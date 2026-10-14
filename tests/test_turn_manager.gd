@@ -4,7 +4,7 @@
 class_name TestTurnManager
 extends TestCase
 
-const Phase := GameEnums.Phase
+const Phase := TurnManager.State
 
 
 func _new_manager(player_count: int = 2, hotseat: bool = true) -> TurnManager:
@@ -47,7 +47,7 @@ func _do(manager: TurnManager, player_id: int, action: StringName, params: Dicti
 
 func test_game_starts_at_turn_begin_with_snapshot() -> void:
 	var manager: TurnManager = _new_manager()
-	check_eq(manager.phase, Phase.TURN_BEGIN, "첫 페이즈")
+	check_eq(manager.current_state, Phase.PHASE_TURN_BEGIN, "첫 페이즈")
 	check_eq(manager.state.current_player, 1, "1번 플레이어부터")
 	check(manager.state.turn_snapshot != null, "TURN_BEGIN 진입 시 TurnSnapshot 저장")
 	check_eq(manager.phase_time_left, GameEnums.PHASE_TIME_TURN_BEGIN, "제한 시간")
@@ -58,13 +58,13 @@ func test_full_turn_flow_with_manual_actions() -> void:
 	var manager: TurnManager = _new_manager()
 	_set_tool(manager, 1, ScriptedTool.new([2]))
 	_do(manager, 1, &"proceed")
-	check_eq(manager.phase, Phase.ROLL_WAIT, "굴림 대기")
+	check_eq(manager.current_state, Phase.PHASE_ROLL_WAIT, "굴림 대기")
 	_do(manager, 1, &"roll")
-	check_eq(manager.phase, Phase.SELECT_PAWN, "손패가 없으면 개입 창은 즉시 닫힘")
+	check_eq(manager.current_state, Phase.PHASE_SELECT_PAWN, "손패가 없으면 개입 창은 즉시 닫힘")
 	check_eq(manager.move_queue, int_array([2]), "이동 대기열")
 	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
 	check_eq(manager.state.get_pawn(11).current_tile_idx, 2, "말 이동")
-	check_eq(manager.phase, Phase.TURN_BEGIN, "다음 플레이어 턴 시작")
+	check_eq(manager.current_state, Phase.PHASE_TURN_BEGIN, "다음 플레이어 턴 시작")
 	check_eq(manager.state.current_player, 2, "2번 플레이어 차례")
 	_dispose(manager)
 
@@ -73,9 +73,9 @@ func test_timeouts_drive_every_phase() -> void:
 	var manager: TurnManager = _new_manager()
 	_set_tool(manager, 1, ScriptedTool.new([2]))
 	manager.tick(GameEnums.PHASE_TIME_TURN_BEGIN + 0.1)
-	check_eq(manager.phase, Phase.ROLL_WAIT, "TURN_BEGIN 시간 초과 -> 굴림 대기")
+	check_eq(manager.current_state, Phase.PHASE_ROLL_WAIT, "TURN_BEGIN 시간 초과 -> 굴림 대기")
 	manager.tick(GameEnums.PHASE_TIME_ROLL + 0.1)
-	check_eq(manager.phase, Phase.SELECT_PAWN, "굴림 시간 초과 -> 자동 굴림")
+	check_eq(manager.current_state, Phase.PHASE_SELECT_PAWN, "굴림 시간 초과 -> 자동 굴림")
 	manager.tick(GameEnums.PHASE_TIME_SELECT + 0.1)
 	check_eq(manager.state.current_player, 2, "기물 선택 시간 초과 -> 자동 이동 후 다음 턴")
 	var moved: int = 0
@@ -91,12 +91,12 @@ func test_reroll_queues_multiple_moves_each_with_its_own_pawn_choice() -> void:
 	_set_tool(manager, 1, ScriptedTool.new([ScriptedTool.reroll_of(4), 2]))
 	_do(manager, 1, &"proceed")
 	_do(manager, 1, &"roll")
-	check_eq(manager.phase, Phase.ROLL_WAIT, "재굴림이면 다시 굴림 대기")
+	check_eq(manager.current_state, Phase.PHASE_ROLL_WAIT, "재굴림이면 다시 굴림 대기")
 	_do(manager, 1, &"roll")
-	check_eq(manager.phase, Phase.SELECT_PAWN, "재굴림 종료 후 선택")
+	check_eq(manager.current_state, Phase.PHASE_SELECT_PAWN, "재굴림 종료 후 선택")
 	check_eq(manager.move_queue, int_array([4, 2]), "눈금 대기열")
 	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
-	check_eq(manager.phase, Phase.SELECT_PAWN, "대기열이 남아 있으면 다시 기물 선택")
+	check_eq(manager.current_state, Phase.PHASE_SELECT_PAWN, "대기열이 남아 있으면 다시 기물 선택")
 	_do(manager, 1, &"select_pawn", {"pawn_id": 12})
 	check_eq(manager.state.get_pawn(11).current_tile_idx, 4, "첫 눈금")
 	check_eq(manager.state.get_pawn(12).current_tile_idx, 2, "둘째 눈금")
@@ -121,10 +121,10 @@ func test_russian_roulette_push_your_luck_flow() -> void:
 	_set_tool(manager, 1, revolver)
 	_do(manager, 1, &"proceed")
 	_do(manager, 1, &"roll")
-	check_eq(manager.phase, Phase.ROLL_WAIT, "빈 총이면 계속 당길 수 있음")
+	check_eq(manager.current_state, Phase.PHASE_ROLL_WAIT, "빈 총이면 계속 당길 수 있음")
 	_do(manager, 1, &"roll")
 	_do(manager, 1, &"stop")
-	check_eq(manager.phase, Phase.SELECT_PAWN, "멈추면 이동 선택")
+	check_eq(manager.current_state, Phase.PHASE_SELECT_PAWN, "멈추면 이동 선택")
 	check_eq(manager.move_queue, int_array([6]), "누적 6칸")
 	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
 	check_eq(manager.state.get_pawn(11).current_tile_idx, 6, "6칸 전진")
@@ -140,7 +140,7 @@ func test_russian_roulette_bullet_ends_turn_without_moving() -> void:
 	_do(manager, 1, &"roll")
 	_do(manager, 1, &"roll")
 	check_eq(manager.state.current_player, 2, "실탄 발사 즉시 턴 종료")
-	check_eq(manager.phase, Phase.TURN_BEGIN, "다음 턴")
+	check_eq(manager.current_state, Phase.PHASE_TURN_BEGIN, "다음 턴")
 	for pawn: PlayerPawn in manager.state.pawns_of(1):
 		check_eq(pawn.current_tile_idx, 0, "이동 없음")
 	_dispose(manager)
@@ -164,7 +164,7 @@ func test_actions_from_wrong_player_or_phase_are_rejected() -> void:
 	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
 	_do(manager, 1, &"bogus")
 	check_eq(rejected.size(), 4, "모두 거부")
-	check_eq(manager.phase, Phase.TURN_BEGIN, "상태 불변")
+	check_eq(manager.current_state, Phase.PHASE_TURN_BEGIN, "상태 불변")
 	_dispose(manager)
 
 
@@ -173,7 +173,7 @@ func test_host_authority_ignores_claimed_player_when_not_hotseat() -> void:
 	var events: Array = _collect_events(manager)
 	_set_tool(manager, 1, ScriptedTool.new([3]))
 	_do(manager, 2, &"proceed")  # 방장(피어 1 = 1번 플레이어)이 2번을 사칭해도 1번으로 처리
-	check_eq(manager.phase, Phase.ROLL_WAIT, "사칭 요청도 1번 플레이어 권한으로만 처리")
+	check_eq(manager.current_state, Phase.PHASE_ROLL_WAIT, "사칭 요청도 1번 플레이어 권한으로만 처리")
 	_do(manager, 2, &"roll")
 	var rolled: Array = events.filter(func(e: Dictionary) -> bool: return e["kind"] == &"roll_resolved")
 	check_eq(rolled.size(), 1, "굴림 이벤트")
@@ -201,7 +201,7 @@ func test_round_end_runs_npc_phase_and_advances_round() -> void:
 		_do(manager, player_id, &"roll")
 		_do(manager, player_id, &"select_pawn", {"pawn_id": player_id * 10 + 1})
 	check_eq(manager.state.round_number, 2, "라운드 증가")
-	check_eq(manager.phase, Phase.TURN_BEGIN, "새 라운드 첫 턴")
+	check_eq(manager.current_state, Phase.PHASE_TURN_BEGIN, "새 라운드 첫 턴")
 	check_eq(manager.state.current_player, 1, "다시 1번")
 	var npc_events: Array = events.filter(func(e: Dictionary) -> bool: return e["kind"] == &"npc_phase_resolved")
 	check_eq(npc_events.size(), 1, "NPC 페이즈 실행")
@@ -216,7 +216,7 @@ func test_capture_grants_extra_turn_to_same_player() -> void:
 	_do(manager, 1, &"roll")
 	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
 	check_eq(manager.state.current_player, 1, "잡기 후 같은 플레이어가 한 번 더")
-	check_eq(manager.phase, Phase.TURN_BEGIN, "새 턴으로 시작")
+	check_eq(manager.current_state, Phase.PHASE_TURN_BEGIN, "새 턴으로 시작")
 	_dispose(manager)
 
 
@@ -229,14 +229,14 @@ func test_interrupt_window_resolves_cards_lifo_and_only_when_hands_exist() -> vo
 	_set_tool(manager, 1, ScriptedTool.new([2]))
 	_do(manager, 1, &"proceed")
 	_do(manager, 1, &"roll")
-	check_eq(manager.phase, Phase.INTERRUPT_ROLL, "손패가 있으면 개입 창이 열린다")
+	check_eq(manager.current_state, Phase.PHASE_INTERRUPT_ROLL, "손패가 있으면 개입 창이 열린다")
 	_do(manager, 2, &"play_card", {"card_id": &"ACT_06", "law_id": "LAW_02"})
 	_do(manager, 2, &"play_card", {"card_id": &"ACT_06", "law_id": "LAW_05"})
 	check_eq(manager.command_stack.interrupt_count(), 2, "개입 대기열")
 	check(manager.state.rulebook.has_law(&"LAW_02"), "아직 실행 전")
 	manager.tick(GameEnums.PHASE_TIME_INTERRUPT + 0.1)
 	check_eq(manager.state.rulebook.active_laws_queue.size(), 0, "두 장 모두 실행되어 법전이 비워짐")
-	check_eq(manager.phase, Phase.SELECT_PAWN, "개입 후 기물 선택")
+	check_eq(manager.current_state, Phase.PHASE_SELECT_PAWN, "개입 후 기물 선택")
 	_dispose(manager)
 
 
@@ -259,7 +259,7 @@ func test_uno_reverse_card_reverses_turn_order() -> void:
 	var manager: TurnManager = _new_manager(3)
 	manager.state.give_card(1, &"ACT_01")
 	_do(manager, 1, &"play_card", {"card_id": &"ACT_01"})
-	check_eq(manager.state.turn_direction, -1, "역순")
+	check_eq(manager.turn_direction, -1, "역순")
 	_set_tool(manager, 1, ScriptedTool.new([1]))
 	_do(manager, 1, &"proceed")
 	_do(manager, 1, &"roll")
@@ -282,12 +282,12 @@ func test_act_05_rolls_back_turn_restores_laws_but_keeps_spent_cards() -> void:
 	manager._begin_turn()  # 위 세팅을 이번 턴 시작 시점으로 저장
 	_do(manager, 1, &"proceed")
 	_do(manager, 1, &"roll")
-	check_eq(manager.phase, Phase.INTERRUPT_ROLL, "개입 창")
+	check_eq(manager.current_state, Phase.PHASE_INTERRUPT_ROLL, "개입 창")
 	_do(manager, 1, &"play_card", {"card_id": &"ACT_06", "law_id": "LAW_06"})  # 이번 턴 도중 법전 파기
 	manager.tick(GameEnums.PHASE_TIME_INTERRUPT + 0.1)
 	check(not state.rulebook.has_law(&"LAW_06"), "법전 파기됨")
 	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
-	check_eq(manager.phase, Phase.RESOLUTION, "ACT_05 대기 창")
+	check_eq(manager.current_state, Phase.PHASE_RESOLUTION, "ACT_05 대기 창")
 	check_eq(state.get_pawn(21).current_tile_idx, 0, "잡힘")
 	_do(manager, 2, &"play_card", {"card_id": &"ACT_05"})
 	manager.tick(GameEnums.PHASE_TIME_RESOLUTION + 0.1)
@@ -296,7 +296,7 @@ func test_act_05_rolls_back_turn_restores_laws_but_keeps_spent_cards() -> void:
 	check(state.rulebook.has_law(&"LAW_06"), "법전 큐도 턴 시작 시점으로 복원")
 	check((state.hands[2] as Array).is_empty(), "ACT_05 카드는 소모된 채")
 	check((state.hands[1] as Array).is_empty(), "이번 턴 소모한 개입 카드는 복구되지 않음")
-	check_eq(manager.phase, Phase.TURN_BEGIN, "같은 플레이어의 턴이 처음부터 다시")
+	check_eq(manager.current_state, Phase.PHASE_TURN_BEGIN, "같은 플레이어의 턴이 처음부터 다시")
 	check_eq(state.current_player, 1, "같은 플레이어")
 	_dispose(manager)
 
@@ -311,7 +311,7 @@ func test_act_05_cannot_be_played_by_unharmed_player() -> void:
 	_do(manager, 1, &"roll")
 	manager.tick(GameEnums.PHASE_TIME_INTERRUPT + 0.1)
 	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
-	check_eq(manager.phase, Phase.RESOLUTION, "개입 창 (손패 존재)")
+	check_eq(manager.current_state, Phase.PHASE_RESOLUTION, "개입 창 (손패 존재)")
 	_do(manager, 2, &"play_card", {"card_id": &"ACT_05"})
 	check_eq(rejected.size(), 1, "피해 없는 플레이어의 ACT_05는 거부")
 	_dispose(manager)
@@ -326,7 +326,7 @@ func test_act_04_after_backdo_retreat_finishes_pawn() -> void:
 	manager.tick(GameEnums.PHASE_TIME_INTERRUPT + 0.1)
 	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
 	check_eq(manager.state.get_pawn(11).current_tile_idx, 19, "0번에서 빽도 후퇴는 19번")
-	check_eq(manager.phase, Phase.RESOLUTION, "도착 직후 개입 창")
+	check_eq(manager.current_state, Phase.PHASE_RESOLUTION, "도착 직후 개입 창")
 	_do(manager, 1, &"play_card", {"card_id": &"ACT_04", "pawn_id": 11})
 	manager.tick(GameEnums.PHASE_TIME_RESOLUTION + 0.1)
 	check(manager.state.get_pawn(11).is_finished, "ACT_04로 즉시 완주")
@@ -344,7 +344,7 @@ func test_all_pawns_home_declares_winner_and_stops_game() -> void:
 	_do(manager, 1, &"proceed")
 	_do(manager, 1, &"roll")
 	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
-	check_eq(manager.phase, Phase.GAME_OVER, "게임 종료")
+	check(manager.is_game_over, "게임 종료")
 	check_eq(finished_signal, [[1, &"all_home"]], "승자/사유")
 	check_eq(manager.state.winner, 1, "승자 기록")
 	_dispose(manager)
@@ -361,7 +361,7 @@ func test_yut_four_stack_special_victory_via_turn_manager() -> void:
 	_do(manager, 1, &"proceed")
 	_do(manager, 1, &"roll")
 	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
-	check_eq(manager.phase, Phase.GAME_OVER, "특수 승리")
+	check(manager.is_game_over, "특수 승리")
 	check_eq(manager.state.winner, 1, "승자")
 	_dispose(manager)
 
@@ -373,15 +373,15 @@ func test_augment_draft_on_round_one_with_auto_pick_on_timeout() -> void:
 	manager.draft_pool.assign([&"AUG_A", &"AUG_B", &"AUG_C", &"AUG_D", &"AUG_E"])
 	var events: Array = _collect_events(manager)
 	manager.start_game([1, 2] as Array[int], 7)
-	check_eq(manager.phase, Phase.ROUND_START, "1라운드 시작은 드래프트")
+	check_eq(manager.current_state, Phase.PHASE_ROUND_START, "1라운드 시작은 드래프트")
 	check_eq(manager.phase_time_left, GameEnums.PHASE_TIME_DRAFT, "15초")
 	var offers_event: Array = events.filter(func(e: Dictionary) -> bool: return e["kind"] == &"augment_offers")
 	var offers: Dictionary = offers_event[0]["data"]["offers"]
 	check_eq((offers[1] as Array).size(), 3, "3지선다")
 	_do(manager, 1, &"pick_augment", {"index": 2})
-	check_eq(manager.phase, Phase.ROUND_START, "전원이 고를 때까지 대기")
+	check_eq(manager.current_state, Phase.PHASE_ROUND_START, "전원이 고를 때까지 대기")
 	manager.tick(GameEnums.PHASE_TIME_DRAFT + 0.1)
-	check_eq(manager.phase, Phase.TURN_BEGIN, "시간 초과 시 미선택자 자동 선택 후 진행")
+	check_eq(manager.current_state, Phase.PHASE_TURN_BEGIN, "시간 초과 시 미선택자 자동 선택 후 진행")
 	check_eq(manager.augments[1], [(offers[1] as Array)[2]] as Array, "1번은 선택한 증강")
 	check_eq(manager.augments[2], [(offers[2] as Array)[0]] as Array, "2번은 자동 선택")
 	_dispose(manager)
@@ -389,7 +389,7 @@ func test_augment_draft_on_round_one_with_auto_pick_on_timeout() -> void:
 
 func test_no_draft_when_pool_is_empty_or_round_not_in_schedule() -> void:
 	var manager: TurnManager = _new_manager()
-	check_eq(manager.phase, Phase.TURN_BEGIN, "풀이 비어 있으면 드래프트 생략")
+	check_eq(manager.current_state, Phase.PHASE_TURN_BEGIN, "풀이 비어 있으면 드래프트 생략")
 	_dispose(manager)
 
 
@@ -420,7 +420,140 @@ func test_state_sync_payload_roundtrips_through_a_client_mirror() -> void:
 	check_eq(client.state.get_pawn(11).current_tile_idx, 8, "기물 위치 미러링")
 	check(client.state.rulebook.has_law(&"LAW_02"), "법전 미러링")
 	check(client.state.board.get_tile(5).has_attachment(&"TRP_01"), "설치물 미러링")
-	check_eq(client.phase, host.phase, "페이즈 미러링")
+	check_eq(client.current_state, host.current_state, "페이즈 미러링")
 	tree.root.remove_child(client)
 	client.free()
 	_dispose(host)
+
+
+func test_state_enum_has_exactly_the_eight_phases() -> void:
+	var names: Array = TurnManager.State.keys()
+	check_eq(names, [
+		"PHASE_ROUND_START", "PHASE_TURN_BEGIN", "PHASE_ROLL_WAIT", "PHASE_INTERRUPT_ROLL",
+		"PHASE_SELECT_PAWN", "PHASE_MOVING_STEP", "PHASE_RESOLUTION", "PHASE_NEUTRAL_NPC"], "8단계 순서")
+
+
+func test_turn_order_variables_have_documented_defaults() -> void:
+	var manager := TurnManager.new()
+	check_eq(manager.player_order, int_array([1, 2, 3, 4]), "기본 플레이 순서")
+	check_eq(manager.current_turn_index, 0, "기본 인덱스")
+	check_eq(manager.turn_direction, 1, "기본 정방향")
+	check_eq(manager.current_state, Phase.PHASE_ROUND_START, "기본 상태")
+	manager.free()
+
+
+func test_reverse_turn_order_flips_direction_and_emits_signal() -> void:
+	var manager: TurnManager = _new_manager(3)
+	var directions: Array[int] = []
+	manager.turn_order_reversed.connect(func(new_direction: int) -> void: directions.append(new_direction))
+	manager.reverse_turn_order()
+	check_eq(manager.turn_direction, -1, "역방향")
+	manager.reverse_turn_order()
+	check_eq(manager.turn_direction, 1, "다시 정방향")
+	check_eq(directions, [-1, 1] as Array[int], "시그널 인자")
+	_dispose(manager)
+
+
+func test_advance_to_next_player_cycles_and_enters_npc_phase_at_round_end() -> void:
+	var manager: TurnManager = _new_manager(3)
+	var events: Array = _collect_events(manager)
+	var states: Array[int] = []
+	manager.phase_changed.connect(func(new_state: int, _player: int, _limit: float) -> void: states.append(new_state))
+	check_eq(manager.current_turn_index, 0, "시작")
+	manager.advance_to_next_player()
+	check_eq(manager.current_turn_index, 1, "다음 플레이어")
+	check_eq(manager.state.current_player, 2, "GameState 미러도 갱신")
+	manager.advance_to_next_player()
+	check_eq(manager.current_turn_index, 2, "세 번째 플레이어")
+	check_eq(manager.state.round_number, 1, "아직 1라운드")
+	manager.advance_to_next_player()
+	check(states.has(Phase.PHASE_NEUTRAL_NPC), "라운드 마지막 턴 뒤 PHASE_NEUTRAL_NPC 진입")
+	check_eq(events.filter(func(e: Dictionary) -> bool: return e["kind"] == &"npc_phase_resolved").size(), 1, "NPC 페이즈 실행")
+	check_eq(manager.state.round_number, 2, "다음 라운드")
+	check_eq(manager.current_turn_index, 0, "인덱스 순환")
+	check_eq(manager.current_state, Phase.PHASE_TURN_BEGIN, "새 라운드 첫 턴")
+	_dispose(manager)
+
+
+func test_advance_to_next_player_follows_reverse_direction() -> void:
+	var manager: TurnManager = _new_manager(4)
+	manager.reverse_turn_order()
+	manager.advance_to_next_player()
+	check_eq(manager.current_turn_index, 3, "역방향이면 0 다음은 마지막 인덱스")
+	check_eq(manager.current_player_id(), 4, "4번 플레이어")
+	manager.advance_to_next_player()
+	check_eq(manager.current_turn_index, 2, "계속 역순")
+	_dispose(manager)
+
+
+func test_uno_reverse_card_flips_turn_direction_through_signal() -> void:
+	var manager: TurnManager = _new_manager(3)
+	manager.state.give_card(1, &"ACT_01")
+	_do(manager, 1, &"play_card", {"card_id": &"ACT_01"})
+	check_eq(manager.turn_direction, -1, "카드 실행이 TurnManager 방향을 뒤집음")
+	check_eq(manager.state.reverse_move_rounds_left, 1, "이동 역주행 1라운드")
+	_dispose(manager)
+
+
+func test_step_by_step_move_stops_immediately_when_a_trap_fires() -> void:
+	var manager: TurnManager = _new_manager()
+	var state: GameState = manager.state
+	state.place_attachment(3, TrapMirrorForce.new(2))
+	var pawn: PlayerPawn = state.get_pawn(11)
+	var ctx: RuleContext = make_ctx(state, 6)
+	var path: Array[int] = state.board.calculate_path(pawn, 6, ctx)
+	var seen_steps: Array[int] = []
+	state.pawn_stepped.connect(func(_pawn_id: int, _from: int, to_tile: int) -> void: seen_steps.append(to_tile))
+	await manager.execute_step_by_step_move(pawn, path, ctx)
+	check_eq(seen_steps, int_array([1, 2, 3]), "함정 칸에서 남은 이동(4, 5, 6)이 취소됨")
+	check_eq(manager._move_outcome, MoveExecutor.StepOutcome.TRAPPED, "함정 발동 결과")
+	check_eq(pawn.current_tile_idx, 0, "출발선으로 복귀")
+	check_eq(state.board.get_tile(3).attachments.size(), 0, "함정은 소모됨")
+	_dispose(manager)
+
+
+func test_step_by_step_move_awaits_between_steps() -> void:
+	var manager: TurnManager = _new_manager()
+	manager.step_delay_sec = 0.03
+	var state: GameState = manager.state
+	var pawn: PlayerPawn = state.get_pawn(11)
+	var ctx: RuleContext = make_ctx(state, 4)
+	var path: Array[int] = state.board.calculate_path(pawn, 4, ctx)
+	manager.execute_step_by_step_move(pawn, path, ctx)  # await 하지 않고 시작만 한다
+	check_eq(pawn.current_tile_idx, 1, "첫 걸음만 즉시 이동하고 다음 걸음은 대기")
+	await tree.create_timer(0.05).timeout
+	check(pawn.current_tile_idx > 1 and pawn.current_tile_idx < 4, "시간이 지나며 한 칸씩 진행 중 (현재 %d)" % pawn.current_tile_idx)
+	await tree.create_timer(0.3).timeout
+	check_eq(pawn.current_tile_idx, 4, "경로 끝까지 이동")
+	_dispose(manager)
+
+
+func test_select_pawn_runs_async_move_to_resolution_with_step_delay() -> void:
+	var manager: TurnManager = _new_manager()
+	manager.step_delay_sec = 0.02
+	_set_tool(manager, 1, ScriptedTool.new([2]))  # 3칸이면 빵집(3번)에서 카드를 받아 개입 창이 열린다
+	_do(manager, 1, &"proceed")
+	_do(manager, 1, &"roll")
+	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
+	check_eq(manager.current_state, Phase.PHASE_MOVING_STEP, "이동 중에는 PHASE_MOVING_STEP")
+	var rejected: Array = _rejections(manager)
+	_do(manager, 1, &"select_pawn", {"pawn_id": 12})
+	check_eq(rejected.size(), 1, "이동 중 다른 행동은 거부")
+	await tree.create_timer(0.3).timeout
+	check_eq(manager.state.get_pawn(11).current_tile_idx, 2, "이동 완료")
+	check_eq(manager.current_state, Phase.PHASE_TURN_BEGIN, "도착 처리 후 다음 플레이어 턴")
+	check_eq(manager.current_player_id(), 2, "2번 플레이어")
+	_dispose(manager)
+
+
+func test_trap_during_real_turn_flow_marks_victim_as_hurt() -> void:
+	var manager: TurnManager = _new_manager()
+	manager.state.place_attachment(2, TrapMirrorForce.new(2))
+	_set_tool(manager, 1, ScriptedTool.new([4]))
+	_do(manager, 1, &"proceed")
+	_do(manager, 1, &"roll")
+	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
+	check_eq(manager.state.get_pawn(11).current_tile_idx, 0, "함정에 걸려 출발선")
+	check_eq(manager.state.board.get_tile(2).attachments.size(), 0, "함정 소모")
+	check_eq(manager.current_player_id(), 2, "턴 종료")
+	_dispose(manager)

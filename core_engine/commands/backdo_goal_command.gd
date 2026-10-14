@@ -8,12 +8,18 @@ var pawn_id: int = -1
 
 
 func _init(acting_player: int = -1, target_pawn_id: int = -1) -> void:
-	player_id = acting_player
+	super()
+	sender_id = acting_player
 	pawn_id = target_pawn_id
-	command_name = &"BackdoGoal"
+	command_name = "BackdoGoal"
 
 
-func _run(state: GameState) -> void:
+func can_execute(_ctx: RuleContext) -> bool:
+	if state == null:
+		return false
 	var pawn: PlayerPawn = state.get_pawn(pawn_id)
-	if pawn != null and not pawn.is_finished:
-		state.finish_stack(pawn)
+	return pawn != null and not pawn.is_finished
+
+
+func _run() -> void:
+	state.finish_stack(state.get_pawn(pawn_id))

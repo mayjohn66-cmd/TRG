@@ -6,15 +6,21 @@ extends TestCase
 
 
 class RecordingCommand extends GameCommand:
-	var log: Array[StringName]
-	var label: StringName
+	var log: Array[String]
+	var label: String
+	var allowed: bool = true
 
-	func _init(target_log: Array[StringName], id: StringName) -> void:
+	func _init(target_log: Array[String], id: String, can_run: bool = true) -> void:
+		super()
 		log = target_log
 		label = id
 		command_name = id
+		allowed = can_run
 
-	func _run(_state: GameState) -> void:
+	func can_execute(_ctx: RuleContext) -> bool:
+		return allowed and state != null
+
+	func _run() -> void:
 		log.append(label)
 
 
@@ -146,29 +152,98 @@ func test_move_calc_flags_and_path_nodes() -> void:
 	check_eq(move_ctx.path_nodes, int_array([1, 2, 3]), "이동 실행기가 path_nodes를 채움")
 
 
-func test_command_stack_resolves_interrupts_lifo_and_undoes() -> void:
+func test_game_command_fields_and_defaults() -> void:
 	var state := make_state()
-	var stack := CommandStack.new()
-	var log: Array[StringName] = []
-	stack.queue_interrupt(RecordingCommand.new(log, &"first"))
-	stack.queue_interrupt(RecordingCommand.new(log, &"second"))
-	stack.queue_interrupt(RecordingCommand.new(log, &"third"))
+	var command := ExpelPawnCommand.new(2, 21)
+	check_eq(command.sender_id, 2, "sender_id")
+	check_eq(command.command_name, "ExpelPawn", "command_name")
+	check(command.timestamp >= 0, "timestamp는 생성 시각")
+	check(not command.can_execute(make_ctx(state, 0)), "상태가 주입되기 전에는 실행 불가")
+	command.bind_state(state)
+	check(command.can_execute(make_ctx(state, 0)), "주입 후 실행 가능")
+	var later := ExpelPawnCommand.new(2, 21)
+	check(later.timestamp >= command.timestamp, "나중에 만든 커맨드의 timestamp는 크거나 같음")
+
+
+func test_command_stack_resolves_interrupts_lifo() -> void:
+	var state := make_state()
+	var stack: CommandStack = new_stack()
+	var ctx: RuleContext = make_ctx(state, 0)
+	var log: Array[String] = []
+	check(stack.push_interrupt(RecordingCommand.new(log, "first"), ctx), "쌓기")
+	check(stack.push_interrupt(RecordingCommand.new(log, "second"), ctx), "쌓기")
+	check(stack.push_interrupt(RecordingCommand.new(log, "third"), ctx), "쌓기")
 	check_eq(stack.interrupt_count(), 3, "대기열")
-	stack.resolve_interrupts(state)
-	check_eq(log, [&"third", &"second", &"first"] as Array[StringName], "후입선출")
+	var resolved: Array[GameCommand] = stack.resolve_interrupts(ctx)
+	check_eq(log, ["third", "second", "first"] as Array[String], "후입선출")
+	check_eq(resolved.size(), 3, "실행된 커맨드 목록")
 	check_eq(stack.interrupt_count(), 0, "대기열 비움")
 	check_eq(stack.history_count(), 3, "실행 이력")
 
 
-func test_command_undo_restores_board() -> void:
+func test_command_stack_skips_commands_that_became_invalid_before_resolution() -> void:
 	var state := make_state()
-	var stack := CommandStack.new()
+	add_law(state, "LAW_02")
+	var stack: CommandStack = new_stack()
+	var ctx: RuleContext = make_ctx(state, 0)
+	var first := RepealLawCommand.new(1, "LAW_02")
+	var second := RepealLawCommand.new(2, "LAW_02")
+	check(stack.push_interrupt(first, ctx), "첫 번째 쌓기")
+	check(stack.push_interrupt(second, ctx), "쌓는 시점에는 둘 다 유효")
+	var resolved: Array[GameCommand] = stack.resolve_interrupts(ctx)
+	check_eq(resolved.size(), 1, "LIFO로 먼저 실행된 쪽이 교칙을 파기하고, 나머지는 can_execute 실패로 건너뜀")
+	check(resolved[0] == second, "나중에 낸 커맨드가 먼저 실행")
+	check_eq(stack.history_count(), 1, "건너뛴 커맨드는 이력에 남지 않음")
+	check(not stack.push_interrupt(RepealLawCommand.new(1, "LAW_02"), ctx), "이미 없는 교칙은 쌓기 단계에서 거부")
+
+
+func test_command_stack_execute_and_undo_last() -> void:
+	var state := make_state()
+	var stack: CommandStack = new_stack()
 	place(state, 11, 4, [3])
-	stack.execute(ExpelPawnCommand.new(1, 11), state)
+	check(exec(state, ExpelPawnCommand.new(1, 11), stack), "실행")
 	check_eq(state.get_pawn(11).current_tile_idx, 0, "추방됨")
-	check(stack.undo_last(state), "undo 성공")
+	check(stack.undo_last(), "undo 성공")
 	check_eq(state.get_pawn(11).current_tile_idx, 4, "되돌림")
-	check(not stack.undo_last(state), "이력 없음")
+	check_eq(state.get_pawn(11).step_history, int_array([3, 4]), "이력도 복원")
+	check(not stack.undo_last(), "이력 없음")
+
+
+func test_undo_turn_history_reverses_in_time_order() -> void:
+	var state := make_state()
+	var stack: CommandStack = new_stack()
+	var undone_order: Array[String] = []
+	stack.command_undone.connect(func(command: GameCommand) -> void: undone_order.append(command.command_name))
+	place(state, 11, 4, [3])
+	place(state, 12, 9, [8])
+	add_law(state, "LAW_02")
+	exec(state, ExpelPawnCommand.new(1, 11), stack)
+	exec(state, RepealLawCommand.new(1, "LAW_02"), stack)
+	exec(state, ExpelPawnCommand.new(1, 12), stack)
+	check_eq(stack.history_count(), 3, "세 번 실행")
+	check_eq(stack.undo_turn_history(), 3, "세 개 모두 취소")
+	check_eq(undone_order, ["ExpelPawn", "RepealLaw", "ExpelPawn"] as Array[String], "가장 최근 것부터 역순")
+	check_eq(state.get_pawn(11).current_tile_idx, 4, "첫 번째 추방 복원")
+	check_eq(state.get_pawn(12).current_tile_idx, 9, "두 번째 추방 복원")
+	check(state.rulebook.has_law("LAW_02"), "파기된 교칙 복원")
+	check_eq(stack.history_count(), 0, "이력 비움")
+
+
+func test_rollback_command_undoes_turn_history_and_is_not_recorded() -> void:
+	var state := make_state()
+	var stack: CommandStack = new_stack()
+	place(state, 11, 4, [3])
+	add_law(state, "LAW_02")
+	state.turn_snapshot = TurnSnapshot.capture(state)
+	exec(state, ExpelPawnCommand.new(1, 11), stack)
+	exec(state, RepealLawCommand.new(1, "LAW_02"), stack)
+	var rolled_back: Array[int] = []
+	stack.turn_rolled_back.connect(func(count: int) -> void: rolled_back.append(count))
+	check(exec(state, RollbackCommand.new(2), stack), "ACT_05 실행")
+	check_eq(rolled_back, [2] as Array[int], "이전 두 개를 되감음")
+	check_eq(stack.history_count(), 0, "롤백 커맨드 자체는 이력에 남지 않음")
+	check(state.rollback_requested, "TurnManager에 알리는 플래그")
+	check_eq(TurnSnapshot.capture(state).data, state.turn_snapshot.data, "역순 undo 결과는 턴 시작 TurnSnapshot과 정확히 같다")
 
 
 func test_act_06_repeals_chosen_slot() -> void:
@@ -178,18 +253,19 @@ func test_act_06_repeals_chosen_slot() -> void:
 	var card: BaseCard = CardRegistry.get_card(&"ACT_06")
 	check(not card.can_play(state, 1, {"law_id": "LAW_07"}), "법전에 없는 교칙은 지정 불가")
 	check(card.can_play(state, 1, {"law_id": "LAW_02"}), "법전에 있는 교칙")
-	CommandStack.new().execute(card.create_command(state, 1, {"law_id": "LAW_02"}), state)
+	exec(state, card.create_command(state, 1, {"law_id": "LAW_02"}))
 	check(not state.rulebook.has_law(&"LAW_02"), "법전 파기")
 	check(state.rulebook.has_law(&"LAW_05"), "다른 교칙 유지")
 
 
-func test_act_01_reverses_order_and_movement_for_one_round() -> void:
+func test_act_01_requests_turn_reversal_and_reverses_movement_for_one_round() -> void:
 	var state := make_state(3)
 	var card: BaseCard = CardRegistry.get_card(&"ACT_01")
-	CommandStack.new().execute(card.create_command(state, 1, {}), state)
-	check_eq(state.turn_direction, -1, "턴 순서 반전")
+	var requests: Array[int] = []
+	state.turn_order_reverse_requested.connect(func() -> void: requests.append(1))
+	exec(state, card.create_command(state, 1, {}))
+	check_eq(requests.size(), 1, "턴 순서 반전 요청 시그널 (순서는 TurnManager가 소유)")
 	check_eq(state.movement_direction(), -1, "이동 역주행")
-	check_eq(state.next_player_after(1), 3, "역순 진행")
 	var pawn: PlayerPawn = place(state, 11, 4, [3])
 	var ctx: RuleContext = make_ctx(state, 2)
 	ctx.direction = state.movement_direction()
@@ -206,7 +282,7 @@ func test_act_04_works_at_19_and_28_after_retreating_from_start() -> void:
 	check_eq(report.path, int_array([19]), "0번에서 후퇴하면 19번")
 	check(card.can_play(state, 1, {"pawn_id": 11}), "19번 도착 직후 발동 가능")
 	check(not card.can_play(state, 2, {"pawn_id": 11}), "남의 말에는 사용 불가")
-	CommandStack.new().execute(card.create_command(state, 1, {"pawn_id": 11}), state)
+	exec(state, card.create_command(state, 1, {"pawn_id": 11}))
 	check(state.get_pawn(11).is_finished, "즉시 완주")
 
 	place(state, 12, 0, [27, 28], true)
@@ -236,7 +312,7 @@ func test_mirror_force_card_validates_tile() -> void:
 	check(not card.can_play(state, 1, {"tile": 0}), "출발선 설치 불가")
 	check(not card.can_play(state, 1, {"tile": 22}), "중앙 설치 불가")
 	check(card.can_play(state, 1, {"tile": 9}), "일반 타일")
-	CommandStack.new().execute(card.create_command(state, 1, {"tile": 9}), state)
+	exec(state, card.create_command(state, 1, {"tile": 9}))
 	check(state.board.get_tile(9).has_attachment(&"TRP_01"), "설치됨")
 	check_eq(state.board.get_tile(9).attachments[0].owner_id, 1, "설치자 기록")
 	check(not card.can_play(state, 2, {"tile": 9}), "같은 설치물 중복 불가")

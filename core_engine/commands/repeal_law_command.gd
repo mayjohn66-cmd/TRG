@@ -8,10 +8,15 @@ var target_law_id: String = ""
 
 
 func _init(acting_player: int = -1, law_id: String = "") -> void:
-	player_id = acting_player
+	super()
+	sender_id = acting_player
 	target_law_id = law_id
-	command_name = &"RepealLaw"
+	command_name = "RepealLaw"
 
 
-func _run(state: GameState) -> void:
+func can_execute(_ctx: RuleContext) -> bool:
+	return state != null and state.rulebook.has_law(target_law_id)
+
+
+func _run() -> void:
 	state.rulebook.remove_law_by_id(target_law_id)

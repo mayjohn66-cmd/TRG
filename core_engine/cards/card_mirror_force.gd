@@ -9,7 +9,7 @@ func _init() -> void:
 	card_id = &"TRP_01"
 	display_name = "성스러운 방어막 거울의 힘"
 	category = GameEnums.CardCategory.TRAP
-	playable_phases = [GameEnums.Phase.TURN_BEGIN]
+	playable_phases = [TurnManager.State.PHASE_TURN_BEGIN]
 
 
 ## params: {"tile": int}  출발/결승선(0번)과 중앙(22번)에는 설치할 수 없고, 한 타일에 같은 설치물은 하나만 둔다.

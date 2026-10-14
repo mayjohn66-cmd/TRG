@@ -9,15 +9,18 @@ var attachment_id: String = ""
 
 
 func _init(acting_player: int = -1, target_tile: int = -1, id: String = "") -> void:
-	player_id = acting_player
+	super()
+	sender_id = acting_player
 	tile = target_tile
 	attachment_id = id
-	command_name = &"PlaceAttachment"
+	command_name = "PlaceAttachment"
 
 
-func _run(state: GameState) -> void:
+func can_execute(_ctx: RuleContext) -> bool:
+	return state != null and state.board.is_valid_tile(tile) and AttachmentRegistry.create(attachment_id) != null
+
+
+func _run() -> void:
 	var attachment: TileAttachment = AttachmentRegistry.create(attachment_id)
-	if attachment == null:
-		return
-	attachment.owner_id = player_id
+	attachment.owner_id = sender_id
 	state.place_attachment(tile, attachment)

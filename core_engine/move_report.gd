@@ -19,7 +19,7 @@ var extra_turn: bool = false
 var drawn_card: StringName = &""
 var special_victory: StringName = &""
 var attachment_events: Array[Dictionary] = []
-var effect_names: Array[StringName] = []
+var effect_names: Array[String] = []
 
 
 func merge(other: MoveReport) -> void:

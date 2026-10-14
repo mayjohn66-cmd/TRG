@@ -8,7 +8,7 @@ extends BaseCard
 func _init() -> void:
 	card_id = &"ACT_05"
 	display_name = "바이츠 더 더스트"
-	playable_phases = [GameEnums.Phase.RESOLUTION]
+	playable_phases = [TurnManager.State.PHASE_RESOLUTION]
 
 
 func can_play(state: GameState, player_id: int, _params: Dictionary) -> bool:

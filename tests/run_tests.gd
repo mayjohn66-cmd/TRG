@@ -18,11 +18,10 @@ var _ran: bool = false
 
 ## 씬 트리가 완전히 시작된 첫 프레임에 실행한다 (Node 기반 TurnManager가 multiplayer API를 쓰려면 필요).
 func _process(_delta: float) -> bool:
-	if _ran:
-		return true
-	_ran = true
-	_run_all()
-	return true
+	if not _ran:
+		_ran = true
+		_run_all()
+	return false
 
 
 func _run_all() -> void:
@@ -39,7 +38,7 @@ func _run_all() -> void:
 			var suite: TestCase = script.new()
 			suite.tree = self
 			suite.current_test = "%s::%s" % [path.get_file(), method_name]
-			suite.call(method_name)
+			await suite.call(method_name)
 			suite.cleanup()
 			total_tests += 1
 			total_assertions += suite.assertions

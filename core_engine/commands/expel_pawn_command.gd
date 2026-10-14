@@ -8,12 +8,18 @@ var pawn_id: int = -1
 
 
 func _init(acting_player: int = -1, target_pawn_id: int = -1) -> void:
-	player_id = acting_player
+	super()
+	sender_id = acting_player
 	pawn_id = target_pawn_id
-	command_name = &"ExpelPawn"
+	command_name = "ExpelPawn"
 
 
-func _run(state: GameState) -> void:
+func can_execute(_ctx: RuleContext) -> bool:
+	if state == null:
+		return false
 	var target: PlayerPawn = state.get_pawn(pawn_id)
-	if target != null and not target.is_finished:
-		state.send_to_start(target, player_id)
+	return target != null and not target.is_finished
+
+
+func _run() -> void:
+	state.send_to_start(state.get_pawn(pawn_id), sender_id)

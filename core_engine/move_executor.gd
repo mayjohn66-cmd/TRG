@@ -1,77 +1,91 @@
 # File: res://core_engine/move_executor.gd
 # Class: class_name MoveExecutor
-# Role: 호스트 전용 이동 실행기. 한 칸씩 이동하며 설치물·결승 바운스·워프·잡기·업기를 판정하고, 법전 훅을 통과시킨 뒤 MoveReport를 만든다.
+# Role: 호스트 전용 이동 실행기. 한 칸 단위 프리미티브(begin/apply_step/finalize)로 설치물·결승 바운스·워프·잡기·업기를 판정하며, 동기 실행(execute)과 TurnManager의 비동기 한 칸씩 이동이 같은 규칙을 공유한다
 class_name MoveExecutor
 extends RefCounted
 
+## 한 걸음을 밟은 결과.
+enum StepOutcome {
+	CONTINUE, # 계속 이동
+	HALTED,   # 함정 등으로 이동이 중단됨 (현재 타일에서 도착 처리)
+	TRAPPED,  # 함정이 말을 출발선으로 돌려보냄
+	FINISHED, # 결승선 완주
+}
 
-## mover를 ctx.dice_value(법전 통과 후 확정 칸수)만큼 움직인다. 모든 중간 변화는 GameState 시그널로 방송된다.
+
+## mover를 ctx.dice_value * ctx.direction 만큼 동기적으로 움직인다. 모든 중간 변화는 GameState 시그널로 방송된다.
+## (비동기 연출이 필요한 이동은 TurnManager.execute_step_by_step_move가 같은 프리미티브를 await와 함께 호출한다.)
 static func execute(state: GameState, mover: PlayerPawn, ctx: RuleContext) -> MoveReport:
-	var report := MoveReport.new()
-	report.pawn_id = mover.entity_id
-	ctx.pawn = mover
-	if ctx.charge_depth == 0:
-		ctx.trigger_timing = RuleContext.ON_MOVE_CALC
-		ctx = state.rulebook.process_context(ctx)
-		if ctx.is_canceled:
-			ctx.is_canceled = false
-			report.canceled = true
-			return report
-
-	var board: BoardGraph = state.board
-	var signed_steps: int = ctx.dice_value * ctx.direction
-	var forward: bool = signed_steps > 0
-	var remaining: int = absi(signed_steps)
-	var start_tile: int = mover.current_tile_idx
-	var cursor: PathCursor = PathCursor.from_entity(mover, mover.has_left_start)
-	var first_step: bool = true
-	var resolved_normally: bool = true
-	mover.retreated_from_start = false
-
-	while remaining > 0:
-		var from_tile: int = cursor.tile
-		var stepped_forward: bool = forward
-		if forward:
-			board.advance_forward(cursor, first_step, ctx.allow_shortcut, mover.turns_at_corner_when_passing())
-		else:
-			board.advance_backward(cursor)
-			if first_step and start_tile == GameEnums.GOAL_TILE:
-				mover.retreated_from_start = true
-		first_step = false
-		remaining -= 1
-		_commit_cursor(state, mover, cursor)
-		report.path.append(cursor.tile)
-		ctx.path_nodes.append(cursor.tile)
-		state.pawn_stepped.emit(mover.entity_id, from_tile, cursor.tile)
-
-		if _trigger_attachments(state, mover, ctx, cursor.tile, remaining == 0, report):
-			if not mover.has_left_start:
-				# 함정이 말을 출발선으로 돌려보냈다 (send_to_start가 출발 상태를 초기화한다).
-				report.trapped = true
-				resolved_normally = false
-				break
-			remaining = 0
-			report.stopped_early = true
-
-		if stepped_forward and cursor.tile == GameEnums.GOAL_TILE and mover.has_left_start:
-			if remaining > 0 and ctx.exact_goal_required:
-				forward = false
-				report.bounced = true
-			else:
-				_finish(state, mover, report)
-				resolved_normally = false
-				break
-
-	if resolved_normally:
-		_resolve_landing(state, mover, ctx, report)
+	var report: MoveReport = begin(state, mover, ctx)
+	if report.canceled:
+		return report
+	var path: Array[int] = state.board.calculate_path(mover, ctx.dice_value * ctx.direction, ctx)
+	var outcome: StepOutcome = StepOutcome.CONTINUE
+	for index: int in path.size():
+		outcome = apply_step(state, mover, ctx, path[index], index == path.size() - 1, index == 0, report)
+		if outcome != StepOutcome.CONTINUE:
+			break
+	finalize(state, mover, ctx, report, outcome)
 	return report
 
 
-static func _commit_cursor(state: GameState, mover: PlayerPawn, cursor: PathCursor) -> void:
-	mover.current_tile_idx = cursor.tile
-	mover.step_history.assign(cursor.history)
-	mover.has_left_start = cursor.started
+## 이동 준비: ON_MOVE_CALC 법전 파이프라인을 통과시켜 지름길/업기/결승 바운스 플래그를 확정한다.
+## 교칙이 이동을 취소하면 report.canceled가 true다. 돌진(charge_depth > 0) 이동은 플래그를 물려받으므로 건너뛴다.
+static func begin(state: GameState, mover: PlayerPawn, ctx: RuleContext) -> MoveReport:
+	var report := MoveReport.new()
+	report.pawn_id = mover.entity_id
+	ctx.pawn = mover
+	mover.retreated_from_start = false
+	if ctx.charge_depth == 0:
+		ctx.trigger_timing = RuleContext.ON_MOVE_CALC
+		var processed: RuleContext = state.rulebook.process_context(ctx)
+		if processed.is_canceled:
+			processed.is_canceled = false
+			report.canceled = true
+	return report
+
+
+## 기물을 destination 타일로 정확히 한 칸 옮기고 그 칸의 설치물·결승선을 판정한다.
+## is_last: 경로의 마지막 걸음인가 / is_first: 이동의 첫 걸음인가.
+static func apply_step(
+		state: GameState,
+		mover: PlayerPawn,
+		ctx: RuleContext,
+		destination: int,
+		is_last: bool,
+		is_first: bool,
+		report: MoveReport) -> StepOutcome:
+	var from_tile: int = mover.current_tile_idx
+	var is_forward: bool = state.board.commit_step(mover, destination)
+	mover.has_left_start = true
+	if is_first and not is_forward and from_tile == GameEnums.GOAL_TILE:
+		mover.retreated_from_start = true
 	state.sync_stack_position(mover)
+	report.path.append(destination)
+	ctx.path_nodes.append(destination)
+	state.pawn_stepped.emit(mover.entity_id, from_tile, destination)
+
+	if _trigger_attachments(state, mover, ctx, destination, is_last, report):
+		if not mover.has_left_start:
+			# 함정이 말을 출발선으로 돌려보냈다 (send_to_start가 출발 상태를 초기화한다).
+			report.trapped = true
+			return StepOutcome.TRAPPED
+		report.stopped_early = true
+		return StepOutcome.HALTED
+
+	if is_forward and destination == GameEnums.GOAL_TILE:
+		if not is_last and ctx.exact_goal_required:
+			report.bounced = true
+			return StepOutcome.CONTINUE
+		_finish(state, mover, report)
+		return StepOutcome.FINISHED
+	return StepOutcome.CONTINUE
+
+
+## 이동 마무리: 정상 도착(CONTINUE/HALTED)이면 도착 처리(빵집·워프·잡기·업기·후속 효과)를 수행한다.
+static func finalize(state: GameState, mover: PlayerPawn, ctx: RuleContext, report: MoveReport, outcome: StepOutcome) -> void:
+	if outcome == StepOutcome.CONTINUE or outcome == StepOutcome.HALTED:
+		_resolve_landing(state, mover, ctx, report)
 
 
 static func _finish(state: GameState, mover: PlayerPawn, report: MoveReport) -> void:
@@ -86,6 +100,7 @@ static func _finish(state: GameState, mover: PlayerPawn, report: MoveReport) -> 
 		report.special_victory = &"yut_four_stack"
 
 
+## 이 칸의 설치물을 차례로 발동시킨다. 함정이 이동을 중단시켜야 하면 true를 반환한다.
 static func _trigger_attachments(
 		state: GameState,
 		mover: PlayerPawn,
@@ -132,8 +147,10 @@ static func _resolve_landing(state: GameState, mover: PlayerPawn, ctx: RuleConte
 	ctx = state.rulebook.process_context(ctx)
 	ctx.is_canceled = false
 	for command: GameCommand in ctx.effects:
-		command.execute(state)
-		report.effect_names.append(command.command_name)
+		command.bind_state(state)
+		if command.can_execute(ctx):
+			command.execute()
+			report.effect_names.append(command.command_name)
 	ctx.effects.clear()
 
 

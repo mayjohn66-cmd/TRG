@@ -8,7 +8,7 @@ extends BaseCard
 func _init() -> void:
 	card_id = &"ACT_06"
 	display_name = "이의 있음! 법전 파기"
-	playable_phases = [GameEnums.Phase.TURN_BEGIN, GameEnums.Phase.INTERRUPT_ROLL, GameEnums.Phase.RESOLUTION]
+	playable_phases = [TurnManager.State.PHASE_TURN_BEGIN, TurnManager.State.PHASE_INTERRUPT_ROLL, TurnManager.State.PHASE_RESOLUTION]
 
 
 ## params: {"law_id": String}

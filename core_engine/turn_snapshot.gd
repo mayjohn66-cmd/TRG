@@ -45,7 +45,6 @@ static func capture(state: GameState) -> TurnSnapshot:
 		"laws": state.rulebook.law_ids(),
 		"meta": {
 			"current_player": state.current_player,
-			"turn_direction": state.turn_direction,
 			"reverse_move_rounds_left": state.reverse_move_rounds_left,
 			"round_number": state.round_number,
 		},
@@ -112,7 +111,6 @@ func restore(state: GameState, restore_meta: bool = false) -> void:
 	if restore_meta:
 		var meta: Dictionary = data["meta"]
 		state.current_player = int(meta["current_player"])
-		state.turn_direction = int(meta["turn_direction"])
 		state.reverse_move_rounds_left = int(meta["reverse_move_rounds_left"])
 		state.round_number = int(meta["round_number"])
 	state.snapshot_restored.emit()

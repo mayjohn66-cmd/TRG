@@ -76,20 +76,24 @@ func test_hands_are_not_restored_by_snapshot() -> void:
 	check((state.hands[1] as Array).is_empty(), "발동한 ACT_05 자체도 소모된 채 유지")
 
 
-func test_rollback_command_restores_turn_start_but_keeps_consumed_cards() -> void:
+func test_act_05_rollback_via_command_history_restores_turn_start_but_keeps_consumed_cards() -> void:
 	var state := make_state()
+	var stack: CommandStack = new_stack()
 	place(state, 11, 2, [1])
 	place(state, 21, 4, [3])
 	state.give_card(2, &"ACT_05")
 	state.turn_snapshot = TurnSnapshot.capture(state)
-	var report: MoveReport = move(state, 11, 2)
-	check(report.captured_pawn_ids.has(21), "잡기 발생")
+	var move_ctx: RuleContext = make_ctx(state, 2)
+	var move_command := MoveCommand.new(1, 11, move_ctx)
+	check(stack.execute_command(move_command, move_ctx), "이동도 커맨드로 이력에 남는다")
+	check(move_command.report.captured_pawn_ids.has(21), "잡기 발생")
 	var card: BaseCard = CardRegistry.get_card(&"ACT_05")
 	check(card.can_play(state, 2, {}), "피해자는 ACT_05 사용 가능")
 	check(not card.can_play(state, 1, {}), "가해자는 사용 불가")
 	state.consume_card(2, &"ACT_05")
-	CommandStack.new().execute(card.create_command(state, 2, {}), state)
+	check(exec(state, card.create_command(state, 2, {}), stack), "ACT_05 실행")
 	check_eq(state.get_pawn(11).current_tile_idx, 2, "이동한 말 복귀")
 	check_eq(state.get_pawn(21).current_tile_idx, 4, "잡힌 말 복귀")
+	check_eq(TurnSnapshot.capture(state).data, state.turn_snapshot.data, "턴 시작 시점과 동일")
 	check(state.rollback_requested, "롤백 플래그")
 	check((state.hands[2] as Array).is_empty(), "ACT_05는 소모된 채")

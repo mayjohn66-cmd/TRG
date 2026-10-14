@@ -8,7 +8,7 @@
 | 2 | 22번: 통과 시 진입 방향 유지(21→23, 26→27), 정확히 멈췄다 출발하면 항상 27→28→0, 옷장(7·17) 워프는 22번에 멈춘 것으로 판정 | `BoardGraph.next_tile_forward`, `MoveExecutor._warp_to_center` | `test_board_graph.gd`, `test_move_executor.gd` |
 | 3 | 코너(5·10)는 정확히 멈췄다 출발할 때만 지름길 진입. 비숍은 스쳐도 진입. `LAW_01` 활성 시 비숍도 외곽 | `BoardGraph.next_tile_forward`, `PlayerPawn.turns_at_corner_when_passing`, `LawShortcutConstruction` | `test_board_graph.gd` |
 | 4 | 0번 후퇴 기본 19번, `step_history` 직전이 28번이면 28번. `ACT_04`는 19/28 도착 직후 완주 | `BoardGraph.advance_backward`, `CardBackdoGoal` | `test_board_graph.gd`, `test_rules_and_cards.gd`, `test_turn_manager.gd` |
-| 5 | `PHASE_TURN_BEGIN`에서 `TurnSnapshot` 저장, `ACT_05`는 스냅샷 복원. 소모된 개입 카드·`ACT_05` 자체는 복구 안 됨 | `TurnSnapshot`, `RollbackCommand`, `TurnManager._close_resolution_window` | `test_snapshot.gd`, `test_turn_manager.gd` |
+| 5 | `PHASE_TURN_BEGIN`에서 `TurnSnapshot` 저장. `ACT_05`는 `CommandStack`이 이번 턴 커맨드 이력(이동 포함)을 역순 `undo()`하며, 결과는 턴 시작 `TurnSnapshot`과 정확히 같다(테스트로 검증). 소모된 개입 카드·`ACT_05` 자체는 복구 안 됨 | `CommandStack.rollback_turn`, `GameCommand.undo`, `MoveCommand`, `RollbackCommand` | `test_rules_and_cards.gd`, `test_snapshot.gd`, `test_turn_manager.gd` |
 | 6 | 법전 > 기물 능력. `LAW_02` 중에는 윷 업기 불가(기존 업기는 유지). FIFO 밀어내기·`ACT_06`로 해제 | `MoveExecutor._resolve_stacking` (`ctx.allow_stacking`) | `test_move_executor.gd` |
 | 7 | Listen Server: 방장이 서버 겸 클라이언트, 방장의 `TurnManager`가 모든 판정 후 `@rpc`로 브로드캐스트 | `TurnManager`, `NetworkService` | `tests/run_net_test.sh` (실제 WebSocket 2프로세스) |
 
@@ -25,6 +25,8 @@
 - **22번과 `LAW_01`**: `allow_shortcut`은 코너 5·10번의 `next_shortcut`만 막는다. 22번에서 멈췄다 출발하면 확정 명세 2번(무조건 최단 결승 루트)대로 항상 27번으로 나간다.
 - **`step_history`**: 스택의 마지막 원소가 현재 타일이다(기본값 `[0]`). 후진은 한 칸 pop해서 되짚고, 이력이 현재 타일뿐이면 구조상 직전 타일(0번 → 19번)로 후퇴한다.
 - **설치물**: `TileAttachment.on_step_trigger()`가 true를 반환하면 이동이 중단된다. 소모는 `duration_turns = 0`으로 표현하며 이동 실행기가 타일에서 제거한다.
+- **롤백 범위**: 커맨드 `undo()`는 기물·설치물·법전·NPC만 되돌린다. 턴 순서(`TurnManager.turn_direction`)와 손패는 범위 밖이라 `ACT_05` 뒤에도 우노 리버스의 방향 반전은 유지된다.
+- **`execute_step_by_step_move`**: `step_delay_sec`이 0(기본)이면 await 없이 즉시 끝까지 이동하고, 뷰를 붙일 때 양수로 설정한다.
 - **개입 창**: `INTERRUPT_ROLL`·`RESOLUTION`은 누구의 손패에도 카드가 없으면 즉시 닫힌다. 카드가 있으면 3.5초 대기 후 LIFO로 해결한다.
 - **개입 타이밍 B**: 이동은 호스트에서 한 번에 계산되므로 "도착 직전" 대신 이동 직후(`RESOLUTION`) 창에서 반응 카드를 받는다.
 - **우노 리버스**: 턴 순서를 뒤집고 현재 라운드가 끝날 때까지 이동 방향을 반대로 한다.

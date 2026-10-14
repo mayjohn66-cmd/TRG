@@ -129,6 +129,21 @@ func advance_backward(cursor: PathCursor) -> void:
 	cursor.started = true
 
 
+## 실제 개체를 destination 타일로 한 칸 옮기고 step_history 스택을 갱신한다.
+## 전진(간선을 따라감)이면 true, 후진(온 길을 되짚음)이면 false를 반환한다.
+## 후진은 스택을 한 칸 pop하고, 되짚을 이력이 없으면(0번 -> 19번 후퇴) 도착 타일로 새로 시작한다.
+func commit_step(entity: BoardEntity, destination: int) -> bool:
+	var is_forward: bool = tiles[entity.current_tile_idx].neighbors().has(destination)
+	if is_forward:
+		entity.step_history.append(destination)
+	elif entity.step_history.size() >= 2 and entity.step_history[entity.step_history.size() - 2] == destination:
+		entity.step_history.pop_back()
+	else:
+		entity.step_history = [destination]
+	entity.current_tile_idx = destination
+	return is_forward
+
+
 ## 설치물/도착 판정 없이 순수 경로만 미리 계산한다 (UI 하이라이트·AI 평가용).
 ## steps > 0: 전진. 시작 타일이 코너(5, 10)이고 ctx.allow_shortcut이면 next_shortcut으로 진입하고,
 ##            22번에서 출발하면 항상 최단 결승 루트로 나간다. 결승(0번) 도달 시 ctx.exact_goal_required가

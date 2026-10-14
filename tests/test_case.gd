@@ -82,6 +82,19 @@ func move(state: GameState, pawn_id: int, steps: int) -> MoveReport:
 	return MoveExecutor.execute(state, pawn, make_ctx(state, steps, pawn.owner_id))
 
 
+## 커맨드 스택 노드를 만들어 테스트 종료 시 해제하도록 등록한다.
+func new_stack() -> CommandStack:
+	var stack := CommandStack.new()
+	defer_free(stack)
+	return stack
+
+
+## 커맨드를 스택을 거쳐 즉시 실행한다 (바인딩 -> can_execute -> execute -> 이력).
+func exec(state: GameState, command: GameCommand, stack: CommandStack = null) -> bool:
+	var target: CommandStack = stack if stack != null else new_stack()
+	return target.execute_command(command, make_ctx(state, 0, command.sender_id))
+
+
 func int_array(values: Array) -> Array[int]:
 	var result: Array[int] = []
 	result.assign(values)

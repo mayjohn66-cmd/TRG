@@ -110,7 +110,7 @@ func test_law_03_swaps_with_last_place_after_big_roll() -> void:
 	place(state, 21, 14, [13])
 	# 21번 말만 보드 위에 있고 나머지 상대 말은 출발선(미출발) -> 꼴찌는 출발선 말
 	var report: MoveReport = move(state, 11, 6)
-	check_eq(report.effect_names, [&"SwapWithLastPlace"] as Array[StringName], "교환 효과 실행")
+	check_eq(report.effect_names, ["SwapWithLastPlace"] as Array[String], "교환 효과 실행")
 	check_eq(state.get_pawn(11).current_tile_idx, 0, "이동한 말이 꼴찌 위치로")
 	var swapped: PlayerPawn = null
 	for pawn: PlayerPawn in state.pawns_of(2):

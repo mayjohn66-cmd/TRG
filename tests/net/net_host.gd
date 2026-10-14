@@ -31,7 +31,7 @@ func _process(_delta: float) -> bool:
 		print("HOST: 대기 중")
 		return false
 	if _frames > 60 * 20:
-		_fail("시간 초과 (phase=%s, roster=%s)" % [_manager.phase, _net.peer_to_player])
+		_fail("시간 초과 (phase=%s, roster=%s)" % [_manager.current_state, _net.peer_to_player])
 		return true
 	if not _started and _net.connected_player_count() == 2:
 		_started = true

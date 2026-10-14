@@ -18,7 +18,8 @@ signal attachment_placed(tile: int, attachment_id: String, owner_id: int)
 signal attachment_triggered(tile: int, attachment_id: String, pawn_id: int, cutscene_id: StringName)
 signal card_drawn(player_id: int, card_id: StringName)
 signal card_stolen(player_id: int, card_id: StringName)
-signal turn_order_reversed(new_direction: int)
+## ACT_01이 턴 순서 반전을 요청했다. 턴 순서는 TurnManager가 소유하므로 TurnManager가 구독해 처리한다.
+signal turn_order_reverse_requested()
 signal snapshot_restored()
 signal victory_declared(player_id: int, reason: StringName)
 
@@ -38,7 +39,6 @@ var tools: Dictionary = {}
 var card_deck: Array[StringName] = []
 
 var current_player: int = -1
-var turn_direction: int = 1
 var round_number: int = 1
 ## 남은 '전체 역주행' 라운드 수 (ACT_01).
 var reverse_move_rounds_left: int = 0
@@ -184,12 +184,6 @@ func last_place_pawn(excluding_owner: int) -> PlayerPawn:
 			last_distance = distance
 			last = pawn
 	return last
-
-
-func next_player_after(player_id: int) -> int:
-	var index: int = player_ids.find(player_id)
-	var next_index: int = posmod(index + turn_direction, player_ids.size())
-	return player_ids[next_index]
 
 
 # ---------------------------------------------------------------------------
@@ -338,11 +332,6 @@ func any_hand_has_cards() -> bool:
 # ---------------------------------------------------------------------------
 # 턴 진행 방향
 # ---------------------------------------------------------------------------
-
-func reverse_turn_order() -> void:
-	turn_direction *= -1
-	turn_order_reversed.emit(turn_direction)
-
 
 ## 이번 이동에 적용할 전체 이동 방향 (+1 정방향 / -1 우노 리버스 역주행).
 func movement_direction() -> int:

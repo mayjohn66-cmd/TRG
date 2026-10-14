@@ -8,15 +8,21 @@ var pawn_id: int = -1
 
 
 func _init(acting_player: int = -1, mover_pawn_id: int = -1) -> void:
-	player_id = acting_player
+	super()
+	sender_id = acting_player
 	pawn_id = mover_pawn_id
-	command_name = &"SwapWithLastPlace"
+	command_name = "SwapWithLastPlace"
 
 
-func _run(state: GameState) -> void:
+func can_execute(_ctx: RuleContext) -> bool:
+	if state == null:
+		return false
 	var mover: PlayerPawn = state.get_pawn(pawn_id)
-	if mover == null or mover.is_finished:
-		return
+	return mover != null and not mover.is_finished
+
+
+func _run() -> void:
+	var mover: PlayerPawn = state.get_pawn(pawn_id)
 	var last: PlayerPawn = state.last_place_pawn(mover.owner_id)
 	if last == null or last == mover:
 		return

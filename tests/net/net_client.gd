@@ -37,11 +37,11 @@ func _process(_delta: float) -> bool:
 	if state == null:
 		return false
 	# 상대 턴에 행동을 보내 본다 (호스트가 거부해야 한다).
-	if not _illegal_sent and _manager.phase == GameEnums.Phase.TURN_BEGIN and state.current_player == 1:
+	if not _illegal_sent and _manager.current_state == TurnManager.State.PHASE_TURN_BEGIN and state.current_player == 1:
 		_illegal_sent = true
 		_manager.act(&"roll", {})
 	# 내 턴이 오면 진행한다.
-	if not _sent and state.current_player == 2 and _manager.phase == GameEnums.Phase.TURN_BEGIN and state.get_pawn(11).current_tile_idx == 1:
+	if not _sent and state.current_player == 2 and _manager.current_state == TurnManager.State.PHASE_TURN_BEGIN and state.get_pawn(11).current_tile_idx == 1:
 		_sent = true
 		print("CLIENT: 내 턴, 미러 상태 11번 말=", state.get_pawn(11).current_tile_idx)
 		_manager.act(&"proceed", {})

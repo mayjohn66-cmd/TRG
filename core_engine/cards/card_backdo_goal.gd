@@ -10,7 +10,7 @@ const VALID_TILES: Array[int] = [GameEnums.LAST_OUTER_TILE, GameEnums.LAST_SHORT
 func _init() -> void:
 	card_id = &"ACT_04"
 	display_name = "우리 동네 빽도 완주!"
-	playable_phases = [GameEnums.Phase.TURN_BEGIN, GameEnums.Phase.RESOLUTION]
+	playable_phases = [TurnManager.State.PHASE_TURN_BEGIN, TurnManager.State.PHASE_RESOLUTION]
 
 
 ## params: {"pawn_id": int}
