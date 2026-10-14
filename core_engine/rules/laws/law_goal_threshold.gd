@@ -2,15 +2,16 @@
 # Class: class_name LawGoalThreshold
 # Role: LAW_08 결승선 문턱 높이기 - 결승선 통과 시 눈금이 남으면 남은 만큼 뒤로 튕겨 나옴
 class_name LawGoalThreshold
-extends BaseLaw
+extends LawResource
 
 
 func _init() -> void:
-	law_id = &"LAW_08"
-	display_name = "결승선 문턱 높이기"
+	law_id = "LAW_08"
+	law_name = "결승선 문턱 높이기"
 	description = "결승선 통과 시 눈금이 남으면 남은 만큼 뒤로 튕겨 나옴."
+	trigger_timing = RuleContext.ON_MOVE_CALC
 
 
-func apply(stage: GameEnums.HookStage, ctx: RuleContext) -> void:
-	if stage == GameEnums.HookStage.PATH_PREPARE:
-		ctx.goal_bounce = true
+func intercept(ctx: RuleContext) -> RuleContext:
+	ctx.exact_goal_required = true
+	return ctx

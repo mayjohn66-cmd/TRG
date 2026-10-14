@@ -1,14 +1,18 @@
 # File: res://core_engine/rules/base_law.gd
-# Class: class_name BaseLaw
-# Role: 패시브 교칙 추상 리소스. 스테이지별로 RuleContext를 변조하는 인터셉터 하나를 정의한다.
-class_name BaseLaw
+# Class: class_name LawResource
+# Role: 패시브 교칙 추상 리소스. 지정한 trigger_timing 시점에 RuleContext를 가로채(intercept) 변조한다
+class_name LawResource
 extends Resource
 
-@export var law_id: StringName = &""
-@export var display_name: String = ""
+@export var law_id: String = ""
+@export var law_name: String = ""
 @export_multiline var description: String = ""
+## 이 교칙이 개입하는 시점 (RuleContext.ON_DICE_ROLL / ON_MOVE_CALC / ON_CAPTURE / ON_TURN_END).
+@export var trigger_timing: String = ""
+## 같은 시점에 여러 교칙이 걸릴 때의 실행 순서. 값이 작을수록 먼저 실행되고, 같으면 법전에 먼저 들어온 교칙이 먼저 실행된다.
+@export var priority: int = 0
 
 
-## 법전 파이프라인이 모든 스테이지에서 호출한다. 자신이 관여하지 않는 스테이지는 그냥 반환한다.
-func apply(_stage: GameEnums.HookStage, _ctx: RuleContext) -> void:
-	return
+## 가상 함수: 서브클래스가 재정의해 ctx를 변조한다. 기본은 ctx를 그대로 반환한다.
+func intercept(ctx: RuleContext) -> RuleContext:
+	return ctx

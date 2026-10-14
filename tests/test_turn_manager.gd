@@ -230,12 +230,12 @@ func test_interrupt_window_resolves_cards_lifo_and_only_when_hands_exist() -> vo
 	_do(manager, 1, &"proceed")
 	_do(manager, 1, &"roll")
 	check_eq(manager.phase, Phase.INTERRUPT_ROLL, "손패가 있으면 개입 창이 열린다")
-	_do(manager, 2, &"play_card", {"card_id": &"ACT_06", "slot_index": 0})
-	_do(manager, 2, &"play_card", {"card_id": &"ACT_06", "slot_index": 0})
+	_do(manager, 2, &"play_card", {"card_id": &"ACT_06", "law_id": "LAW_02"})
+	_do(manager, 2, &"play_card", {"card_id": &"ACT_06", "law_id": "LAW_05"})
 	check_eq(manager.command_stack.interrupt_count(), 2, "개입 대기열")
 	check(manager.state.rulebook.has_law(&"LAW_02"), "아직 실행 전")
 	manager.tick(GameEnums.PHASE_TIME_INTERRUPT + 0.1)
-	check_eq(manager.state.rulebook.laws.size(), 0, "두 장 모두 실행되어 법전이 비워짐")
+	check_eq(manager.state.rulebook.active_laws_queue.size(), 0, "두 장 모두 실행되어 법전이 비워짐")
 	check_eq(manager.phase, Phase.SELECT_PAWN, "개입 후 기물 선택")
 	_dispose(manager)
 
@@ -247,7 +247,7 @@ func test_card_requires_phase_ownership_and_valid_target() -> void:
 	manager.state.give_card(1, &"TRP_01")
 	_do(manager, 2, &"play_card", {"card_id": &"TRP_01", "tile": 9})  # 내 턴 아님
 	_do(manager, 1, &"play_card", {"card_id": &"TRP_01", "tile": 0})  # 잘못된 대상
-	_do(manager, 1, &"play_card", {"card_id": &"ACT_06", "slot_index": 0})  # 손패에 없음
+	_do(manager, 1, &"play_card", {"card_id": &"ACT_06", "law_id": "LAW_01"})  # 손패에 없음
 	_do(manager, 1, &"play_card", {"card_id": &"TRP_01", "tile": 9})  # 정상
 	check_eq(rejected.size(), 3, "비정상 요청 3건 거부")
 	check(manager.state.board.get_tile(9).has_attachment(&"TRP_01"), "정상 요청은 설치")
@@ -283,7 +283,7 @@ func test_act_05_rolls_back_turn_restores_laws_but_keeps_spent_cards() -> void:
 	_do(manager, 1, &"proceed")
 	_do(manager, 1, &"roll")
 	check_eq(manager.phase, Phase.INTERRUPT_ROLL, "개입 창")
-	_do(manager, 1, &"play_card", {"card_id": &"ACT_06", "slot_index": 0})  # 이번 턴 도중 법전 파기
+	_do(manager, 1, &"play_card", {"card_id": &"ACT_06", "law_id": "LAW_06"})  # 이번 턴 도중 법전 파기
 	manager.tick(GameEnums.PHASE_TIME_INTERRUPT + 0.1)
 	check(not state.rulebook.has_law(&"LAW_06"), "법전 파기됨")
 	_do(manager, 1, &"select_pawn", {"pawn_id": 11})

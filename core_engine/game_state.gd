@@ -23,6 +23,7 @@ signal snapshot_restored()
 signal victory_declared(player_id: int, reason: StringName)
 
 var board: BoardGraph = BoardGraph.new()
+## Node 기반 법전. 씬 트리에 붙이지 않고 GameState가 수명을 관리한다.
 var rulebook: RuleBookManager = RuleBookManager.new()
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
@@ -49,6 +50,11 @@ var turn_snapshot: TurnSnapshot = null
 var hurt_players: Array[int] = []
 ## ACT_05가 실행되었음을 TurnManager에 알리는 플래그.
 var rollback_requested: bool = false
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE and is_instance_valid(rulebook):
+		rulebook.free()
 
 
 # ---------------------------------------------------------------------------

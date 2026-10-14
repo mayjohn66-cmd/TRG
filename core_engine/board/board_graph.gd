@@ -104,8 +104,8 @@ func advance_backward(cursor: PathCursor) -> void:
 
 
 ## 설치물/도착 판정 없이 순수 경로만 미리 계산한다 (UI 하이라이트·AI 평가용).
-## 반환: 한 칸씩 밟는 타일 인덱스 순서. ctx.steps 부호와 ctx.direction을 반영하고,
-## 결승 도달 시 ctx.goal_bounce가 꺼져 있으면 남은 칸은 버려진다.
+## 반환: 한 칸씩 밟는 타일 인덱스 순서. ctx.direction을 반영하고,
+## 결승 도달 시 ctx.exact_goal_required가 꺼져 있으면 남은 칸은 버려진다.
 func calculate_path(entity: BoardEntity, steps: int, ctx: RuleContext) -> Array[int]:
 	var path: Array[int] = []
 	var turns_on_pass: bool = entity is PlayerPawn and (entity as PlayerPawn).turns_at_corner_when_passing()
@@ -117,14 +117,14 @@ func calculate_path(entity: BoardEntity, steps: int, ctx: RuleContext) -> Array[
 	var first: bool = true
 	while remaining > 0:
 		if forward:
-			advance_forward(cursor, first, ctx.shortcuts_enabled, turns_on_pass)
+			advance_forward(cursor, first, ctx.allow_shortcut, turns_on_pass)
 		else:
 			advance_backward(cursor)
 		first = false
 		remaining -= 1
 		path.append(cursor.tile)
 		if forward and cursor.tile == GameEnums.GOAL_TILE:
-			if remaining > 0 and ctx.goal_bounce:
+			if remaining > 0 and ctx.exact_goal_required:
 				forward = false
 			else:
 				break

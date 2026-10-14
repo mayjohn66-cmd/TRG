@@ -59,7 +59,7 @@ func test_law_01_blocks_corner_shortcuts() -> void:
 	var state := make_state()
 	var pawn: PlayerPawn = place(state, 11, 5, [4])
 	var ctx: RuleContext = make_ctx(state, 2)
-	ctx.shortcuts_enabled = false
+	ctx.allow_shortcut = false
 	check_eq(state.board.calculate_path(pawn, 2, ctx), int_array([6, 7]), "LAW_01이면 정지해도 외곽")
 
 
@@ -69,7 +69,7 @@ func test_bishop_turns_into_shortcut_even_when_only_passing() -> void:
 	check_eq(_pawn_path(state, 11, 8, [7], 4), int_array([9, 10, 25, 26]), "비숍은 10번을 스치면 25번으로 꺾음")
 	var pawn: PlayerPawn = place(state, 11, 3, [2])
 	var ctx: RuleContext = make_ctx(state, 4)
-	ctx.shortcuts_enabled = false
+	ctx.allow_shortcut = false
 	check_eq(state.board.calculate_path(pawn, 4, ctx), int_array([4, 5, 6, 7]), "LAW_01 중에는 비숍도 외곽으로만")
 
 
@@ -94,7 +94,7 @@ func test_goal_bounce_path_with_law_08_flag() -> void:
 	var state := make_state()
 	var pawn: PlayerPawn = place(state, 11, 18, [17])
 	var ctx: RuleContext = make_ctx(state, 5)
-	ctx.goal_bounce = true
+	ctx.exact_goal_required = true
 	check_eq(state.board.calculate_path(pawn, 5, ctx), int_array([19, 0, 19, 18, 17]), "남은 칸만큼 뒤로 튕김")
 
 

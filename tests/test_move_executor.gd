@@ -195,7 +195,7 @@ func test_law_02_seals_four_stack_until_repealed() -> void:
 	var report: MoveReport = move(state, 11, 1)
 	check(report.stacked_pawn_ids.is_empty(), "법전이 윷 업기 능력보다 우선")
 	# FIFO로 밀어내면 다시 가능
-	for law_id: StringName in [&"LAW_01", &"LAW_03", &"LAW_04", &"LAW_05"]:
+	for law_id: String in ["LAW_01", "LAW_03", "LAW_04", "LAW_05"]:
 		add_law(state, law_id)
 	check(not state.rulebook.has_law(&"LAW_02"), "5번째 교칙이 LAW_02를 밀어냄")
 

@@ -2,16 +2,17 @@
 # Class: class_name LawRunawayTrain
 # Role: LAW_05 폭주 기관차 - 말을 잡으면 추가 턴 대신 즉시 앞으로 3칸 돌진
 class_name LawRunawayTrain
-extends BaseLaw
+extends LawResource
 
 
 func _init() -> void:
-	law_id = &"LAW_05"
-	display_name = "폭주 기관차"
+	law_id = "LAW_05"
+	law_name = "폭주 기관차"
 	description = "말 잡을 시 추가 턴 대신 즉시 앞으로 3칸 돌진."
+	trigger_timing = RuleContext.ON_CAPTURE
 
 
-func apply(stage: GameEnums.HookStage, ctx: RuleContext) -> void:
-	if stage == GameEnums.HookStage.CAPTURE:
-		ctx.capture_extra_turn = false
-		ctx.capture_charge_steps = 3
+func intercept(ctx: RuleContext) -> RuleContext:
+	ctx.capture_extra_turn = false
+	ctx.capture_charge_steps = 3
+	return ctx

@@ -1,19 +1,20 @@
 # File: res://core_engine/rules/laws/law_joint_guarantee.gd
 # Class: class_name LawJointGuarantee
-# Role: LAW_07 강제 연대보증 - 내 말이 잡힐 때 잡은 상대의 다른 말 1개(가장 앞선 말)도 출발선으로 동반 추방
+# Role: LAW_07 강제 연대보증 - 내 말이 잡힐 때 잡은 상대의 다른 말 1개(결승에 가장 가까운 말)도 출발선으로 동반 추방
 class_name LawJointGuarantee
-extends BaseLaw
+extends LawResource
 
 
 func _init() -> void:
-	law_id = &"LAW_07"
-	display_name = "강제 연대보증"
+	law_id = "LAW_07"
+	law_name = "강제 연대보증"
 	description = "내 말이 잡힐 때 잡은 상대의 다른 말 1개도 출발선으로 동반 추방."
+	trigger_timing = RuleContext.ON_CAPTURE
 
 
-func apply(stage: GameEnums.HookStage, ctx: RuleContext) -> void:
-	if stage != GameEnums.HookStage.CAPTURE or ctx.capturer == null or ctx.state == null:
-		return
+func intercept(ctx: RuleContext) -> RuleContext:
+	if ctx.capturer == null or ctx.state == null:
+		return ctx
 	var stack_ids: Array[int] = []
 	for member: PlayerPawn in ctx.capturer.stack_members():
 		stack_ids.append(member.id)
@@ -27,4 +28,5 @@ func apply(stage: GameEnums.HookStage, ctx: RuleContext) -> void:
 			best_distance = distance
 			best = pawn
 	if best != null:
-		ctx.effects.append(ExpelPawnCommand.new(ctx.player_id, best.id))
+		ctx.effects.append(ExpelPawnCommand.new(ctx.actor_id, best.id))
+	return ctx

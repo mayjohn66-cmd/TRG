@@ -7,6 +7,7 @@ extends RefCounted
 var pawn_id: int = -1
 ## 한 칸씩 밟은 타일 순서 (워프 도착 칸 포함).
 var path: Array[int] = []
+var canceled: bool = false
 var bounced: bool = false
 var finished: bool = false
 var trapped: bool = false
@@ -23,6 +24,7 @@ var effect_names: Array[StringName] = []
 
 func merge(other: MoveReport) -> void:
 	path.append_array(other.path)
+	canceled = canceled or other.canceled
 	bounced = bounced or other.bounced
 	finished = finished or other.finished
 	trapped = trapped or other.trapped
@@ -43,6 +45,7 @@ func to_dict() -> Dictionary:
 	return {
 		"pawn_id": pawn_id,
 		"path": path,
+		"canceled": canceled,
 		"bounced": bounced,
 		"finished": finished,
 		"trapped": trapped,

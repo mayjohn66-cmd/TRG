@@ -22,8 +22,8 @@ func test_snapshot_restores_positions_stacks_attachments_and_laws() -> void:
 	state.send_to_start(state.get_pawn(21), 1)
 	state.finish_stack(state.get_pawn(11))
 	state.board.get_tile(3).clear_attachments()
-	state.rulebook.repeal_slot(0)
-	state.rulebook.add_law(LawRegistry.create(&"LAW_08"))
+	state.rulebook.remove_law_by_id("LAW_01")
+	state.rulebook.enqueue_law(LawRegistry.create("LAW_08"))
 	state.npcs.clear()
 
 	snapshot.restore(state)
@@ -36,7 +36,7 @@ func test_snapshot_restores_positions_stacks_attachments_and_laws() -> void:
 	check_eq(state.get_pawn(21).step_history, int_array([13]), "step_history 복원")
 	check(state.board.get_tile(3).has_attachment(&"TRP_01"), "설치물 복원")
 	check_eq(state.board.get_tile(3).attachments[0].owner_id, 2, "설치물 소유자 복원")
-	check_eq(state.rulebook.law_ids(), [&"LAW_01", &"LAW_03"] as Array[StringName], "법전 큐 복원")
+	check_eq(state.rulebook.law_ids(), ["LAW_01", "LAW_03"] as Array[String], "법전 큐 복원")
 	check_eq(state.npcs.size(), 1, "NPC 복원")
 	check_eq(state.npcs[0].tile_index, 5, "NPC 위치 복원")
 

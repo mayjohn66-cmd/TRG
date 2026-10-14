@@ -2,17 +2,17 @@
 # Class: class_name LawCheekEquality
 # Role: LAW_03 볼따구 평등법 - 눈금 6 이상 이동 후 꼴찌 말과 위치 강제 교환
 class_name LawCheekEquality
-extends BaseLaw
+extends LawResource
 
 
 func _init() -> void:
-	law_id = &"LAW_03"
-	display_name = "볼따구 평등법"
+	law_id = "LAW_03"
+	law_name = "볼따구 평등법"
 	description = "눈금 6 이상 이동 후 꼴찌 말과 위치 강제 교환."
+	trigger_timing = RuleContext.ON_TURN_END
 
 
-func apply(stage: GameEnums.HookStage, ctx: RuleContext) -> void:
-	if stage != GameEnums.HookStage.MOVE_COMPLETE or ctx.pawn == null:
-		return
-	if absi(ctx.steps) >= 6:
-		ctx.effects.append(SwapWithLastPlaceCommand.new(ctx.player_id, ctx.pawn.id))
+func intercept(ctx: RuleContext) -> RuleContext:
+	if ctx.pawn != null and absi(ctx.dice_value) >= 6:
+		ctx.effects.append(SwapWithLastPlaceCommand.new(ctx.actor_id, ctx.pawn.id))
+	return ctx

@@ -19,17 +19,7 @@ enum Phase {
 
 enum TileType { NORMAL, START_GOAL, CORNER, BAKERY, PORTAL, CENTER, SHORTCUT }
 
-## 인터셉터 파이프라인 스테이지. 법전(BaseLaw)은 스테이지별로 RuleContext를 변조한다.
-enum HookStage {
-	ROLL_MODIFY,   # 판정 도구 결과(눈금) 확정 직후
-	PATH_PREPARE,  # 이동 시작 직전 (지름길/업기/골인 바운스 플래그)
-	CAPTURE,       # 말 잡기 확정 직전
-	MOVE_COMPLETE, # 이동·도착 처리가 모두 끝난 직후
-}
-
 enum PawnKind { YUT, CHESS_KNIGHT, CHESS_BISHOP, JANGGI_PO, MONOPOLY_CAR, GO_STONE }
-
-enum AddLawResult { ADDED, ADDED_EVICTED, REJECTED_DUPLICATE }
 
 enum CardCategory { INSTANT, TRAP, SUMMON }
 

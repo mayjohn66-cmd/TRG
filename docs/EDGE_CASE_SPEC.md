@@ -9,7 +9,7 @@
 | 3 | 코너(5·10)는 정확히 멈췄다 출발할 때만 지름길 진입. 비숍은 스쳐도 진입. `LAW_01` 활성 시 비숍도 외곽 | `BoardGraph.next_tile_forward`, `PlayerPawn.turns_at_corner_when_passing`, `LawShortcutConstruction` | `test_board_graph.gd` |
 | 4 | 0번 후퇴 기본 19번, `step_history` 직전이 28번이면 28번. `ACT_04`는 19/28 도착 직후 완주 | `BoardGraph.advance_backward`, `CardBackdoGoal` | `test_board_graph.gd`, `test_rules_and_cards.gd`, `test_turn_manager.gd` |
 | 5 | `PHASE_TURN_BEGIN`에서 `TurnSnapshot` 저장, `ACT_05`는 스냅샷 복원. 소모된 개입 카드·`ACT_05` 자체는 복구 안 됨 | `TurnSnapshot`, `RollbackCommand`, `TurnManager._close_resolution_window` | `test_snapshot.gd`, `test_turn_manager.gd` |
-| 6 | 법전 > 기물 능력. `LAW_02` 중에는 윷 업기 불가(기존 업기는 유지). FIFO 밀어내기·`ACT_06`로 해제 | `MoveExecutor._resolve_stacking` (`ctx.stacking_allowed`) | `test_move_executor.gd` |
+| 6 | 법전 > 기물 능력. `LAW_02` 중에는 윷 업기 불가(기존 업기는 유지). FIFO 밀어내기·`ACT_06`로 해제 | `MoveExecutor._resolve_stacking` (`ctx.allow_stacking`) | `test_move_executor.gd` |
 | 7 | Listen Server: 방장이 서버 겸 클라이언트, 방장의 `TurnManager`가 모든 판정 후 `@rpc`로 브로드캐스트 | `TurnManager`, `NetworkService` | `tests/run_net_test.sh` (실제 WebSocket 2프로세스) |
 
 ## 명세에 없어서 내가 정한 해석 (변경 가능)

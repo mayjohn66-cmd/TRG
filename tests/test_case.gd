@@ -43,17 +43,23 @@ func place(state: GameState, pawn_id: int, tile: int, history: Array[int] = [], 
 	return pawn
 
 
-func make_ctx(state: GameState, steps: int, player_id: int = 1) -> RuleContext:
+func make_ctx(state: GameState, steps: int, actor_id: int = 1) -> RuleContext:
 	var ctx := RuleContext.new()
 	ctx.state = state
-	ctx.player_id = player_id
+	ctx.actor_id = actor_id
 	ctx.raw_roll = steps
-	ctx.steps = steps
+	ctx.dice_value = steps
 	return ctx
 
 
-func add_law(state: GameState, law_id: StringName) -> void:
-	state.rulebook.add_law(LawRegistry.create(law_id))
+func add_law(state: GameState, law_id: String) -> void:
+	state.rulebook.enqueue_law(LawRegistry.create(law_id))
+
+
+## 지정한 시점으로 ctx를 법전 파이프라인에 통과시킨다.
+func run_timing(state: GameState, ctx: RuleContext, timing: String) -> RuleContext:
+	ctx.trigger_timing = timing
+	return state.rulebook.process_context(ctx)
 
 
 func move(state: GameState, pawn_id: int, steps: int) -> MoveReport:

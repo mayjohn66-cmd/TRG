@@ -304,11 +304,13 @@ func _apply_roll_result(result: RollResult) -> void:
 		return
 	var ctx := RuleContext.new()
 	ctx.state = state
-	ctx.player_id = state.current_player
+	ctx.actor_id = state.current_player
 	ctx.raw_roll = result.steps
-	ctx.steps = result.steps
-	state.rulebook.run_stage(GameEnums.HookStage.ROLL_MODIFY, ctx)
-	move_queue.append(ctx.steps)
+	ctx.dice_value = result.steps
+	ctx.trigger_timing = RuleContext.ON_DICE_ROLL
+	ctx = state.rulebook.process_context(ctx)
+	if not ctx.is_canceled:
+		move_queue.append(ctx.dice_value)
 	_roll_chain += 1
 	if result.reroll and _roll_chain < GameEnums.MAX_REROLL_CHAIN:
 		phase_time_left = GameEnums.PHASE_TIME_ROLL
@@ -353,9 +355,9 @@ func _execute_move(pawn: PlayerPawn) -> void:
 	change_state(GameEnums.Phase.MOVING_STEP)
 	var ctx := RuleContext.new()
 	ctx.state = state
-	ctx.player_id = state.current_player
-	ctx.steps = move_queue.pop_front()
-	ctx.raw_roll = ctx.steps
+	ctx.actor_id = state.current_player
+	ctx.dice_value = move_queue.pop_front()
+	ctx.raw_roll = ctx.dice_value
 	ctx.direction = state.movement_direction()
 	var report: MoveReport = MoveExecutor.execute(state, pawn, ctx)
 	_extra_turn_pending = _extra_turn_pending or report.extra_turn

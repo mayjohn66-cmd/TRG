@@ -4,20 +4,20 @@
 class_name LawRegistry
 extends RefCounted
 
-const ALL_IDS: Array[StringName] = [
-	&"LAW_01", &"LAW_02", &"LAW_03", &"LAW_04", &"LAW_05", &"LAW_06", &"LAW_07", &"LAW_08",
+const ALL_IDS: Array[String] = [
+	"LAW_01", "LAW_02", "LAW_03", "LAW_04", "LAW_05", "LAW_06", "LAW_07", "LAW_08",
 ]
 
 
-static func create(law_id: StringName) -> BaseLaw:
+static func create(law_id: String) -> LawResource:
 	match law_id:
-		&"LAW_01": return LawShortcutConstruction.new()
-		&"LAW_02": return LawSocialDistancing.new()
-		&"LAW_03": return LawCheekEquality.new()
-		&"LAW_04": return LawFrogCurse.new()
-		&"LAW_05": return LawRunawayTrain.new()
-		&"LAW_06": return LawSpeedCamera.new()
-		&"LAW_07": return LawJointGuarantee.new()
-		&"LAW_08": return LawGoalThreshold.new()
+		"LAW_01": return LawShortcutConstruction.new()
+		"LAW_02": return LawSocialDistancing.new()
+		"LAW_03": return LawCheekEquality.new()
+		"LAW_04": return LawFrogCurse.new()
+		"LAW_05": return LawRunawayTrain.new()
+		"LAW_06": return LawSpeedCamera.new()
+		"LAW_07": return LawJointGuarantee.new()
+		"LAW_08": return LawGoalThreshold.new()
 	push_error("LawRegistry: 알 수 없는 교칙 ID '%s'" % law_id)
 	return null

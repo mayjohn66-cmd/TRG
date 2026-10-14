@@ -5,16 +5,21 @@ class_name MoveExecutor
 extends RefCounted
 
 
-## mover를 ctx.steps(법전 통과 후 확정 칸수)만큼 움직인다. 모든 중간 변화는 GameState 시그널로 방송된다.
+## mover를 ctx.dice_value(법전 통과 후 확정 칸수)만큼 움직인다. 모든 중간 변화는 GameState 시그널로 방송된다.
 static func execute(state: GameState, mover: PlayerPawn, ctx: RuleContext) -> MoveReport:
 	var report := MoveReport.new()
 	report.pawn_id = mover.id
 	ctx.pawn = mover
 	if ctx.charge_depth == 0:
-		state.rulebook.run_stage(GameEnums.HookStage.PATH_PREPARE, ctx)
+		ctx.trigger_timing = RuleContext.ON_MOVE_CALC
+		ctx = state.rulebook.process_context(ctx)
+		if ctx.is_canceled:
+			ctx.is_canceled = false
+			report.canceled = true
+			return report
 
 	var board: BoardGraph = state.board
-	var signed_steps: int = ctx.steps * ctx.direction
+	var signed_steps: int = ctx.dice_value * ctx.direction
 	var forward: bool = signed_steps > 0
 	var remaining: int = absi(signed_steps)
 	var start_tile: int = mover.tile_index
@@ -27,7 +32,7 @@ static func execute(state: GameState, mover: PlayerPawn, ctx: RuleContext) -> Mo
 		var from_tile: int = cursor.tile
 		var stepped_forward: bool = forward
 		if forward:
-			board.advance_forward(cursor, first_step, ctx.shortcuts_enabled, mover.turns_at_corner_when_passing())
+			board.advance_forward(cursor, first_step, ctx.allow_shortcut, mover.turns_at_corner_when_passing())
 		else:
 			board.advance_backward(cursor)
 			if first_step and start_tile == GameEnums.GOAL_TILE:
@@ -36,6 +41,7 @@ static func execute(state: GameState, mover: PlayerPawn, ctx: RuleContext) -> Mo
 		remaining -= 1
 		_commit_cursor(state, mover, cursor)
 		report.path.append(cursor.tile)
+		ctx.path_nodes.append(cursor.tile)
 		state.pawn_stepped.emit(mover.id, from_tile, cursor.tile)
 
 		var effect: AttachmentEffect = _trigger_attachments(state, mover, ctx, cursor.tile, remaining == 0, report)
@@ -50,7 +56,7 @@ static func execute(state: GameState, mover: PlayerPawn, ctx: RuleContext) -> Mo
 				report.stopped_early = true
 
 		if stepped_forward and cursor.tile == GameEnums.GOAL_TILE and mover.has_left_start:
-			if remaining > 0 and ctx.goal_bounce:
+			if remaining > 0 and ctx.exact_goal_required:
 				forward = false
 				report.bounced = true
 			else:
@@ -122,7 +128,9 @@ static func _resolve_landing(state: GameState, mover: PlayerPawn, ctx: RuleConte
 	if mover.is_finished:
 		return
 	_resolve_stacking(state, mover, ctx, report)
-	state.rulebook.run_stage(GameEnums.HookStage.MOVE_COMPLETE, ctx)
+	ctx.trigger_timing = RuleContext.ON_TURN_END
+	ctx = state.rulebook.process_context(ctx)
+	ctx.is_canceled = false
 	for command: GameCommand in ctx.effects:
 		command.execute(state)
 		report.effect_names.append(command.command_name)
@@ -138,6 +146,7 @@ static func _warp_to_center(state: GameState, mover: PlayerPawn, ctx: RuleContex
 	state.sync_stack_position(mover)
 	report.warped = true
 	report.path.append(GameEnums.CENTER_TILE)
+	ctx.path_nodes.append(GameEnums.CENTER_TILE)
 	state.pawn_warped.emit(mover.id, from_tile, GameEnums.CENTER_TILE)
 	var effect: AttachmentEffect = _trigger_attachments(state, mover, ctx, GameEnums.CENTER_TILE, true, report)
 	if effect != null and effect.send_to_start:
@@ -160,7 +169,11 @@ static func _resolve_captures(state: GameState, mover: PlayerPawn, ctx: RuleCont
 	ctx.captured_pawns = victims
 	ctx.capture_extra_turn = true
 	ctx.capture_charge_steps = 0
-	state.rulebook.run_stage(GameEnums.HookStage.CAPTURE, ctx)
+	ctx.trigger_timing = RuleContext.ON_CAPTURE
+	ctx = state.rulebook.process_context(ctx)
+	if ctx.is_canceled:
+		ctx.is_canceled = false
+		return
 	for victim: PlayerPawn in victims:
 		for member: PlayerPawn in victim.stack_members():
 			report.captured_pawn_ids.append(member.id)
@@ -173,9 +186,9 @@ static func _resolve_captures(state: GameState, mover: PlayerPawn, ctx: RuleCont
 		report.merge(charge_report)
 
 
-## 업기: 법전(stacking_allowed)이 기물 고유 능력(can_stack_with)보다 우선한다. 출발선(0번)에서는 업지 않는다.
+## 업기: 법전(allow_stacking)이 기물 고유 능력(can_stack_with)보다 우선한다. 출발선(0번)에서는 업지 않는다.
 static func _resolve_stacking(state: GameState, mover: PlayerPawn, ctx: RuleContext, report: MoveReport) -> void:
-	if not ctx.stacking_allowed or mover.tile_index == GameEnums.GOAL_TILE:
+	if not ctx.allow_stacking or mover.tile_index == GameEnums.GOAL_TILE:
 		return
 	for other: PlayerPawn in state.leaders_at(mover.tile_index):
 		if other != mover and mover.can_stack_with(other):
