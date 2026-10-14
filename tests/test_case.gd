@@ -9,6 +9,7 @@ var assertions: int = 0
 var current_test: String = ""
 ## 러너가 주입하는 씬 트리 (TurnManager 같은 Node 테스트용).
 var tree: SceneTree = null
+var _to_free: Array[Node] = []
 
 
 func check(condition: bool, message: String) -> void:
@@ -21,6 +22,18 @@ func check_eq(actual: Variant, expected: Variant, message: String) -> void:
 	assertions += 1
 	if typeof(actual) != typeof(expected) or actual != expected:
 		failures.append("%s: %s (기대=%s, 실제=%s)" % [current_test, message, str(expected), str(actual)])
+
+
+## 테스트가 끝나면 러너가 해제할 Node를 등록한다.
+func defer_free(node: Node) -> void:
+	_to_free.append(node)
+
+
+func cleanup() -> void:
+	for node: Node in _to_free:
+		if is_instance_valid(node):
+			node.free()
+	_to_free.clear()
 
 
 # --- 공용 헬퍼 -------------------------------------------------------------
@@ -36,8 +49,10 @@ func make_state(player_count: int = 2, seed_value: int = 12345, kinds_by_player:
 
 func place(state: GameState, pawn_id: int, tile: int, history: Array[int] = [], started: bool = true) -> PlayerPawn:
 	var pawn: PlayerPawn = state.get_pawn(pawn_id)
-	pawn.tile_index = tile
-	pawn.step_history.assign(history)
+	pawn.current_tile_idx = tile
+	var trail: Array[int] = history.duplicate()
+	trail.append(tile)  # step_history 스택의 마지막 원소는 항상 현재 타일
+	pawn.step_history = trail
 	pawn.has_left_start = started
 	state.sync_stack_position(pawn)
 	return pawn

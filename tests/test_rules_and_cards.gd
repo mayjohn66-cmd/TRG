@@ -128,7 +128,7 @@ func test_canceled_move_does_not_move_the_pawn() -> void:
 	place(state, 11, 4, [3])
 	var report: MoveReport = move(state, 11, 3)
 	check(report.canceled, "이동 취소")
-	check_eq(state.get_pawn(11).tile_index, 4, "말은 움직이지 않음")
+	check_eq(state.get_pawn(11).current_tile_idx, 4, "말은 움직이지 않음")
 
 
 func test_move_calc_flags_and_path_nodes() -> void:
@@ -165,9 +165,9 @@ func test_command_undo_restores_board() -> void:
 	var stack := CommandStack.new()
 	place(state, 11, 4, [3])
 	stack.execute(ExpelPawnCommand.new(1, 11), state)
-	check_eq(state.get_pawn(11).tile_index, 0, "추방됨")
+	check_eq(state.get_pawn(11).current_tile_idx, 0, "추방됨")
 	check(stack.undo_last(state), "undo 성공")
-	check_eq(state.get_pawn(11).tile_index, 4, "되돌림")
+	check_eq(state.get_pawn(11).current_tile_idx, 4, "되돌림")
 	check(not stack.undo_last(state), "이력 없음")
 
 
@@ -220,7 +220,7 @@ func test_act_04_not_playable_for_pawn_that_merely_walked_to_19() -> void:
 	var card: BaseCard = CardRegistry.get_card(&"ACT_04")
 	place(state, 11, 17, [16])
 	move(state, 11, 2)
-	check_eq(state.get_pawn(11).tile_index, 19, "19번 도착")
+	check_eq(state.get_pawn(11).current_tile_idx, 19, "19번 도착")
 	check(not card.can_play(state, 1, {"pawn_id": 11}), "0번에서 후퇴한 경우에만 사용 가능")
 
 
@@ -250,9 +250,9 @@ func test_neutral_npc_bandit_chases_with_bfs_and_steals_card() -> void:
 	var reports: Array[Dictionary] = []
 	for i: int in 6:
 		reports.append(npc.run_ai(state))
-		if state.get_pawn(21).tile_index == 0:
+		if state.get_pawn(21).current_tile_idx == 0:
 			break
-	check_eq(state.get_pawn(21).tile_index, 0, "도적에게 잡혀 출발선으로")
+	check_eq(state.get_pawn(21).current_tile_idx, 0, "도적에게 잡혀 출발선으로")
 	check((state.hands[2] as Array).is_empty(), "생떼 카드 1장 강탈")
 
 
@@ -262,4 +262,4 @@ func test_neutral_npc_ghost_patrols_reverse_and_drags_pawns_to_center() -> void:
 	var ghost: NeutralNPC = state.spawn_npc(0, GameEnums.NpcBehavior.PATROL_REVERSE, 1, &"SUM_02")
 	var report: Dictionary = ghost.run_ai(state)
 	check_eq(report["path"], int_array([19, 18, 17]), "외곽 트랙 역주행 3칸")
-	check_eq(state.get_pawn(21).tile_index, 22, "마주친 말은 중앙으로 연행")
+	check_eq(state.get_pawn(21).current_tile_idx, 22, "마주친 말은 중앙으로 연행")

@@ -1,6 +1,6 @@
 # File: res://core_engine/entities/neutral_npc.gd
 # Class: class_name NeutralNPC
-# Role: 중립 소환수(카탄의 도적떼·팩맨 고스트). 라운드 종료 시 BFS 최단 경로 AI로 스스로 이동하고 기물을 사냥한다.
+# Role: 중립 소환수(카탄의 도적떼·팩맨 고스트). 라운드 종료 시 BFS 최단 경로 AI로 스스로 이동하고 기물을 사냥한다
 class_name NeutralNPC
 extends BoardEntity
 
@@ -16,58 +16,55 @@ func run_ai(state: GameState) -> Dictionary:
 	return _chase_nearest(state)
 
 
+func _new_report() -> Dictionary:
+	return {"npc_id": entity_id, "path": [] as Array[int], "caught": [] as Array[int], "stolen_cards": [] as Array[StringName]}
+
+
 func _chase_nearest(state: GameState) -> Dictionary:
-	var report: Dictionary = {"npc_id": id, "path": [] as Array[int], "caught": [] as Array[int], "stolen_cards": [] as Array[StringName]}
+	var report: Dictionary = _new_report()
 	var roll: int = state.rng.randi_range(1, 6)
-	var target: PlayerPawn = null
-	var best_path: Array[int] = []
+	var targets: Array[BoardEntity] = []
+	var standing_on_target: bool = false
 	for pawn: PlayerPawn in state.get_active_pawns():
 		if not pawn.has_left_start or pawn.carrier != null:
 			continue
-		if pawn.tile_index == tile_index:
-			target = pawn
-			best_path = []
-			break
-		var path: Array[int] = state.board.shortest_path(tile_index, pawn.tile_index)
-		if path.is_empty():
-			continue
-		if target == null or path.size() < best_path.size():
-			target = pawn
-			best_path = path
-	if target == null:
+		targets.append(pawn)
+		if pawn.current_tile_idx == current_tile_idx:
+			standing_on_target = true
+	var route: Array[int] = state.board.find_nearest_entity_bfs(current_tile_idx, targets)
+	if route.is_empty() and not standing_on_target:
 		return report
-	var move_count: int = mini(roll, best_path.size())
-	for i: int in move_count:
-		step_history.append(tile_index)
-		var from_tile: int = tile_index
-		tile_index = best_path[i]
-		(report["path"] as Array[int]).append(tile_index)
-		state.npc_stepped.emit(id, from_tile, tile_index)
-	if tile_index == target.tile_index or best_path.is_empty():
-		for victim: PlayerPawn in state.leaders_at(tile_index):
+	for i: int in mini(roll, route.size()):
+		var from_tile: int = current_tile_idx
+		current_tile_idx = route[i]
+		step_history.append(current_tile_idx)
+		(report["path"] as Array[int]).append(current_tile_idx)
+		state.npc_stepped.emit(entity_id, from_tile, current_tile_idx)
+	if route.is_empty() or current_tile_idx == route.back():
+		for victim: PlayerPawn in state.leaders_at(current_tile_idx):
 			if not victim.has_left_start:
 				continue
 			var stolen: StringName = state.steal_random_card(victim.owner_id, state.rng)
 			if stolen != &"":
 				(report["stolen_cards"] as Array[StringName]).append(stolen)
-			(report["caught"] as Array[int]).append(victim.id)
+			(report["caught"] as Array[int]).append(victim.entity_id)
 			state.send_to_start(victim, -1)
 	return report
 
 
 func _patrol_reverse(state: GameState) -> Dictionary:
-	var report: Dictionary = {"npc_id": id, "path": [] as Array[int], "caught": [] as Array[int], "stolen_cards": [] as Array[StringName]}
+	var report: Dictionary = _new_report()
 	var cursor: PathCursor = PathCursor.from_entity(self, true)
 	for i: int in 3:
 		var from_tile: int = cursor.tile
 		state.board.advance_backward(cursor)
-		tile_index = cursor.tile
+		current_tile_idx = cursor.tile
 		step_history.assign(cursor.history)
-		(report["path"] as Array[int]).append(tile_index)
-		state.npc_stepped.emit(id, from_tile, tile_index)
-		for victim: PlayerPawn in state.leaders_at(tile_index):
-			if not victim.has_left_start or tile_index == GameEnums.GOAL_TILE:
+		(report["path"] as Array[int]).append(current_tile_idx)
+		state.npc_stepped.emit(entity_id, from_tile, current_tile_idx)
+		for victim: PlayerPawn in state.leaders_at(current_tile_idx):
+			if not victim.has_left_start or current_tile_idx == GameEnums.GOAL_TILE:
 				continue
-			(report["caught"] as Array[int]).append(victim.id)
+			(report["caught"] as Array[int]).append(victim.entity_id)
 			state.teleport_stack(victim, GameEnums.CENTER_TILE)
 	return report

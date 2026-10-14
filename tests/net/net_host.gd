@@ -47,15 +47,15 @@ func _process(_delta: float) -> bool:
 		_manager.act(&"select_pawn", {"pawn_id": 11})
 		# 호스트가 2번 말을 조작하려는 사칭: 방장은 1번 좌석이므로 거부되어야 한다.
 		_manager.act(&"select_pawn", {"pawn_id": 21, "player_id": 2})
-	if _started and not _done and _manager.state != null and _manager.state.get_pawn(21).tile_index == 2:
+	if _started and not _done and _manager.state != null and _manager.state.get_pawn(21).current_tile_idx == 2:
 		_done = true
 		var ok: bool = true
-		ok = ok and _manager.state.get_pawn(11).tile_index == 1
+		ok = ok and _manager.state.get_pawn(11).current_tile_idx == 1
 		ok = ok and _manager.state.current_player == 1 and _manager.state.round_number == 2
 		var forged: Array = _rejections.filter(func(r: Array) -> bool: return r[0] == 1 and r[1] == &"select_pawn")
 		ok = ok and forged.size() >= 1
 		ok = ok and _rejections.any(func(r: Array) -> bool: return r[0] == 2 and r[1] == &"roll" and r[2] == &"wrong_phase")
-		print("HOST: 말 위치 11=%d 21=%d round=%d rejections=%s" % [_manager.state.get_pawn(11).tile_index, _manager.state.get_pawn(21).tile_index, _manager.state.round_number, str(_rejections)])
+		print("HOST: 말 위치 11=%d 21=%d round=%d rejections=%s" % [_manager.state.get_pawn(11).current_tile_idx, _manager.state.get_pawn(21).current_tile_idx, _manager.state.round_number, str(_rejections)])
 		if ok:
 			print("HOST_OK")
 			# 클라이언트가 마지막 브로드캐스트를 받을 시간을 준다.

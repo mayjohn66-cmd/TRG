@@ -470,7 +470,7 @@ func _broadcast_state() -> void:
 func _build_sync_payload() -> Dictionary:
 	var kinds: Dictionary = {}
 	for pawn: PlayerPawn in state.pawns:
-		kinds[pawn.id] = pawn.kind
+		kinds[pawn.entity_id] = pawn.kind
 	var hand_counts: Dictionary = {}
 	for player_id: int in state.player_ids:
 		hand_counts[player_id] = (state.hands[player_id] as Array).size()

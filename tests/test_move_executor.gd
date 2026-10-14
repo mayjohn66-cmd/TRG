@@ -12,10 +12,10 @@ func test_portal_warp_counts_as_stopping_on_22() -> void:
 	check(report.warped, "옷장에 멈추면 워프")
 	check_eq(report.path, int_array([5, 6, 7, 22]), "워프 도착 칸까지 경로")
 	var pawn: PlayerPawn = state.get_pawn(11)
-	check_eq(pawn.tile_index, 22, "22번에 도착")
+	check_eq(pawn.current_tile_idx, 22, "22번에 도착")
 	var next: MoveReport = move(state, 11, 2)
 	check_eq(next.path, int_array([27, 28]), "워프 후 다음 이동은 27 -> 28 최단 루트")
-	check_eq(pawn.tile_index, 28, "28번 정지")
+	check_eq(pawn.current_tile_idx, 28, "28번 정지")
 
 
 func test_portal_only_triggers_on_landing_not_passing() -> void:
@@ -23,7 +23,7 @@ func test_portal_only_triggers_on_landing_not_passing() -> void:
 	place(state, 11, 6, [5])
 	var report: MoveReport = move(state, 11, 3)  # 7을 지나 9에 정지
 	check(not report.warped, "통과만 하면 워프하지 않음")
-	check_eq(state.get_pawn(11).tile_index, 9, "9번 정지")
+	check_eq(state.get_pawn(11).current_tile_idx, 9, "9번 정지")
 
 
 func test_finish_without_law_discards_surplus() -> void:
@@ -42,7 +42,7 @@ func test_law_08_bounces_back_surplus_and_exact_finish_still_wins() -> void:
 	var report: MoveReport = move(state, 11, 5)
 	check(report.bounced and not report.finished, "남으면 튕겨 나옴")
 	check_eq(report.path, int_array([19, 0, 19, 18, 17, 22]), "바운스 경로 (17번 옷장에 멈추면 22번으로 워프)")
-	check_eq(state.get_pawn(11).tile_index, 22, "22번에 정지")
+	check_eq(state.get_pawn(11).current_tile_idx, 22, "22번에 정지")
 	place(state, 12, 18, [17])
 	var exact: MoveReport = move(state, 12, 2)
 	check(exact.finished, "정확히 남은 칸이면 완주")
@@ -64,7 +64,7 @@ func test_capture_sends_enemy_to_start_and_grants_extra_turn() -> void:
 	check_eq(report.captured_pawn_ids, int_array([21]), "잡힌 말")
 	check(report.extra_turn, "추가 턴")
 	var victim: PlayerPawn = state.get_pawn(21)
-	check_eq(victim.tile_index, 0, "출발선 복귀")
+	check_eq(victim.current_tile_idx, 0, "출발선 복귀")
 	check(not victim.has_left_start, "출발 상태 초기화")
 	check(state.hurt_players.has(2), "피해자 기록(ACT_05 조건)")
 
@@ -83,8 +83,8 @@ func test_law_05_charges_forward_instead_of_extra_turn() -> void:
 	place(state, 21, 2, [1])
 	var report: MoveReport = move(state, 11, 2)
 	check(not report.extra_turn, "추가 턴 없음")
-	check_eq(state.get_pawn(11).tile_index, 5, "잡은 뒤 3칸 돌진")
-	check_eq(state.get_pawn(21).tile_index, 0, "피해자 복귀")
+	check_eq(state.get_pawn(11).current_tile_idx, 5, "잡은 뒤 3칸 돌진")
+	check_eq(state.get_pawn(21).current_tile_idx, 0, "피해자 복귀")
 
 
 func test_law_07_expels_capturers_other_advanced_pawn() -> void:
@@ -96,11 +96,11 @@ func test_law_07_expels_capturers_other_advanced_pawn() -> void:
 	place(state, 21, 4, [3])
 	place(state, 22, 12, [11])
 	move(state, 11, 2)
-	check_eq(state.get_pawn(21).tile_index, 0, "잡힌 말")
-	check_eq(state.get_pawn(13).tile_index, 0, "잡은 쪽의 가장 앞선 다른 말이 동반 추방")
-	check_eq(state.get_pawn(12).tile_index, 9, "그 외 말은 영향 없음")
-	check_eq(state.get_pawn(22).tile_index, 12, "잡힌 쪽의 다른 말도 영향 없음")
-	check_eq(state.get_pawn(11).tile_index, 4, "잡은 말 자신은 그대로")
+	check_eq(state.get_pawn(21).current_tile_idx, 0, "잡힌 말")
+	check_eq(state.get_pawn(13).current_tile_idx, 0, "잡은 쪽의 가장 앞선 다른 말이 동반 추방")
+	check_eq(state.get_pawn(12).current_tile_idx, 9, "그 외 말은 영향 없음")
+	check_eq(state.get_pawn(22).current_tile_idx, 12, "잡힌 쪽의 다른 말도 영향 없음")
+	check_eq(state.get_pawn(11).current_tile_idx, 4, "잡은 말 자신은 그대로")
 
 
 func test_law_03_swaps_with_last_place_after_big_roll() -> void:
@@ -111,10 +111,10 @@ func test_law_03_swaps_with_last_place_after_big_roll() -> void:
 	# 21번 말만 보드 위에 있고 나머지 상대 말은 출발선(미출발) -> 꼴찌는 출발선 말
 	var report: MoveReport = move(state, 11, 6)
 	check_eq(report.effect_names, [&"SwapWithLastPlace"] as Array[StringName], "교환 효과 실행")
-	check_eq(state.get_pawn(11).tile_index, 0, "이동한 말이 꼴찌 위치로")
+	check_eq(state.get_pawn(11).current_tile_idx, 0, "이동한 말이 꼴찌 위치로")
 	var swapped: PlayerPawn = null
 	for pawn: PlayerPawn in state.pawns_of(2):
-		if pawn.tile_index == 6:
+		if pawn.current_tile_idx == 6:
 			swapped = pawn
 	check(swapped != null, "꼴찌 말이 6번으로 이동")
 
@@ -136,7 +136,7 @@ func test_stacking_is_automatic_for_yut_and_enforced_by_law_02() -> void:
 	check(report.stacked_pawn_ids.has(11), "보고서에 업기 기록")
 	var leader: PlayerPawn = state.get_pawn(12)
 	move(state, 12, 3)
-	check_eq(state.get_pawn(11).tile_index, leader.tile_index, "업힌 말은 같이 이동")
+	check_eq(state.get_pawn(11).current_tile_idx, leader.current_tile_idx, "업힌 말은 같이 이동")
 
 
 func test_law_02_blocks_new_stacks_but_keeps_existing_ones() -> void:
@@ -152,7 +152,7 @@ func test_law_02_blocks_new_stacks_but_keeps_existing_ones() -> void:
 	check(third.stacked_pawn_ids.is_empty(), "LAW_02 중에는 새 업기 불가")
 	check_eq(state.get_pawn(11).carrier, state.get_pawn(12), "기존 업기는 분리되지 않음")
 	move(state, 12, 2)
-	check_eq(state.get_pawn(11).tile_index, state.get_pawn(12).tile_index, "기존 업힌 말은 계속 동행")
+	check_eq(state.get_pawn(11).current_tile_idx, state.get_pawn(12).current_tile_idx, "기존 업힌 말은 계속 동행")
 
 
 func test_non_yut_pawns_only_stack_with_same_kind_or_yut() -> void:
@@ -212,5 +212,5 @@ func test_mirror_force_trap_stops_and_expels_enemy_but_not_owner() -> void:
 	var report: MoveReport = move(state, 11, 5)
 	check(report.trapped, "상대 말은 통과 중에도 발동")
 	check_eq(report.path, int_array([1, 2, 3]), "함정 칸에서 즉시 중단")
-	check_eq(state.get_pawn(11).tile_index, 0, "출발선으로 복귀")
+	check_eq(state.get_pawn(11).current_tile_idx, 0, "출발선으로 복귀")
 	check_eq(state.board.get_tile(3).attachments.size(), 0, "발동 후 소모")

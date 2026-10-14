@@ -1,19 +1,35 @@
 # File: res://core_engine/board/tile_node.gd
 # Class: class_name TileNode
-# Role: 보드 그래프의 한 타일(0~28번). 타입, 진행 간선, 설치물(TileAttachment) 목록을 관리한다.
+# Role: 보드 그래프의 한 타일(0~28번). 타입, 기본/지름길 진행 간선, 설치물(TileAttachment) 목록을 보관한다
 class_name TileNode
 extends RefCounted
 
-var index: int = 0
-var tile_type: GameEnums.TileType = GameEnums.TileType.NORMAL
-## 이 타일에서 나갈 수 있는 간선들 (BFS 탐색용. 실제 이동 분기는 BoardGraph가 판정).
-var next_tiles: Array[int] = []
+enum TileType { START_GOAL, NORMAL, BAKERY, PORTAL }
+
+var tile_id: int = 0
+var tile_type: TileType = TileType.NORMAL
+## 기본 진행 방향의 다음 타일.
+var next_default: int = -1
+## 분기 타일(5, 10, 22번)에서 정확히 멈췄다 출발할 때 들어가는 다음 타일. 없으면 -1.
+var next_shortcut: int = -1
 var attachments: Array[TileAttachment] = []
 
 
-func _init(tile_index: int = 0, type: GameEnums.TileType = GameEnums.TileType.NORMAL) -> void:
-	index = tile_index
+func _init(id: int = 0, type: TileType = TileType.NORMAL, default_next: int = -1, shortcut_next: int = -1) -> void:
+	tile_id = id
 	tile_type = type
+	next_default = default_next
+	next_shortcut = shortcut_next
+
+
+## 이 타일에서 나갈 수 있는 모든 간선 (BFS 탐색용).
+func neighbors() -> Array[int]:
+	var result: Array[int] = []
+	if next_default != -1:
+		result.append(next_default)
+	if next_shortcut != -1:
+		result.append(next_shortcut)
+	return result
 
 
 func add_attachment(attachment: TileAttachment) -> void:
@@ -28,7 +44,7 @@ func clear_attachments() -> void:
 	attachments.clear()
 
 
-func has_attachment(attachment_id: StringName) -> bool:
+func has_attachment(attachment_id: String) -> bool:
 	for attachment: TileAttachment in attachments:
 		if attachment.attachment_id == attachment_id:
 			return true

@@ -8,7 +8,7 @@ extends RefCounted
 ## mover를 ctx.dice_value(법전 통과 후 확정 칸수)만큼 움직인다. 모든 중간 변화는 GameState 시그널로 방송된다.
 static func execute(state: GameState, mover: PlayerPawn, ctx: RuleContext) -> MoveReport:
 	var report := MoveReport.new()
-	report.pawn_id = mover.id
+	report.pawn_id = mover.entity_id
 	ctx.pawn = mover
 	if ctx.charge_depth == 0:
 		ctx.trigger_timing = RuleContext.ON_MOVE_CALC
@@ -22,7 +22,7 @@ static func execute(state: GameState, mover: PlayerPawn, ctx: RuleContext) -> Mo
 	var signed_steps: int = ctx.dice_value * ctx.direction
 	var forward: bool = signed_steps > 0
 	var remaining: int = absi(signed_steps)
-	var start_tile: int = mover.tile_index
+	var start_tile: int = mover.current_tile_idx
 	var cursor: PathCursor = PathCursor.from_entity(mover, mover.has_left_start)
 	var first_step: bool = true
 	var resolved_normally: bool = true
@@ -42,18 +42,16 @@ static func execute(state: GameState, mover: PlayerPawn, ctx: RuleContext) -> Mo
 		_commit_cursor(state, mover, cursor)
 		report.path.append(cursor.tile)
 		ctx.path_nodes.append(cursor.tile)
-		state.pawn_stepped.emit(mover.id, from_tile, cursor.tile)
+		state.pawn_stepped.emit(mover.entity_id, from_tile, cursor.tile)
 
-		var effect: AttachmentEffect = _trigger_attachments(state, mover, ctx, cursor.tile, remaining == 0, report)
-		if effect != null:
-			if effect.send_to_start:
-				state.send_to_start(mover, effect.owner_id)
+		if _trigger_attachments(state, mover, ctx, cursor.tile, remaining == 0, report):
+			if not mover.has_left_start:
+				# 함정이 말을 출발선으로 돌려보냈다 (send_to_start가 출발 상태를 초기화한다).
 				report.trapped = true
 				resolved_normally = false
 				break
-			if effect.stop_move:
-				remaining = 0
-				report.stopped_early = true
+			remaining = 0
+			report.stopped_early = true
 
 		if stepped_forward and cursor.tile == GameEnums.GOAL_TILE and mover.has_left_start:
 			if remaining > 0 and ctx.exact_goal_required:
@@ -70,7 +68,7 @@ static func execute(state: GameState, mover: PlayerPawn, ctx: RuleContext) -> Mo
 
 
 static func _commit_cursor(state: GameState, mover: PlayerPawn, cursor: PathCursor) -> void:
-	mover.tile_index = cursor.tile
+	mover.current_tile_idx = cursor.tile
 	mover.step_history.assign(cursor.history)
 	mover.has_left_start = cursor.started
 	state.sync_stack_position(mover)
@@ -94,34 +92,36 @@ static func _trigger_attachments(
 		ctx: RuleContext,
 		tile_index: int,
 		is_landing: bool,
-		report: MoveReport) -> AttachmentEffect:
+		report: MoveReport) -> bool:
 	var tile: TileNode = state.board.get_tile(tile_index)
+	ctx.metadata["is_landing"] = is_landing
 	for attachment: TileAttachment in tile.attachments.duplicate():
-		var effect: AttachmentEffect = attachment.on_pawn_enter(state, mover, ctx, is_landing)
-		if effect == null:
-			continue
-		state.attachment_triggered.emit(tile_index, effect.attachment_id, mover.id, effect.cutscene_id)
-		report.attachment_events.append({
-			"tile": tile_index,
-			"attachment_id": effect.attachment_id,
-			"pawn_id": mover.id,
-			"cutscene_id": effect.cutscene_id,
-		})
-		if effect.consume:
+		ctx.metadata.erase("cutscene_id")
+		var halted: bool = attachment.on_step_trigger(mover, ctx)
+		if halted:
+			var cutscene_id: StringName = ctx.metadata.get("cutscene_id", &"")
+			state.attachment_triggered.emit(tile_index, attachment.attachment_id, mover.entity_id, cutscene_id)
+			report.attachment_events.append({
+				"tile": tile_index,
+				"attachment_id": attachment.attachment_id,
+				"pawn_id": mover.entity_id,
+				"cutscene_id": cutscene_id,
+			})
+		if attachment.is_expired():
 			tile.remove_attachment(attachment)
-		if effect.send_to_start or effect.stop_move:
-			return effect
-	return null
+		if halted:
+			return true
+	return false
 
 
 ## 도착(마지막 칸) 처리: 빵집 → 옷장 워프 → 잡기 → 업기 → 이동 완료 훅.
 static func _resolve_landing(state: GameState, mover: PlayerPawn, ctx: RuleContext, report: MoveReport) -> void:
-	var tile: TileNode = state.board.get_tile(mover.tile_index)
-	if tile.tile_type == GameEnums.TileType.BAKERY and ctx.charge_depth == 0:
+	var tile: TileNode = state.board.get_tile(mover.current_tile_idx)
+	if tile.tile_type == TileNode.TileType.BAKERY and ctx.charge_depth == 0:
 		var card_id: StringName = state.draw_card(mover.owner_id)
 		if card_id != &"":
 			report.drawn_card = card_id
-	if tile.tile_type == GameEnums.TileType.PORTAL:
+	if tile.tile_type == TileNode.TileType.PORTAL:
 		if not _warp_to_center(state, mover, ctx, report):
 			return
 	_resolve_captures(state, mover, ctx, report)
@@ -140,27 +140,25 @@ static func _resolve_landing(state: GameState, mover: PlayerPawn, ctx: RuleConte
 ## 옷장(PORTAL)에 멈추면 22번에 도착해 멈춘 것으로 판정한다 (다음 이동은 27 -> 28 -> 0 최단 루트).
 ## 워프 도착 칸의 함정에 걸려 출발선으로 돌아가면 false를 반환한다.
 static func _warp_to_center(state: GameState, mover: PlayerPawn, ctx: RuleContext, report: MoveReport) -> bool:
-	var from_tile: int = mover.tile_index
-	mover.step_history.append(from_tile)
-	mover.tile_index = GameEnums.CENTER_TILE
+	var from_tile: int = mover.current_tile_idx
+	mover.current_tile_idx = GameEnums.CENTER_TILE
+	mover.step_history.append(GameEnums.CENTER_TILE)
 	state.sync_stack_position(mover)
 	report.warped = true
 	report.path.append(GameEnums.CENTER_TILE)
 	ctx.path_nodes.append(GameEnums.CENTER_TILE)
-	state.pawn_warped.emit(mover.id, from_tile, GameEnums.CENTER_TILE)
-	var effect: AttachmentEffect = _trigger_attachments(state, mover, ctx, GameEnums.CENTER_TILE, true, report)
-	if effect != null and effect.send_to_start:
-		state.send_to_start(mover, effect.owner_id)
+	state.pawn_warped.emit(mover.entity_id, from_tile, GameEnums.CENTER_TILE)
+	if _trigger_attachments(state, mover, ctx, GameEnums.CENTER_TILE, true, report) and not mover.has_left_start:
 		report.trapped = true
 		return false
 	return true
 
 
 static func _resolve_captures(state: GameState, mover: PlayerPawn, ctx: RuleContext, report: MoveReport) -> void:
-	if mover.tile_index == GameEnums.GOAL_TILE:
+	if mover.current_tile_idx == GameEnums.GOAL_TILE:
 		return
 	var victims: Array[PlayerPawn] = []
-	for leader: PlayerPawn in state.leaders_at(mover.tile_index):
+	for leader: PlayerPawn in state.leaders_at(mover.current_tile_idx):
 		if leader.owner_id != mover.owner_id:
 			victims.append(leader)
 	if victims.is_empty():
@@ -176,7 +174,7 @@ static func _resolve_captures(state: GameState, mover: PlayerPawn, ctx: RuleCont
 		return
 	for victim: PlayerPawn in victims:
 		for member: PlayerPawn in victim.stack_members():
-			report.captured_pawn_ids.append(member.id)
+			report.captured_pawn_ids.append(member.entity_id)
 		state.send_to_start(victim, mover.owner_id)
 	if ctx.capture_extra_turn:
 		report.extra_turn = true
@@ -188,11 +186,11 @@ static func _resolve_captures(state: GameState, mover: PlayerPawn, ctx: RuleCont
 
 ## 업기: 법전(allow_stacking)이 기물 고유 능력(can_stack_with)보다 우선한다. 출발선(0번)에서는 업지 않는다.
 static func _resolve_stacking(state: GameState, mover: PlayerPawn, ctx: RuleContext, report: MoveReport) -> void:
-	if not ctx.allow_stacking or mover.tile_index == GameEnums.GOAL_TILE:
+	if not ctx.allow_stacking or mover.current_tile_idx == GameEnums.GOAL_TILE:
 		return
-	for other: PlayerPawn in state.leaders_at(mover.tile_index):
+	for other: PlayerPawn in state.leaders_at(mover.current_tile_idx):
 		if other != mover and mover.can_stack_with(other):
 			state.stack_pawns(mover, other)
 			for member: PlayerPawn in mover.stack_members():
-				if not report.stacked_pawn_ids.has(member.id):
-					report.stacked_pawn_ids.append(member.id)
+				if not report.stacked_pawn_ids.has(member.entity_id):
+					report.stacked_pawn_ids.append(member.entity_id)

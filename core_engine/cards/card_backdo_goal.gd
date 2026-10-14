@@ -18,7 +18,7 @@ func can_play(state: GameState, player_id: int, params: Dictionary) -> bool:
 	var pawn: PlayerPawn = state.get_pawn(int(params.get("pawn_id", -1)))
 	if pawn == null or pawn.owner_id != player_id or pawn.is_finished:
 		return false
-	return pawn.carrier == null and pawn.retreated_from_start and VALID_TILES.has(pawn.tile_index)
+	return pawn.carrier == null and pawn.retreated_from_start and VALID_TILES.has(pawn.current_tile_idx)
 
 
 func create_command(_state: GameState, player_id: int, params: Dictionary) -> GameCommand:

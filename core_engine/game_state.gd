@@ -14,8 +14,8 @@ signal pawns_swapped(pawn_a_id: int, pawn_b_id: int)
 signal pawn_teleported(pawn_id: int, to_tile: int)
 signal npc_spawned(npc_id: int, tile: int)
 signal npc_stepped(npc_id: int, from_tile: int, to_tile: int)
-signal attachment_placed(tile: int, attachment_id: StringName, owner_id: int)
-signal attachment_triggered(tile: int, attachment_id: StringName, pawn_id: int, cutscene_id: StringName)
+signal attachment_placed(tile: int, attachment_id: String, owner_id: int)
+signal attachment_triggered(tile: int, attachment_id: String, pawn_id: int, cutscene_id: StringName)
 signal card_drawn(player_id: int, card_id: StringName)
 signal card_stolen(player_id: int, card_id: StringName)
 signal turn_order_reversed(new_direction: int)
@@ -52,9 +52,28 @@ var hurt_players: Array[int] = []
 var rollback_requested: bool = false
 
 
+## BoardGraph·RuleBookManager·기물·NPC는 Node라 씬 트리에 붙이지 않고 GameState가 수명을 관리한다.
+## (PREDELETE 중에는 자기 메서드를 호출할 수 없으므로 멤버만 직접 정리한다.)
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_PREDELETE and is_instance_valid(rulebook):
+	if what != NOTIFICATION_PREDELETE:
+		return
+	for npc: NeutralNPC in npcs:
+		if is_instance_valid(npc):
+			npc.free()
+	for pawn: PlayerPawn in pawns:
+		if is_instance_valid(pawn):
+			pawn.free()
+	if is_instance_valid(rulebook):
 		rulebook.free()
+	if is_instance_valid(board):
+		board.free()
+
+
+func clear_npcs() -> void:
+	for npc: NeutralNPC in npcs:
+		if is_instance_valid(npc):
+			npc.free()
+	npcs.clear()
 
 
 # ---------------------------------------------------------------------------
@@ -68,8 +87,10 @@ func setup(ids: Array[int], seed_value: int = 0, kinds_by_player: Dictionary = {
 		rng.seed = seed_value
 	else:
 		rng.randomize()
+	for old_pawn: PlayerPawn in pawns:
+		old_pawn.free()
 	pawns.clear()
-	npcs.clear()
+	clear_npcs()
 	hands.clear()
 	tools.clear()
 	for player_id: int in player_ids:
@@ -78,7 +99,7 @@ func setup(ids: Array[int], seed_value: int = 0, kinds_by_player: Dictionary = {
 		var kinds: Array = kinds_by_player.get(player_id, [])
 		for slot: int in range(1, GameEnums.PAWNS_PER_PLAYER + 1):
 			var pawn := PlayerPawn.new()
-			pawn.id = player_id * 10 + slot
+			pawn.entity_id = player_id * 10 + slot
 			pawn.owner_id = player_id
 			pawn.slot = slot
 			pawn.kind = kinds[slot - 1] if kinds.size() >= slot else GameEnums.PawnKind.YUT
@@ -102,14 +123,14 @@ func _shuffle(items: Array) -> void:
 
 func get_pawn(pawn_id: int) -> PlayerPawn:
 	for pawn: PlayerPawn in pawns:
-		if pawn.id == pawn_id:
+		if pawn.entity_id == pawn_id:
 			return pawn
 	return null
 
 
 func get_npc(npc_id: int) -> NeutralNPC:
 	for npc: NeutralNPC in npcs:
-		if npc.id == npc_id:
+		if npc.entity_id == npc_id:
 			return npc
 	return null
 
@@ -134,7 +155,7 @@ func get_active_pawns() -> Array[PlayerPawn]:
 func leaders_at(tile: int) -> Array[PlayerPawn]:
 	var result: Array[PlayerPawn] = []
 	for pawn: PlayerPawn in pawns:
-		if pawn.tile_index == tile and not pawn.is_finished and pawn.carrier == null:
+		if pawn.current_tile_idx == tile and not pawn.is_finished and pawn.carrier == null:
 			result.append(pawn)
 	return result
 
@@ -148,7 +169,7 @@ func selectable_pawns(player_id: int) -> Array[PlayerPawn]:
 
 
 func pawn_progress_distance(pawn: PlayerPawn) -> int:
-	return board.distance_to_goal(pawn.tile_index, pawn.has_left_start)
+	return board.distance_to_goal(pawn.current_tile_idx, pawn.has_left_start)
 
 
 ## 꼴찌(결승까지 가장 먼) 대표 말. excluding_owner의 말은 제외한다. 없으면 null.
@@ -182,15 +203,15 @@ func send_to_start(pawn: PlayerPawn, by_player: int) -> void:
 	if not hurt_players.has(pawn.owner_id):
 		hurt_players.append(pawn.owner_id)
 	for member: PlayerPawn in members:
-		pawn_sent_to_start.emit(member.id, by_player)
+		pawn_sent_to_start.emit(member.entity_id, by_player)
 
 
 func finish_stack(leader: PlayerPawn) -> void:
 	for member: PlayerPawn in leader.stack_members():
 		member.is_finished = true
 		member.carrier = null
-		member.tile_index = GameEnums.GOAL_TILE
-		pawn_finished.emit(member.id)
+		member.current_tile_idx = GameEnums.GOAL_TILE
+		pawn_finished.emit(member.entity_id)
 	leader.carried.clear()
 
 
@@ -200,20 +221,20 @@ func stack_pawns(leader: PlayerPawn, member: PlayerPawn) -> void:
 	for absorbed_pawn: PlayerPawn in absorbed:
 		absorbed_pawn.carried.clear()
 		absorbed_pawn.carrier = leader
-		absorbed_pawn.tile_index = leader.tile_index
+		absorbed_pawn.current_tile_idx = leader.current_tile_idx
 		absorbed_pawn.step_history.assign(leader.step_history)
 		absorbed_pawn.has_left_start = leader.has_left_start
 		leader.carried.append(absorbed_pawn)
 	var ids: Array[int] = []
 	for stacked: PlayerPawn in leader.stack_members():
-		ids.append(stacked.id)
-	pawns_stacked.emit(leader.id, ids)
+		ids.append(stacked.entity_id)
+	pawns_stacked.emit(leader.entity_id, ids)
 
 
 ## 대표 말과 업힌 말들의 위치 정보를 한꺼번에 동기화한다.
 func sync_stack_position(leader: PlayerPawn) -> void:
 	for member: PlayerPawn in leader.carried:
-		member.tile_index = leader.tile_index
+		member.current_tile_idx = leader.current_tile_idx
 		member.step_history.assign(leader.step_history)
 		member.has_left_start = leader.has_left_start
 		member.retreated_from_start = leader.retreated_from_start
@@ -221,25 +242,24 @@ func sync_stack_position(leader: PlayerPawn) -> void:
 
 ## 두 대표 말(업은 말 포함)의 위치를 교환한다.
 func swap_stacks(a: PlayerPawn, b: PlayerPawn) -> void:
-	var a_tile: int = a.tile_index
+	var a_tile: int = a.current_tile_idx
 	var a_history: Array[int] = a.step_history.duplicate()
 	var a_started: bool = a.has_left_start
-	a.tile_index = b.tile_index
+	a.current_tile_idx = b.current_tile_idx
 	a.step_history.assign(b.step_history)
 	a.has_left_start = b.has_left_start
-	b.tile_index = a_tile
+	b.current_tile_idx = a_tile
 	b.step_history.assign(a_history)
 	b.has_left_start = a_started
 	sync_stack_position(a)
 	sync_stack_position(b)
-	pawns_swapped.emit(a.id, b.id)
+	pawns_swapped.emit(a.entity_id, b.entity_id)
 
 
 func teleport_stack(leader: PlayerPawn, tile: int) -> void:
-	leader.tile_index = tile
-	leader.step_history.clear()
+	leader.place_at(tile)
 	sync_stack_position(leader)
-	pawn_teleported.emit(leader.id, tile)
+	pawn_teleported.emit(leader.entity_id, tile)
 
 
 # ---------------------------------------------------------------------------
@@ -248,14 +268,14 @@ func teleport_stack(leader: PlayerPawn, tile: int) -> void:
 
 func spawn_npc(tile: int, behavior: GameEnums.NpcBehavior, summoner_id: int, display_id: StringName) -> NeutralNPC:
 	var npc := NeutralNPC.new()
-	npc.id = _next_npc_id
+	npc.entity_id = _next_npc_id
 	_next_npc_id += 1
 	npc.owner_id = summoner_id
-	npc.tile_index = tile
+	npc.place_at(tile)
 	npc.behavior = behavior
 	npc.display_id = display_id
 	npcs.append(npc)
-	npc_spawned.emit(npc.id, tile)
+	npc_spawned.emit(npc.entity_id, tile)
 	return npc
 
 

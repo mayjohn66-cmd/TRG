@@ -5,10 +5,10 @@ class_name PlaceAttachmentCommand
 extends GameCommand
 
 var tile: int = -1
-var attachment_id: StringName = &""
+var attachment_id: String = ""
 
 
-func _init(acting_player: int = -1, target_tile: int = -1, id: StringName = &"") -> void:
+func _init(acting_player: int = -1, target_tile: int = -1, id: String = "") -> void:
 	player_id = acting_player
 	tile = target_tile
 	attachment_id = id

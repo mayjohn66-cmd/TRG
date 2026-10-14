@@ -14,5 +14,5 @@ func _init() -> void:
 
 func intercept(ctx: RuleContext) -> RuleContext:
 	if ctx.pawn != null and absi(ctx.dice_value) >= 6:
-		ctx.effects.append(SwapWithLastPlaceCommand.new(ctx.actor_id, ctx.pawn.id))
+		ctx.effects.append(SwapWithLastPlaceCommand.new(ctx.actor_id, ctx.pawn.entity_id))
 	return ctx

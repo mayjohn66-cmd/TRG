@@ -40,6 +40,7 @@ func _run_all() -> void:
 			suite.tree = self
 			suite.current_test = "%s::%s" % [path.get_file(), method_name]
 			suite.call(method_name)
+			suite.cleanup()
 			total_tests += 1
 			total_assertions += suite.assertions
 			total_failures += suite.failures.size()

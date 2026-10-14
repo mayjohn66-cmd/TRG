@@ -17,16 +17,16 @@ func intercept(ctx: RuleContext) -> RuleContext:
 		return ctx
 	var stack_ids: Array[int] = []
 	for member: PlayerPawn in ctx.capturer.stack_members():
-		stack_ids.append(member.id)
+		stack_ids.append(member.entity_id)
 	var best: PlayerPawn = null
 	var best_distance: int = 1 << 30
 	for pawn: PlayerPawn in ctx.state.pawns_of(ctx.capturer.owner_id):
-		if pawn.is_finished or not pawn.has_left_start or stack_ids.has(pawn.id):
+		if pawn.is_finished or not pawn.has_left_start or stack_ids.has(pawn.entity_id):
 			continue
-		var distance: int = ctx.state.board.distance_to_goal(pawn.tile_index, pawn.has_left_start)
+		var distance: int = ctx.state.board.distance_to_goal(pawn.current_tile_idx, pawn.has_left_start)
 		if distance < best_distance:
 			best_distance = distance
 			best = pawn
 	if best != null:
-		ctx.effects.append(ExpelPawnCommand.new(ctx.actor_id, best.id))
+		ctx.effects.append(ExpelPawnCommand.new(ctx.actor_id, best.entity_id))
 	return ctx

@@ -41,13 +41,13 @@ func _process(_delta: float) -> bool:
 		_illegal_sent = true
 		_manager.act(&"roll", {})
 	# 내 턴이 오면 진행한다.
-	if not _sent and state.current_player == 2 and _manager.phase == GameEnums.Phase.TURN_BEGIN and state.get_pawn(11).tile_index == 1:
+	if not _sent and state.current_player == 2 and _manager.phase == GameEnums.Phase.TURN_BEGIN and state.get_pawn(11).current_tile_idx == 1:
 		_sent = true
-		print("CLIENT: 내 턴, 미러 상태 11번 말=", state.get_pawn(11).tile_index)
+		print("CLIENT: 내 턴, 미러 상태 11번 말=", state.get_pawn(11).current_tile_idx)
 		_manager.act(&"proceed", {})
 		_manager.act(&"roll", {})
 		_manager.act(&"select_pawn", {"pawn_id": 21})
-	if _sent and state.get_pawn(21).tile_index == 2 and state.round_number == 2:
+	if _sent and state.get_pawn(21).current_tile_idx == 2 and state.round_number == 2:
 		var mine: Array = _roll_events.filter(func(e: Dictionary) -> bool: return e["player_id"] == 2)
 		if mine.size() == 1 and mine[0]["result"]["steps"] == 2:
 			print("CLIENT_OK")

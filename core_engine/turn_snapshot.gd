@@ -14,22 +14,22 @@ static func capture(state: GameState) -> TurnSnapshot:
 	for pawn: PlayerPawn in state.pawns:
 		var carried_ids: Array[int] = []
 		for carried_pawn: PlayerPawn in pawn.carried:
-			carried_ids.append(carried_pawn.id)
-		pawn_data[pawn.id] = {
-			"tile": pawn.tile_index,
+			carried_ids.append(carried_pawn.entity_id)
+		pawn_data[pawn.entity_id] = {
+			"tile": pawn.current_tile_idx,
 			"history": pawn.step_history.duplicate(),
 			"started": pawn.has_left_start,
 			"finished": pawn.is_finished,
 			"retreated": pawn.retreated_from_start,
-			"carrier": pawn.carrier.id if pawn.carrier != null else -1,
+			"carrier": pawn.carrier.entity_id if pawn.carrier != null else -1,
 			"carried": carried_ids,
 		}
 	var npc_data: Array[Dictionary] = []
 	for npc: NeutralNPC in state.npcs:
 		npc_data.append({
-			"id": npc.id,
+			"id": npc.entity_id,
 			"owner": npc.owner_id,
-			"tile": npc.tile_index,
+			"tile": npc.current_tile_idx,
 			"history": npc.step_history.duplicate(),
 			"behavior": npc.behavior,
 			"display_id": npc.display_id,
@@ -37,7 +37,7 @@ static func capture(state: GameState) -> TurnSnapshot:
 	var attachment_data: Dictionary = {}
 	for tile: TileNode in state.board.tiles:
 		if not tile.attachments.is_empty():
-			attachment_data[tile.index] = tile.serialize_attachments()
+			attachment_data[tile.tile_id] = tile.serialize_attachments()
 	snapshot.data = {
 		"pawns": pawn_data,
 		"npcs": npc_data,
@@ -69,8 +69,8 @@ func to_dict() -> Dictionary:
 func restore(state: GameState, restore_meta: bool = false) -> void:
 	var pawn_data: Dictionary = data["pawns"]
 	for pawn: PlayerPawn in state.pawns:
-		var entry: Dictionary = pawn_data[pawn.id]
-		pawn.tile_index = int(entry["tile"])
+		var entry: Dictionary = pawn_data[pawn.entity_id]
+		pawn.current_tile_idx = int(entry["tile"])
 		pawn.step_history.assign(entry["history"])
 		pawn.has_left_start = bool(entry["started"])
 		pawn.is_finished = bool(entry["finished"])
@@ -78,7 +78,7 @@ func restore(state: GameState, restore_meta: bool = false) -> void:
 		pawn.carrier = null
 		pawn.carried.clear()
 	for pawn: PlayerPawn in state.pawns:
-		var entry: Dictionary = pawn_data[pawn.id]
+		var entry: Dictionary = pawn_data[pawn.entity_id]
 		var carrier_id: int = int(entry["carrier"])
 		if carrier_id != -1:
 			pawn.carrier = state.get_pawn(carrier_id)
@@ -87,12 +87,12 @@ func restore(state: GameState, restore_meta: bool = false) -> void:
 			if carried_pawn != null:
 				pawn.carried.append(carried_pawn)
 
-	state.npcs.clear()
+	state.clear_npcs()
 	for entry: Dictionary in data["npcs"]:
 		var npc := NeutralNPC.new()
-		npc.id = int(entry["id"])
+		npc.entity_id = int(entry["id"])
 		npc.owner_id = int(entry["owner"])
-		npc.tile_index = int(entry["tile"])
+		npc.current_tile_idx = int(entry["tile"])
 		npc.step_history.assign(entry["history"])
 		npc.behavior = entry["behavior"]
 		npc.display_id = entry["display_id"]
@@ -101,11 +101,11 @@ func restore(state: GameState, restore_meta: bool = false) -> void:
 	for tile: TileNode in state.board.tiles:
 		tile.clear_attachments()
 	var attachment_data: Dictionary = data["attachments"]
-	for tile_index: Variant in attachment_data.keys():
-		for attachment_entry: Dictionary in attachment_data[tile_index]:
+	for tile_key: Variant in attachment_data.keys():
+		for attachment_entry: Dictionary in attachment_data[tile_key]:
 			var attachment: TileAttachment = AttachmentRegistry.from_dict(attachment_entry)
 			if attachment != null:
-				state.board.get_tile(int(tile_index)).add_attachment(attachment)
+				state.board.get_tile(int(tile_key)).add_attachment(attachment)
 
 	state.rulebook.set_laws_from_ids(data["laws"])
 

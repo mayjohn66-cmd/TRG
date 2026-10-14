@@ -24,21 +24,21 @@ func test_snapshot_restores_positions_stacks_attachments_and_laws() -> void:
 	state.board.get_tile(3).clear_attachments()
 	state.rulebook.remove_law_by_id("LAW_01")
 	state.rulebook.enqueue_law(LawRegistry.create("LAW_08"))
-	state.npcs.clear()
+	state.clear_npcs()
 
 	snapshot.restore(state)
 	var leader: PlayerPawn = state.get_pawn(11)
-	check_eq(leader.tile_index, 8, "기물 위치 복원")
+	check_eq(leader.current_tile_idx, 8, "기물 위치 복원")
 	check(not leader.is_finished and not state.get_pawn(12).is_finished, "완주 상태 복원")
 	check_eq(state.get_pawn(12).carrier, leader, "업기 관계 복원")
 	check_eq(leader.carried.size(), 1, "업은 말 목록 복원")
-	check_eq(state.get_pawn(21).tile_index, 14, "추방된 말 복원")
-	check_eq(state.get_pawn(21).step_history, int_array([13]), "step_history 복원")
+	check_eq(state.get_pawn(21).current_tile_idx, 14, "추방된 말 복원")
+	check_eq(state.get_pawn(21).step_history, int_array([13, 14]), "step_history 복원")
 	check(state.board.get_tile(3).has_attachment(&"TRP_01"), "설치물 복원")
 	check_eq(state.board.get_tile(3).attachments[0].owner_id, 2, "설치물 소유자 복원")
 	check_eq(state.rulebook.law_ids(), ["LAW_01", "LAW_03"] as Array[String], "법전 큐 복원")
 	check_eq(state.npcs.size(), 1, "NPC 복원")
-	check_eq(state.npcs[0].tile_index, 5, "NPC 위치 복원")
+	check_eq(state.npcs[0].current_tile_idx, 5, "NPC 위치 복원")
 
 
 func test_snapshot_is_deep_copy() -> void:
@@ -46,9 +46,9 @@ func test_snapshot_is_deep_copy() -> void:
 	place(state, 11, 8, [7])
 	var snapshot: TurnSnapshot = TurnSnapshot.capture(state)
 	state.get_pawn(11).step_history.append(99)
-	state.get_pawn(11).tile_index = 12
+	state.get_pawn(11).current_tile_idx = 12
 	snapshot.restore(state)
-	check_eq(state.get_pawn(11).step_history, int_array([7]), "깊은 복사라 이후 변경에 영향받지 않음")
+	check_eq(state.get_pawn(11).step_history, int_array([7, 8]), "깊은 복사라 이후 변경에 영향받지 않음")
 
 
 func test_snapshot_dict_roundtrip_for_network() -> void:
@@ -59,7 +59,7 @@ func test_snapshot_dict_roundtrip_for_network() -> void:
 	var payload: Dictionary = TurnSnapshot.capture(state).to_dict()
 	var other := make_state()
 	TurnSnapshot.from_dict(payload).restore(other, true)
-	check_eq(other.get_pawn(11).tile_index, 8, "다른 인스턴스에 복원")
+	check_eq(other.get_pawn(11).current_tile_idx, 8, "다른 인스턴스에 복원")
 	check(other.board.get_tile(4).has_attachment(&"TRP_01"), "설치물 재생성")
 	check(other.rulebook.has_law(&"LAW_02"), "법전 재생성")
 
@@ -89,7 +89,7 @@ func test_rollback_command_restores_turn_start_but_keeps_consumed_cards() -> voi
 	check(not card.can_play(state, 1, {}), "가해자는 사용 불가")
 	state.consume_card(2, &"ACT_05")
 	CommandStack.new().execute(card.create_command(state, 2, {}), state)
-	check_eq(state.get_pawn(11).tile_index, 2, "이동한 말 복귀")
-	check_eq(state.get_pawn(21).tile_index, 4, "잡힌 말 복귀")
+	check_eq(state.get_pawn(11).current_tile_idx, 2, "이동한 말 복귀")
+	check_eq(state.get_pawn(21).current_tile_idx, 4, "잡힌 말 복귀")
 	check(state.rollback_requested, "롤백 플래그")
 	check((state.hands[2] as Array).is_empty(), "ACT_05는 소모된 채")
