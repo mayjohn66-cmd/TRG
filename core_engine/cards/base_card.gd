@@ -7,7 +7,7 @@ extends Resource
 @export var card_id: StringName = &""
 @export var display_name: String = ""
 @export var category: GameEnums.CardCategory = GameEnums.CardCategory.INSTANT
-## 사용 가능한 GameEnums.Phase 값들.
+## 사용 가능한 TurnManager.State 값들.
 var playable_phases: Array[int] = []
 
 

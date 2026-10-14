@@ -8,6 +8,8 @@ extends Node
 signal law_added(new_law: LawResource, removed_law: LawResource)
 ## 역전재판 '이의 있음!' 등으로 교칙이 강제 파기되었다.
 signal law_removed(removed_law: LawResource)
+## process_context() 중 교칙 하나가 ctx를 가로챘다. 뷰가 어떤 교칙이 언제 작동했는지 보여 줄 때 구독한다.
+signal law_applied(law: LawResource, timing: String, dice_before: int, dice_after: int)
 
 const MAX_SLOTS: int = 4
 
@@ -46,9 +48,11 @@ func process_context(ctx: RuleContext) -> RuleContext:
 	var current: RuleContext = ctx
 	for entry: Dictionary in matched:
 		var law: LawResource = entry["law"]
+		var dice_before: int = current.dice_value
 		var result: RuleContext = law.intercept(current)
 		if result != null:
 			current = result
+		law_applied.emit(law, current.trigger_timing, dice_before, current.dice_value)
 	return current
 
 

@@ -4,6 +4,18 @@ config_version=5
 [application]
 config/name="TRG"
 config/features=PackedStringArray("4.3")
+run/main_scene="res://scenes/main_board.tscn"
+
+[display]
+
+window/size/viewport_width=1366
+window/size/viewport_height=768
+window/stretch/mode="canvas_items"
+window/stretch/aspect="keep"
+
+[gui]
+
+theme/custom_font="res://scenes/ui_font.tres"
 
 [debug]
 gdscript/warnings/untyped_declaration=1
