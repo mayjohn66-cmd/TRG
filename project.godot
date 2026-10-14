@@ -1,0 +1,9 @@
+; Engine configuration file.
+config_version=5
+
+[application]
+config/name="TRG"
+config/features=PackedStringArray("4.3")
+
+[debug]
+gdscript/warnings/untyped_declaration=1
