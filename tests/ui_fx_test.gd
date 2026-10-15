@@ -47,6 +47,7 @@ func _run() -> void:
 	await _test_gauge_and_lock()
 	await _test_instant_flag()
 	await _test_announcer()
+	await _test_aspect_layout()
 	await _test_hud_overhaul()
 	await _test_bot_pacing()
 	if _failures.is_empty():
@@ -240,6 +241,27 @@ func _test_announcer() -> void:
 	_board._announce("테스트", "건너뜀", "", Color.WHITE, null, 0.5)
 	_expect(not announcer.active, "instant면 알림을 띄우지 않는다")
 	_board.instant_roll_for_test = false
+
+
+## 창 비율 대응: 넓은 창이면 오른쪽 묶음은 오른쪽 끝으로, 보드는 가운데로, 왼쪽은 그대로. 높은 창이면 모두 세로 가운데로.
+func _test_aspect_layout() -> void:
+	var board: MainBoard = _board
+	var right_panel: Control = board._tool_board
+	var left_panel: Control = board._law_panel
+	var plate_x: float = board._plate.position.x
+	var base_right: float = right_panel.position.x - board._off_right.x
+	var base_left: float = left_panel.position.x - board._off_left.x
+	board.layout_for(Vector2(1666, 768))
+	_expect(is_equal_approx(right_panel.position.x, base_right + 300.0) and is_equal_approx(left_panel.position.x, base_left), "넓은 창: 오른쪽 묶음은 끝으로, 왼쪽은 그대로")
+	_expect(is_equal_approx(board._plate.position.x, MainBoard.PLATE_POS.x + 150.0), "넓은 창: 보드는 가운데로 (%s)" % str(board._plate.position))
+	var shifted: Vector2 = board._board_center()
+	_expect(is_equal_approx(shifted.x, 683.0 + 150.0 - (683.0 - (MainBoard.BOARD_ORIGIN.x + MainBoard.BOARD_SIZE / 2.0))), "알림·배너 중심이 보드를 따라간다")
+	board.layout_for(Vector2(1366, 968))
+	_expect(is_equal_approx(board._plate.position.y, MainBoard.PLATE_POS.y + 100.0) and is_equal_approx(right_panel.position.x, base_right), "높은 창: 세로 가운데 정렬")
+	board.layout_for(Vector2(1000, 600))
+	_expect(is_equal_approx(board._plate.position.x, MainBoard.PLATE_POS.x), "디자인보다 작은 창은 오프셋 0 (엔진이 축소)")
+	board.layout_for(Vector2(1366, 768))
+	_expect(is_equal_approx(plate_x, board._plate.position.x), "원래 크기로 돌아온다")
 
 
 ## 좌석 상대 매핑·판정 도구 전광판·기물 독과 0.35초 호버 툴팁·카드 클릭 확대·드래그 앤 드롭 발동.

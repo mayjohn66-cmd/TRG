@@ -26,6 +26,8 @@ var instant: bool = false
 ## 연출이 끝난 뒤 화면에 남은 최종 표시 문자열 (테스트가 엔진 결과와 대조한다).
 var last_display: String = ""
 var active: bool = false
+## 연출 패널이 가운데 정렬될 화면 좌표 (창 비율에 따라 MainBoard가 갱신한다).
+var center: Vector2 = Vector2(683.0, 308.0)
 
 var _mode: StringName = &""
 var _t: float = 0.0
@@ -136,7 +138,7 @@ func cancel() -> void:
 ## 화면 정중앙(보드 한가운데)으로 위치를 맞춘다.
 func _position_center() -> void:
 	reset_size()
-	position = Vector2(683.0, 308.0) - size / 2.0
+	position = center - size / 2.0
 
 
 func _process(delta: float) -> void:

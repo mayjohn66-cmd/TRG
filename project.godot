@@ -11,7 +11,7 @@ run/main_scene="res://scenes/start_menu.tscn"
 window/size/viewport_width=1366
 window/size/viewport_height=768
 window/stretch/mode="canvas_items"
-window/stretch/aspect="keep"
+window/stretch/aspect="expand"
 window/handheld/orientation=0
 
 [gui]

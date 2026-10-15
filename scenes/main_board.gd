@@ -28,10 +28,10 @@ const PROFILE_LIT: Color = Color(1.1, 1.1, 1.1, 1.0)
 const PAWN_SLOT_SIZE: float = 38.0
 ## 프로필 HUD 카드의 모서리 위치(코너 번호): 0 우하단(로컬 플레이어) / 1 우상단 / 2 좌상단 / 3 좌하단 (출발선 0번이 우하단이라 반시계 턴 순서와 같다).
 const CORNER_POSITIONS: Array[Vector2] = [
-	Vector2(1128, 648),
-	Vector2(1128, 48),
-	Vector2(8, 48),
-	Vector2(8, 648),
+	Vector2(1124, 644),
+	Vector2(1124, 52),
+	Vector2(12, 52),
+	Vector2(12, 644),
 ]
 ## 카드 독 안에서 카드가 놓이는 기준 y (호버 시 15px 솟아오른다).
 const DOCK_CARD_Y: float = 6.0
@@ -233,6 +233,17 @@ var ai_mode: bool = true
 var _bot: BotController = null
 var _mode_toggle: Button = null
 var _menu_button: Button = null
+## 창 비율 대응: 디자인 기준 1366x768 화면의 왼쪽 묶음 / 가운데 묶음(보드) / 오른쪽 묶음을 창이 넓거나 높을 때 각자 밀어 배치한다.
+const DESIGN_SIZE: Vector2 = Vector2(1366, 768)
+## 화면 가장자리에서 띄우는 안전 여백(px). 모서리가 둥근 폰·베젤에서 UI가 잘려 보이지 않게 한다.
+const SAFE_MARGIN: float = 12.0
+var _layout_entries: Array[Dictionary] = []
+var _off_left: Vector2 = Vector2.ZERO
+var _off_center: Vector2 = Vector2.ZERO
+var _off_right: Vector2 = Vector2.ZERO
+var _law_panel: PanelContainer = null
+var _plate: Panel = null
+var _action_row: HFlowContainer = null
 
 var _choice_overlay: Control = null
 var _draft_overlay: Control = null
@@ -267,7 +278,7 @@ func _ready() -> void:
 	_build_ui()
 	_new_game()
 	var mobile := MobileSupport.new()
-	mobile.button_position = Vector2(1000, 46)
+	mobile.button_position = Vector2(1000, 48)
 	add_child(mobile)
 
 
@@ -354,7 +365,7 @@ func _pawn_at(mouse: Vector2) -> int:
 		var view: Node2D = _pawn_views.get(pawn.entity_id)
 		if view == null or not view.visible:
 			continue
-		var distance: float = view.position.distance_to(mouse)
+		var distance: float = (view.position + _pawn_layer.position).distance_to(mouse)
 		if distance < best:
 			best = distance
 			found = pawn.entity_id
@@ -470,6 +481,7 @@ func _build_ui() -> void:
 
 	# 보드판 받침: 화면 정중앙의 둥근 판
 	var plate := Panel.new()
+	_plate = plate
 	plate.position = PLATE_POS
 	plate.size = PLATE_SIZE
 	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -496,12 +508,66 @@ func _build_ui() -> void:
 	_build_drop_zone()
 	_build_aim_layer()
 	_build_hover_tip()
+	_register_layout()
+	get_viewport().size_changed.connect(_apply_layout)
+	_apply_layout()
 
 
 ## 상단 중앙 리본 배너(슬림): 라운드 / 현재 턴 / 진행 방향 한 줄. 이벤트는 중앙 알림과 전체 로그가 맡는다.
+## 어느 묶음에 속하는지 등록해 둔다: 0 왼쪽 / 1 가운데(보드) / 2 오른쪽. 기준 위치(base)에 묶음 오프셋을 더해 배치한다.
+func _register_layout() -> void:
+	_layout_entries.clear()
+	var left: Array = [_law_panel, _mode_toggle, _new_game_button]
+	var center: Array = [_ribbon, _board_layer, _pawn_layer, _dock, _dock_tabs, _drop_zone, _aim_layer, _pick_banner, _pick_cancel]
+	var right: Array = [_tool_board, _roll_button, _action_row, _pawn_bar, _power_bar, _power_label, _menu_button, _debug_toggle, _log_toggle, _debug_box, _log_panel]
+	for index: int in PLAYER_IDS.size():
+		var player_id: int = PLAYER_IDS[index]
+		var panel: Control = _profiles[player_id]["panel"]
+		(left if corner_of_player(player_id) >= 2 else right).append(panel)
+	for node: Variant in left:
+		_layout_entries.append({"node": node, "base": (node as CanvasItem).position, "group": 0})
+	for node: Variant in center:
+		_layout_entries.append({"node": node, "base": (node as CanvasItem).position, "group": 1})
+	for node: Variant in right:
+		_layout_entries.append({"node": node, "base": (node as CanvasItem).position, "group": 2})
+	# 배경 위 플레이트는 _build_ui에서 만든 지역 변수라 보드 레이어 쪽에서 함께 옮긴다.
+
+
+## 창이 디자인 크기(1366x768)보다 넓거나 높으면 남는 공간을 묶음별로 나눠 쓴다: 왼쪽 묶음은 왼쪽 끝, 오른쪽 묶음은 오른쪽 끝에 붙고 보드는 가운데에 선다. 세로는 모두 가운데 정렬.
+func _apply_layout() -> void:
+	# 창이 없는 환경(헤드리스 테스트)에서는 창 크기가 0이라 디자인 크기를 그대로 쓴다.
+	var window_size: Vector2i = DisplayServer.window_get_size()
+	layout_for(get_viewport_rect().size if window_size.x > 0 and window_size.y > 0 else DESIGN_SIZE)
+
+
+## 주어진 화면 크기에 맞춰 묶음 배치를 적용한다 (테스트가 여러 비율을 직접 넣어 볼 수 있다).
+func layout_for(viewport_size: Vector2) -> void:
+	var extra: Vector2 = Vector2(maxf(viewport_size.x - DESIGN_SIZE.x, 0.0), maxf(viewport_size.y - DESIGN_SIZE.y, 0.0))
+	_off_left = Vector2(0.0, extra.y / 2.0)
+	_off_center = Vector2(extra.x / 2.0, extra.y / 2.0)
+	_off_right = Vector2(extra.x, extra.y / 2.0)
+	for entry: Dictionary in _layout_entries:
+		var node: CanvasItem = entry["node"]
+		if node == null or not is_instance_valid(node):
+			continue
+		var offset: Vector2 = [_off_left, _off_center, _off_right][int(entry["group"])]
+		node.position = (entry["base"] as Vector2) + offset
+	if _plate != null:
+		_plate.position = PLATE_POS + _off_center
+	if _announcer != null:
+		_announcer.center = _board_center()
+	if _presenter != null:
+		_presenter.center = _board_center() - Vector2(0, 38)
+
+
+## 보드 한가운데의 화면 좌표 (창 비율 오프셋 포함).
+func _board_center() -> Vector2:
+	return BOARD_ORIGIN + Vector2(BOARD_SIZE, BOARD_SIZE) / 2.0 + _off_center
+
+
 func _build_ribbon() -> void:
 	_ribbon = PanelContainer.new()
-	_ribbon.position = Vector2(393, 8)
+	_ribbon.position = Vector2(393, 10)
 	_ribbon.custom_minimum_size = Vector2(580, 38)
 	_ribbon.size = Vector2(580, 38)
 	_ribbon.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -607,7 +673,8 @@ func _build_profiles() -> void:
 ## 좌측 중앙 '엘리아스 중앙 법전' 위젯: 4개의 둥근 카드형 슬롯 (빈 슬롯은 점선 테두리, 활성 교칙은 명패).
 func _build_law_board() -> void:
 	var panel := PanelContainer.new()
-	panel.position = Vector2(8, 190)
+	_law_panel = panel
+	panel.position = Vector2(SAFE_MARGIN, 190)
 	panel.custom_minimum_size = Vector2(300, 0)
 	panel.add_theme_stylebox_override("panel", _style(COLOR_PANEL, COLOR_PANEL_EDGE, 2, 14, 10, 10))
 	add_child(panel)
@@ -660,7 +727,7 @@ func _build_law_board() -> void:
 ## 우측 중앙 판정 도구 카드(고정 210x250 세로형): 상단에 48x48 심볼 + 도구 이름, 가운데에 전진 규칙 한두 줄만 크게.
 func _build_tool_board() -> void:
 	_tool_board = PanelContainer.new()
-	_tool_board.position = Vector2(1148, 170)
+	_tool_board.position = Vector2(1144, 172)
 	_tool_board.custom_minimum_size = Vector2(210, 140)
 	_tool_board.size = Vector2(210, 140)
 	_tool_board.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -740,11 +807,11 @@ func _build_status_strip() -> void:
 	add_child(_pick_cancel)
 	_new_game_button = _make_button("새 게임", _new_game, 12, Color("3b4766"), 8)
 	_menu_button = _make_button("메뉴", _on_menu_pressed, 12, Color("3b4766"), 8)
-	_menu_button.position = Vector2(1000, 8)
+	_menu_button.position = Vector2(1000, 10)
 	_menu_button.size = Vector2(84, 32)
 	_menu_button.tooltip_text = "처음 화면(닉네임·모드 선택)으로 돌아갑니다."
 	add_child(_menu_button)
-	_new_game_button.position = Vector2(246, 8)
+	_new_game_button.position = Vector2(250, 10)
 	_new_game_button.size = Vector2(90, 32)
 	add_child(_new_game_button)
 
@@ -752,7 +819,7 @@ func _build_status_strip() -> void:
 ## 우측 중앙의 큼직한 둥근 [굴리기] 버튼(모두의 마블 방식)과 그 아래의 멈추기·개입 패스·폭탄 떠넘기기 버튼.
 func _build_action_bar() -> void:
 	_roll_button = _make_button("굴리기", _on_roll_pressed, 24, Color("2b8a3e"), 60)
-	_roll_button.position = Vector2(1188, 322)
+	_roll_button.position = Vector2(1184, 324)
 	_roll_button.size = Vector2(130, 130)
 	_roll_button.custom_minimum_size = Vector2(130, 130)
 	_apply_round_button_style(_roll_button, Color("2b8a3e"))
@@ -761,7 +828,8 @@ func _build_action_bar() -> void:
 	_roll_button.button_up.connect(_on_roll_button_up)
 	add_child(_roll_button)
 	var action_row := HFlowContainer.new()
-	action_row.position = Vector2(1138, 462)
+	_action_row = action_row
+	action_row.position = Vector2(1134, 464)
 	action_row.size = Vector2(220, 30)
 	action_row.alignment = FlowContainer.ALIGNMENT_CENTER
 	action_row.add_theme_constant_override("h_separation", 6)
@@ -780,7 +848,7 @@ func _build_action_bar() -> void:
 
 	# 개입 창에서는 카드 독 위에 '카드를 낼 수 있는 플레이어' 탭이 뜬다.
 	_dock_tabs = HBoxContainer.new()
-	_dock_tabs.position = Vector2(250, 644)
+	_dock_tabs.position = Vector2(250, 640)
 	_dock_tabs.size = Vector2(860, 28)
 	_dock_tabs.alignment = BoxContainer.ALIGNMENT_CENTER
 	_dock_tabs.add_theme_constant_override("separation", 6)
@@ -806,8 +874,8 @@ func _apply_round_button_style(button: Button, base: Color) -> void:
 ## 하단 정중앙 TCG 스타일 카드 독. 카드는 _refresh_hands()가 채운다.
 func _build_dock() -> void:
 	_dock = Control.new()
-	_dock.position = Vector2(250, 650)
-	_dock.size = Vector2(860, 118)
+	_dock.position = Vector2(250, 648)
+	_dock.size = Vector2(860, 108)
 	_dock.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_dock)
 
@@ -830,11 +898,11 @@ func _build_center_banner() -> void:
 ## 우측 상단의 [치트/디버그] / [전체 로그] 버튼과, 눌렀을 때만 우측에서 열리는 오버레이 서랍 두 개.
 func _build_drawers() -> void:
 	_debug_toggle = _make_button("[치트/디버그]", _on_debug_toggle_pressed, 13, Color("4a3a66"), 8)
-	_debug_toggle.position = Vector2(1100, 8)
+	_debug_toggle.position = Vector2(1096, 10)
 	_debug_toggle.size = Vector2(140, 30)
 	add_child(_debug_toggle)
 	_log_toggle = _make_button("[전체 로그]", _on_log_toggle_pressed, 13, Color("2f4a66"), 8)
-	_log_toggle.position = Vector2(1248, 8)
+	_log_toggle.position = Vector2(1244, 10)
 	_log_toggle.size = Vector2(110, 30)
 	add_child(_log_toggle)
 
@@ -1699,7 +1767,7 @@ func _cancel_card_drag() -> void:
 
 
 func _board_rect() -> Rect2:
-	return Rect2(PLATE_POS, PLATE_SIZE)
+	return Rect2(PLATE_POS + _off_center, PLATE_SIZE)
 
 
 ## 화면 좌표 아래의 보드 타일 번호. 없으면 -1.
@@ -1728,7 +1796,7 @@ func _open_zoom(player_id: int, card_id: StringName) -> void:
 	_zoom_view.z_index = 30
 	_zoom_view.custom_minimum_size = Vector2(240, 340)
 	_zoom_view.size = Vector2(240, 340)
-	_zoom_view.position = Vector2(563, 262)
+	_zoom_view.position = Vector2(563, 262) + _off_center
 	_zoom_view.add_theme_stylebox_override("panel", _style(Color("20263a"), accent, 5, 18, 28, 14))
 	_zoom_view.gui_input.connect(func(event: InputEvent) -> void:
 		var click: InputEventMouseButton = event as InputEventMouseButton
@@ -1902,7 +1970,7 @@ func _update_board_pawn_tip(pointer: Vector2) -> void:
 		var view: Node2D = _pawn_views.get(pawn.entity_id)
 		if view == null or not view.visible:
 			continue
-		var distance: float = view.position.distance_to(pointer)
+		var distance: float = (view.position + _pawn_layer.position).distance_to(pointer)
 		if distance < best:
 			best = distance
 			found = pawn.entity_id
@@ -1932,7 +2000,7 @@ func _pawn_info_text(pawn_id: int) -> String:
 
 func _build_pawn_dock() -> void:
 	_pawn_bar = Panel.new()
-	_pawn_bar.position = Vector2(1058, 494)
+	_pawn_bar.position = Vector2(1054, 496)
 	_pawn_bar.size = Vector2(300, 138)
 	_pawn_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_pawn_bar.add_theme_stylebox_override("panel", _style(Color("131826"), COLOR_PANEL_EDGE, 2, 12, 8, 0))
@@ -2500,7 +2568,7 @@ func _fly_away(from: Vector2, direction: Vector2, color: Color) -> void:
 	ghost.color = color
 	ghost.position = from
 	ghost.z_index = 18
-	add_child(ghost)
+	_pawn_layer.add_child(ghost)
 	var tween: Tween = create_tween()
 	tween.set_parallel(true)
 	tween.tween_property(ghost, "position", from + direction * 900.0, 0.6).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
@@ -3102,8 +3170,7 @@ func _show_center_banner(text: String, color: Color) -> void:
 	_center_label.text = text
 	_center_label.add_theme_color_override("font_color", color)
 	_center_banner.reset_size()
-	var board_center: Vector2 = BOARD_ORIGIN + Vector2(BOARD_SIZE, BOARD_SIZE) / 2.0
-	_center_banner.position = board_center - _center_banner.size / 2.0
+	_center_banner.position = _board_center() - _center_banner.size / 2.0
 	_center_banner.modulate = Color.WHITE
 	_center_banner.visible = true
 	if _center_banner.has_meta("fade"):
@@ -3120,7 +3187,7 @@ func _show_center_banner(text: String, color: Color) -> void:
 ## 파워 게이지(굴림 버튼 위)와 판정 도구 연출기를 만든다.
 func _build_roll_fx() -> void:
 	_power_bar = ProgressBar.new()
-	_power_bar.position = Vector2(1148, 446)
+	_power_bar.position = Vector2(1144, 448)
 	_power_bar.size = Vector2(210, 14)
 	_power_bar.min_value = 0.0
 	_power_bar.max_value = 100.0
@@ -3131,7 +3198,7 @@ func _build_roll_fx() -> void:
 	_power_bar.add_theme_stylebox_override("fill", _style(Color("51cf66"), Color("fff3bf"), 2, 7, 0, 0))
 	add_child(_power_bar)
 	_power_label = _make_label("POWER 0%", 12, Color("fff3bf"))
-	_power_label.position = Vector2(1148, 444)
+	_power_label.position = Vector2(1144, 446)
 	_power_label.size = Vector2(210, 18)
 	_power_label.z_index = 2
 	_power_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -3140,7 +3207,6 @@ func _build_roll_fx() -> void:
 	_presenter = RollPresenter.new()
 	add_child(_presenter)
 	_announcer = EventAnnouncer.new()
-	_announcer.center = BOARD_ORIGIN + Vector2(BOARD_SIZE, BOARD_SIZE) / 2.0
 	add_child(_announcer)
 	_announcer.drained.connect(func() -> void:
 		if state != null:
@@ -3235,7 +3301,7 @@ func _close_stack_overlay() -> void:
 ## 좌상단 모드 토글: [모드: 1P vs 3AI 봇] / [모드: 4P 수동 조작]. 게임 중에도 언제든 바꿀 수 있다.
 func _build_mode_toggle() -> void:
 	_mode_toggle = _make_button("", _on_mode_toggle_pressed, 13, Color("2f5d50"), 8)
-	_mode_toggle.position = Vector2(8, 8)
+	_mode_toggle.position = Vector2(12, 10)
 	_mode_toggle.size = Vector2(230, 32)
 	_mode_toggle.tooltip_text = "AI 대전: P1만 직접 조작하고 P2~P4는 봇이 플레이합니다. 4P 수동 조작: 한 화면에서 모두 직접 조작합니다."
 	add_child(_mode_toggle)
