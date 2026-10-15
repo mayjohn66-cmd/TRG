@@ -56,3 +56,5 @@ SMOKE_AI=1 godot --headless --path . -s res://tests/ui_smoke.gd    # AI 대전 �
 godot --headless --path . -s res://tests/ui_smoke.gd    # 치트 없이 버튼/오버레이 시그널만으로 4인 한 판을 끝까지 진행
 SMOKE_SEED=3 godot --headless --path . -s res://tests/ui_smoke.gd   # 다른 시드로 진행
 ```
+
+> 화면 맨 위 중앙의 라운드/현재 턴 리본은 제거되었습니다 (현재 턴은 프로필 강조선, 라운드는 중앙 알림).

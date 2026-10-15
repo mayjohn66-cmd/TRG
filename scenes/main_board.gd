@@ -147,8 +147,6 @@ var _pawn_views: Dictionary = {}
 var _npc_views: Dictionary = {}
 var _flash_law_ids: Dictionary = {}
 
-var _ribbon: PanelContainer = null
-var _header_label: Label = null
 var _toast_label: Label = null
 var _phase_label: Label = null
 var _queue_label: Label = null
@@ -517,7 +515,7 @@ func _build_ui() -> void:
 	_pawn_layer = Node2D.new()
 	add_child(_pawn_layer)
 
-	_build_ribbon()
+	_build_toast_label()
 	_build_profiles()
 	_build_law_board()
 	_build_tool_board()
@@ -544,7 +542,7 @@ func _build_ui() -> void:
 func _register_layout() -> void:
 	_layout_entries.clear()
 	var left: Array = [_law_panel, _mode_toggle, _new_game_button]
-	var center: Array = [_ribbon, _select_banner, _dir_left, _dir_right, _board_layer, _pawn_layer, _dock, _dock_tabs, _drop_zone, _aim_layer, _pick_banner, _pick_cancel, _roll_button, _roll_pad, _power_bar, _power_label]
+	var center: Array = [_select_banner, _dir_left, _dir_right, _board_layer, _pawn_layer, _dock, _dock_tabs, _drop_zone, _aim_layer, _pick_banner, _pick_cancel, _roll_button, _roll_pad, _power_bar, _power_label]
 	var right: Array = [_tool_board, _action_row, _pawn_bar, _menu_button, _debug_toggle, _log_toggle, _debug_box, _log_panel]
 	for index: int in PLAYER_IDS.size():
 		var player_id: int = PLAYER_IDS[index]
@@ -591,24 +589,11 @@ func _board_center() -> Vector2:
 	return BOARD_ORIGIN + Vector2(BOARD_SIZE, BOARD_SIZE) / 2.0 + _off_center
 
 
-func _build_ribbon() -> void:
-	_ribbon = PanelContainer.new()
-	_ribbon.position = Vector2(393, 10)
-	_ribbon.custom_minimum_size = Vector2(580, 38)
-	_ribbon.size = Vector2(580, 38)
-	_ribbon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_ribbon.add_theme_stylebox_override("panel", _style(Color("14301f"), COLOR_GOLD, 2, 14, 8, 4))
-	add_child(_ribbon)
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 0)
-	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_ribbon.add_child(box)
-	_header_label = _make_label("", 17, Color("f1f3f5"))
-	_header_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	box.add_child(_header_label)
-	_toast_label = _make_label("", 11, Color("ffe8a3"))  # 화면에는 보이지 않는다 (_log_line이 문구만 갱신)
+## 상단 리본은 없앴다: 현재 턴은 프로필의 밝기·강조선, 라운드는 중앙 알림이 알려 준다. 로그 문구만 받는 숨김 라벨만 남긴다.
+func _build_toast_label() -> void:
+	_toast_label = _make_label("", 11, Color("ffe8a3"))
 	_toast_label.visible = false
-	box.add_child(_toast_label)
+	add_child(_toast_label)
 
 
 ## 화면 네 모서리의 미니멀 프로필 카드: 좌측 84x84 아바타 액자, 우측 상단 닉네임(+카드 수), 우측 하단 2x2 기물 상태 슬롯.
@@ -1411,16 +1396,11 @@ func _phase_text() -> String:
 
 
 func _refresh_header() -> void:
-	var player_id: int = manager.current_player_id()
-	var reversed: bool = manager.turn_direction == -1
-	var reverse_text: String = "  |  이동 역주행 %d라운드" % state.reverse_move_rounds_left if state.reverse_move_rounds_left > 0 else ""
-	_header_label.text = "라운드 %d   |   현재 턴: P%d%s" % [state.round_number, player_id, reverse_text]
-	_header_label.add_theme_color_override("font_color", (PLAYER_COLORS[player_id] as Color).lightened(0.35))
-	# 리본은 정방향이면 초록, 우노 리버스(턴 방향 -1)면 주황으로 반전하고 테두리는 현재 턴 플레이어 색이다.
-	_ribbon.add_theme_stylebox_override("panel", _style(Color("4a2a0c") if reversed else Color("14301f"), PLAYER_COLORS[player_id], 3, 14, 10, 6))
 	_phase_label.text = _phase_text()
 	_refresh_direction()
 	var queue_text: String = "남은 이동 대기열: %s" % str(manager.move_queue) if not manager.move_queue.is_empty() else ""
+	if state.reverse_move_rounds_left > 0:
+		queue_text += "   이동 역주행 %d라운드 남음" % state.reverse_move_rounds_left
 	if manager.command_stack != null and manager.command_stack.interrupt_count() > 0:
 		queue_text += "   개입 대기 카드: %d장 (나중에 낸 카드부터 실행)" % manager.command_stack.interrupt_count()
 	if _fx_busy:
