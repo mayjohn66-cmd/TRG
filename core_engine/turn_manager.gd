@@ -26,6 +26,8 @@ signal game_over(winner_id: int, reason: StringName)
 
 var state: GameState = null
 var current_state: State = State.PHASE_ROUND_START
+## change_state()가 불릴 때마다 1씩 늘어나는 번호 (같은 상태로 다시 들어와도 변한다). 봇 컨트롤러가 새 결정 지점을 알아채는 데 쓴다.
+var phase_serial: int = 0
 var phase_time_left: float = 0.0
 var command_stack: CommandStack = null
 var network: NetworkService = null
@@ -179,6 +181,7 @@ func advance_to_next_player() -> void:
 
 ## 상태를 전환하고 제한 시간을 설정한 뒤 변경을 방송한다.
 func change_state(new_state: State) -> void:
+	phase_serial += 1
 	current_state = new_state
 	match new_state:
 		State.PHASE_ROUND_START: phase_time_left = GameEnums.PHASE_TIME_DRAFT

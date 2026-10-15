@@ -52,6 +52,9 @@ jobs:
       - name: Run UI smoke test (full game without cheats)
         run: godot --headless --path . -s res://tests/ui_smoke.gd
 
+      - name: Run UI smoke test in AI mode (1P vs 3AI bots)
+        run: SMOKE_AI=1 godot --headless --path . -s res://tests/ui_smoke.gd
+
       - name: Run roll effect test (gauge, spin, reels, card flips)
         run: godot --headless --path . -s res://tests/ui_fx_test.gd
 

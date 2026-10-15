@@ -29,6 +29,24 @@ static func execute(state: GameState, mover: PlayerPawn, ctx: RuleContext) -> Mo
 	return report
 
 
+## 이 말이 눈금 dice_value로 움직일 때의 예상 경로 (UI 미리보기·AI 평가용). 법전(ON_MOVE_CALC)을 Dry-Run으로 통과시키고
+## 기물 능력까지 반영한다. 이동이 취소되면 빈 배열이다. 게임 상태는 바뀌지 않는다.
+static func preview_path(state: GameState, pawn: PlayerPawn, dice_value: int) -> Array[int]:
+	var ctx := RuleContext.new()
+	ctx.state = state
+	ctx.actor_id = pawn.owner_id
+	ctx.dice_value = dice_value
+	ctx.raw_roll = dice_value
+	ctx.direction = state.movement_direction()
+	ctx.pawn = pawn
+	ctx.is_preview = true
+	ctx.trigger_timing = RuleContext.ON_MOVE_CALC
+	ctx = state.rulebook.process_context(ctx)
+	if ctx.is_canceled:
+		return [] as Array[int]
+	return plan_path(state, pawn, ctx, MoveReport.new())
+
+
 ## 기물 능력을 반영한 이동 경로를 계산한다. 동기 실행(execute)과 TurnManager 비동기 이동이 공유한다.
 ## 세트 효과: 바둑 2세트 [포석] 눈금 -1(최소 1칸). 세부 기물: 룩/퀸 +1칸(외곽 출발), 포 +2칸(경로 중간에 말),
 ## 마 +1칸(앞 1칸이 비면) 또는 1칸만 이동(막히면), 상 +2칸(앞 2칸이 비면).

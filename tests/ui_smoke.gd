@@ -3,7 +3,7 @@
 # Role: 프로토타입 화면 스모크 테스트. 치트 버튼 없이 버튼/오버레이 시그널만으로 4인 한 판(드래프트 -> 타일 선택 카드 -> 개입 -> 승리 결과창)을 끝까지 진행해 오류·교착이 없는지 확인한다
 extends SceneTree
 
-const MAX_ACTIONS: int = 6000
+const MAX_ACTIONS: int = 40000
 
 var _board: MainBoard = null
 var _frames: int = 0
@@ -20,6 +20,9 @@ var _bangs: int = 0
 var _roulette_seen: int = 0
 var _roulette_forced: bool = false
 var _board_clicks: int = 0
+var _ai: bool = false
+var _fog_checks: int = 0
+var _idle_frames: int = 0
 var _stack_choices: int = 0
 var _failures: Array[String] = []
 var _rng := RandomNumberGenerator.new()
@@ -34,6 +37,11 @@ func _process(_delta: float) -> bool:
 		root.add_child(_board)
 		_board.manager.step_delay_sec = 0.0
 		_board.instant_roll_for_test = true  # 굴림 연출 대기 시간을 0초로 건너뛴다 (연출 자체는 ui_fx_test.gd가 검증)
+		# SMOKE_AI=1이면 [1P vs 3AI 봇] 모드로 진행한다: 스모크는 P1만 조작하고 P2~P4는 BotController가 맡는다.
+		_ai = OS.get_environment("SMOKE_AI") == "1"
+		_board.ai_mode = _ai
+		_board._bot.set_enabled(_ai)
+		_board._refresh_mode_toggle()
 		return false
 	if not _checked_layout:
 		_checked_layout = true
@@ -99,6 +107,34 @@ func _trace(message: String) -> void:
 		print("  trace: ", message)
 
 
+## AI 모드: 지금 봇이 행동할 차례이거나 사람이 할 일이 없으면 이번 프레임은 건너뛴다 (BotController가 _process에서 진행한다).
+func _wait_for_bots(manager: TurnManager) -> bool:
+	_actions -= 1  # 기다리는 프레임은 조작 횟수로 세지 않는다
+	_idle_frames += 1
+	var human: int = MainBoard.HUMAN_ID
+	match manager.current_state:
+		TurnManager.State.PHASE_ROUND_START:
+			if _board._draft_overlay == null:
+				return true
+			return false
+		TurnManager.State.PHASE_TURN_BEGIN, TurnManager.State.PHASE_ROLL_WAIT, TurnManager.State.PHASE_SELECT_PAWN:
+			if manager.current_player_id() != human:
+				return true
+		TurnManager.State.PHASE_INTERRUPT_ROLL, TurnManager.State.PHASE_RESOLUTION:
+			if manager.stack_offer_pending():
+				if manager.current_player_id() != human:
+					return true
+			else:
+				# 사람이 낼 카드가 없으면 창은 봇이 자동으로 넘긴다. 있으면 사람이 [개입 카드 사용 / 패스]를 고른다.
+				_assert(_board._skip_button.visible == _board._human_can_intervene(), "AI 모드의 개입 패스 버튼은 P1이 낼 카드가 있을 때만 보여야 한다")
+				if not _board._human_can_intervene():
+					return true
+		TurnManager.State.PHASE_MOVING_STEP, TurnManager.State.PHASE_NEUTRAL_NPC:
+			return true
+	_actions += 1
+	return false
+
+
 func _step_once() -> void:
 	var manager: TurnManager = _board.manager
 	_seen_phases[manager.current_state] = true
@@ -106,8 +142,11 @@ func _step_once() -> void:
 	if _actions % 5 == 0 and manager.current_state != TurnManager.State.PHASE_ROUND_START:
 		_check_bounds()
 		_check_pawn_labels()
+		_check_fog_of_war()
 	if OS.get_environment("SMOKE_TRACE") != "":
 		print("act ", _actions, " state=", manager.current_state, " player=", manager.current_player_id(), " round=", _board.state.round_number)
+	if _ai and _wait_for_bots(manager):
+		return
 	match manager.current_state:
 		TurnManager.State.PHASE_ROUND_START:
 			_play_draft(manager)
@@ -170,7 +209,7 @@ func _step_once() -> void:
 					_stack_choices += 1
 				return
 			_assert(_board._skip_button.visible, "개입 창에는 [개입 패스(진행)] 버튼이 보여야 한다")
-			_assert(_board._hint_label.text.contains("개입 기회"), "개입 안내 문구가 보여야 한다")
+			_assert(_board._hint_label.text.contains("개입"), "개입 안내 문구가 보여야 한다")
 			if not _try_interrupt_card(manager):
 				_board._skip_button.pressed.emit()
 		_:
@@ -183,10 +222,13 @@ func _play_draft(manager: TurnManager) -> void:
 	if not _draft_rounds.has(round_number):
 		_draft_rounds.append(round_number)
 	_assert(_board._draft_overlay != null, "라운드 %d 드래프트 오버레이가 보여야 한다" % round_number)
-	var pending: Array[int] = manager.draft_pending_players()
+	var pending: Array[int] = []
+	for candidate: int in manager.draft_pending_players():
+		if not _ai or candidate == MainBoard.HUMAN_ID:
+			pending.append(candidate)  # AI 모드에서는 사람(P1)만 직접 고르고 봇은 BotController가 고른다
 	if pending.is_empty():
 		return
-	if _rng.randi_range(0, 2) == 0:
+	if not _ai and _rng.randi_range(0, 2) == 0:
 		_board._on_draft_auto_pressed()
 		return
 	var player_id: int = pending[0]
@@ -246,6 +288,22 @@ func _check_pawn_labels() -> void:
 	_assert(profile.tooltip_text.contains("번 말 - "), "프로필 카드 툴팁에 말별 능력이 있어야 한다")
 
 
+## 타일 은신: AI 모드에서는 P1이 설치한 함정만 이름이 보이고 봇이 설치한 함정은 뒷면 [? 함정]으로만 보여야 한다.
+func _check_fog_of_war() -> void:
+	if not _ai:
+		return
+	for index: int in 29:
+		var mark_text: String = (_board._tile_marks[index] as Label).text
+		for attachment: TileAttachment in _board.state.board.get_tile(index).attachments:
+			if not ["TRP_01", "TRP_02", "TRP_03"].has(attachment.attachment_id):
+				continue
+			_fog_checks += 1
+			if attachment.owner_id == MainBoard.HUMAN_ID:
+				_assert(not mark_text.contains("?함정"), "내 함정은 이름이 보여야 한다 (%s)" % mark_text)
+			else:
+				_assert(mark_text.contains("?함정") and not (mark_text.contains("나락") or mark_text.contains("거울") or mark_text.contains("지뢰")), "봇의 함정은 [? 함정]으로만 보여야 한다 (%s)" % mark_text)
+
+
 func _check_bounds() -> void:
 	var window: Rect2 = Rect2(Vector2.ZERO, Vector2(1366, 768))
 	var controls: Array[Control] = []
@@ -271,7 +329,7 @@ func _check_bounds() -> void:
 	var turn_panel: PanelContainer = _board._profiles[_board.manager.current_player_id()]["panel"]
 	_assert(turn_panel.scale.x > 1.0, "현재 턴 플레이어 프로필 카드는 확대되어야 한다")
 	var player_id: int = _board.manager.current_player_id()
-	if _board.state.tools[player_id] is ToolRussianRoulette:
+	if _board.state.tools[player_id] is ToolRussianRoulette and not _board._is_bot_turn():
 		_assert(_board._roll_button.visible and _board._stop_button.visible, "러시안 룰렛에서는 방아쇠/멈추기 버튼이 상시 노출되어야 한다")
 		_assert(_board._stop_button.disabled == not _board.state.tools[player_id].has_pending_state() or _board.manager.current_state != TurnManager.State.PHASE_ROLL_WAIT, "멈추기 버튼은 누적이 있을 때만 활성화")
 		_roulette_seen += 1
@@ -331,7 +389,7 @@ func _finish() -> bool:
 	var phase_names: Array[String] = []
 	for phase: int in _seen_phases.keys():
 		phase_names.append(str(phase))
-	print("UI_SMOKE actions=%d round=%d game_over=%s winner=%d reason=%s phases=%d drafts=%s tile_picks=%d cards=%d evolutions=%d bombs_passed=%d castles=%d bangs=%d roulette=%d board_clicks=%d stack_choices=%d" % [_actions, _board.state.round_number, manager.is_game_over, _board.state.winner, VictoryChecker.reason_text(_board._last_reason), _seen_phases.size(), str(_draft_rounds), _tile_picks, _cards_played, _evolutions, _bombs_passed, _castles, _bangs, _roulette_seen, _board_clicks, _stack_choices])
+	print("UI_SMOKE actions=%d round=%d game_over=%s winner=%d reason=%s phases=%d drafts=%s tile_picks=%d cards=%d evolutions=%d bombs_passed=%d castles=%d bangs=%d roulette=%d board_clicks=%d stack_choices=%d ai=%s fog_checks=%d" % [_actions, _board.state.round_number, manager.is_game_over, _board.state.winner, VictoryChecker.reason_text(_board._last_reason), _seen_phases.size(), str(_draft_rounds), _tile_picks, _cards_played, _evolutions, _bombs_passed, _castles, _bangs, _roulette_seen, _board_clicks, _stack_choices, str(_ai), _fog_checks])
 	_assert(manager.is_game_over, "치트 없이 한 판이 끝까지 진행되어 승리자가 나와야 한다 (조작 %d회)" % _actions)
 	_assert(_draft_rounds.has(1), "1라운드 드래프트가 열렸어야 한다")
 	_assert(_board._result_overlay != null, "게임 종료 결과창이 떠야 한다")

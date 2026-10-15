@@ -36,9 +36,15 @@ func _run() -> void:
 	_board._on_draft_auto_pressed()
 	for i: int in 4:
 		await process_frame
+	await _test_mode_toggle()
+	# 이후 연출·게이지 테스트는 직접 조작하므로 4P 수동 조작 모드로 진행한다 (봇 호흡은 마지막에 따로 검증)
+	_board.ai_mode = false
+	_board._bot.set_enabled(false)
+	_board._refresh_mode_toggle()
 	await _test_presenters()
 	await _test_gauge_and_lock()
 	await _test_instant_flag()
+	await _test_bot_pacing()
 	if _failures.is_empty():
 		print("UI_FX_OK")
 		quit(0)
@@ -193,3 +199,52 @@ func _test_instant_flag() -> void:
 	_board._unhandled_key_input(release)
 	_expect(not _board._fx_busy, "instant 모드는 연출 대기 없이 즉시 결과를 공개한다")
 	_expect(manager.current_state != TurnManager.State.PHASE_TURN_BEGIN, "키를 떼면 굴림이 확정된다")
+
+
+## 기본 모드는 [1P vs 3AI 봇]이고, 토글로 언제든 [4P 수동 조작]으로 바꿀 수 있다.
+func _test_mode_toggle() -> void:
+	_expect(_board.ai_mode, "기본 모드는 1P vs 3AI 봇이어야 한다")
+	_expect(_board._mode_toggle.text == "[모드: 1P vs 3AI 봇]", "기본 토글 문구 (%s)" % _board._mode_toggle.text)
+	_expect(_board._bot.enabled, "기본으로 봇이 켜져 있다")
+	_board._mode_toggle.pressed.emit()
+	_expect(not _board.ai_mode and not _board._bot.enabled and _board._mode_toggle.text == "[모드: 4P 수동 조작]", "토글하면 4P 수동 조작")
+	_board._mode_toggle.pressed.emit()
+	_expect(_board.ai_mode and _board._bot.enabled, "다시 토글하면 AI 대전")
+
+
+## 봇 턴의 실제 연출 호흡: 턴 시작 0.5초 + 굴리기 직전 0.3초, 굴림 연출 뒤 결과 확인 0.6초 + 이동 선택 0.5초.
+func _test_bot_pacing() -> void:
+	var manager: TurnManager = _board.manager
+	_board.instant_roll_for_test = false
+	var guard: int = 0
+	while not (manager.current_state == TurnManager.State.PHASE_TURN_BEGIN and manager.current_player_id() == 1) and guard < 600:
+		guard += 1
+		manager.force_timeout()
+		await process_frame
+	guard = 0
+	while _board._fx_busy and guard < 600:
+		guard += 1
+		await process_frame
+	_board.ai_mode = true
+	_board._bot.set_enabled(true)
+	_board._refresh_mode_toggle()
+	manager.advance_to_next_player()  # P2(봇)의 턴 시작
+	_expect(manager.current_player_id() == 2, "P2 차례")
+	manager.state.tools[2] = ToolRegistry.create(&"D6")
+	for player_id: int in [1, 2, 3, 4]:
+		(manager.state.hands[player_id] as Array).clear()  # 카드가 없어야 개입 창·함정 사용 없이 순수한 호흡만 잴 수 있다
+	_board._refresh_all()
+	var events: Dictionary = {}
+	var start: float = _now()
+	manager.event_received.connect(func(kind: StringName, _data: Dictionary) -> void:
+		if (kind == &"roll_resolved" or kind == &"move_resolved") and not events.has(kind):
+			events[kind] = _now())
+	var wait_start: float = _now()
+	while not events.has(&"move_resolved") and _now() - wait_start < 12.0:
+		await process_frame
+	_expect(events.has(&"roll_resolved") and events.has(&"move_resolved"), "봇이 굴리고 말을 옮겼다 %s" % str(events))
+	if events.has(&"roll_resolved") and events.has(&"move_resolved"):
+		var roll_after: float = float(events[&"roll_resolved"]) - start
+		var move_after: float = float(events[&"move_resolved"]) - float(events[&"roll_resolved"])
+		_expect(roll_after >= 0.75, "봇은 턴 시작 후 0.5초 판단 + 0.3초 뒤에 굴린다 (%.2f초)" % roll_after)
+		_expect(move_after >= 1.8, "굴림 연출(약 0.9초) + 결과 확인 0.6초 + 선택 0.5초 뒤에 말을 옮긴다 (%.2f초)" % move_after)

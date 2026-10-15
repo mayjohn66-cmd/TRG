@@ -176,7 +176,15 @@ var _charge_value: float = 0.0
 var _pending_power: float = 0.5
 var _fx_busy: bool = false
 var _fx_generation: int = 0
+## 굴림 연출마다 늘어나는 번호: 새 연출이 앞선 연출을 덮어쓰면(취소) 앞선 연출의 뒷정리가 입력 잠금을 풀지 않게 한다.
+var _fx_serial: int = 0
 var _stack_overlay: Control = null
+## 사람이 조작하는 플레이어 번호 (AI 대전 모드에서 P2~P4는 봇이 맡는다).
+const HUMAN_ID: int = 1
+## true면 [1P vs 3AI 봇] 모드: P2~P4를 BotController가 조작하고 P1의 손패만 앞면으로 보인다. false면 4인 수동 조작.
+var ai_mode: bool = true
+var _bot: BotController = null
+var _mode_toggle: Button = null
 
 var _choice_overlay: Control = null
 var _draft_overlay: Control = null
@@ -195,6 +203,12 @@ func _ready() -> void:
 	manager.hotseat_mode = true
 	manager.step_delay_sec = STEP_DELAY
 	manager.stack_choice_enabled = true
+	_bot = BotController.new()
+	_bot.name = "BotController"
+	_bot.manager = manager
+	_bot.busy_check = _bot_should_wait
+	_bot.enabled = ai_mode
+	add_child(_bot)
 	add_child(manager)
 	manager.set_process(false)  # 제한 시간은 체크박스로 켤 때만 흐른다 (혼자 테스트할 때 자동 진행 방지)
 	manager.phase_changed.connect(_on_phase_changed)
@@ -211,6 +225,7 @@ func _process(delta: float) -> void:
 		return
 	if not manager.is_game_over:
 		_phase_label.text = _phase_text()
+	_bot.instant = instant_roll_for_test
 	if _charging:
 		# 파워 게이지: 0% ~ 100%를 빠르게 왕복한다 (손을 떼는 순간의 값이 연출 세기가 된다).
 		_charge_clock += delta
@@ -235,7 +250,7 @@ func _process(delta: float) -> void:
 func _input(event: InputEvent) -> void:
 	if manager == null or state == null or manager.current_state != TurnManager.State.PHASE_SELECT_PAWN:
 		return
-	if _fx_busy or _choice_overlay != null or _draft_overlay != null or _result_overlay != null or _stack_overlay != null or _tile_pick_active:
+	if _fx_busy or _is_bot_turn() or _choice_overlay != null or _draft_overlay != null or _result_overlay != null or _stack_overlay != null or _tile_pick_active:
 		return
 	var button_event: InputEventMouseButton = event as InputEventMouseButton
 	if button_event != null:
@@ -315,6 +330,7 @@ func _new_game() -> void:
 	_dock_player = -1
 	_fx_generation += 1
 	_fx_busy = false
+	_bot.set_enabled(ai_mode)
 	_stop_charge()
 	_presenter.cancel()
 	_close_stack_overlay()
@@ -388,6 +404,7 @@ func _build_ui() -> void:
 	_build_center_banner()
 	_build_roll_fx()
 	_build_drawers()
+	_build_mode_toggle()
 
 
 ## 상단 중앙 리본 배너: 라운드 / 현재 턴 / 진행 방향과 최근 이벤트 한 줄(토스트).
@@ -1048,11 +1065,13 @@ func _refresh_tiles() -> void:
 		return
 	for index: int in GameEnums.TILE_COUNT:
 		var parts: Array[String] = []
+		var tips: Array[String] = []
 		var color: Color = Color("ff6b6b")
 		for attachment: TileAttachment in state.board.get_tile(index).attachments:
 			match attachment.attachment_id:
 				"TRP_01", "TRP_02", "TRP_03":
-					parts.append("?")
+					parts.append(_trap_badge(attachment))
+					tips.append(_trap_tooltip(attachment))
 				"MINE_NUM":
 					parts.append("[1]")
 					color = Color("8ce99a")
@@ -1062,10 +1081,27 @@ func _refresh_tiles() -> void:
 				"HOTEL":
 					parts.append("호텔")
 					color = PLAYER_COLORS.get(attachment.owner_id, Color("ffd43b"))
+		(_tile_views[index] as Control).tooltip_text = "\n".join(tips)
 		var mark: Label = _tile_marks[index]
 		mark.text = " ".join(parts)
 		mark.position = Vector2(TILE_SIZE - 2 - mark.get_minimum_size().x, 0)
 		mark.add_theme_color_override("font_color", color)
+
+
+## 타일 위 함정 배지. AI 모드(타일 은신): P1이 설치한 함정만 이름이 보이고 봇이 설치한 함정은 뒷면 [? 함정]으로만 보인다.
+## 수동 모드는 예전처럼 모든 은신 함정이 "?"로 보인다.
+func _trap_badge(attachment: TileAttachment) -> String:
+	if not ai_mode:
+		return "?"
+	if attachment.owner_id == HUMAN_ID:
+		return {"TRP_01": "거울", "TRP_02": "나락", "TRP_03": "지뢰"}.get(attachment.attachment_id, "함정")
+	return "?함정"
+
+
+func _trap_tooltip(attachment: TileAttachment) -> String:
+	if ai_mode and attachment.owner_id == HUMAN_ID:
+		return "[내 함정] %s" % _attachment_name(attachment.attachment_id)
+	return "[? 함정] P%d가 설치한 뒷면 함정" % attachment.owner_id if ai_mode else "[? 함정]"
 
 
 func _on_pawn_stepped(pawn_id: int, _from_tile: int, _to_tile: int) -> void:
@@ -1246,11 +1282,12 @@ func _refresh_hands() -> void:
 		child.queue_free()
 	for child: Node in _dock_tabs.get_children():
 		child.queue_free()
-	var in_window: bool = _in_intervention_window()
+	# AI 모드: 하단 독에는 사람(P1)의 손패만 앞면으로 보인다 (봇의 손패는 장수만 프로필 카드에 표시).
+	var in_window: bool = _in_intervention_window() and not ai_mode
 	var holders: Array[int] = _window_holders() if in_window else ([] as Array[int])
 	if in_window and not holders.has(_dock_player):
 		_dock_player = holders[0] if not holders.is_empty() else manager.current_player_id()
-	var player_id: int = _dock_player if in_window else manager.current_player_id()
+	var player_id: int = _dock_player if in_window else (HUMAN_ID if ai_mode else manager.current_player_id())
 	if not in_window:
 		_dock_player = player_id
 	# 개입 창: 카드를 낼 수 있는 플레이어 탭 (현재 턴 플레이어의 손패는 평소 독에 상시 표시)
@@ -1388,6 +1425,8 @@ func _category_text(category: GameEnums.CardCategory) -> String:
 func _card_usable_now(player_id: int, card: BaseCard) -> bool:
 	if manager.is_game_over or _fx_busy or manager.stack_offer_pending() or not card.is_playable_in(manager.current_state):
 		return false
+	if ai_mode and player_id != HUMAN_ID:
+		return false
 	if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN and player_id != manager.current_player_id():
 		return false
 	return true
@@ -1399,7 +1438,7 @@ func _refresh_controls() -> void:
 	var tool: BaseJudgmentTool = state.tools[player_id]
 	var over: bool = manager.is_game_over
 	var can_roll: bool = not over and (current_phase == TurnManager.State.PHASE_TURN_BEGIN or current_phase == TurnManager.State.PHASE_ROLL_WAIT)
-	_roll_button.disabled = not can_roll or _tile_pick_active or _fx_busy or manager.stack_offer_pending()
+	_roll_button.disabled = not can_roll or _tile_pick_active or _fx_busy or manager.stack_offer_pending() or _is_bot_turn()
 	var can_stop: bool = not over and tool.has_pending_state() and current_phase == TurnManager.State.PHASE_ROLL_WAIT
 	if tool is ToolRussianRoulette:
 		# 러시안 룰렛: [방아쇠 당기기]와 [멈추고 N칸 이동 확정]을 한 세트로 상시 노출한다. 1발도 못 당겼으면 멈추기는 비활성(회색)이고,
@@ -1407,7 +1446,7 @@ func _refresh_controls() -> void:
 		_roll_button.text = "[방아쇠 당기기 (+%d칸 누적)] (R)" % ToolRussianRoulette.STEPS_PER_EMPTY
 		_stop_button.visible = not over
 		_stop_button.text = "[멈추고 %d칸 이동 확정]" % (tool as ToolRussianRoulette).accumulated
-		_stop_button.disabled = not can_stop or _tile_pick_active
+		_stop_button.disabled = not can_stop or _tile_pick_active or _is_bot_turn()
 		_stop_button.modulate = Color(0.55, 1.0, 0.62) if can_stop else Color.WHITE
 	else:
 		_roll_button.text = "주사위 굴리기 (R) - %s" % tool.display_name
@@ -1415,16 +1454,18 @@ func _refresh_controls() -> void:
 		_stop_button.text = "멈추고 이동 확정"
 		_stop_button.disabled = false
 		_stop_button.modulate = Color.WHITE
-	_bell_button.visible = tool is ToolHalliGalli
+	_bell_button.visible = tool is ToolHalliGalli and not _is_bot_turn()
 	_fruit_label.visible = tool is ToolHalliGalli
 	if tool is ToolHalliGalli:
 		_fruit_label.text = "바닥 과일 합계 %s - 어느 한 과일이 5개면 종을 치세요 (적립 보너스 +%d칸)" % [str((tool as ToolHalliGalli).fruit_totals), (tool as ToolHalliGalli).banked_bonus]
 	var window_open: bool = not over and (current_phase == TurnManager.State.PHASE_INTERRUPT_ROLL or current_phase == TurnManager.State.PHASE_RESOLUTION)
-	_skip_button.visible = window_open and not manager.stack_offer_pending()
+	# AI 모드: 개입 창은 사람(P1)이 낼 카드를 들고 있을 때만 [패스]를 보여 주고, 아니면 봇이 0.8초 뒤 자동으로 넘긴다.
+	_skip_button.visible = window_open and not manager.stack_offer_pending() and (not ai_mode or _human_can_intervene())
 	_skip_button.disabled = _fx_busy
+	_skip_button.text = "개입 카드 사용 / 패스" if ai_mode else "개입 패스(진행)"
 	_pawn_bar.visible = not window_open
-	_castle_button.visible = not over and manager.can_castle(player_id)
-	_bomb_button.visible = not over and manager.can_pass_bomb(player_id)
+	_castle_button.visible = not over and manager.can_castle(player_id) and not _is_bot_turn()
+	_bomb_button.visible = not over and manager.can_pass_bomb(player_id) and not _is_bot_turn()
 	if _bomb_button.visible:
 		_bomb_button.text = "[폭탄 떠넘기기 (%d칸)]" % (state.penalty_of(player_id) * 2)
 	_hint_label.text = _hint_text(current_phase, tool)
@@ -1447,7 +1488,7 @@ func _refresh_controls() -> void:
 		button.text = "%d %s (%s)" % [pawn.slot, pawn.display_label(), status]
 		button.add_theme_font_size_override("font_size", 11)
 		button.tooltip_text = "[%d번 말 - %s (%s)]" % [pawn.slot, pawn.display_label(), PawnCatalog.ability_text(pawn.kind, pawn.unit_no)]
-		button.disabled = not selecting or not pawn.is_selectable() or _fx_busy
+		button.disabled = not selecting or not pawn.is_selectable() or _fx_busy or _is_bot_turn()
 		button.pressed.connect(_on_pawn_pressed.bind(pawn.entity_id))
 		button.mouse_entered.connect(_preview_pawn.bind(pawn.entity_id))
 		button.mouse_exited.connect(_clear_highlight)
@@ -1462,6 +1503,10 @@ func _hint_text(current_phase: TurnManager.State, tool: BaseJudgmentTool) -> Str
 		return "게임 종료. [새 게임]으로 다시 시작하세요."
 	if _fx_busy:
 		return "굴러가는 중..."
+	if _is_bot_turn() and not manager.stack_offer_pending() and current_phase != TurnManager.State.PHASE_INTERRUPT_ROLL and current_phase != TurnManager.State.PHASE_RESOLUTION:
+		return "P%d (AI 봇)가 생각하는 중입니다..." % manager.current_player_id()
+	if ai_mode and (current_phase == TurnManager.State.PHASE_INTERRUPT_ROLL or current_phase == TurnManager.State.PHASE_RESOLUTION) and not manager.stack_offer_pending():
+		return "[개입 카드 사용 / 패스] 낼 카드가 있으면 아래 카드를 누르세요. 낼 카드가 없으면 잠시 뒤 자동으로 넘어갑니다."
 	if manager.stack_offer_pending():
 		return "윷놀이 기물 업기: [업기 (하나로 합체)] 또는 [그냥 두기 (개별 유지)]를 고르세요. (시간이 지나면 자동으로 업기)"
 	if _tile_pick_active:
@@ -1506,7 +1551,7 @@ func _on_roll_pressed() -> void:
 	# 손을 뗀 순간의 파워 게이지 값을 연출에 넘긴다 (게이지가 없는 도구·클릭은 0.5).
 	_pending_power = _charge_value if _charging and _tool_has_gauge() else 0.5
 	_stop_charge()
-	if manager.is_game_over or _roll_button.disabled or _fx_busy:
+	if manager.is_game_over or _roll_button.disabled or _fx_busy or _is_bot_turn():
 		return
 	if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN:
 		_act(&"proceed")
@@ -1516,7 +1561,7 @@ func _on_roll_pressed() -> void:
 
 ## 굴림 버튼/키를 누르기 시작했다. 주사위·윷이면 파워 게이지가 좌우로 왕복하기 시작한다.
 func _begin_charge(by_key: bool) -> void:
-	if _charging or _roll_button.disabled or _fx_busy or manager.is_game_over or _stack_overlay != null:
+	if _charging or _roll_button.disabled or _fx_busy or manager.is_game_over or _stack_overlay != null or _is_bot_turn():
 		return
 	if _tile_pick_active:
 		return
@@ -1796,12 +1841,15 @@ func _refresh_overlays() -> void:
 func _refresh_draft_overlay() -> void:
 	var pending: Array[int] = []
 	if manager.current_state == TurnManager.State.PHASE_ROUND_START and not manager.is_game_over:
-		pending = manager.draft_pending_players()
+		for candidate: int in manager.draft_pending_players():
+			# AI 모드에서는 P1이 고른 뒤 봇들이 BotController로 자동 선택하므로 오버레이에는 사람만 나온다.
+			if not (ai_mode and _bot.is_bot(candidate)):
+				pending.append(candidate)
 	if pending.is_empty():
 		_close_draft_overlay()
 		return
 	var player_id: int = pending[0]
-	if _auto_draft_enabled and player_id != PLAYER_IDS[0]:
+	if _auto_draft_enabled and not ai_mode and player_id != PLAYER_IDS[0]:
 		manager.auto_pick_draft(player_id)
 		_log_line("P%d 증강 자동 선택 완료" % player_id, Color("868e96"))
 		_refresh_all()
@@ -2211,10 +2259,12 @@ func _handle_roll_event(data: Dictionary) -> void:
 		_reveal_roll(data)
 		return
 	var generation: int = _fx_generation
+	_fx_serial += 1
+	var serial: int = _fx_serial
 	_fx_busy = true
 	_refresh_controls()
 	await _presenter.play(tool_id, result, _pending_power)
-	if generation != _fx_generation:
+	if generation != _fx_generation or serial != _fx_serial:
 		return
 	_fx_busy = false
 	_reveal_roll(data)
@@ -2279,3 +2329,46 @@ func _close_stack_overlay() -> void:
 	if _stack_overlay != null:
 		_stack_overlay.queue_free()
 		_stack_overlay = null
+
+
+## 좌상단 모드 토글: [모드: 1P vs 3AI 봇] / [모드: 4P 수동 조작]. 게임 중에도 언제든 바꿀 수 있다.
+func _build_mode_toggle() -> void:
+	_mode_toggle = _make_button("", _on_mode_toggle_pressed, 13, Color("2f5d50"), 8)
+	_mode_toggle.position = Vector2(8, 8)
+	_mode_toggle.size = Vector2(230, 32)
+	_mode_toggle.tooltip_text = "AI 대전: P1만 직접 조작하고 P2~P4는 봇이 플레이합니다. 4P 수동 조작: 한 화면에서 모두 직접 조작합니다."
+	add_child(_mode_toggle)
+	_refresh_mode_toggle()
+
+
+func _refresh_mode_toggle() -> void:
+	_mode_toggle.text = "[모드: 1P vs 3AI 봇]" if ai_mode else "[모드: 4P 수동 조작]"
+
+
+func _on_mode_toggle_pressed() -> void:
+	ai_mode = not ai_mode
+	_bot.set_enabled(ai_mode)
+	_dock_player = -1
+	_log_line("[모드] %s" % ("1P vs 3AI 봇: P2~P4를 AI가 조작합니다." if ai_mode else "4P 수동 조작: 모든 플레이어를 직접 조작합니다."), Color("63e6be"))
+	_refresh_mode_toggle()
+	if manager != null and manager.state != null:
+		_refresh_all()
+
+
+## 지금 턴이 AI 봇의 차례인가 (AI 모드에서 P2~P4).
+func _is_bot_turn() -> bool:
+	return ai_mode and _bot.is_bot(manager.current_player_id())
+
+
+## 사람(P1)이 지금 개입 창에서 낼 수 있는 카드를 들고 있는가.
+func _human_can_intervene() -> bool:
+	for card_id: StringName in state.hands[HUMAN_ID]:
+		var card: BaseCard = CardRegistry.get_card(card_id)
+		if card.is_playable_in(manager.current_state) and card.could_play(state, HUMAN_ID):
+			return true
+	return false
+
+
+## 봇은 화면의 굴림 연출이 끝날 때까지 기다린다.
+func _bot_should_wait() -> bool:
+	return _fx_busy
