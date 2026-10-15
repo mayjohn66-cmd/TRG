@@ -165,6 +165,7 @@ func _test_gauge_and_lock() -> void:
 	_expect(absf(_board._pending_power - power_at_release) < 0.01, "손을 뗀 순간의 파워가 연출에 전달된다")
 	_expect(_board._fx_busy and _board._presenter.active, "굴림 연출이 재생 중이어야 한다")
 	_expect(_board._roll_button.disabled, "연출 중에는 굴림 버튼이 잠긴다")
+	_expect(_board._roll_button.size.x >= 120.0 and _board._roll_button.size.x == _board._roll_button.size.y, "굴리기 버튼은 큼직한 원형 (%s)" % str(_board._roll_button.size))
 	for button: Button in _board._pawn_buttons:
 		_expect(button.disabled, "연출 중에는 말 선택 버튼이 잠긴다")
 	_expect(rolled.size() == 1, "엔진은 이미 결과를 확정했다")
@@ -263,7 +264,7 @@ func _test_hud_overhaul() -> void:
 	var current: int = manager.current_player_id()
 	manager.state.tools[current] = ToolRegistry.create(&"HOLDEM")
 	_board._refresh_controls()
-	_expect(_board._tool_board.custom_minimum_size == Vector2(210, 250) and _board._tool_board.size.x == 210.0, "판정 도구 카드는 210x250 고정 크기")
+	_expect(_board._tool_board.custom_minimum_size == Vector2(210, 140) and _board._tool_board.size.x == 210.0, "판정 도구 카드는 210x140 고정 크기")
 	_expect(_board._tool_title.text == "텍사스 홀덤 딜러" and _board._tool_main.text.contains("포커 족보") and _board._tool_icon.custom_minimum_size == Vector2(48, 48), "홀덤 카드: 이름 + 핵심 규칙 + 48x48 심볼 (%s)" % _board._tool_main.text)
 	manager.state.tools[current] = ToolRegistry.create(&"CHINCHIRO")
 	_board._refresh_controls()

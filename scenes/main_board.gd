@@ -11,13 +11,16 @@ const PLAYER_COLORS: Dictionary = {
 	3: Color("30a46c"),
 	4: Color("f5b700"),
 }
-const BOARD_ORIGIN: Vector2 = Vector2(483, 108)
-const BOARD_SIZE: float = 400.0
-const TILE_SIZE: float = 40.0
-const PAWN_RADIUS: float = 5.5
+## 보드판(큼직하게): 받침 판 584x584 안에 520x520 타일 영역. 모바일 가로 화면에서도 보드가 화면 높이의 대부분을 차지한다.
+const PLATE_POS: Vector2 = Vector2(391, 54)
+const PLATE_SIZE: Vector2 = Vector2(584, 584)
+const BOARD_ORIGIN: Vector2 = Vector2(423, 86)
+const BOARD_SIZE: float = 520.0
+const TILE_SIZE: float = 48.0
+const PAWN_RADIUS: float = 7.5
 const STEP_DELAY: float = 0.22
-const CELL_OFFSETS: Array[Vector2] = [Vector2(-6, -5), Vector2(6, -5), Vector2(-6, 3), Vector2(6, 3)]
-const CARD_SIZE: Vector2 = Vector2(100, 140)
+const CELL_OFFSETS: Array[Vector2] = [Vector2(-8, -6), Vector2(8, -6), Vector2(-8, 5), Vector2(8, 5)]
+const CARD_SIZE: Vector2 = Vector2(80, 110)
 const PROFILE_SIZE: Vector2 = Vector2(230, 112)
 ## 현재 턴이 아닌 프로필은 이 색으로 가라앉고, 현재 턴 프로필은 환하게 밝아진다 (스포트라이트).
 const PROFILE_DIM: Color = Color(0.42, 0.42, 0.45, 0.85)
@@ -31,7 +34,7 @@ const CORNER_POSITIONS: Array[Vector2] = [
 	Vector2(8, 648),
 ]
 ## 카드 독 안에서 카드가 놓이는 기준 y (호버 시 15px 솟아오른다).
-const DOCK_CARD_Y: float = 8.0
+const DOCK_CARD_Y: float = 6.0
 ## 우측 하단 기물 독에서 기물 슬롯이 놓이는 기준 y (필살기 버튼 줄 아래).
 const SLOT_BASE_Y: float = 50.0
 ## 슬링샷 조준: 이 거리(px)만큼 당기면 파워 100%.
@@ -346,7 +349,7 @@ func _input(event: InputEvent) -> void:
 ## 화면 좌표 근처(18px)에 있는, 지금 고를 수 있는 내 말의 ID. 없으면 -1.
 func _pawn_at(mouse: Vector2) -> int:
 	var found: int = -1
-	var best: float = 18.0
+	var best: float = 24.0
 	for pawn: PlayerPawn in state.selectable_pawns(manager.current_player_id()):
 		var view: Node2D = _pawn_views.get(pawn.entity_id)
 		if view == null or not view.visible:
@@ -467,8 +470,8 @@ func _build_ui() -> void:
 
 	# 보드판 받침: 화면 정중앙의 둥근 판
 	var plate := Panel.new()
-	plate.position = Vector2(453, 74)
-	plate.size = Vector2(460, 464)
+	plate.position = PLATE_POS
+	plate.size = PLATE_SIZE
 	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	plate.add_theme_stylebox_override("panel", _style(Color("171d2c"), COLOR_PANEL_EDGE, 3, 24, 16, 0))
 	add_child(plate)
@@ -657,14 +660,14 @@ func _build_law_board() -> void:
 ## 우측 중앙 판정 도구 카드(고정 210x250 세로형): 상단에 48x48 심볼 + 도구 이름, 가운데에 전진 규칙 한두 줄만 크게.
 func _build_tool_board() -> void:
 	_tool_board = PanelContainer.new()
-	_tool_board.position = Vector2(1148, 196)
-	_tool_board.custom_minimum_size = Vector2(210, 250)
-	_tool_board.size = Vector2(210, 250)
+	_tool_board.position = Vector2(1148, 170)
+	_tool_board.custom_minimum_size = Vector2(210, 140)
+	_tool_board.size = Vector2(210, 140)
 	_tool_board.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_tool_board.add_theme_stylebox_override("panel", _style(Color("101626"), COLOR_PANEL_EDGE, 3, 18, 12, 12))
+	_tool_board.add_theme_stylebox_override("panel", _style(Color("101626"), COLOR_PANEL_EDGE, 3, 18, 12, 10))
 	add_child(_tool_board)
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 10)
+	box.add_theme_constant_override("separation", 6)
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_tool_board.add_child(box)
 	var head := HBoxContainer.new()
@@ -692,12 +695,12 @@ func _build_tool_board() -> void:
 	center.add_theme_constant_override("separation", 8)
 	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(center)
-	_tool_main = _make_label("", 21, Color("f8f9fa"))
+	_tool_main = _make_label("", 17, Color("f8f9fa"))
 	_tool_main.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_tool_main.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_tool_main.custom_minimum_size = Vector2(184, 0)
 	center.add_child(_tool_main)
-	_tool_sub = _make_label("", 14, Color("ffe066"))
+	_tool_sub = _make_label("", 12, Color("ffe066"))
 	_tool_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_tool_sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_tool_sub.custom_minimum_size = Vector2(184, 0)
@@ -722,15 +725,15 @@ func _build_status_strip() -> void:
 	_queue_label = _make_label("", 11, Color("adb5bd"))
 	_status_strip.add_child(_queue_label)
 	_pick_banner = _make_label("", 13, Color("63e6be"))
-	_pick_banner.position = Vector2(473, 78)
-	_pick_banner.size = Vector2(340, 26)
+	_pick_banner.position = Vector2(423, 60)
+	_pick_banner.size = Vector2(400, 26)
 	_pick_banner.clip_text = true
 	_pick_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_pick_banner.add_theme_stylebox_override("normal", _style(Color("0b3b33"), Color("63e6be"), 2, 8, 0, 3))
 	_pick_banner.visible = false
 	add_child(_pick_banner)
 	_pick_cancel = _make_button("취소", _on_pick_cancel_pressed, 12, Color("5c2b2b"), 8)
-	_pick_cancel.position = Vector2(819, 76)
+	_pick_cancel.position = Vector2(831, 58)
 	_pick_cancel.size = Vector2(88, 30)
 	_pick_cancel.visible = false
 	_pick_cancel.z_index = 25
@@ -746,47 +749,65 @@ func _build_status_strip() -> void:
 	add_child(_new_game_button)
 
 
-## 보드 아래 중앙의 메인 액션 바(굴리기·멈추기·개입 패스·특수 버튼).
+## 우측 중앙의 큼직한 둥근 [굴리기] 버튼(모두의 마블 방식)과 그 아래의 멈추기·개입 패스·폭탄 떠넘기기 버튼.
 func _build_action_bar() -> void:
-	var action_row := HFlowContainer.new()
-	action_row.position = Vector2(183, 544)
-	action_row.size = Vector2(1000, 44)
-	action_row.alignment = FlowContainer.ALIGNMENT_CENTER
-	action_row.add_theme_constant_override("h_separation", 8)
-	action_row.add_theme_constant_override("v_separation", 4)
-	add_child(action_row)
-	_roll_button = _make_button("[주사위 굴리기 (R)]", _on_roll_pressed, 19, Color("2b8a3e"), 14)
-	_roll_button.custom_minimum_size = Vector2(280, 44)
-	_roll_button.tooltip_text = "주사위/윷은 꾹 눌러 파워 게이지를 채우고 손을 떼면 굴러갑니다 (R / Space 키도 동일)"
+	_roll_button = _make_button("굴리기", _on_roll_pressed, 24, Color("2b8a3e"), 60)
+	_roll_button.position = Vector2(1188, 322)
+	_roll_button.size = Vector2(130, 130)
+	_roll_button.custom_minimum_size = Vector2(130, 130)
+	_apply_round_button_style(_roll_button, Color("2b8a3e"))
+	_roll_button.tooltip_text = "주사위/윷/친치로는 꾹 눌러 파워 게이지를 채우고 손을 떼면 굴러갑니다 (R / Space 키도 동일)"
 	_roll_button.button_down.connect(_begin_charge.bind(false))
 	_roll_button.button_up.connect(_on_roll_button_up)
-	action_row.add_child(_roll_button)
-	_stop_button = _make_button("멈추고 이동 확정", _on_stop_pressed, 16, Color("37506b"), 14)
-	_stop_button.custom_minimum_size = Vector2(240, 44)
+	add_child(_roll_button)
+	var action_row := HFlowContainer.new()
+	action_row.position = Vector2(1138, 462)
+	action_row.size = Vector2(220, 30)
+	action_row.alignment = FlowContainer.ALIGNMENT_CENTER
+	action_row.add_theme_constant_override("h_separation", 6)
+	action_row.add_theme_constant_override("v_separation", 4)
+	add_child(action_row)
+	_stop_button = _make_button("멈추고 이동 확정", _on_stop_pressed, 13, Color("37506b"), 12)
+	_stop_button.custom_minimum_size = Vector2(150, 30)
 	action_row.add_child(_stop_button)
-	_skip_button = _make_button("개입 패스(진행)", _on_skip_pressed, 16, Color("7a4a14"), 14)
-	_skip_button.custom_minimum_size = Vector2(160, 44)
+	_skip_button = _make_button("개입 패스", _on_skip_pressed, 13, Color("7a4a14"), 12)
+	_skip_button.custom_minimum_size = Vector2(100, 30)
 	action_row.add_child(_skip_button)
-	_bomb_button = _make_button("[폭탄 떠넘기기]", _on_pass_bomb_pressed, 14)
-	_bomb_button.custom_minimum_size = Vector2(0, 44)
+	_bomb_button = _make_button("폭탄 떠넘기기", _on_pass_bomb_pressed, 12, Color("8a4b08"), 12)
+	_bomb_button.custom_minimum_size = Vector2(0, 30)
 	_bomb_button.tooltip_text = "즉발 카드 1장을 소모해 우노 +4 페널티를 두 배(-8)로 다음 플레이어에게 넘깁니다"
 	action_row.add_child(_bomb_button)
 
-	# 개입 창에서는 상태 띠 자리에 '카드를 낼 수 있는 플레이어' 탭이 뜬다.
+	# 개입 창에서는 카드 독 위에 '카드를 낼 수 있는 플레이어' 탭이 뜬다.
 	_dock_tabs = HBoxContainer.new()
-	_dock_tabs.position = Vector2(343, 590)
-	_dock_tabs.size = Vector2(680, 28)
+	_dock_tabs.position = Vector2(250, 644)
+	_dock_tabs.size = Vector2(860, 28)
 	_dock_tabs.alignment = BoxContainer.ALIGNMENT_CENTER
 	_dock_tabs.add_theme_constant_override("separation", 6)
 	_dock_tabs.visible = false
 	add_child(_dock_tabs)
 
 
+## 둥근 큰 버튼 스타일 (일반/호버/눌림/비활성): 두꺼운 테두리와 그림자로 눌러 보고 싶게 만든다.
+func _apply_round_button_style(button: Button, base: Color) -> void:
+	var radius: int = int(button.size.x / 2.0)
+	var normal: StyleBoxFlat = _style(base, Color("fff3bf"), 5, radius, 14, 4)
+	var hover: StyleBoxFlat = _style(base.lightened(0.15), Color("ffffff"), 5, radius, 18, 4)
+	var pressed: StyleBoxFlat = _style(base.darkened(0.2), COLOR_GOLD, 5, radius, 0, 4)
+	var disabled: StyleBoxFlat = _style(base.darkened(0.55), base.darkened(0.2), 4, radius, 0, 4)
+	button.add_theme_stylebox_override("normal", normal)
+	button.add_theme_stylebox_override("hover", hover)
+	button.add_theme_stylebox_override("pressed", pressed)
+	button.add_theme_stylebox_override("disabled", disabled)
+	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	button.add_theme_color_override("font_disabled_color", Color("7b8499"))
+
+
 ## 하단 정중앙 TCG 스타일 카드 독. 카드는 _refresh_hands()가 채운다.
 func _build_dock() -> void:
 	_dock = Control.new()
-	_dock.position = Vector2(313, 616)
-	_dock.size = Vector2(740, 152)
+	_dock.position = Vector2(250, 650)
+	_dock.size = Vector2(860, 118)
 	_dock.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_dock)
 
@@ -1017,15 +1038,15 @@ func _build_tiles_once() -> void:
 		var light: bool = _is_light_tile(index, node.tile_type)
 		# 타일 안 요소 배치: 번호=좌상단, 설명=하단 중앙, 설치물 배지=우상단, 말=정중앙.
 		var text_color: Color = Color("212529") if light else Color("f8f9fa")
-		var number := _make_label(str(index), 12, text_color)
+		var number := _make_label(str(index), 13, text_color)
 		number.position = Vector2(3, 0)
 		number.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		tile.add_child(number)
 		var tag: String = _tile_tag(index, node.tile_type)
-		var tag_label := _make_label(tag, 9, text_color)
+		var tag_label := _make_label(tag, 10, text_color)
 		tag_label.name = "Tag"
-		tag_label.position = Vector2(0, TILE_SIZE - 14)
-		tag_label.size = Vector2(TILE_SIZE, 13)
+		tag_label.position = Vector2(0, TILE_SIZE - 15)
+		tag_label.size = Vector2(TILE_SIZE, 14)
 		tag_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		tag_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		tile.add_child(tag_label)
@@ -1119,25 +1140,25 @@ func _build_pawn_views() -> void:
 		for point: Vector2 in _circle_points(PAWN_RADIUS, 20):
 			ring.add_point(point)
 		bounce.add_child(ring)
-		var number := _make_label(str(pawn.slot), 9, Color("111111"))
+		var number := _make_label(str(pawn.slot), 10, Color("111111"))
 		number.name = "Slot"
-		number.position = Vector2(-3, -7)
+		number.position = Vector2(-4, -8)
 		bounce.add_child(number)
-		var kind_label := _make_label("", 10, Color("ffffff"))
+		var kind_label := _make_label("", 12, Color("ffffff"))
 		kind_label.name = "Kind"
-		kind_label.position = Vector2(4, -14)
+		kind_label.position = Vector2(5, -18)
 		kind_label.add_theme_constant_override("outline_size", 5)
 		kind_label.add_theme_color_override("font_outline_color", Color("111418"))
 		bounce.add_child(kind_label)
-		var stack_badge := _make_label("", 13, Color("ffe066"))
+		var stack_badge := _make_label("", 14, Color("ffe066"))
 		stack_badge.name = "Stack"
-		stack_badge.position = Vector2(-9, -10)
+		stack_badge.position = Vector2(-10, -12)
 		stack_badge.add_theme_constant_override("outline_size", 6)
 		stack_badge.add_theme_color_override("font_outline_color", Color("111418"))
 		bounce.add_child(stack_badge)
 		var badge := _make_label("", 9, Color("ffffff"))
 		badge.name = "Badge"
-		badge.position = Vector2(-12, 5)
+		badge.position = Vector2(-14, 6)
 		badge.add_theme_constant_override("outline_size", 5)
 		badge.add_theme_color_override("font_outline_color", Color("111418"))
 		bounce.add_child(badge)
@@ -1156,7 +1177,7 @@ func _circle_points(radius: float, count: int) -> PackedVector2Array:
 
 func _pawn_position(pawn: PlayerPawn) -> Vector2:
 	var owner_index: int = PLAYER_IDS.find(pawn.owner_id)
-	var micro := Vector2(((pawn.slot - 1) % 2) * 4.0 - 2.0, ((pawn.slot - 1) / 2) * 4.0 - 2.0)
+	var micro := Vector2(((pawn.slot - 1) % 2) * 5.0 - 2.5, ((pawn.slot - 1) / 2) * 5.0 - 2.5)
 	var position_in_tile: Vector2 = _tile_center(pawn.current_tile_idx) + CELL_OFFSETS[owner_index] + micro
 	if pawn.is_finished:
 		position_in_tile = _tile_center(GameEnums.GOAL_TILE) + Vector2(-22 + owner_index * 14 + (pawn.slot - 1) * 3.0, 38)
@@ -1498,25 +1519,25 @@ func _make_card_view(player_id: int, card_id: StringName) -> PanelContainer:
 	box.add_theme_constant_override("separation", 3)
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	view.add_child(box)
-	var title := _make_label(card.display_name + (" ▣" if card.needs_tile() else ""), 12, Color("f8f9fa"))
+	var title := _make_label(card.display_name + (" ▣" if card.needs_tile() else ""), 11, Color("f8f9fa"))
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	title.custom_minimum_size = Vector2(CARD_SIZE.x - 16.0, 30)
+	title.custom_minimum_size = Vector2(CARD_SIZE.x - 16.0, 24)
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(title)
 	var icon := PanelContainer.new()
-	icon.custom_minimum_size = Vector2(0, 40)
+	icon.custom_minimum_size = Vector2(0, 28)
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	icon.add_theme_stylebox_override("panel", _style(accent.darkened(0.35), accent, 2, 8, 0, 2))
 	box.add_child(icon)
-	var icon_label := _make_label("%s\n%s" % [CARD_CATEGORY_NAMES[card.category], str(card_id).replace("_", " ")], 11, Color("fff9db"))
+	var icon_label := _make_label("%s\n%s" % [CARD_CATEGORY_NAMES[card.category], str(card_id).replace("_", " ")], 10, Color("fff9db"))
 	icon_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	icon_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	icon_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	icon.add_child(icon_label)
-	var summary := _make_label(str(CARD_SUMMARIES.get(card_id, "")), 10, Color("ced4da"))
+	var summary := _make_label(str(CARD_SUMMARIES.get(card_id, "")), 9, Color("ced4da"))
 	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	summary.max_lines_visible = 4
+	summary.max_lines_visible = 3
 	summary.custom_minimum_size = Vector2(CARD_SIZE.x - 16.0, 0)
 	summary.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	summary.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1678,7 +1699,7 @@ func _cancel_card_drag() -> void:
 
 
 func _board_rect() -> Rect2:
-	return Rect2(Vector2(453, 74), Vector2(460, 464))
+	return Rect2(PLATE_POS, PLATE_SIZE)
 
 
 ## 화면 좌표 아래의 보드 타일 번호. 없으면 -1.
@@ -1769,8 +1790,8 @@ func _close_zoom() -> void:
 ## 카드를 끄는 동안 보드판 테두리에 뜨는 드롭 존 하이라이트.
 func _build_drop_zone() -> void:
 	_drop_zone = PanelContainer.new()
-	_drop_zone.position = Vector2(453, 74)
-	_drop_zone.size = Vector2(460, 464)
+	_drop_zone.position = PLATE_POS
+	_drop_zone.size = PLATE_SIZE
 	_drop_zone.z_index = 20
 	_drop_zone.visible = false
 	_drop_zone.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1876,7 +1897,7 @@ func _update_tip(delta: float) -> void:
 ## 보드 위의 아무 말(상대 말 포함) 위에 커서가 있으면 그 말의 툴팁을 예약한다.
 func _update_board_pawn_tip(pointer: Vector2) -> void:
 	var found: int = -1
-	var best: float = 14.0
+	var best: float = 18.0
 	for pawn: PlayerPawn in state.pawns:
 		var view: Node2D = _pawn_views.get(pawn.entity_id)
 		if view == null or not view.visible:
@@ -2079,13 +2100,13 @@ func _refresh_controls() -> void:
 	if tool is ToolRussianRoulette:
 		# 러시안 룰렛: [방아쇠 당기기]와 [멈추고 N칸 이동 확정]을 한 세트로 상시 노출한다. 1발도 못 당겼으면 멈추기는 비활성(회색)이고,
 		# 누적이 생기면 초록색으로 바뀐다.
-		_roll_button.text = "[방아쇠 당기기 (+%d칸 누적)] (R)" % ToolRussianRoulette.STEPS_PER_EMPTY
+		_roll_button.text = "방아쇠\n당기기"
 		_stop_button.visible = not over
-		_stop_button.text = "[멈추고 %d칸 이동 확정]" % (tool as ToolRussianRoulette).accumulated
+		_stop_button.text = "멈추고 %d칸 확정" % (tool as ToolRussianRoulette).accumulated
 		_stop_button.disabled = not can_stop or _tile_pick_active or _is_bot_turn()
 		_stop_button.modulate = Color(0.55, 1.0, 0.62) if can_stop else Color.WHITE
 	else:
-		_roll_button.text = "주사위 굴리기 (R) - %s" % tool.display_name
+		_roll_button.text = "굴리기"
 		_stop_button.visible = can_stop
 		_stop_button.text = "멈추고 이동 확정"
 		_stop_button.disabled = false
@@ -2095,10 +2116,10 @@ func _refresh_controls() -> void:
 	# AI 모드: 개입 창은 사람(P1)이 낼 카드를 들고 있을 때만 [패스]를 보여 주고, 아니면 봇이 0.8초 뒤 자동으로 넘긴다.
 	_skip_button.visible = window_open and not manager.stack_offer_pending() and (not ai_mode or _human_can_intervene())
 	_skip_button.disabled = _ui_busy()
-	_skip_button.text = "개입 카드 사용 / 패스" if ai_mode else "개입 패스(진행)"
+	_skip_button.text = "개입 패스"
 	_bomb_button.visible = not over and manager.can_pass_bomb(player_id) and not _is_bot_turn()
 	if _bomb_button.visible:
-		_bomb_button.text = "[폭탄 떠넘기기 (%d칸)]" % (state.penalty_of(player_id) * 2)
+		_bomb_button.text = "떠넘기기 (%d칸)" % (state.penalty_of(player_id) * 2)
 	_hint_label.text = _hint_text(current_phase, tool)
 
 	_refresh_pawn_dock()
@@ -3099,8 +3120,8 @@ func _show_center_banner(text: String, color: Color) -> void:
 ## 파워 게이지(굴림 버튼 위)와 판정 도구 연출기를 만든다.
 func _build_roll_fx() -> void:
 	_power_bar = ProgressBar.new()
-	_power_bar.position = Vector2(533, 518)
-	_power_bar.size = Vector2(300, 18)
+	_power_bar.position = Vector2(1148, 446)
+	_power_bar.size = Vector2(210, 14)
 	_power_bar.min_value = 0.0
 	_power_bar.max_value = 100.0
 	_power_bar.show_percentage = false
@@ -3110,8 +3131,9 @@ func _build_roll_fx() -> void:
 	_power_bar.add_theme_stylebox_override("fill", _style(Color("51cf66"), Color("fff3bf"), 2, 7, 0, 0))
 	add_child(_power_bar)
 	_power_label = _make_label("POWER 0%", 12, Color("fff3bf"))
-	_power_label.position = Vector2(533, 498)
-	_power_label.size = Vector2(300, 18)
+	_power_label.position = Vector2(1148, 444)
+	_power_label.size = Vector2(210, 18)
+	_power_label.z_index = 2
 	_power_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_power_label.visible = false
 	add_child(_power_label)

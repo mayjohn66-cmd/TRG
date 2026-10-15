@@ -20,3 +20,7 @@ theme/custom_font="res://assets/fonts/NanumGothic-Regular.ttf"
 
 [debug]
 gdscript/warnings/untyped_declaration=1
+
+[rendering]
+
+environment/defaults/default_clear_color=Color(0.051, 0.063, 0.094, 1)

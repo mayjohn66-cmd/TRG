@@ -334,10 +334,10 @@ func _check_bounds() -> void:
 		var rect: Rect2 = control.get_global_rect()
 		if rect.size.x > 0.0 and not window.grow(2.0).encloses(rect):
 			_failures.append("UI가 화면 밖으로 나갔다: %s %s" % [control.get_class(), str(rect)])
-	# 카드 독의 카드는 서로 가려지지 않는 범위에서 100x140 이상이어야 하고, 현재 턴 프로필은 황금 테두리로 강조된다.
+	# 카드 독의 카드는 80x110 이상이어야 하고, 현재 턴 프로필은 황금 테두리로 강조된다.
 	for node: Node in _board._dock.get_children():
 		if node is PanelContainer and not node.is_queued_for_deletion():
-			_assert((node as Control).size.x >= 99.0 and (node as Control).size.y >= 139.0, "카드는 최소 100x140이어야 한다 (%s)" % str((node as Control).size))
+			_assert((node as Control).size.x >= 79.0 and (node as Control).size.y >= 109.0, "카드는 최소 80x110이어야 한다 (%s)" % str((node as Control).size))
 	var turn_panel: PanelContainer = _board._profiles[_board.manager.current_player_id()]["panel"]
 	_assert(turn_panel.scale.x > 1.0, "현재 턴 플레이어 프로필 카드는 확대되어야 한다")
 	# 스포트라이트: 현재 턴만 환하게, 나머지는 어둡게 가라앉는다 (전체 승리 후에는 모두 밝게).
