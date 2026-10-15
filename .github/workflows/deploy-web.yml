@@ -1,0 +1,72 @@
+name: Deploy web build
+
+# 이 저장소에 푸시할 때마다 테스트를 돌리고, 통과하면 Godot 웹(HTML5) 빌드를 gh-pages 브랜치에 올려
+# https://<계정>.github.io/<저장소>/ 에서 항상 최신 버전을 바로 플레이할 수 있게 한다.
+on:
+  push:
+    branches:
+      - main
+      - "claude/**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deploy-web
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "4.7.1"
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Godot and web export templates
+        run: |
+          set -euo pipefail
+          BASE="https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable"
+          curl -fsSL -o godot.zip "${BASE}/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip
+          sudo mv "Godot_v${GODOT_VERSION}-stable_linux.x86_64" /usr/local/bin/godot
+          curl -fsSL -o templates.tpz "${BASE}/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          mkdir -p "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          unzip -q templates.tpz -d tpl
+          mv tpl/templates/* "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable/"
+          rm -rf godot.zip templates.tpz tpl
+          godot --version
+
+      - name: Import project
+        run: |
+          godot --headless --path . --import || true
+          godot --headless --path . --import
+
+      - name: Run unit tests
+        run: godot --headless --path . -s res://tests/run_tests.gd
+
+      - name: Run UI smoke test (full game without cheats)
+        run: godot --headless --path . -s res://tests/ui_smoke.gd
+
+      - name: Export web build
+        run: |
+          mkdir -p build/web
+          godot --headless --path . --export-release "Web" build/web/index.html
+          touch build/web/.nojekyll
+          ls -la build/web
+
+      - name: Publish to gh-pages
+        run: |
+          set -euo pipefail
+          cd build/web
+          git init -q
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -q -b gh-pages
+          git add -A
+          git commit -q -m "Deploy web build from ${GITHUB_SHA}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" gh-pages

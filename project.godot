@@ -15,7 +15,7 @@ window/stretch/aspect="keep"
 
 [gui]
 
-theme/custom_font="res://scenes/ui_font.tres"
+theme/custom_font="res://assets/fonts/NanumGothic-Regular.ttf"
 
 [debug]
 gdscript/warnings/untyped_declaration=1

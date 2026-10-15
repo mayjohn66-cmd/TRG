@@ -12,6 +12,11 @@ godot --headless --path . -s res://tests/run_tests.gd   # 단위/통합 테스�
 bash tests/run_net_test.sh                              # Listen Server 2프로세스 WebSocket 테스트
 ```
 
+## 바로 플레이 / 업데이트
+
+- **웹에서 바로 플레이 (설치 불필요, 항상 최신):** https://mayjohn66-cmd.github.io/TRG/ — 푸시할 때마다 GitHub Actions가 테스트 후 웹 빌드를 자동으로 배포한다. (저장소 Settings → Pages → Source: `Deploy from a branch`, Branch: `gh-pages` / `(root)` 로 한 번만 켜 두면 된다.)
+- **내 PC의 폴더 업데이트:** `update.bat`을 더블클릭하면 최신 코드로 갱신한다 (Git 필요). 파일 안의 `GODOT_EXE`에 Godot 경로를 적으면 업데이트 뒤 프로젝트를 바로 연다.
+
 ## 플레이 (프로토타입 화면)
 
 Godot 4.3+ 에디터에서 프로젝트를 열고 **F5**를 누르면 `res://scenes/main_board.tscn`이 실행된다. 혼자서 4명을 번갈아 조작하는 핫시트 화면이며, 치트 버튼 없이 처음부터 승리 결과창까지 한 판이 진행된다.
@@ -23,7 +28,7 @@ Godot 4.3+ 에디터에서 프로젝트를 열고 **F5**를 누르면 `res://sce
 5. **승리:** 말 4개 완주, 또는 기물 4세트 특수 승리(천하제일 4업 / 체크메이트 / 장군멍군 / 부동산 독점 / 대마 불사)가 나오면 결과창과 `새 게임 시작` 버튼이 뜬다.
 6. **디버그 패널 토글:** 교칙·카드 지급, 판정 도구 변경, NPC 소환, 제한 시간(기본 꺼짐)은 접혀 있는 패널 안에 있다.
 
-한글은 시스템 폰트(Malgun Gothic 등)를 사용한다.
+한글은 프로젝트에 포함된 나눔고딕(`assets/fonts`, SIL OFL)으로 그린다. 웹 빌드에서도 같은 글꼴이 나온다.
 
 ```bash
 godot --headless --path . -s res://tests/ui_smoke.gd    # 치트 없이 버튼/오버레이 시그널만으로 4인 한 판을 끝까지 진행
