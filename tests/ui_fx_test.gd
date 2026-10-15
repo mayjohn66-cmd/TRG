@@ -320,7 +320,7 @@ func _test_hud_overhaul() -> void:
 	_board._card_release(Vector2(100, 300))
 	await process_frame
 	_expect(not _board._drop_zone.visible and (manager.state.hands[holder] as Array).has(&"TRP_01"), "보드 밖에 놓으면 발동하지 않고 손패에 남는다")
-	# 타일 지정형: 유효 타일 위에 직접 드롭
+	# 타일 지정형: 보드에 던지면 설치 위치 선택 UI가 열리고, 타일을 고르면 설치된다
 	var card: BaseCard = CardRegistry.get_card(&"TRP_01")
 	var target: int = -1
 	for index: int in GameEnums.TILE_COUNT:
@@ -331,7 +331,11 @@ func _test_hud_overhaul() -> void:
 	_board._card_move(Vector2(720, 600))
 	_board._card_release(_board._tile_center(target))
 	await process_frame
-	_expect(manager.state.board.get_tile(target).has_attachment(&"TRP_01") and not (manager.state.hands[holder] as Array).has(&"TRP_01"), "타일 위에 떨어뜨리면 즉시 설치된다")
+	_expect(_board._tile_pick_active and _board._pick_banner.visible and _board._pick_cancel.visible, "보드에 던지면 설치할 타일을 고르는 UI가 열린다")
+	_expect(not manager.state.board.get_tile(target).has_attachment(&"TRP_01"), "던지기만으로는 아직 설치되지 않는다")
+	_board._complete_tile_pick(target)
+	await process_frame
+	_expect(manager.state.board.get_tile(target).has_attachment(&"TRP_01") and not (manager.state.hands[holder] as Array).has(&"TRP_01") and not _board._pick_cancel.visible, "타일을 고르면 설치되고 UI가 닫힌다")
 	# 즉발 카드는 보드판 어디든 놓으면 발동
 	_board._card_press(holder, &"ACT_01", Vector2(700, 700), Vector2(700, 640))
 	_board._card_move(Vector2(720, 600))

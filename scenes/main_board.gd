@@ -135,6 +135,7 @@ var _toast_label: Label = null
 var _phase_label: Label = null
 var _queue_label: Label = null
 var _pick_banner: Label = null
+var _pick_cancel: Button = null
 var _tag_labels: Dictionary = {}
 var _board_hover_pawn: int = -1
 var _profiles: Dictionary = {}
@@ -677,12 +678,18 @@ func _build_status_strip() -> void:
 	_status_strip.add_child(_queue_label)
 	_pick_banner = _make_label("", 13, Color("63e6be"))
 	_pick_banner.position = Vector2(473, 78)
-	_pick_banner.size = Vector2(440, 26)
+	_pick_banner.size = Vector2(340, 26)
 	_pick_banner.clip_text = true
 	_pick_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_pick_banner.add_theme_stylebox_override("normal", _style(Color("0b3b33"), Color("63e6be"), 2, 8, 0, 3))
 	_pick_banner.visible = false
 	add_child(_pick_banner)
+	_pick_cancel = _make_button("취소", _cancel_tile_pick, 12, Color("5c2b2b"), 8)
+	_pick_cancel.position = Vector2(819, 76)
+	_pick_cancel.size = Vector2(88, 30)
+	_pick_cancel.visible = false
+	_pick_cancel.z_index = 25
+	add_child(_pick_cancel)
 	_new_game_button = _make_button("새 게임", _new_game, 12, Color("3b4766"), 8)
 	_new_game_button.position = Vector2(246, 8)
 	_new_game_button.size = Vector2(90, 32)
@@ -1576,10 +1583,7 @@ func _drag_begin() -> void:
 	var usable: bool = _card_usable_now(player_id, card)
 	_drop_label.text = "[여기에 놓아 카드 발동!]" if usable else "[지금은 쓸 수 없는 카드입니다]"
 	if card.needs_tile():
-		_drop_label.text = "[원하는 타일 위에 놓아 설치/소환!]" if usable else "[지금은 쓸 수 없는 카드입니다]"
-		if usable:
-			for index: int in GameEnums.TILE_COUNT:
-				(_pick_marks[index] as ReferenceRect).visible = card.can_play(state, player_id, {"tile": index})
+		_drop_label.text = "[보드판에 놓으면 설치할 타일을 고릅니다]" if usable else "[지금은 쓸 수 없는 카드입니다]"
 	_drop_zone.visible = true
 
 
@@ -1587,13 +1591,8 @@ func _drag_update(pointer: Vector2) -> void:
 	if _drag_ghost == null:
 		return
 	_drag_ghost.position = pointer - CARD_SIZE / 2.0
-	var card: BaseCard = CardRegistry.get_card(_drag_press["card"]) if not _drag_press.is_empty() else null
 	var over_board: bool = _board_rect().has_point(pointer)
 	_drop_zone.add_theme_stylebox_override("panel", _style(Color(1.0, 0.83, 0.23, 0.22 if over_board else 0.08), COLOR_GOLD if over_board else Color("b8962e"), 5 if over_board else 3, 24, 0, 0))
-	if card != null and card.needs_tile():
-		var hovered: int = _tile_at(pointer)
-		for index: int in _highlights.keys():
-			(_highlights[index] as ReferenceRect).visible = index == hovered
 
 
 func _drag_drop(pointer: Vector2, press: Dictionary) -> void:
@@ -1609,15 +1608,8 @@ func _drag_drop(pointer: Vector2, press: Dictionary) -> void:
 	var card_id: StringName = press["card"]
 	var card: BaseCard = CardRegistry.get_card(card_id)
 	var reason: String = ""
-	var tile: int = -1
 	if not _card_usable_now(player_id, card):
 		reason = "지금은 [%s]를 쓸 수 없습니다." % card.display_name
-	elif card.needs_tile():
-		tile = _tile_at(pointer)
-		if tile == -1:
-			reason = "[%s]는 보드판의 타일 위에 놓아야 합니다." % card.display_name
-		elif not card.can_play(state, player_id, {"tile": tile}):
-			reason = "%d번 타일에는 [%s]를 쓸 수 없습니다." % [tile, card.display_name]
 	elif not _board_rect().has_point(pointer):
 		reason = "카드를 보드판 위에 놓아야 발동합니다."
 	if reason != "":
@@ -1625,10 +1617,8 @@ func _drag_drop(pointer: Vector2, press: Dictionary) -> void:
 		_return_ghost(press["home"])
 		return
 	_free_ghost()
-	if tile != -1:
-		_act(&"play_card", {"player_id": player_id, "card_id": card_id, "tile": tile})
-	else:
-		_on_card_pressed(player_id, card_id)
+	# 타일 지정 카드는 보드에 던지면 '어디에 쓸지' 고르는 UI가 열리고, 즉발 카드는 바로 발동한다.
+	_on_card_pressed(player_id, card_id)
 
 
 ## 못 쓰는 위치/타이밍에 놓인 카드가 손패 원위치로 스르륵 돌아간다.
@@ -1715,7 +1705,7 @@ func _open_zoom(player_id: int, card_id: StringName) -> void:
 	timing.custom_minimum_size = Vector2(210, 0)
 	timing.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(timing)
-	var how := _make_label("사용법: " + ("보드판의 원하는 타일 위로 드래그해서 놓기" if card.needs_tile() else "보드판 위로 드래그해서 놓기"), 12, Color("a5d8ff"))
+	var how := _make_label("사용법: " + ("보드판으로 드래그해서 놓은 뒤, 설치할 타일 고르기" if card.needs_tile() else "보드판 위로 드래그해서 놓기"), 12, Color("a5d8ff"))
 	how.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	how.custom_minimum_size = Vector2(210, 0)
 	how.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -2423,8 +2413,9 @@ func _begin_tile_pick(player_id: int, card_id: StringName) -> void:
 		_log_line("[%s]를 놓을 수 있는 타일이 없습니다." % card.display_name, Color("868e96"))
 		_cancel_tile_pick()
 		return
-	_pick_banner.text = "[%s] P%d - 사용할 타일을 클릭하세요 (ESC/오른쪽 클릭: 취소)" % [card.display_name, player_id]
+	_pick_banner.text = "[%s] P%d - %s 타일을 고르세요 (초록 테두리)" % [card.display_name, player_id, "함정을 설치할" if card.category == GameEnums.CardCategory.TRAP else "소환할"]
 	_pick_banner.visible = true
+	_pick_cancel.visible = true
 	_refresh_controls()
 
 
@@ -2435,6 +2426,8 @@ func _cancel_tile_pick() -> void:
 	_tile_pick_card = &""
 	if _pick_banner != null:
 		_pick_banner.visible = false
+	if _pick_cancel != null:
+		_pick_cancel.visible = false
 	for mark: ReferenceRect in _pick_marks.values():
 		mark.visible = false
 	if manager != null and manager.state != null:
