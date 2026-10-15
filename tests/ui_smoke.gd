@@ -105,6 +105,7 @@ func _step_once() -> void:
 	_actions += 1
 	if _actions % 5 == 0 and manager.current_state != TurnManager.State.PHASE_ROUND_START:
 		_check_bounds()
+		_check_pawn_labels()
 	if OS.get_environment("SMOKE_TRACE") != "":
 		print("act ", _actions, " state=", manager.current_state, " player=", manager.current_player_id(), " round=", _board.state.round_number)
 	match manager.current_state:
@@ -230,6 +231,21 @@ func _try_tile_card(manager: TurnManager) -> bool:
 
 ## 턴 시작 전용 UI: 폭탄 떠넘기기·캐슬링 버튼과 뱅! 카드를 (가끔) 누른다.
 ## 화면 밖으로 잘리는 UI가 없는지 검사한다: 보이는 손패 카드·하단 조작 버튼·말 선택 버튼이 모두 창 안에 있어야 한다.
+## 보드 위 말 라벨은 세부 기물(폰·나·비·룩·퀸 / 포·차·마·상 / 카·비·배·개 / 흑·백 / 윷)과 같아야 하고, 말 선택 버튼 툴팁에는 이름과 능력이 있어야 한다.
+func _check_pawn_labels() -> void:
+	for pawn: PlayerPawn in _board.state.pawns:
+		var view: Node2D = _board._pawn_views[pawn.entity_id]
+		var shown: String = (view.get_node("Bounce/Kind") as Label).text
+		_assert(shown == PawnCatalog.unit_letter(pawn.kind, pawn.unit_no), "말 %d의 보드 라벨이 세부 기물과 달라야 하지 않는다 (%s)" % [pawn.entity_id, shown])
+	var player_id: int = _board.manager.current_player_id()
+	for index: int in _board._pawn_buttons.size():
+		var pawn: PlayerPawn = _board.state.get_pawn(player_id * 10 + index + 1)
+		var tip: String = (_board._pawn_buttons[index] as Button).tooltip_text
+		_assert(tip.contains(pawn.display_label()) and tip.contains(PawnCatalog.ability_text(pawn.kind, pawn.unit_no)), "말 선택 버튼 툴팁에 세부 기물 이름과 능력이 있어야 한다 (%s)" % tip)
+	var profile: PanelContainer = _board._profiles[player_id]["panel"]
+	_assert(profile.tooltip_text.contains("번 말 - "), "프로필 카드 툴팁에 말별 능력이 있어야 한다")
+
+
 func _check_bounds() -> void:
 	var window: Rect2 = Rect2(Vector2.ZERO, Vector2(1366, 768))
 	var controls: Array[Control] = []

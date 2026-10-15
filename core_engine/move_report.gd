@@ -35,6 +35,12 @@ var restrained_pawn_ids: Array[int] = []
 var law_notes: Array[String] = []
 ## 업기 선택이 필요한 도착: {"mover": 이동한 말 ID, "others": 합칠 수 있는 아군 대표 말 ID들}. 없으면 빈 Dictionary.
 var stack_offer: Dictionary = {}
+## 세부 기물 능력 보고: 보너스/제약 문구, 승진한 폰, 들이받힌 말, 증기선이 파괴한 설치물, 강아지가 스쳐서 얻은 카드 수.
+var ability_notes: Array[String] = []
+var promoted_pawn_ids: Array[int] = []
+var rammed_pawn_ids: Array[int] = []
+var destroyed_attachments: Array[Dictionary] = []
+var dog_cards: int = 0
 
 
 func merge(other: MoveReport) -> void:
@@ -66,6 +72,11 @@ func merge(other: MoveReport) -> void:
 	law_notes.append_array(other.law_notes)
 	if stack_offer.is_empty():
 		stack_offer = other.stack_offer
+	ability_notes.append_array(other.ability_notes)
+	promoted_pawn_ids.append_array(other.promoted_pawn_ids)
+	rammed_pawn_ids.append_array(other.rammed_pawn_ids)
+	destroyed_attachments.append_array(other.destroyed_attachments)
+	dog_cards += other.dog_cards
 
 
 func to_dict() -> Dictionary:
@@ -96,4 +107,9 @@ func to_dict() -> Dictionary:
 		"restrained": restrained_pawn_ids,
 		"law_notes": law_notes,
 		"stack_offer": stack_offer,
+		"ability_notes": ability_notes,
+		"promoted": promoted_pawn_ids,
+		"rammed": rammed_pawn_ids,
+		"destroyed": destroyed_attachments,
+		"dog_cards": dog_cards,
 	}

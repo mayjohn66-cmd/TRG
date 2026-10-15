@@ -43,9 +43,10 @@ func test_pawn_catalog_labels_and_default_pawns_are_basic() -> void:
 	check_eq(state.get_pawn(11).display_label(), "기본", "기본 표기")
 	check_eq(PawnCatalog.unit_label(Kind.CHESS, 1), "체스:폰", "체스 1호기 폰")
 	check_eq(PawnCatalog.unit_label(Kind.CHESS, 2), "체스:나이트", "체스 2호기 나이트")
-	check_eq(PawnCatalog.letter(Kind.JANGGI), "장", "장기 약어")
+	check_eq(PawnCatalog.unit_letter(Kind.JANGGI, 1), "포", "장기 1호기 라벨")
 	for kind: GameEnums.PawnKind in PawnCatalog.EVOLVABLE_SETS:
-		check((PawnCatalog.UNIT_NAMES[kind] as Array).size() == 4, "각 세트는 1~4호기")
+		for unit: int in range(1, 5):
+			check(PawnCatalog.sub_type_of(kind, unit) != GameEnums.PawnSubType.NONE, "각 세트의 1~4호기에는 세부 기물이 있다 (%d-%d)" % [kind, unit])
 
 
 func test_evolution_unlocks_units_sequentially_up_to_four() -> void:
@@ -157,7 +158,7 @@ func test_each_augment_category_applies_its_effect() -> void:
 	var state := make_state()
 	var evolve: Dictionary = AugmentRegistry.get_def(&"EVO_%d" % Kind.YUT).apply(state, 1, {"pawn_id": 13})
 	check(evolve["ok"], "진화 성공")
-	check_eq(state.get_pawn(13).display_label(), "윷:도", "고른 말이 윷 1호기로 진화")
+	check_eq(state.get_pawn(13).display_label(), "윷말", "고른 말이 윷 1호기로 진화")
 	check_eq(state.get_pawn(11).kind, Kind.BASIC, "다른 말은 그대로")
 	var bad: Dictionary = AugmentRegistry.get_def(&"EVO_%d" % Kind.YUT).apply(state, 1, {"pawn_id": 21})
 	check(not bad["ok"], "남의 말은 진화시킬 수 없음")

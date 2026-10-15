@@ -20,6 +20,23 @@ enum Phase {
 ## 기물 세트(계열). BASIC은 아직 진화하지 않은 기본 말이다. 진화한 말은 세트 안에서 1~4호기(unit_no)를 순서대로 받는다.
 enum PawnKind { BASIC, YUT, CHESS, JANGGI, MONOPOLY, GO }
 
+## 호기별 세부 기물. (세트, 호기)에서 PawnCatalog.sub_type_of()가 정한다. 체스 퀸은 5번째 호기 번호(CHESS_QUEEN_UNIT)로 표현한다.
+enum PawnSubType {
+	NONE,
+	YUT_MAL,
+	CHESS_PAWN, CHESS_KNIGHT, CHESS_BISHOP, CHESS_ROOK, CHESS_QUEEN,
+	JANGGI_PO, JANGGI_CHA, JANGGI_MA, JANGGI_SANG,
+	MONO_CAR, MONO_PLANE, MONO_SHIP, MONO_DOG,
+	BADUK_BLACK, BADUK_WHITE,
+}
+
+## 체스 폰이 승진해 퀸이 된 뒤의 호기 번호.
+const CHESS_QUEEN_UNIT: int = 5
+## 폰이 밟는 즉시 퀸으로 승진하는 타일: 중앙(22번)과 외곽 마지막 사분면(15~19번).
+const PROMOTION_TILES: Array[int] = [15, 16, 17, 18, 19, 22]
+## 옷장 포탈(7, 17번)에 멈춘 모노폴리 비행기가 워프하는 코너 (7번 -> 10번, 17번 -> 결승 직전 19번).
+const PLANE_WARP_TARGETS: Dictionary = {7: 10, 17: 19}
+
 enum AugmentCategory { PAWN_EVOLUTION, TOOL_SWAP, LAW_ENACT, CARD_PACKAGE }
 
 enum CardCategory { INSTANT, TRAP, SUMMON }

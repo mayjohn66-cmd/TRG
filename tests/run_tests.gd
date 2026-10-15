@@ -12,6 +12,7 @@ const SUITES: Array[String] = [
 	"res://tests/test_turn_manager.gd",
 	"res://tests/test_augments_and_victory.gd",
 	"res://tests/test_pawn_abilities.gd",
+	"res://tests/test_sub_types.gd",
 ]
 
 
@@ -32,6 +33,10 @@ func _run_all() -> void:
 	var total_tests: int = 0
 	for path: String in SUITES:
 		var script: GDScript = load(path)
+		if script == null or not script.can_instantiate():
+			printerr("FAIL  %s: 스크립트를 불러오지 못했다 (파싱 오류)" % path.get_file())
+			total_failures += 1
+			continue
 		var probe: TestCase = script.new()
 		for method: Dictionary in probe.get_method_list():
 			var method_name: String = method["name"]

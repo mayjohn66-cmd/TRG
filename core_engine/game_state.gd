@@ -10,6 +10,8 @@ signal pawn_warped(pawn_id: int, from_tile: int, to_tile: int)
 signal pawn_sent_to_start(pawn_id: int, by_player: int)
 signal pawn_finished(pawn_id: int)
 signal pawn_evolved(pawn_id: int, kind: int, unit_no: int)
+## 체스 폰이 중앙(22번)·15번 이후에 도달해 퀸으로 영구 승진했다.
+signal pawn_promoted(pawn_id: int)
 signal pawns_stacked(leader_id: int, member_ids: Array[int])
 signal pawns_swapped(pawn_a_id: int, pawn_b_id: int)
 signal pawn_teleported(pawn_id: int, to_tile: int)

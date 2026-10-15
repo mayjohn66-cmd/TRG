@@ -39,7 +39,7 @@ func _setup_scene() -> void:
 			pass
 		"evolved":
 			_finish_draft()
-			for pair: Array in [[11, GameEnums.PawnKind.CHESS], [12, GameEnums.PawnKind.CHESS], [13, GameEnums.PawnKind.YUT], [21, GameEnums.PawnKind.JANGGI], [22, GameEnums.PawnKind.JANGGI], [23, GameEnums.PawnKind.JANGGI], [24, GameEnums.PawnKind.JANGGI], [31, GameEnums.PawnKind.MONOPOLY], [41, GameEnums.PawnKind.GO], [42, GameEnums.PawnKind.GO]]:
+			for pair: Array in [[11, GameEnums.PawnKind.CHESS], [12, GameEnums.PawnKind.CHESS], [13, GameEnums.PawnKind.CHESS], [14, GameEnums.PawnKind.CHESS], [21, GameEnums.PawnKind.JANGGI], [22, GameEnums.PawnKind.JANGGI], [23, GameEnums.PawnKind.JANGGI], [24, GameEnums.PawnKind.JANGGI], [31, GameEnums.PawnKind.MONOPOLY], [41, GameEnums.PawnKind.GO], [42, GameEnums.PawnKind.GO]]:
 				state.evolve_pawn(state.get_pawn(pair[0]), pair[1])
 			var spots: Dictionary = {11: 4, 12: 5, 13: 9, 21: 12, 22: 20, 31: 22, 41: 27, 42: 27}
 			for pawn_id: int in spots:

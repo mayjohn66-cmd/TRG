@@ -333,6 +333,7 @@ func _bind_state() -> void:
 	state.pawn_warped.connect(_on_pawn_stepped)
 	state.pawn_sent_to_start.connect(func(pawn_id: int, _by: int) -> void: _log_line("%s 출발선으로 복귀" % _pawn_name(pawn_id), Color("ff8787")))
 	state.pawn_finished.connect(func(pawn_id: int) -> void: _log_line("[완주] %s 완주!" % _pawn_name(pawn_id), Color("69db7c")))
+	state.pawn_promoted.connect(func(pawn_id: int) -> void: _log_line("[승진] %s → 체스:퀸! (나이트 점프 + 코너 스침 + 룩 +1칸)" % _pawn_name(pawn_id), Color("ffd43b")))
 	state.pawn_evolved.connect(func(pawn_id: int, kind: int, unit_no: int) -> void: _log_line("[진화] %s → %s" % [_pawn_name(pawn_id), PawnCatalog.unit_label(kind, unit_no)], Color("ffa94d")))
 	state.pawns_stacked.connect(func(leader_id: int, member_ids: Array[int]) -> void: _log_line("%s 업기 (%d마리)" % [_pawn_name(leader_id), member_ids.size()], Color("ffd43b")))
 	state.pawns_swapped.connect(func(a_id: int, b_id: int) -> void: _log_line("%s ↔ %s 위치 교환" % [_pawn_name(a_id), _pawn_name(b_id)], Color("ffd43b")))
@@ -1015,7 +1016,7 @@ func _refresh_pawns() -> void:
 		# 완주 현황은 오른쪽 패널의 미니 슬롯(●●○○)과 [이동할 말] 버튼으로 확인한다.
 		view.visible = pawn.carrier == null and not pawn.is_finished and pawn.has_left_start
 		view.modulate = Color.WHITE
-		(view.get_node("Bounce/Kind") as Label).text = PawnCatalog.letter(pawn.kind)
+		(view.get_node("Bounce/Kind") as Label).text = PawnCatalog.unit_letter(pawn.kind, pawn.unit_no)
 		var badge_text: String = ""
 		var stacked: bool = not pawn.carried.is_empty()
 		(view.get_node("Bounce/Stack") as Label).text = "x%d" % (pawn.carried.size() + 1) if stacked else ""
@@ -1154,7 +1155,7 @@ func _refresh_players() -> void:
 		var bomb_text: String = " [우노+4 %d칸]" % state.penalty_of(player_id) if state.penalty_of(player_id) != 0 else ""
 		(card["synergy"] as Label).text = _set_synergy_text(player_id).replace("(", "").replace(")", "") + bomb_text
 		var panel: PanelContainer = card["panel"]
-		panel.tooltip_text = "기물: %s" % _pawn_tokens(player_id)
+		panel.tooltip_text = _pawn_tooltip(player_id)
 		# 현재 턴 플레이어: 밝은 황금 테두리 3px + 살짝 확대
 		var is_turn: bool = player_id == manager.current_player_id() and not manager.is_game_over
 		if is_turn:
@@ -1165,11 +1166,24 @@ func _refresh_players() -> void:
 			panel.scale = Vector2.ONE
 
 
-## "[윷][체][기][기]" 형태의 기물 4종 미니 아이콘 (기 = 기본 말, 완 = 완주).
+## 프로필 카드 툴팁: 말마다 "[2번 말 - 체스:비숍 (코너 스침 지름길)]" 한 줄씩.
+func _pawn_tooltip(player_id: int) -> String:
+	var lines: Array[String] = []
+	for pawn: PlayerPawn in state.pawns_of(player_id):
+		var line: String = "[%d번 말 - %s (%s)]" % [pawn.slot, pawn.display_label(), PawnCatalog.ability_text(pawn.kind, pawn.unit_no)]
+		if pawn.is_finished:
+			line += " 완주"
+		elif pawn.restrained_turns > 0 or pawn.blocked_this_turn:
+			line += " 구속"
+		lines.append(line)
+	return "\n".join(lines)
+
+
+## "[폰][나][기][기]" 형태의 기물 4종 미니 아이콘 (기 = 기본 말, 완 = 완주).
 func _pawn_mini(player_id: int) -> String:
 	var tokens: Array[String] = []
 	for pawn: PlayerPawn in state.pawns_of(player_id):
-		var letter: String = PawnCatalog.letter(pawn.kind) if pawn.kind != GameEnums.PawnKind.BASIC else "기"
+		var letter: String = PawnCatalog.unit_letter(pawn.kind, pawn.unit_no) if pawn.kind != GameEnums.PawnKind.BASIC else "기"
 		if pawn.is_finished:
 			letter = "완"
 		tokens.append("[%s]" % letter)
@@ -1197,8 +1211,8 @@ func _set_synergy_text(player_id: int) -> String:
 	for kind: GameEnums.PawnKind in PawnCatalog.EVOLVABLE_SETS:
 		var count: int = state.set_count(player_id, kind)
 		if count >= GameEnums.PAWNS_PER_PLAYER:
-			var privilege: String = " + 잡기 추가 턴" if kind == GameEnums.PawnKind.JANGGI else ""
-			parts.append("(%s 4세트 완성 - %s 승리 조건%s)" % [PawnCatalog.display_set_name(kind), PawnCatalog.SPECIAL_VICTORY_NAMES[kind], privilege])
+			var privilege: String = " (잡기 추가 굴림)" if kind == GameEnums.PawnKind.JANGGI else ""
+			parts.append("(%s 4세트: %s%s)" % [PawnCatalog.display_set_name(kind), PawnCatalog.SPECIAL_VICTORY_NAMES[kind], privilege])
 		elif count >= GameEnums.SET_SYNERGY_2:
 			var extra: String = " - 무적" if kind == GameEnums.PawnKind.GO else ""
 			parts.append("(%s %d세트 활성%s)" % [PawnCatalog.display_set_name(kind), count, extra])
@@ -1431,6 +1445,8 @@ func _refresh_controls() -> void:
 		elif pawn.is_imprisoned:
 			status += " 감옥"
 		button.text = "%d %s (%s)" % [pawn.slot, pawn.display_label(), status]
+		button.add_theme_font_size_override("font_size", 11)
+		button.tooltip_text = "[%d번 말 - %s (%s)]" % [pawn.slot, pawn.display_label(), PawnCatalog.ability_text(pawn.kind, pawn.unit_no)]
 		button.disabled = not selecting or not pawn.is_selectable() or _fx_busy
 		button.pressed.connect(_on_pawn_pressed.bind(pawn.entity_id))
 		button.mouse_entered.connect(_preview_pawn.bind(pawn.entity_id))
@@ -2086,8 +2102,14 @@ func _log_move(data: Dictionary) -> void:
 		text += "  (사기 윷: 추가 굴림)"
 	if not (data["law_notes"] as Array).is_empty():
 		text += "  [법전] 이동 변조: %s" % ", ".join(data["law_notes"])
-	if data["cannon_bonus"]:
-		text += "  [포 넘기] +2칸"
+	if not (data["ability_notes"] as Array).is_empty():
+		text += "  [능력] %s" % ", ".join(data["ability_notes"])
+	if not (data["rammed"] as Array).is_empty():
+		text += "  [차 들이받기] %s 추방" % str(data["rammed"])
+	if not (data["destroyed"] as Array).is_empty():
+		text += "  [증기선] 상대 설치물 파괴 %d개" % (data["destroyed"] as Array).size()
+	if int(data["dog_cards"]) > 0:
+		text += "  [강아지] 지나친 빵집에서 카드 %d장" % data["dog_cards"]
 	if data["pushed_back"]:
 		text += "  [포석] 무적에 막혀 한 칸 후퇴"
 	if not (data["restrained"] as Array).is_empty():
