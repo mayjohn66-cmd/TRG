@@ -103,6 +103,15 @@ func _setup_scene() -> void:
 			_board._aim_origin = Vector2(600, 400)
 			_board._aim_dragging = true
 			_board._aim_update(Vector2(600, 520))
+		"life":
+			_finish_draft()
+			_board._announcer.cancel()
+			state.tools[1] = ToolRegistry.create(&"LIFE_ROULETTE")
+			_board._refresh_all()
+		"dice":
+			_finish_draft()
+			_board._announcer.cancel()
+			_board._refresh_all()
 		"tilepick":
 			_finish_draft()
 			_board.state.give_card(1, &"TRP_03")

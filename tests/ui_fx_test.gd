@@ -48,6 +48,7 @@ func _run() -> void:
 	await _test_instant_flag()
 	await _test_announcer()
 	await _test_aspect_layout()
+	await _test_roll_pad()
 	await _test_hud_overhaul()
 	await _test_bot_pacing()
 	if _failures.is_empty():
@@ -240,6 +241,62 @@ func _test_announcer() -> void:
 	_board.instant_roll_for_test = true
 	_board._announce("테스트", "건너뜀", "", Color.WHITE, null, 0.5)
 	_expect(not announcer.active, "instant면 알림을 띄우지 않는다")
+	_board.instant_roll_for_test = false
+
+
+## 룰렛은 원판을 잡고 돌리는 패드, 러시안 룰렛은 방아쇠 패드, 나머지는 둥근 굴리기 버튼. 패드 조작이 엔진 굴림으로 이어지고 원판은 엔진 눈금에 멈춘다.
+func _test_roll_pad() -> void:
+	var manager: TurnManager = _board.manager
+	var pad: RollPad = _board._roll_pad
+	_board.instant_roll_for_test = true
+	_board._announcer.cancel()
+	var guard: int = 0
+	while not (manager.current_state == TurnManager.State.PHASE_TURN_BEGIN) and guard < 400:
+		guard += 1
+		manager.force_timeout()
+		await process_frame
+	var current: int = manager.current_player_id()
+	manager.state.tools[current] = ToolRegistry.create(&"D6")
+	_board._refresh_controls()
+	_expect(pad.kind == RollPad.Kind.NONE and _board._roll_button.visible and not pad.visible, "주사위는 둥근 굴리기 버튼")
+	_expect(_board._roll_button.position.y > 400.0 and absf(_board._roll_button.position.x + 65.0 - 683.0) < 1.0, "굴리기 버튼은 보드 아래쪽(17·18번 위) 가운데")
+	manager.state.tools[current] = ToolRegistry.create(&"LIFE_ROULETTE")
+	_board._refresh_controls()
+	_expect(pad.kind == RollPad.Kind.ROULETTE and pad.visible and not _board._roll_button.visible, "룰렛은 원판 패드")
+	var faces: Array[int] = []
+	manager.event_received.connect(func(kind: StringName, data: Dictionary) -> void:
+		if kind == &"roll_resolved":
+			faces.append(int((data["result"] as Dictionary)["details"].get("face", -1))))
+	var center: Vector2 = pad._wheel.position + pad._wheel.size / 2.0
+	var press := InputEventMouseButton.new()
+	press.button_index = MOUSE_BUTTON_LEFT
+	press.pressed = true
+	press.position = center
+	pad._gui_input(press)
+	var release := InputEventMouseButton.new()
+	release.button_index = MOUSE_BUTTON_LEFT
+	release.pressed = false
+	release.position = center
+	pad._gui_input(release)
+	_expect(faces.size() == 1 and pad.last_face == faces[0], "원판을 톡 치면 굴러가고 원판은 엔진 눈금에 멈춘다 (%s / %d)" % [str(faces), pad.last_face])
+	# 느리게 천천히 문지르기만 하면 던진 것이 아니다
+	manager.force_timeout()
+	guard = 0
+	while not (manager.current_state == TurnManager.State.PHASE_TURN_BEGIN) and guard < 400:
+		guard += 1
+		manager.force_timeout()
+		await process_frame
+	current = manager.current_player_id()
+	manager.state.tools[current] = ToolRegistry.create(&"REVOLVER")
+	_board._refresh_controls()
+	_expect(pad.kind == RollPad.Kind.REVOLVER and pad._gun.visible and not pad._wheel.visible, "러시안 룰렛은 리볼버 패드")
+	var before: int = faces.size()
+	var shots: Array = []
+	manager.event_received.connect(func(kind: StringName, data: Dictionary) -> void:
+		if kind == &"roll_resolved" and (data["result"] as Dictionary)["tool_id"] == &"REVOLVER":
+			shots.append(data["result"]))
+	pad.trigger_pulled.emit()
+	_expect(shots.size() == 1, "방아쇠를 당기면 엔진이 굴린다")
 	_board.instant_roll_for_test = false
 
 

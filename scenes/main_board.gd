@@ -244,6 +244,7 @@ var _off_right: Vector2 = Vector2.ZERO
 var _law_panel: PanelContainer = null
 var _plate: Panel = null
 var _action_row: HFlowContainer = null
+var _roll_pad: RollPad = null
 
 var _choice_overlay: Control = null
 var _draft_overlay: Control = null
@@ -418,6 +419,7 @@ func _new_game() -> void:
 	_bot.set_enabled(ai_mode)
 	_stop_charge()
 	_presenter.cancel()
+	_roll_pad.reset_revolver()
 	_announcer.cancel()
 	_cancel_card_drag()
 	_cancel_aim()
@@ -518,8 +520,8 @@ func _build_ui() -> void:
 func _register_layout() -> void:
 	_layout_entries.clear()
 	var left: Array = [_law_panel, _mode_toggle, _new_game_button]
-	var center: Array = [_ribbon, _board_layer, _pawn_layer, _dock, _dock_tabs, _drop_zone, _aim_layer, _pick_banner, _pick_cancel]
-	var right: Array = [_tool_board, _roll_button, _action_row, _pawn_bar, _power_bar, _power_label, _menu_button, _debug_toggle, _log_toggle, _debug_box, _log_panel]
+	var center: Array = [_ribbon, _board_layer, _pawn_layer, _dock, _dock_tabs, _drop_zone, _aim_layer, _pick_banner, _pick_cancel, _roll_button, _roll_pad, _power_bar, _power_label]
+	var right: Array = [_tool_board, _action_row, _pawn_bar, _menu_button, _debug_toggle, _log_toggle, _debug_box, _log_panel]
 	for index: int in PLAYER_IDS.size():
 		var player_id: int = PLAYER_IDS[index]
 		var panel: Control = _profiles[player_id]["panel"]
@@ -557,7 +559,7 @@ func layout_for(viewport_size: Vector2) -> void:
 	if _announcer != null:
 		_announcer.center = _board_center()
 	if _presenter != null:
-		_presenter.center = _board_center() - Vector2(0, 38)
+		_presenter.center = _board_center() + Vector2(0, 40)
 
 
 ## 보드 한가운데의 화면 좌표 (창 비율 오프셋 포함).
@@ -819,17 +821,23 @@ func _build_status_strip() -> void:
 ## 우측 중앙의 큼직한 둥근 [굴리기] 버튼(모두의 마블 방식)과 그 아래의 멈추기·개입 패스·폭탄 떠넘기기 버튼.
 func _build_action_bar() -> void:
 	_roll_button = _make_button("굴리기", _on_roll_pressed, 24, Color("2b8a3e"), 60)
-	_roll_button.position = Vector2(1184, 324)
+	_roll_button.position = Vector2(618, 446)
 	_roll_button.size = Vector2(130, 130)
 	_roll_button.custom_minimum_size = Vector2(130, 130)
 	_apply_round_button_style(_roll_button, Color("2b8a3e"))
-	_roll_button.tooltip_text = "주사위/윷/친치로는 꾹 눌러 파워 게이지를 채우고 손을 떼면 굴러갑니다 (R / Space 키도 동일)"
+	_roll_button.tooltip_text = "꾹 눌러 파워 게이지를 채우고 손을 떼면 굴러갑니다 (R / Space 키도 동일)"
 	_roll_button.button_down.connect(_begin_charge.bind(false))
 	_roll_button.button_up.connect(_on_roll_button_up)
 	add_child(_roll_button)
+	# 룰렛(원판을 잡고 돌리기)과 러시안 룰렛(방아쇠 당기기)은 굴리기 버튼 대신 같은 자리의 직접 조작 패드를 쓴다.
+	_roll_pad = RollPad.new()
+	_roll_pad.position = Vector2(583, 414)
+	_roll_pad.spin_released.connect(_on_pad_spin_released)
+	_roll_pad.trigger_pulled.connect(_on_pad_trigger_pulled)
+	add_child(_roll_pad)
 	var action_row := HFlowContainer.new()
 	_action_row = action_row
-	action_row.position = Vector2(1134, 464)
+	action_row.position = Vector2(1134, 330)
 	action_row.size = Vector2(220, 30)
 	action_row.alignment = FlowContainer.ALIGNMENT_CENTER
 	action_row.add_theme_constant_override("h_separation", 6)
@@ -2164,6 +2172,7 @@ func _refresh_controls() -> void:
 	var over: bool = manager.is_game_over
 	var can_roll: bool = not over and (current_phase == TurnManager.State.PHASE_TURN_BEGIN or current_phase == TurnManager.State.PHASE_ROLL_WAIT)
 	_roll_button.disabled = not can_roll or _tile_pick_active or _ui_busy() or manager.stack_offer_pending() or _is_bot_turn()
+	_refresh_roll_pad()
 	var can_stop: bool = not over and tool.has_pending_state() and current_phase == TurnManager.State.PHASE_ROLL_WAIT
 	if tool is ToolRussianRoulette:
 		# 러시안 룰렛: [방아쇠 당기기]와 [멈추고 N칸 이동 확정]을 한 세트로 상시 노출한다. 1발도 못 당겼으면 멈추기는 비활성(회색)이고,
@@ -2195,6 +2204,42 @@ func _refresh_controls() -> void:
 	var tool_index: int = ToolRegistry.ALL_IDS.find(tool.tool_id)
 	if tool_index != -1:
 		_tool_option.select(tool_index)
+
+
+## 내 판정 도구에 맞는 굴림 위젯을 보여 준다: 룰렛은 잡아 돌리는 원판, 러시안 룰렛은 리볼버, 나머지는 둥근 굴리기 버튼.
+func _refresh_roll_pad() -> void:
+	var owner_tool: BaseJudgmentTool = state.tools[_dock_owner()]
+	var wanted: RollPad.Kind = RollPad.Kind.NONE
+	if owner_tool is ToolLifeRoulette:
+		wanted = RollPad.Kind.ROULETTE
+	elif owner_tool is ToolRussianRoulette:
+		wanted = RollPad.Kind.REVOLVER
+	_roll_pad.instant = instant_roll_for_test
+	if _roll_pad.kind != wanted:
+		_roll_pad.set_kind(wanted)
+	_roll_button.visible = wanted == RollPad.Kind.NONE
+	_roll_pad.set_enabled(not _roll_button.disabled)
+	if wanted == RollPad.Kind.REVOLVER and not _roll_pad.active and not owner_tool.has_pending_state():
+		_roll_pad.reset_revolver()
+
+
+## 룰렛 원판을 돌려 놓았다: 돌린 속도가 연출 세기가 되고 굴림은 평소처럼 엔진이 정한다.
+func _on_pad_spin_released(power: float) -> void:
+	_roll_with_power(power)
+
+
+func _on_pad_trigger_pulled() -> void:
+	_roll_with_power(0.5)
+
+
+func _roll_with_power(power: float) -> void:
+	_pending_power = power
+	if manager.is_game_over or _roll_button.disabled or _ui_busy() or _is_bot_turn():
+		return
+	if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN:
+		_act(&"proceed")
+	if manager.current_state == TurnManager.State.PHASE_ROLL_WAIT:
+		_act(&"roll")
 
 
 func _hint_text(current_phase: TurnManager.State, tool: BaseJudgmentTool) -> String:
@@ -3187,8 +3232,8 @@ func _show_center_banner(text: String, color: Color) -> void:
 ## 파워 게이지(굴림 버튼 위)와 판정 도구 연출기를 만든다.
 func _build_roll_fx() -> void:
 	_power_bar = ProgressBar.new()
-	_power_bar.position = Vector2(1144, 448)
-	_power_bar.size = Vector2(210, 14)
+	_power_bar.position = Vector2(623, 426)
+	_power_bar.size = Vector2(120, 12)
 	_power_bar.min_value = 0.0
 	_power_bar.max_value = 100.0
 	_power_bar.show_percentage = false
@@ -3198,8 +3243,8 @@ func _build_roll_fx() -> void:
 	_power_bar.add_theme_stylebox_override("fill", _style(Color("51cf66"), Color("fff3bf"), 2, 7, 0, 0))
 	add_child(_power_bar)
 	_power_label = _make_label("POWER 0%", 12, Color("fff3bf"))
-	_power_label.position = Vector2(1144, 446)
-	_power_label.size = Vector2(210, 18)
+	_power_label.position = Vector2(623, 408)
+	_power_label.size = Vector2(120, 16)
 	_power_label.z_index = 2
 	_power_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_power_label.visible = false
@@ -3218,6 +3263,29 @@ func _handle_roll_event(data: Dictionary) -> void:
 	var result: Dictionary = data["result"]
 	var tool_id: StringName = result["tool_id"]
 	_presenter.instant = instant_roll_for_test
+	var details: Dictionary = result["details"]
+	var on_pad: bool = int(data["player_id"]) == _dock_owner() and ((tool_id == &"LIFE_ROULETTE" and _roll_pad.kind == RollPad.Kind.ROULETTE) or (tool_id == &"REVOLVER" and _roll_pad.kind == RollPad.Kind.REVOLVER))
+	if on_pad and not instant_roll_for_test:
+		var pad_generation: int = _fx_generation
+		_fx_serial += 1
+		var pad_serial: int = _fx_serial
+		_fx_busy = true
+		_refresh_controls()
+		if tool_id == &"LIFE_ROULETTE":
+			await _roll_pad.play_spin(int(details["face"]), _pending_power)
+		else:
+			await _roll_pad.play_trigger(bool(details["fired"]), int(details.get("accumulated", 0)))
+		if pad_generation != _fx_generation or pad_serial != _fx_serial:
+			return
+		_fx_busy = false
+		_reveal_roll(data)
+		_refresh_all()
+		return
+	if on_pad:
+		if tool_id == &"LIFE_ROULETTE":
+			_roll_pad.play_spin(int(details["face"]), _pending_power)
+		else:
+			_roll_pad.play_trigger(bool(details["fired"]), int(details.get("accumulated", 0)))
 	if instant_roll_for_test or not RollPresenter.supports(tool_id):
 		_reveal_roll(data)
 		return
