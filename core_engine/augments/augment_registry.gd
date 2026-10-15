@@ -66,6 +66,17 @@ static func generate_offers(state: GameState, player_id: int, count: int = GameE
 	return offers
 
 
+## 리롤: 현재 제시된 선택지(current)에 없는 선택 가능 증강 중 하나를 무작위로 뽑는다. 후보가 없으면 빈 ID.
+static func reroll_candidate(state: GameState, player_id: int, current: Array) -> StringName:
+	var pool: Array[StringName] = []
+	for def: AugmentDef in all():
+		if def.is_available(state, player_id) and not current.has(def.augment_id):
+			pool.append(def.augment_id)
+	if pool.is_empty():
+		return &""
+	return pool[state.rng.randi_range(0, pool.size() - 1)]
+
+
 static func _shuffle(items: Array, rng: RandomNumberGenerator) -> void:
 	for i: int in range(items.size() - 1, 0, -1):
 		var j: int = rng.randi_range(0, i)

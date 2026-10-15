@@ -63,6 +63,8 @@ var _extra_turn_pending: bool = false
 var _bonus_roll_pending: bool = false
 var _draft_offers: Dictionary = {}
 var _draft_picks: Dictionary = {}
+## 이번 드래프트에서 플레이어별로 이미 리롤한 슬롯 인덱스 (슬롯당 1회).
+var _draft_rerolls: Dictionary = {}
 ## 진행 중인 이동의 보고서와 마지막 걸음 결과 (execute_step_by_step_move가 채운다).
 var _move_report: MoveReport = null
 var _move_outcome: MoveExecutor.StepOutcome = MoveExecutor.StepOutcome.CONTINUE
@@ -122,7 +124,7 @@ func act(action: StringName, params: Dictionary = {}) -> void:
 
 
 ## 모든 플레이어 행동의 단일 입구. 서버만 실행하며 발신 피어로 행동자를 검증한다.
-## action: proceed / roll / stop / select_pawn / play_card / pick_augment
+## action: proceed / roll / stop / select_pawn / play_card / pick_augment / reroll_augment
 @rpc("any_peer", "call_local", "reliable")
 func request_action(action: StringName, params: Dictionary = {}) -> void:
 	if not multiplayer.is_server() or state == null:
@@ -141,6 +143,7 @@ func request_action(action: StringName, params: Dictionary = {}) -> void:
 		&"select_pawn": _handle_select_pawn(actor, params)
 		&"play_card": _handle_play_card(actor, params)
 		&"pick_augment": _handle_pick_augment(actor, params)
+		&"reroll_augment": _handle_reroll_augment(actor, params)
 		&"use_skill": _handle_use_skill(actor, params)
 		&"pass_bomb": _handle_pass_bomb(actor, params)
 		&"stack_choice": _handle_stack_choice(actor, params)
@@ -536,6 +539,35 @@ func _handle_pick_augment(actor: int, params: Dictionary) -> void:
 		_finish_draft()
 
 
+## 증강 선택지 한 칸을 같은 드래프트에서 1회에 한해 다른 증강으로 바꾼다.
+func _handle_reroll_augment(actor: int, params: Dictionary) -> void:
+	if current_state != State.PHASE_ROUND_START or not _draft_offers.has(actor) or _draft_picks.has(actor):
+		action_rejected.emit(actor, &"reroll_augment", &"wrong_phase")
+		return
+	var index: int = int(params.get("index", -1))
+	var offers: Array = _draft_offers[actor]
+	if index < 0 or index >= offers.size():
+		action_rejected.emit(actor, &"reroll_augment", &"invalid_index")
+		return
+	if draft_reroll_used(actor, index):
+		action_rejected.emit(actor, &"reroll_augment", &"reroll_used")
+		return
+	var replacement: StringName = AugmentRegistry.reroll_candidate(state, actor, offers)
+	if replacement == &"":
+		action_rejected.emit(actor, &"reroll_augment", &"no_candidate")
+		return
+	offers[index] = replacement
+	if not _draft_rerolls.has(actor):
+		_draft_rerolls[actor] = []
+	(_draft_rerolls[actor] as Array).append(index)
+	_emit_event(&"augment_rerolled", {"player_id": actor, "index": index, "augment_id": replacement})
+	_broadcast_state()
+
+
+func draft_reroll_used(player_id: int, index: int) -> bool:
+	return (_draft_rerolls.get(player_id, []) as Array).has(index)
+
+
 ## 로컬/핫시트용: 해당 플레이어의 증강을 무작위로 자동 선택한다 (기물 진화는 가장 앞 슬롯의 기본 말).
 func auto_pick_draft(player_id: int) -> void:
 	if current_state != State.PHASE_ROUND_START or not _draft_offers.has(player_id) or _draft_picks.has(player_id):
@@ -627,6 +659,7 @@ func _make_ctx(actor: int) -> RuleContext:
 func _enter_round_start() -> void:
 	_draft_offers.clear()
 	_draft_picks.clear()
+	_draft_rerolls.clear()
 	change_state(State.PHASE_ROUND_START)
 	if draft_enabled and GameEnums.DRAFT_ROUNDS.has(state.round_number):
 		for player_id: int in player_order:
@@ -643,6 +676,7 @@ func _finish_draft() -> void:
 			_pick_augment(player_id, 0, {}, true)
 	_draft_offers.clear()
 	_draft_picks.clear()
+	_draft_rerolls.clear()
 	_begin_turn()
 
 

@@ -364,7 +364,7 @@ func _test_hud_overhaul() -> void:
 	manager.state.tools[current] = ToolRegistry.create(&"D6")
 	_board._refresh_controls()
 	# 3) 기물 독 + 호버 툴팁
-	_expect(_board._pawn_buttons.size() == 4 and (_board._pawn_buttons[0] as Button).size.x >= 68.0 and (_board._pawn_buttons[0] as Button).size.y >= 76.0, "기물 슬롯은 최소 68x76")
+	_expect(_board._pawn_buttons.size() == 4 and (_board._pawn_buttons[0] as Button).size.x >= 76.0 and (_board._pawn_buttons[0] as Button).size.y >= 88.0, "기물 슬롯은 최소 76x88")
 	_board._on_pawn_slot_hover(0)
 	for i: int in 5:
 		await process_frame

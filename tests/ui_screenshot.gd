@@ -5,6 +5,8 @@ extends SceneTree
 
 var _board: MainBoard = null
 var _frames: int = 0
+var _banner_frame: int = -1
+var _rolled: bool = false
 var _shot: String = OS.get_environment("SHOT") if OS.get_environment("SHOT") != "" else "draft"
 
 
@@ -19,7 +21,19 @@ func _process(_delta: float) -> bool:
 	if _frames == 3:
 		_setup_scene()
 		return false
-	if _frames == 12:
+	if _shot == "banner":
+		if not _rolled and not _board._ui_busy() and not _board._roll_button.disabled:
+			_rolled = true
+			_board._on_roll_pressed()
+		if _banner_frame == -1 and _board._select_banner.visible:
+			_banner_frame = _frames
+			_board._on_select_card_hover(1, true)
+		if _banner_frame != -1 and _frames == _banner_frame + 10:
+			_banner_frame = -2
+		if _banner_frame != -2 and _frames < 600:
+			return false
+		_banner_frame = -2
+	if (_shot != "banner" and _frames == 12) or (_shot == "banner" and _banner_frame == -2):
 		var path: String = "/tmp/trg_shot_%s.png" % _shot
 		var image: Image = root.get_texture().get_image()
 		image.save_png(path)
@@ -137,6 +151,22 @@ func _setup_scene() -> void:
 			state.tools[1] = ScriptedTool.new([4])
 			_board._on_roll_pressed()
 			_board._preview_pawn(11)
+		"banner":
+			_finish_draft()
+			_board.instant_roll_for_test = true
+			for entry: Array in [[11, GameEnums.PawnKind.CHESS, 2], [12, GameEnums.PawnKind.JANGGI, 2], [13, GameEnums.PawnKind.GO, 1]]:
+				state.give_unit(state.get_pawn(entry[0]), entry[1], [entry[2]] as Array[int])
+			state.get_pawn(11).place_at(2)
+			state.get_pawn(11).has_left_start = true
+			state.get_pawn(12).place_at(4)
+			state.get_pawn(12).has_left_start = true
+			state.get_pawn(13).place_at(14)
+			state.get_pawn(13).has_left_start = true
+			state.get_pawn(21).place_at(6)
+			state.get_pawn(21).has_left_start = true
+			state.get_pawn(14).is_finished = true
+			state.tools[1] = ScriptedTool.new([4])
+			_board._on_roll_pressed()
 		"roulette":
 			_finish_draft()
 			state.tools[1] = ToolRegistry.create(&"REVOLVER")

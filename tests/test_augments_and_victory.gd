@@ -220,6 +220,29 @@ func test_draft_rejects_bad_pawn_and_double_pick() -> void:
 	_dispose(manager)
 
 
+func test_draft_reroll_replaces_one_slot_once_with_a_different_augment() -> void:
+	var manager: TurnManager = _manager(2, true)
+	var rejected: Array = []
+	manager.action_rejected.connect(func(player_id: int, action: StringName, reason: StringName) -> void: rejected.append(reason))
+	var before: Array[StringName] = manager.draft_offers_for(1)
+	_do(manager, 1, &"reroll_augment", {"index": 1})
+	var after: Array[StringName] = manager.draft_offers_for(1)
+	check(after[1] != before[1] and not before.has(after[1]), "리롤한 슬롯은 기존 선택지와 다른 증강으로 바뀜")
+	check(after[0] == before[0] and after[2] == before[2], "다른 슬롯은 그대로")
+	check(AugmentRegistry.get_def(after[1]).is_available(manager.state, 1), "새 증강도 선택 가능한 것")
+	check(manager.draft_reroll_used(1, 1) and not manager.draft_reroll_used(1, 0), "슬롯별로 사용 기록")
+	_do(manager, 1, &"reroll_augment", {"index": 1})
+	check_eq(rejected, [&"reroll_used"] as Array, "같은 슬롯은 한 번만 리롤")
+	_do(manager, 1, &"reroll_augment", {"index": 0})
+	check(manager.draft_reroll_used(1, 0), "다른 슬롯은 각각 1회 리롤 가능")
+	_do(manager, 1, &"reroll_augment", {"index": 9})
+	check_eq(rejected.back(), &"invalid_index", "범위 밖 슬롯은 거부")
+	_do(manager, 1, &"pick_augment", {"index": 2})
+	_do(manager, 1, &"reroll_augment", {"index": 2})
+	check_eq(rejected.back(), &"wrong_phase", "이미 고른 뒤에는 리롤 불가")
+	_dispose(manager)
+
+
 func test_auto_pick_and_timeout_auto_pick() -> void:
 	var manager: TurnManager = _manager(3, true)
 	manager.auto_pick_draft(1)

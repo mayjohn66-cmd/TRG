@@ -11,6 +11,7 @@ var _actions: int = 0
 var _checked_layout: bool = false
 var _seen_phases: Dictionary = {}
 var _draft_rounds: Array[int] = []
+var _banner_picks: int = 0
 var _tile_picks: int = 0
 var _cards_played: int = 0
 var _evolutions: int = 0
@@ -185,7 +186,18 @@ func _step_once() -> void:
 			var chosen_index: int = _board._pawn_buttons.find(chosen)
 			var chosen_pawn: PlayerPawn = _board.state.get_pawn(manager.current_player_id() * 10 + chosen_index + 1)
 			var chosen_view: Node2D = _board._pawn_views.get(chosen_pawn.entity_id)
-			if chosen_view != null and chosen_view.visible and _rng.randi_range(0, 1) == 0:
+			_check_select_banner(manager, options)
+			var banner_rect: Rect2 = (_board._select_banner as Control).get_global_rect()
+			if _board._select_banner.visible and _rng.randi_range(0, 2) == 0:
+				# 말 선택 배너의 카드를 직접 눌러 고른다 (호버 미리보기 포함).
+				var card: Button = _board._select_cards[chosen_index]
+				card.mouse_entered.emit()
+				_assert(_board._flash_pawn == chosen_pawn.entity_id, "카드에 호버하면 해당 말이 깜빡이기 시작해야 한다")
+				card.mouse_exited.emit()
+				card.pressed.emit()
+				_banner_picks += 1
+				return
+			if chosen_view != null and chosen_view.visible and not banner_rect.has_point(chosen_view.position) and _rng.randi_range(0, 1) == 0:
 				var hover := InputEventMouseMotion.new()
 				hover.position = chosen_view.position
 				_board._input(hover)
@@ -235,7 +247,16 @@ func _play_draft(manager: TurnManager) -> void:
 		_board._on_draft_auto_pressed()
 		return
 	var player_id: int = pending[0]
+	_check_draft_cards()
 	var offers: Array[StringName] = manager.draft_offers_for(player_id)
+	if _rng.randi_range(0, 2) == 0:
+		# 리롤: 슬롯 하나가 다른 증강으로 바뀌고 오버레이가 새로 그려지며 그 슬롯의 리롤 버튼은 잠긴다
+		var slot: int = _rng.randi_range(0, offers.size() - 1)
+		_board._on_augment_reroll(player_id, slot)
+		offers = manager.draft_offers_for(player_id)
+		_assert(manager.draft_reroll_used(player_id, slot), "리롤 사용이 기록돼야 한다")
+		_assert(_board._draft_reroll_buttons[slot].disabled, "리롤한 슬롯의 버튼은 비활성이어야 한다")
+		_check_draft_cards()
 	var index: int = _rng.randi_range(0, offers.size() - 1)
 	var definition: AugmentDef = AugmentRegistry.get_def(offers[index])
 	var before_basic: int = _board.state.basic_pawns_of(player_id).size()
@@ -246,6 +267,30 @@ func _play_draft(manager: TurnManager) -> void:
 		_board._close_choice()
 	if _board.state.basic_pawns_of(player_id).size() < before_basic:
 		_evolutions += 1
+
+
+## 말 선택 단계: 배너가 떠 있고(사람 차례), 카드 4장의 크기·활성 상태·결과 예고 문구가 규격에 맞는지 확인한다.
+func _check_select_banner(manager: TurnManager, options: Array[Button]) -> void:
+	var banner: Control = _board._select_banner
+	_assert(banner.visible, "말 선택 단계에는 이동할 말 선택 배너가 자동으로 떠야 한다")
+	_assert(banner.get_global_rect().position.y >= 540.0, "배너는 보드 아래쪽에 있어야 한다")
+	_assert((_board._select_title as Label).text.begins_with("[어느 말을") and (_board._select_title as Label).text.ends_with("칸 이동시킬까요?]"), "배너 제목 문구")
+	_assert(_board._select_cards.size() == 4, "배너에는 말 카드 4장")
+	for index: int in 4:
+		var card: Button = _board._select_cards[index]
+		_assert(card.size.x >= 135.0 and card.size.y >= 165.0, "말 카드는 최소 135x165")
+		_assert(card.disabled == (_board._pawn_buttons[index] as Button).disabled, "배너 카드와 독 슬롯의 활성 상태가 같아야 한다")
+		var result_text: String = (_board._select_parts[index]["result"] as Label).text
+		_assert(result_text != "", "카드마다 결과 예고 문구가 있어야 한다")
+		if not card.disabled:
+			_assert(result_text.begins_with("→"), "선택 가능한 카드의 예고는 [→ N번 ...] 형식")
+
+
+func _check_draft_cards() -> void:
+	_assert(_board._draft_cards.size() == 3, "증강 카드는 3장이어야 한다")
+	for card: Button in _board._draft_cards:
+		_assert(card.size.x >= 260.0 and card.size.y >= 390.0, "증강 카드는 최소 260x390")
+	_assert(_board._draft_reroll_buttons.size() == 3, "카드마다 리롤 버튼이 있어야 한다")
 
 
 func _try_tile_card(manager: TurnManager) -> bool:
@@ -450,7 +495,7 @@ func _finish() -> bool:
 	var phase_names: Array[String] = []
 	for phase: int in _seen_phases.keys():
 		phase_names.append(str(phase))
-	print("UI_SMOKE actions=%d round=%d game_over=%s winner=%d reason=%s phases=%d drafts=%s tile_picks=%d cards=%d evolutions=%d bombs_passed=%d skills=%d bangs=%d roulette=%d board_clicks=%d stack_choices=%d ai=%s fog_checks=%d" % [_actions, _board.state.round_number, manager.is_game_over, _board.state.winner, VictoryChecker.reason_text(_board._last_reason), _seen_phases.size(), str(_draft_rounds), _tile_picks, _cards_played, _evolutions, _bombs_passed, _skills, _bangs, _roulette_seen, _board_clicks, _stack_choices, str(_ai), _fog_checks])
+	print("UI_SMOKE actions=%d round=%d game_over=%s winner=%d reason=%s phases=%d drafts=%s tile_picks=%d cards=%d evolutions=%d bombs_passed=%d skills=%d bangs=%d roulette=%d board_clicks=%d banner_picks=%d stack_choices=%d ai=%s fog_checks=%d" % [_actions, _board.state.round_number, manager.is_game_over, _board.state.winner, VictoryChecker.reason_text(_board._last_reason), _seen_phases.size(), str(_draft_rounds), _tile_picks, _cards_played, _evolutions, _bombs_passed, _skills, _bangs, _roulette_seen, _board_clicks, _banner_picks, _stack_choices, str(_ai), _fog_checks])
 	_assert(manager.is_game_over, "치트 없이 한 판이 끝까지 진행되어 승리자가 나와야 한다 (조작 %d회)" % _actions)
 	_assert(_draft_rounds.has(1), "1라운드 드래프트가 열렸어야 한다")
 	_assert(_board._result_overlay != null, "게임 종료 결과창이 떠야 한다")
