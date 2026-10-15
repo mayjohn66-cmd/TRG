@@ -110,7 +110,7 @@ func test_augment_pool_has_all_four_categories() -> void:
 	var counts: Dictionary = {}
 	for def: AugmentDef in AugmentRegistry.all():
 		counts[def.category] = int(counts.get(def.category, 0)) + 1
-	check_eq(counts[GameEnums.AugmentCategory.PAWN_EVOLUTION], 5, "기물 진화 5세트")
+	check_eq(counts[GameEnums.AugmentCategory.PAWN_EVOLUTION], 15, "기물 지급: 윷 1 + 체스 4 + 장기 4 + 모노폴리 4 + 바둑 2")
 	check_eq(counts[GameEnums.AugmentCategory.TOOL_SWAP], 6, "판정 도구 교체 6종 (D6 제외)")
 	check_eq(counts[GameEnums.AugmentCategory.LAW_ENACT], 8, "교칙 8종")
 	check_eq(counts[GameEnums.AugmentCategory.CARD_PACKAGE], 1, "카드 패키지")
@@ -149,18 +149,19 @@ func test_offers_respect_availability() -> void:
 			seen[offer] = true
 	check(not seen.has(&"TOOL_HOLDEM"), "이미 쓰는 도구는 제시하지 않음")
 	check(not seen.has(&"AUG_LAW_08"), "법전에 있는 교칙은 제시하지 않음")
-	for kind: GameEnums.PawnKind in PawnCatalog.EVOLVABLE_SETS:
-		check(not seen.has(StringName("EVO_%d" % kind)), "기본 말이 없으면 기물 진화는 제시하지 않음")
+	for def: AugmentDef in AugmentRegistry.all():
+		if def.category == GameEnums.AugmentCategory.PAWN_EVOLUTION:
+			check(not seen.has(def.augment_id), "기본 말이 없으면 기물 지급은 제시하지 않음")
 	check(seen.has(&"CARD_PACKAGE"), "카드 패키지는 항상 가능")
 
 
 func test_each_augment_category_applies_its_effect() -> void:
 	var state := make_state()
-	var evolve: Dictionary = AugmentRegistry.get_def(&"EVO_%d" % Kind.YUT).apply(state, 1, {"pawn_id": 13})
+	var evolve: Dictionary = AugmentRegistry.get_def(&"EVO_%d_1" % Kind.YUT).apply(state, 1, {"pawn_id": 13})
 	check(evolve["ok"], "진화 성공")
 	check_eq(state.get_pawn(13).display_label(), "윷말", "고른 말이 윷 1호기로 진화")
 	check_eq(state.get_pawn(11).kind, Kind.BASIC, "다른 말은 그대로")
-	var bad: Dictionary = AugmentRegistry.get_def(&"EVO_%d" % Kind.YUT).apply(state, 1, {"pawn_id": 21})
+	var bad: Dictionary = AugmentRegistry.get_def(&"EVO_%d_1" % Kind.YUT).apply(state, 1, {"pawn_id": 21})
 	check(not bad["ok"], "남의 말은 진화시킬 수 없음")
 	check_eq(state.get_pawn(21).kind, Kind.BASIC, "남의 말 불변")
 	var tool: Dictionary = AugmentRegistry.get_def(&"TOOL_SLOT_777").apply(state, 2)
@@ -193,7 +194,7 @@ func test_draft_opens_in_round_one_with_offers_for_every_player() -> void:
 
 func test_draft_pick_applies_effect_and_finishes_when_everyone_picked() -> void:
 	var manager: TurnManager = _manager(2, true)
-	manager._draft_offers[1] = [&"EVO_2", &"TOOL_HOLDEM", &"AUG_LAW_03"] as Array[StringName]
+	manager._draft_offers[1] = [&"EVO_2_1", &"TOOL_HOLDEM", &"AUG_LAW_03"] as Array[StringName]
 	manager._draft_offers[2] = [&"CARD_PACKAGE", &"AUG_LAW_04", &"TOOL_YUT"] as Array[StringName]
 	_do(manager, 1, &"pick_augment", {"index": 0, "pawn_id": 13})
 	check(manager.state.get_pawn(13).kind == GameEnums.PawnKind.CHESS and manager.state.get_pawn(13).unit_no in [1, 2, 3, 4], "P1이 고른 기본 말이 체스 기물 중 하나로 진화")
@@ -202,7 +203,7 @@ func test_draft_pick_applies_effect_and_finishes_when_everyone_picked() -> void:
 	_do(manager, 2, &"pick_augment", {"index": 1})
 	check(manager.state.rulebook.has_law("LAW_04"), "P2의 교칙이 등록됨")
 	check_eq(manager.current_state, Phase.PHASE_TURN_BEGIN, "모두 고르면 첫 턴")
-	check_eq(manager.augments[1], [&"EVO_2"] as Array, "선택 기록")
+	check_eq(manager.augments[1], [&"EVO_2_1"] as Array, "선택 기록")
 	_dispose(manager)
 
 
@@ -210,7 +211,7 @@ func test_draft_rejects_bad_pawn_and_double_pick() -> void:
 	var manager: TurnManager = _manager(2, true)
 	var rejected: Array = []
 	manager.action_rejected.connect(func(player_id: int, action: StringName, reason: StringName) -> void: rejected.append(reason))
-	manager._draft_offers[1] = [&"EVO_3", &"TOOL_YUT", &"CARD_PACKAGE"] as Array[StringName]
+	manager._draft_offers[1] = [&"EVO_3_1", &"TOOL_YUT", &"CARD_PACKAGE"] as Array[StringName]
 	_do(manager, 1, &"pick_augment", {"index": 0, "pawn_id": 21})
 	check_eq(rejected, [&"invalid_pawn"] as Array, "남의 말로는 진화 불가")
 	_do(manager, 1, &"pick_augment", {"index": 1})
@@ -668,18 +669,20 @@ func test_turn_manager_stops_the_game_on_special_victory_and_rejects_further_act
 	_dispose(winning)
 
 
-func test_evolution_draws_a_random_unit_without_repeats_until_the_set_is_full() -> void:
-	var seen: Dictionary = {}
-	for seed_value: int in 12:
-		var state := make_state()
-		state.rng.seed = seed_value
-		var units: Array[int] = []
-		for pawn_id: int in [11, 12, 13, 14]:
-			check(state.evolve_pawn_random(state.get_pawn(pawn_id), GameEnums.PawnKind.CHESS), "진화 성공")
-			units.append(state.get_pawn(pawn_id).unit_no)
-		seen[units.duplicate()] = true
-		var sorted_units: Array[int] = units.duplicate()
-		sorted_units.sort()
-		check_eq(sorted_units, int_array([1, 2, 3, 4]), "4번 진화하면 폰·나이트·비숍·룩이 하나씩 나온다")
-		check(state.free_units(1, GameEnums.PawnKind.CHESS).is_empty(), "다 받으면 남은 후보 없음")
-	check(seen.size() > 1, "시드에 따라 받는 순서가 달라진다 (순서 고정이 아님)")
+func test_unit_augments_give_the_named_unit_and_refuse_duplicates() -> void:
+	var state := make_state()
+	var rook: AugmentDef = AugmentRegistry.get_def(&"EVO_2_4")
+	check_eq(rook.display_name, "기물 지급: 체스:룩", "선택지는 세부 기물 하나를 이름으로 지급")
+	check(rook.is_available(state, 1), "아직 없으니 받을 수 있다")
+	check(rook.apply(state, 1, {"pawn_id": 11})["ok"], "룩 지급")
+	check_eq(state.get_pawn(11).display_label(), "체스:룩", "정확히 룩이 지급된다 (랜덤 아님)")
+	check(not rook.is_available(state, 1), "이미 룩을 가졌으면 제시하지 않는다")
+	var again: Dictionary = rook.apply(state, 1, {"pawn_id": 12})
+	check(not again["ok"] and state.get_pawn(12).kind == GameEnums.PawnKind.BASIC, "이미 가진 기물은 받을 수 없다")
+	check(AugmentRegistry.get_def(&"EVO_2_1").is_available(state, 1), "다른 체스 기물은 계속 받을 수 있다")
+	# 바둑은 흑·백 두 종이고 각각 2개까지, 윷말은 4개까지
+	var black: AugmentDef = AugmentRegistry.get_def(&"EVO_5_1")
+	check(black.apply(state, 1, {"pawn_id": 12})["ok"] and black.apply(state, 1, {"pawn_id": 13})["ok"], "흑돌 2개까지 받는다")
+	check(not black.is_available(state, 1), "흑돌 두 개를 가졌으면 흑돌은 더 못 받는다")
+	check(AugmentRegistry.get_def(&"EVO_5_2").is_available(state, 1) or state.basic_pawns_of(1).size() == 1, "백돌은 별개 선택지")
+	check(AugmentRegistry.get_def(&"EVO_5_1").describe(state, 1).contains("이미 가진 기물은 받을 수 없습니다"), "설명에 중복 불가 안내")

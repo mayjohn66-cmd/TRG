@@ -1,6 +1,6 @@
 # File: res://core_engine/augments/augment_registry.gd
 # Class: class_name AugmentRegistry
-# Role: 증강 드래프트 전체 풀(기물 진화 5 / 판정 도구 교체 6 / 교칙 제정 8 / 카드 패키지 1)과 선택지 3개를 4대 카테고리가 섞이도록 뽑는 생성기
+# Role: 증강 드래프트 전체 풀(기물 지급 15 (세부 기물별) / 판정 도구 교체 6 / 교칙 제정 8 / 카드 패키지 1)과 선택지 3개를 4대 카테고리가 섞이도록 뽑는 생성기
 class_name AugmentRegistry
 extends RefCounted
 
@@ -12,8 +12,14 @@ const SWAPPABLE_TOOLS: Array[StringName] = [&"YUT", &"HOLDEM", &"LIFE_ROULETTE",
 
 static func all() -> Array[AugmentDef]:
 	if _cache.is_empty():
+		# 기물 지급: 세부 기물 하나하나가 별도 선택지다 (윷말 1종 / 체스·장기·모노폴리 4종씩 / 바둑 흑·백 2종).
 		for kind: GameEnums.PawnKind in PawnCatalog.EVOLVABLE_SETS:
-			_cache.append(AugmentDef.new(StringName("EVO_%d" % kind), GameEnums.AugmentCategory.PAWN_EVOLUTION, "기물 진화: %s 세트" % PawnCatalog.display_set_name(kind), kind))
+			for units: Array in PawnCatalog.unit_groups(kind):
+				var typed_units: Array[int] = []
+				for unit: Variant in units:
+					typed_units.append(int(unit))
+				var sub_name: String = PawnCatalog.unit_label(kind, typed_units[0])
+				_cache.append(AugmentDef.new(StringName("EVO_%d_%d" % [kind, typed_units[0]]), GameEnums.AugmentCategory.PAWN_EVOLUTION, "기물 지급: %s" % sub_name, kind, typed_units))
 		for tool_id: StringName in SWAPPABLE_TOOLS:
 			_cache.append(AugmentDef.new(StringName("TOOL_%s" % tool_id), GameEnums.AugmentCategory.TOOL_SWAP, "판정 도구 교체: %s" % ToolRegistry.create(tool_id).display_name, tool_id))
 		for law_id: String in LawRegistry.ALL_IDS:

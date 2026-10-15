@@ -159,3 +159,18 @@ static func set_panel_data(kind: GameEnums.PawnKind, owned_units: Array[int]) ->
 		"bonus2": {"label": "2세트: %s" % SET_BONUS_2_NAMES.get(kind, "-"), "text": SET_BONUS_2_TEXT.get(kind, ""), "active": count >= GameEnums.SET_SYNERGY_2},
 		"bonus4": {"label": "4세트: %s" % SPECIAL_VICTORY_NAMES.get(kind, "-"), "text": SET_BONUS_4_TEXT.get(kind, ""), "active": count >= GameEnums.PAWNS_PER_PLAYER},
 	}
+
+
+## 세트의 '같은 세부 기물' 묶음: 호기 번호들을 세부 기물 종류별로 묶는다 (체스는 [[1],[2],[3],[4]], 바둑은 [[1,3],[2,4]], 윷은 [[1,2,3,4]]).
+static func unit_groups(kind: GameEnums.PawnKind) -> Array:
+	var groups: Array = []
+	var seen: Array = []
+	for unit: int in range(1, GameEnums.PAWNS_PER_PLAYER + 1):
+		var sub: GameEnums.PawnSubType = sub_type_of(kind, unit)
+		var index: int = seen.find(sub)
+		if index == -1:
+			seen.append(sub)
+			groups.append([unit])
+		else:
+			(groups[index] as Array).append(unit)
+	return groups

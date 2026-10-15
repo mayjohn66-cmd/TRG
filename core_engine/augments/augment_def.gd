@@ -9,13 +9,16 @@ var category: GameEnums.AugmentCategory = GameEnums.AugmentCategory.CARD_PACKAGE
 var display_name: String = ""
 ## 진화한 세트(PawnKind) / 판정 도구 ID / 교칙 ID 중 카테고리에 맞는 값.
 var payload: Variant = null
+## 기물 지급 증강에서 이 선택지가 주는 세부 기물의 호기 번호들 (같은 병종이 여러 호기일 수 있다: 바둑 흑돌 = 1·3호기).
+var units: Array[int] = []
 
 
-func _init(id: StringName, augment_category: GameEnums.AugmentCategory, name: String, value: Variant = null) -> void:
+func _init(id: StringName, augment_category: GameEnums.AugmentCategory, name: String, value: Variant = null, unit_list: Array[int] = []) -> void:
 	augment_id = id
 	category = augment_category
 	display_name = name
 	payload = value
+	units = unit_list
 
 
 static func category_name(value: GameEnums.AugmentCategory) -> String:
@@ -26,11 +29,22 @@ static func category_name(value: GameEnums.AugmentCategory) -> String:
 	return "생떼 카드 패키지"
 
 
+## 이 선택지가 줄 수 있는, 아직 받지 않은 호기 번호들.
+func _free_units_for(state: GameState, player_id: int) -> Array[int]:
+	var free: Array[int] = state.free_units(player_id, payload)
+	var result: Array[int] = []
+	for unit: int in units:
+		if free.has(unit):
+			result.append(unit)
+	return result
+
+
 ## 이 플레이어에게 지금 제시할 수 있는 선택지인가.
 func is_available(state: GameState, player_id: int) -> bool:
 	match category:
 		GameEnums.AugmentCategory.PAWN_EVOLUTION:
-			return not state.basic_pawns_of(player_id).is_empty() and state.set_count(player_id, payload) < GameEnums.PAWNS_PER_PLAYER
+			# 이미 그 세부 기물을 가지고 있으면(받을 호기가 남아 있지 않으면) 받을 수 없다.
+			return not state.basic_pawns_of(player_id).is_empty() and not _free_units_for(state, player_id).is_empty()
 		GameEnums.AugmentCategory.TOOL_SWAP:
 			return (state.tools[player_id] as BaseJudgmentTool).tool_id != payload
 		GameEnums.AugmentCategory.LAW_ENACT:
@@ -47,12 +61,8 @@ func needs_pawn_choice(state: GameState, player_id: int) -> bool:
 func describe(state: GameState, player_id: int) -> String:
 	match category:
 		GameEnums.AugmentCategory.PAWN_EVOLUTION:
-			var names: Array[String] = []
-			for unit: int in state.free_units(player_id, payload):
-				var sub_name: String = PawnCatalog.unit_label(payload, unit).split(":")[-1]
-				if not names.has(sub_name):
-					names.append(sub_name)
-			return "기본 말 1개를 [%s] 기물 중 무작위 1종으로 영구 진화 - 남은 후보: %s (현재 %d/4)" % [PawnCatalog.display_set_name(payload), "/".join(names), state.set_count(player_id, payload)]
+			var kind: GameEnums.PawnKind = payload
+			return "기본 말 1개를 [%s] %s(으)로 교체해 지급 (현재 %d/4)\n능력: %s\n※ 이미 가진 기물은 받을 수 없습니다" % [PawnCatalog.display_set_name(kind), PawnCatalog.unit_label(kind, units[0]).split(":")[-1], state.set_count(player_id, kind), PawnCatalog.ability_text(kind, units[0])]
 		GameEnums.AugmentCategory.TOOL_SWAP:
 			return "내 판정 도구를 [%s](으)로 교체" % ToolRegistry.create(payload).display_name
 		GameEnums.AugmentCategory.LAW_ENACT:
@@ -82,9 +92,9 @@ func _apply_evolution(state: GameState, player_id: int, params: Dictionary) -> D
 		if basics.is_empty():
 			return {"ok": false, "text": "진화시킬 기본 말이 없습니다"}
 		pawn = basics[0]
-	if not state.evolve_pawn_random(pawn, payload):
-		return {"ok": false, "text": "이 세트는 더 진화할 수 없습니다"}
-	return {"ok": true, "text": "말 %d번이 [%s]로 진화했습니다" % [pawn.slot, pawn.display_label()]}
+	if not state.give_unit(pawn, payload, _free_units_for(state, player_id)):
+		return {"ok": false, "text": "이미 가지고 있는 기물이라 받을 수 없습니다"}
+	return {"ok": true, "text": "말 %d번이 [%s] 기물로 바뀌었습니다" % [pawn.slot, pawn.display_label()]}
 
 
 func _apply_tool(state: GameState, player_id: int) -> Dictionary:

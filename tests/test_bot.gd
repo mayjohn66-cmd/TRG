@@ -97,17 +97,17 @@ func test_capture_scoring_ignores_immune_enemies_and_the_start_tile() -> void:
 func test_augment_choice_prefers_completing_an_owned_set() -> void:
 	var state := make_state(2, 1, {2: [Vector2i(Kind.CHESS, 1), 0, 0, 0]})
 	var rng: RandomNumberGenerator = _seeded(1)
-	var offers: Array[StringName] = [&"TOOL_YUT", &"EVO_%d" % Kind.CHESS, &"AUG_LAW_01"]
+	var offers: Array[StringName] = [&"TOOL_YUT", &"EVO_%d_2" % Kind.CHESS, &"AUG_LAW_01"]
 	check_eq(BotBrain.choose_augment(state, 2, offers, rng), 1, "보유한 체스 세트를 2세트로 완성하는 진화가 1순위")
 	var four := make_state(2, 1, {2: [Vector2i(Kind.GO, 1), Vector2i(Kind.GO, 2), Vector2i(Kind.GO, 3), 0]})
-	var offers_four: Array[StringName] = [&"CARD_PACKAGE", &"AUG_LAW_01", &"EVO_%d" % Kind.GO]
+	var offers_four: Array[StringName] = [&"CARD_PACKAGE", &"AUG_LAW_01", &"EVO_%d_2" % Kind.GO]
 	check_eq(BotBrain.choose_augment(four, 2, offers_four, rng), 2, "4세트 완성도 1순위")
-	var other_set: Array[StringName] = [&"TOOL_YUT", &"EVO_%d" % Kind.JANGGI, &"AUG_LAW_01"]
+	var other_set: Array[StringName] = [&"TOOL_YUT", &"EVO_%d_1" % Kind.JANGGI, &"AUG_LAW_01"]
 	check_eq(BotBrain.choose_augment(state, 2, other_set, rng), 0, "이미 다른 세트를 가졌다면 새 세트를 흩뿌리지 않고 판정 도구를 고른다")
 	var no_evo: Array[StringName] = [&"CARD_PACKAGE", &"AUG_LAW_01", &"TOOL_HOLDEM"]
 	check_eq(BotBrain.choose_augment(state, 2, no_evo, rng), 2, "진화가 없으면 판정 도구 교체가 교칙보다 먼저")
 	var first_set := make_state()
-	var start: Array[StringName] = [&"CARD_PACKAGE", &"AUG_LAW_01", &"EVO_%d" % Kind.YUT]
+	var start: Array[StringName] = [&"CARD_PACKAGE", &"AUG_LAW_01", &"EVO_%d_1" % Kind.YUT]
 	check_eq(BotBrain.choose_augment(first_set, 2, start, rng), 2, "아직 세트가 하나도 없으면 첫 세트를 시작한다 (그렇지 않으면 봇이 영원히 기본 말뿐)")
 
 

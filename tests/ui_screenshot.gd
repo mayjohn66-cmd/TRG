@@ -69,7 +69,7 @@ func _setup_scene() -> void:
 		"tip":
 			_finish_draft()
 			for pair: Array in [[11, GameEnums.PawnKind.CHESS], [12, GameEnums.PawnKind.CHESS], [21, GameEnums.PawnKind.JANGGI]]:
-				state.evolve_pawn_random(state.get_pawn(pair[0]), pair[1])
+				state.evolve_pawn(state.get_pawn(pair[0]), pair[1])
 			_board._refresh_all()
 			_board._fill_pawn_tip(11)
 			_board._tip_panel.visible = true

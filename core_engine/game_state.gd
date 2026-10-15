@@ -208,17 +208,17 @@ func free_units(player_id: int, kind: GameEnums.PawnKind) -> Array[int]:
 	return result
 
 
-## 기본 말 하나를 세트의 '아직 못 받은 세부 기물 중 무작위 1종'으로 영구 진화시킨다 (오토체스식: 호기 순서가 아니라 뽑기).
-func evolve_pawn_random(pawn: PlayerPawn, kind: GameEnums.PawnKind) -> bool:
+## 기본 말 하나를 지정한 세부 기물로 영구 교체해 지급한다 (candidates 중 첫 호기). 이미 받은 호기뿐이면 false.
+func give_unit(pawn: PlayerPawn, kind: GameEnums.PawnKind, candidates: Array[int]) -> bool:
 	if pawn == null or pawn.kind != GameEnums.PawnKind.BASIC or kind == GameEnums.PawnKind.BASIC:
 		return false
 	var free: Array[int] = free_units(pawn.owner_id, kind)
-	if free.is_empty():
-		return false
-	var unit: int = free[rng.randi_range(0, free.size() - 1)]
-	pawn.evolve(kind, unit)
-	pawn_evolved.emit(pawn.entity_id, kind, unit)
-	return true
+	for unit: int in candidates:
+		if free.has(unit):
+			pawn.evolve(kind, unit)
+			pawn_evolved.emit(pawn.entity_id, kind, unit)
+			return true
+	return false
 
 
 func pawns_of(player_id: int) -> Array[PlayerPawn]:
