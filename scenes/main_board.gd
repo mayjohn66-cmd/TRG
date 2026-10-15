@@ -18,13 +18,17 @@ const PAWN_RADIUS: float = 5.5
 const STEP_DELAY: float = 0.22
 const CELL_OFFSETS: Array[Vector2] = [Vector2(-6, -5), Vector2(6, -5), Vector2(-6, 3), Vector2(6, 3)]
 const CARD_SIZE: Vector2 = Vector2(100, 140)
-const PROFILE_SIZE: Vector2 = Vector2(300, 124)
+const PROFILE_SIZE: Vector2 = Vector2(230, 112)
+## 현재 턴이 아닌 프로필은 이 색으로 가라앉고, 현재 턴 프로필은 환하게 밝아진다 (스포트라이트).
+const PROFILE_DIM: Color = Color(0.42, 0.42, 0.45, 0.85)
+const PROFILE_LIT: Color = Color(1.1, 1.1, 1.1, 1.0)
+const PAWN_SLOT_SIZE: float = 38.0
 ## 프로필 HUD 카드의 모서리 위치(코너 번호): 0 우하단(로컬 플레이어) / 1 우상단 / 2 좌상단 / 3 좌하단 (출발선 0번이 우하단이라 반시계 턴 순서와 같다).
 const CORNER_POSITIONS: Array[Vector2] = [
-	Vector2(1058, 636),
-	Vector2(1058, 48),
+	Vector2(1128, 648),
+	Vector2(1128, 48),
 	Vector2(8, 48),
-	Vector2(8, 636),
+	Vector2(8, 648),
 ]
 ## 카드 독 안에서 카드가 놓이는 기준 y (호버 시 15px 솟아오른다).
 const DOCK_CARD_Y: float = 8.0
@@ -156,7 +160,6 @@ var _skip_button: Button = null
 var _bomb_button: Button = null
 var _new_game_button: Button = null
 var _hint_label: Label = null
-var _fruit_label: Label = null
 var _pawn_bar: Panel = null
 var _pawn_buttons: Array[Button] = []
 var _pawn_slot_parts: Array[Dictionary] = []
@@ -172,11 +175,11 @@ var _aim_line: Line2D = null
 var _aim_label: Label = null
 var _tool_board: PanelContainer = null
 var _tool_title: Label = null
-var _tool_rows_box: VBoxContainer = null
-var _tool_result_label: Label = null
-var _tool_rows: Dictionary = {}
+var _tool_icon: PanelContainer = null
+var _tool_icon_label: Label = null
+var _tool_main: Label = null
+var _tool_sub: Label = null
 var _tool_board_key: String = ""
-var _tool_highlight: String = ""
 var _status_strip: HBoxContainer = null
 var _tip_panel: PanelContainer = null
 var _tip_title: Label = null
@@ -491,29 +494,29 @@ func _build_ui() -> void:
 	_build_hover_tip()
 
 
-## 상단 중앙 리본 배너: 라운드 / 현재 턴 / 진행 방향과 최근 이벤트 한 줄(토스트).
+## 상단 중앙 리본 배너(슬림): 라운드 / 현재 턴 / 진행 방향 한 줄. 이벤트는 중앙 알림과 전체 로그가 맡는다.
 func _build_ribbon() -> void:
 	_ribbon = PanelContainer.new()
-	_ribbon.position = Vector2(343, 6)
-	_ribbon.custom_minimum_size = Vector2(680, 60)
-	_ribbon.size = Vector2(680, 60)
+	_ribbon.position = Vector2(393, 8)
+	_ribbon.custom_minimum_size = Vector2(580, 38)
+	_ribbon.size = Vector2(580, 38)
 	_ribbon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_ribbon.add_theme_stylebox_override("panel", _style(Color("14301f"), COLOR_GOLD, 2, 14, 10, 6))
+	_ribbon.add_theme_stylebox_override("panel", _style(Color("14301f"), COLOR_GOLD, 2, 14, 8, 4))
 	add_child(_ribbon)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 0)
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_ribbon.add_child(box)
-	_header_label = _make_label("", 20, Color("f1f3f5"))
+	_header_label = _make_label("", 17, Color("f1f3f5"))
 	_header_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(_header_label)
-	_toast_label = _make_label("", 13, Color("ffe8a3"))
-	_toast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_toast_label.clip_text = true
+	_toast_label = _make_label("", 11, Color("ffe8a3"))  # 화면에는 보이지 않는다 (_log_line이 문구만 갱신)
+	_toast_label.visible = false
 	box.add_child(_toast_label)
 
 
-## 화면 네 모서리의 플레이어 프로필 HUD 카드 (아바타 액자 + 완주 구슬 + 도구 뱃지 + 기물 아이콘 + 세트 효과).
+## 화면 네 모서리의 미니멀 프로필 카드: 좌측 84x84 아바타 액자, 우측 상단 닉네임(+카드 수), 우측 하단 2x2 기물 상태 슬롯.
+## 슬롯은 배경·테두리만으로 [대기(어두운 회색) / 출전(플레이어 색) / 완주(황금빛 ★)]를 구분한다.
 func _build_profiles() -> void:
 	for player_id: int in PLAYER_IDS:
 		var color: Color = PLAYER_COLORS[player_id]
@@ -524,76 +527,74 @@ func _build_profiles() -> void:
 		panel.pivot_offset = PROFILE_SIZE / 2.0
 		add_child(panel)
 		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 8)
+		row.add_theme_constant_override("separation", 10)
 		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		panel.add_child(row)
 
-		var left := VBoxContainer.new()
-		left.add_theme_constant_override("separation", 2)
-		left.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		row.add_child(left)
 		var avatar := PanelContainer.new()
-		avatar.custom_minimum_size = Vector2(64, 64)
+		avatar.custom_minimum_size = Vector2(84, 84)
 		avatar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		avatar.add_theme_stylebox_override("panel", _style(color.darkened(0.05), color.lightened(0.55), 3, 14, 0, 0))
-		left.add_child(avatar)
-		var avatar_label := _make_label("P%d" % player_id, 24, Color("0d1018"))
+		avatar.add_theme_stylebox_override("panel", _style(color.darkened(0.05), color.lightened(0.55), 3, 16, 0, 0))
+		row.add_child(avatar)
+		var avatar_label := _make_label("P%d" % player_id, 30, Color("0d1018"))
 		avatar_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		avatar_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		avatar_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		avatar.add_child(avatar_label)
-		var apostle := _make_label("사도 #%d" % player_id, 11, color.lightened(0.4))
-		apostle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		left.add_child(apostle)
+		var penalty_label := _make_label("", 12, Color("ffe3e3"))
+		penalty_label.position = Vector2(4, 64)
+		penalty_label.add_theme_stylebox_override("normal", _style(Color("c92a2a"), Color(0, 0, 0, 0), 0, 6, 0, 2))
+		penalty_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		penalty_label.visible = false
+		avatar.add_child(penalty_label)
 
 		var right := VBoxContainer.new()
-		right.add_theme_constant_override("separation", 1)
+		right.add_theme_constant_override("separation", 4)
 		right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		right.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.add_child(right)
 		var top := HBoxContainer.new()
 		top.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		right.add_child(top)
-		var name_label := _make_label("플레이어 %d" % player_id, 15, color.lightened(0.2))
+		var name_label := _make_label("플레이어 %d" % player_id, 15, color.lightened(0.3))
 		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		name_label.add_theme_color_override("font_outline_color", Color("0d1018"))
+		name_label.add_theme_constant_override("outline_size", 3)
 		top.add_child(name_label)
-		var count_label := _make_label("카드 x0", 12, Color("ced4da"))
+		var count_label := _make_label("x0", 12, Color("ced4da"))
 		top.add_child(count_label)
-		var done_label := _make_label("", 14, color.lightened(0.3))
-		right.add_child(done_label)
-		var tool_badge := PanelContainer.new()
-		tool_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		tool_badge.add_theme_stylebox_override("panel", _style(Color("2b3550"), Color("5c6b94"), 1, 8, 0, 3))
-		right.add_child(tool_badge)
-		var tool_label := _make_label("", 11, Color("dbe4ff"))
-		tool_label.clip_text = true
-		tool_badge.add_child(tool_label)
-		var pawn_icons := HBoxContainer.new()
-		pawn_icons.add_theme_constant_override("separation", 4)
-		pawn_icons.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		right.add_child(pawn_icons)
-		var icon_labels: Array[Label] = []
+		var grid := GridContainer.new()
+		grid.columns = 2
+		grid.add_theme_constant_override("h_separation", 4)
+		grid.add_theme_constant_override("v_separation", 4)
+		grid.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		right.add_child(grid)
+		var slots: Array[Dictionary] = []
 		for slot: int in range(1, GameEnums.PAWNS_PER_PLAYER + 1):
 			var icon := PanelContainer.new()
-			icon.custom_minimum_size = Vector2(28, 24)
+			icon.custom_minimum_size = Vector2(PAWN_SLOT_SIZE, PAWN_SLOT_SIZE)
 			icon.mouse_filter = Control.MOUSE_FILTER_STOP
-			icon.add_theme_stylebox_override("panel", _style(Color("2b3550"), color.lightened(0.2), 1, 6, 0, 2))
-			var icon_label := _make_label("", 13, Color("f1f3f5"))
-			icon_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			icon_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			icon.add_child(icon_label)
+			var box := VBoxContainer.new()
+			box.add_theme_constant_override("separation", -2)
+			box.alignment = BoxContainer.ALIGNMENT_CENTER
+			box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			icon.add_child(box)
+			var letter := _make_label("", 16, Color("f1f3f5"))
+			letter.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			letter.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			box.add_child(letter)
+			var status := _make_label("", 9, Color("f1f3f5"))
+			status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			status.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			box.add_child(status)
 			_bind_tip(icon, _fill_pawn_tip.bind(player_id * 10 + slot))
-			pawn_icons.add_child(icon)
-			icon_labels.append(icon_label)
-		var synergy_label := _make_label("", 11, COLOR_GOLD)
-		synergy_label.clip_text = true
-		right.add_child(synergy_label)
+			grid.add_child(icon)
+			slots.append({"panel": icon, "letter": letter, "status": status})
 		_profiles[player_id] = {
 			"panel": panel,
 			"count": count_label,
-			"done": done_label,
-			"tool": tool_label,
-			"pawns": icon_labels,
-			"synergy": synergy_label,
+			"penalty": penalty_label,
+			"slots": slots,
 		}
 
 
@@ -650,33 +651,54 @@ func _build_law_board() -> void:
 		_law_dashes.append(dash)
 
 
-## 우측 중앙 '판정 도구 전광판': 지금 턴 플레이어의 도구가 "무엇이 나오면 몇 칸 가는지"만 보여 주고, 굴림 결과 줄에 불이 들어온다.
+## 우측 중앙 판정 도구 카드(고정 210x250 세로형): 상단에 48x48 심볼 + 도구 이름, 가운데에 전진 규칙 한두 줄만 크게.
 func _build_tool_board() -> void:
 	_tool_board = PanelContainer.new()
-	_tool_board.position = Vector2(1008, 182)
-	_tool_board.custom_minimum_size = Vector2(350, 0)
-	_tool_board.size = Vector2(350, 10)
+	_tool_board.position = Vector2(1148, 196)
+	_tool_board.custom_minimum_size = Vector2(210, 250)
+	_tool_board.size = Vector2(210, 250)
 	_tool_board.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_tool_board.add_theme_stylebox_override("panel", _style(Color("101626"), COLOR_PANEL_EDGE, 2, 14, 10, 10))
+	_tool_board.add_theme_stylebox_override("panel", _style(Color("101626"), COLOR_PANEL_EDGE, 3, 18, 12, 12))
 	add_child(_tool_board)
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 4)
+	box.add_theme_constant_override("separation", 10)
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_tool_board.add_child(box)
-	_tool_title = _make_label("", 15, COLOR_GOLD)
-	box.add_child(_tool_title)
-	_tool_rows_box = VBoxContainer.new()
-	_tool_rows_box.add_theme_constant_override("separation", 3)
-	_tool_rows_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.add_child(_tool_rows_box)
-	_fruit_label = _make_label("", 11, Color("ced4da"))
-	_fruit_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_fruit_label.custom_minimum_size = Vector2(326, 0)
-	box.add_child(_fruit_label)
-	_tool_result_label = _make_label("", 15, Color("fff3bf"))
-	_tool_result_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_tool_result_label.custom_minimum_size = Vector2(326, 0)
-	box.add_child(_tool_result_label)
+	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", 8)
+	head.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(head)
+	_tool_icon = PanelContainer.new()
+	_tool_icon.custom_minimum_size = Vector2(48, 48)
+	_tool_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	head.add_child(_tool_icon)
+	_tool_icon_label = _make_label("", 26, Color("ffffff"))
+	_tool_icon_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_tool_icon_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_tool_icon_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tool_icon.add_child(_tool_icon_label)
+	_tool_title = _make_label("", 17, COLOR_GOLD)
+	_tool_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_tool_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_tool_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_tool_title.custom_minimum_size = Vector2(120, 48)
+	head.add_child(_tool_title)
+	var center := VBoxContainer.new()
+	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	center.alignment = BoxContainer.ALIGNMENT_CENTER
+	center.add_theme_constant_override("separation", 8)
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(center)
+	_tool_main = _make_label("", 21, Color("f8f9fa"))
+	_tool_main.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_tool_main.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_tool_main.custom_minimum_size = Vector2(184, 0)
+	center.add_child(_tool_main)
+	_tool_sub = _make_label("", 14, Color("ffe066"))
+	_tool_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_tool_sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_tool_sub.custom_minimum_size = Vector2(184, 0)
+	center.add_child(_tool_sub)
 
 
 ## 보드 아래 한 줄 상태 띠: 단계 / 안내 문구 / 이동 대기열. (개입 카드 탭이 뜨면 그 자리를 양보한다.)
@@ -686,6 +708,7 @@ func _build_status_strip() -> void:
 	_status_strip.size = Vector2(800, 24)
 	_status_strip.add_theme_constant_override("separation", 10)
 	_status_strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_status_strip.visible = false  # 긴 안내문은 화면에서 걷어냈다 (문구는 내부에서만 갱신)
 	add_child(_status_strip)
 	_phase_label = _make_label("", 13, COLOR_GOLD)
 	_status_strip.add_child(_phase_label)
@@ -1293,42 +1316,66 @@ func _refresh_players() -> void:
 	for player_id: int in PLAYER_IDS:
 		var card: Dictionary = _profiles[player_id]
 		var color: Color = PLAYER_COLORS[player_id]
-		var finished: int = 0
-		for pawn: PlayerPawn in state.pawns_of(player_id):
-			if pawn.is_finished:
-				finished += 1
-		var marbles: Array[String] = []
-		for index: int in GameEnums.PAWNS_PER_PLAYER:
-			marbles.append("●" if index < finished else "○")
-		(card["done"] as Label).text = "완주 %s  %d/4" % [" ".join(marbles), finished]
-		(card["count"] as Label).text = "카드 x%d" % (state.hands[player_id] as Array).size()
-		(card["tool"] as Label).text = "도구: %s" % (state.tools[player_id] as BaseJudgmentTool).display_name
-		var icon_labels: Array = card["pawns"]
-		for index: int in icon_labels.size():
-			var icon_pawn: PlayerPawn = state.get_pawn(player_id * 10 + index + 1)
-			var icon_text: String = PawnCatalog.unit_letter(icon_pawn.kind, icon_pawn.unit_no) if icon_pawn.kind != GameEnums.PawnKind.BASIC else "기"
-			(icon_labels[index] as Label).text = "완" if icon_pawn.is_finished else icon_text
-		var bomb_text: String = " [우노+4 %d칸]" % state.penalty_of(player_id) if state.penalty_of(player_id) != 0 else ""
-		(card["synergy"] as Label).text = _skill_summary(player_id) + bomb_text
+		(card["count"] as Label).text = "x%d" % (state.hands[player_id] as Array).size()
+		var penalty_label: Label = card["penalty"]
+		penalty_label.visible = state.penalty_of(player_id) != 0
+		penalty_label.text = "+4 %d" % absi(state.penalty_of(player_id)) if state.penalty_of(player_id) != 0 else ""
+		var slots: Array = card["slots"]
+		for index: int in slots.size():
+			_paint_pawn_slot(slots[index], state.get_pawn(player_id * 10 + index + 1), color)
 		var panel: PanelContainer = card["panel"]
-		# 현재 턴 플레이어: 밝은 황금 테두리 3px + 살짝 확대
+		# 스포트라이트: 현재 턴 플레이어만 환하게 밝고 살짝 커지며 외곽 광채가 켜지고, 나머지는 어둡게 가라앉는다.
 		var is_turn: bool = player_id == manager.current_player_id() and not manager.is_game_over
+		var game_over: bool = manager.is_game_over
 		if is_turn:
-			panel.add_theme_stylebox_override("panel", _style(Color("273049"), COLOR_GOLD, 3, 14, 20, 8))
-			panel.scale = Vector2(1.04, 1.04)
+			panel.add_theme_stylebox_override("panel", _style(Color("273049"), Color("fff3bf"), 4, 14, 26, 8))
 		else:
-			panel.add_theme_stylebox_override("panel", _style(COLOR_PANEL, color.darkened(0.25), 2, 14, 8, 8))
-			panel.scale = Vector2.ONE
+			panel.add_theme_stylebox_override("panel", _style(COLOR_PANEL, color.darkened(0.35), 2, 14, 4, 8))
+		_set_profile_light(panel, PROFILE_LIT if (is_turn or game_over) else PROFILE_DIM, Vector2(1.05, 1.05) if is_turn else Vector2.ONE)
 
 
-## 프로필 카드 툴팁: 말마다 "[2번 말 - 체스:비숍 (코너 스침 지름길)]" 한 줄씩.
-## 프로필 카드 한 줄: 아직 쓰지 않은 필살기 보유 기물 수 ("필살기 2개 남음").
-func _skill_summary(player_id: int) -> String:
-	var ready: int = 0
-	for pawn: PlayerPawn in state.pawns_of(player_id):
-		if PawnSkills.has_skill(pawn) and not pawn.skill_used and not pawn.is_finished:
-			ready += 1
-	return "필살기 %d개 남음" % ready if ready > 0 else ""
+## 프로필 패널의 명암(modulate)과 크기를 목표로 보낸다 (테스트·초기화 때는 즉시, 평소에는 짧은 트윈).
+func _set_profile_light(panel: Control, tint: Color, target_scale: Vector2) -> void:
+	if panel.has_meta("light_tween"):
+		var previous: Tween = panel.get_meta("light_tween")
+		if previous != null and previous.is_valid():
+			previous.kill()
+	if instant_roll_for_test or not panel.is_inside_tree():
+		panel.modulate = tint
+		panel.scale = target_scale
+		return
+	var tween: Tween = create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(panel, "modulate", tint, 0.15)
+	tween.tween_property(panel, "scale", target_scale, 0.15).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	panel.set_meta("light_tween", tween)
+
+
+## 기물 슬롯 하나를 3상태로 칠한다: 대기(어두운 회색·반투명) / 출전(플레이어 색) / 완주(황금빛 ★).
+func _paint_pawn_slot(parts: Dictionary, pawn: PlayerPawn, color: Color) -> void:
+	var letter: Label = parts["letter"]
+	var status: Label = parts["status"]
+	var panel: PanelContainer = parts["panel"]
+	var shown: String = PawnCatalog.unit_letter(pawn.kind, pawn.unit_no)
+	letter.text = shown if shown != "" else "말"
+	if pawn.is_finished:
+		panel.add_theme_stylebox_override("panel", _style(Color("d4a72c"), Color("fff3bf"), 3, 8, 12, 1))
+		letter.add_theme_color_override("font_color", Color("2b2100"))
+		status.add_theme_color_override("font_color", Color("2b2100"))
+		status.text = "★완주"
+		panel.modulate = Color.WHITE
+	elif pawn.has_left_start:
+		panel.add_theme_stylebox_override("panel", _style(color.darkened(0.1), color.lightened(0.5), 2, 8, 0, 1))
+		letter.add_theme_color_override("font_color", Color("ffffff"))
+		status.add_theme_color_override("font_color", Color("fff3bf"))
+		status.text = "출전"
+		panel.modulate = Color.WHITE
+	else:
+		panel.add_theme_stylebox_override("panel", _style(Color("2a2d36"), Color("454a57"), 1, 8, 0, 1))
+		letter.add_theme_color_override("font_color", Color("adb5bd"))
+		status.add_theme_color_override("font_color", Color("868e96"))
+		status.text = "대기"
+		panel.modulate = Color(1, 1, 1, 0.6)
 
 
 func _refresh_laws() -> void:
@@ -1368,7 +1415,6 @@ func _refresh_hands() -> void:
 		_dock_player = player_id
 	# 개입 창: 카드를 낼 수 있는 플레이어 탭 (현재 턴 플레이어의 손패는 평소 독에 상시 표시)
 	_dock_tabs.visible = in_window and not holders.is_empty()
-	_status_strip.visible = not _dock_tabs.visible
 	if _dock_tabs.visible:
 		_dock_tabs.add_child(_make_label("개입 카드:", 13, Color("adb5bd")))
 		for holder: int in holders:
@@ -1964,102 +2010,34 @@ func _refresh_pawn_dock() -> void:
 
 
 # ---------------------------------------------------------------------------
-# 우측 중앙 판정 도구 전광판
+# 우측 중앙 판정 도구 카드
 # ---------------------------------------------------------------------------
 
-## 도구별 눈금/족보 이동 규칙: [행 ID, 문구]. 결과가 나오면 해당 행에 불이 들어온다.
-const TOOL_RULES: Dictionary = {
-	&"D6": [["all", "1 ~ 6칸 전진"]],
-	&"YUT": [["-1", "빽도 (-1): 1칸 후퇴"], ["1", "도 (1칸)"], ["2", "개 (2칸)"], ["3", "걸 (3칸)"], ["4", "★ 윷 (4칸 + 1회 재굴림)"], ["5", "★ 모 (5칸 + 1회 재굴림)"]],
-	&"LIFE_ROULETTE": [["base", "1 ~ 10칸 전진"], ["seven", "★ 행운의 7 당첨: 7칸 전진 + 1회 추가 회전!"]],
-	&"HOLDEM": [["high_card", "노페어 (1칸)"], ["one_pair", "원페어 (3칸)"], ["two_pair", "투페어 (5칸)"], ["three_kind", "트리플 (7칸)"], ["straight", "스트레이트 (10칸)"], ["flush", "★ 플러시 이상 (15칸!)"]],
-	&"HALLI_GALLI": [["base", "기본 1 ~ 3칸 전진"], ["bonus", ""]],
-	&"SLOT_777": [["miss", "꽝 (1칸)"], ["pair", "2개 일치 (4칸)"], ["triple", "3개 일치 (8칸)"], ["jackpot", "★ 777 잭팟 (20칸 폭풍 전진!)"]],
-	&"REVOLVER": [["empty", "빈 총을 당길 때마다 +3칸 누적 (최대 15칸)"], ["fired", "실탄 발사 시 0칸 증발 & 즉시 턴 종료!"]],
+## 도구별 [심볼 글자, 심볼 색, 전진 규칙 첫 줄, 둘째 줄]. 할리갈리 둘째 줄의 {bonus}는 현재 적립 칸 수로 바뀐다.
+const TOOL_CARDS: Dictionary = {
+	&"D6": ["6", Color("c92a2a"), "굴려서\n1 ~ 6 칸 전진", ""],
+	&"YUT": ["윷", Color("8a5a2b"), "던져서 -1 ~ 5 칸 전진", "(윷·모 나오면 한 번 더!)"],
+	&"LIFE_ROULETTE": ["룰", Color("1971c2"), "돌려서 1 ~ 10 칸 전진", "(7 당첨 시 한 번 더!)"],
+	&"HOLDEM": ["♠", Color("343a40"), "5장 포커 족보에 따라", "1 ~ 15 칸 전진"],
+	&"HALLI_GALLI": ["종", Color("e67700"), "1 ~ 3 칸 + 종치기 적립금", "(현재 +{bonus}칸 적립 중)"],
+	&"SLOT_777": ["7", Color("862e9c"), "릴 맞춰 1 ~ 8 칸 전진", "(★777 잭팟 시 20칸!)"],
+	&"REVOLVER": ["탄", Color("495057"), "당길 때마다 +3칸 누적", "(실탄 터지면 0칸 종료!)"],
 }
 
 
 func _refresh_tool_board(tool: BaseJudgmentTool, player_id: int) -> void:
-	var key: String = "%d:%s" % [player_id, tool.tool_id]
-	if key != _tool_board_key:
-		_tool_board_key = key
-		_tool_highlight = ""
-		for child: Node in _tool_rows_box.get_children():
-			child.queue_free()
-		_tool_rows.clear()
-		_tool_result_label.text = ""
-		for entry: Array in TOOL_RULES.get(tool.tool_id, []):
-			var row := PanelContainer.new()
-			row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			var label := _make_label(str(entry[1]), 13, Color("ced4da"))
-			label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			label.custom_minimum_size = Vector2(318, 0)
-			label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			row.add_child(label)
-			_tool_rows_box.add_child(row)
-			_tool_rows[str(entry[0])] = {"panel": row, "label": label}
-	_tool_title.text = "%s 판정 도구: %s" % ["내" if ai_mode else "P%d" % player_id, tool.display_name]
-	_tool_title.add_theme_color_override("font_color", (PLAYER_COLORS[player_id] as Color).lightened(0.3))
+	var card: Array = TOOL_CARDS.get(tool.tool_id, ["?", Color("495057"), tool.display_name, ""])
+	_tool_board_key = "%d:%s" % [player_id, tool.tool_id]
+	_tool_icon.add_theme_stylebox_override("panel", _style(card[1], (card[1] as Color).lightened(0.4), 2, 12, 0, 0))
+	_tool_icon_label.text = card[0]
+	_tool_title.text = tool.display_name
+	_tool_title.add_theme_color_override("font_color", (PLAYER_COLORS[player_id] as Color).lightened(0.35))
+	_tool_main.text = card[2]
+	var sub: String = card[3]
 	if tool is ToolHalliGalli:
-		var halli: ToolHalliGalli = tool as ToolHalliGalli
-		(_tool_rows["bonus"]["label"] as Label).text = "과일 5개 종치기 적립 보너스: 현재 +%d칸 누적 중" % halli.banked_bonus
-		_fruit_label.text = "바닥 과일 합계 %s - 어느 한 과일이 5개면 종을 치세요" % str(halli.fruit_totals)
-	_fruit_label.visible = tool is ToolHalliGalli
-	_paint_tool_rows()
-
-
-func _paint_tool_rows() -> void:
-	for row_id: String in _tool_rows.keys():
-		var lit: bool = _tool_highlight != "" and (row_id == _tool_highlight or (_tool_highlight == "base+bonus" and (row_id == "base" or row_id == "bonus")))
-		var panel: PanelContainer = _tool_rows[row_id]["panel"]
-		var label: Label = _tool_rows[row_id]["label"]
-		panel.add_theme_stylebox_override("panel", _style(Color("5a4710") if lit else Color("181e30"), COLOR_GOLD if lit else Color("2c3550"), 3 if lit else 1, 8, 10 if lit else 0, 5))
-		label.add_theme_color_override("font_color", Color("fff3bf") if lit else Color("ced4da"))
-
-
-## 굴림 결과에 해당하는 전광판 행: 불이 들어올 행 ID와 결과 문구.
-func _tool_result_info(result: Dictionary) -> Dictionary:
-	var details: Dictionary = result["details"]
-	var steps: int = int(result["steps"])
-	var row: String = ""
-	var text: String = ""
-	match result["tool_id"]:
-		&"D6":
-			row = "all"
-			text = "%d -> %d칸 전진!" % [steps, steps]
-		&"YUT":
-			row = str(steps)
-			text = ("%s -> 1칸 후퇴!" if steps < 0 else "%s -> %d칸 전진!") % ([YUT_NAMES.get(steps, "?")] if steps < 0 else [YUT_NAMES.get(steps, "?"), steps])
-		&"LIFE_ROULETTE":
-			row = "seven" if int(details["face"]) == ToolLifeRoulette.JACKPOT_FACE else "base"
-			text = "%d -> %d칸 전진!%s" % [steps, steps, "  행운의 7! 한 번 더!" if row == "seven" else ""]
-		&"HOLDEM":
-			var hand: StringName = details["hand"]
-			row = "flush" if ["flush", "full_house", "four_kind", "straight_flush"].has(str(hand)) else str(hand)
-			text = "%s -> %d칸 전진!" % [HAND_NAMES.get(hand, "?"), steps]
-		&"HALLI_GALLI":
-			row = "base+bonus" if int(details["bonus"]) > 0 else "base"
-			text = "기본 %d + 보너스 %d -> %d칸 전진!" % [details["base"], details["bonus"], steps]
-		&"SLOT_777":
-			row = {1: "miss", 4: "pair", 8: "triple", 20: "jackpot"}.get(steps, "miss")
-			text = "%s -> %d칸 전진!" % [{"miss": "꽝", "pair": "2개 일치", "triple": "3개 일치", "jackpot": "777 잭팟"}[row], steps]
-		&"REVOLVER":
-			if details["fired"]:
-				row = "fired"
-				text = "탕! 누적 %d칸 증발 -> 0칸, 턴 종료!" % details["lost"]
-			else:
-				row = "empty"
-				text = "찰칵 -> 누적 %d칸 (멈추면 %d칸 전진)" % [steps, steps]
-	if result["reroll"]:
-		text += "  (재굴림!)"
-	return {"row": row, "text": text}
-
-
-func _highlight_tool_result(result: Dictionary) -> void:
-	var info: Dictionary = _tool_result_info(result)
-	_tool_highlight = str(info["row"])
-	_tool_result_label.text = str(info["text"])
-	_paint_tool_rows()
+		sub = sub.replace("{bonus}", str((tool as ToolHalliGalli).banked_bonus))
+	_tool_sub.text = sub
+	_tool_sub.visible = sub != ""
 
 
 func _category_text(category: GameEnums.CardCategory) -> String:
@@ -3167,8 +3145,6 @@ func _handle_roll_event(data: Dictionary) -> void:
 
 
 func _reveal_roll(data: Dictionary) -> void:
-	if int(data["player_id"]) == _dock_owner():
-		_highlight_tool_result(data["result"])
 	var roll_text: String = _log_roll(data)
 	var details: Dictionary = (data["result"] as Dictionary)["details"]
 	var fired: bool = bool(details.get("fired", false))

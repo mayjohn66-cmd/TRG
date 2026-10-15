@@ -342,6 +342,22 @@ func _check_bounds() -> void:
 			_assert((node as Control).size.x >= 99.0 and (node as Control).size.y >= 139.0, "카드는 최소 100x140이어야 한다 (%s)" % str((node as Control).size))
 	var turn_panel: PanelContainer = _board._profiles[_board.manager.current_player_id()]["panel"]
 	_assert(turn_panel.scale.x > 1.0, "현재 턴 플레이어 프로필 카드는 확대되어야 한다")
+	# 스포트라이트: 현재 턴만 환하게, 나머지는 어둡게 가라앉는다 (전체 승리 후에는 모두 밝게).
+	if not _board.manager.is_game_over:
+		for other: int in [1, 2, 3, 4]:
+			var panel: Control = _board._profiles[other]["panel"]
+			if other == _board.manager.current_player_id():
+				_assert(panel.modulate.is_equal_approx(MainBoard.PROFILE_LIT), "현재 턴 프로필은 밝다 (%s)" % str(panel.modulate))
+			else:
+				_assert(panel.modulate.is_equal_approx(MainBoard.PROFILE_DIM) and panel.scale == Vector2.ONE, "다른 프로필은 어둡고 기본 크기다 (%s)" % str(panel.modulate))
+	# 2x2 기물 슬롯: 완주/출전/대기 문구와 슬롯 수
+	for other: int in [1, 2, 3, 4]:
+		var slots: Array = _board._profiles[other]["slots"]
+		_assert(slots.size() == 4, "프로필마다 기물 슬롯 4개")
+		for index: int in slots.size():
+			var pawn: PlayerPawn = _board.state.get_pawn(other * 10 + index + 1)
+			var expected: String = "★완주" if pawn.is_finished else ("출전" if pawn.has_left_start else "대기")
+			_assert((slots[index]["status"] as Label).text == expected, "기물 슬롯 상태 문구 (%s)" % expected)
 	var player_id: int = _board.manager.current_player_id()
 	if _board.state.tools[player_id] is ToolRussianRoulette and not _board._is_bot_turn():
 		_assert(_board._roll_button.visible and _board._stop_button.visible, "러시안 룰렛에서는 방아쇠/멈추기 버튼이 상시 노출되어야 한다")

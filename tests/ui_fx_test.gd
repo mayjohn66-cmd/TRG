@@ -263,12 +263,16 @@ func _test_hud_overhaul() -> void:
 	var current: int = manager.current_player_id()
 	manager.state.tools[current] = ToolRegistry.create(&"HOLDEM")
 	_board._refresh_controls()
-	_expect(_board._tool_rows.size() == 6, "홀덤 전광판은 족보 6줄")
-	_board._highlight_tool_result({"tool_id": &"HOLDEM", "steps": 5, "reroll": false, "details": {"hand": &"two_pair"}})
-	_expect(_board._tool_highlight == "two_pair" and _board._tool_result_label.text == "투페어 -> 5칸 전진!", "투페어 줄에 불이 들어오고 결과가 뜬다 (%s)" % _board._tool_result_label.text)
+	_expect(_board._tool_board.custom_minimum_size == Vector2(210, 250) and _board._tool_board.size.x == 210.0, "판정 도구 카드는 210x250 고정 크기")
+	_expect(_board._tool_title.text == "텍사스 홀덤 딜러" and _board._tool_main.text.contains("포커 족보") and _board._tool_icon.custom_minimum_size == Vector2(48, 48), "홀덤 카드: 이름 + 핵심 규칙 + 48x48 심볼 (%s)" % _board._tool_main.text)
 	manager.state.tools[current] = ToolRegistry.create(&"HALLI_GALLI")
+	(manager.state.tools[current] as ToolHalliGalli).banked_bonus = 4
 	_board._refresh_controls()
-	_expect(str((_board._tool_rows["bonus"]["label"] as Label).text).contains("누적 중"), "할리갈리 전광판에 보너스 누적 줄")
+	_expect(_board._tool_sub.text.contains("+4칸 적립 중"), "할리갈리 카드에 현재 적립 칸 수 (%s)" % _board._tool_sub.text)
+	for tool_id: StringName in ToolRegistry.ALL_IDS:
+		manager.state.tools[current] = ToolRegistry.create(tool_id)
+		_board._refresh_controls()
+		_expect(_board._tool_main.text != "" and _board.TOOL_CARDS.has(tool_id), "%s 카드 규칙 요약 있음" % tool_id)
 	manager.state.tools[current] = ToolRegistry.create(&"D6")
 	_board._refresh_controls()
 	# 3) 기물 독 + 호버 툴팁
