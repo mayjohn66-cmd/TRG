@@ -25,6 +25,12 @@ var drawn_card: StringName = &""
 var special_victory: StringName = &""
 var attachment_events: Array[Dictionary] = []
 var effect_names: Array[String] = []
+## 장기 [포 넘기]로 이동 거리에 +2칸이 붙었는가.
+var cannon_bonus: bool = false
+## 바둑 [알까기]로 2칸 튕겨 나간 말들 / 포석 무적에 막혀 한 칸 밀려난 이동자 / 장기 2세트 [초나라 포진]으로 구속된 말들.
+var knocked_pawn_ids: Array[int] = []
+var pushed_back: bool = false
+var restrained_pawn_ids: Array[int] = []
 
 
 func merge(other: MoveReport) -> void:
@@ -49,6 +55,10 @@ func merge(other: MoveReport) -> void:
 		special_victory = other.special_victory
 	attachment_events.append_array(other.attachment_events)
 	effect_names.append_array(other.effect_names)
+	cannon_bonus = cannon_bonus or other.cannon_bonus
+	knocked_pawn_ids.append_array(other.knocked_pawn_ids)
+	pushed_back = pushed_back or other.pushed_back
+	restrained_pawn_ids.append_array(other.restrained_pawn_ids)
 
 
 func to_dict() -> Dictionary:
@@ -73,4 +83,8 @@ func to_dict() -> Dictionary:
 		"special_victory": special_victory,
 		"attachment_events": attachment_events,
 		"effects": effect_names,
+		"cannon_bonus": cannon_bonus,
+		"knocked": knocked_pawn_ids,
+		"pushed_back": pushed_back,
+		"restrained": restrained_pawn_ids,
 	}

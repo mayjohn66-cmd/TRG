@@ -19,7 +19,7 @@ static func execute(state: GameState, mover: PlayerPawn, ctx: RuleContext) -> Mo
 	var report: MoveReport = begin(state, mover, ctx)
 	if report.canceled:
 		return report
-	var path: Array[int] = state.board.calculate_path(mover, ctx.dice_value * ctx.direction, ctx)
+	var path: Array[int] = plan_path(state, mover, ctx, report)
 	var outcome: StepOutcome = StepOutcome.CONTINUE
 	for index: int in path.size():
 		outcome = apply_step(state, mover, ctx, path[index], index == path.size() - 1, index == 0, report)
@@ -27,6 +27,32 @@ static func execute(state: GameState, mover: PlayerPawn, ctx: RuleContext) -> Mo
 			break
 	finalize(state, mover, ctx, report, outcome)
 	return report
+
+
+## 기물 능력을 반영한 이동 경로를 계산한다. 동기 실행(execute)과 TurnManager 비동기 이동이 공유한다.
+## - 바둑 2세트 [포석]: 눈금 -1 (최소 1칸). - 장기 [포 넘기]: 중간 칸에 다른 말이 하나라도 있으면 +2칸.
+static func plan_path(state: GameState, mover: PlayerPawn, ctx: RuleContext, report: MoveReport) -> Array[int]:
+	var steps: int = ctx.dice_value * ctx.direction
+	var sign_dir: int = -1 if steps < 0 else 1
+	if steps != 0 and mover.kind == GameEnums.PawnKind.GO and state.set_count(mover.owner_id, GameEnums.PawnKind.GO) >= GameEnums.SET_SYNERGY_2:
+		steps = sign_dir * maxi(absi(steps) - 1, 1)
+	var path: Array[int] = state.board.calculate_path(mover, steps, ctx)
+	if mover.kind == GameEnums.PawnKind.JANGGI and _path_jumps_over_pawn(state, mover, path):
+		path = state.board.calculate_path(mover, steps + 2 * sign_dir, ctx)
+		report.cannon_bonus = true
+	return path
+
+
+## 경로의 '중간 칸'(도착 칸 제외)에 이동자 본인·업은 말이 아닌 말(아군·적군 모두)이 서 있는가.
+static func _path_jumps_over_pawn(state: GameState, mover: PlayerPawn, path: Array[int]) -> bool:
+	for index: int in range(path.size() - 1):
+		var tile: int = path[index]
+		if tile == GameEnums.GOAL_TILE:
+			continue
+		for other: PlayerPawn in state.leaders_at(tile):
+			if other != mover and other.has_left_start:
+				return true
+	return false
 
 
 ## 이동 준비: ON_MOVE_CALC 법전 파이프라인을 통과시켜 지름길/업기/결승 바운스 플래그를 확정한다.
@@ -73,7 +99,9 @@ static func apply_step(
 	ctx.path_nodes.append(destination)
 	state.pawn_stepped.emit(mover.entity_id, from_tile, destination)
 
-	if _trigger_attachments(state, mover, ctx, destination, is_last, report):
+	# 나이트 점프: 중간 칸의 설치물은 무시하고 도착 칸의 설치물만 판정한다.
+	var skip_attachments: bool = not is_last and mover.jumps_over_attachments()
+	if not skip_attachments and _trigger_attachments(state, mover, ctx, destination, is_last, report):
 		if not mover.has_left_start:
 			# 함정이 말을 출발선으로 돌려보냈다 (send_to_start가 출발 상태를 초기화한다).
 			report.trapped = true
@@ -106,7 +134,7 @@ static func _pay_salary(state: GameState, mover: PlayerPawn, report: MoveReport)
 			report.salary_cards += 1
 
 
-## 모노폴리 카 [호텔 건설]: 이동이 끝난 타일에 2턴간 유지되는 통행료 호텔을 설치한다 (같은 타일의 내 호텔은 갱신).
+## 모노폴리 카 [호텔 건설]: 이동이 끝난 타일에 내 턴 5번간(4세트면 영구) 유지되는 통행료 호텔을 설치한다 (같은 타일의 내 호텔은 갱신).
 static func _build_hotel(state: GameState, mover: PlayerPawn, report: MoveReport) -> void:
 	var tile: TileNode = state.board.get_tile(mover.current_tile_idx)
 	for attachment: TileAttachment in tile.attachments.duplicate():
@@ -210,6 +238,18 @@ static func _resolve_captures(state: GameState, mover: PlayerPawn, ctx: RuleCont
 			victims.append(leader)
 	if victims.is_empty():
 		return
+	# 바둑 2세트 [포석]: 내 바둑돌은 잡히지 않는다. 멈춘 침입자는 잡지 못하고 한 칸 밀려난다.
+	for victim: PlayerPawn in victims:
+		if is_capture_immune(state, victim):
+			state.step_back_one(mover)
+			report.pushed_back = true
+			report.path.append(mover.current_tile_idx)
+			return
+	# 바둑 [알까기]: 잡는 대신 상대를 2칸 앞으로 튕겨 내고 내 돌이 그 칸을 차지한다.
+	if mover.kind == GameEnums.PawnKind.GO:
+		for victim: PlayerPawn in victims:
+			_knock_forward(state, victim, 2, report)
+		return
 	ctx.capturer = mover
 	ctx.captured_pawns = victims
 	ctx.capture_extra_turn = true
@@ -219,16 +259,59 @@ static func _resolve_captures(state: GameState, mover: PlayerPawn, ctx: RuleCont
 	if ctx.is_canceled:
 		ctx.is_canceled = false
 		return
+	var restrain_instead: bool = mover.kind == GameEnums.PawnKind.JANGGI \
+			and state.set_count(mover.owner_id, GameEnums.PawnKind.JANGGI) >= GameEnums.SET_SYNERGY_2
 	for victim: PlayerPawn in victims:
 		for member: PlayerPawn in victim.stack_members():
 			report.captured_pawn_ids.append(member.entity_id)
-		state.send_to_start(victim, mover.owner_id)
+		if restrain_instead:
+			# 장기 2세트 [초나라 포진]: 출발선으로 보내지 않고 그 자리에서 1턴 구속한다.
+			for member: PlayerPawn in victim.stack_members():
+				member.restrained_turns = maxi(member.restrained_turns, 1)
+				report.restrained_pawn_ids.append(member.entity_id)
+			if not state.hurt_players.has(victim.owner_id):
+				state.hurt_players.append(victim.owner_id)
+		else:
+			state.send_to_start(victim, mover.owner_id)
 	if ctx.capture_extra_turn:
 		report.extra_turn = true
 	if ctx.capture_charge_steps > 0 and ctx.charge_depth == 0:
 		var charge_ctx: RuleContext = ctx.make_follow_up(ctx.capture_charge_steps)
 		var charge_report: MoveReport = execute(state, mover, charge_ctx)
 		report.merge(charge_report)
+
+
+## 바둑 2세트를 가진 주인의 바둑돌은 잡히지 않는다 (포석).
+static func is_capture_immune(state: GameState, pawn: PlayerPawn) -> bool:
+	return pawn.kind == GameEnums.PawnKind.GO \
+			and state.set_count(pawn.owner_id, GameEnums.PawnKind.GO) >= GameEnums.SET_SYNERGY_2
+
+
+## 대표 말(업은 말 포함)을 앞으로 steps칸 튕겨 낸다. 결승선은 넘지 않고 직전 칸에서 멈추며, 설치물·잡기는 판정하지 않는다.
+static func _knock_forward(state: GameState, victim: PlayerPawn, steps: int, report: MoveReport) -> void:
+	var from_tile: int = victim.current_tile_idx
+	var path: Array[int] = state.board.calculate_path(victim, steps, RuleContext.new())
+	for destination: int in path:
+		if destination == GameEnums.GOAL_TILE:
+			break
+		state.board.commit_step(victim, destination)
+	if victim.current_tile_idx == from_tile:
+		return
+	state.sync_stack_position(victim)
+	for member: PlayerPawn in victim.stack_members():
+		report.knocked_pawn_ids.append(member.entity_id)
+	state.pawn_knocked.emit(victim.entity_id, from_tile, victim.current_tile_idx)
+
+
+## 대표 말을 steps칸 후퇴시킨다 (ACT_03 우노 +4 페널티). 설치물·잡기는 판정하지 않는다. 실제로 지난 타일들을 반환한다.
+static func retreat(state: GameState, pawn: PlayerPawn, steps: int) -> Array[int]:
+	var path: Array[int] = state.board.calculate_path(pawn, -absi(steps), RuleContext.new())
+	for destination: int in path:
+		var from_tile: int = pawn.current_tile_idx
+		state.board.commit_step(pawn, destination)
+		state.sync_stack_position(pawn)
+		state.pawn_stepped.emit(pawn.entity_id, from_tile, destination)
+	return path
 
 
 ## 업기: 법전(allow_stacking)이 기물 고유 능력(can_stack_with)보다 우선한다. 출발선(0번)에서는 업지 않는다.

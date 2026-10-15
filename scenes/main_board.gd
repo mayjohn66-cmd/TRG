@@ -46,6 +46,8 @@ const REJECT_REASONS: Dictionary = {
 	&"invalid_index": "올바르지 않은 선택입니다",
 	&"nothing_to_cash_out": "확정할 누적치가 없습니다",
 	&"game_over": "게임이 끝났습니다",
+	&"ambiguous_pair": "교환할 체스 기물 두 개를 골라야 합니다",
+	&"no_instant_card": "떠넘길 즉발 카드가 없습니다",
 }
 const CATEGORY_COLORS: Dictionary = {
 	GameEnums.AugmentCategory.PAWN_EVOLUTION: Color("ffa94d"),
@@ -78,6 +80,8 @@ var _roll_button: Button = null
 var _stop_button: Button = null
 var _bell_button: Button = null
 var _skip_button: Button = null
+var _castle_button: Button = null
+var _bomb_button: Button = null
 var _new_game_button: Button = null
 var _hint_label: Label = null
 var _fruit_label: Label = null
@@ -254,6 +258,12 @@ func _build_ui() -> void:
 	_skip_button = _make_button("개입 패스(진행)", _on_skip_pressed, 15)
 	_skip_button.custom_minimum_size = Vector2(150, 40)
 	action_row.add_child(_skip_button)
+	_castle_button = _make_button("[캐슬링(위치 교환)]", _on_castle_pressed, 14)
+	_castle_button.tooltip_text = "체스 2세트: 내 체스 기물 두 개의 위치를 맞바꿉니다 (턴 시작 시 1회)"
+	action_row.add_child(_castle_button)
+	_bomb_button = _make_button("[폭탄 떠넘기기]", _on_pass_bomb_pressed, 14)
+	_bomb_button.tooltip_text = "즉발 카드 1장을 소모해 우노 +4 페널티를 두 배(-8)로 다음 플레이어에게 넘깁니다"
+	action_row.add_child(_bomb_button)
 	_new_game_button = _make_button("새 게임", _new_game, 13)
 	action_row.add_child(_new_game_button)
 	_hint_label = _make_label("", 13, Color("a5d8ff"))
@@ -670,7 +680,8 @@ func _refresh_players() -> void:
 		var tool: BaseJudgmentTool = state.tools[player_id]
 		var marker: String = "▶" if player_id == manager.current_player_id() else "  "
 		(_player_labels[player_id] as Label).text = "%s P%d   완주 %d/4   카드 %d장   도구: %s" % [marker, player_id, finished, (state.hands[player_id] as Array).size(), tool.display_name]
-		(_pawn_info_labels[player_id] as Label).text = "      기물: %s %s" % [_pawn_tokens(player_id), _set_synergy_text(player_id)]
+		var bomb_text: String = "  [우노+4 대기 %d칸]" % state.penalty_of(player_id) if state.penalty_of(player_id) != 0 else ""
+		(_pawn_info_labels[player_id] as Label).text = "      기물: %s %s%s" % [_pawn_tokens(player_id), _set_synergy_text(player_id), bomb_text]
 
 
 ## "[체스:폰] [체스:나이트] [기본] [기본]" 형태의 말 4개 요약. 상태 이상은 뒤에 붙인다.
@@ -696,7 +707,8 @@ func _set_synergy_text(player_id: int) -> String:
 		if count >= GameEnums.PAWNS_PER_PLAYER:
 			parts.append("(%s 4세트 완성 - %s 승리 조건)" % [PawnCatalog.display_set_name(kind), PawnCatalog.SPECIAL_VICTORY_NAMES[kind]])
 		elif count >= GameEnums.SET_SYNERGY_2:
-			parts.append("(%s %d세트 활성)" % [PawnCatalog.display_set_name(kind), count])
+			var extra: String = " - 무적" if kind == GameEnums.PawnKind.GO else ""
+			parts.append("(%s %d세트 활성%s)" % [PawnCatalog.display_set_name(kind), count, extra])
 	return " ".join(parts)
 
 
@@ -768,6 +780,10 @@ func _refresh_controls() -> void:
 		_fruit_label.text = "바닥 과일 합계 %s - 어느 한 과일이 5개면 종을 치세요 (적립 보너스 +%d칸)" % [str((tool as ToolHalliGalli).fruit_totals), (tool as ToolHalliGalli).banked_bonus]
 	var window_open: bool = not over and (current_phase == TurnManager.State.PHASE_INTERRUPT_ROLL or current_phase == TurnManager.State.PHASE_RESOLUTION)
 	_skip_button.visible = window_open
+	_castle_button.visible = not over and manager.can_castle(player_id)
+	_bomb_button.visible = not over and manager.can_pass_bomb(player_id)
+	if _bomb_button.visible:
+		_bomb_button.text = "[폭탄 떠넘기기 (%d칸)]" % (state.penalty_of(player_id) * 2)
 	_hint_label.text = _hint_text(current_phase, tool)
 
 	var selecting: bool = not over and current_phase == TurnManager.State.PHASE_SELECT_PAWN
@@ -803,6 +819,9 @@ func _hint_text(current_phase: TurnManager.State, tool: BaseJudgmentTool) -> Str
 		return "타일 선택 모드: 보드판에서 사용할 타일(초록 테두리)을 클릭하세요. 취소는 ESC 또는 오른쪽 클릭."
 	match current_phase:
 		TurnManager.State.PHASE_TURN_BEGIN:
+			var pending: int = state.penalty_of(manager.current_player_id())
+			if pending != 0:
+				return "우노 +4 페널티 %d칸이 걸려 있습니다! 즉발 카드가 있으면 [폭탄 떠넘기기], 아니면 굴리는 순간 가장 앞선 말이 후퇴합니다." % pending
 			return "카드(▣ 표시는 타일을 클릭해 설치/소환)를 쓰거나 [굴리기]를 누르세요. (판정 도구: %s)" % tool.display_name
 		TurnManager.State.PHASE_ROLL_WAIT:
 			if tool.has_pending_state():
@@ -853,6 +872,31 @@ func _on_bell_pressed() -> void:
 func _on_skip_pressed() -> void:
 	manager.force_timeout()
 	_refresh_all()
+
+
+func _on_castle_pressed() -> void:
+	var pairs: Array[Array] = CastleCommand.valid_pairs(state, manager.current_player_id())
+	if pairs.size() <= 1:
+		_act(&"castle")
+		return
+	var options: Array[Dictionary] = []
+	for pair: Array in pairs:
+		var a: PlayerPawn = pair[0]
+		var b: PlayerPawn = pair[1]
+		options.append({
+			"label": "%s(%d번) ↔ %s(%d번)" % [a.display_label(), a.current_tile_idx, b.display_label(), b.current_tile_idx],
+			"value": [a.entity_id, b.entity_id],
+		})
+	_show_choice("위치를 맞바꿀 체스 기물 두 개", options, _on_castle_picked)
+
+
+func _on_castle_picked(value: Variant) -> void:
+	var ids: Array = value
+	_act(&"castle", {"pawn_a": int(ids[0]), "pawn_b": int(ids[1])})
+
+
+func _on_pass_bomb_pressed() -> void:
+	_act(&"pass_bomb")
 
 
 func _on_pawn_pressed(pawn_id: int) -> void:
@@ -1267,6 +1311,25 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_log_line("[증강] 라운드 %d 증강 드래프트가 열렸습니다." % data["round"], Color("ffa94d"))
 		&"augment_picked":
 			_log_line("[증강] P%d%s: %s - %s" % [data["player_id"], " (자동)" if data["auto"] else "", AugmentRegistry.get_def(data["augment_id"]).display_name, data["text"]], Color("ffa94d"))
+		&"bang_resolved":
+			var target_name: String = _pawn_name(int(data["target"]))
+			if data["dodged"]:
+				_log_line("[뱅!] P%d의 총알이 %s를 노렸지만 P%d가 [%s]를 버리고 회피(빗나감)!" % [data["shooter"], target_name, state.get_pawn(int(data["target"])).owner_id, _card_name(data["discarded_card"])], Color("ffa8a8"))
+			else:
+				_log_line("[뱅!] P%d의 총알이 %s 명중! 손패가 없어 출발선으로 돌아갑니다." % [data["shooter"], target_name], Color("ff6b6b"))
+		&"castled":
+			_log_line("[캐슬링] P%d: %s ↔ %s 위치 교환" % [data["player_id"], _pawn_name(int(data["pawn_a"])), _pawn_name(int(data["pawn_b"]))], Color("74c0fc"))
+		&"pawn_knocked":
+			_log_line("[알까기] %s이(가) %d번 → %d번으로 튕겨 나갔습니다" % [_pawn_name(int(data["pawn_id"])), data["from"], data["to"]], Color("b197fc"))
+		&"pawn_pushed_back":
+			_log_line("[포석] 무적의 바둑돌에 막혀 %s이(가) %d번 → %d번으로 밀려났습니다" % [_pawn_name(int(data["pawn_id"])), data["from"], data["to"]], Color("b197fc"))
+		&"bomb_passed":
+			_log_line("[우노 +4] P%d가 [%s]를 소모해 폭탄을 P%d에게 떠넘겼습니다 (%d칸)" % [data["from"], _card_name(data["card_id"]), data["to"], data["amount"]], Color("ffd43b"))
+		&"bomb_applied":
+			if int(data["pawn_id"]) == -1:
+				_log_line("[우노 +4] P%d: 후퇴시킬 말이 없어 페널티가 사라졌습니다" % data["player_id"], Color("ffd43b"))
+			else:
+				_log_line("[우노 +4] P%d의 %s이(가) %d칸 후퇴 (%d번 → %d번)" % [data["player_id"], _pawn_name(int(data["pawn_id"])), data["steps"], data["from"], state.get_pawn(int(data["pawn_id"])).current_tile_idx], Color("ffd43b"))
 		&"game_over":
 			_last_reason = data["reason"]
 	_refresh_all()
@@ -1317,6 +1380,12 @@ func _log_move(data: Dictionary) -> void:
 		text += "  (추가 턴)"
 	if data["bonus_roll"]:
 		text += "  (사기 윷: 추가 굴림)"
+	if data["cannon_bonus"]:
+		text += "  [포 넘기] +2칸"
+	if data["pushed_back"]:
+		text += "  [포석] 무적에 막혀 한 칸 후퇴"
+	if not (data["restrained"] as Array).is_empty():
+		text += "  [초나라 포진] 구속 %s" % str(data["restrained"])
 	if data["hotel_built"]:
 		text += "  호텔 건설"
 	if int(data["salary_cards"]) > 0:

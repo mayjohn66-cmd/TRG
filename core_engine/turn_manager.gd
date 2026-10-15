@@ -54,6 +54,8 @@ var _roll_chain: int = 0
 var _turns_in_round: int = 0
 var _extra_turn_pending: bool = false
 var _bonus_roll_pending: bool = false
+## 체스 2세트 [캐슬링]을 이번 턴에 이미 썼는가 (턴이 시작될 때마다 초기화).
+var _castled_this_turn: bool = false
 ## 현재 플레이어가 이번 턴에 연속으로 잡은 말 수 (장군멍군 판정). 턴이 넘어가거나 롤백되면 0이 된다.
 var _chain_captures: int = 0
 var _draft_offers: Dictionary = {}
@@ -88,12 +90,18 @@ func start_game(player_ids: Array[int], seed_value: int = 0, loadouts: Dictionar
 	state = GameState.new()
 	state.setup(player_ids, seed_value, loadouts)
 	state.turn_order_reverse_requested.connect(reverse_turn_order)
+	state.bang_resolved.connect(_on_bang_resolved)
+	state.pawns_castled.connect(func(a: int, b: int) -> void: _emit_event(&"castled", {"player_id": current_player_id(), "pawn_a": a, "pawn_b": b}))
+	state.pawn_knocked.connect(func(pawn_id: int, from_tile: int, to_tile: int) -> void: _emit_event(&"pawn_knocked", {"pawn_id": pawn_id, "from": from_tile, "to": to_tile}))
+	state.pawn_pushed_back.connect(func(pawn_id: int, from_tile: int, to_tile: int) -> void: _emit_event(&"pawn_pushed_back", {"pawn_id": pawn_id, "from": from_tile, "to": to_tile}))
 	_ensure_command_stack()
 	command_stack.begin_turn()
 	player_order = player_ids.duplicate()
 	current_turn_index = 0
 	turn_direction = 1
+	state.turn_direction = 1
 	is_game_over = false
+	_castled_this_turn = false
 	_sync_current_player()
 	augments.clear()
 	for player_id: int in player_ids:
@@ -135,12 +143,15 @@ func request_action(action: StringName, params: Dictionary = {}) -> void:
 		&"select_pawn": _handle_select_pawn(actor, params)
 		&"play_card": _handle_play_card(actor, params)
 		&"pick_augment": _handle_pick_augment(actor, params)
+		&"castle": _handle_castle(actor, params)
+		&"pass_bomb": _handle_pass_bomb(actor, params)
 		_: action_rejected.emit(actor, action, &"unknown_action")
 
 
 ## 턴 진행 방향을 뒤집는다 (우노 리버스 ACT_01).
 func reverse_turn_order() -> void:
 	turn_direction *= -1
+	state.turn_direction = turn_direction
 	turn_order_reversed.emit(turn_direction)
 	_broadcast_state()
 
@@ -309,6 +320,88 @@ func _handle_play_card(actor: int, params: Dictionary) -> void:
 	_broadcast_state()
 
 
+## 체스 2세트 [캐슬링(위치 교환)]: 내 턴 시작에 내 체스 기물 두 개의 타일을 맞바꾼다 (턴당 1회).
+## params: {"pawn_a": int, "pawn_b": int}. 후보 쌍이 정확히 하나면 생략할 수 있다.
+func can_castle(player_id: int) -> bool:
+	return state != null and not _castled_this_turn and current_state == State.PHASE_TURN_BEGIN \
+			and player_id == current_player_id() and not CastleCommand.valid_pairs(state, player_id).is_empty()
+
+
+func _handle_castle(actor: int, params: Dictionary) -> void:
+	if not can_castle(actor):
+		action_rejected.emit(actor, &"castle", &"wrong_phase")
+		return
+	var pawn_a_id: int = int(params.get("pawn_a", -1))
+	var pawn_b_id: int = int(params.get("pawn_b", -1))
+	if pawn_a_id == -1 or pawn_b_id == -1:
+		var pairs: Array[Array] = CastleCommand.valid_pairs(state, actor)
+		if pairs.size() != 1:
+			action_rejected.emit(actor, &"castle", &"ambiguous_pair")
+			return
+		pawn_a_id = (pairs[0][0] as PlayerPawn).entity_id
+		pawn_b_id = (pairs[0][1] as PlayerPawn).entity_id
+	var command := CastleCommand.new(actor, pawn_a_id, pawn_b_id)
+	if not command_stack.execute_command(command, _make_ctx(actor)):
+		action_rejected.emit(actor, &"castle", &"invalid_pawn")
+		return
+	_castled_this_turn = true
+	_broadcast_state()
+
+
+## ACT_03 우노 +4: 내 턴 시작에 페널티가 걸려 있고 손패에 즉발 카드가 있으면, 그 카드를 소모해 두 배(-8)로 다음 플레이어에게 떠넘길 수 있다.
+## params: {"card_id": StringName} (생략하면 첫 즉발 카드)
+func can_pass_bomb(player_id: int) -> bool:
+	return state != null and current_state == State.PHASE_TURN_BEGIN and player_id == current_player_id() \
+			and state.penalty_of(player_id) != 0 and state.hand_has_category(player_id, GameEnums.CardCategory.INSTANT)
+
+
+func _handle_pass_bomb(actor: int, params: Dictionary) -> void:
+	if current_state != State.PHASE_TURN_BEGIN or actor != current_player_id() or state.penalty_of(actor) == 0:
+		action_rejected.emit(actor, &"pass_bomb", &"wrong_phase")
+		return
+	var card_id: StringName = StringName(params.get("card_id", &""))
+	var card: BaseCard = CardRegistry.get_card(card_id) if card_id != &"" else null
+	if card == null or card.category != GameEnums.CardCategory.INSTANT or not state.has_card(actor, card_id):
+		card_id = state.first_card_of_category(actor, GameEnums.CardCategory.INSTANT)
+	if card_id == &"":
+		action_rejected.emit(actor, &"pass_bomb", &"no_instant_card")
+		return
+	var amount: int = state.penalty_of(actor)
+	var target_player: int = state.next_player_after(actor)
+	state.consume_card(actor, card_id)
+	state.pending_penalty.erase(actor)
+	state.pending_penalty[target_player] = state.penalty_of(target_player) + amount * 2
+	_emit_event(&"bomb_passed", {"from": actor, "to": target_player, "amount": amount * 2, "card_id": card_id})
+	_broadcast_state()
+
+
+## 걸려 있는 우노 +4 페널티를 지금 적용한다: 가장 앞선 말이 해당 칸 수만큼 후퇴한다 (설치물·잡기 판정 없음).
+func _apply_pending_penalty(player_id: int) -> void:
+	var amount: int = state.penalty_of(player_id)
+	if amount == 0:
+		return
+	state.pending_penalty.erase(player_id)
+	var target: PlayerPawn = state.front_pawn_of(player_id)
+	var path: Array[int] = []
+	var from_tile: int = -1
+	if target != null:
+		from_tile = target.current_tile_idx
+		path = MoveExecutor.retreat(state, target, absi(amount))
+	_emit_event(&"bomb_applied", {
+		"player_id": player_id,
+		"steps": absi(amount),
+		"pawn_id": target.entity_id if target != null else -1,
+		"from": from_tile,
+		"path": path,
+	})
+	state.turn_snapshot = TurnSnapshot.capture(state)
+	_broadcast_state()
+
+
+func _on_bang_resolved(shooter: int, target_pawn_id: int, dodged: bool, discarded_card: StringName) -> void:
+	_emit_event(&"bang_resolved", {"shooter": shooter, "target": target_pawn_id, "dodged": dodged, "discarded_card": discarded_card})
+
+
 func _handle_pick_augment(actor: int, params: Dictionary) -> void:
 	if current_state != State.PHASE_ROUND_START or not _draft_offers.has(actor) or _draft_picks.has(actor):
 		action_rejected.emit(actor, &"pick_augment", &"wrong_phase")
@@ -439,10 +532,14 @@ func _begin_turn(new_turn: bool = true) -> void:
 	command_stack.begin_turn()
 	_roll_chain = 0
 	_move_report = null
+	_castled_this_turn = false
 	_sync_current_player()
 	if new_turn:
 		_tick_restraints(current_player_id())
 	_tick_owned_attachments(current_player_id())
+	if not state.hand_has_category(current_player_id(), GameEnums.CardCategory.INSTANT):
+		# 떠넘길 즉발 카드가 없으면 페널티는 턴이 시작되자마자 적용된다.
+		_apply_pending_penalty(current_player_id())
 	state.turn_snapshot = TurnSnapshot.capture(state)
 	(state.tools[current_player_id()] as BaseJudgmentTool).on_turn_begin(state.rng)
 	change_state(State.PHASE_TURN_BEGIN)
@@ -459,11 +556,13 @@ func _tick_restraints(player_id: int) -> void:
 func _tick_owned_attachments(player_id: int) -> void:
 	for tile: TileNode in state.board.tiles:
 		for attachment: TileAttachment in tile.attachments.duplicate():
-			if attachment.owner_id == player_id and attachment.tick_turn():
+			if attachment.owner_id == player_id and not attachment.is_expiry_suspended(state) and attachment.tick_turn():
 				tile.remove_attachment(attachment)
 
 
 func _enter_roll_wait() -> void:
+	# 떠넘기지 않고 굴림으로 넘어가면 걸려 있던 우노 +4 페널티가 적용된다.
+	_apply_pending_penalty(current_player_id())
 	change_state(State.PHASE_ROLL_WAIT)
 
 
@@ -550,7 +649,7 @@ func _execute_move(pawn: PlayerPawn) -> void:
 
 	_move_report = MoveExecutor.begin(state, pawn, ctx)
 	if not _move_report.canceled:
-		var path: Array[int] = state.board.calculate_path(pawn, ctx.dice_value * ctx.direction, ctx)
+		var path: Array[int] = MoveExecutor.plan_path(state, pawn, ctx, _move_report)
 		await execute_step_by_step_move(pawn, path, ctx)
 		MoveExecutor.finalize(state, pawn, ctx, _move_report, _move_outcome)
 	var report: MoveReport = _move_report
@@ -667,6 +766,8 @@ func _build_sync_payload() -> Dictionary:
 		"winner": state.winner,
 		"hand_counts": hand_counts,
 		"move_queue": move_queue,
+		"pending": state.pending_penalty.duplicate(),
+		"castled": _castled_this_turn,
 	}
 
 
@@ -681,6 +782,9 @@ func _rpc_sync_state(payload: Dictionary) -> void:
 	state.winner = int(payload["winner"])
 	current_turn_index = int(payload["turn_index"])
 	turn_direction = int(payload["direction"])
+	state.turn_direction = turn_direction
+	state.pending_penalty = (payload["pending"] as Dictionary).duplicate()
+	_castled_this_turn = bool(payload["castled"])
 	is_game_over = bool(payload["game_over"])
 	move_queue.assign(payload["move_queue"])
 	current_state = payload["phase"]

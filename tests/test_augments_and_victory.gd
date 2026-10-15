@@ -396,17 +396,44 @@ func test_monopoly_pawn_builds_a_toll_hotel_that_stops_enemies_and_expires() -> 
 	check(built.hotel_built, "이동이 끝난 타일에 호텔 건설")
 	var hotel: TileAttachment = state.board.get_tile(2).attachments[0]
 	check_eq(hotel.attachment_id, "HOTEL", "호텔")
-	check_eq(hotel.duration_turns, 2, "2턴간 유지")
+	check_eq(hotel.duration_turns, 5, "내 턴 5번간 유지")
 	place(state, 21, 0, [], false)
 	var enemy: MoveReport = move(state, 21, 4)
 	check(enemy.stopped_early, "적이 밟으면 정지")
 	check_eq(state.get_pawn(21).current_tile_idx, 2, "호텔 타일에서 멈춤")
-	check(state.board.get_tile(2).has_attachment("HOTEL"), "호텔은 통행료를 받고도 유지")
-	place(state, 12, 0, [], false)
-	var own: MoveReport = move(state, 12, 4)
+	check(not state.board.get_tile(2).has_attachment("HOTEL"), "호텔은 통행료를 받으면 소모")
+	check(hotel.is_expired(), "소모된 호텔은 만료 상태")
+	var second := make_state(2, 1, {1: _loadout(Kind.MONOPOLY)})
+	place(second, 11, 0, [], false)
+	move(second, 11, 2)
+	var kept: TileAttachment = second.board.get_tile(2).attachments[0]
+	place(second, 12, 0, [], false)
+	var own: MoveReport = move(second, 12, 4)
 	check(not own.stopped_early, "내 호텔은 그냥 지나감")
-	check(not hotel.tick_turn(), "첫 턴 경과")
-	check(hotel.tick_turn(), "2턴 뒤 만료")
+	check(second.board.get_tile(2).has_attachment("HOTEL"), "내 호텔은 소모되지 않음")
+	for i: int in 4:
+		check(not kept.tick_turn(), "%d번째 턴 경과" % (i + 1))
+	check(kept.tick_turn(), "내 턴 5번 뒤 만료")
+
+
+func test_monopoly_four_set_makes_hotels_permanent() -> void:
+	var state := make_state(2, 1, {1: _loadout(Kind.MONOPOLY), 2: _loadout(Kind.MONOPOLY)})
+	var hotel := Hotel.new(1)
+	check(hotel.is_expiry_suspended(state), "모노폴리 4세트면 만료 정지")
+	var weak := make_state(2, 1, {1: [Vector2i(Kind.MONOPOLY, 1), Vector2i(Kind.MONOPOLY, 2), Vector2i(Kind.MONOPOLY, 3), 0]})
+	check(not Hotel.new(1).is_expiry_suspended(weak), "3세트는 정지되지 않음")
+	var manager: TurnManager = _manager(2, false, {1: _loadout(Kind.MONOPOLY)})
+	manager.state.place_attachment(7, Hotel.new(1))
+	var placed: TileAttachment = manager.state.board.get_tile(7).attachments[0]
+	for i: int in 8:
+		manager._tick_owned_attachments(1)
+	check(manager.state.board.get_tile(7).has_attachment("HOTEL"), "턴이 지나도 영구 유지")
+	check_eq(placed.duration_turns, 5, "남은 턴 수 그대로")
+	manager.state.pawns[0].kind = GameEnums.PawnKind.BASIC
+	for i: int in 5:
+		manager._tick_owned_attachments(1)
+	check(not manager.state.board.get_tile(7).has_attachment("HOTEL"), "4세트가 깨지면 다시 만료")
+	_dispose(manager)
 
 
 func test_monopoly_two_set_salary_draws_two_cards_at_the_goal() -> void:
@@ -589,7 +616,7 @@ func test_turn_manager_stops_the_game_on_special_victory_and_rejects_further_act
 	for pawn_id: int in [12, 13]:
 		place(winning.state, pawn_id, {12: 5, 13: 10}[pawn_id])
 	place(winning.state, 14, 13, [12])
-	winning.state.tools[1] = ScriptedTool.new([2])
+	winning.state.tools[1] = ScriptedTool.new([3])  # 바둑 2세트 포석: 눈금 -1 -> 실제 2칸
 	var winners: Array = []
 	winning.game_over.connect(func(winner_id: int, reason: StringName) -> void: winners.append([winner_id, reason]))
 	winning.action_rejected.connect(func(_player: int, _action: StringName, reason: StringName) -> void: rejected.append(reason))

@@ -301,9 +301,9 @@ func test_act_04_not_playable_for_pawn_that_merely_walked_to_19() -> void:
 
 
 func test_card_registry_and_default_deck() -> void:
-	for card_id: StringName in [&"ACT_01", &"ACT_04", &"ACT_05", &"ACT_06", &"TRP_01", &"TRP_02", &"TRP_03", &"TRP_04", &"SUM_01", &"SUM_02"]:
+	for card_id: StringName in [&"ACT_01", &"ACT_02", &"ACT_03", &"ACT_04", &"ACT_05", &"ACT_06", &"TRP_01", &"TRP_02", &"TRP_03", &"TRP_04", &"SUM_01", &"SUM_02"]:
 		check(CardRegistry.get_card(card_id) != null, "카드 %s 등록" % card_id)
-	check_eq(CardRegistry.default_deck().size(), 20, "기본 덱 20장")
+	check_eq(CardRegistry.default_deck().size(), 24, "기본 덱 24장")
 
 
 func test_mirror_force_card_validates_tile() -> void:

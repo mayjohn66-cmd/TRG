@@ -14,6 +14,9 @@ var _draft_rounds: Array[int] = []
 var _tile_picks: int = 0
 var _cards_played: int = 0
 var _evolutions: int = 0
+var _bombs_passed: int = 0
+var _castles: int = 0
+var _bangs: int = 0
 var _failures: Array[String] = []
 var _rng := RandomNumberGenerator.new()
 
@@ -73,7 +76,7 @@ func _step_once() -> void:
 		TurnManager.State.PHASE_ROUND_START:
 			_play_draft(manager)
 		TurnManager.State.PHASE_TURN_BEGIN, TurnManager.State.PHASE_ROLL_WAIT:
-			if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN and _try_tile_card(manager):
+			if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN and (_try_tile_card(manager) or _try_turn_begin_buttons(manager)):
 				return
 			if _board._stop_button.visible and _rng.randi_range(0, 1) == 0:
 				_board._stop_button.pressed.emit()
@@ -155,6 +158,35 @@ func _try_tile_card(manager: TurnManager) -> bool:
 	return false
 
 
+## 턴 시작 전용 UI: 폭탄 떠넘기기·캐슬링 버튼과 뱅! 카드를 (가끔) 누른다.
+func _try_turn_begin_buttons(manager: TurnManager) -> bool:
+	var player_id: int = manager.current_player_id()
+	_assert(_board._bomb_button.visible == manager.can_pass_bomb(player_id), "폭탄 떠넘기기 버튼 표시가 규칙과 일치해야 한다")
+	_assert(_board._castle_button.visible == manager.can_castle(player_id), "캐슬링 버튼 표시가 규칙과 일치해야 한다")
+	if _board._bomb_button.visible and _rng.randi_range(0, 1) == 0:
+		_board._bomb_button.pressed.emit()
+		_bombs_passed += 1
+		return true
+	if _board._castle_button.visible and _rng.randi_range(0, 1) == 0:
+		_board._castle_button.pressed.emit()
+		if _board._choice_overlay != null:
+			var picks: Array[Button] = []
+			for node: Node in _board._choice_overlay.find_children("*", "Button", true, false):
+				picks.append(node as Button)
+			if picks.size() > 1:
+				picks[0].pressed.emit()
+			_board._close_choice()
+		_castles += 1
+		return true
+	for card_id: StringName in _board.state.hands[player_id]:
+		if card_id == &"ACT_02" and BangCommand.find_target(_board.state, player_id) != null and _rng.randi_range(0, 1) == 0:
+			_board._on_card_pressed(player_id, card_id)
+			_cards_played += 1
+			_bangs += 1
+			return true
+	return false
+
+
 func _try_interrupt_card(manager: TurnManager) -> bool:
 	for player_id: int in [1, 2, 3, 4]:
 		for card_id: StringName in _board.state.hands[player_id]:
@@ -181,7 +213,7 @@ func _finish() -> bool:
 	var phase_names: Array[String] = []
 	for phase: int in _seen_phases.keys():
 		phase_names.append(str(phase))
-	print("UI_SMOKE actions=%d round=%d game_over=%s winner=%d reason=%s phases=%d drafts=%s tile_picks=%d cards=%d evolutions=%d" % [_actions, _board.state.round_number, manager.is_game_over, _board.state.winner, VictoryChecker.reason_text(_board._last_reason), _seen_phases.size(), str(_draft_rounds), _tile_picks, _cards_played, _evolutions])
+	print("UI_SMOKE actions=%d round=%d game_over=%s winner=%d reason=%s phases=%d drafts=%s tile_picks=%d cards=%d evolutions=%d bombs_passed=%d castles=%d bangs=%d" % [_actions, _board.state.round_number, manager.is_game_over, _board.state.winner, VictoryChecker.reason_text(_board._last_reason), _seen_phases.size(), str(_draft_rounds), _tile_picks, _cards_played, _evolutions, _bombs_passed, _castles, _bangs])
 	_assert(manager.is_game_over, "치트 없이 한 판이 끝까지 진행되어 승리자가 나와야 한다 (조작 %d회)" % _actions)
 	_assert(_draft_rounds.has(1), "1라운드 드래프트가 열렸어야 한다")
 	_assert(_board._result_overlay != null, "게임 종료 결과창이 떠야 한다")

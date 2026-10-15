@@ -8,6 +8,8 @@ static var _cache: Dictionary = {}
 
 const DECK_COMPOSITION: Dictionary = {
 	&"ACT_01": 2,
+	&"ACT_02": 2,
+	&"ACT_03": 2,
 	&"ACT_04": 2,
 	&"ACT_05": 2,
 	&"ACT_06": 3,
@@ -26,6 +28,8 @@ static func get_card(card_id: StringName) -> BaseCard:
 	var card: BaseCard = null
 	match card_id:
 		&"ACT_01": card = CardUnoReverse.new()
+		&"ACT_02": card = CardBang.new()
+		&"ACT_03": card = CardUnoPlusFour.new()
 		&"ACT_04": card = CardBackdoGoal.new()
 		&"ACT_05": card = CardBitesTheDust.new()
 		&"ACT_06": card = CardObjection.new()

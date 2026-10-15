@@ -21,6 +21,12 @@ signal card_drawn(player_id: int, card_id: StringName)
 signal card_stolen(player_id: int, card_id: StringName)
 ## ACT_01이 턴 순서 반전을 요청했다. 턴 순서는 TurnManager가 소유하므로 TurnManager가 구독해 처리한다.
 signal turn_order_reverse_requested()
+## ACT_02 뱅! 결과. dodged가 true면 상대가 카드를 버려 회피했다(빗나감).
+signal bang_resolved(shooter: int, target_pawn_id: int, dodged: bool, discarded_card: StringName)
+## 기물 능력 알림: 캐슬링(위치 교환) / 알까기로 튕겨 나감 / 포석 무적에 막혀 밀려남.
+signal pawns_castled(pawn_a_id: int, pawn_b_id: int)
+signal pawn_knocked(pawn_id: int, from_tile: int, to_tile: int)
+signal pawn_pushed_back(pawn_id: int, from_tile: int, to_tile: int)
 signal snapshot_restored()
 signal victory_declared(player_id: int, reason: StringName)
 
@@ -49,6 +55,10 @@ var winner: int = -1
 var turn_snapshot: TurnSnapshot = null
 ## 이번 턴에 말이 잡히거나 함정을 밟은 플레이어들 (ACT_05 발동 조건).
 var hurt_players: Array[int] = []
+## 턴 진행 방향 미러 (TurnManager가 소유·갱신한다): 1 정방향 / -1 역방향. next_player_after가 사용한다.
+var turn_direction: int = 1
+## ACT_03 우노 +4: 플레이어 ID -> 다음 자기 턴 시작에 받을 후퇴 페널티(음수 칸 수). 0이면 없음.
+var pending_penalty: Dictionary = {}
 ## ACT_05가 실행되었음을 TurnManager에 알리는 플래그.
 var rollback_requested: bool = false
 
@@ -359,6 +369,30 @@ func steal_random_card(player_id: int, source_rng: RandomNumberGenerator) -> Str
 	return card_id
 
 
+## 손패에서 무작위 1장을 버린다 (ACT_02 회피). 손패가 비었으면 &"".
+func discard_random_card(player_id: int, source_rng: RandomNumberGenerator) -> StringName:
+	var hand: Array = hands.get(player_id, [])
+	if hand.is_empty():
+		return &""
+	var index: int = source_rng.randi_range(0, hand.size() - 1)
+	var card_id: StringName = hand[index]
+	hand.remove_at(index)
+	return card_id
+
+
+func hand_has_category(player_id: int, category: GameEnums.CardCategory) -> bool:
+	return first_card_of_category(player_id, category) != &""
+
+
+## 손패에서 해당 분류의 첫 카드 ID (없으면 &"").
+func first_card_of_category(player_id: int, category: GameEnums.CardCategory) -> StringName:
+	for card_id: StringName in hands.get(player_id, []):
+		var card: BaseCard = CardRegistry.get_card(card_id)
+		if card != null and card.category == category:
+			return card_id
+	return &""
+
+
 func any_hand_has_cards() -> bool:
 	for player_id: int in player_ids:
 		if not (hands[player_id] as Array).is_empty():
@@ -373,3 +407,38 @@ func any_hand_has_cards() -> bool:
 ## 이번 이동에 적용할 전체 이동 방향 (+1 정방향 / -1 우노 리버스 역주행).
 func movement_direction() -> int:
 	return -1 if reverse_move_rounds_left > 0 else 1
+
+
+## 현재 진행 방향 기준으로 player_id 다음에 턴을 잡는 플레이어.
+func next_player_after(player_id: int) -> int:
+	var index: int = player_ids.find(player_id)
+	if index == -1:
+		return -1
+	return player_ids[posmod(index + turn_direction, player_ids.size())]
+
+
+## 가장 앞선(결승에 가장 가까운) 출발한 내 대표 말. 없으면 null.
+func front_pawn_of(player_id: int) -> PlayerPawn:
+	var best: PlayerPawn = null
+	var best_distance: int = 1 << 30
+	for pawn: PlayerPawn in pawns_of(player_id):
+		if pawn.is_finished or pawn.carrier != null or not pawn.has_left_start or pawn.current_tile_idx == GameEnums.GOAL_TILE:
+			continue
+		var distance: int = pawn_progress_distance(pawn)
+		if distance < best_distance:
+			best_distance = distance
+			best = pawn
+	return best
+
+
+func penalty_of(player_id: int) -> int:
+	return int(pending_penalty.get(player_id, 0))
+
+
+## 대표 말 하나를 한 칸 뒤로 물린다 (포석 무적에 막힌 침입자). 이동 이력의 마지막 걸음을 취소한다.
+func step_back_one(pawn: PlayerPawn) -> int:
+	var from_tile: int = pawn.current_tile_idx
+	var to_tile: int = board.step_back(pawn)
+	sync_stack_position(pawn)
+	pawn_pushed_back.emit(pawn.entity_id, from_tile, to_tile)
+	return to_tile

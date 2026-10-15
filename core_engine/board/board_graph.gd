@@ -181,6 +181,14 @@ func commit_step(entity: BoardEntity, destination: int) -> bool:
 	return is_forward
 
 
+## 개체를 온 길로 정확히 한 칸 되돌리고 도착 타일을 반환한다 (포석 무적에 막힌 침입자 등).
+func step_back(entity: BoardEntity) -> int:
+	var cursor: PathCursor = PathCursor.from_entity(entity, true)
+	advance_backward(cursor)
+	commit_step(entity, cursor.tile)
+	return cursor.tile
+
+
 ## 설치물/도착 판정 없이 순수 경로만 미리 계산한다 (UI 하이라이트·AI 평가용).
 ## steps > 0: 전진. 시작 타일이 코너(5, 10)이고 ctx.allow_shortcut이면 next_shortcut으로 진입하고,
 ##            22번에서 출발하면 항상 최단 결승 루트로 나간다. 결승(0번) 도달 시 ctx.exact_goal_required가

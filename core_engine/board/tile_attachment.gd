@@ -24,6 +24,11 @@ func is_expired() -> bool:
 	return duration_turns == 0
 
 
+## true면 턴이 지나도 유지 턴이 줄지 않는다 (예: 모노폴리 4세트 호텔). 기본은 항상 줄어든다.
+func is_expiry_suspended(_state: GameState) -> bool:
+	return false
+
+
 ## 턴이 한 번 지날 때마다 호출된다. 만료되면 true를 반환한다.
 func tick_turn() -> bool:
 	if duration_turns > 0:

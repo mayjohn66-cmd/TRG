@@ -28,6 +28,11 @@ func turns_at_corner_when_passing() -> bool:
 	return kind == GameEnums.PawnKind.CHESS and unit_no == 3
 
 
+## 체스 2호기 나이트의 고유 능력: 중간 칸의 설치물(함정·호텔)을 무시하고 도착 칸만 판정한다 (나이트 점프).
+func jumps_over_attachments() -> bool:
+	return kind == GameEnums.PawnKind.CHESS and unit_no == 2
+
+
 ## 기본 말이 세트의 다음 호기로 영구 진화한다.
 func evolve(new_kind: GameEnums.PawnKind, new_unit_no: int) -> void:
 	kind = new_kind
