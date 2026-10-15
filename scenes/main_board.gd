@@ -3350,12 +3350,104 @@ func _on_draft_auto_pressed() -> void:
 
 func _on_augment_chosen(player_id: int, index: int, definition: AugmentDef) -> void:
 	if definition.needs_pawn_choice(state, player_id):
-		var options: Array[Dictionary] = []
-		for pawn: PlayerPawn in state.basic_pawns_of(player_id):
-			options.append({"label": "말 %d번 (현재 %d번 타일)" % [pawn.slot, pawn.current_tile_idx], "value": pawn.entity_id})
-		_show_choice("진화시킬 기본 말을 고르세요", options, _pick_augment_with_pawn.bind(player_id, index))
+		_show_pawn_choice(player_id, definition, _pick_augment_with_pawn.bind(player_id, index))
 		return
 	_act(&"pick_augment", {"player_id": player_id, "index": index})
+
+
+## 기물 증강을 받을 말을 아이콘 카드로 고른다. 이미 진화한 말은 어둡게 잠긴다.
+func _show_pawn_choice(player_id: int, definition: AugmentDef, on_pick: Callable) -> void:
+	_close_choice()
+	_choice_overlay = _new_overlay(0.78)
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_choice_overlay.add_child(center)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 10)
+	center.add_child(box)
+	var info: Dictionary = _augment_card_info(definition, player_id)
+	var title := _make_label("어느 말을 [%s]로 진화시킬까요?" % str(info["title"]).split("] ")[-1], 24, Color("ffe066"))
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_color_override("font_outline_color", Color("5c4300"))
+	title.add_theme_constant_override("outline_size", 6)
+	box.add_child(title)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 14)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.add_child(row)
+	var color: Color = PLAYER_COLORS[player_id]
+	var evo_color: Color = info["color"]
+	for slot: int in GameEnums.PAWNS_PER_PLAYER:
+		var pawn: PlayerPawn = state.get_pawn(player_id * 10 + slot + 1)
+		var can_pick: bool = pawn.kind == GameEnums.PawnKind.BASIC and not pawn.is_finished
+		var card := Button.new()
+		card.custom_minimum_size = Vector2(150, 200)
+		card.size = Vector2(150, 200)
+		card.pivot_offset = Vector2(75, 100)
+		card.focus_mode = Control.FOCUS_NONE
+		card.disabled = not can_pick
+		var base: Color = Color("1b2236") if can_pick else Color("101319")
+		var hover_box: StyleBoxFlat = _style(base.lightened(0.12), Color("ffe066"), 4, 14, 20, 0)
+		card.add_theme_stylebox_override("normal", _style(base, color.lightened(0.1), 3, 14, 6, 0))
+		card.add_theme_stylebox_override("hover", hover_box)
+		card.add_theme_stylebox_override("pressed", hover_box)
+		card.add_theme_stylebox_override("disabled", _style(base, Color("495057"), 2, 14, 0, 0))
+		card.modulate = Color.WHITE if can_pick else Color(1, 1, 1, 0.5)
+		var badge := _make_label("%d번 말" % (slot + 1), 14, Color("0d1018"))
+		badge.position = Vector2(46, 8)
+		badge.size = Vector2(58, 22)
+		badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		badge.add_theme_stylebox_override("normal", _style(color.lightened(0.25) if can_pick else Color("6c757d"), Color.WHITE, 1, 9, 0, 1))
+		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		card.add_child(badge)
+		var letter: String = PawnCatalog.unit_letter(pawn.kind, pawn.unit_no)
+		var disc := Panel.new()
+		disc.position = Vector2(30, 42)
+		disc.size = Vector2(90, 90)
+		disc.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		disc.add_theme_stylebox_override("panel", _style(color if can_pick else color.darkened(0.6), Color.WHITE if can_pick else Color("495057"), 4, 45, 0, 0))
+		card.add_child(disc)
+		var mark := _make_label(letter if letter != "" else "말", 38, Color.WHITE)
+		mark.size = Vector2(90, 90)
+		mark.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		mark.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		mark.add_theme_color_override("font_outline_color", Color.BLACK)
+		mark.add_theme_constant_override("outline_size", 5)
+		disc.add_child(mark)
+		var place: String = "완주 완료" if pawn.is_finished else ("출발 대기" if not pawn.has_left_start else "출전 중 (%d번)" % pawn.current_tile_idx)
+		var sub := _make_label(place, 13, Color("ced4da"))
+		sub.position = Vector2(0, 140)
+		sub.size = Vector2(150, 20)
+		sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		sub.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		card.add_child(sub)
+		var action := _make_label("→ %s 진화!" % str(info["glyph"]) if can_pick else "진화 불가", 15, evo_color.lightened(0.4) if can_pick else Color("868e96"))
+		action.position = Vector2(0, 166)
+		action.size = Vector2(150, 24)
+		action.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		action.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		card.add_child(action)
+		card.pressed.connect(_on_pawn_choice_picked.bind(pawn.entity_id, on_pick))
+		card.mouse_entered.connect(_hover_pawn_choice_card.bind(card, true))
+		card.mouse_exited.connect(_hover_pawn_choice_card.bind(card, false))
+		row.add_child(card)
+	var cancel: Button = _make_button("취소", _close_choice, 15)
+	cancel.custom_minimum_size = Vector2(0, 40)
+	box.add_child(cancel)
+	add_child(_choice_overlay)
+
+
+func _hover_pawn_choice_card(card: Button, entered: bool) -> void:
+	if card.disabled:
+		return
+	var tween: Tween = card.create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(card, "scale", Vector2.ONE * (1.07 if entered else 1.0), 0.12)
+
+
+func _on_pawn_choice_picked(pawn_id: int, on_pick: Callable) -> void:
+	_close_choice()
+	on_pick.call(pawn_id)
 
 
 func _pick_augment_with_pawn(pawn_id: int, player_id: int, index: int) -> void:

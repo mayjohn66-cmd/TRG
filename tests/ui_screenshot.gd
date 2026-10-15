@@ -151,6 +151,12 @@ func _setup_scene() -> void:
 			state.tools[1] = ScriptedTool.new([4])
 			_board._on_roll_pressed()
 			_board._preview_pawn(11)
+		"pawnchoice":
+			state.get_pawn(12).place_at(5)
+			state.get_pawn(12).has_left_start = true
+			state.get_pawn(13).is_finished = true
+			var def: AugmentDef = AugmentRegistry.get_def(&"EVO_2_1")
+			_board._on_augment_chosen(1, 0, def)
 		"banner":
 			_finish_draft()
 			_board.instant_roll_for_test = true
