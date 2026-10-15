@@ -158,6 +158,11 @@ func _setup_scene() -> void:
 			state.give_card(1, &"ACT_05")
 			state.give_card(1, &"ACT_01")
 			_board._refresh_all()
+		"rules":
+			_finish_draft()
+			_board._announcer.cancel()
+			state.tools[1] = ToolRegistry.create(StringName(OS.get_environment("TOOL") if OS.get_environment("TOOL") != "" else "HOLDEM"))
+			_board._refresh_all()
 		"cardhover":
 			_finish_draft()
 			_board._announcer.cancel()

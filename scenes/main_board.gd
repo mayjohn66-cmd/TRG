@@ -197,6 +197,9 @@ var _tool_icon: PanelContainer = null
 var _tool_icon_label: Label = null
 var _tool_main: Label = null
 var _tool_sub: Label = null
+var _tool_rules: VBoxContainer = null
+var _tool_note: Label = null
+var _tool_rules_key: String = ""
 var _tool_board_key: String = ""
 var _status_strip: HBoxContainer = null
 var _tip_panel: PanelContainer = null
@@ -750,7 +753,7 @@ func _build_law_board() -> void:
 func _build_tool_board() -> void:
 	_tool_board = PanelContainer.new()
 	_tool_board.position = Vector2(1144, 172)
-	_tool_board.custom_minimum_size = Vector2(210, 140)
+	_tool_board.custom_minimum_size = Vector2(210, 0)
 	_tool_board.size = Vector2(210, 140)
 	_tool_board.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_tool_board.add_theme_stylebox_override("panel", _style(Color("101626"), COLOR_PANEL_EDGE, 3, 18, 12, 10))
@@ -784,7 +787,7 @@ func _build_tool_board() -> void:
 	center.add_theme_constant_override("separation", 8)
 	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(center)
-	_tool_main = _make_label("", 17, Color("f8f9fa"))
+	_tool_main = _make_label("", 14, Color("f8f9fa"))
 	_tool_main.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_tool_main.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_tool_main.custom_minimum_size = Vector2(184, 0)
@@ -794,6 +797,15 @@ func _build_tool_board() -> void:
 	_tool_sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_tool_sub.custom_minimum_size = Vector2(184, 0)
 	center.add_child(_tool_sub)
+	_tool_rules = VBoxContainer.new()
+	_tool_rules.add_theme_constant_override("separation", 2)
+	_tool_rules.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	center.add_child(_tool_rules)
+	_tool_note = _make_label("", 10, Color("9aa5b8"))
+	_tool_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_tool_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_tool_note.custom_minimum_size = Vector2(184, 0)
+	center.add_child(_tool_note)
 
 
 ## 보드 아래 한 줄 상태 띠: 단계 / 안내 문구 / 이동 대기열. (개입 카드 탭이 뜨면 그 자리를 양보한다.)
@@ -857,7 +869,7 @@ func _build_action_bar() -> void:
 	add_child(_roll_pad)
 	var action_row := HFlowContainer.new()
 	_action_row = action_row
-	action_row.position = Vector2(1134, 330)
+	action_row.position = Vector2(1134, 440)
 	action_row.size = Vector2(220, 30)
 	action_row.alignment = FlowContainer.ALIGNMENT_CENTER
 	action_row.add_theme_constant_override("h_separation", 6)
@@ -2518,6 +2530,18 @@ const TOOL_CARDS: Dictionary = {
 }
 
 
+## 도구별 전체 규칙표: [항목, 전진 결과] 행들과 보충 설명. 새로운 방식의 도구는 유저가 모르므로 족보·확률을 전부 보여 준다.
+const TOOL_RULES: Dictionary = {
+	&"D6": {"rows": [["1 ~ 6 눈금", "나온 눈금만큼"]], "note": "각 눈금이 나올 확률은 1/6"},
+	&"YUT": {"rows": [["빽도 (-1)", "1칸 후퇴"], ["도 (1)", "1칸"], ["개 (2)", "2칸"], ["걸 (3)", "3칸"], ["윷 (4)", "4칸 + 한 번 더!"], ["모 (5)", "5칸 + 한 번 더!"]], "note": "여섯 가지가 같은 확률(1/6)"},
+	&"LIFE_ROULETTE": {"rows": [["1 ~ 6, 8 ~ 10", "나온 숫자만큼"], ["7 당첨", "7칸 + 한 번 더!"]], "note": "1 ~ 10 중 하나가 같은 확률로 나옵니다. 원판을 잡고 돌려서 굴립니다"},
+	&"HOLDEM": {"rows": [["노페어", "1칸"], ["원페어", "3칸"], ["투페어", "5칸"], ["트리플", "7칸"], ["스트레이트", "10칸"], ["플러시 이상", "15칸"]], "note": "카드 5장을 뽑아 만든 족보로 정해집니다. 플러시·풀하우스·포카드·스트레이트 플러시는 모두 15칸"},
+	&"CHINCHIRO": {"rows": [["4 눈금", "4칸 (2/6)"], ["5 눈금", "5칸 (2/6)"], ["6 눈금", "6칸 (1/6)"], ["삐끗!", "6칸 후퇴 (1/6)"]], "note": "주사위가 접시 밖으로 튀면 삐끗"},
+	&"SLOT_777": {"rows": [["3개 모두 다름", "1칸"], ["2개 일치", "4칸"], ["3개 일치", "8칸"], ["7 7 7 잭팟", "20칸"]], "note": "릴 3개의 그림은 6종류(체리·레몬·종·BAR·다이아·7)"},
+	&"REVOLVER": {"rows": [["방아쇠 1회", "+3칸 누적"], ["최대 누적", "15칸"], ["실탄 (6발 중 1발)", "누적 0칸, 턴 종료"], ["멈추기", "누적한 칸만큼 이동"]], "note": "빈 총이 나올 때마다 누적되고, 실탄이 나오면 전부 사라집니다"},
+}
+
+
 func _refresh_tool_board(tool: BaseJudgmentTool, player_id: int) -> void:
 	var card: Array = TOOL_CARDS.get(tool.tool_id, ["?", Color("495057"), tool.display_name, ""])
 	_tool_board_key = "%d:%s" % [player_id, tool.tool_id]
@@ -2526,9 +2550,41 @@ func _refresh_tool_board(tool: BaseJudgmentTool, player_id: int) -> void:
 	_tool_title.text = tool.display_name
 	_tool_title.add_theme_color_override("font_color", (PLAYER_COLORS[player_id] as Color).lightened(0.35))
 	_tool_main.text = card[2]
+	var rules: Dictionary = TOOL_RULES.get(tool.tool_id, {})
 	var sub: String = card[3]
 	_tool_sub.text = sub
-	_tool_sub.visible = sub != ""
+	_tool_sub.visible = sub != "" and rules.is_empty()
+	if _tool_rules_key != str(tool.tool_id):
+		_tool_rules_key = str(tool.tool_id)
+		_rebuild_tool_rules(rules, card[1])
+	_tool_board.reset_size()
+
+
+## 규칙표를 다시 그린다: 행마다 [항목 ......... 결과] 한 줄.
+func _rebuild_tool_rules(rules: Dictionary, accent: Color) -> void:
+	for child: Node in _tool_rules.get_children():
+		_tool_rules.remove_child(child)
+		child.queue_free()
+	var rows: Array = rules.get("rows", [])
+	for index: int in rows.size():
+		var pair: Array = rows[index]
+		var row := PanelContainer.new()
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_theme_stylebox_override("panel", _style(accent.darkened(0.7) if index % 2 == 0 else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0, 4, 0, 2))
+		var line := HBoxContainer.new()
+		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(line)
+		var name_label := _make_label(str(pair[0]), 12, Color("dee2e6"))
+		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		line.add_child(name_label)
+		var value_label := _make_label(str(pair[1]), 12, Color("ffe066"))
+		value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		value_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		line.add_child(value_label)
+		_tool_rules.add_child(row)
+	_tool_note.text = str(rules.get("note", ""))
+	_tool_note.visible = _tool_note.text != ""
 
 
 func _category_text(category: GameEnums.CardCategory) -> String:
