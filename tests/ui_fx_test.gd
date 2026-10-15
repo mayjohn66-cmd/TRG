@@ -351,7 +351,7 @@ func _test_hud_overhaul() -> void:
 	var current: int = manager.current_player_id()
 	manager.state.tools[current] = ToolRegistry.create(&"HOLDEM")
 	_board._refresh_controls()
-	_expect(_board._tool_board.custom_minimum_size == Vector2(210, 140) and _board._tool_board.size.x == 210.0, "판정 도구 카드는 210x140 고정 크기")
+	_expect(_board._tool_board.size.x == 210.0 and _board._tool_board.size.y >= 140.0 and _board._tool_board.position.y + _board._tool_board.size.y <= 438.0, "판정 도구 카드는 폭 210 고정, 높이는 규칙표에 맞춰 늘어나되 굴림 버튼 행(y=440) 위에서 끝나야 한다")
 	_expect(_board._tool_title.text == "텍사스 홀덤 딜러" and _board._tool_main.text.contains("포커 족보") and _board._tool_icon.custom_minimum_size == Vector2(48, 48), "홀덤 카드: 이름 + 핵심 규칙 + 48x48 심볼 (%s)" % _board._tool_main.text)
 	manager.state.tools[current] = ToolRegistry.create(&"CHINCHIRO")
 	_board._refresh_controls()
