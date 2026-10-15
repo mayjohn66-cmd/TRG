@@ -1,6 +1,6 @@
 # File: res://core_engine/entities/neutral_npc.gd
 # Class: class_name NeutralNPC
-# Role: 중립 소환수(카탄의 도적떼·팩맨 고스트). 라운드 종료 시 BFS 최단 경로 AI로 스스로 이동하고 기물을 사냥한다
+# Role: 중립 소환수(카탄의 도적떼·팩맨 고스트). 라운드 종료 시 BFS 최단 경로 AI로 스스로 이동하며, 기물을 한 번 잡으면 소멸한다(report.vanished)
 class_name NeutralNPC
 extends BoardEntity
 
@@ -17,7 +17,7 @@ func run_ai(state: GameState) -> Dictionary:
 
 
 func _new_report() -> Dictionary:
-	return {"npc_id": entity_id, "path": [] as Array[int], "caught": [] as Array[int], "stolen_cards": [] as Array[StringName]}
+	return {"npc_id": entity_id, "path": [] as Array[int], "caught": [] as Array[int], "stolen_cards": [] as Array[StringName], "vanished": false}
 
 
 func _chase_nearest(state: GameState) -> Dictionary:
@@ -49,6 +49,7 @@ func _chase_nearest(state: GameState) -> Dictionary:
 				(report["stolen_cards"] as Array[StringName]).append(stolen)
 			(report["caught"] as Array[int]).append(victim.entity_id)
 			state.send_to_start(victim, -1)
+	report["vanished"] = not (report["caught"] as Array[int]).is_empty()
 	return report
 
 
@@ -67,4 +68,7 @@ func _patrol_reverse(state: GameState) -> Dictionary:
 				continue
 			(report["caught"] as Array[int]).append(victim.entity_id)
 			state.teleport_stack(victim, GameEnums.CENTER_TILE)
+		if not (report["caught"] as Array[int]).is_empty():
+			break
+	report["vanished"] = not (report["caught"] as Array[int]).is_empty()
 	return report

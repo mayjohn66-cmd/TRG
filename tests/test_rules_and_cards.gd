@@ -337,7 +337,8 @@ func test_neutral_npc_ghost_patrols_reverse_and_drags_pawns_to_center() -> void:
 	place(state, 21, 18, [17])
 	var ghost: NeutralNPC = state.spawn_npc(0, GameEnums.NpcBehavior.PATROL_REVERSE, 1, &"SUM_02")
 	var report: Dictionary = ghost.run_ai(state)
-	check_eq(report["path"], int_array([19, 18, 17]), "외곽 트랙 역주행 3칸")
+	check_eq(report["path"], int_array([19, 18]), "역주행하다 말을 만나면 그 자리에서 멈춘다")
+	check_eq(report["vanished"], true, "한 번 잡으면 소멸")
 	check_eq(state.get_pawn(21).current_tile_idx, 22, "마주친 말은 중앙으로 연행")
 
 
@@ -394,3 +395,20 @@ func _law_notes_for_move(start_tile: int, roll: int) -> Array:
 func test_move_report_notes_laws_only_when_the_path_really_changes() -> void:
 	check_eq(_law_notes_for_move(2, 2), [[]], "경로가 같으면 법전 요약 없음")
 	check_eq(_law_notes_for_move(5, 2), [["LAW_01 지름길 공사 중"]], "코너에서 지름길이 막혀 경로가 바뀌면 한 줄 요약")
+
+
+func test_neutral_npc_vanishes_after_first_catch() -> void:
+	var state := make_state()
+	place(state, 21, 3, [2])
+	var bandit: NeutralNPC = state.spawn_npc(3, GameEnums.NpcBehavior.CHASE_NEAREST, 1, &"SUM_01")
+	var vanished_ids: Array = []
+	state.npc_vanished.connect(func(npc_id: int, _tile: int) -> void: vanished_ids.append(npc_id))
+	var report: Dictionary = bandit.run_ai(state)
+	check_eq(report["vanished"], true, "잡은 NPC는 소멸 표시")
+	var npc_id: int = bandit.entity_id
+	state.remove_npc(bandit)
+	check_eq(state.npcs.size(), 0, "판에서 제거")
+	check_eq(vanished_ids, [npc_id], "npc_vanished 시그널")
+	var ghost: NeutralNPC = state.spawn_npc(0, GameEnums.NpcBehavior.PATROL_REVERSE, 1, &"SUM_02")
+	var idle: Dictionary = ghost.run_ai(state)
+	check_eq(idle["vanished"], false, "아무도 못 잡으면 계속 순찰")

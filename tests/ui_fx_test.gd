@@ -41,9 +41,12 @@ func _run() -> void:
 	_board.ai_mode = false
 	_board._bot.set_enabled(false)
 	_board._refresh_mode_toggle()
+	_board._announcer.cancel()  # 드래프트가 띄운 알림은 비우고 시작한다
 	await _test_presenters()
+	_board._announcer.cancel()
 	await _test_gauge_and_lock()
 	await _test_instant_flag()
+	await _test_announcer()
 	await _test_bot_pacing()
 	if _failures.is_empty():
 		print("UI_FX_OK")
@@ -210,6 +213,31 @@ func _test_mode_toggle() -> void:
 	_expect(not _board.ai_mode and not _board._bot.enabled and _board._mode_toggle.text == "[모드: 4P 수동 조작]", "토글하면 4P 수동 조작")
 	_board._mode_toggle.pressed.emit()
 	_expect(_board.ai_mode and _board._bot.enabled, "다시 토글하면 AI 대전")
+
+
+## 중앙 이벤트 알림: 대기열 순서대로 한 건씩 뜨고, 떠 있는 동안 입력이 잠기며, 클릭(skip)으로 넘어가고, instant면 건너뛴다.
+func _test_announcer() -> void:
+	_board.instant_roll_for_test = false
+	var announcer: EventAnnouncer = _board._announcer
+	announcer.cancel()
+	announcer.history.clear()
+	_board._announce("테스트", "첫 알림", "", Color.WHITE, null, 0.5)
+	_board._announce("테스트", "둘째 알림", "", Color.WHITE, null, 0.5)
+	_expect(announcer.active and announcer.visible and _board._ui_busy(), "알림이 뜨면 입력이 잠긴다")
+	_expect(_board._roll_button.disabled, "알림 중 굴리기 버튼 비활성")
+	announcer.skip_current()
+	await process_frame
+	await process_frame
+	_expect(announcer.active, "첫 알림을 넘겨도 둘째 알림이 남아 있다")
+	announcer.skip_current()
+	await process_frame
+	await process_frame
+	_expect(not announcer.active and not announcer.visible and not _board._ui_busy(), "대기열이 비면 잠금 해제")
+	announcer.history.clear()
+	_board.instant_roll_for_test = true
+	_board._announce("테스트", "건너뜀", "", Color.WHITE, null, 0.5)
+	_expect(not announcer.active, "instant면 알림을 띄우지 않는다")
+	_board.instant_roll_for_test = false
 
 
 ## 봇 턴의 실제 연출 호흡: 턴 시작 0.5초 + 굴리기 직전 0.3초, 굴림 연출 뒤 결과 확인 0.6초 + 이동 선택 0.5초.

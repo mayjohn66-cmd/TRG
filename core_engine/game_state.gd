@@ -16,6 +16,7 @@ signal pawns_stacked(leader_id: int, member_ids: Array[int])
 signal pawns_swapped(pawn_a_id: int, pawn_b_id: int)
 signal pawn_teleported(pawn_id: int, to_tile: int)
 signal npc_spawned(npc_id: int, tile: int)
+signal npc_vanished(npc_id: int, tile: int)
 signal npc_stepped(npc_id: int, from_tile: int, to_tile: int)
 signal attachment_placed(tile: int, attachment_id: String, owner_id: int)
 signal attachment_triggered(tile: int, attachment_id: String, pawn_id: int, cutscene_id: StringName)
@@ -145,6 +146,16 @@ func get_pawn(pawn_id: int) -> PlayerPawn:
 		if pawn.entity_id == pawn_id:
 			return pawn
 	return null
+
+
+## 기물을 한 번 잡은 NPC를 판에서 제거한다.
+func remove_npc(npc: NeutralNPC) -> void:
+	if npc == null or not npcs.has(npc):
+		return
+	npcs.erase(npc)
+	npc_vanished.emit(npc.entity_id, npc.current_tile_idx)
+	if is_instance_valid(npc):
+		npc.free()
 
 
 func get_npc(npc_id: int) -> NeutralNPC:

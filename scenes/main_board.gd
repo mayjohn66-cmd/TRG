@@ -167,6 +167,7 @@ var _center_label: Label = null
 ## 연출 대기 시간(await)을 0초로 건너뛰는 플래그 (헤드리스·ui_smoke 자동 진행용).
 var instant_roll_for_test: bool = false
 var _presenter: RollPresenter = null
+var _announcer: EventAnnouncer = null
 var _power_bar: ProgressBar = null
 var _power_label: Label = null
 var _charging: bool = false
@@ -250,7 +251,7 @@ func _process(delta: float) -> void:
 func _input(event: InputEvent) -> void:
 	if manager == null or state == null or manager.current_state != TurnManager.State.PHASE_SELECT_PAWN:
 		return
-	if _fx_busy or _is_bot_turn() or _choice_overlay != null or _draft_overlay != null or _result_overlay != null or _stack_overlay != null or _tile_pick_active:
+	if _ui_busy() or _is_bot_turn() or _choice_overlay != null or _draft_overlay != null or _result_overlay != null or _stack_overlay != null or _tile_pick_active:
 		return
 	var button_event: InputEventMouseButton = event as InputEventMouseButton
 	if button_event != null:
@@ -333,6 +334,7 @@ func _new_game() -> void:
 	_bot.set_enabled(ai_mode)
 	_stop_charge()
 	_presenter.cancel()
+	_announcer.cancel()
 	_close_stack_overlay()
 	state = null
 	manager.start_game(PLAYER_IDS, 0)
@@ -353,7 +355,11 @@ func _bind_state() -> void:
 	state.pawn_evolved.connect(func(pawn_id: int, kind: int, unit_no: int) -> void: _log_line("[진화] %s → %s" % [_pawn_name(pawn_id), PawnCatalog.unit_label(kind, unit_no)], Color("ffa94d")))
 	state.pawns_stacked.connect(func(leader_id: int, member_ids: Array[int]) -> void: _log_line("%s 업기 (%d마리)" % [_pawn_name(leader_id), member_ids.size()], Color("ffd43b")))
 	state.pawns_swapped.connect(func(a_id: int, b_id: int) -> void: _log_line("%s ↔ %s 위치 교환" % [_pawn_name(a_id), _pawn_name(b_id)], Color("ffd43b")))
-	state.attachment_triggered.connect(func(tile: int, id: String, pawn_id: int, _cutscene: StringName) -> void: _log_line("[설치물] %d번 타일 %s 발동! (%s)" % [tile, _attachment_name(id), _pawn_name(pawn_id)], Color("ff6b6b")))
+	state.attachment_triggered.connect(func(tile: int, id: String, pawn_id: int, _cutscene: StringName) -> void:
+		_log_line("[설치물] %d번 타일 %s 발동! (%s)" % [tile, _attachment_name(id), _pawn_name(pawn_id)], Color("ff6b6b"))
+		_announce("설치물 발동", "%s 발동!" % _attachment_name(id), "%d번 타일 - %s" % [tile, _pawn_name(pawn_id)], Color("ff6b6b"), null, 1.4))
+	state.npc_vanished.connect(func(npc_id: int, tile: int) -> void:
+		_announce("중립 기물", "NPC가 사냥을 마치고 사라졌습니다", "%d번 타일 - 중립 기물은 한 번 잡으면 사라집니다" % tile, Color("fa5252"), null, 1.3))
 	state.attachment_placed.connect(func(tile: int, id: String, owner_id: int) -> void:
 		if id != "MINE_NUM":
 			_log_line("P%d가 %d번 타일에 [%s]을(를) 설치했습니다" % [owner_id, tile, "뒷면 카드" if id.begins_with("TRP") else _attachment_name(id)], Color("adb5bd"))
@@ -1423,7 +1429,7 @@ func _category_text(category: GameEnums.CardCategory) -> String:
 
 
 func _card_usable_now(player_id: int, card: BaseCard) -> bool:
-	if manager.is_game_over or _fx_busy or manager.stack_offer_pending() or not card.is_playable_in(manager.current_state):
+	if manager.is_game_over or _ui_busy() or manager.stack_offer_pending() or not card.is_playable_in(manager.current_state):
 		return false
 	if ai_mode and player_id != HUMAN_ID:
 		return false
@@ -1438,7 +1444,7 @@ func _refresh_controls() -> void:
 	var tool: BaseJudgmentTool = state.tools[player_id]
 	var over: bool = manager.is_game_over
 	var can_roll: bool = not over and (current_phase == TurnManager.State.PHASE_TURN_BEGIN or current_phase == TurnManager.State.PHASE_ROLL_WAIT)
-	_roll_button.disabled = not can_roll or _tile_pick_active or _fx_busy or manager.stack_offer_pending() or _is_bot_turn()
+	_roll_button.disabled = not can_roll or _tile_pick_active or _ui_busy() or manager.stack_offer_pending() or _is_bot_turn()
 	var can_stop: bool = not over and tool.has_pending_state() and current_phase == TurnManager.State.PHASE_ROLL_WAIT
 	if tool is ToolRussianRoulette:
 		# 러시안 룰렛: [방아쇠 당기기]와 [멈추고 N칸 이동 확정]을 한 세트로 상시 노출한다. 1발도 못 당겼으면 멈추기는 비활성(회색)이고,
@@ -1461,7 +1467,7 @@ func _refresh_controls() -> void:
 	var window_open: bool = not over and (current_phase == TurnManager.State.PHASE_INTERRUPT_ROLL or current_phase == TurnManager.State.PHASE_RESOLUTION)
 	# AI 모드: 개입 창은 사람(P1)이 낼 카드를 들고 있을 때만 [패스]를 보여 주고, 아니면 봇이 0.8초 뒤 자동으로 넘긴다.
 	_skip_button.visible = window_open and not manager.stack_offer_pending() and (not ai_mode or _human_can_intervene())
-	_skip_button.disabled = _fx_busy
+	_skip_button.disabled = _ui_busy()
 	_skip_button.text = "개입 카드 사용 / 패스" if ai_mode else "개입 패스(진행)"
 	_pawn_bar.visible = not window_open
 	_castle_button.visible = not over and manager.can_castle(player_id) and not _is_bot_turn()
@@ -1488,7 +1494,7 @@ func _refresh_controls() -> void:
 		button.text = "%d %s (%s)" % [pawn.slot, pawn.display_label(), status]
 		button.add_theme_font_size_override("font_size", 11)
 		button.tooltip_text = "[%d번 말 - %s (%s)]" % [pawn.slot, pawn.display_label(), PawnCatalog.ability_text(pawn.kind, pawn.unit_no)]
-		button.disabled = not selecting or not pawn.is_selectable() or _fx_busy or _is_bot_turn()
+		button.disabled = not selecting or not pawn.is_selectable() or _ui_busy() or _is_bot_turn()
 		button.pressed.connect(_on_pawn_pressed.bind(pawn.entity_id))
 		button.mouse_entered.connect(_preview_pawn.bind(pawn.entity_id))
 		button.mouse_exited.connect(_clear_highlight)
@@ -1551,7 +1557,7 @@ func _on_roll_pressed() -> void:
 	# 손을 뗀 순간의 파워 게이지 값을 연출에 넘긴다 (게이지가 없는 도구·클릭은 0.5).
 	_pending_power = _charge_value if _charging and _tool_has_gauge() else 0.5
 	_stop_charge()
-	if manager.is_game_over or _roll_button.disabled or _fx_busy or _is_bot_turn():
+	if manager.is_game_over or _roll_button.disabled or _ui_busy() or _is_bot_turn():
 		return
 	if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN:
 		_act(&"proceed")
@@ -1561,7 +1567,7 @@ func _on_roll_pressed() -> void:
 
 ## 굴림 버튼/키를 누르기 시작했다. 주사위·윷이면 파워 게이지가 좌우로 왕복하기 시작한다.
 func _begin_charge(by_key: bool) -> void:
-	if _charging or _roll_button.disabled or _fx_busy or manager.is_game_over or _stack_overlay != null or _is_bot_turn():
+	if _charging or _roll_button.disabled or _ui_busy() or manager.is_game_over or _stack_overlay != null or _is_bot_turn():
 		return
 	if _tile_pick_active:
 		return
@@ -2026,12 +2032,74 @@ func _on_game_over(winner_id: int, reason: StringName) -> void:
 	_refresh_all()
 
 
+func _ui_busy() -> bool:
+	return _fx_busy or (_announcer != null and _announcer.active)
+
+
+func _announce(tag: String, headline: String, body: String, color: Color, extra: Control = null, duration: float = 1.5) -> void:
+	if _announcer == null:
+		return
+	_announcer.instant = instant_roll_for_test
+	_announcer.announce(tag, headline, body, color, extra, duration)
+	if _announcer.active:
+		_refresh_controls()
+
+
+## 새 교칙이 제정되면 현재 법전 전체를 중앙에 띄우고 새로 들어온 줄을 금색으로 강조한다.
+func _announce_law_added(new_law: LawResource, removed_law: LawResource) -> void:
+	var board := VBoxContainer.new()
+	board.add_theme_constant_override("separation", 4)
+	board.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for law: LawResource in state.rulebook.active_laws_queue:
+		var is_new: bool = law == new_law
+		var row := PanelContainer.new()
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.custom_minimum_size = Vector2(420, 0)
+		row.add_theme_stylebox_override("panel", _style(Color("4a3d12") if is_new else Color("1b2030"), COLOR_GOLD if is_new else Color("3b4252"), 3 if is_new else 1, 8, 6, 5))
+		var text: String = "%s[%s] %s - %s" % ["NEW  " if is_new else "", law.law_id, law.law_name, law.description]
+		var label := _make_label(text, 13, Color("fff3bf") if is_new else Color("adb5bd"))
+		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(label)
+		board.add_child(row)
+	var body: String = new_law.description
+	if removed_law != null:
+		body += "\n(가장 오래된 [%s] %s이(가) 밀려났습니다)" % [removed_law.law_id, removed_law.law_name]
+	_announce("법전 개정", "새 교칙: %s" % new_law.law_name, body, COLOR_GOLD, board, 2.6)
+
+
+## 카드 사용 알림에 붙일 카드 앞면 (손패 카드와 같은 모양, 클릭 불가).
+func _make_card_preview(card_id: StringName) -> Control:
+	var card: BaseCard = CardRegistry.get_card(card_id)
+	var accent: Color = CARD_CATEGORY_COLORS[card.category]
+	var view := PanelContainer.new()
+	view.custom_minimum_size = CARD_SIZE
+	view.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	view.add_theme_stylebox_override("panel", _style(Color("2c3550"), accent, 4, 10, 8, 6))
+	var box := VBoxContainer.new()
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	view.add_child(box)
+	var title := _make_label(card.display_name, 14, Color("f8f9fa"))
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(title)
+	var summary := _make_label(str(CARD_SUMMARIES.get(card_id, "")), 11, Color("ced4da"))
+	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	summary.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(summary)
+	var holder := CenterContainer.new()
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.add_child(view)
+	return holder
+
+
 func _on_law_added(new_law: LawResource, removed_law: LawResource) -> void:
 	var text: String = "[법전] 교칙 제정: [%s] %s" % [new_law.law_id, new_law.law_name]
 	if removed_law != null:
 		text += "  (가장 오래된 [%s] %s이(가) 밀려났습니다)" % [removed_law.law_id, removed_law.law_name]
 	_log_line(text, Color("ffe066"))
 	_refresh_laws()
+	_announce_law_added(new_law, removed_law)
 
 
 func _on_law_applied(law: LawResource, timing: String, dice_before: int, dice_after: int, modified: bool) -> void:
@@ -2044,6 +2112,7 @@ func _on_law_applied(law: LawResource, timing: String, dice_before: int, dice_af
 		if dice_before != dice_after:
 			detail = "  눈금 %d → %d" % [dice_before, dice_after]
 		_log_line("[법전] [%s] %s 작동 (%s)%s" % [law.law_id, law.law_name, timing, detail], Color("ffe066"))
+		_announce("법전 발동", "[%s] %s" % [law.law_id, law.law_name], (law.description + detail.strip_edges().insert(0, "\n") if detail != "" else law.description), Color("ffe066"), null, 1.1)
 	_flash_law_ids[law.law_id] = true
 	_refresh_laws()
 	get_tree().create_timer(1.0).timeout.connect(func() -> void:
@@ -2068,15 +2137,23 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 		&"card_played":
 			var card: BaseCard = CardRegistry.get_card(data["card_id"])
 			_log_line("[카드] P%d [%s] 사용%s" % [data["player_id"], card.display_name, " (개입 대기열 - 나중에 낸 카드부터 실행)" if data["queued"] else ""], Color("74c0fc"))
+			_announce("P%d 카드 사용" % data["player_id"], "[%s] 사용!" % card.display_name, "개입 대기열에 쌓였습니다 (나중에 낸 카드부터 실행)" if data["queued"] else "", PLAYER_COLORS[int(data["player_id"])], _make_card_preview(data["card_id"]), 1.6)
 		&"bell_result":
 			_log_line("P%d 종 %s" % [data["player_id"], "성공! 보너스 +2 적립" if data["success"] else "실패"], Color("ffa94d"))
 		&"npc_phase_resolved":
 			for report: Dictionary in data["reports"]:
 				_log_line("[NPC] NPC가 %s로 이동 (잡힌 말: %s)" % [str(report["path"]), str(report["caught"])], Color("fa5252"))
+				if not (report["caught"] as Array).is_empty():
+					var npc_name: String = "도적" if report["display_id"] == &"SUM_01" else "고스트"
+					var stolen: String = ""
+					if not (report["stolen_cards"] as Array).is_empty():
+						stolen = " / 카드 %d장 강탈" % (report["stolen_cards"] as Array).size()
+					_announce("중립 기물", "%s가 말을 잡았습니다!" % npc_name, "잡힌 말 %d개%s" % [(report["caught"] as Array).size(), stolen], Color("fa5252"), null, 1.5)
 		&"augment_offers":
 			_log_line("[증강] 라운드 %d 증강 드래프트가 열렸습니다." % data["round"], Color("ffa94d"))
 		&"augment_picked":
 			_log_line("[증강] P%d%s: %s - %s" % [data["player_id"], " (자동)" if data["auto"] else "", AugmentRegistry.get_def(data["augment_id"]).display_name, data["text"]], Color("ffa94d"))
+			_announce("P%d 증강 선택" % data["player_id"], AugmentRegistry.get_def(data["augment_id"]).display_name, str(data["text"]), Color("ffa94d"), null, 1.4)
 		&"bang_resolved":
 			var target_name: String = _pawn_name(int(data["target"]))
 			if data["dodged"]:
@@ -2248,6 +2325,12 @@ func _build_roll_fx() -> void:
 	add_child(_power_label)
 	_presenter = RollPresenter.new()
 	add_child(_presenter)
+	_announcer = EventAnnouncer.new()
+	_announcer.center = BOARD_ORIGIN + Vector2(BOARD_SIZE, BOARD_SIZE) / 2.0
+	add_child(_announcer)
+	_announcer.drained.connect(func() -> void:
+		if state != null:
+			_refresh_all())
 
 
 ## 엔진이 확정한 굴림 결과를 연출한 뒤 로그·중앙 배너로 공개한다. 연출 중에는 입력을 잠가 결과가 먼저 새지 않게 한다.
@@ -2371,4 +2454,4 @@ func _human_can_intervene() -> bool:
 
 ## 봇은 화면의 굴림 연출이 끝날 때까지 기다린다.
 func _bot_should_wait() -> bool:
-	return _fx_busy
+	return _ui_busy()

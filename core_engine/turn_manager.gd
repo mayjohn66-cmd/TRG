@@ -783,7 +783,12 @@ func _enter_neutral_npc_phase() -> void:
 	change_state(State.PHASE_NEUTRAL_NPC)
 	var reports: Array[Dictionary] = []
 	for npc: NeutralNPC in state.npcs.duplicate():
-		reports.append(npc.run_ai(state))
+		var report: Dictionary = npc.run_ai(state)
+		report["display_id"] = npc.display_id
+		report["tile"] = npc.current_tile_idx
+		reports.append(report)
+		if bool(report["vanished"]):
+			state.remove_npc(npc)
 	_emit_event(&"npc_phase_resolved", {"reports": reports})
 	if state.reverse_move_rounds_left > 0:
 		state.reverse_move_rounds_left -= 1
