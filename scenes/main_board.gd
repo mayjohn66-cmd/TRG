@@ -1,6 +1,6 @@
 # File: res://scenes/main_board.gd
 # Class: class_name MainBoard
-# Role: 로컬 핫시트 프로토타입 화면. 29칸 보드·4인 말·중앙 법전·손패를 기본 도형으로 그리고, TurnManager의 시그널만 구독하고 act()로만 행동을 보낸다
+# Role: 로컬 핫시트 플레이 화면. 29칸 보드·4인 말·중앙 법전·손패·증강 드래프트·타일 선택 모드·결과창을 기본 도형으로 그리고, TurnManager의 시그널만 구독하며 act()로만 행동을 보낸다
 class_name MainBoard
 extends Control
 
@@ -11,17 +11,17 @@ const PLAYER_COLORS: Dictionary = {
 	3: Color("30a46c"),
 	4: Color("f5b700"),
 }
-const BOARD_ORIGIN: Vector2 = Vector2(74, 120)
-const BOARD_SIZE: float = 540.0
+const BOARD_ORIGIN: Vector2 = Vector2(74, 126)
+const BOARD_SIZE: float = 530.0
 const TILE_SIZE: float = 46.0
-const PAWN_RADIUS: float = 6.5
+const PAWN_RADIUS: float = 7.5
 const STEP_DELAY: float = 0.22
-const PANEL_X: float = 700.0
+const PANEL_X: float = 692.0
 const CELL_OFFSETS: Array[Vector2] = [Vector2(-10, -10), Vector2(10, -10), Vector2(-10, 10), Vector2(10, 10)]
 
 const PHASE_NAMES: Dictionary = {
-	TurnManager.State.PHASE_ROUND_START: "라운드 시작 (증강 드래프트)",
-	TurnManager.State.PHASE_TURN_BEGIN: "턴 시작 - 카드·함정 사용 가능",
+	TurnManager.State.PHASE_ROUND_START: "라운드 시작 - 증강 드래프트",
+	TurnManager.State.PHASE_TURN_BEGIN: "턴 시작 - 카드·함정·소환 사용 가능",
 	TurnManager.State.PHASE_ROLL_WAIT: "판정 도구 굴리기",
 	TurnManager.State.PHASE_INTERRUPT_ROLL: "개입 타이밍 A - 카드 사용 가능",
 	TurnManager.State.PHASE_SELECT_PAWN: "이동할 말 선택",
@@ -43,8 +43,15 @@ const REJECT_REASONS: Dictionary = {
 	&"card_not_in_hand": "손패에 없는 카드입니다",
 	&"invalid_target": "대상이 올바르지 않거나 조건을 만족하지 않습니다",
 	&"invalid_pawn": "선택할 수 없는 말입니다",
+	&"invalid_index": "올바르지 않은 선택입니다",
 	&"nothing_to_cash_out": "확정할 누적치가 없습니다",
 	&"game_over": "게임이 끝났습니다",
+}
+const CATEGORY_COLORS: Dictionary = {
+	GameEnums.AugmentCategory.PAWN_EVOLUTION: Color("ffa94d"),
+	GameEnums.AugmentCategory.TOOL_SWAP: Color("74c0fc"),
+	GameEnums.AugmentCategory.LAW_ENACT: Color("ffe066"),
+	GameEnums.AugmentCategory.CARD_PACKAGE: Color("da77f2"),
 }
 
 var manager: TurnManager = null
@@ -54,7 +61,8 @@ var _board_layer: Control = null
 var _pawn_layer: Node2D = null
 var _tile_views: Dictionary = {}
 var _highlights: Dictionary = {}
-var _trap_marks: Dictionary = {}
+var _pick_marks: Dictionary = {}
+var _tile_marks: Dictionary = {}
 var _pawn_views: Dictionary = {}
 var _npc_views: Dictionary = {}
 var _flash_law_ids: Dictionary = {}
@@ -62,22 +70,35 @@ var _flash_law_ids: Dictionary = {}
 var _header_label: Label = null
 var _phase_label: Label = null
 var _queue_label: Label = null
+var _pick_banner: Label = null
 var _player_labels: Dictionary = {}
+var _pawn_info_labels: Dictionary = {}
 var _law_labels: Array[Label] = []
 var _roll_button: Button = null
 var _stop_button: Button = null
 var _bell_button: Button = null
 var _skip_button: Button = null
+var _new_game_button: Button = null
 var _hint_label: Label = null
+var _fruit_label: Label = null
 var _pawn_buttons: Array[Button] = []
 var _hand_boxes: Dictionary = {}
+var _debug_toggle: Button = null
+var _debug_box: VBoxContainer = null
 var _tool_option: OptionButton = null
 var _card_option: OptionButton = null
 var _timer_check: CheckBox = null
-var _fruit_label: Label = null
 var _log: RichTextLabel = null
-var _banner: Label = null
+
 var _choice_overlay: Control = null
+var _draft_overlay: Control = null
+var _draft_player: int = -1
+var _result_overlay: Control = null
+var _auto_draft_enabled: bool = false
+
+var _tile_pick_active: bool = false
+var _tile_pick_player: int = -1
+var _tile_pick_card: StringName = &""
 
 
 func _ready() -> void:
@@ -103,7 +124,12 @@ func _process(_delta: float) -> void:
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	var key_event: InputEventKey = event as InputEventKey
-	if key_event == null or not key_event.pressed or key_event.echo or _choice_overlay != null:
+	if key_event == null or not key_event.pressed or key_event.echo:
+		return
+	if key_event.keycode == KEY_ESCAPE:
+		_cancel_tile_pick()
+		return
+	if _choice_overlay != null or _draft_overlay != null or _result_overlay != null:
 		return
 	if key_event.keycode == KEY_SPACE:
 		_on_bell_pressed()
@@ -117,14 +143,17 @@ func _unhandled_key_input(event: InputEvent) -> void:
 
 func _new_game() -> void:
 	_close_choice()
+	_close_draft_overlay()
+	_close_result_overlay()
+	_cancel_tile_pick()
 	for view: Node in _pawn_views.values():
 		view.queue_free()
 	for view: Node in _npc_views.values():
 		view.queue_free()
 	_pawn_views.clear()
 	_npc_views.clear()
-	_banner.visible = false
 	_log.clear()
+	state = null
 	manager.start_game(PLAYER_IDS, 0)
 	state = manager.state
 	_bind_state()
@@ -139,13 +168,19 @@ func _bind_state() -> void:
 	state.pawn_warped.connect(_on_pawn_stepped)
 	state.pawn_sent_to_start.connect(func(pawn_id: int, _by: int) -> void: _log_line("%s 출발선으로 복귀" % _pawn_name(pawn_id), Color("ff8787")))
 	state.pawn_finished.connect(func(pawn_id: int) -> void: _log_line("[완주] %s 완주!" % _pawn_name(pawn_id), Color("69db7c")))
+	state.pawn_evolved.connect(func(pawn_id: int, kind: int, unit_no: int) -> void: _log_line("[진화] %s → %s" % [_pawn_name(pawn_id), PawnCatalog.unit_label(kind, unit_no)], Color("ffa94d")))
 	state.pawns_stacked.connect(func(leader_id: int, member_ids: Array[int]) -> void: _log_line("%s 업기 (%d마리)" % [_pawn_name(leader_id), member_ids.size()], Color("ffd43b")))
 	state.pawns_swapped.connect(func(a_id: int, b_id: int) -> void: _log_line("%s ↔ %s 위치 교환" % [_pawn_name(a_id), _pawn_name(b_id)], Color("ffd43b")))
-	state.attachment_triggered.connect(func(tile: int, _id: String, pawn_id: int, _cutscene: StringName) -> void: _log_line("[함정] 함정 발동! %d번 타일에서 %s" % [tile, _pawn_name(pawn_id)], Color("ff6b6b")))
-	state.attachment_placed.connect(func(tile: int, _id: String, owner_id: int) -> void: _log_line("P%d가 %d번 타일에 함정을 설치했습니다 (뒷면)" % [owner_id, tile], Color("adb5bd")))
-	state.card_drawn.connect(func(player_id: int, card_id: StringName) -> void: _log_line("[빵집] P%d 생떼 카드 획득: %s" % [player_id, _card_name(card_id)], Color("ffa94d")))
+	state.attachment_triggered.connect(func(tile: int, id: String, pawn_id: int, _cutscene: StringName) -> void: _log_line("[설치물] %d번 타일 %s 발동! (%s)" % [tile, _attachment_name(id), _pawn_name(pawn_id)], Color("ff6b6b")))
+	state.attachment_placed.connect(func(tile: int, id: String, owner_id: int) -> void:
+		if id != "MINE_NUM":
+			_log_line("P%d가 %d번 타일에 [%s]을(를) 설치했습니다" % [owner_id, tile, "뒷면 카드" if id.begins_with("TRP") else _attachment_name(id)], Color("adb5bd"))
+		_refresh_tiles())
+	state.card_drawn.connect(func(player_id: int, card_id: StringName) -> void: _log_line("[카드] P%d 생떼 카드 획득: %s" % [player_id, _card_name(card_id)], Color("ffa94d")))
 	state.card_stolen.connect(func(player_id: int, card_id: StringName) -> void: _log_line("P%d의 카드 [%s]를 도적이 빼앗았습니다" % [player_id, _card_name(card_id)], Color("ff6b6b")))
-	state.npc_spawned.connect(func(_npc_id: int, _tile: int) -> void: _refresh_all())
+	state.npc_spawned.connect(func(_npc_id: int, tile: int) -> void:
+		_log_line("중립 NPC가 %d번 타일에 소환되었습니다. 라운드가 끝날 때 움직입니다." % tile, Color("fa5252"))
+		_refresh_all())
 	state.rulebook.law_added.connect(_on_law_added)
 	state.rulebook.law_removed.connect(func(law: LawResource) -> void:
 		_log_line("[법전] 교칙 파기: [%s] %s" % [law.law_id, law.law_name], Color("ff8787"))
@@ -162,6 +197,7 @@ func _build_ui() -> void:
 	var background := ColorRect.new()
 	background.color = Color("1b1e24")
 	background.set_anchors_preset(Control.PRESET_FULL_RECT)
+	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(background)
 
 	_header_label = _make_label("", 20, Color("f1f3f5"))
@@ -173,61 +209,56 @@ func _build_ui() -> void:
 	_queue_label = _make_label("", 13, Color("adb5bd"))
 	_queue_label.position = Vector2(24, 66)
 	add_child(_queue_label)
+	_pick_banner = _make_label("", 14, Color("63e6be"))
+	_pick_banner.position = Vector2(24, 82)
+	_pick_banner.visible = false
+	add_child(_pick_banner)
 
 	_board_layer = Control.new()
-	_board_layer.position = Vector2.ZERO
+	_board_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_board_layer)
 	_pawn_layer = Node2D.new()
 	add_child(_pawn_layer)
 
-	_banner = _make_label("", 40, Color("ffd43b"))
-	_banner.add_theme_constant_override("outline_size", 10)
-	_banner.add_theme_color_override("font_outline_color", Color("111418"))
-	_banner.position = Vector2(110, 360)
-	_banner.visible = false
-	add_child(_banner)
-
 	var panel := VBoxContainer.new()
 	panel.position = Vector2(PANEL_X, 8)
-	panel.size = Vector2(650, 752)
+	panel.size = Vector2(660, 752)
 	panel.add_theme_constant_override("separation", 3)
 	add_child(panel)
 
-	panel.add_child(_make_section("플레이어"))
+	panel.add_child(_make_section("플레이어 / 기물 (진화 상태와 세트 시너지)"))
 	for player_id: int in PLAYER_IDS:
 		var row: Label = _make_label("", 14, PLAYER_COLORS[player_id])
 		_player_labels[player_id] = row
 		panel.add_child(row)
+		var info: Label = _make_label("", 12, PLAYER_COLORS[player_id].lightened(0.25))
+		_pawn_info_labels[player_id] = info
+		panel.add_child(info)
 
 	panel.add_child(_make_section("중앙 법전 (최대 4슬롯, 가득 차면 가장 오래된 교칙이 밀려남)"))
 	for slot: int in GameEnums.MAX_LAWS:
 		var law_label: Label = _make_label("", 13, Color("dee2e6"))
 		_law_labels.append(law_label)
 		panel.add_child(law_label)
-	var law_buttons := HFlowContainer.new()
-	law_buttons.add_theme_constant_override("h_separation", 4)
-	law_buttons.add_theme_constant_override("v_separation", 3)
-	panel.add_child(law_buttons)
-	law_buttons.add_child(_make_label("교칙 추가(테스트):", 12, Color("868e96")))
-	for law_id: String in LawRegistry.ALL_IDS:
-		var sample: LawResource = LawRegistry.create(law_id)
-		var law_button: Button = _make_button("%s %s" % [law_id.trim_prefix("LAW_"), sample.law_name], _on_add_law_pressed.bind(law_id), 11)
-		law_button.tooltip_text = "[%s] %s\n%s\n(작동 시점: %s)" % [law_id, sample.law_name, sample.description, sample.trigger_timing]
-		law_buttons.add_child(law_button)
 
 	var action_row := HBoxContainer.new()
 	action_row.add_theme_constant_override("separation", 6)
 	panel.add_child(action_row)
 	_roll_button = _make_button("주사위 굴리기 (R)", _on_roll_pressed, 16)
-	_roll_button.custom_minimum_size = Vector2(220, 40)
+	_roll_button.custom_minimum_size = Vector2(230, 40)
 	action_row.add_child(_roll_button)
 	_stop_button = _make_button("멈추고 이동 확정", _on_stop_pressed, 14)
 	action_row.add_child(_stop_button)
 	_bell_button = _make_button("종 치기 (Space)", _on_bell_pressed, 14)
 	action_row.add_child(_bell_button)
-	_skip_button = _make_button("카드 사용 끝 - 넘기기", _on_skip_pressed, 14)
+	_skip_button = _make_button("개입 패스(진행)", _on_skip_pressed, 15)
+	_skip_button.custom_minimum_size = Vector2(150, 40)
 	action_row.add_child(_skip_button)
+	_new_game_button = _make_button("새 게임", _new_game, 13)
+	action_row.add_child(_new_game_button)
 	_hint_label = _make_label("", 13, Color("a5d8ff"))
+	_hint_label.custom_minimum_size = Vector2(0, 34)
+	_hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	panel.add_child(_hint_label)
 	_fruit_label = _make_label("", 12, Color("868e96"))
 	panel.add_child(_fruit_label)
@@ -237,8 +268,8 @@ func _build_ui() -> void:
 	panel.add_child(pawn_row)
 	pawn_row.add_child(_make_label("이동할 말:", 13, Color("adb5bd")))
 	for slot: int in range(1, GameEnums.PAWNS_PER_PLAYER + 1):
-		var pawn_button: Button = _make_button("말 %d" % slot, Callable(), 13)
-		pawn_button.custom_minimum_size = Vector2(120, 30)
+		var pawn_button: Button = _make_button("말 %d" % slot, Callable(), 12)
+		pawn_button.custom_minimum_size = Vector2(135, 30)
 		_pawn_buttons.append(pawn_button)
 		pawn_row.add_child(pawn_button)
 
@@ -249,10 +280,41 @@ func _build_ui() -> void:
 		panel.add_child(hand_row)
 		_hand_boxes[player_id] = hand_row
 
+	_debug_toggle = _make_button("디버그 패널 토글 ▼", _on_debug_toggle_pressed, 12)
+	_debug_toggle.custom_minimum_size = Vector2(190, 26)
+	panel.add_child(_debug_toggle)
+	_debug_box = _build_debug_panel()
+	_debug_box.visible = false
+	panel.add_child(_debug_box)
+
+	panel.add_child(_make_section("로그"))
+	_log = RichTextLabel.new()
+	_log.bbcode_enabled = true
+	_log.scroll_following = true
+	_log.fit_content = false
+	_log.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_log.custom_minimum_size = Vector2(0, 90)
+	_log.add_theme_font_size_override("normal_font_size", 12)
+	panel.add_child(_log)
+
+
+func _build_debug_panel() -> VBoxContainer:
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 3)
+	var law_buttons := HFlowContainer.new()
+	law_buttons.add_theme_constant_override("h_separation", 4)
+	law_buttons.add_theme_constant_override("v_separation", 3)
+	box.add_child(law_buttons)
+	law_buttons.add_child(_make_label("교칙 추가(테스트):", 12, Color("868e96")))
+	for law_id: String in LawRegistry.ALL_IDS:
+		var sample: LawResource = LawRegistry.create(law_id)
+		var law_button: Button = _make_button("%s %s" % [law_id.trim_prefix("LAW_"), sample.law_name], _on_add_law_pressed.bind(law_id), 11)
+		law_button.tooltip_text = "[%s] %s\n%s\n(작동 시점: %s)" % [law_id, sample.law_name, sample.description, sample.trigger_timing]
+		law_buttons.add_child(law_button)
 	var debug_row := HFlowContainer.new()
 	debug_row.add_theme_constant_override("h_separation", 6)
 	debug_row.add_theme_constant_override("v_separation", 3)
-	panel.add_child(debug_row)
+	box.add_child(debug_row)
 	debug_row.add_child(_make_label("현재 플레이어 판정 도구:", 12, Color("868e96")))
 	_tool_option = OptionButton.new()
 	_tool_option.custom_minimum_size = Vector2(190, 0)
@@ -263,7 +325,7 @@ func _build_ui() -> void:
 	debug_row.add_child(_make_label("카드 지급:", 12, Color("868e96")))
 	_card_option = OptionButton.new()
 	_card_option.custom_minimum_size = Vector2(190, 0)
-	for card_id: StringName in CardRegistry.DECK_COMPOSITION.keys():
+	for card_id: StringName in CardRegistry.all_ids():
 		_card_option.add_item("%s %s" % [card_id, CardRegistry.get_card(card_id).display_name])
 		_card_option.set_item_metadata(_card_option.item_count - 1, card_id)
 	debug_row.add_child(_card_option)
@@ -274,17 +336,7 @@ func _build_ui() -> void:
 	_timer_check.text = "제한 시간 사용"
 	_timer_check.toggled.connect(func(enabled: bool) -> void: manager.set_process(enabled))
 	debug_row.add_child(_timer_check)
-	debug_row.add_child(_make_button("새 게임", _new_game, 12))
-
-	panel.add_child(_make_section("로그"))
-	_log = RichTextLabel.new()
-	_log.bbcode_enabled = true
-	_log.scroll_following = true
-	_log.fit_content = false
-	_log.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_log.custom_minimum_size = Vector2(0, 120)
-	_log.add_theme_font_size_override("normal_font_size", 12)
-	panel.add_child(_log)
+	return box
 
 
 func _make_label(text: String, font_size: int, color: Color) -> Label:
@@ -296,9 +348,7 @@ func _make_label(text: String, font_size: int, color: Color) -> Label:
 
 
 func _make_section(text: String) -> Label:
-	var label: Label = _make_label(text, 13, Color("74c0fc"))
-	label.add_theme_constant_override("line_spacing", 0)
-	return label
+	return _make_label(text, 13, Color("74c0fc"))
 
 
 func _make_button(text: String, callback: Callable, font_size: int) -> Button:
@@ -308,6 +358,11 @@ func _make_button(text: String, callback: Callable, font_size: int) -> Button:
 	if callback.is_valid():
 		button.pressed.connect(callback)
 	return button
+
+
+func _on_debug_toggle_pressed() -> void:
+	_debug_box.visible = not _debug_box.visible
+	_debug_toggle.text = "디버그 패널 토글 ▲" if _debug_box.visible else "디버그 패널 토글 ▼"
 
 
 # ---------------------------------------------------------------------------
@@ -353,32 +408,46 @@ func _build_tiles_once() -> void:
 		tile.size = Vector2(TILE_SIZE, TILE_SIZE)
 		tile.position = _tile_center(index) - tile.size / 2.0
 		tile.color = _tile_color(index, node.tile_type)
+		tile.gui_input.connect(_on_tile_gui_input.bind(index))
 		_board_layer.add_child(tile)
 		_tile_views[index] = tile
 
-		var number := _make_label(str(index), 15, Color("212529") if _is_light_tile(index, node.tile_type) else Color("f8f9fa"))
+		var light: bool = _is_light_tile(index, node.tile_type)
+		var number := _make_label(str(index), 15, Color("212529") if light else Color("f8f9fa"))
 		number.position = Vector2(3, 0)
+		number.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		tile.add_child(number)
 		var tag: String = _tile_tag(index, node.tile_type)
 		if tag != "":
-			var tag_label := _make_label(tag, 10, Color("212529") if _is_light_tile(index, node.tile_type) else Color("f8f9fa"))
+			var tag_label := _make_label(tag, 10, Color("212529") if light else Color("f8f9fa"))
 			tag_label.position = Vector2(3, 29)
+			tag_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			tile.add_child(tag_label)
-		var trap := ColorRect.new()
-		trap.color = Color("c92a2a")
-		trap.size = Vector2(10, 10)
-		trap.position = Vector2(TILE_SIZE - 12, 2)
-		trap.visible = false
-		tile.add_child(trap)
-		_trap_marks[index] = trap
+		var mark := _make_label("", 12, Color("ff6b6b"))
+		mark.position = Vector2(TILE_SIZE - 24, 1)
+		mark.add_theme_constant_override("outline_size", 4)
+		mark.add_theme_color_override("font_outline_color", Color("111418"))
+		mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		tile.add_child(mark)
+		_tile_marks[index] = mark
 		var highlight := ReferenceRect.new()
 		highlight.border_color = Color("ffe066")
 		highlight.border_width = 3.0
 		highlight.editor_only = false
 		highlight.size = tile.size
 		highlight.visible = false
+		highlight.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		tile.add_child(highlight)
 		_highlights[index] = highlight
+		var pick_mark := ReferenceRect.new()
+		pick_mark.border_color = Color("63e6be")
+		pick_mark.border_width = 4.0
+		pick_mark.editor_only = false
+		pick_mark.size = tile.size
+		pick_mark.visible = false
+		pick_mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		tile.add_child(pick_mark)
+		_pick_marks[index] = pick_mark
 
 
 func _add_track_line(route: Array[int]) -> void:
@@ -415,8 +484,10 @@ func _tile_tag(index: int, tile_type: TileNode.TileType) -> String:
 		TileNode.TileType.PORTAL: return "옷장"
 	if index == GameEnums.CENTER_TILE:
 		return "중앙"
-	if index == 5 or index == 10:
-		return "코너↘" if index == 5 else "코너↙"
+	if index == 5:
+		return "코너↘"
+	if index == 10:
+		return "코너↙"
 	if index == 15:
 		return "합류"
 	return ""
@@ -426,10 +497,12 @@ func _build_pawn_views() -> void:
 	for pawn: PlayerPawn in state.pawns:
 		var view := Node2D.new()
 		var body := Polygon2D.new()
+		body.name = "Body"
 		body.polygon = _circle_points(PAWN_RADIUS, 20)
 		body.color = PLAYER_COLORS[pawn.owner_id]
 		view.add_child(body)
 		var ring := Line2D.new()
+		ring.name = "Ring"
 		ring.width = 1.5
 		ring.default_color = Color("f8f9fa")
 		ring.closed = true
@@ -439,9 +512,17 @@ func _build_pawn_views() -> void:
 		var number := _make_label(str(pawn.slot), 10, Color("111111"))
 		number.position = Vector2(-4, -8)
 		view.add_child(number)
+		var kind_label := _make_label("", 12, Color("ffffff"))
+		kind_label.name = "Kind"
+		kind_label.position = Vector2(-18, -21)
+		kind_label.add_theme_constant_override("outline_size", 5)
+		kind_label.add_theme_color_override("font_outline_color", Color("111418"))
+		view.add_child(kind_label)
 		var badge := _make_label("", 11, Color("ffffff"))
-		badge.position = Vector2(5, -17)
 		badge.name = "Badge"
+		badge.position = Vector2(6, -18)
+		badge.add_theme_constant_override("outline_size", 5)
+		badge.add_theme_color_override("font_outline_color", Color("111418"))
 		view.add_child(badge)
 		view.position = _pawn_position(pawn)
 		_pawn_layer.add_child(view)
@@ -477,8 +558,15 @@ func _refresh_pawns() -> void:
 		view.position = _pawn_position(pawn)
 		view.visible = pawn.carrier == null
 		view.modulate = Color(1, 1, 1, 0.45) if pawn.is_finished else Color.WHITE
-		var badge: Label = view.get_node("Badge")
-		badge.text = "x%d" % (pawn.carried.size() + 1) if not pawn.carried.is_empty() else ""
+		(view.get_node("Kind") as Label).text = PawnCatalog.letter(pawn.kind)
+		var badge_text: String = ""
+		if not pawn.carried.is_empty():
+			badge_text = "x%d" % (pawn.carried.size() + 1)
+		if pawn.restrained_turns > 0 or pawn.blocked_this_turn:
+			badge_text += " 구속"
+		if pawn.is_imprisoned:
+			badge_text += " 감옥"
+		(view.get_node("Badge") as Label).text = badge_text
 	for npc: NeutralNPC in state.npcs:
 		if not _npc_views.has(npc.entity_id):
 			var marker := Polygon2D.new()
@@ -497,8 +585,28 @@ func _refresh_pawns() -> void:
 
 
 func _refresh_tiles() -> void:
+	if _tile_marks.is_empty():
+		return
 	for index: int in GameEnums.TILE_COUNT:
-		(_trap_marks[index] as ColorRect).visible = not state.board.get_tile(index).attachments.is_empty()
+		var parts: Array[String] = []
+		var color: Color = Color("ff6b6b")
+		for attachment: TileAttachment in state.board.get_tile(index).attachments:
+			match attachment.attachment_id:
+				"TRP_01", "TRP_02", "TRP_03":
+					parts.append("?")
+				"MINE_NUM":
+					parts.append("[1]")
+					color = Color("8ce99a")
+				"TRP_04":
+					parts.append("섬")
+					color = Color("74c0fc")
+				"HOTEL":
+					parts.append("호텔")
+					color = PLAYER_COLORS.get(attachment.owner_id, Color("ffd43b"))
+		var mark: Label = _tile_marks[index]
+		mark.text = " ".join(parts)
+		mark.position = Vector2(TILE_SIZE - 3 - mark.get_minimum_size().x, 29)
+		mark.add_theme_color_override("font_color", color)
 
 
 func _on_pawn_stepped(pawn_id: int, _from_tile: int, _to_tile: int) -> void:
@@ -520,8 +628,9 @@ func _on_pawn_stepped(pawn_id: int, _from_tile: int, _to_tile: int) -> void:
 # ---------------------------------------------------------------------------
 
 func _refresh_all() -> void:
-	if state == null:
+	if manager == null or manager.state == null:
 		return
+	state = manager.state
 	_refresh_header()
 	_refresh_players()
 	_refresh_laws()
@@ -529,11 +638,12 @@ func _refresh_all() -> void:
 	_refresh_pawns()
 	_refresh_hands()
 	_refresh_controls()
+	_refresh_overlays()
 
 
 func _phase_text() -> String:
 	var text: String = PHASE_NAMES[manager.current_state]
-	if _timer_check.button_pressed and manager.phase_time_left > 0.0:
+	if _timer_check != null and _timer_check.button_pressed and manager.phase_time_left > 0.0:
 		text += "  (%.1f초)" % manager.phase_time_left
 	return text
 
@@ -560,6 +670,34 @@ func _refresh_players() -> void:
 		var tool: BaseJudgmentTool = state.tools[player_id]
 		var marker: String = "▶" if player_id == manager.current_player_id() else "  "
 		(_player_labels[player_id] as Label).text = "%s P%d   완주 %d/4   카드 %d장   도구: %s" % [marker, player_id, finished, (state.hands[player_id] as Array).size(), tool.display_name]
+		(_pawn_info_labels[player_id] as Label).text = "      기물: %s %s" % [_pawn_tokens(player_id), _set_synergy_text(player_id)]
+
+
+## "[체스:폰] [체스:나이트] [기본] [기본]" 형태의 말 4개 요약. 상태 이상은 뒤에 붙인다.
+func _pawn_tokens(player_id: int) -> String:
+	var tokens: Array[String] = []
+	for pawn: PlayerPawn in state.pawns_of(player_id):
+		var token: String = pawn.display_label()
+		if pawn.is_finished:
+			token += "·완주"
+		if pawn.restrained_turns > 0 or pawn.blocked_this_turn:
+			token += "·구속"
+		if pawn.is_imprisoned:
+			token += "·감옥"
+		tokens.append("[%s]" % token)
+	return " ".join(tokens)
+
+
+## 2세트 이상 모은 세트를 "(체스 2세트 활성)" 식으로 나열하고, 4세트면 특수 승리 조건 이름을 덧붙인다.
+func _set_synergy_text(player_id: int) -> String:
+	var parts: Array[String] = []
+	for kind: GameEnums.PawnKind in PawnCatalog.EVOLVABLE_SETS:
+		var count: int = state.set_count(player_id, kind)
+		if count >= GameEnums.PAWNS_PER_PLAYER:
+			parts.append("(%s 4세트 완성 - %s 승리 조건)" % [PawnCatalog.display_set_name(kind), PawnCatalog.SPECIAL_VICTORY_NAMES[kind]])
+		elif count >= GameEnums.SET_SYNERGY_2:
+			parts.append("(%s %d세트 활성)" % [PawnCatalog.display_set_name(kind), count])
+	return " ".join(parts)
 
 
 func _refresh_laws() -> void:
@@ -588,9 +726,18 @@ func _refresh_hands() -> void:
 		for card_id: StringName in hand:
 			var card: BaseCard = CardRegistry.get_card(card_id)
 			var button: Button = _make_button(card.display_name, _on_card_pressed.bind(player_id, card_id), 12)
-			button.tooltip_text = "%s (%s)" % [card.display_name, card_id]
+			button.tooltip_text = "%s (%s) - %s" % [card.display_name, card_id, _category_text(card.category)]
 			button.disabled = not _card_usable_now(player_id, card)
+			if card.needs_tile():
+				button.text = "%s ▣" % card.display_name
 			row.add_child(button)
+
+
+func _category_text(category: GameEnums.CardCategory) -> String:
+	match category:
+		GameEnums.CardCategory.TRAP: return "타일 설치형 (사용 후 보드판의 타일을 클릭)"
+		GameEnums.CardCategory.SUMMON: return "중립 NPC 소환형"
+	return "즉발·개입형"
 
 
 func _card_usable_now(player_id: int, card: BaseCard) -> bool:
@@ -607,7 +754,7 @@ func _refresh_controls() -> void:
 	var tool: BaseJudgmentTool = state.tools[player_id]
 	var over: bool = manager.is_game_over
 	var can_roll: bool = not over and (current_phase == TurnManager.State.PHASE_TURN_BEGIN or current_phase == TurnManager.State.PHASE_ROLL_WAIT)
-	_roll_button.disabled = not can_roll
+	_roll_button.disabled = not can_roll or _tile_pick_active
 	if tool is ToolRussianRoulette:
 		_roll_button.text = "방아쇠 당기기 (R)"
 	else:
@@ -619,7 +766,7 @@ func _refresh_controls() -> void:
 	_fruit_label.visible = tool is ToolHalliGalli
 	if tool is ToolHalliGalli:
 		_fruit_label.text = "바닥 과일 합계 %s - 어느 한 과일이 5개면 종을 치세요 (적립 보너스 +%d칸)" % [str((tool as ToolHalliGalli).fruit_totals), (tool as ToolHalliGalli).banked_bonus]
-	var window_open: bool = not over and (current_phase == TurnManager.State.PHASE_INTERRUPT_ROLL or current_phase == TurnManager.State.PHASE_RESOLUTION or current_phase == TurnManager.State.PHASE_ROUND_START)
+	var window_open: bool = not over and (current_phase == TurnManager.State.PHASE_INTERRUPT_ROLL or current_phase == TurnManager.State.PHASE_RESOLUTION)
 	_skip_button.visible = window_open
 	_hint_label.text = _hint_text(current_phase, tool)
 
@@ -633,7 +780,12 @@ func _refresh_controls() -> void:
 			button.mouse_entered.disconnect(connection["callable"])
 		for connection: Dictionary in button.mouse_exited.get_connections():
 			button.mouse_exited.disconnect(connection["callable"])
-		button.text = "말 %d (%s)" % [pawn.slot, "완주" if pawn.is_finished else "%d번" % pawn.current_tile_idx]
+		var status: String = "완주" if pawn.is_finished else "%d번" % pawn.current_tile_idx
+		if pawn.blocked_this_turn:
+			status += " 구속"
+		elif pawn.is_imprisoned:
+			status += " 감옥"
+		button.text = "%d %s (%s)" % [pawn.slot, pawn.display_label(), status]
 		button.disabled = not selecting or not pawn.is_selectable()
 		button.pressed.connect(_on_pawn_pressed.bind(pawn.entity_id))
 		button.mouse_entered.connect(_preview_pawn.bind(pawn.entity_id))
@@ -647,21 +799,25 @@ func _refresh_controls() -> void:
 func _hint_text(current_phase: TurnManager.State, tool: BaseJudgmentTool) -> String:
 	if manager.is_game_over:
 		return "게임 종료. [새 게임]으로 다시 시작하세요."
+	if _tile_pick_active:
+		return "타일 선택 모드: 보드판에서 사용할 타일(초록 테두리)을 클릭하세요. 취소는 ESC 또는 오른쪽 클릭."
 	match current_phase:
 		TurnManager.State.PHASE_TURN_BEGIN:
-			return "카드를 쓰거나 [굴리기]를 누르세요. (판정 도구: %s)" % tool.display_name
+			return "카드(▣ 표시는 타일을 클릭해 설치/소환)를 쓰거나 [굴리기]를 누르세요. (판정 도구: %s)" % tool.display_name
 		TurnManager.State.PHASE_ROLL_WAIT:
 			if tool.has_pending_state():
 				return "계속 당기거나, 멈추고 누적 칸수만큼 이동하세요. 실탄이 나오면 모두 증발합니다!"
 			return "다시 굴려야 합니다 (재굴림)." if not manager.move_queue.is_empty() else "굴리세요."
 		TurnManager.State.PHASE_INTERRUPT_ROLL:
-			return "눈금이 정해졌습니다. 개입 카드를 낼 플레이어는 지금 카드를 누르세요. 끝나면 [넘기기]."
+			return "[개입 기회! 카드를 사용하거나 '패스'를 누르세요]  눈금이 정해졌습니다. 개입 카드를 가진 플레이어는 지금 카드를 누르세요."
 		TurnManager.State.PHASE_SELECT_PAWN:
 			return "이동할 말을 고르세요 (버튼에 마우스를 올리면 도착 경로가 노란 테두리로 보입니다)."
 		TurnManager.State.PHASE_RESOLUTION:
-			return "정산 완료. 잡힌 플레이어는 [바이츠 더 더스트]로 되감을 수 있습니다. 끝나면 [넘기기]."
+			return "[개입 기회! 카드를 사용하거나 '패스'를 누르세요]  잡힌 플레이어는 [바이츠 더 더스트]로 되감을 수 있습니다."
 		TurnManager.State.PHASE_MOVING_STEP:
 			return "말이 한 칸씩 이동합니다..."
+		TurnManager.State.PHASE_ROUND_START:
+			return "라운드 시작 증강 드래프트 중입니다."
 	return ""
 
 
@@ -732,12 +888,13 @@ func _on_grant_card_pressed() -> void:
 func _on_spawn_npc_pressed(behavior: GameEnums.NpcBehavior, tile: int) -> void:
 	var display_id: StringName = &"SUM_01" if behavior == GameEnums.NpcBehavior.CHASE_NEAREST else &"SUM_02"
 	state.spawn_npc(tile, behavior, manager.current_player_id(), display_id)
-	_log_line("중립 NPC 소환! 라운드가 끝날 때 움직입니다.", Color("fa5252"))
-	_refresh_all()
 
 
 func _on_card_pressed(player_id: int, card_id: StringName) -> void:
 	var card: BaseCard = CardRegistry.get_card(card_id)
+	if card.needs_tile():
+		_begin_tile_pick(player_id, card_id)
+		return
 	match card_id:
 		&"ACT_04":
 			var options: Array[Dictionary] = []
@@ -756,12 +913,6 @@ func _on_card_pressed(player_id: int, card_id: StringName) -> void:
 				_log_line("파기할 교칙이 법전에 없습니다.", Color("868e96"))
 				return
 			_show_choice("이의 있음! 파기할 교칙을 고르세요", options, _play_card_with.bind(player_id, card_id, "law_id"))
-		&"TRP_01":
-			var options: Array[Dictionary] = []
-			for tile: int in range(1, GameEnums.TILE_COUNT):
-				if card.can_play(state, player_id, {"tile": tile}):
-					options.append({"label": str(tile), "value": tile})
-			_show_choice("함정을 설치할 타일 번호", options, _play_card_with.bind(player_id, card_id, "tile"), 7)
 		_:
 			_act(&"play_card", {"player_id": player_id, "card_id": card_id})
 
@@ -771,21 +922,102 @@ func _play_card_with(value: Variant, player_id: int, card_id: StringName, param_
 
 
 # ---------------------------------------------------------------------------
-# 선택 오버레이 / 경로 미리보기
+# 타일 선택 모드 (TRP/SUM 카드)
 # ---------------------------------------------------------------------------
+
+func _begin_tile_pick(player_id: int, card_id: StringName) -> void:
+	var card: BaseCard = CardRegistry.get_card(card_id)
+	if not _card_usable_now(player_id, card):
+		_log_line("지금은 [%s]를 쓸 수 없습니다 (내 턴 시작 구간에서만)." % card.display_name, Color("868e96"))
+		return
+	_tile_pick_active = true
+	_tile_pick_player = player_id
+	_tile_pick_card = card_id
+	var valid_count: int = 0
+	for index: int in GameEnums.TILE_COUNT:
+		var valid: bool = card.can_play(state, player_id, {"tile": index})
+		(_pick_marks[index] as ReferenceRect).visible = valid
+		if valid:
+			valid_count += 1
+	if valid_count == 0:
+		_log_line("[%s]를 놓을 수 있는 타일이 없습니다." % card.display_name, Color("868e96"))
+		_cancel_tile_pick()
+		return
+	_pick_banner.text = "[%s] P%d - 사용할 타일을 클릭하세요 (ESC/오른쪽 클릭: 취소)" % [card.display_name, player_id]
+	_pick_banner.visible = true
+	_refresh_controls()
+
+
+func _cancel_tile_pick() -> void:
+	if not _tile_pick_active and _pick_banner != null and not _pick_banner.visible:
+		return
+	_tile_pick_active = false
+	_tile_pick_card = &""
+	if _pick_banner != null:
+		_pick_banner.visible = false
+	for mark: ReferenceRect in _pick_marks.values():
+		mark.visible = false
+	if manager != null and manager.state != null:
+		_refresh_controls()
+
+
+func _on_tile_gui_input(event: InputEvent, index: int) -> void:
+	var mouse_event: InputEventMouseButton = event as InputEventMouseButton
+	if mouse_event == null or not mouse_event.pressed or not _tile_pick_active:
+		return
+	if mouse_event.button_index == MOUSE_BUTTON_RIGHT:
+		_cancel_tile_pick()
+	elif mouse_event.button_index == MOUSE_BUTTON_LEFT:
+		_complete_tile_pick(index)
+
+
+## 고른 타일로 카드를 사용한다. 그 타일에 쓸 수 없으면 선택 모드를 유지한다.
+func _complete_tile_pick(tile: int) -> void:
+	if not _tile_pick_active:
+		return
+	var card: BaseCard = CardRegistry.get_card(_tile_pick_card)
+	if not card.can_play(state, _tile_pick_player, {"tile": tile}):
+		_log_line("%d번 타일에는 [%s]를 쓸 수 없습니다. 다른 타일을 고르세요." % [tile, card.display_name], Color("ff8787"))
+		return
+	var player_id: int = _tile_pick_player
+	var card_id: StringName = _tile_pick_card
+	_cancel_tile_pick()
+	_act(&"play_card", {"player_id": player_id, "card_id": card_id, "tile": tile})
+
+
+# ---------------------------------------------------------------------------
+# 오버레이: 선택창 / 증강 드래프트 / 결과창
+# ---------------------------------------------------------------------------
+
+## 오버레이 패널의 불투명한 어두운 배경 (뒤의 화면이 비치지 않게 한다).
+func _panel_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color("14171c")
+	style.border_color = Color("5c6068")
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(10)
+	style.set_content_margin_all(20)
+	return style
+
+
+func _new_overlay() -> Control:
+	var overlay := Control.new()
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.7)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(dim)
+	return overlay
+
 
 func _show_choice(title: String, options: Array[Dictionary], on_pick: Callable, columns: int = 1) -> void:
 	_close_choice()
-	_choice_overlay = Control.new()
-	_choice_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
-	var dim := ColorRect.new()
-	dim.color = Color(0, 0, 0, 0.6)
-	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_choice_overlay.add_child(dim)
+	_choice_overlay = _new_overlay()
 	var center := CenterContainer.new()
 	center.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_choice_overlay.add_child(center)
 	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", _panel_style())
 	center.add_child(panel)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 8)
@@ -811,6 +1043,141 @@ func _close_choice() -> void:
 	if _choice_overlay != null:
 		_choice_overlay.queue_free()
 		_choice_overlay = null
+
+
+func _refresh_overlays() -> void:
+	_refresh_draft_overlay()
+	if manager.is_game_over and _result_overlay == null:
+		_show_result_overlay()
+
+
+## 드래프트 중이면 아직 고르지 않은 첫 플레이어(P1 -> P4 순서)의 3지선다를 화면 중앙에 띄운다.
+func _refresh_draft_overlay() -> void:
+	var pending: Array[int] = []
+	if manager.current_state == TurnManager.State.PHASE_ROUND_START and not manager.is_game_over:
+		pending = manager.draft_pending_players()
+	if pending.is_empty():
+		_close_draft_overlay()
+		return
+	var player_id: int = pending[0]
+	if _auto_draft_enabled and player_id != PLAYER_IDS[0]:
+		manager.auto_pick_draft(player_id)
+		_log_line("P%d 증강 자동 선택 완료" % player_id, Color("868e96"))
+		_refresh_all()
+		return
+	if _draft_overlay != null and _draft_player == player_id:
+		return
+	_build_draft_overlay(player_id, pending.size())
+
+
+func _build_draft_overlay(player_id: int, remaining: int) -> void:
+	_close_draft_overlay()
+	_draft_player = player_id
+	_draft_overlay = _new_overlay()
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_draft_overlay.add_child(center)
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", _panel_style())
+	center.add_child(panel)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 8)
+	panel.add_child(box)
+	var title: Label = _make_label("라운드 %d 증강 드래프트 - P%d 차례 (%d/%d)" % [state.round_number, player_id, PLAYER_IDS.size() - remaining + 1, PLAYER_IDS.size()], 20, PLAYER_COLORS[player_id])
+	box.add_child(title)
+	box.add_child(_make_label("3개 중 하나를 고르세요. 기물 진화 / 판정 도구 교체 / 교칙 제정 / 생떼 카드 패키지가 섞여 나옵니다.", 12, Color("adb5bd")))
+	var offers: Array[StringName] = manager.draft_offers_for(player_id)
+	for index: int in offers.size():
+		var definition: AugmentDef = AugmentRegistry.get_def(offers[index])
+		var text: String = "[%s]  %s\n%s" % [AugmentDef.category_name(definition.category), definition.display_name, definition.describe(state, player_id)]
+		var button: Button = _make_button(text, _on_augment_chosen.bind(player_id, index, definition), 14)
+		button.custom_minimum_size = Vector2(560, 74)
+		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		button.add_theme_color_override("font_color", CATEGORY_COLORS[definition.category])
+		box.add_child(button)
+	var footer := HBoxContainer.new()
+	footer.add_theme_constant_override("separation", 12)
+	box.add_child(footer)
+	var auto_check := CheckBox.new()
+	auto_check.text = "P2~P4는 무작위 자동 선택"
+	auto_check.button_pressed = _auto_draft_enabled
+	auto_check.toggled.connect(_on_auto_draft_toggled)
+	footer.add_child(auto_check)
+	footer.add_child(_make_button("남은 전원 무작위 자동 선택", _on_draft_auto_pressed, 13))
+	add_child(_draft_overlay)
+
+
+func _close_draft_overlay() -> void:
+	if _draft_overlay != null:
+		_draft_overlay.queue_free()
+		_draft_overlay = null
+	_draft_player = -1
+
+
+func _on_auto_draft_toggled(enabled: bool) -> void:
+	_auto_draft_enabled = enabled
+	_close_draft_overlay()
+	_refresh_draft_overlay()
+
+
+func _on_draft_auto_pressed() -> void:
+	for player_id: int in manager.draft_pending_players():
+		manager.auto_pick_draft(player_id)
+	_refresh_all()
+
+
+func _on_augment_chosen(player_id: int, index: int, definition: AugmentDef) -> void:
+	if definition.needs_pawn_choice(state, player_id):
+		var options: Array[Dictionary] = []
+		for pawn: PlayerPawn in state.basic_pawns_of(player_id):
+			options.append({"label": "말 %d번 (현재 %d번 타일)" % [pawn.slot, pawn.current_tile_idx], "value": pawn.entity_id})
+		_show_choice("진화시킬 기본 말을 고르세요", options, _pick_augment_with_pawn.bind(player_id, index))
+		return
+	_act(&"pick_augment", {"player_id": player_id, "index": index})
+
+
+func _pick_augment_with_pawn(pawn_id: int, player_id: int, index: int) -> void:
+	_act(&"pick_augment", {"player_id": player_id, "index": index, "pawn_id": pawn_id})
+
+
+func _show_result_overlay() -> void:
+	_close_result_overlay()
+	_result_overlay = _new_overlay()
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_result_overlay.add_child(center)
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", _panel_style())
+	center.add_child(panel)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 14)
+	box.custom_minimum_size = Vector2(560, 0)
+	panel.add_child(box)
+	var winner_id: int = state.winner
+	var title: Label = _make_label("게임 종료!", 34, Color("ffd43b"))
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(title)
+	var summary: Label = _make_label("승리자: P%d  /  달성 조건: %s" % [winner_id, _winner_reason_text()], 20, PLAYER_COLORS.get(winner_id, Color.WHITE))
+	summary.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(summary)
+	var restart: Button = _make_button("새 게임 시작", _new_game, 20)
+	restart.custom_minimum_size = Vector2(0, 52)
+	box.add_child(restart)
+	add_child(_result_overlay)
+
+
+var _last_reason: StringName = &""
+
+
+func _winner_reason_text() -> String:
+	return VictoryChecker.reason_text(_last_reason)
+
+
+func _close_result_overlay() -> void:
+	if _result_overlay != null:
+		_result_overlay.queue_free()
+		_result_overlay = null
 
 
 func _preview_pawn(pawn_id: int) -> void:
@@ -855,10 +1222,11 @@ func _on_turn_order_reversed(new_direction: int) -> void:
 
 
 func _on_game_over(winner_id: int, reason: StringName) -> void:
-	_banner.text = "P%d 승리!  (%s)" % [winner_id, "특수 승리: 천하제일 4업" if reason == &"yut_four_stack" else "4개 말 모두 완주"]
-	_banner.add_theme_color_override("font_color", PLAYER_COLORS[winner_id])
-	_banner.visible = true
-	_log_line("[승리] P%d 승리! (%s)" % [winner_id, reason], PLAYER_COLORS[winner_id])
+	_last_reason = reason
+	_log_line("[승리] P%d 승리! - %s" % [winner_id, VictoryChecker.reason_text(reason)], PLAYER_COLORS[winner_id])
+	_close_draft_overlay()
+	_cancel_tile_pick()
+	_show_result_overlay()
 	_refresh_all()
 
 
@@ -895,7 +1263,12 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 		&"npc_phase_resolved":
 			for report: Dictionary in data["reports"]:
 				_log_line("[NPC] NPC가 %s로 이동 (잡힌 말: %s)" % [str(report["path"]), str(report["caught"])], Color("fa5252"))
-		&"augment_offers": _log_line("증강 드래프트가 열렸습니다.", Color("adb5bd"))
+		&"augment_offers":
+			_log_line("[증강] 라운드 %d 증강 드래프트가 열렸습니다." % data["round"], Color("ffa94d"))
+		&"augment_picked":
+			_log_line("[증강] P%d%s: %s - %s" % [data["player_id"], " (자동)" if data["auto"] else "", AugmentRegistry.get_def(data["augment_id"]).display_name, data["text"]], Color("ffa94d"))
+		&"game_over":
+			_last_reason = data["reason"]
 	_refresh_all()
 
 
@@ -925,11 +1298,13 @@ func _log_roll(data: Dictionary) -> void:
 
 func _log_move(data: Dictionary) -> void:
 	var pawn_id: int = data["pawn_id"]
-	var text: String = "[이동] %s 이동" % _pawn_name(pawn_id)
+	var text: String = "[이동] %s" % _pawn_name(pawn_id)
 	if data["canceled"]:
-		text += " 취소됨 (교칙)"
+		text += " 이동 취소됨" + (" (무인도에 갇혀 있음: 짝수 눈금이 필요)" if data["jailed"] else " (교칙)")
 	else:
 		text += " 경로 %s" % str(data["path"])
+	if data["released"]:
+		text += "  무인도 탈출!"
 	if data["bounced"]:
 		text += "  결승선에서 튕겨 나옴"
 	if data["warped"]:
@@ -937,9 +1312,15 @@ func _log_move(data: Dictionary) -> void:
 	if data["stopped_early"]:
 		text += "  이동 중단"
 	if not (data["captured"] as Array).is_empty():
-		text += "  [잡기] 잡음 %s" % str(data["captured"])
+		text += "  [잡기] %s" % str(data["captured"])
 	if data["extra_turn"]:
 		text += "  (추가 턴)"
+	if data["bonus_roll"]:
+		text += "  (사기 윷: 추가 굴림)"
+	if data["hotel_built"]:
+		text += "  호텔 건설"
+	if int(data["salary_cards"]) > 0:
+		text += "  월급날: 카드 %d장" % data["salary_cards"]
 	if data["drawn_card"] != &"":
 		text += "  [빵집] 카드 획득"
 	if not (data["effects"] as Array).is_empty():
@@ -963,3 +1344,13 @@ func _pawn_name(pawn_id: int) -> String:
 func _card_name(card_id: StringName) -> String:
 	var card: BaseCard = CardRegistry.get_card(card_id)
 	return card.display_name if card != null else str(card_id)
+
+
+func _attachment_name(attachment_id: String) -> String:
+	match attachment_id:
+		"TRP_01": return "거울의 힘"
+		"TRP_02": return "나락"
+		"TRP_03": return "지뢰"
+		"TRP_04": return "무인도"
+		"HOTEL": return "호텔"
+	return attachment_id

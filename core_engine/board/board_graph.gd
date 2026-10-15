@@ -7,6 +7,8 @@ extends Node
 var tiles: Array[TileNode] = []
 ## 각 타일에서 결승(0번)까지의 최단 칸 수 (진행도 비교용).
 var _distance_to_goal: Array[int] = []
+## 방향을 무시한 인접 타일 목록 (폭발 반경 같은 거리 계산용).
+var _undirected: Array[Array] = []
 
 ## 후진 시 step_history에 되짚을 이력이 없을 때 쓰는 구조상 직전 타일.
 const _DEFAULT_PREVIOUS: Dictionary = {
@@ -19,6 +21,7 @@ const _DEFAULT_PREVIOUS: Dictionary = {
 func _init() -> void:
 	_init_29_tiles()
 	_build_distance_table()
+	_build_undirected()
 
 
 ## 0~28번 타일과 모든 간선을 초기화한다.
@@ -67,6 +70,40 @@ func is_graph_valid() -> bool:
 		if tile.next_shortcut != -1 and not is_valid_tile(tile.next_shortcut):
 			return false
 	return true
+
+
+## 구조상 직전 타일(이력이 없을 때의 후진 목적지).
+func default_previous(tile: int) -> int:
+	return _DEFAULT_PREVIOUS[tile]
+
+
+## 간선 방향과 무관하게 center에서 radius칸 이내인 모든 타일(자기 자신 포함).
+func tiles_within(center: int, radius: int) -> Array[int]:
+	var distance: Dictionary = {center: 0}
+	var queue: Array[int] = [center]
+	var head: int = 0
+	while head < queue.size():
+		var current: int = queue[head]
+		head += 1
+		if int(distance[current]) >= radius:
+			continue
+		for neighbor: int in _undirected[current]:
+			if not distance.has(neighbor):
+				distance[neighbor] = int(distance[current]) + 1
+				queue.append(neighbor)
+	var result: Array[int] = []
+	for tile: int in distance.keys():
+		result.append(tile)
+	result.sort()
+	return result
+
+
+## 설치물이 놓인 타일 번호. 어느 타일에도 없으면 -1.
+func tile_of_attachment(attachment: TileAttachment) -> int:
+	for tile: TileNode in tiles:
+		if tile.attachments.has(attachment):
+			return tile.tile_id
+	return -1
 
 
 func get_tile(index: int) -> TileNode:
@@ -247,6 +284,19 @@ func shortest_path(from_tile: int, to_tile: int) -> Array[int]:
 
 func path_length(from_tile: int, to_tile: int) -> int:
 	return shortest_path(from_tile, to_tile).size()
+
+
+func _build_undirected() -> void:
+	_undirected.clear()
+	for index: int in GameEnums.TILE_COUNT:
+		var neighbors: Array[int] = []
+		_undirected.append(neighbors)
+	for tile: TileNode in tiles:
+		for neighbor: int in tile.neighbors():
+			if not _undirected[tile.tile_id].has(neighbor):
+				_undirected[tile.tile_id].append(neighbor)
+			if not _undirected[neighbor].has(tile.tile_id):
+				_undirected[neighbor].append(tile.tile_id)
 
 
 func _build_distance_table() -> void:

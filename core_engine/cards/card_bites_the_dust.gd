@@ -11,6 +11,10 @@ func _init() -> void:
 	playable_phases = [TurnManager.State.PHASE_RESOLUTION]
 
 
+func could_play(state: GameState, player_id: int) -> bool:
+	return state.turn_snapshot != null and state.hurt_players.has(player_id)
+
+
 func can_play(state: GameState, player_id: int, _params: Dictionary) -> bool:
 	return state.turn_snapshot != null and state.hurt_players.has(player_id)
 

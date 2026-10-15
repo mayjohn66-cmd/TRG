@@ -42,6 +42,14 @@ static func begin(state: GameState, mover: PlayerPawn, ctx: RuleContext) -> Move
 		if processed.is_canceled:
 			processed.is_canceled = false
 			report.canceled = true
+		elif mover.is_imprisoned:
+			# 무인도(TRP_04): 짝수 눈금이 나와야 탈출하고, 홀수면 이번 이동은 헛수고가 된다.
+			if absi(ctx.dice_value) % 2 == 0:
+				mover.is_imprisoned = false
+				report.released = true
+			else:
+				report.canceled = true
+				report.jailed = true
 	return report
 
 
@@ -74,6 +82,7 @@ static func apply_step(
 		return StepOutcome.HALTED
 
 	if is_forward and destination == GameEnums.GOAL_TILE:
+		_pay_salary(state, mover, report)
 		if not is_last and ctx.exact_goal_required:
 			report.bounced = true
 			return StepOutcome.CONTINUE
@@ -86,6 +95,25 @@ static func apply_step(
 static func finalize(state: GameState, mover: PlayerPawn, ctx: RuleContext, report: MoveReport, outcome: StepOutcome) -> void:
 	if outcome == StepOutcome.CONTINUE or outcome == StepOutcome.HALTED:
 		_resolve_landing(state, mover, ctx, report)
+
+
+## 모노폴리 2세트 [월급날]: 출발선(0번)을 지나거나 밟을 때마다 손패에 생떼 카드 2장을 보충한다.
+static func _pay_salary(state: GameState, mover: PlayerPawn, report: MoveReport) -> void:
+	if mover.kind != GameEnums.PawnKind.MONOPOLY or state.set_count(mover.owner_id, GameEnums.PawnKind.MONOPOLY) < GameEnums.SET_SYNERGY_2:
+		return
+	for i: int in 2:
+		if state.draw_card(mover.owner_id) != &"":
+			report.salary_cards += 1
+
+
+## 모노폴리 카 [호텔 건설]: 이동이 끝난 타일에 2턴간 유지되는 통행료 호텔을 설치한다 (같은 타일의 내 호텔은 갱신).
+static func _build_hotel(state: GameState, mover: PlayerPawn, report: MoveReport) -> void:
+	var tile: TileNode = state.board.get_tile(mover.current_tile_idx)
+	for attachment: TileAttachment in tile.attachments.duplicate():
+		if attachment.attachment_id == "HOTEL" and attachment.owner_id == mover.owner_id:
+			tile.remove_attachment(attachment)
+	state.place_attachment(mover.current_tile_idx, Hotel.new(mover.owner_id))
+	report.hotel_built = true
 
 
 static func _finish(state: GameState, mover: PlayerPawn, report: MoveReport) -> void:
@@ -143,6 +171,8 @@ static func _resolve_landing(state: GameState, mover: PlayerPawn, ctx: RuleConte
 	if mover.is_finished:
 		return
 	_resolve_stacking(state, mover, ctx, report)
+	if mover.kind == GameEnums.PawnKind.MONOPOLY and ctx.charge_depth == 0 and mover.current_tile_idx != GameEnums.GOAL_TILE:
+		_build_hotel(state, mover, report)
 	ctx.trigger_timing = RuleContext.ON_TURN_END
 	ctx = state.rulebook.process_context(ctx)
 	ctx.is_canceled = false

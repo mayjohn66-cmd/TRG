@@ -11,7 +11,12 @@ const DECK_COMPOSITION: Dictionary = {
 	&"ACT_04": 2,
 	&"ACT_05": 2,
 	&"ACT_06": 3,
-	&"TRP_01": 3,
+	&"TRP_01": 2,
+	&"TRP_02": 2,
+	&"TRP_03": 2,
+	&"TRP_04": 2,
+	&"SUM_01": 2,
+	&"SUM_02": 1,
 }
 
 
@@ -25,11 +30,24 @@ static func get_card(card_id: StringName) -> BaseCard:
 		&"ACT_05": card = CardBitesTheDust.new()
 		&"ACT_06": card = CardObjection.new()
 		&"TRP_01": card = CardMirrorForce.new()
+		&"TRP_02": card = CardTrapPit.new()
+		&"TRP_03": card = CardMine.new()
+		&"TRP_04": card = CardIsland.new()
+		&"SUM_01": card = CardBandit.new()
+		&"SUM_02": card = CardGhost.new()
 	if card == null:
 		push_error("CardRegistry: 알 수 없는 카드 ID '%s'" % card_id)
 		return null
 	_cache[card_id] = card
 	return card
+
+
+## 구현된 모든 카드 ID (증강 '생떼 카드 패키지'가 무작위로 뽑는 풀).
+static func all_ids() -> Array[StringName]:
+	var ids: Array[StringName] = []
+	for card_id: StringName in DECK_COMPOSITION.keys():
+		ids.append(card_id)
+	return ids
 
 
 static func default_deck() -> Array[StringName]:

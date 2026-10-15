@@ -36,6 +36,7 @@ func _process(_delta: float) -> bool:
 	if not _started and _net.connected_player_count() == 2:
 		_started = true
 		print("HOST: 클라이언트 접속 확인 roster=", _net.peer_to_player)
+		_manager.draft_enabled = false
 		_manager.start_game([1, 2] as Array[int], 99)
 		_manager.state.tools[1] = ScriptedTool.new([1])
 		_manager.state.tools[2] = ScriptedTool.new([2])

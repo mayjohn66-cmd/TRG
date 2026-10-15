@@ -70,7 +70,7 @@ func test_law_01_blocks_corner_shortcuts() -> void:
 
 
 func test_bishop_turns_into_shortcut_even_when_only_passing() -> void:
-	var state := make_state(2, 1, {1: [GameEnums.PawnKind.CHESS_BISHOP, GameEnums.PawnKind.YUT, GameEnums.PawnKind.YUT, GameEnums.PawnKind.YUT]})
+	var state := make_state(2, 1, {1: [Vector2i(GameEnums.PawnKind.CHESS, 3), Vector2i(GameEnums.PawnKind.YUT, 1), Vector2i(GameEnums.PawnKind.YUT, 2), Vector2i(GameEnums.PawnKind.YUT, 3)]})
 	check_eq(_pawn_path(state, 11, 3, [2], 4), int_array([4, 5, 20, 21]), "비숍은 5번을 스치면 20번으로 꺾음")
 	check_eq(_pawn_path(state, 11, 8, [7], 4), int_array([9, 10, 25, 26]), "비숍은 10번을 스치면 25번으로 꺾음")
 	var pawn: PlayerPawn = place(state, 11, 3, [2])

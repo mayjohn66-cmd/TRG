@@ -42,8 +42,9 @@ var is_game_over: bool = false
 
 ## true면 호스트 로컬(피어 1)이 params["player_id"]로 모든 플레이어를 대리 조작할 수 있다 (핫시트/테스트).
 var hotseat_mode: bool = false
-## 증강 드래프트 후보 풀 (content 계층이 채운다). 후보가 3개 미만이면 드래프트는 건너뛴다.
-var draft_pool: Array[StringName] = []
+## 1, 4, 7라운드 시작 증강 드래프트를 여는가. 헤드리스 테스트나 드래프트 없는 모드에서는 끈다.
+var draft_enabled: bool = true
+## 플레이어 ID -> 지금까지 고른 증강 ID 목록.
 var augments: Dictionary = {}
 ## 피어 ID -> 플레이어 좌석. NetworkService가 있으면 그쪽을 우선한다.
 var peer_to_player: Dictionary = {1: 1}
@@ -52,6 +53,9 @@ var move_queue: Array[int] = []
 var _roll_chain: int = 0
 var _turns_in_round: int = 0
 var _extra_turn_pending: bool = false
+var _bonus_roll_pending: bool = false
+## 현재 플레이어가 이번 턴에 연속으로 잡은 말 수 (장군멍군 판정). 턴이 넘어가거나 롤백되면 0이 된다.
+var _chain_captures: int = 0
 var _draft_offers: Dictionary = {}
 var _draft_picks: Dictionary = {}
 ## 진행 중인 이동의 보고서와 마지막 걸음 결과 (execute_step_by_step_move가 채운다).
@@ -78,11 +82,11 @@ func current_player_id() -> int:
 
 
 ## 호스트 전용: 새 판을 시작한다.
-func start_game(player_ids: Array[int], seed_value: int = 0, kinds_by_player: Dictionary = {}) -> void:
+func start_game(player_ids: Array[int], seed_value: int = 0, loadouts: Dictionary = {}) -> void:
 	if not multiplayer.is_server():
 		return
 	state = GameState.new()
-	state.setup(player_ids, seed_value, kinds_by_player)
+	state.setup(player_ids, seed_value, loadouts)
 	state.turn_order_reverse_requested.connect(reverse_turn_order)
 	_ensure_command_stack()
 	command_stack.begin_turn()
@@ -97,6 +101,8 @@ func start_game(player_ids: Array[int], seed_value: int = 0, kinds_by_player: Di
 	move_queue.clear()
 	_turns_in_round = 0
 	_extra_turn_pending = false
+	_bonus_roll_pending = false
+	_chain_captures = 0
 	_enter_round_start()
 
 
@@ -143,6 +149,8 @@ func reverse_turn_order() -> void:
 ## 이번이 라운드의 마지막 턴이었다면 PHASE_NEUTRAL_NPC로 진입한다.
 func advance_to_next_player() -> void:
 	_extra_turn_pending = false
+	_bonus_roll_pending = false
+	_chain_captures = 0
 	_turns_in_round += 1
 	if _turns_in_round >= player_order.size():
 		_turns_in_round = 0
@@ -309,9 +317,50 @@ func _handle_pick_augment(actor: int, params: Dictionary) -> void:
 	if index < 0 or index >= (_draft_offers[actor] as Array).size():
 		action_rejected.emit(actor, &"pick_augment", &"invalid_index")
 		return
-	_draft_picks[actor] = index
+	if not _pick_augment(actor, index, params, false):
+		action_rejected.emit(actor, &"pick_augment", &"invalid_pawn")
+		return
 	if _draft_picks.size() >= _draft_offers.size():
 		_finish_draft()
+
+
+## 로컬/핫시트용: 해당 플레이어의 증강을 무작위로 자동 선택한다 (기물 진화는 가장 앞 슬롯의 기본 말).
+func auto_pick_draft(player_id: int) -> void:
+	if current_state != State.PHASE_ROUND_START or not _draft_offers.has(player_id) or _draft_picks.has(player_id):
+		return
+	var index: int = state.rng.randi_range(0, (_draft_offers[player_id] as Array).size() - 1)
+	_pick_augment(player_id, index, {}, true)
+	if _draft_picks.size() >= _draft_offers.size():
+		_finish_draft()
+
+
+## 드래프트 중 아직 선택하지 않은 플레이어 (플레이 순서대로).
+func draft_pending_players() -> Array[int]:
+	var pending: Array[int] = []
+	for player_id: int in player_order:
+		if _draft_offers.has(player_id) and not _draft_picks.has(player_id):
+			pending.append(player_id)
+	return pending
+
+
+func draft_offers_for(player_id: int) -> Array[StringName]:
+	var offers: Array[StringName] = []
+	offers.assign(_draft_offers.get(player_id, []))
+	return offers
+
+
+## 선택한 증강을 즉시 적용하고 기록한다. 적용에 실패하면 false.
+func _pick_augment(player_id: int, index: int, params: Dictionary, automatic: bool) -> bool:
+	var augment_id: StringName = (_draft_offers[player_id] as Array)[index]
+	var definition: AugmentDef = AugmentRegistry.get_def(augment_id)
+	var result: Dictionary = definition.apply(state, player_id, params)
+	if not bool(result["ok"]):
+		return false
+	_draft_picks[player_id] = index
+	(augments[player_id] as Array).append(augment_id)
+	_emit_event(&"augment_picked", {"player_id": player_id, "augment_id": augment_id, "text": result["text"], "auto": automatic})
+	_broadcast_state()
+	return true
 
 
 # ---------------------------------------------------------------------------
@@ -364,29 +413,26 @@ func _enter_round_start() -> void:
 	_draft_offers.clear()
 	_draft_picks.clear()
 	change_state(State.PHASE_ROUND_START)
-	if GameEnums.DRAFT_ROUNDS.has(state.round_number) and draft_pool.size() >= GameEnums.DRAFT_OFFER_COUNT:
+	if draft_enabled and GameEnums.DRAFT_ROUNDS.has(state.round_number):
 		for player_id: int in player_order:
-			var offers: Array[StringName] = []
-			for index: int in BaseJudgmentTool.sample_distinct(state.rng, draft_pool.size(), GameEnums.DRAFT_OFFER_COUNT):
-				offers.append(draft_pool[index])
-			_draft_offers[player_id] = offers
-		_emit_event(&"augment_offers", {"offers": _draft_offers.duplicate(true)})
+			_draft_offers[player_id] = AugmentRegistry.generate_offers(state, player_id)
+		_emit_event(&"augment_offers", {"round": state.round_number, "offers": _draft_offers.duplicate(true)})
 	else:
 		_begin_turn()
 
 
+## 시간 초과 등으로 드래프트를 마감한다. 아직 고르지 않은 플레이어는 첫 번째 선택지로 자동 선택된다.
 func _finish_draft() -> void:
-	for player_id: int in _draft_offers:
-		var index: int = int(_draft_picks.get(player_id, 0))
-		var chosen: StringName = (_draft_offers[player_id] as Array)[index]
-		(augments[player_id] as Array).append(chosen)
-		_emit_event(&"augment_picked", {"player_id": player_id, "augment_id": chosen, "auto": not _draft_picks.has(player_id)})
+	for player_id: int in player_order:
+		if _draft_offers.has(player_id) and not _draft_picks.has(player_id):
+			_pick_augment(player_id, 0, {}, true)
 	_draft_offers.clear()
 	_draft_picks.clear()
 	_begin_turn()
 
 
-func _begin_turn() -> void:
+## new_turn: 새 플레이어의 턴이면 true (구속 카운터를 줄인다). 추가 턴·롤백 재시작은 false.
+func _begin_turn(new_turn: bool = true) -> void:
 	state.hurt_players.clear()
 	state.rollback_requested = false
 	move_queue.clear()
@@ -394,10 +440,20 @@ func _begin_turn() -> void:
 	_roll_chain = 0
 	_move_report = null
 	_sync_current_player()
+	if new_turn:
+		_tick_restraints(current_player_id())
 	_tick_owned_attachments(current_player_id())
 	state.turn_snapshot = TurnSnapshot.capture(state)
 	(state.tools[current_player_id()] as BaseJudgmentTool).on_turn_begin(state.rng)
 	change_state(State.PHASE_TURN_BEGIN)
+
+
+## TRP_02 나락으로 구속된 말: 내 턴이 시작될 때마다 구속 턴을 하나씩 소모하고, 그 턴에는 선택할 수 없다.
+func _tick_restraints(player_id: int) -> void:
+	for pawn: PlayerPawn in state.pawns_of(player_id):
+		pawn.blocked_this_turn = pawn.restrained_turns > 0
+		if pawn.restrained_turns > 0:
+			pawn.restrained_turns -= 1
 
 
 func _tick_owned_attachments(player_id: int) -> void:
@@ -436,9 +492,19 @@ func _apply_roll_result(result: RollResult) -> void:
 		_enter_interrupt_roll()
 
 
+## 이 단계의 개입 창에서 낼 수 있는 카드를 가진 플레이어가 있는가. 없으면 창을 열지 않고 바로 진행한다.
+func _someone_can_intervene() -> bool:
+	for player_id: int in player_order:
+		for card_id: StringName in state.hands[player_id]:
+			var card: BaseCard = CardRegistry.get_card(card_id)
+			if card.is_playable_in(current_state) and card.could_play(state, player_id):
+				return true
+	return false
+
+
 func _enter_interrupt_roll() -> void:
 	change_state(State.PHASE_INTERRUPT_ROLL)
-	if not state.any_hand_has_cards():
+	if not _someone_can_intervene():
 		_close_interrupt_window()
 
 
@@ -490,6 +556,11 @@ func _execute_move(pawn: PlayerPawn) -> void:
 	var report: MoveReport = _move_report
 	_move_report = null
 	_extra_turn_pending = _extra_turn_pending or report.extra_turn
+	_chain_captures += report.captured_pawn_ids.size()
+	if pawn.kind == GameEnums.PawnKind.YUT and state.set_count(pawn.owner_id, GameEnums.PawnKind.YUT) >= GameEnums.SET_SYNERGY_2 and [4, 5].has(absi(ctx.raw_roll)):
+		# 윷 2세트 [사기 윷]: 4 또는 5가 나오면 무조건 추가 굴림 1회.
+		report.bonus_roll = true
+		_bonus_roll_pending = true
 	_emit_event(&"move_resolved", report.to_dict())
 	if _check_victory(report):
 		return
@@ -498,7 +569,7 @@ func _execute_move(pawn: PlayerPawn) -> void:
 
 func _enter_resolution() -> void:
 	change_state(State.PHASE_RESOLUTION)
-	if not state.any_hand_has_cards():
+	if not _someone_can_intervene():
 		_close_resolution_window()
 
 
@@ -508,15 +579,21 @@ func _close_resolution_window() -> void:
 		# ACT_05: CommandStack이 이번 턴 이력을 역순으로 undo했다. 같은 플레이어의 턴을 처음부터 다시 시작한다.
 		state.rollback_requested = false
 		_extra_turn_pending = false
-		_begin_turn()
+		_bonus_roll_pending = false
+		_chain_captures = 0
+		_begin_turn(false)
 		return
 	if _check_victory(null):
 		return
 	if not move_queue.is_empty():
 		_enter_select_pawn()
+	elif _bonus_roll_pending:
+		_bonus_roll_pending = false
+		_roll_chain = 0
+		_enter_roll_wait()
 	elif _extra_turn_pending:
 		_extra_turn_pending = false
-		_begin_turn()
+		_begin_turn(false)
 	else:
 		advance_to_next_player()
 
@@ -534,25 +611,13 @@ func _enter_neutral_npc_phase() -> void:
 	_enter_round_start()
 
 
-## 승리 조건: 4개 말을 모두 완주하거나 기물 세트의 특수 승리(report.special_victory).
+## PHASE_RESOLUTION 승리 판정: 일반 승리와 기물 4세트 특수 승리 5종을 VictoryChecker로 검사한다.
 func _check_victory(report: MoveReport) -> bool:
-	var winner_id: int = -1
-	var reason: StringName = &""
-	if report != null and report.special_victory != &"":
-		winner_id = current_player_id()
-		reason = report.special_victory
-	else:
-		for player_id: int in player_order:
-			var all_home: bool = true
-			for pawn: PlayerPawn in state.pawns_of(player_id):
-				if not pawn.is_finished:
-					all_home = false
-			if all_home:
-				winner_id = player_id
-				reason = &"all_home"
-				break
-	if winner_id == -1:
+	var result: Dictionary = VictoryChecker.evaluate(state, player_order, current_player_id(), report, _chain_captures)
+	if result.is_empty():
 		return false
+	var winner_id: int = int(result["winner"])
+	var reason: StringName = result["reason"]
 	state.winner = winner_id
 	is_game_over = true
 	phase_time_left = 0.0
@@ -588,9 +653,6 @@ func _broadcast_state() -> void:
 
 
 func _build_sync_payload() -> Dictionary:
-	var kinds: Dictionary = {}
-	for pawn: PlayerPawn in state.pawns:
-		kinds[pawn.entity_id] = pawn.kind
 	var hand_counts: Dictionary = {}
 	for player_id: int in player_order:
 		hand_counts[player_id] = (state.hands[player_id] as Array).size()
@@ -601,7 +663,6 @@ func _build_sync_payload() -> Dictionary:
 		"turn_index": current_turn_index,
 		"direction": turn_direction,
 		"game_over": is_game_over,
-		"kinds": kinds,
 		"snapshot": TurnSnapshot.capture(state).to_dict(),
 		"winner": state.winner,
 		"hand_counts": hand_counts,
@@ -614,14 +675,8 @@ func _build_sync_payload() -> Dictionary:
 func _rpc_sync_state(payload: Dictionary) -> void:
 	player_order.assign(payload["order"])
 	if state == null:
-		var kinds_by_player: Dictionary = {}
-		for player_id: int in player_order:
-			var kinds: Array = []
-			for slot: int in range(1, GameEnums.PAWNS_PER_PLAYER + 1):
-				kinds.append(payload["kinds"].get(player_id * 10 + slot, GameEnums.PawnKind.YUT))
-			kinds_by_player[player_id] = kinds
 		state = GameState.new()
-		state.setup(player_order, 1, kinds_by_player)
+		state.setup(player_order, 1)
 	TurnSnapshot.from_dict(payload["snapshot"]).restore(state, true)
 	state.winner = int(payload["winner"])
 	current_turn_index = int(payload["turn_index"])

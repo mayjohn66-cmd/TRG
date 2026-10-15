@@ -9,6 +9,7 @@ signal pawn_stepped(pawn_id: int, from_tile: int, to_tile: int)
 signal pawn_warped(pawn_id: int, from_tile: int, to_tile: int)
 signal pawn_sent_to_start(pawn_id: int, by_player: int)
 signal pawn_finished(pawn_id: int)
+signal pawn_evolved(pawn_id: int, kind: int, unit_no: int)
 signal pawns_stacked(leader_id: int, member_ids: Array[int])
 signal pawns_swapped(pawn_a_id: int, pawn_b_id: int)
 signal pawn_teleported(pawn_id: int, to_tile: int)
@@ -80,8 +81,9 @@ func clear_npcs() -> void:
 # 초기화
 # ---------------------------------------------------------------------------
 
-## kinds_by_player: 플레이어 ID -> Array[PawnKind] (4개). 생략하면 모두 윷말.
-func setup(ids: Array[int], seed_value: int = 0, kinds_by_player: Dictionary = {}) -> void:
+## loadouts: 플레이어 ID -> 말 4개의 시작 구성(테스트·시나리오용). 각 원소는 PawnKind 정수 또는 Vector2i(세트, 호기).
+## 생략하면 모두 진화하지 않은 기본 말이다.
+func setup(ids: Array[int], seed_value: int = 0, loadouts: Dictionary = {}) -> void:
 	player_ids = ids.duplicate()
 	if seed_value != 0:
 		rng.seed = seed_value
@@ -96,13 +98,18 @@ func setup(ids: Array[int], seed_value: int = 0, kinds_by_player: Dictionary = {
 	for player_id: int in player_ids:
 		hands[player_id] = [] as Array[StringName]
 		tools[player_id] = ToolRegistry.create(&"D6")
-		var kinds: Array = kinds_by_player.get(player_id, [])
+		var kinds: Array = loadouts.get(player_id, [])
 		for slot: int in range(1, GameEnums.PAWNS_PER_PLAYER + 1):
 			var pawn := PlayerPawn.new()
 			pawn.entity_id = player_id * 10 + slot
 			pawn.owner_id = player_id
 			pawn.slot = slot
-			pawn.kind = kinds[slot - 1] if kinds.size() >= slot else GameEnums.PawnKind.YUT
+			if kinds.size() >= slot:
+				var entry: Variant = kinds[slot - 1]
+				if entry is Vector2i:
+					pawn.evolve(entry.x, entry.y)
+				else:
+					pawn.evolve(int(entry), 0 if int(entry) == GameEnums.PawnKind.BASIC else 1)
 			pawns.append(pawn)
 	current_player = player_ids[0] if not player_ids.is_empty() else -1
 	card_deck = CardRegistry.default_deck()
@@ -133,6 +140,36 @@ func get_npc(npc_id: int) -> NeutralNPC:
 		if npc.entity_id == npc_id:
 			return npc
 	return null
+
+
+## 플레이어가 소유한 해당 세트의 말 수 (세트 시너지 판정). 완주한 말도 세트에 포함한다.
+func set_count(player_id: int, kind: GameEnums.PawnKind) -> int:
+	var count: int = 0
+	for pawn: PlayerPawn in pawns:
+		if pawn.owner_id == player_id and pawn.kind == kind:
+			count += 1
+	return count
+
+
+## 아직 진화하지 않은 플레이어의 기본 말들.
+func basic_pawns_of(player_id: int) -> Array[PlayerPawn]:
+	var result: Array[PlayerPawn] = []
+	for pawn: PlayerPawn in pawns:
+		if pawn.owner_id == player_id and pawn.kind == GameEnums.PawnKind.BASIC:
+			result.append(pawn)
+	return result
+
+
+## 기본 말 하나를 세트의 다음 호기로 영구 진화시킨다. 기본 말이 아니거나 세트가 이미 4호기까지 찼으면 false.
+func evolve_pawn(pawn: PlayerPawn, kind: GameEnums.PawnKind) -> bool:
+	if pawn == null or pawn.kind != GameEnums.PawnKind.BASIC or kind == GameEnums.PawnKind.BASIC:
+		return false
+	var next_unit: int = set_count(pawn.owner_id, kind) + 1
+	if next_unit > GameEnums.PAWNS_PER_PLAYER:
+		return false
+	pawn.evolve(kind, next_unit)
+	pawn_evolved.emit(pawn.entity_id, kind, next_unit)
+	return true
 
 
 func pawns_of(player_id: int) -> Array[PlayerPawn]:

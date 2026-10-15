@@ -1,6 +1,6 @@
 # File: res://core_engine/cards/card_mirror_force.gd
 # Class: class_name CardMirrorForce
-# Role: TRP_01 성스러운 방어막 거울의 힘 - 타일 하나에 뒷면 은신 함정을 설치 (타일 설치형 카드의 대표 구현)
+# Role: TRP_01 성스러운 방어막 거울의 힘 - 타일 하나에 뒷면 은신 함정을 설치 (타일 설치형 카드)
 class_name CardMirrorForce
 extends BaseCard
 
@@ -10,6 +10,10 @@ func _init() -> void:
 	display_name = "성스러운 방어막 거울의 힘"
 	category = GameEnums.CardCategory.TRAP
 	playable_phases = [TurnManager.State.PHASE_TURN_BEGIN]
+
+
+func needs_tile() -> bool:
+	return true
 
 
 ## params: {"tile": int}  출발/결승선(0번)과 중앙(22번)에는 설치할 수 없고, 한 타일에 같은 설치물은 하나만 둔다.

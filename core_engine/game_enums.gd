@@ -17,7 +17,10 @@ enum Phase {
 	GAME_OVER,
 }
 
-enum PawnKind { YUT, CHESS_KNIGHT, CHESS_BISHOP, JANGGI_PO, MONOPOLY_CAR, GO_STONE }
+## 기물 세트(계열). BASIC은 아직 진화하지 않은 기본 말이다. 진화한 말은 세트 안에서 1~4호기(unit_no)를 순서대로 받는다.
+enum PawnKind { BASIC, YUT, CHESS, JANGGI, MONOPOLY, GO }
+
+enum AugmentCategory { PAWN_EVOLUTION, TOOL_SWAP, LAW_ENACT, CARD_PACKAGE }
 
 enum CardCategory { INSTANT, TRAP, SUMMON }
 
@@ -36,6 +39,9 @@ const BAKERY_TILES: Array[int] = [3, 8, 13, 18]
 const PORTAL_TILES: Array[int] = [7, 17]
 
 const PAWNS_PER_PLAYER: int = 4
+const MAX_NPCS: int = 3
+const SET_SYNERGY_2: int = 2
+const CORNER_TILES: Array[int] = [0, 5, 10, 15]
 const MAX_LAWS: int = 4
 const MAX_HAND_SIZE: int = 7
 const MAX_REROLL_CHAIN: int = 8

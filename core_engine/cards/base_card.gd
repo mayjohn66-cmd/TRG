@@ -15,6 +15,16 @@ func is_playable_in(phase: int) -> bool:
 	return playable_phases.has(phase)
 
 
+## 이 카드는 보드판의 타일을 직접 골라야 하는가 (타일 설치형·소환형).
+func needs_tile() -> bool:
+	return false
+
+
+## params 없이, 개입 창에서 이 플레이어가 이 카드를 낼 만한 상황인가. 창을 불필요하게 열지 않기 위해 TurnManager가 쓴다.
+func could_play(_state: GameState, _player_id: int) -> bool:
+	return true
+
+
 ## 카드별 사용 조건(대상 유효성 등). 기본은 항상 사용 가능.
 func can_play(_state: GameState, _player_id: int, _params: Dictionary) -> bool:
 	return true

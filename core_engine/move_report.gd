@@ -8,6 +8,11 @@ var pawn_id: int = -1
 ## 한 칸씩 밟은 타일 순서 (워프 도착 칸 포함).
 var path: Array[int] = []
 var canceled: bool = false
+var jailed: bool = false
+var released: bool = false
+var hotel_built: bool = false
+var salary_cards: int = 0
+var bonus_roll: bool = false
 var bounced: bool = false
 var finished: bool = false
 var trapped: bool = false
@@ -25,6 +30,11 @@ var effect_names: Array[String] = []
 func merge(other: MoveReport) -> void:
 	path.append_array(other.path)
 	canceled = canceled or other.canceled
+	jailed = jailed or other.jailed
+	released = released or other.released
+	hotel_built = hotel_built or other.hotel_built
+	salary_cards += other.salary_cards
+	bonus_roll = bonus_roll or other.bonus_roll
 	bounced = bounced or other.bounced
 	finished = finished or other.finished
 	trapped = trapped or other.trapped
@@ -46,6 +56,11 @@ func to_dict() -> Dictionary:
 		"pawn_id": pawn_id,
 		"path": path,
 		"canceled": canceled,
+		"jailed": jailed,
+		"released": released,
+		"hotel_built": hotel_built,
+		"salary_cards": salary_cards,
+		"bonus_roll": bonus_roll,
 		"bounced": bounced,
 		"finished": finished,
 		"trapped": trapped,

@@ -5,6 +5,10 @@ class_name TestMoveExecutor
 extends TestCase
 
 
+func _yut_loadout() -> Array:
+	return [Vector2i(GameEnums.PawnKind.YUT, 1), Vector2i(GameEnums.PawnKind.YUT, 2), Vector2i(GameEnums.PawnKind.YUT, 3), Vector2i(GameEnums.PawnKind.YUT, 4)]
+
+
 func test_portal_warp_counts_as_stopping_on_22() -> void:
 	var state := make_state()
 	place(state, 11, 4, [3])
@@ -156,14 +160,14 @@ func test_law_02_blocks_new_stacks_but_keeps_existing_ones() -> void:
 
 
 func test_non_yut_pawns_only_stack_with_same_kind_or_yut() -> void:
-	var state := make_state(2, 1, {1: [GameEnums.PawnKind.CHESS_KNIGHT, GameEnums.PawnKind.GO_STONE, GameEnums.PawnKind.YUT, GameEnums.PawnKind.CHESS_KNIGHT]})
+	var state := make_state(2, 1, {1: [Vector2i(GameEnums.PawnKind.CHESS, 2), Vector2i(GameEnums.PawnKind.GO, 1), Vector2i(GameEnums.PawnKind.YUT, 1), Vector2i(GameEnums.PawnKind.CHESS, 1)]})
 	check(not state.get_pawn(11).can_stack_with(state.get_pawn(12)), "나이트 + 바둑돌 불가")
 	check(state.get_pawn(11).can_stack_with(state.get_pawn(13)), "윷말은 다른 종류와도 업기 가능")
 	check(state.get_pawn(11).can_stack_with(state.get_pawn(14)), "같은 종류는 가능")
 
 
 func test_yut_four_stack_reaching_goal_is_special_victory() -> void:
-	var state := make_state()
+	var state := make_state(2, 1, {1: _yut_loadout()})
 	place(state, 11, 18, [17])
 	for slot: int in [2, 3, 4]:
 		place(state, 10 + slot, 18, [17])

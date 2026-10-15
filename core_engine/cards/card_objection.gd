@@ -11,6 +11,10 @@ func _init() -> void:
 	playable_phases = [TurnManager.State.PHASE_TURN_BEGIN, TurnManager.State.PHASE_INTERRUPT_ROLL, TurnManager.State.PHASE_RESOLUTION]
 
 
+func could_play(state: GameState, _player_id: int) -> bool:
+	return not state.rulebook.active_laws_queue.is_empty()
+
+
 ## params: {"law_id": String}
 func can_play(state: GameState, _player_id: int, params: Dictionary) -> bool:
 	return state.rulebook.has_law(String(params.get("law_id", "")))

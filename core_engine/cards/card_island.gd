@@ -1,0 +1,31 @@
+# File: res://core_engine/cards/card_island.gd
+# Class: class_name CardIsland
+# Role: TRP_04 부르마블 무인도 감옥 - 코너 타일(5, 10, 15번) 한 곳을 무인도로 바꾼다. 보드에는 무인도가 하나만 존재할 수 있다
+class_name CardIsland
+extends BaseCard
+
+const CORNERS: Array[int] = [5, 10, 15]
+
+
+func _init() -> void:
+	card_id = &"TRP_04"
+	display_name = "무인도 감옥"
+	category = GameEnums.CardCategory.TRAP
+	playable_phases = [TurnManager.State.PHASE_TURN_BEGIN]
+
+
+func needs_tile() -> bool:
+	return true
+
+
+func can_play(state: GameState, _player_id: int, params: Dictionary) -> bool:
+	if not CORNERS.has(int(params.get("tile", -1))):
+		return false
+	for tile: TileNode in state.board.tiles:
+		if tile.has_attachment("TRP_04"):
+			return false
+	return true
+
+
+func create_command(_state: GameState, player_id: int, params: Dictionary) -> GameCommand:
+	return PlaceAttachmentCommand.new(player_id, int(params["tile"]), "TRP_04")

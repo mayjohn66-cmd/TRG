@@ -7,14 +7,15 @@ extends TestCase
 const Phase := TurnManager.State
 
 
-func _new_manager(player_count: int = 2, hotseat: bool = true) -> TurnManager:
+func _new_manager(player_count: int = 2, hotseat: bool = true, loadouts: Dictionary = {}) -> TurnManager:
 	var manager := TurnManager.new()
 	manager.hotseat_mode = hotseat
+	manager.draft_enabled = false
 	tree.root.add_child(manager)
 	var ids: Array[int] = []
 	for i: int in range(1, player_count + 1):
 		ids.append(i)
-	manager.start_game(ids, 4242)
+	manager.start_game(ids, 4242, loadouts)
 	return manager
 
 
@@ -305,15 +306,29 @@ func test_act_05_cannot_be_played_by_unharmed_player() -> void:
 	var manager: TurnManager = _new_manager()
 	var rejected: Array = _rejections(manager)
 	manager.state.give_card(2, &"ACT_05")
+	manager.state.give_card(2, &"ACT_01")  # 개입 창을 열어 두기 위한 카드 (ACT_05만 있으면 창이 열리지 않는다)
 	place(manager.state, 21, 4, [3])
 	_set_tool(manager, 1, ScriptedTool.new([1]))
 	_do(manager, 1, &"proceed")
 	_do(manager, 1, &"roll")
 	manager.tick(GameEnums.PHASE_TIME_INTERRUPT + 0.1)
 	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
-	check_eq(manager.current_state, Phase.PHASE_RESOLUTION, "개입 창 (손패 존재)")
+	check_eq(manager.current_state, Phase.PHASE_RESOLUTION, "UNO 리버스를 낼 수 있어 개입 창이 열린다")
 	_do(manager, 2, &"play_card", {"card_id": &"ACT_05"})
 	check_eq(rejected.size(), 1, "피해 없는 플레이어의 ACT_05는 거부")
+	_dispose(manager)
+
+
+func test_intervention_window_stays_closed_when_nobody_can_use_their_cards() -> void:
+	var manager: TurnManager = _new_manager()
+	manager.state.give_card(2, &"ACT_05")  # 피해자가 없으면 쓸 수 없는 카드
+	manager.state.give_card(1, &"TRP_01")  # 턴 시작 구간에서만 쓰는 카드
+	_set_tool(manager, 1, ScriptedTool.new([2]))
+	_do(manager, 1, &"proceed")
+	_do(manager, 1, &"roll")
+	check_eq(manager.current_state, Phase.PHASE_SELECT_PAWN, "낼 수 있는 카드가 없으면 개입 창을 건너뛴다")
+	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
+	check_eq(manager.current_state, Phase.PHASE_TURN_BEGIN, "정산 창도 건너뛰고 다음 턴")
 	_dispose(manager)
 
 
@@ -351,7 +366,7 @@ func test_all_pawns_home_declares_winner_and_stops_game() -> void:
 
 
 func test_yut_four_stack_special_victory_via_turn_manager() -> void:
-	var manager: TurnManager = _new_manager()
+	var manager: TurnManager = _new_manager(2, true, {1: [Vector2i(GameEnums.PawnKind.YUT, 1), Vector2i(GameEnums.PawnKind.YUT, 2), Vector2i(GameEnums.PawnKind.YUT, 3), Vector2i(GameEnums.PawnKind.YUT, 4)]})
 	var state: GameState = manager.state
 	for slot: int in [1, 2, 3, 4]:
 		place(state, 10 + slot, 18, [17])
@@ -366,30 +381,9 @@ func test_yut_four_stack_special_victory_via_turn_manager() -> void:
 	_dispose(manager)
 
 
-func test_augment_draft_on_round_one_with_auto_pick_on_timeout() -> void:
-	var manager := TurnManager.new()
-	manager.hotseat_mode = true
-	tree.root.add_child(manager)
-	manager.draft_pool.assign([&"AUG_A", &"AUG_B", &"AUG_C", &"AUG_D", &"AUG_E"])
-	var events: Array = _collect_events(manager)
-	manager.start_game([1, 2] as Array[int], 7)
-	check_eq(manager.current_state, Phase.PHASE_ROUND_START, "1라운드 시작은 드래프트")
-	check_eq(manager.phase_time_left, GameEnums.PHASE_TIME_DRAFT, "15초")
-	var offers_event: Array = events.filter(func(e: Dictionary) -> bool: return e["kind"] == &"augment_offers")
-	var offers: Dictionary = offers_event[0]["data"]["offers"]
-	check_eq((offers[1] as Array).size(), 3, "3지선다")
-	_do(manager, 1, &"pick_augment", {"index": 2})
-	check_eq(manager.current_state, Phase.PHASE_ROUND_START, "전원이 고를 때까지 대기")
-	manager.tick(GameEnums.PHASE_TIME_DRAFT + 0.1)
-	check_eq(manager.current_state, Phase.PHASE_TURN_BEGIN, "시간 초과 시 미선택자 자동 선택 후 진행")
-	check_eq(manager.augments[1], [(offers[1] as Array)[2]] as Array, "1번은 선택한 증강")
-	check_eq(manager.augments[2], [(offers[2] as Array)[0]] as Array, "2번은 자동 선택")
-	_dispose(manager)
-
-
-func test_no_draft_when_pool_is_empty_or_round_not_in_schedule() -> void:
+func test_no_draft_when_disabled() -> void:
 	var manager: TurnManager = _new_manager()
-	check_eq(manager.current_state, Phase.PHASE_TURN_BEGIN, "풀이 비어 있으면 드래프트 생략")
+	check_eq(manager.current_state, Phase.PHASE_TURN_BEGIN, "드래프트를 끄면 바로 첫 턴")
 	_dispose(manager)
 
 

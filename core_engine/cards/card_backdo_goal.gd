@@ -13,6 +13,13 @@ func _init() -> void:
 	playable_phases = [TurnManager.State.PHASE_TURN_BEGIN, TurnManager.State.PHASE_RESOLUTION]
 
 
+func could_play(state: GameState, player_id: int) -> bool:
+	for pawn: PlayerPawn in state.pawns_of(player_id):
+		if not pawn.is_finished and pawn.retreated_from_start and VALID_TILES.has(pawn.current_tile_idx):
+			return true
+	return false
+
+
 ## params: {"pawn_id": int}
 func can_play(state: GameState, player_id: int, params: Dictionary) -> bool:
 	var pawn: PlayerPawn = state.get_pawn(int(params.get("pawn_id", -1)))

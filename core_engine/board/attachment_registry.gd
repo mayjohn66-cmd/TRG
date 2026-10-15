@@ -7,8 +7,12 @@ extends RefCounted
 
 static func create(attachment_id: String) -> TileAttachment:
 	match attachment_id:
-		"TRP_01":
-			return TrapMirrorForce.new()
+		"TRP_01": return TrapMirrorForce.new()
+		"TRP_02": return TrapPit.new()
+		"TRP_03": return TrapMine.new()
+		"MINE_NUM": return MineNumber.new()
+		"TRP_04": return TrapIsland.new()
+		"HOTEL": return Hotel.new()
 	push_error("AttachmentRegistry: 알 수 없는 설치물 ID '%s'" % attachment_id)
 	return null
 

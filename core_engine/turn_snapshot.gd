@@ -21,6 +21,11 @@ static func capture(state: GameState) -> TurnSnapshot:
 			"started": pawn.has_left_start,
 			"finished": pawn.is_finished,
 			"retreated": pawn.retreated_from_start,
+			"kind": pawn.kind,
+			"unit": pawn.unit_no,
+			"restrained": pawn.restrained_turns,
+			"blocked": pawn.blocked_this_turn,
+			"imprisoned": pawn.is_imprisoned,
 			"carrier": pawn.carrier.entity_id if pawn.carrier != null else -1,
 			"carried": carried_ids,
 		}
@@ -74,6 +79,11 @@ func restore(state: GameState, restore_meta: bool = false) -> void:
 		pawn.has_left_start = bool(entry["started"])
 		pawn.is_finished = bool(entry["finished"])
 		pawn.retreated_from_start = bool(entry["retreated"])
+		pawn.kind = entry["kind"]
+		pawn.unit_no = int(entry["unit"])
+		pawn.restrained_turns = int(entry["restrained"])
+		pawn.blocked_this_turn = bool(entry["blocked"])
+		pawn.is_imprisoned = bool(entry["imprisoned"])
 		pawn.carrier = null
 		pawn.carried.clear()
 	for pawn: PlayerPawn in state.pawns:
