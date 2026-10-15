@@ -263,6 +263,9 @@ func _ready() -> void:
 	manager.game_over.connect(_on_game_over)
 	_build_ui()
 	_new_game()
+	var mobile := MobileSupport.new()
+	mobile.button_position = Vector2(1000, 46)
+	add_child(mobile)
 
 
 ## 코너 번호(0 우하단, 1 우상단, 2 좌상단, 3 좌하단)에 앉는 플레이어: 로컬 플레이어 기준 상대 좌석.

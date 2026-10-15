@@ -38,6 +38,11 @@ func _run() -> void:
 	menu.confirm_nickname()
 	menu._ai_button.pressed.emit()
 	_expect(GameSession.mode == GameSession.MODE_AI, "컴퓨터 대전 모드로 세션이 정해진다")
+	_expect(MobileSupport.is_portrait(Vector2i(390, 844)) and not MobileSupport.is_portrait(Vector2i(844, 390)), "세로/가로 판정")
+	menu._mobile.refresh(Vector2i(390, 844))
+	_expect(menu._mobile.overlay.visible, "세로 화면이면 가로 안내가 덮는다")
+	menu._mobile.refresh(Vector2i(844, 390))
+	_expect(not menu._mobile.overlay.visible, "가로 화면이면 안내가 사라진다")
 	menu.queue_free()
 	# 게임 화면: 내 프로필은 닉네임, 봇은 "컴퓨터 n"
 	var board: MainBoard = (load("res://scenes/main_board.tscn") as PackedScene).instantiate()

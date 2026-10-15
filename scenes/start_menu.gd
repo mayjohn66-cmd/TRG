@@ -22,6 +22,7 @@ var _hello_label: Label = null
 var _ai_button: Button = null
 var _multi_button: Button = null
 var _back_button: Button = null
+var _mobile: MobileSupport = null
 
 
 func _ready() -> void:
@@ -54,6 +55,8 @@ func _ready() -> void:
 		_name_edit.text = saved
 	_show_step(1)
 	_name_edit.grab_focus()
+	_mobile = MobileSupport.new()
+	add_child(_mobile)
 
 
 func _build_name_page(parent: VBoxContainer) -> void:
