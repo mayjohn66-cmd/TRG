@@ -131,16 +131,6 @@ func test_each_enemy_owner_loses_at_most_one_unit_per_capture() -> void:
 	check_eq(state.get_pawn(32).current_tile_idx, 4, "P3의 나머지 말 생존")
 
 
-func test_go_knock_also_hits_only_one_unstacked_piece() -> void:
-	var state := make_state(2, 1, {1: [Vector2i(GameEnums.PawnKind.GO, 1), 0, 0, 0]})
-	place(state, 21, 4, [3])
-	place(state, 22, 4, [3])
-	place(state, 11, 2, [1])
-	var report: MoveReport = move(state, 11, 2)
-	check_eq(report.knocked_pawn_ids, int_array([21]), "알까기도 개별 피격")
-	check_eq(state.get_pawn(22).current_tile_idx, 4, "나머지는 제자리")
-
-
 func test_area_traps_still_hit_every_piece_on_the_tile() -> void:
 	var state := make_state()
 	place(state, 21, 6, [5])
@@ -278,44 +268,6 @@ func test_non_yut_pawns_only_stack_when_a_yut_pawn_is_involved() -> void:
 	check(state.get_pawn(11).can_stack_with(state.get_pawn(13)), "윷말은 다른 종류와도 업기 가능")
 	check(not state.get_pawn(11).can_stack_with(state.get_pawn(14)), "같은 종류여도 윷이 아니면 불가")
 	check(state.get_pawn(13).can_stack_with(state.get_pawn(11)), "방향과 무관하게 윷이 끼면 가능")
-
-
-func test_yut_four_stack_reaching_goal_is_special_victory() -> void:
-	var state := make_state(2, 1, {1: _yut_loadout()})
-	place(state, 11, 18, [17])
-	for slot: int in [2, 3, 4]:
-		place(state, 10 + slot, 18, [17])
-		state.stack_pawns(state.get_pawn(11), state.get_pawn(10 + slot))
-	var report: MoveReport = move(state, 11, 2)
-	check(report.finished, "4업 완주")
-	check_eq(report.special_victory, &"yut_four_stack", "천하제일 4업")
-	for pawn: PlayerPawn in state.pawns_of(1):
-		check(pawn.is_finished, "업힌 말 전원 완주")
-
-
-func test_three_stack_is_not_special_victory() -> void:
-	var state := make_state()
-	place(state, 11, 18, [17])
-	for slot: int in [2, 3]:
-		place(state, 10 + slot, 18, [17])
-		state.stack_pawns(state.get_pawn(11), state.get_pawn(10 + slot))
-	var report: MoveReport = move(state, 11, 2)
-	check_eq(report.special_victory, &"", "3업은 특수 승리 아님")
-
-
-func test_law_02_seals_four_stack_until_repealed() -> void:
-	var state := make_state()
-	add_law(state, &"LAW_02")
-	for slot: int in [1, 2, 3, 4]:
-		place(state, 10 + slot, 16, [15])
-	for slot: int in [2, 3, 4]:
-		move(state, 10 + slot, 0)
-	var report: MoveReport = move(state, 11, 1)
-	check(report.stacked_pawn_ids.is_empty(), "법전이 윷 업기 능력보다 우선")
-	# FIFO로 밀어내면 다시 가능
-	for law_id: String in ["LAW_01", "LAW_03", "LAW_04", "LAW_05"]:
-		add_law(state, law_id)
-	check(not state.rulebook.has_law(&"LAW_02"), "5번째 교칙이 LAW_02를 밀어냄")
 
 
 func test_mirror_force_trap_stops_and_expels_enemy_but_not_owner() -> void:

@@ -84,6 +84,25 @@ func _setup_scene() -> void:
 			_board._refresh_all()
 			_board._card_press(1, &"TRP_02", Vector2(700, 700), Vector2(700, 640))
 			_board._card_move(Vector2(640, 380))
+		"skill":
+			_finish_draft()
+			_board.instant_roll_for_test = true
+			_board._announcer.cancel()
+			for entry: Array in [[11, GameEnums.PawnKind.GO, 1], [12, GameEnums.PawnKind.JANGGI, 2], [13, GameEnums.PawnKind.CHESS, 4], [14, GameEnums.PawnKind.MONOPOLY, 2]]:
+				state.give_unit(state.get_pawn(entry[0]), entry[1], [entry[2]] as Array[int])
+				state.get_pawn(entry[0]).has_left_start = true
+			state.get_pawn(11).place_at(1)
+			state.get_pawn(12).place_at(6)
+			state.get_pawn(12).skill_used = true
+			state.get_pawn(21).place_at(3)
+			state.get_pawn(21).has_left_start = true
+			state.get_pawn(22).place_at(5)
+			state.get_pawn(22).has_left_start = true
+			_board._refresh_all()
+			_board._begin_aim(state.get_pawn(11))
+			_board._aim_origin = Vector2(600, 400)
+			_board._aim_dragging = true
+			_board._aim_update(Vector2(600, 520))
 		"tilepick":
 			_finish_draft()
 			_board.state.give_card(1, &"TRP_03")

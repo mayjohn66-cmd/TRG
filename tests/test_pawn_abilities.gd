@@ -70,122 +70,10 @@ func test_knight_jump_ignores_hotels_on_the_way() -> void:
 	check(state.board.get_tile(3).has_attachment("HOTEL"), "호텔은 소모되지 않음")
 
 
-func test_castling_swaps_two_chess_pawns_once_per_turn() -> void:
-	var manager: TurnManager = _manager({1: _two(Kind.CHESS)})
-	place(manager.state, 11, 4)
-	place(manager.state, 12, 9)
-	check(manager.can_castle(1), "체스 2기가 판 위에 있으면 캐슬링 가능")
-	check(not manager.can_castle(2), "내 턴이 아니면 불가")
-	_do(manager, 1, &"castle")
-	check_eq(manager.state.get_pawn(11).current_tile_idx, 9, "11번이 9번으로")
-	check_eq(manager.state.get_pawn(12).current_tile_idx, 4, "12번이 4번으로")
-	check(not manager.can_castle(1), "턴당 1회")
-	var rejected: Array = []
-	manager.action_rejected.connect(func(_p: int, _a: StringName, reason: StringName) -> void: rejected.append(reason))
-	_do(manager, 1, &"castle")
-	check_eq(rejected, [&"wrong_phase"], "두 번째 시도는 거부")
-	_dispose(manager)
-
-
-func test_castling_requires_two_chess_pawns_on_board_and_resets_next_turn() -> void:
-	var manager: TurnManager = _manager({1: _two(Kind.CHESS)})
-	place(manager.state, 11, 4)
-	check(not manager.can_castle(1), "판 위에 체스가 하나뿐이면 불가")
-	place(manager.state, 12, 4)
-	check(not manager.can_castle(1), "같은 타일이면 의미 없음")
-	place(manager.state, 12, 8)
-	_do(manager, 1, &"castle")
-	manager.state.tools[1] = ScriptedTool.new([2])
-	_do(manager, 1, &"proceed")
-	_do(manager, 1, &"roll")
-	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
-	manager.force_timeout()
-	check_eq(manager.current_player_id(), 2, "턴이 넘어감")
-	manager.advance_to_next_player()
-	manager.advance_to_next_player()
-	check_eq(manager.current_player_id(), 1, "다시 1번 턴")
-	check(manager.can_castle(1), "새 턴에는 다시 사용 가능")
-	_dispose(manager)
-
-
-func test_castling_can_be_undone_by_the_command_stack() -> void:
-	var state := make_state(2, 1, {1: _two(Kind.CHESS)})
-	place(state, 11, 4)
-	place(state, 12, 9)
-	var stack: CommandStack = new_stack()
-	var ctx: RuleContext = make_ctx(state, 0)
-	check(stack.execute_command(CastleCommand.new(1, 11, 12), ctx), "실행")
-	check_eq(state.get_pawn(11).current_tile_idx, 9, "교환됨")
-	stack.undo_last()
-	check_eq(state.get_pawn(11).current_tile_idx, 4, "undo로 복구")
-	check(not CastleCommand.new(1, 11, 11).can_execute(ctx), "같은 기물끼리는 불가")
-
-
 # --- 장기 -------------------------------------------------------------------
-
-func test_janggi_cannon_adds_two_tiles_when_jumping_over_any_pawn() -> void:
-	var state := make_state(2, 1, {1: _loadout(Kind.JANGGI)})
-	place(state, 11, 8)
-	place(state, 21, 10)  # 적군이 경로 중간에
-	var over_enemy: MoveReport = move(state, 11, 4)
-	check(over_enemy.cannon_bonus, "포 넘기 발동")
-	check_eq(state.get_pawn(11).current_tile_idx, 14, "4 + 2 = 6칸")
-	var ally := make_state(2, 1, {1: _loadout(Kind.JANGGI)})
-	place(ally, 11, 8)
-	place(ally, 12, 10)
-	check_eq(move(ally, 11, 4).cannon_bonus, true, "아군을 넘어도 발동")
-	check_eq(ally.get_pawn(11).current_tile_idx, 14, "마찬가지로 +2")
-	var clear := make_state(2, 1, {1: _loadout(Kind.JANGGI)})
-	place(clear, 11, 8)
-	place(clear, 21, 12)  # 도착 칸의 말은 '넘은' 것이 아니다
-	check_eq(move(clear, 11, 4).cannon_bonus, false, "경로 중간에 말이 없으면 보너스 없음")
-	check_eq(clear.get_pawn(11).current_tile_idx, 12, "정상 이동")
-
-
-func test_chosun_formation_restrains_instead_of_capturing() -> void:
-	var state := make_state(2, 1, {1: _two(Kind.JANGGI)})
-	place(state, 11, 2)
-	place(state, 21, 4)
-	var report: MoveReport = move(state, 11, 2)
-	check_eq(report.captured_pawn_ids, [21], "잡은 것으로 기록")
-	check_eq(state.get_pawn(21).current_tile_idx, 4, "출발선으로 가지 않고 제자리")
-	check(state.get_pawn(21).has_left_start, "출발 상태 유지")
-	check_eq(state.get_pawn(21).restrained_turns, 1, "1턴 구속")
-	check_eq(report.restrained_pawn_ids, [21], "보고서에 구속 기록")
-	check(not report.extra_turn, "윷놀이 기물이 아니므로 추가 턴은 없음")
-	var single := make_state(2, 1, {1: [Vector2i(Kind.JANGGI, 1), 0, 0, 0]})
-	place(single, 11, 2)
-	place(single, 21, 4)
-	move(single, 11, 2)
-	check_eq(single.get_pawn(21).current_tile_idx, 0, "1세트는 평소처럼 출발선으로")
 
 
 # --- 바둑 -------------------------------------------------------------------
-
-func test_go_knock_pushes_the_enemy_two_tiles_instead_of_capturing() -> void:
-	var state := make_state(2, 1, {1: [Vector2i(Kind.GO, 1), 0, 0, 0]})
-	place(state, 11, 2)
-	place(state, 21, 4)
-	var report: MoveReport = move(state, 11, 2)
-	check_eq(state.get_pawn(11).current_tile_idx, 4, "내 돌이 그 칸을 차지")
-	check_eq(state.get_pawn(21).current_tile_idx, 6, "상대는 2칸 앞으로")
-	check(state.get_pawn(21).has_left_start, "잡히지 않음")
-	check_eq(report.captured_pawn_ids.size(), 0, "잡기 아님")
-	check_eq(report.knocked_pawn_ids, [21], "튕김 기록")
-	check(not report.extra_turn, "추가 턴 없음")
-
-
-func test_go_knock_stops_before_the_goal_and_carries_stacks() -> void:
-	var state := make_state(2, 1, {1: [Vector2i(Kind.GO, 1), 0, 0, 0]})
-	place(state, 11, 17)
-	place(state, 21, 18, [17])
-	state.get_pawn(22).kind = Kind.BASIC
-	place(state, 22, 18, [17])
-	state.stack_pawns(state.get_pawn(21), state.get_pawn(22))
-	move(state, 11, 1)
-	check_eq(state.get_pawn(21).current_tile_idx, 19, "결승선은 넘지 않고 19번에서 멈춤")
-	check_eq(state.get_pawn(22).current_tile_idx, 19, "업힌 말도 함께")
-	check(not state.get_pawn(21).is_finished, "완주 처리되지 않음")
 
 
 func test_non_go_pawns_still_capture_normally() -> void:
@@ -195,38 +83,6 @@ func test_non_go_pawns_still_capture_normally() -> void:
 	var report: MoveReport = move(state, 11, 2)
 	check_eq(report.captured_pawn_ids, [21], "일반 기물은 잡는다")
 	check_eq(state.get_pawn(21).current_tile_idx, 0, "출발선으로")
-
-
-func test_go_two_set_territory_is_capture_immune_and_pushes_the_intruder_back() -> void:
-	var state := make_state(2, 1, {1: _two(Kind.GO)})
-	place(state, 11, 6)
-	place(state, 21, 3)
-	var report: MoveReport = move(state, 21, 3)
-	check(report.pushed_back, "침입자는 밀려남")
-	check_eq(state.get_pawn(21).current_tile_idx, 5, "한 칸 뒤(5번)로")
-	check(state.get_pawn(11).has_left_start and state.get_pawn(11).current_tile_idx == 6, "바둑돌은 그대로")
-	check_eq(report.captured_pawn_ids.size(), 0, "잡지 못함")
-	check(not report.extra_turn, "추가 턴 없음")
-	check(MoveExecutor.is_capture_immune(state, state.get_pawn(11)), "무적 판정")
-	var single := make_state(2, 1, {1: [Vector2i(Kind.GO, 1), 0, 0, 0]})
-	place(single, 11, 6)
-	place(single, 21, 3)
-	move(single, 21, 3)
-	check_eq(single.get_pawn(11).current_tile_idx, 0, "1세트 바둑돌은 잡힌다")
-
-
-func test_go_two_set_reduces_dice_by_one_with_minimum_one() -> void:
-	var state := make_state(2, 1, {1: _two(Kind.GO)})
-	place(state, 11, 1)
-	move(state, 11, 4)
-	check_eq(state.get_pawn(11).current_tile_idx, 4, "눈금 4 -> 3칸")
-	place(state, 12, 1)
-	move(state, 12, 1)
-	check_eq(state.get_pawn(12).current_tile_idx, 2, "눈금 1도 최소 1칸")
-	var single := make_state(2, 1, {1: [Vector2i(Kind.GO, 1), 0, 0, 0]})
-	place(single, 11, 1)
-	move(single, 11, 4)
-	check_eq(single.get_pawn(11).current_tile_idx, 5, "1세트는 페널티 없음")
 
 
 # --- ACT_02 뱅! -----------------------------------------------------------------

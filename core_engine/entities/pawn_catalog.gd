@@ -12,14 +12,6 @@ const SET_NAMES: Dictionary = {
 	GameEnums.PawnKind.MONOPOLY: "모노폴리",
 	GameEnums.PawnKind.GO: "바둑",
 }
-## 4세트 완성 시 달성하는 특수 승리 이름.
-const SPECIAL_VICTORY_NAMES: Dictionary = {
-	GameEnums.PawnKind.YUT: "천하제일 4업",
-	GameEnums.PawnKind.CHESS: "체크메이트",
-	GameEnums.PawnKind.JANGGI: "장군멍군",
-	GameEnums.PawnKind.MONOPOLY: "부동산 독점",
-	GameEnums.PawnKind.GO: "대마 불사",
-}
 const EVOLVABLE_SETS: Array[GameEnums.PawnKind] = [
 	GameEnums.PawnKind.YUT,
 	GameEnums.PawnKind.CHESS,
@@ -52,23 +44,55 @@ const SUB_LETTERS: Dictionary = {
 	SubType.BADUK_BLACK: "흑", SubType.BADUK_WHITE: "백",
 }
 const SUB_ABILITIES: Dictionary = {
-	SubType.YUT_MAL: "잡으면 추가 굴림 · 아군 조우 시 업기 선택",
-	SubType.CHESS_PAWN: "중앙(22번)·15번 이후 도달 시 퀸 승진",
-	SubType.CHESS_KNIGHT: "경로 중간의 말·함정 무시 점프",
-	SubType.CHESS_BISHOP: "코너 스침 지름길",
-	SubType.CHESS_ROOK: "외곽 트랙 출발 시 +1칸",
-	SubType.CHESS_QUEEN: "나이트 점프 + 코너 스침 지름길 + 룩 +1칸",
-	SubType.JANGGI_PO: "경로 중간에 말이 있으면 +2칸",
-	SubType.JANGGI_CHA: "경로 중간의 첫 적을 들이받아 추방",
-	SubType.JANGGI_MA: "앞 1칸이 비면 +1칸, 막히면 1칸만 이동",
-	SubType.JANGGI_SANG: "앞 2칸이 비면 +2칸",
-	SubType.MONO_CAR: "도착 타일에 호텔 건설",
-	SubType.MONO_PLANE: "옷장에서 다음 코너로 워프",
-	SubType.MONO_SHIP: "처음 만나는 상대 함정을 무시하고 파괴",
-	SubType.MONO_DOG: "빵집을 스쳐도 카드 1장",
-	SubType.BADUK_BLACK: "알까기: 도착 칸의 적을 2칸 튕겨냄",
-	SubType.BADUK_WHITE: "같은 칸 아군에게 잡기 방어막",
+	SubType.YUT_MAL: "적을 잡으면 추가 굴림 1회 · 아군과 만나면 업기/따로 두기 선택 · 눈금 4 또는 5로 이동하면 추가 굴림 1회",
+	SubType.CHESS_PAWN: "중앙(22번)이나 15~19번에 도달하면 퀸으로 승진",
+	SubType.CHESS_KNIGHT: "경로 중간의 다른 말과 함정을 모두 뛰어넘어 무시",
+	SubType.CHESS_BISHOP: "코너(5·10번)를 스쳐 지나가기만 해도 대각선 지름길로 진입 · 대각선 타일에서 출발하면 +2칸",
+	SubType.CHESS_ROOK: "상시 능력 없음 (필살기 보유)",
+	SubType.CHESS_QUEEN: "이동할 때마다 +2칸 · 경로상 함정과 말을 뛰어넘어 무시",
+	SubType.JANGGI_PO: "경로 중간에 다른 말이 있으면 넘어서 +3칸",
+	SubType.JANGGI_CHA: "상시 능력 없음 (필살기 보유)",
+	SubType.JANGGI_MA: "바로 앞 칸이 비어 있으면 +2칸 (막혀 있으면 기본 눈금만 이동)",
+	SubType.JANGGI_SANG: "바로 앞 칸이 비어 있으면 +3칸 (막혀 있으면 기본 눈금만 이동)",
+	SubType.MONO_CAR: "이동이 끝난 타일에 5턴 호텔 설치 (적이 밟으면 정지) · 출발선을 지날 때 생떼 카드 1장",
+	SubType.MONO_PLANE: "옷장(7·17번)에서 중앙 대신 다음 코너로 워프 (필살기 보유)",
+	SubType.MONO_SHIP: "함정을 무시하고 처음 만나는 상대 설치물을 파괴",
+	SubType.MONO_DOG: "빵집을 스쳐 지나가기만 해도 생떼 카드 1장",
+	SubType.BADUK_BLACK: "상시 능력 없음 (필살기 보유)",
+	SubType.BADUK_WHITE: "적에게 잡히지 않는 무적 · 같은 칸 아군 기물 보호 · 이동 눈금 -1 (최소 1칸)",
 }
+## 1회용 필살기: 세부 기물 -> 스킬 ID / 이름 / 설명. 필살기가 없으면 스킬 ID가 빈 값이다.
+const SKILL_IDS: Dictionary = {
+	SubType.BADUK_BLACK: &"shoot",
+	SubType.JANGGI_CHA: &"charge",
+	SubType.CHESS_ROOK: &"castle",
+	SubType.MONO_PLANE: &"warp",
+}
+const SKILL_NAMES: Dictionary = {
+	&"shoot": "진짜 알까기 슈팅",
+	&"charge": "직선 전차 저격",
+	&"castle": "단독 캐슬링",
+	&"warp": "직항 워프",
+}
+const SKILL_TEXTS: Dictionary = {
+	&"shoot": "주사위 대신 조준해서 발사: 날아가는 직선에 닿은 적 말은 모두 출발선으로 탈락하고, 흑돌은 가장 가까운 타일에 안착",
+	&"charge": "주사위 대신 전방 직선으로 돌진해 가장 앞의 적 말을 잡음 (적이 없으면 다음 코너까지 이동)",
+	&"castle": "굴리기 전에 내 다른 기물 1개와 위치를 맞바꿈",
+	&"warp": "주사위 대신 빵집(3·8·13·18번)이나 코너(5·10·15·22번) 중 한 곳으로 날아감",
+}
+
+
+## 세부 기물의 필살기 ID. 없으면 빈 StringName.
+static func skill_of(sub: GameEnums.PawnSubType) -> StringName:
+	return SKILL_IDS.get(sub, &"")
+
+
+static func skill_name(skill_id: StringName) -> String:
+	return SKILL_NAMES.get(skill_id, "")
+
+
+static func skill_text(skill_id: StringName) -> String:
+	return SKILL_TEXTS.get(skill_id, "")
 
 
 ## (세트, 호기)의 세부 기물. 기본 말은 NONE.
@@ -93,16 +117,6 @@ static func unit_label(kind: GameEnums.PawnKind, unit_no: int) -> String:
 	return SUB_NAMES.get(sub_type_of(kind, unit_no), "기본")
 
 
-## 세트별 2세트 활성 효과 이름.
-const SET_BONUS_2_NAMES: Dictionary = {
-	GameEnums.PawnKind.YUT: "사기 윷",
-	GameEnums.PawnKind.CHESS: "캐슬링",
-	GameEnums.PawnKind.JANGGI: "초나라 포진",
-	GameEnums.PawnKind.MONOPOLY: "월급날",
-	GameEnums.PawnKind.GO: "포석",
-}
-
-
 ## 세부 기물의 한 줄 능력 설명. 기본 말은 "능력 없음".
 static func ability_text(kind: GameEnums.PawnKind, unit_no: int) -> String:
 	return SUB_ABILITIES.get(sub_type_of(kind, unit_no), "능력 없음")
@@ -116,49 +130,6 @@ static func full_name(kind: GameEnums.PawnKind, unit_no: int) -> String:
 	if ":" in sub_name:
 		sub_name = sub_name.split(":")[1]
 	return "[%s %d호기 - %s]" % [display_set_name(kind), unit_no, sub_name]
-
-
-## 세트 시너지 현황 한 줄: "체스 세트 (2/4) - [2세트 활성: 캐슬링] / [4세트: 체크메이트 특수 승리]". 기본 말은 빈 문자열.
-static func synergy_line(kind: GameEnums.PawnKind, count: int) -> String:
-	if kind == GameEnums.PawnKind.BASIC:
-		return ""
-	var two: String = "2세트 %s: %s" % ["활성" if count >= GameEnums.SET_SYNERGY_2 else "대기", SET_BONUS_2_NAMES.get(kind, "-")]
-	var four: String = "4세트%s: %s 특수 승리" % [" 달성" if count >= GameEnums.PAWNS_PER_PLAYER else "", SPECIAL_VICTORY_NAMES.get(kind, "-")]
-	return "%s 세트 (%d/%d) - [%s] / [%s]" % [display_set_name(kind), count, GameEnums.PAWNS_PER_PLAYER, two, four]
-
-
-## 세트 효과 설명 (던전앤파이터식 세트 툴팁용).
-const SET_BONUS_2_TEXT: Dictionary = {
-	GameEnums.PawnKind.YUT: "이 말이 이동할 때 눈금 4 또는 5가 나오면 추가 굴림 1회",
-	GameEnums.PawnKind.CHESS: "내 턴 시작 시 내 체스 말 2개의 위치를 맞바꿈 (턴당 1회)",
-	GameEnums.PawnKind.JANGGI: "장기 말로 잡으면 출발선 대신 그 자리에서 1턴 구속",
-	GameEnums.PawnKind.MONOPOLY: "출발선(0번)을 지나거나 밟을 때마다 생떼 카드 2장 보충",
-	GameEnums.PawnKind.GO: "바둑돌은 잡히지 않는 무적 (이동 눈금 -1, 최소 1칸)",
-}
-const SET_BONUS_4_TEXT: Dictionary = {
-	GameEnums.PawnKind.YUT: "4개를 하나로 업은 채 결승선 통과 시 즉시 승리",
-	GameEnums.PawnKind.CHESS: "1등 말을 내 체스 말로 앞뒤 타일에서 동시 포위 시 승리",
-	GameEnums.PawnKind.JANGGI: "한 턴에 연속 잡기로 말 3개를 잡으면 승리 + 잡기 추가 굴림",
-	GameEnums.PawnKind.MONOPOLY: "호텔 6개 동시 유지 시 승리 + 4개 전원이 호텔 건설",
-	GameEnums.PawnKind.GO: "네 모서리(0, 5, 10, 15번)를 내 바둑돌 4개로 점령 시 승리",
-}
-
-
-## 세트 툴팁 오른쪽 칸 데이터: 세트 이름·보유 수·호기별 보유 여부와 2/4세트 효과의 이름·설명·작동 여부.
-static func set_panel_data(kind: GameEnums.PawnKind, owned_units: Array[int]) -> Dictionary:
-	var members: Array[Dictionary] = []
-	for index: int in GameEnums.PAWNS_PER_PLAYER:
-		var unit: int = index + 1
-		var sub_name: String = unit_label(kind, unit).split(":")[-1]
-		members.append({"name": sub_name, "owned": owned_units.has(unit)})
-	var count: int = owned_units.size()
-	return {
-		"set_name": display_set_name(kind),
-		"count": count,
-		"members": members,
-		"bonus2": {"label": "2세트: %s" % SET_BONUS_2_NAMES.get(kind, "-"), "text": SET_BONUS_2_TEXT.get(kind, ""), "active": count >= GameEnums.SET_SYNERGY_2},
-		"bonus4": {"label": "4세트: %s" % SPECIAL_VICTORY_NAMES.get(kind, "-"), "text": SET_BONUS_4_TEXT.get(kind, ""), "active": count >= GameEnums.PAWNS_PER_PLAYER},
-	}
 
 
 ## 세트의 '같은 세부 기물' 묶음: 호기 번호들을 세부 기물 종류별로 묶는다 (체스는 [[1],[2],[3],[4]], 바둑은 [[1,3],[2,4]], 윷은 [[1,2,3,4]]).

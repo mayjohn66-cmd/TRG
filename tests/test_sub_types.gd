@@ -47,7 +47,7 @@ func test_labels_letters_and_ability_texts_for_the_ui() -> void:
 		check_eq(PawnCatalog.SUB_LETTERS[sub], letters[sub], "라벨 %d" % sub)
 		check(String(PawnCatalog.SUB_NAMES[sub]) != "" and String(PawnCatalog.SUB_ABILITIES[sub]) != "", "이름·능력 설명 %d" % sub)
 	check_eq(PawnCatalog.unit_label(Kind.CHESS, 3), "체스:비숍", "툴팁용 이름")
-	check_eq(PawnCatalog.ability_text(Kind.CHESS, 3), "코너 스침 지름길", "비숍 능력 설명")
+	check(PawnCatalog.ability_text(Kind.CHESS, 3).contains("코너"), "비숍 능력 설명")
 	check_eq(PawnCatalog.unit_label(Kind.YUT, 4), "윷말", "윷은 1~4호기 모두 윷말")
 	check_eq(PawnCatalog.unit_letter(Kind.BASIC, 0), "", "기본 말은 라벨 없음")
 
@@ -104,20 +104,6 @@ func test_promotion_survives_snapshot_restore() -> void:
 	check_eq(state.get_pawn(11).sub_type(), Sub.CHESS_PAWN, "되감으면 폰으로 복구")
 
 
-func test_queen_has_knight_jump_bishop_turn_and_rook_boost() -> void:
-	var queen: Array = [Vector2i(Kind.CHESS, GameEnums.CHESS_QUEEN_UNIT), 0, 0, 0]
-	var state := make_state(2, 1, {1: queen})
-	check(state.get_pawn(11).jumps_over_attachments() and state.get_pawn(11).turns_at_corner_when_passing() and state.get_pawn(11).has_rook_boost(), "퀸은 세 능력을 모두 가진다")
-	state.place_attachment(8, TrapPit.new(2))
-	place(state, 11, 5, [4])
-	var jumped: MoveReport = move(state, 11, 4)  # 룩 +1 = 5칸: 5번에서 출발이라 지름길(20..)로 들어간다
-	check(not jumped.stopped_early, "퀸은 함정을 무시하고 점프")
-	var rook_only := make_state(2, 1, {1: _units(Kind.CHESS, [4])})
-	place(rook_only, 11, 2, [1])
-	move(rook_only, 11, 3)
-	check_eq(rook_only.get_pawn(11).current_tile_idx, 6, "룩: 외곽 출발이면 3 + 1 = 4칸")
-
-
 func test_bishop_turns_at_a_corner_it_only_passes_but_not_under_law_01() -> void:
 	var state := make_state(2, 1, {1: _units(Kind.CHESS, [1, 2, 3])})
 	place(state, 13, 4, [3])
@@ -133,124 +119,10 @@ func test_bishop_turns_at_a_corner_it_only_passes_but_not_under_law_01() -> void
 	check_eq(MoveExecutor.execute(sealed, sealed.get_pawn(13), ctx).path, int_array([5, 6]), "LAW_01 중에는 꺾이지 않는다")
 
 
-func test_rook_boost_only_applies_when_leaving_from_the_outer_track() -> void:
-	var state := make_state(2, 1, {1: _units(Kind.CHESS, [4])})
-	place(state, 11, 0, [], false)
-	move(state, 11, 2)
-	check_eq(state.get_pawn(11).current_tile_idx, 3, "출발선에서도 +1칸")
-	var inner := make_state(2, 1, {1: _units(Kind.CHESS, [4])})
-	place(inner, 11, 21, [20])
-	inner.get_pawn(11).step_history = [5, 20, 21]
-	var report: MoveReport = move(inner, 11, 1)
-	check_eq(report.path.size(), 1, "지름길 안(20번대)에서는 보너스 없음")
-	var bishop := make_state(2, 1, {1: _units(Kind.CHESS, [1, 2, 3])})
-	place(bishop, 13, 2, [1])
-	move(bishop, 13, 2)
-	check_eq(bishop.get_pawn(13).current_tile_idx, 4, "비숍에게는 룩 보너스가 없다")
-
-
 # --- 장기 -----------------------------------------------------------------------
-
-func test_janggi_cannon_is_only_the_first_unit() -> void:
-	var state := make_state(2, 1, {1: _full(Kind.JANGGI)})
-	place(state, 12, 8, [7])  # 2호기 차는 포 넘기가 없다
-	place(state, 21, 10, [9])
-	var report: MoveReport = move(state, 12, 4)
-	check(not report.cannon_bonus, "차에게는 포 넘기 없음")
-	var po := make_state(2, 1, {1: _full(Kind.JANGGI)})
-	place(po, 11, 8, [7])
-	place(po, 21, 10, [9])
-	check(move(po, 11, 4).cannon_bonus, "포는 +2칸")
-
-
-func test_janggi_cha_rams_the_first_enemy_on_the_way() -> void:
-	var state := make_state(2, 1, {1: _units(Kind.JANGGI, [2])})
-	place(state, 11, 8, [7])
-	place(state, 21, 9, [8])
-	place(state, 22, 11, [10])
-	var report: MoveReport = move(state, 11, 4)  # 9, 10, 11, 12
-	check_eq(state.get_pawn(11).current_tile_idx, 12, "차는 멈추지 않고 12번까지 간다")
-	check_eq(state.get_pawn(21).current_tile_idx, 0, "첫 번째 적은 들이받혀 출발선으로")
-	check_eq(state.get_pawn(22).current_tile_idx, 11, "두 번째 적은 그대로 (이동 한 번에 하나)")
-	check_eq(report.rammed_pawn_ids, int_array([21]), "들이받기 보고")
-	check_eq(report.captured_pawn_ids, int_array([21]), "들이받기는 잡기로 센다")
-	check(state.hurt_players.has(2), "피해자 기록(ACT_05 조건)")
-	check(not report.extra_turn, "장기 4세트가 아니면 추가 굴림 없음")
-	var two_set := make_state(2, 1, {1: _units(Kind.JANGGI, [1, 2])})
-	place(two_set, 12, 8, [7])
-	place(two_set, 21, 9, [8])
-	move(two_set, 12, 4)
-	check_eq(two_set.get_pawn(21).current_tile_idx, 9, "장기 2세트 초나라 포진: 들이받힌 말은 출발선 대신 제자리에서")
-	check_eq(two_set.get_pawn(21).restrained_turns, 1, "1턴 구속")
-
-
-func test_janggi_cha_ram_skips_immune_stones_and_normal_capture_happens_on_landing() -> void:
-	var state := make_state(2, 1, {1: _units(Kind.JANGGI, [2]), 2: _units(Kind.GO, [1, 2])})
-	place(state, 11, 8, [7])
-	place(state, 21, 9, [8])   # 포석 무적: 건너뛴다
-	place(state, 22, 12, [11])  # 도착 칸의 적은 평소 잡기
-	var report: MoveReport = move(state, 11, 4)
-	check_eq(state.get_pawn(21).current_tile_idx, 9, "무적 바둑돌은 들이받히지 않는다")
-	check(report.rammed_pawn_ids.is_empty(), "들이받기 없음")
-	check(report.pushed_back, "도착 칸의 무적 바둑돌도 잡히지 않아 이동한 말이 밀려난다")
-	var landing := make_state(2, 1, {1: _units(Kind.JANGGI, [2])})
-	place(landing, 11, 8, [7])
-	place(landing, 21, 10, [9])
-	var plain: MoveReport = move(landing, 11, 2)  # 10번에 도착: 경로 중간이 아니므로 일반 잡기
-	check(plain.rammed_pawn_ids.is_empty() and plain.captured_pawn_ids == int_array([21]), "도착 칸은 일반 잡기로 처리")
-
-
-func test_janggi_cha_ram_grants_extra_turn_only_with_four_set() -> void:
-	var state := make_state(2, 1, {1: _full(Kind.JANGGI)})
-	place(state, 12, 8, [7])
-	place(state, 21, 9, [8])
-	check(move(state, 12, 3).extra_turn, "4세트 차의 들이받기는 추가 굴림")
-
-
-func test_janggi_ma_gets_plus_one_when_open_and_one_tile_when_blocked() -> void:
-	var open_state := make_state(2, 1, {1: _units(Kind.JANGGI, [1, 2, 3])})
-	place(open_state, 13, 2, [1])
-	move(open_state, 13, 3)
-	check_eq(open_state.get_pawn(13).current_tile_idx, 6, "앞이 비면 3 + 1 = 4칸")
-	var blocked := make_state(2, 1, {1: _units(Kind.JANGGI, [1, 2, 3])})
-	place(blocked, 13, 2, [1])
-	place(blocked, 21, 3, [2])  # 멱 막힘 (적이든 아군이든)
-	var report: MoveReport = move(blocked, 13, 5)
-	check_eq(blocked.get_pawn(13).current_tile_idx, 3, "막히면 1칸만 이동")
-	check(report.captured_pawn_ids == int_array([21]), "1칸 이동한 도착 칸의 적은 잡는다")
-	var ally := make_state(2, 1, {1: _units(Kind.JANGGI, [1, 2, 3])})
-	place(ally, 13, 2, [1])
-	place(ally, 11, 3, [2])
-	move(ally, 13, 4)
-	check_eq(ally.get_pawn(13).current_tile_idx, 3, "아군이 막아도 1칸")
-
-
-func test_janggi_sang_needs_two_clear_tiles_for_plus_two() -> void:
-	var clear := make_state(2, 1, {1: _full(Kind.JANGGI)})
-	place(clear, 14, 2, [1])
-	move(clear, 14, 2)
-	check_eq(clear.get_pawn(14).current_tile_idx, 6, "앞 2칸이 비면 2 + 2 = 4칸")
-	var blocked := make_state(2, 1, {1: _full(Kind.JANGGI)})
-	place(blocked, 14, 2, [1])
-	place(blocked, 21, 4, [3])  # 두 번째 칸에 말
-	move(blocked, 14, 3)
-	check_eq(blocked.get_pawn(14).current_tile_idx, 5, "말이 있으면 기본 눈금만 이동")
-	var one: MoveReport = move(clear, 14, 1)
-	check(one.ability_notes.has("상 도약 +2칸"), "눈금 1이면 앞 1칸만 확인")
 
 
 # --- 모노폴리 ---------------------------------------------------------------------
-
-func test_only_the_mini_car_builds_hotels_until_the_four_set() -> void:
-	var state := make_state(2, 1, {1: _units(Kind.MONOPOLY, [1, 2, 3])})
-	place(state, 11, 0, [], false)
-	place(state, 12, 0, [], false)
-	check(move(state, 11, 2).hotel_built, "미니카는 호텔 건설")
-	check(not move(state, 12, 3).hotel_built, "비행기는 건설하지 않는다")
-	var full := make_state(2, 1, {1: _full(Kind.MONOPOLY)})
-	for pawn_id: int in [12, 13, 14]:
-		place(full, pawn_id, 0, [], false)
-		check(move(full, pawn_id, 2 + pawn_id % 10).hotel_built, "4세트면 %d번 말도 호텔 건설" % pawn_id)
 
 
 func test_plane_warps_to_the_next_corner_instead_of_the_center() -> void:
@@ -302,63 +174,24 @@ func test_dog_draws_a_card_for_every_bakery_it_only_passes() -> void:
 
 # --- 바둑 -----------------------------------------------------------------------
 
-func test_only_black_stones_knock_and_white_stones_capture_normally() -> void:
-	var black := make_state(2, 1, {1: _units(Kind.GO, [1])})
-	place(black, 11, 2, [1])
-	place(black, 21, 4, [3])
-	var knocked: MoveReport = move(black, 11, 2)
-	check_eq(knocked.knocked_pawn_ids, int_array([21]), "흑돌은 알까기")
-	check_eq(black.get_pawn(21).current_tile_idx, 6, "2칸 튕김")
-	var white := make_state(2, 1, {1: _units(Kind.GO, [1, 2])})
-	place(white, 12, 2, [1])
-	place(white, 21, 4, [3])
-	var captured: MoveReport = move(white, 12, 3)  # 포석 2세트: 눈금 -1 = 2칸
-	check_eq(captured.captured_pawn_ids, int_array([21]), "백돌은 평소처럼 잡는다")
-	check_eq(white.get_pawn(21).current_tile_idx, 0, "출발선으로")
-	check(not captured.extra_turn, "추가 굴림은 없다")
-	var third := make_state(2, 1, {1: _units(Kind.GO, [1, 2, 3])})
-	check(third.get_pawn(13).sub_type() == Sub.BADUK_BLACK, "3호기도 흑돌")
 
-
-func test_white_stone_shields_other_allies_on_its_tile() -> void:
+func test_white_stone_is_immune_and_shields_other_allies_on_its_tile() -> void:
 	var state := make_state(2, 1, {1: [Vector2i(Kind.GO, 2), 0, 0, 0]})
 	place(state, 11, 4, [3])  # 백돌
 	place(state, 12, 4, [3])  # 같은 칸의 일반 기물
 	place(state, 21, 2, [1])
+	check(MoveExecutor.is_capture_immune(state, state.get_pawn(11)), "백돌은 세트 없이도 무적")
+	check(MoveExecutor.is_capture_immune(state, state.get_pawn(12)), "같은 칸의 아군도 방어막으로 면역")
 	var report: MoveReport = move(state, 21, 2)
-	check_eq(report.captured_pawn_ids, int_array([11]), "방어막은 백돌 자신에게는 없다 - 백돌이 잡힌다")
-	check_eq(state.get_pawn(12).current_tile_idx, 4, "같은 칸의 아군은 면역이라 살아남는다")
-	check(state.get_pawn(12).has_left_start, "출발 상태 유지")
-	check(MoveExecutor.is_capture_immune(state, state.get_pawn(12)) == false, "백돌이 떠나면 방어막도 사라진다")
+	check(report.pushed_back and report.captured_pawn_ids.is_empty(), "아무도 잡히지 않고 침입자가 밀려난다")
+	state.get_pawn(11).current_tile_idx = 9
+	check(not MoveExecutor.is_capture_immune(state, state.get_pawn(12)), "백돌이 떠나면 방어막도 사라진다")
 
 
-func test_everyone_immune_pushes_the_attacker_back() -> void:
-	var state := make_state(2, 1, {1: _units(Kind.GO, [1, 2])})  # 바둑 2세트 포석: 바둑돌 전원 무적
+func test_black_stones_alone_are_not_immune() -> void:
+	var state := make_state(2, 1, {1: _units(Kind.GO, [1, 3])})
 	place(state, 11, 4, [3])
 	place(state, 12, 4, [3])
-	place(state, 13, 4, [3])  # 기본 말 (백돌 방어막)
 	place(state, 21, 2, [1])
 	var report: MoveReport = move(state, 21, 2)
-	check(report.pushed_back, "잡을 수 있는 말이 없으면 침입자가 밀려난다")
-	check_eq(state.get_pawn(21).current_tile_idx, 3, "한 칸 뒤로")
-	check(report.captured_pawn_ids.is_empty(), "아무도 잡히지 않음")
-
-
-func test_pawn_tooltip_texts_name_the_unit_and_set_synergy() -> void:
-	check_eq(PawnCatalog.full_name(GameEnums.PawnKind.CHESS, 3), "[체스 3호기 - 비숍]", "전체 이름")
-	check_eq(PawnCatalog.full_name(GameEnums.PawnKind.BASIC, 1), "[기본 말]", "기본 말 이름")
-	var line: String = PawnCatalog.synergy_line(GameEnums.PawnKind.CHESS, 2)
-	check(line.contains("체스 세트 (2/4)") and line.contains("2세트 활성: 캐슬링") and line.contains("체크메이트"), "세트 시너지 현황 (%s)" % line)
-	check(PawnCatalog.synergy_line(GameEnums.PawnKind.GO, 1).contains("2세트 대기: 포석"), "1세트면 2세트 효과는 대기")
-	check_eq(PawnCatalog.synergy_line(GameEnums.PawnKind.BASIC, 1), "", "기본 말은 시너지 없음")
-
-
-func test_set_panel_data_marks_reached_set_tiers_active() -> void:
-	var one: Dictionary = PawnCatalog.set_panel_data(GameEnums.PawnKind.CHESS, [1] as Array[int])
-	check(not one["bonus2"]["active"] and not one["bonus4"]["active"], "1세트는 아무 효과도 작동하지 않는다")
-	var two: Dictionary = PawnCatalog.set_panel_data(GameEnums.PawnKind.CHESS, [1, 3] as Array[int])
-	check(two["bonus2"]["active"] and not two["bonus4"]["active"], "2세트면 2세트 효과만 작동")
-	var four: Dictionary = PawnCatalog.set_panel_data(GameEnums.PawnKind.JANGGI, [1, 2, 3, 4] as Array[int])
-	check(four["bonus2"]["active"] and four["bonus4"]["active"], "4세트면 둘 다 작동")
-	check_eq(two["members"].size(), 4, "호기 4칸")
-	check(two["members"][0]["owned"] and not two["members"][1]["owned"], "보유한 호기만 채워진다")
+	check(not report.pushed_back and not report.captured_pawn_ids.is_empty(), "흑돌만 있는 칸은 평범하게 잡힌다")

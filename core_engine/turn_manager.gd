@@ -61,10 +61,6 @@ var _roll_chain: int = 0
 var _turns_in_round: int = 0
 var _extra_turn_pending: bool = false
 var _bonus_roll_pending: bool = false
-## 체스 2세트 [캐슬링]을 이번 턴에 이미 썼는가 (턴이 시작될 때마다 초기화).
-var _castled_this_turn: bool = false
-## 현재 플레이어가 이번 턴에 연속으로 잡은 말 수 (장군멍군 판정). 턴이 넘어가거나 롤백되면 0이 된다.
-var _chain_captures: int = 0
 var _draft_offers: Dictionary = {}
 var _draft_picks: Dictionary = {}
 ## 진행 중인 이동의 보고서와 마지막 걸음 결과 (execute_step_by_step_move가 채운다).
@@ -98,8 +94,6 @@ func start_game(player_ids: Array[int], seed_value: int = 0, loadouts: Dictionar
 	state.setup(player_ids, seed_value, loadouts)
 	state.turn_order_reverse_requested.connect(reverse_turn_order)
 	state.bang_resolved.connect(_on_bang_resolved)
-	state.pawns_castled.connect(func(a: int, b: int) -> void: _emit_event(&"castled", {"player_id": current_player_id(), "pawn_a": a, "pawn_b": b}))
-	state.pawn_knocked.connect(func(pawn_id: int, from_tile: int, to_tile: int) -> void: _emit_event(&"pawn_knocked", {"pawn_id": pawn_id, "from": from_tile, "to": to_tile}))
 	state.pawn_pushed_back.connect(func(pawn_id: int, from_tile: int, to_tile: int) -> void: _emit_event(&"pawn_pushed_back", {"pawn_id": pawn_id, "from": from_tile, "to": to_tile}))
 	_ensure_command_stack()
 	command_stack.begin_turn()
@@ -108,7 +102,6 @@ func start_game(player_ids: Array[int], seed_value: int = 0, loadouts: Dictionar
 	turn_direction = 1
 	state.turn_direction = 1
 	is_game_over = false
-	_castled_this_turn = false
 	_sync_current_player()
 	augments.clear()
 	for player_id: int in player_ids:
@@ -117,7 +110,6 @@ func start_game(player_ids: Array[int], seed_value: int = 0, loadouts: Dictionar
 	_turns_in_round = 0
 	_extra_turn_pending = false
 	_bonus_roll_pending = false
-	_chain_captures = 0
 	_enter_round_start()
 
 
@@ -150,7 +142,7 @@ func request_action(action: StringName, params: Dictionary = {}) -> void:
 		&"select_pawn": _handle_select_pawn(actor, params)
 		&"play_card": _handle_play_card(actor, params)
 		&"pick_augment": _handle_pick_augment(actor, params)
-		&"castle": _handle_castle(actor, params)
+		&"use_skill": _handle_use_skill(actor, params)
 		&"pass_bomb": _handle_pass_bomb(actor, params)
 		&"stack_choice": _handle_stack_choice(actor, params)
 		_: action_rejected.emit(actor, action, &"unknown_action")
@@ -169,7 +161,6 @@ func reverse_turn_order() -> void:
 func advance_to_next_player() -> void:
 	_extra_turn_pending = false
 	_bonus_roll_pending = false
-	_chain_captures = 0
 	_turns_in_round += 1
 	if _turns_in_round >= player_order.size():
 		_turns_in_round = 0
@@ -329,32 +320,120 @@ func _handle_play_card(actor: int, params: Dictionary) -> void:
 	_broadcast_state()
 
 
-## 체스 2세트 [캐슬링(위치 교환)]: 내 턴 시작에 내 체스 기물 두 개의 타일을 맞바꾼다 (턴당 1회).
-## params: {"pawn_a": int, "pawn_b": int}. 후보 쌍이 정확히 하나면 생략할 수 있다.
-func can_castle(player_id: int) -> bool:
-	return state != null and not _castled_this_turn and current_state == State.PHASE_TURN_BEGIN \
-			and player_id == current_player_id() and not CastleCommand.valid_pairs(state, player_id).is_empty()
+## 1회용 필살기를 지금 쓸 수 있는가: 내 턴의 TURN_BEGIN/ROLL_WAIT, 쌓인 굴림·진행 중인 판정 도구가 없고, 기물이 필살기 조건(PawnSkills.is_ready)을 만족한다.
+func can_use_skill(player_id: int, pawn_id: int) -> bool:
+	if state == null or is_game_over or player_id != current_player_id():
+		return false
+	if current_state != State.PHASE_TURN_BEGIN and current_state != State.PHASE_ROLL_WAIT:
+		return false
+	if not move_queue.is_empty() or stack_offer_pending() or (state.tools[player_id] as BaseJudgmentTool).has_pending_state():
+		return false
+	var pawn: PlayerPawn = state.get_pawn(pawn_id)
+	return pawn != null and pawn.owner_id == player_id and PawnSkills.is_ready(pawn)
 
 
-func _handle_castle(actor: int, params: Dictionary) -> void:
-	if not can_castle(actor):
-		action_rejected.emit(actor, &"castle", &"wrong_phase")
+## 필살기 사용. params: {"pawn_id": int} + 기물별 인자 - 룩 {"partner": 맞바꿀 아군 ID} / 비행기 {"tile": 목적지} / 흑돌 {"angle": 라디안, "power": 0~1} / 차 (없음).
+func _handle_use_skill(actor: int, params: Dictionary) -> void:
+	var pawn_id: int = int(params.get("pawn_id", -1))
+	if not can_use_skill(actor, pawn_id):
+		action_rejected.emit(actor, &"use_skill", &"wrong_phase")
 		return
-	var pawn_a_id: int = int(params.get("pawn_a", -1))
-	var pawn_b_id: int = int(params.get("pawn_b", -1))
-	if pawn_a_id == -1 or pawn_b_id == -1:
-		var pairs: Array[Array] = CastleCommand.valid_pairs(state, actor)
-		if pairs.size() != 1:
-			action_rejected.emit(actor, &"castle", &"ambiguous_pair")
-			return
-		pawn_a_id = (pairs[0][0] as PlayerPawn).entity_id
-		pawn_b_id = (pairs[0][1] as PlayerPawn).entity_id
-	var command := CastleCommand.new(actor, pawn_a_id, pawn_b_id)
+	var pawn: PlayerPawn = state.get_pawn(pawn_id)
+	var skill: StringName = PawnCatalog.skill_of(pawn.sub_type())
+	match skill:
+		&"castle": _skill_castle(actor, pawn, params)
+		&"charge":
+			var path: Array[int] = PawnSkills.chariot_path(state, pawn)
+			if path.is_empty():
+				action_rejected.emit(actor, &"use_skill", &"invalid_skill")
+				return
+			_emit_skill_event(actor, pawn, skill, {"path": path})
+			_execute_move(pawn, path)
+		&"warp":
+			var tile: int = int(params.get("tile", -1))
+			if not PawnSkills.plane_targets(pawn).has(tile):
+				action_rejected.emit(actor, &"use_skill", &"invalid_skill")
+				return
+			_emit_skill_event(actor, pawn, skill, {"from": pawn.current_tile_idx, "tile": tile})
+			_execute_instant_skill(pawn, skill, params)
+		&"shoot":
+			var angle: float = float(params.get("angle", NAN))
+			var power: float = float(params.get("power", NAN))
+			if is_nan(angle) or is_nan(power):
+				action_rejected.emit(actor, &"use_skill", &"invalid_skill")
+				return
+			var shot: Dictionary = PawnSkills.shot_result(state, pawn, angle, clampf(power, 0.0, 1.0))
+			var victims: Array[Dictionary] = []
+			for hit_id: int in shot["hits"]:
+				victims.append({"pawn_id": hit_id, "from": state.get_pawn(hit_id).current_tile_idx})
+			_emit_skill_event(actor, pawn, skill, {"from": pawn.current_tile_idx, "landing": shot["landing"], "angle": angle, "power": clampf(power, 0.0, 1.0), "hits": victims})
+			_execute_instant_skill(pawn, skill, params)
+		_:
+			action_rejected.emit(actor, &"use_skill", &"invalid_skill")
+
+
+func _emit_skill_event(actor: int, pawn: PlayerPawn, skill: StringName, detail: Dictionary) -> void:
+	var data: Dictionary = detail.duplicate()
+	data["player_id"] = actor
+	data["pawn_id"] = pawn.entity_id
+	data["skill"] = skill
+	_emit_event(&"skill_used", data)
+
+
+## 룩 단독 캐슬링: 주사위 굴림은 그대로 남고, 룩과 아군 한 기물의 위치만 맞바꾼다.
+func _skill_castle(actor: int, rook: PlayerPawn, params: Dictionary) -> void:
+	var partners: Array[PlayerPawn] = PawnSkills.rook_partners(state, rook)
+	var partner: PlayerPawn = state.get_pawn(int(params.get("partner", -1)))
+	if partner == null and partners.size() == 1:
+		partner = partners[0]
+	if partner == null or not partners.has(partner):
+		action_rejected.emit(actor, &"use_skill", &"invalid_skill")
+		return
+	var command := CastleCommand.new(actor, rook.entity_id, partner.entity_id)
 	if not command_stack.execute_command(command, _make_ctx(actor)):
-		action_rejected.emit(actor, &"castle", &"invalid_pawn")
+		action_rejected.emit(actor, &"use_skill", &"invalid_skill")
 		return
-	_castled_this_turn = true
+	_emit_skill_event(actor, rook, &"castle", {"partner": partner.entity_id})
 	_broadcast_state()
+
+
+## 주사위를 대신하는 순간 필살기(비행기 워프·흑돌 알까기): 효과를 처리하고 일반 이동처럼 정산 단계로 넘어간다.
+func _execute_instant_skill(pawn: PlayerPawn, skill: StringName, params: Dictionary) -> void:
+	change_state(State.PHASE_MOVING_STEP)
+	var ctx: RuleContext = _make_ctx(current_player_id())
+	ctx.defer_stack_choice = stack_choice_enabled
+	ctx.pawn = pawn
+	var record := GameCommand.new()
+	record.command_name = "Skill"
+	record.sender_id = current_player_id()
+	record.bind_state(state)
+	record.capture_before()
+	command_stack.record(record)
+	pawn.skill_used = true
+	var report := MoveReport.new()
+	report.pawn_id = pawn.entity_id
+	var destination: int = pawn.current_tile_idx
+	if skill == &"warp":
+		destination = int(params["tile"])
+	else:
+		var shot: Dictionary = PawnSkills.shot_result(state, pawn, float(params["angle"]), clampf(float(params["power"]), 0.0, 1.0))
+		destination = int(shot["landing"])
+		var victims: Array[PlayerPawn] = []
+		for hit_id: int in shot["hits"]:
+			var victim: PlayerPawn = state.get_pawn(hit_id)
+			if victim != null and victim.carrier == null and not victim.is_finished:
+				victims.append(victim)
+		for victim: PlayerPawn in victims:
+			for member: PlayerPawn in victim.stack_members():
+				report.captured_pawn_ids.append(member.entity_id)
+			state.send_to_start(victim, pawn.owner_id)
+	MoveExecutor.teleport_to(state, pawn, ctx, report, destination)
+	_extra_turn_pending = _extra_turn_pending or report.extra_turn
+	_emit_event(&"move_resolved", report.to_dict())
+	if _check_victory(report):
+		return
+	_stack_offer = report.stack_offer
+	_enter_resolution()
 
 
 ## ACT_03 우노 +4: 내 턴 시작에 페널티가 걸려 있고 손패에 즉발 카드가 있으면, 그 카드를 소모해 두 배(-8)로 다음 플레이어에게 떠넘길 수 있다.
@@ -586,7 +665,6 @@ func _begin_turn(new_turn: bool = true) -> void:
 	command_stack.begin_turn()
 	_roll_chain = 0
 	_move_report = null
-	_castled_this_turn = false
 	_sync_current_player()
 	if new_turn:
 		_tick_restraints(current_player_id())
@@ -689,10 +767,11 @@ func _auto_select_pawn() -> void:
 
 ## PHASE_MOVING_STEP: 법전(ON_MOVE_CALC)을 통과시켜 경로를 확정하고, 한 칸씩 이동한 뒤 도착 처리를 한다.
 ## 이동 직전 상태를 MoveCommand로 이번 턴 이력에 등록하므로 ACT_05가 이 이동도 되감는다.
-func _execute_move(pawn: PlayerPawn) -> void:
+func _execute_move(pawn: PlayerPawn, forced_path: Array[int] = []) -> void:
 	change_state(State.PHASE_MOVING_STEP)
 	var ctx: RuleContext = _make_ctx(current_player_id())
-	ctx.dice_value = move_queue.pop_front()
+	var forced: bool = not forced_path.is_empty()
+	ctx.dice_value = forced_path.size() if forced else move_queue.pop_front()
 	ctx.raw_roll = ctx.dice_value
 	ctx.direction = state.movement_direction()
 	ctx.defer_stack_choice = stack_choice_enabled
@@ -701,19 +780,21 @@ func _execute_move(pawn: PlayerPawn) -> void:
 	move_command.bind_state(state)
 	move_command.capture_before()
 	command_stack.record(move_command)
+	if forced:
+		pawn.skill_used = true  # 차 직선 저격: 이동 직전 스냅샷이 기록된 뒤에 사용 완료로 표시해야 ACT_05가 되돌릴 수 있다
 
 	_move_report = MoveExecutor.begin(state, pawn, ctx)
 	if not _move_report.canceled:
-		var path: Array[int] = MoveExecutor.plan_path(state, pawn, ctx, _move_report)
-		_note_altering_laws(pawn, ctx, path, _move_report)
+		var path: Array[int] = forced_path.duplicate() if forced else MoveExecutor.plan_path(state, pawn, ctx, _move_report)
+		if not forced:
+			_note_altering_laws(pawn, ctx, path, _move_report)
 		await execute_step_by_step_move(pawn, path, ctx)
 		MoveExecutor.finalize(state, pawn, ctx, _move_report, _move_outcome)
 	var report: MoveReport = _move_report
 	_move_report = null
 	_extra_turn_pending = _extra_turn_pending or report.extra_turn
-	_chain_captures += report.captured_pawn_ids.size()
-	if pawn.kind == GameEnums.PawnKind.YUT and state.set_count(pawn.owner_id, GameEnums.PawnKind.YUT) >= GameEnums.SET_SYNERGY_2 and [4, 5].has(absi(ctx.raw_roll)):
-		# 윷 2세트 [사기 윷]: 4 또는 5가 나오면 무조건 추가 굴림 1회.
+	if pawn.kind == GameEnums.PawnKind.YUT and not forced and [4, 5].has(absi(ctx.raw_roll)):
+		# 윷말: 눈금 4 또는 5로 이동하면 (세트 조건 없이) 추가 굴림 1회.
 		report.bonus_roll = true
 		_bonus_roll_pending = true
 	_emit_event(&"move_resolved", report.to_dict())
@@ -761,7 +842,6 @@ func _close_resolution_window() -> void:
 		state.rollback_requested = false
 		_extra_turn_pending = false
 		_bonus_roll_pending = false
-		_chain_captures = 0
 		_begin_turn(false)
 		return
 	if _check_victory(null):
@@ -797,9 +877,9 @@ func _enter_neutral_npc_phase() -> void:
 	_enter_round_start()
 
 
-## PHASE_RESOLUTION 승리 판정: 일반 승리와 기물 4세트 특수 승리 5종을 VictoryChecker로 검사한다.
+## PHASE_RESOLUTION 승리 판정: 내 말 4개 완주 하나뿐이다 (VictoryChecker).
 func _check_victory(report: MoveReport) -> bool:
-	var result: Dictionary = VictoryChecker.evaluate(state, player_order, current_player_id(), report, _chain_captures)
+	var result: Dictionary = VictoryChecker.evaluate(state, player_order, current_player_id())
 	if result.is_empty():
 		return false
 	var winner_id: int = int(result["winner"])
@@ -855,7 +935,6 @@ func _build_sync_payload() -> Dictionary:
 		"move_queue": move_queue,
 		"pending": state.pending_penalty.duplicate(),
 		"stack_offer": _stack_offer.duplicate(true),
-		"castled": _castled_this_turn,
 	}
 
 
@@ -872,7 +951,6 @@ func _rpc_sync_state(payload: Dictionary) -> void:
 	turn_direction = int(payload["direction"])
 	state.turn_direction = turn_direction
 	state.pending_penalty = (payload["pending"] as Dictionary).duplicate()
-	_castled_this_turn = bool(payload["castled"])
 	_stack_offer = (payload["stack_offer"] as Dictionary).duplicate(true)
 	is_game_over = bool(payload["game_over"])
 	move_queue.assign(payload["move_queue"])

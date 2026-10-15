@@ -21,6 +21,8 @@ var restrained_turns: int = 0
 var blocked_this_turn: bool = false
 ## TRP_04 무인도: 짝수 눈금이 나올 때까지 갇혀 움직이지 못한다.
 var is_imprisoned: bool = false
+## 1회용 고유 필살기를 이미 썼는가 (게임당 기물별 1회, 잡혀서 출발선으로 가도 되살아나지 않는다).
+var skill_used: bool = false
 
 
 ## 이 말의 세부 기물 (호기에서 정해지며, 승진한 체스 퀸은 5번째 호기다).
@@ -28,22 +30,15 @@ func sub_type() -> GameEnums.PawnSubType:
 	return PawnCatalog.sub_type_of(kind, unit_no)
 
 
-## 체스 비숍(과 퀸)의 고유 능력: 5번·10번을 멈추지 않고 스쳐 지나가도 지름길로 꺾는다.
+## 체스 비숍의 고유 능력: 5번·10번을 멈추지 않고 스쳐 지나가도 지름길로 꺾는다.
 func turns_at_corner_when_passing() -> bool:
-	var sub: GameEnums.PawnSubType = sub_type()
-	return sub == GameEnums.PawnSubType.CHESS_BISHOP or sub == GameEnums.PawnSubType.CHESS_QUEEN
+	return sub_type() == GameEnums.PawnSubType.CHESS_BISHOP
 
 
 ## 체스 나이트(와 퀸)의 고유 능력: 중간 칸의 설치물(함정·호텔)을 무시하고 도착 칸만 판정한다 (나이트 점프).
 func jumps_over_attachments() -> bool:
 	var sub: GameEnums.PawnSubType = sub_type()
 	return sub == GameEnums.PawnSubType.CHESS_KNIGHT or sub == GameEnums.PawnSubType.CHESS_QUEEN
-
-
-## 체스 룩(과 퀸)의 고유 능력: 외곽 트랙에서 출발하는 이동에 +1칸.
-func has_rook_boost() -> bool:
-	var sub: GameEnums.PawnSubType = sub_type()
-	return sub == GameEnums.PawnSubType.CHESS_ROOK or sub == GameEnums.PawnSubType.CHESS_QUEEN
 
 
 ## 기본 말이 세트의 다음 호기로 영구 진화한다.

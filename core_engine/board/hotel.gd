@@ -1,6 +1,6 @@
 # File: res://core_engine/board/hotel.gd
 # Class: class_name Hotel
-# Role: 모노폴리 카의 통행료 호텔 - 기물 이동이 끝난 타일에 내 턴 5번간 유지(모노폴리 4세트면 영구)되며, 상대가 밟아 이동을 멈추면 소모된다. 내 호텔이 동시에 6개 이상이면 부동산 독점 승리
+# Role: 모노폴리 카의 통행료 호텔 - 기물 이동이 끝난 타일에 내 턴 5번간 유지되며, 상대가 밟아 이동을 멈추면 소모된다
 class_name Hotel
 extends TileAttachment
 
@@ -22,8 +22,3 @@ func on_step_trigger(victim: BoardEntity, ctx: RuleContext) -> bool:
 	# 통행료를 거두면 호텔은 소모된다 (실행기가 만료된 설치물을 타일에서 제거).
 	duration_turns = 0
 	return true
-
-
-## 모노폴리 4세트를 모두 모은 주인의 호텔은 턴이 지나도 만료되지 않는다 (영구).
-func is_expiry_suspended(state: GameState) -> bool:
-	return state.set_count(owner_id, GameEnums.PawnKind.MONOPOLY) >= GameEnums.PAWNS_PER_PLAYER

@@ -26,9 +26,8 @@ signal card_stolen(player_id: int, card_id: StringName)
 signal turn_order_reverse_requested()
 ## ACT_02 뱅! 결과. dodged가 true면 상대가 카드를 버려 회피했다(빗나감).
 signal bang_resolved(shooter: int, target_pawn_id: int, dodged: bool, discarded_card: StringName)
-## 기물 능력 알림: 캐슬링(위치 교환) / 알까기로 튕겨 나감 / 포석 무적에 막혀 밀려남.
+## 기물 능력 알림: 룩 캐슬링(위치 교환) / 백돌 무적에 막혀 밀려남.
 signal pawns_castled(pawn_a_id: int, pawn_b_id: int)
-signal pawn_knocked(pawn_id: int, from_tile: int, to_tile: int)
 signal pawn_pushed_back(pawn_id: int, from_tile: int, to_tile: int)
 signal snapshot_restored()
 signal victory_declared(player_id: int, reason: StringName)

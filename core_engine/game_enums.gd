@@ -57,7 +57,6 @@ const PORTAL_TILES: Array[int] = [7, 17]
 
 const PAWNS_PER_PLAYER: int = 4
 const MAX_NPCS: int = 3
-const SET_SYNERGY_2: int = 2
 const CORNER_TILES: Array[int] = [0, 5, 10, 15]
 const MAX_LAWS: int = 4
 const MAX_HAND_SIZE: int = 7

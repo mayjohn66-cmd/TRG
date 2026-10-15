@@ -28,6 +28,10 @@ const CORNER_POSITIONS: Array[Vector2] = [
 ]
 ## 카드 독 안에서 카드가 놓이는 기준 y (호버 시 15px 솟아오른다).
 const DOCK_CARD_Y: float = 8.0
+## 우측 하단 기물 독에서 기물 슬롯이 놓이는 기준 y (필살기 버튼 줄 아래).
+const SLOT_BASE_Y: float = 50.0
+## 슬링샷 조준: 이 거리(px)만큼 당기면 파워 100%.
+const AIM_MAX_PULL: float = 150.0
 ## 호버 툴팁이 뜨기까지 커서를 가만히 대고 있어야 하는 시간(초).
 const TIP_DELAY: float = 0.35
 const COLOR_BG: Color = Color("0d1018")
@@ -149,7 +153,6 @@ var _roll_button: Button = null
 var _stop_button: Button = null
 var _bell_button: Button = null
 var _skip_button: Button = null
-var _castle_button: Button = null
 var _bomb_button: Button = null
 var _new_game_button: Button = null
 var _hint_label: Label = null
@@ -157,6 +160,16 @@ var _fruit_label: Label = null
 var _pawn_bar: Panel = null
 var _pawn_buttons: Array[Button] = []
 var _pawn_slot_parts: Array[Dictionary] = []
+var _skill_buttons: Array[Button] = []
+var _tile_pick_skill_pawn: int = -1
+var _aim_pawn: int = -1
+var _aim_dragging: bool = false
+var _aim_origin: Vector2 = Vector2.ZERO
+var _aim_angle: float = 0.0
+var _aim_power: float = 0.0
+var _aim_layer: Node2D = null
+var _aim_line: Line2D = null
+var _aim_label: Label = null
 var _tool_board: PanelContainer = null
 var _tool_title: Label = null
 var _tool_rows_box: VBoxContainer = null
@@ -168,7 +181,7 @@ var _status_strip: HBoxContainer = null
 var _tip_panel: PanelContainer = null
 var _tip_title: Label = null
 var _tip_ability: Label = null
-var _tip_right: VBoxContainer = null
+var _tip_skill: Label = null
 var _tip_source: Variant = null
 var _tip_provider: Callable = Callable()
 var _tip_clock: float = 0.0
@@ -287,12 +300,15 @@ func _process(delta: float) -> void:
 			bounce.position.y = wave if active else 0.0
 	for index: int in _pawn_slot_parts.size():
 		var slot_button: Button = _pawn_buttons[index]
-		var base_y: float = 12.0
+		var base_y: float = SLOT_BASE_Y
 		slot_button.position.y = base_y + wave if selecting and not slot_button.disabled else base_y
 
 
 func _input(event: InputEvent) -> void:
 	if manager == null or state == null:
+		return
+	if _handle_aim_input(event):
+		get_viewport().set_input_as_handled()
 		return
 	if _handle_card_pointer(event):
 		return
@@ -350,6 +366,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			_on_roll_pressed()
 		return
 	if key_event.keycode == KEY_ESCAPE:
+		_cancel_aim()
 		_cancel_tile_pick()
 		return
 	if _choice_overlay != null or _draft_overlay != null or _result_overlay != null or _stack_overlay != null:
@@ -385,6 +402,7 @@ func _new_game() -> void:
 	_presenter.cancel()
 	_announcer.cancel()
 	_cancel_card_drag()
+	_cancel_aim()
 	_close_zoom()
 	_tip_end()
 	_tool_board_key = ""
@@ -469,6 +487,7 @@ func _build_ui() -> void:
 	_build_drawers()
 	_build_mode_toggle()
 	_build_drop_zone()
+	_build_aim_layer()
 	_build_hover_tip()
 
 
@@ -684,7 +703,7 @@ func _build_status_strip() -> void:
 	_pick_banner.add_theme_stylebox_override("normal", _style(Color("0b3b33"), Color("63e6be"), 2, 8, 0, 3))
 	_pick_banner.visible = false
 	add_child(_pick_banner)
-	_pick_cancel = _make_button("취소", _cancel_tile_pick, 12, Color("5c2b2b"), 8)
+	_pick_cancel = _make_button("취소", _on_pick_cancel_pressed, 12, Color("5c2b2b"), 8)
 	_pick_cancel.position = Vector2(819, 76)
 	_pick_cancel.size = Vector2(88, 30)
 	_pick_cancel.visible = false
@@ -720,10 +739,6 @@ func _build_action_bar() -> void:
 	_bell_button = _make_button("종 치기 (Space)", _on_bell_pressed, 14)
 	_bell_button.custom_minimum_size = Vector2(0, 44)
 	action_row.add_child(_bell_button)
-	_castle_button = _make_button("[캐슬링(위치 교환)]", _on_castle_pressed, 14)
-	_castle_button.custom_minimum_size = Vector2(0, 44)
-	_castle_button.tooltip_text = "체스 2세트: 내 체스 기물 두 개의 위치를 맞바꿉니다 (턴 시작 시 1회)"
-	action_row.add_child(_castle_button)
 	_bomb_button = _make_button("[폭탄 떠넘기기]", _on_pass_bomb_pressed, 14)
 	_bomb_button.custom_minimum_size = Vector2(0, 44)
 	_bomb_button.tooltip_text = "즉발 카드 1장을 소모해 우노 +4 페널티를 두 배(-8)로 다음 플레이어에게 넘깁니다"
@@ -1294,7 +1309,7 @@ func _refresh_players() -> void:
 			var icon_text: String = PawnCatalog.unit_letter(icon_pawn.kind, icon_pawn.unit_no) if icon_pawn.kind != GameEnums.PawnKind.BASIC else "기"
 			(icon_labels[index] as Label).text = "완" if icon_pawn.is_finished else icon_text
 		var bomb_text: String = " [우노+4 %d칸]" % state.penalty_of(player_id) if state.penalty_of(player_id) != 0 else ""
-		(card["synergy"] as Label).text = _set_synergy_text(player_id).replace("(", "").replace(")", "") + bomb_text
+		(card["synergy"] as Label).text = _skill_summary(player_id) + bomb_text
 		var panel: PanelContainer = card["panel"]
 		# 현재 턴 플레이어: 밝은 황금 테두리 3px + 살짝 확대
 		var is_turn: bool = player_id == manager.current_player_id() and not manager.is_game_over
@@ -1307,56 +1322,13 @@ func _refresh_players() -> void:
 
 
 ## 프로필 카드 툴팁: 말마다 "[2번 말 - 체스:비숍 (코너 스침 지름길)]" 한 줄씩.
-func _pawn_tooltip(player_id: int) -> String:
-	var lines: Array[String] = []
+## 프로필 카드 한 줄: 아직 쓰지 않은 필살기 보유 기물 수 ("필살기 2개 남음").
+func _skill_summary(player_id: int) -> String:
+	var ready: int = 0
 	for pawn: PlayerPawn in state.pawns_of(player_id):
-		var line: String = "[%d번 말 - %s (%s)]" % [pawn.slot, pawn.display_label(), PawnCatalog.ability_text(pawn.kind, pawn.unit_no)]
-		if pawn.is_finished:
-			line += " 완주"
-		elif pawn.restrained_turns > 0 or pawn.blocked_this_turn:
-			line += " 구속"
-		lines.append(line)
-	return "\n".join(lines)
-
-
-## "[폰][나][기][기]" 형태의 기물 4종 미니 아이콘 (기 = 기본 말, 완 = 완주).
-func _pawn_mini(player_id: int) -> String:
-	var tokens: Array[String] = []
-	for pawn: PlayerPawn in state.pawns_of(player_id):
-		var letter: String = PawnCatalog.unit_letter(pawn.kind, pawn.unit_no) if pawn.kind != GameEnums.PawnKind.BASIC else "기"
-		if pawn.is_finished:
-			letter = "완"
-		tokens.append("[%s]" % letter)
-	return "".join(tokens)
-
-
-## "[체스:폰] [체스:나이트] [기본] [기본]" 형태의 말 4개 요약. 상태 이상은 뒤에 붙인다.
-func _pawn_tokens(player_id: int) -> String:
-	var tokens: Array[String] = []
-	for pawn: PlayerPawn in state.pawns_of(player_id):
-		var token: String = pawn.display_label()
-		if pawn.is_finished:
-			token += "·완주"
-		if pawn.restrained_turns > 0 or pawn.blocked_this_turn:
-			token += "·구속"
-		if pawn.is_imprisoned:
-			token += "·감옥"
-		tokens.append("[%s]" % token)
-	return " ".join(tokens)
-
-
-## 2세트 이상 모은 세트를 "(체스 2세트 활성)" 식으로 나열하고, 4세트면 특수 승리 조건 이름을 덧붙인다.
-func _set_synergy_text(player_id: int) -> String:
-	var parts: Array[String] = []
-	for kind: GameEnums.PawnKind in PawnCatalog.EVOLVABLE_SETS:
-		var count: int = state.set_count(player_id, kind)
-		if count >= GameEnums.PAWNS_PER_PLAYER:
-			var privilege: String = " (잡기 추가 굴림)" if kind == GameEnums.PawnKind.JANGGI else ""
-			parts.append("(%s 4세트: %s%s)" % [PawnCatalog.display_set_name(kind), PawnCatalog.SPECIAL_VICTORY_NAMES[kind], privilege])
-		elif count >= GameEnums.SET_SYNERGY_2:
-			var extra: String = " - 무적" if kind == GameEnums.PawnKind.GO else ""
-			parts.append("(%s %d세트 활성%s)" % [PawnCatalog.display_set_name(kind), count, extra])
-	return " ".join(parts)
+		if PawnSkills.has_skill(pawn) and not pawn.skill_used and not pawn.is_finished:
+			ready += 1
+	return "필살기 %d개 남음" % ready if ready > 0 else ""
 
 
 func _refresh_laws() -> void:
@@ -1761,42 +1733,28 @@ func _build_hover_tip() -> void:
 	_tip_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_tip_panel.add_theme_stylebox_override("panel", _style(Color(0.06, 0.08, 0.13, 0.94), COLOR_GOLD, 2, 10, 12, 10))
 	add_child(_tip_panel)
-	var columns := HBoxContainer.new()
-	columns.add_theme_constant_override("separation", 14)
-	columns.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_tip_panel.add_child(columns)
-	# 왼쪽 칸: 이 기물의 이름과 고유 능력
-	var left := VBoxContainer.new()
-	left.add_theme_constant_override("separation", 6)
-	left.custom_minimum_size = Vector2(200, 0)
-	left.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	columns.add_child(left)
-	left.add_child(_make_label("기물 효과", 11, Color("868e96")))
-	_tip_title = _make_label("", 15, COLOR_GOLD)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 8)
+	column.custom_minimum_size = Vector2(320, 0)
+	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tip_panel.add_child(column)
+	_tip_title = _make_label("", 19, COLOR_GOLD)
 	_tip_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_tip_title.custom_minimum_size = Vector2(200, 0)
-	left.add_child(_tip_title)
-	_tip_ability = _make_label("", 13, Color("f1f3f5"))
+	_tip_title.custom_minimum_size = Vector2(320, 0)
+	column.add_child(_tip_title)
+	_tip_ability = _make_label("", 15, Color("f1f3f5"))
 	_tip_ability.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_tip_ability.custom_minimum_size = Vector2(200, 0)
-	left.add_child(_tip_ability)
-	var divider := VSeparator.new()
-	divider.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	columns.add_child(divider)
-	# 오른쪽 칸: 세트 시너지 (던파 세트 효과처럼 도달한 단계가 강조된다)
-	_tip_right = VBoxContainer.new()
-	_tip_right.add_theme_constant_override("separation", 5)
-	_tip_right.custom_minimum_size = Vector2(250, 0)
-	_tip_right.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	columns.add_child(_tip_right)
+	_tip_ability.custom_minimum_size = Vector2(320, 0)
+	column.add_child(_tip_ability)
+	_tip_skill = _make_label("", 15, Color("ffa94d"))
+	_tip_skill.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_tip_skill.custom_minimum_size = Vector2(320, 0)
+	column.add_child(_tip_skill)
 
 
-## 기물 툴팁 내용을 두 칸(왼쪽: 고유 능력 / 오른쪽: 세트 시너지)으로 채운다.
+## 기물 툴팁 내용: 이름 / 상시 능력 / 1회용 필살기 (세트 설명은 없다).
 func _fill_pawn_tip(pawn_id: int) -> void:
-	var pawn: PlayerPawn = state.get_pawn(pawn_id)
-	for child: Node in _tip_right.get_children():
-		_tip_right.remove_child(child)
-		child.queue_free()
+	var pawn: PlayerPawn = state.get_pawn(pawn_id) if state != null else null
 	if pawn == null:
 		return
 	var status: String = ""
@@ -1807,41 +1765,11 @@ func _fill_pawn_tip(pawn_id: int) -> void:
 	elif pawn.is_imprisoned:
 		status = "  (감옥)"
 	_tip_title.text = "%s  - P%d%s" % [PawnCatalog.full_name(pawn.kind, pawn.unit_no), pawn.owner_id, status]
-	_tip_ability.text = PawnCatalog.ability_text(pawn.kind, pawn.unit_no)
-	_tip_right.add_child(_make_label("세트 효과", 11, Color("868e96")))
-	if pawn.kind == GameEnums.PawnKind.BASIC:
-		_tip_right.add_child(_make_label("기본 말은 세트 시너지가 없습니다.\n기물 진화 증강으로 세트를 모으세요.", 12, Color("adb5bd")))
-		return
-	var owned: Array[int] = []
-	for member: PlayerPawn in state.pawns_of(pawn.owner_id):
-		if member.kind == pawn.kind:
-			owned.append(member.unit_no)
-	var data: Dictionary = PawnCatalog.set_panel_data(pawn.kind, owned)
-	var header := _make_label("%s 세트  (%d/%d)" % [data["set_name"], data["count"], GameEnums.PAWNS_PER_PLAYER], 15, COLOR_GOLD)
-	_tip_right.add_child(header)
-	var roster: Array[String] = []
-	for member_info: Dictionary in data["members"]:
-		roster.append("%s %s" % ["●" if member_info["owned"] else "○", member_info["name"]])
-	_tip_right.add_child(_make_label("   ".join(roster), 12, Color("ced4da")))
-	for key: String in ["bonus2", "bonus4"]:
-		var bonus: Dictionary = data[key]
-		var active: bool = bonus["active"]
-		var row := PanelContainer.new()
-		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		row.add_theme_stylebox_override("panel", _style(Color("4a3d12") if active else Color("181e30"), COLOR_GOLD if active else Color("2c3550"), 2 if active else 1, 8, 0, 5))
-		var box := VBoxContainer.new()
-		box.add_theme_constant_override("separation", 1)
-		box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		row.add_child(box)
-		var head: Label = _make_label(("[작동 중] " if active else "") + str(bonus["label"]), 13, Color("fff3bf") if active else Color("7b8499"))
-		head.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		box.add_child(head)
-		var body: Label = _make_label(str(bonus["text"]), 11, Color("ffe8a3") if active else Color("6c757d"))
-		body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		body.custom_minimum_size = Vector2(228, 0)
-		body.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		box.add_child(body)
-		_tip_right.add_child(row)
+	_tip_ability.text = "고유 능력\n%s" % PawnCatalog.ability_text(pawn.kind, pawn.unit_no)
+	var skill: StringName = PawnCatalog.skill_of(pawn.sub_type())
+	_tip_skill.visible = skill != &""
+	if skill != &"":
+		_tip_skill.text = "필살기 (1회) - %s%s\n%s" % [PawnCatalog.skill_name(skill), "  [사용 완료]" if pawn.skill_used else "", PawnCatalog.skill_text(skill)]
 
 
 func _bind_tip(control: Control, provider: Callable) -> void:
@@ -1906,23 +1834,15 @@ func _update_board_pawn_tip(pointer: Vector2) -> void:
 		_tip_begin(key, _fill_pawn_tip.bind(found))
 
 
-## 기물 툴팁 3줄: 전체 이름 / 고유 능력 / 세트 시너지 현황.
+## 기물 설명 텍스트(테스트·로그용): 이름 / 고유 능력 / 필살기.
 func _pawn_info_text(pawn_id: int) -> String:
 	var pawn: PlayerPawn = state.get_pawn(pawn_id) if state != null else null
 	if pawn == null:
 		return ""
-	var lines: Array[String] = []
-	var status: String = ""
-	if pawn.is_finished:
-		status = "  (완주)"
-	elif pawn.restrained_turns > 0 or pawn.blocked_this_turn:
-		status = "  (구속)"
-	elif pawn.is_imprisoned:
-		status = "  (감옥)"
-	lines.append("%s  - P%d%s" % [PawnCatalog.full_name(pawn.kind, pawn.unit_no), pawn.owner_id, status])
-	lines.append("고유 능력: %s" % PawnCatalog.ability_text(pawn.kind, pawn.unit_no))
-	var synergy: String = PawnCatalog.synergy_line(pawn.kind, state.set_count(pawn.owner_id, pawn.kind))
-	lines.append(synergy if synergy != "" else "세트 시너지: 없음 (기본 말)")
+	var lines: Array[String] = [PawnCatalog.full_name(pawn.kind, pawn.unit_no), "고유 능력: %s" % PawnCatalog.ability_text(pawn.kind, pawn.unit_no)]
+	var skill: StringName = PawnCatalog.skill_of(pawn.sub_type())
+	if skill != &"":
+		lines.append("필살기(1회): %s - %s%s" % [PawnCatalog.skill_name(skill), PawnCatalog.skill_text(skill), " [사용 완료]" if pawn.skill_used else ""])
 	return "\n".join(lines)
 
 
@@ -1932,14 +1852,24 @@ func _pawn_info_text(pawn_id: int) -> String:
 
 func _build_pawn_dock() -> void:
 	_pawn_bar = Panel.new()
-	_pawn_bar.position = Vector2(1058, 542)
-	_pawn_bar.size = Vector2(300, 90)
+	_pawn_bar.position = Vector2(1058, 494)
+	_pawn_bar.size = Vector2(300, 138)
 	_pawn_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_pawn_bar.add_theme_stylebox_override("panel", _style(Color("131826"), COLOR_PANEL_EDGE, 2, 12, 8, 0))
 	add_child(_pawn_bar)
 	for slot: int in GameEnums.PAWNS_PER_PLAYER:
+		var skill_button: Button = _make_button("필살기\n발동 (1회)", _on_skill_pressed.bind(slot), 10, Color("8a4b08"), 8)
+		skill_button.position = Vector2(6 + slot * 73, 6)
+		skill_button.size = Vector2(68, 36)
+		skill_button.custom_minimum_size = Vector2(68, 36)
+		skill_button.focus_mode = Control.FOCUS_NONE
+		skill_button.visible = false
+		skill_button.mouse_entered.connect(_on_pawn_slot_hover.bind(slot))
+		skill_button.mouse_exited.connect(_tip_end.bind(skill_button))
+		_pawn_bar.add_child(skill_button)
+		_skill_buttons.append(skill_button)
 		var button := Button.new()
-		button.position = Vector2(6 + slot * 73, 12)
+		button.position = Vector2(6 + slot * 73, SLOT_BASE_Y)
 		button.size = Vector2(68, 76)
 		button.custom_minimum_size = Vector2(68, 76)
 		button.focus_mode = Control.FOCUS_NONE
@@ -2023,6 +1953,14 @@ func _refresh_pawn_dock() -> void:
 		button.add_theme_stylebox_override("disabled", _style(base.darkened(0.2) if pawn.is_finished else base, color.darkened(0.35), 2, 10, 0, 4))
 		button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 		button.modulate = Color(1, 1, 1, 0.55) if pawn.is_finished else Color.WHITE
+		var skill_button: Button = _skill_buttons[index]
+		var has_skill: bool = PawnSkills.has_skill(pawn) and not pawn.is_finished
+		skill_button.visible = has_skill
+		if has_skill:
+			var usable: bool = manager.can_use_skill(owner_id, pawn.entity_id) and not _ui_busy() and not _is_bot_turn() and not _tile_pick_active
+			skill_button.disabled = not usable
+			skill_button.text = "사용 완료" if pawn.skill_used else "필살기\n발동 (1회)"
+			skill_button.modulate = Color(1, 0.86, 0.45) if usable else Color.WHITE
 
 
 # ---------------------------------------------------------------------------
@@ -2170,7 +2108,6 @@ func _refresh_controls() -> void:
 	_skip_button.visible = window_open and not manager.stack_offer_pending() and (not ai_mode or _human_can_intervene())
 	_skip_button.disabled = _ui_busy()
 	_skip_button.text = "개입 카드 사용 / 패스" if ai_mode else "개입 패스(진행)"
-	_castle_button.visible = not over and manager.can_castle(player_id) and not _is_bot_turn()
 	_bomb_button.visible = not over and manager.can_pass_bomb(player_id) and not _is_bot_turn()
 	if _bomb_button.visible:
 		_bomb_button.text = "[폭탄 떠넘기기 (%d칸)]" % (state.penalty_of(player_id) * 2)
@@ -2300,27 +2237,6 @@ func _on_skip_pressed() -> void:
 	_refresh_all()
 
 
-func _on_castle_pressed() -> void:
-	var pairs: Array[Array] = CastleCommand.valid_pairs(state, manager.current_player_id())
-	if pairs.size() <= 1:
-		_act(&"castle")
-		return
-	var options: Array[Dictionary] = []
-	for pair: Array in pairs:
-		var a: PlayerPawn = pair[0]
-		var b: PlayerPawn = pair[1]
-		options.append({
-			"label": "%s(%d번) ↔ %s(%d번)" % [a.display_label(), a.current_tile_idx, b.display_label(), b.current_tile_idx],
-			"value": [a.entity_id, b.entity_id],
-		})
-	_show_choice("위치를 맞바꿀 체스 기물 두 개", options, _on_castle_picked)
-
-
-func _on_castle_picked(value: Variant) -> void:
-	var ids: Array = value
-	_act(&"castle", {"pawn_a": int(ids[0]), "pawn_b": int(ids[1])})
-
-
 func _on_pass_bomb_pressed() -> void:
 	_act(&"pass_bomb")
 
@@ -2392,6 +2308,206 @@ func _play_card_with(value: Variant, player_id: int, card_id: StringName, param_
 
 
 # ---------------------------------------------------------------------------
+# 1회용 필살기 (기물 독의 [필살기 발동] 버튼)
+# ---------------------------------------------------------------------------
+
+func _on_skill_pressed(slot: int) -> void:
+	var owner_id: int = _dock_owner()
+	var pawn: PlayerPawn = state.get_pawn(owner_id * 10 + slot + 1)
+	if pawn == null or not manager.can_use_skill(owner_id, pawn.entity_id) or _ui_busy():
+		_log_line("지금은 필살기를 쓸 수 없습니다 (내 턴 시작, 굴리기 전에만 가능).", Color("868e96"))
+		return
+	_start_skill(pawn)
+
+
+## 기물의 필살기를 시작한다: 룩은 맞바꿀 아군 선택, 차는 즉시 돌진, 비행기는 목적지 타일 선택, 흑돌은 조준 모드.
+func _start_skill(pawn: PlayerPawn) -> void:
+	match PawnCatalog.skill_of(pawn.sub_type()):
+		&"castle":
+			var partners: Array[PlayerPawn] = PawnSkills.rook_partners(state, pawn)
+			if partners.is_empty():
+				_log_line("[단독 캐슬링] 위치를 맞바꿀 아군 기물이 보드 위에 없습니다.", Color("868e96"))
+				return
+			if partners.size() == 1:
+				_act(&"use_skill", {"pawn_id": pawn.entity_id, "partner": partners[0].entity_id})
+				return
+			var options: Array[Dictionary] = []
+			for partner: PlayerPawn in partners:
+				options.append({"label": "%s (%d번 타일)" % [partner.display_label(), partner.current_tile_idx], "value": partner.entity_id})
+			_show_choice("룩과 위치를 맞바꿀 아군 기물", options, _on_rook_partner_picked.bind(pawn.entity_id))
+		&"charge":
+			if PawnSkills.chariot_path(state, pawn).is_empty():
+				_log_line("[직선 전차 저격] 돌진할 길이 없습니다.", Color("868e96"))
+				return
+			_act(&"use_skill", {"pawn_id": pawn.entity_id})
+		&"warp": _begin_skill_tile_pick(pawn)
+		&"shoot": _begin_aim(pawn)
+
+
+func _on_rook_partner_picked(value: Variant, rook_id: int) -> void:
+	_act(&"use_skill", {"pawn_id": rook_id, "partner": int(value)})
+
+
+## 비행기 직항 워프: 날아갈 수 있는 빵집·코너 타일을 초록 테두리로 켜고 고르게 한다 (일반 타일 선택 모드를 재사용).
+func _begin_skill_tile_pick(pawn: PlayerPawn) -> void:
+	_tile_pick_active = true
+	_tile_pick_player = pawn.owner_id
+	_tile_pick_card = &""
+	_tile_pick_skill_pawn = pawn.entity_id
+	var targets: Array[int] = PawnSkills.plane_targets(pawn)
+	for index: int in GameEnums.TILE_COUNT:
+		(_pick_marks[index] as ReferenceRect).visible = targets.has(index)
+	_pick_banner.text = "[직항 워프] 날아갈 빵집·코너 고르기"
+	_pick_banner.visible = true
+	_pick_cancel.visible = true
+	_refresh_controls()
+
+
+## 흑돌 알까기 조준 모드: 마우스를 누른 채 뒤로 당겼다 놓으면 당긴 반대 방향으로 파워만큼 날아간다 (슬링샷).
+func _begin_aim(pawn: PlayerPawn) -> void:
+	_aim_pawn = pawn.entity_id
+	_aim_dragging = false
+	_aim_power = 0.0
+	_aim_layer.visible = true
+	_aim_line.clear_points()
+	_aim_label.text = ""
+	_pick_banner.text = "[알까기] 누른 채 뒤로 당겼다 놓기 (ESC 취소)"
+	_pick_banner.visible = true
+	_pick_cancel.visible = true
+	_refresh_controls()
+
+
+func _cancel_aim() -> void:
+	if _aim_pawn == -1:
+		return
+	_aim_pawn = -1
+	_aim_dragging = false
+	if _aim_layer != null:
+		_aim_layer.visible = false
+	if _pick_banner != null and not _tile_pick_active:
+		_pick_banner.visible = false
+		_pick_cancel.visible = false
+	if manager != null and manager.state != null:
+		_refresh_controls()
+
+
+## 조준 모드의 마우스 입력. 처리했으면 true.
+func _handle_aim_input(event: InputEvent) -> bool:
+	if _aim_pawn == -1:
+		return false
+	var button: InputEventMouseButton = event as InputEventMouseButton
+	if button != null:
+		if button.button_index == MOUSE_BUTTON_RIGHT and button.pressed:
+			_cancel_aim()
+			return true
+		if button.button_index != MOUSE_BUTTON_LEFT:
+			return false
+		if _pick_cancel.visible and _pick_cancel.get_global_rect().has_point(button.position):
+			return false  # [취소] 버튼은 그대로 눌리게 둔다
+		if button.pressed:
+			_aim_dragging = true
+			_aim_origin = button.position
+			_aim_update(button.position)
+		elif _aim_dragging:
+			_aim_dragging = false
+			_aim_fire()
+		return true
+	var motion: InputEventMouseMotion = event as InputEventMouseMotion
+	if motion != null and _aim_dragging:
+		_aim_update(motion.position)
+		return true
+	return false
+
+
+## 당긴 벡터(누른 자리 - 현재 자리)로 발사 각도와 파워를 정하고 예상 궤적을 그린다.
+func _aim_update(pointer: Vector2) -> void:
+	var pull: Vector2 = _aim_origin - pointer
+	_aim_power = clampf(pull.length() / AIM_MAX_PULL, 0.0, 1.0)
+	if pull.length() > 1.0:
+		_aim_angle = pull.angle()
+	var pawn: PlayerPawn = state.get_pawn(_aim_pawn)
+	if pawn == null:
+		return
+	var shot: Dictionary = PawnSkills.shot_result(state, pawn, _aim_angle, _aim_power)
+	_aim_line.clear_points()
+	_aim_line.add_point(_tile_center(pawn.current_tile_idx))
+	_aim_line.add_point(BOARD_ORIGIN + (shot["to"] as Vector2) * BOARD_SIZE)
+	_aim_line.default_color = Color("ffd43b") if (shot["hits"] as Array).is_empty() else Color("ff6b6b")
+	_aim_label.text = "파워 %d%%  명중 %d" % [int(_aim_power * 100.0), (shot["hits"] as Array).size()]
+	_aim_label.position = _tile_center(pawn.current_tile_idx) + Vector2(14, -34)
+
+
+func _aim_fire() -> void:
+	if _aim_power < 0.08:
+		_aim_label.text = "더 길게 당기세요"
+		return
+	var pawn_id: int = _aim_pawn
+	var angle: float = _aim_angle
+	var power: float = _aim_power
+	_cancel_aim()
+	_act(&"use_skill", {"pawn_id": pawn_id, "angle": angle, "power": power})
+
+
+func _build_aim_layer() -> void:
+	_aim_layer = Node2D.new()
+	_aim_layer.z_index = 15
+	_aim_layer.visible = false
+	add_child(_aim_layer)
+	_aim_line = Line2D.new()
+	_aim_line.width = 6.0
+	_aim_line.default_color = Color("ffd43b")
+	_aim_layer.add_child(_aim_line)
+	_aim_label = _make_label("", 16, Color("fff3bf"))
+	_aim_label.add_theme_constant_override("outline_size", 5)
+	_aim_label.add_theme_color_override("font_outline_color", Color("0d1018"))
+	_aim_layer.add_child(_aim_label)
+
+
+## 필살기 발동 연출: 알림 배너 + (알까기라면) 맞은 말들이 화면 밖으로 튕겨 나가는 연출. 엔진 결과가 확정되기 직전에 도착하는 이벤트다.
+func _on_skill_used(data: Dictionary) -> void:
+	var skill: StringName = data["skill"]
+	var player_id: int = int(data["player_id"])
+	var pawn: PlayerPawn = state.get_pawn(int(data["pawn_id"]))
+	var who: String = "P%d %s" % [player_id, pawn.display_label() if pawn != null else ""]
+	var body: String = PawnCatalog.skill_text(skill)
+	match skill:
+		&"shoot":
+			var hits: Array = data["hits"]
+			body = "%d개의 말이 출발선으로 탈락! %s" % [hits.size(), "" if hits.is_empty() else ""]
+			var direction: Vector2 = Vector2(cos(float(data["angle"])), sin(float(data["angle"])))
+			for hit: Variant in hits:
+				var victim: PlayerPawn = state.get_pawn(int((hit as Dictionary)["pawn_id"]))
+				if victim != null:
+					_fly_away(_tile_center(int((hit as Dictionary)["from"])), direction, PLAYER_COLORS[victim.owner_id])
+			body += "\n흑돌은 %d번 타일에 안착" % int(data["landing"])
+		&"charge":
+			var route: Array = data["path"]
+			body = "%d번 타일까지 직선 돌진" % int(route.back())
+		&"warp":
+			body = "%d번 → %d번 타일로 직항" % [int(data["from"]), int(data["tile"])]
+		&"castle":
+			body = "%s와(과) 위치를 맞바꿉니다" % _pawn_name(int(data["partner"]))
+	_log_line("[필살기] %s: %s - %s" % [who, PawnCatalog.skill_name(skill), body.replace("\n", " ")], Color("ffa94d"))
+	_announce("1회용 필살기", "[P%d 발동!] %s" % [player_id, PawnCatalog.skill_name(skill)], body, PLAYER_COLORS[player_id], null, 1.3)
+
+
+## 맞은 말의 자리에서 화면 밖으로 튕겨 나가는 원형 잔상.
+func _fly_away(from: Vector2, direction: Vector2, color: Color) -> void:
+	var ghost := Polygon2D.new()
+	ghost.polygon = _circle_points(PAWN_RADIUS * 2.0, 16)
+	ghost.color = color
+	ghost.position = from
+	ghost.z_index = 18
+	add_child(ghost)
+	var tween: Tween = create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(ghost, "position", from + direction * 900.0, 0.6).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tween.tween_property(ghost, "rotation", 12.0, 0.6)
+	tween.tween_property(ghost, "modulate:a", 0.0, 0.6)
+	tween.chain().tween_callback(ghost.queue_free)
+
+
+# ---------------------------------------------------------------------------
 # 타일 선택 모드 (TRP/SUM 카드)
 # ---------------------------------------------------------------------------
 
@@ -2419,11 +2535,17 @@ func _begin_tile_pick(player_id: int, card_id: StringName) -> void:
 	_refresh_controls()
 
 
+func _on_pick_cancel_pressed() -> void:
+	_cancel_aim()
+	_cancel_tile_pick()
+
+
 func _cancel_tile_pick() -> void:
 	if not _tile_pick_active and _pick_banner != null and not _pick_banner.visible:
 		return
 	_tile_pick_active = false
 	_tile_pick_card = &""
+	_tile_pick_skill_pawn = -1
 	if _pick_banner != null:
 		_pick_banner.visible = false
 	if _pick_cancel != null:
@@ -2447,6 +2569,15 @@ func _on_tile_gui_input(event: InputEvent, index: int) -> void:
 ## 고른 타일로 카드를 사용한다. 그 타일에 쓸 수 없으면 선택 모드를 유지한다.
 func _complete_tile_pick(tile: int) -> void:
 	if not _tile_pick_active:
+		return
+	if _tile_pick_skill_pawn != -1:
+		var plane: PlayerPawn = state.get_pawn(_tile_pick_skill_pawn)
+		if plane == null or not PawnSkills.plane_targets(plane).has(tile):
+			_log_line("%d번 타일로는 날아갈 수 없습니다. 빵집이나 코너를 고르세요." % tile, Color("ff8787"))
+			return
+		var plane_id: int = plane.entity_id
+		_cancel_tile_pick()
+		_act(&"use_skill", {"pawn_id": plane_id, "tile": tile})
 		return
 	var card: BaseCard = CardRegistry.get_card(_tile_pick_card)
 	if not card.can_play(state, _tile_pick_player, {"tile": tile}):
@@ -2715,7 +2846,7 @@ func _on_game_over(winner_id: int, reason: StringName) -> void:
 
 
 func _ui_busy() -> bool:
-	return _fx_busy or (_announcer != null and _announcer.active)
+	return _fx_busy or _aim_pawn != -1 or (_announcer != null and _announcer.active)
 
 
 func _announce(tag: String, headline: String, body: String, color: Color, extra: Control = null, duration: float = 1.5) -> void:
@@ -2848,13 +2979,9 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 				_log_line("[뱅!] P%d의 총알이 %s를 노렸지만 P%d가 [%s]를 버리고 회피(빗나감)!" % [data["shooter"], target_name, state.get_pawn(int(data["target"])).owner_id, _card_name(data["discarded_card"])], Color("ffa8a8"))
 			else:
 				_log_line("[뱅!] P%d의 총알이 %s 명중! 손패가 없어 출발선으로 돌아갑니다." % [data["shooter"], target_name], Color("ff6b6b"))
-		&"castled":
-			_log_line("[캐슬링] P%d: %s ↔ %s 위치 교환" % [data["player_id"], _pawn_name(int(data["pawn_a"])), _pawn_name(int(data["pawn_b"]))], Color("74c0fc"))
-			_announce("기물 능력", "[P%d 발동!] 캐슬링" % data["player_id"], "%s와(과) %s의 위치를 맞바꿉니다" % [_pawn_name(int(data["pawn_a"])), _pawn_name(int(data["pawn_b"]))], Color("74c0fc"), null, 1.1)
-		&"pawn_knocked":
-			_log_line("[알까기] %s이(가) %d번 → %d번으로 튕겨 나갔습니다" % [_pawn_name(int(data["pawn_id"])), data["from"], data["to"]], Color("b197fc"))
+		&"skill_used": _on_skill_used(data)
 		&"pawn_pushed_back":
-			_log_line("[포석] 무적의 바둑돌에 막혀 %s이(가) %d번 → %d번으로 밀려났습니다" % [_pawn_name(int(data["pawn_id"])), data["from"], data["to"]], Color("b197fc"))
+			_log_line("[백돌 무적] 백돌에 막혀 %s이(가) %d번 → %d번으로 밀려났습니다" % [_pawn_name(int(data["pawn_id"])), data["from"], data["to"]], Color("b197fc"))
 		&"bomb_passed":
 			_log_line("[우노 +4] P%d가 [%s]를 소모해 폭탄을 P%d에게 떠넘겼습니다 (%d칸)" % [data["from"], _card_name(data["card_id"]), data["to"], data["amount"]], Color("ffd43b"))
 		&"bomb_applied":
@@ -2918,21 +3045,16 @@ func _log_move(data: Dictionary) -> void:
 		text += "  [법전] 이동 변조: %s" % ", ".join(data["law_notes"])
 	if not (data["ability_notes"] as Array).is_empty():
 		text += "  [능력] %s" % ", ".join(data["ability_notes"])
-	if not (data["rammed"] as Array).is_empty():
-		text += "  [차 들이받기] %s 추방" % str(data["rammed"])
-		_announce("기물 능력", "[발동!] 장기 차 돌진", "경로의 적 %s을(를) 들이받아 추방했습니다" % str(data["rammed"]), Color("ff922b"), null, 1.1)
 	if not (data["destroyed"] as Array).is_empty():
 		text += "  [증기선] 상대 설치물 파괴 %d개" % (data["destroyed"] as Array).size()
 	if int(data["dog_cards"]) > 0:
 		text += "  [강아지] 지나친 빵집에서 카드 %d장" % data["dog_cards"]
 	if data["pushed_back"]:
-		text += "  [포석] 무적에 막혀 한 칸 후퇴"
-	if not (data["restrained"] as Array).is_empty():
-		text += "  [초나라 포진] 구속 %s" % str(data["restrained"])
+		text += "  [백돌 무적] 막혀서 한 칸 후퇴"
 	if data["hotel_built"]:
 		text += "  호텔 건설"
 	if int(data["salary_cards"]) > 0:
-		text += "  월급날: 카드 %d장" % data["salary_cards"]
+		text += "  [미니카] 출발선 통과: 카드 %d장" % data["salary_cards"]
 	if data["drawn_card"] != &"":
 		text += "  [빵집] 카드 획득"
 	if not (data["effects"] as Array).is_empty():

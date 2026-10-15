@@ -48,41 +48,37 @@ static func preview_path(state: GameState, pawn: PlayerPawn, dice_value: int) ->
 
 
 ## 기물 능력을 반영한 이동 경로를 계산한다. 동기 실행(execute)과 TurnManager 비동기 이동이 공유한다.
-## 세트 효과: 바둑 2세트 [포석] 눈금 -1(최소 1칸). 세부 기물: 룩/퀸 +1칸(외곽 출발), 포 +2칸(경로 중간에 말),
-## 마 +1칸(앞 1칸이 비면) 또는 1칸만 이동(막히면), 상 +2칸(앞 2칸이 비면).
+## 세부 기물: 백돌 눈금 -1(최소 1칸), 퀸 +2칸, 비숍 대각선 출발 +2칸, 포 +3칸(경로 중간에 말), 마 +2칸 / 상 +3칸(바로 앞 칸이 비면).
 static func plan_path(state: GameState, mover: PlayerPawn, ctx: RuleContext, report: MoveReport) -> Array[int]:
 	var steps: int = ctx.dice_value * ctx.direction
 	var sign_dir: int = -1 if steps < 0 else 1
 	if steps == 0:
 		return state.board.calculate_path(mover, steps, ctx)
-	if mover.kind == GameEnums.PawnKind.GO and state.set_count(mover.owner_id, GameEnums.PawnKind.GO) >= GameEnums.SET_SYNERGY_2:
+	var sub: GameEnums.PawnSubType = mover.sub_type()
+	if sub == GameEnums.PawnSubType.BADUK_WHITE:
 		steps = sign_dir * maxi(absi(steps) - 1, 1)
-	if mover.has_rook_boost() and mover.current_tile_idx < GameEnums.OUTER_TRACK_SIZE:
-		steps += sign_dir
-		report.ability_notes.append("룩 직선 +1칸")
+		report.ability_notes.append("백돌 눈금 -1")
+	if sub == GameEnums.PawnSubType.CHESS_QUEEN:
+		steps += 2 * sign_dir
+		report.ability_notes.append("퀸 +2칸")
+	if sub == GameEnums.PawnSubType.CHESS_BISHOP and mover.current_tile_idx >= GameEnums.OUTER_TRACK_SIZE:
+		steps += 2 * sign_dir
+		report.ability_notes.append("비숍 대각선 +2칸")
 	var path: Array[int] = state.board.calculate_path(mover, steps, ctx)
-	match mover.sub_type():
+	match sub:
 		GameEnums.PawnSubType.JANGGI_PO:
 			if _path_jumps_over_pawn(state, mover, path):
-				path = state.board.calculate_path(mover, steps + 2 * sign_dir, ctx)
+				path = state.board.calculate_path(mover, steps + 3 * sign_dir, ctx)
 				report.cannon_bonus = true
-				report.ability_notes.append("포 넘기 +2칸")
+				report.ability_notes.append("포 넘기 +3칸")
 		GameEnums.PawnSubType.JANGGI_MA:
-			if not path.is_empty():
-				if _tile_has_other_pawn(state, mover, path[0]):
-					path = state.board.calculate_path(mover, sign_dir, ctx)
-					report.ability_notes.append("마 멱 막힘: 1칸만 이동")
-				else:
-					path = state.board.calculate_path(mover, steps + sign_dir, ctx)
-					report.ability_notes.append("마 +1칸")
-		GameEnums.PawnSubType.JANGGI_SANG:
-			var clear: bool = not path.is_empty()
-			for index: int in mini(2, path.size()):
-				if _tile_has_other_pawn(state, mover, path[index]):
-					clear = false
-			if clear:
+			if not path.is_empty() and not _tile_has_other_pawn(state, mover, path[0]):
 				path = state.board.calculate_path(mover, steps + 2 * sign_dir, ctx)
-				report.ability_notes.append("상 도약 +2칸")
+				report.ability_notes.append("마 +2칸")
+		GameEnums.PawnSubType.JANGGI_SANG:
+			if not path.is_empty() and not _tile_has_other_pawn(state, mover, path[0]):
+				path = state.board.calculate_path(mover, steps + 3 * sign_dir, ctx)
+				report.ability_notes.append("상 도약 +3칸")
 	return path
 
 
@@ -156,10 +152,7 @@ static func apply_step(
 				report.dog_cards += 1
 				if report.drawn_card == &"":
 					report.drawn_card = sniffed
-		# 장기 차: 경로 중간에서 처음 만난 적 1개를 들이받아 추방
-		if mover.sub_type() == GameEnums.PawnSubType.JANGGI_CHA and not bool(ctx.metadata.get("ram_used", false)):
-			if _ram_enemy(state, mover, destination, report):
-				ctx.metadata["ram_used"] = true
+
 	# 증기선: 이동 중 처음 만나는 상대 설치물은 효과 없이 파괴한다 (이동 한 번에 한 칸)
 	if mover.sub_type() == GameEnums.PawnSubType.MONO_SHIP and not bool(ctx.metadata.get("ship_used", false)):
 		if _sink_hostile_attachments(state, mover, destination, report):
@@ -191,16 +184,15 @@ static func finalize(state: GameState, mover: PlayerPawn, ctx: RuleContext, repo
 		_resolve_landing(state, mover, ctx, report)
 
 
-## 모노폴리 2세트 [월급날]: 출발선(0번)을 지나거나 밟을 때마다 손패에 생떼 카드 2장을 보충한다.
+## 모노폴리 미니카: 출발선(0번)을 지나거나 밟을 때마다 손패에 생떼 카드 1장을 보충한다.
 static func _pay_salary(state: GameState, mover: PlayerPawn, report: MoveReport) -> void:
-	if mover.kind != GameEnums.PawnKind.MONOPOLY or state.set_count(mover.owner_id, GameEnums.PawnKind.MONOPOLY) < GameEnums.SET_SYNERGY_2:
+	if mover.sub_type() != GameEnums.PawnSubType.MONO_CAR:
 		return
-	for i: int in 2:
-		if state.draw_card(mover.owner_id) != &"":
-			report.salary_cards += 1
+	if state.draw_card(mover.owner_id) != &"":
+		report.salary_cards += 1
 
 
-## 모노폴리 카 [호텔 건설]: 이동이 끝난 타일에 내 턴 5번간(4세트면 영구) 유지되는 통행료 호텔을 설치한다 (같은 타일의 내 호텔은 갱신).
+## 모노폴리 카 [호텔 건설]: 이동이 끝난 타일에 내 턴 5번간 유지되는 통행료 호텔을 설치한다 (같은 타일의 내 호텔은 갱신).
 static func _build_hotel(state: GameState, mover: PlayerPawn, report: MoveReport) -> void:
 	var tile: TileNode = state.board.get_tile(mover.current_tile_idx)
 	for attachment: TileAttachment in tile.attachments.duplicate():
@@ -211,15 +203,8 @@ static func _build_hotel(state: GameState, mover: PlayerPawn, report: MoveReport
 
 
 static func _finish(state: GameState, mover: PlayerPawn, report: MoveReport) -> void:
-	var members: Array[PlayerPawn] = mover.stack_members()
-	var all_yut: bool = members.size() == GameEnums.PAWNS_PER_PLAYER
-	for member: PlayerPawn in members:
-		if member.kind != GameEnums.PawnKind.YUT:
-			all_yut = false
 	state.finish_stack(mover)
 	report.finished = true
-	if all_yut:
-		report.special_victory = &"yut_four_stack"
 
 
 ## 이 칸의 설치물을 차례로 발동시킨다. 함정이 이동을 중단시켜야 하면 true를 반환한다.
@@ -282,6 +267,15 @@ static func _resolve_landing(state: GameState, mover: PlayerPawn, ctx: RuleConte
 	ctx.effects.clear()
 
 
+## 필살기 순간이동(비행기 워프·알까기로 날아간 흑돌의 안착): 기물을 destination에 놓고 도착 칸의 설치물·빵집·잡기·업기를 평소 도착처럼 판정한다.
+## 도착 칸의 함정에 걸려 출발선으로 돌아가면 report.trapped가 true가 된다.
+static func teleport_to(state: GameState, mover: PlayerPawn, ctx: RuleContext, report: MoveReport, destination: int) -> void:
+	if mover.current_tile_idx != destination:
+		if not _warp_to(state, mover, ctx, report, destination):
+			return
+	_resolve_landing(state, mover, ctx, report)
+
+
 ## 옷장(PORTAL)에 멈추면 destination(기본은 중앙 22번)에 도착해 멈춘 것으로 판정한다 (22번에서의 다음 이동은 27 -> 28 -> 0 최단 루트).
 ## 워프 도착 칸의 함정에 걸려 출발선으로 돌아가면 false를 반환한다.
 static func _warp_to(state: GameState, mover: PlayerPawn, ctx: RuleContext, report: MoveReport, destination: int) -> bool:
@@ -311,29 +305,9 @@ static func _promote_pawns(state: GameState, mover: PlayerPawn, report: MoveRepo
 			state.pawn_promoted.emit(member.entity_id)
 
 
-## 모노폴리 호텔 건설: 1호기 미니카이거나, 모노폴리 4세트면 1~4호기 전원.
-static func can_build_hotel(state: GameState, mover: PlayerPawn) -> bool:
-	if mover.kind != GameEnums.PawnKind.MONOPOLY:
-		return false
-	return mover.sub_type() == GameEnums.PawnSubType.MONO_CAR \
-			or state.set_count(mover.owner_id, GameEnums.PawnKind.MONOPOLY) >= GameEnums.PAWNS_PER_PLAYER
-
-
-## 장기 차의 들이받기: 이 타일의 적 대표 말 중 잡기 면역이 아닌 첫 말(ID 순) 1개와 업힌 말을 추방한다. 추방했으면 true.
-static func _ram_enemy(state: GameState, mover: PlayerPawn, tile: int, report: MoveReport) -> bool:
-	if tile == GameEnums.GOAL_TILE:
-		return false
-	for leader: PlayerPawn in state.leaders_at(tile):
-		if leader.owner_id == mover.owner_id or is_capture_immune(state, leader):
-			continue
-		var victims: Array[PlayerPawn] = [leader]
-		_apply_capture_effects(state, mover, victims, report)
-		for member: PlayerPawn in leader.stack_members():
-			report.rammed_pawn_ids.append(member.entity_id)
-		if grants_capture_extra_turn(state, mover):
-			report.extra_turn = true
-		return true
-	return false
+## 모노폴리 호텔 건설: 미니카만 이동이 끝난 타일에 호텔을 짓는다.
+static func can_build_hotel(_state: GameState, mover: PlayerPawn) -> bool:
+	return mover.sub_type() == GameEnums.PawnSubType.MONO_CAR
 
 
 ## 증기선: 이 타일의 상대 설치물(지뢰 숫자 표식 제외)을 효과 없이 파괴한다. 파괴했으면 true.
@@ -358,7 +332,7 @@ static func _resolve_captures(state: GameState, mover: PlayerPawn, ctx: RuleCont
 			enemies.append(leader)
 	if enemies.is_empty():
 		return
-	# 잡기 면역(바둑 2세트 [포석], 백돌 [방어막])인 말은 잡을 수 없다. 잡을 수 있는 말이 하나도 없으면 이동한 말이 한 칸 밀려난다.
+	# 잡기 면역(바둑 백돌 본인, 백돌과 같은 칸의 아군)인 말은 잡을 수 없다. 잡을 수 있는 말이 하나도 없으면 이동한 말이 한 칸 밀려난다.
 	var vulnerable: Array[PlayerPawn] = []
 	for enemy: PlayerPawn in enemies:
 		if not is_capture_immune(state, enemy):
@@ -370,14 +344,9 @@ static func _resolve_captures(state: GameState, mover: PlayerPawn, ctx: RuleCont
 		return
 	# 개별 피격: 업히지 않고 따로 서 있는 말들은 주인마다 1개(ID가 앞선 말)만 잡힌다. 업힌 말은 하나의 대표 말이라 전원이 함께 잡힌다.
 	var victims: Array[PlayerPawn] = pick_capture_victims(vulnerable)
-	# 바둑 흑돌 [알까기]: 잡는 대신 상대를 2칸 앞으로 튕겨 내고 내 돌이 그 칸을 차지한다.
-	if mover.sub_type() == GameEnums.PawnSubType.BADUK_BLACK:
-		for victim: PlayerPawn in victims:
-			_knock_forward(state, victim, 2, report)
-		return
 	ctx.capturer = mover
 	ctx.captured_pawns = victims
-	# 잡기 추가 턴: 윷놀이 기물의 고유 능력 [신명나는 사냥]이며, 장기 4세트(장군멍군)가 활성이면 장기 기물도 얻는다.
+	# 잡기 추가 턴: 윷놀이 기물의 고유 능력 [신명나는 사냥].
 	ctx.capture_extra_turn = grants_capture_extra_turn(state, mover)
 	ctx.capture_charge_steps = 0
 	ctx.trigger_timing = RuleContext.ON_CAPTURE
@@ -394,28 +363,17 @@ static func _resolve_captures(state: GameState, mover: PlayerPawn, ctx: RuleCont
 		report.merge(charge_report)
 
 
-## 잡힌 대표 말(과 업힌 말)을 기록하고 처리한다: 장기 2세트 [초나라 포진]이면 제자리에서 1턴 구속, 아니면 출발선으로 보낸다.
+## 잡힌 대표 말(과 업힌 말)을 기록하고 출발선으로 보낸다.
 static func _apply_capture_effects(state: GameState, mover: PlayerPawn, victims: Array[PlayerPawn], report: MoveReport) -> void:
-	var restrain_instead: bool = mover.kind == GameEnums.PawnKind.JANGGI \
-			and state.set_count(mover.owner_id, GameEnums.PawnKind.JANGGI) >= GameEnums.SET_SYNERGY_2
 	for victim: PlayerPawn in victims:
 		for member: PlayerPawn in victim.stack_members():
 			report.captured_pawn_ids.append(member.entity_id)
-		if restrain_instead:
-			for member: PlayerPawn in victim.stack_members():
-				member.restrained_turns = maxi(member.restrained_turns, 1)
-				report.restrained_pawn_ids.append(member.entity_id)
-			if not state.hurt_players.has(victim.owner_id):
-				state.hurt_players.append(victim.owner_id)
-		else:
-			state.send_to_start(victim, mover.owner_id)
+		state.send_to_start(victim, mover.owner_id)
 
 
-## 이 말이 상대를 잡았을 때 추가 굴림 기회를 얻는가: 윷놀이 기물 또는 장기 4세트를 모은 주인의 장기 기물.
-static func grants_capture_extra_turn(state: GameState, mover: PlayerPawn) -> bool:
-	if mover.kind == GameEnums.PawnKind.YUT:
-		return true
-	return mover.kind == GameEnums.PawnKind.JANGGI and state.set_count(mover.owner_id, GameEnums.PawnKind.JANGGI) >= GameEnums.PAWNS_PER_PLAYER
+## 이 말이 상대를 잡았을 때 추가 굴림 기회를 얻는가: 윷놀이 기물만 얻는다.
+static func grants_capture_extra_turn(_state: GameState, mover: PlayerPawn) -> bool:
+	return mover.kind == GameEnums.PawnKind.YUT
 
 
 ## 같은 타일의 적 대표 말들 중 실제로 잡히는 말: 주인마다 ID가 가장 앞선 대표 말 1개 (업힌 말은 대표 말과 함께).
@@ -432,31 +390,15 @@ static func pick_capture_victims(enemies: Array[PlayerPawn]) -> Array[PlayerPawn
 	return result
 
 
-## 잡기 면역: 바둑 2세트 [포석]을 가진 주인의 바둑돌, 또는 같은 타일에 아군 백돌이 있는 기물(백돌 [방어막], 백돌 자신은 제외).
+## 잡기 면역: 바둑 백돌 본인, 또는 같은 타일에 아군 백돌이 있는 기물(백돌 방어막).
 static func is_capture_immune(state: GameState, pawn: PlayerPawn) -> bool:
-	if pawn.kind == GameEnums.PawnKind.GO and state.set_count(pawn.owner_id, GameEnums.PawnKind.GO) >= GameEnums.SET_SYNERGY_2:
+	if pawn.sub_type() == GameEnums.PawnSubType.BADUK_WHITE:
 		return true
 	for ally: PlayerPawn in state.pawns_of(pawn.owner_id):
 		if ally != pawn and not ally.is_finished and ally.current_tile_idx == pawn.current_tile_idx \
 				and ally.sub_type() == GameEnums.PawnSubType.BADUK_WHITE:
 			return true
 	return false
-
-
-## 대표 말(업은 말 포함)을 앞으로 steps칸 튕겨 낸다. 결승선은 넘지 않고 직전 칸에서 멈추며, 설치물·잡기는 판정하지 않는다.
-static func _knock_forward(state: GameState, victim: PlayerPawn, steps: int, report: MoveReport) -> void:
-	var from_tile: int = victim.current_tile_idx
-	var path: Array[int] = state.board.calculate_path(victim, steps, RuleContext.new())
-	for destination: int in path:
-		if destination == GameEnums.GOAL_TILE:
-			break
-		state.board.commit_step(victim, destination)
-	if victim.current_tile_idx == from_tile:
-		return
-	state.sync_stack_position(victim)
-	for member: PlayerPawn in victim.stack_members():
-		report.knocked_pawn_ids.append(member.entity_id)
-	state.pawn_knocked.emit(victim.entity_id, from_tile, victim.current_tile_idx)
 
 
 ## 대표 말을 steps칸 후퇴시킨다 (ACT_03 우노 +4 페널티). 설치물·잡기는 판정하지 않는다. 실제로 지난 타일들을 반환한다.

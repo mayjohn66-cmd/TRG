@@ -62,7 +62,11 @@ func describe(state: GameState, player_id: int) -> String:
 	match category:
 		GameEnums.AugmentCategory.PAWN_EVOLUTION:
 			var kind: GameEnums.PawnKind = payload
-			return "기본 말 1개를 [%s] %s(으)로 교체해 지급 (현재 %d/4)\n능력: %s\n※ 이미 가진 기물은 받을 수 없습니다" % [PawnCatalog.display_set_name(kind), PawnCatalog.unit_label(kind, units[0]).split(":")[-1], state.set_count(player_id, kind), PawnCatalog.ability_text(kind, units[0])]
+			var skill: StringName = PawnCatalog.skill_of(PawnCatalog.sub_type_of(kind, units[0]))
+			var text: String = "기본 말 1개를 [%s] %s(으)로 교체해 지급\n능력: %s" % [PawnCatalog.display_set_name(kind), PawnCatalog.unit_label(kind, units[0]).split(":")[-1], PawnCatalog.ability_text(kind, units[0])]
+			if skill != &"":
+				text += "\n필살기(1회): %s - %s" % [PawnCatalog.skill_name(skill), PawnCatalog.skill_text(skill)]
+			return text + "\n※ 이미 가진 기물은 받을 수 없습니다"
 		GameEnums.AugmentCategory.TOOL_SWAP:
 			return "내 판정 도구를 [%s](으)로 교체" % ToolRegistry.create(payload).display_name
 		GameEnums.AugmentCategory.LAW_ENACT:

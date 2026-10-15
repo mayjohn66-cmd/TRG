@@ -27,6 +27,8 @@ var rng := RandomNumberGenerator.new()
 var _wait: float = 0.0
 var _seen_serial: int = -1
 var _tried: Dictionary = {}
+## 이미 필살기를 시도한 기물 ID (필살기는 게임당 1회라 같은 기물을 다시 시도하지 않는다).
+var _tried_skills: Dictionary = {}
 var _roulette_pull_target: int = 2
 var _auto_pass_armed: bool = false
 
@@ -38,6 +40,7 @@ func _init() -> void:
 ## 봇을 켜거나 끈다. 켜는 즉시 지금 차례에 맞춰 행동하기 시작한다.
 func set_enabled(value: bool) -> void:
 	enabled = value
+	_tried_skills.clear()
 	_seen_serial = -1
 	_wait = 0.0
 
@@ -157,6 +160,15 @@ func _step_turn_begin() -> void:
 		var params: Dictionary = (plan["params"] as Dictionary).duplicate()
 		params["card_id"] = plan["card_id"]
 		_act(player_id, &"play_card", params)
+		_delay(DELAY_TURN_START)
+		return
+	# 1회용 필살기: 유리한 각이 나오면 주사위 대신(룩은 굴리기 전에) 쓴다.
+	var skill: Dictionary = BotBrain.plan_skill(manager.state, player_id)
+	if not skill.is_empty() and not _tried_skills.has(skill["pawn_id"]) and manager.can_use_skill(player_id, int(skill["pawn_id"])):
+		_tried_skills[skill["pawn_id"]] = true
+		var skill_params: Dictionary = (skill["params"] as Dictionary).duplicate()
+		skill_params["pawn_id"] = skill["pawn_id"]
+		_act(player_id, &"use_skill", skill_params)
 		_delay(DELAY_TURN_START)
 		return
 	_act(player_id, &"proceed")

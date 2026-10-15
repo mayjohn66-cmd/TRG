@@ -418,57 +418,10 @@ func test_monopoly_pawn_builds_a_toll_hotel_that_stops_enemies_and_expires() -> 
 	check(kept.tick_turn(), "내 턴 5번 뒤 만료")
 
 
-func test_monopoly_four_set_makes_hotels_permanent() -> void:
-	var state := make_state(2, 1, {1: _loadout(Kind.MONOPOLY), 2: _loadout(Kind.MONOPOLY)})
-	var hotel := Hotel.new(1)
-	check(hotel.is_expiry_suspended(state), "모노폴리 4세트면 만료 정지")
-	var weak := make_state(2, 1, {1: [Vector2i(Kind.MONOPOLY, 1), Vector2i(Kind.MONOPOLY, 2), Vector2i(Kind.MONOPOLY, 3), 0]})
-	check(not Hotel.new(1).is_expiry_suspended(weak), "3세트는 정지되지 않음")
-	var manager: TurnManager = _manager(2, false, {1: _loadout(Kind.MONOPOLY)})
-	manager.state.place_attachment(7, Hotel.new(1))
-	var placed: TileAttachment = manager.state.board.get_tile(7).attachments[0]
-	for i: int in 8:
-		manager._tick_owned_attachments(1)
-	check(manager.state.board.get_tile(7).has_attachment("HOTEL"), "턴이 지나도 영구 유지")
-	check_eq(placed.duration_turns, 5, "남은 턴 수 그대로")
-	manager.state.pawns[0].kind = GameEnums.PawnKind.BASIC
-	for i: int in 5:
-		manager._tick_owned_attachments(1)
-	check(not manager.state.board.get_tile(7).has_attachment("HOTEL"), "4세트가 깨지면 다시 만료")
-	_dispose(manager)
-
-
-func test_monopoly_two_set_salary_draws_two_cards_at_the_goal() -> void:
-	var state := make_state(2, 1, {1: [Vector2i(Kind.MONOPOLY, 1), Vector2i(Kind.MONOPOLY, 2), 0, 0]})
-	place(state, 11, 18, [17])
-	var report: MoveReport = move(state, 11, 2)
-	check(report.finished, "완주")
-	check_eq(report.salary_cards, 2, "월급날: 카드 2장")
-	check_eq((state.hands[1] as Array).size(), 2, "손패에 반영")
-	var single := make_state(2, 1, {1: [Vector2i(Kind.MONOPOLY, 1), 0, 0, 0]})
-	place(single, 11, 18, [17])
-	check_eq(move(single, 11, 2).salary_cards, 0, "1세트는 월급날 없음")
-
-
-func test_yut_two_set_grants_a_bonus_roll_on_four_or_five() -> void:
-	var manager: TurnManager = _manager(2, false, {1: [Vector2i(Kind.YUT, 1), Vector2i(Kind.YUT, 2), 0, 0]})
-	manager.state.tools[1] = ScriptedTool.new([4, 2])
-	_do(manager, 1, &"proceed")
-	_do(manager, 1, &"roll")
-	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
-	check_eq(manager.current_state, Phase.PHASE_ROLL_WAIT, "사기 윷: 같은 턴에 추가 굴림")
-	check_eq(manager.current_player_id(), 1, "아직 1번 플레이어")
-	_do(manager, 1, &"roll")
-	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
-	check_eq(manager.current_player_id(), 2, "추가 굴림이 끝나면 다음 플레이어")
-	_dispose(manager)
-
-
 # --- 승리 판정 ----------------------------------------------------------------------
 
-func _reason(state: GameState, player_id: int, report: MoveReport = null, chain: int = 0) -> StringName:
-	var order: Array[int] = [1, 2]
-	return VictoryChecker.player_reason(state, order, player_id, report, chain)
+func _reason(state: GameState, player_id: int) -> StringName:
+	return VictoryChecker.player_reason(state, player_id)
 
 
 func test_normal_victory_requires_all_four_pawns_home() -> void:
@@ -480,193 +433,14 @@ func test_normal_victory_requires_all_four_pawns_home() -> void:
 	check_eq(_reason(state, 1), VictoryChecker.ALL_HOME, "4/4 완주")
 
 
-func test_special_victory_yut_four_stack_needs_the_full_yut_set() -> void:
-	var state := make_state(2, 1, {1: _loadout(Kind.YUT)})
-	var report := MoveReport.new()
-	report.special_victory = VictoryChecker.YUT_FOUR_STACK
-	check_eq(_reason(state, 1, report), VictoryChecker.YUT_FOUR_STACK, "윷 4세트의 4업 완주")
-	var partial := make_state(2, 1, {1: [Vector2i(Kind.YUT, 1), Vector2i(Kind.YUT, 2), Vector2i(Kind.YUT, 3), 0]})
-	check_eq(_reason(partial, 1, report), &"", "윷 3세트는 특수 승리 불가")
-
-
-func test_special_victory_checkmate_surrounds_the_leaders_pawn() -> void:
-	var state := make_state(2, 1, {1: _loadout(Kind.CHESS)})
-	place(state, 21, 8, [6, 7])     # 1등 유저(P2)의 말: 바로 뒤 7번, 바로 앞 9번
-	place(state, 11, 7, [5, 6])
-	check_eq(_reason(state, 1), &"", "앞쪽만 비어 있으면 포위가 아님")
-	place(state, 12, 9, [8])
-	check_eq(_reason(state, 1), VictoryChecker.CHECKMATE, "앞뒤 타일을 체스 말이 동시에 포위")
-	state.get_pawn(12).current_tile_idx = 10
-	check_eq(_reason(state, 1), &"", "한쪽이 비면 해제")
-	var basic := make_state()
-	place(basic, 21, 8, [6, 7])
-	place(basic, 11, 7, [5, 6])
-	place(basic, 12, 9, [8])
-	check_eq(_reason(basic, 1), &"", "체스 4세트가 아니면 포위해도 승리 아님")
-
-
-func test_checkmate_targets_the_leader_only() -> void:
-	var state := make_state(3, 1, {1: _loadout(Kind.CHESS)})
-	place(state, 21, 15, [14])   # P2: 앞선 말
-	place(state, 31, 2, [1])     # P3: 뒤처진 말 (포위당해도 1등이 아님)
-	place(state, 11, 1, [0])
-	place(state, 12, 3, [2])
-	var order: Array[int] = [1, 2, 3]
-	check_eq(VictoryChecker.leader_player(state, order, 1), 2, "남은 거리 합이 가장 작은 P2가 1등")
-	check(not VictoryChecker.is_checkmate(state, order, 1), "1등이 아닌 유저의 포위는 무효")
-
-
-func test_special_victory_janggun_mungun_needs_three_chained_captures() -> void:
-	var state := make_state(2, 1, {1: _loadout(Kind.JANGGI)})
-	check_eq(_reason(state, 1, null, 2), &"", "2연속은 부족")
-	check_eq(_reason(state, 1, null, 3), VictoryChecker.JANGGUN_MUNGUN, "한 턴에 3연속 잡기")
-	check_eq(_reason(make_state(), 1, null, 3), &"", "장기 4세트가 아니면 무효")
-
-
-func test_janggun_mungun_through_a_real_turn_with_three_captures() -> void:
-	# 장기 기물은 잡기 추가 턴이 없으므로, 한 턴에 3연속 잡기는 재굴림으로 쌓은 이동 대기열로 만든다.
-	var manager: TurnManager = _manager(2, false, {1: _loadout(Kind.JANGGI)})
-	place(manager.state, 11, 1, [0])
-	place(manager.state, 21, 2, [1])
-	place(manager.state, 22, 4, [3])
-	place(manager.state, 23, 6, [5])
-	manager.state.tools[1] = ScriptedTool.new([ScriptedTool.reroll_of(1), ScriptedTool.reroll_of(2), 2])
-	var winners: Array = []
-	manager.game_over.connect(func(winner_id: int, reason: StringName) -> void: winners.append([winner_id, reason]))
-	_do(manager, 1, &"proceed")
-	_do(manager, 1, &"roll")
-	_do(manager, 1, &"roll")
-	_do(manager, 1, &"roll")
-	for step: int in 3:
-		_do(manager, 1, &"select_pawn", {"pawn_id": 11})
-	check_eq(winners, [[1, VictoryChecker.JANGGUN_MUNGUN]], "한 턴 안에서 3연속 잡기")
-	check(manager.is_game_over, "게임 종료")
-	_dispose(manager)
-
-
-func test_capture_chain_resets_when_the_turn_passes() -> void:
-	var manager: TurnManager = _manager(2, false, {1: _loadout(Kind.JANGGI)})
-	place(manager.state, 11, 1, [0])
-	place(manager.state, 21, 2, [1])
-	place(manager.state, 22, 4, [3])
-	manager.state.tools[1] = ScriptedTool.new([1, 2, 1])
-	manager.state.tools[2] = ScriptedTool.new([1])
-	for step: int in 2:
-		_do(manager, 1, &"proceed")
-		_do(manager, 1, &"roll")
-		_do(manager, 1, &"select_pawn", {"pawn_id": 11})
-	_do(manager, 1, &"proceed")
-	_do(manager, 1, &"roll")
-	_do(manager, 1, &"select_pawn", {"pawn_id": 12})  # 잡지 못하고 턴 종료
-	check_eq(manager.current_player_id(), 2, "턴이 넘어감")
-	check_eq(manager._chain_captures, 0, "연속 잡기 카운터 초기화")
-	check(not manager.is_game_over, "2연속으로는 승리하지 않음")
-	_dispose(manager)
-
-
-func test_janggun_mungun_three_captures_via_four_set_extra_turns() -> void:
-	# 장기 4세트 특권: 잡기 추가 턴이 이어져 굴림 3번 연속으로 3연속 잡기를 달성한다.
-	var manager: TurnManager = _manager(2, false, {1: _loadout(Kind.JANGGI)})
-	place(manager.state, 11, 1, [0])
-	place(manager.state, 21, 2, [1])
-	place(manager.state, 22, 4, [3])
-	place(manager.state, 23, 6, [5])
-	manager.state.tools[1] = ScriptedTool.new([1, 2, 2])
-	var winners: Array = []
-	manager.game_over.connect(func(winner_id: int, reason: StringName) -> void: winners.append([winner_id, reason]))
-	for step: int in 3:
-		_do(manager, 1, &"proceed")
-		_do(manager, 1, &"roll")
-		_do(manager, 1, &"select_pawn", {"pawn_id": 11})
-	check_eq(winners, [[1, VictoryChecker.JANGGUN_MUNGUN]], "추가 턴이 이어져 3연속 잡기")
-	_dispose(manager)
-
-
-func test_janggi_capture_extra_turn_is_a_four_set_privilege() -> void:
-	for count: int in [1, 2, 3, 4]:
-		var loadout: Array = []
-		for unit: int in 4:
-			loadout.append(Vector2i(Kind.JANGGI, unit + 1) if unit < count else 0)
-		var state := make_state(2, 1, {1: loadout})
-		place(state, 11, 2, [1])
-		place(state, 21, 4, [3])
-		var report: MoveReport = move(state, 11, 2)
-		check_eq(report.captured_pawn_ids, int_array([21]), "%d세트: 잡기는 수행" % count)
-		check_eq(report.extra_turn, count == 4, "%d세트: 추가 굴림은 4세트에서만" % count)
-	var chess := make_state(2, 1, {1: _loadout(Kind.CHESS)})
-	place(chess, 11, 2, [1])
-	place(chess, 21, 4, [3])
-	check(not move(chess, 11, 2).extra_turn, "다른 4세트(체스)는 해당 없음")
-
-
-func test_special_victory_real_estate_needs_six_simultaneous_hotels() -> void:
-	var state := make_state(2, 1, {1: _loadout(Kind.MONOPOLY)})
-	for tile: int in [1, 2, 4, 6, 9]:
-		state.place_attachment(tile, Hotel.new(1))
-	check_eq(VictoryChecker.hotel_count(state, 1), 5, "호텔 5개")
-	check_eq(_reason(state, 1), &"", "5개는 부족")
-	state.place_attachment(11, Hotel.new(1))
-	state.place_attachment(12, Hotel.new(2))
-	check_eq(_reason(state, 1), VictoryChecker.REAL_ESTATE, "내 호텔 6개 동시 유지")
-	check_eq(_reason(state, 2), &"", "상대 호텔은 세지 않음")
-	check_eq(_reason(make_state(), 1), &"", "모노폴리 4세트가 아니면 무효")
-
-
-func test_special_victory_daema_bulsa_holds_all_four_corners() -> void:
-	var state := make_state(2, 1, {1: _loadout(Kind.GO)})
-	check_eq(_reason(state, 1), &"", "시작 직후(모두 0번)는 아님")
-	place(state, 12, 5)
-	place(state, 13, 10)
-	place(state, 14, 15)
-	check_eq(_reason(state, 1), VictoryChecker.DAEMA_BULSA, "0, 5, 10, 15번 네 모서리 동시 점령")
-	place(state, 14, 14)
-	check_eq(_reason(state, 1), &"", "하나라도 비면 무효")
-
-
 func test_evaluate_checks_current_player_first_and_returns_empty_when_nobody_wins() -> void:
 	var state := make_state()
 	var order: Array[int] = [1, 2]
-	check(VictoryChecker.evaluate(state, order, 1, null, 0).is_empty(), "승자 없음")
+	check(VictoryChecker.evaluate(state, order, 1).is_empty(), "승자 없음")
 	for player_id: int in [1, 2]:
 		for pawn: PlayerPawn in state.pawns_of(player_id):
 			state.finish_stack(pawn)
-	check_eq(VictoryChecker.evaluate(state, order, 2, null, 0)["winner"], 2, "동시에 조건을 만족하면 현재 턴 플레이어가 우선")
-
-
-func test_victory_reason_texts_cover_all_six_outcomes() -> void:
-	for reason: StringName in [VictoryChecker.ALL_HOME, VictoryChecker.YUT_FOUR_STACK, VictoryChecker.CHECKMATE, VictoryChecker.JANGGUN_MUNGUN, VictoryChecker.REAL_ESTATE, VictoryChecker.DAEMA_BULSA]:
-		check(VictoryChecker.reason_text(reason).contains("승리"), "%s 설명" % reason)
-
-
-func test_turn_manager_stops_the_game_on_special_victory_and_rejects_further_actions() -> void:
-	var manager: TurnManager = _manager(2, false, {1: _loadout(Kind.GO)})
-	for pawn_id: int in [12, 13, 14]:
-		place(manager.state, pawn_id, {12: 5, 13: 10, 14: 15}[pawn_id])
-	place(manager.state, 11, 18, [17])
-	manager.state.tools[1] = ScriptedTool.new([2])
-	var rejected: Array = []
-	manager.action_rejected.connect(func(_player: int, _action: StringName, reason: StringName) -> void: rejected.append(reason))
-	_do(manager, 1, &"proceed")
-	_do(manager, 1, &"roll")
-	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
-	# 11번이 완주해 0번에서 빠지므로 바둑 4세트가 네 모서리를 다 차지하지는 못한다 -> 아직 승리 아님.
-	check(not manager.is_game_over, "완주한 말은 모서리 점령에 쓰이지 않음")
-	_dispose(manager)
-	var winning: TurnManager = _manager(2, false, {1: _loadout(Kind.GO)})
-	for pawn_id: int in [12, 13]:
-		place(winning.state, pawn_id, {12: 5, 13: 10}[pawn_id])
-	place(winning.state, 14, 13, [12])
-	winning.state.tools[1] = ScriptedTool.new([3])  # 바둑 2세트 포석: 눈금 -1 -> 실제 2칸
-	var winners: Array = []
-	winning.game_over.connect(func(winner_id: int, reason: StringName) -> void: winners.append([winner_id, reason]))
-	winning.action_rejected.connect(func(_player: int, _action: StringName, reason: StringName) -> void: rejected.append(reason))
-	_do(winning, 1, &"proceed")
-	_do(winning, 1, &"roll")
-	_do(winning, 1, &"select_pawn", {"pawn_id": 14})  # 13 -> 14 -> 15번 모서리 도착: 0(출발선 11번), 5, 10, 15 점령
-	check_eq(winners, [[1, VictoryChecker.DAEMA_BULSA]], "대마 불사 승리")
-	_do(winning, 2, &"proceed")
-	check(rejected.has(&"game_over"), "게임이 끝난 뒤의 행동은 거부")
-	_dispose(winning)
+	check_eq(VictoryChecker.evaluate(state, order, 2)["winner"], 2, "동시에 조건을 만족하면 현재 턴 플레이어가 우선")
 
 
 func test_unit_augments_give_the_named_unit_and_refuse_duplicates() -> void:
@@ -686,3 +460,35 @@ func test_unit_augments_give_the_named_unit_and_refuse_duplicates() -> void:
 	check(not black.is_available(state, 1), "흑돌 두 개를 가졌으면 흑돌은 더 못 받는다")
 	check(AugmentRegistry.get_def(&"EVO_5_2").is_available(state, 1) or state.basic_pawns_of(1).size() == 1, "백돌은 별개 선택지")
 	check(AugmentRegistry.get_def(&"EVO_5_1").describe(state, 1).contains("이미 가진 기물은 받을 수 없습니다"), "설명에 중복 불가 안내")
+
+
+func test_the_only_victory_is_getting_all_four_pawns_home() -> void:
+	check(VictoryChecker.reason_text(VictoryChecker.ALL_HOME).contains("승리"), "승리 사유 문구")
+	var state := make_state(2, 1, {1: _loadout(Kind.CHESS)})
+	check_eq(_reason(state, 1), &"", "체스 4개를 모아도 세트 특수 승리는 없다")
+	for pawn: PlayerPawn in state.pawns_of(1):
+		state.finish_stack(pawn)
+	check_eq(_reason(state, 1), VictoryChecker.ALL_HOME, "4개 완주만이 승리")
+
+
+func test_yut_pawns_get_a_bonus_roll_on_four_or_five_without_any_set() -> void:
+	var manager: TurnManager = _manager(2, false)
+	manager.state.evolve_pawn(manager.state.get_pawn(11), Kind.YUT)
+	manager.state.tools[1] = ScriptedTool.new([4, 2])
+	_do(manager, 1, &"proceed")
+	_do(manager, 1, &"roll")
+	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
+	check_eq(manager.current_state, Phase.PHASE_ROLL_WAIT, "윷말 단독으로 눈금 4면 추가 굴림")
+	check_eq(manager.current_player_id(), 1, "아직 1번 플레이어")
+	_dispose(manager)
+
+
+func test_mini_car_gets_one_card_when_passing_the_start_line() -> void:
+	var state := make_state(2, 1, {1: [Vector2i(Kind.MONOPOLY, 1), 0, 0, 0]})
+	place(state, 11, 18, [17])
+	var report: MoveReport = move(state, 11, 2)
+	check(report.finished and report.salary_cards == 1, "미니카는 출발선을 지날 때 카드 1장")
+	check_eq((state.hands[1] as Array).size(), 1, "손패에 반영")
+	var plane := make_state(2, 1, {1: [0, Vector2i(Kind.MONOPOLY, 2), 0, 0]})
+	place(plane, 12, 18, [17])
+	check_eq(move(plane, 12, 2).salary_cards, 0, "다른 모노폴리 기물은 카드를 받지 않는다")

@@ -83,7 +83,7 @@ static func is_front_most(state: GameState, pawn: PlayerPawn) -> bool:
 # 증강 드래프트
 # ---------------------------------------------------------------------------
 
-## offers(증강 ID들) 중 고를 인덱스. 이미 가진 세트를 2세트/4세트로 완성하는 기물 진화가 1순위이고, 없으면 판정 도구 교체나 교칙을 고른다.
+## offers(증강 ID들) 중 고를 인덱스. 필살기를 가진 기물 지급이 1순위이고, 없으면 윷말·다른 기물·판정 도구 교체·교칙 순으로 고른다.
 static func choose_augment(state: GameState, player_id: int, offers: Array[StringName], rng: RandomNumberGenerator) -> int:
 	var best: Array[int] = []
 	var best_score: float = -INF
@@ -100,12 +100,13 @@ static func choose_augment(state: GameState, player_id: int, offers: Array[Strin
 static func score_augment(state: GameState, player_id: int, definition: AugmentDef) -> float:
 	match definition.category:
 		GameEnums.AugmentCategory.PAWN_EVOLUTION:
-			var owned: int = state.set_count(player_id, definition.payload)
-			if owned >= 1 and (owned + 1 == GameEnums.SET_SYNERGY_2 or owned + 1 == GameEnums.PAWNS_PER_PLAYER):
-				return 100.0  # 2세트/4세트 시너지 완성
-			if owned >= 1:
-				return 80.0  # 세트를 키우는 중 (3호기)
-			return 55.0 if _evolved_count(state, player_id) == 0 else 25.0  # 첫 세트 시작은 괜찮고, 세트를 흩뿌리는 것은 낮게
+			# 필살기를 가진 기물(룩·차·비행기·흑돌)이 1순위, 윷말(잡기 추가 굴림)이 2순위, 나머지 기물은 그다음이다.
+			var sub: GameEnums.PawnSubType = PawnCatalog.sub_type_of(definition.payload, definition.units[0])
+			if PawnCatalog.skill_of(sub) != &"":
+				return 90.0
+			if definition.payload == GameEnums.PawnKind.YUT:
+				return 75.0
+			return 60.0 if _evolved_count(state, player_id) < 2 else 45.0
 		GameEnums.AugmentCategory.TOOL_SWAP:
 			return 50.0
 		GameEnums.AugmentCategory.LAW_ENACT:
@@ -266,3 +267,129 @@ static func should_stop_roulette(tool: BaseJudgmentTool, pull_target: int) -> bo
 	if not (tool is ToolRussianRoulette) or not tool.has_pending_state():
 		return false
 	return (tool as ToolRussianRoulette).accumulated >= ToolRussianRoulette.STEPS_PER_EMPTY * pull_target
+
+
+# ---------------------------------------------------------------------------
+# 1회용 필살기
+# ---------------------------------------------------------------------------
+
+## 필살기를 쓸 가치가 이 기준 이상이면 사용한다.
+const SKILL_USE_THRESHOLD: float = 12.0
+const SHOT_ANGLE_STEPS: int = 24
+const SHOT_POWERS: Array[float] = [0.35, 0.65, 1.0]
+
+
+## 이 기물이 결승까지 온 거리(클수록 앞선 말). 업힌 말은 함께 센다.
+static func pawn_progress(state: GameState, pawn: PlayerPawn) -> float:
+	var total: float = 0.0
+	for member: PlayerPawn in pawn.stack_members():
+		total += maxf(0.0, float(GameEnums.OUTER_TRACK_SIZE - state.pawn_progress_distance(member)))
+	return total
+
+
+## 내 필살기 중 지금 쓸 만한 것 하나: {"pawn_id": int, "params": Dictionary, "value": float}. 없으면 빈 Dictionary.
+static func plan_skill(state: GameState, player_id: int) -> Dictionary:
+	var best: Dictionary = {}
+	var best_value: float = SKILL_USE_THRESHOLD
+	for pawn: PlayerPawn in state.pawns_of(player_id):
+		if not PawnSkills.is_ready(pawn):
+			continue
+		var option: Dictionary = skill_option(state, pawn)
+		if not option.is_empty() and float(option["value"]) > best_value:
+			best_value = float(option["value"])
+			best = {"pawn_id": pawn.entity_id, "params": option["params"], "value": option["value"]}
+	return best
+
+
+static func skill_option(state: GameState, pawn: PlayerPawn) -> Dictionary:
+	match PawnCatalog.skill_of(pawn.sub_type()):
+		&"charge": return _charge_option(state, pawn)
+		&"shoot": return _shoot_option(state, pawn)
+		&"warp": return _warp_option(state, pawn)
+		&"castle": return _castle_option(state, pawn)
+	return {}
+
+
+static func _charge_option(state: GameState, pawn: PlayerPawn) -> Dictionary:
+	var path: Array[int] = PawnSkills.chariot_path(state, pawn)
+	if path.is_empty():
+		return {}
+	var value: float = 0.0
+	for leader: PlayerPawn in state.leaders_at(path.back()):
+		if leader.owner_id != pawn.owner_id and leader.has_left_start and not MoveExecutor.is_capture_immune(state, leader):
+			value += pawn_progress(state, leader)
+	if value <= 0.0:
+		return {}
+	return {"params": {}, "value": value}
+
+
+static func _shoot_option(state: GameState, pawn: PlayerPawn) -> Dictionary:
+	var best_value: float = 0.0
+	var best_params: Dictionary = {}
+	for step: int in SHOT_ANGLE_STEPS:
+		var angle: float = TAU * float(step) / float(SHOT_ANGLE_STEPS)
+		for power: float in SHOT_POWERS:
+			var shot: Dictionary = PawnSkills.shot_result(state, pawn, angle, power)
+			var value: float = 0.0
+			for hit_id: int in shot["hits"]:
+				value += pawn_progress(state, state.get_pawn(hit_id))
+			if (shot["hits"] as Array).size() >= 2:
+				value += 6.0
+			if value > best_value:
+				best_value = value
+				best_params = {"angle": angle, "power": power}
+	if best_params.is_empty():
+		return {}
+	return {"params": best_params, "value": best_value}
+
+
+static func _warp_option(state: GameState, pawn: PlayerPawn) -> Dictionary:
+	var best_value: float = -INF
+	var best_tile: int = -1
+	var current: int = state.pawn_progress_distance(pawn)
+	for tile: int in PawnSkills.plane_targets(pawn):
+		var value: float = float(current - state.board.distance_to_goal(tile, true))
+		if state.board.get_tile(tile).tile_type == TileNode.TileType.BAKERY:
+			value += 4.0
+		for leader: PlayerPawn in state.leaders_at(tile):
+			if leader.owner_id != pawn.owner_id and leader.has_left_start and not MoveExecutor.is_capture_immune(state, leader):
+				value += pawn_progress(state, leader)
+		for attachment: TileAttachment in state.board.get_tile(tile).attachments:
+			if attachment.attachment_id == "HOTEL" and attachment.owner_id != pawn.owner_id:
+				value -= 15.0
+		if value > best_value:
+			best_value = value
+			best_tile = tile
+	if best_tile == -1:
+		return {}
+	return {"params": {"tile": best_tile}, "value": best_value}
+
+
+## 캐슬링: 룩이 위험한 자리(바로 뒤에 적이 쫓아옴)에 있을 때, 더 안전한 자리의 아군 기물과 위치를 맞바꿔 피한다.
+static func _castle_option(state: GameState, pawn: PlayerPawn) -> Dictionary:
+	var danger_here: float = _threat_at(state, pawn)
+	if danger_here <= 0.0:
+		return {}
+	var best_partner: PlayerPawn = null
+	var best_gain: float = 0.0
+	for partner: PlayerPawn in PawnSkills.rook_partners(state, pawn):
+		var gain: float = danger_here - _threat_at(state, partner)
+		if gain > best_gain:
+			best_gain = gain
+			best_partner = partner
+	if best_partner == null:
+		return {}
+	return {"params": {"partner": best_partner.entity_id}, "value": SKILL_USE_THRESHOLD + best_gain}
+
+
+## 이 기물 바로 뒤 1~6칸 안에서 쫓아오는 적 대표 말 수 x 이 기물의 전진도.
+static func _threat_at(state: GameState, pawn: PlayerPawn) -> float:
+	var mine: int = state.board.distance_to_goal(pawn.current_tile_idx, true)
+	var chasers: int = 0
+	for enemy: PlayerPawn in state.pawns:
+		if enemy.owner_id == pawn.owner_id or enemy.is_finished or not enemy.has_left_start or enemy.carrier != null:
+			continue
+		var gap: int = state.board.distance_to_goal(enemy.current_tile_idx, true) - mine
+		if gap >= 1 and gap <= 6:
+			chasers += 1
+	return float(chasers) * (2.0 + pawn_progress(state, pawn) * 0.3)

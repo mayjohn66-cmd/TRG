@@ -83,8 +83,8 @@ func test_bakery_stop_and_scoring_does_not_change_the_game_state() -> void:
 
 
 func test_capture_scoring_ignores_immune_enemies_and_the_start_tile() -> void:
-	var state := make_state(2, 1, {2: [Vector2i(Kind.GO, 1), Vector2i(Kind.GO, 2), 0, 0]})
-	place(state, 21, 4, [3])  # 바둑 2세트 포석: 잡을 수 없다
+	var state := make_state(2, 1, {2: [Vector2i(Kind.GO, 2), 0, 0, 0]})
+	place(state, 21, 4, [3])  # 바둑 백돌: 잡을 수 없다
 	check(not BotBrain.has_capturable_enemy(state, state.get_pawn(11), 4), "무적인 적은 잡기 후보가 아니다")
 	check(not BotBrain.has_capturable_enemy(state, state.get_pawn(11), 0), "출발선은 안전")
 	var plain := make_state(2, 1)
@@ -94,21 +94,17 @@ func test_capture_scoring_ignores_immune_enemies_and_the_start_tile() -> void:
 
 # --- 증강 드래프트 ----------------------------------------------------------------
 
-func test_augment_choice_prefers_completing_an_owned_set() -> void:
-	var state := make_state(2, 1, {2: [Vector2i(Kind.CHESS, 1), 0, 0, 0]})
+func test_augment_choice_prefers_skill_pieces_then_yut_then_other_pieces_then_tools() -> void:
+	var state := make_state()
 	var rng: RandomNumberGenerator = _seeded(1)
-	var offers: Array[StringName] = [&"TOOL_YUT", &"EVO_%d_2" % Kind.CHESS, &"AUG_LAW_01"]
-	check_eq(BotBrain.choose_augment(state, 2, offers, rng), 1, "보유한 체스 세트를 2세트로 완성하는 진화가 1순위")
-	var four := make_state(2, 1, {2: [Vector2i(Kind.GO, 1), Vector2i(Kind.GO, 2), Vector2i(Kind.GO, 3), 0]})
-	var offers_four: Array[StringName] = [&"CARD_PACKAGE", &"AUG_LAW_01", &"EVO_%d_2" % Kind.GO]
-	check_eq(BotBrain.choose_augment(four, 2, offers_four, rng), 2, "4세트 완성도 1순위")
-	var other_set: Array[StringName] = [&"TOOL_YUT", &"EVO_%d_1" % Kind.JANGGI, &"AUG_LAW_01"]
-	check_eq(BotBrain.choose_augment(state, 2, other_set, rng), 0, "이미 다른 세트를 가졌다면 새 세트를 흩뿌리지 않고 판정 도구를 고른다")
+	var rook: Array[StringName] = [&"TOOL_YUT", &"EVO_%d_4" % Kind.CHESS, &"AUG_LAW_01"]
+	check_eq(BotBrain.choose_augment(state, 2, rook, rng), 1, "필살기가 있는 룩 지급이 1순위")
+	var yut: Array[StringName] = [&"TOOL_YUT", &"EVO_%d_1" % Kind.YUT, &"EVO_%d_1" % Kind.CHESS]
+	check_eq(BotBrain.choose_augment(state, 2, yut, rng), 1, "필살기가 없으면 잡기 추가 굴림의 윷말이 폰보다 먼저")
+	var plain: Array[StringName] = [&"TOOL_YUT", &"EVO_%d_1" % Kind.JANGGI, &"AUG_LAW_01"]
+	check_eq(BotBrain.choose_augment(state, 2, plain, rng), 1, "필살기 없는 기물도 도구 교체보다는 먼저 (아직 기물이 적을 때)")
 	var no_evo: Array[StringName] = [&"CARD_PACKAGE", &"AUG_LAW_01", &"TOOL_HOLDEM"]
-	check_eq(BotBrain.choose_augment(state, 2, no_evo, rng), 2, "진화가 없으면 판정 도구 교체가 교칙보다 먼저")
-	var first_set := make_state()
-	var start: Array[StringName] = [&"CARD_PACKAGE", &"AUG_LAW_01", &"EVO_%d_1" % Kind.YUT]
-	check_eq(BotBrain.choose_augment(first_set, 2, start, rng), 2, "아직 세트가 하나도 없으면 첫 세트를 시작한다 (그렇지 않으면 봇이 영원히 기본 말뿐)")
+	check_eq(BotBrain.choose_augment(state, 2, no_evo, rng), 2, "기물 지급이 없으면 판정 도구 교체가 교칙보다 먼저")
 
 
 func test_evolution_pawn_choice_is_the_front_most_basic_pawn() -> void:

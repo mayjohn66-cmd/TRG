@@ -22,15 +22,12 @@ var captured_pawn_ids: Array[int] = []
 var stacked_pawn_ids: Array[int] = []
 var extra_turn: bool = false
 var drawn_card: StringName = &""
-var special_victory: StringName = &""
 var attachment_events: Array[Dictionary] = []
 var effect_names: Array[String] = []
 ## 장기 [포 넘기]로 이동 거리에 +2칸이 붙었는가.
 var cannon_bonus: bool = false
-## 바둑 [알까기]로 2칸 튕겨 나간 말들 / 포석 무적에 막혀 한 칸 밀려난 이동자 / 장기 2세트 [초나라 포진]으로 구속된 말들.
-var knocked_pawn_ids: Array[int] = []
+## 백돌 무적에 막혀 한 칸 밀려난 이동자.
 var pushed_back: bool = false
-var restrained_pawn_ids: Array[int] = []
 ## 이번 이동의 눈금·경로를 실제로 바꾼 교칙들의 요약 문구 ("LAW_08 결승선 문턱 높이기" 형식).
 var law_notes: Array[String] = []
 ## 업기 선택이 필요한 도착: {"mover": 이동한 말 ID, "others": 합칠 수 있는 아군 대표 말 ID들}. 없으면 빈 Dictionary.
@@ -38,7 +35,6 @@ var stack_offer: Dictionary = {}
 ## 세부 기물 능력 보고: 보너스/제약 문구, 승진한 폰, 들이받힌 말, 증기선이 파괴한 설치물, 강아지가 스쳐서 얻은 카드 수.
 var ability_notes: Array[String] = []
 var promoted_pawn_ids: Array[int] = []
-var rammed_pawn_ids: Array[int] = []
 var destroyed_attachments: Array[Dictionary] = []
 var dog_cards: int = 0
 
@@ -61,20 +57,15 @@ func merge(other: MoveReport) -> void:
 	extra_turn = extra_turn or other.extra_turn
 	if drawn_card == &"":
 		drawn_card = other.drawn_card
-	if special_victory == &"":
-		special_victory = other.special_victory
 	attachment_events.append_array(other.attachment_events)
 	effect_names.append_array(other.effect_names)
 	cannon_bonus = cannon_bonus or other.cannon_bonus
-	knocked_pawn_ids.append_array(other.knocked_pawn_ids)
 	pushed_back = pushed_back or other.pushed_back
-	restrained_pawn_ids.append_array(other.restrained_pawn_ids)
 	law_notes.append_array(other.law_notes)
 	if stack_offer.is_empty():
 		stack_offer = other.stack_offer
 	ability_notes.append_array(other.ability_notes)
 	promoted_pawn_ids.append_array(other.promoted_pawn_ids)
-	rammed_pawn_ids.append_array(other.rammed_pawn_ids)
 	destroyed_attachments.append_array(other.destroyed_attachments)
 	dog_cards += other.dog_cards
 
@@ -98,18 +89,14 @@ func to_dict() -> Dictionary:
 		"stacked": stacked_pawn_ids,
 		"extra_turn": extra_turn,
 		"drawn_card": drawn_card,
-		"special_victory": special_victory,
 		"attachment_events": attachment_events,
 		"effects": effect_names,
 		"cannon_bonus": cannon_bonus,
-		"knocked": knocked_pawn_ids,
 		"pushed_back": pushed_back,
-		"restrained": restrained_pawn_ids,
 		"law_notes": law_notes,
 		"stack_offer": stack_offer,
 		"ability_notes": ability_notes,
 		"promoted": promoted_pawn_ids,
-		"rammed": rammed_pawn_ids,
 		"destroyed": destroyed_attachments,
 		"dog_cards": dog_cards,
 	}

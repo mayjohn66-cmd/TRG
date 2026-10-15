@@ -15,7 +15,7 @@ var _tile_picks: int = 0
 var _cards_played: int = 0
 var _evolutions: int = 0
 var _bombs_passed: int = 0
-var _castles: int = 0
+var _skills: int = 0
 var _bangs: int = 0
 var _roulette_seen: int = 0
 var _roulette_forced: bool = false
@@ -160,6 +160,10 @@ func _step_once() -> void:
 				for pawn_id: int in [11, 12, 21, 22]:
 					if _board.state.get_pawn(pawn_id).kind == GameEnums.PawnKind.BASIC:
 						_board.state.evolve_pawn(_board.state.get_pawn(pawn_id), GameEnums.PawnKind.YUT)
+				# 필살기 보유 기물(룩·차·비행기·흑돌)도 나눠 준다.
+				var skill_pawns: Array = [[13, GameEnums.PawnKind.CHESS, 4], [14, GameEnums.PawnKind.GO, 1], [23, GameEnums.PawnKind.JANGGI, 2], [24, GameEnums.PawnKind.MONOPOLY, 2], [33, GameEnums.PawnKind.GO, 1], [43, GameEnums.PawnKind.JANGGI, 2]]
+				for entry: Array in skill_pawns:
+					_board.state.give_unit(_board.state.get_pawn(int(entry[0])), entry[1], [int(entry[2])] as Array[int])
 				_board._refresh_all()
 			if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN and (_try_tile_card(manager) or _try_turn_begin_buttons(manager)):
 				return
@@ -285,7 +289,9 @@ func _check_pawn_labels() -> void:
 		var pawn: PlayerPawn = _board.state.get_pawn(owner_id * 10 + index + 1)
 		var tip: String = _board._pawn_info_text(pawn.entity_id)
 		_assert(tip.contains(PawnCatalog.full_name(pawn.kind, pawn.unit_no)) and tip.contains(PawnCatalog.ability_text(pawn.kind, pawn.unit_no)), "기물 툴팁에 전체 이름과 고유 능력이 있어야 한다 (%s)" % tip)
-		_assert(tip.contains("세트"), "기물 툴팁에 세트 시너지 줄이 있어야 한다 (%s)" % tip)
+		_assert(not tip.contains("시너지") and not tip.contains("2세트") and not tip.contains("4세트"), "기물 툴팁에 세트 설명이 없어야 한다 (%s)" % tip)
+		if PawnSkills.has_skill(pawn):
+			_assert(tip.contains("필살기"), "필살기 보유 기물 툴팁에는 필살기 줄이 있어야 한다 (%s)" % tip)
 	for player_id: int in [1, 2, 3, 4]:
 		_assert(_board.get_player_for_corner(_board.corner_of_player(player_id)) == player_id, "좌석 매핑은 역함수 관계여야 한다")
 
@@ -296,6 +302,12 @@ func _check_fog_of_war() -> void:
 		return
 	for index: int in 29:
 		var mark_text: String = (_board._tile_marks[index] as Label).text
+		var owners: Dictionary = {}
+		for attachment: TileAttachment in _board.state.board.get_tile(index).attachments:
+			if ["TRP_01", "TRP_02", "TRP_03"].has(attachment.attachment_id):
+				owners[attachment.owner_id == MainBoard.HUMAN_ID] = true
+		if owners.size() > 1:
+			continue  # 내 함정과 봇의 함정이 한 타일에 겹치면 표식 문구가 섞이므로 검사하지 않는다
 		for attachment: TileAttachment in _board.state.board.get_tile(index).attachments:
 			if not ["TRP_01", "TRP_02", "TRP_03"].has(attachment.attachment_id):
 				continue
@@ -312,7 +324,7 @@ func _check_bounds() -> void:
 	for node: Node in _board._dock.get_children():
 		if node is Control and not node.is_queued_for_deletion():
 			controls.append(node)
-	for button: Control in [_board._roll_button, _board._stop_button, _board._skip_button, _board._castle_button, _board._bomb_button, _board._bell_button]:
+	for button: Control in [_board._roll_button, _board._stop_button, _board._skip_button, _board._bomb_button, _board._bell_button]:
 		if button.visible:
 			controls.append(button)
 	for button: Button in _board._pawn_buttons:
@@ -337,24 +349,57 @@ func _check_bounds() -> void:
 		_roulette_seen += 1
 
 
+## 기물 독의 [필살기 발동] 버튼을 눌러 본다: 룩은 아군 선택, 차는 즉시 돌진, 비행기는 타일 선택, 흑돌은 슬링샷 조준.
+func _try_skill(manager: TurnManager, player_id: int) -> bool:
+	if _board._is_bot_turn() or _rng.randi_range(0, 2) != 0:
+		return false
+	for index: int in _board._skill_buttons.size():
+		var button: Button = _board._skill_buttons[index]
+		if not button.visible or button.disabled:
+			continue
+		var pawn: PlayerPawn = _board.state.get_pawn(_board._dock_owner() * 10 + index + 1)
+		button.pressed.emit()
+		match PawnCatalog.skill_of(pawn.sub_type()):
+			&"castle":
+				if _board._choice_overlay != null:
+					var picks: Array[Button] = []
+					for node: Node in _board._choice_overlay.find_children("*", "Button", true, false):
+						picks.append(node as Button)
+					if not picks.is_empty():
+						picks[0].pressed.emit()
+					_board._close_choice()
+			&"warp":
+				if _board._tile_pick_active:
+					_board._complete_tile_pick(PawnSkills.plane_targets(pawn)[_rng.randi_range(0, 7)])
+			&"shoot":
+				if _board._aim_pawn != -1:
+					for step: int in 3:
+						var event := InputEventMouseButton.new()
+						event.button_index = MOUSE_BUTTON_LEFT
+						event.pressed = step == 0
+						event.position = Vector2(600, 300) if step == 0 else Vector2(600.0 - 20.0 * _rng.randi_range(1, 7), 300.0 + _rng.randi_range(-80, 80))
+						if step == 1:
+							var move := InputEventMouseMotion.new()
+							move.position = event.position
+							_board._input(move)
+							continue
+						_board._input(event)
+		_skills += 1
+		return true
+	return false
+
+
 func _try_turn_begin_buttons(manager: TurnManager) -> bool:
 	var player_id: int = manager.current_player_id()
 	_assert(_board._bomb_button.visible == manager.can_pass_bomb(player_id), "폭탄 떠넘기기 버튼 표시가 규칙과 일치해야 한다")
-	_assert(_board._castle_button.visible == manager.can_castle(player_id), "캐슬링 버튼 표시가 규칙과 일치해야 한다")
+	for index: int in _board._skill_buttons.size():
+		var pawn: PlayerPawn = _board.state.get_pawn(_board._dock_owner() * 10 + index + 1)
+		_assert(_board._skill_buttons[index].visible == (PawnSkills.has_skill(pawn) and not pawn.is_finished), "필살기 버튼은 필살기 보유 기물에만 보인다")
 	if _board._bomb_button.visible and _rng.randi_range(0, 1) == 0:
 		_board._bomb_button.pressed.emit()
 		_bombs_passed += 1
 		return true
-	if _board._castle_button.visible and _rng.randi_range(0, 1) == 0:
-		_board._castle_button.pressed.emit()
-		if _board._choice_overlay != null:
-			var picks: Array[Button] = []
-			for node: Node in _board._choice_overlay.find_children("*", "Button", true, false):
-				picks.append(node as Button)
-			if picks.size() > 1:
-				picks[0].pressed.emit()
-			_board._close_choice()
-		_castles += 1
+	if _try_skill(manager, player_id):
 		return true
 	for card_id: StringName in _board.state.hands[player_id]:
 		if card_id == &"ACT_02" and BangCommand.find_target(_board.state, player_id) != null and _rng.randi_range(0, 1) == 0:
@@ -391,7 +436,7 @@ func _finish() -> bool:
 	var phase_names: Array[String] = []
 	for phase: int in _seen_phases.keys():
 		phase_names.append(str(phase))
-	print("UI_SMOKE actions=%d round=%d game_over=%s winner=%d reason=%s phases=%d drafts=%s tile_picks=%d cards=%d evolutions=%d bombs_passed=%d castles=%d bangs=%d roulette=%d board_clicks=%d stack_choices=%d ai=%s fog_checks=%d" % [_actions, _board.state.round_number, manager.is_game_over, _board.state.winner, VictoryChecker.reason_text(_board._last_reason), _seen_phases.size(), str(_draft_rounds), _tile_picks, _cards_played, _evolutions, _bombs_passed, _castles, _bangs, _roulette_seen, _board_clicks, _stack_choices, str(_ai), _fog_checks])
+	print("UI_SMOKE actions=%d round=%d game_over=%s winner=%d reason=%s phases=%d drafts=%s tile_picks=%d cards=%d evolutions=%d bombs_passed=%d skills=%d bangs=%d roulette=%d board_clicks=%d stack_choices=%d ai=%s fog_checks=%d" % [_actions, _board.state.round_number, manager.is_game_over, _board.state.winner, VictoryChecker.reason_text(_board._last_reason), _seen_phases.size(), str(_draft_rounds), _tile_picks, _cards_played, _evolutions, _bombs_passed, _skills, _bangs, _roulette_seen, _board_clicks, _stack_choices, str(_ai), _fog_checks])
 	_assert(manager.is_game_over, "치트 없이 한 판이 끝까지 진행되어 승리자가 나와야 한다 (조작 %d회)" % _actions)
 	_assert(_draft_rounds.has(1), "1라운드 드래프트가 열렸어야 한다")
 	_assert(_board._result_overlay != null, "게임 종료 결과창이 떠야 한다")
