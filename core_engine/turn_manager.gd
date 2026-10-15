@@ -44,6 +44,11 @@ var is_game_over: bool = false
 var hotseat_mode: bool = false
 ## 1, 4, 7라운드 시작 증강 드래프트를 여는가. 헤드리스 테스트나 드래프트 없는 모드에서는 끈다.
 var draft_enabled: bool = true
+## true면 윷놀이 기물의 업기 가능 도착마다 PHASE_RESOLUTION 안에서 플레이어의 [업기/그냥 두기] 선택을 기다린다.
+## false(기본: 헤드리스 테스트·AI 턴)면 선택을 묻지 않고 항상 [업기]를 선택한 것으로 처리한다.
+var stack_choice_enabled: bool = false
+## 선택 대기 중인 업기 제안 ({"mover": 이동한 말 ID, "others": 합칠 아군 ID들}).
+var _stack_offer: Dictionary = {}
 ## 플레이어 ID -> 지금까지 고른 증강 ID 목록.
 var augments: Dictionary = {}
 ## 피어 ID -> 플레이어 좌석. NetworkService가 있으면 그쪽을 우선한다.
@@ -145,6 +150,7 @@ func request_action(action: StringName, params: Dictionary = {}) -> void:
 		&"pick_augment": _handle_pick_augment(actor, params)
 		&"castle": _handle_castle(actor, params)
 		&"pass_bomb": _handle_pass_bomb(actor, params)
+		&"stack_choice": _handle_stack_choice(actor, params)
 		_: action_rejected.emit(actor, action, &"unknown_action")
 
 
@@ -402,6 +408,47 @@ func _on_bang_resolved(shooter: int, target_pawn_id: int, dodged: bool, discarde
 	_emit_event(&"bang_resolved", {"shooter": shooter, "target": target_pawn_id, "dodged": dodged, "discarded_card": discarded_card})
 
 
+## 윷놀이 기물의 [선택적 업기]에 대한 플레이어의 답. params: {"stack": bool} (기본 true = 업기).
+func _handle_stack_choice(actor: int, params: Dictionary) -> void:
+	if not stack_offer_pending() or actor != current_player_id():
+		action_rejected.emit(actor, &"stack_choice", &"wrong_phase")
+		return
+	_resolve_stack_choice(bool(params.get("stack", true)))
+
+
+## 윷놀이 기물의 [선택적 업기] 답을 기다리는 중인가 (PHASE_RESOLUTION 안의 보조 상태).
+func stack_offer_pending() -> bool:
+	return current_state == State.PHASE_RESOLUTION and not _stack_offer.is_empty()
+
+
+## 대기 중인 업기 제안의 사본 ({"mover": id, "others": [id...]}). 없으면 빈 Dictionary.
+func pending_stack_offer() -> Dictionary:
+	return _stack_offer.duplicate(true)
+
+
+## 업기를 선택하면 제안된 아군 말들을 이동한 말에 합치고, 선택 대기를 끝내 정산 창을 마저 진행한다.
+func _resolve_stack_choice(stack: bool) -> void:
+	var offer: Dictionary = _stack_offer
+	_stack_offer = {}
+	var members: Array[int] = []
+	if stack and not offer.is_empty():
+		var mover: PlayerPawn = state.get_pawn(int(offer["mover"]))
+		for other_id: Variant in offer["others"]:
+			var other: PlayerPawn = state.get_pawn(int(other_id))
+			# 선택을 기다리는 사이 상태가 바뀌었을 수 있으니 합칠 수 있는지 다시 확인한다.
+			if mover != null and other != null and other.carrier == null and not other.is_finished and mover.current_tile_idx == other.current_tile_idx and mover.can_stack_with(other):
+				state.stack_pawns(mover, other)
+		if mover != null:
+			for member: PlayerPawn in mover.stack_members():
+				members.append(member.entity_id)
+	_emit_event(&"stack_resolved", {"player_id": current_player_id(), "stacked": stack and members.size() > 1, "members": members, "offer": offer})
+	phase_time_left = GameEnums.PHASE_TIME_RESOLUTION
+	if _someone_can_intervene():
+		_broadcast_state()
+	else:
+		_close_resolution_window()
+
+
 func _handle_pick_augment(actor: int, params: Dictionary) -> void:
 	if current_state != State.PHASE_ROUND_START or not _draft_offers.has(actor) or _draft_picks.has(actor):
 		action_rejected.emit(actor, &"pick_augment", &"wrong_phase")
@@ -477,7 +524,10 @@ func _on_timeout() -> void:
 		State.PHASE_SELECT_PAWN:
 			_auto_select_pawn()
 		State.PHASE_RESOLUTION:
-			_close_resolution_window()
+			if stack_offer_pending():
+				_resolve_stack_choice(true)
+			else:
+				_close_resolution_window()
 
 
 func _ensure_command_stack() -> void:
@@ -529,6 +579,7 @@ func _begin_turn(new_turn: bool = true) -> void:
 	state.hurt_players.clear()
 	state.rollback_requested = false
 	move_queue.clear()
+	_stack_offer = {}
 	command_stack.begin_turn()
 	_roll_chain = 0
 	_move_report = null
@@ -641,6 +692,7 @@ func _execute_move(pawn: PlayerPawn) -> void:
 	ctx.dice_value = move_queue.pop_front()
 	ctx.raw_roll = ctx.dice_value
 	ctx.direction = state.movement_direction()
+	ctx.defer_stack_choice = stack_choice_enabled
 
 	var move_command := MoveCommand.new(current_player_id(), pawn.entity_id, ctx)
 	move_command.bind_state(state)
@@ -664,6 +716,7 @@ func _execute_move(pawn: PlayerPawn) -> void:
 	_emit_event(&"move_resolved", report.to_dict())
 	if _check_victory(report):
 		return
+	_stack_offer = report.stack_offer
 	_enter_resolution()
 
 
@@ -689,6 +742,11 @@ func _note_altering_laws(pawn: PlayerPawn, ctx: RuleContext, path: Array[int], r
 
 func _enter_resolution() -> void:
 	change_state(State.PHASE_RESOLUTION)
+	if not _stack_offer.is_empty():
+		# 윷놀이 기물 업기 선택을 기다린다. 선택(또는 시간 초과 시 자동 업기) 뒤에 정산 창이 이어진다.
+		phase_time_left = GameEnums.PHASE_TIME_SELECT
+		_broadcast_state()
+		return
 	if not _someone_can_intervene():
 		_close_resolution_window()
 
@@ -788,6 +846,7 @@ func _build_sync_payload() -> Dictionary:
 		"hand_counts": hand_counts,
 		"move_queue": move_queue,
 		"pending": state.pending_penalty.duplicate(),
+		"stack_offer": _stack_offer.duplicate(true),
 		"castled": _castled_this_turn,
 	}
 
@@ -806,6 +865,7 @@ func _rpc_sync_state(payload: Dictionary) -> void:
 	state.turn_direction = turn_direction
 	state.pending_penalty = (payload["pending"] as Dictionary).duplicate()
 	_castled_this_turn = bool(payload["castled"])
+	_stack_offer = (payload["stack_offer"] as Dictionary).duplicate(true)
 	is_game_over = bool(payload["game_over"])
 	move_queue.assign(payload["move_queue"])
 	current_state = payload["phase"]

@@ -164,6 +164,19 @@ var _timer_check: CheckBox = null
 var _log: RichTextLabel = null
 var _center_banner: PanelContainer = null
 var _center_label: Label = null
+## 연출 대기 시간(await)을 0초로 건너뛰는 플래그 (헤드리스·ui_smoke 자동 진행용).
+var instant_roll_for_test: bool = false
+var _presenter: RollPresenter = null
+var _power_bar: ProgressBar = null
+var _power_label: Label = null
+var _charging: bool = false
+var _charge_by_key: bool = false
+var _charge_clock: float = 0.0
+var _charge_value: float = 0.0
+var _pending_power: float = 0.5
+var _fx_busy: bool = false
+var _fx_generation: int = 0
+var _stack_overlay: Control = null
 
 var _choice_overlay: Control = null
 var _draft_overlay: Control = null
@@ -181,6 +194,7 @@ func _ready() -> void:
 	manager.name = "TurnManager"
 	manager.hotseat_mode = true
 	manager.step_delay_sec = STEP_DELAY
+	manager.stack_choice_enabled = true
 	add_child(manager)
 	manager.set_process(false)  # 제한 시간은 체크박스로 켤 때만 흐른다 (혼자 테스트할 때 자동 진행 방지)
 	manager.phase_changed.connect(_on_phase_changed)
@@ -192,11 +206,19 @@ func _ready() -> void:
 	_new_game()
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if manager == null or manager.state == null or state == null:
 		return
 	if not manager.is_game_over:
 		_phase_label.text = _phase_text()
+	if _charging:
+		# 파워 게이지: 0% ~ 100%를 빠르게 왕복한다 (손을 떼는 순간의 값이 연출 세기가 된다).
+		_charge_clock += delta
+		_charge_value = pingpong(_charge_clock * 1.6, 1.0)
+		_power_bar.value = _charge_value * 100.0
+		_power_label.text = "POWER %d%%" % int(_charge_value * 100.0)
+		var fill: StyleBoxFlat = _style(Color("51cf66") if _charge_value < 0.4 else (Color("fcc419") if _charge_value < 0.75 else Color("ff6b6b")), Color("fff3bf"), 2, 7, 0, 0)
+		_power_bar.add_theme_stylebox_override("fill", fill)
 	# 말 선택 단계: 지금 고를 수 있는 내 말 도형이 위아래로 통통 튄다.
 	var selecting: bool = manager.current_state == TurnManager.State.PHASE_SELECT_PAWN and not manager.is_game_over
 	var wave: float = -absf(sin(Time.get_ticks_msec() / 1000.0 * 7.0)) * 6.0
@@ -213,7 +235,7 @@ func _process(_delta: float) -> void:
 func _input(event: InputEvent) -> void:
 	if manager == null or state == null or manager.current_state != TurnManager.State.PHASE_SELECT_PAWN:
 		return
-	if _choice_overlay != null or _draft_overlay != null or _result_overlay != null or _tile_pick_active:
+	if _fx_busy or _choice_overlay != null or _draft_overlay != null or _result_overlay != null or _stack_overlay != null or _tile_pick_active:
 		return
 	var button_event: InputEventMouseButton = event as InputEventMouseButton
 	if button_event != null:
@@ -251,20 +273,26 @@ func _pawn_at(mouse: Vector2) -> int:
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	var key_event: InputEventKey = event as InputEventKey
-	if key_event == null or not key_event.pressed or key_event.echo:
+	if key_event == null or key_event.echo:
 		return
 	# Ctrl/Alt/Meta/Shift 조합은 브라우저·OS 단축키(예: Ctrl+Shift+R 강력 새로고침)이므로 게임 단축키로 쓰지 않는다.
 	if key_event.ctrl_pressed or key_event.alt_pressed or key_event.meta_pressed or key_event.shift_pressed:
 		return
+	var roll_key: bool = key_event.keycode == KEY_R or key_event.keycode == KEY_SPACE
+	if not key_event.pressed:
+		# 키를 떼는 순간 굴린다 (꾹 눌러 모은 파워 게이지 확정)
+		if roll_key and _charging and _charge_by_key:
+			_on_roll_pressed()
+		return
 	if key_event.keycode == KEY_ESCAPE:
 		_cancel_tile_pick()
 		return
-	if _choice_overlay != null or _draft_overlay != null or _result_overlay != null:
+	if _choice_overlay != null or _draft_overlay != null or _result_overlay != null or _stack_overlay != null:
 		return
-	if key_event.keycode == KEY_SPACE:
+	if key_event.keycode == KEY_SPACE and state != null and state.tools[manager.current_player_id()] is ToolHalliGalli:
 		_on_bell_pressed()
-	elif key_event.keycode == KEY_R:
-		_on_roll_pressed()
+	elif roll_key:
+		_begin_charge(true)
 
 
 # ---------------------------------------------------------------------------
@@ -285,6 +313,11 @@ func _new_game() -> void:
 	_log.clear()
 	_toast_label.text = ""
 	_dock_player = -1
+	_fx_generation += 1
+	_fx_busy = false
+	_stop_charge()
+	_presenter.cancel()
+	_close_stack_overlay()
 	state = null
 	manager.start_game(PLAYER_IDS, 0)
 	state = manager.state
@@ -352,6 +385,7 @@ func _build_ui() -> void:
 	_build_action_bar()
 	_build_dock()
 	_build_center_banner()
+	_build_roll_fx()
 	_build_drawers()
 
 
@@ -542,6 +576,9 @@ func _build_action_bar() -> void:
 	add_child(action_row)
 	_roll_button = _make_button("[주사위 굴리기 (R)]", _on_roll_pressed, 19, Color("2b8a3e"), 14)
 	_roll_button.custom_minimum_size = Vector2(280, 44)
+	_roll_button.tooltip_text = "주사위/윷은 꾹 눌러 파워 게이지를 채우고 손을 떼면 굴러갑니다 (R / Space 키도 동일)"
+	_roll_button.button_down.connect(_begin_charge.bind(false))
+	_roll_button.button_up.connect(_on_roll_button_up)
 	action_row.add_child(_roll_button)
 	_stop_button = _make_button("멈추고 이동 확정", _on_stop_pressed, 16, Color("37506b"), 14)
 	_stop_button.custom_minimum_size = Vector2(240, 44)
@@ -1084,6 +1121,8 @@ func _refresh_header() -> void:
 	var queue_text: String = "남은 이동 대기열: %s" % str(manager.move_queue) if not manager.move_queue.is_empty() else ""
 	if manager.command_stack != null and manager.command_stack.interrupt_count() > 0:
 		queue_text += "   개입 대기 카드: %d장 (나중에 낸 카드부터 실행)" % manager.command_stack.interrupt_count()
+	if _fx_busy:
+		queue_text = ""  # 굴림 연출 중에는 결과가 먼저 새지 않게 숨긴다
 	_queue_label.text = queue_text
 	_queue_label.visible = queue_text != ""
 
@@ -1332,7 +1371,7 @@ func _category_text(category: GameEnums.CardCategory) -> String:
 
 
 func _card_usable_now(player_id: int, card: BaseCard) -> bool:
-	if manager.is_game_over or not card.is_playable_in(manager.current_state):
+	if manager.is_game_over or _fx_busy or manager.stack_offer_pending() or not card.is_playable_in(manager.current_state):
 		return false
 	if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN and player_id != manager.current_player_id():
 		return false
@@ -1345,7 +1384,7 @@ func _refresh_controls() -> void:
 	var tool: BaseJudgmentTool = state.tools[player_id]
 	var over: bool = manager.is_game_over
 	var can_roll: bool = not over and (current_phase == TurnManager.State.PHASE_TURN_BEGIN or current_phase == TurnManager.State.PHASE_ROLL_WAIT)
-	_roll_button.disabled = not can_roll or _tile_pick_active
+	_roll_button.disabled = not can_roll or _tile_pick_active or _fx_busy or manager.stack_offer_pending()
 	var can_stop: bool = not over and tool.has_pending_state() and current_phase == TurnManager.State.PHASE_ROLL_WAIT
 	if tool is ToolRussianRoulette:
 		# 러시안 룰렛: [방아쇠 당기기]와 [멈추고 N칸 이동 확정]을 한 세트로 상시 노출한다. 1발도 못 당겼으면 멈추기는 비활성(회색)이고,
@@ -1366,7 +1405,8 @@ func _refresh_controls() -> void:
 	if tool is ToolHalliGalli:
 		_fruit_label.text = "바닥 과일 합계 %s - 어느 한 과일이 5개면 종을 치세요 (적립 보너스 +%d칸)" % [str((tool as ToolHalliGalli).fruit_totals), (tool as ToolHalliGalli).banked_bonus]
 	var window_open: bool = not over and (current_phase == TurnManager.State.PHASE_INTERRUPT_ROLL or current_phase == TurnManager.State.PHASE_RESOLUTION)
-	_skip_button.visible = window_open
+	_skip_button.visible = window_open and not manager.stack_offer_pending()
+	_skip_button.disabled = _fx_busy
 	_pawn_bar.visible = not window_open
 	_castle_button.visible = not over and manager.can_castle(player_id)
 	_bomb_button.visible = not over and manager.can_pass_bomb(player_id)
@@ -1390,7 +1430,7 @@ func _refresh_controls() -> void:
 		elif pawn.is_imprisoned:
 			status += " 감옥"
 		button.text = "%d %s (%s)" % [pawn.slot, pawn.display_label(), status]
-		button.disabled = not selecting or not pawn.is_selectable()
+		button.disabled = not selecting or not pawn.is_selectable() or _fx_busy
 		button.pressed.connect(_on_pawn_pressed.bind(pawn.entity_id))
 		button.mouse_entered.connect(_preview_pawn.bind(pawn.entity_id))
 		button.mouse_exited.connect(_clear_highlight)
@@ -1403,6 +1443,10 @@ func _refresh_controls() -> void:
 func _hint_text(current_phase: TurnManager.State, tool: BaseJudgmentTool) -> String:
 	if manager.is_game_over:
 		return "게임 종료. [새 게임]으로 다시 시작하세요."
+	if _fx_busy:
+		return "굴러가는 중..."
+	if manager.stack_offer_pending():
+		return "윷놀이 기물 업기: [업기 (하나로 합체)] 또는 [그냥 두기 (개별 유지)]를 고르세요. (시간이 지나면 자동으로 업기)"
 	if _tile_pick_active:
 		return "타일 선택 모드: 보드판에서 사용할 타일(초록 테두리)을 클릭하세요. 취소는 ESC 또는 오른쪽 클릭."
 	match current_phase:
@@ -1410,11 +1454,13 @@ func _hint_text(current_phase: TurnManager.State, tool: BaseJudgmentTool) -> Str
 			var pending: int = state.penalty_of(manager.current_player_id())
 			if pending != 0:
 				return "우노 +4 페널티 %d칸이 걸려 있습니다! 즉발 카드가 있으면 [폭탄 떠넘기기], 아니면 굴리는 순간 가장 앞선 말이 후퇴합니다." % pending
+			if _tool_has_gauge():
+				return "굴리기 버튼(또는 R/Space)을 꾹 눌러 파워 게이지를 채우고 손을 떼면 굴러갑니다. 카드(▣ 표시는 타일 클릭)도 쓸 수 있습니다. (판정 도구: %s)" % tool.display_name
 			return "카드(▣ 표시는 타일을 클릭해 설치/소환)를 쓰거나 [굴리기]를 누르세요. (판정 도구: %s)" % tool.display_name
 		TurnManager.State.PHASE_ROLL_WAIT:
 			if tool.has_pending_state():
 				return "계속 당기거나, 멈추고 누적 칸수만큼 이동하세요. 실탄이 나오면 모두 증발합니다!"
-			return "다시 굴려야 합니다 (재굴림)." if not manager.move_queue.is_empty() else "굴리세요."
+			return "다시 굴려야 합니다 (재굴림)." if not manager.move_queue.is_empty() else ("굴리기 버튼을 꾹 눌렀다 떼서 굴리세요." if _tool_has_gauge() else "굴리세요.")
 		TurnManager.State.PHASE_INTERRUPT_ROLL:
 			return "[개입 기회! 카드를 사용하거나 '패스'를 누르세요]  눈금이 정해졌습니다. 개입 카드를 가진 플레이어는 지금 카드를 누르세요."
 		TurnManager.State.PHASE_SELECT_PAWN:
@@ -1440,12 +1486,55 @@ func _act(action: StringName, params: Dictionary = {}) -> void:
 
 
 func _on_roll_pressed() -> void:
-	if manager.is_game_over or _roll_button.disabled:
+	# 손을 뗀 순간의 파워 게이지 값을 연출에 넘긴다 (게이지가 없는 도구·클릭은 0.5).
+	_pending_power = _charge_value if _charging and _tool_has_gauge() else 0.5
+	_stop_charge()
+	if manager.is_game_over or _roll_button.disabled or _fx_busy:
 		return
 	if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN:
 		_act(&"proceed")
 	if manager.current_state == TurnManager.State.PHASE_ROLL_WAIT:
 		_act(&"roll")
+
+
+## 굴림 버튼/키를 누르기 시작했다. 주사위·윷이면 파워 게이지가 좌우로 왕복하기 시작한다.
+func _begin_charge(by_key: bool) -> void:
+	if _charging or _roll_button.disabled or _fx_busy or manager.is_game_over or _stack_overlay != null:
+		return
+	if _tile_pick_active:
+		return
+	_charging = true
+	_charge_by_key = by_key
+	_charge_clock = 0.0
+	_charge_value = 0.0
+	_power_bar.visible = _tool_has_gauge() and not instant_roll_for_test
+	_power_label.visible = _power_bar.visible
+
+
+func _on_roll_button_up() -> void:
+	# pressed(굴리기 확정)가 먼저 처리된 뒤에도 게이지가 남아 있으면(버튼 밖에서 뗌) 취소한다.
+	call_deferred("_stop_charge_if_unconfirmed")
+
+
+func _stop_charge_if_unconfirmed() -> void:
+	if _charging and not _charge_by_key:
+		_stop_charge()
+
+
+func _stop_charge() -> void:
+	_charging = false
+	_charge_by_key = false
+	if _power_bar != null:
+		_power_bar.visible = false
+		_power_label.visible = false
+
+
+## 현재 판정 도구가 홀드 & 릴리즈 파워 게이지를 쓰는가 (기본 D6, 박달나무 윷).
+func _tool_has_gauge() -> bool:
+	if state == null:
+		return false
+	var tool: BaseJudgmentTool = state.tools[manager.current_player_id()]
+	return tool.tool_id == &"D6" or tool.tool_id == &"YUT"
 
 
 func _on_stop_pressed() -> void:
@@ -1681,6 +1770,7 @@ func _close_choice() -> void:
 
 func _refresh_overlays() -> void:
 	_refresh_draft_overlay()
+	_refresh_stack_overlay()
 	if manager.is_game_over and _result_overlay == null:
 		_show_result_overlay()
 
@@ -1900,10 +1990,15 @@ func _on_law_applied(law: LawResource, timing: String, dice_before: int, dice_af
 func _on_event(kind: StringName, data: Dictionary) -> void:
 	match kind:
 		&"roll_resolved":
-			var roll_text: String = _log_roll(data)
-			var details: Dictionary = (data["result"] as Dictionary)["details"]
-			var fired: bool = bool(details.get("fired", false))
-			_show_center_banner("P%d  %s" % [data["player_id"], roll_text.strip_edges()], Color("ff8787") if fired else Color("fff3bf"))
+			_handle_roll_event(data)
+		&"stack_resolved":
+			var stack_names: Array[String] = []
+			for member_id: Variant in data["members"]:
+				stack_names.append(_pawn_name(int(member_id)))
+			if data["stacked"]:
+				_log_line("[업기] P%d: %s 하나로 합체!" % [data["player_id"], ", ".join(stack_names)], Color("ffd43b"))
+			else:
+				_log_line("[업기] P%d: 그냥 두기 - 개별 유지" % data["player_id"], Color("adb5bd"))
 		&"move_resolved": _log_move(data)
 		&"card_played":
 			var card: BaseCard = CardRegistry.get_card(data["card_id"])
@@ -2059,3 +2154,105 @@ func _show_center_banner(text: String, color: Color) -> void:
 	tween.tween_property(_center_banner, "modulate:a", 0.0, 0.45)
 	tween.tween_callback(func() -> void: _center_banner.visible = false)
 	_center_banner.set_meta("fade", tween)
+
+
+## 파워 게이지(굴림 버튼 위)와 판정 도구 연출기를 만든다.
+func _build_roll_fx() -> void:
+	_power_bar = ProgressBar.new()
+	_power_bar.position = Vector2(533, 518)
+	_power_bar.size = Vector2(300, 18)
+	_power_bar.min_value = 0.0
+	_power_bar.max_value = 100.0
+	_power_bar.show_percentage = false
+	_power_bar.visible = false
+	_power_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_power_bar.add_theme_stylebox_override("background", _style(Color("0b0e16"), Color("5c6b94"), 2, 9, 0, 0))
+	_power_bar.add_theme_stylebox_override("fill", _style(Color("51cf66"), Color("fff3bf"), 2, 7, 0, 0))
+	add_child(_power_bar)
+	_power_label = _make_label("POWER 0%", 12, Color("fff3bf"))
+	_power_label.position = Vector2(533, 498)
+	_power_label.size = Vector2(300, 18)
+	_power_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_power_label.visible = false
+	add_child(_power_label)
+	_presenter = RollPresenter.new()
+	add_child(_presenter)
+
+
+## 엔진이 확정한 굴림 결과를 연출한 뒤 로그·중앙 배너로 공개한다. 연출 중에는 입력을 잠가 결과가 먼저 새지 않게 한다.
+func _handle_roll_event(data: Dictionary) -> void:
+	var result: Dictionary = data["result"]
+	var tool_id: StringName = result["tool_id"]
+	_presenter.instant = instant_roll_for_test
+	if instant_roll_for_test or not RollPresenter.supports(tool_id):
+		_reveal_roll(data)
+		return
+	var generation: int = _fx_generation
+	_fx_busy = true
+	_refresh_controls()
+	await _presenter.play(tool_id, result, _pending_power)
+	if generation != _fx_generation:
+		return
+	_fx_busy = false
+	_reveal_roll(data)
+	_refresh_all()
+
+
+func _reveal_roll(data: Dictionary) -> void:
+	var roll_text: String = _log_roll(data)
+	var details: Dictionary = (data["result"] as Dictionary)["details"]
+	var fired: bool = bool(details.get("fired", false))
+	_show_center_banner("P%d  %s" % [data["player_id"], roll_text.strip_edges()], Color("ff8787") if fired else Color("fff3bf"))
+
+
+## 윷놀이 기물의 [선택적 업기] 팝업: 화면 중앙에 [업기 (하나로 합체)] / [그냥 두기 (개별 유지)] 두 버튼을 띄운다.
+func _refresh_stack_overlay() -> void:
+	var pending: bool = manager.stack_offer_pending() and not manager.is_game_over
+	if not pending:
+		_close_stack_overlay()
+		return
+	if _stack_overlay != null:
+		return
+	var offer: Dictionary = manager.pending_stack_offer()
+	var mover: PlayerPawn = state.get_pawn(int(offer["mover"]))
+	var names: Array[String] = []
+	for other_id: Variant in offer["others"]:
+		names.append(state.get_pawn(int(other_id)).display_label())
+	_stack_overlay = _new_overlay()
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_stack_overlay.add_child(center)
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", _style(Color("131826"), COLOR_GOLD, 4, 18, 26, 20))
+	center.add_child(panel)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 10)
+	panel.add_child(box)
+	var title := _make_label("윷놀이 기물 - 선택적 업기", 20, COLOR_GOLD)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(title)
+	var body := _make_label("%s이(가) 아군 [%s]와(과) 같은 타일에 도착했습니다.\n하나로 합체할까요?" % [mover.display_label(), ", ".join(names)], 14, Color("dee2e6"))
+	body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(body)
+	var buttons := HBoxContainer.new()
+	buttons.add_theme_constant_override("separation", 12)
+	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.add_child(buttons)
+	var stack_button: Button = _make_button("[업기 (하나로 합체)]", _on_stack_choice.bind(true), 16, Color("2b8a3e"), 12)
+	stack_button.custom_minimum_size = Vector2(230, 48)
+	buttons.add_child(stack_button)
+	var keep_button: Button = _make_button("[그냥 두기 (개별 유지)]", _on_stack_choice.bind(false), 16, Color("495057"), 12)
+	keep_button.custom_minimum_size = Vector2(230, 48)
+	buttons.add_child(keep_button)
+	add_child(_stack_overlay)
+
+
+func _on_stack_choice(stack: bool) -> void:
+	_close_stack_overlay()
+	_act(&"stack_choice", {"stack": stack})
+
+
+func _close_stack_overlay() -> void:
+	if _stack_overlay != null:
+		_stack_overlay.queue_free()
+		_stack_overlay = null

@@ -111,6 +111,20 @@ func _setup_scene() -> void:
 			state.place_attachment(10, Hotel.new(3))
 			_board._refresh_all()
 			_board._on_roll_pressed()
+		"stack":
+			_finish_draft()
+			for player_id: int in [1, 2, 3, 4]:
+				(state.hands[player_id] as Array).clear()
+			state.evolve_pawn(state.get_pawn(11), GameEnums.PawnKind.YUT)
+			state.evolve_pawn(state.get_pawn(12), GameEnums.PawnKind.CHESS)
+			state.get_pawn(12).place_at(4)
+			state.get_pawn(12).has_left_start = true
+			state.get_pawn(11).place_at(2)
+			state.get_pawn(11).has_left_start = true
+			state.tools[1] = ScriptedTool.new([2])
+			_board.instant_roll_for_test = true
+			_board._on_roll_pressed()
+			_board._act(&"select_pawn", {"pawn_id": 11})
 		"reverse":
 			_finish_draft()
 			_board.manager.reverse_turn_order()

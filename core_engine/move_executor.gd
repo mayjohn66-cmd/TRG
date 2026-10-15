@@ -252,7 +252,8 @@ static func _resolve_captures(state: GameState, mover: PlayerPawn, ctx: RuleCont
 		return
 	ctx.capturer = mover
 	ctx.captured_pawns = victims
-	ctx.capture_extra_turn = true
+	# 윷놀이 기물의 고유 능력 [신명나는 사냥]: 잡기 추가 턴은 윷놀이 기물로 잡았을 때만 얻는다.
+	ctx.capture_extra_turn = mover.kind == GameEnums.PawnKind.YUT
 	ctx.capture_charge_steps = 0
 	ctx.trigger_timing = RuleContext.ON_CAPTURE
 	ctx = state.rulebook.process_context(ctx)
@@ -314,13 +315,25 @@ static func retreat(state: GameState, pawn: PlayerPawn, steps: int) -> Array[int
 	return path
 
 
-## 업기: 법전(allow_stacking)이 기물 고유 능력(can_stack_with)보다 우선한다. 출발선(0번)에서는 업지 않는다.
+## 업기: 윷놀이 기물의 고유 능력이다 (법전 allow_stacking이 우선). 출발선(0번)에서는 업지 않는다.
+## ctx.defer_stack_choice가 켜져 있으면 즉시 합치지 않고 report.stack_offer로 플레이어의 선택을 요청한다.
 static func _resolve_stacking(state: GameState, mover: PlayerPawn, ctx: RuleContext, report: MoveReport) -> void:
 	if not ctx.allow_stacking or mover.current_tile_idx == GameEnums.GOAL_TILE:
 		return
+	var partners: Array[PlayerPawn] = []
 	for other: PlayerPawn in state.leaders_at(mover.current_tile_idx):
 		if other != mover and mover.can_stack_with(other):
-			state.stack_pawns(mover, other)
-			for member: PlayerPawn in mover.stack_members():
-				if not report.stacked_pawn_ids.has(member.entity_id):
-					report.stacked_pawn_ids.append(member.entity_id)
+			partners.append(other)
+	if partners.is_empty():
+		return
+	if ctx.defer_stack_choice:
+		var ids: Array[int] = []
+		for partner: PlayerPawn in partners:
+			ids.append(partner.entity_id)
+		report.stack_offer = {"mover": mover.entity_id, "others": ids}
+		return
+	for other: PlayerPawn in partners:
+		state.stack_pawns(mover, other)
+	for member: PlayerPawn in mover.stack_members():
+		if not report.stacked_pawn_ids.has(member.entity_id):
+			report.stacked_pawn_ids.append(member.entity_id)

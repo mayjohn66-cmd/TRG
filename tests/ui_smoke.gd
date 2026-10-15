@@ -20,6 +20,7 @@ var _bangs: int = 0
 var _roulette_seen: int = 0
 var _roulette_forced: bool = false
 var _board_clicks: int = 0
+var _stack_choices: int = 0
 var _failures: Array[String] = []
 var _rng := RandomNumberGenerator.new()
 
@@ -32,6 +33,7 @@ func _process(_delta: float) -> bool:
 		_board = scene.instantiate()
 		root.add_child(_board)
 		_board.manager.step_delay_sec = 0.0
+		_board.instant_roll_for_test = true  # 굴림 연출 대기 시간을 0초로 건너뛴다 (연출 자체는 ui_fx_test.gd가 검증)
 		return false
 	if not _checked_layout:
 		_checked_layout = true
@@ -113,6 +115,11 @@ func _step_once() -> void:
 				# 디버그 패널의 판정 도구 드롭다운으로 현재 플레이어를 러시안 룰렛으로 바꿔 룰렛 전용 UI를 검증한다.
 				_roulette_forced = true
 				_board._tool_option.item_selected.emit(ToolRegistry.ALL_IDS.find(&"REVOLVER"))
+				# 윷놀이 기물이 있어야 [선택적 업기] 팝업이 뜬다: P1·P2의 기본 말 두 개씩을 윷 세트로 시작시킨다 (진화 증강과 같은 경로).
+				for pawn_id: int in [11, 12, 21, 22]:
+					if _board.state.get_pawn(pawn_id).kind == GameEnums.PawnKind.BASIC:
+						_board.state.evolve_pawn(_board.state.get_pawn(pawn_id), GameEnums.PawnKind.YUT)
+				_board._refresh_all()
 			if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN and (_try_tile_card(manager) or _try_turn_begin_buttons(manager)):
 				return
 			if _board._stop_button.visible and not _board._stop_button.disabled and _rng.randi_range(0, 1) == 0:
@@ -150,6 +157,17 @@ func _step_once() -> void:
 			chosen.mouse_exited.emit()
 			chosen.pressed.emit()
 		TurnManager.State.PHASE_INTERRUPT_ROLL, TurnManager.State.PHASE_RESOLUTION:
+			if manager.stack_offer_pending():
+				# 윷놀이 기물 [선택적 업기] 팝업: 화면 중앙의 두 버튼 중 하나를 누른다.
+				_assert(_board._stack_overlay != null, "업기 제안이 있으면 선택 팝업이 떠야 한다")
+				if _board._stack_overlay != null:
+					var choices: Array[Button] = []
+					for node: Node in _board._stack_overlay.find_children("*", "Button", true, false):
+						choices.append(node as Button)
+					_assert(choices.size() == 2, "업기 팝업에는 [업기]/[그냥 두기] 버튼 두 개")
+					choices[_rng.randi_range(0, choices.size() - 1)].pressed.emit()
+					_stack_choices += 1
+				return
 			_assert(_board._skip_button.visible, "개입 창에는 [개입 패스(진행)] 버튼이 보여야 한다")
 			_assert(_board._hint_label.text.contains("개입 기회"), "개입 안내 문구가 보여야 한다")
 			if not _try_interrupt_card(manager):
@@ -297,7 +315,7 @@ func _finish() -> bool:
 	var phase_names: Array[String] = []
 	for phase: int in _seen_phases.keys():
 		phase_names.append(str(phase))
-	print("UI_SMOKE actions=%d round=%d game_over=%s winner=%d reason=%s phases=%d drafts=%s tile_picks=%d cards=%d evolutions=%d bombs_passed=%d castles=%d bangs=%d roulette=%d board_clicks=%d" % [_actions, _board.state.round_number, manager.is_game_over, _board.state.winner, VictoryChecker.reason_text(_board._last_reason), _seen_phases.size(), str(_draft_rounds), _tile_picks, _cards_played, _evolutions, _bombs_passed, _castles, _bangs, _roulette_seen, _board_clicks])
+	print("UI_SMOKE actions=%d round=%d game_over=%s winner=%d reason=%s phases=%d drafts=%s tile_picks=%d cards=%d evolutions=%d bombs_passed=%d castles=%d bangs=%d roulette=%d board_clicks=%d stack_choices=%d" % [_actions, _board.state.round_number, manager.is_game_over, _board.state.winner, VictoryChecker.reason_text(_board._last_reason), _seen_phases.size(), str(_draft_rounds), _tile_picks, _cards_played, _evolutions, _bombs_passed, _castles, _bangs, _roulette_seen, _board_clicks, _stack_choices])
 	_assert(manager.is_game_over, "치트 없이 한 판이 끝까지 진행되어 승리자가 나와야 한다 (조작 %d회)" % _actions)
 	_assert(_draft_rounds.has(1), "1라운드 드래프트가 열렸어야 한다")
 	_assert(_board._result_overlay != null, "게임 종료 결과창이 떠야 한다")

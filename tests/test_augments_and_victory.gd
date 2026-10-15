@@ -521,20 +521,23 @@ func test_special_victory_janggun_mungun_needs_three_chained_captures() -> void:
 	check_eq(_reason(make_state(), 1, null, 3), &"", "장기 4세트가 아니면 무효")
 
 
-func test_janggun_mungun_through_a_real_turn_with_capture_extra_turns() -> void:
+func test_janggun_mungun_through_a_real_turn_with_three_captures() -> void:
+	# 장기 기물은 잡기 추가 턴이 없으므로, 한 턴에 3연속 잡기는 재굴림으로 쌓은 이동 대기열로 만든다.
 	var manager: TurnManager = _manager(2, false, {1: _loadout(Kind.JANGGI)})
 	place(manager.state, 11, 1, [0])
 	place(manager.state, 21, 2, [1])
 	place(manager.state, 22, 4, [3])
 	place(manager.state, 23, 6, [5])
-	manager.state.tools[1] = ScriptedTool.new([1, 2, 2])
+	manager.state.tools[1] = ScriptedTool.new([ScriptedTool.reroll_of(1), ScriptedTool.reroll_of(2), 2])
 	var winners: Array = []
 	manager.game_over.connect(func(winner_id: int, reason: StringName) -> void: winners.append([winner_id, reason]))
+	_do(manager, 1, &"proceed")
+	_do(manager, 1, &"roll")
+	_do(manager, 1, &"roll")
+	_do(manager, 1, &"roll")
 	for step: int in 3:
-		_do(manager, 1, &"proceed")
-		_do(manager, 1, &"roll")
 		_do(manager, 1, &"select_pawn", {"pawn_id": 11})
-	check_eq(winners, [[1, VictoryChecker.JANGGUN_MUNGUN]], "잡기 추가 턴이 이어지는 한 턴 안에서 3연속 잡기")
+	check_eq(winners, [[1, VictoryChecker.JANGGUN_MUNGUN]], "한 턴 안에서 3연속 잡기")
 	check(manager.is_game_over, "게임 종료")
 	_dispose(manager)
 
@@ -544,16 +547,14 @@ func test_capture_chain_resets_when_the_turn_passes() -> void:
 	place(manager.state, 11, 1, [0])
 	place(manager.state, 21, 2, [1])
 	place(manager.state, 22, 4, [3])
-	manager.state.tools[1] = ScriptedTool.new([1, 2, 1])
+	manager.state.tools[1] = ScriptedTool.new([ScriptedTool.reroll_of(1), 2])
 	manager.state.tools[2] = ScriptedTool.new([1])
-	for step: int in 2:
-		_do(manager, 1, &"proceed")
-		_do(manager, 1, &"roll")
-		_do(manager, 1, &"select_pawn", {"pawn_id": 11})
 	_do(manager, 1, &"proceed")
 	_do(manager, 1, &"roll")
-	_do(manager, 1, &"select_pawn", {"pawn_id": 12})  # 잡지 못하고 턴 종료
-	check_eq(manager.current_player_id(), 2, "턴이 넘어감")
+	_do(manager, 1, &"roll")
+	for step: int in 2:
+		_do(manager, 1, &"select_pawn", {"pawn_id": 11})
+	check_eq(manager.current_player_id(), 2, "일반 기물은 추가 턴이 없어 턴이 넘어감")
 	check_eq(manager._chain_captures, 0, "연속 잡기 카운터 초기화")
 	check(not manager.is_game_over, "2연속으로는 승리하지 않음")
 	_dispose(manager)

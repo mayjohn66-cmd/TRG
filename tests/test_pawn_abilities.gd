@@ -152,7 +152,7 @@ func test_chosun_formation_restrains_instead_of_capturing() -> void:
 	check(state.get_pawn(21).has_left_start, "출발 상태 유지")
 	check_eq(state.get_pawn(21).restrained_turns, 1, "1턴 구속")
 	check_eq(report.restrained_pawn_ids, [21], "보고서에 구속 기록")
-	check(report.extra_turn, "잡기 보너스는 유지")
+	check(not report.extra_turn, "윷놀이 기물이 아니므로 추가 턴은 없음")
 	var single := make_state(2, 1, {1: [Vector2i(Kind.JANGGI, 1), 0, 0, 0]})
 	place(single, 11, 2)
 	place(single, 21, 4)

@@ -28,6 +28,8 @@ var path_nodes: Array[int] = []
 var is_canceled: bool = false
 ## true면 UI 미리보기용 Dry-Run이다: 법전은 수치만 조용히 계산하고 law_applied 시그널(로그·깜빡임)을 내지 않는다.
 var is_preview: bool = false
+## true면 업기 가능한 도착이 생겨도 즉시 합치지 않고 MoveReport.stack_offer로 알린다 (TurnManager가 플레이어의 [업기/그냥 두기] 선택을 받는다).
+var defer_stack_choice: bool = false
 ## 교칙·콘텐츠 계층이 자유롭게 주고받는 부가 데이터.
 var metadata: Dictionary = {}
 

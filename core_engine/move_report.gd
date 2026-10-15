@@ -33,6 +33,8 @@ var pushed_back: bool = false
 var restrained_pawn_ids: Array[int] = []
 ## 이번 이동의 눈금·경로를 실제로 바꾼 교칙들의 요약 문구 ("LAW_08 결승선 문턱 높이기" 형식).
 var law_notes: Array[String] = []
+## 업기 선택이 필요한 도착: {"mover": 이동한 말 ID, "others": 합칠 수 있는 아군 대표 말 ID들}. 없으면 빈 Dictionary.
+var stack_offer: Dictionary = {}
 
 
 func merge(other: MoveReport) -> void:
@@ -62,6 +64,8 @@ func merge(other: MoveReport) -> void:
 	pushed_back = pushed_back or other.pushed_back
 	restrained_pawn_ids.append_array(other.restrained_pawn_ids)
 	law_notes.append_array(other.law_notes)
+	if stack_offer.is_empty():
+		stack_offer = other.stack_offer
 
 
 func to_dict() -> Dictionary:
@@ -91,4 +95,5 @@ func to_dict() -> Dictionary:
 		"pushed_back": pushed_back,
 		"restrained": restrained_pawn_ids,
 		"law_notes": law_notes,
+		"stack_offer": stack_offer,
 	}

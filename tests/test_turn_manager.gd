@@ -209,8 +209,8 @@ func test_round_end_runs_npc_phase_and_advances_round() -> void:
 	_dispose(manager)
 
 
-func test_capture_grants_extra_turn_to_same_player() -> void:
-	var manager: TurnManager = _new_manager()
+func test_yut_capture_grants_extra_turn_to_same_player() -> void:
+	var manager: TurnManager = _new_manager(2, true, {1: [Vector2i(GameEnums.PawnKind.YUT, 1), 0, 0, 0]})
 	place(manager.state, 21, 2, [1])
 	_set_tool(manager, 1, ScriptedTool.new([2]))
 	_do(manager, 1, &"proceed")
@@ -219,6 +219,99 @@ func test_capture_grants_extra_turn_to_same_player() -> void:
 	check_eq(manager.state.current_player, 1, "잡기 후 같은 플레이어가 한 번 더")
 	check_eq(manager.current_state, Phase.PHASE_TURN_BEGIN, "새 턴으로 시작")
 	_dispose(manager)
+
+
+func test_non_yut_capture_does_not_grant_an_extra_turn() -> void:
+	var manager: TurnManager = _new_manager()
+	place(manager.state, 21, 2, [1])
+	_set_tool(manager, 1, ScriptedTool.new([2]))
+	_do(manager, 1, &"proceed")
+	_do(manager, 1, &"roll")
+	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
+	check_eq(manager.state.get_pawn(21).current_tile_idx, 0, "잡기는 수행")
+	check_eq(manager.current_player_id(), 2, "일반 기물은 추가 굴림 없이 턴 종료")
+	_dispose(manager)
+
+
+func _stack_offer_manager() -> TurnManager:
+	var manager: TurnManager = _new_manager(2, true, {1: [Vector2i(GameEnums.PawnKind.YUT, 1), Vector2i(GameEnums.PawnKind.CHESS, 1), 0, 0]})
+	manager.stack_choice_enabled = true
+	place(manager.state, 12, 4, [3])
+	place(manager.state, 11, 2, [1])
+	_set_tool(manager, 1, ScriptedTool.new([2]))
+	_do(manager, 1, &"proceed")
+	_do(manager, 1, &"roll")
+	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
+	return manager
+
+
+func test_yut_stack_choice_waits_for_the_player_and_stacks_on_request() -> void:
+	var manager: TurnManager = _stack_offer_manager()
+	check_eq(manager.current_state, Phase.PHASE_RESOLUTION, "정산 단계에서 선택을 기다림")
+	check(manager.stack_offer_pending(), "업기 선택 대기")
+	check(manager.state.get_pawn(12).carrier == null, "선택 전에는 합치지 않음")
+	var events: Array = _collect_events(manager)
+	_do(manager, 1, &"stack_choice", {"stack": true})
+	check(not manager.stack_offer_pending(), "선택 완료")
+	check_eq(manager.state.get_pawn(12).carrier, manager.state.get_pawn(11), "업기를 선택하면 합체")
+	var resolved: Array = events.filter(func(e: Dictionary) -> bool: return e["kind"] == &"stack_resolved")
+	check_eq(resolved.size(), 1, "stack_resolved 이벤트")
+	check_eq(manager.current_player_id(), 2, "선택 뒤 턴이 이어짐")
+	_dispose(manager)
+
+
+func test_yut_stack_choice_can_keep_pawns_separate() -> void:
+	var manager: TurnManager = _stack_offer_manager()
+	_do(manager, 1, &"stack_choice", {"stack": false})
+	check(manager.state.get_pawn(12).carrier == null, "그냥 두기를 선택하면 개별 유지")
+	check_eq(manager.state.get_pawn(11).current_tile_idx, manager.state.get_pawn(12).current_tile_idx, "같은 타일에 공존")
+	_dispose(manager)
+
+
+func test_yut_stack_choice_defaults_to_stacking_on_timeout_and_rejects_wrong_actors() -> void:
+	var manager: TurnManager = _stack_offer_manager()
+	var rejected: Array = _rejections(manager)
+	_do(manager, 2, &"stack_choice", {"stack": false})
+	check_eq(rejected.size(), 1, "상대 플레이어의 선택은 거부")
+	check(manager.stack_offer_pending(), "여전히 대기")
+	manager.tick(GameEnums.PHASE_TIME_SELECT + 0.1)
+	check(manager.state.get_pawn(12).carrier == manager.state.get_pawn(11), "시간 초과 시 기본값은 업기")
+	_do(manager, 1, &"stack_choice", {"stack": true})
+	check_eq(rejected.size(), 2, "대기 중이 아니면 거부")
+	_dispose(manager)
+
+
+func test_stack_choice_is_skipped_for_non_yut_pawns_law_02_and_headless_default() -> void:
+	var plain: TurnManager = _new_manager()
+	plain.stack_choice_enabled = true
+	place(plain.state, 12, 4, [3])
+	place(plain.state, 11, 2, [1])
+	_set_tool(plain, 1, ScriptedTool.new([2]))
+	_do(plain, 1, &"proceed")
+	_do(plain, 1, &"roll")
+	_do(plain, 1, &"select_pawn", {"pawn_id": 11})
+	check(not plain.stack_offer_pending(), "일반 기물은 선택을 묻지 않음")
+	_dispose(plain)
+	var sealed: TurnManager = _new_manager(2, true, {1: [Vector2i(GameEnums.PawnKind.YUT, 1), 0, 0, 0]})
+	sealed.stack_choice_enabled = true
+	add_law(sealed.state, &"LAW_02")
+	place(sealed.state, 12, 4, [3])
+	place(sealed.state, 11, 2, [1])
+	_set_tool(sealed, 1, ScriptedTool.new([2]))
+	_do(sealed, 1, &"proceed")
+	_do(sealed, 1, &"roll")
+	_do(sealed, 1, &"select_pawn", {"pawn_id": 11})
+	check(not sealed.stack_offer_pending() and sealed.state.get_pawn(12).carrier == null, "LAW_02가 있으면 제안 자체가 없음")
+	_dispose(sealed)
+	var auto: TurnManager = _new_manager(2, true, {1: [Vector2i(GameEnums.PawnKind.YUT, 1), 0, 0, 0]})
+	place(auto.state, 12, 4, [3])
+	place(auto.state, 11, 2, [1])
+	_set_tool(auto, 1, ScriptedTool.new([2]))
+	_do(auto, 1, &"proceed")
+	_do(auto, 1, &"roll")
+	_do(auto, 1, &"select_pawn", {"pawn_id": 11})
+	check(not auto.stack_offer_pending() and auto.state.get_pawn(12).carrier == auto.state.get_pawn(11), "기본(헤드리스/AI)은 선택 없이 자동 업기")
+	_dispose(auto)
 
 
 func test_interrupt_window_resolves_cards_lifo_and_only_when_hands_exist() -> void:

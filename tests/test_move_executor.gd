@@ -60,17 +60,29 @@ func test_law_08_bounce_through_shortcut_exit_28() -> void:
 	check_eq(report.path, int_array([28, 0, 28, 27]), "지름길 출구에서 튕김")
 
 
-func test_capture_sends_enemy_to_start_and_grants_extra_turn() -> void:
-	var state := make_state()
+func test_capture_sends_enemy_to_start_and_yut_pawn_grants_extra_turn() -> void:
+	var state := make_state(2, 1, {1: _yut_loadout()})
 	place(state, 11, 2, [1])
 	place(state, 21, 4, [3])
 	var report: MoveReport = move(state, 11, 2)
 	check_eq(report.captured_pawn_ids, int_array([21]), "잡힌 말")
-	check(report.extra_turn, "추가 턴")
+	check(report.extra_turn, "신명나는 사냥: 윷놀이 기물이 잡으면 추가 턴")
 	var victim: PlayerPawn = state.get_pawn(21)
 	check_eq(victim.current_tile_idx, 0, "출발선 복귀")
 	check(not victim.has_left_start, "출발 상태 초기화")
 	check(state.hurt_players.has(2), "피해자 기록(ACT_05 조건)")
+
+
+func test_non_yut_pawns_capture_without_extra_turn() -> void:
+	for kind: GameEnums.PawnKind in [GameEnums.PawnKind.BASIC, GameEnums.PawnKind.CHESS, GameEnums.PawnKind.JANGGI, GameEnums.PawnKind.MONOPOLY]:
+		var loadout: Array = [0, 0, 0, 0] if kind == GameEnums.PawnKind.BASIC else [Vector2i(kind, 1), 0, 0, 0]
+		var state := make_state(2, 1, {1: loadout})
+		place(state, 11, 2, [1])
+		place(state, 21, 4, [3])
+		var report: MoveReport = move(state, 11, 2)
+		check_eq(report.captured_pawn_ids, int_array([21]), "%d: 잡기는 그대로 수행" % kind)
+		check(not report.extra_turn, "%d: 추가 굴림 기회 없음" % kind)
+		check_eq(state.get_pawn(21).current_tile_idx, 0, "%d: 출발선으로" % kind)
 
 
 func test_start_tile_is_safe() -> void:
@@ -131,20 +143,40 @@ func test_law_03_ignores_small_rolls() -> void:
 	check(report.effect_names.is_empty(), "5 이하는 발동 안 함")
 
 
-func test_stacking_is_automatic_for_yut_and_enforced_by_law_02() -> void:
-	var state := make_state()
+func test_yut_pawn_stacks_with_allies_of_any_kind_and_carried_pawns_move_together() -> void:
+	var state := make_state(2, 1, {1: [Vector2i(GameEnums.PawnKind.YUT, 1), Vector2i(GameEnums.PawnKind.CHESS, 1), 0, 0]})
+	place(state, 12, 4, [3])  # 체스 폰이 먼저 와 있고
+	place(state, 11, 2, [1])
+	var report: MoveReport = move(state, 11, 2)  # 윷놀이 기물이 도착
+	check_eq(state.get_pawn(12).carrier, state.get_pawn(11), "윷놀이 기물은 다른 종류의 아군도 업는다")
+	check(report.stacked_pawn_ids.has(12), "보고서에 업기 기록")
+	move(state, 11, 3)
+	check_eq(state.get_pawn(12).current_tile_idx, state.get_pawn(11).current_tile_idx, "업힌 말은 같이 이동")
+
+
+func test_allies_arriving_on_a_yut_pawn_also_stack() -> void:
+	var state := make_state(2, 1, {1: [Vector2i(GameEnums.PawnKind.YUT, 1), Vector2i(GameEnums.PawnKind.GO, 1), 0, 0]})
 	place(state, 11, 4, [3])
 	place(state, 12, 2, [1])
-	var report: MoveReport = move(state, 12, 2)
-	check_eq(state.get_pawn(11).carrier, state.get_pawn(12), "같은 칸 아군은 업힘")
-	check(report.stacked_pawn_ids.has(11), "보고서에 업기 기록")
-	var leader: PlayerPawn = state.get_pawn(12)
-	move(state, 12, 3)
-	check_eq(state.get_pawn(11).current_tile_idx, leader.current_tile_idx, "업힌 말은 같이 이동")
+	move(state, 12, 2)  # 바둑돌이 내 윷놀이 기물이 있는 칸에 도착
+	check_eq(state.get_pawn(11).carrier, state.get_pawn(12), "아군이 윷놀이 기물이 있는 칸에 도착해도 업힘")
+
+
+func test_non_yut_pawns_never_stack_and_coexist_on_one_tile() -> void:
+	for kind: GameEnums.PawnKind in [GameEnums.PawnKind.BASIC, GameEnums.PawnKind.CHESS, GameEnums.PawnKind.JANGGI, GameEnums.PawnKind.MONOPOLY, GameEnums.PawnKind.GO]:
+		var loadout: Array = [0, 0, 0, 0] if kind == GameEnums.PawnKind.BASIC else [Vector2i(kind, 1), Vector2i(kind, 2), 0, 0]
+		var state := make_state(2, 1, {1: loadout})
+		place(state, 11, 4, [3])
+		place(state, 12, 2, [1])
+		var report: MoveReport = move(state, 12, 3 if kind == GameEnums.PawnKind.GO else 2)  # 바둑 2세트 포석은 눈금 -1
+		check(report.stacked_pawn_ids.is_empty() and report.stack_offer.is_empty(), "%d: 업기 없음" % kind)
+		check(state.get_pawn(11).carrier == null and state.get_pawn(12).carrier == null, "%d: 각각 별개 기물" % kind)
+		check_eq(state.get_pawn(11).current_tile_idx, state.get_pawn(12).current_tile_idx, "%d: 같은 타일에 나란히 공존" % kind)
+		check_eq(state.leaders_at(4).size(), 2, "%d: 대표 말이 둘" % kind)
 
 
 func test_law_02_blocks_new_stacks_but_keeps_existing_ones() -> void:
-	var state := make_state()
+	var state := make_state(2, 1, {1: _yut_loadout()})
 	place(state, 11, 4, [3])
 	place(state, 12, 6, [5])
 	state.stack_pawns(state.get_pawn(12), state.get_pawn(11))  # 이미 업혀 있던 상태 (11을 12가 업음)
@@ -153,17 +185,29 @@ func test_law_02_blocks_new_stacks_but_keeps_existing_ones() -> void:
 	place(state, 12, 8, [7])
 	move(state, 13, 0 + 2)  # 13이 5번에 도착해도 아무것도 업지 않음
 	var third: MoveReport = move(state, 13, 3)  # 8번: 12(+11)와 같은 칸
-	check(third.stacked_pawn_ids.is_empty(), "LAW_02 중에는 새 업기 불가")
+	check(third.stacked_pawn_ids.is_empty() and third.stack_offer.is_empty(), "LAW_02 중에는 새 업기 불가")
 	check_eq(state.get_pawn(11).carrier, state.get_pawn(12), "기존 업기는 분리되지 않음")
 	move(state, 12, 2)
 	check_eq(state.get_pawn(11).current_tile_idx, state.get_pawn(12).current_tile_idx, "기존 업힌 말은 계속 동행")
 
 
-func test_non_yut_pawns_only_stack_with_same_kind_or_yut() -> void:
+func test_defer_stack_choice_reports_an_offer_instead_of_stacking() -> void:
+	var state := make_state(2, 1, {1: _yut_loadout()})
+	place(state, 11, 4, [3])
+	place(state, 12, 2, [1])
+	var ctx: RuleContext = make_ctx(state, 2)
+	ctx.defer_stack_choice = true
+	var report: MoveReport = MoveExecutor.execute(state, state.get_pawn(12), ctx)
+	check_eq(report.stack_offer, {"mover": 12, "others": [11]}, "업기 제안")
+	check(state.get_pawn(11).carrier == null, "선택 전에는 합치지 않음")
+
+
+func test_non_yut_pawns_only_stack_when_a_yut_pawn_is_involved() -> void:
 	var state := make_state(2, 1, {1: [Vector2i(GameEnums.PawnKind.CHESS, 2), Vector2i(GameEnums.PawnKind.GO, 1), Vector2i(GameEnums.PawnKind.YUT, 1), Vector2i(GameEnums.PawnKind.CHESS, 1)]})
 	check(not state.get_pawn(11).can_stack_with(state.get_pawn(12)), "나이트 + 바둑돌 불가")
 	check(state.get_pawn(11).can_stack_with(state.get_pawn(13)), "윷말은 다른 종류와도 업기 가능")
-	check(state.get_pawn(11).can_stack_with(state.get_pawn(14)), "같은 종류는 가능")
+	check(not state.get_pawn(11).can_stack_with(state.get_pawn(14)), "같은 종류여도 윷이 아니면 불가")
+	check(state.get_pawn(13).can_stack_with(state.get_pawn(11)), "방향과 무관하게 윷이 끼면 가능")
 
 
 func test_yut_four_stack_reaching_goal_is_special_victory() -> void:

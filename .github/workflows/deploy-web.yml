@@ -52,6 +52,9 @@ jobs:
       - name: Run UI smoke test (full game without cheats)
         run: godot --headless --path . -s res://tests/ui_smoke.gd
 
+      - name: Run roll effect test (gauge, spin, reels, card flips)
+        run: godot --headless --path . -s res://tests/ui_fx_test.gd
+
       - name: Export web build
         run: |
           mkdir -p build/web
