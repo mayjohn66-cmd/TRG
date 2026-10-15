@@ -342,3 +342,12 @@ func test_everyone_immune_pushes_the_attacker_back() -> void:
 	check(report.pushed_back, "잡을 수 있는 말이 없으면 침입자가 밀려난다")
 	check_eq(state.get_pawn(21).current_tile_idx, 3, "한 칸 뒤로")
 	check(report.captured_pawn_ids.is_empty(), "아무도 잡히지 않음")
+
+
+func test_pawn_tooltip_texts_name_the_unit_and_set_synergy() -> void:
+	check_eq(PawnCatalog.full_name(GameEnums.PawnKind.CHESS, 3), "[체스 3호기 - 비숍]", "전체 이름")
+	check_eq(PawnCatalog.full_name(GameEnums.PawnKind.BASIC, 1), "[기본 말]", "기본 말 이름")
+	var line: String = PawnCatalog.synergy_line(GameEnums.PawnKind.CHESS, 2)
+	check(line.contains("체스 세트 (2/4)") and line.contains("2세트 활성: 캐슬링") and line.contains("체크메이트"), "세트 시너지 현황 (%s)" % line)
+	check(PawnCatalog.synergy_line(GameEnums.PawnKind.GO, 1).contains("2세트 대기: 포석"), "1세트면 2세트 효과는 대기")
+	check_eq(PawnCatalog.synergy_line(GameEnums.PawnKind.BASIC, 1), "", "기본 말은 시너지 없음")

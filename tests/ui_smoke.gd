@@ -84,7 +84,8 @@ func _check_hud_layout() -> void:
 		var tile: Control = _board._tile_views[index]
 		board_rect = tile.get_rect() if index == 0 else board_rect.merge(tile.get_rect())
 	_assert(absf(board_rect.get_center().x - 683.0) < 4.0, "보드판은 화면 가로 정중앙이어야 한다 (%s)" % str(board_rect))
-	var corners: Dictionary = {1: Vector2(0, 1), 2: Vector2(0, 0), 3: Vector2(1, 0), 4: Vector2(1, 1)}
+	# 로컬 플레이어(P1)는 우하단, 다음 순서는 우상단, 맞은편은 좌상단, 이전 순서는 좌하단 (상대 좌석 매핑).
+	var corners: Dictionary = {1: Vector2(1, 1), 2: Vector2(1, 0), 3: Vector2(0, 0), 4: Vector2(0, 1)}
 	var rects: Dictionary = {}
 	for player_id: int in [1, 2, 3, 4]:
 		var panel: Control = _board._profiles[player_id]["panel"]
@@ -96,7 +97,7 @@ func _check_hud_layout() -> void:
 		_assert(not rect.intersects(board_rect), "P%d 프로필 카드가 보드판을 가리면 안 된다" % player_id)
 	var law_rect: Rect2 = (_board._law_slots[0] as Control).get_global_rect().merge((_board._law_slots[3] as Control).get_global_rect())
 	_assert(not law_rect.intersects(board_rect), "법전 위젯이 보드판을 가리면 안 된다")
-	_assert(law_rect.position.x < 400.0 and not law_rect.intersects(rects[1]) and not law_rect.intersects(rects[2]), "법전 위젯은 P1·P2 모서리 사이의 좌측 중앙에 있어야 한다")
+	_assert(law_rect.position.x < 400.0 and not law_rect.intersects(rects[3]) and not law_rect.intersects(rects[4]), "법전 위젯은 P3·P4 모서리 사이의 좌측 중앙에 있어야 한다")
 	_assert(_board._law_labels.size() == 4 and _board._law_dashes.size() == 4, "법전 슬롯 4개")
 	for dash: Control in _board._law_dashes:
 		_assert(dash.visible, "비어 있는 법전 슬롯은 점선 테두리가 보여야 한다")
@@ -279,13 +280,14 @@ func _check_pawn_labels() -> void:
 		var view: Node2D = _board._pawn_views[pawn.entity_id]
 		var shown: String = (view.get_node("Bounce/Kind") as Label).text
 		_assert(shown == PawnCatalog.unit_letter(pawn.kind, pawn.unit_no), "말 %d의 보드 라벨이 세부 기물과 달라야 하지 않는다 (%s)" % [pawn.entity_id, shown])
-	var player_id: int = _board.manager.current_player_id()
+	var owner_id: int = _board._dock_owner()
 	for index: int in _board._pawn_buttons.size():
-		var pawn: PlayerPawn = _board.state.get_pawn(player_id * 10 + index + 1)
-		var tip: String = (_board._pawn_buttons[index] as Button).tooltip_text
-		_assert(tip.contains(pawn.display_label()) and tip.contains(PawnCatalog.ability_text(pawn.kind, pawn.unit_no)), "말 선택 버튼 툴팁에 세부 기물 이름과 능력이 있어야 한다 (%s)" % tip)
-	var profile: PanelContainer = _board._profiles[player_id]["panel"]
-	_assert(profile.tooltip_text.contains("번 말 - "), "프로필 카드 툴팁에 말별 능력이 있어야 한다")
+		var pawn: PlayerPawn = _board.state.get_pawn(owner_id * 10 + index + 1)
+		var tip: String = _board._pawn_info_text(pawn.entity_id)
+		_assert(tip.contains(PawnCatalog.full_name(pawn.kind, pawn.unit_no)) and tip.contains(PawnCatalog.ability_text(pawn.kind, pawn.unit_no)), "기물 툴팁에 전체 이름과 고유 능력이 있어야 한다 (%s)" % tip)
+		_assert(tip.contains("세트"), "기물 툴팁에 세트 시너지 줄이 있어야 한다 (%s)" % tip)
+	for player_id: int in [1, 2, 3, 4]:
+		_assert(_board.get_player_for_corner(_board.corner_of_player(player_id)) == player_id, "좌석 매핑은 역함수 관계여야 한다")
 
 
 ## 타일 은신: AI 모드에서는 P1이 설치한 함정만 이름이 보이고 봇이 설치한 함정은 뒷면 [? 함정]으로만 보여야 한다.

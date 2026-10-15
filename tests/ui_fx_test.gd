@@ -47,6 +47,7 @@ func _run() -> void:
 	await _test_gauge_and_lock()
 	await _test_instant_flag()
 	await _test_announcer()
+	await _test_hud_overhaul()
 	await _test_bot_pacing()
 	if _failures.is_empty():
 		print("UI_FX_OK")
@@ -237,6 +238,92 @@ func _test_announcer() -> void:
 	_board.instant_roll_for_test = true
 	_board._announce("테스트", "건너뜀", "", Color.WHITE, null, 0.5)
 	_expect(not announcer.active, "instant면 알림을 띄우지 않는다")
+	_board.instant_roll_for_test = false
+
+
+## 좌석 상대 매핑·판정 도구 전광판·기물 독과 0.35초 호버 툴팁·카드 클릭 확대·드래그 앤 드롭 발동.
+func _test_hud_overhaul() -> void:
+	var manager: TurnManager = _board.manager
+	_board.instant_roll_for_test = true
+	_board._announcer.cancel()
+	_board._cancel_card_drag()
+	# 1) 좌석: 로컬 플레이어 기준 우하단 -> 우상단 -> 좌상단 -> 좌하단
+	_board.local_player_id = 3
+	_expect([_board.get_player_for_corner(0), _board.get_player_for_corner(1), _board.get_player_for_corner(2), _board.get_player_for_corner(3)] == [3, 4, 1, 2], "P3 화면의 좌석 매핑")
+	_board.local_player_id = 1
+	_expect([_board.get_player_for_corner(0), _board.get_player_for_corner(1), _board.get_player_for_corner(2), _board.get_player_for_corner(3)] == [1, 2, 3, 4], "P1 화면의 좌석 매핑")
+	var p1_rect: Rect2 = (_board._profiles[1]["panel"] as Control).get_global_rect()
+	_expect(p1_rect.get_center().x > 683.0 and p1_rect.get_center().y > 384.0, "P1 프로필은 우측 하단")
+	# 2) 전광판
+	var guard: int = 0
+	while not (manager.current_state == TurnManager.State.PHASE_TURN_BEGIN) and guard < 400:
+		guard += 1
+		manager.force_timeout()
+		await process_frame
+	var current: int = manager.current_player_id()
+	manager.state.tools[current] = ToolRegistry.create(&"HOLDEM")
+	_board._refresh_controls()
+	_expect(_board._tool_rows.size() == 6, "홀덤 전광판은 족보 6줄")
+	_board._highlight_tool_result({"tool_id": &"HOLDEM", "steps": 5, "reroll": false, "details": {"hand": &"two_pair"}})
+	_expect(_board._tool_highlight == "two_pair" and _board._tool_result_label.text == "투페어 -> 5칸 전진!", "투페어 줄에 불이 들어오고 결과가 뜬다 (%s)" % _board._tool_result_label.text)
+	manager.state.tools[current] = ToolRegistry.create(&"HALLI_GALLI")
+	_board._refresh_controls()
+	_expect(str((_board._tool_rows["bonus"]["label"] as Label).text).contains("누적 중"), "할리갈리 전광판에 보너스 누적 줄")
+	manager.state.tools[current] = ToolRegistry.create(&"D6")
+	_board._refresh_controls()
+	# 3) 기물 독 + 호버 툴팁
+	_expect(_board._pawn_buttons.size() == 4 and (_board._pawn_buttons[0] as Button).size.x >= 68.0 and (_board._pawn_buttons[0] as Button).size.y >= 76.0, "기물 슬롯은 최소 68x76")
+	_board._on_pawn_slot_hover(0)
+	for i: int in 5:
+		await process_frame
+	_expect(not _board._tip_panel.visible, "0.35초 전에는 툴팁이 없다")
+	var wait_start: float = _now()
+	while _now() - wait_start < 0.6:
+		await process_frame
+	_expect(_board._tip_panel.visible and _board._tip_label.text.contains("고유 능력") and _board._tip_label.text.contains("세트") , "0.35초 뒤 툴팁이 뜬다 (%s)" % _board._tip_label.text)
+	_board._on_pawn_slot_unhover(_board._pawn_buttons[0])
+	_expect(not _board._tip_panel.visible, "커서를 치우면 즉시 사라진다")
+	# 4) 클릭 확대 (남의 턴에도 가능)
+	var holder: int = current
+	(manager.state.hands[holder] as Array).clear()
+	manager.state.give_card(holder, &"ACT_01")
+	manager.state.give_card(holder, &"TRP_01")
+	_board._refresh_hands()
+	_board._card_press(holder, &"ACT_01", Vector2(700, 700), Vector2(700, 640))
+	_board._card_release(Vector2(701, 700))
+	_expect(_board._zoom_view != null and _board._zoom_view.size.x >= 240.0 and _board._zoom_view.size.y >= 340.0 and _board._zoom_view.size.y < 400.0, "클릭하면 약 240x340으로 확대 (%s)" % str(_board._zoom_view.size if _board._zoom_view != null else Vector2.ZERO))
+	_board._card_press(holder, &"ACT_01", Vector2(700, 700), Vector2(700, 640))
+	_board._card_release(Vector2(701, 700))
+	await process_frame
+	_expect(_board._zoom_view == null, "다시 클릭하면 닫힌다 (토글)")
+	# 5) 드래그: 잘못된 곳에 놓으면 카드가 남는다
+	_expect(manager.current_state == TurnManager.State.PHASE_TURN_BEGIN and not _board._ui_busy(), "드래그 테스트 전제: 턴 시작, 입력 가능")
+	_board._card_press(holder, &"TRP_01", Vector2(700, 700), Vector2(700, 640))
+	_board._card_move(Vector2(720, 600))
+	_expect(_board._drag_active and _board._drop_zone.visible, "끄는 동안 드롭 존이 보인다")
+	_board._card_release(Vector2(100, 300))
+	await process_frame
+	_expect(not _board._drop_zone.visible and (manager.state.hands[holder] as Array).has(&"TRP_01"), "보드 밖에 놓으면 발동하지 않고 손패에 남는다")
+	# 타일 지정형: 유효 타일 위에 직접 드롭
+	var card: BaseCard = CardRegistry.get_card(&"TRP_01")
+	var target: int = -1
+	for index: int in GameEnums.TILE_COUNT:
+		if card.can_play(manager.state, holder, {"tile": index}):
+			target = index
+			break
+	_board._card_press(holder, &"TRP_01", Vector2(700, 700), Vector2(700, 640))
+	_board._card_move(Vector2(720, 600))
+	_board._card_release(_board._tile_center(target))
+	await process_frame
+	_expect(manager.state.board.get_tile(target).has_attachment(&"TRP_01") and not (manager.state.hands[holder] as Array).has(&"TRP_01"), "타일 위에 떨어뜨리면 즉시 설치된다")
+	# 즉발 카드는 보드판 어디든 놓으면 발동
+	_board._card_press(holder, &"ACT_01", Vector2(700, 700), Vector2(700, 640))
+	_board._card_move(Vector2(720, 600))
+	_board._card_release(Vector2(680, 300))
+	await process_frame
+	_expect(not (manager.state.hands[holder] as Array).has(&"ACT_01"), "즉발 카드를 보드에 놓으면 발동")
+	manager.turn_direction = 1  # 우노 리버스가 뒤집은 진행 방향·역주행을 되돌려 다음 테스트에 영향이 없게 한다
+	manager.state.reverse_move_rounds_left = 0
 	_board.instant_roll_for_test = false
 
 

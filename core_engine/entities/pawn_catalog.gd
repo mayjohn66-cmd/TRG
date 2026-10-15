@@ -93,6 +93,35 @@ static func unit_label(kind: GameEnums.PawnKind, unit_no: int) -> String:
 	return SUB_NAMES.get(sub_type_of(kind, unit_no), "기본")
 
 
+## 세트별 2세트 활성 효과 이름.
+const SET_BONUS_2_NAMES: Dictionary = {
+	GameEnums.PawnKind.YUT: "사기 윷",
+	GameEnums.PawnKind.CHESS: "캐슬링",
+	GameEnums.PawnKind.JANGGI: "초나라 포진",
+	GameEnums.PawnKind.MONOPOLY: "월급날",
+	GameEnums.PawnKind.GO: "포석",
+}
+
+
 ## 세부 기물의 한 줄 능력 설명. 기본 말은 "능력 없음".
 static func ability_text(kind: GameEnums.PawnKind, unit_no: int) -> String:
 	return SUB_ABILITIES.get(sub_type_of(kind, unit_no), "능력 없음")
+
+
+## 툴팁용 기물 전체 이름: "[체스 3호기 - 비숍]", 기본 말은 "[기본 말]".
+static func full_name(kind: GameEnums.PawnKind, unit_no: int) -> String:
+	if kind == GameEnums.PawnKind.BASIC:
+		return "[기본 말]"
+	var sub_name: String = unit_label(kind, unit_no)
+	if ":" in sub_name:
+		sub_name = sub_name.split(":")[1]
+	return "[%s %d호기 - %s]" % [display_set_name(kind), unit_no, sub_name]
+
+
+## 세트 시너지 현황 한 줄: "체스 세트 (2/4) - [2세트 활성: 캐슬링] / [4세트: 체크메이트 특수 승리]". 기본 말은 빈 문자열.
+static func synergy_line(kind: GameEnums.PawnKind, count: int) -> String:
+	if kind == GameEnums.PawnKind.BASIC:
+		return ""
+	var two: String = "2세트 %s: %s" % ["활성" if count >= GameEnums.SET_SYNERGY_2 else "대기", SET_BONUS_2_NAMES.get(kind, "-")]
+	var four: String = "4세트%s: %s 특수 승리" % [" 달성" if count >= GameEnums.PAWNS_PER_PLAYER else "", SPECIAL_VICTORY_NAMES.get(kind, "-")]
+	return "%s 세트 (%d/%d) - [%s] / [%s]" % [display_set_name(kind), count, GameEnums.PAWNS_PER_PLAYER, two, four]

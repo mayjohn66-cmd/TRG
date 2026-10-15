@@ -115,6 +115,7 @@ func _start_next() -> void:
 func _place() -> void:
 	reset_size()
 	position = center - size / 2.0
+	pivot_offset = size / 2.0
 
 
 func _label(text: String, size_px: int, color: Color) -> Label:
@@ -145,6 +146,9 @@ func _process(delta: float) -> void:
 	elif _t > duration - FADE_OUT:
 		alpha = clampf((duration - _t) / FADE_OUT, 0.0, 1.0)
 	modulate = Color(1, 1, 1, alpha)
+	# 등장할 때 살짝 커지며 튀어나온다 (0.88배 -> 1.0배).
+	var pop: float = clampf(_t / (FADE_IN * 2.0), 0.0, 1.0)
+	scale = Vector2.ONE * lerpf(0.88, 1.0, 1.0 - pow(1.0 - pop, 3.0))
 	if _t >= duration:
 		_start_next()
 
