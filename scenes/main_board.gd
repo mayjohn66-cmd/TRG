@@ -258,6 +258,9 @@ var _choice_overlay: Control = null
 var _draft_overlay: Control = null
 var _draft_player: int = -1
 var _select_banner: Panel = null
+var _dir_left: Node2D = null
+var _dir_right: Node2D = null
+var _announced_round: int = 0
 var _select_title: Label = null
 var _select_cards: Array[Button] = []
 var _select_parts: Array[Dictionary] = []
@@ -432,6 +435,7 @@ func _new_game() -> void:
 	_log.clear()
 	_toast_label.text = ""
 	_dock_player = -1
+	_announced_round = 0
 	_fx_generation += 1
 	_fx_busy = false
 	_bot.set_enabled(ai_mode)
@@ -522,6 +526,7 @@ func _build_ui() -> void:
 	_build_dock()
 	_build_pawn_dock()
 	_build_select_banner()
+	_build_direction_icons()
 	_build_center_banner()
 	_build_roll_fx()
 	_build_drawers()
@@ -539,7 +544,7 @@ func _build_ui() -> void:
 func _register_layout() -> void:
 	_layout_entries.clear()
 	var left: Array = [_law_panel, _mode_toggle, _new_game_button]
-	var center: Array = [_ribbon, _select_banner, _board_layer, _pawn_layer, _dock, _dock_tabs, _drop_zone, _aim_layer, _pick_banner, _pick_cancel, _roll_button, _roll_pad, _power_bar, _power_label]
+	var center: Array = [_ribbon, _select_banner, _dir_left, _dir_right, _board_layer, _pawn_layer, _dock, _dock_tabs, _drop_zone, _aim_layer, _pick_banner, _pick_cancel, _roll_button, _roll_pad, _power_bar, _power_label]
 	var right: Array = [_tool_board, _action_row, _pawn_bar, _menu_button, _debug_toggle, _log_toggle, _debug_box, _log_panel]
 	for index: int in PLAYER_IDS.size():
 		var player_id: int = PLAYER_IDS[index]
@@ -1395,6 +1400,7 @@ func _refresh_all() -> void:
 	_refresh_hands()
 	_refresh_controls()
 	_refresh_overlays()
+	_check_round_banner()
 
 
 func _phase_text() -> String:
@@ -1407,9 +1413,8 @@ func _phase_text() -> String:
 func _refresh_header() -> void:
 	var player_id: int = manager.current_player_id()
 	var reversed: bool = manager.turn_direction == -1
-	var direction: String = "역방향 ◀" if reversed else "정방향 ▶"
 	var reverse_text: String = "  |  이동 역주행 %d라운드" % state.reverse_move_rounds_left if state.reverse_move_rounds_left > 0 else ""
-	_header_label.text = "라운드 %d   |   현재 턴: P%d   |   진행 방향: %s%s" % [state.round_number, player_id, direction, reverse_text]
+	_header_label.text = "라운드 %d   |   현재 턴: P%d%s" % [state.round_number, player_id, reverse_text]
 	_header_label.add_theme_color_override("font_color", (PLAYER_COLORS[player_id] as Color).lightened(0.35))
 	# 리본은 정방향이면 초록, 우노 리버스(턴 방향 -1)면 주황으로 반전하고 테두리는 현재 턴 플레이어 색이다.
 	_ribbon.add_theme_stylebox_override("panel", _style(Color("4a2a0c") if reversed else Color("14301f"), PLAYER_COLORS[player_id], 3, 14, 10, 6))
@@ -1425,12 +1430,52 @@ func _refresh_header() -> void:
 
 
 func _refresh_direction() -> void:
+	var reversed: bool = manager.turn_direction == -1
+	if _dir_left != null:
+		# 정방향은 출발선에서 반시계: 보드 오른쪽은 위로, 왼쪽은 아래로. 우노 리버스(역방향)면 둘 다 뒤집힌다.
+		_dir_right.rotation = deg_to_rad(90.0 if reversed else -90.0)
+		_dir_left.rotation = deg_to_rad(-90.0 if reversed else 90.0)
+		var tint: Color = Color("ffa94d") if reversed else Color("ff6b6b")
+		for node: Node2D in [_dir_left, _dir_right]:
+			for chevron: Node in node.get_children():
+				(chevron as Polygon2D).color = Color(tint.r, tint.g, tint.b, 0.4)
 	if not _tag_labels.has(GameEnums.GOAL_TILE):
 		return
-	var reversed: bool = manager.turn_direction == -1
 	var start_tag: Label = _tag_labels[GameEnums.GOAL_TILE]
 	start_tag.text = "▼역주행" if reversed else "▲출발"
 	start_tag.add_theme_color_override("font_color", Color("ffe8cc") if reversed else Color("f8f9fa"))
+
+
+## 보드 양옆에 은은하게 깜빡이는 진행 방향 쌍화살표 (>>). 회전은 _refresh_direction이 정한다.
+func _build_direction_icons() -> void:
+	for side: int in 2:
+		var icon := Node2D.new()
+		icon.position = Vector2(352, 346) if side == 0 else Vector2(1014, 346)
+		icon.z_index = 1
+		for index: int in 2:
+			var chevron := Polygon2D.new()
+			chevron.polygon = PackedVector2Array([Vector2(-8, -20), Vector2(2, -20), Vector2(14, 0), Vector2(2, 20), Vector2(-8, 20), Vector2(4, 0)])
+			chevron.position = Vector2(-10 + index * 16, 0)
+			chevron.color = Color(1.0, 0.42, 0.42, 0.4)
+			icon.add_child(chevron)
+		add_child(icon)
+		var pulse: Tween = icon.create_tween().set_loops()
+		pulse.tween_property(icon, "modulate:a", 0.45, 1.1).set_trans(Tween.TRANS_SINE)
+		pulse.tween_property(icon, "modulate:a", 1.0, 1.1).set_trans(Tween.TRANS_SINE)
+		if side == 0:
+			_dir_left = icon
+		else:
+			_dir_right = icon
+
+
+## 라운드가 시작될 때(증강 선택이 끝나고 첫 플레이어의 턴이 오기 직전) 중앙에 크게 알린다.
+func _check_round_banner() -> void:
+	if _announcer == null or manager.is_game_over or manager.current_state == TurnManager.State.PHASE_ROUND_START:
+		return
+	if state.round_number == _announced_round:
+		return
+	_announced_round = state.round_number
+	_announce("라운드", "라운드 %d" % state.round_number, "%d라운드가 시작됩니다" % state.round_number, COLOR_GOLD, null, 1.5)
 
 
 ## 프로필에 보여 줄 이름: AI 대전에서는 내 닉네임과 "컴퓨터 n", 4P 수동 조작에서는 "플레이어 n".
@@ -1614,29 +1659,33 @@ func _make_card_view(player_id: int, card_id: StringName) -> PanelContainer:
 	box.add_theme_constant_override("separation", 3)
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	view.add_child(box)
-	var title := _make_label(card.display_name + (" ▣" if card.needs_tile() else ""), 11, Color("f8f9fa"))
+	# 하스스톤 모바일처럼 손패에는 일러스트와 이름만 보인다 (자세한 효과는 호버 툴팁·클릭 확대로 본다).
+	var art := PanelContainer.new()
+	art.custom_minimum_size = Vector2(0, 40)
+	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	art.add_theme_stylebox_override("panel", _style(accent.darkened(0.55), accent, 2, 9, 0, 0))
+	box.add_child(art)
+	var glyph: String = str(card.display_name).strip_edges().substr(0, 1)
+	var art_label := _make_label(glyph, 30, accent.lightened(0.6))
+	art_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	art_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	art_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	art_label.add_theme_color_override("font_outline_color", accent.darkened(0.7))
+	art_label.add_theme_constant_override("outline_size", 6)
+	art.add_child(art_label)
+	var tag := _make_label(CARD_CATEGORY_NAMES[card.category] + (" ▣" if card.needs_tile() else ""), 9, accent.lightened(0.4))
+	tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(tag)
+	var title := _make_label(card.display_name, 11, Color("f8f9fa"))
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	title.custom_minimum_size = Vector2(CARD_SIZE.x - 16.0, 24)
+	title.custom_minimum_size = Vector2(CARD_SIZE.x - 14.0, 26)
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	title.add_theme_color_override("font_outline_color", Color.BLACK)
+	title.add_theme_constant_override("outline_size", 3)
 	box.add_child(title)
-	var icon := PanelContainer.new()
-	icon.custom_minimum_size = Vector2(0, 28)
-	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	icon.add_theme_stylebox_override("panel", _style(accent.darkened(0.35), accent, 2, 8, 0, 2))
-	box.add_child(icon)
-	var icon_label := _make_label("%s\n%s" % [CARD_CATEGORY_NAMES[card.category], str(card_id).replace("_", " ")], 10, Color("fff9db"))
-	icon_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	icon_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	icon_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	icon.add_child(icon_label)
-	var summary := _make_label(str(CARD_SUMMARIES.get(card_id, "")), 9, Color("ced4da"))
-	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	summary.max_lines_visible = 3
-	summary.custom_minimum_size = Vector2(CARD_SIZE.x - 16.0, 0)
-	summary.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	summary.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.add_child(summary)
 	view.gui_input.connect(_on_card_gui_input.bind(player_id, card_id, view))
 	view.mouse_entered.connect(_on_card_hover.bind(view, glow_style, true))
 	view.mouse_exited.connect(_on_card_hover.bind(view, idle_style, false))

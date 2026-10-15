@@ -151,6 +151,13 @@ func _setup_scene() -> void:
 			state.tools[1] = ScriptedTool.new([4])
 			_board._on_roll_pressed()
 			_board._preview_pawn(11)
+		"round":
+			_finish_draft()
+			state.give_card(1, &"TRP_02")
+			state.give_card(1, &"SUM_01")
+			state.give_card(1, &"ACT_05")
+			state.give_card(1, &"ACT_01")
+			_board._refresh_all()
 		"pawnchoice":
 			state.get_pawn(12).place_at(5)
 			state.get_pawn(12).has_left_start = true

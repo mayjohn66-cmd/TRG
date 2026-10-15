@@ -10,6 +10,8 @@ signal drained
 const FADE_IN: float = 0.12
 const FADE_OUT: float = 0.18
 const MAX_QUEUE: int = 6
+## 이 태그의 알림은 라운드 시작용으로 헤드라인을 크게 그린다.
+const BIG_TAG: String = "라운드"
 
 ## true면 알림을 모두 건너뛴다 (헤드리스 테스트·ui_smoke 자동 진행).
 var instant: bool = false
@@ -96,15 +98,21 @@ func _start_next() -> void:
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_root)
 	_root.add_child(_label(str(_current["tag"]), 13, color.lightened(0.2)))
-	_root.add_child(_label(str(_current["headline"]), 26, Color("f8f9fa")))
+	var big: bool = str(_current["tag"]) == BIG_TAG
+	var headline: Label = _label(str(_current["headline"]), 64 if big else 26, color.lightened(0.3) if big else Color("f8f9fa"))
+	if big:
+		headline.add_theme_color_override("font_outline_color", color.darkened(0.6))
+		headline.add_theme_constant_override("outline_size", 10)
+	_root.add_child(headline)
 	if str(_current["body"]) != "":
-		var body: Label = _label(str(_current["body"]), 14, Color("ced4da"))
+		var body: Label = _label(str(_current["body"]), 20 if big else 14, Color("ced4da"))
 		body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		body.custom_minimum_size = Vector2(380, 0)
 		_root.add_child(body)
 	if _current["extra"] != null:
 		_root.add_child(_current["extra"] as Control)
-	_root.add_child(_label("(클릭하면 넘어갑니다)", 10, Color("6c757d")))
+	if not big:
+		_root.add_child(_label("(클릭하면 넘어갑니다)", 10, Color("6c757d")))
 	modulate = Color(1, 1, 1, 0)
 	visible = true
 	reset_size()
