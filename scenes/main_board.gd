@@ -59,6 +59,13 @@ const CARD_CATEGORY_COLORS: Dictionary = {
 	GameEnums.CardCategory.TRAP: Color("be4bdb"),
 	GameEnums.CardCategory.SUMMON: Color("20c997"),
 }
+## 카드 배경색은 카드의 속성(카테고리)을 알려 준다: 즉발 주황 / 함정 보라 / 소환 청록.
+const CARD_BG_COLORS: Dictionary = {
+	GameEnums.CardCategory.INSTANT: Color("d98b2b"),
+	GameEnums.CardCategory.TRAP: Color("8e4aa8"),
+	GameEnums.CardCategory.SUMMON: Color("2f9a85"),
+}
+const CARD_ART_DIR: String = "res://assets/cards/"
 const CARD_CATEGORY_NAMES: Dictionary = {
 	GameEnums.CardCategory.INSTANT: "즉발",
 	GameEnums.CardCategory.TRAP: "함정",
@@ -1632,64 +1639,99 @@ func _on_dock_tab_pressed(player_id: int) -> void:
 	_refresh_hands()
 
 
-## 한 장짜리 전체 카드 (140x196): 위 일러스트 창 / 카드 이름 / 아래 설명. 손패에서는 아래 절반이 화면 밖에 가려져 일러스트와 이름만 보이고, 호버하면 올라와 전체가 보인다.
+## 카드 프레임 스타일: 배경색이 카테고리(속성)를 나타낸다.
+func _card_frame_style(category: GameEnums.CardCategory, glow: bool, radius: int = 14) -> StyleBoxFlat:
+	var bg: Color = CARD_BG_COLORS[category]
+	if glow:
+		return _style(bg.lightened(0.1), Color("fff3bf"), 5, radius, 22, 0)
+	return _style(bg, bg.darkened(0.55), 4, radius, 8, 0)
+
+
+## 카드 내용물: 맨 위 카드 이름 판 / 큼직한 일러스트 창 / 아래 세부 내용 상자. card_size에 비례해 크기가 정해진다.
+## 일러스트는 assets/cards/<카드ID>.png가 있으면 그것을, 없으면 카테고리 색 도형 + 글자 엠블럼을 쓴다.
+func _build_card_body(card_id: StringName, card_size: Vector2) -> Control:
+	var card: BaseCard = CardRegistry.get_card(card_id)
+	var bg: Color = CARD_BG_COLORS[card.category]
+	var accent: Color = CARD_CATEGORY_COLORS[card.category]
+	var k: float = card_size.x / HAND_CARD_SIZE.x
+	var margin: float = 8.0 * k
+	var inner_w: float = card_size.x - margin * 2.0
+	var holder := Control.new()
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var name_h: float = 22.0 * k
+	var plate := Panel.new()
+	plate.position = Vector2(margin, margin)
+	plate.size = Vector2(inner_w, name_h)
+	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	plate.add_theme_stylebox_override("panel", _style(bg.lightened(0.6), bg.darkened(0.5), maxi(1, int(2.0 * k)), int(5.0 * k), 0, 0))
+	holder.add_child(plate)
+	var title := _make_label("", int(13.0 * k), Color("1d1a14"))
+	title.size = plate.size
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	title.text = card.display_name
+	plate.add_child(title)
+	var art_y: float = margin + name_h + 4.0 * k
+	var art_h: float = 104.0 * k
+	var art := Panel.new()
+	art.position = Vector2(margin, art_y)
+	art.size = Vector2(inner_w, art_h)
+	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	art.add_theme_stylebox_override("panel", _style(bg.darkened(0.7), bg.darkened(0.6), maxi(2, int(3.0 * k)), int(3.0 * k), 0, 0))
+	holder.add_child(art)
+	var art_path: String = "%s%s.png" % [CARD_ART_DIR, card_id]
+	if ResourceLoader.exists(art_path):
+		var picture := TextureRect.new()
+		picture.texture = load(art_path)
+		picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		picture.size = art.size
+		picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		art.add_child(picture)
+	else:
+		var glyph: String = str(card.display_name).strip_edges().substr(0, 1)
+		var emblem: Control = _make_emblem(glyph, accent)
+		var emblem_scale: float = minf(art_h, inner_w) / 150.0 * 0.92
+		emblem.scale = Vector2.ONE * emblem_scale
+		emblem.position = (art.size - Vector2(150, 150) * emblem_scale) / 2.0
+		art.add_child(emblem)
+	var detail_y: float = art_y + art_h + 4.0 * k
+	var detail := Panel.new()
+	detail.position = Vector2(margin, detail_y)
+	detail.size = Vector2(inner_w, card_size.y - detail_y - margin)
+	detail.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	detail.add_theme_stylebox_override("panel", _style(bg.lightened(0.72), bg.darkened(0.5), maxi(1, int(2.0 * k)), int(3.0 * k), 0, 0))
+	holder.add_child(detail)
+	var kind := _make_label("[%s]" % (CARD_CATEGORY_NAMES[card.category] + (" · 타일 설치" if card.needs_tile() else "")), int(9.0 * k), bg.darkened(0.45))
+	kind.position = Vector2(4.0 * k, 1.0 * k)
+	kind.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	detail.add_child(kind)
+	var summary := _make_label("", int(10.0 * k), Color("1d1a14"))
+	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	summary.position = Vector2(4.0 * k, 13.0 * k)
+	summary.custom_minimum_size = Vector2(detail.size.x - 8.0 * k, 0)
+	summary.size = Vector2(detail.size.x - 8.0 * k, detail.size.y - 14.0 * k)
+	summary.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	summary.text = str(CARD_SUMMARIES.get(card_id, ""))
+	detail.add_child(summary)
+	return holder
+
+
+## 한 장짜리 전체 카드 (140x196). 손패에서는 아래 절반이 화면 밖에 가려져 이름과 일러스트가 보이고, 호버하면 올라와 전체가 보인다.
 func _make_card_view(player_id: int, card_id: StringName) -> PanelContainer:
 	var card: BaseCard = CardRegistry.get_card(card_id)
 	var usable: bool = _card_usable_now(player_id, card)
-	var accent: Color = CARD_CATEGORY_COLORS[card.category]
 	var view := PanelContainer.new()
 	view.custom_minimum_size = HAND_CARD_SIZE
 	view.size = HAND_CARD_SIZE
 	view.pivot_offset = Vector2(HAND_CARD_SIZE.x / 2.0, HAND_CARD_SIZE.y)
-	var idle_style: StyleBoxFlat = _style(Color("1a2033"), accent.darkened(0.1), 4, 16, 8, 0)
-	var glow_style: StyleBoxFlat = _style(Color("262f48"), Color("fff3bf"), 5, 16, 22, 0)
+	var idle_style: StyleBoxFlat = _card_frame_style(card.category, false)
+	var glow_style: StyleBoxFlat = _card_frame_style(card.category, true)
 	view.add_theme_stylebox_override("panel", idle_style)
 	view.modulate = Color.WHITE if usable else Color(0.62, 0.62, 0.68)
 	view.tooltip_text = "%s (%s) - %s\n%s" % [card.display_name, card_id, _category_text(card.category), CARD_SUMMARIES.get(card_id, "")]
-	var holder := Control.new()
-	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	view.add_child(holder)
-	var inner_w: float = HAND_CARD_SIZE.x - 20.0
-	var art := Panel.new()
-	art.position = Vector2(10, 10)
-	art.size = Vector2(inner_w, 66)
-	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	art.add_theme_stylebox_override("panel", _style(accent.darkened(0.55), accent, 3, 10, 0, 0))
-	holder.add_child(art)
-	var glyph: String = str(card.display_name).strip_edges().substr(0, 1)
-	var art_label := _make_label(glyph, 40, accent.lightened(0.6))
-	art_label.size = art.size
-	art_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	art_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	art_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	art_label.add_theme_color_override("font_outline_color", accent.darkened(0.7))
-	art_label.add_theme_constant_override("outline_size", 6)
-	art.add_child(art_label)
-	var tag := _make_label(CARD_CATEGORY_NAMES[card.category] + (" ▣" if card.needs_tile() else ""), 9, accent.lightened(0.5))
-	tag.position = Vector2(6, 2)
-	tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	art.add_child(tag)
-	var title := _make_label("", 13, Color("f8f9fa"))
-	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	title.position = Vector2(10, 80)
-	title.custom_minimum_size = Vector2(inner_w, 0)
-	title.size = Vector2(inner_w, 32)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	title.add_theme_color_override("font_outline_color", Color.BLACK)
-	title.add_theme_constant_override("outline_size", 4)
-	title.text = card.display_name
-	holder.add_child(title)
-	var desc := _make_label("", 11, Color("ced4da"))
-	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	desc.position = Vector2(12, 124)
-	desc.custom_minimum_size = Vector2(inner_w - 4.0, 0)
-	desc.size = Vector2(inner_w - 4.0, 62)
-	desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	desc.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	desc.text = str(CARD_SUMMARIES.get(card_id, ""))
-	holder.add_child(desc)
+	view.add_child(_build_card_body(card_id, HAND_CARD_SIZE))
 	view.gui_input.connect(_on_card_gui_input.bind(player_id, card_id, view))
 	view.mouse_entered.connect(_on_card_hover.bind(view, glow_style, true))
 	view.mouse_exited.connect(_on_card_hover.bind(view, idle_style, false))
@@ -1777,9 +1819,9 @@ func _drag_begin() -> void:
 	_drag_ghost.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_drag_ghost.modulate = Color.WHITE
 	add_child(_drag_ghost)
-	_drag_ghost.size = CARD_SIZE
-	_drag_ghost.position = _drag_press["origin"] - CARD_SIZE / 2.0
-	_drag_ghost.pivot_offset = CARD_SIZE / 2.0
+	_drag_ghost.size = HAND_CARD_SIZE
+	_drag_ghost.position = _drag_press["origin"] - HAND_CARD_SIZE / 2.0
+	_drag_ghost.pivot_offset = HAND_CARD_SIZE / 2.0
 	_drag_ghost.scale = Vector2(1.08, 1.08)
 	var source: Control = _drag_press.get("view")
 	if source != null and is_instance_valid(source):
@@ -1794,7 +1836,7 @@ func _drag_begin() -> void:
 func _drag_update(pointer: Vector2) -> void:
 	if _drag_ghost == null:
 		return
-	_drag_ghost.position = pointer - CARD_SIZE / 2.0
+	_drag_ghost.position = pointer - HAND_CARD_SIZE / 2.0
 	var over_board: bool = _board_rect().has_point(pointer)
 	_drop_zone.add_theme_stylebox_override("panel", _style(Color(1.0, 0.83, 0.23, 0.22 if over_board else 0.08), COLOR_GOLD if over_board else Color("b8962e"), 5 if over_board else 3, 24, 0, 0))
 
@@ -1881,7 +1923,7 @@ func _open_zoom(player_id: int, card_id: StringName) -> void:
 	_zoom_view.custom_minimum_size = Vector2(240, 340)
 	_zoom_view.size = Vector2(240, 340)
 	_zoom_view.position = Vector2(563, 262) + _off_center
-	_zoom_view.add_theme_stylebox_override("panel", _style(Color("20263a"), accent, 5, 18, 28, 14))
+	_zoom_view.add_theme_stylebox_override("panel", _style((CARD_BG_COLORS[card.category] as Color).darkened(0.62), accent, 5, 18, 28, 14))
 	_zoom_view.gui_input.connect(func(event: InputEvent) -> void:
 		var click: InputEventMouseButton = event as InputEventMouseButton
 		if click != null and click.pressed and click.button_index == MOUSE_BUTTON_LEFT:
@@ -3642,26 +3684,15 @@ func _make_card_preview(card_id: StringName) -> Control:
 	return holder
 
 
-## 앞면 카드 한 장 (100x140, 클릭 불가). 알림 미리보기와 드래그 중인 카드가 쓴다.
+## 앞면 카드 한 장 (140x196, 클릭 불가). 알림 미리보기가 쓴다.
 func _make_card_face(card_id: StringName) -> PanelContainer:
 	var card: BaseCard = CardRegistry.get_card(card_id)
-	var accent: Color = CARD_CATEGORY_COLORS[card.category]
 	var view := PanelContainer.new()
-	view.custom_minimum_size = CARD_SIZE
-	view.size = CARD_SIZE
+	view.custom_minimum_size = HAND_CARD_SIZE
+	view.size = HAND_CARD_SIZE
 	view.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	view.add_theme_stylebox_override("panel", _style(Color("2c3550"), accent, 4, 10, 8, 6))
-	var box := VBoxContainer.new()
-	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	view.add_child(box)
-	var title := _make_label(card.display_name, 14, Color("f8f9fa"))
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.add_child(title)
-	var summary := _make_label(str(CARD_SUMMARIES.get(card_id, "")), 11, Color("ced4da"))
-	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	summary.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.add_child(summary)
+	view.add_theme_stylebox_override("panel", _card_frame_style(card.category, false))
+	view.add_child(_build_card_body(card_id, HAND_CARD_SIZE))
 	return view
 
 

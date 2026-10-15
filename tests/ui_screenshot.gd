@@ -158,6 +158,20 @@ func _setup_scene() -> void:
 			state.give_card(1, &"ACT_05")
 			state.give_card(1, &"ACT_01")
 			_board._refresh_all()
+		"cardhover":
+			_finish_draft()
+			_board._announcer.cancel()
+			state.give_card(1, &"TRP_02")
+			state.give_card(1, &"SUM_01")
+			state.give_card(1, &"ACT_05")
+			_board._refresh_all()
+			_board._announcer.cancel()
+			var hovered: PanelContainer = null
+			for child: Node in _board._dock.get_children():
+				if child is PanelContainer and not child.is_queued_for_deletion():
+					hovered = child
+					break
+			_board._on_card_hover(hovered, _board._card_frame_style(GameEnums.CardCategory.TRAP, true), true)
 		"pawnchoice":
 			state.get_pawn(12).place_at(5)
 			state.get_pawn(12).has_left_start = true
