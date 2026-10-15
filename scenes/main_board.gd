@@ -1597,7 +1597,7 @@ func _refresh_hands() -> void:
 		var card_view: PanelContainer = _make_card_view(player_id, card_id)
 		var offset: float = float(index) - float(count - 1) / 2.0
 		var home_rot: float = clampf(offset * HAND_FAN_DEGREES, -16.0, 16.0)
-		var home_y: float = DOCK_CARD_Y + offset * offset * 2.5
+		var home_y: float = DOCK_CARD_Y + minf(offset * offset * 2.0, 16.0)
 		card_view.position = Vector2(start_x + step * index, home_y)
 		card_view.rotation = deg_to_rad(home_rot)
 		card_view.set_meta("home_y", home_y)

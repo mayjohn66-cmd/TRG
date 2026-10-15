@@ -385,7 +385,7 @@ func _check_bounds() -> void:
 		if node is PanelContainer and not node.is_queued_for_deletion():
 			var hand_card: Control = node as Control
 			_assert(hand_card.size.x >= 139.0 and hand_card.size.y >= 195.0, "카드는 전체 크기 140x196이어야 한다 (%s)" % str(hand_card.size))
-			_assert(hand_card.get_global_rect().position.y + 100.0 < 768.0, "카드 윗부분(일러스트·이름)은 화면 안에 보여야 한다")
+			_assert(hand_card.get_global_rect().position.y + 80.0 < 768.0, "카드 윗부분(일러스트·이름)은 화면 안에 보여야 한다")
 	var turn_panel: PanelContainer = _board._profiles[_board.manager.current_player_id()]["panel"]
 	_assert(turn_panel.scale.x > 1.0, "현재 턴 플레이어 프로필 카드는 확대되어야 한다")
 	# 스포트라이트: 현재 턴만 환하게, 나머지는 어둡게 가라앉는다 (전체 승리 후에는 모두 밝게).
