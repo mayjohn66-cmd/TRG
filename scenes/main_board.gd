@@ -35,6 +35,10 @@ const CORNER_POSITIONS: Array[Vector2] = [
 ]
 ## 카드 독 안에서 카드가 놓이는 기준 y (호버 시 15px 솟아오른다).
 const DOCK_CARD_Y: float = 6.0
+## 손패 카드는 한 장 전체 일러스트(140x196)가 따로 있고, 화면 아래로 반쯤 가려진 채 부채꼴로 펼쳐진다. 호버하면 전체가 올라와 보인다.
+const HAND_CARD_SIZE: Vector2 = Vector2(140, 196)
+const HAND_FAN_DEGREES: float = 5.0
+const HAND_RAISED_Y: float = -92.0
 ## 우측 하단 기물 독에서 기물 슬롯이 놓이는 기준 y (필살기 버튼 줄 아래).
 const SLOT_BASE_Y: float = 50.0
 const AUGMENT_CARD_SIZE: Vector2 = Vector2(260, 390)
@@ -1585,13 +1589,19 @@ func _refresh_hands() -> void:
 		_dock.add_child(empty)
 		return
 	var count: int = hand.size()
-	var step: float = minf(CARD_SIZE.x + 6.0, (_dock.size.x - CARD_SIZE.x) / maxf(count - 1, 1))
-	var total: float = CARD_SIZE.x + step * (count - 1)
+	var step: float = minf(HAND_CARD_SIZE.x - 14.0, (_dock.size.x - HAND_CARD_SIZE.x) / maxf(count - 1, 1))
+	var total: float = HAND_CARD_SIZE.x + step * (count - 1)
 	var start_x: float = (_dock.size.x - total) / 2.0
 	for index: int in count:
 		var card_id: StringName = hand[index]
 		var card_view: PanelContainer = _make_card_view(player_id, card_id)
-		card_view.position = Vector2(start_x + step * index, DOCK_CARD_Y)
+		var offset: float = float(index) - float(count - 1) / 2.0
+		var home_rot: float = clampf(offset * HAND_FAN_DEGREES, -16.0, 16.0)
+		var home_y: float = DOCK_CARD_Y + offset * offset * 2.5
+		card_view.position = Vector2(start_x + step * index, home_y)
+		card_view.rotation = deg_to_rad(home_rot)
+		card_view.set_meta("home_y", home_y)
+		card_view.set_meta("home_rot", home_rot)
 		_dock.add_child(card_view)
 
 
@@ -1622,50 +1632,64 @@ func _on_dock_tab_pressed(player_id: int) -> void:
 	_refresh_hands()
 
 
-## 실제 카드 모양의 세로형 프레임 (100x140): 상단 카드명 / 중앙 카테고리 색 아이콘 / 하단 요약. 호버 시 15px 솟아오르며 테두리가 빛난다.
+## 한 장짜리 전체 카드 (140x196): 위 일러스트 창 / 카드 이름 / 아래 설명. 손패에서는 아래 절반이 화면 밖에 가려져 일러스트와 이름만 보이고, 호버하면 올라와 전체가 보인다.
 func _make_card_view(player_id: int, card_id: StringName) -> PanelContainer:
 	var card: BaseCard = CardRegistry.get_card(card_id)
 	var usable: bool = _card_usable_now(player_id, card)
 	var accent: Color = CARD_CATEGORY_COLORS[card.category]
 	var view := PanelContainer.new()
-	view.custom_minimum_size = CARD_SIZE
-	view.size = CARD_SIZE
-	var idle_style: StyleBoxFlat = _style(Color("20263a"), accent.darkened(0.15), 2, 10, 8, 6)
-	var glow_style: StyleBoxFlat = _style(Color("2c3550"), Color("fff3bf"), 4, 10, 18, 6)
+	view.custom_minimum_size = HAND_CARD_SIZE
+	view.size = HAND_CARD_SIZE
+	view.pivot_offset = Vector2(HAND_CARD_SIZE.x / 2.0, HAND_CARD_SIZE.y)
+	var idle_style: StyleBoxFlat = _style(Color("1a2033"), accent.darkened(0.1), 4, 16, 8, 0)
+	var glow_style: StyleBoxFlat = _style(Color("262f48"), Color("fff3bf"), 5, 16, 22, 0)
 	view.add_theme_stylebox_override("panel", idle_style)
 	view.modulate = Color.WHITE if usable else Color(0.62, 0.62, 0.68)
 	view.tooltip_text = "%s (%s) - %s\n%s" % [card.display_name, card_id, _category_text(card.category), CARD_SUMMARIES.get(card_id, "")]
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 3)
-	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	view.add_child(box)
-	# 하스스톤 모바일처럼 손패에는 일러스트와 이름만 보인다 (자세한 효과는 호버 툴팁·클릭 확대로 본다).
-	var art := PanelContainer.new()
-	art.custom_minimum_size = Vector2(0, 40)
+	var holder := Control.new()
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	view.add_child(holder)
+	var inner_w: float = HAND_CARD_SIZE.x - 20.0
+	var art := Panel.new()
+	art.position = Vector2(10, 10)
+	art.size = Vector2(inner_w, 66)
 	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	art.add_theme_stylebox_override("panel", _style(accent.darkened(0.55), accent, 2, 9, 0, 0))
-	box.add_child(art)
+	art.add_theme_stylebox_override("panel", _style(accent.darkened(0.55), accent, 3, 10, 0, 0))
+	holder.add_child(art)
 	var glyph: String = str(card.display_name).strip_edges().substr(0, 1)
-	var art_label := _make_label(glyph, 30, accent.lightened(0.6))
+	var art_label := _make_label(glyph, 40, accent.lightened(0.6))
+	art_label.size = art.size
 	art_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	art_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	art_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	art_label.add_theme_color_override("font_outline_color", accent.darkened(0.7))
 	art_label.add_theme_constant_override("outline_size", 6)
 	art.add_child(art_label)
-	var tag := _make_label(CARD_CATEGORY_NAMES[card.category] + (" ▣" if card.needs_tile() else ""), 9, accent.lightened(0.4))
-	tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var tag := _make_label(CARD_CATEGORY_NAMES[card.category] + (" ▣" if card.needs_tile() else ""), 9, accent.lightened(0.5))
+	tag.position = Vector2(6, 2)
 	tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.add_child(tag)
-	var title := _make_label(card.display_name, 11, Color("f8f9fa"))
+	art.add_child(tag)
+	var title := _make_label("", 13, Color("f8f9fa"))
+	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	title.position = Vector2(10, 80)
+	title.custom_minimum_size = Vector2(inner_w, 0)
+	title.size = Vector2(inner_w, 32)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	title.custom_minimum_size = Vector2(CARD_SIZE.x - 14.0, 26)
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	title.add_theme_color_override("font_outline_color", Color.BLACK)
-	title.add_theme_constant_override("outline_size", 3)
-	box.add_child(title)
+	title.add_theme_constant_override("outline_size", 4)
+	title.text = card.display_name
+	holder.add_child(title)
+	var desc := _make_label("", 11, Color("ced4da"))
+	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	desc.position = Vector2(12, 124)
+	desc.custom_minimum_size = Vector2(inner_w - 4.0, 0)
+	desc.size = Vector2(inner_w - 4.0, 62)
+	desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	desc.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	desc.text = str(CARD_SUMMARIES.get(card_id, ""))
+	holder.add_child(desc)
 	view.gui_input.connect(_on_card_gui_input.bind(player_id, card_id, view))
 	view.mouse_entered.connect(_on_card_hover.bind(view, glow_style, true))
 	view.mouse_exited.connect(_on_card_hover.bind(view, idle_style, false))
@@ -1676,13 +1700,17 @@ func _on_card_hover(view: PanelContainer, style: StyleBoxFlat, raised: bool) -> 
 	if not is_instance_valid(view):
 		return
 	view.add_theme_stylebox_override("panel", style)
-	view.z_index = 5 if raised else 0
+	view.z_index = 20 if raised else 0
 	if view.has_meta("lift"):
 		var previous: Tween = view.get_meta("lift")
 		if previous != null and previous.is_valid():
 			previous.kill()
-	var tween: Tween = create_tween()
-	tween.tween_property(view, "position:y", DOCK_CARD_Y - 15.0 if raised else DOCK_CARD_Y, 0.1)
+	var home_y: float = float(view.get_meta("home_y", DOCK_CARD_Y))
+	var home_rot: float = float(view.get_meta("home_rot", 0.0))
+	var tween: Tween = create_tween().set_parallel(true).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(view, "position:y", HAND_RAISED_Y if raised else home_y, 0.12)
+	tween.tween_property(view, "rotation", 0.0 if raised else deg_to_rad(home_rot), 0.12)
+	tween.tween_property(view, "scale", Vector2.ONE * (1.08 if raised else 1.0), 0.12)
 	view.set_meta("lift", tween)
 
 

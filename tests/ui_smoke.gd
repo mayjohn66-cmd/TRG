@@ -365,7 +365,8 @@ func _check_bounds() -> void:
 	var window: Rect2 = Rect2(Vector2.ZERO, Vector2(1366, 768))
 	var controls: Array[Control] = []
 	for node: Node in _board._dock.get_children():
-		if node is Control and not node.is_queued_for_deletion():
+		# 손패 카드는 일부러 화면 아래로 반쯤 가려진 채 펼쳐진다 (호버하면 전체가 올라온다). 크기만 따로 검사한다.
+		if node is Control and not node is PanelContainer and not node.is_queued_for_deletion():
 			controls.append(node)
 	for button: Control in [_board._roll_button, _board._stop_button, _board._skip_button, _board._bomb_button]:
 		if button.visible:
@@ -379,10 +380,12 @@ func _check_bounds() -> void:
 		var rect: Rect2 = control.get_global_rect()
 		if rect.size.x > 0.0 and not window.grow(2.0).encloses(rect):
 			_failures.append("UI가 화면 밖으로 나갔다: %s %s" % [control.get_class(), str(rect)])
-	# 카드 독의 카드는 80x110 이상이어야 하고, 현재 턴 프로필은 황금 테두리로 강조된다.
+	# 카드 독의 카드는 140x196 전체 카드이고 윗부분(일러스트·이름)이 화면 안에 보여야 하며, 현재 턴 프로필은 황금 테두리로 강조된다.
 	for node: Node in _board._dock.get_children():
 		if node is PanelContainer and not node.is_queued_for_deletion():
-			_assert((node as Control).size.x >= 79.0 and (node as Control).size.y >= 109.0, "카드는 최소 80x110이어야 한다 (%s)" % str((node as Control).size))
+			var hand_card: Control = node as Control
+			_assert(hand_card.size.x >= 139.0 and hand_card.size.y >= 195.0, "카드는 전체 크기 140x196이어야 한다 (%s)" % str(hand_card.size))
+			_assert(hand_card.get_global_rect().position.y + 100.0 < 768.0, "카드 윗부분(일러스트·이름)은 화면 안에 보여야 한다")
 	var turn_panel: PanelContainer = _board._profiles[_board.manager.current_player_id()]["panel"]
 	_assert(turn_panel.scale.x > 1.0, "현재 턴 플레이어 프로필 카드는 확대되어야 한다")
 	# 스포트라이트: 현재 턴만 환하게, 나머지는 어둡게 가라앉는다 (전체 승리 후에는 모두 밝게).
