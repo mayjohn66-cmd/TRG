@@ -4,7 +4,7 @@ config_version=5
 [application]
 config/name="TRG"
 config/features=PackedStringArray("4.3")
-run/main_scene="res://scenes/main_board.tscn"
+run/main_scene="res://scenes/start_menu.tscn"
 
 [display]
 

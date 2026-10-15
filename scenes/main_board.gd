@@ -229,6 +229,7 @@ const HUMAN_ID: int = 1  ## local_player_id의 기본값 (테스트 참조용)
 var ai_mode: bool = true
 var _bot: BotController = null
 var _mode_toggle: Button = null
+var _menu_button: Button = null
 
 var _choice_overlay: Control = null
 var _draft_overlay: Control = null
@@ -555,6 +556,7 @@ func _build_profiles() -> void:
 		right.add_child(top)
 		var name_label := _make_label("플레이어 %d" % player_id, 15, color.lightened(0.3))
 		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		name_label.clip_text = true
 		name_label.add_theme_color_override("font_outline_color", Color("0d1018"))
 		name_label.add_theme_constant_override("outline_size", 3)
 		top.add_child(name_label)
@@ -589,6 +591,7 @@ func _build_profiles() -> void:
 			slots.append({"panel": icon, "letter": letter, "status": status})
 		_profiles[player_id] = {
 			"panel": panel,
+			"name": name_label,
 			"count": count_label,
 			"penalty": penalty_label,
 			"slots": slots,
@@ -730,6 +733,11 @@ func _build_status_strip() -> void:
 	_pick_cancel.z_index = 25
 	add_child(_pick_cancel)
 	_new_game_button = _make_button("새 게임", _new_game, 12, Color("3b4766"), 8)
+	_menu_button = _make_button("메뉴", _on_menu_pressed, 12, Color("3b4766"), 8)
+	_menu_button.position = Vector2(1000, 8)
+	_menu_button.size = Vector2(84, 32)
+	_menu_button.tooltip_text = "처음 화면(닉네임·모드 선택)으로 돌아갑니다."
+	add_child(_menu_button)
 	_new_game_button.position = Vector2(246, 8)
 	_new_game_button.size = Vector2(90, 32)
 	add_child(_new_game_button)
@@ -1306,10 +1314,18 @@ func _refresh_direction() -> void:
 	start_tag.add_theme_color_override("font_color", Color("ffe8cc") if reversed else Color("f8f9fa"))
 
 
+## 프로필에 보여 줄 이름: AI 대전에서는 내 닉네임과 "컴퓨터 n", 4P 수동 조작에서는 "플레이어 n".
+func _player_name(player_id: int) -> String:
+	if ai_mode:
+		return GameSession.display_nickname() if player_id == local_player_id else "컴퓨터 %d" % player_id
+	return "플레이어 %d" % player_id
+
+
 func _refresh_players() -> void:
 	for player_id: int in PLAYER_IDS:
 		var card: Dictionary = _profiles[player_id]
 		var color: Color = PLAYER_COLORS[player_id]
+		(card["name"] as Label).text = _player_name(player_id)
 		(card["count"] as Label).text = "x%d" % (state.hands[player_id] as Array).size()
 		var penalty_label: Label = card["penalty"]
 		penalty_label.visible = state.penalty_of(player_id) != 0
@@ -3199,6 +3215,11 @@ func _build_mode_toggle() -> void:
 	_mode_toggle.tooltip_text = "AI 대전: P1만 직접 조작하고 P2~P4는 봇이 플레이합니다. 4P 수동 조작: 한 화면에서 모두 직접 조작합니다."
 	add_child(_mode_toggle)
 	_refresh_mode_toggle()
+
+
+## 처음 화면(닉네임·모드 선택)으로 돌아간다.
+func _on_menu_pressed() -> void:
+	get_tree().change_scene_to_file("res://scenes/start_menu.tscn")
 
 
 func _refresh_mode_toggle() -> void:

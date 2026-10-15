@@ -412,3 +412,11 @@ func test_neutral_npc_vanishes_after_first_catch() -> void:
 	var ghost: NeutralNPC = state.spawn_npc(0, GameEnums.NpcBehavior.PATROL_REVERSE, 1, &"SUM_02")
 	var idle: Dictionary = ghost.run_ai(state)
 	check_eq(idle["vanished"], false, "아무도 못 잡으면 계속 순찰")
+
+
+func test_game_session_validates_nicknames() -> void:
+	check_eq(GameSession.validate_nickname(""), "닉네임을 입력해 주세요.", "빈 값")
+	check_eq(GameSession.validate_nickname("   "), "닉네임을 입력해 주세요.", "공백만")
+	check(GameSession.validate_nickname("12345678901") != "", "11자는 너무 길다")
+	check_eq(GameSession.validate_nickname("에르핀"), "", "정상")
+	check_eq(GameSession.validate_nickname("  열자짜리닉네임입니다 "), "", "공백을 뺀 10자는 통과")
