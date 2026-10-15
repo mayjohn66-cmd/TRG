@@ -14,7 +14,7 @@ func roll(_rng: RandomNumberGenerator) -> RollResult:
 	return RollResult.make(tool_id, 0)
 
 
-## 매 턴 TURN_BEGIN에서 호출된다 (할리갈리 카드 공개 등). 기본은 아무것도 하지 않는다.
+## 매 턴 TURN_BEGIN에서 호출된다 (턴마다 준비가 필요한 도구용). 기본은 아무것도 하지 않는다.
 func on_turn_begin(_rng: RandomNumberGenerator) -> void:
 	return
 

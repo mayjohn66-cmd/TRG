@@ -155,7 +155,6 @@ var _law_badge_labels: Array[Label] = []
 var _law_dashes: Array[Control] = []
 var _roll_button: Button = null
 var _stop_button: Button = null
-var _bell_button: Button = null
 var _skip_button: Button = null
 var _bomb_button: Button = null
 var _new_game_button: Button = null
@@ -374,9 +373,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		return
 	if _choice_overlay != null or _draft_overlay != null or _result_overlay != null or _stack_overlay != null:
 		return
-	if key_event.keycode == KEY_SPACE and state != null and state.tools[manager.current_player_id()] is ToolHalliGalli:
-		_on_bell_pressed()
-	elif roll_key:
+	if roll_key:
 		_begin_charge(true)
 
 
@@ -759,9 +756,6 @@ func _build_action_bar() -> void:
 	_skip_button = _make_button("개입 패스(진행)", _on_skip_pressed, 16, Color("7a4a14"), 14)
 	_skip_button.custom_minimum_size = Vector2(160, 44)
 	action_row.add_child(_skip_button)
-	_bell_button = _make_button("종 치기 (Space)", _on_bell_pressed, 14)
-	_bell_button.custom_minimum_size = Vector2(0, 44)
-	action_row.add_child(_bell_button)
 	_bomb_button = _make_button("[폭탄 떠넘기기]", _on_pass_bomb_pressed, 14)
 	_bomb_button.custom_minimum_size = Vector2(0, 44)
 	_bomb_button.tooltip_text = "즉발 카드 1장을 소모해 우노 +4 페널티를 두 배(-8)로 다음 플레이어에게 넘깁니다"
@@ -2013,13 +2007,13 @@ func _refresh_pawn_dock() -> void:
 # 우측 중앙 판정 도구 카드
 # ---------------------------------------------------------------------------
 
-## 도구별 [심볼 글자, 심볼 색, 전진 규칙 첫 줄, 둘째 줄]. 할리갈리 둘째 줄의 {bonus}는 현재 적립 칸 수로 바뀐다.
+## 도구별 [심볼 글자, 심볼 색, 전진 규칙 첫 줄, 둘째 줄].
 const TOOL_CARDS: Dictionary = {
 	&"D6": ["6", Color("c92a2a"), "굴려서\n1 ~ 6 칸 전진", ""],
 	&"YUT": ["윷", Color("8a5a2b"), "던져서 -1 ~ 5 칸 전진", "(윷·모 나오면 한 번 더!)"],
 	&"LIFE_ROULETTE": ["룰", Color("1971c2"), "돌려서 1 ~ 10 칸 전진", "(7 당첨 시 한 번 더!)"],
 	&"HOLDEM": ["♠", Color("343a40"), "5장 포커 족보에 따라", "1 ~ 15 칸 전진"],
-	&"HALLI_GALLI": ["종", Color("e67700"), "1 ~ 3 칸 + 종치기 적립금", "(현재 +{bonus}칸 적립 중)"],
+	&"CHINCHIRO": ["친", Color("0b7285"), "4 ~ 6 칸 고눈금 보장!", "(삐끗 시 -6칸 후퇴!)"],
 	&"SLOT_777": ["7", Color("862e9c"), "릴 맞춰 1 ~ 8 칸 전진", "(★777 잭팟 시 20칸!)"],
 	&"REVOLVER": ["탄", Color("495057"), "당길 때마다 +3칸 누적", "(실탄 터지면 0칸 종료!)"],
 }
@@ -2034,8 +2028,6 @@ func _refresh_tool_board(tool: BaseJudgmentTool, player_id: int) -> void:
 	_tool_title.add_theme_color_override("font_color", (PLAYER_COLORS[player_id] as Color).lightened(0.35))
 	_tool_main.text = card[2]
 	var sub: String = card[3]
-	if tool is ToolHalliGalli:
-		sub = sub.replace("{bonus}", str((tool as ToolHalliGalli).banked_bonus))
 	_tool_sub.text = sub
 	_tool_sub.visible = sub != ""
 
@@ -2079,7 +2071,6 @@ func _refresh_controls() -> void:
 		_stop_button.text = "멈추고 이동 확정"
 		_stop_button.disabled = false
 		_stop_button.modulate = Color.WHITE
-	_bell_button.visible = tool is ToolHalliGalli and not _is_bot_turn()
 	_refresh_tool_board(state.tools[_dock_owner()], _dock_owner())
 	var window_open: bool = not over and (current_phase == TurnManager.State.PHASE_INTERRUPT_ROLL or current_phase == TurnManager.State.PHASE_RESOLUTION)
 	# AI 모드: 개입 창은 사람(P1)이 낼 카드를 들고 있을 때만 [패스]를 보여 주고, 아니면 봇이 0.8초 뒤 자동으로 넘긴다.
@@ -2191,23 +2182,18 @@ func _stop_charge() -> void:
 		_power_label.visible = false
 
 
-## 현재 판정 도구가 홀드 & 릴리즈 파워 게이지를 쓰는가 (기본 D6, 박달나무 윷).
+## 현재 판정 도구가 홀드 & 릴리즈 파워 게이지를 쓰는가 (기본 D6, 친치로, 박달나무 윷).
 func _tool_has_gauge() -> bool:
 	if state == null:
 		return false
 	var tool: BaseJudgmentTool = state.tools[manager.current_player_id()]
-	return tool.tool_id == &"D6" or tool.tool_id == &"YUT"
+	return tool.tool_id == &"D6" or tool.tool_id == &"CHINCHIRO" or tool.tool_id == &"YUT"
 
 
 func _on_stop_pressed() -> void:
 	if _stop_button.disabled:
 		return
 	_act(&"stop")
-
-
-func _on_bell_pressed() -> void:
-	if state != null and state.tools[manager.current_player_id()] is ToolHalliGalli:
-		_act(&"bell")
 
 
 func _on_skip_pressed() -> void:
@@ -2235,8 +2221,6 @@ func _on_add_law_pressed(law_id: String) -> void:
 func _on_tool_selected(index: int) -> void:
 	var player_id: int = manager.current_player_id()
 	var new_tool: BaseJudgmentTool = ToolRegistry.create(ToolRegistry.ALL_IDS[index])
-	if new_tool is ToolHalliGalli:
-		new_tool.on_turn_begin(state.rng)
 	state.tools[player_id] = new_tool
 	_log_line("P%d의 판정 도구를 [%s](으)로 바꿨습니다." % [player_id, new_tool.display_name], Color("adb5bd"))
 	_refresh_all()
@@ -2935,8 +2919,6 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			var card: BaseCard = CardRegistry.get_card(data["card_id"])
 			_log_line("[카드] P%d [%s] 사용%s" % [data["player_id"], card.display_name, " (개입 대기열 - 나중에 낸 카드부터 실행)" if data["queued"] else ""], Color("74c0fc"))
 			_announce("카드 발동", "[P%d 발동!] %s" % [data["player_id"], card.display_name], ("개입 대기열에 쌓였습니다 (나중에 낸 카드부터 실행)\n" if data["queued"] else "") + str(CARD_SUMMARIES.get(data["card_id"], "")), PLAYER_COLORS[int(data["player_id"])], _make_card_preview(data["card_id"]), 1.2)
-		&"bell_result":
-			_log_line("P%d 종 %s" % [data["player_id"], "성공! 보너스 +2 적립" if data["success"] else "실패"], Color("ffa94d"))
 		&"npc_phase_resolved":
 			for report: Dictionary in data["reports"]:
 				_log_line("[NPC] NPC가 %s로 이동 (잡힌 말: %s)" % [str(report["path"]), str(report["caught"])], Color("fa5252"))
@@ -2985,7 +2967,8 @@ func _log_roll(data: Dictionary) -> String:
 			for reel: int in details["reels"]:
 				symbols.append(SLOT_SYMBOLS[reel])
 			text += "%s → %d칸" % [" | ".join(symbols), result["steps"]]
-		&"HALLI_GALLI": text += "기본 %d + 보너스 %d = %d칸" % [details["base"], details["bonus"], result["steps"]]
+		&"CHINCHIRO":
+			text += "%d칸" % result["steps"] if not details["oops"] else "삐끗! 주사위가 접시 밖으로 (-6칸 후퇴)"
 		&"REVOLVER":
 			if details["fired"]:
 				text += "탕! 누적 %d칸 증발, 턴 종료" % details["lost"]
@@ -3148,6 +3131,10 @@ func _reveal_roll(data: Dictionary) -> void:
 	var roll_text: String = _log_roll(data)
 	var details: Dictionary = (data["result"] as Dictionary)["details"]
 	var fired: bool = bool(details.get("fired", false))
+	if bool(details.get("oops", false)):
+		_show_center_banner("[친치로 삐끗!] 주사위가 접시 밖으로 나갔습니다! (-6칸 후퇴)", Color("ff6b6b"))
+		_announce("지하노역장 친치로", "[친치로 삐끗!]", "주사위가 접시 밖으로 나갔습니다! (-6칸 후퇴)", Color("ff6b6b"), null, 1.3)
+		return
 	_show_center_banner("P%d  %s" % [data["player_id"], roll_text.strip_edges()], Color("ff8787") if fired else Color("fff3bf"))
 
 

@@ -103,8 +103,6 @@ func _apply_evolution(state: GameState, player_id: int, params: Dictionary) -> D
 
 func _apply_tool(state: GameState, player_id: int) -> Dictionary:
 	var tool: BaseJudgmentTool = ToolRegistry.create(payload)
-	if tool is ToolHalliGalli:
-		tool.on_turn_begin(state.rng)
 	state.tools[player_id] = tool
 	return {"ok": true, "text": "판정 도구가 [%s](으)로 바뀌었습니다" % tool.display_name}
 

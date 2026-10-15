@@ -265,10 +265,10 @@ func _test_hud_overhaul() -> void:
 	_board._refresh_controls()
 	_expect(_board._tool_board.custom_minimum_size == Vector2(210, 250) and _board._tool_board.size.x == 210.0, "판정 도구 카드는 210x250 고정 크기")
 	_expect(_board._tool_title.text == "텍사스 홀덤 딜러" and _board._tool_main.text.contains("포커 족보") and _board._tool_icon.custom_minimum_size == Vector2(48, 48), "홀덤 카드: 이름 + 핵심 규칙 + 48x48 심볼 (%s)" % _board._tool_main.text)
-	manager.state.tools[current] = ToolRegistry.create(&"HALLI_GALLI")
-	(manager.state.tools[current] as ToolHalliGalli).banked_bonus = 4
+	manager.state.tools[current] = ToolRegistry.create(&"CHINCHIRO")
 	_board._refresh_controls()
-	_expect(_board._tool_sub.text.contains("+4칸 적립 중"), "할리갈리 카드에 현재 적립 칸 수 (%s)" % _board._tool_sub.text)
+	_expect(_board._tool_title.text == "지하노역장 친치로" and _board._tool_main.text == "4 ~ 6 칸 고눈금 보장!" and _board._tool_sub.text == "(삐끗 시 -6칸 후퇴!)", "친치로 카드 문구 (%s)" % _board._tool_main.text)
+	_expect(_board._tool_has_gauge(), "친치로도 홀드 & 릴리즈 파워 게이지를 쓴다")
 	for tool_id: StringName in ToolRegistry.ALL_IDS:
 		manager.state.tools[current] = ToolRegistry.create(tool_id)
 		_board._refresh_controls()

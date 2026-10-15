@@ -1,6 +1,6 @@
 # File: res://tests/test_tools.gd
 # Class: class_name TestTools
-# Role: 확정된 판정 도구 7종의 눈금 분포·재굴림·누적 규칙 검증
+# Role: 확정된 판정 도구 7종(D6·윷·룰렛·홀덤·친치로·777·러시안 룰렛)의 눈금 분포·재굴림·누적 규칙 검증
 class_name TestTools
 extends TestCase
 
@@ -87,41 +87,6 @@ func test_holdem_hand_evaluation_and_steps() -> void:
 		check_eq(result.steps, ToolHoldem.steps_for(result.details["hand"]), "결과 칸수 = 족보 칸수")
 
 
-func test_halli_galli_banks_bonus_with_spacebar_only_when_five_fruits() -> void:
-	var tool := ToolHalliGalli.new()
-	tool.fruit_totals = [2, 3, 1, 4]
-	check(not tool.press_bell(), "과일 5개가 아니면 적립 실패")
-	tool.fruit_totals = [5, 1, 0, 2]
-	check(tool.press_bell(), "과일 5개일 때 선입력 성공")
-	check(not tool.press_bell(), "같은 카드로 중복 적립 불가")
-	check_eq(tool.banked_bonus, 2, "+2 적립")
-	tool.fruit_totals = [0, 5, 0, 0]
-	tool.bell_claimed = false
-	check(tool.press_bell(), "새 카드에서 다시 적립")
-	check_eq(tool.banked_bonus, 4, "+2씩 누적")
-	var rng: RandomNumberGenerator = _rng()
-	var result: RollResult = tool.roll(rng)
-	check(result.steps >= 5 and result.steps <= 7, "기본 1~3 + 보너스 4")
-	check_eq(result.details["bonus"], 4, "보너스 합산")
-	check_eq(tool.banked_bonus, 0, "적립분 소모")
-	var plain: RollResult = tool.roll(rng)
-	check(plain.steps >= 1 and plain.steps <= 3, "보너스 없으면 1~3")
-
-
-func test_halli_galli_reveal_produces_valid_cards() -> void:
-	var tool := ToolHalliGalli.new()
-	var rng: RandomNumberGenerator = _rng()
-	var five_seen: bool = false
-	for i: int in 300:
-		tool.reveal_cards(rng)
-		var total: int = 0
-		for count: int in tool.fruit_totals:
-			total += count
-		check(total >= 4 and total <= 12, "공개 카드 합계 범위")
-		five_seen = five_seen or tool.is_bell_ready()
-	check(five_seen, "과일 5개 상황이 실제로 발생")
-
-
 func test_slot_machine_payouts() -> void:
 	check_eq(ToolSlot777.steps_for([0, 1, 2] as Array[int]), 1, "꽝")
 	check_eq(ToolSlot777.steps_for([2, 2, 4] as Array[int]), 4, "2개 일치")
@@ -179,3 +144,26 @@ func test_revolver_first_chamber_bullet_and_cap_at_fifteen() -> void:
 	for i: int in 300:
 		var result: RollResult = random_tool.roll(rng)
 		check(result.steps <= 15, "15칸 초과 불가")
+
+
+func test_chinchiro_rolls_high_with_a_one_in_six_oops_that_retreats_six() -> void:
+	var tool := ToolChinchiro.new()
+	check_eq(ToolChinchiro.FACES, int_array([4, 4, 5, 5, 6, -6]), "판정 배열")
+	var rng: RandomNumberGenerator = _rng()
+	var counts: Dictionary = {}
+	for i: int in 6000:
+		var result: RollResult = tool.roll(rng)
+		counts[result.steps] = int(counts.get(result.steps, 0)) + 1
+		check_eq(result.details["oops"], result.steps == -6, "삐끗 표시")
+		check(not result.reroll and not result.ends_turn and not result.can_continue, "단순 1회 판정")
+	check(counts.keys().all(func(face: int) -> bool: return [4, 5, 6, -6].has(face)), "나올 수 있는 눈금은 4·5·6·-6뿐")
+	check(counts[-6] > 800 and counts[-6] < 1200, "-6은 약 1/6 (%d)" % counts[-6])
+	check(counts[4] > 1800 and counts[5] > 1800, "4·5는 각 약 1/3")
+
+
+func test_oops_roll_moves_the_pawn_six_tiles_back() -> void:
+	var state := make_state(2, 1)
+	place(state, 11, 10, [9])
+	var report: MoveReport = move(state, 11, -6)
+	check_eq(state.get_pawn(11).current_tile_idx, 4, "-6이면 6칸 후퇴")
+	check(report.path.size() == 6, "한 칸씩 6걸음")

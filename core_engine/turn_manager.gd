@@ -18,7 +18,7 @@ enum State {
 signal phase_changed(new_state: State, player_id: int, time_limit: float)
 ## 우노 리버스(ACT_01) 등으로 턴 진행 방향이 뒤집혔다. new_direction: 1 정방향 / -1 역방향.
 signal turn_order_reversed(new_direction: int)
-## 연출·UI용 일반 이벤트. kind: roll_resolved, move_resolved, card_played, bell_result, npc_phase_resolved, augment_offers, augment_picked, game_over
+## 연출·UI용 일반 이벤트. kind: roll_resolved, move_resolved, card_played, npc_phase_resolved, augment_offers, augment_picked, game_over
 signal event_received(kind: StringName, data: Dictionary)
 signal action_rejected(player_id: int, action: StringName, reason: StringName)
 signal state_synced()
@@ -122,7 +122,7 @@ func act(action: StringName, params: Dictionary = {}) -> void:
 
 
 ## 모든 플레이어 행동의 단일 입구. 서버만 실행하며 발신 피어로 행동자를 검증한다.
-## action: proceed / roll / stop / bell / select_pawn / play_card / pick_augment
+## action: proceed / roll / stop / select_pawn / play_card / pick_augment
 @rpc("any_peer", "call_local", "reliable")
 func request_action(action: StringName, params: Dictionary = {}) -> void:
 	if not multiplayer.is_server() or state == null:
@@ -138,7 +138,6 @@ func request_action(action: StringName, params: Dictionary = {}) -> void:
 		&"proceed": _handle_proceed(actor)
 		&"roll": _handle_roll(actor)
 		&"stop": _handle_stop(actor)
-		&"bell": _handle_bell(actor)
 		&"select_pawn": _handle_select_pawn(actor, params)
 		&"play_card": _handle_play_card(actor, params)
 		&"pick_augment": _handle_pick_augment(actor, params)
@@ -265,15 +264,6 @@ func _handle_stop(actor: int) -> void:
 		action_rejected.emit(actor, &"stop", &"nothing_to_cash_out")
 		return
 	_apply_roll_result(result)
-
-
-func _handle_bell(actor: int) -> void:
-	var tool: BaseJudgmentTool = state.tools[actor]
-	if not (tool is ToolHalliGalli):
-		action_rejected.emit(actor, &"bell", &"no_bell")
-		return
-	var success: bool = (tool as ToolHalliGalli).press_bell()
-	_emit_event(&"bell_result", {"player_id": actor, "success": success})
 
 
 func _handle_select_pawn(actor: int, params: Dictionary) -> void:

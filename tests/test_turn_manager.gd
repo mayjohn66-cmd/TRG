@@ -480,21 +480,6 @@ func test_no_draft_when_disabled() -> void:
 	_dispose(manager)
 
 
-func test_halli_galli_bell_action_banks_bonus() -> void:
-	var manager: TurnManager = _new_manager()
-	var tool := ToolHalliGalli.new()
-	tool.fruit_totals = [5, 0, 0, 0]
-	_set_tool(manager, 1, tool)
-	var events: Array = _collect_events(manager)
-	_do(manager, 1, &"bell")
-	check_eq(tool.banked_bonus, 2, "스페이스바 선입력으로 +2 적립")
-	_do(manager, 1, &"bell")
-	var results: Array = events.filter(func(e: Dictionary) -> bool: return e["kind"] == &"bell_result")
-	check_eq(results.size(), 2, "결과 이벤트")
-	check_eq(results[1]["data"]["success"], false, "중복 입력 실패")
-	_dispose(manager)
-
-
 func test_state_sync_payload_roundtrips_through_a_client_mirror() -> void:
 	var host: TurnManager = _new_manager()
 	place(host.state, 11, 8, [7])

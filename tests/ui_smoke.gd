@@ -169,8 +169,6 @@ func _step_once() -> void:
 				return
 			if _board._stop_button.visible and not _board._stop_button.disabled and _rng.randi_range(0, 1) == 0:
 				_board._stop_button.pressed.emit()
-			elif _board._bell_button.visible and _rng.randi_range(0, 2) == 0:
-				_board._bell_button.pressed.emit()
 			else:
 				_board._roll_button.pressed.emit()
 		TurnManager.State.PHASE_SELECT_PAWN:
@@ -324,7 +322,7 @@ func _check_bounds() -> void:
 	for node: Node in _board._dock.get_children():
 		if node is Control and not node.is_queued_for_deletion():
 			controls.append(node)
-	for button: Control in [_board._roll_button, _board._stop_button, _board._skip_button, _board._bomb_button, _board._bell_button]:
+	for button: Control in [_board._roll_button, _board._stop_button, _board._skip_button, _board._bomb_button]:
 		if button.visible:
 			controls.append(button)
 	for button: Button in _board._pawn_buttons:

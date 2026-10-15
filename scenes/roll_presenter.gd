@@ -7,7 +7,7 @@ extends PanelContainer
 ## 연출이 끝났다 (취소 포함). play()는 이 시그널을 await 한다.
 signal finished
 
-const SUPPORTED: Array[StringName] = [&"D6", &"YUT", &"LIFE_ROULETTE", &"SLOT_777", &"HOLDEM"]
+const SUPPORTED: Array[StringName] = [&"D6", &"CHINCHIRO", &"YUT", &"LIFE_ROULETTE", &"SLOT_777", &"HOLDEM"]
 const YUT_NAMES: Dictionary = {-1: "빽도", 1: "도", 2: "개", 3: "걸", 4: "윷", 5: "모"}
 const SLOT_SYMBOLS: Array[String] = ["체리", "레몬", "종", "BAR", "다이아", "7"]
 const SUITS: Array[String] = ["♣", "♦", "♥", "♠"]
@@ -207,8 +207,8 @@ func _build(tool_id: StringName) -> void:
 	_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_stage)
 	match tool_id:
-		&"D6":
-			_title.text = "기본 주사위"
+		&"D6", &"CHINCHIRO":
+			_title.text = "기본 주사위" if tool_id == &"D6" else "지하노역장 친치로"
 			_total = DIE_SHUFFLE + DIE_PUNCH + HOLD_TIME
 			_die = _box(Color("f8f9fa"), Color("adb5bd"), 22, Vector2(128, 128))
 			_die_label = _label("?", 78, Color("212529"))
@@ -282,7 +282,7 @@ static func card_text(card: int) -> String:
 
 func _update(t: float) -> void:
 	match _mode:
-		&"D6", &"YUT": _update_die(t)
+		&"D6", &"CHINCHIRO", &"YUT": _update_die(t)
 		&"LIFE_ROULETTE": _update_wheel(t)
 		&"SLOT_777": _update_slot(t)
 		&"HOLDEM": _update_cards(t)
@@ -309,7 +309,7 @@ func _update_die(t: float) -> void:
 				for stick: PanelContainer in _sticks:
 					_set_stick(stick, _rng.randi_range(0, 1) == 0, false)
 			else:
-				_die_label.text = str(_rng.randi_range(1, 6))
+				_die_label.text = str(_rng.randi_range(1, 6)) if _mode == &"D6" else str(ToolChinchiro.FACES[_rng.randi_range(0, 5)])
 		var spins: float = 1.0 + floorf(_power * 3.0)
 		var progress: float = _ease_out(t / DIE_SHUFFLE)
 		if is_yut:
@@ -446,7 +446,7 @@ func _update_cards(t: float) -> void:
 func _final_text(tool_id: StringName, result: Dictionary) -> String:
 	var details: Dictionary = result.get("details", {})
 	match tool_id:
-		&"D6": return str(int(result.get("steps", 0)))
+		&"D6", &"CHINCHIRO": return str(int(result.get("steps", 0)))
 		&"YUT": return str(YUT_NAMES.get(int(details.get("face", result.get("steps", 0))), "?"))
 		&"LIFE_ROULETTE": return str(int(details.get("face", result.get("steps", 0))))
 		&"SLOT_777":
