@@ -232,19 +232,21 @@ static func _warp_to_center(state: GameState, mover: PlayerPawn, ctx: RuleContex
 static func _resolve_captures(state: GameState, mover: PlayerPawn, ctx: RuleContext, report: MoveReport) -> void:
 	if mover.current_tile_idx == GameEnums.GOAL_TILE:
 		return
-	var victims: Array[PlayerPawn] = []
+	var enemies: Array[PlayerPawn] = []
 	for leader: PlayerPawn in state.leaders_at(mover.current_tile_idx):
 		if leader.owner_id != mover.owner_id:
-			victims.append(leader)
-	if victims.is_empty():
+			enemies.append(leader)
+	if enemies.is_empty():
 		return
 	# 바둑 2세트 [포석]: 내 바둑돌은 잡히지 않는다. 멈춘 침입자는 잡지 못하고 한 칸 밀려난다.
-	for victim: PlayerPawn in victims:
+	for victim: PlayerPawn in enemies:
 		if is_capture_immune(state, victim):
 			state.step_back_one(mover)
 			report.pushed_back = true
 			report.path.append(mover.current_tile_idx)
 			return
+	# 개별 피격: 업히지 않고 따로 서 있는 말들은 주인마다 1개(ID가 앞선 말)만 잡힌다. 업힌 말은 하나의 대표 말이라 전원이 함께 잡힌다.
+	var victims: Array[PlayerPawn] = pick_capture_victims(enemies)
 	# 바둑 [알까기]: 잡는 대신 상대를 2칸 앞으로 튕겨 내고 내 돌이 그 칸을 차지한다.
 	if mover.kind == GameEnums.PawnKind.GO:
 		for victim: PlayerPawn in victims:
@@ -252,8 +254,8 @@ static func _resolve_captures(state: GameState, mover: PlayerPawn, ctx: RuleCont
 		return
 	ctx.capturer = mover
 	ctx.captured_pawns = victims
-	# 윷놀이 기물의 고유 능력 [신명나는 사냥]: 잡기 추가 턴은 윷놀이 기물로 잡았을 때만 얻는다.
-	ctx.capture_extra_turn = mover.kind == GameEnums.PawnKind.YUT
+	# 잡기 추가 턴: 윷놀이 기물의 고유 능력 [신명나는 사냥]이며, 장기 4세트(장군멍군)가 활성이면 장기 기물도 얻는다.
+	ctx.capture_extra_turn = grants_capture_extra_turn(state, mover)
 	ctx.capture_charge_steps = 0
 	ctx.trigger_timing = RuleContext.ON_CAPTURE
 	ctx = state.rulebook.process_context(ctx)
@@ -280,6 +282,27 @@ static func _resolve_captures(state: GameState, mover: PlayerPawn, ctx: RuleCont
 		var charge_ctx: RuleContext = ctx.make_follow_up(ctx.capture_charge_steps)
 		var charge_report: MoveReport = execute(state, mover, charge_ctx)
 		report.merge(charge_report)
+
+
+## 이 말이 상대를 잡았을 때 추가 굴림 기회를 얻는가: 윷놀이 기물 또는 장기 4세트를 모은 주인의 장기 기물.
+static func grants_capture_extra_turn(state: GameState, mover: PlayerPawn) -> bool:
+	if mover.kind == GameEnums.PawnKind.YUT:
+		return true
+	return mover.kind == GameEnums.PawnKind.JANGGI and state.set_count(mover.owner_id, GameEnums.PawnKind.JANGGI) >= GameEnums.PAWNS_PER_PLAYER
+
+
+## 같은 타일의 적 대표 말들 중 실제로 잡히는 말: 주인마다 ID가 가장 앞선 대표 말 1개 (업힌 말은 대표 말과 함께).
+static func pick_capture_victims(enemies: Array[PlayerPawn]) -> Array[PlayerPawn]:
+	var picked: Dictionary = {}
+	for enemy: PlayerPawn in enemies:
+		var current: PlayerPawn = picked.get(enemy.owner_id)
+		if current == null or enemy.entity_id < current.entity_id:
+			picked[enemy.owner_id] = enemy
+	var result: Array[PlayerPawn] = []
+	for enemy: PlayerPawn in enemies:
+		if picked[enemy.owner_id] == enemy:
+			result.append(enemy)
+	return result
 
 
 ## 바둑 2세트를 가진 주인의 바둑돌은 잡히지 않는다 (포석).

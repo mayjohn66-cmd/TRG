@@ -1197,7 +1197,8 @@ func _set_synergy_text(player_id: int) -> String:
 	for kind: GameEnums.PawnKind in PawnCatalog.EVOLVABLE_SETS:
 		var count: int = state.set_count(player_id, kind)
 		if count >= GameEnums.PAWNS_PER_PLAYER:
-			parts.append("(%s 4세트 완성 - %s 승리 조건)" % [PawnCatalog.display_set_name(kind), PawnCatalog.SPECIAL_VICTORY_NAMES[kind]])
+			var privilege: String = " + 잡기 추가 턴" if kind == GameEnums.PawnKind.JANGGI else ""
+			parts.append("(%s 4세트 완성 - %s 승리 조건%s)" % [PawnCatalog.display_set_name(kind), PawnCatalog.SPECIAL_VICTORY_NAMES[kind], privilege])
 		elif count >= GameEnums.SET_SYNERGY_2:
 			var extra: String = " - 무적" if kind == GameEnums.PawnKind.GO else ""
 			parts.append("(%s %d세트 활성%s)" % [PawnCatalog.display_set_name(kind), count, extra])

@@ -85,6 +85,76 @@ func test_non_yut_pawns_capture_without_extra_turn() -> void:
 		check_eq(state.get_pawn(21).current_tile_idx, 0, "%d: 출발선으로" % kind)
 
 
+func test_unstacked_pieces_on_one_tile_are_captured_one_at_a_time() -> void:
+	var state := make_state()
+	place(state, 21, 4, [3])
+	place(state, 22, 4, [3])
+	place(state, 23, 4, [3])
+	place(state, 11, 2, [1])
+	var report: MoveReport = move(state, 11, 2)
+	check_eq(report.captured_pawn_ids, int_array([21]), "ID가 가장 앞선 말 하나만 잡힌다")
+	check_eq(state.get_pawn(21).current_tile_idx, 0, "잡힌 말은 출발선으로")
+	check_eq(state.get_pawn(22).current_tile_idx, 4, "나머지는 그 타일에 생존")
+	check_eq(state.get_pawn(23).current_tile_idx, 4, "나머지는 그 타일에 생존")
+	check(state.get_pawn(22).has_left_start and state.get_pawn(23).has_left_start, "생존한 말은 출발 상태 유지")
+	check_eq(state.get_pawn(11).current_tile_idx, 4, "이동한 말도 같은 타일에 공존")
+	var second: MoveReport = move(state, 11, 0 + 1)  # 다른 말이 같은 타일에 다시 도착하면 다음 말이 잡힌다
+	check(second.captured_pawn_ids.is_empty(), "이동해 떠난 뒤에는 잡기 없음")
+	place(state, 12, 2, [1])
+	check_eq(move(state, 12, 2).captured_pawn_ids, int_array([22]), "다음 도착은 남은 말 중 ID가 앞선 하나")
+
+
+func test_stacked_pieces_are_captured_together_as_one_unit() -> void:
+	var state := make_state(2, 1, {2: [Vector2i(GameEnums.PawnKind.YUT, 1), Vector2i(GameEnums.PawnKind.YUT, 2), Vector2i(GameEnums.PawnKind.YUT, 3), 0]})
+	place(state, 21, 4, [3])
+	place(state, 22, 4, [3])
+	state.stack_pawns(state.get_pawn(21), state.get_pawn(22))
+	place(state, 23, 4, [3])
+	place(state, 11, 2, [1])
+	var report: MoveReport = move(state, 11, 2)
+	check_eq(report.captured_pawn_ids, int_array([21, 22]), "업힌 말은 전원 함께 추방")
+	check_eq(state.get_pawn(22).current_tile_idx, 0, "업힌 말도 출발선으로")
+	check(state.get_pawn(22).carrier == null, "업기 해제")
+	check_eq(state.get_pawn(23).current_tile_idx, 4, "따로 서 있던 말은 생존")
+
+
+func test_each_enemy_owner_loses_at_most_one_unit_per_capture() -> void:
+	var state := make_state(3)
+	place(state, 21, 4, [3])
+	place(state, 22, 4, [3])
+	place(state, 31, 4, [3])
+	place(state, 32, 4, [3])
+	place(state, 11, 2, [1])
+	var report: MoveReport = move(state, 11, 2)
+	check_eq(report.captured_pawn_ids, int_array([21, 31]), "상대 플레이어마다 1개씩")
+	check_eq(state.get_pawn(22).current_tile_idx, 4, "P2의 나머지 말 생존")
+	check_eq(state.get_pawn(32).current_tile_idx, 4, "P3의 나머지 말 생존")
+
+
+func test_go_knock_also_hits_only_one_unstacked_piece() -> void:
+	var state := make_state(2, 1, {1: [Vector2i(GameEnums.PawnKind.GO, 1), 0, 0, 0]})
+	place(state, 21, 4, [3])
+	place(state, 22, 4, [3])
+	place(state, 11, 2, [1])
+	var report: MoveReport = move(state, 11, 2)
+	check_eq(report.knocked_pawn_ids, int_array([21]), "알까기도 개별 피격")
+	check_eq(state.get_pawn(22).current_tile_idx, 4, "나머지는 제자리")
+
+
+func test_area_traps_still_hit_every_piece_on_the_tile() -> void:
+	var state := make_state()
+	place(state, 21, 6, [5])
+	place(state, 22, 6, [5])
+	place(state, 12, 7, [6])
+	var mine := PlaceMineFieldCommand.new(1, 6)
+	mine.bind_state(state)
+	mine.execute()
+	place(state, 11, 4, [3])
+	move(state, 11, 2)  # 6번 지뢰를 밟아 폭발
+	check_eq(state.get_pawn(21).current_tile_idx, 0, "지뢰는 그 칸의 모든 말을 날린다 (1)")
+	check_eq(state.get_pawn(22).current_tile_idx, 0, "지뢰는 그 칸의 모든 말을 날린다 (2)")
+
+
 func test_start_tile_is_safe() -> void:
 	var state := make_state()
 	place(state, 12, 19, [18])

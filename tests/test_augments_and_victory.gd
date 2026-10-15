@@ -547,17 +547,54 @@ func test_capture_chain_resets_when_the_turn_passes() -> void:
 	place(manager.state, 11, 1, [0])
 	place(manager.state, 21, 2, [1])
 	place(manager.state, 22, 4, [3])
-	manager.state.tools[1] = ScriptedTool.new([ScriptedTool.reroll_of(1), 2])
+	manager.state.tools[1] = ScriptedTool.new([1, 2, 1])
 	manager.state.tools[2] = ScriptedTool.new([1])
+	for step: int in 2:
+		_do(manager, 1, &"proceed")
+		_do(manager, 1, &"roll")
+		_do(manager, 1, &"select_pawn", {"pawn_id": 11})
 	_do(manager, 1, &"proceed")
 	_do(manager, 1, &"roll")
-	_do(manager, 1, &"roll")
-	for step: int in 2:
-		_do(manager, 1, &"select_pawn", {"pawn_id": 11})
-	check_eq(manager.current_player_id(), 2, "일반 기물은 추가 턴이 없어 턴이 넘어감")
+	_do(manager, 1, &"select_pawn", {"pawn_id": 12})  # 잡지 못하고 턴 종료
+	check_eq(manager.current_player_id(), 2, "턴이 넘어감")
 	check_eq(manager._chain_captures, 0, "연속 잡기 카운터 초기화")
 	check(not manager.is_game_over, "2연속으로는 승리하지 않음")
 	_dispose(manager)
+
+
+func test_janggun_mungun_three_captures_via_four_set_extra_turns() -> void:
+	# 장기 4세트 특권: 잡기 추가 턴이 이어져 굴림 3번 연속으로 3연속 잡기를 달성한다.
+	var manager: TurnManager = _manager(2, false, {1: _loadout(Kind.JANGGI)})
+	place(manager.state, 11, 1, [0])
+	place(manager.state, 21, 2, [1])
+	place(manager.state, 22, 4, [3])
+	place(manager.state, 23, 6, [5])
+	manager.state.tools[1] = ScriptedTool.new([1, 2, 2])
+	var winners: Array = []
+	manager.game_over.connect(func(winner_id: int, reason: StringName) -> void: winners.append([winner_id, reason]))
+	for step: int in 3:
+		_do(manager, 1, &"proceed")
+		_do(manager, 1, &"roll")
+		_do(manager, 1, &"select_pawn", {"pawn_id": 11})
+	check_eq(winners, [[1, VictoryChecker.JANGGUN_MUNGUN]], "추가 턴이 이어져 3연속 잡기")
+	_dispose(manager)
+
+
+func test_janggi_capture_extra_turn_is_a_four_set_privilege() -> void:
+	for count: int in [1, 2, 3, 4]:
+		var loadout: Array = []
+		for unit: int in 4:
+			loadout.append(Vector2i(Kind.JANGGI, unit + 1) if unit < count else 0)
+		var state := make_state(2, 1, {1: loadout})
+		place(state, 11, 2, [1])
+		place(state, 21, 4, [3])
+		var report: MoveReport = move(state, 11, 2)
+		check_eq(report.captured_pawn_ids, int_array([21]), "%d세트: 잡기는 수행" % count)
+		check_eq(report.extra_turn, count == 4, "%d세트: 추가 굴림은 4세트에서만" % count)
+	var chess := make_state(2, 1, {1: _loadout(Kind.CHESS)})
+	place(chess, 11, 2, [1])
+	place(chess, 21, 4, [3])
+	check(not move(chess, 11, 2).extra_turn, "다른 4세트(체스)는 해당 없음")
 
 
 func test_special_victory_real_estate_needs_six_simultaneous_hotels() -> void:
