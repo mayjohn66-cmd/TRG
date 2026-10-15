@@ -1980,7 +1980,7 @@ func _refresh_tool_board(tool: BaseJudgmentTool, player_id: int) -> void:
 			row.add_child(label)
 			_tool_rows_box.add_child(row)
 			_tool_rows[str(entry[0])] = {"panel": row, "label": label}
-	_tool_title.text = "P%d 판정 도구: %s" % [player_id, tool.display_name]
+	_tool_title.text = "%s 판정 도구: %s" % ["내" if ai_mode else "P%d" % player_id, tool.display_name]
 	_tool_title.add_theme_color_override("font_color", (PLAYER_COLORS[player_id] as Color).lightened(0.3))
 	if tool is ToolHalliGalli:
 		var halli: ToolHalliGalli = tool as ToolHalliGalli
@@ -2084,7 +2084,7 @@ func _refresh_controls() -> void:
 		_stop_button.disabled = false
 		_stop_button.modulate = Color.WHITE
 	_bell_button.visible = tool is ToolHalliGalli and not _is_bot_turn()
-	_refresh_tool_board(tool, player_id)
+	_refresh_tool_board(state.tools[_dock_owner()], _dock_owner())
 	var window_open: bool = not over and (current_phase == TurnManager.State.PHASE_INTERRUPT_ROLL or current_phase == TurnManager.State.PHASE_RESOLUTION)
 	# AI 모드: 개입 창은 사람(P1)이 낼 카드를 들고 있을 때만 [패스]를 보여 주고, 아니면 봇이 0.8초 뒤 자동으로 넘긴다.
 	_skip_button.visible = window_open and not manager.stack_offer_pending() and (not ai_mode or _human_can_intervene())
@@ -2962,7 +2962,8 @@ func _handle_roll_event(data: Dictionary) -> void:
 
 
 func _reveal_roll(data: Dictionary) -> void:
-	_highlight_tool_result(data["result"])
+	if int(data["player_id"]) == _dock_owner():
+		_highlight_tool_result(data["result"])
 	var roll_text: String = _log_roll(data)
 	var details: Dictionary = (data["result"] as Dictionary)["details"]
 	var fired: bool = bool(details.get("fired", false))
