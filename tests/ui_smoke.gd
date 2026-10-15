@@ -19,6 +19,7 @@ var _castles: int = 0
 var _bangs: int = 0
 var _roulette_seen: int = 0
 var _roulette_forced: bool = false
+var _board_clicks: int = 0
 var _failures: Array[String] = []
 var _rng := RandomNumberGenerator.new()
 
@@ -46,21 +47,49 @@ func _check_layout() -> void:
 	_assert(_board._tile_views.size() == 29, "타일 29개가 그려져야 한다 (%d)" % _board._tile_views.size())
 	_assert(_board._pawn_views.size() == 16, "말 16개 (%d)" % _board._pawn_views.size())
 	_assert(_board._law_labels.size() == 4, "법전 슬롯 4개")
-	_assert(_board._hand_boxes.size() == 4, "손패 행 4개")
-	_assert(not _board._debug_box.visible, "디버그 패널은 기본으로 접혀 있어야 한다")
+	_assert(_board._profiles.size() == 4, "모서리 프로필 HUD 카드 4개")
+	_assert(not _board._debug_box.visible and not _board._log_panel.visible, "치트/디버그와 전체 로그 서랍은 기본으로 숨겨져 있어야 한다")
 	_board._debug_toggle.pressed.emit()
-	_assert(_board._debug_box.visible, "토글 버튼으로 디버그 패널이 펼쳐진다")
-	_board._debug_toggle.pressed.emit()
-	_assert(not _board._debug_box.visible, "다시 누르면 접힌다")
+	_assert(_board._debug_box.visible and not _board._log_panel.visible, "[치트/디버그] 버튼으로 디버그 서랍이 열린다")
+	_board._log_toggle.pressed.emit()
+	_assert(_board._log_panel.visible and not _board._debug_box.visible, "[전체 로그] 버튼은 로그 서랍을 열고 디버그 서랍을 닫는다")
+	_board._log_toggle.pressed.emit()
+	_assert(not _board._log_panel.visible and not _board._debug_box.visible, "다시 누르면 닫힌다")
+	_check_hud_layout()
 	_assert(_board._draft_overlay != null, "1라운드 시작에 증강 드래프트 오버레이가 떠야 한다")
 	for index: int in 29:
-		var tile: ColorRect = _board._tile_views[index]
-		_assert(tile.position.x >= 0.0 and tile.position.y >= 0.0 and tile.position.x + tile.size.x <= 690.0 and tile.position.y + tile.size.y <= 768.0, "타일 %d가 보드 영역 안에 있어야 한다" % index)
+		var tile: Control = _board._tile_views[index]
+		_assert(Rect2(Vector2.ZERO, Vector2(1366, 768)).encloses(Rect2(tile.position, tile.size)), "타일 %d가 화면 안에 있어야 한다" % index)
 	for a: int in 29:
 		for b: int in range(a + 1, 29):
-			var rect_a := Rect2((_board._tile_views[a] as ColorRect).position, Vector2(46, 46))
-			var rect_b := Rect2((_board._tile_views[b] as ColorRect).position, Vector2(46, 46))
+			var rect_a := Rect2((_board._tile_views[a] as Control).position, Vector2(MainBoard.TILE_SIZE, MainBoard.TILE_SIZE))
+			var rect_b := Rect2((_board._tile_views[b] as Control).position, Vector2(MainBoard.TILE_SIZE, MainBoard.TILE_SIZE))
 			_assert(not rect_a.intersects(rect_b), "타일 %d와 %d가 겹침" % [a, b])
+
+
+## 상용 HUD 배치 검증: 보드는 화면 정중앙, 프로필 카드는 네 모서리, 서로 겹치는 HUD가 없어야 한다.
+func _check_hud_layout() -> void:
+	var board_rect := Rect2()
+	for index: int in 29:
+		var tile: Control = _board._tile_views[index]
+		board_rect = tile.get_rect() if index == 0 else board_rect.merge(tile.get_rect())
+	_assert(absf(board_rect.get_center().x - 683.0) < 4.0, "보드판은 화면 가로 정중앙이어야 한다 (%s)" % str(board_rect))
+	var corners: Dictionary = {1: Vector2(0, 1), 2: Vector2(0, 0), 3: Vector2(1, 0), 4: Vector2(1, 1)}
+	var rects: Dictionary = {}
+	for player_id: int in [1, 2, 3, 4]:
+		var panel: Control = _board._profiles[player_id]["panel"]
+		var rect: Rect2 = panel.get_global_rect()
+		rects[player_id] = rect
+		_assert(Rect2(Vector2.ZERO, Vector2(1366, 768)).encloses(rect), "P%d 프로필 카드가 화면 안에 있어야 한다 %s" % [player_id, str(rect)])
+		var corner: Vector2 = corners[player_id]
+		_assert((rect.get_center().x < 683.0) == (corner.x == 0.0) and (rect.get_center().y < 384.0) == (corner.y == 0.0), "P%d 프로필 카드는 지정한 모서리에 있어야 한다" % player_id)
+		_assert(not rect.intersects(board_rect), "P%d 프로필 카드가 보드판을 가리면 안 된다" % player_id)
+	var law_rect: Rect2 = (_board._law_slots[0] as Control).get_global_rect().merge((_board._law_slots[3] as Control).get_global_rect())
+	_assert(not law_rect.intersects(board_rect), "법전 위젯이 보드판을 가리면 안 된다")
+	_assert(law_rect.position.x < 400.0 and not law_rect.intersects(rects[1]) and not law_rect.intersects(rects[2]), "법전 위젯은 P1·P2 모서리 사이의 좌측 중앙에 있어야 한다")
+	_assert(_board._law_labels.size() == 4 and _board._law_dashes.size() == 4, "법전 슬롯 4개")
+	for dash: Control in _board._law_dashes:
+		_assert(dash.visible, "비어 있는 법전 슬롯은 점선 테두리가 보여야 한다")
 
 
 func _trace(message: String) -> void:
@@ -102,6 +131,21 @@ func _step_once() -> void:
 				manager.force_timeout()
 				return
 			var chosen: Button = options[_rng.randi_range(0, options.size() - 1)]
+			# 가끔은 버튼 대신 보드 위의 말 도형을 직접 클릭한다 (호버 미리보기 포함).
+			var chosen_index: int = _board._pawn_buttons.find(chosen)
+			var chosen_pawn: PlayerPawn = _board.state.get_pawn(manager.current_player_id() * 10 + chosen_index + 1)
+			var chosen_view: Node2D = _board._pawn_views.get(chosen_pawn.entity_id)
+			if chosen_view != null and chosen_view.visible and _rng.randi_range(0, 1) == 0:
+				var hover := InputEventMouseMotion.new()
+				hover.position = chosen_view.position
+				_board._input(hover)
+				var click := InputEventMouseButton.new()
+				click.position = chosen_view.position
+				click.button_index = MOUSE_BUTTON_LEFT
+				click.pressed = true
+				_board._input(click)
+				_board_clicks += 1
+				return
 			chosen.mouse_entered.emit()
 			chosen.mouse_exited.emit()
 			chosen.pressed.emit()
@@ -171,19 +215,27 @@ func _try_tile_card(manager: TurnManager) -> bool:
 func _check_bounds() -> void:
 	var window: Rect2 = Rect2(Vector2.ZERO, Vector2(1366, 768))
 	var controls: Array[Control] = []
-	for player_id: int in [1, 2, 3, 4]:
-		for node: Node in (_board._hand_boxes[player_id] as Control).get_children():
-			if node is Control and not node.is_queued_for_deletion():
-				controls.append(node)
+	for node: Node in _board._dock.get_children():
+		if node is Control and not node.is_queued_for_deletion():
+			controls.append(node)
 	for button: Control in [_board._roll_button, _board._stop_button, _board._skip_button, _board._castle_button, _board._bomb_button, _board._bell_button]:
 		if button.visible:
 			controls.append(button)
 	for button: Button in _board._pawn_buttons:
-		controls.append(button)
+		if _board._pawn_bar.visible:
+			controls.append(button)
+	for player_id: int in [1, 2, 3, 4]:
+		controls.append(_board._profiles[player_id]["panel"])
 	for control: Control in controls:
 		var rect: Rect2 = control.get_global_rect()
-		if rect.size.x > 0.0 and not window.encloses(rect):
+		if rect.size.x > 0.0 and not window.grow(2.0).encloses(rect):
 			_failures.append("UI가 화면 밖으로 나갔다: %s %s" % [control.get_class(), str(rect)])
+	# 카드 독의 카드는 서로 가려지지 않는 범위에서 100x140 이상이어야 하고, 현재 턴 프로필은 황금 테두리로 강조된다.
+	for node: Node in _board._dock.get_children():
+		if node is PanelContainer and not node.is_queued_for_deletion():
+			_assert((node as Control).size.x >= 99.0 and (node as Control).size.y >= 139.0, "카드는 최소 100x140이어야 한다 (%s)" % str((node as Control).size))
+	var turn_panel: PanelContainer = _board._profiles[_board.manager.current_player_id()]["panel"]
+	_assert(turn_panel.scale.x > 1.0, "현재 턴 플레이어 프로필 카드는 확대되어야 한다")
 	var player_id: int = _board.manager.current_player_id()
 	if _board.state.tools[player_id] is ToolRussianRoulette:
 		_assert(_board._roll_button.visible and _board._stop_button.visible, "러시안 룰렛에서는 방아쇠/멈추기 버튼이 상시 노출되어야 한다")
@@ -245,7 +297,7 @@ func _finish() -> bool:
 	var phase_names: Array[String] = []
 	for phase: int in _seen_phases.keys():
 		phase_names.append(str(phase))
-	print("UI_SMOKE actions=%d round=%d game_over=%s winner=%d reason=%s phases=%d drafts=%s tile_picks=%d cards=%d evolutions=%d bombs_passed=%d castles=%d bangs=%d roulette=%d" % [_actions, _board.state.round_number, manager.is_game_over, _board.state.winner, VictoryChecker.reason_text(_board._last_reason), _seen_phases.size(), str(_draft_rounds), _tile_picks, _cards_played, _evolutions, _bombs_passed, _castles, _bangs, _roulette_seen])
+	print("UI_SMOKE actions=%d round=%d game_over=%s winner=%d reason=%s phases=%d drafts=%s tile_picks=%d cards=%d evolutions=%d bombs_passed=%d castles=%d bangs=%d roulette=%d board_clicks=%d" % [_actions, _board.state.round_number, manager.is_game_over, _board.state.winner, VictoryChecker.reason_text(_board._last_reason), _seen_phases.size(), str(_draft_rounds), _tile_picks, _cards_played, _evolutions, _bombs_passed, _castles, _bangs, _roulette_seen, _board_clicks])
 	_assert(manager.is_game_over, "치트 없이 한 판이 끝까지 진행되어 승리자가 나와야 한다 (조작 %d회)" % _actions)
 	_assert(_draft_rounds.has(1), "1라운드 드래프트가 열렸어야 한다")
 	_assert(_board._result_overlay != null, "게임 종료 결과창이 떠야 한다")
