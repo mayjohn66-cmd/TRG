@@ -420,3 +420,5 @@
 
     -   **scenes/** : UI 및 인게임 뷰(View) 씬 파일 (main_board.gd HUD,
         > roll_presenter.gd 판정 연출, event_announcer.gd 중앙 알림)
+- **굴림 위젯 표시:** 굴리기 버튼·룰렛 원판·리볼버 패드는 내가 굴릴 차례(`PHASE_TURN_BEGIN`/`PHASE_ROLL_WAIT`)에만 보이고, 굴림이 끝나면(말 선택·이동 단계) 지워서 보드 가운데가 가려지지 않게 한다. 룰렛·리볼버 패드는 돌아가는 연출 중에는 남는다. 보드 타일의 번호 글자는 없앴다 (설명 태그·말·설치물 배지만 남음).
+

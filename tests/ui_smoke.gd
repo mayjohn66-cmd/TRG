@@ -385,7 +385,8 @@ func _check_bounds() -> void:
 		if node is PanelContainer and not node.is_queued_for_deletion():
 			var hand_card: Control = node as Control
 			_assert(hand_card.size.x >= 139.0 and hand_card.size.y >= 195.0, "카드는 전체 크기 140x196이어야 한다 (%s)" % str(hand_card.size))
-			_assert(hand_card.get_global_rect().position.y + 80.0 < 768.0, "카드 윗부분(일러스트·이름)은 화면 안에 보여야 한다")
+			# 부채꼴로 기울어진 카드는 원점이 최대 30px쯤 아래로 밀리므로 여유를 둔다.
+			_assert(hand_card.get_global_rect().position.y + 60.0 < 768.0, "카드 윗부분(일러스트·이름)은 화면 안에 보여야 한다")
 	var turn_panel: PanelContainer = _board._profiles[_board.manager.current_player_id()]["panel"]
 	_assert(turn_panel.scale.x > 1.0, "현재 턴 플레이어 프로필 카드는 확대되어야 한다")
 	# 스포트라이트: 현재 턴만 환하게, 나머지는 어둡게 가라앉는다 (전체 승리 후에는 모두 밝게).
@@ -406,7 +407,12 @@ func _check_bounds() -> void:
 			_assert((slots[index]["status"] as Label).text == expected, "기물 슬롯 상태 문구 (%s)" % expected)
 	var player_id: int = _board.manager.current_player_id()
 	if _board.state.tools[player_id] is ToolRussianRoulette and not _board._is_bot_turn():
-		_assert(_board._roll_pad.kind == RollPad.Kind.REVOLVER and _board._roll_pad.visible and _board._stop_button.visible, "러시안 룰렛에서는 방아쇠(리볼버 패드)/멈추기 버튼이 상시 노출되어야 한다")
+		var in_roll_phase: bool = _board.manager.current_state == TurnManager.State.PHASE_TURN_BEGIN or _board.manager.current_state == TurnManager.State.PHASE_ROLL_WAIT
+		_assert(_board._roll_pad.kind == RollPad.Kind.REVOLVER and _board._stop_button.visible, "러시안 룰렛에서는 리볼버 패드 종류와 멈추기 버튼이 유지되어야 한다")
+		if in_roll_phase:
+			_assert(_board._roll_pad.visible, "굴릴 차례에는 방아쇠(리볼버 패드)가 보여야 한다")
+		elif not _board._fx_busy and not _board._roll_pad.active:
+			_assert(not _board._roll_pad.visible, "굴림이 끝나면 리볼버 패드는 지워져야 한다")
 		_assert(_board._stop_button.disabled == not _board.state.tools[player_id].has_pending_state() or _board.manager.current_state != TurnManager.State.PHASE_ROLL_WAIT, "멈추기 버튼은 누적이 있을 때만 활성화")
 		_roulette_seen += 1
 

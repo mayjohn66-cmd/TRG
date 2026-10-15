@@ -1144,12 +1144,8 @@ func _build_tiles_once() -> void:
 		_tile_views[index] = tile
 
 		var light: bool = _is_light_tile(index, node.tile_type)
-		# 타일 안 요소 배치: 번호=좌상단, 설명=하단 중앙, 설치물 배지=우상단, 말=정중앙.
+		# 타일 안 요소 배치(번호 글자는 없앴다): 설명=하단 중앙, 설치물 배지=우상단, 말=정중앙.
 		var text_color: Color = Color("212529") if light else Color("f8f9fa")
-		var number := _make_label(str(index), 13, text_color)
-		number.position = Vector2(3, 0)
-		number.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		tile.add_child(number)
 		var tag: String = _tile_tag(index, node.tile_type)
 		var tag_label := _make_label(tag, 10, text_color)
 		tag_label.name = "Tag"
@@ -2671,7 +2667,11 @@ func _refresh_roll_pad() -> void:
 		_roll_pad.set_kind(wanted)
 	if mode != _roll_geometry:
 		_set_roll_geometry(mode)
-	_roll_button.visible = wanted == RollPad.Kind.NONE
+	# 굴림 위젯은 굴릴 차례에만 보인다. 굴림이 끝나면 지워서 보드 한가운데가 가리지 않게 한다 (룰렛·리볼버 패드는 돌아가는 연출 중에는 남긴다).
+	var roll_phase: bool = not manager.is_game_over and (manager.current_state == TurnManager.State.PHASE_TURN_BEGIN or manager.current_state == TurnManager.State.PHASE_ROLL_WAIT) and not _is_bot_turn()
+	_roll_button.visible = wanted == RollPad.Kind.NONE and roll_phase
+	if wanted != RollPad.Kind.NONE:
+		_roll_pad.visible = roll_phase or _fx_busy or _roll_pad.active
 	if mode == &"big":
 		_roll_button.text = "카드 뽑기" if owner_tool is ToolHoldem else "레버 당기기"
 	elif mode == &"charge":
