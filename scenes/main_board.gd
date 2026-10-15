@@ -1442,7 +1442,7 @@ func _build_direction_icons() -> void:
 	for side: int in 2:
 		var icon := Node2D.new()
 		icon.position = Vector2(352, 346) if side == 0 else Vector2(1014, 346)
-		icon.z_index = 1
+		icon.z_index = 0  # 오버레이(증강 선택·결과 등)보다 아래: 같은 z면 나중에 추가된 노드가 위에 그려진다
 		for index: int in 2:
 			var chevron := Polygon2D.new()
 			chevron.polygon = PackedVector2Array([Vector2(-8, -20), Vector2(2, -20), Vector2(14, 0), Vector2(2, 20), Vector2(-8, 20), Vector2(4, 0)])
