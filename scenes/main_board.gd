@@ -165,7 +165,9 @@ var _tool_board_key: String = ""
 var _tool_highlight: String = ""
 var _status_strip: HBoxContainer = null
 var _tip_panel: PanelContainer = null
-var _tip_label: Label = null
+var _tip_title: Label = null
+var _tip_ability: Label = null
+var _tip_right: VBoxContainer = null
 var _tip_source: Variant = null
 var _tip_provider: Callable = Callable()
 var _tip_clock: float = 0.0
@@ -559,7 +561,7 @@ func _build_profiles() -> void:
 			icon_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			icon_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			icon.add_child(icon_label)
-			_bind_tip(icon, _pawn_info_text.bind(player_id * 10 + slot))
+			_bind_tip(icon, _fill_pawn_tip.bind(player_id * 10 + slot))
 			pawn_icons.add_child(icon)
 			icon_labels.append(icon_label)
 		var synergy_label := _make_label("", 11, COLOR_GOLD)
@@ -1757,11 +1759,87 @@ func _build_hover_tip() -> void:
 	_tip_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_tip_panel.add_theme_stylebox_override("panel", _style(Color(0.06, 0.08, 0.13, 0.94), COLOR_GOLD, 2, 10, 12, 10))
 	add_child(_tip_panel)
-	_tip_label = _make_label("", 13, Color("f1f3f5"))
-	_tip_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_tip_label.custom_minimum_size = Vector2(300, 0)
-	_tip_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_tip_panel.add_child(_tip_label)
+	var columns := HBoxContainer.new()
+	columns.add_theme_constant_override("separation", 14)
+	columns.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tip_panel.add_child(columns)
+	# 왼쪽 칸: 이 기물의 이름과 고유 능력
+	var left := VBoxContainer.new()
+	left.add_theme_constant_override("separation", 6)
+	left.custom_minimum_size = Vector2(200, 0)
+	left.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	columns.add_child(left)
+	left.add_child(_make_label("기물 효과", 11, Color("868e96")))
+	_tip_title = _make_label("", 15, COLOR_GOLD)
+	_tip_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_tip_title.custom_minimum_size = Vector2(200, 0)
+	left.add_child(_tip_title)
+	_tip_ability = _make_label("", 13, Color("f1f3f5"))
+	_tip_ability.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_tip_ability.custom_minimum_size = Vector2(200, 0)
+	left.add_child(_tip_ability)
+	var divider := VSeparator.new()
+	divider.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	columns.add_child(divider)
+	# 오른쪽 칸: 세트 시너지 (던파 세트 효과처럼 도달한 단계가 강조된다)
+	_tip_right = VBoxContainer.new()
+	_tip_right.add_theme_constant_override("separation", 5)
+	_tip_right.custom_minimum_size = Vector2(250, 0)
+	_tip_right.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	columns.add_child(_tip_right)
+
+
+## 기물 툴팁 내용을 두 칸(왼쪽: 고유 능력 / 오른쪽: 세트 시너지)으로 채운다.
+func _fill_pawn_tip(pawn_id: int) -> void:
+	var pawn: PlayerPawn = state.get_pawn(pawn_id)
+	for child: Node in _tip_right.get_children():
+		_tip_right.remove_child(child)
+		child.queue_free()
+	if pawn == null:
+		return
+	var status: String = ""
+	if pawn.is_finished:
+		status = "  (완주)"
+	elif pawn.restrained_turns > 0 or pawn.blocked_this_turn:
+		status = "  (구속)"
+	elif pawn.is_imprisoned:
+		status = "  (감옥)"
+	_tip_title.text = "%s  - P%d%s" % [PawnCatalog.full_name(pawn.kind, pawn.unit_no), pawn.owner_id, status]
+	_tip_ability.text = PawnCatalog.ability_text(pawn.kind, pawn.unit_no)
+	_tip_right.add_child(_make_label("세트 효과", 11, Color("868e96")))
+	if pawn.kind == GameEnums.PawnKind.BASIC:
+		_tip_right.add_child(_make_label("기본 말은 세트 시너지가 없습니다.\n기물 진화 증강으로 세트를 모으세요.", 12, Color("adb5bd")))
+		return
+	var owned: Array[int] = []
+	for member: PlayerPawn in state.pawns_of(pawn.owner_id):
+		if member.kind == pawn.kind:
+			owned.append(member.unit_no)
+	var data: Dictionary = PawnCatalog.set_panel_data(pawn.kind, owned)
+	var header := _make_label("%s 세트  (%d/%d)" % [data["set_name"], data["count"], GameEnums.PAWNS_PER_PLAYER], 15, COLOR_GOLD)
+	_tip_right.add_child(header)
+	var roster: Array[String] = []
+	for member_info: Dictionary in data["members"]:
+		roster.append("%s %s" % ["●" if member_info["owned"] else "○", member_info["name"]])
+	_tip_right.add_child(_make_label("   ".join(roster), 12, Color("ced4da")))
+	for key: String in ["bonus2", "bonus4"]:
+		var bonus: Dictionary = data[key]
+		var active: bool = bonus["active"]
+		var row := PanelContainer.new()
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_theme_stylebox_override("panel", _style(Color("4a3d12") if active else Color("181e30"), COLOR_GOLD if active else Color("2c3550"), 2 if active else 1, 8, 0, 5))
+		var box := VBoxContainer.new()
+		box.add_theme_constant_override("separation", 1)
+		box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(box)
+		var head: Label = _make_label(("[작동 중] " if active else "") + str(bonus["label"]), 13, Color("fff3bf") if active else Color("7b8499"))
+		head.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		box.add_child(head)
+		var body: Label = _make_label(str(bonus["text"]), 11, Color("ffe8a3") if active else Color("6c757d"))
+		body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		body.custom_minimum_size = Vector2(228, 0)
+		body.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		box.add_child(body)
+		_tip_right.add_child(row)
 
 
 func _bind_tip(control: Control, provider: Callable) -> void:
@@ -1795,7 +1873,7 @@ func _update_tip(delta: float) -> void:
 	if _tip_clock < TIP_DELAY:
 		return
 	if not _tip_panel.visible:
-		_tip_label.text = str(_tip_provider.call())
+		_tip_provider.call()
 		_tip_panel.visible = true
 		_tip_panel.reset_size()
 	var pointer: Vector2 = get_viewport().get_mouse_position()
@@ -1823,7 +1901,7 @@ func _update_board_pawn_tip(pointer: Vector2) -> void:
 		if _tip_source is String and str(_tip_source).begins_with("board:"):
 			_tip_end()
 	elif _tip_source != key:
-		_tip_begin(key, _pawn_info_text.bind(found))
+		_tip_begin(key, _fill_pawn_tip.bind(found))
 
 
 ## 기물 툴팁 3줄: 전체 이름 / 고유 능력 / 세트 시너지 현황.
@@ -1907,7 +1985,7 @@ func _on_pawn_slot_pressed(slot: int) -> void:
 func _on_pawn_slot_hover(slot: int) -> void:
 	var pawn_id: int = _dock_owner() * 10 + slot + 1
 	_preview_pawn(pawn_id)
-	_tip_begin(_pawn_buttons[slot], _pawn_info_text.bind(pawn_id))
+	_tip_begin(_pawn_buttons[slot], _fill_pawn_tip.bind(pawn_id))
 
 
 func _on_pawn_slot_unhover(button: Button) -> void:

@@ -125,3 +125,37 @@ static func synergy_line(kind: GameEnums.PawnKind, count: int) -> String:
 	var two: String = "2세트 %s: %s" % ["활성" if count >= GameEnums.SET_SYNERGY_2 else "대기", SET_BONUS_2_NAMES.get(kind, "-")]
 	var four: String = "4세트%s: %s 특수 승리" % [" 달성" if count >= GameEnums.PAWNS_PER_PLAYER else "", SPECIAL_VICTORY_NAMES.get(kind, "-")]
 	return "%s 세트 (%d/%d) - [%s] / [%s]" % [display_set_name(kind), count, GameEnums.PAWNS_PER_PLAYER, two, four]
+
+
+## 세트 효과 설명 (던전앤파이터식 세트 툴팁용).
+const SET_BONUS_2_TEXT: Dictionary = {
+	GameEnums.PawnKind.YUT: "이 말이 이동할 때 눈금 4 또는 5가 나오면 추가 굴림 1회",
+	GameEnums.PawnKind.CHESS: "내 턴 시작 시 내 체스 말 2개의 위치를 맞바꿈 (턴당 1회)",
+	GameEnums.PawnKind.JANGGI: "장기 말로 잡으면 출발선 대신 그 자리에서 1턴 구속",
+	GameEnums.PawnKind.MONOPOLY: "출발선(0번)을 지나거나 밟을 때마다 생떼 카드 2장 보충",
+	GameEnums.PawnKind.GO: "바둑돌은 잡히지 않는 무적 (이동 눈금 -1, 최소 1칸)",
+}
+const SET_BONUS_4_TEXT: Dictionary = {
+	GameEnums.PawnKind.YUT: "4개를 하나로 업은 채 결승선 통과 시 즉시 승리",
+	GameEnums.PawnKind.CHESS: "1등 말을 내 체스 말로 앞뒤 타일에서 동시 포위 시 승리",
+	GameEnums.PawnKind.JANGGI: "한 턴에 연속 잡기로 말 3개를 잡으면 승리 + 잡기 추가 굴림",
+	GameEnums.PawnKind.MONOPOLY: "호텔 6개 동시 유지 시 승리 + 4개 전원이 호텔 건설",
+	GameEnums.PawnKind.GO: "네 모서리(0, 5, 10, 15번)를 내 바둑돌 4개로 점령 시 승리",
+}
+
+
+## 세트 툴팁 오른쪽 칸 데이터: 세트 이름·보유 수·호기별 보유 여부와 2/4세트 효과의 이름·설명·작동 여부.
+static func set_panel_data(kind: GameEnums.PawnKind, owned_units: Array[int]) -> Dictionary:
+	var members: Array[Dictionary] = []
+	for index: int in GameEnums.PAWNS_PER_PLAYER:
+		var unit: int = index + 1
+		var sub_name: String = unit_label(kind, unit).split(":")[-1]
+		members.append({"name": sub_name, "owned": owned_units.has(unit)})
+	var count: int = owned_units.size()
+	return {
+		"set_name": display_set_name(kind),
+		"count": count,
+		"members": members,
+		"bonus2": {"label": "2세트: %s" % SET_BONUS_2_NAMES.get(kind, "-"), "text": SET_BONUS_2_TEXT.get(kind, ""), "active": count >= GameEnums.SET_SYNERGY_2},
+		"bonus4": {"label": "4세트: %s" % SPECIAL_VICTORY_NAMES.get(kind, "-"), "text": SET_BONUS_4_TEXT.get(kind, ""), "active": count >= GameEnums.PAWNS_PER_PLAYER},
+	}

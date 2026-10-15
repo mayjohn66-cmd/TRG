@@ -280,7 +280,23 @@ func _test_hud_overhaul() -> void:
 	var wait_start: float = _now()
 	while _now() - wait_start < 0.6:
 		await process_frame
-	_expect(_board._tip_panel.visible and _board._tip_label.text.contains("고유 능력") and _board._tip_label.text.contains("세트") , "0.35초 뒤 툴팁이 뜬다 (%s)" % _board._tip_label.text)
+	_expect(_board._tip_panel.visible and _board._tip_title.text != "" and _board._tip_ability.text != "" and _board._tip_right.get_child_count() >= 2, "0.35초 뒤 두 칸 툴팁이 뜬다 (%s)" % _board._tip_title.text)
+	# 세트 효과 강조: 체스 2세트를 만들면 2세트 줄이 [작동 중]으로 켜지고 4세트 줄은 꺼져 있다
+	var chess_ids: Array[int] = []
+	for pawn: PlayerPawn in manager.state.pawns:
+		if pawn.kind == GameEnums.PawnKind.CHESS and pawn.owner_id == 3:
+			chess_ids.append(pawn.entity_id)
+	for pawn: PlayerPawn in manager.state.basic_pawns_of(3):
+		if chess_ids.size() >= 2:
+			break
+		manager.state.evolve_pawn(pawn, GameEnums.PawnKind.CHESS)
+		chess_ids.append(pawn.entity_id)
+	_board._fill_pawn_tip(chess_ids[0])
+	var tip_text: String = ""
+	for row: Node in _board._tip_right.get_children():
+		for label: Node in row.find_children("*", "Label", true, false):
+			tip_text += (label as Label).text + "|"
+	_expect(tip_text.contains("[작동 중] 2세트: 캐슬링") and not tip_text.contains("[작동 중] 4세트"), "도달한 세트 단계만 강조된다 (%s)" % tip_text)
 	_board._on_pawn_slot_unhover(_board._pawn_buttons[0])
 	_expect(not _board._tip_panel.visible, "커서를 치우면 즉시 사라진다")
 	# 4) 클릭 확대 (남의 턴에도 가능)

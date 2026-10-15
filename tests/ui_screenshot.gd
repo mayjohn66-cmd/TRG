@@ -66,6 +66,15 @@ func _setup_scene() -> void:
 			state.rulebook.enqueue_law(LawRegistry.create("LAW_04"))
 			state.rulebook.enqueue_law(LawRegistry.create("LAW_08"))
 			_board._refresh_all()
+		"tip":
+			_finish_draft()
+			for pair: Array in [[11, GameEnums.PawnKind.CHESS], [12, GameEnums.PawnKind.CHESS], [21, GameEnums.PawnKind.JANGGI]]:
+				state.evolve_pawn_random(state.get_pawn(pair[0]), pair[1])
+			_board._refresh_all()
+			_board._fill_pawn_tip(11)
+			_board._tip_panel.visible = true
+			_board._tip_panel.reset_size()
+			_board._tip_panel.position = Vector2(700, 380)
 		"tilepick":
 			_finish_draft()
 			_board.state.give_card(1, &"TRP_03")

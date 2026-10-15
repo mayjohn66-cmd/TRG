@@ -351,3 +351,14 @@ func test_pawn_tooltip_texts_name_the_unit_and_set_synergy() -> void:
 	check(line.contains("체스 세트 (2/4)") and line.contains("2세트 활성: 캐슬링") and line.contains("체크메이트"), "세트 시너지 현황 (%s)" % line)
 	check(PawnCatalog.synergy_line(GameEnums.PawnKind.GO, 1).contains("2세트 대기: 포석"), "1세트면 2세트 효과는 대기")
 	check_eq(PawnCatalog.synergy_line(GameEnums.PawnKind.BASIC, 1), "", "기본 말은 시너지 없음")
+
+
+func test_set_panel_data_marks_reached_set_tiers_active() -> void:
+	var one: Dictionary = PawnCatalog.set_panel_data(GameEnums.PawnKind.CHESS, [1] as Array[int])
+	check(not one["bonus2"]["active"] and not one["bonus4"]["active"], "1세트는 아무 효과도 작동하지 않는다")
+	var two: Dictionary = PawnCatalog.set_panel_data(GameEnums.PawnKind.CHESS, [1, 3] as Array[int])
+	check(two["bonus2"]["active"] and not two["bonus4"]["active"], "2세트면 2세트 효과만 작동")
+	var four: Dictionary = PawnCatalog.set_panel_data(GameEnums.PawnKind.JANGGI, [1, 2, 3, 4] as Array[int])
+	check(four["bonus2"]["active"] and four["bonus4"]["active"], "4세트면 둘 다 작동")
+	check_eq(two["members"].size(), 4, "호기 4칸")
+	check(two["members"][0]["owned"] and not two["members"][1]["owned"], "보유한 호기만 채워진다")
