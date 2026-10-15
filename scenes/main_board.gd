@@ -634,8 +634,9 @@ func _refresh_pawns() -> void:
 			if running != null and running.is_valid():
 				running.kill()
 		view.position = _pawn_position(pawn)
-		# 완주한 말은 보드에서 치우고, 완주 현황은 오른쪽 패널의 미니 슬롯(●●○○)으로만 보여 준다.
-		view.visible = pawn.carrier == null and not pawn.is_finished
+		# 출발 전 대기 말과 완주한 말은 보드에 그리지 않는다. 대기 말은 첫 걸음을 뗄 때 출발선에서 나타나 전진하고,
+		# 완주 현황은 오른쪽 패널의 미니 슬롯(●●○○)과 [이동할 말] 버튼으로 확인한다.
+		view.visible = pawn.carrier == null and not pawn.is_finished and pawn.has_left_start
 		view.modulate = Color.WHITE
 		(view.get_node("Kind") as Label).text = PawnCatalog.letter(pawn.kind)
 		var badge_text: String = ""
@@ -694,6 +695,7 @@ func _on_pawn_stepped(pawn_id: int, _from_tile: int, _to_tile: int) -> void:
 	var pawn: PlayerPawn = state.get_pawn(pawn_id)
 	if view == null or pawn == null:
 		return
+	view.visible = pawn.carrier == null and not pawn.is_finished
 	if view.has_meta("tween"):
 		var previous: Tween = view.get_meta("tween")
 		if previous != null and previous.is_valid():
