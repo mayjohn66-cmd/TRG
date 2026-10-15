@@ -40,6 +40,9 @@ const HAND_CARD_SIZE: Vector2 = Vector2(140, 196)
 const HAND_FAN_DEGREES: float = 5.0
 ## 피해 되돌리기 팝업이 자동으로 넘어가기까지의 시간(초).
 const REACTION_SECONDS: float = 6.0
+## 행동 사이의 호흡(초): 이동이 끝난 뒤 멈춤 / [P2 차례] 알림 길이.
+const BEAT_AFTER_MOVE: float = 0.8
+const TURN_BANNER_SECONDS: float = 0.9
 const HAND_RAISED_Y: float = -92.0
 ## 우측 하단 기물 독에서 기물 슬롯이 놓이는 기준 y (필살기 버튼 줄 아래).
 const SLOT_BASE_Y: float = 50.0
@@ -283,6 +286,10 @@ var _select_banner: Panel = null
 var _dir_left: Node2D = null
 var _dir_right: Node2D = null
 var _announced_round: int = 0
+var _announced_turn_key: String = ""
+## false면 [N 차례] 알림과 이동 뒤 멈춤을 쓰지 않는다 (연출 타이밍을 따로 검사하는 테스트용).
+var pacing_enabled: bool = true
+var _beat_until_msec: int = 0
 var _select_title: Label = null
 var _select_cards: Array[Button] = []
 var _select_parts: Array[Dictionary] = []
@@ -458,6 +465,8 @@ func _new_game() -> void:
 	_toast_label.text = ""
 	_dock_player = -1
 	_announced_round = 0
+	_announced_turn_key = ""
+	_beat_until_msec = 0
 	_close_reaction_popup()
 	_fx_generation += 1
 	_fx_busy = false
@@ -1407,6 +1416,7 @@ func _refresh_all() -> void:
 	_refresh_controls()
 	_refresh_overlays()
 	_check_round_banner()
+	_check_turn_banner()
 
 
 func _phase_text() -> String:
@@ -1476,7 +1486,21 @@ func _check_round_banner() -> void:
 	if state.round_number == _announced_round:
 		return
 	_announced_round = state.round_number
+	_announced_turn_key = "%d:%d" % [state.round_number, manager.current_player_id()]
 	_announce("라운드", "라운드 %d" % state.round_number, "%d라운드가 시작됩니다" % state.round_number, COLOR_GOLD, null, 1.5)
+
+
+## 새 플레이어의 턴이 시작될 때 [P2 차례] 알림을 짧게 보여 준다 (추가 턴·롤백 재시작에는 다시 띄우지 않는다).
+func _check_turn_banner() -> void:
+	if not pacing_enabled or _announcer == null or manager.is_game_over or manager.current_state != TurnManager.State.PHASE_TURN_BEGIN:
+		return
+	var key: String = "%d:%d" % [state.round_number, manager.current_player_id()]
+	if key == _announced_turn_key:
+		return
+	_announced_turn_key = key
+	var player_id: int = manager.current_player_id()
+	var who: String = "내 차례!" if (not ai_mode or player_id == local_player_id) and ai_mode else "%s 차례" % _player_name(player_id)
+	_announce("턴", who, "", PLAYER_COLORS[player_id], null, TURN_BANNER_SECONDS)
 
 
 ## 프로필에 보여 줄 이름: AI 대전에서는 내 닉네임과 "컴퓨터 n", 4P 수동 조작에서는 "플레이어 n".
@@ -3830,7 +3854,17 @@ func _on_game_over(winner_id: int, reason: StringName) -> void:
 
 
 func _ui_busy() -> bool:
-	return _fx_busy or _aim_pawn != -1 or (_announcer != null and _announcer.active)
+	return _fx_busy or _aim_pawn != -1 or (_announcer != null and _announcer.active) or Time.get_ticks_msec() < _beat_until_msec
+
+
+## 행동이 끝난 뒤 잠깐(초) 입력과 봇 행동을 멈춰, 플레이어가 방금 일어난 일을 알아볼 틈을 준다.
+func _start_beat(seconds: float) -> void:
+	if instant_roll_for_test or not pacing_enabled or seconds <= 0.0:
+		return
+	_beat_until_msec = maxi(_beat_until_msec, Time.get_ticks_msec() + int(seconds * 1000.0))
+	get_tree().create_timer(seconds + 0.02).timeout.connect(func() -> void:
+		if manager != null and state != null:
+			_refresh_all())
 
 
 func _announce(tag: String, headline: String, body: String, color: Color, extra: Control = null, duration: float = 1.5) -> void:
@@ -3925,7 +3959,9 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 				_log_line("[업기] P%d: %s 하나로 합체!" % [data["player_id"], ", ".join(stack_names)], Color("ffd43b"))
 			else:
 				_log_line("[업기] P%d: 그냥 두기 - 개별 유지" % data["player_id"], Color("adb5bd"))
-		&"move_resolved": _log_move(data)
+		&"move_resolved":
+			_log_move(data)
+			_start_beat(BEAT_AFTER_MOVE)
 		&"card_played":
 			var card: BaseCard = CardRegistry.get_card(data["card_id"])
 			_log_line("[카드] P%d [%s] 사용%s" % [data["player_id"], card.display_name, " (개입 대기열 - 나중에 낸 카드부터 실행)" if data["queued"] else ""], Color("74c0fc"))

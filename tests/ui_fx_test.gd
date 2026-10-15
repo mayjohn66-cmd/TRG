@@ -42,6 +42,7 @@ func _run() -> void:
 	_board._bot.set_enabled(false)
 	_board._refresh_mode_toggle()
 	_board._announcer.cancel()  # 드래프트가 띄운 알림은 비우고 시작한다
+	_board.pacing_enabled = false  # 아래 테스트들은 연출 길이를 직접 재므로 [N 차례] 알림·이동 뒤 멈춤은 끈다 (따로 검사한다)
 	await _test_presenters()
 	_board._announcer.cancel()
 	await _test_gauge_and_lock()
@@ -51,6 +52,7 @@ func _run() -> void:
 	await _test_roll_pad()
 	await _test_hud_overhaul()
 	await _test_bot_pacing()
+	await _test_action_beats()
 	if _failures.is_empty():
 		print("UI_FX_OK")
 		quit(0)
@@ -404,6 +406,8 @@ func _test_hud_overhaul() -> void:
 	await process_frame
 	_expect(_board._zoom_view == null, "다시 클릭하면 닫힌다 (토글)")
 	# 5) 드래그: 잘못된 곳에 놓으면 카드가 남는다
+	_board._announcer.cancel()  # [N 차례] 알림과 이동 뒤 멈춤을 건너뛰고 입력 가능 상태로 만든다
+	_board._beat_until_msec = 0
 	_expect(manager.current_state == TurnManager.State.PHASE_TURN_BEGIN and not _board._ui_busy(), "드래그 테스트 전제: 턴 시작, 입력 가능")
 	_board._card_press(holder, &"TRP_01", Vector2(700, 700), Vector2(700, 640))
 	_board._card_move(Vector2(720, 600))
@@ -441,6 +445,33 @@ func _test_hud_overhaul() -> void:
 
 
 ## 봇 턴의 실제 연출 호흡: 턴 시작 0.5초 + 굴리기 직전 0.3초, 굴림 연출 뒤 결과 확인 0.6초 + 이동 선택 0.5초.
+## 행동 사이의 호흡: 이동이 끝나면 잠깐 입력이 잠기고, 새 플레이어의 턴에는 [N 차례] 알림이 뜬다.
+func _test_action_beats() -> void:
+	var manager: TurnManager = _board.manager
+	_board.pacing_enabled = true
+	_board._announcer.cancel()
+	_board._beat_until_msec = 0
+	_board.instant_roll_for_test = false
+	_board._announced_round = _board.state.round_number  # 이미 알린 라운드·턴으로 본다
+	_board._announced_turn_key = "%d:%d" % [_board.state.round_number, manager.current_player_id()]
+	_board._fx_busy = false
+	_expect(not _board._ui_busy(), "전제: 호흡 검사 시작 시 대기 없음")
+	_board._start_beat(0.3)
+	_expect(_board._ui_busy(), "이동이 끝난 직후에는 잠깐 입력이 잠긴다")
+	await create_timer(0.45).timeout
+	_expect(not _board._ui_busy(), "호흡이 끝나면 다시 입력할 수 있다 (fx=%s aim=%s ann=%s)" % [str(_board._fx_busy), str(_board._aim_pawn), str(_board._announcer.active)])
+	_board._announced_turn_key = ""
+	_board._announcer.history.clear()
+	_board._check_turn_banner()
+	if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN:
+		_expect(_board._announcer.history.size() == 1 and _board._announcer.active, "새 턴에는 [N 차례] 알림이 뜬다")
+		_board._check_turn_banner()
+		_expect(_board._announcer.history.size() == 1, "같은 턴에는 알림을 다시 띄우지 않는다")
+	_board._announcer.cancel()
+	_board._beat_until_msec = 0
+	_board.pacing_enabled = false
+
+
 func _test_bot_pacing() -> void:
 	var manager: TurnManager = _board.manager
 	_board.instant_roll_for_test = false

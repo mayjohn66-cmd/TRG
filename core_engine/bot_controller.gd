@@ -8,13 +8,13 @@ extends Node
 signal bot_acted(player_id: int, action: StringName, detail: Dictionary)
 
 ## 단계별 대기 시간(초). instant가 켜지면(헤드리스·ui_smoke) 모두 0초로 건너뛴다.
-const DELAY_TURN_START: float = 0.5   # 봇 턴 시작 -> 카드/함정 사용 판단
-const DELAY_PRE_ROLL: float = 0.3     # 굴리기 직전
-const DELAY_ROLL_RESULT: float = 0.6  # 굴림 연출 뒤 결과를 확인하는 호흡
-const DELAY_MOVE: float = 0.5         # 이동할 말 선택 및 이동
-const DELAY_WINDOW: float = 0.5       # 개입 창에서 봇이 카드를 고민하는 시간
+const DELAY_TURN_START: float = 0.8   # 봇 턴 시작 -> 카드/함정 사용 판단
+const DELAY_PRE_ROLL: float = 0.6     # 굴리기 직전
+const DELAY_ROLL_RESULT: float = 1.0  # 굴림 연출 뒤 결과를 확인하는 호흡
+const DELAY_MOVE: float = 0.9         # 이동할 말 선택 및 이동
+const DELAY_WINDOW: float = 0.7       # 개입 창에서 봇이 카드를 고민하는 시간
 const DELAY_AUTO_PASS: float = 0.8    # 사람이 낼 카드가 없을 때 개입 창이 자동으로 넘어가기까지
-const DELAY_DRAFT: float = 0.4        # 봇의 증강 선택 간격
+const DELAY_DRAFT: float = 0.6        # 봇의 증강 선택 간격
 
 var manager: TurnManager = null
 var bot_players: Array[int] = [2, 3, 4]
