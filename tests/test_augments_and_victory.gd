@@ -196,7 +196,7 @@ func test_draft_pick_applies_effect_and_finishes_when_everyone_picked() -> void:
 	manager._draft_offers[1] = [&"EVO_2", &"TOOL_HOLDEM", &"AUG_LAW_03"] as Array[StringName]
 	manager._draft_offers[2] = [&"CARD_PACKAGE", &"AUG_LAW_04", &"TOOL_YUT"] as Array[StringName]
 	_do(manager, 1, &"pick_augment", {"index": 0, "pawn_id": 13})
-	check_eq(manager.state.get_pawn(13).display_label(), "체스:폰", "P1이 고른 기본 말이 진화")
+	check(manager.state.get_pawn(13).kind == GameEnums.PawnKind.CHESS and manager.state.get_pawn(13).unit_no in [1, 2, 3, 4], "P1이 고른 기본 말이 체스 기물 중 하나로 진화")
 	check_eq(manager.draft_pending_players(), int_array([2]), "P2만 남음")
 	check_eq(manager.current_state, Phase.PHASE_ROUND_START, "아직 드래프트 중")
 	_do(manager, 2, &"pick_augment", {"index": 1})
@@ -666,3 +666,20 @@ func test_turn_manager_stops_the_game_on_special_victory_and_rejects_further_act
 	_do(winning, 2, &"proceed")
 	check(rejected.has(&"game_over"), "게임이 끝난 뒤의 행동은 거부")
 	_dispose(winning)
+
+
+func test_evolution_draws_a_random_unit_without_repeats_until_the_set_is_full() -> void:
+	var seen: Dictionary = {}
+	for seed_value: int in 12:
+		var state := make_state()
+		state.rng.seed = seed_value
+		var units: Array[int] = []
+		for pawn_id: int in [11, 12, 13, 14]:
+			check(state.evolve_pawn_random(state.get_pawn(pawn_id), GameEnums.PawnKind.CHESS), "진화 성공")
+			units.append(state.get_pawn(pawn_id).unit_no)
+		seen[units.duplicate()] = true
+		var sorted_units: Array[int] = units.duplicate()
+		sorted_units.sort()
+		check_eq(sorted_units, int_array([1, 2, 3, 4]), "4번 진화하면 폰·나이트·비숍·룩이 하나씩 나온다")
+		check(state.free_units(1, GameEnums.PawnKind.CHESS).is_empty(), "다 받으면 남은 후보 없음")
+	check(seen.size() > 1, "시드에 따라 받는 순서가 달라진다 (순서 고정이 아님)")

@@ -195,6 +195,32 @@ func evolve_pawn(pawn: PlayerPawn, kind: GameEnums.PawnKind) -> bool:
 	return true
 
 
+## 이 플레이어가 이 세트에서 아직 받지 않은 호기(1~4) 목록. 승진한 퀸(5호기)은 세지 않는다.
+func free_units(player_id: int, kind: GameEnums.PawnKind) -> Array[int]:
+	var taken: Array[int] = []
+	for pawn: PlayerPawn in pawns:
+		if pawn.owner_id == player_id and pawn.kind == kind:
+			taken.append(pawn.unit_no)
+	var result: Array[int] = []
+	for unit: int in range(1, GameEnums.PAWNS_PER_PLAYER + 1):
+		if not taken.has(unit):
+			result.append(unit)
+	return result
+
+
+## 기본 말 하나를 세트의 '아직 못 받은 세부 기물 중 무작위 1종'으로 영구 진화시킨다 (오토체스식: 호기 순서가 아니라 뽑기).
+func evolve_pawn_random(pawn: PlayerPawn, kind: GameEnums.PawnKind) -> bool:
+	if pawn == null or pawn.kind != GameEnums.PawnKind.BASIC or kind == GameEnums.PawnKind.BASIC:
+		return false
+	var free: Array[int] = free_units(pawn.owner_id, kind)
+	if free.is_empty():
+		return false
+	var unit: int = free[rng.randi_range(0, free.size() - 1)]
+	pawn.evolve(kind, unit)
+	pawn_evolved.emit(pawn.entity_id, kind, unit)
+	return true
+
+
 func pawns_of(player_id: int) -> Array[PlayerPawn]:
 	var result: Array[PlayerPawn] = []
 	for pawn: PlayerPawn in pawns:
