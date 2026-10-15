@@ -77,6 +77,24 @@ func _setup_scene() -> void:
 			_board.state.give_card(2, &"ACT_01")
 			_board.state.tools[1] = ScriptedTool.new([3])
 			_board._on_roll_pressed()
+		"select":
+			_finish_draft()
+			for pawn_id: int in [11, 12, 13]:
+				var pawn: PlayerPawn = state.get_pawn(pawn_id)
+				pawn.place_at(4)
+				pawn.has_left_start = true
+			state.stack_pawns(state.get_pawn(11), state.get_pawn(12))
+			state.stack_pawns(state.get_pawn(11), state.get_pawn(13))
+			state.place_attachment(8, Hotel.new(2))
+			state.get_pawn(14).place_at(14)
+			state.get_pawn(14).has_left_start = true
+			state.tools[1] = ScriptedTool.new([4])
+			_board._on_roll_pressed()
+			_board._preview_pawn(11)
+		"reverse":
+			_finish_draft()
+			_board.manager.reverse_turn_order()
+			_board._refresh_all()
 		"debug":
 			_finish_draft()
 			_board._on_debug_toggle_pressed()

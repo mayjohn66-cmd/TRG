@@ -73,6 +73,10 @@ var _header_label: Label = null
 var _phase_label: Label = null
 var _queue_label: Label = null
 var _pick_banner: Label = null
+var _direction_banner: Label = null
+var _direction_bg: ColorRect = null
+var _start_arrow: Label = null
+var _board_hover_pawn: int = -1
 var _player_labels: Dictionary = {}
 var _pawn_info_labels: Dictionary = {}
 var _law_labels: Array[Label] = []
@@ -124,6 +128,30 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if manager != null and manager.state != null and not manager.is_game_over:
 		_phase_label.text = _phase_text()
+
+
+## 말 선택 단계에서 보드 위의 내 말에 마우스를 올려도 버튼 호버와 같은 예상 경로를 보여 준다.
+func _input(event: InputEvent) -> void:
+	if not (event is InputEventMouseMotion) or manager == null or state == null:
+		return
+	if manager.current_state != TurnManager.State.PHASE_SELECT_PAWN:
+		return
+	var mouse: Vector2 = (event as InputEventMouseMotion).position
+	var hovered: int = -1
+	var best: float = 18.0
+	for pawn: PlayerPawn in state.selectable_pawns(manager.current_player_id()):
+		var view: Node2D = _pawn_views.get(pawn.entity_id)
+		if view == null or not view.visible:
+			continue
+		var distance: float = view.position.distance_to(mouse)
+		if distance < best:
+			best = distance
+			hovered = pawn.entity_id
+	if hovered != -1 and hovered != _board_hover_pawn:
+		_preview_pawn(hovered)
+		_board_hover_pawn = hovered
+	elif hovered == -1 and _board_hover_pawn != -1:
+		_clear_highlight()
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -217,6 +245,15 @@ func _build_ui() -> void:
 	_pick_banner.position = Vector2(24, 82)
 	_pick_banner.visible = false
 	add_child(_pick_banner)
+
+	_direction_bg = ColorRect.new()
+	_direction_bg.position = Vector2(430, 8)
+	_direction_bg.size = Vector2(250, 28)
+	_direction_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_direction_bg)
+	_direction_banner = _make_label("", 15, Color("f8f9fa"))
+	_direction_banner.position = Vector2(8, 2)
+	_direction_bg.add_child(_direction_banner)
 
 	_board_layer = Control.new()
 	_board_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -379,26 +416,28 @@ func _on_debug_toggle_pressed() -> void:
 # 보드 / 말 그리기
 # ---------------------------------------------------------------------------
 
-## 타일 번호 -> 0~1 정규화 좌표. 출발선(0번)은 좌하단, 5번 우하단, 10번 우상단, 15번 좌상단 코너다.
+## 타일 번호 -> 0~1 정규화 좌표 (화면 렌더링 전용, BoardGraph 연결 규칙과 무관).
+## 출발선(0번)은 우하단에서 시작해 반시계 방향으로 돈다: 0 우하단 -> 5 우상단 -> 10 좌상단 -> 15 좌하단 -> 다시 0.
+## 지름길 1은 5(우상단)->20,21,22(중앙),23,24->15(좌하단), 지름길 2는 10(좌상단)->25,26,22,27,28->0(우하단).
 static func tile_norm(index: int) -> Vector2:
 	if index <= 5:
-		return Vector2(index / 5.0, 1.0)
+		return Vector2(1.0, 1.0 - index / 5.0)
 	if index <= 10:
-		return Vector2(1.0, 1.0 - (index - 5) / 5.0)
+		return Vector2(1.0 - (index - 5) / 5.0, 0.0)
 	if index <= 15:
-		return Vector2(1.0 - (index - 10) / 5.0, 0.0)
+		return Vector2(0.0, (index - 10) / 5.0)
 	if index <= 19:
-		return Vector2(0.0, (index - 15) / 5.0)
+		return Vector2((index - 15) / 5.0, 1.0)
 	match index:
-		20: return Vector2(5.0 / 6.0, 5.0 / 6.0)
-		21: return Vector2(4.0 / 6.0, 4.0 / 6.0)
+		20: return Vector2(5.0 / 6.0, 1.0 / 6.0)
+		21: return Vector2(4.0 / 6.0, 2.0 / 6.0)
 		22: return Vector2(0.5, 0.5)
-		23: return Vector2(2.0 / 6.0, 2.0 / 6.0)
-		24: return Vector2(1.0 / 6.0, 1.0 / 6.0)
-		25: return Vector2(5.0 / 6.0, 1.0 / 6.0)
-		26: return Vector2(4.0 / 6.0, 2.0 / 6.0)
-		27: return Vector2(2.0 / 6.0, 4.0 / 6.0)
-		28: return Vector2(1.0 / 6.0, 5.0 / 6.0)
+		23: return Vector2(2.0 / 6.0, 4.0 / 6.0)
+		24: return Vector2(1.0 / 6.0, 5.0 / 6.0)
+		25: return Vector2(1.0 / 6.0, 1.0 / 6.0)
+		26: return Vector2(2.0 / 6.0, 2.0 / 6.0)
+		27: return Vector2(4.0 / 6.0, 4.0 / 6.0)
+		28: return Vector2(5.0 / 6.0, 5.0 / 6.0)
 	return Vector2(0.5, 0.5)
 
 
@@ -412,6 +451,12 @@ func _build_tiles_once() -> void:
 	_add_track_line([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 0] as Array[int])
 	_add_track_line([5, 20, 21, 22, 23, 24, 15] as Array[int])
 	_add_track_line([10, 25, 26, 22, 27, 28, 0] as Array[int])
+	_start_arrow = _make_label("▲ 출발", 15, Color("8ce99a"))
+	_start_arrow.position = _tile_center(GameEnums.GOAL_TILE) + Vector2(TILE_SIZE / 2.0 + 4.0, -22)
+	_start_arrow.add_theme_constant_override("outline_size", 5)
+	_start_arrow.add_theme_color_override("font_outline_color", Color("111418"))
+	_start_arrow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_board_layer.add_child(_start_arrow)
 	for index: int in GameEnums.TILE_COUNT:
 		var node: TileNode = state.board.get_tile(index)
 		var tile := ColorRect.new()
@@ -495,9 +540,9 @@ func _tile_tag(index: int, tile_type: TileNode.TileType) -> String:
 	if index == GameEnums.CENTER_TILE:
 		return "중앙"
 	if index == 5:
-		return "코너↘"
-	if index == 10:
 		return "코너↙"
+	if index == 10:
+		return "코너↘"
 	if index == 15:
 		return "합류"
 	return ""
@@ -528,6 +573,12 @@ func _build_pawn_views() -> void:
 		kind_label.add_theme_constant_override("outline_size", 5)
 		kind_label.add_theme_color_override("font_outline_color", Color("111418"))
 		view.add_child(kind_label)
+		var stack_badge := _make_label("", 20, Color("ffe066"))
+		stack_badge.name = "Stack"
+		stack_badge.position = Vector2(8, -12)
+		stack_badge.add_theme_constant_override("outline_size", 8)
+		stack_badge.add_theme_color_override("font_outline_color", Color("111418"))
+		view.add_child(stack_badge)
 		var badge := _make_label("", 11, Color("ffffff"))
 		badge.name = "Badge"
 		badge.position = Vector2(6, -18)
@@ -570,8 +621,7 @@ func _refresh_pawns() -> void:
 		view.modulate = Color(1, 1, 1, 0.45) if pawn.is_finished else Color.WHITE
 		(view.get_node("Kind") as Label).text = PawnCatalog.letter(pawn.kind)
 		var badge_text: String = ""
-		if not pawn.carried.is_empty():
-			badge_text = "x%d" % (pawn.carried.size() + 1)
+		(view.get_node("Stack") as Label).text = "x%d" % (pawn.carried.size() + 1) if not pawn.carried.is_empty() else ""
 		if pawn.restrained_turns > 0 or pawn.blocked_this_turn:
 			badge_text += " 구속"
 		if pawn.is_imprisoned:
@@ -665,10 +715,22 @@ func _refresh_header() -> void:
 	_header_label.text = "라운드 %d   현재 턴: P%d   턴 방향: %s%s" % [state.round_number, player_id, direction, reverse_text]
 	_header_label.add_theme_color_override("font_color", PLAYER_COLORS[player_id])
 	_phase_label.text = _phase_text()
+	_refresh_direction()
 	var queue_text: String = "남은 이동 대기열: %s" % str(manager.move_queue) if not manager.move_queue.is_empty() else ""
 	if manager.command_stack != null and manager.command_stack.interrupt_count() > 0:
 		queue_text += "   개입 대기 카드: %d장 (나중에 낸 카드부터 실행)" % manager.command_stack.interrupt_count()
 	_queue_label.text = queue_text
+
+
+## 진행 방향 안내: 정방향이면 초록 배너 + "▲ 출발", 우노 리버스(turn_direction == -1)면 주황 배너 + "▼ 역주행"으로 반전한다.
+func _refresh_direction() -> void:
+	if _direction_banner == null or _start_arrow == null:
+		return
+	var reversed: bool = manager.turn_direction == -1
+	_direction_bg.color = Color("a8590b") if reversed else Color("1e6b3a")
+	_direction_banner.text = "▼ 역방향 (우노 리버스)" if reversed else "▲ 정방향 (반시계)"
+	_start_arrow.text = "▼ 역주행" if reversed else "▲ 출발"
+	_start_arrow.add_theme_color_override("font_color", Color("ffa94d") if reversed else Color("8ce99a"))
 
 
 func _refresh_players() -> void:
@@ -1239,13 +1301,19 @@ func _preview_pawn(pawn_id: int) -> void:
 	ctx.pawn = pawn
 	ctx.trigger_timing = RuleContext.ON_MOVE_CALC
 	ctx = state.rulebook.process_context(ctx)
-	for tile: int in state.board.calculate_path(pawn, ctx.dice_value * ctx.direction, ctx):
-		(_highlights[tile] as ReferenceRect).visible = true
+	# 실제 이동과 같은 계산(포 넘기 +2, 포석 -1 등 기물 능력 포함)으로 예상 경로를 구한다.
+	var path: Array[int] = MoveExecutor.plan_path(state, pawn, ctx, MoveReport.new())
+	for index: int in path.size():
+		var highlight: ReferenceRect = _highlights[path[index]]
+		highlight.visible = true
+		highlight.border_width = 6.0 if index == path.size() - 1 else 3.0
 
 
 func _clear_highlight() -> void:
 	for highlight: ReferenceRect in _highlights.values():
 		highlight.visible = false
+		highlight.border_width = 3.0
+	_board_hover_pawn = -1
 
 
 # ---------------------------------------------------------------------------
