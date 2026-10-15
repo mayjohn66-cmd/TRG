@@ -1463,7 +1463,7 @@ func _make_card_view(player_id: int, card_id: StringName) -> PanelContainer:
 	var title := _make_label(card.display_name + (" ▣" if card.needs_tile() else ""), 12, Color("f8f9fa"))
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	title.custom_minimum_size = Vector2(0, 30)
+	title.custom_minimum_size = Vector2(CARD_SIZE.x - 16.0, 30)
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(title)
 	var icon := PanelContainer.new()
@@ -1479,6 +1479,7 @@ func _make_card_view(player_id: int, card_id: StringName) -> PanelContainer:
 	var summary := _make_label(str(CARD_SUMMARIES.get(card_id, "")), 10, Color("ced4da"))
 	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	summary.max_lines_visible = 4
+	summary.custom_minimum_size = Vector2(CARD_SIZE.x - 16.0, 0)
 	summary.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	summary.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(summary)
@@ -1507,11 +1508,11 @@ func _on_card_gui_input(event: InputEvent, player_id: int, card_id: StringName, 
 	var mouse_event: InputEventMouseButton = event as InputEventMouseButton
 	if mouse_event == null or not mouse_event.pressed or mouse_event.button_index != MOUSE_BUTTON_LEFT:
 		return
-	_card_press(player_id, card_id, get_viewport().get_mouse_position(), view.global_position)
+	_card_press(player_id, card_id, get_viewport().get_mouse_position(), view.global_position, view)
 
 
-func _card_press(player_id: int, card_id: StringName, pointer: Vector2, home: Vector2) -> void:
-	_drag_press = {"player": player_id, "card": card_id, "origin": pointer, "home": home}
+func _card_press(player_id: int, card_id: StringName, pointer: Vector2, home: Vector2, view: Control = null) -> void:
+	_drag_press = {"player": player_id, "card": card_id, "origin": pointer, "home": home, "view": view}
 
 
 ## 전역 포인터 입력: 카드 위에서 시작한 누르기를 클릭(확대 토글) 또는 드래그(보드에 던져 발동)로 해석한다. 처리했으면 true.
@@ -1558,12 +1559,20 @@ func _drag_begin() -> void:
 	var card: BaseCard = CardRegistry.get_card(card_id)
 	_drag_active = true
 	_close_zoom()
-	_drag_ghost = _make_card_face(card_id)
+	# 손패에 있던 카드 UI(프레임·카테고리 아이콘·요약)를 그대로 집어 들고 간다. 원래 자리의 카드는 흐리게 남는다.
+	_drag_ghost = _make_card_view(player_id, card_id)
+	_drag_ghost.tooltip_text = ""
 	_drag_ghost.z_index = 70
 	_drag_ghost.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_drag_ghost.scale = Vector2(1.1, 1.1)
-	_drag_ghost.pivot_offset = CARD_SIZE / 2.0
+	_drag_ghost.modulate = Color.WHITE
 	add_child(_drag_ghost)
+	_drag_ghost.size = CARD_SIZE
+	_drag_ghost.position = _drag_press["origin"] - CARD_SIZE / 2.0
+	_drag_ghost.pivot_offset = CARD_SIZE / 2.0
+	_drag_ghost.scale = Vector2(1.08, 1.08)
+	var source: Control = _drag_press.get("view")
+	if source != null and is_instance_valid(source):
+		source.modulate = Color(1, 1, 1, 0.25)
 	var usable: bool = _card_usable_now(player_id, card)
 	_drop_label.text = "[여기에 놓아 카드 발동!]" if usable else "[지금은 쓸 수 없는 카드입니다]"
 	if card.needs_tile():
@@ -1593,6 +1602,9 @@ func _drag_drop(pointer: Vector2, press: Dictionary) -> void:
 	_clear_highlight()
 	for mark: ReferenceRect in _pick_marks.values():
 		mark.visible = false
+	var source: Control = press.get("view")
+	if source != null and is_instance_valid(source):
+		source.modulate = Color.WHITE
 	var player_id: int = int(press["player"])
 	var card_id: StringName = press["card"]
 	var card: BaseCard = CardRegistry.get_card(card_id)

@@ -75,6 +75,15 @@ func _setup_scene() -> void:
 			_board._tip_panel.visible = true
 			_board._tip_panel.reset_size()
 			_board._tip_panel.position = Vector2(700, 380)
+		"drag":
+			_finish_draft()
+			_board.instant_roll_for_test = true
+			_board._announcer.cancel()
+			state.give_card(1, &"TRP_02")
+			state.give_card(1, &"ACT_01")
+			_board._refresh_all()
+			_board._card_press(1, &"TRP_02", Vector2(700, 700), Vector2(700, 640))
+			_board._card_move(Vector2(640, 380))
 		"tilepick":
 			_finish_draft()
 			_board.state.give_card(1, &"TRP_03")
