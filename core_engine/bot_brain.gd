@@ -217,8 +217,15 @@ static func _plan_one_turn_card(state: GameState, player_id: int, card: BaseCard
 		&"ACT_03":  # 우노 +4: 다음 차례가 나 자신이 아니고 50%
 			if state.next_player_after(player_id) != player_id and rng.randf() < 0.5:
 				return {"card_id": card.card_id, "params": {}}
-		&"ACT_01", &"ACT_05", &"ACT_06":
-			return {}  # 개입 전용 (턴 시작에는 쓰지 않는다)
+		&"ACT_01":  # 우노 리버스: 이동 역주행 중이 아니면 가끔 (판을 흔든다)
+			if state.reverse_move_rounds_left == 0 and rng.randf() < 0.25:
+				return {"card_id": card.card_id, "params": {}}
+		&"ACT_06":  # 이의 있음!: 법전에 교칙이 있으면 가끔 무작위 한 개를 파기한다
+			var laws: Array[String] = state.rulebook.law_ids()
+			if not laws.is_empty() and rng.randf() < 0.4:
+				return {"card_id": card.card_id, "params": {"law_id": laws[rng.randi_range(0, laws.size() - 1)]}}
+		&"ACT_05":
+			return {}  # 피해를 입었을 때의 되돌리기 전용 (턴 시작에는 쓰지 않는다)
 		_:
 			if rng.randf() >= TRAP_USE_CHANCE:
 				return {}
@@ -231,7 +238,7 @@ static func _plan_one_turn_card(state: GameState, player_id: int, card: BaseCard
 	return {}
 
 
-## 개입 창(INTERRUPT_ROLL / RESOLUTION)에서 이 봇이 낼 카드 하나. 없으면 빈 Dictionary.
+## 개입 창(지금은 피해를 입은 뒤의 RESOLUTION 창뿐)에서 이 봇이 낼 카드 하나. 없으면 빈 Dictionary.
 ## roll_value: 방금 확정된 눈금 (INTERRUPT_ROLL에서만 의미 있음). actor_is_bot: 지금 턴인 플레이어가 봇인가.
 static func plan_window_card(state: GameState, player_id: int, phase: int, roll_value: int, actor_is_bot: bool, current_player: int, tried: Dictionary, rng: RandomNumberGenerator) -> Dictionary:
 	var hand: Array = state.hands[player_id]
@@ -251,10 +258,6 @@ static func plan_window_card(state: GameState, player_id: int, phase: int, roll_
 					var params: Dictionary = {"pawn_id": pawn.entity_id}
 					if card.can_play(state, player_id, params):
 						return {"card_id": card.card_id, "params": params}
-			&"ACT_01":  # 사람(상대)이 고눈금을 굴렸을 때 역주행으로 눈금을 뒤집는다
-				if phase == TurnManager.State.PHASE_INTERRUPT_ROLL and current_player != player_id and not actor_is_bot \
-						and absi(roll_value) >= HIGH_ROLL and state.reverse_move_rounds_left == 0 and rng.randf() < 0.7:
-					return {"card_id": card.card_id, "params": {}}
 	return {}
 
 

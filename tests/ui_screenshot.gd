@@ -33,7 +33,7 @@ func _process(_delta: float) -> bool:
 		if _banner_frame != -2 and _frames < 600:
 			return false
 		_banner_frame = -2
-	if (_shot != "banner" and _frames == 12) or (_shot == "banner" and _banner_frame == -2):
+	if (_shot != "banner" and _frames == (8 if _shot == "pick" else (20 if _shot == "react" else 12))) or (_shot == "banner" and _banner_frame == -2):
 		var path: String = "/tmp/trg_shot_%s.png" % _shot
 		var image: Image = root.get_texture().get_image()
 		image.save_png(path)
@@ -158,6 +158,17 @@ func _setup_scene() -> void:
 			state.give_card(1, &"ACT_05")
 			state.give_card(1, &"ACT_01")
 			_board._refresh_all()
+		"react":
+			_finish_draft()
+			_board._announcer.cancel()
+			_board.instant_roll_for_test = true
+			state.give_card(1, &"ACT_05")
+			state.turn_snapshot = TurnSnapshot.capture(state)
+			state.hurt_players.append(1)
+			_board.manager.current_state = TurnManager.State.PHASE_RESOLUTION
+			_board._refresh_all()
+		"pick":
+			_board._draft_cards[1].pressed.emit()
 		"rules":
 			_finish_draft()
 			_board._announcer.cancel()

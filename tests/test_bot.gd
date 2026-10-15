@@ -152,20 +152,26 @@ func test_turn_card_plans_use_traps_about_sixty_percent_of_the_time() -> void:
 	check(BotBrain.plan_turn_card(state, 2, again, _seeded(1)).is_empty(), "이미 검토한 카드는 다시 쓰지 않는다")
 
 
-func test_window_card_reverse_only_against_a_humans_high_roll() -> void:
+func test_turn_card_bot_uses_reverse_and_objection_sometimes() -> void:
 	var state := make_state(2, 1)
-	state.hands[2] = [&"ACT_01"] as Array[StringName]
-	var phase: int = TurnManager.State.PHASE_INTERRUPT_ROLL
-	var used: int = 0
-	for seed_value: int in 40:
-		var plan: Dictionary = BotBrain.plan_window_card(state, 2, phase, 6, false, 1, {}, _seeded(seed_value))
+	state.rulebook.enqueue_law(LawRegistry.create("LAW_04"))
+	var reverse_used: int = 0
+	var objection_used: int = 0
+	for seed_value: int in 60:
+		state.hands[2] = [&"ACT_01"] as Array[StringName]
+		var plan: Dictionary = BotBrain.plan_turn_card(state, 2, {}, _seeded(seed_value))
 		if not plan.is_empty():
-			used += 1
-			check_eq(plan["card_id"], &"ACT_01", "고눈금에는 역주행으로 끼어든다")
-	check(used > 15, "P1이 6을 굴리면 자주 끼어든다 (%d/40)" % used)
-	for seed_value: int in 40:
-		check(BotBrain.plan_window_card(state, 2, phase, 3, false, 1, {}, _seeded(seed_value)).is_empty(), "낮은 눈금에는 개입하지 않는다")
-		check(BotBrain.plan_window_card(state, 2, phase, 6, true, 3, {}, _seeded(seed_value)).is_empty(), "봇의 턴에는 개입하지 않는다")
+			reverse_used += 1
+		state.hands[2] = [&"ACT_06"] as Array[StringName]
+		plan = BotBrain.plan_turn_card(state, 2, {}, _seeded(seed_value))
+		if not plan.is_empty():
+			objection_used += 1
+			check_eq(plan["params"]["law_id"], "LAW_04", "있는 교칙만 파기한다")
+	check(reverse_used > 3 and reverse_used < 40, "우노 리버스는 가끔 쓴다 (%d/60)" % reverse_used)
+	check(objection_used > 8, "법전이 있으면 이의 있음!을 자주 쓴다 (%d/60)" % objection_used)
+	state.rulebook.active_laws_queue.clear()
+	state.hands[2] = [&"ACT_06"] as Array[StringName]
+	check(BotBrain.plan_turn_card(state, 2, {}, _seeded(1)).is_empty(), "법전이 비어 있으면 쓰지 않는다")
 
 
 func test_window_card_rollback_when_the_bot_was_hurt() -> void:
@@ -277,54 +283,43 @@ func _human_roll_to_window(manager: TurnManager) -> void:
 	manager.act(&"roll", {"player_id": 1})
 
 
-func test_intervention_window_closes_by_itself_when_the_human_has_no_card() -> void:
+func _hurt_setup(manager: TurnManager, victim: int, mover: int) -> void:
+	# mover의 말(1호)이 victim의 말(1호)이 서 있는 4번 칸으로 2칸 이동해 잡는다.
+	var mover_pawn: int = mover * 10 + 1
+	var victim_pawn: int = victim * 10 + 1
+	place(manager.state, mover_pawn, 2, [1])
+	place(manager.state, victim_pawn, 4, [3])
+	manager.state.tools[mover] = ScriptedTool.new([2])
+	manager.state.give_card(victim, &"ACT_05")
+	manager._begin_turn()
+	manager.act(&"proceed", {"player_id": mover})
+	manager.act(&"roll", {"player_id": mover})
+	manager.act(&"select_pawn", {"player_id": mover, "pawn_id": mover_pawn})
+
+
+func test_window_waits_for_a_hurt_human_who_holds_the_rollback_card() -> void:
 	var manager: TurnManager = _manager(2)
-	manager.state.rulebook.enqueue_law(LawRegistry.create("LAW_04"))
-	manager.state.give_card(2, &"ACT_06")  # 법전이 있으니 봇에게 개입 창이 열린다
-	_human_roll_to_window(manager)
-	check_eq(manager.current_state, TurnManager.State.PHASE_INTERRUPT_ROLL, "개입 창이 열림")
-	var controller: BotController = _controller(manager, [2])
-	controller.tick(0.0)
-	controller.tick(0.5)  # 봇이 고민(낼 카드 없음)
-	check_eq(manager.current_state, TurnManager.State.PHASE_INTERRUPT_ROLL, "봇 판단 직후에는 아직 열려 있다")
-	controller.tick(0.7)
-	check_eq(manager.current_state, TurnManager.State.PHASE_INTERRUPT_ROLL, "0.8초가 지나기 전")
-	controller.tick(0.2)
-	check_eq(manager.current_state, TurnManager.State.PHASE_SELECT_PAWN, "0.8초 뒤 P1이 패스를 누르지 않아도 자동으로 넘어간다")
+	_hurt_setup(manager, 2, 1)
+	check_eq(manager.current_state, TurnManager.State.PHASE_RESOLUTION, "피해자가 ACT_05를 들고 있어 정산 창이 열림")
+	# P2가 사람이라고 보고 봇 목록에서 뺀다 (봇은 P1만): 사람이 고를 때까지 자동으로 닫히지 않는다.
+	var controller: BotController = _controller(manager, [1], true)
+	for i: int in 10:
+		controller.tick(1.0)
+	check_eq(manager.current_state, TurnManager.State.PHASE_RESOLUTION, "사람에게 [발동 / 넘기기] 선택 시간을 준다")
+	manager.force_timeout()  # 사람이 넘기기를 누르거나 시간이 지난 것
+	check(manager.current_state != TurnManager.State.PHASE_RESOLUTION, "넘기면 진행")
 	_dispose(manager)
 
 
-func test_intervention_window_waits_for_a_human_who_holds_a_playable_card() -> void:
+func test_bot_rolls_back_when_it_is_hurt_and_holds_the_card() -> void:
 	var manager: TurnManager = _manager(2)
-	manager.state.give_card(1, &"ACT_01")  # P1이 낼 수 있는 개입 카드
-	manager.state.give_card(2, &"ACT_06")
-	manager.state.rulebook.enqueue_law(LawRegistry.create("LAW_04"))
-	_human_roll_to_window(manager)
+	_hurt_setup(manager, 2, 1)
 	var controller: BotController = _controller(manager, [2], true)
 	for i: int in 10:
 		controller.tick(1.0)
-	check_eq(manager.current_state, TurnManager.State.PHASE_INTERRUPT_ROLL, "P1에게 [카드 사용 / 패스] 선택 시간을 준다")
-	manager.force_timeout()  # P1이 패스를 누른 것
-	check_eq(manager.current_state, TurnManager.State.PHASE_SELECT_PAWN, "패스하면 진행")
+	check_eq(manager.state.get_pawn(21).current_tile_idx, 4, "봇이 ACT_05로 되돌려 말이 제자리")
+	check((manager.state.hands[2] as Array).is_empty(), "ACT_05 소모")
 	_dispose(manager)
-
-
-func test_bot_reverses_a_human_high_roll_when_it_holds_the_card() -> void:
-	var used: int = 0
-	for seed_value: int in 12:
-		var manager: TurnManager = _manager(2)
-		manager.state.give_card(2, &"ACT_01")
-		manager.state.tools[1] = ScriptedTool.new([6])
-		manager.act(&"proceed", {"player_id": 1})
-		manager.act(&"roll", {"player_id": 1})
-		var controller: BotController = _controller(manager, [2], true)
-		controller.rng.seed = seed_value + 1
-		for i: int in 4:
-			controller.tick(0.0)
-		if manager.state.reverse_move_rounds_left > 0:
-			used += 1
-		_dispose(manager)
-	check(used >= 4, "봇이 P1의 6에 우노 리버스로 끼어든다 (%d/12)" % used)
 
 
 func test_bots_choose_stacking_for_yut_pawns() -> void:

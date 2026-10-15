@@ -12,6 +12,7 @@ var _checked_layout: bool = false
 var _seen_phases: Dictionary = {}
 var _draft_rounds: Array[int] = []
 var _banner_picks: int = 0
+var _popups: int = 0
 var _tile_picks: int = 0
 var _cards_played: int = 0
 var _evolutions: int = 0
@@ -128,7 +129,8 @@ func _wait_for_bots(manager: TurnManager) -> bool:
 					return true
 			else:
 				# 사람이 낼 카드가 없으면 창은 봇이 자동으로 넘긴다. 있으면 사람이 [개입 카드 사용 / 패스]를 고른다.
-				_assert(_board._skip_button.visible == _board._human_can_intervene(), "AI 모드의 개입 패스 버튼은 P1이 낼 카드가 있을 때만 보여야 한다")
+				_board._update_reaction_popup(0.0)
+				_assert((_board._reaction_popup != null) == _board._human_can_intervene(), "AI 모드의 피해 되돌리기 팝업은 P1이 낼 카드가 있을 때만 떠야 한다")
 				if not _board._human_can_intervene():
 					return true
 		TurnManager.State.PHASE_MOVING_STEP, TurnManager.State.PHASE_NEUTRAL_NPC:
@@ -174,7 +176,7 @@ func _step_once() -> void:
 				_board._roll_button.pressed.emit()
 		TurnManager.State.PHASE_SELECT_PAWN:
 			var options: Array[Button] = []
-			for button: Button in _board._pawn_buttons:
+			for button: Button in _board._select_cards:
 				if not button.disabled:
 					options.append(button)
 			if options.is_empty():
@@ -183,7 +185,7 @@ func _step_once() -> void:
 				return
 			var chosen: Button = options[_rng.randi_range(0, options.size() - 1)]
 			# 가끔은 버튼 대신 보드 위의 말 도형을 직접 클릭한다 (호버 미리보기 포함).
-			var chosen_index: int = _board._pawn_buttons.find(chosen)
+			var chosen_index: int = _board._select_cards.find(chosen)
 			var chosen_pawn: PlayerPawn = _board.state.get_pawn(manager.current_player_id() * 10 + chosen_index + 1)
 			var chosen_view: Node2D = _board._pawn_views.get(chosen_pawn.entity_id)
 			_check_select_banner(manager, options)
@@ -223,10 +225,7 @@ func _step_once() -> void:
 					choices[_rng.randi_range(0, choices.size() - 1)].pressed.emit()
 					_stack_choices += 1
 				return
-			_assert(_board._skip_button.visible, "개입 창에는 [개입 패스(진행)] 버튼이 보여야 한다")
-			_assert(_board._hint_label.text.contains("개입"), "개입 안내 문구가 보여야 한다")
-			if not _try_interrupt_card(manager):
-				_board._skip_button.pressed.emit()
+			_react_in_window(manager)
 		_:
 			manager.force_timeout()
 
@@ -279,7 +278,9 @@ func _check_select_banner(manager: TurnManager, options: Array[Button]) -> void:
 	for index: int in 4:
 		var card: Button = _board._select_cards[index]
 		_assert(card.size.x >= 135.0 and card.size.y >= 165.0, "말 카드는 최소 135x165")
-		_assert(card.disabled == (_board._pawn_buttons[index] as Button).disabled, "배너 카드와 독 슬롯의 활성 상태가 같아야 한다")
+		var slot_pawn: PlayerPawn = _board.state.get_pawn(manager.current_player_id() * 10 + index + 1)
+		_assert(card.disabled == not slot_pawn.is_selectable(), "배너 카드의 활성 상태는 말을 고를 수 있는지와 같아야 한다")
+		_assert(not (_board._pawn_buttons[index] as Button).has_theme_stylebox_override("hover") or not (_board._pawn_buttons[index] as Button).disabled, "독 슬롯은 선택 단계에서도 눌러서 고르는 용도가 아니다")
 		var result_text: String = (_board._select_parts[index]["result"] as Label).text
 		_assert(result_text != "", "카드마다 결과 예고 문구가 있어야 한다")
 		if not card.disabled:
@@ -297,7 +298,7 @@ func _try_tile_card(manager: TurnManager) -> bool:
 	var player_id: int = manager.current_player_id()
 	for card_id: StringName in _board.state.hands[player_id]:
 		var card: BaseCard = CardRegistry.get_card(card_id)
-		if not card.needs_tile() or _rng.randi_range(0, 1) == 0:
+		if manager.card_played_this_turn() or not card.needs_tile() or _rng.randi_range(0, 1) == 0:
 			continue
 		_board._on_card_pressed(player_id, card_id)
 		if not _board._tile_pick_active:
@@ -470,7 +471,7 @@ func _try_turn_begin_buttons(manager: TurnManager) -> bool:
 	if _try_skill(manager, player_id):
 		return true
 	for card_id: StringName in _board.state.hands[player_id]:
-		if card_id == &"ACT_02" and BangCommand.find_target(_board.state, player_id) != null and _rng.randi_range(0, 1) == 0:
+		if card_id == &"ACT_02" and not manager.card_played_this_turn() and BangCommand.find_target(_board.state, player_id) != null and _rng.randi_range(0, 1) == 0:
 			_board._on_card_pressed(player_id, card_id)
 			_cards_played += 1
 			_bangs += 1
@@ -478,25 +479,22 @@ func _try_turn_begin_buttons(manager: TurnManager) -> bool:
 	return false
 
 
-func _try_interrupt_card(manager: TurnManager) -> bool:
-	for player_id: int in [1, 2, 3, 4]:
-		for card_id: StringName in _board.state.hands[player_id]:
-			var card: BaseCard = CardRegistry.get_card(card_id)
-			if not card.is_playable_in(manager.current_state) or not card.could_play(_board.state, player_id):
-				continue
-			if _rng.randi_range(0, 2) != 0:
-				continue
-			_board._on_card_pressed(player_id, card_id)
-			if _board._choice_overlay != null:
-				var options: Array = []
-				for node: Node in _board._choice_overlay.find_children("*", "Button", true, false):
-					options.append(node)
-				if options.size() > 1:
-					(options[0] as Button).pressed.emit()
-				_board._close_choice()
-			_cards_played += 1
-			return true
-	return false
+## 정산 창: 피해를 입은 플레이어가 [바이츠 더 더스트]를 들고 있으면 가운데 팝업이 떠야 하고, [지금 발동!]이나 [넘기기]를 누른다.
+func _react_in_window(manager: TurnManager) -> void:
+	_assert(not _board._skip_button.visible, "예전 [개입 패스] 버튼은 더 이상 보이지 않는다")
+	_board._update_reaction_popup(0.0)
+	var holder: int = _board._reaction_holder()
+	if holder == -1:
+		manager.force_timeout()  # 봇의 창이거나 사람이 낼 카드가 없다: 자동 진행
+		return
+	_assert(_board._reaction_popup != null and _board._reaction_use_button != null and _board._reaction_pass_button != null, "피해 되돌리기 팝업과 두 버튼이 떠야 한다")
+	_assert(_board._hint_label.text.contains("팝업"), "팝업 안내 문구가 보여야 한다")
+	_popups += 1
+	if _rng.randi_range(0, 1) == 0:
+		_board._reaction_use_button.pressed.emit()
+		_cards_played += 1
+	else:
+		_board._reaction_pass_button.pressed.emit()
 
 
 func _finish() -> bool:
@@ -504,7 +502,7 @@ func _finish() -> bool:
 	var phase_names: Array[String] = []
 	for phase: int in _seen_phases.keys():
 		phase_names.append(str(phase))
-	print("UI_SMOKE actions=%d round=%d game_over=%s winner=%d reason=%s phases=%d drafts=%s tile_picks=%d cards=%d evolutions=%d bombs_passed=%d skills=%d bangs=%d roulette=%d board_clicks=%d banner_picks=%d stack_choices=%d ai=%s fog_checks=%d" % [_actions, _board.state.round_number, manager.is_game_over, _board.state.winner, VictoryChecker.reason_text(_board._last_reason), _seen_phases.size(), str(_draft_rounds), _tile_picks, _cards_played, _evolutions, _bombs_passed, _skills, _bangs, _roulette_seen, _board_clicks, _banner_picks, _stack_choices, str(_ai), _fog_checks])
+	print("UI_SMOKE actions=%d round=%d game_over=%s winner=%d reason=%s phases=%d drafts=%s tile_picks=%d cards=%d evolutions=%d bombs_passed=%d skills=%d bangs=%d roulette=%d board_clicks=%d banner_picks=%d popups=%d stack_choices=%d ai=%s fog_checks=%d" % [_actions, _board.state.round_number, manager.is_game_over, _board.state.winner, VictoryChecker.reason_text(_board._last_reason), _seen_phases.size(), str(_draft_rounds), _tile_picks, _cards_played, _evolutions, _bombs_passed, _skills, _bangs, _roulette_seen, _board_clicks, _banner_picks, _popups, _stack_choices, str(_ai), _fog_checks])
 	_assert(manager.is_game_over, "치트 없이 한 판이 끝까지 진행되어 승리자가 나와야 한다 (조작 %d회)" % _actions)
 	_assert(_draft_rounds.has(1), "1라운드 드래프트가 열렸어야 한다")
 	_assert(_board._result_overlay != null, "게임 종료 결과창이 떠야 한다")

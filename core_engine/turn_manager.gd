@@ -63,6 +63,8 @@ var _extra_turn_pending: bool = false
 var _bonus_roll_pending: bool = false
 var _draft_offers: Dictionary = {}
 var _draft_picks: Dictionary = {}
+## 이번 턴에 이미 굴리기 전 카드를 한 장 냈는가. 카드는 굴리기 전 턴당 1장만 쓸 수 있다 (피해를 되돌리는 ACT_05만 예외).
+var _card_played_this_turn: bool = false
 ## 이번 드래프트에서 플레이어별로 이미 리롤한 슬롯 인덱스 (슬롯당 1회).
 var _draft_rerolls: Dictionary = {}
 ## 진행 중인 이동의 보고서와 마지막 걸음 결과 (execute_step_by_step_move가 채운다).
@@ -292,6 +294,9 @@ func _handle_play_card(actor: int, params: Dictionary) -> void:
 	if not state.has_card(actor, card_id):
 		action_rejected.emit(actor, &"play_card", &"card_not_in_hand")
 		return
+	if current_state == State.PHASE_TURN_BEGIN and _card_played_this_turn:
+		action_rejected.emit(actor, &"play_card", &"card_limit")
+		return
 	if not card.can_play(state, actor, params):
 		action_rejected.emit(actor, &"play_card", &"invalid_target")
 		return
@@ -307,6 +312,8 @@ func _handle_play_card(actor: int, params: Dictionary) -> void:
 		action_rejected.emit(actor, &"play_card", &"invalid_target")
 		return
 	state.consume_card(actor, card_id)
+	if not queued:
+		_card_played_this_turn = true
 	_emit_event(&"card_played", {"player_id": actor, "card_id": card_id, "params": params, "queued": queued})
 	if not queued:
 		_check_victory(null)
@@ -682,6 +689,8 @@ func _finish_draft() -> void:
 
 ## new_turn: 새 플레이어의 턴이면 true (구속 카운터를 줄인다). 추가 턴·롤백 재시작은 false.
 func _begin_turn(new_turn: bool = true) -> void:
+	if new_turn:
+		_card_played_this_turn = false
 	state.hurt_players.clear()
 	state.rollback_requested = false
 	move_queue.clear()
@@ -745,6 +754,11 @@ func _apply_roll_result(result: RollResult) -> void:
 		_broadcast_state()
 	else:
 		_enter_interrupt_roll()
+
+
+## 이번 턴에 굴리기 전 카드를 이미 썼는가 (UI·봇이 카드 사용 가능 여부를 판단할 때 쓴다).
+func card_played_this_turn() -> bool:
+	return _card_played_this_turn
 
 
 ## 이 단계의 개입 창에서 낼 수 있는 카드를 가진 플레이어가 있는가. 없으면 창을 열지 않고 바로 진행한다.

@@ -155,7 +155,8 @@ func _step_turn_begin() -> void:
 		_act(player_id, &"pass_bomb")
 		_delay(DELAY_TURN_START)
 		return
-	var plan: Dictionary = BotBrain.plan_turn_card(manager.state, player_id, _tried, rng)
+	# 카드는 굴리기 전 턴당 1장만 쓸 수 있다.
+	var plan: Dictionary = {} if manager.card_played_this_turn() else BotBrain.plan_turn_card(manager.state, player_id, _tried, rng)
 	if not plan.is_empty():
 		var params: Dictionary = (plan["params"] as Dictionary).duplicate()
 		params["card_id"] = plan["card_id"]

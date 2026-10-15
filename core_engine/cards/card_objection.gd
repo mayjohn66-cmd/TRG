@@ -8,7 +8,7 @@ extends BaseCard
 func _init() -> void:
 	card_id = &"ACT_06"
 	display_name = "이의 있음! 법전 파기"
-	playable_phases = [TurnManager.State.PHASE_TURN_BEGIN, TurnManager.State.PHASE_INTERRUPT_ROLL, TurnManager.State.PHASE_RESOLUTION]
+	playable_phases = [TurnManager.State.PHASE_TURN_BEGIN]
 
 
 func could_play(state: GameState, _player_id: int) -> bool:

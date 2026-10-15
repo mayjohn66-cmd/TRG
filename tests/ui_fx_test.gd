@@ -168,8 +168,7 @@ func _test_gauge_and_lock() -> void:
 	_expect(_board._fx_busy and _board._presenter.active, "굴림 연출이 재생 중이어야 한다")
 	_expect(_board._roll_button.disabled, "연출 중에는 굴림 버튼이 잠긴다")
 	_expect(_board._roll_button.size.x >= 120.0 and _board._roll_button.size.x == _board._roll_button.size.y, "굴리기 버튼은 큼직한 원형 (%s)" % str(_board._roll_button.size))
-	for button: Button in _board._pawn_buttons:
-		_expect(button.disabled, "연출 중에는 말 선택 버튼이 잠긴다")
+	_expect(not _board._select_banner.visible, "연출 중에는 말 선택 배너가 보이지 않는다")
 	_expect(rolled.size() == 1, "엔진은 이미 결과를 확정했다")
 	var wait_start: float = _now()
 	while _board._fx_busy and _now() - wait_start < 4.0:
@@ -428,6 +427,8 @@ func _test_hud_overhaul() -> void:
 	_board._complete_tile_pick(target)
 	await process_frame
 	_expect(manager.state.board.get_tile(target).has_attachment(&"TRP_01") and not (manager.state.hands[holder] as Array).has(&"TRP_01") and not _board._pick_cancel.visible, "타일을 고르면 설치되고 UI가 닫힌다")
+	_expect(not _board._card_usable_now(holder, CardRegistry.get_card(&"ACT_01")), "굴리기 전 카드는 턴당 1장이라 두 번째 카드는 쓸 수 없다")
+	manager._card_played_this_turn = false  # 다음 턴이 된 것으로 보고 이어서 검사한다
 	# 즉발 카드는 보드판 어디든 놓으면 발동
 	_board._card_press(holder, &"ACT_01", Vector2(700, 700), Vector2(700, 640))
 	_board._card_move(Vector2(720, 600))

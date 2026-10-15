@@ -314,23 +314,30 @@ func test_stack_choice_is_skipped_for_non_yut_pawns_law_02_and_headless_default(
 	_dispose(auto)
 
 
-func test_interrupt_window_resolves_cards_lifo_and_only_when_hands_exist() -> void:
+func test_cards_are_only_played_before_the_roll_and_once_per_turn() -> void:
 	var manager: TurnManager = _new_manager()
+	var rejected: Array = _rejections(manager)
 	add_law(manager.state, &"LAW_02")
 	add_law(manager.state, &"LAW_05")
-	manager.state.give_card(2, &"ACT_06")
+	manager.state.give_card(1, &"ACT_06")
+	manager.state.give_card(1, &"ACT_06")
 	manager.state.give_card(2, &"ACT_06")
 	_set_tool(manager, 1, ScriptedTool.new([2]))
+	_do(manager, 1, &"play_card", {"card_id": &"ACT_06", "law_id": "LAW_02"})
+	check(not manager.state.rulebook.has_law(&"LAW_02"), "굴리기 전에는 카드가 바로 실행된다")
+	check(manager.card_played_this_turn(), "이번 턴 카드 사용 기록")
+	_do(manager, 1, &"play_card", {"card_id": &"ACT_06", "law_id": "LAW_05"})
+	check_eq(rejected.size(), 1, "굴리기 전 카드는 턴당 1장")
+	check_eq(rejected[0][2], &"card_limit", "거부 사유는 카드 한도")
+	check(manager.state.rulebook.has_law(&"LAW_05"), "두 번째 카드는 실행되지 않음")
 	_do(manager, 1, &"proceed")
 	_do(manager, 1, &"roll")
-	check_eq(manager.current_state, Phase.PHASE_INTERRUPT_ROLL, "손패가 있으면 개입 창이 열린다")
-	_do(manager, 2, &"play_card", {"card_id": &"ACT_06", "law_id": "LAW_02"})
+	check_eq(manager.current_state, Phase.PHASE_SELECT_PAWN, "손패가 있어도 굴림 뒤 개입 창은 열리지 않는다")
 	_do(manager, 2, &"play_card", {"card_id": &"ACT_06", "law_id": "LAW_05"})
-	check_eq(manager.command_stack.interrupt_count(), 2, "개입 대기열")
-	check(manager.state.rulebook.has_law(&"LAW_02"), "아직 실행 전")
-	manager.tick(GameEnums.PHASE_TIME_INTERRUPT + 0.1)
-	check_eq(manager.state.rulebook.active_laws_queue.size(), 0, "두 장 모두 실행되어 법전이 비워짐")
-	check_eq(manager.current_state, Phase.PHASE_SELECT_PAWN, "개입 후 기물 선택")
+	check_eq(rejected.back()[2], &"not_playable_now", "굴림 뒤에는 (ACT_05를 빼고) 카드를 낼 수 없다")
+	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
+	_do(manager, 2, &"proceed")
+	check(not manager.card_played_this_turn(), "새 턴에는 카드 사용 기록이 초기화된다")
 	_dispose(manager)
 
 
@@ -374,12 +381,11 @@ func test_act_05_rolls_back_turn_restores_laws_but_keeps_spent_cards() -> void:
 	state.give_card(1, &"ACT_06")
 	_set_tool(manager, 1, ScriptedTool.new([2]))
 	manager._begin_turn()  # 위 세팅을 이번 턴 시작 시점으로 저장
+	_do(manager, 1, &"play_card", {"card_id": &"ACT_06", "law_id": "LAW_06"})  # 굴리기 전에 법전 파기
+	check(not state.rulebook.has_law(&"LAW_06"), "법전 파기됨")
 	_do(manager, 1, &"proceed")
 	_do(manager, 1, &"roll")
-	check_eq(manager.current_state, Phase.PHASE_INTERRUPT_ROLL, "개입 창")
-	_do(manager, 1, &"play_card", {"card_id": &"ACT_06", "law_id": "LAW_06"})  # 이번 턴 도중 법전 파기
-	manager.tick(GameEnums.PHASE_TIME_INTERRUPT + 0.1)
-	check(not state.rulebook.has_law(&"LAW_06"), "법전 파기됨")
+	check_eq(manager.current_state, Phase.PHASE_SELECT_PAWN, "굴림 뒤 개입 창 없이 바로 기물 선택")
 	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
 	check_eq(manager.current_state, Phase.PHASE_RESOLUTION, "ACT_05 대기 창")
 	check_eq(state.get_pawn(21).current_tile_idx, 0, "잡힘")
@@ -389,7 +395,7 @@ func test_act_05_rolls_back_turn_restores_laws_but_keeps_spent_cards() -> void:
 	check_eq(state.get_pawn(21).current_tile_idx, 4, "잡힌 말 복원")
 	check(state.rulebook.has_law(&"LAW_06"), "법전 큐도 턴 시작 시점으로 복원")
 	check((state.hands[2] as Array).is_empty(), "ACT_05 카드는 소모된 채")
-	check((state.hands[1] as Array).is_empty(), "이번 턴 소모한 개입 카드는 복구되지 않음")
+	check((state.hands[1] as Array).is_empty(), "이번 턴 소모한 카드는 복구되지 않음")
 	check_eq(manager.current_state, Phase.PHASE_TURN_BEGIN, "같은 플레이어의 턴이 처음부터 다시")
 	check_eq(state.current_player, 1, "같은 플레이어")
 	_dispose(manager)
@@ -399,15 +405,16 @@ func test_act_05_cannot_be_played_by_unharmed_player() -> void:
 	var manager: TurnManager = _new_manager()
 	var rejected: Array = _rejections(manager)
 	manager.state.give_card(2, &"ACT_05")
-	manager.state.give_card(2, &"ACT_01")  # 개입 창을 열어 두기 위한 카드 (ACT_05만 있으면 창이 열리지 않는다)
+	manager.state.give_card(1, &"ACT_05")
+	place(manager.state, 11, 2, [1])
 	place(manager.state, 21, 4, [3])
-	_set_tool(manager, 1, ScriptedTool.new([1]))
+	_set_tool(manager, 1, ScriptedTool.new([2]))
+	manager._begin_turn()
 	_do(manager, 1, &"proceed")
 	_do(manager, 1, &"roll")
-	manager.tick(GameEnums.PHASE_TIME_INTERRUPT + 0.1)
 	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
-	check_eq(manager.current_state, Phase.PHASE_RESOLUTION, "UNO 리버스를 낼 수 있어 개입 창이 열린다")
-	_do(manager, 2, &"play_card", {"card_id": &"ACT_05"})
+	check_eq(manager.current_state, Phase.PHASE_RESOLUTION, "피해를 입은 P2가 ACT_05를 낼 수 있어 창이 열린다")
+	_do(manager, 1, &"play_card", {"card_id": &"ACT_05"})
 	check_eq(rejected.size(), 1, "피해 없는 플레이어의 ACT_05는 거부")
 	_dispose(manager)
 
@@ -425,18 +432,21 @@ func test_intervention_window_stays_closed_when_nobody_can_use_their_cards() -> 
 	_dispose(manager)
 
 
-func test_act_04_after_backdo_retreat_finishes_pawn() -> void:
+func test_act_04_finishes_a_pawn_that_backed_off_to_the_last_tile() -> void:
 	var manager: TurnManager = _new_manager()
 	manager.state.give_card(1, &"ACT_04")
 	_set_tool(manager, 1, ScriptedTool.new([-1]))
 	_do(manager, 1, &"proceed")
 	_do(manager, 1, &"roll")
-	manager.tick(GameEnums.PHASE_TIME_INTERRUPT + 0.1)
+	check_eq(manager.current_state, Phase.PHASE_SELECT_PAWN, "굴림 뒤 개입 창 없음")
 	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
 	check_eq(manager.state.get_pawn(11).current_tile_idx, 19, "0번에서 빽도 후퇴는 19번")
-	check_eq(manager.current_state, Phase.PHASE_RESOLUTION, "도착 직후 개입 창")
+	check_eq(manager.current_state, Phase.PHASE_TURN_BEGIN, "ACT_04는 정산 창이 아니라 다음 내 턴의 굴리기 전에 쓴다")
+	manager.state.hands[1] = [&"ACT_04"] as Array[StringName]
+	manager.state.current_player = 1
+	manager.current_turn_index = manager.player_order.find(1)
+	manager._begin_turn()
 	_do(manager, 1, &"play_card", {"card_id": &"ACT_04", "pawn_id": 11})
-	manager.tick(GameEnums.PHASE_TIME_RESOLUTION + 0.1)
 	check(manager.state.get_pawn(11).is_finished, "ACT_04로 즉시 완주")
 	_dispose(manager)
 

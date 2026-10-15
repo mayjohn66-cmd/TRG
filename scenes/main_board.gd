@@ -38,11 +38,15 @@ const DOCK_CARD_Y: float = 6.0
 ## 손패 카드는 한 장 전체 일러스트(140x196)가 따로 있고, 화면 아래로 반쯤 가려진 채 부채꼴로 펼쳐진다. 호버하면 전체가 올라와 보인다.
 const HAND_CARD_SIZE: Vector2 = Vector2(140, 196)
 const HAND_FAN_DEGREES: float = 5.0
+## 피해 되돌리기 팝업이 자동으로 넘어가기까지의 시간(초).
+const REACTION_SECONDS: float = 6.0
 const HAND_RAISED_Y: float = -92.0
 ## 우측 하단 기물 독에서 기물 슬롯이 놓이는 기준 y (필살기 버튼 줄 아래).
 const SLOT_BASE_Y: float = 50.0
 const AUGMENT_CARD_SIZE: Vector2 = Vector2(260, 390)
 const AUGMENT_HOVER_SCALE: float = 1.06
+## 증강 카드를 고른 뒤 다음 단계로 넘어가기 전에 선택 연출을 보여 주는 시간(초).
+const AUGMENT_PICK_SECONDS: float = 0.9
 const SELECT_CARD_SIZE: Vector2 = Vector2(135, 165)
 const SELECT_BANNER_POS: Vector2 = Vector2(380, 568)
 const SLOT_SIZE: Vector2 = Vector2(76, 88)
@@ -134,6 +138,7 @@ const REJECT_REASONS: Dictionary = {
 	&"ambiguous_pair": "교환할 체스 기물 두 개를 골라야 합니다",
 	&"no_instant_card": "떠넘길 즉발 카드가 없습니다",
 	&"reroll_used": "이미 리롤한 카드입니다",
+	&"card_limit": "카드는 굴리기 전에 턴당 1장만 쓸 수 있습니다",
 	&"no_candidate": "바꿀 수 있는 다른 증강이 없습니다",
 }
 const CATEGORY_COLORS: Dictionary = {
@@ -217,7 +222,6 @@ var _drag_ghost: PanelContainer = null
 var _drop_zone: PanelContainer = null
 var _drop_label: Label = null
 var _dock: Control = null
-var _dock_tabs: HBoxContainer = null
 var _dock_player: int = -1
 var _debug_toggle: Button = null
 var _log_toggle: Button = null
@@ -269,6 +273,12 @@ var _roll_geometry: StringName = &""
 var _choice_overlay: Control = null
 var _draft_overlay: Control = null
 var _draft_player: int = -1
+var _reaction_popup: PanelContainer = null
+var _reaction_bar: ProgressBar = null
+var _reaction_use_button: Button = null
+var _reaction_pass_button: Button = null
+var _reaction_key: String = ""
+var _reaction_left: float = 0.0
 var _select_banner: Panel = null
 var _dir_left: Node2D = null
 var _dir_right: Node2D = null
@@ -280,6 +290,9 @@ var _select_hover_slot: int = -1
 var _flash_pawn: int = -1
 var _flash_tween: Tween = null
 var _draft_signature_value: String = ""
+var _draft_locked: bool = false
+var _pawn_choice_cards: Array = []
+var _draft_title_label: Label = null
 var _draft_cards: Array[Button] = []
 var _draft_reroll_buttons: Array[Button] = []
 var _result_overlay: Control = null
@@ -341,6 +354,7 @@ func _process(delta: float) -> void:
 		var fill: StyleBoxFlat = _style(Color("51cf66") if _charge_value < 0.4 else (Color("fcc419") if _charge_value < 0.75 else Color("ff6b6b")), Color("fff3bf"), 2, 7, 0, 0)
 		_power_bar.add_theme_stylebox_override("fill", fill)
 	_update_tip(delta)
+	_update_reaction_popup(delta)
 	# 말 선택 단계: 지금 고를 수 있는 내 말 도형이 위아래로 통통 튄다.
 	var selecting: bool = manager.current_state == TurnManager.State.PHASE_SELECT_PAWN and not manager.is_game_over
 	var wave: float = -absf(sin(Time.get_ticks_msec() / 1000.0 * 7.0)) * 6.0
@@ -352,10 +366,6 @@ func _process(delta: float) -> void:
 		if bounce != null:
 			var active: bool = selecting and pawn.owner_id == manager.current_player_id() and pawn.is_selectable()
 			bounce.position.y = wave if active else 0.0
-	for index: int in _pawn_slot_parts.size():
-		var slot_button: Button = _pawn_buttons[index]
-		var base_y: float = SLOT_BASE_Y
-		slot_button.position.y = base_y + wave if selecting and not slot_button.disabled else base_y
 
 
 func _input(event: InputEvent) -> void:
@@ -448,6 +458,7 @@ func _new_game() -> void:
 	_toast_label.text = ""
 	_dock_player = -1
 	_announced_round = 0
+	_close_reaction_popup()
 	_fx_generation += 1
 	_fx_busy = false
 	_bot.set_enabled(ai_mode)
@@ -556,7 +567,7 @@ func _build_ui() -> void:
 func _register_layout() -> void:
 	_layout_entries.clear()
 	var left: Array = [_law_panel, _mode_toggle, _new_game_button]
-	var center: Array = [_select_banner, _dir_left, _dir_right, _board_layer, _pawn_layer, _dock, _dock_tabs, _drop_zone, _aim_layer, _pick_banner, _pick_cancel, _roll_button, _roll_pad, _power_bar, _power_label]
+	var center: Array = [_select_banner, _dir_left, _dir_right, _board_layer, _pawn_layer, _dock, _drop_zone, _aim_layer, _pick_banner, _pick_cancel, _roll_button, _roll_pad, _power_bar, _power_label]
 	var right: Array = [_tool_board, _action_row, _pawn_bar, _menu_button, _debug_toggle, _log_toggle, _debug_box, _log_panel]
 	for index: int in PLAYER_IDS.size():
 		var player_id: int = PLAYER_IDS[index]
@@ -885,15 +896,6 @@ func _build_action_bar() -> void:
 	_bomb_button.custom_minimum_size = Vector2(0, 30)
 	_bomb_button.tooltip_text = "즉발 카드 1장을 소모해 우노 +4 페널티를 두 배(-8)로 다음 플레이어에게 넘깁니다"
 	action_row.add_child(_bomb_button)
-
-	# 개입 창에서는 카드 독 위에 '카드를 낼 수 있는 플레이어' 탭이 뜬다.
-	_dock_tabs = HBoxContainer.new()
-	_dock_tabs.position = Vector2(250, 640)
-	_dock_tabs.size = Vector2(860, 28)
-	_dock_tabs.alignment = BoxContainer.ALIGNMENT_CENTER
-	_dock_tabs.add_theme_constant_override("separation", 6)
-	_dock_tabs.visible = false
-	add_child(_dock_tabs)
 
 
 ## 둥근 큰 버튼 스타일 (일반/호버/눌림/비활성): 두꺼운 테두리와 그림자로 눌러 보고 싶게 만든다.
@@ -1576,25 +1578,9 @@ func _refresh_laws() -> void:
 func _refresh_hands() -> void:
 	for child: Node in _dock.get_children():
 		child.queue_free()
-	for child: Node in _dock_tabs.get_children():
-		child.queue_free()
 	# AI 모드: 하단 독에는 사람(P1)의 손패만 앞면으로 보인다 (봇의 손패는 장수만 프로필 카드에 표시).
-	var in_window: bool = _in_intervention_window() and not ai_mode
-	var holders: Array[int] = _window_holders() if in_window else ([] as Array[int])
-	if in_window and not holders.has(_dock_player):
-		_dock_player = holders[0] if not holders.is_empty() else manager.current_player_id()
-	var player_id: int = _dock_player if in_window else (local_player_id if ai_mode else manager.current_player_id())
-	if not in_window:
-		_dock_player = player_id
-	# 개입 창: 카드를 낼 수 있는 플레이어 탭 (현재 턴 플레이어의 손패는 평소 독에 상시 표시)
-	_dock_tabs.visible = in_window and not holders.is_empty()
-	if _dock_tabs.visible:
-		_dock_tabs.add_child(_make_label("개입 카드:", 13, Color("adb5bd")))
-		for holder: int in holders:
-			var tab: Button = _make_button("P%d (%d장)" % [holder, (state.hands[holder] as Array).size()], _on_dock_tab_pressed.bind(holder), 12, (PLAYER_COLORS[holder] as Color).darkened(0.4), 8)
-			tab.custom_minimum_size = Vector2(110, 28)
-			tab.disabled = holder == player_id
-			_dock_tabs.add_child(tab)
+	var player_id: int = local_player_id if ai_mode else manager.current_player_id()
+	_dock_player = player_id
 	var hand: Array = state.hands[player_id]
 	if hand.is_empty():
 		var empty := _make_label("P%d 손패 없음" % player_id, 14, Color("5c6068"))
@@ -1620,6 +1606,108 @@ func _refresh_hands() -> void:
 		_dock.add_child(card_view)
 
 
+## 피해 되돌리기 팝업: 카드는 굴리기 전 1장이 기본이고, 유일한 예외인 [바이츠 더 더스트](내 말이 피해를 입었을 때)만 정산 창에서 쓴다.
+## 가운데에 팝업이 뜨고 REACTION_SECONDS 동안 [지금 발동!]을 누르지 않으면 자동으로 넘어간다.
+func _reaction_holder() -> int:
+	if manager.is_game_over or manager.stack_offer_pending() or not _in_intervention_window() or _ui_busy():
+		return -1
+	if ai_mode:
+		return local_player_id if _human_can_intervene() else -1
+	var holders: Array[int] = _window_holders()
+	return holders[0] if not holders.is_empty() else -1
+
+
+func _reaction_card_for(holder: int) -> StringName:
+	for card_id: StringName in state.hands[holder]:
+		var card: BaseCard = CardRegistry.get_card(card_id)
+		if card.is_playable_in(manager.current_state) and card.could_play(state, holder):
+			return card_id
+	return &""
+
+
+func _update_reaction_popup(delta: float) -> void:
+	var holder: int = _reaction_holder()
+	if holder == -1:
+		_close_reaction_popup()
+		return
+	var key: String = "%d:%d" % [holder, manager.phase_serial]
+	if _reaction_popup == null or _reaction_key != key:
+		_build_reaction_popup(holder, key)
+	_reaction_left -= delta
+	_reaction_bar.value = maxf(_reaction_left, 0.0) / REACTION_SECONDS * 100.0
+	if _reaction_left <= 0.0:
+		_close_reaction_popup()
+		manager.force_timeout()
+		_refresh_all()
+
+
+func _build_reaction_popup(holder: int, key: String) -> void:
+	_close_reaction_popup()
+	var card_id: StringName = _reaction_card_for(holder)
+	if card_id == &"":
+		return
+	var card: BaseCard = CardRegistry.get_card(card_id)
+	_reaction_key = key
+	_reaction_left = REACTION_SECONDS
+	_reaction_popup = PanelContainer.new()
+	_reaction_popup.z_index = 60
+	_reaction_popup.add_theme_stylebox_override("panel", _style(Color("101626"), Color("ff6b6b"), 4, 18, 26, 16))
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 8)
+	_reaction_popup.add_child(box)
+	var title := _make_label("P%d의 말이 피해를 입었습니다!" % holder, 22, Color("ffa8a8"))
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(title)
+	var ask := _make_label("[%s]를 지금 발동할까요?" % card.display_name, 16, Color("f8f9fa"))
+	ask.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(ask)
+	var preview: Control = _make_card_preview(card_id)
+	box.add_child(preview)
+	_reaction_bar = ProgressBar.new()
+	_reaction_bar.custom_minimum_size = Vector2(300, 10)
+	_reaction_bar.show_percentage = false
+	_reaction_bar.value = 100.0
+	_reaction_bar.add_theme_stylebox_override("fill", _style(Color("ff6b6b"), Color(0, 0, 0, 0), 0, 5, 0, 0))
+	_reaction_bar.add_theme_stylebox_override("background", _style(Color("2b2f3a"), Color(0, 0, 0, 0), 0, 5, 0, 0))
+	box.add_child(_reaction_bar)
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 14)
+	box.add_child(row)
+	_reaction_use_button = _make_button("지금 발동!", _on_reaction_use.bind(holder, card_id), 18, Color("c77d0a"), 10)
+	_reaction_use_button.custom_minimum_size = Vector2(150, 44)
+	row.add_child(_reaction_use_button)
+	_reaction_pass_button = _make_button("넘기기", _on_reaction_pass, 16, Color("495a85"), 10)
+	_reaction_pass_button.custom_minimum_size = Vector2(110, 44)
+	row.add_child(_reaction_pass_button)
+	add_child(_reaction_popup)
+	_reaction_popup.reset_size()
+	_reaction_popup.position = _board_center() - _reaction_popup.size / 2.0
+	_reaction_popup.pivot_offset = _reaction_popup.size / 2.0
+	_reaction_popup.scale = Vector2(0.85, 0.85)
+	_reaction_popup.create_tween().tween_property(_reaction_popup, "scale", Vector2.ONE, 0.15).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+func _close_reaction_popup() -> void:
+	if _reaction_popup != null:
+		_reaction_popup.queue_free()
+		_reaction_popup = null
+		_reaction_use_button = null
+		_reaction_pass_button = null
+	_reaction_key = ""
+
+
+func _on_reaction_use(holder: int, card_id: StringName) -> void:
+	_close_reaction_popup()
+	_act(&"play_card", {"player_id": holder, "card_id": card_id})
+
+
+func _on_reaction_pass() -> void:
+	_close_reaction_popup()
+	manager.force_timeout()
+	_refresh_all()
+
+
 ## 지금 개입 창(INTERRUPT_ROLL / RESOLUTION)인가.
 func _in_intervention_window() -> bool:
 	var phase: TurnManager.State = manager.current_state
@@ -1640,11 +1728,6 @@ func _window_holders() -> Array[int]:
 				holders.append(player_id)
 				break
 	return holders
-
-
-func _on_dock_tab_pressed(player_id: int) -> void:
-	_dock_player = player_id
-	_refresh_hands()
 
 
 ## 카드 프레임 스타일: 배경색이 카테고리(속성)를 나타낸다.
@@ -2184,7 +2267,6 @@ func _build_pawn_dock() -> void:
 		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		badge.visible = false
 		button.add_child(badge)
-		button.pressed.connect(_on_pawn_slot_pressed.bind(slot))
 		button.mouse_entered.connect(_on_pawn_slot_hover.bind(slot))
 		button.mouse_exited.connect(_on_pawn_slot_unhover.bind(button))
 		_pawn_bar.add_child(button)
@@ -2195,10 +2277,6 @@ func _build_pawn_dock() -> void:
 ## 기물 독이 보여 주는 주인: AI 모드는 항상 로컬 플레이어, 4P 수동 모드는 현재 턴 플레이어.
 func _dock_owner() -> int:
 	return local_player_id if ai_mode else manager.current_player_id()
-
-
-func _on_pawn_slot_pressed(slot: int) -> void:
-	_on_pawn_pressed(_dock_owner() * 10 + slot + 1)
 
 
 func _on_pawn_slot_hover(slot: int) -> void:
@@ -2215,7 +2293,6 @@ func _on_pawn_slot_unhover(button: Button) -> void:
 func _refresh_pawn_dock() -> void:
 	var owner_id: int = _dock_owner()
 	var color: Color = PLAYER_COLORS[owner_id]
-	var selecting: bool = not manager.is_game_over and manager.current_state == TurnManager.State.PHASE_SELECT_PAWN
 	for index: int in _pawn_buttons.size():
 		var button: Button = _pawn_buttons[index]
 		var parts: Dictionary = _pawn_slot_parts[index]
@@ -2231,13 +2308,13 @@ func _refresh_pawn_dock() -> void:
 		var badge: Label = parts["badge"]
 		badge.visible = not pawn.carried.is_empty()
 		badge.text = "x%d" % (pawn.carried.size() + 1)
-		var can_pick: bool = selecting and pawn.owner_id == manager.current_player_id() and pawn.is_selectable() and not _ui_busy() and not _is_bot_turn()
-		button.disabled = not can_pick
+		# 우측 하단 독은 내 말이 어떤 상태인지만 보여 준다 (말 고르기는 가운데 하단 배너가 맡으므로 선택 표시·클릭은 없다).
+		button.disabled = false
 		var base: Color = color.darkened(0.55)
-		button.add_theme_stylebox_override("normal", _style(base.lightened(0.1) if can_pick else base, COLOR_GOLD if can_pick else color.darkened(0.2), 4 if can_pick else 2, 10, 14 if can_pick else 2, 4))
-		button.add_theme_stylebox_override("hover", _style(base.lightened(0.25), Color("fff3bf"), 4, 10, 16, 4))
-		button.add_theme_stylebox_override("pressed", _style(base.darkened(0.1), COLOR_GOLD, 4, 10, 0, 4))
-		button.add_theme_stylebox_override("disabled", _style(base.darkened(0.2) if pawn.is_finished else base, color.darkened(0.35), 2, 10, 0, 4))
+		button.add_theme_stylebox_override("normal", _style(base, color.darkened(0.2), 2, 10, 2, 4))
+		button.add_theme_stylebox_override("hover", _style(base.lightened(0.12), color, 2, 10, 4, 4))
+		button.add_theme_stylebox_override("pressed", _style(base, color.darkened(0.2), 2, 10, 2, 4))
+		button.add_theme_stylebox_override("disabled", _style(base, color.darkened(0.35), 2, 10, 0, 4))
 		button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 		button.modulate = Color(1, 1, 1, 0.55) if pawn.is_finished else Color.WHITE
 		var skill_button: Button = _skill_buttons[index]
@@ -2595,7 +2672,7 @@ func _card_usable_now(player_id: int, card: BaseCard) -> bool:
 		return false
 	if ai_mode and player_id != local_player_id:
 		return false
-	if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN and player_id != manager.current_player_id():
+	if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN and (player_id != manager.current_player_id() or manager.card_played_this_turn()):
 		return false
 	return true
 
@@ -2624,11 +2701,8 @@ func _refresh_controls() -> void:
 		_stop_button.disabled = false
 		_stop_button.modulate = Color.WHITE
 	_refresh_tool_board(state.tools[_dock_owner()], _dock_owner())
-	var window_open: bool = not over and (current_phase == TurnManager.State.PHASE_INTERRUPT_ROLL or current_phase == TurnManager.State.PHASE_RESOLUTION)
-	# AI 모드: 개입 창은 사람(P1)이 낼 카드를 들고 있을 때만 [패스]를 보여 주고, 아니면 봇이 0.8초 뒤 자동으로 넘긴다.
-	_skip_button.visible = window_open and not manager.stack_offer_pending() and (not ai_mode or _human_can_intervene())
-	_skip_button.disabled = _ui_busy()
-	_skip_button.text = "개입 패스"
+	# 개입 창은 이제 피해를 되돌리는 카드(ACT_05) 하나뿐이라 가운데 팝업(_update_reaction_popup)이 맡는다. 예전 [개입 패스] 버튼은 쓰지 않는다.
+	_skip_button.visible = false
 	_bomb_button.visible = not over and manager.can_pass_bomb(player_id) and not _is_bot_turn()
 	if _bomb_button.visible:
 		_bomb_button.text = "떠넘기기 (%d칸)" % (state.penalty_of(player_id) * 2)
@@ -2735,8 +2809,8 @@ func _hint_text(current_phase: TurnManager.State, tool: BaseJudgmentTool) -> Str
 		return "굴러가는 중..."
 	if _is_bot_turn() and not manager.stack_offer_pending() and current_phase != TurnManager.State.PHASE_INTERRUPT_ROLL and current_phase != TurnManager.State.PHASE_RESOLUTION:
 		return "P%d (AI 봇)가 생각하는 중입니다..." % manager.current_player_id()
-	if ai_mode and (current_phase == TurnManager.State.PHASE_INTERRUPT_ROLL or current_phase == TurnManager.State.PHASE_RESOLUTION) and not manager.stack_offer_pending():
-		return "[개입 카드 사용 / 패스] 낼 카드가 있으면 아래 카드를 누르세요. 낼 카드가 없으면 잠시 뒤 자동으로 넘어갑니다."
+	if (current_phase == TurnManager.State.PHASE_INTERRUPT_ROLL or current_phase == TurnManager.State.PHASE_RESOLUTION) and not manager.stack_offer_pending():
+		return "피해를 입었습니다! 가운데 팝업에서 [바이츠 더 더스트] 발동 여부를 고르세요. 시간이 지나면 자동으로 넘어갑니다."
 	if manager.stack_offer_pending():
 		return "윷놀이 기물 업기: [업기 (하나로 합체)] 또는 [그냥 두기 (개별 유지)]를 고르세요. (시간이 지나면 자동으로 업기)"
 	if _tile_pick_active:
@@ -2880,6 +2954,9 @@ func _on_spawn_npc_pressed(behavior: GameEnums.NpcBehavior, tile: int) -> void:
 
 func _on_card_pressed(player_id: int, card_id: StringName) -> void:
 	var card: BaseCard = CardRegistry.get_card(card_id)
+	if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN and manager.card_played_this_turn():
+		_log_line("카드는 굴리기 전에 턴당 1장만 쓸 수 있습니다.", Color("868e96"))
+		return
 	if card.needs_tile():
 		_begin_tile_pick(player_id, card_id)
 		return
@@ -3246,6 +3323,7 @@ func _on_choice_picked(value: Variant, on_pick: Callable) -> void:
 
 
 func _close_choice() -> void:
+	_pawn_choice_cards = []
 	if _choice_overlay != null:
 		_choice_overlay.queue_free()
 		_choice_overlay = null
@@ -3422,6 +3500,7 @@ func _build_draft_overlay(player_id: int, remaining: int) -> void:
 	_close_draft_overlay()
 	_draft_player = player_id
 	_draft_signature_value = _draft_signature(player_id)
+	_draft_locked = false
 	_draft_overlay = _new_overlay(0.78)
 	var center := CenterContainer.new()
 	center.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -3433,6 +3512,7 @@ func _build_draft_overlay(player_id: int, remaining: int) -> void:
 	ready_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(ready_label)
 	var title := _make_label("증강 선택", 46, Color("ffe066"))
+	_draft_title_label = title
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_color_override("font_outline_color", Color("b8860b"))
 	title.add_theme_constant_override("outline_size", 10)
@@ -3457,7 +3537,7 @@ func _build_draft_overlay(player_id: int, remaining: int) -> void:
 		var slot := VBoxContainer.new()
 		slot.add_theme_constant_override("separation", 10)
 		cards.add_child(slot)
-		var card: Button = _make_augment_card(_augment_card_info(definition, player_id), _on_augment_chosen.bind(player_id, index, definition))
+		var card: Button = _make_augment_card(_augment_card_info(definition, player_id), _on_augment_card_picked.bind(player_id, index, definition))
 		slot.add_child(card)
 		_draft_cards.append(card)
 		var used: bool = manager.draft_reroll_used(player_id, index)
@@ -3478,6 +3558,43 @@ func _build_draft_overlay(player_id: int, remaining: int) -> void:
 	footer.add_child(auto_check)
 	footer.add_child(_make_button("남은 전원 무작위 자동 선택", _on_draft_auto_pressed, 13))
 	add_child(_draft_overlay)
+
+
+## 증강 카드를 눌렀을 때: 바로 적용하지 않고 [선택한 카드가 커지며 반짝 / 나머지는 어두워짐] 연출을 잠깐 보여 준 뒤 다음 단계(말 고르기 또는 적용)로 넘어간다.
+func _on_augment_card_picked(player_id: int, index: int, definition: AugmentDef) -> void:
+	if _draft_locked:
+		return
+	_draft_locked = true
+	for button: Button in _draft_reroll_buttons:
+		button.disabled = true
+	if instant_roll_for_test:
+		_draft_locked = false
+		_on_augment_chosen(player_id, index, definition)
+		return
+	_play_pick_animation(_draft_cards, index)
+	if _draft_title_label != null:
+		_draft_title_label.text = "선택 완료!"
+	get_tree().create_timer(AUGMENT_PICK_SECONDS).timeout.connect(func() -> void:
+		_draft_locked = false
+		if _draft_overlay != null and _draft_player == player_id:
+			_on_augment_chosen(player_id, index, definition))
+
+
+## 고른 카드를 키우고 빛내며 나머지는 어둡게 가라앉힌다.
+func _play_pick_animation(cards: Array, chosen: int) -> void:
+	for index: int in cards.size():
+		var card: Button = cards[index]
+		card.disabled = true
+		card.pivot_offset = card.size / 2.0
+		var tween: Tween = card.create_tween().set_parallel(true).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		if index == chosen:
+			card.z_index = 10
+			tween.tween_property(card, "scale", Vector2.ONE * 1.18, 0.3)
+			tween.tween_property(card, "modulate", Color(1.35, 1.25, 0.9), 0.15)
+			tween.chain().tween_property(card, "modulate", Color.WHITE, 0.3)
+		else:
+			tween.tween_property(card, "scale", Vector2.ONE * 0.9, 0.3)
+			tween.tween_property(card, "modulate", Color(1, 1, 1, 0.22), 0.3)
 
 
 func _on_augment_reroll(player_id: int, index: int) -> void:
@@ -3583,14 +3700,22 @@ func _show_pawn_choice(player_id: int, definition: AugmentDef, on_pick: Callable
 		action.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		action.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		card.add_child(action)
-		card.pressed.connect(_on_pawn_choice_picked.bind(pawn.entity_id, on_pick))
+		card.pressed.connect(_on_pawn_choice_picked.bind(pawn.entity_id, on_pick, slot))
 		card.mouse_entered.connect(_hover_pawn_choice_card.bind(card, true))
 		card.mouse_exited.connect(_hover_pawn_choice_card.bind(card, false))
 		row.add_child(card)
-	var cancel: Button = _make_button("취소", _close_choice, 15)
+	var cancel: Button = _make_button("취소", _cancel_pawn_choice, 15)
 	cancel.custom_minimum_size = Vector2(0, 40)
 	box.add_child(cancel)
+	_pawn_choice_cards = row.get_children().filter(func(node: Node) -> bool: return node is Button)
 	add_child(_choice_overlay)
+
+
+## 말 고르기를 취소하면 증강 카드 3장 화면으로 돌아간다.
+func _cancel_pawn_choice() -> void:
+	_close_choice()
+	_close_draft_overlay()
+	_refresh_draft_overlay()
 
 
 func _hover_pawn_choice_card(card: Button, entered: bool) -> void:
@@ -3600,9 +3725,17 @@ func _hover_pawn_choice_card(card: Button, entered: bool) -> void:
 	tween.tween_property(card, "scale", Vector2.ONE * (1.07 if entered else 1.0), 0.12)
 
 
-func _on_pawn_choice_picked(pawn_id: int, on_pick: Callable) -> void:
-	_close_choice()
-	on_pick.call(pawn_id)
+func _on_pawn_choice_picked(pawn_id: int, on_pick: Callable, slot: int) -> void:
+	if instant_roll_for_test or _pawn_choice_cards.is_empty():
+		_close_choice()
+		on_pick.call(pawn_id)
+		return
+	var overlay: Control = _choice_overlay
+	_play_pick_animation(_pawn_choice_cards, slot)
+	get_tree().create_timer(0.7).timeout.connect(func() -> void:
+		if _choice_overlay == overlay and overlay != null:
+			_close_choice()
+			on_pick.call(pawn_id))
 
 
 func _pick_augment_with_pawn(pawn_id: int, player_id: int, index: int) -> void:
