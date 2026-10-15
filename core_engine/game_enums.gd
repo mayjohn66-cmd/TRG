@@ -61,7 +61,12 @@ const CORNER_TILES: Array[int] = [0, 5, 10, 15]
 const MAX_LAWS: int = 4
 const MAX_HAND_SIZE: int = 7
 const MAX_REROLL_CHAIN: int = 8
-const DRAFT_ROUNDS: Array[int] = [1, 4, 7]
+## 증강 드래프트는 1라운드부터 DRAFT_INTERVAL라운드마다 열린다 (1, 4, 7, 10, ...).
+const DRAFT_INTERVAL: int = 3
+
+
+static func is_draft_round(round_number: int) -> bool:
+	return round_number >= 1 and (round_number - 1) % DRAFT_INTERVAL == 0
 const DRAFT_OFFER_COUNT: int = 3
 
 ## 페이즈별 제한 시간(초). 0이면 타이머 없음(즉시 진행).

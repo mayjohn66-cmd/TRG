@@ -192,6 +192,27 @@ func test_draft_opens_in_round_one_with_offers_for_every_player() -> void:
 	_dispose(manager)
 
 
+func test_draft_opens_every_third_round_forever() -> void:
+	for round_number: int in [1, 4, 7, 10, 13, 40]:
+		check(GameEnums.is_draft_round(round_number), "라운드 %d는 드래프트 라운드" % round_number)
+	for round_number: int in [0, 2, 3, 5, 6, 8, 9, 11, 12]:
+		check(not GameEnums.is_draft_round(round_number), "라운드 %d는 드래프트 없음" % round_number)
+
+
+func test_late_game_offers_still_have_three_distinct_choices() -> void:
+	var state := make_state(2, 1)
+	for pawn: PlayerPawn in state.basic_pawns_of(1):
+		state.give_unit(pawn, GameEnums.PawnKind.CHESS, [pawn.slot] as Array[int])
+	for i: int in 30:
+		var offers: Array[StringName] = AugmentRegistry.generate_offers(state, 1)
+		check_eq(offers.size(), 3, "기본 말이 없어도 3지선다")
+		var seen: Dictionary = {}
+		for offer: StringName in offers:
+			check(not seen.has(offer), "선택지가 겹치지 않음")
+			seen[offer] = true
+			check(AugmentRegistry.get_def(offer).category != GameEnums.AugmentCategory.PAWN_EVOLUTION, "기본 말이 없으면 기물 지급은 나오지 않음")
+
+
 func test_draft_pick_applies_effect_and_finishes_when_everyone_picked() -> void:
 	var manager: TurnManager = _manager(2, true)
 	manager._draft_offers[1] = [&"EVO_2_1", &"TOOL_HOLDEM", &"AUG_LAW_03"] as Array[StringName]

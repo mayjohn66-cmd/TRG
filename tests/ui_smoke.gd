@@ -513,7 +513,7 @@ func _finish() -> bool:
 				restart_found = true
 		_assert(restart_found, "결과창에 [새 게임 시작] 버튼이 있어야 한다")
 	for round_number: int in _draft_rounds:
-		_assert([1, 4, 7].has(round_number), "드래프트는 1, 4, 7라운드에만 열려야 한다 (%d)" % round_number)
+		_assert(GameEnums.is_draft_round(round_number), "드래프트는 1라운드부터 3라운드마다만 열려야 한다 (%d)" % round_number)
 	if _failures.is_empty():
 		print("UI_SMOKE_OK")
 		quit(0)

@@ -44,7 +44,7 @@ var is_game_over: bool = false
 
 ## true면 호스트 로컬(피어 1)이 params["player_id"]로 모든 플레이어를 대리 조작할 수 있다 (핫시트/테스트).
 var hotseat_mode: bool = false
-## 1, 4, 7라운드 시작 증강 드래프트를 여는가. 헤드리스 테스트나 드래프트 없는 모드에서는 끈다.
+## 1라운드부터 3라운드마다(1, 4, 7, 10, ...) 시작하는 증강 드래프트를 여는가. 헤드리스 테스트나 드래프트 없는 모드에서는 끈다.
 var draft_enabled: bool = true
 ## true면 윷놀이 기물의 업기 가능 도착마다 PHASE_RESOLUTION 안에서 플레이어의 [업기/그냥 두기] 선택을 기다린다.
 ## false(기본: 헤드리스 테스트·AI 턴)면 선택을 묻지 않고 항상 [업기]를 선택한 것으로 처리한다.
@@ -668,7 +668,7 @@ func _enter_round_start() -> void:
 	_draft_picks.clear()
 	_draft_rerolls.clear()
 	change_state(State.PHASE_ROUND_START)
-	if draft_enabled and GameEnums.DRAFT_ROUNDS.has(state.round_number):
+	if draft_enabled and GameEnums.is_draft_round(state.round_number):
 		for player_id: int in player_order:
 			_draft_offers[player_id] = AugmentRegistry.generate_offers(state, player_id)
 		_emit_event(&"augment_offers", {"round": state.round_number, "offers": _draft_offers.duplicate(true)})
