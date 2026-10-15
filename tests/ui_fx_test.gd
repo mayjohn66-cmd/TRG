@@ -260,9 +260,17 @@ func _test_roll_pad() -> void:
 	_board._refresh_controls()
 	_expect(pad.kind == RollPad.Kind.NONE and _board._roll_button.visible and not pad.visible, "주사위는 둥근 굴리기 버튼")
 	_expect(_board._roll_button.position.y > 400.0 and absf(_board._roll_button.position.x + 65.0 - 683.0) < 1.0, "굴리기 버튼은 보드 아래쪽(17·18번 위) 가운데")
+	manager.state.tools[current] = ToolRegistry.create(&"HOLDEM")
+	_board._refresh_controls()
+	var big_center: Vector2 = _board._roll_button.position + _board._roll_button.size / 2.0
+	_expect(_board._roll_button.visible and _board._roll_button.size.x >= 180.0 and big_center.distance_to(Vector2(683, 346)) < 2.0, "홀덤(버튼형)은 보드 한가운데에 큰 버튼 (%s %s)" % [str(big_center), str(_board._roll_button.size)])
+	manager.state.tools[current] = ToolRegistry.create(&"CHINCHIRO")
+	_board._refresh_controls()
+	_expect(_board._roll_button.size.x == 130.0 and _board._roll_button.position.y > 400.0, "친치로(차징형)는 보드 아래 작은 버튼 (%s %s)" % [str(_board._roll_button.size), str(_board._roll_button.position)])
 	manager.state.tools[current] = ToolRegistry.create(&"LIFE_ROULETTE")
 	_board._refresh_controls()
 	_expect(pad.kind == RollPad.Kind.ROULETTE and pad.visible and not _board._roll_button.visible, "룰렛은 원판 패드")
+	_expect(pad.scale.x >= 1.8 and (pad.position + pad.size / 2.0).distance_to(Vector2(683, 346)) < 2.0, "룰렛 원판은 보드 한가운데에 크게 (%s)" % str(pad.scale))
 	var faces: Array[int] = []
 	manager.event_received.connect(func(kind: StringName, data: Dictionary) -> void:
 		if kind == &"roll_resolved":

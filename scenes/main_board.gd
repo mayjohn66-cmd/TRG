@@ -245,6 +245,7 @@ var _law_panel: PanelContainer = null
 var _plate: Panel = null
 var _action_row: HFlowContainer = null
 var _roll_pad: RollPad = null
+var _roll_geometry: StringName = &""
 
 var _choice_overlay: Control = null
 var _draft_overlay: Control = null
@@ -831,7 +832,7 @@ func _build_action_bar() -> void:
 	add_child(_roll_button)
 	# 룰렛(원판을 잡고 돌리기)과 러시안 룰렛(방아쇠 당기기)은 굴리기 버튼 대신 같은 자리의 직접 조작 패드를 쓴다.
 	_roll_pad = RollPad.new()
-	_roll_pad.position = Vector2(583, 414)
+	_roll_pad.position = Vector2(583, 261)  # 보드 한가운데 (패드 중심 = (683, 346)); 크게 보이도록 켤 때 1.9배로 키운다
 	_roll_pad.spin_released.connect(_on_pad_spin_released)
 	_roll_pad.trigger_pulled.connect(_on_pad_trigger_pulled)
 	add_child(_roll_pad)
@@ -2206,21 +2207,67 @@ func _refresh_controls() -> void:
 		_tool_option.select(tool_index)
 
 
-## 내 판정 도구에 맞는 굴림 위젯을 보여 준다: 룰렛은 잡아 돌리는 원판, 러시안 룰렛은 리볼버, 나머지는 둥근 굴리기 버튼.
+## 굴림 조작 방식: 차징형(기본 주사위·윷·친치로)은 보드 아래 작은 굴리기 버튼+파워 게이지, 그 외(룰렛 원판·리볼버·홀덤/슬롯 큰 버튼)는 보드 한가운데에 크게 보여 준다.
+func _roll_mode_for(tool: BaseJudgmentTool) -> StringName:
+	if tool is ToolLifeRoulette:
+		return &"wheel"
+	if tool is ToolRussianRoulette:
+		return &"gun"
+	if tool is ToolHoldem or tool is ToolSlot777:
+		return &"big"
+	return &"charge"
+
+
+## 내 판정 도구에 맞는 굴림 위젯을 보여 준다.
 func _refresh_roll_pad() -> void:
 	var owner_tool: BaseJudgmentTool = state.tools[_dock_owner()]
+	var mode: StringName = _roll_mode_for(owner_tool)
 	var wanted: RollPad.Kind = RollPad.Kind.NONE
-	if owner_tool is ToolLifeRoulette:
+	if mode == &"wheel":
 		wanted = RollPad.Kind.ROULETTE
-	elif owner_tool is ToolRussianRoulette:
+	elif mode == &"gun":
 		wanted = RollPad.Kind.REVOLVER
 	_roll_pad.instant = instant_roll_for_test
 	if _roll_pad.kind != wanted:
 		_roll_pad.set_kind(wanted)
+	if mode != _roll_geometry:
+		_set_roll_geometry(mode)
 	_roll_button.visible = wanted == RollPad.Kind.NONE
+	if mode == &"big":
+		_roll_button.text = "카드 뽑기" if owner_tool is ToolHoldem else "레버 당기기"
+	elif mode == &"charge":
+		_roll_button.text = "굴리기"
 	_roll_pad.set_enabled(not _roll_button.disabled)
 	if wanted == RollPad.Kind.REVOLVER and not _roll_pad.active and not owner_tool.has_pending_state():
 		_roll_pad.reset_revolver()
+
+
+## 굴림 위젯의 크기·위치를 방식에 맞춘다: charge는 보드 아래 작게(130px), 그 외는 보드 한가운데 크게(버튼 190px / 패드 1.9배).
+func _set_roll_geometry(mode: StringName) -> void:
+	_roll_geometry = mode
+	var big: bool = mode != &"charge"
+	var diameter: float = 190.0 if mode == &"big" else 130.0
+	var center: Vector2 = Vector2(683.0, 346.0) if mode == &"big" else Vector2(683.0, 511.0)
+	_roll_button.custom_minimum_size = Vector2(diameter, diameter)
+	_roll_button.size = Vector2(diameter, diameter)
+	_roll_button.add_theme_font_size_override("font_size", 32 if mode == &"big" else 24)
+	_apply_round_button_style(_roll_button, Color("2b8a3e"))
+	_set_layout_base(_roll_button, center - Vector2(diameter, diameter) / 2.0)
+	_roll_pad.pivot_offset = _roll_pad.size / 2.0
+	_roll_pad.scale = Vector2(1.9, 1.9) if big else Vector2.ONE
+	_apply_layout_now()
+
+
+## 등록된 배치 노드의 기준 위치를 바꾼다.
+func _set_layout_base(node: CanvasItem, base: Vector2) -> void:
+	for entry: Dictionary in _layout_entries:
+		if entry["node"] == node:
+			entry["base"] = base
+
+
+func _apply_layout_now() -> void:
+	var window_size: Vector2i = DisplayServer.window_get_size()
+	layout_for(get_viewport_rect().size if window_size.x > 0 and window_size.y > 0 else DESIGN_SIZE)
 
 
 ## 룰렛 원판을 돌려 놓았다: 돌린 속도가 연출 세기가 되고 굴림은 평소처럼 엔진이 정한다.
