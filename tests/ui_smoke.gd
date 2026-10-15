@@ -358,7 +358,7 @@ func _check_bounds() -> void:
 			_assert((slots[index]["status"] as Label).text == expected, "기물 슬롯 상태 문구 (%s)" % expected)
 	var player_id: int = _board.manager.current_player_id()
 	if _board.state.tools[player_id] is ToolRussianRoulette and not _board._is_bot_turn():
-		_assert(_board._roll_button.visible and _board._stop_button.visible, "러시안 룰렛에서는 방아쇠/멈추기 버튼이 상시 노출되어야 한다")
+		_assert(_board._roll_pad.kind == RollPad.Kind.REVOLVER and _board._roll_pad.visible and _board._stop_button.visible, "러시안 룰렛에서는 방아쇠(리볼버 패드)/멈추기 버튼이 상시 노출되어야 한다")
 		_assert(_board._stop_button.disabled == not _board.state.tools[player_id].has_pending_state() or _board.manager.current_state != TurnManager.State.PHASE_ROLL_WAIT, "멈추기 버튼은 누적이 있을 때만 활성화")
 		_roulette_seen += 1
 
