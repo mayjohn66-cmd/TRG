@@ -339,3 +339,58 @@ func test_neutral_npc_ghost_patrols_reverse_and_drags_pawns_to_center() -> void:
 	var report: Dictionary = ghost.run_ai(state)
 	check_eq(report["path"], int_array([19, 18, 17]), "외곽 트랙 역주행 3칸")
 	check_eq(state.get_pawn(21).current_tile_idx, 22, "마주친 말은 중앙으로 연행")
+
+
+# --- Dry-Run(미리보기)와 법전 변조 추적 ------------------------------------------
+
+func test_preview_context_computes_values_without_emitting_law_signals() -> void:
+	var state := make_state()
+	add_law(state, "LAW_06")  # 눈금 4 초과 시 1로 고정
+	var events: Array = []
+	state.rulebook.law_applied.connect(func(law: LawResource, _timing: String, before: int, after: int, modified: bool) -> void: events.append([law.law_id, before, after, modified]))
+	var preview: RuleContext = make_ctx(state, 5)
+	preview.is_preview = true
+	preview = run_timing(state, preview, RuleContext.ON_DICE_ROLL)
+	check_eq(preview.dice_value, 1, "미리보기도 수치는 똑같이 계산")
+	check_eq(events.size(), 0, "미리보기는 law_applied를 내지 않음")
+	var real: RuleContext = run_timing(state, make_ctx(state, 5), RuleContext.ON_DICE_ROLL)
+	check_eq(real.dice_value, 1, "실제 처리")
+	check_eq(events, [["LAW_06", 5, 1, true]], "실제 처리는 변조 여부와 함께 시그널")
+
+
+func test_law_applied_reports_unmodified_laws_and_tracks_modified_ids() -> void:
+	var state := make_state()
+	add_law(state, "LAW_06")
+	var flags: Array = []
+	state.rulebook.law_applied.connect(func(_law: LawResource, _timing: String, _b: int, _a: int, modified: bool) -> void: flags.append(modified))
+	run_timing(state, make_ctx(state, 3), RuleContext.ON_DICE_ROLL)
+	check_eq(flags, [false], "눈금이 그대로면 modified=false")
+	check_eq(state.rulebook.last_modified_law_ids.size(), 0, "변조 기록 없음")
+	run_timing(state, make_ctx(state, 6), RuleContext.ON_DICE_ROLL)
+	check_eq(state.rulebook.last_modified_law_ids, ["LAW_06"] as Array[String], "변조한 교칙 ID 기록")
+
+
+func _law_notes_for_move(start_tile: int, roll: int) -> Array:
+	var manager := TurnManager.new()
+	manager.hotseat_mode = true
+	manager.draft_enabled = false
+	tree.root.add_child(manager)
+	manager.start_game([1, 2] as Array[int], 777)
+	add_law(manager.state, "LAW_01")  # 지름길 차단: 코너에 서 있을 때만 경로가 달라진다
+	var notes: Array = []
+	manager.event_received.connect(func(kind: StringName, data: Dictionary) -> void:
+		if kind == &"move_resolved":
+			notes.append(data["law_notes"]))
+	place(manager.state, 11, start_tile)
+	manager.state.tools[1] = ScriptedTool.new([roll])
+	manager.act(&"proceed", {"player_id": 1})
+	manager.act(&"roll", {"player_id": 1})
+	manager.act(&"select_pawn", {"player_id": 1, "pawn_id": 11})
+	tree.root.remove_child(manager)
+	manager.free()
+	return notes
+
+
+func test_move_report_notes_laws_only_when_the_path_really_changes() -> void:
+	check_eq(_law_notes_for_move(2, 2), [[]], "경로가 같으면 법전 요약 없음")
+	check_eq(_law_notes_for_move(5, 2), [["LAW_01 지름길 공사 중"]], "코너에서 지름길이 막혀 경로가 바뀌면 한 줄 요약")

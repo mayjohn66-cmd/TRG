@@ -17,6 +17,8 @@ var _evolutions: int = 0
 var _bombs_passed: int = 0
 var _castles: int = 0
 var _bangs: int = 0
+var _roulette_seen: int = 0
+var _roulette_forced: bool = false
 var _failures: Array[String] = []
 var _rng := RandomNumberGenerator.new()
 
@@ -70,15 +72,21 @@ func _step_once() -> void:
 	var manager: TurnManager = _board.manager
 	_seen_phases[manager.current_state] = true
 	_actions += 1
+	if _actions % 5 == 0 and manager.current_state != TurnManager.State.PHASE_ROUND_START:
+		_check_bounds()
 	if OS.get_environment("SMOKE_TRACE") != "":
 		print("act ", _actions, " state=", manager.current_state, " player=", manager.current_player_id(), " round=", _board.state.round_number)
 	match manager.current_state:
 		TurnManager.State.PHASE_ROUND_START:
 			_play_draft(manager)
 		TurnManager.State.PHASE_TURN_BEGIN, TurnManager.State.PHASE_ROLL_WAIT:
+			if not _roulette_forced and manager.current_state == TurnManager.State.PHASE_TURN_BEGIN:
+				# 디버그 패널의 판정 도구 드롭다운으로 현재 플레이어를 러시안 룰렛으로 바꿔 룰렛 전용 UI를 검증한다.
+				_roulette_forced = true
+				_board._tool_option.item_selected.emit(ToolRegistry.ALL_IDS.find(&"REVOLVER"))
 			if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN and (_try_tile_card(manager) or _try_turn_begin_buttons(manager)):
 				return
-			if _board._stop_button.visible and _rng.randi_range(0, 1) == 0:
+			if _board._stop_button.visible and not _board._stop_button.disabled and _rng.randi_range(0, 1) == 0:
 				_board._stop_button.pressed.emit()
 			elif _board._bell_button.visible and _rng.randi_range(0, 2) == 0:
 				_board._bell_button.pressed.emit()
@@ -159,6 +167,30 @@ func _try_tile_card(manager: TurnManager) -> bool:
 
 
 ## 턴 시작 전용 UI: 폭탄 떠넘기기·캐슬링 버튼과 뱅! 카드를 (가끔) 누른다.
+## 화면 밖으로 잘리는 UI가 없는지 검사한다: 보이는 손패 카드·하단 조작 버튼·말 선택 버튼이 모두 창 안에 있어야 한다.
+func _check_bounds() -> void:
+	var window: Rect2 = Rect2(Vector2.ZERO, Vector2(1366, 768))
+	var controls: Array[Control] = []
+	for player_id: int in [1, 2, 3, 4]:
+		for node: Node in (_board._hand_boxes[player_id] as Control).get_children():
+			if node is Control and not node.is_queued_for_deletion():
+				controls.append(node)
+	for button: Control in [_board._roll_button, _board._stop_button, _board._skip_button, _board._castle_button, _board._bomb_button, _board._bell_button]:
+		if button.visible:
+			controls.append(button)
+	for button: Button in _board._pawn_buttons:
+		controls.append(button)
+	for control: Control in controls:
+		var rect: Rect2 = control.get_global_rect()
+		if rect.size.x > 0.0 and not window.encloses(rect):
+			_failures.append("UI가 화면 밖으로 나갔다: %s %s" % [control.get_class(), str(rect)])
+	var player_id: int = _board.manager.current_player_id()
+	if _board.state.tools[player_id] is ToolRussianRoulette:
+		_assert(_board._roll_button.visible and _board._stop_button.visible, "러시안 룰렛에서는 방아쇠/멈추기 버튼이 상시 노출되어야 한다")
+		_assert(_board._stop_button.disabled == not _board.state.tools[player_id].has_pending_state() or _board.manager.current_state != TurnManager.State.PHASE_ROLL_WAIT, "멈추기 버튼은 누적이 있을 때만 활성화")
+		_roulette_seen += 1
+
+
 func _try_turn_begin_buttons(manager: TurnManager) -> bool:
 	var player_id: int = manager.current_player_id()
 	_assert(_board._bomb_button.visible == manager.can_pass_bomb(player_id), "폭탄 떠넘기기 버튼 표시가 규칙과 일치해야 한다")
@@ -213,7 +245,7 @@ func _finish() -> bool:
 	var phase_names: Array[String] = []
 	for phase: int in _seen_phases.keys():
 		phase_names.append(str(phase))
-	print("UI_SMOKE actions=%d round=%d game_over=%s winner=%d reason=%s phases=%d drafts=%s tile_picks=%d cards=%d evolutions=%d bombs_passed=%d castles=%d bangs=%d" % [_actions, _board.state.round_number, manager.is_game_over, _board.state.winner, VictoryChecker.reason_text(_board._last_reason), _seen_phases.size(), str(_draft_rounds), _tile_picks, _cards_played, _evolutions, _bombs_passed, _castles, _bangs])
+	print("UI_SMOKE actions=%d round=%d game_over=%s winner=%d reason=%s phases=%d drafts=%s tile_picks=%d cards=%d evolutions=%d bombs_passed=%d castles=%d bangs=%d roulette=%d" % [_actions, _board.state.round_number, manager.is_game_over, _board.state.winner, VictoryChecker.reason_text(_board._last_reason), _seen_phases.size(), str(_draft_rounds), _tile_picks, _cards_played, _evolutions, _bombs_passed, _castles, _bangs, _roulette_seen])
 	_assert(manager.is_game_over, "치트 없이 한 판이 끝까지 진행되어 승리자가 나와야 한다 (조작 %d회)" % _actions)
 	_assert(_draft_rounds.has(1), "1라운드 드래프트가 열렸어야 한다")
 	_assert(_board._result_overlay != null, "게임 종료 결과창이 떠야 한다")

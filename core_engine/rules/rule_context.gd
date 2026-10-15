@@ -26,6 +26,8 @@ var exact_goal_required: bool = false
 var path_nodes: Array[int] = []
 ## true로 만들면 해당 시점의 동작(굴림 확정 / 이동 / 잡기)이 취소된다. 시점 처리가 끝나면 호출 측이 초기화한다.
 var is_canceled: bool = false
+## true면 UI 미리보기용 Dry-Run이다: 법전은 수치만 조용히 계산하고 law_applied 시그널(로그·깜빡임)을 내지 않는다.
+var is_preview: bool = false
 ## 교칙·콘텐츠 계층이 자유롭게 주고받는 부가 데이터.
 var metadata: Dictionary = {}
 

@@ -14,10 +14,11 @@ const PLAYER_COLORS: Dictionary = {
 const BOARD_ORIGIN: Vector2 = Vector2(74, 126)
 const BOARD_SIZE: float = 530.0
 const TILE_SIZE: float = 46.0
-const PAWN_RADIUS: float = 7.5
+const PAWN_RADIUS: float = 6.0
 const STEP_DELAY: float = 0.22
 const PANEL_X: float = 692.0
-const CELL_OFFSETS: Array[Vector2] = [Vector2(-10, -10), Vector2(10, -10), Vector2(-10, 10), Vector2(10, 10)]
+const BOTTOM_BAR_WIDTH: float = 650.0
+const CELL_OFFSETS: Array[Vector2] = [Vector2(-7, -6), Vector2(7, -6), Vector2(-7, 3), Vector2(7, 3)]
 
 const PHASE_NAMES: Dictionary = {
 	TurnManager.State.PHASE_ROUND_START: "라운드 시작 - 증강 드래프트",
@@ -75,7 +76,7 @@ var _queue_label: Label = null
 var _pick_banner: Label = null
 var _direction_banner: Label = null
 var _direction_bg: ColorRect = null
-var _start_arrow: Label = null
+var _tag_labels: Dictionary = {}
 var _board_hover_pawn: int = -1
 var _player_labels: Dictionary = {}
 var _pawn_info_labels: Dictionary = {}
@@ -267,6 +268,35 @@ func _build_ui() -> void:
 	panel.add_theme_constant_override("separation", 3)
 	add_child(panel)
 
+	# 하단 조작 막대: 보드판 아래 빈 공간에 현재 턴 조작 버튼(굴리기/룰렛/개입 패스 등)과 말 선택 버튼을 둔다.
+	var bottom_bar := VBoxContainer.new()
+	bottom_bar.position = Vector2(24, 684)
+	bottom_bar.size = Vector2(BOTTOM_BAR_WIDTH, 78)
+	bottom_bar.add_theme_constant_override("separation", 4)
+	add_child(bottom_bar)
+	var action_row := HFlowContainer.new()
+	action_row.add_theme_constant_override("h_separation", 6)
+	action_row.add_theme_constant_override("v_separation", 4)
+	bottom_bar.add_child(action_row)
+	_roll_button = _make_button("주사위 굴리기 (R)", _on_roll_pressed, 15)
+	_roll_button.custom_minimum_size = Vector2(230, 38)
+	action_row.add_child(_roll_button)
+	_stop_button = _make_button("멈추고 이동 확정", _on_stop_pressed, 15)
+	_stop_button.custom_minimum_size = Vector2(230, 38)
+	action_row.add_child(_stop_button)
+	_skip_button = _make_button("개입 패스(진행)", _on_skip_pressed, 15)
+	_skip_button.custom_minimum_size = Vector2(140, 38)
+	action_row.add_child(_skip_button)
+	var pawn_row := HBoxContainer.new()
+	pawn_row.add_theme_constant_override("separation", 4)
+	bottom_bar.add_child(pawn_row)
+	pawn_row.add_child(_make_label("이동할 말:", 13, Color("adb5bd")))
+	for slot: int in range(1, GameEnums.PAWNS_PER_PLAYER + 1):
+		var pawn_button: Button = _make_button("말 %d" % slot, Callable(), 12)
+		pawn_button.custom_minimum_size = Vector2(140, 28)
+		_pawn_buttons.append(pawn_button)
+		pawn_row.add_child(pawn_button)
+
 	panel.add_child(_make_section("플레이어 / 기물 (진화 상태와 세트 시너지)"))
 	for player_id: int in PLAYER_IDS:
 		var row: Label = _make_label("", 14, PLAYER_COLORS[player_id])
@@ -282,27 +312,23 @@ func _build_ui() -> void:
 		_law_labels.append(law_label)
 		panel.add_child(law_label)
 
-	var action_row := HBoxContainer.new()
-	action_row.add_theme_constant_override("separation", 6)
-	panel.add_child(action_row)
-	_roll_button = _make_button("주사위 굴리기 (R)", _on_roll_pressed, 16)
-	_roll_button.custom_minimum_size = Vector2(230, 40)
-	action_row.add_child(_roll_button)
-	_stop_button = _make_button("멈추고 이동 확정", _on_stop_pressed, 14)
-	action_row.add_child(_stop_button)
+	var special_row := HFlowContainer.new()
+	special_row.add_theme_constant_override("h_separation", 6)
+	special_row.add_theme_constant_override("v_separation", 3)
+	panel.add_child(special_row)
 	_bell_button = _make_button("종 치기 (Space)", _on_bell_pressed, 14)
-	action_row.add_child(_bell_button)
-	_skip_button = _make_button("개입 패스(진행)", _on_skip_pressed, 15)
-	_skip_button.custom_minimum_size = Vector2(150, 40)
-	action_row.add_child(_skip_button)
-	_castle_button = _make_button("[캐슬링(위치 교환)]", _on_castle_pressed, 14)
+	_bell_button.custom_minimum_size = Vector2(0, 38)
+	special_row.add_child(_bell_button)
+	_castle_button = _make_button("[캐슬링(위치 교환)]", _on_castle_pressed, 13)
+	_castle_button.custom_minimum_size = Vector2(0, 38)
 	_castle_button.tooltip_text = "체스 2세트: 내 체스 기물 두 개의 위치를 맞바꿉니다 (턴 시작 시 1회)"
-	action_row.add_child(_castle_button)
-	_bomb_button = _make_button("[폭탄 떠넘기기]", _on_pass_bomb_pressed, 14)
+	special_row.add_child(_castle_button)
+	_bomb_button = _make_button("[폭탄 떠넘기기]", _on_pass_bomb_pressed, 13)
+	_bomb_button.custom_minimum_size = Vector2(0, 38)
 	_bomb_button.tooltip_text = "즉발 카드 1장을 소모해 우노 +4 페널티를 두 배(-8)로 다음 플레이어에게 넘깁니다"
-	action_row.add_child(_bomb_button)
+	special_row.add_child(_bomb_button)
 	_new_game_button = _make_button("새 게임", _new_game, 13)
-	action_row.add_child(_new_game_button)
+	special_row.add_child(_new_game_button)
 	_hint_label = _make_label("", 13, Color("a5d8ff"))
 	_hint_label.custom_minimum_size = Vector2(0, 34)
 	_hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -310,20 +336,11 @@ func _build_ui() -> void:
 	_fruit_label = _make_label("", 12, Color("868e96"))
 	panel.add_child(_fruit_label)
 
-	var pawn_row := HBoxContainer.new()
-	pawn_row.add_theme_constant_override("separation", 6)
-	panel.add_child(pawn_row)
-	pawn_row.add_child(_make_label("이동할 말:", 13, Color("adb5bd")))
-	for slot: int in range(1, GameEnums.PAWNS_PER_PLAYER + 1):
-		var pawn_button: Button = _make_button("말 %d" % slot, Callable(), 12)
-		pawn_button.custom_minimum_size = Vector2(135, 30)
-		_pawn_buttons.append(pawn_button)
-		pawn_row.add_child(pawn_button)
-
 	panel.add_child(_make_section("생떼 카드 손패 (클릭해서 해당 플레이어로 사용)"))
 	for player_id: int in PLAYER_IDS:
-		var hand_row := HBoxContainer.new()
-		hand_row.add_theme_constant_override("separation", 4)
+		var hand_row := HFlowContainer.new()
+		hand_row.add_theme_constant_override("h_separation", 4)
+		hand_row.add_theme_constant_override("v_separation", 2)
 		panel.add_child(hand_row)
 		_hand_boxes[player_id] = hand_row
 
@@ -451,12 +468,6 @@ func _build_tiles_once() -> void:
 	_add_track_line([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 0] as Array[int])
 	_add_track_line([5, 20, 21, 22, 23, 24, 15] as Array[int])
 	_add_track_line([10, 25, 26, 22, 27, 28, 0] as Array[int])
-	_start_arrow = _make_label("▲ 출발", 15, Color("8ce99a"))
-	_start_arrow.position = _tile_center(GameEnums.GOAL_TILE) + Vector2(TILE_SIZE / 2.0 + 4.0, -22)
-	_start_arrow.add_theme_constant_override("outline_size", 5)
-	_start_arrow.add_theme_color_override("font_outline_color", Color("111418"))
-	_start_arrow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_board_layer.add_child(_start_arrow)
 	for index: int in GameEnums.TILE_COUNT:
 		var node: TileNode = state.board.get_tile(index)
 		var tile := ColorRect.new()
@@ -468,18 +479,23 @@ func _build_tiles_once() -> void:
 		_tile_views[index] = tile
 
 		var light: bool = _is_light_tile(index, node.tile_type)
-		var number := _make_label(str(index), 15, Color("212529") if light else Color("f8f9fa"))
+		# 타일 안 요소 배치: 번호=좌상단, 설명=하단 중앙, 설치물 배지=우상단, 말=정중앙.
+		var text_color: Color = Color("212529") if light else Color("f8f9fa")
+		var number := _make_label(str(index), 13, text_color)
 		number.position = Vector2(3, 0)
 		number.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		tile.add_child(number)
 		var tag: String = _tile_tag(index, node.tile_type)
-		if tag != "":
-			var tag_label := _make_label(tag, 10, Color("212529") if light else Color("f8f9fa"))
-			tag_label.position = Vector2(3, 29)
-			tag_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			tile.add_child(tag_label)
-		var mark := _make_label("", 12, Color("ff6b6b"))
-		mark.position = Vector2(TILE_SIZE - 24, 1)
+		var tag_label := _make_label(tag, 10, text_color)
+		tag_label.name = "Tag"
+		tag_label.position = Vector2(0, TILE_SIZE - 15)
+		tag_label.size = Vector2(TILE_SIZE, 14)
+		tag_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		tag_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		tile.add_child(tag_label)
+		_tag_labels[index] = tag_label
+		var mark := _make_label("", 11, Color("ff6b6b"))
+		mark.position = Vector2(TILE_SIZE - 4, 1)
 		mark.add_theme_constant_override("outline_size", 4)
 		mark.add_theme_color_override("font_outline_color", Color("111418"))
 		mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -534,7 +550,7 @@ func _tile_color(index: int, tile_type: TileNode.TileType) -> Color:
 
 func _tile_tag(index: int, tile_type: TileNode.TileType) -> String:
 	match tile_type:
-		TileNode.TileType.START_GOAL: return "출발/결승"
+		TileNode.TileType.START_GOAL: return "▲출발"
 		TileNode.TileType.BAKERY: return "빵집"
 		TileNode.TileType.PORTAL: return "옷장"
 	if index == GameEnums.CENTER_TILE:
@@ -565,23 +581,24 @@ func _build_pawn_views() -> void:
 			ring.add_point(point)
 		view.add_child(ring)
 		var number := _make_label(str(pawn.slot), 10, Color("111111"))
+		number.name = "Slot"
 		number.position = Vector2(-4, -8)
 		view.add_child(number)
-		var kind_label := _make_label("", 12, Color("ffffff"))
+		var kind_label := _make_label("", 11, Color("ffffff"))
 		kind_label.name = "Kind"
-		kind_label.position = Vector2(-18, -21)
+		kind_label.position = Vector2(5, -15)
 		kind_label.add_theme_constant_override("outline_size", 5)
 		kind_label.add_theme_color_override("font_outline_color", Color("111418"))
 		view.add_child(kind_label)
-		var stack_badge := _make_label("", 20, Color("ffe066"))
+		var stack_badge := _make_label("", 14, Color("ffe066"))
 		stack_badge.name = "Stack"
-		stack_badge.position = Vector2(8, -12)
-		stack_badge.add_theme_constant_override("outline_size", 8)
+		stack_badge.position = Vector2(-9, -11)
+		stack_badge.add_theme_constant_override("outline_size", 6)
 		stack_badge.add_theme_color_override("font_outline_color", Color("111418"))
 		view.add_child(stack_badge)
 		var badge := _make_label("", 11, Color("ffffff"))
 		badge.name = "Badge"
-		badge.position = Vector2(6, -18)
+		badge.position = Vector2(-13, 6)
 		badge.add_theme_constant_override("outline_size", 5)
 		badge.add_theme_color_override("font_outline_color", Color("111418"))
 		view.add_child(badge)
@@ -600,7 +617,7 @@ func _circle_points(radius: float, count: int) -> PackedVector2Array:
 
 func _pawn_position(pawn: PlayerPawn) -> Vector2:
 	var owner_index: int = PLAYER_IDS.find(pawn.owner_id)
-	var micro := Vector2(((pawn.slot - 1) % 2) * 7.0 - 3.5, ((pawn.slot - 1) / 2) * 7.0 - 3.5)
+	var micro := Vector2(((pawn.slot - 1) % 2) * 5.0 - 2.5, ((pawn.slot - 1) / 2) * 5.0 - 2.5)
 	var position_in_tile: Vector2 = _tile_center(pawn.current_tile_idx) + CELL_OFFSETS[owner_index] + micro
 	if pawn.is_finished:
 		position_in_tile = _tile_center(GameEnums.GOAL_TILE) + Vector2(-26 + owner_index * 17 + (pawn.slot - 1) * 3.0, 44)
@@ -617,11 +634,14 @@ func _refresh_pawns() -> void:
 			if running != null and running.is_valid():
 				running.kill()
 		view.position = _pawn_position(pawn)
-		view.visible = pawn.carrier == null
-		view.modulate = Color(1, 1, 1, 0.45) if pawn.is_finished else Color.WHITE
+		# 완주한 말은 보드에서 치우고, 완주 현황은 오른쪽 패널의 미니 슬롯(●●○○)으로만 보여 준다.
+		view.visible = pawn.carrier == null and not pawn.is_finished
+		view.modulate = Color.WHITE
 		(view.get_node("Kind") as Label).text = PawnCatalog.letter(pawn.kind)
 		var badge_text: String = ""
-		(view.get_node("Stack") as Label).text = "x%d" % (pawn.carried.size() + 1) if not pawn.carried.is_empty() else ""
+		var stacked: bool = not pawn.carried.is_empty()
+		(view.get_node("Stack") as Label).text = "x%d" % (pawn.carried.size() + 1) if stacked else ""
+		(view.get_node("Slot") as Label).visible = not stacked
 		if pawn.restrained_turns > 0 or pawn.blocked_this_turn:
 			badge_text += " 구속"
 		if pawn.is_imprisoned:
@@ -665,7 +685,7 @@ func _refresh_tiles() -> void:
 					color = PLAYER_COLORS.get(attachment.owner_id, Color("ffd43b"))
 		var mark: Label = _tile_marks[index]
 		mark.text = " ".join(parts)
-		mark.position = Vector2(TILE_SIZE - 3 - mark.get_minimum_size().x, 29)
+		mark.position = Vector2(TILE_SIZE - 2 - mark.get_minimum_size().x, 0)
 		mark.add_theme_color_override("font_color", color)
 
 
@@ -724,13 +744,14 @@ func _refresh_header() -> void:
 
 ## 진행 방향 안내: 정방향이면 초록 배너 + "▲ 출발", 우노 리버스(turn_direction == -1)면 주황 배너 + "▼ 역주행"으로 반전한다.
 func _refresh_direction() -> void:
-	if _direction_banner == null or _start_arrow == null:
+	if _direction_banner == null or not _tag_labels.has(GameEnums.GOAL_TILE):
 		return
 	var reversed: bool = manager.turn_direction == -1
 	_direction_bg.color = Color("a8590b") if reversed else Color("1e6b3a")
 	_direction_banner.text = "▼ 역방향 (우노 리버스)" if reversed else "▲ 정방향 (반시계)"
-	_start_arrow.text = "▼ 역주행" if reversed else "▲ 출발"
-	_start_arrow.add_theme_color_override("font_color", Color("ffa94d") if reversed else Color("8ce99a"))
+	var start_tag: Label = _tag_labels[GameEnums.GOAL_TILE]
+	start_tag.text = "▼역주행" if reversed else "▲출발"
+	start_tag.add_theme_color_override("font_color", Color("ffe8cc") if reversed else Color("f8f9fa"))
 
 
 func _refresh_players() -> void:
@@ -741,7 +762,8 @@ func _refresh_players() -> void:
 				finished += 1
 		var tool: BaseJudgmentTool = state.tools[player_id]
 		var marker: String = "▶" if player_id == manager.current_player_id() else "  "
-		(_player_labels[player_id] as Label).text = "%s P%d   완주 %d/4   카드 %d장   도구: %s" % [marker, player_id, finished, (state.hands[player_id] as Array).size(), tool.display_name]
+		var slots: String = "●".repeat(finished) + "○".repeat(GameEnums.PAWNS_PER_PLAYER - finished)
+		(_player_labels[player_id] as Label).text = "%s P%d   완주 %d/4 %s   카드 %d장   도구: %s" % [marker, player_id, finished, slots, (state.hands[player_id] as Array).size(), tool.display_name]
 		var bomb_text: String = "  [우노+4 대기 %d칸]" % state.penalty_of(player_id) if state.penalty_of(player_id) != 0 else ""
 		(_pawn_info_labels[player_id] as Label).text = "      기물: %s %s%s" % [_pawn_tokens(player_id), _set_synergy_text(player_id), bomb_text]
 
@@ -788,7 +810,7 @@ func _refresh_laws() -> void:
 
 func _refresh_hands() -> void:
 	for player_id: int in PLAYER_IDS:
-		var row: HBoxContainer = _hand_boxes[player_id]
+		var row: HFlowContainer = _hand_boxes[player_id]
 		for child: Node in row.get_children():
 			child.queue_free()
 		var title: Label = _make_label("P%d 손패:" % player_id, 13, PLAYER_COLORS[player_id])
@@ -829,13 +851,21 @@ func _refresh_controls() -> void:
 	var over: bool = manager.is_game_over
 	var can_roll: bool = not over and (current_phase == TurnManager.State.PHASE_TURN_BEGIN or current_phase == TurnManager.State.PHASE_ROLL_WAIT)
 	_roll_button.disabled = not can_roll or _tile_pick_active
+	var can_stop: bool = not over and tool.has_pending_state() and current_phase == TurnManager.State.PHASE_ROLL_WAIT
 	if tool is ToolRussianRoulette:
-		_roll_button.text = "방아쇠 당기기 (R)"
+		# 러시안 룰렛: [방아쇠 당기기]와 [멈추고 N칸 이동 확정]을 한 세트로 상시 노출한다. 1발도 못 당겼으면 멈추기는 비활성(회색)이고,
+		# 누적이 생기면 초록색으로 바뀐다.
+		_roll_button.text = "[방아쇠 당기기 (+%d칸 누적)] (R)" % ToolRussianRoulette.STEPS_PER_EMPTY
+		_stop_button.visible = not over
+		_stop_button.text = "[멈추고 %d칸 이동 확정]" % (tool as ToolRussianRoulette).accumulated
+		_stop_button.disabled = not can_stop or _tile_pick_active
+		_stop_button.modulate = Color(0.55, 1.0, 0.62) if can_stop else Color.WHITE
 	else:
 		_roll_button.text = "주사위 굴리기 (R) - %s" % tool.display_name
-	_stop_button.visible = tool.has_pending_state() and current_phase == TurnManager.State.PHASE_ROLL_WAIT
-	if tool is ToolRussianRoulette:
-		_stop_button.text = "멈추고 %d칸 이동" % (tool as ToolRussianRoulette).accumulated
+		_stop_button.visible = can_stop
+		_stop_button.text = "멈추고 이동 확정"
+		_stop_button.disabled = false
+		_stop_button.modulate = Color.WHITE
 	_bell_button.visible = tool is ToolHalliGalli
 	_fruit_label.visible = tool is ToolHalliGalli
 	if tool is ToolHalliGalli:
@@ -923,6 +953,8 @@ func _on_roll_pressed() -> void:
 
 
 func _on_stop_pressed() -> void:
+	if _stop_button.disabled:
+		return
 	_act(&"stop")
 
 
@@ -1300,6 +1332,7 @@ func _preview_pawn(pawn_id: int) -> void:
 	ctx.direction = state.movement_direction()
 	ctx.pawn = pawn
 	ctx.trigger_timing = RuleContext.ON_MOVE_CALC
+	ctx.is_preview = true  # Dry-Run: 법전 로그·깜빡임 없이 수치만 계산
 	ctx = state.rulebook.process_context(ctx)
 	# 실제 이동과 같은 계산(포 넘기 +2, 포석 -1 등 기물 능력 포함)으로 예상 경로를 구한다.
 	var path: Array[int] = MoveExecutor.plan_path(state, pawn, ctx, MoveReport.new())
@@ -1350,11 +1383,16 @@ func _on_law_added(new_law: LawResource, removed_law: LawResource) -> void:
 	_refresh_laws()
 
 
-func _on_law_applied(law: LawResource, timing: String, dice_before: int, dice_after: int) -> void:
-	var detail: String = ""
-	if dice_before != dice_after:
-		detail = "  눈금 %d → %d" % [dice_before, dice_after]
-	_log_line("[법전] [%s] %s 작동 (%s)%s" % [law.law_id, law.law_name, timing, detail], Color("ffe066"))
+func _on_law_applied(law: LawResource, timing: String, dice_before: int, dice_after: int, modified: bool) -> void:
+	# 값을 실제로 바꾼 교칙만 보여 준다. 이동 계산(ON_MOVE_CALC) 교칙은 매 걸음 로그를 도배하지 않도록
+	# 이동 보고서(move_resolved)의 요약 한 줄로만 남긴다 (경로·눈금이 실제로 달라졌을 때).
+	if not modified:
+		return
+	if timing != RuleContext.ON_MOVE_CALC:
+		var detail: String = ""
+		if dice_before != dice_after:
+			detail = "  눈금 %d → %d" % [dice_before, dice_after]
+		_log_line("[법전] [%s] %s 작동 (%s)%s" % [law.law_id, law.law_name, timing, detail], Color("ffe066"))
 	_flash_law_ids[law.law_id] = true
 	_refresh_laws()
 	get_tree().create_timer(1.0).timeout.connect(func() -> void:
@@ -1448,6 +1486,8 @@ func _log_move(data: Dictionary) -> void:
 		text += "  (추가 턴)"
 	if data["bonus_roll"]:
 		text += "  (사기 윷: 추가 굴림)"
+	if not (data["law_notes"] as Array).is_empty():
+		text += "  [법전] 이동 변조: %s" % ", ".join(data["law_notes"])
 	if data["cannon_bonus"]:
 		text += "  [포 넘기] +2칸"
 	if data["pushed_back"]:

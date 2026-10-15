@@ -650,6 +650,7 @@ func _execute_move(pawn: PlayerPawn) -> void:
 	_move_report = MoveExecutor.begin(state, pawn, ctx)
 	if not _move_report.canceled:
 		var path: Array[int] = MoveExecutor.plan_path(state, pawn, ctx, _move_report)
+		_note_altering_laws(pawn, ctx, path, _move_report)
 		await execute_step_by_step_move(pawn, path, ctx)
 		MoveExecutor.finalize(state, pawn, ctx, _move_report, _move_outcome)
 	var report: MoveReport = _move_report
@@ -664,6 +665,26 @@ func _execute_move(pawn: PlayerPawn) -> void:
 	if _check_victory(report):
 		return
 	_enter_resolution()
+
+
+## ON_MOVE_CALC 교칙이 눈금이나 경로를 실제로 바꿨을 때만, 바꾼 교칙들을 이동 보고서에 요약으로 남긴다.
+## 교칙이 없었다면 나왔을 기준 경로와 비교하므로 "작동은 했지만 결과가 같은" 교칙은 기록되지 않는다.
+func _note_altering_laws(pawn: PlayerPawn, ctx: RuleContext, path: Array[int], report: MoveReport) -> void:
+	var baseline := RuleContext.new()
+	baseline.state = state
+	baseline.actor_id = ctx.actor_id
+	baseline.pawn = pawn
+	baseline.dice_value = ctx.raw_roll
+	baseline.raw_roll = ctx.raw_roll
+	baseline.direction = ctx.direction
+	baseline.is_preview = true
+	var base_path: Array[int] = MoveExecutor.plan_path(state, pawn, baseline, MoveReport.new())
+	if base_path == path:
+		return
+	for law_id: String in state.rulebook.last_modified_law_ids:
+		var law: LawResource = LawRegistry.create(law_id)
+		if law != null:
+			report.law_notes.append("%s %s" % [law_id, law.law_name])
 
 
 func _enter_resolution() -> void:
