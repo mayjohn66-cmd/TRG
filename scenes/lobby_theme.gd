@@ -153,6 +153,7 @@ static func pale_button(text: String, callback: Callable, size_px: int = 14) -> 
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	if callback.is_valid():
 		button.pressed.connect(callback)
+	UiSkin.button(button, false, 2.0, 2.0)
 	return button
 
 
@@ -172,6 +173,7 @@ static func big_button(text: String, callback: Callable, size_px: int = 34, fill
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	if callback.is_valid():
 		button.pressed.connect(callback)
+	UiSkin.button(button, true, 6.0, 6.0)
 	return button
 
 
@@ -191,6 +193,7 @@ static func cream_button(text: String, callback: Callable, size_px: int = 34) ->
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	if callback.is_valid():
 		button.pressed.connect(callback)
+	UiSkin.button(button, true, 6.0, 6.0)
 	return button
 
 
@@ -210,6 +213,7 @@ static func small_button(text: String, callback: Callable, tone: StringName = &"
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	if callback.is_valid():
 		button.pressed.connect(callback)
+	UiSkin.button(button, false, 8.0, 8.0)
 	return button
 
 
@@ -309,7 +313,7 @@ static func popup(parent: Control, width: float = 480.0) -> Dictionary:
 	overlay.add_child(center)
 	var panel := PanelContainer.new()
 	panel.custom_minimum_size = Vector2(width, 0)
-	panel.add_theme_stylebox_override("panel", style(MINT, MINT_EDGE, 3, 26, 14, 22))
+	panel.add_theme_stylebox_override("panel", UiSkin.panel("panel", 22.0))
 	center.add_child(panel)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 12)

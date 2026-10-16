@@ -1,0 +1,149 @@
+{
+  "version": "0.1",
+  "scale_render": 4,
+  "assets": {
+    "panel": {
+      "size": [
+        96,
+        64
+      ],
+      "slice": 20,
+      "fill": "#F9F9F3",
+      "edge": "#89CD4C",
+      "radius": 18,
+      "shadow": false
+    },
+    "inset": {
+      "size": [
+        96,
+        64
+      ],
+      "slice": 20,
+      "fill": "#E9F5CF",
+      "edge": "#CDE793",
+      "radius": 12,
+      "shadow": false
+    },
+    "inset_active": {
+      "size": [
+        96,
+        64
+      ],
+      "slice": 20,
+      "fill": "#E9F5CF",
+      "edge": "#5DA530",
+      "radius": 12,
+      "shadow": false
+    },
+    "inset_flash": {
+      "size": [
+        96,
+        64
+      ],
+      "slice": 20,
+      "fill": "#FFF3C7",
+      "edge": "#E3C360",
+      "radius": 12,
+      "shadow": false
+    },
+    "header": {
+      "size": [
+        96,
+        64
+      ],
+      "slice": 20,
+      "fill": "#5DA530",
+      "edge": "#5DA530",
+      "radius": 12,
+      "shadow": false
+    },
+    "cancel_normal": {
+      "size": [
+        96,
+        64
+      ],
+      "slice": 20,
+      "fill": "#FFF3C7",
+      "edge": "#E3C360",
+      "radius": 16,
+      "shadow": true
+    },
+    "cancel_hover": {
+      "size": [
+        96,
+        64
+      ],
+      "slice": 20,
+      "fill": "#FFF3C7",
+      "edge": "#5DA530",
+      "radius": 16,
+      "shadow": true
+    },
+    "cancel_pressed": {
+      "size": [
+        96,
+        64
+      ],
+      "slice": 20,
+      "fill": "#FFF3C7",
+      "edge": "#E3C360",
+      "radius": 16,
+      "shadow": false
+    },
+    "action_normal": {
+      "size": [
+        96,
+        64
+      ],
+      "slice": 20,
+      "fill": "#FFDD74",
+      "edge": "#F1A330",
+      "radius": 16,
+      "shadow": true
+    },
+    "action_hover": {
+      "size": [
+        96,
+        64
+      ],
+      "slice": 20,
+      "fill": "#FFDD74",
+      "edge": "#5DA530",
+      "radius": 16,
+      "shadow": true
+    },
+    "action_pressed": {
+      "size": [
+        96,
+        64
+      ],
+      "slice": 20,
+      "fill": "#FFDD74",
+      "edge": "#F1A330",
+      "radius": 16,
+      "shadow": false
+    },
+    "disabled": {
+      "size": [
+        96,
+        64
+      ],
+      "slice": 20,
+      "fill": "#A9A9A7",
+      "edge": "#747C64",
+      "radius": 16,
+      "shadow": false
+    },
+    "focus": {
+      "size": [
+        96,
+        64
+      ],
+      "slice": 20,
+      "fill": null,
+      "edge": "#5DA530",
+      "radius": 16,
+      "shadow": false
+    }
+  }
+}
