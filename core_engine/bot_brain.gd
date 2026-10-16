@@ -9,8 +9,8 @@ const SCORE_GOAL: float = 100.0
 const SCORE_CAPTURE: float = 60.0
 const SCORE_STOP_SPOT: float = 40.0
 const SCORE_ADVANCE: float = 20.0
-## 지름길 코너와 중앙 (정확히 멈추면 유리한 칸).
-const STOP_SPOT_TILES: Array[int] = [5, 10, 22]
+## 점프 코너와 반환점 (정확히 멈추면 유리한 칸).
+const STOP_SPOT_TILES: Array[int] = [6, 12, 18]
 ## 턴 시작에 함정·소환 카드를 쓸 확률.
 const TRAP_USE_CHANCE: float = 0.6
 ## 고눈금 개입 기준: 이 값 이상이면 끼어든다.
@@ -34,7 +34,7 @@ static func choose_pawn(state: GameState, player_id: int, dice_value: int) -> in
 
 
 ## 이 말이 이번 눈금으로 움직일 때의 점수:
-## 결승 완주 +100 / 적 말 잡기 +60 / 코너(5, 10, 22번)·빵집에 정확히 멈춤 +40 / 새 말 꺼내기 또는 선두 말 전진 +20.
+## 결승 완주 +100 / 적 말 잡기 +60 / 코너(6, 12, 18번)·빵집에 정확히 멈춤 +40 / 새 말 꺼내기 또는 선두 말 전진 +20.
 ## 그 외에는 결승에 가까워진 만큼 약간의 가산점을, 눈에 보이는 상대 호텔로 들어가면 감점을 준다.
 static func score_move(state: GameState, pawn: PlayerPawn, dice_value: int) -> float:
 	var path: Array[int] = MoveExecutor.preview_path(state, pawn, dice_value)
@@ -152,7 +152,7 @@ static func leading_enemy(state: GameState, player_id: int) -> PlayerPawn:
 	return best
 
 
-## 함정·소환 카드를 놓을 타일. 선두 상대 말 바로 앞 1~4칸의 길목과 코너(5, 10, 22번)를 우선하고 (2~3칸 앞이 가장 높다),
+## 함정·소환 카드를 놓을 타일. 선두 상대 말 바로 앞 1~4칸의 길목과 코너(6, 12, 18번)를 우선하고 (2~3칸 앞이 가장 높다),
 ## 카드가 허용하는 타일이 하나도 없으면 -1.
 static func choose_card_tile(state: GameState, player_id: int, card: BaseCard, rng: RandomNumberGenerator) -> int:
 	var scores: Dictionary = {}
@@ -206,7 +206,7 @@ static func plan_turn_card(state: GameState, player_id: int, tried: Dictionary, 
 
 static func _plan_one_turn_card(state: GameState, player_id: int, card: BaseCard, rng: RandomNumberGenerator) -> Dictionary:
 	match card.card_id:
-		&"ACT_04":  # 빽도로 19/28번에 선 말을 즉시 완주: 항상
+		&"ACT_04":  # 빽도로 23번에 선 말을 즉시 완주: 항상
 			for pawn: PlayerPawn in state.pawns_of(player_id):
 				var params: Dictionary = {"pawn_id": pawn.entity_id}
 				if card.can_play(state, player_id, params):
@@ -317,7 +317,7 @@ const SHOT_POWERS: Array[float] = [0.35, 0.65, 1.0]
 static func pawn_progress(state: GameState, pawn: PlayerPawn) -> float:
 	var total: float = 0.0
 	for member: PlayerPawn in pawn.stack_members():
-		total += maxf(0.0, float(GameEnums.OUTER_TRACK_SIZE - state.pawn_progress_distance(member)))
+		total += maxf(0.0, float(GameEnums.TILE_COUNT - state.pawn_progress_distance(member)))
 	return total
 
 

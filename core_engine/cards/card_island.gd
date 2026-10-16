@@ -1,10 +1,10 @@
 # File: res://core_engine/cards/card_island.gd
 # Class: class_name CardIsland
-# Role: TRP_04 부르마블 무인도 감옥 - 코너 타일(5, 10, 15번) 한 곳을 무인도로 바꾼다. 보드에는 무인도가 하나만 존재할 수 있다
+# Role: TRP_04 부르마블 무인도 감옥 - 코너 타일(6, 12, 18번) 한 곳을 무인도로 바꾼다. 보드에는 무인도가 하나만 존재할 수 있다
 class_name CardIsland
 extends BaseCard
 
-const CORNERS: Array[int] = [5, 10, 15]
+const CORNERS: Array[int] = [6, 12, 18]
 
 
 func _init() -> void:

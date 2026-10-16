@@ -1,6 +1,6 @@
 # File: res://scenes/main_board.gd
 # Class: class_name MainBoard
-# Role: 로컬 핫시트 플레이 화면. 29칸 보드·4인 말·중앙 법전·손패·증강 드래프트·타일 선택 모드·결과창을 기본 도형으로 그리고, TurnManager의 시그널만 구독하며 act()로만 행동을 보낸다
+# Role: 로컬 핫시트 플레이 화면. 24칸 사각 보드·4인 말·중앙 법전·손패·증강 드래프트·타일 선택 모드·결과창을 기본 도형으로 그리고, TurnManager의 시그널만 구독하며 act()로만 행동을 보낸다
 class_name MainBoard
 extends Control
 
@@ -25,13 +25,13 @@ const TILT_PAWN_LIFT: float = 9.0      ## 서 있는 말이 바닥에서 떠 보
 const TILT_MARGIN: float = 0.11        ## 보드 받침이 타일 바깥으로 나오는 정도(정규화 좌표)
 const TILT_ZOOM: float = 1.05          ## 세로를 눌러 남는 공간만큼 보드를 키운다
 const TILE_SIZE: float = 48.0
-const PAWN_RADIUS: float = 7.5
+const PAWN_RADIUS: float = 10.0
 const STEP_DELAY: float = 0.22
 ## 한 칸 점프: 걸리는 시간(초)과 솟구치는 높이(px). 도착 직후 납작하게 찌그러졌다가 탱글하게 돌아온다.
 const HOP_SECONDS: float = 0.14
 const HOP_HEIGHT: float = 20.0
 const SLAM_HEIGHT: float = 45.0
-const CELL_OFFSETS: Array[Vector2] = [Vector2(-8, -6), Vector2(8, -6), Vector2(-8, 5), Vector2(8, 5)]
+const CELL_OFFSETS: Array[Vector2] = [Vector2(-11, -8), Vector2(11, -8), Vector2(-11, 8), Vector2(11, 8)]
 const CARD_SIZE: Vector2 = Vector2(80, 110)
 const PROFILE_SIZE: Vector2 = Vector2(230, 112)
 ## 현재 턴이 아닌 프로필은 이 색으로 가라앉고, 현재 턴 프로필은 환하게 밝아진다 (스포트라이트).
@@ -133,7 +133,7 @@ const CARD_SUMMARIES: Dictionary = {
 	&"ACT_07": "가장 뭉친 타일의 말 강제 분리·산개",
 	&"ACT_08": "내 꼴찌 말 ↔ 1등 적 선두 말 위치 교환",
 	&"SUM_01": "라운드마다 최근접 말 추격·카드 강탈",
-	&"SUM_02": "외곽 역주행 순찰 & 중앙 강제 연행",
+	&"SUM_02": "12번 출발 역주행 순찰 & 연행",
 }
 
 
@@ -703,7 +703,7 @@ func _bind_state() -> void:
 			_fx_when_announced(func() -> void: _fx_promote(pawn_id, Color("ff4d4d")))
 			_refresh_pawns()
 			return
-		_log_line("[승진] %s → 체스:퀸! (나이트 점프 + 코너 스침 + 룩 +1칸)" % _pawn_name(pawn_id), Color("ffd43b"))
+		_log_line("[승진] %s → 체스:퀸! (반환점 통과 승급)" % _pawn_name(pawn_id), Color("ffd43b"))
 		_announce_gate("기물 능력", "[발동!] 체스 퀸 승진", "%s 퀸 승진 ◆ 이동 +2칸 · 말·함정 관통" % _pawn_name(pawn_id), Color("ffd43b"), null, 1.2)
 		_fx_when_announced(func() -> void: _fx_promote(pawn_id, Color("ffd43b"))))
 	state.domino_collapsed.connect(func(pawn_id: int, passed: Array[int], chain: Array[int]) -> void:
@@ -920,7 +920,7 @@ func layout_for(viewport_size: Vector2) -> void:
 	if _announcer != null:
 		_announcer.center = _board_center()
 	if _presenter != null:
-		_presenter.center = _board_center() + Vector2(0, 40)
+		_presenter.center = _board_center() + Vector2(0, -40)
 
 
 ## 보드 한가운데의 화면 좌표 (창 비율 오프셋 포함).
@@ -1230,9 +1230,9 @@ func _build_status_strip() -> void:
 ## 우측 중앙의 큼직한 둥근 [굴리기] 버튼(모두의 마블 방식)과 그 아래의 멈추기·개입 패스·폭탄 떠넘기기 버튼.
 func _build_action_bar() -> void:
 	_roll_button = _make_button("굴리기", _on_roll_pressed, 24, Color("2b8a3e"), 60)
-	_roll_button.position = Vector2(618, 426)
-	_roll_button.size = Vector2(130, 130)
-	_roll_button.custom_minimum_size = Vector2(130, 130)
+	_roll_button.position = Vector2(623, 370)
+	_roll_button.size = Vector2(120, 120)
+	_roll_button.custom_minimum_size = Vector2(120, 120)
 	_apply_round_button_style(_roll_button, Color("2b8a3e"))
 	_roll_button.tooltip_text = "꾹 눌러 파워 게이지를 채우고 손을 떼면 굴러갑니다 (R / Space 키도 동일)"
 	_roll_button.button_down.connect(_begin_charge.bind(false))
@@ -1380,7 +1380,7 @@ func _build_debug_panel() -> VBoxContainer:
 	debug_row.add_child(_card_option)
 	debug_row.add_child(_make_button("현재 플레이어에게", _on_grant_card_pressed, 12))
 	debug_row.add_child(_make_button("도적 소환(10번)", _on_spawn_npc_pressed.bind(GameEnums.NpcBehavior.CHASE_NEAREST, 10), 12))
-	debug_row.add_child(_make_button("고스트 소환(22번)", _on_spawn_npc_pressed.bind(GameEnums.NpcBehavior.PATROL_REVERSE, 22), 12))
+	debug_row.add_child(_make_button("고스트 소환(12번)", _on_spawn_npc_pressed.bind(GameEnums.NpcBehavior.PATROL_REVERSE, 12), 12))
 	_timer_check = CheckBox.new()
 	_timer_check.text = "제한 시간 사용"
 	_timer_check.toggled.connect(func(enabled: bool) -> void: manager.set_process(enabled))
@@ -1446,29 +1446,9 @@ func _on_log_toggle_pressed() -> void:
 # 보드 / 말 그리기
 # ---------------------------------------------------------------------------
 
-## 타일 번호 -> 0~1 정규화 좌표 (화면 렌더링 전용, BoardGraph 연결 규칙과 무관).
-## 출발선(0번)은 우하단에서 시작해 반시계 방향으로 돈다: 0 우하단 -> 5 우상단 -> 10 좌상단 -> 15 좌하단 -> 다시 0.
-## 지름길 1은 5(우상단)->20,21,22(중앙),23,24->15(좌하단), 지름길 2는 10(좌상단)->25,26,22,27,28->0(우하단).
+## 타일 번호 -> 0~1 정규화 좌표 (BoardLayout과 같은 좌표계: 우하단 0번에서 반시계로 한 변 6칸).
 static func tile_norm(index: int) -> Vector2:
-	if index <= 5:
-		return Vector2(1.0, 1.0 - index / 5.0)
-	if index <= 10:
-		return Vector2(1.0 - (index - 5) / 5.0, 0.0)
-	if index <= 15:
-		return Vector2(0.0, (index - 10) / 5.0)
-	if index <= 19:
-		return Vector2((index - 15) / 5.0, 1.0)
-	match index:
-		20: return Vector2(5.0 / 6.0, 1.0 / 6.0)
-		21: return Vector2(4.0 / 6.0, 2.0 / 6.0)
-		22: return Vector2(0.5, 0.5)
-		23: return Vector2(2.0 / 6.0, 4.0 / 6.0)
-		24: return Vector2(1.0 / 6.0, 5.0 / 6.0)
-		25: return Vector2(1.0 / 6.0, 1.0 / 6.0)
-		26: return Vector2(2.0 / 6.0, 2.0 / 6.0)
-		27: return Vector2(4.0 / 6.0, 4.0 / 6.0)
-		28: return Vector2(5.0 / 6.0, 5.0 / 6.0)
-	return Vector2(0.5, 0.5)
+	return BoardLayout.tile_norm(index)
 
 
 ## 평면 정규화 좌표(0~1) -> 화면 좌표. 탑뷰는 그대로 펴고, 기울인 시점은 세로를 누르고 위쪽(먼 쪽)을 좁혀 원근을 준다. 규칙·좌표는 평면 그대로이고 이 함수만 시점을 안다.
@@ -1496,6 +1476,15 @@ func _tile_center(index: int) -> Vector2:
 	return _project(tile_norm(index))
 
 
+## 점프 코너(6·18번)의 화살표가 가리킬 타일. LAW_01 중에는 점프가 막혀 바로 다음 칸을 가리킨다.
+func _jump_arrow_target(index: int) -> int:
+	if not GameEnums.JUMP_CORNER_TARGETS.has(index):
+		return -1
+	if state != null and state.rulebook.has_law("LAW_01"):
+		return index + 1
+	return GameEnums.JUMP_CORNER_TARGETS[index]
+
+
 ## 타일 하나를 현재 시점에 맞게 놓는다 (위치·원근 크기·세로 압축, 글자는 되돌려 찌그러지지 않게).
 func _place_tile(index: int) -> void:
 	var tile: BoardSkin.Tile = _tile_views[index]
@@ -1506,9 +1495,7 @@ func _place_tile(index: int) -> void:
 	var depth: float = _depth_scale(tile_norm(index).y)
 	var squash: float = 1.0 if view_mode == ViewMode.TOP else TILT_TILE_SQUASH
 	tile.scale = Vector2(depth, depth * squash)
-	var target: int = {5:20,10:25,15:16}.get(index, -1)
-	if index in [5,10] and state != null and state.rulebook.has_law("LAW_01"):
-		target = index + 1
+	var target: int = _jump_arrow_target(index)
 	tile.arrow_target = target
 	var direction: Vector2 = (_tile_center(target) - _tile_center(index)).normalized() if target >= 0 else Vector2.RIGHT
 	tile.configure(_surface_project, BoardSkin.track(tile_norm(index)), span, _depth_scale(BoardSkin.track(tile_norm(index)).y), direction)
@@ -1620,9 +1607,11 @@ func _build_tiles_once() -> void:
 
 
 func _add_track_lines() -> void:
-	_add_track_line([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 0] as Array[int])
-	_add_track_line([5, 20, 21, 22, 23, 24, 15] as Array[int])
-	_add_track_line([10, 25, 26, 22, 27, 28, 0] as Array[int])
+	var loop: Array[int] = []
+	for index: int in GameEnums.TILE_COUNT:
+		loop.append(index)
+	loop.append(0)
+	_add_track_line(loop)
 
 
 func _add_track_line(route: Array[int]) -> void:
@@ -1644,8 +1633,8 @@ func _add_track_line(route: Array[int]) -> void:
 	_track_lines.append(line)
 
 
-func _is_light_tile(index: int, tile_type: TileNode.TileType) -> bool:
-	return tile_type == TileNode.TileType.NORMAL and index < GameEnums.OUTER_TRACK_SIZE and not [5, 10, 15].has(index)
+func _is_light_tile(_index: int, tile_type: TileNode.TileType) -> bool:
+	return tile_type == TileNode.TileType.NORMAL
 
 
 func _tile_color(index: int, tile_type: TileNode.TileType) -> Color:
@@ -1653,12 +1642,8 @@ func _tile_color(index: int, tile_type: TileNode.TileType) -> Color:
 		TileNode.TileType.START_GOAL: return Color("2f9e44")
 		TileNode.TileType.BAKERY: return Color("e8890c")
 		TileNode.TileType.PORTAL: return Color("9c36b5")
-	if index == GameEnums.CENTER_TILE:
-		return Color("b8860b")
-	if [5, 10, 15].has(index):
+	if GameEnums.CORNER_TILES.has(index):
 		return Color("495057")
-	if index >= GameEnums.OUTER_TRACK_SIZE:
-		return Color("1c5d99")
 	return Color("ced4da")
 
 
@@ -1667,14 +1652,10 @@ func _tile_tag(index: int, tile_type: TileNode.TileType) -> String:
 		TileNode.TileType.START_GOAL: return "▲출발"
 		TileNode.TileType.BAKERY: return "빵집"
 		TileNode.TileType.PORTAL: return "옷장"
-	if index == GameEnums.CENTER_TILE:
-		return "중앙"
-	if index == 5:
-		return "코너↙"
-	if index == 10:
-		return "코너↘"
-	if index == 15:
-		return "합류"
+	if GameEnums.JUMP_CORNER_TARGETS.has(index):
+		return "점프 코너 → %d번" % int(GameEnums.JUMP_CORNER_TARGETS[index])
+	if index == GameEnums.HALFWAY_TILE:
+		return "반환점"
 	return ""
 
 
@@ -1807,9 +1788,8 @@ func _refresh_tiles() -> void:
 		return
 	for index: int in GameEnums.TILE_COUNT:
 		var parts: Array[String] = []
-		if index in [5,10]:
-			var target: int = index+1 if state.rulebook.has_law("LAW_01") else (20 if index == 5 else 25)
-			if (_tile_views[index] as BoardSkin.Tile).arrow_target != target:
+		if GameEnums.JUMP_CORNER_TARGETS.has(index):
+			if (_tile_views[index] as BoardSkin.Tile).arrow_target != _jump_arrow_target(index):
 				_place_tile(index)
 		var tips: Array[String] = []
 		var kind_label: String = _tile_tag(index, state.board.get_tile(index).tile_type)
@@ -3043,9 +3023,11 @@ func _pawn_prediction(pawn: PlayerPawn) -> Dictionary:
 			if GameEnums.SHOGI_PROMOTION_TILES.has(step_tile):
 				promote_hint = " +나리!"
 				break
-	if tile.tile_type == TileNode.TileType.PORTAL:
-		var warp_target: int = GameEnums.CENTER_TILE
-		if pawn.sub_type() == GameEnums.PawnSubType.MONO_PLANE and GameEnums.PLANE_WARP_TARGETS.has(dest):
+	if not state.rulebook.has_law("LAW_01") and GameEnums.JUMP_CORNER_TARGETS.has(dest):
+		return {"text": "→ %d번 (점프!)" % int(GameEnums.JUMP_CORNER_TARGETS[dest]), "good": true}
+	if tile.tile_type == TileNode.TileType.PORTAL and not state.rulebook.has_law("LAW_01"):
+		var warp_target: int = GameEnums.PORTAL_WARP_TARGETS[dest]
+		if pawn.sub_type() == GameEnums.PawnSubType.MONO_PLANE:
 			warp_target = GameEnums.PLANE_WARP_TARGETS[dest]
 		return {"text": "→ %d번 (옷장 워프!)" % warp_target, "good": true}
 	var enemies: Array[PlayerPawn] = []
@@ -3382,12 +3364,12 @@ func _refresh_roll_pad() -> void:
 		_roll_pad.reset_revolver()
 
 
-## 굴림 위젯의 크기·위치를 방식에 맞춘다: charge는 보드 아래 작게(130px), 그 외는 보드 한가운데 크게(버튼 190px / 패드 1.9배).
+## 굴림 위젯의 크기·위치를 방식에 맞춘다: charge는 중앙 무대 아래쪽에 작게(120px), 그 외는 보드 한가운데 크게(버튼 190px / 패드 1.9배).
 func _set_roll_geometry(mode: StringName) -> void:
 	_roll_geometry = mode
 	var big: bool = mode != &"charge"
-	var diameter: float = 190.0 if mode == &"big" else 130.0
-	var center: Vector2 = Vector2(683.0, 346.0) if mode == &"big" else Vector2(683.0, 491.0)
+	var diameter: float = 190.0 if mode == &"big" else 120.0
+	var center: Vector2 = Vector2(683.0, 346.0) if mode == &"big" else Vector2(683.0, 430.0)
 	_roll_button.custom_minimum_size = Vector2(diameter, diameter)
 	_roll_button.size = Vector2(diameter, diameter)
 	_roll_button.add_theme_font_size_override("font_size", 32 if mode == &"big" else 24)
@@ -3592,7 +3574,7 @@ func _on_card_pressed(player_id: int, card_id: StringName) -> void:
 				if card.can_play(state, player_id, {"pawn_id": pawn.entity_id}):
 					options.append({"label": "말 %d (%d번 타일)" % [pawn.slot, pawn.current_tile_idx], "value": pawn.entity_id})
 			if options.is_empty():
-				_log_line("[%s] 0번에서 빽도로 후퇴해 19/28번에 있는 말이 필요합니다." % card.display_name, Color("868e96"))
+				_log_line("[%s] 0번에서 빽도로 후퇴해 23번에 있는 말이 필요합니다." % card.display_name, Color("868e96"))
 				return
 			_show_choice("완주시킬 말을 고르세요", options, _play_card_with.bind(player_id, card_id, "pawn_id"))
 		&"ACT_02":
@@ -5647,7 +5629,7 @@ func _log_move(data: Dictionary) -> void:
 	if data["bounced"]:
 		text += "  결승선에서 튕겨 나옴"
 	if data["warped"]:
-		text += "  옷장 워프 → 중앙"
+		text += "  점프·옷장 워프"
 	if data["stopped_early"]:
 		text += "  이동 중단"
 	if not (data["captured"] as Array).is_empty():
@@ -5734,7 +5716,7 @@ func _show_center_banner(text: String, color: Color) -> void:
 ## 파워 게이지(굴림 버튼 위)와 판정 도구 연출기를 만든다.
 func _build_roll_fx() -> void:
 	_power_bar = ProgressBar.new()
-	_power_bar.position = Vector2(623, 426)
+	_power_bar.position = Vector2(623, 497)
 	_power_bar.size = Vector2(120, 12)
 	_power_bar.min_value = 0.0
 	_power_bar.max_value = 100.0
@@ -5745,7 +5727,7 @@ func _build_roll_fx() -> void:
 	_power_bar.add_theme_stylebox_override("fill", _style(Color("51cf66"), Color("fff3bf"), 2, 7, 0, 0))
 	add_child(_power_bar)
 	_power_label = _make_label("POWER 0%", 12, Color("fff3bf"))
-	_power_label.position = Vector2(623, 408)
+	_power_label.position = Vector2(623, 512)
 	_power_label.size = Vector2(120, 16)
 	_power_label.z_index = 2
 	_power_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

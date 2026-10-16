@@ -66,57 +66,57 @@ func test_evolution_assigns_sub_types_in_pickup_order() -> void:
 
 func test_chess_pawn_promotes_to_queen_when_it_steps_on_the_back_ranks() -> void:
 	var state := make_state(2, 1, {1: _units(Kind.CHESS, [1, 1])})
-	place(state, 11, 13, [12])
-	var report: MoveReport = move(state, 11, 4)  # 14, 15(승진), 16, 17
-	check_eq(state.get_pawn(11).sub_type(), Sub.CHESS_QUEEN, "15번을 밟는 순간 퀸으로 승진")
+	place(state, 11, 10, [9])
+	var report: MoveReport = move(state, 11, 4)  # 11, 12(승진), 13, 14
+	check_eq(state.get_pawn(11).sub_type(), Sub.CHESS_QUEEN, "12번을 밟는 순간 퀸으로 승진")
 	check_eq(report.promoted_pawn_ids, int_array([11]), "승진 보고")
 	check_eq(state.get_pawn(11).display_label(), "체스:퀸", "표기도 퀸")
 	var stays := make_state(2, 1, {1: _units(Kind.CHESS, [1])})
-	place(stays, 11, 11, [10])
-	move(stays, 11, 3)  # 14번에서 멈춤: 아직 승진 구간이 아니다
-	check_eq(stays.get_pawn(11).sub_type(), Sub.CHESS_PAWN, "14번까지는 폰 그대로")
+	place(stays, 11, 7, [6])
+	move(stays, 11, 4)  # 11번에서 멈춤: 아직 승진 구간이 아니다
+	check_eq(stays.get_pawn(11).sub_type(), Sub.CHESS_PAWN, "11번까지는 폰 그대로")
 	var knight := make_state(2, 1, {1: _units(Kind.CHESS, [2])})
-	place(knight, 11, 13, [12])
-	move(knight, 11, 3)
+	place(knight, 11, 10, [9])
+	move(knight, 11, 4)
 	check_eq(knight.get_pawn(11).sub_type(), Sub.CHESS_KNIGHT, "나이트는 승진하지 않는다")
 
 
-func test_chess_pawn_promotes_on_the_center_tile_including_portal_warp() -> void:
+func test_chess_pawn_promotes_on_the_halfway_tiles_including_portal_warp() -> void:
 	var state := make_state(2, 1, {1: _units(Kind.CHESS, [1])})
-	place(state, 11, 6, [5])
-	move(state, 11, 1)  # 7번 옷장에 멈춰 22번으로 워프
-	check_eq(state.get_pawn(11).current_tile_idx, 22, "옷장 워프")
-	check_eq(state.get_pawn(11).sub_type(), Sub.CHESS_QUEEN, "중앙에 도착하면 승진")
+	place(state, 11, 8, [7])
+	move(state, 11, 1)  # 9번 옷장에 멈춰 16번으로 워프
+	check_eq(state.get_pawn(11).current_tile_idx, 16, "옷장 워프")
+	check_eq(state.get_pawn(11).sub_type(), Sub.CHESS_QUEEN, "반환점 너머에 도착하면 승진")
 	var passing := make_state(2, 1, {1: _units(Kind.CHESS, [1])})
-	place(passing, 11, 21, [10, 25, 26, 22, 23, 24, 15, 16, 17, 18, 19, 0, 1, 2, 3, 4, 5, 20, 21])
-	passing.get_pawn(11).step_history = [5, 20, 21]
-	move(passing, 11, 2)  # 22를 스쳐 23
-	check_eq(passing.get_pawn(11).sub_type(), Sub.CHESS_QUEEN, "스쳐 지나가도 중앙을 밟는 순간 승진")
+	place(passing, 11, 10, [9])
+	move(passing, 11, 3)  # 12를 스쳐 13
+	check_eq(passing.get_pawn(11).sub_type(), Sub.CHESS_QUEEN, "스쳐 지나가도 12번을 밟는 순간 승진")
 
 
 func test_promotion_survives_snapshot_restore() -> void:
 	var state := make_state(2, 1, {1: _units(Kind.CHESS, [1])})
-	place(state, 11, 14, [13])
+	place(state, 11, 10, [9])
 	var snapshot := TurnSnapshot.capture(state)
-	move(state, 11, 2)
+	move(state, 11, 3)
 	check_eq(state.get_pawn(11).sub_type(), Sub.CHESS_QUEEN, "승진")
 	snapshot.restore(state)
 	check_eq(state.get_pawn(11).sub_type(), Sub.CHESS_PAWN, "되감으면 폰으로 복구")
 
 
-func test_bishop_turns_at_a_corner_it_only_passes_but_not_under_law_01() -> void:
+func test_bishop_gets_plus_two_at_a_corner_and_law_01_only_stops_the_jump() -> void:
 	var state := make_state(2, 1, {1: _units(Kind.CHESS, [1, 2, 3])})
 	place(state, 13, 4, [3])
 	var report: MoveReport = move(state, 13, 2)
-	check_eq(report.path, int_array([5, 20]), "비숍은 5번을 스쳐도 지름길로 꺾는다")
+	check_eq(report.path, int_array([5, 6, 7, 8]), "비숍은 6번 코너를 스치면 +2칸 (6번에 멈추지 않으므로 점프 없음)")
+	check(report.ability_notes.has("코너 보너스 +2칸"), "능력 보고")
 	var plain := make_state(2, 1, {1: _units(Kind.CHESS, [1, 2, 3])})
 	place(plain, 11, 4, [3])
-	check_eq(move(plain, 11, 2).path, int_array([5, 6]), "폰은 그냥 지나간다")
+	check_eq(move(plain, 11, 2).path, int_array([5, 6, 10]), "폰은 보너스 없이 6번에 멈춰 10번으로 점프")
 	var sealed := make_state(2, 1, {1: _units(Kind.CHESS, [1, 2, 3])})
 	var ctx: RuleContext = make_ctx(sealed, 2)
 	ctx.allow_shortcut = false  # LAW_01(지름길 공사 중)이 ON_MOVE_CALC에서 하는 일
-	place(sealed, 13, 4, [3])
-	check_eq(MoveExecutor.execute(sealed, sealed.get_pawn(13), ctx).path, int_array([5, 6]), "LAW_01 중에는 꺾이지 않는다")
+	place(sealed, 11, 4, [3])
+	check_eq(MoveExecutor.execute(sealed, sealed.get_pawn(11), ctx).path, int_array([5, 6]), "LAW_01 중에는 점프하지 않는다")
 
 
 # --- 장기 -----------------------------------------------------------------------
@@ -125,18 +125,18 @@ func test_bishop_turns_at_a_corner_it_only_passes_but_not_under_law_01() -> void
 # --- 모노폴리 ---------------------------------------------------------------------
 
 
-func test_plane_warps_to_the_next_corner_instead_of_the_center() -> void:
+func test_plane_warps_farther_than_the_normal_portal() -> void:
 	var state := make_state(2, 1, {1: _units(Kind.MONOPOLY, [1, 2])})
-	place(state, 12, 6, [5])
-	var report: MoveReport = move(state, 12, 1)  # 7번 옷장
-	check_eq(state.get_pawn(12).current_tile_idx, 10, "7번 옷장 -> 10번 코너")
+	place(state, 12, 8, [7])
+	var report: MoveReport = move(state, 12, 1)  # 9번 옷장
+	check_eq(state.get_pawn(12).current_tile_idx, 18, "9번 옷장 -> 18번 코너")
 	check(report.warped, "워프 보고")
-	place(state, 12, 16, [15])
-	move(state, 12, 1)  # 17번 옷장
-	check_eq(state.get_pawn(12).current_tile_idx, 19, "17번 옷장 -> 결승 직전 19번")
-	place(state, 11, 6, [5])
+	place(state, 12, 15, [14])
+	move(state, 12, 1)  # 16번 옷장
+	check_eq(state.get_pawn(12).current_tile_idx, 22, "16번 옷장 -> 결승 직전 22번")
+	place(state, 11, 8, [7])
 	move(state, 11, 1)
-	check_eq(state.get_pawn(11).current_tile_idx, 22, "미니카는 평소처럼 중앙으로")
+	check_eq(state.get_pawn(11).current_tile_idx, 16, "미니카는 평소처럼 16번으로")
 
 
 func test_steamship_destroys_only_the_first_hostile_attachment_without_triggering_it() -> void:
@@ -159,16 +159,16 @@ func test_steamship_destroys_only_the_first_hostile_attachment_without_triggerin
 
 func test_dog_draws_a_card_for_every_bakery_it_only_passes() -> void:
 	var state := make_state(2, 1, {1: _full(Kind.MONOPOLY)})
-	place(state, 14, 6, [5])
-	var report: MoveReport = move(state, 14, 4)  # 7, 8(빵집 통과), 9, 10
+	place(state, 14, 1, [0])
+	var report: MoveReport = move(state, 14, 4)  # 2, 3, 4(빵집 통과), 5
 	check_eq(report.dog_cards, 1, "스친 빵집에서 카드 1장")
 	check_eq((state.hands[1] as Array).size(), 1, "손패에 반영")
 	var car := make_state(2, 1, {1: _full(Kind.MONOPOLY)})
-	place(car, 11, 6, [5])
+	place(car, 11, 1, [0])
 	check_eq(move(car, 11, 4).dog_cards, 0, "다른 기물은 스치기만 해서는 카드가 없다")
 	var landing := make_state(2, 1, {1: _full(Kind.MONOPOLY)})
-	place(landing, 14, 6, [5])
-	move(landing, 14, 2)  # 8번 빵집에 도착: 평소 보너스 한 장만
+	place(landing, 14, 2, [1])
+	move(landing, 14, 2)  # 4번 빵집에 도착: 평소 보너스 한 장만
 	check_eq((landing.hands[1] as Array).size(), 1, "도착한 빵집은 한 장")
 
 

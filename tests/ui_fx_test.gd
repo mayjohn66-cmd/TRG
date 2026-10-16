@@ -315,7 +315,7 @@ func _test_avatar_seats() -> void:
 func _test_view_modes() -> void:
 	_expect(_board.view_mode == MainBoard.ViewMode.TOP and _board._plate.visible and not _board._board_surface.visible, "기본은 탑뷰")
 	var top_centers: Array[Vector2] = []
-	for index: int in 29:
+	for index: int in 24:
 		top_centers.append(_board._tile_center(index))
 	var pawn_id: int = 11
 	var pawn: PlayerPawn = _board.state.get_pawn(pawn_id)
@@ -330,19 +330,19 @@ func _test_view_modes() -> void:
 	var tag: Label = _board._tag_labels[0]
 	_expect(absf(tag.scale.y * near_tile.scale.y / near_tile.scale.x - 1.0) < 0.01, "타일 글자는 되돌려 찌그러지지 않는다")
 	var all_inside: bool = true
-	for a: int in 29:
+	for a: int in 24:
 		var tile_a: Control = _board._tile_views[a]
 		var rect_a := Rect2(tile_a.position + tile_a.size / 2.0 - tile_a.size * tile_a.scale / 2.0, tile_a.size * tile_a.scale)
 		all_inside = all_inside and Rect2(Vector2.ZERO, Vector2(1366, 768)).encloses(rect_a)
-		for b: int in range(a + 1, 29):
+		for b: int in range(a + 1, 24):
 			var tile_b: Control = _board._tile_views[b]
 			var rect_b := Rect2(tile_b.position + tile_b.size / 2.0 - tile_b.size * tile_b.scale / 2.0, tile_b.size * tile_b.scale)
 			_expect(not rect_a.intersects(rect_b), "기울인 시점에서 타일 %d와 %d가 겹침" % [a, b])
 	_expect(all_inside, "기울인 시점의 모든 타일이 화면 안")
 	_expect((_board._pawn_views[pawn_id] as Node2D).get_node("Shadow").visible, "말 그림자가 보인다")
-	_expect(_board._board_edge.points.size() >= 64 and _board._track_lines.size() == 3, "둥근 보드 윤곽과 경로선 3개가 다시 그려진다")
+	_expect(_board._board_edge.points.size() >= 64 and _board._track_lines.size() == 1, "둥근 보드 윤곽과 순환 경로선 1개가 다시 그려진다")
 	var safe: PackedVector2Array = BoardSkin.safe_outline(_board._surface_project)
-	for i: int in 29:
+	for i: int in 24:
 		var tile: BoardSkin.Tile = _board._tile_views[i]
 		_expect(_board._tile_at(tile.get_global_transform() * (tile.size/2.0)) == i, "새 발판 중심 클릭: %d" % i)
 		for point: Vector2 in tile.outline_points:
@@ -357,10 +357,10 @@ func _test_view_modes() -> void:
 	_board.state.rulebook.active_laws_queue.clear()
 	_board.state.rulebook.enqueue_law(LawRegistry.create("LAW_01"))
 	_board._refresh_tiles()
-	_expect((_board._tile_views[5] as BoardSkin.Tile).arrow_target == 6 and (_board._tile_views[10] as BoardSkin.Tile).arrow_target == 11, "공사 중에는 외곽 방향을 가리킨다")
+	_expect((_board._tile_views[6] as BoardSkin.Tile).arrow_target == 7 and (_board._tile_views[18] as BoardSkin.Tile).arrow_target == 19, "공사 중에는 바로 다음 칸을 가리킨다")
 	_board.state.rulebook.remove_law_by_id("LAW_01")
 	_board._refresh_tiles()
-	_expect((_board._tile_views[5] as BoardSkin.Tile).arrow_target == 20 and (_board._tile_views[10] as BoardSkin.Tile).arrow_target == 25, "공사가 끝나면 지름길 방향을 가리킨다")
+	_expect((_board._tile_views[6] as BoardSkin.Tile).arrow_target == 10 and (_board._tile_views[18] as BoardSkin.Tile).arrow_target == 21, "공사가 끝나면 점프 목적지를 가리킨다")
 	_board.state.rulebook.active_laws_queue = previous_laws
 	_board._refresh_tiles()
 	# 경로선이 새 위치를 따라간다
@@ -369,7 +369,7 @@ func _test_view_modes() -> void:
 	_expect(GameSession.view_mode == MainBoard.ViewMode.TILT, "시점이 세션 설정에 기록된다")
 	_board.set_view_mode(MainBoard.ViewMode.TOP)
 	var restored: bool = true
-	for index: int in 29:
+	for index: int in 24:
 		restored = restored and _board._tile_center(index).is_equal_approx(top_centers[index])
 	_expect(restored and _board._plate.visible and not _board._board_surface.visible and not _board._table_bg.visible, "탑뷰로 돌아오면 모든 좌표와 받침이 그대로 돌아온다")
 	_expect(_board._pawn_position(pawn).is_equal_approx(top_pawn_position) and not _board._pawn_layer.y_sort_enabled, "말 위치도 그대로")
@@ -473,14 +473,14 @@ func _test_roll_pad() -> void:
 	manager.state.tools[current] = ToolRegistry.create(&"D6")
 	_board._refresh_controls()
 	_expect(pad.kind == RollPad.Kind.NONE and _board._roll_button.visible and not pad.visible, "주사위는 둥근 굴리기 버튼")
-	_expect(_board._roll_button.position.y > 400.0 and absf(_board._roll_button.position.x + 65.0 - 683.0) < 1.0, "굴리기 버튼은 보드 아래쪽(17·18번 위) 가운데")
+	_expect(_board._roll_button.position.y > 360.0 and _board._roll_button.position.y + 120.0 < 530.0 and absf(_board._roll_button.position.x + 60.0 - 683.0) < 1.0, "굴리기 버튼은 중앙 무대 안쪽 아래 가운데")
 	manager.state.tools[current] = ToolRegistry.create(&"HOLDEM")
 	_board._refresh_controls()
 	var big_center: Vector2 = _board._roll_button.position + _board._roll_button.size / 2.0
 	_expect(_board._roll_button.visible and _board._roll_button.size.x >= 180.0 and big_center.distance_to(Vector2(683, 346)) < 2.0, "홀덤(버튼형)은 보드 한가운데에 큰 버튼 (%s %s)" % [str(big_center), str(_board._roll_button.size)])
 	manager.state.tools[current] = ToolRegistry.create(&"CHINCHIRO")
 	_board._refresh_controls()
-	_expect(_board._roll_button.size.x == 130.0 and _board._roll_button.position.y > 400.0, "친치로(차징형)는 보드 아래 작은 버튼 (%s %s)" % [str(_board._roll_button.size), str(_board._roll_button.position)])
+	_expect(_board._roll_button.size.x == 120.0 and _board._roll_button.position.y > 360.0, "친치로(차징형)는 중앙 무대 아래 작은 버튼 (%s %s)" % [str(_board._roll_button.size), str(_board._roll_button.position)])
 	manager.state.tools[current] = ToolRegistry.create(&"LIFE_ROULETTE")
 	_board._refresh_controls()
 	_expect(pad.kind == RollPad.Kind.ROULETTE and pad.visible and not _board._roll_button.visible, "룰렛은 원판 패드")

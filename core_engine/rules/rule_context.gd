@@ -16,7 +16,7 @@ var trigger_timing: String = ""
 var actor_id: int = -1
 ## 원본 및 변조된 이동 칸수 (윷의 빽도·청개구리 저주처럼 음수 가능).
 var dice_value: int = 0
-## 코너 지름길 진입 허용 여부 (LAW_01).
+## 점프 코너·옷장 포탈 작동 허용 여부 (LAW_01).
 var allow_shortcut: bool = true
 ## 아군 말 업기 허용 여부 (LAW_02).
 var allow_stacking: bool = true

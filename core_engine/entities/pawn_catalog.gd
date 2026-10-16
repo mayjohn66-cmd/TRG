@@ -57,9 +57,9 @@ const SUB_LETTERS: Dictionary = {
 }
 const SUB_ABILITIES: Dictionary = {
 	SubType.YUT_MAL: "처치·눈금 4/5 시 재굴림 +1 · 자동 업기",
-	SubType.CHESS_PAWN: "중앙·15~19번 도달 시 퀸 승급",
+	SubType.CHESS_PAWN: "12번 이상 도달 시 퀸 승급",
 	SubType.CHESS_KNIGHT: "경로 말·함정 관통 (도착 칸만 판정)",
-	SubType.CHESS_BISHOP: "코너 스침 → 대각선 진입 · 대각선 출발 +2칸",
+	SubType.CHESS_BISHOP: "코너 스치면 +2칸",
 	SubType.CHESS_ROOK: "없음",
 	SubType.CHESS_QUEEN: "이동 +2칸 · 말·함정 관통",
 	SubType.JANGGI_PO: "경로에 말 있으면 넘어서 +3칸",
@@ -67,14 +67,14 @@ const SUB_ABILITIES: Dictionary = {
 	SubType.JANGGI_MA: "앞 칸 비면 +2칸",
 	SubType.JANGGI_SANG: "앞 칸 비면 +3칸",
 	SubType.MONO_CAR: "도착 칸 호텔 5턴 · 출발선 통과 시 카드 +1",
-	SubType.MONO_PLANE: "옷장 → 다음 코너 워프",
+	SubType.MONO_PLANE: "옷장 → 더 먼 곳으로 워프",
 	SubType.MONO_SHIP: "첫 적 설치물 무시·파괴",
 	SubType.MONO_DOG: "빵집 스침만 해도 카드 +1",
 	SubType.BADUK_BLACK: "없음",
 	SubType.BADUK_WHITE: "처치 면역 · 아군 보호 (눈금 -1)",
-	SubType.SHOGI_FU: "10번·중앙 통과 시 토금 승급 (+1칸)",
-	SubType.SHOGI_HISHA: "외곽 직선 +2칸 · 승급 시 대각선도 +2칸",
-	SubType.SHOGI_KAKU: "코너 스침 → 대각선 진입 · 승급 시 앞 1칸 처치",
+	SubType.SHOGI_FU: "12번 이상 통과 시 토금 승급 (+1칸)",
+	SubType.SHOGI_HISHA: "이동 +2칸",
+	SubType.SHOGI_KAKU: "코너 스치면 +2칸 · 승급 시 앞 1칸 처치",
 	SubType.SHOGI_KEIMA: "첫 2칸 함정·말 관통 · 승급 시 +1칸",
 }
 ## 1회용 필살기: 세부 기물 -> 스킬 ID / 이름 / 설명. 필살기가 없으면 스킬 ID가 빈 값이다.

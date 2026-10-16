@@ -50,20 +50,23 @@ func _rejections(manager: TurnManager) -> Array:
 
 func test_queen_always_moves_two_extra_tiles_and_ignores_traps() -> void:
 	var state := make_state(2, 1, {1: _units(Kind.CHESS, [5])})
-	place(state, 11, 1, [0])
-	state.place_attachment(3, TrapPit.new(2))
+	place(state, 11, 7, [6])
+	state.place_attachment(9, TrapPit.new(2))
 	var report: MoveReport = move(state, 11, 3)
 	check_eq(report.path.size(), 5, "눈금 3 + 퀸 보너스 2 = 5칸")
 	check(not report.stopped_early, "중간 칸 함정은 뛰어넘어 무시")
 
 
-func test_bishop_gets_two_extra_tiles_only_when_starting_on_a_diagonal_tile() -> void:
+func test_bishop_gets_two_extra_tiles_only_when_the_path_touches_a_corner() -> void:
 	var state := make_state(2, 1, {1: _units(Kind.CHESS, [3])})
-	place(state, 11, 20, [5])
-	check_eq(move(state, 11, 1).path.size(), 3, "대각선 타일(20번)에서 출발하면 +2칸")
+	place(state, 11, 3, [2])
+	check_eq(move(state, 11, 3).path.size(), 5, "6번 코너를 밟으면 +2칸 (3 + 2)")
 	var outer := make_state(2, 1, {1: _units(Kind.CHESS, [3])})
 	place(outer, 11, 1, [0])
-	check_eq(move(outer, 11, 2).path.size(), 2, "외곽에서는 보너스 없음")
+	check_eq(move(outer, 11, 2).path.size(), 2, "코너를 건드리지 않으면 보너스 없음")
+	var halfway := make_state(2, 1, {1: _units(Kind.CHESS, [3])})
+	place(halfway, 11, 10, [9])
+	check_eq(move(halfway, 11, 3).path.size(), 5, "12번 코너를 스쳐도 +2칸")
 
 
 func test_cannon_adds_three_tiles_when_any_pawn_is_in_the_middle_of_the_path() -> void:
@@ -79,11 +82,11 @@ func test_cannon_adds_three_tiles_when_any_pawn_is_in_the_middle_of_the_path() -
 func test_horse_and_elephant_get_bonus_tiles_only_when_the_tile_ahead_is_clear() -> void:
 	for entry: Array in [[3, 2], [4, 3]]:
 		var open := make_state(2, 1, {1: _units(Kind.JANGGI, [entry[0]])})
-		place(open, 11, 1, [0])
+		place(open, 11, 10, [9])
 		check_eq(move(open, 11, 2).path.size(), 2 + int(entry[1]), "앞이 비면 +%d칸 (%d호기)" % [entry[1], entry[0]])
 		var blocked := make_state(2, 1, {1: _units(Kind.JANGGI, [entry[0]])})
-		place(blocked, 11, 1, [0])
-		place(blocked, 21, 2, [1])
+		place(blocked, 11, 10, [9])
+		place(blocked, 21, 11, [10])
 		check_eq(move(blocked, 11, 2).path.size(), 2, "막혀 있으면 기본 눈금만 이동 (페널티 없음)")
 
 
@@ -177,9 +180,9 @@ func test_chariot_charges_to_the_first_enemy_and_captures_it() -> void:
 
 func test_chariot_without_enemies_runs_to_the_end_corner() -> void:
 	var manager: TurnManager = _manager({1: _units(Kind.JANGGI, [2])})
-	place(manager.state, 11, 1, [0])
+	place(manager.state, 11, 7, [6])
 	_do(manager, 1, &"use_skill", {"pawn_id": 11})
-	check_eq(manager.state.get_pawn(11).current_tile_idx, 5, "적이 없으면 직선 라인 끝 코너까지")
+	check_eq(manager.state.get_pawn(11).current_tile_idx, 12, "적이 없으면 다음 코너(12번)까지")
 	_dispose(manager)
 
 
@@ -187,10 +190,10 @@ func test_plane_warps_to_a_bakery_or_corner_in_place_of_rolling() -> void:
 	var manager: TurnManager = _manager({1: _units(Kind.MONOPOLY, [2])})
 	place(manager.state, 11, 1, [0])
 	var rejected: Array = _rejections(manager)
-	_do(manager, 1, &"use_skill", {"pawn_id": 11, "tile": 6})
+	_do(manager, 1, &"use_skill", {"pawn_id": 11, "tile": 5})
 	check_eq(rejected.size(), 1, "빵집·코너가 아닌 타일은 거부")
-	_do(manager, 1, &"use_skill", {"pawn_id": 11, "tile": 13})
-	check_eq(manager.state.get_pawn(11).current_tile_idx, 13, "빵집으로 직항")
+	_do(manager, 1, &"use_skill", {"pawn_id": 11, "tile": 14})
+	check_eq(manager.state.get_pawn(11).current_tile_idx, 14, "빵집으로 직항")
 	check_eq((manager.state.hands[1] as Array).size(), 1, "도착한 빵집에서 카드 획득")
 	check(manager.state.get_pawn(11).skill_used, "사용 완료")
 	check_eq(manager.current_player_id(), 2, "턴 종료")
@@ -206,7 +209,7 @@ func test_black_stone_shot_eliminates_every_enemy_on_the_line_and_lands_on_the_n
 	_do(manager, 1, &"use_skill", {"pawn_id": 11, "angle": -PI / 2.0, "power": 1.0})
 	check(not manager.state.get_pawn(21).has_left_start and not manager.state.get_pawn(22).has_left_start, "직선에 닿은 적은 모두 출발선으로 탈락")
 	check(manager.state.get_pawn(23).has_left_start, "직선 밖의 적은 무사")
-	check_eq(manager.state.get_pawn(11).current_tile_idx, 5, "멈춘 좌표에서 가장 가까운 타일에 안착")
+	check_eq(manager.state.get_pawn(11).current_tile_idx, 6, "멈춘 좌표에서 가장 가까운 타일(코너 6번)에 안착, 점프는 하지 않는다")
 	check(manager.state.get_pawn(11).skill_used, "사용 완료")
 	_dispose(manager)
 
@@ -219,7 +222,7 @@ func test_black_stone_shot_skips_immune_white_stones_and_takes_whole_stacks() ->
 	var shot: Dictionary = PawnSkills.shot_result(state, state.get_pawn(11), -PI / 2.0, 1.0)
 	check(not (shot["hits"] as Array).has(21), "백돌은 무적이라 맞지 않는다")
 	check((shot["hits"] as Array).has(22), "흑돌은 맞는다")
-	check_eq(shot["landing"], 5, "도착 타일")
+	check_eq(shot["landing"], 6, "도착 타일")
 	check(BoardLayout.nearest_tile(Vector2(1.0, 1.0)) != 0, "출발선(0번)은 안착 후보에서 제외")
 
 

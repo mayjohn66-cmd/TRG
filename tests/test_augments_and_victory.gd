@@ -75,10 +75,10 @@ func test_evolution_rejects_full_set_and_non_basic_pawns() -> void:
 	check_eq(other.get_pawn(21).unit_no, 1, "상대의 첫 진화는 1호기")
 
 
-func test_chess_unit_three_is_the_bishop_with_corner_turning() -> void:
+func test_chess_unit_three_is_the_bishop_with_corner_bonus() -> void:
 	var state := make_state(2, 1, {1: [Vector2i(Kind.CHESS, 3), Vector2i(Kind.CHESS, 2), 0, 0]})
-	check(state.get_pawn(11).turns_at_corner_when_passing(), "체스 3호기 = 비숍")
-	check(not state.get_pawn(12).turns_at_corner_when_passing(), "나이트는 아님")
+	check(state.get_pawn(11).gets_corner_bonus(), "체스 3호기 = 비숍")
+	check(not state.get_pawn(12).gets_corner_bonus(), "나이트는 아님")
 
 
 func test_stacking_rules_with_sets() -> void:
@@ -355,25 +355,25 @@ func test_mine_blast_hits_everyone_within_two_tiles() -> void:
 func test_mine_blast_radius_follows_graph_edges() -> void:
 	var board := BoardGraph.new()
 	defer_free(board)
-	check_eq(board.tiles_within(22, 1), int_array([21, 22, 23, 26, 27]), "중앙의 반경 1")
-	check_eq(board.tiles_within(0, 2), int_array([0, 1, 2, 18, 19, 27, 28]), "0번의 반경 2: 외곽 양쪽과 지름길 2 끝")
-	check(board.tiles_within(5, 2).has(21), "분기 간선도 반경에 포함")
+	check_eq(board.tiles_within(12, 1), int_array([11, 12, 13]), "반환점의 반경 1")
+	check_eq(board.tiles_within(0, 2), int_array([0, 1, 2, 22, 23]), "0번의 반경 2: 트랙 양쪽으로 두 칸씩")
 
 
 func test_island_imprisons_on_landing_until_even_roll() -> void:
 	var state := make_state()
 	var card: BaseCard = CardRegistry.get_card(&"TRP_04")
 	check(not card.can_play(state, 2, {"tile": 3}), "코너가 아닌 타일은 거부")
-	check(card.can_play(state, 2, {"tile": 5}), "코너는 가능")
-	exec(state, card.create_command(state, 2, {"tile": 5}))
-	check(not card.can_play(state, 1, {"tile": 10}), "무인도는 보드에 하나만")
-	place(state, 11, 3, [2])
+	check(card.can_play(state, 2, {"tile": 12}), "코너는 가능")
+	check(not card.can_play(state, 2, {"tile": 0}), "출발선 코너는 불가")
+	exec(state, card.create_command(state, 2, {"tile": 12}))
+	check(not card.can_play(state, 1, {"tile": 18}), "무인도는 보드에 하나만")
+	place(state, 11, 10, [9])
 	move(state, 11, 2)
-	check_eq(state.get_pawn(11).current_tile_idx, 5, "무인도에 도착")
+	check_eq(state.get_pawn(11).current_tile_idx, 12, "무인도에 도착")
 	check(state.get_pawn(11).is_imprisoned, "갇힘")
 	var odd: MoveReport = move(state, 11, 3)
 	check(odd.canceled and odd.jailed, "홀수 눈금이면 헛수고")
-	check_eq(state.get_pawn(11).current_tile_idx, 5, "제자리")
+	check_eq(state.get_pawn(11).current_tile_idx, 12, "제자리")
 	var even: MoveReport = move(state, 11, 2)
 	check(even.released, "짝수 눈금에 탈출")
 	check(not state.get_pawn(11).is_imprisoned, "감금 해제")
@@ -382,12 +382,12 @@ func test_island_imprisons_on_landing_until_even_roll() -> void:
 
 func test_island_does_not_imprison_its_owner_or_passers() -> void:
 	var state := make_state()
-	state.place_attachment(5, TrapIsland.new(1))
-	place(state, 11, 3, [2])
+	state.place_attachment(12, TrapIsland.new(1))
+	place(state, 11, 10, [9])
 	move(state, 11, 2)
 	check(not state.get_pawn(11).is_imprisoned, "설치자는 갇히지 않음")
-	place(state, 21, 3, [2])
-	move(state, 21, 4)  # 5번을 통과해 7번에 도착
+	place(state, 21, 10, [9])
+	move(state, 21, 4)  # 12번을 통과해 14번에 도착
 	check(not state.get_pawn(21).is_imprisoned, "통과만 하면 갇히지 않음")
 
 
@@ -395,13 +395,13 @@ func test_summon_cards_spawn_npcs_with_cap() -> void:
 	var state := make_state()
 	var bandit: BaseCard = CardRegistry.get_card(&"SUM_01")
 	var ghost: BaseCard = CardRegistry.get_card(&"SUM_02")
-	check(bandit.needs_tile() and not ghost.needs_tile(), "도적은 타일 선택, 고스트는 중앙 고정")
-	exec(state, bandit.create_command(state, 1, {"tile": 12}))
+	check(bandit.needs_tile() and not ghost.needs_tile(), "도적은 타일 선택, 고스트는 12번 고정")
+	exec(state, bandit.create_command(state, 1, {"tile": 14}))
 	check_eq(state.npcs.size(), 1, "도적 소환")
-	check_eq(state.npcs[0].current_tile_idx, 12, "고른 타일")
+	check_eq(state.npcs[0].current_tile_idx, 14, "고른 타일")
 	check_eq(state.npcs[0].behavior, GameEnums.NpcBehavior.CHASE_NEAREST, "추격 AI")
 	exec(state, ghost.create_command(state, 2, {}))
-	check_eq(state.npcs[1].current_tile_idx, 22, "고스트는 중앙에 소환")
+	check_eq(state.npcs[1].current_tile_idx, 12, "고스트는 반환점에 소환")
 	check_eq(state.npcs[1].behavior, GameEnums.NpcBehavior.PATROL_REVERSE, "순찰 AI")
 	exec(state, bandit.create_command(state, 1, {"tile": 3}))
 	check(not bandit.can_play(state, 1, {"tile": 4}), "NPC는 최대 %d체" % GameEnums.MAX_NPCS)
@@ -524,10 +524,10 @@ func test_yut_pawns_get_a_bonus_roll_on_four_or_five_without_any_set() -> void:
 
 func test_mini_car_gets_one_card_when_passing_the_start_line() -> void:
 	var state := make_state(2, 1, {1: [Vector2i(Kind.MONOPOLY, 1), 0, 0, 0]})
-	place(state, 11, 18, [17])
+	place(state, 11, 22, [21])
 	var report: MoveReport = move(state, 11, 2)
 	check(report.finished and report.salary_cards == 1, "미니카는 출발선을 지날 때 카드 1장")
 	check_eq((state.hands[1] as Array).size(), 1, "손패에 반영")
 	var plane := make_state(2, 1, {1: [0, Vector2i(Kind.MONOPOLY, 2), 0, 0]})
-	place(plane, 12, 18, [17])
+	place(plane, 12, 22, [21])
 	check_eq(move(plane, 12, 2).salary_cards, 0, "다른 모노폴리 기물은 카드를 받지 않는다")

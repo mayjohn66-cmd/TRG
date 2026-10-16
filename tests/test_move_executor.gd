@@ -9,55 +9,100 @@ func _yut_loadout() -> Array:
 	return [Vector2i(GameEnums.PawnKind.YUT, 1), Vector2i(GameEnums.PawnKind.YUT, 2), Vector2i(GameEnums.PawnKind.YUT, 3), Vector2i(GameEnums.PawnKind.YUT, 4)]
 
 
-func test_portal_warp_counts_as_stopping_on_22() -> void:
+func test_portal_warp_counts_as_stopping_on_16() -> void:
 	var state := make_state()
-	place(state, 11, 4, [3])
-	var report: MoveReport = move(state, 11, 3)  # 5(통과) -> 6 -> 7 (옷장)
+	place(state, 11, 6, [5])
+	var report: MoveReport = move(state, 11, 3)  # 7 -> 8 -> 9 (옷장)
 	check(report.warped, "옷장에 멈추면 워프")
-	check_eq(report.path, int_array([5, 6, 7, 22]), "워프 도착 칸까지 경로")
+	check_eq(report.path, int_array([7, 8, 9, 16]), "워프 도착 칸까지 경로")
 	var pawn: PlayerPawn = state.get_pawn(11)
-	check_eq(pawn.current_tile_idx, 22, "22번에 도착")
-	var next: MoveReport = move(state, 11, 2)
-	check_eq(next.path, int_array([27, 28]), "워프 후 다음 이동은 27 -> 28 최단 루트")
-	check_eq(pawn.current_tile_idx, 28, "28번 정지")
+	check_eq(pawn.current_tile_idx, 16, "보드를 가로질러 16번에 도착")
+	var next: MoveReport = move(state, 11, 1)
+	check_eq(next.path, int_array([17]), "워프 후 다음 이동은 16번에서 이어짐")
+	check_eq(pawn.current_tile_idx, 17, "17번 정지")
+
+
+func test_second_portal_warps_to_20_and_does_not_chain() -> void:
+	var state := make_state()
+	place(state, 11, 14, [13])
+	var report: MoveReport = move(state, 11, 2)
+	check_eq(report.path, int_array([15, 16, 20]), "16번 옷장은 20번으로")
+	check_eq(state.get_pawn(11).current_tile_idx, 20, "20번 정지")
+	check_eq(report.drawn_card != &"", true, "워프 도착한 20번이 빵집이라 카드를 받는다")
 
 
 func test_portal_only_triggers_on_landing_not_passing() -> void:
 	var state := make_state()
-	place(state, 11, 6, [5])
-	var report: MoveReport = move(state, 11, 3)  # 7을 지나 9에 정지
+	place(state, 11, 7, [6])
+	var report: MoveReport = move(state, 11, 3)  # 9를 지나 10에 정지 (10번 빵집)
 	check(not report.warped, "통과만 하면 워프하지 않음")
-	check_eq(state.get_pawn(11).current_tile_idx, 9, "9번 정지")
+	check_eq(state.get_pawn(11).current_tile_idx, 10, "10번 정지")
+
+
+func test_jump_corners_launch_forward_on_exact_stop_only() -> void:
+	var state := make_state()
+	place(state, 11, 3, [2])
+	var report: MoveReport = move(state, 11, 3)
+	check(report.warped, "6번에 정확히 멈추면 점프")
+	check_eq(report.path, int_array([4, 5, 6, 10]), "6번 -> 10번(+4)")
+	check_eq(state.get_pawn(11).current_tile_idx, 10, "10번 도착")
+	place(state, 12, 15, [14])
+	var second: MoveReport = move(state, 12, 3)
+	check_eq(second.path, int_array([16, 17, 18, 21]), "18번 -> 21번(+3)")
+	place(state, 13, 4, [3])
+	var passing: MoveReport = move(state, 13, 4)  # 6을 지나 8
+	check(not passing.warped, "스쳐 지나가기만 하면 점프하지 않는다")
+	check_eq(state.get_pawn(13).current_tile_idx, 8, "8번 정지")
+
+
+func test_law_01_disables_jump_corners_and_portals() -> void:
+	var state := make_state()
+	add_law(state, &"LAW_01")
+	place(state, 11, 3, [2])
+	var report: MoveReport = move(state, 11, 3)
+	check(not report.warped, "LAW_01 중에는 점프 불가")
+	check_eq(state.get_pawn(11).current_tile_idx, 6, "6번에 그대로")
+	place(state, 12, 6, [5])
+	move(state, 12, 3)
+	check_eq(state.get_pawn(12).current_tile_idx, 9, "옷장도 워프하지 않는다")
 
 
 func test_finish_without_law_discards_surplus() -> void:
 	var state := make_state()
-	place(state, 11, 18, [17])
+	place(state, 11, 22, [21])
 	var report: MoveReport = move(state, 11, 5)
 	check(report.finished, "완주")
 	check(state.get_pawn(11).is_finished, "기물 완주 상태")
-	check_eq(report.path, int_array([19, 0]), "경로")
+	check_eq(report.path, int_array([23, 0]), "경로")
 
 
 func test_law_08_bounces_back_surplus_and_exact_finish_still_wins() -> void:
 	var state := make_state()
 	add_law(state, &"LAW_08")
-	place(state, 11, 18, [17])
+	place(state, 11, 22, [21])
 	var report: MoveReport = move(state, 11, 5)
 	check(report.bounced and not report.finished, "남으면 튕겨 나옴")
-	check_eq(report.path, int_array([19, 0, 19, 18, 17, 22]), "바운스 경로 (17번 옷장에 멈추면 22번으로 워프)")
-	check_eq(state.get_pawn(11).current_tile_idx, 22, "22번에 정지")
-	place(state, 12, 18, [17])
+	check_eq(report.path, int_array([23, 0, 23, 22, 21]), "바운스 경로")
+	check_eq(state.get_pawn(11).current_tile_idx, 21, "21번에 정지 (21번은 일반 칸)")
+	place(state, 12, 22, [21])
 	var exact: MoveReport = move(state, 12, 2)
 	check(exact.finished, "정확히 남은 칸이면 완주")
 
 
-func test_law_08_bounce_through_shortcut_exit_28() -> void:
+func test_law_03_swaps_with_last_place_after_big_roll() -> void:
 	var state := make_state()
-	add_law(state, &"LAW_08")
-	place(state, 11, 27, [10, 25, 26, 22])
-	var report: MoveReport = move(state, 11, 4)  # 28, 0, 28, 27
-	check_eq(report.path, int_array([28, 0, 28, 27]), "지름길 출구에서 튕김")
+	add_law(state, &"LAW_03")
+	place(state, 11, 0, [], false)
+	place(state, 21, 14, [13])
+	# 21번 말만 보드 위에 있고 나머지 상대 말은 출발선(미출발) -> 꼴찌는 출발선 말
+	var report: MoveReport = move(state, 11, 6)  # 6번 점프 코너 -> 10번
+	check_eq(report.effect_names, ["SwapWithLastPlace"] as Array[String], "교환 효과 실행")
+	check_eq(state.get_pawn(11).current_tile_idx, 0, "이동한 말이 꼴찌 위치로")
+	var swapped: PlayerPawn = null
+	for pawn: PlayerPawn in state.pawns_of(2):
+		if pawn.current_tile_idx == 10:
+			swapped = pawn
+	check(swapped != null, "꼴찌 말이 점프한 10번으로 이동")
 
 
 func test_capture_sends_enemy_to_start_and_yut_pawn_grants_extra_turn() -> void:
@@ -177,22 +222,6 @@ func test_law_07_expels_capturers_other_advanced_pawn() -> void:
 	check_eq(state.get_pawn(12).current_tile_idx, 9, "그 외 말은 영향 없음")
 	check_eq(state.get_pawn(22).current_tile_idx, 12, "잡힌 쪽의 다른 말도 영향 없음")
 	check_eq(state.get_pawn(11).current_tile_idx, 4, "잡은 말 자신은 그대로")
-
-
-func test_law_03_swaps_with_last_place_after_big_roll() -> void:
-	var state := make_state()
-	add_law(state, &"LAW_03")
-	place(state, 11, 0, [], false)
-	place(state, 21, 14, [13])
-	# 21번 말만 보드 위에 있고 나머지 상대 말은 출발선(미출발) -> 꼴찌는 출발선 말
-	var report: MoveReport = move(state, 11, 6)
-	check_eq(report.effect_names, ["SwapWithLastPlace"] as Array[String], "교환 효과 실행")
-	check_eq(state.get_pawn(11).current_tile_idx, 0, "이동한 말이 꼴찌 위치로")
-	var swapped: PlayerPawn = null
-	for pawn: PlayerPawn in state.pawns_of(2):
-		if pawn.current_tile_idx == 6:
-			swapped = pawn
-	check(swapped != null, "꼴찌 말이 6번으로 이동")
 
 
 func test_law_03_ignores_small_rolls() -> void:

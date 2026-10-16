@@ -46,18 +46,18 @@ func _seeded(seed_value: int) -> RandomNumberGenerator:
 
 func test_pawn_choice_follows_goal_then_capture_then_stop_spot_then_advance() -> void:
 	var state := make_state(2, 1)
-	place(state, 11, 18, [17])           # 눈금 2: 19, 0 -> 결승 완주
-	place(state, 12, 2, [1])             # 3, 4 -> 4번의 적을 잡음
-	place(state, 13, 3, [2])             # 4, 5 -> 코너(5번)에 정확히 멈춤
+	place(state, 11, 22, [21])           # 눈금 2: 23, 0 -> 결승 완주
+	place(state, 12, 3, [2])             # 4, 5 -> 5번의 적을 잡음
+	place(state, 13, 4, [3])             # 5, 6 -> 코너(6번)에 정확히 멈춤
 	place(state, 14, 0, [], false)       # 출발선 대기 말 꺼내기
-	place(state, 21, 4, [3])
+	place(state, 21, 5, [4])
 	var goal: float = BotBrain.score_move(state, state.get_pawn(11), 2)
 	var capture: float = BotBrain.score_move(state, state.get_pawn(12), 2)
 	var corner: float = BotBrain.score_move(state, state.get_pawn(13), 2)
 	var fresh: float = BotBrain.score_move(state, state.get_pawn(14), 2)
 	check(goal > capture and capture > corner and corner > fresh, "완주 > 잡기 > 코너 > 새 말 (%.1f %.1f %.1f %.1f)" % [goal, capture, corner, fresh])
 	check_eq(BotBrain.choose_pawn(state, 1, 2), 11, "완주 가능한 말이 1순위")
-	place(state, 11, 5, [4])             # 완주 후보를 없앤다 (눈금 2로는 6, 7)
+	place(state, 11, 15, [14])           # 완주 후보를 없앤다 (눈금 2로는 16, 17)
 	state.get_pawn(11).has_left_start = true
 	check_eq(BotBrain.choose_pawn(state, 1, 2), 12, "다음은 적을 잡을 수 있는 말")
 	place(state, 21, 9, [8])
@@ -66,7 +66,7 @@ func test_pawn_choice_follows_goal_then_capture_then_stop_spot_then_advance() ->
 
 func test_bakery_stop_and_scoring_does_not_change_the_game_state() -> void:
 	var state := make_state(2, 1)
-	place(state, 11, 1, [0])   # 눈금 2: 2, 3 -> 빵집(3번)
+	place(state, 11, 2, [1])   # 눈금 2: 3, 4 -> 빵집(4번)
 	place(state, 13, 0, [], false)
 	state.rulebook.enqueue_law(LawRegistry.create("LAW_06"))
 	var events: Array = []
@@ -118,10 +118,10 @@ func test_evolution_pawn_choice_is_the_front_most_basic_pawn() -> void:
 
 func test_trap_tiles_target_the_path_ahead_of_the_leading_enemy_or_corners() -> void:
 	var state := make_state(3, 1)
-	place(state, 11, 12, [11])  # P1의 선두 말 (결승까지 가장 가까움)
+	place(state, 11, 20, [19])  # P1의 선두 말 (결승까지 가장 가까움)
 	place(state, 31, 3, [2])
 	check_eq(BotBrain.leading_enemy(state, 2).entity_id, 11, "선두 상대 말")
-	var allowed: Array[int] = [13, 14, 15, 16, 5, 10, 22]
+	var allowed: Array[int] = [21, 22, 23, 6, 12, 18]
 	var card: BaseCard = CardRegistry.get_card(&"TRP_02")
 	for seed_value: int in 20:
 		var tile: int = BotBrain.choose_card_tile(state, 2, card, _seeded(seed_value))
@@ -129,7 +129,7 @@ func test_trap_tiles_target_the_path_ahead_of_the_leading_enemy_or_corners() -> 
 		check(card.can_play(state, 2, {"tile": tile}), "카드가 허용하는 타일")
 	var island: BaseCard = CardRegistry.get_card(&"TRP_04")
 	var island_tile: int = BotBrain.choose_card_tile(state, 2, island, _seeded(1))
-	check([5, 10, 15].has(island_tile), "무인도는 코너에만 (%d)" % island_tile)
+	check([6, 12, 18].has(island_tile), "무인도는 코너에만 (%d)" % island_tile)
 
 
 func test_turn_card_plans_use_traps_about_sixty_percent_of_the_time() -> void:

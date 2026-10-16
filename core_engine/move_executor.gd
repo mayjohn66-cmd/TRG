@@ -48,7 +48,7 @@ static func preview_path(state: GameState, pawn: PlayerPawn, dice_value: int) ->
 
 
 ## 기물 능력을 반영한 이동 경로를 계산한다. 동기 실행(execute)과 TurnManager 비동기 이동이 공유한다.
-## 세부 기물: 백돌 눈금 -1(최소 1칸), 퀸 +2칸, 비숍 대각선 출발 +2칸, 포 +3칸(경로 중간에 말), 마 +2칸 / 상 +3칸(바로 앞 칸이 비면).
+## 세부 기물: 백돌 눈금 -1(최소 1칸), 퀸 +2칸, 비숍 코너 스침 +2칸, 포 +3칸(경로 중간에 말), 마 +2칸 / 상 +3칸(바로 앞 칸이 비면).
 static func plan_path(state: GameState, mover: PlayerPawn, ctx: RuleContext, report: MoveReport) -> Array[int]:
 	var steps: int = ctx.dice_value * ctx.direction
 	var sign_dir: int = -1 if steps < 0 else 1
@@ -61,18 +61,20 @@ static func plan_path(state: GameState, mover: PlayerPawn, ctx: RuleContext, rep
 	if sub == GameEnums.PawnSubType.CHESS_QUEEN:
 		steps += 2 * sign_dir
 		report.ability_notes.append("퀸 +2칸")
-	if sub == GameEnums.PawnSubType.CHESS_BISHOP and mover.current_tile_idx >= GameEnums.OUTER_TRACK_SIZE:
-		steps += 2 * sign_dir
-		report.ability_notes.append("비숍 대각선 +2칸")
 	if mover.kind == GameEnums.PawnKind.SHOGI:
-		# 비차: 외곽 직선(0~19번)에서 출발하면 +2칸 (나리 승급한 용왕은 대각선에서도). 나리 승급한 쇼기 기물은 이동할 때마다 +1칸.
-		if sub == GameEnums.PawnSubType.SHOGI_HISHA and (mover.current_tile_idx < GameEnums.OUTER_TRACK_SIZE or mover.promoted):
+		# 비차: 항상 +2칸 (나리 승급하면 용왕). 나리 승급한 쇼기 기물은 이동할 때마다 +1칸.
+		if sub == GameEnums.PawnSubType.SHOGI_HISHA:
 			steps += 2 * sign_dir
-			report.ability_notes.append("용왕 +2칸" if mover.promoted else "비차 직선 +2칸")
+			report.ability_notes.append("용왕 +2칸" if mover.promoted else "비차 +2칸")
 		if mover.promoted:
 			steps += sign_dir
 			report.ability_notes.append("나리 승급 +1칸")
 	var path: Array[int] = state.board.calculate_path(mover, steps, ctx)
+	# 비숍·각행: 코너(6·12·18번)를 스쳐 지나가거나 멈추면 이동 거리 +2칸.
+	if mover.gets_corner_bonus() and _path_touches_bonus_corner(path):
+		steps += 2 * sign_dir
+		path = state.board.calculate_path(mover, steps, ctx)
+		report.ability_notes.append("코너 보너스 +2칸")
 	match sub:
 		GameEnums.PawnSubType.JANGGI_PO:
 			if _path_jumps_over_pawn(state, mover, path):
@@ -88,6 +90,14 @@ static func plan_path(state: GameState, mover: PlayerPawn, ctx: RuleContext, rep
 				path = state.board.calculate_path(mover, steps + 3 * sign_dir, ctx)
 				report.ability_notes.append("상 도약 +3칸")
 	return path
+
+
+## 경로가 보너스 코너(6·12·18번)를 밟거나 스치는가.
+static func _path_touches_bonus_corner(path: Array[int]) -> bool:
+	for tile: int in path:
+		if GameEnums.BONUS_CORNER_TILES.has(tile):
+			return true
+	return false
 
 
 ## 이 타일에 (이동자 본인과 업은 말을 뺀) 출발한 말이 서 있는가. 출발선 대기 말은 보드 위에 없는 것으로 본다.
@@ -250,17 +260,24 @@ static func _trigger_attachments(
 ## 도착(마지막 칸) 처리: 빵집 → 옷장 워프 → 잡기 → 업기 → 이동 완료 훅.
 static func _resolve_landing(state: GameState, mover: PlayerPawn, ctx: RuleContext, report: MoveReport) -> void:
 	var tile: TileNode = state.board.get_tile(mover.current_tile_idx)
+	# 점프 코너(6->10, 18->21)와 옷장 포탈(9->16, 16->20)은 정확히 멈췄을 때만 작동하고 LAW_01 중에는 멈춘다. 워프 뒤 도착 칸은 다시 워프하지 않는다.
+	if ctx.allow_shortcut and not mover.is_imprisoned and not bool(ctx.metadata.get("no_warp_chain", false)):
+		var warp_target: int = -1
+		if GameEnums.JUMP_CORNER_TARGETS.has(mover.current_tile_idx):
+			warp_target = GameEnums.JUMP_CORNER_TARGETS[mover.current_tile_idx]
+		elif tile.tile_type == TileNode.TileType.PORTAL:
+			# 비행기는 옷장에서 더 앞선 곳으로 워프한다 (9번 -> 18번 코너, 16번 -> 22번)
+			warp_target = GameEnums.PORTAL_WARP_TARGETS[mover.current_tile_idx]
+			if mover.sub_type() == GameEnums.PawnSubType.MONO_PLANE:
+				warp_target = GameEnums.PLANE_WARP_TARGETS[mover.current_tile_idx]
+		if warp_target != -1:
+			if not _warp_to(state, mover, ctx, report, warp_target):
+				return
+			tile = state.board.get_tile(mover.current_tile_idx)
 	if tile.tile_type == TileNode.TileType.BAKERY and ctx.charge_depth == 0:
 		var card_id: StringName = state.draw_card(mover.owner_id)
 		if card_id != &"":
 			report.drawn_card = card_id
-	if tile.tile_type == TileNode.TileType.PORTAL:
-		# 비행기는 옷장에서 중앙 대신 다음 코너로 워프한다 (7번 -> 10번, 17번 -> 19번)
-		var warp_target: int = GameEnums.CENTER_TILE
-		if mover.sub_type() == GameEnums.PawnSubType.MONO_PLANE and GameEnums.PLANE_WARP_TARGETS.has(mover.current_tile_idx):
-			warp_target = GameEnums.PLANE_WARP_TARGETS[mover.current_tile_idx]
-		if not _warp_to(state, mover, ctx, report, warp_target):
-			return
 	_resolve_captures(state, mover, ctx, report)
 	if mover.is_finished:
 		return
@@ -285,10 +302,13 @@ static func teleport_to(state: GameState, mover: PlayerPawn, ctx: RuleContext, r
 	if mover.current_tile_idx != destination:
 		if not _warp_to(state, mover, ctx, report, destination):
 			return
+	# 필살기 도착은 점프 코너·옷장을 다시 타지 않는다.
+	ctx.metadata["no_warp_chain"] = true
 	_resolve_landing(state, mover, ctx, report)
+	ctx.metadata.erase("no_warp_chain")
 
 
-## 옷장(PORTAL)에 멈추면 destination(기본은 중앙 22번)에 도착해 멈춘 것으로 판정한다 (22번에서의 다음 이동은 27 -> 28 -> 0 최단 루트).
+## 점프 코너·옷장(PORTAL)에 멈추면 destination에 도착해 멈춘 것으로 판정한다.
 ## 워프 도착 칸의 함정에 걸려 출발선으로 돌아가면 false를 반환한다.
 static func _warp_to(state: GameState, mover: PlayerPawn, ctx: RuleContext, report: MoveReport, destination: int) -> bool:
 	var from_tile: int = mover.current_tile_idx
@@ -306,7 +326,7 @@ static func _warp_to(state: GameState, mover: PlayerPawn, ctx: RuleContext, repo
 	return true
 
 
-## 체스 폰: 중앙(22번)이나 15~19번 타일을 밟는 순간 영구히 퀸으로 승진한다 (업고 있는 폰도 함께).
+## 체스 폰: 반환점(12번) 이상 타일을 밟거나 지나가는 순간 영구히 퀸으로 승진한다 (업고 있는 폰도 함께).
 static func _promote_pawns(state: GameState, mover: PlayerPawn, report: MoveReport) -> void:
 	_promote_shogi(state, mover, report)
 	if not GameEnums.PROMOTION_TILES.has(mover.current_tile_idx):
@@ -318,7 +338,7 @@ static func _promote_pawns(state: GameState, mover: PlayerPawn, report: MoveRepo
 			state.pawn_promoted.emit(member.entity_id)
 
 
-## 쇼기 나리 승급: 10번 코너나 중앙 22번을 밟는 순간 영구히 승급한다 (업고 있는 말도 함께). 경로를 스치기만 해도 밟은 것으로 본다.
+## 쇼기 나리 승급: 반환점(12번) 이상 타일을 밟는 순간 영구히 승급한다 (업고 있는 말도 함께). 경로를 스치기만 해도 밟은 것으로 본다.
 static func _promote_shogi(state: GameState, mover: PlayerPawn, report: MoveReport) -> void:
 	if not GameEnums.SHOGI_PROMOTION_TILES.has(mover.current_tile_idx):
 		return

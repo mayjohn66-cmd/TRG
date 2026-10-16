@@ -128,7 +128,7 @@ func test_russian_roulette_push_your_luck_flow() -> void:
 	check_eq(manager.current_state, Phase.PHASE_SELECT_PAWN, "멈추면 이동 선택")
 	check_eq(manager.move_queue, int_array([6]), "누적 6칸")
 	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
-	check_eq(manager.state.get_pawn(11).current_tile_idx, 6, "6칸 전진")
+	check_eq(manager.state.get_pawn(11).current_tile_idx, 10, "6칸 전진하면 6번 점프 코너에 멈춰 10번으로 점프")
 	_dispose(manager)
 
 
@@ -367,15 +367,15 @@ func test_uno_reverse_card_reverses_turn_order() -> void:
 	check_eq(manager.move_queue, int_array([1]), "눈금")
 	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
 	check_eq(manager.state.current_player, 3, "1번 다음은 3번")
-	check_eq(manager.state.get_pawn(11).current_tile_idx, 19, "역주행이라 양수 눈금도 출발선에서 19번으로 후퇴")
+	check_eq(manager.state.get_pawn(11).current_tile_idx, 23, "역주행이라 양수 눈금도 출발선에서 23번으로 후퇴")
 	_dispose(manager)
 
 
 func test_act_05_rolls_back_turn_restores_laws_but_keeps_spent_cards() -> void:
 	var manager: TurnManager = _new_manager()
 	var state: GameState = manager.state
-	place(state, 11, 2, [1])
-	place(state, 21, 4, [3])
+	place(state, 11, 1, [0])
+	place(state, 21, 3, [2])
 	add_law(state, &"LAW_06")
 	state.give_card(2, &"ACT_05")
 	state.give_card(1, &"ACT_06")
@@ -391,8 +391,8 @@ func test_act_05_rolls_back_turn_restores_laws_but_keeps_spent_cards() -> void:
 	check_eq(state.get_pawn(21).current_tile_idx, 0, "잡힘")
 	_do(manager, 2, &"play_card", {"card_id": &"ACT_05"})
 	manager.tick(GameEnums.PHASE_TIME_RESOLUTION + 0.1)
-	check_eq(state.get_pawn(11).current_tile_idx, 2, "내 말 위치 복원")
-	check_eq(state.get_pawn(21).current_tile_idx, 4, "잡힌 말 복원")
+	check_eq(state.get_pawn(11).current_tile_idx, 1, "내 말 위치 복원")
+	check_eq(state.get_pawn(21).current_tile_idx, 3, "잡힌 말 복원")
 	check(state.rulebook.has_law(&"LAW_06"), "법전 큐도 턴 시작 시점으로 복원")
 	check((state.hands[2] as Array).is_empty(), "ACT_05 카드는 소모된 채")
 	check((state.hands[1] as Array).is_empty(), "이번 턴 소모한 카드는 복구되지 않음")
@@ -440,7 +440,7 @@ func test_act_04_finishes_a_pawn_that_backed_off_to_the_last_tile() -> void:
 	_do(manager, 1, &"roll")
 	check_eq(manager.current_state, Phase.PHASE_SELECT_PAWN, "굴림 뒤 개입 창 없음")
 	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
-	check_eq(manager.state.get_pawn(11).current_tile_idx, 19, "0번에서 빽도 후퇴는 19번")
+	check_eq(manager.state.get_pawn(11).current_tile_idx, 23, "0번에서 빽도 후퇴는 23번")
 	check_eq(manager.current_state, Phase.PHASE_TURN_BEGIN, "ACT_04는 정산 창이 아니라 다음 내 턴의 굴리기 전에 쓴다")
 	manager.state.hands[1] = [&"ACT_04"] as Array[StringName]
 	manager.state.current_player = 1
@@ -457,7 +457,7 @@ func test_all_pawns_home_declares_winner_and_stops_game() -> void:
 	manager.game_over.connect(func(winner_id: int, reason: StringName) -> void: finished_signal.append([winner_id, reason]))
 	for slot: int in [2, 3, 4]:
 		manager.state.finish_stack(manager.state.get_pawn(10 + slot))
-	place(manager.state, 11, 18, [17])
+	place(manager.state, 11, 22, [21])
 	_set_tool(manager, 1, ScriptedTool.new([2]))
 	_do(manager, 1, &"proceed")
 	_do(manager, 1, &"roll")
@@ -472,7 +472,7 @@ func test_yut_four_stack_special_victory_via_turn_manager() -> void:
 	var manager: TurnManager = _new_manager(2, true, {1: [Vector2i(GameEnums.PawnKind.YUT, 1), Vector2i(GameEnums.PawnKind.YUT, 2), Vector2i(GameEnums.PawnKind.YUT, 3), Vector2i(GameEnums.PawnKind.YUT, 4)]})
 	var state: GameState = manager.state
 	for slot: int in [1, 2, 3, 4]:
-		place(state, 10 + slot, 18, [17])
+		place(state, 10 + slot, 22, [21])
 	for slot: int in [2, 3, 4]:
 		state.stack_pawns(state.get_pawn(11), state.get_pawn(10 + slot))
 	_set_tool(manager, 1, ScriptedTool.new([2]))

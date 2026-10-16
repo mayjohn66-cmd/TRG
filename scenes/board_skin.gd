@@ -3,21 +3,25 @@ class_name BoardSkin
 extends RefCounted
 
 const TRACK_INSET: float = 0.08
+## 일반 타일 한 변(보드 한 변 = 1). 타일 간격(0.14)보다 조금 작아 빽빽하지만 겹치지 않는다.
+const NORMAL_SIZE: float = 0.108
 const SURFACE: Texture2D = preload("res://assets/board/trickcal/board_surface.png")
 
 static func definition(index: int) -> Dictionary:
-	var data: Dictionary = {"kind":"normal", "fill":Color("f9f9f3"), "edge":Color("80aa4b"), "ink":Color("486135"), "diameter":0.068, "major":false}
-	if index >= 20:
-		data.kind = "shortcut"
-		data.fill = Color("e9f5cf")
-	if index in [5,10,15]:
-		data.merge({"kind":"corner", "fill":Color("89cd4c"), "edge":Color("5da530"), "ink":Color("2f4923"), "diameter":0.104, "major":true},true)
-	if index in [3,8,13,18]:
-		data.merge({"kind":"bakery", "fill":Color("ffdd74"), "edge":Color("d98b2b"), "ink":Color("583a1a"), "diameter":0.078},true)
-	if index in [7,17]:
-		data.merge({"kind":"portal", "fill":Color("dcc5e7"), "edge":Color("8e4aa8"), "ink":Color("58366b"), "diameter":0.078},true)
-	if index in [0,22]:
-		data.merge({"kind":"start" if index == 0 else "center", "fill":Color("5da530"), "edge":Color("416c2b"), "ink":Color("f9f9f3"), "diameter":0.104, "major":true},true)
+	# 24칸 사각 트랙: 일반 타일은 큼직한 둥근 사각형, 네 모서리(0·6·12·18번)는 1.25배 큰 팔각 코너 타일.
+	var data: Dictionary = {"kind":"normal", "fill":Color("f9f9f3"), "edge":Color("80aa4b"), "ink":Color("486135"), "diameter":NORMAL_SIZE, "major":false}
+	if index in GameEnums.BAKERY_TILES:
+		data.merge({"kind":"bakery", "fill":Color("ffdd74"), "edge":Color("d98b2b"), "ink":Color("583a1a")},true)
+	if index in GameEnums.PORTAL_TILES:
+		data.merge({"kind":"portal", "fill":Color("dcc5e7"), "edge":Color("8e4aa8"), "ink":Color("58366b")},true)
+	if index in GameEnums.CORNER_TILES:
+		data.merge({"diameter":NORMAL_SIZE*1.25, "major":true},true)
+		if index == GameEnums.GOAL_TILE:
+			data.merge({"kind":"start", "fill":Color("5da530"), "edge":Color("416c2b"), "ink":Color("f9f9f3")},true)
+		elif index == GameEnums.HALFWAY_TILE:
+			data.merge({"kind":"half", "fill":Color("ffe8a3"), "edge":Color("d9a52b"), "ink":Color("6b4a12")},true)
+		else:
+			data.merge({"kind":"corner", "fill":Color("89cd4c"), "edge":Color("5da530"), "ink":Color("2f4923")},true)
 	return data
 
 static func track(norm: Vector2) -> Vector2:
@@ -141,7 +145,7 @@ class Symbol extends Control:
 		draw_polyline(result,ink,1.0,true)
 
 	func _draw() -> void:
-		if kind in ["normal","shortcut"]:
+		if kind == "normal":
 			return
 		elif kind == "bakery":
 			draw_set_transform(Vector2.ZERO,-0.22)
@@ -157,10 +161,11 @@ class Symbol extends Control:
 				draw_circle(Vector2(x,1),2.4,ink,true,-1,true)
 			for x: float in [-16.0,10.0]:
 				round_box(Rect2(x,21,6,7),ink,2)
-		elif kind == "center":
-			for offset: Vector2 in [Vector2(-7,-6),Vector2(7,-6),Vector2(-7,7),Vector2(7,7)]:
-				draw_circle(offset,8,ink,true,-1,true)
-			stroke(PackedVector2Array([Vector2(0,8),Vector2(0,20)]),4)
+		elif kind == "half":
+			# 반환점: 깃대와 삼각 깃발
+			stroke(PackedVector2Array([Vector2(-10,20),Vector2(-10,-20)]),4)
+			draw_colored_polygon(PackedVector2Array([Vector2(-8,-20),Vector2(18,-10),Vector2(-8,0)]),ink)
+			round_box(Rect2(-18,17,16,6),ink,3)
 		elif kind == "start":
 			stroke(PackedVector2Array([Vector2(-14,19),Vector2(-14,-19)]),4)
 			draw_colored_polygon(PackedVector2Array([Vector2(-12,-18),Vector2(16,-18),Vector2(11,0),Vector2(-12,0)]),ink)
@@ -173,9 +178,14 @@ static func shape(major: bool, inset: float = 0.0) -> PackedVector2Array:
 	var points := PackedVector2Array()
 	var width: float = 96.0-2.0*inset
 	if not major:
+		# 둥근 사각형(슈퍼타원): 부르마블 땅 문서 느낌
 		for i: int in 96:
 			var angle: float = float(i)*TAU/96.0
-			points.append(Vector2(48,48)+Vector2(cos(angle),sin(angle))*width/2.0)
+			var ca: float = cos(angle)
+			var sa: float = sin(angle)
+			var rx: float = signf(ca)*pow(absf(ca),0.38)
+			var ry: float = signf(sa)*pow(absf(sa),0.38)
+			points.append(Vector2(48,48)+Vector2(rx,ry)*width/2.0)
 	else:
 		var c: float = width*0.25
 		var vertices := PackedVector2Array([Vector2(c,0),Vector2(width-c,0),Vector2(width,c),Vector2(width,width-c),Vector2(width-c,width),Vector2(c,width),Vector2(0,width-c),Vector2(0,c)])
@@ -216,7 +226,7 @@ class Tile extends Control:
 	func initialize(tile_index: int) -> void:
 		index = tile_index
 		data = BoardSkin.definition(index)
-		if data.kind not in ["normal","shortcut"]:
+		if data.kind != "normal":
 			symbol = Symbol.new()
 			symbol.kind = data.kind
 			symbol.tile_id = index

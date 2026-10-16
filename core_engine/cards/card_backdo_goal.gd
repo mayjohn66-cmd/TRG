@@ -1,10 +1,10 @@
 # File: res://core_engine/cards/card_backdo_goal.gd
 # Class: class_name CardBackdoGoal
-# Role: ACT_04 우리 동네 빽도 완주! - 0번에서 후퇴해 19번/28번에 도착한 직후 해당 말을 즉시 완주 처리
+# Role: ACT_04 우리 동네 빽도 완주! - 0번에서 후퇴해 23번에 도착한 직후 해당 말을 즉시 완주 처리
 class_name CardBackdoGoal
 extends BaseCard
 
-const VALID_TILES: Array[int] = [GameEnums.LAST_OUTER_TILE, GameEnums.LAST_SHORTCUT_TILE]
+const VALID_TILES: Array[int] = [GameEnums.LAST_TILE]
 
 
 func _init() -> void:

@@ -33,12 +33,18 @@ enum PawnSubType {
 
 ## 체스 폰이 승진해 퀸이 된 뒤의 호기 번호.
 const CHESS_QUEEN_UNIT: int = 5
-## 폰이 밟는 즉시 퀸으로 승진하는 타일: 중앙(22번)과 외곽 마지막 사분면(15~19번).
-const PROMOTION_TILES: Array[int] = [15, 16, 17, 18, 19, 22]
-## 쇼기 기물이 밟거나 지나가는 순간 나리(成り) 승급하는 타일: 반환점인 10번 코너와 중앙 22번.
-const SHOGI_PROMOTION_TILES: Array[int] = [10, 22]
-## 옷장 포탈(7, 17번)에 멈춘 모노폴리 비행기가 워프하는 코너 (7번 -> 10번, 17번 -> 결승 직전 19번).
-const PLANE_WARP_TARGETS: Dictionary = {7: 10, 17: 19}
+## 체스 폰이 반환점(12번) 이상에 도달하거나 지나가는 순간 퀸으로 승진하는 타일.
+const PROMOTION_TILES: Array[int] = [12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
+## 쇼기 기물이 반환점(12번) 이상에 도달하거나 지나가는 순간 나리(成り) 승급하는 타일.
+const SHOGI_PROMOTION_TILES: Array[int] = PROMOTION_TILES
+## 옷장 포탈(9, 16번)에 멈춘 모노폴리 비행기가 워프하는 곳 (9번 -> 18번 코너, 16번 -> 결승 직전 22번).
+const PLANE_WARP_TARGETS: Dictionary = {9: 18, 16: 22}
+## 옷장 포탈 일반 워프: 9번 -> 16번(보드를 가로질러), 16번 -> 20번. LAW_01 중에는 작동하지 않는다.
+const PORTAL_WARP_TARGETS: Dictionary = {9: 16, 16: 20}
+## 점프 코너: 정확히 멈추면 즉시 6번 -> 10번(+4칸), 18번 -> 21번(+3칸). LAW_01 중에는 작동하지 않는다.
+const JUMP_CORNER_TARGETS: Dictionary = {6: 10, 18: 21}
+## 비숍·각행이 스쳐 지나가거나 멈추면 이동 거리 +2칸을 얻는 코너.
+const BONUS_CORNER_TILES: Array[int] = [6, 12, 18]
 
 enum AugmentCategory { PAWN_EVOLUTION, TOOL_SWAP, LAW_ENACT, CARD_PACKAGE }
 
@@ -46,21 +52,18 @@ enum CardCategory { INSTANT, TRAP, SUMMON }
 
 enum NpcBehavior { CHASE_NEAREST, PATROL_REVERSE }
 
-const TILE_COUNT: int = 29
+## 부르마블식 24칸 사각 순환 트랙 (0 -> 1 -> ... -> 23 -> 0). 한 변 6칸, 코너는 0·6·12·18번.
+const TILE_COUNT: int = 24
 const GOAL_TILE: int = 0
-const CENTER_TILE: int = 22
-const CORNER_SHORTCUT_1: int = 5
-const CORNER_SHORTCUT_2: int = 10
-const CORNER_MERGE: int = 15
-const OUTER_TRACK_SIZE: int = 20
-const LAST_OUTER_TILE: int = 19
-const LAST_SHORTCUT_TILE: int = 28
-const BAKERY_TILES: Array[int] = [3, 8, 13, 18]
-const PORTAL_TILES: Array[int] = [7, 17]
+## 반환점 코너(12번): 폰 승급 기준이자 고스트 NPC의 소환·연행 지점.
+const HALFWAY_TILE: int = 12
+const LAST_TILE: int = 23
+const BAKERY_TILES: Array[int] = [4, 10, 14, 20]
+const PORTAL_TILES: Array[int] = [9, 16]
 
 const PAWNS_PER_PLAYER: int = 4
 const MAX_NPCS: int = 3
-const CORNER_TILES: Array[int] = [0, 5, 10, 15]
+const CORNER_TILES: Array[int] = [0, 6, 12, 18]
 const MAX_LAWS: int = 4
 const MAX_HAND_SIZE: int = 7
 const MAX_REROLL_CHAIN: int = 8

@@ -21,7 +21,7 @@ var restrained_turns: int = 0
 var blocked_this_turn: bool = false
 ## TRP_04 무인도: 짝수 눈금이 나올 때까지 갇혀 움직이지 못한다.
 var is_imprisoned: bool = false
-## 쇼기 나리(成り) 승급 상태: 10번·22번을 밟으면 영구히 켜진다 (잡혀서 출발선으로 가도 유지된다). 이동할 때마다 +1칸.
+## 쇼기 나리(成り) 승급 상태: 12번 이상을 밟으면 영구히 켜진다 (잡혀서 출발선으로 가도 유지된다). 이동할 때마다 +1칸.
 var promoted: bool = false
 ## 1회용 고유 필살기를 이미 썼는가 (게임당 기물별 1회, 잡혀서 출발선으로 가도 되살아나지 않는다).
 var skill_used: bool = false
@@ -32,8 +32,8 @@ func sub_type() -> GameEnums.PawnSubType:
 	return PawnCatalog.sub_type_of(kind, unit_no)
 
 
-## 체스 비숍의 고유 능력: 5번·10번을 멈추지 않고 스쳐 지나가도 지름길로 꺾는다.
-func turns_at_corner_when_passing() -> bool:
+## 체스 비숍·쇼기 각행의 고유 능력: 코너(6·12·18번)를 스치거나 멈추면 이동 거리 +2칸.
+func gets_corner_bonus() -> bool:
 	var sub: GameEnums.PawnSubType = sub_type()
 	return sub == GameEnums.PawnSubType.CHESS_BISHOP or sub == GameEnums.PawnSubType.SHOGI_KAKU
 

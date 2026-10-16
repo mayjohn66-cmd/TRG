@@ -273,30 +273,25 @@ func test_act_01_requests_turn_reversal_and_reverses_movement_for_one_round() ->
 	check_eq(report.path, int_array([3, 2]), "양수 눈금도 후진")
 
 
-func test_act_04_works_at_19_and_28_after_retreating_from_start() -> void:
+func test_act_04_works_at_23_after_retreating_from_start() -> void:
 	var state := make_state()
 	var card: BaseCard = CardRegistry.get_card(&"ACT_04")
 	place(state, 11, 0, [], false)
 	check(not card.can_play(state, 1, {"pawn_id": 11}), "후퇴 전에는 사용 불가")
 	var report: MoveReport = move(state, 11, -1)
-	check_eq(report.path, int_array([19]), "0번에서 후퇴하면 19번")
-	check(card.can_play(state, 1, {"pawn_id": 11}), "19번 도착 직후 발동 가능")
+	check_eq(report.path, int_array([23]), "0번에서 후퇴하면 23번")
+	check(card.can_play(state, 1, {"pawn_id": 11}), "23번 도착 직후 발동 가능")
 	check(not card.can_play(state, 2, {"pawn_id": 11}), "남의 말에는 사용 불가")
 	exec(state, card.create_command(state, 1, {"pawn_id": 11}))
 	check(state.get_pawn(11).is_finished, "즉시 완주")
 
-	place(state, 12, 0, [27, 28], true)
-	var report28: MoveReport = move(state, 12, -1)
-	check_eq(report28.path, int_array([28]), "history 직전이 28이면 28번으로 후퇴")
-	check(card.can_play(state, 1, {"pawn_id": 12}), "28번 도착 직후에도 발동 가능")
 
-
-func test_act_04_not_playable_for_pawn_that_merely_walked_to_19() -> void:
+func test_act_04_not_playable_for_pawn_that_merely_walked_to_23() -> void:
 	var state := make_state()
 	var card: BaseCard = CardRegistry.get_card(&"ACT_04")
-	place(state, 11, 17, [16])
+	place(state, 11, 21, [20])
 	move(state, 11, 2)
-	check_eq(state.get_pawn(11).current_tile_idx, 19, "19번 도착")
+	check_eq(state.get_pawn(11).current_tile_idx, 23, "23번 도착")
 	check(not card.can_play(state, 1, {"pawn_id": 11}), "0번에서 후퇴한 경우에만 사용 가능")
 
 
@@ -310,7 +305,6 @@ func test_mirror_force_card_validates_tile() -> void:
 	var state := make_state()
 	var card: BaseCard = CardRegistry.get_card(&"TRP_01")
 	check(not card.can_play(state, 1, {"tile": 0}), "출발선 설치 불가")
-	check(not card.can_play(state, 1, {"tile": 22}), "중앙 설치 불가")
 	check(card.can_play(state, 1, {"tile": 9}), "일반 타일")
 	exec(state, card.create_command(state, 1, {"tile": 9}))
 	check(state.board.get_tile(9).has_attachment(&"TRP_01"), "설치됨")
@@ -332,14 +326,14 @@ func test_neutral_npc_bandit_chases_with_bfs_and_steals_card() -> void:
 	check((state.hands[2] as Array).is_empty(), "생떼 카드 1장 강탈")
 
 
-func test_neutral_npc_ghost_patrols_reverse_and_drags_pawns_to_center() -> void:
+func test_neutral_npc_ghost_patrols_reverse_and_drags_pawns_to_halfway() -> void:
 	var state := make_state()
-	place(state, 21, 18, [17])
-	var ghost: NeutralNPC = state.spawn_npc(0, GameEnums.NpcBehavior.PATROL_REVERSE, 1, &"SUM_02")
+	place(state, 21, 10, [9])
+	var ghost: NeutralNPC = state.spawn_npc(12, GameEnums.NpcBehavior.PATROL_REVERSE, 1, &"SUM_02")
 	var report: Dictionary = ghost.run_ai(state)
-	check_eq(report["path"], int_array([19, 18]), "역주행하다 말을 만나면 그 자리에서 멈춘다")
+	check_eq(report["path"], int_array([11, 10]), "12번에서 역주행하다 말을 만나면 그 자리에서 멈춘다")
 	check_eq(report["vanished"], true, "한 번 잡으면 소멸")
-	check_eq(state.get_pawn(21).current_tile_idx, 22, "마주친 말은 중앙으로 연행")
+	check_eq(state.get_pawn(21).current_tile_idx, 12, "마주친 말은 12번으로 연행")
 
 
 # --- Dry-Run(미리보기)와 법전 변조 추적 ------------------------------------------
@@ -377,7 +371,7 @@ func _law_notes_for_move(start_tile: int, roll: int) -> Array:
 	manager.draft_enabled = false
 	tree.root.add_child(manager)
 	manager.start_game([1, 2] as Array[int], 777)
-	add_law(manager.state, "LAW_01")  # 지름길 차단: 코너에 서 있을 때만 경로가 달라진다
+	add_law(manager.state, "LAW_01")  # 점프 코너·옷장 차단
 	var notes: Array = []
 	manager.event_received.connect(func(kind: StringName, data: Dictionary) -> void:
 		if kind == &"move_resolved":
@@ -394,7 +388,7 @@ func _law_notes_for_move(start_tile: int, roll: int) -> Array:
 
 func test_move_report_notes_laws_only_when_the_path_really_changes() -> void:
 	check_eq(_law_notes_for_move(2, 2), [[]], "경로가 같으면 법전 요약 없음")
-	check_eq(_law_notes_for_move(5, 2), [["LAW_01 지름길 공사 중"]], "코너에서 지름길이 막혀 경로가 바뀌면 한 줄 요약")
+	check_eq(_law_notes_for_move(4, 2), [[]], "점프 코너가 막혀도 걸어간 경로는 같으므로 요약 없음")
 
 
 func test_neutral_npc_vanishes_after_first_catch() -> void:

@@ -67,11 +67,11 @@ func test_shogi_units_are_in_the_augment_pool_and_give_the_right_piece() -> void
 
 # --- 쇼기: 나리(成り) 승급 -----------------------------------------------------
 
-func test_shogi_promotes_when_passing_corner_10() -> void:
+func test_shogi_promotes_when_passing_the_halfway_corner() -> void:
 	var state: GameState = _shogi_state()
-	place(state, 11, 8, [7])
-	var report: MoveReport = move(state, 11, 3)  # 9, 10, 11
-	check(state.get_pawn(11).promoted, "10번 코너를 지나면 나리 승급")
+	place(state, 11, 10, [9])
+	var report: MoveReport = move(state, 11, 3)  # 11, 12, 13
+	check(state.get_pawn(11).promoted, "12번 코너를 지나면 나리 승급")
 	check_eq(report.promoted_pawn_ids, int_array([11]), "보고서에 승급한 말")
 	check_eq(report.path.size(), 3, "승급한 그 이동에는 보너스가 없다")
 	check_eq(state.get_pawn(11).letter(), "토", "보병은 토금")
@@ -81,16 +81,16 @@ func test_shogi_promotes_when_passing_corner_10() -> void:
 	check(again.ability_notes.has("나리 승급 +1칸"), "능력 보고")
 
 
-func test_shogi_promotes_on_center_22_and_ignores_other_kinds() -> void:
+func test_shogi_promotes_at_the_halfway_corner_and_ignores_other_kinds() -> void:
 	var state: GameState = _shogi_state()
-	place(state, 11, 20, [5], true)  # 20 -> 21 -> 22
+	place(state, 11, 10, [9], true)  # 11 -> 12
 	move(state, 11, 2)
-	check(state.get_pawn(11).promoted, "중앙 22번에 닿으면 승급")
+	check(state.get_pawn(11).promoted, "반환점 12번에 닿으면 승급")
 	var warp_state: GameState = _shogi_state()
-	place(warp_state, 11, 6, [5])
-	move(warp_state, 11, 1)  # 7번 옷장 -> 22번 워프
-	check_eq(warp_state.get_pawn(11).current_tile_idx, GameEnums.CENTER_TILE, "옷장 워프로 중앙")
-	check(warp_state.get_pawn(11).promoted, "워프로 22번에 도착해도 승급")
+	place(warp_state, 11, 8, [7])
+	move(warp_state, 11, 1)  # 9번 옷장 -> 16번 워프
+	check_eq(warp_state.get_pawn(11).current_tile_idx, 16, "옷장 워프로 16번")
+	check(warp_state.get_pawn(11).promoted, "워프로 12번 이상에 도착해도 승급")
 	var other: GameState = make_state(2, 1, {1: [Vector2i(Kind.CHESS, 1), Vector2i(Kind.JANGGI, 1), Kind.BASIC, Kind.BASIC]})
 	place(other, 12, 8, [7])
 	move(other, 12, 3)
@@ -100,7 +100,7 @@ func test_shogi_promotes_on_center_22_and_ignores_other_kinds() -> void:
 func test_shogi_promotion_is_permanent_but_rolled_back_by_snapshots() -> void:
 	var state: GameState = _shogi_state()
 	var before: TurnSnapshot = TurnSnapshot.capture(state)
-	place(state, 11, 8, [7])
+	place(state, 11, 10, [9])
 	move(state, 11, 3)
 	check(state.get_pawn(11).promoted, "승급")
 	state.send_to_start(state.get_pawn(11), 2)
@@ -114,8 +114,8 @@ func test_shogi_promotion_is_permanent_but_rolled_back_by_snapshots() -> void:
 
 func test_shogi_stacked_members_promote_together() -> void:
 	var yut: GameState = make_state(2, 1, {1: [Vector2i(Kind.YUT, 1), Vector2i(Kind.SHOGI, 2), Kind.BASIC, Kind.BASIC]})
-	place(yut, 11, 8, [7])
-	place(yut, 12, 8, [7])
+	place(yut, 11, 10, [9])
+	place(yut, 12, 10, [9])
 	yut.stack_pawns(yut.get_pawn(11), yut.get_pawn(12))
 	move(yut, 11, 3)
 	check(yut.get_pawn(12).promoted, "업혀 있는 쇼기 말도 함께 승급")
@@ -123,24 +123,21 @@ func test_shogi_stacked_members_promote_together() -> void:
 
 # --- 쇼기: 병종별 능력 ---------------------------------------------------------
 
-func test_shogi_hisha_gets_straight_line_bonus_and_promoted_everywhere() -> void:
+func test_shogi_hisha_always_gets_two_extra_tiles_and_promoted_adds_one_more() -> void:
 	var state: GameState = _shogi_state()
-	place(state, 12, 2, [1])
-	check_eq(move(state, 12, 2).path.size(), 4, "외곽 직선에서는 +2칸")
-	var diagonal: GameState = _shogi_state()
-	place(diagonal, 12, 21, [20])
-	check_eq(move(diagonal, 12, 2).path.size(), 2, "대각선에서는 보너스 없음")
+	place(state, 12, 7, [6])
+	check_eq(move(state, 12, 2).path.size(), 4, "비차는 항상 +2칸")
 	var promoted: GameState = _shogi_state()
-	place(promoted, 12, 20, [5])
+	place(promoted, 12, 12, [11])
 	promoted.get_pawn(12).promoted = true
-	check_eq(move(promoted, 12, 2).path.size(), 5, "나리 승급(용왕)하면 대각선에서도 +2칸, 승급 +1칸")
+	check_eq(move(promoted, 12, 2).path.size(), 5, "나리 승급(용왕)하면 +2칸에 승급 +1칸")
 
 
-func test_shogi_kaku_turns_at_corner_when_passing_and_promoted_strikes_ahead() -> void:
+func test_shogi_kaku_gets_corner_bonus_and_promoted_strikes_ahead() -> void:
 	var state: GameState = _shogi_state()
 	place(state, 13, 3, [2])
 	var report: MoveReport = move(state, 13, 3)
-	check_eq(report.path, int_array([4, 5, 20]), "코너를 스치기만 해도 대각선 지름길로 꺾인다")
+	check_eq(report.path, int_array([4, 5, 6, 7, 8]), "코너(6번)를 밟으면 +2칸")
 	var strike: GameState = _shogi_state()
 	place(strike, 13, 1, [0])
 	strike.get_pawn(13).promoted = true
@@ -415,19 +412,19 @@ func test_domino_chain_can_push_an_enemy_onto_the_mover_and_get_it_captured() ->
 
 func test_domino_affects_any_pawn_including_the_owners_and_without_chain() -> void:
 	var state := make_state(2, 1)
-	state.place_attachment(9, TrapDomino.new(1))
-	place(state, 11, 7, [6])
-	move(state, 11, 2)  # 8, 9: 설치한 사람의 말도 걸린다
-	check_eq(state.get_pawn(11).current_tile_idx, 6, "설치자의 말도 3칸 뒤로 (9 -> 6)")
+	state.place_attachment(15, TrapDomino.new(1))
+	place(state, 11, 13, [12])
+	move(state, 11, 2)  # 14, 15: 설치한 사람의 말도 걸린다
+	check_eq(state.get_pawn(11).current_tile_idx, 12, "설치자의 말도 3칸 뒤로 (15 -> 12)")
 	var calm := make_state(2, 1)
-	calm.place_attachment(9, TrapDomino.new(2))
-	place(calm, 21, 8, [7])
-	place(calm, 12, 13, [12])
+	calm.place_attachment(15, TrapDomino.new(2))
+	place(calm, 21, 14, [13])
+	place(calm, 12, 19, [18])
 	var chain_report: Array = []
 	calm.domino_collapsed.connect(func(_id: int, _passed: Array[int], chained: Array[int]) -> void: chain_report.append(chained.size()))
 	move(calm, 21, 1)
 	check_eq(chain_report, [0] as Array, "경로에 다른 말이 없으면 연쇄는 0")
-	check_eq(calm.get_pawn(12).current_tile_idx, 13, "다른 말은 영향 없음")
+	check_eq(calm.get_pawn(12).current_tile_idx, 19, "다른 말은 영향 없음")
 
 
 func test_domino_hidden_trap_serializes_and_card_places_it() -> void:
@@ -436,7 +433,7 @@ func test_domino_hidden_trap_serializes_and_card_places_it() -> void:
 	check(card != null and card.category == GameEnums.CardCategory.TRAP and card.needs_tile(), "타일 설치형 함정 카드")
 	check_eq(card.display_name, "도미노 연쇄 붕괴", "카드 이름")
 	check(card.can_play(state, 1, {"tile": 9}), "일반 타일에는 설치 가능")
-	check(not card.can_play(state, 1, {"tile": GameEnums.GOAL_TILE}) and not card.can_play(state, 1, {"tile": GameEnums.CENTER_TILE}), "출발선·중앙에는 설치 불가")
+	check(not card.can_play(state, 1, {"tile": GameEnums.GOAL_TILE}), "출발선에는 설치 불가")
 	check(exec(state, card.create_command(state, 1, {"tile": 9})), "설치")
 	check(state.board.get_tile(9).has_attachment("TRP_05"), "9번 타일에 도미노")
 	check(not card.can_play(state, 1, {"tile": 9}), "같은 타일에 중복 설치 불가")
