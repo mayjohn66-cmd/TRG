@@ -364,3 +364,6 @@
 - 온라인에서는 각 참가자의 화면이 자기 시계로 오프닝을 재생하며 규칙 진행(행동 순서)에는 영향이 없다 (증강 행동은 오프닝이 끝난 뒤 UI에서 나온다).
 - 웹 스플래시는 엔진 로딩 중에만 보이며 게임 캔버스가 뜨면 사라진다. `web/shell.html`은 Godot 웹 셸 자리표시자(`$GODOT_URL`, `$GODOT_CONFIG`, `$GODOT_HEAD_INCLUDE`, `$GODOT_THREADS_ENABLED`)를 그대로 쓴다.
 - 오프닝의 모든 시간은 `연출 속도` 설정(`GameSession.pace_scale`, 최소 1.0배)을 곱한다: 빠르게 4.0초 / 보통 6.8초 / 느리게 10초. 단계별 기본 시간은 VS 1.2 / 보드 1.1 / 턴 순서 0.9 / 시작 0.8초.
+
+## 증강 일괄 공개
+- `augment_picked` 이벤트는 알림 카드를 띄우지 않고 `_draft_summary`에 쌓는다. 드래프트가 끝나 단계가 `PHASE_ROUND_START`를 벗어나는 순간(`_on_phase_changed`) 한 장으로 공개하고 비운다. 새 게임을 시작하면 비운다.

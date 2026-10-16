@@ -315,6 +315,8 @@ var _intro_pending: bool = false
 var _opening: OpeningSequence = null
 ## 오프닝 직후 첫 증강 창은 아래에서 위로 솟아오르며 나타난다.
 var _draft_entrance: bool = false
+## 이번 드래프트에서 고른 증강 모음 (끝나면 한 장으로 공개).
+var _draft_summary: Array[Dictionary] = []
 ## 게임 필: 화면 흔들림, 말 id -> 이동 연출을 필살기 스크립트가 맡는 중(걸음 무시), 차 돌진 중 잡힌 말이 나는 시점을 늦추는 값(초).
 var _shake_tween: Tween = null
 var _shake_origin: Vector2 = Vector2.ZERO
@@ -634,6 +636,7 @@ func _new_game() -> void:
 	_tool_board_key = ""
 	_close_stack_overlay()
 	_close_opening()
+	_draft_summary.clear()
 	state = null
 	manager.start_game(_player_ids, _game_seed)
 	state = manager.state
@@ -5266,8 +5269,26 @@ func _clear_highlight() -> void:
 # 엔진 이벤트 -> 화면/로그
 # ---------------------------------------------------------------------------
 
-func _on_phase_changed(_new_state: TurnManager.State, _player_id: int, _limit: float) -> void:
+func _on_phase_changed(new_state: TurnManager.State, _player_id: int, _limit: float) -> void:
+	if new_state != TurnManager.State.PHASE_ROUND_START:
+		_flush_draft_summary()
 	_refresh_all()
+
+
+## 이번 라운드에 모두가 고른 증강을 카드 한 장에 모아 한꺼번에 공개한다.
+func _flush_draft_summary() -> void:
+	if _draft_summary.is_empty():
+		return
+	var rows := VBoxContainer.new()
+	rows.add_theme_constant_override("separation", 4)
+	rows.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for entry: Dictionary in _draft_summary:
+		var line := _make_label("P%d   %s" % [entry["player"], entry["name"]], 20, PLAYER_COLORS[int(entry["player"])].lightened(0.35))
+		line.add_theme_constant_override("outline_size", 4)
+		line.add_theme_color_override("font_outline_color", Color("0d1018"))
+		rows.add_child(line)
+	_draft_summary.clear()
+	_announce("증강 공개", "이번 라운드 증강", "", Color("ffa94d"), rows, 2.4)
 
 
 func _on_action_rejected(player_id: int, action: StringName, reason: StringName) -> void:
@@ -5375,7 +5396,9 @@ func _on_law_added(new_law: LawResource, removed_law: LawResource) -> void:
 	_fx_law_drop_oldest(removed_law)
 	_refresh_laws()
 	_fx_law_slam(new_law)
-	_announce_law_added(new_law, removed_law)
+	# 증강 드래프트로 생긴 교칙은 드래프트 요약 카드에 함께 나오므로 따로 공개하지 않는다.
+	if manager.current_state != TurnManager.State.PHASE_ROUND_START:
+		_announce_law_added(new_law, removed_law)
 
 
 ## 가득 차서 밀려나는 가장 오래된 교칙 슬롯: 아래로 툭 떨어지며 사라진다 (맨 위 슬롯을 복제해 떨어뜨린다).
@@ -5467,7 +5490,8 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_log_line("[증강] 라운드 %d 증강 드래프트가 열렸습니다." % data["round"], Color("ffa94d"))
 		&"augment_picked":
 			_log_line("[증강] P%d%s: %s - %s" % [data["player_id"], " (자동)" if data["auto"] else "", AugmentRegistry.get_def(data["augment_id"]).display_name, data["text"]], Color("ffa94d"))
-			_announce("P%d 증강 선택" % data["player_id"], AugmentRegistry.get_def(data["augment_id"]).display_name, str(data["text"]), Color("ffa94d"), null, 1.4)
+			# 한 명씩 공개하면 늘어지므로 모아 두었다가 드래프트가 끝나면 한 장으로 한꺼번에 공개한다.
+			_draft_summary.append({"player": int(data["player_id"]), "name": AugmentRegistry.get_def(data["augment_id"]).display_name})
 		&"bang_resolved":
 			var target_name: String = _pawn_name(int(data["target"]))
 			_log_line("[뱅!] P%d가 %s을(를) 저격! %d번 → %d번 타일로 2칸 밀려납니다." % [data["shooter"], target_name, data["from"], data["to"]], Color("ff6b6b"))
