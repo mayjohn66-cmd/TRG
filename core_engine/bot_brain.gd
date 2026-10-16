@@ -219,6 +219,10 @@ static func _plan_one_turn_card(state: GameState, player_id: int, card: BaseCard
 					if state.pawn_progress_distance(state.front_pawn_of(victim)) < state.pawn_progress_distance(state.front_pawn_of(best_player)):
 						best_player = victim
 				return {"card_id": card.card_id, "params": {"target_player": best_player}}
+		&"ACT_09":  # 가위바위보 결투: 상대가 있으면 55%, 가장 앞선 상대에게
+			var duel_target: int = DuelRules.default_target(state, player_id)
+			if duel_target != -1 and rng.randf() < 0.55:
+				return {"card_id": card.card_id, "params": {"target_player": duel_target}}
 		&"ACT_03":  # 우노 +4: 다음 차례의 선두 말이 보드 위에 있고 50%
 			if card.could_play(state, player_id) and rng.randf() < 0.5:
 				return {"card_id": card.card_id, "params": {}}

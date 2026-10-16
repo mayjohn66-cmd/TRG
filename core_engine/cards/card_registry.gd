@@ -20,6 +20,7 @@ const DECK_COMPOSITION: Dictionary = {
 	&"TRP_05": 2,
 	&"ACT_07": 2,
 	&"ACT_08": 2,
+	&"ACT_09": 2,
 	&"SUM_01": 2,
 	&"SUM_02": 1,
 }
@@ -43,6 +44,7 @@ static func get_card(card_id: StringName) -> BaseCard:
 		&"TRP_05": card = CardDomino.new()
 		&"ACT_07": card = CardTower.new()
 		&"ACT_08": card = CardWheelOfFortune.new()
+		&"ACT_09": card = CardDuel.new()
 		&"SUM_01": card = CardBandit.new()
 		&"SUM_02": card = CardGhost.new()
 	if card == null:

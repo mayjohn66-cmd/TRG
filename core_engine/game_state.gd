@@ -37,6 +37,8 @@ signal domino_collapsed(pawn_id: int, passed: Array[int], chain: Array[int])
 signal tower_struck(tile: int, scattered: Array[Dictionary])
 ## ACT_08 운명의 수레바퀴: outcome은 "swap"(내 말 mine_id와 적 말 enemy_id의 위치 교환) 또는 "retreat"(적 말 후퇴, mine_id = -1).
 signal wheel_turned(player_id: int, mine_id: int, enemy_id: int, outcome: StringName)
+## ACT_09 가위바위보 결투 신청: challenger가 defender에게 결투를 걸었다 (진행은 TurnManager가 입력을 받아 한다).
+signal duel_requested(challenger: int, defender: int)
 signal snapshot_restored()
 signal victory_declared(player_id: int, reason: StringName)
 

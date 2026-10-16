@@ -109,6 +109,7 @@ const CARD_SHORT: Dictionary = {
 	&"ACT_06": "교칙 1개 삭제",
 	&"ACT_07": "뭉친 말 강제 산개",
 	&"ACT_08": "꼴찌 ↔ 선두 교환",
+	&"ACT_09": "가위바위보 승자가 -2칸",
 	&"TRP_01": "밟은 적 출발선 추방",
 	&"TRP_02": "눈금 4+ 2턴 구속",
 	&"TRP_03": "반경 2칸 폭파",
@@ -132,6 +133,7 @@ const CARD_SUMMARIES: Dictionary = {
 	&"TRP_05": "밟은 말 -3칸 & 뒷말들 연쇄 밀침",
 	&"ACT_07": "가장 뭉친 타일의 말 강제 분리·산개",
 	&"ACT_08": "내 꼴찌 말 ↔ 1등 적 선두 말 위치 교환",
+	&"ACT_09": "적 1명과 가위바위보! 승자가 패자 말 1개를 -2칸 후퇴시킴",
 	&"SUM_01": "라운드마다 최근접 말 추격·카드 강탈",
 	&"SUM_02": "12번 출발 역주행 순찰 & 연행",
 }
@@ -399,6 +401,11 @@ var _auto_draft_enabled: bool = false
 var _tile_pick_active: bool = false
 ## 뱅! 저격: 타일 대신 상대 프로필을 눌러 고르는 모드 (_tile_pick_active와 함께 켜진다). 프로필마다 표식이 붙는다.
 var _snipe_pick: bool = false
+## ACT_09 결투: 중앙 스테이지 결투장, 승자가 고를 수 있는 말(보드 위 붉은 표식), 카드를 놓은 대상 플레이어.
+var _duel_arena: DuelArena = null
+var _duel_strike_marks: Dictionary = {}
+var _duel_strike_winner: int = -1
+var _duel_drop_target: int = -1
 var _snipe_marks: Dictionary = {}
 var _tile_pick_player: int = -1
 var _tile_pick_card: StringName = &""
@@ -527,6 +534,9 @@ func _input(event: InputEvent) -> void:
 	if manager == null or state == null or _menu_is_open():
 		return
 	if _snipe_pick and _handle_snipe_input(event):
+		get_viewport().set_input_as_handled()
+		return
+	if not _duel_strike_marks.is_empty() and _handle_duel_strike_input(event):
 		get_viewport().set_input_as_handled()
 		return
 	if _handle_aim_input(event):
@@ -2499,6 +2509,8 @@ func _drag_begin() -> void:
 	_drop_label.text = "[여기에 놓아 카드 발동!]" if usable else "[지금은 쓸 수 없는 카드입니다]"
 	if card.needs_tile():
 		_drop_label.text = "[보드판에 놓으면 설치할 타일을 고릅니다]" if usable else "[지금은 쓸 수 없는 카드입니다]"
+	if card.card_id == &"ACT_09" and usable:
+		_drop_label.text = "[상대 프로필이나 말 위에 놓으면 결투 신청! (보드판에 놓으면 가장 앞선 상대)]"
 	_drop_zone.visible = true
 
 
@@ -2523,15 +2535,19 @@ func _drag_drop(pointer: Vector2, press: Dictionary) -> void:
 	var card_id: StringName = press["card"]
 	var card: BaseCard = CardRegistry.get_card(card_id)
 	var reason: String = ""
+	var duel_target: int = _duel_target_at(pointer, player_id) if card_id == &"ACT_09" else -1
 	if not _card_usable_now(player_id, card):
 		reason = "지금은 [%s]를 쓸 수 없습니다." % card.display_name
-	elif not _board_rect().has_point(pointer):
-		reason = "카드를 보드판 위에 놓아야 발동합니다."
+	elif duel_target != -1 and not DuelRules.targets(state, player_id).has(duel_target):
+		reason = "%s는 보드 위에 나온 말이 없어 결투할 수 없습니다." % _player_name(duel_target)
+	elif not _board_rect().has_point(pointer) and duel_target == -1:
+		reason = "카드를 보드판 위에 놓아야 발동합니다." if card_id != &"ACT_09" else "결투할 상대의 말이나 프로필, 또는 보드판 위에 놓으세요."
 	if reason != "":
 		_log_line(reason, Color("ff8787"))
 		_return_ghost(press["home"])
 		return
 	# 카드가 보드로 날아가 쾅 내리찍힌다 (타일 지정 카드는 타일을 고른 뒤 그 타일에서도 임팩트가 터진다).
+	_duel_drop_target = duel_target
 	_throw_ghost(_board_center() if not card.needs_tile() else pointer)
 	# 타일 지정 카드는 보드에 던지면 '어디에 쓸지' 고르는 UI가 열리고, 즉발 카드는 바로 발동한다.
 	_on_card_pressed(player_id, card_id)
@@ -3265,7 +3281,7 @@ func _category_text(category: GameEnums.CardCategory) -> String:
 
 
 func _card_usable_now(player_id: int, card: BaseCard) -> bool:
-	if manager.is_game_over or _ui_busy() or manager.stack_offer_pending() or not card.is_playable_in(manager.current_state):
+	if manager.is_game_over or _ui_busy() or manager.stack_offer_pending() or manager.duel_pending() or not card.is_playable_in(manager.current_state):
 		return false
 	if ai_mode and player_id != local_player_id:
 		return false
@@ -3280,7 +3296,7 @@ func _refresh_controls() -> void:
 	var tool: BaseJudgmentTool = state.tools[player_id]
 	var over: bool = manager.is_game_over
 	var can_roll: bool = not over and (current_phase == TurnManager.State.PHASE_TURN_BEGIN or current_phase == TurnManager.State.PHASE_ROLL_WAIT)
-	_roll_button.disabled = not can_roll or _tile_pick_active or _ui_busy() or manager.stack_offer_pending() or _is_bot_turn()
+	_roll_button.disabled = not can_roll or _tile_pick_active or _ui_busy() or manager.stack_offer_pending() or manager.duel_pending() or _is_bot_turn()
 	_refresh_roll_pad()
 	var can_stop: bool = not over and tool.has_pending_state() and current_phase == TurnManager.State.PHASE_ROLL_WAIT
 	if tool is ToolRussianRoulette:
@@ -3579,6 +3595,13 @@ func _on_card_pressed(player_id: int, card_id: StringName) -> void:
 			_show_choice("완주시킬 말을 고르세요", options, _play_card_with.bind(player_id, card_id, "pawn_id"))
 		&"ACT_02":
 			_begin_snipe_pick(player_id, card_id)
+		&"ACT_09":
+			if DuelRules.targets(state, player_id).is_empty():
+				_log_line("[%s] 보드 위에 나와 있는 상대 말이 없습니다." % card.display_name, Color("868e96"))
+				return
+			var duel_target: int = _duel_drop_target
+			_duel_drop_target = -1
+			_act(&"play_card", {"player_id": player_id, "card_id": card_id, "target_player": duel_target})
 		&"ACT_06":
 			var options: Array[Dictionary] = []
 			for law: LawResource in state.rulebook.active_laws_queue:
@@ -4586,6 +4609,201 @@ func _show_top_toast(text: String) -> void:
 # 뱅! 저격: 상대 프로필을 눌러 고른다
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# ACT_09 가위바위보 결투 (중앙 오픈 스테이지)
+# ---------------------------------------------------------------------------
+
+## 이 자리를 이 화면에서 직접 조작하는가 (AI 대전·온라인은 내 자리만, 핫시트는 모두).
+func _duel_local(player_id: int) -> bool:
+	return not ai_mode or player_id == local_player_id
+
+
+## 카드를 놓은 위치가 어느 상대를 가리키는가: 상대 프로필 위, 또는 보드 위에 나와 있는 상대 말 위. 없으면 -1.
+func _duel_target_at(pointer: Vector2, player_id: int) -> int:
+	for other: int in _player_ids:
+		if other == player_id or not _profiles.has(other):
+			continue
+		var panel: Control = _profiles[other]["panel"]
+		if (panel.get_global_transform() * Rect2(Vector2.ZERO, panel.size)).has_point(pointer):
+			return other
+	var best: int = -1
+	var best_distance: float = 28.0
+	for pawn: PlayerPawn in state.pawns:
+		if pawn.owner_id == player_id or pawn.carrier != null or not pawn.has_left_start or pawn.is_finished:
+			continue
+		var view: Node2D = _pawn_views.get(pawn.entity_id)
+		if view == null or not view.visible:
+			continue
+		var distance: float = (view.position + _pawn_layer.position).distance_to(pointer)
+		if distance < best_distance:
+			best_distance = distance
+			best = pawn.owner_id
+	return best
+
+
+func _on_duel_event(kind: StringName, data: Dictionary) -> void:
+	match kind:
+		&"duel_started":
+			_log_line("[결투] %s가 %s에게 가위바위보 결투를 신청했습니다!" % [_player_name(int(data["challenger"])), _player_name(int(data["defender"]))], Color("ffd43b"))
+			if _fx_on():
+				_open_duel_arena(int(data["challenger"]), int(data["defender"]))
+		&"duel_revealed":
+			var picks: Dictionary = data["picks"]
+			_log_line("[결투] %s %s : %s %s → %s" % [_player_name(int(data["challenger"])), DuelRules.HAND_NAMES[int(picks[int(data["challenger"])])], DuelRules.HAND_NAMES[int(picks[int(data["defender"])])], _player_name(int(data["defender"])), "무승부" if int(data["winner"]) == -1 else "%s 승" % _player_name(int(data["winner"]))], Color("ffd43b"))
+		&"duel_resolved":
+			_on_duel_resolved(data)
+	if _duel_arena != null and is_instance_valid(_duel_arena):
+		_duel_arena.push_event(kind, data)
+	elif not _fx_on():
+		_duel_auto_drive.call_deferred()
+
+
+func _open_duel_arena(challenger: int, defender: int) -> void:
+	if _duel_arena != null and is_instance_valid(_duel_arena):
+		_duel_arena.queue_free()
+	var seats: Array[int] = []
+	for seat: int in [challenger, defender]:
+		if _duel_local(seat):
+			seats.append(seat)
+	_duel_arena = DuelArena.new()
+	_duel_arena.setup(self, challenger, defender, seats)
+	_duel_arena.hand_chosen.connect(func(player_id: int, hand: int) -> void: _act(&"duel_pick", {"player_id": player_id, "hand": hand}))
+	_duel_arena.timed_out.connect(_on_duel_timed_out)
+	_duel_arena.strike_started.connect(_on_duel_strike_started)
+	_duel_arena.strike_ended.connect(_clear_duel_strike_marks)
+	_duel_arena.closed.connect(func() -> void:
+		_clear_duel_strike_marks()
+		_duel_arena = null
+		_refresh_all())
+	add_child(_duel_arena)
+	# 카드 발동 알림이 끝난 뒤 열린다 (그 전에 온 이벤트는 결투장 큐에 쌓인다).
+	_fx_when_announced(_duel_arena.open)
+	if not _fx_holding():
+		_duel_arena.open()
+
+
+## 결투 중 시간이 다 됐다: 손은 무작위로, 말은 가장 앞선 말을 민다.
+func _on_duel_timed_out(step: StringName, seat: int) -> void:
+	if not manager.duel_pending():
+		return
+	if step == &"pick" and seat != -1:
+		_act(&"duel_pick", {"player_id": seat, "hand": randi() % 3})
+	elif step == &"strike":
+		var duel: Dictionary = manager.pending_duel()
+		var front: PlayerPawn = state.front_pawn_of(int(duel["loser"]))
+		var candidates: Array = duel["candidates"]
+		var pawn_id: int = front.entity_id if front != null and candidates.has(front.entity_id) else int(candidates[0])
+		_act(&"duel_strike", {"player_id": int(duel["winner"]), "pawn_id": pawn_id})
+
+
+## 승자가 내 자리라면 진 사람의 말들이 붉게 깜빡이고 눌러서 고른다.
+func _on_duel_strike_started(winner: int, candidates: Array, is_local: bool) -> void:
+	_clear_duel_strike_marks()
+	if not is_local:
+		return
+	_duel_strike_winner = winner
+	for pawn_id: Variant in candidates:
+		var view: Node2D = _pawn_views.get(int(pawn_id))
+		if view == null:
+			continue
+		var ring := Line2D.new()
+		ring.points = _circle_points(PAWN_RADIUS * 1.9, 24)
+		ring.closed = true
+		ring.width = 4.0
+		ring.default_color = Color("ff4d4f")
+		ring.z_index = 30
+		view.add_child(ring)
+		var pulse: Tween = ring.create_tween().set_loops()
+		pulse.tween_property(ring, "modulate:a", 0.25, 0.3)
+		pulse.tween_property(ring, "modulate:a", 1.0, 0.3)
+		_duel_strike_marks[int(pawn_id)] = ring
+
+
+func _clear_duel_strike_marks() -> void:
+	for ring: Variant in _duel_strike_marks.values():
+		if is_instance_valid(ring):
+			(ring as Node).queue_free()
+	_duel_strike_marks.clear()
+	_duel_strike_winner = -1
+
+
+func _duel_strike_pawn_at(pointer: Vector2) -> int:
+	var best: int = -1
+	var best_distance: float = 30.0
+	for pawn_id: int in _duel_strike_marks.keys():
+		var view: Node2D = _pawn_views.get(pawn_id)
+		if view == null:
+			continue
+		var distance: float = (view.position + _pawn_layer.position).distance_to(pointer)
+		if distance < best_distance:
+			best_distance = distance
+			best = pawn_id
+	if best != -1:
+		return best
+	var tile: int = _tile_at(pointer)
+	if tile != -1:
+		for pawn_id: int in _duel_strike_marks.keys():
+			if state.get_pawn(pawn_id).current_tile_idx == tile:
+				return pawn_id
+	return -1
+
+
+func _handle_duel_strike_input(event: InputEvent) -> bool:
+	var click: InputEventMouseButton = event as InputEventMouseButton
+	if click == null or not click.pressed or click.button_index != MOUSE_BUTTON_LEFT:
+		return false
+	var pawn_id: int = _duel_strike_pawn_at(click.position)
+	if pawn_id == -1:
+		return false
+	var winner: int = _duel_strike_winner
+	_clear_duel_strike_marks()
+	_act(&"duel_strike", {"player_id": winner, "pawn_id": pawn_id})
+	return true
+
+
+## 결투 결과: 진 사람의 말이 맞아 뒤로 밀린다 (주먹 충격파 -> 반응 -> 미끄러짐). 도착 칸의 함정은 attachment_triggered가 따로 연출한다.
+func _on_duel_resolved(data: Dictionary) -> void:
+	var pawn_id: int = int(data["pawn_id"])
+	if pawn_id == -1:
+		return
+	var winner: int = int(data["winner"])
+	var loser: int = int(data["loser"])
+	_log_line("[결투] %s이(가) %s의 %s을(를) %d번 → %d번으로 %d칸 밀어냈습니다!%s" % [_player_name(winner), _player_name(loser), _pawn_name(pawn_id), int(data["from"]), int(data["to"]), DuelRules.RETREAT_STEPS, " (출발선으로 복귀)" if data["sent_to_start"] else ""], Color("ff6b6b"))
+	if not _fx_on():
+		return
+	Sfx.play(&"shot")
+	var view: Node2D = _pawn_views.get(pawn_id)
+	if view != null:
+		var hit_pos: Vector2 = view.position
+		_set_hint(pawn_id, {"arc": 0.0, "dur": 0.5, "delay": 0.55})
+		_fx_until_msec = maxi(_fx_until_msec, Time.get_ticks_msec() + int(1100.0 * _motion_pace()))
+		get_tree().create_timer(0.3 * _motion_pace()).timeout.connect(func() -> void:
+			screen_shake(9.0, 0.25)
+			_impact_ring(hit_pos, Color("ff6b6b"), 54.0)
+			_impact_ring(hit_pos, Color.WHITE, 30.0)
+			_burst_shards(hit_pos, Color("ff8787"), 12)
+			_floating_badge(hit_pos + Vector2(0, -26), "-%d칸!" % DuelRules.RETREAT_STEPS, Color("ff8787"))
+			_profile_react(loser, false, "[억까!]")
+			_profile_react(winner, true, "[승리!]"))
+
+
+## 즉시 모드(테스트·ui_smoke): 결투장 없이 내 자리의 손과 밀어낼 말을 바로 고른다.
+func _duel_auto_drive() -> void:
+	if manager == null or not manager.duel_pending():
+		return
+	var duel: Dictionary = manager.pending_duel()
+	if duel["step"] == &"pick":
+		for seat: int in [int(duel["challenger"]), int(duel["defender"])]:
+			if _duel_local(seat) and not (duel["picks"] as Dictionary).has(seat):
+				_act(&"duel_pick", {"player_id": seat, "hand": randi() % 3})
+				break
+	elif _duel_local(int(duel["winner"])):
+		var front: PlayerPawn = state.front_pawn_of(int(duel["loser"]))
+		var candidates: Array = duel["candidates"]
+		var pawn_id: int = front.entity_id if front != null and candidates.has(front.entity_id) else int(candidates[0])
+		_act(&"duel_strike", {"player_id": int(duel["winner"]), "pawn_id": pawn_id})
+
+
 func _begin_snipe_pick(player_id: int, card_id: StringName) -> void:
 	var card: BaseCard = CardRegistry.get_card(card_id)
 	if not _card_usable_now(player_id, card):
@@ -5559,6 +5777,8 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_log_line("[뱅!] P%d가 %s을(를) 저격! %d번 → %d번 타일로 2칸 밀려납니다." % [data["shooter"], target_name, data["from"], data["to"]], Color("ff6b6b"))
 			_fx_bang(int(data["shooter"]), int(data["target"]))
 			_react_hit_pawn(int(data["target"]))
+		&"duel_started", &"duel_pick_in", &"duel_revealed", &"duel_strike_wait", &"duel_resolved":
+			_on_duel_event(kind, data)
 		&"skill_used": _on_skill_used(data)
 		&"pawn_pushed_back":
 			_log_line("[백돌 무적] 백돌에 막혀 %s이(가) %d번 → %d번으로 밀려났습니다" % [_pawn_name(int(data["pawn_id"])), data["from"], data["to"]], Color("b197fc"))
@@ -6192,4 +6412,4 @@ func _human_can_intervene() -> bool:
 ## 봇은 화면의 굴림 연출이 끝날 때까지 기다린다.
 func _bot_should_wait() -> bool:
 	# 혼자 하는 판은 메뉴를 여는 동안 봇도 쉰다 (온라인은 다른 사람이 기다리므로 멈추지 않는다).
-	return _ui_busy() or (net == null and _menu_is_open())
+	return _ui_busy() or (net == null and _menu_is_open()) or (_duel_arena != null and _duel_arena.animating)

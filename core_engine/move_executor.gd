@@ -257,6 +257,22 @@ static func _trigger_attachments(
 	return false
 
 
+## 끌려가거나 밀려나 이미 자리 잡은 말이 그 칸의 설치물(함정·지뢰·도미노·호텔)에 걸리게 한다 (ACT_09 결투 후퇴 등).
+## 함정이 말을 출발선으로 돌려보내면 report.trapped가 true다.
+static func resolve_forced_arrival(state: GameState, mover: PlayerPawn) -> MoveReport:
+	var ctx := RuleContext.new()
+	ctx.state = state
+	ctx.actor_id = mover.owner_id
+	ctx.pawn = mover
+	var report := MoveReport.new()
+	report.pawn_id = mover.entity_id
+	if _trigger_attachments(state, mover, ctx, mover.current_tile_idx, true, report):
+		report.stopped_early = true
+		if not mover.has_left_start:
+			report.trapped = true
+	return report
+
+
 ## 도착(마지막 칸) 처리: 빵집 → 옷장 워프 → 잡기 → 업기 → 이동 완료 훅.
 static func _resolve_landing(state: GameState, mover: PlayerPawn, ctx: RuleContext, report: MoveReport) -> void:
 	var tile: TileNode = state.board.get_tile(mover.current_tile_idx)

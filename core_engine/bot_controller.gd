@@ -15,6 +15,9 @@ const DELAY_MOVE: float = 0.9         # 이동할 말 선택 및 이동
 const DELAY_WINDOW: float = 0.7       # 개입 창에서 봇이 카드를 고민하는 시간
 const DELAY_AUTO_PASS: float = 0.8    # 사람이 낼 카드가 없을 때 개입 창이 자동으로 넘어가기까지
 const DELAY_DRAFT: float = 0.6        # 봇의 증강 선택 간격
+const DELAY_DUEL_THINK: float = 0.8   # 봇이 가위바위보 손을 고민하는 시간 (사람이 상대일 때)
+const DELAY_DUEL_RELAY: float = 1.2   # 봇끼리의 결투는 중앙 스테이지 중계를 볼 시간을 준다
+const DELAY_DUEL_STRIKE: float = 0.9  # 이긴 봇이 밀어낼 말을 고르는 시간
 
 var manager: TurnManager = null
 var bot_players: Array[int] = [2, 3, 4]
@@ -92,6 +95,11 @@ func _delay(seconds: float) -> void:
 func _on_phase_entered() -> void:
 	_tried.clear()
 	_auto_pass_armed = false
+	if manager.duel_pending():
+		var duel: Dictionary = manager.pending_duel()
+		var both_bots: bool = is_bot(int(duel["challenger"])) and is_bot(int(duel["defender"]))
+		_delay(DELAY_DUEL_STRIKE if duel["step"] == &"strike" else (DELAY_DUEL_RELAY if both_bots else DELAY_DUEL_THINK))
+		return
 	match manager.current_state:
 		TurnManager.State.PHASE_ROUND_START:
 			_delay(DELAY_DRAFT)
@@ -110,6 +118,9 @@ func _on_phase_entered() -> void:
 
 
 func _step() -> void:
+	if manager.duel_pending():
+		_step_duel()
+		return
 	match manager.current_state:
 		TurnManager.State.PHASE_ROUND_START: _step_draft()
 		TurnManager.State.PHASE_TURN_BEGIN:
@@ -134,6 +145,24 @@ func _act(player_id: int, action: StringName, params: Dictionary = {}) -> void:
 # ---------------------------------------------------------------------------
 # 단계별 행동
 # ---------------------------------------------------------------------------
+
+## ACT_09 결투: 봇은 손을 무작위로 내고, 이겼다면 진 사람의 선두 말을 민다. 사람 차례는 화면이 입력을 받는다.
+func _step_duel() -> void:
+	var duel: Dictionary = manager.pending_duel()
+	if duel["step"] == &"pick":
+		for player_id: int in [int(duel["challenger"]), int(duel["defender"])]:
+			if is_bot(player_id) and not (duel["picks"] as Dictionary).has(player_id):
+				_act(player_id, &"duel_pick", {"hand": rng.randi_range(0, 2)})
+				return
+		return
+	var winner: int = int(duel["winner"])
+	if not is_bot(winner):
+		return
+	var front: PlayerPawn = manager.state.front_pawn_of(int(duel["loser"]))
+	var candidates: Array = duel["candidates"]
+	var pawn_id: int = front.entity_id if front != null and candidates.has(front.entity_id) else int(candidates[0])
+	_act(winner, &"duel_strike", {"pawn_id": pawn_id})
+
 
 ## 증강 드래프트: 사람(P1)이 아직 고르는 중이면 기다리고, 다 고른 뒤 봇들이 차례로 고른다.
 func _step_draft() -> void:

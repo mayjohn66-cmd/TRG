@@ -7,6 +7,7 @@ var _board: MainBoard = null
 var _frames: int = 0
 var _started: bool = false
 var _failures: Array[String] = []
+var _duel_manual: bool = false
 
 
 func _process(_delta: float) -> bool:
@@ -20,6 +21,9 @@ func _process(_delta: float) -> bool:
 	if _frames == 3 and not _started:
 		_started = true
 		_run()
+	# 다른 검사 중에 봇이 건 가위바위보 결투는 시간 초과로 넘겨 검사가 막히지 않게 한다 (결투 검사만 직접 진행).
+	if _started and not _duel_manual and _board.manager != null and _board.manager.duel_pending():
+		_board.manager.force_timeout()
 	return false
 
 
@@ -60,6 +64,7 @@ func _run() -> void:
 	await _test_bot_pacing()
 	await _test_action_beats()
 	await _test_tool_cards_fit()
+	await _test_duel_flow()
 	if _failures.is_empty():
 		print("UI_FX_OK")
 		quit(0)
@@ -747,3 +752,83 @@ func _test_bot_pacing() -> void:
 		var move_after: float = float(events[&"move_resolved"]) - float(events[&"roll_resolved"])
 		_expect(roll_after >= 0.75, "봇은 턴 시작 후 0.5초 판단 + 0.3초 뒤에 굴린다 (%.2f초)" % roll_after)
 		_expect(move_after >= 1.8, "굴림 연출(약 0.9초) + 결과 확인 0.6초 + 선택 0.5초 뒤에 말을 옮긴다 (%.2f초)" % move_after)
+
+
+## ACT_09 결투: 카드를 놓으면 중앙 스테이지에 결투장이 열리고, 손 고르기 -> 공개 -> 승자의 말 클릭 -> 후퇴까지 이어진다.
+func _test_duel_flow() -> void:
+	_duel_manual = true
+	var manager: TurnManager = _board.manager
+	var state: GameState = _board.state
+	_board.ai_mode = false  # 모든 자리를 이 화면에서 직접 조작한다 (핫시트)
+	_board._bot.set_enabled(false)
+	manager.set_process(false)
+	_board.instant_roll_for_test = false
+	_board.pacing_enabled = false
+	_board._announcer.cancel()
+	_board._beat_until_msec = 0
+	_board._fx_until_msec = 0
+	_board._fx_busy = false
+	manager.force_timeout()  # 혹시 남은 단계는 넘겨 둔다
+	var guard: int = 0
+	while manager.current_state != TurnManager.State.PHASE_TURN_BEGIN and guard < 40:
+		manager.force_timeout()
+		guard += 1
+	var player_id: int = manager.current_player_id()
+	var opponent: int = 2 if player_id != 2 else 1
+	for pawn: PlayerPawn in state.pawns:
+		pawn.reset_to_start()
+	state.get_pawn(opponent * 10 + 1).has_left_start = true
+	state.get_pawn(opponent * 10 + 1).current_tile_idx = 14
+	state.get_pawn(opponent * 10 + 2).has_left_start = true
+	state.get_pawn(opponent * 10 + 2).current_tile_idx = 8
+	_board._refresh_pawns()
+	state.give_card(player_id, &"ACT_09")
+	_board._duel_drop_target = opponent
+	_board._on_card_pressed(player_id, &"ACT_09")
+	await process_frame
+	_expect(manager.duel_pending(), "카드를 놓으면 결투가 시작된다")
+	var arena: DuelArena = _board._duel_arena
+	_expect(arena != null, "중앙 스테이지에 결투장이 열린다")
+	if arena == null:
+		return
+	arena.open()
+	await process_frame
+	await process_frame
+	_expect(arena.get_global_rect().get_center().distance_to(_board._board_center()) < 4.0, "결투장은 보드 한가운데에 놓인다")
+	_expect(_board._roll_button.disabled, "결투 중에는 굴리기 버튼이 잠긴다")
+	var waited: float = 0.0
+	await create_timer(2.0).timeout
+	while manager.duel_pending() and manager.pending_duel()["step"] == &"pick" and waited < 12.0:
+		if arena._pick_seat != -1 and arena._step == &"pick":
+			arena._on_hand_pressed(randi() % 3)
+		await create_timer(0.1).timeout
+		waited += 0.1
+	_expect(manager.duel_pending() and manager.pending_duel()["step"] == &"strike" or not manager.duel_pending(), "손을 모두 내면 승패가 나서 말 고르기로 넘어간다 (대기 %.1f초)" % waited)
+	waited = 0.0
+	while manager.duel_pending() and manager.pending_duel()["step"] == &"pick" and waited < 20.0:
+		if arena._pick_seat != -1 and arena._step == &"pick":
+			arena._on_hand_pressed(0 if arena._pick_seat == player_id else 1)
+		await create_timer(0.1).timeout
+		waited += 0.1
+	waited = 0.0
+	while manager.duel_pending() and _board._duel_strike_marks.is_empty() and waited < 12.0:
+		await create_timer(0.1).timeout
+		waited += 0.1
+	if manager.duel_pending():
+		_expect(_board._duel_strike_marks.size() == 2, "이긴 자리의 화면에는 진 사람의 말 2개가 붉은 표식으로 깜빡인다")
+		var victim_id: int = _board._duel_strike_marks.keys()[0]
+		var before: int = state.get_pawn(victim_id).current_tile_idx
+		var view: Node2D = _board._pawn_views[victim_id]
+		var click := InputEventMouseButton.new()
+		click.button_index = MOUSE_BUTTON_LEFT
+		click.pressed = true
+		click.position = view.position + _board._pawn_layer.position
+		_board._input(click)
+		_expect(not manager.duel_pending(), "말을 클릭하면 결투가 끝난다")
+		_expect(state.get_pawn(victim_id).current_tile_idx == before - 2, "고른 말이 2칸 뒤로 후퇴 (%d -> %d)" % [before, state.get_pawn(victim_id).current_tile_idx])
+	waited = 0.0
+	while _board._duel_arena != null and is_instance_valid(_board._duel_arena) and waited < 5.0:
+		await create_timer(0.1).timeout
+		waited += 0.1
+	_expect(_board._duel_arena == null or not is_instance_valid(_board._duel_arena), "결투가 끝나면 결투장이 닫힌다 (%.1f초)" % waited)
+	_expect(not manager.duel_pending(), "결투 종료")

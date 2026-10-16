@@ -454,7 +454,7 @@ func _try_skill(manager: TurnManager, player_id: int) -> bool:
 					_board._close_choice()
 			&"warp":
 				if _board._tile_pick_active:
-					_board._complete_tile_pick(PawnSkills.plane_targets(pawn)[_rng.randi_range(0, 7)])
+					_board._complete_tile_pick(PawnSkills.plane_targets(pawn)[_rng.randi_range(0, PawnSkills.plane_targets(pawn).size() - 1)])
 			&"shoot":
 				if _board._aim_pawn != -1:
 					for step: int in 3:

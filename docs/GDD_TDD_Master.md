@@ -1,6 +1,6 @@
 # **📑 \[마스터 기획서 & 기술 설계서 v3.0\] 에르핀의 억지 레이스: 보드게임 대격돌**
 
-> **v3.0 (2026-10-16, 구현 기준 전면 개정):** 이 문서는 실제 코드(`core_engine/`, `scenes/`, `tests/`)와 대조해 현행화했다. 기물 세트 효과는 삭제되고 6대 기물 계열 + 1회용 필살기 체제이며, 판정 도구 10종·생떼 카드 15종, 네 모서리 좌석, 5자리 방 코드 온라인 대전(락스텝)과 빠른 랜덤 매칭, 웹 배포(Vercel)까지 반영했다. 세부 예외 규칙은 `EDGE_CASE_SPEC.md`, 개발 이력은 6절에 있다.
+> **v3.0 (2026-10-16, 구현 기준 전면 개정):** 이 문서는 실제 코드(`core_engine/`, `scenes/`, `tests/`)와 대조해 현행화했다. 기물 세트 효과는 삭제되고 6대 기물 계열 + 1회용 필살기 체제이며, 판정 도구 10종·생떼 카드 16종, 네 모서리 좌석, 5자리 방 코드 온라인 대전(락스텝)과 빠른 랜덤 매칭, 웹 배포(Vercel)까지 반영했다. 세부 예외 규칙은 `EDGE_CASE_SPEC.md`, 개발 이력은 6절에 있다.
 
 ## **1. 프로젝트 개요 (Project Overview)**
 
@@ -306,7 +306,7 @@
 
 -   LAW_08 (결승선 문턱): 결승선 눈금 초과 시 남은 만큼 반동 후퇴
 
-### **4.4. 일회성 액티브: \[생떼 카드 (동네 룰)\] --- 3대 카테고리 총 15종**
+### **4.4. 일회성 액티브: \[생떼 카드 (동네 룰)\] --- 3대 카테고리 총 16종**
 
 즉발·개입형 8종(ACT_01~08) + 타일 설치형 5종(TRP_01~05) + 중립 소환형 2종(SUM_01~02). 덱 구성은 `CardRegistry`의 가중치(ACT_06 3장, SUM_02 1장, 나머지 2장씩)로 정해진다.
 
@@ -348,6 +348,19 @@
 
 > 원 명세는 이 두 카드를 `ACT_06`·`ACT_07`로 불렀지만 `ACT_06`은 이미
 > `이의 있음! 법전 파기`가 쓰고 있어 **`ACT_07`·`ACT_08`**로 번호를 붙였다.
+
+-   ACT_09 (운명의 가위바위보 결투!): \[1:1 미니게임\] 내 턴 굴리기 전에
+    > 보드 위에 말이 나와 있는 상대 1명과 가위바위보를 한다. **이긴 사람이
+    > 진 사람의 말 1개를 직접 골라 2칸 뒤로 밀어낸다** (상대가 이기면 역관광으로
+    > 내 말이 밀린다). 카드 설명: `적 1명과 가위바위보! 승자가 패자 말 1개를 -2칸 후퇴시킴`.
+    > 원 명세는 번호를 `ACT_08`로 적었지만 이미 수레바퀴가 쓰고 있어 **`ACT_09`**로 붙였다.
+    >
+    > - **발동(드래그 앤 드롭):** 카드를 상대 프로필이나 보드 위 상대 말에 놓으면 그 상대와, 그냥 보드판에 놓으면 보드 위에 말이 나온 상대 중 가장 앞선 사람과 결투한다 (`DuelRules.default_target`).
+    > - **중앙 스테이지 결투장 (`DuelArena`):** 타일이 없는 보드 한가운데에 `[ 1:1 결투! P1 vs P2 ]` 패널이 열린다. 직접 조작하는 자리는 `바위` `가위` `보` 버튼 3개(5초, 시간이 지나면 무작위)로 고르고, 상대가 컴퓨터면 손 모양이 빠르게 돌아가는 고민 모션 0.8초 뒤 무작위로 낸다 (컴퓨터끼리는 1.2초 중계). 둘 다 내면 `가위... 바위... 보!` 박자 뒤 손이 부딪히며 승패가 드러난다. 손 그림은 폰트에 이모지가 없어 코드로 그린다.
+    > - **비김:** `무승부! 재대결!` 뒤 다시 고른다. `MAX_DRAWS`(2)번 연속 비기면 카드 사용자(신청자)의 판정승이다.
+    > - **승자의 말 고르기:** 이기면 `결투 승리! 뒤로 밀어낼 상대방의 말을 클릭하세요! (-2칸 후퇴)`가 뜨고 진 사람의 보드 위 말들이 붉게 깜빡인다 (8초, 시간이 지나면 가장 앞선 말). 말이 하나뿐이면 자동 선택, 하나도 없으면 효과 없이 끝난다. 컴퓨터가 이기면 `결투 패배! 상대가 내 말을 뒤로 밀어버립니다!` 뒤 내 선두 말이 밀린다.
+    > - **후퇴와 함정 연계:** 2칸 뒤로 보내며 (출발선을 넘어가지 않고 닿으면 출발 전으로 복귀) 도착한 칸의 `거울의 힘`·`지뢰`·`도미노`·`무인도`·상대 호텔이 평소 이동처럼 터진다 (`MoveExecutor.resolve_forced_arrival`). 그래서 함정 바로 앞 칸의 적에게 결투를 거는 전략이 가능하다.
+    > - **엔진 구조:** 결투는 `TurnManager`의 `_duel` 상태(`pick` → `strike`)와 두 행동 `duel_pick {hand}`·`duel_strike {pawn_id}`로 진행하고 동기화 페이로드·상태 지문에 포함된다. 결투 중에는 굴리기·진행·카드·필살기가 `duel_pending`으로 거절된다.
 
 #### **B. 타일 설치형 (Tile Trap - 상대 화면에는 뒷면 카드로 은신 표시)**
 
@@ -467,11 +480,11 @@ res://
 │  │                설치물: hotel, mine_number, trap_mine / trap_pit / trap_island / trap_mirror_force / trap_domino
 │  ├─ entities/     board_entity / player_pawn (6계열) / neutral_npc / pawn_catalog (세부 기물·필살기 표)
 │  ├─ rules/        rule_context / rule_book_manager (FIFO 4슬롯) / base_law / law_registry / laws/ (교칙 8종)
-│  ├─ commands/     game_command / command_stack + 카드·필살기 커맨드 (move, bang, castle, drop, tower, wheel ...)
-│  ├─ cards/        생떼 카드 15종 + card_registry
+│  ├─ commands/     game_command / command_stack + 카드·필살기 커맨드 (move, bang, castle, drop, tower, wheel, duel ...)
+│  ├─ cards/        생떼 카드 16종 + card_registry
 │  ├─ tools/        판정 도구 10종 + tool_registry (D6, 윷, 룰렛, 홀덤, 친치로, 슬롯, 리볼버, 화투, 마작, 타로)
 │  ├─ augments/     증강 드래프트 (augment_def / augment_registry)
-│  ├─ turn_manager / game_state / move_executor / move_report / pawn_skills / victory_checker / turn_snapshot / tarot_effects
+│  ├─ turn_manager / game_state / move_executor / move_report / pawn_skills / duel_rules / victory_checker / turn_snapshot / tarot_effects
 │  ├─ bot_brain / bot_controller              # AI 판단·구동
 │  ├─ network_service                         # 초기 Listen Server 설계 (통합 테스트용)
 │  └─ 온라인·로비: net_game (락스텝) / lobby_service / lobby_model / rtc_link / lobby_code /
@@ -480,11 +493,11 @@ res://
 ├─ content_trickcal/avatars/               # [2차 창작 리소스 계층] 아바타 에셋 규격 (실제 그림은 후속)
 ├─ assets/  fonts/(기본 UI 글꼴 ONE 모바일 POP체 `game_ui_font.tres` + 대체 NanumGothic, 출처 고지 `ONE-Mobile-POP-NOTICE.md`), ui/trickcal/ (이미지 스킨)
 ├─ scenes/                                 # 뷰(View)
-│  ├─ main_board (HUD·보드·시점·좌석·연출) / roll_pad / roll_presenter / event_announcer / mobile_support / ui_skin
+│  ├─ main_board (HUD·보드·시점·좌석·연출) / duel_arena (가위바위보 결투장) / roll_pad / roll_presenter / event_announcer / mobile_support / ui_skin
 │  ├─ start_menu / lobby / lobby_theme       # 민트 테마 시작·로비
 │  └─ avatar_slot / avatar_catalog
 ├─ tools/generate_ui_skin.py
-└─ tests/        단위: test_*.gd (26파일, run_tests.gd) · 화면: ui_smoke / ui_fx_test / ui_menu_test /
+└─ tests/        단위: test_*.gd (27파일, run_tests.gd) · 화면: ui_smoke / ui_fx_test / ui_menu_test /
                  ui_lobby_test / ui_net_test · net/ (WebSocket RPC) · e2e/ (실제 Chromium + mock_ntfy)
 ```
 
