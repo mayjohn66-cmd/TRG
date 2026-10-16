@@ -66,6 +66,8 @@ jobs:
           mkdir -p build/web
           godot --headless --path . --export-release "Web" build/web/index.html
           touch build/web/.nojekyll
+          # Vercel이 gh-pages 브랜치(또는 이 폴더)를 빌드 없이 그대로 호스팅하도록 설정 파일을 함께 싣는다.
+          cp vercel.json build/web/vercel.json
           ls -la build/web
 
       - name: Publish to gh-pages
@@ -79,3 +81,19 @@ jobs:
           git add -A
           git commit -q -m "Deploy web build from ${GITHUB_SHA}"
           git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" gh-pages
+
+      # 선택: 저장소 시크릿 VERCEL_TOKEN / VERCEL_ORG_ID / VERCEL_PROJECT_ID가 있으면 같은 빌드를 Vercel에도 바로 배포한다.
+      # (없으면 건너뜀. 시크릿 없이도 Vercel 프로젝트의 Production Branch를 gh-pages로 두면 자동 배포된다 - README 참고)
+      - name: Deploy to Vercel (optional)
+        if: ${{ github.ref_name == 'main' || startsWith(github.ref_name, 'claude/') }}
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          if [ -z "${VERCEL_TOKEN}" ] || [ -z "${VERCEL_ORG_ID}" ] || [ -z "${VERCEL_PROJECT_ID}" ]; then
+            echo "Vercel 시크릿이 없어 건너뜁니다."
+            exit 0
+          fi
+          cd build/web
+          npx --yes vercel@latest deploy --prod --yes --token "${VERCEL_TOKEN}"

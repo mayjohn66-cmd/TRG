@@ -77,3 +77,13 @@ SMOKE_SEED=3 godot --headless --path . -s res://tests/ui_smoke.gd   # 다른 시
 - **판정 도구 3종(증강 `판정 도구 교체`):** `화투 고스톱 패`(패 2장 족보, 망통이 아니면 `스톱`/`고!`), `리치 마작 만리장성`(패 3장 조합 2~12칸, 역만 8%), `점성술사의 타로 덱`(메이저 아르카나 5장 중 1장, 매달린 남자는 다음 굴림 +8칸). 우측 카드에 족보·확률 전체가 표시됩니다.
 - **카드 3종:** `도미노 연쇄 붕괴`(함정: 밟은 말 -3칸, 경로의 다른 말 -2칸), `XVI. 무너지는 탑`(가장 많이 모인 타일의 말을 흩어 놓음), `X. 운명의 수레바퀴`(내 꼴찌 말과 1등 적 말의 위치 교환). 타로 카드 번호는 기존 `ACT_06`과 겹치지 않게 `ACT_07`·`ACT_08`입니다.
 
+
+## 웹 배포 (GitHub Pages / Vercel)
+
+푸시할 때마다 `.github/workflows/deploy-web.yml`이 테스트 -> Godot 웹 빌드 -> `gh-pages` 브랜치 강제 푸시까지 자동으로 합니다(`https://mayjohn66-cmd.github.io/TRG/`). 빌드 결과에는 `vercel.json`도 함께 들어갑니다.
+
+**Vercel로 호스팅하기 (둘 중 하나)**
+1. *시크릿 없이(권장):* Vercel에서 `Add New > Project`로 이 저장소를 가져온 뒤 `Settings > Git > Production Branch`를 `gh-pages`로 바꾸고, Framework Preset `Other`, Build Command / Output Directory는 비워 둡니다. 워크플로가 `gh-pages`를 갱신할 때마다 Vercel이 그 정적 파일을 그대로 배포합니다.
+2. *CLI 자동 배포:* 저장소 `Settings > Secrets and variables > Actions`에 `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`를 넣으면 워크플로의 `Deploy to Vercel (optional)` 단계가 같은 빌드를 `vercel deploy --prod`로 올립니다(없으면 건너뜀).
+
+Godot 웹 빌드는 스레드를 쓰지 않아(`thread_support=false`) 별도의 COOP/COEP 헤더가 필요 없습니다. 폰에서 예전 화면이 보이면 주소 끝에 `?v=숫자`를 붙이세요.
