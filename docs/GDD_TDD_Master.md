@@ -585,3 +585,4 @@
 - 2~3인 판은 4코너 보드를 그대로 써서 좌석 번호에 따라 출발 코너가 정해짐(밸런스 점검 필요).
 - 일러스트 슬롯은 마련됐으나 실제 이미지 에셋은 대부분 미적용.
 - 모바일 세부 최적화와 실기기 검증.
+- **치트/디버그 서랍 제거(예정):** 실제 서비스에는 필요 없다고 결정했다(교칙·카드 지급, 판정 도구 변경, NPC 소환, 제한 시간 체크박스). 지금은 개발·테스트용으로 메뉴 안에 남겨 두고(온라인에서는 이미 숨김) 나중에 지운다. 제거 시 함께 할 일: `ui_smoke`(`_debug_toggle`/`_debug_box` 확인)·`ui_screenshot`의 참조 정리, 제한 시간 체크박스 대신 메뉴의 `게임 설정` 항목이 `manager.set_process`를 직접 다루게 변경, 디버그 전용 핸들러(`_on_add_law_pressed`, `_on_tool_selected`, `_on_grant_card_pressed`, `_on_spawn_npc_pressed`) 삭제, GDD 4.5·README·EDGE_CASE_SPEC의 치트 설명 삭제.
