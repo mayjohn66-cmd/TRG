@@ -1,6 +1,7 @@
 {
-  "version": "0.1",
+  "version": "0.2",
   "scale_render": 4,
+  "compact_below_height": 40,
   "assets": {
     "panel": {
       "size": [
@@ -11,7 +12,8 @@
       "fill": "#F9F9F3",
       "edge": "#89CD4C",
       "radius": 18,
-      "shadow": false
+      "shadow": false,
+      "bottom_inset": 0
     },
     "inset": {
       "size": [
@@ -22,7 +24,8 @@
       "fill": "#E9F5CF",
       "edge": "#CDE793",
       "radius": 12,
-      "shadow": false
+      "shadow": false,
+      "bottom_inset": 0
     },
     "inset_active": {
       "size": [
@@ -33,7 +36,8 @@
       "fill": "#E9F5CF",
       "edge": "#5DA530",
       "radius": 12,
-      "shadow": false
+      "shadow": false,
+      "bottom_inset": 0
     },
     "inset_flash": {
       "size": [
@@ -44,7 +48,8 @@
       "fill": "#FFF3C7",
       "edge": "#E3C360",
       "radius": 12,
-      "shadow": false
+      "shadow": false,
+      "bottom_inset": 0
     },
     "header": {
       "size": [
@@ -55,7 +60,8 @@
       "fill": "#5DA530",
       "edge": "#5DA530",
       "radius": 12,
-      "shadow": false
+      "shadow": false,
+      "bottom_inset": 0
     },
     "cancel_normal": {
       "size": [
@@ -66,7 +72,8 @@
       "fill": "#FFF3C7",
       "edge": "#E3C360",
       "radius": 16,
-      "shadow": true
+      "shadow": true,
+      "bottom_inset": 3
     },
     "cancel_hover": {
       "size": [
@@ -77,7 +84,8 @@
       "fill": "#FFF3C7",
       "edge": "#5DA530",
       "radius": 16,
-      "shadow": true
+      "shadow": true,
+      "bottom_inset": 3
     },
     "cancel_pressed": {
       "size": [
@@ -88,7 +96,8 @@
       "fill": "#FFF3C7",
       "edge": "#E3C360",
       "radius": 16,
-      "shadow": false
+      "shadow": false,
+      "bottom_inset": 3
     },
     "action_normal": {
       "size": [
@@ -99,7 +108,8 @@
       "fill": "#FFDD74",
       "edge": "#F1A330",
       "radius": 16,
-      "shadow": true
+      "shadow": true,
+      "bottom_inset": 3
     },
     "action_hover": {
       "size": [
@@ -110,7 +120,8 @@
       "fill": "#FFDD74",
       "edge": "#5DA530",
       "radius": 16,
-      "shadow": true
+      "shadow": true,
+      "bottom_inset": 3
     },
     "action_pressed": {
       "size": [
@@ -121,7 +132,8 @@
       "fill": "#FFDD74",
       "edge": "#F1A330",
       "radius": 16,
-      "shadow": false
+      "shadow": false,
+      "bottom_inset": 3
     },
     "disabled": {
       "size": [
@@ -132,7 +144,8 @@
       "fill": "#A9A9A7",
       "edge": "#747C64",
       "radius": 16,
-      "shadow": false
+      "shadow": false,
+      "bottom_inset": 3
     },
     "focus": {
       "size": [
@@ -143,7 +156,104 @@
       "fill": null,
       "edge": "#5DA530",
       "radius": 16,
-      "shadow": false
+      "shadow": false,
+      "bottom_inset": 3
+    },
+    "compact_cancel_normal": {
+      "size": [
+        96,
+        32
+      ],
+      "slice": 14,
+      "fill": "#FFF3C7",
+      "edge": "#E3C360",
+      "radius": 10,
+      "shadow": true,
+      "bottom_inset": 2
+    },
+    "compact_cancel_hover": {
+      "size": [
+        96,
+        32
+      ],
+      "slice": 14,
+      "fill": "#FFF3C7",
+      "edge": "#5DA530",
+      "radius": 10,
+      "shadow": true,
+      "bottom_inset": 2
+    },
+    "compact_cancel_pressed": {
+      "size": [
+        96,
+        32
+      ],
+      "slice": 14,
+      "fill": "#FFF3C7",
+      "edge": "#E3C360",
+      "radius": 10,
+      "shadow": false,
+      "bottom_inset": 2
+    },
+    "compact_action_normal": {
+      "size": [
+        96,
+        32
+      ],
+      "slice": 14,
+      "fill": "#FFDD74",
+      "edge": "#F1A330",
+      "radius": 10,
+      "shadow": true,
+      "bottom_inset": 2
+    },
+    "compact_action_hover": {
+      "size": [
+        96,
+        32
+      ],
+      "slice": 14,
+      "fill": "#FFDD74",
+      "edge": "#5DA530",
+      "radius": 10,
+      "shadow": true,
+      "bottom_inset": 2
+    },
+    "compact_action_pressed": {
+      "size": [
+        96,
+        32
+      ],
+      "slice": 14,
+      "fill": "#FFDD74",
+      "edge": "#F1A330",
+      "radius": 10,
+      "shadow": false,
+      "bottom_inset": 2
+    },
+    "compact_disabled": {
+      "size": [
+        96,
+        32
+      ],
+      "slice": 14,
+      "fill": "#A9A9A7",
+      "edge": "#747C64",
+      "radius": 10,
+      "shadow": false,
+      "bottom_inset": 2
+    },
+    "compact_focus": {
+      "size": [
+        96,
+        32
+      ],
+      "slice": 14,
+      "fill": null,
+      "edge": "#5DA530",
+      "radius": 10,
+      "shadow": false,
+      "bottom_inset": 2
     }
   }
 }
