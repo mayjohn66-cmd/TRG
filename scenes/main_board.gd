@@ -943,13 +943,15 @@ func _build_law_board() -> void:
 	_law_panel = panel
 	panel.position = Vector2(SAFE_MARGIN, 190)
 	panel.custom_minimum_size = Vector2(300, 0)
-	panel.add_theme_stylebox_override("panel", _style(COLOR_PANEL, COLOR_PANEL_EDGE, 2, 14, 10, 10))
+	panel.add_theme_stylebox_override("panel", UiSkin.panel())
 	add_child(panel)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)
 	panel.add_child(box)
-	box.add_child(_make_label("엘리아스 중앙 법전", 16, COLOR_GOLD))
-	box.add_child(_make_label("최대 4슬롯 - 가득 차면 가장 오래된 교칙이 밀려남", 10, Color("868e96")))
+	var law_title := _make_label("엘리아스 중앙 법전", 16, Color.WHITE)
+	UiSkin.title(law_title)
+	box.add_child(law_title)
+	box.add_child(_make_label("최대 4슬롯 - 가득 차면 가장 오래된 교칙이 밀려남", 10, UiSkin.SOFT))
 	for slot: int in GameEnums.MAX_LAWS:
 		var slot_panel := PanelContainer.new()
 		slot_panel.custom_minimum_size = Vector2(280, 66)
@@ -975,10 +977,10 @@ func _build_law_board() -> void:
 		text_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		text_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		inner.add_child(text_box)
-		var name_label := _make_label("", 13, Color("dee2e6"))
+		var name_label := _make_label("", 13, UiSkin.INK)
 		name_label.clip_text = true
 		text_box.add_child(name_label)
-		var desc_label := _make_label("", 10, Color("adb5bd"))
+		var desc_label := _make_label("", 10, UiSkin.SOFT)
 		desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		desc_label.max_lines_visible = 3
 		desc_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -998,7 +1000,7 @@ func _build_tool_board() -> void:
 	_tool_board.custom_minimum_size = Vector2(210, 0)
 	_tool_board.size = Vector2(210, 140)
 	_tool_board.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_tool_board.add_theme_stylebox_override("panel", _style(Color("101626"), COLOR_PANEL_EDGE, 3, 18, 12, 10))
+	_tool_board.add_theme_stylebox_override("panel", UiSkin.panel())
 	add_child(_tool_board)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)
@@ -1029,12 +1031,12 @@ func _build_tool_board() -> void:
 	center.add_theme_constant_override("separation", 8)
 	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(center)
-	_tool_main = _make_label("", 14, Color("f8f9fa"))
+	_tool_main = _make_label("", 14, UiSkin.INK)
 	_tool_main.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_tool_main.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_tool_main.custom_minimum_size = Vector2(184, 0)
 	center.add_child(_tool_main)
-	_tool_sub = _make_label("", 12, Color("ffe066"))
+	_tool_sub = _make_label("", 12, UiSkin.GREEN)
 	_tool_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_tool_sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_tool_sub.custom_minimum_size = Vector2(184, 0)
@@ -1043,7 +1045,7 @@ func _build_tool_board() -> void:
 	_tool_rules.add_theme_constant_override("separation", 2)
 	_tool_rules.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	center.add_child(_tool_rules)
-	_tool_note = _make_label("", 10, Color("9aa5b8"))
+	_tool_note = _make_label("", 10, UiSkin.SOFT)
 	_tool_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_tool_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_tool_note.custom_minimum_size = Vector2(184, 0)
@@ -1278,20 +1280,9 @@ func _make_button(text: String, callback: Callable, font_size: int, base_color: 
 
 
 ## 둥근 모서리·테두리가 있는 게임풍 버튼 스타일 (일반/호버/눌림/비활성).
-func _apply_button_style(button: Button, base_color: Color, radius: int) -> void:
-	var normal: StyleBoxFlat = _style(base_color, base_color.lightened(0.3), 2, radius, 4, 6)
-	var hover: StyleBoxFlat = _style(base_color.lightened(0.15), COLOR_GOLD, 2, radius, 6, 6)
-	var pressed: StyleBoxFlat = _style(base_color.darkened(0.2), COLOR_GOLD, 2, radius, 0, 6)
-	var disabled: StyleBoxFlat = _style(base_color.darkened(0.55), base_color.darkened(0.25), 2, radius, 0, 6)
-	for box: StyleBoxFlat in [normal, hover, pressed, disabled]:
-		box.set_content_margin(SIDE_LEFT, 12)
-		box.set_content_margin(SIDE_RIGHT, 12)
-	button.add_theme_stylebox_override("normal", normal)
-	button.add_theme_stylebox_override("hover", hover)
-	button.add_theme_stylebox_override("pressed", pressed)
-	button.add_theme_stylebox_override("disabled", disabled)
-	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	button.add_theme_color_override("font_disabled_color", Color("7b8499"))
+func _apply_button_style(button: Button, base_color: Color, _radius: int) -> void:
+	var is_action: bool = base_color.g > base_color.r * 1.2 and base_color.g > base_color.b
+	UiSkin.button(button, is_action)
 
 
 ## 둥근 모서리·테두리·그림자가 있는 패널 스타일.
@@ -1901,16 +1892,16 @@ func _refresh_laws() -> void:
 		if active:
 			var law: LawResource = state.rulebook.active_laws_queue[slot]
 			var flashing: bool = _flash_law_ids.has(law.law_id)
-			_law_slots[slot].add_theme_stylebox_override("panel", _style(Color("4a3d12") if flashing else Color("2e2a1a"), COLOR_GOLD, 2, 12, 6, 8))
+			_law_slots[slot].add_theme_stylebox_override("panel", UiSkin.panel("inset_flash" if flashing else "inset_active", 8.0))
 			_law_badge_labels[slot].text = law.law_id.trim_prefix("LAW_")
 			_law_labels[slot].text = law.law_name
-			_law_labels[slot].add_theme_color_override("font_color", Color("fff3bf") if flashing else Color("f1f3f5"))
+			_law_labels[slot].add_theme_color_override("font_color", UiSkin.INK)
 			_law_descs[slot].text = law.description
 			_law_slots[slot].tooltip_text = "[%s] %s\n%s" % [law.law_id, law.law_name, law.description]
 		else:
-			_law_slots[slot].add_theme_stylebox_override("panel", _style(Color("10131b"), Color(0, 0, 0, 0), 0, 12, 0, 8))
+			_law_slots[slot].add_theme_stylebox_override("panel", UiSkin.panel("inset", 8.0))
 			_law_labels[slot].text = "빈 슬롯 %d" % (slot + 1)
-			_law_labels[slot].add_theme_color_override("font_color", Color("5c6068"))
+			_law_labels[slot].add_theme_color_override("font_color", UiSkin.SOFT)
 			_law_descs[slot].text = ""
 			_law_slots[slot].tooltip_text = ""
 
@@ -2978,7 +2969,7 @@ func _refresh_tool_board(tool: BaseJudgmentTool, player_id: int) -> void:
 	_tool_icon.add_theme_stylebox_override("panel", _style(card[1], (card[1] as Color).lightened(0.4), 2, 12, 0, 0))
 	_tool_icon_label.text = card[0]
 	_tool_title.text = tool.display_name
-	_tool_title.add_theme_color_override("font_color", (PLAYER_COLORS[player_id] as Color).lightened(0.35))
+	_tool_title.add_theme_color_override("font_color", UiSkin.INK)
 	_tool_main.text = card[2]
 	var rules: Dictionary = TOOL_RULES.get(tool.tool_id, {})
 	var sub: String = card[3]
@@ -2991,7 +2982,7 @@ func _refresh_tool_board(tool: BaseJudgmentTool, player_id: int) -> void:
 
 
 ## 규칙표를 다시 그린다: 행마다 [항목 ......... 결과] 한 줄.
-func _rebuild_tool_rules(rules: Dictionary, accent: Color) -> void:
+func _rebuild_tool_rules(rules: Dictionary, _accent: Color) -> void:
 	for child: Node in _tool_rules.get_children():
 		_tool_rules.remove_child(child)
 		child.queue_free()
@@ -3000,15 +2991,15 @@ func _rebuild_tool_rules(rules: Dictionary, accent: Color) -> void:
 		var pair: Array = rows[index]
 		var row := PanelContainer.new()
 		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		row.add_theme_stylebox_override("panel", _style(accent.darkened(0.7) if index % 2 == 0 else Color(0, 0, 0, 0), Color(0, 0, 0, 0), 0, 4, 0, 2))
+		row.add_theme_stylebox_override("panel", UiSkin.panel("inset", 2.0))
 		var line := HBoxContainer.new()
 		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.add_child(line)
-		var name_label := _make_label(str(pair[0]), 12, Color("dee2e6"))
+		var name_label := _make_label(str(pair[0]), 12, UiSkin.INK)
 		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		line.add_child(name_label)
-		var value_label := _make_label(str(pair[1]), 12, Color("ffe066"))
+		var value_label := _make_label(str(pair[1]), 12, UiSkin.GREEN)
 		value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		value_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		line.add_child(value_label)
@@ -3668,15 +3659,9 @@ func _complete_tile_pick(tile: int) -> void:
 # 오버레이: 선택창 / 증강 드래프트 / 결과창
 # ---------------------------------------------------------------------------
 
-## 오버레이 패널의 불투명한 어두운 배경 (뒤의 화면이 비치지 않게 한다).
-func _panel_style() -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color("14171c")
-	style.border_color = Color("5c6068")
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(10)
-	style.set_content_margin_all(20)
-	return style
+## 밝은 본체와 녹색 테두리의 공통 이미지 패널.
+func _panel_style() -> StyleBoxTexture:
+	return UiSkin.panel("panel", 20.0)
 
 
 func _new_overlay(alpha: float = 0.7) -> Control:
@@ -3697,6 +3682,7 @@ func _show_choice(title: String, options: Array[Dictionary], on_pick: Callable, 
 	_choice_overlay.add_child(center)
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", _panel_style())
+	UiSkin.bind_light_text(panel)
 	center.add_child(panel)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 8)
@@ -4148,6 +4134,7 @@ func _show_result_overlay() -> void:
 	_result_overlay.add_child(center)
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", _panel_style())
+	UiSkin.bind_light_text(panel)
 	center.add_child(panel)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 14)
@@ -4700,6 +4687,7 @@ func _open_menu() -> void:
 	_menu_overlay.add_child(center)
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", _panel_style())
+	UiSkin.bind_light_text(panel)
 	center.add_child(panel)
 	_menu_box = VBoxContainer.new()
 	_menu_box.add_theme_constant_override("separation", 10)
@@ -4738,6 +4726,7 @@ func _menu_title(text: String) -> void:
 	var title: Label = _make_label(text, 26, COLOR_GOLD)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_menu_box.add_child(title)
+	UiSkin.title(title)
 
 
 func _show_menu_page(page: StringName) -> void:
@@ -4905,6 +4894,7 @@ func _on_net_connection_lost(reason: String) -> void:
 	_net_lost_overlay.add_child(center)
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", _panel_style())
+	UiSkin.bind_light_text(panel)
 	center.add_child(panel)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 14)
