@@ -15,6 +15,10 @@ enum State {
 	PHASE_NEUTRAL_NPC,
 }
 
+## 락스텝으로 복제되는 내부 행동 이름.
+const ACTION_TIMEOUT: StringName = &"__timeout"
+const ACTION_AUTO_DRAFT: StringName = &"__auto_draft"
+
 signal phase_changed(new_state: State, player_id: int, time_limit: float)
 ## 우노 리버스(ACT_01) 등으로 턴 진행 방향이 뒤집혔다. new_direction: 1 정방향 / -1 역방향.
 signal turn_order_reversed(new_direction: int)
@@ -23,6 +27,8 @@ signal event_received(kind: StringName, data: Dictionary)
 signal action_rejected(player_id: int, action: StringName, reason: StringName)
 signal state_synced()
 signal game_over(winner_id: int, reason: StringName)
+## 외부 타임아웃 모드에서 제한 시간이 끝났다 (serial: 그 시점의 phase_serial). 방장의 NetGame이 이 신호를 받아 모두에게 같은 타임아웃 행동을 보낸다.
+signal timeout_due(serial: int)
 
 var state: GameState = null
 var current_state: State = State.PHASE_ROUND_START
@@ -41,6 +47,15 @@ var is_game_over: bool = false
 
 ## 한 칸 이동 사이의 연출 대기 시간(초). 0이면 await 없이 즉시 끝까지 이동한다 (헤드리스/테스트). 뷰 연결 시 올린다.
 @export var step_delay_sec: float = 0.0
+
+## true면 모든 참가자가 같은 시드로 같은 규칙 엔진을 각자 돌린다(락스텝). 행동은 방장이 정한 순서대로 apply_replicated()로 들어오고, 네트워크로 상태·이벤트를 따로 보내지 않는다.
+var lockstep: bool = false
+## 설정되면 act()/force_timeout()/auto_pick_draft()가 규칙을 직접 실행하지 않고 이 Callable(action, params)로 보낸다 (락스텝 NetGame이 순서를 정해 되돌려 준다).
+var action_interceptor: Callable = Callable()
+## true면 제한 시간이 끝나도 스스로 처리하지 않고 timeout_due 신호만 보낸다 (락스텝에서 방장이 대표로 정한다).
+var external_timeouts: bool = false
+## 제한 시간 배율 (온라인 대전은 사람 속도에 맞게 늘린다).
+var timer_scale: float = 1.0
 
 ## true면 호스트 로컬(피어 1)이 params["player_id"]로 모든 플레이어를 대리 조작할 수 있다 (핫시트/테스트).
 var hotseat_mode: bool = false
@@ -73,8 +88,13 @@ var _move_outcome: MoveExecutor.StepOutcome = MoveExecutor.StepOutcome.CONTINUE
 
 
 func _process(delta: float) -> void:
-	if state != null and multiplayer.is_server():
+	if state != null and _is_authority():
 		tick(delta)
+
+
+## 규칙을 실행할 권한이 있는가: 방장(서버)이거나 락스텝 참가자.
+func _is_authority() -> bool:
+	return lockstep or multiplayer.is_server()
 
 
 # ---------------------------------------------------------------------------
@@ -92,7 +112,7 @@ func current_player_id() -> int:
 
 ## 호스트 전용: 새 판을 시작한다.
 func start_game(player_ids: Array[int], seed_value: int = 0, loadouts: Dictionary = {}) -> void:
-	if not multiplayer.is_server():
+	if not _is_authority():
 		return
 	state = GameState.new()
 	state.setup(player_ids, seed_value, loadouts)
@@ -119,6 +139,9 @@ func start_game(player_ids: Array[int], seed_value: int = 0, loadouts: Dictionar
 
 ## 로컬에서 행동을 보낸다. 서버면 직접 처리하고, 클라이언트면 호스트(피어 1)로 RPC를 보낸다.
 func act(action: StringName, params: Dictionary = {}) -> void:
+	if action_interceptor.is_valid():
+		action_interceptor.call(action, params)
+		return
 	if multiplayer.is_server():
 		request_action(action, params)
 	else:
@@ -129,7 +152,7 @@ func act(action: StringName, params: Dictionary = {}) -> void:
 ## action: proceed / roll / stop / select_pawn / play_card / pick_augment / reroll_augment
 @rpc("any_peer", "call_local", "reliable")
 func request_action(action: StringName, params: Dictionary = {}) -> void:
-	if not multiplayer.is_server() or state == null:
+	if not _is_authority() or state == null:
 		return
 	var actor: int = _resolve_actor(int(params.get("player_id", -1)))
 	if actor == -1 or not player_order.has(actor):
@@ -179,12 +202,12 @@ func change_state(new_state: State) -> void:
 	phase_serial += 1
 	current_state = new_state
 	match new_state:
-		State.PHASE_ROUND_START: phase_time_left = GameEnums.PHASE_TIME_DRAFT
-		State.PHASE_TURN_BEGIN: phase_time_left = GameEnums.PHASE_TIME_TURN_BEGIN
-		State.PHASE_ROLL_WAIT: phase_time_left = GameEnums.PHASE_TIME_ROLL
-		State.PHASE_INTERRUPT_ROLL: phase_time_left = GameEnums.PHASE_TIME_INTERRUPT
-		State.PHASE_SELECT_PAWN: phase_time_left = GameEnums.PHASE_TIME_SELECT
-		State.PHASE_RESOLUTION: phase_time_left = GameEnums.PHASE_TIME_RESOLUTION
+		State.PHASE_ROUND_START: phase_time_left = GameEnums.PHASE_TIME_DRAFT * timer_scale
+		State.PHASE_TURN_BEGIN: phase_time_left = GameEnums.PHASE_TIME_TURN_BEGIN * timer_scale
+		State.PHASE_ROLL_WAIT: phase_time_left = GameEnums.PHASE_TIME_ROLL * timer_scale
+		State.PHASE_INTERRUPT_ROLL: phase_time_left = GameEnums.PHASE_TIME_INTERRUPT * timer_scale
+		State.PHASE_SELECT_PAWN: phase_time_left = GameEnums.PHASE_TIME_SELECT * timer_scale
+		State.PHASE_RESOLUTION: phase_time_left = GameEnums.PHASE_TIME_RESOLUTION * timer_scale
 		_: phase_time_left = 0.0
 	phase_changed.emit(current_state, current_player_id(), phase_time_left)
 	_broadcast_state()
@@ -197,15 +220,48 @@ func tick(delta: float) -> void:
 	phase_time_left -= delta
 	if phase_time_left <= 0.0:
 		phase_time_left = 0.0
-		_on_timeout()
+		if external_timeouts:
+			timeout_due.emit(phase_serial)
+		else:
+			_on_timeout()
 
 
 ## 로컬/핫시트에서 남은 대기 시간을 건너뛴다 (개입 창 닫기 등). 이동 연출 중에는 동작하지 않는다.
 func force_timeout() -> void:
+	if action_interceptor.is_valid():
+		if state != null and not is_game_over:
+			action_interceptor.call(ACTION_TIMEOUT, {"serial": phase_serial})
+		return
 	if state == null or is_game_over or current_state == State.PHASE_MOVING_STEP or phase_time_left <= 0.0:
 		return
 	phase_time_left = 0.0
 	_on_timeout()
+
+
+## 이 상태에 제한 시간이 있는가 (없는 상태는 타임아웃 행동을 무시한다).
+func phase_has_timer(phase: State) -> bool:
+	match phase:
+		State.PHASE_ROUND_START, State.PHASE_TURN_BEGIN, State.PHASE_ROLL_WAIT, State.PHASE_INTERRUPT_ROLL, State.PHASE_SELECT_PAWN, State.PHASE_RESOLUTION:
+			return true
+	return false
+
+
+## 락스텝: 방장이 정한 순서로 모든 참가자에게 똑같이 적용되는 행동 하나. 사람 확인은 방장이 끝냈다.
+## 일반 행동은 request_action과 같고, ACTION_TIMEOUT(serial이 같을 때만)과 ACTION_AUTO_DRAFT가 추가로 있다.
+func apply_replicated(action: StringName, params: Dictionary) -> void:
+	if state == null:
+		return
+	match action:
+		ACTION_TIMEOUT:
+			if is_game_over or int(params.get("serial", -1)) != phase_serial or current_state == State.PHASE_MOVING_STEP or not phase_has_timer(current_state):
+				action_rejected.emit(-1, action, &"stale_timeout")
+				return
+			phase_time_left = 0.0
+			_on_timeout()
+		ACTION_AUTO_DRAFT:
+			auto_pick_draft_now(int(params.get("player_id", -1)))
+		_:
+			request_action(action, params)
 
 
 ## PHASE_MOVING_STEP 본체: path(BoardGraph.calculate_path 결과)를 한 칸씩 밟는다.
@@ -236,6 +292,8 @@ func execute_step_by_step_move(entity: BoardEntity, path: Array[int], ctx: RuleC
 # ---------------------------------------------------------------------------
 
 func _resolve_actor(claimed_player: int) -> int:
+	if lockstep:
+		return claimed_player  # 방장이 이미 보낸 사람을 확인했다
 	var sender: int = multiplayer.get_remote_sender_id()
 	if sender == 0:
 		sender = NetworkService.HOST_PEER_ID
@@ -543,7 +601,7 @@ func _resolve_stack_choice(stack: bool) -> void:
 			for member: PlayerPawn in mover.stack_members():
 				members.append(member.entity_id)
 	_emit_event(&"stack_resolved", {"player_id": current_player_id(), "stacked": stack and members.size() > 1, "members": members, "offer": offer})
-	phase_time_left = GameEnums.PHASE_TIME_RESOLUTION
+	phase_time_left = GameEnums.PHASE_TIME_RESOLUTION * timer_scale
 	if _someone_can_intervene():
 		_broadcast_state()
 	else:
@@ -596,6 +654,13 @@ func draft_reroll_used(player_id: int, index: int) -> bool:
 
 ## 로컬/핫시트용: 해당 플레이어의 증강을 무작위로 자동 선택한다 (기물 진화는 가장 앞 슬롯의 기본 말).
 func auto_pick_draft(player_id: int) -> void:
+	if action_interceptor.is_valid():
+		action_interceptor.call(ACTION_AUTO_DRAFT, {"player_id": player_id})
+		return
+	auto_pick_draft_now(player_id)
+
+
+func auto_pick_draft_now(player_id: int) -> void:
 	if current_state != State.PHASE_ROUND_START or not _draft_offers.has(player_id) or _draft_picks.has(player_id):
 		return
 	var index: int = state.rng.randi_range(0, (_draft_offers[player_id] as Array).size() - 1)
@@ -757,7 +822,7 @@ func _apply_roll_result(result: RollResult) -> void:
 		advance_to_next_player()
 		return
 	if result.can_continue:
-		phase_time_left = GameEnums.PHASE_TIME_ROLL
+		phase_time_left = GameEnums.PHASE_TIME_ROLL * timer_scale
 		_broadcast_state()
 		return
 	var ctx: RuleContext = _make_ctx(current_player_id())
@@ -769,7 +834,7 @@ func _apply_roll_result(result: RollResult) -> void:
 		move_queue.append(ctx.dice_value)
 	_roll_chain += 1
 	if result.reroll and _roll_chain < GameEnums.MAX_REROLL_CHAIN:
-		phase_time_left = GameEnums.PHASE_TIME_ROLL
+		phase_time_left = GameEnums.PHASE_TIME_ROLL * timer_scale
 		_broadcast_state()
 	else:
 		_enter_interrupt_roll()
@@ -885,7 +950,7 @@ func _enter_resolution() -> void:
 	change_state(State.PHASE_RESOLUTION)
 	if not _stack_offer.is_empty():
 		# 윷놀이 기물 업기 선택을 기다린다. 선택(또는 시간 초과 시 자동 업기) 뒤에 정산 창이 이어진다.
-		phase_time_left = GameEnums.PHASE_TIME_SELECT
+		phase_time_left = GameEnums.PHASE_TIME_SELECT * timer_scale
 		_broadcast_state()
 		return
 	if not _someone_can_intervene():
@@ -956,7 +1021,7 @@ func _check_victory(report: MoveReport) -> bool:
 # ---------------------------------------------------------------------------
 
 func _has_remote_peers() -> bool:
-	return multiplayer.has_multiplayer_peer() and multiplayer.is_server() and not multiplayer.get_peers().is_empty()
+	return not lockstep and multiplayer.has_multiplayer_peer() and multiplayer.is_server() and not multiplayer.get_peers().is_empty()
 
 
 func _emit_event(kind: StringName, data: Dictionary) -> void:
@@ -1030,3 +1095,11 @@ func _rpc_sync_hand(player_id: int, cards: Array) -> void:
 @rpc("authority", "call_remote", "reliable")
 func _rpc_event(kind: StringName, data: Dictionary) -> void:
 	event_received.emit(kind, data)
+
+
+## 락스텝 검증용 상태 지문: 같은 시드·같은 행동 순서를 거친 모든 참가자가 같은 값이어야 한다.
+func state_hash() -> int:
+	if state == null:
+		return 0
+	var payload: Dictionary = {"snapshot": TurnSnapshot.capture(state).to_dict(), "phase": current_state, "serial": phase_serial, "turn": current_turn_index, "dir": turn_direction, "queue": move_queue, "over": is_game_over, "rng": state.rng.state}
+	return var_to_str(payload).hash()

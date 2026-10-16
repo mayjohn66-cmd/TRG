@@ -21,7 +21,13 @@ var beacon_seconds: float = MatchBeacon.BEACON_SECONDS
 ## false면 _process로 시간이 흐르지 않는다 (테스트가 tick을 직접 부른다).
 var auto_tick: bool = true
 
+## 대기가 끝나도 연결 중인 참가자가 있으면 최대 이만큼(초) 더 기다린다.
+var grace_seconds: float = 10.0
+## 대기열을 다시 읽어 동시에 열린 방을 찾는 간격(초).
+var merge_seconds: float = 1.5
+
 var _beacon_left: float = 0.0
+var _merge_left: float = 0.0
 var _serial: int = 0
 var _candidates_tried: Dictionary = {}
 var _busy: bool = false
@@ -77,13 +83,19 @@ func tick(delta: float) -> void:
 	elapsed += delta
 	if state != State.HOSTING:
 		return
-	if service.model.human_count() >= LobbyModel.SEAT_COUNT or seconds_left() == 0:
+	if service.model.human_count() >= LobbyModel.SEAT_COUNT:
+		_begin_start()
+		return
+	if seconds_left() == 0 and not (service.is_connecting_guest() and elapsed < wait_seconds + grace_seconds):
 		_begin_start()
 		return
 	_beacon_left -= delta
 	if _beacon_left <= 0.0:
 		_beacon_left = beacon_seconds
 		_publish_beacon()
+	_merge_left -= delta
+	if _merge_left <= 0.0:
+		_merge_left = merge_seconds
 		_check_merge()
 
 
@@ -154,6 +166,7 @@ func _become_host() -> void:
 		return
 	_set_state(State.HOSTING)
 	_beacon_left = 0.0  # 바로 첫 비콘을 올린다
+	_merge_left = 1.0   # 곧바로(1초 뒤) 동시에 방을 연 사람이 있는지 한 번 확인한다
 
 
 func _publish_beacon() -> void:

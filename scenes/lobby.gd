@@ -61,6 +61,7 @@ func _ready() -> void:
 	service.relay_status_changed.connect(_on_relay_status)
 	service.join_progress.connect(_on_join_progress)
 	service.join_failed.connect(_on_join_failed)
+	service.game_starting.connect(_on_game_starting)
 	quick = QuickMatch.new()
 	quick.name = "QuickMatch"
 	quick.service = service
@@ -248,13 +249,23 @@ func _on_quick_failed(message: String) -> void:
 	_panel_box.add_child(_label(message, 14, Color("ff8787")))
 
 
-## 게임을 시작한다: 빈자리는 AI 봇으로 채운다. 지금은 사람이 방장 혼자일 때만 시작할 수 있다 (참가자와 함께하는 게임 화면 동기화는 다음 단계).
+## 게임을 시작한다. 방장 혼자면 컴퓨터 대전(빈자리 전부 AI), 사람이 둘 이상이면 온라인 대전: 사람 + 방장이 채운 AI만 참여하고 비어 있는 자리는 빠진다 (2인 대전 가능).
 func start_game() -> void:
-	if service.model.human_count() > 1:
-		_set_status("참가자와 함께하는 온라인 게임 화면은 아직 연결되지 않았습니다 (다음 단계). 방은 그대로 유지됩니다.", true)
+	if service.model.human_count() <= 1:
+		service.fill_with_bots()
+		GameSession.clear_net()
+		GameSession.mode = GameSession.MODE_AI
+		game_started = true
+		if change_scene_enabled:
+			get_tree().change_scene_to_file(BOARD_SCENE)
 		return
-	service.fill_with_bots()
-	GameSession.mode = GameSession.MODE_AI
+	if not service.begin_online_game():
+		_set_status("게임을 시작할 수 없습니다. 방을 다시 만들어 주세요.", true)
+
+
+## 방장이 시작했다 (방장·참가자 모두): 온라인 설정을 세션에 넣고 게임 화면으로 간다.
+func _on_game_starting(config: Dictionary) -> void:
+	GameSession.set_net(service.is_host, service.my_seat(), config)
 	game_started = true
 	if change_scene_enabled:
 		get_tree().change_scene_to_file(BOARD_SCENE)
@@ -277,7 +288,7 @@ func start_hosting() -> void:
 	_clear_panel()
 	_title("친선전 방")
 	_panel_box.add_child(_make_code_badge())
-	var help := _label("친구에게 이 방 코드를 알려 주세요. 친구가 코드를 입력하면 자동으로 연결됩니다. 빈 자리는 시작할 때 컴퓨터가 채웁니다.", 13, Color("adb5bd"))
+	var help := _label("친구에게 이 방 코드를 알려 주세요. 친구가 코드를 입력하면 자동으로 연결됩니다. 혼자면 AI 3명과, 친구가 있으면 사람끼리(2~4인) 시작하며 비워 둔 자리는 빠지고 AI는 [AI 봇으로 채우기]를 누른 자리만 참여합니다.", 13, Color("adb5bd"))
 	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	help.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	help.custom_minimum_size = Vector2(820, 0)
@@ -387,15 +398,26 @@ func _rebuild_host() -> void:
 	if _room_label != null:
 		_room_label.text = _room_text()
 	if _start_button != null:
-		# 지금은 방장 혼자(나머지는 AI)일 때만 시작할 수 있다. 참가자가 있으면 온라인 게임 화면 연동(다음 단계)을 기다린다.
-		var alone: bool = service.model.human_count() <= 1
-		_start_button.disabled = not alone
-		_start_button.text = "게임 시작  (빈자리는 AI)" if alone else "게임 시작  (참가자와의 게임 화면은 다음 단계)"
+		# 혼자면 AI와 대결(빈자리 전부 AI), 사람이 둘 이상이면 지금 명단 그대로 시작한다 (비어 있는 자리는 빠져 2인 대전도 된다).
+		_start_button.disabled = false
+		_start_button.text = _start_label()
 	if _status != null and not _seat_errors.has(0):
 		if not _relay_ok:
 			_status.text = "자동 연결 서버에 닿지 못했습니다. 아래 [고급: 수동 코드 연결]을 열어 코드를 직접 주고받을 수 있습니다."
 		else:
 			_status.text = "친구의 입장을 기다리는 중입니다. 방 코드를 알려 주세요."
+
+
+## 시작 버튼 문구: 지금 명단으로 몇 명이 어떻게 겨루는지 보여 준다.
+func _start_label() -> String:
+	var humans: int = service.model.human_count()
+	if humans <= 1:
+		return "게임 시작  (AI 3명과 대결)"
+	var bots: int = 0
+	for seat: int in range(2, LobbyModel.SEAT_COUNT + 1):
+		if service.model.state_of(seat) == LobbyModel.SeatState.BOT:
+			bots += 1
+	return "게임 시작  (사람 %d명%s)" % [humans, " + AI %d명" % bots if bots > 0 else ", AI 없음"]
 
 
 func _make_host_row(seat: int) -> Control:

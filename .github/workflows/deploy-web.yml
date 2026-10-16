@@ -61,6 +61,12 @@ jobs:
       - name: Run lobby UI test (WebRTC lobby screens, no network)
         run: godot --headless --path . -s res://tests/ui_lobby_test.gd
 
+      - name: Run online lockstep test (2 players, no bots)
+        run: godot --headless --path . -s res://tests/ui_net_test.gd
+
+      - name: Run online lockstep test (2 humans + 2 bots)
+        run: SEATS=4 BOTS=3,4 godot --headless --path . -s res://tests/ui_net_test.gd
+
       - name: Export web build
         run: |
           mkdir -p build/web

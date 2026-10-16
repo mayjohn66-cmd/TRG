@@ -11,11 +11,11 @@ const browser = await chromium.launch({
   args: ["--no-sandbox", "--disable-features=WebRtcHideLocalIpsWithMdns", "--allow-loopback-in-peer-connection", "--use-gl=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"],
 });
 const fail = async (message) => { console.error("E2E_FAIL: " + message); await browser.close(); process.exit(1); };
-const open = async (name, role) => {
+const open = async (name, role, extra = "") => {
   const page = await (await browser.newContext()).newPage();
   page.on("console", (m) => { if (process.env.E2E_VERBOSE) console.log(`[${name}] ${m.text()}`); });
   page.on("pageerror", (e) => console.log(`[${name}] pageerror ${e}`));
-  await page.goto(`${baseUrl}/index.html?role=${role}&relay=${encodeURIComponent(relay)}`);
+  await page.goto(`${baseUrl}/index.html?role=${role}&relay=${encodeURIComponent(relay)}${extra}`);
   await page.waitForFunction(() => window.__ready === true, null, { timeout: 90000 }).catch(() => fail(`${name} 씬이 준비되지 않음`));
   return page;
 };
@@ -47,6 +47,15 @@ const joinWithRetry = async (page, nickname) => {
   }
   return false;
 };
+async function joinWithRetryOn(page, nickname, code) {
+  for (let attempt = 0; attempt < 6; attempt++) {
+    await page.evaluate(([name, room]) => { window.__joinFailed = undefined; window.__joinRoom(name, room); }, [nickname, code]);
+    const outcome = await page.waitForFunction(() => window.__joined === true ? "joined" : (typeof window.__joinFailed === "string" ? "failed" : false), null, { timeout: 60000 }).then((h) => h.jsonValue()).catch(() => "timeout");
+    if (outcome === "joined") return true;
+    await new Promise((r) => setTimeout(r, 1500));
+  }
+  return false;
+}
 const [okA, okB] = await Promise.all([joinWithRetry(guestA, "친구A"), joinWithRetry(guestB, "친구B")]);
 if (!okA || !okB) await fail(`방 코드 자동 입장 실패 A=${okA} B=${okB}`);
 
@@ -99,5 +108,29 @@ await hostPage.waitForFunction(() => window.__started === true, null, { timeout:
 const finalRoster = JSON.parse(await hostPage.evaluate(() => window.__roster));
 console.log("quick roster", JSON.stringify(finalRoster));
 if (finalRoster.filter((e) => e[0] === 3).length !== 2) await fail("빈자리가 AI 봇으로 채워지지 않음: " + JSON.stringify(finalRoster));
+// 8) 온라인 대전: 방 코드로 만난 두 사람이 AI 없이 2인 대전을 시작하고 (게임 화면으로 전환, WebRTC 유지) 끝까지 같은 판을 본다
+const gh = await open("gameHost", "host", "&autoplay=1");
+const gg = await open("gameGuest", "guest", "&autoplay=1");
+await gh.waitForFunction(() => typeof window.__roomCode === "string", null, { timeout: 20000 });
+const gameCode = await gh.evaluate(() => window.__roomCode);
+const joined2 = await joinWithRetryOn(gg, "게임친구", gameCode);
+if (!joined2) await fail("2인 대전용 방 입장 실패");
+await gh.waitForFunction(() => { try { return JSON.parse(window.__roster).filter((e) => e[0] === 2).length === 2; } catch (e) { return false; } }, null, { timeout: 20000 }).catch(() => fail("방장 명단에 게임 친구가 없음"));
+await gh.evaluate(() => window.__beginGame());
+const readGame = async (page) => { try { return JSON.parse(await page.evaluate(() => window.__game)); } catch (e) { return null; } };
+let hostGame = null, guestGame = null;
+for (let i = 0; i < 240; i++) {
+  hostGame = await readGame(gh); guestGame = await readGame(gg);
+  if (hostGame && guestGame && hostGame.over && guestGame.over) break;
+  await new Promise((r) => setTimeout(r, 1000));
+}
+console.log("online game host", JSON.stringify(hostGame));
+console.log("online game guest", JSON.stringify(guestGame));
+if (!hostGame || !guestGame) await fail("게임 화면으로 넘어가지 못함");
+if (!hostGame.over || !guestGame.over) await fail("온라인 대전이 끝나지 않음");
+if (JSON.stringify(hostGame.players) !== "[1,2]" || JSON.stringify(guestGame.players) !== "[1,2]") await fail("2인 대전이 아님");
+if (hostGame.winner !== guestGame.winner || hostGame.hash !== guestGame.hash) await fail("두 브라우저의 최종 판이 다르다");
+if (hostGame.desyncs !== 0 || guestGame.desyncs !== 0) await fail("동기화 오류 발생");
+if (hostGame.seat !== 1 || guestGame.seat !== 2) await fail("내 자리 번호가 이상함");
 console.log("E2E_OK");
 await browser.close();

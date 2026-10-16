@@ -156,6 +156,12 @@ const CATEGORY_COLORS: Dictionary = {
 
 ## 이 화면을 보는 플레이어. 이 플레이어의 프로필·기물 독이 우측 하단에 놓인다 (멀티플레이에서 P2~P4로 접속해도 본인이 우측 하단).
 var local_player_id: int = 1
+## 이 판에 참여하는 좌석 (컴퓨터 대전/핫시트는 4명 전부, 온라인 대전은 로비에서 정한 2~4명).
+var _player_ids: Array[int] = PLAYER_IDS.duplicate()
+## 온라인 대전(락스텝) 동기화. 온라인이 아니면 null.
+var net: NetGame = null
+var _game_seed: int = 0
+var _net_lost_overlay: Control = null
 var manager: TurnManager = null
 var state: GameState = null
 
@@ -314,6 +320,10 @@ var _tile_pick_card: StringName = &""
 
 
 func _ready() -> void:
+	if GameSession.net_active:
+		local_player_id = GameSession.net_local_seat
+		ai_mode = true  # 화면 규칙은 AI 대전과 같다: 내 자리만 직접 조작하고 나머지는 봇이나 원격 사람
+		_player_ids = GameSession.net_players.duplicate()
 	manager = TurnManager.new()
 	manager.name = "TurnManager"
 	manager.hotseat_mode = true
@@ -327,13 +337,19 @@ func _ready() -> void:
 	add_child(_bot)
 	add_child(manager)
 	manager.set_process(false)  # 제한 시간은 체크박스로 켤 때만 흐른다 (혼자 테스트할 때 자동 진행 방지)
+	if GameSession.net_active:
+		_setup_net()
 	manager.phase_changed.connect(_on_phase_changed)
 	manager.event_received.connect(_on_event)
 	manager.action_rejected.connect(_on_action_rejected)
 	manager.turn_order_reversed.connect(_on_turn_order_reversed)
 	manager.game_over.connect(_on_game_over)
 	_build_ui()
-	_new_game()
+	if net != null:
+		_log_line("상대를 기다리는 중입니다...", Color("ffe066"))
+		net.begin.call_deferred()
+	else:
+		_new_game()
 	var mobile := MobileSupport.new()
 	mobile.button_position = Vector2(1000, 48)
 	add_child(mobile)
@@ -473,7 +489,7 @@ func _new_game() -> void:
 	_close_reaction_popup()
 	_fx_generation += 1
 	_fx_busy = false
-	_bot.set_enabled(ai_mode)
+	_bot.set_enabled(_bot_active())
 	_stop_charge()
 	_presenter.cancel()
 	_roll_pad.reset_revolver()
@@ -485,12 +501,15 @@ func _new_game() -> void:
 	_tool_board_key = ""
 	_close_stack_overlay()
 	state = null
-	manager.start_game(PLAYER_IDS, 0)
+	manager.start_game(_player_ids, _game_seed)
 	state = manager.state
 	_bind_state()
 	_build_tiles_once()
 	_build_pawn_views()
-	_log_line("새 게임을 시작했습니다. 4인 핫시트: 버튼을 눌러 모든 플레이어를 번갈아 조작하세요.", Color("adb5bd"))
+	if net != null:
+		_log_line("온라인 대전을 시작했습니다 (%d명). 내 차례에 직접 조작하세요." % _player_ids.size(), Color("63e6be"))
+	else:
+		_log_line("새 게임을 시작했습니다. 4인 핫시트: 버튼을 눌러 모든 플레이어를 번갈아 조작하세요.", Color("adb5bd"))
 	_refresh_all()
 
 
@@ -596,6 +615,14 @@ func _build_ui() -> void:
 	_register_layout()
 	get_viewport().size_changed.connect(_apply_layout)
 	_apply_layout()
+	# 이 판에 앉지 않은 자리의 프로필은 숨긴다 (온라인 2~3인 대전).
+	for seat: int in PLAYER_IDS:
+		if not _player_ids.has(seat):
+			(_profiles[seat]["panel"] as Control).visible = false
+	if GameSession.net_active:
+		# 온라인에서는 새 게임·모드 전환·치트(상태를 직접 바꿔 판이 어긋난다)를 쓸 수 없다.
+		for control: Control in [_mode_toggle, _new_game_button, _debug_toggle, _debug_box]:
+			control.visible = false
 
 
 ## 상단 중앙 리본 배너(슬림): 라운드 / 현재 턴 / 진행 방향 한 줄. 이벤트는 중앙 알림과 전체 로그가 맡는다.
@@ -1454,7 +1481,7 @@ func _refresh_all() -> void:
 
 func _phase_text() -> String:
 	var text: String = PHASE_NAMES[manager.current_state]
-	if _timer_check != null and _timer_check.button_pressed and manager.phase_time_left > 0.0:
+	if ((_timer_check != null and _timer_check.button_pressed) or net != null) and manager.phase_time_left > 0.0:
 		text += "  (%.1f초)" % manager.phase_time_left
 	return text
 
@@ -1538,13 +1565,15 @@ func _check_turn_banner() -> void:
 
 ## 프로필에 보여 줄 이름: AI 대전에서는 내 닉네임과 "컴퓨터 n", 4P 수동 조작에서는 "플레이어 n".
 func _player_name(player_id: int) -> String:
+	if net != null:
+		return net.display_name(player_id)
 	if ai_mode:
 		return GameSession.display_nickname() if player_id == local_player_id else "컴퓨터 %d" % player_id
 	return "플레이어 %d" % player_id
 
 
 func _refresh_players() -> void:
-	for player_id: int in PLAYER_IDS:
+	for player_id: int in _player_ids:
 		var card: Dictionary = _profiles[player_id]
 		var color: Color = PLAYER_COLORS[player_id]
 		(card["name"] as Label).text = _player_name(player_id)
@@ -1776,7 +1805,7 @@ func _in_intervention_window() -> bool:
 func _window_holders() -> Array[int]:
 	var holders: Array[int] = []
 	var order: Array[int] = [manager.current_player_id()]
-	for player_id: int in PLAYER_IDS:
+	for player_id: int in _player_ids:
 		if player_id != manager.current_player_id():
 			order.append(player_id)
 	for player_id: int in order:
@@ -2900,6 +2929,8 @@ func _hint_text(current_phase: TurnManager.State, tool: BaseJudgmentTool) -> Str
 	if _fx_busy:
 		return "굴러가는 중..."
 	if _is_bot_turn() and not manager.stack_offer_pending() and current_phase != TurnManager.State.PHASE_INTERRUPT_ROLL and current_phase != TurnManager.State.PHASE_RESOLUTION:
+		if net != null and not net.is_bot(manager.current_player_id()):
+			return "%s 님의 차례입니다. 기다려 주세요..." % _player_name(manager.current_player_id())
 		return "P%d (AI 봇)가 생각하는 중입니다..." % manager.current_player_id()
 	if (current_phase == TurnManager.State.PHASE_INTERRUPT_ROLL or current_phase == TurnManager.State.PHASE_RESOLUTION) and not manager.stack_offer_pending():
 		return "피해를 입었습니다! 가운데 팝업에서 [바이츠 더 더스트] 발동 여부를 고르세요. 시간이 지나면 자동으로 넘어갑니다."
@@ -3454,13 +3485,13 @@ func _refresh_draft_overlay() -> void:
 	if manager.current_state == TurnManager.State.PHASE_ROUND_START and not manager.is_game_over:
 		for candidate: int in manager.draft_pending_players():
 			# AI 모드에서는 P1이 고른 뒤 봇들이 BotController로 자동 선택하므로 오버레이에는 사람만 나온다.
-			if not (ai_mode and _bot.is_bot(candidate)):
+			if not (ai_mode and candidate != local_player_id):
 				pending.append(candidate)
 	if pending.is_empty():
 		_close_draft_overlay()
 		return
 	var player_id: int = pending[0]
-	if _auto_draft_enabled and not ai_mode and player_id != PLAYER_IDS[0]:
+	if _auto_draft_enabled and not ai_mode and player_id != _player_ids[0]:
 		manager.auto_pick_draft(player_id)
 		_log_line("P%d 증강 자동 선택 완료" % player_id, Color("868e96"))
 		_refresh_all()
@@ -3631,7 +3662,7 @@ func _build_draft_overlay(player_id: int, remaining: int) -> void:
 	title.add_theme_color_override("font_shadow_color", Color(1.0, 0.8, 0.2, 0.55))
 	title.add_theme_constant_override("shadow_outline_size", 14)
 	box.add_child(title)
-	var who := _make_label("라운드 %d - P%d 차례 (%d/%d)" % [state.round_number, player_id, PLAYER_IDS.size() - remaining + 1, PLAYER_IDS.size()], 15, PLAYER_COLORS[player_id])
+	var who := _make_label("라운드 %d - P%d 차례 (%d/%d)" % [state.round_number, player_id, _player_ids.size() - remaining + 1, _player_ids.size()], 15, PLAYER_COLORS[player_id])
 	who.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(who)
 	var spacer := Control.new()
@@ -3663,12 +3694,13 @@ func _build_draft_overlay(player_id: int, remaining: int) -> void:
 	footer.add_theme_constant_override("separation", 12)
 	footer.alignment = BoxContainer.ALIGNMENT_CENTER
 	box.add_child(footer)
-	var auto_check := CheckBox.new()
-	auto_check.text = "P2~P4는 무작위 자동 선택"
-	auto_check.button_pressed = _auto_draft_enabled
-	auto_check.toggled.connect(_on_auto_draft_toggled)
-	footer.add_child(auto_check)
-	footer.add_child(_make_button("남은 전원 무작위 자동 선택", _on_draft_auto_pressed, 13))
+	if net == null:
+		var auto_check := CheckBox.new()
+		auto_check.text = "P2~P4는 무작위 자동 선택"
+		auto_check.button_pressed = _auto_draft_enabled
+		auto_check.toggled.connect(_on_auto_draft_toggled)
+		footer.add_child(auto_check)
+	footer.add_child(_make_button("무작위로 자동 선택" if net != null else "남은 전원 무작위 자동 선택", _on_draft_auto_pressed, 13))
 	add_child(_draft_overlay)
 
 
@@ -3728,7 +3760,8 @@ func _on_auto_draft_toggled(enabled: bool) -> void:
 
 func _on_draft_auto_pressed() -> void:
 	for player_id: int in manager.draft_pending_players():
-		manager.auto_pick_draft(player_id)
+		if net == null or player_id == local_player_id:
+			manager.auto_pick_draft(player_id)
 	_refresh_all()
 
 
@@ -3875,7 +3908,7 @@ func _show_result_overlay() -> void:
 	summary.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	box.add_child(summary)
-	var restart: Button = _make_button("새 게임 시작", _new_game, 20)
+	var restart: Button = _make_button("메뉴로 돌아가기" if net != null else "새 게임 시작", _on_menu_pressed if net != null else _new_game, 20)
 	restart.custom_minimum_size = Vector2(0, 52)
 	box.add_child(restart)
 	add_child(_result_overlay)
@@ -3924,6 +3957,8 @@ func _on_phase_changed(_new_state: TurnManager.State, _player_id: int, _limit: f
 
 
 func _on_action_rejected(player_id: int, action: StringName, reason: StringName) -> void:
+	if net != null and (player_id != local_player_id or String(action).begins_with("__")):
+		return  # 온라인: 내 행동이 거부됐을 때만 알린다 (다른 사람의 거부나 늦은 타임아웃은 조용히 넘어간다)
 	_log_line("P%d %s 거부: %s" % [player_id, action, REJECT_REASONS.get(reason, str(reason))], Color("ff8787"))
 
 
@@ -4385,7 +4420,83 @@ func _build_mode_toggle() -> void:
 
 
 ## 처음 화면(닉네임·모드 선택)으로 돌아간다.
+## 온라인 대전을 설정한다: 매니저를 락스텝으로 돌리고, 방장만 봇을 돌린다.
+func _setup_net() -> void:
+	net = NetGame.new()
+	net.name = "NetGame"
+	add_child(net)
+	net.setup(manager, GameSession.net_is_host, local_player_id, _player_ids, GameSession.net_bots, GameSession.net_names, GameSession.net_seed)
+	_bot.bot_players.assign(GameSession.net_bots if net.is_host else [] as Array[int])
+	if GameSession.net_autoplay:
+		_bot.bot_players.append(local_player_id)
+		_bot.wait_for_human_windows = false
+	_bot.draft_waits_for_humans = false
+	_bot.enabled = _bot_active()
+	net.started.connect(_on_net_started)
+	net.seat_taken_over.connect(_on_net_seat_taken_over)
+	net.desynced.connect(_on_net_desynced)
+	net.connection_lost.connect(_on_net_connection_lost)
+
+
+func _bot_active() -> bool:
+	if net == null:
+		return ai_mode
+	return net.is_host or GameSession.net_autoplay
+
+
+func _on_net_started(seed_value: int, players: Array, bots: Array) -> void:
+	_game_seed = seed_value
+	_player_ids.assign(players)
+	if net.is_host:
+		_bot.bot_players.assign(bots)
+		if GameSession.net_autoplay:
+			_bot.bot_players.append(local_player_id)
+	_new_game()
+
+
+func _on_net_seat_taken_over(seat: int) -> void:
+	_log_line("[접속 끊김] %s 님이 나가 컴퓨터가 이어받습니다." % str(GameSession.net_names.get(seat, "P%d" % seat)), Color("ffa94d"))
+	if net.is_host:
+		_bot.bot_players.append(seat)
+	if state != null:
+		_refresh_all()
+
+
+func _on_net_desynced(detail: String) -> void:
+	push_warning("온라인 동기화 오류: %s" % detail)
+	_log_line("[동기화 오류] %s" % detail, Color("ff6b6b"))
+
+
+func _on_net_connection_lost(reason: String) -> void:
+	if _net_lost_overlay != null:
+		return
+	_net_lost_overlay = _new_overlay()
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_net_lost_overlay.add_child(center)
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", _panel_style())
+	center.add_child(panel)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 14)
+	box.custom_minimum_size = Vector2(520, 0)
+	panel.add_child(box)
+	var title: Label = _make_label(reason, 22, Color("ff8787"))
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(title)
+	box.add_child(_make_button("메뉴로 돌아가기", _on_menu_pressed, 20))
+	add_child(_net_lost_overlay)
+
+
+func _leave_net() -> void:
+	if net != null:
+		net.leave()
+	GameSession.clear_net()
+
+
 func _on_menu_pressed() -> void:
+	_leave_net()
 	get_tree().change_scene_to_file("res://scenes/start_menu.tscn")
 
 
@@ -4405,7 +4516,7 @@ func _on_mode_toggle_pressed() -> void:
 
 ## 지금 턴이 AI 봇의 차례인가 (AI 모드에서 P2~P4).
 func _is_bot_turn() -> bool:
-	return ai_mode and _bot.is_bot(manager.current_player_id())
+	return ai_mode and manager.current_player_id() != local_player_id
 
 
 ## 사람(P1)이 지금 개입 창에서 낼 수 있는 카드를 들고 있는가.

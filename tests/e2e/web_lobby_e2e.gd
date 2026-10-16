@@ -8,6 +8,30 @@ var _role: String = ""
 var _callbacks: Array = []
 
 
+## 게임 화면으로 넘어간 뒤에도 남아서 판 상태를 window.__game으로 알리는 관찰자 (이 씬은 게임 화면으로 바뀌면 사라진다).
+class GameReporter extends Node:
+	var window: JavaScriptObject = null
+	var _tuned: bool = false
+	var _desyncs: int = 0
+	var _hooked: bool = false
+
+	func _process(_delta: float) -> void:
+		var board: MainBoard = get_tree().current_scene as MainBoard
+		if board == null or board.manager == null or board.net == null:
+			return
+		if not _tuned:
+			_tuned = true
+			board.instant_roll_for_test = true
+			board.pacing_enabled = false
+			board.manager.step_delay_sec = 0.0
+		if not _hooked:
+			_hooked = true
+			board.net.desynced.connect(func(_detail: String) -> void: _desyncs += 1)
+		if board.state == null:
+			return
+		window.__game = JSON.stringify({"over": board.manager.is_game_over, "winner": board.state.winner, "hash": board.manager.state_hash(), "applied": board.net.applied_count, "round": board.state.round_number, "desyncs": _desyncs, "players": board.manager.player_order, "seat": board.local_player_id})
+
+
 func _ready() -> void:
 	name = "Lobby"
 	service = LobbyService.new()
@@ -16,6 +40,13 @@ func _ready() -> void:
 	var relay: String = str(JavaScriptBridge.eval("new URLSearchParams(location.search).get('relay')"))
 	if relay.begins_with("http"):
 		(service.broker as NtfyBroker).server = relay
+	var reporter := GameReporter.new()
+	reporter.window = JavaScriptBridge.get_interface("window")
+	get_tree().root.add_child.call_deferred(reporter)
+	GameSession.net_autoplay = str(JavaScriptBridge.eval("new URLSearchParams(location.search).get('autoplay')")) == "1"
+	service.game_starting.connect(func(config: Dictionary) -> void:
+		GameSession.set_net(service.is_host, service.my_seat(), config)
+		get_tree().change_scene_to_file("res://scenes/main_board.tscn"))
 	service.poll_seconds = 0.5
 	service.claim_check_seconds = 0.6
 	_role = str(JavaScriptBridge.eval("new URLSearchParams(location.search).get('role')"))
@@ -41,6 +72,7 @@ func _ready() -> void:
 		var ok: bool = service.host_room("방장")
 		window.__ready = ok
 		_expose(window, "__fillBot", func(args: Array) -> void: service.set_bot(int(args[0]), true))
+		_expose(window, "__beginGame", func(_args: Array) -> void: service.begin_online_game())
 	else:
 		service.joined.connect(func() -> void: window.__joined = true)
 		service.left_room.connect(func(reason: String) -> void: window.__left = reason)

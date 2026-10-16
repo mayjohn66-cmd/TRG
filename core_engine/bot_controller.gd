@@ -20,6 +20,10 @@ var manager: TurnManager = null
 var bot_players: Array[int] = [2, 3, 4]
 var enabled: bool = false
 var instant: bool = false
+## true(AI 대전)면 증강 드래프트에서 사람이 먼저 고르고 그 뒤 봇이 고른다. false(온라인)면 봇은 기다리지 않고 바로 고른다.
+var draft_waits_for_humans: bool = true
+## true(기본)면 개입 창에서 사람이 낼 수 있는 카드를 들고 있는 동안 기다린다. false(자동 플레이 테스트)면 기다리지 않고 넘긴다.
+var wait_for_human_windows: bool = true
 ## true를 돌려주면 봇은 잠시 기다린다 (화면의 굴림 연출 중 등).
 var busy_check: Callable = Callable()
 var rng := RandomNumberGenerator.new()
@@ -132,12 +136,17 @@ func _act(player_id: int, action: StringName, params: Dictionary = {}) -> void:
 ## 증강 드래프트: 사람(P1)이 아직 고르는 중이면 기다리고, 다 고른 뒤 봇들이 차례로 고른다.
 func _step_draft() -> void:
 	var pending: Array[int] = manager.draft_pending_players()
-	for player_id: int in pending:
-		if not is_bot(player_id):
-			return
 	if pending.is_empty():
 		return
-	var bot_id: int = pending[0]
+	var bot_id: int = -1
+	for player_id: int in pending:
+		if is_bot(player_id):
+			if bot_id == -1:
+				bot_id = player_id
+		elif draft_waits_for_humans:
+			return
+	if bot_id == -1:
+		return
 	var offers: Array[StringName] = manager.draft_offers_for(bot_id)
 	var index: int = BotBrain.choose_augment(manager.state, bot_id, offers, rng)
 	var params: Dictionary = {"index": index}
@@ -234,6 +243,8 @@ func _step_window() -> void:
 
 ## 사람(봇이 아닌) 플레이어가 지금 개입 창에서 낼 수 있는 카드를 들고 있는가.
 func _human_can_intervene() -> bool:
+	if not wait_for_human_windows:
+		return false
 	for player_id: int in manager.player_order:
 		if is_bot(player_id):
 			continue

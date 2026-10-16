@@ -204,3 +204,16 @@ func test_simultaneous_hosts_merge_into_smaller_code() -> void:
 		if beacon.get("type", "") == "ROOM_CLOSED" and beacon.get("code", "") == mine:
 			closed = true
 	check(closed, "합류하러 가는 쪽은 자기 방의 닫힘 비콘을 남긴다")
+
+
+func test_countdown_waits_a_little_for_a_guest_that_is_still_connecting() -> void:
+	var parts: Dictionary = _make_quick()
+	var quick: QuickMatch = parts["quick"]
+	var service: LobbyService = parts["service"]
+	quick.start()
+	service.model.invite(2)
+	service._answered_at[2] = Time.get_ticks_msec()   # 응답을 받아 연결하는 중
+	quick.tick(15.5)
+	check_eq(quick.state, QuickMatch.State.HOSTING, "연결 중인 참가자가 있으면 15초가 지나도 잠깐 더 기다린다")
+	quick.tick(10.0)
+	check_eq(quick.state, QuickMatch.State.STARTING, "그래도 안 되면 유예(10초) 뒤 시작한다")

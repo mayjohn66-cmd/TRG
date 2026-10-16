@@ -16,6 +16,8 @@ signal joined()
 signal left_room(reason: String)
 ## 좌석 명단이 바뀌었다 (방장·참가자 모두).
 signal roster_changed()
+## 방장이 게임을 시작했다 (방장·참가자 모두). config: {"players": [좌석], "bots": [좌석], "names": {좌석: 이름}, "seed": int}
+signal game_starting(config: Dictionary)
 ## 방장: 방 코드가 정해졌다 (친구에게 알려 줄 5자리).
 signal room_ready(code: String)
 ## 방장: 공개 릴레이와의 통신 상태가 바뀌었다 (false면 자동 연결이 막힌 것 - 수동 코드로 대신할 수 있다).
@@ -187,6 +189,51 @@ func set_bot(seat: int, enabled: bool) -> void:
 	if model.set_bot(seat, enabled):
 		_broadcast_roster()
 	_ensure_invites()
+
+
+## 방장: 지금 명단 그대로 온라인 게임을 시작한다 (사람 + 방장이 채운 봇만 참여하고 비어 있는 자리는 빠진다: 2인 대전 가능). 시작할 수 없으면 false.
+func begin_online_game() -> bool:
+	if not is_host or not _in_room:
+		return false
+	for seat: int in range(2, LobbyModel.SEAT_COUNT + 1):
+		if model.state_of(seat) == LobbyModel.SeatState.INVITED:
+			_drop_link(seat)
+			model.cancel_invite(seat)
+	var players: Array = []
+	var bot_seats: Array = []
+	var names: Dictionary = {}
+	for seat: int in range(1, LobbyModel.SEAT_COUNT + 1):
+		var seat_state: LobbyModel.SeatState = model.state_of(seat)
+		if seat_state == LobbyModel.SeatState.HUMAN or seat_state == LobbyModel.SeatState.BOT:
+			players.append(seat)
+			names[seat] = model.name_of(seat)
+			if seat_state == LobbyModel.SeatState.BOT:
+				bot_seats.append(seat)
+	if players.size() < 2:
+		return false
+	var config: Dictionary = {"players": players, "bots": bot_seats, "names": names, "seed": rng.randi_range(1, 2000000000)}
+	# 시작 뒤에는 새 접속을 받지 않는다 (공개 방 비콘/초대도 닫는다).
+	for seat: int in _offer_nonce.keys():
+		_forget_offer(seat)
+	auto_signaling = false
+	if multiplayer.has_multiplayer_peer() and not offline_for_test:
+		_rpc_begin_game.rpc(config)
+	game_starting.emit(config)
+	return true
+
+
+@rpc("authority", "call_remote", "reliable")
+func _rpc_begin_game(config: Dictionary) -> void:
+	if not is_host:
+		game_starting.emit(config)
+
+
+## 응답을 받아 연결을 맺는 중인 참가자가 있는가 (시작을 잠깐 미뤄 주기 위해).
+func is_connecting_guest() -> bool:
+	for seat: int in _answered_at.keys():
+		if model.state_of(seat) == LobbyModel.SeatState.INVITED:
+			return true
+	return false
 
 
 ## 사람이 아닌 모든 열린/초대 중 자리를 AI 봇으로 채운다 (게임 시작 직전).
