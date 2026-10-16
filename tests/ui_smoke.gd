@@ -86,6 +86,7 @@ func _tile_rect(index: int) -> Rect2:
 
 ## 상용 HUD 배치 검증: 보드는 화면 정중앙, 프로필 카드는 네 모서리, 서로 겹치는 HUD가 없어야 한다.
 func _check_hud_layout() -> void:
+	_assert(not _board._intro_blocks() and _board._opening == null, "즉시 모드에서는 오프닝 인트로가 건너뛰어져 증강 선택을 막지 않는다")
 	var board_rect := Rect2()
 	for index: int in 29:
 		board_rect = _tile_rect(index) if index == 0 else board_rect.merge(_tile_rect(index))

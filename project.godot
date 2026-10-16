@@ -3,6 +3,8 @@ config_version=5
 
 [application]
 config/name="TRG"
+boot_splash/bg_color=Color(0.0784, 0.0941, 0.1412, 1)
+boot_splash/show_image=false
 config/features=PackedStringArray("4.3")
 run/main_scene="res://scenes/start_menu.tscn"
 

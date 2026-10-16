@@ -310,6 +310,11 @@ var _fx_pending: Array[Callable] = []
 ## [문]으로 등록된 알림 번호들과, 문이 열렸는지(카드가 끝나 말이 움직일 수 있는지).
 var _fx_gates: Array[int] = []
 var _fx_gate_open: bool = false
+## 게임 시작 오프닝: 진행 중이면 증강 선택 창·봇·입력을 잠근다 (테스트용 즉시 모드에서는 켜져 있지 않은 것으로 본다).
+var _intro_pending: bool = false
+var _opening: OpeningSequence = null
+## 오프닝 직후 첫 증강 창은 아래에서 위로 솟아오르며 나타난다.
+var _draft_entrance: bool = false
 ## 게임 필: 화면 흔들림, 말 id -> 이동 연출을 필살기 스크립트가 맡는 중(걸음 무시), 차 돌진 중 잡힌 말이 나는 시점을 늦추는 값(초).
 var _shake_tween: Tween = null
 var _shake_origin: Vector2 = Vector2.ZERO
@@ -627,6 +632,7 @@ func _new_game() -> void:
 	_tip_end()
 	_tool_board_key = ""
 	_close_stack_overlay()
+	_close_opening()
 	state = null
 	manager.start_game(_player_ids, _game_seed)
 	state = manager.state
@@ -634,6 +640,8 @@ func _new_game() -> void:
 	_build_tiles_once()
 	_build_pawn_views()
 	_apply_view_mode()
+	_intro_pending = true
+	_start_opening.call_deferred()
 	if net != null:
 		_log_line("온라인 대전을 시작했습니다 (%d명). 내 차례에 직접 조작하세요." % _player_ids.size(), Color("63e6be"))
 	else:
@@ -4419,6 +4427,69 @@ func _fly_away(from: Vector2, direction: Vector2, color: Color) -> void:
 
 
 # ---------------------------------------------------------------------------
+# 게임 시작 오프닝 (OpeningSequence)
+# ---------------------------------------------------------------------------
+
+func _intro_blocks() -> bool:
+	return _intro_pending and not instant_roll_for_test
+
+
+## 게임을 시작하면 증강 선택 전에 4단계 오프닝을 재생한다. 즉시 모드(테스트)에서는 건너뛴다.
+func _start_opening() -> void:
+	if not is_inside_tree() or state == null:
+		return
+	if instant_roll_for_test or _opening != null:
+		_intro_pending = false
+		if state != null:
+			_refresh_all()
+		return
+	_opening = OpeningSequence.new()
+	_opening.name = "OpeningSequence"
+	add_child(_opening)
+	_opening.setup(self)
+	_opening.finished.connect(_on_opening_finished)
+	_opening.start()
+
+
+func _on_opening_finished() -> void:
+	_opening = null
+	_intro_pending = false
+	if state == null or manager == null:
+		return
+	_draft_entrance = true
+	var pending_draft: bool = manager.current_state == TurnManager.State.PHASE_ROUND_START and not manager.draft_pending_players().is_empty()
+	if pending_draft and not instant_roll_for_test:
+		_show_top_toast("라운드 %d - 시작 증강을 선택하세요!" % state.round_number)
+	_refresh_all()
+
+
+func _close_opening() -> void:
+	if _opening != null and is_instance_valid(_opening):
+		_opening.queue_free()
+	_opening = null
+	_intro_pending = false
+
+
+## 화면 위쪽 가운데에 잠깐 떴다 사라지는 안내 토스트.
+func _show_top_toast(text: String) -> void:
+	var toast := PanelContainer.new()
+	toast.add_theme_stylebox_override("panel", _style(Color("101626"), Color("ffe066"), 3, 16, 18, 12))
+	toast.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	toast.z_index = 75
+	var label := _make_label(text, 22, Color("fff3bf"))
+	toast.add_child(label)
+	add_child(toast)
+	toast.reset_size()
+	toast.position = Vector2(683.0 - toast.size.x / 2.0 + _off_center.x, 26.0)
+	toast.modulate.a = 0.0
+	var tween: Tween = toast.create_tween()
+	tween.tween_property(toast, "modulate:a", 1.0, 0.25)
+	tween.tween_interval(1.6)
+	tween.tween_property(toast, "modulate:a", 0.0, 0.4)
+	tween.tween_callback(toast.queue_free)
+
+
+# ---------------------------------------------------------------------------
 # 뱅! 저격: 상대 프로필을 눌러 고른다
 # ---------------------------------------------------------------------------
 
@@ -4666,6 +4737,9 @@ func _refresh_overlays() -> void:
 
 ## 드래프트 중이면 아직 고르지 않은 첫 플레이어(P1 -> P4 순서)의 3지선다를 화면 중앙에 띄운다.
 func _refresh_draft_overlay() -> void:
+	if _intro_blocks():
+		_close_draft_overlay()
+		return
 	var pending: Array[int] = []
 	if manager.current_state == TurnManager.State.PHASE_ROUND_START and not manager.is_game_over:
 		for candidate: int in manager.draft_pending_players():
@@ -4887,6 +4961,13 @@ func _build_draft_overlay(player_id: int, remaining: int) -> void:
 		footer.add_child(auto_check)
 	footer.add_child(_make_button("무작위로 자동 선택" if net != null else "남은 전원 무작위 자동 선택", _on_draft_auto_pressed, 13))
 	add_child(_draft_overlay)
+	if _draft_entrance and _fx_on():
+		_draft_entrance = false
+		_draft_overlay.position = Vector2(0, 110)
+		_draft_overlay.modulate.a = 0.0
+		var rise: Tween = _draft_overlay.create_tween().set_parallel(true)
+		rise.tween_property(_draft_overlay, "position:y", 0.0, 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		rise.tween_property(_draft_overlay, "modulate:a", 1.0, 0.3)
 
 
 ## 증강 카드를 눌렀을 때: 바로 적용하지 않고 [선택한 카드가 커지며 반짝 / 나머지는 어두워짐] 연출을 잠깐 보여 준 뒤 다음 단계(말 고르기 또는 적용)로 넘어간다.
@@ -5168,7 +5249,7 @@ func _on_game_over(winner_id: int, reason: StringName) -> void:
 
 
 func _ui_busy() -> bool:
-	return _fx_busy or _aim_pawn != -1 or (_announcer != null and _announcer.active) or Time.get_ticks_msec() < _beat_until_msec or (_fx_on() and Time.get_ticks_msec() < _fx_until_msec)
+	return _intro_blocks() or _fx_busy or _aim_pawn != -1 or (_announcer != null and _announcer.active) or Time.get_ticks_msec() < _beat_until_msec or (_fx_on() and Time.get_ticks_msec() < _fx_until_msec)
 
 
 ## 행동이 끝난 뒤 잠깐(초) 입력과 봇 행동을 멈춰, 플레이어가 방금 일어난 일을 알아볼 틈을 준다.
