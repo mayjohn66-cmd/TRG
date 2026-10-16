@@ -46,6 +46,9 @@ func _run() -> void:
 	_board._refresh_mode_toggle()
 	_board._announcer.cancel()  # 드래프트가 띄운 알림은 비우고 시작한다
 	_board.pacing_enabled = false  # 아래 테스트들은 연출 길이를 직접 재므로 [N 차례] 알림·이동 뒤 멈춤은 끈다 (따로 검사한다)
+	# 메뉴의 속도/호흡 설정은 _apply_pace()로 이동 간격도 바꾸므로,
+	# _process()에서 지정했던 테스트용 즉시 이동 조건을 다시 복원한다.
+	_board.manager.step_delay_sec = 0.0
 	await _test_presenters()
 	_board._announcer.cancel()
 	await _test_gauge_and_lock()
