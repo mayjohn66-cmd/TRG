@@ -353,6 +353,21 @@ static func show_settings(parent: Control) -> void:
 		GameSession.pacing_enabled = enabled
 		GameSession.save_settings())
 	box.add_child(pacing)
+	var pace_row := HBoxContainer.new()
+	pace_row.add_theme_constant_override("separation", 8)
+	box.add_child(pace_row)
+	pace_row.add_child(label("연출 속도", 16, INK))
+	var pace := OptionButton.new()
+	pace.name = "PaceOption"
+	pace.add_item("빠르게")
+	pace.add_item("보통")
+	pace.add_item("느리게")
+	pace.select(0 if GameSession.pace_scale <= 1.2 else (2 if GameSession.pace_scale >= 2.1 else 1))
+	pace.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	pace.item_selected.connect(func(index: int) -> void:
+		GameSession.pace_scale = [GameSession.PACE_FAST, GameSession.PACE_NORMAL, GameSession.PACE_SLOW][index]
+		GameSession.save_settings())
+	pace_row.add_child(pace)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
 	box.add_child(row)

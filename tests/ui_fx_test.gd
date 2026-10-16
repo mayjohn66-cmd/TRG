@@ -664,7 +664,7 @@ func _test_action_beats() -> void:
 	_expect(not _board._ui_busy(), "전제: 호흡 검사 시작 시 대기 없음")
 	_board._start_beat(0.3)
 	_expect(_board._ui_busy(), "이동이 끝난 직후에는 잠깐 입력이 잠긴다")
-	await create_timer(0.45).timeout
+	await create_timer(0.3 * GameSession.pace_scale + 0.15).timeout  # 연출 속도 배율만큼 길어진다
 	_expect(not _board._ui_busy(), "호흡이 끝나면 다시 입력할 수 있다 (fx=%s aim=%s ann=%s hist=%s)" % [str(_board._fx_busy), str(_board._aim_pawn), str(_board._announcer.active), str(_board._announcer.history.slice(-3))])
 	_board._announced_turn_key = ""
 	_board._announcer.history.clear()

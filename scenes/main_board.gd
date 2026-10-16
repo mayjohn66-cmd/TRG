@@ -369,11 +369,12 @@ func _ready() -> void:
 	manager = TurnManager.new()
 	manager.name = "TurnManager"
 	manager.hotseat_mode = true
-	manager.step_delay_sec = STEP_DELAY
+	manager.step_delay_sec = STEP_DELAY * _pace()
 	manager.stack_choice_enabled = true
 	_bot = BotController.new()
 	_bot.name = "BotController"
 	_bot.manager = manager
+	_bot.pace = _pace()
 	_bot.busy_check = _bot_should_wait
 	_bot.enabled = ai_mode
 	if not GameSession.net_active:
@@ -1722,8 +1723,8 @@ func _on_pawn_stepped(pawn_id: int, _from_tile: int, _to_tile: int) -> void:
 		if previous != null and previous.is_valid():
 			previous.kill()
 	var tween: Tween = create_tween()
-	tween.tween_property(view, "position", _pawn_position(pawn), maxf(STEP_DELAY * 0.85, 0.05))
-	tween.parallel().tween_property(view, "scale", Vector2.ONE * _depth_scale(tile_norm(pawn.current_tile_idx).y), maxf(STEP_DELAY * 0.85, 0.05))
+	tween.tween_property(view, "position", _pawn_position(pawn), maxf(STEP_DELAY * _pace() * 0.85, 0.05))
+	tween.parallel().tween_property(view, "scale", Vector2.ONE * _depth_scale(tile_norm(pawn.current_tile_idx).y), maxf(STEP_DELAY * _pace() * 0.85, 0.05))
 	view.set_meta("tween", tween)
 
 
@@ -4013,7 +4014,7 @@ func _on_augment_card_picked(player_id: int, index: int, definition: AugmentDef)
 	_play_pick_animation(_draft_cards, index)
 	if _draft_title_label != null:
 		_draft_title_label.text = "선택 완료!"
-	get_tree().create_timer(AUGMENT_PICK_SECONDS).timeout.connect(func() -> void:
+	get_tree().create_timer(AUGMENT_PICK_SECONDS * _pace()).timeout.connect(func() -> void:
 		_draft_locked = false
 		if _draft_overlay != null and _draft_player == player_id:
 			_on_augment_chosen(player_id, index, definition))
@@ -4285,8 +4286,8 @@ func _ui_busy() -> bool:
 func _start_beat(seconds: float) -> void:
 	if instant_roll_for_test or not pacing_enabled or seconds <= 0.0:
 		return
-	_beat_until_msec = maxi(_beat_until_msec, Time.get_ticks_msec() + int(seconds * 1000.0))
-	get_tree().create_timer(seconds + 0.02).timeout.connect(func() -> void:
+	_beat_until_msec = maxi(_beat_until_msec, Time.get_ticks_msec() + int(seconds * _pace() * 1000.0))
+	get_tree().create_timer(seconds * _pace() + 0.02).timeout.connect(func() -> void:
 		if manager != null and state != null:
 			_refresh_all())
 
@@ -4295,7 +4296,7 @@ func _announce(tag: String, headline: String, body: String, color: Color, extra:
 	if _announcer == null:
 		return
 	_announcer.instant = instant_roll_for_test
-	_announcer.announce(tag, headline, body, color, extra, duration)
+	_announcer.announce(tag, headline, body, color, extra, duration * _pace())
 	if _announcer.active:
 		_refresh_controls()
 
@@ -4831,6 +4832,18 @@ func _build_settings_page() -> void:
 	pacing.button_pressed = pacing_enabled
 	pacing.toggled.connect(_on_pacing_toggled)
 	_menu_box.add_child(pacing)
+	var pace_row := HBoxContainer.new()
+	pace_row.add_child(_make_label("연출 속도", 15, Color("ced4da")))
+	var pace_option := OptionButton.new()
+	pace_option.name = "PaceOption"
+	pace_option.add_item("빠르게")
+	pace_option.add_item("보통")
+	pace_option.add_item("느리게")
+	pace_option.select(0 if GameSession.pace_scale <= 1.2 else (2 if GameSession.pace_scale >= 2.1 else 1))
+	pace_option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	pace_option.item_selected.connect(_on_pace_selected)
+	pace_row.add_child(pace_option)
+	_menu_box.add_child(pace_row)
 	if net == null:
 		var timer := CheckBox.new()
 		timer.name = "TimerCheck"
@@ -4869,6 +4882,26 @@ func _on_pacing_toggled(enabled: bool) -> void:
 	pacing_enabled = enabled
 	GameSession.pacing_enabled = enabled
 	GameSession.save_settings()
+	_apply_pace()
+
+
+## 연출 속도 배율: 연출 멈춤이 켜져 있고 테스트용 즉시 모드가 아닐 때만 GameSession.pace_scale을 쓴다.
+func _pace() -> float:
+	return GameSession.pace_scale if pacing_enabled and not instant_roll_for_test else 1.0
+
+
+## 속도 설정이 바뀌면 걸음 간격·봇 대기에 바로 적용한다 (알림·호흡은 쓸 때마다 _pace()를 읽는다).
+func _apply_pace() -> void:
+	if manager != null:
+		manager.step_delay_sec = STEP_DELAY * _pace()
+	if _bot != null:
+		_bot.pace = _pace()
+
+
+func _on_pace_selected(index: int) -> void:
+	GameSession.pace_scale = [GameSession.PACE_FAST, GameSession.PACE_NORMAL, GameSession.PACE_SLOW][index]
+	GameSession.save_settings()
+	_apply_pace()
 
 
 func _on_menu_timer_toggled(enabled: bool) -> void:

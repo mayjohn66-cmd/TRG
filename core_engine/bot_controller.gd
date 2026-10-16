@@ -28,6 +28,8 @@ var wait_for_human_windows: bool = true
 var busy_check: Callable = Callable()
 var rng := RandomNumberGenerator.new()
 
+## 대기 시간 배율 (연출 속도 설정: 1.0이 기본 길이)
+var pace: float = 1.0
 var _wait: float = 0.0
 var _seen_serial: int = -1
 var _tried: Dictionary = {}
@@ -83,7 +85,7 @@ func _bot_turn() -> bool:
 ## 대기 시간을 더한다 (이미 남은 대기가 있으면 그 뒤에 이어진다: 굴림 결과 확인 0.6초 -> 말 선택 0.5초).
 func _delay(seconds: float) -> void:
 	if not instant:
-		_wait += seconds
+		_wait += seconds * pace
 
 
 ## 새 결정 지점에 들어왔다: 이번 단계에서 쓸 대기 시간과 기억을 초기화한다.
