@@ -57,6 +57,7 @@ func _run() -> void:
 	await _test_aspect_layout()
 	await _test_roll_pad()
 	await _test_hud_overhaul()
+	await _test_card_art_layout()
 	await _test_bot_pacing()
 	await _test_action_beats()
 	await _test_tool_cards_fit()
@@ -67,6 +68,28 @@ func _run() -> void:
 		for message: String in _failures:
 			printerr("UI_FX_FAIL: " + message)
 		quit(1)
+
+
+## All live card names/effects must fit both layouts with the actual game font.
+func _test_card_art_layout() -> void:
+	for card_id: StringName in CardRegistry.all_ids():
+		for detailed: bool in [false, true]:
+			var card_size := Vector2(350, 490) if detailed else MainBoard.HAND_CARD_SIZE
+			var body: Control = _board._build_card_body(card_id, card_size, detailed)
+			body.size = card_size
+			_board.add_child(body)
+			await process_frame
+			var title: Label = body.find_child("CardTitle", true, false)
+			var summary: Label = body.find_child("CardSummary", true, false)
+			var effect: Control = summary.get_parent()
+			_expect(title.get_line_count() <= 2, "%s title fits two lines, detailed=%s" % [card_id, detailed])
+			_expect(summary.get_line_count() <= (3 if detailed else 2), "%s effect fits without truncation, detailed=%s (%d)" % [card_id, detailed, summary.get_line_count()])
+			_expect(summary.position.y + summary.size.y <= effect.size.y + 0.5, "%s effect stays within its panel, detailed=%s" % [card_id, detailed])
+			var art: TextureRect = body.find_child("CardArt", true, false)
+			if card_id in [&"ACT_06", &"TRP_03", &"SUM_01"]:
+				_expect(art != null and art.texture.resource_path == "res://assets/cards/%s.png" % card_id, "%s uses its own reviewed illustration" % card_id)
+			body.queue_free()
+			await process_frame
 
 
 ## 연출 하나를 시작해 끝날 때까지 프레임마다 sampler를 호출한다. 걸린 실제 시간을 반환한다.
