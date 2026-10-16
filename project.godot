@@ -16,7 +16,7 @@ window/handheld/orientation=1
 
 [gui]
 
-theme/custom_font="res://assets/fonts/NanumGothic-Regular.ttf"
+theme/custom_font="res://assets/fonts/game_ui_font.tres"
 
 [debug]
 gdscript/warnings/untyped_declaration=1
