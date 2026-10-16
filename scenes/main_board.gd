@@ -82,18 +82,8 @@ const COLOR_BG: Color = Color("0d1018")
 const COLOR_PANEL: Color = Color("1a2030")
 const COLOR_PANEL_EDGE: Color = Color("39435c")
 const COLOR_GOLD: Color = Color("ffd43b")
-const CARD_CATEGORY_COLORS: Dictionary = {
-	GameEnums.CardCategory.INSTANT: Color("ff922b"),
-	GameEnums.CardCategory.TRAP: Color("be4bdb"),
-	GameEnums.CardCategory.SUMMON: Color("20c997"),
-}
 ## 카드 배경색은 카드의 속성(카테고리)을 알려 준다: 즉발 주황 / 함정 보라 / 소환 청록.
-const CARD_BG_COLORS: Dictionary = {
-	GameEnums.CardCategory.INSTANT: Color("d98b2b"),
-	GameEnums.CardCategory.TRAP: Color("8e4aa8"),
-	GameEnums.CardCategory.SUMMON: Color("2f9a85"),
-}
-const CARD_ART_DIR: String = "res://assets/cards/"
+const CARD_BG_COLORS: Dictionary = CardSkin.FILLS
 const CARD_CATEGORY_NAMES: Dictionary = {
 	GameEnums.CardCategory.INSTANT: "즉발",
 	GameEnums.CardCategory.TRAP: "함정",
@@ -134,7 +124,7 @@ const CARD_SUMMARIES: Dictionary = {
 	&"ACT_07": "가장 뭉친 타일의 말 강제 분리·산개",
 	&"ACT_08": "내 꼴찌 말 ↔ 1등 적 선두 말 위치 교환",
 	&"ACT_09": "적 1명과 가위바위보! 승자가 패자 말 1개를 -2칸 후퇴시킴",
-	&"SUM_01": "라운드마다 최근접 말 추격·카드 강탈",
+	&"SUM_01": "라운드마다 최근접 말 추격\n카드 강탈",
 	&"SUM_02": "12번 출발 역주행 순찰 & 연행",
 }
 
@@ -2282,84 +2272,16 @@ func _window_holders() -> Array[int]:
 	return holders
 
 
-## 카드 프레임 스타일: 배경색이 카테고리(속성)를 나타낸다.
-func _card_frame_style(category: GameEnums.CardCategory, glow: bool, radius: int = 14) -> StyleBoxFlat:
-	var bg: Color = CARD_BG_COLORS[category]
-	if glow:
-		return _style(bg.lightened(0.1), Color("fff3bf"), 5, radius, 22, 0)
-	return _style(bg, bg.darkened(0.55), 4, radius, 8, 0)
+## 종류색 프레임. 손패와 알림 앞면은 같은 재현 가능한 스킨을 쓴다.
+func _card_frame_style(category: GameEnums.CardCategory, glow: bool, radius: int = 8) -> StyleBoxFlat:
+	return CardSkin.frame(category, glow, radius)
 
 
-## 카드 내용물: 맨 위 카드 이름 판 / 큼직한 일러스트 창 / 아래 세부 내용 상자. card_size에 비례해 크기가 정해진다.
-## 일러스트는 assets/cards/<카드ID>.png가 있으면 그것을, 없으면 카테고리 색 도형 + 글자 엠블럼을 쓴다.
+## 크기가 다른 손패와 상세 카드는 텍스트 영역을 각각 배치한다.
 func _build_card_body(card_id: StringName, card_size: Vector2, detail_mode: bool = false) -> Control:
 	var card: BaseCard = CardRegistry.get_card(card_id)
-	var bg: Color = CARD_BG_COLORS[card.category]
-	var accent: Color = CARD_CATEGORY_COLORS[card.category]
-	var k: float = card_size.x / HAND_CARD_SIZE.x
-	var margin: float = 8.0 * k
-	var inner_w: float = card_size.x - margin * 2.0
-	var holder := Control.new()
-	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var name_h: float = 22.0 * k
-	var plate := Panel.new()
-	plate.position = Vector2(margin, margin)
-	plate.size = Vector2(inner_w, name_h)
-	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	plate.add_theme_stylebox_override("panel", _style(bg.lightened(0.6), bg.darkened(0.5), maxi(1, int(2.0 * k)), int(5.0 * k), 0, 0))
-	holder.add_child(plate)
-	var title := _make_label("", int(13.0 * k), Color("1d1a14"))
-	title.size = plate.size
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	title.text = card.display_name
-	plate.add_child(title)
-	var art_y: float = margin + name_h + 4.0 * k
-	var art_h: float = 104.0 * k
-	var art := Panel.new()
-	art.position = Vector2(margin, art_y)
-	art.size = Vector2(inner_w, art_h)
-	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	art.add_theme_stylebox_override("panel", _style(bg.darkened(0.7), bg.darkened(0.6), maxi(2, int(3.0 * k)), int(3.0 * k), 0, 0))
-	holder.add_child(art)
-	var art_path: String = "%s%s.png" % [CARD_ART_DIR, card_id]
-	if ResourceLoader.exists(art_path):
-		var picture := TextureRect.new()
-		picture.texture = load(art_path)
-		picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-		picture.size = art.size
-		picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		art.add_child(picture)
-	else:
-		var glyph: String = str(card.display_name).strip_edges().substr(0, 1)
-		var emblem: Control = _make_emblem(glyph, accent)
-		var emblem_scale: float = minf(art_h, inner_w) / 150.0 * 0.92
-		emblem.scale = Vector2.ONE * emblem_scale
-		emblem.position = (art.size - Vector2(150, 150) * emblem_scale) / 2.0
-		art.add_child(emblem)
-	var detail_y: float = art_y + art_h + 4.0 * k
-	var detail := Panel.new()
-	detail.position = Vector2(margin, detail_y)
-	detail.size = Vector2(inner_w, card_size.y - detail_y - margin)
-	detail.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	detail.add_theme_stylebox_override("panel", _style(bg.lightened(0.72), bg.darkened(0.5), maxi(1, int(2.0 * k)), int(3.0 * k), 0, 0))
-	holder.add_child(detail)
-	var kind := _make_label("[%s]" % (CARD_CATEGORY_NAMES[card.category] + (" · 타일 설치" if card.needs_tile() else "")), int(10.0 * k), bg.darkened(0.45))
-	kind.position = Vector2(4.0 * k, 1.0 * k)
-	kind.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	detail.add_child(kind)
-	var summary := _make_label("", int((11.0 if detail_mode else 12.0) * k), Color("1d1a14"))
-	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	summary.max_lines_visible = 3 if detail_mode else 2
-	summary.position = Vector2(4.0 * k, 13.0 * k)
-	summary.custom_minimum_size = Vector2(detail.size.x - 8.0 * k, 0)
-	summary.size = Vector2(detail.size.x - 8.0 * k, detail.size.y - 14.0 * k)
-	summary.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	summary.text = str(CARD_SUMMARIES.get(card_id, "")) if detail_mode else str(CARD_SHORT.get(card_id, ""))
-	detail.add_child(summary)
-	return holder
+	var summary: String = str(CARD_SUMMARIES.get(card_id, "")) if detail_mode else str(CARD_SHORT.get(card_id, ""))
+	return CardSkin.body(card, card_size, summary, CARD_CATEGORY_NAMES[card.category], detail_mode)
 
 
 ## 한 장짜리 전체 카드 (140x196). 손패에서는 아래 절반이 화면 밖에 가려져 이름과 일러스트가 보이고, 호버하면 올라와 전체가 보인다.
@@ -2602,42 +2524,60 @@ func _toggle_zoom(player_id: int, card_id: StringName) -> void:
 	_open_zoom(player_id, card_id)
 
 
-## 손패 카드를 2.5배(350x490)로 확대해 손패와 같은 카드 UI에 개조식 요약을 보여 주고, 아래에 타이밍·사용법(2줄)과 사용 가능 여부를 붙인다. 남의 턴에도 볼 수 있다.
+## 확대 카드(350x490)와 별도 사용 안내 패널. 남의 턴에도 열람할 수 있다.
 func _open_zoom(player_id: int, card_id: StringName) -> void:
 	_close_zoom()
 	var card: BaseCard = CardRegistry.get_card(card_id)
 	var card_size: Vector2 = HAND_CARD_SIZE * 2.5
 	_zoom_key = "%d:%s" % [player_id, card_id]
 	_zoom_view = PanelContainer.new()
+	_zoom_view.name = "CardZoom"
 	_zoom_view.z_index = 30
-	_zoom_view.add_theme_stylebox_override("panel", _card_frame_style(card.category, true))
+	_zoom_view.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	_zoom_view.gui_input.connect(func(event: InputEvent) -> void:
 		var click: InputEventMouseButton = event as InputEventMouseButton
 		if click != null and click.pressed and click.button_index == MOUSE_BUTTON_LEFT:
 			_close_zoom())
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 4)
+	box.add_theme_constant_override("separation", 12)
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_zoom_view.add_child(box)
-	var holder := Control.new()
-	holder.custom_minimum_size = card_size
-	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	holder.add_child(_build_card_body(card_id, card_size, true))
-	box.add_child(holder)
-	var usable: bool = _card_usable_now(player_id, card)
+	var face := PanelContainer.new()
+	face.name = "CardFace"
+	face.custom_minimum_size = card_size
+	face.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	face.add_theme_stylebox_override("panel", CardSkin.frame(card.category, false, 20))
+	face.add_child(_build_card_body(card_id, card_size, true))
+	box.add_child(face)
+	var guide := PanelContainer.new()
+	guide.name = "CardGuide"
+	guide.custom_minimum_size = Vector2(card_size.x, 0)
+	guide.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	guide.add_theme_stylebox_override("panel", UiSkin.panel("panel", 12))
+	box.add_child(guide)
+	var guide_box := VBoxContainer.new()
+	guide_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	guide_box.add_theme_constant_override("separation", 4)
+	guide.add_child(guide_box)
 	var how: String = "보드에 드래그 → 타일 선택" if card.needs_tile() else "보드에 드래그"
-	var timing := _make_label("◆ 타이밍: %s\n◆ 사용: %s" % [_card_timing_text(card), how], 15, Color("2b1b00"))
-	timing.custom_minimum_size = Vector2(card_size.x, 0)
+	var timing := _make_label("발동: %s\n방법: %s" % [_card_timing_text(card), how], 14, UiSkin.INK)
+	timing.name = "CardTiming"
+	timing.custom_minimum_size = Vector2(card_size.x - 24.0, 0)
+	timing.size = Vector2(card_size.x - 24.0, 40)
+	timing.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	timing.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.add_child(timing)
-	var status := _make_label("지금 사용 가능" if usable else "지금은 사용 불가", 16, Color("0b5a1c") if usable else Color("4a4036"))
+	guide_box.add_child(timing)
+	var usable: bool = _card_usable_now(player_id, card)
+	var status := _make_label("지금 사용 가능" if usable else "지금은 사용 불가", 14, Color("416c2b") if usable else Color("747c64"))
+	status.name = "CardStatus"
 	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	status.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.add_child(status)
+	guide_box.add_child(status)
 	add_child(_zoom_view)
 	var total: Vector2 = _zoom_view.get_combined_minimum_size()
 	_zoom_view.size = total
-	_zoom_view.position = Vector2(683.0 - total.x / 2.0, 384.0 - total.y / 2.0) + _off_center
+	var screen: Vector2 = get_viewport_rect().size
+	_zoom_view.position = Vector2(maxf(24, (screen.x - total.x) / 2), maxf(24, (screen.y - total.y) / 2))
 
 
 func _card_timing_text(card: BaseCard) -> String:
