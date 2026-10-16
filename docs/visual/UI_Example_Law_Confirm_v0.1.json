@@ -1,0 +1,22 @@
+{
+  "status": "시각 검토용 초안; 최종 규격 아님",
+  "canvas": [
+    1000,
+    720
+  ],
+  "panel": [
+    190,
+    130,
+    810,
+    590
+  ],
+  "panel_radius": 24,
+  "font": "ONE Mobile POP (webfont from Noonnu CDN)",
+  "font_source": "https://noonnu.cc/font_page/676",
+  "font_official_page": "https://dev.onestore.net/dev/devprogram",
+  "header_gradient_samples": [
+    "#5DB52E",
+    "#34AD34"
+  ],
+  "note": "그라데이션 표본을 이번 시안의 시작·끝 색으로 시험 적용. 원작의 실제 끝값이라는 의미는 아님. 텍스트는 별도 렌더 함수로 합성한 미리보기이며 게임용 완성 자산이 아님."
+}
