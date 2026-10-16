@@ -315,6 +315,7 @@ var _intro_pending: bool = false
 var _opening: OpeningSequence = null
 ## 오프닝 직후 첫 증강 창은 아래에서 위로 솟아오르며 나타난다.
 var _draft_entrance: bool = false
+var _draft_banner_round: int = 0
 ## 이번 드래프트에서 고른 증강 모음 (끝나면 한 장으로 공개).
 var _draft_summary: Array[Dictionary] = []
 ## 게임 필: 화면 흔들림, 말 id -> 이동 연출을 필살기 스크립트가 맡는 중(걸음 무시), 차 돌진 중 잡힌 말이 나는 시점을 늦추는 값(초).
@@ -637,6 +638,7 @@ func _new_game() -> void:
 	_close_stack_overlay()
 	_close_opening()
 	_draft_summary.clear()
+	_draft_banner_round = 0
 	state = null
 	manager.start_game(_player_ids, _game_seed)
 	state = manager.state
@@ -664,17 +666,21 @@ func _bind_state() -> void:
 			if by_player != victim.owner_id and _player_ids.has(by_player):
 				_avatar_react(by_player, AvatarSlot.Emotion.HAPPY)
 		# 잡힌 말: 내리찍기(슬램) -> 충격 -> 720도 회전하며 높은 포물선으로 출발선까지 0.45초 -> 쿵 착지.
+		# 순서: (1) 잡는 말이 내리찍는다 -> (2) 충격(링·흔들림, 짧은 정지) -> (3) 프로필 반응 -> (4) 잡힌 말이 날아간다 -> (5) 쿵 착지.
+		var lead: float = 0.0
 		if victim != null and _fx_on():
 			var view: Node2D = _pawn_views.get(pawn_id)
 			if view != null:
-				_fx_try_slam(by_player, view.position)
+				lead = _fx_try_slam(by_player, view.position)
 			var owner_id: int = victim.owner_id
+			var react_delay: float = lead + 0.12 + _fx_hint_bonus
 			_fx_when_announced(func() -> void:
-				_profile_react(owner_id, false, ["[억까!]", "[으악!]"][randi() % 2])
-				if by_player != owner_id:
-					_profile_react(by_player, true, "[나이스!]"))
-		_fx_impact_at_pawn(pawn_id, 0.16)
-		_set_hint(pawn_id, {"delay": 0.18 + _fx_hint_bonus, "arc": 110.0, "spin": 2.0 * TAU, "dur": 0.45, "land_thud": true}))
+				get_tree().create_timer(react_delay).timeout.connect(func() -> void:
+					_profile_react(owner_id, false, ["[억까!]", "[으악!]"][randi() % 2])
+					if by_player != owner_id:
+						_profile_react(by_player, true, "[나이스!]")))
+		_fx_impact_at_pawn(pawn_id, lead + _fx_hint_bonus)
+		_set_hint(pawn_id, {"delay": lead + 0.28 + _fx_hint_bonus, "arc": 110.0, "spin": 2.0 * TAU, "dur": 0.45, "land_thud": true}))
 	state.pawn_finished.connect(func(pawn_id: int) -> void:
 		_log_line("[완주] %s 완주!" % _pawn_name(pawn_id), Color("69db7c"))
 		var finisher: PlayerPawn = state.get_pawn(pawn_id)
@@ -737,11 +743,14 @@ func _bind_state() -> void:
 			_avatar_react(trapped.owner_id, AvatarSlot.Emotion.SURPRISED)
 			var trapped_owner: int = trapped.owner_id
 			var trap_pos: Vector2 = _tile_center(tile)
+			# 순서: 함정이 터진다(충격) -> 잠깐 뒤 프로필 반응 -> 그 뒤 말이 날아간다 (_fx_hint_bonus)
+			_fx_hint_bonus = maxf(_fx_hint_bonus, 0.4)
 			_fx_when_announced(func() -> void:
 				screen_shake(8.0, 0.25)
 				_impact_ring(trap_pos, Color("ff6b6b"), 56.0)
 				_burst_shards(trap_pos, Color("ff8787"), 14)
-				_profile_react(trapped_owner, false, ["[억까!]", "[으악!]"][randi() % 2]))
+				get_tree().create_timer(0.25).timeout.connect(func() -> void:
+					_profile_react(trapped_owner, false, ["[억까!]", "[으악!]"][randi() % 2])))
 		_log_line("[설치물] %d번 타일 %s 발동! (%s)" % [tile, _attachment_name(id), _pawn_name(pawn_id)], Color("ff6b6b"))
 		_announce_gate("함정 발동", "[발동!] %s" % _attachment_name(id), "%s\n%d번 타일에서 %s에게 발동" % [str(CARD_SUMMARIES.get(StringName(id), "")), tile, _pawn_name(pawn_id)], Color("ff6b6b"), null, 1.2))
 	state.npc_vanished.connect(func(npc_id: int, tile: int) -> void:
@@ -3760,9 +3769,9 @@ func _on_skill_used(data: Dictionary) -> void:
 
 
 ## 잡기: 같은 순간 도착 중인 내 말의 마지막 점프를 더 높게(45px) 바꿔 내리찍게 한다. 착지에서 화면이 흔들리고 충격파가 퍼진다.
-func _fx_try_slam(by_player: int, victim_pos: Vector2) -> void:
+func _fx_try_slam(by_player: int, victim_pos: Vector2) -> float:
 	if not _fx_on():
-		return
+		return 0.0
 	for pawn: PlayerPawn in state.pawns:
 		if pawn.owner_id != by_player:
 			continue
@@ -3771,8 +3780,10 @@ func _fx_try_slam(by_player: int, victim_pos: Vector2) -> void:
 			continue
 		if _pawn_position(pawn).distance_to(victim_pos) > 36.0:
 			continue
-		_glide(view, _pawn_position(pawn), _depth_scale(tile_norm(pawn.current_tile_idx).y), {"dur": HOP_SECONDS * 1.3, "arc": SLAM_HEIGHT, "pace_cap": minf(_pace(), 1.5), "land_tile": pawn.current_tile_idx, "land_big": true})
-		return
+		var cap: float = minf(_pace(), 1.5)
+		_glide(view, _pawn_position(pawn), _depth_scale(tile_norm(pawn.current_tile_idx).y), {"dur": HOP_SECONDS * 1.3, "arc": SLAM_HEIGHT, "pace_cap": cap, "land_tile": pawn.current_tile_idx, "land_big": true})
+		return HOP_SECONDS * 1.3 * cap
+	return 0.0
 
 
 ## 승급: 말이 공중으로 떠올라 한 바퀴 돌고 후광이 터진다 (그동안 아이콘 글자가 바뀐다).
@@ -3809,7 +3820,10 @@ func _react_hit_pawn(pawn_id: int) -> void:
 	if pawn == null:
 		return
 	var owner_id: int = pawn.owner_id
-	_fx_when_announced(func() -> void: _profile_react(owner_id, false, ["[억까!]", "[으악!]"][randi() % 2]))
+	# 총알이 날아가(0.35초) 맞은 뒤에 반응한다
+	_fx_when_announced(func() -> void:
+		get_tree().create_timer(0.35 * _motion_pace() + 0.1).timeout.connect(func() -> void:
+			_profile_react(owner_id, false, ["[억까!]", "[으악!]"][randi() % 2])))
 
 
 ## 차 저격 연출을 미리 만든다: 뒤로 살짝 당김(차징) -> 섬광 -> 초고속 직선 돌진으로 들이받음(내리찍기). 잡힌 말은 부딪힌 뒤에 날아간다.
@@ -4503,10 +4517,6 @@ func _on_opening_finished() -> void:
 	_intro_pending = false
 	if state == null or manager == null:
 		return
-	_draft_entrance = true
-	var pending_draft: bool = manager.current_state == TurnManager.State.PHASE_ROUND_START and not manager.draft_pending_players().is_empty()
-	if pending_draft and not instant_roll_for_test:
-		_show_top_toast("라운드 %d - 시작 증강을 선택하세요!" % state.round_number)
 	_refresh_all()
 
 
@@ -4796,6 +4806,17 @@ func _refresh_draft_overlay() -> void:
 	if pending.is_empty():
 		_close_draft_overlay()
 		return
+	# 라운드 안내 -> 증강 선택 창 -> (선택이 끝나면) 일괄 공개 순서: 라운드 카드가 먼저 뜨고 끝난 뒤에 증강 창이 올라온다.
+	if _fx_on() and _announcer != null:
+		if _draft_banner_round != state.round_number:
+			_draft_banner_round = state.round_number
+			_announced_round = state.round_number
+			_draft_entrance = true
+			_close_draft_overlay()
+			_announce("라운드", "라운드 %d" % state.round_number, "시작 증강을 선택하세요", COLOR_GOLD, null, 1.4)
+			return
+		if _announcer.active and _draft_overlay == null:
+			return
 	var player_id: int = pending[0]
 	if _auto_draft_enabled and not ai_mode and player_id != _player_ids[0]:
 		manager.auto_pick_draft(player_id)
