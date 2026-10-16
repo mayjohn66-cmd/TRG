@@ -218,3 +218,39 @@ func test_host_waits_for_everyone_then_starts_and_drops_absent_players() -> void
 	check(host.bots.has(3) and not host.humans.has(3), "오지 않은 사람은 봇이 된다")
 	check((games[2] as NetGame).bots.has(3), "참가자에게도 같은 구성이 전달된다")
 	check((games[2] as NetGame).running, "참가자도 시작했다")
+
+
+func test_silent_peer_is_reported_and_recovers() -> void:
+	var parts: Dictionary = _build([1, 2] as Array[int], [] as Array[int], false)
+	var games: Dictionary = parts["games"]
+	for seat: int in games.keys():
+		(games[seat] as NetGame).begin()
+	var host: NetGame = games[1]
+	var guest: NetGame = games[2]
+	var host_events: Array = []
+	var guest_events: Array = []
+	host.peer_silent.connect(func(seat: int, silent: bool) -> void: host_events.append([seat, silent]))
+	guest.peer_silent.connect(func(seat: int, silent: bool) -> void: guest_events.append([seat, silent]))
+	host._process(0.1)
+	check(host_events.is_empty() and guest_events.is_empty(), "막 시작했을 때는 조용해도 멈춘 것이 아니다")
+	# 참가자 화면이 멈춘 것처럼: 오래 소식이 없다
+	host._heard[2] = Time.get_ticks_msec() - int((NetGame.SILENT_SECONDS + 1.0) * 1000.0)
+	host._process(0.1)
+	check_eq(host_events, [[2, true]], "방장은 참가자 화면이 멈춘 것을 안다")
+	host._process(0.1)
+	check_eq(host_events.size(), 1, "같은 상태를 반복해서 알리지 않는다")
+	# 참가자가 돌아와 핑을 보내면(참가자 프레임이 한 번 돌면) 곧 복구된다
+	guest._ping_left = 0.0
+	guest._process(0.1)
+	host._process(0.1)
+	check_eq(host_events, [[2, true], [2, false]], "소식이 오면 복구를 알린다")
+	# 방장이 멈춘 쪽: 참가자 입장
+	guest._heard[1] = Time.get_ticks_msec() - int((NetGame.SILENT_SECONDS + 1.0) * 1000.0)
+	guest._process(0.1)
+	check_eq(guest_events, [[1, true]], "참가자는 방장 화면이 멈춘 것을 안다")
+	# 내 화면이 오래 멈췄다 돌아온 첫 프레임(delta가 큼)에는 판단하지 않는다
+	guest_events.clear()
+	guest._heard[1] = Time.get_ticks_msec() - int((NetGame.SILENT_SECONDS + 1.0) * 1000.0)
+	guest._silent[1] = false
+	guest._process(5.0)
+	check(guest_events.is_empty(), "큰 delta 프레임에는 상대를 멈췄다고 단정하지 않는다")

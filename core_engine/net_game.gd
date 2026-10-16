@@ -12,12 +12,17 @@ signal seat_taken_over(seat: int)
 signal desynced(detail: String)
 ## 방장과의 연결이 끊겼다.
 signal connection_lost(reason: String)
+## 상대 화면이 멈췄거나(다른 창·탭·앱으로 이동, 느린 연결) 다시 움직였다. 웹 브라우저는 보이지 않는 탭을 멈추기 때문에 알려 준다.
+signal peer_silent(seat: int, silent: bool)
 
 const ACTION_TAKEOVER: StringName = &"__takeover"
 ## 모두가 준비되기를 기다리는 최대 시간(초). 넘으면 준비 안 된 사람은 봇으로 넘긴다.
 const READY_TIMEOUT: float = 15.0
 ## 제한 시간(자동 굴리기·자동 선택 등)을 사람 속도에 맞게 늘리는 배율.
 const TIMER_SCALE: float = 3.0
+## 살아 있다는 신호(핑)를 보내는 간격 / 이만큼(초) 소식이 없으면 멈춘 것으로 본다.
+const PING_SECONDS: float = 1.0
+const SILENT_SECONDS: float = 4.0
 
 var manager: TurnManager = null
 var is_host: bool = false
@@ -40,6 +45,9 @@ var _pending: Array = []   # 방장: 이동 연출 중이라 기다리는 행동
 var _queue: Array = []     # 참가자: 받았지만 아직 적용 못 한 항목
 var _applying_rejection: Array = []
 var _launched: bool = false
+var _ping_left: float = 0.0
+var _heard: Dictionary = {}    # 좌석 -> 마지막으로 소식을 들은 시각(ms)
+var _silent: Dictionary = {}   # 좌석 -> 지금 멈춘 것으로 표시 중인가
 
 
 ## 매니저에 연결한다. 이후 manager.act()/force_timeout()/auto_pick_draft()는 모두 방장을 거쳐 돌아온다.
@@ -99,11 +107,58 @@ func _process(delta: float) -> void:
 		return
 	if not running:
 		return
+	_tick_presence(delta)
 	manager.tick(delta)
 	if is_host:
 		_drain_pending()
 	else:
 		_drain_queue()
+
+
+# ---------------------------------------------------------------------------
+# 상대 화면 상태 (핑)
+# ---------------------------------------------------------------------------
+
+func _tick_presence(delta: float) -> void:
+	_ping_left -= delta
+	if _ping_left <= 0.0:
+		_ping_left = PING_SECONDS
+		_send_ping()
+	# 내 화면이 오래 멈췄다 돌아온 첫 프레임(delta가 큼)에는 판단하지 않는다: 밀린 소식이 곧 도착한다.
+	if delta > 1.0:
+		return
+	var now: int = Time.get_ticks_msec()
+	for seat: int in _watched_seats():
+		var quiet: bool = now - int(_heard.get(seat, now)) > int(SILENT_SECONDS * 1000.0)
+		if quiet != bool(_silent.get(seat, false)):
+			_silent[seat] = quiet
+			peer_silent.emit(seat, quiet)
+
+
+## 소식을 기다려야 하는 좌석: 방장은 참가자 전원, 참가자는 방장.
+func _watched_seats() -> Array[int]:
+	if is_host:
+		return _remote_seats()
+	var host_seat: Array[int] = [1]
+	return host_seat
+
+
+func _on_ping(seat: int) -> void:
+	_heard[seat] = Time.get_ticks_msec()
+
+
+func _send_ping() -> void:
+	if not test_peers.is_empty():
+		for seat: int in test_peers.keys():
+			if seat != local_seat and (is_host or seat == 1):
+				(test_peers[seat] as NetGame)._on_ping(local_seat)
+	elif _has_remote_peers():
+		_rpc_ping.rpc()
+
+
+@rpc("any_peer", "call_remote", "unreliable")
+func _rpc_ping() -> void:
+	_on_ping(multiplayer.get_remote_sender_id())
 
 
 # ---------------------------------------------------------------------------
@@ -132,6 +187,9 @@ func _launch(forced: bool) -> void:
 
 
 func _start_local() -> void:
+	var now: int = Time.get_ticks_msec()
+	for seat: int in humans:
+		_heard[seat] = now
 	running = true
 	_launched = true
 	_expected_seq = 1

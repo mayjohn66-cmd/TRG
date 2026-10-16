@@ -162,6 +162,8 @@ var _player_ids: Array[int] = PLAYER_IDS.duplicate()
 var net: NetGame = null
 var _game_seed: int = 0
 var _net_lost_overlay: Control = null
+var _net_status_label: Label = null
+var _silent_seats: Dictionary = {}
 var manager: TurnManager = null
 var state: GameState = null
 
@@ -4436,6 +4438,7 @@ func _setup_net() -> void:
 	net.seat_taken_over.connect(_on_net_seat_taken_over)
 	net.desynced.connect(_on_net_desynced)
 	net.connection_lost.connect(_on_net_connection_lost)
+	net.peer_silent.connect(_on_net_peer_silent)
 
 
 func _bot_active() -> bool:
@@ -4465,6 +4468,25 @@ func _on_net_seat_taken_over(seat: int) -> void:
 func _on_net_desynced(detail: String) -> void:
 	push_warning("온라인 동기화 오류: %s" % detail)
 	_log_line("[동기화 오류] %s" % detail, Color("ff6b6b"))
+
+
+## 상대 화면이 멈췄을 때(다른 창·탭으로 이동했거나 연결이 느릴 때) 상단에 안내를 띄운다.
+func _on_net_peer_silent(seat: int, silent: bool) -> void:
+	_silent_seats[seat] = silent
+	var names: Array[String] = []
+	for silent_seat: int in _silent_seats.keys():
+		if bool(_silent_seats[silent_seat]):
+			names.append("방장" if silent_seat == 1 and not net.is_host else _player_name(silent_seat))
+	if _net_status_label == null:
+		_net_status_label = _make_label("", 14, Color("1a1d24"))
+		_net_status_label.add_theme_stylebox_override("normal", _style(Color("ffd43b"), Color("fff3bf"), 2, 8, 0, 6))
+		_net_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_net_status_label.position = Vector2(333, 46)
+		_net_status_label.size = Vector2(700, 30)
+		_net_status_label.z_index = 100
+		add_child(_net_status_label)
+	_net_status_label.visible = not names.is_empty()
+	_net_status_label.text = "%s 화면이 멈춘 것 같습니다 (다른 창·탭·앱으로 이동했거나 연결이 느림). 돌아오면 자동으로 이어집니다." % ", ".join(names)
 
 
 func _on_net_connection_lost(reason: String) -> void:

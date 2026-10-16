@@ -87,3 +87,9 @@ SMOKE_SEED=3 godot --headless --path . -s res://tests/ui_smoke.gd   # 다른 시
 2. *CLI 자동 배포:* 저장소 `Settings > Secrets and variables > Actions`에 `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`를 넣으면 워크플로의 `Deploy to Vercel (optional)` 단계가 같은 빌드를 `vercel deploy --prod`로 올립니다(없으면 건너뜀).
 
 Godot 웹 빌드는 스레드를 쓰지 않아(`thread_support=false`) 별도의 COOP/COEP 헤더가 필요 없습니다. 폰에서 예전 화면이 보이면 주소 끝에 `?v=숫자`를 붙이세요.
+
+## 혼자서 멀티플레이 테스트하는 법
+
+- **브라우저 창 두 개를 나란히** 띄우세요 (탭 전환 X). 한 창에서 `친선전 방 만들기`로 방 코드를 만들고 다른 창에서 `방 코드로 입장`을 누르면 됩니다. 한쪽을 가려진 탭에 두면 브라우저가 그 탭의 게임을 멈춥니다(웹 빌드의 한계).
+- PC 한 대 + 폰처럼 기기 두 대도 됩니다. 창이 멈춘 쪽이 생기면 다른 쪽 화면 위에 `○○ 화면이 멈춘 것 같습니다` 안내가 뜨고, 돌아오면 자동으로 이어집니다.
+- 두 창은 같은 닉네임을 저장소에서 읽으므로 이름이 같게 보일 수 있습니다 (방장 쪽은 `방장`, 참가자 쪽 안내는 좌석 번호로 구분).

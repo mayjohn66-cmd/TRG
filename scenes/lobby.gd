@@ -299,6 +299,10 @@ func start_hosting() -> void:
 	_status = _label("", 14, Color("ffe066"))
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_panel_box.add_child(_status)
+	var test_tip := _label("혼자 테스트하려면 브라우저 창을 두 개 나란히 띄우세요 (탭 전환은 안 됩니다: 가려진 탭은 브라우저가 멈춥니다).", 11, Color("868e96"))
+	test_tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	test_tip.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_panel_box.add_child(test_tip)
 	_add_manual_fold()
 	var footer := HBoxContainer.new()
 	footer.add_theme_constant_override("separation", 12)
