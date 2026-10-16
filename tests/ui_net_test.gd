@@ -75,7 +75,11 @@ func _check_screens() -> void:
 		for seat: int in MainBoard.PLAYER_IDS:
 			var panel: Control = board._profiles[seat]["panel"]
 			_expect(panel.visible == _seats.has(seat), "자리 %d 프로필 표시 여부 (보임=%s)" % [seat, str(panel.visible)])
-		_expect(board.corner_of_player(board.local_player_id) == 0, "내 자리는 우하단")
+		_expect(board.seat_anchor_of(board.local_player_id) == MainBoard.SEAT_ME, "내 자리는 우하단")
+		if _seats.size() == 2:
+			for seat: int in _seats:
+				if seat != board.local_player_id:
+					_expect(board.seat_anchor_of(seat) == MainBoard.SEAT_TOP, "2인 대전: 상대는 맞은편(위)")
 		_expect(not board._mode_toggle.visible and not board._new_game_button.visible and not board._debug_toggle.visible, "온라인에서는 새 게임/모드/치트 버튼이 없다")
 		_expect(board.manager.lockstep and board.manager.external_timeouts, "락스텝 + 외부 타임아웃")
 	_expect(_boards[0].manager.player_order == _seats, "플레이 순서는 참여 좌석만")

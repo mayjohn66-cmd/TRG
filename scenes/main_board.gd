@@ -23,7 +23,7 @@ const TILT_FAR_SCALE: float = 0.80     ## 가장 먼(위) 줄의 가로·크기 
 const TILT_TILE_SQUASH: float = 0.86   ## 타일 하나의 세로 압축 (글자는 되돌려 찌그러지지 않게 한다)
 const TILT_PAWN_LIFT: float = 9.0      ## 서 있는 말이 바닥에서 떠 보이는 높이(px)
 const TILT_MARGIN: float = 0.11        ## 보드 받침이 타일 바깥으로 나오는 정도(정규화 좌표)
-const TILT_ZOOM: float = 1.1           ## 세로를 눌러 남는 공간만큼 보드를 키운다
+const TILT_ZOOM: float = 1.05          ## 세로를 눌러 남는 공간만큼 보드를 키운다
 const TILE_SIZE: float = 48.0
 const PAWN_RADIUS: float = 7.5
 const STEP_DELAY: float = 0.22
@@ -34,13 +34,21 @@ const PROFILE_SIZE: Vector2 = Vector2(230, 112)
 const PROFILE_DIM: Color = Color(0.42, 0.42, 0.45, 0.85)
 const PROFILE_LIT: Color = Color(1.1, 1.1, 1.1, 1.0)
 const PAWN_SLOT_SIZE: float = 38.0
-## 프로필 HUD 카드의 모서리 위치(코너 번호): 0 우하단(로컬 플레이어) / 1 우상단 / 2 좌상단 / 3 좌하단 (출발선 0번이 우하단이라 반시계 턴 순서와 같다).
-const CORNER_POSITIONS: Array[Vector2] = [
-	Vector2(1124, 644),
-	Vector2(1124, 52),
-	Vector2(12, 52),
-	Vector2(12, 644),
-]
+## 좌석 앵커(테이블에 둘러앉은 자리): 아래=나(우하단) / 오른쪽=다음 순서 / 위=맞은편 / 왼쪽=이전 순서. 위쪽 자리는 보드 위의 낮은 띠라 한 줄(컴팩트) 프로필을 쓴다.
+const SEAT_ME: StringName = &"me"
+const SEAT_RIGHT: StringName = &"right"
+const SEAT_TOP: StringName = &"top"
+const SEAT_LEFT: StringName = &"left"
+const SEAT_POSITIONS: Dictionary = {
+	&"me": Vector2(1124, 644),
+	&"right": Vector2(1124, 52),
+	&"top": Vector2(518, 0),
+	&"left": Vector2(12, 52),
+}
+const COMPACT_PROFILE_SIZE: Vector2 = Vector2(330, 60)
+const COMPACT_SLOT_SIZE: float = 26.0
+const AVATAR_SIZE: Vector2 = Vector2(84, 84)
+const COMPACT_AVATAR_SIZE: Vector2 = Vector2(48, 48)
 ## 카드 독 안에서 카드가 놓이는 기준 y (호버 시 15px 솟아오른다).
 const DOCK_CARD_Y: float = 6.0
 ## 손패 카드는 한 장 전체 일러스트(140x196)가 따로 있고, 화면 아래로 반쯤 가려진 채 부채꼴로 펼쳐진다. 호버하면 전체가 올라와 보인다.
@@ -166,6 +174,8 @@ const CATEGORY_COLORS: Dictionary = {
 var local_player_id: int = 1
 ## 이 판에 참여하는 좌석 (컴퓨터 대전/핫시트는 4명 전부, 온라인 대전은 로비에서 정한 2~4명).
 var _player_ids: Array[int] = PLAYER_IDS.duplicate()
+## 플레이어 -> 앉은 자리 앵커 (SEAT_*). 참가 인원과 내 자리로 정해진다.
+var _seat_anchor: Dictionary = {}
 ## 온라인 대전(락스텝) 동기화. 온라인이 아니면 null.
 var net: NetGame = null
 var _game_seed: int = 0
@@ -346,6 +356,7 @@ func _ready() -> void:
 		local_player_id = GameSession.net_local_seat
 		ai_mode = true  # 화면 규칙은 AI 대전과 같다: 내 자리만 직접 조작하고 나머지는 봇이나 원격 사람
 		_player_ids = GameSession.net_players.duplicate()
+	_compute_seats()
 	manager = TurnManager.new()
 	manager.name = "TurnManager"
 	manager.hotseat_mode = true
@@ -385,6 +396,29 @@ func get_player_for_corner(corner_idx: int) -> int:
 ## get_player_for_corner()의 역함수: 플레이어가 앉는 코너 번호.
 func corner_of_player(player_id: int) -> int:
 	return posmod(player_id - local_player_id, 4)
+
+
+## 참가 인원과 내 자리로 모두의 앉은 자리를 정한다. 나는 아래, 나머지는 턴 순서(다음 -> 맞은편 -> 이전)대로:
+## 1명이면 맞은편(위), 2명이면 오른쪽·왼쪽, 3명이면 오른쪽·위·왼쪽.
+func _compute_seats() -> void:
+	_seat_anchor.clear()
+	_seat_anchor[local_player_id] = SEAT_ME
+	var others: Array[int] = []
+	for step: int in range(1, 4):
+		var candidate: int = ((local_player_id - 1 + step) % 4) + 1
+		if _player_ids.has(candidate):
+			others.append(candidate)
+	var anchors: Array[StringName] = []
+	match others.size():
+		1: anchors = [SEAT_TOP]
+		2: anchors = [SEAT_RIGHT, SEAT_LEFT]
+		_: anchors = [SEAT_RIGHT, SEAT_TOP, SEAT_LEFT]
+	for index: int in others.size():
+		_seat_anchor[others[index]] = anchors[index]
+
+
+func seat_anchor_of(player_id: int) -> StringName:
+	return _seat_anchor.get(player_id, SEAT_ME)
 
 
 func _process(delta: float) -> void:
@@ -549,8 +583,18 @@ func _new_game() -> void:
 func _bind_state() -> void:
 	state.pawn_stepped.connect(_on_pawn_stepped)
 	state.pawn_warped.connect(_on_pawn_stepped)
-	state.pawn_sent_to_start.connect(func(pawn_id: int, _by: int) -> void: _log_line("%s 출발선으로 복귀" % _pawn_name(pawn_id), Color("ff8787")))
-	state.pawn_finished.connect(func(pawn_id: int) -> void: _log_line("[완주] %s 완주!" % _pawn_name(pawn_id), Color("69db7c")))
+	state.pawn_sent_to_start.connect(func(pawn_id: int, by_player: int) -> void:
+		_log_line("%s 출발선으로 복귀" % _pawn_name(pawn_id), Color("ff8787"))
+		var victim: PlayerPawn = state.get_pawn(pawn_id)
+		if victim != null:
+			_avatar_react(victim.owner_id, AvatarSlot.Emotion.ANGRY)
+			if by_player != victim.owner_id and _player_ids.has(by_player):
+				_avatar_react(by_player, AvatarSlot.Emotion.HAPPY))
+	state.pawn_finished.connect(func(pawn_id: int) -> void:
+		_log_line("[완주] %s 완주!" % _pawn_name(pawn_id), Color("69db7c"))
+		var finisher: PlayerPawn = state.get_pawn(pawn_id)
+		if finisher != null:
+			_avatar_react(finisher.owner_id, AvatarSlot.Emotion.CHEER, 1.8))
 	state.pawn_promoted.connect(func(pawn_id: int) -> void:
 		var promoted_pawn: PlayerPawn = state.get_pawn(pawn_id)
 		if promoted_pawn != null and promoted_pawn.kind == GameEnums.PawnKind.SHOGI:
@@ -582,6 +626,9 @@ func _bind_state() -> void:
 	state.pawns_stacked.connect(func(leader_id: int, member_ids: Array[int]) -> void: _log_line("%s 업기 (%d마리)" % [_pawn_name(leader_id), member_ids.size()], Color("ffd43b")))
 	state.pawns_swapped.connect(func(a_id: int, b_id: int) -> void: _log_line("%s ↔ %s 위치 교환" % [_pawn_name(a_id), _pawn_name(b_id)], Color("ffd43b")))
 	state.attachment_triggered.connect(func(tile: int, id: String, pawn_id: int, _cutscene: StringName) -> void:
+		var trapped: PlayerPawn = state.get_pawn(pawn_id)
+		if trapped != null:
+			_avatar_react(trapped.owner_id, AvatarSlot.Emotion.SURPRISED)
 		_log_line("[설치물] %d번 타일 %s 발동! (%s)" % [tile, _attachment_name(id), _pawn_name(pawn_id)], Color("ff6b6b"))
 		_announce("함정 발동", "[발동!] %s" % _attachment_name(id), "%s\n%d번 타일에서 %s에게 발동" % [str(CARD_SUMMARIES.get(StringName(id), "")), tile, _pawn_name(pawn_id)], Color("ff6b6b"), null, 1.2))
 	state.npc_vanished.connect(func(npc_id: int, tile: int) -> void:
@@ -702,7 +749,10 @@ func _register_layout() -> void:
 	for index: int in PLAYER_IDS.size():
 		var player_id: int = PLAYER_IDS[index]
 		var panel: Control = _profiles[player_id]["panel"]
-		(left if corner_of_player(player_id) >= 2 else right).append(panel)
+		match seat_anchor_of(player_id):
+			SEAT_LEFT: left.append(panel)
+			SEAT_TOP: center.append(panel)
+			_: right.append(panel)
 	for node: Variant in left:
 		_layout_entries.append({"node": node, "base": (node as CanvasItem).position, "group": 0})
 	for node: Variant in center:
@@ -756,43 +806,41 @@ func _build_toast_label() -> void:
 func _build_profiles() -> void:
 	for player_id: int in PLAYER_IDS:
 		var color: Color = PLAYER_COLORS[player_id]
+		var anchor: StringName = seat_anchor_of(player_id) if _player_ids.has(player_id) else SEAT_LEFT
+		var compact: bool = anchor == SEAT_TOP
+		var card_size: Vector2 = COMPACT_PROFILE_SIZE if compact else PROFILE_SIZE
+		var slot_size: float = COMPACT_SLOT_SIZE if compact else PAWN_SLOT_SIZE
 		var panel := PanelContainer.new()
-		panel.position = CORNER_POSITIONS[corner_of_player(player_id)]
-		panel.custom_minimum_size = PROFILE_SIZE
-		panel.size = PROFILE_SIZE
-		panel.pivot_offset = PROFILE_SIZE / 2.0
+		panel.position = SEAT_POSITIONS[anchor]
+		panel.custom_minimum_size = card_size
+		panel.size = card_size
+		panel.pivot_offset = card_size / 2.0
 		add_child(panel)
 		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 10)
+		row.add_theme_constant_override("separation", 10 if not compact else 8)
 		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		panel.add_child(row)
 
-		var avatar := PanelContainer.new()
-		avatar.custom_minimum_size = Vector2(84, 84)
-		avatar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		avatar.add_theme_stylebox_override("panel", _style(color.darkened(0.05), color.lightened(0.55), 3, 16, 0, 0))
+		# 아바타 칸: 사도 Spine/스프라이트 시트가 들어갈 자리 (에셋이 없으면 좌석 글자 + 감정 이름)
+		var avatar := AvatarSlot.new()
+		avatar.setup(player_id, color, COMPACT_AVATAR_SIZE if compact else AVATAR_SIZE)
 		row.add_child(avatar)
-		var avatar_label := _make_label("P%d" % player_id, 30, Color("0d1018"))
-		avatar_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		avatar_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		avatar_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		avatar.add_child(avatar_label)
 		var penalty_label := _make_label("", 12, Color("ffe3e3"))
-		penalty_label.position = Vector2(4, 64)
+		penalty_label.position = Vector2(4, 64) if not compact else Vector2(2, 30)
 		penalty_label.add_theme_stylebox_override("normal", _style(Color("c92a2a"), Color(0, 0, 0, 0), 0, 6, 0, 2))
 		penalty_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		penalty_label.visible = false
 		avatar.add_child(penalty_label)
 
 		var right := VBoxContainer.new()
-		right.add_theme_constant_override("separation", 4)
+		right.add_theme_constant_override("separation", 4 if not compact else 2)
 		right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		right.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.add_child(right)
 		var top := HBoxContainer.new()
 		top.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		right.add_child(top)
-		var name_label := _make_label("플레이어 %d" % player_id, 15, color.lightened(0.3))
+		var name_label := _make_label("플레이어 %d" % player_id, 15 if not compact else 12, color.lightened(0.3))
 		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		name_label.clip_text = true
 		name_label.add_theme_color_override("font_outline_color", Color("0d1018"))
@@ -800,32 +848,40 @@ func _build_profiles() -> void:
 		top.add_child(name_label)
 		var count_label := _make_label("x0", 12, Color("ced4da"))
 		top.add_child(count_label)
-		var grid := GridContainer.new()
-		grid.columns = 2
-		grid.add_theme_constant_override("h_separation", 4)
-		grid.add_theme_constant_override("v_separation", 4)
-		grid.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		right.add_child(grid)
+		var slot_container: Container
+		if compact:
+			var line := HBoxContainer.new()
+			line.add_theme_constant_override("separation", 4)
+			slot_container = line
+		else:
+			var grid := GridContainer.new()
+			grid.columns = 2
+			grid.add_theme_constant_override("h_separation", 4)
+			grid.add_theme_constant_override("v_separation", 4)
+			slot_container = grid
+		slot_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		right.add_child(slot_container)
 		var slots: Array[Dictionary] = []
 		for slot: int in range(1, GameEnums.PAWNS_PER_PLAYER + 1):
 			var icon := PanelContainer.new()
-			icon.custom_minimum_size = Vector2(PAWN_SLOT_SIZE, PAWN_SLOT_SIZE)
+			icon.custom_minimum_size = Vector2(slot_size, slot_size)
 			icon.mouse_filter = Control.MOUSE_FILTER_STOP
 			var box := VBoxContainer.new()
 			box.add_theme_constant_override("separation", -2)
 			box.alignment = BoxContainer.ALIGNMENT_CENTER
 			box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			icon.add_child(box)
-			var letter := _make_label("", 16, Color("f1f3f5"))
+			var letter := _make_label("", 16 if not compact else 14, Color("f1f3f5"))
 			letter.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			letter.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			box.add_child(letter)
 			var status := _make_label("", 9, Color("f1f3f5"))
 			status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			status.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			status.visible = not compact  # 한 줄 프로필은 칸이 작아 상태 글자를 빼고 색으로만 구분한다
 			box.add_child(status)
 			_bind_tip(icon, _fill_pawn_tip.bind(player_id * 10 + slot))
-			grid.add_child(icon)
+			slot_container.add_child(icon)
 			slots.append({"panel": icon, "letter": letter, "status": status})
 		_profiles[player_id] = {
 			"panel": panel,
@@ -833,7 +889,17 @@ func _build_profiles() -> void:
 			"count": count_label,
 			"penalty": penalty_label,
 			"slots": slots,
+			"avatar": avatar,
+			"anchor": anchor,
 		}
+
+
+## 플레이어의 아바타가 감정을 보인다 (에셋이 있으면 그 애니메이션, 없으면 자리표시자 연출).
+func _avatar_react(player_id: int, new_emotion: AvatarSlot.Emotion, seconds: float = 1.4) -> void:
+	var card: Dictionary = _profiles.get(player_id, {})
+	if card.is_empty() or not _player_ids.has(player_id):
+		return
+	(card["avatar"] as AvatarSlot).react(new_emotion, seconds)
 
 
 ## 좌측 중앙 '엘리아스 중앙 법전' 위젯: 4개의 둥근 카드형 슬롯 (빈 슬롯은 점선 테두리, 활성 교칙은 명패).
@@ -1739,10 +1805,11 @@ func _refresh_players() -> void:
 		# 스포트라이트: 현재 턴 플레이어만 환하게 밝고 살짝 커지며 외곽 광채가 켜지고, 나머지는 어둡게 가라앉는다.
 		var is_turn: bool = player_id == manager.current_player_id() and not manager.is_game_over
 		var game_over: bool = manager.is_game_over
+		var margin: int = 4 if card["anchor"] == SEAT_TOP else 8  # 위쪽 한 줄 프로필은 낮은 띠라 여백도 얇게
 		if is_turn:
-			panel.add_theme_stylebox_override("panel", _style(Color("273049"), Color("fff3bf"), 4, 14, 26, 8))
+			panel.add_theme_stylebox_override("panel", _style(Color("273049"), Color("fff3bf"), 4, 14, 26, margin))
 		else:
-			panel.add_theme_stylebox_override("panel", _style(COLOR_PANEL, color.darkened(0.35), 2, 14, 4, 8))
+			panel.add_theme_stylebox_override("panel", _style(COLOR_PANEL, color.darkened(0.35), 2, 14, 4, margin))
 		_set_profile_light(panel, PROFILE_LIT if (is_turn or game_over) else PROFILE_DIM, Vector2(1.05, 1.05) if is_turn else Vector2.ONE)
 
 
@@ -4120,6 +4187,8 @@ func _on_turn_order_reversed(new_direction: int) -> void:
 
 func _on_game_over(winner_id: int, reason: StringName) -> void:
 	_last_reason = reason
+	for player_id: int in _player_ids:
+		_avatar_react(player_id, AvatarSlot.Emotion.CHEER if player_id == winner_id else AvatarSlot.Emotion.SAD, 0.0)
 	_log_line("[승리] P%d 승리! - %s" % [winner_id, VictoryChecker.reason_text(reason)], PLAYER_COLORS[winner_id])
 	_close_draft_overlay()
 	_cancel_tile_pick()
@@ -4237,6 +4306,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_log_move(data)
 			_start_beat(BEAT_AFTER_MOVE)
 		&"card_played":
+			_avatar_react(int(data["player_id"]), AvatarSlot.Emotion.HAPPY)
 			var card: BaseCard = CardRegistry.get_card(data["card_id"])
 			_log_line("[카드] P%d [%s] 사용%s" % [data["player_id"], card.display_name, " (개입 대기열 - 나중에 낸 카드부터 실행)" if data["queued"] else ""], Color("74c0fc"))
 			_announce("카드 발동", "[P%d 발동!] %s" % [data["player_id"], card.display_name], ("개입 대기열에 쌓였습니다 (나중에 낸 카드부터 실행)\n" if data["queued"] else "") + str(CARD_SUMMARIES.get(data["card_id"], "")), PLAYER_COLORS[int(data["player_id"])], _make_card_preview(data["card_id"]), 1.2)

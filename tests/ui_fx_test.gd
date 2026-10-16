@@ -39,6 +39,7 @@ func _run() -> void:
 	await _test_mode_toggle()
 	await _test_game_menu()
 	await _test_view_modes()
+	await _test_avatar_seats()
 	# 이후 연출·게이지 테스트는 직접 조작하므로 4P 수동 조작 모드로 진행한다 (봇 호흡은 마지막에 따로 검증)
 	_board.ai_mode = false
 	_board._bot.set_enabled(false)
@@ -240,6 +241,71 @@ func _test_mode_toggle() -> void:
 	_expect(not _board.ai_mode and not _board._bot.enabled and _board._mode_toggle.text == "[모드: 4P 수동 조작]", "토글하면 4P 수동 조작")
 	_board._mode_toggle.pressed.emit()
 	_expect(_board.ai_mode and _board._bot.enabled, "다시 토글하면 AI 대전")
+
+
+## 테이블 좌석 배치와 아바타 칸: 인원·내 자리에 따라 앵커가 정해지고, 감정 반응과 에셋 슬롯이 동작한다.
+func _test_avatar_seats() -> void:
+	var saved_ids: Array[int] = _board._player_ids.duplicate()
+	var saved_local: int = _board.local_player_id
+	var cases: Array = [
+		[[1, 2] as Array[int], 1, {1: &"me", 2: &"top"}],
+		[[1, 2] as Array[int], 2, {2: &"me", 1: &"top"}],
+		[[1, 2, 3] as Array[int], 1, {1: &"me", 2: &"right", 3: &"left"}],
+		[[1, 2, 3, 4] as Array[int], 1, {1: &"me", 2: &"right", 3: &"top", 4: &"left"}],
+		[[1, 2, 3, 4] as Array[int], 3, {3: &"me", 4: &"right", 1: &"top", 2: &"left"}],
+		[[2, 4] as Array[int], 4, {4: &"me", 2: &"top"}],
+	]
+	for entry: Array in cases:
+		_board._player_ids = entry[0]
+		_board.local_player_id = entry[1]
+		_board._compute_seats()
+		for player_id: int in (entry[2] as Dictionary).keys():
+			_expect(_board.seat_anchor_of(player_id) == (entry[2] as Dictionary)[player_id], "인원 %s, 내 자리 %d: P%d 앵커 %s" % [str(entry[0]), entry[1], player_id, str(_board.seat_anchor_of(player_id))])
+	_board._player_ids = saved_ids
+	_board.local_player_id = saved_local
+	_board._compute_seats()
+	# 아바타 칸: 에셋이 없으면 자리표시자, 반응하면 감정 이름이 보이고 시간이 지나면 돌아온다
+	var avatar: AvatarSlot = _board._profiles[2]["avatar"]
+	_expect(not avatar.has_art() and avatar.emotion == AvatarSlot.Emotion.IDLE, "에셋이 없으면 자리표시자")
+	avatar.react(AvatarSlot.Emotion.ANGRY, 0.0)
+	_expect(avatar.emotion == AvatarSlot.Emotion.ANGRY and avatar._caption.visible and avatar._caption.text == "분노", "자리표시자가 감정 이름을 보여 준다")
+	avatar.react(AvatarSlot.Emotion.IDLE, 0.0)
+	_expect(not avatar._caption.visible, "기본 표정에서는 감정 이름이 사라진다")
+	# 스프라이트 시트 슬롯: 감정별 애니메이션이 재생되고 없는 감정은 idle로 대신한다
+	var frames := SpriteFrames.new()
+	var image := Image.create(40, 60, false, Image.FORMAT_RGBA8)
+	image.fill(Color.WHITE)
+	var texture: ImageTexture = ImageTexture.create_from_image(image)
+	for animation: StringName in [&"idle", &"happy"]:
+		if not frames.has_animation(animation):
+			frames.add_animation(animation)
+		frames.add_frame(animation, texture)
+	if frames.has_animation(&"default"):
+		frames.remove_animation(&"default")
+	avatar.use_frames(frames)
+	_expect(avatar.has_art() and avatar._sprite != null and avatar._sprite.animation == &"idle", "스프라이트 시트를 넣으면 idle이 재생된다")
+	_expect(is_equal_approx(avatar._sprite.scale.y, avatar.size.y / 60.0), "스프라이트는 칸 높이에 맞춰진다")
+	avatar.react(AvatarSlot.Emotion.HAPPY, 0.0)
+	_expect(avatar._sprite.animation == &"happy" and not avatar._caption.visible, "happy 애니메이션 재생 (에셋이 있으면 자리표시자 글자는 숨김)")
+	avatar.react(AvatarSlot.Emotion.ANGRY, 0.0)
+	_expect(avatar._sprite.animation == &"idle", "없는 감정(angry)은 idle로 대신한다")
+	# 정지 이미지 슬롯
+	avatar.set_character(&"nonexistent_character")
+	_expect(not avatar.has_art(), "없는 캐릭터는 다시 자리표시자")
+	avatar.use_portrait(texture)
+	_expect(avatar.has_art() and avatar._portrait != null, "정지 이미지 한 장도 쓸 수 있다")
+	avatar.react(AvatarSlot.Emotion.CHEER, 0.0)
+	avatar.react(AvatarSlot.Emotion.IDLE, 0.0)
+	avatar.set_character(AvatarSlot.DEFAULT_CHARACTER)
+	_expect(not avatar.has_art(), "기본 캐릭터 에셋이 없으면 자리표시자로 돌아간다")
+	# 게임 이벤트가 아바타를 반응시킨다: 말이 잡히면 피해자는 분노, 잡은 쪽은 웃음
+	var victim: PlayerPawn = _board.state.get_pawn(21)
+	_board.state.pawn_sent_to_start.emit(victim.entity_id, 1)
+	_expect((_board._profiles[2]["avatar"] as AvatarSlot).emotion == AvatarSlot.Emotion.ANGRY and (_board._profiles[1]["avatar"] as AvatarSlot).emotion == AvatarSlot.Emotion.HAPPY, "말이 잡히면 피해자 분노 / 잡은 쪽 웃음")
+	_board.state.pawn_finished.emit(31)
+	_expect((_board._profiles[3]["avatar"] as AvatarSlot).emotion == AvatarSlot.Emotion.CHEER, "완주하면 환호")
+	for player_id: int in [1, 2, 3, 4]:
+		(_board._profiles[player_id]["avatar"] as AvatarSlot).react(AvatarSlot.Emotion.IDLE, 0.0)
 
 
 ## 보드 시점: 탑뷰 <-> 기울인 탑뷰. 규칙 좌표는 그대로이고 화면 배치만 바뀐다.

@@ -90,20 +90,25 @@ func _check_hud_layout() -> void:
 	for index: int in 29:
 		board_rect = _tile_rect(index) if index == 0 else board_rect.merge(_tile_rect(index))
 	_assert(absf(board_rect.get_center().x - 683.0) < 4.0, "보드판은 화면 가로 정중앙이어야 한다 (%s)" % str(board_rect))
-	# 로컬 플레이어(P1)는 우하단, 다음 순서는 우상단, 맞은편은 좌상단, 이전 순서는 좌하단 (상대 좌석 매핑).
-	var corners: Dictionary = {1: Vector2(1, 1), 2: Vector2(1, 0), 3: Vector2(0, 0), 4: Vector2(0, 1)}
+	# 테이블에 둘러앉은 자리: 나(P1)는 아래(우하단), 다음 순서 P2는 오른쪽, 맞은편 P3는 위 가운데, 이전 순서 P4는 왼쪽 (상대 좌석 매핑).
+	var expected_anchor: Dictionary = {1: MainBoard.SEAT_ME, 2: MainBoard.SEAT_RIGHT, 3: MainBoard.SEAT_TOP, 4: MainBoard.SEAT_LEFT}
 	var rects: Dictionary = {}
 	for player_id: int in [1, 2, 3, 4]:
 		var panel: Control = _board._profiles[player_id]["panel"]
 		var rect: Rect2 = panel.get_global_rect()
 		rects[player_id] = rect
 		_assert(Rect2(Vector2.ZERO, Vector2(1366, 768)).encloses(rect), "P%d 프로필 카드가 화면 안에 있어야 한다 %s" % [player_id, str(rect)])
-		var corner: Vector2 = corners[player_id]
-		_assert((rect.get_center().x < 683.0) == (corner.x == 0.0) and (rect.get_center().y < 384.0) == (corner.y == 0.0), "P%d 프로필 카드는 지정한 모서리에 있어야 한다" % player_id)
+		_assert(_board.seat_anchor_of(player_id) == expected_anchor[player_id], "P%d 좌석 앵커 (%s)" % [player_id, str(_board.seat_anchor_of(player_id))])
 		_assert(not rect.intersects(board_rect), "P%d 프로필 카드가 보드판을 가리면 안 된다" % player_id)
+		_assert(_board._profiles[player_id]["avatar"] is AvatarSlot, "P%d 아바타 칸" % player_id)
+	_assert(absf((rects[3] as Rect2).get_center().x - 683.0) < 30.0 and (rects[3] as Rect2).position.y < 10.0, "맞은편(P3)은 보드 위 가운데 한 줄 프로필")
+	_assert((rects[2] as Rect2).get_center().x > 683.0 and (rects[2] as Rect2).get_center().y < 384.0, "다음 순서(P2)는 오른쪽 위")
+	_assert((rects[4] as Rect2).get_center().x < 683.0 and (rects[4] as Rect2).get_center().y < 384.0, "이전 순서(P4)는 왼쪽 위")
+	_assert((rects[1] as Rect2).get_center().x > 683.0 and (rects[1] as Rect2).get_center().y > 384.0, "나(P1)는 우하단")
+	_assert(not (rects[3] as Rect2).intersects(rects[2]) and not (rects[3] as Rect2).intersects(rects[4]), "위쪽 프로필이 좌우 프로필과 겹치지 않는다")
 	var law_rect: Rect2 = (_board._law_slots[0] as Control).get_global_rect().merge((_board._law_slots[3] as Control).get_global_rect())
 	_assert(not law_rect.intersects(board_rect), "법전 위젯이 보드판을 가리면 안 된다")
-	_assert(law_rect.position.x < 400.0 and not law_rect.intersects(rects[3]) and not law_rect.intersects(rects[4]), "법전 위젯은 P3·P4 모서리 사이의 좌측 중앙에 있어야 한다")
+	_assert(law_rect.position.x < 400.0 and not law_rect.intersects(rects[3]) and not law_rect.intersects(rects[4]), "법전 위젯은 왼쪽 프로필 아래 좌측 중앙에 있어야 한다")
 	_assert(_board._law_labels.size() == 4 and _board._law_dashes.size() == 4, "법전 슬롯 4개")
 	for dash: Control in _board._law_dashes:
 		_assert(dash.visible, "비어 있는 법전 슬롯은 점선 테두리가 보여야 한다")
