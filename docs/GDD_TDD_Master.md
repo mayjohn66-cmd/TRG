@@ -470,7 +470,7 @@ res://
 │                  room_code / room_signaling / signal_broker / ntfy_broker / memory_broker /
 │                  match_beacon / quick_match / game_session
 ├─ content_trickcal/avatars/               # [2차 창작 리소스 계층] 아바타 에셋 규격 (실제 그림은 후속)
-├─ assets/  fonts/(NanumGothic), ui/trickcal/ (이미지 스킨)
+├─ assets/  fonts/(기본 UI 글꼴 ONE 모바일 POP체 `game_ui_font.tres` + 대체 NanumGothic, 출처 고지 `ONE-Mobile-POP-NOTICE.md`), ui/trickcal/ (이미지 스킨)
 ├─ scenes/                                 # 뷰(View)
 │  ├─ main_board (HUD·보드·시점·좌석·연출) / roll_pad / roll_presenter / event_announcer / mobile_support / ui_skin
 │  ├─ start_menu / lobby / lobby_theme       # 민트 테마 시작·로비
