@@ -250,6 +250,7 @@ var _tip_source: Variant = null
 var _tip_provider: Callable = Callable()
 var _tip_clock: float = 0.0
 var _zoom_view: PanelContainer = null
+var _hold_card: PanelContainer = null  ## 포인터가 영역 안에 있어 올라온 채 유지 중인 손패 카드
 var _zoom_key: String = ""
 var _drag_press: Dictionary = {}
 var _drag_active: bool = false
@@ -451,6 +452,8 @@ func _process(delta: float) -> void:
 		_power_bar.add_theme_stylebox_override("fill", fill)
 	_update_tip(delta)
 	_update_reaction_popup(delta)
+	if _hold_card != null and (not is_instance_valid(_hold_card) or not _card_zone(_hold_card).has_point(get_global_mouse_position())):
+		_release_hold_card()
 	# 말 선택 단계: 지금 고를 수 있는 내 말 도형이 위아래로 통통 튄다.
 	var selecting: bool = manager.current_state == TurnManager.State.PHASE_SELECT_PAWN and not manager.is_game_over
 	var wave: float = -absf(sin(Time.get_ticks_msec() / 1000.0 * 7.0)) * 6.0
@@ -2177,9 +2180,43 @@ func _make_card_view(player_id: int, card_id: StringName) -> PanelContainer:
 	view.tooltip_text = "%s (%s) - %s\n%s" % [card.display_name, card_id, _category_text(card.category), CARD_SUMMARIES.get(card_id, "")]
 	view.add_child(_build_card_body(card_id, HAND_CARD_SIZE))
 	view.gui_input.connect(_on_card_gui_input.bind(player_id, card_id, view))
-	view.mouse_entered.connect(_on_card_hover.bind(view, glow_style, true))
-	view.mouse_exited.connect(_on_card_hover.bind(view, idle_style, false))
+	view.set_meta("idle_style", idle_style)
+	view.mouse_entered.connect(_on_card_enter.bind(view, glow_style))
+	view.mouse_exited.connect(_on_card_exit.bind(view, idle_style))
 	return view
+
+
+## 카드가 솟아오르면 카드 모양이 움직여 포인터가 카드 밖이 되어 곧바로 내려갔다 다시 올라가는 떨림이 생긴다.
+## 그래서 올라온 카드는 [원래 자리 ~ 올라온 자리] 영역 안에 포인터가 있는 동안 계속 올라가 있고(`_hold_card`), 영역을 벗어나면 내린다.
+func _on_card_enter(view: PanelContainer, glow_style: StyleBoxFlat) -> void:
+	if _hold_card != null and is_instance_valid(_hold_card) and _hold_card != view:
+		_release_hold_card()
+	_hold_card = null
+	_on_card_hover(view, glow_style, true)
+
+
+func _on_card_exit(view: PanelContainer, idle_style: StyleBoxFlat) -> void:
+	if not is_instance_valid(view):
+		return
+	if _card_zone(view).has_point(get_global_mouse_position()):
+		_hold_card = view
+		return
+	_on_card_hover(view, idle_style, false)
+
+
+func _card_zone(view: Control) -> Rect2:
+	var home_y: float = float(view.get_meta("home_y", DOCK_CARD_Y))
+	var parent: Control = view.get_parent() as Control
+	var origin: Vector2 = parent.global_position if parent != null else Vector2.ZERO
+	var top: float = minf(HAND_RAISED_Y, home_y)
+	return Rect2(origin + Vector2(view.position.x, top), Vector2(view.size.x, home_y + view.size.y - top))
+
+
+func _release_hold_card() -> void:
+	var view: PanelContainer = _hold_card
+	_hold_card = null
+	if view != null and is_instance_valid(view):
+		_on_card_hover(view, view.get_meta("idle_style"), false)
 
 
 func _on_card_hover(view: PanelContainer, style: StyleBoxFlat, raised: bool) -> void:
