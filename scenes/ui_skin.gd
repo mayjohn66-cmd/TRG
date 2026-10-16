@@ -20,12 +20,35 @@ static func button(item: Button, action: bool = false, horizontal: float = 12.0,
 	for state: String in ["normal", "hover", "pressed", "disabled", "focus"]:
 		var texture_name: String = state if state in ["disabled", "focus"] else prefix + "_" + state
 		var box: StyleBoxTexture = panel(texture_name, vertical)
+		box.set_meta("ui_button_texture", texture_name)
 		box.set_content_margin(SIDE_LEFT, horizontal)
 		box.set_content_margin(SIDE_RIGHT, horizontal)
 		item.add_theme_stylebox_override(state, box)
 	for key: String in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
 		item.add_theme_color_override(key, INK)
 	item.add_theme_color_override("font_disabled_color", Color("4d4d4c"))
+	var fit_callback: Callable = _fit_button.bind(item)
+	if not item.resized.is_connected(fit_callback):
+		item.resized.connect(fit_callback)
+	_fit_button(item)
+
+## Short controls need smaller corners; the focus ring shares the face's
+## bottom inset instead of tracing the outside edge of the shadow.
+static func _fit_button(item: Button) -> void:
+	var normal: StyleBox = item.get_theme_stylebox("normal")
+	if not normal.has_meta("ui_button_texture"):
+		return # A specialized skin, e.g. the circular roll button, took over.
+	var compact: bool = item.size.y > 0.0 and item.size.y < 40.0
+	for state: String in ["normal", "hover", "pressed", "disabled", "focus"]:
+		var box: StyleBox = item.get_theme_stylebox(state)
+		if not box is StyleBoxTexture or not box.has_meta("ui_button_texture"):
+			continue
+		var image_box := box as StyleBoxTexture
+		var asset: String = str(box.get_meta("ui_button_texture"))
+		var target: String = PATH + ("compact_" if compact else "") + asset + ".png"
+		if image_box.texture.resource_path != target:
+			image_box.texture = load(target) as Texture2D
+			image_box.set_texture_margin_all(14.0 if compact else 20.0)
 
 static func title(label: Label) -> void:
 	label.add_theme_color_override("font_color", Color.WHITE)
