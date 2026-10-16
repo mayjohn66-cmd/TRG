@@ -90,6 +90,9 @@ const CARD_SUMMARIES: Dictionary = {
 	&"TRP_02": "눈금 4 이상으로 지나는 적을 2턴 구속",
 	&"TRP_03": "지뢰 + 양옆 [1]. 밟으면 반경 2칸 추방",
 	&"TRP_04": "코너를 무인도로. 짝수가 나와야 탈출",
+	&"TRP_05": "밟은 말 -3칸. 경로의 다른 말도 -2칸 연쇄",
+	&"ACT_07": "말이 가장 많은 타일에 벼락. 모두 1~2칸 흩어짐",
+	&"ACT_08": "내 꼴찌 말과 1등 적 말의 위치 교환",
 	&"SUM_01": "도적 NPC 소환. 가까운 말 추격",
 	&"SUM_02": "중앙에 고스트 소환. 역주행 순찰",
 }
@@ -497,8 +500,32 @@ func _bind_state() -> void:
 	state.pawn_sent_to_start.connect(func(pawn_id: int, _by: int) -> void: _log_line("%s 출발선으로 복귀" % _pawn_name(pawn_id), Color("ff8787")))
 	state.pawn_finished.connect(func(pawn_id: int) -> void: _log_line("[완주] %s 완주!" % _pawn_name(pawn_id), Color("69db7c")))
 	state.pawn_promoted.connect(func(pawn_id: int) -> void:
+		var promoted_pawn: PlayerPawn = state.get_pawn(pawn_id)
+		if promoted_pawn != null and promoted_pawn.kind == GameEnums.PawnKind.SHOGI:
+			_log_line("[나리] %s 승급! 이동할 때마다 +1칸" % _pawn_name(pawn_id), Color("ff6b6b"))
+			_announce("기물 능력", "[나리(成り)!] %s 승급" % promoted_pawn.display_label().split(":")[-1], "%s이(가) 뒤집혀 승급했습니다: 이동할 때마다 +1칸" % _pawn_name(pawn_id), Color("ff6b6b"), null, 1.2)
+			_refresh_pawns()
+			return
 		_log_line("[승진] %s → 체스:퀸! (나이트 점프 + 코너 스침 + 룩 +1칸)" % _pawn_name(pawn_id), Color("ffd43b"))
 		_announce("기물 능력", "[발동!] 체스 퀸 승진", "%s이(가) 퀸으로 승진: 나이트 점프 + 코너 스침 + 룩 +1칸" % _pawn_name(pawn_id), Color("ffd43b"), null, 1.2))
+	state.domino_collapsed.connect(func(pawn_id: int, passed: Array[int], chain: Array[int]) -> void:
+		var chain_names: Array[String] = []
+		for chained: int in chain:
+			chain_names.append(_pawn_name(chained))
+		_log_line("[도미노] %s 뒤로 3칸 밀림%s" % [_pawn_name(pawn_id), "  연쇄: %s (각 -2칸)" % ", ".join(chain_names) if not chain_names.is_empty() else ""], Color("ff6b6b"))
+		_announce("함정 발동", "도미노 연쇄 붕괴!", "%s이(가) 3칸 뒤로 밀려났습니다%s" % [_pawn_name(pawn_id), "\n연쇄로 %d개 말이 2칸씩 우수수 밀려납니다" % chain.size() if not chain.is_empty() else ""], Color("ff6b6b"), null, 1.4))
+	state.tower_struck.connect(func(tile: int, scattered: Array[Dictionary]) -> void:
+		_log_line("[타로] 무너지는 탑이 %d번 타일에 벼락! 말 %d개가 흩어졌습니다" % [tile, scattered.size()], Color("ffa94d"))
+		_announce("타로", "XVI. 무너지는 탑!", "%d번 타일에 벼락이 내리쳐 말 %d개가 뿔뿔이 흩어졌습니다" % [tile, scattered.size()], Color("ffa94d"), null, 1.5)
+		_refresh_pawns())
+	state.wheel_turned.connect(func(player_id: int, mine_id: int, enemy_id: int, outcome: StringName) -> void:
+		if outcome == &"swap":
+			_log_line("[타로] P%d의 운명의 수레바퀴: %s ↔ %s 위치 교환" % [player_id, _pawn_name(mine_id), _pawn_name(enemy_id)], Color("ffa94d"))
+			_announce("타로", "X. 운명의 수레바퀴!", "%s과(와) %s의 위치가 뒤바뀝니다" % [_pawn_name(mine_id), _pawn_name(enemy_id)], Color("ffa94d"), null, 1.5)
+		else:
+			_log_line("[타로] 운명의 수레바퀴: %s 4칸 후퇴" % _pawn_name(enemy_id), Color("ffa94d"))
+			_announce("타로", "X. 운명의 수레바퀴!", "%s이(가) 4칸 뒤로 밀려납니다" % _pawn_name(enemy_id), Color("ffa94d"), null, 1.5)
+		_refresh_pawns())
 	state.pawn_evolved.connect(func(pawn_id: int, kind: int, unit_no: int) -> void: _log_line("[진화] %s → %s" % [_pawn_name(pawn_id), PawnCatalog.unit_label(kind, unit_no)], Color("ffa94d")))
 	state.pawns_stacked.connect(func(leader_id: int, member_ids: Array[int]) -> void: _log_line("%s 업기 (%d마리)" % [_pawn_name(leader_id), member_ids.size()], Color("ffd43b")))
 	state.pawns_swapped.connect(func(a_id: int, b_id: int) -> void: _log_line("%s ↔ %s 위치 교환" % [_pawn_name(a_id), _pawn_name(b_id)], Color("ffd43b")))
@@ -1313,7 +1340,13 @@ func _refresh_pawns() -> void:
 		# 완주 현황은 오른쪽 패널의 미니 슬롯(●●○○)과 [이동할 말] 버튼으로 확인한다.
 		view.visible = pawn.carrier == null and not pawn.is_finished and pawn.has_left_start
 		view.modulate = Color.WHITE
-		(view.get_node("Bounce/Kind") as Label).text = PawnCatalog.unit_letter(pawn.kind, pawn.unit_no)
+		var kind_label: Label = view.get_node("Bounce/Kind")
+		kind_label.text = pawn.letter()
+		# 나리(成り) 승급한 쇼기 기물은 붉은 글씨
+		if pawn.is_promoted_shogi():
+			kind_label.add_theme_color_override("font_color", Color("ff4d4d"))
+		else:
+			kind_label.add_theme_color_override("font_color", Color("ffffff"))
 		var badge_text: String = ""
 		var stacked: bool = not pawn.carried.is_empty()
 		(view.get_node("Bounce/Stack") as Label).text = "x%d" % (pawn.carried.size() + 1) if stacked else ""
@@ -1349,7 +1382,7 @@ func _refresh_tiles() -> void:
 		var color: Color = Color("ff6b6b")
 		for attachment: TileAttachment in state.board.get_tile(index).attachments:
 			match attachment.attachment_id:
-				"TRP_01", "TRP_02", "TRP_03":
+				"TRP_01", "TRP_02", "TRP_03", "TRP_05":
 					parts.append(_trap_badge(attachment))
 					tips.append(_trap_tooltip(attachment))
 				"MINE_NUM":
@@ -1374,7 +1407,7 @@ func _trap_badge(attachment: TileAttachment) -> String:
 	if not ai_mode:
 		return "?"
 	if attachment.owner_id == local_player_id:
-		return {"TRP_01": "거울", "TRP_02": "나락", "TRP_03": "지뢰"}.get(attachment.attachment_id, "함정")
+		return {"TRP_01": "거울", "TRP_02": "나락", "TRP_03": "지뢰", "TRP_05": "도미노"}.get(attachment.attachment_id, "함정")
 	return "?함정"
 
 
@@ -1555,8 +1588,9 @@ func _paint_pawn_slot(parts: Dictionary, pawn: PlayerPawn, color: Color) -> void
 	var letter: Label = parts["letter"]
 	var status: Label = parts["status"]
 	var panel: PanelContainer = parts["panel"]
-	var shown: String = PawnCatalog.unit_letter(pawn.kind, pawn.unit_no)
+	var shown: String = pawn.letter()
 	letter.text = shown if shown != "" else "말"
+	letter.add_theme_color_override("font_color", Color("ff6b6b") if pawn.is_promoted_shogi() else Color("f8f9fa"))
 	if pawn.is_finished:
 		panel.add_theme_stylebox_override("panel", _style(Color("d4a72c"), Color("fff3bf"), 3, 8, 12, 1))
 		letter.add_theme_color_override("font_color", Color("2b2100"))
@@ -2153,6 +2187,8 @@ func _fill_pawn_tip(pawn_id: int) -> void:
 		status = "  (구속)"
 	elif pawn.is_imprisoned:
 		status = "  (감옥)"
+	if pawn.is_promoted_shogi():
+		status += "  ★나리 승급(+1칸)"
 	_tip_title.text = "%s  - P%d%s" % [PawnCatalog.full_name(pawn.kind, pawn.unit_no), pawn.owner_id, status]
 	_tip_ability.text = "고유 능력\n%s" % PawnCatalog.ability_text(pawn.kind, pawn.unit_no)
 	var skill: StringName = PawnCatalog.skill_of(pawn.sub_type())
@@ -2229,6 +2265,8 @@ func _pawn_info_text(pawn_id: int) -> String:
 	if pawn == null:
 		return ""
 	var lines: Array[String] = [PawnCatalog.full_name(pawn.kind, pawn.unit_no), "고유 능력: %s" % PawnCatalog.ability_text(pawn.kind, pawn.unit_no)]
+	if pawn.is_promoted_shogi():
+		lines.append("나리(成り) 승급 상태: %s - 이동할 때마다 +1칸" % pawn.display_label())
 	var skill: StringName = PawnCatalog.skill_of(pawn.sub_type())
 	if skill != &"":
 		lines.append("필살기(1회): %s - %s%s" % [PawnCatalog.skill_name(skill), PawnCatalog.skill_text(skill), " [사용 완료]" if pawn.skill_used else ""])
@@ -2321,8 +2359,9 @@ func _refresh_pawn_dock() -> void:
 		var button: Button = _pawn_buttons[index]
 		var parts: Dictionary = _pawn_slot_parts[index]
 		var pawn: PlayerPawn = state.get_pawn(owner_id * 10 + index + 1)
-		var letter: String = PawnCatalog.unit_letter(pawn.kind, pawn.unit_no)
+		var letter: String = pawn.letter()
 		(parts["letter"] as Label).text = letter if letter != "" else "말"
+		(parts["letter"] as Label).add_theme_color_override("font_color", Color("ff6b6b") if pawn.is_promoted_shogi() else Color("f8f9fa"))
 		var place: String = "완주" if pawn.is_finished else ("대기" if not pawn.has_left_start else "%d번" % pawn.current_tile_idx)
 		if pawn.blocked_this_turn or pawn.restrained_turns > 0:
 			place = "구속"
@@ -2458,6 +2497,12 @@ func _pawn_prediction(pawn: PlayerPawn) -> Dictionary:
 		return {"text": "→ 결승선 완주!", "good": true}
 	var dest: int = path.back()
 	var tile: TileNode = state.board.get_tile(dest)
+	var promote_hint: String = ""
+	if pawn.kind == GameEnums.PawnKind.SHOGI and not pawn.promoted:
+		for step_tile: int in path:
+			if GameEnums.SHOGI_PROMOTION_TILES.has(step_tile):
+				promote_hint = " +나리!"
+				break
 	if tile.tile_type == TileNode.TileType.PORTAL:
 		var warp_target: int = GameEnums.CENTER_TILE
 		if pawn.sub_type() == GameEnums.PawnSubType.MONO_PLANE and GameEnums.PLANE_WARP_TARGETS.has(dest):
@@ -2472,12 +2517,12 @@ func _pawn_prediction(pawn: PlayerPawn) -> Dictionary:
 			allies.append(leader)
 	for enemy: PlayerPawn in enemies:
 		if not MoveExecutor.is_capture_immune(state, enemy):
-			return {"text": "→ %d번 (적 말 처치!)" % dest, "good": true}
+			return {"text": "→ %d번 (적 말 처치!%s)" % [dest, promote_hint], "good": true}
 	if tile.tile_type == TileNode.TileType.BAKERY:
-		return {"text": "→ %d번 (빵집 카드 획득!)" % dest, "good": true}
+		return {"text": "→ %d번 (빵집 카드 획득!%s)" % [dest, promote_hint], "good": true}
 	if not allies.is_empty():
-		return {"text": "→ %d번 (아군과 합류)" % dest, "good": false}
-	return {"text": "→ %d번" % dest, "good": false}
+		return {"text": "→ %d번 (아군과 합류)%s" % [dest, promote_hint], "good": false}
+	return {"text": "→ %d번%s" % [dest, promote_hint], "good": promote_hint != ""}
 
 
 func _select_banner_wanted() -> bool:
@@ -2522,11 +2567,11 @@ func _refresh_select_banner() -> void:
 		else:
 			status = "출전 중 (%d번)" % pawn.current_tile_idx
 		(parts["status"] as Label).text = status
-		var letter: String = PawnCatalog.unit_letter(pawn.kind, pawn.unit_no)
+		var letter: String = pawn.letter()
 		(parts["mark"] as Label).text = letter if letter != "" else "말"
 		var disc_box: StyleBoxFlat = _style(color if can_pick else color.darkened(0.6), Color("ffffff") if can_pick else Color("495057"), 3, 22, 0, 0)
 		(parts["disc"] as Panel).add_theme_stylebox_override("panel", disc_box)
-		var sub_name: String = "윷말" if pawn.kind == GameEnums.PawnKind.BASIC else PawnCatalog.unit_label(pawn.kind, pawn.unit_no).split(":")[-1]
+		var sub_name: String = "윷말" if pawn.kind == GameEnums.PawnKind.BASIC else pawn.display_label().split(":")[-1]
 		(parts["sub"] as Label).text = sub_name
 		var prediction: Dictionary = _pawn_prediction(pawn)
 		var result: Label = parts["result"]
@@ -2624,6 +2669,9 @@ const TOOL_CARDS: Dictionary = {
 	&"CHINCHIRO": ["친", Color("0b7285"), "4 ~ 6 칸 고눈금 보장!", "(삐끗 시 -6칸 후퇴!)"],
 	&"SLOT_777": ["7", Color("862e9c"), "릴 맞춰 1 ~ 8 칸 전진", "(★777 잭팟 시 20칸!)"],
 	&"REVOLVER": ["탄", Color("495057"), "당길 때마다 +3칸 누적", "(실탄 터지면 0칸 종료!)"],
+	&"DICE_HWATU": ["화", Color("c92a2a"), "화투패 족보로 전진!", "[고(GO)] 선택 시 추가 칸수 도전!"],
+	&"DICE_MAHJONG": ["마", Color("2b8a3e"), "마작패 3장 조합으로", "2 ~ 12 칸 전진 (역만 시 한 번 더!)"],
+	&"DICE_TAROT": ["타", Color("5f3dc4"), "메이저 아르카나를 뽑아", "운명에 따라 전진 (매달린 남자: 다음 턴 +8칸)"],
 }
 
 
@@ -2635,6 +2683,9 @@ const TOOL_RULES: Dictionary = {
 	&"HOLDEM": {"rows": [["노페어", "1칸"], ["원페어", "3칸"], ["투페어", "5칸"], ["트리플", "7칸"], ["스트레이트", "10칸"], ["플러시 이상", "15칸"]], "note": "카드 5장을 뽑아 만든 족보로 정해집니다. 플러시·풀하우스·포카드·스트레이트 플러시는 모두 15칸"},
 	&"CHINCHIRO": {"rows": [["4 눈금", "4칸 (2/6)"], ["5 눈금", "5칸 (2/6)"], ["6 눈금", "6칸 (1/6)"], ["삐끗!", "6칸 후퇴 (1/6)"]], "note": "주사위가 접시 밖으로 튀면 삐끗"},
 	&"SLOT_777": {"rows": [["3개 모두 다름", "1칸"], ["2개 일치", "4칸"], ["3개 일치", "8칸"], ["7 7 7 잭팟", "20칸"]], "note": "릴 3개의 그림은 6종류(체리·레몬·종·BAR·다이아·7)"},
+	&"DICE_HWATU": {"rows": [["망통", "0칸, 턴 종료"], ["1~3 / 4~6 / 7~9끗", "2 / 3 / 4칸"], ["1~6 / 7~9땡", "6 / 7칸"], ["장땡·광땡", "8칸"], ["[고!] 광/열끗/띠", "+5/+4/+3칸"], ["[고!] 피 (피박)", "누적 1칸으로"]], "note": "패 2장의 월 합 끝자리로 정해집니다. 망통이 아니면 [스톱] 또는 [고!] (최대 2회)"},
+	&"DICE_MAHJONG": {"rows": [["핑후 (불일치)", "2칸"], ["또이츠 (같은 패 2개)", "3칸"], ["슌쯔 (연속 숫자)", "5칸"], ["커쯔 (같은 패 3개)", "8칸"], ["역만 (8%)", "12칸 + 한 번 더!"]], "note": "역만은 국사무쌍·대삼원입니다. 패 3개를 동시에 쯔모합니다"},
+	&"DICE_TAROT": {"rows": [["0. 광대", "-2칸 또는 +7칸"], ["VII. 전차", "6칸"], ["X. 운명의 수레바퀴", "4칸 + 한 번 더!"], ["XII. 매달린 남자", "1칸, 다음 굴림 +8칸"], ["XXI. 세계", "9칸"]], "note": "다섯 장 중 한 장이 같은 확률로 뒤집힙니다. 매달린 남자의 축복은 다음 내 굴림에 한 번 더해집니다"},
 	&"REVOLVER": {"rows": [["방아쇠 1회", "+3칸 누적"], ["최대 누적", "15칸"], ["실탄 (6발 중 1발)", "누적 0칸, 턴 종료"], ["멈추기", "누적한 칸만큼 이동"]], "note": "빈 총이 나올 때마다 누적되고, 실탄이 나오면 전부 사라집니다"},
 }
 
@@ -2719,11 +2770,13 @@ func _refresh_controls() -> void:
 		_stop_button.disabled = not can_stop or _tile_pick_active or _is_bot_turn()
 		_stop_button.modulate = Color(0.55, 1.0, 0.62) if can_stop else Color.WHITE
 	else:
-		_roll_button.text = "굴리기"
+		_roll_button.text = _roll_button_label(tool)
 		_stop_button.visible = can_stop
 		_stop_button.text = "멈추고 이동 확정"
+		if tool is ToolHwatu:
+			_stop_button.text = "스톱  (즉시 %d칸 이동)" % (tool as ToolHwatu).accumulated
 		_stop_button.disabled = false
-		_stop_button.modulate = Color.WHITE
+		_stop_button.modulate = Color(0.55, 1.0, 0.62) if can_stop and tool is ToolHwatu else Color.WHITE
 	_refresh_tool_board(state.tools[_dock_owner()], _dock_owner())
 	# 개입 창은 이제 피해를 되돌리는 카드(ACT_05) 하나뿐이라 가운데 팝업(_update_reaction_popup)이 맡는다. 예전 [개입 패스] 버튼은 쓰지 않는다.
 	_skip_button.visible = false
@@ -2740,13 +2793,28 @@ func _refresh_controls() -> void:
 		_tool_option.select(tool_index)
 
 
+## 굴림 버튼에 쓰는 글자: 도구마다 다르다 (화투는 진행 중이면 [고!]).
+func _roll_button_label(tool: BaseJudgmentTool) -> String:
+	if tool is ToolHwatu:
+		return "고!\n(추가 도전)" if tool.has_pending_state() else "패\n뒤집기"
+	if tool is ToolHoldem:
+		return "카드 뽑기"
+	if tool is ToolSlot777:
+		return "레버 당기기"
+	if tool is ToolMahjong:
+		return "쯔모!"
+	if tool is ToolTarot:
+		return "운명\n뽑기"
+	return "굴리기"
+
+
 ## 굴림 조작 방식: 차징형(기본 주사위·윷·친치로)은 보드 아래 작은 굴리기 버튼+파워 게이지, 그 외(룰렛 원판·리볼버·홀덤/슬롯 큰 버튼)는 보드 한가운데에 크게 보여 준다.
 func _roll_mode_for(tool: BaseJudgmentTool) -> StringName:
 	if tool is ToolLifeRoulette:
 		return &"wheel"
 	if tool is ToolRussianRoulette:
 		return &"gun"
-	if tool is ToolHoldem or tool is ToolSlot777:
+	if tool is ToolHoldem or tool is ToolSlot777 or tool is ToolHwatu or tool is ToolMahjong or tool is ToolTarot:
 		return &"big"
 	return &"charge"
 
@@ -2763,6 +2831,8 @@ func _refresh_roll_pad() -> void:
 	_roll_pad.instant = instant_roll_for_test
 	if _roll_pad.kind != wanted:
 		_roll_pad.set_kind(wanted)
+	if mode == &"big" or mode == &"charge":
+		_roll_button.text = _roll_button_label(owner_tool)  # 글자를 먼저 바꿔야 새 크기가 이전 글자 폭에 눌리지 않는다
 	if mode != _roll_geometry:
 		_set_roll_geometry(mode)
 	# 굴림 위젯은 굴릴 차례에만 보인다. 굴림이 끝나면 지워서 보드 한가운데가 가리지 않게 한다 (룰렛·리볼버 패드는 돌아가는 연출 중에는 남긴다).
@@ -2770,10 +2840,8 @@ func _refresh_roll_pad() -> void:
 	_roll_button.visible = wanted == RollPad.Kind.NONE and roll_phase
 	if wanted != RollPad.Kind.NONE:
 		_roll_pad.visible = roll_phase or _fx_busy or _roll_pad.active
-	if mode == &"big":
-		_roll_button.text = "카드 뽑기" if owner_tool is ToolHoldem else "레버 당기기"
-	elif mode == &"charge":
-		_roll_button.text = "굴리기"
+	if mode == &"big" or mode == &"charge":
+		_roll_button.text = _roll_button_label(owner_tool)
 	_roll_pad.set_enabled(not _roll_button.disabled)
 	if wanted == RollPad.Kind.REVOLVER and not _roll_pad.active and not owner_tool.has_pending_state():
 		_roll_pad.reset_revolver()
@@ -2848,6 +2916,8 @@ func _hint_text(current_phase: TurnManager.State, tool: BaseJudgmentTool) -> Str
 				return "굴리기 버튼(또는 R/Space)을 꾹 눌러 파워 게이지를 채우고 손을 떼면 굴러갑니다. 카드(▣ 표시는 타일 클릭)도 쓸 수 있습니다. (판정 도구: %s)" % tool.display_name
 			return "카드(▣ 표시는 타일을 클릭해 설치/소환)를 쓰거나 [굴리기]를 누르세요. (판정 도구: %s)" % tool.display_name
 		TurnManager.State.PHASE_ROLL_WAIT:
+			if tool is ToolHwatu and tool.has_pending_state():
+				return "[고!]로 한 장 더 뽑아 +3~5칸에 도전하거나 [스톱]으로 %d칸 이동을 확정하세요. 피(피박)가 나오면 누적이 1칸으로 쪼그라듭니다!" % (tool as ToolHwatu).accumulated
 			if tool.has_pending_state():
 				return "계속 당기거나, 멈추고 누적 칸수만큼 이동하세요. 실탄이 나오면 모두 증발합니다!"
 			return "다시 굴려야 합니다 (재굴림)." if not manager.move_queue.is_empty() else ("굴리기 버튼을 꾹 눌렀다 떼서 굴리세요." if _tool_has_gauge() else "굴리세요.")
@@ -3045,6 +3115,22 @@ func _start_skill(pawn: PlayerPawn) -> void:
 			_act(&"use_skill", {"pawn_id": pawn.entity_id})
 		&"warp": _begin_skill_tile_pick(pawn)
 		&"shoot": _begin_aim(pawn)
+		&"drop":
+			var waiting: Array[PlayerPawn] = PawnSkills.drop_partners(state, pawn)
+			if waiting.is_empty() or PawnSkills.drop_tile(state, pawn) == -1:
+				_log_line("[모치고마 낙하] 출발선에서 대기 중인 내 말이 없거나 낙하할 자리가 없습니다.", Color("868e96"))
+				return
+			if waiting.size() == 1:
+				_act(&"use_skill", {"pawn_id": pawn.entity_id, "partner": waiting[0].entity_id})
+				return
+			var drop_options: Array[Dictionary] = []
+			for partner: PlayerPawn in waiting:
+				drop_options.append({"label": "말 %d번 (출발 대기)" % partner.slot, "value": partner.entity_id})
+			_show_choice("낙하시킬 대기 말", drop_options, _on_drop_partner_picked.bind(pawn.entity_id))
+
+
+func _on_drop_partner_picked(value: Variant, fu_id: int) -> void:
+	_act(&"use_skill", {"pawn_id": fu_id, "partner": int(value)})
 
 
 func _on_rook_partner_picked(value: Variant, rook_id: int) -> void:
@@ -3190,6 +3276,8 @@ func _on_skill_used(data: Dictionary) -> void:
 			body = "%d번 → %d번 타일로 직항" % [int(data["from"]), int(data["tile"])]
 		&"castle":
 			body = "%s와(과) 위치를 맞바꿉니다" % _pawn_name(int(data["partner"]))
+		&"drop":
+			body = "%s이(가) %d번 타일에 낙하!" % [_pawn_name(int(data["partner"])), int(data["tile"])]
 	_log_line("[필살기] %s: %s - %s" % [who, PawnCatalog.skill_name(skill), body.replace("\n", " ")], Color("ffa94d"))
 	_announce("1회용 필살기", "[P%d 발동!] %s" % [player_id, PawnCatalog.skill_name(skill)], body, PLAYER_COLORS[player_id], null, 1.3)
 
@@ -4016,6 +4104,31 @@ func _log_roll(data: Dictionary) -> String:
 			text += "%s → %d칸" % [" | ".join(symbols), result["steps"]]
 		&"CHINCHIRO":
 			text += "%d칸" % result["steps"] if not details["oops"] else "삐끗! 주사위가 접시 밖으로 (-6칸 후퇴)"
+		&"DICE_HWATU":
+			var shown_names: Array[String] = []
+			for card_number: Variant in details.get("new_cards", []):
+				shown_names.append(ToolHwatu.card_name(int(card_number)))
+			if bool(details.get("bust", false)):
+				text += "고! [%s] 피박! 누적 %d칸이 1칸으로 쪼그라듭니다" % [", ".join(shown_names), int(details.get("lost", 0))]
+			elif details.has("go_type"):
+				text += "고! [%s] +%d칸 → 누적 %d칸%s" % [", ".join(shown_names), int(details.get("bonus", 0)), int(details.get("accumulated", 0)), "" if result["can_continue"] else " (투고 한도, 자동 스톱)"]
+			elif result["ends_turn"]:
+				text += "[%s] 망통! 0칸, 턴 종료" % ", ".join(shown_names)
+			elif result["can_continue"]:
+				text += "[%s] %s → %d칸 (스톱 또는 고!)" % [", ".join(shown_names), details["label"], result["steps"]]
+			else:
+				text += "스톱! %d칸 이동 확정" % result["steps"]
+		&"DICE_MAHJONG":
+			var tile_names: Array[String] = []
+			for tile_number: Variant in details["tiles"]:
+				tile_names.append(ToolMahjong.tile_name(int(tile_number)))
+			text += "%s → %s %d칸" % [" ".join(tile_names), details["label"], result["steps"]]
+		&"DICE_TAROT":
+			text += "%s → %d칸" % [details["name"], result["steps"]]
+			if details.has("bonus"):
+				text += "  (매달린 남자의 축복 +%d칸 포함)" % int(details["bonus"])
+			if details.has("blessing_booked"):
+				text += "  다음 굴림에 +%d칸 축복 예약!" % int(details["blessing_booked"])
 		&"REVOLVER":
 			if details["fired"]:
 				text += "탕! 누적 %d칸 증발, 턴 종료" % details["lost"]
@@ -4098,6 +4211,7 @@ func _attachment_name(attachment_id: String) -> String:
 		"TRP_02": return "나락"
 		"TRP_03": return "지뢰"
 		"TRP_04": return "무인도"
+		"TRP_05": return "도미노"
 		"HOTEL": return "호텔"
 	return attachment_id
 

@@ -21,6 +21,8 @@ var restrained_turns: int = 0
 var blocked_this_turn: bool = false
 ## TRP_04 무인도: 짝수 눈금이 나올 때까지 갇혀 움직이지 못한다.
 var is_imprisoned: bool = false
+## 쇼기 나리(成り) 승급 상태: 10번·22번을 밟으면 영구히 켜진다 (잡혀서 출발선으로 가도 유지된다). 이동할 때마다 +1칸.
+var promoted: bool = false
 ## 1회용 고유 필살기를 이미 썼는가 (게임당 기물별 1회, 잡혀서 출발선으로 가도 되살아나지 않는다).
 var skill_used: bool = false
 
@@ -32,7 +34,8 @@ func sub_type() -> GameEnums.PawnSubType:
 
 ## 체스 비숍의 고유 능력: 5번·10번을 멈추지 않고 스쳐 지나가도 지름길로 꺾는다.
 func turns_at_corner_when_passing() -> bool:
-	return sub_type() == GameEnums.PawnSubType.CHESS_BISHOP
+	var sub: GameEnums.PawnSubType = sub_type()
+	return sub == GameEnums.PawnSubType.CHESS_BISHOP or sub == GameEnums.PawnSubType.SHOGI_KAKU
 
 
 ## 체스 나이트(와 퀸)의 고유 능력: 중간 칸의 설치물(함정·호텔)을 무시하고 도착 칸만 판정한다 (나이트 점프).
@@ -48,7 +51,17 @@ func evolve(new_kind: GameEnums.PawnKind, new_unit_no: int) -> void:
 
 
 func display_label() -> String:
-	return PawnCatalog.unit_label(kind, unit_no)
+	return PawnCatalog.name_of_pawn(kind, unit_no, promoted)
+
+
+## 보드·카드에 보이는 한 글자 라벨 (나리 승급한 쇼기 기물은 승급 글자).
+func letter() -> String:
+	return PawnCatalog.letter_of_pawn(kind, unit_no, promoted)
+
+
+## 쇼기 기물 하나가 나리 승급했는가 (승급 이동 보너스 판정용).
+func is_promoted_shogi() -> bool:
+	return promoted and kind == GameEnums.PawnKind.SHOGI
 
 
 func is_on_board() -> bool:

@@ -33,7 +33,7 @@ func _process(_delta: float) -> bool:
 		if _banner_frame != -2 and _frames < 600:
 			return false
 		_banner_frame = -2
-	if (_shot != "banner" and _frames == (8 if _shot == "pick" else (20 if _shot == "react" else 12))) or (_shot == "banner" and _banner_frame == -2):
+	if (_shot != "banner" and _frames == (8 if _shot == "pick" else (20 if _shot == "react" or _shot == "classics" else 12))) or (_shot == "banner" and _banner_frame == -2):
 		var path: String = "/tmp/trg_shot_%s.png" % _shot
 		var image: Image = root.get_texture().get_image()
 		image.save_png(path)
@@ -157,6 +157,24 @@ func _setup_scene() -> void:
 			state.give_card(1, &"SUM_01")
 			state.give_card(1, &"ACT_05")
 			state.give_card(1, &"ACT_01")
+			_board._refresh_all()
+		"classics":
+			_finish_draft()
+			_board._announcer.cancel()
+			_board.instant_roll_for_test = true
+			for entry: Array in [[11, 1, 8, true], [12, 2, 4, false], [13, 3, 14, true], [14, 4, 18, false]]:
+				var pawn: PlayerPawn = state.get_pawn(entry[0])
+				pawn.evolve(GameEnums.PawnKind.SHOGI, entry[1])
+				pawn.place_at(entry[2])
+				pawn.has_left_start = true
+				pawn.promoted = entry[3]
+			state.place_attachment(6, TrapDomino.new(2))
+			var hwatu := ToolHwatu.new()
+			hwatu.forced_draws = [1, 5]
+			state.tools[1] = hwatu
+			_board._refresh_all()
+			_board._act(&"proceed")
+			_board._act(&"roll")
 			_board._refresh_all()
 		"react":
 			_finish_draft()

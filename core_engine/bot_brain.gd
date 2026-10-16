@@ -217,6 +217,32 @@ static func _plan_one_turn_card(state: GameState, player_id: int, card: BaseCard
 		&"ACT_03":  # 우노 +4: 다음 차례가 나 자신이 아니고 50%
 			if state.next_player_after(player_id) != player_id and rng.randf() < 0.5:
 				return {"card_id": card.card_id, "params": {}}
+		&"ACT_07":  # 무너지는 탑: 적이 뭉쳐 있거나 가장 앞선 적이 결승 가까이 있을 때
+			var tower_tile: int = TarotEffects.tower_target(state, player_id)
+			if tower_tile == -1:
+				return {}
+			var crowd: int = 0
+			var enemy_crowd: int = 0
+			for pawn: PlayerPawn in TarotEffects.field_pawns(state):
+				if pawn.current_tile_idx == tower_tile:
+					crowd += 1
+					if pawn.owner_id != player_id:
+						enemy_crowd += 1
+			var lead: PlayerPawn = TarotEffects.leading_enemy(state, player_id)
+			var lead_close: bool = lead != null and state.pawn_progress_distance(lead) <= 8
+			if enemy_crowd >= 2 or (enemy_crowd >= 1 and lead_close):
+				if rng.randf() < 0.7:
+					return {"card_id": card.card_id, "params": {}}
+		&"ACT_08":  # 운명의 수레바퀴: 내 뒤처진 말과 앞선 적 말을 바꿔서 크게 이득일 때
+			var enemy_front: PlayerPawn = TarotEffects.leading_enemy(state, player_id)
+			var mine_back: PlayerPawn = TarotEffects.trailing_own(state, player_id)
+			if enemy_front == null:
+				return {}
+			if mine_back == null:
+				if state.pawn_progress_distance(enemy_front) <= 10 and rng.randf() < 0.6:
+					return {"card_id": card.card_id, "params": {}}
+			elif state.pawn_progress_distance(mine_back) - state.pawn_progress_distance(enemy_front) >= 6:
+				return {"card_id": card.card_id, "params": {}}
 		&"ACT_01":  # 우노 리버스: 이동 역주행 중이 아니면 가끔 (판을 흔든다)
 			if state.reverse_move_rounds_left == 0 and rng.randf() < 0.25:
 				return {"card_id": card.card_id, "params": {}}
@@ -265,6 +291,16 @@ static func plan_window_card(state: GameState, player_id: int, phase: int, roll_
 # 판정 도구
 # ---------------------------------------------------------------------------
 
+## 화투 고스톱: 첫 [고]까지만 절반 확률로 도전하고(최대 1회), 이미 한 번 외쳤거나 누적이 9칸 이상이면 [스톱]한다.
+static func hwatu_should_go(tool: BaseJudgmentTool, rng: RandomNumberGenerator) -> bool:
+	if not (tool is ToolHwatu) or not tool.has_pending_state():
+		return false
+	var hwatu: ToolHwatu = tool as ToolHwatu
+	if hwatu.go_count >= 1 or hwatu.accumulated >= 9:
+		return false
+	return rng.randf() < 0.5
+
+
 ## 러시안 룰렛: 빈 총을 pull_target번 당겼으면(누적 칸수 기준) 멈춘다. pull_target은 보통 2~3.
 static func should_stop_roulette(tool: BaseJudgmentTool, pull_target: int) -> bool:
 	if not (tool is ToolRussianRoulette) or not tool.has_pending_state():
@@ -310,6 +346,7 @@ static func skill_option(state: GameState, pawn: PlayerPawn) -> Dictionary:
 		&"shoot": return _shoot_option(state, pawn)
 		&"warp": return _warp_option(state, pawn)
 		&"castle": return _castle_option(state, pawn)
+		&"drop": return _drop_option(state, pawn)
 	return {}
 
 
@@ -366,6 +403,19 @@ static func _warp_option(state: GameState, pawn: PlayerPawn) -> Dictionary:
 	if best_tile == -1:
 		return {}
 	return {"params": {"tile": best_tile}, "value": best_value}
+
+
+## 모치고마 낙하: 출발선에 대기 중인 말이 있으면 보병 곁에 떨어뜨린다 (그 자리에 잡을 수 있는 적이 있으면 더 가치가 크다).
+static func _drop_option(state: GameState, pawn: PlayerPawn) -> Dictionary:
+	var partners: Array[PlayerPawn] = PawnSkills.drop_partners(state, pawn)
+	var tile: int = PawnSkills.drop_tile(state, pawn)
+	if partners.is_empty() or tile == -1:
+		return {}
+	var value: float = SKILL_USE_THRESHOLD + 1.5
+	for leader: PlayerPawn in state.leaders_at(tile):
+		if leader.owner_id != pawn.owner_id and leader.has_left_start and not MoveExecutor.is_capture_immune(state, leader):
+			value += pawn_progress(state, leader)
+	return {"params": {"partner": partners[0].entity_id}, "value": value}
 
 
 ## 캐슬링: 룩이 위험한 자리(바로 뒤에 적이 쫓아옴)에 있을 때, 더 안전한 자리의 아군 기물과 위치를 맞바꿔 피한다.

@@ -135,7 +135,7 @@ func test_skill_catalog_has_exactly_four_one_shot_skills() -> void:
 			var skill: StringName = PawnCatalog.skill_of(PawnCatalog.sub_type_of(kind, unit))
 			if skill != &"":
 				found[skill] = PawnCatalog.unit_label(kind, unit)
-	check_eq(found.size(), 4, "필살기는 4종")
+	check_eq(found.size(), 5, "필살기는 5종 (알까기·전차·캐슬링·워프·모치고마 낙하)")
 	check_eq(found[&"shoot"], "바둑:흑돌", "알까기 슈팅은 흑돌")
 	check_eq(found[&"charge"], "장기:차", "직선 저격은 차")
 	check_eq(found[&"castle"], "체스:룩", "단독 캐슬링은 룩")

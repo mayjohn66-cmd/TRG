@@ -29,6 +29,12 @@ signal bang_resolved(shooter: int, target_pawn_id: int, dodged: bool, discarded_
 ## 기물 능력 알림: 룩 캐슬링(위치 교환) / 백돌 무적에 막혀 밀려남.
 signal pawns_castled(pawn_a_id: int, pawn_b_id: int)
 signal pawn_pushed_back(pawn_id: int, from_tile: int, to_tile: int)
+## TRP_05 도미노 연쇄 붕괴: 밟은 말(pawn_id)이 지나간 타일들(passed)로 밀려났고 chain의 말들이 2칸씩 연쇄로 밀려났다.
+signal domino_collapsed(pawn_id: int, passed: Array[int], chain: Array[int])
+## ACT_07 무너지는 탑이 tile에 벼락을 쳐 말들을 흩어 놓았다 (scattered: {"pawn_id", "from", "to"}).
+signal tower_struck(tile: int, scattered: Array[Dictionary])
+## ACT_08 운명의 수레바퀴: outcome은 "swap"(내 말 mine_id와 적 말 enemy_id의 위치 교환) 또는 "retreat"(적 말 후퇴, mine_id = -1).
+signal wheel_turned(player_id: int, mine_id: int, enemy_id: int, outcome: StringName)
 signal snapshot_restored()
 signal victory_declared(player_id: int, reason: StringName)
 

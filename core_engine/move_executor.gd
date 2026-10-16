@@ -64,6 +64,14 @@ static func plan_path(state: GameState, mover: PlayerPawn, ctx: RuleContext, rep
 	if sub == GameEnums.PawnSubType.CHESS_BISHOP and mover.current_tile_idx >= GameEnums.OUTER_TRACK_SIZE:
 		steps += 2 * sign_dir
 		report.ability_notes.append("비숍 대각선 +2칸")
+	if mover.kind == GameEnums.PawnKind.SHOGI:
+		# 비차: 외곽 직선(0~19번)에서 출발하면 +2칸 (나리 승급한 용왕은 대각선에서도). 나리 승급한 쇼기 기물은 이동할 때마다 +1칸.
+		if sub == GameEnums.PawnSubType.SHOGI_HISHA and (mover.current_tile_idx < GameEnums.OUTER_TRACK_SIZE or mover.promoted):
+			steps += 2 * sign_dir
+			report.ability_notes.append("용왕 +2칸" if mover.promoted else "비차 직선 +2칸")
+		if mover.promoted:
+			steps += sign_dir
+			report.ability_notes.append("나리 승급 +1칸")
 	var path: Array[int] = state.board.calculate_path(mover, steps, ctx)
 	match sub:
 		GameEnums.PawnSubType.JANGGI_PO:
@@ -160,6 +168,9 @@ static func apply_step(
 
 	# 나이트 점프: 중간 칸의 설치물은 무시하고 도착 칸의 설치물만 판정한다.
 	var skip_attachments: bool = not is_last and mover.jumps_over_attachments()
+	# 계마: 이동 경로의 첫 2칸에 있는 함정은 뛰어넘어 무시한다 (도착 칸이면 그대로 판정).
+	if not is_last and mover.sub_type() == GameEnums.PawnSubType.SHOGI_KEIMA and report.path.size() <= 2:
+		skip_attachments = true
 	if not skip_attachments and _trigger_attachments(state, mover, ctx, destination, is_last, report):
 		if not mover.has_left_start:
 			# 함정이 말을 출발선으로 돌려보냈다 (send_to_start가 출발 상태를 초기화한다).
@@ -253,6 +264,7 @@ static func _resolve_landing(state: GameState, mover: PlayerPawn, ctx: RuleConte
 	_resolve_captures(state, mover, ctx, report)
 	if mover.is_finished:
 		return
+	_kaku_strike(state, mover, ctx, report)
 	_resolve_stacking(state, mover, ctx, report)
 	if can_build_hotel(state, mover) and ctx.charge_depth == 0 and mover.current_tile_idx != GameEnums.GOAL_TILE:
 		_build_hotel(state, mover, report)
@@ -296,6 +308,7 @@ static func _warp_to(state: GameState, mover: PlayerPawn, ctx: RuleContext, repo
 
 ## 체스 폰: 중앙(22번)이나 15~19번 타일을 밟는 순간 영구히 퀸으로 승진한다 (업고 있는 폰도 함께).
 static func _promote_pawns(state: GameState, mover: PlayerPawn, report: MoveReport) -> void:
+	_promote_shogi(state, mover, report)
 	if not GameEnums.PROMOTION_TILES.has(mover.current_tile_idx):
 		return
 	for member: PlayerPawn in mover.stack_members():
@@ -303,6 +316,35 @@ static func _promote_pawns(state: GameState, mover: PlayerPawn, report: MoveRepo
 			member.unit_no = GameEnums.CHESS_QUEEN_UNIT
 			report.promoted_pawn_ids.append(member.entity_id)
 			state.pawn_promoted.emit(member.entity_id)
+
+
+## 쇼기 나리 승급: 10번 코너나 중앙 22번을 밟는 순간 영구히 승급한다 (업고 있는 말도 함께). 경로를 스치기만 해도 밟은 것으로 본다.
+static func _promote_shogi(state: GameState, mover: PlayerPawn, report: MoveReport) -> void:
+	if not GameEnums.SHOGI_PROMOTION_TILES.has(mover.current_tile_idx):
+		return
+	for member: PlayerPawn in mover.stack_members():
+		if member.kind == GameEnums.PawnKind.SHOGI and not member.promoted:
+			member.promoted = true
+			report.promoted_pawn_ids.append(member.entity_id)
+			report.ability_notes.append("%s 나리 승급!" % PawnCatalog.unit_label(member.kind, member.unit_no))
+			state.pawn_promoted.emit(member.entity_id)
+
+
+## 용마(나리 승급한 각행): 이동이 끝난 뒤 바로 앞 1칸에 서 있는 잡을 수 있는 적 말도 함께 처치한다 (이동하지 않는다).
+static func _kaku_strike(state: GameState, mover: PlayerPawn, ctx: RuleContext, report: MoveReport) -> void:
+	if not mover.promoted or mover.sub_type() != GameEnums.PawnSubType.SHOGI_KAKU or mover.current_tile_idx == GameEnums.GOAL_TILE:
+		return
+	var ahead: Array[int] = state.board.calculate_path(mover, 1, ctx)
+	if ahead.is_empty() or ahead[0] == GameEnums.GOAL_TILE:
+		return
+	var enemies: Array[PlayerPawn] = []
+	for leader: PlayerPawn in state.leaders_at(ahead[0]):
+		if leader.owner_id != mover.owner_id and leader.has_left_start and not is_capture_immune(state, leader):
+			enemies.append(leader)
+	if enemies.is_empty():
+		return
+	_apply_capture_effects(state, mover, pick_capture_victims(enemies), report)
+	report.ability_notes.append("용마 앞 1칸 추가 처치")
 
 
 ## 모노폴리 호텔 건설: 미니카만 이동이 끝난 타일에 호텔을 짓는다.

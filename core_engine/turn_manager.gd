@@ -332,7 +332,7 @@ func can_use_skill(player_id: int, pawn_id: int) -> bool:
 	return pawn != null and pawn.owner_id == player_id and PawnSkills.is_ready(pawn)
 
 
-## 필살기 사용. params: {"pawn_id": int} + 기물별 인자 - 룩 {"partner": 맞바꿀 아군 ID} / 비행기 {"tile": 목적지} / 흑돌 {"angle": 라디안, "power": 0~1} / 차 (없음).
+## 필살기 사용. params: {"pawn_id": int} + 기물별 인자 - 룩 {"partner": 맞바꿀 아군 ID} / 비행기 {"tile": 목적지} / 흑돌 {"angle": 라디안, "power": 0~1} / 차 (없음) / 쇼기 보병 {"partner": 낙하시킬 대기 말 ID}.
 func _handle_use_skill(actor: int, params: Dictionary) -> void:
 	var pawn_id: int = int(params.get("pawn_id", -1))
 	if not can_use_skill(actor, pawn_id):
@@ -342,6 +342,7 @@ func _handle_use_skill(actor: int, params: Dictionary) -> void:
 	var skill: StringName = PawnCatalog.skill_of(pawn.sub_type())
 	match skill:
 		&"castle": _skill_castle(actor, pawn, params)
+		&"drop": _skill_drop(actor, pawn, params)
 		&"charge":
 			var path: Array[int] = PawnSkills.chariot_path(state, pawn)
 			if path.is_empty():
@@ -394,6 +395,24 @@ func _skill_castle(actor: int, rook: PlayerPawn, params: Dictionary) -> void:
 		action_rejected.emit(actor, &"use_skill", &"invalid_skill")
 		return
 	_emit_skill_event(actor, rook, &"castle", {"partner": partner.entity_id})
+	_broadcast_state()
+
+
+## 쇼기 보병 모치고마 낙하: 주사위 굴림은 그대로 남고, 출발선 대기 말 하나가 보병 곁에 즉시 놓인다.
+func _skill_drop(actor: int, fu: PlayerPawn, params: Dictionary) -> void:
+	var partners: Array[PlayerPawn] = PawnSkills.drop_partners(state, fu)
+	var partner: PlayerPawn = state.get_pawn(int(params.get("partner", -1)))
+	if partner == null and not partners.is_empty():
+		partner = partners[0]
+	if partner == null or not partners.has(partner):
+		action_rejected.emit(actor, &"use_skill", &"invalid_skill")
+		return
+	var command := DropCommand.new(actor, fu.entity_id, partner.entity_id)
+	if not command_stack.execute_command(command, _make_ctx(actor)):
+		action_rejected.emit(actor, &"use_skill", &"invalid_skill")
+		return
+	_emit_skill_event(actor, fu, &"drop", {"partner": partner.entity_id, "tile": command.landing_tile})
+	_check_victory(null)
 	_broadcast_state()
 
 

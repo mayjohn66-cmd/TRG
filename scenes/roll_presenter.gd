@@ -7,7 +7,7 @@ extends PanelContainer
 ## 연출이 끝났다 (취소 포함). play()는 이 시그널을 await 한다.
 signal finished
 
-const SUPPORTED: Array[StringName] = [&"D6", &"CHINCHIRO", &"YUT", &"LIFE_ROULETTE", &"SLOT_777", &"HOLDEM"]
+const SUPPORTED: Array[StringName] = [&"D6", &"CHINCHIRO", &"YUT", &"LIFE_ROULETTE", &"SLOT_777", &"HOLDEM", &"DICE_HWATU", &"DICE_MAHJONG", &"DICE_TAROT"]
 const YUT_NAMES: Dictionary = {-1: "빽도", 1: "도", 2: "개", 3: "걸", 4: "윷", 5: "모"}
 const SLOT_SYMBOLS: Array[String] = ["체리", "레몬", "종", "BAR", "다이아", "7"]
 const SUITS: Array[String] = ["♣", "♦", "♥", "♠"]
@@ -50,6 +50,10 @@ var _cards: Array[PanelContainer] = []
 var _card_labels: Array[Label] = []
 var _card_faces: Array[String] = []
 var _card_flipped: Array[bool] = []
+## 카드 줄 연출 공통: 뒤집을 카드 표시(이미 앞면인 카드는 false), 앞면 배경색, 카드별 글자색.
+var _card_flip_mask: Array[bool] = []
+var _card_front: Color = Color("f8f9fa")
+var _card_face_colors: Array[Color] = []
 var _last_tick: int = -1
 var _settled: bool = false
 var _final_face: int = 0
@@ -167,6 +171,8 @@ func _clear() -> void:
 	_card_labels.clear()
 	_card_faces.clear()
 	_card_flipped.clear()
+	_card_flip_mask.clear()
+	_card_face_colors.clear()
 	_reel_stopped = [false, false, false]
 	_die = null
 	_wheel = null
@@ -270,7 +276,111 @@ func _build(tool_id: StringName) -> void:
 				_card_labels.append(card_label)
 				_card_flipped.append(false)
 				_card_faces.append(card_text(int(drawn[index])) if index < drawn.size() else "?")
+				_card_flip_mask.append(true)
+				_card_face_colors.append(Color("212529"))
+		&"DICE_HWATU": _build_hwatu()
+		&"DICE_MAHJONG": _build_mahjong()
+		&"DICE_TAROT": _build_tarot()
 	pivot_offset = Vector2.ZERO
+
+
+## 화투: 이번에 새로 뒤집는 패(첫 굴림 2장 / [고] 1장)만 뒤집히고, 이미 나온 패는 앞면으로 놓여 있다.
+func _build_hwatu() -> void:
+	var details: Dictionary = _result["details"]
+	var all_cards: Array = details.get("cards", [])
+	var fresh: Array = details.get("new_cards", [])
+	var go_type: String = str(details.get("go_type", ""))
+	_title.text = "화투 고스톱 패" + ("  -  고! %d회째" % int(details.get("go_count", 0)) if int(details.get("go_count", 0)) > 0 else "")
+	_card_front = Color("fff4e6")
+	var faces: Array[String] = []
+	var colors: Array[Color] = []
+	var mask: Array[bool] = []
+	for card: Variant in all_cards:
+		faces.append(ToolHwatu.card_name(int(card)).replace(" ", "\n"))
+		colors.append(Color("c92a2a") if ToolHwatu.card_type(int(card)) == &"gwang" else Color("212529"))
+		mask.append(fresh.has(card))
+	_build_flip_row(faces, colors, mask, Vector2(84, 116), Color("8b1a1a"), Color("ffd8a8"), 20)
+	var hand_label: String = str(details.get("label", ""))
+	if bool(details.get("bust", false)):
+		hand_label = "피박!"
+	elif go_type != "":
+		hand_label = "고! +%d칸" % int(details.get("bonus", 0))
+	_die_label = _label(hand_label, 22, Color("ffe066"))
+	_root.add_child(_die_label)
+
+
+## 마작: 패 3개를 동시에 쯔모(뒤집기)한다.
+func _build_mahjong() -> void:
+	var details: Dictionary = _result["details"]
+	_title.text = "리치 마작 만리장성"
+	_card_front = Color("f8f9fa")
+	var faces: Array[String] = []
+	var colors: Array[Color] = []
+	var mask: Array[bool] = []
+	for tile: Variant in details.get("tiles", []):
+		var name: String = ToolMahjong.tile_name(int(tile))
+		faces.append(name.substr(0, name.length() - 1) + "\n" + name.substr(name.length() - 1) if int(tile) < ToolMahjong.HONOR_START else name)
+		colors.append(_mahjong_color(int(tile)))
+		mask.append(true)
+	_build_flip_row(faces, colors, mask, Vector2(76, 104), Color("2b8a3e"), Color("b2f2bb"), 26)
+	_die_label = _label(str(details.get("label", "")), 22, Color("ffe066"))
+	_root.add_child(_die_label)
+
+
+static func _mahjong_color(tile: int) -> Color:
+	if tile >= ToolMahjong.HONOR_START:
+		return [Color("495057"), Color("2b8a3e"), Color("c92a2a")][tile - ToolMahjong.HONOR_START]
+	return [Color("c92a2a"), Color("1c7ed6"), Color("2b8a3e")][tile / 9]
+
+
+## 타로: 뒷면 카드 5장이 놓이고 그중 한 장만 뒤집혀 운명이 드러난다.
+const TAROT_SHORT: Dictionary = {&"fool": "0\n광대", &"chariot": "VII\n전차", &"wheel": "X\n수레바퀴", &"hanged": "XII\n매달린 남자", &"world": "XXI\n세계"}
+
+
+func _build_tarot() -> void:
+	var details: Dictionary = _result["details"]
+	_title.text = "점성술사의 타로 덱"
+	_card_front = Color("f3e8ff")
+	var flipped: int = int(details.get("flipped", 0))
+	var fate: StringName = details.get("fate", &"chariot")
+	var faces: Array[String] = []
+	var colors: Array[Color] = []
+	var mask: Array[bool] = []
+	for index: int in 5:
+		faces.append(str(TAROT_SHORT[fate]) if index == flipped else "?")
+		colors.append(Color("5f3dc4"))
+		mask.append(index == flipped)
+	_build_flip_row(faces, colors, mask, Vector2(76, 124), Color("5f3dc4"), Color("d0bfff"), 18, true)
+	var text: String = str(details.get("name", ""))
+	if fate == &"fool":
+		text += "  (%s)" % ("대도약 +7칸!" if bool(details.get("fool_leap", false)) else "뒷걸음 -2칸")
+	_die_label = _label(text, 18, Color("ffe066"))
+	_root.add_child(_die_label)
+
+
+## 카드 줄 한 벌을 만든다. mask가 true인 카드만 뒤집히고 false인 카드는 처음부터 앞면(faces)이다. hidden_rest면 false 카드는 뒷면 그대로 둔다.
+func _build_flip_row(faces: Array[String], colors: Array[Color], mask: Array[bool], card_size: Vector2, back: Color, border: Color, font_px: int, hidden_rest: bool = false) -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_stage.add_child(row)
+	var flips: int = 0
+	for index: int in faces.size():
+		var flips_now: bool = mask[index]
+		var already_front: bool = not flips_now and not hidden_rest
+		var card: PanelContainer = _box(_card_front if already_front else back, border, 10, card_size)
+		var label: Label = _label(faces[index] if already_front else "?", font_px, colors[index] if already_front else Color("f8f9fa"))
+		card.add_child(label)
+		row.add_child(card)
+		_cards.append(card)
+		_card_labels.append(label)
+		_card_flipped.append(already_front or hidden_rest and not flips_now)
+		_card_faces.append(faces[index])
+		_card_flip_mask.append(flips_now)
+		_card_face_colors.append(colors[index])
+		if flips_now:
+			flips += 1
+	_total = CARD_FLIP_INTERVAL * maxi(flips - 1, 0) * 2.0 + CARD_FLIP_TIME + HOLD_TIME + 0.35
 
 
 ## 카드 번호(0~51)의 표시 문자열: 문양 + 숫자 (예: ♠A).
@@ -287,7 +397,7 @@ func _update(t: float) -> void:
 		&"D6", &"CHINCHIRO", &"YUT": _update_die(t)
 		&"LIFE_ROULETTE": _update_wheel(t)
 		&"SLOT_777": _update_slot(t)
-		&"HOLDEM": _update_cards(t)
+		&"HOLDEM", &"DICE_HWATU", &"DICE_MAHJONG", &"DICE_TAROT": _update_cards(t)
 
 
 func _ease_out(x: float) -> float:
@@ -414,12 +524,16 @@ func _stopped_style() -> StyleBoxFlat:
 	return style
 
 
-## 카드 5장이 0.15초 간격으로 한 장씩 뒷면에서 앞면으로 뒤집힌다 (가로로 눌렸다 펴지는 플립).
+## 카드들이 0.15초 간격으로 한 장씩 뒷면에서 앞면으로 뒤집힌다 (가로로 눌렸다 펴지는 플립). 뒤집을 카드(_card_flip_mask)만 뒤집는다.
 func _update_cards(t: float) -> void:
-	for index: int in 5:
-		var start: float = index * CARD_FLIP_INTERVAL
+	var order: int = 0
+	for index: int in _cards.size():
 		var card: PanelContainer = _cards[index]
 		card.pivot_offset = card.size / 2.0
+		if index < _card_flip_mask.size() and not _card_flip_mask[index]:
+			continue
+		var start: float = order * CARD_FLIP_INTERVAL * (2.0 if _mode != &"HOLDEM" else 1.0)
+		order += 1
 		if t < start:
 			card.scale.x = 1.0
 			continue
@@ -431,17 +545,19 @@ func _update_cards(t: float) -> void:
 				_card_flipped[index] = true
 				_card_labels[index].text = _card_faces[index]
 				var red: bool = _card_faces[index].begins_with("♥") or _card_faces[index].begins_with("♦")
-				_card_labels[index].add_theme_color_override("font_color", Color("e03131") if red else Color("212529"))
+				if index < _card_face_colors.size() and _mode != &"HOLDEM":
+					_card_labels[index].add_theme_color_override("font_color", _card_face_colors[index])
+				else:
+					_card_labels[index].add_theme_color_override("font_color", Color("e03131") if red else Color("212529"))
 				var style := StyleBoxFlat.new()
-				style.bg_color = Color("f8f9fa")
+				style.bg_color = _card_front
 				style.border_color = Color("adb5bd")
 				style.set_border_width_all(3)
 				style.set_corner_radius_all(10)
 				style.set_content_margin_all(4)
 				card.add_theme_stylebox_override("panel", style)
 			card.scale.x = (phase - 0.5) * 2.0
-	if t >= CARD_FLIP_INTERVAL * 4 + CARD_FLIP_TIME:
-		last_display = " ".join(PackedStringArray(_card_faces))
+	last_display = " ".join(PackedStringArray(_card_faces)) if _mode == &"HOLDEM" else _final_text(_mode, _result)
 
 
 ## 연출을 건너뛰었을 때 last_display에 담을 최종 표시 문자열.
@@ -459,4 +575,15 @@ func _final_text(tool_id: StringName, result: Dictionary) -> String:
 			for card: Variant in details.get("cards", []):
 				faces.append(card_text(int(card)))
 			return " ".join(PackedStringArray(faces))
+		&"DICE_HWATU":
+			var names: Array[String] = []
+			for card: Variant in details.get("cards", []):
+				names.append(ToolHwatu.card_name(int(card)))
+			return " ".join(PackedStringArray(names))
+		&"DICE_MAHJONG":
+			var tile_names: Array[String] = []
+			for tile: Variant in details.get("tiles", []):
+				tile_names.append(ToolMahjong.tile_name(int(tile)))
+			return " ".join(PackedStringArray(tile_names))
+		&"DICE_TAROT": return str(details.get("name", ""))
 	return ""

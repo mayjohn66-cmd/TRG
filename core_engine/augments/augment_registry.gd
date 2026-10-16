@@ -1,13 +1,13 @@
 # File: res://core_engine/augments/augment_registry.gd
 # Class: class_name AugmentRegistry
-# Role: 증강 드래프트 전체 풀(기물 지급 15 (세부 기물별) / 판정 도구 교체 6 / 교칙 제정 8 / 카드 패키지 1)과 선택지 3개를 4대 카테고리가 섞이도록 뽑는 생성기
+# Role: 증강 드래프트 전체 풀(기물 지급 19 (세부 기물별) / 판정 도구 교체 9 / 교칙 제정 8 / 카드 패키지 1)과 선택지 3개를 4대 카테고리가 섞이도록 뽑는 생성기
 class_name AugmentRegistry
 extends RefCounted
 
 static var _cache: Array[AugmentDef] = []
 
-## 교체 대상 판정 도구. 기본 주사위(D6)를 제외한 확정 6종이다.
-const SWAPPABLE_TOOLS: Array[StringName] = [&"YUT", &"HOLDEM", &"LIFE_ROULETTE", &"CHINCHIRO", &"SLOT_777", &"REVOLVER"]
+## 교체 대상 판정 도구. 기본 주사위(D6)를 제외한 확정 9종이다.
+const SWAPPABLE_TOOLS: Array[StringName] = [&"YUT", &"HOLDEM", &"LIFE_ROULETTE", &"CHINCHIRO", &"SLOT_777", &"REVOLVER", &"DICE_HWATU", &"DICE_MAHJONG", &"DICE_TAROT"]
 
 
 static func all() -> Array[AugmentDef]:

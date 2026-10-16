@@ -33,6 +33,27 @@ static func rook_partners(state: GameState, rook: PlayerPawn) -> Array[PlayerPaw
 	return result
 
 
+## 보병 모치고마 낙하로 불러낼 수 있는 내 말: 출발선에서 아직 출발하지 않은 대기 말(업히지 않은 것, 구속·감옥 아님).
+static func drop_partners(state: GameState, fu: PlayerPawn) -> Array[PlayerPawn]:
+	var result: Array[PlayerPawn] = []
+	for pawn: PlayerPawn in state.pawns_of(fu.owner_id):
+		if pawn != fu and not pawn.has_left_start and not pawn.is_finished and pawn.carrier == null \
+				and not pawn.is_imprisoned and not pawn.blocked_this_turn and pawn.restrained_turns <= 0:
+			result.append(pawn)
+	return result
+
+
+## 낙하 위치: 보병 바로 뒷칸 (온 길의 직전 타일). 뒷칸이 출발선이거나 없으면 앞칸(한 칸 전진한 타일). 둘 다 쓸 수 없으면 -1.
+static func drop_tile(state: GameState, fu: PlayerPawn) -> int:
+	var back: int = fu.step_history[fu.step_history.size() - 2] if fu.step_history.size() >= 2 else state.board.default_previous(fu.current_tile_idx)
+	if back != GameEnums.GOAL_TILE and back != fu.current_tile_idx and state.board.is_valid_tile(back):
+		return back
+	var ahead: Array[int] = state.board.calculate_path(fu, 1, RuleContext.new())
+	if not ahead.is_empty() and ahead[0] != GameEnums.GOAL_TILE:
+		return ahead[0]
+	return -1
+
+
 ## 비행기가 날아갈 수 있는 타일 (지금 서 있는 타일 제외).
 static func plane_targets(pawn: PlayerPawn) -> Array[int]:
 	var result: Array[int] = []

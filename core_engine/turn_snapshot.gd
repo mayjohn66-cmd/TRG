@@ -27,6 +27,7 @@ static func capture(state: GameState) -> TurnSnapshot:
 			"blocked": pawn.blocked_this_turn,
 			"imprisoned": pawn.is_imprisoned,
 			"skill_used": pawn.skill_used,
+			"promoted": pawn.promoted,
 			"carrier": pawn.carrier.entity_id if pawn.carrier != null else -1,
 			"carried": carried_ids,
 		}
@@ -86,6 +87,7 @@ func restore(state: GameState, restore_meta: bool = false) -> void:
 		pawn.blocked_this_turn = bool(entry["blocked"])
 		pawn.is_imprisoned = bool(entry["imprisoned"])
 		pawn.skill_used = bool(entry.get("skill_used", false))
+		pawn.promoted = bool(entry.get("promoted", false))
 		pawn.carrier = null
 		pawn.carried.clear()
 	for pawn: PlayerPawn in state.pawns:

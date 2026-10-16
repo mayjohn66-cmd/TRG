@@ -53,6 +53,7 @@ func _run() -> void:
 	await _test_hud_overhaul()
 	await _test_bot_pacing()
 	await _test_action_beats()
+	await _test_tool_cards_fit()
 	if _failures.is_empty():
 		print("UI_FX_OK")
 		quit(0)
@@ -123,6 +124,25 @@ func _test_presenters() -> void:
 		expected.append(RollPresenter.card_text(card))
 	_expect(presenter.last_display == " ".join(PackedStringArray(expected)), "홀덤 최종 카드 (%s)" % presenter.last_display)
 	_expect(not presenter.visible, "연출이 끝나면 패널이 숨겨져야 한다")
+	# 화투: 새로 뒤집는 패만 뒤집히고 이미 나온 패는 앞면으로 놓인다 (고! 한 번)
+	var hwatu_result: Dictionary = {"tool_id": &"DICE_HWATU", "steps": 7, "details": {"cards": [1, 5, 40], "new_cards": [40], "hand": &"kkeut", "label": "3끗", "go_count": 1, "go_type": &"gwang", "bonus": 5, "accumulated": 7}}
+	elapsed = await _play(&"DICE_HWATU", hwatu_result)
+	_expect(elapsed >= 0.4 and elapsed < 3.0, "화투 연출 시간 (%.2f초)" % elapsed)
+	_expect(presenter.last_display == "1월 열끗 2월 열끗 11월 광", "화투 최종 패 (%s)" % presenter.last_display)
+	# 마작: 패 3개 동시 쯔모
+	elapsed = await _play(&"DICE_MAHJONG", {"tool_id": &"DICE_MAHJONG", "steps": 5, "details": {"tiles": [0, 1, 2], "hand": &"shuntsu", "label": "슌쯔"}})
+	_expect(elapsed >= 0.4 and elapsed < 3.0 and presenter.last_display == "1만 2만 3만", "마작 연출 (%.2f초, %s)" % [elapsed, presenter.last_display])
+	# 타로: 뒷면 5장 중 한 장만 뒤집힌다
+	var tarot_flips: Array[int] = []
+	var sample_tarot: Callable = func(_t: float) -> void:
+		var flipped: int = 0
+		for flag: bool in presenter._card_flipped:
+			if flag:
+				flipped += 1
+		if tarot_flips.is_empty() or tarot_flips.back() != flipped:
+			tarot_flips.append(flipped)
+	elapsed = await _play(&"DICE_TAROT", {"tool_id": &"DICE_TAROT", "steps": 6, "details": {"fate": &"chariot", "name": "VII. 전차 (The Chariot)", "flipped": 2, "fool_leap": false}}, sample_tarot)
+	_expect(elapsed >= 0.4 and elapsed < 3.0 and presenter.last_display.contains("VII"), "타로 연출 (%.2f초, %s)" % [elapsed, presenter.last_display])
 	# instant: 즉시 완료
 	presenter.instant = true
 	var before: float = _now()
@@ -445,6 +465,22 @@ func _test_hud_overhaul() -> void:
 
 
 ## 봇 턴의 실제 연출 호흡: 턴 시작 0.5초 + 굴리기 직전 0.3초, 굴림 연출 뒤 결과 확인 0.6초 + 이동 선택 0.5초.
+## 모든 판정 도구의 우측 카드(규칙표 포함)는 굴림 버튼 행(y=440) 위에서 끝나야 한다.
+func _test_tool_cards_fit() -> void:
+	var manager: TurnManager = _board.manager
+	var player_id: int = manager.current_player_id()
+	var original: BaseJudgmentTool = manager.state.tools[player_id]
+	for tool_id: StringName in ToolRegistry.ALL_IDS:
+		manager.state.tools[player_id] = ToolRegistry.create(tool_id)
+		_board._refresh_controls()
+		await process_frame
+		var bottom: float = _board._tool_board.position.y + _board._tool_board.size.y
+		_expect(bottom <= 438.0, "%s 도구 카드가 굴림 버튼 행 위에서 끝난다 (아래쪽 %.0f)" % [tool_id, bottom])
+		_expect(_board._tool_board.size.x == 210.0, "%s 도구 카드 폭 210" % tool_id)
+	manager.state.tools[player_id] = original
+	_board._refresh_controls()
+
+
 ## 행동 사이의 호흡: 이동이 끝나면 잠깐 입력이 잠기고, 새 플레이어의 턴에는 [N 차례] 알림이 뜬다.
 func _test_action_beats() -> void:
 	var manager: TurnManager = _board.manager

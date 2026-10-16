@@ -179,7 +179,10 @@ func _step_turn_begin() -> void:
 func _step_roll() -> void:
 	var player_id: int = manager.current_player_id()
 	var tool: BaseJudgmentTool = manager.state.tools[player_id]
-	if BotBrain.should_stop_roulette(tool, _roulette_pull_target):
+	if tool is ToolHwatu and tool.has_pending_state():
+		# 화투: 첫 [고]는 확률로 도전하고 그 뒤로는 [스톱]한다.
+		_act(player_id, &"roll" if BotBrain.hwatu_should_go(tool, rng) else &"stop")
+	elif BotBrain.should_stop_roulette(tool, _roulette_pull_target):
 		_act(player_id, &"stop")
 	else:
 		_act(player_id, &"roll")

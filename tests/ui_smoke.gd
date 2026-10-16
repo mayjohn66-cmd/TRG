@@ -327,7 +327,7 @@ func _check_pawn_labels() -> void:
 	for pawn: PlayerPawn in _board.state.pawns:
 		var view: Node2D = _board._pawn_views[pawn.entity_id]
 		var shown: String = (view.get_node("Bounce/Kind") as Label).text
-		_assert(shown == PawnCatalog.unit_letter(pawn.kind, pawn.unit_no), "말 %d의 보드 라벨이 세부 기물과 달라야 하지 않는다 (%s)" % [pawn.entity_id, shown])
+		_assert(shown == pawn.letter(), "말 %d의 보드 라벨이 세부 기물과 달라야 하지 않는다 (%s)" % [pawn.entity_id, shown])
 	var owner_id: int = _board._dock_owner()
 	for index: int in _board._pawn_buttons.size():
 		var pawn: PlayerPawn = _board.state.get_pawn(owner_id * 10 + index + 1)
@@ -429,7 +429,7 @@ func _try_skill(manager: TurnManager, player_id: int) -> bool:
 		var pawn: PlayerPawn = _board.state.get_pawn(_board._dock_owner() * 10 + index + 1)
 		button.pressed.emit()
 		match PawnCatalog.skill_of(pawn.sub_type()):
-			&"castle":
+			&"castle", &"drop":
 				if _board._choice_overlay != null:
 					var picks: Array[Button] = []
 					for node: Node in _board._choice_overlay.find_children("*", "Button", true, false):
