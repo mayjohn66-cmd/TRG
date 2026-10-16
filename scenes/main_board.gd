@@ -310,6 +310,8 @@ var _fx_pending: Array[Callable] = []
 ## [문]으로 등록된 알림 번호들과, 문이 열렸는지(카드가 끝나 말이 움직일 수 있는지).
 var _fx_gates: Array[int] = []
 var _fx_gate_open: bool = false
+var _motion_retry: bool = false
+var _shown_turn: int = -1
 ## 게임 시작 오프닝: 진행 중이면 증강 선택 창·봇·입력을 잠근다 (테스트용 즉시 모드에서는 켜져 있지 않은 것으로 본다).
 var _intro_pending: bool = false
 var _opening: OpeningSequence = null
@@ -502,6 +504,9 @@ func _process(delta: float) -> void:
 		_power_bar.add_theme_stylebox_override("fill", fill)
 	_update_tip(delta)
 	_update_reaction_popup(delta)
+	if _motion_retry and not _fx_motion_pending():
+		_motion_retry = false
+		_refresh_all()
 	if _hold_card != null and (not is_instance_valid(_hold_card) or not _card_zone(_hold_card).has_point(get_global_mouse_position())):
 		_release_hold_card()
 	# 말 선택 단계: 지금 고를 수 있는 내 말 도형이 위아래로 통통 튄다.
@@ -637,6 +642,7 @@ func _new_game() -> void:
 	_tool_board_key = ""
 	_close_stack_overlay()
 	_close_opening()
+	_shown_turn = -1
 	_draft_summary.clear()
 	_draft_banner_round = 0
 	state = null
@@ -1971,9 +1977,44 @@ func _build_direction_icons() -> void:
 			_dir_right = icon
 
 
+## 말의 움직임 연출(잡기 등)이 진행 중이거나 곧 시작될 예정인가. 이때는 다음 턴 안내·강조를 미뤄 한꺼번에 일어나지 않게 한다.
+func _fx_motion_pending() -> bool:
+	if not _fx_on():
+		return false
+	var now: int = Time.get_ticks_msec()
+	if now < _fx_until_msec:
+		return true
+	for view: Node2D in _pawn_views.values():
+		if _fx_running(view):
+			return true
+	for hint: Dictionary in _fx_hints.values():
+		if now - int(hint.get("t", 0)) < 2500:
+			return true
+	return false
+
+
+## 연출이 끝날 때까지 턴·라운드 안내를 미룬다 (끝나면 _process가 화면을 다시 갱신해 안내가 뜬다).
+func _defer_for_motion() -> bool:
+	if _fx_motion_pending():
+		_motion_retry = true
+		return true
+	return false
+
+
+## 프로필의 현재 턴 강조는 말의 움직임이 끝날 때까지 이전 턴 플레이어에 머문다 (순서: 잡기 연출 -> 다음 턴으로 넘어감).
+func _shown_turn_player() -> int:
+	if _fx_motion_pending() and _shown_turn != -1:
+		_motion_retry = true
+		return _shown_turn
+	_shown_turn = manager.current_player_id()
+	return _shown_turn
+
+
 ## 라운드가 시작될 때(증강 선택이 끝나고 첫 플레이어의 턴이 오기 직전) 중앙에 크게 알린다.
 func _check_round_banner() -> void:
 	if _announcer == null or manager.is_game_over or manager.current_state == TurnManager.State.PHASE_ROUND_START:
+		return
+	if _defer_for_motion():
 		return
 	if state.round_number == _announced_round:
 		return
@@ -1985,6 +2026,8 @@ func _check_round_banner() -> void:
 ## 새 플레이어의 턴이 시작될 때 [P2 차례] 알림을 짧게 보여 준다 (추가 턴·롤백 재시작에는 다시 띄우지 않는다).
 func _check_turn_banner() -> void:
 	if not pacing_enabled or _announcer == null or manager.is_game_over or manager.current_state != TurnManager.State.PHASE_TURN_BEGIN:
+		return
+	if _defer_for_motion():
 		return
 	var key: String = "%d:%d" % [state.round_number, manager.current_player_id()]
 	if key == _announced_turn_key:
@@ -2015,7 +2058,7 @@ func _refresh_players() -> void:
 			_paint_pawn_slot(slots[index], state.get_pawn(player_id * 10 + index + 1), color)
 		var panel: PanelContainer = card["panel"]
 		# 스포트라이트: 현재 턴 플레이어만 환하게 밝고 살짝 커지며 외곽 광채가 켜지고, 나머지는 어둡게 가라앉는다.
-		var is_turn: bool = player_id == manager.current_player_id() and not manager.is_game_over
+		var is_turn: bool = player_id == _shown_turn_player() and not manager.is_game_over
 		var game_over: bool = manager.is_game_over
 		var margin: int = 8
 		if is_turn:

@@ -696,6 +696,10 @@ func _test_action_beats() -> void:
 	_board._fx_until_msec = 0
 	_expect(not _board._ui_busy(), "호흡이 끝나면 다시 입력할 수 있다 (fx=%s aim=%s ann=%s hist=%s)" % [str(_board._fx_busy), str(_board._aim_pawn), str(_board._announcer.active), str(_board._announcer.history.slice(-3))])
 	_board._announced_turn_key = ""
+	_board._fx_hints.clear()
+	_board._fx_until_msec = 0
+	for view: Node2D in _board._pawn_views.values():
+		_board._kill_fx(view)
 	_board._announcer.history.clear()
 	_board._check_turn_banner()
 	if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN:
