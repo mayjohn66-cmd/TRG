@@ -104,6 +104,37 @@
 		#tip b {
 			color: #74c0fc;
 		}
+		/* 세로 화면 안내: 세로일 때만 보이는 전체 덮개 + 전체화면/가로 고정 버튼 */
+		#rotate {
+			display: none;
+			position: fixed;
+			inset: 0;
+			z-index: 99999;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			gap: 18px;
+			padding: 24px;
+			box-sizing: border-box;
+			background: #0d1018;
+			color: #e8fff7;
+			text-align: center;
+		}
+		@media (orientation: portrait) {
+			#rotate { display: flex; }
+		}
+		#rotate .big { font-size: 24px; font-weight: 800; }
+		#rotate .small { font-size: 14px; color: #adb5bd; line-height: 1.6; max-width: 320px; }
+		#rotate button {
+			font: inherit;
+			font-weight: 800;
+			font-size: 18px;
+			padding: 14px 26px;
+			border-radius: 14px;
+			border: 3px solid #ffe066;
+			background: #fcc419;
+			color: #3b2a00;
+		}
 		#notice {
 			display: none;
 			max-width: min(560px, 88vw);
@@ -133,6 +164,11 @@
 		<div id="tip"></div>
 		<div id="notice"></div>
 	</div>
+	<div id="rotate">
+		<div class="big">화면을 가로로 돌려 주세요</div>
+		<button id="rotate-button" type="button">전체화면으로 가로 전환</button>
+		<div class="small">폰의 [자동 회전]이 꺼져 있으면 알림창에서 켜거나 위 버튼을 눌러 주세요. 가로로 바뀌면 자동으로 게임이 보입니다.</div>
+	</div>
 	<noscript>
 		<div style="position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:#141824;color:#ffc9c9;">
 			이 게임은 JavaScript가 필요합니다.
@@ -157,6 +193,11 @@
 				"<b>팁</b> 방 코드 5자리로 친구와 바로 비밀 결투를 할 수 있어요.",
 				"<b>팁</b> 뱅! 카드는 상대 프로필을 눌러 선두 말을 2칸 뒤로 보내요.",
 			];
+			// 자동 회전이 꺼진 폰: 전체화면으로 만든 뒤 가로 고정을 요청한다 (사용자 터치가 필요하다).
+			document.getElementById('rotate-button').addEventListener('click', async function () {
+				try { await document.documentElement.requestFullscreen(); } catch (e) { /* 지원하지 않는 브라우저 */ }
+				try { await screen.orientation.lock('landscape'); } catch (e) { /* iOS 등은 지원하지 않음 */ }
+			});
 			const splash = document.getElementById('splash');
 			const fill = document.getElementById('bar-fill');
 			const percent = document.getElementById('percent');
