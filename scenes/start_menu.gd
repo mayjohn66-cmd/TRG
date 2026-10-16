@@ -1,10 +1,11 @@
 # File: res://scenes/start_menu.gd
 # Class: class_name StartMenu
-# Role: 게임 시작 전 메뉴. 1단계 닉네임 설정 -> 2단계 [컴퓨터 대전] / [멀티플레이] 선택. 컴퓨터 대전을 고르면 메인 보드 씬으로 넘어간다 (멀티플레이는 준비 중)
+# Role: 게임 시작 전 메뉴. 1단계 닉네임 설정 -> 2단계 [컴퓨터 대전] / [멀티플레이] 선택. 컴퓨터 대전은 메인 보드 씬으로, 멀티플레이는 로비 씬으로 넘어간다
 class_name StartMenu
 extends Control
 
 const BOARD_SCENE: String = "res://scenes/main_board.tscn"
+const LOBBY_SCENE: String = "res://scenes/lobby.tscn"
 const COLOR_BG: Color = Color("0d1018")
 const COLOR_GOLD: Color = Color("ffd43b")
 
@@ -91,9 +92,8 @@ func _build_mode_page(parent: VBoxContainer) -> void:
 	_mode_page.add_child(_hello_label)
 	_ai_button = _button("컴퓨터 대전  (1P vs 3AI 봇)", start_ai_game, 22, Color("2b8a3e"))
 	_mode_page.add_child(_ai_button)
-	_multi_button = _button("멀티플레이  (준비 중)", Callable(), 22, Color("3b4766"))
-	_multi_button.disabled = true
-	_multi_button.tooltip_text = "온라인 멀티플레이는 아직 준비 중입니다."
+	_multi_button = _button("멀티플레이  (방 만들기 / 참가)", open_lobby, 22, Color("1c6dd0"))
+	_multi_button.tooltip_text = "친구와 직접 연결(WebRTC)해서 함께 합니다. 서버가 필요 없습니다."
 	_mode_page.add_child(_multi_button)
 	_back_button = _button("닉네임 변경", func() -> void: _show_step(1), 14, Color("4a3a66"))
 	_mode_page.add_child(_back_button)
@@ -124,6 +124,13 @@ func start_ai_game() -> void:
 	GameSession.mode = GameSession.MODE_AI
 	if change_scene_enabled:
 		get_tree().change_scene_to_file(BOARD_SCENE)
+
+
+## [멀티플레이]: 로비 화면으로 간다.
+func open_lobby() -> void:
+	GameSession.mode = GameSession.MODE_MULTIPLAYER
+	if change_scene_enabled:
+		get_tree().change_scene_to_file(LOBBY_SCENE)
 
 
 func _label(text: String, size_px: int, color: Color) -> Label:

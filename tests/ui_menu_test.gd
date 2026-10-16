@@ -1,6 +1,6 @@
 # File: res://tests/ui_menu_test.gd
 # Class: (SceneTree 스크립트, class_name 없음)
-# Role: 시작 메뉴 흐름 검증 - 닉네임 설정(빈 값·길이 검사) -> [컴퓨터 대전]/[멀티플레이] 선택, 멀티플레이는 준비 중으로 막혀 있고, 닉네임이 게임 화면의 프로필 이름으로 이어지는지 확인한다
+# Role: 시작 메뉴 흐름 검증 - 닉네임 설정(빈 값·길이 검사) -> [컴퓨터 대전]/[멀티플레이] 선택, 멀티플레이는 로비로 열려 있고, 닉네임이 게임 화면의 프로필 이름으로 이어지는지 확인한다
 extends SceneTree
 
 var _frames: int = 0
@@ -32,7 +32,7 @@ func _run() -> void:
 	_expect(menu.confirm_nickname() and menu.step == 2, "정상 닉네임은 모드 선택으로 넘어간다")
 	_expect(GameSession.nickname == "에르핀" and menu._hello_label.text.contains("에르핀"), "앞뒤 공백을 뺀 닉네임이 저장된다")
 	_expect(menu._mode_page.visible and not menu._name_page.visible, "모드 선택 화면만 보인다")
-	_expect(not menu._ai_button.disabled and menu._multi_button.disabled and menu._multi_button.text.contains("준비 중"), "컴퓨터 대전은 열려 있고 멀티플레이는 준비 중")
+	_expect(not menu._ai_button.disabled and not menu._multi_button.disabled and menu._multi_button.text.contains("멀티플레이"), "컴퓨터 대전과 멀티플레이(로비) 모두 열려 있다")
 	menu._back_button.pressed.emit()
 	_expect(menu.step == 1 and menu._name_edit.text.strip_edges() == "에르핀", "닉네임 변경으로 돌아가면 입력창에 남아 있다")
 	menu.confirm_nickname()

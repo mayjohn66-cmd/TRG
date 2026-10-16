@@ -58,6 +58,9 @@ jobs:
       - name: Run roll effect test (gauge, spin, reels, card flips)
         run: godot --headless --path . -s res://tests/ui_fx_test.gd
 
+      - name: Run lobby UI test (WebRTC lobby screens, no network)
+        run: godot --headless --path . -s res://tests/ui_lobby_test.gd
+
       - name: Export web build
         run: |
           mkdir -p build/web

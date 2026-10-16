@@ -448,18 +448,21 @@ func _test_hud_overhaul() -> void:
 ## 행동 사이의 호흡: 이동이 끝나면 잠깐 입력이 잠기고, 새 플레이어의 턴에는 [N 차례] 알림이 뜬다.
 func _test_action_beats() -> void:
 	var manager: TurnManager = _board.manager
-	_board.pacing_enabled = true
-	_board._announcer.cancel()
+	_board._bot.set_enabled(false)  # 앞선 봇 검사의 봇이 턴을 넘겨 알림이 끼어들지 않게 한다
+	manager.set_process(false)  # 단계 제한 시간으로 턴이 저절로 넘어가지 않게 한다
+	_board.pacing_enabled = false
+	_board._announcer.cancel()  # (알림이 비면 화면이 다시 그려지므로 알림 기능을 끈 채로 비운다)
 	_board._beat_until_msec = 0
 	_board.instant_roll_for_test = false
 	_board._announced_round = _board.state.round_number  # 이미 알린 라운드·턴으로 본다
 	_board._announced_turn_key = "%d:%d" % [_board.state.round_number, manager.current_player_id()]
 	_board._fx_busy = false
+	_board.pacing_enabled = true
 	_expect(not _board._ui_busy(), "전제: 호흡 검사 시작 시 대기 없음")
 	_board._start_beat(0.3)
 	_expect(_board._ui_busy(), "이동이 끝난 직후에는 잠깐 입력이 잠긴다")
 	await create_timer(0.45).timeout
-	_expect(not _board._ui_busy(), "호흡이 끝나면 다시 입력할 수 있다 (fx=%s aim=%s ann=%s)" % [str(_board._fx_busy), str(_board._aim_pawn), str(_board._announcer.active)])
+	_expect(not _board._ui_busy(), "호흡이 끝나면 다시 입력할 수 있다 (fx=%s aim=%s ann=%s hist=%s)" % [str(_board._fx_busy), str(_board._aim_pawn), str(_board._announcer.active), str(_board._announcer.history.slice(-3))])
 	_board._announced_turn_key = ""
 	_board._announcer.history.clear()
 	_board._check_turn_banner()
