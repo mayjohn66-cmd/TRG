@@ -1,8 +1,10 @@
 # File: res://scenes/lobby_theme.gd
 # Class: class_name LobbyTheme
-# Role: 시작 메뉴·로비 화면이 함께 쓰는 밝은 민트/청록 테마 부품. 구름무늬 배경, 위·아래 청록 띠(뒤로가기·제목·규칙 / 이름·설정), 굵은 카드형 모드 버튼, 이중 테두리 큰 버튼, 팝업 틀, 규칙·설정 팝업을 만든다
+# Role: 시작 메뉴·로비 공통 부품. 연두색 잎사귀 배경, 위·아래 띠, 모드 카드, 버튼과 팝업을 만든다.
 class_name LobbyTheme
 extends RefCounted
+
+const BACKGROUND_SCRIPT: Script = preload("res://scenes/lobby_background.gd")
 
 const TEAL: Color = Color("008f6b")
 const TEAL_DARK: Color = Color("006b50")
@@ -47,31 +49,14 @@ static func label(text: String, size_px: int, color: Color = INK) -> Label:
 	return item
 
 
-## 구름무늬 민트 배경 (잔물결 소음 + 부드러운 그라데이션). 부모의 가장 아래에 깔린다.
-static func add_background(parent: Control, greener: bool = false) -> void:
-	var base := ColorRect.new()
-	base.color = Color("a8e6cf") if not greener else Color("8fd35a")
-	base.set_anchors_preset(Control.PRESET_FULL_RECT)
-	base.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	parent.add_child(base)
-	var noise := FastNoiseLite.new()
-	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
-	noise.frequency = 0.006
-	noise.fractal_octaves = 3
-	var ramp := Gradient.new()
-	ramp.colors = PackedColorArray([Color("7fdcbd") if not greener else Color("b4ee6e"), Color("c7f6e6") if not greener else Color("eaffd0"), Color("f1fffa")])
-	ramp.offsets = PackedFloat32Array([0.0, 0.55, 1.0])
-	var texture := NoiseTexture2D.new()
-	texture.noise = noise
-	texture.color_ramp = ramp
-	texture.width = 512
-	texture.height = 384
-	var clouds := TextureRect.new()
-	clouds.texture = texture
-	clouds.stretch_mode = TextureRect.STRETCH_SCALE
-	clouds.set_anchors_preset(Control.PRESET_FULL_RECT)
-	clouds.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	parent.add_child(clouds)
+## 연두색 단색 바탕 + 아래쪽 곡선 + 가장자리 잎 윤곽. 시작 메뉴와 방 로비에 공통 적용.
+## 기존 호출 인자는 유지하되 같은 팔레트를 사용한다.
+static func add_background(parent: Control, _greener: bool = false) -> void:
+	var background: Control = BACKGROUND_SCRIPT.new()
+	background.name = "LobbyBackground"
+	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	background.set_anchors_preset(Control.PRESET_FULL_RECT)
+	parent.add_child(background)
 
 
 ## 위쪽 청록 띠: [뒤로가기] 제목 ............ [규칙]. 반환: {"bar", "back", "title", "right"}
