@@ -587,7 +587,7 @@ func _test_hud_overhaul() -> void:
 	_board._refresh_hands()
 	_board._card_press(holder, &"ACT_01", Vector2(700, 700), Vector2(700, 640))
 	_board._card_release(Vector2(701, 700))
-	_expect(_board._zoom_view != null and _board._zoom_view.size.x >= 240.0 and _board._zoom_view.size.y >= 340.0 and _board._zoom_view.size.y < 400.0, "클릭하면 약 240x340으로 확대 (%s)" % str(_board._zoom_view.size if _board._zoom_view != null else Vector2.ZERO))
+	_expect(_board._zoom_view != null and _board._zoom_view.size.x >= 252.0 and _board._zoom_view.size.y >= 353.0 and _board._zoom_view.size.y < 480.0, "클릭하면 손패와 같은 카드 UI로 약 252x353 이상 확대 (%s)" % str(_board._zoom_view.size if _board._zoom_view != null else Vector2.ZERO))
 	_board._card_press(holder, &"ACT_01", Vector2(700, 700), Vector2(700, 640))
 	_board._card_release(Vector2(701, 700))
 	await process_frame

@@ -2356,54 +2356,44 @@ func _toggle_zoom(player_id: int, card_id: StringName) -> void:
 	_open_zoom(player_id, card_id)
 
 
-## 손패 카드를 2.5배(240x340)로 확대해 이름·분류·효과·사용 가능 타이밍을 또렷하게 보여 준다. 남의 턴에도 볼 수 있다.
+## 손패 카드를 1.8배(252x353)로 확대해 손패와 같은 카드 UI(이름판·일러스트·효과)로 보여 주고, 아래에 사용 가능 타이밍·사용법·지금 사용 가능 여부를 붙인다. 남의 턴에도 볼 수 있다.
 func _open_zoom(player_id: int, card_id: StringName) -> void:
 	_close_zoom()
 	var card: BaseCard = CardRegistry.get_card(card_id)
-	var accent: Color = CARD_CATEGORY_COLORS[card.category]
+	var card_size: Vector2 = HAND_CARD_SIZE * 1.8
 	_zoom_key = "%d:%s" % [player_id, card_id]
 	_zoom_view = PanelContainer.new()
 	_zoom_view.z_index = 30
-	_zoom_view.custom_minimum_size = Vector2(240, 340)
-	_zoom_view.size = Vector2(240, 340)
-	_zoom_view.position = Vector2(563, 262) + _off_center
-	_zoom_view.add_theme_stylebox_override("panel", _style((CARD_BG_COLORS[card.category] as Color).darkened(0.62), accent, 5, 18, 28, 14))
+	_zoom_view.add_theme_stylebox_override("panel", _card_frame_style(card.category, true))
 	_zoom_view.gui_input.connect(func(event: InputEvent) -> void:
 		var click: InputEventMouseButton = event as InputEventMouseButton
 		if click != null and click.pressed and click.button_index == MOUSE_BUTTON_LEFT:
 			_close_zoom())
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 8)
+	box.add_theme_constant_override("separation", 4)
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_zoom_view.add_child(box)
-	var title := _make_label(card.display_name, 26, Color("f8f9fa"))
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.add_child(title)
-	var tag := _make_label("%s  (%s)" % [CARD_CATEGORY_NAMES[card.category], str(card_id).replace("_", " ")], 13, accent.lightened(0.3))
-	tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.add_child(tag)
-	var effect := _make_label(str(CARD_SUMMARIES.get(card_id, "")), 15, Color("dee2e6"))
-	effect.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	effect.custom_minimum_size = Vector2(210, 0)
-	effect.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	effect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.add_child(effect)
-	var timing := _make_label("발동 타이밍: %s" % _card_timing_text(card), 12, Color("ffe8a3"))
+	var holder := Control.new()
+	holder.custom_minimum_size = card_size
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.add_child(_build_card_body(card_id, card_size))
+	box.add_child(holder)
+	var usable: bool = _card_usable_now(player_id, card)
+	var how: String = "보드판으로 드래그 후 타일 고르기" if card.needs_tile() else "보드판 위로 드래그해서 놓기"
+	var timing := _make_label("발동 타이밍: %s  |  %s" % [_card_timing_text(card), how], 12, Color("2b1b00"))
 	timing.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	timing.custom_minimum_size = Vector2(210, 0)
+	timing.custom_minimum_size = Vector2(card_size.x, 0)
 	timing.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(timing)
-	var how := _make_label("사용법: " + ("보드판으로 드래그해서 놓은 뒤, 설치할 타일 고르기" if card.needs_tile() else "보드판 위로 드래그해서 놓기"), 12, Color("a5d8ff"))
-	how.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	how.custom_minimum_size = Vector2(210, 0)
-	how.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.add_child(how)
-	var status := _make_label("지금 사용 가능" if _card_usable_now(player_id, card) else "지금은 사용할 수 없음", 12, Color("69db7c") if _card_usable_now(player_id, card) else Color("868e96"))
+	var status := _make_label("지금 사용 가능" if usable else "지금은 사용할 수 없음", 13, Color("0b5a1c") if usable else Color("4a4036"))
+	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	status.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(status)
 	add_child(_zoom_view)
+	# 보드 가운데에 놓는다 (크기는 내용이 정해진 뒤 한 프레임 안에 확정되므로 최소 크기로 위치를 잡는다)
+	var total: Vector2 = _zoom_view.get_combined_minimum_size()
+	_zoom_view.size = total
+	_zoom_view.position = Vector2(683.0 - total.x / 2.0, 384.0 - total.y / 2.0) + _off_center
 
 
 func _card_timing_text(card: BaseCard) -> String:
