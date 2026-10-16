@@ -22,6 +22,10 @@ var seat: int = 1
 var character_id: StringName = DEFAULT_CHARACTER
 var emotion: Emotion = Emotion.IDLE
 var base_color: Color = Color("e03131")
+## true면 자리표시자 배경색을 캐릭터(AvatarCatalog)의 색으로 칠한다 (아바타 선택 화면용). 게임 화면은 좌석 색을 유지한다.
+var catalog_tint: bool = false
+## 비어 있지 않으면 자리표시자 글자(기본 "P1" 같은 좌석 표시) 대신 이 글자를 보여 준다.
+var placeholder_text: String = ""
 
 var _stage: Control = null
 var _sprite: AnimatedSprite2D = null
@@ -82,6 +86,9 @@ func setup(seat_number: int, color: Color, slot_size: Vector2) -> void:
 ## 캐릭터를 바꾼다. 에셋이 있으면 true, 없으면 자리표시자를 보여 주고 false.
 func set_character(id: StringName) -> bool:
 	character_id = id
+	if catalog_tint:
+		base_color = AvatarCatalog.color_of(id)
+		add_theme_stylebox_override("panel", _frame_style(base_color.lightened(0.55)))
 	_has_art = false
 	if _sprite != null:
 		_sprite.queue_free()
@@ -99,6 +106,7 @@ func set_character(id: StringName) -> bool:
 		var texture: Texture2D = load(portrait_path) as Texture2D
 		if texture != null:
 			use_portrait(texture)
+	_seat_label.text = placeholder_text if placeholder_text != "" else "P%d" % seat
 	_seat_label.visible = not _has_art
 	return _has_art
 

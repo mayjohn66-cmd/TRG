@@ -53,7 +53,7 @@ func _build() -> void:
 			human_seats.append(seat)
 	var names: Dictionary = {1: "방장", 2: "친구", 3: "셋째", 4: "넷째"}
 	for seat: int in human_seats:
-		GameSession.set_net(seat == human_seats[0], seat, {"players": _seats, "bots": _bots, "names": names, "seed": 4321})
+		GameSession.set_net(seat == human_seats[0], seat, {"players": _seats, "bots": _bots, "names": names, "avatars": {1: "avatar_02", 2: "avatar_05"}, "seed": 4321})
 		var board: MainBoard = (load("res://scenes/main_board.tscn") as PackedScene).instantiate()
 		root.add_child(board)
 		board.manager.step_delay_sec = 0.0
@@ -82,6 +82,7 @@ func _check_screens() -> void:
 					_expect(board.seat_anchor_of(seat) == MainBoard.SEAT_TOP, "2인 대전: 상대는 맞은편(위)")
 		_expect(not board._mode_toggle.visible and not board._new_game_button.visible and not board._debug_toggle.visible, "온라인에서는 새 게임/모드/치트 버튼이 없다")
 		_expect(board.manager.lockstep and board.manager.external_timeouts, "락스텝 + 외부 타임아웃")
+		_expect((board._profiles[1]["avatar"] as AvatarSlot).character_id == &"avatar_02" and (board._profiles[2]["avatar"] as AvatarSlot).character_id == &"avatar_05", "모든 화면에서 같은 아바타 (로비에서 고른 값)")
 	_expect(_boards[0].manager.player_order == _seats, "플레이 순서는 참여 좌석만")
 
 

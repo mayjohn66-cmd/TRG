@@ -740,6 +740,7 @@ func _build_ui() -> void:
 	_register_layout()
 	get_viewport().size_changed.connect(_apply_layout)
 	_apply_layout()
+	_apply_avatars()
 	# 이 판에 앉지 않은 자리의 프로필은 숨긴다 (온라인 2~3인 대전).
 	for seat: int in PLAYER_IDS:
 		if not _player_ids.has(seat):
@@ -903,6 +904,29 @@ func _build_profiles() -> void:
 			"avatar": avatar,
 			"anchor": anchor,
 		}
+
+
+## 좌석의 아바타 id: 온라인은 로비에서 정한 값(컴퓨터는 좌석별 고정), 훈련은 내가 고른 것(컴퓨터는 좌석별 고정).
+func _avatar_for(player_id: int) -> StringName:
+	var chosen: Array[StringName] = []
+	var mine: StringName = AvatarCatalog.sanitize(GameSession.avatar_id)
+	if net != null:
+		for seat: int in _player_ids:
+			if GameSession.net_avatars.has(seat):
+				chosen.append(AvatarCatalog.sanitize(GameSession.net_avatars[seat]))
+		if GameSession.net_avatars.has(player_id):
+			return AvatarCatalog.sanitize(GameSession.net_avatars[player_id])
+	elif player_id == local_player_id:
+		return mine
+	else:
+		chosen.append(mine)
+	return AvatarCatalog.bot_avatar(player_id, chosen)
+
+
+func _apply_avatars() -> void:
+	for player_id: int in PLAYER_IDS:
+		if _player_ids.has(player_id):
+			(_profiles[player_id]["avatar"] as AvatarSlot).set_character(_avatar_for(player_id))
 
 
 ## 플레이어의 아바타가 감정을 보인다 (에셋이 있으면 그 애니메이션, 없으면 자리표시자 연출).

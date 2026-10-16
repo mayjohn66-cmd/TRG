@@ -29,7 +29,7 @@ class GameReporter extends Node:
 			board.net.desynced.connect(func(_detail: String) -> void: _desyncs += 1)
 		if board.state == null:
 			return
-		window.__game = JSON.stringify({"over": board.manager.is_game_over, "winner": board.state.winner, "hash": board.manager.state_hash(), "applied": board.net.applied_count, "round": board.state.round_number, "desyncs": _desyncs, "players": board.manager.player_order, "seat": board.local_player_id})
+		window.__game = JSON.stringify({"over": board.manager.is_game_over, "winner": board.state.winner, "hash": board.manager.state_hash(), "applied": board.net.applied_count, "round": board.state.round_number, "desyncs": _desyncs, "players": board.manager.player_order, "seat": board.local_player_id, "avatars": [String((board._profiles[1]["avatar"] as AvatarSlot).character_id), String((board._profiles[2]["avatar"] as AvatarSlot).character_id)]})
 
 
 func _ready() -> void:
@@ -43,6 +43,9 @@ func _ready() -> void:
 	var reporter := GameReporter.new()
 	reporter.window = JavaScriptBridge.get_interface("window")
 	get_tree().root.add_child.call_deferred(reporter)
+	var avatar_param: String = str(JavaScriptBridge.eval("new URLSearchParams(location.search).get('avatar')"))
+	if avatar_param.begins_with("avatar_"):
+		GameSession.avatar_id = StringName(avatar_param)
 	GameSession.net_autoplay = str(JavaScriptBridge.eval("new URLSearchParams(location.search).get('autoplay')")) == "1"
 	service.game_starting.connect(func(config: Dictionary) -> void:
 		GameSession.set_net(service.is_host, service.my_seat(), config)

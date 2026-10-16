@@ -11,7 +11,7 @@ enum SeatState { OPEN, INVITED, HUMAN, BOT }
 const SEAT_COUNT: int = 4
 const HOST_SEAT: int = 1
 
-## 인덱스 0..3 = 좌석 1..4. 각 항목: {"state": SeatState, "name": String}
+## 인덱스 0..3 = 좌석 1..4. 각 항목: {"state": SeatState, "name": String, "avatar": String(사람 좌석의 아바타 id, 없으면 빈 문자열)}
 var seats: Array[Dictionary] = []
 
 
@@ -22,13 +22,13 @@ func _init() -> void:
 func reset() -> void:
 	seats.clear()
 	for seat: int in SEAT_COUNT:
-		seats.append({"state": SeatState.OPEN, "name": ""})
+		seats.append({"state": SeatState.OPEN, "name": "", "avatar": ""})
 	changed.emit()
 
 
-func setup_host(nickname: String) -> void:
+func setup_host(nickname: String, avatar: String = "") -> void:
 	reset()
-	seats[0] = {"state": SeatState.HUMAN, "name": nickname}
+	seats[0] = {"state": SeatState.HUMAN, "name": nickname, "avatar": avatar}
 	changed.emit()
 
 
@@ -40,6 +40,17 @@ func name_of(seat: int) -> String:
 	return str(seats[seat - 1]["name"])
 
 
+func avatar_of(seat: int) -> String:
+	return str(seats[seat - 1].get("avatar", ""))
+
+
+## 사람 좌석의 아바타를 바꾼다.
+func set_avatar(seat: int, avatar: String) -> void:
+	if _valid_guest_seat(seat) and state_of(seat) == SeatState.HUMAN:
+		seats[seat - 1]["avatar"] = avatar
+		changed.emit()
+
+
 func _valid_guest_seat(seat: int) -> bool:
 	return seat > HOST_SEAT and seat <= SEAT_COUNT
 
@@ -48,7 +59,7 @@ func _valid_guest_seat(seat: int) -> bool:
 func invite(seat: int) -> bool:
 	if not _valid_guest_seat(seat) or state_of(seat) != SeatState.OPEN:
 		return false
-	seats[seat - 1] = {"state": SeatState.INVITED, "name": ""}
+	seats[seat - 1] = {"state": SeatState.INVITED, "name": "", "avatar": ""}
 	changed.emit()
 	return true
 
@@ -57,19 +68,19 @@ func invite(seat: int) -> bool:
 func cancel_invite(seat: int) -> bool:
 	if not _valid_guest_seat(seat) or state_of(seat) != SeatState.INVITED:
 		return false
-	seats[seat - 1] = {"state": SeatState.OPEN, "name": ""}
+	seats[seat - 1] = {"state": SeatState.OPEN, "name": "", "avatar": ""}
 	changed.emit()
 	return true
 
 
 ## 참가자가 들어왔다 (INVITED 또는 OPEN -> HUMAN).
-func guest_joined(seat: int, nickname: String) -> bool:
+func guest_joined(seat: int, nickname: String, avatar: String = "") -> bool:
 	if not _valid_guest_seat(seat):
 		return false
 	var current: SeatState = state_of(seat)
 	if current != SeatState.INVITED and current != SeatState.OPEN:
 		return false
-	seats[seat - 1] = {"state": SeatState.HUMAN, "name": nickname}
+	seats[seat - 1] = {"state": SeatState.HUMAN, "name": nickname, "avatar": avatar}
 	changed.emit()
 	return true
 
@@ -85,7 +96,7 @@ func rename_guest(seat: int, nickname: String) -> void:
 func guest_left(seat: int) -> bool:
 	if not _valid_guest_seat(seat) or state_of(seat) != SeatState.HUMAN:
 		return false
-	seats[seat - 1] = {"state": SeatState.OPEN, "name": ""}
+	seats[seat - 1] = {"state": SeatState.OPEN, "name": "", "avatar": ""}
 	changed.emit()
 	return true
 
@@ -96,9 +107,9 @@ func set_bot(seat: int, enabled: bool) -> bool:
 		return false
 	var current: SeatState = state_of(seat)
 	if enabled and current == SeatState.OPEN:
-		seats[seat - 1] = {"state": SeatState.BOT, "name": "컴퓨터 %d" % seat}
+		seats[seat - 1] = {"state": SeatState.BOT, "name": "컴퓨터 %d" % seat, "avatar": ""}
 	elif not enabled and current == SeatState.BOT:
-		seats[seat - 1] = {"state": SeatState.OPEN, "name": ""}
+		seats[seat - 1] = {"state": SeatState.OPEN, "name": "", "avatar": ""}
 	else:
 		return false
 	changed.emit()
@@ -142,7 +153,7 @@ func first_open_seat() -> int:
 func to_array() -> Array:
 	var result: Array = []
 	for entry: Dictionary in seats:
-		result.append([int(entry["state"]), str(entry["name"])])
+		result.append([int(entry["state"]), str(entry["name"]), str(entry.get("avatar", ""))])
 	return result
 
 
@@ -152,12 +163,13 @@ func from_array(data: Array) -> bool:
 		return false
 	var parsed: Array[Dictionary] = []
 	for entry: Variant in data:
-		if not (entry is Array) or (entry as Array).size() != 2:
+		if not (entry is Array) or ((entry as Array).size() != 2 and (entry as Array).size() != 3):
 			return false
 		var state_value: int = int((entry as Array)[0])
 		if state_value < 0 or state_value > SeatState.BOT:
 			return false
-		parsed.append({"state": state_value, "name": str((entry as Array)[1]).substr(0, GameSession.MAX_NICKNAME_LENGTH + 4)})
+		var avatar_text: String = str((entry as Array)[2]).substr(0, 24) if (entry as Array).size() == 3 else ""
+		parsed.append({"state": state_value, "name": str((entry as Array)[1]).substr(0, GameSession.MAX_NICKNAME_LENGTH + 4), "avatar": avatar_text})
 	seats = parsed
 	changed.emit()
 	return true

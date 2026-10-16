@@ -1,6 +1,6 @@
 # File: res://scenes/lobby.gd
 # Class: class_name Lobby
-# Role: 멀티플레이 로비 화면(밝은 민트/청록 테마, 위·아래 띠). 시작 메뉴의 [비밀 결투]는 방 코드 입력 + [새 방 만들기], [진지 승부]는 곧바로 빠른 랜덤 매칭이다. 빠른 매칭은 공용 대기열(QuickMatch)이 방을 찾거나 열고 15초 안에 안 차면 AI로 채워 시작한다. 방장은 5자리 방 코드와 P1~P4 좌석 상태만 보고, 참가자는 방 코드만 입력하면 공개 릴레이를 통해 백그라운드에서 WebRTC 연결이 자동으로 맺어진다. 긴 초대/응답 코드는 [고급: 수동 코드 연결] 접이식 메뉴에만 숨어 있다
+# Role: 멀티플레이 로비 화면(밝은 민트/청록 테마, 위·아래 띠). 시작 메뉴의 [비밀 결투]는 방 코드 입력 + [새 방 만들기], [랜덤 결투]는 곧바로 빠른 랜덤 매칭이다. 빠른 매칭은 공용 대기열(QuickMatch)이 방을 찾거나 열고 15초 안에 안 차면 AI로 채워 시작한다. 방장은 5자리 방 코드와 P1~P4 좌석 상태만 보고, 참가자는 방 코드만 입력하면 공개 릴레이를 통해 백그라운드에서 WebRTC 연결이 자동으로 맺어진다.
 class_name Lobby
 extends Control
 
@@ -26,7 +26,6 @@ var _status: Label = null
 var _seat_box: VBoxContainer = null
 var _start_button: Button = null
 var _guest_box: VBoxContainer = null
-var _manual_box: VBoxContainer = null   # [고급: 수동 코드 연결] 내용 (접혀 있으면 숨김)
 var _room_label: Label = null
 var _quick_status: Label = null
 var _quick_count: Label = null
@@ -34,15 +33,9 @@ var _quick_now_button: Button = null
 var _quick_ui_left: float = 0.0
 var _join_input: LineEdit = null
 var _join_button: Button = null
-var _invite_codes: Dictionary = {}   # 좌석 -> 방장이 만든 초대 코드 (고급 메뉴용)
-var _answer_texts: Dictionary = {}   # 좌석 -> 방장이 붙여 넣은 응답 코드 (다시 그려도 유지)
-var _seat_errors: Dictionary = {}    # 좌석 -> 안내/오류 문구
 var _guest_room_text: String = ""
-var _guest_invite_text: String = ""
-var _guest_answer_code: String = ""
 var _guest_connected: bool = false
 var _guest_busy: bool = false
-var _manual_open: bool = false
 var _relay_ok: bool = true
 
 
@@ -52,9 +45,7 @@ func _ready() -> void:
 	service = LobbyService.new()
 	service.name = "LobbyService"
 	add_child(service)
-	service.invite_ready.connect(_on_invite_ready)
 	service.link_failed.connect(_on_link_failed)
-	service.answer_ready.connect(_on_answer_ready)
 	service.joined.connect(_on_joined)
 	service.left_room.connect(_on_left_room)
 	service.roster_changed.connect(_rebuild)
@@ -106,7 +97,6 @@ func _clear_panel() -> void:
 		child.queue_free()
 	_seat_box = null
 	_guest_box = null
-	_manual_box = null
 	_room_label = null
 	_quick_status = null
 	_quick_count = null
@@ -139,11 +129,8 @@ func _show_choose() -> void:
 		quick.stop()
 	mode = Mode.CHOOSE
 	_guest_room_text = ""
-	_guest_invite_text = ""
-	_guest_answer_code = ""
 	_guest_connected = false
 	_guest_busy = false
-	_manual_open = false
 	_clear_panel()
 	_title("비밀 결투")
 	_guest_box = VBoxContainer.new()
@@ -153,7 +140,6 @@ func _show_choose() -> void:
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_panel_box.add_child(_status)
-	_add_manual_fold()
 	_rebuild()
 
 
@@ -164,9 +150,8 @@ func start_guest() -> void:
 ## [빠른 랜덤 매칭]: 대기열에 들어간다 (열린 방이 있으면 합류, 없으면 방장이 되어 기다림).
 func start_quick_match() -> void:
 	mode = Mode.QUICK
-	_manual_open = false
 	_clear_panel()
-	_title("진지 승부")
+	_title("랜덤 결투")
 	_quick_status = _label("", 24, LobbyTheme.TEAL_DARK)
 	_quick_status.name = "QuickStatus"
 	_quick_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -227,6 +212,7 @@ func _rebuild_quick_rows() -> void:
 		line.add_theme_constant_override("separation", 10)
 		row.add_child(line)
 		line.add_child(_badge(seat))
+		line.add_child(_avatar_thumb(seat))
 		var seat_state: LobbyModel.SeatState = service.model.state_of(seat)
 		var text: String = _seat_title(seat, seat_state)
 		if seat_state == LobbyModel.SeatState.OPEN or seat_state == LobbyModel.SeatState.INVITED:
@@ -286,10 +272,6 @@ func start_hosting() -> void:
 		_panel_box.add_child(warning)
 		return
 	mode = Mode.HOST
-	_invite_codes.clear()
-	_answer_texts.clear()
-	_seat_errors.clear()
-	_manual_open = false
 	_relay_ok = true
 	_clear_panel()
 	_title("비밀 결투")
@@ -309,7 +291,6 @@ func start_hosting() -> void:
 	test_tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	test_tip.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_panel_box.add_child(test_tip)
-	_add_manual_fold()
 	var footer := HBoxContainer.new()
 	footer.add_theme_constant_override("separation", 12)
 	_panel_box.add_child(footer)
@@ -344,28 +325,6 @@ func _room_text() -> String:
 	return "[ 방 코드: %s ]" % (service.room_code if service.room_code != "" else "-----")
 
 
-## [고급: 수동 코드 연결] 접이식 메뉴. 자동 연결이 막힌 네트워크에서만 쓰는 비상용이라 처음엔 접혀 있다.
-func _add_manual_fold() -> void:
-	var toggle := _button("고급: 수동 코드 연결  %s" % ("▼" if _manual_open else "▶"), toggle_manual, 12, Color("2a3147"))
-	toggle.name = "ManualToggle"
-	toggle.custom_minimum_size = Vector2(0, 28)
-	_panel_box.add_child(toggle)
-	_manual_box = VBoxContainer.new()
-	_manual_box.name = "ManualBox"
-	_manual_box.add_theme_constant_override("separation", 8)
-	_manual_box.visible = _manual_open
-	_panel_box.add_child(_manual_box)
-
-
-func toggle_manual() -> void:
-	_manual_open = not _manual_open
-	var toggle: Button = _panel_box.find_child("ManualToggle", true, false)
-	if toggle != null:
-		toggle.text = "고급: 수동 코드 연결  %s" % ("▼" if _manual_open else "▶")
-	if _manual_box != null:
-		_manual_box.visible = _manual_open
-
-
 func _rebuild() -> void:
 	match mode:
 		Mode.HOST: _rebuild_host()
@@ -381,16 +340,15 @@ func _rebuild_host() -> void:
 		child.queue_free()
 	for seat: int in range(1, LobbyModel.SEAT_COUNT + 1):
 		_seat_box.add_child(_make_host_row(seat))
-	_rebuild_manual_host()
 	if _room_label != null:
 		_room_label.text = _room_text()
 	if _start_button != null:
 		# 혼자면 AI와 대결(빈자리 전부 AI), 사람이 둘 이상이면 지금 명단 그대로 시작한다 (비어 있는 자리는 빠져 2인 대전도 된다).
 		_start_button.disabled = false
 		_start_button.text = _start_label()
-	if _status != null and not _seat_errors.has(0):
+	if _status != null:
 		if not _relay_ok:
-			_status.text = "자동 연결 서버에 닿지 못했습니다. 아래 [고급: 수동 코드 연결]을 열어 코드를 직접 주고받을 수 있습니다."
+			_status.text = "연결 서버에 닿지 못했습니다. 인터넷 연결을 확인해 주세요 (친구가 방에 들어오지 못할 수 있습니다)."
 		else:
 			_status.text = "친구의 입장을 기다리는 중입니다. 방 코드를 알려 주세요."
 
@@ -417,6 +375,7 @@ func _make_host_row(seat: int) -> Control:
 	head.add_theme_constant_override("separation", 10)
 	column.add_child(head)
 	head.add_child(_badge(seat))
+	head.add_child(_avatar_thumb(seat))
 	var state: LobbyModel.SeatState = service.model.state_of(seat)
 	var title := _label(_seat_title(seat, state), 17, Color("1b4d3e"))
 	title.name = "SeatTitle%d" % seat
@@ -445,69 +404,6 @@ func _seat_title(seat: int, state: LobbyModel.SeatState) -> String:
 	return "입장 완료!  %s" % service.model.name_of(seat)
 
 
-## 고급 메뉴 속 방장용 수동 연결 줄: 열린 자리는 초대 코드 만들기, 초대 중인 자리는 코드 표시 + 응답 붙여넣기.
-func _rebuild_manual_host() -> void:
-	if _manual_box == null:
-		return
-	for child: Node in _manual_box.get_children():
-		_manual_box.remove_child(child)
-		child.queue_free()
-	var note := _label("자동 연결이 안 될 때만 쓰세요. 초대 코드를 친구에게 보내고, 친구가 돌려준 응답 코드를 붙여 넣어 [연결]을 누릅니다.", 12, Color("5a8070"))
-	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	note.custom_minimum_size = Vector2(700, 0)
-	_manual_box.add_child(note)
-	for seat: int in range(2, LobbyModel.SEAT_COUNT + 1):
-		var state: LobbyModel.SeatState = service.model.state_of(seat)
-		if state != LobbyModel.SeatState.OPEN and state != LobbyModel.SeatState.INVITED:
-			continue
-		var column := VBoxContainer.new()
-		column.add_theme_constant_override("separation", 6)
-		_manual_box.add_child(column)
-		var head := HBoxContainer.new()
-		head.add_theme_constant_override("separation", 10)
-		column.add_child(head)
-		head.add_child(_badge(seat))
-		if state == LobbyModel.SeatState.OPEN:
-			head.add_child(_button("수동 초대 코드 만들기", create_invite.bind(seat), 13, Color("1c6dd0")))
-		else:
-			head.add_child(_button("초대 취소", cancel_invite.bind(seat), 13, Color("7a2a2a")))
-			column.add_child(_make_invite_panel(seat))
-		if _seat_errors.has(seat):
-			var error := _label(str(_seat_errors[seat]), 13, Color("d6336c"))
-			error.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			column.add_child(error)
-
-
-func _make_invite_panel(seat: int) -> Control:
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 6)
-	if not _invite_codes.has(seat):
-		box.add_child(_label("연결 후보를 모으는 중입니다 (몇 초 걸립니다)...", 13, Color("3d6b5c")))
-		return box
-	box.add_child(_label("1) 초대 코드를 친구에게 보내세요", 12, Color("3d6b5c")))
-	var code_row := HBoxContainer.new()
-	code_row.add_theme_constant_override("separation", 8)
-	box.add_child(code_row)
-	var code_edit := _code_box(str(_invite_codes[seat]), false)
-	code_edit.name = "InviteCode%d" % seat
-	code_row.add_child(code_edit)
-	code_row.add_child(_button("복사", copy_text.bind(str(_invite_codes[seat])), 13, Color("495a85")))
-	box.add_child(_label("2) 친구가 돌려준 응답 코드를 붙여 넣고 [연결]", 12, Color("3d6b5c")))
-	var answer_row := HBoxContainer.new()
-	answer_row.add_theme_constant_override("separation", 8)
-	box.add_child(answer_row)
-	var answer_edit := _code_box(str(_answer_texts.get(seat, "")), true)
-	answer_edit.name = "AnswerCode%d" % seat
-	answer_edit.text_changed.connect(func() -> void: _answer_texts[seat] = answer_edit.text)
-	answer_row.add_child(answer_edit)
-	var buttons := VBoxContainer.new()
-	buttons.add_theme_constant_override("separation", 6)
-	answer_row.add_child(buttons)
-	buttons.add_child(_button("붙여넣기", paste_answer.bind(seat, answer_edit), 13, Color("495a85")))
-	buttons.add_child(_button("연결", submit_answer.bind(seat), 14, Color("2b8a3e")))
-	return box
-
-
 func _rebuild_guest() -> void:
 	if _guest_box == null:
 		return
@@ -516,10 +412,6 @@ func _rebuild_guest() -> void:
 		child.queue_free()
 	_join_input = null
 	_join_button = null
-	if _manual_box != null:
-		for child: Node in _manual_box.get_children():
-			_manual_box.remove_child(child)
-			child.queue_free()
 	if _guest_connected:
 		_guest_box.add_child(_label("입장 완료! 방장이 게임을 시작하기를 기다리는 중...", 18, Color("2b8a3e")))
 		for seat: int in range(1, LobbyModel.SEAT_COUNT + 1):
@@ -529,6 +421,7 @@ func _rebuild_guest() -> void:
 			line.add_theme_constant_override("separation", 10)
 			row.add_child(line)
 			line.add_child(_badge(seat))
+			line.add_child(_avatar_thumb(seat))
 			var state: LobbyModel.SeatState = service.model.state_of(seat)
 			var text: String = _seat_title(seat, state)
 			if seat == service.my_seat():
@@ -562,39 +455,6 @@ func _rebuild_guest() -> void:
 	host_button.name = "HostCard"
 	host_button.disabled = _guest_busy
 	_guest_box.add_child(host_button)
-	_rebuild_manual_guest()
-
-
-## 고급 메뉴 속 참가자용 수동 연결: 초대 코드를 붙여 넣으면 응답 코드가 나온다.
-func _rebuild_manual_guest() -> void:
-	if _manual_box == null:
-		return
-	if _guest_answer_code == "":
-		var note := _label("자동 입장이 안 될 때만 쓰세요. 방장에게 받은 초대 코드를 붙여 넣고 [참가하기]를 누른 뒤, 나온 응답 코드를 방장에게 보내세요.", 12, Color("5a8070"))
-		note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		note.custom_minimum_size = Vector2(700, 0)
-		_manual_box.add_child(note)
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 8)
-		_manual_box.add_child(row)
-		var edit := _code_box(_guest_invite_text, true)
-		edit.name = "InviteInput"
-		edit.text_changed.connect(func() -> void: _guest_invite_text = edit.text)
-		row.add_child(edit)
-		var buttons := VBoxContainer.new()
-		buttons.add_theme_constant_override("separation", 6)
-		row.add_child(buttons)
-		buttons.add_child(_button("붙여넣기", paste_invite.bind(edit), 13, Color("495a85")))
-		buttons.add_child(_button("참가하기", join_with_code, 14, Color("2b8a3e")))
-	else:
-		_manual_box.add_child(_label("이 응답 코드를 방장에게 보내세요. 방장이 [연결]을 누르면 자동으로 입장합니다.", 12, Color("3d6b5c")))
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 8)
-		_manual_box.add_child(row)
-		var code_edit := _code_box(_guest_answer_code, false)
-		code_edit.name = "AnswerOutput"
-		row.add_child(code_edit)
-		row.add_child(_button("복사", copy_text.bind(_guest_answer_code), 13, Color("495a85")))
 
 
 # ---------------------------------------------------------------------------
@@ -635,50 +495,6 @@ func join_with_room_code() -> void:
 		_rebuild()
 
 
-func create_invite(seat: int) -> void:
-	_seat_errors.erase(seat)
-	_invite_codes.erase(seat)
-	_answer_texts.erase(seat)
-	if not service.create_invite(seat):
-		_seat_errors[seat] = "초대 코드를 만들 수 없습니다."
-		_rebuild()
-
-
-func cancel_invite(seat: int) -> void:
-	_invite_codes.erase(seat)
-	_answer_texts.erase(seat)
-	_seat_errors.erase(seat)
-	service.cancel_invite(seat)
-
-
-func submit_answer(seat: int) -> void:
-	_seat_errors.erase(seat)
-	if service.submit_answer(seat, str(_answer_texts.get(seat, ""))):
-		_seat_errors[seat] = "연결하는 중입니다... 잠시만 기다려 주세요."
-	_rebuild()
-
-
-func paste_answer(seat: int, edit: TextEdit) -> void:
-	edit.text = DisplayServer.clipboard_get()
-	_answer_texts[seat] = edit.text
-
-
-func paste_invite(edit: TextEdit) -> void:
-	edit.text = DisplayServer.clipboard_get()
-	_guest_invite_text = edit.text
-
-
-## 고급: 붙여 넣은 초대 코드로 수동 입장.
-func join_with_code() -> void:
-	if service.join_room(GameSession.display_nickname(), _guest_invite_text):
-		_set_status("응답 코드를 만드는 중입니다...", false)
-
-
-func copy_text(text: String) -> void:
-	DisplayServer.clipboard_set(text)
-	_set_status("코드를 복사했습니다. 친구에게 붙여 넣어 보내 주세요.", false)
-
-
 func _set_status(text: String, is_error: bool) -> void:
 	if _status != null:
 		_status.text = text
@@ -687,9 +503,6 @@ func _set_status(text: String, is_error: bool) -> void:
 
 func leave_room() -> void:
 	service.leave()
-	_invite_codes.clear()
-	_answer_texts.clear()
-	_seat_errors.clear()
 	_guest_busy = false
 	_show_choose()
 
@@ -712,8 +525,6 @@ func _on_relay_status(ok: bool) -> void:
 	_relay_ok = ok
 	if mode == Mode.HOST:
 		_rebuild()
-		if not ok and not _manual_open:
-			toggle_manual()
 
 
 func _on_join_progress(message: String) -> void:
@@ -722,28 +533,13 @@ func _on_join_progress(message: String) -> void:
 
 func _on_join_failed(message: String) -> void:
 	_guest_busy = false
-	_guest_answer_code = ""
 	_rebuild()
 	_set_status(message, true)
-	if (mode == Mode.GUEST or mode == Mode.CHOOSE) and not _manual_open and message.contains("고급"):
-		toggle_manual()
-
-
-func _on_invite_ready(seat: int, code: String) -> void:
-	_invite_codes[seat] = code
-	_rebuild()
 
 
 func _on_link_failed(seat: int, message: String) -> void:
 	if seat == 0:
 		_set_status(message, true)
-	else:
-		_seat_errors[seat] = message
-	_rebuild()
-
-
-func _on_answer_ready(code: String) -> void:
-	_guest_answer_code = code
 	_rebuild()
 
 
@@ -768,21 +564,17 @@ func _on_left_room(reason: String) -> void:
 # 위젯 도우미
 # ---------------------------------------------------------------------------
 
-func _code_box(text: String, editable: bool) -> TextEdit:
-	var edit := TextEdit.new()
-	edit.text = text
-	edit.editable = editable
-	edit.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
-	edit.custom_minimum_size = Vector2(600, 64)
-	edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	edit.add_theme_font_size_override("font_size", 12)
-	edit.add_theme_color_override("font_color", LobbyTheme.INK)
-	edit.add_theme_color_override("font_readonly_color", LobbyTheme.INK_SOFT)
-	edit.add_theme_stylebox_override("normal", LobbyTheme.style(LobbyTheme.INPUT_BG, Color("86a64a"), 2, 8, 0, 6))
-	edit.add_theme_stylebox_override("focus", LobbyTheme.style(LobbyTheme.INPUT_BG, LobbyTheme.TEAL, 3, 8, 0, 6))
-	edit.add_theme_stylebox_override("read_only", LobbyTheme.style(Color("dfe8c4"), Color("86a64a"), 2, 8, 0, 6))
-	edit.placeholder_text = "여기에 코드를 붙여 넣으세요"
-	return edit
+## 좌석 줄에 붙는 작은 아바타 (사람은 고른 아바타, 컴퓨터는 좌석별 고정 아바타, 빈 자리는 기본).
+func _avatar_thumb(seat: int) -> AvatarSlot:
+	var thumb := AvatarSlot.new()
+	thumb.setup(seat, SEAT_COLORS[seat - 1], Vector2(34, 34))
+	var seat_state: LobbyModel.SeatState = service.model.state_of(seat)
+	var chosen: String = service.model.avatar_of(seat)
+	if seat_state == LobbyModel.SeatState.BOT:
+		thumb.set_character(AvatarCatalog.bot_avatar(seat))
+	elif chosen != "":
+		thumb.set_character(AvatarCatalog.sanitize(chosen))
+	return thumb
 
 
 func _pill_style(seat: int) -> StyleBoxFlat:

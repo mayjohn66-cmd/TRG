@@ -1,6 +1,6 @@
 # File: res://scenes/start_menu.gd
 # Class: class_name StartMenu
-# Role: 게임 시작 전 메뉴(밝은 민트/청록 테마). 1단계 타이틀 + 교주의 이름 -> 2단계 큼직한 모드 카드 3장([훈련] AI 대결 / [비밀 결투] 친선 방 / [진지 승부] 빠른 랜덤 매칭) -> 훈련은 AI 인원 선택 후 메인 보드로, 나머지는 로비 씬으로 넘어간다
+# Role: 게임 시작 전 메뉴(밝은 민트/청록 테마). 1단계 타이틀 + 교주의 이름 -> 2단계 큼직한 모드 카드 3장([훈련] AI 대결 / [비밀 결투] 친선 방 / [랜덤 결투] 빠른 랜덤 매칭) -> 훈련은 AI 인원 선택 후 메인 보드로, 나머지는 로비 씬으로 넘어간다
 class_name StartMenu
 extends Control
 
@@ -11,7 +11,7 @@ const MAX_AI: int = 3
 
 ## 테스트에서 씬 전환을 막기 위한 스위치.
 var change_scene_enabled: bool = true
-## 1 타이틀(이름) / 2 모드 선택 / 3 훈련 설정
+## 1 타이틀(이름) / 2 모드 선택 / 3 훈련 설정 / 4 아바타 설정
 var step: int = 1
 var ai_count: int = MAX_AI
 
@@ -20,6 +20,11 @@ var _bottom: Dictionary = {}
 var _name_page: VBoxContainer = null
 var _mode_page: VBoxContainer = null
 var _train_page: VBoxContainer = null
+var _avatar_page: VBoxContainer = null
+var _avatar_button: Button = null
+var _avatar_preview: AvatarSlot = null
+var _avatar_name: Label = null
+var _avatar_tiles: Dictionary = {}
 var _name_edit: LineEdit = null
 var _error_label: Label = null
 var _confirm_button: Button = null
@@ -50,6 +55,7 @@ func _ready() -> void:
 	_build_name_page(stack)
 	_build_mode_page(stack)
 	_build_train_page(stack)
+	_build_avatar_page(stack)
 	GameSession.load_settings()
 	var saved: String = GameSession.load_saved()
 	if saved != "":
@@ -111,8 +117,12 @@ func _build_mode_page(parent: VBoxContainer) -> void:
 	_mode_page.add_child(_ai_button)
 	_multi_button = LobbyTheme.card("SecretCard", "비밀 결투", "방 코드 5자리", "친구와 친선 대결", &"green", open_lobby)
 	_mode_page.add_child(_multi_button)
-	_quick_button = LobbyTheme.card("QuickCard", "진지 승부", "15초 안에 자동 매칭", "랜덤 상대와 바로 대결 (빈자리는 AI)", &"pink", open_quick_match)
+	_quick_button = LobbyTheme.card("QuickCard", "랜덤 결투", "15초 안에 자동 매칭", "모르는 상대와 바로 대결 (빈자리는 AI)", &"pink", open_quick_match)
 	_mode_page.add_child(_quick_button)
+	_avatar_button = LobbyTheme.big_button("아바타 설정", open_avatar, 24, LobbyTheme.BLUE)
+	_avatar_button.name = "AvatarButton"
+	_avatar_button.custom_minimum_size = Vector2(500, 62)
+	_mode_page.add_child(_avatar_button)
 
 
 func _build_train_page(parent: VBoxContainer) -> void:
@@ -154,14 +164,15 @@ func _show_step(value: int) -> void:
 	_name_page.visible = value == 1
 	_mode_page.visible = value == 2
 	_train_page.visible = value == 3
+	_avatar_page.visible = value == 4
 	_back_button.visible = value > 1
-	(_top["title"] as Label).text = "훈련" if value == 3 else ""
+	(_top["title"] as Label).text = {3: "훈련", 4: "아바타"}.get(value, "")
 	if value == 1 and _name_edit != null:
 		_name_edit.grab_focus()
 
 
 func _on_back_pressed() -> void:
-	_show_step(maxi(step - 1, 1))
+	_show_step(2 if step == 4 else maxi(step - 1, 1))
 	if step == 1:
 		_name_edit.text = GameSession.nickname if GameSession.nickname != "" else _name_edit.text
 
@@ -184,6 +195,101 @@ func confirm_nickname() -> bool:
 	_hello_label.text = "%s 교주님" % GameSession.nickname
 	_show_step(2)
 	return true
+
+
+## 아바타 설정 화면: 큰 미리보기 + 고를 수 있는 아바타 격자.
+func _build_avatar_page(parent: VBoxContainer) -> void:
+	_avatar_page = VBoxContainer.new()
+	_avatar_page.custom_minimum_size = Vector2(900, 0)
+	_avatar_page.add_theme_constant_override("separation", 20)
+	parent.add_child(_avatar_page)
+	var body := HBoxContainer.new()
+	body.add_theme_constant_override("separation", 32)
+	body.alignment = BoxContainer.ALIGNMENT_CENTER
+	_avatar_page.add_child(body)
+	# 왼쪽: 미리보기 + 감정 시험 버튼
+	var left := VBoxContainer.new()
+	left.add_theme_constant_override("separation", 10)
+	left.custom_minimum_size = Vector2(280, 0)
+	body.add_child(left)
+	_avatar_preview = AvatarSlot.new()
+	_avatar_preview.name = "AvatarPreview"
+	_avatar_preview.catalog_tint = true
+	_avatar_preview.setup(1, Color("e8590c"), Vector2(240, 240))
+	_avatar_preview.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	left.add_child(_avatar_preview)
+	_avatar_name = LobbyTheme.label("", 26, LobbyTheme.TEAL_DARK)
+	_avatar_name.name = "AvatarName"
+	_avatar_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	left.add_child(_avatar_name)
+	var emotions := HBoxContainer.new()
+	emotions.add_theme_constant_override("separation", 6)
+	emotions.alignment = BoxContainer.ALIGNMENT_CENTER
+	left.add_child(emotions)
+	for entry: Array in [["웃음", AvatarSlot.Emotion.HAPPY], ["분노", AvatarSlot.Emotion.ANGRY], ["놀람", AvatarSlot.Emotion.SURPRISED], ["환호", AvatarSlot.Emotion.CHEER]]:
+		var emotion_button := LobbyTheme.small_button(entry[0], func() -> void: _avatar_preview.react(entry[1], 1.2), &"blue", 14)
+		emotions.add_child(emotion_button)
+	var hint := LobbyTheme.label("게임 중 말이 잡히거나 완주하면 이렇게 반응합니다.", 13, LobbyTheme.INK_SOFT)
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	left.add_child(hint)
+	# 오른쪽: 고를 수 있는 아바타 격자
+	var grid_panel := PanelContainer.new()
+	grid_panel.add_theme_stylebox_override("panel", LobbyTheme.style(Color(LobbyTheme.MINT, 0.9), LobbyTheme.MINT_EDGE, 3, 26, 8, 16))
+	body.add_child(grid_panel)
+	var grid := GridContainer.new()
+	grid.columns = 4
+	grid.add_theme_constant_override("h_separation", 12)
+	grid.add_theme_constant_override("v_separation", 12)
+	grid_panel.add_child(grid)
+	for id: StringName in AvatarCatalog.ids():
+		var tile := Button.new()
+		tile.name = "Tile_%s" % String(id)
+		tile.custom_minimum_size = Vector2(104, 104)
+		tile.focus_mode = Control.FOCUS_NONE
+		tile.pressed.connect(select_avatar.bind(id))
+		var thumb := AvatarSlot.new()
+		thumb.catalog_tint = true
+		thumb.placeholder_text = AvatarCatalog.name_of(id).trim_prefix("아바타 ")
+		thumb.setup(1, AvatarCatalog.color_of(id), Vector2(88, 88))
+		thumb.set_character(id)
+		thumb.position = Vector2(8, 8)
+		tile.add_child(thumb)
+		grid.add_child(tile)
+		_avatar_tiles[id] = tile
+	var done := LobbyTheme.cream_button("선택 완료", func() -> void: _show_step(2), 34)
+	done.name = "AvatarDone"
+	done.custom_minimum_size = Vector2(0, 66)
+	_avatar_page.add_child(done)
+	_refresh_avatar_page()
+
+
+func _refresh_avatar_page() -> void:
+	var current: StringName = AvatarCatalog.sanitize(GameSession.avatar_id)
+	_avatar_preview.placeholder_text = AvatarCatalog.name_of(current).trim_prefix("아바타 ")
+	_avatar_preview.set_character(current)
+	_avatar_name.text = AvatarCatalog.name_of(current)
+	for id: StringName in _avatar_tiles.keys():
+		var tile: Button = _avatar_tiles[id]
+		var selected: bool = id == current
+		tile.add_theme_stylebox_override("normal", LobbyTheme.style(Color.WHITE if not selected else LobbyTheme.CREAM, LobbyTheme.CREAM_EDGE if selected else LobbyTheme.MINT_EDGE, 5 if selected else 2, 18, 0, 0))
+		tile.add_theme_stylebox_override("hover", LobbyTheme.style(Color("f4fffa"), LobbyTheme.TEAL, 3, 18, 0, 0))
+		tile.add_theme_stylebox_override("pressed", LobbyTheme.style(LobbyTheme.CREAM, LobbyTheme.CREAM_EDGE, 5, 18, 0, 0))
+		tile.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+
+
+## 아바타를 고른다 (저장되어 훈련·방·게임에서 내 아바타로 쓰인다).
+func select_avatar(id: StringName) -> void:
+	GameSession.avatar_id = AvatarCatalog.sanitize(id)
+	GameSession.save_settings()
+	_refresh_avatar_page()
+	_avatar_preview.react(AvatarSlot.Emotion.HAPPY, 1.0)
+
+
+## [아바타 설정]: 아바타 선택 화면으로 간다.
+func open_avatar() -> void:
+	_refresh_avatar_page()
+	_show_step(4)
 
 
 ## [훈련]: AI 인원을 고르는 화면으로 간다.
@@ -219,7 +325,7 @@ func open_lobby() -> void:
 		get_tree().change_scene_to_file(LOBBY_SCENE)
 
 
-## [진지 승부]: 로비 씬에서 곧바로 빠른 랜덤 매칭을 시작한다.
+## [랜덤 결투]: 로비 씬에서 곧바로 빠른 랜덤 매칭을 시작한다.
 func open_quick_match() -> void:
 	GameSession.mode = GameSession.MODE_MULTIPLAYER
 	GameSession.lobby_intent = &"quick"

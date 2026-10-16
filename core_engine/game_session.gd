@@ -22,12 +22,15 @@ const SETTINGS_PATH: String = "user://settings.cfg"
 static var pacing_enabled: bool = true
 ## 보드 시점: 0 탑뷰 / 1 기울인 탑뷰 (MainBoard.ViewMode)
 static var view_mode: int = 0
+## 내가 고른 아바타 id (AvatarCatalog). 시작 화면의 아바타 설정에서 정한다.
+static var avatar_id: StringName = &"avatar_01"
 
 
 static func save_settings() -> void:
 	var config := ConfigFile.new()
 	config.set_value("game", "pacing_enabled", pacing_enabled)
 	config.set_value("game", "view_mode", view_mode)
+	config.set_value("game", "avatar", String(avatar_id))
 	config.save(SETTINGS_PATH)
 
 
@@ -36,6 +39,7 @@ static func load_settings() -> void:
 	if config.load(SETTINGS_PATH) == OK:
 		pacing_enabled = bool(config.get_value("game", "pacing_enabled", true))
 		view_mode = clampi(int(config.get_value("game", "view_mode", 0)), 0, 1)
+		avatar_id = StringName(str(config.get_value("game", "avatar", "avatar_01")))
 
 
 ## 온라인 대전 설정: 로비가 시작 때 채우고 메인 보드가 읽는다 (net_active가 false면 기존 컴퓨터 대전/핫시트).
@@ -45,6 +49,8 @@ static var net_local_seat: int = 1
 static var net_players: Array[int] = []
 static var net_bots: Array[int] = []
 static var net_names: Dictionary = {}
+## 온라인 대전의 좌석별 아바타 id.
+static var net_avatars: Dictionary = {}
 static var net_seed: int = 0
 ## 테스트용: 내 자리를 봇 두뇌가 대신 플레이한다 (자동 플레이).
 static var net_autoplay: bool = false
@@ -58,6 +64,7 @@ static func set_net(is_host: bool, local_seat: int, config: Dictionary) -> void:
 	net_players.assign(config["players"])
 	net_bots.assign(config["bots"])
 	net_names = (config["names"] as Dictionary).duplicate()
+	net_avatars = (config.get("avatars", {}) as Dictionary).duplicate()
 	net_seed = int(config["seed"])
 	mode = MODE_MULTIPLAYER
 
@@ -69,6 +76,7 @@ static func clear_net() -> void:
 	net_players = []
 	net_bots = []
 	net_names = {}
+	net_avatars = {}
 	net_seed = 0
 
 

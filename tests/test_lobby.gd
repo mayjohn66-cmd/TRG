@@ -210,3 +210,41 @@ func test_link_reports_failure_when_webrtc_is_unavailable_or_no_candidates() -> 
 		guard += 1
 		await tree.process_frame
 	check_eq(failures.size(), 1, "후보가 하나도 없으면 실패를 알린다")
+
+
+func test_model_carries_avatar_ids_through_roster_sync() -> void:
+	var model := LobbyModel.new()
+	model.setup_host("방장", "avatar_02")
+	check_eq(model.avatar_of(1), "avatar_02", "방장의 아바타")
+	model.invite(2)
+	check_eq(model.avatar_of(2), "", "초대 중인 자리는 아바타가 없다")
+	model.guest_joined(2, "친구", "avatar_05")
+	check_eq(model.avatar_of(2), "avatar_05", "참가자 아바타")
+	model.set_avatar(2, "avatar_07")
+	check_eq(model.avatar_of(2), "avatar_07", "아바타 변경")
+	model.set_avatar(3, "avatar_01")
+	check_eq(model.avatar_of(3), "", "사람이 아닌 자리에는 아바타를 줄 수 없다")
+	model.set_bot(3, true)
+	check_eq(model.avatar_of(3), "", "컴퓨터 자리는 아바타가 비어 있다 (화면이 좌석별로 정한다)")
+	var copy := LobbyModel.new()
+	check(copy.from_array(model.to_array()), "명단 배열을 그대로 받는다")
+	check_eq(copy.avatar_of(1), "avatar_02", "동기화 뒤에도 방장 아바타")
+	check_eq(copy.avatar_of(2), "avatar_07", "동기화 뒤에도 참가자 아바타")
+	check(copy.from_array([[2, "옛 방장"], [0, ""], [0, ""], [0, ""]]), "예전 형식(좌석당 2칸)도 받는다")
+	check_eq(copy.avatar_of(1), "", "예전 형식은 아바타가 빈 값")
+	check(not copy.from_array([[2, "a", "b", "c"], [0, ""], [0, ""], [0, ""]]), "칸 수가 이상하면 거부")
+
+
+func test_avatar_catalog_rules() -> void:
+	check(AvatarCatalog.ids().size() >= 8, "고를 수 있는 아바타가 8개 이상")
+	check(AvatarCatalog.is_valid(&"avatar_01") and not AvatarCatalog.is_valid(&"nope"), "id 검증")
+	check_eq(AvatarCatalog.sanitize("nope"), AvatarCatalog.DEFAULT_ID, "알 수 없는 값은 기본")
+	check_eq(AvatarCatalog.sanitize("avatar_04"), &"avatar_04", "정상 값은 그대로")
+	var first: StringName = AvatarCatalog.bot_avatar(2)
+	check_eq(first, AvatarCatalog.bot_avatar(2), "컴퓨터 아바타는 좌석 번호로 정해져 항상 같다")
+	check(AvatarCatalog.bot_avatar(2, [first]) != first, "이미 쓰는 아바타는 피한다")
+	var used: Array = []
+	for seat: int in [2, 3, 4]:
+		var picked: StringName = AvatarCatalog.bot_avatar(seat, used)
+		check(not used.has(picked), "컴퓨터 좌석끼리 겹치지 않는다")
+		used.append(picked)

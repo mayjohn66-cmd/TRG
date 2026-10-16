@@ -110,7 +110,7 @@ console.log("quick roster", JSON.stringify(finalRoster));
 if (finalRoster.filter((e) => e[0] === 3).length !== 2) await fail("빈자리가 AI 봇으로 채워지지 않음: " + JSON.stringify(finalRoster));
 // 8) 온라인 대전: 방 코드로 만난 두 사람이 AI 없이 2인 대전을 시작하고 (게임 화면으로 전환, WebRTC 유지) 끝까지 같은 판을 본다
 const gh = await open("gameHost", "host", "&autoplay=1");
-const gg = await open("gameGuest", "guest", "&autoplay=1");
+const gg = await open("gameGuest", "guest", "&autoplay=1&avatar=avatar_05");
 await gh.waitForFunction(() => typeof window.__roomCode === "string", null, { timeout: 20000 });
 const gameCode = await gh.evaluate(() => window.__roomCode);
 const joined2 = await joinWithRetryOn(gg, "게임친구", gameCode);
@@ -132,5 +132,6 @@ if (JSON.stringify(hostGame.players) !== "[1,2]" || JSON.stringify(guestGame.pla
 if (hostGame.winner !== guestGame.winner || hostGame.hash !== guestGame.hash) await fail("두 브라우저의 최종 판이 다르다");
 if (hostGame.desyncs !== 0 || guestGame.desyncs !== 0) await fail("동기화 오류 발생");
 if (hostGame.seat !== 1 || guestGame.seat !== 2) await fail("내 자리 번호가 이상함");
+if (JSON.stringify(hostGame.avatars) !== JSON.stringify(["avatar_01", "avatar_05"]) || JSON.stringify(guestGame.avatars) !== JSON.stringify(["avatar_01", "avatar_05"])) await fail("아바타가 양쪽 화면에 같게 전달되지 않음: " + JSON.stringify(hostGame.avatars) + " / " + JSON.stringify(guestGame.avatars));
 console.log("E2E_OK");
 await browser.close();

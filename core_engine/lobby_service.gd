@@ -20,7 +20,7 @@ signal roster_changed()
 signal game_starting(config: Dictionary)
 ## 방장: 방 코드가 정해졌다 (친구에게 알려 줄 5자리).
 signal room_ready(code: String)
-## 방장: 공개 릴레이와의 통신 상태가 바뀌었다 (false면 자동 연결이 막힌 것 - 수동 코드로 대신할 수 있다).
+## 방장: 공개 릴레이와의 통신 상태가 바뀌었다 (false면 자동 연결이 막힌 것).
 signal relay_status_changed(ok: bool)
 ## 참가자: 방 코드 입장 진행 안내 ("방을 찾는 중..." 등).
 signal join_progress(message: String)
@@ -119,7 +119,7 @@ func host_room(host_nickname: String) -> bool:
 	is_host = true
 	_in_room = true
 	nickname = host_nickname
-	model.setup_host(host_nickname)
+	model.setup_host(host_nickname, String(GameSession.avatar_id))
 	room_code = RoomCode.generate(rng)
 	_signaling = RoomSignaling.new(broker, room_code)
 	room_ready.emit(room_code)
@@ -151,7 +151,7 @@ func create_invite(seat: int) -> bool:
 	return true
 
 
-## 참가자가 보내 준 응답 코드를 적용한다. 연결이 실제로 성립하면 좌석이 사람으로 바뀐다.
+## 릴레이에서 수거한 참가자의 응답 코드를 적용한다. 연결이 실제로 성립하면 좌석이 사람으로 바뀐다.
 func submit_answer(seat: int, code: String) -> bool:
 	if not is_host or not _links.has(seat):
 		return false
@@ -202,16 +202,19 @@ func begin_online_game() -> bool:
 	var players: Array = []
 	var bot_seats: Array = []
 	var names: Dictionary = {}
+	var avatars: Dictionary = {}
 	for seat: int in range(1, LobbyModel.SEAT_COUNT + 1):
 		var seat_state: LobbyModel.SeatState = model.state_of(seat)
 		if seat_state == LobbyModel.SeatState.HUMAN or seat_state == LobbyModel.SeatState.BOT:
 			players.append(seat)
 			names[seat] = model.name_of(seat)
+			if model.avatar_of(seat) != "":
+				avatars[seat] = model.avatar_of(seat)
 			if seat_state == LobbyModel.SeatState.BOT:
 				bot_seats.append(seat)
 	if players.size() < 2:
 		return false
-	var config: Dictionary = {"players": players, "bots": bot_seats, "names": names, "seed": rng.randi_range(1, 2000000000)}
+	var config: Dictionary = {"players": players, "bots": bot_seats, "names": names, "avatars": avatars, "seed": rng.randi_range(1, 2000000000)}
 	# 시작 뒤에는 새 접속을 받지 않는다 (공개 방 비콘/초대도 닫는다).
 	for seat: int in _offer_nonce.keys():
 		_forget_offer(seat)
@@ -336,13 +339,7 @@ func poll_answers_now() -> void:
 # 참가자
 # ---------------------------------------------------------------------------
 
-## 방장에게 받은 초대 코드로 참가한다 (고급: 수동 코드 연결). 응답 코드는 answer_ready로 온다.
-func join_room(guest_nickname: String, invite_code: String) -> bool:
-	leave()
-	return _connect_with_offer(guest_nickname, invite_code)
-
-
-## 초대 코드로 실제 연결을 시작한다 (수동 입장과 방 코드 자동 입장이 함께 쓴다).
+## 방 코드로 찾은 초대 코드로 실제 연결을 시작한다 (응답 코드는 자동으로 릴레이에 올라간다).
 func _connect_with_offer(guest_nickname: String, invite_code: String) -> bool:
 	var decoded: Dictionary = LobbyCode.decode(invite_code)
 	if not bool(decoded["ok"]):
@@ -403,7 +400,7 @@ func join_by_room_code(guest_nickname: String, text: String) -> bool:
 		if serial != _join_serial or not _joining:
 			return
 		if not bool(result["ok"]):
-			_fail_join("중계 서버에 연결하지 못했습니다. 인터넷 연결을 확인하거나 [고급: 수동 코드 연결]을 사용해 주세요.")
+			_fail_join("중계 서버에 연결하지 못했습니다. 인터넷 연결을 확인하고 다시 시도해 주세요.")
 		elif (result["candidates"] as Array).is_empty():
 			_fail_join("빈 자리가 있는 방을 찾지 못했습니다. 방 코드를 확인하거나 잠시 후 다시 시도해 주세요." if not bool(result["saw_room"]) else "방이 가득 찼거나 닫혔습니다.")
 		else:
@@ -448,7 +445,7 @@ func _post_join_answer(answer_code: String) -> void:
 		if serial != _join_serial or not _joining:
 			return
 		if not ok:
-			_fail_join("중계 서버에 응답을 보내지 못했습니다. 인터넷 연결을 확인하거나 [고급: 수동 코드 연결]을 사용해 주세요.")
+			_fail_join("중계 서버에 응답을 보내지 못했습니다. 인터넷 연결을 확인하고 다시 시도해 주세요.")
 			return
 		get_tree().create_timer(claim_check_seconds).timeout.connect(func() -> void: _check_claim(serial)))
 
@@ -540,7 +537,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 func _on_connected_to_server() -> void:
 	_joining = false
 	_join_serial += 1  # 대기 중인 입장 타이머를 모두 무효로 만든다
-	_hello.rpc_id(HOST_PEER_ID, nickname)
+	_hello.rpc_id(HOST_PEER_ID, nickname, String(GameSession.avatar_id))
 	joined.emit()
 
 
@@ -557,19 +554,21 @@ func _broadcast_roster() -> void:
 		_roster.rpc(model.to_array())
 
 
-## 참가자 -> 방장: 닉네임을 알린다.
+## 참가자 -> 방장: 닉네임과 고른 아바타를 알린다.
 @rpc("any_peer", "call_remote", "reliable")
-func _hello(guest_nickname: String) -> void:
+func _hello(guest_nickname: String, avatar_id: String = "") -> void:
 	if not is_host:
 		return
 	var seat: int = multiplayer.get_remote_sender_id()
 	var clean: String = guest_nickname.strip_edges().substr(0, GameSession.MAX_NICKNAME_LENGTH)
 	if clean.is_empty():
 		clean = "플레이어 %d" % seat
+	var clean_avatar: String = avatar_id.strip_edges().substr(0, 24)
 	if model.state_of(seat) == LobbyModel.SeatState.HUMAN:
 		model.rename_guest(seat, clean)
+		model.set_avatar(seat, clean_avatar)
 	elif model.state_of(seat) == LobbyModel.SeatState.INVITED:
-		model.guest_joined(seat, clean)
+		model.guest_joined(seat, clean, clean_avatar)
 	_broadcast_roster()
 
 
