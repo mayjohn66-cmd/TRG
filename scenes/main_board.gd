@@ -360,6 +360,9 @@ var _result_overlay: Control = null
 var _auto_draft_enabled: bool = false
 
 var _tile_pick_active: bool = false
+## 뱅! 저격: 타일 대신 상대 프로필을 눌러 고르는 모드 (_tile_pick_active와 함께 켜진다). 프로필마다 표식이 붙는다.
+var _snipe_pick: bool = false
+var _snipe_marks: Dictionary = {}
 var _tile_pick_player: int = -1
 var _tile_pick_card: StringName = &""
 
@@ -481,6 +484,9 @@ func _process(delta: float) -> void:
 
 func _input(event: InputEvent) -> void:
 	if manager == null or state == null or _menu_is_open():
+		return
+	if _snipe_pick and _handle_snipe_input(event):
+		get_viewport().set_input_as_handled()
 		return
 	if _handle_aim_input(event):
 		get_viewport().set_input_as_handled()
@@ -3445,14 +3451,7 @@ func _on_card_pressed(player_id: int, card_id: StringName) -> void:
 				return
 			_show_choice("완주시킬 말을 고르세요", options, _play_card_with.bind(player_id, card_id, "pawn_id"))
 		&"ACT_02":
-			var snipe_options: Array[Dictionary] = []
-			for victim: int in BangCommand.target_players(state, player_id):
-				var front: PlayerPawn = state.front_pawn_of(victim)
-				snipe_options.append({"label": "%s - 선두 말 %d번 타일" % [_player_name(victim), front.current_tile_idx], "value": victim})
-			if snipe_options.is_empty():
-				_log_line("[%s] 보드 위에 나와 있는 상대 말이 없습니다." % card.display_name, Color("868e96"))
-				return
-			_show_choice("저격할 상대를 고르세요", snipe_options, _play_card_with.bind(player_id, card_id, "target_player"))
+			_begin_snipe_pick(player_id, card_id)
 		&"ACT_06":
 			var options: Array[Dictionary] = []
 			for law: LawResource in state.rulebook.active_laws_queue:
@@ -4065,6 +4064,104 @@ func _fly_away(from: Vector2, direction: Vector2, color: Color) -> void:
 
 
 # ---------------------------------------------------------------------------
+# 뱅! 저격: 상대 프로필을 눌러 고른다
+# ---------------------------------------------------------------------------
+
+func _begin_snipe_pick(player_id: int, card_id: StringName) -> void:
+	var card: BaseCard = CardRegistry.get_card(card_id)
+	if not _card_usable_now(player_id, card):
+		_log_line("지금은 [%s]를 쓸 수 없습니다 (내 턴 시작 구간에서만)." % card.display_name, Color("868e96"))
+		return
+	var targets: Array[int] = BangCommand.target_players(state, player_id)
+	if targets.is_empty():
+		_log_line("[%s] 보드 위에 나와 있는 상대 말이 없습니다." % card.display_name, Color("868e96"))
+		return
+	_tile_pick_active = true
+	_tile_pick_player = player_id
+	_tile_pick_card = card_id
+	_snipe_pick = true
+	_pick_banner.text = "[뱅! 저격] 쏠 상대의 프로필을 눌러 주세요"
+	_pick_banner.visible = true
+	_pick_cancel.visible = true
+	for victim: int in targets:
+		_snipe_marks[victim] = _make_snipe_mark(victim)
+	_refresh_controls()
+
+
+## 프로필 위에 겹치는 금색 표식 (은은하게 깜빡이고, 커서를 올리면 밝아진다).
+func _make_snipe_mark(victim: int) -> Control:
+	var panel: Control = _profiles[victim]["panel"]
+	var rect: Rect2 = panel.get_global_transform() * Rect2(Vector2.ZERO, panel.size)
+	var mark := Panel.new()
+	mark.position = rect.position
+	mark.size = rect.size
+	mark.z_index = 35
+	mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	mark.add_theme_stylebox_override("panel", _style(Color(1.0, 0.83, 0.2, 0.16), Color("ffd43b"), 4, 14, 24, 0))
+	var front: PlayerPawn = state.front_pawn_of(victim)
+	var label := _make_label("저격!", 18, Color("fff3bf"))
+	label.position = Vector2(0, rect.size.y - 26)
+	label.size = Vector2(rect.size.x, 22)
+	label.tooltip_text = "선두 말 %d번 타일" % front.current_tile_idx
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.add_theme_constant_override("outline_size", 5)
+	label.add_theme_color_override("font_outline_color", Color("3b2a00"))
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	mark.add_child(label)
+	add_child(mark)
+	var pulse: Tween = mark.create_tween().set_loops()
+	pulse.tween_property(mark, "modulate:a", 0.55, 0.5)
+	pulse.tween_property(mark, "modulate:a", 1.0, 0.5)
+	return mark
+
+
+func _end_snipe_marks() -> void:
+	_snipe_pick = false
+	for mark: Control in _snipe_marks.values():
+		if is_instance_valid(mark):
+			mark.queue_free()
+	_snipe_marks.clear()
+
+
+func _snipe_target_at(pointer: Vector2) -> int:
+	for victim: int in _snipe_marks.keys():
+		var mark: Control = _snipe_marks[victim]
+		if is_instance_valid(mark) and Rect2(mark.position, mark.size).has_point(pointer):
+			return victim
+	return -1
+
+
+## 저격 모드의 입력: 표식이 붙은 프로필을 누르면 그 상대를 쏜다. 다른 곳을 누르거나 오른쪽 버튼이면 취소한다.
+func _handle_snipe_input(event: InputEvent) -> bool:
+	var motion: InputEventMouseMotion = event as InputEventMouseMotion
+	if motion != null:
+		var hovered: int = _snipe_target_at(motion.position)
+		for victim: int in _snipe_marks.keys():
+			(_snipe_marks[victim] as Control).scale = Vector2.ONE * (1.04 if victim == hovered else 1.0)
+		return false
+	var click: InputEventMouseButton = event as InputEventMouseButton
+	if click == null or not click.pressed:
+		return false
+	if click.button_index == MOUSE_BUTTON_RIGHT:
+		_cancel_tile_pick()
+		return true
+	if click.button_index != MOUSE_BUTTON_LEFT:
+		return false
+	var victim: int = _snipe_target_at(click.position)
+	if victim == -1:
+		return false  # 취소 버튼 등 다른 UI는 그대로 누를 수 있다
+	_complete_snipe(victim)
+	return true
+
+
+func _complete_snipe(victim: int) -> void:
+	var player_id: int = _tile_pick_player
+	var card_id: StringName = _tile_pick_card
+	_cancel_tile_pick()
+	_play_card_with(victim, player_id, card_id, "target_player")
+
+
+# ---------------------------------------------------------------------------
 # 타일 선택 모드 (TRP/SUM 카드)
 # ---------------------------------------------------------------------------
 
@@ -4103,6 +4200,7 @@ func _cancel_tile_pick() -> void:
 	_tile_pick_active = false
 	_tile_pick_card = &""
 	_tile_pick_skill_pawn = -1
+	_end_snipe_marks()
 	if _pick_banner != null:
 		_pick_banner.visible = false
 	if _pick_cancel != null:
@@ -4115,7 +4213,7 @@ func _cancel_tile_pick() -> void:
 
 func _on_tile_gui_input(event: InputEvent, index: int) -> void:
 	var mouse_event: InputEventMouseButton = event as InputEventMouseButton
-	if mouse_event == null or not mouse_event.pressed or not _tile_pick_active:
+	if mouse_event == null or not mouse_event.pressed or not _tile_pick_active or _snipe_pick:
 		return
 	if mouse_event.button_index == MOUSE_BUTTON_RIGHT:
 		_cancel_tile_pick()
