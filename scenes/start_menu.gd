@@ -51,6 +51,7 @@ func _ready() -> void:
 	column.add_child(subtitle)
 	_build_name_page(column)
 	_build_mode_page(column)
+	GameSession.load_settings()
 	var saved: String = GameSession.load_saved()
 	if saved != "":
 		_name_edit.text = saved

@@ -13,6 +13,23 @@ const DEFAULT_NICKNAME: String = "플레이어 1"
 static var nickname: String = ""
 static var mode: StringName = MODE_AI
 
+## 게임 설정(메뉴 > 게임 설정): user://settings.cfg에 저장된다.
+const SETTINGS_PATH: String = "user://settings.cfg"
+static var pacing_enabled: bool = true
+
+
+static func save_settings() -> void:
+	var config := ConfigFile.new()
+	config.set_value("game", "pacing_enabled", pacing_enabled)
+	config.save(SETTINGS_PATH)
+
+
+static func load_settings() -> void:
+	var config := ConfigFile.new()
+	if config.load(SETTINGS_PATH) == OK:
+		pacing_enabled = bool(config.get_value("game", "pacing_enabled", true))
+
+
 ## 온라인 대전 설정: 로비가 시작 때 채우고 메인 보드가 읽는다 (net_active가 false면 기존 컴퓨터 대전/핫시트).
 static var net_active: bool = false
 static var net_is_host: bool = false

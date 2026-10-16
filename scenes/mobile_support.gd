@@ -70,7 +70,7 @@ func refresh(window_size: Vector2i) -> void:
 
 
 ## 전체화면을 켜고 끈다. 웹에서는 가로 화면 고정도 시도한다 (브라우저가 막으면 조용히 무시).
-func toggle_fullscreen() -> void:
+static func toggle_fullscreen() -> void:
 	var is_full: bool = DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
 	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED if is_full else DisplayServer.WINDOW_MODE_FULLSCREEN)
 	if OS.has_feature("web") and not is_full:

@@ -37,6 +37,7 @@ func _run() -> void:
 	for i: int in 4:
 		await process_frame
 	await _test_mode_toggle()
+	await _test_game_menu()
 	# 이후 연출·게이지 테스트는 직접 조작하므로 4P 수동 조작 모드로 진행한다 (봇 호흡은 마지막에 따로 검증)
 	_board.ai_mode = false
 	_board._bot.set_enabled(false)
@@ -238,6 +239,62 @@ func _test_mode_toggle() -> void:
 	_expect(not _board.ai_mode and not _board._bot.enabled and _board._mode_toggle.text == "[모드: 4P 수동 조작]", "토글하면 4P 수동 조작")
 	_board._mode_toggle.pressed.emit()
 	_expect(_board.ai_mode and _board._bot.enabled, "다시 토글하면 AI 대전")
+
+
+## 상단 UI는 [메뉴] 버튼 하나뿐이고, 메뉴 안에서 계속하기/게임 설정/전체 로그/새 게임/모드/치트/게임 나가기를 고른다.
+func _test_game_menu() -> void:
+	var top_buttons: Array[Button] = []
+	for child: Node in _board.get_children():
+		var button: Button = child as Button
+		if button != null and button.visible and button.position.y < 44.0 and button.size.y <= 40.0:
+			top_buttons.append(button)
+	_expect(top_buttons.size() == 1 and top_buttons[0] == _board._menu_button, "상단에는 [메뉴] 버튼 하나만 남는다 (%d개)" % top_buttons.size())
+	_expect(_board._mode_toggle.get_parent() == null and _board._new_game_button.get_parent() == null and _board._debug_toggle.get_parent() == null, "닫힌 메뉴에서는 모드·새 게임·치트 버튼이 화면에 없다")
+	_expect(not _board._menu_is_open(), "처음에는 메뉴가 닫혀 있다")
+	_board._menu_button.pressed.emit()
+	_expect(_board._menu_is_open() and _board._menu_page == &"main", "[메뉴]를 누르면 메뉴가 열린다")
+	var labels: Array[String] = []
+	for child: Node in _board._menu_box.get_children():
+		if child is Button:
+			labels.append((child as Button).text)
+	_expect(labels.has("계속하기") and labels.has("게임 설정") and labels.has("전체 로그") and labels.has("새 게임") and labels.has("게임 나가기"), "메뉴 항목: %s" % str(labels))
+	_expect(_board._mode_toggle.get_parent() == _board._menu_box and _board._debug_toggle.get_parent() == _board._menu_box, "혼자 하는 판에서는 모드 전환과 치트도 메뉴 안에 있다")
+	# 메뉴가 열려 있는 동안 봇은 쉰다
+	_expect(_board._bot_should_wait(), "혼자 하는 판은 메뉴가 열려 있는 동안 봇이 멈춘다")
+	# 게임 설정
+	_board._show_menu_page(&"settings")
+	_expect(_board._menu_page == &"settings" and _board._menu_box.find_child("PacingCheck", true, false) != null and _board._menu_box.find_child("TimerCheck", true, false) != null, "게임 설정 화면: 연출 멈춤·제한 시간 옵션")
+	var pacing_before: bool = _board.pacing_enabled
+	(_board._menu_box.find_child("PacingCheck", true, false) as CheckBox).button_pressed = not pacing_before
+	_expect(_board.pacing_enabled == not pacing_before, "연출 멈춤 옵션이 바로 적용된다")
+	(_board._menu_box.find_child("PacingCheck", true, false) as CheckBox).button_pressed = pacing_before
+	_expect(_board.pacing_enabled == pacing_before, "다시 원래대로")
+	# 나가기는 한 번 더 확인한다
+	_board._show_menu_page(&"confirm_exit")
+	var confirm_labels: Array[String] = []
+	for child: Node in _board._menu_box.get_children():
+		if child is Button:
+			confirm_labels.append((child as Button).text)
+	_expect(str(confirm_labels) == str(["나가기", "취소"]), "나가기 확인 화면: %s" % str(confirm_labels))
+	# ESC: 하위 화면 -> 메인 -> 닫기
+	var escape := InputEventKey.new()
+	escape.keycode = KEY_ESCAPE
+	escape.pressed = true
+	_board._unhandled_key_input(escape)
+	_expect(_board._menu_is_open() and _board._menu_page == &"main", "ESC는 먼저 메인 메뉴로 돌아간다")
+	_board._unhandled_key_input(escape)
+	_expect(not _board._menu_is_open(), "ESC로 메뉴가 닫힌다")
+	_board._unhandled_key_input(escape)
+	_expect(_board._menu_is_open(), "닫혀 있을 때 ESC는 메뉴를 연다")
+	# 메뉴 안의 [전체 로그]는 로그 서랍을 열고 메뉴를 닫는다
+	_board._log_toggle.pressed.emit()
+	_expect(not _board._menu_is_open() and _board._log_panel.visible, "[전체 로그]는 로그 서랍을 열고 메뉴를 닫는다")
+	_board._log_toggle.pressed.emit()
+	_expect(not _board._log_panel.visible, "다시 열어 닫는다")
+	_board._open_menu()
+	_board._show_menu_page(&"main")
+	_board._close_menu()
+	_expect(_board._mode_toggle.get_parent() == null and _board._bot_should_wait() == _board._ui_busy(), "메뉴를 닫으면 버튼이 정리되고 봇은 메뉴 때문에 멈추지 않는다")
 
 
 ## 중앙 이벤트 알림: 대기열 순서대로 한 건씩 뜨고, 떠 있는 동안 입력이 잠기며, 클릭(skip)으로 넘어가고, instant면 건너뛴다.

@@ -270,6 +270,10 @@ var ai_mode: bool = true
 var _bot: BotController = null
 var _mode_toggle: Button = null
 var _menu_button: Button = null
+## 메뉴 오버레이(계속하기/게임 설정/전체 로그/새 게임/치트/게임 나가기). 열려 있지 않으면 null.
+var _menu_overlay: Control = null
+var _menu_box: VBoxContainer = null
+var _menu_page: StringName = &"main"
 ## 창 비율 대응: 디자인 기준 1366x768 화면의 왼쪽 묶음 / 가운데 묶음(보드) / 오른쪽 묶음을 창이 넓거나 높을 때 각자 밀어 배치한다.
 const DESIGN_SIZE: Vector2 = Vector2(1366, 768)
 ## 화면 가장자리에서 띄우는 안전 여백(px). 모서리가 둥근 폰·베젤에서 UI가 잘려 보이지 않게 한다.
@@ -322,6 +326,7 @@ var _tile_pick_card: StringName = &""
 
 
 func _ready() -> void:
+	pacing_enabled = GameSession.pacing_enabled
 	if GameSession.net_active:
 		local_player_id = GameSession.net_local_seat
 		ai_mode = true  # 화면 규칙은 AI 대전과 같다: 내 자리만 직접 조작하고 나머지는 봇이나 원격 사람
@@ -353,7 +358,7 @@ func _ready() -> void:
 	else:
 		_new_game()
 	var mobile := MobileSupport.new()
-	mobile.button_position = Vector2(1000, 48)
+	mobile.button_position = Vector2(12, 10)
 	add_child(mobile)
 
 
@@ -397,7 +402,7 @@ func _process(delta: float) -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if manager == null or state == null:
+	if manager == null or state == null or _menu_is_open():
 		return
 	if _handle_aim_input(event):
 		get_viewport().set_input_as_handled()
@@ -458,8 +463,18 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			_on_roll_pressed()
 		return
 	if key_event.keycode == KEY_ESCAPE:
-		_cancel_aim()
-		_cancel_tile_pick()
+		if _menu_is_open():
+			if _menu_page == &"main":
+				_close_menu()
+			else:
+				_show_menu_page(&"main")
+		elif _aim_pawn != -1 or _tile_pick_active:
+			_cancel_aim()
+			_cancel_tile_pick()
+		elif _choice_overlay == null and _draft_overlay == null and _stack_overlay == null:
+			_open_menu()
+		return
+	if _menu_is_open():
 		return
 	if _choice_overlay != null or _draft_overlay != null or _result_overlay != null or _stack_overlay != null:
 		return
@@ -610,7 +625,7 @@ func _build_ui() -> void:
 	_build_center_banner()
 	_build_roll_fx()
 	_build_drawers()
-	_build_mode_toggle()
+	_build_menu()
 	_build_drop_zone()
 	_build_aim_layer()
 	_build_hover_tip()
@@ -631,9 +646,9 @@ func _build_ui() -> void:
 ## 어느 묶음에 속하는지 등록해 둔다: 0 왼쪽 / 1 가운데(보드) / 2 오른쪽. 기준 위치(base)에 묶음 오프셋을 더해 배치한다.
 func _register_layout() -> void:
 	_layout_entries.clear()
-	var left: Array = [_law_panel, _mode_toggle, _new_game_button]
+	var left: Array = [_law_panel]
 	var center: Array = [_select_banner, _dir_left, _dir_right, _board_layer, _pawn_layer, _dock, _drop_zone, _aim_layer, _pick_banner, _pick_cancel, _roll_button, _roll_pad, _power_bar, _power_label]
-	var right: Array = [_tool_board, _action_row, _pawn_bar, _menu_button, _debug_toggle, _log_toggle, _debug_box, _log_panel]
+	var right: Array = [_tool_board, _action_row, _pawn_bar, _menu_button, _debug_box, _log_panel]
 	for index: int in PLAYER_IDS.size():
 		var player_id: int = PLAYER_IDS[index]
 		var panel: Control = _profiles[player_id]["panel"]
@@ -915,15 +930,13 @@ func _build_status_strip() -> void:
 	_pick_cancel.visible = false
 	_pick_cancel.z_index = 25
 	add_child(_pick_cancel)
+	# 상단에는 [메뉴] 버튼 하나만 둔다. 새 게임·모드·치트·전체 로그·설정·나가기는 메뉴 안에 있다 (_build_menu).
 	_new_game_button = _make_button("새 게임", _new_game, 12, Color("3b4766"), 8)
-	_menu_button = _make_button("메뉴", _on_menu_pressed, 12, Color("3b4766"), 8)
-	_menu_button.position = Vector2(1000, 10)
+	_menu_button = _make_button("메뉴", _toggle_menu, 13, Color("3b4766"), 8)
+	_menu_button.position = Vector2(1270, 10)
 	_menu_button.size = Vector2(84, 32)
-	_menu_button.tooltip_text = "처음 화면(닉네임·모드 선택)으로 돌아갑니다."
+	_menu_button.tooltip_text = "메뉴 (ESC)"
 	add_child(_menu_button)
-	_new_game_button.position = Vector2(250, 10)
-	_new_game_button.size = Vector2(90, 32)
-	add_child(_new_game_button)
 
 
 ## 우측 중앙의 큼직한 둥근 [굴리기] 버튼(모두의 마블 방식)과 그 아래의 멈추기·개입 패스·폭탄 떠넘기기 버튼.
@@ -1002,16 +1015,11 @@ func _build_center_banner() -> void:
 	_center_banner.add_child(_center_label)
 
 
-## 우측 상단의 [치트/디버그] / [전체 로그] 버튼과, 눌렀을 때만 우측에서 열리는 오버레이 서랍 두 개.
+## 메뉴에서 열리는 오버레이 서랍 두 개(치트/디버그, 전체 로그)와 그 열기 버튼.
 func _build_drawers() -> void:
-	_debug_toggle = _make_button("[치트/디버그]", _on_debug_toggle_pressed, 13, Color("4a3a66"), 8)
-	_debug_toggle.position = Vector2(1096, 10)
-	_debug_toggle.size = Vector2(140, 30)
-	add_child(_debug_toggle)
-	_log_toggle = _make_button("[전체 로그]", _on_log_toggle_pressed, 13, Color("2f4a66"), 8)
-	_log_toggle.position = Vector2(1244, 10)
-	_log_toggle.size = Vector2(110, 30)
-	add_child(_log_toggle)
+	# 열기 버튼은 메뉴 안에 놓인다 (_build_menu가 부모를 정한다).
+	_debug_toggle = _make_button("치트 / 디버그", _on_debug_toggle_pressed, 13, Color("4a3a66"), 8)
+	_log_toggle = _make_button("전체 로그", _on_log_toggle_pressed, 13, Color("2f4a66"), 8)
 
 	var debug_drawer: Dictionary = _make_drawer("치트 / 디버그", _on_debug_toggle_pressed)
 	_debug_box = debug_drawer["panel"]
@@ -4411,14 +4419,150 @@ func _close_stack_overlay() -> void:
 		_stack_overlay = null
 
 
-## 좌상단 모드 토글: [모드: 1P vs 3AI 봇] / [모드: 4P 수동 조작]. 게임 중에도 언제든 바꿀 수 있다.
-func _build_mode_toggle() -> void:
+## 메뉴에 들어갈 버튼들을 만든다 (모드 전환·새 게임·치트·전체 로그는 이 오버레이 안에서만 보인다).
+func _build_menu() -> void:
 	_mode_toggle = _make_button("", _on_mode_toggle_pressed, 13, Color("2f5d50"), 8)
-	_mode_toggle.position = Vector2(12, 10)
-	_mode_toggle.size = Vector2(230, 32)
-	_mode_toggle.tooltip_text = "AI 대전: P1만 직접 조작하고 P2~P4는 봇이 플레이합니다. 4P 수동 조작: 한 화면에서 모두 직접 조작합니다."
-	add_child(_mode_toggle)
+	_mode_toggle.tooltip_text = "AI 대전: 내 자리만 직접 조작하고 나머지는 봇이 플레이합니다. 4P 수동 조작: 한 화면에서 모두 직접 조작합니다."
 	_refresh_mode_toggle()
+	# 메뉴 항목을 누르면 메뉴를 닫는다 (모드 전환은 문구만 바뀌므로 열어 둔다).
+	_new_game_button.pressed.connect(_close_menu)
+	_debug_toggle.pressed.connect(_close_menu)
+	_log_toggle.pressed.connect(_close_menu)
+
+
+func _menu_is_open() -> bool:
+	return _menu_overlay != null
+
+
+func _toggle_menu() -> void:
+	if _menu_is_open():
+		_close_menu()
+	else:
+		_open_menu()
+
+
+func _open_menu() -> void:
+	if _menu_is_open():
+		return
+	_cancel_aim()
+	_cancel_tile_pick()
+	_stop_charge()
+	_menu_overlay = _new_overlay(0.6)
+	_menu_overlay.z_index = 200
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_menu_overlay.add_child(center)
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", _panel_style())
+	center.add_child(panel)
+	_menu_box = VBoxContainer.new()
+	_menu_box.add_theme_constant_override("separation", 10)
+	_menu_box.custom_minimum_size = Vector2(380, 0)
+	panel.add_child(_menu_box)
+	add_child(_menu_overlay)
+	_show_menu_page(&"main")
+
+
+func _close_menu() -> void:
+	if _menu_overlay == null:
+		return
+	_release_menu_buttons()
+	_menu_overlay.queue_free()
+	_menu_overlay = null
+	_menu_box = null
+
+
+## 오래 쓰는 버튼(새 게임·모드·치트·로그)은 지우지 않고 메뉴에서 떼어 둔다.
+func _release_menu_buttons() -> void:
+	if _menu_box == null:
+		return
+	for child: Node in _menu_box.get_children():
+		_menu_box.remove_child(child)
+		if not [_new_game_button, _mode_toggle, _debug_toggle, _log_toggle].has(child):
+			child.queue_free()
+
+
+func _menu_item(item: Button, font_size: int = 17) -> void:
+	item.custom_minimum_size = Vector2(380, 46)
+	item.add_theme_font_size_override("font_size", font_size)
+	_menu_box.add_child(item)
+
+
+func _menu_title(text: String) -> void:
+	var title: Label = _make_label(text, 26, COLOR_GOLD)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_menu_box.add_child(title)
+
+
+func _show_menu_page(page: StringName) -> void:
+	_release_menu_buttons()
+	_menu_page = page
+	match page:
+		&"settings": _build_settings_page()
+		&"confirm_exit": _build_exit_page()
+		_: _build_main_page()
+
+
+func _build_main_page() -> void:
+	_menu_title("메뉴")
+	_menu_item(_make_button("계속하기", _close_menu, 17, Color("2b8a3e"), 10))
+	_menu_item(_make_button("게임 설정", _show_menu_page.bind(&"settings"), 17, Color("3b4766"), 10))
+	_menu_item(_log_toggle)
+	if net == null:
+		_menu_item(_new_game_button)
+		_menu_item(_mode_toggle)
+		_menu_item(_debug_toggle)
+	_menu_item(_make_button("게임 나가기", _show_menu_page.bind(&"confirm_exit"), 17, Color("7a2a2a"), 10))
+
+
+func _build_settings_page() -> void:
+	_menu_title("게임 설정")
+	var fullscreen_text: String = "전체화면 끄기" if DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN else "전체화면 켜기"
+	_menu_item(_make_button(fullscreen_text, _on_menu_fullscreen_pressed, 16, Color("3b4766"), 10))
+	var pacing := CheckBox.new()
+	pacing.name = "PacingCheck"
+	pacing.text = "행동 사이에 잠깐 멈춰 보여 주기 (턴 알림·이동 뒤 호흡)"
+	pacing.button_pressed = pacing_enabled
+	pacing.toggled.connect(_on_pacing_toggled)
+	_menu_box.add_child(pacing)
+	if net == null:
+		var timer := CheckBox.new()
+		timer.name = "TimerCheck"
+		timer.text = "제한 시간 사용 (시간이 지나면 자동 진행)"
+		timer.button_pressed = _timer_check != null and _timer_check.button_pressed
+		timer.toggled.connect(_on_menu_timer_toggled)
+		_menu_box.add_child(timer)
+	else:
+		var note: Label = _make_label("온라인 대전은 제한 시간이 항상 켜져 있습니다 (3배 길게).", 12, Color("868e96"))
+		note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_menu_box.add_child(note)
+	_menu_item(_make_button("뒤로", _show_menu_page.bind(&"main"), 16, Color("4a3a66"), 10))
+
+
+func _build_exit_page() -> void:
+	_menu_title("게임을 나갈까요?")
+	var note: Label = _make_label("나가면 시작 화면으로 돌아갑니다. 진행 중인 판은 저장되지 않으며, 온라인 대전이면 내 자리는 컴퓨터가 이어받습니다." if net != null else "나가면 시작 화면으로 돌아갑니다. 진행 중인 판은 저장되지 않습니다.", 14, Color("ced4da"))
+	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_menu_box.add_child(note)
+	_menu_item(_make_button("나가기", _on_menu_pressed, 17, Color("7a2a2a"), 10))
+	_menu_item(_make_button("취소", _show_menu_page.bind(&"main"), 17, Color("3b4766"), 10))
+
+
+func _on_menu_fullscreen_pressed() -> void:
+	MobileSupport.toggle_fullscreen()
+	_show_menu_page(&"settings")
+
+
+func _on_pacing_toggled(enabled: bool) -> void:
+	pacing_enabled = enabled
+	GameSession.pacing_enabled = enabled
+	GameSession.save_settings()
+
+
+func _on_menu_timer_toggled(enabled: bool) -> void:
+	if _timer_check != null:
+		_timer_check.button_pressed = enabled  # 치트 서랍의 체크박스와 같은 값 (toggled 시그널이 manager.set_process를 켜고 끈다)
 
 
 ## 처음 화면(닉네임·모드 선택)으로 돌아간다.
@@ -4552,4 +4696,5 @@ func _human_can_intervene() -> bool:
 
 ## 봇은 화면의 굴림 연출이 끝날 때까지 기다린다.
 func _bot_should_wait() -> bool:
-	return _ui_busy()
+	# 혼자 하는 판은 메뉴를 여는 동안 봇도 쉰다 (온라인은 다른 사람이 기다리므로 멈추지 않는다).
+	return _ui_busy() or (net == null and _menu_is_open())
