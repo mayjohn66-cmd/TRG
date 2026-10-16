@@ -77,5 +77,27 @@ if (outcomeC !== "failed") await fail("가득 찬 방에 세 번째 참가자가
 // 6) 참가자가 나가면 방장 명단에서 자리가 비고 곧 새 초대로 다시 열린다
 await guestA.close();
 await host.waitForFunction((seat) => { try { const r = JSON.parse(window.__roster); return r[seat - 1][0] !== 2; } catch (e) { return false; } }, seatA, { timeout: 30000 }).catch(async () => fail("참가자가 나가도 방장 명단이 그대로 " + (await host.evaluate(() => window.__roster))));
+// 7) 빠른 랜덤 매칭: 동시에 누른 두 사람이 한 방으로 모이고, 15초가 지나면 방장 쪽이 빈자리를 AI로 채워 시작을 요청한다
+const qa = await open("quickA", "quick");
+const qb = await open("quickB", "quick");
+await Promise.all([qa.evaluate(() => window.__quickStart("매칭A")), qb.evaluate(() => window.__quickStart("매칭B"))]);
+const GUEST = 4, HOSTING = 3;
+const stateOf = (page) => page.evaluate(() => window.__quickState);
+await Promise.all([qa, qb].map((page) => page.waitForFunction(([h, g]) => window.__quickState === h || window.__quickState === g, [HOSTING, GUEST], { timeout: 60000 }))).catch(() => fail("빠른 매칭이 방장/참가자로 정해지지 않음"));
+// 한쪽이 합류해 서로 만날 때까지 기다린다 (동시에 방을 판 경우 코드가 큰 쪽이 옮겨 간다)
+let paired = false;
+for (let i = 0; i < 40 && !paired; i++) {
+  const states = [await stateOf(qa), await stateOf(qb)];
+  paired = states.includes(GUEST) && states.includes(HOSTING);
+  if (!paired) await new Promise((r) => setTimeout(r, 1000));
+}
+if (!paired) await fail(`두 사람이 한 방으로 모이지 않음: ${await stateOf(qa)} / ${await stateOf(qb)}`);
+const hostPage = (await stateOf(qa)) === HOSTING ? qa : qb;
+console.log("quick match paired; host =", hostPage === qa ? "quickA" : "quickB");
+await hostPage.waitForFunction(() => { try { return JSON.parse(window.__roster).filter((e) => e[0] === 2).length === 2; } catch (e) { return false; } }, null, { timeout: 30000 }).catch(async () => fail("매칭 방장 명단에 두 사람이 없음 " + (await hostPage.evaluate(() => window.__roster))));
+await hostPage.waitForFunction(() => window.__started === true, null, { timeout: 40000 }).catch(() => fail("15초 뒤 시작 신호가 오지 않음"));
+const finalRoster = JSON.parse(await hostPage.evaluate(() => window.__roster));
+console.log("quick roster", JSON.stringify(finalRoster));
+if (finalRoster.filter((e) => e[0] === 3).length !== 2) await fail("빈자리가 AI 봇으로 채워지지 않음: " + JSON.stringify(finalRoster));
 console.log("E2E_OK");
 await browser.close();

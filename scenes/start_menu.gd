@@ -92,8 +92,8 @@ func _build_mode_page(parent: VBoxContainer) -> void:
 	_mode_page.add_child(_hello_label)
 	_ai_button = _button("컴퓨터 대전  (1P vs 3AI 봇)", start_ai_game, 22, Color("2b8a3e"))
 	_mode_page.add_child(_ai_button)
-	_multi_button = _button("멀티플레이  (방 만들기 / 참가)", open_lobby, 22, Color("1c6dd0"))
-	_multi_button.tooltip_text = "친구와 직접 연결(WebRTC)해서 함께 합니다. 서버가 필요 없습니다."
+	_multi_button = _button("멀티플레이  (빠른 매칭 / 방 코드)", open_lobby, 22, Color("1c6dd0"))
+	_multi_button.tooltip_text = "빠른 랜덤 매칭 또는 5자리 방 코드로 연결합니다 (전용 서버 없이 WebRTC 직접 연결)."
 	_mode_page.add_child(_multi_button)
 	_back_button = _button("닉네임 변경", func() -> void: _show_step(1), 14, Color("4a3a66"))
 	_mode_page.add_child(_back_button)

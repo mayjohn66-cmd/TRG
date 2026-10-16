@@ -115,13 +115,14 @@ func test_host_collects_only_matching_new_answers() -> void:
 	guest.post_answer(2, "OLDOLD", "TRG1-stale", Callable())   # 옛 초대에 대한 응답
 	guest.post_answer(2, "AAAAAA", "TRG1-real", Callable())
 	var first: Dictionary = {}
-	host.collect_answers(2, "AAAAAA", 0, func(ok: bool, bodies: Array, count: int) -> void: first.merge({"ok": ok, "bodies": bodies, "total": count}))
+	host.collect_answers({2: {"nonce": "AAAAAA", "seen": 0}, 3: {"nonce": "BBBBBB", "seen": 0}}, func(ok: bool, found: Dictionary) -> void: first.merge({"ok": ok, "found": found}))
 	check(bool(first["ok"]), "수거 성공")
-	check_eq(first["bodies"], ["TRG1-real"], "표식이 맞는 응답만")
-	check_eq(first["total"], 2, "읽은 개수")
-	var again: Dictionary = {"bodies": ["x"]}
-	host.collect_answers(2, "AAAAAA", int(first["total"]), func(_ok: bool, bodies: Array, _count: int) -> void: again["bodies"] = bodies)
-	check((again["bodies"] as Array).is_empty(), "이미 읽은 응답은 다시 주지 않는다")
+	check_eq(first["found"][2]["bodies"], ["TRG1-real"], "표식이 맞는 응답만")
+	check_eq(first["found"][2]["total"], 2, "읽은 개수")
+	check((first["found"][3]["bodies"] as Array).is_empty(), "응답이 없는 좌석은 비어 있다")
+	var again: Dictionary = {"found": {}}
+	host.collect_answers({2: {"nonce": "AAAAAA", "seen": 2}}, func(_ok: bool, found: Dictionary) -> void: again["found"] = found)
+	check((again["found"][2]["bodies"] as Array).is_empty(), "이미 읽은 응답은 다시 주지 않는다")
 
 
 func test_only_first_answer_wins_the_seat() -> void:

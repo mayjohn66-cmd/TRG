@@ -40,6 +40,7 @@ var broker: SignalBroker = null
 var room_code: String = ""
 ## 방장 응답 수거 주기 / 참가자 선점 확인 대기 / 한 자리에 연결을 기다리는 시간 / 응답을 받고도 연결이 안 된 자리를 새 초대로 바꾸는 시간(초).
 var poll_seconds: float = 2.0
+var slow_poll_seconds: float = 5.0
 var claim_check_seconds: float = 1.2
 var connect_timeout_seconds: float = 15.0
 var recycle_seconds: float = 25.0
@@ -53,6 +54,7 @@ var _offer_nonce: Dictionary = {}    # 좌석 -> 지금 올려 둔 초대의 표
 var _answer_seen: Dictionary = {}    # 좌석 -> 응답함에서 이미 읽은 개수
 var _answered_at: Dictionary = {}    # 좌석 -> 응답을 적용한 시각(ms)
 var _poll_left: float = 0.0
+var _room_changed_at: int = 0
 var _polling_busy: Dictionary = {}
 var _ensuring: bool = false
 var _relay_ok: bool = true
@@ -82,7 +84,9 @@ func _ready() -> void:
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
 	multiplayer.connected_to_server.connect(_on_connected_to_server)
 	multiplayer.server_disconnected.connect(_on_server_disconnected)
-	model.changed.connect(func() -> void: roster_changed.emit())
+	model.changed.connect(func() -> void:
+		_room_changed_at = Time.get_ticks_msec()
+		roster_changed.emit())
 
 
 func in_room() -> bool:
@@ -185,6 +189,16 @@ func set_bot(seat: int, enabled: bool) -> void:
 	_ensure_invites()
 
 
+## 사람이 아닌 모든 열린/초대 중 자리를 AI 봇으로 채운다 (게임 시작 직전).
+func fill_with_bots() -> void:
+	if not is_host:
+		return
+	for seat: int in range(2, LobbyModel.SEAT_COUNT + 1):
+		var seat_state: LobbyModel.SeatState = model.state_of(seat)
+		if seat_state == LobbyModel.SeatState.OPEN or seat_state == LobbyModel.SeatState.INVITED:
+			set_bot(seat, true)
+
+
 # ---------------------------------------------------------------------------
 # 방장: 방 코드 자동 시그널링 (공개 릴레이에 초대를 올리고 응답을 수거)
 # ---------------------------------------------------------------------------
@@ -231,14 +245,18 @@ func _process(delta: float) -> void:
 	_poll_left -= delta
 	if _poll_left > 0.0:
 		return
-	_poll_left = poll_seconds
+	# 공개 릴레이의 요청 횟수 제한(처음 한꺼번에 60회, 이후 5초에 1회)을 넘지 않도록 방이 오래 열려 있으면 간격을 늘린다.
+	_poll_left = poll_seconds if Time.get_ticks_msec() - _room_changed_at < 20000 else maxf(poll_seconds, slow_poll_seconds)
 	poll_answers_now()
 
 
-## 올라온 응답을 한 번 수거한다 (주기적으로 불리며, 테스트가 직접 부를 수 있다).
+## 올라온 응답을 한 번 수거한다 (주기적으로 불리며, 테스트가 직접 부를 수 있다). 모든 좌석을 요청 한 번으로 읽는다.
 func poll_answers_now() -> void:
+	if _polling_busy.has(0) or _signaling == null:
+		return
+	var watch: Dictionary = {}
 	for seat: int in _offer_nonce.keys():
-		if _polling_busy.has(seat) or model.state_of(seat) != LobbyModel.SeatState.INVITED:
+		if model.state_of(seat) != LobbyModel.SeatState.INVITED:
 			continue
 		if _answered_at.has(seat):
 			# 응답을 적용했는데도 오래 연결되지 않으면 새 초대로 바꾼다.
@@ -248,15 +266,20 @@ func poll_answers_now() -> void:
 				_broadcast_roster()
 				_ensure_invites()
 			continue
-		_polling_busy[seat] = true
-		var nonce: String = str(_offer_nonce[seat])
-		_signaling.collect_answers(seat, nonce, int(_answer_seen.get(seat, 0)), func(ok: bool, bodies: Array, total: int) -> void:
-			_polling_busy.erase(seat)
-			_set_relay_ok(ok)
-			if not ok or str(_offer_nonce.get(seat, "")) != nonce:
-				return
-			_answer_seen[seat] = total
-			for body: Variant in bodies:
+		watch[seat] = {"nonce": str(_offer_nonce[seat]), "seen": int(_answer_seen.get(seat, 0))}
+	if watch.is_empty():
+		return
+	_polling_busy[0] = true
+	_signaling.collect_answers(watch, func(ok: bool, found: Dictionary) -> void:
+		_polling_busy.erase(0)
+		_set_relay_ok(ok)
+		if not ok:
+			return
+		for seat: int in found.keys():
+			if str(_offer_nonce.get(seat, "")) != str((watch[seat] as Dictionary)["nonce"]):
+				continue
+			_answer_seen[seat] = int((found[seat] as Dictionary)["total"])
+			for body: Variant in (found[seat] as Dictionary)["bodies"]:
 				if submit_answer(seat, str(body)):
 					_answered_at[seat] = Time.get_ticks_msec()
 					break)
@@ -430,8 +453,9 @@ func _disconnect_all() -> void:
 	if _mp != null:
 		_mp.close()
 		_mp = null
-	if multiplayer.has_multiplayer_peer():
-		multiplayer.multiplayer_peer = null
+	# 피어를 null로 두면 이후 게임 화면의 multiplayer.get_unique_id()가 오류를 내므로 기본값(오프라인 피어)으로 되돌린다.
+	if multiplayer.has_multiplayer_peer() and not (multiplayer.multiplayer_peer is OfflineMultiplayerPeer):
+		multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
 	is_host = false
 	_in_room = false
 	model.reset()

@@ -29,7 +29,10 @@ func _expect(condition: bool, message: String) -> void:
 
 func _run() -> void:
 	GameSession.nickname = "테스터"
-	_expect(_lobby.mode == Lobby.Mode.CHOOSE, "처음에는 방 만들기/방 입장 선택 화면")
+	_expect(_lobby.mode == Lobby.Mode.CHOOSE, "처음에는 멀티플레이 선택 화면")
+	for card_name: String in ["QuickMatchCard", "HostCard", "JoinCard"]:
+		_expect(_lobby.find_child(card_name, true, false) is Button, "큼직한 카드형 버튼: %s" % card_name)
+	_expect((_lobby.find_child("QuickMatchCard", true, false) as Button).custom_minimum_size.y >= 80, "카드는 큼직하다")
 	_lobby.start_hosting()
 	await process_frame
 	var service: LobbyService = _lobby.service
@@ -44,7 +47,7 @@ func _run() -> void:
 	_expect(title1 != null and title1.text.begins_with("방장"), "P1은 방장으로 표시")
 	var title2: Label = _lobby._seat_box.find_child("SeatTitle2", true, false)
 	_expect(title2 != null and title2.text == "빈 자리", "자동 초대가 꺼진 테스트 환경에서는 빈 자리")
-	_expect(_lobby._start_button != null and _lobby._start_button.disabled, "게임 화면 연동 전까지 시작 버튼은 잠겨 있다")
+	_expect(_lobby._start_button != null and not _lobby._start_button.disabled, "방장 혼자(나머지는 AI)면 시작할 수 있다")
 	_expect(_lobby._panel_box.find_child("InviteCode2", true, false) == null and not _lobby._manual_box.visible, "긴 코드는 접힌 고급 메뉴 안에도 처음엔 없다")
 	_lobby.copy_room_code()
 	if DisplayServer.get_name() != "headless":
@@ -88,6 +91,9 @@ func _run() -> void:
 	title2 = _lobby._seat_box.find_child("SeatTitle2", true, false)
 	_expect(title2 != null and title2.text.begins_with("입장 완료!") and title2.text.contains("친구"), "P2: 입장 완료!")
 	_expect(service.model.can_start(), "초대가 끝나면 시작 조건 충족")
+	_expect(_lobby._start_button.disabled, "참가자가 들어오면 (온라인 게임 화면 연동 전까지) 시작 버튼은 잠긴다")
+	_lobby.start_game()
+	_expect(not _lobby.game_started and _lobby._status.text.contains("다음 단계"), "참가자가 있을 때 시작을 시도하면 안내만 나온다")
 	_lobby._seat_errors.clear()
 	# 봇 채우기 / 비우기 (초대 중인 자리도 바로 봇으로)
 	_expect(service.model.invite(3), "3번 좌석 초대")
@@ -106,11 +112,43 @@ func _run() -> void:
 	_lobby.leave_room()
 	await process_frame
 	_expect(_lobby.mode == Lobby.Mode.CHOOSE and not service.in_room(), "방을 닫으면 선택 화면으로 돌아간다")
-	# 참가자 화면: 방 코드 입력 하나
+	# 빠른 랜덤 매칭: 열린 방이 없으면 내가 방장이 되어 기다리고, 15초가 지나면 AI로 채워 시작한다
 	var broker := MemoryBroker.new()
 	MemoryBroker.reset_all()
 	_lobby.add_child(broker)
 	service.broker = broker
+	_lobby.quick.auto_tick = false
+	_lobby.quick.set_process(false)
+	_lobby.start_quick_match()
+	await process_frame
+	_expect(_lobby.mode == Lobby.Mode.QUICK and _lobby.quick.state == QuickMatch.State.HOSTING, "열린 방이 없으면 빠른 매칭은 방장으로 기다린다")
+	_expect(_lobby._quick_status.text.contains("매칭 중... 다른 교주님을 찾고 있습니다 (경과 시간: 0초)"), "대기 문구: %s" % _lobby._quick_status.text)
+	_lobby.quick.tick(4.0)
+	_lobby._refresh_quick()
+	_expect(_lobby._quick_status.text.contains("경과 시간: 4초"), "경과 시간이 올라간다")
+	_expect(_lobby._quick_count.text.contains("11초") and _lobby._quick_count.text.contains("1/4"), "남은 시간·인원 표시: %s" % _lobby._quick_count.text)
+	_expect(_lobby._seat_box.get_child_count() == 4 and not _lobby._quick_now_button.disabled, "자리 4개와 [지금 바로 시작] 버튼")
+	_lobby.quick.tick(11.0)
+	_expect(_lobby.game_started, "15초가 지나면 빈자리를 AI로 채우고 게임을 시작한다")
+	_expect(service.model.state_of(2) == LobbyModel.SeatState.BOT and service.model.state_of(4) == LobbyModel.SeatState.BOT, "빈자리는 AI 봇")
+	_expect(GameSession.mode == GameSession.MODE_AI, "게임 모드는 AI 대전으로 넘어간다")
+	_lobby.game_started = false
+	_lobby.leave_room()
+	_expect(_lobby.quick.state == QuickMatch.State.IDLE and not service.in_room(), "취소하면 대기열에서 빠진다")
+	_lobby.start_quick_match()
+	await process_frame
+	_lobby._quick_now_button.pressed.emit()
+	_expect(_lobby.game_started, "[지금 바로 시작]은 기다리지 않고 시작한다")
+	_lobby.game_started = false
+	_lobby.leave_room()
+	# 친선전 방: 혼자 시작 버튼
+	_lobby.start_hosting()
+	await process_frame
+	_lobby._start_button.pressed.emit()
+	_expect(_lobby.game_started and service.model.state_of(3) == LobbyModel.SeatState.BOT, "친선전 방도 혼자면 AI와 시작")
+	_lobby.game_started = false
+	_lobby.leave_room()
+	# 참가자 화면: 방 코드 입력 하나
 	_lobby.start_guest()
 	await process_frame
 	_expect(_lobby.mode == Lobby.Mode.GUEST, "방 입장 화면")

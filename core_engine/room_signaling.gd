@@ -27,67 +27,74 @@ func close_offer(seat: int) -> void:
 	broker.publish(RoomCode.offer_topic(code, seat), RoomCode.wrap(RoomCode.CLOSED_MARK, RoomCode.CLOSED_MARK), Callable())
 
 
-## 좌석 seat의 응답함에서 seen번째 이후 새 메시지 중 nonce가 맞는 응답 코드들을 가져온다. done(ok: bool, bodies: Array, total: int).
-func collect_answers(seat: int, nonce: String, seen: int, done: Callable) -> void:
-	broker.fetch(RoomCode.answer_topic(code, seat), func(ok: bool, messages: Array) -> void:
-		var bodies: Array = []
-		if ok:
-			for index: int in range(seen, messages.size()):
-				var parts: Dictionary = RoomCode.unwrap(str(messages[index]))
-				if str(parts["nonce"]) == nonce:
-					bodies.append(str(parts["body"]))
+## 여러 좌석의 응답함을 요청 한 번으로 읽는다. watch: 좌석 -> {"nonce": 지금 올린 초대의 표식, "seen": 이미 읽은 개수}.
+## done(ok: bool, found: Dictionary) - 좌석 -> {"bodies": 표식이 맞는 새 응답 코드들, "total": 읽은 개수}.
+func collect_answers(watch: Dictionary, done: Callable) -> void:
+	var topics: Array = []
+	for seat: Variant in watch.keys():
+		topics.append(RoomCode.answer_topic(code, int(seat)))
+	broker.fetch_many(topics, 0, func(ok: bool, by_topic: Dictionary) -> void:
+		var found: Dictionary = {}
+		for seat: Variant in watch.keys():
+			var entry: Dictionary = watch[seat]
+			var messages: Array = by_topic.get(RoomCode.answer_topic(code, int(seat)), [])
+			var bodies: Array = []
+			if ok:
+				for index: int in range(int(entry["seen"]), messages.size()):
+					var parts: Dictionary = RoomCode.unwrap(str(messages[index]))
+					if str(parts["nonce"]) == str(entry["nonce"]):
+						bodies.append(str(parts["body"]))
+			found[int(seat)] = {"bodies": bodies, "total": messages.size() if ok else int(entry["seen"])}
 		if done.is_valid():
-			done.call(ok, bodies, messages.size() if ok else seen))
+			done.call(ok, found))
 
 
 # ---------------------------------------------------------------------------
 # 참가자
 # ---------------------------------------------------------------------------
 
-## 이 방의 입장 가능한 좌석을 찾는다. done(result): {"ok": 릴레이에 닿았는가, "saw_room": 방 흔적이 있는가, "candidates": [{"seat", "nonce", "offer"}] (좌석 오름차순)}.
+## 이 방의 입장 가능한 좌석을 찾는다 (요청 2번: 초대함 한 번, 응답함 한 번). done(result): {"ok": 릴레이에 닿았는가, "saw_room": 방 흔적이 있는가, "candidates": [{"seat", "nonce", "offer"}] (좌석 오름차순)}.
 func find_offers(done: Callable) -> void:
-	var state: Dictionary = {"pending": LobbyModel.SEAT_COUNT - 1, "any_ok": false, "saw_room": false, "found": {}}
+	var offer_topics: Array = []
 	for seat: int in range(2, LobbyModel.SEAT_COUNT + 1):
-		_probe_seat(seat, state, done)
-
-
-func _probe_seat(seat: int, state: Dictionary, done: Callable) -> void:
-	broker.fetch(RoomCode.offer_topic(code, seat), func(ok: bool, messages: Array) -> void:
-		if not ok or messages.is_empty():
-			_seat_probed(state, ok, false, done)
+		offer_topics.append(RoomCode.offer_topic(code, seat))
+	broker.fetch_many(offer_topics, 0, func(ok: bool, offers: Dictionary) -> void:
+		if not ok:
+			done.call({"ok": false, "saw_room": false, "candidates": []})
 			return
-		var parts: Dictionary = RoomCode.unwrap(str(messages.back()))
-		var nonce: String = str(parts["nonce"])
-		var offer: String = str(parts["body"])
-		if nonce == "" or nonce == RoomCode.CLOSED_MARK or not offer.begins_with(LobbyCode.PREFIX):
-			_seat_probed(state, true, true, done)
+		var saw_room: bool = false
+		var open: Dictionary = {}
+		for seat: int in range(2, LobbyModel.SEAT_COUNT + 1):
+			var messages: Array = offers.get(RoomCode.offer_topic(code, seat), [])
+			if messages.is_empty():
+				continue
+			saw_room = true
+			var parts: Dictionary = RoomCode.unwrap(str(messages.back()))
+			var nonce: String = str(parts["nonce"])
+			var offer: String = str(parts["body"])
+			if nonce != "" and nonce != RoomCode.CLOSED_MARK and offer.begins_with(LobbyCode.PREFIX):
+				open[seat] = {"seat": seat, "nonce": nonce, "offer": offer}
+		if open.is_empty():
+			done.call({"ok": true, "saw_room": saw_room, "candidates": []})
 			return
+		var answer_topics: Array = []
+		for seat: Variant in open.keys():
+			answer_topics.append(RoomCode.answer_topic(code, int(seat)))
 		# 이미 누가 응답을 올린 초대는 선점된 것으로 본다.
-		broker.fetch(RoomCode.answer_topic(code, seat), func(answer_ok: bool, answers: Array) -> void:
-			if answer_ok:
+		broker.fetch_many(answer_topics, 0, func(answer_ok: bool, answers: Dictionary) -> void:
+			var candidates: Array = []
+			var seats: Array = open.keys()
+			seats.sort()
+			for seat: Variant in seats:
 				var taken: bool = false
-				for entry: Variant in answers:
-					if str(RoomCode.unwrap(str(entry))["nonce"]) == nonce:
-						taken = true
-						break
+				if answer_ok:
+					for entry: Variant in answers.get(RoomCode.answer_topic(code, int(seat)), []):
+						if str(RoomCode.unwrap(str(entry))["nonce"]) == str((open[seat] as Dictionary)["nonce"]):
+							taken = true
+							break
 				if not taken:
-					(state["found"] as Dictionary)[seat] = {"seat": seat, "nonce": nonce, "offer": offer}
-			_seat_probed(state, true, true, done)))
-
-
-func _seat_probed(state: Dictionary, ok: bool, saw: bool, done: Callable) -> void:
-	state["any_ok"] = bool(state["any_ok"]) or ok
-	state["saw_room"] = bool(state["saw_room"]) or saw
-	state["pending"] = int(state["pending"]) - 1
-	if int(state["pending"]) > 0 or not done.is_valid():
-		return
-	var found: Dictionary = state["found"]
-	var seats: Array = found.keys()
-	seats.sort()
-	var candidates: Array = []
-	for seat: Variant in seats:
-		candidates.append(found[seat])
-	done.call({"ok": state["any_ok"], "saw_room": state["saw_room"], "candidates": candidates})
+					candidates.append(open[seat])
+			done.call({"ok": true, "saw_room": saw_room, "candidates": candidates})))
 
 
 ## 응답 코드를 올린다. done(ok: bool).

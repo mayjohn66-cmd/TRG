@@ -18,3 +18,13 @@ func publish(_topic: String, _text: String, done: Callable) -> void:
 func fetch(_topic: String, done: Callable) -> void:
 	if done.is_valid():
 		done.call(false, [])
+
+
+## 여러 주제를 요청 한 번으로 가져온다 (공개 릴레이는 요청 횟수 제한이 있어 묶어서 읽는다). since_seconds > 0이면 그 시간 안에 올라온 메시지만.
+## done(ok: bool, by_topic: Dictionary) - 주제 이름 -> 메시지 배열(오래된 것부터).
+func fetch_many(topics: Array, since_seconds: int, done: Callable) -> void:
+	var result: Dictionary = {}
+	for topic: Variant in topics:
+		result[str(topic)] = []
+	if done.is_valid():
+		done.call(false, result)

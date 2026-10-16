@@ -24,7 +24,19 @@ func _ready() -> void:
 	service.link_failed.connect(func(seat: int, message: String) -> void: window.__error = "%d:%s" % [seat, message])
 	service.join_failed.connect(func(message: String) -> void: window.__joinFailed = message)
 	service.join_progress.connect(func(message: String) -> void: window.__progress = message)
-	if _role == "host":
+	if _role == "quick":
+		var quick := QuickMatch.new()
+		quick.name = "QuickMatch"
+		quick.service = service
+		add_child(quick)
+		quick.state_changed.connect(func(state: int) -> void: window.__quickState = state)
+		quick.start_requested.connect(func() -> void: window.__started = true)
+		service.joined.connect(func() -> void: window.__joined = true)
+		window.__ready = true
+		_expose(window, "__quickStart", func(args: Array) -> void:
+			GameSession.nickname = str(args[0])
+			quick.start())
+	elif _role == "host":
 		service.room_ready.connect(func(code: String) -> void: window.__roomCode = code)
 		var ok: bool = service.host_room("방장")
 		window.__ready = ok

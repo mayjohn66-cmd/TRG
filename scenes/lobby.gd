@@ -1,20 +1,24 @@
 # File: res://scenes/lobby.gd
 # Class: class_name Lobby
-# Role: 멀티플레이 로비 화면. 방장은 5자리 방 코드와 P1~P4 좌석 상태만 보고, 참가자는 방 코드만 입력하면 공개 릴레이를 통해 백그라운드에서 WebRTC 연결이 자동으로 맺어진다. 긴 초대/응답 코드는 [고급: 수동 코드 연결] 접이식 메뉴에만 숨어 있다
+# Role: 멀티플레이 로비 화면. 메뉴는 [빠른 랜덤 매칭] / [친선전 방 만들기] / [방 코드로 입장] 세 카드이며, 빠른 매칭은 공용 대기열(QuickMatch)이 방을 찾거나 열고 15초 안에 안 차면 AI로 채워 시작한다. 방장은 5자리 방 코드와 P1~P4 좌석 상태만 보고, 참가자는 방 코드만 입력하면 공개 릴레이를 통해 백그라운드에서 WebRTC 연결이 자동으로 맺어진다. 긴 초대/응답 코드는 [고급: 수동 코드 연결] 접이식 메뉴에만 숨어 있다
 class_name Lobby
 extends Control
 
 const START_MENU_SCENE: String = "res://scenes/start_menu.tscn"
+const BOARD_SCENE: String = "res://scenes/main_board.tscn"
 const COLOR_BG: Color = Color("0d1018")
 const COLOR_GOLD: Color = Color("ffd43b")
 const SEAT_COLORS: Array[Color] = [Color("e03131"), Color("1c7ed6"), Color("2f9e44"), Color("f08c00")]
 
-enum Mode { CHOOSE, HOST, GUEST }
+enum Mode { CHOOSE, HOST, GUEST, QUICK }
 
 ## 테스트에서 씬 전환을 막기 위한 스위치.
 var change_scene_enabled: bool = true
 var mode: Mode = Mode.CHOOSE
 var service: LobbyService = null
+var quick: QuickMatch = null
+## 게임 시작을 눌러 장면 전환까지 마쳤다 (테스트 확인용).
+var game_started: bool = false
 
 var _panel_box: VBoxContainer = null
 var _status: Label = null
@@ -23,6 +27,10 @@ var _start_button: Button = null
 var _guest_box: VBoxContainer = null
 var _manual_box: VBoxContainer = null   # [고급: 수동 코드 연결] 내용 (접혀 있으면 숨김)
 var _room_label: Label = null
+var _quick_status: Label = null
+var _quick_count: Label = null
+var _quick_now_button: Button = null
+var _quick_ui_left: float = 0.0
 var _join_input: LineEdit = null
 var _join_button: Button = null
 var _invite_codes: Dictionary = {}   # 좌석 -> 방장이 만든 초대 코드 (고급 메뉴용)
@@ -53,6 +61,13 @@ func _ready() -> void:
 	service.relay_status_changed.connect(_on_relay_status)
 	service.join_progress.connect(_on_join_progress)
 	service.join_failed.connect(_on_join_failed)
+	quick = QuickMatch.new()
+	quick.name = "QuickMatch"
+	quick.service = service
+	add_child(quick)
+	quick.start_requested.connect(_on_quick_start_requested)
+	quick.failed.connect(_on_quick_failed)
+	quick.state_changed.connect(func(_state: int) -> void: _refresh_quick())
 	var background := ColorRect.new()
 	background.color = COLOR_BG
 	background.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -88,6 +103,9 @@ func _clear_panel() -> void:
 	_guest_box = null
 	_manual_box = null
 	_room_label = null
+	_quick_status = null
+	_quick_count = null
+	_quick_now_button = null
 	_join_input = null
 	_join_button = null
 	_start_button = null
@@ -101,15 +119,145 @@ func _title(text: String) -> void:
 
 
 func _show_choose() -> void:
+	if quick != null:
+		quick.stop()
 	mode = Mode.CHOOSE
 	_clear_panel()
 	_title("멀티플레이")
-	var hello := _label("%s 님, 방을 만들거나 친구의 방 코드를 입력하세요." % GameSession.display_nickname(), 16, Color("ced4da"))
+	var hello := _label("%s 님, 어떻게 플레이할까요?" % GameSession.display_nickname(), 16, Color("ced4da"))
 	hello.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_panel_box.add_child(hello)
-	_panel_box.add_child(_button("방 만들기  (내가 방장)", start_hosting, 22, Color("2b8a3e")))
-	_panel_box.add_child(_button("방 입장  (방 코드 입력)", start_guest, 22, Color("1c6dd0")))
+	_panel_box.add_child(_card("QuickMatchCard", "빠른 랜덤 매칭", "버튼 하나로 바로 매칭  (15초 안에 AI가 빈자리를 채워 시작)", start_quick_match, Color("c2410c")))
+	_panel_box.add_child(_card("HostCard", "친선전 방 만들기", "5자리 방 코드를 만들어 친구를 초대", start_hosting, Color("2b8a3e")))
+	_panel_box.add_child(_card("JoinCard", "방 코드로 입장", "친구에게 받은 5자리 코드로 바로 합류", start_guest, Color("1c6dd0")))
 	_panel_box.add_child(_button("뒤로", go_back, 14, Color("4a3a66")))
+
+
+## 큼직한 카드형 버튼 (제목 + 한 줄 설명).
+func _card(node_name: String, title: String, subtitle: String, callback: Callable, base: Color) -> Button:
+	var card := _button("", callback, 22, base)
+	card.name = node_name
+	card.custom_minimum_size = Vector2(0, 92)
+	var column := VBoxContainer.new()
+	column.set_anchors_preset(Control.PRESET_FULL_RECT)
+	column.alignment = BoxContainer.ALIGNMENT_CENTER
+	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	card.add_child(column)
+	var head := _label(title, 26, Color.WHITE)
+	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	head.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	column.add_child(head)
+	var sub := _label(subtitle, 13, Color("ffe8cc") if base == Color("c2410c") else Color("e9ecef"))
+	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	sub.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	column.add_child(sub)
+	return card
+
+
+## [빠른 랜덤 매칭]: 대기열에 들어간다 (열린 방이 있으면 합류, 없으면 방장이 되어 기다림).
+func start_quick_match() -> void:
+	mode = Mode.QUICK
+	_manual_open = false
+	_clear_panel()
+	_title("빠른 랜덤 매칭")
+	_quick_status = _label("", 20, COLOR_GOLD)
+	_quick_status.name = "QuickStatus"
+	_quick_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_quick_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_quick_status.custom_minimum_size = Vector2(820, 0)
+	_panel_box.add_child(_quick_status)
+	_quick_count = _label("", 14, Color("adb5bd"))
+	_quick_count.name = "QuickCountdown"
+	_quick_count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_panel_box.add_child(_quick_count)
+	_seat_box = VBoxContainer.new()
+	_seat_box.add_theme_constant_override("separation", 8)
+	_panel_box.add_child(_seat_box)
+	_status = _label("", 14, Color("ffe066"))
+	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_panel_box.add_child(_status)
+	_quick_now_button = _button("지금 바로 시작  (빈자리 AI 채우기)", quick.start_now, 18, Color("2b8a3e"))
+	_quick_now_button.name = "QuickStartNow"
+	_panel_box.add_child(_quick_now_button)
+	_panel_box.add_child(_button("매칭 취소", leave_room, 14, Color("7a2a2a")))
+	quick.start()
+	_refresh_quick()
+
+
+## 대기 화면의 문구·자리 목록을 현재 상태로 맞춘다.
+func _refresh_quick() -> void:
+	if mode != Mode.QUICK or _quick_status == null:
+		return
+	var seconds: int = int(quick.elapsed)
+	match quick.state:
+		QuickMatch.State.SEARCHING, QuickMatch.State.HOSTING, QuickMatch.State.IDLE:
+			_quick_status.text = "매칭 중... 다른 교주님을 찾고 있습니다 (경과 시간: %d초)" % seconds
+		QuickMatch.State.JOINING:
+			_quick_status.text = "방을 찾았습니다! 입장하는 중... (경과 시간: %d초)" % seconds
+		QuickMatch.State.GUEST:
+			_quick_status.text = "매칭 완료! 방장이 곧 게임을 시작합니다."
+		QuickMatch.State.STARTING:
+			_quick_status.text = "게임을 시작합니다..."
+	if quick.state == QuickMatch.State.HOSTING:
+		_quick_count.text = "%d초 뒤에 빈자리를 AI가 채우고 시작합니다  (현재 %d/%d명)" % [quick.seconds_left(), service.model.human_count(), LobbyModel.SEAT_COUNT]
+	else:
+		_quick_count.text = ""
+	if _quick_now_button != null:
+		_quick_now_button.disabled = quick.state != QuickMatch.State.HOSTING
+	_rebuild_quick_rows()
+
+
+func _rebuild_quick_rows() -> void:
+	if _seat_box == null:
+		return
+	for child: Node in _seat_box.get_children():
+		_seat_box.remove_child(child)
+		child.queue_free()
+	for seat: int in range(1, LobbyModel.SEAT_COUNT + 1):
+		var row := PanelContainer.new()
+		row.add_theme_stylebox_override("panel", _style(Color("131826"), SEAT_COLORS[seat - 1].darkened(0.2), 2, 12, 0, 10))
+		var line := HBoxContainer.new()
+		line.add_theme_constant_override("separation", 10)
+		row.add_child(line)
+		line.add_child(_badge(seat))
+		var seat_state: LobbyModel.SeatState = service.model.state_of(seat)
+		var text: String = _seat_title(seat, seat_state)
+		if seat_state == LobbyModel.SeatState.OPEN or seat_state == LobbyModel.SeatState.INVITED:
+			text = "대기 중..."
+		if service.in_room() and seat == service.my_seat():
+			text += "  (나)"
+		line.add_child(_label(text, 17, Color("f1f3f5")))
+		_seat_box.add_child(row)
+
+
+func _process(delta: float) -> void:
+	if mode != Mode.QUICK:
+		return
+	_quick_ui_left -= delta
+	if _quick_ui_left <= 0.0:
+		_quick_ui_left = 0.25
+		_refresh_quick()
+
+
+func _on_quick_start_requested() -> void:
+	start_game()
+
+
+func _on_quick_failed(message: String) -> void:
+	_show_choose()
+	_panel_box.add_child(_label(message, 14, Color("ff8787")))
+
+
+## 게임을 시작한다: 빈자리는 AI 봇으로 채운다. 지금은 사람이 방장 혼자일 때만 시작할 수 있다 (참가자와 함께하는 게임 화면 동기화는 다음 단계).
+func start_game() -> void:
+	if service.model.human_count() > 1:
+		_set_status("참가자와 함께하는 온라인 게임 화면은 아직 연결되지 않았습니다 (다음 단계). 방은 그대로 유지됩니다.", true)
+		return
+	service.fill_with_bots()
+	GameSession.mode = GameSession.MODE_AI
+	game_started = true
+	if change_scene_enabled:
+		get_tree().change_scene_to_file(BOARD_SCENE)
 
 
 ## [방 만들기]: 방장이 되어 방 코드와 좌석 화면으로 간다.
@@ -127,7 +275,7 @@ func start_hosting() -> void:
 	_manual_open = false
 	_relay_ok = true
 	_clear_panel()
-	_title("내 방")
+	_title("친선전 방")
 	_panel_box.add_child(_make_code_badge())
 	var help := _label("친구에게 이 방 코드를 알려 주세요. 친구가 코드를 입력하면 자동으로 연결됩니다. 빈 자리는 시작할 때 컴퓨터가 채웁니다.", 13, Color("adb5bd"))
 	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -144,8 +292,8 @@ func start_hosting() -> void:
 	var footer := HBoxContainer.new()
 	footer.add_theme_constant_override("separation", 12)
 	_panel_box.add_child(footer)
-	_start_button = _button("게임 시작  (다음 단계에서 연결)", _on_start_pressed, 18, Color("2b8a3e"))
-	_start_button.disabled = true
+	_start_button = _button("게임 시작  (빈자리는 AI)", _on_start_pressed, 18, Color("2b8a3e"))
+	_start_button.name = "StartGame"
 	_start_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	footer.add_child(_start_button)
 	footer.add_child(_button("방 닫고 나가기", leave_room, 14, Color("7a2a2a")))
@@ -224,6 +372,7 @@ func _rebuild() -> void:
 	match mode:
 		Mode.HOST: _rebuild_host()
 		Mode.GUEST: _rebuild_guest()
+		Mode.QUICK: _refresh_quick()
 
 
 func _rebuild_host() -> void:
@@ -238,8 +387,10 @@ func _rebuild_host() -> void:
 	if _room_label != null:
 		_room_label.text = _room_text()
 	if _start_button != null:
-		_start_button.disabled = true  # 게임 화면 연동 전까지는 눌러서 시작할 수 없다
-		_start_button.tooltip_text = "멀티플레이 게임 화면은 다음 단계에서 연결됩니다."
+		# 지금은 방장 혼자(나머지는 AI)일 때만 시작할 수 있다. 참가자가 있으면 온라인 게임 화면 연동(다음 단계)을 기다린다.
+		var alone: bool = service.model.human_count() <= 1
+		_start_button.disabled = not alone
+		_start_button.text = "게임 시작  (빈자리는 AI)" if alone else "게임 시작  (참가자와의 게임 화면은 다음 단계)"
 	if _status != null and not _seat_errors.has(0):
 		if not _relay_ok:
 			_status.text = "자동 연결 서버에 닿지 못했습니다. 아래 [고급: 수동 코드 연결]을 열어 코드를 직접 주고받을 수 있습니다."
@@ -540,8 +691,7 @@ func go_back() -> void:
 
 
 func _on_start_pressed() -> void:
-	if _status != null:
-		_status.text = "멀티플레이 게임 화면은 다음 단계에서 연결됩니다."
+	start_game()
 
 
 func _on_room_ready(_code: String) -> void:
@@ -589,6 +739,9 @@ func _on_answer_ready(code: String) -> void:
 
 
 func _on_joined() -> void:
+	if mode == Mode.QUICK:
+		_refresh_quick()
+		return
 	_guest_connected = true
 	_guest_busy = false
 	_set_status("", false)
