@@ -349,7 +349,7 @@ func _check_pawn_labels() -> void:
 		_assert(tip.contains(PawnCatalog.full_name(pawn.kind, pawn.unit_no)) and tip.contains(PawnCatalog.ability_text(pawn.kind, pawn.unit_no)), "기물 툴팁에 전체 이름과 고유 능력이 있어야 한다 (%s)" % tip)
 		_assert(not tip.contains("시너지") and not tip.contains("2세트") and not tip.contains("4세트"), "기물 툴팁에 세트 설명이 없어야 한다 (%s)" % tip)
 		if PawnSkills.has_skill(pawn):
-			_assert(tip.contains("필살기"), "필살기 보유 기물 툴팁에는 필살기 줄이 있어야 한다 (%s)" % tip)
+			_assert(tip.contains("[1회]"), "필살기 보유 기물 툴팁에는 [1회] 필살기 줄이 있어야 한다 (%s)" % tip)
 	for player_id: int in [1, 2, 3, 4]:
 		_assert(_board.get_player_for_corner(_board.corner_of_player(player_id)) == player_id, "좌석 매핑은 역함수 관계여야 한다")
 

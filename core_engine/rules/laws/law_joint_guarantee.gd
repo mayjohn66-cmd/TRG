@@ -8,7 +8,7 @@ extends LawResource
 func _init() -> void:
 	law_id = "LAW_07"
 	law_name = "강제 연대보증"
-	description = "내 말이 잡힐 때 잡은 상대의 다른 말 1개도 출발선으로 동반 추방."
+	description = "피격 시 상대 다른 말 1개 동반 처치"
 	trigger_timing = RuleContext.ON_CAPTURE
 
 

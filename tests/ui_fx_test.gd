@@ -547,7 +547,7 @@ func _test_hud_overhaul() -> void:
 	_expect(_board._tool_title.text == "텍사스 홀덤 딜러" and _board._tool_main.text.contains("포커 족보") and _board._tool_icon.custom_minimum_size == Vector2(48, 48), "홀덤 카드: 이름 + 핵심 규칙 + 48x48 심볼 (%s)" % _board._tool_main.text)
 	manager.state.tools[current] = ToolRegistry.create(&"CHINCHIRO")
 	_board._refresh_controls()
-	_expect(_board._tool_title.text == "지하노역장 친치로" and _board._tool_main.text == "4 ~ 6 칸 고눈금 보장!" and _board._tool_sub.text == "(삐끗 시 -6칸 후퇴!)", "친치로 카드 문구 (%s)" % _board._tool_main.text)
+	_expect(_board._tool_title.text == "지하노역장 친치로" and _board._tool_main.text == "4 ~ 6칸 (삐끗 -6칸)", "친치로 카드 문구 (%s)" % _board._tool_main.text)
 	_expect(_board._tool_has_gauge(), "친치로도 홀드 & 릴리즈 파워 게이지를 쓴다")
 	for tool_id: StringName in ToolRegistry.ALL_IDS:
 		manager.state.tools[current] = ToolRegistry.create(tool_id)
@@ -591,7 +591,7 @@ func _test_hud_overhaul() -> void:
 	_board._refresh_hands()
 	_board._card_press(holder, &"ACT_01", Vector2(700, 700), Vector2(700, 640))
 	_board._card_release(Vector2(701, 700))
-	_expect(_board._zoom_view != null and _board._zoom_view.size.x >= 252.0 and _board._zoom_view.size.y >= 353.0 and _board._zoom_view.size.y < 480.0, "클릭하면 손패와 같은 카드 UI로 약 252x353 이상 확대 (%s)" % str(_board._zoom_view.size if _board._zoom_view != null else Vector2.ZERO))
+	_expect(_board._zoom_view != null and _board._zoom_view.size.x >= 350.0 and _board._zoom_view.size.y >= 490.0 and _board._zoom_view.size.y < 640.0, "클릭하면 손패와 같은 카드 UI로 2.5배(350x490) 이상 확대 (%s)" % str(_board._zoom_view.size if _board._zoom_view != null else Vector2.ZERO))
 	_board._card_press(holder, &"ACT_01", Vector2(700, 700), Vector2(700, 640))
 	_board._card_release(Vector2(701, 700))
 	await process_frame

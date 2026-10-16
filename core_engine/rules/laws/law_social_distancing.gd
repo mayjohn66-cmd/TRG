@@ -8,7 +8,7 @@ extends LawResource
 func _init() -> void:
 	law_id = "LAW_02"
 	law_name = "사회적 거리두기"
-	description = "아군 말 업기(Stack) 전면 금지."
+	description = "아군 말 업기(합체) 금지"
 	trigger_timing = RuleContext.ON_MOVE_CALC
 
 

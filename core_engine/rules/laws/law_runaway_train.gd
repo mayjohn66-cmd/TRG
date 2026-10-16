@@ -8,7 +8,7 @@ extends LawResource
 func _init() -> void:
 	law_id = "LAW_05"
 	law_name = "폭주 기관차"
-	description = "말 잡을 시 추가 턴 대신 즉시 앞으로 3칸 돌진."
+	description = "적 처치 시 재굴림 대신 +3칸 돌진"
 	trigger_timing = RuleContext.ON_CAPTURE
 
 

@@ -7,8 +7,8 @@ extends LawResource
 
 func _init() -> void:
 	law_id = "LAW_06"
-	law_name = "과속 단속 카메라"
-	description = "눈금 4 초과 시 강제로 1로 고정."
+	law_name = "과속 단속"
+	description = "눈금 4 초과 시 1칸으로 고정"
 	trigger_timing = RuleContext.ON_DICE_ROLL
 
 

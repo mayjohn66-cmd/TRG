@@ -56,26 +56,26 @@ const SUB_LETTERS: Dictionary = {
 	SubType.SHOGI_FU: "보", SubType.SHOGI_HISHA: "비", SubType.SHOGI_KAKU: "각", SubType.SHOGI_KEIMA: "계",
 }
 const SUB_ABILITIES: Dictionary = {
-	SubType.YUT_MAL: "적을 잡으면 추가 굴림 1회 · 아군과 만나면 업기/따로 두기 선택 · 눈금 4 또는 5로 이동하면 추가 굴림 1회",
-	SubType.CHESS_PAWN: "중앙(22번)이나 15~19번에 도달하면 퀸으로 승진",
-	SubType.CHESS_KNIGHT: "경로 중간의 다른 말과 함정을 모두 뛰어넘어 무시",
-	SubType.CHESS_BISHOP: "코너(5·10번)를 스쳐 지나가기만 해도 대각선 지름길로 진입 · 대각선 타일에서 출발하면 +2칸",
-	SubType.CHESS_ROOK: "상시 능력 없음 (필살기 보유)",
-	SubType.CHESS_QUEEN: "이동할 때마다 +2칸 · 경로상 함정과 말을 뛰어넘어 무시",
-	SubType.JANGGI_PO: "경로 중간에 다른 말이 있으면 넘어서 +3칸",
-	SubType.JANGGI_CHA: "상시 능력 없음 (필살기 보유)",
-	SubType.JANGGI_MA: "바로 앞 칸이 비어 있으면 +2칸 (막혀 있으면 기본 눈금만 이동)",
-	SubType.JANGGI_SANG: "바로 앞 칸이 비어 있으면 +3칸 (막혀 있으면 기본 눈금만 이동)",
-	SubType.MONO_CAR: "이동이 끝난 타일에 5턴 호텔 설치 (적이 밟으면 정지) · 출발선을 지날 때 생떼 카드 1장",
-	SubType.MONO_PLANE: "옷장(7·17번)에서 중앙 대신 다음 코너로 워프 (필살기 보유)",
-	SubType.MONO_SHIP: "함정을 무시하고 처음 만나는 상대 설치물을 파괴",
-	SubType.MONO_DOG: "빵집을 스쳐 지나가기만 해도 생떼 카드 1장",
-	SubType.BADUK_BLACK: "상시 능력 없음 (필살기 보유)",
-	SubType.BADUK_WHITE: "적에게 잡히지 않는 무적 · 같은 칸 아군 기물 보호 · 이동 눈금 -1 (최소 1칸)",
-	SubType.SHOGI_FU: "10번 코너·중앙(22번)을 지나면 나리 승급(토금): 이동할 때마다 +1칸 (필살기 보유)",
-	SubType.SHOGI_HISHA: "외곽 직선 구간(0~19번)에서 이동하면 +2칸 · 나리 승급(용왕)하면 대각선에서도 +2칸 · 승급 후 이동 +1칸",
-	SubType.SHOGI_KAKU: "코너(5·10번)를 스쳐 지나가기만 해도 대각선 지름길로 진입 · 나리 승급(용마)하면 이동이 끝난 뒤 바로 앞 1칸의 적 말도 처치 · 승급 후 이동 +1칸",
-	SubType.SHOGI_KEIMA: "이동 경로의 첫 2칸에 있는 함정과 말을 뛰어넘어 무시 · 나리 승급(성계)하면 이동 +1칸",
+	SubType.YUT_MAL: "처치·눈금 4/5 시 재굴림 +1 · 업기 선택",
+	SubType.CHESS_PAWN: "중앙·15~19번 도달 시 퀸 승급",
+	SubType.CHESS_KNIGHT: "경로 말·함정 관통 (도착 칸만 판정)",
+	SubType.CHESS_BISHOP: "코너 스침 → 대각선 진입 · 대각선 출발 +2칸",
+	SubType.CHESS_ROOK: "없음",
+	SubType.CHESS_QUEEN: "이동 +2칸 · 말·함정 관통",
+	SubType.JANGGI_PO: "경로에 말 있으면 넘어서 +3칸",
+	SubType.JANGGI_CHA: "없음",
+	SubType.JANGGI_MA: "앞 칸 비면 +2칸",
+	SubType.JANGGI_SANG: "앞 칸 비면 +3칸",
+	SubType.MONO_CAR: "도착 칸 호텔 5턴 · 출발선 통과 시 카드 +1",
+	SubType.MONO_PLANE: "옷장 → 다음 코너 워프",
+	SubType.MONO_SHIP: "첫 적 설치물 무시·파괴",
+	SubType.MONO_DOG: "빵집 스침만 해도 카드 +1",
+	SubType.BADUK_BLACK: "없음",
+	SubType.BADUK_WHITE: "처치 면역 · 아군 보호 (눈금 -1)",
+	SubType.SHOGI_FU: "10번·중앙 통과 시 토금 승급 (+1칸)",
+	SubType.SHOGI_HISHA: "외곽 직선 +2칸 · 승급 시 대각선도 +2칸",
+	SubType.SHOGI_KAKU: "코너 스침 → 대각선 진입 · 승급 시 앞 1칸 처치",
+	SubType.SHOGI_KEIMA: "첫 2칸 함정·말 관통 · 승급 시 +1칸",
 }
 ## 1회용 필살기: 세부 기물 -> 스킬 ID / 이름 / 설명. 필살기가 없으면 스킬 ID가 빈 값이다.
 const SKILL_IDS: Dictionary = {
@@ -93,11 +93,11 @@ const SKILL_NAMES: Dictionary = {
 	&"drop": "모치고마 낙하",
 }
 const SKILL_TEXTS: Dictionary = {
-	&"shoot": "주사위 대신 조준해서 발사: 날아가는 직선에 닿은 적 말은 모두 출발선으로 탈락하고, 흑돌은 가장 가까운 타일에 안착",
-	&"charge": "주사위 대신 전방 직선으로 돌진해 가장 앞의 적 말을 잡음 (적이 없으면 다음 코너까지 이동)",
-	&"castle": "굴리기 전에 내 다른 기물 1개와 위치를 맞바꿈",
-	&"warp": "주사위 대신 빵집(3·8·13·18번)이나 코너(5·10·15·22번) 중 한 곳으로 날아감",
-	&"drop": "출발선에서 대기 중인 내 다른 말 1개를 주사위 없이 보병 바로 뒷칸(뒤가 출발선이면 앞칸)에 즉시 낙하 배치",
+	&"shoot": "조준 발사 → 적 전원 출발선, 근처 안착",
+	&"charge": "직선 돌진 → 선두 적 처치 (없으면 다음 코너)",
+	&"castle": "굴리기 전 아군 1개와 위치 교환",
+	&"warp": "빵집·코너 중 1곳으로 직항",
+	&"drop": "대기 말 1개를 보병 옆에 즉시 낙하",
 }
 
 

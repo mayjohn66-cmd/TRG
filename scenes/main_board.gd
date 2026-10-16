@@ -95,23 +95,41 @@ const CARD_CATEGORY_NAMES: Dictionary = {
 	GameEnums.CardCategory.TRAP: "함정",
 	GameEnums.CardCategory.SUMMON: "소환",
 }
-## 카드 프레임 하단에 보여 주는 한 줄 요약.
+## 작은 손패 카드에 보여 주는 1줄 핵심 요약 (15자 이내). 자세한 규칙은 클릭해서 확대할 때 CARD_SUMMARIES로 본다.
+const CARD_SHORT: Dictionary = {
+	&"ACT_01": "순서 역전·역주행",
+	&"ACT_02": "상대 선두 -2칸",
+	&"ACT_03": "다음 유저 -4칸 폭탄",
+	&"ACT_04": "뒤로 가서 즉시 골인",
+	&"ACT_05": "턴 시작 전으로 되감기",
+	&"ACT_06": "교칙 1개 삭제",
+	&"ACT_07": "뭉친 말 강제 산개",
+	&"ACT_08": "꼴찌 ↔ 선두 교환",
+	&"TRP_01": "밟은 적 출발선 추방",
+	&"TRP_02": "눈금 4+ 2턴 구속",
+	&"TRP_03": "반경 2칸 폭파",
+	&"TRP_04": "코너 감옥화",
+	&"TRP_05": "-3칸 & 연쇄 밀침",
+	&"SUM_01": "최근접 말 추격",
+	&"SUM_02": "역주행 순찰·연행",
+}
+## 카드 확대 보기에서 읽는 개조식 요약 (키워드 + 명사형 종결).
 const CARD_SUMMARIES: Dictionary = {
-	&"ACT_01": "턴 순서를 뒤집고 1라운드 동안 역주행",
-	&"ACT_02": "저격할 상대를 고르면 그 플레이어의 선두 말이 2칸 뒤로 밀려남",
-	&"ACT_03": "다음 플레이어 4칸 후퇴. 즉발 카드로 -8 떠넘김",
-	&"ACT_04": "0번에서 후퇴해 19/28번에 선 말을 완주",
-	&"ACT_05": "잡히거나 함정을 밟은 턴을 되감기",
-	&"ACT_06": "법전의 교칙 1개를 강제 파기",
-	&"TRP_01": "타일에 뒷면 함정 설치 (타일 선택)",
-	&"TRP_02": "눈금 4 이상으로 지나는 적을 2턴 구속",
-	&"TRP_03": "지뢰 + 양옆 [1]. 밟으면 반경 2칸 추방",
-	&"TRP_04": "코너를 무인도로. 짝수가 나와야 탈출",
-	&"TRP_05": "밟은 말 -3칸. 경로의 다른 말도 -2칸 연쇄",
-	&"ACT_07": "말이 가장 많은 타일에 벼락. 모두 1~2칸 흩어짐",
-	&"ACT_08": "내 꼴찌 말과 1등 적 말의 위치 교환",
-	&"SUM_01": "도적 NPC 소환. 가까운 말 추격",
-	&"SUM_02": "중앙에 고스트 소환. 역주행 순찰",
+	&"ACT_01": "턴 순서 역전 & 전원 역주행",
+	&"ACT_02": "상대 선두 말 2칸 후퇴 (프로필 선택)",
+	&"ACT_03": "다음 유저 -4칸 폭탄 (전가 시 누적)",
+	&"ACT_04": "출발선에서 뒤로 가면 즉시 골인!",
+	&"ACT_05": "이번 턴 시작 직전으로 시간 역행",
+	&"ACT_06": "중앙 법전 교칙 1개 지정 삭제",
+	&"TRP_01": "밟은 적 말 즉시 출발선 추방",
+	&"TRP_02": "눈금 4+ 이동 말 2턴간 구속",
+	&"TRP_03": "폭발 반경 2칸 내 모든 말 폭파",
+	&"TRP_04": "코너 감옥화 (짝수 눈금에 탈출)",
+	&"TRP_05": "밟은 말 -3칸 & 뒷말들 연쇄 밀침",
+	&"ACT_07": "가장 뭉친 타일의 말 강제 분리·산개",
+	&"ACT_08": "내 꼴찌 말 ↔ 1등 적 선두 말 위치 교환",
+	&"SUM_01": "라운드마다 최근접 말 추격·카드 강탈",
+	&"SUM_02": "외곽 역주행 순찰 & 중앙 강제 연행",
 }
 
 
@@ -1031,12 +1049,12 @@ func _build_law_board() -> void:
 		text_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		text_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		inner.add_child(text_box)
-		var name_label := _make_label("", 13, UiSkin.INK)
+		var name_label := _make_label("", 14, UiSkin.INK)
 		name_label.clip_text = true
 		text_box.add_child(name_label)
-		var desc_label := _make_label("", 10, UiSkin.SOFT)
+		var desc_label := _make_label("", 12, UiSkin.SOFT)
 		desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		desc_label.max_lines_visible = 3
+		desc_label.max_lines_visible = 2
 		desc_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		text_box.add_child(desc_label)
 		_law_slots.append(slot_panel)
@@ -1099,7 +1117,7 @@ func _build_tool_board() -> void:
 	_tool_rules.add_theme_constant_override("separation", 2)
 	_tool_rules.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	center.add_child(_tool_rules)
-	_tool_note = _make_label("", 10, UiSkin.SOFT)
+	_tool_note = _make_label("", 12, UiSkin.SOFT)
 	_tool_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_tool_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_tool_note.custom_minimum_size = Vector2(184, 0)
@@ -2151,7 +2169,7 @@ func _card_frame_style(category: GameEnums.CardCategory, glow: bool, radius: int
 
 ## 카드 내용물: 맨 위 카드 이름 판 / 큼직한 일러스트 창 / 아래 세부 내용 상자. card_size에 비례해 크기가 정해진다.
 ## 일러스트는 assets/cards/<카드ID>.png가 있으면 그것을, 없으면 카테고리 색 도형 + 글자 엠블럼을 쓴다.
-func _build_card_body(card_id: StringName, card_size: Vector2) -> Control:
+func _build_card_body(card_id: StringName, card_size: Vector2, detail_mode: bool = false) -> Control:
 	var card: BaseCard = CardRegistry.get_card(card_id)
 	var bg: Color = CARD_BG_COLORS[card.category]
 	var accent: Color = CARD_CATEGORY_COLORS[card.category]
@@ -2205,17 +2223,18 @@ func _build_card_body(card_id: StringName, card_size: Vector2) -> Control:
 	detail.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	detail.add_theme_stylebox_override("panel", _style(bg.lightened(0.72), bg.darkened(0.5), maxi(1, int(2.0 * k)), int(3.0 * k), 0, 0))
 	holder.add_child(detail)
-	var kind := _make_label("[%s]" % (CARD_CATEGORY_NAMES[card.category] + (" · 타일 설치" if card.needs_tile() else "")), int(9.0 * k), bg.darkened(0.45))
+	var kind := _make_label("[%s]" % (CARD_CATEGORY_NAMES[card.category] + (" · 타일 설치" if card.needs_tile() else "")), int(10.0 * k), bg.darkened(0.45))
 	kind.position = Vector2(4.0 * k, 1.0 * k)
 	kind.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	detail.add_child(kind)
-	var summary := _make_label("", int(10.0 * k), Color("1d1a14"))
+	var summary := _make_label("", int((11.0 if detail_mode else 12.0) * k), Color("1d1a14"))
 	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	summary.max_lines_visible = 3 if detail_mode else 2
 	summary.position = Vector2(4.0 * k, 13.0 * k)
 	summary.custom_minimum_size = Vector2(detail.size.x - 8.0 * k, 0)
 	summary.size = Vector2(detail.size.x - 8.0 * k, detail.size.y - 14.0 * k)
 	summary.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	summary.text = str(CARD_SUMMARIES.get(card_id, ""))
+	summary.text = str(CARD_SUMMARIES.get(card_id, "")) if detail_mode else str(CARD_SHORT.get(card_id, ""))
 	detail.add_child(summary)
 	return holder
 
@@ -2448,11 +2467,11 @@ func _toggle_zoom(player_id: int, card_id: StringName) -> void:
 	_open_zoom(player_id, card_id)
 
 
-## 손패 카드를 1.8배(252x353)로 확대해 손패와 같은 카드 UI(이름판·일러스트·효과)로 보여 주고, 아래에 사용 가능 타이밍·사용법·지금 사용 가능 여부를 붙인다. 남의 턴에도 볼 수 있다.
+## 손패 카드를 2.5배(350x490)로 확대해 손패와 같은 카드 UI에 개조식 요약을 보여 주고, 아래에 타이밍·사용법(2줄)과 사용 가능 여부를 붙인다. 남의 턴에도 볼 수 있다.
 func _open_zoom(player_id: int, card_id: StringName) -> void:
 	_close_zoom()
 	var card: BaseCard = CardRegistry.get_card(card_id)
-	var card_size: Vector2 = HAND_CARD_SIZE * 1.8
+	var card_size: Vector2 = HAND_CARD_SIZE * 2.5
 	_zoom_key = "%d:%s" % [player_id, card_id]
 	_zoom_view = PanelContainer.new()
 	_zoom_view.z_index = 30
@@ -2468,21 +2487,19 @@ func _open_zoom(player_id: int, card_id: StringName) -> void:
 	var holder := Control.new()
 	holder.custom_minimum_size = card_size
 	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	holder.add_child(_build_card_body(card_id, card_size))
+	holder.add_child(_build_card_body(card_id, card_size, true))
 	box.add_child(holder)
 	var usable: bool = _card_usable_now(player_id, card)
-	var how: String = "보드판으로 드래그 후 타일 고르기" if card.needs_tile() else "보드판 위로 드래그해서 놓기"
-	var timing := _make_label("발동 타이밍: %s  |  %s" % [_card_timing_text(card), how], 12, Color("2b1b00"))
-	timing.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var how: String = "보드에 드래그 → 타일 선택" if card.needs_tile() else "보드에 드래그"
+	var timing := _make_label("◆ 타이밍: %s\n◆ 사용: %s" % [_card_timing_text(card), how], 15, Color("2b1b00"))
 	timing.custom_minimum_size = Vector2(card_size.x, 0)
 	timing.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(timing)
-	var status := _make_label("지금 사용 가능" if usable else "지금은 사용할 수 없음", 13, Color("0b5a1c") if usable else Color("4a4036"))
+	var status := _make_label("지금 사용 가능" if usable else "지금은 사용 불가", 16, Color("0b5a1c") if usable else Color("4a4036"))
 	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	status.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(status)
 	add_child(_zoom_view)
-	# 보드 가운데에 놓는다 (크기는 내용이 정해진 뒤 한 프레임 안에 확정되므로 최소 크기로 위치를 잡는다)
 	var total: Vector2 = _zoom_view.get_combined_minimum_size()
 	_zoom_view.size = total
 	_zoom_view.position = Vector2(683.0 - total.x / 2.0, 384.0 - total.y / 2.0) + _off_center
@@ -2535,20 +2552,20 @@ func _build_hover_tip() -> void:
 	add_child(_tip_panel)
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 8)
-	column.custom_minimum_size = Vector2(320, 0)
+	column.custom_minimum_size = Vector2(360, 0)
 	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_tip_panel.add_child(column)
-	_tip_title = _make_label("", 19, COLOR_GOLD)
+	_tip_title = _make_label("", 22, COLOR_GOLD)
 	_tip_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_tip_title.custom_minimum_size = Vector2(320, 0)
+	_tip_title.custom_minimum_size = Vector2(360, 0)
 	column.add_child(_tip_title)
-	_tip_ability = _make_label("", 15, Color("f1f3f5"))
+	_tip_ability = _make_label("", 19, Color("f1f3f5"))
 	_tip_ability.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_tip_ability.custom_minimum_size = Vector2(320, 0)
+	_tip_ability.custom_minimum_size = Vector2(360, 0)
 	column.add_child(_tip_ability)
-	_tip_skill = _make_label("", 15, Color("ffa94d"))
+	_tip_skill = _make_label("", 19, Color("ffa94d"))
 	_tip_skill.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_tip_skill.custom_minimum_size = Vector2(320, 0)
+	_tip_skill.custom_minimum_size = Vector2(360, 0)
 	column.add_child(_tip_skill)
 
 
@@ -2567,11 +2584,11 @@ func _fill_pawn_tip(pawn_id: int) -> void:
 	if pawn.is_promoted_shogi():
 		status += "  ★나리 승급(+1칸)"
 	_tip_title.text = "%s  - P%d%s" % [PawnCatalog.full_name(pawn.kind, pawn.unit_no), pawn.owner_id, status]
-	_tip_ability.text = "고유 능력\n%s" % PawnCatalog.ability_text(pawn.kind, pawn.unit_no)
+	_tip_ability.text = "◆ 패시브: %s" % PawnCatalog.ability_text(pawn.kind, pawn.unit_no)
 	var skill: StringName = PawnCatalog.skill_of(pawn.sub_type())
 	_tip_skill.visible = skill != &""
 	if skill != &"":
-		_tip_skill.text = "필살기 (1회) - %s%s\n%s" % [PawnCatalog.skill_name(skill), "  [사용 완료]" if pawn.skill_used else "", PawnCatalog.skill_text(skill)]
+		_tip_skill.text = "◆ [1회] %s%s\n   %s" % [PawnCatalog.skill_name(skill), "  (사용됨)" if pawn.skill_used else "", PawnCatalog.skill_text(skill)]
 
 
 func _bind_tip(control: Control, provider: Callable) -> void:
@@ -2641,12 +2658,12 @@ func _pawn_info_text(pawn_id: int) -> String:
 	var pawn: PlayerPawn = state.get_pawn(pawn_id) if state != null else null
 	if pawn == null:
 		return ""
-	var lines: Array[String] = [PawnCatalog.full_name(pawn.kind, pawn.unit_no), "고유 능력: %s" % PawnCatalog.ability_text(pawn.kind, pawn.unit_no)]
+	var lines: Array[String] = [PawnCatalog.full_name(pawn.kind, pawn.unit_no), "◆ 패시브: %s" % PawnCatalog.ability_text(pawn.kind, pawn.unit_no)]
 	if pawn.is_promoted_shogi():
 		lines.append("나리(成り) 승급 상태: %s - 이동할 때마다 +1칸" % pawn.display_label())
 	var skill: StringName = PawnCatalog.skill_of(pawn.sub_type())
 	if skill != &"":
-		lines.append("필살기(1회): %s - %s%s" % [PawnCatalog.skill_name(skill), PawnCatalog.skill_text(skill), " [사용 완료]" if pawn.skill_used else ""])
+		lines.append("◆ [1회] %s: %s%s" % [PawnCatalog.skill_name(skill), PawnCatalog.skill_text(skill), " (사용됨)" if pawn.skill_used else ""])
 	return "\n".join(lines)
 
 
@@ -3046,31 +3063,31 @@ func _stop_pawn_flash() -> void:
 
 ## 도구별 [심볼 글자, 심볼 색, 전진 규칙 첫 줄, 둘째 줄].
 const TOOL_CARDS: Dictionary = {
-	&"D6": ["6", Color("c92a2a"), "굴려서\n1 ~ 6 칸 전진", ""],
-	&"YUT": ["윷", Color("8a5a2b"), "던져서 -1 ~ 5 칸 전진", "(윷·모 나오면 한 번 더!)"],
-	&"LIFE_ROULETTE": ["룰", Color("1971c2"), "돌려서 1 ~ 10 칸 전진", "(7 당첨 시 한 번 더!)"],
-	&"HOLDEM": ["♠", Color("343a40"), "5장 포커 족보에 따라", "1 ~ 15 칸 전진"],
-	&"CHINCHIRO": ["친", Color("0b7285"), "4 ~ 6 칸 고눈금 보장!", "(삐끗 시 -6칸 후퇴!)"],
-	&"SLOT_777": ["7", Color("862e9c"), "릴 맞춰 1 ~ 8 칸 전진", "(★777 잭팟 시 20칸!)"],
-	&"REVOLVER": ["탄", Color("495057"), "당길 때마다 +3칸 누적", "(실탄 터지면 0칸 종료!)"],
-	&"DICE_HWATU": ["화", Color("c92a2a"), "화투패 족보로 전진!", "[고(GO)] 선택 시 추가 칸수 도전!"],
-	&"DICE_MAHJONG": ["마", Color("2b8a3e"), "마작패 3장 조합으로", "2 ~ 12 칸 전진 (역만 시 한 번 더!)"],
-	&"DICE_TAROT": ["타", Color("5f3dc4"), "메이저 아르카나를 뽑아", "운명에 따라 전진 (매달린 남자: 다음 턴 +8칸)"],
+	&"D6": ["6", Color("c92a2a"), "1 ~ 6칸 전진", ""],
+	&"YUT": ["윷", Color("8a5a2b"), "-1 ~ 5칸 전진", "윷·모 재굴림 +1"],
+	&"LIFE_ROULETTE": ["룰", Color("1971c2"), "1 ~ 10칸 전진", "7 당첨 재굴림 +1"],
+	&"HOLDEM": ["♠", Color("343a40"), "포커 족보 → 1 ~ 15칸", ""],
+	&"CHINCHIRO": ["친", Color("0b7285"), "4 ~ 6칸 (삐끗 -6칸)", ""],
+	&"SLOT_777": ["7", Color("862e9c"), "릴 일치 → 1 ~ 8칸", "777 잭팟 20칸"],
+	&"REVOLVER": ["탄", Color("495057"), "빈 총 +3칸 누적", "실탄 → 0칸·턴 종료"],
+	&"DICE_HWATU": ["화", Color("c92a2a"), "패 족보 → 0 ~ 8칸", "고 / 스톱 선택"],
+	&"DICE_MAHJONG": ["마", Color("2b8a3e"), "패 3장 → 2 ~ 12칸", "역만 재굴림 +1"],
+	&"DICE_TAROT": ["타", Color("5f3dc4"), "타로 1장 → 전진", "매달린 남자: 다음 +8칸"],
 }
 
 
 ## 도구별 전체 규칙표: [항목, 전진 결과] 행들과 보충 설명. 새로운 방식의 도구는 유저가 모르므로 족보·확률을 전부 보여 준다.
 const TOOL_RULES: Dictionary = {
-	&"D6": {"rows": [["1 ~ 6 눈금", "나온 눈금만큼"]], "note": "각 눈금이 나올 확률은 1/6"},
-	&"YUT": {"rows": [["빽도 (-1)", "1칸 후퇴"], ["도 (1)", "1칸"], ["개 (2)", "2칸"], ["걸 (3)", "3칸"], ["윷 (4)", "4칸 + 한 번 더!"], ["모 (5)", "5칸 + 한 번 더!"]], "note": "여섯 가지가 같은 확률(1/6)"},
-	&"LIFE_ROULETTE": {"rows": [["1 ~ 6, 8 ~ 10", "나온 숫자만큼"], ["7 당첨", "7칸 + 한 번 더!"]], "note": "1 ~ 10 중 하나가 같은 확률로 나옵니다. 원판을 잡고 돌려서 굴립니다"},
-	&"HOLDEM": {"rows": [["노페어", "1칸"], ["원페어", "3칸"], ["투페어", "5칸"], ["트리플", "7칸"], ["스트레이트", "10칸"], ["플러시 이상", "15칸"]], "note": "카드 5장을 뽑아 만든 족보로 정해집니다. 플러시·풀하우스·포카드·스트레이트 플러시는 모두 15칸"},
-	&"CHINCHIRO": {"rows": [["4 눈금", "4칸 (2/6)"], ["5 눈금", "5칸 (2/6)"], ["6 눈금", "6칸 (1/6)"], ["삐끗!", "6칸 후퇴 (1/6)"]], "note": "주사위가 접시 밖으로 튀면 삐끗"},
-	&"SLOT_777": {"rows": [["3개 모두 다름", "1칸"], ["2개 일치", "4칸"], ["3개 일치", "8칸"], ["7 7 7 잭팟", "20칸"]], "note": "릴 3개의 그림은 6종류(체리·레몬·종·BAR·다이아·7)"},
-	&"DICE_HWATU": {"rows": [["망통", "0칸, 턴 종료"], ["1~3 / 4~6 / 7~9끗", "2 / 3 / 4칸"], ["1~6 / 7~9땡", "6 / 7칸"], ["장땡·광땡", "8칸"], ["[고!] 광/열끗/띠", "+5/+4/+3칸"], ["[고!] 피 (피박)", "누적 1칸으로"]], "note": "패 2장의 월 합 끝자리로 정해집니다. 망통이 아니면 [스톱] 또는 [고!] (최대 2회)"},
-	&"DICE_MAHJONG": {"rows": [["핑후 (불일치)", "2칸"], ["또이츠 (같은 패 2개)", "3칸"], ["슌쯔 (연속 숫자)", "5칸"], ["커쯔 (같은 패 3개)", "8칸"], ["역만 (8%)", "12칸 + 한 번 더!"]], "note": "역만은 국사무쌍·대삼원입니다. 패 3개를 동시에 쯔모합니다"},
-	&"DICE_TAROT": {"rows": [["0. 광대", "-2칸 또는 +7칸"], ["VII. 전차", "6칸"], ["X. 운명의 수레바퀴", "4칸 + 한 번 더!"], ["XII. 매달린 남자", "1칸, 다음 굴림 +8칸"], ["XXI. 세계", "9칸"]], "note": "다섯 장 중 한 장이 같은 확률로 뒤집힙니다. 매달린 남자의 축복은 다음 내 굴림에 한 번 더해집니다"},
-	&"REVOLVER": {"rows": [["방아쇠 1회", "+3칸 누적"], ["최대 누적", "15칸"], ["실탄 (6발 중 1발)", "누적 0칸, 턴 종료"], ["멈추기", "누적한 칸만큼 이동"]], "note": "빈 총이 나올 때마다 누적되고, 실탄이 나오면 전부 사라집니다"},
+	&"D6": {"rows": [["1 ~ 6 눈금", "나온 눈금만큼"]], "note": "각 눈금 1/6"},
+	&"YUT": {"rows": [["빽도 (-1)", "1칸 후퇴"], ["도 (1)", "1칸"], ["개 (2)", "2칸"], ["걸 (3)", "3칸"], ["윷 (4)", "4칸 + 한 번 더!"], ["모 (5)", "5칸 + 한 번 더!"]], "note": "6가지 각 1/6"},
+	&"LIFE_ROULETTE": {"rows": [["1 ~ 6, 8 ~ 10", "나온 숫자만큼"], ["7 당첨", "7칸 + 한 번 더!"]], "note": "1 ~ 10 균등 · 원판 돌리기"},
+	&"HOLDEM": {"rows": [["노페어", "1칸"], ["원페어", "3칸"], ["투페어", "5칸"], ["트리플", "7칸"], ["스트레이트", "10칸"], ["플러시 이상", "15칸"]], "note": "5장 드로우 · 플러시 이상 15칸"},
+	&"CHINCHIRO": {"rows": [["4 눈금", "4칸 (2/6)"], ["5 눈금", "5칸 (2/6)"], ["6 눈금", "6칸 (1/6)"], ["삐끗!", "6칸 후퇴 (1/6)"]], "note": "접시 밖 이탈 = 삐끗"},
+	&"SLOT_777": {"rows": [["3개 모두 다름", "1칸"], ["2개 일치", "4칸"], ["3개 일치", "8칸"], ["7 7 7 잭팟", "20칸"]], "note": "릴 3개 · 그림 6종"},
+	&"DICE_HWATU": {"rows": [["망통", "0칸, 턴 종료"], ["1~3 / 4~6 / 7~9끗", "2 / 3 / 4칸"], ["1~6 / 7~9땡", "6 / 7칸"], ["장땡·광땡", "8칸"], ["[고!] 광/열끗/띠", "+5/+4/+3칸"], ["[고!] 피 (피박)", "누적 1칸으로"]], "note": "월 합 끝자리 · 고 최대 2회"},
+	&"DICE_MAHJONG": {"rows": [["핑후 (불일치)", "2칸"], ["또이츠 (같은 패 2개)", "3칸"], ["슌쯔 (연속 숫자)", "5칸"], ["커쯔 (같은 패 3개)", "8칸"], ["역만 (8%)", "12칸 + 한 번 더!"]], "note": "역만 = 국사무쌍·대삼원"},
+	&"DICE_TAROT": {"rows": [["0. 광대", "-2칸 또는 +7칸"], ["VII. 전차", "6칸"], ["X. 운명의 수레바퀴", "4칸 + 한 번 더!"], ["XII. 매달린 남자", "1칸, 다음 굴림 +8칸"], ["XXI. 세계", "9칸"]], "note": "5장 중 1장 · 축복은 다음 굴림"},
+	&"REVOLVER": {"rows": [["방아쇠 1회", "+3칸 누적"], ["최대 누적", "15칸"], ["실탄 (6발 중 1발)", "누적 0칸, 턴 종료"], ["멈추기", "누적한 칸만큼 이동"]], "note": "실탄 6발 중 1발 · 터지면 누적 소멸"},
 }
 
 
@@ -4443,8 +4460,8 @@ func _make_augment_card(info: Dictionary, on_pick: Callable) -> Button:
 	title.add_theme_color_override("font_outline_color", Color.BLACK)
 	title.add_theme_constant_override("outline_size", 4)
 	card.add_child(title)
-	var desc := _make_label("", 14, Color("dee2e6"))
-	desc.position = Vector2(14, 242)
+	var desc := _make_label("", 17, Color("dee2e6"))
+	desc.position = Vector2(14, 240)
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	desc.custom_minimum_size = Vector2(AUGMENT_CARD_SIZE.x - 28.0, 0)
 	desc.size = Vector2(AUGMENT_CARD_SIZE.x - 28.0, 140)
@@ -4932,7 +4949,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_avatar_react(int(data["player_id"]), AvatarSlot.Emotion.HAPPY)
 			var card: BaseCard = CardRegistry.get_card(data["card_id"])
 			_log_line("[카드] P%d [%s] 사용%s" % [data["player_id"], card.display_name, " (개입 대기열 - 나중에 낸 카드부터 실행)" if data["queued"] else ""], Color("74c0fc"))
-			_announce_gate("카드 발동", "[P%d 발동!] %s" % [data["player_id"], card.display_name], ("개입 대기열에 쌓였습니다 (나중에 낸 카드부터 실행)\n" if data["queued"] else "") + str(CARD_SUMMARIES.get(data["card_id"], "")), PLAYER_COLORS[int(data["player_id"])], _make_card_preview(data["card_id"]), 1.2)
+			_announce_gate("카드 발동", "[P%d 발동!] %s" % [data["player_id"], card.display_name], ("개입 대기열 등록 (후입선출)\n" if data["queued"] else "") + str(CARD_SUMMARIES.get(data["card_id"], "")), PLAYER_COLORS[int(data["player_id"])], _make_card_preview(data["card_id"]), 1.2)
 		&"npc_phase_resolved":
 			for report: Dictionary in data["reports"]:
 				_log_line("[NPC] NPC가 %s로 이동 (잡힌 말: %s)" % [str(report["path"]), str(report["caught"])], Color("fa5252"))

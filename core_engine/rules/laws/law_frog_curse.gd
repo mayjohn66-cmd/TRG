@@ -8,7 +8,7 @@ extends LawResource
 func _init() -> void:
 	law_id = "LAW_04"
 	law_name = "청개구리 저주"
-	description = "짝수 눈금은 전진, 홀수 눈금은 후퇴."
+	description = "짝수 전진 / 홀수 후퇴"
 	trigger_timing = RuleContext.ON_DICE_ROLL
 
 

@@ -8,7 +8,7 @@ extends LawResource
 func _init() -> void:
 	law_id = "LAW_03"
 	law_name = "볼따구 평등법"
-	description = "눈금 6 이상 이동 후 꼴찌 말과 위치 강제 교환."
+	description = "눈금 6+ 이동 후 꼴찌 말과 위치 교환"
 	trigger_timing = RuleContext.ON_TURN_END
 
 

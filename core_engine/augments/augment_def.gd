@@ -63,16 +63,16 @@ func describe(state: GameState, player_id: int) -> String:
 		GameEnums.AugmentCategory.PAWN_EVOLUTION:
 			var kind: GameEnums.PawnKind = payload
 			var skill: StringName = PawnCatalog.skill_of(PawnCatalog.sub_type_of(kind, units[0]))
-			var text: String = "기본 말 1개를 [%s] %s(으)로 교체해 지급\n능력: %s" % [PawnCatalog.display_set_name(kind), PawnCatalog.unit_label(kind, units[0]).split(":")[-1], PawnCatalog.ability_text(kind, units[0])]
+			var text: String = "◆ 기본 말 1개 → [%s] %s\n◆ 패시브: %s" % [PawnCatalog.display_set_name(kind), PawnCatalog.unit_label(kind, units[0]).split(":")[-1], PawnCatalog.ability_text(kind, units[0])]
 			if skill != &"":
-				text += "\n필살기(1회): %s - %s" % [PawnCatalog.skill_name(skill), PawnCatalog.skill_text(skill)]
+				text += "\n◆ [1회] %s: %s" % [PawnCatalog.skill_name(skill), PawnCatalog.skill_text(skill)]
 			return text + "\n※ 이미 가진 기물은 받을 수 없습니다"
 		GameEnums.AugmentCategory.TOOL_SWAP:
-			return "내 판정 도구를 [%s](으)로 교체" % ToolRegistry.create(payload).display_name
+			return "◆ 내 판정 도구 교체\n◆ 즉시 장착"
 		GameEnums.AugmentCategory.LAW_ENACT:
 			var law: LawResource = LawRegistry.create(payload)
-			return "%s\n중앙 법전에 즉시 등록 (가득 차면 가장 오래된 교칙이 밀려남)" % law.description
-	return "무작위 생떼 카드 2장을 손패에 획득"
+			return "◆ %s\n◆ 법전 즉시 등록 (4칸 초과 시 선입 삭제)" % law.description
+	return "◆ 무작위 생떼 카드 2장 획득"
 
 
 ## 증강을 적용한다. params["pawn_id"]로 진화할 기본 말을 지정할 수 있고, 생략하면 슬롯 번호가 가장 낮은 기본 말을 쓴다.

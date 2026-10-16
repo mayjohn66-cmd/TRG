@@ -7,8 +7,8 @@ extends LawResource
 
 func _init() -> void:
 	law_id = "LAW_08"
-	law_name = "결승선 문턱 높이기"
-	description = "결승선 통과 시 눈금이 남으면 남은 만큼 뒤로 튕겨 나옴."
+	law_name = "결승선 문턱"
+	description = "결승선 눈금 초과 시 남은 만큼 반동 후퇴"
 	trigger_timing = RuleContext.ON_MOVE_CALC
 
 
