@@ -281,6 +281,17 @@ var _charge_clock: float = 0.0
 var _charge_value: float = 0.0
 var _pending_power: float = 0.5
 var _fx_busy: bool = false
+## 말 움직임 연출(PawnFx): 이 시각(msec)까지는 입력·봇을 잠가 움직임이 끝나기를 기다린다.
+var _fx_until_msec: int = 0
+## 말 id -> 다음 이동 연출에 쓸 힌트 {delay, arc, peak, spin, dur, drop, t(만든 시각)}. 이벤트가 어떻게 움직일지 미리 알려 준다.
+var _fx_hints: Dictionary = {}
+## 알림 카드가 끝난 뒤에 실행할 연출들 (알림 카드가 보드를 가리는 동안 말이 먼저 움직이지 않도록).
+var _fx_pending: Array[Callable] = []
+## [문]으로 등록된 알림 번호들과, 문이 열렸는지(카드가 끝나 말이 움직일 수 있는지).
+var _fx_gates: Array[int] = []
+var _fx_gate_open: bool = false
+## 알림 카드가 떠 있는 동안 받아 둔 말의 걸음들: 말 id -> [{pos, scale}] (카드가 끝나면 한 칸씩 이어서 보여 준다).
+var _fx_step_queue: Dictionary = {}
 var _fx_generation: int = 0
 ## 굴림 연출마다 늘어나는 번호: 새 연출이 앞선 연출을 덮어쓰면(취소) 앞선 연출의 뒷정리가 입력 잠금을 풀지 않게 한다.
 var _fx_serial: int = 0
@@ -600,9 +611,12 @@ func _new_game() -> void:
 
 func _bind_state() -> void:
 	state.pawn_stepped.connect(_on_pawn_stepped)
-	state.pawn_warped.connect(_on_pawn_stepped)
+	state.pawn_warped.connect(_on_pawn_warped)
 	state.pawn_sent_to_start.connect(func(pawn_id: int, by_player: int) -> void:
 		_log_line("%s 출발선으로 복귀" % _pawn_name(pawn_id), Color("ff8787"))
+		# 잡힌 말: 맞는 순간 번쩍 + 빙글 돌며 포물선으로 출발선까지 날아간다.
+		_fx_impact_at_pawn(pawn_id, 0.12)
+		_set_hint(pawn_id, {"delay": 0.2, "arc": 58.0, "spin": TAU, "dur": 0.65})
 		var victim: PlayerPawn = state.get_pawn(pawn_id)
 		if victim != null:
 			_avatar_react(victim.owner_id, AvatarSlot.Emotion.ANGRY)
@@ -627,28 +641,36 @@ func _bind_state() -> void:
 		for chained: int in chain:
 			chain_names.append(_pawn_name(chained))
 		_log_line("[도미노] %s 뒤로 3칸 밀림%s" % [_pawn_name(pawn_id), "  연쇄: %s (각 -2칸)" % ", ".join(chain_names) if not chain_names.is_empty() else ""], Color("ff6b6b"))
-		_announce("함정 발동", "도미노 연쇄 붕괴!", "%s이(가) 3칸 뒤로 밀려났습니다%s" % [_pawn_name(pawn_id), "\n연쇄로 %d개 말이 2칸씩 우수수 밀려납니다" % chain.size() if not chain.is_empty() else ""], Color("ff6b6b"), null, 1.4))
+		_announce_gate("함정 발동", "도미노 연쇄 붕괴!", "%s이(가) 3칸 뒤로 밀려났습니다%s" % [_pawn_name(pawn_id), "\n연쇄로 %d개 말이 2칸씩 우수수 밀려납니다" % chain.size() if not chain.is_empty() else ""], Color("ff6b6b"), null, 1.4))
 	state.tower_struck.connect(func(tile: int, scattered: Array[Dictionary]) -> void:
 		_log_line("[타로] 무너지는 탑이 %d번 타일에 벼락! 말 %d개가 흩어졌습니다" % [tile, scattered.size()], Color("ffa94d"))
-		_announce("타로", "XVI. 무너지는 탑!", "%d번 타일에 벼락이 내리쳐 말 %d개가 뿔뿔이 흩어졌습니다" % [tile, scattered.size()], Color("ffa94d"), null, 1.5)
+		_announce_gate("타로", "XVI. 무너지는 탑!", "%d번 타일에 벼락이 내리쳐 말 %d개가 뿔뿔이 흩어졌습니다" % [tile, scattered.size()], Color("ffa94d"), null, 1.5)
+		var struck_pos: Vector2 = _tile_center(tile)
+		for entry: Dictionary in scattered:
+			_set_hint(int(entry["pawn_id"]), {"arc": 52.0, "peak": 1.3, "dur": 0.6, "delay": 0.35})
+		_fx_when_announced(func() -> void: _impact_ring(struck_pos, Color("ffe066"), 44.0))
 		_refresh_pawns())
 	state.wheel_turned.connect(func(player_id: int, mine_id: int, enemy_id: int, outcome: StringName) -> void:
 		if outcome == &"swap":
 			_log_line("[타로] P%d의 운명의 수레바퀴: %s ↔ %s 위치 교환" % [player_id, _pawn_name(mine_id), _pawn_name(enemy_id)], Color("ffa94d"))
-			_announce("타로", "X. 운명의 수레바퀴!", "%s과(와) %s의 위치가 뒤바뀝니다" % [_pawn_name(mine_id), _pawn_name(enemy_id)], Color("ffa94d"), null, 1.5)
+			_announce_gate("타로", "X. 운명의 수레바퀴!", "%s과(와) %s의 위치가 뒤바뀝니다" % [_pawn_name(mine_id), _pawn_name(enemy_id)], Color("ffa94d"), null, 1.5)
 		else:
 			_log_line("[타로] 운명의 수레바퀴: %s 4칸 후퇴" % _pawn_name(enemy_id), Color("ffa94d"))
-			_announce("타로", "X. 운명의 수레바퀴!", "%s이(가) 4칸 뒤로 밀려납니다" % _pawn_name(enemy_id), Color("ffa94d"), null, 1.5)
+			_announce_gate("타로", "X. 운명의 수레바퀴!", "%s이(가) 4칸 뒤로 밀려납니다" % _pawn_name(enemy_id), Color("ffa94d"), null, 1.5)
 		_refresh_pawns())
 	state.pawn_evolved.connect(func(pawn_id: int, kind: int, unit_no: int) -> void: _log_line("[진화] %s → %s" % [_pawn_name(pawn_id), PawnCatalog.unit_label(kind, unit_no)], Color("ffa94d")))
 	state.pawns_stacked.connect(func(leader_id: int, member_ids: Array[int]) -> void: _log_line("%s 업기 (%d마리)" % [_pawn_name(leader_id), member_ids.size()], Color("ffd43b")))
-	state.pawns_swapped.connect(func(a_id: int, b_id: int) -> void: _log_line("%s ↔ %s 위치 교환" % [_pawn_name(a_id), _pawn_name(b_id)], Color("ffd43b")))
+	state.pawns_swapped.connect(func(a_id: int, b_id: int) -> void:
+		_log_line("%s ↔ %s 위치 교환" % [_pawn_name(a_id), _pawn_name(b_id)], Color("ffd43b"))
+		_hint_swap(a_id, b_id))
+	state.pawns_castled.connect(func(a_id: int, b_id: int) -> void: _hint_swap(a_id, b_id))
+	state.pawn_pushed_back.connect(func(pawn_id: int, _from: int, _to: int) -> void: _set_hint(pawn_id, {"arc": 0.0, "dur": 0.5}))
 	state.attachment_triggered.connect(func(tile: int, id: String, pawn_id: int, _cutscene: StringName) -> void:
 		var trapped: PlayerPawn = state.get_pawn(pawn_id)
 		if trapped != null:
 			_avatar_react(trapped.owner_id, AvatarSlot.Emotion.SURPRISED)
 		_log_line("[설치물] %d번 타일 %s 발동! (%s)" % [tile, _attachment_name(id), _pawn_name(pawn_id)], Color("ff6b6b"))
-		_announce("함정 발동", "[발동!] %s" % _attachment_name(id), "%s\n%d번 타일에서 %s에게 발동" % [str(CARD_SUMMARIES.get(StringName(id), "")), tile, _pawn_name(pawn_id)], Color("ff6b6b"), null, 1.2))
+		_announce_gate("함정 발동", "[발동!] %s" % _attachment_name(id), "%s\n%d번 타일에서 %s에게 발동" % [str(CARD_SUMMARIES.get(StringName(id), "")), tile, _pawn_name(pawn_id)], Color("ff6b6b"), null, 1.2))
 	state.npc_vanished.connect(func(npc_id: int, tile: int) -> void:
 		_announce("중립 기물", "NPC가 사냥을 마치고 사라졌습니다", "%d번 타일 - 중립 기물은 한 번 잡으면 사라집니다" % tile, Color("fa5252"), null, 1.3))
 	state.attachment_placed.connect(func(tile: int, id: String, owner_id: int) -> void:
@@ -1624,17 +1646,7 @@ func _refresh_pawns() -> void:
 		var view: Node2D = _pawn_views.get(pawn.entity_id)
 		if view == null:
 			continue
-		if view.has_meta("tween"):
-			var running: Tween = view.get_meta("tween")
-			if running != null and running.is_valid():
-				running.kill()
-		view.position = _pawn_position(pawn)
-		view.scale = Vector2.ONE * _depth_scale(tile_norm(pawn.current_tile_idx).y)
-		(view.get_node("Shadow") as Polygon2D).visible = view_mode == ViewMode.TILT
-		# 출발 전 대기 말과 완주한 말은 보드에 그리지 않는다. 대기 말은 첫 걸음을 뗄 때 출발선에서 나타나 전진하고,
-		# 완주 현황은 오른쪽 패널의 미니 슬롯(●●○○)과 [이동할 말] 버튼으로 확인한다.
-		view.visible = pawn.carrier == null and not pawn.is_finished and pawn.has_left_start
-		view.modulate = Color.WHITE
+		_settle_pawn_view(view, pawn)
 		var kind_label: Label = view.get_node("Bounce/Kind")
 		kind_label.text = pawn.letter()
 		# 나리(成り) 승급한 쇼기 기물은 붉은 글씨
@@ -1661,7 +1673,13 @@ func _refresh_pawns() -> void:
 			marker.add_child(caption)
 			_pawn_layer.add_child(marker)
 			_npc_views[npc.entity_id] = marker
-		(_npc_views[npc.entity_id] as Node2D).position = _tile_center(npc.current_tile_idx) + Vector2(0, -22) * _depth_scale(tile_norm(npc.current_tile_idx).y)
+		var npc_view: Node2D = _npc_views[npc.entity_id]
+		var npc_target: Vector2 = _tile_center(npc.current_tile_idx) + Vector2(0, -22) * _depth_scale(tile_norm(npc.current_tile_idx).y)
+		if _fx_on() and npc_view.position.distance_to(npc_target) > 3.0 and npc_view.position != Vector2.ZERO:
+			if not _fx_holding():
+				_glide_node(npc_view, npc_target, 0.6)
+		elif not npc_view.has_meta("fx") or not _fx_node_running(npc_view):
+			npc_view.position = npc_target
 	for npc_id: int in _npc_views.keys():
 		if state.get_npc(npc_id) == null:
 			(_npc_views[npc_id] as Node).queue_free()
@@ -1718,14 +1736,44 @@ func _on_pawn_stepped(pawn_id: int, _from_tile: int, _to_tile: int) -> void:
 	if view == null or pawn == null:
 		return
 	view.visible = pawn.carrier == null and not pawn.is_finished
-	if view.has_meta("tween"):
-		var previous: Tween = view.get_meta("tween")
-		if previous != null and previous.is_valid():
-			previous.kill()
-	var tween: Tween = create_tween()
-	tween.tween_property(view, "position", _pawn_position(pawn), maxf(STEP_DELAY * _pace() * 0.85, 0.05))
-	tween.parallel().tween_property(view, "scale", Vector2.ONE * _depth_scale(tile_norm(pawn.current_tile_idx).y), maxf(STEP_DELAY * _pace() * 0.85, 0.05))
-	view.set_meta("tween", tween)
+	if not _fx_on():
+		if view.has_meta("fx"):
+			_kill_fx(view)
+		var quick: Tween = create_tween()
+		quick.tween_property(view, "position", _pawn_position(pawn), maxf(STEP_DELAY * _pace() * 0.85, 0.05))
+		quick.parallel().tween_property(view, "scale", Vector2.ONE * _depth_scale(tile_norm(pawn.current_tile_idx).y), maxf(STEP_DELAY * _pace() * 0.85, 0.05))
+		view.set_meta("fx", quick)
+		return
+	if view.has_meta("fx_script") and _fx_running(view):
+		return  # 필살기 연출이 이 말을 직접 움직이는 중
+	var target_scale: float = _depth_scale(tile_norm(pawn.current_tile_idx).y)
+	if _fx_holding():
+		# 알림 카드가 가리는 동안의 걸음은 모아 두었다가 카드가 끝나면 한 칸씩 이어서 보여 준다.
+		if not _fx_step_queue.has(pawn_id):
+			_fx_step_queue[pawn_id] = []
+		(_fx_step_queue[pawn_id] as Array).append({"pos": _pawn_position(pawn), "scale": target_scale})
+		return
+	_glide(view, _pawn_position(pawn), target_scale, {"dur": STEP_DELAY * 0.85, "arc": 7.0, "pace_cap": 1.0})
+
+
+## 순간이동(옷장·비행기·탑 흩어짐 등): 높이 떠올라 포물선으로 날아가 내려앉는다.
+func _on_pawn_warped(pawn_id: int, _from_tile: int, _to_tile: int) -> void:
+	var view: Node2D = _pawn_views.get(pawn_id)
+	var pawn: PlayerPawn = state.get_pawn(pawn_id)
+	if view == null or pawn == null:
+		return
+	view.visible = pawn.carrier == null and not pawn.is_finished
+	if not _fx_on():
+		_on_pawn_stepped(pawn_id, _from_tile, _to_tile)
+		return
+	if view.has_meta("fx_script") and _fx_running(view):
+		return
+	if _fx_holding():
+		return  # 카드가 끝나면 _refresh_pawns가 힌트대로 날려 보낸다
+	var opts: Dictionary = _take_hint(pawn_id)
+	var merged: Dictionary = {"arc": 46.0, "peak": 1.35, "dur": 0.55}
+	merged.merge(opts, true)
+	_glide(view, _pawn_position(pawn), _depth_scale(tile_norm(pawn.current_tile_idx).y), merged)
 
 
 # ---------------------------------------------------------------------------
@@ -3584,7 +3632,8 @@ func _build_aim_layer() -> void:
 	_aim_layer.add_child(_aim_label)
 
 
-## 필살기 발동 연출: 알림 배너 + (알까기라면) 맞은 말들이 화면 밖으로 튕겨 나가는 연출. 엔진 결과가 확정되기 직전에 도착하는 이벤트다.
+## 필살기 발동 연출: 알림 카드(무엇이 발동했는지) -> 보드 위 말들의 움직임. 엔진 결과가 확정되기 직전에 도착하는 이벤트다.
+## 알림 카드가 보드를 가리는 동안에는 말을 움직이지 않고, 카드가 끝나면 연출을 시작한다.
 func _on_skill_used(data: Dictionary) -> void:
 	var skill: StringName = data["skill"]
 	var player_id: int = int(data["player_id"])
@@ -3594,24 +3643,372 @@ func _on_skill_used(data: Dictionary) -> void:
 	match skill:
 		&"shoot":
 			var hits: Array = data["hits"]
-			body = "%d개의 말이 출발선으로 탈락! %s" % [hits.size(), "" if hits.is_empty() else ""]
-			var direction: Vector2 = Vector2(cos(float(data["angle"])), sin(float(data["angle"])))
-			for hit: Variant in hits:
-				var victim: PlayerPawn = state.get_pawn(int((hit as Dictionary)["pawn_id"]))
-				if victim != null:
-					_fly_away(_tile_center(int((hit as Dictionary)["from"])), direction, PLAYER_COLORS[victim.owner_id])
+			body = "%d개의 말이 출발선으로 탈락!" % hits.size()
 			body += "\n흑돌은 %d번 타일에 안착" % int(data["landing"])
+			_prepare_shoot_fx(data)
 		&"charge":
 			var route: Array = data["path"]
 			body = "%d번 타일까지 직선 돌진" % int(route.back())
 		&"warp":
 			body = "%d번 → %d번 타일로 직항" % [int(data["from"]), int(data["tile"])]
+			_set_hint(int(data["pawn_id"]), {"arc": 96.0, "peak": 1.7, "dur": 0.9})
 		&"castle":
 			body = "%s와(과) 위치를 맞바꿉니다" % _pawn_name(int(data["partner"]))
 		&"drop":
 			body = "%s이(가) %d번 타일에 낙하!" % [_pawn_name(int(data["partner"])), int(data["tile"])]
+			_set_hint(int(data["partner"]), {"drop": true})
 	_log_line("[필살기] %s: %s - %s" % [who, PawnCatalog.skill_name(skill), body.replace("\n", " ")], Color("ffa94d"))
-	_announce("1회용 필살기", "[P%d 발동!] %s" % [player_id, PawnCatalog.skill_name(skill)], body, PLAYER_COLORS[player_id], null, 1.3)
+	_announce_gate("1회용 필살기", "[P%d 발동!] %s" % [player_id, PawnCatalog.skill_name(skill)], body, PLAYER_COLORS[player_id], null, 1.3)
+
+
+## 흑돌 알까기 연출을 미리 만들어 둔다 (이 시점에는 말들이 아직 옛 자리에 있다):
+## 뒤로 살짝 당김 -> 직선으로 발사(맞은 말은 닿는 순간 튕겨 나감) -> 멈춘 자리에서 가까운 타일로 자리를 다시 잡음.
+func _prepare_shoot_fx(data: Dictionary) -> void:
+	if not _fx_on():
+		return
+	var shooter_id: int = int(data["pawn_id"])
+	var shooter: PlayerPawn = state.get_pawn(shooter_id)
+	var view: Node2D = _pawn_views.get(shooter_id)
+	if shooter == null or view == null:
+		return
+	var shot: Dictionary = PawnSkills.shot_result(state, shooter, float(data["angle"]), float(data["power"]))
+	var start: Vector2 = view.position
+	var free_end: Vector2 = _project(shot["to"] as Vector2)
+	var distance: float = maxf(start.distance_to(free_end), 1.0)
+	var direction: Vector2 = (free_end - start) / distance
+	var victims: Array[Dictionary] = []
+	for hit: Variant in data["hits"]:
+		var victim_id: int = int((hit as Dictionary)["pawn_id"])
+		var victim_view: Node2D = _pawn_views.get(victim_id)
+		var victim: PlayerPawn = state.get_pawn(victim_id)
+		if victim_view == null or victim == null:
+			continue
+		var along: float = clampf((victim_view.position - start).dot(direction) / distance, 0.08, 1.0)
+		victims.append({"id": victim_id, "pos": victim_view.position, "frac": along, "color": PLAYER_COLORS[victim.owner_id]})
+	_fx_pending.append(func() -> void: _play_shoot_fx(shooter_id, start, free_end, direction, distance, victims))
+
+
+func _play_shoot_fx(shooter_id: int, start: Vector2, free_end: Vector2, direction: Vector2, distance: float, victims: Array[Dictionary]) -> void:
+	var view: Node2D = _pawn_views.get(shooter_id)
+	if view == null:
+		return
+	var pace: float = _motion_pace()
+	var t_pull: float = 0.25 * pace
+	var t_fly: float = clampf(0.4 + distance / 1000.0, 0.45, 0.85) * pace
+	var t_settle: float = 0.3 * pace
+	var base_scale: float = view.scale.x
+	_kill_fx(view)
+	view.visible = true
+	view.position = start
+	view.z_index = 6
+	var tween: Tween = create_tween()
+	tween.tween_property(view, "position", start - direction * 16.0, t_pull).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.parallel().tween_property(view, "scale", Vector2.ONE * base_scale * 1.3, t_pull)
+	tween.tween_property(view, "position", free_end, t_fly).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.parallel().tween_property(view, "scale", Vector2.ONE * base_scale, t_fly)
+	tween.tween_interval(t_settle)
+	tween.tween_callback(_fx_script_done.bind(view))
+	view.set_meta("fx", tween)
+	view.set_meta("fx_script", true)
+	var total: float = t_pull + t_fly + t_settle
+	for victim: Dictionary in victims:
+		var victim_view: Node2D = _pawn_views.get(int(victim["id"]))
+		if victim_view == null:
+			continue
+		var hit_at: float = t_pull + t_fly * (1.0 - sqrt(1.0 - float(victim["frac"])))
+		var vpos: Vector2 = victim["pos"]
+		_kill_fx(victim_view)
+		victim_view.visible = true
+		victim_view.position = vpos
+		victim_view.z_index = 5
+		var vt: Tween = create_tween()
+		vt.tween_interval(hit_at)
+		vt.tween_callback(_impact_ring.bind(vpos, victim["color"], 26.0))
+		vt.tween_property(victim_view, "position", vpos + direction * 46.0, 0.22 * pace).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		vt.parallel().tween_property(victim_view, "rotation", TAU, 0.22 * pace)
+		vt.tween_interval(0.12 * pace)
+		vt.tween_callback(_fx_script_done.bind(victim_view))
+		victim_view.set_meta("fx", vt)
+		victim_view.set_meta("fx_script", true)
+		_set_hint(int(victim["id"]), {"arc": 60.0, "spin": -TAU, "dur": 0.65})
+		total = maxf(total, hit_at + 0.34 * pace)
+	_fx_until_msec = maxi(_fx_until_msec, Time.get_ticks_msec() + int(total * 1000.0) + 80)
+
+
+func _fx_script_done(view: Node2D) -> void:
+	if not is_instance_valid(view):
+		return
+	view.remove_meta("fx_script")
+	view.remove_meta("fx")
+	view.rotation = 0.0
+	view.z_index = 0
+	if state != null:
+		call_deferred("_refresh_all")
+
+
+# ---------------------------------------------------------------------------
+# 말 움직임 연출 (PawnFx): 규칙은 한 번에 결과가 정해지지만 화면은 [출발 -> 이동/충돌 -> 자리 잡기]를 단계로 보여 준다
+# ---------------------------------------------------------------------------
+
+func _fx_on() -> bool:
+	return not instant_roll_for_test
+
+
+## 연출 시간 배율: 연출 속도 설정(최대 2배)을 따른다.
+func _motion_pace() -> float:
+	return minf(_pace(), 2.0)
+
+
+func _fx_running(view: Node2D) -> bool:
+	if not view.has_meta("fx"):
+		return false
+	var running: Tween = view.get_meta("fx")
+	return running != null and running.is_valid() and running.is_running()
+
+
+func _fx_node_running(node: Node2D) -> bool:
+	return _fx_running(node)
+
+
+func _kill_fx(view: Node2D) -> void:
+	if view.has_meta("fx"):
+		var running: Tween = view.get_meta("fx")
+		if running != null and running.is_valid():
+			running.kill()
+		view.remove_meta("fx")
+	if view.has_meta("fx_script"):
+		view.remove_meta("fx_script")
+	view.rotation = 0.0
+	view.z_index = 0
+
+
+func _set_hint(pawn_id: int, hint: Dictionary) -> void:
+	if not _fx_on():
+		return
+	var stored: Dictionary = hint.duplicate()
+	stored["t"] = Time.get_ticks_msec()
+	_fx_hints[pawn_id] = stored
+
+
+## 힌트를 한 번 꺼내 쓴다 (너무 오래된 힌트는 버린다).
+func _take_hint(pawn_id: int) -> Dictionary:
+	if not _fx_hints.has(pawn_id):
+		return {}
+	var hint: Dictionary = _fx_hints[pawn_id]
+	_fx_hints.erase(pawn_id)
+	if Time.get_ticks_msec() - int(hint.get("t", 0)) > 8000:
+		return {}
+	return hint
+
+
+func _hint_swap(a_id: int, b_id: int) -> void:
+	_set_hint(a_id, {"arc": 54.0, "peak": 1.25, "dur": 0.7})
+	_set_hint(b_id, {"arc": -30.0, "peak": 0.9, "dur": 0.7})
+
+
+## 알림 카드가 끝난 뒤(문이 열린 뒤, 카드가 없으면 바로) 실행한다.
+func _fx_when_announced(action: Callable) -> void:
+	if not _fx_on():
+		return
+	if _fx_holding():
+		_fx_pending.append(action)
+	else:
+		action.call()
+
+
+## 알림 카드가 가리고 있어서 말을 움직이면 안 되는 때인가.
+func _fx_holding() -> bool:
+	return _announcer != null and _announcer.active and not _fx_gate_open
+
+
+## 문으로 등록한 알림 한 건이 끝났다: 말 움직임 연출을 시작하고, 다음 알림은 그 연출이 끝난 뒤에 띄운다.
+func _on_announcer_entry_finished(serial: int) -> void:
+	if state == null or not _fx_gates.has(serial):
+		return
+	_fx_gates.erase(serial)
+	_fx_gate_open = true
+	_fx_after_announcer()
+	_refresh_pawns()
+	_announcer.hold_until_msec = maxi(_announcer.hold_until_msec, _fx_until_msec)
+
+
+## 알림 카드가 끝났다: 모아 둔 걸음을 이어서 보여 주고, 예약된 연출(필살기 등)을 시작한다.
+func _fx_after_announcer() -> void:
+	if not _fx_on():
+		_fx_pending.clear()
+		_fx_step_queue.clear()
+		return
+	for pawn_id: int in _fx_step_queue.keys():
+		var view: Node2D = _pawn_views.get(pawn_id)
+		var pawn: PlayerPawn = state.get_pawn(pawn_id) if state != null else null
+		if view == null or pawn == null:
+			continue
+		_play_queued_steps(view, _fx_step_queue[pawn_id])
+	_fx_step_queue.clear()
+	var pending: Array[Callable] = _fx_pending.duplicate()
+	_fx_pending.clear()
+	for action: Callable in pending:
+		action.call()
+
+
+## 모아 둔 걸음들을 한 칸씩 통통 튀며 이어서 보여 준다.
+func _play_queued_steps(view: Node2D, steps: Array) -> void:
+	if steps.is_empty() or view.has_meta("fx_script"):
+		return
+	_kill_fx(view)
+	view.visible = true
+	var step_time: float = STEP_DELAY * 0.85 * _motion_pace()
+	var tween: Tween = create_tween()
+	var origin: Vector2 = view.position
+	for step: Dictionary in steps:
+		var target: Vector2 = step["pos"]
+		var from_pos: Vector2 = origin
+		tween.tween_method(_apply_hop.bind(view, from_pos, target, view.scale.x, float(step["scale"]), 8.0, 1.0, 0.0), 0.0, 1.0, step_time)
+		origin = target
+	tween.tween_callback(_fx_script_done.bind(view))
+	view.set_meta("fx", tween)
+	view.set_meta("fx_script", true)
+	_fx_until_msec = maxi(_fx_until_msec, Time.get_ticks_msec() + int(step_time * steps.size() * 1000.0) + 80)
+
+
+## 한 칸 이동(또는 포물선 비행)의 한 프레임: t는 0..1.
+func _apply_hop(t: float, view: Node2D, from_pos: Vector2, to_pos: Vector2, from_scale: float, to_scale: float, arc: float, peak: float, spin: float) -> void:
+	if not is_instance_valid(view):
+		return
+	var eased: float = t * t * (3.0 - 2.0 * t)
+	var lift: float = sin(PI * t)
+	view.position = from_pos.lerp(to_pos, eased) + Vector2(0.0, -arc * lift)
+	view.scale = Vector2.ONE * lerpf(from_scale, to_scale, eased) * lerpf(1.0, peak, lift)
+	view.rotation = spin * eased
+
+
+## 말 하나를 현재 자리에서 목표 자리로 포물선으로 옮긴다 (옵션: dur arc peak spin delay from_pos from_scale from_alpha drop).
+func _glide(view: Node2D, to_pos: Vector2, to_scale: float, opts: Dictionary = {}) -> void:
+	_kill_fx(view)
+	var from_pos: Vector2 = opts.get("from_pos", view.position)
+	var from_scale: float = float(opts.get("from_scale", view.scale.x))
+	var distance: float = from_pos.distance_to(to_pos)
+	var cap: float = float(opts.get("pace_cap", _motion_pace()))
+	var duration: float = float(opts.get("dur", clampf(0.3 + distance / 1100.0, 0.32, 0.8))) * cap
+	var delay: float = float(opts.get("delay", 0.0)) * cap
+	var arc: float = float(opts.get("arc", clampf(distance * 0.16, 12.0, 64.0)))
+	var peak: float = float(opts.get("peak", 1.0))
+	var spin: float = float(opts.get("spin", 0.0))
+	var from_alpha: float = float(opts.get("from_alpha", 1.0))
+	if bool(opts.get("drop", false)):
+		from_pos = to_pos + Vector2(0.0, -150.0)
+		from_scale = to_scale * 2.4
+		from_alpha = 0.0
+		arc = 0.0
+		duration = 0.55 * _motion_pace()
+		delay = 0.0
+	view.visible = true
+	view.z_index = 4
+	view.position = from_pos
+	view.scale = Vector2.ONE * from_scale
+	view.modulate = Color(1, 1, 1, from_alpha)
+	var tween: Tween = create_tween()
+	if delay > 0.0:
+		tween.tween_interval(delay)
+	tween.tween_method(_apply_hop.bind(view, from_pos, to_pos, from_scale, to_scale, arc, peak, spin), 0.0, 1.0, duration)
+	if from_alpha < 1.0:
+		tween.parallel().tween_property(view, "modulate:a", 1.0, duration * 0.5)
+	tween.tween_callback(_glide_done.bind(view))
+	view.set_meta("fx", tween)
+	_fx_until_msec = maxi(_fx_until_msec, Time.get_ticks_msec() + int((delay + duration) * 1000.0) + 60)
+
+
+func _glide_done(view: Node2D) -> void:
+	if not is_instance_valid(view):
+		return
+	view.remove_meta("fx")
+	view.rotation = 0.0
+	view.z_index = 0
+	view.modulate = Color.WHITE
+	if state != null:
+		call_deferred("_refresh_all")
+
+
+## 중립 기물 같은 단순한 노드를 목표 자리로 미끄러뜨린다.
+func _glide_node(node: Node2D, to_pos: Vector2, seconds: float) -> void:
+	if node.has_meta("fx"):
+		var running: Tween = node.get_meta("fx")
+		if running != null and running.is_valid():
+			running.kill()
+	var duration: float = seconds * _motion_pace()
+	var tween: Tween = create_tween()
+	tween.tween_property(node, "position", to_pos, duration).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+	tween.tween_callback(func() -> void:
+		if is_instance_valid(node):
+			node.remove_meta("fx"))
+	node.set_meta("fx", tween)
+	_fx_until_msec = maxi(_fx_until_msec, Time.get_ticks_msec() + int(duration * 1000.0) + 60)
+
+
+## 상태가 바뀐 뒤 말의 화면 자리를 맞춘다: 자리가 달라졌으면 순간이동 대신 포물선으로 움직이고(힌트가 있으면 그 모양으로), 끝나면 보이기/숨기기를 정한다.
+func _settle_pawn_view(view: Node2D, pawn: PlayerPawn) -> void:
+	var target_pos: Vector2 = _pawn_position(pawn)
+	var target_scale: float = _depth_scale(tile_norm(pawn.current_tile_idx).y)
+	var want_visible: bool = pawn.carrier == null and not pawn.is_finished and pawn.has_left_start
+	(view.get_node("Shadow") as Polygon2D).visible = view_mode == ViewMode.TILT
+	if not _fx_on():
+		_kill_fx(view)
+		view.position = target_pos
+		view.scale = Vector2.ONE * target_scale
+		view.visible = want_visible
+		view.modulate = Color.WHITE
+		return
+	if _fx_running(view):
+		return  # 움직이는 중이다: 끝나면 다시 맞춘다
+	if _fx_holding():
+		return  # 알림 카드가 가리는 동안은 기다린다: 카드가 끝나면 다시 맞춘다
+	if view.visible and view.position.distance_to(target_pos) > 3.0:
+		_glide(view, target_pos, target_scale, _take_hint(pawn.entity_id))
+		return
+	view.position = target_pos
+	view.scale = Vector2.ONE * target_scale
+	view.modulate = Color.WHITE
+	if want_visible and not view.visible:
+		# 새로 나타난다: 낙하(모치고마) 힌트가 있으면 위에서 떨어지고, 아니면 작게 시작해 커진다.
+		var hint: Dictionary = _take_hint(pawn.entity_id)
+		if not bool(hint.get("drop", false)):
+			hint = {"from_scale": target_scale * 0.3, "arc": 0.0, "dur": 0.3, "from_pos": target_pos}
+		_glide(view, target_pos, target_scale, hint)
+		return
+	view.visible = want_visible
+
+
+## 잡힌 말 자리에 맞는 순간의 충격 링 (말이 날아가기 직전).
+func _fx_impact_at_pawn(pawn_id: int, delay: float) -> void:
+	if not _fx_on():
+		return
+	var view: Node2D = _pawn_views.get(pawn_id)
+	var pawn: PlayerPawn = state.get_pawn(pawn_id)
+	if view == null or pawn == null:
+		return
+	var at: Vector2 = view.position
+	var color: Color = PLAYER_COLORS[pawn.owner_id]
+	get_tree().create_timer(delay * _motion_pace()).timeout.connect(func() -> void: _impact_ring(at, color, 24.0))
+
+
+## 번쩍 커지며 사라지는 원 (충돌·벼락 표시).
+func _impact_ring(at: Vector2, color: Color, radius: float) -> void:
+	if not is_inside_tree():
+		return
+	var ring := Line2D.new()
+	ring.width = 3.0
+	ring.default_color = color.lightened(0.4)
+	ring.closed = true
+	for point: Vector2 in _circle_points(1.0, 24):
+		ring.add_point(point)
+	ring.position = at
+	ring.scale = Vector2.ONE * (PAWN_RADIUS * 0.6)
+	ring.z_index = 17
+	_pawn_layer.add_child(ring)
+	var tween: Tween = create_tween().set_parallel(true)
+	tween.tween_property(ring, "scale", Vector2.ONE * radius, 0.3 * _motion_pace()).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(ring, "modulate:a", 0.0, 0.3 * _motion_pace())
+	tween.chain().tween_callback(ring.queue_free)
 
 
 ## 맞은 말의 자리에서 화면 밖으로 튕겨 나가는 원형 잔상.
@@ -4279,7 +4676,7 @@ func _on_game_over(winner_id: int, reason: StringName) -> void:
 
 
 func _ui_busy() -> bool:
-	return _fx_busy or _aim_pawn != -1 or (_announcer != null and _announcer.active) or Time.get_ticks_msec() < _beat_until_msec
+	return _fx_busy or _aim_pawn != -1 or (_announcer != null and _announcer.active) or Time.get_ticks_msec() < _beat_until_msec or (_fx_on() and Time.get_ticks_msec() < _fx_until_msec)
 
 
 ## 행동이 끝난 뒤 잠깐(초) 입력과 봇 행동을 멈춰, 플레이어가 방금 일어난 일을 알아볼 틈을 준다.
@@ -4292,13 +4689,22 @@ func _start_beat(seconds: float) -> void:
 			_refresh_all())
 
 
-func _announce(tag: String, headline: String, body: String, color: Color, extra: Control = null, duration: float = 1.5) -> void:
+func _announce(tag: String, headline: String, body: String, color: Color, extra: Control = null, duration: float = 1.5) -> int:
 	if _announcer == null:
-		return
+		return -1
 	_announcer.instant = instant_roll_for_test
-	_announcer.announce(tag, headline, body, color, extra, duration * _pace())
+	var serial: int = _announcer.announce(tag, headline, body, color, extra, duration * _pace())
 	if _announcer.active:
 		_refresh_controls()
+	return serial
+
+
+## 알림 카드가 끝난 직후 말 움직임 연출이 이어지도록 이 카드를 [문]으로 등록한다 (카드가 보드를 가리는 동안에는 말이 먼저 움직이지 않는다).
+func _announce_gate(tag: String, headline: String, body: String, color: Color, extra: Control = null, duration: float = 1.5) -> void:
+	var serial: int = _announce(tag, headline, body, color, extra, duration)
+	if serial >= 0 and _fx_on():
+		_fx_gates.append(serial)
+		_fx_gate_open = false
 
 
 ## 새 교칙이 제정되면 현재 법전 전체를 중앙에 띄우고 새로 들어온 줄을 금색으로 강조한다.
@@ -4601,7 +5007,11 @@ func _build_roll_fx() -> void:
 	add_child(_announcer)
 	_announcer.drained.connect(func() -> void:
 		if state != null:
+			_fx_gate_open = false
+			_fx_gates.clear()
+			_fx_after_announcer()
 			_refresh_all())
+	_announcer.entry_finished.connect(_on_announcer_entry_finished)
 
 
 ## 엔진이 확정한 굴림 결과를 연출한 뒤 로그·중앙 배너로 공개한다. 연출 중에는 입력을 잠가 결과가 먼저 새지 않게 한다.

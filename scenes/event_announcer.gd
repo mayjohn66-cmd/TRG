@@ -6,6 +6,8 @@ extends PanelContainer
 
 ## 대기열이 모두 비었다 (마지막 알림이 끝났다).
 signal drained
+## 알림 한 건이 끝났다 (serial은 announce()가 돌려준 번호). 보드가 [카드가 끝난 뒤 말이 움직이는] 연출을 이어 붙이는 데 쓴다.
+signal entry_finished(serial: int)
 
 const FADE_IN: float = 0.12
 const FADE_OUT: float = 0.18
@@ -22,6 +24,11 @@ var active: bool = false
 ## 지금까지 띄운 알림 헤드라인 (테스트 확인용).
 var history: Array[String] = []
 
+## 이 시각(msec)이 지나기 전에는 다음 알림을 띄우지 않는다 (앞선 알림 뒤에 이어진 말 움직임 연출이 끝나기를 기다림).
+var hold_until_msec: int = 0
+
+var _serial: int = 0
+var _waiting: bool = false
 var _queue: Array[Dictionary] = []
 var _current: Dictionary = {}
 var _t: float = 0.0
@@ -36,20 +43,23 @@ func _init() -> void:
 
 
 ## 알림 한 건을 대기열에 넣는다. extra는 헤드라인 아래에 붙일 임의의 Control(카드 프레임·법전 목록 등)이다.
-func announce(tag: String, headline: String, body: String, color: Color, extra: Control = null, duration: float = 1.5) -> void:
+## 알림 번호를 돌려준다 (건너뛰면 -1).
+func announce(tag: String, headline: String, body: String, color: Color, extra: Control = null, duration: float = 1.5) -> int:
 	history.append(headline)
 	if instant:
 		if extra != null:
 			extra.free()
-		return
+		return -1
 	if _queue.size() >= MAX_QUEUE:
 		var dropped: Dictionary = _queue.pop_front()
 		if dropped["extra"] != null:
 			(dropped["extra"] as Control).free()
-	_queue.append({"tag": tag, "headline": headline, "body": body, "color": color, "extra": extra, "duration": duration})
+	_serial += 1
+	_queue.append({"tag": tag, "headline": headline, "body": body, "color": color, "extra": extra, "duration": duration, "serial": _serial})
 	active = true
-	if _current.is_empty():
+	if _current.is_empty() and not _waiting:
 		_start_next()
+	return _serial
 
 
 ## 대기 중인 알림까지 모두 지운다 (새 게임·테스트).
@@ -59,6 +69,7 @@ func cancel() -> void:
 			(entry["extra"] as Control).free()
 	_queue.clear()
 	_current = {}
+	_waiting = false
 	_clear()
 	visible = false
 	var was_active: bool = active
@@ -145,6 +156,9 @@ func _clear() -> void:
 
 func _process(delta: float) -> void:
 	if _current.is_empty():
+		if _waiting and Time.get_ticks_msec() >= hold_until_msec:
+			_waiting = false
+			_start_next()
 		return
 	_t += delta
 	var duration: float = float(_current["duration"])
@@ -158,6 +172,22 @@ func _process(delta: float) -> void:
 	var pop: float = clampf(_t / (FADE_IN * 2.0), 0.0, 1.0)
 	scale = Vector2.ONE * lerpf(0.88, 1.0, 1.0 - pow(1.0 - pop, 3.0))
 	if _t >= duration:
+		_finish_current()
+
+
+## 지금 알림을 마치고 (보드가 연출을 붙일 틈을 준 뒤) 다음 알림으로 넘어간다.
+func _finish_current() -> void:
+	var finished_serial: int = int(_current.get("serial", -1))
+	_clear()
+	_current = {}
+	visible = false
+	entry_finished.emit(finished_serial)
+	if _queue.is_empty():
+		active = false
+		drained.emit()
+	elif Time.get_ticks_msec() < hold_until_msec:
+		_waiting = true
+	else:
 		_start_next()
 
 

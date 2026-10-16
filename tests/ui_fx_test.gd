@@ -424,6 +424,7 @@ func _test_announcer() -> void:
 	announcer.skip_current()
 	await process_frame
 	await process_frame
+	_board._fx_until_msec = 0  # (이 검사는 알림 잠금만 본다: 말 움직임 연출 잠금은 따로 검증)
 	_expect(not announcer.active and not announcer.visible and not _board._ui_busy(), "대기열이 비면 잠금 해제")
 	announcer.history.clear()
 	_board.instant_roll_for_test = true
@@ -595,6 +596,7 @@ func _test_hud_overhaul() -> void:
 	# 5) 드래그: 잘못된 곳에 놓으면 카드가 남는다
 	_board._announcer.cancel()  # [N 차례] 알림과 이동 뒤 멈춤을 건너뛰고 입력 가능 상태로 만든다
 	_board._beat_until_msec = 0
+	_board._fx_until_msec = 0
 	_expect(manager.current_state == TurnManager.State.PHASE_TURN_BEGIN and not _board._ui_busy(), "드래그 테스트 전제: 턴 시작, 입력 가능")
 	_board._card_press(holder, &"TRP_01", Vector2(700, 700), Vector2(700, 640))
 	_board._card_move(Vector2(720, 600))
@@ -656,6 +658,7 @@ func _test_action_beats() -> void:
 	_board.pacing_enabled = false
 	_board._announcer.cancel()  # (알림이 비면 화면이 다시 그려지므로 알림 기능을 끈 채로 비운다)
 	_board._beat_until_msec = 0
+	_board._fx_until_msec = 0
 	_board.instant_roll_for_test = false
 	_board._announced_round = _board.state.round_number  # 이미 알린 라운드·턴으로 본다
 	_board._announced_turn_key = "%d:%d" % [_board.state.round_number, manager.current_player_id()]
@@ -665,6 +668,7 @@ func _test_action_beats() -> void:
 	_board._start_beat(0.3)
 	_expect(_board._ui_busy(), "이동이 끝난 직후에는 잠깐 입력이 잠긴다")
 	await create_timer(0.3 * GameSession.pace_scale + 0.15).timeout  # 연출 속도 배율만큼 길어진다
+	_board._fx_until_msec = 0
 	_expect(not _board._ui_busy(), "호흡이 끝나면 다시 입력할 수 있다 (fx=%s aim=%s ann=%s hist=%s)" % [str(_board._fx_busy), str(_board._aim_pawn), str(_board._announcer.active), str(_board._announcer.history.slice(-3))])
 	_board._announced_turn_key = ""
 	_board._announcer.history.clear()
@@ -675,6 +679,7 @@ func _test_action_beats() -> void:
 		_expect(_board._announcer.history.size() == 1, "같은 턴에는 알림을 다시 띄우지 않는다")
 	_board._announcer.cancel()
 	_board._beat_until_msec = 0
+	_board._fx_until_msec = 0
 	_board.pacing_enabled = false
 
 
