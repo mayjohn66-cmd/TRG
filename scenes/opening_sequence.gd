@@ -7,9 +7,9 @@ extends Control
 signal finished
 
 const STEP_VS: float = 1.2
-const STEP_BOARD: float = 1.0
-const STEP_ORDER: float = 0.8
-const STEP_START: float = 0.7
+const STEP_BOARD: float = 1.1
+const STEP_ORDER: float = 0.9
+const STEP_START: float = 0.8
 const CARD_SIZE: Vector2 = Vector2(190, 250)
 
 var _board: MainBoard = null
@@ -19,6 +19,8 @@ var _dim: ColorRect = null
 var _vs_root: Control = null
 var _layer: Node2D = null
 var _extras: Array[Node] = []
+## 연출 속도 배율(설정의 연출 속도): 모든 시간이 이 배수로 늘어난다 (기본 보통 = 1.7배, 약 6.8초).
+var _k: float = 1.0
 
 
 func setup(board: MainBoard) -> void:
@@ -29,8 +31,9 @@ func setup(board: MainBoard) -> void:
 	gui_input.connect(_on_gui_input)
 
 
-## 총 약 3.7초: 클릭하면 즉시 건너뛴다.
+## 기본 4.0초(x 연출 속도 배율, 보통 1.7배 = 약 6.8초): 클릭하면 즉시 건너뛴다.
 func start() -> void:
+	_k = maxf(_board._pace(), 1.0)
 	_dim = ColorRect.new()
 	_dim.color = Color(0.078, 0.094, 0.141, 0.95)
 	_dim.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -40,13 +43,13 @@ func start() -> void:
 	add_child(_layer)
 	_build_vs()
 	_tween = create_tween()
-	_tween.tween_interval(STEP_VS)
+	_tween.tween_interval(STEP_VS * _k)
 	_tween.tween_callback(_step_board)
-	_tween.tween_interval(STEP_BOARD)
+	_tween.tween_interval(STEP_BOARD * _k)
 	_tween.tween_callback(_step_order)
-	_tween.tween_interval(STEP_ORDER)
+	_tween.tween_interval(STEP_ORDER * _k)
 	_tween.tween_callback(_step_start)
-	_tween.tween_interval(STEP_START)
+	_tween.tween_interval(STEP_START * _k)
 	_tween.tween_callback(_finish)
 
 
@@ -93,8 +96,8 @@ func _build_vs() -> void:
 		card.modulate.a = 0.0
 		_vs_root.add_child(card)
 		var slide: Tween = card.create_tween().set_parallel(true)
-		slide.tween_property(card, "position", home, 0.55).set_delay(0.08 * index).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-		slide.tween_property(card, "modulate:a", 1.0, 0.25).set_delay(0.08 * index)
+		slide.tween_property(card, "position", home, 0.55 * _k).set_delay(0.1 * index * _k).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		slide.tween_property(card, "modulate:a", 1.0, 0.25 * _k).set_delay(0.1 * index * _k)
 		if index < count - 1:
 			var versus: Label = _board._make_label("VS", 30, Color("ff8787"))
 			versus.add_theme_constant_override("outline_size", 7)
@@ -102,7 +105,7 @@ func _build_vs() -> void:
 			versus.position = home + Vector2(CARD_SIZE.x + gap / 2.0 - 22.0, CARD_SIZE.y / 2.0 - 20.0)
 			versus.modulate.a = 0.0
 			_vs_root.add_child(versus)
-			versus.create_tween().tween_property(versus, "modulate:a", 1.0, 0.3).set_delay(0.45 + 0.08 * index)
+			versus.create_tween().tween_property(versus, "modulate:a", 1.0, 0.3 * _k).set_delay((0.45 + 0.1 * index) * _k)
 	# 하단: 준비 게이지(0% -> 100%) + 랜덤 팁 한 줄
 	var bar_back := Panel.new()
 	bar_back.position = Vector2((screen.x - 460.0) / 2.0, 560)
@@ -126,10 +129,15 @@ func _build_vs() -> void:
 	tip.position = Vector2(0, 618)
 	tip.size = Vector2(screen.x, 26)
 	_vs_root.add_child(tip)
+	var skip: Label = _board._make_label("클릭하면 건너뜁니다", 13, Color("868e96"))
+	skip.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	skip.position = Vector2(0, 700)
+	skip.size = Vector2(screen.x, 20)
+	_vs_root.add_child(skip)
 	var load_tween: Tween = fill.create_tween()
 	load_tween.tween_method(func(value: float) -> void:
 		fill.size.x = 454.0 * value
-		percent.text = "%d%%" % int(value * 100.0), 0.0, 1.0, STEP_VS)
+		percent.text = "%d%%" % int(value * 100.0), 0.0, 1.0, STEP_VS * _k)
 
 
 func _make_vs_card(player_id: int) -> Control:
@@ -169,13 +177,13 @@ func _step_board() -> void:
 	if _done:
 		return
 	var fade: Tween = create_tween().set_parallel(true)
-	fade.tween_property(_vs_root, "modulate:a", 0.0, 0.3)
-	fade.tween_property(_dim, "color:a", 0.0, 0.35)
+	fade.tween_property(_vs_root, "modulate:a", 0.0, 0.3 * _k)
+	fade.tween_property(_dim, "color:a", 0.0, 0.35 * _k)
 	# 말들이 위에서 0번 출발선으로 통, 통 떨어져 착지한 뒤 각자의 대기석(프로필 칸)으로 들어간다
 	var order: int = 0
 	for player_id: int in _board._player_ids:
 		for slot: int in range(1, GameEnums.PAWNS_PER_PLAYER + 1):
-			_drop_pawn(player_id, slot, 0.05 + order * 0.025)
+			_drop_pawn(player_id, slot, (0.05 + order * 0.035) * _k)
 			order += 1
 
 
@@ -208,20 +216,20 @@ func _drop_pawn(player_id: int, slot: int, delay: float) -> void:
 	var tween: Tween = ghost.create_tween()
 	tween.tween_interval(delay)
 	tween.tween_property(ghost, "modulate:a", 1.0, 0.05)
-	tween.tween_property(ghost, "position", target, 0.4).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+	tween.tween_property(ghost, "position", target, 0.4 * _k).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
 	tween.parallel().tween_callback(func() -> void:
 		var squash: Tween = ghost.create_tween()
-		squash.tween_interval(0.27)
-		squash.tween_property(ghost, "scale", Vector2(1.3, 0.75) * depth, 0.05)
-		squash.tween_property(ghost, "scale", Vector2.ONE * depth, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT))
+		squash.tween_interval(0.27 * _k)
+		squash.tween_property(ghost, "scale", Vector2(1.3, 0.75) * depth, 0.05 * _k)
+		squash.tween_property(ghost, "scale", Vector2.ONE * depth, 0.16 * _k).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT))
 	tween.tween_callback(func() -> void: _board._tile_glow(GameEnums.GOAL_TILE))
-	tween.tween_interval(0.12)
+	tween.tween_interval(0.12 * _k)
 	# 대기석(프로필의 기물 칸)으로 쏙 들어간다
 	var slot_panel: Control = (_board._profiles[player_id]["slots"][slot - 1] as Dictionary)["panel"]
 	var slot_center: Vector2 = slot_panel.global_position + slot_panel.size / 2.0
-	tween.tween_property(ghost, "position", slot_center, 0.28).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	tween.parallel().tween_property(ghost, "scale", Vector2.ONE * 0.5, 0.28)
-	tween.parallel().tween_property(ghost, "modulate:a", 0.0, 0.28)
+	tween.tween_property(ghost, "position", slot_center, 0.28 * _k).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tween.parallel().tween_property(ghost, "scale", Vector2.ONE * 0.5, 0.28 * _k)
+	tween.parallel().tween_property(ghost, "modulate:a", 0.0, 0.28 * _k)
 	tween.tween_callback(ghost.queue_free)
 
 
@@ -248,15 +256,15 @@ func _step_order() -> void:
 	banner.scale = Vector2(0.6, 0.6)
 	banner.modulate.a = 0.0
 	var pop: Tween = banner.create_tween().set_parallel(true)
-	pop.tween_property(banner, "scale", Vector2.ONE, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	pop.tween_property(banner, "modulate:a", 1.0, 0.15)
-	pop.chain().tween_interval(STEP_ORDER - 0.55)
-	pop.tween_property(banner, "modulate:a", 0.0, 0.2)
+	pop.tween_property(banner, "scale", Vector2.ONE, 0.25 * _k).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	pop.tween_property(banner, "modulate:a", 1.0, 0.15 * _k)
+	pop.chain().tween_interval((STEP_ORDER - 0.55) * _k)
+	pop.tween_property(banner, "modulate:a", 0.0, 0.2 * _k)
 	pop.tween_callback(banner.queue_free)
 	_extras.append(banner)
 	# 모서리 프로필이 순서대로 한 번씩 반짝인다 (진행 방향 각인)
 	for index: int in order.size():
-		_halo(order[index], 0.14 * index)
+		_halo(order[index], 0.2 * index * _k)
 
 
 func _turn_order() -> Array[int]:
@@ -280,8 +288,8 @@ func _halo(player_id: int, delay: float) -> void:
 	add_child(halo)
 	var tween: Tween = halo.create_tween()
 	tween.tween_interval(delay)
-	tween.tween_property(halo, "modulate:a", 1.0, 0.1)
-	tween.tween_property(halo, "modulate:a", 0.0, 0.3)
+	tween.tween_property(halo, "modulate:a", 1.0, 0.1 * _k)
+	tween.tween_property(halo, "modulate:a", 0.0, 0.3 * _k)
 	tween.tween_callback(halo.queue_free)
 	_extras.append(halo)
 
@@ -314,14 +322,14 @@ func _step_start() -> void:
 	add_child(ribbon)
 	_extras.append(ribbon)
 	var slam: Tween = ribbon.create_tween().set_parallel(true)
-	slam.tween_property(ribbon, "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	slam.tween_property(ribbon, "modulate:a", 1.0, 0.1)
+	slam.tween_property(ribbon, "scale", Vector2.ONE, 0.18 * _k).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	slam.tween_property(ribbon, "modulate:a", 1.0, 0.1 * _k)
 	slam.chain().tween_callback(func() -> void:
 		_board.screen_shake(10.0, 0.3)
 		_board._impact_ring(Vector2(683, 360), Color("ffe066"), 90.0)
 		_board._burst_shards(Vector2(683, 360), Color("ffd43b"), 20))
-	slam.chain().tween_interval(STEP_START - 0.55)
-	slam.tween_property(ribbon, "modulate:a", 0.0, 0.25)
+	slam.chain().tween_interval((STEP_START - 0.55) * _k + 0.15)
+	slam.tween_property(ribbon, "modulate:a", 0.0, 0.25 * _k)
 	slam.tween_callback(ribbon.queue_free)
 
 
