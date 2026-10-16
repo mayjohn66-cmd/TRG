@@ -362,6 +362,19 @@ func _handle_play_card(actor: int, params: Dictionary) -> void:
 	var ctx: RuleContext = _make_ctx(actor)
 	var accepted: bool
 	var queued: bool = current_state != State.PHASE_TURN_BEGIN
+	# 화면이 [카드 알림 -> 효과] 순서로 보여 줄 수 있도록 효과가 일어나기 전에 알린다 (바로 실행하는 카드는 실행 가능할 때만).
+	command.bind_state(ctx.state)
+	if not queued and command.can_execute(ctx):
+		_emit_event(&"card_played", {"player_id": actor, "card_id": card_id, "params": params, "queued": queued})
+		accepted = command_stack.execute_command(command, ctx)
+		if not accepted:
+			action_rejected.emit(actor, &"play_card", &"invalid_target")
+			return
+		state.consume_card(actor, card_id)
+		_card_played_this_turn = true
+		_check_victory(null)
+		_broadcast_state()
+		return
 	if queued:
 		accepted = command_stack.push_interrupt(command, ctx)
 	else:
@@ -563,8 +576,8 @@ func _apply_pending_penalty(player_id: int) -> void:
 	_broadcast_state()
 
 
-func _on_bang_resolved(shooter: int, target_pawn_id: int, dodged: bool, discarded_card: StringName) -> void:
-	_emit_event(&"bang_resolved", {"shooter": shooter, "target": target_pawn_id, "dodged": dodged, "discarded_card": discarded_card})
+func _on_bang_resolved(shooter: int, target_pawn_id: int, from_tile: int, to_tile: int) -> void:
+	_emit_event(&"bang_resolved", {"shooter": shooter, "target": target_pawn_id, "from": from_tile, "to": to_tile})
 
 
 ## 윷놀이 기물의 [선택적 업기]에 대한 플레이어의 답. params: {"stack": bool} (기본 true = 업기).

@@ -24,8 +24,8 @@ signal card_drawn(player_id: int, card_id: StringName)
 signal card_stolen(player_id: int, card_id: StringName)
 ## ACT_01이 턴 순서 반전을 요청했다. 턴 순서는 TurnManager가 소유하므로 TurnManager가 구독해 처리한다.
 signal turn_order_reverse_requested()
-## ACT_02 뱅! 결과. dodged가 true면 상대가 카드를 버려 회피했다(빗나감).
-signal bang_resolved(shooter: int, target_pawn_id: int, dodged: bool, discarded_card: StringName)
+## ACT_02 뱅! 저격 결과: 저격당한 선두 말이 from_tile에서 to_tile로 2칸 밀려났다.
+signal bang_resolved(shooter: int, target_pawn_id: int, from_tile: int, to_tile: int)
 ## 기물 능력 알림: 룩 캐슬링(위치 교환) / 백돌 무적에 막혀 밀려남.
 signal pawns_castled(pawn_a_id: int, pawn_b_id: int)
 signal pawn_pushed_back(pawn_id: int, from_tile: int, to_tile: int)

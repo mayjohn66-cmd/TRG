@@ -1,6 +1,6 @@
 # File: res://tests/test_pawn_abilities.gd
 # Class: class_name TestPawnAbilities
-# Role: 나머지 기물 능력(나이트 점프·캐슬링·포 넘기·초나라 포진·알까기·포석)과 ACT_02 뱅!·ACT_03 우노 +4 검증
+# Role: 나머지 기물 능력(나이트 점프·캐슬링·포 넘기·초나라 포진·알까기·포석)과 ACT_02 뱅! 저격·ACT_03 우노 +4 검증
 class_name TestPawnAbilities
 extends TestCase
 
@@ -85,58 +85,50 @@ func test_non_go_pawns_still_capture_normally() -> void:
 	check_eq(state.get_pawn(21).current_tile_idx, 0, "출발선으로")
 
 
-# --- ACT_02 뱅! -----------------------------------------------------------------
+# --- ACT_02 뱅! 저격 저격 ------------------------------------------------------------
 
-func test_bang_targets_the_front_most_enemy_within_three_tiles() -> void:
+func test_bang_targets_players_with_pawns_on_the_board() -> void:
 	var state := make_state(3, 1)
-	place(state, 11, 5)
+	check_eq(BangCommand.target_players(state, 1), [], "보드에 나온 상대 말이 없으면 대상 없음")
 	place(state, 21, 7)
-	place(state, 31, 8)   # 더 앞선 적
-	place(state, 22, 13)  # 사거리 밖
-	check_eq(BangCommand.find_target(state, 1).entity_id, 31, "가장 앞선 적 조준")
-	place(state, 31, 9)   # 4칸 거리 -> 사거리 밖
-	check_eq(BangCommand.find_target(state, 1).entity_id, 21, "사거리 안에서 선택")
-	place(state, 21, 2)   # 뒤쪽 3칸도 사거리
-	check_eq(BangCommand.find_target(state, 1).entity_id, 21, "뒤 3칸 포함")
-	place(state, 21, 1)
-	check(BangCommand.find_target(state, 1) == null, "아무도 없으면 대상 없음")
-	var home := make_state(2, 1)
-	place(home, 11, 1)
-	check(BangCommand.find_target(home, 1) == null, "출발선 대기 말은 맞힐 수 없다")
-
-
-func test_bang_is_dodged_by_discarding_a_card_or_sends_the_target_home() -> void:
-	var state := make_state(2, 1)
+	check_eq(BangCommand.target_players(state, 1), [2], "나온 말이 있는 상대만 대상")
+	place(state, 31, 9)
+	check_eq(BangCommand.target_players(state, 1), [2, 3], "여러 상대")
 	place(state, 11, 5)
+	check(not BangCommand.target_players(state, 1).has(1), "나 자신은 대상이 아니다")
+	place(state, 22, 12)
+	check_eq(BangCommand.find_target(state, 2).entity_id, 22, "선두 말(결승에 가까운 말)이 저격당한다")
+
+
+func test_bang_pushes_the_front_pawn_back_two_tiles() -> void:
+	var state := make_state(2, 1)
 	place(state, 21, 6)
-	state.give_card(2, &"ACT_01")
+	place(state, 22, 9)  # 선두
 	var stack: CommandStack = new_stack()
-	var dodges: Array = []
-	state.bang_resolved.connect(func(shooter: int, target: int, dodged: bool, card: StringName) -> void: dodges.append([shooter, target, dodged, card]))
-	check(stack.execute_command(BangCommand.new(1), make_ctx(state, 0)), "발사")
-	check_eq(dodges, [[1, 21, true, &"ACT_01"]], "회피(빗나감)")
-	check_eq((state.hands[2] as Array).size(), 0, "카드 한 장 버림")
-	check_eq(state.get_pawn(21).current_tile_idx, 6, "말은 그대로")
-	stack.execute_command(BangCommand.new(1), make_ctx(state, 0))
-	check_eq(dodges.back(), [1, 21, false, &""], "손패가 비어 명중")
-	check_eq(state.get_pawn(21).current_tile_idx, 0, "출발선으로")
-	check(not state.get_pawn(21).has_left_start, "출발 전 상태")
+	var results: Array = []
+	state.bang_resolved.connect(func(shooter: int, target: int, from_tile: int, to_tile: int) -> void: results.append([shooter, target, from_tile, to_tile]))
+	check(stack.execute_command(BangCommand.new(1, 2), make_ctx(state, 0)), "발사")
+	check_eq(results, [[1, 22, 9, 7]], "선두 말이 2칸 뒤로")
+	check_eq(state.get_pawn(22).current_tile_idx, 7, "7번 타일")
+	check_eq(state.get_pawn(21).current_tile_idx, 6, "다른 말은 그대로")
+	check(not stack.execute_command(BangCommand.new(1, 1), make_ctx(state, 0)), "나 자신은 저격할 수 없다")
 
 
-func test_bang_card_is_playable_only_at_turn_begin_with_a_target() -> void:
+func test_bang_card_is_playable_only_at_turn_begin_with_a_chosen_target() -> void:
 	var manager: TurnManager = _manager({}, 2)
 	var rejected: Array = []
 	manager.action_rejected.connect(func(_p: int, _a: StringName, reason: StringName) -> void: rejected.append(reason))
 	manager.state.give_card(1, &"ACT_02")
-	_do(manager, 1, &"play_card", {"card_id": &"ACT_02"})
+	_do(manager, 1, &"play_card", {"card_id": &"ACT_02", "target_player": 2})
 	check_eq(rejected, [&"invalid_target"], "대상이 없으면 사용 불가")
-	place(manager.state, 11, 5)
 	place(manager.state, 21, 7)
+	_do(manager, 1, &"play_card", {"card_id": &"ACT_02"})
+	check_eq(rejected.back(), &"invalid_target", "저격할 상대를 고르지 않으면 사용 불가")
 	var events: Array = []
 	manager.event_received.connect(func(kind: StringName, data: Dictionary) -> void: events.append([kind, data]))
-	_do(manager, 1, &"play_card", {"card_id": &"ACT_02"})
+	_do(manager, 1, &"play_card", {"card_id": &"ACT_02", "target_player": 2})
 	check(not manager.state.has_card(1, &"ACT_02"), "카드 소모")
-	check_eq(manager.state.get_pawn(21).current_tile_idx, 0, "손패 없는 상대는 출발선으로")
+	check_eq(manager.state.get_pawn(21).current_tile_idx, 5, "상대 선두 말이 2칸 뒤로")
 	var kinds: Array = events.map(func(e: Array) -> StringName: return e[0])
 	check(kinds.has(&"bang_resolved"), "bang_resolved 이벤트")
 	_dispose(manager)

@@ -485,8 +485,17 @@ func _try_turn_begin_buttons(manager: TurnManager) -> bool:
 	if _try_skill(manager, player_id):
 		return true
 	for card_id: StringName in _board.state.hands[player_id]:
-		if card_id == &"ACT_02" and not manager.card_played_this_turn() and BangCommand.find_target(_board.state, player_id) != null and _rng.randi_range(0, 1) == 0:
+		if card_id == &"ACT_02" and not manager.card_played_this_turn() and not BangCommand.target_players(_board.state, player_id).is_empty() and _rng.randi_range(0, 1) == 0:
 			_board._on_card_pressed(player_id, card_id)
+			# 저격할 상대 고르기 창: 첫 번째 상대를 고른다
+			_assert(_board._choice_overlay != null, "뱅! 저격은 대상 선택창을 띄운다")
+			if _board._choice_overlay != null:
+				var picks: Array[Button] = []
+				for node: Node in _board._choice_overlay.find_children("*", "Button", true, false):
+					picks.append(node as Button)
+				if not picks.is_empty():
+					picks[0].pressed.emit()
+				_board._close_choice()
 			_cards_played += 1
 			_bangs += 1
 			return true

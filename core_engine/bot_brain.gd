@@ -211,9 +211,14 @@ static func _plan_one_turn_card(state: GameState, player_id: int, card: BaseCard
 				var params: Dictionary = {"pawn_id": pawn.entity_id}
 				if card.can_play(state, player_id, params):
 					return {"card_id": card.card_id, "params": params}
-		&"ACT_02":  # 뱅!: 사정거리에 적이 있으면 70%
-			if card.could_play(state, player_id) and rng.randf() < 0.7:
-				return {"card_id": card.card_id, "params": {}}
+		&"ACT_02":  # 뱅! 저격: 선두 말이 결승에 가장 가까운 상대를 70%
+			var victims: Array[int] = BangCommand.target_players(state, player_id)
+			if not victims.is_empty() and rng.randf() < 0.7:
+				var best_player: int = victims[0]
+				for victim: int in victims:
+					if state.pawn_progress_distance(state.front_pawn_of(victim)) < state.pawn_progress_distance(state.front_pawn_of(best_player)):
+						best_player = victim
+				return {"card_id": card.card_id, "params": {"target_player": best_player}}
 		&"ACT_03":  # 우노 +4: 다음 차례가 나 자신이 아니고 50%
 			if state.next_player_after(player_id) != player_id and rng.randf() < 0.5:
 				return {"card_id": card.card_id, "params": {}}

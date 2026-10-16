@@ -98,7 +98,7 @@ const CARD_CATEGORY_NAMES: Dictionary = {
 ## 카드 프레임 하단에 보여 주는 한 줄 요약.
 const CARD_SUMMARIES: Dictionary = {
 	&"ACT_01": "턴 순서를 뒤집고 1라운드 동안 역주행",
-	&"ACT_02": "앞뒤 3칸 안의 선두 적을 자동 저격. 회피하면 카드 1장 버림",
+	&"ACT_02": "저격할 상대를 고르면 그 플레이어의 선두 말이 2칸 뒤로 밀려남",
 	&"ACT_03": "다음 플레이어 4칸 후퇴. 즉발 카드로 -8 떠넘김",
 	&"ACT_04": "0번에서 후퇴해 19/28번에 선 말을 완주",
 	&"ACT_05": "잡히거나 함정을 밟은 턴을 되감기",
@@ -3444,6 +3444,15 @@ func _on_card_pressed(player_id: int, card_id: StringName) -> void:
 				_log_line("[%s] 0번에서 빽도로 후퇴해 19/28번에 있는 말이 필요합니다." % card.display_name, Color("868e96"))
 				return
 			_show_choice("완주시킬 말을 고르세요", options, _play_card_with.bind(player_id, card_id, "pawn_id"))
+		&"ACT_02":
+			var snipe_options: Array[Dictionary] = []
+			for victim: int in BangCommand.target_players(state, player_id):
+				var front: PlayerPawn = state.front_pawn_of(victim)
+				snipe_options.append({"label": "%s - 선두 말 %d번 타일" % [_player_name(victim), front.current_tile_idx], "value": victim})
+			if snipe_options.is_empty():
+				_log_line("[%s] 보드 위에 나와 있는 상대 말이 없습니다." % card.display_name, Color("868e96"))
+				return
+			_show_choice("저격할 상대를 고르세요", snipe_options, _play_card_with.bind(player_id, card_id, "target_player"))
 		&"ACT_06":
 			var options: Array[Dictionary] = []
 			for law: LawResource in state.rulebook.active_laws_queue:
@@ -3976,6 +3985,34 @@ func _settle_pawn_view(view: Node2D, pawn: PlayerPawn) -> void:
 		_glide(view, target_pos, target_scale, hint)
 		return
 	view.visible = want_visible
+
+
+## 뱅! 저격 연출: 쏜 사람의 프로필에서 총알이 날아가 맞는 말에 충격 링이 번쩍이고, 그 말이 2칸 뒤로 밀려난다 (카드가 끝난 뒤).
+func _fx_bang(shooter: int, target_pawn_id: int) -> void:
+	if not _fx_on():
+		return
+	var view: Node2D = _pawn_views.get(target_pawn_id)
+	var card: Dictionary = _profiles.get(shooter, {})
+	if view == null or card.is_empty():
+		return
+	var panel: Control = card["panel"]
+	var from_pos: Vector2 = panel.global_position + panel.size * panel.scale / 2.0
+	var to_pos: Vector2 = view.position
+	var flight: float = 0.35 * _motion_pace()
+	_set_hint(target_pawn_id, {"arc": 0.0, "dur": 0.5, "delay": 0.45})
+	_fx_when_announced(func() -> void:
+		var bullet := Polygon2D.new()
+		bullet.polygon = _circle_points(5.0, 12)
+		bullet.color = Color("ffe066")
+		bullet.position = from_pos
+		bullet.z_index = 19
+		_pawn_layer.add_child(bullet)
+		var tween: Tween = create_tween()
+		tween.tween_property(bullet, "position", to_pos, flight).set_trans(Tween.TRANS_LINEAR)
+		tween.tween_callback(func() -> void:
+			_impact_ring(to_pos, Color("ff6b6b"), 30.0)
+			bullet.queue_free())
+		_fx_until_msec = maxi(_fx_until_msec, Time.get_ticks_msec() + int((flight + 0.5 * _motion_pace()) * 1000.0) + 120))
 
 
 ## 잡힌 말 자리에 맞는 순간의 충격 링 (말이 날아가기 직전).
@@ -4797,7 +4834,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_avatar_react(int(data["player_id"]), AvatarSlot.Emotion.HAPPY)
 			var card: BaseCard = CardRegistry.get_card(data["card_id"])
 			_log_line("[카드] P%d [%s] 사용%s" % [data["player_id"], card.display_name, " (개입 대기열 - 나중에 낸 카드부터 실행)" if data["queued"] else ""], Color("74c0fc"))
-			_announce("카드 발동", "[P%d 발동!] %s" % [data["player_id"], card.display_name], ("개입 대기열에 쌓였습니다 (나중에 낸 카드부터 실행)\n" if data["queued"] else "") + str(CARD_SUMMARIES.get(data["card_id"], "")), PLAYER_COLORS[int(data["player_id"])], _make_card_preview(data["card_id"]), 1.2)
+			_announce_gate("카드 발동", "[P%d 발동!] %s" % [data["player_id"], card.display_name], ("개입 대기열에 쌓였습니다 (나중에 낸 카드부터 실행)\n" if data["queued"] else "") + str(CARD_SUMMARIES.get(data["card_id"], "")), PLAYER_COLORS[int(data["player_id"])], _make_card_preview(data["card_id"]), 1.2)
 		&"npc_phase_resolved":
 			for report: Dictionary in data["reports"]:
 				_log_line("[NPC] NPC가 %s로 이동 (잡힌 말: %s)" % [str(report["path"]), str(report["caught"])], Color("fa5252"))
@@ -4814,10 +4851,8 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_announce("P%d 증강 선택" % data["player_id"], AugmentRegistry.get_def(data["augment_id"]).display_name, str(data["text"]), Color("ffa94d"), null, 1.4)
 		&"bang_resolved":
 			var target_name: String = _pawn_name(int(data["target"]))
-			if data["dodged"]:
-				_log_line("[뱅!] P%d의 총알이 %s를 노렸지만 P%d가 [%s]를 버리고 회피(빗나감)!" % [data["shooter"], target_name, state.get_pawn(int(data["target"])).owner_id, _card_name(data["discarded_card"])], Color("ffa8a8"))
-			else:
-				_log_line("[뱅!] P%d의 총알이 %s 명중! 손패가 없어 출발선으로 돌아갑니다." % [data["shooter"], target_name], Color("ff6b6b"))
+			_log_line("[뱅!] P%d가 %s을(를) 저격! %d번 → %d번 타일로 2칸 밀려납니다." % [data["shooter"], target_name, data["from"], data["to"]], Color("ff6b6b"))
+			_fx_bang(int(data["shooter"]), int(data["target"]))
 		&"skill_used": _on_skill_used(data)
 		&"pawn_pushed_back":
 			_log_line("[백돌 무적] 백돌에 막혀 %s이(가) %d번 → %d번으로 밀려났습니다" % [_pawn_name(int(data["pawn_id"])), data["from"], data["to"]], Color("b197fc"))
