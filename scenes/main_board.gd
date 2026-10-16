@@ -4043,7 +4043,10 @@ func _on_augment_chosen(player_id: int, index: int, definition: AugmentDef) -> v
 ## 기물 증강을 받을 말을 아이콘 카드로 고른다. 이미 진화한 말은 어둡게 잠긴다.
 func _show_pawn_choice(player_id: int, definition: AugmentDef, on_pick: Callable) -> void:
 	_close_choice()
-	_choice_overlay = _new_overlay(0.78)
+	# 증강 카드 화면("선택 완료!" 연출)이 뒤에 비쳐 겹쳐 보이지 않도록 말 고르기 동안은 숨긴다 (취소하면 다시 만든다).
+	if _draft_overlay != null:
+		_draft_overlay.visible = false
+	_choice_overlay = _new_overlay(0.88)
 	var center := CenterContainer.new()
 	center.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_choice_overlay.add_child(center)
