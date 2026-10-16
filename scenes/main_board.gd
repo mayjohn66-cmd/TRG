@@ -356,6 +356,11 @@ func _ready() -> void:
 		local_player_id = GameSession.net_local_seat
 		ai_mode = true  # 화면 규칙은 AI 대전과 같다: 내 자리만 직접 조작하고 나머지는 봇이나 원격 사람
 		_player_ids = GameSession.net_players.duplicate()
+	else:
+		# 훈련(컴퓨터 대전): 나(P1) + AI 1~3명
+		_player_ids = []
+		for seat: int in range(1, clampi(GameSession.ai_opponents, 1, 3) + 2):
+			_player_ids.append(seat)
 	_compute_seats()
 	manager = TurnManager.new()
 	manager.name = "TurnManager"
@@ -367,6 +372,12 @@ func _ready() -> void:
 	_bot.manager = manager
 	_bot.busy_check = _bot_should_wait
 	_bot.enabled = ai_mode
+	if not GameSession.net_active:
+		var computer_seats: Array[int] = []
+		for seat: int in _player_ids:
+			if seat != local_player_id:
+				computer_seats.append(seat)
+		_bot.bot_players = computer_seats
 	add_child(_bot)
 	add_child(manager)
 	manager.set_process(false)  # 제한 시간은 체크박스로 켤 때만 흐른다 (혼자 테스트할 때 자동 진행 방지)

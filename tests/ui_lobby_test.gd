@@ -12,6 +12,7 @@ var _started: bool = false
 func _process(_delta: float) -> bool:
 	_frames += 1
 	if _frames == 1:
+		GameSession.nickname = "테스터"
 		_lobby = load("res://scenes/lobby.tscn").instantiate()
 		_lobby.change_scene_enabled = false
 		root.add_child(_lobby)
@@ -30,9 +31,10 @@ func _expect(condition: bool, message: String) -> void:
 func _run() -> void:
 	GameSession.nickname = "테스터"
 	_expect(_lobby.mode == Lobby.Mode.CHOOSE, "처음에는 멀티플레이 선택 화면")
-	for card_name: String in ["QuickMatchCard", "HostCard", "JoinCard"]:
-		_expect(_lobby.find_child(card_name, true, false) is Button, "큼직한 카드형 버튼: %s" % card_name)
-	_expect((_lobby.find_child("QuickMatchCard", true, false) as Button).custom_minimum_size.y >= 80, "카드는 큼직하다")
+	for node_name: String in ["RoomCodeInput", "JoinRoom", "HostCard"]:
+		_expect(_lobby.find_child(node_name, true, false) != null, "비밀 결투 화면 요소: %s" % node_name)
+	_expect((_lobby.find_child("HostCard", true, false) as Button).text == "새 방 만들기" and (_lobby.find_child("JoinRoom", true, false) as Button).text == "입장하기", "방 코드 입력 + [새 방 만들기]")
+	_expect((_lobby._top["title"] as Label).text == "비밀 결투" and (_lobby._bottom["name"] as Label).text.contains("테스터"), "위 띠 제목과 아래 띠 이름")
 	_lobby.start_hosting()
 	await process_frame
 	var service: LobbyService = _lobby.service
@@ -155,7 +157,7 @@ func _run() -> void:
 	# 참가자 화면: 방 코드 입력 하나
 	_lobby.start_guest()
 	await process_frame
-	_expect(_lobby.mode == Lobby.Mode.GUEST, "방 입장 화면")
+	_expect(_lobby.mode == Lobby.Mode.CHOOSE, "방 코드 입력 화면")
 	var input: LineEdit = _lobby._guest_box.find_child("RoomCodeInput", true, false)
 	_expect(input != null and input.max_length == 5, "방 코드 5자리 입력창")
 	_expect(_lobby._guest_box.find_child("JoinRoom", true, false) != null, "방 입장하기 버튼")

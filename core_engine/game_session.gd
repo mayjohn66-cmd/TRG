@@ -12,6 +12,10 @@ const DEFAULT_NICKNAME: String = "플레이어 1"
 
 static var nickname: String = ""
 static var mode: StringName = MODE_AI
+## 훈련(컴퓨터 대전)에서 고른 AI 상대 수 (1~3).
+static var ai_opponents: int = 3
+## 시작 메뉴에서 로비로 넘어갈 때의 목적: &"secret"(비밀 결투: 방 코드 입력/방 만들기) / &"quick"(진지 승부: 빠른 매칭).
+static var lobby_intent: StringName = &"secret"
 
 ## 게임 설정(메뉴 > 게임 설정): user://settings.cfg에 저장된다.
 const SETTINGS_PATH: String = "user://settings.cfg"
