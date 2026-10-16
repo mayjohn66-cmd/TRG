@@ -16,6 +16,14 @@ const PLATE_POS: Vector2 = Vector2(391, 54)
 const PLATE_SIZE: Vector2 = Vector2(584, 584)
 const BOARD_ORIGIN: Vector2 = Vector2(423, 86)
 const BOARD_SIZE: float = 520.0
+## 보드 시점. TOP: 완전 탑뷰, TILT: 테이블에 앉아 비스듬히 내려다보는 기울인 탑뷰(세로 압축 + 위쪽이 멀어 보이는 원근 + 서 있는 말과 그림자).
+enum ViewMode { TOP, TILT }
+const TILT_SQUASH: float = 0.80        ## 보드 세로 압축 비율
+const TILT_FAR_SCALE: float = 0.80     ## 가장 먼(위) 줄의 가로·크기 배율 (가장 가까운 줄은 1.0)
+const TILT_TILE_SQUASH: float = 0.86   ## 타일 하나의 세로 압축 (글자는 되돌려 찌그러지지 않게 한다)
+const TILT_PAWN_LIFT: float = 9.0      ## 서 있는 말이 바닥에서 떠 보이는 높이(px)
+const TILT_MARGIN: float = 0.11        ## 보드 받침이 타일 바깥으로 나오는 정도(정규화 좌표)
+const TILT_ZOOM: float = 1.1           ## 세로를 눌러 남는 공간만큼 보드를 키운다
 const TILE_SIZE: float = 48.0
 const PAWN_RADIUS: float = 7.5
 const STEP_DELAY: float = 0.22
@@ -284,6 +292,12 @@ var _off_center: Vector2 = Vector2.ZERO
 var _off_right: Vector2 = Vector2.ZERO
 var _law_panel: PanelContainer = null
 var _plate: Panel = null
+var view_mode: int = ViewMode.TOP
+var _board_surface: Polygon2D = null
+var _board_edge: Line2D = null
+var _board_shadow: Polygon2D = null
+var _table_bg: TextureRect = null
+var _track_lines: Array[Line2D] = []
 var _action_row: HFlowContainer = null
 var _roll_pad: RollPad = null
 var _roll_geometry: StringName = &""
@@ -327,6 +341,7 @@ var _tile_pick_card: StringName = &""
 
 func _ready() -> void:
 	pacing_enabled = GameSession.pacing_enabled
+	view_mode = GameSession.view_mode
 	if GameSession.net_active:
 		local_player_id = GameSession.net_local_seat
 		ai_mode = true  # 화면 규칙은 AI 대전과 같다: 내 자리만 직접 조작하고 나머지는 봇이나 원격 사람
@@ -398,7 +413,7 @@ func _process(delta: float) -> void:
 		var bounce: Node2D = view.get_node_or_null("Bounce")
 		if bounce != null:
 			var active: bool = selecting and pawn.owner_id == manager.current_player_id() and pawn.is_selectable()
-			bounce.position.y = wave if active else 0.0
+			bounce.position.y = (wave if active else 0.0) - (TILT_PAWN_LIFT if view_mode == ViewMode.TILT else 0.0)
 
 
 func _input(event: InputEvent) -> void:
@@ -523,6 +538,7 @@ func _new_game() -> void:
 	_bind_state()
 	_build_tiles_once()
 	_build_pawn_views()
+	_apply_view_mode()
 	if net != null:
 		_log_line("온라인 대전을 시작했습니다 (%d명). 내 차례에 직접 조작하세요." % _player_ids.size(), Color("63e6be"))
 	else:
@@ -598,6 +614,25 @@ func _build_ui() -> void:
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(background)
 
+	# 기울인 시점에서만 보이는 테이블(펠트) 배경
+	_table_bg = TextureRect.new()
+	var felt := Gradient.new()
+	felt.colors = PackedColorArray([Color("24523f"), Color("12261f"), Color("0a1511")])
+	felt.offsets = PackedFloat32Array([0.0, 0.62, 1.0])
+	var felt_texture := GradientTexture2D.new()
+	felt_texture.gradient = felt
+	felt_texture.fill = GradientTexture2D.FILL_RADIAL
+	felt_texture.fill_from = Vector2(0.5, 0.52)
+	felt_texture.fill_to = Vector2(1.0, 1.0)
+	felt_texture.width = 256
+	felt_texture.height = 256
+	_table_bg.texture = felt_texture
+	_table_bg.stretch_mode = TextureRect.STRETCH_SCALE
+	_table_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_table_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_table_bg.visible = false
+	add_child(_table_bg)
+
 	# 보드판 받침: 화면 정중앙의 둥근 판
 	var plate := Panel.new()
 	_plate = plate
@@ -609,6 +644,21 @@ func _build_ui() -> void:
 	_board_layer = Control.new()
 	_board_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_board_layer)
+	# 기울인 시점의 보드 면(사다리꼴)과 그림자: 타일·선보다 아래에 깔린다.
+	_board_shadow = Polygon2D.new()
+	_board_shadow.color = Color(0, 0, 0, 0.45)
+	_board_shadow.visible = false
+	_board_layer.add_child(_board_shadow)
+	_board_surface = Polygon2D.new()
+	_board_surface.color = Color("2b3350")
+	_board_surface.visible = false
+	_board_layer.add_child(_board_surface)
+	_board_edge = Line2D.new()
+	_board_edge.width = 5.0
+	_board_edge.default_color = Color("8a6a3a")
+	_board_edge.closed = true
+	_board_edge.visible = false
+	_board_layer.add_child(_board_edge)
 	_pawn_layer = Node2D.new()
 	add_child(_pawn_layer)
 
@@ -1197,21 +1247,90 @@ static func tile_norm(index: int) -> Vector2:
 	return Vector2(0.5, 0.5)
 
 
+## 평면 정규화 좌표(0~1) -> 화면 좌표. 탑뷰는 그대로 펴고, 기울인 시점은 세로를 누르고 위쪽(먼 쪽)을 좁혀 원근을 준다. 규칙·좌표는 평면 그대로이고 이 함수만 시점을 안다.
+func _project(norm: Vector2) -> Vector2:
+	if view_mode == ViewMode.TOP:
+		return BOARD_ORIGIN + norm * BOARD_SIZE
+	var center: Vector2 = BOARD_ORIGIN + Vector2(BOARD_SIZE, BOARD_SIZE) / 2.0
+	var size: float = BOARD_SIZE * TILT_ZOOM
+	return center + Vector2((norm.x - 0.5) * size * _depth_scale(norm.y), (norm.y - 0.5) * size * TILT_SQUASH)
+
+
+## 평면 세로 좌표(0 위=먼 쪽, 1 아래=가까운 쪽)에서의 크기 배율.
+func _depth_scale(norm_y: float) -> float:
+	if view_mode == ViewMode.TOP:
+		return 1.0
+	return lerpf(TILT_FAR_SCALE, 1.0, clampf(norm_y, 0.0, 1.0))
+
+
 func _tile_center(index: int) -> Vector2:
-	return BOARD_ORIGIN + tile_norm(index) * BOARD_SIZE
+	return _project(tile_norm(index))
+
+
+## 타일 하나를 현재 시점에 맞게 놓는다 (위치·원근 크기·세로 압축, 글자는 되돌려 찌그러지지 않게).
+func _place_tile(index: int) -> void:
+	var tile: Control = _tile_views[index]
+	tile.pivot_offset = tile.size / 2.0
+	tile.position = _tile_center(index) - tile.size / 2.0
+	var depth: float = _depth_scale(tile_norm(index).y)
+	var squash: float = 1.0 if view_mode == ViewMode.TOP else TILT_TILE_SQUASH
+	tile.scale = Vector2(depth, depth * squash)
+	for label: Label in [_tag_labels.get(index), _tile_marks.get(index)]:
+		if label != null:
+			label.pivot_offset = label.size / 2.0
+			label.scale = Vector2(1.0, 1.0 / squash)
+
+
+## 시점을 바꾼다 (게임 설정에서 언제든). 타일·선·보드 면·말·받침을 다시 놓는다.
+func set_view_mode(mode: int) -> void:
+	if mode == view_mode and not _track_lines.is_empty():
+		return
+	view_mode = mode
+	GameSession.view_mode = mode
+	_apply_view_mode()
+
+
+func _apply_view_mode() -> void:
+	var tilt: bool = view_mode == ViewMode.TILT
+	if _plate != null:
+		_plate.visible = not tilt
+	if _table_bg != null:
+		_table_bg.visible = tilt
+	if _board_surface != null:
+		var corners := PackedVector2Array()
+		for corner: Vector2 in [Vector2(-TILT_MARGIN, -TILT_MARGIN), Vector2(1.0 + TILT_MARGIN, -TILT_MARGIN), Vector2(1.0 + TILT_MARGIN, 1.0 + TILT_MARGIN), Vector2(-TILT_MARGIN, 1.0 + TILT_MARGIN)]:
+			corners.append(_project(corner))
+		_board_surface.polygon = corners
+		_board_surface.visible = tilt
+		_board_edge.points = corners
+		_board_edge.visible = tilt
+		var shadow_points := PackedVector2Array()
+		for point: Vector2 in corners:
+			shadow_points.append(point + Vector2(0, 16))
+		_board_shadow.polygon = shadow_points
+		_board_shadow.visible = tilt
+	if _pawn_layer != null:
+		_pawn_layer.y_sort_enabled = tilt
+	if _tile_views.is_empty():
+		return
+	for index: int in GameEnums.TILE_COUNT:
+		_place_tile(index)
+	for line: Line2D in _track_lines:
+		line.queue_free()
+	_track_lines.clear()
+	_add_track_lines()
+	if state != null:
+		_refresh_pawns()
 
 
 func _build_tiles_once() -> void:
 	if not _tile_views.is_empty():
 		return
-	_add_track_line([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 0] as Array[int])
-	_add_track_line([5, 20, 21, 22, 23, 24, 15] as Array[int])
-	_add_track_line([10, 25, 26, 22, 27, 28, 0] as Array[int])
+	_add_track_lines()
 	for index: int in GameEnums.TILE_COUNT:
 		var node: TileNode = state.board.get_tile(index)
 		var tile := Panel.new()
 		tile.size = Vector2(TILE_SIZE, TILE_SIZE)
-		tile.position = _tile_center(index) - tile.size / 2.0
 		var tile_color: Color = _tile_color(index, node.tile_type)
 		tile.add_theme_stylebox_override("panel", _style(tile_color, tile_color.darkened(0.4), 2, 8, 0, 0))
 		tile.gui_input.connect(_on_tile_gui_input.bind(index))
@@ -1255,6 +1374,13 @@ func _build_tiles_once() -> void:
 		pick_mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		tile.add_child(pick_mark)
 		_pick_marks[index] = pick_mark
+		_place_tile(index)
+
+
+func _add_track_lines() -> void:
+	_add_track_line([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 0] as Array[int])
+	_add_track_line([5, 20, 21, 22, 23, 24, 15] as Array[int])
+	_add_track_line([10, 25, 26, 22, 27, 28, 0] as Array[int])
 
 
 func _add_track_line(route: Array[int]) -> void:
@@ -1264,6 +1390,9 @@ func _add_track_line(route: Array[int]) -> void:
 	for tile_index: int in route:
 		line.add_point(_tile_center(tile_index))
 	_board_layer.add_child(line)
+	# 선은 보드 면 바로 위, 타일 아래에 그린다.
+	_board_layer.move_child(line, 3 + _track_lines.size())
+	_track_lines.append(line)
 
 
 func _is_light_tile(index: int, tile_type: TileNode.TileType) -> bool:
@@ -1305,6 +1434,15 @@ func _build_pawn_views() -> void:
 		var view := Node2D.new()
 		var bounce := Node2D.new()
 		bounce.name = "Bounce"
+		# 기울인 시점에서 말 밑에 깔리는 납작한 그림자 (서 있는 느낌)
+		var shadow := Polygon2D.new()
+		shadow.name = "Shadow"
+		shadow.polygon = _circle_points(PAWN_RADIUS * 0.95, 16)
+		shadow.scale = Vector2(1.0, 0.38)
+		shadow.position = Vector2(0, PAWN_RADIUS * 0.55)
+		shadow.color = Color(0, 0, 0, 0.4)
+		shadow.visible = view_mode == ViewMode.TILT
+		view.add_child(shadow)
 		view.add_child(bounce)
 		var body := Polygon2D.new()
 		body.name = "Body"
@@ -1357,7 +1495,7 @@ func _circle_points(radius: float, count: int) -> PackedVector2Array:
 func _pawn_position(pawn: PlayerPawn) -> Vector2:
 	var owner_index: int = PLAYER_IDS.find(pawn.owner_id)
 	var micro := Vector2(((pawn.slot - 1) % 2) * 5.0 - 2.5, ((pawn.slot - 1) / 2) * 5.0 - 2.5)
-	var position_in_tile: Vector2 = _tile_center(pawn.current_tile_idx) + CELL_OFFSETS[owner_index] + micro
+	var position_in_tile: Vector2 = _tile_center(pawn.current_tile_idx) + (CELL_OFFSETS[owner_index] + micro) * _depth_scale(tile_norm(pawn.current_tile_idx).y)
 	if pawn.is_finished:
 		position_in_tile = _tile_center(GameEnums.GOAL_TILE) + Vector2(-22 + owner_index * 14 + (pawn.slot - 1) * 3.0, 38)
 	return position_in_tile
@@ -1373,6 +1511,8 @@ func _refresh_pawns() -> void:
 			if running != null and running.is_valid():
 				running.kill()
 		view.position = _pawn_position(pawn)
+		view.scale = Vector2.ONE * _depth_scale(tile_norm(pawn.current_tile_idx).y)
+		(view.get_node("Shadow") as Polygon2D).visible = view_mode == ViewMode.TILT
 		# 출발 전 대기 말과 완주한 말은 보드에 그리지 않는다. 대기 말은 첫 걸음을 뗄 때 출발선에서 나타나 전진하고,
 		# 완주 현황은 오른쪽 패널의 미니 슬롯(●●○○)과 [이동할 말] 버튼으로 확인한다.
 		view.visible = pawn.carrier == null and not pawn.is_finished and pawn.has_left_start
@@ -1403,7 +1543,7 @@ func _refresh_pawns() -> void:
 			marker.add_child(caption)
 			_pawn_layer.add_child(marker)
 			_npc_views[npc.entity_id] = marker
-		(_npc_views[npc.entity_id] as Node2D).position = _tile_center(npc.current_tile_idx) + Vector2(0, -22)
+		(_npc_views[npc.entity_id] as Node2D).position = _tile_center(npc.current_tile_idx) + Vector2(0, -22) * _depth_scale(tile_norm(npc.current_tile_idx).y)
 	for npc_id: int in _npc_views.keys():
 		if state.get_npc(npc_id) == null:
 			(_npc_views[npc_id] as Node).queue_free()
@@ -1466,6 +1606,7 @@ func _on_pawn_stepped(pawn_id: int, _from_tile: int, _to_tile: int) -> void:
 			previous.kill()
 	var tween: Tween = create_tween()
 	tween.tween_property(view, "position", _pawn_position(pawn), maxf(STEP_DELAY * 0.85, 0.05))
+	tween.parallel().tween_property(view, "scale", Vector2.ONE * _depth_scale(tile_norm(pawn.current_tile_idx).y), maxf(STEP_DELAY * 0.85, 0.05))
 	view.set_meta("tween", tween)
 
 
@@ -3261,7 +3402,7 @@ func _aim_update(pointer: Vector2) -> void:
 	var shot: Dictionary = PawnSkills.shot_result(state, pawn, _aim_angle, _aim_power)
 	_aim_line.clear_points()
 	_aim_line.add_point(_tile_center(pawn.current_tile_idx))
-	_aim_line.add_point(BOARD_ORIGIN + (shot["to"] as Vector2) * BOARD_SIZE)
+	_aim_line.add_point(_project(shot["to"] as Vector2))
 	_aim_line.default_color = Color("ffd43b") if (shot["hits"] as Array).is_empty() else Color("ff6b6b")
 	_aim_label.text = "파워 %d%%  명중 %d" % [int(_aim_power * 100.0), (shot["hits"] as Array).size()]
 	_aim_label.position = _tile_center(pawn.current_tile_idx) + Vector2(14, -34)
@@ -4519,6 +4660,18 @@ func _build_settings_page() -> void:
 	_menu_title("게임 설정")
 	var fullscreen_text: String = "전체화면 끄기" if DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN else "전체화면 켜기"
 	_menu_item(_make_button(fullscreen_text, _on_menu_fullscreen_pressed, 16, Color("3b4766"), 10))
+	var view_row := HBoxContainer.new()
+	view_row.add_theme_constant_override("separation", 8)
+	_menu_box.add_child(view_row)
+	view_row.add_child(_make_label("보드 시점", 15, Color("ced4da")))
+	var view_option := OptionButton.new()
+	view_option.name = "ViewMode"
+	view_option.add_item("탑뷰 (위에서 내려다봄)")
+	view_option.add_item("기울인 탑뷰 (테이블)")
+	view_option.select(view_mode)
+	view_option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	view_option.item_selected.connect(_on_view_mode_selected)
+	view_row.add_child(view_option)
 	var pacing := CheckBox.new()
 	pacing.name = "PacingCheck"
 	pacing.text = "행동 사이에 잠깐 멈춰 보여 주기 (턴 알림·이동 뒤 호흡)"
@@ -4552,6 +4705,11 @@ func _build_exit_page() -> void:
 func _on_menu_fullscreen_pressed() -> void:
 	MobileSupport.toggle_fullscreen()
 	_show_menu_page(&"settings")
+
+
+func _on_view_mode_selected(index: int) -> void:
+	set_view_mode(index)
+	GameSession.save_settings()
 
 
 func _on_pacing_toggled(enabled: bool) -> void:

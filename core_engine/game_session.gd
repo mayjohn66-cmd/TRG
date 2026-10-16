@@ -16,11 +16,14 @@ static var mode: StringName = MODE_AI
 ## 게임 설정(메뉴 > 게임 설정): user://settings.cfg에 저장된다.
 const SETTINGS_PATH: String = "user://settings.cfg"
 static var pacing_enabled: bool = true
+## 보드 시점: 0 탑뷰 / 1 기울인 탑뷰 (MainBoard.ViewMode)
+static var view_mode: int = 0
 
 
 static func save_settings() -> void:
 	var config := ConfigFile.new()
 	config.set_value("game", "pacing_enabled", pacing_enabled)
+	config.set_value("game", "view_mode", view_mode)
 	config.save(SETTINGS_PATH)
 
 
@@ -28,6 +31,7 @@ static func load_settings() -> void:
 	var config := ConfigFile.new()
 	if config.load(SETTINGS_PATH) == OK:
 		pacing_enabled = bool(config.get_value("game", "pacing_enabled", true))
+		view_mode = clampi(int(config.get_value("game", "view_mode", 0)), 0, 1)
 
 
 ## 온라인 대전 설정: 로비가 시작 때 채우고 메인 보드가 읽는다 (net_active가 false면 기존 컴퓨터 대전/핫시트).

@@ -34,6 +34,7 @@ func _process(_delta: float) -> bool:
 	_frames += 1
 	if _frames == 1:
 		_rng.seed = int(OS.get_environment("SMOKE_SEED")) if OS.get_environment("SMOKE_SEED") != "" else 20261015
+		GameSession.view_mode = 1 if OS.get_environment("SMOKE_VIEW") == "tilt" else 0  # SMOKE_VIEW=tilt: 기울인 탑뷰로 한 판 진행
 		var scene: PackedScene = load("res://scenes/main_board.tscn")
 		_board = scene.instantiate()
 		root.add_child(_board)
@@ -70,21 +71,24 @@ func _check_layout() -> void:
 	_check_hud_layout()
 	_assert(_board._draft_overlay != null, "1라운드 시작에 증강 드래프트 오버레이가 떠야 한다")
 	for index: int in 29:
-		var tile: Control = _board._tile_views[index]
-		_assert(Rect2(Vector2.ZERO, Vector2(1366, 768)).encloses(Rect2(tile.position, tile.size)), "타일 %d가 화면 안에 있어야 한다" % index)
+		_assert(Rect2(Vector2.ZERO, Vector2(1366, 768)).encloses(_tile_rect(index)), "타일 %d가 화면 안에 있어야 한다" % index)
 	for a: int in 29:
 		for b: int in range(a + 1, 29):
-			var rect_a := Rect2((_board._tile_views[a] as Control).position, Vector2(MainBoard.TILE_SIZE, MainBoard.TILE_SIZE))
-			var rect_b := Rect2((_board._tile_views[b] as Control).position, Vector2(MainBoard.TILE_SIZE, MainBoard.TILE_SIZE))
-			_assert(not rect_a.intersects(rect_b), "타일 %d와 %d가 겹침" % [a, b])
+			_assert(not _tile_rect(a).intersects(_tile_rect(b)), "타일 %d와 %d가 겹침" % [a, b])
+
+
+## 타일이 화면에서 실제로 차지하는 사각형 (원근·압축 배율 반영).
+func _tile_rect(index: int) -> Rect2:
+	var tile: Control = _board._tile_views[index]
+	var size: Vector2 = tile.size * tile.scale
+	return Rect2(tile.position + tile.size / 2.0 - size / 2.0, size)
 
 
 ## 상용 HUD 배치 검증: 보드는 화면 정중앙, 프로필 카드는 네 모서리, 서로 겹치는 HUD가 없어야 한다.
 func _check_hud_layout() -> void:
 	var board_rect := Rect2()
 	for index: int in 29:
-		var tile: Control = _board._tile_views[index]
-		board_rect = tile.get_rect() if index == 0 else board_rect.merge(tile.get_rect())
+		board_rect = _tile_rect(index) if index == 0 else board_rect.merge(_tile_rect(index))
 	_assert(absf(board_rect.get_center().x - 683.0) < 4.0, "보드판은 화면 가로 정중앙이어야 한다 (%s)" % str(board_rect))
 	# 로컬 플레이어(P1)는 우하단, 다음 순서는 우상단, 맞은편은 좌상단, 이전 순서는 좌하단 (상대 좌석 매핑).
 	var corners: Dictionary = {1: Vector2(1, 1), 2: Vector2(1, 0), 3: Vector2(0, 0), 4: Vector2(0, 1)}

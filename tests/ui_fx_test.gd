@@ -38,6 +38,7 @@ func _run() -> void:
 		await process_frame
 	await _test_mode_toggle()
 	await _test_game_menu()
+	await _test_view_modes()
 	# 이후 연출·게이지 테스트는 직접 조작하므로 4P 수동 조작 모드로 진행한다 (봇 호흡은 마지막에 따로 검증)
 	_board.ai_mode = false
 	_board._bot.set_enabled(false)
@@ -239,6 +240,49 @@ func _test_mode_toggle() -> void:
 	_expect(not _board.ai_mode and not _board._bot.enabled and _board._mode_toggle.text == "[모드: 4P 수동 조작]", "토글하면 4P 수동 조작")
 	_board._mode_toggle.pressed.emit()
 	_expect(_board.ai_mode and _board._bot.enabled, "다시 토글하면 AI 대전")
+
+
+## 보드 시점: 탑뷰 <-> 기울인 탑뷰. 규칙 좌표는 그대로이고 화면 배치만 바뀐다.
+func _test_view_modes() -> void:
+	_expect(_board.view_mode == MainBoard.ViewMode.TOP and _board._plate.visible and not _board._board_surface.visible, "기본은 탑뷰")
+	var top_centers: Array[Vector2] = []
+	for index: int in 29:
+		top_centers.append(_board._tile_center(index))
+	var pawn_id: int = 11
+	var pawn: PlayerPawn = _board.state.get_pawn(pawn_id)
+	var top_pawn_position: Vector2 = _board._pawn_position(pawn)
+	_board.set_view_mode(MainBoard.ViewMode.TILT)
+	_expect(not _board._plate.visible and _board._board_surface.visible and _board._table_bg.visible and _board._pawn_layer.y_sort_enabled, "기울인 시점: 보드 면·테이블이 켜지고 말이 깊이순으로 그려진다")
+	var far_tile: Control = _board._tile_views[8]   # 위쪽(먼 쪽) 줄
+	var near_tile: Control = _board._tile_views[18]  # 아래쪽(가까운 쪽) 줄
+	_expect(far_tile.scale.x < near_tile.scale.x and absf(near_tile.scale.x - 1.0) < 0.001, "먼 타일은 작고 가까운 타일은 원래 크기")
+	_expect(near_tile.scale.y < near_tile.scale.x, "타일은 세로로 눌린다")
+	_expect(_board._tile_center(8).y < _board._tile_center(18).y and _board._tile_center(18).y - _board._tile_center(8).y < top_centers[18].y - top_centers[8].y, "세로 간격이 압축된다")
+	var tag: Label = _board._tag_labels[0]
+	_expect(absf(tag.scale.y * near_tile.scale.y / near_tile.scale.x - 1.0) < 0.01, "타일 글자는 되돌려 찌그러지지 않는다")
+	var all_inside: bool = true
+	for a: int in 29:
+		var tile_a: Control = _board._tile_views[a]
+		var rect_a := Rect2(tile_a.position + tile_a.size / 2.0 - tile_a.size * tile_a.scale / 2.0, tile_a.size * tile_a.scale)
+		all_inside = all_inside and Rect2(Vector2.ZERO, Vector2(1366, 768)).encloses(rect_a)
+		for b: int in range(a + 1, 29):
+			var tile_b: Control = _board._tile_views[b]
+			var rect_b := Rect2(tile_b.position + tile_b.size / 2.0 - tile_b.size * tile_b.scale / 2.0, tile_b.size * tile_b.scale)
+			_expect(not rect_a.intersects(rect_b), "기울인 시점에서 타일 %d와 %d가 겹침" % [a, b])
+	_expect(all_inside, "기울인 시점의 모든 타일이 화면 안")
+	_expect((_board._pawn_views[pawn_id] as Node2D).get_node("Shadow").visible, "말 그림자가 보인다")
+	_expect(_board._board_edge.points.size() == 4 and _board._track_lines.size() == 3, "보드 면 4점, 경로선 3개가 다시 그려진다")
+	# 경로선이 새 위치를 따라간다
+	_expect(_board._track_lines[0].points[0].is_equal_approx(_board._tile_center(0)), "경로선이 투영 좌표를 따라간다")
+	# 시점은 설정으로 저장된다
+	_expect(GameSession.view_mode == MainBoard.ViewMode.TILT, "시점이 세션 설정에 기록된다")
+	_board.set_view_mode(MainBoard.ViewMode.TOP)
+	var restored: bool = true
+	for index: int in 29:
+		restored = restored and _board._tile_center(index).is_equal_approx(top_centers[index])
+	_expect(restored and _board._plate.visible and not _board._board_surface.visible and not _board._table_bg.visible, "탑뷰로 돌아오면 모든 좌표와 받침이 그대로 돌아온다")
+	_expect(_board._pawn_position(pawn).is_equal_approx(top_pawn_position) and not _board._pawn_layer.y_sort_enabled, "말 위치도 그대로")
+	GameSession.view_mode = MainBoard.ViewMode.TOP
 
 
 ## 상단 UI는 [메뉴] 버튼 하나뿐이고, 메뉴 안에서 계속하기/게임 설정/전체 로그/새 게임/모드/치트/게임 나가기를 고른다.
