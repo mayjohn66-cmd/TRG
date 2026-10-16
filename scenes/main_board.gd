@@ -12,9 +12,9 @@ const PLAYER_COLORS: Dictionary = {
 	4: Color("f5b700"),
 }
 ## 보드판(큼직하게): 받침 판 584x584 안에 520x520 타일 영역. 모바일 가로 화면에서도 보드가 화면 높이의 대부분을 차지한다.
-const PLATE_POS: Vector2 = Vector2(391, 54)
+const PLATE_POS: Vector2 = Vector2(391, 68)
 const PLATE_SIZE: Vector2 = Vector2(584, 584)
-const BOARD_ORIGIN: Vector2 = Vector2(423, 86)
+const BOARD_ORIGIN: Vector2 = Vector2(423, 100)
 const BOARD_SIZE: float = 520.0
 ## 보드 시점. TOP: 완전 탑뷰, TILT: 테이블에 앉아 비스듬히 내려다보는 기울인 탑뷰(세로 압축 + 위쪽이 멀어 보이는 원근 + 서 있는 말과 그림자).
 enum ViewMode { TOP, TILT }
@@ -42,7 +42,7 @@ const SEAT_LEFT: StringName = &"left"
 const SEAT_POSITIONS: Dictionary = {
 	&"me": Vector2(1124, 644),
 	&"right": Vector2(1124, 52),
-	&"top": Vector2(518, 0),
+	&"top": Vector2(518, 6),
 	&"left": Vector2(12, 52),
 }
 const COMPACT_PROFILE_SIZE: Vector2 = Vector2(330, 60)
@@ -1070,7 +1070,7 @@ func _build_status_strip() -> void:
 	_queue_label = _make_label("", 11, Color("adb5bd"))
 	_status_strip.add_child(_queue_label)
 	_pick_banner = _make_label("", 13, Color("63e6be"))
-	_pick_banner.position = Vector2(423, 60)
+	_pick_banner.position = Vector2(423, 74)
 	_pick_banner.size = Vector2(400, 26)
 	_pick_banner.clip_text = true
 	_pick_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
