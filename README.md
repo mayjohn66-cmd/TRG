@@ -14,7 +14,7 @@ bash tests/run_net_test.sh                              # Listen Server 2프로�
 
 ## 바로 플레이 / 업데이트
 
-- **웹에서 바로 플레이 (설치 불필요, 항상 최신):** https://mayjohn66-cmd.github.io/TRG/ — 푸시할 때마다 GitHub Actions가 테스트 후 웹 빌드를 자동으로 배포한다. (저장소 Settings → Pages → Source: `Deploy from a branch`, Branch: `gh-pages` / `(root)` 로 한 번만 켜 두면 된다.)
+- **웹에서 바로 플레이 (설치 불필요, 항상 최신):** https://trickcal-board.vercel.app/ — 푸시할 때마다 GitHub Actions가 테스트 후 웹 빌드를 `gh-pages` 브랜치에 올리고, Vercel(Production Branch: `gh-pages`)이 그대로 배포한다. (예전 GitHub Pages 주소 `https://mayjohn66-cmd.github.io/TRG/`도 `gh-pages`가 켜져 있으면 계속 열린다.)
 - **내 PC의 폴더 업데이트:** `update.bat`을 더블클릭하면 최신 코드로 갱신한다 (Git 필요). 파일 안의 `GODOT_EXE`에 Godot 경로를 적으면 업데이트 뒤 프로젝트를 바로 연다.
 
 ## 플레이 (프로토타입 화면)
@@ -80,7 +80,7 @@ SMOKE_SEED=3 godot --headless --path . -s res://tests/ui_smoke.gd   # 다른 시
 
 ## 웹 배포 (GitHub Pages / Vercel)
 
-푸시할 때마다 `.github/workflows/deploy-web.yml`이 테스트 -> Godot 웹 빌드 -> `gh-pages` 브랜치 강제 푸시까지 자동으로 합니다(`https://mayjohn66-cmd.github.io/TRG/`). 빌드 결과에는 `vercel.json`도 함께 들어갑니다.
+푸시할 때마다 `.github/workflows/deploy-web.yml`이 테스트 -> Godot 웹 빌드 -> `gh-pages` 브랜치 강제 푸시까지 자동으로 합니다(운영 주소: `https://trickcal-board.vercel.app/`). 빌드 결과에는 `vercel.json`도 함께 들어갑니다.
 
 **Vercel로 호스팅하기 (둘 중 하나)**
 1. *시크릿 없이(권장):* Vercel에서 `Add New > Project`로 이 저장소를 가져온 뒤 `Settings > Git > Production Branch`를 `gh-pages`로 바꾸고, Framework Preset `Other`, Build Command / Output Directory는 비워 둡니다. 워크플로가 `gh-pages`를 갱신할 때마다 Vercel이 그 정적 파일을 그대로 배포합니다.
