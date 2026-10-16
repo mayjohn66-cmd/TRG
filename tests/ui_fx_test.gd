@@ -571,7 +571,7 @@ func _test_hud_overhaul() -> void:
 	for pawn: PlayerPawn in manager.state.basic_pawns_of(3):
 		rook = pawn
 		break
-	manager.state.give_unit(rook, GameEnums.PawnKind.CHESS, [4] as Array[int])
+	rook.evolve(GameEnums.PawnKind.CHESS, 4)
 	_board._fill_pawn_tip(rook.entity_id)
 	_expect(_board._tip_skill.visible and _board._tip_skill.text.contains("단독 캐슬링"), "룩 툴팁에는 필살기 줄이 있다 (%s)" % _board._tip_skill.text)
 	var plain: PlayerPawn = null

@@ -118,6 +118,7 @@ func start_game(player_ids: Array[int], seed_value: int = 0, loadouts: Dictionar
 	state.setup(player_ids, seed_value, loadouts)
 	state.turn_order_reverse_requested.connect(reverse_turn_order)
 	state.bang_resolved.connect(_on_bang_resolved)
+	state.bomb_resolved.connect(_on_bomb_resolved)
 	state.pawn_pushed_back.connect(func(pawn_id: int, from_tile: int, to_tile: int) -> void: _emit_event(&"pawn_pushed_back", {"pawn_id": pawn_id, "from": from_tile, "to": to_tile}))
 	_ensure_command_stack()
 	command_stack.begin_turn()
@@ -170,7 +171,6 @@ func request_action(action: StringName, params: Dictionary = {}) -> void:
 		&"pick_augment": _handle_pick_augment(actor, params)
 		&"reroll_augment": _handle_reroll_augment(actor, params)
 		&"use_skill": _handle_use_skill(actor, params)
-		&"pass_bomb": _handle_pass_bomb(actor, params)
 		&"stack_choice": _handle_stack_choice(actor, params)
 		_: action_rejected.emit(actor, action, &"unknown_action")
 
@@ -526,54 +526,8 @@ func _execute_instant_skill(pawn: PlayerPawn, skill: StringName, params: Diction
 	_enter_resolution()
 
 
-## ACT_03 우노 +4: 내 턴 시작에 페널티가 걸려 있고 손패에 즉발 카드가 있으면, 그 카드를 소모해 두 배(-8)로 다음 플레이어에게 떠넘길 수 있다.
-## params: {"card_id": StringName} (생략하면 첫 즉발 카드)
-func can_pass_bomb(player_id: int) -> bool:
-	return state != null and current_state == State.PHASE_TURN_BEGIN and player_id == current_player_id() \
-			and state.penalty_of(player_id) != 0 and state.hand_has_category(player_id, GameEnums.CardCategory.INSTANT)
-
-
-func _handle_pass_bomb(actor: int, params: Dictionary) -> void:
-	if current_state != State.PHASE_TURN_BEGIN or actor != current_player_id() or state.penalty_of(actor) == 0:
-		action_rejected.emit(actor, &"pass_bomb", &"wrong_phase")
-		return
-	var card_id: StringName = StringName(params.get("card_id", &""))
-	var card: BaseCard = CardRegistry.get_card(card_id) if card_id != &"" else null
-	if card == null or card.category != GameEnums.CardCategory.INSTANT or not state.has_card(actor, card_id):
-		card_id = state.first_card_of_category(actor, GameEnums.CardCategory.INSTANT)
-	if card_id == &"":
-		action_rejected.emit(actor, &"pass_bomb", &"no_instant_card")
-		return
-	var amount: int = state.penalty_of(actor)
-	var target_player: int = state.next_player_after(actor)
-	state.consume_card(actor, card_id)
-	state.pending_penalty.erase(actor)
-	state.pending_penalty[target_player] = state.penalty_of(target_player) + amount * 2
-	_emit_event(&"bomb_passed", {"from": actor, "to": target_player, "amount": amount * 2, "card_id": card_id})
-	_broadcast_state()
-
-
-## 걸려 있는 우노 +4 페널티를 지금 적용한다: 가장 앞선 말이 해당 칸 수만큼 후퇴한다 (설치물·잡기 판정 없음).
-func _apply_pending_penalty(player_id: int) -> void:
-	var amount: int = state.penalty_of(player_id)
-	if amount == 0:
-		return
-	state.pending_penalty.erase(player_id)
-	var target: PlayerPawn = state.front_pawn_of(player_id)
-	var path: Array[int] = []
-	var from_tile: int = -1
-	if target != null:
-		from_tile = target.current_tile_idx
-		path = MoveExecutor.retreat(state, target, absi(amount))
-	_emit_event(&"bomb_applied", {
-		"player_id": player_id,
-		"steps": absi(amount),
-		"pawn_id": target.entity_id if target != null else -1,
-		"from": from_tile,
-		"path": path,
-	})
-	state.turn_snapshot = TurnSnapshot.capture(state)
-	_broadcast_state()
+func _on_bomb_resolved(shooter: int, victim: int, pawn_id: int, from_tile: int, to_tile: int) -> void:
+	_emit_event(&"bomb_applied", {"shooter": shooter, "victim": victim, "pawn_id": pawn_id, "from": from_tile, "to": to_tile})
 
 
 func _on_bang_resolved(shooter: int, target_pawn_id: int, from_tile: int, to_tile: int) -> void:
@@ -799,9 +753,6 @@ func _begin_turn(new_turn: bool = true) -> void:
 	if new_turn:
 		_tick_restraints(current_player_id())
 	_tick_owned_attachments(current_player_id())
-	if not state.hand_has_category(current_player_id(), GameEnums.CardCategory.INSTANT):
-		# 떠넘길 즉발 카드가 없으면 페널티는 턴이 시작되자마자 적용된다.
-		_apply_pending_penalty(current_player_id())
 	state.turn_snapshot = TurnSnapshot.capture(state)
 	(state.tools[current_player_id()] as BaseJudgmentTool).on_turn_begin(state.rng)
 	change_state(State.PHASE_TURN_BEGIN)
@@ -823,8 +774,6 @@ func _tick_owned_attachments(player_id: int) -> void:
 
 
 func _enter_roll_wait() -> void:
-	# 떠넘기지 않고 굴림으로 넘어가면 걸려 있던 우노 +4 페널티가 적용된다.
-	_apply_pending_penalty(current_player_id())
 	change_state(State.PHASE_ROLL_WAIT)
 
 
@@ -1068,7 +1017,6 @@ func _build_sync_payload() -> Dictionary:
 		"winner": state.winner,
 		"hand_counts": hand_counts,
 		"move_queue": move_queue,
-		"pending": state.pending_penalty.duplicate(),
 		"stack_offer": _stack_offer.duplicate(true),
 	}
 
@@ -1085,7 +1033,6 @@ func _rpc_sync_state(payload: Dictionary) -> void:
 	current_turn_index = int(payload["turn_index"])
 	turn_direction = int(payload["direction"])
 	state.turn_direction = turn_direction
-	state.pending_penalty = (payload["pending"] as Dictionary).duplicate()
 	_stack_offer = (payload["stack_offer"] as Dictionary).duplicate(true)
 	is_game_over = bool(payload["game_over"])
 	move_queue.assign(payload["move_queue"])

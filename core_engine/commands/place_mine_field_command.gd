@@ -1,6 +1,6 @@
 # File: res://core_engine/commands/place_mine_field_command.gd
 # Class: class_name PlaceMineFieldCommand
-# Role: TRP_03 실행 - 선택한 타일에 은신 지뢰를, 앞뒤 타일에 [1] 숫자 표시를 설치해 연속된 3칸을 만든다
+# Role: TRP_03 지뢰 설치 실행 - 선택한 타일에 은신 지뢰 1개를 설치한다 (숫자 표시 타일은 없다)
 class_name PlaceMineFieldCommand
 extends GameCommand
 
@@ -19,11 +19,4 @@ func can_execute(_ctx: RuleContext) -> bool:
 
 
 func _run() -> void:
-	var mine := TrapMine.new(sender_id)
-	var behind: int = state.board.default_previous(tile)
-	var ahead: int = state.board.get_tile(tile).next_default
-	for neighbor: int in [behind, ahead]:
-		if neighbor != tile and not mine.number_tiles.has(neighbor):
-			mine.number_tiles.append(neighbor)
-			state.place_attachment(neighbor, MineNumber.new(sender_id))
-	state.place_attachment(tile, mine)
+	state.place_attachment(tile, TrapMine.new(sender_id))

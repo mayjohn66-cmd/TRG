@@ -159,13 +159,9 @@ func _step_draft() -> void:
 	_delay(DELAY_DRAFT)
 
 
-## 턴 시작: 폭탄 떠넘기기 -> 카드/함정 사용 판단 -> 굴리러 진행.
+## 턴 시작: 카드/함정 사용 판단 -> 굴리러 진행.
 func _step_turn_begin() -> void:
 	var player_id: int = manager.current_player_id()
-	if manager.can_pass_bomb(player_id):
-		_act(player_id, &"pass_bomb")
-		_delay(DELAY_TURN_START)
-		return
 	# 카드는 굴리기 전 턴당 1장만 쓸 수 있다.
 	var plan: Dictionary = {} if manager.card_played_this_turn() else BotBrain.plan_turn_card(manager.state, player_id, _tried, rng)
 	if not plan.is_empty():
@@ -190,10 +186,7 @@ func _step_turn_begin() -> void:
 func _step_roll() -> void:
 	var player_id: int = manager.current_player_id()
 	var tool: BaseJudgmentTool = manager.state.tools[player_id]
-	if tool is ToolHwatu and tool.has_pending_state():
-		# 화투: 첫 [고]는 확률로 도전하고 그 뒤로는 [스톱]한다.
-		_act(player_id, &"roll" if BotBrain.hwatu_should_go(tool, rng) else &"stop")
-	elif BotBrain.should_stop_roulette(tool, _roulette_pull_target):
+	if BotBrain.should_stop_roulette(tool, _roulette_pull_target):
 		_act(player_id, &"stop")
 	else:
 		_act(player_id, &"roll")

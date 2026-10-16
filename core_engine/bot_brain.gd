@@ -219,8 +219,8 @@ static func _plan_one_turn_card(state: GameState, player_id: int, card: BaseCard
 					if state.pawn_progress_distance(state.front_pawn_of(victim)) < state.pawn_progress_distance(state.front_pawn_of(best_player)):
 						best_player = victim
 				return {"card_id": card.card_id, "params": {"target_player": best_player}}
-		&"ACT_03":  # 우노 +4: 다음 차례가 나 자신이 아니고 50%
-			if state.next_player_after(player_id) != player_id and rng.randf() < 0.5:
+		&"ACT_03":  # 우노 +4: 다음 차례의 선두 말이 보드 위에 있고 50%
+			if card.could_play(state, player_id) and rng.randf() < 0.5:
 				return {"card_id": card.card_id, "params": {}}
 		&"ACT_07":  # 무너지는 탑: 적이 뭉쳐 있거나 가장 앞선 적이 결승 가까이 있을 때
 			var tower_tile: int = TarotEffects.tower_target(state, player_id)
@@ -295,16 +295,6 @@ static func plan_window_card(state: GameState, player_id: int, phase: int, roll_
 # ---------------------------------------------------------------------------
 # 판정 도구
 # ---------------------------------------------------------------------------
-
-## 화투 고스톱: 첫 [고]까지만 절반 확률로 도전하고(최대 1회), 이미 한 번 외쳤거나 누적이 9칸 이상이면 [스톱]한다.
-static func hwatu_should_go(tool: BaseJudgmentTool, rng: RandomNumberGenerator) -> bool:
-	if not (tool is ToolHwatu) or not tool.has_pending_state():
-		return false
-	var hwatu: ToolHwatu = tool as ToolHwatu
-	if hwatu.go_count >= 1 or hwatu.accumulated >= 9:
-		return false
-	return rng.randf() < 0.5
-
 
 ## 러시안 룰렛: 빈 총을 pull_target번 당겼으면(누적 칸수 기준) 멈춘다. pull_target은 보통 2~3.
 static func should_stop_roulette(tool: BaseJudgmentTool, pull_target: int) -> bool:

@@ -40,7 +40,7 @@ const SEAT_RIGHT: StringName = &"right"
 const SEAT_TOP: StringName = &"top"
 const SEAT_LEFT: StringName = &"left"
 const SEAT_POSITIONS: Dictionary = {
-	&"me": Vector2(1010, 598),
+	&"me": Vector2(1000, 598),
 	&"right": Vector2(1124, 52),
 	&"top": Vector2(12, 644),
 	&"left": Vector2(12, 52),
@@ -99,7 +99,7 @@ const CARD_CATEGORY_NAMES: Dictionary = {
 const CARD_SHORT: Dictionary = {
 	&"ACT_01": "순서 역전·역주행",
 	&"ACT_02": "상대 선두 -2칸",
-	&"ACT_03": "다음 유저 -4칸 폭탄",
+	&"ACT_03": "다음 유저 -4칸",
 	&"ACT_04": "뒤로 가서 즉시 골인",
 	&"ACT_05": "턴 시작 전으로 되감기",
 	&"ACT_06": "교칙 1개 삭제",
@@ -117,13 +117,13 @@ const CARD_SHORT: Dictionary = {
 const CARD_SUMMARIES: Dictionary = {
 	&"ACT_01": "턴 순서 역전 & 전원 역주행",
 	&"ACT_02": "상대 선두 말 2칸 후퇴 (프로필 선택)",
-	&"ACT_03": "다음 유저 -4칸 폭탄 (전가 시 누적)",
+	&"ACT_03": "다음 유저 선두 말 4칸 후퇴",
 	&"ACT_04": "출발선에서 뒤로 가면 즉시 골인!",
 	&"ACT_05": "이번 턴 시작 직전으로 시간 역행",
 	&"ACT_06": "중앙 법전 교칙 1개 지정 삭제",
 	&"TRP_01": "밟은 적 말 즉시 출발선 추방",
 	&"TRP_02": "눈금 4+ 이동 말 2턴간 구속",
-	&"TRP_03": "폭발 반경 2칸 내 모든 말 폭파",
+	&"TRP_03": "밟으면 반경 2칸 내 모든 말 폭파",
 	&"TRP_04": "코너 감옥화 (짝수 눈금에 탈출)",
 	&"TRP_05": "밟은 말 -3칸 & 뒷말들 연쇄 밀침",
 	&"ACT_07": "가장 뭉친 타일의 말 강제 분리·산개",
@@ -177,7 +177,6 @@ const REJECT_REASONS: Dictionary = {
 	&"nothing_to_cash_out": "확정할 누적치가 없습니다",
 	&"game_over": "게임이 끝났습니다",
 	&"ambiguous_pair": "교환할 체스 기물 두 개를 골라야 합니다",
-	&"no_instant_card": "떠넘길 즉발 카드가 없습니다",
 	&"reroll_used": "이미 리롤한 카드입니다",
 	&"card_limit": "카드는 굴리기 전에 턴당 1장만 쓸 수 있습니다",
 	&"no_candidate": "바꿀 수 있는 다른 증강이 없습니다",
@@ -231,7 +230,6 @@ var _law_dashes: Array[Control] = []
 var _roll_button: Button = null
 var _stop_button: Button = null
 var _skip_button: Button = null
-var _bomb_button: Button = null
 var _new_game_button: Button = null
 var _hint_label: Label = null
 var _pawn_bar: Panel = null
@@ -402,7 +400,7 @@ func _ready() -> void:
 	manager.name = "TurnManager"
 	manager.hotseat_mode = true
 	manager.step_delay_sec = STEP_DELAY * _pace()
-	manager.stack_choice_enabled = true
+	manager.stack_choice_enabled = false  # 윷말끼리 만나면 선택창 없이 자동으로 업는다 (선택 UI는 코어에 남아 있다)
 	_bot = BotController.new()
 	_bot.name = "BotController"
 	_bot.manager = manager
@@ -698,8 +696,7 @@ func _bind_state() -> void:
 	state.npc_vanished.connect(func(npc_id: int, tile: int) -> void:
 		_announce("중립 기물", "NPC가 사냥을 마치고 사라졌습니다", "%d번 타일 - 중립 기물은 한 번 잡으면 사라집니다" % tile, Color("fa5252"), null, 1.3))
 	state.attachment_placed.connect(func(tile: int, id: String, owner_id: int) -> void:
-		if id != "MINE_NUM":
-			_log_line("P%d가 %d번 타일에 [%s]을(를) 설치했습니다" % [owner_id, tile, "뒷면 카드" if id.begins_with("TRP") else _attachment_name(id)], Color("adb5bd"))
+		_log_line("P%d가 %d번 타일에 [%s]을(를) 설치했습니다" % [owner_id, tile, "뒷면 카드" if id.begins_with("TRP") else _attachment_name(id)], Color("adb5bd"))
 		_refresh_tiles())
 	state.card_drawn.connect(func(player_id: int, card_id: StringName) -> void: _log_line("[카드] P%d 생떼 카드 획득: %s" % [player_id, _card_name(card_id)], Color("ffa94d")))
 	state.card_stolen.connect(func(player_id: int, card_id: StringName) -> void: _log_line("P%d의 카드 [%s]를 도적이 빼앗았습니다" % [player_id, _card_name(card_id)], Color("ff6b6b")))
@@ -889,12 +886,6 @@ func _build_profiles() -> void:
 		var avatar := AvatarSlot.new()
 		avatar.setup(player_id, color, ME_AVATAR_SIZE if big else AVATAR_SIZE)
 		row.add_child(avatar)
-		var penalty_label := _make_label("", 12, Color("ffe3e3"))
-		penalty_label.position = Vector2(4, 90) if big else Vector2(4, 64)
-		penalty_label.add_theme_stylebox_override("normal", _style(Color("c92a2a"), Color(0, 0, 0, 0), 0, 6, 0, 2))
-		penalty_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		penalty_label.visible = false
-		avatar.add_child(penalty_label)
 
 		var right := VBoxContainer.new()
 		right.add_theme_constant_override("separation", 6 if big else 4)
@@ -971,7 +962,6 @@ func _build_profiles() -> void:
 			"panel": panel,
 			"name": name_label,
 			"count": count_label,
-			"penalty": penalty_label,
 			"slots": slots,
 			"avatar": avatar,
 			"anchor": anchor,
@@ -1195,10 +1185,6 @@ func _build_action_bar() -> void:
 	_skip_button = _make_button("개입 패스", _on_skip_pressed, 13, Color("7a4a14"), 12)
 	_skip_button.custom_minimum_size = Vector2(100, 30)
 	action_row.add_child(_skip_button)
-	_bomb_button = _make_button("폭탄 떠넘기기", _on_pass_bomb_pressed, 12, Color("8a4b08"), 12)
-	_bomb_button.custom_minimum_size = Vector2(0, 30)
-	_bomb_button.tooltip_text = "즉발 카드 1장을 소모해 우노 +4 페널티를 두 배(-8)로 다음 플레이어에게 넘깁니다"
-	action_row.add_child(_bomb_button)
 
 
 ## 둥근 큰 버튼 스타일 (일반/호버/눌림/비활성): 두꺼운 테두리와 그림자로 눌러 보고 싶게 만든다.
@@ -1722,9 +1708,6 @@ func _refresh_tiles() -> void:
 				"TRP_01", "TRP_02", "TRP_03", "TRP_05":
 					parts.append(_trap_badge(attachment))
 					tips.append(_trap_tooltip(attachment))
-				"MINE_NUM":
-					parts.append("[1]")
-					color = Color("8ce99a")
 				"TRP_04":
 					parts.append("섬")
 					color = Color("74c0fc")
@@ -1919,9 +1902,6 @@ func _refresh_players() -> void:
 		var color: Color = PLAYER_COLORS[player_id]
 		(card["name"] as Label).text = _player_name(player_id)
 		(card["count"] as Label).text = "x%d" % (state.hands[player_id] as Array).size()
-		var penalty_label: Label = card["penalty"]
-		penalty_label.visible = state.penalty_of(player_id) != 0
-		penalty_label.text = "+4 %d" % absi(state.penalty_of(player_id)) if state.penalty_of(player_id) != 0 else ""
 		var slots: Array = card["slots"]
 		for index: int in slots.size():
 			_paint_pawn_slot(slots[index], state.get_pawn(player_id * 10 + index + 1), color)
@@ -3070,7 +3050,7 @@ const TOOL_CARDS: Dictionary = {
 	&"CHINCHIRO": ["친", Color("0b7285"), "4 ~ 6칸 (삐끗 -6칸)", ""],
 	&"SLOT_777": ["7", Color("862e9c"), "릴 일치 → 1 ~ 8칸", "777 잭팟 20칸"],
 	&"REVOLVER": ["탄", Color("495057"), "빈 총 +3칸 누적", "실탄 → 0칸·턴 종료"],
-	&"DICE_HWATU": ["화", Color("c92a2a"), "패 족보 → 0 ~ 8칸", "고 / 스톱 선택"],
+	&"DICE_HWATU": ["화", Color("c92a2a"), "패 2장 족보 → 0 ~ 8칸", ""],
 	&"DICE_MAHJONG": ["마", Color("2b8a3e"), "패 3장 → 2 ~ 12칸", "역만 재굴림 +1"],
 	&"DICE_TAROT": ["타", Color("5f3dc4"), "타로 1장 → 전진", "매달린 남자: 다음 +8칸"],
 }
@@ -3084,7 +3064,7 @@ const TOOL_RULES: Dictionary = {
 	&"HOLDEM": {"rows": [["노페어", "1칸"], ["원페어", "3칸"], ["투페어", "5칸"], ["트리플", "7칸"], ["스트레이트", "10칸"], ["플러시 이상", "15칸"]], "note": "5장 드로우 · 플러시 이상 15칸"},
 	&"CHINCHIRO": {"rows": [["4 눈금", "4칸 (2/6)"], ["5 눈금", "5칸 (2/6)"], ["6 눈금", "6칸 (1/6)"], ["삐끗!", "6칸 후퇴 (1/6)"]], "note": "접시 밖 이탈 = 삐끗"},
 	&"SLOT_777": {"rows": [["3개 모두 다름", "1칸"], ["2개 일치", "4칸"], ["3개 일치", "8칸"], ["7 7 7 잭팟", "20칸"]], "note": "릴 3개 · 그림 6종"},
-	&"DICE_HWATU": {"rows": [["망통", "0칸, 턴 종료"], ["1~3 / 4~6 / 7~9끗", "2 / 3 / 4칸"], ["1~6 / 7~9땡", "6 / 7칸"], ["장땡·광땡", "8칸"], ["[고!] 광/열끗/띠", "+5/+4/+3칸"], ["[고!] 피 (피박)", "누적 1칸으로"]], "note": "월 합 끝자리 · 고 최대 2회"},
+	&"DICE_HWATU": {"rows": [["망통", "0칸, 턴 종료"], ["1~3 / 4~6 / 7~9끗", "2 / 3 / 4칸"], ["1~6 / 7~9땡", "6 / 7칸"], ["장땡·광땡", "8칸"]], "note": "월 합 끝자리 (망통 = 끝자리 0)"},
 	&"DICE_MAHJONG": {"rows": [["핑후 (불일치)", "2칸"], ["또이츠 (같은 패 2개)", "3칸"], ["슌쯔 (연속 숫자)", "5칸"], ["커쯔 (같은 패 3개)", "8칸"], ["역만 (8%)", "12칸 + 한 번 더!"]], "note": "역만 = 국사무쌍·대삼원"},
 	&"DICE_TAROT": {"rows": [["0. 광대", "-2칸 또는 +7칸"], ["VII. 전차", "6칸"], ["X. 운명의 수레바퀴", "4칸 + 한 번 더!"], ["XII. 매달린 남자", "1칸, 다음 굴림 +8칸"], ["XXI. 세계", "9칸"]], "note": "5장 중 1장 · 축복은 다음 굴림"},
 	&"REVOLVER": {"rows": [["방아쇠 1회", "+3칸 누적"], ["최대 누적", "15칸"], ["실탄 (6발 중 1발)", "누적 0칸, 턴 종료"], ["멈추기", "누적한 칸만큼 이동"]], "note": "실탄 6발 중 1발 · 터지면 누적 소멸"},
@@ -3174,16 +3154,11 @@ func _refresh_controls() -> void:
 		_roll_button.text = _roll_button_label(tool)
 		_stop_button.visible = can_stop
 		_stop_button.text = "멈추고 이동 확정"
-		if tool is ToolHwatu:
-			_stop_button.text = "스톱  (즉시 %d칸 이동)" % (tool as ToolHwatu).accumulated
 		_stop_button.disabled = false
-		_stop_button.modulate = Color(0.55, 1.0, 0.62) if can_stop and tool is ToolHwatu else Color.WHITE
+		_stop_button.modulate = Color.WHITE
 	_refresh_tool_board(state.tools[_dock_owner()], _dock_owner())
 	# 개입 창은 이제 피해를 되돌리는 카드(ACT_05) 하나뿐이라 가운데 팝업(_update_reaction_popup)이 맡는다. 예전 [개입 패스] 버튼은 쓰지 않는다.
 	_skip_button.visible = false
-	_bomb_button.visible = not over and manager.can_pass_bomb(player_id) and not _is_bot_turn()
-	if _bomb_button.visible:
-		_bomb_button.text = "떠넘기기 (%d칸)" % (state.penalty_of(player_id) * 2)
 	_hint_label.text = _hint_text(current_phase, tool)
 
 	_refresh_pawn_dock()
@@ -3194,10 +3169,10 @@ func _refresh_controls() -> void:
 		_tool_option.select(tool_index)
 
 
-## 굴림 버튼에 쓰는 글자: 도구마다 다르다 (화투는 진행 중이면 [고!]).
+## 굴림 버튼에 쓰는 글자: 도구마다 다르다.
 func _roll_button_label(tool: BaseJudgmentTool) -> String:
 	if tool is ToolHwatu:
-		return "고!\n(추가 도전)" if tool.has_pending_state() else "패\n뒤집기"
+		return "패\n뒤집기"
 	if tool is ToolHoldem:
 		return "카드 뽑기"
 	if tool is ToolSlot777:
@@ -3312,15 +3287,10 @@ func _hint_text(current_phase: TurnManager.State, tool: BaseJudgmentTool) -> Str
 		return "타일 선택 모드: 보드판에서 사용할 타일(초록 테두리)을 클릭하세요. 취소는 ESC 또는 오른쪽 클릭."
 	match current_phase:
 		TurnManager.State.PHASE_TURN_BEGIN:
-			var pending: int = state.penalty_of(manager.current_player_id())
-			if pending != 0:
-				return "우노 +4 페널티 %d칸이 걸려 있습니다! 즉발 카드가 있으면 [폭탄 떠넘기기], 아니면 굴리는 순간 가장 앞선 말이 후퇴합니다." % pending
 			if _tool_has_gauge():
 				return "굴리기 버튼(또는 R/Space)을 꾹 눌러 파워 게이지를 채우고 손을 떼면 굴러갑니다. 카드(▣ 표시는 타일 클릭)도 쓸 수 있습니다. (판정 도구: %s)" % tool.display_name
 			return "카드(▣ 표시는 타일을 클릭해 설치/소환)를 쓰거나 [굴리기]를 누르세요. (판정 도구: %s)" % tool.display_name
 		TurnManager.State.PHASE_ROLL_WAIT:
-			if tool is ToolHwatu and tool.has_pending_state():
-				return "[고!]로 한 장 더 뽑아 +3~5칸에 도전하거나 [스톱]으로 %d칸 이동을 확정하세요. 피(피박)가 나오면 누적이 1칸으로 쪼그라듭니다!" % (tool as ToolHwatu).accumulated
 			if tool.has_pending_state():
 				return "계속 당기거나, 멈추고 누적 칸수만큼 이동하세요. 실탄이 나오면 모두 증발합니다!"
 			return "다시 굴려야 합니다 (재굴림)." if not manager.move_queue.is_empty() else ("굴리기 버튼을 꾹 눌렀다 떼서 굴리세요." if _tool_has_gauge() else "굴리세요.")
@@ -3411,8 +3381,6 @@ func _on_skip_pressed() -> void:
 	_refresh_all()
 
 
-func _on_pass_bomb_pressed() -> void:
-	_act(&"pass_bomb")
 
 
 func _on_pawn_pressed(pawn_id: int) -> void:
@@ -4971,13 +4939,9 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 		&"skill_used": _on_skill_used(data)
 		&"pawn_pushed_back":
 			_log_line("[백돌 무적] 백돌에 막혀 %s이(가) %d번 → %d번으로 밀려났습니다" % [_pawn_name(int(data["pawn_id"])), data["from"], data["to"]], Color("b197fc"))
-		&"bomb_passed":
-			_log_line("[우노 +4] P%d가 [%s]를 소모해 폭탄을 P%d에게 떠넘겼습니다 (%d칸)" % [data["from"], _card_name(data["card_id"]), data["to"], data["amount"]], Color("ffd43b"))
 		&"bomb_applied":
-			if int(data["pawn_id"]) == -1:
-				_log_line("[우노 +4] P%d: 후퇴시킬 말이 없어 페널티가 사라졌습니다" % data["player_id"], Color("ffd43b"))
-			else:
-				_log_line("[우노 +4] P%d의 %s이(가) %d칸 후퇴 (%d번 → %d번)" % [data["player_id"], _pawn_name(int(data["pawn_id"])), data["steps"], data["from"], state.get_pawn(int(data["pawn_id"])).current_tile_idx], Color("ffd43b"))
+			_log_line("[우노 +4] P%d의 %s이(가) 4칸 후퇴 (%d번 → %d번)" % [data["victim"], _pawn_name(int(data["pawn_id"])), data["from"], data["to"]], Color("ffd43b"))
+			_fx_bang(int(data["shooter"]), int(data["pawn_id"]))
 		&"game_over":
 			_last_reason = data["reason"]
 	_refresh_all()
@@ -5002,16 +4966,10 @@ func _log_roll(data: Dictionary) -> String:
 			var shown_names: Array[String] = []
 			for card_number: Variant in details.get("new_cards", []):
 				shown_names.append(ToolHwatu.card_name(int(card_number)))
-			if bool(details.get("bust", false)):
-				text += "고! [%s] 피박! 누적 %d칸이 1칸으로 쪼그라듭니다" % [", ".join(shown_names), int(details.get("lost", 0))]
-			elif details.has("go_type"):
-				text += "고! [%s] +%d칸 → 누적 %d칸%s" % [", ".join(shown_names), int(details.get("bonus", 0)), int(details.get("accumulated", 0)), "" if result["can_continue"] else " (투고 한도, 자동 스톱)"]
-			elif result["ends_turn"]:
+			if result["ends_turn"]:
 				text += "[%s] 망통! 0칸, 턴 종료" % ", ".join(shown_names)
-			elif result["can_continue"]:
-				text += "[%s] %s → %d칸 (스톱 또는 고!)" % [", ".join(shown_names), details["label"], result["steps"]]
 			else:
-				text += "스톱! %d칸 이동 확정" % result["steps"]
+				text += "[%s] %s → %d칸" % [", ".join(shown_names), details["label"], result["steps"]]
 		&"DICE_MAHJONG":
 			var tile_names: Array[String] = []
 			for tile_number: Variant in details["tiles"]:

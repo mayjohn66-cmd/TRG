@@ -56,7 +56,7 @@ const SUB_LETTERS: Dictionary = {
 	SubType.SHOGI_FU: "보", SubType.SHOGI_HISHA: "비", SubType.SHOGI_KAKU: "각", SubType.SHOGI_KEIMA: "계",
 }
 const SUB_ABILITIES: Dictionary = {
-	SubType.YUT_MAL: "처치·눈금 4/5 시 재굴림 +1 · 업기 선택",
+	SubType.YUT_MAL: "처치·눈금 4/5 시 재굴림 +1 · 자동 업기",
 	SubType.CHESS_PAWN: "중앙·15~19번 도달 시 퀸 승급",
 	SubType.CHESS_KNIGHT: "경로 말·함정 관통 (도착 칸만 판정)",
 	SubType.CHESS_BISHOP: "코너 스침 → 대각선 진입 · 대각선 출발 +2칸",

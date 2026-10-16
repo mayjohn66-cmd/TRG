@@ -336,11 +336,10 @@ func test_restrained_pawn_skips_exactly_two_own_turns() -> void:
 	_dispose(manager)
 
 
-func test_mine_blast_hits_everyone_within_two_tiles_and_clears_numbers() -> void:
+func test_mine_blast_hits_everyone_within_two_tiles() -> void:
 	var state := make_state()
 	check(exec(state, PlaceMineFieldCommand.new(2, 6)), "지뢰 설치")
 	check(state.board.get_tile(6).has_attachment("TRP_03"), "6번에 지뢰")
-	check(state.board.get_tile(5).has_attachment("MINE_NUM") and state.board.get_tile(7).has_attachment("MINE_NUM"), "양옆 [1] 숫자 표시")
 	place(state, 21, 8, [7])    # 반경 2 이내 (적, 지뢰 설치자 쪽)
 	place(state, 12, 4, [3])    # 반경 2 이내 (아군)
 	place(state, 22, 12, [11])  # 반경 밖
@@ -350,7 +349,6 @@ func test_mine_blast_hits_everyone_within_two_tiles_and_clears_numbers() -> void
 	check_eq(state.get_pawn(21).current_tile_idx, 0, "반경 2칸 안의 기물은 피아 구분 없이 출발선으로")
 	check_eq(state.get_pawn(12).current_tile_idx, 0, "아군도 폭파")
 	check_eq(state.get_pawn(22).current_tile_idx, 12, "반경 밖은 안전")
-	check(not state.board.get_tile(5).has_attachment("MINE_NUM"), "숫자 표시도 사라짐")
 	check(not state.board.get_tile(6).has_attachment("TRP_03"), "지뢰 소모")
 
 
@@ -426,9 +424,6 @@ func test_new_traps_round_trip_through_snapshot() -> void:
 		tile.clear_attachments()
 	snapshot.restore(state)
 	check(state.board.get_tile(9).has_attachment("TRP_03"), "지뢰 복원")
-	check(state.board.get_tile(8).has_attachment("MINE_NUM"), "숫자 복원")
-	var mine: TrapMine = state.board.get_tile(9).attachments[0] as TrapMine
-	check_eq(mine.number_tiles, int_array([8, 10]), "지뢰와 숫자 칸의 연결 복원")
 	check(state.board.get_tile(14).has_attachment("TRP_02"), "나락 복원")
 	check_eq(state.board.get_tile(15).attachments[0].duration_turns, 3, "무인도 지속 시간 복원")
 

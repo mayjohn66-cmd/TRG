@@ -1,13 +1,13 @@
 # File: res://core_engine/cards/card_mine.gd
 # Class: class_name CardMine
-# Role: TRP_03 지뢰찾기 숫자 타일 - 선택한 타일에 은신 지뢰, 양옆에 [1] 숫자 표시를 설치한다
+# Role: TRP_03 지뢰 - 선택한 타일에 은신 지뢰를 설치한다. 밟으면 반경 2칸 안의 모든 말이 출발선으로 날아간다
 class_name CardMine
 extends BaseCard
 
 
 func _init() -> void:
 	card_id = &"TRP_03"
-	display_name = "지뢰찾기 숫자 타일"
+	display_name = "지뢰찾기"
 	category = GameEnums.CardCategory.TRAP
 	playable_phases = [TurnManager.State.PHASE_TURN_BEGIN]
 

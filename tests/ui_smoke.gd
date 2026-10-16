@@ -383,7 +383,7 @@ func _check_bounds() -> void:
 		# 손패 카드는 일부러 화면 아래로 반쯤 가려진 채 펼쳐진다 (호버하면 전체가 올라온다). 크기만 따로 검사한다.
 		if node is Control and not node is PanelContainer and not node.is_queued_for_deletion():
 			controls.append(node)
-	for button: Control in [_board._roll_button, _board._stop_button, _board._skip_button, _board._bomb_button]:
+	for button: Control in [_board._roll_button, _board._stop_button, _board._skip_button]:
 		if button.visible:
 			controls.append(button)
 	for button: Button in _board._pawn_buttons:
@@ -474,14 +474,9 @@ func _try_skill(manager: TurnManager, player_id: int) -> bool:
 
 func _try_turn_begin_buttons(manager: TurnManager) -> bool:
 	var player_id: int = manager.current_player_id()
-	_assert(_board._bomb_button.visible == manager.can_pass_bomb(player_id), "폭탄 떠넘기기 버튼 표시가 규칙과 일치해야 한다")
 	for index: int in _board.active_skill_buttons().size():
 		var pawn: PlayerPawn = _board.state.get_pawn(_board._dock_owner() * 10 + index + 1)
 		_assert(_board.active_skill_buttons()[index].visible == (PawnSkills.has_skill(pawn) and not pawn.is_finished), "필살기 버튼은 필살기 보유 기물에만 보인다")
-	if _board._bomb_button.visible and _rng.randi_range(0, 1) == 0:
-		_board._bomb_button.pressed.emit()
-		_bombs_passed += 1
-		return true
 	if _try_skill(manager, player_id):
 		return true
 	for card_id: StringName in _board.state.hands[player_id]:

@@ -136,77 +136,39 @@ func test_bang_card_is_playable_only_at_turn_begin_with_a_chosen_target() -> voi
 
 # --- ACT_03 우노 +4 ---------------------------------------------------------------
 
-func test_uno_plus_four_sets_pending_penalty_on_the_next_player_following_direction() -> void:
+func test_uno_plus_four_pushes_the_next_players_front_pawn_back_four_tiles() -> void:
 	var state := make_state(3, 1)
 	state.turn_direction = 1
+	place(state, 21, 9)
+	place(state, 22, 4)
 	var stack: CommandStack = new_stack()
-	stack.execute_command(PenaltyBombCommand.new(1), make_ctx(state, 0))
-	check_eq(state.penalty_of(2), -4, "다음 플레이어에게 -4")
+	var results: Array = []
+	state.bomb_resolved.connect(func(shooter: int, victim: int, pawn_id: int, from_tile: int, to_tile: int) -> void: results.append([shooter, victim, pawn_id, from_tile, to_tile]))
+	check(stack.execute_command(PenaltyBombCommand.new(1), make_ctx(state, 0)), "발동")
+	check_eq(results, [[1, 2, 21, 9, 5]], "다음 플레이어의 선두 말이 4칸 후퇴")
+	check_eq(state.get_pawn(22).current_tile_idx, 4, "다른 말은 그대로")
 	var reversed := make_state(3, 1)
 	reversed.turn_direction = -1
-	new_stack().execute_command(PenaltyBombCommand.new(1), make_ctx(reversed, 0))
-	check_eq(reversed.penalty_of(3), -4, "역방향이면 반대편 플레이어")
+	place(reversed, 31, 9)
+	check(new_stack().execute_command(PenaltyBombCommand.new(1), make_ctx(reversed, 0)), "역방향 발동")
+	check_eq(reversed.get_pawn(31).current_tile_idx, 5, "역방향이면 반대편 플레이어")
 
 
-func test_penalty_applies_immediately_without_an_instant_card() -> void:
-	var manager: TurnManager = _manager({}, 3)
+func test_uno_plus_four_needs_a_pawn_on_the_board_and_is_played_at_turn_begin() -> void:
+	var manager: TurnManager = _manager({}, 2)
+	var rejected: Array = []
+	manager.action_rejected.connect(func(_p: int, _a: StringName, reason: StringName) -> void: rejected.append(reason))
+	manager.state.give_card(1, &"ACT_03")
+	_do(manager, 1, &"play_card", {"card_id": &"ACT_03"})
+	check_eq(rejected, [&"invalid_target"], "다음 플레이어의 말이 보드에 없으면 사용 불가")
 	place(manager.state, 21, 9, [8])
-	place(manager.state, 22, 4, [3])
-	manager.state.pending_penalty[2] = -4
 	var events: Array = []
 	manager.event_received.connect(func(kind: StringName, data: Dictionary) -> void: events.append([kind, data]))
-	manager.advance_to_next_player()  # 1 -> 2 번 턴 시작
-	check_eq(manager.current_player_id(), 2, "2번 턴")
-	check_eq(manager.state.get_pawn(21).current_tile_idx, 5, "가장 앞선 말이 4칸 후퇴")
-	check_eq(manager.state.get_pawn(22).current_tile_idx, 4, "다른 말은 그대로")
-	check_eq(manager.state.penalty_of(2), 0, "페널티 해소")
+	_do(manager, 1, &"play_card", {"card_id": &"ACT_03"})
+	check_eq(manager.state.get_pawn(21).current_tile_idx, 5, "즉시 4칸 후퇴")
+	check(not manager.state.has_card(1, &"ACT_03"), "카드 소모")
 	var kinds: Array = events.map(func(e: Array) -> StringName: return e[0])
 	check(kinds.has(&"bomb_applied"), "bomb_applied 이벤트")
 	_dispose(manager)
 
 
-func test_pass_bomb_consumes_an_instant_card_and_doubles_the_penalty() -> void:
-	var manager: TurnManager = _manager({}, 3)
-	place(manager.state, 21, 9, [8])
-	place(manager.state, 31, 11, [10])
-	manager.state.give_card(2, &"ACT_06")
-	manager.state.pending_penalty[2] = -4
-	manager.advance_to_next_player()
-	check(manager.can_pass_bomb(2), "즉발 카드가 있으면 떠넘기기 가능")
-	check_eq(manager.state.get_pawn(21).current_tile_idx, 9, "아직 후퇴하지 않음")
-	_do(manager, 2, &"pass_bomb")
-	check(not manager.state.has_card(2, &"ACT_06"), "즉발 카드 소모")
-	check_eq(manager.state.penalty_of(2), 0, "내 페널티 해소")
-	check_eq(manager.state.penalty_of(3), -8, "다음 플레이어에게 -8")
-	check_eq(manager.state.get_pawn(21).current_tile_idx, 9, "내 말은 무사")
-	manager.advance_to_next_player()  # 3번 턴: 즉발 카드 없음 -> 즉시 8칸 후퇴
-	check_eq(manager.current_player_id(), 3, "3번 턴")
-	check_eq(manager.state.get_pawn(31).current_tile_idx, 3, "11번 -> 8칸 후퇴")
-	_dispose(manager)
-
-
-func test_declining_the_bomb_applies_the_penalty_when_rolling() -> void:
-	var manager: TurnManager = _manager({}, 2)
-	place(manager.state, 21, 9, [8])
-	manager.state.give_card(2, &"ACT_06")
-	manager.state.pending_penalty[2] = -4
-	manager.advance_to_next_player()
-	manager.state.tools[2] = ScriptedTool.new([1])
-	_do(manager, 2, &"proceed")
-	check_eq(manager.state.get_pawn(21).current_tile_idx, 5, "넘기지 않고 진행하면 후퇴 적용")
-	check(manager.state.has_card(2, &"ACT_06"), "카드는 그대로")
-	var rejected: Array = []
-	manager.action_rejected.connect(func(_p: int, _a: StringName, reason: StringName) -> void: rejected.append(reason))
-	_do(manager, 2, &"pass_bomb")
-	check_eq(rejected, [&"wrong_phase"], "이미 지난 뒤에는 떠넘길 수 없다")
-	_dispose(manager)
-
-
-func test_pass_bomb_is_rejected_without_instant_card_or_penalty() -> void:
-	var manager: TurnManager = _manager({}, 2)
-	var rejected: Array = []
-	manager.action_rejected.connect(func(_p: int, _a: StringName, reason: StringName) -> void: rejected.append(reason))
-	_do(manager, 1, &"pass_bomb")
-	check_eq(rejected, [&"wrong_phase"], "페널티가 없으면 거부")
-	check(not manager.can_pass_bomb(1), "버튼 비활성")
-	_dispose(manager)

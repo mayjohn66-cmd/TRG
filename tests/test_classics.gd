@@ -244,32 +244,13 @@ func test_hwatu_hand_evaluation() -> void:
 	check_eq(ToolHwatu.card_name(0), "1월 광", "패 이름")
 
 
-func test_hwatu_go_and_stop_flow() -> void:
+func test_hwatu_is_a_single_draw_without_go_or_stop() -> void:
 	var tool := ToolHwatu.new()
 	var rng := RandomNumberGenerator.new()
 	tool.forced_draws = [1, 5]  # 3끗 = 2칸
-	var first: RollResult = tool.roll(rng)
-	check(first.can_continue and tool.has_pending_state() and first.steps == 2, "망통이 아니면 [스톱/고] 선택 대기")
-	check_eq((first.details["new_cards"] as Array).size(), 2, "처음에는 패 2장")
-	var stop: RollResult = tool.cash_out()
-	check(stop.steps == 2 and not stop.can_continue and not tool.has_pending_state(), "스톱하면 누적 칸수 확정")
-	tool.forced_draws = [1, 5, 40, 17]  # 고! 광(+5) -> 고! 열끗(+4)
-	tool.roll(rng)
-	var go_one: RollResult = tool.roll(rng)
-	check(go_one.can_continue and go_one.steps == 7 and int(go_one.details["go_count"]) == 1, "첫 고: 광 +5칸 -> 누적 7칸, 계속 선택")
-	var go_two: RollResult = tool.roll(rng)
-	check(not go_two.can_continue and go_two.steps == 11 and not tool.has_pending_state(), "투고(최대 2회)는 자동 확정: +4칸 -> 11칸")
-
-
-func test_hwatu_pi_bust_collapses_the_total_to_one_step() -> void:
-	var tool := ToolHwatu.new()
-	var rng := RandomNumberGenerator.new()
-	tool.forced_draws = [36, 37, 3]  # 장땡 8칸 뒤 [고!]에서 피
-	var first: RollResult = tool.roll(rng)
-	check_eq(first.steps, 8, "장땡 8칸")
-	var bust: RollResult = tool.roll(rng)
-	check(bool(bust.details["bust"]) and bust.steps == 1 and int(bust.details["lost"]) == 8, "피박: 8칸이 1칸으로")
-	check(not bust.can_continue and not tool.has_pending_state(), "피박은 강제 이동으로 끝난다")
+	var result: RollResult = tool.roll(rng)
+	check(result.steps == 2 and not result.can_continue and not tool.has_pending_state(), "한 번에 끝난다 (고/스톱 없음)")
+	check_eq((result.details["new_cards"] as Array).size(), 2, "패 2장")
 
 
 func test_hwatu_mangtong_ends_the_turn_and_distribution_is_sane() -> void:
@@ -287,33 +268,15 @@ func test_hwatu_mangtong_ends_the_turn_and_distribution_is_sane() -> void:
 	check(seen.has(&"mangtong") and seen.has(&"kkeut") and seen.has(&"ttaeng"), "망통·끗·땡이 모두 나온다")
 
 
-func test_hwatu_in_turn_manager_flow_go_then_stop() -> void:
+func test_hwatu_in_turn_manager_flow_moves_by_the_hand() -> void:
 	var manager: TurnManager = _manager()
 	var tool := ToolHwatu.new()
 	tool.forced_draws = [1, 5, 40]
 	manager.state.tools[1] = tool
 	_do(manager, 1, &"proceed")
 	_do(manager, 1, &"roll")
-	check_eq(manager.current_state, Phase.PHASE_ROLL_WAIT, "고/스톱 선택 대기 (계속 굴림 단계)")
-	check(manager.move_queue.is_empty(), "아직 이동 대기열에 쌓이지 않는다")
-	_do(manager, 1, &"roll")  # 고!
-	check_eq(manager.current_state, Phase.PHASE_ROLL_WAIT, "한 번 더 선택 대기")
-	_do(manager, 1, &"stop")
-	check_eq(manager.current_state, Phase.PHASE_SELECT_PAWN, "스톱하면 말 선택")
-	check_eq(manager.move_queue, [7] as Array[int], "2 + 5 = 7칸")
-	_dispose(manager)
-
-
-func test_hwatu_timeout_cashes_out_the_pending_total() -> void:
-	var manager: TurnManager = _manager()
-	var tool := ToolHwatu.new()
-	tool.forced_draws = [1, 5]
-	manager.state.tools[1] = tool
-	_do(manager, 1, &"proceed")
-	_do(manager, 1, &"roll")
-	manager.force_timeout()
-	check_eq(manager.current_state, Phase.PHASE_SELECT_PAWN, "시간 초과면 스톱 처리")
-	check_eq(manager.move_queue, [2] as Array[int], "누적 2칸")
+	check_eq(manager.current_state, Phase.PHASE_SELECT_PAWN, "한 번 굴리면 바로 말 선택")
+	check_eq(manager.move_queue, [2] as Array[int], "3끗 = 2칸")
 	_dispose(manager)
 
 
@@ -412,7 +375,7 @@ func test_new_tools_are_registered_and_swappable() -> void:
 		check_eq(ToolRegistry.create(id).tool_id, id, "%s 생성" % id)
 		var def: AugmentDef = AugmentRegistry.get_def(StringName("TOOL_%s" % id))
 		check(def != null and def.category == GameEnums.AugmentCategory.TOOL_SWAP, "%s 판정 도구 교체 증강" % id)
-	check_eq(ToolRegistry.create(&"DICE_HWATU").display_name, "화투 고스톱 패", "화투 이름")
+	check_eq(ToolRegistry.create(&"DICE_HWATU").display_name, "화투 패", "화투 이름")
 	check_eq(ToolRegistry.create(&"DICE_MAHJONG").display_name, "리치 마작 만리장성", "마작 이름")
 	check_eq(ToolRegistry.create(&"DICE_TAROT").display_name, "점성술사의 타로 덱", "타로 이름")
 
@@ -626,28 +589,6 @@ func test_new_cards_are_in_the_deck_and_registry() -> void:
 
 
 # --- AI 봇 --------------------------------------------------------------------
-
-func test_bot_hwatu_goes_once_at_most() -> void:
-	var tool := ToolHwatu.new()
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 1
-	check(not BotBrain.hwatu_should_go(tool, rng), "진행 중이 아니면 고하지 않는다")
-	tool.forced_draws = [1, 5]
-	tool.roll(rng)
-	var goes: int = 0
-	for seed_value: int in 60:
-		var test_rng := RandomNumberGenerator.new()
-		test_rng.seed = seed_value + 1
-		if BotBrain.hwatu_should_go(tool, test_rng):
-			goes += 1
-	check(goes > 15 and goes < 45, "첫 고는 확률적으로 도전 (%d/60)" % goes)
-	tool.forced_draws = [40]
-	tool.roll(rng)  # 고 1회
-	for seed_value: int in 30:
-		var test_rng := RandomNumberGenerator.new()
-		test_rng.seed = seed_value + 1
-		check(not BotBrain.hwatu_should_go(tool, test_rng), "이미 한 번 고했으면 스톱")
-
 
 func test_bot_uses_drop_skill_and_tarot_cards_sensibly() -> void:
 	var state: GameState = _shogi_state()

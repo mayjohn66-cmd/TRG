@@ -352,12 +352,12 @@ static func can_build_hotel(_state: GameState, mover: PlayerPawn) -> bool:
 	return mover.sub_type() == GameEnums.PawnSubType.MONO_CAR
 
 
-## 증기선: 이 타일의 상대 설치물(지뢰 숫자 표식 제외)을 효과 없이 파괴한다. 파괴했으면 true.
+## 증기선: 이 타일의 상대 설치물을 효과 없이 파괴한다. 파괴했으면 true.
 static func _sink_hostile_attachments(state: GameState, mover: PlayerPawn, tile_index: int, report: MoveReport) -> bool:
 	var tile: TileNode = state.board.get_tile(tile_index)
 	var destroyed: bool = false
 	for attachment: TileAttachment in tile.attachments.duplicate():
-		if attachment.owner_id == mover.owner_id or attachment.attachment_id == "MINE_NUM":
+		if attachment.owner_id == mover.owner_id:
 			continue
 		report.destroyed_attachments.append({"tile": tile_index, "attachment_id": attachment.attachment_id})
 		tile.remove_attachment(attachment)

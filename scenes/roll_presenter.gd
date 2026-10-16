@@ -284,13 +284,12 @@ func _build(tool_id: StringName) -> void:
 	pivot_offset = Vector2.ZERO
 
 
-## 화투: 이번에 새로 뒤집는 패(첫 굴림 2장 / [고] 1장)만 뒤집히고, 이미 나온 패는 앞면으로 놓여 있다.
+## 화투: 패 2장을 뒤집어 족보를 보여 준다.
 func _build_hwatu() -> void:
 	var details: Dictionary = _result["details"]
 	var all_cards: Array = details.get("cards", [])
 	var fresh: Array = details.get("new_cards", [])
-	var go_type: String = str(details.get("go_type", ""))
-	_title.text = "화투 고스톱 패" + ("  -  고! %d회째" % int(details.get("go_count", 0)) if int(details.get("go_count", 0)) > 0 else "")
+	_title.text = "화투 패"
 	_card_front = Color("fff4e6")
 	var faces: Array[String] = []
 	var colors: Array[Color] = []
@@ -301,10 +300,6 @@ func _build_hwatu() -> void:
 		mask.append(fresh.has(card))
 	_build_flip_row(faces, colors, mask, Vector2(84, 116), Color("8b1a1a"), Color("ffd8a8"), 20)
 	var hand_label: String = str(details.get("label", ""))
-	if bool(details.get("bust", false)):
-		hand_label = "피박!"
-	elif go_type != "":
-		hand_label = "고! +%d칸" % int(details.get("bonus", 0))
 	_die_label = _label(hand_label, 22, Color("ffe066"))
 	_root.add_child(_die_label)
 
