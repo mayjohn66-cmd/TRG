@@ -18,9 +18,9 @@ const BOARD_ORIGIN: Vector2 = Vector2(423, 100)
 const BOARD_SIZE: float = 520.0
 ## 보드 시점. TOP: 완전 탑뷰, TILT: 테이블에 앉아 비스듬히 내려다보는 기울인 탑뷰(세로 압축 + 위쪽이 멀어 보이는 원근 + 서 있는 말과 그림자).
 enum ViewMode { TOP, TILT }
-const TILT_SQUASH: float = 0.80        ## 보드 세로 압축 비율
-const TILT_FAR_SCALE: float = 0.80     ## 가장 먼(위) 줄의 가로·크기 배율 (가장 가까운 줄은 1.0)
-const TILT_TILE_SQUASH: float = 0.86   ## 타일 하나의 세로 압축 (글자는 되돌려 찌그러지지 않게 한다)
+const TILT_SQUASH: float = 0.90        ## 검토된 시안 v0.9: 과도한 세로 압축 완화
+const TILT_FAR_SCALE: float = 0.90
+const TILT_TILE_SQUASH: float = 0.90
 const TILT_PAWN_LIFT: float = 9.0      ## 서 있는 말이 바닥에서 떠 보이는 높이(px)
 const TILT_MARGIN: float = 0.11        ## 보드 받침이 타일 바깥으로 나오는 정도(정규화 좌표)
 const TILT_ZOOM: float = 1.05          ## 세로를 눌러 남는 공간만큼 보드를 키운다
@@ -344,7 +344,8 @@ var _off_right: Vector2 = Vector2.ZERO
 var _law_panel: PanelContainer = null
 var _plate: Panel = null
 var view_mode: int = ViewMode.TOP
-var _board_surface: Polygon2D = null
+var _board_surface: MeshInstance2D = null
+var _flat_board_surface: MeshInstance2D = null
 var _board_edge: Line2D = null
 var _board_shadow: Polygon2D = null
 var _table_bg: TextureRect = null
@@ -786,8 +787,11 @@ func _build_ui() -> void:
 	plate.position = PLATE_POS
 	plate.size = PLATE_SIZE
 	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	plate.add_theme_stylebox_override("panel", _style(Color("171d2c"), COLOR_PANEL_EDGE, 3, 24, 16, 0))
+	plate.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	add_child(plate)
+	_flat_board_surface = BoardSkin.make_surface()
+	_flat_board_surface.position = -PLATE_POS
+	plate.add_child(_flat_board_surface)
 	_board_layer = Control.new()
 	_board_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_board_layer)
@@ -796,13 +800,12 @@ func _build_ui() -> void:
 	_board_shadow.color = Color(0, 0, 0, 0.45)
 	_board_shadow.visible = false
 	_board_layer.add_child(_board_shadow)
-	_board_surface = Polygon2D.new()
-	_board_surface.color = Color("2b3350")
+	_board_surface = BoardSkin.make_surface()
 	_board_surface.visible = false
 	_board_layer.add_child(_board_surface)
 	_board_edge = Line2D.new()
-	_board_edge.width = 5.0
-	_board_edge.default_color = Color("8a6a3a")
+	_board_edge.width = 1.0
+	_board_edge.default_color = Color("5da530", 0.35)
 	_board_edge.closed = true
 	_board_edge.visible = false
 	_board_layer.add_child(_board_edge)
@@ -883,6 +886,10 @@ func layout_for(viewport_size: Vector2) -> void:
 		node.position = (entry["base"] as Vector2) + offset
 	if _plate != null:
 		_plate.position = PLATE_POS + _off_center
+	if _drop_zone != null:
+		var drop_bounds: Rect2 = _board_rect()
+		_drop_zone.position = drop_bounds.position
+		_drop_zone.size = drop_bounds.size
 	if _announcer != null:
 		_announcer.center = _board_center()
 	if _presenter != null:
@@ -1196,7 +1203,7 @@ func _build_status_strip() -> void:
 ## 우측 중앙의 큼직한 둥근 [굴리기] 버튼(모두의 마블 방식)과 그 아래의 멈추기·개입 패스·폭탄 떠넘기기 버튼.
 func _build_action_bar() -> void:
 	_roll_button = _make_button("굴리기", _on_roll_pressed, 24, Color("2b8a3e"), 60)
-	_roll_button.position = Vector2(618, 446)
+	_roll_button.position = Vector2(618, 426)
 	_roll_button.size = Vector2(130, 130)
 	_roll_button.custom_minimum_size = Vector2(130, 130)
 	_apply_round_button_style(_roll_button, Color("2b8a3e"))
@@ -1438,6 +1445,11 @@ static func tile_norm(index: int) -> Vector2:
 
 ## 평면 정규화 좌표(0~1) -> 화면 좌표. 탑뷰는 그대로 펴고, 기울인 시점은 세로를 누르고 위쪽(먼 쪽)을 좁혀 원근을 준다. 규칙·좌표는 평면 그대로이고 이 함수만 시점을 안다.
 func _project(norm: Vector2) -> Vector2:
+	return _surface_project(BoardSkin.track(norm))
+
+
+## Artwork, tile footprints and pawn trajectories use one shared plane.
+func _surface_project(norm: Vector2) -> Vector2:
 	if view_mode == ViewMode.TOP:
 		return BOARD_ORIGIN + norm * BOARD_SIZE
 	var center: Vector2 = BOARD_ORIGIN + Vector2(BOARD_SIZE, BOARD_SIZE) / 2.0
@@ -1458,12 +1470,23 @@ func _tile_center(index: int) -> Vector2:
 
 ## 타일 하나를 현재 시점에 맞게 놓는다 (위치·원근 크기·세로 압축, 글자는 되돌려 찌그러지지 않게).
 func _place_tile(index: int) -> void:
-	var tile: Control = _tile_views[index]
+	var tile: BoardSkin.Tile = _tile_views[index]
+	var span: float = BOARD_SIZE * (TILT_ZOOM if view_mode == ViewMode.TILT else 1.0)
+	tile.size = Vector2.ONE * (float(tile.data.diameter) * span + 4.0)
 	tile.pivot_offset = tile.size / 2.0
 	tile.position = _tile_center(index) - tile.size / 2.0
 	var depth: float = _depth_scale(tile_norm(index).y)
 	var squash: float = 1.0 if view_mode == ViewMode.TOP else TILT_TILE_SQUASH
 	tile.scale = Vector2(depth, depth * squash)
+	var target: int = {5:20,10:25,15:16}.get(index, -1)
+	if index in [5,10] and state != null and state.rulebook.has_law("LAW_01"):
+		target = index + 1
+	tile.arrow_target = target
+	var direction: Vector2 = (_tile_center(target) - _tile_center(index)).normalized() if target >= 0 else Vector2.RIGHT
+	tile.configure(_surface_project, BoardSkin.track(tile_norm(index)), span, _depth_scale(BoardSkin.track(tile_norm(index)).y), direction)
+	for child: Control in [_highlights.get(index), _pick_marks.get(index)]:
+		if child != null:
+			child.size = tile.size
 	for label: Label in [_tag_labels.get(index), _tile_marks.get(index)]:
 		if label != null:
 			label.pivot_offset = label.size / 2.0
@@ -1486,18 +1509,21 @@ func _apply_view_mode() -> void:
 	if _table_bg != null:
 		_table_bg.visible = tilt
 	if _board_surface != null:
-		var corners := PackedVector2Array()
-		for corner: Vector2 in [Vector2(-TILT_MARGIN, -TILT_MARGIN), Vector2(1.0 + TILT_MARGIN, -TILT_MARGIN), Vector2(1.0 + TILT_MARGIN, 1.0 + TILT_MARGIN), Vector2(-TILT_MARGIN, 1.0 + TILT_MARGIN)]:
-			corners.append(_project(corner))
-		_board_surface.polygon = corners
+		BoardSkin.update_surface(_board_surface, _surface_project)
+		BoardSkin.update_surface(_flat_board_surface, _surface_project)
+		var corners: PackedVector2Array = BoardSkin.outline(_surface_project)
 		_board_surface.visible = tilt
 		_board_edge.points = corners
 		_board_edge.visible = tilt
 		var shadow_points := PackedVector2Array()
 		for point: Vector2 in corners:
-			shadow_points.append(point + Vector2(0, 16))
+			shadow_points.append(point + Vector2(0, 10))
 		_board_shadow.polygon = shadow_points
 		_board_shadow.visible = tilt
+	if _drop_zone != null:
+		var bounds: Rect2 = _board_rect()
+		_drop_zone.position = bounds.position
+		_drop_zone.size = bounds.size
 	if _pawn_layer != null:
 		_pawn_layer.y_sort_enabled = tilt
 	if _tile_views.is_empty():
@@ -1518,10 +1544,8 @@ func _build_tiles_once() -> void:
 	_add_track_lines()
 	for index: int in GameEnums.TILE_COUNT:
 		var node: TileNode = state.board.get_tile(index)
-		var tile := Panel.new()
-		tile.size = Vector2(TILE_SIZE, TILE_SIZE)
-		var tile_color: Color = _tile_color(index, node.tile_type)
-		tile.add_theme_stylebox_override("panel", _style(tile_color, tile_color.darkened(0.4), 2, 8, 0, 0))
+		var tile := BoardSkin.Tile.new()
+		tile.initialize(index)
 		tile.gui_input.connect(_on_tile_gui_input.bind(index))
 		_board_layer.add_child(tile)
 		_tile_views[index] = tile
@@ -1531,6 +1555,7 @@ func _build_tiles_once() -> void:
 		var text_color: Color = Color("212529") if light else Color("f8f9fa")
 		var tag: String = _tile_tag(index, node.tile_type)
 		var tag_label := _make_label(tag, 10, text_color)
+		tag_label.visible = false # Names are provided by tooltips; the pad uses a simple mark.
 		tag_label.name = "Tag"
 		tag_label.position = Vector2(0, TILE_SIZE - 15)
 		tag_label.size = Vector2(TILE_SIZE, 14)
@@ -1545,7 +1570,7 @@ func _build_tiles_once() -> void:
 		mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		tile.add_child(mark)
 		_tile_marks[index] = mark
-		var highlight := ReferenceRect.new()
+		var highlight := BoardSkin.Ring.new()
 		highlight.border_color = Color("ffe066")
 		highlight.border_width = 3.0
 		highlight.editor_only = false
@@ -1554,7 +1579,7 @@ func _build_tiles_once() -> void:
 		highlight.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		tile.add_child(highlight)
 		_highlights[index] = highlight
-		var pick_mark := ReferenceRect.new()
+		var pick_mark := BoardSkin.Ring.new()
 		pick_mark.border_color = Color("63e6be")
 		pick_mark.border_width = 4.0
 		pick_mark.editor_only = false
@@ -1574,10 +1599,17 @@ func _add_track_lines() -> void:
 
 func _add_track_line(route: Array[int]) -> void:
 	var line := Line2D.new()
-	line.width = 4.0
-	line.default_color = Color("495057")
+	line.width = 3.6
+	line.default_color = Color("b7ce87")
+	line.antialiased = true
 	for tile_index: int in route:
 		line.add_point(_tile_center(tile_index))
+	var inset := Line2D.new()
+	inset.points = line.points
+	inset.width = 1.1
+	inset.default_color = Color("91ad61")
+	inset.antialiased = true
+	line.add_child(inset)
 	_board_layer.add_child(line)
 	# 선은 보드 면 바로 위, 타일 아래에 그린다.
 	_board_layer.move_child(line, 3 + _track_lines.size())
@@ -1747,7 +1779,14 @@ func _refresh_tiles() -> void:
 		return
 	for index: int in GameEnums.TILE_COUNT:
 		var parts: Array[String] = []
+		if index in [5,10]:
+			var target: int = index+1 if state.rulebook.has_law("LAW_01") else (20 if index == 5 else 25)
+			if (_tile_views[index] as BoardSkin.Tile).arrow_target != target:
+				_place_tile(index)
 		var tips: Array[String] = []
+		var kind_label: String = _tile_tag(index, state.board.get_tile(index).tile_type)
+		if not kind_label.is_empty():
+			tips.append(kind_label)
 		var color: Color = Color("ff6b6b")
 		for attachment: TileAttachment in state.board.get_tile(index).attachments:
 			match attachment.attachment_id:
@@ -1763,7 +1802,7 @@ func _refresh_tiles() -> void:
 		(_tile_views[index] as Control).tooltip_text = "\n".join(tips)
 		var mark: Label = _tile_marks[index]
 		mark.text = " ".join(parts)
-		mark.position = Vector2(TILE_SIZE - 2 - mark.get_minimum_size().x, 0)
+		mark.position = Vector2((_tile_views[index] as Control).size.x - 2 - mark.get_minimum_size().x, 0)
 		mark.add_theme_color_override("font_color", color)
 
 
@@ -1886,6 +1925,7 @@ func _refresh_direction() -> void:
 		return
 	var start_tag: Label = _tag_labels[GameEnums.GOAL_TILE]
 	start_tag.text = "▼역주행" if reversed else "▲출발"
+	start_tag.visible = reversed
 	start_tag.add_theme_color_override("font_color", Color("ffe8cc") if reversed else Color("f8f9fa"))
 
 
@@ -2477,13 +2517,17 @@ func _cancel_card_drag() -> void:
 
 
 func _board_rect() -> Rect2:
-	return Rect2(PLATE_POS + _off_center, PLATE_SIZE)
+	var points: PackedVector2Array = BoardSkin.outline(_surface_project)
+	var result := Rect2(points[0], Vector2.ZERO)
+	for point: Vector2 in points:
+		result = result.expand(point)
+	return Rect2(result.position + _off_center, result.size)
 
 
 ## 화면 좌표 아래의 보드 타일 번호. 없으면 -1.
 func _tile_at(pointer: Vector2) -> int:
 	for index: int in _tile_views.keys():
-		if (_tile_views[index] as Control).get_global_rect().has_point(pointer):
+		if (_tile_views[index] as BoardSkin.Tile).contains_global(pointer):
 			return index
 	return -1
 
@@ -3277,7 +3321,7 @@ func _set_roll_geometry(mode: StringName) -> void:
 	_roll_geometry = mode
 	var big: bool = mode != &"charge"
 	var diameter: float = 190.0 if mode == &"big" else 130.0
-	var center: Vector2 = Vector2(683.0, 346.0) if mode == &"big" else Vector2(683.0, 511.0)
+	var center: Vector2 = Vector2(683.0, 346.0) if mode == &"big" else Vector2(683.0, 491.0)
 	_roll_button.custom_minimum_size = Vector2(diameter, diameter)
 	_roll_button.size = Vector2(diameter, diameter)
 	_roll_button.add_theme_font_size_override("font_size", 32 if mode == &"big" else 24)

@@ -340,7 +340,29 @@ func _test_view_modes() -> void:
 			_expect(not rect_a.intersects(rect_b), "기울인 시점에서 타일 %d와 %d가 겹침" % [a, b])
 	_expect(all_inside, "기울인 시점의 모든 타일이 화면 안")
 	_expect((_board._pawn_views[pawn_id] as Node2D).get_node("Shadow").visible, "말 그림자가 보인다")
-	_expect(_board._board_edge.points.size() == 4 and _board._track_lines.size() == 3, "보드 면 4점, 경로선 3개가 다시 그려진다")
+	_expect(_board._board_edge.points.size() >= 64 and _board._track_lines.size() == 3, "둥근 보드 윤곽과 경로선 3개가 다시 그려진다")
+	var safe: PackedVector2Array = BoardSkin.safe_outline(_board._surface_project)
+	for i: int in 29:
+		var tile: BoardSkin.Tile = _board._tile_views[i]
+		_expect(_board._tile_at(tile.get_global_transform() * (tile.size/2.0)) == i, "새 발판 중심 클릭: %d" % i)
+		for point: Vector2 in tile.outline_points:
+			var board_point: Vector2 = tile.position + tile.size/2.0 + (point-tile.size/2.0)*tile.scale
+			_expect(Geometry2D.is_point_in_polygon(board_point + Vector2(0,4),safe), "발판과 받침이 테두리 안에 있어야 한다: %d" % i)
+		if tile.symbol != null:
+			var transform: Transform2D = tile.symbol.get_global_transform()
+			_expect(absf(transform.x.length()-transform.y.length()) < 0.001, "문양 비율 보존: %d" % i)
+	var round_tile: BoardSkin.Tile = _board._tile_views[1]
+	_expect(_board._tile_at(round_tile.get_global_transform()*Vector2.ZERO) == -1, "원형 발판 바깥 사각 모서리는 클릭되지 않는다")
+	var previous_laws: Array[LawResource] = _board.state.rulebook.active_laws_queue.duplicate()
+	_board.state.rulebook.active_laws_queue.clear()
+	_board.state.rulebook.enqueue_law(LawRegistry.create("LAW_01"))
+	_board._refresh_tiles()
+	_expect((_board._tile_views[5] as BoardSkin.Tile).arrow_target == 6 and (_board._tile_views[10] as BoardSkin.Tile).arrow_target == 11, "공사 중에는 외곽 방향을 가리킨다")
+	_board.state.rulebook.remove_law_by_id("LAW_01")
+	_board._refresh_tiles()
+	_expect((_board._tile_views[5] as BoardSkin.Tile).arrow_target == 20 and (_board._tile_views[10] as BoardSkin.Tile).arrow_target == 25, "공사가 끝나면 지름길 방향을 가리킨다")
+	_board.state.rulebook.active_laws_queue = previous_laws
+	_board._refresh_tiles()
 	# 경로선이 새 위치를 따라간다
 	_expect(_board._track_lines[0].points[0].is_equal_approx(_board._tile_center(0)), "경로선이 투영 좌표를 따라간다")
 	# 시점은 설정으로 저장된다
