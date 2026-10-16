@@ -382,7 +382,42 @@ static func show_settings(parent: Control) -> void:
 		GameSession.view_mode = index
 		GameSession.save_settings())
 	row.add_child(view)
+	add_audio_controls(box, INK)
 	box.add_child(big_button("닫기", (parts["overlay"] as Control).queue_free, 22))
+
+
+## 소리 설정(효과음 크기, 음소거). 설정 팝업과 게임 메뉴가 같이 쓴다.
+static func add_audio_controls(box: Container, ink: Color) -> void:
+	var mute := CheckBox.new()
+	mute.name = "MuteCheck"
+	mute.text = "소리 끄기"
+	mute.button_pressed = GameSession.audio_muted
+	mute.add_theme_color_override("font_color", ink)
+	mute.add_theme_color_override("font_hover_color", ink)
+	mute.add_theme_color_override("font_pressed_color", ink)
+	mute.toggled.connect(func(muted: bool) -> void:
+		GameSession.audio_muted = muted
+		GameSession.save_settings()
+		Sfx.apply_settings())
+	box.add_child(mute)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	box.add_child(row)
+	row.add_child(label("효과음 크기", 16, ink))
+	var slider := HSlider.new()
+	slider.name = "SfxVolume"
+	slider.min_value = 0.0
+	slider.max_value = 1.0
+	slider.step = 0.05
+	slider.value = GameSession.sfx_volume
+	slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	slider.custom_minimum_size = Vector2(0.0, 28.0)
+	slider.value_changed.connect(func(value: float) -> void:
+		GameSession.sfx_volume = value
+		GameSession.save_settings()
+		Sfx.apply_settings())
+	slider.drag_ended.connect(func(_changed: bool) -> void: Sfx.play(&"ui_click"))
+	row.add_child(slider)
 
 
 ## 위쪽 띠의 뒤로가기 화살표 (폰트에 없는 글자 대신 직접 그린다).

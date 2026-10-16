@@ -39,6 +39,7 @@ var _mobile: MobileSupport = null
 
 
 func _ready() -> void:
+	Sfx.apply_settings()
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	LobbyTheme.add_background(self, true)
 	_top = LobbyTheme.add_top_bar(self, "", _on_back_pressed, "규칙", _show_rules)

@@ -299,6 +299,7 @@ func _halo(player_id: int, delay: float) -> void:
 func _step_start() -> void:
 	if _done:
 		return
+	Sfx.play(&"game_start")
 	var ribbon := Panel.new()
 	ribbon.position = Vector2(0, 300)
 	ribbon.size = Vector2(1366, 120)

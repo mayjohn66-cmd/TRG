@@ -405,6 +405,7 @@ var _tile_pick_card: StringName = &""
 
 
 func _ready() -> void:
+	Sfx.apply_settings()
 	pacing_enabled = GameSession.pacing_enabled
 	view_mode = GameSession.view_mode
 	if GameSession.net_active:
@@ -1404,6 +1405,7 @@ func _make_button(text: String, callback: Callable, font_size: int, base_color: 
 	button.text = text
 	button.add_theme_font_size_override("font_size", font_size)
 	_apply_button_style(button, base_color, radius)
+	button.pressed.connect(Sfx.play.bind(&"ui_click"))
 	if callback.is_valid():
 		button.pressed.connect(callback)
 	return button
@@ -2497,6 +2499,7 @@ func _drag_begin() -> void:
 	var player_id: int = int(_drag_press["player"])
 	var card: BaseCard = CardRegistry.get_card(card_id)
 	_drag_active = true
+	Sfx.play(&"card_pick")
 	_close_zoom()
 	# 손패에 있던 카드 UI(프레임·카테고리 아이콘·요약)를 그대로 집어 들고 간다. 원래 자리의 카드는 흐리게 남는다.
 	_drag_ghost = _make_card_view(player_id, card_id)
@@ -3480,6 +3483,7 @@ func _on_roll_pressed() -> void:
 	_stop_charge()
 	if manager.is_game_over or _roll_button.disabled or _ui_busy() or _is_bot_turn():
 		return
+	Sfx.play(&"dice_roll")
 	if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN:
 		_act(&"proceed")
 	if manager.current_state == TurnManager.State.PHASE_ROLL_WAIT:
@@ -3833,6 +3837,7 @@ func _fx_try_slam(by_player: int, victim_pos: Vector2) -> float:
 func _fx_promote(pawn_id: int, color: Color) -> void:
 	if not _fx_on():
 		return
+	Sfx.play(&"promote")
 	var view: Node2D = _pawn_views.get(pawn_id)
 	if view == null:
 		return
@@ -4249,6 +4254,7 @@ func _settle_pawn_view(view: Node2D, pawn: PlayerPawn) -> void:
 func _fx_bang(shooter: int, target_pawn_id: int) -> void:
 	if not _fx_on():
 		return
+	Sfx.play(&"shot")
 	var view: Node2D = _pawn_views.get(target_pawn_id)
 	var card: Dictionary = _profiles.get(shooter, {})
 	if view == null or card.is_empty():
@@ -4305,6 +4311,7 @@ func _fx_land(view: Node2D, tile: int, big: bool) -> void:
 		squash.tween_property(bounce, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	if tile >= 0:
 		_tile_glow(tile)
+	Sfx.play(&"slam" if big else &"hop")
 	if big:
 		screen_shake(9.0, 0.25)
 		_impact_ring(view.position, Color("fff3bf"), 52.0)
@@ -4323,6 +4330,7 @@ func _fx_landed(view: Node2D) -> void:
 	if tile >= 0 or big:
 		_fx_land(view, tile, big)
 	elif thud:
+		Sfx.play(&"thud")
 		# 출발선에 쿵 떨어지는 소리 없는 소리: 작은 충격파와 흔들림
 		var bounce: Node2D = view.get_node_or_null("Bounce")
 		if bounce != null:
@@ -4394,6 +4402,7 @@ func _fx_trail(view: Node2D, seconds: float, color: Color) -> void:
 func _profile_react(player_id: int, good: bool, text: String) -> void:
 	if not _fx_on() or not _player_ids.has(player_id) or not _profiles.has(player_id):
 		return
+	Sfx.play(&"good" if good else &"bad")
 	var panel: Control = _profiles[player_id]["panel"]
 	var rect: Rect2 = panel.get_global_transform() * Rect2(Vector2.ZERO, panel.size)
 	if panel.has_meta("react_tween"):
@@ -4461,6 +4470,7 @@ func _throw_ghost(target: Vector2) -> void:
 	if not _fx_on():
 		ghost.queue_free()
 		return
+	Sfx.play(&"card_throw")
 	var tween: Tween = create_tween()
 	tween.tween_property(ghost, "global_position", target - ghost.size / 2.0, 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
 	tween.parallel().tween_property(ghost, "scale", Vector2(1.35, 1.35), 0.2)
@@ -4475,6 +4485,7 @@ func _throw_ghost(target: Vector2) -> void:
 func _card_impact(at: Vector2, color: Color) -> void:
 	if not _fx_on():
 		return
+	Sfx.play(&"card_impact")
 	_impact_ring(at, color, 70.0)
 	_impact_ring(at, Color.WHITE, 40.0)
 	_burst_shards(at, color, 16)
@@ -5014,6 +5025,7 @@ func _build_draft_overlay(player_id: int, remaining: int) -> void:
 	_draft_player = player_id
 	_draft_signature_value = _draft_signature(player_id)
 	_draft_locked = false
+	Sfx.play(&"augment_show")
 	_draft_overlay = _new_overlay(0.78)
 	var center := CenterContainer.new()
 	center.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -5086,6 +5098,7 @@ func _on_augment_card_picked(player_id: int, index: int, definition: AugmentDef)
 	if _draft_locked:
 		return
 	_draft_locked = true
+	Sfx.play(&"augment_pick")
 	for button: Button in _draft_reroll_buttons:
 		button.disabled = true
 	if instant_roll_for_test:
@@ -5368,6 +5381,7 @@ func _on_turn_order_reversed(new_direction: int) -> void:
 
 func _on_game_over(winner_id: int, reason: StringName) -> void:
 	_last_reason = reason
+	Sfx.play(&"win")
 	for player_id: int in _player_ids:
 		_avatar_react(player_id, AvatarSlot.Emotion.CHEER if player_id == winner_id else AvatarSlot.Emotion.SAD, 0.0)
 	_log_line("[승리] P%d 승리! - %s" % [winner_id, VictoryChecker.reason_text(reason)], PLAYER_COLORS[winner_id])
@@ -5469,6 +5483,7 @@ func _on_law_added(new_law: LawResource, removed_law: LawResource) -> void:
 func _fx_law_drop_oldest(removed_law: LawResource) -> void:
 	if removed_law == null or not _fx_on() or _law_slots.is_empty():
 		return
+	Sfx.play(&"law_drop")
 	var slot: Control = _law_slots[0]
 	var ghost: Control = slot.duplicate()
 	ghost.z_index = 30
@@ -5487,6 +5502,7 @@ func _fx_law_drop_oldest(removed_law: LawResource) -> void:
 func _fx_law_slam(new_law: LawResource) -> void:
 	if not _fx_on():
 		return
+	Sfx.play(&"law")
 	var index: int = state.rulebook.active_laws_queue.find(new_law)
 	if index < 0 or index >= _law_slots.size():
 		return
@@ -6006,6 +6022,7 @@ func _build_settings_page() -> void:
 		var note: Label = _make_label("온라인 대전은 제한 시간이 항상 켜져 있습니다 (3배 길게).", 12, Color("868e96"))
 		note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_menu_box.add_child(note)
+	LobbyTheme.add_audio_controls(_menu_box, Color("ced4da"))
 	_menu_item(_make_button("뒤로", _show_menu_page.bind(&"main"), 16, Color("4a3a66"), 10))
 
 

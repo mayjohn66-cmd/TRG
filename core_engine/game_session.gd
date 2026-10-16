@@ -20,6 +20,10 @@ static var lobby_intent: StringName = &"secret"
 ## 게임 설정(메뉴 > 게임 설정): user://settings.cfg에 저장된다.
 const SETTINGS_PATH: String = "user://settings.cfg"
 static var pacing_enabled: bool = true
+## 소리 설정: 효과음·배경음 음량(0~1)과 전체 음소거.
+static var sfx_volume: float = 0.8
+static var bgm_volume: float = 0.6
+static var audio_muted: bool = false
 ## 연출 속도 배율(1.0 빠름 / 1.7 보통 / 2.5 느림): 이동 걸음·턴 알림 길이·행동 뒤 호흡·봇 대기가 이 배수로 길어진다 (pacing_enabled가 켜져 있을 때).
 const PACE_FAST: float = 1.0
 const PACE_NORMAL: float = 1.7
@@ -35,6 +39,9 @@ static func save_settings() -> void:
 	var config := ConfigFile.new()
 	config.set_value("game", "pacing_enabled", pacing_enabled)
 	config.set_value("game", "view_mode", view_mode)
+	config.set_value("game", "sfx_volume", sfx_volume)
+	config.set_value("game", "bgm_volume", bgm_volume)
+	config.set_value("game", "audio_muted", audio_muted)
 	config.set_value("game", "pace_scale", pace_scale)
 	config.set_value("game", "avatar", String(avatar_id))
 	config.save(SETTINGS_PATH)
@@ -45,6 +52,9 @@ static func load_settings() -> void:
 	if config.load(SETTINGS_PATH) == OK:
 		pacing_enabled = bool(config.get_value("game", "pacing_enabled", true))
 		view_mode = clampi(int(config.get_value("game", "view_mode", 0)), 0, 1)
+		sfx_volume = clampf(float(config.get_value("game", "sfx_volume", 0.8)), 0.0, 1.0)
+		bgm_volume = clampf(float(config.get_value("game", "bgm_volume", 0.6)), 0.0, 1.0)
+		audio_muted = bool(config.get_value("game", "audio_muted", false))
 		pace_scale = clampf(float(config.get_value("game", "pace_scale", PACE_NORMAL)), PACE_FAST, PACE_SLOW)
 		avatar_id = StringName(str(config.get_value("game", "avatar", "avatar_01")))
 

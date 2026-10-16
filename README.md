@@ -80,6 +80,9 @@ SMOKE_SEED=3 godot --headless --path . -s res://tests/ui_smoke.gd   # 다른 시
 - **카드 3종:** `도미노 연쇄 붕괴`(함정: 밟은 말 -3칸, 경로의 다른 말 -2칸), `XVI. 무너지는 탑`(가장 많이 모인 타일의 말을 흩어 놓음), `X. 운명의 수레바퀴`(내 꼴찌 말과 1등 적 말의 위치 교환). 타로 카드 번호는 기존 `ACT_06`과 겹치지 않게 `ACT_07`·`ACT_08`입니다.
 
 
+## 효과음
+`assets/sfx/`에 효과음 파일(wav/ogg/mp3)을 넣으면 자동으로 재생됩니다. 파일 이름 규칙과 이벤트 목록은 `assets/sfx/README.md`, 출처는 `CREDITS.md`에 적습니다. 설정에서 소리 크기와 끄기를 바꿀 수 있습니다.
+
 ## 웹 배포 (GitHub Pages / Vercel)
 
 푸시할 때마다 `.github/workflows/deploy-web.yml`이 테스트 -> Godot 웹 빌드 -> `gh-pages` 브랜치 강제 푸시까지 자동으로 합니다(운영 주소: `https://trickcal-board.vercel.app/`). 빌드 결과에는 `vercel.json`도 함께 들어갑니다.
