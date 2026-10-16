@@ -1,6 +1,6 @@
 # File: res://tests/e2e/web_lobby_e2e.gd
 # Class: (씬 스크립트, class_name 없음)
-# Role: 브라우저 두 개(방장/참가자)로 실제 WebRTC 로비 연결을 검증하는 웹 전용 테스트 씬. 화면 대신 window.__ 변수와 콜백으로 코드를 주고받는다 (tests/e2e/run_web_lobby_e2e.mjs가 조종)
+# Role: 브라우저 여러 개(방장/참가자)로 방 코드 자동 시그널링 + 실제 WebRTC 로비 연결을 검증하는 웹 전용 테스트 씬. 릴레이 주소는 ?relay=, 역할은 ?role= 로 받고 상태는 window.__ 변수로 알린다 (tests/e2e/run_web_lobby_e2e.mjs가 조종)
 extends Control
 
 var service: LobbyService = null
@@ -13,22 +13,27 @@ func _ready() -> void:
 	service = LobbyService.new()
 	service.name = "LobbyService"
 	add_child(service)
+	var relay: String = str(JavaScriptBridge.eval("new URLSearchParams(location.search).get('relay')"))
+	if relay.begins_with("http"):
+		(service.broker as NtfyBroker).server = relay
+	service.poll_seconds = 0.5
+	service.claim_check_seconds = 0.6
 	_role = str(JavaScriptBridge.eval("new URLSearchParams(location.search).get('role')"))
 	var window: JavaScriptObject = JavaScriptBridge.get_interface("window")
 	service.roster_changed.connect(_publish_roster)
 	service.link_failed.connect(func(seat: int, message: String) -> void: window.__error = "%d:%s" % [seat, message])
+	service.join_failed.connect(func(message: String) -> void: window.__joinFailed = message)
+	service.join_progress.connect(func(message: String) -> void: window.__progress = message)
 	if _role == "host":
-		service.invite_ready.connect(func(_seat: int, code: String) -> void: window.__invite = code)
+		service.room_ready.connect(func(code: String) -> void: window.__roomCode = code)
 		var ok: bool = service.host_room("방장")
 		window.__ready = ok
-		_expose(window, "__makeInvite", func(args: Array) -> void: service.create_invite(int(args[0])))
-		_expose(window, "__submitAnswer", func(args: Array) -> void: service.submit_answer(int(args[0]), str(args[1])))
+		_expose(window, "__fillBot", func(args: Array) -> void: service.set_bot(int(args[0]), true))
 	else:
-		service.answer_ready.connect(func(code: String) -> void: window.__answer = code)
 		service.joined.connect(func() -> void: window.__joined = true)
 		service.left_room.connect(func(reason: String) -> void: window.__left = reason)
 		window.__ready = true
-		_expose(window, "__join", func(args: Array) -> void: service.join_room("친구", str(args[0])))
+		_expose(window, "__joinRoom", func(args: Array) -> void: service.join_by_room_code(str(args[0]), str(args[1])))
 
 
 func _expose(window: JavaScriptObject, key: String, handler: Callable) -> void:
