@@ -79,7 +79,7 @@ func _check_screens() -> void:
 		if _seats.size() == 2:
 			for seat: int in _seats:
 				if seat != board.local_player_id:
-					_expect(board.seat_anchor_of(seat) == MainBoard.SEAT_TOP, "2인 대전: 상대는 맞은편(위)")
+					_expect(board.seat_anchor_of(seat) == MainBoard.SEAT_RIGHT, "2인 대전: 상대는 우상단")
 		_expect(not board._mode_toggle.visible and not board._new_game_button.visible and not board._debug_toggle.visible, "온라인에서는 새 게임/모드/치트 버튼이 없다")
 		_expect(board.manager.lockstep and board.manager.external_timeouts, "락스텝 + 외부 타임아웃")
 		_expect((board._profiles[1]["avatar"] as AvatarSlot).character_id == &"avatar_02" and (board._profiles[2]["avatar"] as AvatarSlot).character_id == &"avatar_05", "모든 화면에서 같은 아바타 (로비에서 고른 값)")

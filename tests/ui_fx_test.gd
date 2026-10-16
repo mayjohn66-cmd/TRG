@@ -248,12 +248,12 @@ func _test_avatar_seats() -> void:
 	var saved_ids: Array[int] = _board._player_ids.duplicate()
 	var saved_local: int = _board.local_player_id
 	var cases: Array = [
-		[[1, 2] as Array[int], 1, {1: &"me", 2: &"top"}],
-		[[1, 2] as Array[int], 2, {2: &"me", 1: &"top"}],
+		[[1, 2] as Array[int], 1, {1: &"me", 2: &"right"}],
+		[[1, 2] as Array[int], 2, {2: &"me", 1: &"right"}],
 		[[1, 2, 3] as Array[int], 1, {1: &"me", 2: &"right", 3: &"left"}],
 		[[1, 2, 3, 4] as Array[int], 1, {1: &"me", 2: &"right", 3: &"top", 4: &"left"}],
 		[[1, 2, 3, 4] as Array[int], 3, {3: &"me", 4: &"right", 1: &"top", 2: &"left"}],
-		[[2, 4] as Array[int], 4, {4: &"me", 2: &"top"}],
+		[[2, 4] as Array[int], 4, {4: &"me", 2: &"right"}],
 	]
 	for entry: Array in cases:
 		_board._player_ids = entry[0]

@@ -90,7 +90,7 @@ func _check_hud_layout() -> void:
 	for index: int in 29:
 		board_rect = _tile_rect(index) if index == 0 else board_rect.merge(_tile_rect(index))
 	_assert(absf(board_rect.get_center().x - 683.0) < 4.0, "보드판은 화면 가로 정중앙이어야 한다 (%s)" % str(board_rect))
-	# 테이블에 둘러앉은 자리: 나(P1)는 아래(우하단), 다음 순서 P2는 오른쪽, 맞은편 P3는 위 가운데, 이전 순서 P4는 왼쪽 (상대 좌석 매핑).
+	# 테이블에 둘러앉은 자리: 네 모서리: 나(P1) 우하단(큼), 다음 순서 P2 우상단, 맞은편 P3 좌하단, 이전 순서 P4 좌상단 (상대 좌석 매핑).
 	var expected_anchor: Dictionary = {1: MainBoard.SEAT_ME, 2: MainBoard.SEAT_RIGHT, 3: MainBoard.SEAT_TOP, 4: MainBoard.SEAT_LEFT}
 	var rects: Dictionary = {}
 	for player_id: int in [1, 2, 3, 4]:
@@ -101,11 +101,15 @@ func _check_hud_layout() -> void:
 		_assert(_board.seat_anchor_of(player_id) == expected_anchor[player_id], "P%d 좌석 앵커 (%s)" % [player_id, str(_board.seat_anchor_of(player_id))])
 		_assert(not rect.intersects(board_rect), "P%d 프로필 카드가 보드판을 가리면 안 된다" % player_id)
 		_assert(_board._profiles[player_id]["avatar"] is AvatarSlot, "P%d 아바타 칸" % player_id)
-	_assert(absf((rects[3] as Rect2).get_center().x - 683.0) < 30.0 and (rects[3] as Rect2).position.y < 10.0, "맞은편(P3)은 보드 위 가운데 한 줄 프로필")
+	_assert((rects[3] as Rect2).get_center().x < 683.0 and (rects[3] as Rect2).get_center().y > 384.0, "맞은편(P3)은 좌하단")
+	_assert((rects[1] as Rect2).size.x > (rects[2] as Rect2).size.x and (rects[1] as Rect2).size.y > (rects[2] as Rect2).size.y, "내 프로필 카드가 가장 크다")
 	_assert((rects[2] as Rect2).get_center().x > 683.0 and (rects[2] as Rect2).get_center().y < 384.0, "다음 순서(P2)는 오른쪽 위")
 	_assert((rects[4] as Rect2).get_center().x < 683.0 and (rects[4] as Rect2).get_center().y < 384.0, "이전 순서(P4)는 왼쪽 위")
 	_assert((rects[1] as Rect2).get_center().x > 683.0 and (rects[1] as Rect2).get_center().y > 384.0, "나(P1)는 우하단")
-	_assert(not (rects[3] as Rect2).intersects(rects[2]) and not (rects[3] as Rect2).intersects(rects[4]), "위쪽 프로필이 좌우 프로필과 겹치지 않는다")
+	for a: int in [1, 2, 3, 4]:
+		for b: int in [1, 2, 3, 4]:
+			if a < b:
+				_assert(not (rects[a] as Rect2).intersects(rects[b]), "P%d·P%d 프로필이 겹치지 않는다" % [a, b])
 	var law_rect: Rect2 = (_board._law_slots[0] as Control).get_global_rect().merge((_board._law_slots[3] as Control).get_global_rect())
 	_assert(not law_rect.intersects(board_rect), "법전 위젯이 보드판을 가리면 안 된다")
 	_assert(law_rect.position.x < 400.0 and not law_rect.intersects(rects[3]) and not law_rect.intersects(rects[4]), "법전 위젯은 왼쪽 프로필 아래 좌측 중앙에 있어야 한다")
@@ -431,8 +435,8 @@ func _check_bounds() -> void:
 func _try_skill(manager: TurnManager, player_id: int) -> bool:
 	if _board._is_bot_turn() or _rng.randi_range(0, 2) != 0:
 		return false
-	for index: int in _board._skill_buttons.size():
-		var button: Button = _board._skill_buttons[index]
+	for index: int in _board.active_skill_buttons().size():
+		var button: Button = _board.active_skill_buttons()[index]
 		if not button.visible or button.disabled:
 			continue
 		var pawn: PlayerPawn = _board.state.get_pawn(_board._dock_owner() * 10 + index + 1)
@@ -470,9 +474,9 @@ func _try_skill(manager: TurnManager, player_id: int) -> bool:
 func _try_turn_begin_buttons(manager: TurnManager) -> bool:
 	var player_id: int = manager.current_player_id()
 	_assert(_board._bomb_button.visible == manager.can_pass_bomb(player_id), "폭탄 떠넘기기 버튼 표시가 규칙과 일치해야 한다")
-	for index: int in _board._skill_buttons.size():
+	for index: int in _board.active_skill_buttons().size():
 		var pawn: PlayerPawn = _board.state.get_pawn(_board._dock_owner() * 10 + index + 1)
-		_assert(_board._skill_buttons[index].visible == (PawnSkills.has_skill(pawn) and not pawn.is_finished), "필살기 버튼은 필살기 보유 기물에만 보인다")
+		_assert(_board.active_skill_buttons()[index].visible == (PawnSkills.has_skill(pawn) and not pawn.is_finished), "필살기 버튼은 필살기 보유 기물에만 보인다")
 	if _board._bomb_button.visible and _rng.randi_range(0, 1) == 0:
 		_board._bomb_button.pressed.emit()
 		_bombs_passed += 1

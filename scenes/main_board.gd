@@ -34,21 +34,22 @@ const PROFILE_SIZE: Vector2 = Vector2(230, 112)
 const PROFILE_DIM: Color = Color(0.42, 0.42, 0.45, 0.85)
 const PROFILE_LIT: Color = Color(1.1, 1.1, 1.1, 1.0)
 const PAWN_SLOT_SIZE: float = 38.0
-## 좌석 앵커(테이블에 둘러앉은 자리): 아래=나(우하단) / 오른쪽=다음 순서 / 위=맞은편 / 왼쪽=이전 순서. 위쪽 자리는 보드 위의 낮은 띠라 한 줄(컴팩트) 프로필을 쓴다.
+## 좌석 앵커(네 모서리): me=나(우하단, 크게) / right=다음 순서(우상단) / top=맞은편(좌하단) / left=이전 순서(좌상단).
 const SEAT_ME: StringName = &"me"
 const SEAT_RIGHT: StringName = &"right"
 const SEAT_TOP: StringName = &"top"
 const SEAT_LEFT: StringName = &"left"
 const SEAT_POSITIONS: Dictionary = {
-	&"me": Vector2(1124, 644),
+	&"me": Vector2(1010, 598),
 	&"right": Vector2(1124, 52),
-	&"top": Vector2(518, 6),
+	&"top": Vector2(12, 644),
 	&"left": Vector2(12, 52),
 }
-const COMPACT_PROFILE_SIZE: Vector2 = Vector2(330, 60)
-const COMPACT_SLOT_SIZE: float = 26.0
+## 내 프로필은 다른 사람보다 크다: 큰 아바타 + 기물 4칸 한 줄 + 칸마다 필살기 버튼.
+const ME_PROFILE_SIZE: Vector2 = Vector2(340, 164)
+const ME_SLOT_SIZE: float = 48.0
 const AVATAR_SIZE: Vector2 = Vector2(84, 84)
-const COMPACT_AVATAR_SIZE: Vector2 = Vector2(48, 48)
+const ME_AVATAR_SIZE: Vector2 = Vector2(96, 96)
 ## 카드 독 안에서 카드가 놓이는 기준 y (호버 시 15px 솟아오른다).
 const DOCK_CARD_Y: float = 6.0
 ## 손패 카드는 한 장 전체 일러스트(140x196)가 따로 있고, 화면 아래로 반쯤 가려진 채 부채꼴로 펼쳐진다. 호버하면 전체가 올라와 보인다.
@@ -218,7 +219,9 @@ var _hint_label: Label = null
 var _pawn_bar: Panel = null
 var _pawn_buttons: Array[Button] = []
 var _pawn_slot_parts: Array[Dictionary] = []
+## 필살기 버튼: 내 프로필(큰 카드)의 칸 아래 버튼들. 수동 4인 모드에서는 기물 독의 버튼(_dock_skill_buttons)이 대신한다.
 var _skill_buttons: Array[Button] = []
+var _dock_skill_buttons: Array[Button] = []
 var _tile_pick_skill_pawn: int = -1
 var _aim_pawn: int = -1
 var _aim_dragging: bool = false
@@ -421,7 +424,7 @@ func _compute_seats() -> void:
 			others.append(candidate)
 	var anchors: Array[StringName] = []
 	match others.size():
-		1: anchors = [SEAT_TOP]
+		1: anchors = [SEAT_RIGHT]
 		2: anchors = [SEAT_RIGHT, SEAT_LEFT]
 		_: anchors = [SEAT_RIGHT, SEAT_TOP, SEAT_LEFT]
 	for index: int in others.size():
@@ -762,8 +765,7 @@ func _register_layout() -> void:
 		var player_id: int = PLAYER_IDS[index]
 		var panel: Control = _profiles[player_id]["panel"]
 		match seat_anchor_of(player_id):
-			SEAT_LEFT: left.append(panel)
-			SEAT_TOP: center.append(panel)
+			SEAT_LEFT, SEAT_TOP: left.append(panel)
 			_: right.append(panel)
 	for node: Variant in left:
 		_layout_entries.append({"node": node, "base": (node as CanvasItem).position, "group": 0})
@@ -819,9 +821,9 @@ func _build_profiles() -> void:
 	for player_id: int in PLAYER_IDS:
 		var color: Color = PLAYER_COLORS[player_id]
 		var anchor: StringName = seat_anchor_of(player_id) if _player_ids.has(player_id) else SEAT_LEFT
-		var compact: bool = anchor == SEAT_TOP
-		var card_size: Vector2 = COMPACT_PROFILE_SIZE if compact else PROFILE_SIZE
-		var slot_size: float = COMPACT_SLOT_SIZE if compact else PAWN_SLOT_SIZE
+		var big: bool = anchor == SEAT_ME
+		var card_size: Vector2 = ME_PROFILE_SIZE if big else PROFILE_SIZE
+		var slot_size: float = ME_SLOT_SIZE if big else PAWN_SLOT_SIZE
 		var panel := PanelContainer.new()
 		panel.position = SEAT_POSITIONS[anchor]
 		panel.custom_minimum_size = card_size
@@ -829,30 +831,30 @@ func _build_profiles() -> void:
 		panel.pivot_offset = card_size / 2.0
 		add_child(panel)
 		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 10 if not compact else 8)
+		row.add_theme_constant_override("separation", 10)
 		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		panel.add_child(row)
 
 		# 아바타 칸: 사도 Spine/스프라이트 시트가 들어갈 자리 (에셋이 없으면 좌석 글자 + 감정 이름)
 		var avatar := AvatarSlot.new()
-		avatar.setup(player_id, color, COMPACT_AVATAR_SIZE if compact else AVATAR_SIZE)
+		avatar.setup(player_id, color, ME_AVATAR_SIZE if big else AVATAR_SIZE)
 		row.add_child(avatar)
 		var penalty_label := _make_label("", 12, Color("ffe3e3"))
-		penalty_label.position = Vector2(4, 64) if not compact else Vector2(2, 30)
+		penalty_label.position = Vector2(4, 90) if big else Vector2(4, 64)
 		penalty_label.add_theme_stylebox_override("normal", _style(Color("c92a2a"), Color(0, 0, 0, 0), 0, 6, 0, 2))
 		penalty_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		penalty_label.visible = false
 		avatar.add_child(penalty_label)
 
 		var right := VBoxContainer.new()
-		right.add_theme_constant_override("separation", 4 if not compact else 2)
+		right.add_theme_constant_override("separation", 6 if big else 4)
 		right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		right.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.add_child(right)
 		var top := HBoxContainer.new()
 		top.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		right.add_child(top)
-		var name_label := _make_label("플레이어 %d" % player_id, 15 if not compact else 12, color.lightened(0.3))
+		var name_label := _make_label("플레이어 %d" % player_id, 18 if big else 15, color.lightened(0.3))
 		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		name_label.clip_text = true
 		name_label.add_theme_color_override("font_outline_color", Color("0d1018"))
@@ -861,9 +863,9 @@ func _build_profiles() -> void:
 		var count_label := _make_label("x0", 12, Color("ced4da"))
 		top.add_child(count_label)
 		var slot_container: Container
-		if compact:
+		if big:
 			var line := HBoxContainer.new()
-			line.add_theme_constant_override("separation", 4)
+			line.add_theme_constant_override("separation", 6)
 			slot_container = line
 		else:
 			var grid := GridContainer.new()
@@ -875,6 +877,14 @@ func _build_profiles() -> void:
 		right.add_child(slot_container)
 		var slots: Array[Dictionary] = []
 		for slot: int in range(1, GameEnums.PAWNS_PER_PLAYER + 1):
+			var cell: Control = slot_container
+			if big:
+				# 칸 아래에 그 기물의 필살기 버튼이 붙는다 (필살기가 있는 기물만 보인다).
+				var column := VBoxContainer.new()
+				column.add_theme_constant_override("separation", 3)
+				column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				slot_container.add_child(column)
+				cell = column
 			var icon := PanelContainer.new()
 			icon.custom_minimum_size = Vector2(slot_size, slot_size)
 			icon.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -883,17 +893,29 @@ func _build_profiles() -> void:
 			box.alignment = BoxContainer.ALIGNMENT_CENTER
 			box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			icon.add_child(box)
-			var letter := _make_label("", 16 if not compact else 14, Color("f1f3f5"))
+			var letter := _make_label("", 20 if big else 16, Color("f1f3f5"))
 			letter.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			letter.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			box.add_child(letter)
 			var status := _make_label("", 9, Color("f1f3f5"))
 			status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			status.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			status.visible = not compact  # 한 줄 프로필은 칸이 작아 상태 글자를 빼고 색으로만 구분한다
+			status.visible = true
 			box.add_child(status)
 			_bind_tip(icon, _fill_pawn_tip.bind(player_id * 10 + slot))
-			slot_container.add_child(icon)
+			cell.add_child(icon)
+			if big:
+				var skill_button: Button = _make_button("필살기", _on_skill_pressed.bind(slot - 1), 11, Color("c77d0a"), 6)
+				skill_button.custom_minimum_size = Vector2(slot_size, 26)
+				skill_button.focus_mode = Control.FOCUS_NONE
+				skill_button.add_theme_color_override("font_color", Color("fff9db"))
+				skill_button.add_theme_color_override("font_outline_color", Color("5c3a00"))
+				skill_button.add_theme_constant_override("outline_size", 3)
+				skill_button.visible = false
+				skill_button.mouse_entered.connect(_on_pawn_slot_hover.bind(slot - 1))
+				skill_button.mouse_exited.connect(_tip_end.bind(skill_button))
+				cell.add_child(skill_button)
+				_skill_buttons.append(skill_button)
 			slots.append({"panel": icon, "letter": letter, "status": status})
 		_profiles[player_id] = {
 			"panel": panel,
@@ -1831,7 +1853,7 @@ func _refresh_players() -> void:
 		# 스포트라이트: 현재 턴 플레이어만 환하게 밝고 살짝 커지며 외곽 광채가 켜지고, 나머지는 어둡게 가라앉는다.
 		var is_turn: bool = player_id == manager.current_player_id() and not manager.is_game_over
 		var game_over: bool = manager.is_game_over
-		var margin: int = 4 if card["anchor"] == SEAT_TOP else 8  # 위쪽 한 줄 프로필은 낮은 띠라 여백도 얇게
+		var margin: int = 8
 		if is_turn:
 			panel.add_theme_stylebox_override("panel", _style(Color("273049"), Color("fff3bf"), 4, 14, 26, margin))
 		else:
@@ -2552,7 +2574,7 @@ func _pawn_info_text(pawn_id: int) -> String:
 
 func _build_pawn_dock() -> void:
 	_pawn_bar = Panel.new()
-	_pawn_bar.position = Vector2(1024, 478)
+	_pawn_bar.position = Vector2(1024, 432)
 	_pawn_bar.size = Vector2(330, 156)
 	_pawn_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_pawn_bar.add_theme_stylebox_override("panel", _style(Color("131826"), COLOR_PANEL_EDGE, 2, 12, 8, 0))
@@ -2572,7 +2594,7 @@ func _build_pawn_dock() -> void:
 		skill_button.mouse_entered.connect(_on_pawn_slot_hover.bind(slot))
 		skill_button.mouse_exited.connect(_tip_end.bind(skill_button))
 		_pawn_bar.add_child(skill_button)
-		_skill_buttons.append(skill_button)
+		_dock_skill_buttons.append(skill_button)
 		var button := Button.new()
 		button.position = Vector2(6 + slot * step, SLOT_BASE_Y)
 		button.size = SLOT_SIZE
@@ -2614,6 +2636,11 @@ func _dock_owner() -> int:
 	return local_player_id if ai_mode else manager.current_player_id()
 
 
+## 지금 모드에서 실제로 쓰는 필살기 버튼들 (슬롯 순서): AI·온라인은 내 프로필 카드, 수동 4인은 기물 독.
+func active_skill_buttons() -> Array[Button]:
+	return _skill_buttons if ai_mode else _dock_skill_buttons
+
+
 func _on_pawn_slot_hover(slot: int) -> void:
 	var pawn_id: int = _dock_owner() * 10 + slot + 1
 	_preview_pawn(pawn_id)
@@ -2653,16 +2680,18 @@ func _refresh_pawn_dock() -> void:
 		button.add_theme_stylebox_override("disabled", _style(base, color.darkened(0.35), 2, 10, 0, 4))
 		button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 		button.modulate = Color(1, 1, 1, 0.55) if pawn.is_finished else Color.WHITE
-		var skill_button: Button = _skill_buttons[index]
 		var has_skill: bool = PawnSkills.has_skill(pawn) and not pawn.is_finished
-		skill_button.visible = has_skill
-		if has_skill:
-			var usable: bool = manager.can_use_skill(owner_id, pawn.entity_id) and not _ui_busy() and not _is_bot_turn() and not _tile_pick_active
+		var usable: bool = has_skill and manager.can_use_skill(owner_id, pawn.entity_id) and not _ui_busy() and not _is_bot_turn() and not _tile_pick_active
+		# AI·온라인 모드에서는 내 프로필 카드의 버튼이, 수동 4인 모드에서는 기물 독의 버튼이 필살기를 맡는다.
+		var profile_button: Button = _skill_buttons[index]
+		var dock_button: Button = _dock_skill_buttons[index]
+		profile_button.visible = has_skill and ai_mode
+		dock_button.visible = has_skill and not ai_mode
+		for skill_button: Button in [profile_button, dock_button]:
 			skill_button.disabled = not usable
-			skill_button.text = "사용 완료" if pawn.skill_used else "필살기\n발동!"
 			skill_button.modulate = Color(1.15, 1.0, 0.7) if usable else Color.WHITE
-			if usable:
-				skill_button.text = "필살기\n발동!"
+		profile_button.text = "사용됨" if pawn.skill_used else "필살기"
+		dock_button.text = "사용 완료" if pawn.skill_used else "필살기\n발동!"
 
 
 # ---------------------------------------------------------------------------
