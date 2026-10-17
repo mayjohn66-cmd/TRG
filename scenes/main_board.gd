@@ -1490,7 +1490,9 @@ func _jump_arrow_target(index: int) -> int:
 func _place_tile(index: int) -> void:
 	var tile: BoardSkin.Tile = _tile_views[index]
 	var span: float = BOARD_SIZE
-	tile.size = Vector2.ONE * (float(tile.data.diameter) * DIAMOND_KX * 1.42 + 8.0)
+	# 회전한 직사각형 발판의 바깥 사각형 크기 (가로·세로 변 합 x 0.707 x 마름모 배율)
+	var footprint: Vector2 = tile.data.footprint as Vector2
+	tile.size = Vector2(DIAMOND_KX, DIAMOND_KY) * (footprint.x + footprint.y) * 0.70710678 + Vector2.ONE * 8.0
 	tile.pivot_offset = tile.size / 2.0
 	tile.position = _tile_center(index) - tile.size / 2.0
 	var depth: float = 1.0

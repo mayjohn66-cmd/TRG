@@ -391,8 +391,12 @@ func _test_view_modes() -> void:
 		if tile.symbol != null:
 			var transform: Transform2D = tile.symbol.get_global_transform()
 			_expect(absf(transform.x.length()-transform.y.length()) < 0.001, "문양 비율 보존: %d" % i)
+		if not tile.data.major:
+			_expect(tile.band.size() >= 3, "일반 발판의 안쪽 색 띠가 있어야 한다: %d" % i)
+			for point: Vector2 in tile.band:
+				_expect(Geometry2D.is_point_in_polygon(point,tile.outline_points), "색 띠가 발판 밖으로 나가지 않아야 한다: %d" % i)
 	var round_tile: BoardSkin.Tile = _board._tile_views[1]
-	_expect(_board._tile_at(round_tile.get_global_transform()*Vector2.ZERO) == -1, "원형 발판 바깥 사각 모서리는 클릭되지 않는다")
+	_expect(_board._tile_at(round_tile.get_global_transform()*Vector2.ZERO) == -1, "둥근 직사각 발판 바깥 모서리는 클릭되지 않는다")
 	var previous_laws: Array[LawResource] = _board.state.rulebook.active_laws_queue.duplicate()
 	_board.state.rulebook.active_laws_queue.clear()
 	_board.state.rulebook.enqueue_law(LawRegistry.create("LAW_01"))
@@ -764,6 +768,16 @@ func _test_bot_pacing() -> void:
 	while _board._fx_busy and guard < 600:
 		guard += 1
 		await process_frame
+	# Measure a plain forward D6 turn, independent of random draft laws/skills.
+	# A frog-curse odd roll cannot launch waiting pawns, so it has no move event.
+	manager.state.rulebook.active_laws_queue.clear()
+	manager.state.reverse_move_rounds_left = 0
+	for pawn: PlayerPawn in manager.state.pawns_of(2):
+		pawn.reset_to_start()
+		pawn.is_finished = false
+		pawn.kind = GameEnums.PawnKind.BASIC
+		pawn.unit_no = 0
+		pawn.skill_used = true
 	_board.ai_mode = true
 	_board._bot.set_enabled(true)
 	_board._refresh_mode_toggle()
