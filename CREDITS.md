@@ -18,4 +18,4 @@
 
 | 폴더 | 캐릭터 | 출처 |
 |---|---|---|
-| `content_trickcal/avatars/avatar_01` ~ `avatar_08` | 에르핀, 버터, 엘레나, 실라, 셰이디, 다야, 벨리타, 죠안 | 트릭컬 리바이브(에피드)의 캐릭터 일러스트. 팬이 만든 스파인 뷰어(`viewer.dclnslde.com`)에서 재생 화면을 캡처해 감정별 프레임(`idle·happy·angry·surprised·sad·cheer`, 초당 10프레임, 192px)으로 사용. 저작권은 원작 제작사에 있음 |
+| `content_trickcal/avatars/avatar_01` ~ `avatar_08` | 에르핀, 버터, 엘레나, 실라, 셰이디, 다야, 벨리타, 죠안 | 트릭컬 리바이브(에피드)의 캐릭터 일러스트. 팬이 만든 스파인 뷰어(`viewer.dclnslde.com`)에서 재생 화면을 캡처해 감정별 프레임(`idle·happy·angry·surprised·sad·cheer`, 초당 10프레임, 192px 상반신 크롭)으로 사용. 저작권은 원작 제작사에 있음 |

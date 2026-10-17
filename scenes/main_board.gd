@@ -57,7 +57,7 @@ const SEAT_POSITIONS: Dictionary = {
 const ME_PROFILE_SIZE: Vector2 = Vector2(340, 164)
 const ME_SLOT_SIZE: float = 48.0
 const AVATAR_SIZE: Vector2 = Vector2(84, 84)
-const ME_AVATAR_SIZE: Vector2 = Vector2(96, 96)
+const ME_AVATAR_SIZE: Vector2 = Vector2(118, 118)
 ## 카드 독 안에서 카드가 놓이는 기준 y (호버 시 15px 솟아오른다).
 const DOCK_CARD_Y: float = 6.0
 ## 손패 카드는 한 장 전체 일러스트(140x196)가 따로 있고, 화면 아래로 반쯤 가려진 채 부채꼴로 펼쳐진다. 호버하면 전체가 올라와 보인다.
@@ -976,6 +976,7 @@ func _build_profiles() -> void:
 		# 아바타 칸: 사도 Spine/스프라이트 시트가 들어갈 자리 (에셋이 없으면 좌석 글자 + 감정 이름)
 		var avatar := AvatarSlot.new()
 		avatar.setup(player_id, color, ME_AVATAR_SIZE if big else AVATAR_SIZE)
+		avatar.size_flags_vertical = Control.SIZE_SHRINK_CENTER  # 칸이 카드 높이만큼 길쭉하게 늘어나지 않게 정사각형으로 둔다
 		row.add_child(avatar)
 
 		var right := VBoxContainer.new()
