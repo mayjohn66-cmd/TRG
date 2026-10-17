@@ -764,6 +764,16 @@ func _test_bot_pacing() -> void:
 	while _board._fx_busy and guard < 600:
 		guard += 1
 		await process_frame
+	# Measure a plain forward D6 turn, independent of random draft laws/skills.
+	# A frog-curse odd roll cannot launch waiting pawns, so it has no move event.
+	manager.state.rulebook.active_laws_queue.clear()
+	manager.state.reverse_move_rounds_left = 0
+	for pawn: PlayerPawn in manager.state.pawns_of(2):
+		pawn.reset_to_start()
+		pawn.is_finished = false
+		pawn.kind = GameEnums.PawnKind.BASIC
+		pawn.unit_no = 0
+		pawn.skill_used = true
 	_board.ai_mode = true
 	_board._bot.set_enabled(true)
 	_board._refresh_mode_toggle()
