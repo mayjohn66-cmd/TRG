@@ -18,6 +18,18 @@ const ART: Dictionary = {
 	&"round_button": preload("res://assets/ui/trickcal/hub/UI_HUB_ROUND_BUTTON.tres"),
 }
 static var _skin_cache: Dictionary = {}
+const EDGE_SHADER: Shader = preload("res://scenes/ui_art_edge.gdshader")
+
+
+## 이미지의 색과 음영을 유지하고 외곽의 누끼 잔여만 표시할 때 제거한다.
+static func clean_edge(item: Control, inset: float = 1.75) -> void:
+	var edge := ShaderMaterial.new()
+	edge.shader = EDGE_SHADER
+	edge.set_shader_parameter("edge_inset", inset)
+	item.material = edge
+	var update_frame := func() -> void: edge.set_shader_parameter("frame_size", item.size)
+	item.resized.connect(update_frame)
+	update_frame.call()
 
 
 static func icon(role: StringName) -> TextureRect:
