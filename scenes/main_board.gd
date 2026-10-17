@@ -1915,8 +1915,6 @@ func _refresh_tiles() -> void:
 		mark.add_theme_color_override("font_color", color)
 
 
-## 타일 위 함정 배지. AI 모드(타일 은신): P1이 설치한 함정만 이름이 보이고 봇이 설치한 함정은 뒷면 [? 함정]으로만 보인다.
-## 수동 모드는 예전처럼 모든 은신 함정이 "?"로 보인다.
 ## 함정이 깔린 발판의 보라색 깜빡임.
 func _update_trap_pulse(delta: float) -> void:
 	if _trap_tiles.is_empty():
@@ -1929,6 +1927,7 @@ func _update_trap_pulse(delta: float) -> void:
 			tile.set_trap_pulse(pulse)
 
 
+## 함정 툴팁. AI 모드(타일 은신): P1이 설치한 함정만 이름이 보이고 봇이 설치한 함정은 뒷면 [? 함정]으로만 보인다.
 func _trap_tooltip(attachment: TileAttachment) -> String:
 	if ai_mode and attachment.owner_id == local_player_id:
 		return "[내 함정] %s" % _attachment_name(attachment.attachment_id)

@@ -376,21 +376,15 @@ func _check_fog_of_war() -> void:
 	if not _ai:
 		return
 	for index: int in 24:
-		var mark_text: String = (_board._tile_marks[index] as Label).text
-		var owners: Dictionary = {}
-		for attachment: TileAttachment in _board.state.board.get_tile(index).attachments:
-			if ["TRP_01", "TRP_02", "TRP_03", "TRP_05"].has(attachment.attachment_id):
-				owners[attachment.owner_id == MainBoard.HUMAN_ID] = true
-		if owners.size() > 1:
-			continue  # 내 함정과 봇의 함정이 한 타일에 겹치면 표식 문구가 섞이므로 검사하지 않는다
 		for attachment: TileAttachment in _board.state.board.get_tile(index).attachments:
 			if not ["TRP_01", "TRP_02", "TRP_03", "TRP_05"].has(attachment.attachment_id):
 				continue
 			_fog_checks += 1
+			var mark_text: String = _board._trap_tooltip(attachment)  # 타일 위 글자 배지는 없애고 툴팁으로만 알린다
 			if attachment.owner_id == MainBoard.HUMAN_ID:
 				_assert(not mark_text.contains("?함정"), "내 함정은 이름이 보여야 한다 (%s)" % mark_text)
 			else:
-				_assert(mark_text.contains("?함정") and not (mark_text.contains("나락") or mark_text.contains("거울") or mark_text.contains("지뢰") or mark_text.contains("도미노")), "봇의 함정은 [? 함정]으로만 보여야 한다 (%s)" % mark_text)
+				_assert(mark_text.contains("? 함정") and not (mark_text.contains("나락") or mark_text.contains("거울") or mark_text.contains("지뢰") or mark_text.contains("도미노")), "봇의 함정은 [? 함정]으로만 보여야 한다 (%s)" % mark_text)
 
 
 func _check_bounds() -> void:

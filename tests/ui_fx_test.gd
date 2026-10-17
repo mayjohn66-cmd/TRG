@@ -1102,7 +1102,7 @@ func _test_trap_tile_marking() -> void:
 	var seen_low: bool = false
 	var seen_high: bool = false
 	for i: int in 40:
-		await process_frame
+		_board._update_trap_pulse(0.1)  # 프레임 속도와 무관하게 시계를 직접 굴린다
 		seen_low = seen_low or tile.trap_pulse < 0.3
 		seen_high = seen_high or tile.trap_pulse > 0.7
 	_expect(seen_low and seen_high, "보라색이 깜빡인다 (pulse가 오르내린다)")
