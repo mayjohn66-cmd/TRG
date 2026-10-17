@@ -2002,7 +2002,7 @@ func _check_round_banner() -> void:
 		return
 	_announced_round = state.round_number
 	_announced_turn_key = "%d:%d" % [state.round_number, manager.current_player_id()]
-	_announce("라운드", "라운드 %d" % state.round_number, "%d라운드가 시작됩니다" % state.round_number, COLOR_GOLD, null, 1.5)
+	_announce("라운드", "%d라운드 시작!" % state.round_number, "", COLOR_GOLD, null, 1.2)
 
 
 ## 새 플레이어의 턴이 시작될 때 [P2 차례] 알림을 짧게 보여 준다 (추가 턴·롤백 재시작에는 다시 띄우지 않는다).
@@ -5006,11 +5006,7 @@ func _refresh_draft_overlay() -> void:
 	if _fx_on() and _announcer != null:
 		if _draft_banner_round != state.round_number:
 			_draft_banner_round = state.round_number
-			_announced_round = state.round_number
 			_draft_entrance = true
-			_close_draft_overlay()
-			_announce("라운드", "라운드 %d" % state.round_number, "시작 증강을 선택하세요", COLOR_GOLD, null, 1.4)
-			return
 		if _announcer.active and _draft_overlay == null:
 			return
 	var player_id: int = pending[0]
@@ -5147,7 +5143,8 @@ func _make_augment_card(info: Dictionary, on_pick: Callable) -> Button:
 	desc.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	desc.text = str(info["desc"])  # 줄바꿈 폭이 정해진 뒤에 글자를 넣어야 라벨이 글자 폭만큼 늘어나지 않는다
 	card.add_child(desc)
-	card.pressed.connect(on_pick)
+	if on_pick.is_valid():
+		card.pressed.connect(on_pick)
 	card.mouse_entered.connect(_hover_augment_card.bind(card, box, color, true))
 	card.mouse_exited.connect(_hover_augment_card.bind(card, box, color, false))
 	return card
@@ -5494,20 +5491,36 @@ func _on_phase_changed(new_state: TurnManager.State, _player_id: int, _limit: fl
 	_refresh_all()
 
 
-## 이번 라운드에 모두가 고른 증강을 카드 한 장에 모아 한꺼번에 공개한다.
+## 이번 라운드에 모두가 고른 증강을 선택 카드 그림 그대로 한 줄에 나란히 공개한다.
 func _flush_draft_summary() -> void:
 	if _draft_summary.is_empty():
 		return
-	var rows := VBoxContainer.new()
-	rows.add_theme_constant_override("separation", 4)
-	rows.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 22)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var card_scale: float = 0.6 if _draft_summary.size() > 2 else 0.8
 	for entry: Dictionary in _draft_summary:
-		var line := _make_label("P%d   %s" % [entry["player"], entry["name"]], 20, PLAYER_COLORS[int(entry["player"])].lightened(0.35))
-		line.add_theme_constant_override("outline_size", 4)
-		line.add_theme_color_override("font_outline_color", Color("0d1018"))
-		rows.add_child(line)
+		var player_id: int = int(entry["player"])
+		var column := VBoxContainer.new()
+		column.add_theme_constant_override("separation", 6)
+		column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var who: Label = _make_label("P%d  %s" % [player_id, _player_name(player_id)], 18, PLAYER_COLORS[player_id].lightened(0.35))
+		who.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		who.add_theme_constant_override("outline_size", 4)
+		who.add_theme_color_override("font_outline_color", Color("0d1018"))
+		column.add_child(who)
+		var holder := Control.new()
+		holder.custom_minimum_size = AUGMENT_CARD_SIZE * card_scale
+		holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var card: Button = _make_augment_card(_augment_card_info(AugmentRegistry.get_def(entry["augment"]), player_id), Callable())
+		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		card.pivot_offset = Vector2.ZERO
+		card.scale = Vector2.ONE * card_scale
+		holder.add_child(card)
+		column.add_child(holder)
+		row.add_child(column)
 	_draft_summary.clear()
-	_announce("증강 공개", "이번 라운드 증강", "", Color("ffa94d"), rows, 2.4)
+	_announce("증강 공개", "선택한 증강", "", Color("ffa94d"), row, 2.8)
 
 
 func _on_action_rejected(player_id: int, action: StringName, reason: StringName) -> void:
@@ -5715,7 +5728,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 		&"augment_picked":
 			_log_line("[증강] P%d%s: %s - %s" % [data["player_id"], " (자동)" if data["auto"] else "", AugmentRegistry.get_def(data["augment_id"]).display_name, data["text"]], Color("ffa94d"))
 			# 한 명씩 공개하면 늘어지므로 모아 두었다가 드래프트가 끝나면 한 장으로 한꺼번에 공개한다.
-			_draft_summary.append({"player": int(data["player_id"]), "name": AugmentRegistry.get_def(data["augment_id"]).display_name})
+			_draft_summary.append({"player": int(data["player_id"]), "augment": data["augment_id"]})
 		&"bang_resolved":
 			var target_name: String = _pawn_name(int(data["target"]))
 			_log_line("[뱅!] P%d가 %s을(를) 저격! %d번 → %d번 타일로 2칸 밀려납니다." % [data["shooter"], target_name, data["from"], data["to"]], Color("ff6b6b"))
