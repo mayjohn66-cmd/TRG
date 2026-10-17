@@ -382,6 +382,7 @@ func _build_avatar_page(parent: VBoxContainer) -> void:
 		var thumb := AvatarSlot.new()
 		thumb.catalog_tint = true
 		thumb.prefer_icon = true
+		thumb.icon_border = false
 		thumb.placeholder_text = AvatarCatalog.name_of(id).trim_prefix("아바타 ")
 		thumb.setup(1, AvatarCatalog.color_of(id), Vector2(88, 88))
 		thumb.set_character(id)
@@ -404,9 +405,11 @@ func _refresh_avatar_page() -> void:
 	for id: StringName in _avatar_tiles.keys():
 		var tile: Button = _avatar_tiles[id]
 		var selected: bool = id == current
-		tile.add_theme_stylebox_override("normal", LobbyTheme.style(Color.WHITE if not selected else LobbyTheme.CREAM, LobbyTheme.CREAM_EDGE if selected else LobbyTheme.MINT_EDGE, 5 if selected else 2, 18, 0, 0))
-		tile.add_theme_stylebox_override("hover", LobbyTheme.style(Color("f4fffa"), LobbyTheme.TEAL, 3, 18, 0, 0))
-		tile.add_theme_stylebox_override("pressed", LobbyTheme.style(LobbyTheme.CREAM, LobbyTheme.CREAM_EDGE, 5, 18, 0, 0))
+		# 고른 칸은 금빛 테두리와 은은한 빛, 나머지는 흰 바탕에 옅은 테두리 (아이콘 자체에는 테두리가 없다).
+		var gold: Color = Color("f2b01e")
+		tile.add_theme_stylebox_override("normal", LobbyTheme.style(Color("fff6d6") if selected else Color.WHITE, gold if selected else LobbyTheme.MINT_EDGE, 5 if selected else 2, 22, 12 if selected else 0, 0, Color(gold, 0.55)))
+		tile.add_theme_stylebox_override("hover", LobbyTheme.style(Color("fff6d6") if selected else Color("f4fffa"), gold if selected else LobbyTheme.TEAL, 5 if selected else 3, 22, 12 if selected else 4, 0, Color(gold, 0.55) if selected else Color(0, 0, 0, 0.15)))
+		tile.add_theme_stylebox_override("pressed", LobbyTheme.style(Color("fff6d6"), gold, 5, 22, 6, 0, Color(gold, 0.55)))
 		tile.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 
 

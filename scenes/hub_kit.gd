@@ -238,7 +238,7 @@ static func avatar_disc(id: StringName, color: Color, diameter: float, ring: Col
 	disc.bg_color = color.lightened(0.45)
 	disc.border_color = ring
 	disc.set_border_width_all(ring_px)
-	disc.set_corner_radius_all(int(diameter / 2.0))
+	disc.set_corner_radius_all(int(diameter * 0.2))  # 둥근 사각형: 정사각형 그림이 원에 잘려 어색해 보이지 않게
 	disc.shadow_color = Color(0, 0, 0, 0.22)
 	disc.shadow_size = maxi(3, int(diameter / 30.0))
 	holder.add_theme_stylebox_override("panel", disc)
@@ -250,7 +250,7 @@ static func avatar_disc(id: StringName, color: Color, diameter: float, ring: Col
 		avatar.position = Vector2.ONE * ring_px
 		var mask := StyleBoxFlat.new()
 		mask.bg_color = color.lightened(0.5)
-		mask.set_corner_radius_all(int((diameter - ring_px * 2.0) / 2.0))
+		mask.set_corner_radius_all(int((diameter - ring_px * 2.0) * AvatarSlot.ART_RADIUS))
 		avatar.add_theme_stylebox_override("panel", mask)
 		holder.add_child(avatar)
 	else:
@@ -503,18 +503,11 @@ static func logo(small_text: String, big_text: String, sub_text: String) -> VBox
 	return column
 
 
-## 마을 축제 장식: 왼쪽 위의 따뜻한 햇살과 위쪽에 늘어진 줄 등불. 클릭을 막지 않는다.
+## 왼쪽 위의 따뜻한 햇살 장식 (줄 등불은 없앴다). 클릭을 막지 않는다.
 class FestivalDecor extends Control:
-	const LANTERN_COLORS: Array[Color] = [Color("ff6b5e"), Color("ffb347"), Color("5fb3ff"), Color("ffd34e"), Color("ff6b5e"), Color("7ad87a")]
-	var _t: float = 0.0
-
 	func _init() -> void:
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 		set_anchors_preset(Control.PRESET_FULL_RECT)
-
-	func _process(delta: float) -> void:
-		_t += delta
-		queue_redraw()
 
 	func _draw() -> void:
 		var w: float = size.x
@@ -522,38 +515,6 @@ class FestivalDecor extends Control:
 		var glow_center := Vector2(w * 0.16, h * 0.04)
 		for layer: int in 6:
 			draw_circle(glow_center, (6 - layer) * 74.0, Color(1.0, 0.93, 0.62, 0.05))
-		for line: int in 2:
-			_garland(w, h, 8.0 + line * 40.0, 22.0 + line * 12.0, line)
-
-	func _garland(w: float, h: float, y0: float, sag: float, seed_shift: int) -> void:
-		var points := PackedVector2Array()
-		var steps: int = 40
-		var x0: float = -20.0
-		var x1: float = w + 20.0
-		for index: int in steps + 1:
-			var u: float = float(index) / steps
-			points.append(Vector2(lerpf(x0, x1, u), y0 + sin(u * PI) * sag))
-		draw_polyline(points, Color(0.42, 0.3, 0.2, 0.75), 2.0, true)
-		var count: int = 9
-		for index: int in count:
-			var u: float = (float(index) + 0.5 + 0.2 * seed_shift) / count
-			if u >= 1.0:
-				continue
-			var base := Vector2(lerpf(x0, x1, u), y0 + sin(u * PI) * sag)
-			var sway: float = sin(_t * 1.3 + float(index) * 1.7 + seed_shift) * 3.0
-			var color: Color = LANTERN_COLORS[(index + seed_shift * 2) % LANTERN_COLORS.size()]
-			draw_line(base, base + Vector2(sway * 0.4, 10), Color(0.42, 0.3, 0.2, 0.75), 2.0)
-			var top: Vector2 = base + Vector2(sway * 0.4, 10)
-			var box := StyleBoxFlat.new()
-			box.bg_color = Color(color, 0.92)
-			box.border_color = Color(1, 1, 1, 0.55)
-			box.set_border_width_all(2)
-			box.set_corner_radius_all(12)
-			box.shadow_color = Color(color, 0.35)
-			box.shadow_size = 10
-			draw_style_box(box, Rect2(top + Vector2(-14 + sway, 0), Vector2(28, 40)))
-			draw_line(top + Vector2(-14 + sway, 9), top + Vector2(14 + sway, 9), Color(1, 1, 1, 0.45), 2.0)
-			draw_line(top + Vector2(-14 + sway, 30), top + Vector2(14 + sway, 30), Color(1, 1, 1, 0.45), 2.0)
 
 
 ## 대기방의 캐릭터 자리 카드 한 장(원본의 파티 편성 칸처럼 세로로 길다): 위 왕관, 큰 동그란 캐릭터, 이름표, 상태 줄, 아래 버튼 칸.

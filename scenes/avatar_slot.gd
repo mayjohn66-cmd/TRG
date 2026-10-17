@@ -28,6 +28,8 @@ var catalog_tint: bool = false
 var placeholder_text: String = ""
 ## true면 작은 목록용 얼굴 아이콘(icon.webp)이 있을 때 애니메이션 대신 그것을 보여 준다 (선택 목록·방 좌석 등 정적인 자리).
 var prefer_icon: bool = false
+## 아이콘에 흰 둥근 테두리를 씌울지 (선택 목록 칸처럼 바깥에 이미 테두리가 있으면 끈다).
+var icon_border: bool = true
 
 var _stage: Control = null
 var _sprite: AnimatedSprite2D = null
@@ -132,6 +134,7 @@ func use_frames(frames: SpriteFrames) -> void:
 		_sprite.queue_free()
 	_sprite = AnimatedSprite2D.new()
 	_sprite.sprite_frames = frames
+	_sprite.material = _round_material()  # 그림 모서리를 둥글게 깎아 칸 모양과 맞춘다
 	_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS  # 칸보다 큰 그림을 줄여 그려도 흐려지거나 깜빡이지 않게
 	_stage.add_child(_sprite)
 	_has_art = true
@@ -146,6 +149,7 @@ func use_portrait(texture: Texture2D) -> void:
 		_portrait.queue_free()
 	_portrait = TextureRect.new()
 	_portrait.texture = texture
+	_portrait.material = _round_material()
 	_portrait.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	_portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
@@ -153,21 +157,25 @@ func use_portrait(texture: Texture2D) -> void:
 	_portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_stage.add_child(_portrait)
 	_stage.move_child(_portrait, 0)
-	if prefer_icon:
+	if prefer_icon and icon_border:
 		_frame_icon()
 	_has_art = true
 	_seat_label.visible = false
 
 
+const ART_RADIUS: float = 0.18
 const ROUND_SHADER: Shader = preload("res://scenes/avatar_round.gdshader")
 
 
 ## 얼굴 아이콘은 정사각형 그림이 잘린 모양이라, 모서리를 둥글게 깎고 테두리를 둘러 목록 칸에 어울리게 한다.
-func _frame_icon() -> void:
+func _round_material() -> ShaderMaterial:
 	var material := ShaderMaterial.new()
 	material.shader = ROUND_SHADER
-	material.set_shader_parameter("radius", 0.2)
-	_portrait.material = material
+	material.set_shader_parameter("radius", ART_RADIUS)
+	return material
+
+
+func _frame_icon() -> void:
 	_portrait.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_theme_stylebox_override("panel", StyleBoxEmpty.new())  # 칸 자체 테두리는 끄고 아래 둥근 테두리 하나만 쓴다
 	var border := Panel.new()
@@ -178,7 +186,7 @@ func _frame_icon() -> void:
 	style.bg_color = Color(0, 0, 0, 0)
 	style.border_color = Color.WHITE
 	style.set_border_width_all(maxi(2, int(minf(size.x, size.y) / 22.0)))
-	style.set_corner_radius_all(maxi(6, int(minf(size.x, size.y) * 0.2)))
+	style.set_corner_radius_all(maxi(6, int(minf(size.x, size.y) * ART_RADIUS)))
 	border.add_theme_stylebox_override("panel", style)
 	_stage.add_child(border)
 
@@ -266,6 +274,6 @@ func _frame_style(border: Color) -> StyleBoxFlat:
 	style.bg_color = base_color.darkened(0.05)
 	style.border_color = border
 	style.set_border_width_all(3)
-	style.set_corner_radius_all(14)
+	style.set_corner_radius_all(maxi(8, int(minf(size.x, size.y) * ART_RADIUS)))
 	style.set_content_margin_all(0)
 	return style
