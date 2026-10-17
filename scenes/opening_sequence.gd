@@ -63,7 +63,7 @@ func _on_gui_input(event: InputEvent) -> void:
 # --- Step 1: 중앙 대진표(VS) ----------------------------------------------------
 
 func _build_vs() -> void:
-	var screen: Vector2 = Vector2(1366, 768)
+	var screen: Vector2 = get_viewport_rect().size
 	_vs_root = Control.new()
 	_vs_root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_vs_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -162,9 +162,11 @@ func _step_title() -> void:
 	if _done:
 		return
 	Sfx.play(&"game_start")
+	# 창이 디자인 크기(1366x768)보다 넓어도 띠가 끊기지 않게 실제 화면 폭 전체를 덮는다.
+	var screen: Vector2 = get_viewport_rect().size
 	var ribbon := Panel.new()
-	ribbon.position = Vector2(0, 300)
-	ribbon.size = Vector2(1366, 120)
+	ribbon.position = Vector2(0, screen.y / 2.0 - 84.0)
+	ribbon.size = Vector2(screen.x, 120)
 	ribbon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ribbon.add_theme_stylebox_override("panel", _board._style(Color(0.1, 0.07, 0.02, 0.94), Color("ffd43b"), 5, 0, 30, 0))
 	var title: Label = _board._make_label("레이스 시작!", 60, Color("ffe066"))
@@ -173,13 +175,13 @@ func _step_title() -> void:
 	title.add_theme_constant_override("outline_size", 12)
 	title.add_theme_color_override("font_outline_color", Color("5c4300"))
 	title.position = Vector2(0, 4)
-	title.size = Vector2(1366, 80)
+	title.size = Vector2(screen.x, 80)
 	ribbon.add_child(title)
 	# 이모지는 글꼴에 없어 깃발 글자는 뺀다.
 	var subtitle: Label = _board._make_label("GAME START! - 초증강 엘리아스 마블 개막!", 22, Color("fff3bf"))
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	subtitle.position = Vector2(0, 84)
-	subtitle.size = Vector2(1366, 30)
+	subtitle.size = Vector2(screen.x, 30)
 	ribbon.add_child(subtitle)
 	ribbon.pivot_offset = ribbon.size / 2.0
 	ribbon.scale = Vector2(1.0, 2.6)
@@ -190,7 +192,7 @@ func _step_title() -> void:
 	slam.tween_property(ribbon, "modulate:a", 1.0, 0.1)
 	slam.chain().tween_callback(func() -> void:
 		_board.screen_shake(8.0, 0.25)
-		_board._impact_ring(Vector2(683, 360), Color("ffe066"), 90.0))
+		_board._impact_ring(screen / 2.0, Color("ffe066"), 90.0))
 	slam.chain().tween_interval(STEP_TITLE - 0.5)
 	slam.chain().tween_property(ribbon, "modulate:a", 0.0, 0.25)
 	slam.chain().tween_callback(ribbon.queue_free)

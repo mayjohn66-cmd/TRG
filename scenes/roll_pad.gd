@@ -135,7 +135,7 @@ func set_kind(value: Kind) -> void:
 	_gun.visible = value == Kind.REVOLVER
 	match value:
 		Kind.ROULETTE: _hint_label.text = "원판을 잡고 빙글 돌려 놓으세요"
-		Kind.REVOLVER: _hint_label.text = "방아쇠를 당기세요"
+		Kind.REVOLVER: _hint_label.text = ""  # 발사·정지 두 버튼이 안내를 대신한다
 		_: _hint_label.text = ""
 
 

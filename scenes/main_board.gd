@@ -233,6 +233,8 @@ var _law_badge_labels: Array[Label] = []
 var _law_dashes: Array[Control] = []
 var _roll_button: Button = null
 var _stop_button: Button = null
+var _gun_row: HBoxContainer = null  ## 러시안 룰렛 전용 [발사][정지] 두 버튼 줄
+var _fire_button: Button = null
 var _skip_button: Button = null
 var _new_game_button: Button = null
 var _hint_label: Label = null
@@ -914,7 +916,7 @@ func _build_ui() -> void:
 func _register_layout() -> void:
 	_layout_entries.clear()
 	var left: Array = [_law_panel]
-	var center: Array = [_select_banner, _dir_left, _dir_right, _board_layer, _pawn_layer, _dock, _drop_zone, _aim_layer, _pick_banner, _pick_cancel, _roll_button, _roll_pad, _power_bar, _power_label]
+	var center: Array = [_select_banner, _dir_left, _dir_right, _board_layer, _pawn_layer, _dock, _drop_zone, _aim_layer, _pick_banner, _pick_cancel, _roll_button, _roll_pad, _gun_row, _power_bar, _power_label]
 	var right: Array = [_tool_board, _action_row, _pawn_bar, _emote_row, _menu_button, _debug_box, _log_panel]
 	for index: int in PLAYER_IDS.size():
 		var player_id: int = PLAYER_IDS[index]
@@ -1339,6 +1341,17 @@ func _build_action_bar() -> void:
 	_roll_pad.spin_released.connect(_on_pad_spin_released)
 	_roll_pad.trigger_pulled.connect(_on_pad_trigger_pulled)
 	add_child(_roll_pad)
+	# 러시안 룰렛은 [발사]와 [정지] 두 버튼만 쓴다 (정지 버튼은 룰렛을 쓸 때만 이 줄로 옮겨 온다).
+	_gun_row = HBoxContainer.new()
+	_gun_row.position = Vector2(683.0 - 170.0, 470.0)
+	_gun_row.size = Vector2(340, 60)
+	_gun_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	_gun_row.add_theme_constant_override("separation", 20)
+	_gun_row.visible = false
+	add_child(_gun_row)
+	_fire_button = _make_button("발사", _on_pad_trigger_pulled, 24, Color("c92a2a"), 16)
+	_fire_button.custom_minimum_size = Vector2(150, 58)
+	_gun_row.add_child(_fire_button)
 	var action_row := HFlowContainer.new()
 	_action_row = action_row
 	action_row.position = Vector2(1134, 440)
@@ -3519,11 +3532,14 @@ func _refresh_controls() -> void:
 		# 러시안 룰렛: [방아쇠 당기기]와 [멈추고 N칸 이동 확정]을 한 세트로 상시 노출한다. 1발도 못 당겼으면 멈추기는 비활성(회색)이고,
 		# 누적이 생기면 초록색으로 바뀐다.
 		_roll_button.text = "방아쇠\n당기기"
+		_set_gun_buttons(true)
 		_stop_button.visible = not over
-		_stop_button.text = "멈추고 %d칸 확정" % (tool as ToolRussianRoulette).accumulated
+		_stop_button.text = "정지"
+		_fire_button.disabled = _roll_button.disabled
 		_stop_button.disabled = not can_stop or _tile_pick_active or _is_bot_turn()
 		_stop_button.modulate = Color(0.55, 1.0, 0.62) if can_stop else Color.WHITE
 	else:
+		_set_gun_buttons(false)
 		_roll_button.text = _roll_button_label(tool)
 		_stop_button.visible = can_stop
 		_stop_button.text = "멈추고 이동 확정"
@@ -3540,6 +3556,20 @@ func _refresh_controls() -> void:
 	var tool_index: int = ToolRegistry.ALL_IDS.find(tool.tool_id)
 	if tool_index != -1:
 		_tool_option.select(tool_index)
+
+
+## 러시안 룰렛이면 정지 버튼을 [발사] 옆 큰 버튼으로 옮기고, 다른 도구면 원래 자리(우측 버튼 줄)로 돌려보낸다.
+func _set_gun_buttons(gun: bool) -> void:
+	var wanted_parent: Node = _gun_row if gun else _action_row
+	if _stop_button.get_parent() != wanted_parent:
+		_stop_button.reparent(wanted_parent, false)
+		if gun:
+			wanted_parent.move_child(_stop_button, wanted_parent.get_child_count() - 1)
+		else:
+			wanted_parent.move_child(_stop_button, 0)
+	_stop_button.custom_minimum_size = Vector2(150, 58) if gun else Vector2(150, 30)
+	_stop_button.add_theme_font_size_override("font_size", 24 if gun else 13)
+	_gun_row.visible = gun and _gun_row.visible
 
 
 ## 굴림 버튼에 쓰는 글자: 도구마다 다르다.
@@ -3589,6 +3619,7 @@ func _refresh_roll_pad() -> void:
 	_roll_button.visible = wanted == RollPad.Kind.NONE and roll_phase
 	if wanted != RollPad.Kind.NONE:
 		_roll_pad.visible = roll_phase or _fx_busy or _roll_pad.active
+	_gun_row.visible = wanted == RollPad.Kind.REVOLVER and (roll_phase or _fx_busy or _roll_pad.active)
 	if mode == &"big" or mode == &"charge":
 		_roll_button.text = _roll_button_label(owner_tool)
 	_roll_pad.set_enabled(not _roll_button.disabled)
@@ -5501,17 +5532,12 @@ func _build_draft_overlay(player_id: int, remaining: int) -> void:
 		reroll.focus_mode = Control.FOCUS_NONE
 		slot.add_child(reroll)
 		_draft_reroll_buttons.append(reroll)
-	var footer := HBoxContainer.new()
-	footer.add_theme_constant_override("separation", 12)
-	footer.alignment = BoxContainer.ALIGNMENT_CENTER
-	box.add_child(footer)
-	if net == null:
-		var auto_check := CheckBox.new()
-		auto_check.text = "P2~P4는 무작위 자동 선택"
-		auto_check.button_pressed = _auto_draft_enabled
-		auto_check.toggled.connect(_on_auto_draft_toggled)
-		footer.add_child(auto_check)
-	footer.add_child(_make_button("무작위로 자동 선택" if net != null else "남은 전원 무작위 자동 선택", _on_draft_auto_pressed, 13))
+	if net != null:
+		# 온라인에서만 [무작위로 자동 선택]을 둔다 (혼자 하는 판은 군더더기라 뺐다).
+		var footer := HBoxContainer.new()
+		footer.alignment = BoxContainer.ALIGNMENT_CENTER
+		box.add_child(footer)
+		footer.add_child(_make_button("무작위로 자동 선택", _on_draft_auto_pressed, 13))
 	add_child(_draft_overlay)
 	if _draft_entrance and _fx_on():
 		_draft_entrance = false
