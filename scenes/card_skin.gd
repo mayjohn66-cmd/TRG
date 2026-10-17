@@ -50,9 +50,13 @@ static func panel(parent: Control, node_name: String, rect: Rect2, fill: Color, 
 	return item
 
 
-static func label(parent: Control, node_name: String, text: String, rect: Rect2, px: int, color: Color = INK, centered: bool = false) -> Label:
+static func label(parent: Control, node_name: String, text: String, rect: Rect2, px: int, color: Color = INK, centered: bool = false, wrap: bool = false) -> Label:
 	var item := Label.new()
 	item.name = node_name
+	# Enable wrapping before assigning text, so the first minimum width is bounded.
+	if wrap:
+		item.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		item.clip_text = true
 	item.text = text
 	item.position = rect.position
 	item.size = rect.size
@@ -81,9 +85,9 @@ static func body(card: BaseCard, card_size: Vector2, summary_text: String, categ
 		title_px = roundi(18.0 * k)
 		title_h = 52.0 * k
 	var name_panel: Panel = panel(holder, "NamePanel", Rect2(margin, margin, width, title_h), HEADER, GREEN, maxi(1, roundi(2 * k)), roundi(10 * k))
-	var title: Label = label(name_panel, "CardTitle", card.display_name, Rect2(6 * k, 2 * k, width - 12 * k, title_h - 4 * k), title_px, INK, true)
-	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var title: Label = label(name_panel, "CardTitle", card.display_name, Rect2(6 * k, 2 * k, width - 12 * k, title_h - 4 * k), title_px, INK, true, true)
 	title.max_lines_visible = 2
+	title.add_theme_constant_override("line_spacing", -roundi(2 * k))
 	var art_y: float = margin + title_h + (12.0 if detailed else 4.0) * k
 	var detail_y: float = (260.0 if detailed else 138.0) * k
 	var art_h: float = detail_y - art_y - (12.0 if detailed else 6.0) * k
@@ -94,10 +98,14 @@ static func body(card: BaseCard, card_size: Vector2, summary_text: String, categ
 		picture.name = "CardArt"
 		picture.texture = load(art_path) as Texture2D
 		picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		var inset: float = 2.0 * k
-		picture.position = Vector2.ONE * inset
-		picture.size = art.size - Vector2.ONE * inset * 2.0
+		# Fit the complete illustration: crowns, ears and props must not be cropped.
+		var available: Vector2 = art.size - Vector2.ONE * inset * 2.0
+		var source_size: Vector2 = picture.texture.get_size()
+		var fit_scale: float = minf(available.x / source_size.x, available.y / source_size.y)
+		picture.size = source_size * fit_scale
+		picture.position = (art.size - picture.size) * 0.5
 		picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		# Clip the illustration to a rounded window; don't cover its border.
 		var material := ShaderMaterial.new()
@@ -121,8 +129,9 @@ static func body(card: BaseCard, card_size: Vector2, summary_text: String, categ
 			tag = "NPC 소환"
 		label(detail, "EffectKind", tag, Rect2(padding * 2 + badge_size.x, padding, width - badge_size.x - padding * 3, badge_size.y), roundi(14 * k))
 	var summary_y: float = (36.0 if detailed else 21.0) * k
-	var summary: Label = label(detail, "CardSummary", summary_text, Rect2(padding, summary_y, width - padding * 2, detail.size.y - summary_y - padding), roundi((16.0 if detailed else 11.0) * k))
-	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var summary: Label = label(detail, "CardSummary", summary_text, Rect2(padding, summary_y, width - padding * 2, detail.size.y - summary_y - padding), roundi((16.0 if detailed else 11.0) * k), INK, false, true)
 	summary.max_lines_visible = 3 if detailed else 2
+	if not detailed:
+		summary.add_theme_constant_override("line_spacing", -roundi(3 * k))
 	summary.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 	return holder

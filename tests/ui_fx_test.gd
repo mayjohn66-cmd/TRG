@@ -88,11 +88,19 @@ func _test_card_art_layout() -> void:
 			var summary: Label = body.find_child("CardSummary", true, false)
 			var effect: Control = summary.get_parent()
 			_expect(title.get_line_count() <= 2, "%s title fits two lines, detailed=%s" % [card_id, detailed])
+			_expect(title.get_visible_line_count() >= title.get_line_count(), "%s title shows every line, detailed=%s" % [card_id, detailed])
+			_expect(title.position.x + title.size.x <= (title.get_parent() as Control).size.x + 0.5, "%s title stays within its name panel, detailed=%s" % [card_id, detailed])
 			_expect(summary.get_line_count() <= (3 if detailed else 2), "%s effect fits without truncation, detailed=%s (%d)" % [card_id, detailed, summary.get_line_count()])
+			_expect(summary.get_visible_line_count() >= summary.get_line_count(), "%s effect shows every line, detailed=%s" % [card_id, detailed])
 			_expect(summary.position.y + summary.size.y <= effect.size.y + 0.5, "%s effect stays within its panel, detailed=%s" % [card_id, detailed])
+			_expect(summary.position.x + summary.size.x <= effect.size.x + 0.5, "%s effect stays within its panel width, detailed=%s" % [card_id, detailed])
 			var art: TextureRect = body.find_child("CardArt", true, false)
-			if card_id in [&"ACT_06", &"TRP_03", &"SUM_01"]:
+			if card_id != &"ACT_09":
 				_expect(art != null and art.texture.resource_path == "res://assets/cards/%s.png" % card_id, "%s uses its own reviewed illustration" % card_id)
+				if art != null:
+					_expect(is_equal_approx(art.size.x / art.size.y, 4.0 / 3.0), "%s keeps the entire 4:3 illustration, detailed=%s" % [card_id, detailed])
+					var art_window: Control = art.get_parent()
+					_expect(art.position.x >= 0.0 and art.position.y >= 0.0 and art.position.x + art.size.x <= art_window.size.x and art.position.y + art.size.y <= art_window.size.y, "%s illustration remains inside its frame, detailed=%s" % [card_id, detailed])
 			body.queue_free()
 			await process_frame
 
