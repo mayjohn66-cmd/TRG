@@ -3571,6 +3571,11 @@ func _set_gun_buttons(gun: bool) -> void:
 	_gun_row.visible = gun and _gun_row.visible
 
 
+## 주사위 계열 도구인가 (굴림 소리가 주사위 던지는 소리다).
+func _is_dice_family(tool: BaseJudgmentTool) -> bool:
+	return tool.tool_id == &"D6" or tool.tool_id == &"CHINCHIRO" or tool.tool_id == &"YUT" or String(tool.tool_id).begins_with("DICE_")
+
+
 ## 굴림 버튼에 쓰는 글자: 도구마다 다르다.
 func _roll_button_label(tool: BaseJudgmentTool) -> String:
 	if tool is ToolHwatu:
@@ -3727,7 +3732,7 @@ func _on_roll_pressed() -> void:
 	_stop_charge()
 	if manager.is_game_over or _roll_button.disabled or _ui_busy() or _is_bot_turn():
 		return
-	Sfx.play(&"dice_roll")
+	Sfx.play(&"dice_roll" if _is_dice_family(state.tools[_dock_owner()]) else &"roll_other")
 	if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN:
 		_act(&"proceed")
 	if manager.current_state == TurnManager.State.PHASE_ROLL_WAIT:
