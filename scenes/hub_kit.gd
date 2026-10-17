@@ -333,15 +333,18 @@ static func mode_card(node_name: String, icon_kind: StringName, title_text: Stri
 	button.focus_mode = Control.FOCUS_NONE
 	button.pivot_offset = size / 2.0
 	HubArt.button(button, StringName("mode_" + String(tone)), 124)
+	HubArt.clean_edge(button)
+	button.resized.connect(func() -> void: button.pivot_offset = button.size / 2.0)
 	var disc := Panel.new()
 	disc.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	disc.position = Vector2(22, 18)
+	disc.position = Vector2(22, 21)
 	disc.size = Vector2(82, 82)
 	disc.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	button.add_child(disc)
 	var disc_art: TextureRect = HubArt.icon(&"icon_disc")
 	disc_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	disc.add_child(disc_art)
+	HubArt.clean_edge(disc_art, 1.0)
 	var role: StringName = {&"sword": &"practice", &"key": &"friend", &"dice": &"match"}[icon_kind]
 	var icon: TextureRect = HubArt.icon(role)
 	icon.position = Vector2(12, 12)
@@ -349,17 +352,28 @@ static func mode_card(node_name: String, icon_kind: StringName, title_text: Stri
 	disc.add_child(icon)
 	var title := outlined(title_text, 44, Color.WHITE, dark, 9)
 	title.name = "CardTitle"
-	title.position = Vector2(126, 8)
-	title.size = Vector2(440, 62)
+	title.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	title.offset_left = 126
+	title.offset_right = -96
+	title.offset_top = 16
+	title.offset_bottom = 78
+	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	button.add_child(title)
 	var sub := outlined(sub_text, 19, Color("fffbe6"), dark, 5)
 	sub.name = "CardSub"
-	sub.position = Vector2(128, 72)
-	sub.size = Vector2(450, 28)
+	sub.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	sub.offset_left = 128
+	sub.offset_right = -96
+	sub.offset_top = 80
+	sub.offset_bottom = 108
+	sub.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	button.add_child(sub)
 	var arrow: TextureRect = HubArt.icon(&"next")
-	arrow.position = Vector2(576, 38)
-	arrow.size = Vector2(44, 44)
+	arrow.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	arrow.offset_left = -68
+	arrow.offset_right = -24
+	arrow.offset_top = 40
+	arrow.offset_bottom = 84
 	button.add_child(arrow)
 	button.mouse_entered.connect(func() -> void: _bounce(button, 1.03))
 	button.mouse_exited.connect(func() -> void: _bounce(button, 1.0))
