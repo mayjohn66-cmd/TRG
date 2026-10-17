@@ -222,6 +222,9 @@ class Tile extends Control:
 	var band := PackedVector2Array()
 	var symbol: Symbol
 	var arrow_target: int = -1
+	## 함정이 깔린 발판: 짙은 보라색 테두리와 깜빡이는 보라색 빛 (pulse는 0~1로 main_board가 갱신한다).
+	var trap_on: bool = false
+	var trap_pulse: float = 0.0
 
 	func initialize(tile_index: int) -> void:
 		index = tile_index
@@ -277,9 +280,30 @@ class Tile extends Control:
 				(child as Ring).queue_redraw()
 		queue_redraw()
 
+	func set_trap(on: bool) -> void:
+		if trap_on != on:
+			trap_on = on
+			trap_pulse = 0.0
+			queue_redraw()
+
+	func set_trap_pulse(value: float) -> void:
+		trap_pulse = value
+		queue_redraw()
+
 	func _draw() -> void:
 		if layers.is_empty():
 			return
+		_draw_tile()
+		if trap_on:
+			var closed: PackedVector2Array = outline_points.duplicate()
+			closed.append(closed[0])
+			draw_colored_polygon(layers[layers.size() - 1], Color(0.36, 0.08, 0.62, 0.22 + 0.38 * trap_pulse))
+			draw_polyline(closed, Color(0.27, 0.05, 0.5, 0.7 + 0.3 * trap_pulse), 5.0, true)
+			var inner: PackedVector2Array = layers[1].duplicate()
+			inner.append(inner[0])
+			draw_polyline(inner, Color(0.55, 0.25, 0.85, 0.35 + 0.5 * trap_pulse), 2.5, true)
+
+	func _draw_tile() -> void:
 		var edge: Color = data.edge
 		var fill: Color = data.fill
 		draw_colored_polygon(shadow,Color(0.22,0.35,0.13,0.12))

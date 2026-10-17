@@ -209,6 +209,10 @@ var _tile_views: Dictionary = {}
 var _highlights: Dictionary = {}
 var _pick_marks: Dictionary = {}
 var _tile_marks: Dictionary = {}
+## 함정 카드를 보여 주는 동안은 발판을 보라색으로 칠하지 않는다 (카드 알림이 끝난 뒤에 나타난다).
+var _trap_pending: Dictionary = {}
+var _trap_tiles: Array[int] = []
+var _trap_clock: float = 0.0
 var _pawn_views: Dictionary = {}
 var _npc_views: Dictionary = {}
 var _flash_law_ids: Dictionary = {}
@@ -503,6 +507,7 @@ func seat_anchor_of(player_id: int) -> StringName:
 
 
 func _process(delta: float) -> void:
+	_update_trap_pulse(delta)
 	if manager == null or manager.state == null or state == null:
 		return
 	if not manager.is_game_over:
@@ -650,6 +655,8 @@ func _new_game() -> void:
 	_close_reaction_popup()
 	_fx_generation += 1
 	_stage_warps = 0
+	_trap_pending.clear()
+	_trap_tiles.clear()
 	_fx_busy = false
 	_bot.set_enabled(_bot_active())
 	_stop_charge()
@@ -783,6 +790,15 @@ func _bind_state() -> void:
 	state.npc_vanished.connect(func(npc_id: int, tile: int) -> void:
 		_announce("중립 기물", "NPC가 사냥을 마치고 사라졌습니다", "%d번 타일 - 중립 기물은 한 번 잡으면 사라집니다" % tile, Color("fa5252"), null, 1.3))
 	state.attachment_placed.connect(func(tile: int, id: String, owner_id: int) -> void:
+		if id.begins_with("TRP") and _fx_on():
+			# 카드를 먼저 보여 준 뒤 발판이 짙은 보라색으로 깜빡이며 나타난다.
+			_trap_pending[tile] = true
+			_fx_when_announced(func() -> void:
+				_trap_pending.erase(tile)
+				_refresh_tiles()
+				_tile_glow(tile)
+				_impact_ring(_tile_center(tile) + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO), Color("7b2cbf"), 26.0)
+				Sfx.play(&"law"))
 		_log_line("P%d가 %d번 타일에 [%s]을(를) 설치했습니다" % [owner_id, tile, "뒷면 카드" if id.begins_with("TRP") else _attachment_name(id)], Color("adb5bd"))
 		_refresh_tiles())
 	state.card_drawn.connect(func(player_id: int, card_id: StringName) -> void: _log_line("[카드] P%d 생떼 카드 획득: %s" % [player_id, _card_name(card_id)], Color("ffa94d")))
@@ -1861,17 +1877,24 @@ func _refresh_tiles() -> void:
 		if not kind_label.is_empty():
 			tips.append(kind_label)
 		var color: Color = Color("ff6b6b")
+		var has_trap: bool = false
 		for attachment: TileAttachment in state.board.get_tile(index).attachments:
 			match attachment.attachment_id:
 				"TRP_01", "TRP_02", "TRP_03", "TRP_05":
-					parts.append(_trap_badge(attachment))
+					has_trap = true
 					tips.append(_trap_tooltip(attachment))
 				"TRP_04":
-					parts.append("섬")
-					color = Color("74c0fc")
+					has_trap = true
+					tips.append("[무인도] 코너 감옥화 (짝수 눈금에 탈출)")
 				"HOTEL":
 					parts.append("호텔")
 					color = PLAYER_COLORS.get(attachment.owner_id, Color("ffd43b"))
+		var shown_trap: bool = has_trap and not _trap_pending.has(index)
+		(_tile_views[index] as BoardSkin.Tile).set_trap(shown_trap)
+		if shown_trap and not _trap_tiles.has(index):
+			_trap_tiles.append(index)
+		elif not shown_trap:
+			_trap_tiles.erase(index)
 		(_tile_views[index] as Control).tooltip_text = "\n".join(tips)
 		var mark: Label = _tile_marks[index]
 		mark.text = " ".join(parts)
@@ -1881,12 +1904,16 @@ func _refresh_tiles() -> void:
 
 ## 타일 위 함정 배지. AI 모드(타일 은신): P1이 설치한 함정만 이름이 보이고 봇이 설치한 함정은 뒷면 [? 함정]으로만 보인다.
 ## 수동 모드는 예전처럼 모든 은신 함정이 "?"로 보인다.
-func _trap_badge(attachment: TileAttachment) -> String:
-	if not ai_mode:
-		return "?"
-	if attachment.owner_id == local_player_id:
-		return {"TRP_01": "거울", "TRP_02": "나락", "TRP_03": "지뢰", "TRP_05": "도미노"}.get(attachment.attachment_id, "함정")
-	return "?함정"
+## 함정이 깔린 발판의 보라색 깜빡임.
+func _update_trap_pulse(delta: float) -> void:
+	if _trap_tiles.is_empty():
+		return
+	_trap_clock += delta
+	var pulse: float = 0.5 + 0.5 * sin(_trap_clock * 5.0)
+	for index: int in _trap_tiles:
+		var tile: BoardSkin.Tile = _tile_views.get(index)
+		if tile != null:
+			tile.set_trap_pulse(pulse)
 
 
 func _trap_tooltip(attachment: TileAttachment) -> String:

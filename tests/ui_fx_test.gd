@@ -71,6 +71,7 @@ func _run() -> void:
 	await _test_tool_cards_fit()
 	await _test_duel_flow()
 	await _test_stage_warp()
+	await _test_trap_tile_marking()
 	if _failures.is_empty():
 		print("UI_FX_OK")
 		quit(0)
@@ -1083,4 +1084,30 @@ func _test_stage_warp() -> void:
 		_expect(view.position.distance_to(final_pos) < 6.0, "%s: 목적지에 착지한다" % case_data[3])
 		_board._fx_until_msec = 0
 		_board._beat_until_msec = 0
+	_board.instant_roll_for_test = true
+
+
+## 함정이 깔린 발판은 카드 알림이 끝난 뒤 짙은 보라색 테두리로 깜빡인다.
+func _test_trap_tile_marking() -> void:
+	var state: GameState = _board.manager.state
+	_board.instant_roll_for_test = false
+	_board._announcer.cancel()
+	_board._refresh_all()
+	var tile: BoardSkin.Tile = _board._tile_views[14]
+	_expect(not tile.trap_on, "함정이 없으면 발판은 평소 모습이다")
+	state.place_attachment(14, TrapPit.new(2))
+	await process_frame
+	await process_frame
+	_expect(tile.trap_on and _board._trap_tiles.has(14), "함정이 깔리면 발판이 보라색 함정 표시로 바뀐다")
+	var seen_low: bool = false
+	var seen_high: bool = false
+	for i: int in 40:
+		await process_frame
+		seen_low = seen_low or tile.trap_pulse < 0.3
+		seen_high = seen_high or tile.trap_pulse > 0.7
+	_expect(seen_low and seen_high, "보라색이 깜빡인다 (pulse가 오르내린다)")
+	_expect((tile.tooltip_text as String).contains("함정"), "마우스를 올리면 함정 설명이 나온다")
+	state.board.get_tile(14).attachments.clear()
+	_board._refresh_tiles()
+	_expect(not tile.trap_on and not _board._trap_tiles.has(14), "함정이 사라지면 표시도 사라진다")
 	_board.instant_roll_for_test = true
