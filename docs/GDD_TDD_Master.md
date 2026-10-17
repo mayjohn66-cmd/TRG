@@ -396,6 +396,14 @@
     > 역주행으로 매 턴 3칸씩 순찰. 마주치는 모든 말을 집어삼켜 12번으로
     > 강제 연행. **기물을 잡는 즉시 그 자리에서 멈추고 사라진다.**
 
+### **4.4-b. 시작 허브·대기방 UI (원본 로비 느낌, v3.3)**
+
+원작(트릭컬 리바이브)의 마을 메인 화면 구성을 참고하되, **원작 그림·아이콘은 쓰지 않고 모든 부품을 코드로 직접 그린다** (`scenes/hub_kit.gd`의 `HubKit`). 팬게임 가이드라인상 원작 에셋을 저장소에 넣지 않기 위한 방침이다. 캐릭터 그림은 `content_trickcal/avatars/<id>/`에 들어오면 자동으로 대체된다 (없으면 색 원 + 웃는 얼굴).
+
+- **시작 허브 (모드 선택):** 왼쪽 위 초록 프로필 띠(둥근 아바타 + 닉네임 + `교주님`, 누르면 아바타 설정), 오른쪽 위 말풍선 팁 띠(게임 팁 + `>>` 다음 팁)와 둥근 `규칙`·`설정` 버튼, 가운데 로고와 숨 쉬는 캐릭터 3명(나 + 컴퓨터 2), 위에 늘어진 축제 등불과 따뜻한 햇살(`FestivalDecor`). 아래는 원본처럼 **둥근 초록 메뉴 버튼 줄**(훈련 / 랜덤 결투 / 비밀 결투 / 아바타, 위로 솟은 동그란 아이콘 + 아래 알약 + 글자, 올리면 통통 커지고 누르면 눌림)과 오른쪽 아래 큰 노란 **`바로 시작`**(원본의 `모험` 자리: 마지막으로 고른 AI 인원과 곧바로 대결, 기본 3명). 노드 이름은 `TrainingCard`·`QuickCard`·`SecretCard`·`AvatarButton`·`QuickStartAi`·`ProfileCapsule`·`TipBar`·`HubRules`·`HubSettings`·`RenameButton`. 허브에서는 청록 위·아래 띠를 숨기지만 띠의 버튼(뒤로·규칙·설정)은 살아 있고, 이름 바꾸기는 프로필 아래 작은 버튼이 맡는다.
+- **대기방(방 코드 / 랜덤 매칭 / 참가자 화면):** 좌석을 한 줄 행이 아니라 **캐릭터 자리 카드 4장**(`HubKit.seat_card`: 좌석 색 테두리, P번호, 방장 왕관, 큰 동그란 캐릭터, 이름표 `SeatTitle<좌석>`, 상태 줄, 아래 `AI 봇으로 채우기`/`내보내기`/`비우기` 버튼)으로 나란히 보여 준다. 빈 자리는 흐리고 모래시계가 깜빡이며, 입장하면 카드가 채워진다. 위쪽 등불 장식은 시작 메뉴와 같다.
+- **테스트:** `ui_menu_test`가 허브 요소·팁 넘기기·둥근 버튼 팝업·`바로 시작`을, `ui_lobby_test`가 카드 4장 명단을 확인한다.
+
 ### **4.5. 화면 구성과 조작 (UI/UX, 1366x768)**
 
 - **화면 비율 대응:** 디자인 기준은 1366x768이고 스트레치는 `expand`라 창이 더 넓거나 높아도 UI가 잘리지 않고 남는 공간을 나눠 쓴다. HUD는 세 묶음으로 나뉜다: 왼쪽(프로필 2개·법전·모드/새 게임), 가운데(보드·리본·카드 독·알림), 오른쪽(프로필 2개·판정 도구 카드·굴리기·기물 독·상단 버튼·서랍). 넓은 창에서는 왼쪽 묶음은 왼쪽 끝, 오른쪽 묶음은 오른쪽 끝에 붙고 보드는 가운데에 서며, 높은 창에서는 전부 세로 가운데로 간다. 가장자리에서 12px의 안전 여백을 두어 모서리가 둥근 폰·베젤에서도 잘려 보이지 않는다.
@@ -493,7 +501,7 @@ res://
 ├─ content_trickcal/avatars/               # [2차 창작 리소스 계층] 아바타 에셋 규격 (실제 그림은 후속)
 ├─ assets/  fonts/(기본 UI 글꼴 ONE 모바일 POP체 `game_ui_font.tres` + 대체 NanumGothic, 출처 고지 `ONE-Mobile-POP-NOTICE.md`), ui/trickcal/ (이미지 스킨)
 ├─ scenes/                                 # 뷰(View)
-│  ├─ main_board (HUD·보드·시점·좌석·연출) / duel_arena (가위바위보 결투장) / roll_pad / roll_presenter / event_announcer / mobile_support / ui_skin
+│  ├─ hub_kit (허브·대기방 부품) / main_board (HUD·보드·시점·좌석·연출) / duel_arena (가위바위보 결투장) / roll_pad / roll_presenter / event_announcer / mobile_support / ui_skin
 │  ├─ start_menu / lobby / lobby_theme       # 민트 테마 시작·로비
 │  └─ avatar_slot / avatar_catalog
 ├─ tools/generate_ui_skin.py

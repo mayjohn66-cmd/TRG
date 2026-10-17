@@ -175,7 +175,7 @@ func _run() -> void:
 	service.model.setup_host("방장")
 	service.model.guest_joined(2, "테스터")
 	await process_frame
-	_expect(_lobby._guest_connected and _lobby._guest_box.get_child_count() >= 4, "입장하면 좌석 명단이 보인다")
+	_expect(_lobby._guest_connected and _lobby._guest_box.find_child("SeatTitle4", true, false) != null and _lobby._guest_box.find_child("SeatTitle2", true, false).text.contains("테스터"), "입장하면 좌석 카드 4장 명단이 보인다")
 	service.left_room.emit("방장과의 연결이 끊어졌습니다.")
 	await process_frame
 	_expect(_lobby.mode == Lobby.Mode.CHOOSE, "연결이 끊기면 선택 화면으로 돌아간다")

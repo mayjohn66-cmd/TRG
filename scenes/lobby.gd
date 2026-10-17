@@ -23,7 +23,7 @@ var _panel_box: VBoxContainer = null
 var _top: Dictionary = {}
 var _bottom: Dictionary = {}
 var _status: Label = null
-var _seat_box: VBoxContainer = null
+var _seat_box: BoxContainer = null
 var _start_button: Button = null
 var _guest_box: VBoxContainer = null
 var _room_label: Label = null
@@ -62,6 +62,7 @@ func _ready() -> void:
 	quick.failed.connect(_on_quick_failed)
 	quick.state_changed.connect(func(_state: int) -> void: _refresh_quick())
 	LobbyTheme.add_background(self)
+	add_child(HubKit.FestivalDecor.new())
 	_top = LobbyTheme.add_top_bar(self, "비밀 결투", _on_back_pressed, "규칙", func() -> void: LobbyTheme.show_rules(self))
 	_bottom = LobbyTheme.add_bottom_bar(self, "%s 교주님" % GameSession.display_nickname(), "설정", func() -> void: LobbyTheme.show_settings(self))
 	var scroll := ScrollContainer.new()
@@ -162,8 +163,7 @@ func start_quick_match() -> void:
 	_quick_count.name = "QuickCountdown"
 	_quick_count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_panel_box.add_child(_quick_count)
-	_seat_box = VBoxContainer.new()
-	_seat_box.add_theme_constant_override("separation", 8)
+	_seat_box = _new_seat_box()
 	_panel_box.add_child(_seat_box)
 	_status = _label("", 14, Color("c47f00"))
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -206,21 +206,11 @@ func _rebuild_quick_rows() -> void:
 		_seat_box.remove_child(child)
 		child.queue_free()
 	for seat: int in range(1, LobbyModel.SEAT_COUNT + 1):
-		var row := PanelContainer.new()
-		row.add_theme_stylebox_override("panel", _pill_style(seat))
-		var line := HBoxContainer.new()
-		line.add_theme_constant_override("separation", 10)
-		row.add_child(line)
-		line.add_child(_badge(seat))
-		line.add_child(_avatar_thumb(seat))
 		var seat_state: LobbyModel.SeatState = service.model.state_of(seat)
-		var text: String = _seat_title(seat, seat_state)
+		var title: String = _seat_title(seat, seat_state)
 		if seat_state == LobbyModel.SeatState.OPEN or seat_state == LobbyModel.SeatState.INVITED:
-			text = "대기 중..."
-		if service.in_room() and seat == service.my_seat():
-			text += "  (나)"
-		line.add_child(_label(text, 17, Color("1b4d3e")))
-		_seat_box.add_child(row)
+			title = "대기 중..."
+		_seat_box.add_child(_make_seat_card(seat, title, service.in_room() and seat == service.my_seat())["root"])
 
 
 func _process(delta: float) -> void:
@@ -281,8 +271,7 @@ func start_hosting() -> void:
 	help.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	help.custom_minimum_size = Vector2(700, 0)
 	_panel_box.add_child(help)
-	_seat_box = VBoxContainer.new()
-	_seat_box.add_theme_constant_override("separation", 8)
+	_seat_box = _new_seat_box()
 	_panel_box.add_child(_seat_box)
 	_status = _label("", 14, Color("c47f00"))
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -366,32 +355,47 @@ func _start_label() -> String:
 
 
 func _make_host_row(seat: int) -> Control:
-	var row := PanelContainer.new()
-	row.add_theme_stylebox_override("panel", _pill_style(seat))
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 6)
-	row.add_child(column)
-	var head := HBoxContainer.new()
-	head.add_theme_constant_override("separation", 10)
-	column.add_child(head)
-	head.add_child(_badge(seat))
-	head.add_child(_avatar_thumb(seat))
 	var state: LobbyModel.SeatState = service.model.state_of(seat)
-	var title := _label(_seat_title(seat, state), 17, Color("1b4d3e"))
-	title.name = "SeatTitle%d" % seat
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	head.add_child(title)
+	var card: Dictionary = _make_seat_card(seat, _seat_title(seat, state), seat == service.my_seat())
+	var actions: VBoxContainer = card["actions"]
 	match state:
 		LobbyModel.SeatState.OPEN, LobbyModel.SeatState.INVITED:
 			var fill := _button("AI 봇으로 채우기", service.set_bot.bind(seat, true), 14, Color("495a85"))
 			fill.name = "FillBot%d" % seat
-			head.add_child(fill)
+			actions.add_child(fill)
 		LobbyModel.SeatState.HUMAN:
 			if seat != LobbyModel.HOST_SEAT:
-				head.add_child(_button("내보내기", service.kick.bind(seat), 13, Color("7a2a2a")))
+				actions.add_child(_button("내보내기", service.kick.bind(seat), 13, Color("7a2a2a")))
 		LobbyModel.SeatState.BOT:
-			head.add_child(_button("비우기", service.set_bot.bind(seat, false), 13, Color("495a85")))
-	return row
+			actions.add_child(_button("비우기", service.set_bot.bind(seat, false), 13, Color("495a85")))
+	return card["root"]
+
+
+## 파티 편성 칸처럼 생긴 좌석 카드 한 장 (원본의 대기 화면 느낌). 이름표 라벨의 이름은 SeatTitle<좌석>이고 글은 _seat_title()이다.
+func _make_seat_card(seat: int, title_text: String, is_me: bool) -> Dictionary:
+	var state: LobbyModel.SeatState = service.model.state_of(seat)
+	var empty: bool = state == LobbyModel.SeatState.OPEN or state == LobbyModel.SeatState.INVITED
+	var avatar_id: StringName = &"default"
+	if state == LobbyModel.SeatState.BOT:
+		avatar_id = AvatarCatalog.bot_avatar(seat)
+	elif service.model.avatar_of(seat) != "":
+		avatar_id = AvatarCatalog.sanitize(service.model.avatar_of(seat))
+	var card: Dictionary = HubKit.seat_card(seat, SEAT_COLORS[seat - 1], empty, avatar_id)
+	var title: Label = card["name"]
+	title.name = "SeatTitle%d" % seat
+	title.text = title_text
+	title.add_theme_font_size_override("font_size", 15)
+	var state_label: Label = card["state"]
+	state_label.text = "나" if is_me else ("AI" if state == LobbyModel.SeatState.BOT else ("준비 완료" if state == LobbyModel.SeatState.HUMAN else ""))
+	(card["crown"] as Control).visible = seat == LobbyModel.HOST_SEAT and state == LobbyModel.SeatState.HUMAN
+	return card
+
+
+func _new_seat_box() -> HBoxContainer:
+	var box := HBoxContainer.new()
+	box.add_theme_constant_override("separation", 12)
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	return box
 
 
 func _seat_title(seat: int, state: LobbyModel.SeatState) -> String:
@@ -414,20 +418,11 @@ func _rebuild_guest() -> void:
 	_join_button = null
 	if _guest_connected:
 		_guest_box.add_child(_label("입장 완료! 방장이 게임을 시작하기를 기다리는 중...", 18, Color("2b8a3e")))
+		var cards := _new_seat_box()
+		_guest_box.add_child(cards)
 		for seat: int in range(1, LobbyModel.SEAT_COUNT + 1):
-			var row := PanelContainer.new()
-			row.add_theme_stylebox_override("panel", _pill_style(seat))
-			var line := HBoxContainer.new()
-			line.add_theme_constant_override("separation", 10)
-			row.add_child(line)
-			line.add_child(_badge(seat))
-			line.add_child(_avatar_thumb(seat))
-			var state: LobbyModel.SeatState = service.model.state_of(seat)
-			var text: String = _seat_title(seat, state)
-			if seat == service.my_seat():
-				text += "  (나)"
-			line.add_child(_label(text, 17, Color("1b4d3e")))
-			_guest_box.add_child(row)
+			var seat_state: LobbyModel.SeatState = service.model.state_of(seat)
+			cards.add_child(_make_seat_card(seat, _seat_title(seat, seat_state), seat == service.my_seat())["root"])
 		return
 	var prompt := _label("방 코드", 26, LobbyTheme.TEAL)
 	prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

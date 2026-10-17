@@ -20,6 +20,8 @@ func _process(_delta: float) -> bool:
 
 
 func _run() -> void:
+	GameSession.avatar_id = AvatarCatalog.DEFAULT_ID  # 이전 실행이 저장한 아바타가 남아 있어도 같은 조건에서 시작한다
+	GameSession.save_settings()
 	var menu: StartMenu = (load("res://scenes/start_menu.tscn") as PackedScene).instantiate()
 	menu.change_scene_enabled = false
 	root.add_child(menu)
@@ -37,6 +39,24 @@ func _run() -> void:
 		titles.append((card.find_child("CardTitle", true, false) as Label).text)
 		_expect(card.custom_minimum_size.y >= 150, "모드 카드는 큼직하다")
 	_expect(str(titles) == str(["훈련", "비밀 결투", "랜덤 결투"]), "모드 카드 세 장: %s" % str(titles))
+	# 마을 허브(원본 로비 느낌): 프로필 띠 · 팁 띠 · 둥근 규칙/설정 버튼 · 큰 [바로 시작] · 캐릭터들
+	for node_name: String in ["ProfileCapsule", "TipBar", "HubRules", "HubSettings", "QuickStartAi", "RenameButton"]:
+		_expect(menu.find_child(node_name, true, false) != null, "허브 요소: %s" % node_name)
+	_expect((menu.find_child("ProfileName", true, false) as Label).text == "에르핀", "프로필 띠에 내 이름")
+	_expect(not (menu._top["bar"] as Control).visible and not (menu._bottom["bar"] as Control).visible, "허브에서는 청록 띠를 숨긴다")
+	var tip_label: Label = menu.find_child("TipText", true, false)
+	var first_tip: String = tip_label.text
+	(menu.find_child("TipNext", true, false) as Button).pressed.emit()
+	_expect(tip_label.text != first_tip and GameTips.TIPS.has(tip_label.text), "팁 띠의 [>>]로 다음 팁")
+	_expect(menu._hub_start_label.text == "AI 3명과 대결", "큰 시작 버튼 문구")
+	menu.find_child("HubSettings", true, false).pressed.emit()
+	_expect(menu.find_child("Popup", true, false) != null, "둥근 설정 버튼이 설정 팝업을 연다")
+	menu.find_child("Popup", true, false).free()
+	menu.find_child("HubRules", true, false).pressed.emit()
+	_expect(menu.find_child("Popup", true, false) != null, "둥근 규칙 버튼이 규칙 팝업을 연다")
+	menu.find_child("Popup", true, false).free()
+	menu.find_child("QuickStartAi", true, false).pressed.emit()
+	_expect(GameSession.mode == GameSession.MODE_AI and GameSession.ai_opponents == 3 and not GameSession.net_active, "[바로 시작]은 AI 3명과 바로 대결")
 	_expect(menu._top["bar"] != null and menu._bottom["bar"] != null and (menu._top["right"] as Button).text == "규칙" and (menu._bottom["center"] as Button).text == "설정", "위·아래 청록 띠: 규칙 / 설정")
 	menu._back_button.pressed.emit()
 	_expect(menu.step == 1 and menu._name_edit.text.strip_edges() == "에르핀", "뒤로가기로 이름 화면에 돌아오면 입력창에 남아 있다")
