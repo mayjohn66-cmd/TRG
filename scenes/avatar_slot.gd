@@ -41,6 +41,9 @@ var _portrait: TextureRect = null
 var _seat_label: Label = null
 var _caption: Label = null
 var _has_art: bool = false
+var _sprite_is_emotion: bool = false
+## 감정 반응 때 애니메이션을 보여 줄지.
+var emotion_art: bool = true
 var _tween: Tween = null
 var _reset_serial: int = 0
 
@@ -101,12 +104,15 @@ func setup(seat_number: int, color: Color, slot_size: Vector2) -> void:
 
 
 ## 캐릭터를 바꾼다. 에셋이 있으면 true, 없으면 자리표시자를 보여 주고 false.
+## 평소에는 작은 얼굴 아이콘(icon.webp)을 보여 준다. 큰 자리(static_only/hq_idle)만 512px 상반신 정지 그림(portrait.png)을 쓰고,
+## 감정 반응 동안에만 그 감정의 애니메이션(emotion_<감정>.tres)을 불러와 보여 준 뒤 메모리에서 내린다.
 func set_character(id: StringName) -> bool:
 	character_id = id
 	if catalog_tint:
 		base_color = AvatarCatalog.color_of(id)
 		add_theme_stylebox_override("panel", _frame_style(base_color.lightened(0.55)))
 	_has_art = false
+	_sprite_is_emotion = false
 	if _sprite != null:
 		_sprite.queue_free()
 		_sprite = null
@@ -115,37 +121,65 @@ func set_character(id: StringName) -> bool:
 		_portrait = null
 	var frames_path: String = character_path(id) + "/frames.tres"
 	var portrait_path: String = character_path(id) + "/portrait.png"
-	if prefer_icon and has_icon(id):
-		var icon: Texture2D = load(icon_path(id)) as Texture2D
-		if icon != null:
-			use_portrait(icon)
-	elif static_only and ResourceLoader.exists(portrait_path):
+	if (static_only or hq_idle) and ResourceLoader.exists(portrait_path):
 		var still: Texture2D = load(portrait_path) as Texture2D
 		if still != null:
 			use_portrait(still)
+	elif has_icon(id):
+		var icon: Texture2D = load(icon_path(id)) as Texture2D
+		if icon != null:
+			use_portrait(icon, true)
 	elif ResourceLoader.exists(frames_path):
 		var frames: SpriteFrames = load(frames_path) as SpriteFrames
 		if frames != null:
 			use_frames(frames)
-		if hq_idle and _sprite != null and ResourceLoader.exists(portrait_path):
-			var hq: Texture2D = load(portrait_path) as Texture2D
-			if hq != null:
-				use_portrait(hq)
 	elif ResourceLoader.exists(portrait_path):
 		var texture: Texture2D = load(portrait_path) as Texture2D
 		if texture != null:
 			use_portrait(texture)
 	_seat_label.text = placeholder_text if placeholder_text != "" else "P%d" % seat
 	_seat_label.visible = not _has_art
-	_sync_hq()
+	_sync_emotion_art()
 	return _has_art
 
 
-## hq_idle 모드: 가만히 있을 때는 고해상도 정지 그림, 감정 반응 중에는 애니메이션 프레임을 보여 준다.
-func _sync_hq() -> void:
-	if hq_idle and _portrait != null and _sprite != null:
-		_portrait.visible = emotion == Emotion.IDLE
-		_sprite.visible = emotion != Emotion.IDLE
+## 감정 애니메이션은 반응하는 동안에만 메모리에 올린다 (캐릭터당 감정 하나가 약 3MB).
+func _sync_emotion_art() -> void:
+	if _sprite != null and not _sprite_is_emotion:
+		return  # frames.tres로 직접 넣은 스프라이트 시트는 그대로 둔다
+	if emotion == Emotion.IDLE or not emotion_art or _portrait == null:
+		_drop_emotion_art()
+		return
+	var path: String = "%s/emotion_%s.tres" % [character_path(character_id), String(ANIMATION_NAMES.get(emotion, &"idle"))]
+	if not ResourceLoader.exists(path):
+		_drop_emotion_art()
+		return
+	var frames: SpriteFrames = load(path) as SpriteFrames
+	if frames == null:
+		_drop_emotion_art()
+		return
+	if _sprite != null:
+		_sprite.queue_free()
+	_sprite = AnimatedSprite2D.new()
+	_sprite.sprite_frames = frames
+	_sprite.material = _round_material()
+	_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	_stage.add_child(_sprite)
+	_sprite_is_emotion = true
+	_fit_sprite()
+	_portrait.visible = false
+	_play_animation(emotion)
+
+
+func _drop_emotion_art() -> void:
+	if _sprite_is_emotion and _sprite != null:
+		_sprite.stop()
+		_sprite.sprite_frames = null
+		_sprite.queue_free()
+		_sprite = null
+	_sprite_is_emotion = false
+	if _portrait != null:
+		_portrait.visible = true
 
 
 ## 스프라이트 시트(SpriteFrames)로 표시한다. 애니메이션 이름은 ANIMATION_NAMES (없는 감정은 idle로 대신).
@@ -164,7 +198,7 @@ func use_frames(frames: SpriteFrames) -> void:
 
 
 ## 정지 이미지 한 장으로 표시한다 (감정은 튕김·떨림 연출로만 보인다).
-func use_portrait(texture: Texture2D) -> void:
+func use_portrait(texture: Texture2D, as_icon: bool = false) -> void:
 	if _portrait != null:
 		_portrait.queue_free()
 	_portrait = TextureRect.new()
@@ -177,7 +211,7 @@ func use_portrait(texture: Texture2D) -> void:
 	_portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_stage.add_child(_portrait)
 	_stage.move_child(_portrait, 0)
-	if prefer_icon and icon_border:
+	if as_icon and icon_border:
 		_frame_icon()
 	_has_art = true
 	_seat_label.visible = false
@@ -218,7 +252,7 @@ func has_art() -> bool:
 ## 감정을 보여 준다. seconds 뒤에 IDLE로 돌아간다 (0이면 그대로 둔다).
 func react(new_emotion: Emotion, seconds: float = 1.4) -> void:
 	emotion = new_emotion
-	_sync_hq()
+	_sync_emotion_art()
 	_reset_serial += 1
 	var serial: int = _reset_serial
 	_play_animation(new_emotion)

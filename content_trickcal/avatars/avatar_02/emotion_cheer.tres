@@ -1,0 +1,22 @@
+[gd_resource type="SpriteFrames" load_steps=13 format=3]
+
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_02/frames/cheer_0.webp" id="1_cheer"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_02/frames/cheer_1.webp" id="2_cheer"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_02/frames/cheer_2.webp" id="3_cheer"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_02/frames/cheer_3.webp" id="4_cheer"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_02/frames/cheer_4.webp" id="5_cheer"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_02/frames/cheer_5.webp" id="6_cheer"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_02/frames/cheer_6.webp" id="7_cheer"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_02/frames/cheer_7.webp" id="8_cheer"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_02/frames/cheer_8.webp" id="9_cheer"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_02/frames/cheer_9.webp" id="10_cheer"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_02/frames/cheer_10.webp" id="11_cheer"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_02/frames/cheer_11.webp" id="12_cheer"]
+
+[resource]
+animations = [{
+"frames": [{"duration": 1.0, "texture": ExtResource("1_cheer")}, {"duration": 1.0, "texture": ExtResource("2_cheer")}, {"duration": 1.0, "texture": ExtResource("3_cheer")}, {"duration": 1.0, "texture": ExtResource("4_cheer")}, {"duration": 1.0, "texture": ExtResource("5_cheer")}, {"duration": 1.0, "texture": ExtResource("6_cheer")}, {"duration": 1.0, "texture": ExtResource("7_cheer")}, {"duration": 1.0, "texture": ExtResource("8_cheer")}, {"duration": 1.0, "texture": ExtResource("9_cheer")}, {"duration": 1.0, "texture": ExtResource("10_cheer")}, {"duration": 1.0, "texture": ExtResource("11_cheer")}, {"duration": 1.0, "texture": ExtResource("12_cheer")}],
+"loop": true,
+"name": &"cheer",
+"speed": 10.0
+}]

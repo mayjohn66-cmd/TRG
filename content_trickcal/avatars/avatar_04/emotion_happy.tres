@@ -1,0 +1,22 @@
+[gd_resource type="SpriteFrames" load_steps=13 format=3]
+
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_04/frames/happy_0.webp" id="1_happy"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_04/frames/happy_1.webp" id="2_happy"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_04/frames/happy_2.webp" id="3_happy"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_04/frames/happy_3.webp" id="4_happy"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_04/frames/happy_4.webp" id="5_happy"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_04/frames/happy_5.webp" id="6_happy"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_04/frames/happy_6.webp" id="7_happy"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_04/frames/happy_7.webp" id="8_happy"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_04/frames/happy_8.webp" id="9_happy"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_04/frames/happy_9.webp" id="10_happy"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_04/frames/happy_10.webp" id="11_happy"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_04/frames/happy_11.webp" id="12_happy"]
+
+[resource]
+animations = [{
+"frames": [{"duration": 1.0, "texture": ExtResource("1_happy")}, {"duration": 1.0, "texture": ExtResource("2_happy")}, {"duration": 1.0, "texture": ExtResource("3_happy")}, {"duration": 1.0, "texture": ExtResource("4_happy")}, {"duration": 1.0, "texture": ExtResource("5_happy")}, {"duration": 1.0, "texture": ExtResource("6_happy")}, {"duration": 1.0, "texture": ExtResource("7_happy")}, {"duration": 1.0, "texture": ExtResource("8_happy")}, {"duration": 1.0, "texture": ExtResource("9_happy")}, {"duration": 1.0, "texture": ExtResource("10_happy")}, {"duration": 1.0, "texture": ExtResource("11_happy")}, {"duration": 1.0, "texture": ExtResource("12_happy")}],
+"loop": true,
+"name": &"happy",
+"speed": 10.0
+}]

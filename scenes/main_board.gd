@@ -980,6 +980,7 @@ func _build_profiles() -> void:
 
 		# 아바타 칸: 사도 Spine/스프라이트 시트가 들어갈 자리 (에셋이 없으면 좌석 글자 + 감정 이름)
 		var avatar := AvatarSlot.new()
+		avatar.icon_border = false  # 게임 화면은 좌석 색 테두리를 쓴다
 		avatar.setup(player_id, color, ME_AVATAR_SIZE if big else AVATAR_SIZE)
 		avatar.size_flags_vertical = Control.SIZE_SHRINK_CENTER  # 칸이 카드 높이만큼 길쭉하게 늘어나지 않게 정사각형으로 둔다
 		row.add_child(avatar)
