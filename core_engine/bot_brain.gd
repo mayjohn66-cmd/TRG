@@ -25,7 +25,7 @@ const HIGH_ROLL: int = 5
 static func choose_pawn(state: GameState, player_id: int, dice_value: int) -> int:
 	var best_id: int = -1
 	var best_score: float = -INF
-	for pawn: PlayerPawn in state.selectable_pawns(player_id):
+	for pawn: PlayerPawn in state.selectable_pawns(player_id, dice_value):
 		var score: float = score_move(state, pawn, dice_value)
 		if score > best_score:
 			best_score = score
@@ -42,18 +42,18 @@ static func score_move(state: GameState, pawn: PlayerPawn, dice_value: int) -> f
 		return -100.0
 	var destination: int = path.back()
 	var score: float = 0.0
-	if destination == GameEnums.GOAL_TILE:
+	if destination == GameEnums.GOAL_TILE and pawn.can_finish(state):
 		score += SCORE_GOAL
 	elif has_capturable_enemy(state, pawn, destination):
 		score += SCORE_CAPTURE
-	if destination != GameEnums.GOAL_TILE:
+	if destination != GameEnums.GOAL_TILE or not pawn.can_finish(state):
 		var tile: TileNode = state.board.get_tile(destination)
 		if STOP_SPOT_TILES.has(destination) or tile.tile_type == TileNode.TileType.BAKERY:
 			score += SCORE_STOP_SPOT
 	if not pawn.has_left_start or is_front_most(state, pawn):
 		score += SCORE_ADVANCE
 	var before: int = state.pawn_progress_distance(pawn)
-	var after: int = state.board.distance_to_goal(destination, true)
+	var after: int = state.board.distance_to_goal(destination, true) + (0 if pawn.can_finish(state) else GameEnums.TILE_COUNT)
 	score += float(before - after) * 0.5
 	if pawn.is_imprisoned and absi(dice_value) % 2 == 1:
 		score -= 30.0

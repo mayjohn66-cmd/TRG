@@ -294,7 +294,7 @@ func _check_select_banner(manager: TurnManager, options: Array[Button]) -> void:
 		var card: Button = _board._select_cards[index]
 		_assert(card.size.x >= 135.0 and card.size.y >= 165.0, "말 카드는 최소 135x165")
 		var slot_pawn: PlayerPawn = _board.state.get_pawn(manager.current_player_id() * 10 + index + 1)
-		_assert(card.disabled == not slot_pawn.is_selectable(), "배너 카드의 활성 상태는 말을 고를 수 있는지와 같아야 한다")
+		_assert(card.disabled == not _board._can_pick_now(slot_pawn), "배너 카드의 활성 상태는 말을 고를 수 있는지와 같아야 한다")
 		_assert(not (_board._pawn_buttons[index] as Button).has_theme_stylebox_override("hover") or not (_board._pawn_buttons[index] as Button).disabled, "독 슬롯은 선택 단계에서도 눌러서 고르는 용도가 아니다")
 		var result_text: String = (_board._select_parts[index]["result"] as Label).text
 		_assert(result_text != "", "카드마다 결과 예고 문구가 있어야 한다")

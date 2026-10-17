@@ -154,6 +154,8 @@ static func apply_step(
 		report: MoveReport) -> StepOutcome:
 	var from_tile: int = mover.current_tile_idx
 	var is_forward: bool = state.board.commit_step(mover, destination)
+	if is_forward and from_tile == GameEnums.GOAL_TILE:
+		mover.retreated_run = false
 	mover.has_left_start = true
 	if is_first and not is_forward and from_tile == GameEnums.GOAL_TILE:
 		mover.retreated_from_start = true
@@ -189,7 +191,7 @@ static func apply_step(
 		report.stopped_early = true
 		return StepOutcome.HALTED
 
-	if is_forward and destination == GameEnums.GOAL_TILE:
+	if is_forward and destination == GameEnums.GOAL_TILE and mover.can_finish(state):
 		_pay_salary(state, mover, report)
 		if not is_last and ctx.exact_goal_required:
 			report.bounced = true

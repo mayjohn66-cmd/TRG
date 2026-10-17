@@ -516,7 +516,7 @@ func _process(delta: float) -> void:
 			continue
 		var bounce: Node2D = view.get_node_or_null("Bounce")
 		if bounce != null:
-			var active: bool = selecting and pawn.owner_id == manager.current_player_id() and pawn.is_selectable()
+			var active: bool = selecting and pawn.owner_id == manager.current_player_id() and _can_pick_now(pawn)
 			bounce.position.y = (wave if active else 0.0) - (TILT_PAWN_LIFT if view_mode == ViewMode.TILT else 0.0)
 
 
@@ -563,7 +563,7 @@ func _input(event: InputEvent) -> void:
 func _pawn_at(mouse: Vector2) -> int:
 	var found: int = -1
 	var best: float = 24.0
-	for pawn: PlayerPawn in state.selectable_pawns(manager.current_player_id()):
+	for pawn: PlayerPawn in state.selectable_pawns(manager.current_player_id(), _queued_dice()):
 		var view: Node2D = _pawn_views.get(pawn.entity_id)
 		if view == null or not view.visible:
 			continue
@@ -2943,9 +2943,18 @@ func _build_select_banner() -> void:
 		_select_parts.append({"badge": badge, "status": status, "disc": disc, "mark": mark, "sub": sub, "result": result})
 
 
+func _queued_dice() -> int:
+	return 0 if manager.move_queue.is_empty() else int(manager.move_queue[0])
+
+
+## 지금 굴림 값으로 이 말을 고를 수 있는가 (후퇴 눈금이면 출발 전 말은 제외).
+func _can_pick_now(pawn: PlayerPawn) -> bool:
+	return state.can_pick(pawn, _queued_dice())
+
+
 ## 이 말이 지금 굴림 값으로 움직이면 지나갈 경로 (선택할 수 없으면 빈 배열).
 func _pawn_move_path(pawn: PlayerPawn) -> Array[int]:
-	if manager.move_queue.is_empty() or not pawn.is_selectable():
+	if manager.move_queue.is_empty() or not _can_pick_now(pawn):
 		return [] as Array[int]
 	var ctx := RuleContext.new()
 	ctx.state = state
@@ -2966,10 +2975,12 @@ func _pawn_prediction(pawn: PlayerPawn) -> Dictionary:
 		return {"text": "이미 완주했습니다", "good": false}
 	if not pawn.is_selectable():
 		return {"text": "움직일 수 없음", "good": false}
+	if not _can_pick_now(pawn):
+		return {"text": "출발 전 말은 후퇴할 수 없음", "good": false}
 	var path: Array[int] = _pawn_move_path(pawn)
 	if path.is_empty():
 		return {"text": "→ 제자리 (이동 없음)", "good": false}
-	if path.has(GameEnums.GOAL_TILE) and pawn.has_left_start:
+	if path.has(GameEnums.GOAL_TILE) and pawn.has_left_start and pawn.can_finish(state):
 		return {"text": "→ 결승선 완주!", "good": true}
 	var dest: int = path.back()
 	var tile: TileNode = state.board.get_tile(dest)
@@ -3008,7 +3019,7 @@ func _select_banner_wanted() -> bool:
 		return false
 	if _ui_busy() or _is_bot_turn() or _tile_pick_active or _draft_overlay != null or _choice_overlay != null or _result_overlay != null or _stack_overlay != null:
 		return false
-	return not state.selectable_pawns(manager.current_player_id()).is_empty()
+	return not state.selectable_pawns(manager.current_player_id(), _queued_dice()).is_empty()
 
 
 func _refresh_select_banner() -> void:
@@ -3029,7 +3040,7 @@ func _refresh_select_banner() -> void:
 		var card: Button = _select_cards[index]
 		var parts: Dictionary = _select_parts[index]
 		var pawn: PlayerPawn = state.get_pawn(owner_id * 10 + index + 1)
-		var can_pick: bool = pawn.is_selectable()
+		var can_pick: bool = _can_pick_now(pawn)
 		var badge: Label = parts["badge"]
 		badge.text = "%d번 말" % (index + 1)
 		badge.add_theme_stylebox_override("normal", _style(color.lightened(0.25) if can_pick else Color("6c757d"), Color("ffffff"), 1, 8, 0, 1))
@@ -5466,7 +5477,7 @@ func _preview_pawn(pawn_id: int) -> void:
 	if manager.current_state != TurnManager.State.PHASE_SELECT_PAWN or manager.move_queue.is_empty():
 		return
 	var pawn: PlayerPawn = state.get_pawn(pawn_id)
-	if pawn == null or not pawn.is_selectable():
+	if pawn == null or not _can_pick_now(pawn):
 		return
 	var path: Array[int] = _pawn_move_path(pawn)
 	for index: int in path.size():

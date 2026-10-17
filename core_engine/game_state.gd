@@ -254,16 +254,27 @@ func leaders_at(tile: int) -> Array[PlayerPawn]:
 	return result
 
 
-func selectable_pawns(player_id: int) -> Array[PlayerPawn]:
+## dice_value는 이번에 적용할 눈금이다 (0이면 눈금 제한 없이 고른다).
+func selectable_pawns(player_id: int, dice_value: int = 0) -> Array[PlayerPawn]:
 	var result: Array[PlayerPawn] = []
 	for pawn: PlayerPawn in pawns_of(player_id):
-		if pawn.is_selectable():
+		if can_pick(pawn, dice_value):
 			result.append(pawn)
 	return result
 
 
+## 눈금이 후퇴(음수)일 때 아직 출발하지 않은 말은 고를 수 없다 (역주행 중에는 출발선에서도 후퇴한다).
+func can_pick(pawn: PlayerPawn, dice_value: int) -> bool:
+	if not pawn.is_selectable():
+		return false
+	return not (dice_value < 0 and movement_direction() > 0 and not pawn.has_left_start)
+
+
 func pawn_progress_distance(pawn: PlayerPawn) -> int:
-	return board.distance_to_goal(pawn.current_tile_idx, pawn.has_left_start)
+	var distance: int = board.distance_to_goal(pawn.current_tile_idx, pawn.has_left_start)
+	if not pawn.can_finish(self):
+		distance += GameEnums.TILE_COUNT
+	return distance
 
 
 ## 꼴찌(결승까지 가장 먼) 대표 말. excluding_owner의 말은 제외한다. 없으면 null.
@@ -326,6 +337,7 @@ func sync_stack_position(leader: PlayerPawn) -> void:
 		member.step_history.assign(leader.step_history)
 		member.has_left_start = leader.has_left_start
 		member.retreated_from_start = leader.retreated_from_start
+		member.retreated_run = leader.retreated_run
 
 
 ## 두 대표 말(업은 말 포함)의 위치를 교환한다.

@@ -435,6 +435,7 @@ func test_intervention_window_stays_closed_when_nobody_can_use_their_cards() -> 
 func test_act_04_finishes_a_pawn_that_backed_off_to_the_last_tile() -> void:
 	var manager: TurnManager = _new_manager()
 	manager.state.give_card(1, &"ACT_04")
+	place(manager.state, 11, 0, [])  # 출발한 적 있는 말이 0번까지 돌아온 상태 (출발 전 말은 후퇴를 고를 수 없다)
 	_set_tool(manager, 1, ScriptedTool.new([-1]))
 	_do(manager, 1, &"proceed")
 	_do(manager, 1, &"roll")
@@ -638,4 +639,20 @@ func test_trap_during_real_turn_flow_marks_victim_as_hurt() -> void:
 	check_eq(manager.state.get_pawn(11).current_tile_idx, 0, "함정에 걸려 출발선")
 	check_eq(manager.state.board.get_tile(2).attachments.size(), 0, "함정 소모")
 	check_eq(manager.current_player_id(), 2, "턴 종료")
+	_dispose(manager)
+
+
+func test_unstarted_pawns_cannot_be_chosen_for_a_backward_roll() -> void:
+	var manager: TurnManager = _new_manager()
+	var rejected: Array = _rejections(manager)
+	place(manager.state, 11, 5, [4])
+	_set_tool(manager, 1, ScriptedTool.new([-1]))
+	_do(manager, 1, &"proceed")
+	_do(manager, 1, &"roll")
+	check_eq(manager.current_state, Phase.PHASE_SELECT_PAWN, "출발한 말이 있어 선택 단계")
+	_do(manager, 1, &"select_pawn", {"pawn_id": 12})
+	check_eq(rejected.size(), 1, "출발 전 말 선택은 거부")
+	check_eq(manager.state.get_pawn(12).current_tile_idx, 0, "출발 전 말은 그대로")
+	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
+	check_eq(manager.state.get_pawn(11).current_tile_idx, 4, "출발한 말만 후퇴")
 	_dispose(manager)

@@ -13,6 +13,8 @@ var has_left_start: bool = false
 var is_finished: bool = false
 ## ACT_04 발동 조건: 직전 이동이 '출발선(0번)에서의 후퇴'였는가.
 var retreated_from_start: bool = false
+## 출발선(0번)에서 뒤로 물러난 뒤 아직 0번을 다시 지나가지 않은 말. 역주행 상태가 아니면 이 말은 완주할 수 없다 (한 바퀴를 더 돌아야 함).
+var retreated_run: bool = false
 ## 업기: 나를 업고 있는 말(없으면 null) / 내가 업고 있는 말들.
 var carrier: PlayerPawn = null
 var carried: Array[PlayerPawn] = []
@@ -68,6 +70,11 @@ func is_on_board() -> bool:
 	return not is_finished
 
 
+## 지금 완주 처리가 가능한가: 출발선에서 후퇴한 말은 역주행 상태가 아닌 한 0번을 한 번 더 지나가야 한다.
+func can_finish(state: GameState) -> bool:
+	return not retreated_run or (state != null and state.reverse_move_rounds_left > 0)
+
+
 ## 직접 선택해 움직일 수 있는 말인가 (업혀 있는 말은 업은 말만 움직인다).
 func is_selectable() -> bool:
 	return not is_finished and carrier == null and not blocked_this_turn
@@ -95,6 +102,7 @@ func reset_to_start() -> void:
 	reset_position()
 	has_left_start = false
 	retreated_from_start = false
+	retreated_run = false
 	is_imprisoned = false
 	restrained_turns = 0
 	blocked_this_turn = false

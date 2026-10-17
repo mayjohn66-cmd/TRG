@@ -124,6 +124,9 @@ func commit_step(entity: BoardEntity, destination: int) -> bool:
 		entity.step_history.pop_back()
 	else:
 		entity.step_history = [destination]
+	var as_pawn: PlayerPawn = entity as PlayerPawn
+	if as_pawn != null and not is_forward and entity.current_tile_idx == GameEnums.GOAL_TILE:
+		as_pawn.retreated_run = true
 	entity.current_tile_idx = destination
 	return is_forward
 
@@ -155,7 +158,7 @@ func calculate_path(entity: BoardEntity, steps: int, ctx: RuleContext) -> Array[
 			advance_backward(cursor)
 		remaining -= 1
 		path.append(cursor.tile)
-		if forward and cursor.tile == GameEnums.GOAL_TILE:
+		if forward and cursor.tile == GameEnums.GOAL_TILE and (pawn == null or pawn.can_finish(ctx.state)):
 			if remaining > 0 and ctx.exact_goal_required:
 				forward = false
 			else:

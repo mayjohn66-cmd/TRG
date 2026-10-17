@@ -343,7 +343,7 @@ func _handle_select_pawn(actor: int, params: Dictionary) -> void:
 		action_rejected.emit(actor, &"select_pawn", &"wrong_phase")
 		return
 	var pawn: PlayerPawn = state.get_pawn(int(params.get("pawn_id", -1)))
-	if pawn == null or pawn.owner_id != actor or not pawn.is_selectable():
+	if pawn == null or pawn.owner_id != actor or not state.can_pick(pawn, _queued_dice()):
 		action_rejected.emit(actor, &"select_pawn", &"invalid_pawn")
 		return
 	_execute_move(pawn)
@@ -976,8 +976,13 @@ func _close_interrupt_window() -> void:
 	_enter_select_pawn()
 
 
+## 이번에 적용할 눈금 (대기열이 비었으면 0).
+func _queued_dice() -> int:
+	return 0 if move_queue.is_empty() else int(move_queue[0])
+
+
 func _enter_select_pawn() -> void:
-	if move_queue.is_empty() or state.selectable_pawns(current_player_id()).is_empty():
+	if move_queue.is_empty() or state.selectable_pawns(current_player_id(), _queued_dice()).is_empty():
 		move_queue.clear()
 		_enter_resolution()
 		return
@@ -987,7 +992,7 @@ func _enter_select_pawn() -> void:
 func _auto_select_pawn() -> void:
 	var best: PlayerPawn = null
 	var best_distance: int = 1 << 30
-	for pawn: PlayerPawn in state.selectable_pawns(current_player_id()):
+	for pawn: PlayerPawn in state.selectable_pawns(current_player_id(), _queued_dice()):
 		var distance: int = state.pawn_progress_distance(pawn)
 		if distance < best_distance:
 			best_distance = distance
