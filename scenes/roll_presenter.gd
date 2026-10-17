@@ -301,6 +301,7 @@ func _build_hwatu() -> void:
 	_build_flip_row(faces, colors, mask, Vector2(84, 116), Color("8b1a1a"), Color("ffd8a8"), 20)
 	var hand_label: String = str(details.get("label", ""))
 	_die_label = _label(hand_label, 22, Color("ffe066"))
+	_die_label.modulate.a = 0.0
 	_root.add_child(_die_label)
 
 
@@ -319,6 +320,7 @@ func _build_mahjong() -> void:
 		mask.append(true)
 	_build_flip_row(faces, colors, mask, Vector2(76, 104), Color("2b8a3e"), Color("b2f2bb"), 26)
 	_die_label = _label(str(details.get("label", "")), 22, Color("ffe066"))
+	_die_label.modulate.a = 0.0
 	_root.add_child(_die_label)
 
 
@@ -350,6 +352,7 @@ func _build_tarot() -> void:
 	if fate == &"fool":
 		text += "  (%s)" % ("대도약 +7칸!" if bool(details.get("fool_leap", false)) else "뒷걸음 -2칸")
 	_die_label = _label(text, 18, Color("ffe066"))
+	_die_label.modulate.a = 0.0
 	_root.add_child(_die_label)
 
 
@@ -552,6 +555,12 @@ func _update_cards(t: float) -> void:
 				style.set_content_margin_all(4)
 				card.add_theme_stylebox_override("panel", style)
 			card.scale.x = (phase - 0.5) * 2.0
+	# 족보·결과 이름은 모든 패가 뒤집힌 뒤에야 보인다 (뒤집히기 전에 결과를 미리 알려 주지 않는다).
+	var all_flipped: bool = true
+	for flipped: bool in _card_flipped:
+		all_flipped = all_flipped and flipped
+	if all_flipped and _die_label != null and _mode in [&"DICE_HWATU", &"DICE_MAHJONG", &"DICE_TAROT"]:
+		_die_label.modulate.a = 1.0
 	last_display = " ".join(PackedStringArray(_card_faces)) if _mode == &"HOLDEM" else _final_text(_mode, _result)
 
 

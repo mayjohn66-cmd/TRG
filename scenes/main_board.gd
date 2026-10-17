@@ -2142,8 +2142,11 @@ func _fx_motion_pending() -> bool:
 		return false
 	if _stage_warps > 0:
 		return true
+	# 굴림 연출·실패 알림이 진행 중이면 아직 이전 플레이어의 턴이다 (결과를 다 보여 준 뒤에야 다음 턴으로 넘어간다).
+	if _fx_busy or (_announcer != null and _announcer.active):
+		return true
 	var now: int = Time.get_ticks_msec()
-	if now < _fx_until_msec:
+	if now < _fx_until_msec or now < _beat_until_msec:
 		return true
 	for view: Node2D in _pawn_views.values():
 		if _fx_running(view):
