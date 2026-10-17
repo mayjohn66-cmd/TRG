@@ -6111,12 +6111,19 @@ func _build_main_page() -> void:
 	_menu_title("메뉴")
 	_menu_item(_make_button("계속하기", _close_menu, 17, Color("2b8a3e"), 10))
 	_menu_item(_make_button("게임 설정", _show_menu_page.bind(&"settings"), 17, Color("3b4766"), 10))
+	_menu_item(_make_button("규칙 책자", _open_rulebook, 17, Color("8a5a0a"), 10))
 	_menu_item(_log_toggle)
 	if net == null:
 		_menu_item(_new_game_button)
 		_menu_item(_mode_toggle)
 		_menu_item(_debug_toggle)
 	_menu_item(_make_button("게임 나가기", _show_menu_page.bind(&"confirm_exit"), 17, Color("7a2a2a"), 10))
+
+
+## 메뉴의 [규칙 책자]: 게임 위(메뉴보다 위)에 규칙 책자를 연다.
+func _open_rulebook() -> void:
+	var book: Rulebook = Rulebook.open(self)
+	book.z_index = 250
 
 
 func _build_settings_page() -> void:

@@ -309,15 +309,7 @@ static func popup(parent: Control, width: float = 480.0) -> Dictionary:
 
 ## 규칙 안내 팝업.
 static func show_rules(parent: Control) -> void:
-	var parts: Dictionary = popup(parent, 620.0)
-	var box: VBoxContainer = parts["box"]
-	box.add_child(label("게임 규칙", 26, TEAL))
-	var text := label(RULES_TEXT, 15, INK)
-	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	text.custom_minimum_size = Vector2(570, 0)
-	box.add_child(text)
-	var close := big_button("닫기", (parts["overlay"] as Control).queue_free, 22)
-	box.add_child(close)
+	Rulebook.open(parent)
 
 
 ## 설정 팝업(전체화면, 행동 사이 연출 멈춤, 보드 시점).
