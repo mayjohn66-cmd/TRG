@@ -353,6 +353,9 @@ var ai_mode: bool = true
 var _bot: BotController = null
 var _mode_toggle: Button = null
 var _menu_button: Button = null
+var _sound_button: Button = null  ## 우측 상단 소리 켜짐/꺼짐 토글
+var _step_chain: int = 0
+var _step_sound_msec: int = -10000
 ## 메뉴 오버레이(계속하기/게임 설정/전체 로그/새 게임/치트/게임 나가기). 열려 있지 않으면 null.
 var _menu_overlay: Control = null
 var _menu_box: VBoxContainer = null
@@ -544,6 +547,8 @@ func _process(delta: float) -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
+		Sfx.unlock()  # 웹 브라우저가 소리를 막아 두므로 첫 클릭에서 오디오를 깨운다
 	if manager == null or state == null or _menu_is_open():
 		return
 	if _snipe_pick and _handle_snipe_input(event):
@@ -782,6 +787,7 @@ func _bind_state() -> void:
 			# 순서: 함정이 터진다(충격) -> 잠깐 뒤 프로필 반응 -> 그 뒤 말이 날아간다 (_fx_hint_bonus)
 			_fx_hint_bonus = maxf(_fx_hint_bonus, 0.4)
 			_fx_when_announced(func() -> void:
+				Sfx.play(&"trap")
 				screen_shake(8.0, 0.25)
 				_impact_ring(trap_pos, Color("ff6b6b"), 56.0)
 				_burst_shards(trap_pos, Color("ff8787"), 14)
@@ -920,7 +926,7 @@ func _register_layout() -> void:
 	_layout_entries.clear()
 	var left: Array = [_law_panel]
 	var center: Array = [_select_banner, _dir_left, _dir_right, _board_layer, _pawn_layer, _dock, _drop_zone, _aim_layer, _pick_banner, _pick_cancel, _roll_button, _roll_pad, _gun_row, _power_bar, _power_label]
-	var right: Array = [_tool_board, _action_row, _pawn_bar, _emote_row, _menu_button, _debug_box, _log_panel]
+	var right: Array = [_tool_board, _action_row, _pawn_bar, _emote_row, _menu_button, _sound_button, _debug_box, _log_panel]
 	for index: int in PLAYER_IDS.size():
 		var player_id: int = PLAYER_IDS[index]
 		var panel: Control = _profiles[player_id]["panel"]
@@ -1325,6 +1331,13 @@ func _build_status_strip() -> void:
 	_menu_button.size = Vector2(84, 32)
 	_menu_button.tooltip_text = "메뉴 (ESC)"
 	add_child(_menu_button)
+	_sound_button = _make_button("", _on_sound_toggle_pressed, 13, Color("3b4766"), 8)
+	_sound_button.name = "SoundToggle"
+	_sound_button.position = Vector2(1170, 10)
+	_sound_button.size = Vector2(94, 32)
+	_sound_button.tooltip_text = "소리 켜기/끄기 (크기는 메뉴 > 게임 설정)"
+	add_child(_sound_button)
+	_refresh_sound_button()
 
 
 ## 우측 중앙의 큼직한 둥근 [굴리기] 버튼(모두의 마블 방식)과 그 아래의 멈추기·개입 패스·폭탄 떠넘기기 버튼.
@@ -3574,6 +3587,21 @@ func _set_gun_buttons(gun: bool) -> void:
 	_gun_row.visible = gun and _gun_row.visible
 
 
+func _on_sound_toggle_pressed() -> void:
+	GameSession.audio_muted = not GameSession.audio_muted
+	GameSession.save_settings()
+	Sfx.unlock()
+	Sfx.apply_settings()
+	_refresh_sound_button()
+	Sfx.play(&"ui_click")  # 켜질 때만 들린다 (꺼져 있으면 재생되지 않음)
+
+
+func _refresh_sound_button() -> void:
+	if _sound_button != null:
+		_sound_button.text = "소리 꺼짐" if GameSession.audio_muted else "소리 켜짐"
+		_sound_button.modulate = Color(1.0, 0.75, 0.75) if GameSession.audio_muted else Color.WHITE
+
+
 ## 주사위 계열 도구인가 (굴림 소리가 주사위 던지는 소리다).
 func _is_dice_family(tool: BaseJudgmentTool) -> bool:
 	return tool.tool_id == &"D6" or tool.tool_id == &"CHINCHIRO" or tool.tool_id == &"YUT" or String(tool.tool_id).begins_with("DICE_")
@@ -3754,6 +3782,8 @@ func _begin_charge(by_key: bool) -> void:
 	_charge_value = 0.0
 	_power_bar.visible = _tool_has_gauge() and not instant_roll_for_test
 	_power_label.visible = _power_bar.visible
+	if _power_bar.visible:
+		Sfx.play(&"charge", -4.0, 0.0)
 
 
 func _on_roll_button_up() -> void:
@@ -4561,7 +4591,14 @@ func _fx_land(view: Node2D, tile: int, big: bool) -> void:
 		squash.tween_property(bounce, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	if tile >= 0:
 		_tile_glow(tile)
-	Sfx.play(&"slam" if big else &"hop")
+	if big:
+		Sfx.play(&"slam")
+	else:
+		# 연달아 걸을 때는 한 칸마다 음높이를 조금씩 올려 다다다닥 달리는 느낌을 낸다 (잠깐 멈추면 처음 높이로).
+		var now: int = Time.get_ticks_msec()
+		_step_chain = _step_chain + 1 if now - _step_sound_msec < 700 else 0
+		_step_sound_msec = now
+		Sfx.play(&"hop", 0.0, 0.01, minf(0.95 + 0.05 * float(_step_chain), 1.35))
 	if big:
 		screen_shake(9.0, 0.25)
 		_impact_ring(view.position, Color("fff3bf"), 52.0)

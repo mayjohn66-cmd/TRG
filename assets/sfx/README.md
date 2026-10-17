@@ -42,3 +42,9 @@
 
 ## 현재 들어 있는 소리
 Kenney(CC0)의 Casino Audio / Interface Sounds / Impact Sounds / Digital Audio에서 골라 이벤트 이름으로 바꿔 넣었습니다 (`<이벤트>_01.ogg` ...). 같은 이벤트에 파일이 여러 개면 무작위로 재생됩니다. 이벤트 이름 뒤에는 번호만 올 수 있어서(`law_01`은 `law`, `law_drop_01`은 `law_drop`) 이름이 겹치는 이벤트가 섞이지 않습니다. 바꾸고 싶으면 같은 이름으로 덮어쓰면 됩니다.
+
+
+## 파일이 없어도 소리가 나는 합성음
+소리 파일이 없는 이벤트는 코드(`Sfx.synth`)가 짧은 PCM 파형을 직접 만들어 재생합니다 (클릭 팝, 차징, 틱, 점프 슬라이드, 타격음, 경보, 팡파르 등).
+파일을 넣으면 합성음 대신 그 파일이 재생됩니다. `res://content_trickcal/audio/sfx/`(배경음은 `.../audio/bgm/`)에 넣어도 똑같이 찾으며, 같은 이름이면 그 폴더의 파일이 우선입니다.
+기획서 이름으로 넣어도 됩니다: `pawn_step`(=hop), `pawn_capture`(=slam), `card_slam`(=card_impact), `trap_trigger`(=trap), `skill_ult`(=promote), `law_enact`(=law), `fanfare_win`(=win), `dice_charge`(=charge).
