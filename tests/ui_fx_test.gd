@@ -375,6 +375,12 @@ func _test_gauge_and_lock() -> void:
 		manager.force_timeout()
 		await process_frame
 		await process_frame
+	# 엔진은 다음 턴에 도착해도 이전 이동·실패 알림·자동 굴림 연출은 남을 수 있다.
+	# 재생 중 instant 플래그를 바꾸면 다음 검사의 R 입력이 잠긴 상태에서 실행된다.
+	var settle_start: float = _now()
+	while (_board._ui_busy() or _board._fx_motion_pending()) and _now() - settle_start < 8.0:
+		await process_frame
+	_expect(not _board._ui_busy() and not _board._fx_motion_pending(), "이전 턴의 연출이 끝난 뒤 다음 입력을 검사한다")
 
 
 func _test_instant_flag() -> void:
