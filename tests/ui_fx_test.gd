@@ -40,6 +40,8 @@ func _run() -> void:
 	_board._on_draft_auto_pressed()
 	for i: int in 4:
 		await process_frame
+	_board._announcer.cancel()
+	_board._announced_round = _board.state.round_number  # [N라운드 시작!] 알림이 이후 검사의 입력 잠금을 흔들지 않게 이미 알린 것으로 본다
 	await _test_mode_toggle()
 	await _test_game_menu()
 	await _test_view_modes()
