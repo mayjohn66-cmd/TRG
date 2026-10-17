@@ -1,6 +1,3 @@
 .godot/
 *.uid
 build/
-
-# 아바타 에셋(원본 게임 캐릭터 등)은 각자 PC에서만 쓴다: 저장소·웹 배포에 올리지 않는다 (README는 제외)
-content_trickcal/avatars/*/
