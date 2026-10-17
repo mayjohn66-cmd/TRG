@@ -332,7 +332,7 @@ func _try_tile_card(manager: TurnManager) -> bool:
 		_assert(_board._pick_banner.visible, "타일 선택 모드 안내가 보여야 한다")
 		var valid: Array[int] = []
 		for tile: int in GameEnums.TILE_COUNT:
-			if (_board._pick_marks[tile] as ReferenceRect).visible:
+			if (_board._pick_marks[tile] as BoardSkin.Ring).visible:
 				valid.append(tile)
 		_assert(not valid.is_empty(), "선택 가능한 타일이 표시되어야 한다")
 		# 잘못된 타일을 먼저 눌러도 모드가 유지되어야 한다.

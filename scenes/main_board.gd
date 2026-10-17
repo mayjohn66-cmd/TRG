@@ -18,7 +18,7 @@ const BOARD_ORIGIN: Vector2 = Vector2(423, 75)
 const BOARD_SIZE: float = 520.0
 ## 보드 시점. TOP: 완전 탑뷰, TILT: 테이블에 앉아 비스듬히 내려다보는 기울인 탑뷰(세로 압축 + 위쪽이 멀어 보이는 원근 + 서 있는 말과 그림자).
 ## 보드는 한 변 6칸의 정사각 트랙을 45도 돌려 마름모로 세운다 (0번 출발선이 아래 꼭짓점, 반시계로 오른쪽 -> 위 -> 왼쪽 꼭짓점).
-const DIAMOND_KX: float = 420.0        ## 회전한 평면 좌표 1.0당 가로 픽셀
+const DIAMOND_KX: float = 520.0        ## 회전한 평면 좌표 1.0당 가로 픽셀
 const DIAMOND_KY: float = 330.0        ## 회전한 평면 좌표 1.0당 세로 픽셀 (눌러서 마름모 비율을 만든다)
 enum ViewMode { TOP, TILT }
 const TILT_SQUASH: float = 0.90        ## 검토된 시안 v0.9: 과도한 세로 압축 완화
@@ -1081,6 +1081,7 @@ func _build_law_board() -> void:
 	_law_panel = panel
 	panel.position = Vector2(SAFE_MARGIN, 190)
 	panel.custom_minimum_size = Vector2(300, 0)
+	panel.scale = Vector2(0.78, 0.78)  # 넓어진 마름모의 왼쪽 꼭짓점과 겹치지 않게 줄여 둔다
 	panel.add_theme_stylebox_override("panel", UiSkin.panel())
 	add_child(panel)
 	var box := VBoxContainer.new()
@@ -1504,9 +1505,7 @@ func _place_tile(index: int) -> void:
 	tile.configure(_surface_project, BoardSkin.track(tile_norm(index)), span, _depth_scale(BoardSkin.track(tile_norm(index)).y), direction)
 	for child: Control in [_highlights.get(index), _pick_marks.get(index)]:
 		if child != null:
-			# 마름모 타일에 맞춰 강조 테두리를 타일 중앙의 작은 가로형 사각으로 둔다.
-			child.size = Vector2(tile.size.x * 0.72, tile.size.y * 0.5)
-			child.position = (tile.size - child.size) / 2.0
+			child.size = tile.size
 	for label: Label in [_tag_labels.get(index), _tile_marks.get(index)]:
 		if label != null:
 			label.pivot_offset = label.size / 2.0
@@ -2454,7 +2453,7 @@ func _drag_drop(pointer: Vector2, press: Dictionary) -> void:
 	_drag_active = false
 	_drop_zone.visible = false
 	_clear_highlight()
-	for mark: ReferenceRect in _pick_marks.values():
+	for mark: BoardSkin.Ring in _pick_marks.values():
 		mark.visible = false
 	var source: Control = press.get("view")
 	if source != null and is_instance_valid(source):
@@ -3633,7 +3632,7 @@ func _begin_skill_tile_pick(pawn: PlayerPawn) -> void:
 	_tile_pick_skill_pawn = pawn.entity_id
 	var targets: Array[int] = PawnSkills.plane_targets(pawn)
 	for index: int in GameEnums.TILE_COUNT:
-		(_pick_marks[index] as ReferenceRect).visible = targets.has(index)
+		(_pick_marks[index] as BoardSkin.Ring).visible = targets.has(index)
 	_pick_banner.text = "[직항 워프] 날아갈 빵집·코너 고르기"
 	_pick_banner.visible = true
 	_pick_cancel.visible = true
@@ -4863,7 +4862,7 @@ func _begin_tile_pick(player_id: int, card_id: StringName) -> void:
 	var valid_count: int = 0
 	for index: int in GameEnums.TILE_COUNT:
 		var valid: bool = card.can_play(state, player_id, {"tile": index})
-		(_pick_marks[index] as ReferenceRect).visible = valid
+		(_pick_marks[index] as BoardSkin.Ring).visible = valid
 		if valid:
 			valid_count += 1
 	if valid_count == 0:
@@ -4892,7 +4891,7 @@ func _cancel_tile_pick() -> void:
 		_pick_banner.visible = false
 	if _pick_cancel != null:
 		_pick_cancel.visible = false
-	for mark: ReferenceRect in _pick_marks.values():
+	for mark: BoardSkin.Ring in _pick_marks.values():
 		mark.visible = false
 	if manager != null and manager.state != null:
 		_refresh_controls()
@@ -5477,13 +5476,13 @@ func _preview_pawn(pawn_id: int) -> void:
 		return
 	var path: Array[int] = _pawn_move_path(pawn)
 	for index: int in path.size():
-		var highlight: ReferenceRect = _highlights[path[index]]
+		var highlight: BoardSkin.Ring = _highlights[path[index]]
 		highlight.visible = true
 		highlight.border_width = 8.0 if index == path.size() - 1 else 5.0
 
 
 func _clear_highlight() -> void:
-	for highlight: ReferenceRect in _highlights.values():
+	for highlight: BoardSkin.Ring in _highlights.values():
 		highlight.visible = false
 		highlight.border_width = 3.0
 	_board_hover_pawn = -1

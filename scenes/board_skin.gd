@@ -192,19 +192,25 @@ static func shape(major: bool, inset: float = 0.0) -> PackedVector2Array:
 	return points
 
 
-class Ring extends ReferenceRect:
+## 타일 윤곽선을 따라 그리는 테두리 (경로 예고·선택 표시). ReferenceRect처럼 border_color/border_width로 쓰지만 사각 테두리는 그리지 않는다.
+class Ring extends Control:
 	var points := PackedVector2Array()
-	var line_width: float = 3.0
-	func _ready() -> void:
-		line_width = border_width
-		border_width = 0.0
+	var border_color: Color = Color.WHITE:
+		set(value):
+			border_color = value
+			queue_redraw()
+	var border_width: float = 3.0:
+		set(value):
+			border_width = value
+			queue_redraw()
+	var editor_only: bool = false
 
 	func _draw() -> void:
 		if points.size() < 3:
 			return
 		var closed: PackedVector2Array = points.duplicate()
 		closed.append(closed[0])
-		draw_polyline(closed,border_color,line_width,true)
+		draw_polyline(closed,border_color,border_width,true)
 
 class Tile extends Control:
 	var index: int = 0
