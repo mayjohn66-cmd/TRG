@@ -1,0 +1,122 @@
+[
+  {
+    "card_id": "ACT_01",
+    "file": "ACT_01.png",
+    "source_version": "v0.2",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "ae769208ebf1b6d8a44e905be679d6d3e85e5bd570ed6a9da28bc6da63f6b868"
+  },
+  {
+    "card_id": "ACT_02",
+    "file": "ACT_02.png",
+    "source_version": "v0.1",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "13b475a59e541bed0a3f440141c11d5203a2bcc5a3cdd70556bbcc30867ef975"
+  },
+  {
+    "card_id": "ACT_03",
+    "file": "ACT_03.png",
+    "source_version": "v0.1",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "75bb9a0d2f5499fd6248041aa47979162f13daba13f264c45e6385737213e2b0"
+  },
+  {
+    "card_id": "ACT_04",
+    "file": "ACT_04.png",
+    "source_version": "v0.2",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "e30e5558bdba98e7e8052aca8d73bdc2ecb648addbcd66840ccb6357744f9c39"
+  },
+  {
+    "card_id": "ACT_05",
+    "file": "ACT_05.png",
+    "source_version": "v0.1",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "26f5f5f75742ee1d2336a152bfb1555ca644e6f43074eba430666f363fc259e5"
+  },
+  {
+    "card_id": "ACT_06",
+    "file": "ACT_06.png",
+    "source_version": "v0.1",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "12a4390567bdd90ca2e22ce738ff92384c4dcbbb227633b692f2979872e1ee1f"
+  },
+  {
+    "card_id": "ACT_07",
+    "file": "ACT_07.png",
+    "source_version": "v0.2",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "f322c0f9d8d7c21a370c231593b45f72a53950035334a56a49159d851be0561f"
+  },
+  {
+    "card_id": "ACT_08",
+    "file": "ACT_08.png",
+    "source_version": "v0.2",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "c1c491e452bdc2731e2833b3f7d48f2978e2a752546e4f55d324e0b717915cc7"
+  },
+  {
+    "card_id": "TRP_01",
+    "file": "TRP_01.png",
+    "source_version": "v0.1",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "e6034e34ea13bb99306dd9904c5c1aa4eb21f1ad8b06c4d1444c34fb777a295f"
+  },
+  {
+    "card_id": "TRP_02",
+    "file": "TRP_02.png",
+    "source_version": "v0.1",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "181ad6b717b69b0a1bc3dbf164f04c3aee48fb325bc880cbd8de0b462265ba2b"
+  },
+  {
+    "card_id": "TRP_03",
+    "file": "TRP_03.png",
+    "source_version": "v0.1",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "ea2674c2a888037a83e8ec64b91686d6ca3a4dee8002b393ad7e946593d5d688"
+  },
+  {
+    "card_id": "TRP_04",
+    "file": "TRP_04.png",
+    "source_version": "v0.1",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "eed835eb180f47bea0312dd28f1e65fc39a647e80bae96abc8e952a3d81dde5a"
+  },
+  {
+    "card_id": "TRP_05",
+    "file": "TRP_05.png",
+    "source_version": "v0.1",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "3ef2574d0138846d72c2c2f297e1e9cdf14cea20e9a4d0bfb5d8ac493af84981"
+  },
+  {
+    "card_id": "SUM_01",
+    "file": "SUM_01.png",
+    "source_version": "v0.1",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "00a63df3c4ff52d59ff4a9b9c6491213cc6927015af2bb85243d97be1054665d"
+  },
+  {
+    "card_id": "SUM_02",
+    "file": "SUM_02.png",
+    "source_version": "v0.1",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "bbd543de8e8f8dedba9f1e94f464bfd54e45a21e509cda206ccf3195696b04ac"
+  }
+]

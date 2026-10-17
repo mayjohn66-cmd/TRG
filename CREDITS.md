@@ -1,0 +1,21 @@
+# Credits
+
+## 오디오
+
+| 파일 | 출처 | 제작자 | 라이선스 |
+|---|---|---|---|
+| `assets/sfx/*.ogg` (ui_click, hop, slam, launch, thud, dice_*, card_*, augment_*, law*, good, bad ...) | Kenney **Casino Audio**, **Interface Sounds**, **Impact Sounds**, **Digital Audio** (https://kenney.nl) | Kenney Vleugels (Kenney.nl) | CC0 1.0 (표기 의무 없음, 라이선스 원문은 `assets/sfx/licenses/`) |
+
+## 비공식 팬 제작 안내
+
+- 이 게임은 원작 게임의 제작사(에피드)와 무관한 **비공식 팬 제작 게임**이며 공식 저작물이 아닙니다.
+- 개인이 **비영리 목적**으로 **무료 배포**하는 2차 창작물입니다. 광고·후원·판매 등 수익 활동을 하지 않습니다.
+- 공식 로고·게임 로고는 사용하지 않습니다.
+- 아바타에 쓰는 원작 캐릭터 이미지의 저작권은 원작 제작사(에피드)에 있으며, 원작의 2차 창작 가이드라인 범위 안에서 사용합니다. **정식 공개된 캐릭터만** 쓰고, 아직 공개되지 않은 자료는 쓰지 않습니다.
+- 제작사가 삭제를 요청하면 즉시 내립니다 (`content_trickcal/avatars/` 폴더 삭제만으로 도형 아바타로 돌아갑니다).
+
+## 아바타 이미지
+
+| 폴더 | 캐릭터 | 출처 |
+|---|---|---|
+| `content_trickcal/avatars/avatar_01` ~ `avatar_08` | 에르핀, 버터, 엘레나, 실라, 셰이디, 다야, 벨리타, 죠안 | 트릭컬 리바이브(에피드)의 캐릭터 일러스트. 팬이 만든 스파인 뷰어(`viewer.dclnslde.com`)에서 재생 화면을 캡처해 감정별 프레임(`idle·happy·angry·surprised·sad·cheer`, 초당 10프레임, 256px 상반신 크롭, 큰 화면용 정지 이미지는 512px)으로 사용. 저작권은 원작 제작사에 있음 |

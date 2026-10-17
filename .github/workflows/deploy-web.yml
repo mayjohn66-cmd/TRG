@@ -1,0 +1,109 @@
+name: Deploy web build
+
+# 이 저장소에 푸시할 때마다 테스트를 돌리고, 통과하면 Godot 웹(HTML5) 빌드를 gh-pages 브랜치에 올려
+# https://<계정>.github.io/<저장소>/ 에서 항상 최신 버전을 바로 플레이할 수 있게 한다.
+on:
+  push:
+    branches:
+      - main
+      - "claude/**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deploy-web
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "4.7.1"
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Godot and web export templates
+        run: |
+          set -euo pipefail
+          BASE="https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable"
+          curl -fsSL -o godot.zip "${BASE}/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip
+          sudo mv "Godot_v${GODOT_VERSION}-stable_linux.x86_64" /usr/local/bin/godot
+          curl -fsSL -o templates.tpz "${BASE}/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          mkdir -p "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          unzip -q templates.tpz -d tpl
+          mv tpl/templates/* "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable/"
+          rm -rf godot.zip templates.tpz tpl
+          godot --version
+
+      - name: Import project
+        run: |
+          godot --headless --path . --import || true
+          godot --headless --path . --import
+
+      - name: Run unit tests
+        run: godot --headless --path . -s res://tests/run_tests.gd
+
+      - name: Run UI smoke test (full game without cheats)
+        run: godot --headless --path . -s res://tests/ui_smoke.gd
+
+      - name: Run UI smoke test in AI mode (1P vs 3AI bots)
+        run: SMOKE_AI=1 godot --headless --path . -s res://tests/ui_smoke.gd
+
+      - name: Run roll effect test (gauge, spin, reels, card flips)
+        run: godot --headless --path . -s res://tests/ui_fx_test.gd
+
+      - name: Run lobby UI test (WebRTC lobby screens, no network)
+        run: godot --headless --path . -s res://tests/ui_lobby_test.gd
+
+      - name: Run online lockstep test (2 players, no bots)
+        run: godot --headless --path . -s res://tests/ui_net_test.gd
+
+      - name: Run online lockstep test (2 humans + 2 bots)
+        run: SEATS=4 BOTS=3,4 godot --headless --path . -s res://tests/ui_net_test.gd
+
+      - name: Export web build
+        run: |
+          mkdir -p build/web
+          godot --headless --path . --export-release "Web" build/web/index.html
+          touch build/web/.nojekyll
+          # Vercel이 gh-pages 브랜치(또는 이 폴더)를 빌드 없이 그대로 호스팅하도록 설정 파일을 함께 싣는다.
+          cp vercel.json build/web/vercel.json
+          # 링크 미리보기(Open Graph)용 이미지와 홈 화면 아이콘: shell.html이 index.html 기준 상대/절대 주소로 참조한다.
+          cp web/og-image.png build/web/og-image.png
+          cp web/icon.png build/web/icon.png
+          cp web/title-logo.png build/web/title-logo.png
+          ls -la build/web
+
+      - name: Publish to gh-pages
+        run: |
+          set -euo pipefail
+          cd build/web
+          git init -q
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -q -b gh-pages
+          git add -A
+          git commit -q -m "Deploy web build from ${GITHUB_SHA}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" gh-pages
+
+      # 선택: 저장소 시크릿 VERCEL_TOKEN / VERCEL_ORG_ID / VERCEL_PROJECT_ID가 있으면 같은 빌드를 Vercel에도 바로 배포한다.
+      # (없으면 건너뜀. 시크릿 없이도 Vercel 프로젝트의 Production Branch를 gh-pages로 두면 자동 배포된다 - README 참고)
+      - name: Deploy to Vercel (optional)
+        if: ${{ github.ref_name == 'main' || startsWith(github.ref_name, 'claude/') }}
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          if [ -z "${VERCEL_TOKEN}" ] || [ -z "${VERCEL_ORG_ID}" ] || [ -z "${VERCEL_PROJECT_ID}" ]; then
+            echo "Vercel 시크릿이 없어 건너뜁니다."
+            exit 0
+          fi
+          cd build/web
+          npx --yes vercel@latest deploy --prod --yes --token "${VERCEL_TOKEN}"
