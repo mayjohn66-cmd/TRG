@@ -382,8 +382,8 @@ func _rich(text: String, size_px: int = 19, color: Color = INK) -> RichTextLabel
 	label.add_theme_constant_override("line_separation", 6)
 	label.custom_minimum_size = Vector2(440, 0)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	# 굵은 글씨는 글꼴에 굵은체가 없어 뭉개지므로 형광펜 같은 강조선(밑줄 + 옅은 노란 띠)으로 대신한다.
-	label.text = text.replace("[b]", "[bgcolor=#ffe9a066][u]").replace("[/b]", "[/u][/bgcolor]")
+	# 굵은 글씨는 글꼴에 굵은체가 없어 뭉개지므로 형광펜으로 칠한 것처럼 노란 띠로 강조한다 (밑줄은 쓰지 않는다).
+	label.text = text.replace("[b]", "[bgcolor=#ffe45c99]").replace("[/b]", "[/bgcolor]")
 	return label
 
 
