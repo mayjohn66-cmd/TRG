@@ -1489,7 +1489,7 @@ func _jump_arrow_target(index: int) -> int:
 func _place_tile(index: int) -> void:
 	var tile: BoardSkin.Tile = _tile_views[index]
 	var span: float = BOARD_SIZE * (TILT_ZOOM if view_mode == ViewMode.TILT else 1.0)
-	tile.size = Vector2.ONE * (float(tile.data.diameter) * span + 4.0)
+	tile.size = (tile.data.footprint as Vector2) * span + Vector2.ONE * 4.0
 	tile.pivot_offset = tile.size / 2.0
 	tile.position = _tile_center(index) - tile.size / 2.0
 	var depth: float = _depth_scale(tile_norm(index).y)

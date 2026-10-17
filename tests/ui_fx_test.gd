@@ -387,8 +387,12 @@ func _test_view_modes() -> void:
 		if tile.symbol != null:
 			var transform: Transform2D = tile.symbol.get_global_transform()
 			_expect(absf(transform.x.length()-transform.y.length()) < 0.001, "문양 비율 보존: %d" % i)
+		if not tile.data.major:
+			_expect(tile.band.size() >= 3, "일반 발판의 안쪽 색 띠가 있어야 한다: %d" % i)
+			for point: Vector2 in tile.band:
+				_expect(Geometry2D.is_point_in_polygon(point,tile.outline_points), "색 띠가 발판 밖으로 나가지 않아야 한다: %d" % i)
 	var round_tile: BoardSkin.Tile = _board._tile_views[1]
-	_expect(_board._tile_at(round_tile.get_global_transform()*Vector2.ZERO) == -1, "원형 발판 바깥 사각 모서리는 클릭되지 않는다")
+	_expect(_board._tile_at(round_tile.get_global_transform()*Vector2.ZERO) == -1, "둥근 직사각 발판 바깥 모서리는 클릭되지 않는다")
 	var previous_laws: Array[LawResource] = _board.state.rulebook.active_laws_queue.duplicate()
 	_board.state.rulebook.active_laws_queue.clear()
 	_board.state.rulebook.enqueue_law(LawRegistry.create("LAW_01"))

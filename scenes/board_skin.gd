@@ -1,27 +1,31 @@
-## Shared artwork and deterministic board geometry, from the reviewed v0.9 prototype.
+## Shared board artwork and projected property-style tile geometry.
 class_name BoardSkin
 extends RefCounted
 
 const TRACK_INSET: float = 0.08
-## 일반 타일 한 변(보드 한 변 = 1). 타일 간격(0.14)보다 조금 작아 빽빽하지만 겹치지 않는다.
-const NORMAL_SIZE: float = 0.108
+## Board-normalized dimensions: narrow along the track, deep toward the center.
+const NORMAL_WIDTH: float = 0.108
+const NORMAL_SIZE: float = 0.142
+const CORNER_SIZE: float = 0.144
 const SURFACE: Texture2D = preload("res://assets/board/trickcal/board_surface.png")
 
 static func definition(index: int) -> Dictionary:
-	# 24칸 사각 트랙: 일반 타일은 큼직한 둥근 사각형, 네 모서리(0·6·12·18번)는 1.25배 큰 팔각 코너 타일.
-	var data: Dictionary = {"kind":"normal", "fill":Color("f9f9f3"), "edge":Color("80aa4b"), "ink":Color("486135"), "diameter":NORMAL_SIZE, "major":false}
+	# Color bands describe existing tile types, never player ownership.
+	var horizontal_row: bool = index in range(7,12) or index in range(19,24)
+	var footprint := Vector2(NORMAL_WIDTH,NORMAL_SIZE) if horizontal_row else Vector2(NORMAL_SIZE,NORMAL_WIDTH)
+	var data: Dictionary = {"kind":"normal", "fill":Color("fff6df"), "edge":Color("7c9558"), "ink":Color("486135"), "band":Color("b4d479"), "footprint":footprint, "diameter":NORMAL_SIZE, "major":false}
 	if index in GameEnums.BAKERY_TILES:
-		data.merge({"kind":"bakery", "fill":Color("ffdd74"), "edge":Color("d98b2b"), "ink":Color("583a1a")},true)
+		data.merge({"kind":"bakery", "band":Color("f4bd55"), "edge":Color("b68b43"), "ink":Color("845221")},true)
 	if index in GameEnums.PORTAL_TILES:
-		data.merge({"kind":"portal", "fill":Color("dcc5e7"), "edge":Color("8e4aa8"), "ink":Color("58366b")},true)
+		data.merge({"kind":"portal", "band":Color("ac87c7"), "edge":Color("8d6a9c"), "ink":Color("69457d")},true)
 	if index in GameEnums.CORNER_TILES:
-		data.merge({"diameter":NORMAL_SIZE*1.25, "major":true},true)
+		data.merge({"diameter":CORNER_SIZE, "footprint":Vector2.ONE*CORNER_SIZE, "major":true},true)
 		if index == GameEnums.GOAL_TILE:
-			data.merge({"kind":"start", "fill":Color("5da530"), "edge":Color("416c2b"), "ink":Color("f9f9f3")},true)
+			data.merge({"kind":"start", "edge":Color("5d8c3d"), "ink":Color("416c2b")},true)
 		elif index == GameEnums.HALFWAY_TILE:
-			data.merge({"kind":"half", "fill":Color("ffe8a3"), "edge":Color("d9a52b"), "ink":Color("6b4a12")},true)
+			data.merge({"kind":"half", "edge":Color("b68b43"), "ink":Color("845221")},true)
 		else:
-			data.merge({"kind":"corner", "fill":Color("89cd4c"), "edge":Color("5da530"), "ink":Color("2f4923")},true)
+			data.merge({"kind":"corner", "edge":Color("5d8c3d"), "ink":Color("416c2b")},true)
 	return data
 
 static func track(norm: Vector2) -> Vector2:
@@ -177,25 +181,14 @@ class Symbol extends Control:
 static func shape(major: bool, inset: float = 0.0) -> PackedVector2Array:
 	var points := PackedVector2Array()
 	var width: float = 96.0-2.0*inset
-	if not major:
-		# 둥근 사각형(슈퍼타원): 부르마블 땅 문서 느낌
-		for i: int in 96:
-			var angle: float = float(i)*TAU/96.0
-			var ca: float = cos(angle)
-			var sa: float = sin(angle)
-			var rx: float = signf(ca)*pow(absf(ca),0.38)
-			var ry: float = signf(sa)*pow(absf(sa),0.38)
-			points.append(Vector2(48,48)+Vector2(rx,ry)*width/2.0)
-	else:
-		var c: float = width*0.25
-		var vertices := PackedVector2Array([Vector2(c,0),Vector2(width-c,0),Vector2(width,c),Vector2(width,width-c),Vector2(width-c,width),Vector2(c,width),Vector2(0,width-c),Vector2(0,c)])
-		for i: int in vertices.size():
-			var v: Vector2 = vertices[i]
-			var before: Vector2 = v+(vertices[(i+7)%8]-v).normalized()*3.0
-			var after: Vector2 = v+(vertices[(i+1)%8]-v).normalized()*3.0
-			for j: int in 7:
-				var t: float = float(j)/6.0
-				points.append((1.0-t)*(1.0-t)*before+2.0*(1.0-t)*t*v+t*t*after+Vector2.ONE*inset)
+	var radius: float = minf(8.0 if major else 5.0,width/2.0)
+	var lo: float = inset
+	var hi: float = inset+width
+	var centers: Array[Vector2] = [Vector2(hi-radius,lo+radius),Vector2(hi-radius,hi-radius),Vector2(lo+radius,hi-radius),Vector2(lo+radius,lo+radius)]
+	for corner: int in 4:
+		for step: int in 9:
+			var angle: float = -PI/2.0+corner*PI/2.0+step*PI/16.0
+			points.append(centers[corner]+Vector2(cos(angle),sin(angle))*radius)
 	return points
 
 
@@ -220,6 +213,7 @@ class Tile extends Control:
 	var layers: Array[PackedVector2Array] = []
 	var side := PackedVector2Array()
 	var shadow := PackedVector2Array()
+	var band := PackedVector2Array()
 	var symbol: Symbol
 	var arrow_target: int = -1
 
@@ -239,22 +233,35 @@ class Tile extends Control:
 		var center: Vector2 = projector.call(world_center)
 		var diameter: float = data.diameter
 		layers.clear()
-		for inset: float in [0.0,3.0,7.0,8.5]:
+		for inset: float in [0.0,1.8,3.6]:
 			var points := PackedVector2Array()
 			for pixel: Vector2 in BoardSkin.shape(data.major,inset):
-				var point: Vector2 = projector.call(world_center+(pixel/96.0-Vector2.ONE/2.0)*diameter)
+				var point: Vector2 = projector.call(world_center+(pixel/96.0-Vector2.ONE/2.0)*(data.footprint as Vector2))
 				points.append((point-center)/scale+size/2.0)
 			layers.append(points)
 		outline_points = layers[0]
+		band.clear()
+		var inward: Vector2 = [Vector2.LEFT,Vector2.DOWN,Vector2.RIGHT,Vector2.UP][index/6]
+		if not data.major:
+			# The strip follows the inner edge on all four sides of the board.
+			var strips: Array[Rect2] = [Rect2(0,0,21,96),Rect2(0,75,96,21),Rect2(75,0,21,96),Rect2(0,0,96,21)]
+			var strip: Rect2 = strips[index/6]
+			var clip := PackedVector2Array([strip.position,Vector2(strip.end.x,strip.position.y),strip.end,Vector2(strip.position.x,strip.end.y)])
+			var clipped: Array[PackedVector2Array] = Geometry2D.intersect_polygons(BoardSkin.shape(false,3.6),clip)
+			if not clipped.is_empty():
+				for pixel: Vector2 in clipped[0]:
+					var point: Vector2 = projector.call(world_center+(pixel/96.0-Vector2.ONE/2.0)*(data.footprint as Vector2))
+					band.append((point-center)/scale+size/2.0)
 		side.clear()
 		shadow.clear()
-		var thickness: float = 2.5*span/760.0*visual_depth
+		var thickness: float = 2.0*span/760.0*visual_depth
 		for p: Vector2 in outline_points:
 			side.append(p+Vector2(0,thickness)/scale)
 			shadow.append(p+Vector2(0,thickness*2.0)/scale)
 		if symbol != null:
-			symbol.position = size/2.0
-			var mark_scale: float = diameter*span*visual_depth/96.0*(1.2 if data.major else 1.0)
+			var mark_center: Vector2 = projector.call(world_center if data.major else world_center-inward*0.014)
+			symbol.position = (mark_center-center)/scale+size/2.0
+			var mark_scale: float = diameter*span*visual_depth/96.0*(1.05 if data.major else 0.75)
 			symbol.scale = Vector2.ONE*mark_scale/scale
 			symbol.direction = direction
 			symbol.queue_redraw()
@@ -271,9 +278,11 @@ class Tile extends Control:
 		var fill: Color = data.fill
 		draw_colored_polygon(shadow,Color(0.22,0.35,0.13,0.12))
 		draw_colored_polygon(side,edge.darkened(0.16))
-		var colors: Array[Color] = [edge,fill.lightened(0.28),edge.lerp(fill,0.65),fill]
+		var colors: Array[Color] = [edge,Color("fffdf5"),fill]
 		for i: int in layers.size():
 			draw_colored_polygon(layers[i],colors[i])
+		if band.size() >= 3:
+			draw_colored_polygon(band,data.band)
 
 	func _has_point(point: Vector2) -> bool:
 		return Geometry2D.is_point_in_polygon(point,outline_points)
