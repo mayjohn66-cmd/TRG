@@ -163,6 +163,14 @@ static func apply_step(
 	report.path.append(destination)
 	ctx.path_nodes.append(destination)
 	state.pawn_stepped.emit(mover.entity_id, from_tile, destination)
+	# 출발선(0번)에서 뒤로 물러나는 말은 한 바퀴를 거꾸로 도는 대신 회수되어 출발 대기로 돌아간다 (역주행 중에는 예외).
+	if is_first and not is_forward and from_tile == GameEnums.GOAL_TILE and state.movement_direction() > 0:
+		for member: PlayerPawn in mover.stack_members():
+			member.reset_to_start()
+		for member: PlayerPawn in mover.stack_members():
+			state.pawn_sent_to_start.emit(member.entity_id, mover.owner_id)
+		report.trapped = true
+		return StepOutcome.TRAPPED
 	_promote_pawns(state, mover, report)
 	if not is_last:
 		# 강아지: 빵집을 멈추지 않고 지나가기만 해도 카드 1장 (도착한 빵집은 _resolve_landing이 처리한다)

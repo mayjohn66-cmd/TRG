@@ -435,8 +435,9 @@ func test_intervention_window_stays_closed_when_nobody_can_use_their_cards() -> 
 func test_act_04_finishes_a_pawn_that_backed_off_to_the_last_tile() -> void:
 	var manager: TurnManager = _new_manager()
 	manager.state.give_card(1, &"ACT_04")
+	manager.state.reverse_move_rounds_left = 3  # 23번 후퇴는 역주행 중에만 가능 (일반 후퇴는 회수)
 	place(manager.state, 11, 0, [])  # 출발한 적 있는 말이 0번까지 돌아온 상태 (출발 전 말은 후퇴를 고를 수 없다)
-	_set_tool(manager, 1, ScriptedTool.new([-1]))
+	_set_tool(manager, 1, ScriptedTool.new([1]))
 	_do(manager, 1, &"proceed")
 	_do(manager, 1, &"roll")
 	check_eq(manager.current_state, Phase.PHASE_SELECT_PAWN, "굴림 뒤 개입 창 없음")

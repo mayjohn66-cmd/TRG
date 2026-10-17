@@ -278,8 +278,9 @@ func test_act_04_works_at_23_after_retreating_from_start() -> void:
 	var card: BaseCard = CardRegistry.get_card(&"ACT_04")
 	place(state, 11, 0, [], false)
 	check(not card.can_play(state, 1, {"pawn_id": 11}), "후퇴 전에는 사용 불가")
+	state.reverse_move_rounds_left = 1  # 일반 후퇴는 회수되므로 23번 후퇴는 역주행 중에만 생긴다
 	var report: MoveReport = move(state, 11, -1)
-	check_eq(report.path, int_array([23]), "0번에서 후퇴하면 23번")
+	check_eq(report.path, int_array([23]), "역주행 중 0번에서 후퇴하면 23번")
 	check(card.can_play(state, 1, {"pawn_id": 11}), "23번 도착 직후 발동 가능")
 	check(not card.can_play(state, 2, {"pawn_id": 11}), "남의 말에는 사용 불가")
 	exec(state, card.create_command(state, 1, {"pawn_id": 11}))

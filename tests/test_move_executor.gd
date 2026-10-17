@@ -76,32 +76,31 @@ func test_finish_without_law_discards_surplus() -> void:
 	check_eq(report.path, int_array([23, 0]), "경로")
 
 
-func test_retreating_from_start_blocks_finish_until_passing_start_again() -> void:
+func test_retreating_from_start_line_recalls_the_pawn() -> void:
 	var state := make_state()
-	place(state, 11, 0, [], false)
+	place(state, 11, 0, [])
+	var report: MoveReport = move(state, 11, -1)
+	var pawn: PlayerPawn = state.get_pawn(11)
+	check(report.trapped, "회수 처리")
+	check_eq(pawn.current_tile_idx, 0, "출발선에 머문다")
+	check(not pawn.has_left_start and not pawn.retreated_run, "출발 대기 상태로 돌아간다")
+	check(not state.hurt_players.has(1), "스스로 물러난 것이라 피해 기록은 남기지 않는다")
+
+
+func test_retreated_run_pawn_must_pass_start_again_to_finish() -> void:
+	var state := make_state()
+	state.reverse_move_rounds_left = 1
+	place(state, 11, 0, [])
 	move(state, 11, -1)
 	var pawn: PlayerPawn = state.get_pawn(11)
-	check_eq(pawn.current_tile_idx, 23, "출발선에서 23번으로 후퇴")
-	check(pawn.retreated_run, "후퇴 표시")
-	var first: MoveReport = move(state, 11, 1)
-	check(not first.finished and not pawn.is_finished, "후퇴한 말은 0번에 닿아도 완주하지 못한다")
-	check_eq(pawn.current_tile_idx, 0, "0번에 멈춤")
-	var second: MoveReport = move(state, 11, 3)
-	check(not pawn.retreated_run, "0번을 지나가면 표시가 풀린다")
-	check_eq(pawn.current_tile_idx, 3, "그대로 한 바퀴를 더 돈다")
-	place(state, 11, 22, [21])
-	var third: MoveReport = move(state, 11, 5)
-	check(third.finished, "한 바퀴 뒤에는 정상 완주")
-
-
-func test_retreated_pawn_passes_goal_without_finishing_in_one_move() -> void:
-	var state := make_state()
-	place(state, 11, 0, [], false)
-	move(state, 11, -1)
+	check(pawn.retreated_run and pawn.current_tile_idx == 23, "역주행 중 후퇴는 23번")
+	state.reverse_move_rounds_left = 0
 	var report: MoveReport = move(state, 11, 4)
-	check(not report.finished, "후퇴한 말은 한 번에 넘어가도 완주 아님")
-	check_eq(state.get_pawn(11).current_tile_idx, 3, "0번을 지나 3번")
-	check(not state.get_pawn(11).retreated_run, "통과로 표시 해제")
+	check(not report.finished and not pawn.is_finished, "후퇴한 말은 0번을 넘어가도 완주가 아니다")
+	check_eq(pawn.current_tile_idx, 3, "0번을 지나 3번")
+	check(not pawn.retreated_run, "통과로 표시 해제")
+	place(state, 11, 22, [21])
+	check(move(state, 11, 5).finished, "한 바퀴 뒤에는 정상 완주")
 
 
 func test_reverse_run_lets_retreated_pawn_finish() -> void:
