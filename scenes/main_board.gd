@@ -250,6 +250,7 @@ var _tool_board: PanelContainer = null
 var _tool_title: Label = null
 var _tool_icon: PanelContainer = null
 var _tool_icon_label: Label = null
+var _tool_icon_art: TextureRect = null
 var _tool_main: Label = null
 var _tool_sub: Label = null
 var _tool_rules: VBoxContainer = null
@@ -1158,6 +1159,9 @@ func _build_tool_board() -> void:
 	_tool_icon_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_tool_icon_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_tool_icon.add_child(_tool_icon_label)
+	_tool_icon_art = AugmentArt.make_texture(null, 48.0)
+	_tool_icon_art.visible = false
+	_tool_icon.add_child(_tool_icon_art)
 	_tool_title = _make_label("", 17, COLOR_GOLD)
 	_tool_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_tool_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -3191,6 +3195,9 @@ func _refresh_tool_board(tool: BaseJudgmentTool, player_id: int) -> void:
 	_tool_board_key = "%d:%s" % [player_id, tool.tool_id]
 	_tool_icon.add_theme_stylebox_override("panel", _style(card[1], (card[1] as Color).lightened(0.4), 2, 12, 0, 0))
 	_tool_icon_label.text = card[0]
+	_tool_icon_art.texture = AugmentArt.load_first(AugmentArt.tool_candidates(tool.tool_id))
+	_tool_icon_art.visible = _tool_icon_art.texture != null
+	_tool_icon_label.visible = _tool_icon_art.texture == null
 	_tool_title.text = tool.display_name
 	_tool_title.add_theme_color_override("font_color", UiSkin.INK)
 	_tool_main.text = card[2]
@@ -5066,11 +5073,11 @@ func _augment_card_info(definition: AugmentDef, player_id: int) -> Dictionary:
 	for line: String in definition.describe(state, player_id).split("\n"):
 		if not line.begins_with("※"):
 			lines.append(line)
-	return {"glyph": glyph, "color": color, "title": title, "desc": "\n".join(lines), "category": AugmentDef.category_name(definition.category)}
+	return {"glyph": glyph, "color": color, "title": title, "desc": "\n".join(lines), "category": AugmentDef.category_name(definition.category), "art": AugmentArt.load_first(AugmentArt.candidates(definition))}
 
 
-## 원형 후광 + 큰 원형 엠블럼 (이모지 없이 도형과 글자만으로 그린다). 크기는 150x150.
-func _make_emblem(glyph: String, color: Color) -> Control:
+## 150px 후광 / 120px 네온 메달 / 110px 원형 이미지. 이미지가 없으면 글자.
+func _make_emblem(glyph: String, color: Color, texture: Texture2D = null) -> Control:
 	var emblem := Control.new()
 	emblem.custom_minimum_size = Vector2(150, 150)
 	emblem.size = Vector2(150, 150)
@@ -5092,7 +5099,20 @@ func _make_emblem(glyph: String, color: Color) -> Control:
 	disc_box.shadow_offset = Vector2.ZERO
 	disc.add_theme_stylebox_override("panel", disc_box)
 	emblem.add_child(disc)
+	if texture != null:
+		var art: TextureRect = AugmentArt.make_texture(texture, 110.0)
+		art.position = Vector2(5, 5)
+		disc.add_child(art)
+		# Draw a transparent ring above the image; shader clips only its inner art.
+		var ring := Panel.new()
+		ring.name = "EmblemRing"
+		ring.size = Vector2(120, 120)
+		ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		ring.add_theme_stylebox_override("panel", _style(Color.TRANSPARENT, color, 5, 60, 0, 0))
+		disc.add_child(ring)
+		return emblem
 	var mark := _make_label(glyph, 56 if glyph.length() <= 1 else 38, color.lightened(0.55))
+	mark.name = "EmblemGlyph"
 	mark.position = Vector2(0, 0)
 	mark.size = Vector2(120, 120)
 	mark.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -5128,7 +5148,7 @@ func _make_augment_card(info: Dictionary, on_pick: Callable) -> Button:
 	tag.position = Vector2(12, 8)
 	tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	card.add_child(tag)
-	var emblem: Control = _make_emblem(str(info["glyph"]), color)
+	var emblem: Control = _make_emblem(str(info["glyph"]), color, info.get("art") as Texture2D)
 	emblem.position = Vector2((AUGMENT_CARD_SIZE.x - 150.0) / 2.0, 14)
 	card.add_child(emblem)
 	var title := _make_label(str(info["title"]), 21, Color("ffffff"))

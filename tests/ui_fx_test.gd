@@ -64,6 +64,7 @@ func _run() -> void:
 	await _test_roll_pad()
 	await _test_hud_overhaul()
 	await _test_card_art_layout()
+	await _test_augment_art()
 	await _test_bot_pacing()
 	await _test_action_beats()
 	await _test_tool_cards_fit()
@@ -75,6 +76,42 @@ func _run() -> void:
 		for message: String in _failures:
 			printerr("UI_FX_FAIL: " + message)
 		quit(1)
+
+
+## Optional art must resolve in order and preserve readable glyphs when missing.
+func _test_augment_art() -> void:
+	var law: AugmentDef = AugmentRegistry.get_def(&"AUG_LAW_03")
+	var pack: AugmentDef = AugmentRegistry.get_def(&"CARD_PACKAGE")
+	var law_paths: Array[String] = AugmentArt.candidates(law)
+	_expect(law_paths[0].ends_with("laws/LAW_03.png"), "individual law art precedes category art")
+	var law_art: Texture2D = AugmentArt.load_first(law_paths)
+	var pack_art: Texture2D = AugmentArt.load_first(AugmentArt.candidates(pack))
+	_expect(law_art != null and pack_art != null, "both required augment icons load after import")
+	_expect(AugmentArt.load_first(["res://missing_icon.png", pack_art.resource_path, law_art.resource_path]) == pack_art, "missing art skips to first available texture")
+	_expect(AugmentArt.load_first([law_art.resource_path, pack_art.resource_path]) == law_art, "specific texture wins over available representative")
+	for definition: AugmentDef in AugmentRegistry.all():
+		var info: Dictionary = _board._augment_card_info(definition, 1)
+		var card: Button = _board._make_augment_card(info, Callable())
+		_board.add_child(card)
+		await process_frame
+		var art: TextureRect = card.find_child("EmblemArt", true, false) as TextureRect
+		var glyph: Label = card.find_child("EmblemGlyph", true, false) as Label
+		_expect((art != null) != (glyph != null), "%s has either art or glyph" % definition.augment_id)
+		if definition.category in [GameEnums.AugmentCategory.LAW_ENACT, GameEnums.AugmentCategory.CARD_PACKAGE]:
+			_expect(art != null and glyph == null, "%s uses generated representative icon" % definition.augment_id)
+		if art != null:
+			_expect(art.size == Vector2(110, 110) and art.position == Vector2(5, 5), "square art fits inside 5px neon ring")
+			_expect((art.material as ShaderMaterial).shader == AugmentArt.CIRCLE_SHADER, "real circular shader masks the square icon")
+			_expect(card.find_child("EmblemRing", true, false) != null, "neon ring remains above image")
+		card.queue_free()
+	for kind: GameEnums.PawnKind in PawnCatalog.EVOLVABLE_SETS:
+		var definition := AugmentDef.new(&"TEST", GameEnums.AugmentCategory.PAWN_EVOLUTION, "", kind, [1])
+		var paths: Array[String] = AugmentArt.candidates(definition)
+		_expect(paths[0].contains("/pawns/") and paths[-1].contains("/PAWN_"), "pawn detail precedes family for %s" % kind)
+	for tool_id: StringName in AugmentRegistry.SWAPPABLE_TOOLS:
+		var paths: Array[String] = AugmentArt.tool_candidates(tool_id)
+		_expect(paths[0] == AugmentArt.ROOT + "dice/%s.png" % tool_id, "tool detail uses runtime ID %s" % tool_id)
+		_expect(paths[-1].get_file().begins_with("DICE_"), "all nine tools map to requested DICE filename")
 
 
 ## All live card names/effects must fit both layouts with the actual game font.
