@@ -1,4 +1,4 @@
-# TRG - 에르핀의 억지 레이스: 보드게임 대격돌 (가제)
+# TRG - 초증강 엘리아스 마블 (Hyper Augment Elias Marble)
 
 기획서: [`docs/GDD_TDD_Master.md`](docs/GDD_TDD_Master.md) · 예외 규칙 확정 명세: [`docs/EDGE_CASE_SPEC.md`](docs/EDGE_CASE_SPEC.md)
 

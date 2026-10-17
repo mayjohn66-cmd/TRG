@@ -84,7 +84,7 @@ func _build_name_page(parent: VBoxContainer) -> void:
 	_name_page.custom_minimum_size = Vector2(520, 0)
 	_name_page.add_theme_constant_override("separation", 10)
 	parent.add_child(_name_page)
-	_name_page.add_child(HubKit.logo("에르핀의", "억지 레이스", "보드게임 대격돌"))
+	_name_page.add_child(HubKit.logo("초증강", "엘리아스 마블", "HYPER AUGMENT ELIAS MARBLE"))
 	var gap := Control.new()
 	gap.custom_minimum_size = Vector2(0, 26)
 	_name_page.add_child(gap)
@@ -141,7 +141,7 @@ func _build_mode_page() -> void:
 	left.add_theme_constant_override("separation", 8)
 	left.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_mode_page.add_child(left)
-	var logo := HubKit.logo("에르핀의", "억지 레이스", "보드게임 대격돌")
+	var logo := HubKit.logo("초증강", "엘리아스 마블", "HYPER AUGMENT ELIAS MARBLE")
 	left.add_child(logo)
 	var avatar_holder := CenterContainer.new()
 	avatar_holder.name = "AvatarHolder"

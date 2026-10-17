@@ -172,9 +172,15 @@ func _step_title() -> void:
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	title.add_theme_constant_override("outline_size", 12)
 	title.add_theme_color_override("font_outline_color", Color("5c4300"))
-	title.position = Vector2(0, 0)
-	title.size = Vector2(1366, 120)
+	title.position = Vector2(0, 4)
+	title.size = Vector2(1366, 80)
 	ribbon.add_child(title)
+	# 이모지는 글꼴에 없어 깃발 글자는 뺀다.
+	var subtitle: Label = _board._make_label("GAME START! - 초증강 엘리아스 마블 개막!", 22, Color("fff3bf"))
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.position = Vector2(0, 84)
+	subtitle.size = Vector2(1366, 30)
+	ribbon.add_child(subtitle)
 	ribbon.pivot_offset = ribbon.size / 2.0
 	ribbon.scale = Vector2(1.0, 2.6)
 	ribbon.modulate.a = 0.0
