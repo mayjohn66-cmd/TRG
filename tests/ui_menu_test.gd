@@ -106,14 +106,14 @@ func _run() -> void:
 		_expect(book._left_holder.get_child_count() >= 3 and book._right_holder.get_child_count() >= 1, "펼침면 %d에 내용이 있다" % tab_index)
 	_expect(book._next.disabled and book._page_label.text == "8 / 8", "마지막 장에서는 다음 쪽이 잠긴다")
 	var all_text: String = ""
-	for node: Node in book.find_children("*", "RichTextLabel", true, false):
-		all_text += (node as RichTextLabel).text
 	book.show_spread(6)
+	for node: Node in book.find_children("*", "Label", true, false):
+		all_text += (node as Label).text
 	for node: Node in book.find_children("*", "RichTextLabel", true, false):
 		all_text += (node as RichTextLabel).text
 	_expect(all_text.contains("가위바위보 결투") and all_text.contains("운명의 수레바퀴"), "카드 쪽에 실제 카드 이름이 코드에서 읽혀 온다")
 	book.show_spread(7)
-	_expect(book.find_children("*", "RichTextLabel", true, false).any(func(node: Node) -> bool: return (node as RichTextLabel).text.contains("과속 단속")), "법전 쪽에 실제 교칙 8종이 나온다")
+	_expect(book.find_children("*", "Label", true, false).any(func(node: Node) -> bool: return (node as Label).text.contains("과속 단속")), "법전 쪽에 실제 교칙 8종이 나온다")
 	book.free()
 	menu._bottom["center"].pressed.emit()
 	var popup: Node = menu.find_child("Popup", true, false)
