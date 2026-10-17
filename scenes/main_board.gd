@@ -18,6 +18,7 @@ const BOARD_ORIGIN: Vector2 = Vector2(423, 75)
 const BOARD_SIZE: float = 520.0
 ## 보드 시점. TOP: 완전 탑뷰, TILT: 테이블에 앉아 비스듬히 내려다보는 기울인 탑뷰(세로 압축 + 위쪽이 멀어 보이는 원근 + 서 있는 말과 그림자).
 ## 보드는 한 변 6칸의 정사각 트랙을 45도 돌려 마름모로 세운다 (0번 출발선이 아래 꼭짓점, 반시계로 오른쪽 -> 위 -> 왼쪽 꼭짓점).
+const TOOL_CARD_CENTER_Y: float = 384.0  ## 판정 도구 카드의 세로 중심 (우측 중앙)
 const DIAMOND_KX: float = 520.0        ## 회전한 평면 좌표 1.0당 가로 픽셀
 const DIAMOND_KY: float = 330.0        ## 회전한 평면 좌표 1.0당 세로 픽셀 (눌러서 마름모 비율을 만든다)
 enum ViewMode { TOP, TILT }
@@ -1206,13 +1207,14 @@ func _on_tool_toggle_pressed() -> void:
 	_apply_tool_expand()
 	_tool_board.reset_size()
 	_place_action_row_below_tool_card()
-	_place_action_row_below_tool_card()
 
 
-## 펼친 상세 족보가 멈추기·패스 버튼 행을 가리지 않게, 버튼 행을 카드 바로 아래로 내린다.
+## 판정 도구 카드는 화면 우측 중앙(세로 중심 384)을 기준으로 앉고, 펼치면 위아래로 늘어난다. 멈추기·패스 버튼 행은 카드 바로 아래에 붙는다.
 func _place_action_row_below_tool_card() -> void:
-	var base_y: float = maxf(440.0, 172.0 + _tool_board.size.y + 8.0)
-	_set_layout_base(_action_row, Vector2(1134, base_y))
+	var height: float = maxf(_tool_board.size.y, _tool_board.get_combined_minimum_size().y)
+	var top_y: float = TOOL_CARD_CENTER_Y - height / 2.0
+	_set_layout_base(_tool_board, Vector2(1144, top_y))
+	_set_layout_base(_action_row, Vector2(1134, top_y + height + 8.0))
 	_apply_layout_now()
 
 
@@ -3235,6 +3237,7 @@ func _refresh_tool_board(tool: BaseJudgmentTool, player_id: int) -> void:
 		_rebuild_tool_rules(rules, card[1])
 	_apply_tool_expand()
 	_tool_board.reset_size()
+	_place_action_row_below_tool_card()
 
 
 ## 규칙표를 다시 그린다: 행마다 [항목 ......... 결과] 한 줄.
