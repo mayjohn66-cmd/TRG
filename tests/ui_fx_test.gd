@@ -132,6 +132,24 @@ func _test_pawn_tokens() -> void:
 			if token != null:
 				var bounds := Rect2(token.position + PawnToken.HIT_BOX.position*token.scale, PawnToken.HIT_BOX.size*token.scale)
 				_expect(Rect2(Vector2(-0.5,-0.5),host.size+Vector2.ONE).encloses(bounds), "token badges stay inside profile slot")
+	# A square avatar plus all skill buttons can exceed the nominal profile width.
+	# Its 1.05 turn emphasis must grow toward the board, preserving screen margins.
+	var me: Control = _board._profiles[_board.local_player_id]["panel"]
+	var previous: Array[Dictionary] = []
+	for button: Button in _board._skill_buttons:
+		previous.append({"visible":button.visible,"text":button.text})
+		button.visible = true
+		button.text = "사용됨"
+	for frame: int in 3:
+		await process_frame
+	var old_scale: Vector2 = me.scale
+	me.scale = Vector2.ONE*1.05
+	_expect(Rect2(Vector2.ZERO,Vector2(1366,768)).encloses(me.get_global_rect()), "expanded profile with all skill buttons stays inside screen")
+	for i: int in _board._skill_buttons.size():
+		_board._skill_buttons[i].visible = previous[i]["visible"]
+		_board._skill_buttons[i].text = previous[i]["text"]
+	me.scale = old_scale
+	_board._refresh_all()
 
 
 ## Optional art must resolve in order and preserve readable glyphs when missing.

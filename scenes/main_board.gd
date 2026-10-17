@@ -1058,6 +1058,28 @@ func _build_profiles() -> void:
 			"avatar": avatar,
 			"anchor": anchor,
 		}
+		panel.resized.connect(_fit_profile_to_seat.bind(panel, anchor))
+		_fit_profile_to_seat(panel, anchor)
+
+
+## Preserve seat margins when avatar/skill content grows, and enlarge inward.
+func _fit_profile_to_seat(panel: Control, anchor: StringName) -> void:
+	var nominal: Vector2 = ME_PROFILE_SIZE if anchor == SEAT_ME else PROFILE_SIZE
+	var base: Vector2 = SEAT_POSITIONS[anchor]
+	var right_edge: bool = anchor in [SEAT_ME, SEAT_RIGHT]
+	var bottom_edge: bool = anchor in [SEAT_ME, SEAT_TOP]
+	if right_edge:
+		base.x -= maxf(0.0,panel.size.x-nominal.x)
+	if bottom_edge:
+		base.y -= maxf(0.0,panel.size.y-nominal.y)
+	panel.pivot_offset = Vector2(panel.size.x if right_edge else 0.0, panel.size.y if bottom_edge else 0.0)
+	var offset := Vector2.ZERO
+	for entry: Dictionary in _layout_entries:
+		if entry["node"] == panel:
+			entry["base"] = base
+			offset = [_off_left,_off_center,_off_right][int(entry["group"])]
+			break
+	panel.position = base+offset
 
 
 ## 좌석의 아바타 id: 온라인은 로비에서 정한 값(컴퓨터는 좌석별 고정), 훈련은 내가 고른 것(컴퓨터는 좌석별 고정).
@@ -2124,9 +2146,11 @@ func _paint_pawn_slot(parts: Dictionary, pawn: PlayerPawn, color: Color) -> void
 	var panel: PanelContainer = parts["panel"]
 	letter.visible = false
 	status.visible = false
-	var width: float = maxf(panel.size.x, panel.custom_minimum_size.x)
-	var token_scale: float = 1.12 if width >= 46 else 0.88
-	_token_in(panel, pawn, color, Vector2(width/2.0, width*0.79), token_scale)
+	_token_in(panel, pawn, color, Vector2.ZERO, 1.0)
+	var reflow: Callable = _fit_profile_token.bind(panel)
+	if not panel.resized.is_connected(reflow):
+		panel.resized.connect(reflow)
+	_fit_profile_token(panel)
 	var shown: String = pawn.letter()
 	letter.text = shown if shown != "" else "말"
 	letter.add_theme_color_override("font_color", Color("ff6b6b") if pawn.is_promoted_shogi() else Color("f8f9fa"))
@@ -2148,6 +2172,15 @@ func _paint_pawn_slot(parts: Dictionary, pawn: PlayerPawn, color: Color) -> void
 		status.add_theme_color_override("font_color", Color("868e96"))
 		status.text = "대기"
 		panel.modulate = Color(1, 1, 1, 0.6)
+
+
+func _fit_profile_token(host: Control) -> void:
+	var token: PawnToken = host.get_node_or_null("PawnToken") as PawnToken
+	if token == null:
+		return
+	var extent: Vector2 = host.size.max(host.custom_minimum_size)
+	token.position = Vector2(extent.x/2.0,extent.y*0.79)
+	token.scale = Vector2.ONE*(1.12 if extent.y>=46 else 0.88)
 
 
 func _refresh_laws() -> void:
