@@ -1,0 +1,8 @@
+[gd_resource type="AtlasTexture" load_steps=2 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/trickcal/hub/UI_HUB_SETTINGS.png" id="1"]
+
+[resource]
+atlas = ExtResource("1")
+region = Rect2(31.43860, 27.76396, 192.91866, 199.45136)
+filter_clip = true
