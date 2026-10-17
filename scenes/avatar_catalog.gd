@@ -5,14 +5,14 @@ class_name AvatarCatalog
 extends RefCounted
 
 const ENTRIES: Array[Dictionary] = [
-	{"id": &"avatar_01", "name": "아바타 1", "color": Color("e8590c")},
-	{"id": &"avatar_02", "name": "아바타 2", "color": Color("1c7ed6")},
-	{"id": &"avatar_03", "name": "아바타 3", "color": Color("2f9e44")},
-	{"id": &"avatar_04", "name": "아바타 4", "color": Color("ae3ec9")},
-	{"id": &"avatar_05", "name": "아바타 5", "color": Color("f59f00")},
-	{"id": &"avatar_06", "name": "아바타 6", "color": Color("0c8599")},
-	{"id": &"avatar_07", "name": "아바타 7", "color": Color("d6336c")},
-	{"id": &"avatar_08", "name": "아바타 8", "color": Color("5c7cfa")},
+	{"id": &"avatar_01", "name": "에르핀", "color": Color("f2b01e")},
+	{"id": &"avatar_02", "name": "버터", "color": Color("e8903a")},
+	{"id": &"avatar_03", "name": "엘레나", "color": Color("c0524a")},
+	{"id": &"avatar_04", "name": "실라", "color": Color("7fc45c")},
+	{"id": &"avatar_05", "name": "셰이디", "color": Color("8a909c")},
+	{"id": &"avatar_06", "name": "다야", "color": Color("6fa3dc")},
+	{"id": &"avatar_07", "name": "벨리타", "color": Color("b33a3a")},
+	{"id": &"avatar_08", "name": "죠안", "color": Color("3a8a52")},
 ]
 const DEFAULT_ID: StringName = &"avatar_01"
 

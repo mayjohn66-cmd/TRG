@@ -344,6 +344,7 @@ func _test_avatar_seats() -> void:
 	_board._compute_seats()
 	# 아바타 칸: 에셋이 없으면 자리표시자, 반응하면 감정 이름이 보이고 시간이 지나면 돌아온다
 	var avatar: AvatarSlot = _board._profiles[2]["avatar"]
+	avatar.set_character(&"no_such_character")  # 에셋이 없는 캐릭터로 자리표시자 동작을 확인한다
 	_expect(not avatar.has_art() and avatar.emotion == AvatarSlot.Emotion.IDLE, "에셋이 없으면 자리표시자")
 	avatar.react(AvatarSlot.Emotion.ANGRY, 0.0)
 	_expect(avatar.emotion == AvatarSlot.Emotion.ANGRY and avatar._caption.visible and avatar._caption.text == "분노", "자리표시자가 감정 이름을 보여 준다")

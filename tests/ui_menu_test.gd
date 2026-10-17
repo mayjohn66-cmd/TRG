@@ -92,7 +92,7 @@ func _run() -> void:
 	_expect(menu.step == 4 and menu._avatar_page.visible and menu._avatar_tiles.size() == AvatarCatalog.ids().size(), "아바타 설정 화면: 선택 칸 %d개" % menu._avatar_tiles.size())
 	_expect(GameSession.avatar_id == AvatarCatalog.DEFAULT_ID and menu._avatar_name.text == AvatarCatalog.name_of(AvatarCatalog.DEFAULT_ID), "기본 아바타가 미리보기에 보인다")
 	(menu._avatar_tiles[&"avatar_03"] as Button).pressed.emit()
-	_expect(GameSession.avatar_id == &"avatar_03" and menu._avatar_name.text == "아바타 3" and menu._avatar_preview.character_id == &"avatar_03", "아바타를 고르면 저장되고 미리보기가 바뀐다")
+	_expect(GameSession.avatar_id == &"avatar_03" and menu._avatar_name.text == "엘레나" and menu._avatar_preview.character_id == &"avatar_03", "아바타를 고르면 저장되고 미리보기가 바뀐다")
 	_expect(menu._avatar_preview.emotion == AvatarSlot.Emotion.HAPPY, "고르면 웃음 반응")
 	menu._back_button.pressed.emit()
 	_expect(menu.step == 2, "아바타 화면의 뒤로가기는 모드 선택으로")

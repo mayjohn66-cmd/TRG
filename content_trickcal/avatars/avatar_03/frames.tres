@@ -1,0 +1,73 @@
+[gd_resource type="SpriteFrames" load_steps=39 format=3]
+
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_03/frames/idle_0.png" id="1_idle0"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_03/frames/idle_1.png" id="2_idle1"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_03/frames/idle_2.png" id="3_idle2"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_03/frames/idle_3.png" id="4_idle3"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_03/frames/idle_4.png" id="5_idle4"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_03/frames/idle_5.png" id="6_idle5"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_03/frames/idle_6.png" id="7_idle6"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_03/frames/idle_7.png" id="8_idle7"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_03/frames/happy_0.png" id="9_happy0"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_03/frames/happy_1.png" id="10_happy1"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_03/frames/happy_2.png" id="11_happy2"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_03/frames/happy_3.png" id="12_happy3"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_03/frames/happy_4.png" id="13_happy4"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_03/frames/happy_5.png" id="14_happy5"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_03/frames/angry_0.png" id="15_angry0"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_03/frames/angry_1.png" id="16_angry1"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_03/frames/angry_2.png" id="17_angry2"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_03/frames/angry_3.png" id="18_angry3"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_03/frames/angry_4.png" id="19_angry4"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_03/frames/angry_5.png" id="20_angry5"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_03/frames/surprised_0.png" id="21_surprised0"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_03/frames/surprised_1.png" id="22_surprised1"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_03/frames/surprised_2.png" id="23_surprised2"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_03/frames/surprised_3.png" id="24_surprised3"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_03/frames/surprised_4.png" id="25_surprised4"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_03/frames/surprised_5.png" id="26_surprised5"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_03/frames/sad_0.png" id="27_sad0"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_03/frames/sad_1.png" id="28_sad1"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_03/frames/sad_2.png" id="29_sad2"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_03/frames/sad_3.png" id="30_sad3"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_03/frames/sad_4.png" id="31_sad4"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_03/frames/sad_5.png" id="32_sad5"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_03/frames/cheer_0.png" id="33_cheer0"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_03/frames/cheer_1.png" id="34_cheer1"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_03/frames/cheer_2.png" id="35_cheer2"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_03/frames/cheer_3.png" id="36_cheer3"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_03/frames/cheer_4.png" id="37_cheer4"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_03/frames/cheer_5.png" id="38_cheer5"]
+
+[resource]
+animations = [{
+"frames": [{"duration": 1.0, "texture": ExtResource("1_idle0")}, {"duration": 1.0, "texture": ExtResource("2_idle1")}, {"duration": 1.0, "texture": ExtResource("3_idle2")}, {"duration": 1.0, "texture": ExtResource("4_idle3")}, {"duration": 1.0, "texture": ExtResource("5_idle4")}, {"duration": 1.0, "texture": ExtResource("6_idle5")}, {"duration": 1.0, "texture": ExtResource("7_idle6")}, {"duration": 1.0, "texture": ExtResource("8_idle7")}],
+"loop": true,
+"name": &"idle",
+"speed": 6.0
+}, {
+"frames": [{"duration": 1.0, "texture": ExtResource("9_happy0")}, {"duration": 1.0, "texture": ExtResource("10_happy1")}, {"duration": 1.0, "texture": ExtResource("11_happy2")}, {"duration": 1.0, "texture": ExtResource("12_happy3")}, {"duration": 1.0, "texture": ExtResource("13_happy4")}, {"duration": 1.0, "texture": ExtResource("14_happy5")}],
+"loop": true,
+"name": &"happy",
+"speed": 6.0
+}, {
+"frames": [{"duration": 1.0, "texture": ExtResource("15_angry0")}, {"duration": 1.0, "texture": ExtResource("16_angry1")}, {"duration": 1.0, "texture": ExtResource("17_angry2")}, {"duration": 1.0, "texture": ExtResource("18_angry3")}, {"duration": 1.0, "texture": ExtResource("19_angry4")}, {"duration": 1.0, "texture": ExtResource("20_angry5")}],
+"loop": true,
+"name": &"angry",
+"speed": 6.0
+}, {
+"frames": [{"duration": 1.0, "texture": ExtResource("21_surprised0")}, {"duration": 1.0, "texture": ExtResource("22_surprised1")}, {"duration": 1.0, "texture": ExtResource("23_surprised2")}, {"duration": 1.0, "texture": ExtResource("24_surprised3")}, {"duration": 1.0, "texture": ExtResource("25_surprised4")}, {"duration": 1.0, "texture": ExtResource("26_surprised5")}],
+"loop": true,
+"name": &"surprised",
+"speed": 6.0
+}, {
+"frames": [{"duration": 1.0, "texture": ExtResource("27_sad0")}, {"duration": 1.0, "texture": ExtResource("28_sad1")}, {"duration": 1.0, "texture": ExtResource("29_sad2")}, {"duration": 1.0, "texture": ExtResource("30_sad3")}, {"duration": 1.0, "texture": ExtResource("31_sad4")}, {"duration": 1.0, "texture": ExtResource("32_sad5")}],
+"loop": true,
+"name": &"sad",
+"speed": 6.0
+}, {
+"frames": [{"duration": 1.0, "texture": ExtResource("33_cheer0")}, {"duration": 1.0, "texture": ExtResource("34_cheer1")}, {"duration": 1.0, "texture": ExtResource("35_cheer2")}, {"duration": 1.0, "texture": ExtResource("36_cheer3")}, {"duration": 1.0, "texture": ExtResource("37_cheer4")}, {"duration": 1.0, "texture": ExtResource("38_cheer5")}],
+"loop": true,
+"name": &"cheer",
+"speed": 6.0
+}]
