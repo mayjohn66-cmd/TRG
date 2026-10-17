@@ -162,7 +162,7 @@ func _build_mode_page() -> void:
 	left.add_child(plate_row)
 	var plate := PanelContainer.new()
 	plate.custom_minimum_size = Vector2(300, 0)
-	plate.add_theme_stylebox_override("panel", LobbyTheme.style(Color("2fa63a"), Color("1f7a2a"), 3, 20, 5, 4))
+	plate.add_theme_stylebox_override("panel", HubArt.skin(&"mode_green", 42, 4.0))
 	plate_row.add_child(plate)
 	var name_label := HubKit.outlined(GameSession.display_nickname(), 28, Color.WHITE, Color("17591f"), 6)
 	name_label.name = "ProfileName"

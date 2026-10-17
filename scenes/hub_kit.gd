@@ -325,8 +325,6 @@ static func mode_card(node_name: String, icon_kind: StringName, title_text: Stri
 		&"blue": [Color("7cc7f0"), Color("2f7fb8"), Color("1d5a8a")],
 		&"pink": [Color("f5a0c0"), Color("c2457a"), Color("8f2d58")],
 	}.get(tone, [GREEN, GREEN_EDGE, GREEN_DARK]) as Array
-	var fill: Color = palette[0]
-	var edge: Color = palette[1]
 	var dark: Color = palette[2]
 	var size := Vector2(640.0, 124.0)
 	var button := Button.new()
@@ -334,35 +332,18 @@ static func mode_card(node_name: String, icon_kind: StringName, title_text: Stri
 	button.custom_minimum_size = size
 	button.focus_mode = Control.FOCUS_NONE
 	button.pivot_offset = size / 2.0
-	var normal := StyleBoxFlat.new()
-	normal.bg_color = fill
-	normal.border_color = Color.WHITE
-	normal.set_border_width_all(5)
-	normal.border_width_bottom = 9
-	normal.set_corner_radius_all(40)
-	normal.shadow_color = Color(edge, 0.8)
-	normal.shadow_size = 6
-	normal.shadow_offset = Vector2(0, 4)
-	button.add_theme_stylebox_override("normal", normal)
-	var hover: StyleBoxFlat = normal.duplicate()
-	hover.bg_color = fill.lightened(0.1)
-	button.add_theme_stylebox_override("hover", hover)
-	var pressed: StyleBoxFlat = normal.duplicate()
-	pressed.bg_color = fill.darkened(0.1)
-	button.add_theme_stylebox_override("pressed", pressed)
-	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	HubArt.button(button, StringName("mode_" + String(tone)), 124)
 	var disc := Panel.new()
 	disc.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	disc.position = Vector2(22, 18)
 	disc.size = Vector2(82, 82)
-	var disc_style := StyleBoxFlat.new()
-	disc_style.bg_color = CREAM
-	disc_style.border_color = edge
-	disc_style.set_border_width_all(5)
-	disc_style.set_corner_radius_all(41)
-	disc.add_theme_stylebox_override("panel", disc_style)
+	disc.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	button.add_child(disc)
-	var icon := Icon.new(icon_kind, dark, GOLD)
+	var disc_art: TextureRect = HubArt.icon(&"icon_disc")
+	disc_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	disc.add_child(disc_art)
+	var role: StringName = {&"sword": &"practice", &"key": &"friend", &"dice": &"match"}[icon_kind]
+	var icon: TextureRect = HubArt.icon(role)
 	icon.position = Vector2(12, 12)
 	icon.size = Vector2(58, 58)
 	disc.add_child(icon)
@@ -376,7 +357,7 @@ static func mode_card(node_name: String, icon_kind: StringName, title_text: Stri
 	sub.position = Vector2(128, 72)
 	sub.size = Vector2(450, 28)
 	button.add_child(sub)
-	var arrow := Icon.new(&"next", Color.WHITE, GOLD)
+	var arrow: TextureRect = HubArt.icon(&"next")
 	arrow.position = Vector2(576, 38)
 	arrow.size = Vector2(44, 44)
 	button.add_child(arrow)
@@ -396,23 +377,10 @@ static func round_button(node_name: String, icon_kind: StringName, callback: Cal
 	button.custom_minimum_size = Vector2(diameter, diameter)
 	button.focus_mode = Control.FOCUS_NONE
 	button.pivot_offset = Vector2(diameter, diameter) / 2.0
-	var normal := StyleBoxFlat.new()
-	normal.bg_color = GREEN
-	normal.border_color = Color.WHITE
-	normal.set_border_width_all(4)
-	normal.set_corner_radius_all(int(diameter / 2.0))
-	normal.shadow_color = Color(GREEN_EDGE, 0.8)
-	normal.shadow_size = 3
-	normal.shadow_offset = Vector2(0, 3)
-	button.add_theme_stylebox_override("normal", normal)
-	var hover: StyleBoxFlat = normal.duplicate()
-	hover.bg_color = GREEN.lightened(0.12)
-	button.add_theme_stylebox_override("hover", hover)
-	var pressed: StyleBoxFlat = normal.duplicate()
-	pressed.bg_color = GREEN.darkened(0.12)
-	button.add_theme_stylebox_override("pressed", pressed)
-	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	var icon := Icon.new(icon_kind, Color.WHITE, GOLD)
+	button.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	HubArt.button(button, &"round_button", int(diameter))
+	var role: StringName = &"rules" if icon_kind == &"book" else &"settings"
+	var icon: TextureRect = HubArt.icon(role)
 	icon.set_anchors_preset(Control.PRESET_FULL_RECT)
 	icon.offset_left = 11
 	icon.offset_top = 11
@@ -472,27 +440,17 @@ static func tip_bar(first_text: String, on_next: Callable) -> Dictionary:
 	var root := PanelContainer.new()
 	root.name = "TipBar"
 	root.custom_minimum_size = Vector2(560, 56)
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(1, 1, 1, 0.92)
-	style.border_color = Color("e3efc6")
-	style.set_border_width_all(3)
-	style.set_corner_radius_all(28)
-	style.shadow_color = Color(0, 0, 0, 0.18)
-	style.shadow_size = 5
-	style.set_content_margin_all(8)
-	root.add_theme_stylebox_override("panel", style)
+	root.add_theme_stylebox_override("panel", HubArt.skin(&"tip_plate", 56, 8.0))
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
 	root.add_child(row)
 	var dot := Panel.new()
 	dot.custom_minimum_size = Vector2(38, 38)
-	var dot_style := StyleBoxFlat.new()
-	dot_style.bg_color = Color("ffe48a")
-	dot_style.border_color = Color("e0b23a")
-	dot_style.set_border_width_all(3)
-	dot_style.set_corner_radius_all(19)
-	dot.add_theme_stylebox_override("panel", dot_style)
-	var dot_icon := Icon.new(&"hourglass", Color("8a5a0a"), Color("fff3bf"))
+	dot.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	var dot_art: TextureRect = HubArt.icon(&"icon_disc")
+	dot_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	dot.add_child(dot_art)
+	var dot_icon: TextureRect = HubArt.icon(&"tip")
 	dot_icon.set_anchors_preset(Control.PRESET_FULL_RECT)
 	dot_icon.offset_left = 6
 	dot_icon.offset_top = 6
@@ -515,18 +473,8 @@ static func tip_bar(first_text: String, on_next: Callable) -> Dictionary:
 	next.name = "TipNext"
 	next.custom_minimum_size = Vector2(54, 38)
 	next.focus_mode = Control.FOCUS_NONE
-	var next_style := StyleBoxFlat.new()
-	next_style.bg_color = Color("d6ecb0")
-	next_style.border_color = Color("9fca62")
-	next_style.set_border_width_all(2)
-	next_style.set_corner_radius_all(19)
-	next.add_theme_stylebox_override("normal", next_style)
-	var next_hover: StyleBoxFlat = next_style.duplicate()
-	next_hover.bg_color = Color("e4f5c8")
-	next.add_theme_stylebox_override("hover", next_hover)
-	next.add_theme_stylebox_override("pressed", next_style)
-	next.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	var next_icon := Icon.new(&"next", Color("5a8a2a"), GOLD)
+	HubArt.button(next, &"mode_green", 38)
+	var next_icon: TextureRect = HubArt.icon(&"next")
 	next_icon.set_anchors_preset(Control.PRESET_FULL_RECT)
 	next_icon.offset_left = 12
 	next_icon.offset_top = 7

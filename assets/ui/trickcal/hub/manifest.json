@@ -1,0 +1,390 @@
+{
+  "status": "integrated into existing lobby controls as independent assets",
+  "assets": [
+    {
+      "id": "UI_HUB_PRACTICE",
+      "kind": "icon",
+      "role": "놀이터 — 컴퓨터와 연습",
+      "brief": "Role: PRACTICE AGAINST COMPUTER. One warm-ivory rounded board-game meeple at lower-left next to one small circular practice target at upper-right: only two concentric broad green/gold rings and one large center dot. NO dart, arrow, weapon, flag, tiny marks or AI lettering. Compact two-object training emblem.",
+      "prompt": "Create ONE standalone simple cute rounded board-game UI icon, square1:1 transparent PNG, immediately readable at32–58px. Broad clean shapes, thick continuous moss-green outline #36543C with rounded joins about4% of canvas width, 2–3 primary solid color regions, only very gentle cel fill, no intricate detail. Warm ivory #FFF5D7, leaf-green #86D94F, butter-gold #FFD66B. Center within75% safe area, at least10% transparent padding. No circular badge or background panel: icon only. No words, numbers, labels, watermark, particles, tiny patterns, gloss, cast shadow or scene. Reference image supplies line weight and palette only, never copy its flag or meeple unless requested. Role: PRACTICE AGAINST COMPUTER. One warm-ivory rounded board-game meeple at lower-left next to one small circular practice target at upper-right: only two concentric broad green/gold rings and one large center dot. NO dart, arrow, weapon, flag, tiny marks or AI lettering. Compact two-object training emblem.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-a6ddac92-76a2-49b5-8f8e-b547f2d569f4.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "file": "UI_HUB_PRACTICE.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "runtime_size_limit": 256,
+      "visible_source_bounds": [
+        177,
+        188,
+        1116,
+        1097
+      ],
+      "atlas_region": [
+        36.133971291866025,
+        38.37958532695375,
+        191.6937799043062,
+        185.5693779904306
+      ],
+      "sha256": "031df75e7fc0dc66f3682e2f74ae3f8c1f556639710ce0aa34cb48b3d9891ae2"
+    },
+    {
+      "id": "UI_HUB_FRIEND",
+      "kind": "icon",
+      "role": "친선 줘팸터 — 방 코드로 친구 초대",
+      "brief": "Role: FRIEND INVITATION / PRIVATE ROOM KEY. ONE chunky butter-gold key with a large rounded HEART-shaped bow and TWO broad simple teeth at its short lower-right stem. Heart opening transparent. One small sky-blue #7CC7F0 inset along bow allowed, but no other objects. The friendly key silhouette should be immediately recognizable, no realistic machining or engraving.",
+      "prompt": "Create ONE standalone simple cute rounded board-game UI icon, square1:1 transparent PNG, immediately readable at32–58px. Broad clean shapes, thick continuous moss-green outline #36543C with rounded joins about4% of canvas width, 2–3 primary solid color regions, only very gentle cel fill, no intricate detail. Warm ivory #FFF5D7, leaf-green #86D94F, butter-gold #FFD66B. Center within75% safe area, at least10% transparent padding. No circular badge or background panel: icon only. No words, numbers, labels, watermark, particles, tiny patterns, gloss, cast shadow or scene. Reference image supplies line weight and palette only, never copy its flag or meeple unless requested. Role: FRIEND INVITATION / PRIVATE ROOM KEY. ONE chunky butter-gold key with a large rounded HEART-shaped bow and TWO broad simple teeth at its short lower-right stem. Heart opening transparent. One small sky-blue #7CC7F0 inset along bow allowed, but no other objects. The friendly key silhouette should be immediately recognizable, no realistic machining or engraving.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-0d1992fa-2e50-47b3-82bc-862954dbdfc7.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "file": "UI_HUB_FRIEND.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "runtime_size_limit": 256,
+      "visible_source_bounds": [
+        174,
+        153,
+        1132,
+        1120
+      ],
+      "atlas_region": [
+        35.52153110047847,
+        31.23444976076555,
+        195.5725677830941,
+        197.4098883572568
+      ],
+      "sha256": "05fd3f66ee9c38cb1267f8d30032b02eac780a777114a02e69485c130d089742"
+    },
+    {
+      "id": "UI_HUB_MATCH",
+      "kind": "icon",
+      "role": "익명 줘팸터 — 무작위 상대 매칭",
+      "brief": "Role: RANDOM OPPONENT MATCHMAKING. TWO very thick crossing SHUFFLE arrows, one leaf-green and one coral-pink #F5A0C0, running from left to right with blunt rounded arrowheads. The upper route and lower route swap positions; clearly separate their crossing with the thick common outline. Only two arrow silhouettes, no dice, pawns or extra sparkles.",
+      "prompt": "Create ONE standalone simple cute rounded board-game UI icon, square1:1 transparent PNG, immediately readable at32–58px. Broad clean shapes, thick continuous moss-green outline #36543C with rounded joins about4% of canvas width, 2–3 primary solid color regions, only very gentle cel fill, no intricate detail. Warm ivory #FFF5D7, leaf-green #86D94F, butter-gold #FFD66B. Center within75% safe area, at least10% transparent padding. No circular badge or background panel: icon only. No words, numbers, labels, watermark, particles, tiny patterns, gloss, cast shadow or scene. Reference image supplies line weight and palette only, never copy its flag or meeple unless requested. Role: RANDOM OPPONENT MATCHMAKING. TWO very thick crossing SHUFFLE arrows, one leaf-green and one coral-pink #F5A0C0, running from left to right with blunt rounded arrowheads. The upper route and lower route swap positions; clearly separate their crossing with the thick common outline. Only two arrow silhouettes, no dice, pawns or extra sparkles.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-3875f605-c197-47c5-aaec-9bb48fcccf58.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "original_source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-fb02b34b-3ef0-4f5f-ac10-3467be2e3563.png",
+      "correction_prompt": "Edit this ONE simple shuffle icon. Preserve shape, placement, outline thickness, transparent background and total two-arrow silhouette. Fix ONLY color continuity: the arrow starting at UPPER LEFT must be leaf green #86D94F along its ENTIRE route through the crossing and ending at the LOWER RIGHT arrowhead. The arrow starting at LOWER LEFT must be pastel pink #F5A0C0 along its ENTIRE route through the crossing and ending at the UPPER RIGHT arrowhead. Each whole arrow has ONE continuous fill color. No green upper-right arrowhead and no pink lower-right arrowhead. No crossfade, no color blend or gradient transition between green and pink. The green arrow remains in front at crossing, its thick dark green outline separates it cleanly from the pink arrow behind. Keep it very simple and flat with no additional marks, gloss, shading, symbols, letters, frame or background. True alpha exterior.",
+      "correction_count": 1,
+      "file": "UI_HUB_MATCH.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "runtime_size_limit": 256,
+      "visible_source_bounds": [
+        136,
+        273,
+        1162,
+        1026
+      ],
+      "atlas_region": [
+        27.76395534290271,
+        55.73205741626794,
+        209.45454545454547,
+        153.7224880382775
+      ],
+      "sha256": "151887d13905bf9cbfae0eb34dfadb210347fdfde812b8b209b5ce5fa2b13255"
+    },
+    {
+      "id": "UI_HUB_TIP",
+      "kind": "icon",
+      "role": "팁 — 도움말 안내",
+      "brief": "Role: HELPFUL TIP. ONE butter-yellow lightbulb with a short warm-ivory base and ONE broad green sprout-shaped filament inside. Simple unbroken bulb outline. No rays, little shine spots or extra leaves outside. Readable as a lightbulb at28px.",
+      "prompt": "Create ONE standalone simple cute rounded board-game UI icon, square1:1 transparent PNG, immediately readable at32–58px. Broad clean shapes, thick continuous moss-green outline #36543C with rounded joins about4% of canvas width, 2–3 primary solid color regions, only very gentle cel fill, no intricate detail. Warm ivory #FFF5D7, leaf-green #86D94F, butter-gold #FFD66B. Center within75% safe area, at least10% transparent padding. No circular badge or background panel: icon only. No words, numbers, labels, watermark, particles, tiny patterns, gloss, cast shadow or scene. Reference image supplies line weight and palette only, never copy its flag or meeple unless requested. Role: HELPFUL TIP. ONE butter-yellow lightbulb with a short warm-ivory base and ONE broad green sprout-shaped filament inside. Simple unbroken bulb outline. No rays, little shine spots or extra leaves outside. Readable as a lightbulb at28px.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-d165e16b-b379-4186-9fb7-f6fb31aac810.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "file": "UI_HUB_TIP.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "runtime_size_limit": 256,
+      "visible_source_bounds": [
+        268,
+        156,
+        984,
+        1103
+      ],
+      "atlas_region": [
+        54.71132376395534,
+        31.84688995215311,
+        146.16905901116428,
+        193.3269537480064
+      ],
+      "sha256": "fd8ac34e9bad4cb4f443b358ca0ee5fbe727962bca7ea66addea02905238bb10"
+    },
+    {
+      "id": "UI_HUB_RULES",
+      "kind": "icon",
+      "role": "규칙 도감 열기",
+      "brief": "Role: OPEN RULE GUIDE. ONE chunky closed leaf-green guidebook, slight front view with ONE narrow ivory page edge and ONE large ivory leaf-shaped emblem centered on its cover. Small butter-yellow bookmark tab protrudes below. No page lines, text, tiny decorations, extra books or medal.",
+      "prompt": "Create ONE standalone simple cute rounded board-game UI icon, square1:1 transparent PNG, immediately readable at32–58px. Broad clean shapes, thick continuous moss-green outline #36543C with rounded joins about4% of canvas width, 2–3 primary solid color regions, only very gentle cel fill, no intricate detail. Warm ivory #FFF5D7, leaf-green #86D94F, butter-gold #FFD66B. Center within75% safe area, at least10% transparent padding. No circular badge or background panel: icon only. No words, numbers, labels, watermark, particles, tiny patterns, gloss, cast shadow or scene. Reference image supplies line weight and palette only, never copy its flag or meeple unless requested. Role: OPEN RULE GUIDE. ONE chunky closed leaf-green guidebook, slight front view with ONE narrow ivory page edge and ONE large ivory leaf-shaped emblem centered on its cover. Small butter-yellow bookmark tab protrudes below. No page lines, text, tiny decorations, extra books or medal.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-7e982afc-ec9e-443e-b4d1-fe0447ba0b06.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "file": "UI_HUB_RULES.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "runtime_size_limit": 256,
+      "visible_source_bounds": [
+        244,
+        153,
+        1062,
+        1130
+      ],
+      "atlas_region": [
+        49.811802232854866,
+        31.23444976076555,
+        166.9920255183413,
+        199.451355661882
+      ],
+      "sha256": "1fc290d4fbf7fc3b2684cc4f154035e4361d82b3b103e9957db1c2b725fed4a6"
+    },
+    {
+      "id": "UI_HUB_SETTINGS",
+      "kind": "icon",
+      "role": "설정 열기",
+      "brief": "Role: SETTINGS. ONE simple six-tooth warm-ivory cogwheel with a leaf-green circular center and one large transparent round hole. Six evenly spaced chunky rounded teeth, bilateral symmetry, no screws, tools, extra rings, leaf decoration or flower petals.",
+      "prompt": "Create ONE standalone simple cute rounded board-game UI icon, square1:1 transparent PNG, immediately readable at32–58px. Broad clean shapes, thick continuous moss-green outline #36543C with rounded joins about4% of canvas width, 2–3 primary solid color regions, only very gentle cel fill, no intricate detail. Warm ivory #FFF5D7, leaf-green #86D94F, butter-gold #FFD66B. Center within75% safe area, at least10% transparent padding. No circular badge or background panel: icon only. No words, numbers, labels, watermark, particles, tiny patterns, gloss, cast shadow or scene. Reference image supplies line weight and palette only, never copy its flag or meeple unless requested. Role: SETTINGS. ONE simple six-tooth warm-ivory cogwheel with a leaf-green circular center and one large transparent round hole. Six evenly spaced chunky rounded teeth, bilateral symmetry, no screws, tools, extra rings, leaf decoration or flower petals.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-3f0cba16-b515-4095-97f1-03841c346ef3.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "file": "UI_HUB_SETTINGS.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "runtime_size_limit": 256,
+      "visible_source_bounds": [
+        154,
+        136,
+        1099,
+        1113
+      ],
+      "atlas_region": [
+        31.438596491228072,
+        27.76395534290271,
+        192.91866028708134,
+        199.451355661882
+      ],
+      "sha256": "4a6053b6f17eae873d676b52812921c829f0f20720358ac4a68900b0fc09b70b"
+    },
+    {
+      "id": "UI_HUB_NEXT",
+      "kind": "icon",
+      "role": "선택 및 다음 팁으로 이동",
+      "brief": "Role: GO FORWARD / NEXT. ONE very thick right-pointing warm-ivory ARROW with a short broad rectangular shaft and a large rounded triangular head. Bold moss-green outer contour. Main shape about78% canvas wide. Not a double chevron, no tiny symbols, no extra decorations.",
+      "prompt": "Create ONE standalone simple cute rounded board-game UI icon, square1:1 transparent PNG, immediately readable at32–58px. Broad clean shapes, thick continuous moss-green outline #36543C with rounded joins about4% of canvas width, 2–3 primary solid color regions, only very gentle cel fill, no intricate detail. Warm ivory #FFF5D7, leaf-green #86D94F, butter-gold #FFD66B. Center within75% safe area, at least10% transparent padding. No circular badge or background panel: icon only. No words, numbers, labels, watermark, particles, tiny patterns, gloss, cast shadow or scene. Reference image supplies line weight and palette only, never copy its flag or meeple unless requested. Role: GO FORWARD / NEXT. ONE very thick right-pointing warm-ivory ARROW with a short broad rectangular shaft and a large rounded triangular head. Bold moss-green outer contour. Main shape about78% canvas wide. Not a double chevron, no tiny symbols, no extra decorations.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-255b9b96-a1ee-4d71-9bcb-c92e1fd87ea4.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "file": "UI_HUB_NEXT.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "runtime_size_limit": 256,
+      "visible_source_bounds": [
+        144,
+        270,
+        1119,
+        983
+      ],
+      "atlas_region": [
+        29.39712918660287,
+        55.119617224880386,
+        199.04306220095694,
+        145.5566188197767
+      ],
+      "sha256": "682eeedaca1d810e971051a69810b48189139406046d8accf914e22656d7dd7e"
+    },
+    {
+      "id": "UI_HUB_MODE_GREEN",
+      "kind": "skin",
+      "role": "놀이터 메뉴 바탕",
+      "brief": "A single very wide rounded pill button, visible face width-to-height exactly5.2:1, green fill #86D94F, ivory #FFFDF2 outer border about5% of face height, short lower lip in #3F9A2B. Corners have radiusabout40% of face height. A very subtle top bevel only. Completely empty face. No inner outline, leaf pattern, circular icon well or arrow. Landscape canvas about4:1 may contain transparent padding around the5.2:1 pill. This is a stretchable9-slice base for a640x124 game menu.",
+      "prompt": "Create ONE individually reusable text-free game UI skin asset, NOT a complete screen or sprite sheet. Cute Trickcal-inspired rounded pastel toy-paper interface. Front-facing orthographic graphic UI; broad flat fills, gentle narrow upper-edge highlight and short darker lower-edge bevel, clean continuous warm-ivory outer rim, no realistic materials, noise, floating sparkles, ornaments, text, icons, numbers, labels or watermark. Leave ALL central content blank. Entire silhouette fully in view with transparent padding and true alpha background. A single very wide rounded pill button, visible face width-to-height exactly5.2:1, green fill #86D94F, ivory #FFFDF2 outer border about5% of face height, short lower lip in #3F9A2B. Corners have radiusabout40% of face height. A very subtle top bevel only. Completely empty face. No inner outline, leaf pattern, circular icon well or arrow. Landscape canvas about4:1 may contain transparent padding around the5.2:1 pill. This is a stretchable9-slice base for a640x124 game menu.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-671f6ffa-999a-4d4a-aa34-c1ff92733b20.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "file": "UI_HUB_MODE_GREEN.png",
+      "dimensions": [
+        2020,
+        779
+      ],
+      "runtime_size_limit": 1024,
+      "visible_source_bounds": [
+        68,
+        181,
+        1952,
+        585
+      ],
+      "atlas_region": [
+        34.47128712871287,
+        91.75445544554455,
+        955.0574257425743,
+        204.8
+      ],
+      "sha256": "4cfb6413afe15f13d52dc6827fb33c868f3fbf6b3a8247469de0ee29538f4b67"
+    },
+    {
+      "id": "UI_HUB_MODE_BLUE",
+      "kind": "skin",
+      "role": "친선전 메뉴 바탕",
+      "brief": "Same single very wide empty pill button: visible face width-to-height5.2:1, sky-blue fill #7CC7F0, ivory #FFFDF2 outer border about5% of face height, short lower lip #2F7FB8. Corners radius40% of face height, subtle top bevel. No inner outline, pattern, icon well, arrow or text. Landscape canvas and transparent padding. Stretchable9-slice base for640x124 menu. If a green button reference is provided, keep its geometry and only change green fill/lip to these blues.",
+      "prompt": "Create ONE individually reusable text-free game UI skin asset, NOT a complete screen or sprite sheet. Cute Trickcal-inspired rounded pastel toy-paper interface. Front-facing orthographic graphic UI; broad flat fills, gentle narrow upper-edge highlight and short darker lower-edge bevel, clean continuous warm-ivory outer rim, no realistic materials, noise, floating sparkles, ornaments, text, icons, numbers, labels or watermark. Leave ALL central content blank. Entire silhouette fully in view with transparent padding and true alpha background. Same single very wide empty pill button: visible face width-to-height5.2:1, sky-blue fill #7CC7F0, ivory #FFFDF2 outer border about5% of face height, short lower lip #2F7FB8. Corners radius40% of face height, subtle top bevel. No inner outline, pattern, icon well, arrow or text. Landscape canvas and transparent padding. Stretchable9-slice base for640x124 menu. If a green button reference is provided, keep its geometry and only change green fill/lip to these blues.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-3c87889a-726e-4139-8e3d-cc31d2b5f430.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "file": "UI_HUB_MODE_BLUE.png",
+      "dimensions": [
+        2019,
+        779
+      ],
+      "runtime_size_limit": 1024,
+      "visible_source_bounds": [
+        68,
+        179,
+        1951,
+        583
+      ],
+      "atlas_region": [
+        34.48836057454185,
+        90.78553739474987,
+        955.0232788509162,
+        204.901436354631
+      ],
+      "sha256": "628b6db8820169cfdb442f5ca58181c2fb801a71732b1e6e5114eacab708da4e"
+    },
+    {
+      "id": "UI_HUB_MODE_PINK",
+      "kind": "skin",
+      "role": "익명 매칭 메뉴 바탕",
+      "brief": "Same single very wide empty pill button: visible face width-to-height5.2:1, pastel-pink fill #F5A0C0, ivory #FFFDF2 outer border about5% of face height, short lower lip #C2457A. Corners radius40% of face height, subtle top bevel. No inner outline, pattern, icon well, arrow or text. Landscape canvas and transparent padding. Stretchable9-slice base for640x124 menu. If a green button reference is provided, keep its geometry and only change green fill/lip to these pinks.",
+      "prompt": "Create ONE individually reusable text-free game UI skin asset, NOT a complete screen or sprite sheet. Cute Trickcal-inspired rounded pastel toy-paper interface. Front-facing orthographic graphic UI; broad flat fills, gentle narrow upper-edge highlight and short darker lower-edge bevel, clean continuous warm-ivory outer rim, no realistic materials, noise, floating sparkles, ornaments, text, icons, numbers, labels or watermark. Leave ALL central content blank. Entire silhouette fully in view with transparent padding and true alpha background. Same single very wide empty pill button: visible face width-to-height5.2:1, pastel-pink fill #F5A0C0, ivory #FFFDF2 outer border about5% of face height, short lower lip #C2457A. Corners radius40% of face height, subtle top bevel. No inner outline, pattern, icon well, arrow or text. Landscape canvas and transparent padding. Stretchable9-slice base for640x124 menu. If a green button reference is provided, keep its geometry and only change green fill/lip to these pinks.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-95c82a09-dd53-4eef-8cee-52e74536fae5.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "file": "UI_HUB_MODE_PINK.png",
+      "dimensions": [
+        2019,
+        779
+      ],
+      "runtime_size_limit": 1024,
+      "visible_source_bounds": [
+        68,
+        180,
+        1951,
+        579
+      ],
+      "atlas_region": [
+        34.48836057454185,
+        91.29271916790489,
+        955.0232788509162,
+        202.36552748885586
+      ],
+      "sha256": "9a94bbc733740b14224483e07efa670b0ac65f9d6d5bc0b82b84f5a1efccf6f4"
+    },
+    {
+      "id": "UI_HUB_TIP_PLATE",
+      "kind": "skin",
+      "role": "상단 팁 안내 띠 바탕",
+      "brief": "One very wide empty horizontal cream-white capsule panel, visible width-to-height5.2:1, face #FFFDF2, broad soft-pale-green #DBEDB9 rim, short lower edge #A6C67B. Corners radius45% of face height. Minimal upper edge highlight. No circular inserts, dividing lines, arrows, leaves or text. Landscape canvas with transparent padding. Reusable9-slice skin to extend to560x56.",
+      "prompt": "Create ONE individually reusable text-free game UI skin asset, NOT a complete screen or sprite sheet. Cute Trickcal-inspired rounded pastel toy-paper interface. Front-facing orthographic graphic UI; broad flat fills, gentle narrow upper-edge highlight and short darker lower-edge bevel, clean continuous warm-ivory outer rim, no realistic materials, noise, floating sparkles, ornaments, text, icons, numbers, labels or watermark. Leave ALL central content blank. Entire silhouette fully in view with transparent padding and true alpha background. One very wide empty horizontal cream-white capsule panel, visible width-to-height5.2:1, face #FFFDF2, broad soft-pale-green #DBEDB9 rim, short lower edge #A6C67B. Corners radius45% of face height. Minimal upper edge highlight. No circular inserts, dividing lines, arrows, leaves or text. Landscape canvas with transparent padding. Reusable9-slice skin to extend to560x56.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-c8568f1d-5b00-4011-b309-31bd1848ad56.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "file": "UI_HUB_TIP_PLATE.png",
+      "dimensions": [
+        2092,
+        752
+      ],
+      "runtime_size_limit": 1024,
+      "visible_source_bounds": [
+        37,
+        200,
+        2055,
+        549
+      ],
+      "atlas_region": [
+        18.110898661567877,
+        97.89674952198853,
+        987.7782026768642,
+        170.82982791586997
+      ],
+      "sha256": "e434ca4c07ac69a22c57f7466e6d7564aecf70af550cb9bd76dcb3b9182ac0fb"
+    },
+    {
+      "id": "UI_HUB_ICON_DISC",
+      "kind": "disc",
+      "role": "메뉴 아이콘 원형 받침",
+      "brief": "ONE perfectly circular cream medallion base only, no symbol. Warm-ivory #FFF5D7 center, ONE thick moss-green #3F7D42 rim about5% diameter, very narrow pale-cream upper bevel and short green lower lip. Flat front orthographic. No hole, pattern, outer ring, ribbons, text, icon or cast shadow cloud. Square canvas, circle diameter76%canvas, even transparent margins. A simple reusable82px icon backing.",
+      "prompt": "Create ONE individually reusable text-free game UI skin asset, NOT a complete screen or sprite sheet. Cute Trickcal-inspired rounded pastel toy-paper interface. Front-facing orthographic graphic UI; broad flat fills, gentle narrow upper-edge highlight and short darker lower-edge bevel, clean continuous warm-ivory outer rim, no realistic materials, noise, floating sparkles, ornaments, text, icons, numbers, labels or watermark. Leave ALL central content blank. Entire silhouette fully in view with transparent padding and true alpha background. ONE perfectly circular cream medallion base only, no symbol. Warm-ivory #FFF5D7 center, ONE thick moss-green #3F7D42 rim about5% diameter, very narrow pale-cream upper bevel and short green lower lip. Flat front orthographic. No hole, pattern, outer ring, ribbons, text, icon or cast shadow cloud. Square canvas, circle diameter76%canvas, even transparent margins. A simple reusable82px icon backing.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-552d397a-5028-421a-b5ee-4bc11c847a21.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "file": "UI_HUB_ICON_DISC.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "runtime_size_limit": 256,
+      "visible_source_bounds": [
+        118,
+        124,
+        1135,
+        1132
+      ],
+      "atlas_region": [
+        24.08931419457735,
+        25.314194577352474,
+        207.61722488038276,
+        205.7799043062201
+      ],
+      "sha256": "f53401f9aa44d74b9b803d9403a1535faa95d29cbc54bc6642efcdd44995914d"
+    },
+    {
+      "id": "UI_HUB_ROUND_BUTTON",
+      "kind": "disc",
+      "role": "상단 도감·설정 원형 버튼 바탕",
+      "brief": "ONE perfectly circular leaf-green button base only, center completely blank. Fill #86D94F, ONE thick warm-white #FFFDF2 rim about6% diameter, narrow light-green upper bevel and short dark-green #3F9A2B lower lip. Square canvas, circle diameter76%canvas, even transparent margins. No hole, symbol, text, pattern, extra decoration, outer glow or shadow cloud. Front orthographic, for56px controls.",
+      "prompt": "Create ONE individually reusable text-free game UI skin asset, NOT a complete screen or sprite sheet. Cute Trickcal-inspired rounded pastel toy-paper interface. Front-facing orthographic graphic UI; broad flat fills, gentle narrow upper-edge highlight and short darker lower-edge bevel, clean continuous warm-ivory outer rim, no realistic materials, noise, floating sparkles, ornaments, text, icons, numbers, labels or watermark. Leave ALL central content blank. Entire silhouette fully in view with transparent padding and true alpha background. ONE perfectly circular leaf-green button base only, center completely blank. Fill #86D94F, ONE thick warm-white #FFFDF2 rim about6% diameter, narrow light-green upper bevel and short dark-green #3F9A2B lower lip. Square canvas, circle diameter76%canvas, even transparent margins. No hole, symbol, text, pattern, extra decoration, outer glow or shadow cloud. Front orthographic, for56px controls.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-41504ff6-85fc-4fad-9e33-5e3aa71ea007.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "file": "UI_HUB_ROUND_BUTTON.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "runtime_size_limit": 256,
+      "visible_source_bounds": [
+        113,
+        124,
+        1138,
+        1134
+      ],
+      "atlas_region": [
+        23.06858054226475,
+        25.314194577352474,
+        209.25039872408294,
+        206.18819776714514
+      ],
+      "sha256": "a56604a91f9b235c18a8b734f3a17d6bc93b204fb3828555a14ae1942a9a7539"
+    }
+  ],
+  "pixels_modified": false,
+  "region_alpha_threshold": 24,
+  "region_padding_source_px": 4,
+  "qa": "Native sources visually inspected; GDScript UI_MENU_OK and 1366x768 capture passed. Matching arrows corrected once for color continuity.",
+  "palette_note": "Color tokens are prompt targets; source PNGs include antialiasing and soft fill variation."
+}
