@@ -255,6 +255,9 @@ var _tool_main: Label = null
 var _tool_sub: Label = null
 var _tool_rules: VBoxContainer = null
 var _tool_note: Label = null
+var _tool_toggle: Button = null
+## 판정 도구 카드의 상세 족보를 펼쳤는가 (처음에는 한두 줄 요약만 보인다).
+var _tool_expanded: bool = false
 var _tool_rules_key: String = ""
 var _tool_board_key: String = ""
 var _status_strip: HBoxContainer = null
@@ -1091,7 +1094,6 @@ func _build_law_board() -> void:
 	var law_title := _make_label("엘리아스 중앙 법전", 16, Color.WHITE)
 	UiSkin.title(law_title)
 	box.add_child(law_title)
-	box.add_child(_make_label("최대 4슬롯 - 가득 차면 가장 오래된 교칙이 밀려남", 10, UiSkin.SOFT))
 	for slot: int in GameEnums.MAX_LAWS:
 		var slot_panel := PanelContainer.new()
 		slot_panel.custom_minimum_size = Vector2(280, 66)
@@ -1193,6 +1195,34 @@ func _build_tool_board() -> void:
 	_tool_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_tool_note.custom_minimum_size = Vector2(184, 0)
 	center.add_child(_tool_note)
+	_tool_toggle = _make_button("▼ 상세 족보", _on_tool_toggle_pressed, 12, Color("5da530"), 8)
+	_tool_toggle.custom_minimum_size = Vector2(184, 26)
+	_tool_toggle.focus_mode = Control.FOCUS_NONE
+	box.add_child(_tool_toggle)
+
+
+func _on_tool_toggle_pressed() -> void:
+	_tool_expanded = not _tool_expanded
+	_apply_tool_expand()
+	_tool_board.reset_size()
+	_place_action_row_below_tool_card()
+	_place_action_row_below_tool_card()
+
+
+## 펼친 상세 족보가 멈추기·패스 버튼 행을 가리지 않게, 버튼 행을 카드 바로 아래로 내린다.
+func _place_action_row_below_tool_card() -> void:
+	var base_y: float = maxf(440.0, 172.0 + _tool_board.size.y + 8.0)
+	_set_layout_base(_action_row, Vector2(1134, base_y))
+	_apply_layout_now()
+
+
+## 상세 족보(규칙표·메모)는 펼쳤을 때만 보이고, 족보가 없는 도구는 토글 버튼도 숨긴다.
+func _apply_tool_expand() -> void:
+	var has_rules: bool = _tool_rules.get_child_count() > 0
+	_tool_toggle.visible = has_rules
+	_tool_toggle.text = "▲ 접기" if _tool_expanded else "▼ 상세 족보"
+	_tool_rules.visible = has_rules and _tool_expanded
+	_tool_note.visible = has_rules and _tool_expanded and _tool_note.text != ""
 
 
 ## 보드 아래 한 줄 상태 띠: 단계 / 안내 문구 / 이동 대기열. (개입 카드 탭이 뜨면 그 자리를 양보한다.)
@@ -2120,7 +2150,7 @@ func _refresh_laws() -> void:
 			_law_slots[slot].tooltip_text = "[%s] %s\n%s" % [law.law_id, law.law_name, law.description]
 		else:
 			_law_slots[slot].add_theme_stylebox_override("panel", UiSkin.panel("inset", 8.0))
-			_law_labels[slot].text = "빈 슬롯 %d" % (slot + 1)
+			_law_labels[slot].text = ""
 			_law_labels[slot].add_theme_color_override("font_color", UiSkin.SOFT)
 			_law_descs[slot].text = ""
 			_law_slots[slot].tooltip_text = ""
@@ -2134,11 +2164,6 @@ func _refresh_hands() -> void:
 	_dock_player = player_id
 	var hand: Array = state.hands[player_id]
 	if hand.is_empty():
-		var empty := _make_label("P%d 손패 없음" % player_id, 14, Color("5c6068"))
-		empty.position = Vector2(0, 60)
-		empty.size = Vector2(_dock.size.x, 24)
-		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		_dock.add_child(empty)
 		return
 	var count: int = hand.size()
 	var step: float = minf(HAND_CARD_SIZE.x - 14.0, (_dock.size.x - HAND_CARD_SIZE.x) / maxf(count - 1, 1))
@@ -3162,16 +3187,16 @@ func _stop_pawn_flash() -> void:
 
 ## 도구별 [심볼 글자, 심볼 색, 전진 규칙 첫 줄, 둘째 줄].
 const TOOL_CARDS: Dictionary = {
-	&"D6": ["6", Color("c92a2a"), "1 ~ 6칸 전진", ""],
-	&"YUT": ["윷", Color("8a5a2b"), "-1 ~ 5칸 전진", "윷·모 재굴림 +1"],
-	&"LIFE_ROULETTE": ["룰", Color("1971c2"), "1 ~ 10칸 전진", "7 당첨 재굴림 +1"],
-	&"HOLDEM": ["♠", Color("343a40"), "포커 족보 → 1 ~ 15칸", ""],
-	&"CHINCHIRO": ["친", Color("0b7285"), "4 ~ 6칸 (삐끗 -6칸)", ""],
-	&"SLOT_777": ["7", Color("862e9c"), "릴 일치 → 1 ~ 8칸", "777 잭팟 20칸"],
-	&"REVOLVER": ["탄", Color("495057"), "빈 총 +3칸 누적", "실탄 → 0칸·턴 종료"],
-	&"DICE_HWATU": ["화", Color("c92a2a"), "패 2장 족보 → 0 ~ 8칸", ""],
-	&"DICE_MAHJONG": ["마", Color("2b8a3e"), "패 3장 → 2 ~ 12칸", "역만 재굴림 +1"],
-	&"DICE_TAROT": ["타", Color("5f3dc4"), "타로 1장 → 전진", "매달린 남자: 다음 +8칸"],
+	&"D6": ["6", Color("c92a2a"), "굴려서 전진한다", ""],
+	&"YUT": ["윷", Color("8a5a2b"), "윷을 던져 나온 만큼 전진한다", "윷·모 재굴림 +1"],
+	&"LIFE_ROULETTE": ["룰", Color("1971c2"), "룰렛을 돌려 전진한다", "7 당첨 재굴림 +1"],
+	&"HOLDEM": ["♠", Color("343a40"), "카드 족보만큼 전진한다", ""],
+	&"CHINCHIRO": ["친", Color("0b7285"), "주사위를 굴려 전진한다", ""],
+	&"SLOT_777": ["7", Color("862e9c"), "슬롯을 돌려 전진한다", "777 잭팟 20칸"],
+	&"REVOLVER": ["탄", Color("495057"), "방아쇠를 당긴 만큼 전진한다", "실탄 → 0칸·턴 종료"],
+	&"DICE_HWATU": ["화", Color("c92a2a"), "화투패 족보만큼 전진한다", ""],
+	&"DICE_MAHJONG": ["마", Color("2b8a3e"), "마작패 족보만큼 전진한다", "역만 재굴림 +1"],
+	&"DICE_TAROT": ["타", Color("5f3dc4"), "타로를 뽑아 전진한다", "매달린 남자: 다음 +8칸"],
 }
 
 
@@ -3208,6 +3233,7 @@ func _refresh_tool_board(tool: BaseJudgmentTool, player_id: int) -> void:
 	if _tool_rules_key != str(tool.tool_id):
 		_tool_rules_key = str(tool.tool_id)
 		_rebuild_tool_rules(rules, card[1])
+	_apply_tool_expand()
 	_tool_board.reset_size()
 
 
@@ -3235,7 +3261,7 @@ func _rebuild_tool_rules(rules: Dictionary, _accent: Color) -> void:
 		line.add_child(value_label)
 		_tool_rules.add_child(row)
 	_tool_note.text = str(rules.get("note", ""))
-	_tool_note.visible = _tool_note.text != ""
+	_apply_tool_expand()
 
 
 func _category_text(category: GameEnums.CardCategory) -> String:
