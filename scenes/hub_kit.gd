@@ -232,7 +232,7 @@ static func _bounce(node: Control, target: float, seconds: float = 0.12) -> void
 ## 허브 전신 아바타의 숨쉬기 동작: 정지 그림 위에 idle/ 폴더의 프레임을 순서대로 돌려 보여 준다. 프레임이 없으면 정지 그림 그대로다.
 ## 허브를 떠나 노드가 사라지면 프레임도 메모리에서 함께 내려간다.
 class IdleLoop extends TextureRect:
-	const FPS: float = 7.8
+	const FPS: float = 16.0
 	var _frames: Array[Texture2D] = []
 	var _clock: float = 0.0
 	var _blend: TextureRect = null  ## 다음 프레임을 위에 겹쳐 서서히 드러내 8프레임 원본이 매끄럽게 이어지게 한다
