@@ -1,6 +1,6 @@
 # File: res://scenes/start_menu.gd
 # Class: class_name StartMenu
-# Role: 게임 시작 전 메뉴(밝은 민트/청록 테마). 1단계 타이틀 + 교주의 이름 -> 2단계 큼직한 모드 카드 3장([훈련] AI 대결 / [비밀 결투] 친선 방 / [랜덤 결투] 빠른 랜덤 매칭) -> 훈련은 AI 인원 선택 후 메인 보드로, 나머지는 로비 씬으로 넘어간다
+# Role: 게임 시작 전 메뉴(밝은 민트/청록 테마). 1단계 타이틀 + 교주의 이름 -> 2단계 큼직한 모드 카드 3장([놀이터] AI 대결 / [친선 줘팸터] 방 코드 친선전 / [익명 줘팸터] 빠른 랜덤 매칭) -> 훈련은 AI 인원 선택 후 메인 보드로, 나머지는 로비 씬으로 넘어간다
 class_name StartMenu
 extends Control
 
@@ -23,7 +23,6 @@ var _hub_profile: Dictionary = {}
 var _hub_tip: Dictionary = {}
 var _hub_start_label: Label = null
 var _tip_index: int = 0
-var _mascots: Array[Control] = []
 var _train_page: VBoxContainer = null
 var _avatar_page: VBoxContainer = null
 var _avatar_button: Button = null
@@ -103,15 +102,14 @@ func _build_name_page(parent: VBoxContainer) -> void:
 	_name_page.add_child(_confirm_button)
 
 
-## 모드 선택 화면 = 마을 허브(원본의 로비처럼): 왼쪽 위 프로필, 오른쪽 위 팁 띠와 둥근 버튼, 가운데 로고와 캐릭터들, 아래 둥근 초록 메뉴 줄과 큰 [바로 시작] 버튼.
+## 모드 선택 화면 = 마을 허브: 왼쪽에 내 아바타 + 닉네임 + [아바타 설정], 오른쪽에서 어디로 대결할지 고른다 (놀이터 / 친선 줘팸터 / 익명 줘팸터).
 func _build_mode_page() -> void:
 	_mode_page = Control.new()
 	_mode_page.name = "Hub"
 	_mode_page.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_mode_page.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_mode_page)
-	_build_hub_mascots()
-	# 위쪽 줄: 프로필 ........ 팁 띠 + 둥근 버튼
+	# 위쪽 줄: 팁 띠 + 둥근 규칙/설정 버튼
 	var top := HBoxContainer.new()
 	top.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	top.offset_left = 18
@@ -120,8 +118,6 @@ func _build_mode_page() -> void:
 	top.add_theme_constant_override("separation", 12)
 	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_mode_page.add_child(top)
-	_hub_profile = HubKit.profile_capsule(GameSession.display_nickname(), "교주님", AvatarCatalog.sanitize(GameSession.avatar_id), AvatarCatalog.color_of(AvatarCatalog.sanitize(GameSession.avatar_id)), open_avatar)
-	top.add_child(_hub_profile["root"])
 	var fill := Control.new()
 	fill.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -135,54 +131,69 @@ func _build_mode_page() -> void:
 	top.add_child(buttons)
 	buttons.add_child(HubKit.round_button("HubRules", &"book", _show_rules, 56.0))
 	buttons.add_child(HubKit.round_button("HubSettings", &"gear", _show_settings, 56.0))
+	# 왼쪽: 로고 + 내 아바타 + 닉네임 + 아바타 설정
+	var left := VBoxContainer.new()
+	left.name = "ProfileCapsule"
+	left.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	left.offset_left = 56
+	left.offset_top = 20
+	left.offset_right = 436
+	left.add_theme_constant_override("separation", 8)
+	left.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_mode_page.add_child(left)
+	var logo := HubKit.logo("에르핀의", "억지 레이스", "보드게임 대격돌")
+	left.add_child(logo)
+	var avatar_holder := CenterContainer.new()
+	avatar_holder.name = "AvatarHolder"
+	avatar_holder.custom_minimum_size = Vector2(0, 230)
+	left.add_child(avatar_holder)
+	var id: StringName = AvatarCatalog.sanitize(GameSession.avatar_id)
+	var avatar: Control = HubKit.avatar_disc(id, AvatarCatalog.color_of(id), 220.0)
+	avatar_holder.add_child(avatar)
+	var plate := PanelContainer.new()
+	plate.add_theme_stylebox_override("panel", LobbyTheme.style(Color("2fa63a"), Color("1f7a2a"), 3, 20, 5, 4))
+	left.add_child(plate)
+	var name_label := HubKit.outlined(GameSession.display_nickname(), 28, Color.WHITE, Color("17591f"), 6)
+	name_label.name = "ProfileName"
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.clip_text = true
+	plate.add_child(name_label)
+	_avatar_button = LobbyTheme.cream_button("아바타 설정", open_avatar, 24)
+	_avatar_button.name = "AvatarButton"
+	_avatar_button.custom_minimum_size = Vector2(0, 58)
+	left.add_child(_avatar_button)
 	var rename := LobbyTheme.small_button("이름 바꾸기", func() -> void: _on_back_pressed(), &"teal", 14)
 	rename.name = "RenameButton"
-	rename.position = Vector2(54, 114)
-	_mode_page.add_child(rename)
-	# 가운데 로고
-	var logo := HubKit.logo("에르핀의", "억지 레이스", "보드게임 대격돌")
-	logo.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	logo.anchor_left = 0.5
-	logo.anchor_right = 0.5
-	logo.offset_left = -300
-	logo.offset_right = 300
-	logo.offset_top = 112
-	_mode_page.add_child(logo)
-	# 아래쪽 메뉴 줄
-	var nav := HBoxContainer.new()
-	nav.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-	nav.anchor_top = 1.0
-	nav.anchor_bottom = 1.0
-	nav.offset_left = 26
-	nav.offset_top = -HubKit.NAV_SIZE.y - 16.0
-	nav.offset_bottom = -16
-	nav.add_theme_constant_override("separation", 16)
-	nav.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_mode_page.add_child(nav)
-	_ai_button = HubKit.nav_button("TrainingCard", &"sword", "훈련", open_training, &"green")
-	_ai_button.tooltip_text = "컴퓨터 1~3명과 혼자서 연습"
-	nav.add_child(_ai_button)
-	_quick_button = HubKit.nav_button("QuickCard", &"dice", "랜덤 결투", open_quick_match, &"pink")
-	_quick_button.tooltip_text = "15초 안에 자동 매칭 (빈자리는 AI)"
-	nav.add_child(_quick_button)
-	_multi_button = HubKit.nav_button("SecretCard", &"key", "비밀 결투", open_lobby, &"blue")
-	_multi_button.tooltip_text = "방 코드 5자리로 친구와 친선 대결"
-	nav.add_child(_multi_button)
-	_avatar_button = HubKit.nav_button("AvatarButton", &"face", "아바타", open_avatar, &"gold")
-	nav.add_child(_avatar_button)
+	rename.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	left.add_child(rename)
+	_hub_profile = {"name": name_label, "avatar": avatar, "holder": avatar_holder}
+	# 오른쪽: 대결 장소 고르기
+	var right := VBoxContainer.new()
+	right.name = "ModeColumn"
+	right.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	right.anchor_left = 1.0
+	right.anchor_right = 1.0
+	right.offset_left = -690
+	right.offset_right = -28
+	right.offset_top = 104
+	right.add_theme_constant_override("separation", 14)
+	right.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_mode_page.add_child(right)
+	var heading := HubKit.outlined("어디로 대결하러 갈까요?", 28, Color.WHITE, Color("2c7a1f"), 8)
+	right.add_child(heading)
+	_ai_button = HubKit.mode_card("TrainingCard", &"sword", "놀이터", "컴퓨터 1~3명 · 혼자서 연습", open_training, &"green")
+	right.add_child(_ai_button)
+	_multi_button = HubKit.mode_card("SecretCard", &"key", "친선 줘팸터", "방 코드 5자리 · 친구와 친선 대결", open_lobby, &"blue")
+	right.add_child(_multi_button)
+	_quick_button = HubKit.mode_card("QuickCard", &"dice", "익명 줘팸터", "15초 자동 매칭 · 모르는 상대와 바로 대결", open_quick_match, &"pink")
+	right.add_child(_quick_button)
 	# 오른쪽 아래의 큰 [바로 시작] 버튼 (원본의 [모험] 자리)
 	var start := Button.new()
 	start.name = "QuickStartAi"
-	start.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	start.anchor_left = 1.0
-	start.anchor_top = 1.0
-	start.offset_left = -290
-	start.offset_right = -22
-	start.offset_top = -150
-	start.offset_bottom = -24
+	start.custom_minimum_size = Vector2(0, 92)
 	start.focus_mode = Control.FOCUS_NONE
-	start.pivot_offset = Vector2(134, 63)
-	var start_style := LobbyTheme.style(Color("ffd34e"), Color.WHITE, 5, 46, 8, 0, Color("c98a14"))
+	start.pivot_offset = Vector2(330, 46)
+	var start_style := LobbyTheme.style(Color("ffd34e"), Color.WHITE, 5, 40, 8, 0, Color("c98a14"))
 	start_style.border_width_bottom = 9
 	start.add_theme_stylebox_override("normal", start_style)
 	var start_hover: StyleBoxFlat = start_style.duplicate()
@@ -192,71 +203,35 @@ func _build_mode_page() -> void:
 	start_pressed.bg_color = Color("f0bd2e")
 	start.add_theme_stylebox_override("pressed", start_pressed)
 	start.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	var start_column := VBoxContainer.new()
-	start_column.set_anchors_preset(Control.PRESET_FULL_RECT)
-	start_column.alignment = BoxContainer.ALIGNMENT_CENTER
-	start_column.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	start_column.add_theme_constant_override("separation", -2)
-	start.add_child(start_column)
+	var start_row := HBoxContainer.new()
+	start_row.set_anchors_preset(Control.PRESET_FULL_RECT)
+	start_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	start_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	start_row.add_theme_constant_override("separation", 16)
+	start.add_child(start_row)
 	var start_title := HubKit.outlined("바로 시작", 40, Color.WHITE, Color("8a5a0a"), 9)
-	start_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	start_column.add_child(start_title)
-	_hub_start_label = HubKit.outlined("", 17, Color("fff3bf"), Color("8a5a0a"), 5)
-	_hub_start_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	start_column.add_child(_hub_start_label)
+	start_row.add_child(start_title)
+	_hub_start_label = HubKit.outlined("", 20, Color("fff3bf"), Color("8a5a0a"), 5)
+	start_row.add_child(_hub_start_label)
 	start.pressed.connect(start_ai_game)
-	start.mouse_entered.connect(func() -> void: HubKit._bounce(start, 1.05))
+	start.mouse_entered.connect(func() -> void: HubKit._bounce(start, 1.03))
 	start.mouse_exited.connect(func() -> void: HubKit._bounce(start, 1.0))
-	_mode_page.add_child(start)
+	right.add_child(start)
 	_refresh_hub()
 
 
-## 가운데 아래에 서 있는 캐릭터들: 내 아바타는 왼쪽에 크게, 컴퓨터들은 가운데·오른쪽에서 통통 숨 쉰다 (그림이 들어오면 그대로 대체된다).
-func _build_hub_mascots() -> void:
-	_mascots.clear()
-	var me: StringName = AvatarCatalog.sanitize(GameSession.avatar_id)
-	var specs: Array[Dictionary] = [
-		{"id": me, "size": 250.0, "pos": Vector2(46, 300), "tag": "나"},
-		{"id": AvatarCatalog.bot_avatar(2), "size": 190.0, "pos": Vector2(560, 380), "tag": "컴퓨터"},
-		{"id": AvatarCatalog.bot_avatar(3, [me]), "size": 210.0, "pos": Vector2(790, 350), "tag": "컴퓨터"},
-	]
-	for index: int in specs.size():
-		var spec: Dictionary = specs[index]
-		var diameter: float = spec["size"]
-		var holder := Control.new()
-		holder.position = spec["pos"]
-		holder.size = Vector2(diameter, diameter + 34.0)
-		holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		holder.modulate = Color(1, 1, 1, 0.97)
-		var id: StringName = spec["id"]
-		var avatar: Control = HubKit.avatar_disc(id, AvatarCatalog.color_of(id), diameter)
-		holder.add_child(avatar)
-		var tag := HubKit.outlined(spec["tag"], 20, Color.WHITE, Color("2c7a1f"), 6)
-		tag.position = Vector2(0, diameter + 4.0)
-		tag.size = Vector2(diameter, 28)
-		tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		holder.add_child(tag)
-		_mode_page.add_child(holder)
-		_mascots.append(holder)
-		var bob: Tween = holder.create_tween().set_loops()
-		var rise: float = 7.0 + index * 2.0
-		bob.tween_property(holder, "position:y", holder.position.y - rise, 1.1 + 0.25 * index).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-		bob.tween_property(holder, "position:y", holder.position.y, 1.1 + 0.25 * index).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-
-
-## 허브의 이름·직함·아바타·바로 시작 문구를 현재 값으로 맞춘다.
+## 허브의 이름·아바타·바로 시작 문구를 현재 값으로 맞춘다.
 func _refresh_hub() -> void:
 	if _hub_profile.is_empty():
 		return
 	(_hub_profile["name"] as Label).text = GameSession.display_nickname()
 	var id: StringName = AvatarCatalog.sanitize(GameSession.avatar_id)
-	var old_avatar: Control = _hub_profile["avatar"]
-	var fresh: Control = HubKit.avatar_disc(id, AvatarCatalog.color_of(id), 76.0, Color("2fa63a"), 4)
-	fresh.position = old_avatar.position
-	old_avatar.get_parent().add_child(fresh)
-	old_avatar.queue_free()
+	var holder: Control = _hub_profile["holder"]
+	(_hub_profile["avatar"] as Control).queue_free()
+	var fresh: Control = HubKit.avatar_disc(id, AvatarCatalog.color_of(id), 220.0)
+	holder.add_child(fresh)
 	_hub_profile["avatar"] = fresh
-	_hub_start_label.text = "AI %d명과 대결" % ai_count
+	_hub_start_label.text = "(AI %d명과 대결)" % ai_count
 
 
 ## 팁 띠의 [>>]: 다음 게임 팁으로 넘긴다.
@@ -311,7 +286,7 @@ func _show_step(value: int) -> void:
 	_train_page.visible = value == 3
 	_avatar_page.visible = value == 4
 	_back_button.visible = value > 1
-	(_top["title"] as Label).text = {3: "훈련", 4: "아바타"}.get(value, "")
+	(_top["title"] as Label).text = {3: "놀이터", 4: "아바타"}.get(value, "")
 	if value == 1 and _name_edit != null:
 		_name_edit.grab_focus()
 
@@ -437,7 +412,7 @@ func open_avatar() -> void:
 	_show_step(4)
 
 
-## [훈련]: AI 인원을 고르는 화면으로 간다.
+## [놀이터]: AI 인원을 고르는 화면으로 간다.
 func open_training() -> void:
 	_show_step(3)
 
@@ -463,7 +438,7 @@ func start_ai_game() -> void:
 		get_tree().change_scene_to_file(BOARD_SCENE)
 
 
-## [비밀 결투]: 로비 씬에서 방 코드 입력 / 방 만들기.
+## [친선 줘팸터]: 로비 씬에서 방 코드 입력 / 방 만들기.
 func open_lobby() -> void:
 	GameSession.mode = GameSession.MODE_MULTIPLAYER
 	GameSession.lobby_intent = &"secret"
@@ -471,7 +446,7 @@ func open_lobby() -> void:
 		get_tree().change_scene_to_file(LOBBY_SCENE)
 
 
-## [랜덤 결투]: 로비 씬에서 곧바로 빠른 랜덤 매칭을 시작한다.
+## [익명 줘팸터]: 로비 씬에서 곧바로 빠른 랜덤 매칭을 시작한다.
 func open_quick_match() -> void:
 	GameSession.mode = GameSession.MODE_MULTIPLAYER
 	GameSession.lobby_intent = &"quick"

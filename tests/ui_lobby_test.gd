@@ -34,7 +34,7 @@ func _run() -> void:
 	for node_name: String in ["RoomCodeInput", "JoinRoom", "HostCard"]:
 		_expect(_lobby.find_child(node_name, true, false) != null, "비밀 결투 화면 요소: %s" % node_name)
 	_expect((_lobby.find_child("HostCard", true, false) as Button).text == "새 방 만들기" and (_lobby.find_child("JoinRoom", true, false) as Button).text == "입장하기", "방 코드 입력 + [새 방 만들기]")
-	_expect((_lobby._top["title"] as Label).text == "비밀 결투" and (_lobby._bottom["name"] as Label).text.contains("테스터"), "위 띠 제목과 아래 띠 이름")
+	_expect((_lobby._top["title"] as Label).text == "친선 줘팸터" and (_lobby._bottom["name"] as Label).text.contains("테스터"), "위 띠 제목과 아래 띠 이름")
 	_lobby.start_hosting()
 	await process_frame
 	var service: LobbyService = _lobby.service

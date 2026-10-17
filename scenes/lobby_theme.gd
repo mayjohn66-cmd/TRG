@@ -202,7 +202,7 @@ static func small_button(text: String, callback: Callable, tone: StringName = &"
 	return button
 
 
-## 굵은 모드 카드 한 장: 큰 제목 / 색 띠(오른쪽 정렬 글씨) / 작은 설명. kind: &"blue"(훈련) / &"green"(비밀 결투) / &"pink"(랜덤 결투)
+## 굵은 모드 카드 한 장: 큰 제목 / 색 띠(오른쪽 정렬 글씨) / 작은 설명. kind: &"blue"(놀이터) / &"green"(친선 줘팸터) / &"pink"(익명 줘팸터)
 static func card(node_name: String, title_text: String, band_text: String, sub_text: String, kind: StringName, callback: Callable) -> Button:
 	var palette: Dictionary = {
 		&"blue": {"bg": BLUE_PALE, "edge": BLUE, "title": BLUE, "band_bg": BLUE, "band_text": Color.WHITE, "sub": BLUE},

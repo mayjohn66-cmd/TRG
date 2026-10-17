@@ -1,6 +1,6 @@
 # File: res://scenes/lobby.gd
 # Class: class_name Lobby
-# Role: 멀티플레이 로비 화면(밝은 민트/청록 테마, 위·아래 띠). 시작 메뉴의 [비밀 결투]는 방 코드 입력 + [새 방 만들기], [랜덤 결투]는 곧바로 빠른 랜덤 매칭이다. 빠른 매칭은 공용 대기열(QuickMatch)이 방을 찾거나 열고 15초 안에 안 차면 AI로 채워 시작한다. 방장은 5자리 방 코드와 P1~P4 좌석 상태만 보고, 참가자는 방 코드만 입력하면 공개 릴레이를 통해 백그라운드에서 WebRTC 연결이 자동으로 맺어진다.
+# Role: 멀티플레이 로비 화면(밝은 민트/청록 테마, 위·아래 띠). 시작 메뉴의 [친선 줘팸터]는 방 코드 입력 + [새 방 만들기], [익명 줘팸터]는 곧바로 빠른 랜덤 매칭이다. 빠른 매칭은 공용 대기열(QuickMatch)이 방을 찾거나 열고 15초 안에 안 차면 AI로 채워 시작한다. 방장은 5자리 방 코드와 P1~P4 좌석 상태만 보고, 참가자는 방 코드만 입력하면 공개 릴레이를 통해 백그라운드에서 WebRTC 연결이 자동으로 맺어진다.
 class_name Lobby
 extends Control
 
@@ -63,7 +63,7 @@ func _ready() -> void:
 	quick.state_changed.connect(func(_state: int) -> void: _refresh_quick())
 	LobbyTheme.add_background(self)
 	add_child(HubKit.FestivalDecor.new())
-	_top = LobbyTheme.add_top_bar(self, "비밀 결투", _on_back_pressed, "규칙", func() -> void: LobbyTheme.show_rules(self))
+	_top = LobbyTheme.add_top_bar(self, "친선 줘팸터", _on_back_pressed, "규칙", func() -> void: LobbyTheme.show_rules(self))
 	_bottom = LobbyTheme.add_bottom_bar(self, "%s 교주님" % GameSession.display_nickname(), "설정", func() -> void: LobbyTheme.show_settings(self))
 	var scroll := ScrollContainer.new()
 	scroll.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -124,7 +124,7 @@ func _on_back_pressed() -> void:
 		go_back()
 
 
-## [비밀 결투]: 방 코드 5자리를 입력해 들어가거나 [새 방 만들기]로 내가 방장이 된다.
+## [친선 줘팸터]: 방 코드 5자리를 입력해 들어가거나 [새 방 만들기]로 내가 방장이 된다.
 func _show_choose() -> void:
 	if quick != null:
 		quick.stop()
@@ -133,7 +133,7 @@ func _show_choose() -> void:
 	_guest_connected = false
 	_guest_busy = false
 	_clear_panel()
-	_title("비밀 결투")
+	_title("친선 줘팸터")
 	_guest_box = VBoxContainer.new()
 	_guest_box.add_theme_constant_override("separation", 12)
 	_panel_box.add_child(_guest_box)
@@ -152,7 +152,7 @@ func start_guest() -> void:
 func start_quick_match() -> void:
 	mode = Mode.QUICK
 	_clear_panel()
-	_title("랜덤 결투")
+	_title("익명 줘팸터")
 	_quick_status = _label("", 24, LobbyTheme.TEAL_DARK)
 	_quick_status.name = "QuickStatus"
 	_quick_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -264,7 +264,7 @@ func start_hosting() -> void:
 	mode = Mode.HOST
 	_relay_ok = true
 	_clear_panel()
-	_title("비밀 결투")
+	_title("친선 줘팸터")
 	_panel_box.add_child(_make_code_badge())
 	var help := _label("친구에게 이 방 코드를 알려 주세요. 친구가 코드를 입력하면 자동으로 연결됩니다. 혼자면 AI 3명과, 친구가 있으면 사람끼리(2~4인) 시작하며 비워 둔 자리는 빠지고 AI는 [AI 봇으로 채우기]를 누른 자리만 참여합니다.", 13, Color("3d6b5c"))
 	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

@@ -241,6 +241,77 @@ static func avatar_disc(id: StringName, color: Color, diameter: float, ring: Col
 	return holder
 
 
+## 오른쪽 대결 선택 카드(가로로 긴 큰 버튼): 왼쪽 동그란 아이콘, 큰 제목(CardTitle), 작은 설명(CardSub), 오른쪽 화살표. 올리면 통통 커진다.
+static func mode_card(node_name: String, icon_kind: StringName, title_text: String, sub_text: String, callback: Callable, tone: StringName = &"green") -> Button:
+	var palette: Array = {
+		&"green": [Color("86d94f"), Color("3f9a2b"), Color("2c7a1f")],
+		&"blue": [Color("7cc7f0"), Color("2f7fb8"), Color("1d5a8a")],
+		&"pink": [Color("f5a0c0"), Color("c2457a"), Color("8f2d58")],
+	}.get(tone, [GREEN, GREEN_EDGE, GREEN_DARK]) as Array
+	var fill: Color = palette[0]
+	var edge: Color = palette[1]
+	var dark: Color = palette[2]
+	var size := Vector2(640.0, 124.0)
+	var button := Button.new()
+	button.name = node_name
+	button.custom_minimum_size = size
+	button.focus_mode = Control.FOCUS_NONE
+	button.pivot_offset = size / 2.0
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = fill
+	normal.border_color = Color.WHITE
+	normal.set_border_width_all(5)
+	normal.border_width_bottom = 9
+	normal.set_corner_radius_all(40)
+	normal.shadow_color = Color(edge, 0.8)
+	normal.shadow_size = 6
+	normal.shadow_offset = Vector2(0, 4)
+	button.add_theme_stylebox_override("normal", normal)
+	var hover: StyleBoxFlat = normal.duplicate()
+	hover.bg_color = fill.lightened(0.1)
+	button.add_theme_stylebox_override("hover", hover)
+	var pressed: StyleBoxFlat = normal.duplicate()
+	pressed.bg_color = fill.darkened(0.1)
+	button.add_theme_stylebox_override("pressed", pressed)
+	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	var disc := Panel.new()
+	disc.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	disc.position = Vector2(22, 18)
+	disc.size = Vector2(82, 82)
+	var disc_style := StyleBoxFlat.new()
+	disc_style.bg_color = CREAM
+	disc_style.border_color = edge
+	disc_style.set_border_width_all(5)
+	disc_style.set_corner_radius_all(41)
+	disc.add_theme_stylebox_override("panel", disc_style)
+	button.add_child(disc)
+	var icon := Icon.new(icon_kind, dark, GOLD)
+	icon.position = Vector2(12, 12)
+	icon.size = Vector2(58, 58)
+	disc.add_child(icon)
+	var title := outlined(title_text, 44, Color.WHITE, dark, 9)
+	title.name = "CardTitle"
+	title.position = Vector2(126, 8)
+	title.size = Vector2(440, 62)
+	button.add_child(title)
+	var sub := outlined(sub_text, 19, Color("fffbe6"), dark, 5)
+	sub.name = "CardSub"
+	sub.position = Vector2(128, 72)
+	sub.size = Vector2(450, 28)
+	button.add_child(sub)
+	var arrow := Icon.new(&"next", Color.WHITE, GOLD)
+	arrow.position = Vector2(576, 38)
+	arrow.size = Vector2(44, 44)
+	button.add_child(arrow)
+	button.mouse_entered.connect(func() -> void: _bounce(button, 1.03))
+	button.mouse_exited.connect(func() -> void: _bounce(button, 1.0))
+	button.button_down.connect(func() -> void: _bounce(button, 0.97, 0.06))
+	button.button_up.connect(func() -> void: _bounce(button, 1.03 if button.is_hovered() else 1.0, 0.1))
+	if callback.is_valid():
+		button.pressed.connect(callback)
+	return button
+
+
 ## 오른쪽 위의 둥근 아이콘 버튼 (설정·규칙).
 static func round_button(node_name: String, icon_kind: StringName, callback: Callable, diameter: float = 60.0) -> Button:
 	var button := Button.new()

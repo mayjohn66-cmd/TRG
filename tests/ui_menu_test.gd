@@ -37,18 +37,18 @@ func _run() -> void:
 	var titles: Array[String] = []
 	for card: Button in [menu._ai_button, menu._multi_button, menu._quick_button]:
 		titles.append((card.find_child("CardTitle", true, false) as Label).text)
-		_expect(card.custom_minimum_size.y >= 150, "모드 카드는 큼직하다")
-	_expect(str(titles) == str(["훈련", "비밀 결투", "랜덤 결투"]), "모드 카드 세 장: %s" % str(titles))
+		_expect(card.custom_minimum_size.y >= 110 and card.custom_minimum_size.x >= 500, "모드 카드는 큼직하다")
+	_expect(str(titles) == str(["놀이터", "친선 줘팸터", "익명 줘팸터"]), "모드 카드 세 장: %s" % str(titles))
 	# 마을 허브(원본 로비 느낌): 프로필 띠 · 팁 띠 · 둥근 규칙/설정 버튼 · 큰 [바로 시작] · 캐릭터들
-	for node_name: String in ["ProfileCapsule", "TipBar", "HubRules", "HubSettings", "QuickStartAi", "RenameButton"]:
+	for node_name: String in ["ProfileCapsule", "TipBar", "HubRules", "HubSettings", "QuickStartAi", "RenameButton", "AvatarButton", "ModeColumn"]:
 		_expect(menu.find_child(node_name, true, false) != null, "허브 요소: %s" % node_name)
-	_expect((menu.find_child("ProfileName", true, false) as Label).text == "에르핀", "프로필 띠에 내 이름")
+	_expect((menu.find_child("ProfileName", true, false) as Label).text == "에르핀", "왼쪽에 아바타 아래 내 닉네임")
 	_expect(not (menu._top["bar"] as Control).visible and not (menu._bottom["bar"] as Control).visible, "허브에서는 청록 띠를 숨긴다")
 	var tip_label: Label = menu.find_child("TipText", true, false)
 	var first_tip: String = tip_label.text
 	(menu.find_child("TipNext", true, false) as Button).pressed.emit()
 	_expect(tip_label.text != first_tip and GameTips.TIPS.has(tip_label.text), "팁 띠의 [>>]로 다음 팁")
-	_expect(menu._hub_start_label.text == "AI 3명과 대결", "큰 시작 버튼 문구")
+	_expect(menu._hub_start_label.text == "(AI 3명과 대결)", "큰 시작 버튼 문구")
 	menu.find_child("HubSettings", true, false).pressed.emit()
 	_expect(menu.find_child("Popup", true, false) != null, "둥근 설정 버튼이 설정 팝업을 연다")
 	menu.find_child("Popup", true, false).free()
