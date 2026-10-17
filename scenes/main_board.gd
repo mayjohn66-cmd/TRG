@@ -14,9 +14,12 @@ const PLAYER_COLORS: Dictionary = {
 ## 보드판(큼직하게): 받침 판 584x584 안에 520x520 타일 영역. 모바일 가로 화면에서도 보드가 화면 높이의 대부분을 차지한다.
 const PLATE_POS: Vector2 = Vector2(391, 68)
 const PLATE_SIZE: Vector2 = Vector2(584, 584)
-const BOARD_ORIGIN: Vector2 = Vector2(423, 100)
+const BOARD_ORIGIN: Vector2 = Vector2(423, 75)
 const BOARD_SIZE: float = 520.0
 ## 보드 시점. TOP: 완전 탑뷰, TILT: 테이블에 앉아 비스듬히 내려다보는 기울인 탑뷰(세로 압축 + 위쪽이 멀어 보이는 원근 + 서 있는 말과 그림자).
+## 보드는 한 변 6칸의 정사각 트랙을 45도 돌려 마름모로 세운다 (0번 출발선이 아래 꼭짓점, 반시계로 오른쪽 -> 위 -> 왼쪽 꼭짓점).
+const DIAMOND_KX: float = 420.0        ## 회전한 평면 좌표 1.0당 가로 픽셀
+const DIAMOND_KY: float = 330.0        ## 회전한 평면 좌표 1.0당 세로 픽셀 (눌러서 마름모 비율을 만든다)
 enum ViewMode { TOP, TILT }
 const TILT_SQUASH: float = 0.90        ## 검토된 시안 v0.9: 과도한 세로 압축 완화
 const TILT_FAR_SCALE: float = 0.90
@@ -1230,7 +1233,7 @@ func _build_status_strip() -> void:
 ## 우측 중앙의 큼직한 둥근 [굴리기] 버튼(모두의 마블 방식)과 그 아래의 멈추기·개입 패스·폭탄 떠넘기기 버튼.
 func _build_action_bar() -> void:
 	_roll_button = _make_button("굴리기", _on_roll_pressed, 24, Color("2b8a3e"), 60)
-	_roll_button.position = Vector2(623, 370)
+	_roll_button.position = Vector2(623, 320)
 	_roll_button.size = Vector2(120, 120)
 	_roll_button.custom_minimum_size = Vector2(120, 120)
 	_apply_round_button_style(_roll_button, Color("2b8a3e"))
@@ -1240,7 +1243,7 @@ func _build_action_bar() -> void:
 	add_child(_roll_button)
 	# 룰렛(원판을 잡고 돌리기)과 러시안 룰렛(방아쇠 당기기)은 굴리기 버튼 대신 같은 자리의 직접 조작 패드를 쓴다.
 	_roll_pad = RollPad.new()
-	_roll_pad.position = Vector2(583, 261)  # 보드 한가운데 (패드 중심 = (683, 346)); 크게 보이도록 켤 때 1.9배로 키운다
+	_roll_pad.position = Vector2(583, 250)  # 마름모 보드 한가운데 (패드 중심 = (683, 335)); 크게 보이도록 켤 때 1.9배로 키운다
 	_roll_pad.spin_released.connect(_on_pad_spin_released)
 	_roll_pad.trigger_pulled.connect(_on_pad_trigger_pulled)
 	add_child(_roll_pad)
@@ -1457,19 +1460,17 @@ func _project(norm: Vector2) -> Vector2:
 
 
 ## Artwork, tile footprints and pawn trajectories use one shared plane.
+## 평면 좌표(0~1)를 45도 돌려 마름모로 세운다 (두 시점 모두 같은 마름모, 시점은 보드 면·그림자·말 높이만 다르다).
 func _surface_project(norm: Vector2) -> Vector2:
-	if view_mode == ViewMode.TOP:
-		return BOARD_ORIGIN + norm * BOARD_SIZE
 	var center: Vector2 = BOARD_ORIGIN + Vector2(BOARD_SIZE, BOARD_SIZE) / 2.0
-	var size: float = BOARD_SIZE * TILT_ZOOM
-	return center + Vector2((norm.x - 0.5) * size * _depth_scale(norm.y), (norm.y - 0.5) * size * TILT_SQUASH)
+	var offset: Vector2 = norm - Vector2(0.5, 0.5)
+	var rotated := Vector2((offset.x - offset.y) * 0.70710678, (offset.x + offset.y) * 0.70710678)
+	return center + Vector2(rotated.x * DIAMOND_KX, rotated.y * DIAMOND_KY)
 
 
-## 평면 세로 좌표(0 위=먼 쪽, 1 아래=가까운 쪽)에서의 크기 배율.
-func _depth_scale(norm_y: float) -> float:
-	if view_mode == ViewMode.TOP:
-		return 1.0
-	return lerpf(TILT_FAR_SCALE, 1.0, clampf(norm_y, 0.0, 1.0))
+## 마름모에는 원근 크기 차이가 없다.
+func _depth_scale(_norm_y: float) -> float:
+	return 1.0
 
 
 func _tile_center(index: int) -> Vector2:
@@ -1488,20 +1489,22 @@ func _jump_arrow_target(index: int) -> int:
 ## 타일 하나를 현재 시점에 맞게 놓는다 (위치·원근 크기·세로 압축, 글자는 되돌려 찌그러지지 않게).
 func _place_tile(index: int) -> void:
 	var tile: BoardSkin.Tile = _tile_views[index]
-	var span: float = BOARD_SIZE * (TILT_ZOOM if view_mode == ViewMode.TILT else 1.0)
-	tile.size = Vector2.ONE * (float(tile.data.diameter) * span + 4.0)
+	var span: float = BOARD_SIZE
+	tile.size = Vector2.ONE * (float(tile.data.diameter) * DIAMOND_KX * 1.42 + 8.0)
 	tile.pivot_offset = tile.size / 2.0
 	tile.position = _tile_center(index) - tile.size / 2.0
-	var depth: float = _depth_scale(tile_norm(index).y)
-	var squash: float = 1.0 if view_mode == ViewMode.TOP else TILT_TILE_SQUASH
-	tile.scale = Vector2(depth, depth * squash)
+	var depth: float = 1.0
+	var squash: float = 1.0
+	tile.scale = Vector2.ONE
 	var target: int = _jump_arrow_target(index)
 	tile.arrow_target = target
 	var direction: Vector2 = (_tile_center(target) - _tile_center(index)).normalized() if target >= 0 else Vector2.RIGHT
 	tile.configure(_surface_project, BoardSkin.track(tile_norm(index)), span, _depth_scale(BoardSkin.track(tile_norm(index)).y), direction)
 	for child: Control in [_highlights.get(index), _pick_marks.get(index)]:
 		if child != null:
-			child.size = tile.size
+			# 마름모 타일에 맞춰 강조 테두리를 타일 중앙의 작은 가로형 사각으로 둔다.
+			child.size = Vector2(tile.size.x * 0.72, tile.size.y * 0.5)
+			child.position = (tile.size - child.size) / 2.0
 	for label: Label in [_tag_labels.get(index), _tile_marks.get(index)]:
 		if label != null:
 			label.pivot_offset = label.size / 2.0
@@ -1518,11 +1521,11 @@ func set_view_mode(mode: int) -> void:
 
 
 func _apply_view_mode() -> void:
-	var tilt: bool = view_mode == ViewMode.TILT
+	var tilt: bool = true  # 마름모 보드는 항상 보드 면 메시로 그린다 (평면 받침 판은 쓰지 않는다)
 	if _plate != null:
-		_plate.visible = not tilt
+		_plate.visible = false
 	if _table_bg != null:
-		_table_bg.visible = tilt
+		_table_bg.visible = view_mode == ViewMode.TILT
 	if _board_surface != null:
 		BoardSkin.update_surface(_board_surface, _surface_project)
 		BoardSkin.update_surface(_flat_board_surface, _surface_project)
@@ -1540,7 +1543,7 @@ func _apply_view_mode() -> void:
 		_drop_zone.position = bounds.position
 		_drop_zone.size = bounds.size
 	if _pawn_layer != null:
-		_pawn_layer.y_sort_enabled = tilt
+		_pawn_layer.y_sort_enabled = view_mode == ViewMode.TILT
 	if _tile_views.is_empty():
 		return
 	for index: int in GameEnums.TILE_COUNT:
@@ -1942,6 +1945,7 @@ func _build_direction_icons() -> void:
 	for side: int in 2:
 		var icon := Node2D.new()
 		icon.position = Vector2(352, 346) if side == 0 else Vector2(1014, 346)
+		icon.visible = false  # 마름모 보드에서는 양옆 쌍화살표를 쓰지 않는다 (진행 방향은 코너 화살표가 알린다)
 		icon.z_index = 0  # 오버레이(증강 선택·결과 등)보다 아래: 같은 z면 나중에 추가된 노드가 위에 그려진다
 		for index: int in 2:
 			var chevron := Polygon2D.new()
@@ -2827,6 +2831,8 @@ func _on_pawn_slot_unhover(button: Button) -> void:
 
 
 func _refresh_pawn_dock() -> void:
+	# AI·온라인에서는 내 프로필 카드가 말 칸과 필살기를 맡으므로 기물 독은 4인 수동 조작에서만 보인다.
+	_pawn_bar.visible = not ai_mode
 	var owner_id: int = _dock_owner()
 	var color: Color = PLAYER_COLORS[owner_id]
 	for index: int in _pawn_buttons.size():
@@ -3336,7 +3342,7 @@ func _set_roll_geometry(mode: StringName) -> void:
 	_roll_geometry = mode
 	var big: bool = mode != &"charge"
 	var diameter: float = 190.0 if mode == &"big" else 120.0
-	var center: Vector2 = Vector2(683.0, 346.0) if mode == &"big" else Vector2(683.0, 430.0)
+	var center: Vector2 = Vector2(683.0, 335.0) if mode == &"big" else Vector2(683.0, 380.0)
 	_roll_button.custom_minimum_size = Vector2(diameter, diameter)
 	_roll_button.size = Vector2(diameter, diameter)
 	_roll_button.add_theme_font_size_override("font_size", 32 if mode == &"big" else 24)
@@ -5893,7 +5899,7 @@ func _show_center_banner(text: String, color: Color) -> void:
 ## 파워 게이지(굴림 버튼 위)와 판정 도구 연출기를 만든다.
 func _build_roll_fx() -> void:
 	_power_bar = ProgressBar.new()
-	_power_bar.position = Vector2(623, 497)
+	_power_bar.position = Vector2(623, 447)
 	_power_bar.size = Vector2(120, 12)
 	_power_bar.min_value = 0.0
 	_power_bar.max_value = 100.0
@@ -5904,7 +5910,7 @@ func _build_roll_fx() -> void:
 	_power_bar.add_theme_stylebox_override("fill", _style(Color("51cf66"), Color("fff3bf"), 2, 7, 0, 0))
 	add_child(_power_bar)
 	_power_label = _make_label("POWER 0%", 12, Color("fff3bf"))
-	_power_label.position = Vector2(623, 512)
+	_power_label.position = Vector2(623, 462)
 	_power_label.size = Vector2(120, 16)
 	_power_label.z_index = 2
 	_power_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

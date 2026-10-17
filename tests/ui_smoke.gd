@@ -74,14 +74,25 @@ func _check_layout() -> void:
 		_assert(Rect2(Vector2.ZERO, Vector2(1366, 768)).encloses(_tile_rect(index)), "타일 %d가 화면 안에 있어야 한다" % index)
 	for a: int in 24:
 		for b: int in range(a + 1, 24):
-			_assert(not _tile_rect(a).intersects(_tile_rect(b)), "타일 %d와 %d가 겹침" % [a, b])
+			_assert(Geometry2D.intersect_polygons(_tile_polygon(a), _tile_polygon(b)).is_empty(), "타일 %d와 %d가 겹침" % [a, b])
 
 
 ## 타일이 화면에서 실제로 차지하는 사각형 (원근·압축 배율 반영).
+## 마름모 보드의 타일은 모양(윤곽)으로 겹침을 본다 (바깥 사각형은 마름모 배치에서 서로 겹친다).
+func _tile_polygon(index: int) -> PackedVector2Array:
+	var tile: BoardSkin.Tile = _board._tile_views[index]
+	var result := PackedVector2Array()
+	for point: Vector2 in tile.outline_points:
+		result.append(tile.position + tile.size / 2.0 + (point - tile.size / 2.0) * tile.scale)
+	return result
+
+
 func _tile_rect(index: int) -> Rect2:
-	var tile: Control = _board._tile_views[index]
-	var size: Vector2 = tile.size * tile.scale
-	return Rect2(tile.position + tile.size / 2.0 - size / 2.0, size)
+	var points: PackedVector2Array = _tile_polygon(index)
+	var rect := Rect2(points[0], Vector2.ZERO)
+	for point: Vector2 in points:
+		rect = rect.expand(point)
+	return rect
 
 
 ## 상용 HUD 배치 검증: 보드는 화면 정중앙, 프로필 카드는 네 모서리, 서로 겹치는 HUD가 없어야 한다.
