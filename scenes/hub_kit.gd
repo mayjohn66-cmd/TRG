@@ -113,6 +113,19 @@ class Icon extends Control:
 			&"next":
 				_line(PackedVector2Array([Vector2(-14, -12), Vector2(-2, 0), Vector2(-14, 12)]), 6.0, ink)
 				_line(PackedVector2Array([Vector2(2, -12), Vector2(14, 0), Vector2(2, 12)]), 6.0, ink)
+			&"leaf":
+				draw_colored_polygon(PackedVector2Array([Vector2(-20, 16), Vector2(-14, -8), Vector2(2, -22), Vector2(20, -20), Vector2(16, 2), Vector2(2, 16)]), accent)
+				_line(PackedVector2Array([Vector2(-18, 18), Vector2(10, -10)]), 3.5, ink)
+			&"back":
+				_line(PackedVector2Array([Vector2(10, -20), Vector2(-10, 0), Vector2(10, 20)]), 11.0, ink)
+			&"forward":
+				_line(PackedVector2Array([Vector2(-10, -20), Vector2(10, 0), Vector2(-10, 20)]), 11.0, ink)
+			&"grid":
+				for gx: int in 3:
+					for gy: int in 3:
+						var cell := Rect2(Vector2(-21 + gx * 15, -21 + gy * 15), Vector2(12, 12))
+						draw_rect(cell, accent if (gx + gy) % 2 == 0 else Color.WHITE)
+						draw_rect(cell, ink, false, 2.5)
 			&"hourglass":
 				draw_colored_polygon(PackedVector2Array([Vector2(-14, -18), Vector2(14, -18), Vector2(0, 0)]), accent)
 				draw_colored_polygon(PackedVector2Array([Vector2(0, 0), Vector2(14, 18), Vector2(-14, 18)]), accent.darkened(0.15))
