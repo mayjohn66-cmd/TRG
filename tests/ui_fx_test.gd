@@ -65,6 +65,7 @@ func _run() -> void:
 	await _test_hud_overhaul()
 	await _test_card_art_layout()
 	await _test_augment_art()
+	await _test_pawn_tokens()
 	await _test_bot_pacing()
 	await _test_action_beats()
 	await _test_tool_cards_fit()
@@ -76,6 +77,61 @@ func _run() -> void:
 		for message: String in _failures:
 			printerr("UI_FX_FAIL: " + message)
 		quit(1)
+
+
+## The six sprites must load; all other kinds still render without images.
+func _test_pawn_tokens() -> void:
+	var alpha_probe := Image.create(32,32,false,Image.FORMAT_RGBA8)
+	alpha_probe.fill(Color.TRANSPARENT)
+	alpha_probe.fill_rect(Rect2i(10,10,12,12),Color.WHITE)
+	alpha_probe.set_pixel(0,0,Color(1,1,1,1.0/255.0))
+	_expect(PawnArt.visible_region(alpha_probe) == Rect2i(8,8,16,16), "invisible alpha noise cannot shrink the visible token")
+	var examples: Array[Vector2i] = [Vector2i(1,1),Vector2i(2,2),Vector2i(3,2),Vector2i(4,1),Vector2i(5,1),Vector2i(6,1)]
+	for example: Vector2i in examples:
+		var pawn := PlayerPawn.new()
+		pawn.kind = example.x as GameEnums.PawnKind
+		pawn.unit_no = example.y
+		var art: Dictionary = PawnArt.sprite(pawn)
+		_expect(not art.is_empty(), "representative token sprite loads: %s" % pawn.display_label())
+		if not art.is_empty():
+			var texture: Texture2D = art.texture
+			var image: Image = texture.get_image()
+			_expect(texture.get_width() <= 256 and texture.get_height() <= 256, "token runtime texture is capped at 256px")
+			_expect(image.detect_alpha() != Image.ALPHA_NONE, "token keeps real transparency rather than a white square")
+			_expect((art.region as Rect2).has_area(), "transparent bounds keep the complete token")
+	var probe := PawnToken.new()
+	_board.add_child(probe)
+	probe.position = Vector2(-1000,-1000)
+	for kind: GameEnums.PawnKind in PawnCatalog.EVOLVABLE_SETS:
+		for units: Array in PawnCatalog.unit_groups(kind):
+			var pawn := PlayerPawn.new()
+			pawn.kind = kind
+			pawn.unit_no = int(units[0])
+			probe.configure(pawn,MainBoard.PLAYER_COLORS[1],false)
+			await process_frame
+			_expect(probe.artwork.is_empty(), "procedural fallback renders without textures: %s" % pawn.display_label())
+			_expect(probe.skill_ready() == PawnSkills.has_skill(pawn), "remaining skill mark follows actual pawn skill")
+			pawn.skill_used = true
+			probe.configure(pawn,MainBoard.PLAYER_COLORS[1],false)
+			_expect(not probe.skill_ready(), "used skill stops its lightning mark")
+	probe.queue_free()
+	var promoted := PlayerPawn.new()
+	promoted.kind = GameEnums.PawnKind.SHOGI
+	promoted.unit_no = 1
+	promoted.promoted = true
+	var paths: Array[String] = PawnArt.candidates(promoted)
+	_expect(paths[0].ends_with("SHOGI_FU_NARI.png") and paths[1].ends_with("SHOGI_NARI.png"), "promoted art takes precedence over normal Shogi art")
+	for pawn: PlayerPawn in _board.state.pawns:
+		var token: PawnToken = (_board._pawn_views[pawn.entity_id] as Node2D).get_node("Bounce/Token") as PawnToken
+		_expect(token.pawn == pawn and token.owner_color == MainBoard.PLAYER_COLORS[pawn.owner_id], "board body and pedestal use correct pawn and owner")
+	for profile: Dictionary in _board._profiles.values():
+		for parts: Dictionary in profile["slots"]:
+			var host: Control = parts["panel"]
+			var token: PawnToken = host.get_node_or_null("PawnToken") as PawnToken
+			_expect(token != null and not (parts["letter"] as Label).visible, "profile replaces central glyph with shared token")
+			if token != null:
+				var bounds := Rect2(token.position + PawnToken.HIT_BOX.position*token.scale, PawnToken.HIT_BOX.size*token.scale)
+				_expect(Rect2(Vector2(-0.5,-0.5),host.size+Vector2.ONE).encloses(bounds), "token badges stay inside profile slot")
 
 
 ## Optional art must resolve in order and preserve readable glyphs when missing.

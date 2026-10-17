@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dojjkbssetuym"
-path="res://.godot/imported/PAWN_MONO.png-392bb31d930fc9a82b2f3789664a03d6.ctex"
+uid="uid://hhh04t6np0lo"
+path="res://.godot/imported/YUT.png-dba3550e4aadde24889fbb00a2d44763.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://content_trickcal/illustrations/pawns/PAWN_MONO.png"
-dest_files=["res://.godot/imported/PAWN_MONO.png-392bb31d930fc9a82b2f3789664a03d6.ctex"]
+source_file="res://content_trickcal/illustrations/pawns/YUT.png"
+dest_files=["res://.godot/imported/YUT.png-dba3550e4aadde24889fbb00a2d44763.ctex"]
 
 [params]
 
@@ -36,5 +36,5 @@ process/premult_alpha=false
 process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
-process/size_limit=512
+process/size_limit=256
 detect_3d/compress_to=1

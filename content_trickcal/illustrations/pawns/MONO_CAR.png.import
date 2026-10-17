@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ob8c2ngo55b"
-path="res://.godot/imported/PAWN_JANGGI.png-a37def1c48f5ff930767798da7cb5d07.ctex"
+uid="uid://d0gidaeji2pl1"
+path="res://.godot/imported/MONO_CAR.png-75f5d826254123e9b7518faedd3b73a1.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://content_trickcal/illustrations/pawns/PAWN_JANGGI.png"
-dest_files=["res://.godot/imported/PAWN_JANGGI.png-a37def1c48f5ff930767798da7cb5d07.ctex"]
+source_file="res://content_trickcal/illustrations/pawns/MONO_CAR.png"
+dest_files=["res://.godot/imported/MONO_CAR.png-75f5d826254123e9b7518faedd3b73a1.ctex"]
 
 [params]
 
@@ -36,5 +36,5 @@ process/premult_alpha=false
 process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
-process/size_limit=512
+process/size_limit=256
 detect_3d/compress_to=1

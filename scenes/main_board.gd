@@ -25,7 +25,7 @@ enum ViewMode { TOP, TILT }
 const TILT_SQUASH: float = 0.90        ## 검토된 시안 v0.9: 과도한 세로 압축 완화
 const TILT_FAR_SCALE: float = 0.90
 const TILT_TILE_SQUASH: float = 0.90
-const TILT_PAWN_LIFT: float = 9.0      ## 서 있는 말이 바닥에서 떠 보이는 높이(px)
+const TILT_PAWN_LIFT: float = 2.0      ## 토큰 받침대의 접지 보정(px)
 const TILT_MARGIN: float = 0.11        ## 보드 받침이 타일 바깥으로 나오는 정도(정규화 좌표)
 const TILT_ZOOM: float = 1.05          ## 세로를 눌러 남는 공간만큼 보드를 키운다
 const TILE_SIZE: float = 48.0
@@ -574,13 +574,13 @@ func _input(event: InputEvent) -> void:
 ## 화면 좌표 근처(18px)에 있는, 지금 고를 수 있는 내 말의 ID. 없으면 -1.
 func _pawn_at(mouse: Vector2) -> int:
 	var found: int = -1
-	var best: float = 24.0
+	var best: float = 50.0
 	for pawn: PlayerPawn in state.selectable_pawns(manager.current_player_id(), _queued_dice()):
 		var view: Node2D = _pawn_views.get(pawn.entity_id)
 		if view == null or not view.visible:
 			continue
-		var distance: float = (view.position + _pawn_layer.position).distance_to(mouse)
-		if distance < best:
+		var distance: float = (view.position + _pawn_layer.position + Vector2(0,-12)).distance_to(mouse)
+		if PawnToken.HIT_BOX.has_point((view.get_node("Bounce") as Node2D).to_local(mouse)) and distance < best:
 			best = distance
 			found = pawn.entity_id
 	return found
@@ -1737,51 +1737,25 @@ func _tile_tag(index: int, tile_type: TileNode.TileType) -> String:
 func _build_pawn_views() -> void:
 	for pawn: PlayerPawn in state.pawns:
 		var view := Node2D.new()
-		var bounce := Node2D.new()
-		bounce.name = "Bounce"
-		# 기울인 시점에서 말 밑에 깔리는 납작한 그림자 (서 있는 느낌)
 		var shadow := Polygon2D.new()
 		shadow.name = "Shadow"
-		shadow.polygon = _circle_points(PAWN_RADIUS * 0.95, 16)
-		shadow.scale = Vector2(1.0, 0.38)
-		shadow.position = Vector2(0, PAWN_RADIUS * 0.55)
-		shadow.color = Color(0, 0, 0, 0.4)
-		shadow.visible = view_mode == ViewMode.TILT
+		shadow.polygon = _circle_points(16.0, 24)
+		shadow.scale = Vector2(1.0, 0.36)
+		shadow.position = Vector2(0, 5)
+		shadow.color = Color(0, 0, 0, 0.28)
 		view.add_child(shadow)
+		var bounce := Node2D.new()
+		bounce.name = "Bounce"
 		view.add_child(bounce)
-		var body := Polygon2D.new()
-		body.name = "Body"
-		body.polygon = _circle_points(PAWN_RADIUS, 20)
-		body.color = PLAYER_COLORS[pawn.owner_id]
-		bounce.add_child(body)
-		var ring := Line2D.new()
-		ring.name = "Ring"
-		ring.width = 1.5
-		ring.default_color = Color("f8f9fa")
-		ring.closed = true
-		for point: Vector2 in _circle_points(PAWN_RADIUS, 20):
-			ring.add_point(point)
-		bounce.add_child(ring)
-		var number := _make_label(str(pawn.slot), 10, Color("111111"))
-		number.name = "Slot"
-		number.position = Vector2(-4, -8)
-		bounce.add_child(number)
-		var kind_label := _make_label("", 12, Color("ffffff"))
-		kind_label.name = "Kind"
-		kind_label.position = Vector2(5, -18)
-		kind_label.add_theme_constant_override("outline_size", 5)
-		kind_label.add_theme_color_override("font_outline_color", Color("111418"))
-		bounce.add_child(kind_label)
-		var stack_badge := _make_label("", 14, Color("ffe066"))
-		stack_badge.name = "Stack"
-		stack_badge.position = Vector2(-10, -12)
-		stack_badge.add_theme_constant_override("outline_size", 6)
-		stack_badge.add_theme_color_override("font_outline_color", Color("111418"))
-		bounce.add_child(stack_badge)
-		var badge := _make_label("", 9, Color("ffffff"))
+		var token := PawnToken.new()
+		token.name = "Token"
+		token.ground_shadow = false
+		token.configure(pawn, PLAYER_COLORS[pawn.owner_id])
+		bounce.add_child(token)
+		var badge := _make_label("", 9, Color.WHITE)
 		badge.name = "Badge"
-		badge.position = Vector2(-14, 6)
-		badge.add_theme_constant_override("outline_size", 5)
+		badge.position = Vector2(-16, 11)
+		badge.add_theme_constant_override("outline_size", 4)
 		badge.add_theme_color_override("font_outline_color", Color("111418"))
 		bounce.add_child(badge)
 		view.position = _pawn_position(pawn)
@@ -1819,17 +1793,8 @@ func _refresh_pawns() -> void:
 		if view == null:
 			continue
 		_settle_pawn_view(view, pawn)
-		var kind_label: Label = view.get_node("Bounce/Kind")
-		kind_label.text = pawn.letter()
-		# 나리(成り) 승급한 쇼기 기물은 붉은 글씨
-		if pawn.is_promoted_shogi():
-			kind_label.add_theme_color_override("font_color", Color("ff4d4d"))
-		else:
-			kind_label.add_theme_color_override("font_color", Color("ffffff"))
+		(view.get_node("Bounce/Token") as PawnToken).configure(pawn, PLAYER_COLORS[pawn.owner_id])
 		var badge_text: String = ""
-		var stacked: bool = not pawn.carried.is_empty()
-		(view.get_node("Bounce/Stack") as Label).text = "x%d" % (pawn.carried.size() + 1) if stacked else ""
-		(view.get_node("Bounce/Slot") as Label).visible = not stacked
 		if pawn.restrained_turns > 0 or pawn.blocked_this_turn:
 			badge_text += " 구속"
 		if pawn.is_imprisoned:
@@ -1837,16 +1802,13 @@ func _refresh_pawns() -> void:
 		(view.get_node("Bounce/Badge") as Label).text = badge_text
 	for npc: NeutralNPC in state.npcs:
 		if not _npc_views.has(npc.entity_id):
-			var marker := Polygon2D.new()
-			marker.polygon = PackedVector2Array([Vector2(0, -11), Vector2(10, 0), Vector2(0, 11), Vector2(-10, 0)])
-			marker.color = Color("fa5252") if npc.behavior == GameEnums.NpcBehavior.CHASE_NEAREST else Color("da77f2")
-			var caption := _make_label("도적" if npc.behavior == GameEnums.NpcBehavior.CHASE_NEAREST else "고스트", 10, Color.WHITE)
-			caption.position = Vector2(-12, 11)
-			marker.add_child(caption)
+			var marker := PawnToken.new()
+			marker.configure_npc(npc.behavior)
 			_pawn_layer.add_child(marker)
 			_npc_views[npc.entity_id] = marker
 		var npc_view: Node2D = _npc_views[npc.entity_id]
-		var npc_target: Vector2 = _tile_center(npc.current_tile_idx) + Vector2(0, -22) * _depth_scale(tile_norm(npc.current_tile_idx).y)
+		var npc_target: Vector2 = _tile_center(npc.current_tile_idx)
+		npc_view.scale = Vector2.ONE * _depth_scale(tile_norm(npc.current_tile_idx).y)
 		if _fx_on() and npc_view.position.distance_to(npc_target) > 3.0 and npc_view.position != Vector2.ZERO:
 			if not _fx_holding():
 				_glide_node(npc_view, npc_target, 0.6)
@@ -2144,10 +2106,27 @@ func _set_profile_light(panel: Control, tint: Color, target_scale: Vector2) -> v
 
 
 ## 기물 슬롯 하나를 3상태로 칠한다: 대기(어두운 회색·반투명) / 출전(플레이어 색) / 완주(황금빛 ★).
+func _token_in(parent: Control, pawn: PlayerPawn, color: Color, position_in_parent: Vector2, token_scale: float) -> PawnToken:
+	var token: PawnToken = parent.get_node_or_null("PawnToken") as PawnToken
+	if token == null:
+		token = PawnToken.new()
+		token.name = "PawnToken"
+		parent.add_child(token)
+	token.position = position_in_parent
+	token.scale = Vector2.ONE * token_scale
+	token.configure(pawn, color)
+	return token
+
+
 func _paint_pawn_slot(parts: Dictionary, pawn: PlayerPawn, color: Color) -> void:
 	var letter: Label = parts["letter"]
 	var status: Label = parts["status"]
 	var panel: PanelContainer = parts["panel"]
+	letter.visible = false
+	status.visible = false
+	var width: float = maxf(panel.size.x, panel.custom_minimum_size.x)
+	var token_scale: float = 1.12 if width >= 46 else 0.88
+	_token_in(panel, pawn, color, Vector2(width/2.0, width*0.79), token_scale)
 	var shown: String = pawn.letter()
 	letter.text = shown if shown != "" else "말"
 	letter.add_theme_color_override("font_color", Color("ff6b6b") if pawn.is_promoted_shogi() else Color("f8f9fa"))
@@ -2782,13 +2761,13 @@ func _update_tip(delta: float) -> void:
 ## 보드 위의 아무 말(상대 말 포함) 위에 커서가 있으면 그 말의 툴팁을 예약한다.
 func _update_board_pawn_tip(pointer: Vector2) -> void:
 	var found: int = -1
-	var best: float = 18.0
+	var best: float = 50.0
 	for pawn: PlayerPawn in state.pawns:
 		var view: Node2D = _pawn_views.get(pawn.entity_id)
 		if view == null or not view.visible:
 			continue
-		var distance: float = (view.position + _pawn_layer.position).distance_to(pointer)
-		if distance < best:
+		var distance: float = (view.position + _pawn_layer.position + Vector2(0,-12)).distance_to(pointer)
+		if PawnToken.HIT_BOX.has_point((view.get_node("Bounce") as Node2D).to_local(pointer)) and distance < best:
 			best = distance
 			found = pawn.entity_id
 	var key: String = "board:%d" % found
@@ -2859,6 +2838,7 @@ func _build_pawn_dock() -> void:
 		button.add_child(place)
 		var number := _make_label(str(slot + 1), 12, Color("adb5bd"))
 		number.position = Vector2(6, 2)
+		number.visible = false
 		number.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		button.add_child(number)
 		var badge := _make_label("", 13, Color("0d1018"))
@@ -2955,6 +2935,8 @@ func _refresh_pawn_dock() -> void:
 		var button: Button = _pawn_buttons[index]
 		var parts: Dictionary = _pawn_slot_parts[index]
 		var pawn: PlayerPawn = state.get_pawn(owner_id * 10 + index + 1)
+		(parts["letter"] as Label).visible = false
+		_token_in(button, pawn, color, Vector2(SLOT_SIZE.x/2.0,44),1.28)
 		var letter: String = pawn.letter()
 		(parts["letter"] as Label).text = letter if letter != "" else "말"
 		(parts["letter"] as Label).add_theme_color_override("font_color", Color("ff6b6b") if pawn.is_promoted_shogi() else Color("f8f9fa"))
@@ -2965,7 +2947,7 @@ func _refresh_pawn_dock() -> void:
 			place = "감옥"
 		(parts["place"] as Label).text = place
 		var badge: Label = parts["badge"]
-		badge.visible = not pawn.carried.is_empty()
+		badge.visible = false
 		badge.text = "x%d" % (pawn.carried.size() + 1)
 		# 우측 하단 독은 내 말이 어떤 상태인지만 보여 준다 (말 고르기는 가운데 하단 배너가 맡으므로 선택 표시·클릭은 없다).
 		button.disabled = false
@@ -3180,8 +3162,9 @@ func _refresh_select_banner() -> void:
 		(parts["status"] as Label).text = status
 		var letter: String = pawn.letter()
 		(parts["mark"] as Label).text = letter if letter != "" else "말"
-		var disc_box: StyleBoxFlat = _style(color if can_pick else color.darkened(0.6), Color("ffffff") if can_pick else Color("495057"), 3, 22, 0, 0)
-		(parts["disc"] as Panel).add_theme_stylebox_override("panel", disc_box)
+		(parts["disc"] as Panel).add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+		(parts["mark"] as Label).visible = false
+		_token_in(parts["disc"], pawn, color, Vector2(22,34),0.95)
 		var sub_name: String = "윷말" if pawn.kind == GameEnums.PawnKind.BASIC else pawn.display_label().split(":")[-1]
 		(parts["sub"] as Label).text = sub_name
 		var prediction: Dictionary = _pawn_prediction(pawn)
@@ -4296,7 +4279,7 @@ func _settle_pawn_view(view: Node2D, pawn: PlayerPawn) -> void:
 	var target_pos: Vector2 = _pawn_position(pawn)
 	var target_scale: float = _depth_scale(tile_norm(pawn.current_tile_idx).y)
 	var want_visible: bool = pawn.carrier == null and not pawn.is_finished and pawn.has_left_start
-	(view.get_node("Shadow") as Polygon2D).visible = view_mode == ViewMode.TILT
+	(view.get_node("Shadow") as Polygon2D).visible = true
 	if not _fx_on():
 		_kill_fx(view)
 		view.position = target_pos
@@ -5489,21 +5472,12 @@ func _show_pawn_choice(player_id: int, definition: AugmentDef, on_pick: Callable
 		badge.add_theme_stylebox_override("normal", _style(color.lightened(0.25) if can_pick else Color("6c757d"), Color.WHITE, 1, 9, 0, 1))
 		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		card.add_child(badge)
-		var letter: String = PawnCatalog.unit_letter(pawn.kind, pawn.unit_no)
-		var disc := Panel.new()
-		disc.position = Vector2(30, 42)
-		disc.size = Vector2(90, 90)
-		disc.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		disc.add_theme_stylebox_override("panel", _style(color if can_pick else color.darkened(0.6), Color.WHITE if can_pick else Color("495057"), 4, 45, 0, 0))
-		card.add_child(disc)
-		var mark := _make_label(letter if letter != "" else "말", 38, Color.WHITE)
-		mark.size = Vector2(90, 90)
-		mark.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		mark.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		mark.add_theme_color_override("font_outline_color", Color.BLACK)
-		mark.add_theme_constant_override("outline_size", 5)
-		disc.add_child(mark)
+		var token_host := Control.new()
+		token_host.position = Vector2(30,42)
+		token_host.size = Vector2(90,90)
+		token_host.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		card.add_child(token_host)
+		_token_in(token_host,pawn,color,Vector2(45,74),2.05)
 		var place: String = "완주 완료" if pawn.is_finished else ("출발 대기" if not pawn.has_left_start else "출전 중 (%d번)" % pawn.current_tile_idx)
 		var sub := _make_label(place, 13, Color("ced4da"))
 		sub.position = Vector2(0, 140)

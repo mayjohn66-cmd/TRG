@@ -1,0 +1,191 @@
+{
+  "version": "0.1",
+  "generator": "native image_gen.imagegen; model identifier not exposed",
+  "assets": [
+    {
+      "id": "PAWN_YUT",
+      "subject": "A single thick round traditional Korean Yutnori wooden token, honey wood with one tiny gold star engraved into its top face. Simple short wooden cylinder, polished rounded bevel, top face clearly visible. No sticks.",
+      "prompt": "Create ONE production board game pawn TOKEN SPRITE on SOLID PURE WHITE background, square 1:1. Single isolated object, cute chunky toy style with Trickcal Revive aesthetic, thick bold nearly black outer outline, simple 3-tone 3D cel shading, highly readable at 30 pixels. Consistent top-down 3/4 view: camera azimuth 45 degrees, elevation about 50 degrees, orthographic projection. Object entirely contained in central 68% width and 76% height with broad empty margins, centered x=50%, bottom at y=86%. No colored pedestal, no scene, no ground plane, no cast shadow, no glowing aura, no sparkles, no letters or numbers EXCEPT an explicitly requested engraved single symbol. Keep geometry simple and rounded. A single thick round traditional Korean Yutnori wooden token, honey wood with one tiny gold star engraved into its top face. Simple short wooden cylinder, polished rounded bevel, top face clearly visible. No sticks.",
+      "white_source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-7c10b9d4-d36f-4e0b-a2b1-ebe668d9511f.png",
+      "edit_prompt": "Remove ONLY the solid white background from this board game token. Preserve the exact single wooden star token, its outline, proportions, colors, position and square canvas. Retain opaque highlights on its body. No other changes. Output a true transparent alpha background, no shadow, no matte, no checkerboard painted into the image.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-72a9023f-6432-4900-8328-c6dba525524c.png",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "alpha_bounds": [
+        111,
+        57,
+        1192,
+        1222
+      ],
+      "sha256": "69b6b1f546acd906510fc1a7605dd2d11e03dcf5a1b01c80560537582724c4b8",
+      "path": "YUT.png",
+      "white_sha256": "c2d285956a1d4509a81ab465ee0d975c3d81cad54616486ac6a5a4d73c8016a8",
+      "white_width": 1254,
+      "white_height": 1254,
+      "white_output": "outputs/PAWN_YUT_Token_White_v0.1.png",
+      "transparent_output": "outputs/PAWN_YUT_Token_v0.1.png",
+      "visible_alpha_bounds_at_0_08": [
+        277,
+        279,
+        974,
+        975
+      ]
+    },
+    {
+      "id": "PAWN_CHESS",
+      "subject": "A single silver-and-ivory chess KNIGHT horse-head piece on a small integrated ivory chess plinth, one tiny cute expressive eye. Smooth chunky neck and mane with only 3 large ridges, very few details, strong horse silhouette.",
+      "prompt": "Create ONE production board game pawn TOKEN SPRITE on SOLID PURE WHITE background, square 1:1. Single isolated object, cute chunky toy style with Trickcal Revive aesthetic, thick bold nearly black outer outline, simple 3-tone 3D cel shading, highly readable at 30 pixels. Consistent top-down 3/4 view: camera azimuth 45 degrees, elevation about 50 degrees, orthographic projection. Object entirely contained in central 68% width and 76% height with broad empty margins, centered x=50%, bottom at y=86%. No colored pedestal, no scene, no ground plane, no cast shadow, no glowing aura, no sparkles, no letters or numbers EXCEPT an explicitly requested engraved single symbol. Keep geometry simple and rounded. A single silver-and-ivory chess KNIGHT horse-head piece on a small integrated ivory chess plinth, one tiny cute expressive eye. Smooth chunky neck and mane with only 3 large ridges, very few details, strong horse silhouette.",
+      "white_source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-ee14f09e-e6b5-45d3-bc1e-f64c8b14ad2d.png",
+      "edit_prompt": "Remove ONLY the white background from this ivory and silver chess knight token. Preserve its opaque ivory body and white highlights completely. Preserve exact outline, pose, proportions, colors, integrated plinth, position and square canvas. No redesign, no crop, no added shadow. Output true transparent alpha background with clean edges, no white matte or painted checkerboard.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-7736f6e5-b4d5-4d68-ac27-44e9635b2510.png",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "alpha_bounds": [
+        45,
+        112,
+        1210,
+        1254
+      ],
+      "sha256": "4aca7b486a71cea7e5efa31d03190d00843ea7821266407faaffea13802a0402",
+      "path": "CHESS_KNIGHT.png",
+      "white_sha256": "d0c08825b62376953729f06a40f37fd4186dd204a9a0b2e29a1af511212a7838",
+      "white_width": 1254,
+      "white_height": 1254,
+      "white_output": "outputs/PAWN_CHESS_Token_White_v0.1.png",
+      "transparent_output": "outputs/PAWN_CHESS_Token_v0.1.png",
+      "visible_alpha_bounds_at_0_08": [
+        268,
+        114,
+        961,
+        1159
+      ]
+    },
+    {
+      "id": "PAWN_JANGGI",
+      "subject": "A single chunky traditional Korean JANGGI OCTAGONAL wooden block game piece. Light honey wood side wall and cream top face with exactly one large dark teal engraved Chinese character 車. Simple eight straight sides, rounded edge, no extra decoration. Character is an intentional game piece engraving.",
+      "prompt": "Create ONE production board game pawn TOKEN SPRITE on SOLID PURE WHITE background, square 1:1. Single isolated object, cute chunky toy style with Trickcal Revive aesthetic, thick bold nearly black outer outline, simple 3-tone 3D cel shading, highly readable at 30 pixels. Consistent top-down 3/4 view: camera azimuth 45 degrees, elevation about 50 degrees, orthographic projection. Object entirely contained in central 68% width and 76% height with broad empty margins, centered x=50%, bottom at y=86%. No colored pedestal, no scene, no ground plane, no cast shadow, no glowing aura, no sparkles, no letters or numbers EXCEPT an explicitly requested engraved single symbol. Keep geometry simple and rounded. A single chunky traditional Korean JANGGI OCTAGONAL wooden block game piece. Light honey wood side wall and cream top face with exactly one large dark teal engraved Chinese character 車. Simple eight straight sides, rounded edge, no extra decoration. Character is an intentional game piece engraving.",
+      "white_source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-723cff46-aa5e-4d7d-9182-ba21c2dfe532.png",
+      "edit_prompt": "Remove ONLY the white background from this octagonal Janggi wooden 車 token. Preserve the exact object, top 車 engraving, shape, all eight sides, thick outline, colors, viewpoint, position and square canvas. Keep all ivory highlights opaque. True transparent alpha background, no shadow, no matte, no checkerboard. No redesign.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-42827b61-bd2f-4591-b215-b395d02850c7.png",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "alpha_bounds": [
+        0,
+        23,
+        1186,
+        1222
+      ],
+      "sha256": "374fc3c84217832303b446c0da719f05a96cedb2d29b14cffec5d39649f3be26",
+      "path": "JANGGI_CHA.png",
+      "white_sha256": "0e21ae09310a1e4b61f35b338a54bc93944aa1dac86083918a4d1d616275901b",
+      "white_width": 1254,
+      "white_height": 1254,
+      "white_output": "outputs/PAWN_JANGGI_Token_White_v0.1.png",
+      "transparent_output": "outputs/PAWN_JANGGI_Token_v0.1.png",
+      "visible_alpha_bounds_at_0_08": [
+        149,
+        185,
+        1104,
+        1088
+      ]
+    },
+    {
+      "id": "PAWN_MONO",
+      "subject": "A single chunky retro RED convertible mini-car board game token, bright round chrome headlights, stubby wheels, simple ivory seats. Toy chibi proportions, no hotel, no scenery.",
+      "prompt": "Create ONE production board game pawn TOKEN SPRITE on SOLID PURE WHITE background, square 1:1. Single isolated object, cute chunky toy style with Trickcal Revive aesthetic, thick bold nearly black outer outline, simple 3-tone 3D cel shading, highly readable at 30 pixels. Consistent top-down 3/4 view: camera azimuth 45 degrees, elevation about 50 degrees, orthographic projection. Object entirely contained in central 68% width and 76% height with broad empty margins, centered x=50%, bottom at y=86%. No colored pedestal, no scene, no ground plane, no cast shadow, no glowing aura, no sparkles, no letters or numbers EXCEPT an explicitly requested engraved single symbol. Keep geometry simple and rounded. A single chunky retro RED convertible mini-car board game token, bright round chrome headlights, stubby wheels, simple ivory seats. Toy chibi proportions, no hotel, no scenery.",
+      "white_source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-0681bb85-8589-43e1-bfc3-58af695b2d84.png",
+      "edit_prompt": "Remove ONLY the solid white background from this red convertible toy car game token. Preserve the exact car, wheels, seats, windshield, thick outline, colors, 3/4 viewpoint, proportions, position and square canvas. Keep all ivory highlights opaque, and preserve transparent open spaces between detached silhouette details. Output true transparent alpha background, no shadow, no matte, no painted checkerboard. No redesign.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-b31525ee-5d5f-4e7e-ba01-6171d0456522.png",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "alpha_bounds": [
+        47,
+        64,
+        1184,
+        1238
+      ],
+      "sha256": "e35b5fdcda9f0b931a123d2f9ecb409b4f75a72e8250bbc492530c150a3016dc",
+      "path": "MONO_CAR.png",
+      "white_sha256": "91cf8a37854ca88d272f1a36497ec843e87ab9cc6a8acc1494b73158e45fdfa5",
+      "white_width": 1254,
+      "white_height": 1254,
+      "white_output": "outputs/PAWN_MONO_Token_White_v0.1.png",
+      "transparent_output": "outputs/PAWN_MONO_Token_v0.1.png",
+      "visible_alpha_bounds_at_0_08": [
+        86,
+        195,
+        1175,
+        1017
+      ]
+    },
+    {
+      "id": "PAWN_BADUK",
+      "subject": "A single thick convex glossy BLACK OBSIDIAN Go stone, smooth dark charcoal top with one large clean ivory curved highlight in top-left, rounded flat underside visible, no eyes, no sparks. Recognizable flat domed Go stone rather than ball.",
+      "prompt": "Create ONE production board game pawn TOKEN SPRITE on SOLID PURE WHITE background, square 1:1. Single isolated object, cute chunky toy style with Trickcal Revive aesthetic, thick bold nearly black outer outline, simple 3-tone 3D cel shading, highly readable at 30 pixels. Consistent top-down 3/4 view: camera azimuth 45 degrees, elevation about 50 degrees, orthographic projection. Object entirely contained in central 68% width and 76% height with broad empty margins, centered x=50%, bottom at y=86%. No colored pedestal, no scene, no ground plane, no cast shadow, no glowing aura, no sparkles, no letters or numbers EXCEPT an explicitly requested engraved single symbol. Keep geometry simple and rounded. A single thick convex glossy BLACK OBSIDIAN Go stone, smooth dark charcoal top with one large clean ivory curved highlight in top-left, rounded flat underside visible, no eyes, no sparks. Recognizable flat domed Go stone rather than ball.",
+      "white_source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-bec35b71-0806-4035-80d6-32bb421cc250.png",
+      "edit_prompt": "Remove ONLY the white background from this black Go stone game token. Preserve the exact flat convex black stone, its ivory glossy highlight, silhouette, dimensions, colors, viewpoint, position and square canvas. Keep the highlight fully opaque. Output true transparent alpha background, no shadow, no matte, no checkerboard. Do not add a pedestal, sparkle or face.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-fcac485b-852a-465a-a8d0-573173a0e461.png",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "alpha_bounds": [
+        41,
+        159,
+        1119,
+        989
+      ],
+      "sha256": "4adba39b8bc0bbb8cee500b2da985b2ae7aa76b37948cb5e5d357be852a9f310",
+      "path": "BADUK_BLACK.png",
+      "white_sha256": "07b9739713f82451292854fdfcc650613ee0bf192fa6e900e2a139932ef2e015",
+      "white_width": 1254,
+      "white_height": 1254,
+      "white_output": "outputs/PAWN_BADUK_Token_White_v0.1.png",
+      "transparent_output": "outputs/PAWN_BADUK_Token_v0.1.png",
+      "visible_alpha_bounds_at_0_08": [
+        240,
+        322,
+        1013,
+        924
+      ]
+    },
+    {
+      "id": "PAWN_SHOGI",
+      "subject": "A single traditional Japanese SHOGI pentagonal wedge game piece, light honey wood, thick beveled sides and one bold black simple brush-stroke 歩 on its top face. Clear five-sided pointed wedge silhouette, top face clearly visible. Character is an intentional game piece engraving.",
+      "prompt": "Create ONE production board game pawn TOKEN SPRITE on SOLID PURE WHITE background, square 1:1. Single isolated object, cute chunky toy style with Trickcal Revive aesthetic, thick bold nearly black outer outline, simple 3-tone 3D cel shading, highly readable at 30 pixels. Consistent top-down 3/4 view: camera azimuth 45 degrees, elevation about 50 degrees, orthographic projection. Object entirely contained in central 68% width and 76% height with broad empty margins, centered x=50%, bottom at y=86%. No colored pedestal, no scene, no ground plane, no cast shadow, no glowing aura, no sparkles, no letters or numbers EXCEPT an explicitly requested engraved single symbol. Keep geometry simple and rounded. A single traditional Japanese SHOGI pentagonal wedge game piece, light honey wood, thick beveled sides and one bold black simple brush-stroke 歩 on its top face. Clear five-sided pointed wedge silhouette, top face clearly visible. Character is an intentional game piece engraving.",
+      "white_source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-e12e98d7-3e77-49c7-a77b-d36e105b2d72.png",
+      "edit_prompt": "Remove ONLY the solid white background from this pentagonal wooden Shogi 歩 token. Preserve the exact five-sided wedge, 歩 engraving, outline, bevel, wood colors, 3/4 viewpoint, proportions, position and square canvas. Keep all highlights opaque. Output true transparent alpha background, no shadow, no matte, no checkerboard. No redesign.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-2c04a3d7-9b16-4b4f-830e-902bc129be96.png",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "alpha_bounds": [
+        85,
+        76,
+        1176,
+        1202
+      ],
+      "sha256": "356c93c8b50e503191647a90e9e5c7be4183dfdd84b6822e8ac2746200f6a17b",
+      "path": "SHOGI_FU.png",
+      "white_sha256": "a77fa86318826ad3fbff784ee5ad2fdf87646fc0206ac595b193c12aeeb93df0",
+      "white_width": 1254,
+      "white_height": 1254,
+      "white_output": "outputs/PAWN_SHOGI_Token_White_v0.1.png",
+      "transparent_output": "outputs/PAWN_SHOGI_Token_v0.1.png",
+      "visible_alpha_bounds_at_0_08": [
+        197,
+        137,
+        1046,
+        1197
+      ]
+    }
+  ],
+  "runtime_import": {
+    "size_limit": 256,
+    "mipmaps": true,
+    "compression": "lossless"
+  }
+}

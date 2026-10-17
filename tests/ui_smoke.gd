@@ -348,12 +348,17 @@ func _try_tile_card(manager: TurnManager) -> bool:
 
 ## 턴 시작 전용 UI: 폭탄 떠넘기기·캐슬링 버튼과 뱅! 카드를 (가끔) 누른다.
 ## 화면 밖으로 잘리는 UI가 없는지 검사한다: 보이는 손패 카드·하단 조작 버튼·말 선택 버튼이 모두 창 안에 있어야 한다.
-## 보드 위 말 라벨은 세부 기물(폰·나·비·룩·퀸 / 포·차·마·상 / 카·비·배·개 / 흑·백 / 윷)과 같아야 하고, 말 선택 버튼 툴팁에는 이름과 능력이 있어야 한다.
+## 보드 토큰은 현재 기물·소유자·이미지를 반영하고, 툴팁에는 이름과 능력이 있어야 한다.
 func _check_pawn_labels() -> void:
 	for pawn: PlayerPawn in _board.state.pawns:
 		var view: Node2D = _board._pawn_views[pawn.entity_id]
-		var shown: String = (view.get_node("Bounce/Kind") as Label).text
-		_assert(shown == pawn.letter(), "말 %d의 보드 라벨이 세부 기물과 달라야 하지 않는다 (%s)" % [pawn.entity_id, shown])
+		var token: PawnToken = view.get_node_or_null("Bounce/Token") as PawnToken
+		_assert(token != null, "말 %d의 토큰 렌더러가 있어야 한다" % pawn.entity_id)
+		if token == null:
+			continue
+		_assert(token.pawn == pawn and token.owner_color == MainBoard.PLAYER_COLORS[pawn.owner_id], "보드 토큰은 현재 말과 소유자 색상을 반영한다")
+		var expected: Dictionary = PawnArt.sprite(pawn)
+		_assert(token.artwork.get("texture") == expected.get("texture"), "보드 토큰 이미지는 현재 세부 병종 또는 폴백과 일치한다")
 	var owner_id: int = _board._dock_owner()
 	for index: int in _board._pawn_buttons.size():
 		var pawn: PlayerPawn = _board.state.get_pawn(owner_id * 10 + index + 1)

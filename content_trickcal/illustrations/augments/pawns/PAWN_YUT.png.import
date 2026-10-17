@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ckoho0btwwxq2"
-path="res://.godot/imported/PAWN_SHOGI.png-a0e81cb10645ad5b77c87116a5ca1dee.ctex"
+uid="uid://7ti8gotl553u"
+path="res://.godot/imported/PAWN_YUT.png-56088f512fcd09c3795d4e820c63914b.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://content_trickcal/illustrations/pawns/PAWN_SHOGI.png"
-dest_files=["res://.godot/imported/PAWN_SHOGI.png-a0e81cb10645ad5b77c87116a5ca1dee.ctex"]
+source_file="res://content_trickcal/illustrations/augments/pawns/PAWN_YUT.png"
+dest_files=["res://.godot/imported/PAWN_YUT.png-56088f512fcd09c3795d4e820c63914b.ctex"]
 
 [params]
 
