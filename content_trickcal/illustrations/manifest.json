@@ -1,5 +1,5 @@
 {
-  "version": "0.1",
+  "version": "0.2",
   "date": "2026-10-17",
   "generator": "native image_gen.imagegen (model identifier not exposed)",
   "transparent_background": false,
@@ -23,6 +23,161 @@
       "height": 1254,
       "mode": "RGB",
       "sha256": "8dedd7d5c08bc6fdc418ea109e1f00fe3ffd3e29993f570a9b4a4f547f7e640e"
+    },
+    {
+      "id": "PAWN_CHESS",
+      "prompt": "One production game augment emblem icon, square 1:1. Cute fantasy Trickcal Revive vibe, very chunky rounded squishy toy shapes, thick clean dark glossy outlines, restrained 3D-like cel shading, big readable silhouette at 110px. Unified compact central composition: important objects fully inside centered circle diameter 76% of canvas, broad dark empty corners, no cropping. Very few large decorative sparkles, no outer ring, no frame, no border, no labels or prose, no watermark. ONE heroic cute chubby chess KNIGHT horse head piece in glossy jade green and silver cream, simple chunky base. Pale cyan magical rim light and one subtle chessboard pattern behind its base. Dark solid teal background with soft cyan radial glow. No letters, no numbers.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-333fde63-dfdf-4c46-a1ec-1210bdb1d480.png",
+      "path": "pawns/PAWN_CHESS.png",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "fabc832fba32b535ea79f9dc7d49f2371526054824dea979a90da804c0857ca7"
+    },
+    {
+      "id": "PAWN_JANGGI",
+      "prompt": "One production game augment emblem icon, square 1:1. Cute fantasy Trickcal Revive vibe, very chunky rounded squishy toy shapes, thick clean dark glossy outlines, restrained 3D-like cel shading, big readable silhouette at 110px. Unified compact central composition: important objects fully inside centered circle diameter 76% of canvas, broad dark empty corners, no cropping. Very few large decorative sparkles, no outer ring, no frame, no border, no labels or prose, no watermark. ONE thick traditional Korean JANGGI octagonal wooden game piece, warm polished light wood bevel and red lacquer inner face, face bears one simple decorative red carved seal-like abstract crest rather than readable writing. View slightly from above, octagonal silhouette unmistakable. Two small stylized oriental cloud curls, cyan rim light and dark solid teal background with soft cyan glow. No readable characters, letters or numbers.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-1fc03414-caee-42e0-8d2c-e7d09061d577.png",
+      "path": "pawns/PAWN_JANGGI.png",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "91b11a3ce419a5ac79d6f05d74dd280d9e1a24d9f4bda44214b291a663fc4bf5"
+    },
+    {
+      "id": "PAWN_YUT",
+      "prompt": "One production game augment emblem icon, square 1:1. Cute fantasy Trickcal Revive vibe, very chunky rounded squishy toy shapes, thick clean dark glossy outlines, restrained 3D-like cel shading, big readable silhouette at 110px. Unified compact central composition: important objects fully inside centered circle diameter 76% of canvas, broad dark empty corners, no cropping. Very few large decorative sparkles, no outer ring, no frame, no border, no labels or prose, no watermark. Exactly FOUR traditional Korean wooden YUT sticks in a compact rising fan behind ONE small round chubby cyan playing token. Each stick has chunky D-shaped cross section, flat underside with simple dark X marks, no dice. Warm honey wood, golden lucky sparkles, cyan rim light, dark solid teal background and soft cyan radial glow. No text or numbers.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-6ecd82af-4879-49d1-ac73-60ee720b9113.png",
+      "path": "pawns/PAWN_YUT.png",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "7b1ecb364338a5bd405bcf59b00bfbdcc335d7551dfa1d1f0e5707413d85b600"
+    },
+    {
+      "id": "PAWN_MONO",
+      "prompt": "One production game augment emblem icon, square 1:1. Cute fantasy Trickcal Revive vibe, very chunky rounded squishy toy shapes, thick clean dark glossy outlines, restrained 3D-like cel shading, big readable silhouette at 110px. Unified compact central composition: important objects fully inside centered circle diameter 76% of canvas, broad dark empty corners, no cropping. Very few large decorative sparkles, no outer ring, no frame, no border, no labels or prose, no watermark. A cute chunky glossy toy RED CONVERTIBLE mini-car in three-quarter view, beside ONE tiny cream and gold luxury hotel miniature with a red roof. Car is primary, hotel smaller, together a compact readable silhouette. Pastel toy surfaces, pale cyan rim light. Dark solid teal background and soft cyan radial glow. No text, no letters, no numbers.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-c0f02994-661c-4de3-acce-3bf819f66a53.png",
+      "path": "pawns/PAWN_MONO.png",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "580251e275fb7fe209324aad6e9de9fec41cb7a042fdfba7de4dcb84e6102f6d"
+    },
+    {
+      "id": "PAWN_BADUK",
+      "prompt": "One production game augment emblem icon, square 1:1. Cute fantasy Trickcal Revive vibe, very chunky rounded squishy toy shapes, thick clean dark glossy outlines, restrained 3D-like cel shading, big readable silhouette at 110px. Unified compact central composition: important objects fully inside centered circle diameter 76% of canvas, broad dark empty corners, no cropping. Very few large decorative sparkles, no outer ring, no frame, no border, no labels or prose, no watermark. Exactly TWO thick glossy domed GO stones, one jet BLACK and one pearly WHITE, colliding near center with a large crisp comic golden impact spark between them. Cute chunky smooth rounded stones, short cyan motion streaks. Dark solid teal background and soft cyan radial glow. No text, letters or numbers.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-16a8b95a-1748-43f1-a7df-d438dd290633.png",
+      "path": "pawns/PAWN_BADUK.png",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "1d8763513de2bd8f96cb971db617c15b9f1ce79ec62de03f4e997b173de9c59b"
+    },
+    {
+      "id": "PAWN_SHOGI",
+      "prompt": "One production game augment emblem icon, square 1:1. Cute fantasy Trickcal Revive vibe, very chunky rounded squishy toy shapes, thick clean dark glossy outlines, restrained 3D-like cel shading, big readable silhouette at 110px. Unified compact central composition: important objects fully inside centered circle diameter 76% of canvas, broad dark empty corners, no cropping. Very few large decorative sparkles, no outer ring, no frame, no border, no labels or prose, no watermark. ONE traditional Japanese SHOGI pentagonal wooden wedge piece flipping midair, clear pentagonal silhouette, thick honey wood bevel, single simple red lacquer crown-shaped geometric crest on front instead of text. A short curved cyan motion trail and golden sparkles, one small red lightning accent. Dark solid teal background with cyan radial glow. No readable characters, letters or numbers.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-78b0d033-b00b-48a1-bb8d-cbc38e2e4594.png",
+      "path": "pawns/PAWN_SHOGI.png",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "7b6d3ec3ae4663251dfe449ef98a46187eb3a0da67aa1776546fa42dacc7d89c"
+    },
+    {
+      "id": "DICE_YUT",
+      "prompt": "One production game augment emblem icon, square 1:1. Cute fantasy Trickcal Revive vibe, very chunky rounded squishy toy shapes, thick clean dark glossy outlines, restrained 3D-like cel shading, big readable silhouette at 110px. Unified compact central composition: important objects fully inside centered circle diameter 76% of canvas, broad dark empty corners, no cropping. Very few large decorative sparkles, no outer ring, no frame, no border, no labels or prose, no watermark. Exactly FOUR chunky traditional Korean wooden Yut sticks tossed in a compact spiral, D-shaped cross sections, rounded honey wood, flat faces with simple dark X marks. A few golden stars. Violet rim light, dark solid indigo background with subtle purple radial glow. No token, no text, letters or numbers.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-3b82700d-9027-4296-9fff-441bcf7aca56.png",
+      "path": "dice/DICE_YUT.png",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "f9f7555699aff96df94a70204c61245873ad6888789ae2964d01a9329eb423d7"
+    },
+    {
+      "id": "DICE_ROULETTE",
+      "prompt": "One production game augment emblem icon, square 1:1. Cute fantasy Trickcal Revive vibe, very chunky rounded squishy toy shapes, thick clean dark glossy outlines, restrained 3D-like cel shading, big readable silhouette at 110px. Unified compact central composition: important objects fully inside centered circle diameter 76% of canvas, broad dark empty corners, no cropping. Very few large decorative sparkles, no outer ring, no frame, no border, no labels or prose, no watermark. ONE colorful shiny toy carnival SPINNER roulette wheel viewed nearly face-on, round chunky gold rim, alternating pastel colored wedges, ONE big gold pointer at top clearly pointing at a single numeral 7 on the top wedge. Other wedges have simple dots only. Compact silhouette, dark solid indigo background with purple radial glow. No words, labels, banners or letters.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-707fd6d5-4f0b-422a-8549-71473bfa1c17.png",
+      "path": "dice/DICE_ROULETTE.png",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "3c082943009568f8dd7db46b24657a2ce83db3f669df0c63eb4efb36749a99bf"
+    },
+    {
+      "id": "DICE_POKER",
+      "prompt": "One production game augment emblem icon, square 1:1. Cute fantasy Trickcal Revive vibe, very chunky rounded squishy toy shapes, thick clean dark glossy outlines, restrained 3D-like cel shading, big readable silhouette at 110px. Unified compact central composition: important objects fully inside centered circle diameter 76% of canvas, broad dark empty corners, no cropping. Very few large decorative sparkles, no outer ring, no frame, no border, no labels or prose, no watermark. A compact fan of FIVE cute glossy poker playing cards showing a royal-flush inspired hand of matching crimson HEART SUIT pictograms, one tiny crown pictogram on central card. Three chunky casino chips at base, cream cards, red and navy chips, gold rim highlights. Dark solid indigo background and violet radial glow. No readable letters, words or numbers.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-ec794b8f-0fb8-45a8-84b4-06b65900ff3d.png",
+      "path": "dice/DICE_POKER.png",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "447fe4f9b101e9d9f7d46066f7ff3c4a08a29fc3bce2c80e61052391cf528273"
+    },
+    {
+      "id": "DICE_SLOT",
+      "prompt": "One production game augment emblem icon, square 1:1. Cute fantasy Trickcal Revive vibe, very chunky rounded squishy toy shapes, thick clean dark glossy outlines, restrained 3D-like cel shading, big readable silhouette at 110px. Unified compact central composition: important objects fully inside centered circle diameter 76% of canvas, broad dark empty corners, no cropping. Very few large decorative sparkles, no outer ring, no frame, no border, no labels or prose, no watermark. ONE cute chunky GOLDEN casino slot machine with rounded corners, exactly THREE reels visibly reading 7 7 7 in large clear crimson numerals, a rounded lever on right and three gold coins popping from bottom. Front-facing slightly three-quarter view, strong simple toy silhouette. Dark solid indigo background with purple radial glow. Only 777 numerals, no other text or letters.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-f0e82766-4c11-4520-a0c1-6f5c6e27557e.png",
+      "path": "dice/DICE_SLOT.png",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "1fc579dbf572075aac78b11ad8eba5fd1ce140fd89a67d1a4ab8df459a62fab9"
+    },
+    {
+      "id": "DICE_RUSSIAN",
+      "prompt": "One production game augment emblem icon, square 1:1. Cute fantasy Trickcal Revive vibe, very chunky rounded squishy toy shapes, thick clean dark glossy outlines, restrained 3D-like cel shading, big readable silhouette at 110px. Unified compact central composition: important objects fully inside centered circle diameter 76% of canvas, broad dark empty corners, no cropping. Very few large decorative sparkles, no outer ring, no frame, no border, no labels or prose, no watermark. ONE cartoon metallic REVOLVER CYLINDER ONLY, detached mechanical drum, viewed from the circular front at slight angle, exactly six chamber openings arranged symmetrically, ONE chamber holding a glowing GOLD cartridge, other five chambers dark and empty. Short curved spinning motion marks and two cute cyan comic sweat drops. No gun barrel or hand. Dark solid indigo background and violet radial glow. No text or letters.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-9857c6ee-3323-4b4d-b71b-e9628941e891.png",
+      "path": "dice/DICE_RUSSIAN.png",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "e8172216644207795a595437a7eb57d1e6a75c5b8bf5ad702e836853c83f4b29"
+    },
+    {
+      "id": "DICE_CHINCHIRO",
+      "prompt": "One production game augment emblem icon, square 1:1. Cute fantasy Trickcal Revive vibe, very chunky rounded squishy toy shapes, thick clean dark glossy outlines, restrained 3D-like cel shading, big readable silhouette at 110px. Unified compact central composition: important objects fully inside centered circle diameter 76% of canvas, broad dark empty corners, no cropping. Very few large decorative sparkles, no outer ring, no frame, no border, no labels or prose, no watermark. ONE cute thick ivory ceramic bowl with a cobalt blue rim, exactly THREE chunky white dice bouncing inside, black and red round pips. One of the three dice teetering dramatically on the near rim, two inside the bowl. Three small golden impact sparks and violet rim light. Dark solid indigo background and purple radial glow. No text or letters.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-bf223bd5-f7ee-4516-8e70-f8f973f8b9c5.png",
+      "path": "dice/DICE_CHINCHIRO.png",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "c2ffadcdc0101289f9678626ecdf75bce101b414f0f738cc93537dd7eb1188d6"
+    },
+    {
+      "id": "DICE_HWATU",
+      "prompt": "One production game augment emblem icon, square 1:1. Cute fantasy Trickcal Revive vibe, very chunky rounded squishy toy shapes, thick clean dark glossy outlines, restrained 3D-like cel shading, big readable silhouette at 110px. Unified compact central composition: important objects fully inside centered circle diameter 76% of canvas, broad dark empty corners, no cropping. Very few large decorative sparkles, no outer ring, no frame, no border, no labels or prose, no watermark. Exactly TWO thick glossy Korean HWATU flower cards clashing diagonally: one red-black card with a simple white CRANE and sun motif, one red-black card with pink CHERRY BLOSSOMS and dark branches. Authentic compact narrow Korean flower card proportions, rounded chunky edges, golden impact spark between cards. Dark solid indigo background and violet radial glow. No GO caption, no writing, letters or numbers.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-d3e590c0-2d40-4c02-b67c-f2afce0efe60.png",
+      "path": "dice/DICE_HWATU.png",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "95d474a1fb07731390af7eaacefd516a982016f3db06ef0b6c4c854ee22f57d3"
+    },
+    {
+      "id": "DICE_MAHJONG",
+      "prompt": "One production game augment emblem icon, square 1:1. Cute fantasy Trickcal Revive vibe, very chunky rounded squishy toy shapes, thick clean dark glossy outlines, restrained 3D-like cel shading, big readable silhouette at 110px. Unified compact central composition: important objects fully inside centered circle diameter 76% of canvas, broad dark empty corners, no cropping. Very few large decorative sparkles, no outer ring, no frame, no border, no labels or prose, no watermark. Exactly THREE chunky glossy ivory MAHJONG tiles standing as a compact fan, one bright red stylized dragon pictogram, one green bamboo dragon pictogram, one empty blue outlined rectangle (white dragon). A short ivory Riichi stick with ONE red dot horizontally at their base. Cute squishy bevels, violet rim light. Dark solid indigo background and purple radial glow. No readable words or letters.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-eba64990-4e52-4a9e-ae4a-82ffeee48592.png",
+      "path": "dice/DICE_MAHJONG.png",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "53c27c94a804dbf8fe3e5a860df58dfdaec8aab310e1751bd175c88173ea9aa3"
+    },
+    {
+      "id": "DICE_TAROT",
+      "prompt": "One production game augment emblem icon, square 1:1. Cute fantasy Trickcal Revive vibe, very chunky rounded squishy toy shapes, thick clean dark glossy outlines, restrained 3D-like cel shading, big readable silhouette at 110px. Unified compact central composition: important objects fully inside centered circle diameter 76% of canvas, broad dark empty corners, no cropping. Very few large decorative sparkles, no outer ring, no frame, no border, no labels or prose, no watermark. ONE mystical ornate golden TAROT card floating upright slightly tilted, deep midnight violet card face with a large golden crescent MOON, small SUN and three simple STARS. Rounded chunky gold edging, restrained ornate corners, a few purple astral sparkles. Strong simple compact silhouette. Dark solid indigo background with purple radial glow. No letters, words or numbers.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-bb4c212b-6bbd-425e-8e57-cbe37b98ba7a.png",
+      "path": "dice/DICE_TAROT.png",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "7cb93a50371e02de87d82bdbc912906757e7e5fa02ea3819a9958148a1e9990a"
     }
-  ]
+  ],
+  "runtime_import": {
+    "size_limit": 512,
+    "mipmaps": true,
+    "compression": "lossless"
+  }
 }

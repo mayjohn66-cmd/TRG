@@ -89,6 +89,10 @@ func _test_augment_art() -> void:
 	_expect(law_art != null and pack_art != null, "both required augment icons load after import")
 	_expect(AugmentArt.load_first(["res://missing_icon.png", pack_art.resource_path, law_art.resource_path]) == pack_art, "missing art skips to first available texture")
 	_expect(AugmentArt.load_first([law_art.resource_path, pack_art.resource_path]) == law_art, "specific texture wins over available representative")
+	_expect(AugmentArt.load_first(["res://missing_icon.png"]) == null, "missing optional art resolves to glyph fallback")
+	var fallback: Control = _board._make_emblem("?", Color("20c997"))
+	_expect(fallback.find_child("EmblemGlyph", true, false) != null and fallback.find_child("EmblemArt", true, false) == null, "no image preserves the original glyph")
+	fallback.free()
 	for definition: AugmentDef in AugmentRegistry.all():
 		var info: Dictionary = _board._augment_card_info(definition, 1)
 		var card: Button = _board._make_augment_card(info, Callable())
@@ -97,6 +101,7 @@ func _test_augment_art() -> void:
 		var art: TextureRect = card.find_child("EmblemArt", true, false) as TextureRect
 		var glyph: Label = card.find_child("EmblemGlyph", true, false) as Label
 		_expect((art != null) != (glyph != null), "%s has either art or glyph" % definition.augment_id)
+		_expect(art != null, "%s has complete representative artwork" % definition.augment_id)
 		if definition.category in [GameEnums.AugmentCategory.LAW_ENACT, GameEnums.AugmentCategory.CARD_PACKAGE]:
 			_expect(art != null and glyph == null, "%s uses generated representative icon" % definition.augment_id)
 		if art != null:
@@ -112,6 +117,12 @@ func _test_augment_art() -> void:
 		var paths: Array[String] = AugmentArt.tool_candidates(tool_id)
 		_expect(paths[0] == AugmentArt.ROOT + "dice/%s.png" % tool_id, "tool detail uses runtime ID %s" % tool_id)
 		_expect(paths[-1].get_file().begins_with("DICE_"), "all nine tools map to requested DICE filename")
+		_board._refresh_tool_board(ToolRegistry.create(tool_id), 1)
+		await process_frame
+		_expect(_board._tool_icon_art.texture != null and _board._tool_icon_art.visible and not _board._tool_icon_label.visible, "%s HUD uses its shared icon" % tool_id)
+		_expect(is_equal_approx(_board._tool_icon_art.size.x, _board._tool_icon_art.size.y), "%s HUD icon keeps square proportions" % tool_id)
+	_board._refresh_tool_board(ToolRegistry.create(&"D6"), 1)
+	_expect(_board._tool_icon_label.visible and not _board._tool_icon_art.visible, "default D6 keeps glyph without optional D6 artwork")
 
 
 ## All live card names/effects must fit both layouts with the actual game font.
@@ -293,6 +304,10 @@ func _test_gauge_and_lock() -> void:
 
 func _test_instant_flag() -> void:
 	var manager: TurnManager = _board.manager
+	var resolved: Array[Dictionary] = []
+	manager.event_received.connect(func(kind: StringName, data: Dictionary) -> void:
+		if kind == &"roll_resolved":
+			resolved.append(data))
 	_board.instant_roll_for_test = true
 	manager.state.tools[manager.current_player_id()] = ToolRegistry.create(&"D6")
 	_board._refresh_all()
@@ -307,7 +322,9 @@ func _test_instant_flag() -> void:
 	release.pressed = false
 	_board._unhandled_key_input(release)
 	_expect(not _board._fx_busy, "instant 모드는 연출 대기 없이 즉시 결과를 공개한다")
-	_expect(manager.current_state != TurnManager.State.PHASE_TURN_BEGIN, "키를 떼면 굴림이 확정된다")
+	# With no selectable pawn, a valid instant roll can already reach the next
+	# player's TURN_BEGIN. Assert the actual result event instead of that phase.
+	_expect(resolved.size() == 1 and not _board._charging, "키를 떼면 굴림 결과가 정확히 한 번 확정된다")
 
 
 ## 기본 모드는 [1P vs 3AI 봇]이고, 토글로 언제든 [4P 수동 조작]으로 바꿀 수 있다.
