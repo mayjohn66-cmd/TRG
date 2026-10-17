@@ -165,12 +165,9 @@ func _build_header() -> void:
 	var back := Button.new()
 	back.name = "CloseBook"
 	back.focus_mode = Control.FOCUS_NONE
-	var back_style := _box(Color("86d94f"), Color.WHITE, 5, 40, 6, 0, Color(0.15, 0.4, 0.15, 0.8))
-	back.add_theme_stylebox_override("normal", back_style)
-	back.add_theme_stylebox_override("hover", _box(Color("9be566"), Color.WHITE, 5, 40, 6, 0, Color(0.15, 0.4, 0.15, 0.8)))
-	back.add_theme_stylebox_override("pressed", _box(Color("6fbf3a"), Color.WHITE, 5, 40, 2, 0, Color(0.15, 0.4, 0.15, 0.8)))
-	back.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	var chevron := HubKit.Icon.new(&"back", Color.WHITE, Color.WHITE)
+	HubArt.button(back, &"round_button", 80)
+	var chevron := HubArt.icon(&"next")
+	chevron.flip_h = true
 	chevron.set_anchors_preset(Control.PRESET_FULL_RECT)
 	chevron.offset_left = 16
 	chevron.offset_top = 14
@@ -311,7 +308,9 @@ func _arrow_button(forward: bool) -> Button:
 	button.focus_mode = Control.FOCUS_NONE
 	for state: String in ["normal", "hover", "pressed", "focus", "disabled"]:
 		button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
-	var icon := HubKit.Icon.new(&"forward" if forward else &"back", Color("3f9a2b"), Color.WHITE)
+	# 좌우는 같은 이미지의 수평 반전만 사용해 굵기와 비율을 맞춘다.
+	var icon := HubArt.icon(&"next")
+	icon.flip_h = not forward
 	icon.set_anchors_preset(Control.PRESET_FULL_RECT)
 	button.add_child(icon)
 	button.mouse_entered.connect(func() -> void: if not button.disabled: HubKit._bounce(button, 1.15))
