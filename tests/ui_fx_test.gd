@@ -476,7 +476,20 @@ func _test_game_menu() -> void:
 		if child is Button:
 			labels.append((child as Button).text)
 	_expect(labels.has("계속하기") and labels.has("게임 설정") and labels.has("전체 로그") and labels.has("새 게임") and labels.has("게임 나가기"), "메뉴 항목: %s" % str(labels))
-	_expect(_board._mode_toggle.get_parent() == _board._menu_box and _board._debug_toggle.get_parent() == _board._menu_box, "혼자 하는 판에서는 모드 전환과 치트도 메뉴 안에 있다")
+	_expect(_board._mode_toggle.get_parent() == _board._menu_box, "혼자 하는 판에서는 모드 전환이 메뉴 안에 있다")
+	_expect(not _board._debug_enabled and not _board._debug_toggle.visible and _board._debug_toggle.get_parent() != _board._menu_box, "치트/디버그는 평소에 숨겨져 있다")
+	var f9 := InputEventKey.new()
+	f9.keycode = KEY_F9
+	f9.pressed = true
+	_board._unhandled_key_input(f9)
+	_expect(_board._debug_enabled and _board._debug_box.visible, "F9를 누르면 치트/디버그가 켜진다")
+	var combo := InputEventKey.new()
+	combo.keycode = KEY_D
+	combo.ctrl_pressed = true
+	combo.shift_pressed = true
+	combo.pressed = true
+	_board._unhandled_key_input(combo)
+	_expect(not _board._debug_enabled and not _board._debug_box.visible, "Ctrl+Shift+D로 다시 끈다")
 	# 메뉴가 열려 있는 동안 봇은 쉰다
 	_expect(_board._bot_should_wait(), "혼자 하는 판은 메뉴가 열려 있는 동안 봇이 멈춘다")
 	# 게임 설정

@@ -74,6 +74,9 @@ jobs:
           touch build/web/.nojekyll
           # Vercel이 gh-pages 브랜치(또는 이 폴더)를 빌드 없이 그대로 호스팅하도록 설정 파일을 함께 싣는다.
           cp vercel.json build/web/vercel.json
+          # 링크 미리보기(Open Graph)용 이미지와 홈 화면 아이콘: shell.html이 index.html 기준 상대/절대 주소로 참조한다.
+          cp web/og-image.png build/web/og-image.png
+          cp web/icon.png build/web/icon.png
           ls -la build/web
 
       - name: Publish to gh-pages

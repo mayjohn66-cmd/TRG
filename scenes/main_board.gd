@@ -280,6 +280,8 @@ var _drop_label: Label = null
 var _dock: Control = null
 var _dock_player: int = -1
 var _debug_toggle: Button = null
+## 치트/디버그 메뉴 노출 여부: 평소에는 숨기고, F9 / Ctrl+Shift+D 또는 웹 주소의 ?debug=1 일 때만 켠다.
+var _debug_enabled: bool = false
 var _log_toggle: Button = null
 var _debug_box: PanelContainer = null
 var _log_panel: PanelContainer = null
@@ -586,6 +588,9 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	var key_event: InputEventKey = event as InputEventKey
 	if key_event == null or key_event.echo:
 		return
+	if key_event.pressed and (key_event.keycode == KEY_F9 or (key_event.keycode == KEY_D and key_event.ctrl_pressed and key_event.shift_pressed)):
+		toggle_debug_access()
+		return
 	# Ctrl/Alt/Meta/Shift 조합은 브라우저·OS 단축키(예: Ctrl+Shift+R 강력 새로고침)이므로 게임 단축키로 쓰지 않는다.
 	if key_event.ctrl_pressed or key_event.alt_pressed or key_event.meta_pressed or key_event.shift_pressed:
 		return
@@ -864,6 +869,8 @@ func _build_ui() -> void:
 	_build_drop_zone()
 	_build_aim_layer()
 	_build_hover_tip()
+	_debug_enabled = debug_requested()
+	_debug_toggle.visible = _debug_enabled
 	_register_layout()
 	get_viewport().size_changed.connect(_apply_layout)
 	_apply_layout()
@@ -1470,6 +1477,30 @@ func _style(bg: Color, border: Color = Color(0, 0, 0, 0), border_width: int = 0,
 		box.shadow_size = shadow
 		box.shadow_offset = Vector2(0, 3)
 	return box
+
+
+## 웹 주소에 ?debug=1 이 있거나 실행 인자에 --debug 가 있는가.
+static func debug_requested() -> bool:
+	if OS.get_cmdline_user_args().has("--debug"):
+		return true
+	if OS.has_feature("web"):
+		var value: Variant = JavaScriptBridge.eval("new URLSearchParams(window.location.search).get('debug')", true)
+		return str(value) == "1"
+	return false
+
+
+## F9 / Ctrl+Shift+D: 치트/디버그 메뉴 항목을 켜고 끈다 (온라인 대전에서는 쓸 수 없다). 켜면 디버그 서랍도 바로 연다.
+func toggle_debug_access() -> void:
+	if net != null:
+		return
+	_debug_enabled = not _debug_enabled
+	_debug_toggle.visible = _debug_enabled
+	_debug_box.visible = _debug_enabled
+	if _debug_enabled:
+		_log_panel.visible = false
+		_show_top_toast("치트/디버그 켜짐 (메뉴에서도 열 수 있어요)")
+	else:
+		_show_top_toast("치트/디버그 꺼짐")
 
 
 func _on_debug_toggle_pressed() -> void:
@@ -5493,13 +5524,45 @@ func _show_result_overlay() -> void:
 	var title: Label = _make_label("게임 종료!", 34, Color("ffd43b"))
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(title)
-	var summary: Label = _make_label("승리자: P%d  /  달성 조건: %s" % [winner_id, _winner_reason_text()], 20, PLAYER_COLORS.get(winner_id, Color.WHITE))
+	var summary: Label = _make_label("승리자: %s (P%d)" % [_player_name(winner_id), winner_id], 22, PLAYER_COLORS.get(winner_id, Color.WHITE))
 	summary.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	box.add_child(summary)
-	var restart: Button = _make_button("메뉴로 돌아가기" if net != null else "새 게임 시작", _on_menu_pressed if net != null else _new_game, 20)
-	restart.custom_minimum_size = Vector2(0, 52)
-	box.add_child(restart)
+	var facts := VBoxContainer.new()
+	facts.add_theme_constant_override("separation", 4)
+	box.add_child(facts)
+	var rounds: Label = _make_label("플레이한 라운드: %d라운드" % state.round_number, 17, Color("f1f3f5"))
+	rounds.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	facts.add_child(rounds)
+	var reason: Label = _make_label("승리 요인: %s" % _winner_reason_text().trim_prefix("승리 (").trim_suffix(")"), 17, Color("f1f3f5"))
+	reason.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	reason.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	facts.add_child(reason)
+	var standings: PackedStringArray = []
+	for player_id: int in _player_ids:
+		var done: int = 0
+		for pawn: PlayerPawn in state.pawns_of(player_id):
+			if pawn.is_finished:
+				done += 1
+		standings.append("P%d %d/%d" % [player_id, done, GameEnums.PAWNS_PER_PLAYER])
+	var progress: Label = _make_label("완주한 말  " + "   ".join(standings), 15, Color("adb5bd"))
+	progress.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	facts.add_child(progress)
+	var buttons := HBoxContainer.new()
+	buttons.add_theme_constant_override("separation", 12)
+	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.add_child(buttons)
+	if net == null:
+		var again: Button = _make_button("같은 설정으로 바로 재시작", _new_game, 19, Color("2b8a3e"))
+		again.name = "RestartButton"
+		again.custom_minimum_size = Vector2(0, 52)
+		again.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		buttons.add_child(again)
+	var lobby: Button = _make_button("로비로 나가기", _on_menu_pressed, 19, Color("3b4766"))
+	lobby.name = "LobbyButton"
+	lobby.custom_minimum_size = Vector2(0, 52)
+	lobby.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	buttons.add_child(lobby)
 	add_child(_result_overlay)
 
 
@@ -6189,7 +6252,8 @@ func _build_main_page() -> void:
 	if net == null:
 		_menu_item(_new_game_button)
 		_menu_item(_mode_toggle)
-		_menu_item(_debug_toggle)
+		if _debug_enabled:
+			_menu_item(_debug_toggle)
 	_menu_item(_make_button("게임 나가기", _show_menu_page.bind(&"confirm_exit"), 17, Color("7a2a2a"), 10))
 
 

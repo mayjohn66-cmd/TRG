@@ -534,9 +534,18 @@ func _finish() -> bool:
 	if _board._result_overlay != null:
 		var restart_found: bool = false
 		for node: Node in _board._result_overlay.find_children("*", "Button", true, false):
-			if (node as Button).text == "새 게임 시작":
+			if (node as Button).text == "같은 설정으로 바로 재시작":
 				restart_found = true
-		_assert(restart_found, "결과창에 [새 게임 시작] 버튼이 있어야 한다")
+		_assert(restart_found, "결과창에 [같은 설정으로 바로 재시작] 버튼이 있어야 한다")
+		var lobby_found: bool = false
+		for node: Node in _board._result_overlay.find_children("*", "Button", true, false):
+			if (node as Button).text == "로비로 나가기":
+				lobby_found = true
+		_assert(lobby_found, "결과창에 [로비로 나가기] 버튼이 있어야 한다")
+		var labels: String = ""
+		for node: Node in _board._result_overlay.find_children("*", "Label", true, false):
+			labels += (node as Label).text + "\n"
+		_assert(labels.contains("플레이한 라운드") and labels.contains("승리 요인"), "결과창에 라운드 수와 승리 요인이 보여야 한다")
 	for round_number: int in _draft_rounds:
 		_assert(GameEnums.is_draft_round(round_number), "드래프트는 1라운드부터 3라운드마다만 열려야 한다 (%d)" % round_number)
 	if _failures.is_empty():
