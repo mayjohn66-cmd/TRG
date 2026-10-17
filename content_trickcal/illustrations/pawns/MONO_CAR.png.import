@@ -15,9 +15,9 @@ dest_files=["res://.godot/imported/MONO_CAR.png-75f5d826254123e9b7518faedd3b73a1
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.9
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

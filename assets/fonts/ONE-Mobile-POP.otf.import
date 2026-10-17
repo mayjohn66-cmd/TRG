@@ -14,7 +14,7 @@ dest_files=["res://.godot/imported/ONE-Mobile-POP.otf-43b8ce9a130a523b8d94d578fc
 
 Rendering=null
 antialiasing=1
-generate_mipmaps=false
+generate_mipmaps=true
 disable_embedded_bitmaps=true
 multichannel_signed_distance_field=false
 msdf_pixel_range=8
