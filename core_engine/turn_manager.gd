@@ -889,6 +889,7 @@ func _begin_turn(new_turn: bool = true) -> void:
 	if new_turn:
 		_card_played_this_turn = false
 	state.hurt_players.clear()
+	state.roll_bonus = 0
 	state.rollback_requested = false
 	move_queue.clear()
 	_stack_offer = {}
@@ -939,7 +940,11 @@ func _apply_roll_result(result: RollResult) -> void:
 	ctx.trigger_timing = RuleContext.ON_DICE_ROLL
 	ctx = state.rulebook.process_context(ctx)
 	if not ctx.is_canceled:
-		move_queue.append(ctx.dice_value)
+		var boosted: int = ctx.dice_value + state.roll_bonus
+		if state.roll_bonus != 0:
+			_emit_event(&"roll_boosted", {"player_id": current_player_id(), "from": ctx.dice_value, "to": boosted})
+			state.roll_bonus = 0
+		move_queue.append(boosted)
 	_roll_chain += 1
 	if result.reroll and _roll_chain < GameEnums.MAX_REROLL_CHAIN:
 		phase_time_left = GameEnums.PHASE_TIME_ROLL * timer_scale

@@ -206,11 +206,9 @@ static func plan_turn_card(state: GameState, player_id: int, tried: Dictionary, 
 
 static func _plan_one_turn_card(state: GameState, player_id: int, card: BaseCard, rng: RandomNumberGenerator) -> Dictionary:
 	match card.card_id:
-		&"ACT_04":  # 빽도로 23번에 선 말을 즉시 완주: 항상
-			for pawn: PlayerPawn in state.pawns_of(player_id):
-				var params: Dictionary = {"pawn_id": pawn.entity_id}
-				if card.can_play(state, player_id, params):
-					return {"card_id": card.card_id, "params": params}
+		&"ACT_04":  # 긴급 로켓 부스터: 굴림 +3, 역주행 중이 아니면 60%
+			if state.reverse_move_rounds_left == 0 and rng.randf() < 0.6:
+				return {"card_id": card.card_id, "params": {}}
 		&"ACT_02":  # 뱅! 저격: 선두 말이 결승에 가장 가까운 상대를 70%
 			var victims: Array[int] = BangCommand.target_players(state, player_id)
 			if not victims.is_empty() and rng.randf() < 0.7:
@@ -288,11 +286,6 @@ static func plan_window_card(state: GameState, player_id: int, phase: int, roll_
 			&"ACT_05":  # 말이 잡히거나 함정에 걸렸다면 되감기
 				if card.could_play(state, player_id):
 					return {"card_id": card.card_id, "params": {}}
-			&"ACT_04":
-				for pawn: PlayerPawn in state.pawns_of(player_id):
-					var params: Dictionary = {"pawn_id": pawn.entity_id}
-					if card.can_play(state, player_id, params):
-						return {"card_id": card.card_id, "params": params}
 	return {}
 
 

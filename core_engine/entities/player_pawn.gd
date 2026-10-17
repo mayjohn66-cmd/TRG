@@ -11,8 +11,6 @@ var unit_no: int = 0
 var slot: int = 1
 var has_left_start: bool = false
 var is_finished: bool = false
-## ACT_04 발동 조건: 직전 이동이 '출발선(0번)에서의 후퇴'였는가.
-var retreated_from_start: bool = false
 ## 출발선(0번)에서 뒤로 물러난 뒤 아직 0번을 다시 지나가지 않은 말. 역주행 상태가 아니면 이 말은 완주할 수 없다 (한 바퀴를 더 돌아야 함).
 var retreated_run: bool = false
 ## 업기: 나를 업고 있는 말(없으면 null) / 내가 업고 있는 말들.
@@ -101,7 +99,6 @@ func stack_members() -> Array[PlayerPawn]:
 func reset_to_start() -> void:
 	reset_position()
 	has_left_start = false
-	retreated_from_start = false
 	retreated_run = false
 	is_imprisoned = false
 	restrained_turns = 0

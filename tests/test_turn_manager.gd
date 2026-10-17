@@ -1,6 +1,6 @@
 # File: res://tests/test_turn_manager.gd
 # Class: class_name TestTurnManager
-# Role: 8단계 턴 상태 머신·타이머·재굴림·러시안 룰렛 흐름·개입 LIFO·ACT_04/05·드래프트·호스트 권위(명세 1·4·5·7) 통합 검증
+# Role: 8단계 턴 상태 머신·타이머·재굴림·러시안 룰렛 흐름·개입 LIFO·ACT_05·드래프트·호스트 권위(명세 1·4·5·7) 통합 검증
 class_name TestTurnManager
 extends TestCase
 
@@ -432,24 +432,17 @@ func test_intervention_window_stays_closed_when_nobody_can_use_their_cards() -> 
 	_dispose(manager)
 
 
-func test_act_04_finishes_a_pawn_that_backed_off_to_the_last_tile() -> void:
+func test_act_04_rocket_booster_adds_three_to_the_roll_once() -> void:
 	var manager: TurnManager = _new_manager()
 	manager.state.give_card(1, &"ACT_04")
-	manager.state.reverse_move_rounds_left = 3  # 23번 후퇴는 역주행 중에만 가능 (일반 후퇴는 회수)
-	place(manager.state, 11, 0, [])  # 출발한 적 있는 말이 0번까지 돌아온 상태 (출발 전 말은 후퇴를 고를 수 없다)
-	_set_tool(manager, 1, ScriptedTool.new([1]))
+	_set_tool(manager, 1, ScriptedTool.new([2, 1]))
+	_do(manager, 1, &"play_card", {"card_id": &"ACT_04"})
+	check_eq(manager.state.roll_bonus, 3, "+3 예약")
 	_do(manager, 1, &"proceed")
 	_do(manager, 1, &"roll")
-	check_eq(manager.current_state, Phase.PHASE_SELECT_PAWN, "굴림 뒤 개입 창 없음")
-	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
-	check_eq(manager.state.get_pawn(11).current_tile_idx, 23, "0번에서 빽도 후퇴는 23번")
-	check_eq(manager.current_state, Phase.PHASE_TURN_BEGIN, "ACT_04는 정산 창이 아니라 다음 내 턴의 굴리기 전에 쓴다")
-	manager.state.hands[1] = [&"ACT_04"] as Array[StringName]
-	manager.state.current_player = 1
-	manager.current_turn_index = manager.player_order.find(1)
-	manager._begin_turn()
-	_do(manager, 1, &"play_card", {"card_id": &"ACT_04", "pawn_id": 11})
-	check(manager.state.get_pawn(11).is_finished, "ACT_04로 즉시 완주")
+	check_eq(manager.move_queue, int_array([5]), "굴림 2에 +3")
+	check_eq(manager.state.roll_bonus, 0, "한 번 쓰면 소모")
+	check((manager.state.hands[1] as Array).is_empty(), "카드 소모")
 	_dispose(manager)
 
 

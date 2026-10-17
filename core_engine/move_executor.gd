@@ -124,7 +124,6 @@ static func begin(state: GameState, mover: PlayerPawn, ctx: RuleContext) -> Move
 	var report := MoveReport.new()
 	report.pawn_id = mover.entity_id
 	ctx.pawn = mover
-	mover.retreated_from_start = false
 	if ctx.charge_depth == 0:
 		ctx.trigger_timing = RuleContext.ON_MOVE_CALC
 		var processed: RuleContext = state.rulebook.process_context(ctx)
@@ -157,8 +156,6 @@ static func apply_step(
 	if is_forward and from_tile == GameEnums.GOAL_TILE:
 		mover.retreated_run = false
 	mover.has_left_start = true
-	if is_first and not is_forward and from_tile == GameEnums.GOAL_TILE:
-		mover.retreated_from_start = true
 	state.sync_stack_position(mover)
 	report.path.append(destination)
 	ctx.path_nodes.append(destination)

@@ -34,7 +34,7 @@ static func get_card(card_id: StringName) -> BaseCard:
 		&"ACT_01": card = CardUnoReverse.new()
 		&"ACT_02": card = CardBang.new()
 		&"ACT_03": card = CardUnoPlusFour.new()
-		&"ACT_04": card = CardBackdoGoal.new()
+		&"ACT_04": card = CardRocketBooster.new()
 		&"ACT_05": card = CardBitesTheDust.new()
 		&"ACT_06": card = CardObjection.new()
 		&"TRP_01": card = CardMirrorForce.new()

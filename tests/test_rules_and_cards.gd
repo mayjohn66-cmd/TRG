@@ -273,27 +273,17 @@ func test_act_01_requests_turn_reversal_and_reverses_movement_for_one_round() ->
 	check_eq(report.path, int_array([3, 2]), "양수 눈금도 후진")
 
 
-func test_act_04_works_at_23_after_retreating_from_start() -> void:
+func test_act_04_rocket_booster_reserves_plus_three_for_the_next_roll() -> void:
 	var state := make_state()
 	var card: BaseCard = CardRegistry.get_card(&"ACT_04")
-	place(state, 11, 0, [], false)
-	check(not card.can_play(state, 1, {"pawn_id": 11}), "후퇴 전에는 사용 불가")
-	state.reverse_move_rounds_left = 1  # 일반 후퇴는 회수되므로 23번 후퇴는 역주행 중에만 생긴다
-	var report: MoveReport = move(state, 11, -1)
-	check_eq(report.path, int_array([23]), "역주행 중 0번에서 후퇴하면 23번")
-	check(card.can_play(state, 1, {"pawn_id": 11}), "23번 도착 직후 발동 가능")
-	check(not card.can_play(state, 2, {"pawn_id": 11}), "남의 말에는 사용 불가")
-	exec(state, card.create_command(state, 1, {"pawn_id": 11}))
-	check(state.get_pawn(11).is_finished, "즉시 완주")
-
-
-func test_act_04_not_playable_for_pawn_that_merely_walked_to_23() -> void:
-	var state := make_state()
-	var card: BaseCard = CardRegistry.get_card(&"ACT_04")
-	place(state, 11, 21, [20])
-	move(state, 11, 2)
-	check_eq(state.get_pawn(11).current_tile_idx, 23, "23번 도착")
-	check(not card.can_play(state, 1, {"pawn_id": 11}), "0번에서 후퇴한 경우에만 사용 가능")
+	check_eq(card.display_name, "긴급 로켓 부스터", "카드 이름")
+	check(card.can_play(state, 1, {}), "조건 없이 사용 가능")
+	exec(state, card.create_command(state, 1, {}))
+	check_eq(state.roll_bonus, 3, "+3 예약")
+	var snapshot: Dictionary = TurnSnapshot.capture(state).to_dict()
+	state.roll_bonus = 0
+	TurnSnapshot.from_dict(snapshot).restore(state, true)
+	check_eq(state.roll_bonus, 3, "스냅샷에 보너스가 담긴다")
 
 
 func test_card_registry_and_default_deck() -> void:

@@ -20,7 +20,6 @@ static func capture(state: GameState) -> TurnSnapshot:
 			"history": pawn.step_history.duplicate(),
 			"started": pawn.has_left_start,
 			"finished": pawn.is_finished,
-			"retreated": pawn.retreated_from_start,
 			"retreated_run": pawn.retreated_run,
 			"kind": pawn.kind,
 			"unit": pawn.unit_no,
@@ -54,6 +53,7 @@ static func capture(state: GameState) -> TurnSnapshot:
 		"meta": {
 			"current_player": state.current_player,
 			"reverse_move_rounds_left": state.reverse_move_rounds_left,
+			"roll_bonus": state.roll_bonus,
 			"round_number": state.round_number,
 		},
 	}
@@ -81,7 +81,6 @@ func restore(state: GameState, restore_meta: bool = false) -> void:
 		pawn.step_history.assign(entry["history"])
 		pawn.has_left_start = bool(entry["started"])
 		pawn.is_finished = bool(entry["finished"])
-		pawn.retreated_from_start = bool(entry["retreated"])
 		pawn.retreated_run = bool(entry.get("retreated_run", false))
 		pawn.kind = entry["kind"]
 		pawn.unit_no = int(entry["unit"])
@@ -128,5 +127,6 @@ func restore(state: GameState, restore_meta: bool = false) -> void:
 		var meta: Dictionary = data["meta"]
 		state.current_player = int(meta["current_player"])
 		state.reverse_move_rounds_left = int(meta["reverse_move_rounds_left"])
+		state.roll_bonus = int(meta.get("roll_bonus", 0))
 		state.round_number = int(meta["round_number"])
 	state.snapshot_restored.emit()

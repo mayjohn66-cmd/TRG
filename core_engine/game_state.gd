@@ -61,6 +61,8 @@ var current_player: int = -1
 var round_number: int = 1
 ## 남은 '전체 역주행' 라운드 수 (ACT_01).
 var reverse_move_rounds_left: int = 0
+## 이번 턴 첫 굴림 결과에 더할 값 (ACT_04 긴급 로켓 부스터). 굴림에 쓰이거나 턴이 시작되면 0으로 돌아간다.
+var roll_bonus: int = 0
 var winner: int = -1
 
 ## 이번 턴 시작 시점 스냅샷 (ACT_05 롤백 대상).
@@ -336,7 +338,6 @@ func sync_stack_position(leader: PlayerPawn) -> void:
 		member.current_tile_idx = leader.current_tile_idx
 		member.step_history.assign(leader.step_history)
 		member.has_left_start = leader.has_left_start
-		member.retreated_from_start = leader.retreated_from_start
 		member.retreated_run = leader.retreated_run
 
 

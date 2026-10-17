@@ -94,7 +94,7 @@ const CARD_SHORT: Dictionary = {
 	&"ACT_01": "순서 역전·역주행",
 	&"ACT_02": "상대 선두 -2칸",
 	&"ACT_03": "다음 유저 -4칸",
-	&"ACT_04": "뒤로 가서 즉시 골인",
+	&"ACT_04": "이번 굴림 결과 +3",
 	&"ACT_05": "턴 시작 전으로 되감기",
 	&"ACT_06": "교칙 1개 삭제",
 	&"ACT_07": "뭉친 말 강제 산개",
@@ -113,7 +113,7 @@ const CARD_SUMMARIES: Dictionary = {
 	&"ACT_01": "턴 순서 역전 & 전원 역주행",
 	&"ACT_02": "상대 선두 말 2칸 후퇴 (프로필 선택)",
 	&"ACT_03": "다음 유저 선두 말 4칸 후퇴",
-	&"ACT_04": "출발선에서 뒤로 가면 즉시 골인!",
+	&"ACT_04": "굴리기 전 사용! 눈금 +3칸",
 	&"ACT_05": "이번 턴 시작 직전으로 시간 역행",
 	&"ACT_06": "중앙 법전 교칙 1개 지정 삭제",
 	&"TRP_01": "밟은 적 말 즉시 출발선 추방",
@@ -3535,15 +3535,6 @@ func _on_card_pressed(player_id: int, card_id: StringName) -> void:
 		_begin_tile_pick(player_id, card_id)
 		return
 	match card_id:
-		&"ACT_04":
-			var options: Array[Dictionary] = []
-			for pawn: PlayerPawn in state.pawns_of(player_id):
-				if card.can_play(state, player_id, {"pawn_id": pawn.entity_id}):
-					options.append({"label": "말 %d (%d번 타일)" % [pawn.slot, pawn.current_tile_idx], "value": pawn.entity_id})
-			if options.is_empty():
-				_log_line("[%s] 0번에서 빽도로 후퇴해 23번에 있는 말이 필요합니다." % card.display_name, Color("868e96"))
-				return
-			_show_choice("완주시킬 말을 고르세요", options, _play_card_with.bind(player_id, card_id, "pawn_id"))
 		&"ACT_02":
 			_begin_snipe_pick(player_id, card_id)
 		&"ACT_09":
@@ -5692,6 +5683,8 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 	match kind:
 		&"roll_resolved":
 			_handle_roll_event(data)
+		&"roll_boosted":
+			_log_line("[긴급 로켓 부스터] P%d: 눈금 %d → %d!" % [data["player_id"], data["from"], data["to"]], Color("ffd43b"))
 		&"stack_resolved":
 			var stack_names: Array[String] = []
 			for member_id: Variant in data["members"]:
