@@ -304,6 +304,10 @@ func _test_gauge_and_lock() -> void:
 
 func _test_instant_flag() -> void:
 	var manager: TurnManager = _board.manager
+	var resolved: Array[Dictionary] = []
+	manager.event_received.connect(func(kind: StringName, data: Dictionary) -> void:
+		if kind == &"roll_resolved":
+			resolved.append(data))
 	_board.instant_roll_for_test = true
 	manager.state.tools[manager.current_player_id()] = ToolRegistry.create(&"D6")
 	_board._refresh_all()
@@ -318,7 +322,9 @@ func _test_instant_flag() -> void:
 	release.pressed = false
 	_board._unhandled_key_input(release)
 	_expect(not _board._fx_busy, "instant 모드는 연출 대기 없이 즉시 결과를 공개한다")
-	_expect(manager.current_state != TurnManager.State.PHASE_TURN_BEGIN, "키를 떼면 굴림이 확정된다")
+	# With no selectable pawn, a valid instant roll can already reach the next
+	# player's TURN_BEGIN. Assert the actual result event instead of that phase.
+	_expect(resolved.size() == 1 and not _board._charging, "키를 떼면 굴림 결과가 정확히 한 번 확정된다")
 
 
 ## 기본 모드는 [1P vs 3AI 봇]이고, 토글로 언제든 [4P 수동 조작]으로 바꿀 수 있다.
