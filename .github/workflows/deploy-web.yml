@@ -77,6 +77,7 @@ jobs:
           # 링크 미리보기(Open Graph)용 이미지와 홈 화면 아이콘: shell.html이 index.html 기준 상대/절대 주소로 참조한다.
           cp web/og-image.png build/web/og-image.png
           cp web/icon.png build/web/icon.png
+          cp web/title-logo.png build/web/title-logo.png
           ls -la build/web
 
       - name: Publish to gh-pages
