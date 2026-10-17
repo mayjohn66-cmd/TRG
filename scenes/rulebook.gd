@@ -31,6 +31,7 @@ const ART: Dictionary = {
 	&"card_law": preload("res://assets/ui/trickcal/rulebook/UI_RULE_CARD_LAW.tres"),
 	&"fair_roll": preload("res://assets/ui/trickcal/rulebook/UI_RULE_FAIR_ROLL.tres"),
 	&"badge": preload("res://assets/ui/trickcal/rulebook/UI_RULE_BADGE.tres"),
+	&"laurel": preload("res://assets/ui/trickcal/rulebook/UI_RULE_LAUREL.tres"),
 }
 ## 위쪽 두 탭이 묶는 장: 규칙 기본(0~3), 도감(4~7).
 const GROUP_NAMES: Array[String] = ["기본 규칙", "도감"]
@@ -165,12 +166,9 @@ func _build_header() -> void:
 	var back := Button.new()
 	back.name = "CloseBook"
 	back.focus_mode = Control.FOCUS_NONE
-	var back_style := _box(Color("86d94f"), Color.WHITE, 5, 40, 6, 0, Color(0.15, 0.4, 0.15, 0.8))
-	back.add_theme_stylebox_override("normal", back_style)
-	back.add_theme_stylebox_override("hover", _box(Color("9be566"), Color.WHITE, 5, 40, 6, 0, Color(0.15, 0.4, 0.15, 0.8)))
-	back.add_theme_stylebox_override("pressed", _box(Color("6fbf3a"), Color.WHITE, 5, 40, 2, 0, Color(0.15, 0.4, 0.15, 0.8)))
-	back.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	var chevron := HubKit.Icon.new(&"back", Color.WHITE, Color.WHITE)
+	HubArt.button(back, &"round_button", 80)
+	var chevron := HubArt.icon(&"next")
+	chevron.flip_h = true
 	chevron.set_anchors_preset(Control.PRESET_FULL_RECT)
 	chevron.offset_left = 16
 	chevron.offset_top = 14
@@ -260,13 +258,13 @@ func _build_notebook() -> void:
 	title_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	title_row.add_theme_constant_override("separation", 8)
 	column.add_child(title_row)
-	title_row.add_child(Laurel.new())
+	title_row.add_child(_art(&"laurel", Vector2(44, 34)))
 	_notebook_title = Label.new()
 	_notebook_title.add_theme_font_size_override("font_size", 30)
 	_notebook_title.add_theme_color_override("font_color", Color("4a3520"))
 	title_row.add_child(_notebook_title)
-	var mirrored := Laurel.new()
-	mirrored.mirror = true
+	var mirrored := _art(&"laurel", Vector2(44, 34))
+	mirrored.flip_h = true
 	title_row.add_child(mirrored)
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -311,7 +309,9 @@ func _arrow_button(forward: bool) -> Button:
 	button.focus_mode = Control.FOCUS_NONE
 	for state: String in ["normal", "hover", "pressed", "focus", "disabled"]:
 		button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
-	var icon := HubKit.Icon.new(&"forward" if forward else &"back", Color("3f9a2b"), Color.WHITE)
+	# 좌우는 같은 이미지의 수평 반전만 사용해 굵기와 비율을 맞춘다.
+	var icon := HubArt.icon(&"next")
+	icon.flip_h = not forward
 	icon.set_anchors_preset(Control.PRESET_FULL_RECT)
 	button.add_child(icon)
 	button.mouse_entered.connect(func() -> void: if not button.disabled: HubKit._bounce(button, 1.15))
@@ -716,25 +716,6 @@ class LinedPaper extends Control:
 			y += 30.0
 		# 종이 모서리의 접힌 느낌
 		draw_colored_polygon(PackedVector2Array([Vector2(size.x - 40, size.y), Vector2(size.x, size.y - 40), Vector2(size.x, size.y)]), Color("e8dcb8"))
-
-
-## 제목 양옆에 붙는 작은 월계수 가지.
-class Laurel extends Control:
-	var mirror: bool = false
-
-	func _init() -> void:
-		custom_minimum_size = Vector2(44, 34)
-		mouse_filter = Control.MOUSE_FILTER_IGNORE
-
-	func _draw() -> void:
-		var flip: float = -1.0 if mirror else 1.0
-		var origin := Vector2(size.x / 2.0, size.y / 2.0)
-		for index: int in 4:
-			var t: float = float(index)
-			var tip := origin + Vector2(flip * (-14.0 + t * 9.0), 8.0 - t * 5.0)
-			var leaf := PackedVector2Array([tip, tip + Vector2(flip * 8, -12), tip + Vector2(flip * 15, -4)])
-			draw_colored_polygon(leaf, Color("b5b56a"))
-		draw_line(origin + Vector2(flip * -16, 12), origin + Vector2(flip * 20, -12), Color("9a9a52"), 2.0, true)
 
 
 ## 책 아래쪽에 걸친 주황 리본 (쪽 번호가 올라간다).
