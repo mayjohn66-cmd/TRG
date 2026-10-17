@@ -55,6 +55,11 @@ func _run() -> void:
 	menu.find_child("HubRules", true, false).pressed.emit()
 	_expect(menu.find_child("Popup", true, false) != null, "둥근 규칙 버튼이 규칙 팝업을 연다")
 	menu.find_child("Popup", true, false).free()
+	var blinking: int = 0
+	for node: Node in menu.find_children("*", "Control", true, false):
+		if node is HubKit.Icon and (node as HubKit.Icon).is_processing():
+			blinking += 1
+	_expect(blinking == 0, "아이콘은 깜빡이지 않는다 (대기 모래시계만 예외): %d개가 매 프레임 돈다" % blinking)
 	menu.find_child("QuickStartAi", true, false).pressed.emit()
 	_expect(GameSession.mode == GameSession.MODE_AI and GameSession.ai_opponents == 3 and not GameSession.net_active, "[바로 시작]은 AI 3명과 바로 대결")
 	_expect(menu._top["bar"] != null and menu._bottom["bar"] != null and (menu._top["right"] as Button).text == "규칙" and (menu._bottom["center"] as Button).text == "설정", "위·아래 청록 띠: 규칙 / 설정")

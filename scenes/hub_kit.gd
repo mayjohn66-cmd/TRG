@@ -43,14 +43,20 @@ class Icon extends Control:
 		ink = ink_color
 		accent = accent_color
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
-		set_process(false)
 
-	## 켜면 숨 쉬듯 깜빡인다 (대기 중 표시).
+	func _ready() -> void:
+		# _process가 있는 스크립트는 자동으로 매 프레임 돌므로, 깜빡이도록 지정한 아이콘만 켜 둔다.
+		set_process(pulse)
+
+	## 켜면 숨 쉬듯 깜빡인다 (대기 중 표시 전용).
 	func start_pulse() -> void:
 		pulse = true
 		set_process(true)
 
 	func _process(delta: float) -> void:
+		if not pulse:
+			set_process(false)
+			return
 		_clock += delta
 		modulate.a = 0.65 + 0.35 * sin(_clock * 2.6)
 
