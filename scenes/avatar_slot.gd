@@ -153,8 +153,34 @@ func use_portrait(texture: Texture2D) -> void:
 	_portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_stage.add_child(_portrait)
 	_stage.move_child(_portrait, 0)
+	if prefer_icon:
+		_frame_icon()
 	_has_art = true
 	_seat_label.visible = false
+
+
+const ROUND_SHADER: Shader = preload("res://scenes/avatar_round.gdshader")
+
+
+## 얼굴 아이콘은 정사각형 그림이 잘린 모양이라, 모서리를 둥글게 깎고 테두리를 둘러 목록 칸에 어울리게 한다.
+func _frame_icon() -> void:
+	var material := ShaderMaterial.new()
+	material.shader = ROUND_SHADER
+	material.set_shader_parameter("radius", 0.2)
+	_portrait.material = material
+	_portrait.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_theme_stylebox_override("panel", StyleBoxEmpty.new())  # 칸 자체 테두리는 끄고 아래 둥근 테두리 하나만 쓴다
+	var border := Panel.new()
+	border.name = "IconBorder"
+	border.set_anchors_preset(Control.PRESET_FULL_RECT)
+	border.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0, 0, 0, 0)
+	style.border_color = Color.WHITE
+	style.set_border_width_all(maxi(2, int(minf(size.x, size.y) / 22.0)))
+	style.set_corner_radius_all(maxi(6, int(minf(size.x, size.y) * 0.2)))
+	border.add_theme_stylebox_override("panel", style)
+	_stage.add_child(border)
 
 
 func has_art() -> bool:
