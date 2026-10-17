@@ -51,6 +51,17 @@ func _ready() -> void:
 	_back_button = _top["back"]
 	_bottom = LobbyTheme.add_bottom_bar(self, "", "설정", _show_settings)
 	_hello_label = _bottom["name"]
+	var fan_notice := Label.new()
+	fan_notice.name = "FanNotice"
+	fan_notice.text = "비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 무료 배포물입니다"
+	fan_notice.add_theme_font_size_override("font_size", 13)
+	fan_notice.add_theme_color_override("font_color", Color(0.17, 0.35, 0.12, 0.85))
+	fan_notice.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	fan_notice.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	fan_notice.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	fan_notice.offset_top = -LobbyTheme.BAR_HEIGHT - 26.0
+	fan_notice.offset_bottom = -LobbyTheme.BAR_HEIGHT - 4.0
+	add_child(fan_notice)
 	var area := CenterContainer.new()
 	area.set_anchors_preset(Control.PRESET_FULL_RECT)
 	area.offset_top = LobbyTheme.BAR_HEIGHT
