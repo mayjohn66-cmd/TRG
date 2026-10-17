@@ -3289,7 +3289,7 @@ func _refresh_select_banner() -> void:
 		(parts["disc"] as Panel).add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 		(parts["mark"] as Label).visible = false
 		_token_in(parts["disc"], pawn, color, Vector2(22,34),0.95)
-		var sub_name: String = "윷말" if pawn.kind == GameEnums.PawnKind.BASIC else pawn.display_label().split(":")[-1]
+		var sub_name: String = "기본 말" if pawn.kind == GameEnums.PawnKind.BASIC else pawn.display_label().split(":")[-1]
 		(parts["sub"] as Label).text = sub_name
 		var prediction: Dictionary = _pawn_prediction(pawn)
 		var result: Label = parts["result"]
