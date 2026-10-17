@@ -482,22 +482,24 @@ static func tip_bar(first_text: String, on_next: Callable) -> Dictionary:
 	return {"root": root, "label": text, "next": next}
 
 
-## 크고 노란 로고 판: 위 작은 글자 + 큰 제목 + 아래 부제.
-static func logo(small_text: String, big_text: String, sub_text: String) -> VBoxContainer:
+## 승인된 투명 타이틀 원본을 비율 유지로 표시한다. 시작 화면 520px, 허브 380px.
+static func logo(small_text: String, big_text: String, sub_text: String, width: float = 520.0) -> VBoxContainer:
 	var column := VBoxContainer.new()
 	column.name = "HubLogo"
-	column.add_theme_constant_override("separation", -4)
+	column.add_theme_constant_override("separation", 0)
 	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var small: Label = outlined(small_text, 30, Color.WHITE, GREEN_DARK, 9)
-	small.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	column.add_child(small)
-	var big: Label = outlined(big_text, 84, GOLD, GREEN_DARK, 16)
-	big.name = "Logo"
-	big.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	big.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.28))
-	big.add_theme_constant_override("shadow_offset_y", 5)
-	column.add_child(big)
-	var sub: Label = outlined(sub_text, 24, Color.WHITE, Color("2c7a1f"), 7)
+	var art := TextureRect.new()
+	art.name = "Logo"
+	art.texture = preload("res://web/title-logo.png")
+	art.custom_minimum_size = Vector2(width, width / 2.0)
+	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	art.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	art.tooltip_text = "%s %s" % [small_text, big_text]
+	column.add_child(art)
+	var sub: Label = outlined(sub_text, int(round(20.0 * width / 520.0)), Color.WHITE, Color("2c7a1f"), 5)
+	sub.name = "LogoSubtitle"
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(sub)
 	return column

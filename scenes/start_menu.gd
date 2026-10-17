@@ -152,7 +152,7 @@ func _build_mode_page() -> void:
 	left.add_theme_constant_override("separation", 8)
 	left.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_mode_page.add_child(left)
-	var logo := HubKit.logo("초증강", "엘리아스 마블", "HYPER AUGMENT ELIAS MARBLE")
+	var logo := HubKit.logo("초증강", "엘리아스 마블", "HYPER AUGMENT ELIAS MARBLE", 380.0)
 	left.add_child(logo)
 	var avatar_holder := CenterContainer.new()
 	avatar_holder.name = "AvatarHolder"

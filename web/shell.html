@@ -58,22 +58,15 @@
 			opacity: 0;
 			pointer-events: none;
 		}
-		#splash .dice {
-			font-size: 56px;
-			animation: roll 1.6s ease-in-out infinite;
-		}
-		@keyframes roll {
-			0%, 100% { transform: rotate(-12deg) translateY(0); }
-			50% { transform: rotate(14deg) translateY(-10px); }
-		}
 		#splash h1 {
 			margin: 0;
-			font-size: clamp(22px, 4.2vw, 40px);
-			font-weight: 800;
-			color: #ffe066;
-			text-align: center;
-			text-shadow: 0 2px 0 #8a6d00, 0 0 22px rgba(255, 200, 40, 0.35);
-			letter-spacing: 0.02em;
+			line-height: 0;
+		}
+		#splash .title-logo {
+			display: block;
+			width: min(560px, 82vw, 56vh);
+			height: auto;
+			object-fit: contain;
 		}
 		#splash .sub {
 			margin: -8px 0 0;
@@ -177,8 +170,7 @@
 		Please try updating or use a different browser.
 	</canvas>
 	<div id="splash">
-		<div class="dice">&#127922;</div>
-		<h1>초증강 엘리아스 마블</h1>
+		<h1><img class="title-logo" src="title-logo.png" width="1774" height="887" alt="초증강 엘리아스 마블" fetchpriority="high"></h1>
 		<p class="sub">HYPER AUGMENT ELIAS MARBLE</p>
 		<p class="fan">비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 무료 배포물</p>
 		<div id="bar"><div id="bar-fill" class="indeterminate"></div></div>
