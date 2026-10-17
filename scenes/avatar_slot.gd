@@ -117,6 +117,7 @@ func use_frames(frames: SpriteFrames) -> void:
 		_sprite.queue_free()
 	_sprite = AnimatedSprite2D.new()
 	_sprite.sprite_frames = frames
+	_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS  # 칸보다 큰 그림을 줄여 그려도 흐려지거나 깜빡이지 않게
 	_stage.add_child(_sprite)
 	_has_art = true
 	_fit_sprite()
@@ -130,6 +131,7 @@ func use_portrait(texture: Texture2D) -> void:
 		_portrait.queue_free()
 	_portrait = TextureRect.new()
 	_portrait.texture = texture
+	_portrait.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	_portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	_portrait.set_anchors_preset(Control.PRESET_FULL_RECT)
