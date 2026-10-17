@@ -15,7 +15,14 @@ signal connection_lost(reason: String)
 ## 상대 화면이 멈췄거나(다른 창·탭·앱으로 이동, 느린 연결) 다시 움직였다. 웹 브라우저는 보이지 않는 탭을 멈추기 때문에 알려 준다.
 signal peer_silent(seat: int, silent: bool)
 
+## 다른 좌석이 감정 표현을 했다 (게임 규칙과 무관한 연출 전용 신호). emotion은 AvatarSlot.Emotion 값이다.
+signal emote_received(seat: int, emotion: int)
+
 const ACTION_TAKEOVER: StringName = &"__takeover"
+## 감정 표현 값 범위(1~5)와, 같은 좌석의 최소 간격(초)을 방장이 지킨다.
+const EMOTE_MIN: int = 1
+const EMOTE_MAX: int = 5
+const EMOTE_COOLDOWN_MSEC: int = 600
 ## 모두가 준비되기를 기다리는 최대 시간(초). 넘으면 준비 안 된 사람은 봇으로 넘긴다.
 const READY_TIMEOUT: float = 15.0
 ## 제한 시간(자동 굴리기·자동 선택 등)을 사람 속도에 맞게 늘리는 배율.
@@ -48,6 +55,7 @@ var _launched: bool = false
 var _ping_left: float = 0.0
 var _heard: Dictionary = {}    # 좌석 -> 마지막으로 소식을 들은 시각(ms)
 var _silent: Dictionary = {}   # 좌석 -> 지금 멈춘 것으로 표시 중인가
+var _last_emote_msec: Dictionary = {}  # 좌석 -> 마지막 감정 표현 시각(ms)
 
 
 ## 매니저에 연결한다. 이후 manager.act()/force_timeout()/auto_pick_draft()는 모두 방장을 거쳐 돌아온다.
@@ -159,6 +167,63 @@ func _send_ping() -> void:
 @rpc("any_peer", "call_remote", "unreliable")
 func _rpc_ping() -> void:
 	_on_ping(multiplayer.get_remote_sender_id())
+
+
+# ---------------------------------------------------------------------------
+# 감정 표현: 규칙과 무관한 연출 신호. 참가자 -> 방장 -> 나머지 참가자로 전달한다 (내 화면은 호출한 쪽이 직접 반응시킨다)
+# ---------------------------------------------------------------------------
+
+func send_emote(emotion: int) -> void:
+	if not running or emotion < EMOTE_MIN or emotion > EMOTE_MAX:
+		return
+	if is_host:
+		_relay_emote(local_seat, emotion)
+	elif not test_peers.is_empty():
+		(test_peers[1] as NetGame).emote_from(local_seat, emotion)
+	else:
+		_rpc_emote.rpc_id(1, emotion)
+
+
+## 방장: 좌석 sender의 감정 표현을 받아 검사하고 다른 모두에게 퍼뜨린다.
+func emote_from(sender: int, emotion: int) -> void:
+	if not is_host or not running or not humans.has(sender):
+		return
+	if emotion < EMOTE_MIN or emotion > EMOTE_MAX:
+		return
+	_relay_emote(sender, emotion)
+
+
+func _relay_emote(seat: int, emotion: int) -> void:
+	var now: int = Time.get_ticks_msec()
+	if now - int(_last_emote_msec.get(seat, -100000)) < EMOTE_COOLDOWN_MSEC:
+		return
+	_last_emote_msec[seat] = now
+	if seat != local_seat:
+		emote_received.emit(seat, emotion)
+	if not test_peers.is_empty():
+		for other: int in test_peers.keys():
+			if other != local_seat and other != seat:
+				(test_peers[other] as NetGame)._on_emote(seat, emotion)
+	elif _has_remote_peers():
+		for other: int in _remote_seats():
+			if other != seat:
+				_rpc_emote_out.rpc_id(other, seat, emotion)
+
+
+func _on_emote(seat: int, emotion: int) -> void:
+	if is_host or emotion < EMOTE_MIN or emotion > EMOTE_MAX:
+		return
+	emote_received.emit(seat, emotion)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_emote(emotion: int) -> void:
+	emote_from(multiplayer.get_remote_sender_id(), emotion)
+
+
+@rpc("authority", "call_remote", "reliable")
+func _rpc_emote_out(seat: int, emotion: int) -> void:
+	_on_emote(seat, emotion)
 
 
 # ---------------------------------------------------------------------------

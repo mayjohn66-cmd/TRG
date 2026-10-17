@@ -254,3 +254,24 @@ func test_silent_peer_is_reported_and_recovers() -> void:
 	guest._silent[1] = false
 	guest._process(5.0)
 	check(guest_events.is_empty(), "큰 delta 프레임에는 상대를 멈췄다고 단정하지 않는다")
+
+
+func test_emote_is_relayed_through_the_host_to_everyone_else() -> void:
+	var seats: Array[int] = [1, 2, 3]
+	var parts: Dictionary = _build(seats, [] as Array[int], false)
+	var games: Dictionary = parts["games"]
+	var heard: Dictionary = {1: [], 2: [], 3: []}
+	for seat: int in games.keys():
+		var game: NetGame = games[seat]
+		game.running = true
+		game.emote_received.connect(func(from_seat: int, emotion: int) -> void: (heard[seat] as Array).append([from_seat, emotion]))
+	(games[2] as NetGame).send_emote(3)
+	check_eq(heard[1], [[2, 3]], "방장이 받는다")
+	check_eq(heard[3], [[2, 3]], "다른 참가자에게 방장이 전달한다")
+	check_eq(heard[2], [], "보낸 사람 화면은 직접 반응하므로 신호를 다시 받지 않는다")
+	(games[2] as NetGame).send_emote(4)
+	check_eq((heard[1] as Array).size(), 1, "같은 좌석의 연속 표현은 짧은 간격 안에서는 무시된다")
+	(games[3] as NetGame).send_emote(99)
+	check_eq((heard[1] as Array).size(), 1, "범위 밖 값은 무시된다")
+	(games[1] as NetGame).send_emote(5)
+	check_eq(heard[2], [[1, 5]], "방장이 보낸 표현도 참가자에게 간다")

@@ -280,6 +280,8 @@ var _drop_label: Label = null
 var _dock: Control = null
 var _dock_player: int = -1
 var _debug_toggle: Button = null
+var _emote_row: HBoxContainer = null
+var _emote_ready_msec: int = 0
 ## 치트/디버그 메뉴 노출 여부: 평소에는 숨기고, F9 / Ctrl+Shift+D 또는 웹 주소의 ?debug=1 일 때만 켠다.
 var _debug_enabled: bool = false
 var _log_toggle: Button = null
@@ -860,6 +862,7 @@ func _build_ui() -> void:
 	_build_action_bar()
 	_build_dock()
 	_build_pawn_dock()
+	_build_emote_row()
 	_build_select_banner()
 	_build_direction_icons()
 	_build_center_banner()
@@ -891,7 +894,7 @@ func _register_layout() -> void:
 	_layout_entries.clear()
 	var left: Array = [_law_panel]
 	var center: Array = [_select_banner, _dir_left, _dir_right, _board_layer, _pawn_layer, _dock, _drop_zone, _aim_layer, _pick_banner, _pick_cancel, _roll_button, _roll_pad, _power_bar, _power_label]
-	var right: Array = [_tool_board, _action_row, _pawn_bar, _menu_button, _debug_box, _log_panel]
+	var right: Array = [_tool_board, _action_row, _pawn_bar, _emote_row, _menu_button, _debug_box, _log_panel]
 	for index: int in PLAYER_IDS.size():
 		var player_id: int = PLAYER_IDS[index]
 		var panel: Control = _profiles[player_id]["panel"]
@@ -2872,6 +2875,54 @@ func _build_pawn_dock() -> void:
 		_pawn_slot_parts.append({"letter": letter, "place": place, "badge": badge})
 
 
+## 내 프로필 위의 감정 표현 버튼 5개: 누르면 내 아바타가 반응하고, 온라인이면 상대 화면의 내 아바타도 같은 반응을 한다.
+const EMOTE_BUTTONS: Array[Dictionary] = [
+	{"emotion": AvatarSlot.Emotion.HAPPY, "text": "웃음", "color": Color("e0a100")},
+	{"emotion": AvatarSlot.Emotion.ANGRY, "text": "분노", "color": Color("c92a2a")},
+	{"emotion": AvatarSlot.Emotion.SURPRISED, "text": "놀람", "color": Color("1971c2")},
+	{"emotion": AvatarSlot.Emotion.SAD, "text": "낙담", "color": Color("5f6b7a")},
+	{"emotion": AvatarSlot.Emotion.CHEER, "text": "환호", "color": Color("2b8a3e")},
+]
+const EMOTE_COOLDOWN_MSEC: int = 1200
+
+
+func _build_emote_row() -> void:
+	_emote_row = HBoxContainer.new()
+	_emote_row.name = "EmoteRow"
+	_emote_row.position = Vector2(1030, 554)
+	_emote_row.size = Vector2(320, 32)
+	_emote_row.add_theme_constant_override("separation", 6)
+	add_child(_emote_row)
+	for entry: Dictionary in EMOTE_BUTTONS:
+		var button: Button = _make_button(str(entry["text"]), _on_emote_pressed.bind(int(entry["emotion"])), 13, entry["color"], 8)
+		button.custom_minimum_size = Vector2(58, 30)
+		button.focus_mode = Control.FOCUS_NONE
+		button.tooltip_text = "내 아바타로 감정 표현 (상대에게도 보입니다)"
+		_emote_row.add_child(button)
+
+
+## 감정 표현은 내 자리를 직접 조작하는 판(AI 대전·온라인)에서만 쓴다. 4인 수동 조작은 기물 독이 같은 자리를 쓴다.
+func _refresh_emote_row() -> void:
+	if _emote_row != null:
+		_emote_row.visible = (ai_mode or net != null) and not manager.is_game_over and _player_ids.has(local_player_id)
+
+
+func _on_emote_pressed(emotion: int) -> void:
+	var now: int = Time.get_ticks_msec()
+	if now < _emote_ready_msec or manager.is_game_over:
+		return
+	_emote_ready_msec = now + EMOTE_COOLDOWN_MSEC
+	_avatar_react(local_player_id, emotion as AvatarSlot.Emotion, 2.0)
+	if net != null:
+		net.send_emote(emotion)
+
+
+func _on_net_emote(seat: int, emotion: int) -> void:
+	if not _player_ids.has(seat) or seat == local_player_id:
+		return
+	_avatar_react(seat, emotion as AvatarSlot.Emotion, 2.0)
+
+
 ## 기물 독이 보여 주는 주인: AI 모드는 항상 로컬 플레이어, 4P 수동 모드는 현재 턴 플레이어.
 func _dock_owner() -> int:
 	return local_player_id if ai_mode else manager.current_player_id()
@@ -2894,6 +2945,7 @@ func _on_pawn_slot_unhover(button: Button) -> void:
 
 
 func _refresh_pawn_dock() -> void:
+	_refresh_emote_row()
 	# AI·온라인에서는 내 프로필 카드가 말 칸과 필살기를 맡으므로 기물 독은 4인 수동 조작에서만 보인다.
 	_pawn_bar.visible = not ai_mode
 	var owner_id: int = _dock_owner()
@@ -6381,6 +6433,7 @@ func _setup_net() -> void:
 	net.desynced.connect(_on_net_desynced)
 	net.connection_lost.connect(_on_net_connection_lost)
 	net.peer_silent.connect(_on_net_peer_silent)
+	net.emote_received.connect(_on_net_emote)
 
 
 func _bot_active() -> bool:

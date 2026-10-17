@@ -490,6 +490,12 @@ func _test_game_menu() -> void:
 	combo.pressed = true
 	_board._unhandled_key_input(combo)
 	_expect(not _board._debug_enabled and not _board._debug_box.visible, "Ctrl+Shift+D로 다시 끈다")
+	_expect(_board._emote_row != null and _board._emote_row.get_child_count() == 5 and _board._emote_row.visible, "AI 대전에는 감정 표현 버튼 5개가 보인다")
+	_board._emote_ready_msec = 0
+	(_board._emote_row.get_child(1) as Button).pressed.emit()
+	_expect((_board._profiles[_board.local_player_id]["avatar"] as AvatarSlot).emotion == AvatarSlot.Emotion.ANGRY, "감정 버튼을 누르면 내 아바타가 반응한다")
+	(_board._emote_row.get_child(2) as Button).pressed.emit()
+	_expect((_board._profiles[_board.local_player_id]["avatar"] as AvatarSlot).emotion == AvatarSlot.Emotion.ANGRY, "연타는 대기 시간 동안 무시된다")
 	# 메뉴가 열려 있는 동안 봇은 쉰다
 	_expect(_board._bot_should_wait(), "혼자 하는 판은 메뉴가 열려 있는 동안 봇이 멈춘다")
 	# 게임 설정
