@@ -229,7 +229,7 @@ static func _bounce(node: Control, target: float, seconds: float = 0.12) -> void
 
 
 ## 동그란 캐릭터 판: 아바타 그림이 있으면 그것을, 없으면 색 원 위에 동글 웃는 얼굴을 그린다. 반환 Control의 크기는 diameter x diameter.
-static func avatar_disc(id: StringName, color: Color, diameter: float, ring: Color = Color.WHITE, ring_px: int = 6) -> Control:
+static func avatar_disc(id: StringName, color: Color, diameter: float, ring: Color = Color.WHITE, ring_px: int = 6, prefer_icon: bool = false) -> Control:
 	var holder := Panel.new()
 	holder.custom_minimum_size = Vector2(diameter, diameter)
 	holder.size = Vector2(diameter, diameter)
@@ -244,6 +244,7 @@ static func avatar_disc(id: StringName, color: Color, diameter: float, ring: Col
 	holder.add_theme_stylebox_override("panel", disc)
 	if AvatarSlot.has_assets(id):
 		var avatar := AvatarSlot.new()
+		avatar.prefer_icon = prefer_icon
 		avatar.setup(1, color, Vector2(diameter, diameter) - Vector2.ONE * ring_px * 2.0)
 		avatar.set_character(id)
 		avatar.position = Vector2.ONE * ring_px
@@ -401,7 +402,7 @@ static func profile_capsule(player_name: String, title_text: String, avatar_id: 
 	title.position = Vector2(60, 36)
 	title.size = Vector2(210, 22)
 	plate.add_child(title)
-	var avatar: Control = avatar_disc(avatar_id, color, 76.0, Color("2fa63a"), 4)
+	var avatar: Control = avatar_disc(avatar_id, color, 76.0, Color("2fa63a"), 4, true)
 	avatar.position = Vector2(8, 8)
 	root.add_child(avatar)
 	if callback.is_valid():
@@ -602,7 +603,7 @@ static func seat_card(seat: int, color: Color, empty: bool, avatar_id: StringNam
 		wait.start_pulse()
 		avatar.add_child(wait)
 	else:
-		avatar = avatar_disc(avatar_id, color, 108.0, color, 5)
+		avatar = avatar_disc(avatar_id, color, 108.0, color, 5, true)
 	avatar_holder.add_child(avatar)
 	var name_plate := PanelContainer.new()
 	var plate_style := StyleBoxFlat.new()

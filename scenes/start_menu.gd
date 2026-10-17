@@ -381,6 +381,7 @@ func _build_avatar_page(parent: VBoxContainer) -> void:
 		tile.pressed.connect(select_avatar.bind(id))
 		var thumb := AvatarSlot.new()
 		thumb.catalog_tint = true
+		thumb.prefer_icon = true
 		thumb.placeholder_text = AvatarCatalog.name_of(id).trim_prefix("아바타 ")
 		thumb.setup(1, AvatarCatalog.color_of(id), Vector2(88, 88))
 		thumb.set_character(id)

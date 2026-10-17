@@ -26,6 +26,8 @@ var base_color: Color = Color("e03131")
 var catalog_tint: bool = false
 ## 비어 있지 않으면 자리표시자 글자(기본 "P1" 같은 좌석 표시) 대신 이 글자를 보여 준다.
 var placeholder_text: String = ""
+## true면 작은 목록용 얼굴 아이콘(icon.webp)이 있을 때 애니메이션 대신 그것을 보여 준다 (선택 목록·방 좌석 등 정적인 자리).
+var prefer_icon: bool = false
 
 var _stage: Control = null
 var _sprite: AnimatedSprite2D = null
@@ -44,7 +46,16 @@ static func character_path(id: StringName) -> String:
 
 ## 이 캐릭터의 에셋이 있는가 (frames.tres 또는 portrait.png).
 static func has_assets(id: StringName) -> bool:
-	return ResourceLoader.exists(character_path(id) + "/frames.tres") or ResourceLoader.exists(character_path(id) + "/portrait.png")
+	return ResourceLoader.exists(character_path(id) + "/frames.tres") or ResourceLoader.exists(character_path(id) + "/portrait.png") or has_icon(id)
+
+
+## 이 캐릭터의 얼굴 아이콘 경로 / 존재 여부.
+static func icon_path(id: StringName) -> String:
+	return character_path(id) + "/icon.webp"
+
+
+static func has_icon(id: StringName) -> bool:
+	return ResourceLoader.exists(icon_path(id))
 
 
 func setup(seat_number: int, color: Color, slot_size: Vector2) -> void:
@@ -98,7 +109,11 @@ func set_character(id: StringName) -> bool:
 		_portrait = null
 	var frames_path: String = character_path(id) + "/frames.tres"
 	var portrait_path: String = character_path(id) + "/portrait.png"
-	if ResourceLoader.exists(frames_path):
+	if prefer_icon and has_icon(id):
+		var icon: Texture2D = load(icon_path(id)) as Texture2D
+		if icon != null:
+			use_portrait(icon)
+	elif ResourceLoader.exists(frames_path):
 		var frames: SpriteFrames = load(frames_path) as SpriteFrames
 		if frames != null:
 			use_frames(frames)

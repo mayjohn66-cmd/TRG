@@ -562,6 +562,7 @@ func _on_left_room(reason: String) -> void:
 ## 좌석 줄에 붙는 작은 아바타 (사람은 고른 아바타, 컴퓨터는 좌석별 고정 아바타, 빈 자리는 기본).
 func _avatar_thumb(seat: int) -> AvatarSlot:
 	var thumb := AvatarSlot.new()
+	thumb.prefer_icon = true
 	thumb.setup(seat, SEAT_COLORS[seat - 1], Vector2(34, 34))
 	var seat_state: LobbyModel.SeatState = service.model.state_of(seat)
 	var chosen: String = service.model.avatar_of(seat)
