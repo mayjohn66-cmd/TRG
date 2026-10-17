@@ -4,7 +4,7 @@
 
 | 파일 | 출처 | 제작자 | 라이선스 |
 |---|---|---|---|
-| (아직 없음) | | | |
+| `assets/sfx/*.ogg` (ui_click, hop, slam, launch, thud, dice_*, card_*, augment_*, law*, good, bad ...) | Kenney **Casino Audio**, **Interface Sounds**, **Impact Sounds**, **Digital Audio** (https://kenney.nl) | Kenney Vleugels (Kenney.nl) | CC0 1.0 (표기 의무 없음, 라이선스 원문은 `assets/sfx/licenses/`) |
 
 ## 비공식 팬 제작 안내
 

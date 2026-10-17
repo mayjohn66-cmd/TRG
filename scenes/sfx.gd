@@ -174,7 +174,8 @@ static func _files_for(event: StringName) -> Array[String]:
 	var found: Array[String] = []
 	var prefix: String = String(event).to_lower()
 	for base: String in _index.keys():
-		if base.begins_with(prefix):
+		# law 와 law_drop 처럼 이름이 겹치는 이벤트가 섞이지 않게, 이벤트 이름 뒤에는 번호만 올 수 있다 (law_01, law-2 ...).
+		if base == prefix or _is_numbered_variant(base, prefix):
 			found.append(_index[base])
 	if found.is_empty() and EVENTS.has(event):
 		for keyword: String in (EVENTS[event] as Array)[1]:
@@ -186,6 +187,13 @@ static func _files_for(event: StringName) -> Array[String]:
 	found.sort()
 	_cache[event] = found
 	return found
+
+
+static func _is_numbered_variant(base: String, prefix: String) -> bool:
+	if not base.begins_with(prefix) or base.length() == prefix.length():
+		return false
+	var rest: String = base.substr(prefix.length()).lstrip("_-")
+	return rest.is_valid_int()
 
 
 static func _stream_for(event: StringName) -> AudioStream:
