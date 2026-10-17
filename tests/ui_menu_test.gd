@@ -39,8 +39,8 @@ func _run() -> void:
 		titles.append((card.find_child("CardTitle", true, false) as Label).text)
 		_expect(card.custom_minimum_size.y >= 110 and card.custom_minimum_size.x >= 500, "모드 카드는 큼직하다")
 	_expect(str(titles) == str(["놀이터", "친선 줘팸터", "익명 줘팸터"]), "모드 카드 세 장: %s" % str(titles))
-	# 마을 허브(원본 로비 느낌): 프로필 띠 · 팁 띠 · 둥근 규칙/설정 버튼 · 큰 [바로 시작] · 캐릭터들
-	for node_name: String in ["ProfileCapsule", "TipBar", "HubRules", "HubSettings", "QuickStartAi", "RenameButton", "AvatarButton", "ModeColumn"]:
+	# 마을 허브(원본 로비 느낌): 프로필 띠 · 팁 띠 · 둥근 규칙/설정 버튼 · 캐릭터들
+	for node_name: String in ["ProfileCapsule", "TipBar", "HubRules", "HubSettings", "RenameButton", "AvatarButton", "ModeColumn"]:
 		_expect(menu.find_child(node_name, true, false) != null, "허브 요소: %s" % node_name)
 	_expect((menu.find_child("ProfileName", true, false) as Label).text == "에르핀", "왼쪽에 아바타 아래 내 닉네임")
 	_expect(not (menu._top["bar"] as Control).visible and not (menu._bottom["bar"] as Control).visible, "허브에서는 청록 띠를 숨긴다")
@@ -48,7 +48,6 @@ func _run() -> void:
 	var first_tip: String = tip_label.text
 	(menu.find_child("TipNext", true, false) as Button).pressed.emit()
 	_expect(tip_label.text != first_tip and GameTips.TIPS.has(tip_label.text), "팁 띠의 [>>]로 다음 팁")
-	_expect(menu._hub_start_label.text == "(AI 3명과 대결)", "큰 시작 버튼 문구")
 	menu.find_child("HubSettings", true, false).pressed.emit()
 	_expect(menu.find_child("Popup", true, false) != null, "둥근 설정 버튼이 설정 팝업을 연다")
 	menu.find_child("Popup", true, false).free()
@@ -60,8 +59,9 @@ func _run() -> void:
 		if node is HubKit.Icon and (node as HubKit.Icon).is_processing():
 			blinking += 1
 	_expect(blinking == 0, "아이콘은 깜빡이지 않는다 (대기 모래시계만 예외): %d개가 매 프레임 돈다" % blinking)
-	menu.find_child("QuickStartAi", true, false).pressed.emit()
-	_expect(GameSession.mode == GameSession.MODE_AI and GameSession.ai_opponents == 3 and not GameSession.net_active, "[바로 시작]은 AI 3명과 바로 대결")
+	_expect(menu.find_child("QuickStartAi", true, false) == null, "허브에는 [바로 시작] 버튼이 없다")
+	menu.start_ai_game()
+	_expect(GameSession.mode == GameSession.MODE_AI and GameSession.ai_opponents == 3 and not GameSession.net_active, "AI 시작은 AI 3명과 대결")
 	_expect(menu._top["bar"] != null and menu._bottom["bar"] != null and (menu._top["right"] as Button).text == "규칙" and (menu._bottom["center"] as Button).text == "설정", "위·아래 청록 띠: 규칙 / 설정")
 	menu._back_button.pressed.emit()
 	_expect(menu.step == 1 and menu._name_edit.text.strip_edges() == "에르핀", "뒤로가기로 이름 화면에 돌아오면 입력창에 남아 있다")

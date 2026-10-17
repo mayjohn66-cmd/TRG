@@ -21,7 +21,6 @@ var _name_page: VBoxContainer = null
 var _mode_page: Control = null
 var _hub_profile: Dictionary = {}
 var _hub_tip: Dictionary = {}
-var _hub_start_label: Label = null
 var _tip_index: int = 0
 var _train_page: VBoxContainer = null
 var _avatar_page: VBoxContainer = null
@@ -191,8 +190,8 @@ func _build_mode_page() -> void:
 	right.anchor_right = 1.0
 	right.offset_left = -690
 	right.offset_right = -28
-	right.offset_top = 74
-	right.add_theme_constant_override("separation", 10)
+	right.offset_top = 96
+	right.add_theme_constant_override("separation", 16)
 	right.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_mode_page.add_child(right)
 	var heading := HubKit.outlined("어디로 대결하러 갈까요?", 28, Color.WHITE, Color("2c7a1f"), 8)
@@ -203,36 +202,6 @@ func _build_mode_page() -> void:
 	right.add_child(_multi_button)
 	_quick_button = HubKit.mode_card("QuickCard", &"dice", "익명 줘팸터", "15초 자동 매칭 · 모르는 상대와 바로 대결", open_quick_match, &"pink")
 	right.add_child(_quick_button)
-	# 오른쪽 아래의 큰 [바로 시작] 버튼 (원본의 [모험] 자리)
-	var start := Button.new()
-	start.name = "QuickStartAi"
-	start.custom_minimum_size = Vector2(0, 76)
-	start.focus_mode = Control.FOCUS_NONE
-	start.pivot_offset = Vector2(330, 38)
-	var start_style := LobbyTheme.style(Color("ffd34e"), Color.WHITE, 5, 40, 8, 0, Color("c98a14"))
-	start_style.border_width_bottom = 9
-	start.add_theme_stylebox_override("normal", start_style)
-	var start_hover: StyleBoxFlat = start_style.duplicate()
-	start_hover.bg_color = Color("ffe07a")
-	start.add_theme_stylebox_override("hover", start_hover)
-	var start_pressed: StyleBoxFlat = start_style.duplicate()
-	start_pressed.bg_color = Color("f0bd2e")
-	start.add_theme_stylebox_override("pressed", start_pressed)
-	start.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	var start_row := HBoxContainer.new()
-	start_row.set_anchors_preset(Control.PRESET_FULL_RECT)
-	start_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	start_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	start_row.add_theme_constant_override("separation", 16)
-	start.add_child(start_row)
-	var start_title := HubKit.outlined("바로 시작", 40, Color.WHITE, Color("8a5a0a"), 9)
-	start_row.add_child(start_title)
-	_hub_start_label = HubKit.outlined("", 20, Color("fff3bf"), Color("8a5a0a"), 5)
-	start_row.add_child(_hub_start_label)
-	start.pressed.connect(start_ai_game)
-	start.mouse_entered.connect(func() -> void: HubKit._bounce(start, 1.03))
-	start.mouse_exited.connect(func() -> void: HubKit._bounce(start, 1.0))
-	right.add_child(start)
 	# 타이틀은 하단 중앙에 작게 두고, 영문 부제 자리에는 비영리 무료 배포물이라고 적는다 (안내 문구 바로 위)
 	var logo := HubKit.logo("초증강", "엘리아스 마블", "비영리 무료 배포물", 230.0)
 	logo.name = "HubLogoCorner"
@@ -248,7 +217,7 @@ func _build_mode_page() -> void:
 	_refresh_hub()
 
 
-## 허브의 이름·아바타·바로 시작 문구를 현재 값으로 맞춘다.
+## 허브의 이름·아바타를 현재 값으로 맞춘다.
 func _refresh_hub() -> void:
 	if _hub_profile.is_empty():
 		return
@@ -259,7 +228,6 @@ func _refresh_hub() -> void:
 	var fresh: Control = HubKit.avatar_full(id, AvatarCatalog.color_of(id), HUB_AVATAR_HEIGHT)
 	holder.add_child(fresh)
 	_hub_profile["avatar"] = fresh
-	_hub_start_label.text = "(AI %d명과 대결)" % ai_count
 
 
 ## 팁 띠의 [>>]: 다음 게임 팁으로 넘긴다.
