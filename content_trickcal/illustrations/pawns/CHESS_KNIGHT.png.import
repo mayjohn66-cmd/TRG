@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://wkwvgh0uu50s"
-path="res://.godot/imported/PAWN_CHESS.png-3723196a7dae6f9b6f10e56dfc6407ba.ctex"
+uid="uid://df1tb63dp6crm"
+path="res://.godot/imported/CHESS_KNIGHT.png-b659496fa864ea6832e1ce58c0b1d0e7.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://content_trickcal/illustrations/pawns/PAWN_CHESS.png"
-dest_files=["res://.godot/imported/PAWN_CHESS.png-3723196a7dae6f9b6f10e56dfc6407ba.ctex"]
+source_file="res://content_trickcal/illustrations/pawns/CHESS_KNIGHT.png"
+dest_files=["res://.godot/imported/CHESS_KNIGHT.png-b659496fa864ea6832e1ce58c0b1d0e7.ctex"]
 
 [params]
 
@@ -36,5 +36,5 @@ process/premult_alpha=false
 process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
-process/size_limit=512
+process/size_limit=256
 detect_3d/compress_to=1

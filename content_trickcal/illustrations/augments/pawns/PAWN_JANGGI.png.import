@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b68frxqt55ehb"
-path="res://.godot/imported/PAWN_BADUK.png-ea2b182d904469ead58c3dd22b648cbc.ctex"
+uid="uid://ob8c2ngo55b"
+path="res://.godot/imported/PAWN_JANGGI.png-6d36a48b004667789f5c611619141bfa.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://content_trickcal/illustrations/pawns/PAWN_BADUK.png"
-dest_files=["res://.godot/imported/PAWN_BADUK.png-ea2b182d904469ead58c3dd22b648cbc.ctex"]
+source_file="res://content_trickcal/illustrations/augments/pawns/PAWN_JANGGI.png"
+dest_files=["res://.godot/imported/PAWN_JANGGI.png-6d36a48b004667789f5c611619141bfa.ctex"]
 
 [params]
 

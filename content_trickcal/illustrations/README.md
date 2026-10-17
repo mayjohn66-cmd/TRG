@@ -27,7 +27,7 @@
 3. 아래 계열·카테고리 대표 이미지.
 4. 기존 글자 약어.
 
-예: `pawns/CHESS_KNIGHT.png` → `augments/EVO_2_2.png` → `pawns/PAWN_CHESS.png` → `나`.
+예: `pawns/CHESS_KNIGHT.png` → `augments/EVO_2_2.png` → `augments/augments/augments/pawns/PAWN_CHESS.png` → `나`.
 예: `laws/LAW_03.png` → `augments/AUG_LAW_03.png` → `augments/AUG_LAW.png` → `법`.
 예: `augments/CARD_PACKAGE.png` → `augments/AUG_CARD_PACK.png` → `J`.
 
@@ -37,12 +37,12 @@
 
 | 계열 | 대표 경로 |
 |---|---|
-| 체스 | `pawns/PAWN_CHESS.png` |
-| 장기 | `pawns/PAWN_JANGGI.png` |
-| 윷놀이 | `pawns/PAWN_YUT.png` |
-| 모노폴리 | `pawns/PAWN_MONO.png` |
-| 바둑 | `pawns/PAWN_BADUK.png` |
-| 쇼기 | `pawns/PAWN_SHOGI.png` |
+| 체스 | `augments/augments/augments/pawns/PAWN_CHESS.png` |
+| 장기 | `augments/augments/augments/pawns/PAWN_JANGGI.png` |
+| 윷놀이 | `augments/augments/augments/pawns/PAWN_YUT.png` |
+| 모노폴리 | `augments/augments/augments/pawns/PAWN_MONO.png` |
+| 바둑 | `augments/augments/augments/pawns/PAWN_BADUK.png` |
+| 쇼기 | `augments/augments/augments/pawns/PAWN_SHOGI.png` |
 
 세부 기물 파일명은 `GameEnums.PawnSubType`의 키와 일치시킨다.
 예: `CHESS_KNIGHT`, `JANGGI_CHA`, `MONO_CAR`, `BADUK_BLACK`, `SHOGI_FU`.
