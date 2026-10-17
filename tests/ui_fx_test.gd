@@ -575,8 +575,8 @@ func _test_game_menu() -> void:
 	for child: Node in _board._menu_box.get_children():
 		if child is Button:
 			labels.append((child as Button).text)
-	_expect(labels.has("계속하기") and labels.has("게임 설정") and labels.has("전체 로그") and labels.has("새 게임") and labels.has("게임 나가기"), "메뉴 항목: %s" % str(labels))
-	_expect(_board._mode_toggle.get_parent() == _board._menu_box, "혼자 하는 판에서는 모드 전환이 메뉴 안에 있다")
+	_expect(labels.has("계속하기") and labels.has("게임 설정") and labels.has("규칙 책자") and labels.has("게임 나가기"), "메뉴 항목: %s" % str(labels))
+	_expect(not labels.has("전체 로그") and not labels.has("새 게임") and _board._mode_toggle.get_parent() != _board._menu_box, "디버그가 꺼져 있으면 로그·새 게임·모드는 메뉴에 없다")
 	_expect(not _board._debug_enabled and not _board._debug_toggle.visible and _board._debug_toggle.get_parent() != _board._menu_box, "치트/디버그는 평소에 숨겨져 있다")
 	var f9 := InputEventKey.new()
 	f9.keycode = KEY_F9

@@ -6460,11 +6460,12 @@ func _build_main_page() -> void:
 	_menu_item(_make_button("계속하기", _close_menu, 17, Color("2b8a3e"), 10))
 	_menu_item(_make_button("게임 설정", _show_menu_page.bind(&"settings"), 17, Color("3b4766"), 10))
 	_menu_item(_make_button("규칙 책자", _open_rulebook, 17, Color("8a5a0a"), 10))
-	_menu_item(_log_toggle)
-	if net == null:
-		_menu_item(_new_game_button)
-		_menu_item(_mode_toggle)
-		if _debug_enabled:
+	# 전체 로그·새 게임·모드 전환은 개발용이라 디버그를 켰을 때만 메뉴에 나온다 (평소엔 게임답게 숨긴다).
+	if _debug_enabled:
+		_menu_item(_log_toggle)
+		if net == null:
+			_menu_item(_new_game_button)
+			_menu_item(_mode_toggle)
 			_menu_item(_debug_toggle)
 	_menu_item(_make_button("게임 나가기", _show_menu_page.bind(&"confirm_exit"), 17, Color("7a2a2a"), 10))
 
