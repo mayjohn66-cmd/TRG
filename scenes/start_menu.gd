@@ -29,6 +29,7 @@ var _avatar_button: Button = null
 var _avatar_preview: AvatarSlot = null
 var _avatar_name: Label = null
 var _avatar_tiles: Dictionary = {}
+const HUB_AVATAR_HEIGHT: float = 520.0
 var _name_edit: LineEdit = null
 var _error_label: Label = null
 var _confirm_button: Button = null
@@ -83,8 +84,7 @@ func _ready() -> void:
 		_hello_label.text = "%s 교주님" % GameSession.nickname
 		_show_step(2)
 	else:
-		_show_step(1)
-		_name_edit.grab_focus()
+		_show_step(1)  # 모바일에서 키보드가 불쑥 뜨지 않도록 입력칸은 눌러야 입력된다
 	_mobile = MobileSupport.new()
 	_mobile.button_position = Vector2(1070, 2)
 	add_child(_mobile)
@@ -142,41 +142,46 @@ func _build_mode_page() -> void:
 	top.add_child(buttons)
 	buttons.add_child(HubKit.round_button("HubRules", &"book", _show_rules, 56.0))
 	buttons.add_child(HubKit.round_button("HubSettings", &"gear", _show_settings, 56.0))
-	# 왼쪽: 로고 + 내 아바타 + 닉네임 + 아바타 설정
+	# 왼쪽: 큼직한 전신 아바타 + 닉네임 + 아바타 설정 (타이틀은 오른쪽 아래)
 	var left := VBoxContainer.new()
 	left.name = "ProfileCapsule"
 	left.set_anchors_preset(Control.PRESET_TOP_LEFT)
-	left.offset_left = 56
-	left.offset_top = 20
-	left.offset_right = 436
+	left.offset_left = 40
+	left.offset_top = 74
+	left.offset_right = 600
 	left.add_theme_constant_override("separation", 8)
 	left.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_mode_page.add_child(left)
-	var logo := HubKit.logo("초증강", "엘리아스 마블", "HYPER AUGMENT ELIAS MARBLE", 380.0)
-	left.add_child(logo)
 	var avatar_holder := CenterContainer.new()
 	avatar_holder.name = "AvatarHolder"
-	avatar_holder.custom_minimum_size = Vector2(0, 230)
+	avatar_holder.custom_minimum_size = Vector2(0, HUB_AVATAR_HEIGHT)
 	left.add_child(avatar_holder)
 	var id: StringName = AvatarCatalog.sanitize(GameSession.avatar_id)
-	var avatar: Control = HubKit.avatar_disc(id, AvatarCatalog.color_of(id), 220.0)
+	var avatar: Control = HubKit.avatar_full(id, AvatarCatalog.color_of(id), HUB_AVATAR_HEIGHT)
 	avatar_holder.add_child(avatar)
+	var plate_row := CenterContainer.new()
+	left.add_child(plate_row)
 	var plate := PanelContainer.new()
+	plate.custom_minimum_size = Vector2(300, 0)
 	plate.add_theme_stylebox_override("panel", LobbyTheme.style(Color("2fa63a"), Color("1f7a2a"), 3, 20, 5, 4))
-	left.add_child(plate)
+	plate_row.add_child(plate)
 	var name_label := HubKit.outlined(GameSession.display_nickname(), 28, Color.WHITE, Color("17591f"), 6)
 	name_label.name = "ProfileName"
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.clip_text = true
 	plate.add_child(name_label)
-	_avatar_button = LobbyTheme.cream_button("아바타 설정", open_avatar, 24)
+	var buttons_row := HBoxContainer.new()
+	buttons_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	buttons_row.add_theme_constant_override("separation", 10)
+	left.add_child(buttons_row)
+	_avatar_button = LobbyTheme.cream_button("아바타 설정", open_avatar, 22)
 	_avatar_button.name = "AvatarButton"
-	_avatar_button.custom_minimum_size = Vector2(0, 58)
-	left.add_child(_avatar_button)
+	_avatar_button.custom_minimum_size = Vector2(200, 50)
+	buttons_row.add_child(_avatar_button)
 	var rename := LobbyTheme.small_button("이름 바꾸기", func() -> void: _on_back_pressed(), &"teal", 14)
 	rename.name = "RenameButton"
-	rename.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	left.add_child(rename)
+	rename.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	buttons_row.add_child(rename)
 	_hub_profile = {"name": name_label, "avatar": avatar, "holder": avatar_holder}
 	# 오른쪽: 대결 장소 고르기
 	var right := VBoxContainer.new()
@@ -186,8 +191,8 @@ func _build_mode_page() -> void:
 	right.anchor_right = 1.0
 	right.offset_left = -690
 	right.offset_right = -28
-	right.offset_top = 104
-	right.add_theme_constant_override("separation", 14)
+	right.offset_top = 74
+	right.add_theme_constant_override("separation", 10)
 	right.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_mode_page.add_child(right)
 	var heading := HubKit.outlined("어디로 대결하러 갈까요?", 28, Color.WHITE, Color("2c7a1f"), 8)
@@ -201,9 +206,9 @@ func _build_mode_page() -> void:
 	# 오른쪽 아래의 큰 [바로 시작] 버튼 (원본의 [모험] 자리)
 	var start := Button.new()
 	start.name = "QuickStartAi"
-	start.custom_minimum_size = Vector2(0, 92)
+	start.custom_minimum_size = Vector2(0, 76)
 	start.focus_mode = Control.FOCUS_NONE
-	start.pivot_offset = Vector2(330, 46)
+	start.pivot_offset = Vector2(330, 38)
 	var start_style := LobbyTheme.style(Color("ffd34e"), Color.WHITE, 5, 40, 8, 0, Color("c98a14"))
 	start_style.border_width_bottom = 9
 	start.add_theme_stylebox_override("normal", start_style)
@@ -228,6 +233,17 @@ func _build_mode_page() -> void:
 	start.mouse_entered.connect(func() -> void: HubKit._bounce(start, 1.03))
 	start.mouse_exited.connect(func() -> void: HubKit._bounce(start, 1.0))
 	right.add_child(start)
+	# 타이틀은 오른쪽 아래에 작게 둔다
+	var logo := HubKit.logo("초증강", "엘리아스 마블", "HYPER AUGMENT ELIAS MARBLE", 230.0)
+	logo.name = "HubLogoCorner"
+	logo.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	logo.anchor_left = 1.0
+	logo.anchor_top = 1.0
+	logo.offset_left = -258
+	logo.offset_right = -28
+	logo.offset_top = -LobbyTheme.BAR_HEIGHT - 8.0 - 134.0
+	logo.offset_bottom = -LobbyTheme.BAR_HEIGHT - 8.0
+	_mode_page.add_child(logo)
 	_refresh_hub()
 
 
@@ -239,7 +255,7 @@ func _refresh_hub() -> void:
 	var id: StringName = AvatarCatalog.sanitize(GameSession.avatar_id)
 	var holder: Control = _hub_profile["holder"]
 	(_hub_profile["avatar"] as Control).queue_free()
-	var fresh: Control = HubKit.avatar_disc(id, AvatarCatalog.color_of(id), 220.0)
+	var fresh: Control = HubKit.avatar_full(id, AvatarCatalog.color_of(id), HUB_AVATAR_HEIGHT)
 	holder.add_child(fresh)
 	_hub_profile["avatar"] = fresh
 	_hub_start_label.text = "(AI %d명과 대결)" % ai_count
@@ -298,8 +314,6 @@ func _show_step(value: int) -> void:
 	_avatar_page.visible = value == 4
 	_back_button.visible = value > 1
 	(_top["title"] as Label).text = {3: "놀이터", 4: "아바타"}.get(value, "")
-	if value == 1 and _name_edit != null:
-		_name_edit.grab_focus()
 
 
 func _on_back_pressed() -> void:

@@ -229,6 +229,37 @@ static func _bounce(node: Control, target: float, seconds: float = 0.12) -> void
 
 
 ## 동그란 캐릭터 판: 아바타 그림이 있으면 그것을, 없으면 색 원 위에 동글 웃는 얼굴을 그린다. 반환 Control의 크기는 diameter x diameter.
+## 허브 중앙에 큼직하게 세우는 전신 아바타 (고해상도 정지 그림 한 장만 메모리에 올린다). 에셋이 없으면 둥근 사각형 아바타로 대신한다.
+static func avatar_full(id: StringName, color: Color, height: float) -> Control:
+	var path: String = "%s/fullbody.png" % AvatarSlot.character_path(id)
+	if not ResourceLoader.exists(path):
+		return avatar_disc(id, color, minf(height, 220.0))
+	var texture: Texture2D = load(path) as Texture2D
+	var width: float = height * float(texture.get_width()) / float(texture.get_height())
+	var holder := Control.new()
+	holder.name = "AvatarFull"
+	holder.custom_minimum_size = Vector2(width, height)
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var shadow := Panel.new()
+	var shadow_style := StyleBoxFlat.new()
+	shadow_style.bg_color = Color(0.1, 0.3, 0.1, 0.14)
+	shadow_style.set_corner_radius_all(100)
+	shadow.add_theme_stylebox_override("panel", shadow_style)
+	shadow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	shadow.position = Vector2(width * 0.25, height - 22.0)
+	shadow.size = Vector2(width * 0.5, 20.0)
+	holder.add_child(shadow)
+	var art := TextureRect.new()
+	art.texture = texture
+	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	art.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	art.size = Vector2(width, height - 8.0)
+	holder.add_child(art)
+	return holder
+
+
 static func avatar_disc(id: StringName, color: Color, diameter: float, ring: Color = Color.WHITE, ring_px: int = 6, prefer_icon: bool = false) -> Control:
 	var holder := Panel.new()
 	holder.custom_minimum_size = Vector2(diameter, diameter)
