@@ -233,16 +233,17 @@ func _build_mode_page() -> void:
 	start.mouse_entered.connect(func() -> void: HubKit._bounce(start, 1.03))
 	start.mouse_exited.connect(func() -> void: HubKit._bounce(start, 1.0))
 	right.add_child(start)
-	# 타이틀은 오른쪽 아래에 작게 둔다
-	var logo := HubKit.logo("초증강", "엘리아스 마블", "HYPER AUGMENT ELIAS MARBLE", 230.0)
+	# 타이틀은 하단 중앙에 작게 두고, 영문 부제 자리에는 비영리 무료 배포물이라고 적는다 (안내 문구 바로 위)
+	var logo := HubKit.logo("초증강", "엘리아스 마블", "비영리 무료 배포물", 230.0)
 	logo.name = "HubLogoCorner"
-	logo.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	logo.anchor_left = 1.0
-	logo.anchor_top = 1.0
-	logo.offset_left = -258
-	logo.offset_right = -28
-	logo.offset_top = -LobbyTheme.BAR_HEIGHT - 8.0 - 134.0
-	logo.offset_bottom = -LobbyTheme.BAR_HEIGHT - 8.0
+	(logo.get_node("LogoSubtitle") as Label).add_theme_font_size_override("font_size", 15)
+	logo.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	logo.anchor_left = 0.5
+	logo.anchor_right = 0.5
+	logo.offset_left = -115.0
+	logo.offset_right = 115.0
+	logo.offset_top = -LobbyTheme.BAR_HEIGHT - 30.0 - 134.0
+	logo.offset_bottom = -LobbyTheme.BAR_HEIGHT - 30.0
 	_mode_page.add_child(logo)
 	_refresh_hub()
 
