@@ -30,6 +30,10 @@ var placeholder_text: String = ""
 var prefer_icon: bool = false
 ## 아이콘에 흰 둥근 테두리를 씌울지 (선택 목록 칸처럼 바깥에 이미 테두리가 있으면 끈다).
 var icon_border: bool = true
+## true면 애니메이션 프레임을 불러오지 않고 고해상도 정지 이미지(portrait.png)만 쓴다 (시작 화면의 큰 아바타처럼 크게 보이는 자리).
+var static_only: bool = false
+## true면 평소에는 고해상도 정지 이미지를 보여 주고, 감정 반응 동안만 애니메이션 프레임으로 바꾼다 (아바타 선택 미리보기).
+var hq_idle: bool = false
 
 var _stage: Control = null
 var _sprite: AnimatedSprite2D = null
@@ -115,17 +119,33 @@ func set_character(id: StringName) -> bool:
 		var icon: Texture2D = load(icon_path(id)) as Texture2D
 		if icon != null:
 			use_portrait(icon)
+	elif static_only and ResourceLoader.exists(portrait_path):
+		var still: Texture2D = load(portrait_path) as Texture2D
+		if still != null:
+			use_portrait(still)
 	elif ResourceLoader.exists(frames_path):
 		var frames: SpriteFrames = load(frames_path) as SpriteFrames
 		if frames != null:
 			use_frames(frames)
+		if hq_idle and _sprite != null and ResourceLoader.exists(portrait_path):
+			var hq: Texture2D = load(portrait_path) as Texture2D
+			if hq != null:
+				use_portrait(hq)
 	elif ResourceLoader.exists(portrait_path):
 		var texture: Texture2D = load(portrait_path) as Texture2D
 		if texture != null:
 			use_portrait(texture)
 	_seat_label.text = placeholder_text if placeholder_text != "" else "P%d" % seat
 	_seat_label.visible = not _has_art
+	_sync_hq()
 	return _has_art
+
+
+## hq_idle 모드: 가만히 있을 때는 고해상도 정지 그림, 감정 반응 중에는 애니메이션 프레임을 보여 준다.
+func _sync_hq() -> void:
+	if hq_idle and _portrait != null and _sprite != null:
+		_portrait.visible = emotion == Emotion.IDLE
+		_sprite.visible = emotion != Emotion.IDLE
 
 
 ## 스프라이트 시트(SpriteFrames)로 표시한다. 애니메이션 이름은 ANIMATION_NAMES (없는 감정은 idle로 대신).
@@ -198,6 +218,7 @@ func has_art() -> bool:
 ## 감정을 보여 준다. seconds 뒤에 IDLE로 돌아간다 (0이면 그대로 둔다).
 func react(new_emotion: Emotion, seconds: float = 1.4) -> void:
 	emotion = new_emotion
+	_sync_hq()
 	_reset_serial += 1
 	var serial: int = _reset_serial
 	_play_animation(new_emotion)

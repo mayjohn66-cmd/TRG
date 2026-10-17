@@ -346,6 +346,7 @@ func _build_avatar_page(parent: VBoxContainer) -> void:
 	_avatar_preview = AvatarSlot.new()
 	_avatar_preview.name = "AvatarPreview"
 	_avatar_preview.catalog_tint = true
+	_avatar_preview.hq_idle = true
 	_avatar_preview.setup(1, Color("e8590c"), Vector2(240, 240))
 	_avatar_preview.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	left.add_child(_avatar_preview)

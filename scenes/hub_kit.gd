@@ -245,6 +245,7 @@ static func avatar_disc(id: StringName, color: Color, diameter: float, ring: Col
 	if AvatarSlot.has_assets(id):
 		var avatar := AvatarSlot.new()
 		avatar.prefer_icon = prefer_icon
+		avatar.static_only = diameter >= 150.0  # 크게 보이는 아바타는 고해상도 정지 그림으로 (선명하게)
 		avatar.setup(1, color, Vector2(diameter, diameter) - Vector2.ONE * ring_px * 2.0)
 		avatar.set_character(id)
 		avatar.position = Vector2.ONE * ring_px
