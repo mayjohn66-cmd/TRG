@@ -235,6 +235,7 @@ class IdleLoop extends TextureRect:
 	const FPS: float = 7.8
 	var _frames: Array[Texture2D] = []
 	var _clock: float = 0.0
+	var _blend: TextureRect = null  ## 다음 프레임을 위에 겹쳐 서서히 드러내 8프레임 원본이 매끄럽게 이어지게 한다
 
 	func setup(still: Texture2D, folder: String) -> void:
 		texture = still
@@ -249,11 +250,26 @@ class IdleLoop extends TextureRect:
 				break
 			_frames.append(frame)
 			index += 1
+		if _frames.size() > 1:
+			_blend = TextureRect.new()
+			_blend.set_anchors_preset(Control.PRESET_FULL_RECT)
+			_blend.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			_blend.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			_blend.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+			_blend.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			add_child(_blend)
 		set_process(_frames.size() > 1)
 
 	func _process(delta: float) -> void:
 		_clock += delta
-		texture = _frames[int(_clock * FPS) % _frames.size()]
+		var position: float = _clock * FPS
+		var index: int = int(position)
+		var mix: float = position - float(index)
+		var current: Texture2D = _frames[index % _frames.size()]
+		if texture != current:  # 프레임이 바뀔 때만 텍스처를 갈아 끼운다
+			texture = current
+			_blend.texture = _frames[(index + 1) % _frames.size()]
+		_blend.modulate.a = smoothstep(0.0, 1.0, mix)
 
 
 ## 허브 중앙에 큼직하게 세우는 전신 아바타 (고해상도 정지 그림 한 장만 메모리에 올린다). 에셋이 없으면 둥근 사각형 아바타로 대신한다.
