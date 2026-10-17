@@ -21,6 +21,7 @@ const EVENTS: Dictionary = {
 	&"roll_other": ["그 밖의 판정 도구(슬롯·홀덤·룰렛·리볼버) 굴림", ["dice-shake", "shake"]],
 	&"card_pick": ["카드 집어 듦", ["card-fan", "card-slide", "card-shove"]],
 	&"card_throw": ["카드 던짐", ["card-shove", "card-slide", "whoosh"]],
+	&"card_get": ["카드 획득·드로우", ["card-place", "card-fan"]],
 	&"card_impact": ["카드 발동 임팩트", ["card-place", "impact", "thud"]],
 	&"augment_show": ["증강 카드 등장", ["card-fan", "card-shuffle", "shuffle"]],
 	&"augment_pick": ["증강 선택", ["card-place", "select", "click"]],

@@ -803,6 +803,9 @@ func _bind_state() -> void:
 				Sfx.play(&"law"))
 		_log_line("P%d가 %d번 타일에 [%s]을(를) 설치했습니다" % [owner_id, tile, "뒷면 카드" if id.begins_with("TRP") else _attachment_name(id)], Color("adb5bd"))
 		_refresh_tiles())
+	state.card_drawn.connect(func(_player_id: int, _card_id: StringName) -> void:
+		if _fx_on():
+			Sfx.play(&"card_get"))
 	state.card_drawn.connect(func(player_id: int, card_id: StringName) -> void: _log_line("[카드] P%d 생떼 카드 획득: %s" % [player_id, _card_name(card_id)], Color("ffa94d")))
 	state.card_stolen.connect(func(player_id: int, card_id: StringName) -> void: _log_line("P%d의 카드 [%s]를 도적이 빼앗았습니다" % [player_id, _card_name(card_id)], Color("ff6b6b")))
 	state.npc_spawned.connect(func(_npc_id: int, tile: int) -> void:

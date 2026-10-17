@@ -20,6 +20,7 @@
 | `thud` | 출발선에 쿵 떨어짐 | thud, chips-handle, place |
 | `dice_roll` | 주사위 계열(주사위·윷·친치로·마작·화투·타로) 굴림 | dice-throw, die-throw, dice |
 | `roll_other` | 그 밖의 판정 도구(슬롯·홀덤·룰렛·리볼버) 굴림 | dice-shake, shake |
+| `card_get` | 카드 획득·드로우 | card-place, card-fan |
 | `card_pick` | 카드 집어 듦 | card-fan, card-slide, card-shove |
 | `card_throw` | 카드 던짐 | card-shove, card-slide, whoosh |
 | `card_impact` | 카드 발동 임팩트 | card-place, impact, thud |
