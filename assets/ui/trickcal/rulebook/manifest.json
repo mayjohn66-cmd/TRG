@@ -356,6 +356,38 @@
         164.9505582137161,
         209.45454545454547
       ]
+    },
+    {
+      "id": "UI_RULE_LAUREL",
+      "role": "제목 양옆 잎사귀 장식",
+      "prompt": "Use case: stylized-concept. Create ONE standalone transparent PNG game UI ornament: a short, cute rounded laurel leaf sprig for the sides of a rulebook chapter heading in a Trickcal-inspired pastel board game. It will be displayed at only 44x34 logical pixels, so use a very simple bold pictogram. ONE gently rising branch from lower left to upper right, tilted about 25 degrees above horizontal, bearing exactly FIVE plump oval leaves with softly pointed round tips, alternating along a smooth thick connected stem; friendly chubby leaf silhouettes, clear negative gaps. Compact horizontal composition, roughly 1.4:1 silhouette width to height, centered with at least 12% clear transparent margins. Leaf fill light yellow-green #B5CF69, one darker olive-green #718743 outer outline and stem, a restrained cream highlight on each leaf, extremely simple two-tone cel shading. Thick clean smooth rounded outlines; organic illustrated leaf forms, not sharp triangular polygons or repeated geometric teeth. The attached medal is STYLE AND PALETTE reference only: match its clean chunky pastel game UI finish, do not draw the medal, book, ribbons or circular frame. No text, letters, numbers, title, badge, background, frame, particles, glow, floor shadow, grain, veins, tiny details, watermark, extra sprigs or mirrored pair. Exactly one isolated sprig, true alpha transparency.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-979dbb8a-e234-408e-b250-9a0f25d9e8cd.png",
+      "file": "UI_RULE_LAUREL.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "dimensions": [
+        1470,
+        1070
+      ],
+      "mode": "RGBA",
+      "sha256": "2e82c3cc4164f5fb9c1cd1abae71792643d4eadf55fa7c4a4e73ce5e469d70a4",
+      "visible_source_rect": [
+        182,
+        225,
+        1337,
+        892
+      ],
+      "imported_dimensions": [
+        256,
+        186
+      ],
+      "atlas_region": [
+        31.695238095238096,
+        39.11214953271028,
+        201.14285714285714,
+        115.94579439252337
+      ],
+      "qa": "Rounded single connected sprig, true alpha, no text or frame; six leaves accepted for readability, replacing procedural triangles. Original pixels preserved."
     }
   ]
 }
