@@ -1,6 +1,6 @@
 # File: res://scenes/rulebook.gd
 # Class: class_name Rulebook
-# Role: 규칙 도감. 인게임 도감 화면처럼 초록 뒤로가기 단추와 제목, 위쪽 두 탭, 왼쪽 세로 항목 줄, 갈색 가죽 테두리의 줄 노트 쪽(설명), 오른쪽 하늘색 카드 칸(보기 좋게 나눈 요약), 양옆 화살표와 아래 리본으로 8개 장(시작하기 / 한 턴 / 보드 / 잡기 / 도구 / 말 / 카드 / 법전)을 쉬운 말로 보여 준다. 모든 그림은 코드로 그리며 카드·교칙 문구는 실제 데이터에서 읽어 온다
+# Role: 규칙 도감. 배지와 역할별 아이콘은 개별 이미지로 표시하고, 본문·카드·탭은 기존 UI 노드로 구성한다. 카드·교칙 문구는 실제 데이터에서 읽어 온다.
 class_name Rulebook
 extends Control
 
@@ -20,6 +20,18 @@ const TEAL: Color = Color("7cc4b4")
 const TEAL_DARK: Color = Color("4a9a8a")
 const TAB_NAMES: Array[String] = ["시작하기", "한 턴", "보드", "잡기", "도구", "말", "카드", "법전"]
 const TAB_ICONS: Array[StringName] = [&"face", &"hourglass", &"grid", &"sword", &"dice", &"crown", &"book", &"gear"]
+const TAB_ART: Array[StringName] = [&"start", &"turn", &"board", &"capture"]
+const ART: Dictionary = {
+	&"start": preload("res://assets/ui/trickcal/rulebook/UI_RULE_START.tres"),
+	&"turn": preload("res://assets/ui/trickcal/rulebook/UI_RULE_TURN.tres"),
+	&"board": preload("res://assets/ui/trickcal/rulebook/UI_RULE_BOARD.tres"),
+	&"capture": preload("res://assets/ui/trickcal/rulebook/UI_RULE_CAPTURE.tres"),
+	&"pawn_ability": preload("res://assets/ui/trickcal/rulebook/UI_RULE_PAWN_ABILITY.tres"),
+	&"tool_swap": preload("res://assets/ui/trickcal/rulebook/UI_RULE_TOOL_SWAP.tres"),
+	&"card_law": preload("res://assets/ui/trickcal/rulebook/UI_RULE_CARD_LAW.tres"),
+	&"fair_roll": preload("res://assets/ui/trickcal/rulebook/UI_RULE_FAIR_ROLL.tres"),
+	&"badge": preload("res://assets/ui/trickcal/rulebook/UI_RULE_BADGE.tres"),
+}
 ## 위쪽 두 탭이 묶는 장: 규칙 기본(0~3), 도감(4~7).
 const GROUP_NAMES: Array[String] = ["기본 규칙", "도감"]
 const GROUP_SIZE: int = 4
@@ -122,6 +134,21 @@ func _place(node: Control, pos: Vector2, node_size: Vector2) -> void:
 	_stage.add_child(node)
 
 
+## 역할에 맞춘 개별 PNG. AtlasTexture는 투명 여백만 제외하며 원본 픽셀은 보존한다.
+static func _art(role: StringName, extent: Vector2) -> TextureRect:
+	var image := TextureRect.new()
+	image.name = "Art_" + String(role)
+	image.set_meta("art_role", role)
+	image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	image.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	image.texture = ART[role] as Texture2D
+	image.custom_minimum_size = extent
+	image.size = extent
+	image.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return image
+
+
 ## 연한 청록 테두리의 큰 책 틀 두 겹과 그 안의 크림색 바탕.
 func _build_book() -> void:
 	var outer := Panel.new()
@@ -195,9 +222,14 @@ func _build_list() -> void:
 		disc.position = Vector2(2, -4)
 		disc.size = Vector2(52, 52)
 		button.add_child(disc)
-		var icon := HubKit.Icon.new(TAB_ICONS[index], Color("2f6f66"), Color("ffe48a"))
-		icon.position = Vector2(8, 8)
-		icon.size = Vector2(36, 36)
+		var icon: Control
+		if index < TAB_ART.size():
+			icon = _art(TAB_ART[index], Vector2(40, 40))
+			icon.position = Vector2(6, 6)
+		else:
+			icon = HubKit.Icon.new(TAB_ICONS[index], Color("2f6f66"), Color("ffe48a"))
+			icon.position = Vector2(8, 8)
+			icon.size = Vector2(36, 36)
 		disc.add_child(icon)
 		var plate := Label.new()
 		plate.name = "Plate"
@@ -244,8 +276,9 @@ func _build_notebook() -> void:
 	_left_holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_left_holder.add_theme_constant_override("separation", 10)
 	scroll.add_child(_left_holder)
-	var medal := Medal.new()
-	_place(medal, Vector2(728, 118), Vector2(92, 110))
+	var medal := _art(&"badge", Vector2(80, 96))
+	medal.name = "RulebookBadge"
+	_place(medal, Vector2(740, 112), Vector2(80, 96))
 
 
 func _build_cards_area() -> void:
@@ -414,7 +447,7 @@ func _tip(text: String) -> Control:
 
 
 ## 오른쪽 하늘색 카드 한 장: 위 이름표(아이콘 + 제목), 아래 설명.
-func _card(title: String, body: String, icon: StringName = &"face", tone: Color = Color("5fc1e8"), number: int = 0) -> Control:
+func _card(title: String, body: String, icon: StringName = &"face", tone: Color = Color("5fc1e8"), number: int = 0, art_role: StringName = &"") -> Control:
 	var frame := PanelContainer.new()
 	frame.custom_minimum_size = Vector2(0, 0)
 	frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -438,6 +471,10 @@ func _card(title: String, body: String, icon: StringName = &"face", tone: Color 
 		digit.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		digit.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		disc.add_child(digit)
+	elif ART.has(art_role):
+		var image := _art(art_role, Vector2(36, 36))
+		image.position = Vector2(5, 5)
+		disc.add_child(image)
 	else:
 		var glyph := HubKit.Icon.new(icon, tone.darkened(0.35), Color("ffe48a"))
 		glyph.position = Vector2(7, 7)
@@ -503,10 +540,10 @@ func _ch_start() -> Dictionary:
 			_tip("처음이라면 [b]놀이터[/b]에서 컴퓨터와 먼저 한 판 해 보세요. 몇 판이면 금방 익숙해져요."),
 		],
 		"right": [
-			_card("말마다 능력이 달라요", "체스 폰은 퀸으로 승급하고, 장기 포는 말을 넘어 달려요. 말마다 한 판에 한 번 쓰는 필살기도 있어요.", &"crown", Color("f08aa8")),
-			_card("굴리는 도구가 바뀌어요", "증강으로 주사위를 윷, 룰렛, 홀덤, 슬롯… 으로 바꿔요. 도구마다 규칙이 달라요.", &"dice", Color("5fc1e8")),
-			_card("카드와 법전으로 판을 뒤집어요", "함정을 깔고, 말을 뒤로 밀고, 가운데 법전으로 모두의 규칙을 바꿔요.", &"book", Color("f0c14e")),
-			_card("눈금은 항상 공정해요", "파워 게이지는 연출일 뿐이에요. 세게 눌러도 큰 숫자가 더 잘 나오진 않아요.", &"gear", Color("86d94f")),
+			_card("말마다 능력이 달라요", "체스 폰은 퀸으로 승급하고, 장기 포는 말을 넘어 달려요. 말마다 한 판에 한 번 쓰는 필살기도 있어요.", &"crown", Color("f08aa8"), 0, &"pawn_ability"),
+			_card("굴리는 도구가 바뀌어요", "증강으로 주사위를 윷, 룰렛, 홀덤, 슬롯… 으로 바꿔요. 도구마다 규칙이 달라요.", &"dice", Color("5fc1e8"), 0, &"tool_swap"),
+			_card("카드와 법전으로 판을 뒤집어요", "함정을 깔고, 말을 뒤로 밀고, 가운데 법전으로 모두의 규칙을 바꿔요.", &"book", Color("f0c14e"), 0, &"card_law"),
+			_card("눈금은 항상 공정해요", "파워 게이지는 연출일 뿐이에요. 세게 눌러도 큰 숫자가 더 잘 나오진 않아요.", &"gear", Color("86d94f"), 0, &"fair_roll"),
 		],
 	}
 
@@ -698,21 +735,6 @@ class Laurel extends Control:
 			var leaf := PackedVector2Array([tip, tip + Vector2(flip * 8, -12), tip + Vector2(flip * 15, -4)])
 			draw_colored_polygon(leaf, Color("b5b56a"))
 		draw_line(origin + Vector2(flip * -16, 12), origin + Vector2(flip * 20, -12), Color("9a9a52"), 2.0, true)
-
-
-## 노트 오른쪽 위에 걸린 금색 메달과 주황 리본.
-class Medal extends Control:
-	func _draw() -> void:
-		var c := Vector2(size.x / 2.0, 40.0)
-		draw_colored_polygon(PackedVector2Array([c + Vector2(-26, 22), c + Vector2(-8, 22), c + Vector2(-14, 62), c + Vector2(-26, 54)]), Color("e0763a"))
-		draw_colored_polygon(PackedVector2Array([c + Vector2(26, 22), c + Vector2(8, 22), c + Vector2(14, 62), c + Vector2(26, 54)]), Color("c95e2a"))
-		draw_circle(c + Vector2(0, 2), 38.0, Color("b8860b"))
-		draw_circle(c + Vector2(0, 0), 36.0, Color("f2c14e"))
-		draw_circle(c + Vector2(0, 0), 29.0, Color("ffe08a"))
-		draw_arc(c, 29.0, 0.0, TAU, 36, Color("d9a82a"), 3.0, true)
-		# 날개 모양 무늬
-		draw_colored_polygon(PackedVector2Array([c + Vector2(-20, 6), c + Vector2(-8, -16), c + Vector2(4, -4), c + Vector2(16, -14), c + Vector2(20, 6), c + Vector2(0, 14)]), Color("fff6d6"))
-		draw_polyline(PackedVector2Array([c + Vector2(-20, 6), c + Vector2(-8, -16), c + Vector2(4, -4), c + Vector2(16, -14), c + Vector2(20, 6), c + Vector2(0, 14), c + Vector2(-20, 6)]), Color("d9a82a"), 2.5, true)
 
 
 ## 책 아래쪽에 걸친 주황 리본 (쪽 번호가 올라간다).

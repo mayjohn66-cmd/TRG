@@ -1,0 +1,361 @@
+{
+  "runtime_size_limit": 256,
+  "region_alpha_threshold": 20,
+  "source_padding_px": 4,
+  "pixels_modified": false,
+  "assets": [
+    {
+      "id": "UI_RULE_START",
+      "role": "시작하기 — 규칙 입문",
+      "brief": "Semantic role: START / getting started, the entry to basic rules. Draw one rounded ivory board-game meeple standing in front of one short green start-line flag on a small yellow pole. Two dominant shapes only; the flag is a plain solid green flag, NOT checkered, no writing. Compact friendly silhouette. No ground platform.",
+      "prompt": "Create ONE standalone simple game UI icon, 1:1 square transparent PNG. Cute rounded Trickcal-inspired pastel board-game UI pictogram, designed to remain immediately readable at 40x40 pixels. Flat illustration: thick continuous dark moss-green #36543C outer outline with rounded joins, uniform stroke about 4% of canvas width, just 2 or 3 solid fill colors per icon, no gradients or shading. Main symbol centered within a 72%-wide by72%-high safe box, at least12% clear transparent margin on every side. Fill palette leaf green #86D94F, warm ivory #FFF5D7, butter yellow #FFD66B; additional accent only if explicitly specified. Broad simple closed silhouettes, minimum interior gap4% of canvas width. No circular badge, surrounding frame, background square, shadow, gloss, texture, tiny marks, sparkles, facial features, decorative particles, letters, numbers, labels, watermark or border. This is an actual UI symbol, not a miniature detailed illustration or a 3D toy render. Semantic role: START / getting started, the entry to basic rules. Draw one rounded ivory board-game meeple standing in front of one short green start-line flag on a small yellow pole. Two dominant shapes only; the flag is a plain solid green flag, NOT checkered, no writing. Compact friendly silhouette. No ground platform.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-c7f1a312-5dbd-42d6-a8e1-598885089017.png",
+      "file": "UI_RULE_START.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "alpha_bbox": [
+        0,
+        3,
+        1236,
+        1254
+      ],
+      "sha256": "8f771eb41142245cd8007fdd6060737494e312b907420b39a473bd51d02c56c3",
+      "qa": "Role and silhouette visually checked; alpha present; original pixels preserved.",
+      "visible_bbox_alpha_ge_20": [
+        158,
+        174,
+        1162,
+        1067
+      ],
+      "visible_source_rect": [
+        154,
+        170,
+        1166,
+        1071
+      ],
+      "atlas_region_256": [
+        31.438596491228072,
+        34.70494417862839,
+        206.59649122807016,
+        183.93620414673046
+      ]
+    },
+    {
+      "id": "UI_RULE_TURN",
+      "role": "한 턴 — 굴리기와 행동 순환",
+      "brief": "Semantic role: ONE TURN / sequence of play. ONE ivory die with three large green pips, surrounded by ONE thick clockwise leaf-green circular arrow, butter-yellow arrowhead. Open gap in ring so clockwise movement reads instantly. No hourglass, flag, meeple, extra dice, numbers or decorative parts.",
+      "prompt": "Create ONE standalone simple game UI icon, 1:1 square transparent PNG. Cute rounded Trickcal-inspired pastel board-game UI pictogram, designed to remain immediately readable at 40x40 pixels. Flat illustration: thick continuous dark moss-green #36543C outer outline with rounded joins, uniform stroke about 4% of canvas width, just 2 or 3 solid fill colors per icon, no gradients or shading. Main symbol centered within a 72%-wide by72%-high safe box, at least12% clear transparent margin on every side. Fill palette leaf green #86D94F, warm ivory #FFF5D7, butter yellow #FFD66B; additional accent only if explicitly specified. Broad simple closed silhouettes, minimum interior gap4% of canvas width. No circular badge, surrounding frame, background square, shadow, gloss, texture, tiny marks, sparkles, facial features, decorative particles, letters, numbers, labels, watermark or border. This is an actual UI symbol, not a miniature detailed illustration or a 3D toy render. Semantic role: ONE TURN / sequence of play. ONE ivory die with three large green pips, surrounded by ONE thick clockwise leaf-green circular arrow, butter-yellow arrowhead. Open gap in ring so clockwise movement reads instantly. No hourglass, flag, meeple, extra dice, numbers or decorative parts. Use supplied reference only for the simple rounded icon language, consistent stroke and palette; do not copy its objects.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-c5b944c3-5981-4be8-8059-cf51ebc5d192.png",
+      "file": "UI_RULE_TURN.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "alpha_bbox": [
+        0,
+        21,
+        1182,
+        1254
+      ],
+      "sha256": "2b7a7f38003ae9aa655cf269e224cfc43fb5d6e763b5ab1826b8255b7845776e",
+      "qa": "Role and silhouette visually checked; alpha present; original pixels preserved.",
+      "visible_bbox_alpha_ge_20": [
+        178,
+        182,
+        1078,
+        1069
+      ],
+      "visible_source_rect": [
+        174,
+        178,
+        1082,
+        1073
+      ],
+      "atlas_region_256": [
+        35.52153110047847,
+        36.33811802232855,
+        185.3652312599681,
+        182.71132376395533
+      ]
+    },
+    {
+      "id": "UI_RULE_BOARD",
+      "role": "보드 — 사각 트랙과 발판",
+      "brief": "Semantic role: BOARD / read the board's loop of spaces. A simple square board-game track seen straight from above: four large rounded corner spaces and one chunky rectangular space between each pair of corners, warm ivory spaces with dark green outlines joined into a green square track, center empty transparent. Highlight only lower-right corner butter yellow. This is a tiny graphic loop emblem, not a literal detailed map: only eight spaces total, no paths in the center, no numbers, labels, pawns, arrows or flag.",
+      "prompt": "Create ONE standalone simple game UI icon, 1:1 square transparent PNG. Cute rounded Trickcal-inspired pastel board-game UI pictogram, designed to remain immediately readable at 40x40 pixels. Flat illustration: thick continuous dark moss-green #36543C outer outline with rounded joins, uniform stroke about 4% of canvas width, just 2 or 3 solid fill colors per icon, no gradients or shading. Main symbol centered within a 72%-wide by72%-high safe box, at least12% clear transparent margin on every side. Fill palette leaf green #86D94F, warm ivory #FFF5D7, butter yellow #FFD66B; additional accent only if explicitly specified. Broad simple closed silhouettes, minimum interior gap4% of canvas width. No circular badge, surrounding frame, background square, shadow, gloss, texture, tiny marks, sparkles, facial features, decorative particles, letters, numbers, labels, watermark or border. This is an actual UI symbol, not a miniature detailed illustration or a 3D toy render. Semantic role: BOARD / read the board's loop of spaces. A simple square board-game track seen straight from above: four large rounded corner spaces and one chunky rectangular space between each pair of corners, warm ivory spaces with dark green outlines joined into a green square track, center empty transparent. Highlight only lower-right corner butter yellow. This is a tiny graphic loop emblem, not a literal detailed map: only eight spaces total, no paths in the center, no numbers, labels, pawns, arrows or flag. Use supplied reference only for the simple rounded icon language, consistent stroke and palette; do not copy its objects.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-0a3a742b-9819-4ac3-bd76-964739e84926.png",
+      "file": "UI_RULE_BOARD.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "alpha_bbox": [
+        0,
+        55,
+        1254,
+        1198
+      ],
+      "sha256": "58d546bdab86c67cbffde3006750744be132d816de5baec7155228688a807a38",
+      "qa": "Role and silhouette visually checked; alpha present; original pixels preserved.",
+      "visible_bbox_alpha_ge_20": [
+        194,
+        233,
+        1059,
+        1019
+      ],
+      "visible_source_rect": [
+        190,
+        229,
+        1063,
+        1023
+      ],
+      "atlas_region_256": [
+        38.78787878787879,
+        46.749601275917065,
+        178.2200956937799,
+        162.09250398724083
+      ]
+    },
+    {
+      "id": "UI_RULE_CAPTURE",
+      "role": "잡기 — 상대 말을 출발점으로 되돌림",
+      "brief": "Semantic role: CAPTURE AN OPPONENT PAWN / send the opponent back, not combat weapons. Two simple flat rounded board-game meeples: a larger upright leaf-green meeple at lower-left and a smaller coral-pink #F17D80 meeple tipped backward at upper-right. A single short chunky butter-yellow hooked arrow curves from the pink meeple back toward the left, conveying the captured piece returning. Keep both silhouettes separate and clearly readable. No flag, weapon, impact star, particles, facial features or ground.",
+      "prompt": "Create ONE standalone simple game UI icon, 1:1 square transparent PNG. Cute rounded Trickcal-inspired pastel board-game UI pictogram, designed to remain immediately readable at 40x40 pixels. Flat illustration: thick continuous dark moss-green #36543C outer outline with rounded joins, uniform stroke about 4% of canvas width, just 2 or 3 solid fill colors per icon, no gradients or shading. Main symbol centered within a 72%-wide by72%-high safe box, at least12% clear transparent margin on every side. Fill palette leaf green #86D94F, warm ivory #FFF5D7, butter yellow #FFD66B; additional accent only if explicitly specified. Broad simple closed silhouettes, minimum interior gap4% of canvas width. No circular badge, surrounding frame, background square, shadow, gloss, texture, tiny marks, sparkles, facial features, decorative particles, letters, numbers, labels, watermark or border. This is an actual UI symbol, not a miniature detailed illustration or a 3D toy render. Semantic role: CAPTURE AN OPPONENT PAWN / send the opponent back, not combat weapons. Two simple flat rounded board-game meeples: a larger upright leaf-green meeple at lower-left and a smaller coral-pink #F17D80 meeple tipped backward at upper-right. A single short chunky butter-yellow hooked arrow curves from the pink meeple back toward the left, conveying the captured piece returning. Keep both silhouettes separate and clearly readable. No flag, weapon, impact star, particles, facial features or ground. The supplied reference sets the simple line weight and color language only; do not reuse its flag.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-ffd20526-32d9-4aa9-8fcf-ca0a8936dc64.png",
+      "file": "UI_RULE_CAPTURE.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "alpha_bbox": [
+        0,
+        45,
+        1240,
+        1254
+      ],
+      "sha256": "d5ca9f6f324d9afb7654aa1b6e0499775e2a7b3c74323f3889dce9abe106c7fc",
+      "qa": "Role and silhouette visually checked; alpha present; original pixels preserved.",
+      "visible_bbox_alpha_ge_20": [
+        163,
+        236,
+        1140,
+        1077
+      ],
+      "visible_source_rect": [
+        159,
+        232,
+        1144,
+        1081
+      ],
+      "atlas_region_256": [
+        32.45933014354067,
+        47.36204146730463,
+        201.08452950558214,
+        173.32057416267943
+      ]
+    },
+    {
+      "id": "UI_RULE_PAWN_ABILITY",
+      "role": "말마다 능력이 달라요 — 기물별 고유 능력",
+      "brief": "Semantic role: DIFFERENT PAWNS HAVE SPECIAL ABILITIES. A single bold ivory chess KNIGHT horse-head silhouette on one very simple wide base, with ONE large butter-yellow lightning bolt at its upper-right. The horse is recognizable from its outline alone: two blunt ears, one stepped muzzle, smoothly curved neck. No eye, mane strands, bridle or sculpture detail, no other chess pieces. The bolt is the sole ability cue. Use only ivory and yellow fills with the common dark green outline.",
+      "prompt": "Create ONE standalone simple game UI icon, 1:1 square transparent PNG. Cute rounded Trickcal-inspired pastel board-game UI pictogram, designed to remain immediately readable at 40x40 pixels. Flat illustration: thick continuous dark moss-green #36543C outer outline with rounded joins, uniform stroke about 4% of canvas width, just 2 or 3 solid fill colors per icon, no gradients or shading. Main symbol centered within a 72%-wide by72%-high safe box, at least12% clear transparent margin on every side. Fill palette leaf green #86D94F, warm ivory #FFF5D7, butter yellow #FFD66B; additional accent only if explicitly specified. Broad simple closed silhouettes, minimum interior gap4% of canvas width. No circular badge, surrounding frame, background square, shadow, gloss, texture, tiny marks, sparkles, facial features, decorative particles, letters, numbers, labels, watermark or border. This is an actual UI symbol, not a miniature detailed illustration or a 3D toy render. Semantic role: DIFFERENT PAWNS HAVE SPECIAL ABILITIES. A single bold ivory chess KNIGHT horse-head silhouette on one very simple wide base, with ONE large butter-yellow lightning bolt at its upper-right. The horse is recognizable from its outline alone: two blunt ears, one stepped muzzle, smoothly curved neck. No eye, mane strands, bridle or sculpture detail, no other chess pieces. The bolt is the sole ability cue. Use only ivory and yellow fills with the common dark green outline. The supplied reference sets line weight and rounded style only; no flag or meeple.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-46caa676-364e-4f21-aa84-f1527a02b3a4.png",
+      "file": "UI_RULE_PAWN_ABILITY.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "alpha_bbox": [
+        0,
+        28,
+        1216,
+        1254
+      ],
+      "sha256": "1c92b832f5da407148194cd48e2fa31d129218ef7d299f8fe92e5dfa24c54b18",
+      "qa": "Role and silhouette visually checked; alpha present; original pixels preserved.",
+      "visible_bbox_alpha_ge_20": [
+        244,
+        219,
+        1054,
+        1073
+      ],
+      "visible_source_rect": [
+        240,
+        215,
+        1058,
+        1077
+      ],
+      "atlas_region_256": [
+        48.995215311004785,
+        43.89154704944178,
+        166.9920255183413,
+        175.97448165869218
+      ]
+    },
+    {
+      "id": "UI_RULE_TOOL_SWAP",
+      "role": "굴리는 도구가 바뀌어요 — 판정 도구 교체",
+      "brief": "Semantic role: CHANGE THE ROLLING TOOL, different board-game randomizers. Draw one small ivory cube die with THREE large dark green pips at lower-left, and TWO broad short butter-yellow wooden Yut sticks together at upper-right, one with a plain green flat face and one with one broad curved back. A single simple leaf-green curved two-headed swap arrow connects the two objects. Keep this extremely minimal, broad readable silhouettes, no wood grain, no carvings, no tiny stick markings, no flag, no meeple. Use ivory, yellow, green only.",
+      "prompt": "Create ONE standalone simple game UI icon, 1:1 square transparent PNG. Cute rounded Trickcal-inspired pastel board-game UI pictogram, designed to remain immediately readable at 40x40 pixels. Flat illustration: thick continuous dark moss-green #36543C outer outline with rounded joins, uniform stroke about 4% of canvas width, just 2 or 3 solid fill colors per icon, no gradients or shading. Main symbol centered within a 72%-wide by72%-high safe box, at least12% clear transparent margin on every side. Fill palette leaf green #86D94F, warm ivory #FFF5D7, butter yellow #FFD66B; additional accent only if explicitly specified. Broad simple closed silhouettes, minimum interior gap4% of canvas width. No circular badge, surrounding frame, background square, shadow, gloss, texture, tiny marks, sparkles, facial features, decorative particles, letters, numbers, labels, watermark or border. This is an actual UI symbol, not a miniature detailed illustration or a 3D toy render. Semantic role: CHANGE THE ROLLING TOOL, different board-game randomizers. Draw one small ivory cube die with THREE large dark green pips at lower-left, and TWO broad short butter-yellow wooden Yut sticks together at upper-right, one with a plain green flat face and one with one broad curved back. A single simple leaf-green curved two-headed swap arrow connects the two objects. Keep this extremely minimal, broad readable silhouettes, no wood grain, no carvings, no tiny stick markings, no flag, no meeple. Use ivory, yellow, green only. Use supplied reference only for thick rounded outline language and palette; omit its objects.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-f26b3d7b-aa96-48e8-8637-d4d9d9d31ae5.png",
+      "file": "UI_RULE_TOOL_SWAP.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "alpha_bbox": [
+        0,
+        25,
+        1242,
+        1254
+      ],
+      "sha256": "58324158b8f7bdb536b32775ce45eae2da3b4a09437c31f9bb0272b0329e7071",
+      "qa": "Role and silhouette visually checked; alpha present; original pixels preserved.",
+      "visible_bbox_alpha_ge_20": [
+        141,
+        199,
+        1158,
+        1079
+      ],
+      "visible_source_rect": [
+        137,
+        195,
+        1162,
+        1083
+      ],
+      "atlas_region_256": [
+        27.96810207336523,
+        39.80861244019139,
+        209.25039872408294,
+        181.2822966507177
+      ]
+    },
+    {
+      "id": "UI_RULE_CARD_LAW",
+      "role": "카드와 법전으로 판을 뒤집어요 — 카드 효과와 공통 규칙",
+      "brief": "Semantic role: ACTION CARDS AND THE COMMON RULEBOOK CHANGE THE GAME RULES. One simple OPEN ivory book with a leaf-green cover and just one thick center fold, with ONE purple #B58CDD playing card overlapping its upper-right corner. On the card face put one large butter-yellow five-point star symbol (a pictogram, not text). Book pages are completely blank; no line marks, no bookmark, no flourishes. Two main objects only, clear compact silhouette, very flat graphic icon, all outlines the same dark green. No other objects.",
+      "prompt": "Create ONE standalone simple game UI icon, 1:1 square transparent PNG. Cute rounded Trickcal-inspired pastel board-game UI pictogram, designed to remain immediately readable at 40x40 pixels. Flat illustration: thick continuous dark moss-green #36543C outer outline with rounded joins, uniform stroke about 4% of canvas width, just 2 or 3 solid fill colors per icon, no gradients or shading. Main symbol centered within a 72%-wide by72%-high safe box, at least12% clear transparent margin on every side. Fill palette leaf green #86D94F, warm ivory #FFF5D7, butter yellow #FFD66B; additional accent only if explicitly specified. Broad simple closed silhouettes, minimum interior gap4% of canvas width. No circular badge, surrounding frame, background square, shadow, gloss, texture, tiny marks, sparkles, facial features, decorative particles, letters, numbers, labels, watermark or border. This is an actual UI symbol, not a miniature detailed illustration or a 3D toy render. Semantic role: ACTION CARDS AND THE COMMON RULEBOOK CHANGE THE GAME RULES. One simple OPEN ivory book with a leaf-green cover and just one thick center fold, with ONE purple #B58CDD playing card overlapping its upper-right corner. On the card face put one large butter-yellow five-point star symbol (a pictogram, not text). Book pages are completely blank; no line marks, no bookmark, no flourishes. Two main objects only, clear compact silhouette, very flat graphic icon, all outlines the same dark green. No other objects. Reference sets rounded silhouette and stroke style only; do not copy its subject.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-7adc517b-40f5-4ab2-bd25-5a1710aecd42.png",
+      "file": "UI_RULE_CARD_LAW.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "alpha_bbox": [
+        0,
+        87,
+        1240,
+        1172
+      ],
+      "sha256": "f60b6ad6bd53c3ac653e0b4bf788bdbaa5efd09d4c0a6d780719fc72db900655",
+      "qa": "Role and silhouette visually checked; alpha present; original pixels preserved.",
+      "visible_bbox_alpha_ge_20": [
+        181,
+        221,
+        1142,
+        1041
+      ],
+      "visible_source_rect": [
+        177,
+        217,
+        1146,
+        1045
+      ],
+      "atlas_region_256": [
+        36.133971291866025,
+        44.29984051036683,
+        197.8181818181818,
+        169.0334928229665
+      ]
+    },
+    {
+      "id": "UI_RULE_FAIR_ROLL",
+      "role": "눈금은 항상 공정해요 — 힘 조절과 무관한 공정한 확률",
+      "brief": "Semantic role: FAIR RANDOM OUTCOMES / button pressure does not bias dice. A simple perfectly LEVEL balance scale: one broad leaf-green horizontal beam on a short central stem and wide foot, with two chunky butter-yellow shallow pans at exactly equal heights. ONE small ivory die with a single large green pip rests in EACH pan, both dice exactly the same size. Strong bilateral symmetry makes fairness immediately readable. Minimal thick iconic silhouette: no chains, ornamental finials, calibration marks, tiny screws, numbers, flag or meeple. Keep beam level, not tilted. Three fill colors: green, yellow, ivory.",
+      "prompt": "Create ONE standalone simple game UI icon, 1:1 square transparent PNG. Cute rounded Trickcal-inspired pastel board-game UI pictogram, designed to remain immediately readable at 40x40 pixels. Flat illustration: thick continuous dark moss-green #36543C outer outline with rounded joins, uniform stroke about 4% of canvas width, just 2 or 3 solid fill colors per icon, no gradients or shading. Main symbol centered within a 72%-wide by72%-high safe box, at least12% clear transparent margin on every side. Fill palette leaf green #86D94F, warm ivory #FFF5D7, butter yellow #FFD66B; additional accent only if explicitly specified. Broad simple closed silhouettes, minimum interior gap4% of canvas width. No circular badge, surrounding frame, background square, shadow, gloss, texture, tiny marks, sparkles, facial features, decorative particles, letters, numbers, labels, watermark or border. This is an actual UI symbol, not a miniature detailed illustration or a 3D toy render. Semantic role: FAIR RANDOM OUTCOMES / button pressure does not bias dice. A simple perfectly LEVEL balance scale: one broad leaf-green horizontal beam on a short central stem and wide foot, with two chunky butter-yellow shallow pans at exactly equal heights. ONE small ivory die with a single large green pip rests in EACH pan, both dice exactly the same size. Strong bilateral symmetry makes fairness immediately readable. Minimal thick iconic silhouette: no chains, ornamental finials, calibration marks, tiny screws, numbers, flag or meeple. Keep beam level, not tilted. Three fill colors: green, yellow, ivory. Reference sets rounded line weight and palette only, not its subject.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-af82f497-eea0-4a10-b302-7387b5555291.png",
+      "file": "UI_RULE_FAIR_ROLL.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "alpha_bbox": [
+        0,
+        130,
+        1232,
+        1182
+      ],
+      "sha256": "20eb5ce4fff99bad36aebbe7f11740bac791860365e7c559d3250654777c3bd1",
+      "qa": "Role and silhouette visually checked; alpha present; original pixels preserved.",
+      "visible_bbox_alpha_ge_20": [
+        138,
+        294,
+        1116,
+        995
+      ],
+      "visible_source_rect": [
+        134,
+        290,
+        1120,
+        999
+      ],
+      "atlas_region_256": [
+        27.35566188197767,
+        59.20255183413078,
+        201.28867623604467,
+        144.74003189792663
+      ]
+    },
+    {
+      "id": "UI_RULE_BADGE",
+      "role": "Rule guide decoration: open book and leaf medal",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-1255d30c-c815-4208-a12c-41191e596e06.png",
+      "file": "UI_RULE_BADGE.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "sha256": "0bb4fe9523788a5c329646465eff765a778088daffe5e67fffe9fceb8a200240",
+      "visible_source_rect": [
+        222,
+        102,
+        1030,
+        1128
+      ],
+      "atlas_region_256": [
+        45.32057416267943,
+        20.822966507177032,
+        164.9505582137161,
+        209.45454545454547
+      ]
+    }
+  ]
+}
