@@ -1,0 +1,28 @@
+{
+  "version": "0.1",
+  "date": "2026-10-17",
+  "generator": "native image_gen.imagegen (model identifier not exposed)",
+  "transparent_background": false,
+  "assets": [
+    {
+      "id": "AUG_LAW",
+      "path": "augments/AUG_LAW.png",
+      "source": "C:/Users/john9/.codex/generated_images/01a142bd-ab11-7f42-8e21-7a03de077bd3/exec-7caba370-fa88-4124-8ed8-c3d87f98b74d.png",
+      "prompt": "Create one production game augment EMBLEM icon, 1:1 square. Cute fantasy Trickcal Revive vibe, chunky squishy toy proportions, thick clean glossy outlines, restrained 3D-like cel shading, polished pastel gold and cream, readable at 110 pixels. A single chunky golden judge gavel tilted diagonally above a thick CLOSED ancient fantasy spellbook, its cover bearing a tiny simple fairy crown pictogram. Strong unified central silhouette, gavel and book clearly separated. Golden impact spark shapes, very few large sparkles. Dark solid chocolate brown background with a subtle warm golden radial glow behind the object. All important objects fit entirely within the CENTERED CIRCLE of diameter 78% of the image; generous empty dark corners and margin. Art should occupy about 70% of the canvas. No outer border, no circular frame, no medal rim, no banner, no characters, no writing, no letters, no numbers, no text, no runes. Square composition. This is AUG_LAW.",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "2ac38e10caaa1cd91492344b5754d99c951b363feda54fdd28528ccb5c2a5cb6"
+    },
+    {
+      "id": "AUG_CARD_PACK",
+      "path": "augments/AUG_CARD_PACK.png",
+      "source": "C:/Users/john9/.codex/generated_images/01a142bd-ab11-7f42-8e21-7a03de077bd3/exec-bba0e1f1-1b1a-4938-874a-7f09b43eea52.png",
+      "prompt": "Create ONE production game augment EMBLEM icon, 1:1 square. Cute fantasy Trickcal Revive vibe, chunky squishy toy proportions, thick clean glossy outlines, 3D-like cel shading, pastel pink cream and crimson colors, readable at 110 pixels. A cute ribboned pink gift box open at the top, exactly three magical playing cards fanning out of it. Central card has one simple round chubby-cheek JESTER FACE pictogram with a tiny two-point jester hat, playful smile. Other cards have simple diamond and heart shapes. Unified symmetrical central silhouette, very few large sparkles. Dark solid burgundy background, subtle crimson and pink radial glow. IMPORTANT: Entire gift and cards grouped COMPACTLY inside a central CIRCLE DIAMETER 68% of image, all four corners and broad surrounding margins completely empty dark background. Keep object bounds between 20%-80% of width and 14%-83% of height. No circular rim, no frame, no border, no banner, no characters outside the jester pictogram, no text, no letters, no numbers. This is AUG_CARD_PACK.",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "8dedd7d5c08bc6fdc418ea109e1f00fe3ffd3e29993f570a9b4a4f547f7e640e"
+    }
+  ]
+}
