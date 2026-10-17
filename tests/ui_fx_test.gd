@@ -70,6 +70,7 @@ func _run() -> void:
 	await _test_action_beats()
 	await _test_tool_cards_fit()
 	await _test_duel_flow()
+	await _test_stage_warp()
 	if _failures.is_empty():
 		print("UI_FX_OK")
 		quit(0)
@@ -1038,3 +1039,42 @@ func _test_duel_flow() -> void:
 		waited += 0.1
 	_expect(_board._duel_arena == null or not is_instance_valid(_board._duel_arena), "결투가 끝나면 결투장이 닫힌다 (%.1f초)" % waited)
 	_expect(not manager.duel_pending(), "결투 종료")
+
+
+## 점프 코너·포탈: 말이 먼저 발판에 멈춰 발동 연출을 보여 준 뒤 목적지로 날아간다 (한 번에 최종 칸으로 가지 않는다).
+func _test_stage_warp() -> void:
+	var manager: TurnManager = _board.manager
+	var state: GameState = manager.state
+	_board.instant_roll_for_test = false
+	_board._announcer.cancel()
+	_board._beat_until_msec = 0
+	_board._fx_until_msec = 0
+	for case_data: Array in [[5, 6, 10, "코너"], [8, 9, 16, "포탈"]]:
+		var pawn: PlayerPawn = state.get_pawn(11)
+		pawn.has_left_start = true
+		pawn.current_tile_idx = case_data[0]
+		_board._refresh_all()
+		await process_frame
+		_board._kill_fx(_board._pawn_views[11])
+		(_board._pawn_views[11] as Node2D).position = _board._pawn_position(pawn)
+		pawn.current_tile_idx = case_data[1]
+		state.pawn_stepped.emit(11, case_data[0], case_data[1])
+		pawn.current_tile_idx = case_data[2]
+		state.pawn_warped.emit(11, case_data[1], case_data[2])
+		_expect(_board._stage_warps == 1, "%s: 2단계 이동이 시작된다" % case_data[3])
+		var corner_pos: Vector2 = _board._pawn_position_at(pawn, case_data[1])
+		var final_pos: Vector2 = _board._pawn_position_at(pawn, case_data[2])
+		var view: Node2D = _board._pawn_views[11]
+		var stopped_at_pad: bool = false
+		var start: float = _now()
+		while _board._stage_warps > 0 and _now() - start < 6.0:
+			if view.position.distance_to(corner_pos) < 14.0 and view.position.distance_to(final_pos) > 40.0 and _now() - start > 0.3:
+				stopped_at_pad = true
+			await process_frame
+		_expect(stopped_at_pad, "%s: 말이 발판에 먼저 도착해 멈춘다" % case_data[3])
+		_expect(_board._stage_warps == 0, "%s: 2단계 이동이 끝난다" % case_data[3])
+		await create_timer(0.3).timeout
+		_expect(view.position.distance_to(final_pos) < 6.0, "%s: 목적지에 착지한다" % case_data[3])
+		_board._fx_until_msec = 0
+		_board._beat_until_msec = 0
+	_board.instant_roll_for_test = true

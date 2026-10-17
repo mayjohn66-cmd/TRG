@@ -22,7 +22,7 @@ const ACTION_AUTO_DRAFT: StringName = &"__auto_draft"
 signal phase_changed(new_state: State, player_id: int, time_limit: float)
 ## 우노 리버스(ACT_01) 등으로 턴 진행 방향이 뒤집혔다. new_direction: 1 정방향 / -1 역방향.
 signal turn_order_reversed(new_direction: int)
-## 연출·UI용 일반 이벤트. kind: roll_resolved, move_resolved, card_played, npc_phase_resolved, augment_offers, augment_picked, game_over
+## 연출·UI용 일반 이벤트. kind: roll_resolved, move_resolved, turn_skipped, card_played, npc_phase_resolved, augment_offers, augment_picked, game_over
 signal event_received(kind: StringName, data: Dictionary)
 signal action_rejected(player_id: int, action: StringName, reason: StringName)
 signal state_synced()
@@ -988,6 +988,8 @@ func _queued_dice() -> int:
 
 func _enter_select_pawn() -> void:
 	if move_queue.is_empty() or state.selectable_pawns(current_player_id(), _queued_dice()).is_empty():
+		if not move_queue.is_empty():
+			_emit_event(&"turn_skipped", {"player_id": current_player_id(), "reason": &"no_movable_pawn"})
 		move_queue.clear()
 		_enter_resolution()
 		return

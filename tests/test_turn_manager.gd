@@ -650,3 +650,16 @@ func test_unstarted_pawns_cannot_be_chosen_for_a_backward_roll() -> void:
 	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
 	check_eq(manager.state.get_pawn(11).current_tile_idx, 4, "출발한 말만 후퇴")
 	_dispose(manager)
+
+
+func test_turn_skipped_event_when_no_pawn_can_move() -> void:
+	var manager: TurnManager = _new_manager()
+	var kinds: Array = []
+	manager.event_received.connect(func(kind: StringName, data: Dictionary) -> void: kinds.append([kind, data.get("player_id", -1)]))
+	for pawn: PlayerPawn in manager.state.pawns_of(1):
+		pawn.blocked_this_turn = true
+	_set_tool(manager, 1, ScriptedTool.new([3]))
+	_do(manager, 1, &"proceed")
+	_do(manager, 1, &"roll")
+	check(kinds.has([&"turn_skipped", 1]), "움직일 수 있는 말이 없으면 turn_skipped 이벤트가 나간다")
+	_dispose(manager)
