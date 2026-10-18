@@ -10,6 +10,8 @@ const STEP_VS: float = 1.7
 const STEP_FLY: float = 0.7
 const STEP_TITLE: float = 1.05
 const CARD_SIZE: Vector2 = Vector2(190, 250)
+const START_RIBBON: Texture2D = preload("res://assets/ui/trickcal/opening/UI_RACE_START_RIBBON.png")
+const START_RIBBON_WIDTH: float = 960.0
 
 var _board: MainBoard = null
 var _tween: Tween = null
@@ -162,29 +164,40 @@ func _step_title() -> void:
 	if _done:
 		return
 	Sfx.play(&"game_start")
-	# 창이 디자인 크기(1366x768)보다 넓어도 띠가 끊기지 않게 실제 화면 폭 전체를 덮는다.
+	# 투명 리본의 원본 3:1 비율을 유지한다. 글자는 중앙의 빈 크림색 영역에 별도 출력한다.
 	var screen: Vector2 = get_viewport_rect().size
-	var ribbon := Panel.new()
-	ribbon.position = Vector2(0, screen.y / 2.0 - 84.0)
-	ribbon.size = Vector2(screen.x, 120)
+	var width: float = minf(START_RIBBON_WIDTH, screen.x * 0.86)
+	var art_scale: float = width / START_RIBBON_WIDTH
+	var ribbon := Control.new()
+	ribbon.name = "RaceStartRibbon"
+	ribbon.size = Vector2(width, width * START_RIBBON.get_height() / START_RIBBON.get_width())
+	ribbon.position = (screen - ribbon.size) / 2.0
 	ribbon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	ribbon.add_theme_stylebox_override("panel", _board._style(Color(0.1, 0.07, 0.02, 0.94), Color("ffd43b"), 5, 0, 30, 0))
-	var title: Label = _board._make_label("레이스 시작!", 60, Color("ffe066"))
+	var artwork := TextureRect.new()
+	artwork.texture = START_RIBBON
+	artwork.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	artwork.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	artwork.size = ribbon.size
+	artwork.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	artwork.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	ribbon.add_child(artwork)
+	var title: Label = _board._make_label("레이스 시작!", roundi(54.0 * art_scale), Color("36543c"))
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	title.add_theme_constant_override("outline_size", 12)
-	title.add_theme_color_override("font_outline_color", Color("5c4300"))
-	title.position = Vector2(0, 4)
-	title.size = Vector2(screen.x, 80)
+	title.add_theme_constant_override("outline_size", 2)
+	title.add_theme_color_override("font_outline_color", Color("fff5d7"))
+	title.position = ribbon.size * Vector2(0.28, 0.29)
+	title.size = ribbon.size * Vector2(0.49, 0.25)
 	ribbon.add_child(title)
 	# 이모지는 글꼴에 없어 깃발 글자는 뺀다.
-	var subtitle: Label = _board._make_label("GAME START! - 초증강 엘리아스 마블 개막!", 22, Color("fff3bf"))
+	var subtitle: Label = _board._make_label("GAME START! - 초증강 엘리아스 마블 개막!", roundi(18.0 * art_scale), Color("54743c"))
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	subtitle.position = Vector2(0, 84)
-	subtitle.size = Vector2(screen.x, 30)
+	subtitle.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	subtitle.position = ribbon.size * Vector2(0.28, 0.54)
+	subtitle.size = ribbon.size * Vector2(0.49, 0.11)
 	ribbon.add_child(subtitle)
 	ribbon.pivot_offset = ribbon.size / 2.0
-	ribbon.scale = Vector2(1.0, 2.6)
+	ribbon.scale = Vector2.ONE * 0.88
 	ribbon.modulate.a = 0.0
 	add_child(ribbon)
 	var slam: Tween = ribbon.create_tween().set_parallel(true)
