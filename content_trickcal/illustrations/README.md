@@ -1,72 +1,29 @@
-# 증강 원형 메달 — v0.2
+# 증강 원형 메달 v0.3
 
-제작·적용 완료: 교칙·카드 패키지 2종, 기물 계열 6종, 판정 도구 9종, 총 17종.
-아래 대표 경로에 PNG가 들어 있다. 개별 ID 이미지를 추가하면 대표 이미지보다 먼저 표시된다.
-웹에서는 파일 추가 후 새 빌드·배포가 필요하다. 기본 D6 이미지는 별도 제작하지 않아 기존 `6`을 유지한다.
+현재 37개 증강은 세부 기물 19종·판정 도구 9종·교칙 8종·카드 패키지 1종의 고유 이미지에 연결된다. 전체 점검과 연결표는 docs/ui-trial/augment-icon-audit-v03.md에 기록했다.
 
 ## 표시 규격
 
-- 입력: 1:1 정사각형 PNG, 불투명한 어두운 배경, 중앙 집중형 오브젝트. 설명 문구 없음. 룰렛 `7`·슬롯 `777`은 요청한 식별 숫자로 예외 허용.
-- 현재 생성 원본의 실제 크기와 SHA-256: `manifest.json` 참조.
-- 원본 PNG는 1254×1254로 보존. Godot 런타임 텍스처는 크기 제한 512px·무손실 압축·밉맵 사용으로 통일해 110px 메달과 48px HUD 표시 비용을 줄인다.
-- 증강 카드: 260×390px. 메달 전체 150×150px, 디스크 외경 120px.
-- 네온 링 두께 5px, 안쪽 이미지 110×110px, 디스크 기준 좌표 (5, 5).
-- 원형 셰이더: UV 중심 (0.5, 0.5), 반지름 0.5. 화면 미분으로 약 1px 경계 안티앨리어싱.
-- 이미지 비율 유지. 외곽 사각 모서리는 알파 마스킹하고, 링은 이미지 위에 별도 렌더링.
-- 원본 속 중요 오브젝트는 중심에서 반지름 40% 안에 배치하는 것을 권장. UI 자체 링은 원본에 그리지 않는다.
-- 카테고리 링: 기물 `#20C997`, 판정 도구 `#9775FA`, 교칙 `#FFD43B`, 카드 패키지 `#FF6B6B`.
-- 기물 대표 6종: 어두운 청록 배경·청록 후광. 판정 도구 9종: 어두운 남보라 배경·보라 후광.
-- 장기·쇼기·마작의 글자 문양은 큰 도형 문양으로 단순화했다. 홀덤은 같은 무늬 카드 5장과 칩으로 표시한다.
-- 우측 판정 도구 HUD: 기존 48×48px 슬롯 안에 동일한 원형 이미지 사용.
-- 이미지와 글자는 동시에 표시하지 않는다. 이미지가 전혀 없을 때 기존 약어 유지.
+- 증강 카드 260 × 390px, 메달 전체 150 × 150px, 디스크 외경 120px, 링 두께 5px, 안쪽 그림 110 × 110px, 디스크 기준 (5,5).
+- 원형 셰이더 UV 중심 (0.5,0.5), 반지름 0.5, 경계 약 1px 안티앨리어싱. 그림 비율 유지, 링 별도 표시. 판정 도구 HUD 48 × 48px에 같은 그림을 공유한다.
+- 카테고리 링: 기물 #20C997 / 도구 #9775FA / 교칙 #FFD43B / 카드 패키지 #FF6B6B.
+- 전용 배경 엠블럼은 기존 17 + 새 10 = 27 PNG. 1:1 원본 1254 × 1254, 런타임 최대 512px·무손실·밉맵. 어두운 배경과 중앙 오브젝트, 설명 글씨 없음. 룰렛 7·슬롯 777 식별 숫자만 예외.
+- 기물 진화는 pawns/의 세부 기물 PNG 19개를 우선 공유한다. 그 폴더는 256px 임포트와 별도 규격을 사용한다. 기본 말·승급 전용·NPC는 증강 선택지에 직접 나오지 않는다.
+- 모델의 카메라·팔레트·안전 여백은 생성 목표이며 엄격히 강제된 수치가 아니다. 실제 원형 메달에서 구도·잘림·구분을 검토한다.
 
-## 우선순위
+## 선택 우선순위
 
-1. 개별 대상 이미지 (기물 세부 타입 / 교칙 ID / 도구 런타임 ID).
-2. 개별 증강 ID 이미지 `augments/<증강 ID>.png` (기물·교칙·카드 패키지).
-3. 아래 계열·카테고리 대표 이미지.
-4. 기존 글자 약어.
+1. 기물: pawns/<세부 타입>.png → 윷이면 pawns/YUT.png → augments/<증강 ID>.png → augments/pawns/<계열 대표>.png → pawns/<계열 대표>.png → 글자.
+2. 교칙: laws/<LAW_ID>.png → augments/<증강 ID>.png → augments/AUG_LAW.png → 글자. 현재 LAW_01~08은 모두 효과별 전용 그림이다.
+3. 도구: dice/<런타임 ID>.png → TOOL_FILES의 대표 PNG → 글자. 기본 D6는 선택지에서 제외되며 HUD에서 기존 6 표시를 유지한다.
+4. 카드: augments/CARD_PACKAGE.png → augments/AUG_CARD_PACK.png → 글자. 현재는 카드 2장 그림을 사용한다.
 
-예: `pawns/CHESS_KNIGHT.png` → `augments/EVO_2_2.png` → `augments/augments/augments/pawns/PAWN_CHESS.png` → `나`.
-예: `laws/LAW_03.png` → `augments/AUG_LAW_03.png` → `augments/AUG_LAW.png` → `법`.
-예: `augments/CARD_PACKAGE.png` → `augments/AUG_CARD_PACK.png` → `J`.
+예: pawns/CHESS_KNIGHT.png, pawns/YUT.png, laws/LAW_03.png, augments/CARD_PACKAGE.png, dice/REVOLVER.png. 리볼버 신규 그림은 선택 화면과 HUD에 함께 적용된다.
 
-누락 경로는 경고 없이 건너뛰며, 임포트된 Texture2D만 사용한다. 게임 규칙 데이터는 바꾸지 않는다.
+## 의미 수정 v0.3
 
-## 계열 대표 파일
+윷말 진화의 윷막대 대표 그림을 실제 윷말로 바꾸고, 카드 2장 그림과 식별하기 쉬운 6약실 리볼버를 추가했다. 교칙 8종은 공사 차단·업기 금지·자리 교환·전후진 개구리·기관차·단속 카메라·동반 피격·결승 반동으로 각각 구분한다. 기존 대표 그림은 폴백으로 보존한다.
 
-| 계열 | 대표 경로 |
-|---|---|
-| 체스 | `augments/augments/augments/pawns/PAWN_CHESS.png` |
-| 장기 | `augments/augments/augments/pawns/PAWN_JANGGI.png` |
-| 윷놀이 | `augments/augments/augments/pawns/PAWN_YUT.png` |
-| 모노폴리 | `augments/augments/augments/pawns/PAWN_MONO.png` |
-| 바둑 | `augments/augments/augments/pawns/PAWN_BADUK.png` |
-| 쇼기 | `augments/augments/augments/pawns/PAWN_SHOGI.png` |
+native image_gen.imagegen을 사용했다. 생성 모델 ID는 공개되지 않는다. 전체 프롬프트·원본 위치·파일 해시·선택 및 보정 이력은 manifest.json에 기록한다. 선택한 원본을 래스터 재가공 없이 복사했고 원본/프로젝트 SHA-256 일치를 확인했다.
 
-세부 기물 파일명은 `GameEnums.PawnSubType`의 키와 일치시킨다.
-예: `CHESS_KNIGHT`, `JANGGI_CHA`, `MONO_CAR`, `BADUK_BLACK`, `SHOGI_FU`.
-
-## 판정 도구 공용 파일
-
-| 런타임 ID (개별 파일명) | 대표 경로 |
-|---|---|
-| `YUT` | `dice/DICE_YUT.png` |
-| `LIFE_ROULETTE` | `dice/DICE_ROULETTE.png` |
-| `HOLDEM` | `dice/DICE_POKER.png` |
-| `SLOT_777` | `dice/DICE_SLOT.png` |
-| `REVOLVER` | `dice/DICE_RUSSIAN.png` |
-| `CHINCHIRO` | `dice/DICE_CHINCHIRO.png` |
-| `DICE_HWATU` | `dice/DICE_HWATU.png` |
-| `DICE_MAHJONG` | `dice/DICE_MAHJONG.png` |
-| `DICE_TAROT` | `dice/DICE_TAROT.png` |
-
-각 행은 먼저 `dice/<런타임 ID>.png`, 없으면 대표 경로를 찾는다.
-기본 주사위는 선택적으로 `dice/D6.png` → `dice/DICE_D6.png` → 기존 `6`.
-대표 이름과 런타임 ID가 같은 경우 중복 검색하지 않는다.
-
-## 생성 기록
-
-도구: 네이티브 `image_gen.imagegen`. 실제 모델 식별자는 도구가 공개하지 않아 기록하지 않았다.
-전체 프롬프트·원본 경로·파일 해시는 `manifest.json`에 기록한다.
-생성 원본은 별도 보존하고 래스터 재가공 없이 복사했다. 게임에서만 원형 마스킹한다.
+전체 매핑은 tests/test_augment_art.gd가 검증한다. 로컬 전체 테스트 323개 실패 0건, 37개 설명 변경 없음, 고유 아이콘 37개 연결 및 실제 선택 화면을 확인했다.

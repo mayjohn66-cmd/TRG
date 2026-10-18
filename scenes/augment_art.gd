@@ -27,6 +27,8 @@ static func candidates(definition: AugmentDef) -> Array[String]:
 			if not definition.units.is_empty():
 				var subtype: int = PawnCatalog.sub_type_of(definition.payload, definition.units[0])
 				paths.append(ROOT + "pawns/%s.png" % GameEnums.PawnSubType.keys()[subtype])
+				if definition.payload == GameEnums.PawnKind.YUT:
+					paths.append(ROOT + "pawns/YUT.png")
 			paths.append(ROOT + "augments/%s.png" % definition.augment_id)
 			paths.append(ROOT + "augments/pawns/%s.png" % PAWN_FILES.get(definition.payload, "PAWN_BASIC"))
 			paths.append(ROOT + "pawns/%s.png" % PAWN_FILES.get(definition.payload, "PAWN_BASIC"))
