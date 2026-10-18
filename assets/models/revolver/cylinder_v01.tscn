@@ -1,0 +1,92 @@
+[gd_scene format=3]
+
+[ext_resource type="ArrayMesh" path="res://assets/models/revolver/cylinder_body_v01.res" id="1_83t0y"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_2wb0i"]
+albedo_color = Color(0.7254902, 0.77254903, 0.8117647, 1)
+metallic = 0.65
+roughness = 0.28
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_o4hl1"]
+top_radius = 0.125
+bottom_radius = 0.125
+height = 1.27
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_deypk"]
+top_radius = 0.17
+bottom_radius = 0.17
+height = 0.035
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_rnbsd"]
+albedo_color = Color(0.84313726, 0.6392157, 0.3019608, 1)
+metallic = 0.68
+roughness = 0.27
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_x6ycb"]
+top_radius = 0.202
+bottom_radius = 0.202
+height = 1.08
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_p5u45"]
+albedo_color = Color(0.9372549, 0.77254903, 0.41960785, 1)
+metallic = 0.6
+roughness = 0.23
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_m652o"]
+top_radius = 0.223
+bottom_radius = 0.223
+height = 0.032
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_qrr7r"]
+top_radius = 0.095
+bottom_radius = 0.095
+height = 0.008
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_o0w23"]
+albedo_color = Color(0.8352941, 0.81960785, 0.7176471, 1)
+metallic = 0.48
+roughness = 0.31
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_3dovw"]
+top_radius = 0.069
+bottom_radius = 0.069
+height = 0.012
+
+[node name="RevolverCylinder" type="Node3D" unique_id=516937448]
+
+[node name="SixBoreSteelDrum" type="MeshInstance3D" parent="." unique_id=1736945793]
+material_override = SubResource("StandardMaterial3D_2wb0i")
+mesh = ExtResource("1_83t0y")
+
+[node name="EjectorHub" type="MeshInstance3D" parent="." unique_id=210166426]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_2wb0i")
+mesh = SubResource("CylinderMesh_o4hl1")
+
+[node name="EjectorCap" type="MeshInstance3D" parent="." unique_id=1426612844]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0.65)
+material_override = SubResource("StandardMaterial3D_2wb0i")
+mesh = SubResource("CylinderMesh_deypk")
+
+[node name="SingleLoadedCartridge" type="Node3D" parent="." unique_id=2141811087]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.53693575, 0.31, 0)
+
+[node name="BrassCase" type="MeshInstance3D" parent="SingleLoadedCartridge" unique_id=1209492618]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0.055)
+material_override = SubResource("StandardMaterial3D_rnbsd")
+mesh = SubResource("CylinderMesh_x6ycb")
+
+[node name="CaseRim" type="MeshInstance3D" parent="SingleLoadedCartridge" unique_id=480665752]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0.613)
+material_override = SubResource("StandardMaterial3D_p5u45")
+mesh = SubResource("CylinderMesh_m652o")
+
+[node name="PrimerSeat" type="MeshInstance3D" parent="SingleLoadedCartridge" unique_id=355807092]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0.634)
+material_override = SubResource("StandardMaterial3D_rnbsd")
+mesh = SubResource("CylinderMesh_qrr7r")
+
+[node name="Primer" type="MeshInstance3D" parent="SingleLoadedCartridge" unique_id=108021719]
+transform = Transform3D(1, 0, 0, 0, -4.371139e-08, -1, 0, 1, -4.371139e-08, 0, 0, 0.643)
+material_override = SubResource("StandardMaterial3D_o0w23")
+mesh = SubResource("CylinderMesh_3dovw")
