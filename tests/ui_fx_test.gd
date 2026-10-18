@@ -56,6 +56,7 @@ func _run() -> void:
 	# _process()에서 지정했던 테스트용 즉시 이동 조건을 다시 복원한다.
 	_board.manager.step_delay_sec = 0.0
 	await _test_presenters()
+	await _test_illustrated_judgment_cards()
 	_board._announcer.cancel()
 	await _test_gauge_and_lock()
 	await _test_instant_flag()
@@ -342,6 +343,63 @@ func _test_presenters() -> void:
 	await presenter.play(&"SLOT_777", {"tool_id": &"SLOT_777", "steps": 1, "details": {"reels": [0, 1, 2]}}, 0.5)
 	_expect(_now() - before < 0.1 and presenter.last_display == "체리|레몬|종", "instant면 연출을 건너뛴다")
 	presenter.instant = false
+
+
+## Sample animation time directly so these privacy checks do not advance turn timers.
+func _test_illustrated_judgment_cards() -> void:
+	var presenter: RollPresenter = _board._presenter
+	presenter.instant = false
+	presenter.set_process(false)
+	presenter.play(&"HOLDEM", {"steps":1, "details":{"cards":[0,15,30,45,51], "hand":&"high_card"}})
+	await process_frame
+	await process_frame
+	presenter._update(0.29)
+	_expect(presenter.last_display.is_empty() and presenter._die_label.text.is_empty(), "poker outcome stays hidden before first flip midpoint")
+	for panel: PanelContainer in presenter._cards:
+		var card: JudgmentCard = panel as JudgmentCard
+		_expect(not card.face_up and card._back.visible and not card._front.visible, "poker starts with opaque generated backs")
+	presenter._update(0.32)
+	_expect(presenter._card_flipped == [true,false,false,false,false], "only the first poker card reveals at its midpoint")
+	_expect(presenter._die_label.text.is_empty(), "poker hand name waits for every card")
+	presenter._update(1.03)
+	await process_frame
+	_expect(presenter._card_flipped == [true,true,true,true,true], "all five poker cards reveal in order")
+	_expect(presenter._die_label.text.contains("1칸 전진"), "poker caption uses engine movement")
+	for index: int in presenter._cards.size():
+		var card: JudgmentCard = presenter._cards[index] as JudgmentCard
+		_expect(card._front.size.x > 0 and card._front.get_child_count() > 0 and not card._back.visible, "revealed front has populated artwork and no back")
+		if index > 0:
+			_expect(card.position.x >= presenter._cards[index-1].position.x + presenter._cards[index-1].size.x, "settled cards do not overlap")
+	presenter.cancel()
+	_expect(not presenter.active and not presenter.visible, "card cancellation releases the presenter")
+	presenter.play(&"DICE_HWATU", {"steps":0, "ends_turn":true, "details":{"cards":[1,40], "new_cards":[40], "label":"망통"}})
+	await process_frame
+	await process_frame
+	presenter._update(0.10)
+	_expect((presenter._cards[0] as JudgmentCard).face_up and not (presenter._cards[1] as JudgmentCard).face_up, "known Hwatu stays face up while the fresh card is hidden")
+	presenter._update(0.43)
+	_expect(presenter._die_label.text == "망통 · 이동 없음", "zero movement remains zero without a false forward result")
+	presenter.cancel()
+	for selected: int in 5:
+		var fate: StringName = ToolTarot.FATES[selected]
+		presenter.play(&"DICE_TAROT", {"steps":-2, "details":{"fate":fate, "flipped":selected}})
+		await process_frame
+		await process_frame
+		presenter._update(0.52)
+		_expect(presenter._card_flipped.count(true) == 0 and presenter._die_label.text.is_empty() and presenter.last_display.is_empty(), "tarot fate remains hidden during focus and first flip half")
+		presenter._update(0.65)
+		_expect(presenter._card_flipped.count(true) == 1, "tarot reveals exactly one card at every selection position")
+		_expect(presenter._die_label.text.contains("2칸 후퇴"), "negative engine movement remains a retreat")
+		for index: int in 5:
+			var card: JudgmentCard = presenter._cards[index] as JudgmentCard
+			_expect(card.face_up == (index == selected), "only the actual selected tarot card is face up")
+			_expect(card._back.visible == (index != selected), "the four unselected tarot backs remain visible")
+			if index != selected:
+				_expect(card.model.art.is_empty(), "unselected tarot cards have no assigned fate illustration")
+		presenter.cancel()
+	_expect(presenter._dice_3d.render_view.render_target_update_mode == SubViewport.UPDATE_DISABLED, "card effects leave the cached 3D dice renderer asleep")
+	presenter.set_process(true)
+	print("JUDGMENT_CARD_FX_OK")
 
 
 func _angle_between(samples: Array[Vector2], from_time: float, to_time: float) -> float:

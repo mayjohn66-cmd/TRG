@@ -20,6 +20,10 @@ const SLOT_STOPS: Array[float] = [0.4, 0.8, 1.2]
 const CARD_FLIP_INTERVAL: float = 0.15
 const CARD_FLIP_TIME: float = 0.12
 const HOLD_TIME: float = 0.35
+const CARD_DEAL_TIME: float = 0.20
+const ART_CARD_FLIP_TIME: float = 0.22
+const TAROT_FOCUS_TIME: float = 0.22
+const CARD_RESULT_HOLD: float = 0.50
 
 ## true면 모든 연출을 0초로 건너뛴다 (헤드리스 테스트·ui_smoke 자동 진행).
 var instant: bool = false
@@ -59,6 +63,8 @@ var _settled: bool = false
 var _final_face: int = 0
 var _dice_3d: DiceRoll3D = null
 var _default_style: StyleBoxFlat
+var _card_home: Array[Vector2] = []
+var _card_result_caption: String = ""
 
 
 ## 룰렛 원판. angle(라디안)만큼 돌아간 상태로 1~10 눈금을 그린다 (위쪽 바늘 자리가 현재 눈금).
@@ -121,6 +127,8 @@ func play(tool_id: StringName, result: Dictionary, power: float = 0.5) -> void:
 		return
 	_power = clampf(power, 0.0, 1.0)
 	_result = result
+	if tool_id in [&"HOLDEM", &"DICE_HWATU", &"DICE_TAROT"]:
+		last_display = ""
 	_mode = tool_id
 	_t = 0.0
 	_last_tick = -1
@@ -188,6 +196,7 @@ func _clear() -> void:
 	_card_flipped.clear()
 	_card_flip_mask.clear()
 	_card_face_colors.clear()
+	_card_home.clear()
 	_reel_stopped = [false, false, false]
 	_die = null
 	_wheel = null
@@ -220,12 +229,16 @@ func _box(bg: Color, border: Color, radius: int, min_size: Vector2) -> PanelCont
 
 func _build(tool_id: StringName) -> void:
 	_clear()
-	add_theme_stylebox_override("panel", UiSkin.panel("panel", 12.0) if tool_id in [&"D6", &"CHINCHIRO"] else _default_style)
+	var illustrated: bool = tool_id in [&"HOLDEM", &"DICE_HWATU", &"DICE_TAROT"]
+	add_theme_stylebox_override("panel", UiSkin.panel("panel", 12.0) if illustrated or tool_id in [&"D6", &"CHINCHIRO"] else _default_style)
 	_root = VBoxContainer.new()
 	_root.add_theme_constant_override("separation", 8)
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_root)
 	_title = _label("", 14, Color("adb5bd"))
+	if illustrated:
+		_title.add_theme_font_size_override("font_size", 18)
+		_title.add_theme_color_override("font_color", UiSkin.GREEN)
 	_root.add_child(_title)
 	_stage = CenterContainer.new()
 	_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -284,49 +297,41 @@ func _build(tool_id: StringName) -> void:
 			_die_label = _label("[ ? ] [ ? ] [ ? ]", 16, Color("adb5bd"))
 			_root.add_child(_die_label)
 		&"HOLDEM":
-			_title.text = "텍사스 홀덤 딜러"
-			_total = CARD_FLIP_INTERVAL * 4 + CARD_FLIP_TIME + HOLD_TIME + 0.2
-			var cards := HBoxContainer.new()
-			cards.add_theme_constant_override("separation", 8)
-			cards.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			_stage.add_child(cards)
-			var drawn: Array = (_result["details"] as Dictionary).get("cards", [])
-			for index: int in 5:
-				var card: PanelContainer = _box(Color("364fc7"), Color("dbe4ff"), 10, Vector2(68, 96))
-				var card_label: Label = _label("?", 28, Color("f8f9fa"))
-				card.add_child(card_label)
-				cards.add_child(card)
-				_cards.append(card)
-				_card_labels.append(card_label)
-				_card_flipped.append(false)
-				_card_faces.append(card_text(int(drawn[index])) if index < drawn.size() else "?")
-				_card_flip_mask.append(true)
-				_card_face_colors.append(Color("212529"))
+			_build_holdem()
 		&"DICE_HWATU": _build_hwatu()
 		&"DICE_MAHJONG": _build_mahjong()
 		&"DICE_TAROT": _build_tarot()
 	pivot_offset = Vector2.ZERO
 
 
-## 화투: 패 2장을 뒤집어 족보를 보여 준다.
+## 홀덤: 엔진이 뽑은 다섯 장을 순서대로 공개한다.
+func _build_holdem() -> void:
+	_title.text = "텍사스 홀덤 딜러"
+	var details: Dictionary = _result.get("details", {})
+	var models: Array[Dictionary] = []
+	var mask: Array[bool] = []
+	for card: Variant in details.get("cards", []):
+		models.append(JudgmentCardArt.poker(int(card)))
+		_card_faces.append(card_text(int(card)))
+		mask.append(true)
+	_build_illustrated_row(models, mask, Vector2(96, 144))
+	_make_card_result("%s · %s" % [MainBoard.HAND_NAMES.get(details.get("hand", &"high_card"), "족보"), _card_move_text()])
+
+
+## 화투: 기존 공개 패는 그대로 두고 새 패만 뒤집는다.
 func _build_hwatu() -> void:
 	var details: Dictionary = _result["details"]
 	var all_cards: Array = details.get("cards", [])
 	var fresh: Array = details.get("new_cards", [])
 	_title.text = "화투 패"
-	_card_front = Color("fff4e6")
-	var faces: Array[String] = []
-	var colors: Array[Color] = []
+	var models: Array[Dictionary] = []
 	var mask: Array[bool] = []
 	for card: Variant in all_cards:
-		faces.append(ToolHwatu.card_name(int(card)).replace(" ", "\n"))
-		colors.append(Color("c92a2a") if ToolHwatu.card_type(int(card)) == &"gwang" else Color("212529"))
+		models.append(JudgmentCardArt.hwatu(int(card)))
+		_card_faces.append(ToolHwatu.card_name(int(card)))
 		mask.append(fresh.has(card))
-	_build_flip_row(faces, colors, mask, Vector2(84, 116), Color("8b1a1a"), Color("ffd8a8"), 20)
-	var hand_label: String = str(details.get("label", ""))
-	_die_label = _label(hand_label, 22, Color("ffe066"))
-	_die_label.modulate.a = 0.0
-	_root.add_child(_die_label)
+	_build_illustrated_row(models, mask, Vector2(104, 148))
+	_make_card_result("%s · %s" % [details.get("label", ""), _card_move_text()])
 
 
 ## 마작: 패 3개를 동시에 쯔모(뒤집기)한다.
@@ -361,23 +366,67 @@ const TAROT_SHORT: Dictionary = {&"fool": "0\n광대", &"chariot": "VII\n전차"
 func _build_tarot() -> void:
 	var details: Dictionary = _result["details"]
 	_title.text = "점성술사의 타로 덱"
-	_card_front = Color("f3e8ff")
 	var flipped: int = int(details.get("flipped", 0))
 	var fate: StringName = details.get("fate", &"chariot")
-	var faces: Array[String] = []
-	var colors: Array[Color] = []
+	var models: Array[Dictionary] = []
 	var mask: Array[bool] = []
 	for index: int in 5:
-		faces.append(str(TAROT_SHORT[fate]) if index == flipped else "?")
-		colors.append(Color("5f3dc4"))
+		models.append(JudgmentCardArt.tarot(fate if index == flipped else &""))
+		_card_faces.append(str(TAROT_SHORT[fate]) if index == flipped else "?")
 		mask.append(index == flipped)
-	_build_flip_row(faces, colors, mask, Vector2(76, 124), Color("5f3dc4"), Color("d0bfff"), 18, true)
-	var text: String = str(details.get("name", ""))
-	if fate == &"fool":
-		text += "  (%s)" % ("대도약 +7칸!" if bool(details.get("fool_leap", false)) else "뒷걸음 -2칸")
-	_die_label = _label(text, 18, Color("ffe066"))
-	_die_label.modulate.a = 0.0
+	_build_illustrated_row(models, mask, Vector2(96, 156), true)
+	var text: String = "%s · %s" % [JudgmentCardArt.TAROT[fate][1], _card_move_text()]
+	if bool(_result.get("reroll", false)):
+		text += " · 한 번 더"
+	if details.has("blessing_booked"):
+		text += " · 다음 굴림 +%d" % int(details.blessing_booked)
+	_make_card_result(text)
+
+
+func _card_move_text() -> String:
+	var steps: int = int(_result.get("steps", 0))
+	if steps == 0:
+		return "이동 없음"
+	return "%d칸 %s" % [absi(steps), "전진" if steps > 0 else "후퇴"]
+
+
+func _make_card_result(caption: String) -> void:
+	_card_result_caption = caption
+	_die_label = _label("", 20, UiSkin.INK)
 	_root.add_child(_die_label)
+	var font: Font = _die_label.get_theme_font("font")
+	_die_label.custom_minimum_size = Vector2(font.get_string_size(caption, HORIZONTAL_ALIGNMENT_LEFT, -1, 20).x + 4.0, 32.0)
+	_die_label.modulate.a = 0.0
+
+
+func _build_illustrated_row(models: Array[Dictionary], mask: Array[bool], card_size: Vector2, hidden_rest: bool = false) -> void:
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_top", 18)
+	margin.add_theme_constant_override("margin_bottom", 12)
+	margin.add_theme_constant_override("margin_left", 12)
+	margin.add_theme_constant_override("margin_right", 12)
+	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_stage.add_child(margin)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	margin.add_child(row)
+	var flips: int = 0
+	for index: int in models.size():
+		var card := JudgmentCard.new()
+		card.configure(models[index], card_size)
+		row.add_child(card)
+		var already_front: bool = not mask[index] and not hidden_rest
+		card.set_face_up(already_front)
+		_cards.append(card)
+		_card_flipped.append(already_front)
+		_card_flip_mask.append(mask[index])
+		_card_home.append(Vector2(index * (card_size.x + 8.0), 0.0))
+		if mask[index]:
+			flips += 1
+	var stride: float = CARD_FLIP_INTERVAL * (1.0 if _mode == &"HOLDEM" else 2.0)
+	_total = CARD_DEAL_TIME + (TAROT_FOCUS_TIME if hidden_rest else 0.0) + stride * maxi(flips - 1, 0) + ART_CARD_FLIP_TIME + CARD_RESULT_HOLD
+	Sfx.play(&"card_throw")
 
 
 ## 카드 줄 한 벌을 만든다. mask가 true인 카드만 뒤집히고 false인 카드는 처음부터 앞면(faces)이다. hidden_rest면 false 카드는 뒷면 그대로 둔다.
@@ -420,7 +469,8 @@ func _update(t: float) -> void:
 		&"YUT": _update_die(t)
 		&"LIFE_ROULETTE": _update_wheel(t)
 		&"SLOT_777": _update_slot(t)
-		&"HOLDEM", &"DICE_HWATU", &"DICE_MAHJONG", &"DICE_TAROT": _update_cards(t)
+		&"HOLDEM", &"DICE_HWATU", &"DICE_TAROT": _update_illustrated_cards(t)
+		&"DICE_MAHJONG": _update_cards(t)
 
 
 func _ease_out(x: float) -> float:
@@ -559,7 +609,45 @@ func _stopped_style() -> StyleBoxFlat:
 	return style
 
 
-## 카드들이 0.15초 간격으로 한 장씩 뒷면에서 앞면으로 뒤집힌다 (가로로 눌렸다 펴지는 플립). 뒤집을 카드(_card_flip_mask)만 뒤집는다.
+func _update_illustrated_cards(t: float) -> void:
+	var order: int = 0
+	var complete: bool = true
+	var is_tarot: bool = _mode == &"DICE_TAROT"
+	var stride: float = CARD_FLIP_INTERVAL * (1.0 if _mode == &"HOLDEM" else 2.0)
+	for index: int in _cards.size():
+		var card: JudgmentCard = _cards[index] as JudgmentCard
+		var dealing: float = clampf(t / CARD_DEAL_TIME, 0.0, 1.0)
+		if _mode == &"DICE_HWATU" and not _card_flip_mask[index]:
+			dealing = 1.0
+		var remaining: float = pow(1.0 - dealing, 3.0)
+		card.position = _card_home[index] + Vector2(((_cards.size() - 1) * 0.5 - index) * card.size.x * 0.7, 18.0) * remaining
+		card.pivot_offset = card.size / 2.0
+		card.rotation = (index - (_cards.size() - 1) * 0.5) * 0.08 * remaining
+		card.modulate.a = clampf(dealing * 2.0, 0.0, 1.0)
+		if not _card_flip_mask[index]:
+			if is_tarot and t >= CARD_DEAL_TIME:
+				card.modulate = Color(0.85, 0.85, 0.85, 1.0)
+			continue
+		var start: float = CARD_DEAL_TIME + (TAROT_FOCUS_TIME if is_tarot else 0.0) + order * stride
+		order += 1
+		if is_tarot:
+			card.position.y -= 8.0 * clampf((t - CARD_DEAL_TIME) / TAROT_FOCUS_TIME, 0.0, 1.0)
+		var phase: float = clampf((t - start) / ART_CARD_FLIP_TIME, 0.0, 1.0)
+		card.scale.x = maxf(absf(cos(phase * PI)), 0.015)
+		card.position.y -= sin(phase * PI) * 6.0
+		if phase >= 0.5 and not _card_flipped[index]:
+			_card_flipped[index] = true
+			card.set_face_up(true)
+			Sfx.play(&"card_pick")
+		if phase < 1.0:
+			complete = false
+	if complete:
+		_die_label.text = _card_result_caption
+		_die_label.modulate.a = 1.0
+		last_display = _final_text(_mode, _result)
+
+
+## Legacy Mahjong tiles share their previous flip renderer.
 func _update_cards(t: float) -> void:
 	var order: int = 0
 	for index: int in _cards.size():
