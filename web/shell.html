@@ -115,11 +115,11 @@
 		#bar-marker {
 			position: absolute;
 			left: clamp(32px, var(--progress), calc(100% - 32px));
-			top: -61px;
+			top: -59px;
 			width: 64px;
 			height: 64px;
 			overflow: hidden;
-			transform: translateX(-50%);
+			transform: translateX(-50%) scaleX(-1);
 			transition: left 0.25s ease-out, opacity 0.15s;
 			pointer-events: none;
 			filter: drop-shadow(0 1px 1px #24331f80);
