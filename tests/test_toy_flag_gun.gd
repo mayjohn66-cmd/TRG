@@ -2,6 +2,26 @@ class_name TestToyFlagGun
 extends TestCase
 
 
+func test_orbit_landmarks_never_fold_or_flip_the_sprite_mesh() -> void:
+	var side: PackedVector2Array = ToyFlagGun3D.landmarks(true)
+	var quarter: PackedVector2Array = ToyFlagGun3D.landmarks(false)
+	check_eq(side.size(),quarter.size(),"both views have corresponding contours")
+	var mean := PackedVector2Array()
+	for i: int in side.size(): mean.append((side[i]+quarter[i])*0.5)
+	var triangles: PackedInt32Array = Geometry2D.triangulate_delaunay(mean)
+	for step: int in 21:
+		var amount: float = step/20.0
+		for i: int in range(0,triangles.size(),3):
+			var a: int = triangles[i]
+			var b: int = triangles[i+1]
+			var c: int = triangles[i+2]
+			var original: float = (mean[b]-mean[a]).cross(mean[c]-mean[a])
+			var pa: Vector2 = quarter[a].lerp(side[a],amount)
+			var pb: Vector2 = quarter[b].lerp(side[b],amount)
+			var pc: Vector2 = quarter[c].lerp(side[c],amount)
+			check((pb-pa).cross(pc-pa)*original>0.0,"orbit interpolation keeps every texture triangle facing the same way")
+
+
 func test_six_loaded_positions_keep_the_original_accumulation_loss_and_cashout() -> void:
 	var rng := RandomNumberGenerator.new()
 	for slot: int in 6:

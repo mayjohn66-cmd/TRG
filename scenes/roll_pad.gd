@@ -10,6 +10,7 @@ signal spin_released(power: float)
 signal trigger_pulled
 ## 룰렛/리볼버 연출이 끝났다.
 signal finished
+signal preparation_finished
 
 enum Kind { NONE, ROULETTE, REVOLVER }
 
@@ -44,6 +45,9 @@ var _spin_time: float = 0.0
 var _firing: bool = false
 var _trigger_time: float = 0.0
 var _trigger_caption: String = ""
+var preparing: bool = false
+var _prepare_time: float = 0.0
+var _prepared_key: String = ""
 
 
 func _ready() -> void:
@@ -70,9 +74,9 @@ func _ready() -> void:
 	_face_label.visible = false
 	add_child(_face_label)
 	_gun = ToyFlagGun3D.new()
-	_gun.custom_minimum_size = Vector2(190,120)
-	_gun.size = Vector2(190,120)
-	_gun.position = Vector2((size.x - 190.0) / 2.0, 26.0)
+	_gun.custom_minimum_size = Vector2(280,168)
+	_gun.size = Vector2(280,168)
+	_gun.position = Vector2((size.x - 280.0) / 2.0, 4.0)
 	_gun.visible = false
 	add_child(_gun)
 	_hint_label = Label.new()
@@ -92,6 +96,7 @@ func _ready() -> void:
 func set_kind(value: Kind) -> void:
 	if kind != value:
 		cancel_spin()
+		_prepared_key = ""
 	kind = value
 	visible = value != Kind.NONE
 	if _wheel == null:
@@ -126,6 +131,26 @@ func set_enabled(value: bool) -> void:
 func reset_revolver() -> void:
 	if _gun != null:
 		_gun.reset_state()
+
+
+## Cosmetic loading never reads or consumes the engine's hidden chamber/RNG.
+func ensure_revolver_prepared(key: String, pending: bool) -> void:
+	if _prepared_key==key:
+		return
+	_prepared_key = key
+	_gun.reset_state()
+	if instant or pending:
+		_gun.show_side()
+		return
+	preparing = true
+	active = true
+	_prepare_time = 0.0
+	modulate = Color.WHITE
+	_gun.begin_preparation()
+	_hint_label.text = ToyFlagGun3D.preparation_caption(0)
+	_hint_label.add_theme_font_size_override("font_size",11)
+	_hint_label.position = Vector2(-30,134)
+	_hint_label.size = Vector2(260,22)
 
 
 func _gui_input(event: InputEvent) -> void:
@@ -218,6 +243,16 @@ func play_spin(face: int, power: float) -> void:
 
 
 func _process(delta: float) -> void:
+	if preparing:
+		_prepare_time += delta
+		_gun.apply_preparation(_prepare_time)
+		_hint_label.text = ToyFlagGun3D.preparation_caption(_prepare_time)
+		if _prepare_time>=ToyFlagGun3D.PREP_TIME:
+			preparing = false
+			active = false
+			_gun.stop_rendering()
+			preparation_finished.emit()
+		return
 	if _firing:
 		_trigger_time += delta
 		_gun.apply_time(_trigger_time)
@@ -249,15 +284,17 @@ func _process(delta: float) -> void:
 
 ## Resume any awaiting board handler when a new game/tool cancels the spin.
 func cancel_spin() -> void:
+	var was_preparing: bool = preparing
+	preparing = false
 	_dragging = false
 	if _wheel != null:
 		_wheel.stop_rendering()
 	if _gun != null:
-		if _firing:
+		if _firing or was_preparing:
 			_gun.reset_state()
 			_gun.hide()
 		_gun.stop_rendering()
-	if not _spinning and not _firing:
+	if not _spinning and not _firing and not was_preparing:
 		return
 	_spinning = false
 	_firing = false

@@ -1357,6 +1357,7 @@ func _build_action_bar() -> void:
 	_roll_pad.position = Vector2(583, 250)  # 마름모 보드 한가운데 (패드 중심 = (683, 335)); 크게 보이도록 켤 때 1.9배로 키운다
 	_roll_pad.spin_released.connect(_on_pad_spin_released)
 	_roll_pad.trigger_pulled.connect(_on_pad_trigger_pulled)
+	_roll_pad.preparation_finished.connect(_refresh_controls)
 	add_child(_roll_pad)
 	# 러시안 룰렛은 [발사]와 [정지] 두 버튼만 쓴다 (정지 버튼은 룰렛을 쓸 때만 이 줄로 옮겨 온다).
 	_gun_row = HBoxContainer.new()
@@ -3551,8 +3552,8 @@ func _refresh_controls() -> void:
 		_set_gun_buttons(true)
 		_stop_button.visible = not over
 		_stop_button.text = "정지"
-		_fire_button.disabled = _roll_button.disabled
-		_stop_button.disabled = not can_stop or _tile_pick_active or _is_bot_turn()
+		_fire_button.disabled = _roll_button.disabled or _roll_pad.active
+		_stop_button.disabled = not can_stop or _tile_pick_active or _is_bot_turn() or _ui_busy() or _roll_pad.active
 		_stop_button.modulate = Color(0.55, 1.0, 0.62) if can_stop else Color.WHITE
 	else:
 		_set_gun_buttons(false)
@@ -3665,8 +3666,9 @@ func _refresh_roll_pad() -> void:
 	if mode == &"big" or mode == &"charge":
 		_roll_button.text = _roll_button_label(owner_tool)
 	_roll_pad.set_enabled(not _roll_button.disabled)
-	if wanted == RollPad.Kind.REVOLVER and not _roll_pad.active and not owner_tool.has_pending_state():
-		_roll_pad.reset_revolver()
+	if wanted == RollPad.Kind.REVOLVER and roll_phase and not _ui_busy():
+		var gun_key: String = "%d:%d:%d:%d" % [state.get_instance_id(),state.round_number,_dock_owner(),owner_tool.get_instance_id()]
+		_roll_pad.ensure_revolver_prepared(gun_key,owner_tool.has_pending_state())
 
 
 ## 굴림 위젯의 크기·위치를 방식에 맞춘다: charge는 중앙 무대 아래쪽에 작게(120px), 그 외는 보드 한가운데 크게(버튼 190px / 패드 1.9배).
@@ -3703,12 +3705,14 @@ func _on_pad_spin_released(power: float) -> void:
 
 
 func _on_pad_trigger_pulled() -> void:
+	if _roll_pad.preparing or _roll_pad.active:
+		return
 	_roll_with_power(0.5)
 
 
 func _roll_with_power(power: float) -> void:
 	_pending_power = power
-	if manager.is_game_over or _roll_button.disabled or _ui_busy() or _is_bot_turn():
+	if manager.is_game_over or _roll_button.disabled or _ui_busy() or _is_bot_turn() or _roll_pad.preparing:
 		return
 	if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN:
 		_act(&"proceed")

@@ -59,6 +59,8 @@ var _mahjong_names: Array[Label] = []
 var _yut_3d: YutThrow3D = null
 var _slot_3d: SlotMachine3D = null
 var _toy_gun: ToyFlagGun3D = null
+var _gun_intro: float = 0.0
+var _gun_pull_started: bool = false
 
 
 func _init() -> void:
@@ -292,10 +294,13 @@ func _build(tool_id: StringName) -> void:
 				caption += " · 한 번 더"
 			_make_card_result(caption)
 		&"REVOLVER":
-			_title.text = "러시안 룰렛 · 장난감 총"
+			_title.text = "러시안 룰렛 · 폭죽 리볼버"
 			var details: Dictionary = _result.get("details",{})
 			var fired: bool = bool(details.get("fired",false))
-			_total = ToyFlagGun3D.total_time(fired)
+			var progress: int = int(details.get("lost",0)) if fired else maxi(0,int(details.get("accumulated",0))-3)
+			_gun_intro = ToyFlagGun3D.PREP_TIME if progress==0 and not instant else 0.0
+			_gun_pull_started = _gun_intro==0.0
+			_total = ToyFlagGun3D.total_time(fired)+_gun_intro
 			if _toy_gun == null:
 				_toy_gun = ToyFlagGun3D.new()
 				_stage.add_child(_toy_gun)
@@ -303,6 +308,8 @@ func _build(tool_id: StringName) -> void:
 				_toy_gun.reparent(_stage)
 			_toy_gun.show()
 			_toy_gun.begin(fired,int(details.get("accumulated",0)),int(details.get("lost",0)))
+			if _gun_intro>0.0:
+				_toy_gun.begin_preparation()
 			_make_card_result(ToyFlagGun3D.result_caption(fired,int(details.get("accumulated",0)),int(details.get("lost",0)),bool(_result.get("can_continue",false))))
 		&"SLOT_777":
 			_title.text = "777 슬롯머신"
@@ -499,7 +506,14 @@ func _update(t: float) -> void:
 		&"LIFE_ROULETTE": _update_wheel(t)
 		&"SLOT_777": _update_slot(t)
 		&"REVOLVER":
-			_toy_gun.apply_time(t)
+			if t<_gun_intro:
+				_toy_gun.apply_preparation(t)
+				return
+			if not _gun_pull_started:
+				_gun_pull_started = true
+				var details: Dictionary = _result.get("details",{})
+				_toy_gun.begin(bool(details.get("fired",false)),int(details.get("accumulated",0)),int(details.get("lost",0)))
+			_toy_gun.apply_time(t-_gun_intro)
 			if _toy_gun.settled:
 				_die_label.text = _card_result_caption
 				_die_label.modulate.a = 1.0
