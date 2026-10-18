@@ -78,6 +78,7 @@ jobs:
           cp web/og-image.png build/web/og-image.png
           cp web/icon.png build/web/icon.png
           cp web/title-logo.png build/web/title-logo.png
+          cp web/loading-pawn.png build/web/loading-pawn.png
           ls -la build/web
 
       - name: Publish to gh-pages
