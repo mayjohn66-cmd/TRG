@@ -3446,7 +3446,7 @@ const TOOL_CARDS: Dictionary = {
 	&"HOLDEM": ["♠", Color("343a40"), "카드 족보만큼 전진한다", ""],
 	&"CHINCHIRO": ["친", Color("0b7285"), "주사위를 굴려 전진한다", ""],
 	&"SLOT_777": ["7", Color("862e9c"), "슬롯을 돌려 전진한다", "777 잭팟 20칸"],
-	&"REVOLVER": ["탄", Color("495057"), "방아쇠를 당긴 만큼 전진한다", "실탄 → 0칸·턴 종료"],
+	&"REVOLVER": ["탄", Color("495057"), "방아쇠를 당긴 만큼 전진한다", "폭죽 발사 → 0칸·턴 종료"],
 	&"DICE_HWATU": ["화", Color("c92a2a"), "화투패 족보만큼 전진한다", ""],
 	&"DICE_MAHJONG": ["마", Color("2b8a3e"), "마작패 족보만큼 전진한다", "역만 재굴림 +1"],
 	&"DICE_TAROT": ["타", Color("5f3dc4"), "타로를 뽑아 전진한다", "매달린 남자: 다음 +8칸"],
@@ -3464,7 +3464,7 @@ const TOOL_RULES: Dictionary = {
 	&"DICE_HWATU": {"rows": [["망통", "0칸, 턴 종료"], ["1~3 / 4~6 / 7~9끗", "2 / 3 / 4칸"], ["1~6 / 7~9땡", "6 / 7칸"], ["장땡·광땡", "8칸"]], "note": "월 합 끝자리 (망통 = 끝자리 0)"},
 	&"DICE_MAHJONG": {"rows": [["핑후 (불일치)", "2칸"], ["또이츠 (같은 패 2개)", "3칸"], ["슌쯔 (연속 숫자)", "5칸"], ["커쯔 (같은 패 3개)", "8칸"], ["역만 (8%)", "12칸 + 한 번 더!"]], "note": "역만 = 국사무쌍·대삼원"},
 	&"DICE_TAROT": {"rows": [["0. 광대", "-2칸 또는 +7칸"], ["VII. 전차", "6칸"], ["X. 운명의 수레바퀴", "4칸 + 한 번 더!"], ["XII. 매달린 남자", "1칸, 다음 굴림 +8칸"], ["XXI. 세계", "9칸"]], "note": "5장 중 1장 · 축복은 다음 굴림"},
-	&"REVOLVER": {"rows": [["방아쇠 1회", "+3칸 누적"], ["최대 누적", "15칸"], ["실탄 (6발 중 1발)", "누적 0칸, 턴 종료"], ["멈추기", "누적한 칸만큼 이동"]], "note": "실탄 6발 중 1발 · 터지면 누적 소멸"},
+	&"REVOLVER": {"rows": [["방아쇠 1회", "+3칸 누적"], ["최대 누적", "15칸"], ["폭죽 (6칸 중 1칸)", "누적 0칸, 턴 종료"], ["멈추기", "누적한 칸만큼 이동"]], "note": "6칸 중 1칸은 폭죽 · 깃발이 나오면 누적 소멸"},
 }
 
 
@@ -3636,6 +3636,12 @@ func _roll_mode_for(tool: BaseJudgmentTool) -> StringName:
 
 ## 내 판정 도구에 맞는 굴림 위젯을 보여 준다.
 func _refresh_roll_pad() -> void:
+	# A fired outcome advances the engine turn immediately. Keep the current
+	# visual until its local timeline finishes, even if the next tool differs.
+	if _fx_busy and _roll_pad.active:
+		_roll_pad.set_enabled(false)
+		_gun_row.visible = _roll_pad.kind == RollPad.Kind.REVOLVER
+		return
 	var owner_tool: BaseJudgmentTool = state.tools[_dock_owner()]
 	var mode: StringName = _roll_mode_for(owner_tool)
 	var wanted: RollPad.Kind = RollPad.Kind.NONE
@@ -3732,7 +3738,7 @@ func _hint_text(current_phase: TurnManager.State, tool: BaseJudgmentTool) -> Str
 			return "카드(▣ 표시는 타일을 클릭해 설치/소환)를 쓰거나 [굴리기]를 누르세요. (판정 도구: %s)" % tool.display_name
 		TurnManager.State.PHASE_ROLL_WAIT:
 			if tool.has_pending_state():
-				return "계속 당기거나, 멈추고 누적 칸수만큼 이동하세요. 실탄이 나오면 모두 증발합니다!"
+				return "계속 당기거나, 멈추고 누적 칸수만큼 이동하세요. 깃발이 나오면 누적이 사라져요!"
 			return "다시 굴려야 합니다 (재굴림)." if not manager.move_queue.is_empty() else ("굴리기 버튼을 꾹 눌렀다 떼서 굴리세요." if _tool_has_gauge() else "굴리세요.")
 		TurnManager.State.PHASE_INTERRUPT_ROLL:
 			return "[개입 기회! 카드를 사용하거나 '패스'를 누르세요]  눈금이 정해졌습니다. 개입 카드를 가진 플레이어는 지금 카드를 누르세요."
@@ -6176,9 +6182,9 @@ func _log_roll(data: Dictionary) -> String:
 				text += "  다음 굴림에 +%d칸 축복 예약!" % int(details["blessing_booked"])
 		&"REVOLVER":
 			if details["fired"]:
-				text += "탕! 누적 %d칸 증발, 턴 종료" % details["lost"]
+				text += "뿅! 깃발 발사 · 누적 %d칸 사라짐, 턴 종료" % details["lost"]
 			else:
-				text += "찰칵(빈 총) 누적 %d칸" % result["steps"]
+				text += ("%d칸 이동 확정" if details.get("voluntary",false) or not result.get("can_continue",false) else "찰칵! 누적 %d칸") % result["steps"]
 		_: text += "%d칸" % result["steps"]
 	if result["reroll"]:
 		text += "  ★ 재굴림!"
@@ -6321,6 +6327,22 @@ func _handle_roll_event(data: Dictionary) -> void:
 	var tool_id: StringName = result["tool_id"]
 	_presenter.instant = instant_roll_for_test
 	var details: Dictionary = result["details"]
+	# Stopping is a cash-out, not another trigger pull or cylinder advance.
+	if tool_id == &"REVOLVER" and bool(details.get("voluntary",false)):
+		_fx_serial += 1
+		_roll_pad.cancel_spin()
+		_presenter.cancel()
+		_fx_busy = false
+		_roll_pad.reset_revolver()
+		_reveal_roll(data)
+		_refresh_all()
+		return
+	# A quick second pull must not be covered by the previous safe-result banner.
+	if _center_banner != null:
+		_center_banner.hide()
+		if _center_banner.has_meta("fade"):
+			var fade: Tween = _center_banner.get_meta("fade")
+			if fade != null and fade.is_valid(): fade.kill()
 	var on_pad: bool = int(data["player_id"]) == _dock_owner() and ((tool_id == &"LIFE_ROULETTE" and _roll_pad.kind == RollPad.Kind.ROULETTE) or (tool_id == &"REVOLVER" and _roll_pad.kind == RollPad.Kind.REVOLVER))
 	if on_pad and not instant_roll_for_test:
 		var pad_generation: int = _fx_generation
@@ -6331,7 +6353,7 @@ func _handle_roll_event(data: Dictionary) -> void:
 		if tool_id == &"LIFE_ROULETTE":
 			await _roll_pad.play_spin(int(details["face"]), _pending_power)
 		else:
-			await _roll_pad.play_trigger(bool(details["fired"]), int(details.get("accumulated", 0)))
+			await _roll_pad.play_trigger(bool(details["fired"]),int(details.get("accumulated",0)),int(details.get("lost",0)),bool(result.get("can_continue",false)))
 		if pad_generation != _fx_generation or pad_serial != _fx_serial:
 			return
 		_fx_busy = false
@@ -6342,7 +6364,7 @@ func _handle_roll_event(data: Dictionary) -> void:
 		if tool_id == &"LIFE_ROULETTE":
 			_roll_pad.play_spin(int(details["face"]), _pending_power)
 		else:
-			_roll_pad.play_trigger(bool(details["fired"]), int(details.get("accumulated", 0)))
+			_roll_pad.play_trigger(bool(details["fired"]),int(details.get("accumulated",0)),int(details.get("lost",0)),bool(result.get("can_continue",false)))
 	if instant_roll_for_test or not RollPresenter.supports(tool_id):
 		_reveal_roll(data)
 		return
@@ -6385,7 +6407,7 @@ func _reveal_roll(data: Dictionary) -> void:
 	_show_center_banner("P%d  %s" % [data["player_id"], roll_text.strip_edges()], Color("ff8787") if fired else Color("fff3bf"))
 	if bool((data["result"] as Dictionary).get("ends_turn", false)):
 		# 이동 없이 턴이 끝나는 굴림(러시안 룰렛 실탄·화투 망통): 결과 알림과 피격 반응을 충분히 보여 준 뒤에야 다음 차례로 넘어간다.
-		_announce_move_failed("실탄 폭발!" if fired else "망통!", roller)
+		_announce_move_failed("폭죽 깃발!" if fired else "망통!", roller)
 
 
 ## 윷놀이 기물의 [선택적 업기] 팝업: 화면 중앙에 [업기 (하나로 합체)] / [그냥 두기 (개별 유지)] 두 버튼을 띄운다.

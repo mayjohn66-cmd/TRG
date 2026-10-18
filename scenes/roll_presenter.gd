@@ -7,7 +7,7 @@ extends PanelContainer
 ## 연출이 끝났다 (취소 포함). play()는 이 시그널을 await 한다.
 signal finished
 
-const SUPPORTED: Array[StringName] = [&"D6", &"CHINCHIRO", &"YUT", &"LIFE_ROULETTE", &"SLOT_777", &"HOLDEM", &"DICE_HWATU", &"DICE_MAHJONG", &"DICE_TAROT"]
+const SUPPORTED: Array[StringName] = [&"D6", &"CHINCHIRO", &"YUT", &"LIFE_ROULETTE", &"SLOT_777", &"HOLDEM", &"DICE_HWATU", &"DICE_MAHJONG", &"DICE_TAROT", &"REVOLVER"]
 const YUT_NAMES: Dictionary = {-1: "빽도", 1: "도", 2: "개", 3: "걸", 4: "윷", 5: "모"}
 const SLOT_SYMBOLS: Array[String] = ["체리", "레몬", "종", "BAR", "다이아", "7"]
 const SUITS: Array[String] = ["♣", "♦", "♥", "♠"]
@@ -58,6 +58,7 @@ var _mahjong_3d: MahjongSlam3D = null
 var _mahjong_names: Array[Label] = []
 var _yut_3d: YutThrow3D = null
 var _slot_3d: SlotMachine3D = null
+var _toy_gun: ToyFlagGun3D = null
 
 
 func _init() -> void:
@@ -88,7 +89,7 @@ func play(tool_id: StringName, result: Dictionary, power: float = 0.5) -> void:
 		return
 	_power = clampf(power, 0.0, 1.0)
 	_result = result
-	if tool_id in [&"HOLDEM", &"DICE_HWATU", &"DICE_TAROT", &"DICE_MAHJONG", &"YUT", &"LIFE_ROULETTE", &"SLOT_777"]:
+	if tool_id in [&"HOLDEM", &"DICE_HWATU", &"DICE_TAROT", &"DICE_MAHJONG", &"YUT", &"LIFE_ROULETTE", &"SLOT_777", &"REVOLVER"]:
 		last_display = ""
 	_mode = tool_id
 	_t = 0.0
@@ -112,6 +113,8 @@ func cancel() -> void:
 		_wheel.stop_rendering()
 	if _slot_3d != null:
 		_slot_3d.stop_rendering()
+	if _toy_gun != null:
+		_toy_gun.stop_rendering()
 	if not active:
 		visible = false
 		return
@@ -144,6 +147,8 @@ func _process(delta: float) -> void:
 			_wheel.stop_rendering()
 		if _slot_3d != null:
 			_slot_3d.stop_rendering()
+		if _toy_gun != null:
+			_toy_gun.stop_rendering()
 		finished.emit()
 
 
@@ -178,8 +183,13 @@ func _clear() -> void:
 		_slot_3d.hide()
 		if _slot_3d.get_parent() != self:
 			_slot_3d.reparent(self)
+	if _toy_gun != null:
+		_toy_gun.stop_rendering()
+		_toy_gun.hide()
+		if _toy_gun.get_parent() != self:
+			_toy_gun.reparent(self)
 	for child: Node in get_children():
-		if child == _dice_3d or child == _mahjong_3d or child == _yut_3d or child == _wheel or child == _slot_3d:
+		if child == _dice_3d or child == _mahjong_3d or child == _yut_3d or child == _wheel or child == _slot_3d or child == _toy_gun:
 			continue
 		remove_child(child)
 		child.queue_free()
@@ -221,7 +231,7 @@ func _box(bg: Color, border: Color, radius: int, min_size: Vector2) -> PanelCont
 
 func _build(tool_id: StringName) -> void:
 	_clear()
-	var illustrated: bool = tool_id in [&"HOLDEM", &"DICE_HWATU", &"DICE_TAROT", &"DICE_MAHJONG", &"YUT", &"LIFE_ROULETTE", &"SLOT_777"]
+	var illustrated: bool = tool_id in [&"HOLDEM", &"DICE_HWATU", &"DICE_TAROT", &"DICE_MAHJONG", &"YUT", &"LIFE_ROULETTE", &"SLOT_777", &"REVOLVER"]
 	add_theme_stylebox_override("panel", UiSkin.panel("panel", 12.0) if illustrated or tool_id in [&"D6", &"CHINCHIRO"] else _default_style)
 	_root = VBoxContainer.new()
 	_root.add_theme_constant_override("separation", 8)
@@ -281,6 +291,19 @@ func _build(tool_id: StringName) -> void:
 			if bool(_result.get("reroll",false)):
 				caption += " · 한 번 더"
 			_make_card_result(caption)
+		&"REVOLVER":
+			_title.text = "러시안 룰렛 · 장난감 총"
+			var details: Dictionary = _result.get("details",{})
+			var fired: bool = bool(details.get("fired",false))
+			_total = ToyFlagGun3D.total_time(fired)
+			if _toy_gun == null:
+				_toy_gun = ToyFlagGun3D.new()
+				_stage.add_child(_toy_gun)
+			else:
+				_toy_gun.reparent(_stage)
+			_toy_gun.show()
+			_toy_gun.begin(fired,int(details.get("accumulated",0)),int(details.get("lost",0)))
+			_make_card_result(ToyFlagGun3D.result_caption(fired,int(details.get("accumulated",0)),int(details.get("lost",0)),bool(_result.get("can_continue",false))))
 		&"SLOT_777":
 			_title.text = "777 슬롯머신"
 			_total = SlotMachine3D.TOTAL_TIME
@@ -475,6 +498,12 @@ func _update(t: float) -> void:
 		&"YUT": _update_yut(t)
 		&"LIFE_ROULETTE": _update_wheel(t)
 		&"SLOT_777": _update_slot(t)
+		&"REVOLVER":
+			_toy_gun.apply_time(t)
+			if _toy_gun.settled:
+				_die_label.text = _card_result_caption
+				_die_label.modulate.a = 1.0
+				last_display = _final_text(_mode,_result)
 		&"HOLDEM", &"DICE_HWATU", &"DICE_TAROT": _update_illustrated_cards(t)
 		&"DICE_MAHJONG": _update_mahjong(t)
 
@@ -617,6 +646,7 @@ func _final_text(tool_id: StringName, result: Dictionary) -> String:
 		&"D6", &"CHINCHIRO": return str(int(result.get("steps", 0)))
 		&"YUT": return str(YUT_NAMES.get(int(details.get("face", result.get("steps", 0))), "?"))
 		&"LIFE_ROULETTE": return str(int(details.get("face", result.get("steps", 0))))
+		&"REVOLVER": return "뿅!" if bool(details.get("fired",false)) else "찰칵"
 		&"SLOT_777":
 			var reels: Array = details.get("reels", [0, 0, 0])
 			return "|".join(PackedStringArray([SLOT_SYMBOLS[int(reels[0])], SLOT_SYMBOLS[int(reels[1])], SLOT_SYMBOLS[int(reels[2])]]))

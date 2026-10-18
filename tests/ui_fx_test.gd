@@ -61,6 +61,7 @@ func _run() -> void:
 	await _test_yut_throw()
 	await _test_roulette_spin()
 	await _test_slot_machine()
+	await _test_toy_flag_gun()
 	_board._announcer.cancel()
 	await _test_gauge_and_lock()
 	await _test_instant_flag()
@@ -594,6 +595,76 @@ func _test_slot_machine() -> void:
 	_expect(not presenter.active and not presenter.visible and view.render_view.render_target_update_mode==SubViewport.UPDATE_DISABLED,"mid-spin cancellation cannot strand input or rendering")
 	presenter.set_process(true)
 	print("SLOT_MACHINE_FX_OK")
+
+
+func _test_toy_flag_gun() -> void:
+	var pad := RollPad.new()
+	root.add_child(pad)
+	pad.set_kind(RollPad.Kind.REVOLVER)
+	pad.set_process(false)
+	var gun: ToyFlagGun3D = pad._gun
+	var outcomes: Array[bool] = []
+	gun.outcome_reached.connect(func(fired: bool) -> void: outcomes.append(fired))
+	pad.play_trigger(false,3)
+	pad._process(ToyFlagGun3D.CLICK_TIME-0.01)
+	_expect(gun.chambers.count(true)==0 and not gun.flag_root.visible,"no flag or safe marker leaks before public click")
+	pad._process(0.02)
+	_expect(gun.chambers.count(true)==1 and not gun.flag_root.visible,"safe click reveals exactly one used position")
+	pad._process(ToyFlagGun3D.SAFE_TOTAL_TIME)
+	_expect(not pad.active and pad._hint_label.text=="찰칵! 누적 3칸","safe result reports accumulation and releases input")
+	_expect(gun.render_view.render_target_update_mode==SubViewport.UPDATE_DISABLED,"safe completion sleeps the renderer")
+	pad.play_trigger(true,0,3,false)
+	pad._process(ToyFlagGun3D.CLICK_TIME-0.01)
+	_expect(not gun.flag_root.visible and pad._hint_label.text.is_empty(),"party result is hidden while pulling")
+	pad._process(0.25)
+	_expect(gun.flag_root.visible and gun.confetti.filter(func(p: MeshInstance3D) -> bool: return p.visible).size()==ToyFlagGun3D.CONFETTI_COUNT,"fired result produces attached flag and paper confetti")
+	pad._process(ToyFlagGun3D.FLAG_RESULT_TIME-0.56+0.001)
+	_expect(pad._hint_label.text=="뿅! 누적 3칸 사라짐 · 턴 종료","local caption matches actual lost accumulation")
+	pad._process(ToyFlagGun3D.FLAG_TOTAL_TIME)
+	_expect(outcomes==[false,true] and not pad.active,"each click/pop emits exactly one outcome and completes")
+	pad.reset_revolver()
+	_expect(not gun.flag_root.visible and gun.chambers.count(true)==0,"new cylinder clears old flag and progress")
+	pad.play_trigger(true,0,6,false)
+	pad._process(0.60)
+	pad.cancel_spin()
+	_expect(not pad.active and not gun.visible and not gun.flag_root.visible and gun.render_view.render_target_update_mode==SubViewport.UPDATE_DISABLED,"mid-pop cancellation clears the toy and sleeps")
+	pad.play_trigger(false,6)
+	_expect(pad._gun==gun and gun.visible,"later pulls reuse and show the same cached toy")
+	pad.set_kind(RollPad.Kind.ROULETTE)
+	_expect(not pad.active and not gun.visible,"tool switch cancels the trigger")
+	pad.queue_free()
+	await process_frame
+	# A fired result advances the engine before its visual finishes.
+	var current: int = _board.manager.current_player_id()
+	var old_tool: BaseJudgmentTool = _board.state.tools[current]
+	_board._roll_pad.instant = false
+	_board._roll_pad.set_kind(RollPad.Kind.REVOLVER)
+	_board._roll_pad.play_trigger(true,0,3,false)
+	_board._fx_busy = true
+	_board.state.tools[current] = ToolRegistry.create(&"D6")
+	_board._refresh_roll_pad()
+	_expect(_board._roll_pad.active and _board._roll_pad.kind==RollPad.Kind.REVOLVER,"next tool cannot erase an active flag animation")
+	_board._roll_pad.cancel_spin()
+	_board._fx_busy = false
+	_board.state.tools[current] = old_tool
+	_board._refresh_all()
+	var presenter: RollPresenter = _board._presenter
+	presenter.instant = false
+	presenter.set_process(false)
+	presenter.play(&"REVOLVER",{"steps":0,"ends_turn":true,"details":{"fired":true,"lost":6}})
+	presenter._update(0.2)
+	_expect(presenter.last_display.is_empty() and presenter._die_label.text.is_empty(),"remote gun hides its result before pop")
+	presenter._update(ToyFlagGun3D.FLAG_RESULT_TIME+0.001)
+	_expect(presenter._toy_gun.flag_root.visible and presenter.last_display=="뿅!" and presenter._die_label.text.contains("6칸"),"remote presenter uses the same star flag and lost-step result")
+	var cached: ToyFlagGun3D = presenter._toy_gun
+	presenter._process(presenter._total)
+	_expect(cached.render_view.render_target_update_mode==SubViewport.UPDATE_DISABLED,"remote completion sleeps")
+	presenter.play(&"REVOLVER",{"steps":9,"can_continue":true,"details":{"fired":false,"accumulated":9}})
+	presenter._update(ToyFlagGun3D.SAFE_RESULT_TIME+0.001)
+	_expect(presenter._toy_gun==cached and not cached.flag_root.visible and cached.chambers.count(true)==3,"remote safe click reuses toy and shows only public progress")
+	presenter.cancel()
+	presenter.set_process(true)
+	print("TOY_FLAG_GUN_FX_OK")
 
 
 func _angle_between(samples: Array[Vector2], from_time: float, to_time: float) -> float:

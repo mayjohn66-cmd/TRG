@@ -30,7 +30,7 @@ var last_face: int = 0
 var _wheel: RouletteSpin3D = null
 var _face_label: Label = null
 var _hint_label: Label = null
-var _gun: GunView = null
+var _gun: ToyFlagGun3D = null
 
 var _dragging: bool = false
 var _press_pos: Vector2 = Vector2.ZERO
@@ -41,46 +41,9 @@ var _velocity: float = 0.0
 var _travel: float = 0.0
 var _spinning: bool = false
 var _spin_time: float = 0.0
-
-
-## 리볼버 옆모습: 총열·약실(6발)·손잡이·방아쇠를 그린다. chambers[i]가 true면 빈 총을 당겨 비운 약실이다.
-class GunView extends Control:
-	var chambers: Array[bool] = [false, false, false, false, false, false]
-	var cylinder_angle: float = 0.0
-	var flash: Color = Color(0, 0, 0, 0)
-	var trigger_down: float = 0.0
-
-	func _init() -> void:
-		custom_minimum_size = Vector2(190, 120)
-		mouse_filter = Control.MOUSE_FILTER_IGNORE
-
-	func _draw() -> void:
-		var steel: Color = Color("868e96")
-		var dark: Color = Color("495057")
-		# 총열
-		draw_rect(Rect2(Vector2(8, 22), Vector2(120, 22)), steel, true)
-		draw_rect(Rect2(Vector2(8, 22), Vector2(120, 22)), dark, false, 2.0)
-		draw_rect(Rect2(Vector2(2, 18), Vector2(10, 8)), dark, true)
-		# 몸통과 손잡이
-		draw_rect(Rect2(Vector2(110, 20), Vector2(70, 40)), steel, true)
-		draw_rect(Rect2(Vector2(110, 20), Vector2(70, 40)), dark, false, 2.0)
-		draw_colored_polygon(PackedVector2Array([Vector2(138, 58), Vector2(182, 58), Vector2(172, 112), Vector2(128, 112)]), Color("5c3b1e"))
-		# 방아쇠 (당기면 안쪽으로 눌린다)
-		draw_rect(Rect2(Vector2(124 + trigger_down * 6.0, 60), Vector2(10, 22)), Color("e03131"), true)
-		# 약실 (6발)
-		var center: Vector2 = Vector2(96, 40)
-		draw_circle(center, 30.0, dark)
-		draw_circle(center, 27.0, Color("adb5bd"))
-		for index: int in 6:
-			var angle: float = cylinder_angle + TAU * float(index) / 6.0 - PI / 2.0
-			var spot: Vector2 = center + Vector2(cos(angle), sin(angle)) * 16.0
-			draw_circle(spot, 7.0, Color("212529") if not chambers[index] else Color("e9ecef"))
-			if chambers[index]:
-				draw_line(spot - Vector2(4, 4), spot + Vector2(4, 4), Color("868e96"), 2.0)
-				draw_line(spot - Vector2(4, -4), spot + Vector2(4, -4), Color("868e96"), 2.0)
-		draw_circle(center, 5.0, dark)
-		if flash.a > 0.0:
-			draw_circle(Vector2(6, 33), 18.0 * flash.a + 6.0, flash)
+var _firing: bool = false
+var _trigger_time: float = 0.0
+var _trigger_caption: String = ""
 
 
 func _ready() -> void:
@@ -106,7 +69,9 @@ func _ready() -> void:
 	_face_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_face_label.visible = false
 	add_child(_face_label)
-	_gun = GunView.new()
+	_gun = ToyFlagGun3D.new()
+	_gun.custom_minimum_size = Vector2(190,120)
+	_gun.size = Vector2(190,120)
 	_gun.position = Vector2((size.x - 190.0) / 2.0, 26.0)
 	_gun.visible = false
 	add_child(_gun)
@@ -138,8 +103,16 @@ func set_kind(value: Kind) -> void:
 	_wheel.visible = value == Kind.ROULETTE
 	_face_label.visible = value == Kind.ROULETTE
 	_gun.visible = value == Kind.REVOLVER
+	if value == Kind.REVOLVER:
+		_gun.render_view.render_target_update_mode = SubViewport.UPDATE_ONCE
+	else:
+		_gun.stop_rendering()
 	match value:
-		Kind.ROULETTE: _hint_label.text = "원판을 잡고 빙글 돌려 놓으세요"
+		Kind.ROULETTE:
+			_hint_label.text = "원판을 잡고 빙글 돌려 놓으세요"
+			_hint_label.position = Vector2(0,size.y-22.0)
+			_hint_label.size = Vector2(size.x,20)
+			_hint_label.add_theme_font_size_override("font_size",13)
 		Kind.REVOLVER: _hint_label.text = ""  # 발사·정지 두 버튼이 안내를 대신한다
 		_: _hint_label.text = ""
 
@@ -149,14 +122,10 @@ func set_enabled(value: bool) -> void:
 	modulate = Color.WHITE if value or active else Color(0.55, 0.55, 0.6, 0.85)
 
 
-## 리볼버 약실 표시를 새 판처럼 비운다 (턴이 끝났을 때).
+## Clear only the public safe-click progress; no loaded chamber is displayed.
 func reset_revolver() -> void:
-	if _gun == null:
-		return
-	for index: int in 6:
-		_gun.chambers[index] = false
-	_gun.cylinder_angle = 0.0
-	_gun.queue_redraw()
+	if _gun != null:
+		_gun.reset_state()
 
 
 func _gui_input(event: InputEvent) -> void:
@@ -249,6 +218,17 @@ func play_spin(face: int, power: float) -> void:
 
 
 func _process(delta: float) -> void:
+	if _firing:
+		_trigger_time += delta
+		_gun.apply_time(_trigger_time)
+		if _gun.settled:
+			_hint_label.text = _trigger_caption
+		if _trigger_time >= ToyFlagGun3D.total_time(_gun.fired_result):
+			_firing = false
+			active = false
+			_gun.stop_rendering()
+			finished.emit()
+		return
 	if not _spinning:
 		return
 	_spin_time += delta
@@ -272,42 +252,36 @@ func cancel_spin() -> void:
 	_dragging = false
 	if _wheel != null:
 		_wheel.stop_rendering()
-	if not _spinning:
+	if _gun != null:
+		if _firing:
+			_gun.reset_state()
+			_gun.hide()
+		_gun.stop_rendering()
+	if not _spinning and not _firing:
 		return
 	_spinning = false
+	_firing = false
 	active = false
 	_face_label.scale = Vector2.ONE
 	finished.emit()
 
 
-## 리볼버 연출: 빈 총이면 약실이 한 칸 돌고 철컥, 실탄이면 총구에서 번쩍 한다.
-func play_trigger(fired: bool, accumulated: int) -> void:
+## Fire the public outcome as a party toy, or click the next empty chamber.
+func play_trigger(fired: bool, accumulated: int, lost: int = 0, can_continue: bool = true) -> void:
+	cancel_spin()
+	_trigger_caption = ToyFlagGun3D.result_caption(fired,accumulated,lost,can_continue)
+	_gun.show()
+	_gun.begin(fired,accumulated,lost)
 	if instant or not is_inside_tree():
-		if fired:
-			reset_revolver()
+		_gun.apply_time(ToyFlagGun3D.total_time(fired))
+		_gun.stop_rendering()
 		return
 	active = true
-	var pull: Tween = create_tween()
-	pull.tween_property(_gun, "trigger_down", 1.0, 0.08)
-	pull.tween_property(_gun, "trigger_down", 0.0, 0.12)
-	pull.parallel().tween_method(func(_v: float) -> void: _gun.queue_redraw(), 0.0, 1.0, 0.2)
-	await pull.finished
-	if fired:
-		_gun.flash = Color("ff6b6b")
-		_gun.queue_redraw()
-		var boom: Tween = create_tween()
-		boom.tween_method(func(value: float) -> void:
-			_gun.flash.a = value
-			_gun.queue_redraw(), 1.0, 0.0, 0.5)
-		await boom.finished
-		reset_revolver()
-	else:
-		var index: int = clampi(accumulated / ToolRussianRoulette.STEPS_PER_EMPTY - 1, 0, 5)
-		_gun.chambers[index] = true
-		var spin: Tween = create_tween()
-		spin.tween_method(func(value: float) -> void:
-			_gun.cylinder_angle = value
-			_gun.queue_redraw(), _gun.cylinder_angle, _gun.cylinder_angle + TAU / 6.0, 0.18)
-		await spin.finished
-	active = false
-	finished.emit()
+	_firing = true
+	modulate = Color.WHITE
+	_trigger_time = 0.0
+	_hint_label.text = ""
+	_hint_label.add_theme_font_size_override("font_size",11)
+	_hint_label.position = Vector2(-30,134)
+	_hint_label.size = Vector2(260,22)
+	await finished
