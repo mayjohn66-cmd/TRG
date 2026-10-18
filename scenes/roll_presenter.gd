@@ -13,7 +13,6 @@ const SLOT_SYMBOLS: Array[String] = ["체리", "레몬", "종", "BAR", "다이�
 const SUITS: Array[String] = ["♣", "♦", "♥", "♠"]
 const RANKS: Array[String] = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"]
 ## 연출 시간(초).
-const ROULETTE_SPIN: float = 1.2
 const SLOT_STOPS: Array[float] = [0.4, 0.8, 1.2]
 const CARD_FLIP_INTERVAL: float = 0.15
 const CARD_FLIP_TIME: float = 0.12
@@ -40,8 +39,7 @@ var _root: VBoxContainer = null
 var _title: Label = null
 var _stage: Control = null
 var _die_label: Label = null
-var _wheel: WheelView = null
-var _wheel_label: Label = null
+var _wheel: RouletteSpin3D = null
 var _reels: Array[PanelContainer] = []
 var _reel_labels: Array[Label] = []
 var _reel_stopped: Array[bool] = [false, false, false]
@@ -62,37 +60,6 @@ var _card_result_caption: String = ""
 var _mahjong_3d: MahjongSlam3D = null
 var _mahjong_names: Array[Label] = []
 var _yut_3d: YutThrow3D = null
-
-
-## 룰렛 원판. angle(라디안)만큼 돌아간 상태로 1~10 눈금을 그린다 (위쪽 바늘 자리가 현재 눈금).
-class WheelView extends Control:
-	var angle: float = 0.0
-
-	func _init() -> void:
-		custom_minimum_size = Vector2(190, 190)
-		mouse_filter = Control.MOUSE_FILTER_IGNORE
-
-	func _draw() -> void:
-		var center: Vector2 = size / 2.0
-		var radius: float = minf(size.x, size.y) / 2.0 - 4.0
-		var font: Font = get_theme_default_font()
-		for index: int in 10:
-			var mid: float = -PI / 2.0 + index * TAU / 10.0 - angle
-			var from_angle: float = mid - TAU / 20.0
-			var to_angle: float = mid + TAU / 20.0
-			var points := PackedVector2Array([center])
-			for step: int in 9:
-				var theta: float = lerpf(from_angle, to_angle, step / 8.0)
-				points.append(center + Vector2(cos(theta), sin(theta)) * radius)
-			var color: Color = Color("e8590c") if index == 6 else (Color("1c7ed6") if index % 2 == 0 else Color("364fc7"))
-			draw_colored_polygon(points, color)
-			var label_pos: Vector2 = center + Vector2(cos(mid), sin(mid)) * radius * 0.72
-			var text: String = str(index + 1)
-			var text_size: Vector2 = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 18)
-			draw_string(font, label_pos - Vector2(text_size.x / 2.0, -6.0), text, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("f8f9fa"))
-		draw_arc(center, radius, 0.0, TAU, 64, Color("f1f3f5"), 3.0)
-		# 고정 바늘 (위쪽)
-		draw_colored_polygon(PackedVector2Array([center + Vector2(-9, -radius - 6), center + Vector2(9, -radius - 6), center + Vector2(0, -radius + 14)]), Color("ffd43b"))
 
 
 func _init() -> void:
@@ -123,7 +90,7 @@ func play(tool_id: StringName, result: Dictionary, power: float = 0.5) -> void:
 		return
 	_power = clampf(power, 0.0, 1.0)
 	_result = result
-	if tool_id in [&"HOLDEM", &"DICE_HWATU", &"DICE_TAROT", &"DICE_MAHJONG", &"YUT"]:
+	if tool_id in [&"HOLDEM", &"DICE_HWATU", &"DICE_TAROT", &"DICE_MAHJONG", &"YUT", &"LIFE_ROULETTE"]:
 		last_display = ""
 	_mode = tool_id
 	_t = 0.0
@@ -143,6 +110,8 @@ func cancel() -> void:
 		_mahjong_3d.stop_rendering()
 	if _yut_3d != null:
 		_yut_3d.stop_rendering()
+	if _wheel != null:
+		_wheel.stop_rendering()
 	if not active:
 		visible = false
 		return
@@ -171,6 +140,8 @@ func _process(delta: float) -> void:
 			_mahjong_3d.stop_rendering()
 		if _yut_3d != null:
 			_yut_3d.stop_rendering()
+		if _wheel != null:
+			_wheel.stop_rendering()
 		finished.emit()
 
 
@@ -195,8 +166,13 @@ func _clear() -> void:
 		_yut_3d.hide()
 		if _yut_3d.get_parent() != self:
 			_yut_3d.reparent(self)
+	if _wheel != null:
+		_wheel.stop_rendering()
+		_wheel.hide()
+		if _wheel.get_parent() != self:
+			_wheel.reparent(self)
 	for child: Node in get_children():
-		if child == _dice_3d or child == _mahjong_3d or child == _yut_3d:
+		if child == _dice_3d or child == _mahjong_3d or child == _yut_3d or child == _wheel:
 			continue
 		remove_child(child)
 		child.queue_free()
@@ -211,7 +187,6 @@ func _clear() -> void:
 	_card_home.clear()
 	_mahjong_names.clear()
 	_reel_stopped = [false, false, false]
-	_wheel = null
 
 
 func _label(text: String, size_px: int, color: Color) -> Label:
@@ -241,7 +216,7 @@ func _box(bg: Color, border: Color, radius: int, min_size: Vector2) -> PanelCont
 
 func _build(tool_id: StringName) -> void:
 	_clear()
-	var illustrated: bool = tool_id in [&"HOLDEM", &"DICE_HWATU", &"DICE_TAROT", &"DICE_MAHJONG", &"YUT"]
+	var illustrated: bool = tool_id in [&"HOLDEM", &"DICE_HWATU", &"DICE_TAROT", &"DICE_MAHJONG", &"YUT", &"LIFE_ROULETTE"]
 	add_theme_stylebox_override("panel", UiSkin.panel("panel", 12.0) if illustrated or tool_id in [&"D6", &"CHINCHIRO"] else _default_style)
 	_root = VBoxContainer.new()
 	_root.add_theme_constant_override("separation", 8)
@@ -288,12 +263,19 @@ func _build(tool_id: StringName) -> void:
 			_make_card_result(caption)
 		&"LIFE_ROULETTE":
 			_title.text = "인생게임 회전 룰렛"
-			_total = ROULETTE_SPIN + HOLD_TIME + 0.15
-			_wheel = WheelView.new()
-			_stage.add_child(_wheel)
-			_wheel_label = _label("?", 44, Color("ffd43b"))
-			_root.add_child(_wheel_label)
-			_final_face = int((_result["details"] as Dictionary).get("face", _result.get("steps", 1)))
+			_total = RouletteSpin3D.TOTAL_TIME
+			if _wheel == null:
+				_wheel = RouletteSpin3D.new()
+				_stage.add_child(_wheel)
+			else:
+				_wheel.reparent(_stage)
+			_wheel.show()
+			_final_face = int((_result.get("details",{}) as Dictionary).get("face",_result.get("steps",1)))
+			_wheel.begin(_final_face,_power)
+			var caption: String = "%d · %s" % [_final_face,_card_move_text()]
+			if bool(_result.get("reroll",false)):
+				caption += " · 한 번 더"
+			_make_card_result(caption)
 		&"SLOT_777":
 			_title.text = "777 슬롯머신"
 			_total = SLOT_STOPS[2] + HOLD_TIME + 0.15
@@ -497,11 +479,6 @@ func _update(t: float) -> void:
 		&"DICE_MAHJONG": _update_mahjong(t)
 
 
-func _ease_out(x: float) -> float:
-	var inv: float = 1.0 - clampf(x, 0.0, 1.0)
-	return 1.0 - inv * inv * inv
-
-
 func _update_3d_die(t: float) -> void:
 	_dice_3d.apply_time(t)
 	if t >= DiceRoll3D.ROLL_TIME and not _settled:
@@ -522,25 +499,13 @@ func _update_yut(t: float) -> void:
 		last_display = str(YUT_NAMES[_yut_3d.result_value])
 
 
-## 원판이 처음엔 엄청 빠르게 돌다가 EASE_OUT 곡선으로 1.2초 동안 감속하며 최종 눈금에 딱 멈춘다.
+## The same physical rotor is used by the direct pad and this remote reveal.
 func _update_wheel(t: float) -> void:
-	var total_ticks: float = 40.0 + float(_final_face - 1)
-	var progress: float = _ease_out(t / ROULETTE_SPIN)
-	var k: float = total_ticks * progress
-	_wheel.angle = k * TAU / 10.0
-	_wheel.queue_redraw()
-	_wheel_label.text = str((int(roundf(k)) % 10) + 1)
-	if t >= ROULETTE_SPIN and not _settled:
-		_settled = true
-		_wheel.angle = total_ticks * TAU / 10.0
-		_wheel.queue_redraw()
-		_wheel_label.text = str(_final_face)
+	_wheel.apply_time(t)
+	if _wheel.settled:
+		_die_label.text = _card_result_caption
+		_die_label.modulate.a = 1.0
 		last_display = str(_final_face)
-	if _settled:
-		var punch: float = clampf((t - ROULETTE_SPIN) / 0.2, 0.0, 1.0)
-		var scale_value: float = 1.0 + 0.4 * pow(1.0 - punch, 2.0)
-		_wheel_label.pivot_offset = _wheel_label.size / 2.0
-		_wheel_label.scale = Vector2(scale_value, scale_value)
 
 
 ## 세 릴이 동시에 돌다가 0.4 -> 0.8 -> 1.2초에 차례로 철컥! 하고 멈춘다.

@@ -28,6 +28,7 @@ const SUITES: Array[String] = [
 	"res://tests/test_judgment_card_art.gd",
 	"res://tests/test_mahjong_slam.gd",
 	"res://tests/test_yut_throw.gd",
+	"res://tests/test_roulette_spin.gd",
 ]
 
 

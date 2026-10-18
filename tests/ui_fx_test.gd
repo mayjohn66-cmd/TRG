@@ -59,6 +59,7 @@ func _run() -> void:
 	await _test_illustrated_judgment_cards()
 	await _test_mahjong_landings()
 	await _test_yut_throw()
+	await _test_roulette_spin()
 	_board._announcer.cancel()
 	await _test_gauge_and_lock()
 	await _test_instant_flag()
@@ -281,16 +282,16 @@ func _test_presenters() -> void:
 	# 윷
 	elapsed = await _play(&"YUT", {"tool_id": &"YUT", "steps": 3, "details": {"face": 3}})
 	_expect(elapsed >= 0.55 and presenter.last_display == "걸", "윷 연출 (%.2f초, %s)" % [elapsed, presenter.last_display])
-	# 인생게임 룰렛: 1.2초 EASE_OUT 감속 - 초반이 후반보다 훨씬 빠르게 돈다
+	# 인생게임 룰렛: 짧은 가속 뒤 감속하며 정확한 칸 가운데 정지한다
 	var samples: Array[Vector2] = []
 	var sample_roulette: Callable = func(t: float) -> void:
 		if presenter._wheel != null:
 			samples.append(Vector2(t, presenter._wheel.angle))
 	elapsed = await _play(&"LIFE_ROULETTE", {"tool_id": &"LIFE_ROULETTE", "steps": 7, "details": {"face": 7}}, sample_roulette)
-	_expect(elapsed >= 1.2 and elapsed < 3.0, "룰렛 연출 시간 (%.2f초)" % elapsed)
+	_expect(elapsed >= RouletteSpin3D.TOTAL_TIME-0.1 and elapsed < 3.5, "룰렛 연출 시간 (%.2f초)" % elapsed)
 	_expect(presenter.last_display == "7", "룰렛 최종 눈금 (%s)" % presenter.last_display)
-	var early: float = _angle_between(samples, 0.0, 0.3)
-	var late: float = _angle_between(samples, 0.9, 1.2)
+	var early: float = _angle_between(samples, 0.4, 0.7)
+	var late: float = _angle_between(samples, 1.3, 1.6)
 	_expect(early > late * 3.0 and late >= 0.0, "룰렛은 감속해야 한다 (초반 %.2f > 후반 %.2f)" % [early, late])
 	# 777 슬롯: 0.4 -> 0.8 -> 1.2초에 릴이 차례로 멈춘다
 	var stop_times: Array[float] = [-1.0, -1.0, -1.0]
@@ -487,6 +488,66 @@ func _test_yut_throw() -> void:
 	presenter.cancel()
 	presenter.set_process(true)
 	print("YUT_THROW_FX_OK")
+
+
+func _test_roulette_spin() -> void:
+	var presenter: RollPresenter = _board._presenter
+	presenter.instant = false
+	presenter.set_process(false)
+	presenter.play(&"LIFE_ROULETTE",{"steps":7,"reroll":true,"details":{"face":7}},0.6)
+	await process_frame
+	var view: RouletteSpin3D = presenter._wheel
+	var ticks: Array[int] = []
+	var observer: Callable = func(ordinal: int) -> void: ticks.append(ordinal)
+	view.tick_passed.connect(observer)
+	presenter._update(0.8)
+	_expect(presenter.last_display.is_empty() and presenter._die_label.text.is_empty(),"roulette does not reveal its result while spinning")
+	presenter._update(RouletteSpin3D.RESULT_TIME+0.001)
+	presenter._update(RouletteSpin3D.RESULT_TIME+0.01)
+	_expect(view.displayed_value()==7 and presenter.last_display=="7","real gold seven sector aligns with fixed pointer")
+	_expect(presenter._die_label.text=="7 · 7칸 전진 · 한 번 더","roulette shows movement and authoritative reroll")
+	_expect(ticks.size()==view.tick_times.size(),"boundary events occur once, including skipped frames")
+	view.tick_passed.disconnect(observer)
+	presenter._process(presenter._total)
+	_expect(not presenter.active and view.render_view.render_target_update_mode==SubViewport.UPDATE_DISABLED,"remote roulette completes and sleeps")
+	for face: int in range(1,11):
+		presenter.play(&"LIFE_ROULETTE",{"steps":face,"details":{"face":face}})
+		presenter._update(RouletteSpin3D.RESULT_TIME+0.001)
+		_expect(view==presenter._wheel and view.displayed_value()==face,"all ten results reuse one wheel and align correctly")
+		presenter.cancel()
+	presenter.play(&"YUT",{"steps":2,"details":{"face":2}})
+	_expect(view.render_view.render_target_update_mode==SubViewport.UPDATE_DISABLED,"switching to Yut leaves roulette asleep")
+	presenter.cancel()
+	presenter.set_process(true)
+	# Direct pad is the real local-player route; verify it independently.
+	var pad := RollPad.new()
+	root.add_child(pad)
+	pad.set_kind(RollPad.Kind.ROULETTE)
+	pad.set_process(false)
+	var released: Array[bool] = []
+	pad.finished.connect(func() -> void: released.append(true))
+	var cached: RouletteSpin3D = pad._wheel
+	pad._velocity = 12.0
+	pad._wheel.set_idle_angle(0.31)
+	pad.play_spin(7,0.6)
+	pad._process(0.6)
+	_expect(pad.active and pad._face_label.text.is_empty() and pad._wheel.angle<0.31,"local reverse fling stays private and follows the drag direction")
+	pad._process(RouletteSpin3D.TOTAL_TIME)
+	_expect(not pad.active and pad.last_face==7 and pad._wheel.displayed_value()==7,"local route finishes on the physical engine result")
+	_expect(pad._hint_label.text.contains("한 번 더") and released.size()==1,"local seven signals completion and reroll once")
+	_expect(pad._wheel.render_view.render_target_update_mode==SubViewport.UPDATE_DISABLED,"local completion sleeps the renderer")
+	pad.play_spin(3,0.1)
+	pad.cancel_spin()
+	_expect(not pad.active and released.size()==2,"cancelling an active pad resumes awaiting board handlers")
+	pad.set_kind(RollPad.Kind.REVOLVER)
+	_expect(cached.render_view.render_target_update_mode==SubViewport.UPDATE_DISABLED,"tool switch cannot strand a running wheel")
+	pad.set_kind(RollPad.Kind.ROULETTE)
+	pad.instant = true
+	pad.play_spin(10,0.0)
+	_expect(pad._wheel==cached and pad._wheel.displayed_value()==10 and not pad.active,"instant path keeps the actual face and reuses geometry")
+	pad.queue_free()
+	await process_frame
+	print("ROULETTE_SPIN_FX_OK")
 
 
 func _angle_between(samples: Array[Vector2], from_time: float, to_time: float) -> float:

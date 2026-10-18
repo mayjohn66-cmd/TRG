@@ -19,8 +19,6 @@ const MIN_FLING_SPEED: float = 3.0
 const MAX_FLING_SPEED: float = 20.0
 const TAP_MAX_TRAVEL: float = 8.0
 const TAP_MAX_SECONDS: float = 0.35
-const SPIN_MIN_SECONDS: float = 1.1
-const SPIN_MAX_SECONDS: float = 2.2
 
 var kind: Kind = Kind.NONE
 var enabled: bool = true
@@ -29,7 +27,7 @@ var instant: bool = false
 var active: bool = false
 var last_face: int = 0
 
-var _wheel: RollPresenter.WheelView = null
+var _wheel: RouletteSpin3D = null
 var _face_label: Label = null
 var _hint_label: Label = null
 var _gun: GunView = null
@@ -41,7 +39,8 @@ var _last_angle: float = 0.0
 var _last_move_msec: int = 0
 var _velocity: float = 0.0
 var _travel: float = 0.0
-var _tween: Tween = null
+var _spinning: bool = false
+var _spin_time: float = 0.0
 
 
 ## 리볼버 옆모습: 총열·약실(6발)·손잡이·방아쇠를 그린다. chambers[i]가 true면 빈 총을 당겨 비운 약실이다.
@@ -88,7 +87,7 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	size = Vector2(200, 170)
 	custom_minimum_size = size
-	_wheel = RollPresenter.WheelView.new()
+	_wheel = RouletteSpin3D.new()
 	_wheel.custom_minimum_size = Vector2(WHEEL_SIZE, WHEEL_SIZE)
 	_wheel.size = Vector2(WHEEL_SIZE, WHEEL_SIZE)
 	_wheel.position = Vector2((size.x - WHEEL_SIZE) / 2.0, 6.0)
@@ -96,14 +95,14 @@ func _ready() -> void:
 	_wheel.visible = false
 	add_child(_wheel)
 	_face_label = Label.new()
-	_face_label.add_theme_font_size_override("font_size", 38)
+	_face_label.add_theme_font_size_override("font_size", 21)
 	_face_label.add_theme_color_override("font_color", Color("ffd43b"))
 	_face_label.add_theme_constant_override("outline_size", 8)
 	_face_label.add_theme_color_override("font_outline_color", Color("0d1018"))
 	_face_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_face_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_face_label.size = Vector2(70, 50)
-	_face_label.position = _wheel.position + (_wheel.size - _face_label.size) / 2.0
+	_face_label.size = Vector2(200, 28)
+	_face_label.position = Vector2(0,118)
 	_face_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_face_label.visible = false
 	add_child(_face_label)
@@ -126,10 +125,16 @@ func _ready() -> void:
 
 ## 어떤 패드를 보여 줄지 정한다 (NONE이면 숨김: 일반 굴리기 버튼이 대신 보인다).
 func set_kind(value: Kind) -> void:
+	if kind != value:
+		cancel_spin()
 	kind = value
 	visible = value != Kind.NONE
 	if _wheel == null:
 		return
+	if value != Kind.ROULETTE:
+		_wheel.stop_rendering()
+	elif _wheel.render_view != null:
+		_wheel.render_view.render_target_update_mode = SubViewport.UPDATE_ONCE
 	_wheel.visible = value == Kind.ROULETTE
 	_face_label.visible = value == Kind.ROULETTE
 	_gun.visible = value == Kind.REVOLVER
@@ -141,7 +146,7 @@ func set_kind(value: Kind) -> void:
 
 func set_enabled(value: bool) -> void:
 	enabled = value
-	modulate = Color.WHITE if value else Color(0.55, 0.55, 0.6, 0.85)
+	modulate = Color.WHITE if value or active else Color(0.55, 0.55, 0.6, 0.85)
 
 
 ## 리볼버 약실 표시를 새 판처럼 비운다 (턴이 끝났을 때).
@@ -195,8 +200,7 @@ func _drag_to(pointer: Vector2, center: Vector2) -> void:
 	_last_angle = angle
 	_last_move_msec = now
 	_travel += pointer.distance_to(_press_pos) if _travel == 0.0 else 0.0
-	_wheel.angle -= delta
-	_wheel.queue_redraw()
+	_wheel.set_idle_angle(_wheel.angle-delta)
 	_show_face_under_needle()
 
 
@@ -221,42 +225,58 @@ func _release_wheel(pointer: Vector2) -> void:
 
 
 func _show_face_under_needle() -> void:
-	var step: float = TAU / 10.0
-	var index: int = posmod(int(roundf(_wheel.angle / step)), 10)
-	_face_label.text = str(index + 1)
+	_face_label.text = str(_wheel.displayed_value())
 
 
-## 엔진이 정한 눈금(face 1~10)으로 원판이 감속하며 멈춘다. power(0~1)가 클수록 오래·많이 돈다.
+## Same 3D motion as remote rolls; dragging chooses direction and visual power.
 func play_spin(face: int, power: float) -> void:
+	cancel_spin()
 	last_face = face
+	_face_label.scale = Vector2.ONE
 	if instant or not is_inside_tree():
-		_wheel.angle = float(face - 1) * TAU / 10.0
-		_wheel.queue_redraw()
+		_wheel.set_idle_angle((face-1)*RouletteSpin3D.STEP)
+		_wheel.stop_rendering()
 		_face_label.text = str(face)
 		return
+	_spinning = true
 	active = true
-	if _tween != null and _tween.is_valid():
-		_tween.kill()
-	var step: float = TAU / 10.0
-	var start_index: float = _wheel.angle / step
-	var extra: float = 20.0 + clampf(power, 0.0, 1.0) * 30.0
-	var target_index: float = ceilf(start_index + extra)
-	while posmod(int(target_index), 10) != posmod(face - 1, 10):
-		target_index += 1.0
-	var seconds: float = lerpf(SPIN_MIN_SECONDS, SPIN_MAX_SECONDS, clampf(power, 0.0, 1.0))
-	_tween = create_tween()
-	_tween.tween_method(func(value: float) -> void:
-		_wheel.angle = value * step
-		_wheel.queue_redraw()
-		_show_face_under_needle(), start_index, target_index, seconds).set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
-	await _tween.finished
-	_face_label.text = str(face)
-	_face_label.pivot_offset = _face_label.size / 2.0
-	var punch: Tween = create_tween()
-	_face_label.scale = Vector2(1.5, 1.5)
-	punch.tween_property(_face_label, "scale", Vector2.ONE, 0.2)
-	await punch.finished
+	modulate = Color.WHITE
+	_spin_time = 0.0
+	_face_label.text = ""
+	_hint_label.text = "빙글빙글…"
+	_wheel.begin(face,power,_wheel.angle,-1.0 if _velocity>0.0 else 1.0)
+	await finished
+
+
+func _process(delta: float) -> void:
+	if not _spinning:
+		return
+	_spin_time += delta
+	_wheel.apply_time(_spin_time)
+	if _wheel.settled:
+		_face_label.text = str(last_face)
+		_hint_label.text = "%d칸 전진%s" % [last_face," · 한 번 더!" if last_face==ToolLifeRoulette.JACKPOT_FACE else ""]
+		var phase: float = clampf((_spin_time-RouletteSpin3D.RESULT_TIME)/0.18,0,1)
+		_face_label.pivot_offset = _face_label.size/2.0
+		_face_label.scale = Vector2.ONE*(1.0+0.20*sin(phase*PI)*(1.0-phase))
+	if _spin_time >= RouletteSpin3D.TOTAL_TIME:
+		_spinning = false
+		active = false
+		_wheel.stop_rendering()
+		_face_label.scale = Vector2.ONE
+		finished.emit()
+
+
+## Resume any awaiting board handler when a new game/tool cancels the spin.
+func cancel_spin() -> void:
+	_dragging = false
+	if _wheel != null:
+		_wheel.stop_rendering()
+	if not _spinning:
+		return
+	_spinning = false
 	active = false
+	_face_label.scale = Vector2.ONE
 	finished.emit()
 
 

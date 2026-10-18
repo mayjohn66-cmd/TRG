@@ -668,6 +668,7 @@ func _new_game() -> void:
 	_bot.set_enabled(_bot_active())
 	_stop_charge()
 	_presenter.cancel()
+	_roll_pad.cancel_spin()
 	_roll_pad.reset_revolver()
 	_announcer.cancel()
 	_cancel_card_drag()
