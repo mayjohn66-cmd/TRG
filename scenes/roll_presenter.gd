@@ -65,6 +65,8 @@ var _dice_3d: DiceRoll3D = null
 var _default_style: StyleBoxFlat
 var _card_home: Array[Vector2] = []
 var _card_result_caption: String = ""
+var _mahjong_3d: MahjongSlam3D = null
+var _mahjong_names: Array[Label] = []
 
 
 ## 룰렛 원판. angle(라디안)만큼 돌아간 상태로 1~10 눈금을 그린다 (위쪽 바늘 자리가 현재 눈금).
@@ -127,7 +129,7 @@ func play(tool_id: StringName, result: Dictionary, power: float = 0.5) -> void:
 		return
 	_power = clampf(power, 0.0, 1.0)
 	_result = result
-	if tool_id in [&"HOLDEM", &"DICE_HWATU", &"DICE_TAROT"]:
+	if tool_id in [&"HOLDEM", &"DICE_HWATU", &"DICE_TAROT", &"DICE_MAHJONG"]:
 		last_display = ""
 	_mode = tool_id
 	_t = 0.0
@@ -144,6 +146,8 @@ func play(tool_id: StringName, result: Dictionary, power: float = 0.5) -> void:
 func cancel() -> void:
 	if _dice_3d != null:
 		_dice_3d.stop_rendering()
+	if _mahjong_3d != null:
+		_mahjong_3d.stop_rendering()
 	if not active:
 		visible = false
 		return
@@ -168,6 +172,8 @@ func _process(delta: float) -> void:
 		visible = false
 		if _dice_3d != null:
 			_dice_3d.stop_rendering()
+		if _mahjong_3d != null:
+			_mahjong_3d.stop_rendering()
 		finished.emit()
 
 
@@ -182,8 +188,13 @@ func _clear() -> void:
 		_dice_3d.hide()
 		if _dice_3d.get_parent() != self:
 			_dice_3d.reparent(self)
+	if _mahjong_3d != null:
+		_mahjong_3d.stop_rendering()
+		_mahjong_3d.hide()
+		if _mahjong_3d.get_parent() != self:
+			_mahjong_3d.reparent(self)
 	for child: Node in get_children():
-		if child == _dice_3d:
+		if child == _dice_3d or child == _mahjong_3d:
 			continue
 		remove_child(child)
 		child.queue_free()
@@ -197,6 +208,7 @@ func _clear() -> void:
 	_card_flip_mask.clear()
 	_card_face_colors.clear()
 	_card_home.clear()
+	_mahjong_names.clear()
 	_reel_stopped = [false, false, false]
 	_die = null
 	_wheel = null
@@ -229,7 +241,7 @@ func _box(bg: Color, border: Color, radius: int, min_size: Vector2) -> PanelCont
 
 func _build(tool_id: StringName) -> void:
 	_clear()
-	var illustrated: bool = tool_id in [&"HOLDEM", &"DICE_HWATU", &"DICE_TAROT"]
+	var illustrated: bool = tool_id in [&"HOLDEM", &"DICE_HWATU", &"DICE_TAROT", &"DICE_MAHJONG"]
 	add_theme_stylebox_override("panel", UiSkin.panel("panel", 12.0) if illustrated or tool_id in [&"D6", &"CHINCHIRO"] else _default_style)
 	_root = VBoxContainer.new()
 	_root.add_theme_constant_override("separation", 8)
@@ -334,23 +346,33 @@ func _build_hwatu() -> void:
 	_make_card_result("%s · %s" % [details.get("label", ""), _card_move_text()])
 
 
-## 마작: 패 3개를 동시에 쯔모(뒤집기)한다.
+## 마작: 고정된 세 패를 0.24초 간격으로 탁, 탁, 탁 내려놓는다.
 func _build_mahjong() -> void:
 	var details: Dictionary = _result["details"]
 	_title.text = "리치 마작 만리장성"
-	_card_front = Color("f8f9fa")
-	var faces: Array[String] = []
-	var colors: Array[Color] = []
-	var mask: Array[bool] = []
+	_total = MahjongSlam3D.TOTAL_TIME
+	if _mahjong_3d == null:
+		_mahjong_3d = MahjongSlam3D.new()
+		_stage.add_child(_mahjong_3d)
+	else:
+		_mahjong_3d.reparent(_stage)
+	_mahjong_3d.show()
+	_mahjong_3d.begin(details.get("tiles", []))
+	var names := HBoxContainer.new()
+	names.alignment = BoxContainer.ALIGNMENT_CENTER
+	names.add_theme_constant_override("separation",0)
+	_root.add_child(names)
 	for tile: Variant in details.get("tiles", []):
-		var name: String = ToolMahjong.tile_name(int(tile))
-		faces.append(name.substr(0, name.length() - 1) + "\n" + name.substr(name.length() - 1) if int(tile) < ToolMahjong.HONOR_START else name)
-		colors.append(_mahjong_color(int(tile)))
-		mask.append(true)
-	_build_flip_row(faces, colors, mask, Vector2(76, 104), Color("2b8a3e"), Color("b2f2bb"), 26)
-	_die_label = _label(str(details.get("label", "")), 22, Color("ffe066"))
-	_die_label.modulate.a = 0.0
-	_root.add_child(_die_label)
+		_card_faces.append(ToolMahjong.tile_name(int(tile)))
+		_card_flipped.append(false)
+		var name_label: Label = _label("",16,UiSkin.INK)
+		name_label.custom_minimum_size = Vector2(118,24)
+		names.add_child(name_label)
+		_mahjong_names.append(name_label)
+	var caption: String = "%s · %s" % [details.get("label", ""),_card_move_text()]
+	if bool(_result.get("reroll",false)):
+		caption += " · 한 번 더"
+	_make_card_result(caption)
 
 
 static func _mahjong_color(tile: int) -> Color:
@@ -470,7 +492,7 @@ func _update(t: float) -> void:
 		&"LIFE_ROULETTE": _update_wheel(t)
 		&"SLOT_777": _update_slot(t)
 		&"HOLDEM", &"DICE_HWATU", &"DICE_TAROT": _update_illustrated_cards(t)
-		&"DICE_MAHJONG": _update_cards(t)
+		&"DICE_MAHJONG": _update_mahjong(t)
 
 
 func _ease_out(x: float) -> float:
@@ -647,7 +669,19 @@ func _update_illustrated_cards(t: float) -> void:
 		last_display = _final_text(_mode, _result)
 
 
-## Legacy Mahjong tiles share their previous flip renderer.
+func _update_mahjong(t: float) -> void:
+	_mahjong_3d.apply_time(t)
+	for index: int in 3:
+		_card_flipped[index] = _mahjong_3d.landed[index]
+		if _card_flipped[index]:
+			_mahjong_names[index].text = _card_faces[index]
+	if t >= MahjongSlam3D.RESULT_TIME:
+		_die_label.text = _card_result_caption
+		_die_label.modulate.a = 1.0
+		last_display = _final_text(_mode,_result)
+
+
+## Legacy flat flip renderer; current judgment tools use their own presenters.
 func _update_cards(t: float) -> void:
 	var order: int = 0
 	for index: int in _cards.size():

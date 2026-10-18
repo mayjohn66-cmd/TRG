@@ -57,6 +57,7 @@ func _run() -> void:
 	_board.manager.step_delay_sec = 0.0
 	await _test_presenters()
 	await _test_illustrated_judgment_cards()
+	await _test_mahjong_landings()
 	_board._announcer.cancel()
 	await _test_gauge_and_lock()
 	await _test_instant_flag()
@@ -400,6 +401,51 @@ func _test_illustrated_judgment_cards() -> void:
 	_expect(presenter._dice_3d.render_view.render_target_update_mode == SubViewport.UPDATE_DISABLED, "card effects leave the cached 3D dice renderer asleep")
 	presenter.set_process(true)
 	print("JUDGMENT_CARD_FX_OK")
+
+
+## Exact local timeline samples avoid consuming another live turn's timeout.
+func _test_mahjong_landings() -> void:
+	var presenter: RollPresenter = _board._presenter
+	presenter.instant = false
+	presenter.set_process(false)
+	var original_time_scale: float = Engine.time_scale
+	var result: Dictionary = {"steps":12,"reroll":true,"details":{"tiles":[27,28,29],"hand":&"yakuman","label":"대삼원"}}
+	presenter.play(&"DICE_MAHJONG",result)
+	await process_frame
+	await process_frame
+	var view: MahjongSlam3D = presenter._mahjong_3d
+	var events: Array[int] = []
+	var observer: Callable = func(index: int) -> void: events.append(index)
+	view.tile_landed.connect(observer)
+	presenter._update(0.29)
+	_expect(view.landed.count(true)==0 and presenter.last_display.is_empty() and presenter._die_label.text.is_empty(),"mahjong hides hand and movement before landing")
+	for label: Label in presenter._mahjong_names:
+		_expect(label.text.is_empty(),"tile names do not leak before their own landing")
+	for index: int in 3:
+		presenter._update(MahjongSlam3D.impact_time(index)+0.001)
+		_expect(view.landed.count(true)==index+1,"mahjong lands one solid tile per beat")
+		_expect(presenter._mahjong_names[index].text==ToolMahjong.tile_name(27+index),"landing reveals matching tile name")
+		_expect(presenter._die_label.text.is_empty(),"hand result waits for third tile to settle")
+	presenter._update(MahjongSlam3D.RESULT_TIME+0.001)
+	presenter._update(MahjongSlam3D.RESULT_TIME+0.01)
+	_expect(events==[0,1,2],"exactly three landing events fire, without duplicate sounds")
+	_expect(view.tile_ids==[27,28,29] and presenter.last_display=="백 발 중","physical fronts match actual engine tile order")
+	_expect(presenter._die_label.text=="대삼원 · 12칸 전진 · 한 번 더","yakuman displays exact movement and reroll")
+	_expect(Engine.time_scale==original_time_scale,"contact hold never pauses the game or network clock")
+	view.tile_landed.disconnect(observer)
+	presenter._process(presenter._total)
+	_expect(not presenter.active and not presenter.visible,"mahjong completes and releases presenter")
+	_expect(view.render_view.render_target_update_mode==SubViewport.UPDATE_DISABLED,"completed 3D mahjong stops rendering")
+	presenter.play(&"DICE_MAHJONG",{"steps":5,"details":{"tiles":[0,1,2],"label":"슌쯔"}})
+	_expect(presenter._mahjong_3d==view,"next draw reuses cached meshes and viewport")
+	_expect(view.landed.count(true)==0,"next draw resets all landing latches")
+	presenter.cancel()
+	_expect(view.render_view.render_target_update_mode==SubViewport.UPDATE_DISABLED and not presenter.visible,"cancel hides mahjong and stops its renderer")
+	presenter.play(&"HOLDEM",{"steps":1,"details":{"cards":[0,1,2,3,4],"hand":&"high_card"}})
+	_expect(view.render_view.render_target_update_mode==SubViewport.UPDATE_DISABLED,"switching to cards keeps mahjong renderer asleep")
+	presenter.cancel()
+	presenter.set_process(true)
+	print("MAHJONG_SLAM_FX_OK")
 
 
 func _angle_between(samples: Array[Vector2], from_time: float, to_time: float) -> float:
