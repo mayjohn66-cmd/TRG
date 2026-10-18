@@ -4,7 +4,8 @@ extends Node3D
 
 const RADIUS: float = 1.03
 const FACE_RADIUS: float = 0.985
-const HALF_LENGTH: float = 0.60
+const HALF_LENGTH: float = 0.75
+const END_SHIFT: float = HALF_LENGTH-0.60
 const CHAMBER_CIRCLE: float = 0.62
 const BORE_RADIUS: float = 0.215
 const LIP_RADIUS: float = 0.245
@@ -34,18 +35,20 @@ func build() -> void:
 	drum.material_override = steel
 	add_child(drum)
 	# Rear extractor: six broad arms between chambers and a small hexagonal hub.
-	add_part(self,"EjectorHub",0.125,1.27,Vector3.ZERO,steel)
+	add_part(self,"EjectorHub",0.125,2.0*HALF_LENGTH+0.07,Vector3.ZERO,steel)
 	var extractor := MeshInstance3D.new()
 	extractor.name = "SixArmExtractor"
 	extractor.mesh = make_extractor()
+	extractor.position.z = END_SHIFT
 	extractor.material_override = metal(Color("7e8d9b"),0.72,0.31)
 	add_child(extractor)
-	add_part(self,"ExtractorWasher",0.137,0.018,Vector3(0,0,0.670),steel)
-	var bolt: MeshInstance3D = add_part(self,"HexagonalHub",0.095,0.035,Vector3(0,0,0.694),metal(Color("697987"),0.68,0.32))
+	add_part(self,"ExtractorWasher",0.137,0.018,Vector3(0,0,0.670+END_SHIFT),steel)
+	var bolt: MeshInstance3D = add_part(self,"HexagonalHub",0.095,0.035,Vector3(0,0,0.694+END_SHIFT),metal(Color("697987"),0.68,0.32))
 	(bolt.mesh as CylinderMesh).radial_segments = 6
 	var lips := MeshInstance3D.new()
 	lips.name = "ChamberEntranceRecesses"
 	lips.mesh = make_lip_rings()
+	lips.position.z = END_SHIFT
 	lips.material_override = metal(Color("697b8b"),0.65,0.38)
 	add_child(lips)
 	cartridge = Node3D.new()
@@ -53,10 +56,10 @@ func build() -> void:
 	add_child(cartridge)
 	var brass: StandardMaterial3D = metal(Color("d7a34d"),0.68,0.27)
 	var rim: StandardMaterial3D = metal(Color("efc56b"),0.60,0.23)
-	add_part(cartridge,"BrassCase",0.202,1.08,Vector3(0,0,0.055),brass)
-	add_part(cartridge,"CaseRim",0.223,0.032,Vector3(0,0,0.613),rim)
-	add_part(cartridge,"PrimerSeat",0.095,0.008,Vector3(0,0,0.634),brass)
-	add_part(cartridge,"Primer",0.069,0.012,Vector3(0,0,0.643),metal(Color("d5d1b7"),0.48,0.31))
+	add_part(cartridge,"BrassCase",0.202,1.08+2.0*END_SHIFT,Vector3(0,0,0.055),brass)
+	add_part(cartridge,"CaseRim",0.223,0.032,Vector3(0,0,0.613+END_SHIFT),rim)
+	add_part(cartridge,"PrimerSeat",0.095,0.008,Vector3(0,0,0.634+END_SHIFT),brass)
+	add_part(cartridge,"Primer",0.069,0.012,Vector3(0,0,0.643+END_SHIFT),metal(Color("d5d1b7"),0.48,0.31))
 	set_loaded(loaded_chamber)
 
 
@@ -128,15 +131,16 @@ static func make_body() -> ArrayMesh:
 			var n := Vector3(0,0,sign_z)
 			triangle(geometry,Vector3(a.x,a.y,HALF_LENGTH*sign_z),Vector3(b.x,b.y,HALF_LENGTH*sign_z),Vector3(c.x,c.y,HALF_LENGTH*sign_z),n,n,n)
 	# Continuous side walls and beveled outer edges.
+	var inner_end: float = HALF_LENGTH-0.05
 	fluted_wall(geometry)
-	band(geometry,Vector2.ZERO,FACE_RADIUS,0.60,RADIUS,0.55,OUTER_SEGMENTS,-1.0)
-	band(geometry,Vector2.ZERO,FACE_RADIUS,-0.60,RADIUS,-0.55,OUTER_SEGMENTS,1.0)
-	band(geometry,Vector2.ZERO,AXLE_RADIUS,-0.60,AXLE_RADIUS,0.60,AXLE_SEGMENTS,-1.0)
+	band(geometry,Vector2.ZERO,FACE_RADIUS,HALF_LENGTH,RADIUS,inner_end,OUTER_SEGMENTS,-1.0)
+	band(geometry,Vector2.ZERO,FACE_RADIUS,-HALF_LENGTH,RADIUS,-inner_end,OUTER_SEGMENTS,1.0)
+	band(geometry,Vector2.ZERO,AXLE_RADIUS,-HALF_LENGTH,AXLE_RADIUS,HALF_LENGTH,AXLE_SEGMENTS,-1.0)
 	for hole: int in 6:
 		var center: Vector2 = chamber_center(hole)
-		band(geometry,center,BORE_RADIUS,-0.55,BORE_RADIUS,0.55,BORE_SEGMENTS,-1.0)
-		band(geometry,center,BORE_RADIUS,0.55,LIP_RADIUS,0.60,BORE_SEGMENTS,-1.0)
-		band(geometry,center,BORE_RADIUS,-0.55,LIP_RADIUS,-0.60,BORE_SEGMENTS,1.0)
+		band(geometry,center,BORE_RADIUS,-inner_end,BORE_RADIUS,inner_end,BORE_SEGMENTS,-1.0)
+		band(geometry,center,BORE_RADIUS,inner_end,LIP_RADIUS,HALF_LENGTH,BORE_SEGMENTS,-1.0)
+		band(geometry,center,BORE_RADIUS,-inner_end,LIP_RADIUS,-HALF_LENGTH,BORE_SEGMENTS,1.0)
 	var arrays: Array = []
 	arrays.resize(Mesh.ARRAY_MAX)
 	arrays[Mesh.ARRAY_VERTEX] = geometry.vertices
@@ -150,7 +154,8 @@ static func make_body() -> ArrayMesh:
 static func wall_radius(angle: float, z: float) -> float:
 	var nearest: float = wrapf(angle-PI/6.0,-PI/6.0,PI/6.0)
 	var across: float = 0.5+0.5*cos(PI*nearest/FLUTE_HALF_WIDTH) if absf(nearest)<FLUTE_HALF_WIDTH else 0.0
-	var along: float = smoothstep(-0.55,-0.42,z)*(1.0-smoothstep(0.20,0.42,z))
+	var local_z: float = z*0.55/(HALF_LENGTH-0.05)
+	var along: float = smoothstep(-0.55,-0.42,local_z)*(1.0-smoothstep(0.20,0.42,local_z))
 	return RADIUS-FLUTE_DEPTH*across*along
 
 
@@ -171,8 +176,8 @@ static func wall_normal(angle: float, z: float) -> Vector3:
 static func fluted_wall(out: Dictionary) -> void:
 	var rings: Array[float] = [-0.55,-0.53,-0.50,-0.46,-0.42,-0.35,-0.20,0.0,0.12,0.20,0.26,0.32,0.37,0.40,0.42,0.48,0.55]
 	for row: int in rings.size()-1:
-		var z0: float = rings[row]
-		var z1: float = rings[row+1]
+		var z0: float = rings[row]*(HALF_LENGTH-0.05)/0.55
+		var z1: float = rings[row+1]*(HALF_LENGTH-0.05)/0.55
 		for i: int in OUTER_SEGMENTS:
 			var a: float = TAU*i/OUTER_SEGMENTS
 			var b: float = TAU*(i+1)/OUTER_SEGMENTS
