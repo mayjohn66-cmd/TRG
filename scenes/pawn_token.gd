@@ -86,7 +86,9 @@ func _draw() -> void:
 				draw_texture_rect_region(texture,Rect2(rect.position+offset,rect.size),region,Color("ff5e50"))
 		for offset: Vector2 in [Vector2(-0.7, 0), Vector2(0.7, 0), Vector2(0, -0.7), Vector2(0, 0.7)]:
 			draw_texture_rect_region(texture, Rect2(rect.position + offset, rect.size), region, owner_color.lightened(0.2))
-		draw_texture_rect_region(texture, rect, region)
+		# Basic tokens use the owner's color; chess/evolved pieces retain their material.
+		var body_color: Color = owner_color if pawn.kind == GameEnums.PawnKind.BASIC else Color.WHITE
+		draw_texture_rect_region(texture, rect, region, body_color)
 	else:
 		_draw_shape()
 	if pawn.is_promoted_shogi() and artwork.is_empty():
@@ -141,9 +143,9 @@ func _draw_shape() -> void:
 			_draw_monopoly(sub)
 		_:
 			# A meeple has arms and two feet; it stays distinct from a chess pawn.
-			_poly(PackedVector2Array([Vector2(-4,-21),Vector2(4,-21),Vector2(11,-16),Vector2(9,-12),Vector2(5,-15),Vector2(6,-7),Vector2(9,-2),Vector2(3,-2),Vector2(0,-8),Vector2(-3,-2),Vector2(-9,-2),Vector2(-6,-7),Vector2(-5,-15),Vector2(-9,-12),Vector2(-11,-16)]),IVORY)
+			_poly(PackedVector2Array([Vector2(-4,-21),Vector2(4,-21),Vector2(11,-16),Vector2(9,-12),Vector2(5,-15),Vector2(6,-7),Vector2(9,-2),Vector2(3,-2),Vector2(0,-8),Vector2(-3,-2),Vector2(-9,-2),Vector2(-6,-7),Vector2(-5,-15),Vector2(-9,-12),Vector2(-11,-16)]),owner_color)
 			draw_circle(Vector2(0,-26),6,INK)
-			draw_circle(Vector2(0,-26),4.5,IVORY)
+			draw_circle(Vector2(0,-26),4.5,owner_color)
 
 
 func _draw_chess(sub: GameEnums.PawnSubType) -> void:
