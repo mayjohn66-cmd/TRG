@@ -230,25 +230,30 @@ static func _bounce(node: Control, target: float, seconds: float = 0.12) -> void
 
 ## 동그란 캐릭터 판: 아바타 그림이 있으면 그것을, 없으면 색 원 위에 동글 웃는 얼굴을 그린다. 반환 Control의 크기는 diameter x diameter.
 ## 허브 전신 아바타의 숨쉬기 동작: 정지 그림 위에 idle/ 폴더의 프레임을 순서대로 돌려 보여 준다. 프레임이 없으면 정지 그림 그대로다.
+## idle_hq.tres가 있으면 그 파일의 공통 영역 AtlasTexture 프레임을 우선 사용한다.
 ## 허브를 떠나 노드가 사라지면 프레임도 메모리에서 함께 내려간다.
 class IdleLoop extends TextureRect:
 	const FPS: float = 16.0
 	var _frames: Array[Texture2D] = []
 	var _clock: float = 0.0
 
-	func setup(still: Texture2D, folder: String) -> void:
+	func setup(still: Texture2D, folder: String, high_quality: SpriteFrames = null) -> void:
 		texture = still
 		expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var index: int = 0
-		while ResourceLoader.exists("%s/idle_%02d.webp" % [folder, index]):
-			var frame: Texture2D = load("%s/idle_%02d.webp" % [folder, index]) as Texture2D
-			if frame == null:
-				break
-			_frames.append(frame)
-			index += 1
+		if high_quality != null and high_quality.has_animation(&"idle"):
+			for index: int in high_quality.get_frame_count(&"idle"):
+				_frames.append(high_quality.get_frame_texture(&"idle", index))
+		else:
+			var index: int = 0
+			while ResourceLoader.exists("%s/idle_%02d.webp" % [folder, index]):
+				var frame: Texture2D = load("%s/idle_%02d.webp" % [folder, index]) as Texture2D
+				if frame == null:
+					break
+				_frames.append(frame)
+				index += 1
 		set_process(_frames.size() > 1)
 
 	func _process(delta: float) -> void:
@@ -258,12 +263,18 @@ class IdleLoop extends TextureRect:
 			texture = current
 
 
-## 허브 중앙에 큼직하게 세우는 전신 아바타 (고해상도 정지 그림 한 장만 메모리에 올린다). 에셋이 없으면 둥근 사각형 아바타로 대신한다.
+## 허브 중앙의 전신 아바타. 고해상도 대기 프레임이 있으면 우선 사용하며, 에셋이 없으면 둥근 사각형 아바타로 대신한다.
 static func avatar_full(id: StringName, color: Color, height: float) -> Control:
 	var path: String = "%s/fullbody.png" % AvatarSlot.character_path(id)
 	if not ResourceLoader.exists(path):
 		return avatar_disc(id, color, minf(height, 220.0))
+	var high_quality: SpriteFrames = null
+	var high_quality_path: String = "%s/idle_hq.tres" % AvatarSlot.character_path(id)
+	if ResourceLoader.exists(high_quality_path):
+		high_quality = load(high_quality_path) as SpriteFrames
 	var texture: Texture2D = load(path) as Texture2D
+	if high_quality != null and high_quality.has_animation(&"idle") and high_quality.get_frame_count(&"idle") > 0:
+		texture = high_quality.get_frame_texture(&"idle", 0)
 	var width: float = height * float(texture.get_width()) / float(texture.get_height())
 	var holder := Control.new()
 	holder.name = "AvatarFull"
@@ -279,7 +290,7 @@ static func avatar_full(id: StringName, color: Color, height: float) -> Control:
 	shadow.size = Vector2(width * 0.5, 20.0)
 	holder.add_child(shadow)
 	var art := IdleLoop.new()
-	art.setup(texture, AvatarSlot.character_path(id) + "/idle")
+	art.setup(texture, AvatarSlot.character_path(id) + "/idle", high_quality)
 	art.size = Vector2(width, height - 8.0)
 	holder.add_child(art)
 	return holder
