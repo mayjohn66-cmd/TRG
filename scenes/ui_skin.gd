@@ -16,6 +16,8 @@ static func panel(kind: String = "panel", margin: float = 10.0) -> StyleBoxTextu
 	return box
 
 static func button(item: Button, action: bool = false, horizontal: float = 12.0, vertical: float = 6.0) -> void:
+	# 9-slice 조각마다 다른 밉 레벨을 고르면 작은 버튼 중앙에 사각 얼룩이 생긴다.
+	item.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	var prefix: String = "action" if action else "cancel"
 	for state: String in ["normal", "hover", "pressed", "disabled", "focus"]:
 		var texture_name: String = state if state in ["disabled", "focus"] else prefix + "_" + state
