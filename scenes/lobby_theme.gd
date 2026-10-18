@@ -394,6 +394,23 @@ static func add_audio_controls(box: Container, ink: Color) -> void:
 		Sfx.apply_settings())
 	slider.drag_ended.connect(func(_changed: bool) -> void: Sfx.play(&"ui_click"))
 	row.add_child(slider)
+	var bgm_row := HBoxContainer.new()
+	bgm_row.add_theme_constant_override("separation", 8)
+	box.add_child(bgm_row)
+	bgm_row.add_child(label("배경음악 크기", 16, ink))
+	var bgm_slider := HSlider.new()
+	bgm_slider.name = "BgmVolume"
+	bgm_slider.min_value = 0.0
+	bgm_slider.max_value = 1.0
+	bgm_slider.step = 0.05
+	bgm_slider.value = GameSession.bgm_volume
+	bgm_slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bgm_slider.custom_minimum_size = Vector2(0.0, 28.0)
+	bgm_slider.value_changed.connect(func(value: float) -> void:
+		GameSession.bgm_volume = value
+		GameSession.save_settings()
+		Sfx.apply_settings())
+	bgm_row.add_child(bgm_slider)
 
 
 ## 위쪽 띠의 뒤로가기 화살표 (폰트에 없는 글자 대신 직접 그린다).

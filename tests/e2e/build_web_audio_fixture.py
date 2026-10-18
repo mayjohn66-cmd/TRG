@@ -12,9 +12,11 @@ exe=sys.argv[3]
 assert not (dest/'project.godot').exists(), 'Use a new scratch directory.'
 (dest/'scenes').mkdir(parents=True,exist_ok=True)
 (dest/'assets/sfx').mkdir(parents=True,exist_ok=True)
+(dest/'assets/bgm').mkdir(parents=True,exist_ok=True)
 (dest/'build').mkdir(exist_ok=True)
 shutil.copy2(repo/'scenes/sfx.gd',dest/'scenes/sfx.gd')
 shutil.copy2(repo/'assets/sfx/hop_01.ogg',dest/'assets/sfx/hop_01.ogg')
+shutil.copy2(repo/'assets/bgm/lobby_daylife.ogg',dest/'assets/bgm/lobby_daylife.ogg')
 (dest/'game_session.gd').write_text('class_name GameSession\nextends RefCounted\nstatic var audio_muted: bool = false\nstatic var sfx_volume: float = 0.8\nstatic var bgm_volume: float = 0.6\n')
 (dest/'project.godot').write_text('''config_version=5
 [application]
@@ -44,7 +46,12 @@ func _command(args: Array) -> void:
   "quiet": GameSession.sfx_volume=0.1; Sfx.apply_settings()
   "loud": GameSession.sfx_volume=0.8; Sfx.apply_settings()
   "repeat": Sfx.apply_settings()
+  "bgm": Sfx.bgm_play(Sfx.LOBBY_TRACK)
+  "bgm_stop": Sfx.bgm_stop()
+  "bgm_quiet": GameSession.bgm_volume=0.1; Sfx.apply_settings()
+  "bgm_loud": GameSession.bgm_volume=0.6; Sfx.apply_settings()
  JavaScriptBridge.eval("window.audioFixtureState="+JSON.stringify({"muted":GameSession.audio_muted,"volume":GameSession.sfx_volume,"buses":AudioServer.bus_count,"master":AudioServer.get_bus_name(0),"sfx":AudioServer.get_bus_index(&"SFX"),"bgm":AudioServer.get_bus_index(&"BGM")}))
+ JavaScriptBridge.eval("window.bgmFixtureState="+JSON.stringify({"playing":Sfx._bgm.playing if Sfx._bgm != null else false,"position":Sfx._bgm.get_playback_position() if Sfx._bgm != null else 0.0,"length":Sfx._bgm.stream.get_length() if Sfx._bgm != null and Sfx._bgm.stream != null else 0.0,"loop":Sfx._bgm.stream.loop if Sfx._bgm != null and Sfx._bgm.stream != null else false}))
 ''')
 preset=(repo/'export_presets.cfg').read_text(encoding='utf-8').replace('custom_template/release=""','custom_template/release="'+template.as_posix()+'"').replace('html/custom_html_shell="res://web/shell.html"','html/custom_html_shell=""')
 (dest/'export_presets.cfg').write_text(preset,encoding='utf-8')

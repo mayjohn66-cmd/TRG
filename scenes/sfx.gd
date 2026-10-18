@@ -9,6 +9,7 @@ const BGM_DIR: String = "res://assets/bgm"
 ## 사용자가 직접 소리 파일을 넣는 폴더 (assets/ 와 똑같이 이름 규칙으로 찾는다). 파일이 있으면 합성음보다 우선한다.
 const USER_SFX_DIR: String = "res://content_trickcal/audio/sfx"
 const USER_BGM_DIR: String = "res://content_trickcal/audio/bgm"
+const LOBBY_TRACK: StringName = &"lobby_daylife"
 const MIX_RATE: int = 22050
 const BUS_SFX: StringName = &"SFX"
 const BUS_BGM: StringName = &"BGM"

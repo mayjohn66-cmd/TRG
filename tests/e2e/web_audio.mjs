@@ -27,7 +27,9 @@ try{
  page.on('pageerror',e=>errors.push(e.message));
  page.on('console',m=>{if(m.type()==='error'&&!m.text().includes('404'))errors.push(m.text());});
  await page.addInitScript(()=>{
-  window.audioMeter={peak:0,contexts:[]};
+  window.audioMeter={peak:0,contexts:[],sourceStarts:0};
+  const start=AudioBufferSourceNode.prototype.start;
+  AudioBufferSourceNode.prototype.start=function(...args){audioMeter.sourceStarts++;return start.apply(this,args);};
   const Original=window.AudioContext;
   window.AudioContext=new Proxy(Original,{construct(target,args){
    const ctx=Reflect.construct(target,args);audioMeter.contexts.push(ctx);
@@ -72,6 +74,33 @@ try{
   const state=await page.evaluate(()=>window.audioFixtureState);
   assert.deepEqual(state,{muted:false,volume:0.8,buses:3,master:'Master',sfx:1,bgm:2});
   console.log('WEB_AUDIO_OK: OGG, generated PCM, mute/unmute, volume, repeated bus setup');
+  await command('bgm');
+  const first=await page.evaluate(()=>window.bgmFixtureState);
+  assert(first.playing&&first.loop&&first.length>30&&first.length<60,'DayLife is an imported looping track');
+  await page.waitForTimeout(600);
+  const starts=await page.evaluate(()=>audioMeter.sourceStarts);
+  await command('bgm');
+  const continued=await page.evaluate(()=>window.bgmFixtureState);
+  assert(continued.playing,'same lobby track remains active');
+  assert.equal(await page.evaluate(()=>audioMeter.sourceStarts),starts,'same lobby track does not create/restart a source');
+  const steadyPeak=async()=>{
+   await page.waitForTimeout(250);await page.evaluate(()=>{audioMeter.peak=0;});
+   await page.waitForTimeout(600);return page.evaluate(()=>audioMeter.peak);
+  };
+  assert(await steadyPeak()>0.0001,'BGM reaches destination');
+  await command('mute');assert.equal(await steadyPeak(),0,'global mute affects BGM');
+  await command('unmute');assert(await steadyPeak()>0.0001,'BGM resumes after unmute');
+  await command('bgm_quiet');const bgmQuiet=await steadyPeak();
+  await command('bgm_loud');const bgmLoud=await steadyPeak();
+  assert(bgmQuiet>0&&bgmLoud>bgmQuiet*2,'BGM has separate volume control');
+  await command('bgm_stop');assert.equal(await steadyPeak(),0,'entering battle can stop BGM');
+  await command('bgm');
+  await page.waitForTimeout((first.length+0.4)*1000);
+  await command('repeat');
+  const looped=await page.evaluate(()=>window.bgmFixtureState);
+  assert(looped.playing,'track repeats past its end');
+  assert(await steadyPeak()>0.0001,'loop still produces output');
+  console.log('WEB_BGM_OK: imported DayLife, continuity, mute, volume, stop/restart and complete loop');
  }
  assert.deepEqual(errors,[]);
 }finally{

@@ -40,6 +40,8 @@ var _relay_ok: bool = true
 
 
 func _ready() -> void:
+	Sfx.unlock()
+	Sfx.bgm_play.call_deferred(Sfx.LOBBY_TRACK)
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	name = "Lobby"
 	service = LobbyService.new()

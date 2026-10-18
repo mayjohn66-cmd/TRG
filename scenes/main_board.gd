@@ -429,6 +429,7 @@ var _tile_pick_card: StringName = &""
 
 
 func _ready() -> void:
+	Sfx.bgm_stop()
 	Sfx.apply_settings()
 	pacing_enabled = GameSession.pacing_enabled
 	view_mode = GameSession.view_mode

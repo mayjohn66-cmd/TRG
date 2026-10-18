@@ -75,6 +75,7 @@ func _ready() -> void:
 	_build_avatar_page(stack)
 	GameSession.load_settings()
 	Sfx.unlock()  # 저장된 음량을 적용하고 첫 버튼 클릭 전에 플레이어 풀을 준비한다.
+	Sfx.bgm_play.call_deferred(Sfx.LOBBY_TRACK)
 	var saved: String = GameSession.load_saved()
 	if saved != "":
 		_name_edit.text = saved
