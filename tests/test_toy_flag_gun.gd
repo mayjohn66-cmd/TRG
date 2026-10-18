@@ -2,24 +2,30 @@ class_name TestToyFlagGun
 extends TestCase
 
 
-func test_orbit_landmarks_never_fold_or_flip_the_sprite_mesh() -> void:
-	var side: PackedVector2Array = ToyFlagGun3D.landmarks(true)
-	var quarter: PackedVector2Array = ToyFlagGun3D.landmarks(false)
-	check_eq(side.size(),quarter.size(),"both views have corresponding contours")
-	var mean := PackedVector2Array()
-	for i: int in side.size(): mean.append((side[i]+quarter[i])*0.5)
-	var triangles: PackedInt32Array = Geometry2D.triangulate_delaunay(mean)
-	for step: int in 21:
-		var amount: float = step/20.0
-		for i: int in range(0,triangles.size(),3):
-			var a: int = triangles[i]
-			var b: int = triangles[i+1]
-			var c: int = triangles[i+2]
-			var original: float = (mean[b]-mean[a]).cross(mean[c]-mean[a])
-			var pa: Vector2 = quarter[a].lerp(side[a],amount)
-			var pb: Vector2 = quarter[b].lerp(side[b],amount)
-			var pc: Vector2 = quarter[c].lerp(side[c],amount)
-			check((pb-pa).cross(pc-pa)*original>0.0,"orbit interpolation keeps every texture triangle facing the same way")
+func test_assembled_model_keeps_the_fitted_cylinder_and_independent_parts() -> void:
+	var model: Node3D = ToyFlagGun3D.MODEL.instantiate()
+	defer_free(model)
+	var mount: Node3D = model.get_node("Body/CylinderMount")
+	var drum: Node3D = mount.get_node("Cylinder")
+	check_eq(mount.get_child_count(),1,"only one geometric cylinder is mounted")
+	check(drum.has_node("SixBoreSteelDrum") and drum.has_node("SingleLoadedCartridge"),"approved six-bore drum and single cartridge are used")
+	check(drum.scale.is_equal_approx(Vector3(1,1,1.44)),"assembly preserves its fitted length")
+	check(model.has_node("Body/ExposedCurvedHammer") and model.has_node("Body/CurvedTrigger"),"actual hammer and trigger can animate independently")
+	# Check all vertices of the closed model against the real resting camera.
+	check_mesh_framing(model,Transform3D.IDENTITY)
+
+
+func check_mesh_framing(node: Node3D, parent_transform: Transform3D) -> void:
+	var transformed: Transform3D = parent_transform*node.transform
+	if node is MeshInstance3D:
+		var instance: MeshInstance3D = node
+		for surface: int in instance.mesh.get_surface_count():
+			var vertices: PackedVector3Array = instance.mesh.surface_get_arrays(surface)[Mesh.ARRAY_VERTEX]
+			for vertex: Vector3 in vertices:
+				var p: Vector3 = ToyFlagGun3D.HOME+transformed*vertex*ToyFlagGun3D.MODEL_SCALE-ToyFlagGun3D.CAMERA_TARGET
+				check(absf(p.x)<3.20 and absf(p.y)<1.90,"closed model fits the gameplay camera")
+	for child: Node in node.get_children():
+		if child is Node3D: check_mesh_framing(child,transformed)
 
 
 func test_six_loaded_positions_keep_the_original_accumulation_loss_and_cashout() -> void:
