@@ -2,12 +2,12 @@
 extends Control
 
 const BODY_SCRIPT = preload("res://scenes/revolver_body_3d.gd")
-const TARGET: Vector3 = Vector3(-1.25,-0.60,0)
+const TARGET: Vector3 = Vector3(-1.60,-1.55,0)
 var model: Node3D
 var camera: Camera3D
 var render_view: SubViewport
-var yaw: float = -0.20
-var pitch: float = 0.10
+var yaw: float = -0.12
+var pitch: float = 0.06
 var _dragging: bool = false
 var _pivot: Node3D
 var _spin: Tween
@@ -55,7 +55,7 @@ func _ready() -> void:
 	_pivot.add_child(model)
 	camera = Camera3D.new()
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
-	camera.size = 6.40
+	camera.size = 10.80
 	render_view.add_child(camera)
 	camera.current = true
 	update_camera()

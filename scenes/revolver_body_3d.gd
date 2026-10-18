@@ -1,12 +1,15 @@
-## Standalone silver revolver body. The cylinder seat intentionally stays empty.
+## Long-barrel silver revolver silhouette traced from the user's 400x240 reference.
+## The cylinder seat intentionally stays empty; display size is a uniform transform.
 class_name RevolverBody3D
 extends Node3D
 
 const CYLINDER_CENTER: Vector3 = Vector3(0,0.30,0)
 const CYLINDER_LENGTH: float = 1.50
 const CYLINDER_RADIUS: float = 1.03
-const BARREL_LENGTH: float = 4.10
-const BARREL_ROOT: Vector3 = Vector3(-1.12,0.92,0)
+const REFERENCE_ORIGIN: Vector2 = Vector2(244,71)
+const REFERENCE_UNIT: float = 0.04
+const BARREL_LENGTH: float = 6.92
+const BARREL_ROOT: Vector3 = Vector3(-1.88,0.98,0)
 var mount: Marker3D
 var _steel: StandardMaterial3D
 var _dark_steel: StandardMaterial3D
@@ -18,43 +21,46 @@ func _ready() -> void:
 
 func build() -> void:
 	if mount!=null: return
-	_steel = material(Color("a8b4c0"),0.70,0.34)
-	_dark_steel = material(Color("657481"),0.67,0.35)
-	var frame := smooth(PackedVector2Array([Vector2(-1.13,1.59),Vector2(-0.92,1.68),Vector2(0.88,1.69),Vector2(1.20,1.49),Vector2(1.50,1.12),Vector2(1.60,0.65),Vector2(1.80,0.25),Vector2(1.82,-0.10),Vector2(1.57,-0.61),Vector2(1.22,-0.88),Vector2(0.80,-1.09),Vector2(-0.55,-1.09),Vector2(-1.09,-0.86),Vector2(-1.15,-0.62)]),5)
-	var window: PackedVector2Array = rounded_rectangle(Rect2(-0.86,-0.80,1.85,2.16),0.09)
-	part("OpenCylinderFrame",ring(frame,window,0.68,0.04),_steel)
+	_steel = material(Color("aebac4"),0.74,0.29)
+	_dark_steel = material(Color("64727d"),0.67,0.34)
+	var frame := smooth(reference_shape(PackedVector2Array([Vector2(198,37),Vector2(215,36),Vector2(274,36),Vector2(283,39),Vector2(290,48),Vector2(298,60),Vector2(314,68),Vector2(334,78),Vector2(329,93),Vector2(308,109),Vector2(289,114),Vector2(277,112),Vector2(218,111),Vector2(199,108),Vector2(198,90)])),5)
+	var window: PackedVector2Array = rounded_rectangle(Rect2(-1.08,-0.82,2.40,2.24),0.075)
+	part("OpenCylinderFrame",ring(frame,window,0.64,0.035),_steel)
 	# Hollow cylindrical barrel, crown and collar. Its axis points to the left.
-	var barrel_profile := PackedVector2Array([Vector2(0.38,0),Vector2(0.38,0.06),Vector2(0.345,BARREL_LENGTH-0.04),Vector2(0.320,BARREL_LENGTH),Vector2(0.190,BARREL_LENGTH),Vector2(0.170,BARREL_LENGTH-0.025),Vector2(0.170,0)])
+	var barrel_profile := PackedVector2Array([Vector2(0.385,0),Vector2(0.385,0.07),Vector2(0.375,BARREL_LENGTH-0.035),Vector2(0.350,BARREL_LENGTH),Vector2(0.190,BARREL_LENGTH),Vector2(0.170,BARREL_LENGTH-0.025),Vector2(0.170,0)])
 	var barrel: MeshInstance3D = part("HollowRoundBarrel",lathe(barrel_profile,96),_steel)
 	barrel.position = BARREL_ROOT
 	barrel.rotation.y = -PI/2.0
 	var collar: MeshInstance3D = part("BarrelCollar",lathe(PackedVector2Array([Vector2(0.425,0),Vector2(0.425,0.22),Vector2(0.37,0.22),Vector2(0.37,0)]),72),_steel)
 	collar.position = BARREL_ROOT+Vector3(0.025,0,0)
 	collar.rotation.y = -PI/2.0
-	part("UpperBarrelRib",solid(PackedVector2Array([Vector2(-5.10,1.28),Vector2(-5.02,1.48),Vector2(-1.14,1.55),Vector2(-1.10,1.28)]),0.22,0.025),_steel)
-	part("FrontSight",solid(smooth(PackedVector2Array([Vector2(-5.02,1.45),Vector2(-5.00,1.78),Vector2(-4.90,1.80),Vector2(-4.51,1.59),Vector2(-4.48,1.47)]),3),0.13,0.018),_dark_steel)
-	var under: MeshInstance3D = part("UnderBarrelHousing",lathe(PackedVector2Array([Vector2(0.04,0),Vector2(0.13,0.06),Vector2(0.13,2.55),Vector2(0.085,2.68),Vector2(0,2.68),Vector2(0,0)]),64),_steel)
-	under.position = Vector3(-1.12,0.35,0)
+	part("UpperBarrelRib",solid(reference_shape(PackedVector2Array([Vector2(25,35),Vector2(195,35),Vector2(198,46),Vector2(24,46)])),0.24,0.025),_steel)
+	part("FrontSight",solid(smooth(reference_shape(PackedVector2Array([Vector2(27,35),Vector2(28,27),Vector2(34,27),Vector2(49,34),Vector2(62,36)])),3),0.13,0.018),_dark_steel)
+	part("FullLengthLowerShroud",solid(smooth(reference_shape(PackedVector2Array([Vector2(24,57),Vector2(194,56),Vector2(197,59),Vector2(197,73),Vector2(193,76),Vector2(27,76),Vector2(23,72)])),3),0.59,0.035),_steel)
+	var under: MeshInstance3D = part("RecessedEjectorRod",lathe(PackedVector2Array([Vector2(0.04,0),Vector2(0.105,0.05),Vector2(0.105,2.50),Vector2(0.055,2.60),Vector2(0,2.60),Vector2(0,0)]),48),_dark_steel)
+	under.position = Vector3(-1.89,0.28,0.305)
 	under.rotation.y = -PI/2.0
 	# Curved grip frame with separate rounded charcoal grip panels.
-	var grip := smooth(PackedVector2Array([Vector2(1.12,-0.61),Vector2(1.79,-0.32),Vector2(2.02,-0.55),Vector2(2.10,-1.18),Vector2(2.35,-1.94),Vector2(2.61,-2.58),Vector2(2.62,-2.87),Vector2(2.36,-3.00),Vector2(1.51,-3.00),Vector2(1.23,-2.88),Vector2(1.21,-2.63),Vector2(1.31,-2.17),Vector2(1.26,-1.73),Vector2(1.12,-1.39),Vector2(0.96,-1.13),Vector2(0.97,-0.83)]),5)
+	var grip := smooth(reference_shape(PackedVector2Array([Vector2(335,80),Vector2(340,84),Vector2(343,103),Vector2(355,129),Vector2(367,156),Vector2(378,184),Vector2(384,204),Vector2(377,207),Vector2(347,207),Vector2(320,210),Vector2(316,205),Vector2(314,178),Vector2(310,153),Vector2(302,138),Vector2(291,136),Vector2(284,136),Vector2(285,119),Vector2(304,112),Vector2(309,96),Vector2(322,87)])),5)
 	part("CurvedGripFrame",solid(grip,0.70,0.045),_steel)
-	part("BlackRoundedGrip",solid(scaled(grip,Vector2(1.76,-1.68),0.94),0.90,0.075),material(Color("303c46"),0.08,0.57))
+	part("BlackRoundedGrip",solid(scaled(grip,reference_point(Vector2(333,145)),0.995),0.91,0.085),material(Color("171d22"),0.04,0.64))
 	# A genuinely open, curved D-shaped trigger guard.
-	var guard := smooth(PackedVector2Array([Vector2(-0.51,-0.84),Vector2(-0.68,-1.09),Vector2(-0.63,-1.51),Vector2(-0.39,-1.82),Vector2(0.08,-1.97),Vector2(0.64,-1.94),Vector2(1.05,-1.70),Vector2(1.20,-1.31),Vector2(1.14,-0.97),Vector2(0.88,-0.82),Vector2(0.25,-0.82)]),6)
-	part("OpenCurvedTriggerGuard",ring(guard,scaled(guard,Vector2(0.25,-1.36),0.81),0.26,0.025),_steel)
-	var trigger := smooth(PackedVector2Array([Vector2(0.58,-0.81),Vector2(0.82,-0.89),Vector2(0.92,-1.10),Vector2(0.84,-1.37),Vector2(0.66,-1.57),Vector2(0.39,-1.66),Vector2(0.57,-1.44),Vector2(0.65,-1.21),Vector2(0.63,-1.01)]),5)
+	var guard := smooth(reference_shape(PackedVector2Array([Vector2(224,108),Vector2(222,121),Vector2(228,137),Vector2(240,146),Vector2(257,150),Vector2(273,145),Vector2(283,134),Vector2(287,118),Vector2(281,108),Vector2(258,104),Vector2(239,104)])),6)
+	part("OpenCurvedTriggerGuard",ring(guard,scaled(guard,reference_point(Vector2(254,125)),0.84),0.26,0.025),_steel)
+	var trigger := smooth(reference_shape(PackedVector2Array([Vector2(260,107),Vector2(267,111),Vector2(270,119),Vector2(267,128),Vector2(261,136),Vector2(248,142),Vector2(256,134),Vector2(260,125),Vector2(260,116),Vector2(256,111)])),5)
 	part("CurvedTrigger",solid(trigger,0.14,0.018),_dark_steel)
-	var hammer := smooth(PackedVector2Array([Vector2(1.05,1.10),Vector2(1.28,1.43),Vector2(1.52,1.57),Vector2(1.80,1.62),Vector2(1.98,1.78),Vector2(2.12,1.81),Vector2(2.09,1.61),Vector2(1.89,1.38),Vector2(1.80,1.16),Vector2(1.59,0.94),Vector2(1.29,0.94)]),4)
+	var hammer := smooth(reference_shape(PackedVector2Array([Vector2(291,63),Vector2(294,55),Vector2(300,50),Vector2(308,49),Vector2(318,50),Vector2(323,53),Vector2(317,55),Vector2(309,55),Vector2(306,60),Vector2(307,66),Vector2(301,69)])),4)
 	part("ExposedCurvedHammer",solid(hammer,0.22,0.025),_dark_steel)
 	# Restrained side-plate and fastener details, clear of the cylinder opening.
-	var plate := smooth(PackedVector2Array([Vector2(1.12,1.15),Vector2(1.39,0.91),Vector2(1.64,0.33),Vector2(1.70,-0.04),Vector2(1.43,-0.58),Vector2(1.10,-0.69),Vector2(1.04,-0.31),Vector2(1.04,0.44)]),4)
-	part("RearSidePlate",solid(plate,0.708,0.012),material(Color("a0aebb"),0.68,0.39))
+	var plate := smooth(reference_shape(PackedVector2Array([Vector2(280,52),Vector2(291,60),Vector2(307,70),Vector2(326,78),Vector2(321,91),Vector2(306,105),Vector2(281,106),Vector2(278,94)])),4)
+	part("RearSidePlate",solid(plate,0.665,0.012),material(Color("a4b2bd"),0.70,0.32))
+	var latch := smooth(reference_shape(PackedVector2Array([Vector2(286,77),Vector2(291,71),Vector2(298,73),Vector2(304,80),Vector2(299,85),Vector2(288,84)])),4)
+	part("CylinderReleaseLatch",solid(latch,0.73,0.018),_dark_steel)
 	for side: float in [-1.0,1.0]:
-		screw(Vector2(1.48,-1.32),0.452*side,0.09,side)
-		screw(Vector2(2.02,-2.58),0.452*side,0.085,side)
-		screw(Vector2(1.26,0.18),0.36*side,0.065,side)
-		screw(Vector2(1.38,-0.43),0.36*side,0.055,side)
+		screw(reference_point(Vector2(326,113)),0.458*side,0.055,side)
+		screw(reference_point(Vector2(363,168)),0.458*side,0.045,side)
+		screw(reference_point(Vector2(290,79)),0.375*side,0.045,side)
+		screw(reference_point(Vector2(278,97)),0.345*side,0.040,side)
 	mount = Marker3D.new()
 	mount.name = "EmptyCylinderMount"
 	mount.position = CYLINDER_CENTER
@@ -93,6 +99,16 @@ static func material(color: Color, metallic: float, roughness: float) -> Standar
 	return result
 
 
+static func reference_point(pixel: Vector2) -> Vector2:
+	return Vector2((pixel.x-REFERENCE_ORIGIN.x)*REFERENCE_UNIT,CYLINDER_CENTER.y+(REFERENCE_ORIGIN.y-pixel.y)*REFERENCE_UNIT)
+
+
+static func reference_shape(pixels: PackedVector2Array) -> PackedVector2Array:
+	var result := PackedVector2Array()
+	for pixel: Vector2 in pixels: result.append(reference_point(pixel))
+	return result
+
+
 static func smooth(points: PackedVector2Array, steps: int) -> PackedVector2Array:
 	var result := PackedVector2Array()
 	var n: int = points.size()
@@ -101,9 +117,12 @@ static func smooth(points: PackedVector2Array, steps: int) -> PackedVector2Array
 		var p1: Vector2 = points[i]
 		var p2: Vector2 = points[(i+1)%n]
 		var p3: Vector2 = points[(i+2)%n]
+		# Limit corner handles so long photo contours do not overshoot short corners.
+		var m1: Vector2 = (p2-p0).normalized()*minf(p0.distance_to(p1),p1.distance_to(p2))*0.65
+		var m2: Vector2 = (p3-p1).normalized()*minf(p1.distance_to(p2),p2.distance_to(p3))*0.65
 		for j: int in steps:
 			var t: float = float(j)/steps
-			result.append(0.5*((2.0*p1)+(-p0+p2)*t+(2.0*p0-5.0*p1+4.0*p2-p3)*t*t+(-p0+3.0*p1-3.0*p2+p3)*t*t*t))
+			result.append((2*t*t*t-3*t*t+1)*p1+(t*t*t-2*t*t+t)*m1+(-2*t*t*t+3*t*t)*p2+(t*t*t-t*t)*m2)
 	return result
 
 
