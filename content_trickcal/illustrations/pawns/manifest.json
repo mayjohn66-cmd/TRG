@@ -1,5 +1,5 @@
 {
-  "version": "0.3",
+  "version": "0.4",
   "generator": "native image_gen.imagegen; model identifier not exposed",
   "assets": [
     {
@@ -404,6 +404,383 @@
         1161
       ],
       "sha256": "710c95c6eacd3aafa2d45343773387286616694f18fbe6a9472acc042143b55a",
+      "pixels_modified": false,
+      "qa": "Native transparent output visually checked for silhouette, coherent geometry, opaque body and clean margins. Source and destination SHA-256 match. Runtime small-size QA recorded in README."
+    },
+    {
+      "id": "JANGGI_PO",
+      "role": "장기 포",
+      "ref": "JANGGI_CHA.png",
+      "brief": "ONE thick octagonal honey-wood Korean Janggi token, slightly bevelled corners and broad visible top face, short dark amber side wall. Match the supplied Janggi chariot token's material and camera. Top engraving fills 65% of top face. Exactly one bold, correctly formed engraved character with thick readable strokes, no other symbol or decorative marking. Dark crimson-red #A33B35 engraving of character 包, the cannon token. Do not turn it into 車.",
+      "prompt": "Create ONE production board-game TOKEN SPRITE as a 1:1 square transparent PNG. Cute chunky rounded toy consistent with supplied style reference, thick clean nearly black #25252A outer outline, broad simple forms and restrained three-tone cel shading. Orthographic top-down 3/4 view, target elevation 50 degrees, no perspective exaggeration. Must remain readable at just 26x31 pixels. One centered isolated object, entirely within central 76% width and height, clear transparent margin. No colored owner pedestal (game draws it), cast shadow, ground plane, scene, particles, aura, glow outside silhouette, logos, captions, numbers, watermark or frame. No text except the SINGLE explicitly requested carved glyph. Source image is style reference only; replace its subject. Preserve opaque object highlights and white fills. ONE thick octagonal honey-wood Korean Janggi token, slightly bevelled corners and broad visible top face, short dark amber side wall. Match the supplied Janggi chariot token's material and camera. Top engraving fills 65% of top face. Exactly one bold, correctly formed engraved character with thick readable strokes, no other symbol or decorative marking. Dark crimson-red #A33B35 engraving of character 包, the cannon token. Do not turn it into 車.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-8892040e-555f-4751-9549-1896592ab5b0.png",
+      "path": "JANGGI_PO.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "alpha_bounds": [
+        0,
+        53,
+        1109,
+        1135
+      ],
+      "visible_alpha_bounds_at_0_08": [
+        149,
+        185,
+        1105,
+        1083
+      ],
+      "sha256": "93d28e18a9f9d3677ebed7c4d0eaf016ef4710b6c03ed5af68e7ed862f880389",
+      "pixels_modified": false,
+      "qa": "Native transparent output visually checked for silhouette, coherent geometry, opaque body and clean margins. Source and destination SHA-256 match. Runtime small-size QA recorded in README."
+    },
+    {
+      "id": "JANGGI_MA",
+      "role": "장기 마",
+      "ref": "JANGGI_CHA.png",
+      "brief": "ONE thick octagonal honey-wood Korean Janggi token, slightly bevelled corners and broad visible top face, short dark amber side wall. Match the supplied Janggi chariot token's material and camera. Top engraving fills 65% of top face. Exactly one bold, correctly formed engraved character with thick readable strokes, no other symbol or decorative marking. Deep teal #174E56 engraving of character 馬, the horse token. One character only, no actual horse or horseshoe.",
+      "prompt": "Create ONE production board-game TOKEN SPRITE as a 1:1 square transparent PNG. Cute chunky rounded toy consistent with supplied style reference, thick clean nearly black #25252A outer outline, broad simple forms and restrained three-tone cel shading. Orthographic top-down 3/4 view, target elevation 50 degrees, no perspective exaggeration. Must remain readable at just 26x31 pixels. One centered isolated object, entirely within central 76% width and height, clear transparent margin. No colored owner pedestal (game draws it), cast shadow, ground plane, scene, particles, aura, glow outside silhouette, logos, captions, numbers, watermark or frame. No text except the SINGLE explicitly requested carved glyph. Source image is style reference only; replace its subject. Preserve opaque object highlights and white fills. ONE thick octagonal honey-wood Korean Janggi token, slightly bevelled corners and broad visible top face, short dark amber side wall. Match the supplied Janggi chariot token's material and camera. Top engraving fills 65% of top face. Exactly one bold, correctly formed engraved character with thick readable strokes, no other symbol or decorative marking. Deep teal #174E56 engraving of character 馬, the horse token. One character only, no actual horse or horseshoe.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-ece104c9-c35a-448f-a12b-1ec2f6cf7d78.png",
+      "path": "JANGGI_MA.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "alpha_bounds": [
+        0,
+        124,
+        1108,
+        1181
+      ],
+      "visible_alpha_bounds_at_0_08": [
+        149,
+        183,
+        1105,
+        1085
+      ],
+      "sha256": "e5bf148324b0e7be560ba5a8c1b5a8c93d66c11dc9b272dab53be727d1f2f4be",
+      "pixels_modified": false,
+      "qa": "Native transparent output visually checked for silhouette, coherent geometry, opaque body and clean margins. Source and destination SHA-256 match. Runtime small-size QA recorded in README."
+    },
+    {
+      "id": "JANGGI_SANG",
+      "role": "장기 상",
+      "ref": "JANGGI_CHA.png",
+      "brief": "ONE thick octagonal honey-wood Korean Janggi token, slightly bevelled corners and broad visible top face, short dark amber side wall. Match the supplied Janggi chariot token's material and camera. Top engraving fills 65% of top face. Exactly one bold, correctly formed engraved character with thick readable strokes, no other symbol or decorative marking. Dark crimson-red #A33B35 engraving of character 象, the elephant token. One character only, no actual elephant.",
+      "prompt": "Create ONE production board-game TOKEN SPRITE as a 1:1 square transparent PNG. Cute chunky rounded toy consistent with supplied style reference, thick clean nearly black #25252A outer outline, broad simple forms and restrained three-tone cel shading. Orthographic top-down 3/4 view, target elevation 50 degrees, no perspective exaggeration. Must remain readable at just 26x31 pixels. One centered isolated object, entirely within central 76% width and height, clear transparent margin. No colored owner pedestal (game draws it), cast shadow, ground plane, scene, particles, aura, glow outside silhouette, logos, captions, numbers, watermark or frame. No text except the SINGLE explicitly requested carved glyph. Source image is style reference only; replace its subject. Preserve opaque object highlights and white fills. ONE thick octagonal honey-wood Korean Janggi token, slightly bevelled corners and broad visible top face, short dark amber side wall. Match the supplied Janggi chariot token's material and camera. Top engraving fills 65% of top face. Exactly one bold, correctly formed engraved character with thick readable strokes, no other symbol or decorative marking. Dark crimson-red #A33B35 engraving of character 象, the elephant token. One character only, no actual elephant.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-0ef6b077-22fb-425b-bf5f-4cea1e9b616a.png",
+      "path": "JANGGI_SANG.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "alpha_bounds": [
+        75,
+        181,
+        1150,
+        1095
+      ],
+      "visible_alpha_bounds_at_0_08": [
+        149,
+        185,
+        1105,
+        1087
+      ],
+      "sha256": "46daca84dc08722d7199ba102f2373a16646c7063cdec98f45ce988c106f2655",
+      "pixels_modified": false,
+      "qa": "Native transparent output visually checked for silhouette, coherent geometry, opaque body and clean margins. Source and destination SHA-256 match. Runtime small-size QA recorded in README."
+    },
+    {
+      "id": "BADUK_WHITE",
+      "role": "바둑 백돌",
+      "ref": "BADUK_BLACK.png",
+      "brief": "ONE glossy thick convex white Go stone, smooth rounded biconvex pearl-white #FFF9E9 body with broad cool light-grey side shading and ONE soft white highlight. Match the supplied black Go stone's shape, tilt and lighting, but make a WHITE stone. Strong dark outer outline to remain visible on cream board. No engravings, pips, symbols, shell texture, shield, aura, other stones or platform.",
+      "prompt": "Create ONE production board-game TOKEN SPRITE as a 1:1 square transparent PNG. Cute chunky rounded toy consistent with supplied style reference, thick clean nearly black #25252A outer outline, broad simple forms and restrained three-tone cel shading. Orthographic top-down 3/4 view, target elevation 50 degrees, no perspective exaggeration. Must remain readable at just 26x31 pixels. One centered isolated object, entirely within central 76% width and height, clear transparent margin. No colored owner pedestal (game draws it), cast shadow, ground plane, scene, particles, aura, glow outside silhouette, logos, captions, numbers, watermark or frame. No text except the SINGLE explicitly requested carved glyph. Source image is style reference only; replace its subject. Preserve opaque object highlights and white fills. ONE glossy thick convex white Go stone, smooth rounded biconvex pearl-white #FFF9E9 body with broad cool light-grey side shading and ONE soft white highlight. Match the supplied black Go stone's shape, tilt and lighting, but make a WHITE stone. Strong dark outer outline to remain visible on cream board. No engravings, pips, symbols, shell texture, shield, aura, other stones or platform.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-f344554a-8401-4fe6-bb23-a5170f026ba2.png",
+      "path": "BADUK_WHITE.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "alpha_bounds": [
+        154,
+        188,
+        1021,
+        1214
+      ],
+      "visible_alpha_bounds_at_0_08": [
+        236,
+        318,
+        1018,
+        928
+      ],
+      "sha256": "402a67b22d91fb121910a719aade1037dc82a9517ed0983bc6d4c7cdc2d83e7f",
+      "pixels_modified": false,
+      "qa": "Native transparent output visually checked for silhouette, coherent geometry, opaque body and clean margins. Source and destination SHA-256 match. Runtime small-size QA recorded in README."
+    },
+    {
+      "id": "SHOGI_HISHA",
+      "role": "쇼기 비차",
+      "ref": "SHOGI_FU.png",
+      "brief": "ONE thick pentagonal Japanese shogi wooden wedge, pale honey-gold face and amber side wall, rounded bevels, tapered pointed top, broad clearly visible face. Match supplied shogi pawn's camera and material. Keep silhouette compact, top point intact. Exactly ONE large correctly formed brush-style engraved glyph centered on face, taking 65% of face height; NO other glyph, label, decoration or pattern. Normal unpromoted rook: near-black engraving of the single character 飛. No red ink, no second character 車.",
+      "prompt": "Create ONE production board-game TOKEN SPRITE as a 1:1 square transparent PNG. Cute chunky rounded toy consistent with supplied style reference, thick clean nearly black #25252A outer outline, broad simple forms and restrained three-tone cel shading. Orthographic top-down 3/4 view, target elevation 50 degrees, no perspective exaggeration. Must remain readable at just 26x31 pixels. One centered isolated object, entirely within central 76% width and height, clear transparent margin. No colored owner pedestal (game draws it), cast shadow, ground plane, scene, particles, aura, glow outside silhouette, logos, captions, numbers, watermark or frame. No text except the SINGLE explicitly requested carved glyph. Source image is style reference only; replace its subject. Preserve opaque object highlights and white fills. ONE thick pentagonal Japanese shogi wooden wedge, pale honey-gold face and amber side wall, rounded bevels, tapered pointed top, broad clearly visible face. Match supplied shogi pawn's camera and material. Keep silhouette compact, top point intact. Exactly ONE large correctly formed brush-style engraved glyph centered on face, taking 65% of face height; NO other glyph, label, decoration or pattern. Normal unpromoted rook: near-black engraving of the single character 飛. No red ink, no second character 車.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-f35bf8ff-db23-419e-94fb-d7b5e5f1087f.png",
+      "path": "SHOGI_HISHA.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "alpha_bounds": [
+        0,
+        9,
+        1226,
+        1254
+      ],
+      "visible_alpha_bounds_at_0_08": [
+        191,
+        135,
+        1048,
+        1200
+      ],
+      "sha256": "4bd577af8661bc4c0e0c5d8007bbedd0c7d0fd74f7e37bb0455412cd5f4149f9",
+      "pixels_modified": false,
+      "qa": "Native transparent output visually checked for silhouette, coherent geometry, opaque body and clean margins. Source and destination SHA-256 match. Runtime small-size QA recorded in README."
+    },
+    {
+      "id": "SHOGI_KAKU",
+      "role": "쇼기 각행",
+      "ref": "SHOGI_FU.png",
+      "brief": "ONE thick pentagonal Japanese shogi wooden wedge, pale honey-gold face and amber side wall, rounded bevels, tapered pointed top, broad clearly visible face. Match supplied shogi pawn's camera and material. Keep silhouette compact, top point intact. Exactly ONE large correctly formed brush-style engraved glyph centered on face, taking 65% of face height; NO other glyph, label, decoration or pattern. Normal unpromoted bishop: near-black engraving of the single character 角.",
+      "prompt": "Create ONE production board-game TOKEN SPRITE as a 1:1 square transparent PNG. Cute chunky rounded toy consistent with supplied style reference, thick clean nearly black #25252A outer outline, broad simple forms and restrained three-tone cel shading. Orthographic top-down 3/4 view, target elevation 50 degrees, no perspective exaggeration. Must remain readable at just 26x31 pixels. One centered isolated object, entirely within central 76% width and height, clear transparent margin. No colored owner pedestal (game draws it), cast shadow, ground plane, scene, particles, aura, glow outside silhouette, logos, captions, numbers, watermark or frame. No text except the SINGLE explicitly requested carved glyph. Source image is style reference only; replace its subject. Preserve opaque object highlights and white fills. ONE thick pentagonal Japanese shogi wooden wedge, pale honey-gold face and amber side wall, rounded bevels, tapered pointed top, broad clearly visible face. Match supplied shogi pawn's camera and material. Keep silhouette compact, top point intact. Exactly ONE large correctly formed brush-style engraved glyph centered on face, taking 65% of face height; NO other glyph, label, decoration or pattern. Normal unpromoted bishop: near-black engraving of the single character 角.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-07f37cc7-035c-4bdb-9bfc-a7c706a15c1b.png",
+      "path": "SHOGI_KAKU.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "alpha_bounds": [
+        146,
+        133,
+        1155,
+        1200
+      ],
+      "visible_alpha_bounds_at_0_08": [
+        189,
+        135,
+        1047,
+        1195
+      ],
+      "sha256": "dc0ced35ae99102a618140b780240ae582efb7cb41f135c723d42986848aa588",
+      "pixels_modified": false,
+      "qa": "Native transparent output visually checked for silhouette, coherent geometry, opaque body and clean margins. Source and destination SHA-256 match. Runtime small-size QA recorded in README."
+    },
+    {
+      "id": "SHOGI_KEIMA",
+      "role": "쇼기 계마",
+      "ref": "SHOGI_FU.png",
+      "brief": "ONE thick pentagonal Japanese shogi wooden wedge, pale honey-gold face and amber side wall, rounded bevels, tapered pointed top, broad clearly visible face. Match supplied shogi pawn's camera and material. Keep silhouette compact, top point intact. Exactly ONE large correctly formed brush-style engraved glyph centered on face, taking 65% of face height; NO other glyph, label, decoration or pattern. Normal unpromoted knight: near-black engraving of the single character 桂.",
+      "prompt": "Create ONE production board-game TOKEN SPRITE as a 1:1 square transparent PNG. Cute chunky rounded toy consistent with supplied style reference, thick clean nearly black #25252A outer outline, broad simple forms and restrained three-tone cel shading. Orthographic top-down 3/4 view, target elevation 50 degrees, no perspective exaggeration. Must remain readable at just 26x31 pixels. One centered isolated object, entirely within central 76% width and height, clear transparent margin. No colored owner pedestal (game draws it), cast shadow, ground plane, scene, particles, aura, glow outside silhouette, logos, captions, numbers, watermark or frame. No text except the SINGLE explicitly requested carved glyph. Source image is style reference only; replace its subject. Preserve opaque object highlights and white fills. ONE thick pentagonal Japanese shogi wooden wedge, pale honey-gold face and amber side wall, rounded bevels, tapered pointed top, broad clearly visible face. Match supplied shogi pawn's camera and material. Keep silhouette compact, top point intact. Exactly ONE large correctly formed brush-style engraved glyph centered on face, taking 65% of face height; NO other glyph, label, decoration or pattern. Normal unpromoted knight: near-black engraving of the single character 桂.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-505d01f7-f2a4-4388-9e84-2c08590f95dc.png",
+      "path": "SHOGI_KEIMA.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "alpha_bounds": [
+        0,
+        133,
+        1119,
+        1200
+      ],
+      "visible_alpha_bounds_at_0_08": [
+        187,
+        136,
+        1049,
+        1197
+      ],
+      "sha256": "d946bfa21bb653e9ef41bcc31c10a1177ca8ff3c665a8ec9347a378ffb2bcd33",
+      "pixels_modified": false,
+      "qa": "Native transparent output visually checked for silhouette, coherent geometry, opaque body and clean margins. Source and destination SHA-256 match. Runtime small-size QA recorded in README."
+    },
+    {
+      "id": "SHOGI_FU_NARI",
+      "role": "쇼기 토금 — 보병 승급",
+      "ref": "SHOGI_FU.png",
+      "brief": "ONE thick pentagonal Japanese shogi wooden wedge, pale honey-gold face and amber side wall, rounded bevels, tapered pointed top, broad clearly visible face. Match supplied shogi pawn's camera and material. Keep silhouette compact, top point intact. Exactly ONE large correctly formed brush-style engraved glyph centered on face, taking 65% of face height; NO other glyph, label, decoration or pattern. Promoted pawn / Tokin face: one LARGE deep crimson-red #D43A32 Japanese hiragana と, and a slim gold bevel around wood face. Same stable orientation as unpromoted token. No black 歩, no extra character, no lightning.",
+      "prompt": "Create ONE production board-game TOKEN SPRITE as a 1:1 square transparent PNG. Cute chunky rounded toy consistent with supplied style reference, thick clean nearly black #25252A outer outline, broad simple forms and restrained three-tone cel shading. Orthographic top-down 3/4 view, target elevation 50 degrees, no perspective exaggeration. Must remain readable at just 26x31 pixels. One centered isolated object, entirely within central 76% width and height, clear transparent margin. No colored owner pedestal (game draws it), cast shadow, ground plane, scene, particles, aura, glow outside silhouette, logos, captions, numbers, watermark or frame. No text except the SINGLE explicitly requested carved glyph. Source image is style reference only; replace its subject. Preserve opaque object highlights and white fills. ONE thick pentagonal Japanese shogi wooden wedge, pale honey-gold face and amber side wall, rounded bevels, tapered pointed top, broad clearly visible face. Match supplied shogi pawn's camera and material. Keep silhouette compact, top point intact. Exactly ONE large correctly formed brush-style engraved glyph centered on face, taking 65% of face height; NO other glyph, label, decoration or pattern. Promoted pawn / Tokin face: one LARGE deep crimson-red #D43A32 Japanese hiragana と, and a slim gold bevel around wood face. Same stable orientation as unpromoted token. No black 歩, no extra character, no lightning.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-43e1cbf4-a4a0-443f-bae8-41586e608e78.png",
+      "path": "SHOGI_FU_NARI.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "alpha_bounds": [
+        191,
+        79,
+        1200,
+        1206
+      ],
+      "visible_alpha_bounds_at_0_08": [
+        193,
+        141,
+        1044,
+        1202
+      ],
+      "sha256": "acd636e72befa7cf8cf14e856c2273fa5bec6e99ac6126a8fc95de45a353de70",
+      "pixels_modified": false,
+      "qa": "Native transparent output visually checked for silhouette, coherent geometry, opaque body and clean margins. Source and destination SHA-256 match. Runtime small-size QA recorded in README."
+    },
+    {
+      "id": "SHOGI_HISHA_NARI",
+      "role": "쇼기 용왕 — 비차 승급",
+      "ref": "SHOGI_FU.png",
+      "brief": "ONE thick pentagonal Japanese shogi wooden wedge, pale honey-gold face and amber side wall, rounded bevels, tapered pointed top, broad clearly visible face. Match supplied shogi pawn's camera and material. Keep silhouette compact, top point intact. Exactly ONE large correctly formed brush-style engraved glyph centered on face, taking 65% of face height; NO other glyph, label, decoration or pattern. Promoted rook / dragon king face: one LARGE deep crimson-red #D43A32 character 龍, and a slim gold bevel around wood face. Same stable orientation. No black 飛, no additional 王 character, no lightning.",
+      "prompt": "Create ONE production board-game TOKEN SPRITE as a 1:1 square transparent PNG. Cute chunky rounded toy consistent with supplied style reference, thick clean nearly black #25252A outer outline, broad simple forms and restrained three-tone cel shading. Orthographic top-down 3/4 view, target elevation 50 degrees, no perspective exaggeration. Must remain readable at just 26x31 pixels. One centered isolated object, entirely within central 76% width and height, clear transparent margin. No colored owner pedestal (game draws it), cast shadow, ground plane, scene, particles, aura, glow outside silhouette, logos, captions, numbers, watermark or frame. No text except the SINGLE explicitly requested carved glyph. Source image is style reference only; replace its subject. Preserve opaque object highlights and white fills. ONE thick pentagonal Japanese shogi wooden wedge, pale honey-gold face and amber side wall, rounded bevels, tapered pointed top, broad clearly visible face. Match supplied shogi pawn's camera and material. Keep silhouette compact, top point intact. Exactly ONE large correctly formed brush-style engraved glyph centered on face, taking 65% of face height; NO other glyph, label, decoration or pattern. Promoted rook / dragon king face: one LARGE deep crimson-red #D43A32 character 龍, and a slim gold bevel around wood face. Same stable orientation. No black 飛, no additional 王 character, no lightning.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-933dfcb5-1d37-4f09-8f69-8b182c8d5ea5.png",
+      "path": "SHOGI_HISHA_NARI.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "alpha_bounds": [
+        158,
+        131,
+        1194,
+        1207
+      ],
+      "visible_alpha_bounds_at_0_08": [
+        189,
+        134,
+        1048,
+        1203
+      ],
+      "sha256": "48e69f561e219c00e1831070256f7a1f22650f544a568ab6291c2d19bcc487c3",
+      "pixels_modified": false,
+      "qa": "Native transparent output visually checked for silhouette, coherent geometry, opaque body and clean margins. Source and destination SHA-256 match. Runtime small-size QA recorded in README."
+    },
+    {
+      "id": "SHOGI_KAKU_NARI",
+      "role": "쇼기 용마 — 각행 승급",
+      "ref": "SHOGI_FU.png",
+      "brief": "ONE thick pentagonal Japanese shogi wooden wedge, pale honey-gold face and amber side wall, rounded bevels, tapered pointed top, broad clearly visible face. Match supplied shogi pawn's camera and material. Keep silhouette compact, top point intact. Exactly ONE large correctly formed brush-style engraved glyph centered on face, taking 65% of face height; NO other glyph, label, decoration or pattern. Promoted bishop / dragon horse face: one LARGE deep crimson-red #D43A32 character 馬, and a slim gold bevel around wood face. Same stable orientation. No black 角, no extra character, no lightning.",
+      "prompt": "Create ONE production board-game TOKEN SPRITE as a 1:1 square transparent PNG. Cute chunky rounded toy consistent with supplied style reference, thick clean nearly black #25252A outer outline, broad simple forms and restrained three-tone cel shading. Orthographic top-down 3/4 view, target elevation 50 degrees, no perspective exaggeration. Must remain readable at just 26x31 pixels. One centered isolated object, entirely within central 76% width and height, clear transparent margin. No colored owner pedestal (game draws it), cast shadow, ground plane, scene, particles, aura, glow outside silhouette, logos, captions, numbers, watermark or frame. No text except the SINGLE explicitly requested carved glyph. Source image is style reference only; replace its subject. Preserve opaque object highlights and white fills. ONE thick pentagonal Japanese shogi wooden wedge, pale honey-gold face and amber side wall, rounded bevels, tapered pointed top, broad clearly visible face. Match supplied shogi pawn's camera and material. Keep silhouette compact, top point intact. Exactly ONE large correctly formed brush-style engraved glyph centered on face, taking 65% of face height; NO other glyph, label, decoration or pattern. Promoted bishop / dragon horse face: one LARGE deep crimson-red #D43A32 character 馬, and a slim gold bevel around wood face. Same stable orientation. No black 角, no extra character, no lightning.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-da4c6d41-31c7-4b91-b494-9c001cd63155.png",
+      "path": "SHOGI_KAKU_NARI.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "alpha_bounds": [
+        49,
+        21,
+        1204,
+        1206
+      ],
+      "visible_alpha_bounds_at_0_08": [
+        189,
+        134,
+        1049,
+        1203
+      ],
+      "sha256": "999988ce52a1e4b7454040eee208911732ae31028cc4a38d78deb5fc622ce9c4",
+      "pixels_modified": false,
+      "qa": "Native transparent output visually checked for silhouette, coherent geometry, opaque body and clean margins. Source and destination SHA-256 match. Runtime small-size QA recorded in README."
+    },
+    {
+      "id": "SHOGI_KEIMA_NARI",
+      "role": "쇼기 성계 — 계마 승급",
+      "ref": "SHOGI_FU.png",
+      "brief": "ONE thick pentagonal Japanese shogi wooden wedge, pale honey-gold face and amber side wall, rounded bevels, tapered pointed top, broad clearly visible face. Match supplied shogi pawn's camera and material. Keep silhouette compact, top point intact. Exactly ONE large correctly formed brush-style engraved glyph centered on face, taking 65% of face height; NO other glyph, label, decoration or pattern. Promoted knight face: one LARGE deep crimson-red #D43A32 character 金 (gold symbol for this game's promoted knight), and a slim gold bevel around wood face. Same stable orientation. No black 桂, no additional characters, no lightning.",
+      "prompt": "Create ONE production board-game TOKEN SPRITE as a 1:1 square transparent PNG. Cute chunky rounded toy consistent with supplied style reference, thick clean nearly black #25252A outer outline, broad simple forms and restrained three-tone cel shading. Orthographic top-down 3/4 view, target elevation 50 degrees, no perspective exaggeration. Must remain readable at just 26x31 pixels. One centered isolated object, entirely within central 76% width and height, clear transparent margin. No colored owner pedestal (game draws it), cast shadow, ground plane, scene, particles, aura, glow outside silhouette, logos, captions, numbers, watermark or frame. No text except the SINGLE explicitly requested carved glyph. Source image is style reference only; replace its subject. Preserve opaque object highlights and white fills. ONE thick pentagonal Japanese shogi wooden wedge, pale honey-gold face and amber side wall, rounded bevels, tapered pointed top, broad clearly visible face. Match supplied shogi pawn's camera and material. Keep silhouette compact, top point intact. Exactly ONE large correctly formed brush-style engraved glyph centered on face, taking 65% of face height; NO other glyph, label, decoration or pattern. Promoted knight face: one LARGE deep crimson-red #D43A32 character 金 (gold symbol for this game's promoted knight), and a slim gold bevel around wood face. Same stable orientation. No black 桂, no additional characters, no lightning.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-35437c44-9410-4c2b-abdb-499ef70b38ba.png",
+      "path": "SHOGI_KEIMA_NARI.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "alpha_bounds": [
+        187,
+        130,
+        1051,
+        1202
+      ],
+      "visible_alpha_bounds_at_0_08": [
+        189,
+        132,
+        1049,
+        1199
+      ],
+      "sha256": "0a1b580890c688ceceaa213621d520f4cd96fe1bcb8900e3e1865f908b7c7c0c",
+      "pixels_modified": false,
+      "qa": "Native transparent output visually checked for silhouette, coherent geometry, opaque body and clean margins. Source and destination SHA-256 match. Runtime small-size QA recorded in README."
+    },
+    {
+      "id": "NPC_ROBBER",
+      "role": "중립 도적",
+      "ref": "CHESS_KNIGHT.png",
+      "brief": "ONE cute squat hooded bandit toy figure, simple rounded dark-purple #514865 hood and cloak, warm beige face, thick black eye mask with TWO tiny ivory eyes, ONE small honey-coloured loot sack tucked against its right side. Chunky feet touching ground, no separate platform. Character height about twice head diameter. Friendly mischievous expression, face and sack instantly readable, very few clothing folds. No weapon, text, extra figure or scenery.",
+      "prompt": "Create ONE production board-game TOKEN SPRITE as a 1:1 square transparent PNG. Cute chunky rounded toy consistent with supplied style reference, thick clean nearly black #25252A outer outline, broad simple forms and restrained three-tone cel shading. Orthographic top-down 3/4 view, target elevation 50 degrees, no perspective exaggeration. Must remain readable at just 26x31 pixels. One centered isolated object, entirely within central 76% width and height, clear transparent margin. No colored owner pedestal (game draws it), cast shadow, ground plane, scene, particles, aura, glow outside silhouette, logos, captions, numbers, watermark or frame. No text except the SINGLE explicitly requested carved glyph. Source image is style reference only; replace its subject. Preserve opaque object highlights and white fills. ONE cute squat hooded bandit toy figure, simple rounded dark-purple #514865 hood and cloak, warm beige face, thick black eye mask with TWO tiny ivory eyes, ONE small honey-coloured loot sack tucked against its right side. Chunky feet touching ground, no separate platform. Character height about twice head diameter. Friendly mischievous expression, face and sack instantly readable, very few clothing folds. No weapon, text, extra figure or scenery.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-20095047-bb28-4da5-836f-ededb3a5a0ab.png",
+      "path": "NPC_ROBBER.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "alpha_bounds": [
+        41,
+        33,
+        1192,
+        1232
+      ],
+      "visible_alpha_bounds_at_0_08": [
+        285,
+        151,
+        975,
+        1090
+      ],
+      "sha256": "088ed1fe409a63a1548a708cc34c78f717d7aa5096657eee18a8d85098821c19",
+      "pixels_modified": false,
+      "qa": "Native transparent output visually checked for silhouette, coherent geometry, opaque body and clean margins. Source and destination SHA-256 match. Runtime small-size QA recorded in README."
+    },
+    {
+      "id": "NPC_GHOST",
+      "role": "중립 고스트",
+      "ref": "CHESS_KNIGHT.png",
+      "brief": "ONE cute squat arcade ghost toy, rounded dome cyan #74E0E7 body, three broad rounded scallops along wavy bottom, TWO large ivory oval eyes with dark pupils looking slightly left. Thick near-black outer outline with a narrow pastel-pink #BC73CE accent rim INSIDE the silhouette. Glossy simple cel shading. No mouth, limbs, aura, sparks, floating shadow, pedestal or maze. Bold immediately readable ghost silhouette.",
+      "prompt": "Create ONE production board-game TOKEN SPRITE as a 1:1 square transparent PNG. Cute chunky rounded toy consistent with supplied style reference, thick clean nearly black #25252A outer outline, broad simple forms and restrained three-tone cel shading. Orthographic top-down 3/4 view, target elevation 50 degrees, no perspective exaggeration. Must remain readable at just 26x31 pixels. One centered isolated object, entirely within central 76% width and height, clear transparent margin. No colored owner pedestal (game draws it), cast shadow, ground plane, scene, particles, aura, glow outside silhouette, logos, captions, numbers, watermark or frame. No text except the SINGLE explicitly requested carved glyph. Source image is style reference only; replace its subject. Preserve opaque object highlights and white fills. ONE cute squat arcade ghost toy, rounded dome cyan #74E0E7 body, three broad rounded scallops along wavy bottom, TWO large ivory oval eyes with dark pupils looking slightly left. Thick near-black outer outline with a narrow pastel-pink #BC73CE accent rim INSIDE the silhouette. Glossy simple cel shading. No mouth, limbs, aura, sparks, floating shadow, pedestal or maze. Bold immediately readable ghost silhouette.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-b627524a-dbd0-4ca5-b8a3-b8868e3a15a6.png",
+      "path": "NPC_GHOST.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "alpha_bounds": [
+        49,
+        117,
+        1160,
+        1065
+      ],
+      "visible_alpha_bounds_at_0_08": [
+        247,
+        232,
+        1009,
+        1050
+      ],
+      "sha256": "81055a54c5b52909b27fe28102e2e418a63b1b91c3ce2a6f5a526e49756b7f65",
       "pixels_modified": false,
       "qa": "Native transparent output visually checked for silhouette, coherent geometry, opaque body and clean margins. Source and destination SHA-256 match. Runtime small-size QA recorded in README."
     }
