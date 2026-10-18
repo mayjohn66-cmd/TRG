@@ -1,6 +1,6 @@
 # File: res://scenes/roll_presenter.gd
 # Class: class_name RollPresenter
-# Role: 판정 도구 결과 연출기. 엔진이 이미 확정한 결과(RollResult.to_dict())를 받아 주사위 셔플·윷 던지기·룰렛 감속 회전·슬롯 3릴 순차 정지·홀덤 카드 플립으로 보여 준다. 연출만 담당하며 결과는 절대 바꾸지 않는다
+# Role: 판정 도구 결과 연출기. 확정된 결과를 D6의 실제 3D 굴림·윷 던지기·룰렛 감속·슬롯 순차 정지·카드 플립으로 표시한다. 연출만 담당하며 결과는 절대 바꾸지 않는다
 class_name RollPresenter
 extends PanelContainer
 
@@ -57,6 +57,8 @@ var _card_face_colors: Array[Color] = []
 var _last_tick: int = -1
 var _settled: bool = false
 var _final_face: int = 0
+var _dice_3d: DiceRoll3D = null
+var _default_style: StyleBoxFlat
 
 
 ## 룰렛 원판. angle(라디안)만큼 돌아간 상태로 1~10 눈금을 그린다 (위쪽 바늘 자리가 현재 눈금).
@@ -102,6 +104,7 @@ func _init() -> void:
 	style.set_content_margin_all(16)
 	style.shadow_color = Color(0, 0, 0, 0.5)
 	style.shadow_size = 22
+	_default_style = style
 	add_theme_stylebox_override("panel", style)
 
 
@@ -131,6 +134,8 @@ func play(tool_id: StringName, result: Dictionary, power: float = 0.5) -> void:
 
 ## 진행 중인 연출을 즉시 끝내고 숨긴다 (새 게임 등).
 func cancel() -> void:
+	if _dice_3d != null:
+		_dice_3d.stop_rendering()
 	if not active:
 		visible = false
 		return
@@ -153,6 +158,8 @@ func _process(delta: float) -> void:
 	if _t >= _total:
 		active = false
 		visible = false
+		if _dice_3d != null:
+			_dice_3d.stop_rendering()
 		finished.emit()
 
 
@@ -161,7 +168,15 @@ func _process(delta: float) -> void:
 # ---------------------------------------------------------------------------
 
 func _clear() -> void:
+	# Keep one viewport/mesh set across rolls; it does not render when idle.
+	if _dice_3d != null:
+		_dice_3d.stop_rendering()
+		_dice_3d.hide()
+		if _dice_3d.get_parent() != self:
+			_dice_3d.reparent(self)
 	for child: Node in get_children():
+		if child == _dice_3d:
+			continue
 		remove_child(child)
 		child.queue_free()
 	_sticks.clear()
@@ -205,6 +220,7 @@ func _box(bg: Color, border: Color, radius: int, min_size: Vector2) -> PanelCont
 
 func _build(tool_id: StringName) -> void:
 	_clear()
+	add_theme_stylebox_override("panel", UiSkin.panel("panel", 12.0) if tool_id == &"D6" else _default_style)
 	_root = VBoxContainer.new()
 	_root.add_theme_constant_override("separation", 8)
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -215,8 +231,23 @@ func _build(tool_id: StringName) -> void:
 	_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_stage)
 	match tool_id:
-		&"D6", &"CHINCHIRO":
-			_title.text = "기본 주사위" if tool_id == &"D6" else "지하노역장 친치로"
+		&"D6":
+			_title.text = "기본 주사위"
+			_title.add_theme_font_size_override("font_size", 18)
+			_title.add_theme_color_override("font_color", UiSkin.GREEN)
+			_total = DiceRoll3D.ROLL_TIME + DiceRoll3D.HOLD_TIME
+			if _dice_3d == null:
+				_dice_3d = DiceRoll3D.new()
+				_stage.add_child(_dice_3d)
+			else:
+				_dice_3d.reparent(_stage)
+			_dice_3d.show()
+			_final_face = int((_result.get("details", {}) as Dictionary).get("face", _result.get("steps", 1)))
+			_dice_3d.begin(_final_face, _power)
+			_die_label = _label("굴리는 중…", 22, UiSkin.INK)
+			_root.add_child(_die_label)
+		&"CHINCHIRO":
+			_title.text = "지하노역장 친치로"
 			_total = DIE_SHUFFLE + DIE_PUNCH + HOLD_TIME
 			_die = _box(Color("f8f9fa"), Color("adb5bd"), 22, Vector2(128, 128))
 			_die_label = _label("?", 78, Color("212529"))
@@ -392,7 +423,8 @@ static func card_text(card: int) -> String:
 
 func _update(t: float) -> void:
 	match _mode:
-		&"D6", &"CHINCHIRO", &"YUT": _update_die(t)
+		&"D6": _update_d6(t)
+		&"CHINCHIRO", &"YUT": _update_die(t)
 		&"LIFE_ROULETTE": _update_wheel(t)
 		&"SLOT_777": _update_slot(t)
 		&"HOLDEM", &"DICE_HWATU", &"DICE_MAHJONG", &"DICE_TAROT": _update_cards(t)
@@ -401,6 +433,16 @@ func _update(t: float) -> void:
 func _ease_out(x: float) -> float:
 	var inv: float = 1.0 - clampf(x, 0.0, 1.0)
 	return 1.0 - inv * inv * inv
+
+
+func _update_d6(t: float) -> void:
+	_dice_3d.apply_time(t)
+	if t >= DiceRoll3D.ROLL_TIME and not _settled:
+		_settled = true
+		var steps: int = int(_result.get("steps", _final_face))
+		last_display = str(steps)
+		_die_label.text = "%d칸 전진" % steps
+		Sfx.play(&"thud")
 
 
 ## 눈금 숫자가 빠르게 바뀌며 구르다가 쾅! 하고 최종 눈금이 찍힌다.
@@ -419,7 +461,7 @@ func _update_die(t: float) -> void:
 				for stick: PanelContainer in _sticks:
 					_set_stick(stick, _rng.randi_range(0, 1) == 0, false)
 			else:
-				_die_label.text = str(_rng.randi_range(1, 6)) if _mode == &"D6" else str(ToolChinchiro.FACES[_rng.randi_range(0, 5)])
+				_die_label.text = str(ToolChinchiro.FACES[_rng.randi_range(0, 5)])
 		var spins: float = 1.0 + floorf(_power * 3.0)
 		var progress: float = _ease_out(t / DIE_SHUFFLE)
 		if is_yut:

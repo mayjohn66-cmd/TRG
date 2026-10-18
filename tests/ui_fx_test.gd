@@ -246,10 +246,20 @@ func _play(tool_id: StringName, result: Dictionary, sampler: Callable = Callable
 
 func _test_presenters() -> void:
 	var presenter: RollPresenter = _board._presenter
-	# 기본 주사위: 0.5초 셔플 + 펀치, 최종 눈금이 찍힌다
+	# 기본 주사위: 실제 3D 회전 1초 + 결과 유지. 윗면과 판정이 일치한다.
 	var elapsed: float = await _play(&"D6", {"tool_id": &"D6", "steps": 4, "details": {}})
 	_expect(elapsed >= 0.55 and elapsed < 2.5, "주사위 연출 시간 (%.2f초)" % elapsed)
 	_expect(presenter.last_display == "4", "주사위 최종 눈금이 엔진 결과와 같아야 한다 (%s)" % presenter.last_display)
+	var die_view: DiceRoll3D = presenter._dice_3d
+	_expect(die_view != null and die_view.settled, "3D die reaches its final pose")
+	_expect(DiceRoll3D.top_face(die_view.die.quaternion) == 4, "actual mesh top face has four pips")
+	_expect(die_view.render_view.render_target_update_mode == SubViewport.UPDATE_DISABLED, "idle 3D viewport stops rendering")
+	# Switching tools and cancelling must not strand input or orphan the cached viewport.
+	presenter.play(&"D6", {"steps": 2, "details": {"face": 2}}, 0.0)
+	_expect(presenter._dice_3d == die_view, "next roll reuses the same viewport")
+	presenter.cancel()
+	_expect(not presenter.active and not presenter.visible, "cancel hides the die immediately")
+	_expect(die_view.render_view.render_target_update_mode == SubViewport.UPDATE_DISABLED, "cancel stops the viewport")
 	# 윷
 	elapsed = await _play(&"YUT", {"tool_id": &"YUT", "steps": 3, "details": {"face": 3}})
 	_expect(elapsed >= 0.55 and presenter.last_display == "걸", "윷 연출 (%.2f초, %s)" % [elapsed, presenter.last_display])
