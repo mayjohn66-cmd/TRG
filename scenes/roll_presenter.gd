@@ -13,7 +13,6 @@ const SLOT_SYMBOLS: Array[String] = ["체리", "레몬", "종", "BAR", "다이�
 const SUITS: Array[String] = ["♣", "♦", "♥", "♠"]
 const RANKS: Array[String] = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"]
 ## 연출 시간(초).
-const SLOT_STOPS: Array[float] = [0.4, 0.8, 1.2]
 const CARD_FLIP_INTERVAL: float = 0.15
 const CARD_FLIP_TIME: float = 0.12
 const HOLD_TIME: float = 0.35
@@ -40,8 +39,6 @@ var _title: Label = null
 var _stage: Control = null
 var _die_label: Label = null
 var _wheel: RouletteSpin3D = null
-var _reels: Array[PanelContainer] = []
-var _reel_labels: Array[Label] = []
 var _reel_stopped: Array[bool] = [false, false, false]
 var _cards: Array[PanelContainer] = []
 var _card_labels: Array[Label] = []
@@ -60,6 +57,7 @@ var _card_result_caption: String = ""
 var _mahjong_3d: MahjongSlam3D = null
 var _mahjong_names: Array[Label] = []
 var _yut_3d: YutThrow3D = null
+var _slot_3d: SlotMachine3D = null
 
 
 func _init() -> void:
@@ -90,7 +88,7 @@ func play(tool_id: StringName, result: Dictionary, power: float = 0.5) -> void:
 		return
 	_power = clampf(power, 0.0, 1.0)
 	_result = result
-	if tool_id in [&"HOLDEM", &"DICE_HWATU", &"DICE_TAROT", &"DICE_MAHJONG", &"YUT", &"LIFE_ROULETTE"]:
+	if tool_id in [&"HOLDEM", &"DICE_HWATU", &"DICE_TAROT", &"DICE_MAHJONG", &"YUT", &"LIFE_ROULETTE", &"SLOT_777"]:
 		last_display = ""
 	_mode = tool_id
 	_t = 0.0
@@ -112,6 +110,8 @@ func cancel() -> void:
 		_yut_3d.stop_rendering()
 	if _wheel != null:
 		_wheel.stop_rendering()
+	if _slot_3d != null:
+		_slot_3d.stop_rendering()
 	if not active:
 		visible = false
 		return
@@ -142,6 +142,8 @@ func _process(delta: float) -> void:
 			_yut_3d.stop_rendering()
 		if _wheel != null:
 			_wheel.stop_rendering()
+		if _slot_3d != null:
+			_slot_3d.stop_rendering()
 		finished.emit()
 
 
@@ -171,13 +173,16 @@ func _clear() -> void:
 		_wheel.hide()
 		if _wheel.get_parent() != self:
 			_wheel.reparent(self)
+	if _slot_3d != null:
+		_slot_3d.stop_rendering()
+		_slot_3d.hide()
+		if _slot_3d.get_parent() != self:
+			_slot_3d.reparent(self)
 	for child: Node in get_children():
-		if child == _dice_3d or child == _mahjong_3d or child == _yut_3d or child == _wheel:
+		if child == _dice_3d or child == _mahjong_3d or child == _yut_3d or child == _wheel or child == _slot_3d:
 			continue
 		remove_child(child)
 		child.queue_free()
-	_reels.clear()
-	_reel_labels.clear()
 	_cards.clear()
 	_card_labels.clear()
 	_card_faces.clear()
@@ -216,7 +221,7 @@ func _box(bg: Color, border: Color, radius: int, min_size: Vector2) -> PanelCont
 
 func _build(tool_id: StringName) -> void:
 	_clear()
-	var illustrated: bool = tool_id in [&"HOLDEM", &"DICE_HWATU", &"DICE_TAROT", &"DICE_MAHJONG", &"YUT", &"LIFE_ROULETTE"]
+	var illustrated: bool = tool_id in [&"HOLDEM", &"DICE_HWATU", &"DICE_TAROT", &"DICE_MAHJONG", &"YUT", &"LIFE_ROULETTE", &"SLOT_777"]
 	add_theme_stylebox_override("panel", UiSkin.panel("panel", 12.0) if illustrated or tool_id in [&"D6", &"CHINCHIRO"] else _default_style)
 	_root = VBoxContainer.new()
 	_root.add_theme_constant_override("separation", 8)
@@ -278,20 +283,15 @@ func _build(tool_id: StringName) -> void:
 			_make_card_result(caption)
 		&"SLOT_777":
 			_title.text = "777 슬롯머신"
-			_total = SLOT_STOPS[2] + HOLD_TIME + 0.15
-			var reels := HBoxContainer.new()
-			reels.add_theme_constant_override("separation", 12)
-			reels.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			_stage.add_child(reels)
-			for index: int in 3:
-				var reel: PanelContainer = _box(Color("f8f9fa"), Color("c92a2a"), 14, Vector2(96, 110))
-				var reel_label: Label = _label("?", 26, Color("212529"))
-				reel.add_child(reel_label)
-				reels.add_child(reel)
-				_reels.append(reel)
-				_reel_labels.append(reel_label)
-			_die_label = _label("[ ? ] [ ? ] [ ? ]", 16, Color("adb5bd"))
-			_root.add_child(_die_label)
+			_total = SlotMachine3D.TOTAL_TIME
+			if _slot_3d == null:
+				_slot_3d = SlotMachine3D.new()
+				_stage.add_child(_slot_3d)
+			else:
+				_slot_3d.reparent(_stage)
+			_slot_3d.show()
+			_slot_3d.begin((_result.get("details",{}) as Dictionary).get("reels",[0,0,0]),_power)
+			_make_card_result("%s · %s" % [SlotMachine3D.result_title(_slot_3d.result_values),_card_move_text()])
 		&"HOLDEM":
 			_build_holdem()
 		&"DICE_HWATU": _build_hwatu()
@@ -508,40 +508,14 @@ func _update_wheel(t: float) -> void:
 		last_display = str(_final_face)
 
 
-## 세 릴이 동시에 돌다가 0.4 -> 0.8 -> 1.2초에 차례로 철컥! 하고 멈춘다.
+## Three textured cylinders brake and lock one by one on the actual symbols.
 func _update_slot(t: float) -> void:
-	var reels: Array = (_result["details"] as Dictionary).get("reels", [0, 0, 0])
-	var shown: Array[String] = []
-	for index: int in 3:
-		var stop_time: float = SLOT_STOPS[index]
-		if t < stop_time:
-			var symbol: int = (int(t * 24.0) + index * 2) % SLOT_SYMBOLS.size()
-			_reel_labels[index].text = SLOT_SYMBOLS[symbol]
-			shown.append("?")
-		else:
-			var final_symbol: String = SLOT_SYMBOLS[int(reels[index]) % SLOT_SYMBOLS.size()]
-			_reel_labels[index].text = final_symbol
-			shown.append(final_symbol)
-			var punch: float = clampf((t - stop_time) / 0.18, 0.0, 1.0)
-			var scale_value: float = 1.0 + 0.3 * pow(1.0 - punch, 2.0)
-			_reels[index].pivot_offset = _reels[index].size / 2.0
-			_reels[index].scale = Vector2(scale_value, scale_value)
-			if not _reel_stopped[index]:
-				_reel_stopped[index] = true
-				_reels[index].add_theme_stylebox_override("panel", _stopped_style())
-	_die_label.text = "[ %s ] [ %s ] [ %s ]" % [shown[0], shown[1], shown[2]]
-	if t >= SLOT_STOPS[2]:
-		last_display = "|".join(PackedStringArray([SLOT_SYMBOLS[int(reels[0])], SLOT_SYMBOLS[int(reels[1])], SLOT_SYMBOLS[int(reels[2])]]))
-
-
-func _stopped_style() -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color("fff3bf")
-	style.border_color = Color("ffd43b")
-	style.set_border_width_all(4)
-	style.set_corner_radius_all(14)
-	style.set_content_margin_all(4)
-	return style
+	_slot_3d.apply_time(t)
+	_reel_stopped = _slot_3d.stopped.duplicate()
+	if _slot_3d.settled:
+		_die_label.text = _card_result_caption
+		_die_label.modulate.a = 1.0
+		last_display = _final_text(_mode,_result)
 
 
 func _update_illustrated_cards(t: float) -> void:

@@ -3764,7 +3764,8 @@ func _on_roll_pressed() -> void:
 	_stop_charge()
 	if manager.is_game_over or _roll_button.disabled or _ui_busy() or _is_bot_turn():
 		return
-	Sfx.play(&"dice_roll" if _is_dice_family(state.tools[_dock_owner()]) else &"roll_other")
+	if not (state.tools[_dock_owner()] is ToolSlot777):
+		Sfx.play(&"dice_roll" if _is_dice_family(state.tools[_dock_owner()]) else &"roll_other")
 	if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN:
 		_act(&"proceed")
 	if manager.current_state == TurnManager.State.PHASE_ROLL_WAIT:

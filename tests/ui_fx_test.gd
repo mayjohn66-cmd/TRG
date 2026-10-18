@@ -60,6 +60,7 @@ func _run() -> void:
 	await _test_mahjong_landings()
 	await _test_yut_throw()
 	await _test_roulette_spin()
+	await _test_slot_machine()
 	_board._announcer.cancel()
 	await _test_gauge_and_lock()
 	await _test_instant_flag()
@@ -293,7 +294,7 @@ func _test_presenters() -> void:
 	var early: float = _angle_between(samples, 0.4, 0.7)
 	var late: float = _angle_between(samples, 1.3, 1.6)
 	_expect(early > late * 3.0 and late >= 0.0, "룰렛은 감속해야 한다 (초반 %.2f > 후반 %.2f)" % [early, late])
-	# 777 슬롯: 0.4 -> 0.8 -> 1.2초에 릴이 차례로 멈춘다
+	# 777 슬롯: 실제 릴이 왼쪽부터 순차 정지한다
 	var stop_times: Array[float] = [-1.0, -1.0, -1.0]
 	var sample_slot: Callable = func(t: float) -> void:
 		for index: int in 3:
@@ -301,7 +302,7 @@ func _test_presenters() -> void:
 				stop_times[index] = t
 	elapsed = await _play(&"SLOT_777", {"tool_id": &"SLOT_777", "steps": 4, "details": {"reels": [1, 1, 5]}}, sample_slot)
 	_expect(stop_times[0] > 0.0 and stop_times[0] < stop_times[1] and stop_times[1] < stop_times[2], "릴이 순서대로 멈춰야 한다 %s" % str(stop_times))
-	_expect(absf(stop_times[0] - 0.4) < 0.2 and absf(stop_times[1] - 0.8) < 0.2 and absf(stop_times[2] - 1.2) < 0.2, "릴 정지 간격 0.4/0.8/1.2초 %s" % str(stop_times))
+	_expect(absf(stop_times[0] - SlotMachine3D.STOP_TIMES[0]) < 0.2 and absf(stop_times[1] - SlotMachine3D.STOP_TIMES[1]) < 0.2 and absf(stop_times[2] - SlotMachine3D.STOP_TIMES[2]) < 0.2, "실제 릴의 정지 시각 %s" % str(stop_times))
 	_expect(presenter.last_display == "레몬|레몬|7", "슬롯 최종 심볼 (%s)" % presenter.last_display)
 	# 홀덤: 카드 5장이 0.15초 간격으로 한 장씩 뒤집힌다
 	var flip_times: Array[float] = [-1.0, -1.0, -1.0, -1.0, -1.0]
@@ -548,6 +549,51 @@ func _test_roulette_spin() -> void:
 	pad.queue_free()
 	await process_frame
 	print("ROULETTE_SPIN_FX_OK")
+
+
+func _test_slot_machine() -> void:
+	var presenter: RollPresenter = _board._presenter
+	presenter.instant = false
+	presenter.set_process(false)
+	presenter.play(&"SLOT_777",{"steps":20,"details":{"reels":[5,5,5]}},0.6)
+	await process_frame
+	var view: SlotMachine3D = presenter._slot_3d
+	var stops: Array[int] = []
+	var observer: Callable = func(index: int) -> void: stops.append(index)
+	view.reel_stopped.connect(observer)
+	presenter._update(0.7)
+	_expect(view.stopped.count(true)==0 and presenter.last_display.is_empty() and presenter._die_label.text.is_empty(),"slot conceals payout before physical reels stop")
+	for index: int in 3:
+		presenter._update(SlotMachine3D.STOP_TIMES[index]+0.001)
+		_expect(view.stopped.count(true)==index+1,"slot locks one reel at a time, left to right")
+		_expect(view.displayed_values()[index]==5,"stopped cylinder shows its actual seven")
+		_expect(presenter._die_label.text.is_empty(),"payout remains hidden until all reel rebounds settle")
+	presenter._update(SlotMachine3D.RESULT_TIME+0.001)
+	presenter._update(SlotMachine3D.RESULT_TIME+0.01)
+	_expect(stops==[0,1,2],"slot emits exactly three distinct stop events")
+	_expect(presenter.last_display=="7|7|7" and presenter._die_label.text=="777 잭팟! · 20칸 전진","physical jackpot and engine movement agree")
+	_expect(view._sign.text=="777 잭팟!" and view.winning_reels==[true,true,true],"jackpot sign and matching lamps use actual symbols")
+	view.reel_stopped.disconnect(observer)
+	presenter._process(presenter._total)
+	_expect(not presenter.active and view.render_view.render_target_update_mode==SubViewport.UPDATE_DISABLED,"completion releases board and sleeps slot renderer")
+	var strip: SubViewport = view._strip_view
+	for values: Array in [[0,1,2],[0,1,0],[2,2,2],[3,4,5]]:
+		var typed: Array[int] = []
+		typed.assign(values)
+		presenter.play(&"SLOT_777",{"steps":ToolSlot777.steps_for(typed),"details":{"reels":values}},0.0)
+		presenter._update(SlotMachine3D.RESULT_TIME+0.001)
+		_expect(presenter._slot_3d==view and view._strip_view==strip,"repeated spins reuse cabinet, drums and strip")
+		_expect(view.displayed_values()==typed,"all six actual reel symbols can be shown")
+		_expect(view._sign.text==SlotMachine3D.result_title(typed),"miss, pair and triple receive their real outcome title")
+		presenter.cancel()
+	presenter.play(&"YUT",{"steps":2,"details":{"face":2}})
+	_expect(view.render_view.render_target_update_mode==SubViewport.UPDATE_DISABLED,"switching to Yut leaves slot asleep")
+	presenter.cancel()
+	presenter.play(&"SLOT_777",{"steps":1,"details":{"reels":[0,1,2]}})
+	presenter.cancel()
+	_expect(not presenter.active and not presenter.visible and view.render_view.render_target_update_mode==SubViewport.UPDATE_DISABLED,"mid-spin cancellation cannot strand input or rendering")
+	presenter.set_process(true)
+	print("SLOT_MACHINE_FX_OK")
 
 
 func _angle_between(samples: Array[Vector2], from_time: float, to_time: float) -> float:
