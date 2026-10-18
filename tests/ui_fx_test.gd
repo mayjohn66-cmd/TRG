@@ -260,6 +260,21 @@ func _test_presenters() -> void:
 	presenter.cancel()
 	_expect(not presenter.active and not presenter.visible, "cancel hides the die immediately")
 	_expect(die_view.render_view.render_target_update_mode == SubViewport.UPDATE_DISABLED, "cancel stops the viewport")
+	var ordinary_mesh: Mesh = die_view._pips.mesh
+	# D6 above already measures the shared real-time animation. Sample each new
+	# face at completion without advancing the live game's unrelated turn timer.
+	for value: int in [4, 5, 6, -6]:
+		presenter.play(&"CHINCHIRO", {"steps": value, "details": {"face": value, "oops": value == -6}}, 0.8)
+		presenter._process(DiceRoll3D.ROLL_TIME + DiceRoll3D.HOLD_TIME)
+		_expect(presenter._dice_3d == die_view, "loaded die shares the same 3D viewport")
+		_expect(die_view.displayed_value() == value and presenter.last_display == str(value), "loaded physical face and displayed result match %d" % value)
+		_expect(die_view._pips.mesh != ordinary_mesh, "loaded die uses its own face paint")
+		_expect(die_view.render_view.render_target_update_mode == SubViewport.UPDATE_DISABLED, "loaded die stops rendering after result")
+		if value < 0:
+			_expect(presenter._die_label.text.contains("후퇴"), "oops is shown as backwards movement")
+	presenter.play(&"D6", {"steps": 1, "details": {"face": 1}}, 0.5)
+	_expect(die_view._pips.mesh == ordinary_mesh, "switching back restores ordinary D6 pips")
+	presenter.cancel()
 	# 윷
 	elapsed = await _play(&"YUT", {"tool_id": &"YUT", "steps": 3, "details": {"face": 3}})
 	_expect(elapsed >= 0.55 and presenter.last_display == "걸", "윷 연출 (%.2f초, %s)" % [elapsed, presenter.last_display])

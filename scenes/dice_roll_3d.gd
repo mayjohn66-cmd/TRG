@@ -14,20 +14,24 @@ const PIP_GAP: float = 0.38
 const BODY_SHADER: Shader = preload("res://assets/ui/trickcal/dice/toy_die.gdshader")
 const OUTLINE_SHADER: Shader = preload("res://assets/ui/trickcal/dice/toy_outline.gdshader")
 const SHADOW_SHADER: Shader = preload("res://assets/ui/trickcal/dice/contact_shadow.gdshader")
-## Opposite faces add to seven. These normals also define the actual mesh pips.
+const D6_VALUES: Array[int] = [1, 2, 3, 4, 5, 6]
+## Physical face axes. Only the normal D6 has opposite values adding to seven.
 const FACE_NORMALS: Array[Vector3] = [Vector3.UP, Vector3.BACK, Vector3.RIGHT, Vector3.LEFT, Vector3.FORWARD, Vector3.DOWN]
 const FACE_U: Array[Vector3] = [Vector3.RIGHT, Vector3.RIGHT, Vector3.FORWARD, Vector3.BACK, Vector3.LEFT, Vector3.RIGHT]
 const FACE_V: Array[Vector3] = [Vector3.FORWARD, Vector3.UP, Vector3.UP, Vector3.UP, Vector3.UP, Vector3.BACK]
 
 static var _body_mesh: ArrayMesh
-static var _pip_mesh: ArrayMesh
+static var _pip_meshes: Dictionary = {}
 
 var render_view: SubViewport
 var die: Node3D
 var shadow: MeshInstance3D
 var result_face: int = 1
+var result_value: int = 1
 var settled: bool = false
 var _power: float = 0.5
+var _tool_id: StringName = &"D6"
+var _pips: MeshInstance3D
 
 
 func _init() -> void:
@@ -70,7 +74,6 @@ func _ready() -> void:
 	render_view.add_child(die)
 	if _body_mesh == null:
 		_body_mesh = _make_body_mesh()
-		_pip_mesh = _make_pip_mesh()
 	var outline := MeshInstance3D.new()
 	outline.mesh = _body_mesh
 	var ink := ShaderMaterial.new()
@@ -83,21 +86,44 @@ func _ready() -> void:
 	cream.shader = BODY_SHADER
 	body.material_override = cream
 	die.add_child(body)
-	var pips := MeshInstance3D.new()
-	pips.mesh = _pip_mesh
+	_pips = MeshInstance3D.new()
+	_pips.mesh = _pip_mesh_for(&"D6")
 	var paint := StandardMaterial3D.new()
 	paint.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	paint.vertex_color_use_as_albedo = true
-	pips.material_override = paint
-	die.add_child(pips)
+	_pips.material_override = paint
+	die.add_child(_pips)
 
 
-func begin(face: int, power: float) -> void:
-	result_face = clampi(face, 1, 6)
+func begin(value: int, power: float, tool_id: StringName = &"D6") -> void:
+	_tool_id = tool_id
+	result_value = value
+	result_face = physical_face_for(value, tool_id)
+	_pips.mesh = _pip_mesh_for(tool_id)
 	_power = clampf(power, 0.0, 1.0)
 	settled = false
 	render_view.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	apply_time(0.0)
+
+
+static func face_values(tool_id: StringName) -> Array[int]:
+	return ToolChinchiro.FACES if tool_id == &"CHINCHIRO" else D6_VALUES
+
+
+## The outcome is a value, not a physical side number. In particular -6 must
+## reach its dedicated marked side instead of being clamped to D6's side 1.
+static func physical_face_for(value: int, tool_id: StringName) -> int:
+	return maxi(face_values(tool_id).find(value), 0) + 1
+
+
+func displayed_value() -> int:
+	return face_values(_tool_id)[top_face(die.quaternion) - 1]
+
+
+static func _pip_mesh_for(tool_id: StringName) -> ArrayMesh:
+	if not _pip_meshes.has(tool_id):
+		_pip_meshes[tool_id] = _make_pip_mesh(tool_id)
+	return _pip_meshes[tool_id]
 
 
 func stop_rendering() -> void:
@@ -205,14 +231,15 @@ static func _make_body_mesh() -> ArrayMesh:
 	return mesh
 
 
-static func _make_pip_mesh() -> ArrayMesh:
+static func _make_pip_mesh(tool_id: StringName = &"D6") -> ArrayMesh:
 	var vertices := PackedVector3Array()
 	var normals := PackedVector3Array()
 	var colors := PackedColorArray()
 	const SIDES: int = 20
 	for face: int in 6:
-		var color: Color = (Color("e77970") if face == 0 else Color("36543c")).srgb_to_linear()
-		for pip: Vector2 in pip_positions(face + 1):
+		var value: int = face_values(tool_id)[face]
+		var color: Color = (Color("e77970") if value == 1 or value < 0 else Color("36543c")).srgb_to_linear()
+		for pip: Vector2 in pip_positions(absi(value)):
 			var center: Vector3 = FACE_NORMALS[face] * 1.006 + FACE_U[face] * pip.x + FACE_V[face] * pip.y
 			for segment: int in SIDES:
 				var angle: float = TAU * segment / SIDES
@@ -221,6 +248,13 @@ static func _make_pip_mesh() -> ArrayMesh:
 					vertices.append(point)
 					normals.append(FACE_NORMALS[face])
 					colors.append(color)
+		if value < 0:
+			# A broad minus above six coral pips. It is face paint, not a seventh pip.
+			var corners: Array[Vector2] = [Vector2(-0.18, 0.605), Vector2(-0.18, 0.675), Vector2(0.18, 0.675), Vector2(-0.18, 0.605), Vector2(0.18, 0.675), Vector2(0.18, 0.605)]
+			for point: Vector2 in corners:
+				vertices.append(FACE_NORMALS[face] * 1.006 + FACE_U[face] * point.x + FACE_V[face] * point.y)
+				normals.append(FACE_NORMALS[face])
+				colors.append(color)
 	var arrays: Array = []
 	arrays.resize(Mesh.ARRAY_MAX)
 	arrays[Mesh.ARRAY_VERTEX] = vertices

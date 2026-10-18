@@ -35,3 +35,18 @@ func test_tumbling_corners_never_pass_below_the_table() -> void:
 				var before: Transform3D = DiceRoll3D.pose_at(contact - 0.00001, face, power)
 				var after: Transform3D = DiceRoll3D.pose_at(contact + 0.00001, face, power)
 				check(before.origin.distance_to(after.origin) < 0.002, "bounce contacts never teleport the die")
+
+
+func test_chinchiro_faces_match_the_engine_including_negative_six() -> void:
+	var values: Array[int] = DiceRoll3D.face_values(&"CHINCHIRO")
+	check_eq(values, [4, 4, 5, 5, 6, -6] as Array[int], "loaded die has the engine's six values")
+	for physical_side: int in range(1, 7):
+		var value: int = values[physical_side - 1]
+		check_eq(DiceRoll3D.pip_positions(absi(value)).size(), absi(value), "every loaded side has its painted pip count")
+		var pose: Transform3D = DiceRoll3D.pose_at(DiceRoll3D.ROLL_TIME, physical_side, 0.5)
+		check_eq(values[DiceRoll3D.top_face(pose.basis.get_rotation_quaternion()) - 1], value, "all six painted sides can rest face-up")
+	for value: int in [4, 5, 6, -6]:
+		var side: int = DiceRoll3D.physical_face_for(value, &"CHINCHIRO")
+		check_eq(values[side - 1], value, "outcome selects a matching physical side")
+	check(DiceRoll3D.physical_face_for(6, &"CHINCHIRO") != DiceRoll3D.physical_face_for(-6, &"CHINCHIRO"), "six and oops are distinct physical faces")
+	check_eq(DiceRoll3D.face_values(&"D6"), [1, 2, 3, 4, 5, 6] as Array[int], "ordinary D6 keeps its original faces")

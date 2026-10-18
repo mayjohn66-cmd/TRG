@@ -220,7 +220,7 @@ func _box(bg: Color, border: Color, radius: int, min_size: Vector2) -> PanelCont
 
 func _build(tool_id: StringName) -> void:
 	_clear()
-	add_theme_stylebox_override("panel", UiSkin.panel("panel", 12.0) if tool_id == &"D6" else _default_style)
+	add_theme_stylebox_override("panel", UiSkin.panel("panel", 12.0) if tool_id in [&"D6", &"CHINCHIRO"] else _default_style)
 	_root = VBoxContainer.new()
 	_root.add_theme_constant_override("separation", 8)
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -231,8 +231,8 @@ func _build(tool_id: StringName) -> void:
 	_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_stage)
 	match tool_id:
-		&"D6":
-			_title.text = "기본 주사위"
+		&"D6", &"CHINCHIRO":
+			_title.text = "기본 주사위" if tool_id == &"D6" else "지하노역장 친치로"
 			_title.add_theme_font_size_override("font_size", 18)
 			_title.add_theme_color_override("font_color", UiSkin.GREEN)
 			_total = DiceRoll3D.ROLL_TIME + DiceRoll3D.HOLD_TIME
@@ -243,16 +243,9 @@ func _build(tool_id: StringName) -> void:
 				_dice_3d.reparent(_stage)
 			_dice_3d.show()
 			_final_face = int((_result.get("details", {}) as Dictionary).get("face", _result.get("steps", 1)))
-			_dice_3d.begin(_final_face, _power)
+			_dice_3d.begin(_final_face, _power, tool_id)
 			_die_label = _label("굴리는 중…", 22, UiSkin.INK)
 			_root.add_child(_die_label)
-		&"CHINCHIRO":
-			_title.text = "지하노역장 친치로"
-			_total = DIE_SHUFFLE + DIE_PUNCH + HOLD_TIME
-			_die = _box(Color("f8f9fa"), Color("adb5bd"), 22, Vector2(128, 128))
-			_die_label = _label("?", 78, Color("212529"))
-			_die.add_child(_die_label)
-			_stage.add_child(_die)
 		&"YUT":
 			_title.text = "전통 박달나무 윷"
 			_total = DIE_SHUFFLE + DIE_PUNCH + HOLD_TIME
@@ -423,8 +416,8 @@ static func card_text(card: int) -> String:
 
 func _update(t: float) -> void:
 	match _mode:
-		&"D6": _update_d6(t)
-		&"CHINCHIRO", &"YUT": _update_die(t)
+		&"D6", &"CHINCHIRO": _update_3d_die(t)
+		&"YUT": _update_die(t)
 		&"LIFE_ROULETTE": _update_wheel(t)
 		&"SLOT_777": _update_slot(t)
 		&"HOLDEM", &"DICE_HWATU", &"DICE_MAHJONG", &"DICE_TAROT": _update_cards(t)
@@ -435,13 +428,15 @@ func _ease_out(x: float) -> float:
 	return 1.0 - inv * inv * inv
 
 
-func _update_d6(t: float) -> void:
+func _update_3d_die(t: float) -> void:
 	_dice_3d.apply_time(t)
 	if t >= DiceRoll3D.ROLL_TIME and not _settled:
 		_settled = true
 		var steps: int = int(_result.get("steps", _final_face))
 		last_display = str(steps)
-		_die_label.text = "%d칸 전진" % steps
+		_die_label.text = "삐끗! %d칸 후퇴" % absi(steps) if steps < 0 else "%d칸 전진" % steps
+		if steps < 0:
+			_die_label.add_theme_color_override("font_color", Color("bf4941"))
 		Sfx.play(&"thud")
 
 
