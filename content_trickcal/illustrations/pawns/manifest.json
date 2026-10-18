@@ -1,5 +1,5 @@
 {
-  "version": "0.2",
+  "version": "0.3",
   "generator": "native image_gen.imagegen; model identifier not exposed",
   "assets": [
     {
@@ -291,6 +291,119 @@
         1026
       ],
       "sha256": "55f2b3f0d2fd87bc894f360bd0d1e3879ee69d74fc1a2767c3a7f58083d6fd6e",
+      "pixels_modified": false,
+      "qa": "Native transparent output visually checked for silhouette, coherent geometry, opaque body and clean margins. Source and destination SHA-256 match. Runtime small-size QA recorded in README."
+    },
+    {
+      "id": "CHESS_PAWN",
+      "role": "체스 폰",
+      "brief": "A single traditional chess PAWN: a SMALL round ball finial, clearly visible thick rounded collar directly beneath it, short CURVED waisted stem, wide double-tier circular chess foot. Finial diameter 40% of foot diameter. The neck collar and tiered chess foot must distinguish it from the game's very plain ball-and-cone Ludo basic pawn. Squat chunky classic chess pawn, not a person, no arms or legs.",
+      "prompt": "Create ONE production board-game CHESS TOKEN SPRITE as a 1:1 square PNG with true transparent background. Match the supplied existing ivory knight piece's thick clean dark outline, chunky cute toy proportions, ivory-white glossy material, cool grey cel-shaded sides and coherent orthographic top-down 3/4 view (target camera elevation 50 degrees). Readable at just 26x31 pixels: one bold closed silhouette, broad sturdy parts, minimal internal lines, no intricate engraving. Warm ivory #FFF4D6, cool silver-grey shadow, nearly black #25252A outline. Entire object inside central 70% width and 76% height, centered with transparent safe margins. Small integral ivory chess foot allowed; NO colored player pedestal, cast shadow, scene, aura, sparkles, text, letters, numbers, face, logo or watermark. Do NOT copy the horse subject. A single traditional chess PAWN: a SMALL round ball finial, clearly visible thick rounded collar directly beneath it, short CURVED waisted stem, wide double-tier circular chess foot. Finial diameter 40% of foot diameter. The neck collar and tiered chess foot must distinguish it from the game's very plain ball-and-cone Ludo basic pawn. Squat chunky classic chess pawn, not a person, no arms or legs.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-24c95855-5e8c-4d20-9d53-7ba4965b9354.png",
+      "path": "CHESS_PAWN.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "alpha_bounds": [
+        352,
+        257,
+        901,
+        1091
+      ],
+      "visible_alpha_bounds_at_0_08": [
+        356,
+        260,
+        899,
+        1086
+      ],
+      "sha256": "3501a563b1e5668857358a3c1ffcae7cd1cc8106930f289813503457f1066060",
+      "pixels_modified": false,
+      "qa": "Native transparent output visually checked for silhouette, coherent geometry, opaque body and clean margins. Source and destination SHA-256 match. Runtime small-size QA recorded in README."
+    },
+    {
+      "id": "CHESS_BISHOP",
+      "role": "체스 비숍",
+      "brief": "A single traditional chess BISHOP: oversized round teardrop-shaped mitre top with ONE broad diagonal dark slash cut on the top-right side, a tiny rounded finial, thick neck collar, sturdy tapered stem and simple wide circular chess foot. The mitre slit must remain obvious at small size. Rounded mitre, not a thin rhombus, no crown or cross or face.",
+      "prompt": "Create ONE production board-game CHESS TOKEN SPRITE as a 1:1 square PNG with true transparent background. Match the supplied existing ivory knight piece's thick clean dark outline, chunky cute toy proportions, ivory-white glossy material, cool grey cel-shaded sides and coherent orthographic top-down 3/4 view (target camera elevation 50 degrees). Readable at just 26x31 pixels: one bold closed silhouette, broad sturdy parts, minimal internal lines, no intricate engraving. Warm ivory #FFF4D6, cool silver-grey shadow, nearly black #25252A outline. Entire object inside central 70% width and 76% height, centered with transparent safe margins. Small integral ivory chess foot allowed; NO colored player pedestal, cast shadow, scene, aura, sparkles, text, letters, numbers, face, logo or watermark. Do NOT copy the horse subject. A single traditional chess BISHOP: oversized round teardrop-shaped mitre top with ONE broad diagonal dark slash cut on the top-right side, a tiny rounded finial, thick neck collar, sturdy tapered stem and simple wide circular chess foot. The mitre slit must remain obvious at small size. Rounded mitre, not a thin rhombus, no crown or cross or face.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-f2b6c8fd-d388-44e5-9a82-35f0f628470b.png",
+      "path": "CHESS_BISHOP.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "alpha_bounds": [
+        97,
+        39,
+        1026,
+        1172
+      ],
+      "visible_alpha_bounds_at_0_08": [
+        336,
+        88,
+        918,
+        1165
+      ],
+      "sha256": "6e075fe670b407ca1f6a1699d1c1183e175d5afccb15f4f4b099c8b843567527",
+      "pixels_modified": false,
+      "qa": "Native transparent output visually checked for silhouette, coherent geometry, opaque body and clean margins. Source and destination SHA-256 match. Runtime small-size QA recorded in README."
+    },
+    {
+      "id": "CHESS_ROOK",
+      "role": "체스 룩",
+      "brief": "A single traditional chess ROOK: squat wide rounded ivory castle tower, broad flat circular battlement rim with exactly THREE big visible crenellated merlons separated by TWO wide rectangular notches, thick simple cylindrical body tapering slightly at the waist, sturdy round chess foot. Very simple chunky toy castle silhouette. No windows, doors, flags, bricks, roof or crown. Battlements should remain obvious at tiny size.",
+      "prompt": "Create ONE production board-game CHESS TOKEN SPRITE as a 1:1 square PNG with true transparent background. Match the supplied existing ivory knight piece's thick clean dark outline, chunky cute toy proportions, ivory-white glossy material, cool grey cel-shaded sides and coherent orthographic top-down 3/4 view (target camera elevation 50 degrees). Readable at just 26x31 pixels: one bold closed silhouette, broad sturdy parts, minimal internal lines, no intricate engraving. Warm ivory #FFF4D6, cool silver-grey shadow, nearly black #25252A outline. Entire object inside central 70% width and 76% height, centered with transparent safe margins. Small integral ivory chess foot allowed; NO colored player pedestal, cast shadow, scene, aura, sparkles, text, letters, numbers, face, logo or watermark. Do NOT copy the horse subject. A single traditional chess ROOK: squat wide rounded ivory castle tower, broad flat circular battlement rim with exactly THREE big visible crenellated merlons separated by TWO wide rectangular notches, thick simple cylindrical body tapering slightly at the waist, sturdy round chess foot. Very simple chunky toy castle silhouette. No windows, doors, flags, bricks, roof or crown. Battlements should remain obvious at tiny size.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-57a3fc5d-76f3-4a0b-8d67-7d125fc37473.png",
+      "accepted_exception": "Four visible battlement merlons rather than requested three; accepted as a coherent classic rook with clear broad notches at runtime scale.",
+      "path": "CHESS_ROOK.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "alpha_bounds": [
+        178,
+        39,
+        1121,
+        1230
+      ],
+      "visible_alpha_bounds_at_0_08": [
+        297,
+        133,
+        962,
+        1133
+      ],
+      "sha256": "38c87b61b6be155a1855e9dd67b26eebdaac0a672a770cc648826b973c959c24",
+      "pixels_modified": false,
+      "qa": "Native transparent output visually checked for silhouette, coherent geometry, opaque body and clean margins. Source and destination SHA-256 match. Runtime small-size QA recorded in README."
+    },
+    {
+      "id": "CHESS_QUEEN",
+      "role": "승급 체스 퀸",
+      "brief": "A single traditional chess QUEEN: rounded ivory chess body with thick neck collar and wide simple circular foot, topped by ONE chunky butter-gold #FFD66B royal coronet with THREE broad rounded prongs, central prong slightly taller. ONE small coral-red #E5484D gem at front of crown. Compact and stately silhouette, crown broad and clear at tiny size. No cross (queen not king), no floating crown, face, extra jewellery, aura or particles.",
+      "prompt": "Create ONE production board-game CHESS TOKEN SPRITE as a 1:1 square PNG with true transparent background. Match the supplied existing ivory knight piece's thick clean dark outline, chunky cute toy proportions, ivory-white glossy material, cool grey cel-shaded sides and coherent orthographic top-down 3/4 view (target camera elevation 50 degrees). Readable at just 26x31 pixels: one bold closed silhouette, broad sturdy parts, minimal internal lines, no intricate engraving. Warm ivory #FFF4D6, cool silver-grey shadow, nearly black #25252A outline. Entire object inside central 70% width and 76% height, centered with transparent safe margins. Small integral ivory chess foot allowed; NO colored player pedestal, cast shadow, scene, aura, sparkles, text, letters, numbers, face, logo or watermark. Do NOT copy the horse subject. A single traditional chess QUEEN: rounded ivory chess body with thick neck collar and wide simple circular foot, topped by ONE chunky butter-gold #FFD66B royal coronet with THREE broad rounded prongs, central prong slightly taller. ONE small coral-red #E5484D gem at front of crown. Compact and stately silhouette, crown broad and clear at tiny size. No cross (queen not king), no floating crown, face, extra jewellery, aura or particles.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-c8b93ea8-09de-4a5e-b313-56ea512460c2.png",
+      "path": "CHESS_QUEEN.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "alpha_bounds": [
+        73,
+        85,
+        1182,
+        1236
+      ],
+      "visible_alpha_bounds_at_0_08": [
+        319,
+        87,
+        940,
+        1161
+      ],
+      "sha256": "710c95c6eacd3aafa2d45343773387286616694f18fbe6a9472acc042143b55a",
       "pixels_modified": false,
       "qa": "Native transparent output visually checked for silhouette, coherent geometry, opaque body and clean margins. Source and destination SHA-256 match. Runtime small-size QA recorded in README."
     }
