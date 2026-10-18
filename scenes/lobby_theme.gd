@@ -1,6 +1,6 @@
 # File: res://scenes/lobby_theme.gd
 # Class: class_name LobbyTheme
-# Role: 시작 메뉴·로비 공통 부품. 연두색 잎사귀 배경, 위·아래 띠, 모드 카드, 버튼과 팝업을 만든다.
+# Role: 시작 메뉴·로비 공통 부품. 무작위 풍경 배경, 위·아래 띠, 모드 카드, 버튼과 팝업을 만든다.
 class_name LobbyTheme
 extends RefCounted
 
@@ -49,8 +49,7 @@ static func label(text: String, size_px: int, color: Color = INK) -> Label:
 	return item
 
 
-## 연두색 단색 바탕 + 아래쪽 곡선 + 가장자리 잎 윤곽. 시작 메뉴와 방 로비에 공통 적용.
-## 기존 호출 인자는 유지하되 같은 팔레트를 사용한다.
+## 제공된 풍경 4장 중 1장 + 배경 전용 약한 블러. 시작 메뉴와 방 로비에 공통 적용.
 static func add_background(parent: Control, _greener: bool = false) -> void:
 	var background: Control = BACKGROUND_SCRIPT.new()
 	background.name = "LobbyBackground"

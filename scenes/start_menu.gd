@@ -46,7 +46,6 @@ func _ready() -> void:
 	Sfx.apply_settings()
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	LobbyTheme.add_background(self, true)
-	add_child(HubKit.FestivalDecor.new())
 	_top = LobbyTheme.add_top_bar(self, "", _on_back_pressed, "규칙", _show_rules)
 	_back_button = _top["back"]
 	_bottom = LobbyTheme.add_bottom_bar(self, "", "설정", _show_settings)
@@ -56,6 +55,8 @@ func _ready() -> void:
 	fan_notice.text = "비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 무료 배포물입니다"
 	fan_notice.add_theme_font_size_override("font_size", 13)
 	fan_notice.add_theme_color_override("font_color", Color(0.17, 0.35, 0.12, 0.85))
+	fan_notice.add_theme_color_override("font_outline_color", Color("fff6df"))
+	fan_notice.add_theme_constant_override("outline_size", 3)
 	fan_notice.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	fan_notice.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	fan_notice.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)

@@ -62,7 +62,6 @@ func _ready() -> void:
 	quick.failed.connect(_on_quick_failed)
 	quick.state_changed.connect(func(_state: int) -> void: _refresh_quick())
 	LobbyTheme.add_background(self)
-	add_child(HubKit.FestivalDecor.new())
 	_top = LobbyTheme.add_top_bar(self, "친선 줘팸터", _on_back_pressed, "규칙", func() -> void: LobbyTheme.show_rules(self))
 	_bottom = LobbyTheme.add_bottom_bar(self, "%s 교주님" % GameSession.display_nickname(), "설정", func() -> void: LobbyTheme.show_settings(self))
 	var scroll := ScrollContainer.new()
