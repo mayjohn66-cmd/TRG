@@ -1,5 +1,5 @@
 {
-  "version": "0.1",
+  "version": "0.2",
   "generator": "native image_gen.imagegen; model identifier not exposed",
   "assets": [
     {
@@ -181,6 +181,118 @@
         1046,
         1197
       ]
+    },
+    {
+      "id": "PAWN_DEFAULT",
+      "role": "기본 말",
+      "brief": "ONE classic universal board-game pawn like Mensch-aergere-dich-nicht / Ludo: smooth round ivory ball head above a continuous short tapered conical ivory body that widens into a simple rounded circular foot. Familiar basic plastic playing pawn. No arms, legs, human anatomy, face, crown, chess ornament, collar rings, or extra pedestal. Head diameter about 45% of foot diameter; squat friendly total height about 1.5 times foot diameter. Warm ivory #FFF4D6 body with cool grey shadow, smooth soft bevel.",
+      "prompt": "Create ONE production board-game pawn TOKEN SPRITE, 1:1 square PNG with genuinely TRANSPARENT background. Use supplied image only as a style reference: cute chunky rounded toy, thick clean nearly black #25252A outline, simple THREE-tone cel shading, warm ivory/silver highlights, coherent orthographic top-down three-quarter view, camera elevation about 50 degrees and azimuth 45 degrees. Must read at 26x31 pixels. Bold compact silhouette, broad parts, very few internal details. Object entirely inside central 70% width and 76% height with clear transparent margins; centered, bottom ground contact horizontal. No colored owner pedestal (the game supplies one), no cast shadow, scene, aura, particles, text, logos, letters, labels or numbers. Preserve opaque white object highlights. ONE classic universal board-game pawn like Mensch-aergere-dich-nicht / Ludo: smooth round ivory ball head above a continuous short tapered conical ivory body that widens into a simple rounded circular foot. Familiar basic plastic playing pawn. No arms, legs, human anatomy, face, crown, chess ornament, collar rings, or extra pedestal. Head diameter about 45% of foot diameter; squat friendly total height about 1.5 times foot diameter. Warm ivory #FFF4D6 body with cool grey shadow, smooth soft bevel.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-0b81497d-63b3-4aef-9d60-0efc2a840067.png",
+      "path": "PAWN_DEFAULT.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "alpha_bounds": [
+        105,
+        217,
+        1065,
+        1221
+      ],
+      "visible_alpha_bounds_at_0_08": [
+        336,
+        220,
+        918,
+        1070
+      ],
+      "sha256": "ea982980de47bef222c2deacde880c2c3811084be9b05365bb08d33e08971f71",
+      "pixels_modified": false,
+      "qa": "Native transparent output visually checked for silhouette, coherent geometry, opaque body and clean margins. Source and destination SHA-256 match. Runtime small-size QA recorded in README."
+    },
+    {
+      "id": "MONO_DOG",
+      "role": "모노폴리 강아지",
+      "brief": "ONE cute squat silver Scottish Terrier board-game token standing on four SHORT solid legs, facing front-right in three-quarter view. Clear dog silhouette: large compact head, two short upright pointed ears, broad small muzzle with one black nose, short sturdy body, tiny upright tail, four anatomically connected paws (three may be visible). Solid silver-grey #BEC4C9 with warm ivory highlights and one tiny black eye. No fur strands, collar, accessories, platform, human features. Thick sturdy toy proportions, no thin spindly legs.",
+      "prompt": "Create ONE production board-game pawn TOKEN SPRITE, 1:1 square PNG with genuinely TRANSPARENT background. Use supplied image only as a style reference: cute chunky rounded toy, thick clean nearly black #25252A outline, simple THREE-tone cel shading, warm ivory/silver highlights, coherent orthographic top-down three-quarter view, camera elevation about 50 degrees and azimuth 45 degrees. Must read at 26x31 pixels. Bold compact silhouette, broad parts, very few internal details. Object entirely inside central 70% width and 76% height with clear transparent margins; centered, bottom ground contact horizontal. No colored owner pedestal (the game supplies one), no cast shadow, scene, aura, particles, text, logos, letters, labels or numbers. Preserve opaque white object highlights. ONE cute squat silver Scottish Terrier board-game token standing on four SHORT solid legs, facing front-right in three-quarter view. Clear dog silhouette: large compact head, two short upright pointed ears, broad small muzzle with one black nose, short sturdy body, tiny upright tail, four anatomically connected paws (three may be visible). Solid silver-grey #BEC4C9 with warm ivory highlights and one tiny black eye. No fur strands, collar, accessories, platform, human features. Thick sturdy toy proportions, no thin spindly legs.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-f4b94a47-8bde-4a86-acd2-ba32c699eeac.png",
+      "path": "MONO_DOG.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "alpha_bounds": [
+        49,
+        47,
+        1202,
+        1206
+      ],
+      "visible_alpha_bounds_at_0_08": [
+        256,
+        206,
+        1064,
+        1073
+      ],
+      "sha256": "52bdf84cedbbf5afe3cb6d860788d86ee0b59ac4c88834e9a55d8e1a290307f7",
+      "pixels_modified": false,
+      "qa": "Native transparent output visually checked for silhouette, coherent geometry, opaque body and clean margins. Source and destination SHA-256 match. Runtime small-size QA recorded in README."
+    },
+    {
+      "id": "MONO_SHIP",
+      "role": "모노폴리 증기선",
+      "brief": "ONE cute chunky toy steamship / tugboat board-game token, bow facing front-right in three-quarter view. Simple broad navy-blue hull with curved pointed bow, ONE squat ivory cabin with ONE broad dark-blue window, ONE short coral-red smokestack behind the cabin. At most three main masses: hull, cabin, smokestack. Whole hull visible with clean outline. No sea, wake, smoke, ropes, railings, flags, porthole rows, text or base. Must instantly read as a boat at 26 pixels.",
+      "prompt": "Create ONE production board-game pawn TOKEN SPRITE, 1:1 square PNG with genuinely TRANSPARENT background. Use supplied image only as a style reference: cute chunky rounded toy, thick clean nearly black #25252A outline, simple THREE-tone cel shading, warm ivory/silver highlights, coherent orthographic top-down three-quarter view, camera elevation about 50 degrees and azimuth 45 degrees. Must read at 26x31 pixels. Bold compact silhouette, broad parts, very few internal details. Object entirely inside central 70% width and 76% height with clear transparent margins; centered, bottom ground contact horizontal. No colored owner pedestal (the game supplies one), no cast shadow, scene, aura, particles, text, logos, letters, labels or numbers. Preserve opaque white object highlights. ONE cute chunky toy steamship / tugboat board-game token, bow facing front-right in three-quarter view. Simple broad navy-blue hull with curved pointed bow, ONE squat ivory cabin with ONE broad dark-blue window, ONE short coral-red smokestack behind the cabin. At most three main masses: hull, cabin, smokestack. Whole hull visible with clean outline. No sea, wake, smoke, ropes, railings, flags, porthole rows, text or base. Must instantly read as a boat at 26 pixels.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-6cdbf07b-a1f4-4bd0-bb8e-c4b57d3704fc.png",
+      "path": "MONO_SHIP.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "alpha_bounds": [
+        97,
+        23,
+        1085,
+        1099
+      ],
+      "visible_alpha_bounds_at_0_08": [
+        254,
+        209,
+        1034,
+        1047
+      ],
+      "sha256": "22331a4516e1a833d14d90e00e12fe65e2513fe3b8d7c4e5068f081af60d68ae",
+      "pixels_modified": false,
+      "qa": "Native transparent output visually checked for silhouette, coherent geometry, opaque body and clean margins. Source and destination SHA-256 match. Runtime small-size QA recorded in README."
+    },
+    {
+      "id": "MONO_PLANE",
+      "role": "모노폴리 비행기",
+      "brief": "ONE cute chunky toy propeller airplane board-game token pointing front-right in three-quarter view. Short rounded sky-blue fuselage, exactly ONE pair of broad stubby main wings symmetrically attached to the body, a small simple tailplane at rear, ONE chunky two-blade butter-yellow front propeller, ONE dark blue cockpit window. Ivory highlights. No pilot, face, cloud, motion trail, landing gear, extra wings, markings or platform. Coherent toy airplane geometry, strong broad silhouette for 26 pixel display.",
+      "prompt": "Create ONE production board-game pawn TOKEN SPRITE, 1:1 square PNG with genuinely TRANSPARENT background. Use supplied image only as a style reference: cute chunky rounded toy, thick clean nearly black #25252A outline, simple THREE-tone cel shading, warm ivory/silver highlights, coherent orthographic top-down three-quarter view, camera elevation about 50 degrees and azimuth 45 degrees. Must read at 26x31 pixels. Bold compact silhouette, broad parts, very few internal details. Object entirely inside central 70% width and 76% height with clear transparent margins; centered, bottom ground contact horizontal. No colored owner pedestal (the game supplies one), no cast shadow, scene, aura, particles, text, logos, letters, labels or numbers. Preserve opaque white object highlights. ONE cute chunky toy propeller airplane board-game token pointing front-right in three-quarter view. Short rounded sky-blue fuselage, exactly ONE pair of broad stubby main wings symmetrically attached to the body, a small simple tailplane at rear, ONE chunky two-blade butter-yellow front propeller, ONE dark blue cockpit window. Ivory highlights. No pilot, face, cloud, motion trail, landing gear, extra wings, markings or platform. Coherent toy airplane geometry, strong broad silhouette for 26 pixel display.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-651a6b60-e88d-4167-861e-02bb2f6a621e.png",
+      "path": "MONO_PLANE.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "alpha_bounds": [
+        0,
+        20,
+        1127,
+        1250
+      ],
+      "visible_alpha_bounds_at_0_08": [
+        208,
+        255,
+        1125,
+        1026
+      ],
+      "sha256": "55f2b3f0d2fd87bc894f360bd0d1e3879ee69d74fc1a2767c3a7f58083d6fd6e",
+      "pixels_modified": false,
+      "qa": "Native transparent output visually checked for silhouette, coherent geometry, opaque body and clean margins. Source and destination SHA-256 match. Runtime small-size QA recorded in README."
     }
   ],
   "runtime_import": {
