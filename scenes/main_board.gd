@@ -4,6 +4,8 @@
 class_name MainBoard
 extends Control
 
+const MATCH_BACKGROUND_SCRIPT: Script = preload("res://scenes/match_background.gd")
+
 const PLAYER_IDS: Array[int] = [1, 2, 3, 4]
 const PLAYER_COLORS: Dictionary = {
 	1: Color("e5484d"),
@@ -375,7 +377,7 @@ var _board_surface: MeshInstance2D = null
 var _flat_board_surface: MeshInstance2D = null
 var _board_edge: Line2D = null
 var _board_shadow: Polygon2D = null
-var _table_bg: TextureRect = null
+var _match_background: TextureRect = null
 var _track_lines: Array[Line2D] = []
 var _action_row: HFlowContainer = null
 var _roll_pad: RollPad = null
@@ -643,6 +645,9 @@ func _unhandled_key_input(event: InputEvent) -> void:
 # ---------------------------------------------------------------------------
 
 func _new_game() -> void:
+	# Initial scene entry has already selected a backdrop; an actual rematch repicks.
+	if state != null and _match_background != null:
+		_match_background.choose_random()
 	_close_choice()
 	_close_draft_overlay()
 	_close_result_overlay()
@@ -831,30 +836,10 @@ func _bind_state() -> void:
 
 func _build_ui() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
-	var background := ColorRect.new()
-	background.color = COLOR_BG
-	background.set_anchors_preset(Control.PRESET_FULL_RECT)
-	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(background)
-
-	# 기울인 시점에서만 보이는 테이블(펠트) 배경
-	_table_bg = TextureRect.new()
-	var felt := Gradient.new()
-	felt.colors = PackedColorArray([Color("24523f"), Color("12261f"), Color("0a1511")])
-	felt.offsets = PackedFloat32Array([0.0, 0.62, 1.0])
-	var felt_texture := GradientTexture2D.new()
-	felt_texture.gradient = felt
-	felt_texture.fill = GradientTexture2D.FILL_RADIAL
-	felt_texture.fill_from = Vector2(0.5, 0.52)
-	felt_texture.fill_to = Vector2(1.0, 1.0)
-	felt_texture.width = 256
-	felt_texture.height = 256
-	_table_bg.texture = felt_texture
-	_table_bg.stretch_mode = TextureRect.STRETCH_SCALE
-	_table_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_table_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_table_bg.visible = false
-	add_child(_table_bg)
+	_match_background = MATCH_BACKGROUND_SCRIPT.new()
+	_match_background.name = "MatchBackground"
+	_match_background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(_match_background)
 
 	# 보드판 받침: 화면 정중앙의 둥근 판
 	var plate := Panel.new()
@@ -1671,8 +1656,6 @@ func _apply_view_mode() -> void:
 	var tilt: bool = true  # 마름모 보드는 항상 보드 면 메시로 그린다 (평면 받침 판은 쓰지 않는다)
 	if _plate != null:
 		_plate.visible = false
-	if _table_bg != null:
-		_table_bg.visible = view_mode == ViewMode.TILT
 	if _board_surface != null:
 		BoardSkin.update_surface(_board_surface, _surface_project)
 		BoardSkin.update_surface(_flat_board_surface, _surface_project)

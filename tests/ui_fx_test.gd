@@ -863,9 +863,9 @@ func _test_avatar_seats() -> void:
 		(_board._profiles[player_id]["avatar"] as AvatarSlot).react(AvatarSlot.Emotion.IDLE, 0.0)
 
 
-## 보드 시점: 탑뷰 <-> 기울인 시점. 두 시점 모두 같은 마름모 배치이고 규칙 좌표는 그대로이며, 시점은 테이블 배경·보드 면 그림자·말 높이만 바꾼다.
+## 보드 시점: 탑뷰 <-> 기울인 시점. 두 시점 모두 같은 마름모 배치이고 규칙 좌표는 그대로이며, 시점은 배경을 유지하고 보드 면 그림자·말 높이만 바꾼다.
 func _test_view_modes() -> void:
-	_expect(_board.view_mode == MainBoard.ViewMode.TOP and not _board._plate.visible and _board._board_surface.visible and not _board._table_bg.visible, "기본은 탑뷰 (마름모 보드 면만 보인다)")
+	_expect(_board.view_mode == MainBoard.ViewMode.TOP and not _board._plate.visible and _board._board_surface.visible and _board._match_background.visible, "탑뷰에서도 풍경 배경과 마름모 보드 면이 보인다")
 	var top_centers: Array[Vector2] = []
 	for index: int in 24:
 		top_centers.append(_board._tile_center(index))
@@ -875,7 +875,7 @@ func _test_view_modes() -> void:
 	var pawn: PlayerPawn = _board.state.get_pawn(pawn_id)
 	var top_pawn_position: Vector2 = _board._pawn_position(pawn)
 	_board.set_view_mode(MainBoard.ViewMode.TILT)
-	_expect(not _board._plate.visible and _board._board_surface.visible and _board._table_bg.visible and _board._pawn_layer.y_sort_enabled, "기울인 시점: 테이블이 켜지고 말이 깊이순으로 그려진다")
+	_expect(not _board._plate.visible and _board._board_surface.visible and _board._match_background.visible and _board._pawn_layer.y_sort_enabled, "기울인 시점: 같은 풍경 배경을 유지하고 말이 깊이순으로 그려진다")
 	var restored_in_tilt: bool = true
 	for index: int in 24:
 		restored_in_tilt = restored_in_tilt and _board._tile_center(index).is_equal_approx(top_centers[index])
@@ -931,7 +931,7 @@ func _test_view_modes() -> void:
 	var restored: bool = true
 	for index: int in 24:
 		restored = restored and _board._tile_center(index).is_equal_approx(top_centers[index])
-	_expect(restored and not _board._plate.visible and _board._board_surface.visible and not _board._table_bg.visible, "탑뷰로 돌아오면 모든 좌표와 배경이 그대로 돌아온다")
+	_expect(restored and not _board._plate.visible and _board._board_surface.visible and _board._match_background.visible, "탑뷰로 돌아오면 모든 좌표와 배경이 그대로 돌아온다")
 	_expect(_board._pawn_position(pawn).is_equal_approx(top_pawn_position) and not _board._pawn_layer.y_sort_enabled, "말 위치도 그대로")
 	GameSession.view_mode = MainBoard.ViewMode.TOP
 
