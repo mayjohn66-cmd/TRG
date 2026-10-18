@@ -1,0 +1,22 @@
+{
+  "version": "0.1",
+  "date": "2026-10-18",
+  "generator": "native image_gen.imagegen",
+  "image_model": "not exposed",
+  "calls": 1,
+  "correction_calls": 0,
+  "pixels_modified": false,
+  "assets": [
+    {
+      "id": "YUT_WOOD",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-22355a34-0d4f-4df0-b1de-d45af476b54e.png",
+      "prompt": "Production albedo texture for cute polished wooden Korean Yutnori throwing sticks in a fantasy board game, Trickcal-inspired warm toy finish. A perfectly flat orthographic material swatch filling the ENTIRE 1:1 square image, opaque. Pale honey birch wood, main color warm golden tan #D9AA6C with low-contrast broad clean longitudinal grain lines running straight vertically from top to bottom, a few gentle curving grain bands, subtle hand-painted cel-shaded illustration finish, large readable graphic clusters, calm and simple. The entire swatch must be the same wood material; NO object silhouette, plank edges, borders, seams, gaps, knots, text, letters, runes, symbols, logos, watermark, background, lighting gradient, highlights, cast shadows, metallic elements or glossy white reflections. No ambient occlusion or baked directional lighting: the game engine will light the actual curved 3D stick. Left and right colors should closely match; top and bottom grain should continue naturally. One seamless-looking uniform wood material only.",
+      "qa": "Visually inspected native output: full-bleed pale honey wood, vertical subtle grain, no text/object border, no baked lighting. Used once across each surface with repeat disabled; exact tiling is not assumed. No correction or pixel edits.",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGB",
+      "path": "assets/ui/trickcal/yut/YUT_WOOD.png",
+      "sha256": "0f62e9798b9f4f8e2f44cfedba5ff644fcf59f595adaa8bd1827a5aed58e9477"
+    }
+  ]
+}

@@ -28,6 +28,8 @@ const EVENTS: Dictionary = {
 	&"card_get": ["카드 획득·드로우", ["card-place", "card-fan"]],
 	&"card_impact": ["카드 발동 임팩트", ["card-place", "impact", "thud"]],
 	&"mahjong_tap": ["마작패 단단한 착지 (탁)", ["mahjong-tap", "tile-clack"]],
+	&"yut_clack": ["나무 윷가락 착지 (따닥)", ["yut-clack", "wood-clack"]],
+	&"yut_toss": ["네 윷가락을 함께 던지는 바람", ["yut-toss"]],
 	&"augment_show": ["증강 카드 등장", ["card-fan", "card-shuffle", "shuffle"]],
 	&"augment_pick": ["증강 선택", ["card-place", "select", "click"]],
 	&"law": ["새 교칙 찍힘", ["impact", "stamp", "thud", "chips-collide"]],
@@ -63,6 +65,8 @@ const SYNTH: Dictionary = {
 	&"thud": [[0.0, 0.16, 110.0, 45.0, "sine", 0.85, 0.0, 5.0]],
 	# Fast hard-resin click plus a short table-body resonance; separate from paper/card SFX.
 	&"mahjong_tap": [[0.0,0.024,2700.0,1650.0,"tri",0.60,0.22,9.0], [0.0,0.014,0.0,0.0,"noise",0.32,1.0,9.0], [0.002,0.075,620.0,270.0,"sine",0.67,0.0,6.5], [0.005,0.095,185.0,120.0,"sine",0.21,0.0,7.0]],
+	&"yut_clack": [[0.0,0.018,1700.0,950.0,"tri",0.42,0.18,8.0], [0.001,0.082,460.0,235.0,"sine",0.76,0.0,6.5], [0.003,0.058,820.0,590.0,"sine",0.20,0.0,8.0], [0.0,0.012,0.0,0.0,"noise",0.22,1.0,9.0]],
+	&"yut_toss": [[0.0,0.20,360.0,650.0,"tri",0.11,0.85,3.2]],
 	&"card_impact": [[0.0, 0.2, 240.0, 90.0, "square", 0.45, 0.2, 5.0], [0.0, 0.12, 0.0, 0.0, "noise", 0.45, 1.0, 8.0]],
 	&"card_throw": [[0.0, 0.16, 500.0, 1000.0, "tri", 0.25, 0.7, 3.5]],
 	&"card_pick": [[0.0, 0.06, 500.0, 760.0, "sine", 0.5, 0.0, 5.0]],

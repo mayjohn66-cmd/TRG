@@ -58,6 +58,7 @@ func _run() -> void:
 	await _test_presenters()
 	await _test_illustrated_judgment_cards()
 	await _test_mahjong_landings()
+	await _test_yut_throw()
 	_board._announcer.cancel()
 	await _test_gauge_and_lock()
 	await _test_instant_flag()
@@ -446,6 +447,46 @@ func _test_mahjong_landings() -> void:
 	presenter.cancel()
 	presenter.set_process(true)
 	print("MAHJONG_SLAM_FX_OK")
+
+
+func _test_yut_throw() -> void:
+	var presenter: RollPresenter = _board._presenter
+	presenter.instant = false
+	presenter.set_process(false)
+	presenter.play(&"YUT",{"steps":-1,"details":{"face":-1}})
+	await process_frame
+	await process_frame
+	var view: YutThrow3D = presenter._yut_3d
+	var events: Array[int] = []
+	var observer: Callable = func(index: int) -> void: events.append(index)
+	view.stick_landed.connect(observer)
+	presenter._update(0.65)
+	_expect(view.landed.count(true)==0 and presenter.last_display.is_empty() and presenter._die_label.text.is_empty(),"Yut keeps its outcome hidden while all four sticks are in flight")
+	for index: int in 4:
+		presenter._update(YutThrow3D.impact_time(index)+0.001)
+		_expect(view.landed.count(true)==index+1,"wooden sticks land at separate clustered times")
+		_expect(presenter._die_label.text.is_empty(),"Yut waits for all sticks to settle before naming the result")
+	presenter._update(YutThrow3D.RESULT_TIME+0.001)
+	presenter._update(YutThrow3D.RESULT_TIME+0.01)
+	_expect(events==[0,1,2,3],"exactly four primary landing events occur")
+	_expect(view.displayed_value()==-1 and presenter.last_display=="빽도","marked physical belly and engine Backdo agree")
+	_expect(presenter._die_label.text=="빽도 · 1칸 후퇴","negative Yut result is shown as retreat")
+	view.stick_landed.disconnect(observer)
+	presenter._process(presenter._total)
+	_expect(not presenter.active and view.render_view.render_target_update_mode==SubViewport.UPDATE_DISABLED,"completion releases input and stops Yut rendering")
+	for value: int in ToolYut.FACES:
+		presenter.play(&"YUT",{"steps":value,"reroll":value>=4,"details":{"face":value}},0.1)
+		presenter._update(YutThrow3D.RESULT_TIME+0.001)
+		_expect(presenter._yut_3d==view,"all outcomes reuse the same four meshes and viewport")
+		_expect(view.displayed_value()==value and presenter.last_display==RollPresenter.YUT_NAMES[value],"six physical outcomes agree with engine values")
+		_expect(presenter._die_label.text.contains("한 번 더")==bool(value>=4),"only actual Yut/Mo results show reroll")
+		presenter.cancel()
+	_expect(not presenter.active and not presenter.visible and view.render_view.render_target_update_mode==SubViewport.UPDATE_DISABLED,"cancelling Yut hides it and stops its renderer")
+	presenter.play(&"D6",{"steps":4,"details":{"face":4}})
+	_expect(view.render_view.render_target_update_mode==SubViewport.UPDATE_DISABLED and presenter._dice_3d.render_view.render_target_update_mode==SubViewport.UPDATE_ALWAYS,"switching back to D6 awakens only the active renderer")
+	presenter.cancel()
+	presenter.set_process(true)
+	print("YUT_THROW_FX_OK")
 
 
 func _angle_between(samples: Array[Vector2], from_time: float, to_time: float) -> float:

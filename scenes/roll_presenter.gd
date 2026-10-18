@@ -13,8 +13,6 @@ const SLOT_SYMBOLS: Array[String] = ["체리", "레몬", "종", "BAR", "다이�
 const SUITS: Array[String] = ["♣", "♦", "♥", "♠"]
 const RANKS: Array[String] = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"]
 ## 연출 시간(초).
-const DIE_SHUFFLE: float = 0.5
-const DIE_PUNCH: float = 0.25
 const ROULETTE_SPIN: float = 1.2
 const SLOT_STOPS: Array[float] = [0.4, 0.8, 1.2]
 const CARD_FLIP_INTERVAL: float = 0.15
@@ -38,13 +36,10 @@ var _t: float = 0.0
 var _total: float = 0.0
 var _result: Dictionary = {}
 var _power: float = 0.5
-var _rng := RandomNumberGenerator.new()
 var _root: VBoxContainer = null
 var _title: Label = null
 var _stage: Control = null
-var _die: PanelContainer = null
 var _die_label: Label = null
-var _sticks: Array[PanelContainer] = []
 var _wheel: WheelView = null
 var _wheel_label: Label = null
 var _reels: Array[PanelContainer] = []
@@ -58,7 +53,6 @@ var _card_flipped: Array[bool] = []
 var _card_flip_mask: Array[bool] = []
 var _card_front: Color = Color("f8f9fa")
 var _card_face_colors: Array[Color] = []
-var _last_tick: int = -1
 var _settled: bool = false
 var _final_face: int = 0
 var _dice_3d: DiceRoll3D = null
@@ -67,6 +61,7 @@ var _card_home: Array[Vector2] = []
 var _card_result_caption: String = ""
 var _mahjong_3d: MahjongSlam3D = null
 var _mahjong_names: Array[Label] = []
+var _yut_3d: YutThrow3D = null
 
 
 ## 룰렛 원판. angle(라디안)만큼 돌아간 상태로 1~10 눈금을 그린다 (위쪽 바늘 자리가 현재 눈금).
@@ -103,7 +98,6 @@ class WheelView extends Control:
 func _init() -> void:
 	visible = false
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_rng.randomize()
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color("101626")
 	style.border_color = Color("ffd43b")
@@ -129,11 +123,10 @@ func play(tool_id: StringName, result: Dictionary, power: float = 0.5) -> void:
 		return
 	_power = clampf(power, 0.0, 1.0)
 	_result = result
-	if tool_id in [&"HOLDEM", &"DICE_HWATU", &"DICE_TAROT", &"DICE_MAHJONG"]:
+	if tool_id in [&"HOLDEM", &"DICE_HWATU", &"DICE_TAROT", &"DICE_MAHJONG", &"YUT"]:
 		last_display = ""
 	_mode = tool_id
 	_t = 0.0
-	_last_tick = -1
 	_settled = false
 	_build(tool_id)
 	_position_center()
@@ -148,6 +141,8 @@ func cancel() -> void:
 		_dice_3d.stop_rendering()
 	if _mahjong_3d != null:
 		_mahjong_3d.stop_rendering()
+	if _yut_3d != null:
+		_yut_3d.stop_rendering()
 	if not active:
 		visible = false
 		return
@@ -174,6 +169,8 @@ func _process(delta: float) -> void:
 			_dice_3d.stop_rendering()
 		if _mahjong_3d != null:
 			_mahjong_3d.stop_rendering()
+		if _yut_3d != null:
+			_yut_3d.stop_rendering()
 		finished.emit()
 
 
@@ -193,12 +190,16 @@ func _clear() -> void:
 		_mahjong_3d.hide()
 		if _mahjong_3d.get_parent() != self:
 			_mahjong_3d.reparent(self)
+	if _yut_3d != null:
+		_yut_3d.stop_rendering()
+		_yut_3d.hide()
+		if _yut_3d.get_parent() != self:
+			_yut_3d.reparent(self)
 	for child: Node in get_children():
-		if child == _dice_3d or child == _mahjong_3d:
+		if child == _dice_3d or child == _mahjong_3d or child == _yut_3d:
 			continue
 		remove_child(child)
 		child.queue_free()
-	_sticks.clear()
 	_reels.clear()
 	_reel_labels.clear()
 	_cards.clear()
@@ -210,7 +211,6 @@ func _clear() -> void:
 	_card_home.clear()
 	_mahjong_names.clear()
 	_reel_stopped = [false, false, false]
-	_die = null
 	_wheel = null
 
 
@@ -241,7 +241,7 @@ func _box(bg: Color, border: Color, radius: int, min_size: Vector2) -> PanelCont
 
 func _build(tool_id: StringName) -> void:
 	_clear()
-	var illustrated: bool = tool_id in [&"HOLDEM", &"DICE_HWATU", &"DICE_TAROT", &"DICE_MAHJONG"]
+	var illustrated: bool = tool_id in [&"HOLDEM", &"DICE_HWATU", &"DICE_TAROT", &"DICE_MAHJONG", &"YUT"]
 	add_theme_stylebox_override("panel", UiSkin.panel("panel", 12.0) if illustrated or tool_id in [&"D6", &"CHINCHIRO"] else _default_style)
 	_root = VBoxContainer.new()
 	_root.add_theme_constant_override("separation", 8)
@@ -273,17 +273,19 @@ func _build(tool_id: StringName) -> void:
 			_root.add_child(_die_label)
 		&"YUT":
 			_title.text = "전통 박달나무 윷"
-			_total = DIE_SHUFFLE + DIE_PUNCH + HOLD_TIME
-			var sticks := HBoxContainer.new()
-			sticks.add_theme_constant_override("separation", 10)
-			sticks.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			_stage.add_child(sticks)
-			for index: int in 4:
-				var stick: PanelContainer = _box(Color("5c3b1e"), Color("2b1a0b"), 10, Vector2(30, 100))
-				sticks.add_child(stick)
-				_sticks.append(stick)
-			_die_label = _label("?", 44, Color("ffe8cc"))
-			_root.add_child(_die_label)
+			_total = YutThrow3D.TOTAL_TIME
+			if _yut_3d == null:
+				_yut_3d = YutThrow3D.new()
+				_stage.add_child(_yut_3d)
+			else:
+				_yut_3d.reparent(_stage)
+			_yut_3d.show()
+			var face: int = int((_result.get("details", {}) as Dictionary).get("face",_result.get("steps",1)))
+			_yut_3d.begin(face,_power)
+			var caption: String = "%s · %s" % [YUT_NAMES[face],_card_move_text()]
+			if bool(_result.get("reroll",false)):
+				caption += " · 한 번 더"
+			_make_card_result(caption)
 		&"LIFE_ROULETTE":
 			_title.text = "인생게임 회전 룰렛"
 			_total = ROULETTE_SPIN + HOLD_TIME + 0.15
@@ -488,7 +490,7 @@ static func card_text(card: int) -> String:
 func _update(t: float) -> void:
 	match _mode:
 		&"D6", &"CHINCHIRO": _update_3d_die(t)
-		&"YUT": _update_die(t)
+		&"YUT": _update_yut(t)
 		&"LIFE_ROULETTE": _update_wheel(t)
 		&"SLOT_777": _update_slot(t)
 		&"HOLDEM", &"DICE_HWATU", &"DICE_TAROT": _update_illustrated_cards(t)
@@ -512,66 +514,12 @@ func _update_3d_die(t: float) -> void:
 		Sfx.play(&"thud")
 
 
-## 눈금 숫자가 빠르게 바뀌며 구르다가 쾅! 하고 최종 눈금이 찍힌다.
-func _update_die(t: float) -> void:
-	var steps: int = int(_result.get("steps", 1))
-	var face: int = int((_result["details"] as Dictionary).get("face", steps))
-	var is_yut: bool = _mode == &"YUT"
-	if t < DIE_SHUFFLE:
-		var rate: float = lerpf(18.0, 42.0, _power)
-		var tick: int = int(t * rate)
-		if tick != _last_tick:
-			_last_tick = tick
-			if is_yut:
-				var names: Array = YUT_NAMES.values()
-				_die_label.text = str(names[_rng.randi_range(0, names.size() - 1)])
-				for stick: PanelContainer in _sticks:
-					_set_stick(stick, _rng.randi_range(0, 1) == 0, false)
-			else:
-				_die_label.text = str(ToolChinchiro.FACES[_rng.randi_range(0, 5)])
-		var spins: float = 1.0 + floorf(_power * 3.0)
-		var progress: float = _ease_out(t / DIE_SHUFFLE)
-		if is_yut:
-			for index: int in _sticks.size():
-				_sticks[index].pivot_offset = _sticks[index].size / 2.0
-				_sticks[index].rotation = sin(t * 14.0 + index) * 0.35
-		else:
-			_die.pivot_offset = _die.size / 2.0
-			_die.rotation = progress * TAU * spins
-		return
-	if not _settled:
-		_settled = true
-		if is_yut:
-			_die_label.text = str(YUT_NAMES.get(face, str(face)))
-			_apply_yut_final(face)
-			last_display = _die_label.text
-		else:
-			_die_label.text = str(steps)
-			last_display = str(steps)
-			_die.rotation = 0.0
-	var punch: float = clampf((t - DIE_SHUFFLE) / DIE_PUNCH, 0.0, 1.0)
-	var scale_value: float = 1.0 + (0.35 + 0.35 * _power) * pow(1.0 - punch, 2.0)
-	var target: Control = _die if _die != null else _die_label
-	target.pivot_offset = target.size / 2.0
-	target.scale = Vector2(scale_value, scale_value)
-	if is_yut:
-		_die_label.add_theme_color_override("font_color", Color("ffd43b") if punch < 1.0 else Color("ffe8cc"))
-
-
-func _set_stick(stick: PanelContainer, flat: bool, final: bool) -> void:
-	var style: StyleBoxFlat = stick.get_theme_stylebox("panel").duplicate()
-	style.bg_color = Color("f1d9a8") if flat else Color("5c3b1e")
-	if final:
-		style.border_color = Color("ffd43b")
-	stick.add_theme_stylebox_override("panel", style)
-
-
-## 도~윷은 평평한 면의 수, 모는 전부 둥근 면, 빽도는 한 개만 뒤집힌 표식으로 그린다.
-func _apply_yut_final(face: int) -> void:
-	var flats: int = face if face >= 1 and face <= 4 else (1 if face == -1 else 0)
-	for index: int in _sticks.size():
-		_sticks[index].rotation = 0.0
-		_set_stick(_sticks[index], index < flats, true)
+func _update_yut(t: float) -> void:
+	_yut_3d.apply_time(t)
+	if _yut_3d.settled:
+		_die_label.text = _card_result_caption
+		_die_label.modulate.a = 1.0
+		last_display = str(YUT_NAMES[_yut_3d.result_value])
 
 
 ## 원판이 처음엔 엄청 빠르게 돌다가 EASE_OUT 곡선으로 1.2초 동안 감속하며 최종 눈금에 딱 멈춘다.
