@@ -388,6 +388,129 @@
         115.94579439252337
       ],
       "qa": "Rounded single connected sprig, true alpha, no text or frame; six leaves accepted for readability, replacing procedural triangles. Original pixels preserved."
+    },
+    {
+      "id": "UI_RULE_HIDDEN_TRAP",
+      "brief": "A single upright rounded purple face-down playing card, warm ivory border. On its back is ONE large simple closed eye pictogram (curved eyelid with three short rounded lashes), indicating an unrevealed hidden trap. Purple accent #B197FC. No key, lock, question mark, open eye, or tiny pattern.",
+      "prompt": "Create ONE standalone simple game UI icon, square transparent PNG, designed for 36x36 pixel display. Match supplied reference's cute rounded board-game icon language: thick continuous dark moss-green #36543C outlines, rounded joins, broad simple silhouettes, very restrained soft cel fills. Palette warm ivory #FFF5D7, leaf green #86D94F, butter yellow #FFD66B with only the specified accent. Center compact symbol within 75% safe box, transparent empty margins. No enclosing disc or frame, no background, no shadows, no texture, no sparkles, no letters or numbers. Actual readable UI pictogram, not a detailed miniature illustration. Reference is style only; replace its subject completely. A single upright rounded purple face-down playing card, warm ivory border. On its back is ONE large simple closed eye pictogram (curved eyelid with three short rounded lashes), indicating an unrevealed hidden trap. Purple accent #B197FC. No key, lock, question mark, open eye, or tiny pattern.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-ba6d964e-8adb-461a-8b7e-ff56648bb629.png",
+      "role": "숨겨진 함정 — 뒷면 카드와 감은 눈",
+      "file": "UI_RULE_HIDDEN_TRAP.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "alpha_bbox": [
+        49,
+        53,
+        1194,
+        1205
+      ],
+      "visible_bbox_alpha_ge_20": [
+        320,
+        241,
+        934,
+        1035
+      ],
+      "visible_source_rect": [
+        316,
+        237,
+        938,
+        1039
+      ],
+      "atlas_region_256": [
+        64.5103668261563,
+        48.38277511961722,
+        126.9792663476874,
+        163.72567783094098
+      ],
+      "sha256": "61ece1555e4f796884c4e045202d3f9a1cdafff6e399582e72cede82967b394b",
+      "qa": "Transparent alpha and original source hash verified. Role and silhouette visually inspected; native soft fills retained."
+    },
+    {
+      "id": "UI_RULE_PASS",
+      "brief": "One small ivory board-game meeple on the left and one leaf-green meeple on the lower right. ONE bold butter-yellow rightward arcing arrow passes ABOVE the green meeple, showing a pawn passing an occupied space without capturing. Both meeples remain upright and intact. Two meeples and one arrow only. Clearly different from capture/return: arrow points RIGHT, not left. Simple compact silhouette.",
+      "prompt": "Create ONE standalone simple game UI icon, square transparent PNG, designed for 36x36 pixel display. Match supplied reference's cute rounded board-game icon language: thick continuous dark moss-green #36543C outlines, rounded joins, broad simple silhouettes, very restrained soft cel fills. Palette warm ivory #FFF5D7, leaf green #86D94F, butter yellow #FFD66B with only the specified accent. Center compact symbol within 75% safe box, transparent empty margins. No enclosing disc or frame, no background, no shadows, no texture, no sparkles, no letters or numbers. Actual readable UI pictogram, not a detailed miniature illustration. Reference is style only; replace its subject completely. One small ivory board-game meeple on the left and one leaf-green meeple on the lower right. ONE bold butter-yellow rightward arcing arrow passes ABOVE the green meeple, showing a pawn passing an occupied space without capturing. Both meeples remain upright and intact. Two meeples and one arrow only. Clearly different from capture/return: arrow points RIGHT, not left. Simple compact silhouette.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-3ea9693c-ecfd-4652-9977-4b35153267ae.png",
+      "role": "지나가기 — 두 말을 유지하는 전진 화살표",
+      "file": "UI_RULE_PASS.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "alpha_bbox": [
+        33,
+        140,
+        1196,
+        1181
+      ],
+      "visible_bbox_alpha_ge_20": [
+        224,
+        283,
+        1056,
+        1011
+      ],
+      "visible_source_rect": [
+        220,
+        279,
+        1060,
+        1015
+      ],
+      "atlas_region_256": [
+        44.91228070175438,
+        56.95693779904306,
+        171.48325358851676,
+        150.25199362041468
+      ],
+      "sha256": "424bed81711451128f14f646f1f18c718c47a030750615fdfd2b2f5ad6f5bad5",
+      "qa": "Transparent alpha and original source hash verified. Role and silhouette visually inspected; native soft fills retained."
+    },
+    {
+      "id": "UI_RULE_ISLAND",
+      "brief": "A tiny round butter-yellow sandy island with ONE short curved palm tree (three broad leaf-green leaves), and ONE large ivory die beside it showing exactly TWO large moss-green pips. A small simple cyan crescent under the island suggests water. Four dominant shapes only: sand, palm, die, water. No character, scenery, sun, clouds or extra detail. Communicates island escape on even die roll.",
+      "prompt": "Create ONE standalone simple game UI icon, square transparent PNG, designed for 36x36 pixel display. Match supplied reference's cute rounded board-game icon language: thick continuous dark moss-green #36543C outlines, rounded joins, broad simple silhouettes, very restrained soft cel fills. Palette warm ivory #FFF5D7, leaf green #86D94F, butter yellow #FFD66B with only the specified accent. Center compact symbol within 75% safe box, transparent empty margins. No enclosing disc or frame, no background, no shadows, no texture, no sparkles, no letters or numbers. Actual readable UI pictogram, not a detailed miniature illustration. Reference is style only; replace its subject completely. A tiny round butter-yellow sandy island with ONE short curved palm tree (three broad leaf-green leaves), and ONE large ivory die beside it showing exactly TWO large moss-green pips. A small simple cyan crescent under the island suggests water. Four dominant shapes only: sand, palm, die, water. No character, scenery, sun, clouds or extra detail. Communicates island escape on even die roll.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-0e57010e-ce5f-47b1-92b4-00963f990287.png",
+      "role": "무인도 탈출 — 섬과 짝수 눈금 주사위",
+      "file": "UI_RULE_ISLAND.png",
+      "tool": "native image_gen.imagegen",
+      "image_model": "not exposed",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "alpha_bbox": [
+        69,
+        37,
+        1186,
+        1216
+      ],
+      "visible_bbox_alpha_ge_20": [
+        252,
+        244,
+        1017,
+        1033
+      ],
+      "visible_source_rect": [
+        248,
+        240,
+        1021,
+        1037
+      ],
+      "atlas_region_256": [
+        50.62838915470494,
+        48.995215311004785,
+        157.8054226475279,
+        162.70494417862838
+      ],
+      "sha256": "3be9f4bfab24d8495d09f07175921393e217c0c799807a7f71bab00ebce68324",
+      "qa": "Transparent alpha and original source hash verified. Role and silhouette visually inspected; native soft fills retained. Island has four broad palm leaves rather than the requested three; accepted for clear small-size silhouette."
     }
   ]
 }

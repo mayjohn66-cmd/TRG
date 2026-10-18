@@ -26,6 +26,9 @@ const ART: Dictionary = {
 	&"turn": preload("res://assets/ui/trickcal/rulebook/UI_RULE_TURN.tres"),
 	&"board": preload("res://assets/ui/trickcal/rulebook/UI_RULE_BOARD.tres"),
 	&"capture": preload("res://assets/ui/trickcal/rulebook/UI_RULE_CAPTURE.tres"),
+	&"hidden_trap": preload("res://assets/ui/trickcal/rulebook/UI_RULE_HIDDEN_TRAP.tres"),
+	&"pass": preload("res://assets/ui/trickcal/rulebook/UI_RULE_PASS.tres"),
+	&"island": preload("res://assets/ui/trickcal/rulebook/UI_RULE_ISLAND.tres"),
 	&"pawn_ability": preload("res://assets/ui/trickcal/rulebook/UI_RULE_PAWN_ABILITY.tres"),
 	&"tool_swap": preload("res://assets/ui/trickcal/rulebook/UI_RULE_TOOL_SWAP.tres"),
 	&"card_law": preload("res://assets/ui/trickcal/rulebook/UI_RULE_CARD_LAW.tres"),
@@ -597,10 +600,10 @@ func _ch_capture() -> Dictionary:
 			_tip("잡힌 말은 [b]출발선에서 처음부터[/b]예요. 완주 직전에 잡히면 억울하니 선두 말은 적 앞을 조심하세요."),
 		],
 		"right": [
-			_card("내 말이 앞에 있는데 적이 쫓아와요!", "나중에 도착해서 [b]멈춘 쪽이 잡아요[/b]. 스쳐 지나가기만 하면 안 잡혀요.", &"sword", Color("f08aa8")),
-			_card("함정은 어떻게 보여요?", "컴퓨터 대전에서는 상대가 깐 함정이 [b]뒷면[/b]으로만 보여요. 밟아 보기 전엔 몰라요. 내 함정은 내게 보여요.", &"key", Color("b197fc")),
-			_card("적이 막고 있는데 지나갈 수 있어요?", "네! 멈추지만 않으면 지나가요. (장기 포는 말을 넘으면 보너스를 받아요.)", &"play", Color("5fc1e8")),
-			_card("무인도에 갇혔어요!", "[b]짝수 눈금[/b]이 나오면 탈출해요. 홀수면 제자리예요.", &"hourglass", Color("f0c14e")),
+			_card("내 말이 앞에 있는데 적이 쫓아와요!", "나중에 도착해서 [b]멈춘 쪽이 잡아요[/b]. 스쳐 지나가기만 하면 안 잡혀요.", &"sword", Color("f08aa8"), 0, &"capture"),
+			_card("함정은 어떻게 보여요?", "컴퓨터 대전에서는 상대가 깐 함정이 [b]뒷면[/b]으로만 보여요. 밟아 보기 전엔 몰라요. 내 함정은 내게 보여요.", &"key", Color("b197fc"), 0, &"hidden_trap"),
+			_card("적이 막고 있는데 지나갈 수 있어요?", "네! 멈추지만 않으면 지나가요. (장기 포는 말을 넘으면 보너스를 받아요.)", &"play", Color("5fc1e8"), 0, &"pass"),
+			_card("무인도에 갇혔어요!", "[b]짝수 눈금[/b]이 나오면 탈출해요. 홀수면 제자리예요.", &"hourglass", Color("f0c14e"), 0, &"island"),
 		],
 	}
 
