@@ -143,6 +143,13 @@ static func has_sound(event: StringName) -> bool:
 	return _files_for(event).size() > 0
 
 
+## 이미지 스킨을 다시 입혀도 클릭음은 한 번만 연결한다.
+static func bind_button(button: BaseButton) -> void:
+	var callback: Callable = play.bind(&"ui_click")
+	if not button.pressed.is_connected(callback):
+		button.pressed.connect(callback)
+
+
 ## 배경음 재생 (assets/bgm/<이름>.ogg). 같은 곡이 이미 나오면 그대로 둔다. 파일이 없으면 아무것도 하지 않는다.
 static func bgm_play(track: StringName) -> void:
 	if not enabled() or not _ensure_ready():
@@ -186,8 +193,12 @@ static func apply_settings() -> void:
 static func _ensure_buses() -> void:
 	for bus_name: StringName in [BUS_SFX, BUS_BGM]:
 		if AudioServer.get_bus_index(bus_name) == -1:
-			AudioServer.add_bus()
-			var index: int = AudioServer.get_bus_count() - 1
+			var index: int = AudioServer.get_bus_count()
+			# Web Sample playback: add_bus() forwards append as -1 and the
+			# 4.7 JS bridge reorders Master, disconnecting every sample.
+			# Growing the count appends without that buggy bus-move path.
+			# https://github.com/godotengine/godot/issues/119026
+			AudioServer.set_bus_count(index + 1)
 			AudioServer.set_bus_name(index, bus_name)
 			AudioServer.set_bus_send(index, &"Master")
 

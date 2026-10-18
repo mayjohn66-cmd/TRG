@@ -63,6 +63,7 @@ static func skin(role: StringName, height: int, margin: float = 0.0) -> StyleBox
 
 
 static func button(item: Button, role: StringName, height: int) -> void:
+	Sfx.bind_button(item)
 	# 버튼 바탕의 9-slice에는 밉맵을 쓰지 않는다. 자식 아이콘은 자체 필터를 유지한다.
 	item.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	for state: String in ["normal", "hover", "pressed", "disabled"]:

@@ -43,7 +43,6 @@ var _mobile: MobileSupport = null
 
 
 func _ready() -> void:
-	Sfx.apply_settings()
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	LobbyTheme.add_background(self, true)
 	_top = LobbyTheme.add_top_bar(self, "", _on_back_pressed, "규칙", _show_rules)
@@ -75,6 +74,7 @@ func _ready() -> void:
 	_build_train_page(stack)
 	_build_avatar_page(stack)
 	GameSession.load_settings()
+	Sfx.unlock()  # 저장된 음량을 적용하고 첫 버튼 클릭 전에 플레이어 풀을 준비한다.
 	var saved: String = GameSession.load_saved()
 	if saved != "":
 		_name_edit.text = saved

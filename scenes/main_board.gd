@@ -1516,7 +1516,7 @@ func _make_button(text: String, callback: Callable, font_size: int, base_color: 
 	button.text = text
 	button.add_theme_font_size_override("font_size", font_size)
 	_apply_button_style(button, base_color, radius)
-	button.pressed.connect(Sfx.play.bind(&"ui_click"))
+	Sfx.bind_button(button)
 	if callback.is_valid():
 		button.pressed.connect(callback)
 	return button
