@@ -22,8 +22,8 @@ const server = http.createServer(async (req,res)=>{
  const name = new URL(req.url,'http://localhost').pathname;
  if (name === '/') {res.setHeader('Content-Type','text/html; charset=utf-8');res.end(shell);return;}
  if (name === '/engine-stub.js') {res.setHeader('Content-Type','text/javascript');res.end(stub);return;}
- if (!['/title-logo.png','/loading-pawn.png','/icon.png'].includes(name)){res.writeHead(404);res.end();return;}
- try {res.setHeader('Content-Type','image/png');res.end(await fs.readFile(path.join(web,name.slice(1))));}
+ if (!['/title-logo.png','/loading-petit-speaki.webp','/icon.png'].includes(name)){res.writeHead(404);res.end();return;}
+ try {res.setHeader('Content-Type',name.endsWith('.webp')?'image/webp':'image/png');res.end(await fs.readFile(path.join(web,name.slice(1))));}
  catch {res.writeHead(404);res.end();}
 });
 await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
@@ -35,6 +35,7 @@ try {
   const page = await browser.newPage({viewport});
   const errors=[];page.on('pageerror',error=>errors.push(error.message));
   await page.goto(url);await page.waitForFunction(()=>window.loadingCallbacks);
+  assert.equal(await page.locator('#splash .sub').count(),0,'English subtitle removed');
   assert.equal(await page.locator('#percent').innerText(),'준비 중…');
   assert.equal(await page.locator('#bar').getAttribute('aria-valuenow'),null);
   for (const value of [0,1,61,99,100]) {
@@ -43,7 +44,7 @@ try {
    assert.equal(await page.locator('#percent').innerText(),`${value}%`);
    assert.equal(await page.locator('#bar').getAttribute('aria-valuenow'),String(value));
    const bar=await page.locator('#bar').boundingBox();const marker=await page.locator('#bar-marker').boundingBox();
-   assert(marker.x>=bar.x-3 && marker.x+marker.width<=bar.x+bar.width+3,'pawn stays within rail ends');
+   assert(marker.x>=bar.x-3 && marker.x+marker.width<=bar.x+bar.width+3,'pet stays within rail ends');
   }
   await page.evaluate(()=>window.loadingCallbacks.onProgress(61,100));
   await page.waitForTimeout(300);
@@ -52,6 +53,10 @@ try {
    assert(box.x>=0 && box.y>=0 && box.x+box.width<=viewport.width+1 && box.y+box.height<=viewport.height+1,`${selector} fits ${viewport.width}x${viewport.height}`);
   }
   assert(await page.locator('#bar-marker img').evaluate(img=>img.complete && img.naturalWidth>0));
+  assert.equal(await page.locator('#bar-marker img').evaluate(el=>getComputedStyle(el).animationName),'loading-pet-move');
+  const pose=await page.locator('#bar-marker img').evaluate(el=>getComputedStyle(el).transform);
+  await page.waitForTimeout(120);
+  assert.notEqual(await page.locator('#bar-marker img').evaluate(el=>getComputedStyle(el).transform),pose,'native pet frames animate');
   assert(await page.locator('.title-logo').evaluate(img=>img.complete && img.naturalWidth>0));
   if (capture) await page.screenshot({path:path.join(capture,`Loading_Bar_${viewport.width}x${viewport.height}.png`),animations:'disabled'});
   await page.evaluate(()=>window.loadingCallbacks.onProgress(0,0));
@@ -59,6 +64,7 @@ try {
   assert(await page.locator('#bar').evaluate(el=>el.classList.contains('is-indeterminate')));
   await page.emulateMedia({reducedMotion:'reduce'});
   assert.equal(await page.locator('#bar-fill').evaluate(el=>getComputedStyle(el).animationName),'none');
+  assert.equal(await page.locator('#bar-marker img').evaluate(el=>getComputedStyle(el).animationName),'none','reduced motion uses first pet frame');
   await page.evaluate(()=>window.finishLoading());
   await page.waitForTimeout(650);
   assert.equal(await page.locator('#splash').evaluate(el=>getComputedStyle(el).display),'none');
