@@ -31,12 +31,12 @@ func _run() -> void:
 	var state: GameState = board.state
 	var mine: PlayerPawn = state.get_pawn(11)
 	var enemy: PlayerPawn = state.get_pawn(21)
-	mine.current_tile_idx = 7
+	mine.current_tile_idx = 1
 	mine.has_left_start = true
-	mine.step_history.assign([7])
-	enemy.current_tile_idx = 8
+	mine.step_history.assign([1])
+	enemy.current_tile_idx = 2
 	enemy.has_left_start = true
-	enemy.step_history.assign([8])
+	enemy.step_history.assign([2])
 	board._refresh_all()
 	board._announcer.cancel()
 	var ctx := RuleContext.new()
