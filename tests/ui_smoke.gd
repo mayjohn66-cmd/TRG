@@ -423,14 +423,15 @@ func _check_bounds() -> void:
 				_assert(panel.modulate.is_equal_approx(MainBoard.PROFILE_LIT), "현재 턴 프로필은 밝다 (%s)" % str(panel.modulate))
 			else:
 				_assert(panel.modulate.is_equal_approx(MainBoard.PROFILE_DIM) and panel.scale == Vector2.ONE, "다른 프로필은 어둡고 기본 크기다 (%s)" % str(panel.modulate))
-	# 2x2 기물 슬롯: 완주/출전/대기 문구와 슬롯 수
+	# 2x2 기물 슬롯: 완주/출전/대기 문구와 슬롯 수 (이동 도중 멈춘 상태에서 표본을 뽑아도 문구가 낡지 않도록 먼저 HUD를 최신 상태로 칠한다)
+	_board._refresh_players()
 	for other: int in [1, 2, 3, 4]:
 		var slots: Array = _board._profiles[other]["slots"]
 		_assert(slots.size() == 4, "프로필마다 기물 슬롯 4개")
 		for index: int in slots.size():
 			var pawn: PlayerPawn = _board.state.get_pawn(other * 10 + index + 1)
 			var expected: String = "★완주" if pawn.is_finished else ("출전" if pawn.has_left_start else "대기")
-			_assert((slots[index]["status"] as Label).text == expected, "기물 슬롯 상태 문구 (%s)" % expected)
+			_assert((slots[index]["status"] as Label).text == expected, "기물 슬롯 상태 문구 (%s) P%d 말%d 실제=%s fin=%s left=%s" % [expected, other, index + 1, (slots[index]["status"] as Label).text, pawn.is_finished, pawn.has_left_start])
 	var player_id: int = _board.manager.current_player_id()
 	if _board.state.tools[player_id] is ToolRussianRoulette and not _board._is_bot_turn():
 		var in_roll_phase: bool = _board.manager.current_state == TurnManager.State.PHASE_TURN_BEGIN or _board.manager.current_state == TurnManager.State.PHASE_ROLL_WAIT
