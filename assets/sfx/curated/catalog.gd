@@ -14,7 +14,7 @@ const FILES: Dictionary = {
 	&"card_impact": ["res://assets/sfx/curated/card_impact_01.ogg"],
 	&"mahjong_tap": ["res://assets/sfx/curated/mahjong_tap_01.ogg", "res://assets/sfx/curated/mahjong_tap_02.ogg"],
 	&"yut_clack": ["res://assets/sfx/curated/yut_clack_01.ogg", "res://assets/sfx/curated/yut_clack_02.ogg", "res://assets/sfx/curated/yut_clack_03.ogg"],
-	&"yut_toss": ["res://assets/sfx/curated/yut_toss_01.ogg"],
+	&"yut_toss": ["res://assets/sfx/curated/yut_toss_01.ogg", "res://assets/sfx/curated/yut_toss_02.ogg"],
 	&"toy_click": ["res://assets/sfx/curated/toy_click_01.ogg"],
 	&"toy_party_pop": ["res://assets/sfx/curated/toy_party_pop_01.ogg"],
 	&"slot_spin": ["res://assets/sfx/curated/slot_spin_01.ogg"],

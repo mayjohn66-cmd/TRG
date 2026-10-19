@@ -1,6 +1,7 @@
-"""Retune curated effects without the unreachable original packs: python retune_sfx.py <kenney folder> <ffmpeg>.
+"""Retune curated effects: python retune_sfx.py <source folder> <ffmpeg>.
 
-<kenney folder> holds the unzipped Kenney packs as kenney_<pack-name>/ (e.g. kenney_sci-fi-sounds/Audio/...).
+<source folder> holds the unzipped packs: Kenney as kenney_<pack-name>/ (e.g. kenney_sci-fi-sounds/Audio/...)
+and OpenGameArt CC0 packs as the oga_* folders named in PACKS (all CC0, see manifest for author and URL).
 1) Events in REPLACE are rebuilt from the Kenney CC0 sources below (old files and manifest rows are removed).
 2) Every curated clip is then brought to its loudness class (RMS target) so similar moments sound equally loud;
    clips already within LOUDNESS_TOLERANCE_DB are left untouched to avoid re-encoding.
@@ -15,27 +16,36 @@ SOURCE = Path(sys.argv[1]).resolve()
 FFMPEG = sys.argv[2]
 OUT = Path(__file__).resolve().parents[2] / 'assets/sfx/curated'
 RATE = 44100
+# pack folder -> (author, url)
 PACKS = {
-    'kenney_sci-fi-sounds': 'https://kenney.nl/assets/sci-fi-sounds',
-    'kenney_digital-audio': 'https://kenney.nl/assets/digital-audio',
-    'kenney_interface-sounds': 'https://kenney.nl/assets/interface-sounds',
-    'kenney_impact-sounds': 'https://kenney.nl/assets/impact-sounds',
-    'kenney_rpg-audio': 'https://kenney.nl/assets/rpg-audio',
+    'kenney_sci-fi-sounds': ('Kenney', 'https://kenney.nl/assets/sci-fi-sounds'),
+    'kenney_digital-audio': ('Kenney', 'https://kenney.nl/assets/digital-audio'),
+    'kenney_interface-sounds': ('Kenney', 'https://kenney.nl/assets/interface-sounds'),
+    'kenney_impact-sounds': ('Kenney', 'https://kenney.nl/assets/impact-sounds'),
+    'kenney_rpg-audio': ('Kenney', 'https://kenney.nl/assets/rpg-audio'),
+    'oga_bamboo-swoosh': ('qubodup', 'https://opengameart.org/content/swish-bamboo-stick-weapon-swhoshes'),
+    'oga_teleport-spell': ('Ogrebane', 'https://opengameart.org/content/teleport-spell'),
+    'oga_25-cc0-bang': ('rubberduck', 'https://opengameart.org/content/25-cc0-bang-firework-sfx'),
+    'oga_level-up': ('wobbleboxx', 'https://opengameart.org/content/level-up-power-up-coin-get-13-sounds'),
 }
-# event, source, start seconds (skip slow fade-ins), max seconds, speed.
+# event, layers [(source, start seconds, offset seconds, gain)], max seconds, speed.
 # Chosen by measured features (duration, attack, brightness trend, tonal vs noise) to fit what happens on screen:
-# flights rise in pitch, the rocket is a short thruster burst, the shot is a toy "pew", warps fall inward,
-# a hidden trap is a quiet latch, a capture is a body punch instead of a soft tap.
+# flights rise in pitch, the rocket is a short thruster burst, warps fall inward, a hidden trap is a quiet latch,
+# a capture is a body punch, wooden yut sticks swish like bamboo, a level-up rises, the BANG! card is a cap-gun crack.
 RECIPES = [
-    ('launch', 'kenney_digital-audio/Audio/phaseJump2.ogg', 0.0, .32, 1),          # 장외 홈런·점프 코너: 위로 솟는 만화풍 효과
-    ('rocket', 'kenney_sci-fi-sounds/Audio/thrusterFire_002.ogg', 1.0, .42, 1),     # 🔥 리벤지 로켓 출격: 분사 화염
-    ('dash', 'kenney_digital-audio/Audio/phaserUp7.ogg', 0.0, .30, 1),             # ⚡ 부스터 발판·처치 컷인 돌진
-    ('shot', 'kenney_sci-fi-sounds/Audio/laserRetro_000.ogg', 0.0, .24, 1),        # 뱅! 장난감 총 발사
-    ('charge', 'kenney_digital-audio/Audio/powerUp5.ogg', 0.0, .26, 1),            # 차 돌진 차징
-    ('good', 'kenney_interface-sounds/Audio/confirmation_003.ogg', 0.0, .32, 1),   # 좋은 일 (증강 선택 딩과 구분)
-    ('warp', 'kenney_digital-audio/Audio/phaserDown1.ogg', 0.0, .36, 1),           # 옷장 포탈: 빨려 들어가는 하강음
-    ('trap_set', 'kenney_rpg-audio/Audio/metalLatch.ogg', 0.0, .16, 1),            # 함정 설치: 조용한 걸쇠
-    ('slam', 'kenney_impact-sounds/Audio/impactPunch_heavy_000.ogg', 0.0, .36, 1), # 잡기·결투 타격
+    ('launch', [('kenney_impact-sounds/Audio/impactWood_light_002.ogg', 0, 0, .8), ('oga_bamboo-swoosh/swosh-09.flac', 0, .015, 1)], .34, 1),  # 장외 홈런: 딱! + 휙
+    ('rocket', [('kenney_sci-fi-sounds/Audio/thrusterFire_002.ogg', 1.0, 0, 1)], .42, 1),       # 🔥 리벤지 로켓 출격: 분사 화염
+    ('dash', [('kenney_digital-audio/Audio/phaserUp7.ogg', 0, 0, 1)], .30, 1),                 # ⚡ 부스터 발판·처치 컷인 돌진
+    ('shot', [('oga_25-cc0-bang/shot_03.ogg', 0, 0, 1)], .24, 1),                              # 뱅! 화약총 한 방 (장난감 레이저 대신)
+    ('charge', [('kenney_digital-audio/Audio/powerUp5.ogg', 0, 0, 1)], .26, 1),                # 차 돌진 차징
+    ('good', [('kenney_interface-sounds/Audio/confirmation_003.ogg', 0, 0, 1)], .32, 1),       # 좋은 일 (증강 선택 딩과 구분)
+    ('warp', [('oga_teleport-spell/teleport.wav', .3, 0, 1)], .55, 1),                          # 옷장 포탈: 진짜 순간이동 주문
+    ('trap_set', [('kenney_rpg-audio/Audio/metalLatch.ogg', 0, 0, 1)], .16, 1),                # 함정 설치: 조용한 걸쇠
+    ('slam', [('kenney_impact-sounds/Audio/impactPunch_heavy_000.ogg', 0, 0, 1)], .36, 1),     # 잡기·결투 타격
+    ('yut_toss', [('oga_bamboo-swoosh/swosh-01.flac', 0, 0, 1)], .30, 1),                      # 윷가락 던짐: 대나무 휘두름 (종이 부채 대신)
+    ('yut_toss', [('oga_bamboo-swoosh/swosh-22.flac', 0, 0, 1)], .30, 1),
+    ('slot_spin', [('kenney_interface-sounds/Audio/scroll_003.ogg', 0, 0, 1)], .15, 1),        # 슬롯 릴: 톱니 딸깍 (스프링 대신)
+    ('promote', [('oga_level-up/Rise02.aif', 0, 0, 1)], .62, 1),                                # 승급: 레벨 업 상승음 (1.75초 차임 대신)
 ]
 REPLACE = {event for event, *_ in RECIPES}
 # Loudness classes (RMS dBFS). Frequent small sounds stay quiet, punctuation is louder, big moments loudest.
@@ -49,7 +59,7 @@ CLASSES = {
 TARGET = {event: level for level, events in CLASSES.items() for event in events}
 LOUDNESS_TOLERANCE_DB = 4.0
 PEAK_LIMIT = 0.9
-MAX_SECONDS = {'promote': 0.95}  # 1.75초 차임은 승급마다 너무 길다
+MAX_SECONDS = {}
 
 
 def decode(path, start=0.0):
@@ -96,19 +106,39 @@ for record in [r for r in records if r['event'] in REPLACE]:
     (OUT / (record['file'] + '.import')).unlink(missing_ok=True)
 records = [r for r in records if r['event'] not in REPLACE]
 
-for event, name, start, cap, speed in RECIPES:
-    source = SOURCE / name
-    x = decode(source, start)
+def render(layers):
+    mix = None
+    for name, start, offset, gain in layers:
+        y = decode(SOURCE / name, start)
+        active = np.flatnonzero(abs(y) > abs(y).max() * .012)
+        if len(active):
+            y = y[max(0, int(active[0]) - 88):]
+        y = y / max(float(abs(y).max()), 1e-6) * gain
+        lead = np.zeros(int(offset * RATE), dtype='f4')
+        y = np.concatenate([lead, y])
+        if mix is None:
+            mix = y
+        else:
+            size = max(len(mix), len(y))
+            mix = np.pad(mix, (0, size - len(mix))) + np.pad(y, (0, size - len(y)))
+    return mix
+
+
+for event, layers, cap, speed in RECIPES:
+    x = render(layers)
     if speed != 1:
         x = np.interp(np.arange(0, len(x), speed), np.arange(len(x)), x).astype('f4')
     x = to_level(shape(x, cap), TARGET[event])
     variant = 1 + sum(1 for r in records if r['event'] == event)
     output = OUT / f'{event}_{variant:02}.ogg'
     encode(x, output)
-    pack = name.split('/')[0]
-    records.append(dict(event=event, file=output.name, source=name, author='Kenney', url=PACKS[pack], license='CC0-1.0',
-                        source_sha256=hashlib.sha256(source.read_bytes()).hexdigest(), sha256=hashlib.sha256(output.read_bytes()).hexdigest(),
-                        seconds=round(len(x) / RATE, 4), target_rms_db=TARGET[event], speed=speed, trim_start=start, fade_out_ms=40))
+    names = [layer[0] for layer in layers]
+    packs = [PACKS[name.split('/')[0]] for name in names]
+    records.append(dict(event=event, file=output.name, source=' + '.join(names), author=' + '.join(sorted({p[0] for p in packs})),
+                        url=' '.join(sorted({p[1] for p in packs})), license='CC0-1.0',
+                        source_sha256=' '.join(hashlib.sha256((SOURCE / n).read_bytes()).hexdigest() for n in names),
+                        sha256=hashlib.sha256(output.read_bytes()).hexdigest(), seconds=round(len(x) / RATE, 4), target_rms_db=TARGET[event],
+                        speed=speed, layers=[dict(source=n, start=st, offset=o, gain=g) for n, st, o, g in layers], fade_out_ms=40))
     if event not in order:
         order.append(event)
 

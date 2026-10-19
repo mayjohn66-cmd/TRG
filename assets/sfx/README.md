@@ -58,3 +58,11 @@ Kenney(CC0)의 Casino Audio / Interface Sounds / Impact Sounds / Digital Audio�
 Kenney CC0 팩(Sci-fi / Digital / Interface / Impact / RPG)에서 다시 골랐습니다. 고른 기준은 측정한 특징(길이·첫 타격까지 시간·밝기·높낮이 변화·잡음 비율)입니다.
 이어서 모든 효과음을 4단계 음량(호버 -36 / 자잘한 소리 -30 / 강조 -25 / 큰 순간 -21 dB RMS)으로 맞췄습니다.
 원본 팩을 받아 `python tools/audio/retune_sfx.py <팩 폴더> ffmpeg`로 다시 만들 수 있고, 가공 기록은 `curated/manifest.json`에 남습니다.
+
+## 3차 재선정 (OpenGameArt CC0 추가)
+- 장외 홈런(`launch`): 나무 "딱" + 대나무 "휙" 두 소리를 겹쳐 방망이로 쳐 날리는 느낌
+- 뱅!(`shot`): 장난감 레이저 대신 짧은 화약총 한 방
+- 옷장 포탈(`warp`): 순간이동 주문 소리
+- 윷 던짐(`yut_toss`): 종이 부채 소리 대신 대나무 휘두르는 소리 2종 (번갈아 재생)
+- 슬롯 릴(`slot_spin`): 스프링 대신 톱니 딸깍
+- 승급(`promote`): 긴 차임 대신 0.6초 레벨 업 상승음
