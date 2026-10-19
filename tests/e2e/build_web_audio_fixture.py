@@ -16,6 +16,7 @@ assert not (dest/'project.godot').exists(), 'Use a new scratch directory.'
 (dest/'build').mkdir(exist_ok=True)
 shutil.copy2(repo/'scenes/sfx.gd',dest/'scenes/sfx.gd')
 shutil.copy2(repo/'assets/sfx/hop_01.ogg',dest/'assets/sfx/hop_01.ogg')
+shutil.copytree(repo/'assets/sfx/curated',dest/'assets/sfx/curated')
 shutil.copy2(repo/'assets/bgm/lobby_daylife.ogg',dest/'assets/bgm/lobby_daylife.ogg')
 shutil.copy2(repo/'assets/bgm/battle_monatium_night.ogg',dest/'assets/bgm/battle_monatium_night.ogg')
 (dest/'game_session.gd').write_text('class_name GameSession\nextends RefCounted\nstatic var audio_muted: bool = false\nstatic var sfx_volume: float = 0.8\nstatic var bgm_volume: float = 0.6\n')
@@ -41,7 +42,13 @@ func _command(args: Array) -> void:
  var command: String = str(args[0])
  match command:
   "file": Sfx.play(&"hop",0.0,0.0)
-  "synth": Sfx.play(&"roulette_tick",0.0,0.0)
+  "synth":
+   if Sfx._ensure_ready():
+    var player: AudioStreamPlayer = Sfx._pool[0]
+    player.stream=Sfx.synth(&"roulette_tick")
+    player.volume_db=0.0
+    player.pitch_scale=1.0
+    player.play()
   "mute": GameSession.audio_muted=true; Sfx.apply_settings()
   "unmute": GameSession.audio_muted=false; Sfx.apply_settings()
   "quiet": GameSession.sfx_volume=0.1; Sfx.apply_settings()
@@ -52,6 +59,8 @@ func _command(args: Array) -> void:
   "bgm_stop": Sfx.bgm_stop()
   "bgm_quiet": GameSession.bgm_volume=0.1; Sfx.apply_settings()
   "bgm_loud": GameSession.bgm_volume=0.6; Sfx.apply_settings()
+ if command.begins_with("fx:"):
+  Sfx.play(StringName(command.trim_prefix("fx:")),0.0,0.0)
  JavaScriptBridge.eval("window.audioFixtureState="+JSON.stringify({"muted":GameSession.audio_muted,"volume":GameSession.sfx_volume,"buses":AudioServer.bus_count,"master":AudioServer.get_bus_name(0),"sfx":AudioServer.get_bus_index(&"SFX"),"bgm":AudioServer.get_bus_index(&"BGM")}))
  JavaScriptBridge.eval("window.bgmFixtureState="+JSON.stringify({"track":String(Sfx._bgm_name),"playing":Sfx._bgm.playing if Sfx._bgm != null else false,"position":Sfx._bgm.get_playback_position() if Sfx._bgm != null else 0.0,"length":Sfx._bgm.stream.get_length() if Sfx._bgm != null and Sfx._bgm.stream != null else 0.0,"loop":Sfx._bgm.stream.loop if Sfx._bgm != null and Sfx._bgm.stream != null else false}))
 ''')

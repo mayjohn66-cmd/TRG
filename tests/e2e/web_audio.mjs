@@ -74,6 +74,18 @@ try{
   const state=await page.evaluate(()=>window.audioFixtureState);
   assert.deepEqual(state,{muted:false,volume:0.8,buses:3,master:'Master',sfx:1,bgm:2});
   console.log('WEB_AUDIO_OK: OGG, generated PCM, mute/unmute, volume, repeated bus setup');
+  const manifest=JSON.parse(await fs.readFile(path.join(root,'../assets/sfx/curated/manifest.json'),'utf8'));
+  const events=[...new Set(manifest.map(r=>r.event))];
+  for(const event of events){
+   await page.waitForTimeout(1800); // isolate every effect, including long chimes
+   assert(await measure('fx:'+event)>0.0001,`${event} file reaches browser destination`);
+  }
+  await page.waitForTimeout(1800);
+  const before=await page.evaluate(()=>audioMeter.sourceStarts);
+  await page.evaluate(()=>{window.audioCommand('fx:ui_click');window.audioCommand('fx:ui_click');});
+  await page.waitForTimeout(100);
+  assert.equal((await page.evaluate(()=>audioMeter.sourceStarts))-before,1,'same-frame duplicate UI sound is suppressed');
+  console.log('WEB_CURATED_SFX_OK: '+events.length+' real file events and duplicate click suppression');
   await command('bgm');
   const first=await page.evaluate(()=>window.bgmFixtureState);
   assert(first.playing&&first.loop&&first.length>30&&first.length<60,'DayLife is an imported looping track');

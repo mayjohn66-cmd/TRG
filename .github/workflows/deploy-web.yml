@@ -49,6 +49,9 @@ jobs:
       - name: Run unit tests
         run: godot --headless --path . -s res://tests/run_tests.gd
 
+      - name: Validate curated sound assets and override priority
+        run: godot --headless --path . -s res://tests/sfx_assets_test.gd
+
       - name: Run UI smoke test (full game without cheats)
         run: godot --headless --path . -s res://tests/ui_smoke.gd
 

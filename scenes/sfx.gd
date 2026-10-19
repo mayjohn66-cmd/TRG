@@ -1,10 +1,11 @@
 # File: res://scenes/sfx.gd
 # Class: class_name Sfx
-# Role: 효과음·배경음 재생기. 게임은 이벤트 이름(&"hop", &"slam"...)으로 Sfx.play()만 부르고, 실제 소리는 assets/sfx/ 폴더에서 파일 이름으로 찾는다 (파일이 없으면 조용히 건너뜀). 음량·음소거는 GameSession 설정을 따른다
+# Role: 효과음·배경음 재생기. 사용자 파일 → 큐레이션 목록 → 기존 파일 → 합성 폴백 순서로 찾는다. 음량·음소거는 GameSession 설정을 따른다.
 class_name Sfx
 extends RefCounted
 
 const SFX_DIR: String = "res://assets/sfx"
+const CURATED = preload("res://assets/sfx/curated/catalog.gd")
 const BGM_DIR: String = "res://assets/bgm"
 ## 사용자가 직접 소리 파일을 넣는 폴더 (assets/ 와 똑같이 이름 규칙으로 찾는다). 파일이 있으면 합성음보다 우선한다.
 const USER_SFX_DIR: String = "res://content_trickcal/audio/sfx"
@@ -23,8 +24,8 @@ const EVENTS: Dictionary = {
 	&"slam": ["내리찍기 (잡을 때 쾅)", ["impact", "thud", "slam", "chips-collide"]],
 	&"launch": ["잡힌 말이 날아감", ["whoosh", "swoosh", "card-slide", "slide"]],
 	&"thud": ["출발선에 쿵 떨어짐", ["thud", "chips-handle", "place"]],
-	&"dice_roll": ["주사위 계열(주사위·윷·친치로·마작·화투·타로) 굴림", ["dice-throw", "die-throw", "dice"]],
-	&"roll_other": ["그 밖의 판정 도구(슬롯·홀덤·룰렛·리볼버) 굴림", ["dice-shake", "shake"]],
+	&"dice_roll": ["주사위·친치로 굴림", ["dice-throw", "die-throw", "dice"]],
+	&"roll_other": ["기타 도구 보조 넘김음", ["card-fan", "shuffle"]],
 	&"card_pick": ["카드 집어 듦", ["card-fan", "card-slide", "card-shove"]],
 	&"card_throw": ["카드 던짐", ["card-shove", "card-slide", "whoosh"]],
 	&"card_get": ["카드 획득·드로우", ["card-place", "card-fan"]],
@@ -34,7 +35,7 @@ const EVENTS: Dictionary = {
 	&"yut_toss": ["네 윷가락을 함께 던지는 바람", ["yut-toss"]],
 	&"toy_click": ["장난감 총 빈 약실 (찰칵)", ["toy-click"]],
 	&"toy_party_pop": ["스프링 깃발과 색종이 폭죽 (뿅)", ["toy-party-pop"]],
-	&"slot_spin": ["슬롯 릴 회전 임시음", ["slot-spin"]],
+	&"slot_spin": ["슬롯 릴 회전 기계음", ["slot-spin"]],
 	&"slot_stop": ["슬롯 릴 정지 (철컥)", ["slot-stop"]],
 	&"roulette_tick": ["룰렛 포인터 눈금 클릭", ["roulette-tick"]],
 	&"roulette_stop": ["룰렛 정착", ["roulette-stop"]],
@@ -104,6 +105,10 @@ static var _synth_cache: Dictionary = {}
 static var _index: Dictionary = {}
 static var _scanned: bool = false
 static var _cache: Dictionary = {}
+static var _last_variant: Dictionary = {}
+static var _last_play_ms: Dictionary = {}
+## Only repetitive controls/ticks are gated; tile and Yut landings stay independent.
+const MIN_INTERVAL_MS: Dictionary = {&"ui_click": 45, &"ui_hover": 90, &"roulette_tick": 24, &"slot_spin": 120}
 static var _pool: Array[AudioStreamPlayer] = []
 static var _next: int = 0
 static var _host: Node = null
@@ -122,9 +127,13 @@ static func play(event: StringName, volume_db: float = 0.0, pitch_variance: floa
 	if not enabled() or GameSession.audio_muted:
 		return
 	event = ALIASES.get(event, event)
+	var now: int = Time.get_ticks_msec()
+	if MIN_INTERVAL_MS.has(event) and now - int(_last_play_ms.get(event, -10000)) < int(MIN_INTERVAL_MS[event]):
+		return
 	var stream: AudioStream = _stream_for(event)
 	if stream == null or not _ensure_ready():
 		return
+	_last_play_ms[event] = now
 	var player: AudioStreamPlayer = _pool[_next % _pool.size()]
 	_next += 1
 	player.stream = stream
@@ -142,7 +151,7 @@ static func unlock() -> void:
 
 ## 지금 이 이벤트에 연결된 소리 파일이 있는가 (설정 화면 시험 버튼 등에서 쓴다).
 static func has_sound(event: StringName) -> bool:
-	return _files_for(event).size() > 0
+	return _files_for(ALIASES.get(event, event)).size() > 0
 
 
 ## 이미지 스킨을 다시 입혀도 클릭음은 한 번만 연결한다.
@@ -269,6 +278,16 @@ static func _files_for(event: StringName) -> Array[String]:
 			if base == prefix or _is_numbered_variant(base, prefix):
 				found.append(_index[base])
 				break
+	# An event override replaces the whole curated set, even with a different
+	# variant suffix. Legacy random candidates never mix with curated effects.
+	var overrides: Array[String] = []
+	for path: String in found:
+		if path.begins_with(USER_SFX_DIR + "/"):
+			overrides.append(path)
+	if not overrides.is_empty():
+		found = overrides
+	elif CURATED.FILES.has(event):
+		found.assign(CURATED.FILES[event])
 	if found.is_empty() and EVENTS.has(event):
 		for keyword: String in (EVENTS[event] as Array)[1]:
 			for base: String in _index.keys():
@@ -292,7 +311,11 @@ static func _stream_for(event: StringName) -> AudioStream:
 	var files: Array[String] = _files_for(event)
 	if files.is_empty():
 		return synth(event)  # 소리 파일이 아직 없으면 코드로 만든 합성음을 쓴다
-	return load(files[randi() % files.size()]) as AudioStream
+	var index: int = randi() % files.size()
+	if files.size() > 1 and index == int(_last_variant.get(event, -1)):
+		index = (index + 1 + randi() % (files.size() - 1)) % files.size()
+	_last_variant[event] = index
+	return load(files[index]) as AudioStream
 
 
 ## 파일 없이 코드로 만든 효과음(16비트 PCM). 이벤트마다 한 번만 만들어 캐시한다. 합성법이 없는 이벤트는 null.

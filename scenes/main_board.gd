@@ -3760,8 +3760,11 @@ func _on_roll_pressed() -> void:
 	_stop_charge()
 	if manager.is_game_over or _roll_button.disabled or _ui_busy() or _is_bot_turn():
 		return
-	if not (state.tools[_dock_owner()] is ToolSlot777):
-		Sfx.play(&"dice_roll" if _is_dice_family(state.tools[_dock_owner()]) else &"roll_other")
+	var tool: BaseJudgmentTool = state.tools[_dock_owner()]
+	# Yut, Mahjong, cards, roulette, slots and the toy gun emit their own
+	# material sounds at animation cues. Only dice need the generic clatter.
+	if _is_dice_family(tool) and tool.tool_id != &"YUT":
+		Sfx.play(&"dice_roll")
 	if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN:
 		_act(&"proceed")
 	if manager.current_state == TurnManager.State.PHASE_ROLL_WAIT:
