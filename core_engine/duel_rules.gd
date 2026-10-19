@@ -9,6 +9,11 @@ enum Hand { ROCK, SCISSORS, PAPER }
 const HAND_NAMES: Array[String] = ["바위", "가위", "보"]
 ## 결투 승자의 말이 앞으로 날아가는 칸수 (패자의 말은 출발선으로 사출된다).
 const WINNER_ADVANCE: int = 3
+
+
+## 승자 말이 앞으로 날아가는 칸 수 (cards_table.csv ACT_09 param_1).
+static func winner_advance() -> int:
+	return CardRegistry.param(&"ACT_09", WINNER_ADVANCE)
 ## 비기면 다시 겨루는 최대 횟수: 이 횟수만큼 연달아 비기면 신청자의 판정승이다.
 const MAX_DRAWS: int = 2
 ## 손 선택(초)과 말 고르기(초) 제한 시간 (TurnManager.timer_scale이 곱해진다).
@@ -65,6 +70,6 @@ static func apply_strike(state: GameState, winner: int, pawn: PlayerPawn) -> Dic
 	if booster != null:
 		result["boost_pawn_id"] = booster.entity_id
 		result["boost_from"] = booster.current_tile_idx
-		MoveExecutor.forced_advance(state, booster, WINNER_ADVANCE)
+		MoveExecutor.forced_advance(state, booster, winner_advance())
 		result["boost_to"] = booster.current_tile_idx
 	return result

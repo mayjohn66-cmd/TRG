@@ -14,4 +14,4 @@ func _init(acting_player: int = -1) -> void:
 
 
 func _run() -> void:
-	state.roll_bonus += BONUS
+	state.roll_bonus += CardRegistry.param(&"ACT_04", BONUS)  # cards_table.csv ACT_04 param_1

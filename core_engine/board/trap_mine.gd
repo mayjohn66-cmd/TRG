@@ -18,7 +18,7 @@ func on_step_trigger(_victim: BoardEntity, ctx: RuleContext) -> bool:
 	var center: int = ctx.state.board.tile_of_attachment(self)
 	if center == -1:
 		return false
-	for tile_index: int in ctx.state.board.tiles_within(center, BLAST_RADIUS):
+	for tile_index: int in ctx.state.board.tiles_within(center, CardRegistry.param(&"TRP_03", BLAST_RADIUS)):  # cards_table.csv TRP_03 param_1
 		if tile_index == GameEnums.GOAL_TILE:
 			continue
 		for leader: PlayerPawn in ctx.state.leaders_at(tile_index):

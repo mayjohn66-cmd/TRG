@@ -11,7 +11,7 @@ func _init(owner: int = -1) -> void:
 	attachment_id = "TRP_04"
 	owner_id = owner
 	is_hidden_trap = false
-	duration_turns = LIFETIME_TURNS
+	duration_turns = CardRegistry.param(&"TRP_04", LIFETIME_TURNS)  # cards_table.csv TRP_04 param_1
 
 
 ## 도착(이동의 마지막 칸)한 상대 말만 가둔다. 이미 도착했으므로 이동을 끊지는 않는다(false 반환).

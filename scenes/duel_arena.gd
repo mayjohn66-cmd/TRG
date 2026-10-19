@@ -364,7 +364,7 @@ func _play_strike_wait(data: Dictionary) -> void:
 	_compact()
 	var local_winner: bool = local_seats.has(winner)
 	if local_winner:
-		_say("결투 승리! 출발선으로 날려 버릴 상대방의 말을 클릭하세요! (내 말은 +%d칸 전진)" % DuelRules.WINNER_ADVANCE, Color("8ce99a"))
+		_say("결투 승리! 출발선으로 날려 버릴 상대방의 말을 클릭하세요! (내 말은 +%d칸 전진)" % DuelRules.winner_advance(), Color("8ce99a"))
 		_start_timer(DuelRules.TIME_STRIKE * board.manager.timer_scale, &"strike")
 		_pick_seat = winner
 	elif local_seats.has(loser):
@@ -395,7 +395,7 @@ func _play_resolved(data: Dictionary) -> void:
 	if int(data["pawn_id"]) == -1:
 		_say("날려 버릴 말이 없어 결투가 끝났습니다", Color("ced4da"))
 	elif local_seats.has(winner):
-		_say("결투 승리! 상대 말을 장외 사출, 내 말은 +%d칸 전진!" % DuelRules.WINNER_ADVANCE, Color("8ce99a"))
+		_say("결투 승리! 상대 말을 장외 사출, 내 말은 +%d칸 전진!" % DuelRules.winner_advance(), Color("8ce99a"))
 	elif local_seats.has(loser):
 		_say("결투 패배! 내 말이 출발선으로 날아갔습니다!", Color("ff8787"))
 	else:

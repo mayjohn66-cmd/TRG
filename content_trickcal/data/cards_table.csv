@@ -1,0 +1,17 @@
+id,enabled,type,name,parody_quote,desc,param_1,param_2,icon_file
+ACT_01,TRUE,INSTANT,우노 리버스,우노(UNO) 리버스 카드,턴 진행 순서 역전 (말은 뒤로 가지 않음),,2,ACT_01.png
+ACT_02,TRUE,INSTANT,뱅! 저격,뱅!(BANG!) 보드게임,상대 선두 말을 출발선으로 장외 사출 (프로필 선택),,2,ACT_02.png
+ACT_03,TRUE,INSTANT,우노 +4,우노(UNO) +4 카드,다음 유저 선두 말 장외 사출 + 내 말 1개 +{p1}칸 전진,4,2,ACT_03.png
+ACT_04,TRUE,INSTANT,긴급 로켓 부스터,,굴리기 전 사용! 눈금 +{p1}칸,3,2,ACT_04.png
+ACT_05,TRUE,INSTANT,바이츠 더 더스트,죠죠의 기묘한 모험 '바이츠 더 더스트',이번 턴 시작 직전으로 시간 역행,,2,ACT_05.png
+ACT_06,TRUE,INSTANT,이의 있음! 법전 파기,역전재판 '이의 있음!',중앙 법전 교칙 1개 지정 삭제,,3,ACT_06.png
+TRP_01,TRUE,TRAP,성스러운 방어막 거울의 힘,유희왕 '성스러운 방어막 - 거울의 힘 -',밟은 적 말 즉시 출발선 추방,,2,TRP_01.png
+TRP_02,TRUE,TRAP,함정 속으로 (나락),유희왕 '함정 카드 발동!',눈금 {p1}+ 이동 말 2턴간 구속,4,2,TRP_02.png
+TRP_03,TRUE,TRAP,지뢰찾기,지뢰찾기,밟으면 반경 {p1}칸 내 모든 말 폭파,2,2,TRP_03.png
+TRP_04,TRUE,TRAP,무인도 감옥,부루마블 '무인도',"코너 감옥화 (짝수 눈금에 탈출, {p1}턴 유지)",3,2,TRP_04.png
+TRP_05,TRUE,TRAP,스프링 인간 대포,,"밟은 말 앞으로 +{p1}칸 사출, 착지 지점의 말은 들이받아 날림",5,2,TRP_05.png
+ACT_07,TRUE,INSTANT,XVI. 무너지는 탑,타로 16번 '무너지는 탑',가장 뭉친 타일의 말 강제 분리·산개,,2,ACT_07.png
+ACT_08,TRUE,INSTANT,X. 운명의 수레바퀴,타로 10번 '운명의 수레바퀴',내 꼴찌 말 ↔ 1등 적 선두 말 위치 교환,,2,ACT_08.png
+ACT_09,TRUE,INSTANT,운명의 가위바위보 결투!,가위바위보 결투,"적 1명과 가위바위보! 승자 말 +{p1}칸 전진, 패자 말 1개 장외 사출",3,2,
+SUM_01,TRUE,SUMMON,카탄의 도적떼,카탄의 개척자 '도적',라운드마다 최근접 말 추격\n카드 강탈,,2,SUM_01.png
+SUM_02,TRUE,SUMMON,팩맨의 고스트,팩맨 '고스트',반환점 출발 역주행 순찰 & 연행,,1,SUM_02.png

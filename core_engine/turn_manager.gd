@@ -784,8 +784,12 @@ func auto_pick_draft(player_id: int) -> void:
 func auto_pick_draft_now(player_id: int) -> void:
 	if current_state != State.PHASE_ROUND_START or not _draft_offers.has(player_id) or _draft_picks.has(player_id):
 		return
-	var index: int = state.rng.randi_range(0, (_draft_offers[player_id] as Array).size() - 1)
-	_pick_augment(player_id, index, {}, true)
+	var offers: Array = _draft_offers[player_id]
+	var index: int = state.rng.randi_range(0, offers.size() - 1)
+	# 고른 증강이 적용되지 않으면(손패 가득 등) 다음 선택지를 차례로 시도해 드래프트가 멈추지 않게 한다.
+	for attempt: int in offers.size():
+		if _pick_augment(player_id, (index + attempt) % offers.size(), {}, true):
+			break
 	if _draft_picks.size() >= _draft_offers.size():
 		_finish_draft()
 
@@ -943,6 +947,7 @@ func _enter_roll_wait() -> void:
 
 
 func _apply_roll_result(result: RollResult) -> void:
+	ToolRegistry.adjust_result(result)  # dice_table.csv의 min/max/jackpot 칸 수
 	_emit_event(&"roll_resolved", {"player_id": current_player_id(), "result": result.to_dict()})
 	if result.ends_turn:
 		move_queue.clear()
@@ -960,7 +965,7 @@ func _apply_roll_result(result: RollResult) -> void:
 	if not ctx.is_canceled:
 		var roller: int = current_player_id()
 		# [초증강] 주사위 도박사의 영혼: 이번 라운드 이동 거리 2배! 단 눈금이 1 이하면 이동한 말이 과열되어 이동 뒤 0번으로 사출된다.
-		if int(state.gambler_round.get(roller, -1)) == state.round_number and ctx.dice_value <= 1:
+		if int(state.gambler_round.get(roller, -1)) == state.round_number and ctx.dice_value <= SuperAugments.gambler_overheat_at():
 			_overheat_player = roller
 			_overheat_roll = ctx.dice_value
 		var permanent: int = int(state.permanent_roll_bonus.get(roller, 0))
@@ -969,8 +974,8 @@ func _apply_roll_result(result: RollResult) -> void:
 			_emit_event(&"roll_boosted", {"player_id": roller, "from": ctx.dice_value, "to": boosted})
 			state.roll_bonus = 0
 		if int(state.gambler_round.get(roller, -1)) == state.round_number:
-			_emit_event(&"gambler_doubled", {"player_id": roller, "from": boosted, "to": boosted * 2})
-			boosted *= 2
+			_emit_event(&"gambler_doubled", {"player_id": roller, "from": boosted, "to": boosted * SuperAugments.gambler_multiplier()})
+			boosted *= SuperAugments.gambler_multiplier()
 		move_queue.append(boosted)
 	_roll_chain += 1
 	if result.reroll and _roll_chain < GameEnums.MAX_REROLL_CHAIN:

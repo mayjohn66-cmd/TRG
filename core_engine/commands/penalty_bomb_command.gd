@@ -6,6 +6,11 @@ extends GameCommand
 
 const ADVANCE_STEPS: int = 4
 
+
+## 내 말이 전진하는 칸 수 (cards_table.csv ACT_03 param_1).
+static func advance_steps() -> int:
+	return CardRegistry.param(&"ACT_03", ADVANCE_STEPS)
+
 ## 실행 뒤 UI가 읽는다: 내 말이 실제로 전진한 말 ID(없으면 -1).
 var boosted_pawn_id: int = -1
 
@@ -44,4 +49,4 @@ func _run() -> void:
 				break
 	if mine != null:
 		boosted_pawn_id = mine.entity_id
-		MoveExecutor.forced_advance(state, mine, ADVANCE_STEPS)
+		MoveExecutor.forced_advance(state, mine, advance_steps())

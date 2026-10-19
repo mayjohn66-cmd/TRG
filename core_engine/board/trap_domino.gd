@@ -20,7 +20,7 @@ func on_step_trigger(victim: BoardEntity, ctx: RuleContext) -> bool:
 		return false
 	var state: GameState = ctx.state
 	ctx.metadata["cutscene_id"] = &"trap_domino"
-	var passed: Array[int] = MoveExecutor.fling(state, pawn, LAUNCH_STEPS)
+	var passed: Array[int] = MoveExecutor.fling(state, pawn, CardRegistry.param(&"TRP_05", LAUNCH_STEPS))
 	var chain: Array[int] = []
 	ctx.metadata["domino_chain"] = chain
 	state.domino_collapsed.emit(pawn.entity_id, passed, chain)

@@ -659,7 +659,7 @@ func _ch_pawns() -> Dictionary:
 
 func _card_entry(card_id: StringName, tone: Color) -> Control:
 	var card: BaseCard = CardRegistry.get_card(card_id)
-	var summary: String = str(MainBoard.CARD_SUMMARIES.get(card_id, "")).replace("\n", " ")
+	var summary: String = MainBoard.card_summary(card_id).replace("\n", " ")
 	var icon: StringName = &"book" if card_id == &"ACT_09" else (&"gear" if card_id.begins_with("ACT") else (&"key" if card_id.begins_with("TRP") else &"face"))
 	return _card(card.display_name, summary, icon, tone)
 

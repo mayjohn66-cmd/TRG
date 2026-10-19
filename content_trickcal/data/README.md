@@ -1,0 +1,59 @@
+# 밸런스 표 (CSV) 사용법
+
+엑셀·구글 스프레드시트·메모장으로 열어서 고친 뒤 저장(UTF-8, CSV)하면 다음 실행부터 바로 반영됩니다. 웹 배포는 `git push`만 하면 이 파일들이 함께 패키징됩니다.
+
+| 파일 | 내용 |
+|---|---|
+| `augments_table.csv` | 모든 증강 + 규칙 수치(`RULE_*`) |
+| `dice_table.csv` | 판정 도구 13종 |
+| `cards_table.csv` | 생떼 카드 16종 |
+
+> 쉼표가 들어간 칸은 큰따옴표로 감쌉니다(엑셀이 알아서 해 줍니다). 줄바꿈은 칸 안에 `\n`이라고 적습니다. 비워 둔 칸은 코드 기본값을 씁니다.
+
+## augments_table.csv
+| 열 | 설명 |
+|---|---|
+| `id` | 증강 ID (바꾸지 마세요) |
+| `enabled` | `TRUE`/`FALSE`. FALSE면 드래프트에 나오지 않습니다 |
+| `category` | `PAWN`(기물) `DICE`(판정 도구) `LAW`(교칙) `CARD`(카드 패키지) `CHAOS`(초증강) `RULE`(규칙 수치 행, 드래프트 아님) |
+| `tier` | 카드 테두리: `NORMAL` / `GOLD`(금빛) / `PRISMA`(보라 후광+금 테두리) |
+| `weight` | 등장 가중치(기본 100, 초증강 50). 0이면 제외. 한 계열 안에서는 비율대로, 계열 사이에서는 평균 가중치 비율대로 뽑힙니다 |
+| `min_round` | 이 라운드부터 등장 |
+| `title` `subtitle` `desc` `spec_preview` | 카드 제목 / 위쪽 계열 표시 / 효과 설명 / 족보·공식 요약. `{p1}` `{p2}`는 아래 param 값으로 바뀝니다. `DICE` 행의 spec_preview를 비우면 dice_table의 `spec_table`을 씁니다 |
+| `param_1` `param_2` | 실제 게임 수치 (아래 표) |
+| `target_ref` | 연결 대상 ID (`DICE`=도구 ID, `LAW`=교칙 ID) |
+| `icon_file` | 아이콘 파일. `content_trickcal/illustrations/` 아래 상대 경로 또는 `res://` 전체 경로 |
+
+새 행 추가: `DICE`(target_ref=도구 ID)·`LAW`(target_ref=교칙 ID)·`CARD`(카드 패키지, param_1=장수) 행은 새 id로 추가하면 새 증강이 됩니다. 기물·초증강은 로직이 필요해 새로 만들 수 없습니다.
+
+### param이 바꾸는 수치
+| id | param_1 | param_2 |
+|---|---|---|
+| `CARD_PACKAGE`(및 새 CARD 행) | 받는 카드 수 | |
+| `AUG_LAW_03` 볼따구 평등법 | 이 눈금 이상 이동하면 꼴찌와 교환 | |
+| `AUG_LAW_04` 짝수 니트로 | 짝수 눈금에 더하는 칸 | |
+| `AUG_LAW_05` 폭주 기관차 | 처치 뒤 돌진 칸 | |
+| `AUG_LAW_06` 아우토반 | 추가 가속 칸 | 가속이 붙는 최소 눈금 |
+| `SUPER_01` 판 뒤집기 | 완주 확률(%) | |
+| `SUPER_03` 악마의 계약 | 영구 가속 칸 | |
+| `SUPER_04` 지뢰밭 | 설치 개수 | |
+| `SUPER_05` 도적단 | 도적 수 | 고스트 수 |
+| `SUPER_06` 도박사 | 이동 배수 | 이 눈금 이하면 과열 |
+| `SUPER_08` 빵집 털이 | 받는 카드 수 | |
+| `SUPER_09` 저격수 | 내 말 전진 칸 | |
+| `SUPER_10` 독재자 | 새 교칙 수 | 내 말 전진 칸 |
+| `RULE_REVENGE_BOOST` 🔥 | 복수 부스터 칸 | |
+| `RULE_DASH_PAD` ⚡ | 발판 추가 전진 칸 | |
+| `RULE_LEAPFROG` 🏃 | 말 하나당 칸 | 한 번에 최대 칸 |
+
+`RULE_*` 행은 `enabled=FALSE`로 그 기믹 자체를 끌 수 있습니다. 교칙 행을 `FALSE`로 하면 독재자의 날조도 그 교칙을 뽑지 않습니다.
+
+## dice_table.csv
+`enabled`(FALSE면 교체 증강에서 빠짐, 기본 주사위 D6는 제외) · `name`(도구 이름) · `desc`(도구 카드 한 줄) · `spec_table`(족보표 문구) · `min_step`/`max_step`(이동 칸을 이 범위로 맞춤. 0칸·턴 종료 결과는 건드리지 않음, 비우면 제한 없음) · `jackpot_step`(그 도구의 최고 결과 칸 수를 이 값으로 교체, 상한과 무관. 윷·홀덤·슬롯·화투·마작·야추·블랙잭·핀볼만 지원) · `icon_file`(`illustrations/dice/` 아래).
+
+## cards_table.csv
+`enabled`(FALSE면 덱과 카드 패키지에서 빠짐) · `type`(INSTANT/TRAP/SUMMON, 표시용) · `name` · `parody_quote`(툴팁에 나오는 출처 문구) · `desc`(카드 확대 설명, `{p1}`) · `param_1`(수치: 우노+4 전진 `ACT_03`, 긴급 로켓 `ACT_04`, 결투 승자 전진 `ACT_09`, 스프링 대포 `TRP_05`, 지뢰 반경 `TRP_03`, 나락 최소 눈금 `TRP_02`, 무인도 유지 턴 `TRP_04`) · `param_2`(덱에 들어가는 장수) · `icon_file`(`assets/cards/` 아래).
+
+## 주의
+- 온라인 대전은 모든 참가자가 같은 CSV로 빌드된 같은 버전을 써야 합니다 (값이 다르면 시뮬레이션이 어긋납니다).
+- 값이 잘못되면(글자 등) 그 칸은 비어 있는 것처럼 코드 기본값을 씁니다. 파일 전체가 없어도 게임은 기본값으로 돕니다.

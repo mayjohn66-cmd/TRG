@@ -11,6 +11,13 @@ const ALL_IDS: Array[StringName] = [
 
 
 static func create(id: StringName) -> BaseJudgmentTool:
+	var tool: BaseJudgmentTool = _create_default(id)
+	if tool != null:
+		tool.display_name = GameData.text("dice", id, "name", tool.display_name)  # dice_table.csv의 name
+	return tool
+
+
+static func _create_default(id: StringName) -> BaseJudgmentTool:
 	match id:
 		&"D6": return ToolDiceD6.new()
 		&"YUT": return ToolYut.new()
@@ -47,5 +54,35 @@ const TABLES: Dictionary = {
 }
 
 
+## 눈금·족보 표 문구: dice_table.csv의 spec_table이 있으면 그것, 없으면 코드 기본값.
+static func spec_text(id: StringName) -> String:
+	return GameData.text("dice", id, "spec_table", str(TABLES.get(id, "눈금표: 나온 눈금만큼 전진")))
+
+
 static func table_line(id: StringName) -> String:
-	return "• %s" % TABLES.get(id, "눈금표: 나온 눈금만큼 전진")
+	return "• %s" % spec_text(id)
+
+
+## 각 도구에서 가장 높은 결과(잭팟)의 기본 칸 수. dice_table.csv의 jackpot_step이 비어 있지 않으면 이 칸 수 결과를 그 값으로 바꾼다.
+const NATURAL_JACKPOT: Dictionary = {
+	&"YUT": 5, &"HOLDEM": 15, &"SLOT_777": 20, &"DICE_HWATU": 8, &"DICE_MAHJONG": 12,
+	&"DICE_YACHT": 12, &"DICE_BLACKJACK": 11, &"DICE_PINBALL": 10,
+}
+
+
+## dice_table.csv의 min_step·max_step·jackpot_step을 한 번의 굴림 결과에 적용한다. 이동이 있는 확정 결과(칸 수 > 0)에만 작용하고, 표 값이 비어 있으면 아무것도 바꾸지 않는다.
+static func adjust_result(result: RollResult) -> void:
+	if result == null or result.ends_turn or result.can_continue or result.steps <= 0:
+		return
+	var id: StringName = result.tool_id
+	var natural: int = result.steps
+	var floor_steps: int = GameData.param("dice", id, 1, 0)
+	var cap_steps: int = GameData.param("dice", id, 2, 0)
+	if floor_steps > 0:
+		result.steps = maxi(result.steps, floor_steps)
+	if cap_steps > 0:
+		result.steps = mini(result.steps, cap_steps)
+	# 잭팟 칸 수는 max_step 상한과 상관없이 정확히 jackpot_step이 된다 (잭팟을 올리려고 max_step까지 같이 고치지 않아도 된다).
+	var jackpot: int = GameData.param("dice", id, 3, 0)
+	if jackpot > 0 and NATURAL_JACKPOT.has(id) and natural == int(NATURAL_JACKPOT[id]):
+		result.steps = jackpot

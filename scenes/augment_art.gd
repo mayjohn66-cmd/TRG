@@ -21,6 +21,26 @@ const TOOL_FILES: Dictionary = {
 }
 
 
+## augments_table.csv·dice_table.csv의 icon_file이 기본 후보와 다른 파일이면 가장 먼저 찾는다 (res:// 전체 경로 또는 illustrations/ 아래 상대 경로, 확장자 생략 가능).
+## 기본 후보와 같은 파일이면 순서를 바꾸지 않는다 (표에 현재 쓰는 파일명이 채워져 있어도 동작이 같다).
+static func _with_table_icon(paths: Array[String], icon_file: String, extra_folder: String) -> Array[String]:
+	if icon_file == "":
+		return paths
+	var file: String = icon_file if icon_file.get_extension() != "" else icon_file + ".png"
+	var wanted: Array[String] = []
+	if file.begins_with("res://"):
+		wanted.append(file)
+	else:
+		wanted.append(ROOT + file)
+		wanted.append(ROOT + extra_folder + file)
+	for candidate: String in wanted:
+		if paths.has(candidate):
+			return paths
+	var result: Array[String] = wanted.duplicate()
+	result.append_array(paths)
+	return result
+
+
 static func candidates(definition: AugmentDef) -> Array[String]:
 	var paths: Array[String] = []
 	match definition.category:
@@ -44,7 +64,7 @@ static func candidates(definition: AugmentDef) -> Array[String]:
 		_:
 			paths.append(ROOT + "augments/%s.png" % definition.augment_id)
 			paths.append(ROOT + "augments/AUG_CARD_PACK.png")
-	return paths
+	return _with_table_icon(paths, definition.icon_file, "augments/")
 
 
 static func tool_candidates(tool_id: StringName) -> Array[String]:
@@ -52,7 +72,10 @@ static func tool_candidates(tool_id: StringName) -> Array[String]:
 	var representative: String = ROOT + "dice/%s.png" % TOOL_FILES.get(tool_id, tool_id)
 	if not paths.has(representative):
 		paths.append(representative)
-	return paths
+	var table_icon: String = GameData.text("dice", tool_id, "icon_file")  # dice_table.csv의 icon_file (illustrations/dice/ 아래)
+	if table_icon != "" and not table_icon.begins_with("res://"):
+		table_icon = "dice/" + table_icon
+	return _with_table_icon(paths, table_icon, "dice/")
 
 
 ## Check imported resources so optional artwork also works in exported PCKs.

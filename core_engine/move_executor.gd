@@ -56,10 +56,11 @@ static func plan_path(state: GameState, mover: PlayerPawn, ctx: RuleContext, rep
 	if steps == 0:
 		return [] as Array[int]
 	# 🔥 리벤지 부스터: 사출된 말이 출발선에서 다시 나갈 때 눈금에 +4칸.
-	if state.boost_gimmicks and mover.revenge_boost and not mover.has_left_start:
-		steps += GameEnums.REVENGE_BONUS
-		report.revenge_bonus = GameEnums.REVENGE_BONUS
-		report.ability_notes.append("🔥 복수 부스터 +%d칸" % GameEnums.REVENGE_BONUS)
+	if state.boost_gimmicks and mover.revenge_boost and not mover.has_left_start and GameData.revenge_bonus() > 0:
+		var revenge: int = GameData.revenge_bonus()
+		steps += revenge
+		report.revenge_bonus = revenge
+		report.ability_notes.append("🔥 복수 부스터 +%d칸" % revenge)
 	var sub: GameEnums.PawnSubType = mover.sub_type()
 	if sub == GameEnums.PawnSubType.BADUK_WHITE:
 		steps = sign_dir * maxi(absi(steps) - 1, 1)
@@ -117,7 +118,7 @@ static func leapfrog_bonus(state: GameState, mover: PlayerPawn, path: Array[int]
 	for index: int in range(path.size() - 1):
 		if _tile_has_other_pawn(state, mover, path[index]):
 			count += 1
-	return mini(count, GameEnums.LEAPFROG_MAX)
+	return mini(count * GameData.leapfrog_per_pawn(), GameData.leapfrog_max())
 
 
 ## 효과(카드·초증강·결투)로 말을 앞으로 steps칸 날려 보낸다. 평소 이동처럼 설치물·잡기·발판을 모두 판정한다.
@@ -361,10 +362,10 @@ static func _resolve_landing(state: GameState, mover: PlayerPawn, ctx: RuleConte
 	if can_build_hotel(state, mover) and ctx.charge_depth == 0 and mover.current_tile_idx != GameEnums.GOAL_TILE:
 		_build_hotel(state, mover, report)
 	# ⚡ 부스터 발판: 멈춘 자리가 발판이면 곧바로 앞으로 3칸 더 날아간다 (뒤따르는 이동이 도착 정산을 이어서 한다).
-	if state.boost_gimmicks and BoardSpec.dash_tiles.has(mover.current_tile_idx) and ctx.charge_depth == 0 and not mover.is_finished and not mover.is_imprisoned:
+	if state.boost_gimmicks and GameData.dash_steps() > 0 and BoardSpec.dash_tiles.has(mover.current_tile_idx) and ctx.charge_depth == 0 and not mover.is_finished and not mover.is_imprisoned:
 		report.dash_tiles.append(mover.current_tile_idx)
 		state.dash_pad_triggered.emit(mover.entity_id, mover.current_tile_idx)
-		report.merge(execute(state, mover, ctx.make_follow_up(GameEnums.DASH_STEPS)))
+		report.merge(execute(state, mover, ctx.make_follow_up(GameData.dash_steps())))
 		return
 	ctx.trigger_timing = RuleContext.ON_TURN_END
 	ctx = state.rulebook.process_context(ctx)

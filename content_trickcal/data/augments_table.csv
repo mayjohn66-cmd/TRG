@@ -1,0 +1,54 @@
+id,enabled,category,tier,weight,min_round,title,subtitle,desc,spec_preview,param_1,param_2,target_ref,icon_file
+EVO_1_1,TRUE,PAWN,NORMAL,100,1,[기물 진화] 윷: 윷말,기물 진화,◆ 기본 말 1개 → [윷] 윷말,◆ 패시브: 처치·눈금 4/5 시 재굴림 +1 · 자동 업기\n※ 이미 가진 기물은 받을 수 없습니다,,,YUT_MAL,pawns/YUT.png
+EVO_2_1,TRUE,PAWN,NORMAL,100,1,[기물 진화] 체스: 폰,기물 진화,◆ 기본 말 1개 → [체스] 폰,◆ 패시브: 반환점 이상 도달 시 퀸 승급\n※ 이미 가진 기물은 받을 수 없습니다,,,CHESS_PAWN,pawns/CHESS_PAWN.png
+EVO_2_2,TRUE,PAWN,NORMAL,100,1,[기물 진화] 체스: 나이트,기물 진화,◆ 기본 말 1개 → [체스] 나이트,◆ 패시브: 경로 말·함정 관통 (도착 칸만 판정)\n※ 이미 가진 기물은 받을 수 없습니다,,,CHESS_KNIGHT,pawns/CHESS_KNIGHT.png
+EVO_2_3,TRUE,PAWN,NORMAL,100,1,[기물 진화] 체스: 비숍,기물 진화,◆ 기본 말 1개 → [체스] 비숍,◆ 패시브: 코너 스치면 +2칸\n※ 이미 가진 기물은 받을 수 없습니다,,,CHESS_BISHOP,pawns/CHESS_BISHOP.png
+EVO_2_4,TRUE,PAWN,NORMAL,100,1,[기물 진화] 체스: 룩,기물 진화,◆ 기본 말 1개 → [체스] 룩,◆ 패시브: 없음\n◆ [1회] 단독 캐슬링: 굴리기 전 아군 1개와 위치 교환\n※ 이미 가진 기물은 받을 수 없습니다,,,CHESS_ROOK,pawns/CHESS_ROOK.png
+EVO_3_1,TRUE,PAWN,NORMAL,100,1,[기물 진화] 장기: 포,기물 진화,◆ 기본 말 1개 → [장기] 포,◆ 패시브: 경로에 말 있으면 넘어서 +3칸\n※ 이미 가진 기물은 받을 수 없습니다,,,JANGGI_PO,pawns/JANGGI_PO.png
+EVO_3_2,TRUE,PAWN,NORMAL,100,1,[기물 진화] 장기: 차,기물 진화,◆ 기본 말 1개 → [장기] 차,◆ 패시브: 없음\n◆ [1회] 직선 전차 저격: 직선 돌진 → 선두 적 처치 (없으면 다음 코너)\n※ 이미 가진 기물은 받을 수 없습니다,,,JANGGI_CHA,pawns/JANGGI_CHA.png
+EVO_3_3,TRUE,PAWN,NORMAL,100,1,[기물 진화] 장기: 마,기물 진화,◆ 기본 말 1개 → [장기] 마,◆ 패시브: 앞 칸 비면 +2칸\n※ 이미 가진 기물은 받을 수 없습니다,,,JANGGI_MA,pawns/JANGGI_MA.png
+EVO_3_4,TRUE,PAWN,NORMAL,100,1,[기물 진화] 장기: 상,기물 진화,◆ 기본 말 1개 → [장기] 상,◆ 패시브: 앞 칸 비면 +3칸\n※ 이미 가진 기물은 받을 수 없습니다,,,JANGGI_SANG,pawns/JANGGI_SANG.png
+EVO_4_1,TRUE,PAWN,NORMAL,100,1,[기물 진화] 모노폴리: 미니카,기물 진화,◆ 기본 말 1개 → [모노폴리] 미니카,◆ 패시브: 도착 칸 호텔 5턴 · 출발선 통과 시 카드 +1\n※ 이미 가진 기물은 받을 수 없습니다,,,MONO_CAR,pawns/MONO_CAR.png
+EVO_4_2,TRUE,PAWN,NORMAL,100,1,[기물 진화] 모노폴리: 비행기,기물 진화,◆ 기본 말 1개 → [모노폴리] 비행기,◆ 패시브: 옷장 → 더 먼 곳으로 워프\n◆ [1회] 직항 워프: 빵집·코너 중 1곳으로 직항\n※ 이미 가진 기물은 받을 수 없습니다,,,MONO_PLANE,pawns/MONO_PLANE.png
+EVO_4_3,TRUE,PAWN,NORMAL,100,1,[기물 진화] 모노폴리: 증기선,기물 진화,◆ 기본 말 1개 → [모노폴리] 증기선,◆ 패시브: 첫 적 설치물 무시·파괴\n※ 이미 가진 기물은 받을 수 없습니다,,,MONO_SHIP,pawns/MONO_SHIP.png
+EVO_4_4,TRUE,PAWN,NORMAL,100,1,[기물 진화] 모노폴리: 강아지,기물 진화,◆ 기본 말 1개 → [모노폴리] 강아지,◆ 패시브: 빵집 스침만 해도 카드 +1\n※ 이미 가진 기물은 받을 수 없습니다,,,MONO_DOG,pawns/MONO_DOG.png
+EVO_5_1,TRUE,PAWN,NORMAL,100,1,[기물 진화] 바둑: 흑돌,기물 진화,◆ 기본 말 1개 → [바둑] 흑돌,"◆ 패시브: 없음\n◆ [1회] 진짜 알까기 슈팅: 조준 발사 → 적 전원 출발선, 근처 안착\n※ 이미 가진 기물은 받을 수 없습니다",,,BADUK_BLACK,pawns/BADUK_BLACK.png
+EVO_5_2,TRUE,PAWN,NORMAL,100,1,[기물 진화] 바둑: 백돌,기물 진화,◆ 기본 말 1개 → [바둑] 백돌,◆ 패시브: 처치 면역 · 아군 보호 (눈금 -1)\n※ 이미 가진 기물은 받을 수 없습니다,,,BADUK_WHITE,pawns/BADUK_WHITE.png
+EVO_6_1,TRUE,PAWN,NORMAL,100,1,[기물 진화] 쇼기: 보병,기물 진화,◆ 기본 말 1개 → [쇼기] 보병,◆ 패시브: 반환점 이상 통과 시 토금 승급 (+1칸)\n◆ [1회] 모치고마 낙하: 대기 말 1개를 보병 옆에 즉시 낙하\n※ 이미 가진 기물은 받을 수 없습니다,,,SHOGI_FU,pawns/SHOGI_FU.png
+EVO_6_2,TRUE,PAWN,NORMAL,100,1,[기물 진화] 쇼기: 비차,기물 진화,◆ 기본 말 1개 → [쇼기] 비차,◆ 패시브: 이동 +2칸\n※ 이미 가진 기물은 받을 수 없습니다,,,SHOGI_HISHA,pawns/SHOGI_HISHA.png
+EVO_6_3,TRUE,PAWN,NORMAL,100,1,[기물 진화] 쇼기: 각행,기물 진화,◆ 기본 말 1개 → [쇼기] 각행,◆ 패시브: 코너 스치면 +2칸 · 승급 시 앞 1칸 처치\n※ 이미 가진 기물은 받을 수 없습니다,,,SHOGI_KAKU,pawns/SHOGI_KAKU.png
+EVO_6_4,TRUE,PAWN,NORMAL,100,1,[기물 진화] 쇼기: 계마,기물 진화,◆ 기본 말 1개 → [쇼기] 계마,◆ 패시브: 첫 2칸 함정·말 관통 · 승급 시 +1칸\n※ 이미 가진 기물은 받을 수 없습니다,,,SHOGI_KEIMA,pawns/SHOGI_KEIMA.png
+TOOL_YUT,TRUE,DICE,NORMAL,100,1,[판정 도구] 전통 박달나무 윷,판정 도구 교체,◆ 내 판정 도구 즉시 교체,,,,YUT,dice/DICE_YUT.png
+TOOL_HOLDEM,TRUE,DICE,NORMAL,100,1,[판정 도구] 텍사스 홀덤 딜러,판정 도구 교체,◆ 내 판정 도구 즉시 교체,,,,HOLDEM,dice/DICE_POKER.png
+TOOL_LIFE_ROULETTE,TRUE,DICE,NORMAL,100,1,[판정 도구] 인생게임 회전 룰렛,판정 도구 교체,◆ 내 판정 도구 즉시 교체,,,,LIFE_ROULETTE,dice/DICE_ROULETTE.png
+TOOL_CHINCHIRO,TRUE,DICE,NORMAL,100,1,[판정 도구] 지하노역장 친치로,판정 도구 교체,◆ 내 판정 도구 즉시 교체,,,,CHINCHIRO,dice/DICE_CHINCHIRO.png
+TOOL_SLOT_777,TRUE,DICE,NORMAL,100,1,[판정 도구] 777 슬롯머신,판정 도구 교체,◆ 내 판정 도구 즉시 교체,,,,SLOT_777,dice/DICE_SLOT.png
+TOOL_REVOLVER,TRUE,DICE,NORMAL,100,1,[판정 도구] 러시안 룰렛 리볼버,판정 도구 교체,◆ 내 판정 도구 즉시 교체,,,,REVOLVER,dice/REVOLVER.png
+TOOL_DICE_HWATU,TRUE,DICE,NORMAL,100,1,[판정 도구] 화투 패,판정 도구 교체,◆ 내 판정 도구 즉시 교체,,,,DICE_HWATU,dice/DICE_HWATU.png
+TOOL_DICE_MAHJONG,TRUE,DICE,NORMAL,100,1,[판정 도구] 리치 마작 만리장성,판정 도구 교체,◆ 내 판정 도구 즉시 교체,,,,DICE_MAHJONG,dice/DICE_MAHJONG.png
+TOOL_DICE_TAROT,TRUE,DICE,NORMAL,100,1,[판정 도구] 점성술사의 타로 덱,판정 도구 교체,◆ 내 판정 도구 즉시 교체,,,,DICE_TAROT,dice/DICE_TAROT.png
+TOOL_DICE_YACHT,TRUE,DICE,NORMAL,100,1,[판정 도구] 야추 다이스,판정 도구 교체,◆ 내 판정 도구 즉시 교체,,,,DICE_YACHT,dice/DICE_YACHT.png
+TOOL_DICE_BLACKJACK,TRUE,DICE,NORMAL,100,1,[판정 도구] 블랙잭 21 딜러,판정 도구 교체,◆ 내 판정 도구 즉시 교체,,,,DICE_BLACKJACK,dice/DICE_BLACKJACK.png
+TOOL_DICE_PINBALL,TRUE,DICE,NORMAL,100,1,[판정 도구] 클래식 구슬 핀볼,판정 도구 교체,◆ 내 판정 도구 즉시 교체,,,,DICE_PINBALL,dice/DICE_PINBALL.png
+AUG_LAW_01,TRUE,LAW,NORMAL,100,1,[교칙 제정] 지름길 공사 중,교칙 제정,◆ 점프 코너·포탈 작동 중지\n◆ 법전 즉시 등록 (4칸 초과 시 선입 삭제),,,,LAW_01,laws/LAW_01.png
+AUG_LAW_02,TRUE,LAW,NORMAL,100,1,[교칙 제정] 사회적 거리두기,교칙 제정,◆ 아군 말 업기(합체) 금지\n◆ 법전 즉시 등록 (4칸 초과 시 선입 삭제),,,,LAW_02,laws/LAW_02.png
+AUG_LAW_03,TRUE,LAW,NORMAL,100,1,[교칙 제정] 볼따구 평등법,교칙 제정,◆ 눈금 {p1}+ 이동 후 꼴찌 말과 위치 교환\n◆ 법전 즉시 등록 (4칸 초과 시 선입 삭제),,6,,LAW_03,laws/LAW_03.png
+AUG_LAW_04,TRUE,LAW,NORMAL,100,1,[교칙 제정] 짝수 니트로 부스터,교칙 제정,◆ 짝수 눈금이 나오면 이동 거리 +{p1}칸 증폭!\n◆ 법전 즉시 등록 (4칸 초과 시 선입 삭제),,3,,LAW_04,laws/LAW_04.png
+AUG_LAW_05,TRUE,LAW,NORMAL,100,1,[교칙 제정] 폭주 기관차,교칙 제정,◆ 적 처치 시 재굴림 대신 +{p1}칸 돌진\n◆ 법전 즉시 등록 (4칸 초과 시 선입 삭제),,3,,LAW_05,laws/LAW_05.png
+AUG_LAW_06,TRUE,LAW,NORMAL,100,1,[교칙 제정] 아우토반 무제한 과속,교칙 제정,◆ 눈금 {p2} 이상 굴림 시 +{p1}칸 추가 가속!\n◆ 법전 즉시 등록 (4칸 초과 시 선입 삭제),,3,5,LAW_06,laws/LAW_06.png
+AUG_LAW_07,TRUE,LAW,NORMAL,100,1,[교칙 제정] 강제 연대보증,교칙 제정,◆ 피격 시 상대 다른 말 1개 동반 처치\n◆ 법전 즉시 등록 (4칸 초과 시 선입 삭제),,,,LAW_07,laws/LAW_07.png
+AUG_LAW_08,TRUE,LAW,NORMAL,100,1,[교칙 제정] 결승선 문턱,교칙 제정,◆ 결승선은 정확한 눈금으로만 입장! 남으면 바로 앞에서 정지\n◆ 법전 즉시 등록 (4칸 초과 시 선입 삭제),,,,LAW_08,laws/LAW_08.png
+CARD_PACKAGE,TRUE,CARD,NORMAL,100,1,[카드 패키지] 생떼 카드 {p1}장,생떼 카드 패키지,◆ 무작위 생떼 카드 {p1}장 획득,,2,,CARD_PACKAGE,augments/CARD_PACKAGE.png
+SUPER_01,TRUE,CHAOS,PRISMA,50,1,[초증강] 판 뒤집기 (모 아니면 도),초증강 : 도박 & 억까,◆ 보드 위 내 말 1개를 무작위로 골라\n◆ {p1}% 즉시 결승선 완주!\n◆ 실패하면 출발선 추방 + 다음 턴 휴식,,50,,SUPER_01,augments/SUPER_01.png
+SUPER_02,TRUE,CHAOS,PRISMA,50,1,[초증강] 공산주의 재분배,초증강 : 도박 & 억까,◆ 1등의 가장 앞선 말 ↔ 내 가장 뒤처진 말 위치 강제 교환\n◆ 1등의 손패 카드 1장 강탈,,,,SUPER_02,augments/SUPER_02.png
+SUPER_03,TRUE,CHAOS,PRISMA,50,1,[초증강] 악마의 계약 (영구 가속),초증강 : 도박 & 억까,◆ 내 말 1개를 출발선으로 제물\n◆ 남은 게임 내내 내 모든 굴림 결과에 +{p1}칸,,3,,SUPER_03,augments/SUPER_03.png
+SUPER_04,TRUE,CHAOS,PRISMA,50,1,[초증강] 광란의 지뢰밭,초증강 : 도박 & 억까,◆ 빈 타일 {p1}곳에 은신 함정(거울의 힘 또는 지뢰) 일제 살포\n◆ 설치한 내 눈에는 위치가 보인다,,5,,SUPER_04,augments/SUPER_04.png
+SUPER_05,TRUE,CHAOS,PRISMA,50,1,[초증강] 도적단 대습격,초증강 : 도박 & 억까,◆ 카탄의 도적떼 {p1}마리 + 팩맨 고스트 {p2}마리 동시 소환\n◆ 판 전체가 아수라장!,,2,1,SUPER_05,augments/SUPER_05.png
+SUPER_06,TRUE,CHAOS,PRISMA,50,1,[초증강] 주사위 도박사의 영혼,초증강 : 도박 & 억까,◆ 이번 라운드 이동 거리 {p1}배(x{p1}) 증폭!\n◆ 단 눈금 {p2} 이하면 이동한 내 말이 과열되어 0번 출발선으로 사출,,2,1,SUPER_06,augments/SUPER_06.png
+SUPER_07,TRUE,CHAOS,PRISMA,50,1,[초증강] 강제 캐슬링 룰렛,초증강 : 도박 & 억까,◆ 보드 위 모든 플레이어 말의 위치를 무작위로 전부 섞는다,,,,SUPER_07,augments/SUPER_07.png
+SUPER_08,TRUE,CHAOS,PRISMA,50,1,[초증강] 에르핀의 빵집 털이,초증강 : 도박 & 억까,◆ 무작위 생떼 카드 {p1}장 획득\n◆ 모든 빵집 타일에 내 통행료 호텔 설치,,3,,SUPER_08,augments/SUPER_08.png
+SUPER_09,TRUE,CHAOS,PRISMA,50,1,[초증강] 저격수의 표적,초증강 : 도박 & 억까,◆ 가장 앞선 적 말 1개를 즉시 0번 출발선으로 장외 사출\n◆ 내 말 1개를 +{p1}칸 전진 + 그 자리에 스프링 대포 설치,,4,,SUPER_09,augments/SUPER_09.png
+SUPER_10,TRUE,CHAOS,PRISMA,50,1,[초증강] 독재자의 날조,초증강 : 도박 & 억까,◆ 중앙 법전을 전부 밀어내고 새 교칙 {p1}개 강제 등록\n◆ 내 말 1개 +{p2}칸 전진,,2,4,SUPER_10,augments/SUPER_10.png
+RULE_REVENGE_BOOST,TRUE,RULE,NORMAL,0,1,🔥 리벤지 부스터,규칙 수치,출발선으로 사출된 말이 다음 출발 때 이동 거리 +{p1}칸 (enabled=FALSE면 꺼짐),,4,,REVENGE,
+RULE_DASH_PAD,TRUE,RULE,NORMAL,0,1,⚡ 부스터 발판,규칙 수치,발판 칸에 멈추면 앞으로 {p1}칸 추가 전진 (enabled=FALSE면 꺼짐),,3,,DASH,
+RULE_LEAPFROG,TRUE,RULE,NORMAL,0,1,🏃 말 밟고 점프,규칙 수치,"경로 중간의 말 하나마다 +{p1}칸, 한 번에 최대 +{p2}칸 (enabled=FALSE면 꺼짐)",,1,3,LEAPFROG,

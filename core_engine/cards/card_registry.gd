@@ -28,7 +28,9 @@ const DECK_COMPOSITION: Dictionary = {
 
 static func get_card(card_id: StringName) -> BaseCard:
 	if _cache.has(card_id):
-		return _cache[card_id]
+		var cached: BaseCard = _cache[card_id]
+		cached.display_name = GameData.text("cards", card_id, "name", cached.display_name)
+		return cached
 	var card: BaseCard = null
 	match card_id:
 		&"ACT_01": card = CardUnoReverse.new()
@@ -51,20 +53,39 @@ static func get_card(card_id: StringName) -> BaseCard:
 		push_error("CardRegistry: 알 수 없는 카드 ID '%s'" % card_id)
 		return null
 	_cache[card_id] = card
+	card.display_name = GameData.text("cards", card_id, "name", card.display_name)  # cards_table.csv의 name
 	return card
+
+
+## 이 카드가 덱과 카드 패키지 풀에 들어가는가 (cards_table.csv enabled).
+static func is_enabled(card_id: StringName) -> bool:
+	return GameData.enabled("cards", card_id)
+
+
+## 카드 한 종류의 덱 장수: cards_table.csv param_2가 있으면 그것, 없으면 코드 기본값. 꺼진 카드는 0장.
+static func deck_copies(card_id: StringName) -> int:
+	if not is_enabled(card_id):
+		return 0
+	return maxi(GameData.param("cards", card_id, 2, int(DECK_COMPOSITION.get(card_id, 0))), 0)
+
+
+## 카드의 수치(param_1). 표에 없거나 비어 있으면 default.
+static func param(card_id: StringName, default: int) -> int:
+	return GameData.param("cards", card_id, 1, default)
 
 
 ## 구현된 모든 카드 ID (증강 '생떼 카드 패키지'가 무작위로 뽑는 풀).
 static func all_ids() -> Array[StringName]:
 	var ids: Array[StringName] = []
 	for card_id: StringName in DECK_COMPOSITION.keys():
-		ids.append(card_id)
+		if is_enabled(card_id):
+			ids.append(card_id)
 	return ids
 
 
 static func default_deck() -> Array[StringName]:
 	var deck: Array[StringName] = []
 	for card_id: StringName in DECK_COMPOSITION:
-		for i: int in int(DECK_COMPOSITION[card_id]):
+		for i: int in deck_copies(card_id):
 			deck.append(card_id)
 	return deck

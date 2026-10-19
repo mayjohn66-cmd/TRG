@@ -17,18 +17,73 @@ const DICTATOR: StringName = &"SUPER_10"       # 독재자의 날조
 
 const ALL_IDS: Array[StringName] = [FLIP, REDISTRIBUTE, DEVIL, MINEFIELD, RAID, GAMBLER, CASTLING, BAKERY, SNIPER, DICTATOR]
 
+## 수치 기본값 (content_trickcal/data/augments_table.csv의 param_1·param_2가 비어 있을 때만 쓴다).
 const FLIP_FINISH_CHANCE_PERCENT: int = 50
 const DEVIL_BONUS: int = 3
 const MINEFIELD_COUNT: int = 5
 const RAID_ROBBERS: int = 2
+const RAID_GHOSTS: int = 1
 const BAKERY_CARDS: int = 3
 const SNIPER_ADVANCE: int = 4
 const DICTATOR_LAWS: int = 2
 const DICTATOR_ADVANCE: int = 4
+const GAMBLER_MULTIPLIER: int = 2
+const GAMBLER_OVERHEAT_AT: int = 1
+
+
+## CSV 수치 (param_index 1·2). 표에 없거나 비어 있으면 default.
+static func param(effect: StringName, param_index: int, default: int) -> int:
+	return GameData.param("augments", effect, param_index, default)
+
+
+static func flip_chance() -> int:
+	return clampi(param(FLIP, 1, FLIP_FINISH_CHANCE_PERCENT), 0, 100)
+
+
+static func devil_bonus() -> int:
+	return param(DEVIL, 1, DEVIL_BONUS)
+
+
+static func minefield_count() -> int:
+	return maxi(param(MINEFIELD, 1, MINEFIELD_COUNT), 0)
+
+
+static func raid_robbers() -> int:
+	return maxi(param(RAID, 1, RAID_ROBBERS), 0)
+
+
+static func raid_ghosts() -> int:
+	return maxi(param(RAID, 2, RAID_GHOSTS), 0)
+
+
+static func bakery_cards() -> int:
+	return maxi(param(BAKERY, 1, BAKERY_CARDS), 0)
+
+
+static func sniper_advance() -> int:
+	return maxi(param(SNIPER, 1, SNIPER_ADVANCE), 0)
+
+
+static func dictator_laws() -> int:
+	return maxi(param(DICTATOR, 1, DICTATOR_LAWS), 0)
+
+
+static func dictator_advance() -> int:
+	return maxi(param(DICTATOR, 2, DICTATOR_ADVANCE), 0)
+
+
+## 도박사의 영혼: 이동 거리 배수와, 이 눈금 이하면 과열되는 기준.
+static func gambler_multiplier() -> int:
+	return maxi(param(GAMBLER, 1, GAMBLER_MULTIPLIER), 1)
+
+
+static func gambler_overheat_at() -> int:
+	return param(GAMBLER, 2, GAMBLER_OVERHEAT_AT)
+
 
 ## 효과 ID -> [이름, 카드 설명].
 const INFO: Dictionary = {
-	FLIP: ["판 뒤집기 (모 아니면 도)", "◆ 보드 위 내 말 1개를 무작위로 골라\n◆ 50% 즉시 결승선 완주!\n◆ 50% 출발선 추방 + 다음 턴 휴식"],
+	FLIP: ["판 뒤집기 (모 아니면 도)", "◆ 보드 위 내 말 1개를 무작위로 골라\n◆ 50% 즉시 결승선 완주!\n◆ 실패하면 출발선 추방 + 다음 턴 휴식"],
 	REDISTRIBUTE: ["공산주의 재분배", "◆ 1등의 가장 앞선 말 ↔ 내 가장 뒤처진 말 위치 강제 교환\n◆ 1등의 손패 카드 1장 강탈"],
 	DEVIL: ["악마의 계약 (영구 가속)", "◆ 내 말 1개를 출발선으로 제물\n◆ 남은 게임 내내 내 모든 굴림 결과에 +3칸"],
 	MINEFIELD: ["광란의 지뢰밭", "◆ 빈 타일 5곳에 은신 함정(거울의 힘 또는 지뢰) 일제 살포\n◆ 설치한 내 눈에는 위치가 보인다"],
@@ -137,7 +192,7 @@ static func _apply_flip(state: GameState, player_id: int) -> Dictionary:
 	if mine.is_empty():
 		return {"ok": false, "text": "보드 위에 내 말이 없습니다"}
 	var pawn: PlayerPawn = mine[state.rng.randi_range(0, mine.size() - 1)]
-	if state.rng.randi_range(0, 99) < FLIP_FINISH_CHANCE_PERCENT:
+	if state.rng.randi_range(0, 99) < flip_chance():
 		state.finish_stack(pawn)
 		return {"ok": true, "text": "판 뒤집기 성공! 말 %d번이 즉시 결승선에 완주했습니다" % pawn.slot}
 	state.send_to_start(pawn, player_id)
@@ -170,8 +225,8 @@ static func _apply_devil(state: GameState, player_id: int) -> Dictionary:
 	# 가장 뒤처진(결승에서 먼) 보드 위 말을 바친다
 	var sacrifice: PlayerPawn = sorted_by_progress(state, mine)[mine.size() - 1]
 	state.send_to_start(sacrifice, player_id)
-	state.permanent_roll_bonus[player_id] = int(state.permanent_roll_bonus.get(player_id, 0)) + DEVIL_BONUS
-	return {"ok": true, "text": "말 %d번을 제물로 바치고 영구 +%d칸 가속 계약!" % [sacrifice.slot, DEVIL_BONUS]}
+	state.permanent_roll_bonus[player_id] = int(state.permanent_roll_bonus.get(player_id, 0)) + devil_bonus()
+	return {"ok": true, "text": "말 %d번을 제물로 바치고 영구 +%d칸 가속 계약!" % [sacrifice.slot, devil_bonus()]}
 
 
 ## 빈 타일: 결승 칸이 아니고 설치물이 없는 칸.
@@ -190,7 +245,7 @@ static func _apply_minefield(state: GameState, player_id: int) -> Dictionary:
 	if empty.is_empty():
 		return {"ok": false, "text": "함정을 깔 빈 타일이 없습니다"}
 	var placed: Array[int] = []
-	for i: int in mini(MINEFIELD_COUNT, empty.size()):
+	for i: int in mini(minefield_count(), empty.size()):
 		var pick: int = state.rng.randi_range(0, empty.size() - 1)
 		var tile: int = empty[pick]
 		empty.remove_at(pick)
@@ -208,9 +263,10 @@ static func _apply_raid(state: GameState, player_id: int) -> Dictionary:
 	var spawned_robbers: int = 0
 	var spawned_ghost: int = 0
 	var order: Array[StringName] = []
-	for i: int in RAID_ROBBERS:
+	for i: int in raid_robbers():
 		order.append(&"SUM_01")
-	order.append(&"SUM_02")
+	for i: int in raid_ghosts():
+		order.append(&"SUM_02")
 	for id: StringName in order:
 		if state.npcs.size() >= GameEnums.MAX_NPCS:
 			break
@@ -226,7 +282,7 @@ static func _apply_raid(state: GameState, player_id: int) -> Dictionary:
 
 static func _apply_gambler(state: GameState, player_id: int) -> Dictionary:
 	state.gambler_round[player_id] = state.round_number
-	return {"ok": true, "text": "이번 라운드 이동 거리 2배! (눈금 1 이하면 이동한 말이 과열되어 출발선으로 사출)"}
+	return {"ok": true, "text": "이번 라운드 이동 거리 %d배! (눈금 %d 이하면 이동한 말이 과열되어 출발선으로 사출)" % [gambler_multiplier(), gambler_overheat_at()]}
 
 
 static func _apply_castling(state: GameState) -> Dictionary:
@@ -244,7 +300,7 @@ static func _apply_castling(state: GameState) -> Dictionary:
 static func _apply_bakery(state: GameState, player_id: int) -> Dictionary:
 	var pool: Array[StringName] = CardRegistry.all_ids()
 	var names: Array[String] = []
-	for i: int in BAKERY_CARDS:
+	for i: int in bakery_cards():
 		var picked: StringName = pool[state.rng.randi_range(0, pool.size() - 1)]
 		if state.give_card(player_id, picked):
 			names.append(CardRegistry.get_card(picked).display_name)
@@ -275,8 +331,8 @@ static func _apply_sniper(state: GameState, player_id: int) -> Dictionary:
 				booster = candidate
 				break
 	if booster != null:
-		MoveExecutor.forced_advance(state, booster, SNIPER_ADVANCE)
-	return {"ok": true, "text": "선두 적 말을 출발선으로 사출하고 내 말 +%d칸! 그 자리에 스프링 대포를 깔았습니다" % SNIPER_ADVANCE}
+		MoveExecutor.forced_advance(state, booster, sniper_advance())
+	return {"ok": true, "text": "선두 적 말을 출발선으로 사출하고 내 말 +%d칸! 그 자리에 스프링 대포를 깔았습니다" % sniper_advance()}
 
 
 static func _apply_dictator(state: GameState, player_id: int) -> Dictionary:
@@ -284,17 +340,21 @@ static func _apply_dictator(state: GameState, player_id: int) -> Dictionary:
 	if mine.is_empty():
 		return {"ok": false, "text": "전진시킬 내 말이 없습니다"}
 	var old_ids: Array[String] = state.rulebook.law_ids()
-	var fresh: Array[String] = []
+	var pool: Array[String] = []
 	for id: String in LawRegistry.ALL_IDS:
+		if GameData.enabled("augments", "AUG_%s" % id):  # CSV에서 꺼 둔 교칙은 날조 대상에서도 빠진다
+			pool.append(id)
+	if pool.is_empty():
+		pool.assign(LawRegistry.ALL_IDS)
+	var fresh: Array[String] = []
+	for id: String in pool:
 		if not old_ids.has(id):
 			fresh.append(id)
-	if fresh.size() < DICTATOR_LAWS:
-		fresh = []
-		for id: String in LawRegistry.ALL_IDS:
-			fresh.append(id)
+	if fresh.size() < dictator_laws():
+		fresh = pool.duplicate()
 	state.rulebook.set_laws_from_ids([])
 	var chosen: Array[String] = []
-	for i: int in DICTATOR_LAWS:
+	for i: int in dictator_laws():
 		var pick: int = state.rng.randi_range(0, fresh.size() - 1)
 		chosen.append(fresh[pick])
 		fresh.remove_at(pick)
@@ -304,8 +364,8 @@ static func _apply_dictator(state: GameState, player_id: int) -> Dictionary:
 	var ctx := RuleContext.new()
 	ctx.state = state
 	ctx.actor_id = player_id
-	ctx.dice_value = DICTATOR_ADVANCE
-	ctx.raw_roll = DICTATOR_ADVANCE
+	ctx.dice_value = dictator_advance()
+	ctx.raw_roll = dictator_advance()
 	ctx.charge_depth = 1  # 이미 바뀐 새 법전이 이 전진을 다시 변조하지 않게 한다
 	MoveExecutor.execute(state, mover, ctx)
-	return {"ok": true, "text": "법전을 갈아엎고 새 교칙 %d개를 제정, 말 %d번 +%d칸 전진!" % [chosen.size(), mover.slot, DICTATOR_ADVANCE]}
+	return {"ok": true, "text": "법전을 갈아엎고 새 교칙 %d개를 제정, 말 %d번 +%d칸 전진!" % [chosen.size(), mover.slot, dictator_advance()]}

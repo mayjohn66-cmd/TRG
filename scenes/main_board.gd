@@ -140,6 +140,12 @@ const CARD_SUMMARIES: Dictionary = {
 }
 
 
+## 카드 확대 요약: cards_table.csv의 desc({p1}·{p2}는 param 값으로 바뀜), 비어 있으면 위 CARD_SUMMARIES 기본 문구.
+static func card_summary(card_id: StringName) -> String:
+	var text: String = GameData.text("cards", card_id, "desc", str(CARD_SUMMARIES.get(card_id, "")))
+	return text.replace("{p1}", str(GameData.param("cards", card_id, 1, 0))).replace("{p2}", str(GameData.param("cards", card_id, 2, 0)))
+
+
 ## 비어 있는 법전 슬롯에 그리는 어두운 점선 테두리.
 class DashedBorder extends Control:
 	var line_color: Color = Color("4a5368")
@@ -730,7 +736,7 @@ func _bind_state() -> void:
 			_capture_cutin.cancel())
 	state.pawn_sent_to_start.connect(func(pawn_id: int, by_player: int) -> void:
 		var victim: PlayerPawn = state.get_pawn(pawn_id)
-		_log_line("%s 출발선으로 복귀%s" % [_pawn_name(pawn_id), "  [🔥 복수 부스터 획득: 다음 출발 +%d칸]" % GameEnums.REVENGE_BONUS if victim != null and victim.revenge_boost else ""], Color("ff8787"))
+		_log_line("%s 출발선으로 복귀%s" % [_pawn_name(pawn_id), "  [🔥 복수 부스터 획득: 다음 출발 +%d칸]" % GameData.revenge_bonus() if victim != null and victim.revenge_boost else ""], Color("ff8787"))
 		if victim != null:
 			_avatar_react(victim.owner_id, AvatarSlot.Emotion.ANGRY)
 			if by_player != victim.owner_id and _player_ids.has(by_player):
@@ -742,12 +748,12 @@ func _bind_state() -> void:
 			_enqueue_late(_play_capture_eject.bind(pawn_id, by_player, victim.owner_id, cutin_capture), pawn_id))
 	state.revenge_boost_fired.connect(_on_revenge_boost_fired)
 	state.dash_pad_triggered.connect(func(pawn_id: int, tile: int) -> void:
-		_log_line("[부스터 발판] %s %d번 발판! +%d칸 추가 전진" % [_pawn_name(pawn_id), tile, GameEnums.DASH_STEPS], Color("63e6be"))
+		_log_line("[부스터 발판] %s %d번 발판! +%d칸 추가 전진" % [_pawn_name(pawn_id), tile, GameData.dash_steps()], Color("63e6be"))
 		var pad_pos: Vector2 = (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + _tile_center(tile)
 		_fx_when_announced(func() -> void:
 			Sfx.play(&"good", -4.0, 0.0, 1.3)
 			_impact_ring(pad_pos, Color("63e6be"), 46.0)
-			_floating_badge(pad_pos + Vector2(0, -30), "[⚡ 부스터 발판! +%d칸 추가 전진!]" % GameEnums.DASH_STEPS, Color("63e6be"))
+			_floating_badge(pad_pos + Vector2(0, -30), "[⚡ 부스터 발판! +%d칸 추가 전진!]" % GameData.dash_steps(), Color("63e6be"))
 			_fx_until_msec = maxi(_fx_until_msec, Time.get_ticks_msec() + int(300.0 * _motion_pace()))))
 	state.pawn_finished.connect(func(pawn_id: int) -> void:
 		_log_line("[완주] %s 완주!" % _pawn_name(pawn_id), Color("69db7c"))
@@ -815,7 +821,7 @@ func _bind_state() -> void:
 				get_tree().create_timer(0.25).timeout.connect(func() -> void:
 					_profile_react(trapped_owner, false, ["[억까!]", "[으악!]"][randi() % 2])))
 		_log_line("[설치물] %d번 타일 %s 발동! (%s)" % [tile, _attachment_name(id), _pawn_name(pawn_id)], Color("ff6b6b"))
-		_announce_gate("함정 발동", "[발동!] %s" % _attachment_name(id), "%s\n%d번 타일에서 %s에게 발동" % [str(CARD_SUMMARIES.get(StringName(id), "")), tile, _pawn_name(pawn_id)], Color("ff6b6b"), null, 1.2))
+		_announce_gate("함정 발동", "[발동!] %s" % _attachment_name(id), "%s\n%d번 타일에서 %s에게 발동" % [card_summary(StringName(id)), tile, _pawn_name(pawn_id)], Color("ff6b6b"), null, 1.2))
 	state.npc_vanished.connect(func(npc_id: int, tile: int) -> void:
 		_announce("중립 기물", "NPC가 사냥을 마치고 사라졌습니다", "%d번 타일 - 중립 기물은 한 번 잡으면 사라집니다" % tile, Color("fa5252"), null, 1.3))
 	state.attachment_placed.connect(func(tile: int, id: String, owner_id: int) -> void:
@@ -1805,7 +1811,7 @@ func _tile_color(index: int, tile_type: TileNode.TileType) -> Color:
 func _tile_tag(index: int, tile_type: TileNode.TileType) -> String:
 	var base: String = _tile_tag_base(index, tile_type)
 	if BoardSpec.dash_tiles.has(index):
-		var dash: String = "⚡ 부스터 발판 (멈추면 +%d칸)" % GameEnums.DASH_STEPS
+		var dash: String = "⚡ 부스터 발판 (멈추면 +%d칸)" % GameData.dash_steps()
 		return dash if base.is_empty() else "%s · %s" % [base, dash]
 	return base
 
@@ -2226,7 +2232,7 @@ func _revenge_charged_popup(player_id: int) -> void:
 	var at: Vector2 = get_global_transform().affine_inverse() * panel.get_global_rect().get_center()
 	at.x = clampf(at.x, 230.0, size.x - 230.0)  # 긴 문구가 화면 밖으로 잘리지 않게
 	at.y = clampf(at.y, 60.0, size.y - 60.0)
-	_floating_badge(at, "[🔥 복수심 장전! (다음 출격 시 +%d칸)]" % GameEnums.REVENGE_BONUS, Color("ff922b"))
+	_floating_badge(at, "[🔥 복수심 장전! (다음 출격 시 +%d칸)]" % GameData.revenge_bonus(), Color("ff922b"))
 	_fx_until_msec = maxi(_fx_until_msec, Time.get_ticks_msec() + int(450.0 * _motion_pace()))
 
 
@@ -2275,7 +2281,7 @@ func _play_rocket(pawn_id: int, to_pos: Vector2, to_scale: float, tile: int) -> 
 		return
 	screen_shake(7.0, 0.22)
 	_impact_ring(view.position, Color("ff6b00"), 50.0)
-	_floating_badge(view.position + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + Vector2(0, -42), "🔥 부스터 +%d칸!" % GameEnums.REVENGE_BONUS, Color("ff922b"))
+	_floating_badge(view.position + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + Vector2(0, -42), "🔥 부스터 +%d칸!" % GameData.revenge_bonus(), Color("ff922b"))
 
 
 ## 로켓 화염 잔상 한 점: 주황 원이 커지며 사라진다.
@@ -2607,7 +2613,7 @@ func _paint_revenge_glow(host: Control, on: bool) -> void:
 		frame.shadow_size = 6
 		glow.add_theme_stylebox_override("panel", frame)
 		host.add_child(glow)
-		var badge: Label = _make_label("🔥출격 +%d" % GameEnums.REVENGE_BONUS, 10, Color("fff4e6"))
+		var badge: Label = _make_label("🔥출격 +%d" % GameData.revenge_bonus(), 10, Color("fff4e6"))
 		badge.name = "RevengeBadge"
 		badge.add_theme_constant_override("outline_size", 4)
 		badge.add_theme_color_override("font_outline_color", Color("8a2b00"))
@@ -2811,7 +2817,7 @@ func _card_frame_style(category: GameEnums.CardCategory, glow: bool, radius: int
 ## 크기가 다른 손패와 상세 카드는 텍스트 영역을 각각 배치한다.
 func _build_card_body(card_id: StringName, card_size: Vector2, detail_mode: bool = false) -> Control:
 	var card: BaseCard = CardRegistry.get_card(card_id)
-	var summary: String = str(CARD_SUMMARIES.get(card_id, "")) if detail_mode else str(CARD_SHORT.get(card_id, ""))
+	var summary: String = card_summary(card_id) if detail_mode else str(CARD_SHORT.get(card_id, ""))
 	return CardSkin.body(card, card_size, summary, CARD_CATEGORY_NAMES[card.category], detail_mode)
 
 
@@ -2827,7 +2833,8 @@ func _make_card_view(player_id: int, card_id: StringName) -> PanelContainer:
 	var glow_style: StyleBoxFlat = _card_frame_style(card.category, true)
 	view.add_theme_stylebox_override("panel", idle_style)
 	view.modulate = Color.WHITE if usable else Color(0.62, 0.62, 0.68)
-	view.tooltip_text = "%s (%s) - %s\n%s" % [card.display_name, card_id, _category_text(card.category), CARD_SUMMARIES.get(card_id, "")]
+	var quote: String = GameData.text("cards", card_id, "parody_quote")
+	view.tooltip_text = "%s (%s) - %s\n%s%s" % [card.display_name, card_id, _category_text(card.category), card_summary(card_id), ("\n“%s”" % quote) if quote != "" else ""]
 	view.add_child(_build_card_body(card_id, HAND_CARD_SIZE))
 	view.gui_input.connect(_on_card_gui_input.bind(player_id, card_id, view))
 	view.set_meta("idle_style", idle_style)
@@ -3190,7 +3197,7 @@ func _fill_pawn_tip(pawn_id: int) -> void:
 	if pawn.is_promoted_shogi():
 		status += "  ★나리 승급(+1칸)"
 	if pawn.revenge_boost and not pawn.has_left_start:
-		status += "\n🔥 리벤지 부스터 활성화: 이번 출격 시 이동 거리 +%d칸!" % GameEnums.REVENGE_BONUS
+		status += "\n🔥 리벤지 부스터 활성화: 이번 출격 시 이동 거리 +%d칸!" % GameData.revenge_bonus()
 	_tip_title.text = "%s  - P%d%s" % [PawnCatalog.full_name(pawn.kind, pawn.unit_no), pawn.owner_id, status]
 	_tip_ability.text = "◆ 패시브: %s" % PawnCatalog.ability_text(pawn.kind, pawn.unit_no)
 	var skill: StringName = PawnCatalog.skill_of(pawn.sub_type())
@@ -3454,7 +3461,7 @@ func _refresh_pawn_dock() -> void:
 		elif pawn.is_imprisoned:
 			place = "감옥"
 		elif pawn.revenge_boost and not pawn.has_left_start:
-			place = "🔥+%d" % GameEnums.REVENGE_BONUS
+			place = "🔥+%d" % GameData.revenge_bonus()
 		(parts["place"] as Label).text = place
 		_paint_revenge_glow(button, pawn.revenge_boost and not pawn.has_left_start and not pawn.is_finished)
 		var badge: Label = parts["badge"]
@@ -3667,7 +3674,7 @@ func _refresh_select_banner() -> void:
 		elif pawn.is_imprisoned:
 			status = "감옥"
 		elif not pawn.has_left_start and pawn.revenge_boost:
-			status = "🔥 출격 +%d (리벤지 부스터)" % GameEnums.REVENGE_BONUS
+			status = "🔥 출격 +%d (리벤지 부스터)" % GameData.revenge_bonus()
 		elif not pawn.has_left_start:
 			status = "출발 대기"
 		else:
@@ -3813,7 +3820,7 @@ func _refresh_tool_board(tool: BaseJudgmentTool, player_id: int) -> void:
 	_tool_icon_label.visible = _tool_icon_art.texture == null
 	_tool_title.text = tool.display_name
 	_tool_title.add_theme_color_override("font_color", UiSkin.INK)
-	_tool_main.text = card[2]
+	_tool_main.text = GameData.text("dice", tool.tool_id, "desc", str(card[2]))  # dice_table.csv의 desc
 	var rules: Dictionary = TOOL_RULES.get(tool.tool_id, {})
 	var sub: String = card[3]
 	_tool_sub.text = sub
@@ -5557,7 +5564,7 @@ func _on_duel_resolved(data: Dictionary) -> void:
 		return
 	var winner: int = int(data["winner"])
 	var loser: int = int(data["loser"])
-	_log_line("[결투] %s이(가) %s의 %s(%d번)을(를) 출발선으로 사출시켰습니다!%s" % [_player_name(winner), _player_name(loser), _pawn_name(pawn_id), int(data["from"]), "  승자의 %s +%d칸 전진 (%d번 → %d번)" % [_pawn_name(int(data["boost_pawn_id"])), DuelRules.WINNER_ADVANCE, int(data["boost_from"]), int(data["boost_to"])] if int(data["boost_pawn_id"]) != -1 else ""], Color("ff6b6b"))
+	_log_line("[결투] %s이(가) %s의 %s(%d번)을(를) 출발선으로 사출시켰습니다!%s" % [_player_name(winner), _player_name(loser), _pawn_name(pawn_id), int(data["from"]), "  승자의 %s +%d칸 전진 (%d번 → %d번)" % [_pawn_name(int(data["boost_pawn_id"])), DuelRules.winner_advance(), int(data["boost_from"]), int(data["boost_to"])] if int(data["boost_pawn_id"]) != -1 else ""], Color("ff6b6b"))
 	if not _fx_on():
 		return
 	Sfx.play(&"shot")
@@ -5921,7 +5928,10 @@ func _augment_card_info(definition: AugmentDef, player_id: int) -> Dictionary:
 	for line: String in definition.describe(state, player_id).split("\n"):
 		if not line.begins_with("※"):
 			lines.append(line)
-	return {"glyph": glyph, "color": color, "title": title, "desc": "\n".join(lines), "category": AugmentDef.category_name(definition.category), "art": AugmentArt.load_first(AugmentArt.candidates(definition)), "super": definition.category == GameEnums.AugmentCategory.SUPER_GAMBLE}
+	if definition.title != "":
+		title = definition.title  # augments_table.csv의 title
+	var tag_text: String = definition.subtitle if definition.subtitle != "" else AugmentDef.category_name(definition.category)
+	return {"glyph": glyph, "color": color, "title": title, "desc": "\n".join(lines), "category": tag_text, "art": AugmentArt.load_first(AugmentArt.candidates(definition)), "super": definition.category == GameEnums.AugmentCategory.SUPER_GAMBLE, "tier": definition.tier}
 
 
 ## 150px 후광 / 120px 네온 메달 / 110px 원형 이미지. 이미지가 없으면 글자.
@@ -5984,11 +5994,18 @@ func _make_augment_card(info: Dictionary, on_pick: Callable) -> Button:
 	var box: StyleBoxFlat = _style(Color("12151f"), color, 3, 16, 8, 0)
 	box.shadow_color = Color(color.r, color.g, color.b, 0.35)
 	box.shadow_offset = Vector2.ZERO
-	if bool(info.get("super", false)):
-		# 초증강: 보라색 네온 후광 + 황금 테두리
+	var tier: String = str(info.get("tier", "NORMAL"))
+	if tier == "PRISMA":
+		# PRISMA(초증강 기본): 보라색 네온 후광 + 황금 테두리
 		box = _style(Color("160c26"), Color("ffd43b"), 5, 16, 8, 0)
 		box.shadow_color = Color(0.62, 0.3, 0.95, 0.85)
 		box.shadow_size = 22
+		box.shadow_offset = Vector2.ZERO
+	elif tier == "GOLD":
+		# GOLD: 황금 테두리와 금빛 후광
+		box = _style(Color("1a1608"), Color("ffd43b"), 4, 16, 8, 0)
+		box.shadow_color = Color(1.0, 0.83, 0.23, 0.6)
+		box.shadow_size = 16
 		box.shadow_offset = Vector2.ZERO
 	for style_name: String in ["normal", "hover", "pressed", "focus", "disabled"]:
 		card.add_theme_stylebox_override(style_name, box)
@@ -6655,7 +6672,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_avatar_react(int(data["player_id"]), AvatarSlot.Emotion.HAPPY)
 			var card: BaseCard = CardRegistry.get_card(data["card_id"])
 			_log_line("[카드] P%d [%s] 사용%s" % [data["player_id"], card.display_name, " (개입 대기열 - 나중에 낸 카드부터 실행)" if data["queued"] else ""], Color("74c0fc"))
-			_announce_gate("카드 발동", "[P%d 발동!] %s" % [data["player_id"], card.display_name], ("개입 대기열 등록 (후입선출)\n" if data["queued"] else "") + str(CARD_SUMMARIES.get(data["card_id"], "")), PLAYER_COLORS[int(data["player_id"])], _make_card_preview(data["card_id"]), 1.2)
+			_announce_gate("카드 발동", "[P%d 발동!] %s" % [data["player_id"], card.display_name], ("개입 대기열 등록 (후입선출)\n" if data["queued"] else "") + card_summary(data["card_id"]), PLAYER_COLORS[int(data["player_id"])], _make_card_preview(data["card_id"]), 1.2)
 		&"npc_phase_resolved":
 			if not (data["reports"] as Array).is_empty():
 				# 중립 NPC 이동: 안내 카드가 먼저 뜨고(0.6초), 카드가 끝난 뒤 한 칸 점프(0.35초)하며, 말을 잡으면 처치 알림이 이어진다.
@@ -6685,7 +6702,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 		&"pawn_pushed_back":
 			_log_line("[백돌 무적] 백돌에 막혀 %s이(가) %d번 → %d번으로 밀려났습니다" % [_pawn_name(int(data["pawn_id"])), data["from"], data["to"]], Color("b197fc"))
 		&"bomb_applied":
-			_log_line("[우노 +4] P%d의 %s이(가) 출발선으로 장외 사출! 내 말은 +%d칸 전진" % [data["victim"], _pawn_name(int(data["pawn_id"])), PenaltyBombCommand.ADVANCE_STEPS], Color("ffd43b"))
+			_log_line("[우노 +4] P%d의 %s이(가) 출발선으로 장외 사출! 내 말은 +%d칸 전진" % [data["victim"], _pawn_name(int(data["pawn_id"])), PenaltyBombCommand.advance_steps()], Color("ffd43b"))
 			_fx_bang(int(data["shooter"]), int(data["pawn_id"]))
 			_react_hit_pawn(int(data["pawn_id"]))
 		&"game_over":

@@ -93,6 +93,11 @@ static func body(card: BaseCard, card_size: Vector2, summary_text: String, categ
 	var art_h: float = detail_y - art_y - (12.0 if detailed else 6.0) * k
 	var art: Panel = panel(holder, "ArtWindow", Rect2(margin, art_y, width, art_h), PANEL, GREEN, maxi(1, roundi(2 * k)), roundi(10 * k))
 	var art_path: String = "res://assets/cards/%s.png" % card.card_id
+	var table_icon: String = GameData.text("cards", card.card_id, "icon_file")  # cards_table.csv의 icon_file
+	if table_icon != "":
+		var candidate: String = table_icon if table_icon.begins_with("res://") else "res://assets/cards/" + table_icon
+		if ResourceLoader.exists(candidate):
+			art_path = candidate
 	if ResourceLoader.exists(art_path):
 		var picture := TextureRect.new()
 		picture.name = "CardArt"

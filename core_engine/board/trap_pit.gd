@@ -15,7 +15,7 @@ func _init(owner: int = -1) -> void:
 
 func on_step_trigger(victim: BoardEntity, ctx: RuleContext) -> bool:
 	var pawn: PlayerPawn = victim as PlayerPawn
-	if pawn == null or pawn.owner_id == owner_id or absi(ctx.dice_value) < MIN_DICE:
+	if pawn == null or pawn.owner_id == owner_id or absi(ctx.dice_value) < CardRegistry.param(&"TRP_02", MIN_DICE):  # cards_table.csv TRP_02 param_1
 		return false
 	ctx.metadata["cutscene_id"] = &"trap_pit"
 	pawn.restrained_turns = RESTRAIN_TURNS

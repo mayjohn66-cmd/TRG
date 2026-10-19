@@ -12,6 +12,25 @@ var payload: Variant = null
 ## 기물 지급 증강에서 이 선택지가 주는 세부 기물의 호기 번호들 (같은 병종이 여러 호기일 수 있다: 바둑 흑돌 = 1·3호기).
 var units: Array[int] = []
 
+# --- augments_table.csv가 덮어쓰는 값 (표에 행이 없으면 기본값 그대로) -----------------------------------
+## FALSE면 드래프트 풀에서 제외된다.
+var enabled: bool = true
+## NORMAL / GOLD / PRISMA: 선택 카드 테두리 연출.
+var tier: String = "NORMAL"
+## 드래프트 등장 가중치(기본 100). 같은 계열 안에서 후보를 고르는 비율과, 계열이 뽑히는 비율에 쓰인다.
+var weight: int = 100
+## 이 라운드부터 등장한다.
+var min_round: int = 1
+## 선택 카드 제목·계열 표시·설명·족보 요약 (비어 있으면 코드의 기본 문구).
+var title: String = ""
+var subtitle: String = ""
+var desc: String = ""
+var spec_preview: String = ""
+var param_1: String = ""
+var param_2: String = ""
+var target_ref: String = ""
+var icon_file: String = ""
+
 
 func _init(id: StringName, augment_category: GameEnums.AugmentCategory, name: String, value: Variant = null, unit_list: Array[int] = []) -> void:
 	augment_id = id
@@ -42,16 +61,21 @@ func _free_units_for(state: GameState, player_id: int) -> Array[int]:
 
 ## 이 플레이어에게 지금 제시할 수 있는 선택지인가.
 func is_available(state: GameState, player_id: int) -> bool:
+	if not enabled or state.round_number < min_round:
+		return false
 	match category:
 		GameEnums.AugmentCategory.PAWN_EVOLUTION:
 			# 이미 그 세부 기물을 가지고 있으면(받을 호기가 남아 있지 않으면) 받을 수 없다.
 			return not state.basic_pawns_of(player_id).is_empty() and not _free_units_for(state, player_id).is_empty()
 		GameEnums.AugmentCategory.TOOL_SWAP:
-			return (state.tools[player_id] as BaseJudgmentTool).tool_id != payload
+			return (state.tools[player_id] as BaseJudgmentTool).tool_id != payload and GameData.enabled("dice", payload)
 		GameEnums.AugmentCategory.LAW_ENACT:
 			return not state.rulebook.has_law(payload)
 		GameEnums.AugmentCategory.SUPER_GAMBLE:
 			return SuperAugments.is_available(payload, state, player_id)
+		GameEnums.AugmentCategory.CARD_PACKAGE:
+			# 손패가 가득 차 있으면 받을 수 없어 선택해도 적용되지 않는다 (드래프트가 멈추는 것을 막는다).
+			return (state.hands[player_id] as Array).size() < GameEnums.MAX_HAND_SIZE and not CardRegistry.all_ids().is_empty()
 	return true
 
 
@@ -62,6 +86,25 @@ func needs_pawn_choice(state: GameState, player_id: int) -> bool:
 
 ## 선택지에 보여 줄 설명 (플레이어 상태를 반영한다).
 func describe(state: GameState, player_id: int) -> String:
+	if desc.strip_edges() != "":
+		return _table_text(state, player_id)
+	return _default_text(state, player_id)
+
+
+## CSV의 desc(+spec_preview)를 쓴다. {p1}·{p2}는 param_1·param_2 값으로 바뀐다. 판정 도구는 spec_preview가 비어 있으면 dice_table.csv의 spec_table을 붙인다.
+func _table_text(state: GameState, _player_id: int) -> String:
+	var text: String = desc.replace("{p1}", param_1).replace("{p2}", param_2)
+	var spec: String = spec_preview.replace("{p1}", param_1).replace("{p2}", param_2)
+	if spec.strip_edges() == "" and category == GameEnums.AugmentCategory.TOOL_SWAP:
+		spec = "• " + ToolRegistry.spec_text(payload)
+	if spec.strip_edges() != "":
+		text += "\n" + spec
+	if category == GameEnums.AugmentCategory.PAWN_EVOLUTION and not text.contains("※"):
+		text += "\n※ 이미 가진 기물은 받을 수 없습니다"
+	return text
+
+
+func _default_text(state: GameState, player_id: int) -> String:
 	match category:
 		GameEnums.AugmentCategory.PAWN_EVOLUTION:
 			var kind: GameEnums.PawnKind = payload
@@ -122,8 +165,35 @@ func _apply_law(state: GameState) -> Dictionary:
 func _apply_cards(state: GameState, player_id: int) -> Dictionary:
 	var pool: Array[StringName] = CardRegistry.all_ids()
 	var names: Array[String] = []
-	for i: int in 2:
+	if pool.is_empty():
+		return {"ok": false, "text": "받을 수 있는 생떼 카드가 없습니다"}
+	for i: int in card_count():
 		var picked: StringName = pool[state.rng.randi_range(0, pool.size() - 1)]
 		if state.give_card(player_id, picked):
 			names.append(CardRegistry.get_card(picked).display_name)
 	return {"ok": not names.is_empty(), "text": "생떼 카드 획득: %s" % ", ".join(names)}
+
+
+## 카드 패키지가 주는 카드 수 (augments_table.csv param_1, 기본 2).
+func card_count() -> int:
+	return maxi(DataTable.to_int(param_1, 2), 0)
+
+
+## 표의 한 행을 이 증강에 입힌다.
+func apply_row(data: Dictionary) -> void:
+	enabled = DataTable.to_bool(data.get("enabled", "TRUE"), true)
+	tier = str(data.get("tier", "NORMAL")).strip_edges().to_upper()
+	if not ["NORMAL", "GOLD", "PRISMA"].has(tier):
+		tier = "NORMAL"
+	weight = maxi(DataTable.to_int(data.get("weight", ""), 100), 0)
+	min_round = maxi(DataTable.to_int(data.get("min_round", ""), 1), 1)
+	param_1 = str(data.get("param_1", "")).strip_edges()
+	param_2 = str(data.get("param_2", "")).strip_edges()
+	title = str(data.get("title", "")).strip_edges().replace("{p1}", param_1).replace("{p2}", param_2)
+	subtitle = str(data.get("subtitle", "")).strip_edges()
+	desc = str(data.get("desc", ""))
+	spec_preview = str(data.get("spec_preview", ""))
+	param_1 = str(data.get("param_1", "")).strip_edges()
+	param_2 = str(data.get("param_2", "")).strip_edges()
+	target_ref = str(data.get("target_ref", "")).strip_edges()
+	icon_file = str(data.get("icon_file", "")).strip_edges()

@@ -91,7 +91,10 @@ static func choose_augment(state: GameState, player_id: int, offers: Array[Strin
 	var best: Array[int] = []
 	var best_score: float = -INF
 	for index: int in offers.size():
-		var score: float = score_augment(state, player_id, AugmentRegistry.get_def(offers[index]))
+		var offered: AugmentDef = AugmentRegistry.get_def(offers[index])
+		if not offered.is_available(state, player_id):
+			continue  # 제시된 뒤 조건이 바뀌어 지금은 적용되지 않는 증강(예: 보드에 내 말이 없는 초증강)은 고르지 않는다
+		var score: float = score_augment(state, player_id, offered)
 		if score > best_score + 0.001:
 			best_score = score
 			best = [index]
