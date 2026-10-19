@@ -28,8 +28,8 @@
   {
     "avatar": "avatar_01",
     "pose": "hit",
-    "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-7335fe5f-a843-4f3c-a41d-1d14a580487f.png",
-    "prompt": "Edit the attached original Trickcal Revive character reference into ONE standalone full-body combat key-pose sprite for a Darkest Dungeon parody presentation. This is the exact character identity reference: preserve the hairstyle, ears, headwear, outfit cut, primary color scheme, wings/tail and recognizable accessories. Cute SD two-head-tall proportions, large soft mochi cheeks, clean thick near-black outlines, crisp flat cel coloring and strong solid black shadow shapes, limited hatching, matching a polished chibi game sprite. Actual transparent RGBA background, square canvas, full head, hands, weapons and both feet inside the frame, at least 6 percent transparent margin. One actor only, no scenery, no floor, no cast shadow outside the body, no rectangular comic painting, no enemy, no magic aura, no light rays, no speed lines, no projectile, no impact burst, no words, letters, numbers, watermark, UI, or baked checkerboard. Keep the reference costume age-appropriate and unchanged; do not add revealing clothing, realistic body proportions or different armor. Erpin: long blonde hair, flat gold crown with diamond symbol, small white fairy wings, red-and-gold starry eyes, white/gold uniform, red cape. RIGHT-stage defender who was facing LEFT, now recoiling diagonally BACK TO THE RIGHT after a harmless cartoon hit from the left. Her left-facing cheek is visibly squished, eyes squeezed shut and mouth a funny shocked grimace, both arms thrown up, torso leaning right, hair/ears/cape lagging right, one foot sliding and the other heel raised. Keep a clean readable recoil silhouette in three-quarter side view. Remove handheld weapons/props for this reaction pose, but preserve worn costume, headwear, wings/tail and satchel or chains. No incoming fist, attacker, projectile, stars, blood, damage marks or impact effects.",
+    "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-605489c6-5d78-47bb-ab07-9dbeeca41280.png",
+    "prompt": "Use case: identity-preserve game sprite edit. Edit the reference character into one new full-body HIT REACTION pose for a two-actor combat presentation. Preserve exactly this character's recognizable hairstyle, headwear, worn accessories, costume design, colors, wings/tail, chibi proportions and thick black ink/cel shaded rendering. IMPORTANT DIRECTION CORRECTION: this defender stands on the RIGHT and faces the attacker to the LEFT. A horizontal blow comes FROM SCREEN LEFT, pushing her TO SCREEN RIGHT. Her face is clearly turned LEFT in readable three-quarter PROFILE, nose and mouth toward the LEFT. The head and shoulders must recoil BACKWARD TO THE RIGHT of her hips: head center x roughly 65%, hips at 47%, feet at 32% of the canvas. A backward-sloping diagonal silhouette (head upper-right, feet lower-left). This is the opposite of leaning forward toward the attacker. Strong horizontal rightward knockback, chin tilting upward slightly, left-facing cheek compressed inward, eyes squeezed closed and a funny pained gasp. Arms flung back to the RIGHT, not both guarding in front of her face; both hands visible. Hair, cape, ears and tail swept toward SCREEN RIGHT. Bent knees, feet losing balance toward right; full body shown with clean silhouette. No handheld weapon or prop, preserve only worn accessories. Cute harmless slapstick, no injury. Actual transparent RGBA square canvas, at least 6% clear margin on every side including feet/hair/wings. One character only. No attacker, fist, incoming object, impact star, magical effects, background, shadow on floor, text, border or watermark. Do NOT simply mirror the old pose: redraw the body mechanics so the face looks LEFT while the entire head and shoulders lean RIGHT from a blow from the LEFT.\nImage 1 is the old hit sprite for line quality and costume; image 2 is the original identity reference. Replace the old forward-leaning reaction with the specified head-right/feet-left backward recoil.",
     "reference": "C:/Users/john9/Documents/Codex/2026-10-16/new-chat/work/trg-ui-trial/content_trickcal/avatars/avatar_01/fullbody.png",
     "generator": "native image_gen.imagegen",
     "corrections": 0,
@@ -37,19 +37,33 @@
     "width": 1254,
     "height": 1254,
     "format": "RGBA",
-    "sha256": "ad4a455c4b04c65d799c2c08c8000238c85b7d842ff687f273b431fdda40585d",
-    "bytes": 1421060,
-    "transparent_fraction": 0.488,
+    "sha256": "f178ebdc7e5106b16469d2092ea0b2a7ce7a4951de57a9af28a4767c4e4769db",
+    "bytes": 1253821,
+    "transparent_fraction": 0.579,
     "alpha_bbox": [
-      41,
-      45,
-      1236,
-      1254
+      0,
+      99,
+      1239,
+      1158
     ],
     "runtime_max_size": 1024,
     "import_quality": 0.85,
     "image_model": "Not exposed by native image_gen",
-    "reference_sha256": "6e21e46f28eb6924344fe1b8096f07c2f050aa71d063bb9a41fc51600fba736a"
+    "reference_sha256": "6e21e46f28eb6924344fe1b8096f07c2f050aa71d063bb9a41fc51600fba736a",
+    "revision": 2,
+    "previous_revision": {
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-7335fe5f-a843-4f3c-a41d-1d14a580487f.png",
+      "sha256": "ad4a455c4b04c65d799c2c08c8000238c85b7d842ff687f273b431fdda40585d",
+      "prompt": "Edit the attached original Trickcal Revive character reference into ONE standalone full-body combat key-pose sprite for a Darkest Dungeon parody presentation. This is the exact character identity reference: preserve the hairstyle, ears, headwear, outfit cut, primary color scheme, wings/tail and recognizable accessories. Cute SD two-head-tall proportions, large soft mochi cheeks, clean thick near-black outlines, crisp flat cel coloring and strong solid black shadow shapes, limited hatching, matching a polished chibi game sprite. Actual transparent RGBA background, square canvas, full head, hands, weapons and both feet inside the frame, at least 6 percent transparent margin. One actor only, no scenery, no floor, no cast shadow outside the body, no rectangular comic painting, no enemy, no magic aura, no light rays, no speed lines, no projectile, no impact burst, no words, letters, numbers, watermark, UI, or baked checkerboard. Keep the reference costume age-appropriate and unchanged; do not add revealing clothing, realistic body proportions or different armor. Erpin: long blonde hair, flat gold crown with diamond symbol, small white fairy wings, red-and-gold starry eyes, white/gold uniform, red cape. RIGHT-stage defender who was facing LEFT, now recoiling diagonally BACK TO THE RIGHT after a harmless cartoon hit from the left. Her left-facing cheek is visibly squished, eyes squeezed shut and mouth a funny shocked grimace, both arms thrown up, torso leaning right, hair/ears/cape lagging right, one foot sliding and the other heel raised. Keep a clean readable recoil silhouette in three-quarter side view. Remove handheld weapons/props for this reaction pose, but preserve worn costume, headwear, wings/tail and satchel or chains. No incoming fist, attacker, projectile, stars, blood, damage marks or impact effects."
+    },
+    "direction": "faces screen left; head and shoulders recoil screen right from a left-to-right strike",
+    "visible_alpha_bbox": [
+      105,
+      101,
+      1237,
+      1155
+    ],
+    "qa": "Reviewed direction, costume identity, silhouette, full body and game composition; corner alpha <=1/255; original PNG bytes preserved."
   },
   {
     "avatar": "avatar_02",
@@ -80,28 +94,42 @@
   {
     "avatar": "avatar_02",
     "pose": "hit",
-    "source": "C:/Users/john9/.codex/generated_images/01a142bd-ab11-7f42-8e21-7a03de077bd3/exec-7b064fbc-adea-4c09-974c-efe95bfc821d.png",
+    "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-ec66babe-ebc5-4726-a9ee-00f92cf161bf.png",
     "generator": "native image_gen.imagegen",
-    "prompt": "Approved Butter hit-reaction pose from the preceding turn; full prompt specification in the saved poses/GENERATION.md.",
+    "prompt": "Use case: identity-preserve game sprite edit. Edit the reference character into one new full-body HIT REACTION pose for a two-actor combat presentation. Preserve exactly this character's recognizable hairstyle, headwear, worn accessories, costume design, colors, wings/tail, chibi proportions and thick black ink/cel shaded rendering. IMPORTANT DIRECTION CORRECTION: this defender stands on the RIGHT and faces the attacker to the LEFT. A horizontal blow comes FROM SCREEN LEFT, pushing her TO SCREEN RIGHT. Her face is clearly turned LEFT in readable three-quarter PROFILE, nose and mouth toward the LEFT. The head and shoulders must recoil BACKWARD TO THE RIGHT of her hips: head center x roughly 65%, hips at 47%, feet at 32% of the canvas. A backward-sloping diagonal silhouette (head upper-right, feet lower-left). This is the opposite of leaning forward toward the attacker. Strong horizontal rightward knockback, chin tilting upward slightly, left-facing cheek compressed inward, eyes squeezed closed and a funny pained gasp. Arms flung back to the RIGHT, not both guarding in front of her face; both hands visible. Hair, cape, ears and tail swept toward SCREEN RIGHT. Bent knees, feet losing balance toward right; full body shown with clean silhouette. No handheld weapon or prop, preserve only worn accessories. Cute harmless slapstick, no injury. Actual transparent RGBA square canvas, at least 6% clear margin on every side including feet/hair/wings. One character only. No attacker, fist, incoming object, impact star, magical effects, background, shadow on floor, text, border or watermark. Do NOT simply mirror the old pose: redraw the body mechanics so the face looks LEFT while the entire head and shoulders lean RIGHT from a blow from the LEFT.\nImage 1 is the old hit sprite for line quality and costume; image 2 is the original identity reference. Replace the old forward-leaning reaction with the specified head-right/feet-left backward recoil.",
     "reference": "content_trickcal/avatars/avatar_02/fullbody.png",
     "corrections": 0,
     "path": "res://content_trickcal/avatars/avatar_02/hit.png",
     "width": 1254,
     "height": 1254,
     "format": "RGBA",
-    "sha256": "62e8c524d31981858c10a62428eb6ece949c6f4295ed1b8c4605b31820507739",
-    "bytes": 1261808,
-    "transparent_fraction": 0.534,
+    "sha256": "f2c109b18569f1f7eb662adf18236ce1d2b7f895113a2ba1f5533d70e1de4d79",
+    "bytes": 1155947,
+    "transparent_fraction": 0.594,
     "alpha_bbox": [
-      29,
-      5,
-      1228,
-      1254
+      0,
+      39,
+      1234,
+      1238
     ],
     "runtime_max_size": 1024,
     "import_quality": 0.85,
     "image_model": "Not exposed by native image_gen",
-    "reference_sha256": "a3fead69b0d6d291f2bbcd999b5543b4420b4751976a6de47304f122409981d2"
+    "reference_sha256": "a3fead69b0d6d291f2bbcd999b5543b4420b4751976a6de47304f122409981d2",
+    "revision": 2,
+    "previous_revision": {
+      "source": "C:/Users/john9/.codex/generated_images/01a142bd-ab11-7f42-8e21-7a03de077bd3/exec-7b064fbc-adea-4c09-974c-efe95bfc821d.png",
+      "sha256": "62e8c524d31981858c10a62428eb6ece949c6f4295ed1b8c4605b31820507739",
+      "prompt": "Approved Butter hit-reaction pose from the preceding turn; full prompt specification in the saved poses/GENERATION.md."
+    },
+    "direction": "faces screen left; head and shoulders recoil screen right from a left-to-right strike",
+    "visible_alpha_bbox": [
+      112,
+      50,
+      1229,
+      1199
+    ],
+    "qa": "Reviewed direction, costume identity, silhouette, full body and game composition; corner alpha <=1/255; original PNG bytes preserved."
   },
   {
     "avatar": "avatar_03",
@@ -132,8 +160,8 @@
   {
     "avatar": "avatar_03",
     "pose": "hit",
-    "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-51701d78-3271-42f9-a013-673d8b68829a.png",
-    "prompt": "Edit the attached original Trickcal Revive character reference into ONE standalone full-body combat key-pose sprite for a Darkest Dungeon parody presentation. This is the exact character identity reference: preserve the hairstyle, ears, headwear, outfit cut, primary color scheme, wings/tail and recognizable accessories. Cute SD two-head-tall proportions, large soft mochi cheeks, clean thick near-black outlines, crisp flat cel coloring and strong solid black shadow shapes, limited hatching, matching a polished chibi game sprite. Actual transparent RGBA background, square canvas, full head, hands, weapons and both feet inside the frame, at least 6 percent transparent margin. One actor only, no scenery, no floor, no cast shadow outside the body, no rectangular comic painting, no enemy, no magic aura, no light rays, no speed lines, no projectile, no impact burst, no words, letters, numbers, watermark, UI, or baked checkerboard. Keep the reference costume age-appropriate and unchanged; do not add revealing clothing, realistic body proportions or different armor. Elena: long dusty rose hair, pointed elf ears, turquoise eyes, white scientist lab coat over a plain pale-blue tunic dress and simple flats, exactly as the reference. RIGHT-stage defender who was facing LEFT, now recoiling diagonally BACK TO THE RIGHT after a harmless cartoon hit from the left. Her left-facing cheek is visibly squished, eyes squeezed shut and mouth a funny shocked grimace, both arms thrown up, torso leaning right, hair/ears/cape lagging right, one foot sliding and the other heel raised. Keep a clean readable recoil silhouette in three-quarter side view. Remove handheld weapons/props for this reaction pose, but preserve worn costume, headwear, wings/tail and satchel or chains. No incoming fist, attacker, projectile, stars, blood, damage marks or impact effects.",
+    "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-616afd2d-3c00-4282-ab68-08db775e8a48.png",
+    "prompt": "Use case: identity-preserve game sprite edit. Edit the reference character into one new full-body HIT REACTION pose for a two-actor combat presentation. Preserve exactly this character's recognizable hairstyle, headwear, worn accessories, costume design, colors, wings/tail, chibi proportions and thick black ink/cel shaded rendering. IMPORTANT DIRECTION CORRECTION: this defender stands on the RIGHT and faces the attacker to the LEFT. A horizontal blow comes FROM SCREEN LEFT, pushing her TO SCREEN RIGHT. Her face is clearly turned LEFT in readable three-quarter PROFILE, nose and mouth toward the LEFT. The head and shoulders must recoil BACKWARD TO THE RIGHT of her hips: head center x roughly 65%, hips at 47%, feet at 32% of the canvas. A backward-sloping diagonal silhouette (head upper-right, feet lower-left). This is the opposite of leaning forward toward the attacker. Strong horizontal rightward knockback, chin tilting upward slightly, left-facing cheek compressed inward, eyes squeezed closed and a funny pained gasp. Arms flung back to the RIGHT, not both guarding in front of her face; both hands visible. Hair, cape, ears and tail swept toward SCREEN RIGHT. Bent knees, feet losing balance toward right; full body shown with clean silhouette. No handheld weapon or prop, preserve only worn accessories. Cute harmless slapstick, no injury. Actual transparent RGBA square canvas, at least 6% clear margin on every side including feet/hair/wings. One character only. No attacker, fist, incoming object, impact star, magical effects, background, shadow on floor, text, border or watermark. Do NOT simply mirror the old pose: redraw the body mechanics so the face looks LEFT while the entire head and shoulders lean RIGHT from a blow from the LEFT.\nImage 1 is the old hit sprite for line quality and costume; image 2 is the original identity reference. Replace the old forward-leaning reaction with the specified head-right/feet-left backward recoil.",
     "reference": "C:/Users/john9/Documents/Codex/2026-10-16/new-chat/work/trg-ui-trial/content_trickcal/avatars/avatar_03/fullbody.png",
     "generator": "native image_gen.imagegen",
     "corrections": 0,
@@ -141,19 +169,33 @@
     "width": 1254,
     "height": 1254,
     "format": "RGBA",
-    "sha256": "3588582ddc08e5f57f616fa297d5c7cc537e0014dcc7b7c0d8a8446341ff65d0",
-    "bytes": 1103363,
-    "transparent_fraction": 0.565,
+    "sha256": "72408333607f2f7f34a39c06530af67b224eb57ffc429a3c6d83d0d9b41ffe7a",
+    "bytes": 1069867,
+    "transparent_fraction": 0.598,
     "alpha_bbox": [
-      0,
-      25,
-      1205,
-      1254
+      49,
+      55,
+      1239,
+      1214
     ],
     "runtime_max_size": 1024,
     "import_quality": 0.85,
     "image_model": "Not exposed by native image_gen",
-    "reference_sha256": "ecc0a769b2fd809633fd795ea753cae9d224cc56e6d2d607a0a8f8f9f9f07534"
+    "reference_sha256": "ecc0a769b2fd809633fd795ea753cae9d224cc56e6d2d607a0a8f8f9f9f07534",
+    "revision": 2,
+    "previous_revision": {
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-51701d78-3271-42f9-a013-673d8b68829a.png",
+      "sha256": "3588582ddc08e5f57f616fa297d5c7cc537e0014dcc7b7c0d8a8446341ff65d0",
+      "prompt": "Edit the attached original Trickcal Revive character reference into ONE standalone full-body combat key-pose sprite for a Darkest Dungeon parody presentation. This is the exact character identity reference: preserve the hairstyle, ears, headwear, outfit cut, primary color scheme, wings/tail and recognizable accessories. Cute SD two-head-tall proportions, large soft mochi cheeks, clean thick near-black outlines, crisp flat cel coloring and strong solid black shadow shapes, limited hatching, matching a polished chibi game sprite. Actual transparent RGBA background, square canvas, full head, hands, weapons and both feet inside the frame, at least 6 percent transparent margin. One actor only, no scenery, no floor, no cast shadow outside the body, no rectangular comic painting, no enemy, no magic aura, no light rays, no speed lines, no projectile, no impact burst, no words, letters, numbers, watermark, UI, or baked checkerboard. Keep the reference costume age-appropriate and unchanged; do not add revealing clothing, realistic body proportions or different armor. Elena: long dusty rose hair, pointed elf ears, turquoise eyes, white scientist lab coat over a plain pale-blue tunic dress and simple flats, exactly as the reference. RIGHT-stage defender who was facing LEFT, now recoiling diagonally BACK TO THE RIGHT after a harmless cartoon hit from the left. Her left-facing cheek is visibly squished, eyes squeezed shut and mouth a funny shocked grimace, both arms thrown up, torso leaning right, hair/ears/cape lagging right, one foot sliding and the other heel raised. Keep a clean readable recoil silhouette in three-quarter side view. Remove handheld weapons/props for this reaction pose, but preserve worn costume, headwear, wings/tail and satchel or chains. No incoming fist, attacker, projectile, stars, blood, damage marks or impact effects."
+    },
+    "direction": "faces screen left; head and shoulders recoil screen right from a left-to-right strike",
+    "visible_alpha_bbox": [
+      95,
+      58,
+      1237,
+      1197
+    ],
+    "qa": "Reviewed direction, costume identity, silhouette, full body and game composition; corner alpha <=1/255; original PNG bytes preserved."
   },
   {
     "avatar": "avatar_04",
@@ -184,8 +226,8 @@
   {
     "avatar": "avatar_04",
     "pose": "hit",
-    "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-7befed52-8629-4e8b-ad9c-e3e93ec77c90.png",
-    "prompt": "Edit the attached original Trickcal Revive character reference into ONE standalone full-body combat key-pose sprite for a Darkest Dungeon parody presentation. This is the exact character identity reference: preserve the hairstyle, ears, headwear, outfit cut, primary color scheme, wings/tail and recognizable accessories. Cute SD two-head-tall proportions, large soft mochi cheeks, clean thick near-black outlines, crisp flat cel coloring and strong solid black shadow shapes, limited hatching, matching a polished chibi game sprite. Actual transparent RGBA background, square canvas, full head, hands, weapons and both feet inside the frame, at least 6 percent transparent margin. One actor only, no scenery, no floor, no cast shadow outside the body, no rectangular comic painting, no enemy, no magic aura, no light rays, no speed lines, no projectile, no impact burst, no words, letters, numbers, watermark, UI, or baked checkerboard. Keep the reference costume age-appropriate and unchanged; do not add revealing clothing, realistic body proportions or different armor. Silla: very long pale mint hair, pointed elf ears, gold horn-like head ornaments, white/teal-and-gold archer costume, wrapped legs and wooden gold-trim bow. RIGHT-stage defender who was facing LEFT, now recoiling diagonally BACK TO THE RIGHT after a harmless cartoon hit from the left. Her left-facing cheek is visibly squished, eyes squeezed shut and mouth a funny shocked grimace, both arms thrown up, torso leaning right, hair/ears/cape lagging right, one foot sliding and the other heel raised. Keep a clean readable recoil silhouette in three-quarter side view. Remove handheld weapons/props for this reaction pose, but preserve worn costume, headwear, wings/tail and satchel or chains. No incoming fist, attacker, projectile, stars, blood, damage marks or impact effects.",
+    "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-9e68a91e-191a-4495-b036-ddc95eb1aafe.png",
+    "prompt": "Use case: identity-preserve game sprite edit. Edit the reference character into one new full-body HIT REACTION pose for a two-actor combat presentation. Preserve exactly this character's recognizable hairstyle, headwear, worn accessories, costume design, colors, wings/tail, chibi proportions and thick black ink/cel shaded rendering. IMPORTANT DIRECTION CORRECTION: this defender stands on the RIGHT and faces the attacker to the LEFT. A horizontal blow comes FROM SCREEN LEFT, pushing her TO SCREEN RIGHT. Her face is clearly turned LEFT in readable three-quarter PROFILE, nose and mouth toward the LEFT. The head and shoulders must recoil BACKWARD TO THE RIGHT of her hips: head center x roughly 65%, hips at 47%, feet at 32% of the canvas. A backward-sloping diagonal silhouette (head upper-right, feet lower-left). This is the opposite of leaning forward toward the attacker. Strong horizontal rightward knockback, chin tilting upward slightly, left-facing cheek compressed inward, eyes squeezed closed and a funny pained gasp. Arms flung back to the RIGHT, not both guarding in front of her face; both hands visible. Hair, cape, ears and tail swept toward SCREEN RIGHT. Bent knees, feet losing balance toward right; full body shown with clean silhouette. No handheld weapon or prop, preserve only worn accessories. Cute harmless slapstick, no injury. Actual transparent RGBA square canvas, at least 6% clear margin on every side including feet/hair/wings. One character only. No attacker, fist, incoming object, impact star, magical effects, background, shadow on floor, text, border or watermark. Do NOT simply mirror the old pose: redraw the body mechanics so the face looks LEFT while the entire head and shoulders lean RIGHT from a blow from the LEFT.\nImage 1 is the old hit sprite for line quality and costume; image 2 is the original identity reference. Replace the old forward-leaning reaction with the specified head-right/feet-left backward recoil.",
     "reference": "C:/Users/john9/Documents/Codex/2026-10-16/new-chat/work/trg-ui-trial/content_trickcal/avatars/avatar_04/fullbody.png",
     "generator": "native image_gen.imagegen",
     "corrections": 0,
@@ -193,19 +235,33 @@
     "width": 1254,
     "height": 1254,
     "format": "RGBA",
-    "sha256": "c42f8a1577ee9105f576e8980a15fd23417201ad3e3074ce7bea322dd0d7b7e6",
-    "bytes": 1382708,
-    "transparent_fraction": 0.551,
+    "sha256": "3f8464c5a17a08302caa1c206645692f20ad69306fe6c385420bf4a8eba2f260",
+    "bytes": 1344767,
+    "transparent_fraction": 0.574,
     "alpha_bbox": [
       0,
-      33,
-      1238,
-      1230
+      31,
+      1242,
+      1254
     ],
     "runtime_max_size": 1024,
     "import_quality": 0.85,
     "image_model": "Not exposed by native image_gen",
-    "reference_sha256": "ef10eff5c61ef9d5f526cfd9308c5bc5a10ce76d856ad630b23aac6f819daabc"
+    "reference_sha256": "ef10eff5c61ef9d5f526cfd9308c5bc5a10ce76d856ad630b23aac6f819daabc",
+    "revision": 2,
+    "previous_revision": {
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-7befed52-8629-4e8b-ad9c-e3e93ec77c90.png",
+      "sha256": "c42f8a1577ee9105f576e8980a15fd23417201ad3e3074ce7bea322dd0d7b7e6",
+      "prompt": "Edit the attached original Trickcal Revive character reference into ONE standalone full-body combat key-pose sprite for a Darkest Dungeon parody presentation. This is the exact character identity reference: preserve the hairstyle, ears, headwear, outfit cut, primary color scheme, wings/tail and recognizable accessories. Cute SD two-head-tall proportions, large soft mochi cheeks, clean thick near-black outlines, crisp flat cel coloring and strong solid black shadow shapes, limited hatching, matching a polished chibi game sprite. Actual transparent RGBA background, square canvas, full head, hands, weapons and both feet inside the frame, at least 6 percent transparent margin. One actor only, no scenery, no floor, no cast shadow outside the body, no rectangular comic painting, no enemy, no magic aura, no light rays, no speed lines, no projectile, no impact burst, no words, letters, numbers, watermark, UI, or baked checkerboard. Keep the reference costume age-appropriate and unchanged; do not add revealing clothing, realistic body proportions or different armor. Silla: very long pale mint hair, pointed elf ears, gold horn-like head ornaments, white/teal-and-gold archer costume, wrapped legs and wooden gold-trim bow. RIGHT-stage defender who was facing LEFT, now recoiling diagonally BACK TO THE RIGHT after a harmless cartoon hit from the left. Her left-facing cheek is visibly squished, eyes squeezed shut and mouth a funny shocked grimace, both arms thrown up, torso leaning right, hair/ears/cape lagging right, one foot sliding and the other heel raised. Keep a clean readable recoil silhouette in three-quarter side view. Remove handheld weapons/props for this reaction pose, but preserve worn costume, headwear, wings/tail and satchel or chains. No incoming fist, attacker, projectile, stars, blood, damage marks or impact effects."
+    },
+    "direction": "faces screen left; head and shoulders recoil screen right from a left-to-right strike",
+    "visible_alpha_bbox": [
+      90,
+      62,
+      1240,
+      1190
+    ],
+    "qa": "Reviewed direction, costume identity, silhouette, full body and game composition; corner alpha <=1/255; original PNG bytes preserved."
   },
   {
     "avatar": "avatar_05",
@@ -236,8 +292,8 @@
   {
     "avatar": "avatar_05",
     "pose": "hit",
-    "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-26912dde-5d41-4a7d-a9a5-3f5c6afd8a98.png",
-    "prompt": "Edit the attached original Trickcal Revive character reference into ONE standalone full-body combat key-pose sprite for a Darkest Dungeon parody presentation. This is the exact character identity reference: preserve the hairstyle, ears, headwear, outfit cut, primary color scheme, wings/tail and recognizable accessories. Cute SD two-head-tall proportions, large soft mochi cheeks, clean thick near-black outlines, crisp flat cel coloring and strong solid black shadow shapes, limited hatching, matching a polished chibi game sprite. Actual transparent RGBA background, square canvas, full head, hands, weapons and both feet inside the frame, at least 6 percent transparent margin. One actor only, no scenery, no floor, no cast shadow outside the body, no rectangular comic painting, no enemy, no magic aura, no light rays, no speed lines, no projectile, no impact burst, no words, letters, numbers, watermark, UI, or baked checkerboard. Keep the reference costume age-appropriate and unchanged; do not add revealing clothing, realistic body proportions or different armor. Shady: long silver hair with pale cyan ends, a little white ghost/skull hair ornament, cyan eyes, dark charcoal off-shoulder ghost outfit, short dark boots, silver chain accessory and curved spectral scythe. RIGHT-stage defender who was facing LEFT, now recoiling diagonally BACK TO THE RIGHT after a harmless cartoon hit from the left. Her left-facing cheek is visibly squished, eyes squeezed shut and mouth a funny shocked grimace, both arms thrown up, torso leaning right, hair/ears/cape lagging right, one foot sliding and the other heel raised. Keep a clean readable recoil silhouette in three-quarter side view. Remove handheld weapons/props for this reaction pose, but preserve worn costume, headwear, wings/tail and satchel or chains. No incoming fist, attacker, projectile, stars, blood, damage marks or impact effects.",
+    "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-9eeb760f-19f1-4b18-8d32-7b76ebc278fc.png",
+    "prompt": "Edit this existing transparent chibi hit-reaction sprite. Make a SMALL targeted correction to the anatomy and readability of the arms and legs only, including just enough torso adjustment to connect them naturally. Preserve the character identity, face expression, left-facing head, hair, costume, worn ornaments, wings/tail, palette, bold black ink/cel shading and current level of detail. She remains the RIGHT-stage defender: facing SCREEN LEFT, recoiling backward to SCREEN RIGHT from a harmless cartoon hit from the left. Do not mirror the character or reverse the recoil. Show a natural backward stumble, not a twisted floating seated position. Give her exactly TWO ARMS, TWO HANDS, TWO LEGS and TWO FEET, all with clear continuous anatomy. Each arm must visibly connect to its own shoulder, with a readable elbow bend and wrist. Near arm: bent downward beside the torso, forearm and open hand swept gently to screen right around waist height. Far arm: lifted back to screen right, open hand around shoulder height, its upper arm and elbow readable instead of merging with the near arm. No crossed or parallel duplicated forearms. Legs: near/supporting leg descends from the near hip to an obvious knee and planted foot below the hips, the far/rear leg steps backward to screen right with a bent knee and lightly raised heel. Leave a visible transparent gap between both calves and between the two hands; no crossed knees, fused limbs, reversed knees, detached feet, duplicated limbs or missing joints. Maintain a clear small backward lean of head and shoulders to the right of the hips, readable left-facing profile and funny closed-eye gasp. Full body inside square canvas with clear margins; genuine transparent RGBA background. One character only. No held weapon, new prop, text, attack effect, spark, background or floor shadow. Do not redesign head, hair, costume or accessories; this is a focused limb/anatomy correction. Shady: keep her skull hair ornament, silver/cyan hair, black-and-white outfit, chains, and two black boots. Ensure the two upper arms start from distinct shoulders, no third arm, chains do not cut through flesh.",
     "reference": "C:/Users/john9/Documents/Codex/2026-10-16/new-chat/work/trg-ui-trial/content_trickcal/avatars/avatar_05/fullbody.png",
     "generator": "native image_gen.imagegen",
     "corrections": 0,
@@ -245,19 +301,39 @@
     "width": 1254,
     "height": 1254,
     "format": "RGBA",
-    "sha256": "e224a5ad8890ee7adefd458c3ca7c478ab2edc0a24a1616ae258cb2a7e6ccbaf",
-    "bytes": 1369031,
-    "transparent_fraction": 0.529,
+    "sha256": "c9a367db327425cb29a5e73d1bbc29b0eeb4be850de9a140c7462e67efc9d1f5",
+    "bytes": 1249395,
+    "transparent_fraction": 0.584,
     "alpha_bbox": [
       0,
-      49,
-      1246,
-      1226
+      0,
+      1234,
+      1240
     ],
     "runtime_max_size": 1024,
     "import_quality": 0.85,
     "image_model": "Not exposed by native image_gen",
-    "reference_sha256": "e56fee340e3aca0eacd5d266b0715e3819864a3d31fb9447171cd97c0e899011"
+    "reference_sha256": "e56fee340e3aca0eacd5d266b0715e3819864a3d31fb9447171cd97c0e899011",
+    "revision": 3,
+    "previous_revision": {
+      "revision": 2,
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-ae36f3f7-b5c1-43c7-94d1-08c663071c7b.png",
+      "sha256": "176f91da78cd8c8c1827c1d7ee59fd99b6cef601e57c8acda959975d0fe99675",
+      "prompt": "Use case: identity-preserve game sprite edit. Edit the reference character into one new full-body HIT REACTION pose for a two-actor combat presentation. Preserve exactly this character's recognizable hairstyle, headwear, worn accessories, costume design, colors, wings/tail, chibi proportions and thick black ink/cel shaded rendering. IMPORTANT DIRECTION CORRECTION: this defender stands on the RIGHT and faces the attacker to the LEFT. A horizontal blow comes FROM SCREEN LEFT, pushing her TO SCREEN RIGHT. Her face is clearly turned LEFT in readable three-quarter PROFILE, nose and mouth toward the LEFT. The head and shoulders must recoil BACKWARD TO THE RIGHT of her hips: head center x roughly 65%, hips at 47%, feet at 32% of the canvas. A backward-sloping diagonal silhouette (head upper-right, feet lower-left). This is the opposite of leaning forward toward the attacker. Strong horizontal rightward knockback, chin tilting upward slightly, left-facing cheek compressed inward, eyes squeezed closed and a funny pained gasp. Arms flung back to the RIGHT, not both guarding in front of her face; both hands visible. Hair, cape, ears and tail swept toward SCREEN RIGHT. Bent knees, feet losing balance toward right; full body shown with clean silhouette. No handheld weapon or prop, preserve only worn accessories. Cute harmless slapstick, no injury. Actual transparent RGBA square canvas, at least 6% clear margin on every side including feet/hair/wings. One character only. No attacker, fist, incoming object, impact star, magical effects, background, shadow on floor, text, border or watermark. Do NOT simply mirror the old pose: redraw the body mechanics so the face looks LEFT while the entire head and shoulders lean RIGHT from a blow from the LEFT.\nImage 1 is the old hit sprite for line quality and costume; image 2 is the original identity reference. Replace the old forward-leaning reaction with the specified head-right/feet-left backward recoil.",
+      "previous_revision": {
+        "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-26912dde-5d41-4a7d-a9a5-3f5c6afd8a98.png",
+        "sha256": "e224a5ad8890ee7adefd458c3ca7c478ab2edc0a24a1616ae258cb2a7e6ccbaf",
+        "prompt": "Edit the attached original Trickcal Revive character reference into ONE standalone full-body combat key-pose sprite for a Darkest Dungeon parody presentation. This is the exact character identity reference: preserve the hairstyle, ears, headwear, outfit cut, primary color scheme, wings/tail and recognizable accessories. Cute SD two-head-tall proportions, large soft mochi cheeks, clean thick near-black outlines, crisp flat cel coloring and strong solid black shadow shapes, limited hatching, matching a polished chibi game sprite. Actual transparent RGBA background, square canvas, full head, hands, weapons and both feet inside the frame, at least 6 percent transparent margin. One actor only, no scenery, no floor, no cast shadow outside the body, no rectangular comic painting, no enemy, no magic aura, no light rays, no speed lines, no projectile, no impact burst, no words, letters, numbers, watermark, UI, or baked checkerboard. Keep the reference costume age-appropriate and unchanged; do not add revealing clothing, realistic body proportions or different armor. Shady: long silver hair with pale cyan ends, a little white ghost/skull hair ornament, cyan eyes, dark charcoal off-shoulder ghost outfit, short dark boots, silver chain accessory and curved spectral scythe. RIGHT-stage defender who was facing LEFT, now recoiling diagonally BACK TO THE RIGHT after a harmless cartoon hit from the left. Her left-facing cheek is visibly squished, eyes squeezed shut and mouth a funny shocked grimace, both arms thrown up, torso leaning right, hair/ears/cape lagging right, one foot sliding and the other heel raised. Keep a clean readable recoil silhouette in three-quarter side view. Remove handheld weapons/props for this reaction pose, but preserve worn costume, headwear, wings/tail and satchel or chains. No incoming fist, attacker, projectile, stars, blood, damage marks or impact effects."
+      }
+    },
+    "direction": "faces screen left; head and shoulders recoil screen right from a left-to-right strike",
+    "visible_alpha_bbox": [
+      168,
+      59,
+      1215,
+      1220
+    ],
+    "qa": "Two continuous arms/hands and legs/feet reviewed; natural shoulder/elbow/knee/ankle connections; screen-left face and screen-right recoil retained; source bytes preserved."
   },
   {
     "avatar": "avatar_06",
@@ -288,8 +364,8 @@
   {
     "avatar": "avatar_06",
     "pose": "hit",
-    "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-00737aac-3ca2-4d40-9007-07a2c0605d91.png",
-    "prompt": "Edit the attached original Trickcal Revive character reference into ONE standalone full-body combat key-pose sprite for a Darkest Dungeon parody presentation. This is the exact character identity reference: preserve the hairstyle, ears, headwear, outfit cut, primary color scheme, wings/tail and recognizable accessories. Cute SD two-head-tall proportions, large soft mochi cheeks, clean thick near-black outlines, crisp flat cel coloring and strong solid black shadow shapes, limited hatching, matching a polished chibi game sprite. Actual transparent RGBA background, square canvas, full head, hands, weapons and both feet inside the frame, at least 6 percent transparent margin. One actor only, no scenery, no floor, no cast shadow outside the body, no rectangular comic painting, no enemy, no magic aura, no light rays, no speed lines, no projectile, no impact burst, no words, letters, numbers, watermark, UI, or baked checkerboard. Keep the reference costume age-appropriate and unchanged; do not add revealing clothing, realistic body proportions or different armor. Daya: white/light silver hair, pointed dragon ears, tiny silver tiara, large faceted crystal horns and angular dragon wings, pale draped dress, long dragon tail, crystal sword. Preserve her crystalline dragon identity. RIGHT-stage defender who was facing LEFT, now recoiling diagonally BACK TO THE RIGHT after a harmless cartoon hit from the left. Her left-facing cheek is visibly squished, eyes squeezed shut and mouth a funny shocked grimace, both arms thrown up, torso leaning right, hair/ears/cape lagging right, one foot sliding and the other heel raised. Keep a clean readable recoil silhouette in three-quarter side view. Remove handheld weapons/props for this reaction pose, but preserve worn costume, headwear, wings/tail and satchel or chains. No incoming fist, attacker, projectile, stars, blood, damage marks or impact effects.",
+    "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-f6b115be-bed8-43ef-9c2a-bc885ff677ce.png",
+    "prompt": "Edit this existing transparent chibi hit-reaction sprite. Make a SMALL targeted correction to the anatomy and readability of the arms and legs only, including just enough torso adjustment to connect them naturally. Preserve the character identity, face expression, left-facing head, hair, costume, worn ornaments, wings/tail, palette, bold black ink/cel shading and current level of detail. She remains the RIGHT-stage defender: facing SCREEN LEFT, recoiling backward to SCREEN RIGHT from a harmless cartoon hit from the left. Do not mirror the character or reverse the recoil. Show a natural backward stumble, not a twisted floating seated position. Give her exactly TWO ARMS, TWO HANDS, TWO LEGS and TWO FEET, all with clear continuous anatomy. Each arm must visibly connect to its own shoulder, with a readable elbow bend and wrist. Near arm: bent downward beside the torso, forearm and open hand swept gently to screen right around waist height. Far arm: lifted back to screen right, open hand around shoulder height, its upper arm and elbow readable instead of merging with the near arm. No crossed or parallel duplicated forearms. Legs: near/supporting leg descends from the near hip to an obvious knee and planted foot below the hips, the far/rear leg steps backward to screen right with a bent knee and lightly raised heel. Leave a visible transparent gap between both calves and between the two hands; no crossed knees, fused limbs, reversed knees, detached feet, duplicated limbs or missing joints. Maintain a clear small backward lean of head and shoulders to the right of the hips, readable left-facing profile and funny closed-eye gasp. Full body inside square canvas with clear margins; genuine transparent RGBA background. One character only. No held weapon, new prop, text, attack effect, spark, background or floor shadow. Do not redesign head, hair, costume or accessories; this is a focused limb/anatomy correction. Daya: keep the crystal horns, white hair, crystal wings, tail and ivory dress. Wings stay behind her shoulders and are never mistaken for arms. Exactly two bare human feet, no added shoes. Keep both feet shaped naturally and connected to ankles, no reverse-bending knee or extra leg.",
     "reference": "C:/Users/john9/Documents/Codex/2026-10-16/new-chat/work/trg-ui-trial/content_trickcal/avatars/avatar_06/fullbody.png",
     "generator": "native image_gen.imagegen",
     "corrections": 0,
@@ -297,19 +373,39 @@
     "width": 1254,
     "height": 1254,
     "format": "RGBA",
-    "sha256": "763d6f62f950101a5255a7f9c84f306b8efa867757b8be32734e1d2eccbe1815",
-    "bytes": 1459313,
-    "transparent_fraction": 0.486,
+    "sha256": "ae5f00fe36d5a8cc0fdc53974e49e9e2918a447243739a9b87d144a6ed5efe2a",
+    "bytes": 1390045,
+    "transparent_fraction": 0.531,
     "alpha_bbox": [
       0,
-      32,
-      1231,
-      1205
+      59,
+      1240,
+      1222
     ],
     "runtime_max_size": 1024,
     "import_quality": 0.85,
     "image_model": "Not exposed by native image_gen",
-    "reference_sha256": "5b278a5b44d113bf8f8bd940f3aa61e515ee32687a67febf8a105eb865f3e9fb"
+    "reference_sha256": "5b278a5b44d113bf8f8bd940f3aa61e515ee32687a67febf8a105eb865f3e9fb",
+    "revision": 3,
+    "previous_revision": {
+      "revision": 2,
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-522d168b-97de-4441-b29c-d6f6bef3f2e4.png",
+      "sha256": "9c65a5b7468ed6f0bc51db2522302c594c39d740d16838c9a5b3a3521507fac3",
+      "prompt": "Use case: identity-preserve game sprite edit. Edit the reference character into one new full-body HIT REACTION pose for a two-actor combat presentation. Preserve exactly this character's recognizable hairstyle, headwear, worn accessories, costume design, colors, wings/tail, chibi proportions and thick black ink/cel shaded rendering. IMPORTANT DIRECTION CORRECTION: this defender stands on the RIGHT and faces the attacker to the LEFT. A horizontal blow comes FROM SCREEN LEFT, pushing her TO SCREEN RIGHT. Her face is clearly turned LEFT in readable three-quarter PROFILE, nose and mouth toward the LEFT. The head and shoulders must recoil BACKWARD TO THE RIGHT of her hips: head center x roughly 65%, hips at 47%, feet at 32% of the canvas. A backward-sloping diagonal silhouette (head upper-right, feet lower-left). This is the opposite of leaning forward toward the attacker. Strong horizontal rightward knockback, chin tilting upward slightly, left-facing cheek compressed inward, eyes squeezed closed and a funny pained gasp. Arms flung back to the RIGHT, not both guarding in front of her face; both hands visible. Hair, cape, ears and tail swept toward SCREEN RIGHT. Bent knees, feet losing balance toward right; full body shown with clean silhouette. No handheld weapon or prop, preserve only worn accessories. Cute harmless slapstick, no injury. Actual transparent RGBA square canvas, at least 6% clear margin on every side including feet/hair/wings. One character only. No attacker, fist, incoming object, impact star, magical effects, background, shadow on floor, text, border or watermark. Do NOT simply mirror the old pose: redraw the body mechanics so the face looks LEFT while the entire head and shoulders lean RIGHT from a blow from the LEFT.\nImage 1 is the old hit sprite for line quality and costume; image 2 is the original identity reference. Replace the old forward-leaning reaction with the specified head-right/feet-left backward recoil.",
+      "previous_revision": {
+        "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-00737aac-3ca2-4d40-9007-07a2c0605d91.png",
+        "sha256": "763d6f62f950101a5255a7f9c84f306b8efa867757b8be32734e1d2eccbe1815",
+        "prompt": "Edit the attached original Trickcal Revive character reference into ONE standalone full-body combat key-pose sprite for a Darkest Dungeon parody presentation. This is the exact character identity reference: preserve the hairstyle, ears, headwear, outfit cut, primary color scheme, wings/tail and recognizable accessories. Cute SD two-head-tall proportions, large soft mochi cheeks, clean thick near-black outlines, crisp flat cel coloring and strong solid black shadow shapes, limited hatching, matching a polished chibi game sprite. Actual transparent RGBA background, square canvas, full head, hands, weapons and both feet inside the frame, at least 6 percent transparent margin. One actor only, no scenery, no floor, no cast shadow outside the body, no rectangular comic painting, no enemy, no magic aura, no light rays, no speed lines, no projectile, no impact burst, no words, letters, numbers, watermark, UI, or baked checkerboard. Keep the reference costume age-appropriate and unchanged; do not add revealing clothing, realistic body proportions or different armor. Daya: white/light silver hair, pointed dragon ears, tiny silver tiara, large faceted crystal horns and angular dragon wings, pale draped dress, long dragon tail, crystal sword. Preserve her crystalline dragon identity. RIGHT-stage defender who was facing LEFT, now recoiling diagonally BACK TO THE RIGHT after a harmless cartoon hit from the left. Her left-facing cheek is visibly squished, eyes squeezed shut and mouth a funny shocked grimace, both arms thrown up, torso leaning right, hair/ears/cape lagging right, one foot sliding and the other heel raised. Keep a clean readable recoil silhouette in three-quarter side view. Remove handheld weapons/props for this reaction pose, but preserve worn costume, headwear, wings/tail and satchel or chains. No incoming fist, attacker, projectile, stars, blood, damage marks or impact effects."
+      }
+    },
+    "direction": "faces screen left; head and shoulders recoil screen right from a left-to-right strike",
+    "visible_alpha_bbox": [
+      118,
+      62,
+      1237,
+      1196
+    ],
+    "qa": "Two continuous arms/hands and legs/feet reviewed; natural shoulder/elbow/knee/ankle connections; screen-left face and screen-right recoil retained; source bytes preserved."
   },
   {
     "avatar": "avatar_07",
@@ -340,8 +436,8 @@
   {
     "avatar": "avatar_07",
     "pose": "hit",
-    "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-ca4d3ab5-4bb7-4681-81df-b348896e775b.png",
-    "prompt": "Edit the attached original Trickcal Revive character reference into ONE standalone full-body combat key-pose sprite for a Darkest Dungeon parody presentation. This is the exact character identity reference: preserve the hairstyle, ears, headwear, outfit cut, primary color scheme, wings/tail and recognizable accessories. Cute SD two-head-tall proportions, large soft mochi cheeks, clean thick near-black outlines, crisp flat cel coloring and strong solid black shadow shapes, limited hatching, matching a polished chibi game sprite. Actual transparent RGBA background, square canvas, full head, hands, weapons and both feet inside the frame, at least 6 percent transparent margin. One actor only, no scenery, no floor, no cast shadow outside the body, no rectangular comic painting, no enemy, no magic aura, no light rays, no speed lines, no projectile, no impact burst, no words, letters, numbers, watermark, UI, or baked checkerboard. Keep the reference costume age-appropriate and unchanged; do not add revealing clothing, realistic body proportions or different armor. Belita: long white hair, small black/red demon horns, red-and-gold contrasting eyes, red-and-black gothic outfit and cape, dark wing-like appendages, pointed red/black ornate staff. RIGHT-stage defender who was facing LEFT, now recoiling diagonally BACK TO THE RIGHT after a harmless cartoon hit from the left. Her left-facing cheek is visibly squished, eyes squeezed shut and mouth a funny shocked grimace, both arms thrown up, torso leaning right, hair/ears/cape lagging right, one foot sliding and the other heel raised. Keep a clean readable recoil silhouette in three-quarter side view. Remove handheld weapons/props for this reaction pose, but preserve worn costume, headwear, wings/tail and satchel or chains. No incoming fist, attacker, projectile, stars, blood, damage marks or impact effects.",
+    "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-7fa23ec4-c32e-41ce-9d14-9d5349b70b84.png",
+    "prompt": "Use case: identity-preserve game sprite edit. Edit the reference character into one new full-body HIT REACTION pose for a two-actor combat presentation. Preserve exactly this character's recognizable hairstyle, headwear, worn accessories, costume design, colors, wings/tail, chibi proportions and thick black ink/cel shaded rendering. IMPORTANT DIRECTION CORRECTION: this defender stands on the RIGHT and faces the attacker to the LEFT. A horizontal blow comes FROM SCREEN LEFT, pushing her TO SCREEN RIGHT. Her face is clearly turned LEFT in readable three-quarter PROFILE, nose and mouth toward the LEFT. The head and shoulders must recoil BACKWARD TO THE RIGHT of her hips: head center x roughly 65%, hips at 47%, feet at 32% of the canvas. A backward-sloping diagonal silhouette (head upper-right, feet lower-left). This is the opposite of leaning forward toward the attacker. Strong horizontal rightward knockback, chin tilting upward slightly, left-facing cheek compressed inward, eyes squeezed closed and a funny pained gasp. Arms flung back to the RIGHT, not both guarding in front of her face; both hands visible. Hair, cape, ears and tail swept toward SCREEN RIGHT. Bent knees, feet losing balance toward right; full body shown with clean silhouette. No handheld weapon or prop, preserve only worn accessories. Cute harmless slapstick, no injury. Actual transparent RGBA square canvas, at least 6% clear margin on every side including feet/hair/wings. One character only. No attacker, fist, incoming object, impact star, magical effects, background, shadow on floor, text, border or watermark. Do NOT simply mirror the old pose: redraw the body mechanics so the face looks LEFT while the entire head and shoulders lean RIGHT from a blow from the LEFT.",
     "reference": "C:/Users/john9/Documents/Codex/2026-10-16/new-chat/work/trg-ui-trial/content_trickcal/avatars/avatar_07/fullbody.png",
     "generator": "native image_gen.imagegen",
     "corrections": 0,
@@ -349,19 +445,33 @@
     "width": 1254,
     "height": 1254,
     "format": "RGBA",
-    "sha256": "d299560dc925ccca10359ce824a53c8a393775f2e9290a7838eb5fec09a41740",
-    "bytes": 1375364,
-    "transparent_fraction": 0.515,
+    "sha256": "3c22992a5d6377b803d1a773e51f230ad3984052c9779ccc3af07befda05f8fb",
+    "bytes": 1228948,
+    "transparent_fraction": 0.596,
     "alpha_bbox": [
-      57,
-      9,
-      1221,
+      0,
+      23,
+      1238,
       1254
     ],
     "runtime_max_size": 1024,
     "import_quality": 0.85,
     "image_model": "Not exposed by native image_gen",
-    "reference_sha256": "f35192706476e79be0c22f73bf0e2f1bf1af4e965dff7287134f3569ffbb571d"
+    "reference_sha256": "f35192706476e79be0c22f73bf0e2f1bf1af4e965dff7287134f3569ffbb571d",
+    "revision": 2,
+    "previous_revision": {
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-ca4d3ab5-4bb7-4681-81df-b348896e775b.png",
+      "sha256": "d299560dc925ccca10359ce824a53c8a393775f2e9290a7838eb5fec09a41740",
+      "prompt": "Edit the attached original Trickcal Revive character reference into ONE standalone full-body combat key-pose sprite for a Darkest Dungeon parody presentation. This is the exact character identity reference: preserve the hairstyle, ears, headwear, outfit cut, primary color scheme, wings/tail and recognizable accessories. Cute SD two-head-tall proportions, large soft mochi cheeks, clean thick near-black outlines, crisp flat cel coloring and strong solid black shadow shapes, limited hatching, matching a polished chibi game sprite. Actual transparent RGBA background, square canvas, full head, hands, weapons and both feet inside the frame, at least 6 percent transparent margin. One actor only, no scenery, no floor, no cast shadow outside the body, no rectangular comic painting, no enemy, no magic aura, no light rays, no speed lines, no projectile, no impact burst, no words, letters, numbers, watermark, UI, or baked checkerboard. Keep the reference costume age-appropriate and unchanged; do not add revealing clothing, realistic body proportions or different armor. Belita: long white hair, small black/red demon horns, red-and-gold contrasting eyes, red-and-black gothic outfit and cape, dark wing-like appendages, pointed red/black ornate staff. RIGHT-stage defender who was facing LEFT, now recoiling diagonally BACK TO THE RIGHT after a harmless cartoon hit from the left. Her left-facing cheek is visibly squished, eyes squeezed shut and mouth a funny shocked grimace, both arms thrown up, torso leaning right, hair/ears/cape lagging right, one foot sliding and the other heel raised. Keep a clean readable recoil silhouette in three-quarter side view. Remove handheld weapons/props for this reaction pose, but preserve worn costume, headwear, wings/tail and satchel or chains. No incoming fist, attacker, projectile, stars, blood, damage marks or impact effects."
+    },
+    "direction": "faces screen left; head and shoulders recoil screen right from a left-to-right strike",
+    "visible_alpha_bbox": [
+      119,
+      73,
+      1235,
+      1160
+    ],
+    "qa": "Reviewed direction, costume identity, silhouette, full body and game composition; corner alpha <=1/255; original PNG bytes preserved."
   },
   {
     "avatar": "avatar_08",
@@ -392,8 +502,8 @@
   {
     "avatar": "avatar_08",
     "pose": "hit",
-    "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-11065501-2c1d-490e-b0cb-ac1a8b7cae73.png",
-    "prompt": "Edit the attached original Trickcal Revive character reference into ONE standalone full-body combat key-pose sprite for a Darkest Dungeon parody presentation. This is the exact character identity reference: preserve the hairstyle, ears, headwear, outfit cut, primary color scheme, wings/tail and recognizable accessories. Cute SD two-head-tall proportions, large soft mochi cheeks, clean thick near-black outlines, crisp flat cel coloring and strong solid black shadow shapes, limited hatching, matching a polished chibi game sprite. Actual transparent RGBA background, square canvas, full head, hands, weapons and both feet inside the frame, at least 6 percent transparent margin. One actor only, no scenery, no floor, no cast shadow outside the body, no rectangular comic painting, no enemy, no magic aura, no light rays, no speed lines, no projectile, no impact burst, no words, letters, numbers, watermark, UI, or baked checkerboard. Keep the reference costume age-appropriate and unchanged; do not add revealing clothing, realistic body proportions or different armor. Joan: muted green hair, long black/gold horn-like head ornaments, red eyes, dark green-black long coat with gold trim, white bodysuit and long white leg panels, decorative golden chains and dark boots. RIGHT-stage defender who was facing LEFT, now recoiling diagonally BACK TO THE RIGHT after a harmless cartoon hit from the left. Her left-facing cheek is visibly squished, eyes squeezed shut and mouth a funny shocked grimace, both arms thrown up, torso leaning right, hair/ears/cape lagging right, one foot sliding and the other heel raised. Keep a clean readable recoil silhouette in three-quarter side view. Remove handheld weapons/props for this reaction pose, but preserve worn costume, headwear, wings/tail and satchel or chains. No incoming fist, attacker, projectile, stars, blood, damage marks or impact effects.",
+    "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-8c10ebd0-9d8f-4211-a46b-d0a299381449.png",
+    "prompt": "Use case: identity-preserve game sprite edit. Edit the reference character into one new full-body HIT REACTION pose for a two-actor combat presentation. Preserve exactly this character's recognizable hairstyle, headwear, worn accessories, costume design, colors, wings/tail, chibi proportions and thick black ink/cel shaded rendering. IMPORTANT DIRECTION CORRECTION: this defender stands on the RIGHT and faces the attacker to the LEFT. A horizontal blow comes FROM SCREEN LEFT, pushing her TO SCREEN RIGHT. Her face is clearly turned LEFT in readable three-quarter PROFILE, nose and mouth toward the LEFT. The head and shoulders must recoil BACKWARD TO THE RIGHT of her hips: head center x roughly 65%, hips at 47%, feet at 32% of the canvas. A backward-sloping diagonal silhouette (head upper-right, feet lower-left). This is the opposite of leaning forward toward the attacker. Strong horizontal rightward knockback, chin tilting upward slightly, left-facing cheek compressed inward, eyes squeezed closed and a funny pained gasp. Arms flung back to the RIGHT, not both guarding in front of her face; both hands visible. Hair, cape, ears and tail swept toward SCREEN RIGHT. Bent knees, feet losing balance toward right; full body shown with clean silhouette. No handheld weapon or prop, preserve only worn accessories. Cute harmless slapstick, no injury. Actual transparent RGBA square canvas, at least 6% clear margin on every side including feet/hair/wings. One character only. No attacker, fist, incoming object, impact star, magical effects, background, shadow on floor, text, border or watermark. Do NOT simply mirror the old pose: redraw the body mechanics so the face looks LEFT while the entire head and shoulders lean RIGHT from a blow from the LEFT.\nImage 1 is the old hit sprite for line quality and costume; image 2 is the original identity reference. Replace the old forward-leaning reaction with the specified head-right/feet-left backward recoil.",
     "reference": "C:/Users/john9/Documents/Codex/2026-10-16/new-chat/work/trg-ui-trial/content_trickcal/avatars/avatar_08/fullbody.png",
     "generator": "native image_gen.imagegen",
     "corrections": 0,
@@ -401,18 +511,32 @@
     "width": 1254,
     "height": 1254,
     "format": "RGBA",
-    "sha256": "9bff3fe79a3f087eff17b44cdb6094dc8efa80e150e8ff68b992f73abdd4f637",
-    "bytes": 1269900,
-    "transparent_fraction": 0.575,
+    "sha256": "b08fd60ee2ecff854f299b3bfbd7b89c947ee85bb5863459f5183afc8e7de289",
+    "bytes": 1211689,
+    "transparent_fraction": 0.617,
     "alpha_bbox": [
       0,
-      31,
-      1224,
-      1254
+      95,
+      1226,
+      1232
     ],
     "runtime_max_size": 1024,
     "import_quality": 0.85,
     "image_model": "Not exposed by native image_gen",
-    "reference_sha256": "96a54c9595caa448b6edb8c406f6d9eebdc3be170b3fde1f1417371de5886c62"
+    "reference_sha256": "96a54c9595caa448b6edb8c406f6d9eebdc3be170b3fde1f1417371de5886c62",
+    "revision": 2,
+    "previous_revision": {
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-11065501-2c1d-490e-b0cb-ac1a8b7cae73.png",
+      "sha256": "9bff3fe79a3f087eff17b44cdb6094dc8efa80e150e8ff68b992f73abdd4f637",
+      "prompt": "Edit the attached original Trickcal Revive character reference into ONE standalone full-body combat key-pose sprite for a Darkest Dungeon parody presentation. This is the exact character identity reference: preserve the hairstyle, ears, headwear, outfit cut, primary color scheme, wings/tail and recognizable accessories. Cute SD two-head-tall proportions, large soft mochi cheeks, clean thick near-black outlines, crisp flat cel coloring and strong solid black shadow shapes, limited hatching, matching a polished chibi game sprite. Actual transparent RGBA background, square canvas, full head, hands, weapons and both feet inside the frame, at least 6 percent transparent margin. One actor only, no scenery, no floor, no cast shadow outside the body, no rectangular comic painting, no enemy, no magic aura, no light rays, no speed lines, no projectile, no impact burst, no words, letters, numbers, watermark, UI, or baked checkerboard. Keep the reference costume age-appropriate and unchanged; do not add revealing clothing, realistic body proportions or different armor. Joan: muted green hair, long black/gold horn-like head ornaments, red eyes, dark green-black long coat with gold trim, white bodysuit and long white leg panels, decorative golden chains and dark boots. RIGHT-stage defender who was facing LEFT, now recoiling diagonally BACK TO THE RIGHT after a harmless cartoon hit from the left. Her left-facing cheek is visibly squished, eyes squeezed shut and mouth a funny shocked grimace, both arms thrown up, torso leaning right, hair/ears/cape lagging right, one foot sliding and the other heel raised. Keep a clean readable recoil silhouette in three-quarter side view. Remove handheld weapons/props for this reaction pose, but preserve worn costume, headwear, wings/tail and satchel or chains. No incoming fist, attacker, projectile, stars, blood, damage marks or impact effects."
+    },
+    "direction": "faces screen left; head and shoulders recoil screen right from a left-to-right strike",
+    "visible_alpha_bbox": [
+      168,
+      98,
+      1224,
+      1135
+    ],
+    "qa": "Reviewed direction, costume identity, silhouette, full body and game composition; corner alpha <=1/255; original PNG bytes preserved."
   }
 ]
