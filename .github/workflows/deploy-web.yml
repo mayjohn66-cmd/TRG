@@ -82,6 +82,14 @@ jobs:
           cp web/icon.png build/web/icon.png
           cp web/title-logo.png build/web/title-logo.png
           cp web/loading-petit-speaki.webp build/web/loading-petit-speaki.webp
+          # GitHub rejects individual files above 100 MiB. Fail before upload
+          # with an actionable message if future asset additions reach it.
+          python3 - <<'PY'
+          from pathlib import Path
+          for asset in Path('build/web').iterdir():
+              if asset.is_file() and asset.stat().st_size >= 100 * 1024 * 1024:
+                  raise SystemExit(f'{asset} exceeds GitHub 100 MiB: exclude unused source assets or split the pack')
+          PY
           ls -la build/web
 
       - name: Publish to gh-pages
