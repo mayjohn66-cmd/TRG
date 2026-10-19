@@ -169,6 +169,7 @@ func _step_once() -> void:
 	_seen_phases[manager.current_state] = true
 	_actions += 1
 	if _actions % 5 == 0 and manager.current_state != TurnManager.State.PHASE_ROUND_START:
+		_board._refresh_all()  # 이동 도중 멈춘 상태에서 표본을 뽑아도 HUD·토큰이 낡지 않도록 먼저 최신으로 칠한다
 		_check_bounds()
 		_check_pawn_labels()
 		_check_fog_of_war()
