@@ -1,6 +1,6 @@
 {
-  "version": "0.3",
-  "date": "2026-10-18",
+  "version": "0.4",
+  "date": "2026-10-19",
   "generator": "native image_gen.imagegen (model identifier not exposed)",
   "transparent_background": false,
   "assets": [
@@ -265,19 +265,24 @@
     {
       "id": "LAW_06",
       "path": "laws/LAW_06.png",
-      "role": "과속 단속 — 큰 눈금 이동 제한",
-      "ref": "augments/AUG_LAW.png",
-      "brief": " Solid dark chocolate-brown background #24170F with subtle warm gold radial glow; ivory, gold, leaf-green and coral accents. ONE cute chunky gold roadside speed camera on a short thick stand, with ONE large dark round lens and ONE broad ivory camera-flash burst near the lens. Small coral warning triangle attached to side, plain blank triangle. Single camera object dominates. No traffic light, car, sign numbers, letters or background road.",
-      "prompt": "Create ONE simple production game augment emblem, 1:1 square. Match supplied reference's cute chunky fantasy toy art, thick clean dark outlines, broad forms, restrained glossy cel shading, warm pastel objects. Readable at 110x110 pixels. All essential objects fit within CENTERED CIRCLE of diameter 74% of canvas, with generous empty corners. No enclosing medal ring, border, labels, writing, letters, numerals, captions or watermark. No intricate ornaments or tiny particles; use at most two small glints. Symbol must clearly express the specified GAME EFFECT, not just a generic law book or gavel.  Solid dark chocolate-brown background #24170F with subtle warm gold radial glow; ivory, gold, leaf-green and coral accents. ONE cute chunky gold roadside speed camera on a short thick stand, with ONE large dark round lens and ONE broad ivory camera-flash burst near the lens. Small coral warning triangle attached to side, plain blank triangle. Single camera object dominates. No traffic light, car, sign numbers, letters or background road.",
-      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-15978375-0edd-4d7c-9ca3-e82debe93e87.png",
+      "source": "C:/Users/john9/.codex/generated_images/01a142bd-ab11-7f42-8e21-7a03de077bd3/exec-6036102a-b7dc-4c80-91d9-d70e4ae0e77f.png",
+      "prompt": "Edit target: image 1, the old golden speed-camera augment icon. Supporting style reference: image 2, the chunky gold-and-cream magical portal icon. Completely replace the camera subject with an AUTOBAHN SPEED BOOST emblem for a cute fantasy board game. Match reference 2's polished chunky squishy toy forms, very thick clean dark-brown outlines, bold 3D-like cel shading, warm gold and ivory materials, tiny cyan rim highlights, dark solid chocolate-brown background and subtle amber radial glow. New compact subject: ONE short, thick raised piece of dark asphalt freeway sweeping upward toward the upper-right, three broad luminous golden forward chevrons inset along the road, and ONE tiny chunky red-and-gold toy racing car accelerating up it with a short golden speed trail. The freeway and car must read together as one simple SPEED BOOST silhouette at 100px. Sparse large sparks only, no fine scenery. All subject matter wholly inside a centered circle of diameter 76% of the square image; generous empty dark corners, no cropping. No camera, no police, no speed-limit signs, no barriers, no outer frame, no circular rim, no banner, no letters, no numbers, no text, no watermark. 1:1 square game augment emblem. The actual rule is high rolls gain extra forward movement; the icon must clearly suggest acceleration rather than punishment.",
+      "qa": "Accepted first generation. Three forward boost chevrons and one accelerating car visually checked; camera removed; no text; existing gold/ivory cel-shaded style matched.",
       "generator": "native image_gen.imagegen",
+      "tool_event": "exec-6036102a-b7dc-4c80-91d9-d70e4ae0e77f",
       "image_model": "not exposed",
       "width": 1254,
       "height": 1254,
       "mode": "RGB",
-      "sha256": "6fe2b6ae0d017ca8cfad38cf42f670b1a0c213cd557cd27cb3b506b76523be29",
+      "sha256": "1e23c23dd281bcacd89e7be9bf8675862125235d2cea8fc60414756718e1f5cd",
+      "previous_sha256": "6fe2b6ae0d017ca8cfad38cf42f670b1a0c213cd557cd27cb3b506b76523be29",
       "pixels_modified": false,
-      "qa": "Subject and rule meaning visually checked. Exact card/chamber counts checked for relevant assets. Source and workspace SHA-256 match. Circular runtime preview checked separately."
+      "runtime_import": {
+        "size_limit": 512,
+        "mipmaps": true,
+        "compression": "lossy",
+        "quality": 0.9
+      }
     },
     {
       "id": "LAW_07",
@@ -351,6 +356,28 @@
       "sha256": "12fce0cda27053fb80a2b307d1d122d8d4b4b4b9beef769829b1f12277031af5",
       "pixels_modified": false,
       "qa": "Subject and rule meaning visually checked. Exact card/chamber counts checked for relevant assets. Source and workspace SHA-256 match. Circular runtime preview checked separately."
+    },
+    {
+      "id": "SUPER_09",
+      "path": "augments/SUPER_09.png",
+      "source": "C:/Users/john9/.codex/generated_images/01a142bd-ab11-7f42-8e21-7a03de077bd3/exec-82d9ffaf-8f9f-40c7-b641-d7f12632efb7.png",
+      "prompt": "Edit target: image 1, the flat red reticle with the obsolete -5 label. Supporting STYLE reference: image 2, the polished chunky golden magical portal game emblem. Redraw the target icon completely as a polished fantasy board-game SNIPER'S TARGET augment emblem. Keep a centered 1:1 composition, very thick clean dark outlines, chunky squishy 3D-like cel-shaded toy forms, gold and ivory hardware with red accents, subtle cyan rim glints, a dark solid burgundy/chocolate background with soft warm radial glow. Main subject is ONE small red-and-ivory board-game meeple being POPPED UPWARD from a compact golden spring launcher: one visibly compressed-to-uncoiled chunky metal spring beneath its little round seat, a short curved golden launch trail, two broad comic impact sparks. A bold small golden-framed RED TARGET RETICLE sits behind the meeple's upper body to make targeting unmistakable. One small green forward chevron near the base suggests the player's forward boost. Compact unified silhouette, only these few large simple forms, legible at 100px. All objects fully fit within the centered circle diameter 76% of canvas, broad empty dark corners and margins, no cropping. No realistic gun, no bullet, no injury, no blood, no photographic details, no outer circle rim or border, no frame, no banner, no letters, no words, NO NUMERALS, NO minus sign, absolutely remove the old -5 text. The current effect ejects a marked enemy to start, advances the player's piece and leaves a spring cannon; do not imply five-step retreat.",
+      "qa": "Accepted first generation. Targeted red meeple, upward ejection, spring launcher and forward chevron visually checked. Obsolete -5 and all text removed; no realistic firing or gore.",
+      "generator": "native image_gen.imagegen",
+      "tool_event": "exec-82d9ffaf-8f9f-40c7-b641-d7f12632efb7",
+      "image_model": "not exposed",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGB",
+      "sha256": "5862ccd084e31aa7b326ccca9d859d35574553e30f0c1838f3b243e6595ff687",
+      "previous_sha256": "b904ece3634cf8b30aab54ee17abac956a096ec51337eb60a2d21c4c313ce326",
+      "pixels_modified": false,
+      "runtime_import": {
+        "size_limit": 512,
+        "mipmaps": true,
+        "compression": "lossy",
+        "quality": 0.9
+      }
     }
   ],
   "runtime_import": {
