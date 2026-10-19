@@ -503,6 +503,7 @@ static func _apply_capture_effects(state: GameState, mover: PlayerPawn, victims:
 	for victim: PlayerPawn in victims:
 		for member: PlayerPawn in victim.stack_members():
 			report.captured_pawn_ids.append(member.entity_id)
+		state.pawn_captured.emit(mover.entity_id, victim.entity_id)
 		state.send_to_start(victim, mover.owner_id)
 
 

@@ -318,6 +318,9 @@ var _presenter: RollPresenter = null
 var _announcer: EventAnnouncer = null
 var _pending_power: float = 0.5
 var _fx_busy: bool = false
+var _capture_cutin: CaptureCutin = null
+var _capture_marks: Dictionary = {}
+var _capture_epoch: int = 0
 ## 말 움직임 연출(PawnFx): 이 시각(msec)까지는 입력·봇을 잠가 움직임이 끝나기를 기다린다.
 var _fx_until_msec: int = 0
 ## 말 id -> 다음 이동 연출에 쓸 힌트 {delay, arc, peak, spin, dur, drop, t(만든 시각)}. 이벤트가 어떻게 움직일지 미리 알려 준다.
@@ -668,6 +671,10 @@ func _new_game() -> void:
 	_beat_until_msec = 0
 	_close_reaction_popup()
 	_fx_generation += 1
+	_capture_epoch += 1
+	_capture_marks.clear()
+	if _capture_cutin != null:
+		_capture_cutin.cancel()
 	_stage_warps = 0
 	_trap_pending.clear()
 	_trap_tiles.clear()
@@ -706,6 +713,12 @@ func _new_game() -> void:
 func _bind_state() -> void:
 	state.pawn_stepped.connect(_on_pawn_stepped)
 	state.pawn_warped.connect(_on_pawn_warped)
+	state.pawn_captured.connect(_on_pawn_captured)
+	state.snapshot_restored.connect(func() -> void:
+		_capture_epoch += 1
+		_capture_marks.clear()
+		if _capture_cutin != null:
+			_capture_cutin.cancel())
 	state.pawn_sent_to_start.connect(func(pawn_id: int, by_player: int) -> void:
 		var victim: PlayerPawn = state.get_pawn(pawn_id)
 		_log_line("%s 출발선으로 복귀%s" % [_pawn_name(pawn_id), "  [🔥 복수 부스터 획득: 다음 출발 +%d칸]" % GameEnums.REVENGE_BONUS if victim != null and victim.revenge_boost else ""], Color("ff8787"))
@@ -713,23 +726,24 @@ func _bind_state() -> void:
 			_avatar_react(victim.owner_id, AvatarSlot.Emotion.ANGRY)
 			if by_player != victim.owner_id and _player_ids.has(by_player):
 				_avatar_react(by_player, AvatarSlot.Emotion.HAPPY)
-		# 잡힌 말: [처치 컷신 0.65초] -> 보드 밖으로 홈런처럼 날아감(0.38초, 1080도 회전) -> 출발선 위에서 툭 떨어져 바운스.
-		# 컷신은 잡는 말의 이동이 끝난 뒤에 뜨고, 그동안 잡힌 말은 제자리에서 기다린다.
+		# 실제 잡기는 아바타 두 포즈를 0.5초 강조한 뒤 장외로 날리고 출발선에 돌려놓는다.
+		var lead: float = 0.0
+		var cutin_capture: bool = _capture_marks.has(pawn_id)
+		_capture_marks.erase(pawn_id)
 		if victim != null and _fx_on():
+			var view: Node2D = _pawn_views.get(pawn_id)
+			if view != null and not cutin_capture:
+				lead = _fx_try_slam(by_player, view.position)
 			var owner_id: int = victim.owner_id
-			var victim_pos: Vector2 = (_pawn_views[pawn_id] as Node2D).position if _pawn_views.has(pawn_id) else Vector2.ZERO
-			var attacker_art: Texture2D = _attacker_art(by_player, victim_pos)
+			var react_delay: float = (CaptureCutin.DURATION if cutin_capture else lead + 0.12) + _fx_hint_bonus
 			_fx_when_announced(func() -> void:
-				var lead: float = maxf(0.0, float(_fx_until_msec - Time.get_ticks_msec()) / 1000.0)
-				var cutin_seconds: float = KillCutIn.TOTAL_SECONDS * _pace()
-				_show_kill_cutin(attacker_art, lead)
-				_set_hint(pawn_id, {"delay": lead + cutin_seconds + _fx_hint_bonus, "homerun": true, "land_thud": true})
-				get_tree().create_timer(lead + cutin_seconds + 0.1).timeout.connect(func() -> void:
+				get_tree().create_timer(react_delay).timeout.connect(func() -> void:
 					_profile_react(owner_id, false, ["[억까!]", "[으악!]"][randi() % 2])
 					if by_player != owner_id:
 						_profile_react(by_player, true, "[나이스!]")))
-		else:
-			_set_hint(pawn_id, {"arc": 110.0, "spin": 2.0 * TAU, "dur": 0.45, "land_thud": true}))
+		var flight_delay: float = CaptureCutin.DURATION / _motion_pace() if cutin_capture else lead + 0.28
+		_fx_impact_at_pawn(pawn_id, (flight_delay if cutin_capture else lead) + _fx_hint_bonus)
+		_set_hint(pawn_id, {"delay": flight_delay + _fx_hint_bonus, "homerun": cutin_capture, "arc": 110.0, "spin": 2.0 * TAU, "dur": 0.45, "land_thud": true}))
 	state.dash_pad_triggered.connect(func(pawn_id: int, tile: int) -> void:
 		_log_line("[부스터 발판] %s %d번 발판! +%d칸 추가 전진" % [_pawn_name(pawn_id), tile, GameEnums.DASH_STEPS], Color("63e6be"))
 		var pad_pos: Vector2 = (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + _tile_center(tile)
@@ -894,6 +908,13 @@ func _build_ui() -> void:
 	_build_drop_zone()
 	_build_aim_layer()
 	_build_hover_tip()
+	var capture_layer := CanvasLayer.new()
+	capture_layer.name = "CapturePresentation"
+	capture_layer.layer = 60
+	add_child(capture_layer)
+	_capture_cutin = CaptureCutin.new()
+	_capture_cutin.name = "CaptureCutin"
+	capture_layer.add_child(_capture_cutin)
 	_debug_enabled = debug_requested()
 	_debug_toggle.visible = _debug_enabled
 	_register_layout()
@@ -1126,6 +1147,7 @@ func _apply_avatars() -> void:
 	for player_id: int in PLAYER_IDS:
 		if _player_ids.has(player_id):
 			(_profiles[player_id]["avatar"] as AvatarSlot).set_character(_avatar_for(player_id))
+			AvatarCombatArt.warm(_avatar_for(player_id))
 
 
 ## 플레이어의 아바타가 감정을 보인다 (에셋이 있으면 그 애니메이션, 없으면 자리표시자 연출).
@@ -2235,6 +2257,8 @@ func _build_direction_icons() -> void:
 func _fx_motion_pending() -> bool:
 	if not _fx_on():
 		return false
+	if _capture_cutin != null and _capture_cutin.busy():
+		return true
 	if _stage_warps > 0:
 		return true
 	# 굴림 연출·실패 알림이 진행 중이면 아직 이전 플레이어의 턴이다 (결과를 다 보여 준 뒤에야 다음 턴으로 넘어간다).
@@ -4181,28 +4205,46 @@ func _on_skill_used(data: Dictionary) -> void:
 	_announce_gate("1회용 필살기", "[P%d 발동!] %s" % [player_id, PawnCatalog.skill_name(skill)], body, PLAYER_COLORS[player_id], null, 1.3)
 
 
-## 말을 잡은 쪽(by_player)의 말 중 잡힌 말 자리에 있던 말의 그림. 못 찾으면(함정·중립 기물 등) null.
-func _attacker_art(by_player: int, victim_pos: Vector2) -> Texture2D:
+## 실제 잡기만 공격자/피격자 아바타 포즈로 강조한다 (함정·자기 복귀 제외).
+func _on_pawn_captured(attacker_pawn_id: int, victim_pawn_id: int) -> void:
+	if not _fx_on() or _capture_cutin == null:
+		return
+	var attacker: PlayerPawn = state.get_pawn(attacker_pawn_id)
+	var victim: PlayerPawn = state.get_pawn(victim_pawn_id)
+	if attacker == null or victim == null or attacker.owner_id == victim.owner_id:
+		return
+	var attacking_player: int = attacker.owner_id
+	var defending_player: int = victim.owner_id
+	if not _player_ids.has(attacking_player) or not _player_ids.has(defending_player):
+		return
+	for member: PlayerPawn in victim.stack_members():
+		_capture_marks[member.entity_id] = true
+	var attack_avatar: StringName = _avatar_for(attacking_player)
+	var hit_avatar: StringName = _avatar_for(defending_player)
+	var generation: int = _capture_epoch
+	_fx_when_announced(func() -> void:
+		if generation != _capture_epoch:
+			return
+		_capture_cutin.enqueue(attack_avatar, hit_avatar, attacking_player, defending_player)
+		_fx_until_msec = maxi(_fx_until_msec, Time.get_ticks_msec() + int(CaptureCutin.DURATION * 1000.0)))
+
+
+## 아바타 컷인 외의 복귀 효과에서 쓰는 보드 말 내리찍기.
+func _fx_try_slam(by_player: int, victim_pos: Vector2) -> float:
+	if not _fx_on():
+		return 0.0
 	for pawn: PlayerPawn in state.pawns:
 		if pawn.owner_id != by_player:
 			continue
-		if _pawn_views.has(pawn.entity_id) and _pawn_position(pawn).distance_to(victim_pos) <= 40.0:
-			return PawnArt.sprite(pawn).get("texture") as Texture2D
-	return null
-
-
-## 처치 컷신을 lead초 뒤에 띄운다 (잡는 말이 먼저 도착해야 하므로).
-func _show_kill_cutin(attacker_art: Texture2D, lead: float) -> void:
-	var start_cutin: Callable = func() -> void:
-		if not is_inside_tree():
-			return
-		var cutin := KillCutIn.new()
-		add_child(cutin)
-		cutin.play(self, attacker_art, _pace())
-	if lead <= 0.01:
-		start_cutin.call()
-	else:
-		get_tree().create_timer(lead).timeout.connect(start_cutin)
+		var view: Node2D = _pawn_views.get(pawn.entity_id)
+		if view == null or not _fx_running(view) or view.has_meta("fx_script"):
+			continue
+		if _pawn_position(pawn).distance_to(victim_pos) > 36.0:
+			continue
+		var cap: float = minf(_pace(), 1.5)
+		_glide(view, _pawn_position(pawn), _depth_scale(tile_norm(pawn.current_tile_idx).y), {"dur": HOP_SECONDS * 1.3, "arc": SLAM_HEIGHT, "pace_cap": cap, "land_tile": pawn.current_tile_idx, "land_big": true})
+		return HOP_SECONDS * 1.3 * cap
+	return 0.0
 
 
 ## 승급: 말이 공중으로 떠올라 한 바퀴 돌고 후광이 터진다 (그동안 아이콘 글자가 바뀐다).
@@ -6091,7 +6133,7 @@ func _on_game_over(winner_id: int, reason: StringName) -> void:
 
 
 func _ui_busy() -> bool:
-	return _intro_blocks() or _fx_busy or _aim_pawn != -1 or (_announcer != null and _announcer.active) or Time.get_ticks_msec() < _beat_until_msec or (_fx_on() and Time.get_ticks_msec() < _fx_until_msec)
+	return _intro_blocks() or _fx_busy or (_capture_cutin != null and _capture_cutin.busy()) or _aim_pawn != -1 or (_announcer != null and _announcer.active) or Time.get_ticks_msec() < _beat_until_msec or (_fx_on() and Time.get_ticks_msec() < _fx_until_msec)
 
 
 ## 행동이 끝난 뒤 잠깐(초) 입력과 봇 행동을 멈춰, 플레이어가 방금 일어난 일을 알아볼 틈을 준다.

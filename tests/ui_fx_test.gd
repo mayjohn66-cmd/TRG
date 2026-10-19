@@ -1485,7 +1485,7 @@ func _test_trap_tile_marking() -> void:
 	_board.instant_roll_for_test = true
 
 
-## 말을 잡으면 처치 컷신(0.65초)이 뜨고, 그동안 잡힌 말은 제자리에서 기다렸다가 보드 밖으로 날아간 뒤 출발선에 돌아온다.
+## 말을 잡으면 아바타 공격·피격 포즈(0.5초)가 뜨고, 그동안 잡힌 말은 제자리에서 기다렸다가 보드 밖으로 날아간 뒤 출발선에 돌아온다.
 func _test_kill_cutin() -> void:
 	var state: GameState = _board.manager.state
 	_board.instant_roll_for_test = false
@@ -1496,23 +1496,18 @@ func _test_kill_cutin() -> void:
 	_board._refresh_all()
 	await get_root().get_tree().create_timer(1.2).timeout  # 말이 12번 자리로 나타나는 연출이 끝나길 기다린다
 	_board._fx_until_msec = 0  # 남은 연출 시간이 컷신을 미루지 않게 한다
-	var cutin: KillCutIn = null
+	state.pawn_captured.emit(11, victim.entity_id)
 	state.send_to_start(victim, 1)
 	_board._refresh_all()  # 실제 게임에서는 행동 처리(_act) 뒤에 화면이 갱신된다
 	for i: int in 4:
 		await process_frame
-	for child: Node in _board.get_children():
-		if child is KillCutIn:
-			cutin = child
-	_expect(cutin != null, "말이 잡히면 처치 컷신이 뜬다")
-	_expect(cutin != null and cutin.layer >= 20 and KillCutIn.LINES.size() == 4, "컷신은 맨 위 레이어에 뜨고 패러디 대사가 4종 있다")
+	var cutin: CaptureCutin = _board._capture_cutin
+	_expect(cutin != null and cutin.active, "말이 잡히면 두 아바타 포즈가 뜬다")
+	_expect(cutin.attacker_avatar == _board._avatar_for(1) and cutin.defender_avatar == _board._avatar_for(2), "실제 공격자와 피격자의 선택 아바타를 사용한다")
 	var view: Node2D = _board._pawn_views[victim.entity_id]
 	_expect(view.visible and view.position.distance_to(_board._pawn_position(victim)) > 3.0, "컷신 동안 잡힌 말은 아직 제자리(옛 자리)에 있다")
 	await get_root().get_tree().create_timer(1.2).timeout
-	var cutin_left: bool = false
-	for child: Node in _board.get_children():
-		cutin_left = cutin_left or child is KillCutIn
-	_expect(not cutin_left, "컷신은 0.65초 뒤에 사라진다")
+	_expect(not cutin.active, "아바타 포즈는 0.5초 뒤에 사라진다")
 	await get_root().get_tree().create_timer(1.6).timeout
 	_expect(not _board._fx_running(view) and absf(view.rotation) < 0.01 and view.scale.x < 3.0 and view.position.distance_to(_board._pawn_position(victim)) < 4.0, "홈런으로 날아갔던 말이 출발선 자리에 돌아와 연출이 끝났다")
 	_board.instant_roll_for_test = true
