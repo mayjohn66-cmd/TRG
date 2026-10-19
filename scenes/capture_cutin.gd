@@ -116,12 +116,16 @@ func _draw() -> void:
 	if elapsed >= IMPACT_AT and elapsed < HOLD_UNTIL:
 		var beat: float = elapsed - IMPACT_AT
 		shake = Vector2(sin(beat * 170.0), sin(beat * 130.0)) * 5.0 * (1.0 - beat / (HOLD_UNTIL - IMPACT_AT))
-	var target: Vector2 = Vector2(size.x * 0.58, size.y * 0.42) + shake
-	var side: float = minf(size.x * 0.49, size.y * 0.84)
-	var lunge: float = lerpf(-side * 0.10, 0.0, ramp(elapsed, 0.0, IMPACT_AT))
+	var target: Vector2 = Vector2(size.x * 0.53, size.y * 0.40) + shake
+	var side: float = minf(size.x * 0.41, size.y * 0.74)
+	var gap: float = size.x * 0.10
+	# Match the horizontal strike height while leaving room between fist and face.
+	var attack_target := target - Vector2(gap * 0.5, 0)
+	var hit_target := target + Vector2(gap * 0.5, 0)
+	var lunge: float = lerpf(-side * 0.08, 0.0, ramp(elapsed, 0.0, IMPACT_AT))
 	var recoil: float = ramp(elapsed, HOLD_UNTIL, RECOIL_UNTIL)
-	_draw_actor(_hit, defender_avatar, &"hit", target + Vector2(side * 0.10 * recoil, side * 0.01 * recoil), side * 0.93, 0.13 * recoil, fade)
-	_draw_actor(_attack, attacker_avatar, &"attack", target + Vector2(lunge, 0), side, 0.0, fade)
+	_draw_actor(_hit, defender_avatar, &"hit", hit_target + Vector2(side * 0.08 * recoil, 0), side * 0.93, 0.04 * recoil, fade)
+	_draw_actor(_attack, attacker_avatar, &"attack", attack_target + Vector2(lunge, 0), side, 0.0, fade)
 	# Rendered separately from either transparent character image.
 	var spark_alpha: float = (1.0 - ramp(elapsed, 0.15, 0.225)) if elapsed >= IMPACT_AT else 0.0
 	if spark_alpha > 0.0:
@@ -134,11 +138,17 @@ func _draw() -> void:
 		draw_rect(Rect2(Vector2.ZERO, size), Color(1.0, 0.90, 0.72, flash))
 
 
+func _actor_size(texture: Texture2D, avatar: StringName, pose: StringName, side: float) -> Vector2:
+	if texture == null:
+		return Vector2.ZERO
+	var extent: Vector2 = texture.get_size()
+	return extent * (side * AvatarCombatArt.pose_scale(avatar, pose) / maxf(extent.x, extent.y))
+
+
 func _draw_actor(texture: Texture2D, avatar: StringName, pose: StringName, target: Vector2, side: float, angle: float, opacity: float) -> void:
 	if texture == null:
 		return
-	var extent: Vector2 = texture.get_size()
-	var drawn: Vector2 = extent * (side * AvatarCombatArt.pose_scale(avatar, pose) / maxf(extent.x, extent.y))
+	var drawn: Vector2 = _actor_size(texture, avatar, pose, side)
 	var contact: Vector2 = AvatarCombatArt.contact(avatar, pose) * drawn
 	draw_set_transform(target, angle)
 	draw_texture_rect(texture, Rect2(-contact, drawn), false, Color(1, 1, 1, opacity))

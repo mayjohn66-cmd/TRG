@@ -35,15 +35,15 @@ static func warm(avatar: StringName) -> void:
 static func contact(avatar: StringName, pose: StringName) -> Vector2:
 	if pose == &"hit":
 		match avatar:
-			&"avatar_01": return Vector2(0.43, 0.29)
-			&"avatar_02": return Vector2(0.40, 0.34)
-			&"avatar_03": return Vector2(0.25, 0.36)
-			&"avatar_04": return Vector2(0.37, 0.36)
-			&"avatar_05": return Vector2(0.35, 0.30)
-			&"avatar_06": return Vector2(0.25, 0.30)
-			&"avatar_07": return Vector2(0.25, 0.40)
-			&"avatar_08": return Vector2(0.32, 0.37)
-		return Vector2(0.40, 0.34)
+			&"avatar_01": return Vector2(0.40, 0.34)
+			&"avatar_02": return Vector2(0.37, 0.33)
+			&"avatar_03": return Vector2(0.43, 0.29)
+			&"avatar_04": return Vector2(0.40, 0.34)
+			&"avatar_05": return Vector2(0.40, 0.33)
+			&"avatar_06": return Vector2(0.40, 0.33)
+			&"avatar_07": return Vector2(0.41, 0.33)
+			&"avatar_08": return Vector2(0.40, 0.33)
+		return Vector2(0.40, 0.33)
 	match avatar:
 		&"avatar_01": return Vector2(0.94, 0.45)
 		&"avatar_02": return Vector2(0.94, 0.36)
