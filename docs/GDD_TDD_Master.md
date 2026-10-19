@@ -752,3 +752,10 @@ res://
 - `GameEnums`의 타일 상수(`TILE_COUNT`, 코너, 빵집, 옷장, 점프, 발판, 승급 등)를 `BoardSpec`으로 옮겼다. 모든 참가자가 같은 값을 써야 하므로 게임 도중에는 바꾸지 않는다.
 - 규칙 문구(도감 `보드 읽기` 쪽·미니 보드 그림·게임 팁·법전 설명·기물 설명)는 숫자를 박지 않고 `BoardSpec`에서 읽거나 `반환점`처럼 이름으로 쓴다.
 - 테스트: `run_tests.gd`가 시작할 때 `BoardSpec.apply(24)`로 기존 규칙 테스트를 그대로 검증하고, `tests/test_board_32.gd`가 32칸 배치(칸 수·코너·점프·완주·발판·타일 폭)를 따로 켜서 검사한다. UI 테스트(`ui_smoke` 등)는 기본 32칸으로 돈다.
+
+### 6.10 단일 FIFO 연출 큐 (Presentation Queue)
+- `main_board.gd`의 `_presentation_queue`/`_is_playing_presentation`/`enqueue_step(callable)`/`_process_presentation_queue()`가 모든 연출을 1개씩 `await`로 순차 실행한다. (말 이동 hop, 워프, 장외 사출 정착, 처치 컷신/팝업, 배너 `_announce`)
+- 헤드리스·빠른 스모크(`not _fx_on()`)에서는 큐를 거치지 않고 즉시 실행한다.
+- 각 스텝은 시작 전 `_presentation_wait_ready`, 종료 후 `_presentation_settle`(워프·FX·컷인·배너·말 트윈이 끝날 때까지 대기)을 거친다.
+- 큐가 활성인 동안 `_ui_busy()`/`_fx_motion_pending()`이 true → 다음 턴/증강 선택 팝업이 앞선 연출 뒤에 열린다.
+- `_reset_presentation()`: 큐 비우기·세대 증가(테스트/새 게임 시작용). `_settle_pawn_view(view, pawn, force)`는 대기 중인 스텝이 있는 말을 재배치하지 않는다.

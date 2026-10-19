@@ -81,6 +81,7 @@ func _run() -> void:
 	await _test_kill_cutin()
 	await _test_new_tool_stages()
 	await _test_npc_danger_preview()
+	await _test_presentation_queue()
 	if _failures.is_empty():
 		print("UI_FX_OK")
 		quit(0)
@@ -1262,6 +1263,7 @@ func _test_tool_cards_fit() -> void:
 
 ## 행동 사이의 호흡: 이동이 끝나면 잠깐 입력이 잠기고, 새 플레이어의 턴에는 [N 차례] 알림이 뜬다.
 func _test_action_beats() -> void:
+	_board._reset_presentation()  # 앞선 검사가 남긴 연출 큐를 비운다
 	var manager: TurnManager = _board.manager
 	_board._bot.set_enabled(false)  # 앞선 봇 검사의 봇이 턴을 넘겨 알림이 끼어들지 않게 한다
 	manager.set_process(false)  # 단계 제한 시간으로 턴이 저절로 넘어가지 않게 한다
@@ -1426,6 +1428,7 @@ func _test_duel_flow() -> void:
 
 ## 점프 코너·포탈: 말이 먼저 발판에 멈춰 발동 연출을 보여 준 뒤 목적지로 날아간다 (한 번에 최종 칸으로 가지 않는다).
 func _test_stage_warp() -> void:
+	_board._reset_presentation()  # 앞선 검사가 남긴 연출 큐를 비운다
 	var manager: TurnManager = _board.manager
 	var state: GameState = manager.state
 	_board.instant_roll_for_test = false
@@ -1446,6 +1449,9 @@ func _test_stage_warp() -> void:
 		state.pawn_stepped.emit(11, case_data[0], case_data[1])
 		pawn.current_tile_idx = case_data[2]
 		state.pawn_warped.emit(11, case_data[1], case_data[2])
+		var started_at: float = _now()
+		while _board._stage_warps == 0 and _now() - started_at < 2.0:
+			await process_frame  # 앞선 걸음이 연출 큐에서 끝나야 워프 연출이 시작된다
 		_expect(_board._stage_warps == 1, "%s: 2단계 이동이 시작된다" % case_data[3])
 		var corner_pos: Vector2 = _board._pawn_position_at(pawn, case_data[1])
 		var final_pos: Vector2 = _board._pawn_position_at(pawn, case_data[2])
@@ -1467,6 +1473,7 @@ func _test_stage_warp() -> void:
 
 ## 함정이 깔린 발판은 카드 알림이 끝난 뒤 짙은 보라색 테두리로 깜빡인다.
 func _test_trap_tile_marking() -> void:
+	_board._reset_presentation()  # 앞선 검사가 남긴 연출 큐를 비운다
 	var state: GameState = _board.manager.state
 	_board.instant_roll_for_test = false
 	_board._announcer.cancel()
@@ -1493,6 +1500,7 @@ func _test_trap_tile_marking() -> void:
 
 ## 말을 잡으면 아바타 공격·피격 포즈(0.5초)가 뜨고, 그동안 잡힌 말은 제자리에서 기다렸다가 보드 밖으로 날아간 뒤 출발선에 돌아온다.
 func _test_kill_cutin() -> void:
+	_board._reset_presentation()  # 앞선 검사가 남긴 연출 큐를 비운다
 	var state: GameState = _board.manager.state
 	_board.instant_roll_for_test = false
 	_board._announcer.cancel()
@@ -1673,3 +1681,71 @@ func _test_npc_danger_preview() -> void:
 	mine.current_tile_idx = 0
 	_board._refresh_all()
 	_expect(_board._npc_danger.is_empty(), "NPC가 사라지면 위험 예고도 사라진다")
+
+
+## 단일 연출 큐: 여러 연출이 한꺼번에 방송돼도 한 번에 하나씩 순서대로만 재생된다.
+func _test_presentation_queue() -> void:
+	var state: GameState = _board.manager.state
+	_board.instant_roll_for_test = false
+	_board._announcer.cancel()
+	_board._fx_until_msec = 0
+	var guard: int = 0
+	while _board._presentation_active() and guard < 600:
+		guard += 1
+		await process_frame
+	# 1) 단계는 앞 단계가 끝난 뒤에야 시작한다
+	var log: Array[String] = []
+	_board.enqueue_step(func() -> void:
+		log.append("a start")
+		await create_timer(0.15).timeout
+		log.append("a end"))
+	_board.enqueue_step(func() -> void:
+		log.append("b start")
+		await create_timer(0.1).timeout
+		log.append("b end"))
+	_board.enqueue_step(func() -> void: log.append("c"))
+	_expect(_board._ui_busy() and _board._presentation_active(), "큐가 일하는 동안은 입력·봇·다음 턴이 기다린다")
+	_expect(log == ["a start"], "첫 단계는 바로 시작하고 나머지는 줄을 선다 (%s)" % str(log))
+	guard = 0
+	while _board._presentation_active() and guard < 600:
+		guard += 1
+		await process_frame
+	_expect(log == ["a start", "a end", "b start", "b end", "c"], "앞 연출이 끝난 뒤에 다음 연출이 시작된다 (%s)" % str(log))
+	# 2) 엔진이 한 번에 방송한 여러 걸음(발판 가속)도 한 칸씩 차례로 뛴다
+	var pawn: PlayerPawn = state.get_pawn(11)
+	pawn.has_left_start = true
+	pawn.current_tile_idx = 2
+	pawn.step_history = [1, 2]
+	_board._refresh_all()
+	await process_frame
+	_board._fx_until_msec = 0
+	var view: Node2D = _board._pawn_views[11]
+	var visited: Array[int] = []
+	for tile: int in [3, 4, 5, 6]:
+		var before: int = pawn.current_tile_idx
+		pawn.current_tile_idx = tile
+		state.pawn_stepped.emit(11, before, tile)
+	guard = 0
+	while _board._presentation_active() and guard < 900:
+		guard += 1
+		if view.has_meta("land_tile"):
+			var landing: int = int(view.get_meta("land_tile"))
+			if visited.is_empty() or visited[-1] != landing:
+				visited.append(landing)
+		await process_frame
+	_expect(visited == [3, 4, 5, 6], "한꺼번에 방송된 4걸음이 3 -> 4 -> 5 -> 6번 순서로 하나씩 착지한다 (%s)" % str(visited))
+	_expect(view.position.distance_to(_board._pawn_position(pawn)) < 4.0, "큐가 끝나면 말은 최종 위치에 서 있다")
+	# 3) 배너는 말이 움직이는 동안 먼저 뜨지 않고 큐 순서를 지킨다
+	pawn.current_tile_idx = 8
+	state.pawn_stepped.emit(11, 6, 8)
+	_board._announce("테스트", "[큐 배너]", "말 이동 뒤에 떠야 한다", Color.WHITE, null, 0.3)
+	_expect(not _board._announcer.active, "이동 큐가 재생 중이면 배너는 그 뒤에 줄을 선다")
+	guard = 0
+	while _board._presentation_active() and guard < 900:
+		guard += 1
+		await process_frame
+	_expect(not _board._presentation_active(), "큐가 모두 비워진다")
+	_board._announcer.cancel()
+	_board._fx_until_msec = 0
+	_board.instant_roll_for_test = true
+	print("PRESENTATION_QUEUE_OK")
