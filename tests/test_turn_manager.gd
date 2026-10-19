@@ -111,7 +111,7 @@ func test_law_pipeline_modifies_roll_before_move() -> void:
 	_set_tool(manager, 1, ScriptedTool.new([6]))
 	_do(manager, 1, &"proceed")
 	_do(manager, 1, &"roll")
-	check_eq(manager.move_queue, int_array([1]), "LAW_06이 6을 1로 고정")
+	check_eq(manager.move_queue, int_array([9]), "LAW_06(아우토반)이 눈금 6에 +3칸 = 9")
 	_dispose(manager)
 
 

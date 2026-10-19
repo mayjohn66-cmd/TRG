@@ -225,6 +225,10 @@ class Tile extends Control:
 	## 함정이 깔린 발판: 짙은 보라색 테두리와 깜빡이는 보라색 빛 (pulse는 0~1로 main_board가 갱신한다).
 	var trap_on: bool = false
 	var trap_pulse: float = 0.0
+	## 중립 NPC 습격 예고: 0 없음 / 1 NPC가 지나갈 길 / 2 말이 서 있으면 잡히는 위험 타일(붉은 해골). direction은 NPC가 가는 쪽(화면 방향)이다.
+	var danger_level: int = 0
+	var danger_dir: Vector2 = Vector2.ZERO
+	var danger_pulse: float = 0.0
 
 	func initialize(tile_index: int) -> void:
 		index = tile_index
@@ -290,10 +294,22 @@ class Tile extends Control:
 		trap_pulse = value
 		queue_redraw()
 
+	func set_danger(level: int, direction: Vector2 = Vector2.ZERO) -> void:
+		if danger_level != level or danger_dir != direction:
+			danger_level = level
+			danger_dir = direction
+			queue_redraw()
+
+	func set_danger_pulse(value: float) -> void:
+		danger_pulse = value
+		queue_redraw()
+
 	func _draw() -> void:
 		if layers.is_empty():
 			return
 		_draw_tile()
+		if danger_level > 0:
+			_draw_danger()
 		if trap_on:
 			var closed: PackedVector2Array = outline_points.duplicate()
 			closed.append(closed[0])
@@ -302,6 +318,37 @@ class Tile extends Control:
 			var inner: PackedVector2Array = layers[1].duplicate()
 			inner.append(inner[0])
 			draw_polyline(inner, Color(0.55, 0.25, 0.85, 0.35 + 0.5 * trap_pulse), 2.5, true)
+
+	## NPC 습격 예고: 붉게 깜빡이는 테두리, 위험 타일의 해골, NPC가 가는 쪽을 가리키는 화살표.
+	func _draw_danger() -> void:
+		var closed: PackedVector2Array = outline_points.duplicate()
+		closed.append(closed[0])
+		var strong: bool = danger_level >= 2
+		var alpha: float = (0.2 + 0.32 * danger_pulse) if strong else (0.08 + 0.14 * danger_pulse)
+		draw_colored_polygon(layers[layers.size() - 1], Color(0.9, 0.08, 0.08, alpha))
+		draw_polyline(closed, Color(0.85, 0.05, 0.05, 0.55 + 0.45 * danger_pulse), 5.0 if strong else 3.0, true)
+		var center := Vector2.ZERO
+		for point: Vector2 in outline_points:
+			center += point
+		center /= float(maxi(outline_points.size(), 1))
+		if strong:
+			_draw_skull(center + Vector2(0.0, -3.0))
+		if danger_dir != Vector2.ZERO:
+			var along: Vector2 = danger_dir.normalized()
+			var across := Vector2(-along.y, along.x)
+			var tip: Vector2 = center + along * 17.0 + Vector2(0.0, 10.0 if strong else 0.0)
+			var base: Vector2 = tip - along * 10.0
+			draw_colored_polygon(PackedVector2Array([tip, base + across * 7.0, base - across * 7.0]), Color(1.0, 0.25, 0.2, 0.7 + 0.3 * danger_pulse))
+
+	func _draw_skull(at: Vector2) -> void:
+		draw_circle(at, 11.5, Color(0.1, 0.0, 0.0, 0.85))
+		draw_circle(at, 10.0, Color("fff3f0"))
+		draw_rect(Rect2(at + Vector2(-6.0, 5.0), Vector2(12.0, 7.0)), Color("fff3f0"))
+		for x: float in [-4.0, 4.0]:
+			draw_circle(at + Vector2(x, -1.0), 2.8, Color("2b0000"))
+		draw_colored_polygon(PackedVector2Array([at + Vector2(0.0, 2.0), at + Vector2(-1.5, 4.5), at + Vector2(1.5, 4.5)]), Color("2b0000"))
+		for x: float in [-3.0, 0.0, 3.0]:
+			draw_line(at + Vector2(x, 7.0), at + Vector2(x, 11.0), Color("2b0000"), 1.2)
 
 	func _draw_tile() -> void:
 		var edge: Color = data.edge

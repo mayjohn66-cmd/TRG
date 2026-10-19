@@ -216,3 +216,15 @@ func _draw_npc() -> void:
 		draw_line(Vector2(-6,-22),Vector2(6,-22),INK,5,true)
 		for x: int in [-3,3]: draw_circle(Vector2(x,-22),1,IVORY)
 		_ellipse(Vector2(9,-9),Vector2(6,7),WOOD,INK)
+	_draw_npc_label()
+
+
+## NPC 토큰 아래 이동 방향 라벨: 도적(▶1~6칸) / 팩맨(◀-3칸).
+func _draw_npc_label() -> void:
+	var robber: bool = npc_behavior != GameEnums.NpcBehavior.PATROL_REVERSE
+	var text: String = "도적(▶1~6칸)" if robber else "팩맨(◀-3칸)"
+	var color: Color = Color("ffe3e3") if robber else Color("d0f4ff")
+	var width: float = 76.0
+	var origin := Vector2(-width / 2.0, 20.0)
+	draw_rect(Rect2(origin + Vector2(0.0, -11.0), Vector2(width, 15.0)), Color(0.08, 0.02, 0.04, 0.78))
+	draw_string(FONT, origin, text, HORIZONTAL_ALIGNMENT_CENTER, width, 11, color)

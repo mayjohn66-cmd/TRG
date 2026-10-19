@@ -1,6 +1,6 @@
 # File: res://scenes/stage_pinball.gd
 # Class: class_name PinballStage
-# Role: 클래식 구슬 핀볼의 중앙 오픈 스테이지. 오른쪽 스프링 발사대, 상단 아치 레일, 지그재그 못(Peg), 하단 숫자 구멍 7칸 [2][4][6][★10][5][3][1]을 그린다. 발사 버튼을 꾹 누르는 동안 스프링이 당겨지고(set_pull), 놓으면 구슬이 레일을 타고 올라가 못에 튕기며 내려와 엔진이 정한 구멍에 들어간다. 연출만 담당한다
+# Role: 클래식 구슬 핀볼의 중앙 오픈 스테이지. 오른쪽 스프링 발사대, 상단 아치 레일, 지그재그 못(Peg), 하단 숫자 구멍 7칸 [2][4][6][★10][5][3][1]을 그린다. 발사 버튼을 한 번 누르면 스프링이 당겨졌다 놓이며 구슬이 레일을 타고 올라가 못에 튕기며 내려와 엔진이 정한 구멍에 들어간다. 연출만 담당한다
 class_name PinballStage
 extends Control
 
@@ -32,7 +32,7 @@ func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 
-## 발사대 스프링을 당긴 정도 (0~1). 발사 버튼을 꾹 누르는 동안 파워 게이지 값이 들어온다.
+## 발사대 스프링을 당긴 정도 (0~1). 발사하는 순간 스프링이 당겨졌다 놓인다.
 func set_pull(value: float) -> void:
 	pull = clampf(value, 0.0, 1.0)
 	if not active:
@@ -73,7 +73,14 @@ func play(result: Dictionary, power: float = 0.5) -> void:
 	active = true
 	_highlight = -1
 	_ball_in_play = true
+	# 원클릭: 스프링이 순식간에 당겨졌다가 튕겨 나간다 (꾹 누를 필요 없음)
+	var wind_up: Tween = create_tween()
+	wind_up.tween_method(set_pull, 0.0, 1.0, 0.16)
+	await wind_up.finished
+	if not is_inside_tree():
+		return
 	pull = 0.0
+	queue_redraw()
 	# 1) 발사대에서 레일을 타고 위로 솟구친다 (세게 쏠수록 빠르다)
 	var rise_seconds: float = lerpf(0.85, 0.45, clampf(power, 0.0, 1.0))
 	await _move(Vector2(LANE_X, 350.0), Vector2(LANE_X, ARCH_CENTER.y), rise_seconds, 0.0, true)

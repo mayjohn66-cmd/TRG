@@ -39,6 +39,8 @@ static func candidates(definition: AugmentDef) -> Array[String]:
 			paths.append(ROOT + "laws/%s.png" % definition.payload)
 			paths.append(ROOT + "augments/%s.png" % definition.augment_id)
 			paths.append(ROOT + "augments/AUG_LAW.png")
+		GameEnums.AugmentCategory.SUPER_GAMBLE:
+			paths.append(ROOT + "augments/%s.png" % definition.augment_id)
 		_:
 			paths.append(ROOT + "augments/%s.png" % definition.augment_id)
 			paths.append(ROOT + "augments/AUG_CARD_PACK.png")

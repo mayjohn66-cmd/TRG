@@ -26,6 +26,7 @@ static func category_name(value: GameEnums.AugmentCategory) -> String:
 		GameEnums.AugmentCategory.PAWN_EVOLUTION: return "기물 진화"
 		GameEnums.AugmentCategory.TOOL_SWAP: return "판정 도구 교체"
 		GameEnums.AugmentCategory.LAW_ENACT: return "교칙 제정"
+		GameEnums.AugmentCategory.SUPER_GAMBLE: return "초증강 : 도박 & 억까"
 	return "생떼 카드 패키지"
 
 
@@ -49,6 +50,8 @@ func is_available(state: GameState, player_id: int) -> bool:
 			return (state.tools[player_id] as BaseJudgmentTool).tool_id != payload
 		GameEnums.AugmentCategory.LAW_ENACT:
 			return not state.rulebook.has_law(payload)
+		GameEnums.AugmentCategory.SUPER_GAMBLE:
+			return SuperAugments.is_available(payload, state, player_id)
 	return true
 
 
@@ -68,10 +71,12 @@ func describe(state: GameState, player_id: int) -> String:
 				text += "\n◆ [1회] %s: %s" % [PawnCatalog.skill_name(skill), PawnCatalog.skill_text(skill)]
 			return text + "\n※ 이미 가진 기물은 받을 수 없습니다"
 		GameEnums.AugmentCategory.TOOL_SWAP:
-			return "◆ 내 판정 도구 교체\n◆ 즉시 장착"
+			return "◆ 내 판정 도구 즉시 교체\n%s" % ToolRegistry.table_line(payload)
 		GameEnums.AugmentCategory.LAW_ENACT:
 			var law: LawResource = LawRegistry.create(payload)
 			return "◆ %s\n◆ 법전 즉시 등록 (4칸 초과 시 선입 삭제)" % law.description
+		GameEnums.AugmentCategory.SUPER_GAMBLE:
+			return SuperAugments.describe(payload)
 	return "◆ 무작위 생떼 카드 2장 획득"
 
 
@@ -82,6 +87,7 @@ func apply(state: GameState, player_id: int, params: Dictionary = {}) -> Diction
 		GameEnums.AugmentCategory.PAWN_EVOLUTION: return _apply_evolution(state, player_id, params)
 		GameEnums.AugmentCategory.TOOL_SWAP: return _apply_tool(state, player_id)
 		GameEnums.AugmentCategory.LAW_ENACT: return _apply_law(state)
+		GameEnums.AugmentCategory.SUPER_GAMBLE: return SuperAugments.apply(payload, state, player_id)
 	return _apply_cards(state, player_id)
 
 

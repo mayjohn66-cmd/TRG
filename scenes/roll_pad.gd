@@ -14,6 +14,7 @@ signal preparation_finished
 
 enum Kind { NONE, ROULETTE, REVOLVER }
 
+const ONE_CLICK_POWER: float = 0.75  ## 원판을 한 번 눌렀을 때의 연출 세기
 const WHEEL_SIZE: float = 140.0
 ## 이 속도(rad/s) 이상으로 돌려야 던진 것으로 친다. 이보다 느리게 놓으면 안내만 뜬다.
 const MIN_FLING_SPEED: float = 3.0
@@ -162,60 +163,13 @@ func _gui_input(event: InputEvent) -> void:
 			accept_event()
 			trigger_pulled.emit()
 		return
+	# 원클릭: 원판을 한 번 누르면 바로 시원하게 돈다 (돌리는 속도를 잴 필요가 없다).
 	var center: Vector2 = _wheel.position + _wheel.size / 2.0
-	if button != null and button.button_index == MOUSE_BUTTON_LEFT:
-		if button.pressed:
-			if button.position.distance_to(center) > WHEEL_SIZE / 2.0 + 14.0:
-				return
-			accept_event()
-			_dragging = true
-			_press_pos = button.position
-			_press_time = Time.get_ticks_msec() / 1000.0
-			_last_angle = (button.position - center).angle()
-			_last_move_msec = Time.get_ticks_msec()
-			_velocity = 0.0
-			_travel = 0.0
-		elif _dragging:
-			accept_event()
-			_release_wheel(button.position)
-		return
-	var motion: InputEventMouseMotion = event as InputEventMouseMotion
-	if motion != null and _dragging:
+	if button != null and button.pressed and button.button_index == MOUSE_BUTTON_LEFT:
+		if button.position.distance_to(center) > WHEEL_SIZE / 2.0 + 14.0:
+			return
 		accept_event()
-		_drag_to(motion.position, center)
-
-
-func _drag_to(pointer: Vector2, center: Vector2) -> void:
-	var angle: float = (pointer - center).angle()
-	var delta: float = wrapf(angle - _last_angle, -PI, PI)
-	var now: int = Time.get_ticks_msec()
-	var seconds: float = maxf(float(now - _last_move_msec) / 1000.0, 0.001)
-	_velocity = lerpf(_velocity, delta / seconds, 0.5)
-	_last_angle = angle
-	_last_move_msec = now
-	_travel += pointer.distance_to(_press_pos) if _travel == 0.0 else 0.0
-	_wheel.set_idle_angle(_wheel.angle-delta)
-	_show_face_under_needle()
-
-
-## 손을 뗐다: 충분히 빠르게 돌렸거나 가볍게 톡 쳤으면 던진 것으로 친다.
-func _release_wheel(pointer: Vector2) -> void:
-	_dragging = false
-	var held: float = Time.get_ticks_msec() / 1000.0 - _press_time
-	var speed: float = absf(_velocity)
-	# 손가락을 멈췄다 떼면 속도가 식은 것으로 본다 (마지막 움직임이 오래됐으면 0)
-	if Time.get_ticks_msec() - _last_move_msec > 120:
-		speed = 0.0
-	var tapped: bool = pointer.distance_to(_press_pos) <= TAP_MAX_TRAVEL and held <= TAP_MAX_SECONDS
-	if speed >= MIN_FLING_SPEED:
-		spin_released.emit(clampf((speed - MIN_FLING_SPEED) / (MAX_FLING_SPEED - MIN_FLING_SPEED), 0.0, 1.0))
-	elif tapped:
-		spin_released.emit(0.5)
-	else:
-		_hint_label.text = "더 세게 돌려 주세요!"
-		get_tree().create_timer(1.2).timeout.connect(func() -> void:
-			if kind == Kind.ROULETTE and not active:
-				_hint_label.text = "원판을 잡고 빙글 돌려 놓으세요")
+		spin_released.emit(ONE_CLICK_POWER)
 
 
 func _show_face_under_needle() -> void:

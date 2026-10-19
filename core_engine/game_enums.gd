@@ -46,7 +46,7 @@ const JUMP_CORNER_TARGETS: Dictionary = {6: 10, 18: 21}
 ## 비숍·각행이 스쳐 지나가거나 멈추면 이동 거리 +2칸을 얻는 코너.
 const BONUS_CORNER_TILES: Array[int] = [6, 12, 18]
 
-enum AugmentCategory { PAWN_EVOLUTION, TOOL_SWAP, LAW_ENACT, CARD_PACKAGE }
+enum AugmentCategory { PAWN_EVOLUTION, TOOL_SWAP, LAW_ENACT, CARD_PACKAGE, SUPER_GAMBLE }
 
 enum CardCategory { INSTANT, TRAP, SUMMON }
 

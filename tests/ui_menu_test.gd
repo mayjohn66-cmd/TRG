@@ -118,7 +118,7 @@ func _run() -> void:
 		all_text += (node as RichTextLabel).text
 	_expect(all_text.contains("가위바위보 결투") and all_text.contains("운명의 수레바퀴"), "카드 쪽에 실제 카드 이름이 코드에서 읽혀 온다")
 	book.show_spread(7)
-	_expect(book.find_children("*", "Label", true, false).any(func(node: Node) -> bool: return (node as Label).text.contains("과속 단속")), "법전 쪽에 실제 교칙 8종이 나온다")
+	_expect(book.find_children("*", "Label", true, false).any(func(node: Node) -> bool: return (node as Label).text.contains("아우토반")), "법전 쪽에 실제 교칙 8종이 나온다")
 	book.free()
 	menu._bottom["center"].pressed.emit()
 	var popup: Node = menu.find_child("Popup", true, false)

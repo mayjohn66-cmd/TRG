@@ -111,7 +111,21 @@ static func score_augment(state: GameState, player_id: int, definition: AugmentD
 			return 50.0
 		GameEnums.AugmentCategory.LAW_ENACT:
 			return 40.0
+		GameEnums.AugmentCategory.SUPER_GAMBLE:
+			return super_augment_score(definition.payload)
 	return 30.0
+
+
+## 봇의 초증강 선호: 확실히 이득인 것(영구 가속·카드+호텔·저격·재분배)은 높게, 도박성 짙은 것(판 뒤집기·도박사·캐슬링)은 낮게 본다.
+static func super_augment_score(effect: StringName) -> float:
+	match effect:
+		SuperAugments.DEVIL, SuperAugments.BAKERY, SuperAugments.SNIPER:
+			return 70.0
+		SuperAugments.REDISTRIBUTE, SuperAugments.DICTATOR, SuperAugments.MINEFIELD:
+			return 55.0
+		SuperAugments.RAID:
+			return 45.0
+	return 35.0
 
 
 static func _evolved_count(state: GameState, player_id: int) -> int:

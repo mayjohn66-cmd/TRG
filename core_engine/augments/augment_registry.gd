@@ -25,6 +25,8 @@ static func all() -> Array[AugmentDef]:
 		for law_id: String in LawRegistry.ALL_IDS:
 			_cache.append(AugmentDef.new(StringName("AUG_%s" % law_id), GameEnums.AugmentCategory.LAW_ENACT, "교칙 제정: %s" % LawRegistry.create(law_id).law_name, law_id))
 		_cache.append(AugmentDef.new(&"CARD_PACKAGE", GameEnums.AugmentCategory.CARD_PACKAGE, "생떼 카드 패키지"))
+		for effect: StringName in SuperAugments.ALL_IDS:
+			_cache.append(AugmentDef.new(effect, GameEnums.AugmentCategory.SUPER_GAMBLE, SuperAugments.display_name(effect), effect))
 	return _cache
 
 
@@ -47,6 +49,9 @@ static func generate_offers(state: GameState, player_id: int, count: int = GameE
 				by_category[def.category] = [] as Array[AugmentDef]
 			(by_category[def.category] as Array).append(def)
 	var categories: Array = by_category.keys()
+	# 초증강은 한 번의 드래프트에 최대 1장이고, 나올 가능성은 절반으로 줄여 도박이 너무 흔해지지 않게 한다.
+	if categories.has(GameEnums.AugmentCategory.SUPER_GAMBLE) and state.rng.randi_range(0, 1) == 0:
+		categories.erase(GameEnums.AugmentCategory.SUPER_GAMBLE)
 	_shuffle(categories, state.rng)
 	for category: Variant in categories:
 		if offers.size() >= count:

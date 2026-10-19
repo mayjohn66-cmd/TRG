@@ -332,3 +332,68 @@ func test_four_bots_finish_a_game_using_only_the_new_tools() -> void:
 		check(manager.is_game_over and manager.state.winner != -1, "시드 %d: 새 도구만으로도 판이 끝난다 (%d틱, 라운드 %d, 버스트 %d회)" % [seed_value, ticks, manager.state.round_number, busts])
 		controller.free()
 		_dispose(manager)
+
+
+# --- 증강 선택 카드의 족보·눈금표 ------------------------------------------------
+
+func test_every_tool_has_a_payout_table_for_the_augment_card() -> void:
+	for tool_id: StringName in ToolRegistry.ALL_IDS:
+		var line: String = ToolRegistry.table_line(tool_id)
+		check(ToolRegistry.TABLES.has(tool_id) and line.begins_with("• "), "%s 족보표가 있다" % tool_id)
+		check(line.contains("칸") or line.contains("1~6") or line.contains("1~10") or line.contains("("), "%s 표에 구체적인 칸수가 적혀 있다" % tool_id)
+	check_eq(ToolRegistry.table_line(&"HOLDEM"), "• 족보표: 노페어(1) / 원페어(3) / 투페어(5) / 트리플(7) / 스트레이트(10) / 플러시+(15칸)", "홀덤 표")
+	check_eq(ToolRegistry.table_line(&"DICE_YACHT"), "• 족보표: 찬스(1~3) / 트리플(5) / 풀하·4연속(7) / 포카드·5연속(9) / ★야추(12칸+한번더)", "야추 표")
+	check_eq(ToolRegistry.table_line(&"DICE_BLACKJACK"), "• 족보표: 11~20 스탠드 시 (합계-10)칸 / ★21 달성(11칸+한번더) / 22↑ 버스트(0칸)", "블랙잭 표")
+	check_eq(ToolRegistry.table_line(&"SLOT_777"), "• 족보표: 꽝(1) / 2일치(4) / 3일치(8) / ★777 잭팟(20칸!)", "슬롯 표")
+
+
+func test_tool_swap_augment_description_lists_the_table() -> void:
+	var state := GameState.new()
+	state.setup([1, 2] as Array[int], 1)
+	for tool_id: StringName in AugmentRegistry.SWAPPABLE_TOOLS:
+		var definition: AugmentDef = AugmentRegistry.get_def(StringName("TOOL_%s" % tool_id))
+		var text: String = definition.describe(state, 1)
+		check(text.contains(ToolRegistry.table_line(tool_id)), "%s 증강 카드에 족보표가 함께 나온다" % tool_id)
+
+
+# --- 중립 NPC 위험 예고 ----------------------------------------------------------
+
+func _npc_state() -> GameState:
+	var state := GameState.new()
+	state.setup([1, 2] as Array[int], 5)
+	return state
+
+
+func test_ghost_danger_preview_is_the_next_three_tiles_backward() -> void:
+	var state: GameState = _npc_state()
+	var ghost: NeutralNPC = state.spawn_npc(12, GameEnums.NpcBehavior.PATROL_REVERSE, 1, &"SUM_02")
+	var preview: Dictionary = ghost.danger_preview(state)
+	check_eq(preview["direction"], -1, "고스트는 역방향")
+	check_eq((preview["tiles"] as Array).size(), 3, "3칸 순찰")
+	check_eq(preview["tiles"], [11, 10, 9] as Array[int], "12번에서 역주행하면 11, 10, 9번")
+	check_eq(preview["catch_tiles"], [11, 10, 9] as Array[int], "지나는 타일에 서 있으면 잡힌다")
+	check_eq(float(preview["chance"]), 1.0, "고스트의 순찰은 확정")
+	var before: int = ghost.current_tile_idx
+	ghost.danger_preview(state)
+	check_eq(ghost.current_tile_idx, before, "미리보기는 NPC를 움직이지 않는다")
+
+
+func test_robber_danger_preview_follows_the_nearest_pawn() -> void:
+	var state: GameState = _npc_state()
+	var pawn: PlayerPawn = state.get_pawn(11)
+	pawn.has_left_start = true
+	pawn.current_tile_idx = 14
+	var robber: NeutralNPC = state.spawn_npc(10, GameEnums.NpcBehavior.CHASE_NEAREST, 1, &"SUM_01")
+	var preview: Dictionary = robber.danger_preview(state)
+	check_eq(preview["direction"], 1, "도적은 정방향 추격")
+	check_eq(preview["tiles"], [11, 12, 13, 14] as Array[int], "가장 가까운 말까지의 경로")
+	check_eq(preview["catch_tiles"], [14] as Array[int], "도착한 말만 잡으므로 위험 타일은 목표 한 곳")
+	check(absf(float(preview["chance"]) - 0.5) < 0.001, "경로 4칸이면 주사위 4 이상일 때 잡힌다 (3/6)")
+	pawn.current_tile_idx = 20
+	var far: Dictionary = robber.danger_preview(state)
+	check_eq((far["tiles"] as Array).size(), 6, "먼 말을 향해서는 최대 6칸까지만 간다")
+	check((far["catch_tiles"] as Array).is_empty() and float(far["chance"]) == 0.0, "경로가 6칸보다 길면 이번 라운드에는 못 잡는다")
+	pawn.current_tile_idx = 10
+	var same: Dictionary = robber.danger_preview(state)
+	check_eq(same["catch_tiles"], [10] as Array[int], "도적 바로 위에 선 말은 확정 습격")
+	check_eq(float(same["chance"]), 1.0, "같은 칸이면 100%")
