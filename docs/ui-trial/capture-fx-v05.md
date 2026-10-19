@@ -25,3 +25,8 @@ CaptureCutin의 시각 좌표만 별도 시간 곡선으로 재생하며 Engine.
 웹 내보내기 성공, 패키지 약 98.7 MiB.
 
 재생 예시: capture-fx-v05.mp4. 타격 정지 화면: capture-fx-v05.png.
+
+원격의 단일 FIFO 연출 큐와 통합해 말 도착 뒤에 컷인이 시작되게 했다.
+FIFO에서 이미 기다린 컷인 시간을 사출 힌트에서 한 번 더 기다리지 않도록 제거했고,
+스냅샷 복원은 큐도 취소한다. 통합 후 UI_CAPTURE_OK / PRESENTATION_QUEUE_OK / UI_FX_OK.
+프리뷰의 포즈 시작은 20프레임, 사출 시작은 77프레임(60fps)으로 빈 대기 없이 이어진다.

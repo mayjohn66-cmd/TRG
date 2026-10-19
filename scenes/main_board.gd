@@ -349,6 +349,12 @@ var _fx_hint_bonus: float = 0.0
 ## 알림 카드가 떠 있는 동안 받아 둔 말의 걸음들: 말 id -> [{pos, scale}] (카드가 끝나면 한 칸씩 이어서 보여 준다).
 var _fx_step_queue: Dictionary = {}
 var _fx_generation: int = 0
+## 단일 연출 큐(FIFO): 말 걸음·발판 팝업·처치 컷인·배너·워프·출발선 사출이 이 줄에서 한 번에 하나씩만 재생된다.
+## 엔진은 한 번에 결과를 계산하고 시그널을 연달아 쏘지만, 화면은 앞 연출이 완전히 끝난 뒤에야 다음 연출을 시작한다.
+var _presentation_queue: Array[Callable] = []
+var _is_playing_presentation: bool = false
+## 큐에 아직 남은 말별 연출 수 (이 말은 큐가 끝나기 전에 최종 위치로 순간 이동하지 않는다).
+var _pawn_pending: Dictionary = {}
 ## 점프 코너·옷장 포탈의 2단계 이동(발판에 멈춤 -> 발동 연출 -> 비행/워프)이 진행 중인 수. 0보다 크면 다른 말의 연출과 알림은 끝날 때까지 기다린다.
 var _stage_warps: int = 0
 ## 증강 선택 창은 이동·처치·함정 연출이 모두 끝나고 0.12초 여운이 지난 뒤에 연다.
@@ -670,7 +676,7 @@ func _new_game() -> void:
 	_announced_turn_key = ""
 	_beat_until_msec = 0
 	_close_reaction_popup()
-	_fx_generation += 1
+	_reset_presentation()
 	_capture_epoch += 1
 	_capture_marks.clear()
 	if _capture_cutin != null:
@@ -715,6 +721,7 @@ func _bind_state() -> void:
 	state.pawn_warped.connect(_on_pawn_warped)
 	state.pawn_captured.connect(_on_pawn_captured)
 	state.snapshot_restored.connect(func() -> void:
+		_reset_presentation()
 		_capture_epoch += 1
 		_capture_marks.clear()
 		if _capture_cutin != null:
@@ -743,7 +750,10 @@ func _bind_state() -> void:
 						_profile_react(by_player, true, "[나이스!]")))
 		var flight_delay: float = CaptureCutin.DURATION / _motion_pace() if cutin_capture else lead + 0.28
 		_fx_impact_at_pawn(pawn_id, (flight_delay if cutin_capture else lead) + _fx_hint_bonus)
-		_set_hint(pawn_id, {"delay": flight_delay + _fx_hint_bonus, "homerun": cutin_capture, "arc": 110.0, "spin": 2.0 * TAU, "dur": 0.45, "land_thud": true}))
+		_set_hint(pawn_id, {"delay": flight_delay + _fx_hint_bonus, "homerun": cutin_capture, "arc": 110.0, "spin": 2.0 * TAU, "dur": 0.45, "land_thud": true})
+		# 사출도 큐의 한 단계다: 앞선 걸음·컷인이 끝난 뒤에 말이 장외로 날아가 출발선에 떨어진다.
+		if victim != null and _fx_on():
+			enqueue_step(_play_eject_settle.bind(pawn_id), pawn_id))
 	state.dash_pad_triggered.connect(func(pawn_id: int, tile: int) -> void:
 		_log_line("[부스터 발판] %s %d번 발판! +%d칸 추가 전진" % [_pawn_name(pawn_id), tile, GameEnums.DASH_STEPS], Color("63e6be"))
 		var pad_pos: Vector2 = (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + _tile_center(tile)
@@ -2059,13 +2069,22 @@ func _on_pawn_stepped(pawn_id: int, _from_tile: int, _to_tile: int) -> void:
 	var target_scale: float = _depth_scale(tile_norm(pawn.current_tile_idx).y)
 	if _fx_skip_steps.has(pawn_id):
 		return  # 필살기 스크립트(차 돌진 등)가 이 말을 직접 움직인다
-	if _fx_holding():
-		# 알림 카드가 가리는 동안의 걸음은 모아 두었다가 카드가 끝나면 한 칸씩 이어서 보여 준다.
-		if not _fx_step_queue.has(pawn_id):
-			_fx_step_queue[pawn_id] = []
-		(_fx_step_queue[pawn_id] as Array).append({"pos": _pawn_position(pawn), "scale": target_scale, "tile": pawn.current_tile_idx})
+	# 한 칸씩 연출 큐에 세운다: 엔진이 여러 걸음(발판 가속·효과 전진)을 한꺼번에 방송해도 화면은 앞 걸음이 끝난 뒤에 다음 걸음을 뛴다.
+	enqueue_step(_play_hop.bind(pawn_id, _pawn_position(pawn), target_scale, pawn.current_tile_idx), pawn_id)
+
+
+## 큐의 한 단계: 말이 한 칸을 통통 뛰고 착지할 때까지 기다린다.
+func _play_hop(pawn_id: int, to_pos: Vector2, to_scale: float, tile: int) -> void:
+	var view: Node2D = _pawn_views.get(pawn_id)
+	if view == null or not is_instance_valid(view):
 		return
-	_glide(view, _pawn_position(pawn), target_scale, {"dur": HOP_SECONDS, "arc": HOP_HEIGHT, "pace_cap": minf(_pace(), 1.5), "land_tile": pawn.current_tile_idx})
+	var pawn: PlayerPawn = state.get_pawn(pawn_id) if state != null else null
+	if pawn != null:
+		view.visible = pawn.carrier == null and not pawn.is_finished
+	_glide(view, to_pos, to_scale, {"dur": HOP_SECONDS, "arc": HOP_HEIGHT, "pace_cap": minf(_pace(), 1.5), "land_tile": tile})
+	var generation: int = _fx_generation
+	while generation == _fx_generation and is_instance_valid(view) and _fx_running(view):
+		await get_tree().process_frame
 
 
 ## 점프 코너나 옷장 포탈에서 시작한 워프인가: 발판에 먼저 멈춰 발동 연출을 보여 준 뒤 날아가야 한다.
@@ -2162,14 +2181,40 @@ func _on_pawn_warped(pawn_id: int, _from_tile: int, _to_tile: int) -> void:
 	if view.has_meta("fx_script") and _fx_running(view):
 		return
 	if _is_stage_warp(_from_tile, _to_tile):
-		_stage_warp(pawn_id, _from_tile, _to_tile)
+		enqueue_step(_stage_warp.bind(pawn_id, _from_tile, _to_tile), pawn_id)
 		return
-	if _fx_holding():
-		return  # 카드가 끝나면 _refresh_pawns가 힌트대로 날려 보낸다
 	var opts: Dictionary = _take_hint(pawn_id)
 	var merged: Dictionary = {"arc": 46.0, "peak": 1.35, "dur": 0.55}
 	merged.merge(opts, true)
-	_glide(view, _pawn_position(pawn), _depth_scale(tile_norm(pawn.current_tile_idx).y), merged)
+	enqueue_step(_play_warp_glide.bind(pawn_id, _pawn_position(pawn), _depth_scale(tile_norm(pawn.current_tile_idx).y), merged), pawn_id)
+
+
+## 큐의 한 단계: 사출된 말을 최종 위치(출발선)로 보내는 연출(장외 홈런 등)을 재생하고 끝날 때까지 기다린다.
+func _play_eject_settle(pawn_id: int) -> void:
+	var view: Node2D = _pawn_views.get(pawn_id)
+	var pawn: PlayerPawn = state.get_pawn(pawn_id) if state != null else null
+	if view == null or pawn == null or not is_instance_valid(view):
+		return
+	# The FIFO has already waited for the entire capture pose; do not wait twice.
+	if _fx_hints.has(pawn_id):
+		var hint: Dictionary = _fx_hints[pawn_id]
+		if bool(hint.get("homerun", false)):
+			hint["delay"] = 0.0
+	_settle_pawn_view(view, pawn, true)
+	var generation: int = _fx_generation
+	while generation == _fx_generation and is_instance_valid(view) and _fx_running(view):
+		await get_tree().process_frame
+
+
+## 큐의 한 단계: 말이 포물선으로 날아가 내려앉을 때까지 기다린다.
+func _play_warp_glide(pawn_id: int, to_pos: Vector2, to_scale: float, options: Dictionary) -> void:
+	var view: Node2D = _pawn_views.get(pawn_id)
+	if view == null or not is_instance_valid(view):
+		return
+	_glide(view, to_pos, to_scale, options)
+	var generation: int = _fx_generation
+	while generation == _fx_generation and is_instance_valid(view) and _fx_running(view):
+		await get_tree().process_frame
 
 
 # ---------------------------------------------------------------------------
@@ -2259,7 +2304,7 @@ func _fx_motion_pending() -> bool:
 		return false
 	if _capture_cutin != null and _capture_cutin.busy():
 		return true
-	if _stage_warps > 0:
+	if _stage_warps > 0 or _presentation_active():
 		return true
 	# 굴림 연출·실패 알림이 진행 중이면 아직 이전 플레이어의 턴이다 (결과를 다 보여 준 뒤에야 다음 턴으로 넘어간다).
 	if _fx_busy or (_announcer != null and _announcer.active):
@@ -4305,7 +4350,7 @@ func _prepare_charge_fx(data: Dictionary) -> void:
 	var direction: Vector2 = (goal - start).normalized() if start.distance_to(goal) > 1.0 else Vector2.RIGHT
 	_fx_skip_steps[pawn_id] = true
 	_fx_hint_bonus = 0.3 * _motion_pace() + 0.2
-	_fx_pending.append(func() -> void:
+	_fx_when_announced(func() -> void:
 		var pace: float = _motion_pace()
 		_kill_fx(view)
 		view.visible = true
@@ -4351,7 +4396,7 @@ func _prepare_shoot_fx(data: Dictionary) -> void:
 			continue
 		var along: float = clampf((victim_view.position - start).dot(direction) / distance, 0.08, 1.0)
 		victims.append({"id": victim_id, "pos": victim_view.position, "frac": along, "color": PLAYER_COLORS[victim.owner_id]})
-	_fx_pending.append(func() -> void: _play_shoot_fx(shooter_id, start, free_end, direction, distance, victims))
+	_fx_when_announced(func() -> void: _play_shoot_fx(shooter_id, start, free_end, direction, distance, victims))
 
 
 func _play_shoot_fx(shooter_id: int, start: Vector2, free_end: Vector2, direction: Vector2, distance: float, victims: Array[Dictionary]) -> void:
@@ -4484,14 +4529,96 @@ func _hint_swap(a_id: int, b_id: int) -> void:
 	_set_hint(b_id, {"arc": -30.0, "peak": 0.9, "dur": 0.7})
 
 
-## 알림 카드가 끝난 뒤(문이 열린 뒤, 카드가 없으면 바로) 실행한다.
+## 테스트·빠른 스모크(연출 끔)에서는 큐 없이 즉시 실행한다.
+func is_headless_or_fast_smoke() -> bool:
+	return not _fx_on()
+
+
+## 연출 한 단계를 큐 맨 뒤에 세운다. 큐가 비어 있고 알림 카드가 없으면 그 자리에서 바로 시작하고,
+## 아니면 앞 연출이 100% 끝난 뒤에 시작한다. pawn_id를 주면 그 말은 이 단계가 끝날 때까지 최종 위치로 건너뛰지 않는다.
+func enqueue_step(step_callable: Callable, pawn_id: int = -1) -> void:
+	if is_headless_or_fast_smoke():
+		step_callable.call()  # 테스트 모드에선 즉시 실행
+		return
+	if pawn_id != -1:
+		_pawn_pending[pawn_id] = int(_pawn_pending.get(pawn_id, 0)) + 1
+	_presentation_queue.append(func() -> void:
+		await step_callable.call()
+		if pawn_id != -1:
+			_pawn_pending[pawn_id] = maxi(int(_pawn_pending.get(pawn_id, 1)) - 1, 0))
+	if not _is_playing_presentation:
+		_process_presentation_queue()
+
+
+## 연출 큐를 비우고 재생 중인 러너를 멈춘다 (판 초기화·되감기·테스트 정리용). 이미 시작된 트윈은 건드리지 않는다.
+func _reset_presentation() -> void:
+	_fx_generation += 1
+	_presentation_queue.clear()
+	_is_playing_presentation = false
+	_pawn_pending.clear()
+
+
+func _process_presentation_queue() -> void:
+	_is_playing_presentation = true
+	var generation: int = _fx_generation
+	while not _presentation_queue.is_empty():
+		var next_step: Callable = _presentation_queue.pop_front()
+		await _presentation_wait_ready(generation)
+		if generation != _fx_generation:
+			break
+		await next_step.call()  # ★ 앞 연출이 100% 끝날 때까지 다음 연출은 절대 시작하지 않는다
+		await _presentation_settle(generation)
+		if generation != _fx_generation:
+			break
+	if generation != _fx_generation:
+		return  # 판이 초기화됐다: 새 큐가 이어받는다
+	_is_playing_presentation = false
+	_pawn_pending.clear()
+	if state != null and manager != null and is_inside_tree():
+		_refresh_all()  # 큐가 비면 연출이 건드리지 않은 나머지 변화를 화면에 맞춘다
+
+
+## 알림 카드·워프 연출이 보드를 가리고 있으면 끝날 때까지 기다린다 (최대 12초).
+func _presentation_wait_ready(generation: int) -> void:
+	var frames: int = 0
+	while generation == _fx_generation and _fx_holding() and frames < 720:
+		frames += 1
+		await get_tree().process_frame
+
+
+## 한 단계가 시작한 움직임·컷인·배너·여운이 모두 끝나기를 기다린다 (최대 12초).
+func _presentation_settle(generation: int) -> void:
+	var frames: int = 0
+	while generation == _fx_generation and _presentation_step_busy() and frames < 720:
+		frames += 1
+		await get_tree().process_frame
+
+
+func _presentation_step_busy() -> bool:
+	if _stage_warps > 0 or _fx_busy:
+		return true
+	if _capture_cutin != null and _capture_cutin.busy():
+		return true
+	if _announcer != null and _announcer.active:
+		return true
+	if Time.get_ticks_msec() < _fx_until_msec:
+		return true
+	for view: Node2D in _pawn_views.values():
+		if _fx_running(view):
+			return true
+	return false
+
+
+## 연출 큐가 일하는 중이거나 대기 중인가 (입력·봇·다음 턴·증강 창은 이 동안 기다린다).
+func _presentation_active() -> bool:
+	return _is_playing_presentation or not _presentation_queue.is_empty()
+
+
+## 알림 카드가 끝난 뒤(문이 열린 뒤, 카드가 없으면 바로) 실행한다. 이제 연출 큐의 한 단계로 순서대로 실행된다.
 func _fx_when_announced(action: Callable) -> void:
 	if not _fx_on():
 		return
-	if _fx_holding():
-		_fx_pending.append(action)
-	else:
-		action.call()
+	enqueue_step(action)
 
 
 ## 알림 카드가 가리고 있어서 말을 움직이면 안 되는 때인가.
@@ -4686,7 +4813,7 @@ func _glide_node(node: Node2D, to_pos: Vector2, seconds: float) -> void:
 
 
 ## 상태가 바뀐 뒤 말의 화면 자리를 맞춘다: 자리가 달라졌으면 순간이동 대신 포물선으로 움직이고(힌트가 있으면 그 모양으로), 끝나면 보이기/숨기기를 정한다.
-func _settle_pawn_view(view: Node2D, pawn: PlayerPawn) -> void:
+func _settle_pawn_view(view: Node2D, pawn: PlayerPawn, force: bool = false) -> void:
 	var target_pos: Vector2 = _pawn_position(pawn)
 	var target_scale: float = _depth_scale(tile_norm(pawn.current_tile_idx).y)
 	var want_visible: bool = pawn.carrier == null and not pawn.is_finished and pawn.has_left_start
@@ -4702,6 +4829,8 @@ func _settle_pawn_view(view: Node2D, pawn: PlayerPawn) -> void:
 		return  # 움직이는 중이다: 끝나면 다시 맞춘다
 	if _fx_holding():
 		return  # 알림 카드가 가리는 동안은 기다린다: 카드가 끝나면 다시 맞춘다
+	if _presentation_active() and not force:
+		return  # 연출 큐가 순서대로 보여 주는 중이다: 큐가 비면 한꺼번에 맞춘다
 	if view.visible and view.position.distance_to(target_pos) > 3.0:
 		_glide(view, target_pos, target_scale, _take_hint(pawn.entity_id))
 		return
@@ -6133,7 +6262,7 @@ func _on_game_over(winner_id: int, reason: StringName) -> void:
 
 
 func _ui_busy() -> bool:
-	return _intro_blocks() or _fx_busy or (_capture_cutin != null and _capture_cutin.busy()) or _aim_pawn != -1 or (_announcer != null and _announcer.active) or Time.get_ticks_msec() < _beat_until_msec or (_fx_on() and Time.get_ticks_msec() < _fx_until_msec)
+	return _intro_blocks() or _presentation_active() or _fx_busy or (_capture_cutin != null and _capture_cutin.busy()) or _aim_pawn != -1 or (_announcer != null and _announcer.active) or Time.get_ticks_msec() < _beat_until_msec or (_fx_on() and Time.get_ticks_msec() < _fx_until_msec)
 
 
 ## 행동이 끝난 뒤 잠깐(초) 입력과 봇 행동을 멈춰, 플레이어가 방금 일어난 일을 알아볼 틈을 준다.
@@ -6147,6 +6276,16 @@ func _start_beat(seconds: float) -> void:
 
 
 func _announce(tag: String, headline: String, body: String, color: Color, extra: Control = null, duration: float = 1.5) -> int:
+	if _announcer == null:
+		return -1
+	# 앞선 연출이 큐에서 재생 중이면 배너도 그 뒤에 줄을 선다 (말이 움직이는 동안 배너가 먼저 뜨지 않는다).
+	if _fx_on() and _presentation_active():
+		enqueue_step(func() -> void: _announce_now(tag, headline, body, color, extra, duration))
+		return -1
+	return _announce_now(tag, headline, body, color, extra, duration)
+
+
+func _announce_now(tag: String, headline: String, body: String, color: Color, extra: Control = null, duration: float = 1.5) -> int:
 	if _announcer == null:
 		return -1
 	_announcer.instant = instant_roll_for_test
