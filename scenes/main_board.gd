@@ -715,22 +715,23 @@ func _bind_state() -> void:
 			_avatar_react(victim.owner_id, AvatarSlot.Emotion.ANGRY)
 			if by_player != victim.owner_id and _player_ids.has(by_player):
 				_avatar_react(by_player, AvatarSlot.Emotion.HAPPY)
-		# 잡힌 말: 내리찍기(슬램) -> 충격 -> 720도 회전하며 높은 포물선으로 출발선까지 0.45초 -> 쿵 착지.
-		# 순서: (1) 잡는 말이 내리찍는다 -> (2) 충격(링·흔들림, 짧은 정지) -> (3) 프로필 반응 -> (4) 잡힌 말이 날아간다 -> (5) 쿵 착지.
-		var lead: float = 0.0
+		# 잡힌 말: [처치 컷신 0.65초] -> 보드 밖으로 홈런처럼 날아감(0.38초, 1080도 회전) -> 출발선 위에서 툭 떨어져 바운스.
+		# 컷신은 잡는 말의 이동이 끝난 뒤에 뜨고, 그동안 잡힌 말은 제자리에서 기다린다.
 		if victim != null and _fx_on():
-			var view: Node2D = _pawn_views.get(pawn_id)
-			if view != null:
-				lead = _fx_try_slam(by_player, view.position)
 			var owner_id: int = victim.owner_id
-			var react_delay: float = lead + 0.12 + _fx_hint_bonus
+			var victim_pos: Vector2 = (_pawn_views[pawn_id] as Node2D).position if _pawn_views.has(pawn_id) else Vector2.ZERO
+			var attacker_art: Texture2D = _attacker_art(by_player, victim_pos)
 			_fx_when_announced(func() -> void:
-				get_tree().create_timer(react_delay).timeout.connect(func() -> void:
+				var lead: float = maxf(0.0, float(_fx_until_msec - Time.get_ticks_msec()) / 1000.0)
+				var cutin_seconds: float = KillCutIn.TOTAL_SECONDS * _pace()
+				_show_kill_cutin(attacker_art, lead)
+				_set_hint(pawn_id, {"delay": lead + cutin_seconds + _fx_hint_bonus, "homerun": true, "land_thud": true})
+				get_tree().create_timer(lead + cutin_seconds + 0.1).timeout.connect(func() -> void:
 					_profile_react(owner_id, false, ["[억까!]", "[으악!]"][randi() % 2])
 					if by_player != owner_id:
 						_profile_react(by_player, true, "[나이스!]")))
-		_fx_impact_at_pawn(pawn_id, lead + _fx_hint_bonus)
-		_set_hint(pawn_id, {"delay": lead + 0.28 + _fx_hint_bonus, "arc": 110.0, "spin": 2.0 * TAU, "dur": 0.45, "land_thud": true}))
+		else:
+			_set_hint(pawn_id, {"arc": 110.0, "spin": 2.0 * TAU, "dur": 0.45, "land_thud": true}))
 	state.pawn_finished.connect(func(pawn_id: int) -> void:
 		_log_line("[완주] %s 완주!" % _pawn_name(pawn_id), Color("69db7c"))
 		var finisher: PlayerPawn = state.get_pawn(pawn_id)
@@ -4096,22 +4097,28 @@ func _on_skill_used(data: Dictionary) -> void:
 	_announce_gate("1회용 필살기", "[P%d 발동!] %s" % [player_id, PawnCatalog.skill_name(skill)], body, PLAYER_COLORS[player_id], null, 1.3)
 
 
-## 잡기: 같은 순간 도착 중인 내 말의 마지막 점프를 더 높게(45px) 바꿔 내리찍게 한다. 착지에서 화면이 흔들리고 충격파가 퍼진다.
-func _fx_try_slam(by_player: int, victim_pos: Vector2) -> float:
-	if not _fx_on():
-		return 0.0
+## 말을 잡은 쪽(by_player)의 말 중 잡힌 말 자리에 있던 말의 그림. 못 찾으면(함정·중립 기물 등) null.
+func _attacker_art(by_player: int, victim_pos: Vector2) -> Texture2D:
 	for pawn: PlayerPawn in state.pawns:
 		if pawn.owner_id != by_player:
 			continue
-		var view: Node2D = _pawn_views.get(pawn.entity_id)
-		if view == null or not _fx_running(view) or view.has_meta("fx_script"):
-			continue
-		if _pawn_position(pawn).distance_to(victim_pos) > 36.0:
-			continue
-		var cap: float = minf(_pace(), 1.5)
-		_glide(view, _pawn_position(pawn), _depth_scale(tile_norm(pawn.current_tile_idx).y), {"dur": HOP_SECONDS * 1.3, "arc": SLAM_HEIGHT, "pace_cap": cap, "land_tile": pawn.current_tile_idx, "land_big": true})
-		return HOP_SECONDS * 1.3 * cap
-	return 0.0
+		if _pawn_views.has(pawn.entity_id) and _pawn_position(pawn).distance_to(victim_pos) <= 40.0:
+			return PawnArt.sprite(pawn).get("texture") as Texture2D
+	return null
+
+
+## 처치 컷신을 lead초 뒤에 띄운다 (잡는 말이 먼저 도착해야 하므로).
+func _show_kill_cutin(attacker_art: Texture2D, lead: float) -> void:
+	var start_cutin: Callable = func() -> void:
+		if not is_inside_tree():
+			return
+		var cutin := KillCutIn.new()
+		add_child(cutin)
+		cutin.play(self, attacker_art, _pace())
+	if lead <= 0.01:
+		start_cutin.call()
+	else:
+		get_tree().create_timer(lead).timeout.connect(start_cutin)
 
 
 ## 승급: 말이 공중으로 떠올라 한 바퀴 돌고 후광이 터진다 (그동안 아이콘 글자가 바뀐다).
@@ -4455,6 +4462,9 @@ func _glide(view: Node2D, to_pos: Vector2, to_scale: float, opts: Dictionary = {
 	view.position = from_pos
 	view.scale = Vector2.ONE * from_scale
 	view.modulate = Color(1, 1, 1, from_alpha)
+	if bool(opts.get("homerun", false)):
+		_glide_homerun(view, to_pos, to_scale, delay, bool(opts.get("land_thud", false)))
+		return
 	var tween: Tween = create_tween()
 	if delay > 0.0:
 		tween.tween_interval(delay)
@@ -4468,6 +4478,57 @@ func _glide(view: Node2D, to_pos: Vector2, to_scale: float, opts: Dictionary = {
 	tween.tween_callback(_glide_done.bind(view))
 	view.set_meta("fx", tween)
 	_fx_until_msec = maxi(_fx_until_msec, Time.get_ticks_msec() + int((delay + duration) * 1000.0) + 60)
+
+
+## 장외 홈런: 잡힌 말이 보드 밖(화면 좌상단·우상단 바깥)으로 초고속으로 날아가며 1080도 회전하고 크기가 변한다 (뒤에 흰 연기·별 잔상).
+## 화면 밖으로 사라진 뒤 출발선 타일 위에서 툭 떨어져 바운스한다.
+const HOMERUN_SECONDS: float = 0.38
+const HOMERUN_ROTATION: float = 1080.0
+
+
+func _glide_homerun(view: Node2D, to_pos: Vector2, to_scale: float, delay: float, land_thud: bool) -> void:
+	var from_pos: Vector2 = view.position
+	var screen: Vector2 = get_viewport_rect().size
+	var go_left: bool = from_pos.x < _board_center().x
+	var exit_global: Vector2 = Vector2(-320.0, -220.0) if go_left else Vector2(screen.x + 320.0, -220.0)
+	var parent: CanvasItem = view.get_parent() as CanvasItem
+	var exit_pos: Vector2 = parent.get_global_transform().affine_inverse() * exit_global if parent != null else exit_global
+	var duration: float = HOMERUN_SECONDS * _motion_pace()
+	var from_scale: float = view.scale.x
+	var tween: Tween = create_tween()
+	if delay > 0.0:
+		tween.tween_interval(delay)
+	tween.tween_callback(func() -> void:
+		Sfx.play(&"launch"))
+	tween.tween_method(_apply_homerun.bind(view, from_pos, exit_pos, from_scale), 0.0, 1.0, duration)
+	tween.tween_callback(_homerun_return.bind(view, to_pos, to_scale, land_thud))
+	view.set_meta("fx", tween)
+	var drop_seconds: float = 0.55 * _motion_pace()
+	_fx_until_msec = maxi(_fx_until_msec, Time.get_ticks_msec() + int((delay + duration + drop_seconds) * 1000.0) + 120)
+
+
+func _apply_homerun(t: float, view: Node2D, from_pos: Vector2, exit_pos: Vector2, from_scale: float) -> void:
+	if not is_instance_valid(view):
+		return
+	var eased: float = t * t  # 처음엔 살짝 웅크렸다가 점점 빨라진다
+	view.position = from_pos.lerp(exit_pos, eased) + Vector2(0.0, -90.0 * sin(PI * minf(t * 1.2, 1.0)))
+	view.rotation = deg_to_rad(HOMERUN_ROTATION) * eased
+	view.scale = Vector2.ONE * from_scale * lerpf(1.0, 2.4, sin(PI * t * 0.8))
+	var step: int = int(t * 7.0)
+	if int(view.get_meta("trail_step", -1)) != step:
+		view.set_meta("trail_step", step)
+		_burst_shards(view.position, Color("f8f9fa"), 3)
+		_burst_shards(view.position, Color("ffe066"), 2)
+
+
+## 홈런 뒤: 화면 밖에 있던 말을 출발선 타일 위에서 위로부터 떨어뜨린다.
+func _homerun_return(view: Node2D, to_pos: Vector2, to_scale: float, land_thud: bool) -> void:
+	if not is_instance_valid(view):
+		return
+	if view.has_meta("trail_step"):
+		view.remove_meta("trail_step")
+	view.rotation = 0.0
+	_glide.call_deferred(view, to_pos, to_scale, {"drop": true, "land_thud": land_thud})
 
 
 func _glide_done(view: Node2D) -> void:
