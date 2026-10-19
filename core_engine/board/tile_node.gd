@@ -1,6 +1,6 @@
 # File: res://core_engine/board/tile_node.gd
 # Class: class_name TileNode
-# Role: 보드 그래프의 한 타일(0~23번). 타입, 다음 타일 간선, 설치물(TileAttachment) 목록을 보관한다
+# Role: 보드 그래프의 한 타일(0~BoardSpec.tile_count-1번). 타입, 다음 타일 간선, 설치물(TileAttachment) 목록을 보관한다
 class_name TileNode
 extends RefCounted
 

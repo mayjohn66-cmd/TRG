@@ -75,7 +75,7 @@ static func plan_path(state: GameState, mover: PlayerPawn, ctx: RuleContext, rep
 			steps += sign_dir
 			report.ability_notes.append("나리 승급 +1칸")
 	var path: Array[int] = state.board.calculate_path(mover, steps, ctx)
-	# 비숍·각행: 코너(6·12·18번)를 스쳐 지나가거나 멈추면 이동 거리 +2칸.
+	# 비숍·각행: 출발선 외 코너를 스쳐 지나가거나 멈추면 이동 거리 +2칸.
 	if mover.gets_corner_bonus() and _path_touches_bonus_corner(path):
 		steps += 2 * sign_dir
 		path = state.board.calculate_path(mover, steps, ctx)
@@ -140,7 +140,7 @@ static func fling(state: GameState, pawn: PlayerPawn, steps: int) -> Array[int]:
 	return path
 
 
-## 경로가 보너스 코너(6·12·18번)를 밟거나 스치는가.
+## 경로가 보너스 코너(BoardSpec.bonus_corner_tiles)를 밟거나 스치는가.
 static func _path_touches_bonus_corner(path: Array[int]) -> bool:
 	for tile: int in path:
 		if BoardSpec.bonus_corner_tiles.has(tile):
@@ -330,13 +330,13 @@ static func resolve_forced_arrival(state: GameState, mover: PlayerPawn) -> MoveR
 ## 도착(마지막 칸) 처리: 빵집 → 옷장 워프 → 잡기 → 업기 → 이동 완료 훅.
 static func _resolve_landing(state: GameState, mover: PlayerPawn, ctx: RuleContext, report: MoveReport) -> void:
 	var tile: TileNode = state.board.get_tile(mover.current_tile_idx)
-	# 점프 코너(6->10, 18->21)와 옷장 포탈(9->16, 16->20)은 정확히 멈췄을 때만 작동하고 LAW_01 중에는 멈춘다. 워프 뒤 도착 칸은 다시 워프하지 않는다.
+	# 점프 코너(BoardSpec.jump_corner_targets)와 옷장 포탈(BoardSpec.portal_warp_targets)은 정확히 멈췄을 때만 작동하고 LAW_01 중에는 멈춘다. 워프 뒤 도착 칸은 다시 워프하지 않는다.
 	if ctx.allow_shortcut and not mover.is_imprisoned and not bool(ctx.metadata.get("no_warp_chain", false)):
 		var warp_target: int = -1
 		if BoardSpec.jump_corner_targets.has(mover.current_tile_idx):
 			warp_target = BoardSpec.jump_corner_targets[mover.current_tile_idx]
 		elif tile.tile_type == TileNode.TileType.PORTAL:
-			# 비행기는 옷장에서 더 앞선 곳으로 워프한다 (9번 -> 18번 코너, 16번 -> 22번)
+			# 비행기는 옷장에서 더 앞선 곳으로 워프한다 (BoardSpec.plane_warp_targets)
 			warp_target = BoardSpec.portal_warp_targets[mover.current_tile_idx]
 			if mover.sub_type() == GameEnums.PawnSubType.MONO_PLANE:
 				warp_target = BoardSpec.plane_warp_targets[mover.current_tile_idx]
@@ -402,7 +402,7 @@ static func _warp_to(state: GameState, mover: PlayerPawn, ctx: RuleContext, repo
 	return true
 
 
-## 체스 폰: 반환점(12번) 이상 타일을 밟거나 지나가는 순간 영구히 퀸으로 승진한다 (업고 있는 폰도 함께).
+## 체스 폰: 반환점(BoardSpec.halfway_tile) 이상 타일을 밟거나 지나가는 순간 영구히 퀸으로 승진한다 (업고 있는 폰도 함께).
 static func _promote_pawns(state: GameState, mover: PlayerPawn, report: MoveReport) -> void:
 	_promote_shogi(state, mover, report)
 	if not BoardSpec.promotion_tiles.has(mover.current_tile_idx):
@@ -414,7 +414,7 @@ static func _promote_pawns(state: GameState, mover: PlayerPawn, report: MoveRepo
 			state.pawn_promoted.emit(member.entity_id)
 
 
-## 쇼기 나리 승급: 반환점(12번) 이상 타일을 밟는 순간 영구히 승급한다 (업고 있는 말도 함께). 경로를 스치기만 해도 밟은 것으로 본다.
+## 쇼기 나리 승급: 반환점(BoardSpec.halfway_tile) 이상 타일을 밟는 순간 영구히 승급한다 (업고 있는 말도 함께). 경로를 스치기만 해도 밟은 것으로 본다.
 static func _promote_shogi(state: GameState, mover: PlayerPawn, report: MoveReport) -> void:
 	if not BoardSpec.promotion_tiles.has(mover.current_tile_idx):
 		return

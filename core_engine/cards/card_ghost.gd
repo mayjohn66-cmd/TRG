@@ -1,6 +1,6 @@
 # File: res://core_engine/cards/card_ghost.gd
 # Class: class_name CardGhost
-# Role: SUM_02 팩맨의 고스트 - 반환점(12번)에 고스트 NPC를 소환한다 (외곽 트랙을 역주행으로 3칸씩 순찰하며 마주친 말을 12번으로 연행)
+# Role: SUM_02 팩맨의 고스트 - 반환점(BoardSpec.halfway_tile)에 고스트 NPC를 소환한다 (외곽 트랙을 역주행으로 3칸씩 순찰하며 마주친 말을 반환점으로 연행)
 class_name CardGhost
 extends BaseCard
 

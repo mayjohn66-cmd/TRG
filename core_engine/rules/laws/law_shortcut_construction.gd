@@ -1,6 +1,6 @@
 # File: res://core_engine/rules/laws/law_shortcut_construction.gd
 # Class: class_name LawShortcutConstruction
-# Role: LAW_01 지름길 공사 중 - 점프 코너(6·18번)와 옷장 포탈 작동 중지
+# Role: LAW_01 지름길 공사 중 - 점프 코너와 옷장 포탈(BoardSpec) 작동 중지
 class_name LawShortcutConstruction
 extends LawResource
 

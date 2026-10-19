@@ -33,7 +33,7 @@ static func tile_norm(index: int) -> Vector2:
 	return Vector2(_along(index - step * 3, step), 1.0)
 
 
-## 좌표에서 가장 가까운 타일 번호 (출발선 0번 제외: 알까기로 날아간 돌은 1~23번 중 한 곳에 안착한다).
+## 좌표에서 가장 가까운 타일 번호 (출발선 0번 제외: 알까기로 날아간 돌은 출발선을 뺀 칸 중 한 곳에 안착한다).
 static func nearest_tile(point: Vector2) -> int:
 	var best: int = 1
 	var best_distance: float = INF

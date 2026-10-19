@@ -19,7 +19,7 @@ const PLATE_SIZE: Vector2 = Vector2(584, 584)
 const BOARD_ORIGIN: Vector2 = Vector2(423, 75)
 const BOARD_SIZE: float = 520.0
 ## 보드 시점. TOP: 완전 탑뷰, TILT: 테이블에 앉아 비스듬히 내려다보는 기울인 탑뷰(세로 압축 + 위쪽이 멀어 보이는 원근 + 서 있는 말과 그림자).
-## 보드는 한 변 6칸의 정사각 트랙을 45도 돌려 마름모로 세운다 (0번 출발선이 아래 꼭짓점, 반시계로 오른쪽 -> 위 -> 왼쪽 꼭짓점).
+## 보드는 한 변 BoardSpec.side칸의 정사각 트랙을 45도 돌려 마름모로 세운다 (0번 출발선이 아래 꼭짓점, 반시계로 오른쪽 -> 위 -> 왼쪽 꼭짓점).
 const TOOL_CARD_CENTER_Y: float = 384.0  ## 판정 도구 카드의 세로 중심 (우측 중앙)
 const DIAMOND_KX: float = 520.0        ## 회전한 평면 좌표 1.0당 가로 픽셀
 const DIAMOND_KY: float = 330.0        ## 회전한 평면 좌표 1.0당 세로 픽셀 (눌러서 마름모 비율을 만든다)
@@ -325,8 +325,6 @@ var _capture_epoch: int = 0
 var _fx_until_msec: int = 0
 ## 말 id -> 다음 이동 연출에 쓸 힌트 {delay, arc, peak, spin, dur, drop, t(만든 시각)}. 이벤트가 어떻게 움직일지 미리 알려 준다.
 var _fx_hints: Dictionary = {}
-## 알림 카드가 끝난 뒤에 실행할 연출들 (알림 카드가 보드를 가리는 동안 말이 먼저 움직이지 않도록).
-var _fx_pending: Array[Callable] = []
 ## [문]으로 등록된 알림 번호들과, 문이 열렸는지(카드가 끝나 말이 움직일 수 있는지).
 var _fx_gates: Array[int] = []
 var _fx_gate_open: bool = false
@@ -346,8 +344,6 @@ var _shake_origin: Vector2 = Vector2.ZERO
 var _shake_active: bool = false
 var _fx_skip_steps: Dictionary = {}
 var _fx_hint_bonus: float = 0.0
-## 알림 카드가 떠 있는 동안 받아 둔 말의 걸음들: 말 id -> [{pos, scale}] (카드가 끝나면 한 칸씩 이어서 보여 준다).
-var _fx_step_queue: Dictionary = {}
 var _fx_generation: int = 0
 ## 단일 연출 큐(FIFO): 말 걸음·발판 팝업·처치 컷인·배너·워프·출발선 사출이 이 줄에서 한 번에 하나씩만 재생된다.
 ## 엔진은 한 번에 결과를 계산하고 시그널을 연달아 쏘지만, 화면은 앞 연출이 완전히 끝난 뒤에야 다음 연출을 시작한다.
@@ -1603,7 +1599,7 @@ func _on_log_toggle_pressed() -> void:
 # 보드 / 말 그리기
 # ---------------------------------------------------------------------------
 
-## 타일 번호 -> 0~1 정규화 좌표 (BoardLayout과 같은 좌표계: 우하단 0번에서 반시계로 한 변 6칸).
+## 타일 번호 -> 0~1 정규화 좌표 (BoardLayout과 같은 좌표계: 우하단 0번에서 반시계로 한 변 BoardSpec.side칸).
 static func tile_norm(index: int) -> Vector2:
 	return BoardLayout.tile_norm(index)
 
@@ -2095,7 +2091,7 @@ func _stage_warp(pawn_id: int, from_tile: int, to_tile: int) -> void:
 	var corner: bool = BoardSpec.jump_corner_targets.has(from_tile)
 	var pace: float = _motion_pace()
 	# A) 발판에 닿을 때까지 (밀려 있던 걸음, 알림 카드, 점프 중인 말)
-	while generation == _fx_generation and is_instance_valid(view) and (_fx_running(view) or _fx_step_queue.has(pawn_id) or (_announcer != null and _announcer.active and not _fx_gate_open)):
+	while generation == _fx_generation and is_instance_valid(view) and (_fx_running(view) or (_announcer != null and _announcer.active and not _fx_gate_open)):
 		await get_tree().process_frame
 	if generation != _fx_generation or not is_instance_valid(view):
 		return
@@ -4693,45 +4689,9 @@ func _on_announcer_entry_finished(serial: int) -> void:
 	_announcer.hold_until_msec = maxi(_announcer.hold_until_msec, _fx_until_msec)
 
 
-## 알림 카드가 끝났다: 모아 둔 걸음을 이어서 보여 주고, 예약된 연출(필살기 등)을 시작한다.
+## 알림 카드가 끝났다 (말 걸음·예약 연출은 이제 연출 큐가 순서대로 재생한다).
 func _fx_after_announcer() -> void:
-	if not _fx_on():
-		_fx_pending.clear()
-		_fx_step_queue.clear()
-		return
-	for pawn_id: int in _fx_step_queue.keys():
-		var view: Node2D = _pawn_views.get(pawn_id)
-		var pawn: PlayerPawn = state.get_pawn(pawn_id) if state != null else null
-		if view == null or pawn == null:
-			continue
-		_play_queued_steps(view, _fx_step_queue[pawn_id])
-	_fx_step_queue.clear()
-	var pending: Array[Callable] = _fx_pending.duplicate()
-	_fx_pending.clear()
-	for action: Callable in pending:
-		action.call()
 	_fx_hint_bonus = 0.0
-
-
-## 모아 둔 걸음들을 한 칸씩 통통 튀며 이어서 보여 준다.
-func _play_queued_steps(view: Node2D, steps: Array) -> void:
-	if steps.is_empty() or view.has_meta("fx_script"):
-		return
-	_kill_fx(view)
-	view.visible = true
-	var step_time: float = HOP_SECONDS * minf(_motion_pace(), 1.5)
-	var tween: Tween = create_tween()
-	var origin: Vector2 = view.position
-	for step: Dictionary in steps:
-		var target: Vector2 = step["pos"]
-		var from_pos: Vector2 = origin
-		tween.tween_method(_apply_hop.bind(view, from_pos, target, view.scale.x, float(step["scale"]), HOP_HEIGHT, 1.0, 0.0, 0.0), 0.0, 1.0, step_time)
-		tween.tween_callback(_fx_land.bind(view, int(step.get("tile", -1)), false))
-		origin = target
-	tween.tween_callback(_fx_script_done.bind(view))
-	view.set_meta("fx", tween)
-	view.set_meta("fx_script", true)
-	_fx_until_msec = maxi(_fx_until_msec, Time.get_ticks_msec() + int(step_time * steps.size() * 1000.0) + 80)
 
 
 ## 한 칸 이동(또는 포물선 비행)의 한 프레임: t는 0..1.
@@ -7174,11 +7134,6 @@ func _on_menu_fullscreen_pressed() -> void:
 	_show_menu_page(&"settings")
 
 
-func _on_view_mode_selected(index: int) -> void:
-	set_view_mode(index)
-	GameSession.save_settings()
-
-
 func _on_pacing_toggled(enabled: bool) -> void:
 	pacing_enabled = enabled
 	GameSession.pacing_enabled = enabled
@@ -7197,12 +7152,6 @@ func _apply_pace() -> void:
 		manager.step_delay_sec = STEP_DELAY * _pace()
 	if _bot != null:
 		_bot.pace = _pace()
-
-
-func _on_pace_selected(index: int) -> void:
-	GameSession.pace_scale = [GameSession.PACE_FAST, GameSession.PACE_NORMAL, GameSession.PACE_SLOW][index]
-	GameSession.save_settings()
-	_apply_pace()
 
 
 func _on_menu_timer_toggled(enabled: bool) -> void:

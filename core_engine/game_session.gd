@@ -56,13 +56,13 @@ static func load_settings() -> void:
 	var config := ConfigFile.new()
 	if config.load(SETTINGS_PATH) == OK:
 		pacing_enabled = bool(config.get_value("game", "pacing_enabled", true))
-		view_mode = clampi(int(config.get_value("game", "view_mode", 0)), 0, 1)
+		view_mode = 0  # 설정 화면에서 시점 선택을 없앴다: 저장값과 무관하게 탑뷰
 		sfx_volume = clampf(float(config.get_value("game", "sfx_volume", 0.8)), 0.0, 1.0)
 		bgm_volume = clampf(float(config.get_value("game", "bgm_volume", 0.6)), 0.0, 1.0)
 		audio_muted = bool(config.get_value("game", "audio_muted", false))
 		sfx_muted = bool(config.get_value("game", "sfx_muted", false))
 		bgm_muted = bool(config.get_value("game", "bgm_muted", false))
-		pace_scale = clampf(float(config.get_value("game", "pace_scale", PACE_NORMAL)), PACE_FAST, PACE_SLOW)
+		pace_scale = PACE_NORMAL  # 연출 속도 선택을 없앴다: 저장값과 무관하게 보통
 		avatar_id = StringName(str(config.get_value("game", "avatar", "avatar_01")))
 
 

@@ -16,7 +16,7 @@ func _init() -> void:
 	_build_undirected()
 
 
-## 0~23번 타일과 단일 순환 간선을 초기화한다: 0 -> 1 -> ... -> 23 -> 0 (코너 0·6·12·18).
+## 0~(BoardSpec.tile_count-1)번 타일과 단일 순환 간선을 초기화한다 (코너는 BoardSpec.corner_tiles).
 func _init_24_tiles() -> void:
 	tiles.clear()
 	for index: int in BoardSpec.tile_count:
@@ -30,7 +30,7 @@ func _init_24_tiles() -> void:
 		tiles[index].tile_type = TileNode.TileType.PORTAL
 
 
-## 모든 타일이 유효한 next_default를 갖고, 모든 간선이 0~23 범위 안에 있는지 검사한다.
+## 모든 타일이 유효한 next_default를 갖고, 모든 간선이 보드 범위(BoardSpec.tile_count) 안에 있는지 검사한다.
 func is_graph_valid() -> bool:
 	if tiles.size() != BoardSpec.tile_count:
 		return false
@@ -169,7 +169,7 @@ func calculate_path(entity: BoardEntity, steps: int, ctx: RuleContext) -> Array[
 # 거리 / BFS
 # ---------------------------------------------------------------------------
 
-## 결승까지 남은 최단 칸 수. 출발선에서 아직 출발하지 않은 말은 한 바퀴(24칸)로 본다.
+## 결승까지 남은 최단 칸 수. 출발선에서 아직 출발하지 않은 말은 한 바퀴(BoardSpec.tile_count칸)로 본다.
 func distance_to_goal(tile: int, has_left_start: bool) -> int:
 	if tile == GameEnums.GOAL_TILE and not has_left_start:
 		return BoardSpec.tile_count

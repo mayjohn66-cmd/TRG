@@ -13,7 +13,7 @@ signal pawn_sent_to_start(pawn_id: int, by_player: int)
 signal pawn_captured(attacker_pawn_id: int, victim_pawn_id: int)
 signal pawn_finished(pawn_id: int)
 signal pawn_evolved(pawn_id: int, kind: int, unit_no: int)
-## 체스 폰이 반환점(12번) 이상에 도달해 퀸으로 영구 승진했다.
+## 체스 폰이 반환점(BoardSpec.halfway_tile) 이상에 도달해 퀸으로 영구 승진했다.
 signal pawn_promoted(pawn_id: int)
 signal pawns_stacked(leader_id: int, member_ids: Array[int])
 signal pawns_swapped(pawn_a_id: int, pawn_b_id: int)

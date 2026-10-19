@@ -12,7 +12,6 @@ const SCORE_ADVANCE: float = 20.0
 ## ⚡ 부스터 발판에 멈추면 3칸 더 날아간다.
 const SCORE_DASH_PAD: float = 30.0
 ## 점프 코너와 반환점 (정확히 멈추면 유리한 칸).
-const STOP_SPOT_TILES: Array[int] = [6, 12, 18]
 ## 턴 시작에 함정·소환 카드를 쓸 확률.
 const TRAP_USE_CHANCE: float = 0.6
 ## 고눈금 개입 기준: 이 값 이상이면 끼어든다.
@@ -36,7 +35,7 @@ static func choose_pawn(state: GameState, player_id: int, dice_value: int) -> in
 
 
 ## 이 말이 이번 눈금으로 움직일 때의 점수:
-## 결승 완주 +100 / 적 말 잡기 +60 / 코너(6, 12, 18번)·빵집에 정확히 멈춤 +40 / 새 말 꺼내기 또는 선두 말 전진 +20.
+## 결승 완주 +100 / 적 말 잡기 +60 / 출발선 외 코너(BoardSpec.bonus_corner_tiles)·빵집에 정확히 멈춤 +40 / 새 말 꺼내기 또는 선두 말 전진 +20.
 ## 그 외에는 결승에 가까워진 만큼 약간의 가산점을, 눈에 보이는 상대 호텔로 들어가면 감점을 준다.
 static func score_move(state: GameState, pawn: PlayerPawn, dice_value: int) -> float:
 	var path: Array[int] = MoveExecutor.preview_path(state, pawn, dice_value)
@@ -50,7 +49,7 @@ static func score_move(state: GameState, pawn: PlayerPawn, dice_value: int) -> f
 		score += SCORE_CAPTURE
 	if destination != GameEnums.GOAL_TILE or not pawn.can_finish(state):
 		var tile: TileNode = state.board.get_tile(destination)
-		if STOP_SPOT_TILES.has(destination) or tile.tile_type == TileNode.TileType.BAKERY:
+		if BoardSpec.bonus_corner_tiles.has(destination) or tile.tile_type == TileNode.TileType.BAKERY:
 			score += SCORE_STOP_SPOT
 	if state.boost_gimmicks and BoardSpec.dash_tiles.has(destination):
 		score += SCORE_DASH_PAD
@@ -170,7 +169,7 @@ static func leading_enemy(state: GameState, player_id: int) -> PlayerPawn:
 	return best
 
 
-## 함정·소환 카드를 놓을 타일. 선두 상대 말 바로 앞 1~4칸의 길목과 코너(6, 12, 18번)를 우선하고 (2~3칸 앞이 가장 높다),
+## 함정·소환 카드를 놓을 타일. 선두 상대 말 바로 앞 1~4칸의 길목과 출발선 외 코너를 우선하고 (2~3칸 앞이 가장 높다),
 ## 카드가 허용하는 타일이 하나도 없으면 -1.
 static func choose_card_tile(state: GameState, player_id: int, card: BaseCard, rng: RandomNumberGenerator) -> int:
 	var scores: Dictionary = {}
@@ -183,7 +182,7 @@ static func choose_card_tile(state: GameState, player_id: int, card: BaseCard, r
 			var tile: int = path.back()
 			var value: float = 60.0 if ahead == 2 or ahead == 3 else 50.0
 			scores[tile] = maxf(float(scores.get(tile, 0.0)), value)
-	for corner: int in STOP_SPOT_TILES:
+	for corner: int in BoardSpec.bonus_corner_tiles:
 		scores[corner] = float(scores.get(corner, 0.0)) + 20.0 if scores.has(corner) else 30.0
 	var best: Array[int] = []
 	var best_score: float = -INF

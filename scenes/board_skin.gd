@@ -25,7 +25,6 @@ static func definition(index: int) -> Dictionary:
 	# Color bands describe existing tile types, never player ownership.
 	var step: int = BoardSpec.side
 	var horizontal_row: bool = index in range(step + 1, step * 2) or index in range(step * 3 + 1, step * 4)
-	# 한 변의 칸이 늘면 타일 폭을 줄여 이웃 타일과 겹치지 않게 한다 (한 변 6칸 기준 보정).
 	var metrics: Dictionary = tile_metrics()
 	var width: float = metrics.width
 	var depth: float = metrics.depth

@@ -29,7 +29,8 @@ func test_board_spec_defaults_to_32_tiles() -> void:
 func test_special_tiles_are_valid_and_distinct() -> void:
 	_use_32()
 	var seen: Dictionary = {}
-	for tile: int in BoardSpec.bakery_tiles + BoardSpec.portal_tiles + BoardSpec.corner_tiles:
+	# 부스터 발판도 다른 특수 칸(빵집·옷장·코너)과 한 칸에 겹치지 않는다 (아이콘·효과가 한 칸에 겹치지 않게)
+	for tile: int in BoardSpec.bakery_tiles + BoardSpec.portal_tiles + BoardSpec.corner_tiles + BoardSpec.dash_tiles:
 		check(tile >= 0 and tile < 32, "%d번은 보드 안" % tile)
 		check(not seen.has(tile), "%d번 타일이 겹치지 않는다" % tile)
 		seen[tile] = true
@@ -72,9 +73,9 @@ func test_boost_pads_and_promotion_follow_the_32_tile_layout() -> void:
 	_use_32()
 	var state: GameState = make_state()
 	state.boost_gimmicks = true
-	place(state, 11, 3, [2])
-	move(state, 11, 2)  # 5번 발판(빵집과 겹침) -> +3
-	check_eq(state.get_pawn(11).current_tile_idx, 13, "5번 발판에 멈추면 +3칸 날아가 8번 점프 코너에 서고 13번으로 이어진다")
+	place(state, 11, 2, [1])
+	move(state, 11, 2)  # 4번 부스터 발판 -> +3
+	check_eq(state.get_pawn(11).current_tile_idx, 7, "4번 발판에 멈추면 +3칸 날아가 7번에 선다")
 	check(BoardSpec.promotion_tiles.has(16) and not BoardSpec.promotion_tiles.has(15), "승급은 16번(반환점)부터")
 
 

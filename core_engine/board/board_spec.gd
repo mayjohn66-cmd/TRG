@@ -26,7 +26,7 @@ static var bonus_corner_tiles: Array[int] = [8, 16, 24]
 ## 체스 폰·쇼기 기물이 반환점 이상에 도달하거나 지나가는 순간 승진·승급하는 타일.
 static var promotion_tiles: Array[int] = []
 ## ⚡ 부스터 발판 (5번은 빵집과 겹친다).
-static var dash_tiles: Array[int] = [5, 15, 26]
+static var dash_tiles: Array[int] = [4, 15, 26]
 
 
 ## 칸 수를 24(한 변 6칸) 또는 32(한 변 8칸)로 정한다. 특수 타일 번호도 함께 바뀐다.
@@ -53,7 +53,7 @@ static func apply(count: int) -> void:
 		plane_warp_targets = {12: 24, 22: 30}
 		jump_corner_targets = {8: 13, 24: 28}
 		bonus_corner_tiles = [8, 16, 24]
-		dash_tiles = [5, 15, 26]
+		dash_tiles = [4, 15, 26]
 	promotion_tiles = []
 	for index: int in range(halfway_tile, count):
 		promotion_tiles.append(index)
