@@ -1745,6 +1745,37 @@ func _test_presentation_queue() -> void:
 		guard += 1
 		await process_frame
 	_expect(not _board._presentation_active(), "큐가 모두 비워진다")
+	# 4) 처치 연출은 같은 행동의 이동 연출이 모두 끝난 뒤(큐 맨 뒤)에 재생된다
+	var order: Array[String] = []
+	pawn.current_tile_idx = 9
+	state.pawn_stepped.emit(11, 8, 9)
+	_board._enqueue_late(func() -> void:
+		order.append("late: landed" if view.position.distance_to(_board._pawn_position(pawn)) < 4.0 and not _board._fx_running(view) else "late: early")
+		await process_frame)
+	pawn.current_tile_idx = 10
+	state.pawn_stepped.emit(11, 9, 10)
+	_expect(_board._presentation_active(), "후순위 단계가 대기 중이면 큐는 활성 상태다")
+	guard = 0
+	while _board._presentation_active() and guard < 900:
+		guard += 1
+		await process_frame
+	_expect(order == ["late: landed"], "처치 컷신·사출은 마지막 칸에 착지한 직후에 시작한다 (%s)" % str(order))
+	# 5) 굴림 뒤에는 최종 칸수를 보여 주는 단계가 이동보다 먼저 선다
+	var summary_data: Dictionary = {"player_id": 1, "result": {"steps": 3, "ends_turn": false, "can_continue": false}}
+	_board._enqueue_roll_summary(summary_data)
+	_board._fx_busy = true
+	state.pawn_stepped.emit(11, 10, 11)
+	pawn.current_tile_idx = 11
+	_expect(_board._presentation_active(), "굴림 요약 단계가 큐에 선다")
+	for _i: int in 5:
+		await process_frame
+	_expect(int(view.get_meta("land_tile", -1)) != 11, "주사위 연출(_fx_busy)이 끝나기 전에는 말이 이동하지 않는다")
+	_board._fx_busy = false
+	guard = 0
+	while _board._presentation_active() and guard < 900:
+		guard += 1
+		await process_frame
+	_expect(not _board._presentation_active(), "굴림 요약 뒤에 이동이 이어지고 큐가 비워진다")
 	_board._announcer.cancel()
 	_board._fx_until_msec = 0
 	_board.instant_roll_for_test = true
