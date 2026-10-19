@@ -72,3 +72,48 @@ func _patrol_reverse(state: GameState) -> Dictionary:
 			break
 	report["vanished"] = not (report["caught"] as Array[int]).is_empty()
 	return report
+
+
+## 이 NPC가 이번 라운드 끝에 어디를 덮칠지 미리 본다 (화면의 위험 예고용). 난수를 쓰지 않고 게임 상태도 바꾸지 않는다.
+## 반환: {"tiles": 지나갈 수 있는 타일 순서(Array[int]), "catch_tiles": 말이 서 있으면 잡히는 타일(Array[int]), "chance": 그 타일에서 잡힐 확률(0~1), "direction": +1(정방향 추격) 또는 -1(역방향 순찰)}
+## 도적떼는 주사위(1~6)만큼 가장 가까운 말을 향해 가고, 도착한 말만 잡는다 (도착 못 하면 못 잡음). 고스트는 3칸 역주행하며 지나는 타일의 말을 잡고 첫 사냥에서 멈춘다.
+func danger_preview(state: GameState) -> Dictionary:
+	var preview: Dictionary = {"tiles": [] as Array[int], "catch_tiles": [] as Array[int], "chance": 0.0, "direction": 1}
+	if behavior == GameEnums.NpcBehavior.PATROL_REVERSE:
+		preview["direction"] = -1
+		var cursor: PathCursor = PathCursor.from_entity(self, true)
+		var tiles: Array[int] = []
+		for i: int in 3:
+			state.board.advance_backward(cursor)
+			tiles.append(cursor.tile)
+		# 말이 지금 없어도 그 자리에 서게 되면 잡히므로 지나가는 모든 타일(출발선 제외)을 위험 구간으로 본다.
+		preview["tiles"] = tiles
+		var danger: Array[int] = []
+		for tile: int in tiles:
+			if tile != GameEnums.GOAL_TILE:
+				danger.append(tile)
+		preview["catch_tiles"] = danger
+		preview["chance"] = 1.0 if not danger.is_empty() else 0.0
+		return preview
+	var targets: Array[BoardEntity] = []
+	var standing_on_target: bool = false
+	for pawn: PlayerPawn in state.get_active_pawns():
+		if not pawn.has_left_start or pawn.carrier != null:
+			continue
+		targets.append(pawn)
+		if pawn.current_tile_idx == current_tile_idx:
+			standing_on_target = true
+	var route: Array[int] = state.board.find_nearest_entity_bfs(current_tile_idx, targets)
+	if route.is_empty():
+		if standing_on_target:
+			preview["catch_tiles"] = [current_tile_idx] as Array[int]
+			preview["chance"] = 1.0
+		return preview
+	var reachable: Array[int] = []
+	for i: int in mini(6, route.size()):
+		reachable.append(route[i])
+	preview["tiles"] = reachable
+	if route.size() <= 6:
+		preview["catch_tiles"] = [route.back()] as Array[int]
+		preview["chance"] = float(7 - route.size()) / 6.0
+	return preview

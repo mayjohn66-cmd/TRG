@@ -154,7 +154,7 @@ func act(action: StringName, params: Dictionary = {}) -> void:
 
 
 ## 모든 플레이어 행동의 단일 입구. 서버만 실행하며 발신 피어로 행동자를 검증한다.
-## action: proceed / roll / stop / select_pawn / play_card / pick_augment / reroll_augment
+## action: proceed / roll(야추: keep 인자) / stop / select_pawn / play_card / pick_augment / reroll_augment
 @rpc("any_peer", "call_local", "reliable")
 func request_action(action: StringName, params: Dictionary = {}) -> void:
 	if not _is_authority() or state == null:
@@ -171,7 +171,7 @@ func request_action(action: StringName, params: Dictionary = {}) -> void:
 		return
 	match action:
 		&"proceed": _handle_proceed(actor)
-		&"roll": _handle_roll(actor)
+		&"roll": _handle_roll(actor, params)
 		&"stop": _handle_stop(actor)
 		&"select_pawn": _handle_select_pawn(actor, params)
 		&"play_card": _handle_play_card(actor, params)
@@ -320,11 +320,15 @@ func _handle_proceed(actor: int) -> void:
 		action_rejected.emit(actor, &"proceed", &"wrong_phase")
 
 
-func _handle_roll(actor: int) -> void:
+func _handle_roll(actor: int, params: Dictionary = {}) -> void:
 	if current_state != State.PHASE_ROLL_WAIT or actor != current_player_id():
 		action_rejected.emit(actor, &"roll", &"wrong_phase")
 		return
-	_apply_roll_result((state.tools[actor] as BaseJudgmentTool).roll(state.rng))
+	var tool: BaseJudgmentTool = state.tools[actor]
+	# 야추 다이스: 다시 굴릴 때 고정할 주사위(keep: 5개 bool)를 굴림 행동에 실어 보낸다.
+	if params.has("keep") and tool is ToolYacht:
+		(tool as ToolYacht).set_keep(params["keep"] as Array if params["keep"] is Array else [])
+	_apply_roll_result(tool.roll(state.rng))
 
 
 func _handle_stop(actor: int) -> void:
@@ -898,6 +902,12 @@ func _begin_turn(new_turn: bool = true) -> void:
 	_roll_chain = 0
 	_move_report = null
 	_sync_current_player()
+	# [초증강] 판 뒤집기 실패: 이번 턴은 쉰다 (바로 다음 사람 차례).
+	if new_turn and bool(state.rest_next_turn.get(current_player_id(), false)):
+		state.rest_next_turn[current_player_id()] = false
+		_emit_event(&"turn_rested", {"player_id": current_player_id()})
+		advance_to_next_player()
+		return
 	if new_turn:
 		_tick_restraints(current_player_id())
 	_tick_owned_attachments(current_player_id())
@@ -941,10 +951,19 @@ func _apply_roll_result(result: RollResult) -> void:
 	ctx.trigger_timing = RuleContext.ON_DICE_ROLL
 	ctx = state.rulebook.process_context(ctx)
 	if not ctx.is_canceled:
-		var boosted: int = ctx.dice_value + state.roll_bonus
-		if state.roll_bonus != 0:
-			_emit_event(&"roll_boosted", {"player_id": current_player_id(), "from": ctx.dice_value, "to": boosted})
+		var roller: int = current_player_id()
+		# [초증강] 주사위 도박사의 영혼: 이번 라운드 동안 눈금이 1 이하(실패)면 내 모든 말이 -4칸 후퇴하고 턴이 끝난다.
+		if int(state.gambler_round.get(roller, -1)) == state.round_number and ctx.dice_value <= 1:
+			_gambler_busts(roller, ctx.dice_value)
+			return
+		var permanent: int = int(state.permanent_roll_bonus.get(roller, 0))
+		var boosted: int = ctx.dice_value + state.roll_bonus + permanent
+		if state.roll_bonus != 0 or permanent != 0:
+			_emit_event(&"roll_boosted", {"player_id": roller, "from": ctx.dice_value, "to": boosted})
 			state.roll_bonus = 0
+		if int(state.gambler_round.get(roller, -1)) == state.round_number:
+			_emit_event(&"gambler_doubled", {"player_id": roller, "from": boosted, "to": boosted * 2})
+			boosted *= 2
 		move_queue.append(boosted)
 	_roll_chain += 1
 	if result.reroll and _roll_chain < GameEnums.MAX_REROLL_CHAIN:
@@ -952,6 +971,17 @@ func _apply_roll_result(result: RollResult) -> void:
 		_broadcast_state()
 	else:
 		_enter_interrupt_roll()
+
+
+## 도박사의 영혼 실패: 내 보드 위 모든 말을 -4칸 후퇴시키고 이동 없이 턴을 끝낸다.
+func _gambler_busts(player_id: int, roll_value: int) -> void:
+	var retreated: int = 0
+	for pawn: PlayerPawn in SuperAugments.board_leaders(state, player_id):
+		MoveExecutor.retreat(state, pawn, SuperAugments.GAMBLER_RETREAT)
+		retreated += 1
+	_emit_event(&"gambler_busted", {"player_id": player_id, "roll": roll_value, "retreated": retreated})
+	move_queue.clear()
+	advance_to_next_player()
 
 
 ## 이번 턴에 굴리기 전 카드를 이미 썼는가 (UI·봇이 카드 사용 가능 여부를 판단할 때 쓴다).

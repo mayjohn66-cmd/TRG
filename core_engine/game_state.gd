@@ -66,6 +66,12 @@ var round_number: int = 1
 var reverse_move_rounds_left: int = 0
 ## 이번 턴 첫 굴림 결과에 더할 값 (ACT_04 긴급 로켓 부스터). 굴림에 쓰이거나 턴이 시작되면 0으로 돌아간다.
 var roll_bonus: int = 0
+## [초증강] 악마의 계약: 플레이어별 영구 굴림 보너스 칸수.
+var permanent_roll_bonus: Dictionary = {}
+## [초증강] 주사위 도박사의 영혼: 플레이어 -> 효과가 켜진 라운드 번호 (그 라운드 동안만 이동 2배).
+var gambler_round: Dictionary = {}
+## [초증강] 판 뒤집기 실패: 다음 내 턴을 쉬어야 하는 플레이어들.
+var rest_next_turn: Dictionary = {}
 var winner: int = -1
 
 ## 이번 턴 시작 시점 스냅샷 (ACT_05 롤백 대상).

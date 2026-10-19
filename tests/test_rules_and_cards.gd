@@ -78,14 +78,14 @@ func test_process_context_only_runs_laws_matching_trigger_timing() -> void:
 
 func test_process_context_orders_by_priority_then_queue_order() -> void:
 	var state := make_state()
-	# 같은 priority면 큐 순서: LAW_06(5 -> 1) 다음 LAW_04(홀수 -> 후퇴) = -1
+	# 같은 priority면 큐 순서: LAW_06(5 -> 8) 다음 LAW_04(짝수는 전진) = 8
 	add_law(state, "LAW_06")
 	add_law(state, "LAW_04")
-	check_eq(run_timing(state, make_ctx(state, 5), RuleContext.ON_DICE_ROLL).dice_value, -1, "LAW_06 -> LAW_04")
+	check_eq(run_timing(state, make_ctx(state, 5), RuleContext.ON_DICE_ROLL).dice_value, 8, "LAW_06 -> LAW_04")
 	var reversed_state := make_state()
 	add_law(reversed_state, "LAW_04")
 	add_law(reversed_state, "LAW_06")
-	check_eq(run_timing(reversed_state, make_ctx(reversed_state, 5), RuleContext.ON_DICE_ROLL).dice_value, -1, "LAW_04 -> LAW_06")
+	check_eq(run_timing(reversed_state, make_ctx(reversed_state, 5), RuleContext.ON_DICE_ROLL).dice_value, -5, "LAW_04(5 -> -5) -> LAW_06(음수는 가속 없음)")
 	# priority가 낮을수록 먼저: 큐에는 LAW_06이 앞이지만 LAW_04의 priority를 -1로 주면 LAW_04가 먼저.
 	var priority_state := make_state()
 	var camera: LawResource = LawRegistry.create("LAW_06")
@@ -94,9 +94,9 @@ func test_process_context_orders_by_priority_then_queue_order() -> void:
 	priority_state.rulebook.enqueue_law(camera)
 	priority_state.rulebook.enqueue_law(frog)
 	var out: RuleContext = run_timing(priority_state, make_ctx(priority_state, 6), RuleContext.ON_DICE_ROLL)
-	check_eq(out.dice_value, 1, "6 -> (LAW_04) 6 전진 -> (LAW_06) 1")
+	check_eq(out.dice_value, 9, "6 -> (LAW_04) 6 전진 -> (LAW_06) +3 = 9")
 	var odd: RuleContext = run_timing(priority_state, make_ctx(priority_state, 5), RuleContext.ON_DICE_ROLL)
-	check_eq(odd.dice_value, -1, "5 -> (LAW_04) -5 -> (LAW_06) -1")
+	check_eq(odd.dice_value, -5, "5 -> (LAW_04) -5 -> (LAW_06) 후퇴는 가속 없음")
 	var even: RuleContext = run_timing(state, make_ctx(state, 4), RuleContext.ON_DICE_ROLL)
 	check_eq(even.dice_value, 4, "짝수 4는 전진 4")
 
@@ -331,17 +331,17 @@ func test_neutral_npc_ghost_patrols_reverse_and_drags_pawns_to_halfway() -> void
 
 func test_preview_context_computes_values_without_emitting_law_signals() -> void:
 	var state := make_state()
-	add_law(state, "LAW_06")  # 눈금 4 초과 시 1로 고정
+	add_law(state, "LAW_06")  # 눈금 5 이상이면 +3칸
 	var events: Array = []
 	state.rulebook.law_applied.connect(func(law: LawResource, _timing: String, before: int, after: int, modified: bool) -> void: events.append([law.law_id, before, after, modified]))
 	var preview: RuleContext = make_ctx(state, 5)
 	preview.is_preview = true
 	preview = run_timing(state, preview, RuleContext.ON_DICE_ROLL)
-	check_eq(preview.dice_value, 1, "미리보기도 수치는 똑같이 계산")
+	check_eq(preview.dice_value, 8, "미리보기도 수치는 똑같이 계산")
 	check_eq(events.size(), 0, "미리보기는 law_applied를 내지 않음")
 	var real: RuleContext = run_timing(state, make_ctx(state, 5), RuleContext.ON_DICE_ROLL)
-	check_eq(real.dice_value, 1, "실제 처리")
-	check_eq(events, [["LAW_06", 5, 1, true]], "실제 처리는 변조 여부와 함께 시그널")
+	check_eq(real.dice_value, 8, "실제 처리")
+	check_eq(events, [["LAW_06", 5, 8, true]], "실제 처리는 변조 여부와 함께 시그널")
 
 
 func test_law_applied_reports_unmodified_laws_and_tracks_modified_ids() -> void:

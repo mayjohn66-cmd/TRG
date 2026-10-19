@@ -111,7 +111,21 @@ static func score_augment(state: GameState, player_id: int, definition: AugmentD
 			return 50.0
 		GameEnums.AugmentCategory.LAW_ENACT:
 			return 40.0
+		GameEnums.AugmentCategory.SUPER_GAMBLE:
+			return super_augment_score(definition.payload)
 	return 30.0
+
+
+## 봇의 초증강 선호: 확실히 이득인 것(영구 가속·카드+호텔·저격·재분배)은 높게, 도박성 짙은 것(판 뒤집기·도박사·캐슬링)은 낮게 본다.
+static func super_augment_score(effect: StringName) -> float:
+	match effect:
+		SuperAugments.DEVIL, SuperAugments.BAKERY, SuperAugments.SNIPER:
+			return 70.0
+		SuperAugments.REDISTRIBUTE, SuperAugments.DICTATOR, SuperAugments.MINEFIELD:
+			return 55.0
+		SuperAugments.RAID:
+			return 45.0
+	return 35.0
 
 
 static func _evolved_count(state: GameState, player_id: int) -> int:
@@ -298,6 +312,64 @@ static func should_stop_roulette(tool: BaseJudgmentTool, pull_target: int) -> bo
 	if not (tool is ToolRussianRoulette) or not tool.has_pending_state():
 		return false
 	return (tool as ToolRussianRoulette).accumulated >= ToolRussianRoulette.STEPS_PER_EMPTY * pull_target
+
+
+## 야추 다이스: 가장 많이 겹친 눈금(동률이면 높은 눈금)을 고정한다. 겹친 게 없으면 가장 긴 연속 숫자, 그것도 없으면 가장 높은 주사위 하나를 고정한다.
+static func yacht_keep_mask(dice: Array) -> Array[bool]:
+	var counts: Dictionary = {}
+	for face: Variant in dice:
+		counts[int(face)] = int(counts.get(int(face), 0)) + 1
+	var best_face: int = 0
+	var best_count: int = 0
+	for face: Variant in counts.keys():
+		var count: int = int(counts[face])
+		if count > best_count or (count == best_count and int(face) > best_face):
+			best_count = count
+			best_face = int(face)
+	var keep_faces: Dictionary = {}
+	if best_count >= 2:
+		keep_faces[best_face] = true
+	else:
+		var faces: Array[int] = []
+		for face: Variant in counts.keys():
+			faces.append(int(face))
+		faces.sort()
+		var run: Array[int] = []
+		var current: Array[int] = []
+		for face: int in faces:
+			if not current.is_empty() and face == current[-1] + 1:
+				current.append(face)
+			else:
+				current = [face]
+			if current.size() > run.size():
+				run = current.duplicate()
+		if run.size() >= 3:
+			for face: int in run:
+				keep_faces[face] = true
+		else:
+			keep_faces[faces[-1]] = true
+	var mask: Array[bool] = []
+	var kept_faces: Dictionary = {}
+	for face: Variant in dice:
+		# 연속 숫자 노림에서는 같은 눈금을 한 개씩만 고정한다
+		var keep: bool = keep_faces.has(int(face)) and (best_count >= 2 or not kept_faces.has(int(face)))
+		if keep:
+			kept_faces[int(face)] = true
+		mask.append(keep)
+	return mask
+
+
+## 야추: 다시 굴릴 횟수가 없거나 이미 7칸 이상 족보(스트레이트·풀하우스·포카드·야추)면 확정한다.
+static func should_stop_yacht(tool: BaseJudgmentTool) -> bool:
+	if not (tool is ToolYacht) or not tool.has_pending_state():
+		return false
+	var yacht: ToolYacht = tool as ToolYacht
+	return yacht.rerolls_left <= 0 or int(ToolYacht.evaluate(yacht.dice)["steps"]) >= ToolYacht.STEPS_SMALL_OR_FULL
+
+
+## 블랙잭: 합계 16 이하면 히트, 17 이상이면 스탠드.
+static func should_hit_blackjack(tool: BaseJudgmentTool) -> bool:
+	return tool is ToolBlackjack and tool.has_pending_state() and ToolBlackjack.total_of((tool as ToolBlackjack).cards) <= 16
 
 
 # ---------------------------------------------------------------------------

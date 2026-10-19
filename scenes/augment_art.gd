@@ -17,6 +17,7 @@ const TOOL_FILES: Dictionary = {
 	&"HOLDEM": "DICE_POKER", &"SLOT_777": "DICE_SLOT", &"REVOLVER": "DICE_RUSSIAN",
 	&"CHINCHIRO": "DICE_CHINCHIRO", &"DICE_HWATU": "DICE_HWATU",
 	&"DICE_MAHJONG": "DICE_MAHJONG", &"DICE_TAROT": "DICE_TAROT",
+	&"DICE_YACHT": "DICE_YACHT", &"DICE_BLACKJACK": "DICE_BLACKJACK", &"DICE_PINBALL": "DICE_PINBALL",
 }
 
 
@@ -38,6 +39,8 @@ static func candidates(definition: AugmentDef) -> Array[String]:
 			paths.append(ROOT + "laws/%s.png" % definition.payload)
 			paths.append(ROOT + "augments/%s.png" % definition.augment_id)
 			paths.append(ROOT + "augments/AUG_LAW.png")
+		GameEnums.AugmentCategory.SUPER_GAMBLE:
+			paths.append(ROOT + "augments/%s.png" % definition.augment_id)
 		_:
 			paths.append(ROOT + "augments/%s.png" % definition.augment_id)
 			paths.append(ROOT + "augments/AUG_CARD_PACK.png")

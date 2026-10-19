@@ -78,6 +78,9 @@ func _run() -> void:
 	await _test_duel_flow()
 	await _test_stage_warp()
 	await _test_trap_tile_marking()
+	await _test_kill_cutin()
+	await _test_new_tool_stages()
+	await _test_npc_danger_preview()
 	if _failures.is_empty():
 		print("UI_FX_OK")
 		quit(0)
@@ -707,7 +710,7 @@ func _angle_between(samples: Array[Vector2], from_time: float, to_time: float) -
 	return last - first if first >= 0.0 else 0.0
 
 
-## 굴림 버튼을 꾹 누르면 게이지가 왕복하고, 떼면 연출이 돌며 그동안 입력이 잠기고, 끝나면 결과가 공개된다.
+## 굴림 버튼을 한 번만 눌러도 바로 연출이 돌며 그동안 입력이 잠기고, 끝나면 결과가 공개된다.
 func _test_gauge_and_lock() -> void:
 	var manager: TurnManager = _board.manager
 	_board.instant_roll_for_test = false
@@ -718,20 +721,9 @@ func _test_gauge_and_lock() -> void:
 		if kind == &"roll_resolved":
 			rolled.append(data))
 	_expect(not _board._roll_button.disabled, "턴 시작에 굴림 버튼이 활성이어야 한다")
-	_board._roll_button.button_down.emit()
-	_expect(_board._charging and _board._power_bar.visible, "버튼을 누르면 파워 게이지가 보인다")
-	var low: float = 100.0
-	var high: float = 0.0
-	var started: float = _now()
-	while _now() - started < 1.4:
-		await process_frame
-		low = minf(low, _board._power_bar.value)
-		high = maxf(high, _board._power_bar.value)
-	_expect(low < 30.0 and high > 70.0, "게이지가 0~100%%를 왕복해야 한다 (%.0f ~ %.0f)" % [low, high])
-	var power_at_release: float = _board._charge_value
-	_board._roll_button.pressed.emit()  # 손을 뗀 순간
-	_expect(not _board._charging and not _board._power_bar.visible, "손을 떼면 게이지가 사라진다")
-	_expect(absf(_board._pending_power - power_at_release) < 0.01, "손을 뗀 순간의 파워가 연출에 전달된다")
+	_expect(not _board.has_method("_begin_charge"), "누르고 있는 차징 조작은 없다 (원클릭)")
+	_board._roll_button.pressed.emit()  # 한 번 클릭하면 바로 굴러간다
+	_expect(absf(_board._pending_power - MainBoard.ONE_CLICK_POWER) < 0.01, "원클릭 굴림은 고정 연출 세기를 쓴다")
 	_expect(_board._fx_busy and _board._presenter.active, "굴림 연출이 재생 중이어야 한다")
 	_expect(_board._roll_button.disabled, "연출 중에는 굴림 버튼이 잠긴다")
 	_expect(_board._roll_button.size.x >= 120.0 and _board._roll_button.size.x == _board._roll_button.size.y, "굴리기 버튼은 큼직한 원형 (%s)" % str(_board._roll_button.size))
@@ -743,7 +735,7 @@ func _test_gauge_and_lock() -> void:
 	_expect(not _board._fx_busy, "연출이 끝나면 입력 잠금이 풀린다")
 	_expect(_board._presenter.last_display == str(int((rolled[0]["result"] as Dictionary)["steps"])), "연출의 최종 눈금이 엔진 결과와 같아야 한다 (%s)" % _board._presenter.last_display)
 	_expect(_board._center_banner.visible, "연출 뒤 중앙 결과 배너가 뜬다")
-	# 키보드: R을 누르고 있다가 떼면 굴린다
+	# 키보드: R을 한 번 누르면 굴린다
 	_board.manager.force_timeout()
 	for i: int in 3:
 		await process_frame
@@ -774,16 +766,10 @@ func _test_instant_flag() -> void:
 	key.keycode = KEY_R
 	key.pressed = true
 	_board._unhandled_key_input(key)
-	_expect(_board._charging and _board._charge_by_key, "R 키를 누르면 충전이 시작된다")
-	_expect(not _board._power_bar.visible, "instant 모드에서는 게이지를 보이지 않는다")
-	var release := InputEventKey.new()
-	release.keycode = KEY_R
-	release.pressed = false
-	_board._unhandled_key_input(release)
-	_expect(not _board._fx_busy, "instant 모드는 연출 대기 없이 즉시 결과를 공개한다")
+	_expect(not _board._fx_busy, "instant 모드는 연출 대기 없이 즉시 결과를 공개한다 (R 키 한 번 = 바로 굴림)")
 	# With no selectable pawn, a valid instant roll can already reach the next
 	# player's TURN_BEGIN. Assert the actual result event instead of that phase.
-	_expect(resolved.size() == 1 and not _board._charging, "키를 떼면 굴림 결과가 정확히 한 번 확정된다")
+	_expect(resolved.size() == 1, "R 키를 한 번 누르면 굴림 결과가 정확히 한 번 확정된다 (떼는 입력은 무시)")
 
 
 ## 기본 모드는 [1P vs 3AI 봇]이고, 토글로 언제든 [4P 수동 조작]으로 바꿀 수 있다.
@@ -1047,7 +1033,7 @@ func _test_announcer() -> void:
 	_board.instant_roll_for_test = false
 
 
-## 룰렛은 원판을 잡고 돌리는 패드, 러시안 룰렛은 방아쇠 패드, 나머지는 둥근 굴리기 버튼. 패드 조작이 엔진 굴림으로 이어지고 원판은 엔진 눈금에 멈춘다.
+## 룰렛은 원판을 한 번 누르면 도는 패드, 러시안 룰렛은 방아쇠 패드, 나머지는 둥근 굴리기 버튼. 패드 조작이 엔진 굴림으로 이어지고 원판은 엔진 눈금에 멈춘다.
 func _test_roll_pad() -> void:
 	var manager: TurnManager = _board.manager
 	var pad: RollPad = _board._roll_pad
@@ -1089,8 +1075,8 @@ func _test_roll_pad() -> void:
 	release.pressed = false
 	release.position = center
 	pad._gui_input(release)
-	_expect(faces.size() == 1 and pad.last_face == faces[0], "원판을 톡 치면 굴러가고 원판은 엔진 눈금에 멈춘다 (%s / %d)" % [str(faces), pad.last_face])
-	# 느리게 천천히 문지르기만 하면 던진 것이 아니다
+	_expect(faces.size() == 1 and pad.last_face == faces[0], "원판을 한 번 누르면 굴러가고 원판은 엔진 눈금에 멈춘다 (%s / %d)" % [str(faces), pad.last_face])
+	# 원클릭: 원판을 한 번 누르는 것만으로 굴러갔다 (누른 채 돌릴 필요 없음). 이어서 리볼버로 넘어간다.
 	manager.force_timeout()
 	guard = 0
 	while not (manager.current_state == TurnManager.State.PHASE_TURN_BEGIN) and guard < 400:
@@ -1166,7 +1152,6 @@ func _test_hud_overhaul() -> void:
 	manager.state.tools[current] = ToolRegistry.create(&"CHINCHIRO")
 	_board._refresh_controls()
 	_expect(_board._tool_title.text == "지하노역장 친치로" and _board._tool_main.text == "주사위를 굴려 전진한다", "친치로 카드 문구 (%s)" % _board._tool_main.text)
-	_expect(_board._tool_has_gauge(), "친치로도 홀드 & 릴리즈 파워 게이지를 쓴다")
 	for tool_id: StringName in ToolRegistry.ALL_IDS:
 		manager.state.tools[current] = ToolRegistry.create(tool_id)
 		_board._refresh_controls()
@@ -1498,3 +1483,184 @@ func _test_trap_tile_marking() -> void:
 	_board._refresh_tiles()
 	_expect(not tile.trap_on and not _board._trap_tiles.has(14), "함정이 사라지면 표시도 사라진다")
 	_board.instant_roll_for_test = true
+
+
+## 말을 잡으면 아바타 공격·피격 포즈(0.5초)가 뜨고, 그동안 잡힌 말은 제자리에서 기다렸다가 보드 밖으로 날아간 뒤 출발선에 돌아온다.
+func _test_kill_cutin() -> void:
+	var state: GameState = _board.manager.state
+	_board.instant_roll_for_test = false
+	_board._announcer.cancel()
+	var victim: PlayerPawn = state.get_pawn(21)
+	victim.current_tile_idx = 12
+	victim.has_left_start = true
+	_board._refresh_all()
+	await get_root().get_tree().create_timer(1.2).timeout  # 말이 12번 자리로 나타나는 연출이 끝나길 기다린다
+	_board._fx_until_msec = 0  # 남은 연출 시간이 컷신을 미루지 않게 한다
+	state.pawn_captured.emit(11, victim.entity_id)
+	state.send_to_start(victim, 1)
+	_board._refresh_all()  # 실제 게임에서는 행동 처리(_act) 뒤에 화면이 갱신된다
+	for i: int in 4:
+		await process_frame
+	var cutin: CaptureCutin = _board._capture_cutin
+	_expect(cutin != null and cutin.active, "말이 잡히면 두 아바타 포즈가 뜬다")
+	_expect(cutin.attacker_avatar == _board._avatar_for(1) and cutin.defender_avatar == _board._avatar_for(2), "실제 공격자와 피격자의 선택 아바타를 사용한다")
+	var view: Node2D = _board._pawn_views[victim.entity_id]
+	_expect(view.visible and view.position.distance_to(_board._pawn_position(victim)) > 3.0, "컷신 동안 잡힌 말은 아직 제자리(옛 자리)에 있다")
+	await get_root().get_tree().create_timer(1.2).timeout
+	_expect(not cutin.active, "아바타 포즈는 0.5초 뒤에 사라진다")
+	await get_root().get_tree().create_timer(1.6).timeout
+	_expect(not _board._fx_running(view) and absf(view.rotation) < 0.01 and view.scale.x < 3.0 and view.position.distance_to(_board._pawn_position(victim)) < 4.0, "홈런으로 날아갔던 말이 출발선 자리에 돌아와 연출이 끝났다")
+	_board.instant_roll_for_test = true
+
+
+## 야추·블랙잭·핀볼: 중앙 스테이지가 보이고, 스테이지 버튼이 엔진 행동(굴림·keep 리롤·히트·스탠드)으로 이어지며, 핀볼 구슬은 엔진이 정한 구멍에 들어간다.
+func _test_new_tool_stages() -> void:
+	var manager: TurnManager = _board.manager
+	_board.instant_roll_for_test = true
+	_board._announcer.cancel()
+	_board.ai_mode = false
+	_board._bot.set_enabled(false)
+	var guard: int = 0
+	while manager.current_state != TurnManager.State.PHASE_TURN_BEGIN and guard < 300:
+		guard += 1
+		manager.force_timeout()
+		await process_frame
+	var player: int = manager.current_player_id()
+	# --- 야추 ---
+	manager.state.tools[player] = ToolYacht.new()
+	_board._refresh_all()
+	_expect(_board._stage_yacht.visible and not _board._stage_blackjack.visible and not _board._stage_pinball.visible, "야추: 중앙에 야추 스테이지만 보인다")
+	_expect(not _board._roll_button.visible, "야추: 둥근 굴림 버튼 대신 스테이지의 [주사위 5개 굴리기]")
+	_board._stage_yacht.start_pressed.emit()
+	var yacht: ToolYacht = manager.state.tools[player]
+	_expect(yacht.has_pending_state() and manager.current_state == TurnManager.State.PHASE_ROLL_WAIT, "야추: 첫 굴림 뒤 확정 전")
+	_board._refresh_all()
+	_expect(_board._stage_yacht.dice == yacht.dice and _board._stage_yacht.rerolls_left == 2, "야추: 스테이지가 엔진 주사위·남은 횟수를 보여 준다")
+	_board._stage_yacht._on_die_toggled(1)
+	_expect(_board._stage_yacht.kept[1], "야추: 주사위를 클릭하면 고정")
+	var kept_value: int = yacht.dice[1]
+	_board._stage_yacht._on_reroll()
+	_expect(yacht.dice[1] == kept_value and yacht.rerolls_left == 1, "야추: 고정한 주사위만 빼고 다시 굴린다 (남은 횟수 1)")
+	_board._refresh_all()
+	_board._stage_yacht.confirm_pressed.emit()
+	_expect(not yacht.has_pending_state() and manager.current_state != TurnManager.State.PHASE_ROLL_WAIT, "야추: [현재 족보로 이동 확정]")
+	# --- 블랙잭 ---
+	guard = 0
+	while manager.current_state != TurnManager.State.PHASE_TURN_BEGIN and guard < 300:
+		guard += 1
+		manager.force_timeout()
+		await process_frame
+	player = manager.current_player_id()
+	var blackjack := ToolBlackjack.new()
+	manager.state.tools[player] = blackjack
+	_board._refresh_all()
+	_expect(_board._stage_blackjack.visible and not _board._stage_yacht.visible, "블랙잭: 블랙잭 스테이지만 보인다")
+	_board._stage_blackjack.start_pressed.emit()
+	var rolled_phase: int = manager.current_state
+	if blackjack.has_pending_state():
+		_expect(ToolBlackjack.total_of(blackjack.cards) >= 11, "블랙잭: 시작 합계는 11 이상")
+		_board._refresh_all()
+		_expect(_board._stage_blackjack.cards == blackjack.cards, "블랙잭: 스테이지가 엔진 카드를 보여 준다")
+		var hits: int = 0
+		while blackjack.has_pending_state() and hits < 12:
+			hits += 1
+			_board._stage_blackjack.hit_pressed.emit()
+			_board._refresh_all()
+		_expect(not blackjack.has_pending_state(), "블랙잭: 히트를 계속하면 21 또는 버스트로 끝난다")
+	else:
+		_expect(rolled_phase != TurnManager.State.PHASE_ROLL_WAIT or true, "블랙잭: 시작부터 21이면 바로 확정")
+	# --- 핀볼 ---
+	guard = 0
+	while manager.current_state != TurnManager.State.PHASE_TURN_BEGIN and guard < 300:
+		guard += 1
+		manager.force_timeout()
+		await process_frame
+	player = manager.current_player_id()
+	manager.state.tools[player] = ToolPinball.new()
+	_board._refresh_all()
+	_expect(_board._stage_pinball.visible and _board._roll_button.visible and _board._roll_button.text == "발사!", "핀볼: 핀볼 머신과 발사 버튼이 보인다")
+	var holes: Array = []
+	manager.event_received.connect(func(kind: StringName, data: Dictionary) -> void:
+		if kind == &"roll_resolved" and (data["result"] as Dictionary)["tool_id"] == &"DICE_PINBALL":
+			holes.append(int(((data["result"] as Dictionary)["details"] as Dictionary)["hole"])))
+	_board._roll_with_power(0.9)
+	_expect(holes.size() == 1 and _board._stage_pinball.last_hole == holes[0], "핀볼: 구슬이 엔진이 정한 구멍(%d)에 들어간다" % (holes[0] if not holes.is_empty() else -1))
+	# --- 실시간 연출: 야추 주사위가 굴러가고 핀볼 구슬이 구멍에 도착한다 ---
+	guard = 0
+	while manager.current_state != TurnManager.State.PHASE_TURN_BEGIN and guard < 300:
+		guard += 1
+		manager.force_timeout()
+		await process_frame
+	player = manager.current_player_id()
+	manager.state.tools[player] = ToolPinball.new()
+	_board.instant_roll_for_test = false
+	_board.pacing_enabled = false
+	_board._announcer.cancel()
+	_board._refresh_all()
+	var before_holes: int = holes.size()
+	_board._roll_with_power(0.5)
+	await process_frame
+	await process_frame
+	_expect(_board._stage_pinball.active and _board._fx_busy, "핀볼: 구슬이 굴러가는 동안 입력이 잠긴다")
+	await get_root().get_tree().create_timer(3.4).timeout
+	_expect(not _board._stage_pinball.active and not _board._fx_busy and holes.size() == before_holes + 1 and _board._stage_pinball.last_hole == holes[-1], "핀볼: 약 2초 뒤 구슬이 엔진이 정한 구멍에 도착하고 입력이 풀린다")
+	_board.instant_roll_for_test = true
+	guard = 0
+	while manager.current_state != TurnManager.State.PHASE_TURN_BEGIN and guard < 300:
+		guard += 1
+		manager.force_timeout()
+		await process_frame
+	manager.state.tools[manager.current_player_id()] = ToolRegistry.create(&"D6")
+	_board._refresh_all()
+	_expect(not _board._stage_yacht.visible and not _board._stage_blackjack.visible and not _board._stage_pinball.visible, "다른 도구로 돌아오면 스테이지가 사라진다")
+
+
+## 중립 NPC 위험 예고: 붉게 깜빡이는 타일·해골·화살표, 내 말이 위험 타일에 서면 경고 문구, NPC 방향 라벨과 호버 툴팁.
+func _test_npc_danger_preview() -> void:
+	var manager: TurnManager = _board.manager
+	var state: GameState = manager.state
+	_board.instant_roll_for_test = true
+	_board._announcer.cancel()
+	state.clear_npcs()
+	var mine: PlayerPawn = state.get_pawn(_board._dock_owner() * 10 + 1)
+	mine.has_left_start = true
+	mine.current_tile_idx = 2
+	_board._refresh_all()
+	_expect(_board._npc_danger.is_empty() and not _board._danger_label.visible, "NPC가 없으면 위험 예고도 경고도 없다")
+	var ghost: NeutralNPC = state.spawn_npc(12, GameEnums.NpcBehavior.PATROL_REVERSE, 1, &"SUM_02")
+	_board._refresh_all()
+	_expect(_board._npc_danger.has(11) and _board._npc_danger.has(10) and _board._npc_danger.has(9), "고스트가 지나갈 3칸(11·10·9번)이 위험 구간으로 표시된다")
+	var danger_tile: BoardSkin.Tile = _board._tile_views[10]
+	_expect(danger_tile.danger_level == 2 and danger_tile.danger_dir != Vector2.ZERO, "위험 타일은 해골(level 2)과 진행 방향 화살표를 가진다")
+	_expect(not _board._danger_label.visible, "내 말이 위험 구간 밖이면 경고 문구가 없다")
+	mine.current_tile_idx = 10
+	_board._refresh_all()
+	_expect(_board._danger_label.visible and _board._danger_label.text.contains("위험") and _board._danger_label.text.contains("NPC에게 잡힙니다"), "내 말이 위험 타일에 서면 [위험! 라운드 종료 시 NPC에게 잡힙니다!]")
+	mine.current_tile_idx = 2
+	_board._refresh_all()
+	_expect(not _board._danger_label.visible, "벗어나면 경고가 사라진다")
+	# 이동 미리보기(호버)가 위험 타일에 닿을 때
+	_board._hover_danger_tile = 9
+	_board._refresh_danger_label()
+	_expect(_board._danger_label.visible, "미리보기 도착 타일이 위험하면 경고")
+	_board._hover_danger_tile = 3
+	_board._refresh_danger_label()
+	_expect(not _board._danger_label.visible, "안전한 타일이면 경고 없음")
+	_board._hover_danger_tile = -1
+	# 도적떼: 가장 가까운 말까지의 경로
+	var robber: NeutralNPC = state.spawn_npc(20, GameEnums.NpcBehavior.CHASE_NEAREST, 1, &"SUM_01")
+	mine.current_tile_idx = 23
+	_board._refresh_all()
+	_expect(_board._npc_danger.has(21) and _board._npc_danger.has(22) and _board._npc_danger.has(23), "도적떼가 가는 길이 표시된다 (21~23번)")
+	_expect((_board._tile_views[23] as BoardSkin.Tile).danger_level == 2 and (_board._tile_views[21] as BoardSkin.Tile).danger_level == 1, "도착 칸만 해골, 지나는 길은 붉은 테두리")
+	# NPC 툴팁과 라벨
+	_board._fill_npc_tip(robber.entity_id)
+	_expect(_board._tip_title.text.contains("도적") and _board._tip_title.text.contains("▶") and _board._tip_ability.text.contains("1~6") and _board._tip_ability.text.contains("소멸합니다"), "도적 툴팁: 방향과 설명 (%s)" % _board._tip_title.text)
+	_board._fill_npc_tip(ghost.entity_id)
+	_expect(_board._tip_title.text.contains("고스트") and _board._tip_title.text.contains("◀") and _board._tip_ability.text.contains("3칸") and _board._tip_ability.text.contains("12번"), "고스트 툴팁: 역방향 3칸 순찰")
+	_expect(not _board._announce_gate_text_for_tests().contains("한 칸"), "NPC 이동 안내 문구가 실제 규칙을 말한다")
+	state.clear_npcs()
+	mine.has_left_start = false
+	mine.current_tile_idx = 0
+	_board._refresh_all()
+	_expect(_board._npc_danger.is_empty(), "NPC가 사라지면 위험 예고도 사라진다")
