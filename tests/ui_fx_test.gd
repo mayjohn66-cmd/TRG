@@ -273,14 +273,14 @@ func _test_presenters() -> void:
 	# D6 above already measures the shared real-time animation. Sample each new
 	# face at completion without advancing the live game's unrelated turn timer.
 	for value: int in [4, 5, 6, -6]:
-		presenter.play(&"CHINCHIRO", {"steps": value, "details": {"face": value, "oops": value == -6}}, 0.8)
+		presenter.play(&"CHINCHIRO", {"steps": maxi(value, 0), "details": {"face": value, "oops": value == -6}}, 0.8)
 		presenter._process(DiceRoll3D.ROLL_TIME + DiceRoll3D.HOLD_TIME)
 		_expect(presenter._dice_3d == die_view, "loaded die shares the same 3D viewport")
-		_expect(die_view.displayed_value() == value and presenter.last_display == str(value), "loaded physical face and displayed result match %d" % value)
+		_expect(die_view.displayed_value() == value and presenter.last_display == str(maxi(value, 0)), "loaded physical face and displayed result match %d" % value)
 		_expect(die_view._pips.mesh != ordinary_mesh, "loaded die uses its own face paint")
 		_expect(die_view.render_view.render_target_update_mode == SubViewport.UPDATE_DISABLED, "loaded die stops rendering after result")
 		if value < 0:
-			_expect(presenter._die_label.text.contains("후퇴"), "oops is shown as backwards movement")
+			_expect(presenter._die_label.text.contains("0칸") and not presenter._die_label.text.contains("후퇴"), "oops is shown as a zero-tile failure, never a retreat")
 	presenter.play(&"D6", {"steps": 1, "details": {"face": 1}}, 0.5)
 	_expect(die_view._pips.mesh == ordinary_mesh, "switching back restores ordinary D6 pips")
 	presenter.cancel()
@@ -390,14 +390,14 @@ func _test_illustrated_judgment_cards() -> void:
 	presenter.cancel()
 	for selected: int in 5:
 		var fate: StringName = ToolTarot.FATES[selected]
-		presenter.play(&"DICE_TAROT", {"steps":-2, "details":{"fate":fate, "flipped":selected}})
+		presenter.play(&"DICE_TAROT", {"steps":0, "details":{"fate":fate, "flipped":selected}})
 		await process_frame
 		await process_frame
 		presenter._update(0.52)
 		_expect(presenter._card_flipped.count(true) == 0 and presenter._die_label.text.is_empty() and presenter.last_display.is_empty(), "tarot fate remains hidden during focus and first flip half")
 		presenter._update(0.65)
 		_expect(presenter._card_flipped.count(true) == 1, "tarot reveals exactly one card at every selection position")
-		_expect(presenter._die_label.text.contains("2칸 후퇴"), "negative engine movement remains a retreat")
+		_expect(presenter._die_label.text.contains("이동 없음"), "zero engine movement is shown as no movement")
 		for index: int in 5:
 			var card: JudgmentCard = presenter._cards[index] as JudgmentCard
 			_expect(card.face_up == (index == selected), "only the actual selected tarot card is face up")
@@ -459,7 +459,7 @@ func _test_yut_throw() -> void:
 	var presenter: RollPresenter = _board._presenter
 	presenter.instant = false
 	presenter.set_process(false)
-	presenter.play(&"YUT",{"steps":-1,"details":{"face":-1}})
+	presenter.play(&"YUT",{"steps":2,"reroll":true,"details":{"face":-1,"special":true}})
 	await process_frame
 	await process_frame
 	var view: YutThrow3D = presenter._yut_3d
@@ -475,17 +475,17 @@ func _test_yut_throw() -> void:
 	presenter._update(YutThrow3D.RESULT_TIME+0.001)
 	presenter._update(YutThrow3D.RESULT_TIME+0.01)
 	_expect(events==[0,1,2,3],"exactly four primary landing events occur")
-	_expect(view.displayed_value()==-1 and presenter.last_display=="빽도","marked physical belly and engine Backdo agree")
-	_expect(presenter._die_label.text=="빽도 · 1칸 후퇴","negative Yut result is shown as retreat")
+	_expect(view.displayed_value()==-1 and presenter.last_display=="특도","marked physical belly and engine special throw agree")
+	_expect(presenter._die_label.text=="특도 · 2칸 전진 · 한 번 더","special Yut result is shown as a forward bonus throw")
 	view.stick_landed.disconnect(observer)
 	presenter._process(presenter._total)
 	_expect(not presenter.active and view.render_view.render_target_update_mode==SubViewport.UPDATE_DISABLED,"completion releases input and stops Yut rendering")
 	for value: int in ToolYut.FACES:
-		presenter.play(&"YUT",{"steps":value,"reroll":value>=4,"details":{"face":value}},0.1)
+		presenter.play(&"YUT",{"steps":2 if value==-1 else value,"reroll":value>=4 or value==-1,"details":{"face":value}},0.1)
 		presenter._update(YutThrow3D.RESULT_TIME+0.001)
 		_expect(presenter._yut_3d==view,"all outcomes reuse the same four meshes and viewport")
 		_expect(view.displayed_value()==value and presenter.last_display==RollPresenter.YUT_NAMES[value],"six physical outcomes agree with engine values")
-		_expect(presenter._die_label.text.contains("한 번 더")==bool(value>=4),"only actual Yut/Mo results show reroll")
+		_expect(presenter._die_label.text.contains("한 번 더")==bool(value>=4 or value==-1),"only special/Yut/Mo results show reroll")
 		presenter.cancel()
 	_expect(not presenter.active and not presenter.visible and view.render_view.render_target_update_mode==SubViewport.UPDATE_DISABLED,"cancelling Yut hides it and stops its renderer")
 	presenter.play(&"D6",{"steps":4,"details":{"face":4}})
@@ -1411,7 +1411,7 @@ func _test_duel_flow() -> void:
 		click.position = view.position + _board._pawn_layer.position
 		_board._input(click)
 		_expect(not manager.duel_pending(), "말을 클릭하면 결투가 끝난다")
-		_expect(state.get_pawn(victim_id).current_tile_idx == before - 2, "고른 말이 2칸 뒤로 후퇴 (%d -> %d)" % [before, state.get_pawn(victim_id).current_tile_idx])
+		_expect(state.get_pawn(victim_id).current_tile_idx == 0 and not state.get_pawn(victim_id).has_left_start, "고른 말이 출발선으로 사출 (%d -> %d)" % [before, state.get_pawn(victim_id).current_tile_idx])
 	waited = 0.0
 	while _board._duel_arena != null and is_instance_valid(_board._duel_arena) and waited < 5.0:
 		await create_timer(0.1).timeout

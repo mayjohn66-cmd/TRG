@@ -7,6 +7,7 @@ extends TestCase
 
 func _state(seed_value: int = 11) -> GameState:
 	var state := GameState.new()
+	state.boost_gimmicks = false
 	state.setup([1, 2, 3, 4] as Array[int], seed_value)
 	return state
 
@@ -188,7 +189,7 @@ func test_bakery_gives_cards_and_hotels_on_every_bakery_tile() -> void:
 	check_eq(state.board.get_tile(GameEnums.BAKERY_TILES[0]).attachments.size(), 1, "호텔은 중복 설치되지 않는다")
 
 
-func test_sniper_retreats_the_two_leading_enemies_and_drops_dominos() -> void:
+func test_sniper_ejects_the_leading_enemy_boosts_mine_and_drops_a_cannon() -> void:
 	var state: GameState = _state()
 	_place(state, 11, 4)
 	_place(state, 21, 20)
@@ -196,14 +197,15 @@ func test_sniper_retreats_the_two_leading_enemies_and_drops_dominos() -> void:
 	_place(state, 41, 6)
 	var result: Dictionary = SuperAugments.apply(SuperAugments.SNIPER, state, 1)
 	check(bool(result["ok"]), "저격")
-	check_eq(state.get_pawn(21).current_tile_idx, 15, "선두 20번 -> 15번")
-	check_eq(state.get_pawn(31).current_tile_idx, 10, "2위 15번 -> 10번")
+	check_eq(state.get_pawn(21).current_tile_idx, 0, "선두 적 말은 출발선으로 사출")
+	check(not state.get_pawn(21).has_left_start and state.get_pawn(21).revenge_boost, "출발 대기 + 복수 부스터")
+	check_eq(state.get_pawn(31).current_tile_idx, 15, "2위는 그대로")
 	check_eq(state.get_pawn(41).current_tile_idx, 6, "3위는 그대로")
-	for tile: int in [20, 15]:
-		var domino: bool = false
-		for attachment: TileAttachment in state.board.get_tile(tile).attachments:
-			domino = domino or (attachment.attachment_id == "TRP_05" and attachment.owner_id == 1)
-		check(domino, "%d번 자리에 도미노" % tile)
+	check_eq(state.get_pawn(11).current_tile_idx, 8, "내 선두 말은 +4칸 전진 (4 -> 8)")
+	var cannon: bool = false
+	for attachment: TileAttachment in state.board.get_tile(20).attachments:
+		cannon = cannon or (attachment.attachment_id == "TRP_05" and attachment.owner_id == 1)
+	check(cannon, "사출된 자리에 스프링 대포")
 
 
 func test_dictator_replaces_the_rulebook_and_advances_a_pawn() -> void:
@@ -241,6 +243,7 @@ func test_super_category_appears_at_most_once_per_draft_and_not_every_time() -> 
 
 func _manager() -> TurnManager:
 	var manager := TurnManager.new()
+	manager.boost_gimmicks = false
 	manager.hotseat_mode = true
 	manager.draft_enabled = false
 	tree.root.add_child(manager)
@@ -293,7 +296,7 @@ func test_gambler_applies_after_other_bonuses_and_only_in_its_round() -> void:
 	_dispose(other)
 
 
-func test_gambler_fail_retreats_all_pawns_and_ends_the_turn() -> void:
+func test_gambler_overheat_ejects_the_moved_pawn_after_a_doubled_move() -> void:
 	var manager: TurnManager = _manager()
 	var player: int = manager.current_player_id()
 	manager.state.gambler_round[player] = manager.state.round_number
@@ -310,10 +313,11 @@ func test_gambler_fail_retreats_all_pawns_and_ends_the_turn() -> void:
 		if kind == &"gambler_busted":
 			events.append(data))
 	_roll(manager, player, 1)
-	check_eq(events.size(), 1, "도박사 실패 이벤트")
-	check(manager.current_player_id() != player, "실패하면 바로 다음 사람 차례")
-	check(manager.move_queue.is_empty(), "이동 없음")
-	check(pawn_a.current_tile_idx < 10 and pawn_b.current_tile_idx < 6, "내 모든 말이 후퇴했다 (%d, %d)" % [pawn_a.current_tile_idx, pawn_b.current_tile_idx])
+	check_eq(manager.move_queue, [2] as Array[int], "눈금 1도 x2로 이동은 한다")
+	manager.act(&"select_pawn", {"player_id": player, "pawn_id": pawn_a.entity_id})
+	check_eq(events.size(), 1, "과열 이벤트")
+	check(not pawn_a.has_left_start and pawn_a.current_tile_idx == 0 and pawn_a.revenge_boost, "이동한 말이 출발선으로 사출 + 복수 부스터")
+	check_eq(pawn_b.current_tile_idx, 6, "다른 말은 그대로")
 	_dispose(manager)
 
 

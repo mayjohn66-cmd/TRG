@@ -15,6 +15,7 @@ func _build(seats: Array[int], bot_seats: Array[int], autoplay: bool = true, see
 			humans.append(seat)
 	for seat: int in humans:
 		var manager := TurnManager.new()
+		manager.boost_gimmicks = false
 		tree.root.add_child(manager)
 		manager.set_process(false)
 		defer_free(manager)

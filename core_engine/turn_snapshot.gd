@@ -21,6 +21,7 @@ static func capture(state: GameState) -> TurnSnapshot:
 			"started": pawn.has_left_start,
 			"finished": pawn.is_finished,
 			"retreated_run": pawn.retreated_run,
+			"revenge": pawn.revenge_boost,
 			"kind": pawn.kind,
 			"unit": pawn.unit_no,
 			"restrained": pawn.restrained_turns,
@@ -82,6 +83,7 @@ func restore(state: GameState, restore_meta: bool = false) -> void:
 		pawn.has_left_start = bool(entry["started"])
 		pawn.is_finished = bool(entry["finished"])
 		pawn.retreated_run = bool(entry.get("retreated_run", false))
+		pawn.revenge_boost = bool(entry.get("revenge", false))
 		pawn.kind = entry["kind"]
 		pawn.unit_no = int(entry["unit"])
 		pawn.restrained_turns = int(entry["restrained"])

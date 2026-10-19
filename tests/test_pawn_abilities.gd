@@ -18,6 +18,7 @@ func _two(kind: GameEnums.PawnKind) -> Array:
 
 func _manager(loadouts: Dictionary = {}, players: int = 3) -> TurnManager:
 	var manager := TurnManager.new()
+	manager.boost_gimmicks = false
 	manager.hotseat_mode = true
 	manager.draft_enabled = false
 	tree.root.add_child(manager)
@@ -100,7 +101,7 @@ func test_bang_targets_players_with_pawns_on_the_board() -> void:
 	check_eq(BangCommand.find_target(state, 2).entity_id, 22, "선두 말(결승에 가까운 말)이 저격당한다")
 
 
-func test_bang_pushes_the_front_pawn_back_two_tiles() -> void:
+func test_bang_ejects_the_front_pawn_to_the_start_line() -> void:
 	var state := make_state(2, 1)
 	place(state, 21, 6)
 	place(state, 22, 9)  # 선두
@@ -108,8 +109,9 @@ func test_bang_pushes_the_front_pawn_back_two_tiles() -> void:
 	var results: Array = []
 	state.bang_resolved.connect(func(shooter: int, target: int, from_tile: int, to_tile: int) -> void: results.append([shooter, target, from_tile, to_tile]))
 	check(stack.execute_command(BangCommand.new(1, 2), make_ctx(state, 0)), "발사")
-	check_eq(results, [[1, 22, 9, 7]], "선두 말이 2칸 뒤로")
-	check_eq(state.get_pawn(22).current_tile_idx, 7, "7번 타일")
+	check_eq(results, [[1, 22, 9, 0]], "선두 말이 출발선으로 사출")
+	check_eq(state.get_pawn(22).current_tile_idx, 0, "0번 출발선")
+	check(not state.get_pawn(22).has_left_start and state.get_pawn(22).revenge_boost, "출발 대기 상태 + 복수 부스터")
 	check_eq(state.get_pawn(21).current_tile_idx, 6, "다른 말은 그대로")
 	check(not stack.execute_command(BangCommand.new(1, 1), make_ctx(state, 0)), "나 자신은 저격할 수 없다")
 
@@ -128,7 +130,7 @@ func test_bang_card_is_playable_only_at_turn_begin_with_a_chosen_target() -> voi
 	manager.event_received.connect(func(kind: StringName, data: Dictionary) -> void: events.append([kind, data]))
 	_do(manager, 1, &"play_card", {"card_id": &"ACT_02", "target_player": 2})
 	check(not manager.state.has_card(1, &"ACT_02"), "카드 소모")
-	check_eq(manager.state.get_pawn(21).current_tile_idx, 5, "상대 선두 말이 2칸 뒤로")
+	check_eq(manager.state.get_pawn(21).current_tile_idx, 0, "상대 선두 말이 출발선으로 사출")
 	var kinds: Array = events.map(func(e: Array) -> StringName: return e[0])
 	check(kinds.has(&"bang_resolved"), "bang_resolved 이벤트")
 	_dispose(manager)
@@ -136,22 +138,26 @@ func test_bang_card_is_playable_only_at_turn_begin_with_a_chosen_target() -> voi
 
 # --- ACT_03 우노 +4 ---------------------------------------------------------------
 
-func test_uno_plus_four_pushes_the_next_players_front_pawn_back_four_tiles() -> void:
+func test_uno_plus_four_ejects_the_next_players_front_pawn_and_boosts_mine() -> void:
 	var state := make_state(3, 1)
 	state.turn_direction = 1
 	place(state, 21, 9)
 	place(state, 22, 4)
+	place(state, 11, 1, [0])
 	var stack: CommandStack = new_stack()
 	var results: Array = []
 	state.bomb_resolved.connect(func(shooter: int, victim: int, pawn_id: int, from_tile: int, to_tile: int) -> void: results.append([shooter, victim, pawn_id, from_tile, to_tile]))
 	check(stack.execute_command(PenaltyBombCommand.new(1), make_ctx(state, 0)), "발동")
-	check_eq(results, [[1, 2, 21, 9, 5]], "다음 플레이어의 선두 말이 4칸 후퇴")
+	check_eq(results, [[1, 2, 21, 9, 0]], "다음 플레이어의 선두 말이 출발선으로 사출")
+	check_eq(state.get_pawn(21).current_tile_idx, 0, "사출")
 	check_eq(state.get_pawn(22).current_tile_idx, 4, "다른 말은 그대로")
+	check_eq(state.get_pawn(11).current_tile_idx, 5, "내 선두 말은 +4칸 전진 (1 -> 5)")
 	var reversed := make_state(3, 1)
 	reversed.turn_direction = -1
 	place(reversed, 31, 9)
 	check(new_stack().execute_command(PenaltyBombCommand.new(1), make_ctx(reversed, 0)), "역방향 발동")
-	check_eq(reversed.get_pawn(31).current_tile_idx, 5, "역방향이면 반대편 플레이어")
+	check_eq(reversed.get_pawn(31).current_tile_idx, 0, "역방향이면 반대편 플레이어")
+	check_eq(reversed.get_pawn(11).current_tile_idx, 4, "보드에 말이 없으면 출발 대기 말이 +4칸 나간다")
 
 
 func test_uno_plus_four_needs_a_pawn_on_the_board_and_is_played_at_turn_begin() -> void:
@@ -165,7 +171,7 @@ func test_uno_plus_four_needs_a_pawn_on_the_board_and_is_played_at_turn_begin() 
 	var events: Array = []
 	manager.event_received.connect(func(kind: StringName, data: Dictionary) -> void: events.append([kind, data]))
 	_do(manager, 1, &"play_card", {"card_id": &"ACT_03"})
-	check_eq(manager.state.get_pawn(21).current_tile_idx, 5, "즉시 4칸 후퇴")
+	check_eq(manager.state.get_pawn(21).current_tile_idx, 0, "즉시 출발선으로 사출")
 	check(not manager.state.has_card(1, &"ACT_03"), "카드 소모")
 	var kinds: Array = events.map(func(e: Array) -> StringName: return e[0])
 	check(kinds.has(&"bomb_applied"), "bomb_applied 이벤트")

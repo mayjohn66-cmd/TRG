@@ -1,10 +1,8 @@
 # File: res://core_engine/commands/bang_command.gd
 # Class: class_name BangCommand
-# Role: ACT_02 뱅! 저격 실행 - 고른 상대 플레이어의 선두 말(보드 위에서 결승에 가장 가까운 말) 하나를 2칸 뒤로 보낸다. 회피나 사거리 판정은 없다
+# Role: ACT_02 뱅! 저격 실행 - 고른 상대 플레이어의 선두 말(보드 위에서 결승에 가장 가까운 말) 하나를 즉시 출발선(0번)으로 장외 사출시킨다. 회피나 사거리 판정은 없다
 class_name BangCommand
 extends GameCommand
-
-const RETREAT_STEPS: int = 2
 
 var target_player: int = -1
 var target_pawn_id: int = -1
@@ -43,9 +41,6 @@ func _run() -> void:
 		return
 	target_pawn_id = target.entity_id
 	var from_tile: int = target.current_tile_idx
-	# 설치물·잡기 판정 없이 조용히 뒤로 민다 (업힌 말은 함께 밀려난다)
-	var path: Array[int] = state.board.calculate_path(target, -RETREAT_STEPS, RuleContext.new())
-	for destination: int in path:
-		state.board.commit_step(target, destination)
-		state.sync_stack_position(target)
-	state.bang_resolved.emit(sender_id, target_pawn_id, from_tile, target.current_tile_idx)
+	# 회피 없는 저격: 선두 말이 즉시 출발선으로 장외 사출된다 (업힌 말은 함께)
+	state.send_to_start(target, sender_id)
+	state.bang_resolved.emit(sender_id, target_pawn_id, from_tile, GameEnums.GOAL_TILE)

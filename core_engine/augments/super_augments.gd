@@ -21,10 +21,8 @@ const FLIP_FINISH_CHANCE_PERCENT: int = 50
 const DEVIL_BONUS: int = 3
 const MINEFIELD_COUNT: int = 5
 const RAID_ROBBERS: int = 2
-const GAMBLER_RETREAT: int = 4
 const BAKERY_CARDS: int = 3
-const SNIPER_TARGETS: int = 2
-const SNIPER_RETREAT: int = 5
+const SNIPER_ADVANCE: int = 4
 const DICTATOR_LAWS: int = 2
 const DICTATOR_ADVANCE: int = 4
 
@@ -35,10 +33,12 @@ const INFO: Dictionary = {
 	DEVIL: ["악마의 계약 (영구 가속)", "◆ 내 말 1개를 출발선으로 제물\n◆ 남은 게임 내내 내 모든 굴림 결과에 +3칸"],
 	MINEFIELD: ["광란의 지뢰밭", "◆ 빈 타일 5곳에 은신 함정(거울의 힘 또는 지뢰) 일제 살포\n◆ 설치한 내 눈에는 위치가 보인다"],
 	RAID: ["도적단 대습격", "◆ 카탄의 도적떼 2마리 + 팩맨 고스트 1마리 동시 소환\n◆ 판 전체가 아수라장!"],
-	GAMBLER: ["주사위 도박사의 영혼", "◆ 이번 라운드 내 이동 거리 무조건 2배(x2)\n◆ 단 눈금 1 이하(0·실패)가 나오면 내 모든 말 -4칸 후퇴"],
+	GAMBLER: ["주사위 도박사의 영혼", "◆ 이번 라운드 이동 거리 2배(x2) 증폭!
+◆ 단 눈금 1 이하면 이동한 내 말이 과열되어 0번 출발선으로 사출"],
 	CASTLING: ["강제 캐슬링 룰렛", "◆ 보드 위 모든 플레이어 말의 위치를 무작위로 전부 섞는다"],
 	BAKERY: ["에르핀의 빵집 털이", "◆ 무작위 생떼 카드 3장 획득\n◆ 모든 빵집 타일에 내 통행료 호텔 설치"],
-	SNIPER: ["저격수의 표적", "◆ 가장 앞선 적 말 2개를 -5칸 강제 후퇴\n◆ 그 자리에 도미노 함정 설치"],
+	SNIPER: ["저격수의 표적", "◆ 가장 앞선 적 말 1개를 즉시 0번 출발선으로 장외 사출
+◆ 내 말 1개를 +4칸 전진 + 그 자리에 스프링 대포 설치"],
 	DICTATOR: ["독재자의 날조", "◆ 중앙 법전을 전부 밀어내고 새 교칙 2개 강제 등록\n◆ 내 말 1개 +4칸 전진"],
 }
 
@@ -226,7 +226,7 @@ static func _apply_raid(state: GameState, player_id: int) -> Dictionary:
 
 static func _apply_gambler(state: GameState, player_id: int) -> Dictionary:
 	state.gambler_round[player_id] = state.round_number
-	return {"ok": true, "text": "이번 라운드 이동 거리 2배! (눈금 1 이하는 모든 말 -%d칸 후퇴)" % GAMBLER_RETREAT}
+	return {"ok": true, "text": "이번 라운드 이동 거리 2배! (눈금 1 이하면 이동한 말이 과열되어 출발선으로 사출)"}
 
 
 static func _apply_castling(state: GameState) -> Dictionary:
@@ -264,13 +264,19 @@ static func _apply_sniper(state: GameState, player_id: int) -> Dictionary:
 	var targets: Array[PlayerPawn] = sorted_by_progress(state, board_leaders(state, -1, player_id))
 	if targets.is_empty():
 		return {"ok": false, "text": "저격할 적 말이 없습니다"}
-	var hit: Array[int] = []
-	for pawn: PlayerPawn in targets.slice(0, SNIPER_TARGETS):
-		var origin: int = pawn.current_tile_idx
-		MoveExecutor.retreat(state, pawn, SNIPER_RETREAT)
-		state.place_attachment(origin, TrapDomino.new(player_id))
-		hit.append(pawn.entity_id)
-	return {"ok": true, "text": "선두 적 말 %d개를 -%d칸 후퇴시키고 그 자리에 도미노를 깔았습니다" % [hit.size(), SNIPER_RETREAT]}
+	var victim: PlayerPawn = targets[0]
+	var origin: int = victim.current_tile_idx
+	state.send_to_start(victim, player_id)
+	state.place_attachment(origin, TrapDomino.new(player_id))
+	var booster: PlayerPawn = state.front_pawn_of(player_id)
+	if booster == null:
+		for candidate: PlayerPawn in state.pawns_of(player_id):
+			if candidate.is_selectable():
+				booster = candidate
+				break
+	if booster != null:
+		MoveExecutor.forced_advance(state, booster, SNIPER_ADVANCE)
+	return {"ok": true, "text": "선두 적 말을 출발선으로 사출하고 내 말 +%d칸! 그 자리에 스프링 대포를 깔았습니다" % SNIPER_ADVANCE}
 
 
 static func _apply_dictator(state: GameState, player_id: int) -> Dictionary:

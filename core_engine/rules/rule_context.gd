@@ -14,13 +14,13 @@ const ON_TURN_END: String = "ON_TURN_END"
 var trigger_timing: String = ""
 ## 행동 주체 플레이어 ID.
 var actor_id: int = -1
-## 원본 및 변조된 이동 칸수 (윷의 빽도·청개구리 저주처럼 음수 가능).
+## 원본 및 변조된 이동 칸수 (0 이상. 말은 뒤로 가지 않는다).
 var dice_value: int = 0
 ## 점프 코너·옷장 포탈 작동 허용 여부 (LAW_01).
 var allow_shortcut: bool = true
 ## 아군 말 업기 허용 여부 (LAW_02).
 var allow_stacking: bool = true
-## true면 결승선을 넘는 눈금은 남은 만큼 뒤로 튕겨 나온다 (LAW_08).
+## true면 결승선을 정확한 눈금으로만 들어갈 수 있다: 눈금이 남으면 결승선 바로 앞 칸에서 멈춘다 (LAW_08).
 var exact_goal_required: bool = false
 ## 이번 이동에서 밟은 타일 인덱스들 (MoveExecutor가 한 칸씩 채운다).
 var path_nodes: Array[int] = []

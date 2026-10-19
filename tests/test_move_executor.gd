@@ -76,31 +76,15 @@ func test_finish_without_law_discards_surplus() -> void:
 	check_eq(report.path, int_array([23, 0]), "경로")
 
 
-func test_retreating_from_start_line_recalls_the_pawn() -> void:
+func test_negative_roll_never_moves_a_pawn_backward() -> void:
 	var state := make_state()
 	place(state, 11, 0, [])
 	var report: MoveReport = move(state, 11, -1)
-	var pawn: PlayerPawn = state.get_pawn(11)
-	check(report.trapped, "회수 처리")
-	check_eq(pawn.current_tile_idx, 0, "출발선에 머문다")
-	check(not pawn.has_left_start and not pawn.retreated_run, "출발 대기 상태로 돌아간다")
-	check(not state.hurt_players.has(1), "스스로 물러난 것이라 피해 기록은 남기지 않는다")
-
-
-func test_retreated_run_pawn_must_pass_start_again_to_finish() -> void:
-	var state := make_state()
-	state.reverse_move_rounds_left = 1
-	place(state, 11, 0, [])
-	move(state, 11, -1)
-	var pawn: PlayerPawn = state.get_pawn(11)
-	check(pawn.retreated_run and pawn.current_tile_idx == 23, "역주행 중 후퇴는 23번")
-	state.reverse_move_rounds_left = 0
-	var report: MoveReport = move(state, 11, 4)
-	check(not report.finished and not pawn.is_finished, "후퇴한 말은 0번을 넘어가도 완주가 아니다")
-	check_eq(pawn.current_tile_idx, 3, "0번을 지나 3번")
-	check(not pawn.retreated_run, "통과로 표시 해제")
-	place(state, 11, 22, [21])
-	check(move(state, 11, 5).finished, "한 바퀴 뒤에는 정상 완주")
+	check(report.path.is_empty(), "음수 눈금은 0칸으로 본다")
+	check_eq(state.get_pawn(11).current_tile_idx, 0, "출발선에 머문다")
+	place(state, 12, 7, [6])
+	move(state, 12, -3)
+	check_eq(state.get_pawn(12).current_tile_idx, 7, "보드 위의 말도 뒤로 가지 않는다")
 
 
 func test_reverse_run_lets_retreated_pawn_finish() -> void:
@@ -114,26 +98,14 @@ func test_reverse_run_lets_retreated_pawn_finish() -> void:
 	check(state.pawn_progress_distance(state.get_pawn(11)) > GameEnums.TILE_COUNT, "진행 거리는 한 바퀴 더")
 
 
-func test_negative_roll_cannot_pick_unstarted_pawn() -> void:
-	var state := make_state()
-	place(state, 11, 5, [4])
-	var ids: Array = []
-	for pawn: PlayerPawn in state.selectable_pawns(1, -1):
-		ids.append(pawn.entity_id)
-	check(ids.has(11) and not ids.has(12), "후퇴 눈금에는 출발 전 말을 고를 수 없다")
-	check(state.selectable_pawns(1, 2).size() > state.selectable_pawns(1, -1).size(), "전진 눈금에는 모두 가능")
-	state.reverse_move_rounds_left = 1
-	check(state.can_pick(state.get_pawn(12), -1) and state.can_pick(state.get_pawn(12), 2) == true, "역주행 중에는 출발선 후퇴 허용")
-
-
-func test_law_08_bounces_back_surplus_and_exact_finish_still_wins() -> void:
+func test_law_08_stops_short_of_the_goal_and_exact_finish_still_wins() -> void:
 	var state := make_state()
 	add_law(state, &"LAW_08")
 	place(state, 11, 22, [21])
 	var report: MoveReport = move(state, 11, 5)
-	check(report.bounced and not report.finished, "남으면 튕겨 나옴")
-	check_eq(report.path, int_array([23, 0, 23, 22, 21]), "바운스 경로")
-	check_eq(state.get_pawn(11).current_tile_idx, 21, "21번에 정지 (21번은 일반 칸)")
+	check(not report.finished, "남으면 완주하지 못함")
+	check_eq(report.path, int_array([23]), "결승선 바로 앞까지만 간다")
+	check_eq(state.get_pawn(11).current_tile_idx, 23, "23번에 정지")
 	place(state, 12, 22, [21])
 	var exact: MoveReport = move(state, 12, 2)
 	check(exact.finished, "정확히 남은 칸이면 완주")

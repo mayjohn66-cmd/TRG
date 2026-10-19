@@ -1,6 +1,6 @@
 # File: res://core_engine/cards/card_uno_reverse.gd
 # Class: class_name CardUnoReverse
-# Role: ACT_01 우노 리버스 - 턴 진행 순서를 뒤집고 1라운드 동안 모든 말의 이동 방향을 역주행으로 변경
+# Role: ACT_01 우노 리버스 - 턴 진행 순서를 뒤집는다 (말은 뒤로 가지 않는다)
 class_name CardUnoReverse
 extends BaseCard
 

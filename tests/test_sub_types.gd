@@ -183,7 +183,7 @@ func test_white_stone_is_immune_and_shields_other_allies_on_its_tile() -> void:
 	check(MoveExecutor.is_capture_immune(state, state.get_pawn(11)), "백돌은 세트 없이도 무적")
 	check(MoveExecutor.is_capture_immune(state, state.get_pawn(12)), "같은 칸의 아군도 방어막으로 면역")
 	var report: MoveReport = move(state, 21, 2)
-	check(report.pushed_back and report.captured_pawn_ids.is_empty(), "아무도 잡히지 않고 침입자가 밀려난다")
+	check(not report.pushed_back and report.captured_pawn_ids.is_empty(), "아무도 잡히지 않고 침입자는 밀려나지 않고 함께 선다")
 	state.get_pawn(11).current_tile_idx = 9
 	check(not MoveExecutor.is_capture_immune(state, state.get_pawn(12)), "백돌이 떠나면 방어막도 사라진다")
 

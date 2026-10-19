@@ -30,6 +30,7 @@ signal bomb_resolved(shooter: int, victim: int, pawn_id: int, from_tile: int, to
 signal bang_resolved(shooter: int, target_pawn_id: int, from_tile: int, to_tile: int)
 ## 기물 능력 알림: 룩 캐슬링(위치 교환) / 백돌 무적에 막혀 밀려남.
 signal pawns_castled(pawn_a_id: int, pawn_b_id: int)
+signal dash_pad_triggered(pawn_id: int, tile: int)
 signal pawn_pushed_back(pawn_id: int, from_tile: int, to_tile: int)
 ## TRP_05 도미노 연쇄 붕괴: 밟은 말(pawn_id)이 지나간 타일들(passed)로 밀려났고 chain의 말들이 2칸씩 연쇄로 밀려났다.
 signal domino_collapsed(pawn_id: int, passed: Array[int], chain: Array[int])
@@ -57,6 +58,8 @@ var hands: Dictionary = {}
 var tools: Dictionary = {}
 var card_deck: Array[StringName] = []
 
+## 폭풍 전진 가속 기믹(⚡ 부스터 발판 · 🏃 말 밟고 점프 · 🔥 리벤지 부스터)을 켠다. 규칙 판정용 스위치라 단위 테스트가 기본 이동 규칙만 따로 검증할 때 끈다.
+var boost_gimmicks: bool = true
 var current_player: int = -1
 var round_number: int = 1
 ## 남은 '전체 역주행' 라운드 수 (ACT_01).
@@ -271,11 +274,9 @@ func selectable_pawns(player_id: int, dice_value: int = 0) -> Array[PlayerPawn]:
 	return result
 
 
-## 눈금이 후퇴(음수)일 때 아직 출발하지 않은 말은 고를 수 없다 (역주행 중에는 출발선에서도 후퇴한다).
-func can_pick(pawn: PlayerPawn, dice_value: int) -> bool:
-	if not pawn.is_selectable():
-		return false
-	return not (dice_value < 0 and movement_direction() > 0 and not pawn.has_left_start)
+## 지금 눈금으로 이 말을 고를 수 있는가 (후퇴가 없어서 눈금과 상관없이 움직일 수 있는 말이면 누구나 가능).
+func can_pick(pawn: PlayerPawn, _dice_value: int) -> bool:
+	return pawn.is_selectable()
 
 
 func pawn_progress_distance(pawn: PlayerPawn) -> int:
@@ -306,7 +307,10 @@ func last_place_pawn(excluding_owner: int) -> PlayerPawn:
 func send_to_start(pawn: PlayerPawn, by_player: int) -> void:
 	var members: Array[PlayerPawn] = pawn.stack_members()
 	for member: PlayerPawn in members:
+		# 보드 위에 나와 있던 말만 복수심을 얻는다 (이미 출발선에 있던 말은 해당 없음).
+		var was_out: bool = member.has_left_start and not member.is_finished
 		member.reset_to_start()
+		member.revenge_boost = member.revenge_boost or was_out
 	if not hurt_players.has(pawn.owner_id):
 		hurt_players.append(pawn.owner_id)
 	for member: PlayerPawn in members:
@@ -470,9 +474,9 @@ func any_hand_has_cards() -> bool:
 # 턴 진행 방향
 # ---------------------------------------------------------------------------
 
-## 이번 이동에 적용할 전체 이동 방향 (+1 정방향 / -1 우노 리버스 역주행).
+## 이번 이동에 적용할 전체 이동 방향. 말은 절대 뒤로 가지 않으므로 언제나 +1이다 (우노 리버스는 턴 순서만 뒤집는다).
 func movement_direction() -> int:
-	return -1 if reverse_move_rounds_left > 0 else 1
+	return 1
 
 
 ## 현재 진행 방향 기준으로 player_id 다음에 턴을 잡는 플레이어.

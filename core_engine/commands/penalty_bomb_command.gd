@@ -1,10 +1,13 @@
 # File: res://core_engine/commands/penalty_bomb_command.gd
 # Class: class_name PenaltyBombCommand
-# Role: ACT_03 우노 +4 실행 - 진행 방향의 다음 플레이어의 선두 말 하나를 즉시 4칸 뒤로 보낸다 (설치물·잡기 판정 없음)
+# Role: ACT_03 우노 +4 실행 - 진행 방향의 다음 플레이어의 선두 말 하나를 즉시 출발선(0번)으로 장외 사출시키고, 내 선두 말 하나를 앞으로 +4칸 날려 보낸다
 class_name PenaltyBombCommand
 extends GameCommand
 
-const RETREAT_STEPS: int = 4
+const ADVANCE_STEPS: int = 4
+
+## 실행 뒤 UI가 읽는다: 내 말이 실제로 전진한 말 ID(없으면 -1).
+var boosted_pawn_id: int = -1
 
 
 func _init(acting_player: int = -1) -> void:
@@ -30,8 +33,15 @@ func _run() -> void:
 	if target == null:
 		return
 	var from_tile: int = target.current_tile_idx
-	var path: Array[int] = state.board.calculate_path(target, -RETREAT_STEPS, RuleContext.new())
-	for destination: int in path:
-		state.board.commit_step(target, destination)
-		state.sync_stack_position(target)
-	state.bomb_resolved.emit(sender_id, victim, target.entity_id, from_tile, target.current_tile_idx)
+	state.send_to_start(target, sender_id)
+	state.bomb_resolved.emit(sender_id, victim, target.entity_id, from_tile, GameEnums.GOAL_TILE)
+	# 내 말 하나를 +4칸 전진: 보드 위 선두 말 (없으면 아직 출발 안 한 말 하나)
+	var mine: PlayerPawn = state.front_pawn_of(sender_id)
+	if mine == null:
+		for candidate: PlayerPawn in state.pawns_of(sender_id):
+			if candidate.is_selectable():
+				mine = candidate
+				break
+	if mine != null:
+		boosted_pawn_id = mine.entity_id
+		MoveExecutor.forced_advance(state, mine, ADVANCE_STEPS)

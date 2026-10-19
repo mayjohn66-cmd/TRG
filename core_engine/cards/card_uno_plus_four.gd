@@ -1,6 +1,6 @@
 # File: res://core_engine/cards/card_uno_plus_four.gd
 # Class: class_name CardUnoPlusFour
-# Role: ACT_03 우노 +4 - 진행 방향의 다음 플레이어의 선두 말이 즉시 4칸 후퇴한다 (떠넘기기·누적 없음)
+# Role: ACT_03 우노 +4 - 진행 방향의 다음 플레이어의 선두 말이 즉시 출발선으로 장외 사출되고, 내 선두 말 하나가 +4칸 전진한다 (떠넘기기·누적 없음)
 class_name CardUnoPlusFour
 extends BaseCard
 

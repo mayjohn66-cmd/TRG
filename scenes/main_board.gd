@@ -102,28 +102,28 @@ const CARD_CATEGORY_NAMES: Dictionary = {
 }
 ## 작은 손패 카드에 보여 주는 1줄 핵심 요약 (15자 이내). 자세한 규칙은 클릭해서 확대할 때 CARD_SUMMARIES로 본다.
 const CARD_SHORT: Dictionary = {
-	&"ACT_01": "순서 역전·역주행",
-	&"ACT_02": "상대 선두 -2칸",
-	&"ACT_03": "다음 유저 -4칸",
+	&"ACT_01": "턴 순서 역전",
+	&"ACT_02": "상대 선두 사출",
+	&"ACT_03": "적 사출 & 내 +4칸",
 	&"ACT_04": "이번 굴림 결과 +3",
 	&"ACT_05": "턴 시작 전으로 되감기",
 	&"ACT_06": "교칙 1개 삭제",
 	&"ACT_07": "뭉친 말 강제 산개",
 	&"ACT_08": "꼴찌 ↔ 선두 교환",
-	&"ACT_09": "가위바위보 승자가 -2칸",
+	&"ACT_09": "승자 +3칸·패자 사출",
 	&"TRP_01": "밟은 적 출발선 추방",
 	&"TRP_02": "눈금 4+ 2턴 구속",
 	&"TRP_03": "반경 2칸 폭파",
 	&"TRP_04": "코너 감옥화",
-	&"TRP_05": "-3칸 & 연쇄 밀침",
+	&"TRP_05": "스프링 대포 +5칸",
 	&"SUM_01": "최근접 말 추격",
 	&"SUM_02": "역주행 순찰·연행",
 }
 ## 카드 확대 보기에서 읽는 개조식 요약 (키워드 + 명사형 종결).
 const CARD_SUMMARIES: Dictionary = {
-	&"ACT_01": "턴 순서 역전 & 전원 역주행",
-	&"ACT_02": "상대 선두 말 2칸 후퇴 (프로필 선택)",
-	&"ACT_03": "다음 유저 선두 말 4칸 후퇴",
+	&"ACT_01": "턴 진행 순서 역전 (말은 뒤로 가지 않음)",
+	&"ACT_02": "상대 선두 말을 출발선으로 장외 사출 (프로필 선택)",
+	&"ACT_03": "다음 유저 선두 말 장외 사출 + 내 말 1개 +4칸 전진",
 	&"ACT_04": "굴리기 전 사용! 눈금 +3칸",
 	&"ACT_05": "이번 턴 시작 직전으로 시간 역행",
 	&"ACT_06": "중앙 법전 교칙 1개 지정 삭제",
@@ -131,10 +131,10 @@ const CARD_SUMMARIES: Dictionary = {
 	&"TRP_02": "눈금 4+ 이동 말 2턴간 구속",
 	&"TRP_03": "밟으면 반경 2칸 내 모든 말 폭파",
 	&"TRP_04": "코너 감옥화 (짝수 눈금에 탈출)",
-	&"TRP_05": "밟은 말 -3칸 & 뒷말들 연쇄 밀침",
+	&"TRP_05": "밟은 말 앞으로 +5칸 사출, 착지 지점의 말은 들이받아 날림",
 	&"ACT_07": "가장 뭉친 타일의 말 강제 분리·산개",
 	&"ACT_08": "내 꼴찌 말 ↔ 1등 적 선두 말 위치 교환",
-	&"ACT_09": "적 1명과 가위바위보! 승자가 패자 말 1개를 -2칸 후퇴시킴",
+	&"ACT_09": "적 1명과 가위바위보! 승자 말 +3칸 전진, 패자 말 1개 장외 사출",
 	&"SUM_01": "라운드마다 최근접 말 추격\n카드 강탈",
 	&"SUM_02": "12번 출발 역주행 순찰 & 연행",
 }
@@ -166,7 +166,7 @@ const PHASE_NAMES: Dictionary = {
 	TurnManager.State.PHASE_RESOLUTION: "정산 / 개입 타이밍 B - 카드 사용 가능",
 	TurnManager.State.PHASE_NEUTRAL_NPC: "중립 NPC 페이즈",
 }
-const YUT_NAMES: Dictionary = {-1: "빽도", 1: "도", 2: "개", 3: "걸", 4: "윷", 5: "모"}
+const YUT_NAMES: Dictionary = {-1: "특도", 1: "도", 2: "개", 3: "걸", 4: "윷", 5: "모"}
 const HAND_NAMES: Dictionary = {
 	&"high_card": "노페어", &"one_pair": "원페어", &"two_pair": "투페어", &"three_kind": "트리플",
 	&"straight": "스트레이트", &"flush": "플러시", &"full_house": "풀하우스", &"four_kind": "포카드",
@@ -707,8 +707,8 @@ func _bind_state() -> void:
 	state.pawn_stepped.connect(_on_pawn_stepped)
 	state.pawn_warped.connect(_on_pawn_warped)
 	state.pawn_sent_to_start.connect(func(pawn_id: int, by_player: int) -> void:
-		_log_line("%s 출발선으로 복귀" % _pawn_name(pawn_id), Color("ff8787"))
 		var victim: PlayerPawn = state.get_pawn(pawn_id)
+		_log_line("%s 출발선으로 복귀%s" % [_pawn_name(pawn_id), "  [🔥 복수 부스터 획득: 다음 출발 +%d칸]" % GameEnums.REVENGE_BONUS if victim != null and victim.revenge_boost else ""], Color("ff8787"))
 		if victim != null:
 			_avatar_react(victim.owner_id, AvatarSlot.Emotion.ANGRY)
 			if by_player != victim.owner_id and _player_ids.has(by_player):
@@ -730,6 +730,14 @@ func _bind_state() -> void:
 						_profile_react(by_player, true, "[나이스!]")))
 		else:
 			_set_hint(pawn_id, {"arc": 110.0, "spin": 2.0 * TAU, "dur": 0.45, "land_thud": true}))
+	state.dash_pad_triggered.connect(func(pawn_id: int, tile: int) -> void:
+		_log_line("[부스터 발판] %s %d번 발판! +%d칸 추가 전진" % [_pawn_name(pawn_id), tile, GameEnums.DASH_STEPS], Color("63e6be"))
+		var pad_pos: Vector2 = (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + _tile_center(tile)
+		_fx_when_announced(func() -> void:
+			Sfx.play(&"good", -4.0, 0.0, 1.3)
+			_impact_ring(pad_pos, Color("63e6be"), 46.0)
+			_floating_badge(pad_pos + Vector2(0, -30), "[⚡ 부스터 발판! +%d칸 추가 전진!]" % GameEnums.DASH_STEPS, Color("63e6be"))
+			_fx_until_msec = maxi(_fx_until_msec, Time.get_ticks_msec() + int(300.0 * _motion_pace()))))
 	state.pawn_finished.connect(func(pawn_id: int) -> void:
 		_log_line("[완주] %s 완주!" % _pawn_name(pawn_id), Color("69db7c"))
 		var finisher: PlayerPawn = state.get_pawn(pawn_id)
@@ -748,19 +756,13 @@ func _bind_state() -> void:
 		_log_line("[승진] %s → 체스:퀸! (반환점 통과 승급)" % _pawn_name(pawn_id), Color("ffd43b"))
 		_announce_gate("기물 능력", "[발동!] 체스 퀸 승진", "%s 퀸 승진 ◆ 이동 +2칸 · 말·함정 관통" % _pawn_name(pawn_id), Color("ffd43b"), null, 1.2)
 		_fx_when_announced(func() -> void: _fx_promote(pawn_id, Color("ffd43b"))))
-	state.domino_collapsed.connect(func(pawn_id: int, passed: Array[int], chain: Array[int]) -> void:
-		var chain_names: Array[String] = []
-		for chained: int in chain:
-			chain_names.append(_pawn_name(chained))
-		_log_line("[도미노] %s 뒤로 3칸 밀림%s" % [_pawn_name(pawn_id), "  연쇄: %s (각 -2칸)" % ", ".join(chain_names) if not chain_names.is_empty() else ""], Color("ff6b6b"))
-		_set_hint(pawn_id, {"arc": 0.0, "dur": 0.45, "tilt": -0.55})
-		for chain_index: int in chain.size():
-			_set_hint(chain[chain_index], {"arc": 0.0, "dur": 0.4, "tilt": -0.55, "delay": 0.1 * (chain_index + 1)})
-		var domino_pos: Vector2 = (_pawn_views[pawn_id] as Node2D).position if _pawn_views.has(pawn_id) else Vector2.ZERO
+	state.domino_collapsed.connect(func(pawn_id: int, passed: Array[int], _chain: Array[int]) -> void:
+		_log_line("[스프링 대포] %s 앞으로 %d칸 사출!" % [_pawn_name(pawn_id), passed.size()], Color("63e6be"))
+		var cannon_pos: Vector2 = (_pawn_views[pawn_id] as Node2D).position if _pawn_views.has(pawn_id) else Vector2.ZERO
 		_fx_when_announced(func() -> void:
 			screen_shake(7.0, 0.25)
-			_impact_ring(domino_pos, Color("ff6b6b"), 40.0))
-		_announce_gate("함정 발동", "도미노 연쇄 붕괴!", "%s이(가) 3칸 뒤로 밀려났습니다%s" % [_pawn_name(pawn_id), "\n연쇄로 %d개 말이 2칸씩 우수수 밀려납니다" % chain.size() if not chain.is_empty() else ""], Color("ff6b6b"), null, 1.4))
+			_impact_ring(cannon_pos, Color("63e6be"), 40.0))
+		_announce_gate("함정 발동", "스프링 인간 대포!", "%s이(가) 앞으로 %d칸 쏘아 올려졌습니다\n착지 지점의 말은 들이받혀 출발선으로 날아갑니다" % [_pawn_name(pawn_id), passed.size()], Color("63e6be"), null, 1.4))
 	state.tower_struck.connect(func(tile: int, scattered: Array[Dictionary]) -> void:
 		_log_line("[타로] 무너지는 탑이 %d번 타일에 벼락! 말 %d개가 흩어졌습니다" % [tile, scattered.size()], Color("ffa94d"))
 		_announce_gate("타로", "XVI. 무너지는 탑!", "%d번 타일에 벼락이 내리쳐 말 %d개가 뿔뿔이 흩어졌습니다" % [tile, scattered.size()], Color("ffa94d"), null, 1.5)
@@ -774,8 +776,8 @@ func _bind_state() -> void:
 			_log_line("[타로] P%d의 운명의 수레바퀴: %s ↔ %s 위치 교환" % [player_id, _pawn_name(mine_id), _pawn_name(enemy_id)], Color("ffa94d"))
 			_announce_gate("타로", "X. 운명의 수레바퀴!", "%s과(와) %s의 위치가 뒤바뀝니다" % [_pawn_name(mine_id), _pawn_name(enemy_id)], Color("ffa94d"), null, 1.5)
 		else:
-			_log_line("[타로] 운명의 수레바퀴: %s 4칸 후퇴" % _pawn_name(enemy_id), Color("ffa94d"))
-			_announce_gate("타로", "X. 운명의 수레바퀴!", "%s이(가) 4칸 뒤로 밀려납니다" % _pawn_name(enemy_id), Color("ffa94d"), null, 1.5)
+			_log_line("[타로] 운명의 수레바퀴: %s 장외 사출" % _pawn_name(enemy_id), Color("ffa94d"))
+			_announce_gate("타로", "X. 운명의 수레바퀴!", "%s이(가) 출발선으로 날아갑니다" % _pawn_name(enemy_id), Color("ffa94d"), null, 1.5)
 		_refresh_pawns())
 	state.pawn_evolved.connect(func(pawn_id: int, kind: int, unit_no: int) -> void: _log_line("[진화] %s → %s" % [_pawn_name(pawn_id), PawnCatalog.unit_label(kind, unit_no)], Color("ffa94d")))
 	state.pawns_stacked.connect(func(leader_id: int, member_ids: Array[int]) -> void: _log_line("%s 업기 (%d마리)" % [_pawn_name(leader_id), member_ids.size()], Color("ffd43b")))
@@ -1634,6 +1636,7 @@ func _place_tile(index: int) -> void:
 	tile.arrow_target = target
 	var direction: Vector2 = (_tile_center(target) - _tile_center(index)).normalized() if target >= 0 else Vector2.RIGHT
 	tile.configure(_surface_project, BoardSkin.track(tile_norm(index)), span, _depth_scale(BoardSkin.track(tile_norm(index)).y), direction)
+	tile.set_dash(GameEnums.DASH_TILES.has(index), _tile_center((index + 1) % GameEnums.TILE_COUNT) - _tile_center(index))
 	for child: Control in [_highlights.get(index), _pick_marks.get(index)]:
 		if child != null:
 			child.size = tile.size
@@ -1781,6 +1784,14 @@ func _tile_color(index: int, tile_type: TileNode.TileType) -> Color:
 
 
 func _tile_tag(index: int, tile_type: TileNode.TileType) -> String:
+	var base: String = _tile_tag_base(index, tile_type)
+	if GameEnums.DASH_TILES.has(index):
+		var dash: String = "⚡ 부스터 발판 (멈추면 +%d칸)" % GameEnums.DASH_STEPS
+		return dash if base.is_empty() else "%s · %s" % [base, dash]
+	return base
+
+
+func _tile_tag_base(index: int, tile_type: TileNode.TileType) -> String:
 	match tile_type:
 		TileNode.TileType.START_GOAL: return "▲출발"
 		TileNode.TileType.BAKERY: return "빵집"
@@ -1857,6 +1868,8 @@ func _refresh_pawns() -> void:
 			badge_text += " 구속"
 		if pawn.is_imprisoned:
 			badge_text += " 감옥"
+		if pawn.revenge_boost:
+			badge_text += " 복수"
 		(view.get_node("Bounce/Badge") as Label).text = badge_text
 	for npc: NeutralNPC in state.npcs:
 		if not _npc_views.has(npc.entity_id):
@@ -1943,6 +1956,7 @@ func _refresh_npc_danger() -> void:
 
 
 func _update_danger_pulse(delta: float) -> void:
+	_update_dash_pulse()
 	if _npc_danger.is_empty():
 		return
 	_danger_clock += delta
@@ -1953,6 +1967,15 @@ func _update_danger_pulse(delta: float) -> void:
 			tile.set_danger_pulse(pulse)
 	if _danger_label != null and _danger_label.visible:
 		_danger_label.modulate.a = 0.75 + 0.25 * pulse
+
+
+## ⚡ 부스터 발판 화살표를 흘려 보낸다.
+func _update_dash_pulse() -> void:
+	var phase: float = fmod(float(Time.get_ticks_msec()) / 900.0, 1.0)
+	for index: int in GameEnums.DASH_TILES:
+		var tile: BoardSkin.Tile = _tile_views.get(index)
+		if tile != null:
+			tile.set_dash_phase(phase)
 
 
 ## 내 말이 위험 타일에 서 있거나 이동 미리보기가 위험 타일에 닿으면 경고 문구를 띄운다.
@@ -2159,8 +2182,6 @@ func _refresh_header() -> void:
 	_phase_label.text = _phase_text()
 	_refresh_direction()
 	var queue_text: String = "남은 이동 대기열: %s" % str(manager.move_queue) if not manager.move_queue.is_empty() else ""
-	if state.reverse_move_rounds_left > 0:
-		queue_text += "   이동 역주행 %d라운드 남음" % state.reverse_move_rounds_left
 	if manager.command_stack != null and manager.command_stack.interrupt_count() > 0:
 		queue_text += "   개입 대기 카드: %d장 (나중에 낸 카드부터 실행)" % manager.command_stack.interrupt_count()
 	if _fx_busy:
@@ -2182,7 +2203,7 @@ func _refresh_direction() -> void:
 	if not _tag_labels.has(GameEnums.GOAL_TILE):
 		return
 	var start_tag: Label = _tag_labels[GameEnums.GOAL_TILE]
-	start_tag.text = "▼역주행" if reversed else "▲출발"
+	start_tag.text = "▼역순" if reversed else "▲출발"
 	start_tag.visible = reversed
 	start_tag.add_theme_color_override("font_color", Color("ffe8cc") if reversed else Color("f8f9fa"))
 
@@ -3529,14 +3550,14 @@ const TOOL_CARDS: Dictionary = {
 ## 도구별 전체 규칙표: [항목, 전진 결과] 행들과 보충 설명. 새로운 방식의 도구는 유저가 모르므로 족보·확률을 전부 보여 준다.
 const TOOL_RULES: Dictionary = {
 	&"D6": {"rows": [["1 ~ 6 눈금", "나온 눈금만큼"]], "note": "각 눈금 1/6"},
-	&"YUT": {"rows": [["빽도 (-1)", "1칸 후퇴"], ["도 (1)", "1칸"], ["개 (2)", "2칸"], ["걸 (3)", "3칸"], ["윷 (4)", "4칸 + 한 번 더!"], ["모 (5)", "5칸 + 한 번 더!"]], "note": "6가지 각 1/6"},
+	&"YUT": {"rows": [["특도 (배 면)", "2칸 + 한 번 더!"], ["도 (1)", "1칸"], ["개 (2)", "2칸"], ["걸 (3)", "3칸"], ["윷 (4)", "4칸 + 한 번 더!"], ["모 (5)", "5칸 + 한 번 더!"]], "note": "6가지 각 1/6"},
 	&"LIFE_ROULETTE": {"rows": [["1 ~ 6, 8 ~ 10", "나온 숫자만큼"], ["7 당첨", "7칸 + 한 번 더!"]], "note": "1 ~ 10 균등 · 원판 돌리기"},
 	&"HOLDEM": {"rows": [["노페어", "1칸"], ["원페어", "3칸"], ["투페어", "5칸"], ["트리플", "7칸"], ["스트레이트", "10칸"], ["플러시 이상", "15칸"]], "note": "5장 드로우 · 플러시 이상 15칸"},
-	&"CHINCHIRO": {"rows": [["4 눈금", "4칸 (2/6)"], ["5 눈금", "5칸 (2/6)"], ["6 눈금", "6칸 (1/6)"], ["삐끗!", "6칸 후퇴 (1/6)"]], "note": "접시 밖 이탈 = 삐끗"},
+	&"CHINCHIRO": {"rows": [["4 눈금", "4칸 (2/6)"], ["5 눈금", "5칸 (2/6)"], ["6 눈금", "6칸 (1/6)"], ["삐끗!", "이번 이동 0칸 (1/6)"]], "note": "접시 밖 이탈 = 삐끗 (후퇴는 없음)"},
 	&"SLOT_777": {"rows": [["3개 모두 다름", "1칸"], ["2개 일치", "4칸"], ["3개 일치", "8칸"], ["7 7 7 잭팟", "20칸"]], "note": "릴 3개 · 그림 6종"},
 	&"DICE_HWATU": {"rows": [["망통", "0칸, 턴 종료"], ["1~3 / 4~6 / 7~9끗", "2 / 3 / 4칸"], ["1~6 / 7~9땡", "6 / 7칸"], ["장땡·광땡", "8칸"]], "note": "월 합 끝자리 (망통 = 끝자리 0)"},
 	&"DICE_MAHJONG": {"rows": [["핑후 (불일치)", "2칸"], ["또이츠 (같은 패 2개)", "3칸"], ["슌쯔 (연속 숫자)", "5칸"], ["커쯔 (같은 패 3개)", "8칸"], ["역만 (8%)", "12칸 + 한 번 더!"]], "note": "역만 = 국사무쌍·대삼원"},
-	&"DICE_TAROT": {"rows": [["0. 광대", "-2칸 또는 +7칸"], ["VII. 전차", "6칸"], ["X. 운명의 수레바퀴", "4칸 + 한 번 더!"], ["XII. 매달린 남자", "1칸, 다음 굴림 +8칸"], ["XXI. 세계", "9칸"]], "note": "5장 중 1장 · 축복은 다음 굴림"},
+	&"DICE_TAROT": {"rows": [["0. 광대", "0칸(헛발질) 또는 +7칸"], ["VII. 전차", "6칸"], ["X. 운명의 수레바퀴", "4칸 + 한 번 더!"], ["XII. 매달린 남자", "1칸, 다음 굴림 +8칸"], ["XXI. 세계", "9칸"]], "note": "5장 중 1장 · 축복은 다음 굴림"},
 	&"REVOLVER": {"rows": [["방아쇠 1회", "+3칸 누적"], ["최대 누적", "15칸"], ["폭죽 (6칸 중 1칸)", "누적 0칸, 턴 종료"], ["멈추기", "누적한 칸만큼 이동"]], "note": "6칸 중 1칸은 폭죽 · 깃발이 나오면 누적 소멸"},
 	&"DICE_YACHT": {"rows": [["노페어 (찬스)", "가장 높은 눈금의 절반 올림 (1~3칸)"], ["트리플 (3개 동일)", "5칸"], ["스몰 스트레이트 (4연속) / 풀하우스", "7칸"], ["포카드 / 라지 스트레이트 (5연속)", "9칸"], ["★ 야추 (5개 동일)", "12칸 + 한 번 더!"]], "note": "주사위 5개 · 고정(Keep)하고 나머지를 최대 2번 다시 굴림"},
 	&"DICE_BLACKJACK": {"rows": [["시작", "합계 11 이상이 되도록 카드를 받음 (A는 11, 넘으면 1)"], ["11 ~ 20에서 스탠드", "(합계 - 10)칸 (1~10칸)"], ["★ 정확히 21", "11칸 + 한 번 더!"], ["22 이상 (버스트)", "0칸, 턴 종료"]], "note": "히트로 카드를 더 뽑거나 스탠드로 확정"},
@@ -4655,7 +4676,7 @@ func _settle_pawn_view(view: Node2D, pawn: PlayerPawn) -> void:
 	view.visible = want_visible
 
 
-## 뱅! 저격 연출: 쏜 사람의 프로필에서 총알이 날아가 맞는 말에 충격 링이 번쩍이고, 그 말이 2칸 뒤로 밀려난다 (카드가 끝난 뒤).
+## 뱅! 저격 연출: 쏜 사람의 프로필에서 총알이 날아가 맞는 말에 충격 링이 번쩍이고, 그 말이 출발선으로 장외 사출된다 (카드가 끝난 뒤).
 func _fx_bang(shooter: int, target_pawn_id: int) -> void:
 	if not _fx_on():
 		return
@@ -4668,7 +4689,6 @@ func _fx_bang(shooter: int, target_pawn_id: int) -> void:
 	var from_pos: Vector2 = panel.global_position + panel.size * panel.scale / 2.0
 	var to_pos: Vector2 = view.position
 	var flight: float = 0.35 * _motion_pace()
-	_set_hint(target_pawn_id, {"arc": 0.0, "dur": 0.5, "delay": 0.45})
 	_fx_when_announced(func() -> void:
 		var bullet := Polygon2D.new()
 		bullet.polygon = _circle_points(5.0, 12)
@@ -5168,28 +5188,27 @@ func _handle_duel_strike_input(event: InputEvent) -> bool:
 	return true
 
 
-## 결투 결과: 진 사람의 말이 맞아 뒤로 밀린다 (주먹 충격파 -> 반응 -> 미끄러짐). 도착 칸의 함정은 attachment_triggered가 따로 연출한다.
+## 결투 결과: 진 사람의 말이 출발선으로 장외 사출되고(처치 컷신은 pawn_sent_to_start가 띄운다) 이긴 사람의 말이 +3칸 전진한다.
 func _on_duel_resolved(data: Dictionary) -> void:
 	var pawn_id: int = int(data["pawn_id"])
 	if pawn_id == -1:
 		return
 	var winner: int = int(data["winner"])
 	var loser: int = int(data["loser"])
-	_log_line("[결투] %s이(가) %s의 %s을(를) %d번 → %d번으로 %d칸 밀어냈습니다!%s" % [_player_name(winner), _player_name(loser), _pawn_name(pawn_id), int(data["from"]), int(data["to"]), DuelRules.RETREAT_STEPS, " (출발선으로 복귀)" if data["sent_to_start"] else ""], Color("ff6b6b"))
+	_log_line("[결투] %s이(가) %s의 %s(%d번)을(를) 출발선으로 사출시켰습니다!%s" % [_player_name(winner), _player_name(loser), _pawn_name(pawn_id), int(data["from"]), "  승자의 %s +%d칸 전진 (%d번 → %d번)" % [_pawn_name(int(data["boost_pawn_id"])), DuelRules.WINNER_ADVANCE, int(data["boost_from"]), int(data["boost_to"])] if int(data["boost_pawn_id"]) != -1 else ""], Color("ff6b6b"))
 	if not _fx_on():
 		return
 	Sfx.play(&"shot")
 	var view: Node2D = _pawn_views.get(pawn_id)
 	if view != null:
 		var hit_pos: Vector2 = view.position
-		_set_hint(pawn_id, {"arc": 0.0, "dur": 0.5, "delay": 0.55})
 		_fx_until_msec = maxi(_fx_until_msec, Time.get_ticks_msec() + int(1100.0 * _motion_pace()))
 		get_tree().create_timer(0.3 * _motion_pace()).timeout.connect(func() -> void:
 			screen_shake(9.0, 0.25)
 			_impact_ring(hit_pos, Color("ff6b6b"), 54.0)
 			_impact_ring(hit_pos, Color.WHITE, 30.0)
 			_burst_shards(hit_pos, Color("ff8787"), 12)
-			_floating_badge(hit_pos + Vector2(0, -26), "-%d칸!" % DuelRules.RETREAT_STEPS, Color("ff8787"))
+			_floating_badge(hit_pos + Vector2(0, -26), "장외 사출!", Color("ff8787"))
 			_profile_react(loser, false, "[억까!]")
 			_profile_react(winner, true, "[승리!]"))
 
@@ -6227,10 +6246,10 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_log_line("[도박사의 영혼] P%d: 이동 %d → %d (x2)!" % [data["player_id"], data["from"], data["to"]], Color("ffa94d"))
 		&"gambler_busted":
 			var busted: int = int(data["player_id"])
-			_log_line("[도박사의 영혼] P%d: 눈금 %d - 도박 실패! 모든 말 %d칸 후퇴" % [busted, data["roll"], SuperAugments.GAMBLER_RETREAT], Color("ff6b6b"))
+			_log_line("[도박사의 영혼] P%d: 눈금 %d - 과열! %s 출발선으로 사출" % [busted, data["roll"], _pawn_name(int(data["pawn_id"]))], Color("ff6b6b"))
 			_profile_react(busted, false, "[으악!]")
 			_avatar_react(busted, AvatarSlot.Emotion.SAD, 1.2)
-			_announce("도박사의 영혼", "[도박 실패!]", "눈금 %d - 내 모든 말이 %d칸 후퇴하고 턴이 끝납니다" % [data["roll"], SuperAugments.GAMBLER_RETREAT], Color("ff6b6b"), null, 1.1)
+			_announce("도박사의 영혼", "[과열!]", "눈금 %d - 이동한 말이 과열되어 출발선으로 사출됩니다" % data["roll"], Color("ff6b6b"), null, 1.1)
 			_start_beat(0.9)
 		&"turn_rested":
 			var rested: int = int(data["player_id"])
@@ -6248,6 +6267,10 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 		&"move_resolved":
 			_log_move(data)
 			_start_beat(BEAT_AFTER_MOVE)
+			if int(data.get("leapfrog_bonus", 0)) > 0 and _pawn_views.has(int(data["pawn_id"])):
+				var leap_pos: Vector2 = (_pawn_views[int(data["pawn_id"])] as Node2D).position + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO)
+				var leap_bonus: int = int(data["leapfrog_bonus"])
+				_fx_when_announced(func() -> void: _floating_badge(leap_pos + Vector2(0, -40), "점프 부스트! (+%d칸)" % leap_bonus, Color("ffd43b")))
 			if bool(data.get("jailed", false)) and (data.get("path", []) as Array).is_empty():
 				_announce_move_failed("무인도 탈출 실패!", manager.current_player_id(), "짝수 눈금이 나와야 탈출할 수 있습니다")
 		&"turn_skipped":
@@ -6286,7 +6309,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 		&"pawn_pushed_back":
 			_log_line("[백돌 무적] 백돌에 막혀 %s이(가) %d번 → %d번으로 밀려났습니다" % [_pawn_name(int(data["pawn_id"])), data["from"], data["to"]], Color("b197fc"))
 		&"bomb_applied":
-			_log_line("[우노 +4] P%d의 %s이(가) 4칸 후퇴 (%d번 → %d번)" % [data["victim"], _pawn_name(int(data["pawn_id"])), data["from"], data["to"]], Color("ffd43b"))
+			_log_line("[우노 +4] P%d의 %s이(가) 출발선으로 장외 사출! 내 말은 +%d칸 전진" % [data["victim"], _pawn_name(int(data["pawn_id"])), PenaltyBombCommand.ADVANCE_STEPS], Color("ffd43b"))
 			_fx_bang(int(data["shooter"]), int(data["pawn_id"]))
 			_react_hit_pawn(int(data["pawn_id"]))
 		&"game_over":
@@ -6308,7 +6331,7 @@ func _log_roll(data: Dictionary) -> String:
 				symbols.append(SLOT_SYMBOLS[reel])
 			text += "%s → %d칸" % [" | ".join(symbols), result["steps"]]
 		&"CHINCHIRO":
-			text += "%d칸" % result["steps"] if not details["oops"] else "삐끗! 주사위가 접시 밖으로 (-6칸 후퇴)"
+			text += "%d칸" % result["steps"] if not details["oops"] else "삐끗! 주사위가 접시 밖으로 (이번 이동 0칸)"
 		&"DICE_HWATU":
 			var shown_names: Array[String] = []
 			for card_number: Variant in details.get("new_cards", []):
@@ -6388,7 +6411,7 @@ func _log_move(data: Dictionary) -> void:
 	if int(data["dog_cards"]) > 0:
 		text += "  [강아지] 지나친 빵집에서 카드 %d장" % data["dog_cards"]
 	if data["pushed_back"]:
-		text += "  [백돌 무적] 막혀서 한 칸 후퇴"
+		text += "  [백돌 무적] 잡을 수 없어 함께 섭니다"
 	if data["hotel_built"]:
 		text += "  호텔 건설"
 	if int(data["salary_cards"]) > 0:
@@ -6428,7 +6451,7 @@ func _attachment_name(attachment_id: String) -> String:
 		"TRP_02": return "나락"
 		"TRP_03": return "지뢰"
 		"TRP_04": return "무인도"
-		"TRP_05": return "도미노"
+		"TRP_05": return "스프링 대포"
 		"HOTEL": return "호텔"
 	return attachment_id
 
@@ -6703,8 +6726,8 @@ func _reveal_roll(data: Dictionary) -> void:
 		_show_center_banner("P%d  %s" % [data["player_id"], roll_text.strip_edges()], Color("ffd43b") if bool((data["result"] as Dictionary).get("reroll", false)) else Color("fff3bf"))
 		return
 	if bool(details.get("oops", false)):
-		_show_center_banner("[친치로 삐끗!] 주사위가 접시 밖으로 나갔습니다! (-6칸 후퇴)", Color("ff6b6b"))
-		_announce("지하노역장 친치로", "[친치로 삐끗!]", "주사위가 접시 밖으로 나갔습니다! (-6칸 후퇴)", Color("ff6b6b"), null, 1.3)
+		_show_center_banner("[친치로 삐끗!] 주사위가 접시 밖으로 나갔습니다! (이번 이동 0칸)", Color("ff6b6b"))
+		_announce("지하노역장 친치로", "[친치로 삐끗!]", "주사위가 접시 밖으로 나갔습니다! (이번 이동 0칸)", Color("ff6b6b"), null, 1.3)
 		return
 	_show_center_banner("P%d  %s" % [data["player_id"], roll_text.strip_edges()], Color("ff8787") if fired else Color("fff3bf"))
 	if bool((data["result"] as Dictionary).get("ends_turn", false)):

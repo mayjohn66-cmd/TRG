@@ -68,6 +68,11 @@ var stack_choice_enabled: bool = false
 var _stack_offer: Dictionary = {}
 ## ACT_09 결투 진행 상태 (없으면 빈 Dictionary): {"challenger","defender","step"(pick/strike),"picks","draws","winner","loser","candidates"}.
 var _duel: Dictionary = {}
+## 폭풍 전진 가속 기믹(⚡ 발판·🏃 점프·🔥 복수) 사용 여부. start_game 전에만 바꿀 수 있다.
+var boost_gimmicks: bool = true
+## 도박사의 영혼이 눈금 1 이하로 과열된 플레이어 (이동이 끝나면 움직인 말이 출발선으로 사출된다). 없으면 -1.
+var _overheat_player: int = -1
+var _overheat_roll: int = 0
 ## 플레이어 ID -> 지금까지 고른 증강 ID 목록.
 var augments: Dictionary = {}
 ## 피어 ID -> 플레이어 좌석. NetworkService가 있으면 그쪽을 우선한다.
@@ -117,6 +122,7 @@ func start_game(player_ids: Array[int], seed_value: int = 0, loadouts: Dictionar
 	if not _is_authority():
 		return
 	state = GameState.new()
+	state.boost_gimmicks = boost_gimmicks
 	state.setup(player_ids, seed_value, loadouts)
 	state.turn_order_reverse_requested.connect(reverse_turn_order)
 	state.bang_resolved.connect(_on_bang_resolved)
@@ -663,7 +669,7 @@ func _duel_apply_strike(pawn_id: int) -> void:
 	var loser: int = int(_duel["loser"])
 	var pawn: PlayerPawn = state.get_pawn(pawn_id)
 	var result: Dictionary = DuelRules.apply_strike(state, winner, pawn)
-	_emit_event(&"duel_resolved", {"winner": winner, "loser": loser, "pawn_id": pawn_id, "from": result["from"], "landing": result["landing"], "to": result["to"], "sent_to_start": result["sent_to_start"], "trapped": result["trapped"]})
+	_emit_event(&"duel_resolved", {"winner": winner, "loser": loser, "pawn_id": pawn_id, "from": result["from"], "landing": result["landing"], "to": result["to"], "sent_to_start": result["sent_to_start"], "trapped": result["trapped"], "boost_pawn_id": result["boost_pawn_id"], "boost_from": result["boost_from"], "boost_to": result["boost_to"]})
 	_duel_finish()
 
 
@@ -894,6 +900,7 @@ func _begin_turn(new_turn: bool = true) -> void:
 		_card_played_this_turn = false
 	state.hurt_players.clear()
 	state.roll_bonus = 0
+	_overheat_player = -1
 	state.rollback_requested = false
 	move_queue.clear()
 	_stack_offer = {}
@@ -951,12 +958,12 @@ func _apply_roll_result(result: RollResult) -> void:
 	ctx = state.rulebook.process_context(ctx)
 	if not ctx.is_canceled:
 		var roller: int = current_player_id()
-		# [초증강] 주사위 도박사의 영혼: 이번 라운드 동안 눈금이 1 이하(실패)면 내 모든 말이 -4칸 후퇴하고 턴이 끝난다.
+		# [초증강] 주사위 도박사의 영혼: 이번 라운드 이동 거리 2배! 단 눈금이 1 이하면 이동한 말이 과열되어 이동 뒤 0번으로 사출된다.
 		if int(state.gambler_round.get(roller, -1)) == state.round_number and ctx.dice_value <= 1:
-			_gambler_busts(roller, ctx.dice_value)
-			return
+			_overheat_player = roller
+			_overheat_roll = ctx.dice_value
 		var permanent: int = int(state.permanent_roll_bonus.get(roller, 0))
-		var boosted: int = ctx.dice_value + state.roll_bonus + permanent
+		var boosted: int = maxi(ctx.dice_value + state.roll_bonus + permanent, 0)
 		if state.roll_bonus != 0 or permanent != 0:
 			_emit_event(&"roll_boosted", {"player_id": roller, "from": ctx.dice_value, "to": boosted})
 			state.roll_bonus = 0
@@ -970,17 +977,6 @@ func _apply_roll_result(result: RollResult) -> void:
 		_broadcast_state()
 	else:
 		_enter_interrupt_roll()
-
-
-## 도박사의 영혼 실패: 내 보드 위 모든 말을 -4칸 후퇴시키고 이동 없이 턴을 끝낸다.
-func _gambler_busts(player_id: int, roll_value: int) -> void:
-	var retreated: int = 0
-	for pawn: PlayerPawn in SuperAugments.board_leaders(state, player_id):
-		MoveExecutor.retreat(state, pawn, SuperAugments.GAMBLER_RETREAT)
-		retreated += 1
-	_emit_event(&"gambler_busted", {"player_id": player_id, "roll": roll_value, "retreated": retreated})
-	move_queue.clear()
-	advance_to_next_player()
 
 
 ## 이번 턴에 굴리기 전 카드를 이미 썼는가 (UI·봇이 카드 사용 가능 여부를 판단할 때 쓴다).
@@ -1065,6 +1061,12 @@ func _execute_move(pawn: PlayerPawn, forced_path: Array[int] = []) -> void:
 	var report: MoveReport = _move_report
 	_move_report = null
 	_extra_turn_pending = _extra_turn_pending or report.extra_turn
+	if _overheat_player == pawn.owner_id:
+		var overheated_roll: int = _overheat_roll
+		_overheat_player = -1
+		if not pawn.is_finished and pawn.has_left_start and pawn.current_tile_idx != GameEnums.GOAL_TILE:
+			state.send_to_start(pawn, pawn.owner_id)
+			_emit_event(&"gambler_busted", {"player_id": pawn.owner_id, "roll": overheated_roll, "pawn_id": pawn.entity_id})
 	if pawn.kind == GameEnums.PawnKind.YUT and not forced and [4, 5].has(absi(ctx.raw_roll)):
 		# 윷말: 눈금 4 또는 5로 이동하면 (세트 조건 없이) 추가 굴림 1회.
 		report.bonus_roll = true

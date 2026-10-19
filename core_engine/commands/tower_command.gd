@@ -1,6 +1,6 @@
 # File: res://core_engine/commands/tower_command.gd
 # Class: class_name TowerCommand
-# Role: ACT_07 XVI. 무너지는 탑 - 말이 가장 많이 모인 타일(없으면 가장 앞선 적 말의 타일)에 벼락을 내려, 그 타일의 모든 말을 업기 해제하고 앞뒤 1~2칸 인접 타일로 뿔뿔이 흩어 놓는다. 스냅샷으로 undo 가능
+# Role: ACT_07 XVI. 무너지는 탑 - 말이 가장 많이 모인 타일(없으면 가장 앞선 적 말의 타일)에 벼락을 내려, 그 타일의 모든 말을 업기 해제하고 앞쪽 1~2칸 타일로 뿔뿔이 흩어 놓는다. 스냅샷으로 undo 가능
 class_name TowerCommand
 extends GameCommand
 

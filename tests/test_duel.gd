@@ -12,6 +12,7 @@ const PAPER: int = 2
 
 func _new_manager() -> TurnManager:
 	var manager := TurnManager.new()
+	manager.boost_gimmicks = false
 	manager.hotseat_mode = true
 	manager.draft_enabled = false
 	tree.root.add_child(manager)
@@ -81,7 +82,7 @@ func test_card_needs_an_opponent_pawn_on_the_board_and_defaults_to_the_leader() 
 	check_eq(command.target_player, 3, "자동 지목이 명령에 들어간다")
 
 
-func test_challenger_wins_and_picks_which_pawn_to_push_back() -> void:
+func test_challenger_wins_and_picks_which_pawn_to_eject() -> void:
 	var manager: TurnManager = _new_manager()
 	_setup(manager)
 	var events: Array = _events(manager)
@@ -106,15 +107,17 @@ func test_challenger_wins_and_picks_which_pawn_to_push_back() -> void:
 	check_eq(rejected.size(), 5, "상대 말이 아니면 안 된다")
 	_do(manager, 1, &"duel_strike", {"pawn_id": 22})
 	check(not manager.duel_pending(), "결투 종료")
-	check_eq(manager.state.get_pawn(22).current_tile_idx, 12, "고른 말이 14 -> 12번으로 2칸 후퇴")
+	check_eq(manager.state.get_pawn(22).current_tile_idx, 0, "고른 말이 14번에서 출발선으로 사출")
+	check(not manager.state.get_pawn(22).has_left_start, "출발 대기 상태")
 	check_eq(manager.state.get_pawn(21).current_tile_idx, 10, "다른 말은 그대로")
+	check_eq(manager.state.get_pawn(11).current_tile_idx, 3, "승자의 말은 +3칸 전진 (출발 대기 말이 0 -> 3)")
 	check(_kinds(events).has(&"duel_started") and _kinds(events).has(&"duel_revealed") and _kinds(events).has(&"duel_strike_wait") and _kinds(events).has(&"duel_resolved"), "결투 이벤트 순서")
 	_do(manager, 1, &"proceed")
 	check_eq(manager.current_state, Phase.PHASE_ROLL_WAIT, "결투가 끝나면 평소처럼 진행")
 	_dispose(manager)
 
 
-func test_defender_can_win_and_pushes_back_the_challengers_lead_pawn() -> void:
+func test_defender_can_win_and_ejects_the_challengers_lead_pawn() -> void:
 	var manager: TurnManager = _new_manager()
 	_setup(manager)
 	place(manager.state, 11, 8, [7])
@@ -125,7 +128,7 @@ func test_defender_can_win_and_pushes_back_the_challengers_lead_pawn() -> void:
 	check_eq(manager.pending_duel()["winner"], 2, "상대가 이기면 역관광")
 	check_eq(manager.pending_duel()["loser"], 1, "진 사람은 신청자")
 	_do(manager, 2, &"duel_strike", {"pawn_id": 11})
-	check_eq(manager.state.get_pawn(11).current_tile_idx, 6, "신청자의 말이 8 -> 6번으로 후퇴")
+	check_eq(manager.state.get_pawn(11).current_tile_idx, 0, "신청자의 말이 8번에서 출발선으로 사출")
 	check_eq(manager.state.get_pawn(12).current_tile_idx, 3, "다른 말은 그대로")
 	_dispose(manager)
 
@@ -174,36 +177,35 @@ func test_loser_without_board_pawns_ends_the_duel_without_effect() -> void:
 	_dispose(manager)
 
 
-func test_pushed_back_pawn_triggers_the_trap_on_its_new_tile() -> void:
+func test_winner_boost_triggers_the_trap_on_the_landing_tile() -> void:
 	var manager: TurnManager = _new_manager()
 	manager.state.give_card(1, &"ACT_09")
-	manager.state.place_attachment(10, TrapMirrorForce.new(1))
-	place(manager.state, 21, 12, [11])
+	manager.state.place_attachment(8, TrapMirrorForce.new(2))
+	place(manager.state, 11, 5, [4])
 	place(manager.state, 22, 3, [2])
 	var triggers: Array = []
 	manager.state.attachment_triggered.connect(func(tile: int, id: String, pawn_id: int, _cutscene: StringName) -> void: triggers.append([tile, id, pawn_id]))
 	_challenge(manager)
 	_do(manager, 1, &"duel_pick", {"hand": ROCK})
 	_do(manager, 2, &"duel_pick", {"hand": SCISSORS})
-	_do(manager, 1, &"duel_strike", {"pawn_id": 21})
-	check_eq(triggers, [[10, "TRP_01", 21]], "밀려난 칸(10번)의 거울의 힘이 터진다")
-	check(not manager.state.get_pawn(21).has_left_start, "함정에 걸려 출발선으로 돌아간다")
-	check(not manager.state.board.get_tile(10).has_attachment("TRP_01"), "함정은 소모")
+	_do(manager, 1, &"duel_strike", {"pawn_id": 22})
+	check_eq(triggers, [[8, "TRP_01", 11]], "승자의 말이 +3칸 착지한 8번의 거울의 힘이 터진다")
+	check(not manager.state.get_pawn(11).has_left_start, "함정에 걸려 출발선으로 돌아간다")
 	_dispose(manager)
 
 
-func test_own_trap_does_not_hit_the_owners_pawn_but_enemy_hotel_does() -> void:
+func test_winner_boost_passes_through_its_own_trap() -> void:
 	var manager: TurnManager = _new_manager()
 	manager.state.give_card(1, &"ACT_09")
-	manager.state.place_attachment(10, TrapMirrorForce.new(2))  # P2의 함정: P2의 말에는 발동하지 않는다
-	place(manager.state, 21, 12, [11])
+	manager.state.place_attachment(8, TrapMirrorForce.new(1))  # P1의 함정: P1의 말에는 발동하지 않는다
+	place(manager.state, 11, 5, [4])
 	place(manager.state, 22, 3, [2])
 	_challenge(manager)
 	_do(manager, 1, &"duel_pick", {"hand": ROCK})
 	_do(manager, 2, &"duel_pick", {"hand": SCISSORS})
-	_do(manager, 1, &"duel_strike", {"pawn_id": 21})
-	check_eq(manager.state.get_pawn(21).current_tile_idx, 10, "자기 함정은 무사 통과")
-	check(manager.state.get_pawn(21).has_left_start, "출발선으로 가지 않는다")
+	_do(manager, 1, &"duel_strike", {"pawn_id": 22})
+	check_eq(manager.state.get_pawn(11).current_tile_idx, 8, "자기 함정은 무사 통과")
+	check(manager.state.get_pawn(11).has_left_start, "출발선으로 가지 않는다")
 	_dispose(manager)
 
 
@@ -225,6 +227,7 @@ func test_timeout_picks_random_hands_and_pushes_the_leading_pawn() -> void:
 
 func test_non_participants_cannot_pick() -> void:
 	var manager := TurnManager.new()
+	manager.boost_gimmicks = false
 	manager.hotseat_mode = true
 	manager.draft_enabled = false
 	tree.root.add_child(manager)

@@ -229,6 +229,10 @@ class Tile extends Control:
 	var danger_level: int = 0
 	var danger_dir: Vector2 = Vector2.ZERO
 	var danger_pulse: float = 0.0
+	## ⚡ 부스터 발판: 초록·하늘색 가속 화살표(>>>)가 길 흐름 쪽으로 흘러간다. flow_dir은 화면상 진행 방향, dash_phase는 0~1 반복.
+	var dash_on: bool = false
+	var flow_dir: Vector2 = Vector2.RIGHT
+	var dash_phase: float = 0.0
 
 	func initialize(tile_index: int) -> void:
 		index = tile_index
@@ -304,10 +308,21 @@ class Tile extends Control:
 		danger_pulse = value
 		queue_redraw()
 
+	func set_dash(on: bool, flow: Vector2) -> void:
+		dash_on = on
+		flow_dir = flow if flow != Vector2.ZERO else Vector2.RIGHT
+		queue_redraw()
+
+	func set_dash_phase(value: float) -> void:
+		dash_phase = value
+		queue_redraw()
+
 	func _draw() -> void:
 		if layers.is_empty():
 			return
 		_draw_tile()
+		if dash_on:
+			_draw_dash()
 		if danger_level > 0:
 			_draw_danger()
 		if trap_on:
@@ -318,6 +333,23 @@ class Tile extends Control:
 			var inner: PackedVector2Array = layers[1].duplicate()
 			inner.append(inner[0])
 			draw_polyline(inner, Color(0.55, 0.25, 0.85, 0.35 + 0.5 * trap_pulse), 2.5, true)
+
+	## ⚡ 부스터 발판: 연두→하늘색 화살표 세 개가 진행 방향으로 번갈아 밝아진다.
+	func _draw_dash() -> void:
+		var center := Vector2.ZERO
+		for point: Vector2 in outline_points:
+			center += point
+		center /= float(maxi(outline_points.size(), 1))
+		var along: Vector2 = flow_dir.normalized()
+		var across := Vector2(-along.y, along.x)
+		for chevron: int in 3:
+			var offset: float = (float(chevron) - 1.0) * 9.0
+			var lit: float = clampf(1.0 - absf(fmod(dash_phase * 3.0 - float(chevron) + 3.0, 3.0) - 0.5) * 1.3, 0.25, 1.0)
+			var color: Color = Color(0.25, 0.95, 0.65, 0.55 + 0.45 * lit).lerp(Color(0.35, 0.85, 1.0, 0.55 + 0.45 * lit), float(chevron) / 2.0)
+			var tip: Vector2 = center + along * (offset + 5.0)
+			var back: Vector2 = center + along * (offset - 4.0)
+			draw_polyline(PackedVector2Array([back + across * 8.0, tip, back - across * 8.0]), Color(0.02, 0.2, 0.15, 0.7), 5.0, true)
+			draw_polyline(PackedVector2Array([back + across * 8.0, tip, back - across * 8.0]), color, 3.0, true)
 
 	## NPC 습격 예고: 붉게 깜빡이는 테두리, 위험 타일의 해골, NPC가 가는 쪽을 가리키는 화살표.
 	func _draw_danger() -> void:

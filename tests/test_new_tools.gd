@@ -13,6 +13,7 @@ func _rng(seed_value: int = 4242) -> RandomNumberGenerator:
 
 func _new_manager() -> TurnManager:
 	var manager := TurnManager.new()
+	manager.boost_gimmicks = false
 	manager.hotseat_mode = true
 	manager.draft_enabled = false
 	tree.root.add_child(manager)
@@ -307,6 +308,7 @@ func test_turn_manager_blackjack_bust_ends_the_turn() -> void:
 func test_four_bots_finish_a_game_using_only_the_new_tools() -> void:
 	for seed_value: int in [1, 2, 3]:
 		var manager := TurnManager.new()
+		manager.boost_gimmicks = false
 		manager.hotseat_mode = true
 		manager.draft_enabled = false
 		tree.root.add_child(manager)

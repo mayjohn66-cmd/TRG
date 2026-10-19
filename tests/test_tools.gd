@@ -32,18 +32,22 @@ func test_d6_range_and_coverage() -> void:
 	check_eq(seen.size(), 6, "6면 모두 등장")
 
 
-func test_yut_faces_and_reroll_on_four_or_five() -> void:
+func test_yut_faces_and_reroll_on_special_four_or_five() -> void:
 	var tool := ToolYut.new()
 	var rng: RandomNumberGenerator = _rng()
 	var seen: Dictionary = {}
 	for i: int in 800:
 		var result: RollResult = tool.roll(rng)
-		seen[result.steps] = true
-		check_eq(result.reroll, result.steps >= 4, "4, 5일 때만 재굴림")
-		check(ToolYut.FACES.has(result.steps), "윷 눈금 집합")
+		var face: int = int(result.details["face"])
+		seen[face] = true
+		check(result.steps >= 1, "후퇴 눈금은 없다")
+		check_eq(result.reroll, face == ToolYut.SPECIAL_FACE or face >= 4, "특도·윷·모일 때만 재굴림")
+		if face == ToolYut.SPECIAL_FACE:
+			check(result.steps == ToolYut.SPECIAL_STEPS and bool(result.details["special"]), "특도는 +2칸")
+		check(ToolYut.FACES.has(face), "윷 눈금 집합")
 	var faces: Array = seen.keys()
 	faces.sort()
-	check_eq(faces, [-1, 1, 2, 3, 4, 5], "빽도 포함 6면 모두 등장")
+	check_eq(faces, [-1, 1, 2, 3, 4, 5], "특도 포함 6면 모두 등장")
 
 
 func test_life_roulette_seven_grants_seven_steps_and_reroll() -> void:
@@ -146,24 +150,25 @@ func test_revolver_first_chamber_bullet_and_cap_at_fifteen() -> void:
 		check(result.steps <= 15, "15칸 초과 불가")
 
 
-func test_chinchiro_rolls_high_with_a_one_in_six_oops_that_retreats_six() -> void:
+func test_chinchiro_rolls_high_with_a_one_in_six_oops_that_moves_zero() -> void:
 	var tool := ToolChinchiro.new()
-	check_eq(ToolChinchiro.FACES, int_array([4, 4, 5, 5, 6, -6]), "판정 배열")
+	check_eq(ToolChinchiro.FACES, int_array([4, 4, 5, 5, 6, -6]), "판정 배열 (-6은 물리 주사위의 삐끗 면)")
 	var rng: RandomNumberGenerator = _rng()
 	var counts: Dictionary = {}
 	for i: int in 6000:
 		var result: RollResult = tool.roll(rng)
 		counts[result.steps] = int(counts.get(result.steps, 0)) + 1
-		check_eq(result.details["oops"], result.steps == -6, "삐끗 표시")
+		check_eq(result.details["oops"], result.steps == 0, "삐끗 표시")
 		check(not result.reroll and not result.ends_turn and not result.can_continue, "단순 1회 판정")
-	check(counts.keys().all(func(face: int) -> bool: return [4, 5, 6, -6].has(face)), "나올 수 있는 눈금은 4·5·6·-6뿐")
-	check(counts[-6] > 800 and counts[-6] < 1200, "-6은 약 1/6 (%d)" % counts[-6])
+	check(counts.keys().all(func(face: int) -> bool: return [0, 4, 5, 6].has(face)), "나올 수 있는 눈금은 0·4·5·6뿐 (후퇴 없음)")
+	check(counts[0] > 800 and counts[0] < 1200, "삐끗(0칸)은 약 1/6 (%d)" % counts[0])
 	check(counts[4] > 1800 and counts[5] > 1800, "4·5는 각 약 1/3")
 
 
-func test_oops_roll_moves_the_pawn_six_tiles_back() -> void:
+func test_oops_roll_leaves_the_pawn_where_it_stands() -> void:
 	var state := make_state(2, 1)
 	place(state, 11, 10, [9])
-	var report: MoveReport = move(state, 11, -6)
-	check_eq(state.get_pawn(11).current_tile_idx, 4, "-6이면 6칸 후퇴")
-	check(report.path.size() == 6, "한 칸씩 6걸음")
+	var report: MoveReport = move(state, 11, 0)
+	check_eq(state.get_pawn(11).current_tile_idx, 10, "삐끗은 0칸이라 제자리")
+	check(report.path.is_empty(), "걸음 없음")
+

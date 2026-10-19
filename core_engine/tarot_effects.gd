@@ -4,9 +4,8 @@
 class_name TarotEffects
 extends RefCounted
 
-## 탑이 흩어 놓는 반경(앞뒤 1~2칸)과 수레바퀴가 적을 후퇴시키는 칸수.
+## 탑이 흩어 놓는 반경: 앞쪽 1~2칸 (말은 뒤로 날아가지 않는다).
 const TOWER_RADIUS: int = 2
-const WHEEL_RETREAT: int = 4
 
 
 ## 보드 위(출발선·완주 제외)에서 지금 서 있는 말: 출발했고 완주하지 않은 모든 말(업힌 말 포함).
@@ -75,10 +74,13 @@ static func _tower_better(state: GameState, counts: Dictionary, enemy_counts: Di
 	return state.board.distance_to_goal(tile, true) < state.board.distance_to_goal(other, true)
 
 
-## 탑이 말을 튕겨 낼 수 있는 인접 타일 (앞뒤 1~2칸, 출발선 제외).
+## 탑이 말을 튕겨 낼 수 있는 앞쪽 타일 (앞 1~2칸, 출발선 제외).
 static func tower_scatter_tiles(state: GameState, tile: int) -> Array[int]:
 	var result: Array[int] = []
-	for candidate: int in state.board.tiles_within(tile, TOWER_RADIUS):
-		if candidate != tile and candidate != GameEnums.GOAL_TILE:
-			result.append(candidate)
+	var cursor: int = tile
+	for _step: int in TOWER_RADIUS:
+		cursor = state.board.next_tile_forward(cursor)
+		if cursor == GameEnums.GOAL_TILE:
+			break
+		result.append(cursor)
 	return result

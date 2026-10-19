@@ -65,40 +65,40 @@ func test_process_context_only_runs_laws_matching_trigger_timing() -> void:
 	var state := make_state()
 	add_law(state, "LAW_01")  # ON_MOVE_CALC
 	add_law(state, "LAW_04")  # ON_DICE_ROLL
-	var ctx: RuleContext = make_ctx(state, 3)
+	var ctx: RuleContext = make_ctx(state, 4)
 	ctx = run_timing(state, ctx, RuleContext.ON_DICE_ROLL)
-	check_eq(ctx.dice_value, -3, "ON_DICE_ROLL 교칙(LAW_04)만 적용: 홀수는 후퇴")
+	check_eq(ctx.dice_value, 7, "ON_DICE_ROLL 교칙(LAW_04)만 적용: 짝수 4 -> 니트로 +3")
 	check(ctx.allow_shortcut, "ON_MOVE_CALC 교칙(LAW_01)은 아직 미적용")
 	ctx = run_timing(state, ctx, RuleContext.ON_MOVE_CALC)
 	check(not ctx.allow_shortcut, "ON_MOVE_CALC 시점에 LAW_01 적용")
-	check_eq(ctx.dice_value, -3, "눈금은 다시 바뀌지 않음")
-	var untouched: RuleContext = run_timing(state, make_ctx(state, 3), RuleContext.ON_CAPTURE)
-	check_eq(untouched.dice_value, 3, "일치하는 교칙이 없으면 ctx 그대로")
+	check_eq(ctx.dice_value, 7, "눈금은 다시 바뀌지 않음")
+	var untouched: RuleContext = run_timing(state, make_ctx(state, 4), RuleContext.ON_CAPTURE)
+	check_eq(untouched.dice_value, 4, "일치하는 교칙이 없으면 ctx 그대로")
 
 
 func test_process_context_orders_by_priority_then_queue_order() -> void:
 	var state := make_state()
-	# 같은 priority면 큐 순서: LAW_06(5 -> 8) 다음 LAW_04(짝수는 전진) = 8
+	# 같은 priority면 큐 순서: LAW_06(5 -> 8) 다음 LAW_04(짝수 니트로 8 -> 11)
 	add_law(state, "LAW_06")
 	add_law(state, "LAW_04")
-	check_eq(run_timing(state, make_ctx(state, 5), RuleContext.ON_DICE_ROLL).dice_value, 8, "LAW_06 -> LAW_04")
+	check_eq(run_timing(state, make_ctx(state, 5), RuleContext.ON_DICE_ROLL).dice_value, 11, "LAW_06 -> LAW_04")
 	var reversed_state := make_state()
 	add_law(reversed_state, "LAW_04")
 	add_law(reversed_state, "LAW_06")
-	check_eq(run_timing(reversed_state, make_ctx(reversed_state, 5), RuleContext.ON_DICE_ROLL).dice_value, -5, "LAW_04(5 -> -5) -> LAW_06(음수는 가속 없음)")
+	check_eq(run_timing(reversed_state, make_ctx(reversed_state, 5), RuleContext.ON_DICE_ROLL).dice_value, 8, "LAW_04(홀수 5 그대로) -> LAW_06(+3)")
 	# priority가 낮을수록 먼저: 큐에는 LAW_06이 앞이지만 LAW_04의 priority를 -1로 주면 LAW_04가 먼저.
 	var priority_state := make_state()
-	var camera: LawResource = LawRegistry.create("LAW_06")
-	var frog: LawResource = LawRegistry.create("LAW_04")
-	frog.priority = -1
-	priority_state.rulebook.enqueue_law(camera)
-	priority_state.rulebook.enqueue_law(frog)
-	var out: RuleContext = run_timing(priority_state, make_ctx(priority_state, 6), RuleContext.ON_DICE_ROLL)
-	check_eq(out.dice_value, 9, "6 -> (LAW_04) 6 전진 -> (LAW_06) +3 = 9")
+	var autobahn: LawResource = LawRegistry.create("LAW_06")
+	var nitro: LawResource = LawRegistry.create("LAW_04")
+	nitro.priority = -1
+	priority_state.rulebook.enqueue_law(autobahn)
+	priority_state.rulebook.enqueue_law(nitro)
+	var out: RuleContext = run_timing(priority_state, make_ctx(priority_state, 4), RuleContext.ON_DICE_ROLL)
+	check_eq(out.dice_value, 10, "4 -> (LAW_04) 짝수 +3 = 7 -> (LAW_06) +3 = 10")
 	var odd: RuleContext = run_timing(priority_state, make_ctx(priority_state, 5), RuleContext.ON_DICE_ROLL)
-	check_eq(odd.dice_value, -5, "5 -> (LAW_04) -5 -> (LAW_06) 후퇴는 가속 없음")
-	var even: RuleContext = run_timing(state, make_ctx(state, 4), RuleContext.ON_DICE_ROLL)
-	check_eq(even.dice_value, 4, "짝수 4는 전진 4")
+	check_eq(odd.dice_value, 8, "5 -> (LAW_04) 홀수는 그대로 -> (LAW_06) +3")
+	var low: RuleContext = run_timing(state, make_ctx(state, 3), RuleContext.ON_DICE_ROLL)
+	check_eq(low.dice_value, 3, "홀수 3은 그대로")
 
 
 func test_law_may_replace_context_or_cancel() -> void:
@@ -258,19 +258,19 @@ func test_act_06_repeals_chosen_slot() -> void:
 	check(state.rulebook.has_law(&"LAW_05"), "다른 교칙 유지")
 
 
-func test_act_01_requests_turn_reversal_and_reverses_movement_for_one_round() -> void:
+func test_act_01_requests_turn_reversal_but_pawns_never_move_backward() -> void:
 	var state := make_state(3)
 	var card: BaseCard = CardRegistry.get_card(&"ACT_01")
 	var requests: Array[int] = []
 	state.turn_order_reverse_requested.connect(func() -> void: requests.append(1))
 	exec(state, card.create_command(state, 1, {}))
 	check_eq(requests.size(), 1, "턴 순서 반전 요청 시그널 (순서는 TurnManager가 소유)")
-	check_eq(state.movement_direction(), -1, "이동 역주행")
+	check_eq(state.movement_direction(), 1, "말의 이동 방향은 그대로 전진")
 	var pawn: PlayerPawn = place(state, 11, 4, [3])
-	var ctx: RuleContext = make_ctx(state, 2)
+	var ctx: RuleContext = make_ctx(state, 1)
 	ctx.direction = state.movement_direction()
 	var report: MoveReport = MoveExecutor.execute(state, pawn, ctx)
-	check_eq(report.path, int_array([3, 2]), "양수 눈금도 후진")
+	check_eq(report.path, int_array([5]), "카드를 써도 말은 앞으로 간다")
 
 
 func test_act_04_rocket_booster_reserves_plus_three_for_the_next_roll() -> void:
@@ -358,6 +358,7 @@ func test_law_applied_reports_unmodified_laws_and_tracks_modified_ids() -> void:
 
 func _law_notes_for_move(start_tile: int, roll: int) -> Array:
 	var manager := TurnManager.new()
+	manager.boost_gimmicks = false
 	manager.hotseat_mode = true
 	manager.draft_enabled = false
 	tree.root.add_child(manager)

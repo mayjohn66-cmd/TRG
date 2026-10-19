@@ -19,6 +19,7 @@ func _units(kind: GameEnums.PawnKind, units: Array) -> Array:
 
 func _manager(loadouts: Dictionary = {}, players: int = 2) -> TurnManager:
 	var manager := TurnManager.new()
+	manager.boost_gimmicks = false
 	manager.hotseat_mode = true
 	manager.draft_enabled = false
 	tree.root.add_child(manager)
@@ -95,7 +96,7 @@ func test_white_stone_is_immune_and_slower_while_black_stone_captures_normally()
 	place(state, 11, 4, [3])
 	place(state, 21, 2, [1])
 	var intruder: MoveReport = move(state, 21, 2)
-	check(intruder.pushed_back, "백돌은 잡히지 않아 침입자가 밀려난다")
+	check(not intruder.pushed_back and intruder.captured_pawn_ids.is_empty(), "백돌은 잡히지 않고 침입자도 밀려나지 않는다")
 	check_eq(state.get_pawn(11).current_tile_idx, 4, "백돌은 그대로")
 	place(state, 11, 11, [10])
 	check_eq(move(state, 11, 4).path.size(), 3, "백돌은 눈금 -1")

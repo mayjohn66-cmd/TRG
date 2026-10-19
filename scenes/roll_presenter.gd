@@ -8,7 +8,7 @@ extends PanelContainer
 signal finished
 
 const SUPPORTED: Array[StringName] = [&"D6", &"CHINCHIRO", &"YUT", &"LIFE_ROULETTE", &"SLOT_777", &"HOLDEM", &"DICE_HWATU", &"DICE_MAHJONG", &"DICE_TAROT", &"REVOLVER"]
-const YUT_NAMES: Dictionary = {-1: "빽도", 1: "도", 2: "개", 3: "걸", 4: "윷", 5: "모"}
+const YUT_NAMES: Dictionary = {-1: "특도", 1: "도", 2: "개", 3: "걸", 4: "윷", 5: "모"}
 const SLOT_SYMBOLS: Array[String] = ["체리", "레몬", "종", "BAR", "다이아", "7"]
 const SUITS: Array[String] = ["♣", "♦", "♥", "♠"]
 const RANKS: Array[String] = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"]
@@ -423,7 +423,7 @@ func _card_move_text() -> String:
 	var steps: int = int(_result.get("steps", 0))
 	if steps == 0:
 		return "이동 없음"
-	return "%d칸 %s" % [absi(steps), "전진" if steps > 0 else "후퇴"]
+	return "%d칸 전진" % maxi(steps, 0)
 
 
 func _make_card_result(caption: String) -> void:
@@ -528,8 +528,9 @@ func _update_3d_die(t: float) -> void:
 		_settled = true
 		var steps: int = int(_result.get("steps", _final_face))
 		last_display = str(steps)
-		_die_label.text = "삐끗! %d칸 후퇴" % absi(steps) if steps < 0 else "%d칸 전진" % steps
-		if steps < 0:
+		var oops: bool = bool((_result.get("details", {}) as Dictionary).get("oops", false))
+		_die_label.text = "삐끗! 이번 이동 0칸" if oops else "%d칸 전진" % steps
+		if oops:
 			_die_label.add_theme_color_override("font_color", Color("bf4941"))
 		Sfx.play(&"thud")
 

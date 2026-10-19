@@ -50,10 +50,15 @@ static func preview_path(state: GameState, pawn: PlayerPawn, dice_value: int) ->
 ## 기물 능력을 반영한 이동 경로를 계산한다. 동기 실행(execute)과 TurnManager 비동기 이동이 공유한다.
 ## 세부 기물: 백돌 눈금 -1(최소 1칸), 퀸 +2칸, 비숍 코너 스침 +2칸, 포 +3칸(경로 중간에 말), 마 +2칸 / 상 +3칸(바로 앞 칸이 비면).
 static func plan_path(state: GameState, mover: PlayerPawn, ctx: RuleContext, report: MoveReport) -> Array[int]:
-	var steps: int = ctx.dice_value * ctx.direction
-	var sign_dir: int = -1 if steps < 0 else 1
+	# 후퇴는 없다: 눈금이 음수여도 0칸으로 본다.
+	var steps: int = maxi(ctx.dice_value, 0)
+	var sign_dir: int = 1
 	if steps == 0:
-		return state.board.calculate_path(mover, steps, ctx)
+		return [] as Array[int]
+	# 🔥 리벤지 부스터: 사출된 말이 출발선에서 다시 나갈 때 눈금에 +4칸.
+	if state.boost_gimmicks and mover.revenge_boost and not mover.has_left_start:
+		steps += GameEnums.REVENGE_BONUS
+		report.ability_notes.append("🔥 복수 부스터 +%d칸" % GameEnums.REVENGE_BONUS)
 	var sub: GameEnums.PawnSubType = mover.sub_type()
 	if sub == GameEnums.PawnSubType.BADUK_WHITE:
 		steps = sign_dir * maxi(absi(steps) - 1, 1)
@@ -89,6 +94,49 @@ static func plan_path(state: GameState, mover: PlayerPawn, ctx: RuleContext, rep
 			if not path.is_empty() and not _tile_has_other_pawn(state, mover, path[0]):
 				path = state.board.calculate_path(mover, steps + 3 * sign_dir, ctx)
 				report.ability_notes.append("상 도약 +3칸")
+	# 🏃 말 밟고 점프하기: 경로 중간에 서 있는 말(아군·적군 무관)마다 +1칸 (최대 3칸). 경로를 무시하는 기물은 제외.
+	var leap: int = leapfrog_bonus(state, mover, path)
+	if leap > 0:
+		path = state.board.calculate_path(mover, steps + leap, ctx)
+		report.leapfrog_bonus += leap
+		report.ability_notes.append("점프 부스트! (+%d칸)" % leap)
+	return path
+
+
+## 경로 중간(도착 칸 제외)에 서 있는 말 수만큼의 추가 칸수 (최대 LEAPFROG_MAX). 나이트·퀸·포·마·상은 경로를 무시하므로 0.
+static func leapfrog_bonus(state: GameState, mover: PlayerPawn, path: Array[int]) -> int:
+	if not state.boost_gimmicks or not mover.has_left_start or mover.jumps_over_attachments():
+		return 0
+	var sub: GameEnums.PawnSubType = mover.sub_type()
+	if sub == GameEnums.PawnSubType.JANGGI_PO or sub == GameEnums.PawnSubType.JANGGI_MA or sub == GameEnums.PawnSubType.JANGGI_SANG:
+		return 0
+	var count: int = 0
+	for index: int in range(path.size() - 1):
+		if _tile_has_other_pawn(state, mover, path[index]):
+			count += 1
+	return mini(count, GameEnums.LEAPFROG_MAX)
+
+
+## 효과(카드·초증강·결투)로 말을 앞으로 steps칸 날려 보낸다. 평소 이동처럼 설치물·잡기·발판을 모두 판정한다.
+static func forced_advance(state: GameState, pawn: PlayerPawn, steps: int) -> MoveReport:
+	var ctx := RuleContext.new()
+	ctx.state = state
+	ctx.actor_id = pawn.owner_id
+	ctx.pawn = pawn
+	ctx.dice_value = steps
+	ctx.raw_roll = steps
+	ctx.direction = 1
+	return execute(state, pawn, ctx)
+
+
+## 설치물·잡기 판정 없이 말을 앞으로 steps칸 날린다 (스프링 대포 함정). 지난 타일들을 반환한다. 도착 판정은 호출한 이동이 이어서 한다.
+static func fling(state: GameState, pawn: PlayerPawn, steps: int) -> Array[int]:
+	var path: Array[int] = state.board.calculate_path(pawn, steps, RuleContext.new())
+	for destination: int in path:
+		var from_tile: int = pawn.current_tile_idx
+		state.board.commit_step(pawn, destination)
+		state.sync_stack_position(pawn)
+		state.pawn_stepped.emit(pawn.entity_id, from_tile, destination)
 	return path
 
 
@@ -155,19 +203,13 @@ static func apply_step(
 	var is_forward: bool = state.board.commit_step(mover, destination)
 	if is_forward and from_tile == GameEnums.GOAL_TILE:
 		mover.retreated_run = false
+	if not mover.has_left_start:
+		mover.revenge_boost = false  # 복수 부스터는 출발할 때 한 번 쓰이고 사라진다
 	mover.has_left_start = true
 	state.sync_stack_position(mover)
 	report.path.append(destination)
 	ctx.path_nodes.append(destination)
 	state.pawn_stepped.emit(mover.entity_id, from_tile, destination)
-	# 출발선(0번)에서 뒤로 물러나는 말은 한 바퀴를 거꾸로 도는 대신 회수되어 출발 대기로 돌아간다 (역주행 중에는 예외).
-	if is_first and not is_forward and from_tile == GameEnums.GOAL_TILE and state.movement_direction() > 0:
-		for member: PlayerPawn in mover.stack_members():
-			member.reset_to_start()
-		for member: PlayerPawn in mover.stack_members():
-			state.pawn_sent_to_start.emit(member.entity_id, mover.owner_id)
-		report.trapped = true
-		return StepOutcome.TRAPPED
 	_promote_pawns(state, mover, report)
 	if not is_last:
 		# 강아지: 빵집을 멈추지 않고 지나가기만 해도 카드 1장 (도착한 빵집은 _resolve_landing이 처리한다)
@@ -194,6 +236,11 @@ static func apply_step(
 			report.trapped = true
 			return StepOutcome.TRAPPED
 		report.stopped_early = true
+		# 스프링 대포에 실려 결승선까지 날아갔다.
+		if destination != GameEnums.GOAL_TILE and mover.current_tile_idx == GameEnums.GOAL_TILE and mover.can_finish(state):
+			_pay_salary(state, mover, report)
+			_finish(state, mover, report)
+			return StepOutcome.FINISHED
 		return StepOutcome.HALTED
 
 	if is_forward and destination == GameEnums.GOAL_TILE and mover.can_finish(state):
@@ -308,6 +355,12 @@ static func _resolve_landing(state: GameState, mover: PlayerPawn, ctx: RuleConte
 	_resolve_stacking(state, mover, ctx, report)
 	if can_build_hotel(state, mover) and ctx.charge_depth == 0 and mover.current_tile_idx != GameEnums.GOAL_TILE:
 		_build_hotel(state, mover, report)
+	# ⚡ 부스터 발판: 멈춘 자리가 발판이면 곧바로 앞으로 3칸 더 날아간다 (뒤따르는 이동이 도착 정산을 이어서 한다).
+	if state.boost_gimmicks and GameEnums.DASH_TILES.has(mover.current_tile_idx) and ctx.charge_depth == 0 and not mover.is_finished and not mover.is_imprisoned:
+		report.dash_tiles.append(mover.current_tile_idx)
+		state.dash_pad_triggered.emit(mover.entity_id, mover.current_tile_idx)
+		report.merge(execute(state, mover, ctx.make_follow_up(GameEnums.DASH_STEPS)))
+		return
 	ctx.trigger_timing = RuleContext.ON_TURN_END
 	ctx = state.rulebook.process_context(ctx)
 	ctx.is_canceled = false
@@ -423,10 +476,7 @@ static func _resolve_captures(state: GameState, mover: PlayerPawn, ctx: RuleCont
 		if not is_capture_immune(state, enemy):
 			vulnerable.append(enemy)
 	if vulnerable.is_empty():
-		state.step_back_one(mover)
-		report.pushed_back = true
-		report.path.append(mover.current_tile_idx)
-		return
+		return  # 잡을 수 없는 말과는 한 칸에 함께 선다 (뒤로 밀려나지 않는다)
 	# 개별 피격: 업히지 않고 따로 서 있는 말들은 주인마다 1개(ID가 앞선 말)만 잡힌다. 업힌 말은 하나의 대표 말이라 전원이 함께 잡힌다.
 	var victims: Array[PlayerPawn] = pick_capture_victims(vulnerable)
 	ctx.capturer = mover
@@ -484,17 +534,6 @@ static func is_capture_immune(state: GameState, pawn: PlayerPawn) -> bool:
 				and ally.sub_type() == GameEnums.PawnSubType.BADUK_WHITE:
 			return true
 	return false
-
-
-## 대표 말을 steps칸 후퇴시킨다 (ACT_03 우노 +4 페널티). 설치물·잡기는 판정하지 않는다. 실제로 지난 타일들을 반환한다.
-static func retreat(state: GameState, pawn: PlayerPawn, steps: int) -> Array[int]:
-	var path: Array[int] = state.board.calculate_path(pawn, -absi(steps), RuleContext.new())
-	for destination: int in path:
-		var from_tile: int = pawn.current_tile_idx
-		state.board.commit_step(pawn, destination)
-		state.sync_stack_position(pawn)
-		state.pawn_stepped.emit(pawn.entity_id, from_tile, destination)
-	return path
 
 
 ## 업기: 윷놀이 기물의 고유 능력이다 (법전 allow_stacking이 우선). 출발선(0번)에서는 업지 않는다.

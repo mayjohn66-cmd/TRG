@@ -60,6 +60,13 @@ const HALFWAY_TILE: int = 12
 const LAST_TILE: int = 23
 const BAKERY_TILES: Array[int] = [4, 10, 14, 20]
 const PORTAL_TILES: Array[int] = [9, 16]
+## ⚡ 부스터 발판: 이동을 마치고 멈추면 즉시 앞으로 DASH_STEPS칸 더 날아간다 (4번은 빵집과 겹친다).
+const DASH_TILES: Array[int] = [4, 11, 19]
+const DASH_STEPS: int = 3
+## 🔥 리벤지 부스터: 사출된 말이 다시 출발할 때 붙는 보너스 칸수.
+const REVENGE_BONUS: int = 4
+## 🏃 말 밟고 점프하기: 경로 중간의 말 하나마다 +1칸, 한 번의 이동에서 최대 LEAPFROG_MAX칸까지.
+const LEAPFROG_MAX: int = 3
 
 const PAWNS_PER_PLAYER: int = 4
 const MAX_NPCS: int = 3

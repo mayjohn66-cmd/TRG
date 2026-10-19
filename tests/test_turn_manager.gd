@@ -9,6 +9,7 @@ const Phase := TurnManager.State
 
 func _new_manager(player_count: int = 2, hotseat: bool = true, loadouts: Dictionary = {}) -> TurnManager:
 	var manager := TurnManager.new()
+	manager.boost_gimmicks = false
 	manager.hotseat_mode = hotseat
 	manager.draft_enabled = false
 	tree.root.add_child(manager)
@@ -367,7 +368,7 @@ func test_uno_reverse_card_reverses_turn_order() -> void:
 	check_eq(manager.move_queue, int_array([1]), "눈금")
 	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
 	check_eq(manager.state.current_player, 3, "1번 다음은 3번")
-	check_eq(manager.state.get_pawn(11).current_tile_idx, 23, "역주행이라 양수 눈금도 출발선에서 23번으로 후퇴")
+	check_eq(manager.state.get_pawn(11).current_tile_idx, 1, "턴 순서만 뒤집힐 뿐 말은 앞으로 간다")
 	_dispose(manager)
 
 
@@ -492,6 +493,7 @@ func test_state_sync_payload_roundtrips_through_a_client_mirror() -> void:
 	host.state.place_attachment(5, TrapMirrorForce.new(2))
 	var payload: Dictionary = host._build_sync_payload()
 	var client := TurnManager.new()
+	client.boost_gimmicks = false
 	tree.root.add_child(client)
 	client._rpc_sync_state(payload)  # 클라이언트 수신 경로를 직접 호출
 	check_eq(client.state.get_pawn(11).current_tile_idx, 8, "기물 위치 미러링")
@@ -512,6 +514,7 @@ func test_state_enum_has_exactly_the_eight_phases() -> void:
 
 func test_turn_order_variables_have_documented_defaults() -> void:
 	var manager := TurnManager.new()
+	manager.boost_gimmicks = false
 	check_eq(manager.player_order, int_array([1, 2, 3, 4]), "기본 플레이 순서")
 	check_eq(manager.current_turn_index, 0, "기본 인덱스")
 	check_eq(manager.turn_direction, 1, "기본 정방향")
@@ -568,7 +571,7 @@ func test_uno_reverse_card_flips_turn_direction_through_signal() -> void:
 	manager.state.give_card(1, &"ACT_01")
 	_do(manager, 1, &"play_card", {"card_id": &"ACT_01"})
 	check_eq(manager.turn_direction, -1, "카드 실행이 TurnManager 방향을 뒤집음")
-	check_eq(manager.state.reverse_move_rounds_left, 1, "이동 역주행 1라운드")
+	check_eq(manager.state.reverse_move_rounds_left, 0, "말의 이동 방향은 바뀌지 않는다")
 	_dispose(manager)
 
 
@@ -636,19 +639,15 @@ func test_trap_during_real_turn_flow_marks_victim_as_hurt() -> void:
 	_dispose(manager)
 
 
-func test_unstarted_pawns_cannot_be_chosen_for_a_backward_roll() -> void:
+func test_a_zero_roll_moves_nothing_and_never_goes_backward() -> void:
 	var manager: TurnManager = _new_manager()
-	var rejected: Array = _rejections(manager)
 	place(manager.state, 11, 5, [4])
 	_set_tool(manager, 1, ScriptedTool.new([-1]))
 	_do(manager, 1, &"proceed")
 	_do(manager, 1, &"roll")
-	check_eq(manager.current_state, Phase.PHASE_SELECT_PAWN, "출발한 말이 있어 선택 단계")
-	_do(manager, 1, &"select_pawn", {"pawn_id": 12})
-	check_eq(rejected.size(), 1, "출발 전 말 선택은 거부")
-	check_eq(manager.state.get_pawn(12).current_tile_idx, 0, "출발 전 말은 그대로")
+	check_eq(manager.move_queue, int_array([0]), "음수 눈금은 0칸으로 고정")
 	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
-	check_eq(manager.state.get_pawn(11).current_tile_idx, 4, "출발한 말만 후퇴")
+	check_eq(manager.state.get_pawn(11).current_tile_idx, 5, "뒤로 가지 않고 제자리")
 	_dispose(manager)
 
 

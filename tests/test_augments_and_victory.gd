@@ -14,6 +14,7 @@ func _loadout(kind: GameEnums.PawnKind) -> Array:
 
 func _manager(player_count: int, draft: bool, loadouts: Dictionary = {}) -> TurnManager:
 	var manager := TurnManager.new()
+	manager.boost_gimmicks = false
 	manager.hotseat_mode = true
 	manager.draft_enabled = draft
 	tree.root.add_child(manager)

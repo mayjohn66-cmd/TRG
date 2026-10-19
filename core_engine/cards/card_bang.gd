@@ -1,6 +1,6 @@
 # File: res://core_engine/cards/card_bang.gd
 # Class: class_name CardBang
-# Role: ACT_02 뱅! 저격 - 내 턴 시작에 저격할 상대 플레이어를 고르면 그 플레이어의 선두 말 하나가 2칸 뒤로 밀려난다
+# Role: ACT_02 뱅! 저격 - 내 턴 시작에 저격할 상대 플레이어를 고르면 그 플레이어의 선두 말 하나가 즉시 출발선으로 장외 사출된다
 class_name CardBang
 extends BaseCard
 

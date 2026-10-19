@@ -53,12 +53,13 @@ func test_backward_retraces_history() -> void:
 	check_eq(_pawn_path(state, 11, 7, [], -1), int_array([6]), "history가 없으면 구조상 직전 타일")
 
 
-func test_goal_bounce_path_with_law_08_flag() -> void:
+func test_goal_threshold_stops_the_path_just_short_of_the_finish_line() -> void:
 	var state := make_state()
 	var pawn: PlayerPawn = place(state, 11, 22, [21])
 	var ctx: RuleContext = make_ctx(state, 5)
 	ctx.exact_goal_required = true
-	check_eq(state.board.calculate_path(pawn, 5, ctx), int_array([23, 0, 23, 22, 21]), "남은 칸만큼 뒤로 튕김")
+	check_eq(state.board.calculate_path(pawn, 5, ctx), int_array([23]), "눈금이 남으면 결승선 바로 앞(23번)에서 멈춘다 (뒤로 튕기지 않음)")
+	check_eq(state.board.calculate_path(pawn, 2, ctx), int_array([23, 0]), "정확한 눈금이면 결승선까지 간다")
 
 
 func test_distance_table_and_bfs() -> void:

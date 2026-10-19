@@ -23,12 +23,12 @@ func configure(value: PlayerPawn, color: Color, images: bool = true) -> void:
 	owner_color = color
 	use_art = images
 	var art: Dictionary = PawnArt.sprite(pawn) if images else {}
-	var key: String = "%s:%s:%s:%s:%s:%s:%s:%s:%s" % [pawn.kind, pawn.unit_no, pawn.slot, pawn.promoted, pawn.carried.size(), pawn.skill_used, pawn.is_finished, color, (art.get("texture") as Texture2D).resource_path if not art.is_empty() else "shape"]
+	var key: String = "%s:%s:%s:%s:%s:%s:%s:%s:%s:%s" % [pawn.kind, pawn.unit_no, pawn.slot, pawn.promoted, pawn.carried.size(), pawn.skill_used, pawn.is_finished, color, pawn.revenge_boost, (art.get("texture") as Texture2D).resource_path if not art.is_empty() else "shape"]
 	if key == _signature:
 		return
 	_signature = key
 	artwork = art
-	set_process(skill_ready())
+	set_process(skill_ready() or pawn.revenge_boost)
 	queue_redraw()
 
 
@@ -101,9 +101,22 @@ func _draw() -> void:
 		var box := Rect2(-10, -1, 20, 9)
 		draw_style_box(_badge_style(), box)
 		_caption("x%d" % (pawn.carried.size()+1), Vector2(0,3.5), 9, INK)
+	if pawn.revenge_boost:
+		_draw_revenge_flame()
 	if skill_ready():
 		var bolt := PackedVector2Array([Vector2(13,-29),Vector2(8,-20),Vector2(12,-20),Vector2(10,-13),Vector2(18,-23),Vector2(14,-23)])
 		_poly(bolt, Color(1,0.88,0.25,_pulse), INK, 0.9)
+
+
+## 🔥 리벤지 부스터: 말 옆에서 일렁이는 불꽃 (다음 출발에 +4칸).
+func _draw_revenge_flame() -> void:
+	var flick: float = 0.5 + 0.5 * sin(Time.get_ticks_msec() * TAU / 420.0)
+	var base := Vector2(17, -8)
+	var outer := PackedVector2Array([base + Vector2(-6, 0), base + Vector2(-7, -8), base + Vector2(-2, -13 - 4 * flick), base + Vector2(0, -7), base + Vector2(3, -17 - 5 * flick), base + Vector2(8, -7), base + Vector2(7, 0)])
+	_poly(outer, Color(1.0, 0.36, 0.1, 0.95), INK, 1.0)
+	var inner := PackedVector2Array([base + Vector2(-3, 0), base + Vector2(-3, -5), base + Vector2(0, -9 - 2 * flick), base + Vector2(4, -5), base + Vector2(3, 0)])
+	_poly(inner, Color(1.0, 0.85, 0.25, 0.95), Color.TRANSPARENT, 0.0)
+	_caption("+4", base + Vector2(1, 8), 8, Color("fff3bf"))
 
 
 static func _badge_style() -> StyleBoxFlat:

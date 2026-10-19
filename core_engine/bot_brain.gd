@@ -9,6 +9,8 @@ const SCORE_GOAL: float = 100.0
 const SCORE_CAPTURE: float = 60.0
 const SCORE_STOP_SPOT: float = 40.0
 const SCORE_ADVANCE: float = 20.0
+## ⚡ 부스터 발판에 멈추면 3칸 더 날아간다.
+const SCORE_DASH_PAD: float = 30.0
 ## 점프 코너와 반환점 (정확히 멈추면 유리한 칸).
 const STOP_SPOT_TILES: Array[int] = [6, 12, 18]
 ## 턴 시작에 함정·소환 카드를 쓸 확률.
@@ -50,6 +52,8 @@ static func score_move(state: GameState, pawn: PlayerPawn, dice_value: int) -> f
 		var tile: TileNode = state.board.get_tile(destination)
 		if STOP_SPOT_TILES.has(destination) or tile.tile_type == TileNode.TileType.BAKERY:
 			score += SCORE_STOP_SPOT
+	if state.boost_gimmicks and GameEnums.DASH_TILES.has(destination):
+		score += SCORE_DASH_PAD
 	if not pawn.has_left_start or is_front_most(state, pawn):
 		score += SCORE_ADVANCE
 	var before: int = state.pawn_progress_distance(pawn)

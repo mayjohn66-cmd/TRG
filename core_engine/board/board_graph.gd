@@ -141,8 +141,8 @@ func step_back(entity: BoardEntity) -> int:
 
 ## 설치물/도착 판정 없이 순수 경로만 미리 계산한다 (UI 하이라이트·AI 평가용).
 ## steps > 0: 전진. 결승(0번) 도달 시 ctx.exact_goal_required가
-##            꺼져 있으면 남은 칸을 버리고, 켜져 있으면 남은 칸만큼 step_history를 되짚어 튕겨 나온다.
-## steps < 0: 후진(빽도). step_history를 역추적한다.
+##            꺼져 있으면 남은 칸을 버리고, 켜져 있으면 눈금이 남을 때 결승선 직전에서 멈춘다.
+## steps < 0: 후진(NPC 전용 경로 계산에만 쓰인다. 플레이어 말은 뒤로 가지 않는다).
 ## steps는 이미 부호가 확정된 값이다 (전체 역주행 등은 호출 측이 부호에 반영한다).
 func calculate_path(entity: BoardEntity, steps: int, ctx: RuleContext) -> Array[int]:
 	var path: Array[int] = []
@@ -160,9 +160,8 @@ func calculate_path(entity: BoardEntity, steps: int, ctx: RuleContext) -> Array[
 		path.append(cursor.tile)
 		if forward and cursor.tile == GameEnums.GOAL_TILE and (pawn == null or pawn.can_finish(ctx.state)):
 			if remaining > 0 and ctx.exact_goal_required:
-				forward = false
-			else:
-				break
+				path.pop_back()  # 눈금이 남으면 결승선에 못 들어가고 바로 앞 칸에서 멈춘다
+			break
 	return path
 
 

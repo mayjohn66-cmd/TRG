@@ -43,6 +43,7 @@ func make_state(player_count: int = 2, seed_value: int = 12345, kinds_by_player:
 	for i: int in range(1, player_count + 1):
 		ids.append(i)
 	var state := GameState.new()
+	state.boost_gimmicks = false  # 기본 이동 규칙 테스트: 폭풍 전진 기믹은 test_boost_gimmicks.gd가 따로 켠다
 	state.setup(ids, seed_value, kinds_by_player)
 	return state
 

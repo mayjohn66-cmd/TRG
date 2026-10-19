@@ -9,6 +9,7 @@ const Kind := GameEnums.PawnKind
 
 func _manager(player_count: int = 2, draft: bool = false, loadouts: Dictionary = {}) -> TurnManager:
 	var manager := TurnManager.new()
+	manager.boost_gimmicks = false
 	manager.hotseat_mode = true
 	manager.draft_enabled = draft
 	tree.root.add_child(manager)
@@ -365,6 +366,7 @@ func test_bots_draft_after_the_human_has_picked() -> void:
 func test_four_bots_finish_whole_games_without_getting_stuck() -> void:
 	for seed_value: int in [1, 2, 3]:
 		var manager := TurnManager.new()
+		manager.boost_gimmicks = false
 		manager.hotseat_mode = true
 		manager.draft_enabled = true
 		manager.stack_choice_enabled = true
