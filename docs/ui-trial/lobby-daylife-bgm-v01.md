@@ -1,5 +1,7 @@
 # 로비 BGM: DayLife
 
+후속 변경: 대전 진입 시에는 DayLife를 멈추고 **모나티엄의 밤**으로 교체한다. `battle-monatium-bgm-v01.md` 참고. 아래의 대전 정지는 최초 버전 기록이다.
+
 사용자가 지정한 [EPIDGames 공식 영상](https://www.youtube.com/watch?v=pfsosJ1xPqk)의 **트릭컬 로비화면 테마 DayLife**를 사용한다. 영상 설명의 작곡자는 Warak다. 출처는 `CREDITS.md`에도 기록했다.
 
 ## 음원

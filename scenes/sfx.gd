@@ -10,6 +10,7 @@ const BGM_DIR: String = "res://assets/bgm"
 const USER_SFX_DIR: String = "res://content_trickcal/audio/sfx"
 const USER_BGM_DIR: String = "res://content_trickcal/audio/bgm"
 const LOBBY_TRACK: StringName = &"lobby_daylife"
+const BATTLE_TRACK: StringName = &"battle_monatium_night"
 const MIX_RATE: int = 22050
 const BUS_SFX: StringName = &"SFX"
 const BUS_BGM: StringName = &"BGM"

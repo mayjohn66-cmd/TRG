@@ -93,7 +93,7 @@ try{
   await command('bgm_quiet');const bgmQuiet=await steadyPeak();
   await command('bgm_loud');const bgmLoud=await steadyPeak();
   assert(bgmQuiet>0&&bgmLoud>bgmQuiet*2,'BGM has separate volume control');
-  await command('bgm_stop');assert.equal(await steadyPeak(),0,'entering battle can stop BGM');
+  await command('bgm_stop');assert.equal(await steadyPeak(),0,'explicit stop silences BGM');
   await command('bgm');
   await page.waitForTimeout((first.length+0.4)*1000);
   await command('repeat');
@@ -101,6 +101,20 @@ try{
   assert(looped.playing,'track repeats past its end');
   assert(await steadyPeak()>0.0001,'loop still produces output');
   console.log('WEB_BGM_OK: imported DayLife, continuity, mute, volume, stop/restart and complete loop');
+  await command('battle');
+  const battle=await page.evaluate(()=>window.bgmFixtureState);
+  assert(battle.track==='battle_monatium_night'&&battle.playing&&battle.loop,'battle replaces lobby track with looping Monatium Night');
+  assert(battle.length>30&&battle.length<50,'battle uses the short loop asset');
+  assert(await steadyPeak()>0.0001,'battle track reaches destination');
+  await command('mute');assert.equal(await steadyPeak(),0,'mute also affects battle music');
+  await command('unmute');assert(await steadyPeak()>0.0001,'battle music recovers after unmute');
+  await page.waitForTimeout((battle.length+0.4)*1000);await command('repeat');
+  assert((await page.evaluate(()=>window.bgmFixtureState)).playing,'battle music repeats past its end');
+  assert(await steadyPeak()>0.0001,'battle loop still produces output');
+  await command('bgm');
+  assert.equal((await page.evaluate(()=>window.bgmFixtureState)).track,'lobby_daylife','returning to lobby restores DayLife');
+  assert(await steadyPeak()>0.0001,'restored lobby music reaches destination');
+  console.log('WEB_BATTLE_BGM_OK: switch, output, mute, full repeat and lobby return');
  }
  assert.deepEqual(errors,[]);
 }finally{

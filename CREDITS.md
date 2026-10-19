@@ -6,6 +6,7 @@
 |---|---|---|---|
 | `assets/sfx/*.ogg` (ui_click, hop, slam, launch, thud, dice_*, card_*, augment_*, law*, good, bad ...) | Kenney **Casino Audio**, **Interface Sounds**, **Impact Sounds**, **Digital Audio** (https://kenney.nl) | Kenney Vleugels (Kenney.nl) | CC0 1.0 (표기 의무 없음, 라이선스 원문은 `assets/sfx/licenses/`) |
 | `assets/bgm/lobby_daylife.ogg` — DayLife | EPIDGames 공식 영상 [트릭컬 BGM 맛보기 10탄 - 로비화면 테마](https://www.youtube.com/watch?v=pfsosJ1xPqk), 사용자가 지정한 곡의 반복 구간 | Warak / EPIDGames | 원작 음악, 저작권은 원권리자에게 있음 |
+| `assets/bgm/battle_monatium_night.ogg` — 모나티엄의 밤 (Monatium Night) | EPIDGames 공식 영상 [트릭컬 BGM 맛보기 8탄 - 모나티엄의 밤](https://www.youtube.com/watch?v=8Y-wY2kZmZ0), 사용자가 지정한 곡의 반복 구간 | Warak / EPIDGames | 원작 음악, 저작권은 원권리자에게 있음 |
 
 ## 비공식 팬 제작 안내
 

@@ -431,6 +431,8 @@ var _tile_pick_card: StringName = &""
 func _ready() -> void:
 	Sfx.bgm_stop()
 	Sfx.apply_settings()
+	Sfx.unlock()
+	Sfx.bgm_play.call_deferred(Sfx.BATTLE_TRACK)
 	pacing_enabled = GameSession.pacing_enabled
 	view_mode = GameSession.view_mode
 	if GameSession.net_active:
