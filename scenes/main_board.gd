@@ -751,7 +751,7 @@ func _bind_state() -> void:
 		_log_line("[부스터 발판] %s %d번 발판! +%d칸 추가 전진" % [_pawn_name(pawn_id), tile, GameData.dash_steps()], Color("63e6be"))
 		var pad_pos: Vector2 = (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + _tile_center(tile)
 		_fx_when_announced(func() -> void:
-			Sfx.play(&"good", -4.0, 0.0, 1.3)
+			Sfx.play(&"dash")
 			_impact_ring(pad_pos, Color("63e6be"), 46.0)
 			_floating_badge(pad_pos + Vector2(0, -30), "[⚡ 부스터 발판! +%d칸 추가 전진!]" % GameData.dash_steps(), Color("63e6be"))
 			_fx_until_msec = maxi(_fx_until_msec, Time.get_ticks_msec() + int(300.0 * _motion_pace()))))
@@ -833,7 +833,7 @@ func _bind_state() -> void:
 				_refresh_tiles()
 				_tile_glow(tile)
 				_impact_ring(_tile_center(tile) + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO), Color("7b2cbf"), 26.0)
-				Sfx.play(&"law"))
+				Sfx.play(&"trap_set"))
 		_log_line("P%d가 %d번 타일에 [%s]을(를) 설치했습니다" % [owner_id, tile, "뒷면 카드" if id.begins_with("TRP") else _attachment_name(id)], Color("adb5bd"))
 		_refresh_tiles())
 	state.card_drawn.connect(func(_player_id: int, _card_id: StringName) -> void:
@@ -2116,7 +2116,7 @@ func _stage_warp(pawn_id: int, from_tile: int, to_tile: int) -> void:
 	_fx_until_msec = maxi(_fx_until_msec, Time.get_ticks_msec() + int((0.45 + 0.9) * pace * 1000.0) + 150)
 	_tile_glow(from_tile)
 	_show_tile_banner(from_tile, "점프 코너 발동!" if corner else "옷장 포탈 워프!", Color("ffe066") if corner else Color("d0bfff"), 0.45 * pace)
-	Sfx.play(&"launch" if corner else &"promote")
+	Sfx.play(&"launch" if corner else &"warp")
 	await get_tree().create_timer(0.45 * pace).timeout
 	if generation != _fx_generation or not is_instance_valid(view):
 		return
@@ -2251,7 +2251,7 @@ func _play_revenge_launch(pawn_id: int, base_steps: int, bonus: int, total: int)
 	var pace: float = _motion_pace()
 	_show_center_banner("🎲 기본 눈금: %d칸" % base_steps, Color("fff3bf"))
 	await get_tree().create_timer(0.25 * pace).timeout
-	Sfx.play(&"launch")
+	Sfx.play(&"rocket")
 	screen_shake(6.0, 0.2)
 	var extra: int = total - base_steps - bonus
 	var formula: String = "%d칸 + 🔥%d칸 = 🚀 총 %d칸 전진!" % [base_steps, bonus, total] if extra == 0 else "%d칸 + 🔥%d칸 (+능력 %d칸) = 🚀 총 %d칸 전진!" % [base_steps, bonus, extra, total]

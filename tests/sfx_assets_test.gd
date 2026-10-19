@@ -28,7 +28,7 @@ func _initialize() -> void:
 	Sfx._index.erase("pawn_step_99")
 	Sfx._cache.erase(&"hop")
 	if failures.is_empty():
-		print("SFX_ASSETS_OK: 34 curated events, valid streams, varied impacts, alias and user override")
+		print("SFX_ASSETS_OK: %d curated events" % Sfx.EVENTS.size() + ", valid streams, varied impacts, alias and user override")
 	else:
 		for failure: String in failures: push_error(failure)
 	quit(0 if failures.is_empty() else 1)
