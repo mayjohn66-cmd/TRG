@@ -2294,6 +2294,39 @@ func _rocket_puff(at: Vector2) -> void:
 	tween.chain().tween_callback(puff.queue_free)
 
 
+## 🍞 빵집에 멈추면 얻은 것을 분명히 보여 준다: 카드를 받으면 [빵집! 카드 획득] 금빛 알림과 환호, 손패가 가득 차 못 받으면 그 이유를 알려 준다.
+func _bakery_feedback(data: Dictionary) -> void:
+	if not _fx_on() or bool(data.get("canceled", false)):
+		return
+	var path: Array = data.get("path", [])
+	if path.is_empty():
+		return
+	var pawn_id: int = int(data["pawn_id"])
+	var pawn: PlayerPawn = state.get_pawn(pawn_id)
+	if pawn == null or pawn.is_finished or pawn.current_tile_idx != int(path.back()) or not BoardSpec.bakery_tiles.has(pawn.current_tile_idx):
+		return
+	var owner_id: int = pawn.owner_id
+	var tile: int = pawn.current_tile_idx
+	var drawn: StringName = data.get("drawn_card", &"")
+	var full: bool = drawn == &"" and (state.hands[owner_id] as Array).size() >= GameEnums.MAX_HAND_SIZE
+	if drawn == &"" and not full:
+		return
+	var at: Vector2 = (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + _tile_center(tile) + Vector2(0, -46)
+	_fx_when_announced(func() -> void:
+		if drawn != &"":
+			Sfx.play(&"good")
+			_floating_badge(at, "🍞 빵집! 카드 획득 +1  [%s]" % _card_name(drawn), Color("ffd43b"))
+			_avatar_react(owner_id, AvatarSlot.Emotion.HAPPY, 1.2)
+		else:
+			_floating_badge(at, "🍞 빵집: 손패가 가득 차서 카드를 받지 못했어요", Color("adb5bd"))
+		_fx_until_msec = maxi(_fx_until_msec, Time.get_ticks_msec() + int(500.0 * _motion_pace())))
+
+
+## 테스트용: move_resolved 없이 빵집 알림만 확인한다.
+func _enqueue_bakery_for_test(data: Dictionary) -> void:
+	_bakery_feedback(data)
+
+
 ## 큐의 한 단계: 말이 포물선으로 날아가 내려앉을 때까지 기다린다.
 func _play_warp_glide(pawn_id: int, to_pos: Vector2, to_scale: float, options: Dictionary) -> void:
 	var view: Node2D = _pawn_views.get(pawn_id)
@@ -4907,8 +4940,7 @@ func _glide_homerun(view: Node2D, to_pos: Vector2, to_scale: float, delay: float
 	tween.tween_method(_apply_homerun.bind(view, from_pos, exit_pos, from_scale), 0.0, 1.0, duration)
 	tween.tween_callback(_homerun_return.bind(view, to_pos, to_scale, land_thud))
 	view.set_meta("fx", tween)
-	var drop_seconds: float = 0.55 * _motion_pace()
-	_fx_until_msec = maxi(_fx_until_msec, Time.get_ticks_msec() + int((delay + duration + drop_seconds) * 1000.0) + 120)
+	_fx_until_msec = maxi(_fx_until_msec, Time.get_ticks_msec() + int((delay + duration) * 1000.0) + 120)
 
 
 func _apply_homerun(t: float, view: Node2D, from_pos: Vector2, exit_pos: Vector2, from_scale: float) -> void:
@@ -4925,14 +4957,20 @@ func _apply_homerun(t: float, view: Node2D, from_pos: Vector2, exit_pos: Vector2
 		_burst_shards(view.position, Color("ffe066"), 2)
 
 
-## 홈런 뒤: 화면 밖에 있던 말을 출발선 타일 위에서 위로부터 떨어뜨린다.
-func _homerun_return(view: Node2D, to_pos: Vector2, to_scale: float, land_thud: bool) -> void:
+## 홈런 뒤: 말은 날아가기만 한다. 내려앉는 연출 없이 출발선 자리에 조용히 돌아와 있다.
+func _homerun_return(view: Node2D, to_pos: Vector2, to_scale: float, _land_thud: bool) -> void:
 	if not is_instance_valid(view):
 		return
 	if view.has_meta("trail_step"):
 		view.remove_meta("trail_step")
 	view.rotation = 0.0
-	_glide.call_deferred(view, to_pos, to_scale, {"drop": true, "land_thud": land_thud})
+	view.position = to_pos
+	view.scale = Vector2.ONE * to_scale
+	view.modulate = Color.WHITE
+	for key: String in ["land_tile", "land_big", "land_thud"]:
+		if view.has_meta(key):
+			view.remove_meta(key)
+	_glide_done(view)
 
 
 func _glide_done(view: Node2D) -> void:
@@ -6608,6 +6646,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 				var leap_pos: Vector2 = (_pawn_views[int(data["pawn_id"])] as Node2D).position + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO)
 				var leap_bonus: int = int(data["leapfrog_bonus"])
 				_fx_when_announced(func() -> void: _floating_badge(leap_pos + Vector2(0, -40), "점프 부스트! (+%d칸)" % leap_bonus, Color("ffd43b")))
+			_bakery_feedback(data)
 			if bool(data.get("jailed", false)) and (data.get("path", []) as Array).is_empty():
 				_announce_move_failed("무인도 탈출 실패!", manager.current_player_id(), "짝수 눈금이 나와야 탈출할 수 있습니다")
 		&"turn_skipped":
