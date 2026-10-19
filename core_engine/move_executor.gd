@@ -58,6 +58,7 @@ static func plan_path(state: GameState, mover: PlayerPawn, ctx: RuleContext, rep
 	# 🔥 리벤지 부스터: 사출된 말이 출발선에서 다시 나갈 때 눈금에 +4칸.
 	if state.boost_gimmicks and mover.revenge_boost and not mover.has_left_start:
 		steps += GameEnums.REVENGE_BONUS
+		report.revenge_bonus = GameEnums.REVENGE_BONUS
 		report.ability_notes.append("🔥 복수 부스터 +%d칸" % GameEnums.REVENGE_BONUS)
 	var sub: GameEnums.PawnSubType = mover.sub_type()
 	if sub == GameEnums.PawnSubType.BADUK_WHITE:
@@ -100,6 +101,8 @@ static func plan_path(state: GameState, mover: PlayerPawn, ctx: RuleContext, rep
 		path = state.board.calculate_path(mover, steps + leap, ctx)
 		report.leapfrog_bonus += leap
 		report.ability_notes.append("점프 부스트! (+%d칸)" % leap)
+	if report.revenge_bonus > 0:
+		report.revenge_total = path.size()
 	return path
 
 
@@ -205,6 +208,8 @@ static func apply_step(
 		mover.retreated_run = false
 	if not mover.has_left_start:
 		mover.revenge_boost = false  # 복수 부스터는 출발할 때 한 번 쓰이고 사라진다
+		if is_first and report.revenge_bonus > 0:
+			state.revenge_boost_fired.emit(mover.entity_id, maxi(ctx.dice_value, 0), report.revenge_bonus, report.revenge_total)
 	mover.has_left_start = true
 	state.sync_stack_position(mover)
 	report.path.append(destination)

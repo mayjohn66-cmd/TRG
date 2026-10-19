@@ -40,6 +40,9 @@ var dog_cards: int = 0
 ## 🏃 말 밟고 점프하기로 늘어난 칸수와 ⚡ 부스터 발판이 터진 타일들.
 var leapfrog_bonus: int = 0
 var dash_tiles: Array[int] = []
+## 🔥 리벤지 부스터로 더해진 칸 수 (0이면 발동하지 않음)와 그때의 최종 계획 칸 수.
+var revenge_bonus: int = 0
+var revenge_total: int = 0
 
 
 func merge(other: MoveReport) -> void:
@@ -78,6 +81,7 @@ func merge(other: MoveReport) -> void:
 func to_dict() -> Dictionary:
 	return {
 		"pawn_id": pawn_id,
+		"revenge_bonus": revenge_bonus,
 		"path": path,
 		"canceled": canceled,
 		"jailed": jailed,

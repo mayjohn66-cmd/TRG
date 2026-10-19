@@ -34,6 +34,8 @@ signal bang_resolved(shooter: int, target_pawn_id: int, from_tile: int, to_tile:
 ## 기물 능력 알림: 룩 캐슬링(위치 교환) / 백돌 무적에 막혀 밀려남.
 signal pawns_castled(pawn_a_id: int, pawn_b_id: int)
 signal dash_pad_triggered(pawn_id: int, tile: int)
+## 🔥 리벤지 부스터가 장전된 말이 출발한다 (첫 걸음 직전). base: 기본 눈금, bonus: 추가 칸, total: 최종 계획 칸 수.
+signal revenge_boost_fired(pawn_id: int, base_steps: int, bonus: int, total: int)
 signal pawn_pushed_back(pawn_id: int, from_tile: int, to_tile: int)
 ## TRP_05 도미노 연쇄 붕괴: 밟은 말(pawn_id)이 지나간 타일들(passed)로 밀려났고 chain의 말들이 2칸씩 연쇄로 밀려났다.
 signal domino_collapsed(pawn_id: int, passed: Array[int], chain: Array[int])

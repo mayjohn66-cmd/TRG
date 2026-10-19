@@ -1776,6 +1776,39 @@ func _test_presentation_queue() -> void:
 		guard += 1
 		await process_frame
 	_expect(not _board._presentation_active(), "굴림 요약 뒤에 이동이 이어지고 큐가 비워진다")
+	# 6) 🔥 리벤지 부스터: 장전된 대기 말은 슬롯이 불꽃으로 빛나고, 출격하면 0 -> 4번은 로켓 한 번, 그 뒤는 한 칸씩
+	var rocket: PlayerPawn = state.get_pawn(12)
+	rocket.reset_to_start()
+	rocket.revenge_boost = true
+	_board._refresh_all()
+	var slot_panel: Control = (_board._profiles[1]["slots"] as Array)[1]["panel"]
+	var glow: Control = slot_panel.get_node_or_null("RevengeGlow")
+	_expect(glow != null and glow.visible and (glow.get_node("RevengeBadge") as Label).text.contains("+4"), "장전된 대기 말 슬롯에 불꽃 테두리와 [🔥출격 +4] 뱃지")
+	guard = 0
+	while _board._presentation_active() and guard < 600:
+		guard += 1
+		await process_frame
+	var rocket_view: Node2D = _board._pawn_views[12]
+	var landings: Array[int] = []
+	rocket.revenge_boost = false
+	state.revenge_boost_fired.emit(12, 2, 4, 6)
+	_expect(_board._rocket_target.get(12, -1) == 4, "로켓은 출발선 + 4번 칸에 내려앉는다")
+	rocket.has_left_start = true
+	for tile: int in [1, 2, 3, 4, 5, 6]:
+		var before: int = rocket.current_tile_idx
+		rocket.current_tile_idx = tile
+		state.pawn_stepped.emit(12, before, tile)
+	guard = 0
+	while _board._presentation_active() and guard < 900:
+		guard += 1
+		if rocket_view.has_meta("land_tile") and _board._fx_running(rocket_view):
+			var landing_tile: int = int(rocket_view.get_meta("land_tile"))
+			if landings.is_empty() or landings[-1] != landing_tile:
+				landings.append(landing_tile)
+		await process_frame
+	_expect(landings == [4, 5, 6], "1~3번은 건너뛰고 4번에 로켓 착지 뒤 5 -> 6번 한 칸씩 (%s)" % str(landings))
+	_board._refresh_all()
+	_expect(glow == null or not glow.visible, "출격하면 불꽃 테두리가 꺼진다")
 	_board._announcer.cancel()
 	_board._fx_until_msec = 0
 	_board.instant_roll_for_test = true

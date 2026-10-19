@@ -353,6 +353,8 @@ var _is_playing_presentation: bool = false
 var _pawn_pending: Dictionary = {}
 ## 한 행동 안에서 엔진이 동시에 방송한 처치 연출(컷신·장외 사출): 그 행동의 이동 연출이 모두 끝난 뒤(큐 맨 뒤)에 재생한다.
 var _late_steps: Array[Dictionary] = []
+## 🔥 리벤지 부스터 로켓 출격 중인 말 -> 로켓이 내려앉을 타일 (그 칸까지의 걸음은 한 칸씩 뛰지 않고 한 번에 날아간다)
+var _rocket_target: Dictionary = {}
 ## 굴림 직후 확정 칸수 표시용: 플레이어 -> 가속 보너스까지 합친 최종 칸수
 var _roll_total: Dictionary = {}
 ## 점프 코너·옷장 포탈의 2단계 이동(발판에 멈춤 -> 발동 연출 -> 비행/워프)이 진행 중인 수. 0보다 크면 다른 말의 연출과 알림은 끝날 때까지 기다린다.
@@ -738,6 +740,7 @@ func _bind_state() -> void:
 		_capture_marks.erase(pawn_id)
 		if victim != null and _fx_on():
 			_enqueue_late(_play_capture_eject.bind(pawn_id, by_player, victim.owner_id, cutin_capture), pawn_id))
+	state.revenge_boost_fired.connect(_on_revenge_boost_fired)
 	state.dash_pad_triggered.connect(func(pawn_id: int, tile: int) -> void:
 		_log_line("[부스터 발판] %s %d번 발판! +%d칸 추가 전진" % [_pawn_name(pawn_id), tile, GameEnums.DASH_STEPS], Color("63e6be"))
 		var pad_pos: Vector2 = (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + _tile_center(tile)
@@ -2056,6 +2059,14 @@ func _on_pawn_stepped(pawn_id: int, _from_tile: int, _to_tile: int) -> void:
 	var target_scale: float = _depth_scale(tile_norm(pawn.current_tile_idx).y)
 	if _fx_skip_steps.has(pawn_id):
 		return  # 필살기 스크립트(차 돌진 등)가 이 말을 직접 움직인다
+	if _rocket_target.has(pawn_id):
+		var rocket_tile: int = int(_rocket_target[pawn_id])
+		if _to_tile != GameEnums.GOAL_TILE and _to_tile < rocket_tile:
+			return  # 로켓 구간의 걸음: 한 칸씩 뛰지 않는다
+		_rocket_target.erase(pawn_id)
+		if _to_tile == rocket_tile:
+			enqueue_step(_play_rocket.bind(pawn_id, _pawn_position(pawn), target_scale, rocket_tile), pawn_id)
+			return
 	# 한 칸씩 연출 큐에 세운다: 엔진이 여러 걸음(발판 가속·효과 전진)을 한꺼번에 방송해도 화면은 앞 걸음이 끝난 뒤에 다음 걸음을 뛴다.
 	enqueue_step(_play_hop.bind(pawn_id, _pawn_position(pawn), target_scale, pawn.current_tile_idx), pawn_id)
 
@@ -2202,6 +2213,85 @@ func _play_capture_eject(pawn_id: int, by_player: int, owner_id: int, cutin_capt
 		if by_player != owner_id:
 			_profile_react(by_player, true, "[나이스!]"))
 	await _play_eject_settle(pawn_id)
+	var ejected: PlayerPawn = state.get_pawn(pawn_id) if state != null else null
+	if ejected != null and ejected.revenge_boost and not ejected.has_left_start:
+		_revenge_charged_popup(ejected.owner_id)
+
+
+## 🔥 리벤지 부스터 [획득]: 그 플레이어 모서리 프로필 위에 복수심 장전 문구를 띄운다.
+func _revenge_charged_popup(player_id: int) -> void:
+	if not _fx_on() or not _profiles.has(player_id):
+		return
+	var panel: Control = _profiles[player_id]["panel"]
+	var at: Vector2 = get_global_transform().affine_inverse() * panel.get_global_rect().get_center()
+	at.x = clampf(at.x, 230.0, size.x - 230.0)  # 긴 문구가 화면 밖으로 잘리지 않게
+	at.y = clampf(at.y, 60.0, size.y - 60.0)
+	_floating_badge(at, "[🔥 복수심 장전! (다음 출격 시 +%d칸)]" % GameEnums.REVENGE_BONUS, Color("ff922b"))
+	_fx_until_msec = maxi(_fx_until_msec, Time.get_ticks_msec() + int(450.0 * _motion_pace()))
+
+
+## 🔥 리벤지 부스터 [발동]: 기본 눈금 -> 부스터 합산을 두 단계로 보여 주고, 첫 BONUS칸은 로켓으로 날아간다.
+func _on_revenge_boost_fired(pawn_id: int, base_steps: int, bonus: int, total: int) -> void:
+	var pawn: PlayerPawn = state.get_pawn(pawn_id)
+	_log_line("[🔥 리벤지 부스터] %s 출격! 눈금 %d칸 + 부스터 %d칸 = 총 %d칸" % [_pawn_name(pawn_id), base_steps, bonus, total], Color("ff922b"))
+	if not _fx_on() or pawn == null:
+		return
+	_rocket_target[pawn_id] = GameEnums.GOAL_TILE + bonus
+	enqueue_step(_play_revenge_launch.bind(pawn_id, base_steps, bonus, total), pawn_id)
+
+
+## 큐의 한 단계: [🎲 기본 눈금] 0.25초 -> [🔥 리벤지 부스터 발동! 수식] 0.45초 (발사음·화염 링).
+func _play_revenge_launch(pawn_id: int, base_steps: int, bonus: int, total: int) -> void:
+	var pace: float = _motion_pace()
+	_show_center_banner("🎲 기본 눈금: %d칸" % base_steps, Color("fff3bf"))
+	await get_tree().create_timer(0.25 * pace).timeout
+	Sfx.play(&"launch")
+	screen_shake(6.0, 0.2)
+	var extra: int = total - base_steps - bonus
+	var formula: String = "%d칸 + 🔥%d칸 = 🚀 총 %d칸 전진!" % [base_steps, bonus, total] if extra == 0 else "%d칸 + 🔥%d칸 (+능력 %d칸) = 🚀 총 %d칸 전진!" % [base_steps, bonus, extra, total]
+	_show_center_banner("[🔥 리벤지 부스터 발동! +%d칸 추가!]\n%s" % [bonus, formula], Color("ff922b"))
+	var view: Node2D = _pawn_views.get(pawn_id)
+	if view != null and _pawn_layer != null:
+		_impact_ring(view.position, Color("ff6b00"), 58.0)
+		_burst_shards(view.position, Color("ff922b"), 14)
+	await get_tree().create_timer(0.45 * pace).timeout
+
+
+## 큐의 한 단계: 출발선에서 부스터 칸까지 화염 잔상을 남기며 0.28초 만에 낮은 아치로 날아가 쾅 착지한다.
+func _play_rocket(pawn_id: int, to_pos: Vector2, to_scale: float, tile: int) -> void:
+	var view: Node2D = _pawn_views.get(pawn_id)
+	if view == null or not is_instance_valid(view):
+		return
+	var start: Vector2 = view.position if view.visible else _tile_center(GameEnums.GOAL_TILE)
+	_glide(view, to_pos, to_scale, {"from_pos": start, "dur": 0.28, "arc": 14.0, "pace_cap": 1.0, "land_tile": tile, "land_big": true})
+	var generation: int = _fx_generation
+	var frame: int = 0
+	while generation == _fx_generation and is_instance_valid(view) and _fx_running(view):
+		if frame % 2 == 0:
+			_rocket_puff(view.position)
+		frame += 1
+		await get_tree().process_frame
+	if generation != _fx_generation or not is_instance_valid(view):
+		return
+	screen_shake(7.0, 0.22)
+	_impact_ring(view.position, Color("ff6b00"), 50.0)
+	_floating_badge(view.position + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + Vector2(0, -42), "🔥 부스터 +%d칸!" % GameEnums.REVENGE_BONUS, Color("ff922b"))
+
+
+## 로켓 화염 잔상 한 점: 주황 원이 커지며 사라진다.
+func _rocket_puff(at: Vector2) -> void:
+	if _pawn_layer == null:
+		return
+	var puff := Polygon2D.new()
+	puff.polygon = _circle_points(7.0, 12)
+	puff.color = Color(1.0, 0.45 + randf() * 0.25, 0.1, 0.85)
+	puff.position = at + Vector2(randf_range(-3, 3), randf_range(-3, 3))
+	puff.z_index = 3
+	_pawn_layer.add_child(puff)
+	var tween: Tween = puff.create_tween().set_parallel(true)
+	tween.tween_property(puff, "scale", Vector2.ONE * 2.2, 0.35)
+	tween.tween_property(puff, "modulate:a", 0.0, 0.35)
+	tween.chain().tween_callback(puff.queue_free)
 
 
 ## 큐의 한 단계: 말이 포물선으로 날아가 내려앉을 때까지 기다린다.
@@ -2459,7 +2549,44 @@ func _paint_pawn_slot(parts: Dictionary, pawn: PlayerPawn, color: Color) -> void
 		letter.add_theme_color_override("font_color", Color("adb5bd"))
 		status.add_theme_color_override("font_color", Color("868e96"))
 		status.text = "대기"
-		panel.modulate = Color(1, 1, 1, 0.6)
+		panel.modulate = Color.WHITE if pawn.revenge_boost else Color(1, 1, 1, 0.6)
+	_paint_revenge_glow(panel, pawn.revenge_boost and not pawn.has_left_start and not pawn.is_finished)
+
+
+## 🔥 리벤지 부스터가 장전된 대기 말: 슬롯 테두리가 붉은·주황 네온으로 두근거리고 아래에 [🔥출격 +4] 뱃지가 붙는다.
+func _paint_revenge_glow(host: Control, on: bool) -> void:
+	var glow: Panel = host.get_node_or_null("RevengeGlow") as Panel
+	if not on:
+		if glow != null:
+			glow.visible = false
+		return
+	if glow == null:
+		glow = Panel.new()
+		glow.name = "RevengeGlow"
+		glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		glow.set_anchors_preset(Control.PRESET_FULL_RECT)
+		var frame := StyleBoxFlat.new()
+		frame.bg_color = Color(1.0, 0.35, 0.05, 0.12)
+		frame.border_color = Color("ff6b00")
+		frame.set_border_width_all(3)
+		frame.set_corner_radius_all(8)
+		frame.shadow_color = Color(1.0, 0.4, 0.0, 0.6)
+		frame.shadow_size = 6
+		glow.add_theme_stylebox_override("panel", frame)
+		host.add_child(glow)
+		var badge: Label = _make_label("🔥출격 +%d" % GameEnums.REVENGE_BONUS, 10, Color("fff4e6"))
+		badge.name = "RevengeBadge"
+		badge.add_theme_constant_override("outline_size", 4)
+		badge.add_theme_color_override("font_outline_color", Color("8a2b00"))
+		badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		badge.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+		badge.offset_top = -14.0
+		glow.add_child(badge)
+		var pulse: Tween = glow.create_tween().set_loops()
+		pulse.tween_property(glow, "modulate:a", 0.45, 0.45).set_trans(Tween.TRANS_SINE)
+		pulse.tween_property(glow, "modulate:a", 1.0, 0.45).set_trans(Tween.TRANS_SINE)
+	glow.visible = true
 
 
 func _fit_profile_token(host: Control) -> void:
@@ -3029,6 +3156,8 @@ func _fill_pawn_tip(pawn_id: int) -> void:
 		status = "  (감옥)"
 	if pawn.is_promoted_shogi():
 		status += "  ★나리 승급(+1칸)"
+	if pawn.revenge_boost and not pawn.has_left_start:
+		status += "\n🔥 리벤지 부스터 활성화: 이번 출격 시 이동 거리 +%d칸!" % GameEnums.REVENGE_BONUS
 	_tip_title.text = "%s  - P%d%s" % [PawnCatalog.full_name(pawn.kind, pawn.unit_no), pawn.owner_id, status]
 	_tip_ability.text = "◆ 패시브: %s" % PawnCatalog.ability_text(pawn.kind, pawn.unit_no)
 	var skill: StringName = PawnCatalog.skill_of(pawn.sub_type())
@@ -3291,7 +3420,10 @@ func _refresh_pawn_dock() -> void:
 			place = "구속"
 		elif pawn.is_imprisoned:
 			place = "감옥"
+		elif pawn.revenge_boost and not pawn.has_left_start:
+			place = "🔥+%d" % GameEnums.REVENGE_BONUS
 		(parts["place"] as Label).text = place
+		_paint_revenge_glow(button, pawn.revenge_boost and not pawn.has_left_start and not pawn.is_finished)
 		var badge: Label = parts["badge"]
 		badge.visible = false
 		badge.text = "x%d" % (pawn.carried.size() + 1)
@@ -3501,6 +3633,8 @@ func _refresh_select_banner() -> void:
 			status = "구속 중"
 		elif pawn.is_imprisoned:
 			status = "감옥"
+		elif not pawn.has_left_start and pawn.revenge_boost:
+			status = "🔥 출격 +%d (리벤지 부스터)" % GameEnums.REVENGE_BONUS
 		elif not pawn.has_left_start:
 			status = "출발 대기"
 		else:
@@ -4558,6 +4692,7 @@ func _reset_presentation() -> void:
 	_presentation_queue.clear()
 	_late_steps.clear()
 	_roll_total.clear()
+	_rocket_target.clear()
 	_is_playing_presentation = false
 	_pawn_pending.clear()
 
@@ -4847,6 +4982,8 @@ func _settle_pawn_view(view: Node2D, pawn: PlayerPawn, force: bool = false) -> v
 		return  # 알림 카드가 가리는 동안은 기다린다: 카드가 끝나면 다시 맞춘다
 	if _presentation_active() and not force:
 		return  # 연출 큐가 순서대로 보여 주는 중이다: 큐가 비면 한꺼번에 맞춘다
+	if _rocket_target.has(pawn.entity_id) and not force:
+		return  # 로켓 출격 걸음이 아직 다 오지 않았다
 	if view.visible and view.position.distance_to(target_pos) > 3.0:
 		_glide(view, target_pos, target_scale, _take_hint(pawn.entity_id))
 		return

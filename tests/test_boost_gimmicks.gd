@@ -167,3 +167,23 @@ func test_a_waiting_pawn_keeps_its_revenge_boost_when_sent_to_start_again() -> v
 	state.send_to_start(state.get_pawn(21), 1)
 	state.send_to_start(state.get_pawn(21), 1)
 	check(state.get_pawn(21).revenge_boost, "이미 켜진 복수 부스터는 유지")
+
+
+func test_revenge_boost_announces_base_bonus_and_total_once_on_the_first_step() -> void:
+	var state: GameState = _boost_state()
+	var pawn: PlayerPawn = state.get_pawn(11)
+	pawn.revenge_boost = true
+	var fired: Array = []
+	state.revenge_boost_fired.connect(func(pawn_id: int, base: int, bonus: int, total: int) -> void: fired.append([pawn_id, base, bonus, total]))
+	var first_step: Array = []
+	state.pawn_stepped.connect(func(pawn_id: int, _from: int, to: int) -> void:
+		if first_step.is_empty():
+			first_step.append([fired.size(), to]))
+	var report: MoveReport = MoveExecutor.forced_advance(state, pawn, 3)
+	check_eq(fired.size(), 1, "발동 신호는 한 번")
+	check_eq(fired[0], [11, 3, GameEnums.REVENGE_BONUS, 3 + GameEnums.REVENGE_BONUS], "기본 눈금·부스터·총 칸수")
+	check_eq(first_step[0][0], 1, "신호는 첫 걸음보다 먼저 온다")
+	check_eq(report.revenge_bonus, GameEnums.REVENGE_BONUS, "보고서에 부스터 기록")
+	check(not pawn.revenge_boost, "부스터는 출발과 함께 사라진다")
+	MoveExecutor.forced_advance(state, pawn, 2)
+	check_eq(fired.size(), 1, "이미 출발한 말의 다음 이동에서는 발동하지 않는다")
