@@ -27,3 +27,8 @@
 native image_gen.imagegen을 사용했다. 생성 모델 ID는 공개되지 않는다. 전체 프롬프트·원본 위치·파일 해시·선택 및 보정 이력은 manifest.json에 기록한다. 선택한 원본을 래스터 재가공 없이 복사했고 원본/프로젝트 SHA-256 일치를 확인했다.
 
 전체 매핑은 tests/test_augment_art.gd가 검증한다. 로컬 전체 테스트 323개 실패 0건, 37개 설명 변경 없음, 고유 아이콘 37개 연결 및 실제 선택 화면을 확인했다.
+
+
+## 판정 도구 3종 추가 (임시 그림)
+
+`dice/DICE_YACHT.png`(주사위 5개), `dice/DICE_BLACKJACK.png`(카드 A·K와 21 칩), `dice/DICE_PINBALL.png`(핀볼 판과 은색 구슬)는 코드로 그린 임시 1254 × 1254 엠블럼이다. 같은 이름의 정식 그림으로 덮어쓰면 선택 화면과 HUD에 그대로 적용된다 (`AugmentArt.TOOL_FILES`).

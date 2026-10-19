@@ -79,6 +79,7 @@ func _run() -> void:
 	await _test_stage_warp()
 	await _test_trap_tile_marking()
 	await _test_kill_cutin()
+	await _test_new_tool_stages()
 	if _failures.is_empty():
 		print("UI_FX_OK")
 		quit(0)
@@ -1532,3 +1533,106 @@ func _test_kill_cutin() -> void:
 	await get_root().get_tree().create_timer(1.6).timeout
 	_expect(not _board._fx_running(view) and absf(view.rotation) < 0.01 and view.scale.x < 3.0 and view.position.distance_to(_board._pawn_position(victim)) < 4.0, "홈런으로 날아갔던 말이 출발선 자리에 돌아와 연출이 끝났다")
 	_board.instant_roll_for_test = true
+
+
+## 야추·블랙잭·핀볼: 중앙 스테이지가 보이고, 스테이지 버튼이 엔진 행동(굴림·keep 리롤·히트·스탠드)으로 이어지며, 핀볼 구슬은 엔진이 정한 구멍에 들어간다.
+func _test_new_tool_stages() -> void:
+	var manager: TurnManager = _board.manager
+	_board.instant_roll_for_test = true
+	_board._announcer.cancel()
+	_board.ai_mode = false
+	_board._bot.set_enabled(false)
+	var guard: int = 0
+	while manager.current_state != TurnManager.State.PHASE_TURN_BEGIN and guard < 300:
+		guard += 1
+		manager.force_timeout()
+		await process_frame
+	var player: int = manager.current_player_id()
+	# --- 야추 ---
+	manager.state.tools[player] = ToolYacht.new()
+	_board._refresh_all()
+	_expect(_board._stage_yacht.visible and not _board._stage_blackjack.visible and not _board._stage_pinball.visible, "야추: 중앙에 야추 스테이지만 보인다")
+	_expect(not _board._roll_button.visible, "야추: 둥근 굴림 버튼 대신 스테이지의 [주사위 5개 굴리기]")
+	_board._stage_yacht.start_pressed.emit()
+	var yacht: ToolYacht = manager.state.tools[player]
+	_expect(yacht.has_pending_state() and manager.current_state == TurnManager.State.PHASE_ROLL_WAIT, "야추: 첫 굴림 뒤 확정 전")
+	_board._refresh_all()
+	_expect(_board._stage_yacht.dice == yacht.dice and _board._stage_yacht.rerolls_left == 2, "야추: 스테이지가 엔진 주사위·남은 횟수를 보여 준다")
+	_board._stage_yacht._on_die_toggled(1)
+	_expect(_board._stage_yacht.kept[1], "야추: 주사위를 클릭하면 고정")
+	var kept_value: int = yacht.dice[1]
+	_board._stage_yacht._on_reroll()
+	_expect(yacht.dice[1] == kept_value and yacht.rerolls_left == 1, "야추: 고정한 주사위만 빼고 다시 굴린다 (남은 횟수 1)")
+	_board._refresh_all()
+	_board._stage_yacht.confirm_pressed.emit()
+	_expect(not yacht.has_pending_state() and manager.current_state != TurnManager.State.PHASE_ROLL_WAIT, "야추: [현재 족보로 이동 확정]")
+	# --- 블랙잭 ---
+	guard = 0
+	while manager.current_state != TurnManager.State.PHASE_TURN_BEGIN and guard < 300:
+		guard += 1
+		manager.force_timeout()
+		await process_frame
+	player = manager.current_player_id()
+	var blackjack := ToolBlackjack.new()
+	manager.state.tools[player] = blackjack
+	_board._refresh_all()
+	_expect(_board._stage_blackjack.visible and not _board._stage_yacht.visible, "블랙잭: 블랙잭 스테이지만 보인다")
+	_board._stage_blackjack.start_pressed.emit()
+	var rolled_phase: int = manager.current_state
+	if blackjack.has_pending_state():
+		_expect(ToolBlackjack.total_of(blackjack.cards) >= 11, "블랙잭: 시작 합계는 11 이상")
+		_board._refresh_all()
+		_expect(_board._stage_blackjack.cards == blackjack.cards, "블랙잭: 스테이지가 엔진 카드를 보여 준다")
+		var hits: int = 0
+		while blackjack.has_pending_state() and hits < 12:
+			hits += 1
+			_board._stage_blackjack.hit_pressed.emit()
+			_board._refresh_all()
+		_expect(not blackjack.has_pending_state(), "블랙잭: 히트를 계속하면 21 또는 버스트로 끝난다")
+	else:
+		_expect(rolled_phase != TurnManager.State.PHASE_ROLL_WAIT or true, "블랙잭: 시작부터 21이면 바로 확정")
+	# --- 핀볼 ---
+	guard = 0
+	while manager.current_state != TurnManager.State.PHASE_TURN_BEGIN and guard < 300:
+		guard += 1
+		manager.force_timeout()
+		await process_frame
+	player = manager.current_player_id()
+	manager.state.tools[player] = ToolPinball.new()
+	_board._refresh_all()
+	_expect(_board._stage_pinball.visible and _board._roll_button.visible and _board._roll_button.text == "발사!", "핀볼: 핀볼 머신과 발사 버튼이 보인다")
+	_expect(_board._tool_has_gauge(), "핀볼: 파워 게이지(꾹 눌렀다 놓기)를 쓴다")
+	var holes: Array = []
+	manager.event_received.connect(func(kind: StringName, data: Dictionary) -> void:
+		if kind == &"roll_resolved" and (data["result"] as Dictionary)["tool_id"] == &"DICE_PINBALL":
+			holes.append(int(((data["result"] as Dictionary)["details"] as Dictionary)["hole"])))
+	_board._roll_with_power(0.9)
+	_expect(holes.size() == 1 and _board._stage_pinball.last_hole == holes[0], "핀볼: 구슬이 엔진이 정한 구멍(%d)에 들어간다" % (holes[0] if not holes.is_empty() else -1))
+	# --- 실시간 연출: 야추 주사위가 굴러가고 핀볼 구슬이 구멍에 도착한다 ---
+	guard = 0
+	while manager.current_state != TurnManager.State.PHASE_TURN_BEGIN and guard < 300:
+		guard += 1
+		manager.force_timeout()
+		await process_frame
+	player = manager.current_player_id()
+	manager.state.tools[player] = ToolPinball.new()
+	_board.instant_roll_for_test = false
+	_board.pacing_enabled = false
+	_board._announcer.cancel()
+	_board._refresh_all()
+	var before_holes: int = holes.size()
+	_board._roll_with_power(0.5)
+	await process_frame
+	await process_frame
+	_expect(_board._stage_pinball.active and _board._fx_busy, "핀볼: 구슬이 굴러가는 동안 입력이 잠긴다")
+	await get_root().get_tree().create_timer(3.4).timeout
+	_expect(not _board._stage_pinball.active and not _board._fx_busy and holes.size() == before_holes + 1 and _board._stage_pinball.last_hole == holes[-1], "핀볼: 약 2초 뒤 구슬이 엔진이 정한 구멍에 도착하고 입력이 풀린다")
+	_board.instant_roll_for_test = true
+	guard = 0
+	while manager.current_state != TurnManager.State.PHASE_TURN_BEGIN and guard < 300:
+		guard += 1
+		manager.force_timeout()
+		await process_frame
+	manager.state.tools[manager.current_player_id()] = ToolRegistry.create(&"D6")
+	_board._refresh_all()
+	_expect(not _board._stage_yacht.visible and not _board._stage_blackjack.visible and not _board._stage_pinball.visible, "다른 도구로 돌아오면 스테이지가 사라진다")

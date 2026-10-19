@@ -211,12 +211,20 @@ func _step_turn_begin() -> void:
 	_act(player_id, &"proceed")
 
 
-## 굴리기: 러시안 룰렛은 2~3번 당긴 뒤 멈추고, 나머지는 그냥 굴린다.
+## 굴리기: 러시안 룰렛은 2~3번 당긴 뒤 멈추고, 야추는 고정·다시 굴리기, 블랙잭은 16 이하 히트·17 이상 스탠드, 나머지는 그냥 굴린다.
 func _step_roll() -> void:
 	var player_id: int = manager.current_player_id()
 	var tool: BaseJudgmentTool = manager.state.tools[player_id]
 	if BotBrain.should_stop_roulette(tool, _roulette_pull_target):
 		_act(player_id, &"stop")
+	elif tool is ToolYacht and tool.has_pending_state():
+		# 야추: 가장 많이 겹친 눈금을 고정하고 1~2번 다시 굴린 뒤 확정한다.
+		if BotBrain.should_stop_yacht(tool):
+			_act(player_id, &"stop")
+		else:
+			_act(player_id, &"roll", {"keep": BotBrain.yacht_keep_mask((tool as ToolYacht).dice)})
+	elif tool is ToolBlackjack and tool.has_pending_state():
+		_act(player_id, &"roll" if BotBrain.should_hit_blackjack(tool) else &"stop")
 	else:
 		_act(player_id, &"roll")
 	_delay(DELAY_ROLL_RESULT)

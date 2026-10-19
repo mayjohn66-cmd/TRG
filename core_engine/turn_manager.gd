@@ -154,7 +154,7 @@ func act(action: StringName, params: Dictionary = {}) -> void:
 
 
 ## 모든 플레이어 행동의 단일 입구. 서버만 실행하며 발신 피어로 행동자를 검증한다.
-## action: proceed / roll / stop / select_pawn / play_card / pick_augment / reroll_augment
+## action: proceed / roll(야추: keep 인자) / stop / select_pawn / play_card / pick_augment / reroll_augment
 @rpc("any_peer", "call_local", "reliable")
 func request_action(action: StringName, params: Dictionary = {}) -> void:
 	if not _is_authority() or state == null:
@@ -171,7 +171,7 @@ func request_action(action: StringName, params: Dictionary = {}) -> void:
 		return
 	match action:
 		&"proceed": _handle_proceed(actor)
-		&"roll": _handle_roll(actor)
+		&"roll": _handle_roll(actor, params)
 		&"stop": _handle_stop(actor)
 		&"select_pawn": _handle_select_pawn(actor, params)
 		&"play_card": _handle_play_card(actor, params)
@@ -320,11 +320,15 @@ func _handle_proceed(actor: int) -> void:
 		action_rejected.emit(actor, &"proceed", &"wrong_phase")
 
 
-func _handle_roll(actor: int) -> void:
+func _handle_roll(actor: int, params: Dictionary = {}) -> void:
 	if current_state != State.PHASE_ROLL_WAIT or actor != current_player_id():
 		action_rejected.emit(actor, &"roll", &"wrong_phase")
 		return
-	_apply_roll_result((state.tools[actor] as BaseJudgmentTool).roll(state.rng))
+	var tool: BaseJudgmentTool = state.tools[actor]
+	# 야추 다이스: 다시 굴릴 때 고정할 주사위(keep: 5개 bool)를 굴림 행동에 실어 보낸다.
+	if params.has("keep") and tool is ToolYacht:
+		(tool as ToolYacht).set_keep(params["keep"] as Array if params["keep"] is Array else [])
+	_apply_roll_result(tool.roll(state.rng))
 
 
 func _handle_stop(actor: int) -> void:

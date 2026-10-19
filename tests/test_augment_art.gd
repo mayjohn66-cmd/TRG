@@ -5,6 +5,7 @@ const EXPECTED_TOOLS: Dictionary = {
 	&"YUT": "DICE_YUT", &"HOLDEM": "DICE_POKER", &"LIFE_ROULETTE": "DICE_ROULETTE",
 	&"CHINCHIRO": "DICE_CHINCHIRO", &"SLOT_777": "DICE_SLOT", &"REVOLVER": "REVOLVER",
 	&"DICE_HWATU": "DICE_HWATU", &"DICE_MAHJONG": "DICE_MAHJONG", &"DICE_TAROT": "DICE_TAROT",
+	&"DICE_YACHT": "DICE_YACHT", &"DICE_BLACKJACK": "DICE_BLACKJACK", &"DICE_PINBALL": "DICE_PINBALL",
 }
 
 
@@ -32,6 +33,6 @@ func test_all_draft_icons_resolve_to_the_described_target() -> void:
 		check_eq(texture.resource_path, AugmentArt.ROOT + relative, str(definition.augment_id) + " target image, not an unrelated category fallback")
 		check(not paths.has(texture.resource_path), str(definition.augment_id) + " distinct icon")
 		paths[texture.resource_path] = true
-	check_eq(AugmentRegistry.all().size(), 37, "19 pawns + 9 tools + 8 laws + card package")
-	check_eq(paths.size(), 37, "every draft effect has its own icon")
-	print("AUGMENT_ART_COVERAGE ", paths.size(), "/37")
+	check_eq(AugmentRegistry.all().size(), 40, "19 pawns + 12 tools + 8 laws + card package")
+	check_eq(paths.size(), 40, "every draft effect has its own icon")
+	print("AUGMENT_ART_COVERAGE ", paths.size(), "/40")

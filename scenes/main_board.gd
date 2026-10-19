@@ -354,6 +354,10 @@ const HUMAN_ID: int = 1  ## local_player_id의 기본값 (테스트 참조용)
 var ai_mode: bool = true
 var _bot: BotController = null
 var _mode_toggle: Button = null
+var _stage_yacht: YachtStage = null  ## 새 판정 도구 3종의 중앙 오픈 스테이지 (해당 도구를 쓰는 차례에만 보인다)
+var _stage_blackjack: BlackjackStage = null
+var _stage_pinball: PinballStage = null
+var _stage_turn_key: String = ""
 var _menu_button: Button = null
 var _sound_button: Button = null  ## 우측 상단 소리 켜짐/꺼짐 토글
 var _step_chain: int = 0
@@ -529,6 +533,8 @@ func _process(delta: float) -> void:
 		_charge_value = pingpong(_charge_clock * 1.6, 1.0)
 		_power_bar.value = _charge_value * 100.0
 		_power_label.text = "POWER %d%%" % int(_charge_value * 100.0)
+		if _stage_pinball != null and _stage_pinball.visible:
+			_stage_pinball.set_pull(_charge_value)  # 발사대 스프링이 당겨진다
 		var fill: StyleBoxFlat = _style(Color("51cf66") if _charge_value < 0.4 else (Color("fcc419") if _charge_value < 0.75 else Color("ff6b6b")), Color("fff3bf"), 2, 7, 0, 0)
 		_power_bar.add_theme_stylebox_override("fill", fill)
 	_update_tip(delta)
@@ -915,7 +921,7 @@ func _build_ui() -> void:
 func _register_layout() -> void:
 	_layout_entries.clear()
 	var left: Array = [_law_panel]
-	var center: Array = [_select_banner, _dir_left, _dir_right, _board_layer, _pawn_layer, _dock, _drop_zone, _aim_layer, _pick_banner, _pick_cancel, _roll_button, _roll_pad, _gun_row, _power_bar, _power_label]
+	var center: Array = [_select_banner, _dir_left, _dir_right, _board_layer, _pawn_layer, _dock, _drop_zone, _aim_layer, _pick_banner, _pick_cancel, _roll_button, _roll_pad, _gun_row, _stage_yacht, _stage_blackjack, _stage_pinball, _power_bar, _power_label]
 	var right: Array = [_tool_board, _action_row, _pawn_bar, _emote_row, _menu_button, _sound_button, _debug_box, _log_panel]
 	for index: int in PLAYER_IDS.size():
 		var player_id: int = PLAYER_IDS[index]
@@ -3438,6 +3444,9 @@ const TOOL_CARDS: Dictionary = {
 	&"DICE_HWATU": ["화", Color("c92a2a"), "화투패 족보만큼 전진한다", ""],
 	&"DICE_MAHJONG": ["마", Color("2b8a3e"), "마작패 족보만큼 전진한다", "역만 재굴림 +1"],
 	&"DICE_TAROT": ["타", Color("5f3dc4"), "타로를 뽑아 전진한다", "매달린 남자: 다음 +8칸"],
+	&"DICE_YACHT": ["야", Color("e03131"), "주사위 5개 고정·리롤(2회)로 족보 완성!", "(트리플 5칸 / 풀하·4연속 7칸 / ★야추 12칸+한번더)"],
+	&"DICE_BLACKJACK": ["21", Color("2b8a3e"), "카드 합계(11~21)에서 -10 한 만큼 전진!", "(★21 달성: 11칸+한번더 / 22↑ 초과 시 0칸 폭발!)"],
+	&"DICE_PINBALL": ["핀", Color("1971c2"), "발사대를 당겨 쇠구슬 발사!", "구슬이 골인한 칸의 숫자(1 ~ 10칸)만큼 전진"],
 }
 
 
@@ -3453,6 +3462,9 @@ const TOOL_RULES: Dictionary = {
 	&"DICE_MAHJONG": {"rows": [["핑후 (불일치)", "2칸"], ["또이츠 (같은 패 2개)", "3칸"], ["슌쯔 (연속 숫자)", "5칸"], ["커쯔 (같은 패 3개)", "8칸"], ["역만 (8%)", "12칸 + 한 번 더!"]], "note": "역만 = 국사무쌍·대삼원"},
 	&"DICE_TAROT": {"rows": [["0. 광대", "-2칸 또는 +7칸"], ["VII. 전차", "6칸"], ["X. 운명의 수레바퀴", "4칸 + 한 번 더!"], ["XII. 매달린 남자", "1칸, 다음 굴림 +8칸"], ["XXI. 세계", "9칸"]], "note": "5장 중 1장 · 축복은 다음 굴림"},
 	&"REVOLVER": {"rows": [["방아쇠 1회", "+3칸 누적"], ["최대 누적", "15칸"], ["폭죽 (6칸 중 1칸)", "누적 0칸, 턴 종료"], ["멈추기", "누적한 칸만큼 이동"]], "note": "6칸 중 1칸은 폭죽 · 깃발이 나오면 누적 소멸"},
+	&"DICE_YACHT": {"rows": [["노페어 (찬스)", "가장 높은 눈금의 절반 올림 (1~3칸)"], ["트리플 (3개 동일)", "5칸"], ["스몰 스트레이트 (4연속) / 풀하우스", "7칸"], ["포카드 / 라지 스트레이트 (5연속)", "9칸"], ["★ 야추 (5개 동일)", "12칸 + 한 번 더!"]], "note": "주사위 5개 · 고정(Keep)하고 나머지를 최대 2번 다시 굴림"},
+	&"DICE_BLACKJACK": {"rows": [["시작", "합계 11 이상이 되도록 카드를 받음 (A는 11, 넘으면 1)"], ["11 ~ 20에서 스탠드", "(합계 - 10)칸 (1~10칸)"], ["★ 정확히 21", "11칸 + 한 번 더!"], ["22 이상 (버스트)", "0칸, 턴 종료"]], "note": "히트로 카드를 더 뽑거나 스탠드로 확정"},
+	&"DICE_PINBALL": {"rows": [["하단 구멍 7칸", "[2] [4] [6] [★10] [5] [3] [1]"], ["골인한 구멍의 숫자", "그 숫자만큼 전진 (1~10칸)"], ["★10 구멍", "가장 드문 대박"]], "note": "발사 버튼을 꾹 눌렀다 놓으면 스프링이 당겨졌다 발사"},
 }
 
 
@@ -3531,6 +3543,7 @@ func _refresh_controls() -> void:
 	var can_roll: bool = not over and (current_phase == TurnManager.State.PHASE_TURN_BEGIN or current_phase == TurnManager.State.PHASE_ROLL_WAIT)
 	_roll_button.disabled = not can_roll or _tile_pick_active or _ui_busy() or manager.stack_offer_pending() or manager.duel_pending() or _is_bot_turn()
 	_refresh_roll_pad()
+	_refresh_tool_stage()
 	var can_stop: bool = not over and tool.has_pending_state() and current_phase == TurnManager.State.PHASE_ROLL_WAIT
 	if tool is ToolRussianRoulette:
 		# 러시안 룰렛: [방아쇠 당기기]와 [멈추고 N칸 이동 확정]을 한 세트로 상시 노출한다. 1발도 못 당겼으면 멈추기는 비활성(회색)이고,
@@ -3545,7 +3558,7 @@ func _refresh_controls() -> void:
 	else:
 		_set_gun_buttons(false)
 		_roll_button.text = _roll_button_label(tool)
-		_stop_button.visible = can_stop
+		_stop_button.visible = can_stop and not _is_stage_tool(tool.tool_id)  # 야추·블랙잭은 스테이지에 자기 확정 버튼이 있다
 		_stop_button.text = "멈추고 이동 확정"
 		_stop_button.disabled = false
 		_stop_button.modulate = Color.WHITE
@@ -3593,7 +3606,7 @@ func _refresh_sound_button() -> void:
 
 ## 주사위 계열 도구인가 (굴림 소리가 주사위 던지는 소리다).
 func _is_dice_family(tool: BaseJudgmentTool) -> bool:
-	return tool.tool_id == &"D6" or tool.tool_id == &"CHINCHIRO" or tool.tool_id == &"YUT" or String(tool.tool_id).begins_with("DICE_")
+	return tool.tool_id == &"D6" or tool.tool_id == &"CHINCHIRO" or tool.tool_id == &"YUT" or tool.tool_id == &"DICE_YACHT" or tool.tool_id == &"DICE_HWATU" or tool.tool_id == &"DICE_MAHJONG" or tool.tool_id == &"DICE_TAROT"
 
 
 ## 굴림 버튼에 쓰는 글자: 도구마다 다르다.
@@ -3608,6 +3621,8 @@ func _roll_button_label(tool: BaseJudgmentTool) -> String:
 		return "쯔모!"
 	if tool is ToolTarot:
 		return "운명\n뽑기"
+	if tool is ToolPinball:
+		return "발사!"
 	return "굴리기"
 
 
@@ -3619,6 +3634,10 @@ func _roll_mode_for(tool: BaseJudgmentTool) -> StringName:
 		return &"gun"
 	if tool is ToolHoldem or tool is ToolSlot777 or tool is ToolHwatu or tool is ToolMahjong or tool is ToolTarot:
 		return &"big"
+	if tool is ToolYacht or tool is ToolBlackjack:
+		return &"stage"
+	if tool is ToolPinball:
+		return &"pinball"
 	return &"charge"
 
 
@@ -3640,17 +3659,17 @@ func _refresh_roll_pad() -> void:
 	_roll_pad.instant = instant_roll_for_test
 	if _roll_pad.kind != wanted:
 		_roll_pad.set_kind(wanted)
-	if mode == &"big" or mode == &"charge":
+	if mode == &"big" or mode == &"charge" or mode == &"pinball":
 		_roll_button.text = _roll_button_label(owner_tool)  # 글자를 먼저 바꿔야 새 크기가 이전 글자 폭에 눌리지 않는다
 	if mode != _roll_geometry:
 		_set_roll_geometry(mode)
 	# 굴림 위젯은 굴릴 차례에만 보인다. 굴림이 끝나면 지워서 보드 한가운데가 가리지 않게 한다 (룰렛·리볼버 패드는 돌아가는 연출 중에는 남긴다).
 	var roll_phase: bool = not manager.is_game_over and (manager.current_state == TurnManager.State.PHASE_TURN_BEGIN or manager.current_state == TurnManager.State.PHASE_ROLL_WAIT) and not _is_bot_turn()
-	_roll_button.visible = wanted == RollPad.Kind.NONE and roll_phase
+	_roll_button.visible = wanted == RollPad.Kind.NONE and roll_phase and mode != &"stage"
 	if wanted != RollPad.Kind.NONE:
 		_roll_pad.visible = roll_phase or _fx_busy or _roll_pad.active
 	_gun_row.visible = wanted == RollPad.Kind.REVOLVER and (roll_phase or _fx_busy or _roll_pad.active)
-	if mode == &"big" or mode == &"charge":
+	if mode == &"big" or mode == &"charge" or mode == &"pinball":
 		_roll_button.text = _roll_button_label(owner_tool)
 	_roll_pad.set_enabled(not _roll_button.disabled)
 	if wanted == RollPad.Kind.REVOLVER and roll_phase and not _ui_busy():
@@ -3661,14 +3680,18 @@ func _refresh_roll_pad() -> void:
 ## 굴림 위젯의 크기·위치를 방식에 맞춘다: charge는 중앙 무대 아래쪽에 작게(120px), 그 외는 보드 한가운데 크게(버튼 190px / 패드 1.9배).
 func _set_roll_geometry(mode: StringName) -> void:
 	_roll_geometry = mode
-	var big: bool = mode != &"charge"
-	var diameter: float = 190.0 if mode == &"big" else 120.0
-	var center: Vector2 = Vector2(683.0, 335.0) if mode == &"big" else Vector2(683.0, 380.0)
+	var big: bool = mode != &"charge" and mode != &"pinball"
+	var diameter: float = 190.0 if mode == &"big" else (110.0 if mode == &"pinball" else 120.0)
+	var center: Vector2 = Vector2(683.0, 335.0) if mode == &"big" else (Vector2(940.0, 470.0) if mode == &"pinball" else Vector2(683.0, 380.0))
 	_roll_button.custom_minimum_size = Vector2(diameter, diameter)
 	_roll_button.size = Vector2(diameter, diameter)
 	_roll_button.add_theme_font_size_override("font_size", 32 if mode == &"big" else 24)
 	_apply_round_button_style(_roll_button, Color("2b8a3e"))
 	_set_layout_base(_roll_button, center - Vector2(diameter, diameter) / 2.0)
+	# 파워 게이지는 굴림 버튼 바로 아래에 붙는다 (핀볼은 발사 버튼이 오른쪽 아래로 옮겨 가 게이지도 함께 간다)
+	var bar_origin: Vector2 = center + Vector2(-60.0, diameter / 2.0 + 7.0)
+	_set_layout_base(_power_bar, bar_origin)
+	_set_layout_base(_power_label, bar_origin + Vector2(0.0, 15.0))
 	_roll_pad.pivot_offset = _roll_pad.size / 2.0
 	_roll_pad.scale = Vector2(1.9, 1.9) if big else Vector2.ONE
 	_apply_layout_now()
@@ -3728,6 +3751,10 @@ func _hint_text(current_phase: TurnManager.State, tool: BaseJudgmentTool) -> Str
 				return "굴리기 버튼(또는 R/Space)을 꾹 눌러 파워 게이지를 채우고 손을 떼면 굴러갑니다. 카드(▣ 표시는 타일 클릭)도 쓸 수 있습니다. (판정 도구: %s)" % tool.display_name
 			return "카드(▣ 표시는 타일을 클릭해 설치/소환)를 쓰거나 [굴리기]를 누르세요. (판정 도구: %s)" % tool.display_name
 		TurnManager.State.PHASE_ROLL_WAIT:
+			if tool.has_pending_state() and tool is ToolYacht:
+				return "고정할 주사위를 클릭하고 [나머지 다시 굴리기], 마음에 들면 [현재 족보로 이동 확정]을 누르세요."
+			if tool.has_pending_state() and tool is ToolBlackjack:
+				return "[히트]로 카드를 더 뽑거나 [스탠드]로 (합계-10)칸 이동을 확정하세요. 22 이상이면 버스트!"
 			if tool.has_pending_state():
 				return "계속 당기거나, 멈추고 누적 칸수만큼 이동하세요. 깃발이 나오면 누적이 사라져요!"
 			return "다시 굴려야 합니다 (재굴림)." if not manager.move_queue.is_empty() else ("굴리기 버튼을 꾹 눌렀다 떼서 굴리세요." if _tool_has_gauge() else "굴리세요.")
@@ -3804,6 +3831,8 @@ func _stop_charge() -> void:
 	if _power_bar != null:
 		_power_bar.visible = false
 		_power_label.visible = false
+	if _stage_pinball != null:
+		_stage_pinball.set_pull(0.0)
 
 
 ## 현재 판정 도구가 홀드 & 릴리즈 파워 게이지를 쓰는가 (기본 D6, 친치로, 박달나무 윷).
@@ -3811,7 +3840,7 @@ func _tool_has_gauge() -> bool:
 	if state == null:
 		return false
 	var tool: BaseJudgmentTool = state.tools[manager.current_player_id()]
-	return tool.tool_id == &"D6" or tool.tool_id == &"CHINCHIRO" or tool.tool_id == &"YUT"
+	return tool.tool_id == &"D6" or tool.tool_id == &"CHINCHIRO" or tool.tool_id == &"YUT" or tool.tool_id == &"DICE_PINBALL"
 
 
 func _on_stop_pressed() -> void:
@@ -6234,6 +6263,24 @@ func _log_roll(data: Dictionary) -> String:
 				text += "  (매달린 남자의 축복 +%d칸 포함)" % int(details["bonus"])
 			if details.has("blessing_booked"):
 				text += "  다음 굴림에 +%d칸 축복 예약!" % int(details["blessing_booked"])
+		&"DICE_YACHT":
+			var dice_text: String = " ".join(PackedStringArray((details["dice"] as Array).map(func(face: Variant) -> String: return str(face))))
+			if bool(result.get("can_continue", false)):
+				text += "[%s] %s (예상 %d칸) 남은 다시 굴리기 %d회" % [dice_text, details["label"], int(details["preview_steps"]), int(details["rerolls_left"])]
+			else:
+				text += "[%s] %s → %d칸 이동 확정" % [dice_text, details["label"], result["steps"]]
+		&"DICE_BLACKJACK":
+			var card_text: String = " ".join(PackedStringArray((details["cards"] as Array).map(func(rank: Variant) -> String: return ToolBlackjack.card_name(int(rank)))))
+			if bool(details.get("bust", false)):
+				text += "[%s] 합계 %d - BUST! 0칸, 턴 종료" % [card_text, int(details["total"])]
+			elif bool(details.get("blackjack", false)):
+				text += "[%s] 합계 21 BLACKJACK! → %d칸" % [card_text, result["steps"]]
+			elif bool(result.get("can_continue", false)):
+				text += "[%s] 합계 %d (스탠드하면 %d칸)" % [card_text, int(details["total"]), int(details["preview_steps"])]
+			else:
+				text += "[%s] 스탠드: 합계 %d → %d칸 이동 확정" % [card_text, int(details["total"]), result["steps"]]
+		&"DICE_PINBALL":
+			text += "구슬이 [%s] 구멍에 골인 → %d칸" % ["★10" if int(details["value"]) == 10 else str(details["value"]), result["steps"]]
 		&"REVOLVER":
 			if details["fired"]:
 				text += "뿅! 깃발 발사 · 누적 %d칸 사라짐, 턴 종료" % details["lost"]
@@ -6362,6 +6409,7 @@ func _build_roll_fx() -> void:
 	_power_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_power_label.visible = false
 	add_child(_power_label)
+	_build_tool_stages()
 	_presenter = RollPresenter.new()
 	add_child(_presenter)
 	_announcer = EventAnnouncer.new()
@@ -6375,12 +6423,102 @@ func _build_roll_fx() -> void:
 	_announcer.entry_finished.connect(_on_announcer_entry_finished)
 
 
+## 야추·블랙잭·핀볼의 중앙 오픈 스테이지를 만든다. 눈에 보이는 건 해당 도구를 쓰는 차례뿐이다.
+func _build_tool_stages() -> void:
+	_stage_yacht = YachtStage.new()
+	_stage_yacht.position = Vector2(683.0, 335.0) - YachtStage.STAGE_SIZE / 2.0
+	_stage_yacht.visible = false
+	_stage_yacht.z_index = 5
+	_stage_yacht.start_pressed.connect(_on_stage_start)
+	_stage_yacht.reroll_pressed.connect(_on_yacht_reroll)
+	_stage_yacht.confirm_pressed.connect(_on_stage_stand)
+	add_child(_stage_yacht)
+	_stage_blackjack = BlackjackStage.new()
+	_stage_blackjack.position = Vector2(683.0, 335.0) - BlackjackStage.STAGE_SIZE / 2.0
+	_stage_blackjack.visible = false
+	_stage_blackjack.z_index = 5
+	_stage_blackjack.start_pressed.connect(_on_stage_start)
+	_stage_blackjack.hit_pressed.connect(_on_blackjack_hit)
+	_stage_blackjack.stand_pressed.connect(_on_stage_stand)
+	add_child(_stage_blackjack)
+	_stage_pinball = PinballStage.new()
+	_stage_pinball.position = Vector2(683.0, 335.0) - PinballStage.STAGE_SIZE / 2.0
+	_stage_pinball.visible = false
+	_stage_pinball.z_index = 5
+	add_child(_stage_pinball)
+
+
+## 이 도구의 중앙 스테이지 (야추·블랙잭·핀볼이 아니면 null).
+func _stage_for(tool_id: StringName) -> Control:
+	match tool_id:
+		&"DICE_YACHT": return _stage_yacht
+		&"DICE_BLACKJACK": return _stage_blackjack
+		&"DICE_PINBALL": return _stage_pinball
+	return null
+
+
+func _is_stage_tool(tool_id: StringName) -> bool:
+	return tool_id == &"DICE_YACHT" or tool_id == &"DICE_BLACKJACK" or tool_id == &"DICE_PINBALL"
+
+
+## 지금 굴리는 사람의 도구에 맞는 스테이지만 보여 주고 엔진 상태에 맞춘다 (남의 차례에도 굴리는 모습이 보인다).
+func _refresh_tool_stage() -> void:
+	var current: int = manager.current_player_id()
+	var tool: BaseJudgmentTool = state.tools[current]
+	var stage: Control = _stage_for(tool.tool_id)
+	for other: Control in [_stage_yacht, _stage_blackjack, _stage_pinball]:
+		if other != null and other != stage and not other.get("active"):
+			other.visible = false
+	if stage == null:
+		return
+	var turn_key: String = "%d:%d:%s" % [state.round_number, current, tool.tool_id]
+	if turn_key != _stage_turn_key and not tool.has_pending_state() and not bool(stage.get("active")):
+		_stage_turn_key = turn_key
+		stage.call("reset")
+	var in_roll: bool = not manager.is_game_over and (manager.current_state == TurnManager.State.PHASE_TURN_BEGIN or manager.current_state == TurnManager.State.PHASE_ROLL_WAIT)
+	stage.set("instant", instant_roll_for_test)
+	stage.visible = in_roll or _fx_busy or bool(stage.get("active")) or tool.has_pending_state()
+	var acting: bool = not _roll_button.disabled
+	if stage == _stage_yacht:
+		_stage_yacht.sync(tool as ToolYacht, acting)
+	elif stage == _stage_blackjack:
+		_stage_blackjack.sync(tool as ToolBlackjack, acting)
+
+
+func _on_stage_start() -> void:
+	_roll_with_power(0.5)
+
+
+func _on_yacht_reroll(keep: Array) -> void:
+	if manager.is_game_over or _ui_busy() or _is_bot_turn() or manager.current_state != TurnManager.State.PHASE_ROLL_WAIT:
+		return
+	Sfx.play(&"dice_roll")
+	_act(&"roll", {"keep": keep})
+
+
+func _on_blackjack_hit() -> void:
+	if manager.is_game_over or _ui_busy() or _is_bot_turn() or manager.current_state != TurnManager.State.PHASE_ROLL_WAIT:
+		return
+	Sfx.play(&"card_get")
+	_act(&"roll")
+
+
+## 야추의 [현재 족보로 이동 확정]과 블랙잭의 [스탠드].
+func _on_stage_stand() -> void:
+	if manager.is_game_over or _ui_busy() or _is_bot_turn() or manager.current_state != TurnManager.State.PHASE_ROLL_WAIT:
+		return
+	_act(&"stop")
+
+
 ## 엔진이 확정한 굴림 결과를 연출한 뒤 로그·중앙 배너로 공개한다. 연출 중에는 입력을 잠가 결과가 먼저 새지 않게 한다.
 func _handle_roll_event(data: Dictionary) -> void:
 	var result: Dictionary = data["result"]
 	var tool_id: StringName = result["tool_id"]
 	_presenter.instant = instant_roll_for_test
 	var details: Dictionary = result["details"]
+	if _is_stage_tool(tool_id):
+		_handle_stage_roll(data)
+		return
 	# Stopping is a cash-out, not another trigger pull or cylinder advance.
 	if tool_id == &"REVOLVER" and bool(details.get("voluntary",false)):
 		_fx_serial += 1
@@ -6435,6 +6573,49 @@ func _handle_roll_event(data: Dictionary) -> void:
 	_refresh_all()
 
 
+## 야추·블랙잭·핀볼: 중앙 스테이지가 결과를 연출한 뒤(테스트에서는 즉시) 로그·배너로 공개한다.
+func _handle_stage_roll(data: Dictionary) -> void:
+	var result: Dictionary = data["result"]
+	var tool_id: StringName = result["tool_id"]
+	var stage: Control = _stage_for(tool_id)
+	if _center_banner != null:
+		_center_banner.hide()
+	stage.visible = true
+	stage.set("instant", instant_roll_for_test)
+	if instant_roll_for_test:
+		_play_stage(stage, tool_id, result)
+		_reveal_roll(data)
+		return
+	var generation: int = _fx_generation
+	_fx_serial += 1
+	var serial: int = _fx_serial
+	_fx_busy = true
+	_refresh_controls()
+	await _play_stage(stage, tool_id, result)
+	if generation != _fx_generation or serial != _fx_serial:
+		return
+	_fx_busy = false
+	_reveal_roll(data)
+	_refresh_all()
+
+
+func _play_stage(stage: Control, tool_id: StringName, result: Dictionary) -> void:
+	if tool_id == &"DICE_PINBALL":
+		await (stage as PinballStage).play(result, _pending_power)
+	elif tool_id == &"DICE_YACHT":
+		await (stage as YachtStage).play(result)
+	else:
+		await (stage as BlackjackStage).play(result)
+
+
+## 블랙잭 버스트: 이동 없이 턴이 끝난다. 결과 카드를 0.9초 보여 주고 프로필이 피격 반응을 한다.
+func _announce_bust(player_id: int, total: int) -> void:
+	_profile_react(player_id, false, "[으악!]")
+	_avatar_react(player_id, AvatarSlot.Emotion.SAD, 1.2)
+	_announce("블랙잭", "[BUST! (21 초과 - 0칸 이동 실패)]", "카드 합계 %d" % total, Color("ff6b6b"), null, 0.9)
+	_start_beat(0.9)
+
+
 ## 이동 실패 알림: 결과 카드를 0.9초 보여 주고 프로필이 피격 반응을 한다. 알림이 떠 있는 동안 입력과 봇 행동은 멈춰 있어 다음 차례가 먼저 시작되지 않는다.
 func _announce_move_failed(headline: String, player_id: int, body: String = "") -> void:
 	_profile_react(player_id, false, "[으악!]")
@@ -6454,6 +6635,15 @@ func _reveal_roll(data: Dictionary) -> void:
 		_profile_react(roller, false, "[으악!]")
 	elif (roll_tool == &"SLOT_777" and roll_steps >= 20) or (roll_tool == &"DICE_MAHJONG" and roll_steps >= 12) or (roll_tool == &"HOLDEM" and roll_steps >= 15):
 		_profile_react(roller, true, "[나이스!]")
+	if _is_stage_tool(roll_tool):
+		# 진행 중인 굴림(야추 다시 굴리기·블랙잭 히트)은 스테이지가 보여 주므로 중앙 배너를 띄우지 않는다.
+		if bool((data["result"] as Dictionary).get("can_continue", false)):
+			return
+		if bool(details.get("bust", false)):
+			_announce_bust(roller, int(details["total"]))
+			return
+		_show_center_banner("P%d  %s" % [data["player_id"], roll_text.strip_edges()], Color("ffd43b") if bool((data["result"] as Dictionary).get("reroll", false)) else Color("fff3bf"))
+		return
 	if bool(details.get("oops", false)):
 		_show_center_banner("[친치로 삐끗!] 주사위가 접시 밖으로 나갔습니다! (-6칸 후퇴)", Color("ff6b6b"))
 		_announce("지하노역장 친치로", "[친치로 삐끗!]", "주사위가 접시 밖으로 나갔습니다! (-6칸 후퇴)", Color("ff6b6b"), null, 1.3)

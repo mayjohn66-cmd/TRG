@@ -6,8 +6,8 @@ extends RefCounted
 
 static var _cache: Array[AugmentDef] = []
 
-## 교체 대상 판정 도구. 기본 주사위(D6)를 제외한 확정 9종이다.
-const SWAPPABLE_TOOLS: Array[StringName] = [&"YUT", &"HOLDEM", &"LIFE_ROULETTE", &"CHINCHIRO", &"SLOT_777", &"REVOLVER", &"DICE_HWATU", &"DICE_MAHJONG", &"DICE_TAROT"]
+## 교체 대상 판정 도구. 기본 주사위(D6)를 제외한 확정 12종이다.
+const SWAPPABLE_TOOLS: Array[StringName] = [&"YUT", &"HOLDEM", &"LIFE_ROULETTE", &"CHINCHIRO", &"SLOT_777", &"REVOLVER", &"DICE_HWATU", &"DICE_MAHJONG", &"DICE_TAROT", &"DICE_YACHT", &"DICE_BLACKJACK", &"DICE_PINBALL"]
 
 
 static func all() -> Array[AugmentDef]:
