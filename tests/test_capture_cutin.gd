@@ -92,3 +92,29 @@ func test_impact_hold_and_slow_recoil_preserve_direction_and_speed_contrast() ->
 	check_eq(CaptureCutin.impact_kind(&"avatar_05"), &"slash", "Shady gets a scythe slash")
 	check_eq(CaptureCutin.impact_kind(&"avatar_06"), &"pierce", "Daya gets a crystal-blade streak")
 	check_eq(CaptureCutin.impact_kind(&"avatar_01"), &"blunt", "Erpin gets a punch shock ring")
+
+
+func test_weapon_trails_follow_the_hold_without_a_blunt_explosion() -> void:
+	check(ResourceLoader.exists(CaptureCutin.SLASH_PATH), "the painted scythe trail is imported")
+	for avatar: StringName in [&"avatar_02", &"avatar_04", &"avatar_05", &"avatar_06"]:
+		check(not CaptureCutin.uses_shock_ring(avatar), "%s weapon attack has no circular punch burst" % avatar)
+	check(CaptureCutin.uses_shock_ring(&"avatar_01"), "the punch retains its radial shock")
+	check_eq(CaptureCutin.trail_time(CaptureCutin.IMPACT_AT + 0.01), CaptureCutin.trail_time(CaptureCutin.HOLD_UNTIL - 0.01), "the slash reveal stops with the actors at contact")
+	check(CaptureCutin.trail_time(CaptureCutin.SWING_AT + 0.01) < CaptureCutin.IMPACT_AT, "weapon travel is visible before contact")
+	check(CaptureCutin.trail_time(CaptureCutin.HOLD_UNTIL + 0.10) > CaptureCutin.IMPACT_AT, "the trail resumes after the hold")
+
+
+func test_singular_strike_art_appears_at_contact_and_clears_with_the_capture() -> void:
+	var cutin := CaptureCutin.new()
+	tree.root.add_child(cutin)
+	defer_free(cutin)
+	check(cutin._strike != null and cutin._strike_region.has_area(), "painted strike lettering is imported with visible alpha bounds")
+	check_eq(CaptureCutin.caption_at(CaptureCutin.IMPACT_AT - 0.001)["alpha"], 0.0, "caption does not announce the hit early")
+	check_eq(CaptureCutin.caption_at(CaptureCutin.IMPACT_AT)["alpha"], 1.0, "caption and hit arrive together")
+	check_eq(CaptureCutin.caption_at(CaptureCutin.IMPACT_AT + 0.01), CaptureCutin.caption_at(CaptureCutin.HOLD_UNTIL - 0.01), "lettering freezes with the two character poses")
+	check_eq(CaptureCutin.caption_at(CaptureCutin.DURATION)["alpha"], 0.0, "caption disappears when the capture ends")
+	var aspect: float = cutin._strike_region.size.x / maxf(cutin._strike_region.size.y, 1.0)
+	for viewport: Vector2 in [Vector2(1366,768),Vector2(1024,768),Vector2(1920,800)]:
+		var rect: Rect2 = CaptureCutin.caption_rect(viewport, aspect, 1.08)
+		check(Rect2(Vector2.ZERO,viewport).encloses(rect), "full lettering stays on screen at %s" % str(viewport))
+		check(rect.end.y < viewport.y * 0.22, "lettering occupies the upper gap above the actors")

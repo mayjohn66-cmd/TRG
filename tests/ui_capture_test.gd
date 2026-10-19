@@ -31,6 +31,17 @@ func _run() -> void:
 	board._reset_presentation()
 	board._fx_until_msec = 0
 	var state: GameState = board.state
+	# A bot's first step can run between phase refreshes. Its slot must already
+	# reflect deployment while that same movement phase is still in progress.
+	var bot_pawn: PlayerPawn = state.get_pawn(31)
+	var bot_ctx := RuleContext.new()
+	bot_ctx.state = state
+	bot_ctx.actor_id = 3
+	bot_ctx.dice_value = 1
+	var bot_report: MoveReport = MoveExecutor.begin(state, bot_pawn, bot_ctx)
+	MoveExecutor.apply_step(state, bot_pawn, bot_ctx, 1, true, true, bot_report)
+	expect((board._profiles[3]["slots"][0]["status"] as Label).text == "출전", "bot deployment updates its profile slot before the next phase refresh")
+	state.send_to_start(bot_pawn, 3)
 	var mine: PlayerPawn = state.get_pawn(11)
 	var enemy: PlayerPawn = state.get_pawn(21)
 	mine.current_tile_idx = 1
@@ -51,6 +62,7 @@ func _run() -> void:
 	await _wait_for_pose()
 	expect(report.captured_pawn_ids.has(21), "real move captures the opposing pawn")
 	expect(board._capture_cutin.active, "actual capture signal opens the overlay")
+	expect(board._capture_cutin._strike != null, "the actual capture overlay loads the painted A SINGULAR STRIKE lettering")
 	expect(board._capture_cutin.attacker_avatar == &"avatar_03", "my selected avatar attacks")
 	expect(board._capture_cutin.defender_avatar == board._avatar_for(2), "opponent's own avatar is hit")
 	expect(board._ui_busy(), "input waits for the short presentation")
@@ -59,6 +71,7 @@ func _run() -> void:
 	var rng_state: int = state.rng.state
 	await create_timer(0.40).timeout
 	expect(board._capture_cutin.busy(), "capture holds long enough to read the slow recoil")
+	expect(float(CaptureCutin.caption_at(board._capture_cutin.elapsed)["alpha"]) > 0.0, "strike lettering stays visible alongside the character illustrations")
 	await create_timer(CaptureCutin.DURATION - 0.40 + 0.08).timeout
 	expect(not board._capture_cutin.busy(), "presentation cleans up after its full slow-motion duration")
 	expect(TurnSnapshot.capture(state).to_dict() == snapshot and state.rng.state == rng_state, "visual frames do not mutate authoritative state/RNG")
