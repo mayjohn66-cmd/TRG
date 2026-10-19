@@ -15,9 +15,9 @@ const SURFACE: Texture2D = preload("res://assets/board/trickcal/board_surface.pn
 static func tile_metrics() -> Dictionary:
 	var length: float = 1.0 - 2.0 * TRACK_INSET
 	var spacing: float = length * (1.0 - 2.0 * BoardLayout.CORNER_REACH) / float(maxi(BoardSpec.side - 2, 1))
-	var width: float = minf(spacing * 0.95, MAX_TILE_WIDTH)
+	var width: float = minf(spacing - 0.0015, MAX_TILE_WIDTH)
 	var reach: float = length * BoardLayout.CORNER_REACH
-	var room: float = 2.0 * (reach - width / 2.0 - 0.004)
+	var room: float = 2.0 * (reach - width / 2.0 - 0.002)
 	return {"width": width, "depth": minf(NORMAL_SIZE, room), "corner": minf(CORNER_SIZE, room)}
 
 
@@ -198,7 +198,7 @@ class Symbol extends Control:
 static func shape(major: bool, inset: float = 0.0) -> PackedVector2Array:
 	var points := PackedVector2Array()
 	var width: float = 96.0-2.0*inset
-	var radius: float = minf(8.0 if major else 5.0,width/2.0)
+	var radius: float = minf(8.0 if major else 2.5,width/2.0)
 	var lo: float = inset
 	var hi: float = inset+width
 	var centers: Array[Vector2] = [Vector2(hi-radius,lo+radius),Vector2(hi-radius,hi-radius),Vector2(lo+radius,hi-radius),Vector2(lo+radius,lo+radius)]
