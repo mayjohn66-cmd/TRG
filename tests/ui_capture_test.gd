@@ -27,7 +27,9 @@ func _run() -> void:
 	board._announcer.cancel()
 	board._announced_round = board.state.round_number
 	board.pacing_enabled = false
-	board.instant_roll_for_test = false
+	board.instant_roll_for_test = true
+	board._reset_presentation()
+	board._fx_until_msec = 0
 	var state: GameState = board.state
 	var mine: PlayerPawn = state.get_pawn(11)
 	var enemy: PlayerPawn = state.get_pawn(21)
@@ -44,20 +46,29 @@ func _run() -> void:
 	ctx.actor_id = 1
 	ctx.raw_roll = 1
 	ctx.dice_value = 1
+	board.instant_roll_for_test = false
 	var report: MoveReport = MoveExecutor.execute(state, mine, ctx)
+	await _wait_for_pose()
 	expect(report.captured_pawn_ids.has(21), "real move captures the opposing pawn")
 	expect(board._capture_cutin.active, "actual capture signal opens the overlay")
 	expect(board._capture_cutin.attacker_avatar == &"avatar_03", "my selected avatar attacks")
 	expect(board._capture_cutin.defender_avatar == board._avatar_for(2), "opponent's own avatar is hit")
 	expect(board._ui_busy(), "input waits for the short presentation")
+	var victim_start: Vector2 = (board._pawn_views[21] as Node2D).position
 	var snapshot: Dictionary = TurnSnapshot.capture(state).to_dict()
 	var rng_state: int = state.rng.state
-	await create_timer(0.58).timeout
-	expect(not board._capture_cutin.busy(), "half-second presentation cleans up")
+	await create_timer(0.40).timeout
+	expect(board._capture_cutin.busy(), "capture holds long enough to read the slow recoil")
+	await create_timer(CaptureCutin.DURATION - 0.40 + 0.08).timeout
+	expect(not board._capture_cutin.busy(), "presentation cleans up after its full slow-motion duration")
 	expect(TurnSnapshot.capture(state).to_dict() == snapshot and state.rng.state == rng_state, "visual frames do not mutate authoritative state/RNG")
+	expect((board._pawn_views[21] as Node2D).position.distance_to(victim_start) > 3.0, "ejection starts promptly after the pose without a second cutin delay")
+	await _wait_for_queue()
 	state.send_to_start(state.get_pawn(12), 2)
 	expect(not board._capture_cutin.active, "trap-like generic reset does not show the attack")
+	await _wait_for_queue()
 	board._on_pawn_captured(21, 11)
+	await _wait_for_pose()
 	expect(board._capture_cutin.attacker_avatar == board._avatar_for(2) and board._capture_cutin.defender_avatar == &"avatar_03", "roles reverse when the opponent captures me")
 	state.snapshot_restored.emit()
 	expect(not board._capture_cutin.busy() and board._capture_marks.is_empty(), "snapshot restoration clears current poses")
@@ -74,3 +85,16 @@ func _run() -> void:
 	else:
 		for failure: String in failures: push_error(failure)
 	quit(0 if failures.is_empty() else 1)
+
+
+func _wait_for_pose() -> void:
+	var until: int = Time.get_ticks_msec() + 4000
+	while not board._capture_cutin.active and Time.get_ticks_msec() < until:
+		await create_timer(0.01).timeout
+
+
+func _wait_for_queue() -> void:
+	var until: int = Time.get_ticks_msec() + 4000
+	while board._presentation_active() and Time.get_ticks_msec() < until:
+		await create_timer(0.01).timeout
+	expect(not board._presentation_active(), "the presentation queue finishes")

@@ -725,6 +725,7 @@ func _bind_state() -> void:
 	state.pawn_warped.connect(_on_pawn_warped)
 	state.pawn_captured.connect(_on_pawn_captured)
 	state.snapshot_restored.connect(func() -> void:
+		_reset_presentation()
 		_capture_epoch += 1
 		_capture_marks.clear()
 		if _capture_cutin != null:
@@ -2182,6 +2183,11 @@ func _play_eject_settle(pawn_id: int) -> void:
 	var pawn: PlayerPawn = state.get_pawn(pawn_id) if state != null else null
 	if view == null or pawn == null or not is_instance_valid(view):
 		return
+	# The FIFO has already waited for the entire capture pose; do not wait twice.
+	if _fx_hints.has(pawn_id):
+		var hint: Dictionary = _fx_hints[pawn_id]
+		if bool(hint.get("homerun", false)):
+			hint["delay"] = 0.0
 	_settle_pawn_view(view, pawn, true)
 	var generation: int = _fx_generation
 	while generation == _fx_generation and is_instance_valid(view) and _fx_running(view):

@@ -1498,7 +1498,7 @@ func _test_trap_tile_marking() -> void:
 	_board.instant_roll_for_test = true
 
 
-## 말을 잡으면 아바타 공격·피격 포즈(0.5초)가 뜨고, 그동안 잡힌 말은 제자리에서 기다렸다가 보드 밖으로 날아간 뒤 출발선에 돌아온다.
+## 말을 잡으면 아바타 공격·피격 슬로모션(약 1초)가 뜨고, 그동안 잡힌 말은 제자리에서 기다렸다가 보드 밖으로 날아간 뒤 출발선에 돌아온다.
 func _test_kill_cutin() -> void:
 	_board._reset_presentation()  # 앞선 검사가 남긴 연출 큐를 비운다
 	var state: GameState = _board.manager.state
@@ -1521,7 +1521,7 @@ func _test_kill_cutin() -> void:
 	var view: Node2D = _board._pawn_views[victim.entity_id]
 	_expect(view.visible and view.position.distance_to(_board._pawn_position(victim)) > 3.0, "컷신 동안 잡힌 말은 아직 제자리(옛 자리)에 있다")
 	await get_root().get_tree().create_timer(1.2).timeout
-	_expect(not cutin.active, "아바타 포즈는 0.5초 뒤에 사라진다")
+	_expect(not cutin.active, "아바타 포즈는 슬로모션 종료 뒤에 사라진다")
 	await get_root().get_tree().create_timer(1.6).timeout
 	_expect(not _board._fx_running(view) and absf(view.rotation) < 0.01 and view.scale.x < 3.0 and view.position.distance_to(_board._pawn_position(victim)) < 4.0, "홈런으로 날아갔던 말이 출발선 자리에 돌아와 연출이 끝났다")
 	_board.instant_roll_for_test = true
