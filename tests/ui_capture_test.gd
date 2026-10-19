@@ -31,6 +31,17 @@ func _run() -> void:
 	board._reset_presentation()
 	board._fx_until_msec = 0
 	var state: GameState = board.state
+	# A bot's first step can run between phase refreshes. Its slot must already
+	# reflect deployment while that same movement phase is still in progress.
+	var bot_pawn: PlayerPawn = state.get_pawn(31)
+	var bot_ctx := RuleContext.new()
+	bot_ctx.state = state
+	bot_ctx.actor_id = 3
+	bot_ctx.dice_value = 1
+	var bot_report: MoveReport = MoveExecutor.begin(state, bot_pawn, bot_ctx)
+	MoveExecutor.apply_step(state, bot_pawn, bot_ctx, 1, true, true, bot_report)
+	expect((board._profiles[3]["slots"][0]["status"] as Label).text == "출전", "bot deployment updates its profile slot before the next phase refresh")
+	state.send_to_start(bot_pawn, 3)
 	var mine: PlayerPawn = state.get_pawn(11)
 	var enemy: PlayerPawn = state.get_pawn(21)
 	mine.current_tile_idx = 1

@@ -2043,6 +2043,9 @@ func _on_pawn_stepped(pawn_id: int, _from_tile: int, _to_tile: int) -> void:
 	var pawn: PlayerPawn = state.get_pawn(pawn_id)
 	if view == null or pawn == null:
 		return
+	# Deployment changes on the first step, before the next phase refresh.
+	# Update only this owner's slots, without restarting turn-light tweens.
+	_refresh_pawn_slots(pawn.owner_id)
 	view.visible = pawn.carrier == null and not pawn.is_finished
 	if not _fx_on():
 		if view.has_meta("fx"):
@@ -2380,9 +2383,7 @@ func _refresh_players() -> void:
 		var color: Color = PLAYER_COLORS[player_id]
 		(card["name"] as Label).text = _player_name(player_id)
 		(card["count"] as Label).text = "x%d" % (state.hands[player_id] as Array).size()
-		var slots: Array = card["slots"]
-		for index: int in slots.size():
-			_paint_pawn_slot(slots[index], state.get_pawn(player_id * 10 + index + 1), color)
+		_refresh_pawn_slots(player_id)
 		var panel: PanelContainer = card["panel"]
 		# 스포트라이트: 현재 턴 플레이어만 환하게 밝고 살짝 커지며 외곽 광채가 켜지고, 나머지는 어둡게 가라앉는다.
 		var is_turn: bool = player_id == _shown_turn_player() and not manager.is_game_over
@@ -2393,6 +2394,12 @@ func _refresh_players() -> void:
 		else:
 			panel.add_theme_stylebox_override("panel", _style(COLOR_PANEL, color.darkened(0.35), 2, 14, 4, margin))
 		_set_profile_light(panel, PROFILE_LIT if (is_turn or game_over) else PROFILE_DIM, Vector2(1.05, 1.05) if is_turn else Vector2.ONE)
+
+
+func _refresh_pawn_slots(player_id: int) -> void:
+	var slots: Array = _profiles[player_id]["slots"]
+	for index: int in slots.size():
+		_paint_pawn_slot(slots[index], state.get_pawn(player_id * 10 + index + 1), PLAYER_COLORS[player_id])
 
 
 ## 프로필 패널의 명암(modulate)과 크기를 목표로 보낸다 (테스트·초기화 때는 즉시, 평소에는 짧은 트윈).
