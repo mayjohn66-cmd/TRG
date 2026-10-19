@@ -52,8 +52,10 @@ func _run() -> void:
 	expect(board._ui_busy(), "input waits for the short presentation")
 	var snapshot: Dictionary = TurnSnapshot.capture(state).to_dict()
 	var rng_state: int = state.rng.state
-	await create_timer(0.58).timeout
-	expect(not board._capture_cutin.busy(), "half-second presentation cleans up")
+	await create_timer(0.40).timeout
+	expect(board._capture_cutin.busy(), "capture holds long enough to read the slow recoil")
+	await create_timer(CaptureCutin.DURATION - 0.40 + 0.08).timeout
+	expect(not board._capture_cutin.busy(), "presentation cleans up after its full slow-motion duration")
 	expect(TurnSnapshot.capture(state).to_dict() == snapshot and state.rng.state == rng_state, "visual frames do not mutate authoritative state/RNG")
 	state.send_to_start(state.get_pawn(12), 2)
 	expect(not board._capture_cutin.active, "trap-like generic reset does not show the attack")

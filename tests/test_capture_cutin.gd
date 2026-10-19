@@ -52,23 +52,43 @@ func test_visual_queue_hit_once_cancel_and_time_scale_unchanged() -> void:
 	check_eq(cutin.defender_avatar, &"avatar_08", "selected defender identity")
 	check(not cutin.enqueue(&"avatar_03", &"avatar_08", 1, 2), "stack duplicates suppressed")
 	check(not cutin.enqueue(&"avatar_03", &"avatar_03", 1, 1), "self-return suppressed")
-	cutin._process(0.12)
+	cutin._process(CaptureCutin.IMPACT_AT + 0.01)
 	cutin._process(0.05)
 	check_eq(hits.size(), 1, "impact emitted once across the held pose")
 	check(cutin.enqueue(&"avatar_03", &"avatar_06", 1, 3), "different opponent queues")
-	cutin._process(0.34)
+	cutin._process(CaptureCutin.DURATION)
 	check_eq(cutin.defender_avatar, &"avatar_06", "next opponent uses its own hit pose")
 	cutin.cancel()
 	check(not cutin.busy() and not cutin.visible, "cancel removes overlay and queue")
 	check_eq(Engine.time_scale, original_time_scale, "visual hit stop does not change simulation time")
 
 
-func test_half_second_without_stale_overlay() -> void:
+func test_full_duration_without_stale_overlay() -> void:
 	var cutin := CaptureCutin.new()
 	tree.root.add_child(cutin)
 	defer_free(cutin)
 	cutin.enqueue(&"avatar_07", &"avatar_04", 3, 4)
-	cutin._process(0.499)
-	check(cutin.active, "still showing before half second")
+	cutin._process(CaptureCutin.DURATION - 0.001)
+	check(cutin.active, "still showing before the end of the slow-motion sequence")
 	cutin._process(0.002)
-	check(not cutin.active and not cutin.visible and not cutin.busy(), "clears at half second")
+	check(not cutin.active and not cutin.visible and not cutin.busy(), "clears at the end of the complete sequence")
+
+
+func test_impact_hold_and_slow_recoil_preserve_direction_and_speed_contrast() -> void:
+	var held_a: Dictionary = CaptureCutin.motion_at(CaptureCutin.IMPACT_AT + 0.01)
+	var held_b: Dictionary = CaptureCutin.motion_at(CaptureCutin.HOLD_UNTIL - 0.01)
+	check_eq(held_a, held_b, "both actors and zoom are motionless throughout the impact hold")
+	var strike_a: Dictionary = CaptureCutin.motion_at(0.10)
+	var strike_b: Dictionary = CaptureCutin.motion_at(0.13)
+	var slow_a: Dictionary = CaptureCutin.motion_at(0.36)
+	var slow_b: Dictionary = CaptureCutin.motion_at(0.50)
+	var strike_speed: float = (float(strike_b["attack"]) - float(strike_a["attack"])) / 0.03
+	var slow_speed: float = (float(slow_b["hit"]) - float(slow_a["hit"])) / 0.14
+	check(slow_speed > 0.0 and strike_speed > slow_speed * 4.0, "fast rightward strike visibly contrasts with slow rightward recoil")
+	var released: Dictionary = CaptureCutin.motion_at(CaptureCutin.DURATION - 0.02)
+	check(float(released["hit"]) > float(slow_b["hit"]) * 3.0, "release accelerates the victim out of the held impact")
+	check(CaptureCutin.DURATION < 1.1, "the emphasis remains under a little over one second")
+	check(ResourceLoader.exists(CaptureCutin.INK_PATH), "the hand-painted transparent impact asset is present")
+	check_eq(CaptureCutin.impact_kind(&"avatar_05"), &"slash", "Shady gets a scythe slash")
+	check_eq(CaptureCutin.impact_kind(&"avatar_06"), &"pierce", "Daya gets a crystal-blade streak")
+	check_eq(CaptureCutin.impact_kind(&"avatar_01"), &"blunt", "Erpin gets a punch shock ring")

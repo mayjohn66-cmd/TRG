@@ -726,7 +726,7 @@ func _bind_state() -> void:
 			_avatar_react(victim.owner_id, AvatarSlot.Emotion.ANGRY)
 			if by_player != victim.owner_id and _player_ids.has(by_player):
 				_avatar_react(by_player, AvatarSlot.Emotion.HAPPY)
-		# 실제 잡기는 아바타 두 포즈를 0.5초 강조한 뒤 장외로 날리고 출발선에 돌려놓는다.
+		# 실제 잡기는 아바타 두 포즈를 약 1초 강조한 뒤 장외로 날리고 출발선에 돌려놓는다.
 		var lead: float = 0.0
 		var cutin_capture: bool = _capture_marks.has(pawn_id)
 		_capture_marks.erase(pawn_id)
