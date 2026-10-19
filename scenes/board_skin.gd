@@ -6,14 +6,18 @@ const TRACK_INSET: float = 0.08
 ## Board-normalized dimensions: narrow along the track, deep toward the center.
 const NORMAL_WIDTH: float = 0.108
 const NORMAL_SIZE: float = 0.142
-const CORNER_SIZE: float = 0.144
+const CORNER_SIZE: float = 0.19
+## 일반 타일 폭(트랙 방향) 상한
+const MAX_TILE_WIDTH: float = 0.12
 const SURFACE: Texture2D = preload("res://assets/board/trickcal/board_surface.png")
 
-## 한 변의 칸 수에 맞춘 타일 크기: 칸이 늘면 폭과 깊이, 코너를 줄여 이웃 타일(코너 둘레 포함)과 겹치지 않게 한다. 한 변 6칸이면 원래 크기 그대로다.
+## 타일 크기: 일반 타일은 이웃과 거의 맞닿도록 폭을 넓히고, 코너 타일만 크게 키운다 (코너 둘레의 이웃과는 겹치지 않게 BoardLayout.CORNER_REACH 안에서 계산).
 static func tile_metrics() -> Dictionary:
-	var spacing: float = (1.0 - 2.0 * TRACK_INSET) / float(BoardSpec.side)
-	var width: float = NORMAL_WIDTH * BoardSpec.tile_scale() * (0.9 if BoardSpec.side > 6 else 1.0)
-	var room: float = 2.0 * (spacing - width / 2.0 - 0.004)
+	var length: float = 1.0 - 2.0 * TRACK_INSET
+	var spacing: float = length * (1.0 - 2.0 * BoardLayout.CORNER_REACH) / float(maxi(BoardSpec.side - 2, 1))
+	var width: float = minf(spacing * 0.95, MAX_TILE_WIDTH)
+	var reach: float = length * BoardLayout.CORNER_REACH
+	var room: float = 2.0 * (reach - width / 2.0 - 0.004)
 	return {"width": width, "depth": minf(NORMAL_SIZE, room), "corner": minf(CORNER_SIZE, room)}
 
 
@@ -48,7 +52,7 @@ static func outline(projector: Callable, offset: Vector2 = Vector2.ZERO) -> Pack
 	return _rounded_outline(projector, Rect2(0,0,1,1), 0.062, offset)
 
 static func safe_outline(projector: Callable) -> PackedVector2Array:
-	return _rounded_outline(projector, Rect2(0.065,0.065,0.87,0.87), 0.07, Vector2.ZERO)
+	return _rounded_outline(projector, Rect2(0.03,0.03,0.94,0.94), 0.07, Vector2.ZERO)
 
 static func _rounded_outline(projector: Callable, rect: Rect2, radius: float, offset: Vector2) -> PackedVector2Array:
 	var result := PackedVector2Array()

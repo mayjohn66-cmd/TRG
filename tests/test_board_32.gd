@@ -80,11 +80,21 @@ func test_boost_pads_and_promotion_follow_the_32_tile_layout() -> void:
 
 func test_board_skin_tiles_do_not_overlap_on_a_longer_side() -> void:
 	_use_32()
-	var spacing: float = (1.0 - 2.0 * BoardSkin.TRACK_INSET) / float(BoardSpec.side)
+	var length: float = 1.0 - 2.0 * BoardSkin.TRACK_INSET
+	var rects: Array[Rect2] = []
+	for index: int in BoardSpec.tile_count:
+		var footprint: Vector2 = BoardSkin.definition(index)["footprint"]
+		var center: Vector2 = BoardLayout.tile_norm(index) * length
+		rects.append(Rect2(center - footprint / 2.0, footprint))
+	var overlaps: int = 0
+	for a: int in BoardSpec.tile_count:
+		for b: int in range(a + 1, BoardSpec.tile_count):
+			if rects[a].intersects(rects[b]):
+				overlaps += 1
+	check(overlaps == 0, "모든 타일의 발자국이 서로 겹치지 않는다 (겹침 %d쌍)" % overlaps)
 	var along: float = BoardSkin.definition(3)["footprint"].y
-	var depth: float = BoardSkin.definition(3)["footprint"].x
+	var normal_gap: float = (BoardLayout.tile_norm(4) - BoardLayout.tile_norm(3)).length() * length
+	check(along > normal_gap * 0.85, "일반 타일은 이웃과 거의 맞닿을 만큼 넓다 (폭 %.3f / 간격 %.3f)" % [along, normal_gap])
 	var corner: float = BoardSkin.definition(8)["footprint"].x
-	check(along < spacing, "한 변 8칸에서도 타일 폭(%.3f)이 칸 간격(%.3f)보다 작다" % [along, spacing])
-	check(BoardSkin.definition(11)["footprint"].x < spacing, "가로 변도 마찬가지")
-	check(corner / 2.0 + along / 2.0 < spacing, "코너 둘레 타일과 겹치지 않는다")
-	check(depth / 2.0 + along / 2.0 < spacing, "코너 양쪽 이웃 타일끼리도 겹치지 않는다")
+	var depth: float = BoardSkin.definition(3)["footprint"].x
+	check(corner > depth * 1.15, "코너 타일은 일반 타일보다 확실히 크다 (%.3f vs %.3f)" % [corner, depth])
