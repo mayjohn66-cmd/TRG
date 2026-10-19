@@ -525,6 +525,7 @@ func _execute_instant_skill(pawn: PlayerPawn, skill: StringName, params: Diction
 		for victim: PlayerPawn in victims:
 			for member: PlayerPawn in victim.stack_members():
 				report.captured_pawn_ids.append(member.entity_id)
+			state.pawn_captured.emit(pawn.entity_id, victim.entity_id)
 			state.send_to_start(victim, pawn.owner_id)
 	MoveExecutor.teleport_to(state, pawn, ctx, report, destination)
 	_extra_turn_pending = _extra_turn_pending or report.extra_turn

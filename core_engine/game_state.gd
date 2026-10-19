@@ -8,6 +8,9 @@ extends RefCounted
 signal pawn_stepped(pawn_id: int, from_tile: int, to_tile: int)
 signal pawn_warped(pawn_id: int, from_tile: int, to_tile: int)
 signal pawn_sent_to_start(pawn_id: int, by_player: int)
+## A real player-pawn capture, once per victim stack, before reset signals.
+## Traps, self-recalls and NPC attacks deliberately do not emit this.
+signal pawn_captured(attacker_pawn_id: int, victim_pawn_id: int)
 signal pawn_finished(pawn_id: int)
 signal pawn_evolved(pawn_id: int, kind: int, unit_no: int)
 ## 체스 폰이 반환점(12번) 이상에 도달해 퀸으로 영구 승진했다.
