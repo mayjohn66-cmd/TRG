@@ -11,6 +11,7 @@ const HOLD_UNTIL: float = 0.26
 const RECOIL_UNTIL: float = 0.72
 const MAX_PAIRS: int = 3
 const INK_PATH: String = "res://assets/fx/capture/ink_impact.png"
+const SLASH_PATH: String = "res://assets/fx/capture/scythe_slash.png"
 
 var active: bool = false
 var attacker_avatar: StringName = &""
@@ -19,6 +20,7 @@ var elapsed: float = 0.0
 var _attack: Texture2D = null
 var _hit: Texture2D = null
 var _ink: Texture2D = null
+var _slash: Texture2D = null
 var _queue: Array[Dictionary] = []
 var _keys: Dictionary = {}
 var _current_key: String = ""
@@ -31,6 +33,8 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if ResourceLoader.exists(INK_PATH):
 		_ink = load(INK_PATH) as Texture2D
+	if ResourceLoader.exists(SLASH_PATH):
+		_slash = load(SLASH_PATH) as Texture2D
 	visible = false
 	set_process(false)
 
@@ -140,6 +144,17 @@ static func impact_color(avatar: StringName) -> Color:
 	return Color("ffe1a6")
 
 
+## Weapon trails share the actors' impact hold, then finish in slow motion.
+static func trail_time(time: float) -> float:
+	if time < IMPACT_AT:
+		return time
+	return IMPACT_AT + maxf(0.0, time - HOLD_UNTIL) * 0.24
+
+
+static func uses_shock_ring(avatar: StringName) -> bool:
+	return impact_kind(avatar) in [&"blunt", &"magic"]
+
+
 func _draw() -> void:
 	if not active:
 		return
@@ -155,6 +170,7 @@ func _draw() -> void:
 	var target := Vector2(size.x * 0.53, size.y * 0.43) + shake
 	_draw_backdrop(target, side, color, fade)
 	_draw_ink(target, side, color, fade)
+	_draw_weapon_trail(target, side, color, fade)
 	var gap: float = size.x * 0.10 * float(motion["zoom"])
 	var attack_target := target - Vector2(gap * 0.5, 0)
 	var hit_target := target + Vector2(gap * 0.5, 0)
@@ -189,7 +205,7 @@ func _draw_backdrop(target: Vector2, side: float, color: Color, fade: float) -> 
 
 
 func _draw_ink(target: Vector2, side: float, color: Color, fade: float) -> void:
-	if elapsed < IMPACT_AT or _ink == null:
+	if elapsed < IMPACT_AT or _ink == null or not uses_shock_ring(attacker_avatar):
 		return
 	var age: float = elapsed - IMPACT_AT
 	var opacity: float = (1.0 - ramp(elapsed, HOLD_UNTIL + 0.10, RECOIL_UNTIL)) * fade
@@ -207,6 +223,37 @@ func _draw_ink(target: Vector2, side: float, color: Color, fade: float) -> void:
 		draw_colored_polygon(PackedVector2Array([at + Vector2(-radius * 1.5, 0), at + Vector2(0, -radius), at + Vector2(radius * 2.0, radius * 0.4)]), Color(color.r, color.g, color.b, opacity * 0.75))
 
 
+func _draw_weapon_trail(target: Vector2, side: float, color: Color, fade: float) -> void:
+	var kind: StringName = impact_kind(attacker_avatar)
+	if elapsed < SWING_AT or (kind != &"slash" and kind != &"pierce"):
+		return
+	var time: float = trail_time(elapsed)
+	var strike: float = ramp(time, SWING_AT, IMPACT_AT)
+	var opacity: float = fade * (1.0 - ramp(time, IMPACT_AT + 0.025, IMPACT_AT + 0.085))
+	if kind == &"slash":
+		if _slash == null:
+			return
+		# Reveal the painted crescent from top to bottom along the scythe blade.
+		# Keep the hollow interior and both faces unobscured, behind the actors.
+		var extent := Vector2(side * 0.72, side * 0.76)
+		var center := target + Vector2(-side * 0.22, side * 0.04)
+		var reveal: float = lerpf(0.08, 1.0, strike)
+		var rect := Rect2(center - extent * 0.5, Vector2(extent.x, extent.y * reveal))
+		var source := Rect2(Vector2.ZERO, Vector2(_slash.get_width(), _slash.get_height() * reveal))
+		draw_texture_rect_region(_slash, rect, source, Color(color.r, color.g, color.b, opacity * strike * 0.92))
+	else:
+		# Arrows, slingshot shots and Daya's thrust follow a narrow rightward line.
+		var direction := Vector2(1.0, -0.025).normalized()
+		var normal := direction.orthogonal()
+		var tip := target + direction * side * lerpf(-0.24, 0.24, strike)
+		for index: int in 3:
+			var offset: float = float(index - 1) * side * 0.013
+			var tail := tip - direction * side * (0.45 - absf(float(index - 1)) * 0.12) + normal * offset
+			var width: float = side * (0.005 if index == 1 else 0.0018)
+			var tint := Color(color.r, color.g, color.b, opacity * strike * (0.9 if index == 1 else 0.45))
+			draw_colored_polygon(PackedVector2Array([tail, tip - direction * side * 0.08 + normal * (offset + width), tip, tip - direction * side * 0.08 + normal * (offset - width)]), tint)
+
+
 func _draw_contact(target: Vector2, side: float, color: Color, fade: float) -> void:
 	if elapsed < IMPACT_AT:
 		return
@@ -216,8 +263,7 @@ func _draw_contact(target: Vector2, side: float, color: Color, fade: float) -> v
 	var light := Color(color.r, color.g, color.b, opacity * 0.8)
 	match impact_kind(attacker_avatar):
 		&"slash":
-			draw_arc(target, radius * 1.35, -1.3, 1.3, 28, light, 4.0, true)
-			draw_arc(target + Vector2(side * 0.018, 0), radius, -1.1, 1.1, 24, Color(1, 1, 1, opacity * 0.8), 1.8, true)
+			pass # The painted blade sweep supplies the contact accent too.
 		&"pierce":
 			var tip := target + Vector2(radius * 1.4, -radius * 0.5)
 			draw_colored_polygon(PackedVector2Array([target - Vector2(radius, -radius * 0.4), target + Vector2(-radius * 0.15, -radius * 0.15), tip, target + Vector2(0, radius * 0.15)]), light)
