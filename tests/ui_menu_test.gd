@@ -122,7 +122,7 @@ func _run() -> void:
 	book.free()
 	menu._bottom["center"].pressed.emit()
 	var popup: Node = menu.find_child("Popup", true, false)
-	_expect(popup != null and popup.find_child("PacingCheck", true, false) != null and popup.find_child("ViewMode", true, false) != null, "설정 팝업: 연출 멈춤·보드 시점")
+	_expect(popup != null and popup.find_child("PacingCheck", true, false) != null and popup.find_child("ViewMode", true, false) == null and popup.find_child("PaceOption", true, false) == null and popup.find_child("SfxMute", true, false) != null and popup.find_child("BgmMute", true, false) != null, "설정 팝업: 연출 멈춤·이름 옆 음소거 (연출 속도·시점은 없음)")
 	popup.free()
 	_expect(MobileSupport.is_portrait(Vector2i(390, 844)) and not MobileSupport.is_portrait(Vector2i(844, 390)), "세로/가로 판정")
 	menu._mobile.refresh(Vector2i(390, 844))

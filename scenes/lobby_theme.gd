@@ -311,7 +311,7 @@ static func show_rules(parent: Control) -> void:
 	Rulebook.open(parent)
 
 
-## 설정 팝업(전체화면, 행동 사이 연출 멈춤, 보드 시점).
+## 설정 팝업(전체화면, 행동 사이 연출 멈춤, 소리).
 static func show_settings(parent: Control) -> void:
 	var parts: Dictionary = popup(parent, 520.0)
 	var box: VBoxContainer = parts["box"]
@@ -329,88 +329,60 @@ static func show_settings(parent: Control) -> void:
 		GameSession.pacing_enabled = enabled
 		GameSession.save_settings())
 	box.add_child(pacing)
-	var pace_row := HBoxContainer.new()
-	pace_row.add_theme_constant_override("separation", 8)
-	box.add_child(pace_row)
-	pace_row.add_child(label("연출 속도", 16, INK))
-	var pace := OptionButton.new()
-	pace.name = "PaceOption"
-	pace.add_item("빠르게")
-	pace.add_item("보통")
-	pace.add_item("느리게")
-	pace.select(0 if GameSession.pace_scale <= 1.2 else (2 if GameSession.pace_scale >= 2.1 else 1))
-	pace.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	pace.item_selected.connect(func(index: int) -> void:
-		GameSession.pace_scale = [GameSession.PACE_FAST, GameSession.PACE_NORMAL, GameSession.PACE_SLOW][index]
-		GameSession.save_settings())
-	pace_row.add_child(pace)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
-	box.add_child(row)
-	row.add_child(label("보드 시점", 16, INK))
-	var view := OptionButton.new()
-	view.name = "ViewMode"
-	view.add_item("탑뷰 (위에서 내려다봄)")
-	view.add_item("기울인 탑뷰 (테이블)")
-	view.select(GameSession.view_mode)
-	view.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	view.item_selected.connect(func(index: int) -> void:
-		GameSession.view_mode = index
-		GameSession.save_settings())
-	row.add_child(view)
 	add_audio_controls(box, INK)
 	box.add_child(big_button("닫기", (parts["overlay"] as Control).queue_free, 22))
 
 
-## 소리 설정(효과음 크기, 음소거). 설정 팝업과 게임 메뉴가 같이 쓴다.
+## 소리 설정(효과음·배경음악: 이름 옆 음소거 버튼 + 같은 크기의 볼륨 바). 설정 팝업과 게임 메뉴가 같이 쓴다.
 static func add_audio_controls(box: Container, ink: Color) -> void:
-	var mute := CheckBox.new()
-	mute.name = "MuteCheck"
-	mute.text = "소리 끄기"
-	mute.button_pressed = GameSession.audio_muted
-	mute.add_theme_color_override("font_color", ink)
-	mute.add_theme_color_override("font_hover_color", ink)
-	mute.add_theme_color_override("font_pressed_color", ink)
-	mute.toggled.connect(func(muted: bool) -> void:
-		GameSession.audio_muted = muted
-		GameSession.save_settings()
-		Sfx.apply_settings())
-	box.add_child(mute)
+	_add_volume_row(box, ink, "효과음 크기", "SfxVolume", "SfxMute", GameSession.sfx_volume, GameSession.sfx_muted,
+		func(value: float) -> void: GameSession.sfx_volume = value,
+		func(muted: bool) -> void: GameSession.sfx_muted = muted, true)
+	_add_volume_row(box, ink, "배경음악 크기", "BgmVolume", "BgmMute", GameSession.bgm_volume, GameSession.bgm_muted,
+		func(value: float) -> void: GameSession.bgm_volume = value,
+		func(muted: bool) -> void: GameSession.bgm_muted = muted, false)
+
+
+## 한 줄: [이름][음소거 버튼][볼륨 바]. 두 줄 모두 이름 칸 폭과 버튼 폭이 같아 바 크기가 똑같다.
+static func _add_volume_row(box: Container, ink: Color, title: String, slider_name: String, mute_name: String, volume: float, muted: bool, set_volume: Callable, set_muted: Callable, click_on_release: bool) -> void:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
 	box.add_child(row)
-	row.add_child(label("효과음 크기", 16, ink))
+	var name_label: Label = label(title, 16, ink)
+	name_label.custom_minimum_size = Vector2(112.0, 0.0)
+	row.add_child(name_label)
+	var mute := Button.new()
+	mute.name = mute_name
+	mute.toggle_mode = true
+	mute.text = "음소거"
+	mute.custom_minimum_size = Vector2(74.0, 28.0)
+	mute.add_theme_font_size_override("font_size", 13)
+	mute.button_pressed = muted
+	mute.modulate = Color(1.0, 0.7, 0.7) if muted else Color.WHITE
+	row.add_child(mute)
 	var slider := HSlider.new()
-	slider.name = "SfxVolume"
+	slider.name = slider_name
 	slider.min_value = 0.0
 	slider.max_value = 1.0
 	slider.step = 0.05
-	slider.value = GameSession.sfx_volume
+	slider.value = volume
 	slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	slider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	slider.custom_minimum_size = Vector2(0.0, 28.0)
 	slider.value_changed.connect(func(value: float) -> void:
-		GameSession.sfx_volume = value
+		set_volume.call(value)
 		GameSession.save_settings()
 		Sfx.apply_settings())
-	slider.drag_ended.connect(func(_changed: bool) -> void: Sfx.play(&"ui_click"))
+	if click_on_release:
+		slider.drag_ended.connect(func(_changed: bool) -> void: Sfx.play(&"ui_click"))
 	row.add_child(slider)
-	var bgm_row := HBoxContainer.new()
-	bgm_row.add_theme_constant_override("separation", 8)
-	box.add_child(bgm_row)
-	bgm_row.add_child(label("배경음악 크기", 16, ink))
-	var bgm_slider := HSlider.new()
-	bgm_slider.name = "BgmVolume"
-	bgm_slider.min_value = 0.0
-	bgm_slider.max_value = 1.0
-	bgm_slider.step = 0.05
-	bgm_slider.value = GameSession.bgm_volume
-	bgm_slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	bgm_slider.custom_minimum_size = Vector2(0.0, 28.0)
-	bgm_slider.value_changed.connect(func(value: float) -> void:
-		GameSession.bgm_volume = value
+	mute.toggled.connect(func(on: bool) -> void:
+		set_muted.call(on)
+		mute.modulate = Color(1.0, 0.7, 0.7) if on else Color.WHITE
+		slider.modulate = Color(1, 1, 1, 0.45) if on else Color.WHITE
 		GameSession.save_settings()
 		Sfx.apply_settings())
-	bgm_row.add_child(bgm_slider)
+	slider.modulate = Color(1, 1, 1, 0.45) if muted else Color.WHITE
 
 
 ## 위쪽 띠의 뒤로가기 화살표 (폰트에 없는 글자 대신 직접 그린다).

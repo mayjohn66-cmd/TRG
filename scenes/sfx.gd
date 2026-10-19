@@ -195,8 +195,8 @@ static func apply_settings() -> void:
 	var bgm_index: int = AudioServer.get_bus_index(BUS_BGM)
 	AudioServer.set_bus_volume_db(sfx_index, linear_to_db(maxf(GameSession.sfx_volume, 0.0001)))
 	AudioServer.set_bus_volume_db(bgm_index, linear_to_db(maxf(GameSession.bgm_volume, 0.0001)))
-	AudioServer.set_bus_mute(sfx_index, GameSession.audio_muted)
-	AudioServer.set_bus_mute(bgm_index, GameSession.audio_muted)
+	AudioServer.set_bus_mute(sfx_index, GameSession.audio_muted or GameSession.sfx_muted)
+	AudioServer.set_bus_mute(bgm_index, GameSession.audio_muted or GameSession.bgm_muted)
 
 
 # --- 내부 -----------------------------------------------------------------------

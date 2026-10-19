@@ -7138,36 +7138,12 @@ func _build_settings_page() -> void:
 	_menu_title("게임 설정")
 	var fullscreen_text: String = "전체화면 끄기" if DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN else "전체화면 켜기"
 	_menu_item(_make_button(fullscreen_text, _on_menu_fullscreen_pressed, 16, Color("3b4766"), 10))
-	var view_row := HBoxContainer.new()
-	view_row.add_theme_constant_override("separation", 8)
-	_menu_box.add_child(view_row)
-	view_row.add_child(_make_label("보드 시점", 15, Color("ced4da")))
-	var view_option := OptionButton.new()
-	view_option.name = "ViewMode"
-	view_option.add_item("탑뷰 (위에서 내려다봄)")
-	view_option.add_item("기울인 탑뷰 (테이블)")
-	view_option.select(view_mode)
-	view_option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	view_option.item_selected.connect(_on_view_mode_selected)
-	view_row.add_child(view_option)
 	var pacing := CheckBox.new()
 	pacing.name = "PacingCheck"
 	pacing.text = "행동 사이에 잠깐 멈춰 보여 주기 (턴 알림·이동 뒤 호흡)"
 	pacing.button_pressed = pacing_enabled
 	pacing.toggled.connect(_on_pacing_toggled)
 	_menu_box.add_child(pacing)
-	var pace_row := HBoxContainer.new()
-	pace_row.add_child(_make_label("연출 속도", 15, Color("ced4da")))
-	var pace_option := OptionButton.new()
-	pace_option.name = "PaceOption"
-	pace_option.add_item("빠르게")
-	pace_option.add_item("보통")
-	pace_option.add_item("느리게")
-	pace_option.select(0 if GameSession.pace_scale <= 1.2 else (2 if GameSession.pace_scale >= 2.1 else 1))
-	pace_option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	pace_option.item_selected.connect(_on_pace_selected)
-	pace_row.add_child(pace_option)
-	_menu_box.add_child(pace_row)
 	if net == null:
 		var timer := CheckBox.new()
 		timer.name = "TimerCheck"
