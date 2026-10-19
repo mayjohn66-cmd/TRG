@@ -12,6 +12,7 @@ const RECOIL_UNTIL: float = 0.72
 const MAX_PAIRS: int = 3
 const INK_PATH: String = "res://assets/fx/capture/ink_impact.png"
 const SLASH_PATH: String = "res://assets/fx/capture/scythe_slash.png"
+const STRIKE_PATH: String = "res://assets/fx/capture/singular_strike.png"
 
 var active: bool = false
 var attacker_avatar: StringName = &""
@@ -21,6 +22,8 @@ var _attack: Texture2D = null
 var _hit: Texture2D = null
 var _ink: Texture2D = null
 var _slash: Texture2D = null
+var _strike: Texture2D = null
+var _strike_region := Rect2()
 var _queue: Array[Dictionary] = []
 var _keys: Dictionary = {}
 var _current_key: String = ""
@@ -35,6 +38,10 @@ func _ready() -> void:
 		_ink = load(INK_PATH) as Texture2D
 	if ResourceLoader.exists(SLASH_PATH):
 		_slash = load(SLASH_PATH) as Texture2D
+	var strike_art: Dictionary = PawnArt.load_sprite([STRIKE_PATH])
+	if not strike_art.is_empty():
+		_strike = strike_art.texture
+		_strike_region = strike_art.region
 	visible = false
 	set_process(false)
 
@@ -155,6 +162,20 @@ static func uses_shock_ring(avatar: StringName) -> bool:
 	return impact_kind(avatar) in [&"blunt", &"magic"]
 
 
+## The critical lettering snaps on at contact and shares the frozen impact pose.
+static func caption_at(time: float) -> Dictionary:
+	if time < IMPACT_AT or time >= DURATION:
+		return {"alpha": 0.0, "scale": 1.08}
+	return {"alpha": 1.0 - ramp(time, RECOIL_UNTIL, DURATION), "scale": 1.08 - 0.08 * ramp(time, HOLD_UNTIL, HOLD_UNTIL + 0.08)}
+
+
+static func caption_rect(viewport: Vector2, aspect: float, scale_factor: float) -> Rect2:
+	var maximum := Vector2(viewport.x * 0.82, viewport.y * 0.15)
+	var extent := Vector2(aspect, 1.0) * minf(maximum.x / aspect, maximum.y) * scale_factor
+	var center := Vector2(viewport.x * 0.5, viewport.y * 0.115)
+	return Rect2(center - extent * 0.5, extent)
+
+
 func _draw() -> void:
 	if not active:
 		return
@@ -182,6 +203,17 @@ func _draw() -> void:
 	_draw_actor(_hit, defender_avatar, &"hit", hit_at, side * 0.93, float(motion["angle"]), fade)
 	_draw_actor(_attack, attacker_avatar, &"attack", attack_at, side, 0.0, fade)
 	_draw_contact(target, side, color, fade)
+	_draw_strike_caption()
+
+
+func _draw_strike_caption() -> void:
+	if _strike == null or not _strike_region.has_area():
+		return
+	var caption: Dictionary = caption_at(elapsed)
+	if float(caption["alpha"]) <= 0.0:
+		return
+	var rect: Rect2 = caption_rect(size, _strike_region.size.x / _strike_region.size.y, float(caption["scale"]))
+	draw_texture_rect_region(_strike, rect, _strike_region, Color(1, 1, 1, float(caption["alpha"])))
 
 
 func _draw_backdrop(target: Vector2, side: float, color: Color, fade: float) -> void:

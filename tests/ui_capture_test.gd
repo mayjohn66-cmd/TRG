@@ -62,6 +62,7 @@ func _run() -> void:
 	await _wait_for_pose()
 	expect(report.captured_pawn_ids.has(21), "real move captures the opposing pawn")
 	expect(board._capture_cutin.active, "actual capture signal opens the overlay")
+	expect(board._capture_cutin._strike != null, "the actual capture overlay loads the painted A SINGULAR STRIKE lettering")
 	expect(board._capture_cutin.attacker_avatar == &"avatar_03", "my selected avatar attacks")
 	expect(board._capture_cutin.defender_avatar == board._avatar_for(2), "opponent's own avatar is hit")
 	expect(board._ui_busy(), "input waits for the short presentation")
@@ -70,6 +71,7 @@ func _run() -> void:
 	var rng_state: int = state.rng.state
 	await create_timer(0.40).timeout
 	expect(board._capture_cutin.busy(), "capture holds long enough to read the slow recoil")
+	expect(float(CaptureCutin.caption_at(board._capture_cutin.elapsed)["alpha"]) > 0.0, "strike lettering stays visible alongside the character illustrations")
 	await create_timer(CaptureCutin.DURATION - 0.40 + 0.08).timeout
 	expect(not board._capture_cutin.busy(), "presentation cleans up after its full slow-motion duration")
 	expect(TurnSnapshot.capture(state).to_dict() == snapshot and state.rng.state == rng_state, "visual frames do not mutate authoritative state/RNG")
