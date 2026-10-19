@@ -17,4 +17,4 @@ func can_play(state: GameState, _player_id: int, _params: Dictionary) -> bool:
 
 
 func create_command(_state: GameState, player_id: int, _params: Dictionary) -> GameCommand:
-	return SpawnNpcCommand.new(player_id, GameEnums.HALFWAY_TILE, GameEnums.NpcBehavior.PATROL_REVERSE, &"SUM_02")
+	return SpawnNpcCommand.new(player_id, BoardSpec.halfway_tile, GameEnums.NpcBehavior.PATROL_REVERSE, &"SUM_02")

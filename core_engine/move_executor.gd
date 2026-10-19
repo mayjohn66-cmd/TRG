@@ -143,7 +143,7 @@ static func fling(state: GameState, pawn: PlayerPawn, steps: int) -> Array[int]:
 ## 경로가 보너스 코너(6·12·18번)를 밟거나 스치는가.
 static func _path_touches_bonus_corner(path: Array[int]) -> bool:
 	for tile: int in path:
-		if GameEnums.BONUS_CORNER_TILES.has(tile):
+		if BoardSpec.bonus_corner_tiles.has(tile):
 			return true
 	return false
 
@@ -333,13 +333,13 @@ static func _resolve_landing(state: GameState, mover: PlayerPawn, ctx: RuleConte
 	# 점프 코너(6->10, 18->21)와 옷장 포탈(9->16, 16->20)은 정확히 멈췄을 때만 작동하고 LAW_01 중에는 멈춘다. 워프 뒤 도착 칸은 다시 워프하지 않는다.
 	if ctx.allow_shortcut and not mover.is_imprisoned and not bool(ctx.metadata.get("no_warp_chain", false)):
 		var warp_target: int = -1
-		if GameEnums.JUMP_CORNER_TARGETS.has(mover.current_tile_idx):
-			warp_target = GameEnums.JUMP_CORNER_TARGETS[mover.current_tile_idx]
+		if BoardSpec.jump_corner_targets.has(mover.current_tile_idx):
+			warp_target = BoardSpec.jump_corner_targets[mover.current_tile_idx]
 		elif tile.tile_type == TileNode.TileType.PORTAL:
 			# 비행기는 옷장에서 더 앞선 곳으로 워프한다 (9번 -> 18번 코너, 16번 -> 22번)
-			warp_target = GameEnums.PORTAL_WARP_TARGETS[mover.current_tile_idx]
+			warp_target = BoardSpec.portal_warp_targets[mover.current_tile_idx]
 			if mover.sub_type() == GameEnums.PawnSubType.MONO_PLANE:
-				warp_target = GameEnums.PLANE_WARP_TARGETS[mover.current_tile_idx]
+				warp_target = BoardSpec.plane_warp_targets[mover.current_tile_idx]
 		if warp_target != -1:
 			if not _warp_to(state, mover, ctx, report, warp_target):
 				return
@@ -356,7 +356,7 @@ static func _resolve_landing(state: GameState, mover: PlayerPawn, ctx: RuleConte
 	if can_build_hotel(state, mover) and ctx.charge_depth == 0 and mover.current_tile_idx != GameEnums.GOAL_TILE:
 		_build_hotel(state, mover, report)
 	# ⚡ 부스터 발판: 멈춘 자리가 발판이면 곧바로 앞으로 3칸 더 날아간다 (뒤따르는 이동이 도착 정산을 이어서 한다).
-	if state.boost_gimmicks and GameEnums.DASH_TILES.has(mover.current_tile_idx) and ctx.charge_depth == 0 and not mover.is_finished and not mover.is_imprisoned:
+	if state.boost_gimmicks and BoardSpec.dash_tiles.has(mover.current_tile_idx) and ctx.charge_depth == 0 and not mover.is_finished and not mover.is_imprisoned:
 		report.dash_tiles.append(mover.current_tile_idx)
 		state.dash_pad_triggered.emit(mover.entity_id, mover.current_tile_idx)
 		report.merge(execute(state, mover, ctx.make_follow_up(GameEnums.DASH_STEPS)))
@@ -405,7 +405,7 @@ static func _warp_to(state: GameState, mover: PlayerPawn, ctx: RuleContext, repo
 ## 체스 폰: 반환점(12번) 이상 타일을 밟거나 지나가는 순간 영구히 퀸으로 승진한다 (업고 있는 폰도 함께).
 static func _promote_pawns(state: GameState, mover: PlayerPawn, report: MoveReport) -> void:
 	_promote_shogi(state, mover, report)
-	if not GameEnums.PROMOTION_TILES.has(mover.current_tile_idx):
+	if not BoardSpec.promotion_tiles.has(mover.current_tile_idx):
 		return
 	for member: PlayerPawn in mover.stack_members():
 		if member.sub_type() == GameEnums.PawnSubType.CHESS_PAWN:
@@ -416,7 +416,7 @@ static func _promote_pawns(state: GameState, mover: PlayerPawn, report: MoveRepo
 
 ## 쇼기 나리 승급: 반환점(12번) 이상 타일을 밟는 순간 영구히 승급한다 (업고 있는 말도 함께). 경로를 스치기만 해도 밟은 것으로 본다.
 static func _promote_shogi(state: GameState, mover: PlayerPawn, report: MoveReport) -> void:
-	if not GameEnums.SHOGI_PROMOTION_TILES.has(mover.current_tile_idx):
+	if not BoardSpec.promotion_tiles.has(mover.current_tile_idx):
 		return
 	for member: PlayerPawn in mover.stack_members():
 		if member.kind == GameEnums.PawnKind.SHOGI and not member.promoted:

@@ -1,6 +1,6 @@
 # File: res://scenes/main_board.gd
 # Class: class_name MainBoard
-# Role: 로컬 핫시트 플레이 화면. 24칸 사각 보드·4인 말·중앙 법전·손패·증강 드래프트·타일 선택 모드·결과창을 기본 도형으로 그리고, TurnManager의 시그널만 구독하며 act()로만 행동을 보낸다
+# Role: 로컬 핫시트 플레이 화면. 32칸 사각 보드·4인 말·중앙 법전·손패·증강 드래프트·타일 선택 모드·결과창을 기본 도형으로 그리고, TurnManager의 시그널만 구독하며 act()로만 행동을 보낸다
 class_name MainBoard
 extends Control
 
@@ -37,7 +37,7 @@ const STEP_DELAY: float = 0.22
 const ONE_CLICK_POWER: float = 0.75  ## 원클릭 굴림의 연출 세기 (파워 게이지를 없앴다)
 const NPC_ANNOUNCE_BODY: String = "도적은 주사위만큼 추격하고 고스트는 3칸 순찰합니다"
 const NPC_TIP_ROBBER: String = "라운드 종료 시 주사위(1~6)만큼 가장 가까운 말을 향해 앞으로 이동하며, 도착해 마주친 말을 출발선으로 날려버리고 소멸합니다"
-const NPC_TIP_GHOST: String = "라운드 종료 시 역방향으로 3칸 순찰하며, 마주친 말을 반환점(12번)으로 연행하고 소멸합니다"
+const NPC_TIP_GHOST: String = "라운드 종료 시 역방향으로 3칸 순찰하며, 마주친 말을 반환점으로 연행하고 소멸합니다"
 const HOP_SECONDS: float = 0.10
 const HOP_HEIGHT: float = 20.0
 const SLAM_HEIGHT: float = 45.0
@@ -136,7 +136,7 @@ const CARD_SUMMARIES: Dictionary = {
 	&"ACT_08": "내 꼴찌 말 ↔ 1등 적 선두 말 위치 교환",
 	&"ACT_09": "적 1명과 가위바위보! 승자 말 +3칸 전진, 패자 말 1개 장외 사출",
 	&"SUM_01": "라운드마다 최근접 말 추격\n카드 강탈",
-	&"SUM_02": "12번 출발 역주행 순찰 & 연행",
+	&"SUM_02": "반환점 출발 역주행 순찰 & 연행",
 }
 
 
@@ -1514,8 +1514,8 @@ func _build_debug_panel() -> VBoxContainer:
 		_card_option.set_item_metadata(_card_option.item_count - 1, card_id)
 	debug_row.add_child(_card_option)
 	debug_row.add_child(_make_button("현재 플레이어에게", _on_grant_card_pressed, 12))
-	debug_row.add_child(_make_button("도적 소환(10번)", _on_spawn_npc_pressed.bind(GameEnums.NpcBehavior.CHASE_NEAREST, 10), 12))
-	debug_row.add_child(_make_button("고스트 소환(12번)", _on_spawn_npc_pressed.bind(GameEnums.NpcBehavior.PATROL_REVERSE, 12), 12))
+	debug_row.add_child(_make_button("도적 소환(%d번)" % BoardSpec.bakery_tiles[1], _on_spawn_npc_pressed.bind(GameEnums.NpcBehavior.CHASE_NEAREST, BoardSpec.bakery_tiles[1]), 12))
+	debug_row.add_child(_make_button("고스트 소환(%d번)" % BoardSpec.halfway_tile, _on_spawn_npc_pressed.bind(GameEnums.NpcBehavior.PATROL_REVERSE, BoardSpec.halfway_tile), 12))
 	_timer_check = CheckBox.new()
 	_timer_check.text = "제한 시간 사용"
 	_timer_check.toggled.connect(func(enabled: bool) -> void: manager.set_process(enabled))
@@ -1633,13 +1633,13 @@ func _tile_center(index: int) -> Vector2:
 	return _project(tile_norm(index))
 
 
-## 점프 코너(6·18번)의 화살표가 가리킬 타일. LAW_01 중에는 점프가 막혀 바로 다음 칸을 가리킨다.
+## 점프 코너의 화살표가 가리킬 타일. LAW_01 중에는 점프가 막혀 바로 다음 칸을 가리킨다.
 func _jump_arrow_target(index: int) -> int:
-	if not GameEnums.JUMP_CORNER_TARGETS.has(index):
+	if not BoardSpec.jump_corner_targets.has(index):
 		return -1
 	if state != null and state.rulebook.has_law("LAW_01"):
 		return index + 1
-	return GameEnums.JUMP_CORNER_TARGETS[index]
+	return BoardSpec.jump_corner_targets[index]
 
 
 ## 타일 하나를 현재 시점에 맞게 놓는다 (위치·원근 크기·세로 압축, 글자는 되돌려 찌그러지지 않게).
@@ -1658,7 +1658,7 @@ func _place_tile(index: int) -> void:
 	tile.arrow_target = target
 	var direction: Vector2 = (_tile_center(target) - _tile_center(index)).normalized() if target >= 0 else Vector2.RIGHT
 	tile.configure(_surface_project, BoardSkin.track(tile_norm(index)), span, _depth_scale(BoardSkin.track(tile_norm(index)).y), direction)
-	tile.set_dash(GameEnums.DASH_TILES.has(index), _tile_center((index + 1) % GameEnums.TILE_COUNT) - _tile_center(index))
+	tile.set_dash(BoardSpec.dash_tiles.has(index), _tile_center((index + 1) % BoardSpec.tile_count) - _tile_center(index))
 	for child: Control in [_highlights.get(index), _pick_marks.get(index)]:
 		if child != null:
 			child.size = tile.size
@@ -1701,7 +1701,7 @@ func _apply_view_mode() -> void:
 		_pawn_layer.y_sort_enabled = view_mode == ViewMode.TILT
 	if _tile_views.is_empty():
 		return
-	for index: int in GameEnums.TILE_COUNT:
+	for index: int in BoardSpec.tile_count:
 		_place_tile(index)
 	for line: Line2D in _track_lines:
 		line.queue_free()
@@ -1715,7 +1715,7 @@ func _build_tiles_once() -> void:
 	if not _tile_views.is_empty():
 		return
 	_add_track_lines()
-	for index: int in GameEnums.TILE_COUNT:
+	for index: int in BoardSpec.tile_count:
 		var node: TileNode = state.board.get_tile(index)
 		var tile := BoardSkin.Tile.new()
 		tile.initialize(index)
@@ -1766,7 +1766,7 @@ func _build_tiles_once() -> void:
 
 func _add_track_lines() -> void:
 	var loop: Array[int] = []
-	for index: int in GameEnums.TILE_COUNT:
+	for index: int in BoardSpec.tile_count:
 		loop.append(index)
 	loop.append(0)
 	_add_track_line(loop)
@@ -1800,14 +1800,14 @@ func _tile_color(index: int, tile_type: TileNode.TileType) -> Color:
 		TileNode.TileType.START_GOAL: return Color("2f9e44")
 		TileNode.TileType.BAKERY: return Color("e8890c")
 		TileNode.TileType.PORTAL: return Color("9c36b5")
-	if GameEnums.CORNER_TILES.has(index):
+	if BoardSpec.corner_tiles.has(index):
 		return Color("495057")
 	return Color("ced4da")
 
 
 func _tile_tag(index: int, tile_type: TileNode.TileType) -> String:
 	var base: String = _tile_tag_base(index, tile_type)
-	if GameEnums.DASH_TILES.has(index):
+	if BoardSpec.dash_tiles.has(index):
 		var dash: String = "⚡ 부스터 발판 (멈추면 +%d칸)" % GameEnums.DASH_STEPS
 		return dash if base.is_empty() else "%s · %s" % [base, dash]
 	return base
@@ -1818,9 +1818,9 @@ func _tile_tag_base(index: int, tile_type: TileNode.TileType) -> String:
 		TileNode.TileType.START_GOAL: return "▲출발"
 		TileNode.TileType.BAKERY: return "빵집"
 		TileNode.TileType.PORTAL: return "옷장"
-	if GameEnums.JUMP_CORNER_TARGETS.has(index):
-		return "점프 코너 → %d번" % int(GameEnums.JUMP_CORNER_TARGETS[index])
-	if index == GameEnums.HALFWAY_TILE:
+	if BoardSpec.jump_corner_targets.has(index):
+		return "점프 코너 → %d번" % int(BoardSpec.jump_corner_targets[index])
+	if index == BoardSpec.halfway_tile:
 		return "반환점"
 	return ""
 
@@ -1916,9 +1916,9 @@ func _refresh_pawns() -> void:
 func _refresh_tiles() -> void:
 	if _tile_marks.is_empty():
 		return
-	for index: int in GameEnums.TILE_COUNT:
+	for index: int in BoardSpec.tile_count:
 		var parts: Array[String] = []
-		if GameEnums.JUMP_CORNER_TARGETS.has(index):
+		if BoardSpec.jump_corner_targets.has(index):
 			if (_tile_views[index] as BoardSkin.Tile).arrow_target != _jump_arrow_target(index):
 				_place_tile(index)
 		var tips: Array[String] = []
@@ -1994,7 +1994,7 @@ func _update_danger_pulse(delta: float) -> void:
 ## ⚡ 부스터 발판 화살표를 흘려 보낸다.
 func _update_dash_pulse() -> void:
 	var phase: float = fmod(float(Time.get_ticks_msec()) / 900.0, 1.0)
-	for index: int in GameEnums.DASH_TILES:
+	for index: int in BoardSpec.dash_tiles:
 		var tile: BoardSkin.Tile = _tile_views.get(index)
 		if tile != null:
 			tile.set_dash_phase(phase)
@@ -2068,9 +2068,9 @@ func _on_pawn_stepped(pawn_id: int, _from_tile: int, _to_tile: int) -> void:
 	_glide(view, _pawn_position(pawn), target_scale, {"dur": HOP_SECONDS, "arc": HOP_HEIGHT, "pace_cap": minf(_pace(), 1.5), "land_tile": pawn.current_tile_idx})
 
 
-## 점프 코너(6·18번)나 옷장 포탈(9·16번)에서 시작한 워프인가: 발판에 먼저 멈춰 발동 연출을 보여 준 뒤 날아가야 한다.
+## 점프 코너나 옷장 포탈에서 시작한 워프인가: 발판에 먼저 멈춰 발동 연출을 보여 준 뒤 날아가야 한다.
 func _is_stage_warp(from_tile: int, to_tile: int) -> bool:
-	return from_tile != to_tile and (GameEnums.JUMP_CORNER_TARGETS.has(from_tile) or GameEnums.PORTAL_TILES.has(from_tile))
+	return from_tile != to_tile and (BoardSpec.jump_corner_targets.has(from_tile) or BoardSpec.portal_tiles.has(from_tile))
 
 
 ## 2단계 분리 이동: (A) 말이 발판에 도착해 멈출 때까지 기다린다 -> (B) 발판이 빛나며 [발동] 배너 0.45초 -> (C) 높은 포물선으로 날아가거나(코너) 줄었다 커지며(포탈) 목적지에 착지 -> (D) 밀려 있던 잡기·함정 연출을 이어서 재생한다.
@@ -2082,7 +2082,7 @@ func _stage_warp(pawn_id: int, from_tile: int, to_tile: int) -> void:
 		return
 	var generation: int = _fx_generation
 	_stage_warps += 1
-	var corner: bool = GameEnums.JUMP_CORNER_TARGETS.has(from_tile)
+	var corner: bool = BoardSpec.jump_corner_targets.has(from_tile)
 	var pace: float = _motion_pace()
 	# A) 발판에 닿을 때까지 (밀려 있던 걸음, 알림 카드, 점프 중인 말)
 	while generation == _fx_generation and is_instance_valid(view) and (_fx_running(view) or _fx_step_queue.has(pawn_id) or (_announcer != null and _announcer.active and not _fx_gate_open)):
@@ -3390,15 +3390,15 @@ func _pawn_prediction(pawn: PlayerPawn) -> Dictionary:
 	var promote_hint: String = ""
 	if pawn.kind == GameEnums.PawnKind.SHOGI and not pawn.promoted:
 		for step_tile: int in path:
-			if GameEnums.SHOGI_PROMOTION_TILES.has(step_tile):
+			if BoardSpec.promotion_tiles.has(step_tile):
 				promote_hint = " +나리!"
 				break
-	if not state.rulebook.has_law("LAW_01") and GameEnums.JUMP_CORNER_TARGETS.has(dest):
-		return {"text": "→ %d번 (점프!)" % int(GameEnums.JUMP_CORNER_TARGETS[dest]), "good": true}
+	if not state.rulebook.has_law("LAW_01") and BoardSpec.jump_corner_targets.has(dest):
+		return {"text": "→ %d번 (점프!)" % int(BoardSpec.jump_corner_targets[dest]), "good": true}
 	if tile.tile_type == TileNode.TileType.PORTAL and not state.rulebook.has_law("LAW_01"):
-		var warp_target: int = GameEnums.PORTAL_WARP_TARGETS[dest]
+		var warp_target: int = BoardSpec.portal_warp_targets[dest]
 		if pawn.sub_type() == GameEnums.PawnSubType.MONO_PLANE:
-			warp_target = GameEnums.PLANE_WARP_TARGETS[dest]
+			warp_target = BoardSpec.plane_warp_targets[dest]
 		return {"text": "→ %d번 (옷장 워프!)" % warp_target, "good": true}
 	var enemies: Array[PlayerPawn] = []
 	var allies: Array[PlayerPawn] = []
@@ -4067,7 +4067,7 @@ func _begin_skill_tile_pick(pawn: PlayerPawn) -> void:
 	_tile_pick_card = &""
 	_tile_pick_skill_pawn = pawn.entity_id
 	var targets: Array[int] = PawnSkills.plane_targets(pawn)
-	for index: int in GameEnums.TILE_COUNT:
+	for index: int in BoardSpec.tile_count:
 		(_pick_marks[index] as BoardSkin.Ring).visible = targets.has(index)
 	_pick_banner.text = "[직항 워프] 날아갈 빵집·코너 고르기"
 	_pick_banner.visible = true
@@ -5379,7 +5379,7 @@ func _begin_tile_pick(player_id: int, card_id: StringName) -> void:
 	_tile_pick_player = player_id
 	_tile_pick_card = card_id
 	var valid_count: int = 0
-	for index: int in GameEnums.TILE_COUNT:
+	for index: int in BoardSpec.tile_count:
 		var valid: bool = card.can_play(state, player_id, {"tile": index})
 		(_pick_marks[index] as BoardSkin.Ring).visible = valid
 		if valid:

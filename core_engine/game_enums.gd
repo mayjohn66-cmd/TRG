@@ -33,18 +33,6 @@ enum PawnSubType {
 
 ## 체스 폰이 승진해 퀸이 된 뒤의 호기 번호.
 const CHESS_QUEEN_UNIT: int = 5
-## 체스 폰이 반환점(12번) 이상에 도달하거나 지나가는 순간 퀸으로 승진하는 타일.
-const PROMOTION_TILES: Array[int] = [12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23]
-## 쇼기 기물이 반환점(12번) 이상에 도달하거나 지나가는 순간 나리(成り) 승급하는 타일.
-const SHOGI_PROMOTION_TILES: Array[int] = PROMOTION_TILES
-## 옷장 포탈(9, 16번)에 멈춘 모노폴리 비행기가 워프하는 곳 (9번 -> 18번 코너, 16번 -> 결승 직전 22번).
-const PLANE_WARP_TARGETS: Dictionary = {9: 18, 16: 22}
-## 옷장 포탈 일반 워프: 9번 -> 16번(보드를 가로질러), 16번 -> 20번. LAW_01 중에는 작동하지 않는다.
-const PORTAL_WARP_TARGETS: Dictionary = {9: 16, 16: 20}
-## 점프 코너: 정확히 멈추면 즉시 6번 -> 10번(+4칸), 18번 -> 21번(+3칸). LAW_01 중에는 작동하지 않는다.
-const JUMP_CORNER_TARGETS: Dictionary = {6: 10, 18: 21}
-## 비숍·각행이 스쳐 지나가거나 멈추면 이동 거리 +2칸을 얻는 코너.
-const BONUS_CORNER_TILES: Array[int] = [6, 12, 18]
 
 enum AugmentCategory { PAWN_EVOLUTION, TOOL_SWAP, LAW_ENACT, CARD_PACKAGE, SUPER_GAMBLE }
 
@@ -52,16 +40,7 @@ enum CardCategory { INSTANT, TRAP, SUMMON }
 
 enum NpcBehavior { CHASE_NEAREST, PATROL_REVERSE }
 
-## 부르마블식 24칸 사각 순환 트랙 (0 -> 1 -> ... -> 23 -> 0). 한 변 6칸, 코너는 0·6·12·18번.
-const TILE_COUNT: int = 24
 const GOAL_TILE: int = 0
-## 반환점 코너(12번): 폰 승급 기준이자 고스트 NPC의 소환·연행 지점.
-const HALFWAY_TILE: int = 12
-const LAST_TILE: int = 23
-const BAKERY_TILES: Array[int] = [4, 10, 14, 20]
-const PORTAL_TILES: Array[int] = [9, 16]
-## ⚡ 부스터 발판: 이동을 마치고 멈추면 즉시 앞으로 DASH_STEPS칸 더 날아간다 (4번은 빵집과 겹친다).
-const DASH_TILES: Array[int] = [4, 11, 19]
 const DASH_STEPS: int = 3
 ## 🔥 리벤지 부스터: 사출된 말이 다시 출발할 때 붙는 보너스 칸수.
 const REVENGE_BONUS: int = 4
@@ -70,7 +49,6 @@ const LEAPFROG_MAX: int = 3
 
 const PAWNS_PER_PLAYER: int = 4
 const MAX_NPCS: int = 3
-const CORNER_TILES: Array[int] = [0, 6, 12, 18]
 const MAX_LAWS: int = 4
 const MAX_HAND_SIZE: int = 7
 const MAX_REROLL_CHAIN: int = 8

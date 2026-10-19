@@ -21,7 +21,7 @@ func test_graph_has_24_tiles_and_expected_types() -> void:
 		check_eq(board.get_tile(index).tile_type, TileNode.TileType.PORTAL, "옷장 %d" % index)
 	for index: int in [1, 2, 3, 5, 6, 7, 8, 11, 12, 13, 15, 17, 18, 19, 21, 22, 23]:
 		check_eq(board.get_tile(index).tile_type, TileNode.TileType.NORMAL, "일반 %d" % index)
-	check_eq(GameEnums.CORNER_TILES, int_array([0, 6, 12, 18]), "코너 타일")
+	check_eq(BoardSpec.corner_tiles, int_array([0, 6, 12, 18]), "코너 타일")
 	board.free()
 
 

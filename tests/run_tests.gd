@@ -25,6 +25,7 @@ const SUITES: Array[String] = [
 	"res://tests/test_new_tools.gd",
 	"res://tests/test_super_augments.gd",
 	"res://tests/test_boost_gimmicks.gd",
+	"res://tests/test_board_32.gd",
 	"res://tests/test_pawn_art.gd",
 	"res://tests/test_augment_art.gd",
 	"res://tests/test_dice_roll_3d.gd",
@@ -50,6 +51,7 @@ func _process(_delta: float) -> bool:
 
 
 func _run_all() -> void:
+	BoardSpec.apply(24)  # 기존 규칙 테스트는 옛 24칸 배치로 검증한다 (32칸 배치는 test_board_32.gd가 따로 켠다)
 	var total_failures: int = 0
 	var total_assertions: int = 0
 	var total_tests: int = 0

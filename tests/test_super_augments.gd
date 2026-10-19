@@ -136,7 +136,7 @@ func test_raid_spawns_two_robbers_and_a_ghost_within_the_npc_cap() -> void:
 			robbers += 1
 		else:
 			ghosts += 1
-			check_eq(npc.current_tile_idx, GameEnums.HALFWAY_TILE, "고스트는 반환점에서")
+			check_eq(npc.current_tile_idx, BoardSpec.halfway_tile, "고스트는 반환점에서")
 	check(robbers == 2 and ghosts == 1, "구성 확인")
 	var crowded: GameState = _state()
 	crowded.spawn_npc(5, GameEnums.NpcBehavior.CHASE_NEAREST, 1, &"SUM_01")
@@ -179,14 +179,14 @@ func test_bakery_gives_cards_and_hotels_on_every_bakery_tile() -> void:
 	var result: Dictionary = SuperAugments.apply(SuperAugments.BAKERY, state, 1)
 	check(bool(result["ok"]), "빵집 털이")
 	check_eq((state.hands[1] as Array).size(), mini(before + 3, GameEnums.MAX_HAND_SIZE), "카드 3장")
-	for tile: int in GameEnums.BAKERY_TILES:
+	for tile: int in BoardSpec.bakery_tiles:
 		var has_hotel: bool = false
 		for attachment: TileAttachment in state.board.get_tile(tile).attachments:
 			if attachment.attachment_id == "HOTEL" and attachment.owner_id == 1:
 				has_hotel = true
 		check(has_hotel, "%d번 빵집에 내 호텔" % tile)
 	SuperAugments.apply(SuperAugments.BAKERY, state, 1)
-	check_eq(state.board.get_tile(GameEnums.BAKERY_TILES[0]).attachments.size(), 1, "호텔은 중복 설치되지 않는다")
+	check_eq(state.board.get_tile(BoardSpec.bakery_tiles[0]).attachments.size(), 1, "호텔은 중복 설치되지 않는다")
 
 
 func test_sniper_ejects_the_leading_enemy_boosts_mine_and_drops_a_cannon() -> void:

@@ -57,7 +57,7 @@ func _process(_delta: float) -> bool:
 
 
 func _check_layout() -> void:
-	_assert(_board._tile_views.size() == 24, "타일 24개가 그려져야 한다 (%d)" % _board._tile_views.size())
+	_assert(_board._tile_views.size() == BoardSpec.tile_count, "타일 %d개가 그려져야 한다 (%d)" % [BoardSpec.tile_count, _board._tile_views.size()])
 	_assert(_board._pawn_views.size() == 16, "말 16개 (%d)" % _board._pawn_views.size())
 	_assert(_board._law_labels.size() == 4, "법전 슬롯 4개")
 	_assert(_board._profiles.size() == 4, "모서리 프로필 HUD 카드 4개")
@@ -70,10 +70,10 @@ func _check_layout() -> void:
 	_assert(not _board._log_panel.visible and not _board._debug_box.visible, "다시 누르면 닫힌다")
 	_check_hud_layout()
 	_assert(_board._draft_overlay != null, "1라운드 시작에 증강 드래프트 오버레이가 떠야 한다")
-	for index: int in 24:
+	for index: int in BoardSpec.tile_count:
 		_assert(Rect2(Vector2.ZERO, Vector2(1366, 768)).encloses(_tile_rect(index)), "타일 %d가 화면 안에 있어야 한다" % index)
-	for a: int in 24:
-		for b: int in range(a + 1, 24):
+	for a: int in BoardSpec.tile_count:
+		for b: int in range(a + 1, BoardSpec.tile_count):
 			_assert(Geometry2D.intersect_polygons(_tile_polygon(a), _tile_polygon(b)).is_empty(), "타일 %d와 %d가 겹침" % [a, b])
 
 
@@ -99,7 +99,7 @@ func _tile_rect(index: int) -> Rect2:
 func _check_hud_layout() -> void:
 	_assert(not _board._intro_blocks() and _board._opening == null, "즉시 모드에서는 오프닝 인트로가 건너뛰어져 증강 선택을 막지 않는다")
 	var board_rect := Rect2()
-	for index: int in 24:
+	for index: int in BoardSpec.tile_count:
 		board_rect = _tile_rect(index) if index == 0 else board_rect.merge(_tile_rect(index))
 	_assert(absf(board_rect.get_center().x - 683.0) < 4.0, "보드판은 화면 가로 정중앙이어야 한다 (%s)" % str(board_rect))
 	# 테이블에 둘러앉은 자리: 네 모서리: 나(P1) 우하단(큼), 다음 순서 P2 우상단, 맞은편 P3 좌하단, 이전 순서 P4 좌상단 (상대 좌석 매핑).
@@ -331,7 +331,7 @@ func _try_tile_card(manager: TurnManager) -> bool:
 			continue
 		_assert(_board._pick_banner.visible, "타일 선택 모드 안내가 보여야 한다")
 		var valid: Array[int] = []
-		for tile: int in GameEnums.TILE_COUNT:
+		for tile: int in BoardSpec.tile_count:
 			if (_board._pick_marks[tile] as BoardSkin.Ring).visible:
 				valid.append(tile)
 		_assert(not valid.is_empty(), "선택 가능한 타일이 표시되어야 한다")
@@ -375,7 +375,7 @@ func _check_pawn_labels() -> void:
 func _check_fog_of_war() -> void:
 	if not _ai:
 		return
-	for index: int in 24:
+	for index: int in BoardSpec.tile_count:
 		for attachment: TileAttachment in _board.state.board.get_tile(index).attachments:
 			if not ["TRP_01", "TRP_02", "TRP_03", "TRP_05"].has(attachment.attachment_id):
 				continue

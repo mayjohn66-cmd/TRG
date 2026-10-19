@@ -853,28 +853,29 @@ func _test_avatar_seats() -> void:
 func _test_view_modes() -> void:
 	_expect(_board.view_mode == MainBoard.ViewMode.TOP and not _board._plate.visible and _board._board_surface.visible and _board._match_background.visible, "탑뷰에서도 풍경 배경과 마름모 보드 면이 보인다")
 	var top_centers: Array[Vector2] = []
-	for index: int in 24:
+	for index: int in BoardSpec.tile_count:
 		top_centers.append(_board._tile_center(index))
-	_expect(top_centers[0].y > top_centers[6].y and top_centers[0].y > top_centers[18].y and absf(top_centers[0].x - 683.0) < 1.0, "0번 출발선은 마름모의 아래 꼭짓점")
-	_expect(top_centers[6].x > top_centers[0].x and top_centers[18].x < top_centers[0].x and top_centers[12].y < top_centers[6].y, "6번 오른쪽, 12번 위, 18번 왼쪽 꼭짓점 (반시계)")
+	var side: int = BoardSpec.side
+	_expect(top_centers[0].y > top_centers[side].y and top_centers[0].y > top_centers[side * 3].y and absf(top_centers[0].x - 683.0) < 1.0, "0번 출발선은 마름모의 아래 꼭짓점")
+	_expect(top_centers[side].x > top_centers[0].x and top_centers[side * 3].x < top_centers[0].x and top_centers[side * 2].y < top_centers[side].y, "한 변 번호는 오른쪽, 두 변은 위, 세 변은 왼쪽 꼭짓점 (반시계)")
 	var pawn_id: int = 11
 	var pawn: PlayerPawn = _board.state.get_pawn(pawn_id)
 	var top_pawn_position: Vector2 = _board._pawn_position(pawn)
 	_board.set_view_mode(MainBoard.ViewMode.TILT)
 	_expect(not _board._plate.visible and _board._board_surface.visible and _board._match_background.visible and _board._pawn_layer.y_sort_enabled, "기울인 시점: 같은 풍경 배경을 유지하고 말이 깊이순으로 그려진다")
 	var restored_in_tilt: bool = true
-	for index: int in 24:
+	for index: int in BoardSpec.tile_count:
 		restored_in_tilt = restored_in_tilt and _board._tile_center(index).is_equal_approx(top_centers[index])
 	_expect(restored_in_tilt, "두 시점의 타일 좌표는 같다")
 	var all_inside: bool = true
-	for a: int in 24:
+	for a: int in BoardSpec.tile_count:
 		var tile_a: BoardSkin.Tile = _board._tile_views[a]
 		var poly_a := PackedVector2Array()
 		for point: Vector2 in tile_a.outline_points:
 			poly_a.append(tile_a.position + tile_a.size / 2.0 + (point - tile_a.size / 2.0) * tile_a.scale)
 		for point: Vector2 in poly_a:
 			all_inside = all_inside and Rect2(Vector2.ZERO, Vector2(1366, 768)).has_point(point)
-		for b: int in range(a + 1, 24):
+		for b: int in range(a + 1, BoardSpec.tile_count):
 			var tile_b: BoardSkin.Tile = _board._tile_views[b]
 			var poly_b := PackedVector2Array()
 			for point: Vector2 in tile_b.outline_points:
@@ -884,7 +885,7 @@ func _test_view_modes() -> void:
 	_expect((_board._pawn_views[pawn_id] as Node2D).get_node("Shadow").visible, "말 그림자가 보인다")
 	_expect(_board._board_edge.points.size() >= 64 and _board._track_lines.size() == 1, "둥근 보드 윤곽과 순환 경로선 1개가 다시 그려진다")
 	var safe: PackedVector2Array = BoardSkin.safe_outline(_board._surface_project)
-	for i: int in 24:
+	for i: int in BoardSpec.tile_count:
 		var tile: BoardSkin.Tile = _board._tile_views[i]
 		_expect(_board._tile_at(tile.get_global_transform() * (tile.size/2.0)) == i, "새 발판 중심 클릭: %d" % i)
 		for point: Vector2 in tile.outline_points:
@@ -903,10 +904,13 @@ func _test_view_modes() -> void:
 	_board.state.rulebook.active_laws_queue.clear()
 	_board.state.rulebook.enqueue_law(LawRegistry.create("LAW_01"))
 	_board._refresh_tiles()
-	_expect((_board._tile_views[6] as BoardSkin.Tile).arrow_target == 7 and (_board._tile_views[18] as BoardSkin.Tile).arrow_target == 19, "공사 중에는 바로 다음 칸을 가리킨다")
+	var jump_from: Array = BoardSpec.jump_corner_targets.keys()
+	var jump_a: int = int(jump_from[0])
+	var jump_b: int = int(jump_from[1])
+	_expect((_board._tile_views[jump_a] as BoardSkin.Tile).arrow_target == jump_a + 1 and (_board._tile_views[jump_b] as BoardSkin.Tile).arrow_target == jump_b + 1, "공사 중에는 바로 다음 칸을 가리킨다")
 	_board.state.rulebook.remove_law_by_id("LAW_01")
 	_board._refresh_tiles()
-	_expect((_board._tile_views[6] as BoardSkin.Tile).arrow_target == 10 and (_board._tile_views[18] as BoardSkin.Tile).arrow_target == 21, "공사가 끝나면 점프 목적지를 가리킨다")
+	_expect((_board._tile_views[jump_a] as BoardSkin.Tile).arrow_target == int(BoardSpec.jump_corner_targets[jump_a]) and (_board._tile_views[jump_b] as BoardSkin.Tile).arrow_target == int(BoardSpec.jump_corner_targets[jump_b]), "공사가 끝나면 점프 목적지를 가리킨다")
 	_board.state.rulebook.active_laws_queue = previous_laws
 	_board._refresh_tiles()
 	# 경로선이 새 위치를 따라간다
@@ -915,7 +919,7 @@ func _test_view_modes() -> void:
 	_expect(GameSession.view_mode == MainBoard.ViewMode.TILT, "시점이 세션 설정에 기록된다")
 	_board.set_view_mode(MainBoard.ViewMode.TOP)
 	var restored: bool = true
-	for index: int in 24:
+	for index: int in BoardSpec.tile_count:
 		restored = restored and _board._tile_center(index).is_equal_approx(top_centers[index])
 	_expect(restored and not _board._plate.visible and _board._board_surface.visible and _board._match_background.visible, "탑뷰로 돌아오면 모든 좌표와 배경이 그대로 돌아온다")
 	_expect(_board._pawn_position(pawn).is_equal_approx(top_pawn_position) and not _board._pawn_layer.y_sort_enabled, "말 위치도 그대로")
@@ -1213,7 +1217,7 @@ func _test_hud_overhaul() -> void:
 	# 타일 지정형: 보드에 던지면 설치 위치 선택 UI가 열리고, 타일을 고르면 설치된다
 	var card: BaseCard = CardRegistry.get_card(&"TRP_01")
 	var target: int = -1
-	for index: int in GameEnums.TILE_COUNT:
+	for index: int in BoardSpec.tile_count:
 		if card.can_play(manager.state, holder, {"tile": index}):
 			target = index
 			break
@@ -1428,7 +1432,9 @@ func _test_stage_warp() -> void:
 	_board._announcer.cancel()
 	_board._beat_until_msec = 0
 	_board._fx_until_msec = 0
-	for case_data: Array in [[5, 6, 10, "코너"], [8, 9, 16, "포탈"]]:
+	var warp_corner: int = int(BoardSpec.jump_corner_targets.keys()[0])
+	var warp_portal: int = int(BoardSpec.portal_warp_targets.keys()[0])
+	for case_data: Array in [[warp_corner - 1, warp_corner, int(BoardSpec.jump_corner_targets[warp_corner]), "코너"], [warp_portal - 1, warp_portal, int(BoardSpec.portal_warp_targets[warp_portal]), "포탈"]]:
 		var pawn: PlayerPawn = state.get_pawn(11)
 		pawn.has_left_start = true
 		pawn.current_tile_idx = case_data[0]
@@ -1649,6 +1655,9 @@ func _test_npc_danger_preview() -> void:
 	_board._hover_danger_tile = -1
 	# 도적떼: 가장 가까운 말까지의 경로
 	var robber: NeutralNPC = state.spawn_npc(20, GameEnums.NpcBehavior.CHASE_NEAREST, 1, &"SUM_01")
+	for other: PlayerPawn in state.pawns:
+		if other != mine and not other.is_finished:
+			other.reset_to_start()  # 앞선 테스트가 남긴 말이 도적의 추격 대상이 되지 않게 한다
 	mine.current_tile_idx = 23
 	_board._refresh_all()
 	_expect(_board._npc_danger.has(21) and _board._npc_danger.has(22) and _board._npc_danger.has(23), "도적떼가 가는 길이 표시된다 (21~23번)")
@@ -1657,7 +1666,7 @@ func _test_npc_danger_preview() -> void:
 	_board._fill_npc_tip(robber.entity_id)
 	_expect(_board._tip_title.text.contains("도적") and _board._tip_title.text.contains("▶") and _board._tip_ability.text.contains("1~6") and _board._tip_ability.text.contains("소멸합니다"), "도적 툴팁: 방향과 설명 (%s)" % _board._tip_title.text)
 	_board._fill_npc_tip(ghost.entity_id)
-	_expect(_board._tip_title.text.contains("고스트") and _board._tip_title.text.contains("◀") and _board._tip_ability.text.contains("3칸") and _board._tip_ability.text.contains("12번"), "고스트 툴팁: 역방향 3칸 순찰")
+	_expect(_board._tip_title.text.contains("고스트") and _board._tip_title.text.contains("◀") and _board._tip_ability.text.contains("3칸") and _board._tip_ability.text.contains("반환점"), "고스트 툴팁: 역방향 3칸 순찰")
 	_expect(not _board._announce_gate_text_for_tests().contains("한 칸"), "NPC 이동 안내 문구가 실제 규칙을 말한다")
 	state.clear_npcs()
 	mine.has_left_start = false

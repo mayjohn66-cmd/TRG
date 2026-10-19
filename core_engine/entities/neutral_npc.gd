@@ -67,7 +67,7 @@ func _patrol_reverse(state: GameState) -> Dictionary:
 			if not victim.has_left_start or current_tile_idx == GameEnums.GOAL_TILE:
 				continue
 			(report["caught"] as Array[int]).append(victim.entity_id)
-			state.teleport_stack(victim, GameEnums.HALFWAY_TILE)
+			state.teleport_stack(victim, BoardSpec.halfway_tile)
 		if not (report["caught"] as Array[int]).is_empty():
 			break
 	report["vanished"] = not (report["caught"] as Array[int]).is_empty()

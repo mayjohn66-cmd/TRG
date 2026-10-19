@@ -9,20 +9,33 @@ const NORMAL_SIZE: float = 0.142
 const CORNER_SIZE: float = 0.144
 const SURFACE: Texture2D = preload("res://assets/board/trickcal/board_surface.png")
 
+## 한 변의 칸 수에 맞춘 타일 크기: 칸이 늘면 폭과 깊이, 코너를 줄여 이웃 타일(코너 둘레 포함)과 겹치지 않게 한다. 한 변 6칸이면 원래 크기 그대로다.
+static func tile_metrics() -> Dictionary:
+	var spacing: float = (1.0 - 2.0 * TRACK_INSET) / float(BoardSpec.side)
+	var width: float = NORMAL_WIDTH * BoardSpec.tile_scale() * (0.9 if BoardSpec.side > 6 else 1.0)
+	var room: float = 2.0 * (spacing - width / 2.0 - 0.004)
+	return {"width": width, "depth": minf(NORMAL_SIZE, room), "corner": minf(CORNER_SIZE, room)}
+
+
 static func definition(index: int) -> Dictionary:
 	# Color bands describe existing tile types, never player ownership.
-	var horizontal_row: bool = index in range(7,12) or index in range(19,24)
-	var footprint := Vector2(NORMAL_WIDTH,NORMAL_SIZE) if horizontal_row else Vector2(NORMAL_SIZE,NORMAL_WIDTH)
-	var data: Dictionary = {"kind":"normal", "fill":Color("fff6df"), "edge":Color("7c9558"), "ink":Color("486135"), "band":Color("b4d479"), "footprint":footprint, "diameter":NORMAL_SIZE, "major":false}
-	if index in GameEnums.BAKERY_TILES:
+	var step: int = BoardSpec.side
+	var horizontal_row: bool = index in range(step + 1, step * 2) or index in range(step * 3 + 1, step * 4)
+	# 한 변의 칸이 늘면 타일 폭을 줄여 이웃 타일과 겹치지 않게 한다 (한 변 6칸 기준 보정).
+	var metrics: Dictionary = tile_metrics()
+	var width: float = metrics.width
+	var depth: float = metrics.depth
+	var footprint := Vector2(width,depth) if horizontal_row else Vector2(depth,width)
+	var data: Dictionary = {"kind":"normal", "fill":Color("fff6df"), "edge":Color("7c9558"), "ink":Color("486135"), "band":Color("b4d479"), "footprint":footprint, "diameter":depth, "major":false}
+	if index in BoardSpec.bakery_tiles:
 		data.merge({"kind":"bakery", "band":Color("f4bd55"), "edge":Color("b68b43"), "ink":Color("845221")},true)
-	if index in GameEnums.PORTAL_TILES:
+	if index in BoardSpec.portal_tiles:
 		data.merge({"kind":"portal", "band":Color("ac87c7"), "edge":Color("8d6a9c"), "ink":Color("69457d")},true)
-	if index in GameEnums.CORNER_TILES:
-		data.merge({"diameter":CORNER_SIZE, "footprint":Vector2.ONE*CORNER_SIZE, "major":true},true)
+	if index in BoardSpec.corner_tiles:
+		data.merge({"diameter":metrics.corner, "footprint":Vector2.ONE*float(metrics.corner), "major":true},true)
 		if index == GameEnums.GOAL_TILE:
 			data.merge({"kind":"start", "edge":Color("5d8c3d"), "ink":Color("416c2b")},true)
-		elif index == GameEnums.HALFWAY_TILE:
+		elif index == BoardSpec.halfway_tile:
 			data.merge({"kind":"half", "edge":Color("b68b43"), "ink":Color("845221")},true)
 		else:
 			data.merge({"kind":"corner", "edge":Color("5d8c3d"), "ink":Color("416c2b")},true)
@@ -258,11 +271,11 @@ class Tile extends Control:
 			layers.append(points)
 		outline_points = layers[0]
 		band.clear()
-		var inward: Vector2 = [Vector2.LEFT,Vector2.DOWN,Vector2.RIGHT,Vector2.UP][index/6]
+		var inward: Vector2 = [Vector2.LEFT,Vector2.DOWN,Vector2.RIGHT,Vector2.UP][mini(index/BoardSpec.side, 3)]
 		if not data.major:
 			# The strip follows the inner edge on all four sides of the board.
 			var strips: Array[Rect2] = [Rect2(0,0,21,96),Rect2(0,75,96,21),Rect2(75,0,21,96),Rect2(0,0,96,21)]
-			var strip: Rect2 = strips[index/6]
+			var strip: Rect2 = strips[mini(index/BoardSpec.side, 3)]
 			var clip := PackedVector2Array([strip.position,Vector2(strip.end.x,strip.position.y),strip.end,Vector2(strip.position.x,strip.end.y)])
 			var clipped: Array[PackedVector2Array] = Geometry2D.intersect_polygons(BoardSkin.shape(false,3.6),clip)
 			if not clipped.is_empty():

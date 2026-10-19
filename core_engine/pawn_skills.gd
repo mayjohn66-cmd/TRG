@@ -4,8 +4,11 @@
 class_name PawnSkills
 extends RefCounted
 
-## 비행기 직항 워프 목적지: 빵집 4곳(4·10·14·20번)과 코너 3곳(6·12·18번).
-const PLANE_TARGETS: Array[int] = [4, 10, 14, 20, 6, 12, 18]
+## 비행기 직항 워프 목적지: 빵집 4곳과 출발선을 뺀 코너 3곳.
+static func plane_landing_tiles() -> Array[int]:
+	var result: Array[int] = BoardSpec.bakery_tiles.duplicate()
+	result.append_array(BoardSpec.bonus_corner_tiles)
+	return result
 ## 알까기 슈팅: 파워 0~1이 날아가는 거리(보드 한 변 = 1)를 정하고, 지나가는 직선에서 충돌 반경 안의 적은 모두 탈락한다.
 const SHOT_MIN_DISTANCE: float = 0.25
 const SHOT_MAX_DISTANCE: float = 1.1
@@ -57,13 +60,13 @@ static func drop_tile(state: GameState, fu: PlayerPawn) -> int:
 ## 비행기가 날아갈 수 있는 타일 (지금 서 있는 타일 제외).
 static func plane_targets(pawn: PlayerPawn) -> Array[int]:
 	var result: Array[int] = []
-	for tile: int in PLANE_TARGETS:
+	for tile: int in plane_landing_tiles():
 		if tile != pawn.current_tile_idx:
 			result.append(tile)
 	return result
 
 
-## 차의 직선 돌진 경로: 전방 경로(결승선 제외)를 따라 가장 앞의 잡을 수 있는 적이 선 타일까지, 적이 없으면 다음 코너 타일(6·12·18번)까지.
+## 차의 직선 돌진 경로: 전방 경로(결승선 제외)를 따라 가장 앞의 잡을 수 있는 적이 선 타일까지, 적이 없으면 다음 코너 타일까지.
 ## 갈 곳이 없으면 빈 배열이다.
 static func chariot_path(state: GameState, pawn: PlayerPawn) -> Array[int]:
 	var ctx := RuleContext.new()
@@ -79,7 +82,7 @@ static func chariot_path(state: GameState, pawn: PlayerPawn) -> Array[int]:
 		if _has_vulnerable_enemy(state, pawn, route[index]):
 			return route.slice(0, index + 1)
 	for index: int in route.size():
-		if GameEnums.CORNER_TILES.has(route[index]):
+		if BoardSpec.corner_tiles.has(route[index]):
 			return route.slice(0, index + 1)
 	return route
 

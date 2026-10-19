@@ -52,12 +52,12 @@ static func score_move(state: GameState, pawn: PlayerPawn, dice_value: int) -> f
 		var tile: TileNode = state.board.get_tile(destination)
 		if STOP_SPOT_TILES.has(destination) or tile.tile_type == TileNode.TileType.BAKERY:
 			score += SCORE_STOP_SPOT
-	if state.boost_gimmicks and GameEnums.DASH_TILES.has(destination):
+	if state.boost_gimmicks and BoardSpec.dash_tiles.has(destination):
 		score += SCORE_DASH_PAD
 	if not pawn.has_left_start or is_front_most(state, pawn):
 		score += SCORE_ADVANCE
 	var before: int = state.pawn_progress_distance(pawn)
-	var after: int = state.board.distance_to_goal(destination, true) + (0 if pawn.can_finish(state) else GameEnums.TILE_COUNT)
+	var after: int = state.board.distance_to_goal(destination, true) + (0 if pawn.can_finish(state) else BoardSpec.tile_count)
 	score += float(before - after) * 0.5
 	if pawn.is_imprisoned and absi(dice_value) % 2 == 1:
 		score -= 30.0
@@ -198,7 +198,7 @@ static func choose_card_tile(state: GameState, player_id: int, card: BaseCard, r
 			best.append(tile)
 	if best.is_empty():
 		var any: Array[int] = []
-		for tile: int in GameEnums.TILE_COUNT:
+		for tile: int in BoardSpec.tile_count:
 			if card.can_play(state, player_id, {"tile": tile}):
 				any.append(tile)
 		return any[rng.randi_range(0, any.size() - 1)] if not any.is_empty() else -1
@@ -390,7 +390,7 @@ const SHOT_POWERS: Array[float] = [0.35, 0.65, 1.0]
 static func pawn_progress(state: GameState, pawn: PlayerPawn) -> float:
 	var total: float = 0.0
 	for member: PlayerPawn in pawn.stack_members():
-		total += maxf(0.0, float(GameEnums.TILE_COUNT - state.pawn_progress_distance(member)))
+		total += maxf(0.0, float(BoardSpec.tile_count - state.pawn_progress_distance(member)))
 	return total
 
 

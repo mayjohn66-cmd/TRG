@@ -577,9 +577,9 @@ func _ch_board() -> Dictionary:
 	return {
 		"title": "보드 읽기",
 		"left": [
-			_note("보드는 [b]24칸짜리 사각 한 바퀴[/b]예요. 우하단 0번에서 출발해 반시계로 돌고, 한 바퀴를 다 돌면 다시 0번이 결승선이에요."),
+			_note("보드는 [b]%d칸짜리 사각 한 바퀴[/b]예요. 우하단 0번에서 출발해 반시계로 돌고, 한 바퀴를 다 돌면 다시 0번이 결승선이에요." % BoardSpec.tile_count),
 			_heading("눈여겨볼 칸"),
-			_rich("[color=#2f8f4e][b]6번, 18번 점프 코너[/b][/color]  딱 멈추면 6번은 10번으로, 18번은 21번으로 폴짝!\n[color=#c98a14][b]12번 반환점[/b][/color]  여기를 지나면 체스 폰이 퀸으로, 쇼기 말이 승급해요.\n[color=#d9822b][b]빵집 4·10·14·20번[/b][/color]  멈추면 생떼 카드 한 장!\n[color=#8e4aa8][b]옷장 9번, 16번[/b][/color]  딱 멈추면 9번은 16번으로, 16번은 20번으로 순간이동!"),
+			_rich("[color=#2f8f4e][b]점프 코너 %s[/b][/color]  딱 멈추면 앞으로 폴짝!\n[color=#c98a14][b]%d번 반환점[/b][/color]  여기를 지나면 체스 폰이 퀸으로, 쇼기 말이 승급해요.\n[color=#d9822b][b]빵집 %s번[/b][/color]  멈추면 생떼 카드 한 장!\n[color=#8e4aa8][b]옷장 %s번[/b][/color]  딱 멈추면 순간이동!\n[color=#2fb59a][b]⚡ 부스터 발판 %s번[/b][/color]  딱 멈추면 +3칸 더 날아가요!" % [_join_tiles(BoardSpec.jump_corner_targets.keys()), BoardSpec.halfway_tile, _join_tiles(BoardSpec.bakery_tiles), _join_tiles(BoardSpec.portal_tiles), _join_tiles(BoardSpec.dash_tiles)]),
 			_tip("점프와 옷장은 [b]딱 멈출 때만[/b] 작동해요. 그냥 지나가면 아무 일도 없어요. 눈금을 잘 맞춰 보세요."),
 		],
 		"right": [
@@ -648,11 +648,11 @@ func _ch_pawns() -> Dictionary:
 		],
 		"right": [_grid([
 			_card("윷말", "잡거나 4·5가 나오면 한 번 더. 만나면 업기", &"play", Color("f08aa8")),
-			_card("체스", "폰은 12번 이상에서 퀸으로 승급 · 나이트는 함정과 말을 뛰어넘기 · 비숍은 코너를 스치면 +2칸 · 룩은 [b]필살기 캐슬링[/b](아군과 위치 교환)", &"crown", Color("5fc1e8")),
+			_card("체스", "폰은 반환점 이상에서 퀸으로 승급 · 나이트는 함정과 말을 뛰어넘기 · 비숍은 코너를 스치면 +2칸 · 룩은 [b]필살기 캐슬링[/b](아군과 위치 교환)", &"crown", Color("5fc1e8")),
 			_card("장기", "포는 길에 말이 있으면 +3칸 · 차는 [b]필살기 돌진[/b](선두 적을 잡으러 직진) · 마는 앞 칸이 비면 +2칸 · 상은 +3칸", &"sword", Color("f0c14e")),
 			_card("모노폴리", "미니카는 도착 칸에 호텔 · 비행기는 옷장에서 더 멀리, [b]필살기 직항 워프[/b] · 증기선은 첫 적 함정을 부숴요 · 강아지는 빵집을 스치기만 해도 카드!", &"key", Color("86d94f")),
 			_card("바둑", "흑돌은 [b]필살기 알까기[/b](튕겨서 직선의 적을 탈락) · 백돌은 잡히지 않고 같은 칸 아군도 지켜요(눈금 -1)", &"dice", Color("b197fc")),
-			_card("쇼기", "12번 이상을 지나면 [b]승급[/b](이동 +1칸) · 보병은 [b]필살기 모치고마 낙하[/b](대기 말을 바로 옆에 투입) · 비차 +2칸 · 각행은 코너 +2칸 · 계마는 첫 2칸 함정 무시", &"grid", Color("f08aa8")),
+			_card("쇼기", "반환점 이상을 지나면 [b]승급[/b](이동 +1칸) · 보병은 [b]필살기 모치고마 낙하[/b](대기 말을 바로 옆에 투입) · 비차 +2칸 · 각행은 코너 +2칸 · 계마는 첫 2칸 함정 무시", &"grid", Color("f08aa8")),
 		])],
 	}
 
@@ -722,6 +722,14 @@ class LinedPaper extends Control:
 		draw_colored_polygon(PackedVector2Array([Vector2(size.x - 40, size.y), Vector2(size.x, size.y - 40), Vector2(size.x, size.y)]), Color("e8dcb8"))
 
 
+## 타일 번호 목록을 `4·10·14` 꼴로 이어 붙인다.
+static func _join_tiles(tiles: Array) -> String:
+	var parts: Array[String] = []
+	for tile: Variant in tiles:
+		parts.append(str(int(tile)))
+	return "·".join(parts)
+
+
 ## 책 아래쪽에 걸친 주황 리본 (쪽 번호가 올라간다).
 class Ribbon extends Control:
 	func _draw() -> void:
@@ -739,10 +747,16 @@ class Ribbon extends Control:
 # 미니 보드 그림 (보드 읽기 쪽)
 # ---------------------------------------------------------------------------
 
-## 24칸 사각 트랙을 작게 그리고 점프·옷장 이동을 화살표로 보여 준다.
+## 사각 트랙(BoardSpec)을 작게 그리고 점프·옷장 이동을 화살표로 보여 준다.
 class MiniBoard extends Control:
 	const CELL: float = 34.0
 	const CORNER: float = 44.0
+
+	static func _warp_text(targets: Dictionary) -> String:
+		var parts: Array[String] = []
+		for from_tile: int in targets.keys():
+			parts.append("%d → %d" % [from_tile, int(targets[from_tile])])
+		return ", ".join(parts)
 
 	func _tile_pos(index: int) -> Vector2:
 		var pad: float = 34.0
@@ -758,26 +772,26 @@ class MiniBoard extends Control:
 		draw_style_box(paper, Rect2(Vector2.ZERO, size))
 		var font: Font = get_theme_default_font()
 		# 이동선 (타일 아래)
-		_arc(6, 10, Color("2f8f4e"))
-		_arc(18, 21, Color("2f8f4e"))
-		_dashed(9, 16, Color("8e4aa8"))
-		_dashed(16, 20, Color("8e4aa8"))
-		for index: int in GameEnums.TILE_COUNT:
+		for from_tile: int in BoardSpec.jump_corner_targets.keys():
+			_arc(from_tile, int(BoardSpec.jump_corner_targets[from_tile]), Color("2f8f4e"))
+		for from_tile: int in BoardSpec.portal_warp_targets.keys():
+			_dashed(from_tile, int(BoardSpec.portal_warp_targets[from_tile]), Color("8e4aa8"))
+		for index: int in BoardSpec.tile_count:
 			var center: Vector2 = _tile_pos(index)
-			var corner: bool = GameEnums.CORNER_TILES.has(index)
+			var corner: bool = BoardSpec.corner_tiles.has(index)
 			var side: float = CORNER if corner else CELL
 			var fill: Color = Color("fffdf0")
 			var edge: Color = Color("b9a56a")
-			if GameEnums.BAKERY_TILES.has(index):
+			if BoardSpec.bakery_tiles.has(index):
 				fill = Color("ffd98a")
 				edge = Color("d9822b")
-			elif GameEnums.PORTAL_TILES.has(index):
+			elif BoardSpec.portal_tiles.has(index):
 				fill = Color("e6d2f0")
 				edge = Color("8e4aa8")
 			elif index == 0:
 				fill = Color("86d94f")
 				edge = Color("2f8f4e")
-			elif index == GameEnums.HALFWAY_TILE:
+			elif index == BoardSpec.halfway_tile:
 				fill = Color("ffe48a")
 				edge = Color("c98a14")
 			elif corner:
@@ -796,7 +810,7 @@ class MiniBoard extends Control:
 			var width: float = font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, label_size).x
 			draw_string(font, center + Vector2(-width / 2.0, label_size * 0.36), label, HORIZONTAL_ALIGNMENT_LEFT, -1, label_size, Color("3a2f1f"))
 		# 안쪽 범례
-		var legend: Array = [[Color("86d94f"), "출발 · 결승"], [Color("b6ea8c"), "점프 코너 (6 → 10, 18 → 21)"], [Color("ffe48a"), "반환점 (승급 기준)"], [Color("ffd98a"), "빵집 (카드 1장)"], [Color("e6d2f0"), "옷장 (9 → 16, 16 → 20)"]]
+		var legend: Array = [[Color("86d94f"), "출발 · 결승"], [Color("b6ea8c"), "점프 코너 (%s)" % _warp_text(BoardSpec.jump_corner_targets)], [Color("ffe48a"), "반환점 (승급 기준)"], [Color("ffd98a"), "빵집 (카드 1장)"], [Color("e6d2f0"), "옷장 (%s)" % _warp_text(BoardSpec.portal_warp_targets)]]
 		var origin := Vector2(92, 118)
 		for index: int in legend.size():
 			var spot: Vector2 = origin + Vector2(0, index * 30.0)

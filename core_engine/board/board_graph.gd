@@ -19,20 +19,20 @@ func _init() -> void:
 ## 0~23번 타일과 단일 순환 간선을 초기화한다: 0 -> 1 -> ... -> 23 -> 0 (코너 0·6·12·18).
 func _init_24_tiles() -> void:
 	tiles.clear()
-	for index: int in GameEnums.TILE_COUNT:
+	for index: int in BoardSpec.tile_count:
 		tiles.append(TileNode.new(index))
-	for index: int in GameEnums.TILE_COUNT:
-		tiles[index].next_default = (index + 1) % GameEnums.TILE_COUNT
+	for index: int in BoardSpec.tile_count:
+		tiles[index].next_default = (index + 1) % BoardSpec.tile_count
 	tiles[GameEnums.GOAL_TILE].tile_type = TileNode.TileType.START_GOAL
-	for index: int in GameEnums.BAKERY_TILES:
+	for index: int in BoardSpec.bakery_tiles:
 		tiles[index].tile_type = TileNode.TileType.BAKERY
-	for index: int in GameEnums.PORTAL_TILES:
+	for index: int in BoardSpec.portal_tiles:
 		tiles[index].tile_type = TileNode.TileType.PORTAL
 
 
 ## 모든 타일이 유효한 next_default를 갖고, 모든 간선이 0~23 범위 안에 있는지 검사한다.
 func is_graph_valid() -> bool:
-	if tiles.size() != GameEnums.TILE_COUNT:
+	if tiles.size() != BoardSpec.tile_count:
 		return false
 	for tile: TileNode in tiles:
 		if not is_valid_tile(tile.next_default):
@@ -42,7 +42,7 @@ func is_graph_valid() -> bool:
 
 ## 구조상 직전 타일(이력이 없을 때의 후진 목적지).
 func default_previous(tile: int) -> int:
-	return (tile - 1 + GameEnums.TILE_COUNT) % GameEnums.TILE_COUNT
+	return (tile - 1 + BoardSpec.tile_count) % BoardSpec.tile_count
 
 
 ## 간선 방향과 무관하게 center에서 radius칸 이내인 모든 타일(자기 자신 포함).
@@ -79,7 +79,7 @@ func get_tile(index: int) -> TileNode:
 
 
 func is_valid_tile(index: int) -> bool:
-	return index >= 0 and index < GameEnums.TILE_COUNT
+	return index >= 0 and index < BoardSpec.tile_count
 
 
 # ---------------------------------------------------------------------------
@@ -172,7 +172,7 @@ func calculate_path(entity: BoardEntity, steps: int, ctx: RuleContext) -> Array[
 ## 결승까지 남은 최단 칸 수. 출발선에서 아직 출발하지 않은 말은 한 바퀴(24칸)로 본다.
 func distance_to_goal(tile: int, has_left_start: bool) -> int:
 	if tile == GameEnums.GOAL_TILE and not has_left_start:
-		return GameEnums.TILE_COUNT
+		return BoardSpec.tile_count
 	return _distance_to_goal[tile]
 
 
@@ -241,7 +241,7 @@ func path_length(from_tile: int, to_tile: int) -> int:
 
 func _build_undirected() -> void:
 	_undirected.clear()
-	for index: int in GameEnums.TILE_COUNT:
+	for index: int in BoardSpec.tile_count:
 		var neighbors: Array[int] = []
 		_undirected.append(neighbors)
 	for tile: TileNode in tiles:
@@ -254,7 +254,7 @@ func _build_undirected() -> void:
 
 func _build_distance_table() -> void:
 	_distance_to_goal.clear()
-	_distance_to_goal.resize(GameEnums.TILE_COUNT)
+	_distance_to_goal.resize(BoardSpec.tile_count)
 	_distance_to_goal.fill(-1)
 	_distance_to_goal[GameEnums.GOAL_TILE] = 0
 	var queue: Array[int] = [GameEnums.GOAL_TILE]

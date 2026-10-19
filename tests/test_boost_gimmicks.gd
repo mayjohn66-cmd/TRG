@@ -14,12 +14,12 @@ func _boost_state(players: int = 2) -> GameState:
 # --- ⚡ 부스터 발판 -----------------------------------------------------------------
 
 func test_dash_pads_are_4_11_and_19() -> void:
-	check_eq(GameEnums.DASH_TILES, int_array([4, 11, 19]), "발판 위치")
+	check_eq(BoardSpec.dash_tiles, int_array([4, 11, 19]), "발판 위치")
 	check_eq(GameEnums.DASH_STEPS, 3, "발판 가속 칸수")
 
 
 func test_stopping_on_a_dash_pad_flies_three_more_tiles() -> void:
-	for pad: int in GameEnums.DASH_TILES:
+	for pad: int in BoardSpec.dash_tiles:
 		var state: GameState = _boost_state()
 		place(state, 11, pad - 2, [pad - 3])
 		var signals: Array = []

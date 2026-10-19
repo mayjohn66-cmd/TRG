@@ -95,7 +95,7 @@ func test_reverse_run_lets_retreated_pawn_finish() -> void:
 	check(state.get_pawn(11).can_finish(state), "역주행 중에는 완주 가능")
 	state.reverse_move_rounds_left = 0
 	check(not state.get_pawn(11).can_finish(state), "역주행이 끝나면 다시 불가")
-	check(state.pawn_progress_distance(state.get_pawn(11)) > GameEnums.TILE_COUNT, "진행 거리는 한 바퀴 더")
+	check(state.pawn_progress_distance(state.get_pawn(11)) > BoardSpec.tile_count, "진행 거리는 한 바퀴 더")
 
 
 func test_law_08_stops_short_of_the_goal_and_exact_finish_still_wins() -> void:

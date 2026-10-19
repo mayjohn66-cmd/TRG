@@ -177,7 +177,7 @@ static func _apply_devil(state: GameState, player_id: int) -> Dictionary:
 ## 빈 타일: 결승 칸이 아니고 설치물이 없는 칸.
 static func _empty_tiles(state: GameState) -> Array[int]:
 	var tiles: Array[int] = []
-	for index: int in GameEnums.TILE_COUNT:
+	for index: int in BoardSpec.tile_count:
 		if index == GameEnums.GOAL_TILE:
 			continue
 		if state.board.get_tile(index).attachments.is_empty():
@@ -215,10 +215,10 @@ static func _apply_raid(state: GameState, player_id: int) -> Dictionary:
 		if state.npcs.size() >= GameEnums.MAX_NPCS:
 			break
 		if id == &"SUM_02":
-			state.spawn_npc(GameEnums.HALFWAY_TILE, GameEnums.NpcBehavior.PATROL_REVERSE, player_id, id)
+			state.spawn_npc(BoardSpec.halfway_tile, GameEnums.NpcBehavior.PATROL_REVERSE, player_id, id)
 			spawned_ghost += 1
 		else:
-			var tile: int = state.rng.randi_range(1, GameEnums.TILE_COUNT - 1)
+			var tile: int = state.rng.randi_range(1, BoardSpec.tile_count - 1)
 			state.spawn_npc(tile, GameEnums.NpcBehavior.CHASE_NEAREST, player_id, id)
 			spawned_robbers += 1
 	return {"ok": true, "text": "도적떼 %d마리와 팩맨 고스트 %d마리가 판에 나타났습니다!" % [spawned_robbers, spawned_ghost]}
@@ -249,7 +249,7 @@ static func _apply_bakery(state: GameState, player_id: int) -> Dictionary:
 		if state.give_card(player_id, picked):
 			names.append(CardRegistry.get_card(picked).display_name)
 	var hotels: int = 0
-	for tile: int in GameEnums.BAKERY_TILES:
+	for tile: int in BoardSpec.bakery_tiles:
 		var has_mine: bool = false
 		for attachment: TileAttachment in state.board.get_tile(tile).attachments:
 			if attachment.attachment_id == "HOTEL" and attachment.owner_id == player_id:

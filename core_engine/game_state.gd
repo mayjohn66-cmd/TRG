@@ -285,7 +285,7 @@ func can_pick(pawn: PlayerPawn, _dice_value: int) -> bool:
 func pawn_progress_distance(pawn: PlayerPawn) -> int:
 	var distance: int = board.distance_to_goal(pawn.current_tile_idx, pawn.has_left_start)
 	if not pawn.can_finish(self):
-		distance += GameEnums.TILE_COUNT
+		distance += BoardSpec.tile_count
 	return distance
 
 

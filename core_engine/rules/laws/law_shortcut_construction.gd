@@ -8,7 +8,7 @@ extends LawResource
 func _init() -> void:
 	law_id = "LAW_01"
 	law_name = "지름길 공사 중"
-	description = "점프 코너(6·18번)·포탈 작동 중지"
+	description = "점프 코너·포탈 작동 중지"
 	trigger_timing = RuleContext.ON_MOVE_CALC
 
 
