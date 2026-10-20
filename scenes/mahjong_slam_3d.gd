@@ -3,6 +3,9 @@
 class_name MahjongSlam3D
 extends TextureRect
 
+## 앞면 렌더 뷰 캐시 상한 (한 번에 3장을 쓴다).
+const MAX_FACE_VIEWS: int = 6
+
 signal tile_landed(index: int)
 
 const VIEW_SIZE: Vector2 = Vector2(500,260)
@@ -140,6 +143,20 @@ func _make_face_view(tile: int) -> SubViewport:
 	return viewport
 
 
+## 패 앞면 렌더 뷰는 최근 MAX_FACE_VIEWS장만 남긴다 (패 종류마다 SubViewport·렌더 타깃을 계속 붙잡으면 웹 메모리가 는다).
+func _trim_face_views() -> void:
+	while _face_views.size() > MAX_FACE_VIEWS:
+		var oldest: int = -999
+		for tile: int in _face_views.keys():
+			if not tile_ids.has(tile):
+				oldest = tile
+				break
+		if oldest == -999:
+			return
+		(_face_views[oldest] as Node).queue_free()
+		_face_views.erase(oldest)
+
+
 func begin(values: Array) -> void:
 	tile_ids.clear()
 	for index: int in 3:
@@ -147,7 +164,12 @@ func begin(values: Array) -> void:
 		tile_ids.append(tile)
 		if not _face_views.has(tile):
 			_face_views[tile] = _make_face_view(tile)
+		else:
+			var view: SubViewport = _face_views[tile]
+			_face_views.erase(tile)
+			_face_views[tile] = view  # 최근에 쓴 패를 맨 뒤로
 		(_faces[index].material_override as StandardMaterial3D).albedo_texture = (_face_views[tile] as SubViewport).get_texture()
+	_trim_face_views()
 	landed = [false,false,false]
 	_time = -0.001
 	render_view.render_target_update_mode = SubViewport.UPDATE_ALWAYS

@@ -92,7 +92,7 @@ func _prewarm_step() -> void:
 		_prewarm_index += 1
 		return
 	var entry: Array = PREWARM[_prewarm_index]
-	presenter.instant = true
+	presenter.instant = false  # instant면 play가 아무것도 만들지 않고 돌아간다
 	presenter.play(entry[0], entry[1], 0.5)
 	_prewarm_playing = true
 	if _prewarm_index == 0:
