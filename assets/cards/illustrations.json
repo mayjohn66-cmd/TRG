@@ -170,10 +170,10 @@
   {
     "card_id": "ACT_12",
     "file": "ACT_12.png",
-    "source_version": "character-v3",
+    "source_version": "character-v4",
     "width": 1448,
     "height": 1086,
-    "sha256": "212abb122e26915d8242ee2c3dbe7b2d36c09ca270e89728a95d0c64ec369282"
+    "sha256": "4463f7da1e8310bb4cc10dee2b2e0e37c82194030d2cb07ba2a601dfbafbd252"
   },
   {
     "card_id": "ACT_13",
