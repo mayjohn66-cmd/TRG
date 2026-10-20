@@ -516,7 +516,7 @@ func _picture_tile(data: Dictionary, on_pick: Callable) -> Control:
 	marker.add_theme_font_size_override("font_size", 14)
 	marker.add_theme_color_override("font_color", Color("3a2400"))
 	marker.add_theme_stylebox_override("normal", _box(Color("ffd43b"), Color("b8860b"), 2, 10, 2, 4))
-	marker.position = Vector2(card_size.x - 70, -8)
+	marker.position = Vector2(card_size.x - 74, 6)
 	marker.z_index = 6
 	marker.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	marker.visible = false
@@ -929,8 +929,14 @@ func _ch_pawns() -> Dictionary:
 		var skill: StringName = PawnCatalog.SKILL_IDS.get(sub, &"")
 		if skill != &"":
 			rows.append(["필살기 %s" % PawnCatalog.skill_name(skill), PawnCatalog.skill_text(skill)])
+		var chips: Array = [PawnCatalog.display_set_name(kind)]
+		if sub == GameEnums.PawnSubType.CHESS_PAWN:
+			# 폰은 반환점에서 퀸이 된다: 승급한 뒤의 능력을 퀸 그림과 함께 보여 준다
+			var queen: GameEnums.PawnSubType = GameEnums.PawnSubType.CHESS_QUEEN
+			rows.append([_pawn_texture(queen, kind), "퀸 승급 후", "%s\n반환점(%d번) 이상을 밟는 순간 영구 승급 (잡혀도 퀸 유지)" % [PawnCatalog.SUB_ABILITIES[queen], BoardSpec.halfway_tile]])
+			chips.append("퀸 승급")
 		entries.append({"title": PawnCatalog.unit_label(kind, unit).split(":")[-1], "augment": definition.augment_id, "texture": _pawn_texture(sub, kind), "icon": &"crown",
-			"tone": Color("20c997"), "chips": [PawnCatalog.display_set_name(kind)], "summary": PAWN_LINES.get(kind, ""), "rows": rows})
+			"tone": Color("20c997"), "chips": chips, "summary": PAWN_LINES.get(kind, ""), "rows": rows})
 	return {"title": "말", "entries": entries, "wide": true}
 
 
