@@ -344,7 +344,7 @@ func _test_presenters() -> void:
 				flipped += 1
 		if tarot_flips.is_empty() or tarot_flips.back() != flipped:
 			tarot_flips.append(flipped)
-	elapsed = await _play(&"DICE_TAROT", {"tool_id": &"DICE_TAROT", "steps": 6, "details": {"fate": &"chariot", "name": "VII. 전차 (The Chariot)", "flipped": 2, "fool_leap": false}}, sample_tarot)
+	elapsed = await _play(&"DICE_TAROT", {"tool_id": &"DICE_TAROT", "steps": 6, "details": {"fate": &"chariot", "name": "VII. 전차 (The Chariot)", "flipped": 2}}, sample_tarot)
 	_expect(elapsed >= 0.4 and elapsed < 3.0 and presenter.last_display.contains("VII"), "타로 연출 (%.2f초, %s)" % [elapsed, presenter.last_display])
 	# instant: 즉시 완료
 	presenter.instant = true
@@ -460,7 +460,7 @@ func _test_yut_throw() -> void:
 	var presenter: RollPresenter = _board._presenter
 	presenter.instant = false
 	presenter.set_process(false)
-	presenter.play(&"YUT",{"steps":2,"reroll":true,"details":{"face":-1,"special":true}})
+	presenter.play(&"YUT",{"steps":0,"ends_turn":true,"details":{"face":0,"nak":true}})
 	await process_frame
 	await process_frame
 	var view: YutThrow3D = presenter._yut_3d
@@ -476,17 +476,17 @@ func _test_yut_throw() -> void:
 	presenter._update(YutThrow3D.RESULT_TIME+0.001)
 	presenter._update(YutThrow3D.RESULT_TIME+0.01)
 	_expect(events==[0,1,2,3],"exactly four primary landing events occur")
-	_expect(view.displayed_value()==-1 and presenter.last_display=="특도","marked physical belly and engine special throw agree")
-	_expect(presenter._die_label.text=="특도 · 2칸 전진 · 한 번 더","special Yut result is shown as a forward bonus throw")
+	_expect(view.displayed_value()==0 and presenter.last_display=="낙","marked stick off the mat and engine 낙 agree")
+	_expect(presenter._die_label.text=="낙 · 0칸, 턴 종료","낙 is shown as 0 steps and the turn ends")
 	view.stick_landed.disconnect(observer)
 	presenter._process(presenter._total)
 	_expect(not presenter.active and view.render_view.render_target_update_mode==SubViewport.UPDATE_DISABLED,"completion releases input and stops Yut rendering")
 	for value: int in ToolYut.FACES:
-		presenter.play(&"YUT",{"steps":2 if value==-1 else value,"reroll":value>=4 or value==-1,"details":{"face":value}},0.1)
+		presenter.play(&"YUT",{"steps":value,"ends_turn":value==0,"reroll":value>=4,"details":{"face":value}},0.1)
 		presenter._update(YutThrow3D.RESULT_TIME+0.001)
 		_expect(presenter._yut_3d==view,"all outcomes reuse the same four meshes and viewport")
 		_expect(view.displayed_value()==value and presenter.last_display==RollPresenter.YUT_NAMES[value],"six physical outcomes agree with engine values")
-		_expect(presenter._die_label.text.contains("한 번 더")==bool(value>=4 or value==-1),"only special/Yut/Mo results show reroll")
+		_expect(presenter._die_label.text.contains("한 번 더")==bool(value>=4),"only Yut/Mo results show reroll")
 		presenter.cancel()
 	_expect(not presenter.active and not presenter.visible and view.render_view.render_target_update_mode==SubViewport.UPDATE_DISABLED,"cancelling Yut hides it and stops its renderer")
 	presenter.play(&"D6",{"steps":4,"details":{"face":4}})
@@ -1648,11 +1648,14 @@ func _test_npc_danger_preview() -> void:
 	var mine: PlayerPawn = state.get_pawn(_board._dock_owner() * 10 + 1)
 	mine.has_left_start = true
 	mine.current_tile_idx = 2
+	for other: PlayerPawn in state.pawns:
+		if other != mine and not other.is_finished:
+			other.reset_to_start()  # 앞선 테스트가 남긴 말이 NPC를 멈춰 세우지 않게 한다
 	_board._refresh_all()
 	_expect(_board._npc_danger.is_empty() and not _board._danger_label.visible, "NPC가 없으면 위험 예고도 경고도 없다")
 	var ghost: NeutralNPC = state.spawn_npc(12, GameEnums.NpcBehavior.PATROL_REVERSE, 1, &"SUM_02")
 	_board._refresh_all()
-	_expect(_board._npc_danger.has(11) and _board._npc_danger.has(10) and _board._npc_danger.has(9), "고스트가 지나갈 3칸(11·10·9번)이 위험 구간으로 표시된다")
+	_expect(_board._npc_danger.has(11) and _board._npc_danger.has(10) and _board._npc_danger.has(9), "팩맨이 지나갈 칸(11·10·9번…)이 위험 구간으로 표시된다")
 	var danger_tile: BoardSkin.Tile = _board._tile_views[10]
 	_expect(danger_tile.danger_level == 2 and danger_tile.danger_dir != Vector2.ZERO, "위험 타일은 해골(level 2)과 진행 방향 화살표를 가진다")
 	_expect(not _board._danger_label.visible, "내 말이 위험 구간 밖이면 경고 문구가 없다")
@@ -1678,12 +1681,12 @@ func _test_npc_danger_preview() -> void:
 	mine.current_tile_idx = 23
 	_board._refresh_all()
 	_expect(_board._npc_danger.has(21) and _board._npc_danger.has(22) and _board._npc_danger.has(23), "도적떼가 가는 길이 표시된다 (21~23번)")
-	_expect((_board._tile_views[23] as BoardSkin.Tile).danger_level == 2 and (_board._tile_views[21] as BoardSkin.Tile).danger_level == 1, "도착 칸만 해골, 지나는 길은 붉은 테두리")
+	_expect(not _board._npc_danger.has(24), "말을 만난 칸에서 멈추므로 그 뒤는 표시하지 않는다")
 	# NPC 툴팁과 라벨
 	_board._fill_npc_tip(robber.entity_id)
-	_expect(_board._tip_title.text.contains("도적") and _board._tip_title.text.contains("▶") and _board._tip_ability.text.contains("1~6") and _board._tip_ability.text.contains("소멸합니다"), "도적 툴팁: 방향과 설명 (%s)" % _board._tip_title.text)
+	_expect(_board._tip_title.text.contains("도적") and _board._tip_title.text.contains("▶") and _board._tip_ability.text.contains("3~6") and _board._tip_ability.text.contains("소멸합니다"), "도적 툴팁: 방향과 설명 (%s)" % _board._tip_title.text)
 	_board._fill_npc_tip(ghost.entity_id)
-	_expect(_board._tip_title.text.contains("고스트") and _board._tip_title.text.contains("◀") and _board._tip_ability.text.contains("3칸") and _board._tip_ability.text.contains("반환점"), "고스트 툴팁: 역방향 3칸 순찰")
+	_expect(_board._tip_title.text.contains("팩맨") and _board._tip_title.text.contains("◀") and _board._tip_ability.text.contains("역방향") and _board._tip_ability.text.contains("3~6"), "팩맨 툴팁: 역방향 3~6칸 전진")
 	_expect(not _board._announce_gate_text_for_tests().contains("한 칸"), "NPC 이동 안내 문구가 실제 규칙을 말한다")
 	state.clear_npcs()
 	mine.has_left_start = false

@@ -63,18 +63,13 @@ func test_remove_law_by_id_for_act_06() -> void:
 func test_personal_passives_only_run_at_their_timing_and_for_their_owner() -> void:
 	var state := make_state()
 	state.rulebook.add_personal("SUPER_10", 1)  # ON_DICE_ROLL: 짝수 또는 5 이상 +3
-	state.rulebook.add_personal("SUPER_11", 1)  # ON_CAPTURE
 	check(not state.rulebook.add_personal("SUPER_10", 1), "같은 패시브는 한 번만")
 	check(state.rulebook.law_ids().is_empty(), "개인 패시브는 법전 슬롯을 차지하지 않는다")
 	var ctx: RuleContext = run_timing(state, make_ctx(state, 4), RuleContext.ON_DICE_ROLL)
 	check_eq(ctx.dice_value, 7, "짝수 4 -> 니트로 +3")
-	check_eq(ctx.capture_charge_steps, 0, "ON_CAPTURE 패시브는 아직 미적용")
 	check_eq(run_timing(state, make_ctx(state, 5), RuleContext.ON_DICE_ROLL).dice_value, 8, "홀수라도 5 이상이면 +3")
 	check_eq(run_timing(state, make_ctx(state, 3), RuleContext.ON_DICE_ROLL).dice_value, 3, "홀수 3은 그대로")
 	check_eq(run_timing(state, make_ctx(state, 4, 2), RuleContext.ON_DICE_ROLL).dice_value, 4, "주인이 아니면 작동하지 않는다")
-	var captured: RuleContext = run_timing(state, make_ctx(state, 4), RuleContext.ON_CAPTURE)
-	check_eq(captured.capture_charge_steps, LawRunawayTrain.charge_steps(), "ON_CAPTURE 시점에 폭주 기관차")
-	check_eq(captured.dice_value, 4, "눈금은 다시 바뀌지 않음")
 
 
 func test_process_context_orders_by_priority_then_queue_order() -> void:
@@ -255,7 +250,7 @@ func test_card_registry_has_thirty_two_cards_and_the_default_deck() -> void:
 		var key: String = "corner" if card.corner_only else str(card.category)
 		counts[key] = int(counts.get(key, 0)) + 1
 	check_eq(CardRegistry.DECK_COMPOSITION.size(), 32, "카드 32종")
-	check_eq([counts.get(str(GameEnums.CardCategory.COUNTER)), counts.get(str(GameEnums.CardCategory.INSTANT)), counts.get(str(GameEnums.CardCategory.TRAP)), counts.get("corner"), counts.get(str(GameEnums.CardCategory.SUMMON))], [7, 13, 6, 4, 2], "반격 7 · 즉발 13 · 함정 6 · 코너 함정 4 · 소환 2")
+	check_eq([counts.get(str(GameEnums.CardCategory.COUNTER)), counts.get(str(GameEnums.CardCategory.INSTANT)), counts.get(str(GameEnums.CardCategory.TRAP)), counts.get("corner"), counts.get(str(GameEnums.CardCategory.SUMMON))], [7, 13, 6, 4, 2], "방어 7 · 즉발 13 · 함정 6 · 코너 함정 4 · 소환 2")
 	check_eq(CardRegistry.default_deck().size(), 50, "기본 덱 50장 (cards_table.csv param_2)")
 
 
@@ -271,28 +266,25 @@ func test_act_06_objection_resets_one_victory_record() -> void:
 	exec(state, card.create_command(state, 1, {"target_player": 2, "law_id": "LAW_01"}))
 	check_eq(state.stat(2, VictoryLaw.KILLS), 0, "0으로 초기화")
 
-func test_neutral_npc_bandit_chases_with_bfs_and_steals_card() -> void:
+func test_neutral_npc_bandit_marches_forward_and_ejects_the_first_pawns_it_meets() -> void:
 	var state := make_state()
 	place(state, 21, 3, [2])
+	place(state, 22, 3, [2])
 	state.give_card(2, &"ACT_06")
 	var npc: NeutralNPC = state.spawn_npc(1, GameEnums.NpcBehavior.CHASE_NEAREST, 1, &"SUM_01")
-	var reports: Array[Dictionary] = []
-	for i: int in 6:
-		reports.append(npc.run_ai(state))
-		if state.get_pawn(21).current_tile_idx == 0:
-			break
-	check_eq(state.get_pawn(21).current_tile_idx, 0, "도적에게 잡혀 출발선으로")
-	check((state.hands[2] as Array).is_empty(), "생떼 카드 1장 강탈")
+	var report: Dictionary = npc.run_ai(state)
+	check_eq(report["path"], int_array([2, 3]), "정방향으로 가다 말을 만난 칸에서 멈춘다")
+	check(not state.get_pawn(21).has_left_start and not state.get_pawn(22).has_left_start, "그 칸의 말 전부 출발선으로")
+	check_eq((state.hands[2] as Array).size(), 1, "카드는 빼앗지 않는다")
 
 
-func test_neutral_npc_ghost_patrols_reverse_and_drags_pawns_to_halfway() -> void:
+func test_neutral_npc_passes_over_the_start_line_without_catching() -> void:
 	var state := make_state()
-	place(state, 21, 10, [9])
-	var ghost: NeutralNPC = state.spawn_npc(12, GameEnums.NpcBehavior.PATROL_REVERSE, 1, &"SUM_02")
+	var ghost: NeutralNPC = state.spawn_npc(2, GameEnums.NpcBehavior.PATROL_REVERSE, 1, &"SUM_02")
+	place(state, 21, BoardSpec.tile_count - 1, [BoardSpec.tile_count - 2])
 	var report: Dictionary = ghost.run_ai(state)
-	check_eq(report["path"], int_array([11, 10]), "12번에서 역주행하다 말을 만나면 그 자리에서 멈춘다")
-	check_eq(report["vanished"], true, "한 번 잡으면 소멸")
-	check_eq(state.get_pawn(21).current_tile_idx, 12, "마주친 말은 12번으로 연행")
+	check_eq(report["path"], int_array([1, 0, BoardSpec.tile_count - 1]), "출발선을 그냥 지나 역방향으로 계속")
+	check(bool(report["vanished"]) and not state.get_pawn(21).has_left_start, "건너편 말을 잡는다")
 
 
 # --- Dry-Run(미리보기)와 법전 변조 추적 ------------------------------------------
@@ -351,7 +343,7 @@ func test_move_report_notes_laws_only_when_the_path_really_changes() -> void:
 
 func test_neutral_npc_vanishes_after_first_catch() -> void:
 	var state := make_state()
-	place(state, 21, 3, [2])
+	place(state, 21, 4, [3])
 	var bandit: NeutralNPC = state.spawn_npc(3, GameEnums.NpcBehavior.CHASE_NEAREST, 1, &"SUM_01")
 	var vanished_ids: Array = []
 	state.npc_vanished.connect(func(npc_id: int, _tile: int) -> void: vanished_ids.append(npc_id))
@@ -361,9 +353,9 @@ func test_neutral_npc_vanishes_after_first_catch() -> void:
 	state.remove_npc(bandit)
 	check_eq(state.npcs.size(), 0, "판에서 제거")
 	check_eq(vanished_ids, [npc_id], "npc_vanished 시그널")
-	var ghost: NeutralNPC = state.spawn_npc(0, GameEnums.NpcBehavior.PATROL_REVERSE, 1, &"SUM_02")
+	var ghost: NeutralNPC = state.spawn_npc(BoardSpec.halfway_tile, GameEnums.NpcBehavior.PATROL_REVERSE, 1, &"SUM_02")
 	var idle: Dictionary = ghost.run_ai(state)
-	check_eq(idle["vanished"], false, "아무도 못 잡으면 계속 순찰")
+	check_eq(idle["vanished"], false, "아무도 못 잡으면 계속 전진")
 
 
 func test_game_session_validates_nicknames() -> void:

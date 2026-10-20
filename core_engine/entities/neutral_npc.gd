@@ -1,6 +1,6 @@
 # File: res://core_engine/entities/neutral_npc.gd
 # Class: class_name NeutralNPC
-# Role: 중립 소환수(카탄의 도적떼·팩맨 고스트). 라운드 종료 시 BFS 최단 경로 AI로 스스로 이동하며, 기물을 한 번 잡으면 소멸한다(report.vanished)
+# Role: 중립 소환수(카탄의 도적떼·팩맨). 보드에 남아 라운드 종료마다 정해진 방향으로 3~6칸 전진하며, 말을 처음 만난 칸의 말을 모두 사출하고 소멸한다(report.vanished)
 class_name NeutralNPC
 extends BoardEntity
 
@@ -8,112 +8,40 @@ var behavior: GameEnums.NpcBehavior = GameEnums.NpcBehavior.CHASE_NEAREST
 var display_id: StringName = &"SUM_01"
 
 
-## 라운드 종료 NPC 페이즈에서 호출된다. 이동 결과를 이벤트 딕셔너리로 반환한다.
+const MIN_STEPS: int = 3
+const MAX_STEPS: int = 6
+
+
+## 라운드 종료 NPC 페이즈에서 호출된다. 정해진 방향(도적떼 정방향, 팩맨 역방향)으로 3~6칸 전진하고, 말을 처음 만난 칸에서 그 칸의 말을 모두 사출한 뒤 사라진다.
+## 반환: {"npc_id", "path", "caught": [말 ID], "stolen_cards": [], "vanished"}
 func run_ai(state: GameState) -> Dictionary:
-	match behavior:
-		GameEnums.NpcBehavior.PATROL_REVERSE:
-			return _patrol_reverse(state)
-	return _chase_nearest(state)
+	var run: Dictionary = NpcSweep.advance(state, self, state.rng.randi_range(MIN_STEPS, MAX_STEPS))
+	var path: Array[int] = []
+	path.assign((run["path"] as Array).slice(1))
+	return {"npc_id": entity_id, "path": path, "caught": run["ejected"], "stolen_cards": [] as Array[StringName], "vanished": run["vanished"]}
 
 
-func _new_report() -> Dictionary:
-	return {"npc_id": entity_id, "path": [] as Array[int], "caught": [] as Array[int], "stolen_cards": [] as Array[StringName], "vanished": false}
-
-
-func _chase_nearest(state: GameState) -> Dictionary:
-	var report: Dictionary = _new_report()
-	var roll: int = state.rng.randi_range(1, 6)
-	var targets: Array[BoardEntity] = []
-	var standing_on_target: bool = false
-	for pawn: PlayerPawn in state.get_active_pawns():
-		if not pawn.has_left_start or pawn.carrier != null:
-			continue
-		targets.append(pawn)
-		if pawn.current_tile_idx == current_tile_idx:
-			standing_on_target = true
-	var route: Array[int] = state.board.find_nearest_entity_bfs(current_tile_idx, targets)
-	if route.is_empty() and not standing_on_target:
-		return report
-	for i: int in mini(roll, route.size()):
-		var from_tile: int = current_tile_idx
-		current_tile_idx = route[i]
-		push_step(current_tile_idx)
-		(report["path"] as Array[int]).append(current_tile_idx)
-		state.npc_stepped.emit(entity_id, from_tile, current_tile_idx)
-	if route.is_empty() or current_tile_idx == route.back():
-		for victim: PlayerPawn in state.leaders_at(current_tile_idx):
-			if not victim.has_left_start:
-				continue
-			var stolen: StringName = state.steal_random_card(victim.owner_id, state.rng)
-			if stolen != &"":
-				(report["stolen_cards"] as Array[StringName]).append(stolen)
-			(report["caught"] as Array[int]).append(victim.entity_id)
-			state.send_to_start(victim, -1)
-	report["vanished"] = not (report["caught"] as Array[int]).is_empty()
-	return report
-
-
-func _patrol_reverse(state: GameState) -> Dictionary:
-	var report: Dictionary = _new_report()
-	var cursor: PathCursor = PathCursor.from_entity(self, true)
-	for i: int in 3:
-		var from_tile: int = cursor.tile
-		state.board.advance_backward(cursor)
-		current_tile_idx = cursor.tile
-		step_history.assign(cursor.history)
-		(report["path"] as Array[int]).append(current_tile_idx)
-		state.npc_stepped.emit(entity_id, from_tile, current_tile_idx)
-		for victim: PlayerPawn in state.leaders_at(current_tile_idx):
-			if not victim.has_left_start or current_tile_idx == GameEnums.GOAL_TILE:
-				continue
-			(report["caught"] as Array[int]).append(victim.entity_id)
-			state.teleport_stack(victim, BoardSpec.halfway_tile)
-		if not (report["caught"] as Array[int]).is_empty():
-			break
-	report["vanished"] = not (report["caught"] as Array[int]).is_empty()
-	return report
+func direction() -> int:
+	return -1 if behavior == GameEnums.NpcBehavior.PATROL_REVERSE else 1
 
 
 ## 이 NPC가 이번 라운드 끝에 어디를 덮칠지 미리 본다 (화면의 위험 예고용). 난수를 쓰지 않고 게임 상태도 바꾸지 않는다.
-## 반환: {"tiles": 지나갈 수 있는 타일 순서(Array[int]), "catch_tiles": 말이 서 있으면 잡히는 타일(Array[int]), "chance": 그 타일에서 잡힐 확률(0~1), "direction": +1(정방향 추격) 또는 -1(역방향 순찰)}
-## 도적떼는 주사위(1~6)만큼 가장 가까운 말을 향해 가고, 도착한 말만 잡는다 (도착 못 하면 못 잡음). 고스트는 3칸 역주행하며 지나는 타일의 말을 잡고 첫 사냥에서 멈춘다.
+## 반환: {"tiles": 지나갈 수 있는 타일 순서(Array[int]), "catch_tiles": 말이 서 있으면 잡히는 타일(Array[int]), "chance": 지금 말이 서 있는 첫 칸에서 잡힐 확률(0~1), "direction": +1(정방향) 또는 -1(역방향)}
+## 3~6칸 중 하나를 고르게 전진하므로 3칸 안은 반드시 닿고, 4·5·6칸째는 3/4·2/4·1/4 확률로 닿는다. 말을 만난 첫 칸에서 멈춘다.
 func danger_preview(state: GameState) -> Dictionary:
-	var preview: Dictionary = {"tiles": [] as Array[int], "catch_tiles": [] as Array[int], "chance": 0.0, "direction": 1}
-	if behavior == GameEnums.NpcBehavior.PATROL_REVERSE:
-		preview["direction"] = -1
-		var cursor: PathCursor = PathCursor.from_entity(self, true)
-		var tiles: Array[int] = []
-		for i: int in 3:
-			state.board.advance_backward(cursor)
-			tiles.append(cursor.tile)
-		# 말이 지금 없어도 그 자리에 서게 되면 잡히므로 지나가는 모든 타일(출발선 제외)을 위험 구간으로 본다.
-		preview["tiles"] = tiles
-		var danger: Array[int] = []
-		for tile: int in tiles:
-			if tile != GameEnums.GOAL_TILE:
-				danger.append(tile)
-		preview["catch_tiles"] = danger
-		preview["chance"] = 1.0 if not danger.is_empty() else 0.0
-		return preview
-	var targets: Array[BoardEntity] = []
-	var standing_on_target: bool = false
-	for pawn: PlayerPawn in state.get_active_pawns():
-		if not pawn.has_left_start or pawn.carrier != null:
+	var preview: Dictionary = {"tiles": [] as Array[int], "catch_tiles": [] as Array[int], "chance": 0.0, "direction": direction()}
+	var tiles: Array[int] = []
+	var danger: Array[int] = []
+	var tile: int = current_tile_idx
+	for distance: int in range(1, MAX_STEPS + 1):
+		tile = posmod(tile + direction(), BoardSpec.tile_count)
+		tiles.append(tile)
+		if tile == GameEnums.GOAL_TILE:
 			continue
-		targets.append(pawn)
-		if pawn.current_tile_idx == current_tile_idx:
-			standing_on_target = true
-	var route: Array[int] = state.board.find_nearest_entity_bfs(current_tile_idx, targets)
-	if route.is_empty():
-		if standing_on_target:
-			preview["catch_tiles"] = [current_tile_idx] as Array[int]
-			preview["chance"] = 1.0
-		return preview
-	var reachable: Array[int] = []
-	for i: int in mini(6, route.size()):
-		reachable.append(route[i])
-	preview["tiles"] = reachable
-	if route.size() <= 6:
-		preview["catch_tiles"] = [route.back()] as Array[int]
-		preview["chance"] = float(7 - route.size()) / 6.0
+		danger.append(tile)
+		if not NpcSweep.catchable_at(state, tile).is_empty():
+			preview["chance"] = 1.0 if distance <= MIN_STEPS else float(MAX_STEPS + 1 - distance) / float(MAX_STEPS - MIN_STEPS + 1)
+			break  # 그 칸에서 멈추므로 더 뒤는 안전
+	preview["tiles"] = tiles
+	preview["catch_tiles"] = danger
 	return preview

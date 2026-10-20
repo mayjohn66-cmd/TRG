@@ -61,7 +61,7 @@ const SUB_LETTERS: Dictionary = {
 	SubType.CHECKERS_KING: "킹", SubType.LUDO_AVENGER: "루", SubType.POOL_8BALL: "8", SubType.KART_STAR: "★", SubType.MINESWEEPER_FLAG: "깃",
 }
 const SUB_ABILITIES: Dictionary = {
-	SubType.YUT_MAL: "처치·눈금 4/5 시 재굴림 +1 · 자동 업기",
+	SubType.YUT_MAL: "처치 시 재굴림 +1 · 자동 업기",
 	SubType.CHESS_PAWN: "반환점 이상 도달 시 퀸 승급",
 	SubType.CHESS_KNIGHT: "경로 말·함정 관통 (도착 칸만 판정)",
 	SubType.CHESS_BISHOP: "코너 바로 앞에 멈추면 +1칸 코너 진입",
@@ -71,11 +71,11 @@ const SUB_ABILITIES: Dictionary = {
 	SubType.JANGGI_CHA: "없음",
 	SubType.JANGGI_MA: "앞 칸 비면 +2칸",
 	SubType.JANGGI_SANG: "앞 칸 비면 +2칸",
-	SubType.MONO_CAR: "도착 칸 호텔 5턴 · 출발선 통과 시 카드 +1",
+	SubType.MONO_CAR: "반환점 통과 시 카드 +1",
 	SubType.MONO_PLANE: "옷장 → 더 먼 곳으로 워프",
 	SubType.MONO_SHIP: "첫 적 설치물 무시·파괴",
 	SubType.MONO_DOG: "빵집 스침만 해도 카드 +1",
-	SubType.BADUK_BLACK: "없음",
+	SubType.BADUK_BLACK: "홀수 눈금으로 전진하면 +1칸",
 	SubType.BADUK_WHITE: "잡기·함정 1회 방어 (증강 라운드까지 안 잡히면 재충전)",
 	SubType.SHOGI_FU: "반환점 이상 통과 시 토금 승급 (+1칸)",
 	SubType.SHOGI_HISHA: "직진 +2칸 · 반환점에서 용왕 승급",
@@ -100,6 +100,7 @@ const SKILL_IDS: Dictionary = {
 	SubType.SHOGI_KAKU: &"horse",
 	SubType.POOL_8BALL: &"bank_shot",
 	SubType.MINESWEEPER_FLAG: &"plant_mine",
+	SubType.MONO_CAR: &"hotel",
 }
 ## 나리 승급해야 쓸 수 있는 필살기 (용왕·용마).
 const PROMOTED_SKILLS: Array[StringName] = [&"slash", &"horse"]
@@ -115,6 +116,7 @@ const SKILL_NAMES: Dictionary = {
 	&"horse": "용마 십자 베기",
 	&"bank_shot": "뱅크샷",
 	&"plant_mine": "지뢰 매설",
+	&"hotel": "호텔 건설",
 }
 const SKILL_TEXTS: Dictionary = {
 	&"shoot": "조준 발사 → 적 전원 출발선, 근처 안착",
@@ -128,6 +130,7 @@ const SKILL_TEXTS: Dictionary = {
 	&"horse": "[용마] 앞뒤 1칸의 적 처치",
 	&"bank_shot": "앞쪽 가장 가까운 적에게 돌진",
 	&"plant_mine": "지금 칸에 지뢰 설치",
+	&"hotel": "지금 칸에 내 호텔 설치 (5턴, 밟은 적은 멈춤)",
 }
 
 

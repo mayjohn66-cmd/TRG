@@ -35,9 +35,9 @@ const PAWN_RADIUS: float = 10.0
 const STEP_DELAY: float = 0.22
 ## 한 칸 점프: 걸리는 시간(초)과 솟구치는 높이(px). 도착 직후 납작하게 찌그러졌다가 탱글하게 돌아온다.
 const ONE_CLICK_POWER: float = 0.75  ## 원클릭 굴림의 연출 세기 (파워 게이지를 없앴다)
-const NPC_ANNOUNCE_BODY: String = "도적은 주사위만큼 추격하고 고스트는 3칸 순찰합니다"
-const NPC_TIP_ROBBER: String = "라운드 종료 시 주사위(1~6)만큼 가장 가까운 말을 향해 앞으로 이동하며, 도착해 마주친 말을 출발선으로 날려버리고 소멸합니다"
-const NPC_TIP_GHOST: String = "라운드 종료 시 역방향으로 3칸 순찰하며, 마주친 말을 반환점으로 연행하고 소멸합니다"
+const NPC_ANNOUNCE_BODY: String = "도적떼는 정방향, 팩맨은 역방향으로 3~6칸 전진합니다"
+const NPC_TIP_ROBBER: String = "라운드 종료마다 정방향으로 3~6칸 전진하며, 처음 마주친 칸의 말을 모두 출발선으로 날려버리고 소멸합니다"
+const NPC_TIP_GHOST: String = "라운드 종료마다 역방향으로 3~6칸 전진하며, 처음 마주친 칸의 말을 모두 출발선으로 날려버리고 소멸합니다"
 const HOP_SECONDS: float = 0.10
 const HOP_HEIGHT: float = 20.0
 const SLAM_HEIGHT: float = 45.0
@@ -99,7 +99,7 @@ const CARD_CATEGORY_NAMES: Dictionary = {
 	GameEnums.CardCategory.INSTANT: "즉발",
 	GameEnums.CardCategory.TRAP: "함정",
 	GameEnums.CardCategory.SUMMON: "소환",
-	GameEnums.CardCategory.COUNTER: "반격",
+	GameEnums.CardCategory.COUNTER: "방어",
 }
 ## 작은 손패 카드에 보여 주는 1줄 핵심 요약 (15자 이내). 자세한 규칙은 클릭해서 확대할 때 CARD_SUMMARIES로 본다.
 const CARD_SHORT: Dictionary = {
@@ -109,7 +109,7 @@ const CARD_SHORT: Dictionary = {
 	&"CNT_04": "공격 1회 회피",
 	&"CNT_05": "함정 파괴 +3칸",
 	&"CNT_06": "함정 무효+강탈",
-	&"CNT_07": "함정 주인에 반사",
+	&"CNT_07": "함정 카드 획득",
 	&"ACT_02": "상대 선두 사출",
 	&"ACT_03": "폭탄 패스 & +4칸",
 	&"ACT_04": "이번 굴림 +4",
@@ -125,7 +125,7 @@ const CARD_SHORT: Dictionary = {
 	&"ACT_15": "상대 턴 건너뛰기",
 	&"TRP_02": "눈금 4+ 적 사출",
 	&"TRP_03": "반경 2칸 폭파",
-	&"TRP_05": "스프링 대포 +5칸",
+	&"TRP_05": "반경 함정 연쇄 발동",
 	&"TRP_06": "미끄러짐+카드 강탈",
 	&"TRP_07": "지나가면 정지",
 	&"TRP_08": "꼴찌와 자리 교환",
@@ -138,13 +138,13 @@ const CARD_SHORT: Dictionary = {
 }
 ## 카드 확대 보기에서 읽는 개조식 요약 (키워드 + 명사형 종결). cards_table.csv의 desc가 있으면 그것이 우선이다.
 const CARD_SUMMARIES: Dictionary = {
-	&"CNT_01": "[반격] 공격당하면 이번 턴을 통째로 되감고 공격자의 턴 종료",
-	&"CNT_02": "[반격] 잡기를 막고 공격한 말을 출발선으로 사출",
-	&"CNT_03": "[반격] 공격 카드를 막고 공격자에게 그대로 반사",
-	&"CNT_04": "[반격] 잡기·공격 카드 1회 회피",
-	&"CNT_05": "[반격] 걸린 함정을 부수고 +3칸 전진",
-	&"CNT_06": "[반격] 걸린 함정 무효 + 설치자 카드 1장 강탈",
-	&"CNT_07": "[반격] 걸린 함정을 설치자의 선두 말에 반사 (출발선 사출)",
+	&"CNT_01": "[방어] 공격당하면 이번 턴을 통째로 되감고 공격자의 턴 종료",
+	&"CNT_02": "[방어] 잡기를 막고 공격한 말을 출발선으로 사출",
+	&"CNT_03": "[방어] 공격 카드를 막고 공격자에게 그대로 반사",
+	&"CNT_04": "[방어] 잡기·공격 카드 1회 회피",
+	&"CNT_05": "[방어] 걸린 함정을 부수고 +3칸 전진",
+	&"CNT_06": "[방어] 걸린 함정 무효 + 설치자 카드 1장 강탈",
+	&"CNT_07": "[방어] 걸린 함정을 발동하지 않고 그 함정 카드를 내 패로",
 	&"ACT_02": "상대 선두 말을 출발선으로 장외 사출 (프로필 선택)",
 	&"ACT_03": "다음 유저에게 폭탄 패스: 선두 말 사출 + 내 이동 +4칸",
 	&"ACT_04": "굴리기 전 사용! 이번 굴림 +4칸",
@@ -160,7 +160,7 @@ const CARD_SUMMARIES: Dictionary = {
 	&"ACT_15": "상대 1명의 다음 턴 건너뛰기",
 	&"TRP_02": "눈금 4+ 로 지나가는 적 말 출발선 사출",
 	&"TRP_03": "밟으면 반경 2칸 내 모든 말 폭파",
-	&"TRP_05": "밟은 말 앞으로 +5칸 사출, 착지 지점의 말은 들이받아 날림",
+	&"TRP_05": "밟은 말은 멈추고, 반경 2칸 안의 함정이 전부 연쇄 발동",
 	&"TRP_06": "밟은 적 말 +3칸 미끄러짐 + 카드 1장 강탈",
 	&"TRP_07": "지나가던 적 말 그 칸에 강제 정지",
 	&"TRP_08": "밟은 적 말 ↔ 보드 꼴찌 말 위치 교환",
@@ -168,8 +168,8 @@ const CARD_SUMMARIES: Dictionary = {
 	&"TRP_C02": "[코너] 내 말 +5칸 점프 / 적 말 출발선 사출",
 	&"TRP_C03": "[코너] 지나가는 적은 카드 1장 상납, 없으면 강제 정지 (5턴 유지)",
 	&"TRP_C04": "[코너] 밟은 적 정지 + 코너 2칸 안의 적 말 끌어오기",
-	&"SUM_01": "[상단 코너] 정방향 3~6칸 질주하며 길 위 말 전부 사출",
-	&"SUM_02": "[상단 코너] 역방향 3~6칸 질주하며 길 위 말 전부 사출",
+	&"SUM_01": "[상단 코너] 소환 후 매 라운드 정방향 3~6칸 전진 · 처음 만난 칸의 말 전부 사출 후 소멸 (1마리만)",
+	&"SUM_02": "[상단 코너] 소환 후 매 라운드 역방향 3~6칸 전진 · 처음 만난 칸의 말 전부 사출 후 소멸 (1마리만)",
 }
 
 
@@ -205,7 +205,7 @@ const PHASE_NAMES: Dictionary = {
 	TurnManager.State.PHASE_RESOLUTION: "정산 / 개입 타이밍 B - 카드 사용 가능",
 	TurnManager.State.PHASE_NEUTRAL_NPC: "중립 NPC 페이즈",
 }
-const YUT_NAMES: Dictionary = {-1: "특도", 1: "도", 2: "개", 3: "걸", 4: "윷", 5: "모"}
+const YUT_NAMES: Dictionary = {0: "낙", 1: "도", 2: "개", 3: "걸", 4: "윷", 5: "모"}
 const HAND_NAMES: Dictionary = {
 	&"high_card": "노페어", &"one_pair": "원페어", &"two_pair": "투페어", &"three_kind": "트리플",
 	&"straight": "스트레이트", &"flush": "플러시", &"full_house": "풀하우스", &"four_kind": "포카드",
@@ -830,13 +830,13 @@ func _bind_state() -> void:
 		_log_line("[승진] %s → 체스:퀸! (반환점 통과 승급)" % _pawn_name(pawn_id), Color("ffd43b"))
 		_announce_gate("기물 능력", "[발동!] 체스 퀸 승진", "%s 퀸 승진 ◆ 이동 +2칸 · 말·함정 관통" % _pawn_name(pawn_id), Color("ffd43b"), null, 1.2)
 		_fx_when_announced(func() -> void: _fx_promote(pawn_id, Color("ffd43b"))))
-	state.domino_collapsed.connect(func(pawn_id: int, passed: Array[int], _chain: Array[int]) -> void:
-		_log_line("[스프링 대포] %s 앞으로 %d칸 사출!" % [_pawn_name(pawn_id), passed.size()], Color("63e6be"))
+	state.domino_collapsed.connect(func(pawn_id: int, _passed: Array[int], chain: Array[int]) -> void:
+		_log_line("[도미노 연쇄] %s이(가) 도미노를 밟아 함정 %d개가 연쇄 발동!" % [_pawn_name(pawn_id), chain.size()], Color("63e6be"))
 		var cannon_pos: Vector2 = (_pawn_views[pawn_id] as Node2D).position if _pawn_views.has(pawn_id) else Vector2.ZERO
 		_fx_when_announced(func() -> void:
 			screen_shake(7.0, 0.25)
 			_impact_ring(cannon_pos, Color("63e6be"), 40.0))
-		_announce_gate("함정 발동", "스프링 인간 대포!", "%s이(가) 앞으로 %d칸 쏘아 올려졌습니다\n착지 지점의 말은 들이받혀 출발선으로 날아갑니다" % [_pawn_name(pawn_id), passed.size()], Color("63e6be"), null, 1.4))
+		_announce_gate("함정 발동", "도미노 연쇄!", "%s이(가) 도미노를 밟고 멈췄습니다\n반경 %d칸의 함정 %d개가 줄줄이 터집니다" % [_pawn_name(pawn_id), TrapDomino.chain_radius(), chain.size()], Color("63e6be"), null, 1.4))
 	state.tower_struck.connect(func(tile: int, scattered: Array[Dictionary]) -> void:
 		_log_line("[타로] 무너지는 탑이 %d번 타일에 벼락! 말 %d개가 흩어졌습니다" % [tile, scattered.size()], Color("ffa94d"))
 		_announce_gate("타로", "XVI. 무너지는 탑!", "%d번 타일에 벼락이 내리쳐 말 %d개가 뿔뿔이 흩어졌습니다" % [tile, scattered.size()], Color("ffa94d"), null, 1.5)
@@ -880,11 +880,20 @@ func _bind_state() -> void:
 	state.crowbar_swung.connect(func(player_id: int, tiles: Array[int]) -> void:
 		_log_line("[빠루] %s이(가) %s번 칸을 휘둘렀습니다" % [_player_name(player_id), ", ".join(PackedStringArray(tiles.map(func(tile: int) -> String: return str(tile))))], Color("ffa94d"))
 		_refresh_tiles())
+	state.pawns_bonded.connect(func(a: int, b: int) -> void:
+		_log_line("[강제 연대책임] %s ↔ %s 일심동체!" % [_pawn_name(a), _pawn_name(b)], Color("ffa94d")))
+	state.bond_resolved.connect(func(kind: StringName, pawn_id: int, partner_id: int) -> void:
+		var pawn: PlayerPawn = state.get_pawn(pawn_id)
+		var verb: String = "함께 골인!" if kind == &"finish" else "함께 출발선으로!"
+		_log_line("[강제 연대책임] %s의 짝 %s도 %s" % [_pawn_name(pawn_id), _pawn_name(partner_id), verb], Color("ffa94d"))
+		if pawn != null:
+			_record(pawn.owner_id, "🔗 연대책임: %s 짝 말도 %s" % [_bq("%d번 말" % pawn.slot), verb], "", true))
 	state.npc_swept.connect(func(display_id: StringName, path: Array[int], ejected: Array[int]) -> void:
-		var runner: String = "도적떼" if display_id == &"SUM_01" else "팩맨"
+		var runner: String = "폭주 기관차" if display_id == &"TRAIN" else ("도적떼" if display_id == &"SUM_01" else "팩맨")
 		_log_line("[%s] %d번 → %d번 질주! 사출된 말 %d개" % [runner, path[0], path[-1], ejected.size()], Color("fa5252"))
 		_record(-1, "🦹 %s %d번 → %d번 질주! (사출 %d)" % [_bq(runner), path[0], path[-1], ejected.size()])
-		_announce("소환", "[%s 질주!]" % runner, "%d번 → %d번 칸을 쓸고 사라졌습니다 (사출 %d)" % [path[0], path[-1], ejected.size()], Color("fa5252"), null, 1.1))
+		var outcome: String = "칸을 쓸고 사라졌습니다" if display_id == &"TRAIN" or not ejected.is_empty() else "칸까지 전진! 라운드가 끝날 때마다 계속 전진합니다"
+		_announce("소환", "[%s 질주!]" % runner, "%d번 → %d번 %s (사출 %d)" % [path[0], path[-1], outcome, ejected.size()], Color("fa5252"), null, 1.1))
 	state.shield_recharged.connect(func(pawn_id: int) -> void: _log_line("[백돌 방어막] %s의 방어막이 다시 차올랐습니다" % _pawn_name(pawn_id), Color("b197fc")))
 	state.trap_defused.connect(func(tile: int, id: String, pawn_id: int) -> void:
 		_log_line("[지뢰찾기] %s이(가) %d번 타일의 %s을(를) 해체하고 카드 1장!" % [_pawn_name(pawn_id), tile, _attachment_name(id)], Color("63e6be"))
@@ -914,7 +923,7 @@ func _bind_state() -> void:
 			_record(trapped.owner_id, "🪤 %s 밟음! (%d번 타일, %s)" % [_bq(_attachment_name(id)), tile, _bq("%d번 말" % trapped.slot)])
 		_announce_gate("함정 발동", "[발동!] %s" % _attachment_name(id), "%s\n%d번 타일에서 %s에게 발동" % [card_summary(StringName(id)), tile, _pawn_name(pawn_id)], Color("ff6b6b"), null, 1.2))
 	state.npc_vanished.connect(func(npc_id: int, tile: int) -> void:
-		_announce("중립 기물", "NPC가 사냥을 마치고 사라졌습니다", "%d번 타일 - 중립 기물은 한 번 잡으면 사라집니다" % tile, Color("fa5252"), null, 1.3))
+		_announce("중립 기물", "NPC가 사냥을 마치고 사라졌습니다", "%d번 타일 - 중립 기물은 말을 잡으면 사라집니다" % tile, Color("fa5252"), null, 1.3))
 	state.attachment_placed.connect(func(tile: int, id: String, owner_id: int) -> void:
 		if id.begins_with("TRP") and _fx_on():
 			# 카드를 먼저 보여 준 뒤 발판이 짙은 보라색으로 깜빡이며 나타난다.
@@ -933,7 +942,7 @@ func _bind_state() -> void:
 	state.card_drawn.connect(func(player_id: int, _card_id: StringName) -> void: _log_line("[카드] P%d 생떼 카드 1장 획득" % player_id, Color("ffa94d")))  # 뽑은 카드는 비공개
 	state.card_stolen.connect(func(player_id: int, card_id: StringName) -> void: _log_line("P%d의 카드 [%s]를 도적이 빼앗았습니다" % [player_id, _card_name(card_id)], Color("ff6b6b")))
 	state.npc_spawned.connect(func(_npc_id: int, tile: int) -> void:
-		_log_line("중립 NPC가 %d번 타일에 소환되었습니다. 라운드가 끝날 때 움직입니다." % tile, Color("fa5252"))
+		_log_line("중립 기물이 %d번 타일에 소환되었습니다. 말을 잡을 때까지 계속 전진합니다." % tile, Color("fa5252"))
 		_refresh_all())
 	state.rulebook.law_added.connect(_on_law_added)
 	state.rulebook.law_removed.connect(func(law: LawResource) -> void:
@@ -1614,7 +1623,7 @@ func _build_debug_panel() -> VBoxContainer:
 	debug_row.add_child(_card_option)
 	debug_row.add_child(_make_button("현재 플레이어에게", _on_grant_card_pressed, 12))
 	debug_row.add_child(_make_button("도적 소환(%d번)" % BoardSpec.bakery_tiles[1], _on_spawn_npc_pressed.bind(GameEnums.NpcBehavior.CHASE_NEAREST, BoardSpec.bakery_tiles[1]), 12))
-	debug_row.add_child(_make_button("고스트 소환(%d번)" % BoardSpec.halfway_tile, _on_spawn_npc_pressed.bind(GameEnums.NpcBehavior.PATROL_REVERSE, BoardSpec.halfway_tile), 12))
+	debug_row.add_child(_make_button("팩맨 소환(%d번)" % BoardSpec.halfway_tile, _on_spawn_npc_pressed.bind(GameEnums.NpcBehavior.PATROL_REVERSE, BoardSpec.halfway_tile), 12))
 	_timer_check = CheckBox.new()
 	_timer_check.text = "제한 시간 사용"
 	_timer_check.toggled.connect(func(enabled: bool) -> void: manager.set_process(enabled))
@@ -1991,6 +2000,8 @@ func _refresh_pawns() -> void:
 			badge_text += " 감옥"
 		if pawn.revenge_boost:
 			badge_text += " 복수"
+		if state.bonds.has(pawn.entity_id):
+			badge_text += " 연대"  # 강제 연대책임: 일심동체로 묶인 말
 		(view.get_node("Bounce/Badge") as Label).text = badge_text
 	for npc: NeutralNPC in state.npcs:
 		if not _npc_views.has(npc.entity_id):
@@ -2800,7 +2811,7 @@ func _refresh_hands() -> void:
 		_dock.add_child(card_view)
 
 
-## ⚔ 반격 팝업(InterceptionPrompt): 내 말이 잡히거나, 공격 카드를 맞거나, 함정에 걸렸을 때 그 공격을 받아칠 반격 카드가 손에 있으면
+## ⚔ 방어 팝업(InterceptionPrompt): 내 말이 잡히거나, 공격 카드를 맞거나, 함정에 걸렸을 때 그 공격을 받아칠 방어 카드가 손에 있으면
 ## 진행이 멈추고 가운데에 팝업이 뜬다. 카드마다 [발동] 버튼이 있고, REACTION_SECONDS 동안 고르지 않으면 그냥 맞고 넘어간다.
 func _reaction_holder() -> int:
 	if manager.is_game_over or not manager.counter_pending():
@@ -2853,7 +2864,7 @@ func _build_reaction_popup(holder: int, key: String) -> void:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 8)
 	_reaction_popup.add_child(box)
-	var title := _make_label("⚔ %s 반격하시겠습니까?" % _player_name(holder), 22, Color("bac8ff"))
+	var title := _make_label("⚔ %s 방어하시겠습니까?" % _player_name(holder), 22, Color("bac8ff"))
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(title)
 	var ask := _make_label(_attack_text(entry if not entry.is_empty() else offer), 16, Color("f8f9fa"))
@@ -2954,7 +2965,7 @@ func _build_card_body(card_id: StringName, card_size: Vector2, detail_mode: bool
 ## 한 장짜리 전체 카드 (140x196). 손패에서는 아래 절반이 화면 밖에 가려져 이름과 일러스트가 보이고, 호버하면 올라와 전체가 보인다.
 func _make_card_view(player_id: int, card_id: StringName) -> PanelContainer:
 	var card: BaseCard = CardRegistry.get_card(card_id)
-	# 반격 카드는 끌어 쓰지 않는다: 내게 열린 피격 팝업이 이 카드를 받을 때만 밝게 보인다
+	# 방어 카드는 끌어 쓰지 않는다: 내게 열린 피격 팝업이 이 카드를 받을 때만 밝게 보인다
 	var usable: bool = _card_usable_now(player_id, card) or _counter_offered_to(player_id, card_id)
 	var view := PanelContainer.new()
 	view.custom_minimum_size = HAND_CARD_SIZE
@@ -3100,7 +3111,7 @@ func _drag_begin() -> void:
 	var usable: bool = _card_usable_now(player_id, card)
 	_drop_label.text = "[여기에 놓아 카드 발동!]" if usable else "[지금은 쓸 수 없는 카드입니다]"
 	if card.category == GameEnums.CardCategory.COUNTER:
-		_drop_label.text = "[반격 카드는 공격받을 때 팝업에서 발동합니다]"
+		_drop_label.text = "[방어 카드는 공격받을 때 팝업에서 발동합니다]"
 	if card.needs_tile():
 		_drop_label.text = "[보드판에 놓으면 설치할 타일을 고릅니다]" if usable else "[지금은 쓸 수 없는 카드입니다]"
 	if card.card_id == &"ACT_09" and usable:
@@ -3131,7 +3142,7 @@ func _drag_drop(pointer: Vector2, press: Dictionary) -> void:
 	var reason: String = ""
 	var duel_target: int = _duel_target_at(pointer, player_id) if card_id == &"ACT_09" else -1
 	if card.category == GameEnums.CardCategory.COUNTER:
-		reason = "반격 카드 [%s]는 내가 공격받을 때 뜨는 팝업에서 발동합니다." % card.display_name
+		reason = "방어 카드 [%s]는 내가 공격받을 때 뜨는 팝업에서 발동합니다." % card.display_name
 	elif not _card_usable_now(player_id, card):
 		reason = "지금은 [%s]를 쓸 수 없습니다." % card.display_name
 	elif duel_target != -1 and not DuelRules.targets(state, player_id).has(duel_target):
@@ -3247,7 +3258,7 @@ func _open_zoom(player_id: int, card_id: StringName) -> void:
 	var status_text: String = "지금 사용 가능" if usable else "지금은 사용 불가"
 	if card.category == GameEnums.CardCategory.COUNTER:
 		usable = _counter_offered_to(player_id, card.card_id)
-		status_text = "지금 반격 가능 (팝업에서 발동)" if usable else "내가 공격받을 때만 사용 가능"
+		status_text = "지금 방어 가능 (팝업에서 발동)" if usable else "내가 공격받을 때만 사용 가능"
 	var status := _make_label(status_text, 14, Color("416c2b") if usable else Color("747c64"))
 	status.name = "CardStatus"
 	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -3434,7 +3445,7 @@ func _fill_npc_tip(npc_id: int) -> void:
 	if npc == null:
 		return
 	var robber: bool = npc.behavior != GameEnums.NpcBehavior.PATROL_REVERSE
-	_tip_title.text = "카탄의 도적떼  ▶ 정방향 추격" if robber else "팩맨 고스트  ◀ 역방향 순찰"
+	_tip_title.text = "카탄의 도적떼  ▶ 정방향 전진" if robber else "팩맨  ◀ 역방향 전진"
 	_tip_ability.text = NPC_TIP_ROBBER if robber else NPC_TIP_GHOST
 	_tip_skill.visible = false
 
@@ -3971,14 +3982,14 @@ const TOOL_CARDS: Dictionary = {
 ## 도구별 전체 규칙표: [항목, 전진 결과] 행들과 보충 설명. 새로운 방식의 도구는 유저가 모르므로 족보·확률을 전부 보여 준다.
 const TOOL_RULES: Dictionary = {
 	&"D6": {"rows": [["1 ~ 6 눈금", "나온 눈금만큼"]], "note": "각 눈금 1/6"},
-	&"YUT": {"rows": [["특도 (배 면)", "2칸 + 한 번 더!"], ["도 (1)", "1칸"], ["개 (2)", "2칸"], ["걸 (3)", "3칸"], ["윷 (4)", "4칸 + 한 번 더!"], ["모 (5)", "5칸 + 한 번 더!"]], "note": "6가지 각 1/6"},
+	&"YUT": {"rows": [["낙 (판 밖으로)", "0칸, 턴 종료"], ["도 (1)", "1칸"], ["개 (2)", "2칸"], ["걸 (3)", "3칸"], ["윷 (4)", "4칸 + 한 번 더!"], ["모 (5)", "5칸 + 한 번 더!"]], "note": "6가지 각 1/6"},
 	&"LIFE_ROULETTE": {"rows": [["1 ~ 6, 8 ~ 10", "나온 숫자만큼"], ["7 당첨", "7칸 + 한 번 더!"]], "note": "1 ~ 10 균등 · 원판 돌리기"},
 	&"HOLDEM": {"rows": [["노페어", "1칸"], ["원페어", "3칸"], ["투페어", "5칸"], ["트리플", "7칸"], ["스트레이트", "10칸"], ["플러시 이상", "15칸"]], "note": "5장 드로우 · 플러시 이상 15칸"},
 	&"CHINCHIRO": {"rows": [["4 눈금", "4칸 (2/6)"], ["5 눈금", "5칸 (2/6)"], ["6 눈금", "6칸 (1/6)"], ["삐끗!", "이번 이동 0칸 (1/6)"]], "note": "접시 밖 이탈 = 삐끗 (후퇴는 없음)"},
 	&"SLOT_777": {"rows": [["3개 모두 다름", "1칸"], ["2개 일치", "4칸"], ["3개 일치", "8칸"], ["7 7 7 잭팟", "20칸"]], "note": "릴 3개 · 그림 6종"},
 	&"DICE_HWATU": {"rows": [["망통", "0칸, 턴 종료"], ["1~3 / 4~6 / 7~9끗", "2 / 3 / 4칸"], ["1~6 / 7~9땡", "6 / 7칸"], ["장땡·광땡", "8칸"]], "note": "월 합 끝자리 (망통 = 끝자리 0)"},
 	&"DICE_MAHJONG": {"rows": [["핑후 (불일치)", "2칸"], ["또이츠 (같은 패 2개)", "3칸"], ["슌쯔 (연속 숫자)", "5칸"], ["커쯔 (같은 패 3개)", "8칸"], ["역만 (8%)", "12칸 + 한 번 더!"]], "note": "역만 = 국사무쌍·대삼원"},
-	&"DICE_TAROT": {"rows": [["0. 광대", "0칸(헛발질) 또는 +7칸"], ["VII. 전차", "6칸"], ["X. 운명의 수레바퀴", "4칸 + 한 번 더!"], ["XII. 매달린 남자", "1칸, 다음 굴림 +8칸"], ["XXI. 세계", "9칸"]], "note": "5장 중 1장 · 축복은 다음 굴림"},
+	&"DICE_TAROT": {"rows": [["0. 광대", "0칸, 턴 종료"], ["VII. 전차", "6칸"], ["X. 운명의 수레바퀴", "4칸 + 한 번 더!"], ["XII. 매달린 남자", "1칸, 다음 굴림 +8칸"], ["XXI. 세계", "9칸"]], "note": "5장 중 1장 · 축복은 다음 굴림"},
 	&"REVOLVER": {"rows": [["방아쇠 1회", "+3칸 누적"], ["최대 누적", "15칸"], ["폭죽 (6칸 중 1칸)", "누적 0칸, 턴 종료"], ["멈추기", "누적한 칸만큼 이동"]], "note": "6칸 중 1칸은 폭죽 · 깃발이 나오면 누적 소멸"},
 	&"DICE_YACHT": {"rows": [["노페어 (찬스)", "가장 높은 눈금의 절반 올림 (1~3칸)"], ["트리플 (3개 동일)", "5칸"], ["스몰 스트레이트 (4연속) / 풀하우스", "7칸"], ["포카드 / 라지 스트레이트 (5연속)", "9칸"], ["★ 야추 (5개 동일)", "12칸 + 한 번 더!"]], "note": "주사위 5개 · 고정(Keep)하고 나머지를 최대 2번 다시 굴림"},
 	&"DICE_BLACKJACK": {"rows": [["시작", "합계 11 이상이 되도록 카드를 받음 (A는 11, 넘으면 1)"], ["11 ~ 20에서 스탠드", "(합계 - 10)칸 (1~10칸)"], ["★ 정확히 21", "11칸 + 한 번 더!"], ["22 이상 (버스트)", "0칸, 턴 종료"]], "note": "히트로 카드를 더 뽑거나 스탠드로 확정"},
@@ -4043,7 +4054,7 @@ func _category_text(category: GameEnums.CardCategory) -> String:
 	return "즉발·개입형"
 
 
-## 지금 이 플레이어에게 열린 반격 대기(피격 팝업)에 이 카드를 낼 수 있는가.
+## 지금 이 플레이어에게 열린 방어 대기(피격 팝업)에 이 카드를 낼 수 있는가.
 func _counter_offered_to(player_id: int, card_id: StringName) -> bool:
 	if manager == null or not manager.counter_pending():
 		return false
@@ -4051,7 +4062,7 @@ func _counter_offered_to(player_id: int, card_id: StringName) -> bool:
 	return int(offer["victim"]) == player_id and (offer.get("cards", []) as Array).has(card_id)
 
 
-## 손패에서 끌어 쓸 수 있는가. 반격 카드는 끌어 쓰지 않고 피격 팝업에서만 내므로 언제나 false다.
+## 손패에서 끌어 쓸 수 있는가. 방어 카드는 끌어 쓰지 않고 피격 팝업에서만 내므로 언제나 false다.
 func _card_usable_now(player_id: int, card: BaseCard) -> bool:
 	if card.category == GameEnums.CardCategory.COUNTER:
 		return false
@@ -4263,8 +4274,8 @@ func _hint_text(current_phase: TurnManager.State, tool: BaseJudgmentTool) -> Str
 	if manager.counter_pending():
 		var victim: int = int(manager.pending_counter()["victim"])
 		if _reaction_holder() == victim:
-			return "공격당했습니다! 가운데 반격 팝업에서 반격 카드를 고르거나 [그냥 맞기]를 누르세요. 시간이 지나면 그냥 맞습니다."
-		return "%s이(가) 반격할지 고르는 중입니다..." % _player_name(victim)
+			return "공격당했습니다! 가운데 방어 팝업에서 방어 카드를 고르거나 [그냥 맞기]를 누르세요. 시간이 지나면 그냥 맞습니다."
+		return "%s이(가) 방어할지 고르는 중입니다..." % _player_name(victim)
 	if _is_bot_turn() and not manager.stack_offer_pending() and current_phase != TurnManager.State.PHASE_INTERRUPT_ROLL and current_phase != TurnManager.State.PHASE_RESOLUTION:
 		if net != null and not net.is_bot(manager.current_player_id()):
 			return "%s 님의 차례입니다. 기다려 주세요..." % _player_name(manager.current_player_id())
@@ -4388,7 +4399,7 @@ func _on_card_pressed(player_id: int, card_id: StringName) -> void:
 		if manager.counter_pending() and int(manager.pending_counter()["victim"]) == player_id and card.could_play(state, player_id):
 			_on_reaction_use(player_id, card_id)
 		else:
-			_log_line("[%s] 반격 카드는 공격을 받았을 때 뜨는 반격 팝업에서 씁니다." % card.display_name, Color("868e96"))
+			_log_line("[%s] 방어 카드는 공격을 받았을 때 뜨는 방어 팝업에서 씁니다." % card.display_name, Color("868e96"))
 		return
 	if state.is_banned(player_id):
 		_log_line("알고리즘 밴! %d턴 동안 카드를 쓸 수 없습니다." % int(state.banned_turns[player_id]), Color("ff8787"))
@@ -4513,7 +4524,7 @@ func _start_skill(pawn: PlayerPawn) -> void:
 				_log_line("[뱅크샷] 앞쪽에 들이받을 적이 없습니다.", Color("868e96"))
 				return
 			_act(&"use_skill", {"pawn_id": pawn.entity_id})
-		&"quake", &"slash", &"horse", &"plant_mine":
+		&"quake", &"slash", &"horse", &"plant_mine", &"hotel":
 			_act(&"use_skill", {"pawn_id": pawn.entity_id})
 
 
@@ -4678,6 +4689,8 @@ func _on_skill_used(data: Dictionary) -> void:
 			body = "%d개의 말을 베어 출발선으로!" % (data["victims"] as Array).size()
 		&"plant_mine":
 			body = "%d번 타일에 지뢰 매설" % int(data["from"])
+		&"hotel":
+			body = "%d번 타일에 호텔 건설 (밟은 적은 멈춤)" % int(data["from"])
 	_log_line("[필살기] %s: %s - %s" % [who, PawnCatalog.skill_name(skill), body.replace("\n", " ")], Color("ffa94d"))
 	_announce_gate("1회용 필살기", "[P%d 발동!] %s" % [player_id, PawnCatalog.skill_name(skill)], body, PLAYER_COLORS[player_id], null, 1.3)
 
@@ -7068,7 +7081,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			for report: Dictionary in data["reports"]:
 				_log_line("[NPC] NPC가 %s로 이동 (잡힌 말: %s)" % [str(report["path"]), str(report["caught"])], Color("fa5252"))
 				if not (report["caught"] as Array).is_empty():
-					var npc_name: String = "도적" if report["display_id"] == &"SUM_01" else "고스트"
+					var npc_name: String = "도적떼" if report["display_id"] == &"SUM_01" else "팩맨"
 					var stolen: String = ""
 					if not (report["stolen_cards"] as Array).is_empty():
 						stolen = " / 카드 %d장 강탈" % (report["stolen_cards"] as Array).size()
@@ -7110,15 +7123,15 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 				_profile_react(ranked, true, "[%d위!]" % rank_no)
 				_start_beat(1.0)
 		&"counter_offer":
-			_log_line("[반격 대기] %s: %s - 반격 카드 %d장" % [_player_name(int(data["victim"])), _attack_text(data), (data["cards"] as Array).size()], Color("bac8ff"))
+			_log_line("[방어 대기] %s: %s - 방어 카드 %d장" % [_player_name(int(data["victim"])), _attack_text(data), (data["cards"] as Array).size()], Color("bac8ff"))
 		&"counter_passed":
-			_log_line("[반격] %s이(가) 그냥 맞기로 했습니다" % _player_name(int(data["victim"])), Color("adb5bd"))
+			_log_line("[방어] %s이(가) 그냥 맞기로 했습니다" % _player_name(int(data["victim"])), Color("adb5bd"))
 		&"counter_resolved":
-			_log_line("[반격 성공] %s의 [%s]!" % [_player_name(int(data["victim"])), _card_name(data["card_id"])], Color("74c0fc"))
-			_profile_react(int(data["victim"]), true, "[반격!]")
+			_log_line("[방어 성공] %s의 [%s]!" % [_player_name(int(data["victim"])), _card_name(data["card_id"])], Color("74c0fc"))
+			_profile_react(int(data["victim"]), true, "[방어!]")
 		&"turn_rewound":
 			_record(int(data["player_id"]), "⏪ 이번 턴이 통째로 되감겼습니다")
-			_announce("반격", "[바이츠 더 더스트!]", "%s의 턴이 통째로 되감기고 끝났습니다" % _player_name(int(data["player_id"])), Color("4c6ef5"), null, 1.3)
+			_announce("방어", "[바이츠 더 더스트!]", "%s의 턴이 통째로 되감기고 끝났습니다" % _player_name(int(data["player_id"])), Color("4c6ef5"), null, 1.3)
 		&"extra_turn":
 			_announce("더 월드", "[%s 한 턴 더!]" % _player_name(int(data["player_id"])), "시간이 멈춘 사이 한 번 더 움직입니다", PLAYER_COLORS[int(data["player_id"])], null, 1.1)
 		&"game_over":
@@ -7138,7 +7151,11 @@ func _roll_text(data: Dictionary) -> String:
 	var details: Dictionary = result["details"]
 	var text: String = ""
 	match result["tool_id"]:
-		&"YUT": text += "%s (%d칸)" % [YUT_NAMES.get(result["steps"], "?"), result["steps"]]
+		&"YUT":
+			if result["ends_turn"]:
+				text += "낙! 윷가락이 판 밖으로 - 0칸, 턴 종료"
+			else:
+				text += "%s (%d칸)" % [YUT_NAMES.get(int(details.get("face", result["steps"])), "?"), result["steps"]]
 		&"HOLDEM": text += "%s → %d칸" % [HAND_NAMES.get(details["hand"], "?"), result["steps"]]
 		&"SLOT_777":
 			var symbols: Array[String] = []
@@ -7161,7 +7178,7 @@ func _roll_text(data: Dictionary) -> String:
 				tile_names.append(ToolMahjong.tile_name(int(tile_number)))
 			text += "%s → %s %d칸" % [" ".join(tile_names), details["label"], result["steps"]]
 		&"DICE_TAROT":
-			text += "%s → %d칸" % [details["name"], result["steps"]]
+			text += ("%s → 0칸, 턴 종료" % details["name"]) if result["ends_turn"] else ("%s → %d칸" % [details["name"], result["steps"]])
 			if details.has("bonus"):
 				text += "  (매달린 남자의 축복 +%d칸 포함)" % int(details["bonus"])
 			if details.has("blessing_booked"):
@@ -7231,7 +7248,7 @@ func _log_move(data: Dictionary) -> void:
 	if data["hotel_built"]:
 		text += "  호텔 건설"
 	if int(data["salary_cards"]) > 0:
-		text += "  [미니카] 출발선 통과: 카드 %d장" % data["salary_cards"]
+		text += "  [미니카] 반환점 통과: 카드 %d장" % data["salary_cards"]
 	if data["drawn_card"] != &"":
 		text += "  [빵집] 카드 획득"
 	if not (data["effects"] as Array).is_empty():
@@ -7262,7 +7279,7 @@ func _pawn_name(pawn_id: int) -> String:
 
 
 # ---------------------------------------------------------------------------
-# 액션 로그: 누가 무엇을 했는지 (굴림·카드·반격·함정·처치·필살기·증강·법전)
+# 액션 로그: 누가 무엇을 했는지 (굴림·카드·방어·함정·처치·필살기·증강·법전)
 # ---------------------------------------------------------------------------
 
 func _build_action_log() -> void:
@@ -7321,7 +7338,7 @@ func _record_card(data: Dictionary) -> void:
 	var params: Dictionary = data.get("params", {})
 	if bool(data.get("counter", false)):
 		var entry: Dictionary = state.get_attack(int(params.get("attack", -1)))
-		_record(player_id, "🛡️ 반격 %s 발동! ➔ %s을(를) 받아침" % [_bq(card.display_name), _bb(_attack_text(entry)) if entry.has("kind") else "공격"])
+		_record(player_id, "🛡️ 방어 %s 발동! ➔ %s을(를) 받아침" % [_bq(card.display_name), _bb(_attack_text(entry)) if entry.has("kind") else "공격"])
 		return
 	if card.category == GameEnums.CardCategory.TRAP:
 		if card.corner_only:
@@ -7359,7 +7376,7 @@ func _attachment_name(attachment_id: String) -> String:
 		"TRP_01": return "거울의 힘"
 		"TRP_02": return "나락"
 		"TRP_03": return "지뢰"
-		"TRP_05": return "스프링 대포"
+		"TRP_05": return "도미노 연쇄"
 		"TRP_06": return "바나나 껍질"
 		"TRP_07": return "스파이크"
 		"TRP_08": return "강제 환승 포탈"
@@ -7649,7 +7666,8 @@ func _reveal_roll(data: Dictionary) -> void:
 	_show_center_banner("P%d  %s" % [data["player_id"], roll_text.strip_edges()], Color("ff8787") if fired else Color("fff3bf"))
 	if bool((data["result"] as Dictionary).get("ends_turn", false)):
 		# 이동 없이 턴이 끝나는 굴림(러시안 룰렛 실탄·화투 망통): 결과 알림과 피격 반응을 충분히 보여 준 뒤에야 다음 차례로 넘어간다.
-		_announce_move_failed("폭죽 깃발!" if fired else "망통!", roller)
+		var fail_name: String = "폭죽 깃발!" if fired else ("낙!" if roll_tool == &"YUT" else ("광대!" if roll_tool == &"DICE_TAROT" else "망통!"))
+		_announce_move_failed(fail_name, roller)
 
 
 ## 윷놀이 기물의 [선택적 업기] 팝업: 화면 중앙에 [업기 (하나로 합체)] / [그냥 두기 (개별 유지)] 두 버튼을 띄운다.

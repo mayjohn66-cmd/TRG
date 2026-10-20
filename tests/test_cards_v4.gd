@@ -1,6 +1,6 @@
 # File: res://tests/test_cards_v4.gd
 # Class: class_name TestCardsV4
-# Role: v4.0 카드 개편 - 새 함정 6종(바나나·스파이크·강제 환승·점프대·톨게이트·타르), 빠루·어디로든 문, 함정 반격(포고령·도굴꾼), 우노 리버스 반사(스킵·밴), 공격 기록 검증 (24칸 보드: 코너 6·12·18)
+# Role: v4.0 카드 개편 - 새 함정 6종(바나나·스파이크·강제 환승·점프대·톨게이트·타르), 빠루·어디로든 문, 함정 방어(포고령·도굴꾼), 우노 리버스 반사(스킵·밴), 공격 기록 검증 (24칸 보드: 코너 6·12·18)
 class_name TestCardsV4
 extends TestCase
 
@@ -112,7 +112,7 @@ func test_royal_decree_and_grave_robber_answer_traps() -> void:
 	check(not state.get_pawn(11).has_left_start, "나락에 빠졌다")
 	var attack: int = int(_trap_attack(state)["id"])
 	var decree: BaseCard = CardRegistry.get_card(&"CNT_06")
-	check(decree.is_legal(state, 1, {"attack": attack}) and not CardRegistry.get_card(&"CNT_02").is_legal(state, 1, {"attack": attack}), "함정 반격만 받는다")
+	check(decree.is_legal(state, 1, {"attack": attack}) and not CardRegistry.get_card(&"CNT_02").is_legal(state, 1, {"attack": attack}), "함정 방어만 받는다")
 	exec(state, decree.create_command(state, 1, {"attack": attack}))
 	check_eq(state.get_pawn(11).current_tile_idx, 3, "함정에 걸리기 직전 자리로 복원")
 	check((state.hands[1] as Array).has(&"ACT_02"), "설치자의 카드 강탈")
@@ -123,8 +123,10 @@ func test_royal_decree_and_grave_robber_answer_traps() -> void:
 	place(robber, 11, 1, [0])
 	move(robber, 11, 4)
 	exec(robber, CardRegistry.get_card(&"CNT_07").create_command(robber, 1, {"attack": int(_trap_attack(robber)["id"])}))
-	check(robber.get_pawn(11).has_left_start, "내 말 복원")
-	check(not robber.get_pawn(21).has_left_start, "설치자의 선두 말이 대신 사출")
+	check(robber.get_pawn(11).has_left_start, "함정은 발동하지 않은 것으로 되돌린다")
+	check(robber.get_pawn(21).has_left_start, "설치자의 말은 건드리지 않는다")
+	check((robber.hands[1] as Array).has(StringName(TrapPit.new(2).attachment_id)), "걸린 함정 카드를 내 패로 가져온다")
+	check(robber.board.get_tile(3).attachments.is_empty(), "보드의 함정은 사라진다")
 
 
 func test_uno_reverse_reflects_skip_and_ban() -> void:
@@ -152,4 +154,4 @@ func test_counters_need_a_matching_attack_of_mine() -> void:
 	move(state, 11, 2)
 	check(CardRegistry.get_card(&"CNT_02").could_play(state, 2), "잡힌 사람은 거울의 힘")
 	check(not CardRegistry.get_card(&"CNT_02").could_play(state, 1), "잡은 사람은 못 쓴다")
-	check(not CardRegistry.get_card(&"CNT_05").could_play(state, 2), "잡기에는 함정 반격을 못 쓴다")
+	check(not CardRegistry.get_card(&"CNT_05").could_play(state, 2), "잡기에는 함정 방어을 못 쓴다")

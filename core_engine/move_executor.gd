@@ -69,6 +69,10 @@ static func plan_path(state: GameState, mover: PlayerPawn, ctx: RuleContext, rep
 	if sub == GameEnums.PawnSubType.CHESS_QUEEN:
 		steps += 2 * sign_dir
 		report.ability_notes.append("퀸 +2칸")
+	# 흑돌: 홀수 눈금으로 전진하면 +1칸 (추가 이동에는 붙지 않는다).
+	if sub == GameEnums.PawnSubType.BADUK_BLACK and ctx.charge_depth == 0 and posmod(ctx.dice_value, 2) == 1:
+		steps += sign_dir
+		report.ability_notes.append("흑돌 홀수 +1칸")
 	# 나리 승급한 쇼기 기물은 이동할 때마다 +1칸.
 	if mover.kind == GameEnums.PawnKind.SHOGI and mover.promoted:
 		steps += sign_dir
@@ -280,13 +284,11 @@ static func apply_step(
 		report.stopped_early = true
 		# 스프링 대포에 실려 결승선까지 날아갔다.
 		if destination != GameEnums.GOAL_TILE and mover.current_tile_idx == GameEnums.GOAL_TILE and mover.can_finish(state):
-			_pay_salary(state, mover, report)
 			_finish(state, mover, report)
 			return StepOutcome.FINISHED
 		return StepOutcome.HALTED
 
 	if is_forward and destination == GameEnums.GOAL_TILE and mover.can_finish(state):
-		_pay_salary(state, mover, report)
 		if not is_last and ctx.exact_goal_required:
 			report.bounced = true
 			return StepOutcome.CONTINUE
@@ -330,22 +332,12 @@ static func finalize(state: GameState, mover: PlayerPawn, ctx: RuleContext, repo
 		_resolve_landing(state, mover, ctx, report)
 
 
-## 모노폴리 미니카: 출발선(0번)을 지나거나 밟을 때마다 손패에 생떼 카드 1장을 보충한다.
+## 모노폴리 미니카: 반환점(BoardSpec.halfway_tile)을 지나거나 밟을 때마다 손패에 생떼 카드 1장을 보충한다.
 static func _pay_salary(state: GameState, mover: PlayerPawn, report: MoveReport) -> void:
-	if mover.sub_type() != GameEnums.PawnSubType.MONO_CAR:
+	if mover.sub_type() != GameEnums.PawnSubType.MONO_CAR or mover.current_tile_idx != BoardSpec.halfway_tile:
 		return
 	if state.draw_card(mover.owner_id) != &"":
 		report.salary_cards += 1
-
-
-## 모노폴리 카 [호텔 건설]: 이동이 끝난 타일에 내 턴 5번간 유지되는 통행료 호텔을 설치한다 (같은 타일의 내 호텔은 갱신).
-static func _build_hotel(state: GameState, mover: PlayerPawn, report: MoveReport) -> void:
-	var tile: TileNode = state.board.get_tile(mover.current_tile_idx)
-	for attachment: TileAttachment in tile.attachments.duplicate():
-		if attachment.attachment_id == "HOTEL" and attachment.owner_id == mover.owner_id:
-			tile.remove_attachment(attachment)
-	state.place_attachment(mover.current_tile_idx, Hotel.new(mover.owner_id))
-	report.hotel_built = true
 
 
 static func _finish(state: GameState, mover: PlayerPawn, report: MoveReport) -> void:
@@ -377,7 +369,7 @@ static func _trigger_attachments(
 		if is_trap and attachment.owner_id != mover.owner_id and state.break_shield(mover):
 			tile.remove_attachment(attachment)  # 백돌 방어막이 함정을 막고 함께 부서진다
 			continue
-		# ⚔ 남의 함정은 반격 카드(싸이크론·포고령·도굴꾼)의 대상이 되도록 피해 직전 상태를 기록한다.
+		# ⚔ 남의 함정은 방어 카드(싸이크론·포고령·도굴꾼)의 대상이 되도록 피해 직전 상태를 기록한다.
 		var hostile: bool = is_trap and attachment.owner_id != mover.owner_id
 		var hand_before: int = (state.hands.get(mover.owner_id, []) as Array).size()
 		if hostile:
@@ -448,8 +440,6 @@ static func _resolve_landing(state: GameState, mover: PlayerPawn, ctx: RuleConte
 		return
 	_kaku_strike(state, mover, ctx, report)
 	_resolve_stacking(state, mover, ctx, report)
-	if can_build_hotel(state, mover) and ctx.charge_depth == 0 and mover.current_tile_idx != GameEnums.GOAL_TILE:
-		_build_hotel(state, mover, report)
 	# ⚡ 부스터 발판: 멈춘 자리가 발판이면 곧바로 앞으로 3칸 더 날아간다 (뒤따르는 이동이 도착 정산을 이어서 한다).
 	if state.boost_gimmicks and GameData.dash_steps() > 0 and BoardSpec.dash_tiles.has(mover.current_tile_idx) and ctx.charge_depth == 0 and not mover.is_finished and not mover.is_imprisoned:
 		report.dash_tiles.append(mover.current_tile_idx)
@@ -499,6 +489,7 @@ static func _warp_to(state: GameState, mover: PlayerPawn, ctx: RuleContext, repo
 
 ## 체스 폰: 반환점(BoardSpec.halfway_tile) 이상 타일을 밟거나 지나가는 순간 영구히 퀸으로 승진한다 (업고 있는 폰도 함께).
 static func _promote_pawns(state: GameState, mover: PlayerPawn, report: MoveReport) -> void:
+	_pay_salary(state, mover, report)
 	_promote_shogi(state, mover, report)
 	if not BoardSpec.promotion_tiles.has(mover.current_tile_idx):
 		return
@@ -536,11 +527,6 @@ static func _kaku_strike(state: GameState, mover: PlayerPawn, ctx: RuleContext, 
 		return
 	_apply_capture_effects(state, mover, pick_capture_victims(enemies), report)
 	report.ability_notes.append("용마 앞 1칸 추가 처치")
-
-
-## 모노폴리 호텔 건설: 미니카만 이동이 끝난 타일에 호텔을 짓는다.
-static func can_build_hotel(_state: GameState, mover: PlayerPawn) -> bool:
-	return mover.sub_type() == GameEnums.PawnSubType.MONO_CAR
 
 
 ## 증기선: 이 타일의 상대 설치물을 효과 없이 파괴한다. 파괴했으면 true.

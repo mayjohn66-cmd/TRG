@@ -2,8 +2,8 @@ class_name TestYutThrow
 extends TestCase
 
 
-func test_six_results_have_matching_physical_faces_and_a_unique_backdo() -> void:
-	var counts: Dictionary = {-1:1,1:1,2:2,3:3,4:4,5:0}
+func test_six_results_have_matching_physical_faces_and_a_nak_off_the_mat() -> void:
+	var counts: Dictionary = {0:2,1:1,2:2,3:3,4:4,5:0}
 	for value: int in ToolYut.FACES:
 		var flags: Array[bool] = YutThrow3D.flat_faces(value)
 		check_eq(flags.size(),4,"exactly four wooden sticks")
@@ -14,8 +14,9 @@ func test_six_results_have_matching_physical_faces_and_a_unique_backdo() -> void
 			check(flat==flags[index],"actual flat-face normal matches the selected outcome")
 			check(pose.is_equal_approx(YutThrow3D.pose_at(4.0,index,value,0.5)),"settled sticks cannot keep spinning")
 	check(not YutThrow3D.flat_faces(1)[YutThrow3D.MARKED_STICK],"ordinary Do has the marked stick facing down")
-	check(YutThrow3D.flat_faces(-1)[YutThrow3D.MARKED_STICK],"only Backdo reveals the marked belly as the single flat")
-	check_eq(ToolYut.FACES,[-1,1,2,3,4,5] as Array[int],"engine outcome set stays unchanged")
+	var nak_stick: Transform3D = YutThrow3D.pose_at(2.0,YutThrow3D.MARKED_STICK,0,0.5)
+	check(nak_stick.origin.x > YutThrow3D.FINAL_X[3] + 1.0,"낙: 표시 가락이 판 밖으로 떨어진다")
+	check_eq(ToolYut.FACES,[0,1,2,3,4,5] as Array[int],"engine outcome set: 낙·도·개·걸·윷·모")
 	print("YUT_FACE_COVERAGE 6/6")
 
 

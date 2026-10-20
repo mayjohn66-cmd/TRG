@@ -6,7 +6,7 @@ extends RefCounted
 
 static var _cache: Dictionary = {}
 
-## v4.0 카드 32종: 반격 7 · 즉발 13 · 함정 6 · 코너 함정 4 · 소환 2. 값은 기본 덱 장수 (cards_table.csv param_2가 우선).
+## v4.0 카드 32종: 방어 7 · 즉발 13 · 함정 6 · 코너 함정 4 · 소환 2. 값은 기본 덱 장수 (cards_table.csv param_2가 우선).
 const DECK_COMPOSITION: Dictionary = {
 	&"CNT_01": 1, &"CNT_02": 2, &"CNT_03": 2, &"CNT_04": 2, &"CNT_05": 1, &"CNT_06": 1, &"CNT_07": 1,
 	&"ACT_02": 2, &"ACT_03": 2, &"ACT_04": 2, &"ACT_06": 2, &"ACT_07": 2, &"ACT_08": 2, &"ACT_09": 2,

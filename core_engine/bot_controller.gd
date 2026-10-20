@@ -40,7 +40,7 @@ var _tried: Dictionary = {}
 var _tried_skills: Dictionary = {}
 var _roulette_pull_target: int = 2
 var _auto_pass_armed: bool = false
-## 마지막으로 반격 여부를 고민하기 시작한 공격 기록 ID.
+## 마지막으로 방어 여부를 고민하기 시작한 공격 기록 ID.
 var _counter_seen: int = -1
 
 
@@ -151,7 +151,7 @@ func _act(player_id: int, action: StringName, params: Dictionary = {}) -> void:
 # 단계별 행동
 # ---------------------------------------------------------------------------
 
-## 반격 대기: 맞은 봇은 반격 카드를 고르거나 그냥 맞는다. 사람이 맞았으면 화면의 반격 팝업을 기다린다 (자동 플레이 테스트는 넘긴다).
+## 방어 대기: 맞은 봇은 방어 카드를 고르거나 그냥 맞는다. 사람이 맞았으면 화면의 방어 팝업을 기다린다 (자동 플레이 테스트는 넘긴다).
 func _step_counter() -> void:
 	var offer: Dictionary = manager.pending_counter()
 	var victim: int = int(offer["victim"])

@@ -186,7 +186,7 @@ func _setup_scene() -> void:
 			_board._record(2, "🔥 리벤지 부스터 ➔ 눈금 7칸 + 🔥4칸 = 총 11칸 전진!")
 			_board._record(3, "🃏 %s 사용! (14번 타일)" % _board._bq("사장님의 빠루"))
 			_board._record(3, "🪤 은신 함정 설치!")
-			_board._record(1, "🛡️ 반격 %s 발동! ➔ 컴퓨터 2의 말에게 잡힘을(를) 받아침" % _board._bq("거울의 힘"))
+			_board._record(1, "🛡️ 방어 %s 발동! ➔ 컴퓨터 2의 말에게 잡힘을(를) 받아침" % _board._bq("거울의 힘"))
 			_board._record(1, "⚔️ %s의 %s 처치!" % [_board._log_who(2), _board._bq("1번 말")])
 			_board._record(4, "🪤 %s 밟음! (9번 타일, %s)" % [_board._bq("바나나 껍질"), _board._bq("2번 말")])
 			_board._record(1, "♟️ %s 필살기 사용!" % _board._bq("비숍 - 피앙케토"))
@@ -195,7 +195,7 @@ func _setup_scene() -> void:
 			if _shot == "logx":
 				_board._action_log.set_expanded(true)
 		"counterzoom":
-			# 반격 카드 확대: 발동 시점·방법이 피격 팝업으로 안내되고 평소에는 사용 불가로 보인다
+			# 방어 카드 확대: 발동 시점·방법이 피격 팝업으로 안내되고 평소에는 사용 불가로 보인다
 			_finish_draft()
 			_board._announcer.cancel()
 			_board.instant_roll_for_test = true

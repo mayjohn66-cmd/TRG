@@ -1,6 +1,6 @@
 # File: res://scenes/action_log_panel.gd
 # Class: class_name ActionLogPanel
-# Role: 인게임 액션 히스토리 로그. 누가 무엇을 했는지(굴림·카드·반격·함정·처치·필살기·증강·법전) 한 줄씩 쌓는다.
+# Role: 인게임 액션 히스토리 로그. 누가 무엇을 했는지(굴림·카드·방어·함정·처치·필살기·증강·법전) 한 줄씩 쌓는다.
 #       평소(미니)에는 최근 MINI_LINES줄만 작게, 펼치면([📜 로그] 버튼·L 키) 전체 내역을 스크롤로 본다.
 #       메모리 보호: 최대 MAX_LOG_LINES줄만 보관하고 넘치면 가장 오래된 줄부터 버린다 (링 버퍼)
 class_name ActionLogPanel

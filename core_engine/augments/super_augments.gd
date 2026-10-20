@@ -1,6 +1,6 @@
 # File: res://core_engine/augments/super_augments.gd
 # Class: class_name SuperAugments
-# Role: [초증강 : 도박 & 억까] 12종 (영구 패시브 3종 포함) - 드래프트에서만 나오는 하이리스크 증강의 조건·효과. 모든 난수는 호스트 RNG(state.rng)를 쓰고 효과는 GameState 시그널로 방송되어 화면이 연출한다
+# Role: [초증강 : 하이리스크 하이리턴] 12종 (영구 패시브 1종 포함) - 드래프트에서만 나오는, 판을 크게 뒤집지만 나도 크게 다칠 수 있는 증강의 조건·효과. 모든 난수는 호스트 RNG(state.rng)를 쓰고 효과는 GameState 시그널로 방송되어 화면이 연출한다
 class_name SuperAugments
 extends RefCounted
 
@@ -14,12 +14,12 @@ const CASTLING: StringName = &"SUPER_07"       # 강제 캐슬링 룰렛
 const BAKERY: StringName = &"SUPER_08"         # 에르핀의 빵집 털이
 const SNIPER: StringName = &"SUPER_09"         # 저격수의 표적
 const NITRO: StringName = &"SUPER_10"          # 아우토반 니트로 (개인 영구 패시브)
-const RUNAWAY: StringName = &"SUPER_11"        # 폭주 기관차 (개인 영구 패시브)
-const GUARANTEE: StringName = &"SUPER_12"      # 강제 연대보증 (개인 영구 패시브)
+const RUNAWAY: StringName = &"SUPER_11"        # 폭주 기관차 (무작위 한 변 쓸기)
+const GUARANTEE: StringName = &"SUPER_12"      # 강제 연대책임 (선두·후방 말 일심동체)
 
 const ALL_IDS: Array[StringName] = [FLIP, REDISTRIBUTE, DEVIL, MINEFIELD, RAID, GAMBLER, CASTLING, BAKERY, SNIPER, NITRO, RUNAWAY, GUARANTEE]
 ## 남은 게임 내내 그 플레이어에게만 작동하는 패시브 (RuleBookManager.personal_laws, 법전 슬롯을 차지하지 않는다).
-const PERSONAL: Array[StringName] = [NITRO, RUNAWAY, GUARANTEE]
+const PERSONAL: Array[StringName] = [NITRO]
 
 ## 수치 기본값 (content_trickcal/data/augments_table.csv의 param_1·param_2가 비어 있을 때만 쓴다).
 const FLIP_FINISH_CHANCE_PERCENT: int = 50
@@ -27,8 +27,8 @@ const DEVIL_BONUS: int = 3
 const REDISTRIBUTE_CARDS: int = 2
 const MINEFIELD_COUNT: int = 2
 const MINEFIELD_TRAP_CARDS: int = 1
-const RAID_ROBBERS: int = 1
-const RAID_GHOSTS: int = 1
+const RAID_SUMMON_CARDS: int = 1
+const RAID_STEAL_EACH: int = 1
 const BAKERY_CARDS: int = 3
 const SNIPER_ADVANCE: int = 4
 const GAMBLER_MULTIPLIER: int = 2
@@ -60,12 +60,13 @@ static func minefield_trap_cards() -> int:
 	return maxi(param(MINEFIELD, 2, MINEFIELD_TRAP_CARDS), 0)
 
 
-static func raid_robbers() -> int:
-	return maxi(param(RAID, 1, RAID_ROBBERS), 0)
+## 도적단 대습격: 받는 중립 기물(소환) 카드 수와, 다른 사람마다 빼앗는 카드 수.
+static func raid_summon_cards() -> int:
+	return maxi(param(RAID, 1, RAID_SUMMON_CARDS), 0)
 
 
-static func raid_ghosts() -> int:
-	return maxi(param(RAID, 2, RAID_GHOSTS), 0)
+static func raid_steal_each() -> int:
+	return maxi(param(RAID, 2, RAID_STEAL_EACH), 0)
 
 
 static func bakery_cards() -> int:
@@ -91,14 +92,14 @@ const INFO: Dictionary = {
 	REDISTRIBUTE: ["공산주의 재분배", "◆ 모두의 진도를 꼴찌와 똑같이 맞춘다\n◆ 모든 손패를 회수해 섞은 뒤 2장씩 다시 나눠 준다"],
 	DEVIL: ["악마의 계약 (영구 가속)", "◆ 완주한 내 말 1개를 출발선으로 되돌리고\n◆ 남은 게임 내내 내 모든 굴림 결과에 +3칸"],
 	MINEFIELD: ["광란의 지뢰밭", "◆ 빈 일반 타일 2곳에 지뢰 매설\n◆ 함정 카드 1장 획득"],
-	RAID: ["도적단 대습격", "◆ 상단 코너에서 도적떼 1(왼쪽 줄)·팩맨 1(오른쪽 줄) 출격\n◆ 지나가는 길의 모든 말 사출 후 소멸"],
+	RAID: ["도적단 대습격", "◆ 중립 기물(소환) 카드 1장 획득\n◆ 나를 뺀 모든 플레이어의 카드 1장씩을 내 패로"],
 	GAMBLER: ["주사위 도박사의 영혼", "◆ 이번 라운드 이동 거리 2배(x2) 증폭!\n◆ 단 눈금 1 이하면 이동한 내 말이 과열되어 0번 출발선으로 사출"],
 	CASTLING: ["강제 캐슬링 룰렛", "◆ 보드 위 모든 플레이어 말의 위치를 무작위로 전부 섞는다"],
 	BAKERY: ["에르핀의 빵집 털이", "◆ 무작위 생떼 카드 3장 획득\n◆ 대기 중인 내 말 1개를 첫 빵집으로 출격"],
 	SNIPER: ["저격수의 표적", "◆ 가장 앞선 적 말 1개를 즉시 0번 출발선으로 장외 사출\n◆ 내 말 1개 +4칸 전진"],
 	NITRO: ["아우토반 니트로", "◆ 남은 게임 내내 내 눈금이 짝수이거나 5 이상이면 +3칸!"],
-	RUNAWAY: ["폭주 기관차", "◆ 남은 게임 내내 내 말이 적을 처치하면 그 자리에서 +4칸 돌진!"],
-	GUARANTEE: ["강제 연대보증", "◆ 남은 게임 내내 내 말이 잡히면\n◆ 공격자의 다른 말 1개 동반 처치 + 카드 1장"],
+	RUNAWAY: ["폭주 기관차", "◆ 무작위 한 변을 기관차가 질주!\n◆ 그 변의 모든 말(내 말 포함) 출발선으로 · 함정 카드 전부 파괴"],
+	GUARANTEE: ["강제 연대책임", "◆ 내 선두 말과 가장 뒤 말이 일심동체\n◆ 하나가 골인하면 둘 다 골인 · 탈락하면 둘 다 탈락"],
 }
 
 
@@ -146,9 +147,11 @@ static func is_available(effect: StringName, state: GameState, player_id: int) -
 			return board_leaders(state).size() >= 2
 		SNIPER:
 			return not board_leaders(state, -1, player_id).is_empty()
-		NITRO, RUNAWAY, GUARANTEE:
+		NITRO:
 			return not state.rulebook.has_personal(String(effect), player_id)
-	return true  # 재분배·대습격·도박사·빵집 털이는 언제든
+		GUARANTEE:
+			return bond_pair(state, player_id).size() == 2  # 보드 위에 내 말이 둘 이상이어야 묶을 수 있다
+	return true  # 재분배·대습격·도박사·빵집 털이·폭주 기관차는 언제든
 
 
 ## 효과를 적용한다. 반환: {"ok": bool, "text": String}
@@ -163,7 +166,9 @@ static func apply(effect: StringName, state: GameState, player_id: int) -> Dicti
 		CASTLING: return _apply_castling(state)
 		BAKERY: return _apply_bakery(state, player_id)
 		SNIPER: return _apply_sniper(state, player_id)
-		NITRO, RUNAWAY, GUARANTEE: return _apply_personal(effect, state, player_id)
+		RUNAWAY: return _apply_runaway(state, player_id)
+		GUARANTEE: return _apply_guarantee(state, player_id)
+		NITRO: return _apply_personal(effect, state, player_id)
 	return {"ok": false, "text": "알 수 없는 초증강입니다"}
 
 
@@ -296,16 +301,60 @@ static func _apply_minefield(state: GameState, player_id: int) -> Dictionary:
 	return {"ok": not placed.is_empty() or not got.is_empty(), "text": "빈 타일 %d곳(%s)에 지뢰 매설 + 함정 카드 %s" % [placed.size(), ", ".join(PackedStringArray(placed.map(func(tile: int) -> String: return "%d번" % tile))), ", ".join(got) if not got.is_empty() else "없음 (손패 가득)"]}
 
 
-## 도적단 대습격: 상단 코너에서 도적떼는 왼쪽 줄(반환점 → 아래로), 팩맨은 오른쪽 줄(오른쪽 위 코너 → 출발선 쪽으로 역주행)을 한 번에 쓸고 사라진다.
+## 도적단 대습격: 중립 기물(소환) 카드를 받고, 나를 뺀 모든 플레이어에게서 카드를 무작위로 1장씩 빼앗아 온다.
+## 내 손패가 가득 차서 못 받는 카드는 주인에게 돌려준다. 어떤 카드인지는 알리지 않는다.
 static func _apply_raid(state: GameState, player_id: int) -> Dictionary:
-	var ejected: Array[int] = []
-	for i: int in raid_robbers():
-		var robber: Dictionary = NpcSweep.run(state, BoardSpec.halfway_tile, 1, BoardSpec.side, &"SUM_01", player_id)
-		ejected.append_array(robber["ejected"] as Array[int])
-	for i: int in raid_ghosts():
-		var ghost: Dictionary = NpcSweep.run(state, BoardSpec.side, -1, BoardSpec.side, &"SUM_02", player_id)
-		ejected.append_array(ghost["ejected"] as Array[int])
-	return {"ok": true, "text": "도적떼와 팩맨이 양쪽 줄을 쓸고 지나갔습니다! 사출된 말 %d개" % ejected.size()}
+	var summons: Array[StringName] = []
+	for card_id: StringName in CardRegistry.all_ids():
+		if CardRegistry.get_card(card_id).category == GameEnums.CardCategory.SUMMON:
+			summons.append(card_id)
+	var got_summon: int = 0
+	for i: int in raid_summon_cards():
+		if summons.is_empty():
+			break
+		if state.give_card(player_id, summons[state.rng.randi_range(0, summons.size() - 1)]):
+			got_summon += 1
+	var stolen: int = 0
+	for victim: int in state.active_players(state.player_ids):
+		if victim == player_id:
+			continue
+		for i: int in raid_steal_each():
+			var card_id: StringName = state.steal_random_card(victim, state.rng)
+			if card_id == &"":
+				break
+			if state.give_card(player_id, card_id):
+				stolen += 1
+			else:
+				state.give_card(victim, card_id)  # 내 손패가 가득: 돌려준다
+	return {"ok": true, "text": "중립 기물 카드 %d장 획득, 다른 플레이어에게서 카드 %d장을 빼앗았습니다" % [got_summon, stolen]}
+
+
+## 폭주 기관차: 무작위 한 변(코너에서 다음 코너까지)을 기관차가 질주하며 그 변의 모든 말을 출발선으로 보내고 함정 카드를 전부 부순다 (내 말도 예외 없음).
+static func _apply_runaway(state: GameState, player_id: int) -> Dictionary:
+	var side_index: int = state.rng.randi_range(0, 3)
+	var run: Dictionary = NpcSweep.run(state, side_index * BoardSpec.side, 1, BoardSpec.side, &"TRAIN", player_id, true)
+	var path: Array = run["path"]
+	state.npc_swept.emit(&"TRAIN", run["path"], run["ejected"])
+	return {"ok": true, "text": "폭주 기관차가 %d번 → %d번 변을 질주! 말 %d개 사출, 함정 %d개 파괴" % [int(path[0]), int(path[-1]), (run["ejected"] as Array).size(), int(run["destroyed"])]}
+
+
+## 강제 연대책임으로 묶을 내 두 말: 보드 위 내 말 중 가장 앞선 말과 가장 뒤처진 말. 둘이 안 되면 빈 배열.
+static func bond_pair(state: GameState, player_id: int) -> Array[PlayerPawn]:
+	var mine: Array[PlayerPawn] = []
+	for pawn: PlayerPawn in sorted_by_progress(state, board_leaders(state, player_id)):
+		if not state.bonds.has(pawn.entity_id):
+			mine.append(pawn)
+	if mine.size() < 2:
+		return [] as Array[PlayerPawn]
+	return [mine[0], mine[-1]] as Array[PlayerPawn]
+
+
+static func _apply_guarantee(state: GameState, player_id: int) -> Dictionary:
+	var pair: Array[PlayerPawn] = bond_pair(state, player_id)
+	if pair.size() < 2:
+		return {"ok": false, "text": "보드 위에 내 말이 둘 이상 있어야 합니다"}
+	state.bind_pawns(pair[0], pair[1])
+	return {"ok": true, "text": "말 %d번(선두)과 말 %d번(후방)이 일심동체! 하나가 골인하면 둘 다 골인, 탈락하면 둘 다 탈락" % [pair[0].slot, pair[1].slot]}
 
 
 static func _apply_gambler(state: GameState, player_id: int) -> Dictionary:

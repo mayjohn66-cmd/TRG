@@ -19,8 +19,8 @@ const FRAME: Color = Color("bfe9d8")
 const FRAME_EDGE: Color = Color("5fc9a0")
 const TEAL: Color = Color("7cc4b4")
 const TEAL_DARK: Color = Color("4a9a8a")
-const TAB_NAMES: Array[String] = ["시작하기", "한 턴", "보드", "잡기", "도구", "말", "카드", "법전"]
-const TAB_ICONS: Array[StringName] = [&"face", &"hourglass", &"grid", &"sword", &"dice", &"crown", &"book", &"gear"]
+const TAB_NAMES: Array[String] = ["시작하기", "한 턴", "보드", "잡기", "도구", "말", "카드", "법전", "초증강"]
+const TAB_ICONS: Array[StringName] = [&"face", &"hourglass", &"grid", &"sword", &"dice", &"crown", &"book", &"gear", &"star"]
 const TAB_ART: Array[StringName] = [&"start", &"turn", &"board", &"capture"]
 const ART: Dictionary = {
 	&"start": preload("res://assets/ui/trickcal/rulebook/UI_RULE_START.tres"),
@@ -39,7 +39,8 @@ const ART: Dictionary = {
 }
 ## 위쪽 두 탭이 묶는 장: 규칙 기본(0~3), 도감(4~7).
 const GROUP_NAMES: Array[String] = ["기본 규칙", "도감"]
-const GROUP_SIZE: int = 4
+## 위쪽 탭(묶음)마다 첫 장의 번호: 기본 규칙 0~3, 도감 4~8.
+const GROUP_STARTS: Array[int] = [0, 4]
 const STAGE: Vector2 = Vector2(1366.0, 768.0)
 
 ## 현재 장 번호(0부터).
@@ -202,7 +203,7 @@ func _build_header() -> void:
 		tab.text = GROUP_NAMES[index]
 		tab.focus_mode = Control.FOCUS_NONE
 		tab.add_theme_font_size_override("font_size", 20)
-		tab.pressed.connect(func() -> void: show_spread(index * GROUP_SIZE))
+		tab.pressed.connect(func() -> void: show_spread(GROUP_STARTS[index]))
 		_place(tab, Vector2(500 + index * 170, 66), Vector2(160, 52))
 		_group_tabs.append(tab)
 
@@ -210,14 +211,14 @@ func _build_header() -> void:
 ## 왼쪽 세로 항목 줄: 현재 탭의 장 4개. 고른 항목은 흰 알약에 점선 느낌의 초록 테두리.
 func _build_list() -> void:
 	_list_box = VBoxContainer.new()
-	_list_box.add_theme_constant_override("separation", 12)
+	_list_box.add_theme_constant_override("separation", 8)
 	_list_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_place(_list_box, Vector2(28, 148), Vector2(196, 420))
 	for index: int in TAB_NAMES.size():
 		var button := Button.new()
 		button.name = "Tab%d" % index
 		button.focus_mode = Control.FOCUS_NONE
-		button.custom_minimum_size = Vector2(196, 86)
+		button.custom_minimum_size = Vector2(196, 78)
 		button.pressed.connect(show_spread.bind(index))
 		for state: String in ["normal", "hover", "pressed", "focus", "disabled"]:
 			button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
@@ -361,7 +362,7 @@ func show_spread(index: int, entry_index: int = -1) -> void:
 	_rebuild_tiles()
 	show_entry(entry_index)
 	_right_scroll.scroll_vertical = 0
-	var group: int = spread / GROUP_SIZE
+	var group: int = group_of(spread)
 	for index2: int in _group_tabs.size():
 		var active: bool = index2 == group
 		var tab: Button = _group_tabs[index2]
@@ -376,7 +377,7 @@ func show_spread(index: int, entry_index: int = -1) -> void:
 		tab.size = Vector2(160, 52 if active else 44)
 		tab.position.y = 66 if active else 74
 	for index3: int in _list_buttons.size():
-		var visible_here: bool = index3 / GROUP_SIZE == group
+		var visible_here: bool = group_of(index3) == group
 		var button: Button = _list_buttons[index3]
 		button.visible = visible_here
 		var selected: bool = index3 == spread
@@ -399,6 +400,15 @@ func show_spread(index: int, entry_index: int = -1) -> void:
 	_next.modulate.a = 0.35 if _next.disabled else 1.0
 	_prev_name.text = TAB_NAMES[spread - 1] if spread > 0 else ""
 	_next_name.text = TAB_NAMES[spread + 1] if spread < spread_count() - 1 else ""
+
+
+## 장 번호가 속한 위쪽 탭(묶음).
+static func group_of(index: int) -> int:
+	var group: int = 0
+	for start_index: int in GROUP_STARTS.size():
+		if index >= GROUP_STARTS[start_index]:
+			group = start_index
+	return group
 
 
 ## 지금 장의 항목 수.
@@ -766,14 +776,15 @@ func _chapter(index: int) -> Dictionary:
 		4: content = _ch_tools()
 		5: content = _ch_pawns()
 		6: content = _ch_cards()
-		_: content = _ch_laws()
+		7: content = _ch_laws()
+		_: content = _ch_super()
 	var entries: Array = content["entries"]
 	content["overview"] = entries.pop_front()
 	return content
 
 
 # ---------------------------------------------------------------------------
-# 내용 (장 8개). 장마다 항목 목록: title / tone / 그림(texture·art·number·icon) / chips / summary / rows / points / note / tip / extra
+# 내용 (장 9개). 장마다 항목 목록: title / tone / 그림(texture·art·number·icon) / chips / summary / rows / points / note / tip / extra
 # ---------------------------------------------------------------------------
 
 func _ch_start() -> Dictionary:
@@ -803,7 +814,7 @@ func _ch_turn() -> Dictionary:
 			"tip": "카드는 [b]굴리기 전에만[/b] 낼 수 있어요. 눈금을 보고 고민하려면 아껴 두세요."},
 		{"title": "카드 한 장", "number": 1, "tone": Color("f0c14e"), "chips": ["굴리기 전", "턴당 1장"],
 			"summary": "카드를 [b]보드판 위로 끌어다 놓으면[/b] 발동해요.",
-			"points": ["함정·소환은 놓은 뒤 칸을 골라요", "반격 카드는 끌어 쓰지 않아요 (공격받을 때 팝업)"]},
+			"points": ["함정·소환은 놓은 뒤 칸을 골라요", "방어 카드는 끌어 쓰지 않아요 (공격받을 때 팝업)"]},
 		{"title": "굴리기", "number": 2, "tone": Color("86d94f"), "chips": ["R / 스페이스"],
 			"summary": "[b]굴리기[/b] 버튼을 꾹 눌러 파워를 모으고 손을 떼요.",
 			"points": ["룰렛은 원판을 잡아 돌리고, 리볼버는 방아쇠를 당겨요"]},
@@ -811,7 +822,7 @@ func _ch_turn() -> Dictionary:
 			"summary": "아래 말 카드나 보드 위의 말을 누르면 그 말이 움직여요.",
 			"points": ["카드에 도착 결과가 미리 보여요 (잡기·빵집·워프…)"]},
 		{"title": "정산", "number": 4, "tone": Color("f08aa8"),
-			"summary": "도착한 칸의 효과가 터져요. 공격받으면 반격 카드로 받아칠지 물어봐요.",
+			"summary": "도착한 칸의 효과가 터져요. 공격받으면 방어 카드로 받아칠지 물어봐요.",
 			"points": ["빵집이면 카드 1장, 옷장이면 순간이동", "적 말 위에 멈추면 잡기!"]},
 		{"title": "보너스 이동", "icon": &"play", "tone": Color("63e6be"), "chips": ["후퇴 없음"],
 			"summary": "말은 절대 뒤로 가지 않아요. 대신 여러 보너스로 앞으로 튀어 나가요.",
@@ -877,8 +888,8 @@ func _ch_capture() -> Dictionary:
 			"points": ["내 함정은 내 화면에서 그림이 보여요"]},
 		{"title": "무인도", "art": &"island", "tone": Color("f0c14e"),
 			"summary": "갇히면 [b]짝수 눈금[/b]이 나와야 탈출해요."},
-		{"title": "반격", "icon": &"sword", "tone": Color("74c0fc"), "chips": ["피격 시"],
-			"summary": "내가 공격받으면 [b]반격 카드를 쓸지[/b] 팝업으로 물어봐요.",
+		{"title": "방어", "icon": &"sword", "tone": Color("74c0fc"), "chips": ["피격 시"],
+			"summary": "내가 공격받으면 [b]방어 카드를 쓸지[/b] 팝업으로 물어봐요.",
 			"points": ["잡기·공격 카드·함정이 공격이에요", "그냥 맞기를 고르면 그 공격엔 다시 못 써요"]},
 	]}
 
@@ -950,11 +961,11 @@ func _family_rows() -> Array:
 
 ## 계열 한 줄 소개.
 const PAWN_LINES: Dictionary = {
-	GameEnums.PawnKind.YUT: "잡거나 4·5가 나오면 한 번 더. 만나면 업혀요.",
+	GameEnums.PawnKind.YUT: "잡으면 재굴림, 만나면 자동으로 업혀요.",
 	GameEnums.PawnKind.CHESS: "폰은 반환점에서 퀸으로 승급. 기물마다 움직임 보너스가 달라요.",
 	GameEnums.PawnKind.JANGGI: "말을 넘고, 돌진하고, 땅을 흔드는 장기 기물.",
-	GameEnums.PawnKind.MONOPOLY: "호텔·워프·카드로 판을 굴리는 모노폴리 말.",
-	GameEnums.PawnKind.GO: "흑돌은 알까기, 백돌은 방어막.",
+	GameEnums.PawnKind.MONOPOLY: "필살기 호텔·워프·카드로 판을 굴리는 모노폴리 말.",
+	GameEnums.PawnKind.GO: "흑돌은 홀수 눈금 +1칸, 백돌은 방어막.",
 	GameEnums.PawnKind.SHOGI: "반환점을 지나면 승급(나리)해 더 강해져요.",
 	GameEnums.PawnKind.ARCADE: "킹 체커·루도·8번 공·스타 카트·지뢰찾기 공병.",
 }
@@ -981,7 +992,7 @@ func _ch_cards() -> Dictionary:
 	var entries: Array = [
 		{"title": "카드 쓰는 법", "art": &"card_law", "tone": Color("f0c14e"), "chips": ["손패 최대 7장"],
 			"summary": "빵집·증강에서 얻은 카드를 [b]보드판으로 끌어다 놓아[/b] 써요.",
-			"rows": [["반격 (파랑)", "공격받으면 팝업에서 발동 여부를 물어봐요"], ["즉발 (노랑)", "굴리기 전에 바로 효과"], ["함정 (보라)", "칸을 골라 숨겨 깔기, 코너 전용 4종"], ["소환 (분홍)", "상단 코너에서 질주해 길 위의 말을 날려요"]],
+			"rows": [["방어 (파랑)", "공격받으면 팝업에서 발동 여부를 물어봐요"], ["즉발 (노랑)", "굴리기 전에 바로 효과"], ["함정 (보라)", "칸을 골라 숨겨 깔기, 코너 전용 4종"], ["소환 (분홍)", "상단 코너에 1마리, 말을 잡을 때까지 계속 전진해요"]],
 			"tip": "가위바위보 결투는 [b]상대 프로필이나 말 위에[/b] 놓으면 그 상대와 붙어요."},
 	]
 	for card_id: StringName in CardRegistry.DECK_COMPOSITION.keys():
@@ -1014,7 +1025,7 @@ func _ch_laws() -> Dictionary:
 	var entries: Array = [
 		{"title": "증강과 법전", "art": &"card_law", "tone": Color("ffa94d"), "chips": ["3라운드마다", "법전 4칸"],
 			"summary": "1·4·7라운드처럼 [b]3라운드마다[/b] 모두가 증강 3장 중 하나를 골라요. 법전의 교칙은 모두 [b]특수 승리 조건[/b]이에요.",
-			"rows": [["기물 지급", "말 하나를 새 기물로 진화 (도감 → 말)"], ["도구 교체", "굴리는 도구 바꾸기 (도감 → 도구)"], ["특수 승리", "법전에 새 승리 조건 (3라운드부터)"], ["카드 패키지", "생떼 카드 여러 장"], ["초증강", "판을 뒤흔드는 도박 증강"]],
+			"rows": [["기물 지급", "말 하나를 새 기물로 진화 (도감 → 말)"], ["도구 교체", "굴리는 도구 바꾸기 (도감 → 도구)"], ["특수 승리", "법전에 새 승리 조건 (3라운드부터)"], ["카드 패키지", "생떼 카드 여러 장"], ["초증강", "하이리스크 하이리턴 (도감 → 초증강)"]],
 			"points": ["교칙을 먼저 달성하면 [b]다음 순위로 졸업[/b], 그 교칙은 사라져요", "새 교칙이 들어오면 가장 오래된 교칙이 밀려나요", "증강 카드마다 한 번 다시 뽑기"],
 			"tip": "법전 슬롯에 마우스를 올리면 모두의 진행도가 보여요. [color=#d6336c][b][위험!][/b][/color] 표시를 견제하세요!"},
 	]
@@ -1026,13 +1037,31 @@ func _ch_laws() -> Dictionary:
 		entries.append({"title": law.law_name, "augment": definition.augment_id, "texture": TextureCache.fetch("res://content_trickcal/illustrations/laws/%s.png" % law.law_id), "icon": &"book",
 			"tone": Color("ffd43b"), "chips": ["목표 %d%s" % [law.goal(), law.unit()]], "summary": law.condition_text(),
 			"rows": [["달성하면", "다음 순위로 졸업, 교칙은 사라져요"], ["기록", counting], ["이의 있음!", "기록을 0으로 되돌릴 수 %s" % ("있어요" if law.resettable() else "없어요")]]})
-	for category: GameEnums.AugmentCategory in [GameEnums.AugmentCategory.CARD_PACKAGE, GameEnums.AugmentCategory.SUPER_GAMBLE]:
-		for definition: AugmentDef in _augments(category):
-			var info: Dictionary = MainBoard.augment_card_info(definition, null, 1)
-			var lines: Array = str(info["desc"]).split("\n")
-			entries.append({"title": str(info["title"]), "augment": definition.augment_id, "texture": info.get("art"), "icon": &"gear", "tone": info["color"],
-				"chips": [str(info["category"])], "summary": str(lines[0]).trim_prefix("◆ "), "points": lines.slice(1).map(func(line: String) -> String: return line.trim_prefix("◆ "))})
+	for definition: AugmentDef in _augments(GameEnums.AugmentCategory.CARD_PACKAGE):
+		entries.append(_augment_entry(definition, &"gear"))
 	return {"title": "법전", "entries": entries, "wide": true}
+
+
+## 증강 카드 한 장을 도감 항목으로: 첫 줄은 요약, 나머지 ◆ 줄은 항목 점.
+static func _augment_entry(definition: AugmentDef, icon: StringName) -> Dictionary:
+	var info: Dictionary = MainBoard.augment_card_info(definition, null, 1)
+	var lines: Array = str(info["desc"]).split("\n")
+	return {"title": str(info["title"]), "augment": definition.augment_id, "texture": info.get("art"), "icon": icon, "tone": info["color"],
+		"chips": [str(info["category"])], "summary": str(lines[0]).trim_prefix("◆ "), "points": lines.slice(1).map(func(line: String) -> String: return line.trim_prefix("◆ "))}
+
+
+## 초증강: 하이리스크 하이리턴. 판을 한 번에 뒤집을 수 있지만 내게도 화살이 돌아올 수 있는 증강들.
+func _ch_super() -> Dictionary:
+	var entries: Array = [
+		{"title": "하이리스크 하이리턴", "art": &"card_law", "tone": Color("ffd43b"), "chips": ["초증강", "%d종" % SuperAugments.ALL_IDS.size()],
+			"summary": "초증강은 [b]판을 한 번에 뒤집는[/b] 증강이에요. 크게 얻는 대신 [b]내 말도 다칠 수 있어요[/b].",
+			"rows": [["한 방", "판 뒤집기 · 저격수의 표적"], ["도박", "주사위 도박사 · 악마의 계약"], ["강탈", "도적단 대습격 · 빵집 털이 · 공산주의 재분배"], ["난장판", "폭주 기관차 · 강제 캐슬링 · 광란의 지뢰밭 · 강제 연대책임"], ["끝까지", "아우토반 니트로는 게임 내내 남는 패시브"]],
+			"points": ["폭주 기관차는 내 말도 가리지 않아요", "강제 연대책임은 선두와 꼴찌 말의 운명을 묶어요", "조건이 안 맞는 초증강은 드래프트에 나오지 않아요"],
+			"tip": "질 것 같을 때가 초증강을 고를 때예요. [b]역전은 한 번이면 충분[/b]하니까요!"},
+	]
+	for definition: AugmentDef in _augments(GameEnums.AugmentCategory.SUPER_GAMBLE):
+		entries.append(_augment_entry(definition, &"star"))
+	return {"title": "초증강", "entries": entries, "wide": true}
 
 
 # ---------------------------------------------------------------------------

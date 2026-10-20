@@ -91,24 +91,22 @@ func test_only_yut_pawns_earn_the_capture_extra_turn_and_no_set_effects_remain()
 	check(move(yut, 11, 2).extra_turn, "윷말은 잡으면 추가 굴림")
 
 
-func test_only_the_mini_car_builds_hotels() -> void:
-	var state := make_state(2, 1, {1: _units(Kind.MONOPOLY, [1, 2, 3, 4])})
-	place(state, 11, 1, [0])
-	place(state, 12, 1, [0])
-	check(move(state, 11, 2).hotel_built, "미니카는 호텔 건설")
-	check(not move(state, 12, 3).hotel_built, "비행기는 4세트를 모아도 호텔을 못 짓는다")
+func test_only_the_mini_car_has_the_hotel_skill() -> void:
+	check_eq(PawnCatalog.skill_of(GameEnums.PawnSubType.MONO_CAR), &"hotel", "미니카 필살기는 호텔 건설")
+	check_eq(PawnCatalog.skill_of(GameEnums.PawnSubType.MONO_PLANE), &"warp", "비행기는 직항 워프")
 
 
 # --- 필살기 ----------------------------------------------------------------
 
-func test_skill_catalog_has_eleven_one_shot_skills() -> void:
+func test_skill_catalog_has_twelve_one_shot_skills() -> void:
 	var found: Dictionary = {}
 	for kind: GameEnums.PawnKind in PawnCatalog.EVOLVABLE_SETS:
 		for unit: int in range(1, PawnCatalog.unit_count(kind) + 1):
 			var skill: StringName = PawnCatalog.skill_of(PawnCatalog.sub_type_of(kind, unit))
 			if skill != &"":
 				found[skill] = PawnCatalog.unit_label(kind, unit)
-	check_eq(found.size(), 11, "필살기 11종")
+	check_eq(found.size(), 12, "필살기 12종")
+	check_eq(found[&"hotel"], "모노:미니카", "호텔 건설은 미니카")
 	check_eq(found[&"shoot"], "바둑:흑돌", "알까기 슈팅은 흑돌")
 	check_eq(found[&"castle"], "체스:룩", "단독 캐슬링은 룩")
 	check_eq(found[&"fianchetto"], "체스:비숍", "피앙케토는 비숍")

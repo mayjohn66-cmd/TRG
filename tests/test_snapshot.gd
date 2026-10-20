@@ -97,4 +97,4 @@ func test_bites_the_dust_rollback_via_command_history_restores_turn_start_but_ke
 	check_eq(state.get_pawn(21).current_tile_idx, 4, "잡힌 말 복귀")
 	check_eq(TurnSnapshot.capture(state).data, state.turn_snapshot.data, "턴 시작 시점과 동일")
 	check(state.rollback_requested, "롤백 플래그")
-	check((state.hands[2] as Array).is_empty(), "반격 카드는 소모된 채")
+	check((state.hands[2] as Array).is_empty(), "방어 카드는 소모된 채")

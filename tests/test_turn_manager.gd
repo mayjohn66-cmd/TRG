@@ -305,7 +305,7 @@ func test_stack_choice_is_skipped_for_non_yut_pawns_and_headless_default() -> vo
 
 func test_intervention_window_stays_closed_when_nobody_can_use_their_cards() -> void:
 	var manager: TurnManager = _new_manager()
-	manager.state.give_card(2, &"CNT_04")  # 공격받기 전에는 쓸 수 없는 반격 카드
+	manager.state.give_card(2, &"CNT_04")  # 공격받기 전에는 쓸 수 없는 방어 카드
 	manager.state.give_card(1, &"TRP_07")  # 턴 시작 구간에서만 쓰는 카드
 	_set_tool(manager, 1, ScriptedTool.new([2]))
 	_do(manager, 1, &"proceed")
@@ -590,7 +590,7 @@ func test_cards_are_only_played_before_the_roll_and_once_per_turn() -> void:
 	check_eq(manager.move_queue, int_array([6]), "굴림 2에 로켓 +4")
 	check_eq(manager.current_state, Phase.PHASE_SELECT_PAWN, "손패가 있어도 굴림 뒤 개입 창은 열리지 않는다")
 	_do(manager, 2, &"play_card", {"card_id": &"ACT_04"})
-	check_eq(rejected.back()[2], &"not_playable_now", "굴림 뒤에는 (반격 카드를 빼고) 카드를 낼 수 없다")
+	check_eq(rejected.back()[2], &"not_playable_now", "굴림 뒤에는 (방어 카드를 빼고) 카드를 낼 수 없다")
 	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
 	_do(manager, 2, &"proceed")
 	check(not manager.card_played_this_turn(), "새 턴에는 카드 사용 기록이 초기화된다")
@@ -630,7 +630,7 @@ func test_one_trap_per_tile() -> void:
 	_dispose(manager)
 
 
-## P1 말이 P2 말을 잡는다. P2는 반격 카드 card_id를 들고 있다.
+## P1 말이 P2 말을 잡는다. P2는 방어 카드 card_id를 들고 있다.
 func _capture_setup(manager: TurnManager, card_id: StringName) -> void:
 	var state: GameState = manager.state
 	place(state, 11, 1, [0])
@@ -648,16 +648,16 @@ func test_capture_opens_a_counter_offer_and_mirror_force_ejects_the_attacker() -
 	var events: Array = _collect_events(manager)
 	var rejected: Array = _rejections(manager)
 	_capture_setup(manager, &"CNT_02")
-	check(manager.counter_pending(), "반격 대기")
+	check(manager.counter_pending(), "방어 대기")
 	check_eq(int(manager.pending_counter()["victim"]), 2, "피해자 P2")
-	check_eq(manager.pending_counter()["cards"], [&"CNT_02"], "낼 수 있는 반격 카드")
+	check_eq(manager.pending_counter()["cards"], [&"CNT_02"], "낼 수 있는 방어 카드")
 	check(events.any(func(e: Dictionary) -> bool: return e["kind"] == &"counter_offer"), "counter_offer 이벤트")
 	_do(manager, 1, &"proceed")
-	check_eq(rejected.back()[2], &"counter_pending", "반격 대기 중에는 다른 행동을 막는다")
+	check_eq(rejected.back()[2], &"counter_pending", "방어 대기 중에는 다른 행동을 막는다")
 	_do(manager, 2, &"play_card", {"card_id": &"CNT_02"})
 	check_eq(manager.state.get_pawn(21).current_tile_idx, 3, "잡힌 말 복원")
 	check(not manager.state.get_pawn(11).has_left_start, "공격한 말은 출발선으로")
-	check(not manager.counter_pending(), "반격 대기 종료")
+	check(not manager.counter_pending(), "방어 대기 종료")
 	check_eq(manager.state.stat(1, VictoryLaw.KILLS), 0, "처치 기록도 되돌린다")
 	check_eq(manager.state.current_player, 2, "턴은 이어서 넘어간다")
 	_dispose(manager)
@@ -666,11 +666,11 @@ func test_capture_opens_a_counter_offer_and_mirror_force_ejects_the_attacker() -
 func test_bites_the_dust_rewinds_the_attackers_turn_and_ends_it() -> void:
 	var manager: TurnManager = _new_manager()
 	_capture_setup(manager, &"CNT_01")
-	check(manager.counter_pending(), "반격 대기")
+	check(manager.counter_pending(), "방어 대기")
 	_do(manager, 2, &"play_card", {"card_id": &"CNT_01"})
 	check_eq(manager.state.get_pawn(11).current_tile_idx, 1, "공격자 말 위치 복원")
 	check_eq(manager.state.get_pawn(21).current_tile_idx, 3, "잡힌 말 복원")
-	check((manager.state.hands[2] as Array).is_empty(), "반격 카드는 소모된 채")
+	check((manager.state.hands[2] as Array).is_empty(), "방어 카드는 소모된 채")
 	check_eq(manager.state.current_player, 2, "공격자의 턴이 끝나고 다음 사람 차례")
 	_dispose(manager)
 
@@ -691,7 +691,7 @@ func test_counter_cards_only_work_inside_the_victims_offer() -> void:
 	manager.state.give_card(1, &"CNT_04")
 	manager._begin_turn()
 	_do(manager, 1, &"play_card", {"card_id": &"CNT_04"})
-	check_eq(rejected.back(), [1, &"play_card", &"counter_only_when_attacked"], "공격받지 않았으면 반격 카드를 낼 수 없다")
+	check_eq(rejected.back(), [1, &"play_card", &"counter_only_when_attacked"], "공격받지 않았으면 방어 카드를 낼 수 없다")
 	check_eq((manager.state.hands[1] as Array).size(), 1, "카드는 그대로")
 	_dispose(manager)
 	# 피격 팝업이 열렸어도 피해자가 아닌 사람은 낼 수 없고, 넘긴 뒤에는 그 공격에 소급해 낼 수 없다
@@ -699,7 +699,7 @@ func test_counter_cards_only_work_inside_the_victims_offer() -> void:
 	rejected = _rejections(manager)
 	manager.state.give_card(1, &"CNT_04")
 	_capture_setup(manager, &"CNT_04")
-	check(manager.counter_pending(), "P2에게 반격 대기")
+	check(manager.counter_pending(), "P2에게 방어 대기")
 	_do(manager, 1, &"play_card", {"card_id": &"CNT_04"})
 	check(rejected.back()[0] == 1 and rejected.back()[1] == &"play_card" and (manager.state.hands[1] as Array).has(&"CNT_04"), "피해자가 아니면 거부 (%s)" % str(rejected.back()))
 	_do(manager, 2, &"counter_pass")
@@ -717,7 +717,7 @@ func test_uno_reverse_reflects_a_bang_back_to_the_shooter() -> void:
 	state.give_card(1, &"ACT_02")
 	state.give_card(2, &"CNT_03")
 	_do(manager, 1, &"play_card", {"card_id": &"ACT_02", "target_player": 2})
-	check(manager.counter_pending() and manager.current_state == Phase.PHASE_TURN_BEGIN, "뱅! 직후 턴 시작 단계에서 반격 대기")
+	check(manager.counter_pending() and manager.current_state == Phase.PHASE_TURN_BEGIN, "뱅! 직후 턴 시작 단계에서 방어 대기")
 	_do(manager, 2, &"play_card", {"card_id": &"CNT_03"})
 	check_eq(state.get_pawn(21).current_tile_idx, 9, "내 말 복원")
 	check(not state.get_pawn(11).has_left_start, "뱅!이 쏜 사람에게 반사")
@@ -737,7 +737,7 @@ func test_trap_counters_cyclone_destroys_and_advances() -> void:
 	_do(manager, 1, &"roll")
 	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
 	check_eq(state.get_pawn(11).current_tile_idx, 3, "스파이크에 멈췄다")
-	check(manager.counter_pending() and int(manager.pending_counter()["victim"]) == 1, "내 턴에 걸린 함정도 반격할 수 있다")
+	check(manager.counter_pending() and int(manager.pending_counter()["victim"]) == 1, "내 턴에 걸린 함정도 방어할 수 있다")
 	_do(manager, 1, &"play_card", {"card_id": &"CNT_05"})
 	check(state.board.get_tile(3).attachments.is_empty(), "함정 파괴")
 	check_eq(state.get_pawn(11).current_tile_idx, 3 + CardCounter.CYCLONE_STEPS, "+3칸 전진")

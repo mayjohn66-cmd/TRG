@@ -1,6 +1,6 @@
 # File: res://core_engine/commands/penalty_bomb_command.gd
 # Class: class_name PenaltyBombCommand
-# Role: ACT_03 우노 +4 폭탄 실행 - 진행 방향의 다음 플레이어에게 폭탄을 넘겨 선두 말 하나를 출발선(0번)으로 장외 사출시키고(반격 카드로 막을 수 있다), 내 이번 이동에 +4칸을 더한다
+# Role: ACT_03 우노 +4 폭탄 실행 - 진행 방향의 다음 플레이어에게 폭탄을 넘겨 선두 말 하나를 출발선(0번)으로 장외 사출시키고(방어 카드로 막을 수 있다), 내 이번 이동에 +4칸을 더한다
 class_name PenaltyBombCommand
 extends GameCommand
 

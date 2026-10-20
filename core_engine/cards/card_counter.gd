@@ -1,6 +1,6 @@
 # File: res://core_engine/cards/card_counter.gd
 # Class: class_name CardCounter
-# Role: 반격 카드 7종(CNT_01~07). 내가 공격(잡기·공격 카드·함정)을 당했을 때 반격 팝업에서 낸다. 이번 턴의 공격 기록(GameState.attack_log) 하나를 골라 되돌리거나 되갚는다
+# Role: 방어 카드 7종(CNT_01~07). 내가 공격(잡기·공격 카드·함정)을 당했을 때 방어 팝업에서 낸다. 이번 턴의 공격 기록(GameState.attack_log) 하나를 골라 되돌리거나 되갚는다
 class_name CardCounter
 extends BaseCard
 
@@ -25,14 +25,14 @@ func _init(id: StringName = &"CNT_01") -> void:
 	card_id = id
 	display_name = str(DEFS[id][0])
 	category = GameEnums.CardCategory.COUNTER
-	playable_phases = []  # 단계로 쓰는 카드가 아니다: 피격 팝업(반격 대기)에서만 낸다 (TurnManager._play_counter)
+	playable_phases = []  # 단계로 쓰는 카드가 아니다: 피격 팝업(방어 대기)에서만 낸다 (TurnManager._play_counter)
 
 
 static func is_counter(id: StringName) -> bool:
 	return DEFS.has(id)
 
 
-## 이 반격 카드가 이 공격 기록에 쓸 수 있는가.
+## 이 방어 카드가 이 공격 기록에 쓸 수 있는가.
 static func answers(state: GameState, id: StringName, entry: Dictionary) -> bool:
 	if not DEFS.has(id) or entry.is_empty() or bool(entry["countered"]):
 		return false

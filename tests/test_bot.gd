@@ -328,22 +328,22 @@ func test_four_bots_finish_whole_games_without_getting_stuck() -> void:
 func test_bot_dodges_a_capture_with_its_counter_card() -> void:
 	var manager: TurnManager = _manager(2)
 	_hurt_setup(manager, 2, 1)
-	check(manager.counter_pending(), "반격 카드를 쥔 피해자에게 반격 대기")
+	check(manager.counter_pending(), "방어 카드를 쥔 피해자에게 방어 대기")
 	var controller: BotController = _controller(manager, [2], true)
 	var guard: int = 0
 	while manager.counter_pending() and guard < 10:
 		guard += 1
 		controller.tick(1.0)
 	check_eq(manager.state.get_pawn(21).current_tile_idx, 4, "봇이 [빗나감!]으로 피해 말이 제자리")
-	check((manager.state.hands[2] as Array).is_empty(), "반격 카드 소모")
-	check(not manager.counter_pending(), "반격 대기 종료")
+	check((manager.state.hands[2] as Array).is_empty(), "방어 카드 소모")
+	check(not manager.counter_pending(), "방어 대기 종료")
 	_dispose(manager)
 
 
 func test_counter_offer_waits_for_a_human_victim() -> void:
 	var manager: TurnManager = _manager(2)
 	_hurt_setup(manager, 2, 1)
-	check(manager.counter_pending() and int(manager.pending_counter()["victim"]) == 2, "피해자 P2에게 반격 대기")
+	check(manager.counter_pending() and int(manager.pending_counter()["victim"]) == 2, "피해자 P2에게 방어 대기")
 	var controller: BotController = _controller(manager, [1], true)  # P2는 사람
 	for i: int in 10:
 		controller.tick(1.0)

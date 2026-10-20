@@ -45,7 +45,7 @@ static func category_name(value: GameEnums.AugmentCategory) -> String:
 		GameEnums.AugmentCategory.PAWN_EVOLUTION: return "기물 진화"
 		GameEnums.AugmentCategory.TOOL_SWAP: return "판정 도구 교체"
 		GameEnums.AugmentCategory.LAW_ENACT: return "교칙 제정"
-		GameEnums.AugmentCategory.SUPER_GAMBLE: return "초증강 : 도박 & 억까"
+		GameEnums.AugmentCategory.SUPER_GAMBLE: return "초증강 : 하이리스크 하이리턴"
 	return "생떼 카드 패키지"
 
 

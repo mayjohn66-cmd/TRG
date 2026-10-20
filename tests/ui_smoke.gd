@@ -176,10 +176,10 @@ func _wait_for_bots(manager: TurnManager) -> bool:
 	_idle_frames += 1
 	var human: int = MainBoard.HUMAN_ID
 	if manager.counter_pending():
-		# 반격 대기: 맞은 사람이 P1이면 반격 팝업이 떠야 하고, 봇이면 봇이 고른다.
+		# 방어 대기: 맞은 사람이 P1이면 방어 팝업이 떠야 하고, 봇이면 봇이 고른다.
 		_board._update_reaction_popup(0.0)
 		var human_victim: bool = int(manager.pending_counter()["victim"]) == human
-		_assert((_board._reaction_popup != null) == human_victim, "AI 모드의 반격 팝업은 P1이 공격당했을 때만 떠야 한다")
+		_assert((_board._reaction_popup != null) == human_victim, "AI 모드의 방어 팝업은 P1이 공격당했을 때만 떠야 한다")
 		if not human_victim:
 			return true
 		_actions += 1
@@ -549,15 +549,15 @@ func _try_turn_begin_buttons(manager: TurnManager) -> bool:
 	return false
 
 
-## 반격 대기: 공격당한 사람이 반격 카드를 들고 있으면 가운데 반격 팝업(InterceptionPrompt)이 떠야 하고, [발동!]이나 [그냥 맞기]를 누른다.
+## 방어 대기: 공격당한 사람이 방어 카드를 들고 있으면 가운데 방어 팝업(InterceptionPrompt)이 떠야 하고, [발동!]이나 [그냥 맞기]를 누른다.
 func _react_in_window(manager: TurnManager) -> void:
 	_assert(not _board._skip_button.visible, "예전 [개입 패스] 버튼은 더 이상 보이지 않는다")
 	_board._update_reaction_popup(0.0)
 	var holder: int = _board._reaction_holder()
 	if holder == -1:
-		manager.force_timeout()  # 봇의 반격 차례이거나 반격 대기가 아니다: 자동 진행
+		manager.force_timeout()  # 봇의 방어 차례이거나 방어 대기가 아니다: 자동 진행
 		return
-	_assert(_board._reaction_popup != null and _board._reaction_popup.name == "InterceptionPrompt" and _board._reaction_use_button != null and _board._reaction_pass_button != null, "반격 팝업과 [발동!]/[그냥 맞기] 버튼이 떠야 한다")
+	_assert(_board._reaction_popup != null and _board._reaction_popup.name == "InterceptionPrompt" and _board._reaction_use_button != null and _board._reaction_pass_button != null, "방어 팝업과 [발동!]/[그냥 맞기] 버튼이 떠야 한다")
 	_assert(_board._hint_label.text.contains("팝업"), "팝업 안내 문구가 보여야 한다")
 	_popups += 1
 	if _rng.randi_range(0, 1) == 0:

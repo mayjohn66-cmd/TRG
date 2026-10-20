@@ -7,7 +7,7 @@ extends RefCounted
 
 static func create(attachment_id: String) -> TileAttachment:
 	match attachment_id:
-		"TRP_01": return TrapMirrorForce.new()  # 카드는 반격 CNT_02로 바뀌었지만, 밟으면 사출하는 기본 함정으로 남겨 둔다
+		"TRP_01": return TrapMirrorForce.new()  # 카드는 방어 CNT_02로 바뀌었지만, 밟으면 사출하는 기본 함정으로 남겨 둔다
 		"TRP_02": return TrapPit.new()
 		"TRP_03": return TrapMine.new()
 		"TRP_05": return TrapDomino.new()

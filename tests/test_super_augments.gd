@@ -1,6 +1,6 @@
 # File: res://tests/test_super_augments.gd
 # Class: class_name TestSuperAugments
-# Role: [초증강 : 도박 & 억까] 12종의 조건·효과·드래프트 등장·턴 매니저 연동(영구 가속, 도박사 2배/과열 사출, 휴식)을 검사한다
+# Role: [초증강 : 하이리스크 하이리턴] 12종의 조건·효과·드래프트 등장·턴 매니저 연동(영구 가속, 도박사 2배/과열 사출, 휴식)을 검사한다
 class_name TestSuperAugments
 extends TestCase
 
@@ -31,7 +31,7 @@ func test_twelve_super_augments_are_registered_with_names_and_descriptions() -> 
 		check(def != null and def.category == GameEnums.AugmentCategory.SUPER_GAMBLE, "%s 등록" % effect)
 		check(def.display_name.begins_with("[초증강] "), "%s 이름 표기" % effect)
 		check(def.describe(state, 1).begins_with("◆"), "%s 설명" % effect)
-	check_eq(AugmentDef.category_name(GameEnums.AugmentCategory.SUPER_GAMBLE), "초증강 : 도박 & 억까", "카테고리 이름")
+	check_eq(AugmentDef.category_name(GameEnums.AugmentCategory.SUPER_GAMBLE), "초증강 : 하이리스크 하이리턴", "카테고리 이름")
 	check_eq(SuperAugments.display_name(SuperAugments.FLIP), "[초증강] 판 뒤집기 (모 아니면 도)", "1번 이름")
 	check_eq(SuperAugments.display_name(SuperAugments.REDISTRIBUTE), "[초증강] 공산주의 재분배", "2번 이름")
 	check_eq(SuperAugments.display_name(SuperAugments.NITRO), "[초증강] 아우토반 니트로", "10번 이름")
@@ -119,19 +119,76 @@ func test_minefield_places_mines_on_empty_normal_tiles_and_gives_a_trap_card() -
 	check(card.category == GameEnums.CardCategory.TRAP and not card.corner_only, "일반 함정 카드")
 
 
-func test_raid_sweeps_both_side_lines_from_the_top_corners_and_vanishes() -> void:
+func test_raid_gives_a_summon_card_and_steals_one_card_from_each_other_player() -> void:
 	var state: GameState = _state()
-	_place(state, 21, BoardSpec.halfway_tile + 3)  # 왼쪽 줄
-	_place(state, 31, BoardSpec.side - 2)          # 오른쪽 줄
-	_place(state, 11, BoardSpec.halfway_tile - 3)  # 윗줄 (안전)
-	_place(state, 41, 2 * BoardSpec.side + BoardSpec.side + 2)  # 아랫줄 (안전)
+	for victim: int in [2, 3, 4]:
+		state.give_card(victim, &"TRP_01")
+		state.give_card(victim, &"TRP_02")
 	var result: Dictionary = SuperAugments.apply(SuperAugments.RAID, state, 1)
 	check(bool(result["ok"]), "대습격")
-	check(not state.get_pawn(21).has_left_start, "도적떼가 왼쪽 줄을 쓸었다")
-	check(not state.get_pawn(31).has_left_start, "팩맨이 오른쪽 줄을 쓸었다")
-	check(state.get_pawn(11).has_left_start and state.get_pawn(41).has_left_start, "다른 줄은 안전")
-	check(state.npcs.is_empty(), "쓸고 나면 사라진다")
-	check_eq(state.stat(1, VictoryLaw.KILLS), 2, "내 초증강이 잡은 말은 처치로 센다")
+	var hand: Array = state.hands[1]
+	check_eq(hand.size(), 1 + 3, "소환 카드 1장 + 세 명에게서 1장씩")
+	check_eq(CardRegistry.get_card(hand[0]).category, GameEnums.CardCategory.SUMMON, "첫 장은 중립 기물 카드")
+	for victim: int in [2, 3, 4]:
+		check_eq((state.hands[victim] as Array).size(), 1, "%d번 플레이어는 1장을 빼앗겼다" % victim)
+	check(state.npcs.is_empty(), "기물을 바로 풀지는 않는다")
+
+
+func test_runaway_train_clears_one_whole_side_of_pawns_and_traps() -> void:
+	var state: GameState = _state(3)
+	for tile: int in BoardSpec.tile_count:
+		if tile % 2 == 1:
+			state.place_attachment(tile, TrapMine.new(2))
+	_place(state, 11, 3)
+	_place(state, 21, BoardSpec.side + 3)
+	_place(state, 31, 2 * BoardSpec.side + 3)
+	_place(state, 41, 3 * BoardSpec.side + 3)
+	var result: Dictionary = SuperAugments.apply(SuperAugments.RUNAWAY, state, 1)
+	check(bool(result["ok"]), "폭주 기관차")
+	var cleared_sides: int = 0
+	for side_index: int in 4:
+		var pawn: PlayerPawn = state.get_pawn([11, 21, 31, 41][side_index])
+		var side_cleared: bool = not pawn.has_left_start
+		var traps_left: int = 0
+		for step: int in range(1, BoardSpec.side + 1):
+			var tile: int = posmod(side_index * BoardSpec.side + step, BoardSpec.tile_count)
+			traps_left += state.board.get_tile(tile).attachments.size()
+		if side_cleared:
+			cleared_sides += 1
+			check_eq(traps_left, 0, "기관차가 지난 변의 함정은 모두 파괴")
+		else:
+			check(traps_left > 0, "다른 변의 함정은 그대로")
+	check_eq(cleared_sides, 1, "정확히 한 변만 쓸었다 (내 말도 예외 없음)")
+
+
+func test_joint_responsibility_bonds_my_front_and_rear_pawns() -> void:
+	var state: GameState = _state()
+	check(not SuperAugments.is_available(SuperAugments.GUARANTEE, state, 1), "보드에 말이 둘 이상 있어야 한다")
+	_place(state, 11, 4)
+	_place(state, 12, 9)
+	_place(state, 13, 15)
+	check(SuperAugments.is_available(SuperAugments.GUARANTEE, state, 1), "선택 가능")
+	check(bool(SuperAugments.apply(SuperAugments.GUARANTEE, state, 1)["ok"]), "연대책임")
+	check_eq(int(state.bonds.get(13, -1)), 11, "선두(13)와 후방(11)이 묶인다")
+	check(not state.bonds.has(12), "가운데 말은 그대로")
+	var restored: GameState = _state()
+	TurnSnapshot.from_dict(TurnSnapshot.capture(state).to_dict()).restore(restored)
+	check_eq(int(restored.bonds.get(11, -1)), 13, "스냅샷으로 복원된다")
+	# 하나가 골인하면 둘 다 골인
+	state.finish_stack(state.get_pawn(13))
+	check(state.get_pawn(11).is_finished, "후방 말도 함께 골인")
+	check(not state.get_pawn(12).is_finished, "묶이지 않은 말은 그대로")
+	check(state.bonds.is_empty(), "결과가 나면 묶음은 풀린다")
+
+
+func test_joint_responsibility_ejects_both_pawns_together() -> void:
+	var state: GameState = _state()
+	_place(state, 11, 4)
+	_place(state, 13, 15)
+	SuperAugments.apply(SuperAugments.GUARANTEE, state, 1)
+	state.send_to_start(state.get_pawn(11), 2)
+	check(not state.get_pawn(11).has_left_start and not state.get_pawn(13).has_left_start, "하나가 탈락하면 둘 다 탈락")
+	check(state.bonds.is_empty(), "묶음 해제")
 
 
 func test_bakery_gives_cards_and_launches_a_waiting_pawn_to_the_first_bakery() -> void:
@@ -197,7 +254,7 @@ func test_personal_passive_supers_stay_for_the_rest_of_the_game() -> void:
 	check(state.rulebook.law_ids().is_empty(), "법전 슬롯은 비어 있다")
 	var restored: GameState = _state()
 	TurnSnapshot.from_dict(TurnSnapshot.capture(state).to_dict()).restore(restored)
-	check(restored.rulebook.has_personal("SUPER_11", 1), "스냅샷으로 복원된다")
+	check(restored.rulebook.has_personal("SUPER_10", 1), "스냅샷으로 복원된다")
 
 
 func test_super_category_appears_at_most_once_per_draft_and_not_every_time() -> void:

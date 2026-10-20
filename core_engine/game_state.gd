@@ -42,7 +42,7 @@ signal shield_broken(pawn_id: int, tile: int)
 signal shield_recharged(pawn_id: int)
 ## 지뢰찾기 공병이 적 함정을 해체했다.
 signal trap_defused(tile: int, attachment_id: String, pawn_id: int)
-## TRP_05 도미노 연쇄 붕괴: 밟은 말(pawn_id)이 지나간 타일들(passed)로 밀려났고 chain의 말들이 2칸씩 연쇄로 밀려났다.
+## TRP_05 도미노 연쇄: 밟은 말(pawn_id)이 멈췄고 chain 칸들의 함정이 연쇄로 터졌다. passed는 예전 형식 호환용(항상 빈 배열).
 signal domino_collapsed(pawn_id: int, passed: Array[int], chain: Array[int])
 ## ACT_07 무너지는 탑이 tile에 벼락을 쳐 말들을 흩어 놓았다 (scattered: {"pawn_id", "from", "to"}).
 signal tower_struck(tile: int, scattered: Array[Dictionary])
@@ -57,6 +57,9 @@ signal wheel_turned(player_id: int, mine_id: int, enemy_id: int, outcome: String
 signal duel_requested(challenger: int, defender: int)
 signal snapshot_restored()
 signal victory_declared(player_id: int, reason: StringName)
+## 강제 연대책임: 두 말이 묶였다 / 묶인 짝이 같이 골인(&"finish")·탈락(&"eject")했다.
+signal pawns_bonded(pawn_a_id: int, pawn_b_id: int)
+signal bond_resolved(kind: StringName, pawn_id: int, partner_id: int)
 
 var board: BoardGraph = BoardGraph.new()
 ## Node 기반 법전. 씬 트리에 붙이지 않고 GameState가 수명을 관리한다.
@@ -92,7 +95,7 @@ var winner: int = -1
 var rankings: Array[int] = []
 ## 플레이어 ID -> 순위를 확정한 사유 (all_home / 특수 승리 교칙 ID / last_place)
 var rank_reasons: Dictionary = {}
-## ⚔ 이번 턴의 공격 기록 (반격 카드 대상). 턴이 시작될 때 비운다. 원소: {id, kind(capture/card/trap), victim, attacker, attacker_pawn,
+## ⚔ 이번 턴의 공격 기록 (방어 카드 대상). 턴이 시작될 때 비운다. 원소: {id, kind(capture/card/trap), victim, attacker, attacker_pawn,
 ## card_id, trap_id, trap_tile, trap_owner, trap_data, pawns: {말 ID: 피해 직전 상태}, stats: {kills, ejected, underdog}, effects: {}, offered, countered}
 var attack_log: Array[Dictionary] = []
 ## 지금 진행 중인 공격의 출처 (begin_attack ~ end_attack 사이). 비어 있으면 공격으로 기록하지 않는다.
@@ -114,6 +117,8 @@ var law_stats: Dictionary = {}
 var turn_snapshot: TurnSnapshot = null
 ## 이번 턴에 말이 잡히거나 함정을 밟은 플레이어들 (ACT_05 발동 조건).
 var hurt_players: Array[int] = []
+## 초증강 강제 연대책임: 일심동체로 묶인 두 말 (말 ID -> 짝 말 ID, 양쪽 모두 적는다). 하나가 골인·탈락하면 짝도 같이, 그 뒤 풀린다.
+var bonds: Dictionary = {}
 ## 턴 진행 방향 미러 (TurnManager가 소유·갱신한다): 1 정방향 / -1 역방향. next_player_after가 사용한다.
 var turn_direction: int = 1
 ## ACT_03 우노 +4: 플레이어 ID -> 다음 자기 턴 시작에 받을 후퇴 페널티(음수 칸 수). 0이면 없음.
@@ -368,15 +373,45 @@ func send_to_start(pawn: PlayerPawn, by_player: int) -> void:
 		hurt_players.append(pawn.owner_id)
 	for member: PlayerPawn in members:
 		pawn_sent_to_start.emit(member.entity_id, by_player)
+	# 강제 연대책임: 묶인 짝도 함께 탈락한다
+	for member: PlayerPawn in members:
+		var partner: PlayerPawn = _take_bond(member)
+		if partner != null and partner.has_left_start and not partner.is_finished:
+			bond_resolved.emit(&"eject", member.entity_id, partner.entity_id)
+			send_to_start(partner.carrier if partner.carrier != null else partner, by_player)
 
 
 func finish_stack(leader: PlayerPawn) -> void:
-	for member: PlayerPawn in leader.stack_members():
+	var members: Array[PlayerPawn] = leader.stack_members()
+	for member: PlayerPawn in members:
 		member.is_finished = true
 		member.carrier = null
 		member.current_tile_idx = GameEnums.GOAL_TILE
 		pawn_finished.emit(member.entity_id)
 	leader.carried.clear()
+	# 강제 연대책임: 묶인 짝도 함께 골인한다
+	for member: PlayerPawn in members:
+		var partner: PlayerPawn = _take_bond(member)
+		if partner != null and not partner.is_finished:
+			bond_resolved.emit(&"finish", member.entity_id, partner.entity_id)
+			finish_stack(partner.carrier if partner.carrier != null else partner)
+
+
+## 두 말을 일심동체로 묶는다 (강제 연대책임).
+func bind_pawns(a: PlayerPawn, b: PlayerPawn) -> void:
+	bonds[a.entity_id] = b.entity_id
+	bonds[b.entity_id] = a.entity_id
+	pawns_bonded.emit(a.entity_id, b.entity_id)
+
+
+## 이 말의 짝을 돌려주고 묶음을 푼다 (없으면 null).
+func _take_bond(pawn: PlayerPawn) -> PlayerPawn:
+	if not bonds.has(pawn.entity_id):
+		return null
+	var partner_id: int = int(bonds[pawn.entity_id])
+	bonds.erase(pawn.entity_id)
+	bonds.erase(partner_id)
+	return get_pawn(partner_id)
 
 
 ## member를 leader에 업힌 상태로 합친다 (member가 업고 있던 말들도 함께).
@@ -688,7 +723,7 @@ func recharge_shields() -> void:
 
 
 # ---------------------------------------------------------------------------
-# ⚔ 공격 기록 (반격 카드)
+# ⚔ 공격 기록 (방어 카드)
 # ---------------------------------------------------------------------------
 
 ## 공격 출처를 연다: {"kind": &"capture"/&"card"/&"trap", "attacker": 플레이어, ...}. 같은 출처 안의 피해는 피해자별로 한 기록에 모인다.
@@ -775,7 +810,7 @@ func pawn_state(pawn: PlayerPawn) -> Dictionary:
 		"imprisoned": pawn.is_imprisoned, "shield": pawn.shield, "carrier": pawn.carrier.entity_id if pawn.carrier != null else -1, "carried": carried_ids}
 
 
-## 반격으로 피해를 되돌린다: 저장한 말 상태·휴식·밴·기록을 복원하고, 공격으로 오른 특수 승리 기록을 되돌린다.
+## 방어으로 피해를 되돌린다: 저장한 말 상태·휴식·밴·기록을 복원하고, 공격으로 오른 특수 승리 기록을 되돌린다.
 func undo_attack(entry: Dictionary) -> void:
 	var saved: Dictionary = entry["pawns"]
 	for pawn_id: Variant in saved.keys():

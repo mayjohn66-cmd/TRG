@@ -16,6 +16,9 @@ const RADIUS: float = 0.27
 const HALF_LENGTH: float = 1.15
 const TABLE_Y: float = 0.105
 const MARKED_STICK: int = 3
+## 낙(落)일 때 표시 가락이 떨어지는 판 밖 자리.
+const NAK_X: float = 3.1
+const NAK_Z: float = 0.6
 const FINAL_X: Array[float] = [-1.65,-0.55,0.55,1.65]
 const FINAL_Z: Array[float] = [-0.15,0.20,-0.15,0.18]
 const FINAL_YAW: Array[float] = [-12.0,5.0,-7.0,12.0]
@@ -129,7 +132,7 @@ func begin(value: int, power: float) -> void:
 
 static func flat_faces(value: int) -> Array[bool]:
 	match value:
-		-1: return [false,false,false,true]
+		0: return [true,false,true,false]  # 낙: 남은 세 가락은 아무렇게나, 표시 가락(3번)은 판 밖으로
 		1: return [true,false,false,false]
 		2: return [true,true,false,false]
 		3: return [true,true,true,false]
@@ -176,8 +179,14 @@ static func pose_at(seconds: float, index: int, value: int, power: float) -> Tra
 		var decay: float = (1.0-rebound)*(1.0-rebound)
 		rotation = target*Quaternion(Vector3.FORWARD,0.07*sin(TAU*rebound)*decay)
 		lift = 0.10*sin(PI*rebound)*(1.0-rebound)
-	var x: float = lerpf(FINAL_X[index]*0.56,FINAL_X[index],progress)
-	var z: float = lerpf(0.85+index*0.025,FINAL_Z[index],progress)
+	var final_x: float = FINAL_X[index]
+	var final_z: float = FINAL_Z[index]
+	if value == 0 and index == MARKED_STICK:
+		# 낙: 표시 가락 하나가 멀리 튕겨 판 밖으로 떨어진다
+		final_x = NAK_X
+		final_z = NAK_Z
+	var x: float = lerpf(FINAL_X[index]*0.56,final_x,progress)
+	var z: float = lerpf(0.85+index*0.025,final_z,progress)
 	return Transform3D(Basis(rotation),Vector3(x,TABLE_Y+support_height(rotation)+maxf(lift,0),z))
 
 
@@ -211,13 +220,15 @@ func apply_time(seconds: float) -> void:
 
 
 func displayed_value() -> int:
+	if sticks[MARKED_STICK].position.x > NAK_X - 0.4:
+		return 0  # 표시 가락이 판 밖: 낙
 	var count: int = 0
 	var marked: bool = false
 	for index: int in 4:
 		if (sticks[index].quaternion*Vector3.DOWN).dot(Vector3.UP)>0.9:
 			count += 1
 			marked = marked or index == MARKED_STICK
-	return 5 if count == 0 else (-1 if count == 1 and marked else count)
+	return 5 if count == 0 else count
 
 
 func stop_rendering() -> void:

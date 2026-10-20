@@ -51,3 +51,10 @@ func _run() -> void:
 					state.send_to_start(enemy, pawn.owner_id)
 		&"plant_mine":
 			state.place_attachment(pawn.current_tile_idx, TrapMine.new(pawn.owner_id))
+		&"hotel":
+			# 미니카 [호텔 건설]: 같은 칸의 내 호텔은 새것으로 바꾼다
+			var node: TileNode = state.board.get_tile(pawn.current_tile_idx)
+			for attachment: TileAttachment in node.attachments.duplicate():
+				if attachment.attachment_id == "HOTEL" and attachment.owner_id == pawn.owner_id:
+					node.remove_attachment(attachment)
+			state.place_attachment(pawn.current_tile_idx, Hotel.new(pawn.owner_id))

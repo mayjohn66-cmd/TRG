@@ -125,12 +125,12 @@ static func score_augment(state: GameState, player_id: int, definition: AugmentD
 ## 봇의 초증강 선호: 확실히 이득인 것(영구 가속·카드+호텔·저격·재분배)은 높게, 도박성 짙은 것(판 뒤집기·도박사·캐슬링)은 낮게 본다.
 static func super_augment_score(effect: StringName) -> float:
 	match effect:
-		SuperAugments.DEVIL, SuperAugments.BAKERY, SuperAugments.SNIPER, SuperAugments.NITRO, SuperAugments.RUNAWAY:
+		SuperAugments.DEVIL, SuperAugments.BAKERY, SuperAugments.SNIPER, SuperAugments.NITRO, SuperAugments.RAID:
 			return 70.0
 		SuperAugments.REDISTRIBUTE, SuperAugments.GUARANTEE, SuperAugments.MINEFIELD:
 			return 55.0
-		SuperAugments.RAID:
-			return 45.0
+		SuperAugments.RUNAWAY:
+			return 40.0  # 내 말도 날아갈 수 있는 도박
 	return 35.0
 
 
@@ -308,7 +308,7 @@ static func _plan_one_turn_card(state: GameState, player_id: int, card: BaseCard
 			if leader_player != -1 and card.is_legal(state, player_id, {"target_player": leader_player}) and rng.randf() < 0.6:
 				return {"card_id": card.card_id, "params": {"target_player": leader_player}}
 		&"CNT_01", &"CNT_02", &"CNT_03", &"CNT_04", &"CNT_05", &"CNT_06", &"CNT_07":
-			return {}  # 반격 카드는 공격당했을 때만
+			return {}  # 방어 카드는 공격당했을 때만
 		_:
 			if rng.randf() >= TRAP_USE_CHANCE:
 				return {}
@@ -337,7 +337,7 @@ static func plan_window_card(state: GameState, player_id: int, phase: int, roll_
 	return {}
 
 
-## 반격 대기에서 봇이 낼 반격 카드: 되갚는 카드를 먼저 고르고(거울의 힘 > 우노 리버스 > 도굴꾼 > 싸이크론 > 포고령 > 빗나감),
+## 방어 대기에서 봇이 낼 방어 카드: 되갚는 카드를 먼저 고르고(거울의 힘 > 우노 리버스 > 도굴꾼 > 싸이크론 > 포고령 > 빗나감),
 ## 바이츠 더 더스트는 앞서 나간 말을 잃었을 때만 쓴다. 쓰지 않으면 빈 값.
 const COUNTER_PREFERENCE: Array[StringName] = [&"CNT_02", &"CNT_03", &"CNT_07", &"CNT_05", &"CNT_06", &"CNT_04", &"CNT_01"]
 
@@ -490,6 +490,9 @@ static func skill_option(state: GameState, pawn: PlayerPawn) -> Dictionary:
 			var hostile: int = PawnSkills.attachments_on(state, pawn, PawnSkills.quake_tiles(pawn), true)
 			var mine: int = PawnSkills.attachments_on(state, pawn, PawnSkills.quake_tiles(pawn)) - hostile
 			return {"params": {}, "value": SKILL_USE_THRESHOLD + 4.0 * float(hostile - mine)} if hostile > mine else {}
+		&"hotel":
+			var own_hotel: bool = state.board.get_tile(pawn.current_tile_idx).attachments.any(func(a: TileAttachment) -> bool: return a.attachment_id == "HOTEL" and a.owner_id == pawn.owner_id)
+			return {"params": {}, "value": SKILL_USE_THRESHOLD + 1.0} if not own_hotel else {}
 		&"plant_mine":
 			return {"params": {}, "value": SKILL_USE_THRESHOLD + 1.0} if not state.board.get_tile(pawn.current_tile_idx).has_trap() else {}
 	return {}

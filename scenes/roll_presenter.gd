@@ -8,7 +8,7 @@ extends PanelContainer
 signal finished
 
 const SUPPORTED: Array[StringName] = [&"D6", &"CHINCHIRO", &"YUT", &"LIFE_ROULETTE", &"SLOT_777", &"HOLDEM", &"DICE_HWATU", &"DICE_MAHJONG", &"DICE_TAROT", &"REVOLVER"]
-const YUT_NAMES: Dictionary = {-1: "특도", 1: "도", 2: "개", 3: "걸", 4: "윷", 5: "모"}
+const YUT_NAMES: Dictionary = {0: "낙", 1: "도", 2: "개", 3: "걸", 4: "윷", 5: "모"}
 const SLOT_SYMBOLS: Array[String] = ["체리", "레몬", "종", "BAR", "다이아", "7"]
 const SUITS: Array[String] = ["♣", "♦", "♥", "♠"]
 const RANKS: Array[String] = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"]
@@ -274,7 +274,7 @@ func _build(tool_id: StringName) -> void:
 			_yut_3d.show()
 			var face: int = int((_result.get("details", {}) as Dictionary).get("face",_result.get("steps",1)))
 			_yut_3d.begin(face,_power)
-			var caption: String = "%s · %s" % [YUT_NAMES[face],_card_move_text()]
+			var caption: String = "%s · %s" % [YUT_NAMES[face],"0칸, 턴 종료" if bool(_result.get("ends_turn",false)) else _card_move_text()]
 			if bool(_result.get("reroll",false)):
 				caption += " · 한 번 더"
 			_make_card_result(caption)
@@ -411,7 +411,7 @@ func _build_tarot() -> void:
 		_card_faces.append(str(TAROT_SHORT[fate]) if index == flipped else "?")
 		mask.append(index == flipped)
 	_build_illustrated_row(models, mask, Vector2(96, 156), true)
-	var text: String = "%s · %s" % [JudgmentCardArt.TAROT[fate][1], _card_move_text()]
+	var text: String = "%s · %s" % [JudgmentCardArt.TAROT[fate][1], "0칸, 턴 종료" if bool(_result.get("ends_turn", false)) else _card_move_text()]
 	if bool(_result.get("reroll", false)):
 		text += " · 한 번 더"
 	if details.has("blessing_booked"):

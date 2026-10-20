@@ -40,14 +40,16 @@ func test_yut_faces_and_reroll_on_special_four_or_five() -> void:
 		var result: RollResult = tool.roll(rng)
 		var face: int = int(result.details["face"])
 		seen[face] = true
-		check(result.steps >= 1, "후퇴 눈금은 없다")
-		check_eq(result.reroll, face == ToolYut.SPECIAL_FACE or face >= 4, "특도·윷·모일 때만 재굴림")
-		if face == ToolYut.SPECIAL_FACE:
-			check(result.steps == ToolYut.SPECIAL_STEPS and bool(result.details["special"]), "특도는 +2칸")
+		check(result.steps >= 0, "후퇴 눈금은 없다")
+		check_eq(result.reroll, face >= 4, "윷·모일 때만 재굴림")
+		if face == ToolYut.NAK_FACE:
+			check(result.steps == 0 and result.ends_turn and bool(result.details["nak"]), "낙은 0칸 + 턴 종료")
+		else:
+			check(result.steps == face and not result.ends_turn, "도~모는 나온 만큼")
 		check(ToolYut.FACES.has(face), "윷 눈금 집합")
 	var faces: Array = seen.keys()
 	faces.sort()
-	check_eq(faces, [-1, 1, 2, 3, 4, 5], "특도 포함 6면 모두 등장")
+	check_eq(faces, [0, 1, 2, 3, 4, 5], "낙 포함 6면 모두 등장")
 
 
 func test_life_roulette_seven_grants_seven_steps_and_reroll() -> void:

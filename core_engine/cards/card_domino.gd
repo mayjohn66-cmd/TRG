@@ -1,13 +1,13 @@
 # File: res://core_engine/cards/card_domino.gd
 # Class: class_name CardDomino
-# Role: TRP_05 스프링 인간 대포(옛 도미노 연쇄 붕괴) - 타일에 대포를 숨겨 두는 은신 함정(타일 설치형). 밟은 말이 앞으로 +5칸 사출되고 착지 지점의 말은 들이받혀 출발선으로 날아간다
+# Role: TRP_05 도미노 연쇄 - 타일에 숨겨 두는 은신 함정(타일 설치형). 밟은 말은 멈추고 반경 2칸 안의 다른 함정이 전부 연쇄 발동한다
 class_name CardDomino
 extends BaseCard
 
 
 func _init() -> void:
 	card_id = &"TRP_05"
-	display_name = "스프링 인간 대포"
+	display_name = "도미노 연쇄"
 	category = GameEnums.CardCategory.TRAP
 	playable_phases = [TurnManager.State.PHASE_TURN_BEGIN]
 

@@ -387,10 +387,16 @@ func test_new_traps_round_trip_through_snapshot() -> void:
 # --- 모노폴리 / 윷 세트 효과 ------------------------------------------------------
 
 func test_monopoly_pawn_builds_a_toll_hotel_that_stops_enemies_and_expires() -> void:
-	var state := make_state(2, 1, {1: _loadout(Kind.MONOPOLY)})
-	place(state, 11, 0, [], false)
-	var built: MoveReport = move(state, 11, 2)
-	check(built.hotel_built, "이동이 끝난 타일에 호텔 건설")
+	var probe := make_state(2, 1, {1: _loadout(Kind.MONOPOLY)})
+	place(probe, 11, 0, [], false)
+	move(probe, 11, 2)
+	check(not probe.board.get_tile(2).has_attachment("HOTEL"), "미니카는 이동만으로는 호텔을 짓지 않는다 (필살기)")
+	var manager: TurnManager = _manager(2, false, {1: [Vector2i(Kind.MONOPOLY, 1), 0, 0, 0]})
+	var state: GameState = manager.state
+	place(state, 11, 2, [1])
+	_do(manager, 1, &"use_skill", {"pawn_id": 11})
+	check(state.get_pawn(11).skill_used and state.board.get_tile(2).has_attachment("HOTEL"), "필살기 [호텔 건설]: 지금 칸에 호텔")
+	check(not manager.can_use_skill(1, 11), "한 판에 한 번")
 	var hotel: TileAttachment = state.board.get_tile(2).attachments[0]
 	check_eq(hotel.attachment_id, "HOTEL", "호텔")
 	check_eq(hotel.duration_turns, 5, "내 턴 5번간 유지")
@@ -400,9 +406,9 @@ func test_monopoly_pawn_builds_a_toll_hotel_that_stops_enemies_and_expires() -> 
 	check_eq(state.get_pawn(21).current_tile_idx, 2, "호텔 타일에서 멈춤")
 	check(not state.board.get_tile(2).has_attachment("HOTEL"), "호텔은 통행료를 받으면 소모")
 	check(hotel.is_expired(), "소모된 호텔은 만료 상태")
+	_dispose(manager)
 	var second := make_state(2, 1, {1: _loadout(Kind.MONOPOLY)})
-	place(second, 11, 0, [], false)
-	move(second, 11, 2)
+	second.place_attachment(2, Hotel.new(1))
 	var kept: TileAttachment = second.board.get_tile(2).attachments[0]
 	place(second, 12, 0, [], false)
 	var own: MoveReport = move(second, 12, 4)
@@ -466,27 +472,39 @@ func test_the_only_victory_is_getting_all_four_pawns_home() -> void:
 	check_eq(_reason(state, 1), VictoryChecker.ALL_HOME, "4개 완주만이 승리")
 
 
-func test_yut_pawns_get_a_bonus_roll_on_four_or_five_without_any_set() -> void:
+func test_yut_pawns_no_longer_reroll_on_four_or_five() -> void:
 	var manager: TurnManager = _manager(2, false)
 	manager.state.evolve_pawn(manager.state.get_pawn(11), Kind.YUT)
 	manager.state.tools[1] = ScriptedTool.new([4, 2])
 	_do(manager, 1, &"proceed")
 	_do(manager, 1, &"roll")
 	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
-	check_eq(manager.current_state, Phase.PHASE_ROLL_WAIT, "윷말 단독으로 눈금 4면 추가 굴림")
-	check_eq(manager.current_player_id(), 1, "아직 1번 플레이어")
+	check(not (manager.current_state == Phase.PHASE_ROLL_WAIT and manager.current_player_id() == 1), "윷말은 눈금 4·5로는 추가 굴림이 없다 (처치할 때만)")
 	_dispose(manager)
 
 
-func test_mini_car_gets_one_card_when_passing_the_start_line() -> void:
+func test_mini_car_gets_one_card_when_passing_the_halfway_tile() -> void:
+	var half: int = BoardSpec.halfway_tile
 	var state := make_state(2, 1, {1: [Vector2i(Kind.MONOPOLY, 1), 0, 0, 0]})
-	place(state, 11, 22, [21])
+	place(state, 11, half - 1, [half - 2])
 	var report: MoveReport = move(state, 11, 2)
-	check(report.finished and report.salary_cards == 1, "미니카는 출발선을 지날 때 카드 1장")
+	check_eq(report.salary_cards, 1, "미니카는 반환점을 지날 때 카드 1장")
 	check_eq((state.hands[1] as Array).size(), 1, "손패에 반영")
+	var finish := make_state(2, 1, {1: [Vector2i(Kind.MONOPOLY, 1), 0, 0, 0]})
+	place(finish, 11, BoardSpec.tile_count - 1, [BoardSpec.tile_count - 2])
+	check_eq(move(finish, 11, 2).salary_cards, 0, "출발선 통과로는 받지 않는다")
 	var plane := make_state(2, 1, {1: [0, Vector2i(Kind.MONOPOLY, 2), 0, 0]})
-	place(plane, 12, 22, [21])
+	place(plane, 12, half - 1, [half - 2])
 	check_eq(move(plane, 12, 2).salary_cards, 0, "다른 모노폴리 기물은 카드를 받지 않는다")
+
+
+func test_black_stone_gets_one_extra_step_on_odd_rolls() -> void:
+	var state := make_state(2, 1, {1: [Vector2i(Kind.GO, 1), 0, 0, 0]})
+	place(state, 11, 4, [3])
+	move(state, 11, 3)
+	check_eq(state.get_pawn(11).current_tile_idx, 8, "홀수 3 → 4칸")
+	move(state, 11, 2)
+	check_eq(state.get_pawn(11).current_tile_idx, 10, "짝수 2 → 그대로 2칸")
 
 
 # --- 최종 순위 ---------------------------------------------------------------------------
@@ -546,19 +564,39 @@ func test_trap_pit_ejects_only_on_dice_four_or_more() -> void:
 	check_eq(state.board.get_tile(2).attachments.size(), 0, "발동 후 소모")
 
 
-func test_summon_cards_sweep_from_a_top_corner_and_vanish() -> void:
+func test_summon_cards_stay_on_the_board_and_vanish_after_their_first_catch() -> void:
 	var state := make_state()
 	var bandit: BaseCard = CardRegistry.get_card(&"SUM_01")
 	var ghost: BaseCard = CardRegistry.get_card(&"SUM_02")
 	check(bandit.needs_tile() and ghost.needs_tile(), "둘 다 소환할 코너를 고른다")
 	check(bandit.can_play(state, 1, {"tile": BoardSpec.side}) and bandit.can_play(state, 1, {"tile": BoardSpec.halfway_tile}), "상단 코너 두 곳")
 	check(not bandit.can_play(state, 1, {"tile": 3}) and not ghost.can_play(state, 1, {"tile": 3 * BoardSpec.side}), "다른 칸에는 소환할 수 없다")
-	place(state, 21, BoardSpec.side + 1, [BoardSpec.side])
-	place(state, 22, BoardSpec.side + 3, [BoardSpec.side + 2])
-	place(state, 23, BoardSpec.side - 1, [BoardSpec.side - 2])
+	# 말이 없는 길: 소환 직후 3~6칸 전진하고 보드에 남는다
 	exec(state, bandit.create_command(state, 1, {"tile": BoardSpec.side}))
-	check(not state.get_pawn(21).has_left_start and not state.get_pawn(22).has_left_start, "도적떼는 정방향 3칸 이상을 쓸었다")
-	check(state.get_pawn(23).has_left_start, "뒤쪽은 안전")
-	check(state.npcs.is_empty(), "쓸고 사라진다")
-	exec(state, ghost.create_command(state, 1, {"tile": BoardSpec.side}))
-	check(not state.get_pawn(23).has_left_start, "팩맨은 역방향을 쓴다")
+	check_eq(state.npcs.size(), 1, "아무도 못 만나면 보드에 남는다")
+	var npc: NeutralNPC = state.npcs[0]
+	var advanced: int = npc.current_tile_idx - BoardSpec.side
+	check(advanced >= 3 and advanced <= 6, "정방향으로 3~6칸 전진 (%d)" % advanced)
+	check(not bandit.can_play(state, 1, {"tile": BoardSpec.side}) and not ghost.can_play(state, 1, {"tile": BoardSpec.halfway_tile}), "중립 기물은 한 번에 하나만")
+	# 앞에 말이 서면 그 칸에서 잡고 사라진다 (첫 칸의 말만)
+	place(state, 21, npc.current_tile_idx + 2, [npc.current_tile_idx + 1])
+	place(state, 22, npc.current_tile_idx + 3, [npc.current_tile_idx + 2])
+	var report: Dictionary = npc.run_ai(state)
+	check(bool(report["vanished"]), "말을 잡으면 사라진다")
+	check_eq(report["caught"], [21], "처음 만난 칸의 말만 잡는다")
+	check(state.get_pawn(22).has_left_start, "그 뒤의 말은 안전")
+	state.remove_npc(npc)
+	# 소환한 칸에 말이 있으면 바로 잡는다
+	place(state, 23, BoardSpec.halfway_tile, [BoardSpec.halfway_tile - 1])
+	exec(state, ghost.create_command(state, 1, {"tile": BoardSpec.halfway_tile}))
+	check(not state.get_pawn(23).has_left_start and state.npcs.is_empty(), "소환 칸의 말을 잡고 바로 사라진다")
+
+
+func test_neutral_npc_phase_keeps_marching_until_it_catches() -> void:
+	var state := make_state()
+	var ghost: NeutralNPC = state.spawn_npc(BoardSpec.halfway_tile, GameEnums.NpcBehavior.PATROL_REVERSE, 1, &"SUM_02")
+	var report: Dictionary = ghost.run_ai(state)
+	check(not bool(report["vanished"]), "아무도 없으면 계속 전진")
+	var moved: int = BoardSpec.halfway_tile - ghost.current_tile_idx
+	check(moved >= 3 and moved <= 6, "팩맨은 역방향 3~6칸 (%d)" % moved)
+	check_eq((report["path"] as Array).size(), moved, "경로 기록")

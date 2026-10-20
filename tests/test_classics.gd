@@ -338,8 +338,10 @@ func test_tarot_fates_and_blessing() -> void:
 	rng.seed = 5
 	var fool_values: Dictionary = {}
 	for i: int in 40:
-		fool_values[tool.roll_fate(&"fool", rng).steps] = true
-	check(fool_values.has(0) and fool_values.has(7) and fool_values.size() == 2, "광대는 0칸(헛발질) 또는 +7칸")
+		var fool: RollResult = tool.roll_fate(&"fool", rng)
+		fool_values[fool.steps] = true
+		check(fool.ends_turn, "광대는 턴 종료")
+	check(fool_values.has(0) and fool_values.size() == 1, "광대는 언제나 0칸")
 	check_eq(tool.roll_fate(&"chariot", rng).steps, 6, "전차 6칸")
 	var wheel: RollResult = tool.roll_fate(&"wheel", rng)
 	check(wheel.steps == 4 and wheel.reroll, "수레바퀴 4칸 + 한 번 더")
@@ -379,46 +381,43 @@ func test_new_tools_are_registered_and_swappable() -> void:
 	check_eq(ToolRegistry.create(&"DICE_TAROT").display_name, "점성술사의 타로 덱", "타로 이름")
 
 
-# --- TRP_05 도미노 연쇄 붕괴 ---------------------------------------------------
+# --- TRP_05 도미노 연쇄 ---------------------------------------------------------
 
-func test_spring_cannon_launches_the_mover_five_tiles_forward_and_rams_the_landing_pawn() -> void:
+func test_domino_stops_the_mover_and_sets_off_every_trap_within_two_tiles() -> void:
 	var state := make_state(2, 1)
 	state.place_attachment(5, TrapDomino.new(2))
+	state.place_attachment(6, TrapPit.new(2))
+	state.place_attachment(7, TrapMirrorForce.new(2))
+	state.place_attachment(9, TrapPit.new(2))
 	place(state, 11, 3, [2])
-	place(state, 21, 10, [9])
-	place(state, 23, 8, [7])
-	var launched: Array = []
-	state.domino_collapsed.connect(func(pawn_id: int, passed: Array[int], _chained: Array[int]) -> void: launched.append([pawn_id, passed.size()]))
-	var report: MoveReport = move(state, 11, 2)  # 4, 5번: 5번 스프링 대포
-	check(report.stopped_early, "대포에 걸려 원래 이동은 중단된다")
-	check_eq(state.get_pawn(11).current_tile_idx, 10, "밟은 말은 앞으로 5칸 사출 (5 -> 10)")
-	check(not state.get_pawn(21).has_left_start and report.captured_pawn_ids.has(21), "착지 지점의 적 말은 들이받혀 출발선으로 날아간다")
-	check_eq(state.get_pawn(23).current_tile_idx, 8, "경로 중간의 말은 건드리지 않는다")
-	check_eq(launched, [[11, 5]], "사출 신호 (말, 5칸)")
-	check(not state.board.get_tile(5).has_attachment("TRP_05"), "한 번 발동하면 사라진다")
+	place(state, 12, 6, [5])
+	var chained: Array = []
+	state.domino_collapsed.connect(func(pawn_id: int, _passed: Array[int], chain: Array[int]) -> void: chained.append([pawn_id, chain.duplicate()]))
+	var report: MoveReport = move(state, 11, 4)  # 4, 5번: 5번 도미노
+	check(report.stopped_early, "도미노에 걸려 이동이 멈춘다")
+	check_eq(state.get_pawn(11).current_tile_idx, 5, "밟은 말은 도미노 칸에 선다")
+	check(not state.get_pawn(12).has_left_start, "6번 나락이 연쇄로 터져 그 칸의 말을 출발선으로")
+	check_eq(chained.size(), 1, "연쇄 신호 1번")
+	check_eq(chained[0][0], 11, "밟은 말")
+	check_eq((chained[0][1] as Array).size(), 2, "반경 2칸의 함정 2개가 터졌다")
+	for tile: int in [5, 6, 7]:
+		check(state.board.get_tile(tile).attachments.is_empty(), "%d번 함정 소모" % tile)
+	check(state.board.get_tile(9).has_attachment("TRP_02"), "반경 밖 함정은 그대로")
 
 
-func test_spring_cannon_can_launch_a_pawn_straight_to_the_finish_line() -> void:
-	var state := make_state(2, 1)
-	state.place_attachment(21, TrapDomino.new(2))
-	place(state, 11, 20, [19])
-	var report: MoveReport = move(state, 11, 1)
-	check(report.finished and state.get_pawn(11).is_finished, "21번 대포로 22, 23, 0번까지 날아가 완주")
-
-
-func test_spring_cannon_affects_any_pawn_including_the_owners() -> void:
+func test_domino_affects_any_pawn_including_the_owners() -> void:
 	var state := make_state(2, 1)
 	state.place_attachment(15, TrapDomino.new(1))
 	place(state, 11, 13, [12])
-	move(state, 11, 2)  # 14, 15: 설치한 사람의 말도 걸린다
-	check_eq(state.get_pawn(11).current_tile_idx, 20, "설치자의 말도 앞으로 5칸 (15 -> 20)")
+	move(state, 11, 4)  # 14, 15: 설치한 사람의 말도 걸린다
+	check_eq(state.get_pawn(11).current_tile_idx, 15, "설치자의 말도 도미노 칸에서 멈춘다")
 
 
 func test_domino_hidden_trap_serializes_and_card_places_it() -> void:
 	var state := make_state(2, 1)
 	var card: BaseCard = CardRegistry.get_card(&"TRP_05")
 	check(card != null and card.category == GameEnums.CardCategory.TRAP and card.needs_tile(), "타일 설치형 함정 카드")
-	check_eq(card.display_name, "스프링 인간 대포", "카드 이름")
+	check_eq(card.display_name, "도미노 연쇄", "카드 이름")
 	check(card.can_play(state, 1, {"tile": 9}), "일반 타일에는 설치 가능")
 	check(not card.can_play(state, 1, {"tile": GameEnums.GOAL_TILE}), "출발선에는 설치 불가")
 	for corner: int in BoardSpec.bonus_corner_tiles:
@@ -426,7 +425,7 @@ func test_domino_hidden_trap_serializes_and_card_places_it() -> void:
 	var island: BaseCard = CardRegistry.get_card(&"TRP_C01")
 	check(island.is_legal(state, 1, {"tile": BoardSpec.bonus_corner_tiles[0]}) and not island.is_legal(state, 1, {"tile": 9}), "코너 전용 함정은 코너에만")
 	check(exec(state, card.create_command(state, 1, {"tile": 9})), "설치")
-	check(state.board.get_tile(9).has_attachment("TRP_05"), "9번 타일에 스프링 대포")
+	check(state.board.get_tile(9).has_attachment("TRP_05"), "9번 타일에 도미노")
 	check(not card.can_play(state, 1, {"tile": 9}), "같은 타일에 중복 설치 불가")
 	var attachment: TileAttachment = state.board.get_tile(9).attachments[0]
 	check(attachment.is_hidden_trap and attachment.owner_id == 1, "은신 함정, 설치자 기록")

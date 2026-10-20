@@ -1,6 +1,6 @@
 # File: res://core_engine/commands/counter_command.gd
 # Class: class_name CounterCommand
-# Role: 반격 카드 CNT_02~07 실행 - 공격 기록 하나의 피해를 되돌리고(말 위치·휴식·밴·기록 복원) 카드별로 되갚는다: 공격한 말 사출 / 공격 카드 반사 / 함정 파괴 후 +3칸 / 함정 무효 + 카드 강탈 / 함정을 주인의 선두 말에 반사
+# Role: 방어 카드 CNT_02~07 실행 - 공격 기록 하나의 피해를 되돌리고(말 위치·휴식·밴·기록 복원) 카드별로 되갚는다: 공격한 말 사출 / 공격 카드 반사 / 함정 파괴 후 +3칸 / 함정 무효 + 카드 강탈 / 걸린 함정 카드를 내 패로 (도굴꾼)
 class_name CounterCommand
 extends GameCommand
 
@@ -23,7 +23,7 @@ func can_execute(_ctx: RuleContext) -> bool:
 func _run() -> void:
 	var entry: Dictionary = state.get_attack(attack_id)
 	var attacker: int = int(entry.get("attacker", -1))
-	if entry["kind"] == CardCounter.TRAP and card_id != &"CNT_07":
+	if entry["kind"] == CardCounter.TRAP:
 		_remove_trap(entry)
 	state.undo_attack(entry)
 	match card_id:
@@ -43,10 +43,10 @@ func _run() -> void:
 				if stolen != &"" and not state.give_card(sender_id, stolen):
 					(state.hands[attacker] as Array).append(stolen)  # 내 손패가 가득 차면 돌려준다
 		&"CNT_07":
-			_remove_trap(entry)
-			var owner_front: PlayerPawn = state.front_pawn_of(attacker) if attacker >= 1 else null
-			if owner_front != null:
-				state.send_to_start(owner_front, sender_id)
+			# 도굴꾼: 걸린 함정은 발동하지 않고(되돌림) 그 함정 카드를 내 패로 가져온다
+			var trap_card: StringName = StringName(entry.get("trap_id", ""))
+			if CardRegistry.get_card(trap_card) != null:
+				state.give_card(sender_id, trap_card)
 
 
 ## 우노 리버스: 되돌린 공격 카드를 공격한 사람에게 그대로 돌려준다.

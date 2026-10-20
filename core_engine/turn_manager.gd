@@ -68,7 +68,7 @@ var stack_choice_enabled: bool = false
 var _stack_offer: Dictionary = {}
 ## ACT_09 결투 진행 상태 (없으면 빈 Dictionary): {"challenger","defender","step"(pick/strike),"picks","draws","winner","loser","candidates"}.
 var _duel: Dictionary = {}
-## ⚔ 반격 대기: {"victim": 플레이어, "attack": 공격 기록 ID, "resume": &"turn_begin"/&"resolution", "cards": [낼 수 있는 반격 카드]}. 없으면 빈 Dictionary.
+## ⚔ 방어 대기: {"victim": 플레이어, "attack": 공격 기록 ID, "resume": &"turn_begin"/&"resolution", "cards": [낼 수 있는 방어 카드]}. 없으면 빈 Dictionary.
 var _counter_offer: Dictionary = {}
 ## 폭풍 전진 가속 기믹(⚡ 발판·🏃 점프·🔥 복수) 사용 여부. start_game 전에만 바꿀 수 있다.
 var boost_gimmicks: bool = true
@@ -178,7 +178,7 @@ func request_action(action: StringName, params: Dictionary = {}) -> void:
 	if not _duel.is_empty() and action != &"duel_pick" and action != &"duel_strike":
 		action_rejected.emit(actor, action, &"duel_pending")
 		return
-	# ⚔ 반격 대기 중에는 피해자의 반격 카드 / 넘기기만 받는다.
+	# ⚔ 방어 대기 중에는 피해자의 방어 카드 / 넘기기만 받는다.
 	if counter_pending() and not (actor == int(_counter_offer["victim"]) and (action == &"counter_pass" or (action == &"play_card" and CardCounter.is_counter(StringName(params.get("card_id", &"")))))):
 		action_rejected.emit(actor, action, &"counter_pending")
 		return
@@ -409,7 +409,7 @@ func _handle_play_card(actor: int, params: Dictionary) -> void:
 	command.bind_state(ctx.state)
 	if not queued and command.can_execute(ctx):
 		_emit_event(&"card_played", {"player_id": actor, "card_id": card_id, "params": params, "queued": queued})
-		state.begin_attack({"kind": &"card", "card_id": card_id, "attacker": actor})  # ⚔ 이 카드로 입힌 피해는 반격 대상
+		state.begin_attack({"kind": &"card", "card_id": card_id, "attacker": actor})  # ⚔ 이 카드로 입힌 피해는 방어 대상
 		accepted = command_stack.execute_command(command, ctx)
 		state.end_attack()
 		if not accepted:
@@ -513,6 +513,8 @@ func _handle_use_skill(actor: int, params: Dictionary) -> void:
 				action_rejected.emit(actor, &"use_skill", &"invalid_skill")  # 한 칸에 함정은 하나만
 				return
 			_skill_effect(actor, pawn, skill)
+		&"hotel":
+			_skill_effect(actor, pawn, skill)
 		&"quake", &"slash", &"horse":
 			_skill_effect(actor, pawn, skill)
 		_:
@@ -550,7 +552,7 @@ func _skill_effect(actor: int, pawn: PlayerPawn, skill: StringName) -> void:
 	match skill:
 		&"quake": tiles = PawnSkills.quake_tiles(pawn)
 		&"slash", &"horse": tiles = PawnSkills.strike_tiles(pawn, skill)
-		&"plant_mine": tiles = [pawn.current_tile_idx] as Array[int]
+		&"plant_mine", &"hotel": tiles = [pawn.current_tile_idx] as Array[int]
 	var from_tile: int = pawn.current_tile_idx
 	var command := SkillEffectCommand.new(actor, pawn.entity_id, skill, tiles)
 	state.begin_attack({"kind": &"capture", "attacker": actor, "attacker_pawn": pawn.entity_id})
@@ -656,7 +658,7 @@ func pending_counter() -> Dictionary:
 	return _counter_offer
 
 
-## 이 플레이어가 이 공격에 낼 수 있는 반격 카드들 (손패 순서, 중복 없이).
+## 이 플레이어가 이 공격에 낼 수 있는 방어 카드들 (손패 순서, 중복 없이).
 func counter_cards_for(player_id: int, attack_id: int) -> Array[StringName]:
 	var result: Array[StringName] = []
 	var entry: Dictionary = state.get_attack(attack_id)
@@ -668,7 +670,7 @@ func counter_cards_for(player_id: int, attack_id: int) -> Array[StringName]:
 	return result
 
 
-## 아직 묻지 않은 공격 중 피해자가 반격 카드를 쥔 것이 있으면 진행을 멈추고 반격 여부를 묻는다. 물었으면 true.
+## 아직 묻지 않은 공격 중 피해자가 방어 카드를 쥔 것이 있으면 진행을 멈추고 방어 여부를 묻는다. 물었으면 true.
 func _open_counter_offer(resume: StringName) -> bool:
 	if is_game_over or state == null:
 		return false
@@ -700,7 +702,7 @@ func _handle_counter_pass(actor: int) -> void:
 	_finish_counter_offer()
 
 
-## 반격 카드는 내가 공격받았을 때 열리는 반격 대기(피격 팝업) 동안에만, 그 공격에 대해서만 낸다. 즉시 실행된다.
+## 방어 카드는 내가 공격받았을 때 열리는 방어 대기(피격 팝업) 동안에만, 그 공격에 대해서만 낸다. 즉시 실행된다.
 ## 손패에서 아무 때나 끌어 쓰거나 지난 공격에 소급해 낼 수는 없다.
 func _play_counter(actor: int, card: BaseCard, params: Dictionary) -> void:
 	if not counter_pending() or actor != int(_counter_offer["victim"]):
@@ -732,7 +734,7 @@ func _play_counter(actor: int, card: BaseCard, params: Dictionary) -> void:
 		_broadcast_state()
 
 
-## 반격 대기를 닫고 멈췄던 흐름을 잇는다. 바이츠 더 더스트로 되감았다면 공격한 사람의 턴이 바로 끝난다.
+## 방어 대기를 닫고 멈췄던 흐름을 잇는다. 바이츠 더 더스트로 되감았다면 공격한 사람의 턴이 바로 끝난다.
 func _finish_counter_offer() -> void:
 	var resume: StringName = _counter_offer.get("resume", &"resolution")
 	_counter_offer = {}
@@ -1293,10 +1295,6 @@ func _execute_move(pawn: PlayerPawn, forced_path: Array[int] = []) -> void:
 		if not pawn.is_finished and pawn.has_left_start and pawn.current_tile_idx != GameEnums.GOAL_TILE:
 			state.send_to_start(pawn, pawn.owner_id)
 			_emit_event(&"gambler_busted", {"player_id": pawn.owner_id, "roll": overheated_roll, "pawn_id": pawn.entity_id})
-	if pawn.kind == GameEnums.PawnKind.YUT and not forced and [4, 5].has(absi(ctx.raw_roll)):
-		# 윷말: 눈금 4 또는 5로 이동하면 (세트 조건 없이) 추가 굴림 1회.
-		report.bonus_roll = true
-		_bonus_roll_pending = true
 	_emit_event(&"move_resolved", report.to_dict())
 	if _check_victory(report):
 		return

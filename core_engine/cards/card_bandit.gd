@@ -1,6 +1,6 @@
 # File: res://core_engine/cards/card_bandit.gd
 # Class: class_name CardBandit
-# Role: SUM_01 카탄의 도적떼 - 상단 코너(오른쪽 위·반환점) 한 곳에 소환하면 정방향으로 3~6칸 달리며 길 위의 모든 말을 사출하고 사라진다
+# Role: SUM_01 카탄의 도적떼 - 상단 코너(오른쪽 위·반환점) 한 곳에 소환하면 보드에 남아 정방향으로 3~6칸씩(소환 직후·라운드 종료마다) 전진하고, 말을 만나면 그 칸의 말을 모두 사출하고 사라진다. 중립 기물은 한 번에 하나만
 class_name CardBandit
 extends BaseCard
 
@@ -17,8 +17,8 @@ func needs_tile() -> bool:
 
 
 ## params: {"tile": 상단 코너}
-func can_play(_state: GameState, _player_id: int, params: Dictionary) -> bool:
-	return SweepCommand.spawn_tiles().has(int(params.get("tile", -1)))
+func can_play(state: GameState, _player_id: int, params: Dictionary) -> bool:
+	return SweepCommand.can_summon(state) and SweepCommand.spawn_tiles().has(int(params.get("tile", -1)))
 
 
 func create_command(_state: GameState, player_id: int, params: Dictionary) -> GameCommand:
