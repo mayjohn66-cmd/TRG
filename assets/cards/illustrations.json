@@ -154,10 +154,10 @@
   {
     "card_id": "ACT_10",
     "file": "ACT_10.png",
-    "source_version": "character-v1",
+    "source_version": "character-v2",
     "width": 1448,
     "height": 1086,
-    "sha256": "37e4c871753cf89e4abaae837b3ef3b94930bc7b8993dc6ec04b2f0107a5a8ec"
+    "sha256": "9ef7cb12bd0b5ebcaab9d168310259c11305a1e3a889b9ef81322ac59483e763"
   },
   {
     "card_id": "ACT_11",
@@ -170,10 +170,10 @@
   {
     "card_id": "ACT_12",
     "file": "ACT_12.png",
-    "source_version": "character-v1",
+    "source_version": "character-v2",
     "width": 1448,
     "height": 1086,
-    "sha256": "02149be27a1e15c8b4b2f8fd53b2711c157a68b76e7fc0e4d79370d3cb11281d"
+    "sha256": "d266e7595e67331a6f83d212ef361b2318bd708bfda3fc72f984e4225e1f0749"
   },
   {
     "card_id": "ACT_13",
@@ -186,18 +186,18 @@
   {
     "card_id": "ACT_14",
     "file": "ACT_14.png",
-    "source_version": "character-v1",
+    "source_version": "character-v2",
     "width": 1448,
     "height": 1086,
-    "sha256": "03f01c571dcaf001664ed05d55a8e030e93942e3c719d45165972e532410032f"
+    "sha256": "3f3f53a93a2fc566dd924ab640f0f8417bd57fc0bfe1a2c154858f7e049a7b6c"
   },
   {
     "card_id": "ACT_15",
     "file": "ACT_15.png",
-    "source_version": "character-v1",
+    "source_version": "character-v2",
     "width": 1448,
     "height": 1086,
-    "sha256": "cdaacd029476bc47358e272540eb1912c6f9c7e47491770e49d7160db597668c"
+    "sha256": "51ea74732b24371db7b7ec422485fdc21d254a81848aa05d8aba2dabd93f6796"
   },
   {
     "card_id": "TRP_06",
