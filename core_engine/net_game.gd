@@ -15,13 +15,13 @@ signal connection_lost(reason: String)
 ## 상대 화면이 멈췄거나(다른 창·탭·앱으로 이동, 느린 연결) 다시 움직였다. 웹 브라우저는 보이지 않는 탭을 멈추기 때문에 알려 준다.
 signal peer_silent(seat: int, silent: bool)
 
-## 다른 좌석이 감정 표현을 했다 (게임 규칙과 무관한 연출 전용 신호). emotion은 AvatarSlot.Emotion 값이다.
+## 다른 좌석이 감정 표현을 했다 (게임 규칙과 무관한 연출 전용 신호). emotion은 EmoteCatalog.EMOTES의 순번이다.
 signal emote_received(seat: int, emotion: int)
 
 const ACTION_TAKEOVER: StringName = &"__takeover"
-## 감정 표현 값 범위(1~5)와, 같은 좌석의 최소 간격(초)을 방장이 지킨다.
-const EMOTE_MIN: int = 1
-const EMOTE_MAX: int = 5
+## 감정 표현 번호 범위(EmoteCatalog.EMOTES의 순번 0~7)와, 같은 좌석의 최소 간격(초)을 방장이 지킨다.
+const EMOTE_MIN: int = 0
+const EMOTE_MAX: int = 7
 const EMOTE_COOLDOWN_MSEC: int = 600
 ## 모두가 준비되기를 기다리는 최대 시간(초). 넘으면 준비 안 된 사람은 봇으로 넘긴다.
 const READY_TIMEOUT: float = 15.0

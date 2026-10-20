@@ -33,7 +33,7 @@ func _process(_delta: float) -> bool:
 		if _banner_frame != -2 and _frames < 600:
 			return false
 		_banner_frame = -2
-	var shot_frame: int = 8 if _shot == "pick" else (20 if _shot in ["react", "classics", "traps", "log", "logx", "counterzoom", "book", "tempo"] else (int(OS.get_environment("DUEL_FRAME")) if _shot == "duel" and OS.get_environment("DUEL_FRAME") != "" else (150 if _shot == "duel" else 12)))
+	var shot_frame: int = 8 if _shot == "pick" else (20 if _shot in ["react", "classics", "traps", "log", "logx", "counterzoom", "book", "tempo", "emote", "emotepick"] else (int(OS.get_environment("DUEL_FRAME")) if _shot == "duel" and OS.get_environment("DUEL_FRAME") != "" else (150 if _shot == "duel" else 12)))
 	if (_shot != "banner" and _frames == shot_frame) or (_shot == "banner" and _banner_frame == -2):
 		var path: String = "/tmp/trg_shot_%s.png" % _shot
 		var image: Image = root.get_texture().get_image()
@@ -71,6 +71,17 @@ func _setup_scene() -> void:
 			_board._on_card_pressed(me, &"ACT_09")
 			if _board._duel_arena != null:
 				_board._duel_arena.open()
+		"emote", "emotepick":
+			# 감정 표현: 이모트 판(emotepick) 또는 내 말풍선 + 상대 말풍선(emote)
+			_board._close_opening()
+			_finish_draft()
+			_board._announcer.cancel()
+			if _shot == "emotepick":
+				_board._emote_button.pressed.emit()
+			else:
+				_board._on_emote_pressed(1)
+				for seat: int in [2, 3, 4]:
+					_board._show_emote(seat, [2, 6, 3][seat - 2])
 		"tempo":
 			# ⏩ 템포 업 경고 + 당겨진 결승선 체크무늬
 			_board._close_opening()
