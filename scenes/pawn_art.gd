@@ -31,7 +31,7 @@ static func load_sprite(paths: Array[String]) -> Dictionary:
 	var texture: Texture2D = AugmentArt.load_first(paths)
 	if texture == null:
 		return {}
-	var path: String = texture.resource_path
+	var path: String = texture.resource_path if texture.resource_path != "" else "id:%d" % texture.get_instance_id()  # TextureCache가 줄인 그림은 경로가 없다
 	if not _regions.has(path):
 		var image: Image = texture.get_image()
 		if image == null:

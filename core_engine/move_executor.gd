@@ -484,7 +484,7 @@ static func teleport_to(state: GameState, mover: PlayerPawn, ctx: RuleContext, r
 static func _warp_to(state: GameState, mover: PlayerPawn, ctx: RuleContext, report: MoveReport, destination: int) -> bool:
 	var from_tile: int = mover.current_tile_idx
 	mover.current_tile_idx = destination
-	mover.step_history.append(destination)
+	mover.push_step(destination)
 	state.sync_stack_position(mover)
 	report.warped = true
 	report.path.append(destination)

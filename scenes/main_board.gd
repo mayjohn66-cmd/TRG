@@ -425,6 +425,12 @@ var _menu_page: StringName = &"main"
 const DESIGN_SIZE: Vector2 = Vector2(1366, 768)
 ## 화면 가장자리에서 띄우는 안전 여백(px). 모서리가 둥근 폰·베젤에서 UI가 잘려 보이지 않게 한다.
 const SAFE_MARGIN: float = 12.0
+## 액션 로그 미니 패널의 왼쪽 위 (법전 아래, 왼쪽 아래 프로필 위의 빈 자리).
+const ACTION_LOG_POS: Vector2 = Vector2(12.0, 466.0)
+## 액션 로그의 자리 표시 (P1~P4 색 네모).
+const PLAYER_MARKS: Dictionary = {1: "🟥", 2: "🟦", 3: "🟩", 4: "🟨"}
+## 메뉴의 [전체 로그] 서랍(디버그용 상세 로그)이 보관하는 최대 줄 수.
+const DEBUG_LOG_LINES: int = 200
 var _layout_entries: Array[Dictionary] = []
 var _off_left: Vector2 = Vector2.ZERO
 var _off_center: Vector2 = Vector2.ZERO
@@ -479,8 +485,8 @@ var _tile_pick_active: bool = false
 var _snipe_pick: bool = false
 ## ACT_09 결투: 중앙 스테이지 결투장, 승자가 고를 수 있는 말(보드 위 붉은 표식), 카드를 놓은 대상 플레이어.
 var _duel_arena: DuelArena = null
-## 함정 타일 그림 캐시 (설치물 ID 또는 "HIDDEN" -> 텍스처).
-var _trap_icons: Dictionary = {}
+## 액션 로그 (누가 무엇을 했는지 최근 100줄, 미니/펼침).
+var _action_log: ActionLogPanel = null
 var _duel_strike_marks: Dictionary = {}
 var _duel_strike_winner: int = -1
 var _duel_drop_target: int = -1
@@ -688,6 +694,9 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		return
 	if _menu_is_open():
 		return
+	if key_event.keycode == KEY_L and _action_log != null:
+		_action_log.toggle()  # 액션 로그 펼치기/접기 (오버레이가 떠 있어도 볼 수 있다)
+		return
 	if _choice_overlay != null or _draft_overlay != null or _result_overlay != null or _stack_overlay != null:
 		return
 	if roll_key:
@@ -713,6 +722,8 @@ func _new_game() -> void:
 	_pawn_views.clear()
 	_npc_views.clear()
 	_log.clear()
+	if _action_log != null:
+		_action_log.clear_entries()
 	_toast_label.text = ""
 	_dock_player = -1
 	_announced_round = 0
@@ -774,6 +785,7 @@ func _bind_state() -> void:
 		_log_line("%s 출발선으로 복귀%s" % [_pawn_name(pawn_id), "  [🔥 복수 부스터 획득: 다음 출발 +%d칸]" % GameData.revenge_bonus() if victim != null and victim.revenge_boost else ""], Color("ff8787"))
 		if victim == null:
 			return
+		_record_ejection(pawn_id, by_player)
 		var victim_owner: int = victim.owner_id
 		var react: Callable = func() -> void:
 			_avatar_react(victim_owner, AvatarSlot.Emotion.ANGRY)
@@ -871,10 +883,14 @@ func _bind_state() -> void:
 	state.npc_swept.connect(func(display_id: StringName, path: Array[int], ejected: Array[int]) -> void:
 		var runner: String = "도적떼" if display_id == &"SUM_01" else "팩맨"
 		_log_line("[%s] %d번 → %d번 질주! 사출된 말 %d개" % [runner, path[0], path[-1], ejected.size()], Color("fa5252"))
+		_record(-1, "🦹 %s %d번 → %d번 질주! (사출 %d)" % [_bq(runner), path[0], path[-1], ejected.size()])
 		_announce("소환", "[%s 질주!]" % runner, "%d번 → %d번 칸을 쓸고 사라졌습니다 (사출 %d)" % [path[0], path[-1], ejected.size()], Color("fa5252"), null, 1.1))
 	state.shield_recharged.connect(func(pawn_id: int) -> void: _log_line("[백돌 방어막] %s의 방어막이 다시 차올랐습니다" % _pawn_name(pawn_id), Color("b197fc")))
 	state.trap_defused.connect(func(tile: int, id: String, pawn_id: int) -> void:
 		_log_line("[지뢰찾기] %s이(가) %d번 타일의 %s을(를) 해체하고 카드 1장!" % [_pawn_name(pawn_id), tile, _attachment_name(id)], Color("63e6be"))
+		var sweeper: PlayerPawn = state.get_pawn(pawn_id)
+		if sweeper != null:
+			_record(sweeper.owner_id, "🚩 %d번 타일의 %s 해체! (카드 1장)" % [tile, _bq(_attachment_name(id))])
 		_refresh_tiles())
 	state.attachment_triggered.connect(func(tile: int, id: String, pawn_id: int, _cutscene: StringName) -> void:
 		var trapped: PlayerPawn = state.get_pawn(pawn_id)
@@ -894,6 +910,8 @@ func _bind_state() -> void:
 				get_tree().create_timer(0.25).timeout.connect(func() -> void:
 					_profile_react(trapped_owner, false, ["[억까!]", "[으악!]"][randi() % 2])))
 		_log_line("[설치물] %d번 타일 %s 발동! (%s)" % [tile, _attachment_name(id), _pawn_name(pawn_id)], Color("ff6b6b"))
+		if trapped != null:
+			_record(trapped.owner_id, "🪤 %s 밟음! (%d번 타일, %s)" % [_bq(_attachment_name(id)), tile, _bq("%d번 말" % trapped.slot)])
 		_announce_gate("함정 발동", "[발동!] %s" % _attachment_name(id), "%s\n%d번 타일에서 %s에게 발동" % [card_summary(StringName(id)), tile, _pawn_name(pawn_id)], Color("ff6b6b"), null, 1.2))
 	state.npc_vanished.connect(func(npc_id: int, tile: int) -> void:
 		_announce("중립 기물", "NPC가 사냥을 마치고 사라졌습니다", "%d번 타일 - 중립 기물은 한 번 잡으면 사라집니다" % tile, Color("fa5252"), null, 1.3))
@@ -920,6 +938,7 @@ func _bind_state() -> void:
 	state.rulebook.law_added.connect(_on_law_added)
 	state.rulebook.law_removed.connect(func(law: LawResource) -> void:
 		_log_line("[법전] 교칙 파기: [%s] %s" % [law.law_id, law.law_name], Color("ff8787"))
+		_record(-1, "[color=#ff8787][lb]📜 법전] %s 파기[/color]" % _bb(law.law_name))
 		_refresh_laws())
 	state.rulebook.law_applied.connect(_on_law_applied)
 
@@ -969,6 +988,7 @@ func _build_ui() -> void:
 	_build_toast_label()
 	_build_profiles()
 	_build_law_board()
+	_build_action_log()
 	_build_tool_board()
 	_build_status_strip()
 	_build_action_bar()
@@ -1054,6 +1074,8 @@ func layout_for(viewport_size: Vector2) -> void:
 		var drop_bounds: Rect2 = _board_rect()
 		_drop_zone.position = drop_bounds.position
 		_drop_zone.size = drop_bounds.size
+	if _action_log != null:
+		_action_log.place(ACTION_LOG_POS + _off_left)
 	if _announcer != null:
 		_announcer.center = _board_center()
 	if _presenter != null:
@@ -1515,7 +1537,7 @@ func _build_center_banner() -> void:
 func _build_drawers() -> void:
 	# 열기 버튼은 메뉴 안에 놓인다 (_build_menu가 부모를 정한다).
 	_debug_toggle = _make_button("치트 / 디버그", _on_debug_toggle_pressed, 13, Color("4a3a66"), 8)
-	_log_toggle = _make_button("전체 로그", _on_log_toggle_pressed, 13, Color("2f4a66"), 8)
+	_log_toggle = _make_button("상세 로그 (개발용)", _on_log_toggle_pressed, 13, Color("2f4a66"), 8)
 
 	var debug_drawer: Dictionary = _make_drawer("치트 / 디버그", _on_debug_toggle_pressed)
 	_debug_box = debug_drawer["panel"]
@@ -1527,7 +1549,7 @@ func _build_drawers() -> void:
 	debug_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(debug_content)
 
-	var log_drawer: Dictionary = _make_drawer("전체 로그", _on_log_toggle_pressed)
+	var log_drawer: Dictionary = _make_drawer("상세 로그 (개발용)", _on_log_toggle_pressed)
 	_log_panel = log_drawer["panel"]
 	_log = RichTextLabel.new()
 	_log.bbcode_enabled = true
@@ -2125,10 +2147,8 @@ func _trap_known(attachment: TileAttachment) -> bool:
 ## 함정 타일에 붙일 그림: 정체를 모르는 함정은 물음표.
 func _trap_icon(attachment: TileAttachment) -> Texture2D:
 	var key: String = attachment.attachment_id if _trap_known(attachment) else "HIDDEN"
-	if not _trap_icons.has(key):
-		var path: String = "res://assets/board/traps/%s.png" % key
-		_trap_icons[key] = load(path) if ResourceLoader.exists(path) else load("res://assets/board/traps/HIDDEN.png")
-	return _trap_icons[key]
+	var icon: Texture2D = TextureCache.fetch("res://assets/board/traps/%s.png" % key)
+	return icon if icon != null else TextureCache.fetch("res://assets/board/traps/HIDDEN.png")
 
 
 func _on_pawn_stepped(pawn_id: int, _from_tile: int, _to_tile: int) -> void:
@@ -2328,6 +2348,8 @@ func _revenge_charged_popup(player_id: int) -> void:
 func _on_revenge_boost_fired(pawn_id: int, base_steps: int, bonus: int, total: int) -> void:
 	var pawn: PlayerPawn = state.get_pawn(pawn_id)
 	_log_line("[🔥 리벤지 부스터] %s 출격! 눈금 %d칸 + 부스터 %d칸 = 총 %d칸" % [_pawn_name(pawn_id), base_steps, bonus, total], Color("ff922b"))
+	if pawn != null:
+		_record(pawn.owner_id, "🔥 리벤지 부스터 ➔ 눈금 %d칸 + 🔥%d칸 = 총 %d칸 전진!" % [base_steps, bonus, total])
 	if not _fx_on() or pawn == null:
 		return
 	_rocket_target[pawn_id] = GameEnums.GOAL_TILE + bonus
@@ -2563,6 +2585,8 @@ func _check_round_banner() -> void:
 		return
 	_announced_round = state.round_number
 	_announced_turn_key = "%d:%d" % [state.round_number, manager.current_player_id()]
+	if _action_log != null:
+		_action_log.add_entry("[color=#ffd43b]──── %d라운드 ────[/color]" % state.round_number)
 	_announce("라운드", "%d라운드 시작!" % state.round_number, "", COLOR_GOLD, null, 1.2)
 
 
@@ -5655,10 +5679,18 @@ func _on_duel_event(kind: StringName, data: Dictionary) -> void:
 		&"duel_revealed":
 			var picks: Dictionary = data["picks"]
 			var duel_text: String = "[결투] %s %s : %s %s → %s" % [_player_name(int(data["challenger"])), DuelRules.HAND_NAMES[int(picks[int(data["challenger"])])], DuelRules.HAND_NAMES[int(picks[int(data["defender"])])], _player_name(int(data["defender"])), "무승부" if int(data["winner"]) == -1 else "%s 승" % _player_name(int(data["winner"]))]
-			# 로그도 결투장이 "가위바위보!"를 다 보여 준 뒤에 남긴다 (연출 큐가 공개를 기다린다)
+			# 로그도 결투장이 "가위바위보!"를 다 보여 준 뒤에 남긴다: 결투장에 공개를 먼저 넘긴 다음 연출 큐에 세운다
+			_push_duel_event(kind, data)
 			enqueue_step(func() -> void: _log_line(duel_text, Color("ffd43b")))
+			return
 		&"duel_resolved":
+			_push_duel_event(kind, data)  # 사출 연출이 공개를 기다리도록 결투장이 먼저 받는다
 			_on_duel_resolved(data)
+			return
+	_push_duel_event(kind, data)
+
+
+func _push_duel_event(kind: StringName, data: Dictionary) -> void:
 	if _duel_arena != null and is_instance_valid(_duel_arena):
 		_duel_arena.push_event(kind, data)
 	elif not _fx_on():
@@ -6727,6 +6759,9 @@ func _flush_draft_summary() -> void:
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var card_scale: float = 0.6 if _draft_summary.size() > 2 else 0.8
 	for entry: Dictionary in _draft_summary:
+		var picked_id: StringName = entry["augment"]
+		_record(int(entry["player"]), "⚡ %s 선택!" % _bq(("초증강 - " if String(picked_id).begins_with("SUPER") else "") + AugmentRegistry.get_def(picked_id).display_name), "증강")
+	for entry: Dictionary in _draft_summary:
 		var player_id: int = int(entry["player"])
 		var column := VBoxContainer.new()
 		column.add_theme_constant_override("separation", 6)
@@ -6767,6 +6802,7 @@ func _on_game_over(winner_id: int, reason: StringName) -> void:
 	for player_id: int in _player_ids:
 		_avatar_react(player_id, AvatarSlot.Emotion.CHEER if player_id == winner_id else AvatarSlot.Emotion.SAD, 0.0)
 	_log_line("[승리] P%d 승리! - %s" % [winner_id, VictoryChecker.reason_text(reason)], PLAYER_COLORS[winner_id])
+	_record(winner_id, "👑 게임 종료! (%s)" % _bb(VictoryChecker.reason_text(reason)))
 	_close_draft_overlay()
 	_cancel_tile_pick()
 	_show_result_overlay()
@@ -6863,6 +6899,7 @@ func _on_law_added(new_law: LawResource, removed_law: LawResource) -> void:
 	if removed_law != null:
 		text += "  (가장 오래된 [%s] %s이(가) 밀려났습니다)" % [removed_law.law_id, removed_law.law_name]
 	_log_line(text, Color("ffe066"))
+	_record(-1, "[color=#ffe066][lb]📜 법전] %s 등록![/color]%s" % [_bb(new_law.law_name), "  (%s 밀려남)" % _bq(removed_law.law_name) if removed_law != null else ""])
 	_fx_law_drop_oldest(removed_law)
 	_refresh_laws()
 	_fx_law_slam(new_law)
@@ -6934,15 +6971,19 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 		&"roll_resolved":
 			_handle_roll_event(data)
 			_enqueue_roll_summary(data)
+			_record_roll(data)
 		&"roll_boosted":
 			_roll_total[int(data["player_id"])] = int(data["to"])
 			_log_line("[가속 보너스] P%d: 눈금 %d → %d!" % [data["player_id"], data["from"], data["to"]], Color("ffd43b"))
+			_record(int(data["player_id"]), "⚡ 가속 보너스 ➔ %d칸 → 총 %d칸 전진!" % [data["from"], data["to"]])
 		&"gambler_doubled":
 			_roll_total[int(data["player_id"])] = int(data["to"])
 			_log_line("[도박사의 영혼] P%d: 이동 %d → %d (x2)!" % [data["player_id"], data["from"], data["to"]], Color("ffa94d"))
+			_record(int(data["player_id"]), "🎰 도박사의 영혼 x2 ➔ %d칸 → 총 %d칸 전진!" % [data["from"], data["to"]])
 		&"gambler_busted":
 			var busted: int = int(data["player_id"])
 			_log_line("[도박사의 영혼] P%d: 눈금 %d - 과열! %s 출발선으로 사출" % [busted, data["roll"], _pawn_name(int(data["pawn_id"]))], Color("ff6b6b"))
+			_record(busted, "🎰 도박사의 영혼 과열! (눈금 %d)" % int(data["roll"]))
 			_profile_react(busted, false, "[으악!]")
 			_avatar_react(busted, AvatarSlot.Emotion.SAD, 1.2)
 			_announce("도박사의 영혼", "[과열!]", "눈금 %d - 이동한 말이 과열되어 출발선으로 사출됩니다" % data["roll"], Color("ff6b6b"), null, 1.1)
@@ -6950,6 +6991,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 		&"turn_rested":
 			var rested: int = int(data["player_id"])
 			_log_line("[휴식] P%d가 이번 턴을 쉽니다 (판 뒤집기 실패)" % rested, Color("adb5bd"))
+			_record(rested, "💤 이번 턴 휴식")
 			_announce("휴식", "[%s 이번 턴 휴식!]" % _player_name(rested), "판 뒤집기에 실패해 차례를 건너뜁니다", Color("adb5bd"), null, 0.9)
 			_start_beat(0.9)
 		&"stack_resolved":
@@ -6974,11 +7016,13 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			if bool(data.get("jailed", false)) and (data.get("path", []) as Array).is_empty():
 				_announce_move_failed("무인도 탈출 실패!", manager.current_player_id(), "짝수 눈금이 나와야 탈출할 수 있습니다")
 		&"turn_skipped":
+			_record(int(data["player_id"]), "⛔ 움직일 수 있는 말이 없어 이동 실패")
 			_announce_move_failed("움직일 수 있는 말이 없어", int(data["player_id"]), "구속 중이거나 선택할 수 있는 말이 없습니다")
 		&"card_played":
 			_avatar_react(int(data["player_id"]), AvatarSlot.Emotion.HAPPY)
 			var card: BaseCard = CardRegistry.get_card(data["card_id"])
 			_log_line("[카드] P%d [%s] 사용%s" % [data["player_id"], card.display_name, " (개입 대기열 - 나중에 낸 카드부터 실행)" if data["queued"] else ""], Color("74c0fc"))
+			_record_card(data)
 			_announce_gate("카드 발동", "[P%d 발동!] %s" % [data["player_id"], card.display_name], ("개입 대기열 등록 (후입선출)\n" if data["queued"] else "") + card_summary(data["card_id"]), PLAYER_COLORS[int(data["player_id"])], _make_card_preview(data["card_id"]), 1.2)
 		&"npc_phase_resolved":
 			if not (data["reports"] as Array).is_empty():
@@ -7004,8 +7048,15 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_fx_bang(int(data["shooter"]), int(data["target"]))
 			_react_hit_pawn(int(data["target"]))
 		&"duel_started", &"duel_pick_in", &"duel_revealed", &"duel_strike_wait", &"duel_resolved":
+			if kind == &"duel_started":
+				_record(int(data["challenger"]), "✊ %s에게 가위바위보 결투 신청!" % _log_who(int(data["defender"])))
 			_on_duel_event(kind, data)
-		&"skill_used": _on_skill_used(data)
+			if kind == &"duel_revealed" and int(data["winner"]) != -1:
+				_record(int(data["winner"]), "✌️ 가위바위보 결투 승리! (승자의 말 +%d칸)" % DuelRules.winner_advance())  # 결투장이 공개를 받은 뒤라 공개 연출을 기다린다
+		&"skill_used":
+			var skill_pawn: PlayerPawn = state.get_pawn(int(data["pawn_id"]))
+			_record(int(data["player_id"]), "♟️ %s 필살기 사용!" % _bq("%s - %s" % [skill_pawn.display_label() if skill_pawn != null else "말", PawnCatalog.skill_name(data["skill"])]))
+			_on_skill_used(data)
 		&"pawn_pushed_back":
 			_log_line("[백돌 방어막] 백돌에 막혀 %s이(가) %d번 → %d번으로 밀려났습니다" % [_pawn_name(int(data["pawn_id"])), data["from"], data["to"]], Color("b197fc"))
 		&"bomb_applied":
@@ -7016,6 +7067,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			var ranked: int = int(data["player_id"])
 			var rank_no: int = int(data["rank"])
 			_log_line("[순위 확정] %s %d위 - %s" % [_player_name(ranked), rank_no, VictoryChecker.reason_text(data["reason"])], Color("ffd43b"))
+			_record(ranked, "🏆 %d위 확정! (%s)" % [rank_no, _bb(VictoryChecker.reason_text(data["reason"]))])
 			if rank_no < _player_ids.size() - 1:  # 3위(마지막 졸업)부터는 결과 화면이 바로 이어진다
 				_announce("순위 확정", "[%s%s %d위 확정!]" % ["👑 " if rank_no == 1 else "", _player_name(ranked), rank_no], "%s\n남은 말은 보드에서 철수하고 레이스를 졸업합니다" % VictoryChecker.reason_text(data["reason"]), PLAYER_COLORS[ranked], null, 1.4)
 				_profile_react(ranked, true, "[%d위!]" % rank_no)
@@ -7028,6 +7080,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_log_line("[반격 성공] %s의 [%s]!" % [_player_name(int(data["victim"])), _card_name(data["card_id"])], Color("74c0fc"))
 			_profile_react(int(data["victim"]), true, "[반격!]")
 		&"turn_rewound":
+			_record(int(data["player_id"]), "⏪ 이번 턴이 통째로 되감겼습니다")
 			_announce("반격", "[바이츠 더 더스트!]", "%s의 턴이 통째로 되감기고 끝났습니다" % _player_name(int(data["player_id"])), Color("4c6ef5"), null, 1.3)
 		&"extra_turn":
 			_announce("더 월드", "[%s 한 턴 더!]" % _player_name(int(data["player_id"])), "시간이 멈춘 사이 한 번 더 움직입니다", PLAYER_COLORS[int(data["player_id"])], null, 1.1)
@@ -7037,9 +7090,15 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 
 
 func _log_roll(data: Dictionary) -> String:
+	var text: String = _roll_text(data)
+	_log_line("[굴림] P%d [%s] " % [data["player_id"], state.tools[data["player_id"]].display_name] + text, Color("f1f3f5"))
+	return text
+
+
+## 굴림 결과 한 줄 (도구별 족보·칸수).
+func _roll_text(data: Dictionary) -> String:
 	var result: Dictionary = data["result"]
 	var details: Dictionary = result["details"]
-	var prefix: String = "[굴림] P%d [%s] " % [data["player_id"], state.tools[data["player_id"]].display_name]
 	var text: String = ""
 	match result["tool_id"]:
 		&"YUT": text += "%s (%d칸)" % [YUT_NAMES.get(result["steps"], "?"), result["steps"]]
@@ -7096,7 +7155,6 @@ func _log_roll(data: Dictionary) -> String:
 		_: text += "%d칸" % result["steps"]
 	if result["reroll"]:
 		text += "  ★ 재굴림!"
-	_log_line(prefix + text, Color("f1f3f5"))
 	return text
 
 
@@ -7147,7 +7205,12 @@ func _log_move(data: Dictionary) -> void:
 func _log_line(text: String, color: Color) -> void:
 	if _log == null:
 		return
+	if text.is_empty():
+		return
 	_log.append_text("[color=#%s]%s[/color]\n" % [color.to_html(false), text])
+	# 메모리 보호: 디버그 전체 로그도 오래된 줄부터 버린다 (RichTextLabel은 지우지 않으면 끝없이 커진다)
+	while _log.get_paragraph_count() > DEBUG_LOG_LINES:
+		_log.remove_paragraph(0)
 	# 상단 리본의 토스트: 가장 최근 이벤트 한 줄 요약
 	if _toast_label != null:
 		_toast_label.text = text
@@ -7159,6 +7222,94 @@ func _pawn_name(pawn_id: int) -> String:
 	if pawn == null:
 		return "말#%d" % pawn_id
 	return "P%d-말%d" % [pawn.owner_id, pawn.slot]
+
+
+# ---------------------------------------------------------------------------
+# 액션 로그: 누가 무엇을 했는지 (굴림·카드·반격·함정·처치·필살기·증강·법전)
+# ---------------------------------------------------------------------------
+
+func _build_action_log() -> void:
+	_action_log = ActionLogPanel.new()
+	add_child(_action_log)
+	_action_log.place(ACTION_LOG_POS)
+
+
+## BBCode에 넣을 글자: 대괄호가 태그로 읽히지 않게 바꾼다.
+func _bb(text: String) -> String:
+	return text.replace("[", "[lb]")
+
+
+## [이름] 꼴로 감싼다.
+func _bq(text: String) -> String:
+	return "[lb]%s]" % _bb(text)
+
+
+## 🟦 컴퓨터 2 (플레이어 색).
+func _log_who(player_id: int) -> String:
+	if not PLAYER_COLORS.has(player_id):
+		return "[color=#ced4da]중립[/color]"
+	return "%s [color=#%s]%s[/color]" % [PLAYER_MARKS.get(player_id, ""), (PLAYER_COLORS[player_id] as Color).lightened(0.3).to_html(false), _bb(_player_name(player_id))]
+
+
+## 액션 로그 한 줄: [R3] 🟦 컴퓨터 2 : 내용 (player_id가 -1이면 이름 없이).
+## 연출을 켠 화면에서는 연출 큐를 따라 그 장면이 나올 때 적는다 (결과를 먼저 흘리지 않는다). late는 사출처럼 맨 뒤 연출과 함께 적는다.
+func _record(player_id: int, text: String, tag: String = "", late: bool = false) -> void:
+	if _action_log == null or state == null:
+		return
+	var round_tag: String = "[color=#868e96][lb]R%d%s][/color]" % [state.round_number, (" " + tag) if tag != "" else ""]
+	var line: String = "%s %s : %s" % [round_tag, _log_who(player_id), text] if player_id >= 1 else "%s %s" % [round_tag, text]
+	var log_panel: ActionLogPanel = _action_log
+	var add: Callable = func() -> void:
+		if is_instance_valid(log_panel):
+			log_panel.add_entry(line)
+	if not _fx_on():
+		add.call()
+	elif late:
+		_enqueue_late(add)
+	else:
+		enqueue_step(add)
+
+
+func _record_roll(data: Dictionary) -> void:
+	var result: Dictionary = data["result"]
+	if bool(result.get("can_continue", false)):
+		return  # 이어지는 굴림(룰렛 생존·야추 다시 굴리기)은 최종 결과만 적는다
+	var player_id: int = int(data["player_id"])
+	_record(player_id, "🎲 %s 굴림 ➔ %s" % [_bq(state.tools[player_id].display_name), _bb(_roll_text(data))])
+
+
+func _record_card(data: Dictionary) -> void:
+	var player_id: int = int(data["player_id"])
+	var card: BaseCard = CardRegistry.get_card(data["card_id"])
+	var params: Dictionary = data.get("params", {})
+	if bool(data.get("counter", false)):
+		var entry: Dictionary = state.get_attack(int(params.get("attack", -1)))
+		_record(player_id, "🛡️ 반격 %s 발동! ➔ %s을(를) 받아침" % [_bq(card.display_name), _bb(_attack_text(entry)) if entry.has("kind") else "공격"])
+		return
+	if card.category == GameEnums.CardCategory.TRAP:
+		if card.corner_only:
+			_record(player_id, "🪤 코너 함정 %s 설치! (%d번 코너)" % [_bq(card.display_name), int(params.get("tile", -1))])
+		else:
+			_record(player_id, "🪤 은신 함정 설치!")  # 은신 함정은 종류도 위치도 남기지 않는다
+		return
+	var detail: String = ""
+	if params.has("target_player"):
+		detail = " ➔ %s" % _log_who(int(params["target_player"]))
+	elif params.has("tile"):
+		detail = " (%d번 타일)" % int(params["tile"])
+	_record(player_id, "🃏 %s 사용!%s" % [_bq(card.display_name), detail])
+
+
+## 말이 출발선으로 날아갔다: 다른 사람이 보냈으면 처치, 아니면 사출.
+func _record_ejection(pawn_id: int, by_player: int) -> void:
+	var victim: PlayerPawn = state.get_pawn(pawn_id)
+	if victim == null:
+		return
+	var label: String = _bq("%d번 말" % victim.slot)
+	if _player_ids.has(by_player) and by_player != victim.owner_id:
+		_record(by_player, "⚔️ %s의 %s 처치!" % [_log_who(victim.owner_id), label], "", true)
+	else:
+		_record(victim.owner_id, "💥 %s이(가) 출발선으로 사출" % label, "", true)
 
 
 func _card_name(card_id: StringName) -> String:

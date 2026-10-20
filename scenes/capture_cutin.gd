@@ -34,10 +34,8 @@ var _swing_fired: bool = false
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	if ResourceLoader.exists(INK_PATH):
-		_ink = load(INK_PATH) as Texture2D
-	if ResourceLoader.exists(SLASH_PATH):
-		_slash = load(SLASH_PATH) as Texture2D
+	_ink = TextureCache.fetch(INK_PATH)
+	_slash = TextureCache.fetch(SLASH_PATH)
 	var strike_art: Dictionary = PawnArt.load_sprite([STRIKE_PATH])
 	if not strike_art.is_empty():
 		_strike = strike_art.texture

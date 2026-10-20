@@ -103,7 +103,7 @@ static func body(card: BaseCard, card_size: Vector2, summary_text: String, categ
 	if ResourceLoader.exists(art_path):
 		var picture := TextureRect.new()
 		picture.name = "CardArt"
-		picture.texture = load(art_path) as Texture2D
+		picture.texture = TextureCache.fetch(art_path)
 		picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		var inset: float = 2.0 * k

@@ -20,7 +20,7 @@ static func run(state: GameState, start_tile: int, direction: int, steps: int, d
 		var from_tile: int = tile
 		tile = next
 		npc.current_tile_idx = tile
-		npc.step_history.append(tile)
+		npc.push_step(tile)
 		(result["path"] as Array[int]).append(tile)
 		state.npc_stepped.emit(npc.entity_id, from_tile, tile)
 		_eject_at(state, tile, by_player, result)

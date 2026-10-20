@@ -129,7 +129,7 @@ func _make_strip() -> SubViewport:
 		var row: int = strip_row(symbol)
 		if ICON_FILES.has(symbol):
 			var icon := TextureRect.new()
-			icon.texture = load("res://assets/ui/trickcal/slot/SLOT_%s.png" % ICON_FILES[symbol]) as Texture2D
+			icon.texture = TextureCache.fetch("res://assets/ui/trickcal/slot/SLOT_%s.png" % ICON_FILES[symbol])
 			icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 			icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 			icon.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS

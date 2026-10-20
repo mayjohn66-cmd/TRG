@@ -205,7 +205,7 @@ func _pick_art(rng: RandomNumberGenerator) -> Texture2D:
 			found.append(path)
 	if found.is_empty():
 		return null
-	return load(found[rng.randi() % found.size()]) as Texture2D
+	return TextureCache.fetch(found[rng.randi() % found.size()])
 
 
 func _make_label(text: String, size_px: int, color: Color) -> Label:

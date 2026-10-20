@@ -33,7 +33,7 @@ func _process(_delta: float) -> bool:
 		if _banner_frame != -2 and _frames < 600:
 			return false
 		_banner_frame = -2
-	if (_shot != "banner" and _frames == (8 if _shot == "pick" else (20 if _shot == "react" or _shot == "classics" or _shot == "traps" else 12))) or (_shot == "banner" and _banner_frame == -2):
+	if (_shot != "banner" and _frames == (8 if _shot == "pick" else (20 if _shot in ["react", "classics", "traps", "log", "logx"] else 12))) or (_shot == "banner" and _banner_frame == -2):
 		var path: String = "/tmp/trg_shot_%s.png" % _shot
 		var image: Image = root.get_texture().get_image()
 		image.save_png(path)
@@ -176,6 +176,24 @@ func _setup_scene() -> void:
 			_board._act(&"proceed")
 			_board._act(&"roll")
 			_board._refresh_all()
+		"log", "logx":
+			# 액션 로그: 평소에는 최근 4줄만 작게, logx는 펼친 전체 내역
+			_finish_draft()
+			_board._announcer.cancel()
+			_board.instant_roll_for_test = true
+			_board._action_log.add_entry("[color=#ffd43b]──── 3라운드 ────[/color]")
+			_board._record(2, "🎲 %s 굴림 ➔ [lb]5 5 5 2 2] 풀하우스 → 7칸 이동 확정" % _board._bq("야추 다이스"))
+			_board._record(2, "🔥 리벤지 부스터 ➔ 눈금 7칸 + 🔥4칸 = 총 11칸 전진!")
+			_board._record(3, "🃏 %s 사용! (14번 타일)" % _board._bq("사장님의 빠루"))
+			_board._record(3, "🪤 은신 함정 설치!")
+			_board._record(1, "🛡️ 반격 %s 발동! ➔ 컴퓨터 2의 말에게 잡힘을(를) 받아침" % _board._bq("거울의 힘"))
+			_board._record(1, "⚔️ %s의 %s 처치!" % [_board._log_who(2), _board._bq("1번 말")])
+			_board._record(4, "🪤 %s 밟음! (9번 타일, %s)" % [_board._bq("바나나 껍질"), _board._bq("2번 말")])
+			_board._record(1, "♟️ %s 필살기 사용!" % _board._bq("비숍 - 피앙케토"))
+			_board._record(2, "⚡ %s 선택!" % _board._bq("초증강 - 공산주의 재분배"), "증강")
+			_board._record(-1, "[color=#ffe066][lb]📜 법전] 투기장의 지배자 등록![/color]")
+			if _shot == "logx":
+				_board._action_log.set_expanded(true)
 		"traps":
 			# 함정 칸 그림: 내 함정(지뢰·바나나)은 그림, 상대 함정은 물음표, 코너 함정은 공개, 옷장은 청록
 			_finish_draft()

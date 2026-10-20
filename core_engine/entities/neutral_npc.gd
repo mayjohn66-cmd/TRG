@@ -37,7 +37,7 @@ func _chase_nearest(state: GameState) -> Dictionary:
 	for i: int in mini(roll, route.size()):
 		var from_tile: int = current_tile_idx
 		current_tile_idx = route[i]
-		step_history.append(current_tile_idx)
+		push_step(current_tile_idx)
 		(report["path"] as Array[int]).append(current_tile_idx)
 		state.npc_stepped.emit(entity_id, from_tile, current_tile_idx)
 	if route.is_empty() or current_tile_idx == route.back():

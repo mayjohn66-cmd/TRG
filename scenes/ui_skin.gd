@@ -10,7 +10,7 @@ const PATH: String = "res://assets/ui/trickcal/"
 
 static func panel(kind: String = "panel", margin: float = 10.0) -> StyleBoxTexture:
 	var box := StyleBoxTexture.new()
-	box.texture = load(PATH + kind + ".png") as Texture2D
+	box.texture = TextureCache.fetch(PATH + kind + ".png")
 	box.set_texture_margin_all(20.0)
 	box.set_content_margin_all(margin)
 	return box
@@ -50,7 +50,7 @@ static func _fit_button(item: Button) -> void:
 		var asset: String = str(box.get_meta("ui_button_texture"))
 		var target: String = PATH + ("compact_" if compact else "") + asset + ".png"
 		if image_box.texture.resource_path != target:
-			image_box.texture = load(target) as Texture2D
+			image_box.texture = TextureCache.fetch(target)
 			image_box.set_texture_margin_all(14.0 if compact else 20.0)
 
 static func title(label: Label) -> void:

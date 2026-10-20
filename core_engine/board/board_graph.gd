@@ -119,7 +119,7 @@ func advance_backward(cursor: PathCursor) -> void:
 func commit_step(entity: BoardEntity, destination: int) -> bool:
 	var is_forward: bool = tiles[entity.current_tile_idx].neighbors().has(destination)
 	if is_forward:
-		entity.step_history.append(destination)
+		entity.push_step(destination)
 	elif entity.step_history.size() >= 2 and entity.step_history[entity.step_history.size() - 2] == destination:
 		entity.step_history.pop_back()
 	else:

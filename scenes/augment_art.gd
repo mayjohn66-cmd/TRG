@@ -79,11 +79,11 @@ static func tool_candidates(tool_id: StringName) -> Array[String]:
 
 
 ## Check imported resources so optional artwork also works in exported PCKs.
-## Do not cache misses: newly imported art becomes visible on the next refresh.
+## Hits are kept in TextureCache; misses are not cached here, so newly imported art becomes visible on the next refresh.
 static func load_first(paths: Array[String]) -> Texture2D:
 	for path: String in paths:
 		if ResourceLoader.exists(path, "Texture2D"):
-			var texture: Texture2D = load(path) as Texture2D
+			var texture: Texture2D = TextureCache.fetch(path)
 			if texture != null:
 				return texture
 	return null

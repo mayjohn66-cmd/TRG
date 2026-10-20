@@ -15,7 +15,7 @@ static func texture(avatar: StringName, pose: StringName) -> Texture2D:
 	for file: String in [String(pose) + ".png", "fullbody.png", "portrait.png"]:
 		var path: String = "%s/%s/%s" % [ROOT, avatar, file]
 		if ResourceLoader.exists(path):
-			var loaded: Texture2D = load(path) as Texture2D
+			var loaded: Texture2D = TextureCache.fetch(path)
 			if loaded != null:
 				_cache[key] = loaded
 				return loaded

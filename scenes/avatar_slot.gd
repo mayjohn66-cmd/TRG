@@ -122,19 +122,19 @@ func set_character(id: StringName) -> bool:
 	var frames_path: String = character_path(id) + "/frames.tres"
 	var portrait_path: String = character_path(id) + "/portrait.png"
 	if (static_only or hq_idle) and ResourceLoader.exists(portrait_path):
-		var still: Texture2D = load(portrait_path) as Texture2D
+		var still: Texture2D = TextureCache.fetch(portrait_path)
 		if still != null:
 			use_portrait(still)
 	elif has_icon(id):
-		var icon: Texture2D = load(icon_path(id)) as Texture2D
+		var icon: Texture2D = TextureCache.fetch(icon_path(id))
 		if icon != null:
 			use_portrait(icon, true)
 	elif ResourceLoader.exists(frames_path):
-		var frames: SpriteFrames = load(frames_path) as SpriteFrames
+		var frames: SpriteFrames = TextureCache.fetch_frames(frames_path)
 		if frames != null:
 			use_frames(frames)
 	elif ResourceLoader.exists(portrait_path):
-		var texture: Texture2D = load(portrait_path) as Texture2D
+		var texture: Texture2D = TextureCache.fetch(portrait_path)
 		if texture != null:
 			use_portrait(texture)
 	_seat_label.text = placeholder_text if placeholder_text != "" else "P%d" % seat
