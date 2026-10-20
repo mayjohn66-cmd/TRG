@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/LAW_01.png-3534e2519b50b3f7a5e7b9863136a416.c
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
