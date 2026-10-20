@@ -28,6 +28,11 @@ var _idle_frames: int = 0
 var _stack_choices: int = 0
 var _failures: Array[String] = []
 var _rng := RandomNumberGenerator.new()
+## 판이 멈췄는지 감시: 이 프레임 수 동안 진행 상태가 그대로면 실패로 끝내고 원인을 찍는다 (CI가 무한히 돌지 않게).
+const STALL_FRAMES: int = 20000
+var _stall_frames: int = 0
+var _stall_signature: String = ""
+var _rejections: Array[String] = []
 
 
 func _process(_delta: float) -> bool:
@@ -52,8 +57,38 @@ func _process(_delta: float) -> bool:
 		return false
 	if _board.manager.is_game_over or _actions >= MAX_ACTIONS:
 		return _finish()
+	if _stalled():
+		return _finish()
 	_step_once()
 	return false
+
+
+## 진행 상태(단계 번호·라운드·차례·대기열·패)가 STALL_FRAMES 동안 그대로면 멈춘 것으로 보고 진단을 남긴다.
+func _stalled() -> bool:
+	var manager: TurnManager = _board.manager
+	if _rejections.is_empty() and not manager.action_rejected.is_connected(_on_rejected):
+		manager.action_rejected.connect(_on_rejected)
+	var hands: int = 0
+	for player_id: int in _board.state.hands.keys():
+		hands += (_board.state.hands[player_id] as Array).size()
+	var signature: String = "%d|%d|%d|%d|%d|%d" % [manager.phase_serial, _board.state.round_number, manager.current_player_id(), manager.current_state, manager.move_queue.size(), hands]
+	if signature != _stall_signature:
+		_stall_signature = signature
+		_stall_frames = 0
+		return false
+	_stall_frames += 1
+	if _stall_frames < STALL_FRAMES:
+		return false
+	_failures.append("판이 %d프레임 동안 진행되지 않는다: state=%d player=%d round=%d counter=%s duel=%s stack=%s bot_wait=%s ui_busy=%s presentation=%s announcer=%s draft_overlay=%s 최근 거절=%s" % [
+		STALL_FRAMES, manager.current_state, manager.current_player_id(), _board.state.round_number, manager.counter_pending(), manager.duel_pending(), manager.stack_offer_pending(),
+		_board._bot_should_wait(), _board._ui_busy(), _board._presentation_active(), _board._announcer != null and _board._announcer.active, _board._draft_overlay != null, str(_rejections.slice(-6))])
+	return true
+
+
+func _on_rejected(player_id: int, action: StringName, reason: StringName) -> void:
+	_rejections.append("P%d %s:%s" % [player_id, action, reason])
+	if _rejections.size() > 50:
+		_rejections.pop_front()
 
 
 func _check_layout() -> void:
