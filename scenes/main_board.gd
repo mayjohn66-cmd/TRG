@@ -2506,7 +2506,8 @@ func _refresh_players() -> void:
 	for player_id: int in _player_ids:
 		var card: Dictionary = _profiles[player_id]
 		var color: Color = PLAYER_COLORS[player_id]
-		(card["name"] as Label).text = _player_name(player_id)
+		var rank: int = state.rankings.find(player_id) + 1
+		(card["name"] as Label).text = ("%s%d위 · %s" % ["👑 " if rank == 1 else "", rank, _player_name(player_id)]) if rank > 0 else _player_name(player_id)
 		(card["count"] as Label).text = "x%d" % (state.hands[player_id] as Array).size()
 		_refresh_pawn_slots(player_id)
 		var panel: PanelContainer = card["panel"]
@@ -5707,7 +5708,7 @@ func _begin_tile_pick(player_id: int, card_id: StringName) -> void:
 	_tile_pick_card = card_id
 	var valid_count: int = 0
 	for index: int in BoardSpec.tile_count:
-		var valid: bool = card.can_play(state, player_id, {"tile": index})
+		var valid: bool = card.is_legal(state, player_id, {"tile": index})
 		(_pick_marks[index] as BoardSkin.Ring).visible = valid
 		if valid:
 			valid_count += 1
@@ -5767,7 +5768,7 @@ func _complete_tile_pick(tile: int) -> void:
 		_act(&"use_skill", {"pawn_id": plane_id, "tile": tile})
 		return
 	var card: BaseCard = CardRegistry.get_card(_tile_pick_card)
-	if not card.can_play(state, _tile_pick_player, {"tile": tile}):
+	if not card.is_legal(state, _tile_pick_player, {"tile": tile}):
 		_log_line("%d번 타일에는 [%s]를 쓸 수 없습니다. 다른 타일을 고르세요." % [tile, card.display_name], Color("ff8787"))
 		return
 	var player_id: int = _tile_pick_player
@@ -6792,6 +6793,14 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_log_line("[우노 +4] P%d의 %s이(가) 출발선으로 장외 사출! 내 말은 +%d칸 전진" % [data["victim"], _pawn_name(int(data["pawn_id"])), PenaltyBombCommand.advance_steps()], Color("ffd43b"))
 			_fx_bang(int(data["shooter"]), int(data["pawn_id"]))
 			_react_hit_pawn(int(data["pawn_id"]))
+		&"player_ranked":
+			var ranked: int = int(data["player_id"])
+			var rank_no: int = int(data["rank"])
+			_log_line("[순위 확정] %s %d위 - %s" % [_player_name(ranked), rank_no, VictoryChecker.reason_text(data["reason"])], Color("ffd43b"))
+			if rank_no < _player_ids.size() - 1:  # 3위(마지막 졸업)부터는 결과 화면이 바로 이어진다
+				_announce("순위 확정", "[%s%s %d위 확정!]" % ["👑 " if rank_no == 1 else "", _player_name(ranked), rank_no], "%s\n남은 말은 보드에서 철수하고 레이스를 졸업합니다" % VictoryChecker.reason_text(data["reason"]), PLAYER_COLORS[ranked], null, 1.4)
+				_profile_react(ranked, true, "[%d위!]" % rank_no)
+				_start_beat(1.0)
 		&"game_over":
 			_last_reason = data["reason"]
 	_refresh_all()

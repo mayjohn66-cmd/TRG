@@ -56,12 +56,12 @@ func test_layout_places_32_tiles_around_the_square() -> void:
 	check_eq(BoardLayout.nearest_tile(BoardLayout.tile_norm(11)), 11, "가장 가까운 타일 찾기")
 
 
-func test_jump_corner_and_finish_run_on_the_bigger_board() -> void:
+func test_corner_stop_and_finish_run_on_the_bigger_board() -> void:
 	_use_32()
 	var state: GameState = make_state()
 	place(state, 11, 6, [5])
-	move(state, 11, 2)  # 7, 8: 점프 코너 8 -> 13
-	check_eq(state.get_pawn(11).current_tile_idx, 13, "8번 점프 코너에 멈추면 13번으로")
+	move(state, 11, 2)  # 7, 8: 코너 8 정지 (점프대 없음)
+	check_eq(state.get_pawn(11).current_tile_idx, 8, "8번 코너에 멈춘다")
 	var finisher: PlayerPawn = place(state, 12, 30, [29])
 	check(move(state, 12, 2).finished and finisher.is_finished, "30번에서 눈금 2면 정확히 완주")
 	place(state, 13, 28, [27])

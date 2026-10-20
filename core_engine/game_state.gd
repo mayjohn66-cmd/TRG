@@ -78,6 +78,10 @@ var gambler_round: Dictionary = {}
 ## [초증강] 판 뒤집기 실패: 다음 내 턴을 쉬어야 하는 플레이어들.
 var rest_next_turn: Dictionary = {}
 var winner: int = -1
+## 🏁 서바이벌 순위제: 승리 조건을 먼저 달성한 순서대로 쌓이는 플레이어 ID (0번째 = 1위). 졸업한 플레이어는 레이스에서 빠지고 턴을 건너뛴다.
+var rankings: Array[int] = []
+## 플레이어 ID -> 순위를 확정한 사유 (all_home / 특수 승리 교칙 ID / last_place)
+var rank_reasons: Dictionary = {}
 
 ## 이번 턴 시작 시점 스냅샷 (ACT_05 롤백 대상).
 var turn_snapshot: TurnSnapshot = null
@@ -515,3 +519,41 @@ func step_back_one(pawn: PlayerPawn) -> int:
 	sync_stack_position(pawn)
 	pawn_pushed_back.emit(pawn.entity_id, from_tile, to_tile)
 	return to_tile
+
+
+# ---------------------------------------------------------------------------
+# 🏁 서바이벌 순위제
+# ---------------------------------------------------------------------------
+
+func is_graduated(player_id: int) -> bool:
+	return rankings.has(player_id)
+
+
+## 다음 순위로 졸업시킨다: 남은 말은 보드에서 철수(완주 처리)하고 업기·구속을 푼다. 확정된 순위(1부터)를 돌려준다.
+func graduate(player_id: int, reason: StringName) -> int:
+	if rankings.has(player_id):
+		return rankings.find(player_id) + 1
+	rankings.append(player_id)
+	rank_reasons[player_id] = reason
+	for pawn: PlayerPawn in pawns_of(player_id):
+		if pawn.carrier != null:
+			pawn.carrier.carried.erase(pawn)
+			pawn.carrier = null
+		pawn.carried.clear()
+		pawn.is_finished = true
+		pawn.has_left_start = true
+		pawn.is_imprisoned = false
+		pawn.restrained_turns = 0
+		pawn.blocked_this_turn = false
+		pawn.revenge_boost = false
+		pawn.current_tile_idx = GameEnums.GOAL_TILE
+	return rankings.size()
+
+
+## 아직 레이스 중인 플레이어 (주어진 순서 그대로).
+func active_players(order: Array[int]) -> Array[int]:
+	var active: Array[int] = []
+	for player_id: int in order:
+		if not rankings.has(player_id):
+			active.append(player_id)
+	return active

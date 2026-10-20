@@ -111,7 +111,7 @@ func test_bishop_gets_plus_two_at_a_corner_and_law_01_only_stops_the_jump() -> v
 	check(report.ability_notes.has("코너 보너스 +2칸"), "능력 보고")
 	var plain := make_state(2, 1, {1: _units(Kind.CHESS, [1, 2, 3])})
 	place(plain, 11, 4, [3])
-	check_eq(move(plain, 11, 2).path, int_array([5, 6, 10]), "폰은 보너스 없이 6번에 멈춰 10번으로 점프")
+	check_eq(move(plain, 11, 2).path, int_array([5, 6]), "폰은 보너스 없이 6번 코너에 멈춘다")
 	var sealed := make_state(2, 1, {1: _units(Kind.CHESS, [1, 2, 3])})
 	var ctx: RuleContext = make_ctx(sealed, 2)
 	ctx.allow_shortcut = false  # LAW_01(지름길 공사 중)이 ON_MOVE_CALC에서 하는 일

@@ -51,6 +51,8 @@ static func capture(state: GameState) -> TurnSnapshot:
 		"npcs": npc_data,
 		"attachments": attachment_data,
 		"laws": state.rulebook.law_ids(),
+		"rankings": state.rankings.duplicate(),
+		"rank_reasons": state.rank_reasons.duplicate(),
 		"meta": {
 			"current_player": state.current_player,
 			"reverse_move_rounds_left": state.reverse_move_rounds_left,
@@ -124,6 +126,9 @@ func restore(state: GameState, restore_meta: bool = false) -> void:
 				state.board.get_tile(int(tile_key)).add_attachment(attachment)
 
 	state.rulebook.set_laws_from_ids(data["laws"])
+	if data.has("rankings"):
+		state.rankings.assign(data["rankings"])
+		state.rank_reasons = (data.get("rank_reasons", {}) as Dictionary).duplicate()
 
 	if restore_meta:
 		var meta: Dictionary = data["meta"]

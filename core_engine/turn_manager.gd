@@ -374,7 +374,7 @@ func _handle_play_card(actor: int, params: Dictionary) -> void:
 	if current_state == State.PHASE_TURN_BEGIN and _card_played_this_turn:
 		action_rejected.emit(actor, &"play_card", &"card_limit")
 		return
-	if not card.can_play(state, actor, params):
+	if not card.is_legal(state, actor, params):
 		action_rejected.emit(actor, &"play_card", &"invalid_target")
 		return
 	var command: GameCommand = card.create_command(state, actor, params)
@@ -882,7 +882,8 @@ func _enter_round_start() -> void:
 	change_state(State.PHASE_ROUND_START)
 	if draft_enabled and GameEnums.is_draft_round(state.round_number):
 		for player_id: int in player_order:
-			_draft_offers[player_id] = AugmentRegistry.generate_offers(state, player_id)
+			if not state.is_graduated(player_id):  # 졸업한 플레이어는 드래프트에서 빠진다
+				_draft_offers[player_id] = AugmentRegistry.generate_offers(state, player_id)
 		_emit_event(&"augment_offers", {"round": state.round_number, "offers": _draft_offers.duplicate(true)})
 	else:
 		_begin_turn()
@@ -913,6 +914,10 @@ func _begin_turn(new_turn: bool = true) -> void:
 	_roll_chain = 0
 	_move_report = null
 	_sync_current_player()
+	# 🏁 이미 순위가 확정되어 졸업한 플레이어는 턴을 건너뛴다.
+	if state.is_graduated(current_player_id()) and not is_game_over:
+		advance_to_next_player()
+		return
 	# [초증강] 판 뒤집기 실패: 이번 턴은 쉰다 (바로 다음 사람 차례).
 	if new_turn and bool(state.rest_next_turn.get(current_player_id(), false)):
 		state.rest_next_turn[current_player_id()] = false
@@ -1157,21 +1162,45 @@ func _enter_neutral_npc_phase() -> void:
 	_enter_round_start()
 
 
-## PHASE_RESOLUTION 승리 판정: 내 말 4개 완주 하나뿐이다 (VictoryChecker).
-func _check_victory(report: MoveReport) -> bool:
-	var result: Dictionary = VictoryChecker.evaluate(state, player_order, current_player_id())
-	if result.is_empty():
-		return false
-	var winner_id: int = int(result["winner"])
-	var reason: StringName = result["reason"]
+## 🏁 서바이벌 순위 판정 (VictoryChecker): 승리 조건을 달성한 사람을 다음 순위로 졸업시킨다.
+## 남은 사람이 1명이면 그 사람이 꼴찌로 확정되고 게임이 끝난다. 게임이 끝났거나 지금 차례인 사람이 졸업해 턴이 넘어갔으면 true (호출한 쪽은 진행을 멈춘다).
+func _check_victory(_report: MoveReport) -> bool:
+	if is_game_over:
+		return true
+	var current: int = current_player_id()
+	var current_graduated: bool = false
+	for entry: Dictionary in VictoryChecker.newly_qualified(state, player_order, current):
+		_graduate(int(entry["player"]), entry["reason"])
+		current_graduated = current_graduated or int(entry["player"]) == current
+	var active: Array[int] = state.active_players(player_order)
+	if active.size() <= 1:
+		for last: int in active:
+			_graduate(last, VictoryChecker.LAST_PLACE)
+		_end_game()
+		return true
+	if current_graduated:
+		advance_to_next_player()
+		return true
+	return false
+
+
+## 한 명을 다음 순위로 졸업시키고 알린다 (남은 말은 보드에서 철수).
+func _graduate(player_id: int, reason: StringName) -> void:
+	var rank: int = state.graduate(player_id, reason)
+	SpecialVictory.on_graduated(state, player_id, reason)
+	_emit_event(&"player_ranked", {"player_id": player_id, "rank": rank, "reason": reason})
+
+
+func _end_game() -> void:
+	var winner_id: int = state.rankings[0]
+	var reason: StringName = state.rank_reasons.get(winner_id, VictoryChecker.ALL_HOME)
 	state.winner = winner_id
 	is_game_over = true
 	phase_time_left = 0.0
 	state.victory_declared.emit(winner_id, reason)
-	_emit_event(&"game_over", {"winner": winner_id, "reason": reason})
+	_emit_event(&"game_over", {"winner": winner_id, "reason": reason, "rankings": state.rankings.duplicate()})
 	_broadcast_state()
 	game_over.emit(winner_id, reason)
-	return true
 
 
 # ---------------------------------------------------------------------------

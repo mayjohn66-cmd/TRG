@@ -8,6 +8,7 @@ func _init() -> void:
 	card_id = &"TRP_04"
 	display_name = "무인도 감옥"
 	category = GameEnums.CardCategory.TRAP
+	corner_only = true
 	playable_phases = [TurnManager.State.PHASE_TURN_BEGIN]
 
 

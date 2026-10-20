@@ -420,6 +420,10 @@ func test_domino_hidden_trap_serializes_and_card_places_it() -> void:
 	check_eq(card.display_name, "스프링 인간 대포", "카드 이름")
 	check(card.can_play(state, 1, {"tile": 9}), "일반 타일에는 설치 가능")
 	check(not card.can_play(state, 1, {"tile": GameEnums.GOAL_TILE}), "출발선에는 설치 불가")
+	for corner: int in BoardSpec.bonus_corner_tiles:
+		check(not card.is_legal(state, 1, {"tile": corner}), "일반 함정은 코너(%d)에 설치 불가" % corner)
+	var island: BaseCard = CardRegistry.get_card(&"TRP_04")
+	check(island.is_legal(state, 1, {"tile": BoardSpec.bonus_corner_tiles[0]}) and not island.is_legal(state, 1, {"tile": 9}), "코너 전용 함정은 코너에만")
 	check(exec(state, card.create_command(state, 1, {"tile": 9})), "설치")
 	check(state.board.get_tile(9).has_attachment("TRP_05"), "9번 타일에 스프링 대포")
 	check(not card.can_play(state, 1, {"tile": 9}), "같은 타일에 중복 설치 불가")

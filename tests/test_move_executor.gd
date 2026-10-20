@@ -39,20 +39,13 @@ func test_portal_only_triggers_on_landing_not_passing() -> void:
 	check_eq(state.get_pawn(11).current_tile_idx, 10, "10번 정지")
 
 
-func test_jump_corners_launch_forward_on_exact_stop_only() -> void:
+func test_corners_no_longer_have_jump_pads() -> void:
 	var state := make_state()
+	check(BoardSpec.jump_corner_targets.is_empty(), "코너 기본 점프대 삭제")
 	place(state, 11, 3, [2])
 	var report: MoveReport = move(state, 11, 3)
-	check(report.warped, "6번에 정확히 멈추면 점프")
-	check_eq(report.path, int_array([4, 5, 6, 10]), "6번 -> 10번(+4)")
-	check_eq(state.get_pawn(11).current_tile_idx, 10, "10번 도착")
-	place(state, 12, 15, [14])
-	var second: MoveReport = move(state, 12, 3)
-	check_eq(second.path, int_array([16, 17, 18, 21]), "18번 -> 21번(+3)")
-	place(state, 13, 4, [3])
-	var passing: MoveReport = move(state, 13, 4)  # 6을 지나 8
-	check(not passing.warped, "스쳐 지나가기만 하면 점프하지 않는다")
-	check_eq(state.get_pawn(13).current_tile_idx, 8, "8번 정지")
+	check(not report.warped, "6번 코너에 정확히 멈춰도 점프하지 않는다")
+	check_eq(report.path, int_array([4, 5, 6]), "6번에 그대로")
 
 
 func test_law_01_disables_jump_corners_and_portals() -> void:
@@ -117,14 +110,14 @@ func test_law_03_swaps_with_last_place_after_big_roll() -> void:
 	place(state, 11, 0, [], false)
 	place(state, 21, 14, [13])
 	# 21번 말만 보드 위에 있고 나머지 상대 말은 출발선(미출발) -> 꼴찌는 출발선 말
-	var report: MoveReport = move(state, 11, 6)  # 6번 점프 코너 -> 10번
+	var report: MoveReport = move(state, 11, 6)  # 6번 코너 정지
 	check_eq(report.effect_names, ["SwapWithLastPlace"] as Array[String], "교환 효과 실행")
 	check_eq(state.get_pawn(11).current_tile_idx, 0, "이동한 말이 꼴찌 위치로")
 	var swapped: PlayerPawn = null
 	for pawn: PlayerPawn in state.pawns_of(2):
-		if pawn.current_tile_idx == 10:
+		if pawn.current_tile_idx == 6:
 			swapped = pawn
-	check(swapped != null, "꼴찌 말이 점프한 10번으로 이동")
+	check(swapped != null, "꼴찌 말이 6번으로 이동")
 
 
 func test_capture_sends_enemy_to_start_and_yut_pawn_grants_extra_turn() -> void:

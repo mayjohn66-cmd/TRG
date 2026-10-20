@@ -901,19 +901,7 @@ func _test_view_modes() -> void:
 				_expect(Geometry2D.is_point_in_polygon(point,tile.outline_points), "색 띠가 발판 밖으로 나가지 않아야 한다: %d" % i)
 	var round_tile: BoardSkin.Tile = _board._tile_views[1]
 	_expect(_board._tile_at(round_tile.get_global_transform()*Vector2.ZERO) == -1, "둥근 직사각 발판 바깥 모서리는 클릭되지 않는다")
-	var previous_laws: Array[LawResource] = _board.state.rulebook.active_laws_queue.duplicate()
-	_board.state.rulebook.active_laws_queue.clear()
-	_board.state.rulebook.enqueue_law(LawRegistry.create("LAW_01"))
-	_board._refresh_tiles()
-	var jump_from: Array = BoardSpec.jump_corner_targets.keys()
-	var jump_a: int = int(jump_from[0])
-	var jump_b: int = int(jump_from[1])
-	_expect((_board._tile_views[jump_a] as BoardSkin.Tile).arrow_target == jump_a + 1 and (_board._tile_views[jump_b] as BoardSkin.Tile).arrow_target == jump_b + 1, "공사 중에는 바로 다음 칸을 가리킨다")
-	_board.state.rulebook.remove_law_by_id("LAW_01")
-	_board._refresh_tiles()
-	_expect((_board._tile_views[jump_a] as BoardSkin.Tile).arrow_target == int(BoardSpec.jump_corner_targets[jump_a]) and (_board._tile_views[jump_b] as BoardSkin.Tile).arrow_target == int(BoardSpec.jump_corner_targets[jump_b]), "공사가 끝나면 점프 목적지를 가리킨다")
-	_board.state.rulebook.active_laws_queue = previous_laws
-	_board._refresh_tiles()
+	_expect(BoardSpec.jump_corner_targets.is_empty(), "코너 점프대는 삭제되었다")
 	# 경로선이 새 위치를 따라간다
 	_expect(_board._track_lines[0].points[0].is_equal_approx(_board._tile_center(0)), "경로선이 투영 좌표를 따라간다")
 	# 시점은 설정으로 저장된다
@@ -1435,9 +1423,8 @@ func _test_stage_warp() -> void:
 	_board._announcer.cancel()
 	_board._beat_until_msec = 0
 	_board._fx_until_msec = 0
-	var warp_corner: int = int(BoardSpec.jump_corner_targets.keys()[0])
 	var warp_portal: int = int(BoardSpec.portal_warp_targets.keys()[0])
-	for case_data: Array in [[warp_corner - 1, warp_corner, int(BoardSpec.jump_corner_targets[warp_corner]), "코너"], [warp_portal - 1, warp_portal, int(BoardSpec.portal_warp_targets[warp_portal]), "포탈"]]:
+	for case_data: Array in [[warp_portal - 1, warp_portal, int(BoardSpec.portal_warp_targets[warp_portal]), "포탈"]]:
 		var pawn: PlayerPawn = state.get_pawn(11)
 		pawn.has_left_start = true
 		pawn.current_tile_idx = case_data[0]

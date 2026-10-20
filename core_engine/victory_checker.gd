@@ -1,16 +1,38 @@
 # File: res://core_engine/victory_checker.gd
 # Class: class_name VictoryChecker
-# Role: PHASE_RESOLUTION의 승리 판정. 승리 조건은 하나뿐이다: 내 말 4개를 모두 완주시킨다 (빽도 완주 같은 생떼 카드 효과도 결국 완주로 센다)
+# Role: 🏁 서바이벌 순위 판정. 승리 조건(말 4개 완주 또는 중앙 법전의 특수 승리)을 먼저 달성한 순서대로 1·2·3위가 확정되고, 마지막 한 명이 4위가 된다
 class_name VictoryChecker
 extends RefCounted
 
 const ALL_HOME: StringName = &"all_home"
+## 마지막까지 남아 자동으로 꼴찌가 된 플레이어.
+const LAST_PLACE: StringName = &"last_place"
 
 
 static func reason_text(reason: StringName) -> String:
 	match reason:
 		ALL_HOME: return "승리 (말 4개 모두 완주)"
+		LAST_PLACE: return "마지막까지 남음"
+	var law: LawResource = LawRegistry.create(String(reason)) if LawRegistry.ALL_IDS.has(String(reason)) else null
+	if law != null:
+		return "특수 승리 (%s)" % law.law_name
 	return String(reason)
+
+
+## 아직 순위가 없는 플레이어 중 지금 승리 조건을 달성한 사람들 (현재 턴 플레이어가 먼저). [{player, reason}]
+static func newly_qualified(state: GameState, player_order: Array[int], current_player: int) -> Array[Dictionary]:
+	var order: Array[int] = [current_player]
+	for player_id: int in player_order:
+		if player_id != current_player:
+			order.append(player_id)
+	var result: Array[Dictionary] = []
+	for player_id: int in order:
+		if state.is_graduated(player_id):
+			continue
+		var reason: StringName = player_reason(state, player_id)
+		if reason != &"":
+			result.append({"player": player_id, "reason": reason})
+	return result
 
 
 ## 모든 플레이어를 검사한다 (현재 턴 플레이어가 먼저). 승자가 있으면 {"winner": int, "reason": StringName}, 없으면 {}.
@@ -26,7 +48,9 @@ static func evaluate(state: GameState, player_order: Array[int], current_player:
 
 
 static func player_reason(state: GameState, player_id: int) -> StringName:
-	return ALL_HOME if _all_home(state, player_id) else &""
+	if _all_home(state, player_id):
+		return ALL_HOME
+	return SpecialVictory.achieved_by(state, player_id)
 
 
 static func _all_home(state: GameState, player_id: int) -> bool:
@@ -36,10 +60,13 @@ static func _all_home(state: GameState, player_id: int) -> bool:
 	return true
 
 
-## 게임이 끝났을 때의 1~N등. 1등은 승자(말 4개 완주), 나머지는 완주한 말 수가 많은 순 → 결승까지 남은 거리 합이 작은 순 →
+## 1~N등. 이미 확정된 순위(state.rankings)가 먼저이고, 아직 순위가 없는 사람은 완주한 말 수가 많은 순 → 결승까지 남은 거리 합이 작은 순 →
 ## 그래도 같으면 승자 다음 차례부터의 턴 순서. [{player, rank, finished, remaining, progress(0~100)}] (모든 참가자가 같은 결과를 계산한다)
 static func standings(state: GameState, player_order: Array[int], winner: int) -> Array[Dictionary]:
 	var entries: Array[Dictionary] = []
+	var ranked: Array[int] = state.rankings.duplicate()
+	if ranked.is_empty() and winner != -1:
+		ranked.append(winner)
 	var full: int = maxi(BoardSpec.tile_count * GameEnums.PAWNS_PER_PLAYER, 1)
 	var start: int = maxi(player_order.find(winner), 0)
 	for index: int in player_order.size():
@@ -53,10 +80,15 @@ static func standings(state: GameState, player_order: Array[int], winner: int) -
 				remaining += state.pawn_progress_distance(pawn)
 		entries.append({"player": player_id, "finished": finished, "remaining": remaining,
 			"progress": clampi(roundi(100.0 * (1.0 - float(remaining) / float(full))), 0, 100),
-			"turn_rank": (index - start + player_order.size()) % player_order.size()})
+			"turn_rank": (index - start + player_order.size()) % player_order.size(),
+			"reason": state.rank_reasons.get(player_id, &"")})
 	entries.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
-		if (int(a["player"]) == winner) != (int(b["player"]) == winner):
-			return int(a["player"]) == winner
+		var rank_a: int = ranked.find(int(a["player"]))
+		var rank_b: int = ranked.find(int(b["player"]))
+		if rank_a != rank_b and (rank_a == -1 or rank_b == -1):
+			return rank_b == -1
+		if rank_a != -1 and rank_b != -1:
+			return rank_a < rank_b
 		if int(a["finished"]) != int(b["finished"]):
 			return int(a["finished"]) > int(b["finished"])
 		if int(a["remaining"]) != int(b["remaining"]):

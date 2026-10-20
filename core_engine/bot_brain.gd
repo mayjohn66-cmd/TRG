@@ -190,7 +190,7 @@ static func choose_card_tile(state: GameState, player_id: int, card: BaseCard, r
 	var best: Array[int] = []
 	var best_score: float = -INF
 	for tile: int in scores:
-		if not card.can_play(state, player_id, {"tile": tile}):
+		if not card.is_legal(state, player_id, {"tile": tile}):
 			continue
 		var score: float = scores[tile]
 		if score > best_score:
@@ -201,7 +201,7 @@ static func choose_card_tile(state: GameState, player_id: int, card: BaseCard, r
 	if best.is_empty():
 		var any: Array[int] = []
 		for tile: int in BoardSpec.tile_count:
-			if card.can_play(state, player_id, {"tile": tile}):
+			if card.is_legal(state, player_id, {"tile": tile}):
 				any.append(tile)
 		return any[rng.randi_range(0, any.size() - 1)] if not any.is_empty() else -1
 	return best[rng.randi_range(0, best.size() - 1)]
@@ -286,7 +286,7 @@ static func _plan_one_turn_card(state: GameState, player_id: int, card: BaseCard
 				var tile: int = choose_card_tile(state, player_id, card, rng)
 				if tile != -1:
 					return {"card_id": card.card_id, "params": {"tile": tile}}
-			elif card.can_play(state, player_id, {}):
+			elif card.is_legal(state, player_id, {}):
 				return {"card_id": card.card_id, "params": {}}
 	return {}
 
