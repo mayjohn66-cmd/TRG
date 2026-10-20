@@ -1,6 +1,7 @@
 # File: res://scenes/rulebook.gd
 # Class: class_name Rulebook
-# Role: 규칙 도감. 배지와 역할별 아이콘은 개별 이미지로 표시하고, 본문·카드·탭은 기존 UI 노드로 구성한다. 카드·교칙 문구는 실제 데이터에서 읽어 온다.
+# Role: 규칙 도감. 장마다 오른쪽에는 항목 제목 타일만 늘어놓고, 고른 항목은 왼쪽 노트에 그림·꼬리표·표·요점으로 크게 보여 준다.
+#       도구 규칙표·기물 능력·카드·교칙 문구는 실제 데이터(TOOL_RULES·PawnCatalog·CardRegistry·VictoryLaw)에서 읽어 온다.
 class_name Rulebook
 extends Control
 
@@ -56,6 +57,13 @@ var _next: Button = null
 var _prev_name: Label = null
 var _next_name: Label = null
 var _list_box: VBoxContainer = null
+## 지금 장의 내용 ({"title", "entries"})과 고른 항목 번호.
+var _content: Dictionary = {}
+var entry: int = 0
+var _tiles: Array[Button] = []
+var _chapter_label: Label = null
+## 카드 항목에서 왼쪽에 크게 보여 주는 카드 앞면 크기.
+const CARD_FACE: Vector2 = Vector2(170, 238)
 
 
 ## 부모 위에 규칙 도감을 연다. 반환: 도감 노드 (이름은 Popup이라 설정 팝업과 같은 방식으로 찾는다).
@@ -103,6 +111,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	match key.keycode:
 		KEY_RIGHT: show_spread(spread + 1)
 		KEY_LEFT: show_spread(spread - 1)
+		KEY_DOWN: show_entry(entry + 1)
+		KEY_UP: show_entry(entry - 1)
 		KEY_ESCAPE: close()
 		_: return
 	get_viewport().set_input_as_handled()
@@ -182,15 +192,6 @@ func _build_header() -> void:
 	_place(back, Vector2(30, 18), Vector2(80, 80))
 	var title := HubKit.outlined("규칙 도감", 50, Color.WHITE, Color("3a3250"), 12)
 	_place(title, Vector2(126, 28), Vector2(360, 66))
-	var badge := Label.new()
-	badge.text = "?"
-	badge.add_theme_font_size_override("font_size", 24)
-	badge.add_theme_color_override("font_color", Color.WHITE)
-	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	badge.add_theme_stylebox_override("normal", _box(Color("4a4560"), Color("2a2640"), 3, 18))
-	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_place(badge, Vector2(330, 44), Vector2(38, 38))
 	# 위쪽 탭 두 개 (책 위로 살짝 솟은 베이지 탭)
 	for index: int in GROUP_NAMES.size():
 		var tab := Button.new()
@@ -257,6 +258,12 @@ func _build_notebook() -> void:
 	column.add_theme_constant_override("separation", 6)
 	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_place(column, Vector2(290, 168), Vector2(484, 520))
+	_chapter_label = Label.new()
+	_chapter_label.name = "ChapterLabel"
+	_chapter_label.add_theme_font_size_override("font_size", 15)
+	_chapter_label.add_theme_color_override("font_color", Color("a08a60"))
+	_chapter_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(_chapter_label)
 	var title_row := HBoxContainer.new()
 	title_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	title_row.add_theme_constant_override("separation", 8)
@@ -341,25 +348,14 @@ func _build_ribbon() -> void:
 
 
 # ---------------------------------------------------------------------------
-# 장 바꾸기
+# 장 바꾸기: 오른쪽은 항목 제목 타일, 고른 항목의 자세한 모습은 왼쪽 노트에 그림·표로 나온다
 # ---------------------------------------------------------------------------
 
-func show_spread(index: int) -> void:
+func show_spread(index: int, entry_index: int = 0) -> void:
 	spread = clampi(index, 0, spread_count() - 1)
-	for holder: Node in [_left_holder, _right_holder]:
-		for child: Node in holder.get_children():
-			holder.remove_child(child)
-			child.queue_free()
-	var content: Dictionary = _chapter(spread)
-	_notebook_title.text = content["title"]
-	var first: bool = true
-	for block: Variant in content["left"]:
-		var node: Control = block as Control
-		if first and node is RichTextLabel:
-			first = false
-		_left_holder.add_child(node)
-	for block: Variant in content["right"]:
-		_right_holder.add_child(block as Control)
+	_content = _chapter(spread)
+	_rebuild_tiles()
+	show_entry(entry_index)
 	_right_scroll.scroll_vertical = 0
 	var group: int = spread / GROUP_SIZE
 	for index2: int in _group_tabs.size():
@@ -401,8 +397,287 @@ func show_spread(index: int) -> void:
 	_next_name.text = TAB_NAMES[spread + 1] if spread < spread_count() - 1 else ""
 
 
+## 지금 장의 항목 수.
+func entry_count() -> int:
+	return (_content.get("entries", []) as Array).size()
+
+
+## 오른쪽 타일 중 하나를 골라 왼쪽 노트에 자세히 보여 준다.
+func show_entry(index: int) -> void:
+	var entries: Array = _content.get("entries", [])
+	if entries.is_empty():
+		return
+	entry = clampi(index, 0, entries.size() - 1)
+	for child: Node in _left_holder.get_children():
+		_left_holder.remove_child(child)
+		child.queue_free()
+	var data: Dictionary = entries[entry]
+	_notebook_title.text = str(data["title"])
+	_chapter_label.text = "%s  ·  %d / %d" % [_content["title"], entry + 1, entries.size()]
+	for node: Control in _detail(data):
+		_left_holder.add_child(node)
+	for tile_index: int in _tiles.size():
+		_paint_tile(_tiles[tile_index], tile_index == entry)
+
+
+func _rebuild_tiles() -> void:
+	for child: Node in _right_holder.get_children():
+		_right_holder.remove_child(child)
+		child.queue_free()
+	_tiles.clear()
+	var grid := GridContainer.new()
+	grid.columns = 3
+	grid.add_theme_constant_override("h_separation", 10)
+	grid.add_theme_constant_override("v_separation", 10)
+	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var entries: Array = _content.get("entries", [])
+	for index: int in entries.size():
+		var tile: Button = _tile(entries[index] as Dictionary)
+		tile.pressed.connect(show_entry.bind(index))
+		grid.add_child(tile)
+		_tiles.append(tile)
+	_right_holder.add_child(grid)
+
+
+## 오른쪽 제목 타일: 동그란 그림 + 이름만. 고르면 흰 바탕에 굵은 테두리.
+func _tile(data: Dictionary) -> Button:
+	var tone: Color = data.get("tone", Color("5fc1e8"))
+	var button := Button.new()
+	button.name = "Entry_" + str(data["title"])
+	button.focus_mode = Control.FOCUS_NONE
+	button.custom_minimum_size = Vector2(142, 112)
+	button.set_meta("tone", tone)
+	button.tooltip_text = str(data.get("summary", "")).replace("[b]", "").replace("[/b]", "")
+	var column := VBoxContainer.new()
+	column.alignment = BoxContainer.ALIGNMENT_CENTER
+	column.add_theme_constant_override("separation", 4)
+	column.set_anchors_preset(Control.PRESET_FULL_RECT)
+	column.offset_left = 6
+	column.offset_right = -6
+	column.offset_top = 8
+	column.offset_bottom = -6
+	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(column)
+	var disc := Panel.new()
+	disc.custom_minimum_size = Vector2(54, 54)
+	disc.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	disc.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	disc.add_theme_stylebox_override("panel", _box(Color.WHITE, tone, 3, 27))
+	column.add_child(disc)
+	var picture: Control = _picture(data, Vector2(42, 42))
+	picture.position = Vector2(6, 6)
+	disc.add_child(picture)
+	var name_label := Label.new()
+	name_label.text = str(data["title"])
+	name_label.add_theme_font_size_override("font_size", 16)
+	name_label.add_theme_color_override("font_color", Color("3a4a5a"))
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	name_label.max_lines_visible = 2
+	name_label.custom_minimum_size = Vector2(128, 0)
+	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	column.add_child(name_label)
+	return button
+
+
+func _paint_tile(button: Button, selected: bool) -> void:
+	var tone: Color = button.get_meta("tone")
+	var normal: StyleBoxFlat = _box(Color.WHITE if selected else tone.lightened(0.62), tone.darkened(0.15) if selected else tone, 5 if selected else 3, 20, 4 if selected else 2, 0, Color(0, 0, 0, 0.18))
+	button.add_theme_stylebox_override("normal", normal)
+	var hover: StyleBoxFlat = normal.duplicate()
+	hover.bg_color = Color.WHITE
+	button.add_theme_stylebox_override("hover", hover)
+	button.add_theme_stylebox_override("pressed", hover)
+	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+
+
+## 항목의 그림: 실제 일러스트(texture) > 도감 그림(art) > 번호 > 아이콘 순.
+func _picture(data: Dictionary, extent: Vector2) -> Control:
+	var tone: Color = data.get("tone", Color("5fc1e8"))
+	var texture: Texture2D = data.get("texture", null)
+	if texture != null:
+		var image := TextureRect.new()
+		image.texture = texture
+		image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		image.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		image.custom_minimum_size = extent
+		image.size = extent
+		image.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		return image
+	if ART.has(data.get("art", &"")):
+		return _art(data["art"], extent)
+	if int(data.get("number", 0)) > 0:
+		var digit := Label.new()
+		digit.text = str(data["number"])
+		digit.add_theme_font_size_override("font_size", int(extent.y * 0.62))
+		digit.add_theme_color_override("font_color", tone.darkened(0.3))
+		digit.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		digit.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		digit.custom_minimum_size = extent
+		digit.size = extent
+		digit.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		return digit
+	var glyph := HubKit.Icon.new(data.get("icon", &"face"), tone.darkened(0.35), Color("ffe48a"))
+	glyph.custom_minimum_size = extent
+	glyph.size = extent
+	glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return glyph
+
+
 # ---------------------------------------------------------------------------
-# 글·카드 부품
+# 왼쪽 노트의 자세한 모습: 큰 그림 + 한 줄 요약 + 표 + 요점 + 꿀팁
+# ---------------------------------------------------------------------------
+
+func _detail(data: Dictionary) -> Array[Control]:
+	var nodes: Array[Control] = []
+	var tone: Color = data.get("tone", Color("5fc1e8"))
+	var hero := HBoxContainer.new()
+	hero.add_theme_constant_override("separation", 14)
+	hero.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if data.has("card"):
+		hero.add_child(_card_face(data["card"]))
+	else:
+		var frame := PanelContainer.new()
+		frame.custom_minimum_size = Vector2(132, 132)
+		frame.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+		frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		frame.add_theme_stylebox_override("panel", _box(tone.lightened(0.7), tone, 4, 24, 3, 8, Color(0, 0, 0, 0.15)))
+		frame.add_child(_picture(data, Vector2(112, 112)))
+		hero.add_child(frame)
+	var side := VBoxContainer.new()
+	side.add_theme_constant_override("separation", 8)
+	side.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	side.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hero.add_child(side)
+	var chips := HFlowContainer.new()
+	chips.add_theme_constant_override("h_separation", 6)
+	chips.add_theme_constant_override("v_separation", 6)
+	chips.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for chip_text: Variant in data.get("chips", []):
+		chips.add_child(_chip(str(chip_text), tone))
+	if chips.get_child_count() > 0:
+		side.add_child(chips)
+	var summary: RichTextLabel = _rich(str(data.get("summary", "")), 20, Color("3a2f1f"))
+	summary.custom_minimum_size = Vector2(0, 0)
+	summary.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	side.add_child(summary)
+	nodes.append(hero)
+	if data.has("extra"):
+		nodes.append((data["extra"] as Callable).call() as Control)  # 볼 때마다 새로 만든다 (지운 노드를 다시 붙이지 않게)
+	var rows: Array = data.get("rows", [])
+	if not rows.is_empty():
+		nodes.append(_table(rows, tone))
+	var points: Array = data.get("points", [])
+	if not points.is_empty():
+		nodes.append(_points(points, tone))
+	if data.has("note"):
+		nodes.append(_rich("[color=#8a7a58]%s[/color]" % str(data["note"]), 15))
+	if data.has("tip"):
+		nodes.append(_tip(str(data["tip"])))
+	return nodes
+
+
+## 둥근 알약 모양의 작은 꼬리표 (종류·시점 등).
+func _chip(text: String, tone: Color) -> Control:
+	var chip := Label.new()
+	chip.text = text
+	chip.add_theme_font_size_override("font_size", 15)
+	chip.add_theme_color_override("font_color", Color.WHITE)
+	chip.add_theme_stylebox_override("normal", _box(tone.darkened(0.12), tone.darkened(0.3), 0, 12, 0, 0))
+	(chip.get_theme_stylebox("normal") as StyleBoxFlat).content_margin_left = 10
+	(chip.get_theme_stylebox("normal") as StyleBoxFlat).content_margin_right = 10
+	(chip.get_theme_stylebox("normal") as StyleBoxFlat).content_margin_top = 2
+	(chip.get_theme_stylebox("normal") as StyleBoxFlat).content_margin_bottom = 2
+	chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return chip
+
+
+## 두 칸 표: 왼쪽은 색 꼬리표(조건·이름), 오른쪽은 결과. 행 하나는 [왼쪽, 오른쪽] 또는 [그림, 왼쪽, 오른쪽].
+func _table(rows: Array, tone: Color) -> Control:
+	var panel := PanelContainer.new()
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_theme_stylebox_override("panel", _box(Color("fffdf6"), tone.lightened(0.2), 2, 16, 0, 10))
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 6)
+	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(column)
+	for row_index: int in rows.size():
+		var row: Array = rows[row_index]
+		var line := HBoxContainer.new()
+		line.add_theme_constant_override("separation", 10)
+		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var cells: Array = row
+		if row.size() == 3:
+			var icon_holder := Control.new()
+			icon_holder.custom_minimum_size = Vector2(44, 44)
+			icon_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			var picture: Control = _picture({"texture": row[0]} if row[0] is Texture2D else {"icon": &"face", "tone": tone}, Vector2(44, 44))
+			icon_holder.add_child(picture)
+			line.add_child(icon_holder)
+			cells = row.slice(1)
+		var key := Label.new()
+		key.text = str(cells[0])
+		key.add_theme_font_size_override("font_size", 16)
+		key.add_theme_color_override("font_color", tone.darkened(0.45))
+		key.custom_minimum_size = Vector2(150, 0)
+		key.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		key.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		key.add_theme_stylebox_override("normal", _box(tone.lightened(0.62), Color(0, 0, 0, 0), 0, 10, 0, 6))
+		key.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		line.add_child(key)
+		var value: RichTextLabel = _rich(str(cells[1]), 16, Color("3a2f1f"))
+		value.custom_minimum_size = Vector2(0, 0)
+		value.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		value.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		line.add_child(value)
+		column.add_child(line)
+		if row_index < rows.size() - 1:
+			var rule := ColorRect.new()
+			rule.color = Color(tone, 0.25)
+			rule.custom_minimum_size = Vector2(0, 2)
+			rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			column.add_child(rule)
+	return panel
+
+
+## 요점 목록: 줄마다 색 점 + 짧은 문장.
+func _points(points: Array, tone: Color) -> Control:
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 6)
+	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for point: Variant in points:
+		var line := HBoxContainer.new()
+		line.add_theme_constant_override("separation", 8)
+		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var dot := Panel.new()
+		dot.custom_minimum_size = Vector2(14, 14)
+		dot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		dot.add_theme_stylebox_override("panel", _box(tone, tone.darkened(0.25), 2, 7))
+		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		line.add_child(dot)
+		var text: RichTextLabel = _rich(str(point), 17)
+		text.custom_minimum_size = Vector2(0, 0)
+		text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		line.add_child(text)
+		column.add_child(line)
+	return column
+
+
+## 카드 항목의 큰 그림: 게임 손패와 같은 카드 앞면.
+func _card_face(card_id: StringName) -> Control:
+	var card: BaseCard = CardRegistry.get_card(card_id)
+	var face := PanelContainer.new()
+	face.custom_minimum_size = CARD_FACE
+	face.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	face.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	face.add_theme_stylebox_override("panel", CardSkin.frame(card.category, false, 14))
+	face.add_child(CardSkin.body(card, CARD_FACE, MainBoard.card_summary(card_id), MainBoard.CARD_CATEGORY_NAMES[card.category], true))
+	return face
+
+
+# ---------------------------------------------------------------------------
+# 글 부품
 # ---------------------------------------------------------------------------
 
 ## BBCode 문단 (갈색 잉크). [b]굵게[/b] [color=#c2457a]강조[/color]
@@ -423,96 +698,12 @@ func _rich(text: String, size_px: int = 19, color: Color = INK) -> RichTextLabel
 	return label
 
 
-## 첫 글자를 주황색으로 크게 강조한 노트 문단 (원본 노트의 머리글자 느낌).
-func _note(text: String, size_px: int = 19) -> RichTextLabel:
-	var cut: int = 0
-	while cut < text.length() and text[cut] == "[":
-		cut = text.find("]", cut) + 1
-	if cut < text.length():
-		text = text.substr(0, cut) + "[color=#e08a1a][font_size=%d]%s[/font_size][/color]" % [size_px + 6, text[cut]] + text.substr(cut + 1)
-	return _rich(text, size_px)
-
-
-func _heading(text: String, color: Color = ACCENT) -> Control:
-	var label := Label.new()
-	label.text = text
-	label.add_theme_font_size_override("font_size", 21)
-	label.add_theme_color_override("font_color", color)
-	return label
-
-
 ## 노란 쪽지 팁 상자.
 func _tip(text: String) -> Control:
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", _box(Color("fff0b8"), Color("e0b23a"), 2, 12, 0, 10))
-	panel.add_child(_rich("[b]꿀팁[/b]  " + text, 18))
+	panel.add_child(_rich("[b]꿀팁[/b]  " + text, 17))
 	return panel
-
-
-## 오른쪽 하늘색 카드 한 장: 위 이름표(아이콘 + 제목), 아래 설명.
-func _card(title: String, body: String, icon: StringName = &"face", tone: Color = Color("5fc1e8"), number: int = 0, art_role: StringName = &"") -> Control:
-	var frame := PanelContainer.new()
-	frame.custom_minimum_size = Vector2(0, 0)
-	frame.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	frame.add_theme_stylebox_override("panel", _box(tone.lightened(0.55), tone, 5, 24, 4, 8, Color(0, 0, 0, 0.18)))
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 6)
-	frame.add_child(column)
-	var head := HBoxContainer.new()
-	head.add_theme_constant_override("separation", 8)
-	column.add_child(head)
-	var disc := Panel.new()
-	disc.custom_minimum_size = Vector2(46, 46)
-	disc.add_theme_stylebox_override("panel", _box(Color.WHITE, tone, 3, 23))
-	head.add_child(disc)
-	if number > 0:
-		var digit := Label.new()
-		digit.text = str(number)
-		digit.add_theme_font_size_override("font_size", 24)
-		digit.add_theme_color_override("font_color", tone.darkened(0.3))
-		digit.set_anchors_preset(Control.PRESET_FULL_RECT)
-		digit.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		digit.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		disc.add_child(digit)
-	elif ART.has(art_role):
-		var image := _art(art_role, Vector2(36, 36))
-		image.position = Vector2(5, 5)
-		disc.add_child(image)
-	else:
-		var glyph := HubKit.Icon.new(icon, tone.darkened(0.35), Color("ffe48a"))
-		glyph.position = Vector2(7, 7)
-		glyph.size = Vector2(32, 32)
-		disc.add_child(glyph)
-	var name_plate := PanelContainer.new()
-	name_plate.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_plate.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	name_plate.add_theme_stylebox_override("panel", _box(Color.WHITE, Color(tone, 0.0), 0, 16, 0, 5))
-	head.add_child(name_plate)
-	var name_label := Label.new()
-	name_label.text = title
-	name_label.add_theme_font_size_override("font_size", 19)
-	name_label.add_theme_color_override("font_color", Color("3a5a6a"))
-	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_plate.add_child(name_label)
-	var body_panel := PanelContainer.new()
-	body_panel.add_theme_stylebox_override("panel", _box(Color("fbfdff"), Color(tone, 0.0), 0, 14, 0, 8))
-	column.add_child(body_panel)
-	body_panel.add_child(_rich(body, 17, Color("3a4a5a")))
-	(body_panel.get_child(0) as Control).custom_minimum_size = Vector2(190, 0)
-	return frame
-
-
-## 카드를 두 칸씩 늘어놓는 격자.
-func _grid(cards: Array) -> Control:
-	var grid := GridContainer.new()
-	grid.columns = 2
-	grid.add_theme_constant_override("h_separation", 12)
-	grid.add_theme_constant_override("v_separation", 12)
-	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	for card: Variant in cards:
-		grid.add_child(card as Control)
-	return grid
 
 
 func _chapter(index: int) -> Dictionary:
@@ -528,182 +719,251 @@ func _chapter(index: int) -> Dictionary:
 
 
 # ---------------------------------------------------------------------------
-# 내용 (장 8개): 왼쪽 노트 + 오른쪽 카드
+# 내용 (장 8개). 장마다 항목 목록: title / tone / 그림(texture·art·number·icon) / chips / summary / rows / points / note / tip / extra
 # ---------------------------------------------------------------------------
 
 func _ch_start() -> Dictionary:
-	return {
-		"title": "시작하기",
-		"left": [
-			_note("주사위만 굴리는 게임이 아니에요. [b]윷, 룰렛, 화투, 마작[/b]까지 굴려 가며 둘에서 넷이 한 바퀴를 도는 [color=#c2457a]억지 레이스[/color]예요!"),
-			_heading("이기는 법"),
-			_rich("내 말 [b]4개를 전부[/b] 결승선(0번 칸)에 먼저 넣으면 승리예요. 한 개라도 남으면 계속 달려야 해요."),
-			_heading("준비물"),
-			_rich("· 내 말 4개 (처음엔 모두 출발선에 서 있어요)\n· 생떼 카드 손패 (최대 7장, 빵집이나 증강으로 얻어요)\n· 가운데 법전 4칸 (먼저 달성하면 졸업하는 특수 승리 조건이 걸려요)"),
-			_tip("처음이라면 [b]놀이터[/b]에서 컴퓨터와 먼저 한 판 해 보세요. 몇 판이면 금방 익숙해져요."),
-		],
-		"right": [
-			_card("말마다 능력이 달라요", "체스 폰은 퀸으로 승급하고, 장기 포는 말을 넘어 달려요. 말마다 한 판에 한 번 쓰는 필살기도 있어요.", &"crown", Color("f08aa8"), 0, &"pawn_ability"),
-			_card("굴리는 도구가 바뀌어요", "증강으로 주사위를 윷, 룰렛, 홀덤, 슬롯… 으로 바꿔요. 도구마다 규칙이 달라요.", &"dice", Color("5fc1e8"), 0, &"tool_swap"),
-			_card("카드와 법전으로 판을 뒤집어요", "함정을 깔고, 상대 말을 출발선으로 날리고, 가운데 법전의 특수 승리를 노려요.", &"book", Color("f0c14e"), 0, &"card_law"),
-			_card("눈금은 항상 공정해요", "파워 게이지는 연출일 뿐이에요. 세게 눌러도 큰 숫자가 더 잘 나오진 않아요.", &"gear", Color("86d94f"), 0, &"fair_roll"),
-		],
-	}
+	return {"title": "시작하기", "entries": [
+		{"title": "한눈에 보기", "art": &"start", "tone": Color("86d94f"), "chips": ["2~4인", "한 바퀴 레이스"],
+			"summary": "말 [b]4개를 모두[/b] 결승선(0번)에 먼저 넣는 레이스예요.",
+			"rows": [["이기는 법", "말 4개 완주 → 먼저 해낸 순서로 1·2·3위"], ["특수 승리", "가운데 법전의 조건을 먼저 달성하면 졸업"], ["손패", "생떼 카드 최대 7장"], ["출발", "말 4개 모두 출발선(0번)에서"]],
+			"tip": "처음이라면 [b]놀이터[/b]에서 컴퓨터와 한 판 해 보세요."},
+		{"title": "말마다 능력", "art": &"pawn_ability", "tone": Color("f08aa8"), "chips": ["증강", "필살기 1회"],
+			"summary": "증강으로 말을 [b]체스·장기·쇼기…[/b]로 진화시켜요. 말마다 상시 능력과 한 판에 한 번 쓰는 필살기가 있어요.",
+			"points": ["보드 위 말에 마우스를 올리면 능력이 보여요", "자세한 건 [b]도감 → 말[/b]"]},
+		{"title": "굴리는 도구", "art": &"tool_swap", "tone": Color("5fc1e8"), "chips": ["13종"],
+			"summary": "기본 주사위로 시작해 증강으로 [b]윷·룰렛·홀덤·슬롯…[/b]으로 바꿔요.",
+			"points": ["도구마다 족보와 칸 수가 달라요", "게임 중 오른쪽 카드에 규칙표가 나와요", "자세한 건 [b]도감 → 도구[/b]"]},
+		{"title": "카드와 법전", "art": &"card_law", "tone": Color("f0c14e"), "chips": ["생떼 카드", "특수 승리"],
+			"summary": "함정을 깔고, 상대 말을 날리고, 법전의 특수 승리를 노려 판을 뒤집어요.",
+			"points": ["카드는 빵집·증강에서 얻어요", "법전 조건을 먼저 달성하면 바로 졸업!"]},
+		{"title": "눈금은 공정해요", "art": &"fair_roll", "tone": Color("86d94f"),
+			"summary": "파워 게이지는 [b]연출[/b]일 뿐이에요. 세게 눌러도 큰 숫자가 더 잘 나오지 않아요.",
+			"points": ["결과는 엔진이 정하고 화면은 보여 주기만 해요"]},
+	]}
 
 
 func _ch_turn() -> Dictionary:
-	return {
-		"title": "한 턴은 이렇게",
-		"left": [
-			_note("한 턴은 [b]카드, 굴리기, 말 고르기, 정산[/b] 네 단계예요. 오른쪽 카드를 순서대로 읽어 보세요."),
-			_heading("알아 두면 편해요", GREEN),
-			_rich("· [b]재굴림[/b]: 윷말은 상대를 잡거나 4·5가 나오면 한 번 더 굴려요.\n· [b]후퇴는 없어요[/b]: 말은 절대 뒤로 가지 않아요. 대신 공격과 함정은 상대 말을 [b]출발선으로 날려 버려요[/b]. 날아간 말은 [b]🔥 복수 부스터[/b]로 다시 나올 때 +4칸! 길 위의 [b]⚡ 부스터 발판[/b](" + "·".join(BoardSpec.dash_tiles.map(func(tile: int) -> String: return str(tile))) + "번)에 멈추면 +3칸, 다른 말을 밟고 지나가면 [b]점프 부스트[/b] +1칸(최대 +3)!
-· [b]증강[/b]: 1, 4, 7라운드처럼 [b]3라운드마다[/b] 모두가 3장 중 하나를 골라요.\n· [b]제한 시간[/b]: 온라인에서는 단계마다 시간이 있고, 지나면 알아서 진행돼요.\n· [b]컴퓨터 차례[/b]: 느리다 싶으면 설정에서 연출 속도를 바꿔 보세요."),
-			_tip("카드는 [b]굴리기 전에만[/b] 낼 수 있어요. 눈금을 보고 고민하고 싶다면 이번 턴 카드는 아껴 두세요."),
-		],
-		"right": [
-			_card("카드 한 장 (안 써도 돼요)", "굴리기 전에, 카드를 [b]보드판 위로 끌어다 놓으면[/b] 발동해요. 한 턴에 한 장까지예요.", &"book", Color("f0c14e"), 1),
-			_card("굴리기", "[b]굴리기[/b] 버튼을 꾹 눌러 파워를 모으고 손을 떼요. (R이나 스페이스 키도 돼요)", &"dice", Color("86d94f"), 2),
-			_card("말 고르기", "나온 눈금만큼 움직일 말을 골라요. 아래 말 카드나 보드 위의 말을 누르면 돼요.", &"face", Color("5fc1e8"), 3),
-			_card("정산", "도착한 칸의 효과가 터져요. 피해를 입었다면 [b]바이츠 더 더스트[/b] 카드로 이번 턴을 되돌릴 수 있어요.", &"hourglass", Color("f08aa8"), 4),
-		],
-	}
+	var dash: String = _join_tiles(BoardSpec.dash_tiles)
+	return {"title": "한 턴", "entries": [
+		{"title": "한눈에 보기", "art": &"turn", "tone": Color("86d94f"), "chips": ["4단계"],
+			"summary": "한 턴은 [b]카드 → 굴리기 → 말 고르기 → 정산[/b] 순서예요.",
+			"rows": [["① 카드", "굴리기 전에 한 장 (안 써도 돼요)"], ["② 굴리기", "도구를 굴려 칸 수 결정"], ["③ 말 고르기", "그 칸 수만큼 움직일 말 선택"], ["④ 정산", "도착한 칸의 효과가 터져요"]],
+			"tip": "카드는 [b]굴리기 전에만[/b] 낼 수 있어요. 눈금을 보고 고민하려면 아껴 두세요."},
+		{"title": "카드 한 장", "number": 1, "tone": Color("f0c14e"), "chips": ["굴리기 전", "턴당 1장"],
+			"summary": "카드를 [b]보드판 위로 끌어다 놓으면[/b] 발동해요.",
+			"points": ["함정·소환은 놓은 뒤 칸을 골라요", "반격 카드는 끌어 쓰지 않아요 (공격받을 때 팝업)"]},
+		{"title": "굴리기", "number": 2, "tone": Color("86d94f"), "chips": ["R / 스페이스"],
+			"summary": "[b]굴리기[/b] 버튼을 꾹 눌러 파워를 모으고 손을 떼요.",
+			"points": ["룰렛은 원판을 잡아 돌리고, 리볼버는 방아쇠를 당겨요"]},
+		{"title": "말 고르기", "number": 3, "tone": Color("5fc1e8"),
+			"summary": "아래 말 카드나 보드 위의 말을 누르면 그 말이 움직여요.",
+			"points": ["카드에 도착 결과가 미리 보여요 (잡기·빵집·워프…)"]},
+		{"title": "정산", "number": 4, "tone": Color("f08aa8"),
+			"summary": "도착한 칸의 효과가 터져요. 공격받으면 반격 카드로 받아칠지 물어봐요.",
+			"points": ["빵집이면 카드 1장, 옷장이면 순간이동", "적 말 위에 멈추면 잡기!"]},
+		{"title": "보너스 이동", "icon": &"play", "tone": Color("63e6be"), "chips": ["후퇴 없음"],
+			"summary": "말은 절대 뒤로 가지 않아요. 대신 여러 보너스로 앞으로 튀어 나가요.",
+			"rows": [["🔥 복수 부스터", "출발선으로 날아간 말이 다시 나올 때 +4칸"], ["⚡ 부스터 발판", "%s번에 딱 멈추면 +3칸" % dash], ["점프 부스트", "다른 말을 밟고 지나가면 +1칸 (최대 +3)"], ["재굴림", "윷말은 잡거나 4·5가 나오면 한 번 더"]]},
+		{"title": "증강 라운드", "icon": &"crown", "tone": Color("ffa94d"), "chips": ["3라운드마다"],
+			"summary": "1·4·7라운드처럼 [b]3라운드마다[/b] 모두가 3장 중 하나를 골라요.",
+			"points": ["카드마다 한 번 다시 뽑기", "자세한 건 [b]도감 → 법전[/b]"]},
+	]}
 
 
 func _ch_board() -> Dictionary:
-	var board := MiniBoard.new()
-	board.custom_minimum_size = Vector2(440, 440)
-	board.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	return {
-		"title": "보드 읽기",
-		"left": [
-			_note("보드는 [b]%d칸짜리 사각 한 바퀴[/b]예요. 우하단 0번에서 출발해 반시계로 돌고, 한 바퀴를 다 돌면 다시 0번이 결승선이에요." % BoardSpec.tile_count),
-			_heading("눈여겨볼 칸"),
-			_rich("[color=#2f8f4e][b]코너 %s[/b][/color]  코너 전용 함정만 설치할 수 있는 칸이에요.\n[color=#c98a14][b]%d번 반환점[/b][/color]  여기를 지나면 체스 폰이 퀸으로, 쇼기 말이 승급해요.\n[color=#d9822b][b]빵집 %s번[/b][/color]  멈추면 생떼 카드 한 장!\n[color=#24838c][b]옷장 %s번[/b][/color]  딱 멈추면 순간이동!\n[color=#2fb59a][b]⚡ 부스터 발판 %s번[/b][/color]  딱 멈추면 +3칸 더 날아가요!\n[color=#7a5cd6][b]보라색 칸[/b][/color]  함정이 깔린 칸이에요. 그 함정 그림이 보이고, 상대가 숨긴 함정은 물음표로 보여요. 한 칸에 함정은 하나만!" % [_join_tiles(BoardSpec.corner_tiles.slice(1)), BoardSpec.halfway_tile, _join_tiles(BoardSpec.bakery_tiles), _join_tiles(BoardSpec.portal_tiles), _join_tiles(BoardSpec.dash_tiles)]),
-			_tip("옷장과 부스터는 [b]딱 멈출 때만[/b] 작동해요. 그냥 지나가면 아무 일도 없어요. 눈금을 잘 맞춰 보세요."),
-		],
-		"right": [
-			board,
-			_rich("가운데는 비어 있어요. 굴리기 버튼과 주사위 연출이 이 빈 무대에서 펼쳐져요.", 16),
-		],
-	}
+	var make_board: Callable = func() -> Control:
+		var board := MiniBoard.new()
+		board.custom_minimum_size = Vector2(440, 440)
+		board.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		return board
+	return {"title": "보드", "entries": [
+		{"title": "한눈에 보기", "art": &"board", "tone": Color("86d94f"), "chips": ["%d칸" % BoardSpec.tile_count, "반시계"],
+			"summary": "우하단 0번에서 출발해 반시계로 한 바퀴. 다시 0번이 [b]결승선[/b]이에요.", "extra": make_board,
+			"points": ["옷장과 부스터 발판은 [b]딱 멈출 때만[/b] 작동해요", "오른쪽 칸 이름을 누르면 자세히 볼 수 있어요"]},
+		{"title": "코너", "icon": &"grid", "tone": Color("2f8f4e"), "chips": [_join_tiles(BoardSpec.corner_tiles.slice(1)) + "번"],
+			"summary": "[b]코너 전용 함정[/b]만 설치할 수 있는 칸이에요.",
+			"points": ["무인도·점프대·톨게이트·타르"]},
+		{"title": "반환점", "icon": &"crown", "tone": Color("c98a14"), "chips": ["%d번" % BoardSpec.halfway_tile],
+			"summary": "여기를 지나면 체스 폰은 [b]퀸[/b]으로, 쇼기 말은 [b]승급[/b]해요."},
+		{"title": "빵집", "icon": &"book", "tone": Color("d9822b"), "chips": [_join_tiles(BoardSpec.bakery_tiles) + "번"],
+			"summary": "딱 멈추면 [b]생떼 카드 1장[/b]! 어떤 카드인지는 본인만 알아요."},
+		{"title": "옷장", "icon": &"key", "tone": Color("2f9aa3"), "chips": [_join_tiles(BoardSpec.portal_tiles) + "번"],
+			"summary": "딱 멈추면 [b]순간이동[/b]! 지나가기만 하면 아무 일도 없어요.",
+			"rows": _warp_rows()},
+		{"title": "부스터 발판", "icon": &"play", "tone": Color("2fb59a"), "chips": [_join_tiles(BoardSpec.dash_tiles) + "번"],
+			"summary": "딱 멈추면 [b]+3칸[/b] 더 날아가요."},
+		{"title": "함정 칸", "texture": TextureCache.fetch("res://assets/board/traps/HIDDEN.png"), "tone": Color("7a5cd6"), "chips": ["한 칸에 하나"],
+			"summary": "함정이 깔린 칸은 [b]보라색[/b]으로 바뀌고 그 함정 그림이 보여요.",
+			"points": ["상대가 숨긴 함정은 물음표로 보여요", "코너 함정은 누구에게나 공개"]},
+	]}
+
+
+func _warp_rows() -> Array:
+	var rows: Array = []
+	for from_tile: int in BoardSpec.portal_warp_targets.keys():
+		rows.append(["%d번 옷장" % from_tile, "→ %d번으로" % int(BoardSpec.portal_warp_targets[from_tile])])
+	return rows
 
 
 func _ch_capture() -> Dictionary:
-	return {
-		"title": "잡기 · 업기 · 완주",
-		"left": [
-			_note("적 말이 서 있는 칸에 [b]멈추면 그 말은 출발선으로[/b] 돌아가요. [b]출발선(0번)은 안전[/b]해서 잡을 수 없고, 내 말끼리는 잡지 않아요."),
-			_heading("업기 (윷말만)"),
-			_rich("윷말끼리 같은 칸에서 만나면 [b]하나로 합쳐[/b] 한꺼번에 움직여요. 든든하지만 잡히면 [color=#d6336c]같이 잡혀요[/color]! 합칠지 말지는 고를 수 있어요."),
-			_heading("완주"),
-			_rich("출발한 말이 0번에 닿으면 완주예요. 눈금이 남아도 괜찮아요. 말 4개가 모두 완주하면 [b]순위 확정[/b]! 먼저 해낸 순서대로 1·2·3위가 되고, 마지막 한 명이 4위예요."),
-			_tip("잡힌 말은 [b]출발선에서 처음부터[/b]예요. 완주 직전에 잡히면 억울하니 선두 말은 적 앞을 조심하세요."),
-		],
-		"right": [
-			_card("내 말이 앞에 있는데 적이 쫓아와요!", "나중에 도착해서 [b]멈춘 쪽이 잡아요[/b]. 스쳐 지나가기만 하면 안 잡혀요.", &"sword", Color("f08aa8"), 0, &"capture"),
-			_card("함정은 어떻게 보여요?", "컴퓨터 대전에서는 상대가 깐 함정이 [b]뒷면[/b]으로만 보여요. 밟아 보기 전엔 몰라요. 내 함정은 내게 보여요.", &"key", Color("b197fc"), 0, &"hidden_trap"),
-			_card("적이 막고 있는데 지나갈 수 있어요?", "네! 멈추지만 않으면 지나가요. (장기 포는 말을 넘으면 보너스를 받아요.)", &"play", Color("5fc1e8"), 0, &"pass"),
-			_card("무인도에 갇혔어요!", "[b]짝수 눈금[/b]이 나오면 탈출해요. 홀수면 제자리예요.", &"hourglass", Color("f0c14e"), 0, &"island"),
-		],
-	}
+	return {"title": "잡기", "entries": [
+		{"title": "한눈에 보기", "art": &"capture", "tone": Color("f08aa8"),
+			"summary": "적 말이 있는 칸에 [b]멈추면[/b] 그 말은 출발선으로 날아가요.",
+			"rows": [["잡기", "멈춘 쪽이 잡아요 (스치기만 하면 안 잡혀요)"], ["출발선(0번)", "안전 지대: 잡을 수 없어요"], ["내 말끼리", "잡지 않아요"]],
+			"tip": "완주 직전에 잡히면 억울해요. 선두 말은 적 앞을 조심!"},
+		{"title": "지나가기", "art": &"pass", "tone": Color("5fc1e8"),
+			"summary": "적이 막고 있어도 [b]멈추지만 않으면[/b] 지나가요.",
+			"points": ["밟고 지나가면 점프 부스트 +1칸 (최대 +3)"]},
+		{"title": "업기 (윷말)", "icon": &"play", "tone": Color("f0c14e"),
+			"summary": "윷말끼리 같은 칸에서 만나면 [b]하나로 합쳐[/b] 함께 움직여요.",
+			"points": ["잡히면 [color=#d6336c]같이 잡혀요[/color]"]},
+		{"title": "완주와 순위", "icon": &"crown", "tone": Color("86d94f"),
+			"summary": "말이 0번에 닿으면 완주. 4개 모두 완주하면 [b]순위 확정[/b]!",
+			"rows": [["1·2·3위", "먼저 해낸 순서대로"], ["4위", "마지막 남은 한 명"], ["특수 승리", "법전 조건을 달성해도 다음 순위로 졸업"]]},
+		{"title": "숨은 함정", "art": &"hidden_trap", "tone": Color("b197fc"),
+			"summary": "상대가 깐 함정은 [b]물음표[/b]로만 보여요. 밟아 보기 전엔 몰라요.",
+			"points": ["내 함정은 내 화면에서 그림이 보여요"]},
+		{"title": "무인도", "art": &"island", "tone": Color("f0c14e"),
+			"summary": "갇히면 [b]짝수 눈금[/b]이 나와야 탈출해요."},
+		{"title": "반격", "icon": &"sword", "tone": Color("74c0fc"), "chips": ["피격 시"],
+			"summary": "내가 공격받으면 [b]반격 카드를 쓸지[/b] 팝업으로 물어봐요.",
+			"points": ["잡기·공격 카드·함정이 공격이에요", "그냥 맞기를 고르면 그 공격엔 다시 못 써요"]},
+	]}
 
 
 func _ch_tools() -> Dictionary:
-	var tools: Array = [
-		["주사위", "1~6칸, 공정한 기본 도구", &"dice", Color("5fc1e8")],
-		["윷", "도 1 · 개 2 · 걸 3 · 윷 4 · 모 5, 특도는 2칸 + 한 번 더", &"play", Color("86d94f")],
-		["인생게임 룰렛", "원판을 돌려 1~10칸. 7이 나오면 7칸에 한 번 더!", &"gear", Color("f0c14e")],
-		["홀덤", "카드 족보에 따라 1~15칸 (플러시 이상은 15칸)", &"book", Color("f08aa8")],
-		["친치로", "4~6칸의 고눈금! 대신 [color=#d6336c]삐끗하면 0칸[/color]", &"dice", Color("b197fc")],
-		["777 슬롯", "릴 3개. 꽝 1칸 · 두 개 4칸 · 세 개 8칸 · 777은 20칸!", &"crown", Color("f0c14e")],
-		["러시안 룰렛", "당길수록 칸이 쌓이지만 폭죽 깃발이 나오면 [color=#d6336c]전부 증발[/color]하고 턴 종료. 멈출 때는 내 선택!", &"sword", Color("f08aa8")],
-		["화투", "패 2장의 족보로 0~8칸. 망통이면 0칸에 턴 종료", &"leaf", Color("86d94f")],
-		["마작", "패를 뽑아 족보로 칸 수가 정해져요", &"grid", Color("5fc1e8")],
-		["타로", "카드 5장 중 한 장. 장마다 효과가 달라요", &"face", Color("b197fc")],
+	var entries: Array = [
+		{"title": "고르는 요령", "art": &"tool_swap", "tone": Color("86d94f"), "chips": ["증강으로 교체"],
+			"summary": "처음엔 [b]기본 주사위[/b]. 증강으로 다른 도구로 바꿀 수 있어요.",
+			"rows": [["한 방", "친치로 · 777 슬롯"], ["안정", "주사위 · 윷"], ["짜릿함", "러시안 룰렛 · 블랙잭"]],
+			"tip": "러시안 룰렛은 [b]멈추기[/b] 버튼이 생명이에요."},
 	]
-	var cards: Array = []
-	for entry: Array in tools:
-		cards.append(_card(entry[0], entry[1], entry[2], entry[3]))
-	return {
-		"title": "굴리는 도구",
-		"left": [
-			_note("처음엔 [b]기본 주사위[/b]로 시작해요. 증강으로 오른쪽 도구 중 하나로 바꿀 수 있고, 도구마다 규칙이 달라요. 게임 중 오른쪽 카드에 규칙표가 나와요."),
-			_heading("고르는 요령", GREEN),
-			_rich("· 한 방을 노린다면 [b]친치로[/b]나 [b]슬롯[/b]\n· 안정적으로 가고 싶다면 [b]주사위[/b]나 [b]윷[/b]\n· 짜릿함을 원한다면 [b]러시안 룰렛[/b]"),
-			_tip("러시안 룰렛은 [b]멈추기[/b] 버튼이 생명이에요. 욕심내다 한 방에 날아가지 마세요."),
-		],
-		"right": [_grid(cards)],
-	}
+	var tones: Array[Color] = [Color("5fc1e8"), Color("86d94f"), Color("f0c14e"), Color("f08aa8"), Color("b197fc")]
+	for index: int in ToolRegistry.ALL_IDS.size():
+		var tool_id: StringName = ToolRegistry.ALL_IDS[index]
+		var tool: BaseJudgmentTool = ToolRegistry.create(tool_id)
+		var rules: Dictionary = MainBoard.TOOL_RULES.get(tool_id, {})
+		var card: Array = MainBoard.TOOL_CARDS.get(tool_id, ["", Color.WHITE, "", ""])
+		var data: Dictionary = {"title": tool.display_name, "texture": AugmentArt.load_first(AugmentArt.tool_candidates(tool_id)), "icon": &"dice",
+			"tone": tones[index % tones.size()], "summary": GameData.text("dice", tool_id, "desc", str(card[2])), "rows": rules.get("rows", [])}
+		if rules.has("note"):
+			data["note"] = rules["note"]
+		if str(card[3]) != "":
+			data["chips"] = [str(card[3])]
+		entries.append(data)
+	return {"title": "도구", "entries": entries}
 
 
 func _ch_pawns() -> Dictionary:
-	return {
-		"title": "말과 필살기",
-		"left": [
-			_note("증강으로 기본 말을 여섯 계열 중 하나로 [b]진화[/b]시켜요. 보드 위 말에는 한 글자 라벨이 붙고, 마우스를 올리면 능력이 나와요."),
-			_heading("필살기", ACCENT),
-			_rich("말마다 [b]한 판에 한 번[/b] 쓰는 필살기가 있어요. 룩의 [b]캐슬링[/b], 비숍의 [b]피앙케토[/b], 차의 [b]돌진[/b], 상의 [b]코끼리 지진[/b], 비행기의 [b]직항 워프[/b], 흑돌의 [b]알까기[/b], 보병의 [b]모치고마 낙하[/b], 용왕·용마의 [b]베기[/b](승급 후), 8번 공의 [b]뱅크샷[/b], 공병의 [b]지뢰 매설[/b]이에요."),
-			_tip("필살기는 내 프로필 카드에서 눌러요. 굴리기 전에만 쓸 수 있고, 잡혀서 출발선으로 가도 되살아나지 않아요."),
-		],
-		"right": [_grid([
-			_card("윷말", "잡거나 4·5가 나오면 한 번 더. 만나면 업기", &"play", Color("f08aa8")),
-			_card("체스", "폰은 반환점 이상에서 퀸으로 승급 · 나이트는 함정과 말을 뛰어넘기 · 비숍은 코너 바로 앞이면 +1칸 코너 진입, [b]필살기 피앙케토[/b](대각선 코너로) · 룩은 직진 +2칸, [b]필살기 캐슬링[/b](아군과 위치 교환)", &"crown", Color("5fc1e8")),
-			_card("장기", "포는 길에 말이 있으면 +3칸 · 차는 [b]필살기 돌진[/b](선두 적을 잡으러 직진) · 마·상은 앞 칸이 비면 +2칸 · 상은 [b]필살기 코끼리 지진[/b](앞뒤 2칸 설치물 파괴)", &"sword", Color("f0c14e")),
-			_card("모노폴리", "미니카는 도착 칸에 호텔 · 비행기는 옷장에서 더 멀리, [b]필살기 직항 워프[/b] · 증기선은 첫 적 함정을 부숴요 · 강아지는 빵집을 스치기만 해도 카드!", &"key", Color("86d94f")),
-			_card("바둑", "흑돌은 [b]필살기 알까기[/b](튕겨서 직선의 적을 탈락) · 백돌은 잡기·함정을 한 번 막는 방어막 (증강 라운드까지 안 잡히면 재충전)", &"dice", Color("b197fc")),
-			_card("쇼기", "반환점 이상을 지나면 [b]승급[/b](이동 +1칸) · 보병은 [b]필살기 모치고마 낙하[/b](대기 말을 바로 옆에 투입) · 비차는 직진 +2칸, 용왕이 되면 [b]앞 2칸 베기[/b] · 각행은 코너 +2칸(용마 +3), 용마가 되면 [b]앞뒤 1칸 베기[/b] · 계마는 첫 2칸 함정 무시", &"grid", Color("f08aa8")),
-			_card("아케이드", "킹 체커는 지나가는 적을 잡아요 · 루도 복수자는 복수 부스터 +8 · 8번 공은 잡으면 +3칸, [b]필살기 뱅크샷[/b] · 스타 카트는 추가 이동 +2, 함정 면역 · 지뢰찾기 공병은 적 함정 해체(+카드), [b]필살기 지뢰 매설[/b]", &"play", Color("63e6be")),
-		])],
-	}
+	var entries: Array = [
+		{"title": "진화와 필살기", "art": &"pawn_ability", "tone": Color("f08aa8"), "chips": ["한 판에 1회"],
+			"summary": "증강으로 말을 [b]7계열[/b] 중 하나로 진화시켜요.",
+			"points": ["보드 위 말에는 한 글자 라벨이 붙어요", "필살기는 내 프로필 카드에서 굴리기 전에 눌러요", "잡혀서 출발선으로 가도 필살기는 되살아나지 않아요"],
+			"tip": "오른쪽에서 계열을 누르면 세부 기물마다 능력과 필살기가 그림과 함께 나와요."},
+	]
+	var tones: Array[Color] = [Color("f08aa8"), Color("5fc1e8"), Color("f0c14e"), Color("86d94f"), Color("b197fc"), Color("ffa94d"), Color("63e6be")]
+	for index: int in PawnCatalog.EVOLVABLE_SETS.size():
+		var kind: GameEnums.PawnKind = PawnCatalog.EVOLVABLE_SETS[index]
+		var rows: Array = []
+		var seen: Array = []
+		for sub: Variant in PawnCatalog.SUB_TYPES[kind]:
+			if seen.has(sub):
+				continue
+			seen.append(sub)
+			var sub_name: String = str(PawnCatalog.SUB_NAMES.get(sub, ""))
+			sub_name = sub_name.split(":")[-1]
+			var text: String = str(PawnCatalog.SUB_ABILITIES.get(sub, ""))
+			var skill: StringName = PawnCatalog.SKILL_IDS.get(sub, &"")
+			if skill != &"":
+				text += "\n[color=#c2457a]필살기 %s[/color] %s" % [PawnCatalog.skill_name(skill), PawnCatalog.skill_text(skill)]
+			rows.append([_pawn_texture(sub, kind), sub_name, text])
+		entries.append({"title": PawnCatalog.display_set_name(kind), "texture": _pawn_texture(PawnCatalog.SUB_TYPES[kind][0], kind), "icon": &"crown",
+			"tone": tones[index % tones.size()], "chips": ["%d종" % rows.size()], "summary": PAWN_LINES.get(kind, ""), "rows": rows})
+	return {"title": "말", "entries": entries}
 
 
-func _card_entry(card_id: StringName, tone: Color) -> Control:
-	var card: BaseCard = CardRegistry.get_card(card_id)
-	var summary: String = MainBoard.card_summary(card_id).replace("\n", " ")
-	var icon: StringName = &"book" if card_id == &"ACT_09" else (&"gear" if card_id.begins_with("ACT") else (&"key" if card_id.begins_with("TRP") else (&"crown" if card_id.begins_with("CNT") else &"face")))
-	return _card(card.display_name, summary, icon, tone)
+## 계열 한 줄 소개.
+const PAWN_LINES: Dictionary = {
+	GameEnums.PawnKind.YUT: "잡거나 4·5가 나오면 한 번 더. 만나면 업혀요.",
+	GameEnums.PawnKind.CHESS: "폰은 반환점에서 퀸으로 승급. 기물마다 움직임 보너스가 달라요.",
+	GameEnums.PawnKind.JANGGI: "말을 넘고, 돌진하고, 땅을 흔드는 장기 기물.",
+	GameEnums.PawnKind.MONOPOLY: "호텔·워프·카드로 판을 굴리는 모노폴리 말.",
+	GameEnums.PawnKind.GO: "흑돌은 알까기, 백돌은 방어막.",
+	GameEnums.PawnKind.SHOGI: "반환점을 지나면 승급(나리)해 더 강해져요.",
+	GameEnums.PawnKind.ARCADE: "킹 체커·루도·8번 공·스타 카트·지뢰찾기 공병.",
+}
+
+
+## 세부 기물 그림 (투명 여백을 잘라 낸 아틀라스).
+static func _pawn_texture(sub: Variant, kind: GameEnums.PawnKind) -> Texture2D:
+	var root: String = PawnArt.ROOT
+	var key: String = GameEnums.PawnSubType.keys()[int(sub)]
+	var paths: Array[String] = [root + key + ".png"]
+	if kind == GameEnums.PawnKind.YUT:
+		paths.append(root + "YUT.png")
+	paths.append(root + str(AugmentArt.PAWN_FILES.get(kind, "PAWN_DEFAULT")) + ".png")
+	var sprite: Dictionary = PawnArt.load_sprite(paths)
+	if sprite.is_empty():
+		return null
+	var atlas := AtlasTexture.new()
+	atlas.atlas = sprite["texture"]
+	atlas.region = sprite["region"]
+	return atlas
 
 
 func _ch_cards() -> Dictionary:
-	var cards: Array = []
+	var entries: Array = [
+		{"title": "카드 쓰는 법", "art": &"card_law", "tone": Color("f0c14e"), "chips": ["손패 최대 7장"],
+			"summary": "빵집·증강에서 얻은 카드를 [b]보드판으로 끌어다 놓아[/b] 써요.",
+			"rows": [["반격 (파랑)", "공격받으면 팝업에서 발동 여부를 물어봐요"], ["즉발 (노랑)", "굴리기 전에 바로 효과"], ["함정 (보라)", "칸을 골라 숨겨 깔기, 코너 전용 4종"], ["소환 (분홍)", "상단 코너에서 질주해 길 위의 말을 날려요"]],
+			"tip": "가위바위보 결투는 [b]상대 프로필이나 말 위에[/b] 놓으면 그 상대와 붙어요."},
+	]
 	for card_id: StringName in CardRegistry.DECK_COMPOSITION.keys():
 		var card: BaseCard = CardRegistry.get_card(card_id)
 		var tone: Color = Color("f0c14e")
+		var when: String = "굴리기 전 (내 턴 시작)"
+		var how: String = "보드에 끌어 놓기"
 		match card.category:
-			GameEnums.CardCategory.COUNTER: tone = Color("74c0fc")
-			GameEnums.CardCategory.TRAP: tone = Color("b197fc")
-			GameEnums.CardCategory.SUMMON: tone = Color("f08aa8")
-		cards.append(_card_entry(card_id, tone))
-	return {
-		"title": "생떼 카드",
-		"left": [
-			_note("빵집이나 증강에서 얻는 카드예요. 손패는 [b]최대 7장[/b]이고, 카드를 [b]보드판으로 끌어다 놓아[/b] 써요. 한 턴에 한 장, 굴리기 전에만 낼 수 있어요. [b]반격 카드[/b]는 끌어다 쓸 수 없어요: 내가 공격받으면 [b]발동할지 묻는 팝업[/b]이 뜨고, 거기서만 써요."),
-			_heading("종류", GREEN),
-			_rich("[color=#3b5bdb][b]파랑[/b][/color]  반격 카드 (7종, 내가 공격받을 때 팝업에서 받아쳐요)\n[color=#c98a14][b]노랑[/b][/color]  바로 터지는 카드 (13종)\n[color=#7a5cd6][b]보라[/b][/color]  칸을 골라 까는 함정 (6종) + 코너 전용 함정 (4종)\n[color=#c2457a][b]분홍[/b][/color]  소환 카드 (2종, 상단 코너에서 질주하며 길 위의 말을 날려요)"),
-			_tip("가위바위보 결투 카드는 [b]상대 프로필이나 말 위에[/b] 놓으면 그 상대와 바로 붙어요. 이기면 내 말이 +3칸 전진하고, 진 사람의 말 하나는 출발선으로 날아가요!"),
-		],
-		"right": [_grid(cards)],
-	}
+			GameEnums.CardCategory.COUNTER:
+				tone = Color("74c0fc")
+				when = "피격 시 (내가 공격받았을 때)"
+				how = "발동 여부를 묻는 팝업에서 [발동]"
+			GameEnums.CardCategory.TRAP:
+				tone = Color("b197fc")
+				how = "보드에 끌어 놓고 %s 고르기" % ("코너" if card.corner_only else "칸")
+			GameEnums.CardCategory.SUMMON:
+				tone = Color("f08aa8")
+		var quote: String = GameData.text("cards", card_id, "parody_quote")
+		var data: Dictionary = {"title": card.display_name, "card": card_id, "texture": TextureCache.fetch("res://assets/cards/%s.png" % card_id), "icon": &"book", "tone": tone,
+			"chips": [MainBoard.CARD_CATEGORY_NAMES[card.category], "%d장" % int(CardRegistry.DECK_COMPOSITION[card_id])],
+			"summary": MainBoard.card_summary(card_id).replace("\n", " "),
+			"rows": [["언제", when], ["방법", how]]}
+		if quote != "":
+			data["note"] = "“%s”" % quote
+		entries.append(data)
+	return {"title": "카드", "entries": entries}
 
 
 func _ch_laws() -> Dictionary:
-	var cards: Array = []
-	for index: int in 8:
-		var law: LawResource = LawRegistry.create("LAW_%02d" % (index + 1))
-		if law != null:
-			cards.append(_card(law.law_name, law.description, &"book", Color("5fc1e8")))
-	return {
-		"title": "증강과 특수 승리",
-		"left": [
-			_note("1, 4, 7라운드처럼 [b]3라운드마다[/b] 모두가 3장 중 하나를 골라요. 마음에 안 들면 카드마다 [b]한 번 다시 뽑기[/b]가 있어요."),
-			_rich("· [b]기물 지급[/b]  말 하나를 새 기물로 진화\n· [b]도구 교체[/b]  굴리는 도구 바꾸기\n· [b]특수 승리[/b]  가운데 법전에 새 승리 조건 걸기 (3라운드부터)\n· [b]카드 패키지[/b]  생떼 카드 여러 장"),
-			_heading("가운데 법전 (4칸)"),
-			_rich("법전의 교칙은 모두 [b]특수 승리 조건[/b]이에요. 누구든 [b]먼저 달성하면 다음 순위로 졸업[/b]하고 그 교칙은 사라져요. 새 교칙이 들어오면 [b]가장 오래된 교칙이 밀려나요[/b]."),
-			_tip("법전 슬롯에 마우스를 올리면 모두의 진행도가 보여요. [color=#d6336c][b][위험!][/b][/color] 표시가 뜬 사람을 견제하세요!"),
-		],
-		"right": [_grid(cards)],
-	}
+	var entries: Array = [
+		{"title": "증강과 법전", "art": &"card_law", "tone": Color("ffa94d"), "chips": ["3라운드마다", "법전 4칸"],
+			"summary": "법전의 교칙은 모두 [b]특수 승리 조건[/b]이에요. 먼저 달성하면 [b]다음 순위로 졸업[/b]!",
+			"rows": [["기물 지급", "말 하나를 새 기물로 진화"], ["도구 교체", "굴리는 도구 바꾸기"], ["특수 승리", "법전에 새 승리 조건 (3라운드부터)"], ["카드 패키지", "생떼 카드 여러 장"]],
+			"points": ["새 교칙이 들어오면 가장 오래된 교칙이 밀려나요", "달성된 교칙은 사라져요"],
+			"tip": "법전 슬롯에 마우스를 올리면 모두의 진행도가 보여요. [color=#d6336c][b][위험!][/b][/color] 표시를 견제하세요!"},
+	]
+	for index: int in VictoryLaw.DEFS.size():
+		var law_id: String = "LAW_%02d" % (index + 1)
+		var law: VictoryLaw = LawRegistry.create(law_id) as VictoryLaw
+		if law == null:
+			continue
+		var counting: String = "법전에 있는 동안만 세요" if VictoryLaw.SESSION_KEYS.has(law.stat_key) else "게임 내내 쌓여요"
+		entries.append({"title": law.law_name, "texture": TextureCache.fetch("res://content_trickcal/illustrations/laws/%s.png" % law_id), "icon": &"book",
+			"tone": Color("5fc1e8") if index % 2 == 0 else Color("b197fc"), "chips": ["목표 %d%s" % [law.goal(), law.unit()]],
+			"summary": law.condition_text(),
+			"rows": [["달성하면", "다음 순위로 졸업, 교칙은 사라져요"], ["기록", counting], ["이의 있음!", "기록을 0으로 되돌릴 수 %s" % ("있어요" if law.resettable() else "없어요")]]})
+	return {"title": "법전", "entries": entries}
 
 
 # ---------------------------------------------------------------------------
