@@ -282,7 +282,7 @@ func _play_draft(manager: TurnManager) -> void:
 	var player_id: int = pending[0]
 	_check_draft_cards()
 	var offers: Array[StringName] = manager.draft_offers_for(player_id)
-	if _rng.randi_range(0, 2) == 0:
+	if _rng.randi_range(0, 2) == 0 and not _board.state.is_banned(player_id):  # 알고리즘 밴(ACT_14) 중에는 리롤이 막힌다
 		# 리롤: 슬롯 하나가 다른 증강으로 바뀌고 오버레이가 새로 그려지며 그 슬롯의 리롤 버튼은 잠긴다
 		var slot: int = _rng.randi_range(0, offers.size() - 1)
 		_board._on_augment_reroll(player_id, slot)
