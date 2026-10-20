@@ -154,50 +154,50 @@
   {
     "card_id": "ACT_10",
     "file": "ACT_10.png",
-    "source_version": "emoji-v1",
+    "source_version": "character-v1",
     "width": 1448,
     "height": 1086,
-    "sha256": "69a3d27da7e36ffe288390d5b03594c9a246c3d08052f081f2d2e55531edeb50"
+    "sha256": "37e4c871753cf89e4abaae837b3ef3b94930bc7b8993dc6ec04b2f0107a5a8ec"
   },
   {
     "card_id": "ACT_11",
     "file": "ACT_11.png",
-    "source_version": "emoji-v1",
+    "source_version": "character-v1",
     "width": 1448,
     "height": 1086,
-    "sha256": "5553c84ffae226c405ba474e1b8e36fede9a099e62cda708714e5197c1becdc4"
+    "sha256": "56b52739c43acca170ad51785ed897adc189f072704e0c7a1ba20eed89792d6c"
   },
   {
     "card_id": "ACT_12",
     "file": "ACT_12.png",
-    "source_version": "emoji-v1",
+    "source_version": "character-v1",
     "width": 1448,
     "height": 1086,
-    "sha256": "371d4dd08ae01bb301298cdff19d2bc7941ea2f991653dc0ed228f791a8df086"
+    "sha256": "02149be27a1e15c8b4b2f8fd53b2711c157a68b76e7fc0e4d79370d3cb11281d"
   },
   {
     "card_id": "ACT_13",
     "file": "ACT_13.png",
-    "source_version": "emoji-v1",
+    "source_version": "character-v1",
     "width": 1448,
     "height": 1086,
-    "sha256": "e7a3defea2a98422b1d3dcb1929561118c3a972da6f161872b912c2938a602d9"
+    "sha256": "b7c0caf665457a0fafa40832efd10f8cbaf95e131488acf48e340da7dc17871d"
   },
   {
     "card_id": "ACT_14",
     "file": "ACT_14.png",
-    "source_version": "emoji-v1",
+    "source_version": "character-v1",
     "width": 1448,
     "height": 1086,
-    "sha256": "26ff45fc3ab8c4fc91fa95fa5a7410d4ca4ee16dccbf712b4b3fe59c964f42cc"
+    "sha256": "03f01c571dcaf001664ed05d55a8e030e93942e3c719d45165972e532410032f"
   },
   {
     "card_id": "ACT_15",
     "file": "ACT_15.png",
-    "source_version": "emoji-v1",
+    "source_version": "character-v1",
     "width": 1448,
     "height": 1086,
-    "sha256": "fcd3cc92172bebfc46dc4d0f167b5d6bd23f7f5d0a9bf2e38661dbe550cc9349"
+    "sha256": "cdaacd029476bc47358e272540eb1912c6f9c7e47491770e49d7160db597668c"
   },
   {
     "card_id": "TRP_06",
