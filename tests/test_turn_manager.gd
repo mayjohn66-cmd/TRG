@@ -108,11 +108,11 @@ func test_reroll_queues_multiple_moves_each_with_its_own_pawn_choice() -> void:
 
 func test_law_pipeline_modifies_roll_before_move() -> void:
 	var manager: TurnManager = _new_manager()
-	add_law(manager.state, &"LAW_06")
+	manager.state.rulebook.add_personal("SUPER_10", 1)
 	_set_tool(manager, 1, ScriptedTool.new([6]))
 	_do(manager, 1, &"proceed")
 	_do(manager, 1, &"roll")
-	check_eq(manager.move_queue, int_array([9]), "LAW_06(아우토반)이 눈금 6에 +3칸 = 9")
+	check_eq(manager.move_queue, int_array([9]), "아우토반 니트로(개인 패시브)가 눈금 6에 +3칸 = 9")
 	_dispose(manager)
 
 
@@ -282,7 +282,7 @@ func test_yut_stack_choice_defaults_to_stacking_on_timeout_and_rejects_wrong_act
 	_dispose(manager)
 
 
-func test_stack_choice_is_skipped_for_non_yut_pawns_law_02_and_headless_default() -> void:
+func test_stack_choice_is_skipped_for_non_yut_pawns_and_headless_default() -> void:
 	var plain: TurnManager = _new_manager()
 	plain.stack_choice_enabled = true
 	place(plain.state, 12, 4, [3])
@@ -293,17 +293,6 @@ func test_stack_choice_is_skipped_for_non_yut_pawns_law_02_and_headless_default(
 	_do(plain, 1, &"select_pawn", {"pawn_id": 11})
 	check(not plain.stack_offer_pending(), "일반 기물은 선택을 묻지 않음")
 	_dispose(plain)
-	var sealed: TurnManager = _new_manager(2, true, {1: [Vector2i(GameEnums.PawnKind.YUT, 1), 0, 0, 0]})
-	sealed.stack_choice_enabled = true
-	add_law(sealed.state, &"LAW_02")
-	place(sealed.state, 12, 4, [3])
-	place(sealed.state, 11, 2, [1])
-	_set_tool(sealed, 1, ScriptedTool.new([2]))
-	_do(sealed, 1, &"proceed")
-	_do(sealed, 1, &"roll")
-	_do(sealed, 1, &"select_pawn", {"pawn_id": 11})
-	check(not sealed.stack_offer_pending() and sealed.state.get_pawn(12).carrier == null, "LAW_02가 있으면 제안 자체가 없음")
-	_dispose(sealed)
 	var auto: TurnManager = _new_manager(2, true, {1: [Vector2i(GameEnums.PawnKind.YUT, 1), 0, 0, 0]})
 	place(auto.state, 12, 4, [3])
 	place(auto.state, 11, 2, [1])

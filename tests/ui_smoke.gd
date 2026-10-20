@@ -553,6 +553,11 @@ func _finish() -> bool:
 			_assert(int(ranking.get_child(0).get_meta("rank")) == 1 and int(ranking.get_child(0).get_meta("player")) == _board.state.winner, "1등 줄은 승자")
 			for index: int in ranking.get_child_count():
 				_assert(int(ranking.get_child(index).get_meta("rank")) == index + 1, "순위는 1등부터 차례대로")
+	# 🏆 법전 슬롯 툴팁: 조건과 모두의 진행도
+	_board.state.rulebook.set_laws_from_ids(["LAW_01"])
+	_board._fill_law_tip(0)
+	_assert(_board._tip_title.text.contains("투기장의 지배자"), "법전 툴팁 제목")
+	_assert(_board._tip_skill.visible and _board._tip_skill.text.split("\n").size() == _board._player_ids.size() and _board._tip_skill.text.contains("/6 처치"), "법전 툴팁에 플레이어마다 진행도 줄: " + _board._tip_skill.text)
 	for round_number: int in _draft_rounds:
 		_assert(GameEnums.is_draft_round(round_number), "드래프트는 1라운드부터 3라운드마다만 열려야 한다 (%d)" % round_number)
 	if _failures.is_empty():

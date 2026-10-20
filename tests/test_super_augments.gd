@@ -24,7 +24,7 @@ func _def(effect: StringName) -> AugmentDef:
 
 
 func test_ten_super_augments_are_registered_with_names_and_descriptions() -> void:
-	check_eq(SuperAugments.ALL_IDS.size(), 10, "초증강 10종")
+	check_eq(SuperAugments.ALL_IDS.size(), 12, "초증강 12종")
 	var state: GameState = _state()
 	for effect: StringName in SuperAugments.ALL_IDS:
 		var def: AugmentDef = _def(effect)
@@ -34,7 +34,7 @@ func test_ten_super_augments_are_registered_with_names_and_descriptions() -> voi
 	check_eq(AugmentDef.category_name(GameEnums.AugmentCategory.SUPER_GAMBLE), "초증강 : 도박 & 억까", "카테고리 이름")
 	check_eq(SuperAugments.display_name(SuperAugments.FLIP), "[초증강] 판 뒤집기 (모 아니면 도)", "1번 이름")
 	check_eq(SuperAugments.display_name(SuperAugments.REDISTRIBUTE), "[초증강] 공산주의 재분배", "2번 이름")
-	check_eq(SuperAugments.display_name(SuperAugments.DICTATOR), "[초증강] 독재자의 날조", "10번 이름")
+	check_eq(SuperAugments.display_name(SuperAugments.NITRO), "[초증강] 아우토반 니트로", "10번 이름")
 
 
 func test_availability_depends_on_the_board() -> void:
@@ -207,18 +207,18 @@ func test_sniper_ejects_the_leading_enemy_boosts_mine_and_drops_a_cannon() -> vo
 		cannon = cannon or (attachment.attachment_id == "TRP_05" and attachment.owner_id == 1)
 	check(cannon, "사출된 자리에 스프링 대포")
 
-
-func test_dictator_replaces_the_rulebook_and_advances_a_pawn() -> void:
+func test_personal_passive_supers_stay_for_the_rest_of_the_game() -> void:
 	var state: GameState = _state()
-	state.rulebook.enqueue_law(LawRegistry.create("LAW_04"))
-	state.rulebook.enqueue_law(LawRegistry.create("LAW_06"))
-	var pawn: PlayerPawn = _place(state, 11, 5)
-	var distance_before: int = state.pawn_progress_distance(pawn)
-	var result: Dictionary = SuperAugments.apply(SuperAugments.DICTATOR, state, 1)
-	check(bool(result["ok"]), "독재자")
-	check_eq(state.rulebook.law_ids().size(), 2, "새 교칙 2개만 남는다")
-	check(not state.rulebook.has_law("LAW_04") and not state.rulebook.has_law("LAW_06"), "옛 교칙은 전부 밀려났다")
-	check(state.pawn_progress_distance(pawn) <= distance_before - 4, "내 말 +4칸 이상 전진 (점프 코너 등 보드 규칙이 그대로 적용된다: %d -> %d)" % [distance_before, state.pawn_progress_distance(pawn)])
+	for effect: StringName in SuperAugments.PERSONAL:
+		check(SuperAugments.is_available(effect, state, 1), "%s 선택 가능" % effect)
+		check(bool(SuperAugments.apply(effect, state, 1)["ok"]), "%s 적용" % effect)
+		check(state.rulebook.has_personal(String(effect), 1), "%s 개인 패시브 등록" % effect)
+		check(not SuperAugments.is_available(effect, state, 1), "%s 두 번은 받지 않는다" % effect)
+		check(SuperAugments.is_available(effect, state, 2), "%s 다른 사람은 받을 수 있다" % effect)
+	check(state.rulebook.law_ids().is_empty(), "법전 슬롯은 비어 있다")
+	var restored: GameState = _state()
+	TurnSnapshot.from_dict(TurnSnapshot.capture(state).to_dict()).restore(restored)
+	check(restored.rulebook.has_personal("SUPER_11", 1), "스냅샷으로 복원된다")
 
 
 func test_super_category_appears_at_most_once_per_draft_and_not_every_time() -> void:

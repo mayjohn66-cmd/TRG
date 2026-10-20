@@ -117,7 +117,7 @@ func _default_text(state: GameState, player_id: int) -> String:
 			return "◆ 내 판정 도구 즉시 교체\n%s" % ToolRegistry.table_line(payload)
 		GameEnums.AugmentCategory.LAW_ENACT:
 			var law: LawResource = LawRegistry.create(payload)
-			return "◆ %s\n◆ 법전 즉시 등록 (4칸 초과 시 선입 삭제)" % law.description
+			return "◆ 승리 조건: %s\n◆ 먼저 달성한 사람이 다음 순위로 졸업 (달성되면 법전에서 삭제)\n◆ 법전 4칸 (초과 시 가장 오래된 교칙 삭제)\n◆ 법전 슬롯에 마우스를 올리면 모두의 진행도" % law.description
 		GameEnums.AugmentCategory.SUPER_GAMBLE:
 			return SuperAugments.describe(payload)
 	return "◆ 무작위 생떼 카드 2장 획득"
@@ -158,8 +158,9 @@ func _apply_tool(state: GameState, player_id: int) -> Dictionary:
 
 func _apply_law(state: GameState) -> Dictionary:
 	var law: LawResource = LawRegistry.create(payload)
+	SpecialVictory.on_law_enacted(state, law)
 	state.rulebook.enqueue_law(law)
-	return {"ok": true, "text": "교칙 [%s] %s 제정" % [law.law_id, law.law_name]}
+	return {"ok": true, "text": "특수 승리 교칙 [%s] 제정: %s" % [law.law_name, law.description]}
 
 
 func _apply_cards(state: GameState, player_id: int) -> Dictionary:

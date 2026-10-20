@@ -1209,6 +1209,7 @@ func _build_law_board() -> void:
 		desc_label.max_lines_visible = 2
 		desc_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		text_box.add_child(desc_label)
+		_bind_tip(slot_panel, _fill_law_tip.bind(_law_slots.size()))
 		_law_slots.append(slot_panel)
 		_law_labels.append(name_label)
 		_law_descs.append(desc_label)
@@ -2648,10 +2649,12 @@ func _refresh_laws() -> void:
 			var flashing: bool = _flash_law_ids.has(law.law_id)
 			_law_slots[slot].add_theme_stylebox_override("panel", UiSkin.panel("inset_flash" if flashing else "inset_active", 8.0))
 			_law_badge_labels[slot].text = law.law_id.trim_prefix("LAW_")
-			_law_labels[slot].text = law.law_name
-			_law_labels[slot].add_theme_color_override("font_color", UiSkin.INK)
+			# 누군가 달성 직전이면 이름 앞에 경고 표시 (자세한 진행도는 마우스를 올리면 나온다).
+			var danger: bool = law is VictoryLaw and SpecialVictory.progress_rows(state, law as VictoryLaw).any(func(row: Dictionary) -> bool: return bool(row["danger"]) and not bool(row["done"]))
+			_law_labels[slot].text = ("⚠ " if danger else "") + law.law_name
+			_law_labels[slot].add_theme_color_override("font_color", Color("c92a2a") if danger else UiSkin.INK)
 			_law_descs[slot].text = law.description
-			_law_slots[slot].tooltip_text = "[%s] %s\n%s" % [law.law_id, law.law_name, law.description]
+			_law_slots[slot].tooltip_text = ""
 		else:
 			_law_slots[slot].add_theme_stylebox_override("panel", UiSkin.panel("inset", 8.0))
 			_law_labels[slot].text = ""
@@ -3205,6 +3208,35 @@ func _fill_pawn_tip(pawn_id: int) -> void:
 	_tip_skill.visible = skill != &""
 	if skill != &"":
 		_tip_skill.text = "◆ [1회] %s%s\n   %s" % [PawnCatalog.skill_name(skill), "  (사용됨)" if pawn.skill_used else "", PawnCatalog.skill_text(skill)]
+
+
+## 법전 슬롯 툴팁: 특수 승리 조건과 모두의 실시간 진행도 ("P2  3/6 처치  [위험!]").
+func _fill_law_tip(slot: int) -> void:
+	if state == null or slot >= state.rulebook.active_laws_queue.size():
+		_tip_title.text = "빈 법전 슬롯"
+		_tip_ability.text = "특수 승리 교칙이 제정되면 여기에 올라옵니다 (3라운드부터 드래프트)"
+		_tip_skill.visible = false
+		return
+	var law: LawResource = state.rulebook.active_laws_queue[slot]
+	_tip_title.text = "🏆 [특수 승리] %s" % law.law_name
+	_tip_ability.text = "◆ 조건: %s\n◆ 먼저 달성한 사람이 다음 순위로 졸업하고, 이 교칙은 법전에서 사라집니다" % law.description
+	_tip_skill.visible = law is VictoryLaw
+	if law is VictoryLaw:
+		_tip_skill.text = law_progress_text(state, law as VictoryLaw, _player_name)
+
+
+## 진행도 줄들 (툴팁·테스트 공용).
+static func law_progress_text(game: GameState, law: VictoryLaw, name_of: Callable) -> String:
+	var lines: Array[String] = []
+	for row: Dictionary in SpecialVictory.progress_rows(game, law):
+		var player_id: int = int(row["player"])
+		var line: String = "%s  %d/%d %s" % [name_of.call(player_id), int(row["value"]), int(row["goal"]), law.unit()]
+		if bool(row["done"]):
+			line += "  (%d위 졸업)" % (game.rankings.find(player_id) + 1)
+		elif bool(row["danger"]):
+			line += "  [위험!]"
+		lines.append(line)
+	return "\n".join(lines)
 
 
 func _bind_tip(control: Control, provider: Callable) -> void:
@@ -6619,7 +6651,7 @@ func _announce_law_added(new_law: LawResource, removed_law: LawResource) -> void
 	var body: String = new_law.description
 	if removed_law != null:
 		body += "\n(가장 오래된 [%s] %s이(가) 밀려났습니다)" % [removed_law.law_id, removed_law.law_name]
-	_announce("법전 개정", "새 교칙: %s" % new_law.law_name, body, COLOR_GOLD, board, 2.6)
+	_announce("법전 개정", "새 특수 승리 교칙: %s" % new_law.law_name, body, COLOR_GOLD, board, 2.6)
 
 
 ## 카드 사용 알림에 붙일 카드 앞면 (손패 카드와 같은 모양, 클릭 불가).

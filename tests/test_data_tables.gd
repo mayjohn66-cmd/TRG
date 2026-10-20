@@ -78,7 +78,7 @@ func test_every_augment_is_in_the_table_exactly_once_with_valid_fields() -> void
 			check(str(row["title"]) != "" and str(row["desc"]) != "", "%s: title·desc가 있다" % id)
 	for def: AugmentDef in AugmentRegistry.all():
 		check(seen.has(str(def.augment_id)), "%s: 코드의 증강이 표에 빠지지 않았다" % def.augment_id)
-	check_eq(AugmentRegistry.all().size(), 50, "증강 50종 (기물 19 + 도구 12 + 교칙 8 + 카드 1 + 초증강 10)")
+	check_eq(AugmentRegistry.all().size(), 52, "증강 52종 (기물 19 + 도구 12 + 교칙 8 + 카드 1 + 초증강 12)")
 	for rule_id: String in ["RULE_REVENGE_BOOST", "RULE_DASH_PAD", "RULE_LEAPFROG"]:
 		check(seen.has(rule_id), "%s 규칙 수치 행" % rule_id)
 
@@ -111,8 +111,6 @@ func test_defaults_from_the_table_keep_the_original_numbers() -> void:
 	check_eq(SuperAugments.raid_ghosts(), 1, "고스트 1마리")
 	check_eq(SuperAugments.bakery_cards(), 3, "빵집 털이 카드 3장")
 	check_eq(SuperAugments.sniper_advance(), 4, "저격수 +4")
-	check_eq(SuperAugments.dictator_laws(), 2, "독재자 교칙 2개")
-	check_eq(SuperAugments.dictator_advance(), 4, "독재자 +4")
 	check_eq(SuperAugments.gambler_multiplier(), 2, "도박사 x2")
 	check_eq(SuperAugments.gambler_overheat_at(), 1, "도박사 과열 눈금 1")
 	check_eq(GameData.revenge_bonus(), 4, "리벤지 +4")
@@ -120,7 +118,9 @@ func test_defaults_from_the_table_keep_the_original_numbers() -> void:
 	check_eq(GameData.leapfrog_max(), 3, "점프 최대 +3")
 	check_eq(LawAutobahn.boost_steps(), 3, "아우토반 +3")
 	check_eq(LawAutobahn.threshold(), 5, "아우토반 눈금 5")
-	check_eq(LawFrogCurse.nitro_bonus(), 3, "니트로 +3")
+	check_eq(LawRunawayTrain.charge_steps(), 4, "폭주 기관차 +4")
+	check_eq((LawRegistry.create("LAW_01") as VictoryLaw).goal(), 6, "투기장 6처치")
+	check_eq((LawRegistry.create("LAW_04") as VictoryLaw).goal(), 16, "한방 16칸")
 
 
 # --- enabled / weight / min_round ------------------------------------------------------------
@@ -138,17 +138,13 @@ func test_disabling_an_augment_in_the_table_removes_it_from_every_draft() -> voi
 		found = found or AugmentRegistry.generate_offers(state2, 1, 5).has(&"CARD_PACKAGE")
 	check(found, "켜면 다시 나온다")
 
-
-func test_disabled_super_augment_and_law_are_not_available_and_dictator_skips_the_law() -> void:
+func test_disabled_super_augment_and_law_are_not_available() -> void:
 	_edit_augment("SUPER_01", {"enabled": "FALSE"})
 	check(not AugmentRegistry.get_def(&"SUPER_01").is_available(make_state(2, 3), 1), "꺼진 초증강은 선택 불가")
 	_edit_augment("AUG_LAW_07", {"enabled": "FALSE"})
-	for seed_value: int in 15:
-		var state: GameState = make_state(2, 11 + seed_value)
-		place(state, 11, 5, [4])
-		var result: Dictionary = SuperAugments.apply(&"SUPER_10", state, 1)
-		check(bool(result["ok"]), "독재자 적용")
-		check(not state.rulebook.law_ids().has("LAW_07"), "꺼 둔 교칙은 날조로도 제정되지 않는다")
+	var state: GameState = make_state(2, 3)
+	state.round_number = 5
+	check(not AugmentRegistry.get_def(&"AUG_LAW_07").is_available(state, 1), "꺼진 교칙은 선택 불가")
 
 
 func test_weight_zero_excludes_and_weights_steer_the_draft() -> void:
@@ -159,7 +155,9 @@ func test_weight_zero_excludes_and_weights_steer_the_draft() -> void:
 	AugmentRegistry.reload()
 	for seed_value: int in 20:
 		var names: Array[String] = []
-		for offered: StringName in AugmentRegistry.generate_offers(make_state(2, seed_value + 1), 1):
+		var weighted_state: GameState = make_state(2, seed_value + 1)
+		weighted_state.round_number = 3  # 특수 승리 교칙은 3라운드부터
+		for offered: StringName in AugmentRegistry.generate_offers(weighted_state, 1):
 			names.append(str(offered))
 		names.sort()
 		check_eq(names, ["AUG_LAW_04", "CARD_PACKAGE", "TOOL_YUT"] as Array[String], "가중치가 0이 아닌 3종만 나온다 (시드 %d)" % seed_value)
@@ -231,13 +229,12 @@ func test_super_augment_params_change_the_game_logic() -> void:
 
 
 func test_law_params_change_the_dice_rules() -> void:
-	_edit_augment("AUG_LAW_04", {"param_1": "7"})
+	_edit_augment("AUG_LAW_01", {"param_1": "2"})
 	var state: GameState = make_state(2, 3)
-	var ctx: RuleContext = make_ctx(state, 2)
-	ctx = LawFrogCurse.new().intercept(ctx)
-	check_eq(ctx.dice_value, 9, "짝수 눈금 2 + 표의 7")
-	check(LawFrogCurse.new().description.contains("+7칸"), "법전 문구도 7로 바뀐다")
-	_edit_augment("AUG_LAW_06", {"param_1": "10", "param_2": "3"})
+	var arena: VictoryLaw = LawRegistry.create("LAW_01")
+	check_eq(arena.goal(), 2, "표의 목표 처치 수")
+	check(arena.description.contains("2회"), "법전 문구도 2로 바뀐다")
+	_edit_augment("SUPER_10", {"param_1": "10", "param_2": "3"})
 	var ctx2: RuleContext = make_ctx(state, 3)
 	ctx2 = LawAutobahn.new().intercept(ctx2)
 	check_eq(ctx2.dice_value, 13, "눈금 3 이상이면 +10")
@@ -333,7 +330,7 @@ func test_missing_or_empty_table_falls_back_to_code_defaults() -> void:
 	GameData.override_table("dice", [] as Array[Dictionary])
 	GameData.override_table("cards", [] as Array[Dictionary])
 	AugmentRegistry.reload()
-	check_eq(AugmentRegistry.all().size(), 50, "표가 비어도 증강 50종이 코드 기본값으로 만들어진다")
+	check_eq(AugmentRegistry.all().size(), 52, "표가 비어도 증강 52종이 코드 기본값으로 만들어진다")
 	check_eq(GameData.revenge_bonus(), 4, "규칙 수치 기본값")
 	check_eq(SuperAugments.minefield_count(), 5, "초증강 수치 기본값")
 	check(CardRegistry.default_deck().size() > 0, "카드 덱 기본값")

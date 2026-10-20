@@ -30,14 +30,14 @@ TOOL_DICE_TAROT,TRUE,DICE,NORMAL,100,1,[판정 도구] 점성술사의 타로 �
 TOOL_DICE_YACHT,TRUE,DICE,NORMAL,100,1,[판정 도구] 야추 다이스,판정 도구 교체,◆ 내 판정 도구 즉시 교체,,,,DICE_YACHT,dice/DICE_YACHT.png
 TOOL_DICE_BLACKJACK,TRUE,DICE,NORMAL,100,1,[판정 도구] 블랙잭 21 딜러,판정 도구 교체,◆ 내 판정 도구 즉시 교체,,,,DICE_BLACKJACK,dice/DICE_BLACKJACK.png
 TOOL_DICE_PINBALL,TRUE,DICE,NORMAL,100,1,[판정 도구] 클래식 구슬 핀볼,판정 도구 교체,◆ 내 판정 도구 즉시 교체,,,,DICE_PINBALL,dice/DICE_PINBALL.png
-AUG_LAW_01,TRUE,LAW,NORMAL,100,1,[교칙 제정] 지름길 공사 중,교칙 제정,◆ 점프 코너·포탈 작동 중지\n◆ 법전 즉시 등록 (4칸 초과 시 선입 삭제),,,,LAW_01,laws/LAW_01.png
-AUG_LAW_02,TRUE,LAW,NORMAL,100,1,[교칙 제정] 사회적 거리두기,교칙 제정,◆ 아군 말 업기(합체) 금지\n◆ 법전 즉시 등록 (4칸 초과 시 선입 삭제),,,,LAW_02,laws/LAW_02.png
-AUG_LAW_03,TRUE,LAW,NORMAL,100,1,[교칙 제정] 볼따구 평등법,교칙 제정,◆ 눈금 {p1}+ 이동 후 꼴찌 말과 위치 교환\n◆ 법전 즉시 등록 (4칸 초과 시 선입 삭제),,6,,LAW_03,laws/LAW_03.png
-AUG_LAW_04,TRUE,LAW,NORMAL,100,1,[교칙 제정] 짝수 니트로 부스터,교칙 제정,◆ 짝수 눈금이 나오면 이동 거리 +{p1}칸 증폭!\n◆ 법전 즉시 등록 (4칸 초과 시 선입 삭제),,3,,LAW_04,laws/LAW_04.png
-AUG_LAW_05,TRUE,LAW,NORMAL,100,1,[교칙 제정] 폭주 기관차,교칙 제정,◆ 적 처치 시 재굴림 대신 +{p1}칸 돌진\n◆ 법전 즉시 등록 (4칸 초과 시 선입 삭제),,3,,LAW_05,laws/LAW_05.png
-AUG_LAW_06,TRUE,LAW,NORMAL,100,1,[교칙 제정] 아우토반 무제한 과속,교칙 제정,◆ 눈금 {p2} 이상 굴림 시 +{p1}칸 추가 가속!\n◆ 법전 즉시 등록 (4칸 초과 시 선입 삭제),,3,5,LAW_06,laws/LAW_06.png
-AUG_LAW_07,TRUE,LAW,NORMAL,100,1,[교칙 제정] 강제 연대보증,교칙 제정,◆ 피격 시 상대 다른 말 1개 동반 처치\n◆ 법전 즉시 등록 (4칸 초과 시 선입 삭제),,,,LAW_07,laws/LAW_07.png
-AUG_LAW_08,TRUE,LAW,NORMAL,100,1,[교칙 제정] 결승선 문턱,교칙 제정,◆ 결승선은 정확한 눈금으로만 입장! 남으면 바로 앞에서 정지\n◆ 법전 즉시 등록 (4칸 초과 시 선입 삭제),,,,LAW_08,laws/LAW_08.png
+AUG_LAW_01,TRUE,LAW,GOLD,20,3,[특수 승리] 투기장의 지배자,특수 승리 교칙,◆ 승리 조건: 적 말을 {p1}회 처치\n◆ 먼저 달성한 사람이 다음 순위로 졸업 (달성되면 법전에서 삭제),◆ 법전 4칸 (초과 시 가장 오래된 교칙 삭제)\n◆ 법전 슬롯에 마우스를 올리면 모두의 진행도,6,,LAW_01,laws/LAW_01.png
+AUG_LAW_02,TRUE,LAW,GOLD,20,3,[특수 승리] 봉인된 에르핀의 식권,특수 승리 교칙,◆ 승리 조건: 내 턴 시작 시 손패 {p1}장 이상\n◆ 먼저 달성한 사람이 다음 순위로 졸업 (달성되면 법전에서 삭제),◆ 법전 4칸 (초과 시 가장 오래된 교칙 삭제)\n◆ 법전 슬롯에 마우스를 올리면 모두의 진행도,5,,LAW_02,laws/LAW_02.png
+AUG_LAW_03,TRUE,LAW,GOLD,20,3,[특수 승리] 엘리아스 부동산 재벌,특수 승리 교칙,◆ 승리 조건: 내 설치물(호텔·함정) {p1}개를 보드에 동시 유지\n◆ 먼저 달성한 사람이 다음 순위로 졸업 (달성되면 법전에서 삭제),◆ 법전 4칸 (초과 시 가장 오래된 교칙 삭제)\n◆ 법전 슬롯에 마우스를 올리면 모두의 진행도,5,,LAW_03,laws/LAW_03.png
+AUG_LAW_04,TRUE,LAW,GOLD,15,3,[특수 승리] 카이지의 한방 역전법,특수 승리 교칙,◆ 승리 조건: 한 번의 이동으로 {p1}칸 이상 전진\n◆ 먼저 달성한 사람이 다음 순위로 졸업 (달성되면 법전에서 삭제),◆ 법전 4칸 (초과 시 가장 오래된 교칙 삭제)\n◆ 법전 슬롯에 마우스를 올리면 모두의 진행도,16,,LAW_04,laws/LAW_04.png
+AUG_LAW_05,TRUE,LAW,GOLD,20,3,[특수 승리] 사도 포위망,특수 승리 교칙,◆ 승리 조건: 말 {p1}개 모두 트랙 위에서 서로 3칸 이상 간격\n◆ 먼저 달성한 사람이 다음 순위로 졸업 (달성되면 법전에서 삭제),◆ 법전 4칸 (초과 시 가장 오래된 교칙 삭제)\n◆ 법전 슬롯에 마우스를 올리면 모두의 진행도,4,,LAW_05,laws/LAW_05.png
+AUG_LAW_06,TRUE,LAW,GOLD,15,3,[특수 승리] 해탈한 동네북의 역습,특수 승리 교칙,◆ 승리 조건: 내 말이 {p1}회 장외 사출당함\n◆ 먼저 달성한 사람이 다음 순위로 졸업 (달성되면 법전에서 삭제),◆ 법전 4칸 (초과 시 가장 오래된 교칙 삭제)\n◆ 법전 슬롯에 마우스를 올리면 모두의 진행도,8,,LAW_06,laws/LAW_06.png
+AUG_LAW_07,TRUE,LAW,GOLD,15,3,[특수 승리] 초전도체 무한 동력,특수 승리 교칙,◆ 승리 조건: 한 턴에 주사위 {p1}연속 굴림\n◆ 먼저 달성한 사람이 다음 순위로 졸업 (달성되면 법전에서 삭제),◆ 법전 4칸 (초과 시 가장 오래된 교칙 삭제)\n◆ 법전 슬롯에 마우스를 올리면 모두의 진행도,4,,LAW_07,laws/LAW_07.png
+AUG_LAW_08,TRUE,LAW,GOLD,20,3,[특수 승리] 다크호스의 하극상,특수 승리 교칙,◆ 승리 조건: 완주 0개인 채로 선두의 말을 {p1}회 처치\n◆ 먼저 달성한 사람이 다음 순위로 졸업 (달성되면 법전에서 삭제),◆ 법전 4칸 (초과 시 가장 오래된 교칙 삭제)\n◆ 법전 슬롯에 마우스를 올리면 모두의 진행도,3,,LAW_08,laws/LAW_08.png
 CARD_PACKAGE,TRUE,CARD,NORMAL,100,1,[카드 패키지] 생떼 카드 {p1}장,생떼 카드 패키지,◆ 무작위 생떼 카드 {p1}장 획득,,2,,CARD_PACKAGE,augments/CARD_PACKAGE.png
 SUPER_01,TRUE,CHAOS,PRISMA,50,1,[초증강] 판 뒤집기 (모 아니면 도),초증강 : 도박 & 억까,◆ 보드 위 내 말 1개를 무작위로 골라\n◆ {p1}% 즉시 결승선 완주!\n◆ 실패하면 출발선 추방 + 다음 턴 휴식,,50,,SUPER_01,augments/SUPER_01.png
 SUPER_02,TRUE,CHAOS,PRISMA,50,1,[초증강] 공산주의 재분배,초증강 : 도박 & 억까,◆ 1등의 가장 앞선 말 ↔ 내 가장 뒤처진 말 위치 강제 교환\n◆ 1등의 손패 카드 1장 강탈,,,,SUPER_02,augments/SUPER_02.png
@@ -48,7 +48,9 @@ SUPER_06,TRUE,CHAOS,PRISMA,50,1,[초증강] 주사위 도박사의 영혼,초증
 SUPER_07,TRUE,CHAOS,PRISMA,50,1,[초증강] 강제 캐슬링 룰렛,초증강 : 도박 & 억까,◆ 보드 위 모든 플레이어 말의 위치를 무작위로 전부 섞는다,,,,SUPER_07,augments/SUPER_07.png
 SUPER_08,TRUE,CHAOS,PRISMA,50,1,[초증강] 에르핀의 빵집 털이,초증강 : 도박 & 억까,◆ 무작위 생떼 카드 {p1}장 획득\n◆ 모든 빵집 타일에 내 통행료 호텔 설치,,3,,SUPER_08,augments/SUPER_08.png
 SUPER_09,TRUE,CHAOS,PRISMA,50,1,[초증강] 저격수의 표적,초증강 : 도박 & 억까,◆ 가장 앞선 적 말 1개를 즉시 0번 출발선으로 장외 사출\n◆ 내 말 1개를 +{p1}칸 전진 + 그 자리에 스프링 대포 설치,,4,,SUPER_09,augments/SUPER_09.png
-SUPER_10,TRUE,CHAOS,PRISMA,50,1,[초증강] 독재자의 날조,초증강 : 도박 & 억까,◆ 중앙 법전을 전부 밀어내고 새 교칙 {p1}개 강제 등록\n◆ 내 말 1개 +{p2}칸 전진,,2,4,SUPER_10,augments/SUPER_10.png
+SUPER_10,TRUE,CHAOS,PRISMA,50,1,[초증강] 아우토반 니트로,초증강 : 영구 패시브,◆ 남은 게임 내내 내 눈금이 짝수이거나 {p2} 이상이면 +{p1}칸!,,3,5,SUPER_10,augments/SUPER_10.png
+SUPER_11,TRUE,CHAOS,PRISMA,50,1,[초증강] 폭주 기관차,초증강 : 영구 패시브,◆ 남은 게임 내내 내 말이 적을 처치하면 그 자리에서 +{p1}칸 돌진!,,4,,SUPER_11,augments/SUPER_11.png
+SUPER_12,TRUE,CHAOS,PRISMA,50,1,[초증강] 강제 연대보증,초증강 : 영구 패시브,◆ 남은 게임 내내 내 말이 잡히면\n◆ 공격자의 다른 말 1개 동반 처치 + 카드 1장,,,,SUPER_12,augments/SUPER_12.png
 RULE_REVENGE_BOOST,TRUE,RULE,NORMAL,0,1,🔥 리벤지 부스터,규칙 수치,출발선으로 사출된 말이 다음 출발 때 이동 거리 +{p1}칸 (enabled=FALSE면 꺼짐),,4,,REVENGE,
 RULE_DASH_PAD,TRUE,RULE,NORMAL,0,1,⚡ 부스터 발판,규칙 수치,발판 칸에 멈추면 앞으로 {p1}칸 추가 전진 (enabled=FALSE면 꺼짐),,3,,DASH,
 RULE_LEAPFROG,TRUE,RULE,NORMAL,0,1,🏃 말 밟고 점프,규칙 수치,"경로 중간의 말 하나마다 +{p1}칸, 한 번에 최대 +{p2}칸 (enabled=FALSE면 꺼짐)",,1,3,LEAPFROG,

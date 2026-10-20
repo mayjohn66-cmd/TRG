@@ -1,6 +1,6 @@
 # File: res://core_engine/commands/expel_pawn_command.gd
 # Class: class_name ExpelPawnCommand
-# Role: LAW_07 후속 효과 - 지정한 말(업힌 말 포함)을 출발선으로 동반 추방
+# Role: 후속 효과 (강제 연대보증 등) - 지정한 말(업힌 말 포함)을 출발선으로 동반 추방
 class_name ExpelPawnCommand
 extends GameCommand
 

@@ -145,16 +145,6 @@ func test_negative_dice_values_are_clamped_to_zero() -> void:
 	var report: MoveReport = move(state, 11, -4)
 	check(report.path.is_empty() and state.get_pawn(11).current_tile_idx == 8, "후퇴 눈금은 0칸")
 
-
-func test_even_nitro_law_adds_three_to_even_rolls_only() -> void:
-	var state: GameState = make_state()
-	add_law(state, "LAW_04")
-	check_eq(run_timing(state, make_ctx(state, 2), RuleContext.ON_DICE_ROLL).dice_value, 5, "짝수 2 -> 5")
-	check_eq(run_timing(state, make_ctx(state, 6), RuleContext.ON_DICE_ROLL).dice_value, 9, "짝수 6 -> 9")
-	check_eq(run_timing(state, make_ctx(state, 3), RuleContext.ON_DICE_ROLL).dice_value, 3, "홀수는 그대로 (후퇴 없음)")
-	check_eq(LawRegistry.create("LAW_04").law_name, "짝수 니트로 부스터", "법전 이름")
-
-
 func test_tower_scatters_only_forward() -> void:
 	var state: GameState = make_state()
 	check_eq(TarotEffects.tower_scatter_tiles(state, 8), int_array([9, 10]), "탑은 앞쪽 1~2칸으로만 흩는다")

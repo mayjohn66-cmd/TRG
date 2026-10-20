@@ -13,9 +13,13 @@ const GAMBLER: StringName = &"SUPER_06"        # 주사위 도박사의 영혼
 const CASTLING: StringName = &"SUPER_07"       # 강제 캐슬링 룰렛
 const BAKERY: StringName = &"SUPER_08"         # 에르핀의 빵집 털이
 const SNIPER: StringName = &"SUPER_09"         # 저격수의 표적
-const DICTATOR: StringName = &"SUPER_10"       # 독재자의 날조
+const NITRO: StringName = &"SUPER_10"          # 아우토반 니트로 (개인 영구 패시브)
+const RUNAWAY: StringName = &"SUPER_11"        # 폭주 기관차 (개인 영구 패시브)
+const GUARANTEE: StringName = &"SUPER_12"      # 강제 연대보증 (개인 영구 패시브)
 
-const ALL_IDS: Array[StringName] = [FLIP, REDISTRIBUTE, DEVIL, MINEFIELD, RAID, GAMBLER, CASTLING, BAKERY, SNIPER, DICTATOR]
+const ALL_IDS: Array[StringName] = [FLIP, REDISTRIBUTE, DEVIL, MINEFIELD, RAID, GAMBLER, CASTLING, BAKERY, SNIPER, NITRO, RUNAWAY, GUARANTEE]
+## 남은 게임 내내 그 플레이어에게만 작동하는 패시브 (RuleBookManager.personal_laws, 법전 슬롯을 차지하지 않는다).
+const PERSONAL: Array[StringName] = [NITRO, RUNAWAY, GUARANTEE]
 
 ## 수치 기본값 (content_trickcal/data/augments_table.csv의 param_1·param_2가 비어 있을 때만 쓴다).
 const FLIP_FINISH_CHANCE_PERCENT: int = 50
@@ -25,8 +29,6 @@ const RAID_ROBBERS: int = 2
 const RAID_GHOSTS: int = 1
 const BAKERY_CARDS: int = 3
 const SNIPER_ADVANCE: int = 4
-const DICTATOR_LAWS: int = 2
-const DICTATOR_ADVANCE: int = 4
 const GAMBLER_MULTIPLIER: int = 2
 const GAMBLER_OVERHEAT_AT: int = 1
 
@@ -64,14 +66,6 @@ static func sniper_advance() -> int:
 	return maxi(param(SNIPER, 1, SNIPER_ADVANCE), 0)
 
 
-static func dictator_laws() -> int:
-	return maxi(param(DICTATOR, 1, DICTATOR_LAWS), 0)
-
-
-static func dictator_advance() -> int:
-	return maxi(param(DICTATOR, 2, DICTATOR_ADVANCE), 0)
-
-
 ## 도박사의 영혼: 이동 거리 배수와, 이 눈금 이하면 과열되는 기준.
 static func gambler_multiplier() -> int:
 	return maxi(param(GAMBLER, 1, GAMBLER_MULTIPLIER), 1)
@@ -94,7 +88,9 @@ const INFO: Dictionary = {
 	BAKERY: ["에르핀의 빵집 털이", "◆ 무작위 생떼 카드 3장 획득\n◆ 모든 빵집 타일에 내 통행료 호텔 설치"],
 	SNIPER: ["저격수의 표적", "◆ 가장 앞선 적 말 1개를 즉시 0번 출발선으로 장외 사출
 ◆ 내 말 1개를 +4칸 전진 + 그 자리에 스프링 대포 설치"],
-	DICTATOR: ["독재자의 날조", "◆ 중앙 법전을 전부 밀어내고 새 교칙 2개 강제 등록\n◆ 내 말 1개 +4칸 전진"],
+	NITRO: ["아우토반 니트로", "◆ 남은 게임 내내 내 눈금이 짝수이거나 5 이상이면 +3칸!"],
+	RUNAWAY: ["폭주 기관차", "◆ 남은 게임 내내 내 말이 적을 처치하면 그 자리에서 +4칸 돌진!"],
+	GUARANTEE: ["강제 연대보증", "◆ 남은 게임 내내 내 말이 잡히면\n◆ 공격자의 다른 말 1개 동반 처치 + 카드 1장"],
 }
 
 
@@ -166,8 +162,8 @@ static func is_available(effect: StringName, state: GameState, player_id: int) -
 			return board_leaders(state).size() >= 2
 		SNIPER:
 			return not board_leaders(state, -1, player_id).is_empty()
-		DICTATOR:
-			return not board_leaders(state, player_id).is_empty()
+		NITRO, RUNAWAY, GUARANTEE:
+			return not state.rulebook.has_personal(String(effect), player_id)
 	return true  # 도박사·빵집 털이는 언제든
 
 
@@ -183,7 +179,7 @@ static func apply(effect: StringName, state: GameState, player_id: int) -> Dicti
 		CASTLING: return _apply_castling(state)
 		BAKERY: return _apply_bakery(state, player_id)
 		SNIPER: return _apply_sniper(state, player_id)
-		DICTATOR: return _apply_dictator(state, player_id)
+		NITRO, RUNAWAY, GUARANTEE: return _apply_personal(effect, state, player_id)
 	return {"ok": false, "text": "알 수 없는 초증강입니다"}
 
 
@@ -335,37 +331,8 @@ static func _apply_sniper(state: GameState, player_id: int) -> Dictionary:
 	return {"ok": true, "text": "선두 적 말을 출발선으로 사출하고 내 말 +%d칸! 그 자리에 스프링 대포를 깔았습니다" % sniper_advance()}
 
 
-static func _apply_dictator(state: GameState, player_id: int) -> Dictionary:
-	var mine: Array[PlayerPawn] = board_leaders(state, player_id)
-	if mine.is_empty():
-		return {"ok": false, "text": "전진시킬 내 말이 없습니다"}
-	var old_ids: Array[String] = state.rulebook.law_ids()
-	var pool: Array[String] = []
-	for id: String in LawRegistry.ALL_IDS:
-		if GameData.enabled("augments", "AUG_%s" % id):  # CSV에서 꺼 둔 교칙은 날조 대상에서도 빠진다
-			pool.append(id)
-	if pool.is_empty():
-		pool.assign(LawRegistry.ALL_IDS)
-	var fresh: Array[String] = []
-	for id: String in pool:
-		if not old_ids.has(id):
-			fresh.append(id)
-	if fresh.size() < dictator_laws():
-		fresh = pool.duplicate()
-	state.rulebook.set_laws_from_ids([])
-	var chosen: Array[String] = []
-	for i: int in dictator_laws():
-		var pick: int = state.rng.randi_range(0, fresh.size() - 1)
-		chosen.append(fresh[pick])
-		fresh.remove_at(pick)
-	for id: String in chosen:
-		state.rulebook.enqueue_law(LawRegistry.create(id))
-	var mover: PlayerPawn = sorted_by_progress(state, mine)[0]
-	var ctx := RuleContext.new()
-	ctx.state = state
-	ctx.actor_id = player_id
-	ctx.dice_value = dictator_advance()
-	ctx.raw_roll = dictator_advance()
-	ctx.charge_depth = 1  # 이미 바뀐 새 법전이 이 전진을 다시 변조하지 않게 한다
-	MoveExecutor.execute(state, mover, ctx)
-	return {"ok": true, "text": "법전을 갈아엎고 새 교칙 %d개를 제정, 말 %d번 +%d칸 전진!" % [chosen.size(), mover.slot, dictator_advance()]}
+static func _apply_personal(effect: StringName, state: GameState, player_id: int) -> Dictionary:
+	if not state.rulebook.add_personal(String(effect), player_id):
+		return {"ok": false, "text": "이미 가진 패시브입니다"}
+	var law: LawResource = LawRegistry.create(String(effect))
+	return {"ok": true, "text": "[%s] 남은 게임 내내: %s" % [law.law_name, law.description]}

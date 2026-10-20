@@ -926,6 +926,10 @@ func _begin_turn(new_turn: bool = true) -> void:
 		return
 	if new_turn:
 		_tick_restraints(current_player_id())
+		# 🏆 봉인된 에르핀의 식권: 내 턴이 시작될 때의 손패를 기록하고, 특수 승리(설치물·포위망 포함)를 판정한다.
+		SpecialVictory.note_session(state, current_player_id(), VictoryLaw.HAND, (state.hands[current_player_id()] as Array).size())
+		if _check_victory(null):
+			return
 	_tick_owned_attachments(current_player_id())
 	state.turn_snapshot = TurnSnapshot.capture(state)
 	(state.tools[current_player_id()] as BaseJudgmentTool).on_turn_begin(state.rng)
@@ -983,6 +987,7 @@ func _apply_roll_result(result: RollResult) -> void:
 			boosted *= SuperAugments.gambler_multiplier()
 		move_queue.append(boosted)
 	_roll_chain += 1
+	SpecialVictory.note_session(state, current_player_id(), VictoryLaw.BEST_CHAIN, _roll_chain)  # 🏆 초전도체 무한 동력
 	if result.reroll and _roll_chain < GameEnums.MAX_REROLL_CHAIN:
 		phase_time_left = GameEnums.PHASE_TIME_ROLL * timer_scale
 		_broadcast_state()
@@ -1164,10 +1169,12 @@ func _enter_neutral_npc_phase() -> void:
 
 ## 🏁 서바이벌 순위 판정 (VictoryChecker): 승리 조건을 달성한 사람을 다음 순위로 졸업시킨다.
 ## 남은 사람이 1명이면 그 사람이 꼴찌로 확정되고 게임이 끝난다. 게임이 끝났거나 지금 차례인 사람이 졸업해 턴이 넘어갔으면 true (호출한 쪽은 진행을 멈춘다).
-func _check_victory(_report: MoveReport) -> bool:
+func _check_victory(report: MoveReport) -> bool:
 	if is_game_over:
 		return true
 	var current: int = current_player_id()
+	if report != null:
+		SpecialVictory.note_session(state, current, VictoryLaw.BEST_MOVE, report.path.size())  # 🏆 카이지의 한방 역전법
 	var current_graduated: bool = false
 	for entry: Dictionary in VictoryChecker.newly_qualified(state, player_order, current):
 		_graduate(int(entry["player"]), entry["reason"])

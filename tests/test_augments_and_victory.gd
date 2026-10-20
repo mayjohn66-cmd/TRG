@@ -115,7 +115,7 @@ func test_augment_pool_has_all_four_categories() -> void:
 	check_eq(counts[GameEnums.AugmentCategory.TOOL_SWAP], 12, "판정 도구 교체 12종 (D6 제외)")
 	check_eq(counts[GameEnums.AugmentCategory.LAW_ENACT], 8, "교칙 8종")
 	check_eq(counts[GameEnums.AugmentCategory.CARD_PACKAGE], 1, "카드 패키지")
-	check_eq(counts[GameEnums.AugmentCategory.SUPER_GAMBLE], 10, "초증강 10종")
+	check_eq(counts[GameEnums.AugmentCategory.SUPER_GAMBLE], 12, "초증강 12종")
 
 
 func test_offers_are_three_distinct_mixed_categories() -> void:

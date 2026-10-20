@@ -82,6 +82,9 @@ var winner: int = -1
 var rankings: Array[int] = []
 ## 플레이어 ID -> 순위를 확정한 사유 (all_home / 특수 승리 교칙 ID / last_place)
 var rank_reasons: Dictionary = {}
+## 🏆 특수 승리 교칙 진행도: 플레이어 ID -> {kills, ejected, underdog, best_move, best_chain, turn_hand}.
+## 누적 기록(kills·ejected·underdog)은 게임 시작부터 세고, 순간 기록(best_*·turn_hand)은 해당 교칙이 법전에 있는 동안만 센다.
+var law_stats: Dictionary = {}
 
 ## 이번 턴 시작 시점 스냅샷 (ACT_05 롤백 대상).
 var turn_snapshot: TurnSnapshot = null
@@ -315,11 +318,20 @@ func last_place_pawn(excluding_owner: int) -> PlayerPawn:
 
 func send_to_start(pawn: PlayerPawn, by_player: int) -> void:
 	var members: Array[PlayerPawn] = pawn.stack_members()
+	# 특수 승리 기록: 다크호스 판정은 사출 전에 선두를 정한다.
+	var enemy_kill: bool = by_player >= 1 and by_player != pawn.owner_id
+	var underdog: bool = enemy_kill and finished_count(by_player) == 0 and race_leader(by_player) == pawn.owner_id
 	for member: PlayerPawn in members:
 		# 보드 위에 나와 있던 말만 복수심을 얻는다 (이미 출발선에 있던 말은 해당 없음).
 		var was_out: bool = member.has_left_start and not member.is_finished
 		member.reset_to_start()
 		member.revenge_boost = member.revenge_boost or was_out
+		if was_out:
+			add_stat(pawn.owner_id, &"ejected")
+			if enemy_kill:
+				add_stat(by_player, &"kills")
+			if underdog:
+				add_stat(by_player, &"underdog")
 	if not hurt_players.has(pawn.owner_id):
 		hurt_players.append(pawn.owner_id)
 	for member: PlayerPawn in members:
@@ -557,3 +569,66 @@ func active_players(order: Array[int]) -> Array[int]:
 		if not rankings.has(player_id):
 			active.append(player_id)
 	return active
+
+
+# ---------------------------------------------------------------------------
+# 🏆 특수 승리 기록
+# ---------------------------------------------------------------------------
+
+func stat(player_id: int, key: StringName) -> int:
+	return int((law_stats.get(player_id, {}) as Dictionary).get(key, 0))
+
+
+func add_stat(player_id: int, key: StringName, amount: int = 1) -> void:
+	if not law_stats.has(player_id):
+		law_stats[player_id] = {}
+	law_stats[player_id][key] = stat(player_id, key) + amount
+
+
+## 최고 기록을 갱신한다 (더 클 때만).
+func max_stat(player_id: int, key: StringName, value: int) -> void:
+	if value > stat(player_id, key):
+		add_stat(player_id, key, value - stat(player_id, key))
+
+
+func reset_stat(player_id: int, key: StringName) -> void:
+	if law_stats.has(player_id):
+		(law_stats[player_id] as Dictionary).erase(key)
+
+
+func finished_count(player_id: int) -> int:
+	var count: int = 0
+	for pawn: PlayerPawn in pawns_of(player_id):
+		if pawn.is_finished:
+			count += 1
+	return count
+
+
+## 레이스 선두 플레이어 (excluding을 뺀, 아직 졸업하지 않은 사람 중 완주 수가 많고 → 남은 거리 합이 작은 사람). 없으면 -1.
+func race_leader(excluding: int) -> int:
+	var best: int = -1
+	var best_finished: int = -1
+	var best_remaining: int = 0
+	for player_id: int in player_ids:
+		if player_id == excluding or rankings.has(player_id):
+			continue
+		var finished: int = finished_count(player_id)
+		var remaining: int = 0
+		for pawn: PlayerPawn in pawns_of(player_id):
+			if not pawn.is_finished:
+				remaining += pawn_progress_distance(pawn)
+		if finished > best_finished or (finished == best_finished and remaining < best_remaining):
+			best = player_id
+			best_finished = finished
+			best_remaining = remaining
+	return best
+
+
+## 이 플레이어가 보드에 깔아 둔 설치물(호텔·함정) 수.
+func owned_attachment_count(player_id: int) -> int:
+	var count: int = 0
+	for tile: TileNode in board.tiles:
+		for attachment: TileAttachment in tile.attachments:
+			if attachment.owner_id == player_id:
+				count += 1
+	return count

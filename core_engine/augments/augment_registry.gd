@@ -1,6 +1,6 @@
 # File: res://core_engine/augments/augment_registry.gd
 # Class: class_name AugmentRegistry
-# Role: 증강 드래프트 전체 풀(기물 지급 19 (세부 기물별) / 판정 도구 교체 9 / 교칙 제정 8 / 카드 패키지 1)과 선택지 3개를 4대 카테고리가 섞이도록 뽑는 생성기
+# Role: 증강 드래프트 전체 풀(기물 지급 (세부 기물별) / 판정 도구 교체 12 / 특수 승리 교칙 8 / 카드 패키지 1 / 초증강 12)과 선택지 3개를 4대 카테고리가 섞이도록 뽑는 생성기
 class_name AugmentRegistry
 extends RefCounted
 
@@ -23,7 +23,11 @@ static func all() -> Array[AugmentDef]:
 		for tool_id: StringName in SWAPPABLE_TOOLS:
 			_cache.append(AugmentDef.new(StringName("TOOL_%s" % tool_id), GameEnums.AugmentCategory.TOOL_SWAP, "판정 도구 교체: %s" % ToolRegistry.create(tool_id).display_name, tool_id))
 		for law_id: String in LawRegistry.ALL_IDS:
-			_cache.append(AugmentDef.new(StringName("AUG_%s" % law_id), GameEnums.AugmentCategory.LAW_ENACT, "교칙 제정: %s" % LawRegistry.create(law_id).law_name, law_id))
+			var law := AugmentDef.new(StringName("AUG_%s" % law_id), GameEnums.AugmentCategory.LAW_ENACT, "특수 승리: %s" % LawRegistry.create(law_id).law_name, law_id)
+			law.tier = "GOLD"
+			law.weight = 15 if ["LAW_04", "LAW_06", "LAW_07"].has(law_id) else 20  # 특수 승리는 드물게
+			law.min_round = 3
+			_cache.append(law)
 		_cache.append(AugmentDef.new(&"CARD_PACKAGE", GameEnums.AugmentCategory.CARD_PACKAGE, "생떼 카드 패키지"))
 		for effect: StringName in SuperAugments.ALL_IDS:
 			var chaos := AugmentDef.new(effect, GameEnums.AugmentCategory.SUPER_GAMBLE, SuperAugments.display_name(effect), effect)

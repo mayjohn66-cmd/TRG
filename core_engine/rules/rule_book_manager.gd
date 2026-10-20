@@ -1,6 +1,6 @@
 # File: res://core_engine/rules/rule_book_manager.gd
 # Class: class_name RuleBookManager
-# Role: 중앙 법전. 패시브 교칙을 최대 4개까지 FIFO 큐로 보관하고, 시점이 일치하는 교칙들에 RuleContext를 통과시키는 인터셉터 파이프라인
+# Role: 중앙 법전. 특수 승리 교칙을 최대 4개까지 FIFO 큐로 보관하고, 초증강 개인 패시브와 함께 시점이 일치하는 교칙들에 RuleContext를 통과시키는 인터셉터 파이프라인
 class_name RuleBookManager
 extends Node
 
@@ -15,6 +15,8 @@ signal law_applied(law: LawResource, timing: String, dice_before: int, dice_afte
 const MAX_SLOTS: int = 4
 
 var active_laws_queue: Array[LawResource] = []
+## 초증강 개인 패시브 (owner_id가 붙은 교칙). 슬롯을 차지하지 않고 게임 끝까지 남는다.
+var personal_laws: Array[LawResource] = []
 ## 가장 최근 process_context()에서 ctx를 실제로 변조한 교칙 ID들 (이동 보고서의 법전 요약용).
 var last_modified_law_ids: Array[String] = []
 
@@ -43,9 +45,10 @@ func remove_law_by_id(target_law_id: String) -> bool:
 ## 새 교칙이 늘어도 이 함수는 수정되지 않는다(OCP).
 func process_context(ctx: RuleContext) -> RuleContext:
 	var matched: Array[Dictionary] = []
-	for index: int in active_laws_queue.size():
-		var law: LawResource = active_laws_queue[index]
-		if law.trigger_timing == ctx.trigger_timing:
+	var all_laws: Array[LawResource] = active_laws_queue + personal_laws
+	for index: int in all_laws.size():
+		var law: LawResource = all_laws[index]
+		if law.trigger_timing != "" and law.trigger_timing == ctx.trigger_timing and law.applies_to(ctx):
 			matched.append({"law": law, "index": index})
 	matched.sort_custom(_compare_by_priority_then_slot)
 	var current: RuleContext = ctx
@@ -85,6 +88,40 @@ func law_ids() -> Array[String]:
 	for law: LawResource in active_laws_queue:
 		ids.append(law.law_id)
 	return ids
+
+
+## 개인 패시브를 더한다 (같은 주인·같은 ID는 한 번만).
+func add_personal(law_id: String, owner: int) -> bool:
+	if has_personal(law_id, owner):
+		return false
+	var law: LawResource = LawRegistry.create_personal(law_id, owner)
+	if law == null:
+		return false
+	personal_laws.append(law)
+	return true
+
+
+func has_personal(law_id: String, owner: int) -> bool:
+	for law: LawResource in personal_laws:
+		if law.law_id == law_id and law.owner_id == owner:
+			return true
+	return false
+
+
+## [[owner, law_id], ...] (스냅샷용)
+func personal_entries() -> Array:
+	var entries: Array = []
+	for law: LawResource in personal_laws:
+		entries.append([law.owner_id, law.law_id])
+	return entries
+
+
+func set_personal_from(entries: Array) -> void:
+	personal_laws.clear()
+	for entry: Variant in entries:
+		var law: LawResource = LawRegistry.create_personal(String(entry[1]), int(entry[0]))
+		if law != null:
+			personal_laws.append(law)
 
 
 ## 시그널 없이 법전 내용을 통째로 교체한다 (스냅샷 복원·클라이언트 동기화용).

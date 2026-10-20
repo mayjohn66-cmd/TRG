@@ -60,45 +60,41 @@ func test_remove_law_by_id_for_act_06() -> void:
 	check_eq(removed.size(), 1, "실패 시 시그널 없음")
 	book.free()
 
-
-func test_process_context_only_runs_laws_matching_trigger_timing() -> void:
+func test_personal_passives_only_run_at_their_timing_and_for_their_owner() -> void:
 	var state := make_state()
-	add_law(state, "LAW_01")  # ON_MOVE_CALC
-	add_law(state, "LAW_04")  # ON_DICE_ROLL
-	var ctx: RuleContext = make_ctx(state, 4)
-	ctx = run_timing(state, ctx, RuleContext.ON_DICE_ROLL)
-	check_eq(ctx.dice_value, 7, "ON_DICE_ROLL 교칙(LAW_04)만 적용: 짝수 4 -> 니트로 +3")
-	check(ctx.allow_shortcut, "ON_MOVE_CALC 교칙(LAW_01)은 아직 미적용")
-	ctx = run_timing(state, ctx, RuleContext.ON_MOVE_CALC)
-	check(not ctx.allow_shortcut, "ON_MOVE_CALC 시점에 LAW_01 적용")
-	check_eq(ctx.dice_value, 7, "눈금은 다시 바뀌지 않음")
-	var untouched: RuleContext = run_timing(state, make_ctx(state, 4), RuleContext.ON_CAPTURE)
-	check_eq(untouched.dice_value, 4, "일치하는 교칙이 없으면 ctx 그대로")
+	state.rulebook.add_personal("SUPER_10", 1)  # ON_DICE_ROLL: 짝수 또는 5 이상 +3
+	state.rulebook.add_personal("SUPER_11", 1)  # ON_CAPTURE
+	check(not state.rulebook.add_personal("SUPER_10", 1), "같은 패시브는 한 번만")
+	check(state.rulebook.law_ids().is_empty(), "개인 패시브는 법전 슬롯을 차지하지 않는다")
+	var ctx: RuleContext = run_timing(state, make_ctx(state, 4), RuleContext.ON_DICE_ROLL)
+	check_eq(ctx.dice_value, 7, "짝수 4 -> 니트로 +3")
+	check_eq(ctx.capture_charge_steps, 0, "ON_CAPTURE 패시브는 아직 미적용")
+	check_eq(run_timing(state, make_ctx(state, 5), RuleContext.ON_DICE_ROLL).dice_value, 8, "홀수라도 5 이상이면 +3")
+	check_eq(run_timing(state, make_ctx(state, 3), RuleContext.ON_DICE_ROLL).dice_value, 3, "홀수 3은 그대로")
+	check_eq(run_timing(state, make_ctx(state, 4, 2), RuleContext.ON_DICE_ROLL).dice_value, 4, "주인이 아니면 작동하지 않는다")
+	var captured: RuleContext = run_timing(state, make_ctx(state, 4), RuleContext.ON_CAPTURE)
+	check_eq(captured.capture_charge_steps, LawRunawayTrain.charge_steps(), "ON_CAPTURE 시점에 폭주 기관차")
+	check_eq(captured.dice_value, 4, "눈금은 다시 바뀌지 않음")
 
 
 func test_process_context_orders_by_priority_then_queue_order() -> void:
 	var state := make_state()
-	# 같은 priority면 큐 순서: LAW_06(5 -> 8) 다음 LAW_04(짝수 니트로 8 -> 11)
-	add_law(state, "LAW_06")
-	add_law(state, "LAW_04")
-	check_eq(run_timing(state, make_ctx(state, 5), RuleContext.ON_DICE_ROLL).dice_value, 11, "LAW_06 -> LAW_04")
-	var reversed_state := make_state()
-	add_law(reversed_state, "LAW_04")
-	add_law(reversed_state, "LAW_06")
-	check_eq(run_timing(reversed_state, make_ctx(reversed_state, 5), RuleContext.ON_DICE_ROLL).dice_value, 8, "LAW_04(홀수 5 그대로) -> LAW_06(+3)")
-	# priority가 낮을수록 먼저: 큐에는 LAW_06이 앞이지만 LAW_04의 priority를 -1로 주면 LAW_04가 먼저.
-	var priority_state := make_state()
-	var autobahn: LawResource = LawRegistry.create("LAW_06")
-	var nitro: LawResource = LawRegistry.create("LAW_04")
-	nitro.priority = -1
-	priority_state.rulebook.enqueue_law(autobahn)
-	priority_state.rulebook.enqueue_law(nitro)
-	var out: RuleContext = run_timing(priority_state, make_ctx(priority_state, 4), RuleContext.ON_DICE_ROLL)
-	check_eq(out.dice_value, 10, "4 -> (LAW_04) 짝수 +3 = 7 -> (LAW_06) +3 = 10")
-	var odd: RuleContext = run_timing(priority_state, make_ctx(priority_state, 5), RuleContext.ON_DICE_ROLL)
-	check_eq(odd.dice_value, 8, "5 -> (LAW_04) 홀수는 그대로 -> (LAW_06) +3")
-	var low: RuleContext = run_timing(state, make_ctx(state, 3), RuleContext.ON_DICE_ROLL)
-	check_eq(low.dice_value, 3, "홀수 3은 그대로")
+	var script := GDScript.new()
+	script.source_code = "extends LawResource\nvar factor: int = 1\nvar add: int = 0\nfunc intercept(ctx: RuleContext) -> RuleContext:\n\tctx.dice_value = ctx.dice_value * factor + add\n\treturn ctx\n"
+	script.reload()
+	var double_it: LawResource = script.new()
+	double_it.set("factor", 2)
+	double_it.law_id = "TEST_DOUBLE"
+	double_it.trigger_timing = RuleContext.ON_DICE_ROLL
+	var plus_one: LawResource = script.new()
+	plus_one.set("add", 1)
+	plus_one.law_id = "TEST_PLUS"
+	plus_one.trigger_timing = RuleContext.ON_DICE_ROLL
+	state.rulebook.enqueue_law(double_it)
+	state.rulebook.enqueue_law(plus_one)
+	check_eq(run_timing(state, make_ctx(state, 3), RuleContext.ON_DICE_ROLL).dice_value, 7, "같은 priority면 큐 순서: 3*2+1")
+	plus_one.priority = -1
+	check_eq(run_timing(state, make_ctx(state, 3), RuleContext.ON_DICE_ROLL).dice_value, 8, "priority가 낮으면 먼저: (3+1)*2")
 
 
 func test_law_may_replace_context_or_cancel() -> void:
@@ -139,13 +135,6 @@ func test_canceled_move_does_not_move_the_pawn() -> void:
 
 func test_move_calc_flags_and_path_nodes() -> void:
 	var state := make_state()
-	add_law(state, "LAW_01")
-	add_law(state, "LAW_02")
-	add_law(state, "LAW_08")
-	var ctx: RuleContext = run_timing(state, make_ctx(state, 3), RuleContext.ON_MOVE_CALC)
-	check(not ctx.allow_shortcut, "LAW_01")
-	check(not ctx.allow_stacking, "LAW_02")
-	check(ctx.exact_goal_required, "LAW_08")
 	var pawn: PlayerPawn = place(state, 11, 0, [], false)
 	var move_ctx: RuleContext = make_ctx(state, 3)
 	MoveExecutor.execute(state, pawn, move_ctx)
@@ -331,7 +320,7 @@ func test_neutral_npc_ghost_patrols_reverse_and_drags_pawns_to_halfway() -> void
 
 func test_preview_context_computes_values_without_emitting_law_signals() -> void:
 	var state := make_state()
-	add_law(state, "LAW_06")  # 눈금 5 이상이면 +3칸
+	state.rulebook.add_personal("SUPER_10", 1)  # 눈금이 짝수이거나 5 이상이면 +3칸
 	var events: Array = []
 	state.rulebook.law_applied.connect(func(law: LawResource, _timing: String, before: int, after: int, modified: bool) -> void: events.append([law.law_id, before, after, modified]))
 	var preview: RuleContext = make_ctx(state, 5)
@@ -341,19 +330,19 @@ func test_preview_context_computes_values_without_emitting_law_signals() -> void
 	check_eq(events.size(), 0, "미리보기는 law_applied를 내지 않음")
 	var real: RuleContext = run_timing(state, make_ctx(state, 5), RuleContext.ON_DICE_ROLL)
 	check_eq(real.dice_value, 8, "실제 처리")
-	check_eq(events, [["LAW_06", 5, 8, true]], "실제 처리는 변조 여부와 함께 시그널")
+	check_eq(events, [["SUPER_10", 5, 8, true]], "실제 처리는 변조 여부와 함께 시그널")
 
 
 func test_law_applied_reports_unmodified_laws_and_tracks_modified_ids() -> void:
 	var state := make_state()
-	add_law(state, "LAW_06")
+	state.rulebook.add_personal("SUPER_10", 1)
 	var flags: Array = []
 	state.rulebook.law_applied.connect(func(_law: LawResource, _timing: String, _b: int, _a: int, modified: bool) -> void: flags.append(modified))
 	run_timing(state, make_ctx(state, 3), RuleContext.ON_DICE_ROLL)
 	check_eq(flags, [false], "눈금이 그대로면 modified=false")
 	check_eq(state.rulebook.last_modified_law_ids.size(), 0, "변조 기록 없음")
 	run_timing(state, make_ctx(state, 6), RuleContext.ON_DICE_ROLL)
-	check_eq(state.rulebook.last_modified_law_ids, ["LAW_06"] as Array[String], "변조한 교칙 ID 기록")
+	check_eq(state.rulebook.last_modified_law_ids, ["SUPER_10"] as Array[String], "변조한 교칙 ID 기록")
 
 
 func _law_notes_for_move(start_tile: int, roll: int) -> Array:
@@ -363,7 +352,6 @@ func _law_notes_for_move(start_tile: int, roll: int) -> Array:
 	manager.draft_enabled = false
 	tree.root.add_child(manager)
 	manager.start_game([1, 2] as Array[int], 777)
-	add_law(manager.state, "LAW_01")  # 점프 코너·옷장 차단
 	var notes: Array = []
 	manager.event_received.connect(func(kind: StringName, data: Dictionary) -> void:
 		if kind == &"move_resolved":
@@ -380,7 +368,6 @@ func _law_notes_for_move(start_tile: int, roll: int) -> Array:
 
 func test_move_report_notes_laws_only_when_the_path_really_changes() -> void:
 	check_eq(_law_notes_for_move(2, 2), [[]], "경로가 같으면 법전 요약 없음")
-	check_eq(_law_notes_for_move(4, 2), [[]], "점프 코너가 막혀도 걸어간 경로는 같으므로 요약 없음")
 
 
 func test_neutral_npc_vanishes_after_first_catch() -> void:

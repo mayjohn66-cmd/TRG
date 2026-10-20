@@ -125,9 +125,9 @@ static func score_augment(state: GameState, player_id: int, definition: AugmentD
 ## 봇의 초증강 선호: 확실히 이득인 것(영구 가속·카드+호텔·저격·재분배)은 높게, 도박성 짙은 것(판 뒤집기·도박사·캐슬링)은 낮게 본다.
 static func super_augment_score(effect: StringName) -> float:
 	match effect:
-		SuperAugments.DEVIL, SuperAugments.BAKERY, SuperAugments.SNIPER:
+		SuperAugments.DEVIL, SuperAugments.BAKERY, SuperAugments.SNIPER, SuperAugments.NITRO, SuperAugments.RUNAWAY:
 			return 70.0
-		SuperAugments.REDISTRIBUTE, SuperAugments.DICTATOR, SuperAugments.MINEFIELD:
+		SuperAugments.REDISTRIBUTE, SuperAugments.GUARANTEE, SuperAugments.MINEFIELD:
 			return 55.0
 		SuperAugments.RAID:
 			return 45.0
