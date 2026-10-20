@@ -234,63 +234,42 @@ func test_rollback_command_undoes_turn_history_and_is_not_recorded() -> void:
 	check(state.rollback_requested, "TurnManager에 알리는 플래그")
 	check_eq(TurnSnapshot.capture(state).data, state.turn_snapshot.data, "역순 undo 결과는 턴 시작 TurnSnapshot과 정확히 같다")
 
-
-func test_act_06_repeals_chosen_slot() -> void:
-	var state := make_state()
-	add_law(state, &"LAW_02")
-	add_law(state, &"LAW_05")
-	var card: BaseCard = CardRegistry.get_card(&"ACT_06")
-	check(not card.can_play(state, 1, {"law_id": "LAW_07"}), "법전에 없는 교칙은 지정 불가")
-	check(card.can_play(state, 1, {"law_id": "LAW_02"}), "법전에 있는 교칙")
-	exec(state, card.create_command(state, 1, {"law_id": "LAW_02"}))
-	check(not state.rulebook.has_law(&"LAW_02"), "법전 파기")
-	check(state.rulebook.has_law(&"LAW_05"), "다른 교칙 유지")
-
-
-func test_act_01_requests_turn_reversal_but_pawns_never_move_backward() -> void:
-	var state := make_state(3)
-	var card: BaseCard = CardRegistry.get_card(&"ACT_01")
-	var requests: Array[int] = []
-	state.turn_order_reverse_requested.connect(func() -> void: requests.append(1))
-	exec(state, card.create_command(state, 1, {}))
-	check_eq(requests.size(), 1, "턴 순서 반전 요청 시그널 (순서는 TurnManager가 소유)")
-	check_eq(state.movement_direction(), 1, "말의 이동 방향은 그대로 전진")
-	var pawn: PlayerPawn = place(state, 11, 4, [3])
-	var ctx: RuleContext = make_ctx(state, 1)
-	ctx.direction = state.movement_direction()
-	var report: MoveReport = MoveExecutor.execute(state, pawn, ctx)
-	check_eq(report.path, int_array([5]), "카드를 써도 말은 앞으로 간다")
-
-
-func test_act_04_rocket_booster_reserves_plus_three_for_the_next_roll() -> void:
+func test_act_04_rocket_reserves_plus_four_for_the_next_roll() -> void:
 	var state := make_state()
 	var card: BaseCard = CardRegistry.get_card(&"ACT_04")
-	check_eq(card.display_name, "긴급 로켓 부스터", "카드 이름")
+	check_eq(card.display_name, "로켓", "카드 이름")
 	check(card.can_play(state, 1, {}), "조건 없이 사용 가능")
 	exec(state, card.create_command(state, 1, {}))
-	check_eq(state.roll_bonus, 3, "+3 예약")
+	check_eq(state.roll_bonus, 4, "+4 예약")
 	var snapshot: Dictionary = TurnSnapshot.capture(state).to_dict()
 	state.roll_bonus = 0
 	TurnSnapshot.from_dict(snapshot).restore(state, true)
-	check_eq(state.roll_bonus, 3, "스냅샷에 보너스가 담긴다")
+	check_eq(state.roll_bonus, 4, "스냅샷에 보너스가 담긴다")
 
 
-func test_card_registry_and_default_deck() -> void:
-	for card_id: StringName in [&"ACT_01", &"ACT_02", &"ACT_03", &"ACT_04", &"ACT_05", &"ACT_06", &"TRP_01", &"TRP_02", &"TRP_03", &"TRP_04", &"SUM_01", &"SUM_02"]:
-		check(CardRegistry.get_card(card_id) != null, "카드 %s 등록" % card_id)
-	check_eq(CardRegistry.default_deck().size(), 32, "기본 덱 32장 (TRP_05·ACT_07·ACT_08·ACT_09 각 2장 추가)")
+func test_card_registry_has_thirty_two_cards_and_the_default_deck() -> void:
+	var counts: Dictionary = {}
+	for card_id: StringName in CardRegistry.DECK_COMPOSITION.keys():
+		var card: BaseCard = CardRegistry.get_card(card_id)
+		check(card != null and card.card_id == card_id, "카드 %s 등록" % card_id)
+		var key: String = "corner" if card.corner_only else str(card.category)
+		counts[key] = int(counts.get(key, 0)) + 1
+	check_eq(CardRegistry.DECK_COMPOSITION.size(), 32, "카드 32종")
+	check_eq([counts.get(str(GameEnums.CardCategory.COUNTER)), counts.get(str(GameEnums.CardCategory.INSTANT)), counts.get(str(GameEnums.CardCategory.TRAP)), counts.get("corner"), counts.get(str(GameEnums.CardCategory.SUMMON))], [7, 13, 6, 4, 2], "반격 7 · 즉발 13 · 함정 6 · 코너 함정 4 · 소환 2")
+	check_eq(CardRegistry.default_deck().size(), 50, "기본 덱 50장 (cards_table.csv param_2)")
 
 
-func test_mirror_force_card_validates_tile() -> void:
+func test_act_06_objection_resets_one_victory_record() -> void:
 	var state := make_state()
-	var card: BaseCard = CardRegistry.get_card(&"TRP_01")
-	check(not card.can_play(state, 1, {"tile": 0}), "출발선 설치 불가")
-	check(card.can_play(state, 1, {"tile": 9}), "일반 타일")
-	exec(state, card.create_command(state, 1, {"tile": 9}))
-	check(state.board.get_tile(9).has_attachment(&"TRP_01"), "설치됨")
-	check_eq(state.board.get_tile(9).attachments[0].owner_id, 1, "설치자 기록")
-	check(not card.can_play(state, 2, {"tile": 9}), "같은 설치물 중복 불가")
-
+	add_law(state, "LAW_01")
+	add_law(state, "LAW_05")
+	state.law_stats[2] = {VictoryLaw.KILLS: 4}
+	var card: BaseCard = CardRegistry.get_card(&"ACT_06")
+	check(card.can_play(state, 1, {"target_player": 2, "law_id": "LAW_01"}), "처치 기록은 지울 수 있다")
+	check(not card.can_play(state, 1, {"target_player": 1, "law_id": "LAW_01"}), "0인 기록은 지울 게 없다")
+	check(not card.can_play(state, 1, {"target_player": 2, "law_id": "LAW_05"}), "포위망(지금 보드 상태)은 기록이 아니다")
+	exec(state, card.create_command(state, 1, {"target_player": 2, "law_id": "LAW_01"}))
+	check_eq(state.stat(2, VictoryLaw.KILLS), 0, "0으로 초기화")
 
 func test_neutral_npc_bandit_chases_with_bfs_and_steals_card() -> void:
 	var state := make_state()

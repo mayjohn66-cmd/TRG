@@ -68,6 +68,8 @@ var stack_choice_enabled: bool = false
 var _stack_offer: Dictionary = {}
 ## ACT_09 결투 진행 상태 (없으면 빈 Dictionary): {"challenger","defender","step"(pick/strike),"picks","draws","winner","loser","candidates"}.
 var _duel: Dictionary = {}
+## ⚔ 반격 대기: {"victim": 플레이어, "attack": 공격 기록 ID, "resume": &"turn_begin"/&"resolution", "cards": [낼 수 있는 반격 카드]}. 없으면 빈 Dictionary.
+var _counter_offer: Dictionary = {}
 ## 폭풍 전진 가속 기믹(⚡ 발판·🏃 점프·🔥 복수) 사용 여부. start_game 전에만 바꿀 수 있다.
 var boost_gimmicks: bool = true
 ## 도박사의 영혼이 눈금 1 이하로 과열된 플레이어 (이동이 끝나면 움직인 말이 출발선으로 사출된다). 없으면 -1.
@@ -128,6 +130,7 @@ func start_game(player_ids: Array[int], seed_value: int = 0, loadouts: Dictionar
 	state.bang_resolved.connect(_on_bang_resolved)
 	state.duel_requested.connect(_on_duel_requested)
 	_duel = {}
+	_counter_offer = {}
 	state.bomb_resolved.connect(_on_bomb_resolved)
 	state.pawn_pushed_back.connect(func(pawn_id: int, from_tile: int, to_tile: int) -> void: _emit_event(&"pawn_pushed_back", {"pawn_id": pawn_id, "from": from_tile, "to": to_tile}))
 	_ensure_command_stack()
@@ -175,6 +178,10 @@ func request_action(action: StringName, params: Dictionary = {}) -> void:
 	if not _duel.is_empty() and action != &"duel_pick" and action != &"duel_strike":
 		action_rejected.emit(actor, action, &"duel_pending")
 		return
+	# ⚔ 반격 대기 중에는 피해자의 반격 카드 / 넘기기만 받는다.
+	if counter_pending() and not (actor == int(_counter_offer["victim"]) and (action == &"counter_pass" or (action == &"play_card" and CardCounter.is_counter(StringName(params.get("card_id", &"")))))):
+		action_rejected.emit(actor, action, &"counter_pending")
+		return
 	match action:
 		&"proceed": _handle_proceed(actor)
 		&"roll": _handle_roll(actor, params)
@@ -187,6 +194,7 @@ func request_action(action: StringName, params: Dictionary = {}) -> void:
 		&"stack_choice": _handle_stack_choice(actor, params)
 		&"duel_pick": _handle_duel_pick(actor, params)
 		&"duel_strike": _handle_duel_strike(actor, params)
+		&"counter_pass": _handle_counter_pass(actor)
 		_: action_rejected.emit(actor, action, &"unknown_action")
 
 
@@ -203,6 +211,16 @@ func reverse_turn_order() -> void:
 func advance_to_next_player() -> void:
 	_extra_turn_pending = false
 	_bonus_roll_pending = false
+	_counter_offer = {}
+	var leaving: int = current_player_id()
+	if state != null and int(state.banned_turns.get(leaving, 0)) > 0:
+		state.banned_turns[leaving] = int(state.banned_turns[leaving]) - 1  # 알고리즘 밴: 밴 당한 사람의 턴이 끝날 때마다 하나씩 줄어든다
+	# ACT_12 더 월드: 이 턴이 끝나면 같은 사람이 한 턴 더 한다.
+	if state != null and bool(state.extra_turns.get(leaving, false)) and not state.is_graduated(leaving) and not is_game_over:
+		state.extra_turns.erase(leaving)
+		_emit_event(&"extra_turn", {"player_id": leaving})
+		_begin_turn()
+		return
 	_turns_in_round += 1
 	if _turns_in_round >= player_order.size():
 		_turns_in_round = 0
@@ -362,6 +380,12 @@ func _handle_select_pawn(actor: int, params: Dictionary) -> void:
 func _handle_play_card(actor: int, params: Dictionary) -> void:
 	var card_id: StringName = StringName(params.get("card_id", &""))
 	var card: BaseCard = CardRegistry.get_card(card_id)
+	if card != null and state.is_banned(actor):
+		action_rejected.emit(actor, &"play_card", &"banned")
+		return
+	if card is CardCounter:
+		_play_counter(actor, card, params)
+		return
 	if card == null or not card.is_playable_in(current_state):
 		action_rejected.emit(actor, &"play_card", &"not_playable_now")
 		return
@@ -385,13 +409,18 @@ func _handle_play_card(actor: int, params: Dictionary) -> void:
 	command.bind_state(ctx.state)
 	if not queued and command.can_execute(ctx):
 		_emit_event(&"card_played", {"player_id": actor, "card_id": card_id, "params": params, "queued": queued})
+		state.begin_attack({"kind": &"card", "card_id": card_id, "attacker": actor})  # ⚔ 이 카드로 입힌 피해는 반격 대상
 		accepted = command_stack.execute_command(command, ctx)
+		state.end_attack()
 		if not accepted:
 			action_rejected.emit(actor, &"play_card", &"invalid_target")
 			return
 		state.consume_card(actor, card_id)
 		_card_played_this_turn = true
-		_check_victory(null)
+		if _check_victory(null):
+			return
+		if _open_counter_offer(&"turn_begin"):
+			return
 		_broadcast_state()
 		return
 	if queued:
@@ -418,6 +447,8 @@ func can_use_skill(player_id: int, pawn_id: int) -> bool:
 		return false
 	if not move_queue.is_empty() or stack_offer_pending() or (state.tools[player_id] as BaseJudgmentTool).has_pending_state():
 		return false
+	if state.is_banned(player_id):
+		return false  # 알고리즘 밴
 	var pawn: PlayerPawn = state.get_pawn(pawn_id)
 	return pawn != null and pawn.owner_id == player_id and PawnSkills.is_ready(pawn)
 
@@ -513,11 +544,16 @@ func _skill_effect(actor: int, pawn: PlayerPawn, skill: StringName) -> void:
 		&"plant_mine": tiles = [pawn.current_tile_idx] as Array[int]
 	var from_tile: int = pawn.current_tile_idx
 	var command := SkillEffectCommand.new(actor, pawn.entity_id, skill, tiles)
-	if not command_stack.execute_command(command, _make_ctx(actor)):
+	state.begin_attack({"kind": &"capture", "attacker": actor, "attacker_pawn": pawn.entity_id})
+	var accepted: bool = command_stack.execute_command(command, _make_ctx(actor))
+	state.end_attack()
+	if not accepted:
 		action_rejected.emit(actor, &"use_skill", &"invalid_skill")
 		return
 	_emit_skill_event(actor, pawn, skill, {"from": from_tile, "tiles": tiles, "destroyed": command.destroyed, "victims": command.victims})
 	if _check_victory(null):
+		return
+	if _open_counter_offer(&"turn_begin"):
 		return
 	_broadcast_state()
 
@@ -566,11 +602,13 @@ func _execute_instant_skill(pawn: PlayerPawn, skill: StringName, params: Diction
 			var victim: PlayerPawn = state.get_pawn(hit_id)
 			if victim != null and victim.carrier == null and not victim.is_finished:
 				victims.append(victim)
+		state.begin_attack({"kind": &"capture", "attacker": pawn.owner_id, "attacker_pawn": pawn.entity_id})
 		for victim: PlayerPawn in victims:
 			for member: PlayerPawn in victim.stack_members():
 				report.captured_pawn_ids.append(member.entity_id)
 			state.pawn_captured.emit(pawn.entity_id, victim.entity_id)
 			state.send_to_start(victim, pawn.owner_id)
+		state.end_attack()
 	MoveExecutor.teleport_to(state, pawn, ctx, report, destination)
 	_extra_turn_pending = _extra_turn_pending or report.extra_turn
 	_emit_event(&"move_resolved", report.to_dict())
@@ -601,6 +639,116 @@ func _handle_stack_choice(actor: int, params: Dictionary) -> void:
 # ---------------------------------------------------------------------------
 
 ## 결투가 진행 중인가 (손 고르기 또는 이긴 사람이 말을 고르는 중). 이동·굴리기·카드 같은 다른 행동은 모두 잠긴다.
+func counter_pending() -> bool:
+	return not _counter_offer.is_empty()
+
+
+func pending_counter() -> Dictionary:
+	return _counter_offer
+
+
+## 이 플레이어가 이 공격에 낼 수 있는 반격 카드들 (손패 순서, 중복 없이).
+func counter_cards_for(player_id: int, attack_id: int) -> Array[StringName]:
+	var result: Array[StringName] = []
+	var entry: Dictionary = state.get_attack(attack_id)
+	if entry.is_empty() or state.is_banned(player_id):
+		return result
+	for card_id: StringName in state.hands[player_id]:
+		if not result.has(card_id) and CardCounter.answers(state, card_id, entry):
+			result.append(card_id)
+	return result
+
+
+## 아직 묻지 않은 공격 중 피해자가 반격 카드를 쥔 것이 있으면 진행을 멈추고 반격 여부를 묻는다. 물었으면 true.
+func _open_counter_offer(resume: StringName) -> bool:
+	if is_game_over or state == null:
+		return false
+	state.discard_empty_attacks()
+	for entry: Dictionary in state.attack_log:
+		if bool(entry["offered"]) or bool(entry["countered"]):
+			continue
+		entry["offered"] = true
+		var victim: int = int(entry["victim"])
+		if state.is_graduated(victim):
+			continue
+		var cards: Array[StringName] = counter_cards_for(victim, int(entry["id"]))
+		if cards.is_empty():
+			continue
+		_counter_offer = {"victim": victim, "attack": int(entry["id"]), "resume": resume, "cards": cards}
+		phase_time_left = GameEnums.PHASE_TIME_SELECT * timer_scale
+		_emit_event(&"counter_offer", {"victim": victim, "attacker": int(entry.get("attacker", -1)), "attack": int(entry["id"]), "kind": entry["kind"],
+			"card_id": entry.get("card_id", &""), "trap_id": entry.get("trap_id", ""), "pawns": (entry["pawns"] as Dictionary).keys(), "cards": cards})
+		_broadcast_state()
+		return true
+	return false
+
+
+func _handle_counter_pass(actor: int) -> void:
+	if not counter_pending() or actor != int(_counter_offer["victim"]):
+		action_rejected.emit(actor, &"counter_pass", &"wrong_phase")
+		return
+	_emit_event(&"counter_passed", {"victim": actor, "attack": int(_counter_offer["attack"])})
+	_finish_counter_offer()
+
+
+## 반격 카드는 공격당한 사람이 언제든(반격 대기 중이면 그 공격에) 낸다. 즉시 실행된다.
+func _play_counter(actor: int, card: BaseCard, params: Dictionary) -> void:
+	var payload: Dictionary = params.duplicate()
+	if counter_pending() and not payload.has("attack"):
+		payload["attack"] = int(_counter_offer["attack"])
+	if not state.has_card(actor, card.card_id):
+		action_rejected.emit(actor, &"play_card", &"card_not_in_hand")
+		return
+	if not card.is_legal(state, actor, payload):
+		action_rejected.emit(actor, &"play_card", &"invalid_target")
+		return
+	var entry: Dictionary = state.get_attack(int(payload["attack"]))
+	_emit_event(&"card_played", {"player_id": actor, "card_id": card.card_id, "params": payload, "queued": false, "counter": true,
+		"attacker": int(entry.get("attacker", -1)), "attacker_pawn": int(entry.get("attacker_pawn", -1)), "pawns": (entry["pawns"] as Dictionary).keys()})
+	var command: GameCommand = card.create_command(state, actor, payload)
+	if not command_stack.execute_command(command, _make_ctx(actor)):
+		action_rejected.emit(actor, &"play_card", &"invalid_target")
+		return
+	state.consume_card(actor, card.card_id)
+	if not entry.is_empty():
+		entry["countered"] = true
+	_emit_event(&"counter_resolved", {"victim": actor, "card_id": card.card_id, "attack": int(payload["attack"])})
+	if counter_pending() and int(_counter_offer["attack"]) == int(payload["attack"]):
+		_finish_counter_offer()
+	else:
+		_check_victory(null)
+		_broadcast_state()
+
+
+## 반격 대기를 닫고 멈췄던 흐름을 잇는다. 바이츠 더 더스트로 되감았다면 공격한 사람의 턴이 바로 끝난다.
+func _finish_counter_offer() -> void:
+	var resume: StringName = _counter_offer.get("resume", &"resolution")
+	_counter_offer = {}
+	if state.rollback_requested:
+		state.rollback_requested = false
+		var ends_turn: bool = state.rollback_ends_turn
+		state.rollback_ends_turn = false
+		move_queue.clear()
+		_stack_offer = {}
+		_extra_turn_pending = false
+		_bonus_roll_pending = false
+		if ends_turn:
+			_emit_event(&"turn_rewound", {"player_id": current_player_id()})
+			advance_to_next_player()
+			return
+		_begin_turn(false)
+		return
+	if _check_victory(null):
+		return
+	if _open_counter_offer(resume):
+		return
+	if resume == &"turn_begin":
+		phase_time_left = GameEnums.PHASE_TIME_TURN_BEGIN * timer_scale
+		_broadcast_state()
+	else:
+		_enter_resolution()
+
+
 func duel_pending() -> bool:
 	return not _duel.is_empty()
 
@@ -788,7 +936,7 @@ func _handle_reroll_augment(actor: int, params: Dictionary) -> void:
 	if index < 0 or index >= offers.size():
 		action_rejected.emit(actor, &"reroll_augment", &"invalid_index")
 		return
-	if draft_reroll_used(actor, index):
+	if draft_reroll_used(actor, index) or state.is_banned(actor):
 		action_rejected.emit(actor, &"reroll_augment", &"reroll_used")
 		return
 	var replacement: StringName = AugmentRegistry.reroll_candidate(state, actor, offers)
@@ -864,6 +1012,9 @@ func _pick_augment(player_id: int, index: int, params: Dictionary, automatic: bo
 func _on_timeout() -> void:
 	if not _duel.is_empty():
 		_duel_timeout()
+		return
+	if counter_pending():
+		_finish_counter_offer()
 		return
 	match current_state:
 		State.PHASE_ROUND_START:
@@ -949,6 +1100,8 @@ func _begin_turn(new_turn: bool = true) -> void:
 	command_stack.begin_turn()
 	_roll_chain = 0
 	_move_report = null
+	if new_turn:
+		state.attack_log.clear()
 	_sync_current_player()
 	# 🏁 이미 순위가 확정되어 졸업한 플레이어는 턴을 건너뛴다.
 	if state.is_graduated(current_player_id()) and not is_game_over:
@@ -993,6 +1146,15 @@ func _enter_roll_wait() -> void:
 
 func _apply_roll_result(result: RollResult) -> void:
 	ToolRegistry.adjust_result(result)  # dice_table.csv의 min/max/jackpot 칸 수
+	var roller_id: int = current_player_id()
+	# ACT_11 밑장빼기: 확정된 굴림 결과를 미리 고른 칸 수로 바꾼다.
+	if state.forced_roll.has(roller_id) and not result.can_continue:
+		result.steps = int(state.forced_roll[roller_id])
+		result.ends_turn = false
+		result.reroll = false
+		state.forced_roll.erase(roller_id)
+	if state.is_banned(roller_id):
+		result.reroll = false  # 알고리즘 밴: 리롤 금지
 	_emit_event(&"roll_resolved", {"player_id": current_player_id(), "result": result.to_dict()})
 	if result.ends_turn:
 		move_queue.clear()
@@ -1041,7 +1203,7 @@ func _someone_can_intervene() -> bool:
 	for player_id: int in player_order:
 		for card_id: StringName in state.hands[player_id]:
 			var card: BaseCard = CardRegistry.get_card(card_id)
-			if card.is_playable_in(current_state) and card.could_play(state, player_id):
+			if card.category != GameEnums.CardCategory.COUNTER and card.is_playable_in(current_state) and card.could_play(state, player_id):
 				return true
 	return false
 
@@ -1152,6 +1314,8 @@ func _note_altering_laws(pawn: PlayerPawn, ctx: RuleContext, path: Array[int], r
 
 func _enter_resolution() -> void:
 	change_state(State.PHASE_RESOLUTION)
+	if _open_counter_offer(&"resolution"):
+		return
 	if not _stack_offer.is_empty():
 		# 윷놀이 기물 업기 선택을 기다린다. 선택(또는 시간 초과 시 자동 업기) 뒤에 정산 창이 이어진다.
 		phase_time_left = GameEnums.PHASE_TIME_SELECT * timer_scale
@@ -1287,6 +1451,7 @@ func _build_sync_payload() -> Dictionary:
 		"move_queue": move_queue,
 		"stack_offer": _stack_offer.duplicate(true),
 		"duel": _duel.duplicate(true),
+		"counter": _counter_offer.duplicate(true),
 	}
 
 
@@ -1304,6 +1469,7 @@ func _rpc_sync_state(payload: Dictionary) -> void:
 	state.turn_direction = turn_direction
 	_stack_offer = (payload["stack_offer"] as Dictionary).duplicate(true)
 	_duel = (payload.get("duel", {}) as Dictionary).duplicate(true)
+	_counter_offer = (payload.get("counter", {}) as Dictionary).duplicate(true)
 	is_game_over = bool(payload["game_over"])
 	move_queue.assign(payload["move_queue"])
 	current_state = payload["phase"]
@@ -1331,5 +1497,5 @@ func _rpc_event(kind: StringName, data: Dictionary) -> void:
 func state_hash() -> int:
 	if state == null:
 		return 0
-	var payload: Dictionary = {"snapshot": TurnSnapshot.capture(state).to_dict(), "phase": current_state, "serial": phase_serial, "turn": current_turn_index, "dir": turn_direction, "queue": move_queue, "over": is_game_over, "rng": state.rng.state, "duel": _duel}
+	var payload: Dictionary = {"snapshot": TurnSnapshot.capture(state).to_dict(), "phase": current_state, "serial": phase_serial, "turn": current_turn_index, "dir": turn_direction, "queue": move_queue, "over": is_game_over, "rng": state.rng.state, "duel": _duel, "counter": _counter_offer}
 	return var_to_str(payload).hash()

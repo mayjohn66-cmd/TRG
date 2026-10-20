@@ -295,21 +295,6 @@ func test_draft_only_in_rounds_1_4_and_7() -> void:
 
 # --- 신규 함정 / 소환 카드 -------------------------------------------------------
 
-func test_trap_pit_restrains_only_on_dice_four_or_more() -> void:
-	var state := make_state()
-	state.place_attachment(2, TrapPit.new(2))
-	place(state, 11, 0, [], false)
-	var weak: MoveReport = move(state, 11, 3)
-	check(not weak.stopped_early and state.get_pawn(11).restrained_turns == 0, "눈금 3은 통과")
-	check_eq(state.get_pawn(11).current_tile_idx, 3, "정상 이동")
-	place(state, 12, 0, [], false)
-	var strong: MoveReport = move(state, 12, 4)
-	check(strong.stopped_early, "눈금 4 이상이면 그 자리에 멈춤")
-	check_eq(state.get_pawn(12).current_tile_idx, 2, "나락 타일에서 정지")
-	check_eq(state.get_pawn(12).restrained_turns, 2, "2턴 구속")
-	check_eq(state.board.get_tile(2).attachments.size(), 0, "발동 후 소모")
-
-
 func test_trap_pit_ignores_its_owner() -> void:
 	var state := make_state()
 	state.place_attachment(2, TrapPit.new(1))
@@ -317,26 +302,6 @@ func test_trap_pit_ignores_its_owner() -> void:
 	move(state, 11, 4)
 	check_eq(state.get_pawn(11).current_tile_idx, 4, "설치자는 통과")
 	check_eq(state.get_pawn(11).restrained_turns, 0, "구속 없음")
-
-
-func test_restrained_pawn_skips_exactly_two_own_turns() -> void:
-	var manager: TurnManager = _manager(2, false)
-	manager.state.place_attachment(2, TrapPit.new(1))
-	manager.state.tools[1] = ScriptedTool.new([6, 6, 6, 6])  # 서로 다른 타일에 서서 잡기·추가 턴이 끼어들지 않게 한다
-	manager.state.tools[2] = ScriptedTool.new([4, 1, 1, 1])
-	var blocked: Array[bool] = []
-	for round_number: int in 4:
-		for player_id: int in [1, 2]:
-			if player_id == 2:
-				blocked.append(not manager.state.get_pawn(21).is_selectable())
-			_do(manager, player_id, &"proceed")
-			_do(manager, player_id, &"roll")
-			var pawn_id: int = 21 if (player_id == 2 and round_number == 0) else player_id * 10 + 1 + round_number
-			_do(manager, player_id, &"select_pawn", {"pawn_id": pawn_id})
-	check_eq(manager.state.get_pawn(21).current_tile_idx, 2, "21번 말은 나락에서 멈춤")
-	check_eq(blocked, [false, true, true, false] as Array[bool], "구속된 다음 두 번의 내 턴 동안 선택 불가, 그 뒤 해제")
-	_dispose(manager)
-
 
 func test_mine_blast_hits_everyone_within_two_tiles() -> void:
 	var state := make_state()
@@ -363,7 +328,7 @@ func test_mine_blast_radius_follows_graph_edges() -> void:
 
 func test_island_imprisons_on_landing_until_even_roll() -> void:
 	var state := make_state()
-	var card: BaseCard = CardRegistry.get_card(&"TRP_04")
+	var card: BaseCard = CardRegistry.get_card(&"TRP_C01")
 	check(not card.can_play(state, 2, {"tile": 3}), "코너가 아닌 타일은 거부")
 	check(card.can_play(state, 2, {"tile": 12}), "코너는 가능")
 	check(not card.can_play(state, 2, {"tile": 0}), "출발선 코너는 불가")
@@ -374,12 +339,18 @@ func test_island_imprisons_on_landing_until_even_roll() -> void:
 	check_eq(state.get_pawn(11).current_tile_idx, 12, "무인도에 도착")
 	check(state.get_pawn(11).is_imprisoned, "갇힘")
 	var odd: MoveReport = move(state, 11, 3)
-	check(odd.canceled and odd.jailed, "홀수 눈금이면 헛수고")
+	check(odd.canceled and odd.jailed, "홀수 눈금이고 낼 카드도 없으면 헛수고")
 	check_eq(state.get_pawn(11).current_tile_idx, 12, "제자리")
 	var even: MoveReport = move(state, 11, 2)
 	check(even.released, "짝수 눈금에 탈출")
 	check(not state.get_pawn(11).is_imprisoned, "감금 해제")
 	check(even.path.size() == 2, "탈출과 동시에 눈금만큼 이동")
+	place(state, 12, 10, [9])
+	move(state, 12, 2)
+	state.give_card(1, &"ACT_04")
+	var hand_before: int = (state.hands[1] as Array).size()
+	var bail: MoveReport = move(state, 12, 3)
+	check(bail.released and bail.paid_bail and (state.hands[1] as Array).size() == hand_before - 1, "홀수여도 카드 1장을 내면 탈출")
 
 
 func test_island_does_not_imprison_its_owner_or_passers() -> void:
@@ -392,27 +363,10 @@ func test_island_does_not_imprison_its_owner_or_passers() -> void:
 	move(state, 21, 4)  # 12번을 통과해 14번에 도착
 	check(not state.get_pawn(21).is_imprisoned, "통과만 하면 갇히지 않음")
 
-
-func test_summon_cards_spawn_npcs_with_cap() -> void:
-	var state := make_state()
-	var bandit: BaseCard = CardRegistry.get_card(&"SUM_01")
-	var ghost: BaseCard = CardRegistry.get_card(&"SUM_02")
-	check(bandit.needs_tile() and not ghost.needs_tile(), "도적은 타일 선택, 고스트는 12번 고정")
-	exec(state, bandit.create_command(state, 1, {"tile": 14}))
-	check_eq(state.npcs.size(), 1, "도적 소환")
-	check_eq(state.npcs[0].current_tile_idx, 14, "고른 타일")
-	check_eq(state.npcs[0].behavior, GameEnums.NpcBehavior.CHASE_NEAREST, "추격 AI")
-	exec(state, ghost.create_command(state, 2, {}))
-	check_eq(state.npcs[1].current_tile_idx, 12, "고스트는 반환점에 소환")
-	check_eq(state.npcs[1].behavior, GameEnums.NpcBehavior.PATROL_REVERSE, "순찰 AI")
-	exec(state, bandit.create_command(state, 1, {"tile": 3}))
-	check(not bandit.can_play(state, 1, {"tile": 4}), "NPC는 최대 %d체" % GameEnums.MAX_NPCS)
-
-
 func test_tile_cards_report_that_they_need_a_tile() -> void:
-	for card_id: StringName in [&"TRP_01", &"TRP_02", &"TRP_03", &"TRP_04", &"SUM_01"]:
+	for card_id: StringName in [&"TRP_02", &"TRP_03", &"TRP_06", &"TRP_C01", &"TRP_C04", &"SUM_01", &"SUM_02", &"ACT_13"]:
 		check(CardRegistry.get_card(card_id).needs_tile(), "%s는 타일을 고른다" % card_id)
-	for card_id: StringName in [&"ACT_01", &"ACT_04", &"ACT_05", &"ACT_06", &"SUM_02"]:
+	for card_id: StringName in [&"CNT_01", &"ACT_04", &"ACT_06", &"ACT_14"]:
 		check(not CardRegistry.get_card(card_id).needs_tile(), "%s는 타일이 필요 없다" % card_id)
 
 
@@ -578,3 +532,33 @@ func test_hotels_stop_walkers_but_not_pawns_flying_on_a_dash_pad() -> void:
 	var walker: PlayerPawn = place(state, 12, pad - 1, [pad - 2])
 	var walked: MoveReport = move(state, 12, 3)
 	check(walked.stopped_early and walker.current_tile_idx == pad + 1, "걸어서 지나가면 여전히 호텔에서 멈춘다")
+
+
+func test_trap_pit_ejects_only_on_dice_four_or_more() -> void:
+	var state := make_state()
+	state.place_attachment(2, TrapPit.new(2))
+	place(state, 11, 0, [], false)
+	var weak: MoveReport = move(state, 11, 3)
+	check(not weak.stopped_early and state.get_pawn(11).current_tile_idx == 3, "눈금 3은 통과")
+	place(state, 12, 0, [], false)
+	var strong: MoveReport = move(state, 12, 4)
+	check(strong.trapped and not state.get_pawn(12).has_left_start, "눈금 4 이상이면 나락으로 사출")
+	check_eq(state.board.get_tile(2).attachments.size(), 0, "발동 후 소모")
+
+
+func test_summon_cards_sweep_from_a_top_corner_and_vanish() -> void:
+	var state := make_state()
+	var bandit: BaseCard = CardRegistry.get_card(&"SUM_01")
+	var ghost: BaseCard = CardRegistry.get_card(&"SUM_02")
+	check(bandit.needs_tile() and ghost.needs_tile(), "둘 다 소환할 코너를 고른다")
+	check(bandit.can_play(state, 1, {"tile": BoardSpec.side}) and bandit.can_play(state, 1, {"tile": BoardSpec.halfway_tile}), "상단 코너 두 곳")
+	check(not bandit.can_play(state, 1, {"tile": 3}) and not ghost.can_play(state, 1, {"tile": 3 * BoardSpec.side}), "다른 칸에는 소환할 수 없다")
+	place(state, 21, BoardSpec.side + 1, [BoardSpec.side])
+	place(state, 22, BoardSpec.side + 3, [BoardSpec.side + 2])
+	place(state, 23, BoardSpec.side - 1, [BoardSpec.side - 2])
+	exec(state, bandit.create_command(state, 1, {"tile": BoardSpec.side}))
+	check(not state.get_pawn(21).has_left_start and not state.get_pawn(22).has_left_start, "도적떼는 정방향 3칸 이상을 쓸었다")
+	check(state.get_pawn(23).has_left_start, "뒤쪽은 안전")
+	check(state.npcs.is_empty(), "쓸고 사라진다")
+	exec(state, ghost.create_command(state, 1, {"tile": BoardSpec.side}))
+	check(not state.get_pawn(23).has_left_start, "팩맨은 역방향을 쓴다")

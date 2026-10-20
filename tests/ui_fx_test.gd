@@ -1182,13 +1182,13 @@ func _test_hud_overhaul() -> void:
 	# 4) 클릭 확대 (남의 턴에도 가능)
 	var holder: int = current
 	(manager.state.hands[holder] as Array).clear()
-	manager.state.give_card(holder, &"ACT_01")
-	manager.state.give_card(holder, &"TRP_01")
+	manager.state.give_card(holder, &"ACT_04")
+	manager.state.give_card(holder, &"TRP_07")
 	_board._refresh_hands()
-	_board._card_press(holder, &"ACT_01", Vector2(700, 700), Vector2(700, 640))
+	_board._card_press(holder, &"ACT_04", Vector2(700, 700), Vector2(700, 640))
 	_board._card_release(Vector2(701, 700))
 	_expect(_board._zoom_view != null and _board._zoom_view.size.x >= 350.0 and _board._zoom_view.size.y >= 490.0 and _board._zoom_view.size.y < 640.0, "클릭하면 손패와 같은 카드 UI로 2.5배(350x490) 이상 확대 (%s)" % str(_board._zoom_view.size if _board._zoom_view != null else Vector2.ZERO))
-	_board._card_press(holder, &"ACT_01", Vector2(700, 700), Vector2(700, 640))
+	_board._card_press(holder, &"ACT_04", Vector2(700, 700), Vector2(700, 640))
 	_board._card_release(Vector2(701, 700))
 	await process_frame
 	_expect(_board._zoom_view == null, "다시 클릭하면 닫힌다 (토글)")
@@ -1197,37 +1197,37 @@ func _test_hud_overhaul() -> void:
 	_board._beat_until_msec = 0
 	_board._fx_until_msec = 0
 	_expect(manager.current_state == TurnManager.State.PHASE_TURN_BEGIN and not _board._ui_busy(), "드래그 테스트 전제: 턴 시작, 입력 가능")
-	_board._card_press(holder, &"TRP_01", Vector2(700, 700), Vector2(700, 640))
+	_board._card_press(holder, &"TRP_07", Vector2(700, 700), Vector2(700, 640))
 	_board._card_move(Vector2(720, 600))
 	_expect(_board._drag_active and _board._drop_zone.visible, "끄는 동안 드롭 존이 보인다")
 	_board._card_release(Vector2(100, 300))
 	await process_frame
-	_expect(not _board._drop_zone.visible and (manager.state.hands[holder] as Array).has(&"TRP_01"), "보드 밖에 놓으면 발동하지 않고 손패에 남는다")
+	_expect(not _board._drop_zone.visible and (manager.state.hands[holder] as Array).has(&"TRP_07"), "보드 밖에 놓으면 발동하지 않고 손패에 남는다")
 	# 타일 지정형: 보드에 던지면 설치 위치 선택 UI가 열리고, 타일을 고르면 설치된다
-	var card: BaseCard = CardRegistry.get_card(&"TRP_01")
+	var card: BaseCard = CardRegistry.get_card(&"TRP_07")
 	var target: int = -1
 	for index: int in BoardSpec.tile_count:
 		if card.can_play(manager.state, holder, {"tile": index}):
 			target = index
 			break
-	_board._card_press(holder, &"TRP_01", Vector2(700, 700), Vector2(700, 640))
+	_board._card_press(holder, &"TRP_07", Vector2(700, 700), Vector2(700, 640))
 	_board._card_move(Vector2(720, 600))
 	_board._card_release(_board._tile_center(target))
 	await process_frame
 	_expect(_board._tile_pick_active and _board._pick_banner.visible and _board._pick_cancel.visible, "보드에 던지면 설치할 타일을 고르는 UI가 열린다")
-	_expect(not manager.state.board.get_tile(target).has_attachment(&"TRP_01"), "던지기만으로는 아직 설치되지 않는다")
+	_expect(not manager.state.board.get_tile(target).has_attachment(&"TRP_07"), "던지기만으로는 아직 설치되지 않는다")
 	_board._complete_tile_pick(target)
 	await process_frame
-	_expect(manager.state.board.get_tile(target).has_attachment(&"TRP_01") and not (manager.state.hands[holder] as Array).has(&"TRP_01") and not _board._pick_cancel.visible, "타일을 고르면 설치되고 UI가 닫힌다")
-	_expect(not _board._card_usable_now(holder, CardRegistry.get_card(&"ACT_01")), "굴리기 전 카드는 턴당 1장이라 두 번째 카드는 쓸 수 없다")
+	_expect(manager.state.board.get_tile(target).has_attachment(&"TRP_07") and not (manager.state.hands[holder] as Array).has(&"TRP_07") and not _board._pick_cancel.visible, "타일을 고르면 설치되고 UI가 닫힌다")
+	_expect(not _board._card_usable_now(holder, CardRegistry.get_card(&"ACT_04")), "굴리기 전 카드는 턴당 1장이라 두 번째 카드는 쓸 수 없다")
 	manager._card_played_this_turn = false  # 다음 턴이 된 것으로 보고 이어서 검사한다
 	# 즉발 카드는 보드판 어디든 놓으면 발동
-	_board._card_press(holder, &"ACT_01", Vector2(700, 700), Vector2(700, 640))
+	_board._card_press(holder, &"ACT_04", Vector2(700, 700), Vector2(700, 640))
 	_board._card_move(Vector2(720, 600))
 	_board._card_release(Vector2(680, 300))
 	await process_frame
-	_expect(not (manager.state.hands[holder] as Array).has(&"ACT_01"), "즉발 카드를 보드에 놓으면 발동")
-	manager.turn_direction = 1  # 우노 리버스가 뒤집은 진행 방향·역주행을 되돌려 다음 테스트에 영향이 없게 한다
+	_expect(not (manager.state.hands[holder] as Array).has(&"ACT_04"), "즉발 카드를 보드에 놓으면 발동")
+	manager.state.roll_bonus = 0  # 로켓 보너스가 다음 테스트에 영향이 없게 한다
 	manager.state.reverse_move_rounds_left = 0
 	_board.instant_roll_for_test = false
 

@@ -303,116 +303,10 @@ func test_stack_choice_is_skipped_for_non_yut_pawns_and_headless_default() -> vo
 	check(not auto.stack_offer_pending() and auto.state.get_pawn(12).carrier == auto.state.get_pawn(11), "기본(헤드리스/AI)은 선택 없이 자동 업기")
 	_dispose(auto)
 
-
-func test_cards_are_only_played_before_the_roll_and_once_per_turn() -> void:
-	var manager: TurnManager = _new_manager()
-	var rejected: Array = _rejections(manager)
-	add_law(manager.state, &"LAW_02")
-	add_law(manager.state, &"LAW_05")
-	manager.state.give_card(1, &"ACT_06")
-	manager.state.give_card(1, &"ACT_06")
-	manager.state.give_card(2, &"ACT_06")
-	_set_tool(manager, 1, ScriptedTool.new([2]))
-	_do(manager, 1, &"play_card", {"card_id": &"ACT_06", "law_id": "LAW_02"})
-	check(not manager.state.rulebook.has_law(&"LAW_02"), "굴리기 전에는 카드가 바로 실행된다")
-	check(manager.card_played_this_turn(), "이번 턴 카드 사용 기록")
-	_do(manager, 1, &"play_card", {"card_id": &"ACT_06", "law_id": "LAW_05"})
-	check_eq(rejected.size(), 1, "굴리기 전 카드는 턴당 1장")
-	check_eq(rejected[0][2], &"card_limit", "거부 사유는 카드 한도")
-	check(manager.state.rulebook.has_law(&"LAW_05"), "두 번째 카드는 실행되지 않음")
-	_do(manager, 1, &"proceed")
-	_do(manager, 1, &"roll")
-	check_eq(manager.current_state, Phase.PHASE_SELECT_PAWN, "손패가 있어도 굴림 뒤 개입 창은 열리지 않는다")
-	_do(manager, 2, &"play_card", {"card_id": &"ACT_06", "law_id": "LAW_05"})
-	check_eq(rejected.back()[2], &"not_playable_now", "굴림 뒤에는 (ACT_05를 빼고) 카드를 낼 수 없다")
-	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
-	_do(manager, 2, &"proceed")
-	check(not manager.card_played_this_turn(), "새 턴에는 카드 사용 기록이 초기화된다")
-	_dispose(manager)
-
-
-func test_card_requires_phase_ownership_and_valid_target() -> void:
-	var manager: TurnManager = _new_manager()
-	var rejected: Array = _rejections(manager)
-	manager.state.give_card(2, &"TRP_01")
-	manager.state.give_card(1, &"TRP_01")
-	_do(manager, 2, &"play_card", {"card_id": &"TRP_01", "tile": 9})  # 내 턴 아님
-	_do(manager, 1, &"play_card", {"card_id": &"TRP_01", "tile": 0})  # 잘못된 대상
-	_do(manager, 1, &"play_card", {"card_id": &"ACT_06", "law_id": "LAW_01"})  # 손패에 없음
-	_do(manager, 1, &"play_card", {"card_id": &"TRP_01", "tile": 9})  # 정상
-	check_eq(rejected.size(), 3, "비정상 요청 3건 거부")
-	check(manager.state.board.get_tile(9).has_attachment(&"TRP_01"), "정상 요청은 설치")
-	check((manager.state.hands[1] as Array).is_empty(), "사용한 카드 소모")
-	_dispose(manager)
-
-
-func test_uno_reverse_card_reverses_turn_order() -> void:
-	var manager: TurnManager = _new_manager(3)
-	manager.state.give_card(1, &"ACT_01")
-	_do(manager, 1, &"play_card", {"card_id": &"ACT_01"})
-	check_eq(manager.turn_direction, -1, "역순")
-	_set_tool(manager, 1, ScriptedTool.new([1]))
-	_do(manager, 1, &"proceed")
-	_do(manager, 1, &"roll")
-	check_eq(manager.move_queue, int_array([1]), "눈금")
-	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
-	check_eq(manager.state.current_player, 3, "1번 다음은 3번")
-	check_eq(manager.state.get_pawn(11).current_tile_idx, 1, "턴 순서만 뒤집힐 뿐 말은 앞으로 간다")
-	_dispose(manager)
-
-
-func test_act_05_rolls_back_turn_restores_laws_but_keeps_spent_cards() -> void:
-	var manager: TurnManager = _new_manager()
-	var state: GameState = manager.state
-	place(state, 11, 1, [0])
-	place(state, 21, 3, [2])
-	add_law(state, &"LAW_06")
-	state.give_card(2, &"ACT_05")
-	state.give_card(1, &"ACT_06")
-	_set_tool(manager, 1, ScriptedTool.new([2]))
-	manager._begin_turn()  # 위 세팅을 이번 턴 시작 시점으로 저장
-	_do(manager, 1, &"play_card", {"card_id": &"ACT_06", "law_id": "LAW_06"})  # 굴리기 전에 법전 파기
-	check(not state.rulebook.has_law(&"LAW_06"), "법전 파기됨")
-	_do(manager, 1, &"proceed")
-	_do(manager, 1, &"roll")
-	check_eq(manager.current_state, Phase.PHASE_SELECT_PAWN, "굴림 뒤 개입 창 없이 바로 기물 선택")
-	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
-	check_eq(manager.current_state, Phase.PHASE_RESOLUTION, "ACT_05 대기 창")
-	check_eq(state.get_pawn(21).current_tile_idx, 0, "잡힘")
-	_do(manager, 2, &"play_card", {"card_id": &"ACT_05"})
-	manager.tick(GameEnums.PHASE_TIME_RESOLUTION + 0.1)
-	check_eq(state.get_pawn(11).current_tile_idx, 1, "내 말 위치 복원")
-	check_eq(state.get_pawn(21).current_tile_idx, 3, "잡힌 말 복원")
-	check(state.rulebook.has_law(&"LAW_06"), "법전 큐도 턴 시작 시점으로 복원")
-	check((state.hands[2] as Array).is_empty(), "ACT_05 카드는 소모된 채")
-	check((state.hands[1] as Array).is_empty(), "이번 턴 소모한 카드는 복구되지 않음")
-	check_eq(manager.current_state, Phase.PHASE_TURN_BEGIN, "같은 플레이어의 턴이 처음부터 다시")
-	check_eq(state.current_player, 1, "같은 플레이어")
-	_dispose(manager)
-
-
-func test_act_05_cannot_be_played_by_unharmed_player() -> void:
-	var manager: TurnManager = _new_manager()
-	var rejected: Array = _rejections(manager)
-	manager.state.give_card(2, &"ACT_05")
-	manager.state.give_card(1, &"ACT_05")
-	place(manager.state, 11, 2, [1])
-	place(manager.state, 21, 4, [3])
-	_set_tool(manager, 1, ScriptedTool.new([2]))
-	manager._begin_turn()
-	_do(manager, 1, &"proceed")
-	_do(manager, 1, &"roll")
-	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
-	check_eq(manager.current_state, Phase.PHASE_RESOLUTION, "피해를 입은 P2가 ACT_05를 낼 수 있어 창이 열린다")
-	_do(manager, 1, &"play_card", {"card_id": &"ACT_05"})
-	check_eq(rejected.size(), 1, "피해 없는 플레이어의 ACT_05는 거부")
-	_dispose(manager)
-
-
 func test_intervention_window_stays_closed_when_nobody_can_use_their_cards() -> void:
 	var manager: TurnManager = _new_manager()
-	manager.state.give_card(2, &"ACT_05")  # 피해자가 없으면 쓸 수 없는 카드
-	manager.state.give_card(1, &"TRP_01")  # 턴 시작 구간에서만 쓰는 카드
+	manager.state.give_card(2, &"CNT_04")  # 공격받기 전에는 쓸 수 없는 반격 카드
+	manager.state.give_card(1, &"TRP_07")  # 턴 시작 구간에서만 쓰는 카드
 	_set_tool(manager, 1, ScriptedTool.new([2]))
 	_do(manager, 1, &"proceed")
 	_do(manager, 1, &"roll")
@@ -420,21 +314,6 @@ func test_intervention_window_stays_closed_when_nobody_can_use_their_cards() -> 
 	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
 	check_eq(manager.current_state, Phase.PHASE_TURN_BEGIN, "정산 창도 건너뛰고 다음 턴")
 	_dispose(manager)
-
-
-func test_act_04_rocket_booster_adds_three_to_the_roll_once() -> void:
-	var manager: TurnManager = _new_manager()
-	manager.state.give_card(1, &"ACT_04")
-	_set_tool(manager, 1, ScriptedTool.new([2, 1]))
-	_do(manager, 1, &"play_card", {"card_id": &"ACT_04"})
-	check_eq(manager.state.roll_bonus, 3, "+3 예약")
-	_do(manager, 1, &"proceed")
-	_do(manager, 1, &"roll")
-	check_eq(manager.move_queue, int_array([5]), "굴림 2에 +3")
-	check_eq(manager.state.roll_bonus, 0, "한 번 쓰면 소모")
-	check((manager.state.hands[1] as Array).is_empty(), "카드 소모")
-	_dispose(manager)
-
 
 func test_all_pawns_home_declares_winner_and_stops_game() -> void:
 	var manager: TurnManager = _new_manager()
@@ -604,16 +483,6 @@ func test_advance_to_next_player_follows_reverse_direction() -> void:
 	check_eq(manager.current_turn_index, 2, "계속 역순")
 	_dispose(manager)
 
-
-func test_uno_reverse_card_flips_turn_direction_through_signal() -> void:
-	var manager: TurnManager = _new_manager(3)
-	manager.state.give_card(1, &"ACT_01")
-	_do(manager, 1, &"play_card", {"card_id": &"ACT_01"})
-	check_eq(manager.turn_direction, -1, "카드 실행이 TurnManager 방향을 뒤집음")
-	check_eq(manager.state.reverse_move_rounds_left, 0, "말의 이동 방향은 바뀌지 않는다")
-	_dispose(manager)
-
-
 func test_step_by_step_move_stops_immediately_when_a_trap_fires() -> void:
 	var manager: TurnManager = _new_manager()
 	var state: GameState = manager.state
@@ -701,3 +570,171 @@ func test_turn_skipped_event_when_no_pawn_can_move() -> void:
 	_do(manager, 1, &"roll")
 	check(kinds.has([&"turn_skipped", 1]), "움직일 수 있는 말이 없으면 turn_skipped 이벤트가 나간다")
 	_dispose(manager)
+
+
+func test_cards_are_only_played_before_the_roll_and_once_per_turn() -> void:
+	var manager: TurnManager = _new_manager()
+	var rejected: Array = _rejections(manager)
+	manager.state.give_card(1, &"ACT_04")
+	manager.state.give_card(1, &"ACT_04")
+	manager.state.give_card(2, &"ACT_04")
+	_set_tool(manager, 1, ScriptedTool.new([2]))
+	_do(manager, 1, &"play_card", {"card_id": &"ACT_04"})
+	check_eq(manager.state.roll_bonus, 4, "굴리기 전에는 카드가 바로 실행된다")
+	check(manager.card_played_this_turn(), "이번 턴 카드 사용 기록")
+	_do(manager, 1, &"play_card", {"card_id": &"ACT_04"})
+	check_eq(rejected.size(), 1, "굴리기 전 카드는 턴당 1장")
+	check_eq(rejected[0][2], &"card_limit", "거부 사유는 카드 한도")
+	_do(manager, 1, &"proceed")
+	_do(manager, 1, &"roll")
+	check_eq(manager.move_queue, int_array([6]), "굴림 2에 로켓 +4")
+	check_eq(manager.current_state, Phase.PHASE_SELECT_PAWN, "손패가 있어도 굴림 뒤 개입 창은 열리지 않는다")
+	_do(manager, 2, &"play_card", {"card_id": &"ACT_04"})
+	check_eq(rejected.back()[2], &"not_playable_now", "굴림 뒤에는 (반격 카드를 빼고) 카드를 낼 수 없다")
+	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
+	_do(manager, 2, &"proceed")
+	check(not manager.card_played_this_turn(), "새 턴에는 카드 사용 기록이 초기화된다")
+	_dispose(manager)
+
+
+func test_card_requires_phase_ownership_and_valid_target() -> void:
+	var manager: TurnManager = _new_manager()
+	var rejected: Array = _rejections(manager)
+	manager.state.give_card(2, &"TRP_07")
+	manager.state.give_card(1, &"TRP_07")
+	_do(manager, 2, &"play_card", {"card_id": &"TRP_07", "tile": 9})  # 내 턴 아님
+	_do(manager, 1, &"play_card", {"card_id": &"TRP_07", "tile": 0})  # 잘못된 대상
+	_do(manager, 1, &"play_card", {"card_id": &"ACT_04"})  # 손패에 없음
+	_do(manager, 1, &"play_card", {"card_id": &"TRP_07", "tile": 9})  # 정상
+	check_eq(rejected.size(), 3, "비정상 요청 3건 거부")
+	check(manager.state.board.get_tile(9).has_attachment("TRP_07"), "정상 요청은 설치")
+	check((manager.state.hands[1] as Array).is_empty(), "사용한 카드 소모")
+	_dispose(manager)
+
+
+## P1 말이 P2 말을 잡는다. P2는 반격 카드 card_id를 들고 있다.
+func _capture_setup(manager: TurnManager, card_id: StringName) -> void:
+	var state: GameState = manager.state
+	place(state, 11, 1, [0])
+	place(state, 21, 3, [2])
+	state.give_card(2, card_id)
+	_set_tool(manager, 1, ScriptedTool.new([2]))
+	manager._begin_turn()
+	_do(manager, 1, &"proceed")
+	_do(manager, 1, &"roll")
+	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
+
+
+func test_capture_opens_a_counter_offer_and_mirror_force_ejects_the_attacker() -> void:
+	var manager: TurnManager = _new_manager()
+	var events: Array = _collect_events(manager)
+	var rejected: Array = _rejections(manager)
+	_capture_setup(manager, &"CNT_02")
+	check(manager.counter_pending(), "반격 대기")
+	check_eq(int(manager.pending_counter()["victim"]), 2, "피해자 P2")
+	check_eq(manager.pending_counter()["cards"], [&"CNT_02"], "낼 수 있는 반격 카드")
+	check(events.any(func(e: Dictionary) -> bool: return e["kind"] == &"counter_offer"), "counter_offer 이벤트")
+	_do(manager, 1, &"proceed")
+	check_eq(rejected.back()[2], &"counter_pending", "반격 대기 중에는 다른 행동을 막는다")
+	_do(manager, 2, &"play_card", {"card_id": &"CNT_02"})
+	check_eq(manager.state.get_pawn(21).current_tile_idx, 3, "잡힌 말 복원")
+	check(not manager.state.get_pawn(11).has_left_start, "공격한 말은 출발선으로")
+	check(not manager.counter_pending(), "반격 대기 종료")
+	check_eq(manager.state.stat(1, VictoryLaw.KILLS), 0, "처치 기록도 되돌린다")
+	check_eq(manager.state.current_player, 2, "턴은 이어서 넘어간다")
+	_dispose(manager)
+
+
+func test_bites_the_dust_rewinds_the_attackers_turn_and_ends_it() -> void:
+	var manager: TurnManager = _new_manager()
+	_capture_setup(manager, &"CNT_01")
+	check(manager.counter_pending(), "반격 대기")
+	_do(manager, 2, &"play_card", {"card_id": &"CNT_01"})
+	check_eq(manager.state.get_pawn(11).current_tile_idx, 1, "공격자 말 위치 복원")
+	check_eq(manager.state.get_pawn(21).current_tile_idx, 3, "잡힌 말 복원")
+	check((manager.state.hands[2] as Array).is_empty(), "반격 카드는 소모된 채")
+	check_eq(manager.state.current_player, 2, "공격자의 턴이 끝나고 다음 사람 차례")
+	_dispose(manager)
+
+
+func test_passing_a_counter_offer_keeps_the_damage() -> void:
+	var manager: TurnManager = _new_manager()
+	_capture_setup(manager, &"CNT_04")
+	_do(manager, 2, &"counter_pass")
+	check(not manager.counter_pending(), "넘기면 진행")
+	check_eq(manager.state.get_pawn(21).current_tile_idx, 0, "피해는 그대로")
+	check_eq((manager.state.hands[2] as Array).size(), 1, "카드는 남는다")
+	_dispose(manager)
+
+
+func test_uno_reverse_reflects_a_bang_back_to_the_shooter() -> void:
+	var manager: TurnManager = _new_manager()
+	var state: GameState = manager.state
+	place(state, 11, 5, [4])
+	place(state, 21, 9, [8])
+	state.give_card(1, &"ACT_02")
+	state.give_card(2, &"CNT_03")
+	_do(manager, 1, &"play_card", {"card_id": &"ACT_02", "target_player": 2})
+	check(manager.counter_pending() and manager.current_state == Phase.PHASE_TURN_BEGIN, "뱅! 직후 턴 시작 단계에서 반격 대기")
+	_do(manager, 2, &"play_card", {"card_id": &"CNT_03"})
+	check_eq(state.get_pawn(21).current_tile_idx, 9, "내 말 복원")
+	check(not state.get_pawn(11).has_left_start, "뱅!이 쏜 사람에게 반사")
+	check_eq(manager.current_state, Phase.PHASE_TURN_BEGIN, "공격자의 턴은 계속된다")
+	_dispose(manager)
+
+
+func test_trap_counters_cyclone_destroys_and_advances() -> void:
+	var manager: TurnManager = _new_manager()
+	var state: GameState = manager.state
+	state.place_attachment(3, TrapSpike.new(2))
+	state.give_card(1, &"CNT_05")
+	place(state, 11, 1, [0])
+	_set_tool(manager, 1, ScriptedTool.new([4]))
+	manager._begin_turn()
+	_do(manager, 1, &"proceed")
+	_do(manager, 1, &"roll")
+	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
+	check_eq(state.get_pawn(11).current_tile_idx, 3, "스파이크에 멈췄다")
+	check(manager.counter_pending() and int(manager.pending_counter()["victim"]) == 1, "내 턴에 걸린 함정도 반격할 수 있다")
+	_do(manager, 1, &"play_card", {"card_id": &"CNT_05"})
+	check(state.board.get_tile(3).attachments.is_empty(), "함정 파괴")
+	check_eq(state.get_pawn(11).current_tile_idx, 3 + CardCounter.CYCLONE_STEPS, "+3칸 전진")
+	_dispose(manager)
+
+
+func test_ban_skip_stacked_deck_and_the_world() -> void:
+	var manager: TurnManager = _new_manager()
+	var state: GameState = manager.state
+	var rejected: Array = _rejections(manager)
+	state.give_card(1, &"ACT_14")
+	state.give_card(2, &"ACT_04")
+	_do(manager, 1, &"play_card", {"card_id": &"ACT_14", "target_player": 2})
+	check(state.is_banned(2), "밴")
+	_set_tool(manager, 1, ScriptedTool.new([1]))
+	_do(manager, 1, &"proceed")
+	_do(manager, 1, &"roll")
+	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
+	check_eq(state.current_player, 2, "P2 차례")
+	_do(manager, 2, &"play_card", {"card_id": &"ACT_04"})
+	check_eq(rejected.back()[2], &"banned", "밴 중에는 카드를 못 쓴다")
+	_dispose(manager)
+	var world: TurnManager = _new_manager()
+	world.state.give_card(1, &"ACT_12")
+	world.state.forced_roll[1] = 5
+	_do(world, 1, &"play_card", {"card_id": &"ACT_12"})
+	_set_tool(world, 1, ScriptedTool.new([1, 1]))
+	_do(world, 1, &"proceed")
+	_do(world, 1, &"roll")
+	check_eq(world.move_queue, int_array([5]), "밑장빼기로 고른 결과")
+	_do(world, 1, &"select_pawn", {"pawn_id": 11})
+	check_eq(world.state.current_player, 1, "더 월드: 한 턴 더")
+	_dispose(world)
+	var skip: TurnManager = _new_manager()
+	skip.state.give_card(1, &"ACT_15")
+	_do(skip, 1, &"play_card", {"card_id": &"ACT_15", "target_player": 2})
+	_set_tool(skip, 1, ScriptedTool.new([1, 1]))
+	_do(skip, 1, &"proceed")
+	_do(skip, 1, &"roll")
+	_do(skip, 1, &"select_pawn", {"pawn_id": 11})
+	check_eq(skip.state.current_player, 1, "우노 스킵: P2를 건너뛰고 다시 P1")
+	_dispose(skip)

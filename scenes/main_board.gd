@@ -99,44 +99,77 @@ const CARD_CATEGORY_NAMES: Dictionary = {
 	GameEnums.CardCategory.INSTANT: "즉발",
 	GameEnums.CardCategory.TRAP: "함정",
 	GameEnums.CardCategory.SUMMON: "소환",
+	GameEnums.CardCategory.COUNTER: "반격",
 }
 ## 작은 손패 카드에 보여 주는 1줄 핵심 요약 (15자 이내). 자세한 규칙은 클릭해서 확대할 때 CARD_SUMMARIES로 본다.
 const CARD_SHORT: Dictionary = {
-	&"ACT_01": "턴 순서 역전",
+	&"CNT_01": "되감고 턴 종료",
+	&"CNT_02": "공격한 말 사출",
+	&"CNT_03": "공격 카드 반사",
+	&"CNT_04": "공격 1회 회피",
+	&"CNT_05": "함정 파괴 +3칸",
+	&"CNT_06": "함정 무효+강탈",
+	&"CNT_07": "함정 주인에 반사",
 	&"ACT_02": "상대 선두 사출",
-	&"ACT_03": "적 사출 & 내 +4칸",
-	&"ACT_04": "이번 굴림 결과 +3",
-	&"ACT_05": "턴 시작 전으로 되감기",
-	&"ACT_06": "교칙 1개 삭제",
-	&"ACT_07": "뭉친 말 강제 산개",
+	&"ACT_03": "폭탄 패스 & +4칸",
+	&"ACT_04": "이번 굴림 +4",
+	&"ACT_06": "승리 기록 초기화",
+	&"ACT_07": "한 변 설치물 붕괴",
 	&"ACT_08": "꼴찌 ↔ 선두 교환",
 	&"ACT_09": "승자 +3칸·패자 사출",
-	&"TRP_01": "밟은 적 출발선 추방",
-	&"TRP_02": "눈금 4+ 2턴 구속",
+	&"ACT_10": "앞 3칸 적 사출",
+	&"ACT_11": "굴림 결과 지정",
+	&"ACT_12": "한 턴 더",
+	&"ACT_13": "빈 칸 순간이동",
+	&"ACT_14": "2턴 카드·스킬 금지",
+	&"ACT_15": "상대 턴 건너뛰기",
+	&"TRP_02": "눈금 4+ 적 사출",
 	&"TRP_03": "반경 2칸 폭파",
-	&"TRP_04": "코너 감옥화",
 	&"TRP_05": "스프링 대포 +5칸",
-	&"SUM_01": "최근접 말 추격",
-	&"SUM_02": "역주행 순찰·연행",
+	&"TRP_06": "미끄러짐+카드 강탈",
+	&"TRP_07": "지나가면 정지",
+	&"TRP_08": "꼴찌와 자리 교환",
+	&"TRP_C01": "코너 감옥화",
+	&"TRP_C02": "내 편 점프·적 사출",
+	&"TRP_C03": "카드 상납 or 정지",
+	&"TRP_C04": "주변 적 끌어오기",
+	&"SUM_01": "정방향 질주 사출",
+	&"SUM_02": "역방향 질주 사출",
 }
-## 카드 확대 보기에서 읽는 개조식 요약 (키워드 + 명사형 종결).
+## 카드 확대 보기에서 읽는 개조식 요약 (키워드 + 명사형 종결). cards_table.csv의 desc가 있으면 그것이 우선이다.
 const CARD_SUMMARIES: Dictionary = {
-	&"ACT_01": "턴 진행 순서 역전 (말은 뒤로 가지 않음)",
+	&"CNT_01": "[반격] 공격당하면 이번 턴을 통째로 되감고 공격자의 턴 종료",
+	&"CNT_02": "[반격] 잡기를 막고 공격한 말을 출발선으로 사출",
+	&"CNT_03": "[반격] 공격 카드를 막고 공격자에게 그대로 반사",
+	&"CNT_04": "[반격] 잡기·공격 카드 1회 회피",
+	&"CNT_05": "[반격] 걸린 함정을 부수고 +3칸 전진",
+	&"CNT_06": "[반격] 걸린 함정 무효 + 설치자 카드 1장 강탈",
+	&"CNT_07": "[반격] 걸린 함정을 설치자의 선두 말에 반사 (출발선 사출)",
 	&"ACT_02": "상대 선두 말을 출발선으로 장외 사출 (프로필 선택)",
-	&"ACT_03": "다음 유저 선두 말 장외 사출 + 내 말 1개 +4칸 전진",
-	&"ACT_04": "굴리기 전 사용! 눈금 +3칸",
-	&"ACT_05": "이번 턴 시작 직전으로 시간 역행",
-	&"ACT_06": "중앙 법전 교칙 1개 지정 삭제",
-	&"TRP_01": "밟은 적 말 즉시 출발선 추방",
-	&"TRP_02": "눈금 4+ 이동 말 2턴간 구속",
-	&"TRP_03": "밟으면 반경 2칸 내 모든 말 폭파",
-	&"TRP_04": "코너 감옥화 (짝수 눈금에 탈출)",
-	&"TRP_05": "밟은 말 앞으로 +5칸 사출, 착지 지점의 말은 들이받아 날림",
-	&"ACT_07": "가장 뭉친 타일의 말 강제 분리·산개",
+	&"ACT_03": "다음 유저에게 폭탄 패스: 선두 말 사출 + 내 이동 +4칸",
+	&"ACT_04": "굴리기 전 사용! 이번 굴림 +4칸",
+	&"ACT_06": "특수 승리 기록 1개를 0으로 초기화",
+	&"ACT_07": "고른 한 변의 설치물 전부 붕괴",
 	&"ACT_08": "내 꼴찌 말 ↔ 1등 적 선두 말 위치 교환",
-	&"ACT_09": "적 1명과 가위바위보! 승자 말 +3칸 전진, 패자 말 1개 장외 사출",
-	&"SUM_01": "라운드마다 최근접 말 추격\n카드 강탈",
-	&"SUM_02": "반환점 출발 역주행 순찰 & 연행",
+	&"ACT_09": "적 1명과 가위바위보! 승자 말 +3칸, 패자 말 1개 사출",
+	&"ACT_10": "내 선두 말 앞 3칸의 적 사출 + 설치물 파괴",
+	&"ACT_11": "다음 굴림 결과를 1~6칸 중 직접 지정",
+	&"ACT_12": "이번 턴이 끝나면 한 턴 더",
+	&"ACT_13": "내 선두 말을 고른 빈 칸으로 순간이동",
+	&"ACT_14": "상대 1명 2턴 동안 카드·필살기·리롤 금지",
+	&"ACT_15": "상대 1명의 다음 턴 건너뛰기",
+	&"TRP_02": "눈금 4+ 로 지나가는 적 말 출발선 사출",
+	&"TRP_03": "밟으면 반경 2칸 내 모든 말 폭파",
+	&"TRP_05": "밟은 말 앞으로 +5칸 사출, 착지 지점의 말은 들이받아 날림",
+	&"TRP_06": "밟은 적 말 +3칸 미끄러짐 + 카드 1장 강탈",
+	&"TRP_07": "지나가던 적 말 그 칸에 강제 정지",
+	&"TRP_08": "밟은 적 말 ↔ 보드 꼴찌 말 위치 교환",
+	&"TRP_C01": "[코너] 멈춘 적 말 감금 (카드 1장 or 짝수 눈금에 탈출, 3턴 유지)",
+	&"TRP_C02": "[코너] 내 말 +5칸 점프 / 적 말 출발선 사출",
+	&"TRP_C03": "[코너] 지나가는 적은 카드 1장 상납, 없으면 강제 정지 (5턴 유지)",
+	&"TRP_C04": "[코너] 밟은 적 정지 + 코너 2칸 안의 적 말 끌어오기",
+	&"SUM_01": "[상단 코너] 정방향 3~6칸 질주하며 길 위 말 전부 사출",
+	&"SUM_02": "[상단 코너] 역방향 3~6칸 질주하며 길 위 말 전부 사출",
 }
 
 
@@ -811,6 +844,22 @@ func _bind_state() -> void:
 			_fx_when_announced(func() -> void:
 				_impact_ring(_tile_center(tile) + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO), Color("e5dbff"), 30.0)
 				Sfx.play(&"good")))
+	state.side_collapsed.connect(func(side: int, tiles: Array[int], destroyed: int) -> void:
+		_log_line("[무너지는 탑] %d번 변(%d~%d번 칸)의 설치물 %d개가 무너졌습니다" % [side + 1, tiles[0], tiles[-1], destroyed], Color("ffa94d"))
+		_refresh_tiles()
+		if _fx_on():
+			_fx_when_announced(func() -> void:
+				screen_shake(9.0, 0.3)
+				for tile: int in tiles:
+					_impact_ring(_tile_center(tile) + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO), Color("ffa94d"), 22.0)
+				Sfx.play(&"slam")))
+	state.crowbar_swung.connect(func(player_id: int, tiles: Array[int]) -> void:
+		_log_line("[빠루] %s이(가) %s번 칸을 휘둘렀습니다" % [_player_name(player_id), ", ".join(PackedStringArray(tiles.map(func(tile: int) -> String: return str(tile))))], Color("ffa94d"))
+		_refresh_tiles())
+	state.npc_swept.connect(func(display_id: StringName, path: Array[int], ejected: Array[int]) -> void:
+		var runner: String = "도적떼" if display_id == &"SUM_01" else "팩맨"
+		_log_line("[%s] %d번 → %d번 질주! 사출된 말 %d개" % [runner, path[0], path[-1], ejected.size()], Color("fa5252"))
+		_announce("소환", "[%s 질주!]" % runner, "%d번 → %d번 칸을 쓸고 사라졌습니다 (사출 %d)" % [path[0], path[-1], ejected.size()], Color("fa5252"), null, 1.1))
 	state.shield_recharged.connect(func(pawn_id: int) -> void: _log_line("[백돌 방어막] %s의 방어막이 다시 차올랐습니다" % _pawn_name(pawn_id), Color("b197fc")))
 	state.trap_defused.connect(func(tile: int, id: String, pawn_id: int) -> void:
 		_log_line("[지뢰찾기] %s이(가) %d번 타일의 %s을(를) 해체하고 카드 1장!" % [_pawn_name(pawn_id), tile, _attachment_name(id)], Color("63e6be"))
@@ -2699,23 +2748,15 @@ func _refresh_hands() -> void:
 		_dock.add_child(card_view)
 
 
-## 피해 되돌리기 팝업: 카드는 굴리기 전 1장이 기본이고, 유일한 예외인 [바이츠 더 더스트](내 말이 피해를 입었을 때)만 정산 창에서 쓴다.
-## 가운데에 팝업이 뜨고 REACTION_SECONDS 동안 [지금 발동!]을 누르지 않으면 자동으로 넘어간다.
+## ⚔ 반격 팝업(InterceptionPrompt): 내 말이 잡히거나, 공격 카드를 맞거나, 함정에 걸렸을 때 그 공격을 받아칠 반격 카드가 손에 있으면
+## 진행이 멈추고 가운데에 팝업이 뜬다. 카드마다 [발동] 버튼이 있고, REACTION_SECONDS 동안 고르지 않으면 그냥 맞고 넘어간다.
 func _reaction_holder() -> int:
-	if manager.is_game_over or manager.stack_offer_pending() or not _in_intervention_window() or _ui_busy():
+	if manager.is_game_over or not manager.counter_pending():
 		return -1
-	if ai_mode:
-		return local_player_id if _human_can_intervene() else -1
-	var holders: Array[int] = _window_holders()
-	return holders[0] if not holders.is_empty() else -1
-
-
-func _reaction_card_for(holder: int) -> StringName:
-	for card_id: StringName in state.hands[holder]:
-		var card: BaseCard = CardRegistry.get_card(card_id)
-		if card.is_playable_in(manager.current_state) and card.could_play(state, holder):
-			return card_id
-	return &""
+	var victim: int = int(manager.pending_counter()["victim"])
+	if ai_mode or net != null:
+		return victim if victim == local_player_id else -1
+	return victim  # 같은 화면 대전은 맞은 사람이 직접 고른다
 
 
 func _update_reaction_popup(delta: float) -> void:
@@ -2723,70 +2764,93 @@ func _update_reaction_popup(delta: float) -> void:
 	if holder == -1:
 		_close_reaction_popup()
 		return
-	var key: String = "%d:%d" % [holder, manager.phase_serial]
+	var key: String = "%d:%d" % [holder, int(manager.pending_counter()["attack"])]
 	if _reaction_popup == null or _reaction_key != key:
 		_build_reaction_popup(holder, key)
+	if _reaction_bar == null:
+		return
 	_reaction_left -= delta
 	_reaction_bar.value = maxf(_reaction_left, 0.0) / REACTION_SECONDS * 100.0
 	if _reaction_left <= 0.0:
-		_close_reaction_popup()
-		manager.force_timeout()
-		_refresh_all()
+		_on_reaction_pass(holder)
+
+
+## 어떤 공격인지 한 줄로: "P2의 [뱅!]" / "P3의 말에게 잡힘" / "P4의 [바나나 껍질] 함정".
+func _attack_text(offer: Dictionary) -> String:
+	var attacker: int = int(offer.get("attacker", -1))
+	var who: String = _player_name(attacker) if attacker >= 1 else "누군가"
+	match StringName(offer.get("kind", &"")):
+		&"card": return "%s의 [%s] 공격" % [who, _card_name(offer.get("card_id", &""))]
+		&"trap": return "%s의 [%s] 함정" % [who, _attachment_name(String(offer.get("trap_id", "")))]
+	return "%s의 말에게 잡힘" % who
 
 
 func _build_reaction_popup(holder: int, key: String) -> void:
 	_close_reaction_popup()
-	var card_id: StringName = _reaction_card_for(holder)
-	if card_id == &"":
+	var offer: Dictionary = manager.pending_counter()
+	var entry: Dictionary = state.get_attack(int(offer["attack"]))
+	var cards: Array = offer.get("cards", [])
+	if cards.is_empty():
 		return
-	var card: BaseCard = CardRegistry.get_card(card_id)
 	_reaction_key = key
 	_reaction_left = REACTION_SECONDS
 	_reaction_popup = PanelContainer.new()
+	_reaction_popup.name = "InterceptionPrompt"
 	_reaction_popup.z_index = 60
-	_reaction_popup.add_theme_stylebox_override("panel", _style(Color("101626"), Color("ff6b6b"), 4, 18, 26, 16))
+	_reaction_popup.add_theme_stylebox_override("panel", _style(Color("101626"), Color("4c6ef5"), 4, 18, 26, 16))
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 8)
 	_reaction_popup.add_child(box)
-	var title := _make_label("P%d의 말이 피해를 입었습니다!" % holder, 22, Color("ffa8a8"))
+	var title := _make_label("⚔ %s 반격하시겠습니까?" % _player_name(holder), 22, Color("bac8ff"))
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(title)
-	var ask := _make_label("[%s]를 지금 발동할까요?" % card.display_name, 16, Color("f8f9fa"))
+	var ask := _make_label(_attack_text(entry if not entry.is_empty() else offer), 16, Color("f8f9fa"))
 	ask.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(ask)
-	var preview: Control = _make_card_preview(card_id)
-	box.add_child(preview)
+	var row_cards := HBoxContainer.new()
+	row_cards.alignment = BoxContainer.ALIGNMENT_CENTER
+	row_cards.add_theme_constant_override("separation", 12)
+	box.add_child(row_cards)
+	_reaction_use_button = null
+	for card_id: Variant in cards:
+		var column := VBoxContainer.new()
+		column.add_theme_constant_override("separation", 6)
+		column.add_child(_make_card_preview(StringName(card_id)))
+		var use := _make_button("발동!", _on_reaction_use.bind(holder, StringName(card_id)), 16, Color("3b5bdb"), 10)
+		use.name = "Use_%s" % card_id
+		use.custom_minimum_size = Vector2(130, 40)
+		column.add_child(use)
+		row_cards.add_child(column)
+		if _reaction_use_button == null:
+			_reaction_use_button = use
 	_reaction_bar = ProgressBar.new()
 	_reaction_bar.custom_minimum_size = Vector2(300, 10)
 	_reaction_bar.show_percentage = false
 	_reaction_bar.value = 100.0
-	_reaction_bar.add_theme_stylebox_override("fill", _style(Color("ff6b6b"), Color(0, 0, 0, 0), 0, 5, 0, 0))
+	_reaction_bar.add_theme_stylebox_override("fill", _style(Color("4c6ef5"), Color(0, 0, 0, 0), 0, 5, 0, 0))
 	_reaction_bar.add_theme_stylebox_override("background", _style(Color("2b2f3a"), Color(0, 0, 0, 0), 0, 5, 0, 0))
 	box.add_child(_reaction_bar)
-	var row := HBoxContainer.new()
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_theme_constant_override("separation", 14)
-	box.add_child(row)
-	_reaction_use_button = _make_button("지금 발동!", _on_reaction_use.bind(holder, card_id), 18, Color("c77d0a"), 10)
-	_reaction_use_button.custom_minimum_size = Vector2(150, 44)
-	row.add_child(_reaction_use_button)
-	_reaction_pass_button = _make_button("넘기기", _on_reaction_pass, 16, Color("495a85"), 10)
-	_reaction_pass_button.custom_minimum_size = Vector2(110, 44)
-	row.add_child(_reaction_pass_button)
+	_reaction_pass_button = _make_button("그냥 맞기", _on_reaction_pass.bind(holder), 16, Color("495a85"), 10)
+	_reaction_pass_button.custom_minimum_size = Vector2(130, 40)
+	_reaction_pass_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	box.add_child(_reaction_pass_button)
 	add_child(_reaction_popup)
 	_reaction_popup.reset_size()
 	_reaction_popup.position = _board_center() - _reaction_popup.size / 2.0
 	_reaction_popup.pivot_offset = _reaction_popup.size / 2.0
 	_reaction_popup.scale = Vector2(0.85, 0.85)
 	_reaction_popup.create_tween().tween_property(_reaction_popup, "scale", Vector2.ONE, 0.15).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	Sfx.play(&"bad")
 
 
 func _close_reaction_popup() -> void:
 	if _reaction_popup != null:
+		_reaction_popup.name = "ClosingPrompt"  # 같은 프레임에 새 팝업이 이름을 이어받게 한다
 		_reaction_popup.queue_free()
 		_reaction_popup = null
 		_reaction_use_button = null
 		_reaction_pass_button = null
+		_reaction_bar = null
 	_reaction_key = ""
 
 
@@ -2795,9 +2859,9 @@ func _on_reaction_use(holder: int, card_id: StringName) -> void:
 	_act(&"play_card", {"player_id": holder, "card_id": card_id})
 
 
-func _on_reaction_pass() -> void:
+func _on_reaction_pass(holder: int) -> void:
 	_close_reaction_popup()
-	manager.force_timeout()
+	_act(&"counter_pass", {"player_id": holder})
 	_refresh_all()
 
 
@@ -2817,7 +2881,7 @@ func _window_holders() -> Array[int]:
 	for player_id: int in order:
 		for card_id: StringName in state.hands[player_id]:
 			var card: BaseCard = CardRegistry.get_card(card_id)
-			if card.is_playable_in(manager.current_state) and card.could_play(state, player_id):
+			if card.category != GameEnums.CardCategory.COUNTER and card.is_playable_in(manager.current_state) and card.could_play(state, player_id):
 				holders.append(player_id)
 				break
 	return holders
@@ -4119,12 +4183,17 @@ func _hint_text(current_phase: TurnManager.State, tool: BaseJudgmentTool) -> Str
 		return "게임 종료. [새 게임]으로 다시 시작하세요."
 	if _fx_busy:
 		return "굴러가는 중..."
+	if manager.counter_pending():
+		var victim: int = int(manager.pending_counter()["victim"])
+		if _reaction_holder() == victim:
+			return "공격당했습니다! 가운데 반격 팝업에서 반격 카드를 고르거나 [그냥 맞기]를 누르세요. 시간이 지나면 그냥 맞습니다."
+		return "%s이(가) 반격할지 고르는 중입니다..." % _player_name(victim)
 	if _is_bot_turn() and not manager.stack_offer_pending() and current_phase != TurnManager.State.PHASE_INTERRUPT_ROLL and current_phase != TurnManager.State.PHASE_RESOLUTION:
 		if net != null and not net.is_bot(manager.current_player_id()):
 			return "%s 님의 차례입니다. 기다려 주세요..." % _player_name(manager.current_player_id())
 		return "P%d (AI 봇)가 생각하는 중입니다..." % manager.current_player_id()
 	if (current_phase == TurnManager.State.PHASE_INTERRUPT_ROLL or current_phase == TurnManager.State.PHASE_RESOLUTION) and not manager.stack_offer_pending():
-		return "피해를 입었습니다! 가운데 팝업에서 [바이츠 더 더스트] 발동 여부를 고르세요. 시간이 지나면 자동으로 넘어갑니다."
+		return "정산 중입니다..."
 	if manager.stack_offer_pending():
 		return "윷놀이 기물 업기: [업기 (하나로 합체)] 또는 [그냥 두기 (개별 유지)]를 고르세요. (시간이 지나면 자동으로 업기)"
 	if _tile_pick_active:
@@ -4238,6 +4307,15 @@ func _on_spawn_npc_pressed(behavior: GameEnums.NpcBehavior, tile: int) -> void:
 
 func _on_card_pressed(player_id: int, card_id: StringName) -> void:
 	var card: BaseCard = CardRegistry.get_card(card_id)
+	if card is CardCounter:
+		if manager.counter_pending() and int(manager.pending_counter()["victim"]) == player_id and card.could_play(state, player_id):
+			_on_reaction_use(player_id, card_id)
+		else:
+			_log_line("[%s] 반격 카드는 공격을 받았을 때 뜨는 반격 팝업에서 씁니다." % card.display_name, Color("868e96"))
+		return
+	if state.is_banned(player_id):
+		_log_line("알고리즘 밴! %d턴 동안 카드를 쓸 수 없습니다." % int(state.banned_turns[player_id]), Color("ff8787"))
+		return
 	if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN and manager.card_played_this_turn():
 		_log_line("카드는 굴리기 전에 턴당 1장만 쓸 수 있습니다.", Color("868e96"))
 		return
@@ -4256,18 +4334,49 @@ func _on_card_pressed(player_id: int, card_id: StringName) -> void:
 			_act(&"play_card", {"player_id": player_id, "card_id": card_id, "target_player": duel_target})
 		&"ACT_06":
 			var options: Array[Dictionary] = []
-			for law: LawResource in state.rulebook.active_laws_queue:
-				options.append({"label": "[%s] %s" % [law.law_id, law.law_name], "value": law.law_id})
+			for choice: Dictionary in CardObjection.choices(state):
+				var law: VictoryLaw = LawRegistry.create(choice["law_id"]) as VictoryLaw
+				var target: int = int(choice["target_player"])
+				options.append({"label": "%s - %s (%d%s)" % [_player_name(target), law.law_name, law.progress(state, target), law.unit()], "value": choice})
 			if options.is_empty():
-				_log_line("파기할 교칙이 법전에 없습니다.", Color("868e96"))
+				_log_line("초기화할 특수 승리 기록이 없습니다.", Color("868e96"))
 				return
-			_show_choice("이의 있음! 파기할 교칙을 고르세요", options, _play_card_with.bind(player_id, card_id, "law_id"))
+			_show_choice("이의 있음! 누구의 어떤 기록을 0으로 되돌릴까요?", options, _play_card_with_dict.bind(player_id, card_id))
+		&"ACT_07":
+			var sides: Array[Dictionary] = []
+			for side: int in 4:
+				if TowerCommand.has_attachments(state, side):
+					var tiles: Array[int] = TowerCommand.side_tiles(side)
+					sides.append({"label": "%d번 변 (%d~%d번 칸)" % [side + 1, tiles[0], tiles[-1]], "value": side})
+			if sides.is_empty():
+				_log_line("무너뜨릴 설치물이 보드에 없습니다.", Color("868e96"))
+				return
+			_show_choice("무너지는 탑! 설치물을 무너뜨릴 변을 고르세요", sides, _play_card_with.bind(player_id, card_id, "side"))
+		&"ACT_11":
+			var faces: Array[Dictionary] = []
+			for steps: int in range(CardStatus.MIN_STEPS, CardStatus.MAX_STEPS + 1):
+				faces.append({"label": "%d칸" % steps, "value": steps})
+			_show_choice("밑장빼기! 다음 굴림 결과를 고르세요", faces, _play_card_with.bind(player_id, card_id, "steps"), 3)
+		&"ACT_14", &"ACT_15":
+			var targets: Array[Dictionary] = []
+			for target: int in StatusCardCommand.targets(state, player_id):
+				targets.append({"label": _player_name(target), "value": target})
+			if targets.is_empty():
+				return
+			_show_choice("[%s] 대상을 고르세요" % card.display_name, targets, _play_card_with.bind(player_id, card_id, "target_player"))
 		_:
 			_act(&"play_card", {"player_id": player_id, "card_id": card_id})
 
 
 func _play_card_with(value: Variant, player_id: int, card_id: StringName, param_name: String) -> void:
 	_act(&"play_card", {"player_id": player_id, "card_id": card_id, param_name: value})
+
+
+func _play_card_with_dict(value: Variant, player_id: int, card_id: StringName) -> void:
+	var params: Dictionary = (value as Dictionary).duplicate()
+	params["player_id"] = player_id
+	params["card_id"] = card_id
+	_act(&"play_card", params)
 
 
 # ---------------------------------------------------------------------------
@@ -5785,7 +5894,8 @@ func _begin_tile_pick(player_id: int, card_id: StringName) -> void:
 		_log_line("[%s]를 놓을 수 있는 타일이 없습니다." % card.display_name, Color("868e96"))
 		_cancel_tile_pick()
 		return
-	_pick_banner.text = "[%s] P%d - %s 타일을 고르세요 (초록 테두리)" % [card.display_name, player_id, "함정을 설치할" if card.category == GameEnums.CardCategory.TRAP else "소환할"]
+	var purpose: String = "함정을 설치할" if card.category == GameEnums.CardCategory.TRAP else ("순간이동할" if card_id == &"ACT_13" else "소환할")
+	_pick_banner.text = "[%s] P%d - %s 타일을 고르세요 (초록 테두리)" % [card.display_name, player_id, purpose]
 	_pick_banner.visible = true
 	_pick_cancel.visible = true
 	_refresh_controls()
@@ -6859,7 +6969,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 		&"pawn_pushed_back":
 			_log_line("[백돌 방어막] 백돌에 막혀 %s이(가) %d번 → %d번으로 밀려났습니다" % [_pawn_name(int(data["pawn_id"])), data["from"], data["to"]], Color("b197fc"))
 		&"bomb_applied":
-			_log_line("[우노 +4] P%d의 %s이(가) 출발선으로 장외 사출! 내 말은 +%d칸 전진" % [data["victim"], _pawn_name(int(data["pawn_id"])), PenaltyBombCommand.advance_steps()], Color("ffd43b"))
+			_log_line("[우노 +4] P%d의 %s이(가) 출발선으로 장외 사출! 내 이번 이동 +%d칸" % [data["victim"], _pawn_name(int(data["pawn_id"])), PenaltyBombCommand.advance_steps()], Color("ffd43b"))
 			_fx_bang(int(data["shooter"]), int(data["pawn_id"]))
 			_react_hit_pawn(int(data["pawn_id"]))
 		&"player_ranked":
@@ -6870,6 +6980,17 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 				_announce("순위 확정", "[%s%s %d위 확정!]" % ["👑 " if rank_no == 1 else "", _player_name(ranked), rank_no], "%s\n남은 말은 보드에서 철수하고 레이스를 졸업합니다" % VictoryChecker.reason_text(data["reason"]), PLAYER_COLORS[ranked], null, 1.4)
 				_profile_react(ranked, true, "[%d위!]" % rank_no)
 				_start_beat(1.0)
+		&"counter_offer":
+			_log_line("[반격 대기] %s: %s - 반격 카드 %d장" % [_player_name(int(data["victim"])), _attack_text(data), (data["cards"] as Array).size()], Color("bac8ff"))
+		&"counter_passed":
+			_log_line("[반격] %s이(가) 그냥 맞기로 했습니다" % _player_name(int(data["victim"])), Color("adb5bd"))
+		&"counter_resolved":
+			_log_line("[반격 성공] %s의 [%s]!" % [_player_name(int(data["victim"])), _card_name(data["card_id"])], Color("74c0fc"))
+			_profile_react(int(data["victim"]), true, "[반격!]")
+		&"turn_rewound":
+			_announce("반격", "[바이츠 더 더스트!]", "%s의 턴이 통째로 되감기고 끝났습니다" % _player_name(int(data["player_id"])), Color("4c6ef5"), null, 1.3)
+		&"extra_turn":
+			_announce("더 월드", "[%s 한 턴 더!]" % _player_name(int(data["player_id"])), "시간이 멈춘 사이 한 번 더 움직입니다", PLAYER_COLORS[int(data["player_id"])], null, 1.1)
 		&"game_over":
 			_last_reason = data["reason"]
 	_refresh_all()
@@ -7010,8 +7131,14 @@ func _attachment_name(attachment_id: String) -> String:
 		"TRP_01": return "거울의 힘"
 		"TRP_02": return "나락"
 		"TRP_03": return "지뢰"
-		"TRP_04": return "무인도"
 		"TRP_05": return "스프링 대포"
+		"TRP_06": return "바나나 껍질"
+		"TRP_07": return "스파이크"
+		"TRP_08": return "강제 환승 포탈"
+		"TRP_C01": return "무인도"
+		"TRP_C02": return "피아식별 점프대"
+		"TRP_C03": return "톨게이트"
+		"TRP_C04": return "타르"
 		"HOTEL": return "호텔"
 	return attachment_id
 
@@ -7645,7 +7772,7 @@ func _is_bot_turn() -> bool:
 func _human_can_intervene() -> bool:
 	for card_id: StringName in state.hands[local_player_id]:
 		var card: BaseCard = CardRegistry.get_card(card_id)
-		if card.is_playable_in(manager.current_state) and card.could_play(state, local_player_id):
+		if card.category != GameEnums.CardCategory.COUNTER and card.is_playable_in(manager.current_state) and card.could_play(state, local_player_id):
 			return true
 	return false
 

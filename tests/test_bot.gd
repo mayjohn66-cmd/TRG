@@ -122,15 +122,15 @@ func test_trap_tiles_target_the_path_ahead_of_the_leading_enemy_or_corners() -> 
 	place(state, 11, 20, [19])  # P1의 선두 말 (결승까지 가장 가까움)
 	place(state, 31, 3, [2])
 	check_eq(BotBrain.leading_enemy(state, 2).entity_id, 11, "선두 상대 말")
-	var allowed: Array[int] = [21, 22, 23, 6, 12, 18]
+	var allowed: Array[int] = [21, 22, 23]
 	var card: BaseCard = CardRegistry.get_card(&"TRP_02")
 	for seed_value: int in 20:
 		var tile: int = BotBrain.choose_card_tile(state, 2, card, _seeded(seed_value))
-		check(allowed.has(tile), "함정은 선두 말 앞 1~4칸 길목이나 코너에 놓는다 (%d)" % tile)
+		check(allowed.has(tile), "일반 함정은 선두 말 앞 1~4칸 길목에 놓는다 (코너 제외, %d)" % tile)
 		check(card.can_play(state, 2, {"tile": tile}), "카드가 허용하는 타일")
-	var island: BaseCard = CardRegistry.get_card(&"TRP_04")
+	var island: BaseCard = CardRegistry.get_card(&"TRP_C01")
 	var island_tile: int = BotBrain.choose_card_tile(state, 2, island, _seeded(1))
-	check([6, 12, 18].has(island_tile), "무인도는 코너에만 (%d)" % island_tile)
+	check([6, 12, 18].has(island_tile), "코너 함정은 코너에만 (%d)" % island_tile)
 
 
 func test_turn_card_plans_use_traps_about_sixty_percent_of_the_time() -> void:
@@ -139,51 +139,18 @@ func test_turn_card_plans_use_traps_about_sixty_percent_of_the_time() -> void:
 	var hits: int = 0
 	var trials: int = 400
 	for seed_value: int in trials:
-		state.hands[2] = [&"TRP_01"] as Array[StringName]
+		state.hands[2] = [&"TRP_02"] as Array[StringName]
 		var tried: Dictionary = {}
 		var plan: Dictionary = BotBrain.plan_turn_card(state, 2, tried, _seeded(seed_value + 1))
-		check(tried.has(&"TRP_01"), "검토한 카드는 tried에 기록된다")
+		check(tried.has(&"TRP_02"), "검토한 카드는 tried에 기록된다")
 		if not plan.is_empty():
 			hits += 1
-			check(((plan["params"] as Dictionary).has("tile")) and plan["card_id"] == &"TRP_01", "타일이 정해진 계획")
+			check(((plan["params"] as Dictionary).has("tile")) and plan["card_id"] == &"TRP_02", "타일이 정해진 계획")
 	var ratio: float = float(hits) / float(trials)
 	check(ratio > 0.5 and ratio < 0.7, "함정 사용 확률은 약 60%% (%.2f)" % ratio)
-	var again: Dictionary = {&"TRP_01": true}
-	state.hands[2] = [&"TRP_01"] as Array[StringName]
+	var again: Dictionary = {&"TRP_02": true}
+	state.hands[2] = [&"TRP_02"] as Array[StringName]
 	check(BotBrain.plan_turn_card(state, 2, again, _seeded(1)).is_empty(), "이미 검토한 카드는 다시 쓰지 않는다")
-
-
-func test_turn_card_bot_uses_reverse_and_objection_sometimes() -> void:
-	var state := make_state(2, 1)
-	state.rulebook.enqueue_law(LawRegistry.create("LAW_04"))
-	var reverse_used: int = 0
-	var objection_used: int = 0
-	for seed_value: int in 60:
-		state.hands[2] = [&"ACT_01"] as Array[StringName]
-		var plan: Dictionary = BotBrain.plan_turn_card(state, 2, {}, _seeded(seed_value))
-		if not plan.is_empty():
-			reverse_used += 1
-		state.hands[2] = [&"ACT_06"] as Array[StringName]
-		plan = BotBrain.plan_turn_card(state, 2, {}, _seeded(seed_value))
-		if not plan.is_empty():
-			objection_used += 1
-			check_eq(plan["params"]["law_id"], "LAW_04", "있는 교칙만 파기한다")
-	check(reverse_used > 3 and reverse_used < 40, "우노 리버스는 가끔 쓴다 (%d/60)" % reverse_used)
-	check(objection_used > 8, "법전이 있으면 이의 있음!을 자주 쓴다 (%d/60)" % objection_used)
-	state.rulebook.active_laws_queue.clear()
-	state.hands[2] = [&"ACT_06"] as Array[StringName]
-	check(BotBrain.plan_turn_card(state, 2, {}, _seeded(1)).is_empty(), "법전이 비어 있으면 쓰지 않는다")
-
-
-func test_window_card_rollback_when_the_bot_was_hurt() -> void:
-	var state := make_state(2, 1)
-	state.hands[2] = [&"ACT_05"] as Array[StringName]
-	state.turn_snapshot = TurnSnapshot.capture(state)
-	check(BotBrain.plan_window_card(state, 2, TurnManager.State.PHASE_RESOLUTION, 0, false, 1, {}, _seeded(1)).is_empty(), "다치지 않았으면 쓰지 않는다")
-	state.hurt_players.append(2)
-	var plan: Dictionary = BotBrain.plan_window_card(state, 2, TurnManager.State.PHASE_RESOLUTION, 0, false, 1, {}, _seeded(1))
-	check_eq(plan.get("card_id", &""), &"ACT_05", "말이 잡혔다면 되감기")
-
 
 func test_roulette_stops_after_two_or_three_pulls() -> void:
 	var tool := ToolRussianRoulette.new()
@@ -295,37 +262,11 @@ func _hurt_setup(manager: TurnManager, victim: int, mover: int) -> void:
 	place(manager.state, mover_pawn, 2, [1])
 	place(manager.state, victim_pawn, 4, [3])
 	manager.state.tools[mover] = ScriptedTool.new([2])
-	manager.state.give_card(victim, &"ACT_05")
+	manager.state.give_card(victim, &"CNT_04")
 	manager._begin_turn()
 	manager.act(&"proceed", {"player_id": mover})
 	manager.act(&"roll", {"player_id": mover})
 	manager.act(&"select_pawn", {"player_id": mover, "pawn_id": mover_pawn})
-
-
-func test_window_waits_for_a_hurt_human_who_holds_the_rollback_card() -> void:
-	var manager: TurnManager = _manager(2)
-	_hurt_setup(manager, 2, 1)
-	check_eq(manager.current_state, TurnManager.State.PHASE_RESOLUTION, "피해자가 ACT_05를 들고 있어 정산 창이 열림")
-	# P2가 사람이라고 보고 봇 목록에서 뺀다 (봇은 P1만): 사람이 고를 때까지 자동으로 닫히지 않는다.
-	var controller: BotController = _controller(manager, [1], true)
-	for i: int in 10:
-		controller.tick(1.0)
-	check_eq(manager.current_state, TurnManager.State.PHASE_RESOLUTION, "사람에게 [발동 / 넘기기] 선택 시간을 준다")
-	manager.force_timeout()  # 사람이 넘기기를 누르거나 시간이 지난 것
-	check(manager.current_state != TurnManager.State.PHASE_RESOLUTION, "넘기면 진행")
-	_dispose(manager)
-
-
-func test_bot_rolls_back_when_it_is_hurt_and_holds_the_card() -> void:
-	var manager: TurnManager = _manager(2)
-	_hurt_setup(manager, 2, 1)
-	var controller: BotController = _controller(manager, [2], true)
-	for i: int in 10:
-		controller.tick(1.0)
-	check_eq(manager.state.get_pawn(21).current_tile_idx, 4, "봇이 ACT_05로 되돌려 말이 제자리")
-	check((manager.state.hands[2] as Array).is_empty(), "ACT_05 소모")
-	_dispose(manager)
-
 
 func test_bots_choose_stacking_for_yut_pawns() -> void:
 	var manager: TurnManager = _manager(2, false, {2: [Vector2i(Kind.YUT, 1), Vector2i(Kind.CHESS, 1), 0, 0]})
@@ -382,3 +323,53 @@ func test_four_bots_finish_whole_games_without_getting_stuck() -> void:
 		check(manager.is_game_over, "시드 %d: 봇끼리 한 판이 끝까지 진행된다 (%d틱, 라운드 %d)" % [seed_value, ticks, manager.state.round_number])
 		check(manager.state.winner != -1, "시드 %d: 승자가 있다" % seed_value)
 		_dispose(manager)
+
+
+func test_bot_dodges_a_capture_with_its_counter_card() -> void:
+	var manager: TurnManager = _manager(2)
+	_hurt_setup(manager, 2, 1)
+	check(manager.counter_pending(), "반격 카드를 쥔 피해자에게 반격 대기")
+	var controller: BotController = _controller(manager, [2], true)
+	var guard: int = 0
+	while manager.counter_pending() and guard < 10:
+		guard += 1
+		controller.tick(1.0)
+	check_eq(manager.state.get_pawn(21).current_tile_idx, 4, "봇이 [빗나감!]으로 피해 말이 제자리")
+	check((manager.state.hands[2] as Array).is_empty(), "반격 카드 소모")
+	check(not manager.counter_pending(), "반격 대기 종료")
+	_dispose(manager)
+
+
+func test_counter_offer_waits_for_a_human_victim() -> void:
+	var manager: TurnManager = _manager(2)
+	_hurt_setup(manager, 2, 1)
+	check(manager.counter_pending() and int(manager.pending_counter()["victim"]) == 2, "피해자 P2에게 반격 대기")
+	var controller: BotController = _controller(manager, [1], true)  # P2는 사람
+	for i: int in 10:
+		controller.tick(1.0)
+	check(manager.counter_pending(), "사람에게 [발동 / 그냥 맞기] 선택 시간을 준다")
+	manager.force_timeout()  # 시간이 지나면 그냥 맞는다
+	check(not manager.counter_pending(), "넘기면 진행")
+	check_eq(manager.state.get_pawn(21).current_tile_idx, 0, "그냥 맞으면 잡힌 채")
+	_dispose(manager)
+
+
+func test_turn_card_bot_uses_objection_on_the_closest_rival_and_skips_the_leader() -> void:
+	var state := make_state(3, 1)
+	state.rulebook.enqueue_law(LawRegistry.create("LAW_01"))
+	state.law_stats[3] = {VictoryLaw.KILLS: 5}
+	state.law_stats[1] = {VictoryLaw.KILLS: 1}
+	state.hands[2] = [&"ACT_06"] as Array[StringName]
+	var plan: Dictionary = BotBrain.plan_turn_card(state, 2, {}, _seeded(1))
+	check_eq(plan.get("params", {}), {"target_player": 3, "law_id": "LAW_01"}, "달성 직전인 상대의 기록을 지운다")
+	state.law_stats.clear()
+	check(BotBrain.plan_turn_card(state, 2, {}, _seeded(1)).is_empty(), "지울 기록이 없으면 쓰지 않는다")
+	place(state, 11, 20, [19])
+	var skips: int = 0
+	for seed_value: int in 40:
+		state.hands[2] = [&"ACT_15"] as Array[StringName]
+		var skip: Dictionary = BotBrain.plan_turn_card(state, 2, {}, _seeded(seed_value))
+		if not skip.is_empty():
+			skips += 1
+			check_eq(int(skip["params"]["target_player"]), 1, "선두 상대의 턴을 건너뛴다")
+	check(skips > 10, "스킵은 자주 쓴다 (%d/40)" % skips)

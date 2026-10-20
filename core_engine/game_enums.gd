@@ -37,7 +37,7 @@ const CHESS_QUEEN_UNIT: int = 5
 
 enum AugmentCategory { PAWN_EVOLUTION, TOOL_SWAP, LAW_ENACT, CARD_PACKAGE, SUPER_GAMBLE }
 
-enum CardCategory { INSTANT, TRAP, SUMMON }
+enum CardCategory { INSTANT, TRAP, SUMMON, COUNTER }
 
 enum NpcBehavior { CHASE_NEAREST, PATROL_REVERSE }
 

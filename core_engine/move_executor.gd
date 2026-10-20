@@ -213,10 +213,14 @@ static func begin(state: GameState, mover: PlayerPawn, ctx: RuleContext) -> Move
 			processed.is_canceled = false
 			report.canceled = true
 		elif mover.is_imprisoned:
-			# 무인도(TRP_04): 짝수 눈금이 나와야 탈출하고, 홀수면 이번 이동은 헛수고가 된다.
+			# 무인도(TRP_C01): 짝수 눈금이 나오거나 손패 1장을 내면 탈출하고, 둘 다 안 되면 이번 이동은 헛수고가 된다.
 			if absi(ctx.dice_value) % 2 == 0:
 				mover.is_imprisoned = false
 				report.released = true
+			elif not ctx.is_preview and state.discard_random_card(mover.owner_id, state.rng) != &"":
+				mover.is_imprisoned = false
+				report.released = true
+				report.paid_bail = true
 			else:
 				report.canceled = true
 				report.jailed = true
@@ -291,10 +295,24 @@ static func apply_step(
 	return StepOutcome.CONTINUE
 
 
+## 발동하지 않은 함정의 피해 기록을 지운다.
+static func _forget_attack(state: GameState, serial: int, victim: int) -> void:
+	for index: int in range(state.attack_log.size() - 1, -1, -1):
+		var entry: Dictionary = state.attack_log[index]
+		if int(entry["serial"]) == serial and int(entry["victim"]) == victim and (entry["stats"] as Dictionary).is_empty():
+			state.attack_log.remove_at(index)
+
+
 ## 체커 킹: 지나가는 칸의 적 대표 말을 모두 뛰어넘으며 잡는다 (백돌 방어막은 막는다).
 static func _checkers_jump(state: GameState, mover: PlayerPawn, tile: int, report: MoveReport) -> void:
 	if tile == GameEnums.GOAL_TILE:
 		return
+	state.begin_attack({"kind": &"capture", "attacker": mover.owner_id, "attacker_pawn": mover.entity_id, "tile": tile})
+	_checkers_jump_at(state, mover, tile, report)
+	state.end_attack()
+
+
+static func _checkers_jump_at(state: GameState, mover: PlayerPawn, tile: int, report: MoveReport) -> void:
 	for enemy: PlayerPawn in state.leaders_at(tile):
 		if enemy.owner_id == mover.owner_id or not enemy.has_left_start:
 			continue
@@ -359,7 +377,19 @@ static func _trigger_attachments(
 		if is_trap and attachment.owner_id != mover.owner_id and state.break_shield(mover):
 			tile.remove_attachment(attachment)  # 백돌 방어막이 함정을 막고 함께 부서진다
 			continue
+		# ⚔ 남의 함정은 반격 카드(싸이크론·포고령·도굴꾼)의 대상이 되도록 피해 직전 상태를 기록한다.
+		var hostile: bool = is_trap and attachment.owner_id != mover.owner_id
+		var hand_before: int = (state.hands.get(mover.owner_id, []) as Array).size()
+		if hostile:
+			state.begin_attack({"kind": &"trap", "attacker": attachment.owner_id, "trap_id": attachment.attachment_id, "trap_tile": tile_index, "trap_data": attachment.serialize()})
+			state.record_hit(mover)
+		var before: Dictionary = state.pawn_state(mover)
 		var halted: bool = attachment.on_step_trigger(mover, ctx)
+		if hostile:
+			var hurt: bool = halted or state.pawn_state(mover) != before or (state.hands.get(mover.owner_id, []) as Array).size() != hand_before
+			if not hurt:
+				_forget_attack(state, int(state.attack_source["serial"]), mover.owner_id)
+			state.end_attack()
 		if halted:
 			var cutscene_id: StringName = ctx.metadata.get("cutscene_id", &"")
 			state.attachment_triggered.emit(tile_index, attachment.attachment_id, mover.entity_id, cutscene_id)
@@ -556,7 +586,9 @@ static func _resolve_captures(state: GameState, mover: PlayerPawn, ctx: RuleCont
 	if ctx.is_canceled:
 		ctx.is_canceled = false
 		return
+	state.begin_attack({"kind": &"capture", "attacker": mover.owner_id, "attacker_pawn": mover.entity_id, "tile": mover.current_tile_idx})
 	_apply_capture_effects(state, mover, victims, report)
+	state.end_attack()
 	if ctx.capture_extra_turn:
 		report.extra_turn = true
 	if ctx.capture_charge_steps > 0 and ctx.charge_depth == 0:

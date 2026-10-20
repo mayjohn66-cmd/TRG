@@ -90,7 +90,7 @@ func test_every_tool_and_card_is_in_its_table() -> void:
 	var card_rows: Dictionary = GameData.table("cards")
 	for card_id: StringName in CardRegistry.DECK_COMPOSITION.keys():
 		check(card_rows.has(str(card_id)), "cards_table.csv에 %s가 있다" % card_id)
-		check(["INSTANT", "TRAP", "SUMMON"].has(str(card_rows[str(card_id)]["type"])), "%s: type 값" % card_id)
+		check(["COUNTER", "INSTANT", "TRAP", "TRAP_CORNER", "SUMMON"].has(str(card_rows[str(card_id)]["type"])), "%s: type 값" % card_id)
 
 
 func test_table_text_matches_the_built_in_defaults_for_every_augment() -> void:
@@ -310,20 +310,20 @@ func test_cards_table_controls_deck_copies_names_and_numbers() -> void:
 	check_eq(CardRegistry.default_deck().size(), base_size - 2, "덱 장수 2장 감소")
 	_edit_rows("cards", "ACT_02", {"enabled": "TRUE", "param_2": "5"})
 	check_eq(CardRegistry.default_deck().size(), base_size + 3, "param_2 = 덱 장수 (2 -> 5)")
-	_edit_rows("cards", "ACT_01", {"name": "내 우노 리버스"})
-	check_eq(CardRegistry.get_card(&"ACT_01").display_name, "내 우노 리버스", "카드 이름")
+	_edit_rows("cards", "CNT_03", {"name": "내 우노 리버스"})
+	check_eq(CardRegistry.get_card(&"CNT_03").display_name, "내 우노 리버스", "카드 이름")
 	_edit_rows("cards", "ACT_04", {"param_1": "9"})
 	var state: GameState = make_state(2, 3)
 	var command: RocketBoosterCommand = RocketBoosterCommand.new(1)
 	command.bind_state(state)
 	command._run()
-	check_eq(state.roll_bonus, 9, "긴급 로켓 부스터 +9")
+	check_eq(state.roll_bonus, 9, "로켓 +9")
 	_edit_rows("cards", "TRP_05", {"param_1": "8"})
 	check_eq(CardRegistry.param(&"TRP_05", 5), 8, "스프링 대포 +8")
 	_edit_rows("cards", "ACT_09", {"param_1": "6"})
 	check_eq(DuelRules.winner_advance(), 6, "결투 승자 +6")
 	_edit_rows("cards", "ACT_03", {"param_1": "7"})
-	check_eq(PenaltyBombCommand.advance_steps(), 7, "우노 +4의 전진 칸수")
+	check_eq(PenaltyBombCommand.advance_steps(), 7, "우노 +4 폭탄의 이동 보너스")
 	check(MainBoard.card_summary(&"ACT_03").contains("+7칸"), "카드 설명에도 7이 반영된다")
 
 

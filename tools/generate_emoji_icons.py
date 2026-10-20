@@ -4,6 +4,8 @@ All glyphs come from Noto Color Emoji (SIL Open Font License 1.1).
 - laws/LAW_0N.png: the 8 special-victory law icons on a dark warm backdrop with a golden glow,
   sized like the painted illustrations (1254 px) so the draft card and rulebook slots treat them the same way.
 - pawns/<SUBTYPE>.png: transparent 256 px board tokens for the arcade pawn set, with a white sticker outline.
+- assets/cards/<CARD>.png: 4:3 card illustrations (1448 x 1086, like the painted cards) for the v4.0 cards without a painting,
+  on a soft backdrop tinted by the card type.
 """
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
@@ -29,6 +31,47 @@ PAWNS = {
     'MINESWEEPER_FLAG': '\U0001F6A9',  # 지뢰찾기 공병: 깃발
 }
 TOKEN = 256
+CARD_ROOT = Path(__file__).resolve().parents[1] / 'assets/cards'
+CARD_SIZE = (1448, 1086)
+# card id -> (glyph, backdrop tint)
+COUNTER, INSTANT, TRAP, CORNER = (92, 124, 250), (255, 168, 76), (176, 120, 214), (120, 80, 170)
+CARDS = {
+    'CNT_04': ('\U0001F4A8', COUNTER),        # 빗나감!: 휙
+    'CNT_05': ('\U0001F32A\ufe0f', COUNTER),  # 싸이크론: 회오리
+    'CNT_06': ('\U0001F4DC', COUNTER),        # 왕궁의 포고령: 두루마리
+    'CNT_07': ('\u26CF\ufe0f', COUNTER),      # 도굴꾼: 곡괭이
+    'ACT_10': ('\U0001F528', INSTANT),        # 빠루: 망치
+    'ACT_11': ('\U0001F0CF', INSTANT),        # 밑장빼기: 조커
+    'ACT_12': ('\u23F1\ufe0f', INSTANT),      # 더 월드: 스톱워치
+    'ACT_13': ('\U0001F6AA', INSTANT),        # 어디로든 문
+    'ACT_14': ('\U0001F6AB', INSTANT),        # 알고리즘 밴
+    'ACT_15': ('\u23ED\ufe0f', INSTANT),      # 우노 스킵
+    'TRP_06': ('\U0001F34C', TRAP),           # 바나나 껍질
+    'TRP_07': ('\U0001F335', TRAP),           # 스파이크: 선인장 가시
+    'TRP_08': ('\U0001F300', TRAP),           # 강제 환승 포탈: 소용돌이
+    'TRP_C02': ('\U0001F998', CORNER),        # 피아식별 점프대: 캥거루
+    'TRP_C03': ('\U0001F4B0', CORNER),        # 톨게이트: 돈 자루
+    'TRP_C04': ('\U0001F6E2\ufe0f', CORNER),  # 타르: 기름통
+}
+
+
+def card_art(text, tint):
+    width, height = CARD_SIZE
+    image = Image.new('RGBA', CARD_SIZE, (*[min(255, 200 + c // 5) for c in tint], 255))
+    glow = Image.new('RGBA', CARD_SIZE, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(glow)
+    for radius, alpha in ((620, 90), (480, 120), (340, 150)):
+        draw.ellipse((width // 2 - radius, height // 2 - radius, width // 2 + radius, height // 2 + radius), fill=(*tint, alpha))
+    image = Image.alpha_composite(image, glow.filter(ImageFilter.GaussianBlur(110)))
+    art = glyph(text, 620)
+    if art.height > 720:
+        art = art.resize((round(art.width * 720 / art.height), 720), Image.LANCZOS)
+    x, y = (width - art.width) // 2, (height - art.height) // 2
+    halo = Image.new('RGBA', CARD_SIZE, (0, 0, 0, 0))
+    halo.paste((255, 255, 255, 230), (x, y), art.split()[3].point(lambda a: 255 if a > 20 else 0))
+    image = Image.alpha_composite(image, halo.filter(ImageFilter.GaussianBlur(22)))
+    image.alpha_composite(art, (x, y))
+    return image.convert('RGB')
 
 
 def backdrop():
@@ -77,3 +120,7 @@ for law_id, text in ICONS.items():
 for subtype, text in PAWNS.items():
     token(text).save(ROOT / 'pawns' / f'{subtype}.png')
     print('wrote', subtype)
+
+for card_id, (text, tint) in CARDS.items():
+    card_art(text, tint).save(CARD_ROOT / f'{card_id}.png')
+    print('wrote', card_id)

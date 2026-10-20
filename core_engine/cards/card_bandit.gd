@@ -1,6 +1,6 @@
 # File: res://core_engine/cards/card_bandit.gd
 # Class: class_name CardBandit
-# Role: SUM_01 카탄의 도적떼 - 원하는 타일에 도적 NPC를 소환한다 (라운드 종료 시 가장 가까운 말을 BFS로 추격해 카드 1장을 빼앗고 추방)
+# Role: SUM_01 카탄의 도적떼 - 상단 코너(오른쪽 위·반환점) 한 곳에 소환하면 정방향으로 3~6칸 달리며 길 위의 모든 말을 사출하고 사라진다
 class_name CardBandit
 extends BaseCard
 
@@ -16,9 +16,10 @@ func needs_tile() -> bool:
 	return true
 
 
-func can_play(state: GameState, _player_id: int, params: Dictionary) -> bool:
-	return state.board.is_valid_tile(int(params.get("tile", -1))) and state.npcs.size() < GameEnums.MAX_NPCS
+## params: {"tile": 상단 코너}
+func can_play(_state: GameState, _player_id: int, params: Dictionary) -> bool:
+	return SweepCommand.spawn_tiles().has(int(params.get("tile", -1)))
 
 
 func create_command(_state: GameState, player_id: int, params: Dictionary) -> GameCommand:
-	return SpawnNpcCommand.new(player_id, int(params["tile"]), GameEnums.NpcBehavior.CHASE_NEAREST, &"SUM_01")
+	return SweepCommand.new(player_id, int(params["tile"]), card_id)

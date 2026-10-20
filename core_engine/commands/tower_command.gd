@@ -1,42 +1,48 @@
 # File: res://core_engine/commands/tower_command.gd
 # Class: class_name TowerCommand
-# Role: ACT_07 XVI. 무너지는 탑 - 말이 가장 많이 모인 타일(없으면 가장 앞선 적 말의 타일)에 벼락을 내려, 그 타일의 모든 말을 업기 해제하고 앞쪽 1~2칸 타일로 뿔뿔이 흩어 놓는다. 스냅샷으로 undo 가능
+# Role: ACT_07 XVI. 무너지는 탑 - 고른 보드 한 변(코너 포함)의 모든 설치물(누구 것이든)을 무너뜨린다. 스냅샷으로 undo 가능
 class_name TowerCommand
 extends GameCommand
 
-## 실행 뒤 UI가 읽는다: 벼락이 친 타일과 흩어진 말들 {"pawn_id", "from", "to"}.
-var struck_tile: int = -1
-var scattered: Array[Dictionary] = []
+var side_index: int = 0
+## 실행 뒤 UI가 읽는다: 무너진 칸들과 부서진 설치물 수.
+var tiles: Array[int] = []
+var destroyed: int = 0
 
 
-func _init(acting_player: int = -1) -> void:
+func _init(acting_player: int = -1, side: int = 0) -> void:
 	super()
 	sender_id = acting_player
+	side_index = side
 	command_name = "Tower"
 
 
+## 한 변의 칸들: side * 한 변 길이부터 다음 코너까지 (출발선 제외).
+static func side_tiles(side: int) -> Array[int]:
+	var result: Array[int] = []
+	for offset: int in range(BoardSpec.side + 1):
+		var tile: int = posmod(side * BoardSpec.side + offset, BoardSpec.tile_count)
+		if tile != GameEnums.GOAL_TILE:
+			result.append(tile)
+	return result
+
+
+## 이 변에 무너뜨릴 설치물이 있는가.
+static func has_attachments(game: GameState, side: int) -> bool:
+	for tile: int in side_tiles(side):
+		if not game.board.get_tile(tile).attachments.is_empty():
+			return true
+	return false
+
+
 func can_execute(_ctx: RuleContext) -> bool:
-	return state != null and TarotEffects.tower_target(state, sender_id) != -1
+	return state != null and side_index >= 0 and side_index < 4
 
 
 func _run() -> void:
-	struck_tile = TarotEffects.tower_target(state, sender_id)
-	scattered.clear()
-	var victims: Array[PlayerPawn] = []
-	for pawn: PlayerPawn in TarotEffects.field_pawns(state):
-		if pawn.current_tile_idx == struck_tile:
-			victims.append(pawn)
-	# 업기 해제: 업은 말과 업힌 말이 모두 따로 선다.
-	for pawn: PlayerPawn in victims:
-		pawn.carrier = null
-		pawn.carried.clear()
-	var tiles: Array[int] = TarotEffects.tower_scatter_tiles(state, struck_tile)
-	if tiles.is_empty():
-		return
-	for pawn: PlayerPawn in victims:
-		var destination: int = tiles[state.rng.randi_range(0, tiles.size() - 1)]
-		var from_tile: int = pawn.current_tile_idx
-		pawn.place_at(destination)
-		scattered.append({"pawn_id": pawn.entity_id, "from": from_tile, "to": destination})
-		state.pawn_warped.emit(pawn.entity_id, from_tile, destination)
-	state.tower_struck.emit(struck_tile, scattered)
+	tiles = side_tiles(side_index)
+	for tile_index: int in tiles:
+		var tile: TileNode = state.board.get_tile(tile_index)
+		destroyed += tile.attachments.size()
+		tile.clear_attachments()
+	state.side_collapsed.emit(side_index, tiles, destroyed)

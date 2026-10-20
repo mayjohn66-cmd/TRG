@@ -1,6 +1,6 @@
 # File: res://core_engine/cards/card_trap_pit.gd
 # Class: class_name CardTrapPit
-# Role: TRP_02 함정 속으로(나락) - 눈금 4 이상으로 지나가는 상대 말을 2턴간 구속하는 은신 함정을 타일에 설치
+# Role: TRP_02 함정 속으로(나락) - 눈금 4 이상으로 지나가는 상대 말을 출발선으로 떨어뜨리는 은신 함정을 타일에 설치
 class_name CardTrapPit
 extends BaseCard
 

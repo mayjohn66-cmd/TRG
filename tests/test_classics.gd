@@ -423,7 +423,7 @@ func test_domino_hidden_trap_serializes_and_card_places_it() -> void:
 	check(not card.can_play(state, 1, {"tile": GameEnums.GOAL_TILE}), "출발선에는 설치 불가")
 	for corner: int in BoardSpec.bonus_corner_tiles:
 		check(not card.is_legal(state, 1, {"tile": corner}), "일반 함정은 코너(%d)에 설치 불가" % corner)
-	var island: BaseCard = CardRegistry.get_card(&"TRP_04")
+	var island: BaseCard = CardRegistry.get_card(&"TRP_C01")
 	check(island.is_legal(state, 1, {"tile": BoardSpec.bonus_corner_tiles[0]}) and not island.is_legal(state, 1, {"tile": 9}), "코너 전용 함정은 코너에만")
 	check(exec(state, card.create_command(state, 1, {"tile": 9})), "설치")
 	check(state.board.get_tile(9).has_attachment("TRP_05"), "9번 타일에 스프링 대포")
@@ -459,46 +459,6 @@ func test_tower_targets_the_most_crowded_tile() -> void:
 	place(enemy_heavy, 21, 12, [11])
 	place(enemy_heavy, 22, 12, [11])
 	check_eq(TarotEffects.tower_target(enemy_heavy, 1), 12, "동수면 적 말이 많은 타일")
-
-
-func test_tower_falls_back_to_the_leading_enemy_and_needs_pawns() -> void:
-	var state := make_state(2, 1)
-	check_eq(TarotEffects.tower_target(state, 1), -1, "보드 위에 말이 없으면 대상 없음")
-	var card: BaseCard = CardRegistry.get_card(&"ACT_07")
-	check(not card.could_play(state, 1), "대상이 없으면 낼 수 없다")
-	place(state, 11, 4, [3])
-	place(state, 21, 12, [11])
-	place(state, 22, 6, [5])
-	check_eq(TarotEffects.tower_target(state, 1), 12, "뭉친 곳이 없으면 가장 앞선 적 말(12번)")
-	check(card.could_play(state, 1), "낼 수 있다")
-	check_eq(card.display_name, "XVI. 무너지는 탑", "카드 이름")
-	check(card.is_playable_in(Phase.PHASE_TURN_BEGIN) and not card.is_playable_in(Phase.PHASE_RESOLUTION), "내 턴 시작에만")
-
-
-func test_tower_scatters_everyone_and_breaks_stacks() -> void:
-	var state := make_state(2, 1, {1: [Vector2i(Kind.YUT, 1), Vector2i(Kind.YUT, 2), Kind.BASIC, Kind.BASIC]})
-	place(state, 11, 8, [7])
-	place(state, 12, 8, [7])
-	state.stack_pawns(state.get_pawn(11), state.get_pawn(12))
-	place(state, 21, 8, [7])
-	place(state, 22, 3, [2])
-	var scattered_signal: Array = []
-	state.tower_struck.connect(func(tile: int, scattered: Array[Dictionary]) -> void: scattered_signal.append([tile, scattered.size()]))
-	var command := TowerCommand.new(1)
-	check(exec(state, command), "무너지는 탑 실행")
-	check_eq(command.struck_tile, 8, "8번에 벼락")
-	var allowed: Array[int] = TarotEffects.tower_scatter_tiles(state, 8)
-	for pawn_id: int in [11, 12, 21]:
-		var pawn: PlayerPawn = state.get_pawn(pawn_id)
-		check(pawn.current_tile_idx != 8 and allowed.has(pawn.current_tile_idx), "말 %d은 앞뒤 1~2칸 인접 타일로 흩어진다 (%d번)" % [pawn_id, pawn.current_tile_idx])
-		check(pawn.carrier == null and pawn.carried.is_empty(), "업기 해제")
-	check_eq(state.get_pawn(22).current_tile_idx, 3, "다른 타일의 말은 그대로")
-	check_eq(scattered_signal, [[8, 3]] as Array, "신호: 8번에서 말 3개")
-	check(not allowed.has(GameEnums.GOAL_TILE) and not allowed.has(8), "출발선과 제자리는 흩어질 곳이 아니다")
-	var within: Array[int] = state.board.tiles_within(8, 2)
-	for tile: int in allowed:
-		check(within.has(tile), "반경 2칸 이내")
-
 
 func test_tower_scatter_is_deterministic_with_the_state_seed() -> void:
 	var results: Array = []
@@ -569,12 +529,18 @@ func test_tarot_cards_follow_the_one_card_per_turn_rule_in_the_manager() -> void
 	check_eq(rejected, [&"card_limit"] as Array, "굴리기 전 카드는 턴당 1장")
 	_dispose(manager)
 
-
-func test_new_cards_are_in_the_deck_and_registry() -> void:
-	for card_id: StringName in [&"TRP_05", &"ACT_07", &"ACT_08"]:
-		check(CardRegistry.get_card(card_id) != null, "%s 등록" % card_id)
-		check(CardRegistry.default_deck().has(card_id), "%s 기본 덱에 포함" % card_id)
-	check_eq(CardRegistry.get_card(&"ACT_06").display_name, "이의 있음! 법전 파기", "기존 ACT_06은 그대로")
+func test_tower_collapses_every_attachment_on_one_side() -> void:
+	var state := make_state(2, 1)
+	var card: BaseCard = CardRegistry.get_card(&"ACT_07")
+	check(not card.could_play(state, 1), "설치물이 없으면 낼 수 없다")
+	state.place_attachment(2, TrapMine.new(2))
+	state.place_attachment(BoardSpec.side, Hotel.new(1))
+	state.place_attachment(BoardSpec.side + 2, TrapMine.new(2))
+	check(card.is_legal(state, 1, {"side": 0}) and not card.is_legal(state, 1, {"side": 2}), "설치물이 있는 변만")
+	exec(state, card.create_command(state, 1, {"side": 0}))
+	check(state.board.get_tile(2).attachments.is_empty() and state.board.get_tile(BoardSpec.side).attachments.is_empty(), "첫 변(코너 포함)이 무너졌다")
+	check_eq(state.board.get_tile(BoardSpec.side + 2).attachments.size(), 1, "다음 변은 그대로")
+	check(card.is_playable_in(Phase.PHASE_TURN_BEGIN) and not card.is_playable_in(Phase.PHASE_RESOLUTION), "내 턴 시작에만")
 
 
 # --- AI 봇 --------------------------------------------------------------------

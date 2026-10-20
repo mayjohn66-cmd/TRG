@@ -12,11 +12,13 @@ const FILLS: Dictionary = {
 	GameEnums.CardCategory.INSTANT: Color("d98b2b"),
 	GameEnums.CardCategory.TRAP: Color("8e4aa8"),
 	GameEnums.CardCategory.SUMMON: Color("2f9a85"),
+	GameEnums.CardCategory.COUNTER: Color("4c6ef5"),
 }
 const EDGES: Dictionary = {
 	GameEnums.CardCategory.INSTANT: Color("89551a"),
 	GameEnums.CardCategory.TRAP: Color("58366b"),
 	GameEnums.CardCategory.SUMMON: Color("205e54"),
+	GameEnums.CardCategory.COUNTER: Color("2b3f9e"),
 }
 
 
@@ -126,7 +128,7 @@ static func body(card: BaseCard, card_size: Vector2, summary_text: String, categ
 	var badge_size := Vector2((48.0 if detailed else 30.0) * k, (20.0 if detailed else 14.0) * k)
 	var padding: float = (8.0 if detailed else 4.0) * k
 	var badge: Panel = panel(detail, "CategoryBadge", Rect2(Vector2.ONE * padding, badge_size), FILLS[card.category], FILLS[card.category], 0, roundi(7 * k))
-	var badge_ink: Color = Color("f9f9f3") if card.category == GameEnums.CardCategory.TRAP else Color("111111")
+	var badge_ink: Color = Color("f9f9f3") if card.category == GameEnums.CardCategory.TRAP or card.category == GameEnums.CardCategory.COUNTER else Color("111111")
 	label(badge, "CategoryName", category_name, Rect2(Vector2.ZERO, badge_size), roundi((14.0 if detailed else 10.0) * k), badge_ink, true)
 	if detailed:
 		var tag: String = "타일 설치" if card.needs_tile() else "즉시 효과"

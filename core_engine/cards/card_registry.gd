@@ -6,23 +6,14 @@ extends RefCounted
 
 static var _cache: Dictionary = {}
 
+## v4.0 카드 32종: 반격 7 · 즉발 13 · 함정 6 · 코너 함정 4 · 소환 2. 값은 기본 덱 장수 (cards_table.csv param_2가 우선).
 const DECK_COMPOSITION: Dictionary = {
-	&"ACT_01": 2,
-	&"ACT_02": 2,
-	&"ACT_03": 2,
-	&"ACT_04": 2,
-	&"ACT_05": 2,
-	&"ACT_06": 3,
-	&"TRP_01": 2,
-	&"TRP_02": 2,
-	&"TRP_03": 2,
-	&"TRP_04": 2,
-	&"TRP_05": 2,
-	&"ACT_07": 2,
-	&"ACT_08": 2,
-	&"ACT_09": 2,
-	&"SUM_01": 2,
-	&"SUM_02": 1,
+	&"CNT_01": 1, &"CNT_02": 2, &"CNT_03": 2, &"CNT_04": 2, &"CNT_05": 1, &"CNT_06": 1, &"CNT_07": 1,
+	&"ACT_02": 2, &"ACT_03": 2, &"ACT_04": 2, &"ACT_06": 2, &"ACT_07": 2, &"ACT_08": 2, &"ACT_09": 2,
+	&"ACT_10": 2, &"ACT_11": 1, &"ACT_12": 1, &"ACT_13": 2, &"ACT_14": 1, &"ACT_15": 2,
+	&"TRP_02": 2, &"TRP_03": 2, &"TRP_05": 2, &"TRP_06": 2, &"TRP_07": 2, &"TRP_08": 1,
+	&"TRP_C01": 1, &"TRP_C02": 1, &"TRP_C03": 1, &"TRP_C04": 1,
+	&"SUM_01": 1, &"SUM_02": 1,
 }
 
 
@@ -33,20 +24,22 @@ static func get_card(card_id: StringName) -> BaseCard:
 		return cached
 	var card: BaseCard = null
 	match card_id:
-		&"ACT_01": card = CardUnoReverse.new()
+		&"CNT_01", &"CNT_02", &"CNT_03", &"CNT_04", &"CNT_05", &"CNT_06", &"CNT_07": card = CardCounter.new(card_id)
 		&"ACT_02": card = CardBang.new()
 		&"ACT_03": card = CardUnoPlusFour.new()
 		&"ACT_04": card = CardRocketBooster.new()
-		&"ACT_05": card = CardBitesTheDust.new()
 		&"ACT_06": card = CardObjection.new()
-		&"TRP_01": card = CardMirrorForce.new()
-		&"TRP_02": card = CardTrapPit.new()
-		&"TRP_03": card = CardMine.new()
-		&"TRP_04": card = CardIsland.new()
-		&"TRP_05": card = CardDomino.new()
 		&"ACT_07": card = CardTower.new()
 		&"ACT_08": card = CardWheelOfFortune.new()
 		&"ACT_09": card = CardDuel.new()
+		&"ACT_10": card = CardCrowbar.new()
+		&"ACT_11", &"ACT_12", &"ACT_14", &"ACT_15": card = CardStatus.new(card_id)
+		&"ACT_13": card = CardDoor.new()
+		&"TRP_02": card = CardTrapPit.new()
+		&"TRP_03": card = CardMine.new()
+		&"TRP_05": card = CardDomino.new()
+		&"TRP_06", &"TRP_07", &"TRP_08", &"TRP_C02", &"TRP_C03", &"TRP_C04": card = CardTrap.new(card_id)
+		&"TRP_C01": card = CardIsland.new()
 		&"SUM_01": card = CardBandit.new()
 		&"SUM_02": card = CardGhost.new()
 	if card == null:

@@ -1,20 +1,25 @@
 # File: res://core_engine/cards/card_ghost.gd
 # Class: class_name CardGhost
-# Role: SUM_02 팩맨의 고스트 - 반환점(BoardSpec.halfway_tile)에 고스트 NPC를 소환한다 (외곽 트랙을 역주행으로 3칸씩 순찰하며 마주친 말을 반환점으로 연행)
+# Role: SUM_02 팩맨 - 상단 코너(오른쪽 위·반환점) 한 곳에 소환하면 역방향으로 3~6칸 달리며 길 위의 모든 말을 사출하고 사라진다
 class_name CardGhost
 extends BaseCard
 
 
 func _init() -> void:
 	card_id = &"SUM_02"
-	display_name = "팩맨의 고스트"
+	display_name = "팩맨"
 	category = GameEnums.CardCategory.SUMMON
 	playable_phases = [TurnManager.State.PHASE_TURN_BEGIN]
 
 
-func can_play(state: GameState, _player_id: int, _params: Dictionary) -> bool:
-	return state.npcs.size() < GameEnums.MAX_NPCS
+func needs_tile() -> bool:
+	return true
 
 
-func create_command(_state: GameState, player_id: int, _params: Dictionary) -> GameCommand:
-	return SpawnNpcCommand.new(player_id, BoardSpec.halfway_tile, GameEnums.NpcBehavior.PATROL_REVERSE, &"SUM_02")
+## params: {"tile": 상단 코너}
+func can_play(_state: GameState, _player_id: int, params: Dictionary) -> bool:
+	return SweepCommand.spawn_tiles().has(int(params.get("tile", -1)))
+
+
+func create_command(_state: GameState, player_id: int, params: Dictionary) -> GameCommand:
+	return SweepCommand.new(player_id, int(params["tile"]), card_id)

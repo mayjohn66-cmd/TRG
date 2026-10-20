@@ -244,22 +244,19 @@ static func _plan_one_turn_card(state: GameState, player_id: int, card: BaseCard
 		&"ACT_03":  # 우노 +4: 다음 차례의 선두 말이 보드 위에 있고 50%
 			if card.could_play(state, player_id) and rng.randf() < 0.5:
 				return {"card_id": card.card_id, "params": {}}
-		&"ACT_07":  # 무너지는 탑: 적이 뭉쳐 있거나 가장 앞선 적이 결승 가까이 있을 때
-			var tower_tile: int = TarotEffects.tower_target(state, player_id)
-			if tower_tile == -1:
-				return {}
-			var crowd: int = 0
-			var enemy_crowd: int = 0
-			for pawn: PlayerPawn in TarotEffects.field_pawns(state):
-				if pawn.current_tile_idx == tower_tile:
-					crowd += 1
-					if pawn.owner_id != player_id:
-						enemy_crowd += 1
-			var lead: PlayerPawn = TarotEffects.leading_enemy(state, player_id)
-			var lead_close: bool = lead != null and state.pawn_progress_distance(lead) <= 8
-			if enemy_crowd >= 2 or (enemy_crowd >= 1 and lead_close):
-				if rng.randf() < 0.7:
-					return {"card_id": card.card_id, "params": {}}
+		&"ACT_07":  # 무너지는 탑: 남의 설치물이 가장 많은 변 (내 설치물보다 많을 때)
+			var best_side: int = -1
+			var best_gain: int = 0
+			for side: int in 4:
+				var gain: int = 0
+				for tile: int in TowerCommand.side_tiles(side):
+					for attachment: TileAttachment in state.board.get_tile(tile).attachments:
+						gain += 1 if attachment.owner_id != player_id else -1
+				if gain > best_gain:
+					best_gain = gain
+					best_side = side
+			if best_side != -1 and rng.randf() < 0.7:
+				return {"card_id": card.card_id, "params": {"side": best_side}}
 		&"ACT_08":  # 운명의 수레바퀴: 내 뒤처진 말과 앞선 적 말을 바꿔서 크게 이득일 때
 			var enemy_front: PlayerPawn = TarotEffects.leading_enemy(state, player_id)
 			var mine_back: PlayerPawn = TarotEffects.trailing_own(state, player_id)
@@ -270,15 +267,48 @@ static func _plan_one_turn_card(state: GameState, player_id: int, card: BaseCard
 					return {"card_id": card.card_id, "params": {}}
 			elif state.pawn_progress_distance(mine_back) - state.pawn_progress_distance(enemy_front) >= 6:
 				return {"card_id": card.card_id, "params": {}}
-		&"ACT_01":  # 우노 리버스: 이동 역주행 중이 아니면 가끔 (판을 흔든다)
-			if state.reverse_move_rounds_left == 0 and rng.randf() < 0.25:
+		&"ACT_06":  # 이의 있음!: 목표에 가장 가까운 상대의 특수 승리 기록을 지운다
+			var best_choice: Dictionary = {}
+			var best_ratio: float = 0.5
+			for choice: Dictionary in CardObjection.choices(state):
+				var target: int = int(choice["target_player"])
+				if target == player_id:
+					continue
+				var law: VictoryLaw = LawRegistry.create(choice["law_id"]) as VictoryLaw
+				var ratio: float = float(law.progress(state, target)) / float(law.goal())
+				if ratio > best_ratio:
+					best_ratio = ratio
+					best_choice = choice
+			if not best_choice.is_empty():
+				return {"card_id": card.card_id, "params": best_choice}
+		&"ACT_10":  # 빠루: 앞 3칸에 적 말이 있으면
+			for tile: int in CrowbarCommand.reach_tiles(state, player_id):
+				for leader: PlayerPawn in state.leaders_at(tile):
+					if leader.owner_id != player_id and leader.has_left_start:
+						return {"card_id": card.card_id, "params": {}}
+		&"ACT_11":  # 밑장빼기: 최대 눈금
+			if card.could_play(state, player_id) and rng.randf() < 0.5:
+				return {"card_id": card.card_id, "params": {"steps": CardStatus.MAX_STEPS}}
+		&"ACT_12":  # 더 월드: 바로 쓴다
+			if card.could_play(state, player_id):
 				return {"card_id": card.card_id, "params": {}}
-		&"ACT_06":  # 이의 있음!: 법전에 교칙이 있으면 가끔 무작위 한 개를 파기한다
-			var laws: Array[String] = state.rulebook.law_ids()
-			if not laws.is_empty() and rng.randf() < 0.4:
-				return {"card_id": card.card_id, "params": {"law_id": laws[rng.randi_range(0, laws.size() - 1)]}}
-		&"ACT_05":
-			return {}  # 피해를 입었을 때의 되돌리기 전용 (턴 시작에는 쓰지 않는다)
+		&"ACT_13":  # 어디로든 문: 결승에 가장 가까운 빈 칸으로 (지금보다 앞일 때만)
+			var traveler: PlayerPawn = DoorCommand.traveler(state, player_id)
+			if traveler != null and rng.randf() < 0.6:
+				var best_tile: int = -1
+				var best_distance: int = state.pawn_progress_distance(traveler)
+				for tile: int in BoardSpec.tile_count:
+					if DoorCommand.is_empty_tile(state, tile) and state.board.distance_to_goal(tile, true) < best_distance:
+						best_distance = state.board.distance_to_goal(tile, true)
+						best_tile = tile
+				if best_tile != -1:
+					return {"card_id": card.card_id, "params": {"tile": best_tile}}
+		&"ACT_14", &"ACT_15":  # 밴·스킵: 선두 상대에게
+			var leader_player: int = state.race_leader(player_id)
+			if leader_player != -1 and card.is_legal(state, player_id, {"target_player": leader_player}) and rng.randf() < 0.6:
+				return {"card_id": card.card_id, "params": {"target_player": leader_player}}
+		&"CNT_01", &"CNT_02", &"CNT_03", &"CNT_04", &"CNT_05", &"CNT_06", &"CNT_07":
+			return {}  # 반격 카드는 공격당했을 때만
 		_:
 			if rng.randf() >= TRAP_USE_CHANCE:
 				return {}
@@ -302,11 +332,29 @@ static func plan_window_card(state: GameState, player_id: int, phase: int, roll_
 		if not card.is_playable_in(phase):
 			continue
 		tried[card_id] = true
-		match card.card_id:
-			&"ACT_05":  # 말이 잡히거나 함정에 걸렸다면 되감기
-				if card.could_play(state, player_id):
-					return {"card_id": card.card_id, "params": {}}
+		if card.category != GameEnums.CardCategory.COUNTER and card.could_play(state, player_id):
+			return {"card_id": card.card_id, "params": {}}
 	return {}
+
+
+## 반격 대기에서 봇이 낼 반격 카드: 되갚는 카드를 먼저 고르고(거울의 힘 > 우노 리버스 > 도굴꾼 > 싸이크론 > 포고령 > 빗나감),
+## 바이츠 더 더스트는 앞서 나간 말을 잃었을 때만 쓴다. 쓰지 않으면 빈 값.
+const COUNTER_PREFERENCE: Array[StringName] = [&"CNT_02", &"CNT_03", &"CNT_07", &"CNT_05", &"CNT_06", &"CNT_04", &"CNT_01"]
+
+
+static func choose_counter(state: GameState, _player_id: int, cards: Array, entry: Dictionary, _rng: RandomNumberGenerator) -> StringName:
+	for card_id: StringName in COUNTER_PREFERENCE:
+		if not cards.has(card_id):
+			continue
+		if card_id == &"CNT_01":
+			var lost: int = 0
+			for pawn_id: Variant in (entry.get("pawns", {}) as Dictionary).keys():
+				var saved: Dictionary = entry["pawns"][pawn_id]
+				lost += BoardSpec.tile_count - state.board.distance_to_goal(int(saved["tile"]), bool(saved["started"]))
+			if lost < BoardSpec.side:
+				continue
+		return card_id
+	return &""
 
 
 # ---------------------------------------------------------------------------

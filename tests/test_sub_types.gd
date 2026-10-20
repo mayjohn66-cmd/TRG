@@ -137,7 +137,7 @@ func test_steamship_destroys_only_the_first_hostile_attachment_without_triggerin
 	var plain := make_state(2, 1, {1: _units(Kind.MONOPOLY, [1])})
 	plain.place_attachment(8, TrapPit.new(2))
 	place(plain, 11, 6, [5])
-	check(move(plain, 11, 4).stopped_early, "미니카는 함정에 걸린다")
+	check(move(plain, 11, 4).trapped, "미니카는 함정에 걸린다")
 
 
 func test_dog_draws_a_card_for_every_bakery_it_only_passes() -> void:

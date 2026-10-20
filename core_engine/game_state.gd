@@ -46,6 +46,11 @@ signal trap_defused(tile: int, attachment_id: String, pawn_id: int)
 signal domino_collapsed(pawn_id: int, passed: Array[int], chain: Array[int])
 ## ACT_07 무너지는 탑이 tile에 벼락을 쳐 말들을 흩어 놓았다 (scattered: {"pawn_id", "from", "to"}).
 signal tower_struck(tile: int, scattered: Array[Dictionary])
+## ACT_07 무너지는 탑: 한 변의 설치물이 무너졌다. / ACT_10 빠루를 휘둘렀다.
+signal side_collapsed(side: int, tiles: Array[int], destroyed: int)
+signal crowbar_swung(player_id: int, tiles: Array[int])
+## 소환 카드: 도적떼·팩맨이 길을 쓸고 사라졌다.
+signal npc_swept(display_id: StringName, path: Array[int], ejected: Array[int])
 ## ACT_08 운명의 수레바퀴: outcome은 "swap"(내 말 mine_id와 적 말 enemy_id의 위치 교환) 또는 "retreat"(적 말 후퇴, mine_id = -1).
 signal wheel_turned(player_id: int, mine_id: int, enemy_id: int, outcome: StringName)
 ## ACT_09 가위바위보 결투 신청: challenger가 defender에게 결투를 걸었다 (진행은 TurnManager가 입력을 받아 한다).
@@ -87,6 +92,20 @@ var winner: int = -1
 var rankings: Array[int] = []
 ## 플레이어 ID -> 순위를 확정한 사유 (all_home / 특수 승리 교칙 ID / last_place)
 var rank_reasons: Dictionary = {}
+## ⚔ 이번 턴의 공격 기록 (반격 카드 대상). 턴이 시작될 때 비운다. 원소: {id, kind(capture/card/trap), victim, attacker, attacker_pawn,
+## card_id, trap_id, trap_tile, trap_owner, trap_data, pawns: {말 ID: 피해 직전 상태}, stats: {kills, ejected, underdog}, effects: {}, offered, countered}
+var attack_log: Array[Dictionary] = []
+## 지금 진행 중인 공격의 출처 (begin_attack ~ end_attack 사이). 비어 있으면 공격으로 기록하지 않는다.
+var attack_source: Dictionary = {}
+var _attack_stack: Array[Dictionary] = []
+var _attack_serial: int = 0
+var _attack_next_id: int = 1
+## ACT_14 알고리즘 밴: 플레이어 ID -> 남은 내 턴 수 (카드·필살기·리롤 금지).
+var banned_turns: Dictionary = {}
+## ACT_11 밑장빼기: 플레이어 ID -> 다음 굴림 결과로 쓸 칸 수.
+var forced_roll: Dictionary = {}
+## ACT_12 더 월드: 이번 턴이 끝나면 한 턴을 더 하는 플레이어들.
+var extra_turns: Dictionary = {}
 ## 🏆 특수 승리 교칙 진행도: 플레이어 ID -> {kills, ejected, underdog, best_move, best_chain, turn_hand}.
 ## 누적 기록(kills·ejected·underdog)은 게임 시작부터 세고, 순간 기록(best_*·turn_hand)은 해당 교칙이 법전에 있는 동안만 센다.
 var law_stats: Dictionary = {}
@@ -100,6 +119,8 @@ var turn_direction: int = 1
 ## ACT_03 우노 +4: 플레이어 ID -> 다음 자기 턴 시작에 받을 후퇴 페널티(음수 칸 수). 0이면 없음.
 ## ACT_05가 실행되었음을 TurnManager에 알리는 플래그.
 var rollback_requested: bool = false
+## CNT_01: 되감은 뒤 그 턴을 바로 끝낸다 (공격한 사람의 턴 종료).
+var rollback_ends_turn: bool = false
 
 
 ## BoardGraph·RuleBookManager·기물·NPC는 Node라 씬 트리에 붙이지 않고 GameState가 수명을 관리한다.
@@ -326,6 +347,7 @@ func send_to_start(pawn: PlayerPawn, by_player: int) -> void:
 	# 특수 승리 기록: 다크호스 판정은 사출 전에 선두를 정한다.
 	var enemy_kill: bool = by_player >= 1 and by_player != pawn.owner_id
 	var underdog: bool = enemy_kill and finished_count(by_player) == 0 and race_leader(by_player) == pawn.owner_id
+	var entry: Dictionary = record_hit(pawn) if enemy_kill else {}
 	for member: PlayerPawn in members:
 		# 보드 위에 나와 있던 말만 복수심을 얻는다 (이미 출발선에 있던 말은 해당 없음).
 		var was_out: bool = member.has_left_start and not member.is_finished
@@ -335,10 +357,13 @@ func send_to_start(pawn: PlayerPawn, by_player: int) -> void:
 			member.shield_broken_hit = true  # 방어막이 깨진 채로 잡혔다: 다음 증강 라운드에 재충전되지 않는다
 		if was_out:
 			add_stat(pawn.owner_id, &"ejected")
+			_note_entry_stat(entry, &"ejected")
 			if enemy_kill:
 				add_stat(by_player, &"kills")
+				_note_entry_stat(entry, &"kills")
 			if underdog:
 				add_stat(by_player, &"underdog")
+				_note_entry_stat(entry, &"underdog")
 	if not hurt_players.has(pawn.owner_id):
 		hurt_players.append(pawn.owner_id)
 	for member: PlayerPawn in members:
@@ -660,4 +685,144 @@ func recharge_shields() -> void:
 			pawn.shield = true
 			shield_recharged.emit(pawn.entity_id)
 		pawn.shield_broken_hit = false
+
+
+# ---------------------------------------------------------------------------
+# ⚔ 공격 기록 (반격 카드)
+# ---------------------------------------------------------------------------
+
+## 공격 출처를 연다: {"kind": &"capture"/&"card"/&"trap", "attacker": 플레이어, ...}. 같은 출처 안의 피해는 피해자별로 한 기록에 모인다.
+func begin_attack(source: Dictionary) -> void:
+	_attack_serial += 1
+	_attack_stack.append(attack_source)
+	attack_source = source.duplicate()
+	attack_source["serial"] = _attack_serial
+
+
+## 출처를 닫고 바깥 출처(카드가 일으킨 이동 속의 잡기 등)로 돌아간다.
+func end_attack() -> void:
+	attack_source = _attack_stack.pop_back() if not _attack_stack.is_empty() else {}
+
+
+## 피해 직전에 부른다: 지금 출처 아래에서 pawn(과 업힌 말)의 상태를 피해자 기록에 담는다. 출처가 없거나 자기 공격이면 빈 값.
+func record_hit(pawn: PlayerPawn) -> Dictionary:
+	if attack_source.is_empty() or pawn == null or int(attack_source.get("attacker", -1)) == pawn.owner_id:
+		return {}
+	var entry: Dictionary = _entry_for(pawn.owner_id)
+	var saved: Dictionary = entry["pawns"]
+	for member: PlayerPawn in pawn.stack_members():
+		if not saved.has(member.entity_id):
+			saved[member.entity_id] = pawn_state(member)
+	return entry
+
+
+## 지금 출처 아래에서 피해자 플레이어의 말 이외의 피해(휴식·밴·기록 초기화)를 기록에 남긴다. 되돌릴 때 previous 값으로 복원한다.
+func record_effect(victim: int, key: String, previous: Variant) -> void:
+	if attack_source.is_empty() or int(attack_source.get("attacker", -1)) == victim:
+		return
+	var effects: Dictionary = _entry_for(victim)["effects"]
+	if not effects.has(key):
+		effects[key] = previous
+
+
+func _entry_for(victim: int) -> Dictionary:
+	for entry: Dictionary in attack_log:
+		if int(entry["serial"]) == int(attack_source["serial"]) and int(entry["victim"]) == victim:
+			return entry
+	var entry: Dictionary = attack_source.duplicate()
+	entry["id"] = _attack_next_id
+	_attack_next_id += 1
+	entry["victim"] = victim
+	entry["pawns"] = {}
+	entry["stats"] = {}
+	entry["effects"] = {}
+	entry["offered"] = false
+	entry["countered"] = false
+	attack_log.append(entry)
+	return entry
+
+
+func _note_entry_stat(entry: Dictionary, key: StringName) -> void:
+	if entry.is_empty():
+		return
+	var stats: Dictionary = entry["stats"]
+	stats[key] = int(stats.get(key, 0)) + 1
+
+
+## 아무 피해도 남지 않은 기록(발동하지 않은 함정 등)을 지운다.
+func discard_empty_attacks() -> void:
+	var kept: Array[Dictionary] = []
+	for entry: Dictionary in attack_log:
+		if not (entry["pawns"] as Dictionary).is_empty() or not (entry["effects"] as Dictionary).is_empty() or bool(entry.get("keep", false)):
+			kept.append(entry)
+	attack_log = kept
+
+
+func get_attack(attack_id: int) -> Dictionary:
+	for entry: Dictionary in attack_log:
+		if int(entry["id"]) == attack_id:
+			return entry
+	return {}
+
+
+## 말 하나의 위치·상태 (공격 직전 저장용).
+func pawn_state(pawn: PlayerPawn) -> Dictionary:
+	var carried_ids: Array[int] = []
+	for carried_pawn: PlayerPawn in pawn.carried:
+		carried_ids.append(carried_pawn.entity_id)
+	return {"tile": pawn.current_tile_idx, "history": pawn.step_history.duplicate(), "started": pawn.has_left_start,
+		"finished": pawn.is_finished, "revenge": pawn.revenge_boost, "restrained": pawn.restrained_turns,
+		"imprisoned": pawn.is_imprisoned, "shield": pawn.shield, "carrier": pawn.carrier.entity_id if pawn.carrier != null else -1, "carried": carried_ids}
+
+
+## 반격으로 피해를 되돌린다: 저장한 말 상태·휴식·밴·기록을 복원하고, 공격으로 오른 특수 승리 기록을 되돌린다.
+func undo_attack(entry: Dictionary) -> void:
+	var saved: Dictionary = entry["pawns"]
+	for pawn_id: Variant in saved.keys():
+		var pawn: PlayerPawn = get_pawn(int(pawn_id))
+		var data: Dictionary = saved[pawn_id]
+		if pawn.carrier != null:
+			pawn.carrier.carried.erase(pawn)
+		pawn.carrier = null
+		pawn.carried.clear()
+		var from_tile: int = pawn.current_tile_idx
+		pawn.current_tile_idx = int(data["tile"])
+		pawn.step_history.assign(data["history"])
+		pawn.has_left_start = bool(data["started"])
+		pawn.is_finished = bool(data["finished"])
+		pawn.revenge_boost = bool(data["revenge"])
+		pawn.restrained_turns = int(data["restrained"])
+		pawn.is_imprisoned = bool(data["imprisoned"])
+		pawn.shield = bool(data["shield"])
+		if from_tile != pawn.current_tile_idx:
+			pawn_teleported.emit(pawn.entity_id, pawn.current_tile_idx)
+	for pawn_id: Variant in saved.keys():
+		var data: Dictionary = saved[pawn_id]
+		var pawn: PlayerPawn = get_pawn(int(pawn_id))
+		var carrier: PlayerPawn = get_pawn(int(data["carrier"]))
+		if carrier != null and not carrier.carried.has(pawn):
+			pawn.carrier = carrier
+			carrier.carried.append(pawn)
+	var victim: int = int(entry["victim"])
+	var attacker: int = int(entry.get("attacker", -1))
+	var stats: Dictionary = entry["stats"]
+	add_stat(victim, &"ejected", -int(stats.get(&"ejected", 0)))
+	if attacker >= 1:
+		add_stat(attacker, &"kills", -int(stats.get(&"kills", 0)))
+		add_stat(attacker, &"underdog", -int(stats.get(&"underdog", 0)))
+	var effects: Dictionary = entry["effects"]
+	if effects.has("rest"):
+		rest_next_turn[victim] = bool(effects["rest"])
+	if effects.has("ban"):
+		banned_turns[victim] = int(effects["ban"])
+	for key: String in effects.keys():
+		if key.begins_with("stat:"):
+			law_stats[victim] = law_stats.get(victim, {})
+			(law_stats[victim] as Dictionary)[StringName(key.trim_prefix("stat:"))] = int(effects[key])
+	stats.clear()
+	entry["countered"] = true
+
+
+func is_banned(player_id: int) -> bool:
+	return int(banned_turns.get(player_id, 0)) > 0
 

@@ -52,14 +52,12 @@ func test_knight_jump_ignores_intermediate_traps_but_not_the_landing_trap() -> v
 	check(state.board.get_tile(3).has_attachment("TRP_02"), "무시한 함정은 그대로 남음")
 	place(state, 11, 1)  # 1호기 폰은 걸린다
 	var pawn_hit: MoveReport = move(state, 11, 4)
-	check(pawn_hit.stopped_early, "다른 기물은 중간 함정에 걸림")
-	check_eq(state.get_pawn(11).current_tile_idx, 3, "함정 칸에서 정지")
+	check(pawn_hit.trapped and not state.get_pawn(11).has_left_start, "다른 기물은 중간 함정(나락)에 걸려 사출")
 	var landing := make_state(2, 1, {1: _loadout(Kind.CHESS)})
 	landing.place_attachment(5, TrapPit.new(2))
 	place(landing, 12, 1)
 	var landed: MoveReport = move(landing, 12, 4)
-	check(landed.stopped_early, "도착 칸 함정은 발동")
-	check_eq(landing.get_pawn(12).restrained_turns, 2, "구속됨")
+	check(landed.trapped, "도착 칸 함정은 발동")
 
 
 func test_knight_jump_ignores_hotels_on_the_way() -> void:
@@ -151,13 +149,13 @@ func test_uno_plus_four_ejects_the_next_players_front_pawn_and_boosts_mine() -> 
 	check_eq(results, [[1, 2, 21, 9, 0]], "다음 플레이어의 선두 말이 출발선으로 사출")
 	check_eq(state.get_pawn(21).current_tile_idx, 0, "사출")
 	check_eq(state.get_pawn(22).current_tile_idx, 4, "다른 말은 그대로")
-	check_eq(state.get_pawn(11).current_tile_idx, 5, "내 선두 말은 +4칸 전진 (1 -> 5)")
+	check_eq(state.roll_bonus, PenaltyBombCommand.advance_steps(), "내 이번 이동 +4칸")
 	var reversed := make_state(3, 1)
 	reversed.turn_direction = -1
 	place(reversed, 31, 9)
 	check(new_stack().execute_command(PenaltyBombCommand.new(1), make_ctx(reversed, 0)), "역방향 발동")
 	check_eq(reversed.get_pawn(31).current_tile_idx, 0, "역방향이면 반대편 플레이어")
-	check_eq(reversed.get_pawn(11).current_tile_idx, 4, "보드에 말이 없으면 출발 대기 말이 +4칸 나간다")
+	check_eq(reversed.roll_bonus, PenaltyBombCommand.advance_steps(), "이동 보너스")
 
 
 func test_uno_plus_four_needs_a_pawn_on_the_board_and_is_played_at_turn_begin() -> void:

@@ -4,7 +4,7 @@
 class_name RocketBoosterCommand
 extends GameCommand
 
-const BONUS: int = 3
+const BONUS: int = 4
 
 
 func _init(acting_player: int = -1) -> void:

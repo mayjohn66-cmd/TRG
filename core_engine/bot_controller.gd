@@ -40,6 +40,8 @@ var _tried: Dictionary = {}
 var _tried_skills: Dictionary = {}
 var _roulette_pull_target: int = 2
 var _auto_pass_armed: bool = false
+## 마지막으로 반격 여부를 고민하기 시작한 공격 기록 ID.
+var _counter_seen: int = -1
 
 
 func _init() -> void:
@@ -121,6 +123,9 @@ func _step() -> void:
 	if manager.duel_pending():
 		_step_duel()
 		return
+	if manager.counter_pending():
+		_step_counter()
+		return
 	match manager.current_state:
 		TurnManager.State.PHASE_ROUND_START: _step_draft()
 		TurnManager.State.PHASE_TURN_BEGIN:
@@ -145,6 +150,27 @@ func _act(player_id: int, action: StringName, params: Dictionary = {}) -> void:
 # ---------------------------------------------------------------------------
 # 단계별 행동
 # ---------------------------------------------------------------------------
+
+## 반격 대기: 맞은 봇은 반격 카드를 고르거나 그냥 맞는다. 사람이 맞았으면 화면의 반격 팝업을 기다린다 (자동 플레이 테스트는 넘긴다).
+func _step_counter() -> void:
+	var offer: Dictionary = manager.pending_counter()
+	var victim: int = int(offer["victim"])
+	var key: int = int(offer["attack"])
+	if _counter_seen != key:
+		_counter_seen = key
+		_delay(DELAY_WINDOW)
+		if _wait > 0.0:
+			return
+	if not is_bot(victim):
+		if not wait_for_human_windows:
+			_act(victim, &"counter_pass")
+		return
+	var card_id: StringName = BotBrain.choose_counter(manager.state, victim, offer.get("cards", []), manager.state.get_attack(key), rng)
+	if card_id != &"":
+		_act(victim, &"play_card", {"card_id": card_id})
+	else:
+		_act(victim, &"counter_pass")
+
 
 ## ACT_09 결투: 봇은 손을 무작위로 내고, 이겼다면 진 사람의 선두 말을 민다. 사람 차례는 화면이 입력을 받는다.
 func _step_duel() -> void:

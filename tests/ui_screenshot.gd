@@ -73,8 +73,8 @@ func _setup_scene() -> void:
 			state.spawn_npc(10, GameEnums.NpcBehavior.CHASE_NEAREST, 1, &"SUM_01")
 			state.give_card(1, &"TRP_02")
 			state.give_card(1, &"SUM_01")
-			state.give_card(2, &"ACT_05")
-			state.give_card(3, &"TRP_04")
+			state.give_card(2, &"CNT_01")
+			state.give_card(3, &"TRP_C01")
 			state.give_card(4, &"TRP_03")
 			state.give_card(4, &"SUM_02")
 			state.rulebook.enqueue_law(LawRegistry.create("LAW_04"))
@@ -94,7 +94,7 @@ func _setup_scene() -> void:
 			_board.instant_roll_for_test = true
 			_board._announcer.cancel()
 			state.give_card(1, &"TRP_02")
-			state.give_card(1, &"ACT_01")
+			state.give_card(1, &"CNT_03")
 			_board._refresh_all()
 			_board._card_press(1, &"TRP_02", Vector2(700, 700), Vector2(700, 640))
 			_board._card_move(Vector2(640, 380))
@@ -129,12 +129,12 @@ func _setup_scene() -> void:
 		"tilepick":
 			_finish_draft()
 			_board.state.give_card(1, &"TRP_03")
-			_board.state.give_card(1, &"TRP_04")
+			_board.state.give_card(1, &"TRP_C01")
 			_board._refresh_all()
-			_board._on_card_pressed(1, &"TRP_04")
+			_board._on_card_pressed(1, &"TRP_C01")
 		"interrupt":
 			_finish_draft()
-			_board.state.give_card(2, &"ACT_01")
+			_board.state.give_card(2, &"CNT_03")
 			_board.state.tools[1] = ScriptedTool.new([3])
 			_board._on_roll_pressed()
 		"select":
@@ -155,8 +155,8 @@ func _setup_scene() -> void:
 			_finish_draft()
 			state.give_card(1, &"TRP_02")
 			state.give_card(1, &"SUM_01")
-			state.give_card(1, &"ACT_05")
-			state.give_card(1, &"ACT_01")
+			state.give_card(1, &"CNT_01")
+			state.give_card(1, &"CNT_03")
 			_board._refresh_all()
 		"classics":
 			_finish_draft()
@@ -180,11 +180,28 @@ func _setup_scene() -> void:
 			_finish_draft()
 			_board._announcer.cancel()
 			_board.instant_roll_for_test = true
-			state.give_card(1, &"ACT_05")
-			state.turn_snapshot = TurnSnapshot.capture(state)
-			state.hurt_players.append(1)
-			_board.manager.current_state = TurnManager.State.PHASE_RESOLUTION
+			state.give_card(1, &"CNT_03")
+			state.give_card(1, &"CNT_04")
+			var victim: PlayerPawn = state.get_pawn(11)
+			victim.has_left_start = true
+			victim.current_tile_idx = 9
+			state.begin_attack({"kind": &"card", "card_id": &"ACT_02", "attacker": 2})
+			state.send_to_start(victim, 2)
+			state.end_attack()
+			_board.manager._open_counter_offer(&"turn_begin")
 			_board._refresh_all()
+		"lawtip":
+			_finish_draft()
+			_board._announcer.cancel()
+			state.rulebook.enqueue_law(LawRegistry.create("LAW_01"))
+			state.rulebook.enqueue_law(LawRegistry.create("LAW_06"))
+			state.law_stats[2] = {VictoryLaw.KILLS: 5, VictoryLaw.EJECTED: 3}
+			state.law_stats[3] = {VictoryLaw.KILLS: 2}
+			_board._refresh_all()
+			_board._fill_law_tip(0)
+			_board._tip_panel.visible = true
+			_board._tip_panel.reset_size()
+			_board._tip_panel.position = Vector2(260, 260)
 		"pick":
 			_board._draft_cards[1].pressed.emit()
 		"rules":
@@ -197,7 +214,7 @@ func _setup_scene() -> void:
 			_board._announcer.cancel()
 			state.give_card(1, &"TRP_02")
 			state.give_card(1, &"SUM_01")
-			state.give_card(1, &"ACT_05")
+			state.give_card(1, &"CNT_01")
 			_board._refresh_all()
 			_board._announcer.cancel()
 			var hovered: PanelContainer = null
@@ -231,7 +248,7 @@ func _setup_scene() -> void:
 		"roulette":
 			_finish_draft()
 			state.tools[1] = ToolRegistry.create(&"REVOLVER")
-			for card_id: StringName in [&"ACT_01", &"ACT_02", &"ACT_03", &"ACT_05", &"ACT_06", &"TRP_01", &"TRP_02"]:
+			for card_id: StringName in [&"CNT_03", &"ACT_02", &"ACT_03", &"CNT_01", &"ACT_06", &"TRP_02", &"TRP_02"]:
 				state.give_card(3, card_id)
 				state.give_card(1, card_id)
 			state.finish_stack(state.get_pawn(21))

@@ -55,6 +55,10 @@ static func capture(state: GameState) -> TurnSnapshot:
 		"laws": state.rulebook.law_ids(),
 		"personal_laws": state.rulebook.personal_entries(),
 		"law_stats": state.law_stats.duplicate(true),
+		"attack_log": state.attack_log.duplicate(true),
+		"banned": state.banned_turns.duplicate(),
+		"forced_roll": state.forced_roll.duplicate(),
+		"extra_turns": state.extra_turns.duplicate(),
 		"rankings": state.rankings.duplicate(),
 		"rank_reasons": state.rank_reasons.duplicate(),
 		"meta": {
@@ -135,6 +139,10 @@ func restore(state: GameState, restore_meta: bool = false) -> void:
 	state.rulebook.set_personal_from(data.get("personal_laws", []))
 	if data.has("law_stats"):
 		state.law_stats = (data["law_stats"] as Dictionary).duplicate(true)
+	state.attack_log.assign((data.get("attack_log", []) as Array).duplicate(true))
+	state.banned_turns = (data.get("banned", {}) as Dictionary).duplicate()
+	state.forced_roll = (data.get("forced_roll", {}) as Dictionary).duplicate()
+	state.extra_turns = (data.get("extra_turns", {}) as Dictionary).duplicate()
 	if data.has("rankings"):
 		state.rankings.assign(data["rankings"])
 		state.rank_reasons = (data.get("rank_reasons", {}) as Dictionary).duplicate()

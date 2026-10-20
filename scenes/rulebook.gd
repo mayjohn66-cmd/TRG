@@ -661,24 +661,26 @@ func _ch_pawns() -> Dictionary:
 func _card_entry(card_id: StringName, tone: Color) -> Control:
 	var card: BaseCard = CardRegistry.get_card(card_id)
 	var summary: String = MainBoard.card_summary(card_id).replace("\n", " ")
-	var icon: StringName = &"book" if card_id == &"ACT_09" else (&"gear" if card_id.begins_with("ACT") else (&"key" if card_id.begins_with("TRP") else &"face"))
+	var icon: StringName = &"book" if card_id == &"ACT_09" else (&"gear" if card_id.begins_with("ACT") else (&"key" if card_id.begins_with("TRP") else (&"crown" if card_id.begins_with("CNT") else &"face")))
 	return _card(card.display_name, summary, icon, tone)
 
 
 func _ch_cards() -> Dictionary:
 	var cards: Array = []
-	for card_id: StringName in [&"ACT_01", &"ACT_02", &"ACT_03", &"ACT_04", &"ACT_05", &"ACT_06", &"ACT_07", &"ACT_08", &"ACT_09"]:
-		cards.append(_card_entry(card_id, Color("f0c14e")))
-	for card_id: StringName in [&"TRP_01", &"TRP_02", &"TRP_03", &"TRP_04", &"TRP_05"]:
-		cards.append(_card_entry(card_id, Color("b197fc")))
-	for card_id: StringName in [&"SUM_01", &"SUM_02"]:
-		cards.append(_card_entry(card_id, Color("f08aa8")))
+	for card_id: StringName in CardRegistry.DECK_COMPOSITION.keys():
+		var card: BaseCard = CardRegistry.get_card(card_id)
+		var tone: Color = Color("f0c14e")
+		match card.category:
+			GameEnums.CardCategory.COUNTER: tone = Color("74c0fc")
+			GameEnums.CardCategory.TRAP: tone = Color("b197fc")
+			GameEnums.CardCategory.SUMMON: tone = Color("f08aa8")
+		cards.append(_card_entry(card_id, tone))
 	return {
 		"title": "생떼 카드",
 		"left": [
-			_note("빵집이나 증강에서 얻는 카드예요. 손패는 [b]최대 7장[/b]이고, 카드를 [b]보드판으로 끌어다 놓아[/b] 써요. 한 턴에 한 장, 굴리기 전에만 낼 수 있어요."),
+			_note("빵집이나 증강에서 얻는 카드예요. 손패는 [b]최대 7장[/b]이고, 카드를 [b]보드판으로 끌어다 놓아[/b] 써요. 한 턴에 한 장, 굴리기 전에만 낼 수 있어요. [b]반격 카드[/b]만은 공격당했을 때 뜨는 반격 팝업에서 바로 써요."),
 			_heading("종류", GREEN),
-			_rich("[color=#c98a14][b]노랑[/b][/color]  바로 터지는 카드 (9종)\n[color=#7a5cd6][b]보라[/b][/color]  칸을 골라 까는 함정 (5종, 상대에게는 뒷면)\n[color=#c2457a][b]분홍[/b][/color]  소환 카드 (2종, 중립 말이 움직여요)"),
+			_rich("[color=#3b5bdb][b]파랑[/b][/color]  반격 카드 (7종, 잡기·공격 카드·함정을 받아쳐요)\n[color=#c98a14][b]노랑[/b][/color]  바로 터지는 카드 (13종)\n[color=#7a5cd6][b]보라[/b][/color]  칸을 골라 까는 함정 (6종) + 코너 전용 함정 (4종)\n[color=#c2457a][b]분홍[/b][/color]  소환 카드 (2종, 상단 코너에서 질주하며 길 위의 말을 날려요)"),
 			_tip("가위바위보 결투 카드는 [b]상대 프로필이나 말 위에[/b] 놓으면 그 상대와 바로 붙어요. 이기면 내 말이 +3칸 전진하고, 진 사람의 말 하나는 출발선으로 날아가요!"),
 		],
 		"right": [_grid(cards)],
