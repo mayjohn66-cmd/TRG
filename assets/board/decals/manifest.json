@@ -1,0 +1,128 @@
+[
+  {
+    "id": "BOARD_BAKERY",
+    "name": "빵집",
+    "path": "assets/board/decals/BOARD_BAKERY.png",
+    "native_source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-61c24890-e865-4e82-bf84-c9881288bc3e.png",
+    "width": 1254,
+    "height": 1254,
+    "alpha": true,
+    "opaque_bounds": [
+      131,
+      318,
+      1125,
+      940
+    ],
+    "sha256": "131508ccdd305c35b421dd9ebaab7352264ea5d52ffd9e933d7e93c48b9fdda1",
+    "attempts": 1,
+    "tool": "native image_gen.imagegen",
+    "image_model": "not exposed",
+    "prompt": "Use case: stylized-concept. Create ONE isolated board-game TILE DECAL icon on a genuinely transparent background. This will be mapped onto the board plane by the game engine, so the artwork MUST be perfectly flat orthographic face-on, no isometric angle, no perspective tilt, no visible side thickness, no floor or cast shadow. Cute rounded fantasy toy aesthetic, bold clean dark contours, simple broad color areas, one restrained glossy highlight, instantly readable at 32px. Compact centered square canvas, safe 15% transparent margin on all sides, no enclosing circular badge, no text or letters, no watermark. A single plump golden-brown bread roll, oval horizontal silhouette, exactly three large cream diagonal scoring marks on its top. Golden toasted rim, warm chestnut outline. No plate, hands, sparks or extra objects.",
+    "correction_prompt": null
+  },
+  {
+    "id": "BOARD_PORTAL",
+    "name": "옷장 포탈",
+    "path": "assets/board/decals/BOARD_PORTAL.png",
+    "native_source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-8bc5aee2-4068-4093-b2f6-21a89e290190.png",
+    "width": 1254,
+    "height": 1254,
+    "alpha": true,
+    "opaque_bounds": [
+      138,
+      100,
+      1117,
+      1156
+    ],
+    "sha256": "da7fa8ff548cbc8e93d8a729fac1652fa005d832715fbd34a4aa83ad77477cde",
+    "attempts": 1,
+    "tool": "native image_gen.imagegen",
+    "image_model": "not exposed",
+    "prompt": "Use case: stylized-concept. Create ONE isolated board-game TILE DECAL icon on a genuinely transparent background. This will be mapped onto the board plane by the game engine, so the artwork MUST be perfectly flat orthographic face-on, no isometric angle, no perspective tilt, no visible side thickness, no floor or cast shadow. Cute rounded fantasy toy aesthetic, bold clean dark contours, simple broad color areas, one restrained glossy highlight, instantly readable at 32px. Compact centered square canvas, safe 15% transparent margin on all sides, no enclosing circular badge, no text or letters, no watermark. A single cute teal wardrobe viewed straight on, broad squat proportions, two ivory door panels with teal frame, two large teal knobs, small simple arched teal cornice, two short feet. Make the wardrobe fill a compact almost-square silhouette, recognizable doors, no magical vortex, no background.",
+    "correction_prompt": null
+  },
+  {
+    "id": "BOARD_START",
+    "name": "출발·결승",
+    "path": "assets/board/decals/BOARD_START.png",
+    "native_source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-df8b48b4-27c7-45d2-b967-0694331ccdbb.png",
+    "width": 1254,
+    "height": 1254,
+    "alpha": true,
+    "opaque_bounds": [
+      181,
+      131,
+      1136,
+      1117
+    ],
+    "sha256": "b1f88e11008ecf3b283d86d6b7b0433baaf6d2744f6a23cb8908e64f4ba2bdd5",
+    "attempts": 1,
+    "tool": "native image_gen.imagegen",
+    "image_model": "not exposed",
+    "prompt": "Use case: stylized-concept. Create ONE isolated board-game TILE DECAL icon on a genuinely transparent background. This will be mapped onto the board plane by the game engine, so the artwork MUST be perfectly flat orthographic face-on, no isometric angle, no perspective tilt, no visible side thickness, no floor or cast shadow. Cute rounded fantasy toy aesthetic, bold clean dark contours, simple broad color areas, one restrained glossy highlight, instantly readable at 32px. Compact centered square canvas, safe 15% transparent margin on all sides, no enclosing circular badge, no text or letters, no watermark. One chunky green flagpole with a waving green-and-ivory checkerboard finish flag. Large simple 3-by-2 checks, not many tiny checks. Thick deep forest-green outline, cream highlights. Compact silhouette, no base tile, no secondary arrows.",
+    "correction_prompt": null
+  },
+  {
+    "id": "BOARD_HALF",
+    "name": "반환점",
+    "path": "assets/board/decals/BOARD_HALF.png",
+    "native_source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-ca430b0e-cf55-4c6e-9549-21f944ce0a27.png",
+    "width": 1254,
+    "height": 1254,
+    "alpha": true,
+    "opaque_bounds": [
+      269,
+      124,
+      998,
+      1124
+    ],
+    "sha256": "dd49ba28e98e348604ad200f9a25d4e469822b879ebcbe936deb8688a731b970",
+    "attempts": 1,
+    "tool": "native image_gen.imagegen",
+    "image_model": "not exposed",
+    "prompt": "Use case: stylized-concept. Create ONE isolated board-game TILE DECAL icon on a genuinely transparent background. This will be mapped onto the board plane by the game engine, so the artwork MUST be perfectly flat orthographic face-on, no isometric angle, no perspective tilt, no visible side thickness, no floor or cast shadow. Cute rounded fantasy toy aesthetic, bold clean dark contours, simple broad color areas, one restrained glossy highlight, instantly readable at 32px. Compact centered square canvas, safe 15% transparent margin on all sides, no enclosing circular badge, no text or letters, no watermark. One chunky honey-gold flagpole with a single bright coral-orange triangular pennant pointing right. Broad triangular flag, warm dark brown outline, cream highlights, no checks, no base tile or secondary symbols.",
+    "correction_prompt": null
+  },
+  {
+    "id": "BOARD_CORNER",
+    "name": "코너 진행 화살표",
+    "path": "assets/board/decals/BOARD_CORNER.png",
+    "native_source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-b929d17f-9e80-42f2-af2c-6e824ffdce42.png",
+    "width": 1254,
+    "height": 1254,
+    "alpha": true,
+    "opaque_bounds": [
+      134,
+      256,
+      1127,
+      990
+    ],
+    "sha256": "6a05f8afec7a07948b232e45f6500454aa61040166d12946bec689a69480c9a4",
+    "attempts": 1,
+    "tool": "native image_gen.imagegen",
+    "image_model": "not exposed",
+    "prompt": "Use case: stylized-concept. Create ONE isolated board-game TILE DECAL icon on a genuinely transparent background. This will be mapped onto the board plane by the game engine, so the artwork MUST be perfectly flat orthographic face-on, no isometric angle, no perspective tilt, no visible side thickness, no floor or cast shadow. Cute rounded fantasy toy aesthetic, bold clean dark contours, simple broad color areas, one restrained glossy highlight, instantly readable at 32px. Compact centered square canvas, safe 15% transparent margin on all sides, no enclosing circular badge, no text or letters, no watermark. One single broad rounded arrow pointing exactly RIGHT horizontally. Cream ivory center, vivid leaf-green edging and thick dark forest-green contour, broad straight shaft and large triangular head. All parts are flat on one plane. Absolutely no extra arrows, circle, badge, swooshes or motion streaks.",
+    "correction_prompt": null
+  },
+  {
+    "id": "BOARD_BOOST",
+    "name": "부스터",
+    "path": "assets/board/decals/BOARD_BOOST.png",
+    "native_source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-2d4f9c80-3a98-4e6f-bca0-f1d2a49ba4b9.png",
+    "width": 1254,
+    "height": 1254,
+    "alpha": true,
+    "opaque_bounds": [
+      62,
+      323,
+      1217,
+      920
+    ],
+    "sha256": "f6401cb4c22083c10e15f2d61afaa348814cee20fec01edfd770fd43cdd5ac14",
+    "attempts": 2,
+    "tool": "native image_gen.imagegen",
+    "image_model": "not exposed",
+    "prompt": "Use case: stylized-concept. Create ONE isolated board-game TILE DECAL icon on a genuinely transparent background. This will be mapped onto the board plane by the game engine, so the artwork MUST be perfectly flat orthographic face-on, no isometric angle, no perspective tilt, no visible side thickness, no floor or cast shadow. Cute rounded fantasy toy aesthetic, bold clean dark contours, simple broad color areas, one restrained glossy highlight, instantly readable at 32px. Compact centered square canvas, safe 15% transparent margin on all sides, no enclosing circular badge, no text or letters, no watermark. Exactly THREE large separate rounded chevrons >>> pointing exactly RIGHT horizontally, arranged in one simple horizontal row. Each chevron has a bright ivory-white center with golden yellow inner highlight and bold dark burnt-orange contour. Simple thick identical V-shaped chevrons turned toward the RIGHT, no arrow shaft, no enclosing badge or tile, no sparks or text. Flat front-facing decal with transparency, not angled, no perspective.",
+    "correction_prompt": "Correct ONLY the background and edge treatment of these three chevrons. Keep exactly THREE ivory-white and golden-yellow >>> chevrons pointing RIGHT, identical broad rounded shapes, but REMOVE ALL orange haze, ALL glow and shadows from around and between the chevrons. Each chevron must be a crisp opaque solid icon with a thin dark burnt-orange outline, immediately surrounded by FULLY TRANSPARENT empty pixels. No semitransparent cloud, no backplate. Flat orthographic decal, square canvas, centered compact horizontal row, generous clear transparent margin. No text."
+  }
+]

@@ -1764,7 +1764,7 @@ func _place_tile(index: int) -> void:
 	tile.scale = Vector2.ONE
 	var target: int = _jump_arrow_target(index)
 	tile.arrow_target = target
-	var direction: Vector2 = (_tile_center(target) - _tile_center(index)).normalized() if target >= 0 else Vector2.RIGHT
+	var direction: Vector2 = (tile_norm(target) - tile_norm(index)).normalized() if target >= 0 else BoardSkin.forward_world(index)
 	tile.configure(_surface_project, BoardSkin.track(tile_norm(index)), span, _depth_scale(BoardSkin.track(tile_norm(index)).y), direction)
 	tile.set_dash(BoardSpec.dash_tiles.has(index), _tile_center((index + 1) % BoardSpec.tile_count) - _tile_center(index))
 	for child: Control in [_highlights.get(index), _pick_marks.get(index)]:

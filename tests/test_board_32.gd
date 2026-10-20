@@ -99,3 +99,18 @@ func test_board_skin_tiles_do_not_overlap_on_a_longer_side() -> void:
 	var corner: float = BoardSkin.definition(8)["footprint"].x
 	var depth: float = BoardSkin.definition(3)["footprint"].x
 	check(corner > depth * 1.15, "코너 타일은 일반 타일보다 확실히 크다 (%.3f vs %.3f)" % [corner, depth])
+
+
+func test_floor_decals_follow_board_plane_and_next_tile_on_both_layouts() -> void:
+	# A diamond board has skewed axes: a screen rotation alone cannot reproduce its plane.
+	var plane := Transform2D(Vector2(370,233),Vector2(-370,233),Vector2(640,360))
+	for count: int in [24,32]:
+		BoardSpec.apply(count)
+		for index: int in BoardSpec.corner_tiles + BoardSpec.dash_tiles:
+			var next: Vector2 = BoardLayout.tile_norm((index+1)%count)-BoardLayout.tile_norm(index)
+			var frame := BoardSkin.decal_frame(plane,0.1,BoardSkin.forward_world(index))
+			check(frame.x.normalized().dot(plane.basis_xform(next).normalized()) > 0.9999,"%d칸 보드 %d번 화살표는 다음 칸을 가리킨다" % [count,index])
+			check(absf(frame.x.normalized().dot(frame.y.normalized())) > 0.1,"아이콘은 화면 직각이 아니라 보드 기울기를 공유한다")
+	for kind: String in BoardSkin.DECALS:
+		var texture: Texture2D = BoardSkin.DECALS[kind]
+		check(texture != null and texture.get_width() <= 256,"보드 심볼은 256px 이하로 임포트된다: " + kind)
