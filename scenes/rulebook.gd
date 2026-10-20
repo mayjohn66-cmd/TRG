@@ -997,7 +997,7 @@ func _ch_cards() -> Dictionary:
 		{"title": "카드 쓰는 법", "art": &"card_law", "tone": Color("f0c14e"), "chips": ["손패 최대 7장"],
 			"summary": "빵집·증강에서 얻은 카드를 [b]보드판으로 끌어다 놓아[/b] 써요.",
 			"rows": [["방어 (파랑)", "공격받으면 팝업에서 발동 여부를 물어봐요"], ["즉발 (노랑)", "굴리기 전에 바로 효과"], ["함정 (보라)", "칸을 골라 숨겨 깔기, 코너 전용 4종"], ["소환 (분홍)", "상단 코너에 1마리, 말을 잡을 때까지 계속 전진해요"]],
-			"tip": "가위바위보 결투는 [b]상대 프로필이나 말 위에[/b] 놓으면 그 상대와 붙어요."},
+			"tip": "일기토 데스매치는 [b]상대 프로필이나 말 위에[/b] 놓으면 그 상대와 붙어요. 종목은 6종 중 무작위!"},
 	]
 	for card_id: StringName in CardRegistry.DECK_COMPOSITION.keys():
 		var card: BaseCard = CardRegistry.get_card(card_id)
@@ -1021,6 +1021,10 @@ func _ch_cards() -> Dictionary:
 			"rows": [["언제", when], ["방법", how]]}
 		if quote != "":
 			data["note"] = "“%s”" % quote
+		if card_id == &"ACT_09":
+			# 일기토 데스매치: 6종 미니게임 중 하나가 무작위로 뽑힌다
+			for game: int in DuelRules.GAME_COUNT:
+				(data["rows"] as Array).append([DuelRules.game_title(game), DuelRules.GAME_RULES[game]])
 		entries.append(data)
 	return {"title": "카드", "entries": entries, "wide": true}
 

@@ -33,7 +33,8 @@ func _process(_delta: float) -> bool:
 		if _banner_frame != -2 and _frames < 600:
 			return false
 		_banner_frame = -2
-	if (_shot != "banner" and _frames == (8 if _shot == "pick" else (20 if _shot in ["react", "classics", "traps", "log", "logx", "counterzoom", "book", "tempo"] else 12))) or (_shot == "banner" and _banner_frame == -2):
+	var shot_frame: int = 8 if _shot == "pick" else (20 if _shot in ["react", "classics", "traps", "log", "logx", "counterzoom", "book", "tempo"] else (int(OS.get_environment("DUEL_FRAME")) if _shot == "duel" and OS.get_environment("DUEL_FRAME") != "" else (150 if _shot == "duel" else 12)))
+	if (_shot != "banner" and _frames == shot_frame) or (_shot == "banner" and _banner_frame == -2):
 		var path: String = "/tmp/trg_shot_%s.png" % _shot
 		var image: Image = root.get_texture().get_image()
 		image.save_png(path)
@@ -51,6 +52,25 @@ func _setup_scene() -> void:
 	match _shot:
 		"draft":
 			pass
+		"duel":
+			# ⚔️ 데스매치 결투장: DUEL_GAME 종목을 핫시트로 열어 미니게임 화면을 찍는다
+			_board._close_opening()
+			_finish_draft()
+			_board.ai_mode = false
+			_board._bot.set_enabled(false)
+			var duel_game: int = int(OS.get_environment("DUEL_GAME")) if OS.get_environment("DUEL_GAME") != "" else 0
+			_board.manager.duel_game_override = duel_game
+			var me: int = _board.manager.current_player_id()
+			var foe: int = 2 if me != 2 else 1
+			for pair: Array in [[me * 10 + 1, 5], [foe * 10 + 1, 14]]:
+				state.get_pawn(pair[0]).has_left_start = true
+				state.get_pawn(pair[0]).current_tile_idx = pair[1]
+			_board._announcer.cancel()
+			state.give_card(me, &"ACT_09")
+			_board._duel_drop_target = foe
+			_board._on_card_pressed(me, &"ACT_09")
+			if _board._duel_arena != null:
+				_board._duel_arena.open()
 		"tempo":
 			# ⏩ 템포 업 경고 + 당겨진 결승선 체크무늬
 			_board._close_opening()

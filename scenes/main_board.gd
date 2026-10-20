@@ -35,7 +35,7 @@ const PAWN_RADIUS: float = 10.0
 const STEP_DELAY: float = 0.22
 ## 한 칸 점프: 걸리는 시간(초)과 솟구치는 높이(px). 도착 직후 납작하게 찌그러졌다가 탱글하게 돌아온다.
 const ONE_CLICK_POWER: float = 0.75  ## 원클릭 굴림의 연출 세기 (파워 게이지를 없앴다)
-const NPC_ANNOUNCE_BODY: String = "도적떼는 정방향, 팩맨은 역방향으로 3~6칸 전진합니다"
+const NPC_ANNOUNCE_BODY: String = "사료스탕스는 정방향, 와구와구 유령은 역방향으로 3~6칸 전진합니다"
 const NPC_TIP_ROBBER: String = "라운드 종료마다 정방향으로 3~6칸 전진하며, 처음 마주친 칸의 말을 모두 출발선으로 날려버리고 소멸합니다"
 const NPC_TIP_GHOST: String = "라운드 종료마다 역방향으로 3~6칸 전진하며, 처음 마주친 칸의 말을 모두 출발선으로 날려버리고 소멸합니다"
 const HOP_SECONDS: float = 0.10
@@ -151,7 +151,7 @@ const CARD_SUMMARIES: Dictionary = {
 	&"ACT_06": "특수 승리 기록 1개를 0으로 초기화",
 	&"ACT_07": "고른 한 변의 설치물 전부 붕괴",
 	&"ACT_08": "내 꼴찌 말 ↔ 1등 적 선두 말 위치 교환",
-	&"ACT_09": "적 1명과 가위바위보! 승자 말 +3칸, 패자 말 1개 사출",
+	&"ACT_09": "적 1명과 6종 랜덤 미니게임 데스매치! 승자 말 +3칸, 패자 선두 말 사출",
 	&"ACT_10": "내 선두 말 앞 3칸의 적 사출 + 설치물 파괴",
 	&"ACT_11": "다음 굴림 결과를 1~6칸 중 직접 지정",
 	&"ACT_12": "이번 턴이 끝나면 한 턴 더",
@@ -487,8 +487,6 @@ var _snipe_pick: bool = false
 var _duel_arena: DuelArena = null
 ## 액션 로그 (누가 무엇을 했는지 최근 100줄, 미니/펼침).
 var _action_log: ActionLogPanel = null
-var _duel_strike_marks: Dictionary = {}
-var _duel_strike_winner: int = -1
 var _duel_drop_target: int = -1
 var _snipe_marks: Dictionary = {}
 var _tile_pick_player: int = -1
@@ -617,9 +615,6 @@ func _input(event: InputEvent) -> void:
 	if manager == null or state == null or _menu_is_open():
 		return
 	if _snipe_pick and _handle_snipe_input(event):
-		get_viewport().set_input_as_handled()
-		return
-	if not _duel_strike_marks.is_empty() and _handle_duel_strike_input(event):
 		get_viewport().set_input_as_handled()
 		return
 	if _handle_aim_input(event):
@@ -889,7 +884,7 @@ func _bind_state() -> void:
 		if pawn != null:
 			_record(pawn.owner_id, "🔗 연대책임: %s 짝 말도 %s" % [_bq("%d번 말" % pawn.slot), verb], "", true))
 	state.npc_swept.connect(func(display_id: StringName, path: Array[int], ejected: Array[int]) -> void:
-		var runner: String = "폭주 기관차" if display_id == &"TRAIN" else ("도적떼" if display_id == &"SUM_01" else "팩맨")
+		var runner: String = "폭주 기관차" if display_id == &"TRAIN" else ("사료스탕스" if display_id == &"SUM_01" else "와구와구 유령")
 		_log_line("[%s] %d번 → %d번 질주! 사출된 말 %d개" % [runner, path[0], path[-1], ejected.size()], Color("fa5252"))
 		_record(-1, "🦹 %s %d번 → %d번 질주! (사출 %d)" % [_bq(runner), path[0], path[-1], ejected.size()])
 		var outcome: String = "칸을 쓸고 사라졌습니다" if display_id == &"TRAIN" or not ejected.is_empty() else "칸까지 전진! 라운드가 끝날 때마다 계속 전진합니다"
@@ -1623,7 +1618,7 @@ func _build_debug_panel() -> VBoxContainer:
 	debug_row.add_child(_card_option)
 	debug_row.add_child(_make_button("현재 플레이어에게", _on_grant_card_pressed, 12))
 	debug_row.add_child(_make_button("도적 소환(%d번)" % BoardSpec.bakery_tiles[1], _on_spawn_npc_pressed.bind(GameEnums.NpcBehavior.CHASE_NEAREST, BoardSpec.bakery_tiles[1]), 12))
-	debug_row.add_child(_make_button("팩맨 소환(%d번)" % BoardSpec.halfway_tile, _on_spawn_npc_pressed.bind(GameEnums.NpcBehavior.PATROL_REVERSE, BoardSpec.halfway_tile), 12))
+	debug_row.add_child(_make_button("와구와구 유령 소환(%d번)" % BoardSpec.halfway_tile, _on_spawn_npc_pressed.bind(GameEnums.NpcBehavior.PATROL_REVERSE, BoardSpec.halfway_tile), 12))
 	_timer_check = CheckBox.new()
 	_timer_check.text = "제한 시간 사용"
 	_timer_check.toggled.connect(func(enabled: bool) -> void: manager.set_process(enabled))
@@ -3456,7 +3451,7 @@ func _fill_npc_tip(npc_id: int) -> void:
 	if npc == null:
 		return
 	var robber: bool = npc.behavior != GameEnums.NpcBehavior.PATROL_REVERSE
-	_tip_title.text = "카탄의 도적떼  ▶ 정방향 전진" if robber else "팩맨  ◀ 역방향 전진"
+	_tip_title.text = "사료스탕스  ▶ 정방향 전진" if robber else "와구와구 유령  ◀ 역방향 전진"
 	_tip_ability.text = NPC_TIP_ROBBER if robber else NPC_TIP_GHOST
 	_tip_skill.visible = false
 
@@ -4455,7 +4450,7 @@ func _on_card_pressed(player_id: int, card_id: StringName) -> void:
 			var faces: Array[Dictionary] = []
 			for steps: int in range(CardStatus.MIN_STEPS, CardStatus.MAX_STEPS + 1):
 				faces.append({"label": "%d칸" % steps, "value": steps})
-			_show_choice("밑장빼기! 다음 굴림 결과를 고르세요", faces, _play_card_with.bind(player_id, card_id, "steps"), 3)
+			_show_choice("싸늘한 밑장빼기! 다음 굴림 결과를 고르세요", faces, _play_card_with.bind(player_id, card_id, "steps"), 3)
 		&"ACT_14", &"ACT_15":
 			var targets: Array[Dictionary] = []
 			for target: int in StatusCardCommand.targets(state, player_id):
@@ -5131,7 +5126,7 @@ func _fx_when_announced(action: Callable) -> void:
 ## 알림 카드가 가리고 있어서 말을 움직이면 안 되는 때인가.
 func _fx_holding() -> bool:
 	if _duel_arena != null and is_instance_valid(_duel_arena) and _duel_arena.holds_board():
-		return true  # 가위바위보 승패가 공개되기 전에 누가 날아가는지 보여 주지 않는다
+		return true  # 결투 승패가 공개되기 전에 누가 날아가는지 보여 주지 않는다
 	return _stage_warps > 0 or (_announcer != null and _announcer.active and not _fx_gate_open)
 
 
@@ -5688,7 +5683,7 @@ func _show_top_toast(text: String) -> void:
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
-# ACT_09 가위바위보 결투 (중앙 오픈 스테이지)
+# ACT_09 일기토 데스매치 (중앙 오픈 스테이지: 6종 미니게임 결투장)
 # ---------------------------------------------------------------------------
 
 ## 이 자리를 이 화면에서 직접 조작하는가 (AI 대전·온라인은 내 자리만, 핫시트는 모두).
@@ -5722,13 +5717,12 @@ func _duel_target_at(pointer: Vector2, player_id: int) -> int:
 func _on_duel_event(kind: StringName, data: Dictionary) -> void:
 	match kind:
 		&"duel_started":
-			_log_line("[결투] %s가 %s에게 가위바위보 결투를 신청했습니다!" % [_player_name(int(data["challenger"])), _player_name(int(data["defender"]))], Color("ffd43b"))
+			_log_line("[⚔️ 결투] %s가 %s에게 일기토 데스매치를 신청했습니다! 종목: %s" % [_player_name(int(data["challenger"])), _player_name(int(data["defender"])), DuelRules.game_title(int(data["game"]))], Color("ffd43b"))
 			if _fx_on():
-				_open_duel_arena(int(data["challenger"]), int(data["defender"]))
+				_open_duel_arena(int(data["challenger"]), int(data["defender"]), int(data["game"]), data["setup"])
 		&"duel_revealed":
-			var picks: Dictionary = data["picks"]
-			var duel_text: String = "[결투] %s %s : %s %s → %s" % [_player_name(int(data["challenger"])), DuelRules.HAND_NAMES[int(picks[int(data["challenger"])])], DuelRules.HAND_NAMES[int(picks[int(data["defender"])])], _player_name(int(data["defender"])), "무승부" if int(data["winner"]) == -1 else "%s 승" % _player_name(int(data["winner"]))]
-			# 로그도 결투장이 "가위바위보!"를 다 보여 준 뒤에 남긴다: 결투장에 공개를 먼저 넘긴 다음 연출 큐에 세운다
+			var duel_text: String = "[⚔️ 결투] %s vs %s : [%s] %s ➔ %s" % [_player_name(int(data["challenger"])), _player_name(int(data["defender"])), DuelRules.game_name(int(data["game"])), str(data["detail"]), "무승부, 재대결!" if int(data["winner"]) == -1 else "%s 승리!" % _player_name(int(data["winner"]))]
+			# 로그도 결투장이 승패를 다 보여 준 뒤에 남긴다: 결투장에 공개를 먼저 넘긴 다음 연출 큐에 세운다
 			_push_duel_event(kind, data)
 			enqueue_step(func() -> void: _log_line(duel_text, Color("ffd43b")))
 			return
@@ -5746,7 +5740,7 @@ func _push_duel_event(kind: StringName, data: Dictionary) -> void:
 		_duel_auto_drive.call_deferred()
 
 
-func _open_duel_arena(challenger: int, defender: int) -> void:
+func _open_duel_arena(challenger: int, defender: int, game: int, game_setup: Dictionary) -> void:
 	if _duel_arena != null and is_instance_valid(_duel_arena):
 		_duel_arena.queue_free()
 	var seats: Array[int] = []
@@ -5754,13 +5748,9 @@ func _open_duel_arena(challenger: int, defender: int) -> void:
 		if _duel_local(seat):
 			seats.append(seat)
 	_duel_arena = DuelArena.new()
-	_duel_arena.setup(self, challenger, defender, seats)
-	_duel_arena.hand_chosen.connect(func(player_id: int, hand: int) -> void: _act(&"duel_pick", {"player_id": player_id, "hand": hand}))
-	_duel_arena.timed_out.connect(_on_duel_timed_out)
-	_duel_arena.strike_started.connect(_on_duel_strike_started)
-	_duel_arena.strike_ended.connect(_clear_duel_strike_marks)
+	_duel_arena.setup(self, challenger, defender, seats, game, game_setup)
+	_duel_arena.value_chosen.connect(func(player_id: int, value: int) -> void: _act(&"duel_pick", {"player_id": player_id, "value": value}))
 	_duel_arena.closed.connect(func() -> void:
-		_clear_duel_strike_marks()
 		_duel_arena = null
 		_refresh_all())
 	add_child(_duel_arena)
@@ -5770,85 +5760,6 @@ func _open_duel_arena(challenger: int, defender: int) -> void:
 		_duel_arena.open()
 
 
-## 결투 중 시간이 다 됐다: 손은 무작위로, 말은 가장 앞선 말을 민다.
-func _on_duel_timed_out(step: StringName, seat: int) -> void:
-	if not manager.duel_pending():
-		return
-	if step == &"pick" and seat != -1:
-		_act(&"duel_pick", {"player_id": seat, "hand": randi() % 3})
-	elif step == &"strike":
-		var duel: Dictionary = manager.pending_duel()
-		var front: PlayerPawn = state.front_pawn_of(int(duel["loser"]))
-		var candidates: Array = duel["candidates"]
-		var pawn_id: int = front.entity_id if front != null and candidates.has(front.entity_id) else int(candidates[0])
-		_act(&"duel_strike", {"player_id": int(duel["winner"]), "pawn_id": pawn_id})
-
-
-## 승자가 내 자리라면 진 사람의 말들이 붉게 깜빡이고 눌러서 고른다.
-func _on_duel_strike_started(winner: int, candidates: Array, is_local: bool) -> void:
-	_clear_duel_strike_marks()
-	if not is_local:
-		return
-	_duel_strike_winner = winner
-	for pawn_id: Variant in candidates:
-		var view: Node2D = _pawn_views.get(int(pawn_id))
-		if view == null:
-			continue
-		var ring := Line2D.new()
-		ring.points = _circle_points(PAWN_RADIUS * 1.9, 24)
-		ring.closed = true
-		ring.width = 4.0
-		ring.default_color = Color("ff4d4f")
-		ring.z_index = 30
-		view.add_child(ring)
-		var pulse: Tween = ring.create_tween().set_loops()
-		pulse.tween_property(ring, "modulate:a", 0.25, 0.3)
-		pulse.tween_property(ring, "modulate:a", 1.0, 0.3)
-		_duel_strike_marks[int(pawn_id)] = ring
-
-
-func _clear_duel_strike_marks() -> void:
-	for ring: Variant in _duel_strike_marks.values():
-		if is_instance_valid(ring):
-			(ring as Node).queue_free()
-	_duel_strike_marks.clear()
-	_duel_strike_winner = -1
-
-
-func _duel_strike_pawn_at(pointer: Vector2) -> int:
-	var best: int = -1
-	var best_distance: float = 30.0
-	for pawn_id: int in _duel_strike_marks.keys():
-		var view: Node2D = _pawn_views.get(pawn_id)
-		if view == null:
-			continue
-		var distance: float = (view.position + _pawn_layer.position).distance_to(pointer)
-		if distance < best_distance:
-			best_distance = distance
-			best = pawn_id
-	if best != -1:
-		return best
-	var tile: int = _tile_at(pointer)
-	if tile != -1:
-		for pawn_id: int in _duel_strike_marks.keys():
-			if state.get_pawn(pawn_id).current_tile_idx == tile:
-				return pawn_id
-	return -1
-
-
-func _handle_duel_strike_input(event: InputEvent) -> bool:
-	var click: InputEventMouseButton = event as InputEventMouseButton
-	if click == null or not click.pressed or click.button_index != MOUSE_BUTTON_LEFT:
-		return false
-	var pawn_id: int = _duel_strike_pawn_at(click.position)
-	if pawn_id == -1:
-		return false
-	var winner: int = _duel_strike_winner
-	_clear_duel_strike_marks()
-	_act(&"duel_strike", {"player_id": winner, "pawn_id": pawn_id})
-	return true
-
-
 ## 결투 결과: 진 사람의 말이 출발선으로 장외 사출되고(처치 컷신은 pawn_sent_to_start가 띄운다) 이긴 사람의 말이 +3칸 전진한다.
 func _on_duel_resolved(data: Dictionary) -> void:
 	var pawn_id: int = int(data["pawn_id"])
@@ -5856,7 +5767,7 @@ func _on_duel_resolved(data: Dictionary) -> void:
 		return
 	var winner: int = int(data["winner"])
 	var loser: int = int(data["loser"])
-	var resolved_text: String = "[결투] %s이(가) %s의 %s(%d번)을(를) 출발선으로 사출시켰습니다!%s" % [_player_name(winner), _player_name(loser), _pawn_name(pawn_id), int(data["from"]), "  승자의 %s +%d칸 전진 (%d번 → %d번)" % [_pawn_name(int(data["boost_pawn_id"])), DuelRules.winner_advance(), int(data["boost_from"]), int(data["boost_to"])] if int(data["boost_pawn_id"]) != -1 else ""]
+	var resolved_text: String = "[⚔️ 결투] %s이(가) %s의 선두 %s(%d번)을(를) 출발선으로 사출시켰습니다!%s" % [_player_name(winner), _player_name(loser), _pawn_name(pawn_id), int(data["from"]), "  승자의 %s +%d칸 전진 (%d번 → %d번)" % [_pawn_name(int(data["boost_pawn_id"])), int(data.get("advance", DuelRules.winner_advance())), int(data["boost_from"]), int(data["boost_to"])] if int(data["boost_pawn_id"]) != -1 else ""]
 	if not _fx_on():
 		_log_line(resolved_text, Color("ff6b6b"))
 		return
@@ -5879,21 +5790,22 @@ func _on_duel_resolved(data: Dictionary) -> void:
 		_profile_react(winner, true, "[승리!]"), pawn_id)
 
 
-## 즉시 모드(테스트·ui_smoke): 결투장 없이 내 자리의 손과 밀어낼 말을 바로 고른다.
+## 즉시 모드(테스트·ui_smoke): 결투장 없이 내 자리의 값을 바로 낸다 (봇과 같은 규칙으로 무작위).
 func _duel_auto_drive() -> void:
 	if manager == null or not manager.duel_pending():
 		return
 	var duel: Dictionary = manager.pending_duel()
-	if duel["step"] == &"pick":
-		for seat: int in [int(duel["challenger"]), int(duel["defender"])]:
-			if _duel_local(seat) and not (duel["picks"] as Dictionary).has(seat):
-				_act(&"duel_pick", {"player_id": seat, "hand": randi() % 3})
-				break
-	elif _duel_local(int(duel["winner"])):
-		var front: PlayerPawn = state.front_pawn_of(int(duel["loser"]))
-		var candidates: Array = duel["candidates"]
-		var pawn_id: int = front.entity_id if front != null and candidates.has(front.entity_id) else int(candidates[0])
-		_act(&"duel_strike", {"player_id": int(duel["winner"]), "pawn_id": pawn_id})
+	var game: int = int(duel["game"])
+	var rng := RandomNumberGenerator.new()
+	if game == DuelRules.Game.BARREL:
+		var seat: int = int(duel["turn"])
+		if _duel_local(seat):
+			_act(&"duel_pick", {"player_id": seat, "value": DuelRules.bot_input(game, duel["setup"], seat == int(duel["challenger"]), rng, duel["opened"])})
+		return
+	for seat: int in [int(duel["challenger"]), int(duel["defender"])]:
+		if _duel_local(seat) and not (duel["picks"] as Dictionary).has(seat):
+			_act(&"duel_pick", {"player_id": seat, "value": DuelRules.bot_input(game, duel["setup"], seat == int(duel["challenger"]), rng)})
+			break
 
 
 func _begin_snipe_pick(player_id: int, card_id: StringName) -> void:
@@ -5909,7 +5821,7 @@ func _begin_snipe_pick(player_id: int, card_id: StringName) -> void:
 	_tile_pick_player = player_id
 	_tile_pick_card = card_id
 	_snipe_pick = true
-	_pick_banner.text = "[뱅! 저격] 쏠 상대의 프로필을 눌러 주세요"
+	_pick_banner.text = "[BANG!] 쏠 상대의 프로필을 눌러 주세요"
 	_pick_banner.visible = true
 	_pick_cancel.visible = true
 	for victim: int in targets:
@@ -6853,7 +6765,7 @@ func _on_action_rejected(player_id: int, action: StringName, reason: StringName)
 
 
 func _on_turn_order_reversed(new_direction: int) -> void:
-	_log_line("[리버스] 우노 리버스! 턴 방향이 %s이 되었습니다." % ("정방향" if new_direction == 1 else "역방향"), Color("ffd43b"))
+	_log_line("[리버스] UDO 리버스! 턴 방향이 %s이 되었습니다." % ("정방향" if new_direction == 1 else "역방향"), Color("ffd43b"))
 	_refresh_all()
 
 
@@ -7117,7 +7029,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			for report: Dictionary in data["reports"]:
 				_log_line("[NPC] NPC가 %s로 이동 (잡힌 말: %s)" % [str(report["path"]), str(report["caught"])], Color("fa5252"))
 				if not (report["caught"] as Array).is_empty():
-					var npc_name: String = "도적떼" if report["display_id"] == &"SUM_01" else "팩맨"
+					var npc_name: String = "사료스탕스" if report["display_id"] == &"SUM_01" else "와구와구 유령"
 					var stolen: String = ""
 					if not (report["stolen_cards"] as Array).is_empty():
 						stolen = " / 카드 %d장 강탈" % (report["stolen_cards"] as Array).size()
@@ -7130,15 +7042,16 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_draft_summary.append({"player": int(data["player_id"]), "augment": data["augment_id"]})
 		&"bang_resolved":
 			var target_name: String = _pawn_name(int(data["target"]))
-			_log_line("[뱅!] P%d가 %s을(를) 저격! %d번 → %d번 타일로 2칸 밀려납니다." % [data["shooter"], target_name, data["from"], data["to"]], Color("ff6b6b"))
+			_log_line("[BANG!] P%d가 %s을(를) 저격! %d번 → %d번 타일로 2칸 밀려납니다." % [data["shooter"], target_name, data["from"], data["to"]], Color("ff6b6b"))
 			_fx_bang(int(data["shooter"]), int(data["target"]))
 			_react_hit_pawn(int(data["target"]))
-		&"duel_started", &"duel_pick_in", &"duel_revealed", &"duel_strike_wait", &"duel_resolved":
+		&"duel_started", &"duel_pick_in", &"duel_revealed", &"duel_resolved":
 			if kind == &"duel_started":
-				_record(int(data["challenger"]), "✊ %s에게 가위바위보 결투 신청!" % _log_who(int(data["defender"])))
+				_record(int(data["challenger"]), "⚔️ %s에게 일기토 데스매치 신청! 종목: %s" % [_log_who(int(data["defender"])), _bq(DuelRules.game_title(int(data["game"])))])
 			_on_duel_event(kind, data)
 			if kind == &"duel_revealed" and int(data["winner"]) != -1:
-				_record(int(data["winner"]), "✌️ 가위바위보 결투 승리! (승자의 말 +%d칸)" % DuelRules.winner_advance())  # 결투장이 공개를 받은 뒤라 공개 연출을 기다린다
+				# 결투장이 공개를 받은 뒤라 공개 연출을 기다린다
+				_record(int(data["winner"]), "[⚔️ 결투] %s vs %s : %s %s ➔ %s 승리!" % [_bb(_player_name(int(data["challenger"]))), _bb(_player_name(int(data["defender"]))), _bq(DuelRules.game_name(int(data["game"]))), _bb(str(data["detail"])), _bb(_player_name(int(data["winner"])))])
 		&"skill_used":
 			var skill_pawn: PlayerPawn = state.get_pawn(int(data["pawn_id"]))
 			_record(int(data["player_id"]), "♟️ %s 필살기 사용!" % _bq("%s - %s" % [skill_pawn.display_label() if skill_pawn != null else "말", PawnCatalog.skill_name(data["skill"])]))
@@ -7146,7 +7059,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 		&"pawn_pushed_back":
 			_log_line("[백돌 방어막] 백돌에 막혀 %s이(가) %d번 → %d번으로 밀려났습니다" % [_pawn_name(int(data["pawn_id"])), data["from"], data["to"]], Color("b197fc"))
 		&"bomb_applied":
-			_log_line("[우노 +4] P%d의 %s이(가) 출발선으로 장외 사출! 내 이번 이동 +%d칸" % [data["victim"], _pawn_name(int(data["pawn_id"])), PenaltyBombCommand.advance_steps()], Color("ffd43b"))
+			_log_line("[UDO +4] P%d의 %s이(가) 출발선으로 장외 사출! 내 이번 이동 +%d칸" % [data["victim"], _pawn_name(int(data["pawn_id"])), PenaltyBombCommand.advance_steps()], Color("ffd43b"))
 			_fx_bang(int(data["shooter"]), int(data["pawn_id"]))
 			_react_hit_pawn(int(data["pawn_id"]))
 		&"player_ranked":
@@ -7169,7 +7082,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_record(int(data["player_id"]), "⏪ 이번 턴이 통째로 되감겼습니다")
 			_announce("방어", "[바이츠 더 더스트!]", "%s의 턴이 통째로 되감기고 끝났습니다" % _player_name(int(data["player_id"])), Color("4c6ef5"), null, 1.3)
 		&"extra_turn":
-			_announce("더 월드", "[%s 한 턴 더!]" % _player_name(int(data["player_id"])), "시간이 멈춘 사이 한 번 더 움직입니다", PLAYER_COLORS[int(data["player_id"])], null, 1.1)
+			_announce("XI. The World!!", "[%s 한 턴 더!]" % _player_name(int(data["player_id"])), "시간이 멈춘 사이 한 번 더 움직입니다", PLAYER_COLORS[int(data["player_id"])], null, 1.1)
 		&"game_over":
 			_last_reason = data["reason"]
 	_refresh_all()

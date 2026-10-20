@@ -1,13 +1,13 @@
 # File: res://core_engine/cards/card_door.gd
 # Class: class_name CardDoor
-# Role: ACT_13 어디로든 문 - 보드의 빈 칸을 골라 내 선두 말을 순간이동시킨다
+# Role: ACT_13 슈팡 특급 배송 - 보드의 빈 칸을 골라 내 선두 말을 순간이동시킨다
 class_name CardDoor
 extends BaseCard
 
 
 func _init() -> void:
 	card_id = &"ACT_13"
-	display_name = "어디로든 문"
+	display_name = "슈팡 특급 배송"
 	playable_phases = [TurnManager.State.PHASE_TURN_BEGIN]
 
 

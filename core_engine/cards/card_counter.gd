@@ -11,10 +11,10 @@ const TRAP: StringName = &"trap"
 const DEFS: Dictionary = {
 	&"CNT_01": ["바이츠 더 더스트", [CAPTURE, CARD, TRAP]],
 	&"CNT_02": ["거울의 힘", [CAPTURE]],
-	&"CNT_03": ["우노 리버스", [CARD]],
+	&"CNT_03": ["UDO 리버스 카드", [CARD]],
 	&"CNT_04": ["빗나감!", [CAPTURE, CARD]],
 	&"CNT_05": ["싸이크론", [TRAP]],
-	&"CNT_06": ["왕궁의 포고령", [TRAP]],
+	&"CNT_06": ["교단의 칙령", [TRAP]],
 	&"CNT_07": ["도굴꾼", [TRAP]],
 }
 ## 싸이크론으로 함정을 부순 뒤 전진하는 칸 수 (cards_table.csv CNT_05 param_1).

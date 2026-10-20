@@ -116,7 +116,7 @@ func _run() -> void:
 		all_text += (node as Label).text
 	for node: Node in book.find_children("*", "RichTextLabel", true, false):
 		all_text += (node as RichTextLabel).text
-	_expect(all_text.contains("가위바위보 결투") and all_text.contains("운명의 수레바퀴"), "카드 쪽에 실제 카드 이름이 코드에서 읽혀 온다")
+	_expect(all_text.contains("일기토 데스매치") and all_text.contains("운명의 수레바퀴"), "카드 쪽에 실제 카드 이름이 코드에서 읽혀 온다")
 	book.show_spread(7)
 	_expect(book.find_children("*", "Label", true, false).any(func(node: Node) -> bool: return (node as Label).text.contains("투기장의 지배자")), "법전 쪽에 실제 특수 승리 교칙 8종이 나온다")
 	_expect(not book.find_children("*", "Label", true, false).any(func(node: Node) -> bool: return (node as Label).text == "?"), "제목 옆 ? 표시는 없다")

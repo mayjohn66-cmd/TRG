@@ -1,14 +1,14 @@
 # File: res://core_engine/cards/card_status.gd
 # Class: class_name CardStatus
-# Role: ACT_11 밑장빼기 / ACT_12 더 월드 / ACT_14 알고리즘 밴 / ACT_15 우노 스킵 - 턴 시작에 쓰는 상태 변화 즉발 카드
+# Role: ACT_11 싸늘한 밑장빼기 / ACT_12 XI. The World!! / ACT_14 알고리즘 밴 / ACT_15 UDO 스킵 - 턴 시작에 쓰는 상태 변화 즉발 카드
 class_name CardStatus
 extends BaseCard
 
 const NAMES: Dictionary = {
-	&"ACT_11": "밑장빼기",
-	&"ACT_12": "더 월드",
+	&"ACT_11": "싸늘한 밑장빼기",
+	&"ACT_12": "XI. The World!!",
 	&"ACT_14": "알고리즘 밴",
-	&"ACT_15": "우노 스킵",
+	&"ACT_15": "UDO 스킵",
 }
 ## 밑장빼기로 고를 수 있는 칸 수.
 const MIN_STEPS: int = 1
