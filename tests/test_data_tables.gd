@@ -106,8 +106,8 @@ func test_table_text_matches_the_built_in_defaults_for_every_augment() -> void:
 func test_defaults_from_the_table_keep_the_original_numbers() -> void:
 	check_eq(SuperAugments.flip_chance(), 50, "판 뒤집기 50%")
 	check_eq(SuperAugments.devil_bonus(), 3, "악마의 계약 +3")
-	check_eq(SuperAugments.minefield_count(), 5, "지뢰 5곳")
-	check_eq(SuperAugments.raid_robbers(), 2, "도적 2마리")
+	check_eq(SuperAugments.minefield_count(), 2, "지뢰 2곳")
+	check_eq(SuperAugments.raid_robbers(), 1, "도적 1마리")
 	check_eq(SuperAugments.raid_ghosts(), 1, "고스트 1마리")
 	check_eq(SuperAugments.bakery_cards(), 3, "빵집 털이 카드 3장")
 	check_eq(SuperAugments.sniper_advance(), 4, "저격수 +4")
@@ -216,8 +216,7 @@ func test_a_new_table_row_adds_a_second_card_package() -> void:
 func test_super_augment_params_change_the_game_logic() -> void:
 	_edit_augment("SUPER_03", {"param_1": "6"})
 	var state: GameState = make_state(2, 9)
-	place(state, 11, 4, [3])
-	place(state, 12, 5, [4])
+	state.get_pawn(12).is_finished = true
 	var result: Dictionary = SuperAugments.apply(&"SUPER_03", state, 1)
 	check(bool(result["ok"]), "악마의 계약 적용")
 	check_eq(int(state.permanent_roll_bonus.get(1, 0)), 6, "영구 가속이 표의 6")
@@ -225,6 +224,9 @@ func test_super_augment_params_change_the_game_logic() -> void:
 	check_eq(SuperAugments.sniper_advance(), 7, "저격수 전진 칸수")
 	_edit_augment("SUPER_08", {"param_1": "1"})
 	var state2: GameState = make_state(2, 10)
+	for pawn: PlayerPawn in state2.pawns_of(1):
+		pawn.has_left_start = true  # 출격할 대기 말이 없으면 카드만 받는다
+		pawn.current_tile_idx = 2
 	check(bool(SuperAugments.apply(&"SUPER_08", state2, 1)["ok"]) and (state2.hands[1] as Array).size() == 1, "빵집 털이 카드 1장")
 
 
@@ -332,6 +334,6 @@ func test_missing_or_empty_table_falls_back_to_code_defaults() -> void:
 	AugmentRegistry.reload()
 	check_eq(AugmentRegistry.all().size(), 52, "표가 비어도 증강 52종이 코드 기본값으로 만들어진다")
 	check_eq(GameData.revenge_bonus(), 4, "규칙 수치 기본값")
-	check_eq(SuperAugments.minefield_count(), 5, "초증강 수치 기본값")
+	check_eq(SuperAugments.minefield_count(), 2, "초증강 수치 기본값")
 	check(CardRegistry.default_deck().size() > 0, "카드 덱 기본값")
 	check(AugmentRegistry.get_def(&"SUPER_01").tier == "PRISMA", "초증강 기본 테두리")

@@ -1,6 +1,6 @@
 # File: res://tests/test_super_augments.gd
 # Class: class_name TestSuperAugments
-# Role: [초증강 : 도박 & 억까] 10종의 조건·효과·드래프트 등장·턴 매니저 연동(영구 가속, 도박사 2배/실패 후퇴, 휴식)을 검사한다
+# Role: [초증강 : 도박 & 억까] 12종의 조건·효과·드래프트 등장·턴 매니저 연동(영구 가속, 도박사 2배/과열 사출, 휴식)을 검사한다
 class_name TestSuperAugments
 extends TestCase
 
@@ -23,7 +23,7 @@ func _def(effect: StringName) -> AugmentDef:
 	return AugmentRegistry.get_def(effect)
 
 
-func test_ten_super_augments_are_registered_with_names_and_descriptions() -> void:
+func test_twelve_super_augments_are_registered_with_names_and_descriptions() -> void:
 	check_eq(SuperAugments.ALL_IDS.size(), 12, "초증강 12종")
 	var state: GameState = _state()
 	for effect: StringName in SuperAugments.ALL_IDS:
@@ -36,22 +36,17 @@ func test_ten_super_augments_are_registered_with_names_and_descriptions() -> voi
 	check_eq(SuperAugments.display_name(SuperAugments.REDISTRIBUTE), "[초증강] 공산주의 재분배", "2번 이름")
 	check_eq(SuperAugments.display_name(SuperAugments.NITRO), "[초증강] 아우토반 니트로", "10번 이름")
 
-
 func test_availability_depends_on_the_board() -> void:
 	var state: GameState = _state()
 	check(not SuperAugments.is_available(SuperAugments.FLIP, state, 1), "보드에 내 말이 없으면 판 뒤집기 불가")
-	check(not SuperAugments.is_available(SuperAugments.DEVIL, state, 1), "제물이 없으면 악마의 계약 불가")
+	check(not SuperAugments.is_available(SuperAugments.DEVIL, state, 1), "완주한 말이 없으면 악마의 계약 불가")
 	check(not SuperAugments.is_available(SuperAugments.SNIPER, state, 1), "적 말이 없으면 저격 불가")
 	check(not SuperAugments.is_available(SuperAugments.CASTLING, state, 1), "말이 둘 미만이면 캐슬링 불가")
-	check(SuperAugments.is_available(SuperAugments.GAMBLER, state, 1) and SuperAugments.is_available(SuperAugments.BAKERY, state, 1) and SuperAugments.is_available(SuperAugments.MINEFIELD, state, 1) and SuperAugments.is_available(SuperAugments.RAID, state, 1), "언제든 되는 초증강")
+	check(SuperAugments.is_available(SuperAugments.GAMBLER, state, 1) and SuperAugments.is_available(SuperAugments.BAKERY, state, 1) and SuperAugments.is_available(SuperAugments.MINEFIELD, state, 1) and SuperAugments.is_available(SuperAugments.RAID, state, 1) and SuperAugments.is_available(SuperAugments.REDISTRIBUTE, state, 1), "언제든 되는 초증강")
 	_place(state, 11, 8)
 	_place(state, 21, 14)
+	state.get_pawn(12).is_finished = true
 	check(SuperAugments.is_available(SuperAugments.FLIP, state, 1) and SuperAugments.is_available(SuperAugments.DEVIL, state, 1) and SuperAugments.is_available(SuperAugments.SNIPER, state, 1) and SuperAugments.is_available(SuperAugments.CASTLING, state, 1), "말이 나오면 가능")
-	check(SuperAugments.is_available(SuperAugments.REDISTRIBUTE, state, 1), "내가 뒤처지면 재분배 가능")
-	state.npcs.append(NeutralNPC.new())
-	state.npcs.append(NeutralNPC.new())
-	state.npcs.append(NeutralNPC.new())
-	check(not SuperAugments.is_available(SuperAugments.RAID, state, 1), "NPC가 가득 차면 대습격 불가")
 
 
 func test_flip_is_all_or_nothing_across_seeds() -> void:
@@ -62,86 +57,105 @@ func test_flip_is_all_or_nothing_across_seeds() -> void:
 		var pawn: PlayerPawn = _place(state, 11, 10)
 		var result: Dictionary = SuperAugments.apply(SuperAugments.FLIP, state, 1)
 		check(bool(result["ok"]), "판 뒤집기 적용")
+		check(not bool(state.rest_next_turn.get(1, false)), "휴식 벌칙은 없다")
 		if pawn.is_finished:
 			finished += 1
-			check(not bool(state.rest_next_turn.get(1, false)), "성공하면 휴식 없음")
 		else:
 			expelled += 1
-			check(not pawn.has_left_start and pawn.current_tile_idx == GameEnums.GOAL_TILE and bool(state.rest_next_turn.get(1, false)), "실패하면 추방 + 다음 턴 휴식")
+			check(not pawn.has_left_start and pawn.current_tile_idx == GameEnums.GOAL_TILE, "실패하면 출발선 추방")
 	check(finished > 10 and expelled > 10, "50% 안팎으로 갈린다 (완주 %d / 추방 %d)" % [finished, expelled])
 
 
-func test_redistribute_swaps_with_the_leader_and_steals_a_card() -> void:
+func test_redistribute_copies_the_last_place_layout_and_redeals_hands() -> void:
 	var state: GameState = _state()
-	_place(state, 11, 3)    # 내 말: 3번 (뒤처짐)
-	_place(state, 21, 20)   # 상대 선두: 20번 (결승에 가까움)
-	_place(state, 31, 10)
-	state.hands[2] = [&"ACT_04"]
-	# 내 가장 뒤처진 말은 아직 출발 전인 12번 말 (출발선 대기도 '가장 뒤처진 말'로 센다)
-	check_eq(SuperAugments.laggard_pawn(state, 1).entity_id, 12, "가장 뒤처진 말")
-	var result: Dictionary = SuperAugments.apply(SuperAugments.REDISTRIBUTE, state, 1)
+	_place(state, 11, 20)
+	state.get_pawn(12).is_finished = true  # P1: 완주 1 + 20번
+	_place(state, 21, 14)
+	_place(state, 22, 9)
+	_place(state, 31, 5)   # P3: 5번 하나 (꼴찌)
+	_place(state, 41, 12)
+	state.hands[1] = [&"ACT_04", &"ACT_04", &"ACT_04"] as Array[StringName]
+	state.hands[2] = [&"ACT_02"] as Array[StringName]
+	var result: Dictionary = SuperAugments.apply(SuperAugments.REDISTRIBUTE, state, 2)
 	check(bool(result["ok"]), "재분배 적용")
-	check_eq(state.get_pawn(12).current_tile_idx, 20, "내 꼴찌 말이 선두 자리로")
-	check(state.get_pawn(12).has_left_start, "선두 자리에서는 보드 위 말이 된다")
-	check(state.get_pawn(21).current_tile_idx == GameEnums.GOAL_TILE and not state.get_pawn(21).has_left_start, "선두 말은 내 꼴찌의 자리(출발선 대기)로")
-	check((state.hands[1] as Array).has(&"ACT_04") and (state.hands[2] as Array).is_empty(), "1등의 카드 1장 강탈")
+	for owner: int in [1, 2, 4]:
+		var tiles: Array[int] = []
+		var finished: int = 0
+		for pawn: PlayerPawn in state.pawns_of(owner):
+			tiles.append(pawn.current_tile_idx)
+			finished += 1 if pawn.is_finished else 0
+		tiles.sort()
+		check_eq(tiles, int_array([0, 0, 0, 5]), "P%d의 말 배치가 꼴찌(P3)와 같다" % owner)
+		check_eq(finished, 0, "P%d의 완주도 꼴찌와 같다 (0개)" % owner)
+	for owner: int in [1, 2, 3, 4]:
+		check_eq((state.hands[owner] as Array).size(), SuperAugments.redistribute_cards(), "P%d 손패 2장" % owner)
 
 
-func test_redistribute_unavailable_when_i_am_already_ahead() -> void:
+func test_devil_returns_a_finished_pawn_for_a_permanent_bonus() -> void:
 	var state: GameState = _state()
-	_place(state, 11, 22)
-	_place(state, 21, 5)
-	for pawn: PlayerPawn in state.pawns_of(1):
-		if pawn.entity_id != 11:
-			pawn.is_finished = true
-	check(not SuperAugments.is_available(SuperAugments.REDISTRIBUTE, state, 1), "내가 1등이면 재분배 불가")
-
-
-func test_devil_sacrifices_a_pawn_for_a_permanent_bonus() -> void:
-	var state: GameState = _state()
-	_place(state, 11, 9)
+	var finished: PlayerPawn = state.get_pawn(12)
+	finished.is_finished = true
+	finished.has_left_start = true
 	var result: Dictionary = SuperAugments.apply(SuperAugments.DEVIL, state, 1)
 	check(bool(result["ok"]), "악마의 계약")
-	check(not state.get_pawn(11).has_left_start, "제물로 출발선 복귀")
+	check(not finished.is_finished and not finished.has_left_start and finished.current_tile_idx == GameEnums.GOAL_TILE, "완주 말이 출발선으로 돌아왔다")
 	check_eq(int(state.permanent_roll_bonus[1]), 3, "영구 +3")
-	_place(state, 12, 5)
-	SuperAugments.apply(SuperAugments.DEVIL, state, 1)
-	check_eq(int(state.permanent_roll_bonus[1]), 6, "겹치면 +6")
+	check(not SuperAugments.is_available(SuperAugments.DEVIL, state, 1), "더 이상 완주 말이 없다")
 
 
-func test_minefield_places_five_hidden_traps_on_empty_tiles() -> void:
+func test_minefield_places_mines_on_empty_normal_tiles_and_gives_a_trap_card() -> void:
 	var state: GameState = _state(5)
 	var placed: Array[int] = []
 	state.attachment_placed.connect(func(tile: int, id: String, owner: int) -> void:
 		placed.append(tile)
-		check(owner == 1 and (id == "TRP_01" or id == "TRP_03"), "거울의 힘 또는 지뢰, 설치자는 나"))
+		check(owner == 1 and id == "TRP_03", "지뢰, 설치자는 나"))
 	var result: Dictionary = SuperAugments.apply(SuperAugments.MINEFIELD, state, 1)
 	check(bool(result["ok"]), "지뢰밭")
-	check_eq(placed.size(), 5, "5곳에 살포")
-	var unique: Dictionary = {}
+	check_eq(placed.size(), 2, "2곳에 매설")
 	for tile: int in placed:
-		unique[tile] = true
-		check(tile != GameEnums.GOAL_TILE, "결승 칸은 피한다")
-	check_eq(unique.size(), 5, "서로 다른 타일")
+		check(not BoardSpec.corner_tiles.has(tile) and not BoardSpec.bakery_tiles.has(tile) and not BoardSpec.portal_tiles.has(tile) and not BoardSpec.dash_tiles.has(tile), "%d번은 일반 타일" % tile)
+	check_eq((state.hands[1] as Array).size(), 1, "함정 카드 1장")
+	var card: BaseCard = CardRegistry.get_card((state.hands[1] as Array)[0])
+	check(card.category == GameEnums.CardCategory.TRAP and not card.corner_only, "일반 함정 카드")
 
 
-func test_raid_spawns_two_robbers_and_a_ghost_within_the_npc_cap() -> void:
+func test_raid_sweeps_both_side_lines_from_the_top_corners_and_vanishes() -> void:
 	var state: GameState = _state()
-	SuperAugments.apply(SuperAugments.RAID, state, 1)
-	check_eq(state.npcs.size(), 3, "도적떼 2 + 고스트 1")
-	var robbers: int = 0
-	var ghosts: int = 0
-	for npc: NeutralNPC in state.npcs:
-		if npc.behavior == GameEnums.NpcBehavior.CHASE_NEAREST:
-			robbers += 1
-		else:
-			ghosts += 1
-			check_eq(npc.current_tile_idx, BoardSpec.halfway_tile, "고스트는 반환점에서")
-	check(robbers == 2 and ghosts == 1, "구성 확인")
-	var crowded: GameState = _state()
-	crowded.spawn_npc(5, GameEnums.NpcBehavior.CHASE_NEAREST, 1, &"SUM_01")
-	SuperAugments.apply(SuperAugments.RAID, crowded, 1)
-	check_eq(crowded.npcs.size(), GameEnums.MAX_NPCS, "NPC 상한을 넘지 않는다")
+	_place(state, 21, BoardSpec.halfway_tile + 3)  # 왼쪽 줄
+	_place(state, 31, BoardSpec.side - 2)          # 오른쪽 줄
+	_place(state, 11, BoardSpec.halfway_tile - 3)  # 윗줄 (안전)
+	_place(state, 41, 2 * BoardSpec.side + BoardSpec.side + 2)  # 아랫줄 (안전)
+	var result: Dictionary = SuperAugments.apply(SuperAugments.RAID, state, 1)
+	check(bool(result["ok"]), "대습격")
+	check(not state.get_pawn(21).has_left_start, "도적떼가 왼쪽 줄을 쓸었다")
+	check(not state.get_pawn(31).has_left_start, "팩맨이 오른쪽 줄을 쓸었다")
+	check(state.get_pawn(11).has_left_start and state.get_pawn(41).has_left_start, "다른 줄은 안전")
+	check(state.npcs.is_empty(), "쓸고 나면 사라진다")
+	check_eq(state.stat(1, VictoryLaw.KILLS), 2, "내 초증강이 잡은 말은 처치로 센다")
+
+
+func test_bakery_gives_cards_and_launches_a_waiting_pawn_to_the_first_bakery() -> void:
+	var state: GameState = _state()
+	var result: Dictionary = SuperAugments.apply(SuperAugments.BAKERY, state, 1)
+	check(bool(result["ok"]), "빵집 털이")
+	check_eq((state.hands[1] as Array).size(), 3 + 1, "카드 3장 + 빵집 도착 카드 1장")
+	var launched: PlayerPawn = state.get_pawn(11)
+	check(launched.has_left_start and launched.current_tile_idx == BoardSpec.bakery_tiles[0], "대기 말이 첫 빵집으로 출격")
+
+
+func test_sniper_ejects_the_leading_enemy_and_boosts_mine() -> void:
+	var state: GameState = _state()
+	_place(state, 11, 4)
+	_place(state, 21, 20)
+	_place(state, 31, 15)
+	_place(state, 41, 6)
+	var result: Dictionary = SuperAugments.apply(SuperAugments.SNIPER, state, 1)
+	check(bool(result["ok"]), "저격")
+	check_eq(state.get_pawn(21).current_tile_idx, 0, "선두 적 말은 출발선으로 사출")
+	check(not state.get_pawn(21).has_left_start and state.get_pawn(21).revenge_boost, "출발 대기 + 복수 부스터")
+	check_eq(state.get_pawn(31).current_tile_idx, 15, "2위는 그대로")
+	check_eq(state.get_pawn(11).current_tile_idx, 8, "내 선두 말은 +4칸 전진 (4 -> 8)")
+	check(state.board.get_tile(20).attachments.is_empty(), "스프링 대포는 더 이상 깔지 않는다")
 
 
 func test_gambler_flag_lasts_one_round_only() -> void:
@@ -171,41 +185,6 @@ func test_castling_shuffles_all_board_pawns_positions() -> void:
 		if after != tiles:
 			changed += 1
 	check(changed >= 15, "대부분의 시드에서 실제로 섞인다 (%d/20)" % changed)
-
-
-func test_bakery_gives_cards_and_hotels_on_every_bakery_tile() -> void:
-	var state: GameState = _state()
-	var before: int = (state.hands[1] as Array).size()
-	var result: Dictionary = SuperAugments.apply(SuperAugments.BAKERY, state, 1)
-	check(bool(result["ok"]), "빵집 털이")
-	check_eq((state.hands[1] as Array).size(), mini(before + 3, GameEnums.MAX_HAND_SIZE), "카드 3장")
-	for tile: int in BoardSpec.bakery_tiles:
-		var has_hotel: bool = false
-		for attachment: TileAttachment in state.board.get_tile(tile).attachments:
-			if attachment.attachment_id == "HOTEL" and attachment.owner_id == 1:
-				has_hotel = true
-		check(has_hotel, "%d번 빵집에 내 호텔" % tile)
-	SuperAugments.apply(SuperAugments.BAKERY, state, 1)
-	check_eq(state.board.get_tile(BoardSpec.bakery_tiles[0]).attachments.size(), 1, "호텔은 중복 설치되지 않는다")
-
-
-func test_sniper_ejects_the_leading_enemy_boosts_mine_and_drops_a_cannon() -> void:
-	var state: GameState = _state()
-	_place(state, 11, 4)
-	_place(state, 21, 20)
-	_place(state, 31, 15)
-	_place(state, 41, 6)
-	var result: Dictionary = SuperAugments.apply(SuperAugments.SNIPER, state, 1)
-	check(bool(result["ok"]), "저격")
-	check_eq(state.get_pawn(21).current_tile_idx, 0, "선두 적 말은 출발선으로 사출")
-	check(not state.get_pawn(21).has_left_start and state.get_pawn(21).revenge_boost, "출발 대기 + 복수 부스터")
-	check_eq(state.get_pawn(31).current_tile_idx, 15, "2위는 그대로")
-	check_eq(state.get_pawn(41).current_tile_idx, 6, "3위는 그대로")
-	check_eq(state.get_pawn(11).current_tile_idx, 8, "내 선두 말은 +4칸 전진 (4 -> 8)")
-	var cannon: bool = false
-	for attachment: TileAttachment in state.board.get_tile(20).attachments:
-		cannon = cannon or (attachment.attachment_id == "TRP_05" and attachment.owner_id == 1)
-	check(cannon, "사출된 자리에 스프링 대포")
 
 func test_personal_passive_supers_stay_for_the_rest_of_the_game() -> void:
 	var state: GameState = _state()

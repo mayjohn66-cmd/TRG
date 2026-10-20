@@ -39,15 +39,15 @@ AUG_LAW_06,TRUE,LAW,GOLD,15,3,[특수 승리] 해탈한 동네북의 역습,특�
 AUG_LAW_07,TRUE,LAW,GOLD,15,3,[특수 승리] 초전도체 무한 동력,특수 승리 교칙,◆ 승리 조건: 한 턴에 주사위 {p1}연속 굴림\n◆ 먼저 달성한 사람이 다음 순위로 졸업 (달성되면 법전에서 삭제),◆ 법전 4칸 (초과 시 가장 오래된 교칙 삭제)\n◆ 법전 슬롯에 마우스를 올리면 모두의 진행도,4,,LAW_07,laws/LAW_07.png
 AUG_LAW_08,TRUE,LAW,GOLD,20,3,[특수 승리] 다크호스의 하극상,특수 승리 교칙,◆ 승리 조건: 완주 0개인 채로 선두의 말을 {p1}회 처치\n◆ 먼저 달성한 사람이 다음 순위로 졸업 (달성되면 법전에서 삭제),◆ 법전 4칸 (초과 시 가장 오래된 교칙 삭제)\n◆ 법전 슬롯에 마우스를 올리면 모두의 진행도,3,,LAW_08,laws/LAW_08.png
 CARD_PACKAGE,TRUE,CARD,NORMAL,100,1,[카드 패키지] 생떼 카드 {p1}장,생떼 카드 패키지,◆ 무작위 생떼 카드 {p1}장 획득,,2,,CARD_PACKAGE,augments/CARD_PACKAGE.png
-SUPER_01,TRUE,CHAOS,PRISMA,50,1,[초증강] 판 뒤집기 (모 아니면 도),초증강 : 도박 & 억까,◆ 보드 위 내 말 1개를 무작위로 골라\n◆ {p1}% 즉시 결승선 완주!\n◆ 실패하면 출발선 추방 + 다음 턴 휴식,,50,,SUPER_01,augments/SUPER_01.png
-SUPER_02,TRUE,CHAOS,PRISMA,50,1,[초증강] 공산주의 재분배,초증강 : 도박 & 억까,◆ 1등의 가장 앞선 말 ↔ 내 가장 뒤처진 말 위치 강제 교환\n◆ 1등의 손패 카드 1장 강탈,,,,SUPER_02,augments/SUPER_02.png
-SUPER_03,TRUE,CHAOS,PRISMA,50,1,[초증강] 악마의 계약 (영구 가속),초증강 : 도박 & 억까,◆ 내 말 1개를 출발선으로 제물\n◆ 남은 게임 내내 내 모든 굴림 결과에 +{p1}칸,,3,,SUPER_03,augments/SUPER_03.png
-SUPER_04,TRUE,CHAOS,PRISMA,50,1,[초증강] 광란의 지뢰밭,초증강 : 도박 & 억까,◆ 빈 타일 {p1}곳에 은신 함정(거울의 힘 또는 지뢰) 일제 살포\n◆ 설치한 내 눈에는 위치가 보인다,,5,,SUPER_04,augments/SUPER_04.png
-SUPER_05,TRUE,CHAOS,PRISMA,50,1,[초증강] 도적단 대습격,초증강 : 도박 & 억까,◆ 카탄의 도적떼 {p1}마리 + 팩맨 고스트 {p2}마리 동시 소환\n◆ 판 전체가 아수라장!,,2,1,SUPER_05,augments/SUPER_05.png
+SUPER_01,TRUE,CHAOS,PRISMA,50,1,[초증강] 판 뒤집기 (모 아니면 도),초증강 : 도박 & 억까,◆ 보드 위 내 말 1개를 무작위로 골라\n◆ {p1}% 즉시 결승선 완주!\n◆ 실패하면 출발선 추방,,50,,SUPER_01,augments/SUPER_01.png
+SUPER_02,TRUE,CHAOS,PRISMA,50,1,[초증강] 공산주의 재분배,초증강 : 도박 & 억까,◆ 모두의 진도를 꼴찌와 똑같이 맞춘다\n◆ 모든 손패를 회수해 섞은 뒤 {p1}장씩 다시 나눠 준다,,2,,SUPER_02,augments/SUPER_02.png
+SUPER_03,TRUE,CHAOS,PRISMA,50,1,[초증강] 악마의 계약 (영구 가속),초증강 : 도박 & 억까,◆ 완주한 내 말 1개를 출발선으로 되돌리고\n◆ 남은 게임 내내 내 모든 굴림 결과에 +{p1}칸,,3,,SUPER_03,augments/SUPER_03.png
+SUPER_04,TRUE,CHAOS,PRISMA,50,1,[초증강] 광란의 지뢰밭,초증강 : 도박 & 억까,◆ 빈 일반 타일 {p1}곳에 지뢰 매설\n◆ 함정 카드 {p2}장 획득,,2,1,SUPER_04,augments/SUPER_04.png
+SUPER_05,TRUE,CHAOS,PRISMA,50,1,[초증강] 도적단 대습격,초증강 : 도박 & 억까,◆ 상단 코너에서 도적떼 {p1}(왼쪽 줄)·팩맨 {p2}(오른쪽 줄) 출격\n◆ 지나가는 길의 모든 말 사출 후 소멸,,1,1,SUPER_05,augments/SUPER_05.png
 SUPER_06,TRUE,CHAOS,PRISMA,50,1,[초증강] 주사위 도박사의 영혼,초증강 : 도박 & 억까,◆ 이번 라운드 이동 거리 {p1}배(x{p1}) 증폭!\n◆ 단 눈금 {p2} 이하면 이동한 내 말이 과열되어 0번 출발선으로 사출,,2,1,SUPER_06,augments/SUPER_06.png
 SUPER_07,TRUE,CHAOS,PRISMA,50,1,[초증강] 강제 캐슬링 룰렛,초증강 : 도박 & 억까,◆ 보드 위 모든 플레이어 말의 위치를 무작위로 전부 섞는다,,,,SUPER_07,augments/SUPER_07.png
-SUPER_08,TRUE,CHAOS,PRISMA,50,1,[초증강] 에르핀의 빵집 털이,초증강 : 도박 & 억까,◆ 무작위 생떼 카드 {p1}장 획득\n◆ 모든 빵집 타일에 내 통행료 호텔 설치,,3,,SUPER_08,augments/SUPER_08.png
-SUPER_09,TRUE,CHAOS,PRISMA,50,1,[초증강] 저격수의 표적,초증강 : 도박 & 억까,◆ 가장 앞선 적 말 1개를 즉시 0번 출발선으로 장외 사출\n◆ 내 말 1개를 +{p1}칸 전진 + 그 자리에 스프링 대포 설치,,4,,SUPER_09,augments/SUPER_09.png
+SUPER_08,TRUE,CHAOS,PRISMA,50,1,[초증강] 에르핀의 빵집 털이,초증강 : 도박 & 억까,◆ 무작위 생떼 카드 {p1}장 획득\n◆ 대기 중인 내 말 1개를 첫 빵집으로 출격,,3,,SUPER_08,augments/SUPER_08.png
+SUPER_09,TRUE,CHAOS,PRISMA,50,1,[초증강] 저격수의 표적,초증강 : 도박 & 억까,◆ 가장 앞선 적 말 1개를 즉시 0번 출발선으로 장외 사출\n◆ 내 말 1개 +{p1}칸 전진,,4,,SUPER_09,augments/SUPER_09.png
 SUPER_10,TRUE,CHAOS,PRISMA,50,1,[초증강] 아우토반 니트로,초증강 : 영구 패시브,◆ 남은 게임 내내 내 눈금이 짝수이거나 {p2} 이상이면 +{p1}칸!,,3,5,SUPER_10,augments/SUPER_10.png
 SUPER_11,TRUE,CHAOS,PRISMA,50,1,[초증강] 폭주 기관차,초증강 : 영구 패시브,◆ 남은 게임 내내 내 말이 적을 처치하면 그 자리에서 +{p1}칸 돌진!,,4,,SUPER_11,augments/SUPER_11.png
 SUPER_12,TRUE,CHAOS,PRISMA,50,1,[초증강] 강제 연대보증,초증강 : 영구 패시브,◆ 남은 게임 내내 내 말이 잡히면\n◆ 공격자의 다른 말 1개 동반 처치 + 카드 1장,,,,SUPER_12,augments/SUPER_12.png

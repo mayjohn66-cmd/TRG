@@ -1,6 +1,6 @@
 # File: res://core_engine/augments/super_augments.gd
 # Class: class_name SuperAugments
-# Role: [초증강 : 도박 & 억까] 10종 - 드래프트에서만 나오는 하이리스크 증강의 조건·효과. 모든 난수는 호스트 RNG(state.rng)를 쓰고 효과는 GameState 시그널로 방송되어 화면이 연출한다
+# Role: [초증강 : 도박 & 억까] 12종 (영구 패시브 3종 포함) - 드래프트에서만 나오는 하이리스크 증강의 조건·효과. 모든 난수는 호스트 RNG(state.rng)를 쓰고 효과는 GameState 시그널로 방송되어 화면이 연출한다
 class_name SuperAugments
 extends RefCounted
 
@@ -24,8 +24,10 @@ const PERSONAL: Array[StringName] = [NITRO, RUNAWAY, GUARANTEE]
 ## 수치 기본값 (content_trickcal/data/augments_table.csv의 param_1·param_2가 비어 있을 때만 쓴다).
 const FLIP_FINISH_CHANCE_PERCENT: int = 50
 const DEVIL_BONUS: int = 3
-const MINEFIELD_COUNT: int = 5
-const RAID_ROBBERS: int = 2
+const REDISTRIBUTE_CARDS: int = 2
+const MINEFIELD_COUNT: int = 2
+const MINEFIELD_TRAP_CARDS: int = 1
+const RAID_ROBBERS: int = 1
 const RAID_GHOSTS: int = 1
 const BAKERY_CARDS: int = 3
 const SNIPER_ADVANCE: int = 4
@@ -46,8 +48,16 @@ static func devil_bonus() -> int:
 	return param(DEVIL, 1, DEVIL_BONUS)
 
 
+static func redistribute_cards() -> int:
+	return maxi(param(REDISTRIBUTE, 1, REDISTRIBUTE_CARDS), 0)
+
+
 static func minefield_count() -> int:
 	return maxi(param(MINEFIELD, 1, MINEFIELD_COUNT), 0)
+
+
+static func minefield_trap_cards() -> int:
+	return maxi(param(MINEFIELD, 2, MINEFIELD_TRAP_CARDS), 0)
 
 
 static func raid_robbers() -> int:
@@ -77,17 +87,15 @@ static func gambler_overheat_at() -> int:
 
 ## 효과 ID -> [이름, 카드 설명].
 const INFO: Dictionary = {
-	FLIP: ["판 뒤집기 (모 아니면 도)", "◆ 보드 위 내 말 1개를 무작위로 골라\n◆ 50% 즉시 결승선 완주!\n◆ 실패하면 출발선 추방 + 다음 턴 휴식"],
-	REDISTRIBUTE: ["공산주의 재분배", "◆ 1등의 가장 앞선 말 ↔ 내 가장 뒤처진 말 위치 강제 교환\n◆ 1등의 손패 카드 1장 강탈"],
-	DEVIL: ["악마의 계약 (영구 가속)", "◆ 내 말 1개를 출발선으로 제물\n◆ 남은 게임 내내 내 모든 굴림 결과에 +3칸"],
-	MINEFIELD: ["광란의 지뢰밭", "◆ 빈 타일 5곳에 은신 함정(거울의 힘 또는 지뢰) 일제 살포\n◆ 설치한 내 눈에는 위치가 보인다"],
-	RAID: ["도적단 대습격", "◆ 카탄의 도적떼 2마리 + 팩맨 고스트 1마리 동시 소환\n◆ 판 전체가 아수라장!"],
-	GAMBLER: ["주사위 도박사의 영혼", "◆ 이번 라운드 이동 거리 2배(x2) 증폭!
-◆ 단 눈금 1 이하면 이동한 내 말이 과열되어 0번 출발선으로 사출"],
+	FLIP: ["판 뒤집기 (모 아니면 도)", "◆ 보드 위 내 말 1개를 무작위로 골라\n◆ 50% 즉시 결승선 완주!\n◆ 실패하면 출발선 추방"],
+	REDISTRIBUTE: ["공산주의 재분배", "◆ 모두의 진도를 꼴찌와 똑같이 맞춘다\n◆ 모든 손패를 회수해 섞은 뒤 2장씩 다시 나눠 준다"],
+	DEVIL: ["악마의 계약 (영구 가속)", "◆ 완주한 내 말 1개를 출발선으로 되돌리고\n◆ 남은 게임 내내 내 모든 굴림 결과에 +3칸"],
+	MINEFIELD: ["광란의 지뢰밭", "◆ 빈 일반 타일 2곳에 지뢰 매설\n◆ 함정 카드 1장 획득"],
+	RAID: ["도적단 대습격", "◆ 상단 코너에서 도적떼 1(왼쪽 줄)·팩맨 1(오른쪽 줄) 출격\n◆ 지나가는 길의 모든 말 사출 후 소멸"],
+	GAMBLER: ["주사위 도박사의 영혼", "◆ 이번 라운드 이동 거리 2배(x2) 증폭!\n◆ 단 눈금 1 이하면 이동한 내 말이 과열되어 0번 출발선으로 사출"],
 	CASTLING: ["강제 캐슬링 룰렛", "◆ 보드 위 모든 플레이어 말의 위치를 무작위로 전부 섞는다"],
-	BAKERY: ["에르핀의 빵집 털이", "◆ 무작위 생떼 카드 3장 획득\n◆ 모든 빵집 타일에 내 통행료 호텔 설치"],
-	SNIPER: ["저격수의 표적", "◆ 가장 앞선 적 말 1개를 즉시 0번 출발선으로 장외 사출
-◆ 내 말 1개를 +4칸 전진 + 그 자리에 스프링 대포 설치"],
+	BAKERY: ["에르핀의 빵집 털이", "◆ 무작위 생떼 카드 3장 획득\n◆ 대기 중인 내 말 1개를 첫 빵집으로 출격"],
+	SNIPER: ["저격수의 표적", "◆ 가장 앞선 적 말 1개를 즉시 0번 출발선으로 장외 사출\n◆ 내 말 1개 +4칸 전진"],
 	NITRO: ["아우토반 니트로", "◆ 남은 게임 내내 내 눈금이 짝수이거나 5 이상이면 +3칸!"],
 	RUNAWAY: ["폭주 기관차", "◆ 남은 게임 내내 내 말이 적을 처치하면 그 자리에서 +4칸 돌진!"],
 	GUARANTEE: ["강제 연대보증", "◆ 남은 게임 내내 내 말이 잡히면\n◆ 공격자의 다른 말 1개 동반 처치 + 카드 1장"],
@@ -126,45 +134,21 @@ static func sorted_by_progress(state: GameState, pawns: Array[PlayerPawn]) -> Ar
 	return sorted
 
 
-## 1등 플레이어의 가장 앞선 말 (player_id를 뺀 상대 중). 없으면 null.
-static func leader_pawn(state: GameState, player_id: int) -> PlayerPawn:
-	var enemies: Array[PlayerPawn] = sorted_by_progress(state, board_leaders(state, -1, player_id))
-	return enemies[0] if not enemies.is_empty() else null
-
-
-## 출발 전 말까지 포함해 내 대표 말 중 결승에서 가장 먼(가장 뒤처진) 말.
-static func laggard_pawn(state: GameState, player_id: int) -> PlayerPawn:
-	var worst: PlayerPawn = null
-	var worst_distance: int = -1
-	for pawn: PlayerPawn in state.pawns_of(player_id):
-		if pawn.is_finished or pawn.carrier != null:
-			continue
-		var distance: int = state.pawn_progress_distance(pawn)
-		if distance > worst_distance:
-			worst_distance = distance
-			worst = pawn
-	return worst
-
-
 static func is_available(effect: StringName, state: GameState, player_id: int) -> bool:
 	match effect:
-		FLIP, DEVIL:
+		FLIP:
 			return not board_leaders(state, player_id).is_empty()
-		REDISTRIBUTE:
-			var first: PlayerPawn = leader_pawn(state, player_id)
-			var last: PlayerPawn = laggard_pawn(state, player_id)
-			return first != null and last != null and state.pawn_progress_distance(last) > state.pawn_progress_distance(first)
+		DEVIL:
+			return state.finished_count(player_id) >= 1  # 되돌릴 완주 말이 있어야 한다
 		MINEFIELD:
-			return not _empty_tiles(state).is_empty()
-		RAID:
-			return state.npcs.size() < GameEnums.MAX_NPCS
+			return not empty_normal_tiles(state).is_empty()
 		CASTLING:
 			return board_leaders(state).size() >= 2
 		SNIPER:
 			return not board_leaders(state, -1, player_id).is_empty()
 		NITRO, RUNAWAY, GUARANTEE:
 			return not state.rulebook.has_personal(String(effect), player_id)
-	return true  # 도박사·빵집 털이는 언제든
+	return true  # 재분배·대습격·도박사·빵집 털이는 언제든
 
 
 ## 효과를 적용한다. 반환: {"ok": bool, "text": String}
@@ -192,44 +176,95 @@ static func _apply_flip(state: GameState, player_id: int) -> Dictionary:
 		state.finish_stack(pawn)
 		return {"ok": true, "text": "판 뒤집기 성공! 말 %d번이 즉시 결승선에 완주했습니다" % pawn.slot}
 	state.send_to_start(pawn, player_id)
-	state.rest_next_turn[player_id] = true
-	return {"ok": true, "text": "판 뒤집기 실패... 말 %d번이 출발선으로 추방되고 다음 턴을 쉽니다" % pawn.slot}
+	return {"ok": true, "text": "판 뒤집기 실패... 말 %d번이 출발선으로 추방되었습니다" % pawn.slot}
 
 
+## 공산주의 재분배: 레이스에 남은 사람 모두의 말 배치를 꼴찌(4등)의 배치와 똑같이 맞추고(앞선 말끼리 짝지어 같은 칸·같은 완주 여부),
+## 모든 손패를 덱에 섞어 넣은 뒤 각자 N장씩 다시 받는다.
 static func _apply_redistribute(state: GameState, player_id: int) -> Dictionary:
-	var first: PlayerPawn = leader_pawn(state, player_id)
-	var last: PlayerPawn = laggard_pawn(state, player_id)
-	if first == null or last == null or state.pawn_progress_distance(last) <= state.pawn_progress_distance(first):
-		return {"ok": false, "text": "재분배할 대상이 없습니다"}
-	var victim_player: int = first.owner_id
-	state.swap_stacks(last, first)
-	var stolen: StringName = state.steal_random_card(victim_player, state.rng)
-	var text: String = "P%d의 선두 말과 내 꼴찌 말의 위치를 맞바꿨습니다" % victim_player
-	if stolen != &"":
-		if state.give_card(player_id, stolen):
-			text += " (카드 [%s] 강탈)" % CardRegistry.get_card(stolen).display_name
-		else:
-			(state.hands[victim_player] as Array).append(stolen)  # 내 손패가 가득 차면 카드는 주인에게 돌려준다
-			text += " (내 손패가 가득 차 카드는 돌려줌)"
-	return {"ok": true, "text": text}
+	var active: Array[int] = state.active_players(state.player_ids)
+	var laggard: int = -1
+	var worst: Array = []
+	for candidate: int in active:
+		var key: Array = [state.finished_count(candidate), -_remaining(state, candidate)]
+		if laggard == -1 or key < worst:
+			laggard = candidate
+			worst = key
+	var template: Array[Dictionary] = []
+	for pawn: PlayerPawn in _by_progress(state, state.pawns_of(laggard)):
+		template.append({"tile": pawn.current_tile_idx, "history": pawn.step_history.duplicate(), "started": pawn.has_left_start, "finished": pawn.is_finished})
+	for owner: int in active:
+		for pawn: PlayerPawn in state.pawns_of(owner):
+			pawn.carrier = null
+			pawn.carried.clear()
+	for owner: int in active:
+		if owner == laggard:
+			continue
+		var mine: Array[PlayerPawn] = _by_progress(state, state.pawns_of(owner))
+		for index: int in mini(mine.size(), template.size()):
+			var pawn: PlayerPawn = mine[index]
+			var spot: Dictionary = template[index]
+			var from_tile: int = pawn.current_tile_idx
+			pawn.current_tile_idx = int(spot["tile"])
+			pawn.step_history.assign(spot["history"])
+			pawn.has_left_start = bool(spot["started"])
+			pawn.is_finished = bool(spot["finished"])
+			if from_tile != pawn.current_tile_idx:
+				state.pawn_teleported.emit(pawn.entity_id, pawn.current_tile_idx)
+	var pool: Array[StringName] = []
+	for owner: int in active:
+		pool.append_array(state.hands[owner] as Array)
+		(state.hands[owner] as Array).clear()
+	state.card_deck.append_array(pool)
+	state._shuffle(state.card_deck)
+	for owner: int in active:
+		for i: int in redistribute_cards():
+			state.draw_card(owner)
+	return {"ok": true, "text": "모두의 진도를 P%d(꼴찌)와 똑같이 맞추고, 손패 %d장을 회수해 %d장씩 다시 나눴습니다" % [laggard, pool.size(), redistribute_cards()]}
 
 
+static func _remaining(state: GameState, player_id: int) -> int:
+	var total: int = 0
+	for pawn: PlayerPawn in state.pawns_of(player_id):
+		if not pawn.is_finished:
+			total += state.pawn_progress_distance(pawn)
+	return total
+
+
+## 앞선 순서(완주 → 결승까지 가까운 말 → 슬롯 번호)로 정렬한 말들.
+static func _by_progress(state: GameState, pawns: Array[PlayerPawn]) -> Array[PlayerPawn]:
+	var sorted: Array[PlayerPawn] = pawns.duplicate()
+	sorted.sort_custom(func(a: PlayerPawn, b: PlayerPawn) -> bool:
+		if a.is_finished != b.is_finished:
+			return a.is_finished
+		var da: int = 0 if a.is_finished else state.pawn_progress_distance(a)
+		var db: int = 0 if b.is_finished else state.pawn_progress_distance(b)
+		return da < db if da != db else a.slot < b.slot)
+	return sorted
+
+
+## 악마의 계약: 완주한 내 말 1개를 출발선으로 되돌리고 남은 게임 내내 모든 굴림 +N.
 static func _apply_devil(state: GameState, player_id: int) -> Dictionary:
-	var mine: Array[PlayerPawn] = board_leaders(state, player_id)
-	if mine.is_empty():
-		return {"ok": false, "text": "제물로 바칠 말이 없습니다"}
-	# 가장 뒤처진(결승에서 먼) 보드 위 말을 바친다
-	var sacrifice: PlayerPawn = sorted_by_progress(state, mine)[mine.size() - 1]
-	state.send_to_start(sacrifice, player_id)
+	var sacrifice: PlayerPawn = null
+	for pawn: PlayerPawn in state.pawns_of(player_id):
+		if pawn.is_finished:
+			sacrifice = pawn
+			break
+	if sacrifice == null:
+		return {"ok": false, "text": "되돌릴 완주 말이 없습니다"}
+	sacrifice.is_finished = false
+	sacrifice.reset_to_start()
+	state.pawn_sent_to_start.emit(sacrifice.entity_id, player_id)
 	state.permanent_roll_bonus[player_id] = int(state.permanent_roll_bonus.get(player_id, 0)) + devil_bonus()
-	return {"ok": true, "text": "말 %d번을 제물로 바치고 영구 +%d칸 가속 계약!" % [sacrifice.slot, devil_bonus()]}
+	return {"ok": true, "text": "완주한 말 %d번을 제물로 되돌리고 영구 +%d칸 가속 계약!" % [sacrifice.slot, devil_bonus()]}
 
 
-## 빈 타일: 결승 칸이 아니고 설치물이 없는 칸.
-static func _empty_tiles(state: GameState) -> Array[int]:
+## 빈 일반 타일: 코너·빵집·옷장·부스터 발판·결승이 아니고 설치물이 없는 칸.
+static func empty_normal_tiles(state: GameState) -> Array[int]:
 	var tiles: Array[int] = []
 	for index: int in BoardSpec.tile_count:
-		if index == GameEnums.GOAL_TILE:
+		if index == GameEnums.GOAL_TILE or BoardSpec.corner_tiles.has(index) or BoardSpec.bakery_tiles.has(index) \
+				or BoardSpec.portal_tiles.has(index) or BoardSpec.dash_tiles.has(index):
 			continue
 		if state.board.get_tile(index).attachments.is_empty():
 			tiles.append(index)
@@ -237,43 +272,40 @@ static func _empty_tiles(state: GameState) -> Array[int]:
 
 
 static func _apply_minefield(state: GameState, player_id: int) -> Dictionary:
-	var empty: Array[int] = _empty_tiles(state)
-	if empty.is_empty():
-		return {"ok": false, "text": "함정을 깔 빈 타일이 없습니다"}
+	var empty: Array[int] = empty_normal_tiles(state)
 	var placed: Array[int] = []
 	for i: int in mini(minefield_count(), empty.size()):
 		var pick: int = state.rng.randi_range(0, empty.size() - 1)
 		var tile: int = empty[pick]
 		empty.remove_at(pick)
-		var trap: TileAttachment = TrapMine.new(player_id) if state.rng.randi_range(0, 1) == 0 else TrapMirrorForce.new(player_id)
-		state.place_attachment(tile, trap)
+		state.place_attachment(tile, TrapMine.new(player_id))
 		placed.append(tile)
 	placed.sort()
-	return {"ok": true, "text": "빈 타일 %d곳(%s)에 은신 함정을 살포했습니다" % [placed.size(), ", ".join(PackedStringArray(placed.map(func(tile: int) -> String: return "%d번" % tile)))]}
-
-
-static func _apply_raid(state: GameState, player_id: int) -> Dictionary:
-	var room: int = GameEnums.MAX_NPCS - state.npcs.size()
-	if room <= 0:
-		return {"ok": false, "text": "더 소환할 자리가 없습니다"}
-	var spawned_robbers: int = 0
-	var spawned_ghost: int = 0
-	var order: Array[StringName] = []
-	for i: int in raid_robbers():
-		order.append(&"SUM_01")
-	for i: int in raid_ghosts():
-		order.append(&"SUM_02")
-	for id: StringName in order:
-		if state.npcs.size() >= GameEnums.MAX_NPCS:
+	var traps: Array[StringName] = []
+	for card_id: StringName in CardRegistry.all_ids():
+		var card: BaseCard = CardRegistry.get_card(card_id)
+		if card.category == GameEnums.CardCategory.TRAP and not card.corner_only:
+			traps.append(card_id)
+	var got: Array[String] = []
+	for i: int in minefield_trap_cards():
+		if traps.is_empty():
 			break
-		if id == &"SUM_02":
-			state.spawn_npc(BoardSpec.halfway_tile, GameEnums.NpcBehavior.PATROL_REVERSE, player_id, id)
-			spawned_ghost += 1
-		else:
-			var tile: int = state.rng.randi_range(1, BoardSpec.tile_count - 1)
-			state.spawn_npc(tile, GameEnums.NpcBehavior.CHASE_NEAREST, player_id, id)
-			spawned_robbers += 1
-	return {"ok": true, "text": "도적떼 %d마리와 팩맨 고스트 %d마리가 판에 나타났습니다!" % [spawned_robbers, spawned_ghost]}
+		var picked: StringName = traps[state.rng.randi_range(0, traps.size() - 1)]
+		if state.give_card(player_id, picked):
+			got.append(CardRegistry.get_card(picked).display_name)
+	return {"ok": not placed.is_empty() or not got.is_empty(), "text": "빈 타일 %d곳(%s)에 지뢰 매설 + 함정 카드 %s" % [placed.size(), ", ".join(PackedStringArray(placed.map(func(tile: int) -> String: return "%d번" % tile))), ", ".join(got) if not got.is_empty() else "없음 (손패 가득)"]}
+
+
+## 도적단 대습격: 상단 코너에서 도적떼는 왼쪽 줄(반환점 → 아래로), 팩맨은 오른쪽 줄(오른쪽 위 코너 → 출발선 쪽으로 역주행)을 한 번에 쓸고 사라진다.
+static func _apply_raid(state: GameState, player_id: int) -> Dictionary:
+	var ejected: Array[int] = []
+	for i: int in raid_robbers():
+		var robber: Dictionary = NpcSweep.run(state, BoardSpec.halfway_tile, 1, BoardSpec.side, &"SUM_01", player_id)
+		ejected.append_array(robber["ejected"] as Array[int])
+	for i: int in raid_ghosts():
+		var ghost: Dictionary = NpcSweep.run(state, BoardSpec.side, -1, BoardSpec.side, &"SUM_02", player_id)
+		ejected.append_array(ghost["ejected"] as Array[int])
+	return {"ok": true, "text": "도적떼와 팩맨이 양쪽 줄을 쓸고 지나갔습니다! 사출된 말 %d개" % ejected.size()}
 
 
 static func _apply_gambler(state: GameState, player_id: int) -> Dictionary:
@@ -300,26 +332,29 @@ static func _apply_bakery(state: GameState, player_id: int) -> Dictionary:
 		var picked: StringName = pool[state.rng.randi_range(0, pool.size() - 1)]
 		if state.give_card(player_id, picked):
 			names.append(CardRegistry.get_card(picked).display_name)
-	var hotels: int = 0
-	for tile: int in BoardSpec.bakery_tiles:
-		var has_mine: bool = false
-		for attachment: TileAttachment in state.board.get_tile(tile).attachments:
-			if attachment.attachment_id == "HOTEL" and attachment.owner_id == player_id:
-				has_mine = true
-		if not has_mine:
-			state.place_attachment(tile, Hotel.new(player_id))
-			hotels += 1
-	return {"ok": true, "text": "빵집 털이! 생떼 카드 %d장(%s) + 호텔 %d채" % [names.size(), ", ".join(names), hotels]}
+	var launched: PlayerPawn = null
+	for pawn: PlayerPawn in state.pawns_of(player_id):
+		if not pawn.has_left_start and not pawn.is_finished:
+			launched = pawn
+			break
+	var text: String = "빵집 털이! 생떼 카드 %d장(%s)" % [names.size(), ", ".join(names)]
+	if launched != null and not BoardSpec.bakery_tiles.is_empty():
+		var ctx := RuleContext.new()
+		ctx.state = state
+		ctx.actor_id = player_id
+		ctx.pawn = launched
+		launched.has_left_start = true
+		launched.revenge_boost = false
+		MoveExecutor.teleport_to(state, launched, ctx, MoveReport.new(), BoardSpec.bakery_tiles[0])
+		text += " + 말 %d번을 %d번 빵집으로 출격" % [launched.slot, BoardSpec.bakery_tiles[0]]
+	return {"ok": true, "text": text}
 
 
 static func _apply_sniper(state: GameState, player_id: int) -> Dictionary:
 	var targets: Array[PlayerPawn] = sorted_by_progress(state, board_leaders(state, -1, player_id))
 	if targets.is_empty():
 		return {"ok": false, "text": "저격할 적 말이 없습니다"}
-	var victim: PlayerPawn = targets[0]
-	var origin: int = victim.current_tile_idx
-	state.send_to_start(victim, player_id)
-	state.place_attachment(origin, TrapDomino.new(player_id))
+	state.send_to_start(targets[0], player_id)
 	var booster: PlayerPawn = state.front_pawn_of(player_id)
 	if booster == null:
 		for candidate: PlayerPawn in state.pawns_of(player_id):
@@ -328,7 +363,7 @@ static func _apply_sniper(state: GameState, player_id: int) -> Dictionary:
 				break
 	if booster != null:
 		MoveExecutor.forced_advance(state, booster, sniper_advance())
-	return {"ok": true, "text": "선두 적 말을 출발선으로 사출하고 내 말 +%d칸! 그 자리에 스프링 대포를 깔았습니다" % sniper_advance()}
+	return {"ok": true, "text": "선두 적 말을 출발선으로 사출하고 내 말 +%d칸!" % sniper_advance()}
 
 
 static func _apply_personal(effect: StringName, state: GameState, player_id: int) -> Dictionary:
