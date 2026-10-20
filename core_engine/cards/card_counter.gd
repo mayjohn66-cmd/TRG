@@ -25,9 +25,7 @@ func _init(id: StringName = &"CNT_01") -> void:
 	card_id = id
 	display_name = str(DEFS[id][0])
 	category = GameEnums.CardCategory.COUNTER
-	playable_phases = []
-	for phase: int in TurnManager.State.values():
-		playable_phases.append(phase)
+	playable_phases = []  # 단계로 쓰는 카드가 아니다: 피격 팝업(반격 대기)에서만 낸다 (TurnManager._play_counter)
 
 
 static func is_counter(id: StringName) -> bool:

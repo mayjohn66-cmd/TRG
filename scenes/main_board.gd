@@ -2954,7 +2954,8 @@ func _build_card_body(card_id: StringName, card_size: Vector2, detail_mode: bool
 ## 한 장짜리 전체 카드 (140x196). 손패에서는 아래 절반이 화면 밖에 가려져 이름과 일러스트가 보이고, 호버하면 올라와 전체가 보인다.
 func _make_card_view(player_id: int, card_id: StringName) -> PanelContainer:
 	var card: BaseCard = CardRegistry.get_card(card_id)
-	var usable: bool = _card_usable_now(player_id, card)
+	# 반격 카드는 끌어 쓰지 않는다: 내게 열린 피격 팝업이 이 카드를 받을 때만 밝게 보인다
+	var usable: bool = _card_usable_now(player_id, card) or _counter_offered_to(player_id, card_id)
 	var view := PanelContainer.new()
 	view.custom_minimum_size = HAND_CARD_SIZE
 	view.size = HAND_CARD_SIZE
@@ -2964,7 +2965,8 @@ func _make_card_view(player_id: int, card_id: StringName) -> PanelContainer:
 	view.add_theme_stylebox_override("panel", idle_style)
 	view.modulate = Color.WHITE if usable else Color(0.62, 0.62, 0.68)
 	var quote: String = GameData.text("cards", card_id, "parody_quote")
-	view.tooltip_text = "%s (%s) - %s\n%s%s" % [card.display_name, card_id, _category_text(card.category), card_summary(card_id), ("\n“%s”" % quote) if quote != "" else ""]
+	view.tooltip_text = "%s (%s) - %s\n%s%s%s" % [card.display_name, card_id, _category_text(card.category), card_summary(card_id),
+		"\n발동: 내가 공격받으면 발동 여부를 묻습니다" if card.category == GameEnums.CardCategory.COUNTER else "", ("\n“%s”" % quote) if quote != "" else ""]
 	view.add_child(_build_card_body(card_id, HAND_CARD_SIZE))
 	view.gui_input.connect(_on_card_gui_input.bind(player_id, card_id, view))
 	view.set_meta("idle_style", idle_style)
@@ -3097,6 +3099,8 @@ func _drag_begin() -> void:
 		source.modulate = Color(1, 1, 1, 0.25)
 	var usable: bool = _card_usable_now(player_id, card)
 	_drop_label.text = "[여기에 놓아 카드 발동!]" if usable else "[지금은 쓸 수 없는 카드입니다]"
+	if card.category == GameEnums.CardCategory.COUNTER:
+		_drop_label.text = "[반격 카드는 공격받을 때 팝업에서 발동합니다]"
 	if card.needs_tile():
 		_drop_label.text = "[보드판에 놓으면 설치할 타일을 고릅니다]" if usable else "[지금은 쓸 수 없는 카드입니다]"
 	if card.card_id == &"ACT_09" and usable:
@@ -3126,7 +3130,9 @@ func _drag_drop(pointer: Vector2, press: Dictionary) -> void:
 	var card: BaseCard = CardRegistry.get_card(card_id)
 	var reason: String = ""
 	var duel_target: int = _duel_target_at(pointer, player_id) if card_id == &"ACT_09" else -1
-	if not _card_usable_now(player_id, card):
+	if card.category == GameEnums.CardCategory.COUNTER:
+		reason = "반격 카드 [%s]는 내가 공격받을 때 뜨는 팝업에서 발동합니다." % card.display_name
+	elif not _card_usable_now(player_id, card):
 		reason = "지금은 [%s]를 쓸 수 없습니다." % card.display_name
 	elif duel_target != -1 and not DuelRules.targets(state, player_id).has(duel_target):
 		reason = "%s는 보드 위에 나온 말이 없어 결투할 수 없습니다." % _player_name(duel_target)
@@ -3228,6 +3234,8 @@ func _open_zoom(player_id: int, card_id: StringName) -> void:
 	guide_box.add_theme_constant_override("separation", 4)
 	guide.add_child(guide_box)
 	var how: String = "보드에 드래그 → 타일 선택" if card.needs_tile() else "보드에 드래그"
+	if card.category == GameEnums.CardCategory.COUNTER:
+		how = "피격 시 발동 여부를 묻는 팝업에서 [발동]"
 	var timing := _make_label("발동: %s\n방법: %s" % [_card_timing_text(card), how], 14, UiSkin.INK)
 	timing.name = "CardTiming"
 	timing.custom_minimum_size = Vector2(card_size.x - 24.0, 0)
@@ -3236,7 +3244,11 @@ func _open_zoom(player_id: int, card_id: StringName) -> void:
 	timing.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	guide_box.add_child(timing)
 	var usable: bool = _card_usable_now(player_id, card)
-	var status := _make_label("지금 사용 가능" if usable else "지금은 사용 불가", 14, Color("416c2b") if usable else Color("747c64"))
+	var status_text: String = "지금 사용 가능" if usable else "지금은 사용 불가"
+	if card.category == GameEnums.CardCategory.COUNTER:
+		usable = _counter_offered_to(player_id, card.card_id)
+		status_text = "지금 반격 가능 (팝업에서 발동)" if usable else "내가 공격받을 때만 사용 가능"
+	var status := _make_label(status_text, 14, Color("416c2b") if usable else Color("747c64"))
 	status.name = "CardStatus"
 	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	status.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -3249,6 +3261,8 @@ func _open_zoom(player_id: int, card_id: StringName) -> void:
 
 
 func _card_timing_text(card: BaseCard) -> String:
+	if card.category == GameEnums.CardCategory.COUNTER:
+		return "피격 시 (내 말이 잡히거나 공격 카드·함정에 당했을 때)"
 	var names: Array[String] = []
 	for phase: int in card.playable_phases:
 		var full: String = PHASE_NAMES.get(phase, "")
@@ -4029,7 +4043,18 @@ func _category_text(category: GameEnums.CardCategory) -> String:
 	return "즉발·개입형"
 
 
+## 지금 이 플레이어에게 열린 반격 대기(피격 팝업)에 이 카드를 낼 수 있는가.
+func _counter_offered_to(player_id: int, card_id: StringName) -> bool:
+	if manager == null or not manager.counter_pending():
+		return false
+	var offer: Dictionary = manager.pending_counter()
+	return int(offer["victim"]) == player_id and (offer.get("cards", []) as Array).has(card_id)
+
+
+## 손패에서 끌어 쓸 수 있는가. 반격 카드는 끌어 쓰지 않고 피격 팝업에서만 내므로 언제나 false다.
 func _card_usable_now(player_id: int, card: BaseCard) -> bool:
+	if card.category == GameEnums.CardCategory.COUNTER:
+		return false
 	if manager.is_game_over or _ui_busy() or manager.stack_offer_pending() or manager.duel_pending() or not card.is_playable_in(manager.current_state):
 		return false
 	if ai_mode and player_id != local_player_id:

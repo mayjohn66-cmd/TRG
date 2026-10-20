@@ -134,6 +134,8 @@ static func body(card: BaseCard, card_size: Vector2, summary_text: String, categ
 		var tag: String = "타일 설치" if card.needs_tile() else "즉시 효과"
 		if card.category == GameEnums.CardCategory.SUMMON:
 			tag = "NPC 소환"
+		elif card.category == GameEnums.CardCategory.COUNTER:
+			tag = "피격 시 발동"
 		label(detail, "EffectKind", tag, Rect2(padding * 2 + badge_size.x, padding, width - badge_size.x - padding * 3, badge_size.y), roundi(14 * k))
 	var summary_y: float = (36.0 if detailed else 21.0) * k
 	var summary: Label = label(detail, "CardSummary", summary_text, Rect2(padding, summary_y, width - padding * 2, detail.size.y - summary_y - padding), roundi((16.0 if detailed else 11.0) * k), INK, false, true)

@@ -700,11 +700,14 @@ func _handle_counter_pass(actor: int) -> void:
 	_finish_counter_offer()
 
 
-## 반격 카드는 공격당한 사람이 언제든(반격 대기 중이면 그 공격에) 낸다. 즉시 실행된다.
+## 반격 카드는 내가 공격받았을 때 열리는 반격 대기(피격 팝업) 동안에만, 그 공격에 대해서만 낸다. 즉시 실행된다.
+## 손패에서 아무 때나 끌어 쓰거나 지난 공격에 소급해 낼 수는 없다.
 func _play_counter(actor: int, card: BaseCard, params: Dictionary) -> void:
+	if not counter_pending() or actor != int(_counter_offer["victim"]):
+		action_rejected.emit(actor, &"play_card", &"counter_only_when_attacked")
+		return
 	var payload: Dictionary = params.duplicate()
-	if counter_pending() and not payload.has("attack"):
-		payload["attack"] = int(_counter_offer["attack"])
+	payload["attack"] = int(_counter_offer["attack"])
 	if not state.has_card(actor, card.card_id):
 		action_rejected.emit(actor, &"play_card", &"card_not_in_hand")
 		return

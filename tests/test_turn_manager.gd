@@ -685,6 +685,30 @@ func test_passing_a_counter_offer_keeps_the_damage() -> void:
 	_dispose(manager)
 
 
+func test_counter_cards_only_work_inside_the_victims_offer() -> void:
+	var manager: TurnManager = _new_manager()
+	var rejected: Array = _rejections(manager)
+	manager.state.give_card(1, &"CNT_04")
+	manager._begin_turn()
+	_do(manager, 1, &"play_card", {"card_id": &"CNT_04"})
+	check_eq(rejected.back(), [1, &"play_card", &"counter_only_when_attacked"], "공격받지 않았으면 반격 카드를 낼 수 없다")
+	check_eq((manager.state.hands[1] as Array).size(), 1, "카드는 그대로")
+	_dispose(manager)
+	# 피격 팝업이 열렸어도 피해자가 아닌 사람은 낼 수 없고, 넘긴 뒤에는 그 공격에 소급해 낼 수 없다
+	manager = _new_manager()
+	rejected = _rejections(manager)
+	manager.state.give_card(1, &"CNT_04")
+	_capture_setup(manager, &"CNT_04")
+	check(manager.counter_pending(), "P2에게 반격 대기")
+	_do(manager, 1, &"play_card", {"card_id": &"CNT_04"})
+	check(rejected.back()[0] == 1 and rejected.back()[1] == &"play_card" and (manager.state.hands[1] as Array).has(&"CNT_04"), "피해자가 아니면 거부 (%s)" % str(rejected.back()))
+	_do(manager, 2, &"counter_pass")
+	_do(manager, 2, &"play_card", {"card_id": &"CNT_04"})
+	check_eq(rejected.back(), [2, &"play_card", &"counter_only_when_attacked"], "팝업을 넘긴 뒤에는 소급해 낼 수 없다")
+	check_eq(manager.state.get_pawn(21).current_tile_idx, 0, "피해는 그대로")
+	_dispose(manager)
+
+
 func test_uno_reverse_reflects_a_bang_back_to_the_shooter() -> void:
 	var manager: TurnManager = _new_manager()
 	var state: GameState = manager.state

@@ -33,7 +33,7 @@ func _process(_delta: float) -> bool:
 		if _banner_frame != -2 and _frames < 600:
 			return false
 		_banner_frame = -2
-	if (_shot != "banner" and _frames == (8 if _shot == "pick" else (20 if _shot in ["react", "classics", "traps", "log", "logx"] else 12))) or (_shot == "banner" and _banner_frame == -2):
+	if (_shot != "banner" and _frames == (8 if _shot == "pick" else (20 if _shot in ["react", "classics", "traps", "log", "logx", "counterzoom"] else 12))) or (_shot == "banner" and _banner_frame == -2):
 		var path: String = "/tmp/trg_shot_%s.png" % _shot
 		var image: Image = root.get_texture().get_image()
 		image.save_png(path)
@@ -194,6 +194,14 @@ func _setup_scene() -> void:
 			_board._record(-1, "[color=#ffe066][lb]📜 법전] 투기장의 지배자 등록![/color]")
 			if _shot == "logx":
 				_board._action_log.set_expanded(true)
+		"counterzoom":
+			# 반격 카드 확대: 발동 시점·방법이 피격 팝업으로 안내되고 평소에는 사용 불가로 보인다
+			_finish_draft()
+			_board._announcer.cancel()
+			_board.instant_roll_for_test = true
+			state.give_card(1, &"CNT_02")
+			_board._refresh_all()
+			_board._open_zoom(1, &"CNT_02")
 		"traps":
 			# 함정 칸 그림: 내 함정(지뢰·바나나)은 그림, 상대 함정은 물음표, 코너 함정은 공개, 옷장은 청록
 			_finish_draft()
