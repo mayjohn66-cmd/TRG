@@ -111,6 +111,12 @@ func test_floor_decals_follow_board_plane_and_next_tile_on_both_layouts() -> voi
 			var frame := BoardSkin.decal_frame(plane,0.1,BoardSkin.forward_world(index))
 			check(frame.x.normalized().dot(plane.basis_xform(next).normalized()) > 0.9999,"%d칸 보드 %d번 화살표는 다음 칸을 가리킨다" % [count,index])
 			check(absf(frame.x.normalized().dot(frame.y.normalized())) > 0.1,"아이콘은 화면 직각이 아니라 보드 기울기를 공유한다")
+		for index: int in BoardSpec.bakery_tiles + BoardSpec.portal_tiles:
+			var axis: Vector2 = BoardSkin.symbol_axis(index)
+			var top := Vector2(axis.y,-axis.x)
+			var inward: Vector2 = [Vector2.LEFT,Vector2.DOWN,Vector2.RIGHT,Vector2.UP][mini(index/BoardSpec.side,3)]
+			check(top.dot(inward)>0.9999,"빵·옷장 윗부분은 네 변 모두 판 중심을 향한다: %d" % index)
+			check(absf(axis.dot(BoardSkin.forward_world(index)))>0.9999,"빵·옷장 가로축은 타일 짧은 변과 나란하다")
 	for kind: String in BoardSkin.DECALS:
 		var texture: Texture2D = BoardSkin.DECALS[kind]
 		check(texture != null and texture.get_width() <= 256,"보드 심볼은 256px 이하로 임포트된다: " + kind)
