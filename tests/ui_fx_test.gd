@@ -845,19 +845,19 @@ func _test_avatar_seats() -> void:
 	# 반응은 연출 큐에서 사출·골인 장면과 함께 나온다 (결과를 먼저 흘리지 않는다)
 	_board.state.pawn_sent_to_start.emit(victim.entity_id, 1)
 	var reacted: bool = false
-	for i: int in 240:
+	for i: int in 120:  # 최대 6초 (헤드리스는 프레임이 빨라 시간으로 기다린다)
 		reacted = (_board._profiles[2]["avatar"] as AvatarSlot).emotion == AvatarSlot.Emotion.ANGRY and (_board._profiles[1]["avatar"] as AvatarSlot).emotion == AvatarSlot.Emotion.HAPPY
 		if reacted:
 			break
-		await process_frame
+		await create_timer(0.05).timeout
 	_expect(reacted, "말이 잡히면 피해자 분노 / 잡은 쪽 웃음")
 	_board.state.pawn_finished.emit(31)
 	reacted = false
-	for i: int in 240:
+	for i: int in 120:  # 최대 6초 (헤드리스는 프레임이 빨라 시간으로 기다린다)
 		reacted = (_board._profiles[3]["avatar"] as AvatarSlot).emotion == AvatarSlot.Emotion.CHEER
 		if reacted:
 			break
-		await process_frame
+		await create_timer(0.05).timeout
 	_expect(reacted, "완주하면 환호")
 	for player_id: int in [1, 2, 3, 4]:
 		(_board._profiles[player_id]["avatar"] as AvatarSlot).react(AvatarSlot.Emotion.IDLE, 0.0)
