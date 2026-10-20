@@ -491,7 +491,7 @@ static func skill_option(state: GameState, pawn: PlayerPawn) -> Dictionary:
 			var mine: int = PawnSkills.attachments_on(state, pawn, PawnSkills.quake_tiles(pawn)) - hostile
 			return {"params": {}, "value": SKILL_USE_THRESHOLD + 4.0 * float(hostile - mine)} if hostile > mine else {}
 		&"plant_mine":
-			return {"params": {}, "value": SKILL_USE_THRESHOLD + 1.0} if state.board.get_tile(pawn.current_tile_idx).attachments.is_empty() else {}
+			return {"params": {}, "value": SKILL_USE_THRESHOLD + 1.0} if not state.board.get_tile(pawn.current_tile_idx).has_trap() else {}
 	return {}
 
 

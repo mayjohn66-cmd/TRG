@@ -46,6 +46,14 @@ func has_attachment(attachment_id: String) -> bool:
 	return false
 
 
+## 함정(TRP_*, 코너 함정 포함)이 이미 깔려 있는가. 한 칸에는 함정을 하나만 설치할 수 있다.
+func has_trap() -> bool:
+	for attachment: TileAttachment in attachments:
+		if attachment.attachment_id.begins_with("TRP"):
+			return true
+	return false
+
+
 func serialize_attachments() -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	for attachment: TileAttachment in attachments:

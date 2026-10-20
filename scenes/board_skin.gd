@@ -33,7 +33,7 @@ static func definition(index: int) -> Dictionary:
 	if index in BoardSpec.bakery_tiles:
 		data.merge({"kind":"bakery", "band":Color("f4bd55"), "edge":Color("b68b43"), "ink":Color("845221")},true)
 	if index in BoardSpec.portal_tiles:
-		data.merge({"kind":"portal", "band":Color("ac87c7"), "edge":Color("8d6a9c"), "ink":Color("69457d")},true)
+		data.merge({"kind":"portal", "band":Color("5fc4c9"), "edge":Color("3f8f96"), "ink":Color("24636b")},true)  # 청록: 보라색 함정 타일과 구분
 	if index in BoardSpec.corner_tiles:
 		data.merge({"diameter":metrics.corner, "footprint":Vector2.ONE*float(metrics.corner), "major":true},true)
 		if index == GameEnums.GOAL_TILE:
@@ -238,9 +238,10 @@ class Tile extends Control:
 	var band := PackedVector2Array()
 	var symbol: Symbol
 	var arrow_target: int = -1
-	## 함정이 깔린 발판: 짙은 보라색 테두리와 깜빡이는 보라색 빛 (pulse는 0~1로 main_board가 갱신한다).
+	## 함정이 깔린 발판: 타일 전체가 보라색으로 바뀌고 가운데에 그 함정의 그림(정체를 모르면 물음표)이 붙는다. pulse는 0~1로 main_board가 갱신한다.
 	var trap_on: bool = false
 	var trap_pulse: float = 0.0
+	var trap_icon: Texture2D = null
 	## 중립 NPC 습격 예고: 0 없음 / 1 NPC가 지나갈 길 / 2 말이 서 있으면 잡히는 위험 타일(붉은 해골). direction은 NPC가 가는 쪽(화면 방향)이다.
 	var danger_level: int = 0
 	var danger_dir: Vector2 = Vector2.ZERO
@@ -304,10 +305,14 @@ class Tile extends Control:
 				(child as Ring).queue_redraw()
 		queue_redraw()
 
-	func set_trap(on: bool) -> void:
-		if trap_on != on:
+	func set_trap(on: bool, icon: Texture2D = null) -> void:
+		if trap_on != on or trap_icon != icon:
+			if trap_on != on:
+				trap_pulse = 0.0
 			trap_on = on
-			trap_pulse = 0.0
+			trap_icon = icon if on else null
+			if symbol != null:
+				symbol.visible = not on  # 빵집·옷장 그림 대신 함정 그림을 보여 준다
 			queue_redraw()
 
 	func set_trap_pulse(value: float) -> void:
@@ -342,13 +347,26 @@ class Tile extends Control:
 		if danger_level > 0:
 			_draw_danger()
 		if trap_on:
-			var closed: PackedVector2Array = outline_points.duplicate()
-			closed.append(closed[0])
-			draw_colored_polygon(layers[layers.size() - 1], Color(0.36, 0.08, 0.62, 0.22 + 0.38 * trap_pulse))
-			draw_polyline(closed, Color(0.27, 0.05, 0.5, 0.7 + 0.3 * trap_pulse), 5.0, true)
-			var inner: PackedVector2Array = layers[1].duplicate()
-			inner.append(inner[0])
-			draw_polyline(inner, Color(0.55, 0.25, 0.85, 0.35 + 0.5 * trap_pulse), 2.5, true)
+			_draw_trap()
+
+	## 함정 타일: 보라색 발판 + 함정 그림. 그림은 타일 안쪽 사각형에 맞춰 원근에 따라 살짝 납작하게 그린다.
+	func _draw_trap() -> void:
+		var closed: PackedVector2Array = outline_points.duplicate()
+		closed.append(closed[0])
+		draw_colored_polygon(layers[1], Color("5b2a86"))
+		draw_colored_polygon(layers[layers.size() - 1], Color("8e4ec6").lerp(Color("b07be0"), 0.35 * trap_pulse))
+		draw_polyline(closed, Color(0.22, 0.04, 0.42, 0.85 + 0.15 * trap_pulse), 4.0, true)
+		var inner: PackedVector2Array = layers[1].duplicate()
+		inner.append(inner[0])
+		draw_polyline(inner, Color(0.85, 0.65, 1.0, 0.35 + 0.5 * trap_pulse), 2.0, true)
+		if trap_icon == null:
+			return
+		var box := Rect2(outline_points[0], Vector2.ZERO)
+		for point: Vector2 in outline_points:
+			box = box.expand(point)
+		var side_len: float = minf(box.size.x, box.size.y) * 0.78
+		var icon_size := Vector2(side_len, side_len)
+		draw_texture_rect(trap_icon, Rect2(box.get_center() - icon_size / 2.0, icon_size), false)
 
 	## ⚡ 부스터 발판: 연두→하늘색 화살표 세 개가 진행 방향으로 번갈아 밝아진다.
 	func _draw_dash() -> void:

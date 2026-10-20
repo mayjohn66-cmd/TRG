@@ -612,6 +612,24 @@ func test_card_requires_phase_ownership_and_valid_target() -> void:
 	_dispose(manager)
 
 
+func test_one_trap_per_tile() -> void:
+	var manager: TurnManager = _new_manager()
+	var state: GameState = manager.state
+	state.place_attachment(9, TrapMine.new(2))
+	for card_id: StringName in [&"TRP_02", &"TRP_03", &"TRP_05", &"TRP_06", &"TRP_07", &"TRP_08"]:
+		var card: BaseCard = CardRegistry.get_card(card_id)
+		check(not card.can_play(state, 1, {"tile": 9}), "%s: 함정이 있는 칸에는 설치할 수 없다" % card_id)
+		check(card.can_play(state, 1, {"tile": 10}), "%s: 빈 칸에는 설치할 수 있다" % card_id)
+	var corner: int = BoardSpec.bonus_corner_tiles[0]
+	state.place_attachment(corner, TrapMine.new(2))
+	for card_id: StringName in [&"TRP_C01", &"TRP_C02", &"TRP_C03", &"TRP_C04"]:
+		check(not CardRegistry.get_card(card_id).can_play(state, 1, {"tile": corner}), "%s: 코너에 함정이 있으면 설치할 수 없다" % card_id)
+	var command := PlaceAttachmentCommand.new(1, 9, "TRP_07")
+	command.state = state
+	check(not command.can_execute(null), "명령도 겹쳐 설치를 거부한다")
+	_dispose(manager)
+
+
 ## P1 말이 P2 말을 잡는다. P2는 반격 카드 card_id를 들고 있다.
 func _capture_setup(manager: TurnManager, card_id: StringName) -> void:
 	var state: GameState = manager.state

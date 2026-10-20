@@ -288,6 +288,14 @@ func _on_hand_pressed(hand: int) -> void:
 			_begin_pick()
 
 
+## 보드 연출(사출·전진)이 기다려야 하는가: 결투장이 열린 뒤 승패 공개가 끝날 때까지는 보드가 결과를 먼저 보여 주면 안 된다.
+func holds_board() -> bool:
+	if not _opened or _closing:
+		return false
+	# 손을 고르는 중에는 붙잡지 않는다 (봇이 연출 큐가 비기를 기다리므로): 엔진이 승패를 냈다면 duel_revealed가 큐에 있다.
+	return (_step == &"reveal" and animating) or _queue_has(&"duel_revealed")
+
+
 func _queue_has(kind: StringName) -> bool:
 	for item: Dictionary in _queue:
 		if item["kind"] == kind:

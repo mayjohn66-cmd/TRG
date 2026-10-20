@@ -33,7 +33,7 @@ func _process(_delta: float) -> bool:
 		if _banner_frame != -2 and _frames < 600:
 			return false
 		_banner_frame = -2
-	if (_shot != "banner" and _frames == (8 if _shot == "pick" else (20 if _shot == "react" or _shot == "classics" else 12))) or (_shot == "banner" and _banner_frame == -2):
+	if (_shot != "banner" and _frames == (8 if _shot == "pick" else (20 if _shot == "react" or _shot == "classics" or _shot == "traps" else 12))) or (_shot == "banner" and _banner_frame == -2):
 		var path: String = "/tmp/trg_shot_%s.png" % _shot
 		var image: Image = root.get_texture().get_image()
 		image.save_png(path)
@@ -175,6 +175,17 @@ func _setup_scene() -> void:
 			_board._refresh_all()
 			_board._act(&"proceed")
 			_board._act(&"roll")
+			_board._refresh_all()
+		"traps":
+			# 함정 칸 그림: 내 함정(지뢰·바나나)은 그림, 상대 함정은 물음표, 코너 함정은 공개, 옷장은 청록
+			_finish_draft()
+			_board._announcer.cancel()
+			_board.instant_roll_for_test = true
+			state.place_attachment(3, TrapMine.new(1))
+			state.place_attachment(5, TrapBanana.new(1))
+			state.place_attachment(8, TrapPit.new(2))
+			state.place_attachment(BoardSpec.bonus_corner_tiles[0], TrapToll.new(3))
+			state.place_attachment(15, TrapSpike.new(4))
 			_board._refresh_all()
 		"react":
 			_finish_draft()

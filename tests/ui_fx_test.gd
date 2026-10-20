@@ -842,10 +842,23 @@ func _test_avatar_seats() -> void:
 	_expect(not avatar.has_art(), "기본 캐릭터 에셋이 없으면 자리표시자로 돌아간다")
 	# 게임 이벤트가 아바타를 반응시킨다: 말이 잡히면 피해자는 분노, 잡은 쪽은 웃음
 	var victim: PlayerPawn = _board.state.get_pawn(21)
+	# 반응은 연출 큐에서 사출·골인 장면과 함께 나온다 (결과를 먼저 흘리지 않는다)
 	_board.state.pawn_sent_to_start.emit(victim.entity_id, 1)
-	_expect((_board._profiles[2]["avatar"] as AvatarSlot).emotion == AvatarSlot.Emotion.ANGRY and (_board._profiles[1]["avatar"] as AvatarSlot).emotion == AvatarSlot.Emotion.HAPPY, "말이 잡히면 피해자 분노 / 잡은 쪽 웃음")
+	var reacted: bool = false
+	for i: int in 240:
+		reacted = (_board._profiles[2]["avatar"] as AvatarSlot).emotion == AvatarSlot.Emotion.ANGRY and (_board._profiles[1]["avatar"] as AvatarSlot).emotion == AvatarSlot.Emotion.HAPPY
+		if reacted:
+			break
+		await process_frame
+	_expect(reacted, "말이 잡히면 피해자 분노 / 잡은 쪽 웃음")
 	_board.state.pawn_finished.emit(31)
-	_expect((_board._profiles[3]["avatar"] as AvatarSlot).emotion == AvatarSlot.Emotion.CHEER, "완주하면 환호")
+	reacted = false
+	for i: int in 240:
+		reacted = (_board._profiles[3]["avatar"] as AvatarSlot).emotion == AvatarSlot.Emotion.CHEER
+		if reacted:
+			break
+		await process_frame
+	_expect(reacted, "완주하면 환호")
 	for player_id: int in [1, 2, 3, 4]:
 		(_board._profiles[player_id]["avatar"] as AvatarSlot).react(AvatarSlot.Emotion.IDLE, 0.0)
 
@@ -1085,8 +1098,12 @@ func _test_roll_pad() -> void:
 	manager.event_received.connect(func(kind: StringName, data: Dictionary) -> void:
 		if kind == &"roll_resolved" and (data["result"] as Dictionary)["tool_id"] == &"REVOLVER":
 			shots.append(data["result"]))
+	if _board._center_banner != null:
+		_board._center_banner.hide()
 	pad.trigger_pulled.emit()
 	_expect(shots.size() == 1, "방아쇠를 당기면 엔진이 굴린다")
+	if shots.size() == 1 and bool((shots[0] as Dictionary).get("can_continue", false)):
+		_expect(_board._center_banner == null or not _board._center_banner.visible, "살아남은 방아쇠마다 칸수 배너를 띄우지 않는다 (최종 결과 뒤 한 번만)")
 	_board.instant_roll_for_test = false
 
 
@@ -1384,6 +1401,8 @@ func _test_duel_flow() -> void:
 		await create_timer(0.1).timeout
 		waited += 0.1
 	_expect(manager.duel_pending() and manager.pending_duel()["step"] == &"strike" or not manager.duel_pending(), "손을 모두 내면 승패가 나서 말 고르기로 넘어간다 (대기 %.1f초)" % waited)
+	if arena.animating or arena._queue_has(&"duel_revealed"):
+		_expect(arena.holds_board() and _board._fx_holding(), "가위바위보 공개가 끝나기 전에는 보드 연출(피격·사출)이 기다린다")
 	waited = 0.0
 	while manager.duel_pending() and manager.pending_duel()["step"] == &"pick" and waited < 20.0:
 		if arena._pick_seat != -1 and arena._step == &"pick":
@@ -1471,6 +1490,9 @@ func _test_trap_tile_marking() -> void:
 	await process_frame
 	await process_frame
 	_expect(tile.trap_on and _board._trap_tiles.has(14), "함정이 깔리면 발판이 보라색 함정 표시로 바뀐다")
+	var shown_icon: Texture2D = tile.trap_icon
+	var expected_icon: String = "TRP_02" if _board.ai_mode and _board.local_player_id == 2 else "HIDDEN"
+	_expect(shown_icon != null and shown_icon.resource_path.ends_with("%s.png" % expected_icon), "함정 칸에 함정 그림이 붙는다 (모르는 함정은 물음표: %s)" % (shown_icon.resource_path if shown_icon != null else "없음"))
 	var seen_low: bool = false
 	var seen_high: bool = false
 	for i: int in 40:
@@ -1813,6 +1835,7 @@ func _test_presentation_queue() -> void:
 		guard += 1
 		await process_frame
 	_expect(badge_texts.any(func(text: String) -> bool: return text.contains("카드 획득")), "빵집에 멈춰 카드를 받으면 [빵집! 카드 획득] 알림이 뜬다 (%s)" % str(badge_texts))
+	_expect(not badge_texts.any(func(text: String) -> bool: return text.contains(_board._card_name(&"TRP_03"))), "빵집 알림은 어떤 카드인지 알려 주지 않는다 (%s)" % str(badge_texts))
 	badge_texts.clear()
 	for i: int in GameEnums.MAX_HAND_SIZE:
 		state.hands[1].append(&"TRP_03")

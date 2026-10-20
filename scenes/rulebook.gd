@@ -579,7 +579,7 @@ func _ch_board() -> Dictionary:
 		"left": [
 			_note("보드는 [b]%d칸짜리 사각 한 바퀴[/b]예요. 우하단 0번에서 출발해 반시계로 돌고, 한 바퀴를 다 돌면 다시 0번이 결승선이에요." % BoardSpec.tile_count),
 			_heading("눈여겨볼 칸"),
-			_rich("[color=#2f8f4e][b]코너 %s[/b][/color]  코너 전용 함정만 설치할 수 있는 칸이에요.\n[color=#c98a14][b]%d번 반환점[/b][/color]  여기를 지나면 체스 폰이 퀸으로, 쇼기 말이 승급해요.\n[color=#d9822b][b]빵집 %s번[/b][/color]  멈추면 생떼 카드 한 장!\n[color=#8e4aa8][b]옷장 %s번[/b][/color]  딱 멈추면 순간이동!\n[color=#2fb59a][b]⚡ 부스터 발판 %s번[/b][/color]  딱 멈추면 +3칸 더 날아가요!" % [_join_tiles(BoardSpec.corner_tiles.slice(1)), BoardSpec.halfway_tile, _join_tiles(BoardSpec.bakery_tiles), _join_tiles(BoardSpec.portal_tiles), _join_tiles(BoardSpec.dash_tiles)]),
+			_rich("[color=#2f8f4e][b]코너 %s[/b][/color]  코너 전용 함정만 설치할 수 있는 칸이에요.\n[color=#c98a14][b]%d번 반환점[/b][/color]  여기를 지나면 체스 폰이 퀸으로, 쇼기 말이 승급해요.\n[color=#d9822b][b]빵집 %s번[/b][/color]  멈추면 생떼 카드 한 장!\n[color=#24838c][b]옷장 %s번[/b][/color]  딱 멈추면 순간이동!\n[color=#2fb59a][b]⚡ 부스터 발판 %s번[/b][/color]  딱 멈추면 +3칸 더 날아가요!\n[color=#7a5cd6][b]보라색 칸[/b][/color]  함정이 깔린 칸이에요. 그 함정 그림이 보이고, 상대가 숨긴 함정은 물음표로 보여요. 한 칸에 함정은 하나만!" % [_join_tiles(BoardSpec.corner_tiles.slice(1)), BoardSpec.halfway_tile, _join_tiles(BoardSpec.bakery_tiles), _join_tiles(BoardSpec.portal_tiles), _join_tiles(BoardSpec.dash_tiles)]),
 			_tip("옷장과 부스터는 [b]딱 멈출 때만[/b] 작동해요. 그냥 지나가면 아무 일도 없어요. 눈금을 잘 맞춰 보세요."),
 		],
 		"right": [
@@ -778,7 +778,7 @@ class MiniBoard extends Control:
 		for from_tile: int in BoardSpec.jump_corner_targets.keys():
 			_arc(from_tile, int(BoardSpec.jump_corner_targets[from_tile]), Color("2f8f4e"))
 		for from_tile: int in BoardSpec.portal_warp_targets.keys():
-			_dashed(from_tile, int(BoardSpec.portal_warp_targets[from_tile]), Color("8e4aa8"))
+			_dashed(from_tile, int(BoardSpec.portal_warp_targets[from_tile]), Color("2f9aa3"))
 		for index: int in BoardSpec.tile_count:
 			var center: Vector2 = _tile_pos(index)
 			var corner: bool = BoardSpec.corner_tiles.has(index)
@@ -789,8 +789,8 @@ class MiniBoard extends Control:
 				fill = Color("ffd98a")
 				edge = Color("d9822b")
 			elif BoardSpec.portal_tiles.has(index):
-				fill = Color("e6d2f0")
-				edge = Color("8e4aa8")
+				fill = Color("c8eef0")
+				edge = Color("2f9aa3")
 			elif index == 0:
 				fill = Color("86d94f")
 				edge = Color("2f8f4e")
@@ -813,7 +813,7 @@ class MiniBoard extends Control:
 			var width: float = font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, label_size).x
 			draw_string(font, center + Vector2(-width / 2.0, label_size * 0.36), label, HORIZONTAL_ALIGNMENT_LEFT, -1, label_size, Color("3a2f1f"))
 		# 안쪽 범례
-		var legend: Array = [[Color("86d94f"), "출발 · 결승"], [Color("b6ea8c"), "코너 (코너 전용 함정)"], [Color("ffe48a"), "반환점 (승급 기준)"], [Color("ffd98a"), "빵집 (카드 1장)"], [Color("e6d2f0"), "옷장 (%s)" % _warp_text(BoardSpec.portal_warp_targets)]]
+		var legend: Array = [[Color("86d94f"), "출발 · 결승"], [Color("b6ea8c"), "코너 (코너 전용 함정)"], [Color("ffe48a"), "반환점 (승급 기준)"], [Color("ffd98a"), "빵집 (카드 1장)"], [Color("c8eef0"), "옷장 (%s)" % _warp_text(BoardSpec.portal_warp_targets)]]
 		var origin := Vector2(92, 118)
 		for index: int in legend.size():
 			var spot: Vector2 = origin + Vector2(0, index * 30.0)

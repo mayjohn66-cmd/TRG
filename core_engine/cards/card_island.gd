@@ -19,6 +19,8 @@ func needs_tile() -> bool:
 func can_play(state: GameState, _player_id: int, params: Dictionary) -> bool:
 	if not BoardSpec.bonus_corner_tiles.has(int(params.get("tile", -1))):
 		return false
+	if state.board.get_tile(int(params["tile"])).has_trap():
+		return false  # 한 칸에 함정은 하나만
 	for tile: TileNode in state.board.tiles:
 		if tile.has_attachment("TRP_C01"):
 			return false

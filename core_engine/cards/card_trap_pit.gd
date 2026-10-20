@@ -20,7 +20,7 @@ func can_play(state: GameState, _player_id: int, params: Dictionary) -> bool:
 	var tile: int = int(params.get("tile", -1))
 	if not state.board.is_valid_tile(tile) or tile == GameEnums.GOAL_TILE:
 		return false
-	return not state.board.get_tile(tile).has_attachment("TRP_02")
+	return not state.board.get_tile(tile).has_trap()  # 한 칸에 함정은 하나만
 
 
 func create_command(_state: GameState, player_id: int, params: Dictionary) -> GameCommand:

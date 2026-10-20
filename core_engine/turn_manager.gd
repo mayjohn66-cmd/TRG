@@ -450,7 +450,11 @@ func can_use_skill(player_id: int, pawn_id: int) -> bool:
 	if state.is_banned(player_id):
 		return false  # 알고리즘 밴
 	var pawn: PlayerPawn = state.get_pawn(pawn_id)
-	return pawn != null and pawn.owner_id == player_id and PawnSkills.is_ready(pawn)
+	if pawn == null or pawn.owner_id != player_id or not PawnSkills.is_ready(pawn):
+		return false
+	if PawnCatalog.skill_of(pawn.sub_type()) == &"plant_mine" and state.board.get_tile(pawn.current_tile_idx).has_trap():
+		return false  # 한 칸에 함정은 하나만
+	return true
 
 
 ## 필살기 사용. params: {"pawn_id": int} + 기물별 인자 - 룩 {"partner": 맞바꿀 아군 ID} / 비행기 {"tile": 목적지} / 흑돌 {"angle": 라디안, "power": 0~1} / 차 (없음) / 쇼기 보병 {"partner": 낙하시킬 대기 말 ID}.
@@ -504,7 +508,12 @@ func _handle_use_skill(actor: int, params: Dictionary) -> void:
 				return
 			_emit_skill_event(actor, pawn, skill, {"path": shot_path})
 			_execute_move(pawn, shot_path)
-		&"quake", &"slash", &"horse", &"plant_mine":
+		&"plant_mine":
+			if state.board.get_tile(pawn.current_tile_idx).has_trap():
+				action_rejected.emit(actor, &"use_skill", &"invalid_skill")  # 한 칸에 함정은 하나만
+				return
+			_skill_effect(actor, pawn, skill)
+		&"quake", &"slash", &"horse":
 			_skill_effect(actor, pawn, skill)
 		_:
 			action_rejected.emit(actor, &"use_skill", &"invalid_skill")

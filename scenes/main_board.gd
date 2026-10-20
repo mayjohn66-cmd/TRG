@@ -479,6 +479,8 @@ var _tile_pick_active: bool = false
 var _snipe_pick: bool = false
 ## ACT_09 결투: 중앙 스테이지 결투장, 승자가 고를 수 있는 말(보드 위 붉은 표식), 카드를 놓은 대상 플레이어.
 var _duel_arena: DuelArena = null
+## 함정 타일 그림 캐시 (설치물 ID 또는 "HIDDEN" -> 텍스처).
+var _trap_icons: Dictionary = {}
 var _duel_strike_marks: Dictionary = {}
 var _duel_strike_winner: int = -1
 var _duel_drop_target: int = -1
@@ -770,15 +772,22 @@ func _bind_state() -> void:
 	state.pawn_sent_to_start.connect(func(pawn_id: int, by_player: int) -> void:
 		var victim: PlayerPawn = state.get_pawn(pawn_id)
 		_log_line("%s 출발선으로 복귀%s" % [_pawn_name(pawn_id), "  [🔥 복수 부스터 획득: 다음 출발 +%d칸]" % GameData.revenge_bonus() if victim != null and victim.revenge_boost else ""], Color("ff8787"))
-		if victim != null:
-			_avatar_react(victim.owner_id, AvatarSlot.Emotion.ANGRY)
-			if by_player != victim.owner_id and _player_ids.has(by_player):
+		if victim == null:
+			return
+		var victim_owner: int = victim.owner_id
+		var react: Callable = func() -> void:
+			_avatar_react(victim_owner, AvatarSlot.Emotion.ANGRY)
+			if by_player != victim_owner and _player_ids.has(by_player):
 				_avatar_react(by_player, AvatarSlot.Emotion.HAPPY)
-		# 실제 잡기: [컷신 -> 장외 홈런 -> 0번 복귀]를 이동·발판 연출이 모두 끝난 뒤(큐 맨 뒤)에 재생한다.
+		# 실제 잡기: [컷신 -> 장외 홈런 -> 0번 복귀]를 이동·발판 연출이 모두 끝난 뒤(큐 맨 뒤)에 재생한다. 아바타도 그때 반응한다 (결과를 먼저 흘리지 않게).
 		var cutin_capture: bool = _capture_marks.has(pawn_id)
 		_capture_marks.erase(pawn_id)
-		if victim != null and _fx_on():
-			_enqueue_late(_play_capture_eject.bind(pawn_id, by_player, victim.owner_id, cutin_capture), pawn_id))
+		if _fx_on():
+			_enqueue_late(func() -> void:
+				react.call()
+				await _play_capture_eject(pawn_id, by_player, victim_owner, cutin_capture), pawn_id)
+		else:
+			react.call())
 	state.revenge_boost_fired.connect(_on_revenge_boost_fired)
 	state.dash_pad_triggered.connect(func(pawn_id: int, tile: int) -> void:
 		_log_line("[부스터 발판] %s %d번 발판! +%d칸 추가 전진" % [_pawn_name(pawn_id), tile, GameData.dash_steps()], Color("63e6be"))
@@ -792,9 +801,12 @@ func _bind_state() -> void:
 		_log_line("[완주] %s 완주!" % _pawn_name(pawn_id), Color("69db7c"))
 		var finisher: PlayerPawn = state.get_pawn(pawn_id)
 		if finisher != null:
-			_avatar_react(finisher.owner_id, AvatarSlot.Emotion.CHEER, 1.8)
 			var finisher_owner: int = finisher.owner_id
-			_fx_when_announced(func() -> void: _profile_react(finisher_owner, true, "[골인!]")))
+			if not _fx_on():
+				_avatar_react(finisher_owner, AvatarSlot.Emotion.CHEER, 1.8)
+			_fx_when_announced(func() -> void:
+				_avatar_react(finisher_owner, AvatarSlot.Emotion.CHEER, 1.8)  # 말이 결승선에 닿은 뒤 환호
+				_profile_react(finisher_owner, true, "[골인!]")))
 	state.pawn_promoted.connect(func(pawn_id: int) -> void:
 		var promoted_pawn: PlayerPawn = state.get_pawn(pawn_id)
 		if promoted_pawn != null and promoted_pawn.kind == GameEnums.PawnKind.SHOGI:
@@ -867,12 +879,14 @@ func _bind_state() -> void:
 	state.attachment_triggered.connect(func(tile: int, id: String, pawn_id: int, _cutscene: StringName) -> void:
 		var trapped: PlayerPawn = state.get_pawn(pawn_id)
 		if trapped != null:
-			_avatar_react(trapped.owner_id, AvatarSlot.Emotion.SURPRISED)
 			var trapped_owner: int = trapped.owner_id
+			if not _fx_on():
+				_avatar_react(trapped_owner, AvatarSlot.Emotion.SURPRISED)
 			var trap_pos: Vector2 = _tile_center(tile)
 			# 순서: 함정이 터진다(충격) -> 잠깐 뒤 프로필 반응 -> 그 뒤 말이 날아간다 (_fx_hint_bonus)
 			_fx_hint_bonus = maxf(_fx_hint_bonus, 0.4)
 			_fx_when_announced(func() -> void:
+				_avatar_react(trapped_owner, AvatarSlot.Emotion.SURPRISED)
 				Sfx.play(&"trap")
 				screen_shake(8.0, 0.25)
 				_impact_ring(trap_pos, Color("ff6b6b"), 56.0)
@@ -898,7 +912,7 @@ func _bind_state() -> void:
 	state.card_drawn.connect(func(_player_id: int, _card_id: StringName) -> void:
 		if _fx_on():
 			Sfx.play(&"card_get"))
-	state.card_drawn.connect(func(player_id: int, card_id: StringName) -> void: _log_line("[카드] P%d 생떼 카드 획득: %s" % [player_id, _card_name(card_id)], Color("ffa94d")))
+	state.card_drawn.connect(func(player_id: int, _card_id: StringName) -> void: _log_line("[카드] P%d 생떼 카드 1장 획득" % player_id, Color("ffa94d")))  # 뽑은 카드는 비공개
 	state.card_stolen.connect(func(player_id: int, card_id: StringName) -> void: _log_line("P%d의 카드 [%s]를 도적이 빼앗았습니다" % [player_id, _card_name(card_id)], Color("ff6b6b")))
 	state.npc_spawned.connect(func(_npc_id: int, tile: int) -> void:
 		_log_line("중립 NPC가 %d번 타일에 소환되었습니다. 라운드가 끝날 때 움직입니다." % tile, Color("fa5252"))
@@ -1990,19 +2004,17 @@ func _refresh_tiles() -> void:
 			tips.append(kind_label)
 		var color: Color = Color("ff6b6b")
 		var has_trap: bool = false
+		var trap_icon: Texture2D = null
 		for attachment: TileAttachment in state.board.get_tile(index).attachments:
-			match attachment.attachment_id:
-				"TRP_01", "TRP_02", "TRP_03", "TRP_05":
-					has_trap = true
-					tips.append(_trap_tooltip(attachment))
-				"TRP_04":
-					has_trap = true
-					tips.append("[무인도] 코너 감옥화 (짝수 눈금에 탈출)")
-				"HOTEL":
-					parts.append("호텔")
-					color = PLAYER_COLORS.get(attachment.owner_id, Color("ffd43b"))
+			if attachment.attachment_id.begins_with("TRP"):
+				has_trap = true
+				trap_icon = _trap_icon(attachment)
+				tips.append(_trap_tooltip(attachment))
+			elif attachment.attachment_id == "HOTEL":
+				parts.append("호텔")
+				color = PLAYER_COLORS.get(attachment.owner_id, Color("ffd43b"))
 		var shown_trap: bool = has_trap and not _trap_pending.has(index)
-		(_tile_views[index] as BoardSkin.Tile).set_trap(shown_trap)
+		(_tile_views[index] as BoardSkin.Tile).set_trap(shown_trap, trap_icon)
 		if shown_trap and not _trap_tiles.has(index):
 			_trap_tiles.append(index)
 		elif not shown_trap:
@@ -2098,9 +2110,25 @@ func _update_trap_pulse(delta: float) -> void:
 
 ## 함정 툴팁. AI 모드(타일 은신): P1이 설치한 함정만 이름이 보이고 봇이 설치한 함정은 뒷면 [? 함정]으로만 보인다.
 func _trap_tooltip(attachment: TileAttachment) -> String:
-	if ai_mode and attachment.owner_id == local_player_id:
+	if not attachment.is_hidden_trap:
+		return "[함정] %s (P%d)" % [_attachment_name(attachment.attachment_id), attachment.owner_id]  # 코너 함정은 공개
+	if _trap_known(attachment):
 		return "[내 함정] %s" % _attachment_name(attachment.attachment_id)
-	return "[? 함정] P%d가 설치한 뒷면 함정" % attachment.owner_id if ai_mode else "[? 함정]"
+	return "[? 함정] P%d가 설치한 뒷면 함정" % attachment.owner_id if ai_mode or net != null else "[? 함정]"
+
+
+## 이 화면이 함정의 정체를 알아도 되는가: 공개 함정이거나, 혼자 보는 화면(AI 대전·온라인)에서 내가 깐 함정.
+func _trap_known(attachment: TileAttachment) -> bool:
+	return not attachment.is_hidden_trap or ((ai_mode or net != null) and attachment.owner_id == local_player_id)
+
+
+## 함정 타일에 붙일 그림: 정체를 모르는 함정은 물음표.
+func _trap_icon(attachment: TileAttachment) -> Texture2D:
+	var key: String = attachment.attachment_id if _trap_known(attachment) else "HIDDEN"
+	if not _trap_icons.has(key):
+		var path: String = "res://assets/board/traps/%s.png" % key
+		_trap_icons[key] = load(path) if ResourceLoader.exists(path) else load("res://assets/board/traps/HIDDEN.png")
+	return _trap_icons[key]
 
 
 func _on_pawn_stepped(pawn_id: int, _from_tile: int, _to_tile: int) -> void:
@@ -2175,7 +2203,7 @@ func _stage_warp(pawn_id: int, from_tile: int, to_tile: int) -> void:
 	# B) 발판 발동 연출
 	_fx_until_msec = maxi(_fx_until_msec, Time.get_ticks_msec() + int((0.45 + 0.9) * pace * 1000.0) + 150)
 	_tile_glow(from_tile)
-	_show_tile_banner(from_tile, "점프 코너 발동!" if corner else "옷장 포탈 워프!", Color("ffe066") if corner else Color("d0bfff"), 0.45 * pace)
+	_show_tile_banner(from_tile, "점프 코너 발동!" if corner else "옷장 포탈 워프!", Color("ffe066") if corner else Color("99e9f2"), 0.45 * pace)
 	Sfx.play(&"launch" if corner else &"warp")
 	await get_tree().create_timer(0.45 * pace).timeout
 	if generation != _fx_generation or not is_instance_valid(view):
@@ -2381,7 +2409,7 @@ func _bakery_feedback(data: Dictionary) -> void:
 	_fx_when_announced(func() -> void:
 		if drawn != &"":
 			Sfx.play(&"good")
-			_floating_badge(at, "🍞 빵집! 카드 획득 +1  [%s]" % _card_name(drawn), Color("ffd43b"))
+			_floating_badge(at, "🍞 빵집! 카드 획득 +1", Color("ffd43b"))  # 어떤 카드인지는 알려 주지 않는다
 			_avatar_react(owner_id, AvatarSlot.Emotion.HAPPY, 1.2)
 		else:
 			_floating_badge(at, "🍞 빵집: 손패가 가득 차서 카드를 받지 못했어요", Color("adb5bd"))
@@ -5029,6 +5057,8 @@ func _fx_when_announced(action: Callable) -> void:
 
 ## 알림 카드가 가리고 있어서 말을 움직이면 안 되는 때인가.
 func _fx_holding() -> bool:
+	if _duel_arena != null and is_instance_valid(_duel_arena) and _duel_arena.holds_board():
+		return true  # 가위바위보 승패가 공개되기 전에 누가 날아가는지 보여 주지 않는다
 	return _stage_warps > 0 or (_announcer != null and _announcer.active and not _fx_gate_open)
 
 
@@ -5624,7 +5654,9 @@ func _on_duel_event(kind: StringName, data: Dictionary) -> void:
 				_open_duel_arena(int(data["challenger"]), int(data["defender"]))
 		&"duel_revealed":
 			var picks: Dictionary = data["picks"]
-			_log_line("[결투] %s %s : %s %s → %s" % [_player_name(int(data["challenger"])), DuelRules.HAND_NAMES[int(picks[int(data["challenger"])])], DuelRules.HAND_NAMES[int(picks[int(data["defender"])])], _player_name(int(data["defender"])), "무승부" if int(data["winner"]) == -1 else "%s 승" % _player_name(int(data["winner"]))], Color("ffd43b"))
+			var duel_text: String = "[결투] %s %s : %s %s → %s" % [_player_name(int(data["challenger"])), DuelRules.HAND_NAMES[int(picks[int(data["challenger"])])], DuelRules.HAND_NAMES[int(picks[int(data["defender"])])], _player_name(int(data["defender"])), "무승부" if int(data["winner"]) == -1 else "%s 승" % _player_name(int(data["winner"]))]
+			# 로그도 결투장이 "가위바위보!"를 다 보여 준 뒤에 남긴다 (연출 큐가 공개를 기다린다)
+			enqueue_step(func() -> void: _log_line(duel_text, Color("ffd43b")))
 		&"duel_resolved":
 			_on_duel_resolved(data)
 	if _duel_arena != null and is_instance_valid(_duel_arena):
@@ -5743,22 +5775,27 @@ func _on_duel_resolved(data: Dictionary) -> void:
 		return
 	var winner: int = int(data["winner"])
 	var loser: int = int(data["loser"])
-	_log_line("[결투] %s이(가) %s의 %s(%d번)을(를) 출발선으로 사출시켰습니다!%s" % [_player_name(winner), _player_name(loser), _pawn_name(pawn_id), int(data["from"]), "  승자의 %s +%d칸 전진 (%d번 → %d번)" % [_pawn_name(int(data["boost_pawn_id"])), DuelRules.winner_advance(), int(data["boost_from"]), int(data["boost_to"])] if int(data["boost_pawn_id"]) != -1 else ""], Color("ff6b6b"))
+	var resolved_text: String = "[결투] %s이(가) %s의 %s(%d번)을(를) 출발선으로 사출시켰습니다!%s" % [_player_name(winner), _player_name(loser), _pawn_name(pawn_id), int(data["from"]), "  승자의 %s +%d칸 전진 (%d번 → %d번)" % [_pawn_name(int(data["boost_pawn_id"])), DuelRules.winner_advance(), int(data["boost_from"]), int(data["boost_to"])] if int(data["boost_pawn_id"]) != -1 else ""]
 	if not _fx_on():
+		_log_line(resolved_text, Color("ff6b6b"))
 		return
-	Sfx.play(&"shot")
-	var view: Node2D = _pawn_views.get(pawn_id)
-	if view != null:
+	enqueue_step(func() -> void: _log_line(resolved_text, Color("ff6b6b")))
+	# 피격 연출은 연출 큐로 보낸다: 결투장이 승패를 다 보여 준 뒤에 재생된다 (_fx_holding이 결투장 공개를 기다린다).
+	enqueue_step(func() -> void:
+		Sfx.play(&"shot")
+		var view: Node2D = _pawn_views.get(pawn_id)
+		if view == null or not is_instance_valid(view):
+			return
 		var hit_pos: Vector2 = view.position
 		_fx_until_msec = maxi(_fx_until_msec, Time.get_ticks_msec() + int(1100.0 * _motion_pace()))
-		get_tree().create_timer(0.3 * _motion_pace()).timeout.connect(func() -> void:
-			screen_shake(9.0, 0.25)
-			_impact_ring(hit_pos, Color("ff6b6b"), 54.0)
-			_impact_ring(hit_pos, Color.WHITE, 30.0)
-			_burst_shards(hit_pos, Color("ff8787"), 12)
-			_floating_badge(hit_pos + Vector2(0, -26), "장외 사출!", Color("ff8787"))
-			_profile_react(loser, false, "[억까!]")
-			_profile_react(winner, true, "[승리!]"))
+		await get_tree().create_timer(0.3 * _motion_pace()).timeout
+		screen_shake(9.0, 0.25)
+		_impact_ring(hit_pos, Color("ff6b6b"), 54.0)
+		_impact_ring(hit_pos, Color.WHITE, 30.0)
+		_burst_shards(hit_pos, Color("ff8787"), 12)
+		_floating_badge(hit_pos + Vector2(0, -26), "장외 사출!", Color("ff8787"))
+		_profile_react(loser, false, "[억까!]")
+		_profile_react(winner, true, "[승리!]"), pawn_id)
 
 
 ## 즉시 모드(테스트·ui_smoke): 결투장 없이 내 자리의 손과 밀어낼 말을 바로 고른다.
@@ -6927,9 +6964,12 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_log_move(data)
 			_start_beat(BEAT_AFTER_MOVE)
 			if int(data.get("leapfrog_bonus", 0)) > 0 and _pawn_views.has(int(data["pawn_id"])):
-				var leap_pos: Vector2 = (_pawn_views[int(data["pawn_id"])] as Node2D).position + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO)
+				var leap_view: Node2D = _pawn_views[int(data["pawn_id"])]
 				var leap_bonus: int = int(data["leapfrog_bonus"])
-				_fx_when_announced(func() -> void: _floating_badge(leap_pos + Vector2(0, -40), "점프 부스트! (+%d칸)" % leap_bonus, Color("ffd43b")))
+				# 위치는 말 걸음이 끝난 뒤(이 단계가 재생될 때) 읽는다
+				_fx_when_announced(func() -> void:
+					if is_instance_valid(leap_view):
+						_floating_badge(leap_view.position + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + Vector2(0, -40), "점프 부스트! (+%d칸)" % leap_bonus, Color("ffd43b")))
 			_bakery_feedback(data)
 			if bool(data.get("jailed", false)) and (data.get("path", []) as Array).is_empty():
 				_announce_move_failed("무인도 탈출 실패!", manager.current_player_id(), "짝수 눈금이 나와야 탈출할 수 있습니다")
@@ -7412,6 +7452,8 @@ func _reveal_roll(data: Dictionary) -> void:
 			return
 		_show_center_banner("P%d  %s" % [data["player_id"], roll_text.strip_edges()], Color("ffd43b") if bool((data["result"] as Dictionary).get("reroll", false)) else Color("fff3bf"))
 		return
+	if bool((data["result"] as Dictionary).get("can_continue", false)):
+		return  # 이어지는 굴림(러시안 룰렛 생존 등)은 패드가 누적을 보여 준다: 이동 칸수는 최종 결과가 나온 뒤 한 번만 띄운다
 	if bool(details.get("oops", false)):
 		_show_center_banner("[친치로 삐끗!] 주사위가 접시 밖으로 나갔습니다! (이번 이동 0칸)", Color("ff6b6b"))
 		_announce("지하노역장 친치로", "[친치로 삐끗!]", "주사위가 접시 밖으로 나갔습니다! (이번 이동 0칸)", Color("ff6b6b"), null, 1.3)

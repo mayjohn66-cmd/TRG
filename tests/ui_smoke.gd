@@ -386,14 +386,15 @@ func _check_fog_of_war() -> void:
 		return
 	for index: int in BoardSpec.tile_count:
 		for attachment: TileAttachment in _board.state.board.get_tile(index).attachments:
-			if not ["TRP_01", "TRP_02", "TRP_03", "TRP_05"].has(attachment.attachment_id):
+			if not attachment.attachment_id.begins_with("TRP") or not attachment.is_hidden_trap:
 				continue
 			_fog_checks += 1
 			var mark_text: String = _board._trap_tooltip(attachment)  # 타일 위 글자 배지는 없애고 툴팁으로만 알린다
 			if attachment.owner_id == MainBoard.HUMAN_ID:
 				_assert(not mark_text.contains("?함정"), "내 함정은 이름이 보여야 한다 (%s)" % mark_text)
 			else:
-				_assert(mark_text.contains("? 함정") and not (mark_text.contains("나락") or mark_text.contains("거울") or mark_text.contains("지뢰") or mark_text.contains("도미노")), "봇의 함정은 [? 함정]으로만 보여야 한다 (%s)" % mark_text)
+				_assert(mark_text.contains("? 함정") and not mark_text.contains(_board._attachment_name(attachment.attachment_id)), "봇의 함정은 [? 함정]으로만 보여야 한다 (%s)" % mark_text)
+				_assert(_board._trap_icon(attachment).resource_path.ends_with("HIDDEN.png"), "봇의 함정 칸에는 물음표 그림만 보여야 한다")
 
 
 func _check_bounds() -> void:

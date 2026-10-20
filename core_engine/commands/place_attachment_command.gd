@@ -17,7 +17,9 @@ func _init(acting_player: int = -1, target_tile: int = -1, id: String = "") -> v
 
 
 func can_execute(_ctx: RuleContext) -> bool:
-	return state != null and state.board.is_valid_tile(tile) and AttachmentRegistry.create(attachment_id) != null
+	if state == null or not state.board.is_valid_tile(tile) or AttachmentRegistry.create(attachment_id) == null:
+		return false
+	return not (attachment_id.begins_with("TRP") and state.board.get_tile(tile).has_trap())  # 한 칸에 함정은 하나만
 
 
 func _run() -> void:
