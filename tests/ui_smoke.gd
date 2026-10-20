@@ -547,6 +547,12 @@ func _finish() -> bool:
 		for node: Node in _board._result_overlay.find_children("*", "Label", true, false):
 			labels += (node as Label).text + "\n"
 		_assert(labels.contains("플레이한 라운드") and labels.contains("승리 요인"), "결과창에 라운드 수와 승리 요인이 보여야 한다")
+		var ranking: Node = _board._result_overlay.find_child("RankingList", true, false)
+		_assert(ranking != null and ranking.get_child_count() == _board._player_ids.size(), "결과창에 참가자 수만큼 순위 줄이 있다")
+		if ranking != null and ranking.get_child_count() > 0:
+			_assert(int(ranking.get_child(0).get_meta("rank")) == 1 and int(ranking.get_child(0).get_meta("player")) == _board.state.winner, "1등 줄은 승자")
+			for index: int in ranking.get_child_count():
+				_assert(int(ranking.get_child(index).get_meta("rank")) == index + 1, "순위는 1등부터 차례대로")
 	for round_number: int in _draft_rounds:
 		_assert(GameEnums.is_draft_round(round_number), "드래프트는 1라운드부터 3라운드마다만 열려야 한다 (%d)" % round_number)
 	if _failures.is_empty():

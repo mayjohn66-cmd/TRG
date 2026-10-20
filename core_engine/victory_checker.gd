@@ -36,6 +36,38 @@ static func _all_home(state: GameState, player_id: int) -> bool:
 	return true
 
 
+## 게임이 끝났을 때의 1~N등. 1등은 승자(말 4개 완주), 나머지는 완주한 말 수가 많은 순 → 결승까지 남은 거리 합이 작은 순 →
+## 그래도 같으면 승자 다음 차례부터의 턴 순서. [{player, rank, finished, remaining, progress(0~100)}] (모든 참가자가 같은 결과를 계산한다)
+static func standings(state: GameState, player_order: Array[int], winner: int) -> Array[Dictionary]:
+	var entries: Array[Dictionary] = []
+	var full: int = maxi(BoardSpec.tile_count * GameEnums.PAWNS_PER_PLAYER, 1)
+	var start: int = maxi(player_order.find(winner), 0)
+	for index: int in player_order.size():
+		var player_id: int = player_order[index]
+		var finished: int = 0
+		var remaining: int = 0
+		for pawn: PlayerPawn in state.pawns_of(player_id):
+			if pawn.is_finished:
+				finished += 1
+			else:
+				remaining += state.pawn_progress_distance(pawn)
+		entries.append({"player": player_id, "finished": finished, "remaining": remaining,
+			"progress": clampi(roundi(100.0 * (1.0 - float(remaining) / float(full))), 0, 100),
+			"turn_rank": (index - start + player_order.size()) % player_order.size()})
+	entries.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		if (int(a["player"]) == winner) != (int(b["player"]) == winner):
+			return int(a["player"]) == winner
+		if int(a["finished"]) != int(b["finished"]):
+			return int(a["finished"]) > int(b["finished"])
+		if int(a["remaining"]) != int(b["remaining"]):
+			return int(a["remaining"]) < int(b["remaining"])
+		return int(a["turn_rank"]) < int(b["turn_rank"]))
+	for index: int in entries.size():
+		entries[index]["rank"] = index + 1
+		entries[index].erase("turn_rank")
+	return entries
+
+
 ## 결승까지 남은 거리의 합이 가장 작은(= 가장 앞선) 상대 플레이어. 완주한 말은 0으로 센다.
 static func leader_player(state: GameState, player_order: Array[int], excluding: int) -> int:
 	var best: int = -1

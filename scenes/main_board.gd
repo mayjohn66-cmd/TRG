@@ -6323,10 +6323,20 @@ func _show_result_overlay() -> void:
 	var title: Label = _make_label("게임 종료!", 34, Color("ffd43b"))
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(title)
-	var summary: Label = _make_label("승리자: %s (P%d)" % [_player_name(winner_id), winner_id], 22, PLAYER_COLORS.get(winner_id, Color.WHITE))
-	summary.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	box.add_child(summary)
+	var announcer: Label = _make_label("📣 최종 순위를 발표합니다!", 20, Color("f1f3f5"))
+	announcer.name = "RankingAnnouncer"
+	announcer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(announcer)
+	var ranking := VBoxContainer.new()
+	ranking.name = "RankingList"
+	ranking.add_theme_constant_override("separation", 8)
+	box.add_child(ranking)
+	var standings: Array[Dictionary] = VictoryChecker.standings(state, manager.player_order, winner_id)
+	var rows: Array[Control] = []
+	for entry: Dictionary in standings:
+		var row: Control = _make_rank_row(entry)
+		ranking.add_child(row)
+		rows.append(row)
 	var facts := VBoxContainer.new()
 	facts.add_theme_constant_override("separation", 4)
 	box.add_child(facts)
@@ -6337,16 +6347,6 @@ func _show_result_overlay() -> void:
 	reason.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	reason.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	facts.add_child(reason)
-	var standings: PackedStringArray = []
-	for player_id: int in _player_ids:
-		var done: int = 0
-		for pawn: PlayerPawn in state.pawns_of(player_id):
-			if pawn.is_finished:
-				done += 1
-		standings.append("P%d %d/%d" % [player_id, done, GameEnums.PAWNS_PER_PLAYER])
-	var progress: Label = _make_label("완주한 말  " + "   ".join(standings), 15, Color("adb5bd"))
-	progress.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	facts.add_child(progress)
 	var buttons := HBoxContainer.new()
 	buttons.add_theme_constant_override("separation", 12)
 	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -6363,6 +6363,93 @@ func _show_result_overlay() -> void:
 	lobby.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	buttons.add_child(lobby)
 	add_child(_result_overlay)
+	_reveal_ranking(rows, announcer)
+
+
+const RANK_MEDALS: Array[String] = ["🥇", "🥈", "🥉", "4위"]
+const RANK_COLORS: Array[Color] = [Color("ffd43b"), Color("ced4da"), Color("e8a364"), Color("868e96")]
+
+
+## 순위표 한 줄: [메달] [아바타] 이름 / 완주 n/4 · 진행도 막대.
+func _make_rank_row(entry: Dictionary) -> Control:
+	var rank: int = int(entry["rank"])
+	var player_id: int = int(entry["player"])
+	var row := PanelContainer.new()
+	row.name = "Rank%d" % rank
+	row.set_meta("rank", rank)
+	row.set_meta("player", player_id)
+	row.add_theme_stylebox_override("panel", _style(Color("fff3bf") if rank == 1 else Color("ffffff"), RANK_COLORS[mini(rank, 4) - 1].darkened(0.1), 3 if rank == 1 else 2, 12, 12, 8))
+	var line := HBoxContainer.new()
+	line.add_theme_constant_override("separation", 12)
+	row.add_child(line)
+	var medal: Label = _make_label(RANK_MEDALS[mini(rank, 4) - 1], 30 if rank <= 3 else 20, RANK_COLORS[mini(rank, 4) - 1])
+	medal.custom_minimum_size = Vector2(54, 0)
+	medal.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	medal.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	line.add_child(medal)
+	var avatar := AvatarSlot.new()
+	avatar.icon_border = false
+	avatar.static_only = true
+	avatar.setup(player_id, PLAYER_COLORS.get(player_id, Color.WHITE), Vector2(56, 56))
+	avatar.set_character(_avatar_for(player_id))
+	avatar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	line.add_child(avatar)
+	var info := VBoxContainer.new()
+	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info.add_theme_constant_override("separation", 2)
+	line.add_child(info)
+	var name_label: Label = _make_label("%d등  %s" % [rank, _player_name(player_id)], 20 if rank == 1 else 18, PLAYER_COLORS.get(player_id, Color.WHITE).lightened(0.3))
+	info.add_child(name_label)
+	var detail: Label = _make_label("완주 %d/%d · 진행도 %d%%" % [int(entry["finished"]), GameEnums.PAWNS_PER_PLAYER, int(entry["progress"])], 14, Color("ced4da"))
+	info.add_child(detail)
+	var bar := ProgressBar.new()
+	bar.show_percentage = false
+	bar.custom_minimum_size = Vector2(0, 8)
+	bar.max_value = 100
+	bar.value = int(entry["progress"])
+	bar.add_theme_stylebox_override("fill", _style(PLAYER_COLORS.get(player_id, Color.WHITE), Color(0, 0, 0, 0), 0, 4, 0, 0))
+	bar.add_theme_stylebox_override("background", _style(Color("e9ecef"), Color(0, 0, 0, 0), 0, 4, 0, 0))
+	info.add_child(bar)
+	return row
+
+
+## 순위 발표: 꼴찌부터 한 줄씩 쾅 하고 나타나고, 1등은 잠깐 뜸을 들인 뒤 팡파르와 함께 공개한다 (연출을 끈 테스트에서는 바로 다 보인다).
+func _reveal_ranking(rows: Array[Control], announcer: Label) -> void:
+	if not _fx_on():
+		announcer.text = "🏆 최종 순위"
+		return
+	for row: Control in rows:
+		row.modulate.a = 0.0
+	var overlay: Control = _result_overlay
+	var frames: int = 0
+	while _presentation_active() and frames < 600:  # 마지막 이동·처치 연출이 끝난 뒤에 발표한다
+		frames += 1
+		await get_tree().process_frame
+	for index: int in range(rows.size() - 1, -1, -1):
+		if overlay != _result_overlay or not is_instance_valid(rows[index]):
+			return
+		var row: Control = rows[index]
+		var first: bool = int(row.get_meta("rank")) == 1
+		if first:
+			announcer.text = "🥁 그리고 대망의 1등은...!"
+			await get_tree().create_timer(1.0).timeout
+			if overlay != _result_overlay or not is_instance_valid(row):
+				return
+		else:
+			await get_tree().create_timer(0.55).timeout
+			if overlay != _result_overlay or not is_instance_valid(row):
+				return
+		row.pivot_offset = row.size / 2.0
+		row.scale = Vector2(1.25, 1.25) if first else Vector2(1.1, 1.1)
+		var tween: Tween = row.create_tween().set_parallel(true)
+		tween.tween_property(row, "modulate:a", 1.0, 0.18)
+		tween.tween_property(row, "scale", Vector2.ONE, 0.32).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		if first:
+			Sfx.play(&"win")
+			announcer.text = "🏆 %s 우승!" % _player_name(int(row.get_meta("player")))
+			screen_shake(6.0, 0.25)
+		else:
+			Sfx.play(&"card_impact")
 
 
 var _last_reason: StringName = &""

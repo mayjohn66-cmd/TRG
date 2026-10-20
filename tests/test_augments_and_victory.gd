@@ -533,3 +533,48 @@ func test_mini_car_gets_one_card_when_passing_the_start_line() -> void:
 	var plane := make_state(2, 1, {1: [0, Vector2i(Kind.MONOPOLY, 2), 0, 0]})
 	place(plane, 12, 22, [21])
 	check_eq(move(plane, 12, 2).salary_cards, 0, "다른 모노폴리 기물은 카드를 받지 않는다")
+
+
+# --- 최종 순위 ---------------------------------------------------------------------------
+
+func test_standings_rank_winner_then_finished_pawns_then_distance_then_turn_order() -> void:
+	var state := make_state(4, 3)
+	for pawn: PlayerPawn in state.pawns_of(3):
+		pawn.is_finished = true
+		pawn.has_left_start = true
+	# P1: 완주 2개, P2: 완주 2개지만 남은 말이 더 앞섬, P4: 완주 0개
+	for index: int in 2:
+		state.pawns_of(1)[index].is_finished = true
+		state.pawns_of(2)[index].is_finished = true
+	place(state, 13, 3, [2])
+	place(state, 23, 15, [14])
+	var ranking: Array[Dictionary] = VictoryChecker.standings(state, [1, 2, 3, 4] as Array[int], 3)
+	var order: Array[int] = []
+	for entry: Dictionary in ranking:
+		order.append(int(entry["player"]))
+	check_eq(order, [3, 2, 1, 4] as Array[int], "승자 → 완주 수 → 남은 거리 순")
+	check_eq(int(ranking[0]["rank"]), 1, "1등")
+	check_eq(int(ranking[3]["rank"]), 4, "4등")
+	check_eq(int(ranking[0]["finished"]), 4, "승자는 4개 완주")
+	check(int(ranking[1]["progress"]) > int(ranking[2]["progress"]), "진행도도 순위와 같은 방향")
+	# 완전히 같으면 승자 다음 차례부터
+	var tie := make_state(4, 4)
+	for pawn: PlayerPawn in tie.pawns_of(2):
+		pawn.is_finished = true
+	var tied: Array[Dictionary] = VictoryChecker.standings(tie, [1, 2, 3, 4] as Array[int], 2)
+	check_eq([int(tied[1]["player"]), int(tied[2]["player"]), int(tied[3]["player"])], [3, 4, 1], "동률은 승자 다음 차례 순")
+
+
+func test_hotels_stop_walkers_but_not_pawns_flying_on_a_dash_pad() -> void:
+	var state := make_state(2, 3)
+	state.boost_gimmicks = true
+	var pad: int = BoardSpec.dash_tiles[0]
+	state.place_attachment(pad + 1, Hotel.new(2))
+	var pawn: PlayerPawn = place(state, 11, pad - 2, [pad - 3])
+	var report: MoveReport = move(state, 11, 2)
+	check(not report.stopped_early, "발판 가속 중에는 지나치는 호텔에 걸리지 않는다")
+	check_eq(pawn.current_tile_idx, pad + GameData.dash_steps(), "발판 +칸까지 날아간다")
+	check(state.board.get_tile(pad + 1).has_attachment("HOTEL"), "호텔은 그대로")
+	var walker: PlayerPawn = place(state, 12, pad - 1, [pad - 2])
+	var walked: MoveReport = move(state, 12, 3)
+	check(walked.stopped_early and walker.current_tile_idx == pad + 1, "걸어서 지나가면 여전히 호텔에서 멈춘다")

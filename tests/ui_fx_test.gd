@@ -1856,6 +1856,30 @@ func _test_presentation_queue() -> void:
 		await process_frame
 	_expect(not saw_drop, "홈런 뒤 낙하·착지 연출이 없다")
 	_expect(victim_view.position.distance_to(_board._pawn_position(victim)) < 4.0, "홈런이 끝나면 말은 출발선 자리에 있다")
+	# 9) 최종 순위 발표: 줄이 처음엔 숨어 있다가 꼴찌부터 차례로 나타나고, 1등이 마지막이다
+	for pawn_done: PlayerPawn in state.pawns_of(2):
+		pawn_done.is_finished = true
+	state.winner = 2
+	_board._show_result_overlay()
+	var ranking: Node = _board._result_overlay.find_child("RankingList", true, false)
+	_expect(ranking != null and ranking.get_child_count() == _board._player_ids.size(), "순위 줄이 참가자 수만큼 있다")
+	var reveal_order: Array[int] = []
+	guard = 0
+	while reveal_order.size() < ranking.get_child_count() and guard < 900:
+		guard += 1
+		for row: Node in ranking.get_children():
+			var rank_no: int = int(row.get_meta("rank"))
+			if (row as Control).modulate.a > 0.5 and not reveal_order.has(rank_no):
+				reveal_order.append(rank_no)
+		await process_frame
+	var expected_order: Array[int] = []
+	for rank_no: int in range(ranking.get_child_count(), 0, -1):
+		expected_order.append(rank_no)
+	_expect(reveal_order == expected_order, "꼴찌부터 1등까지 차례로 공개된다 (%s)" % str(reveal_order))
+	_board._close_result_overlay()
+	for pawn_done: PlayerPawn in state.pawns_of(2):
+		pawn_done.is_finished = false
+	state.winner = -1
 	_board._announcer.cancel()
 	_board._fx_until_msec = 0
 	_board.instant_roll_for_test = true
