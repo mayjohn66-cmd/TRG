@@ -1622,7 +1622,7 @@ func _build_debug_panel() -> VBoxContainer:
 	return box
 
 
-func _make_label(text: String, font_size: int, color: Color) -> Label:
+static func _make_label(text: String, font_size: int, color: Color) -> Label:
 	var label := Label.new()
 	label.text = text
 	label.add_theme_font_size_override("font_size", font_size)
@@ -1652,7 +1652,7 @@ func _apply_button_style(button: Button, base_color: Color, _radius: int) -> voi
 
 
 ## 둥근 모서리·테두리·그림자가 있는 패널 스타일.
-func _style(bg: Color, border: Color = Color(0, 0, 0, 0), border_width: int = 0, radius: int = 10, shadow: int = 0, margin: int = 8) -> StyleBoxFlat:
+static func _style(bg: Color, border: Color = Color(0, 0, 0, 0), border_width: int = 0, radius: int = 10, shadow: int = 0, margin: int = 8) -> StyleBoxFlat:
 	var box := StyleBoxFlat.new()
 	box.bg_color = bg
 	box.border_color = border
@@ -6170,6 +6170,11 @@ func _draft_signature(player_id: int) -> String:
 
 ## 증강 카드 하나의 표시 정보: 엠블럼 글자·테두리 색·제목·설명.
 func _augment_card_info(definition: AugmentDef, player_id: int) -> Dictionary:
+	return augment_card_info(definition, state, player_id)
+
+
+## 판 밖(규칙 도감)에서도 쓰는 증강 카드 정보. game_state가 null이어도 된다.
+static func augment_card_info(definition: AugmentDef, game_state: GameState, player_id: int) -> Dictionary:
 	var glyph: String = "?"
 	var color: Color = Color("20c997")
 	var title: String = definition.display_name
@@ -6199,7 +6204,7 @@ func _augment_card_info(definition: AugmentDef, player_id: int) -> Dictionary:
 			color = Color("ff6b6b")
 			title = "[카드 패키지] 생떼 카드 2장"
 	var lines: PackedStringArray = []
-	for line: String in definition.describe(state, player_id).split("\n"):
+	for line: String in definition.describe(game_state, player_id).split("\n"):
 		if not line.begins_with("※"):
 			lines.append(line)
 	if definition.title != "":
@@ -6209,7 +6214,7 @@ func _augment_card_info(definition: AugmentDef, player_id: int) -> Dictionary:
 
 
 ## 150px 후광 / 120px 네온 메달 / 110px 원형 이미지. 이미지가 없으면 글자.
-func _make_emblem(glyph: String, color: Color, texture: Texture2D = null) -> Control:
+static func _make_emblem(glyph: String, color: Color, texture: Texture2D = null) -> Control:
 	var emblem := Control.new()
 	emblem.custom_minimum_size = Vector2(150, 150)
 	emblem.size = Vector2(150, 150)
@@ -6258,11 +6263,17 @@ func _make_emblem(glyph: String, color: Color, texture: Texture2D = null) -> Con
 
 ## 260x390 세로 증강 카드 (위 45% 엠블럼 / 중간 15% 제목 / 아래 40% 설명). 호버하면 1.06배로 커지며 금빛 테두리 광채가 밝아진다.
 func _make_augment_card(info: Dictionary, on_pick: Callable) -> Button:
+	return make_augment_card(info, on_pick)
+
+
+## 판 밖(규칙 도감)에서도 쓰는 증강 카드. base_scale로 줄여 보여 줄 수 있다 (호버 확대도 그 배율 기준).
+static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: float = 1.0) -> Button:
 	var color: Color = info["color"]
 	var card := Button.new()
 	card.custom_minimum_size = AUGMENT_CARD_SIZE
 	card.size = AUGMENT_CARD_SIZE
 	card.pivot_offset = AUGMENT_CARD_SIZE / 2.0
+	card.scale = Vector2.ONE * base_scale
 	card.focus_mode = Control.FOCUS_NONE
 	card.clip_contents = false
 	var box: StyleBoxFlat = _style(Color("12151f"), color, 3, 16, 8, 0)
@@ -6319,14 +6330,15 @@ func _make_augment_card(info: Dictionary, on_pick: Callable) -> Button:
 	card.add_child(desc)
 	if on_pick.is_valid():
 		card.pressed.connect(on_pick)
-	card.mouse_entered.connect(_hover_augment_card.bind(card, box, color, true))
-	card.mouse_exited.connect(_hover_augment_card.bind(card, box, color, false))
+	card.set_meta("frame_box", box)
+	card.mouse_entered.connect(func() -> void: _hover_augment_card(card, box, color, true, base_scale))
+	card.mouse_exited.connect(func() -> void: _hover_augment_card(card, box, color, false, base_scale))
 	return card
 
 
-func _hover_augment_card(card: Button, box: StyleBoxFlat, color: Color, entered: bool) -> void:
+static func _hover_augment_card(card: Button, box: StyleBoxFlat, color: Color, entered: bool, base_scale: float = 1.0) -> void:
 	var tween: Tween = card.create_tween().set_parallel(true).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(card, "scale", Vector2.ONE * (AUGMENT_HOVER_SCALE if entered else 1.0), 0.14)
+	tween.tween_property(card, "scale", Vector2.ONE * base_scale * (AUGMENT_HOVER_SCALE if entered else 1.0), 0.14)
 	tween.tween_property(box, "shadow_size", 34 if entered else 8, 0.14)
 	tween.tween_property(box, "shadow_color", Color(1.0, 0.82, 0.25, 0.95) if entered else Color(color.r, color.g, color.b, 0.35), 0.14)
 	tween.tween_property(box, "border_color", Color("ffe066") if entered else color, 0.14)

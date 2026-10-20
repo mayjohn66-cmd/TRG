@@ -60,10 +60,13 @@ var _list_box: VBoxContainer = null
 ## 지금 장의 내용 ({"title", "entries"})과 고른 항목 번호.
 var _content: Dictionary = {}
 var entry: int = 0
-var _tiles: Array[Button] = []
+var _tiles: Array[Control] = []
 var _chapter_label: Label = null
 ## 카드 항목에서 왼쪽에 크게 보여 주는 카드 앞면 크기.
 const CARD_FACE: Vector2 = Vector2(170, 238)
+## 도감 오른쪽 그림 타일: 증강 카드 배율(두 칸씩)과 손패 카드 크기.
+const AUGMENT_TILE_SCALE: float = 0.8
+const CARD_TILE: Vector2 = Vector2(200, 280)
 
 
 ## 부모 위에 규칙 도감을 연다. 반환: 도감 노드 (이름은 Popup이라 설정 팝업과 같은 방식으로 찾는다).
@@ -351,7 +354,8 @@ func _build_ribbon() -> void:
 # 장 바꾸기: 오른쪽은 항목 제목 타일, 고른 항목의 자세한 모습은 왼쪽 노트에 그림·표로 나온다
 # ---------------------------------------------------------------------------
 
-func show_spread(index: int, entry_index: int = 0) -> void:
+## 장을 연다. 처음에는 왼쪽에 그 장의 전체 설명(overview)이 나오고, 오른쪽 타일을 누르면 그 항목으로 바뀐다.
+func show_spread(index: int, entry_index: int = -1) -> void:
 	spread = clampi(index, 0, spread_count() - 1)
 	_content = _chapter(spread)
 	_rebuild_tiles()
@@ -402,18 +406,16 @@ func entry_count() -> int:
 	return (_content.get("entries", []) as Array).size()
 
 
-## 오른쪽 타일 중 하나를 골라 왼쪽 노트에 자세히 보여 준다.
+## 오른쪽 타일 중 하나를 골라 왼쪽 노트에 자세히 보여 준다. -1이면 장의 전체 설명.
 func show_entry(index: int) -> void:
 	var entries: Array = _content.get("entries", [])
-	if entries.is_empty():
-		return
-	entry = clampi(index, 0, entries.size() - 1)
+	entry = clampi(index, -1, entries.size() - 1)
 	for child: Node in _left_holder.get_children():
 		_left_holder.remove_child(child)
 		child.queue_free()
-	var data: Dictionary = entries[entry]
+	var data: Dictionary = _content["overview"] if entry == -1 else entries[entry]
 	_notebook_title.text = str(data["title"])
-	_chapter_label.text = "%s  ·  %d / %d" % [_content["title"], entry + 1, entries.size()]
+	_chapter_label.text = "%s  ·  전체 설명" % _content["title"] if entry == -1 else "%s  ·  %d / %d" % [_content["title"], entry + 1, entries.size()]
 	for node: Control in _detail(data):
 		_left_holder.add_child(node)
 	for tile_index: int in _tiles.size():
@@ -425,15 +427,18 @@ func _rebuild_tiles() -> void:
 		_right_holder.remove_child(child)
 		child.queue_free()
 	_tiles.clear()
+	var wide: bool = bool(_content.get("wide", false))
 	var grid := GridContainer.new()
-	grid.columns = 3
+	grid.columns = 2 if wide else 3
 	grid.add_theme_constant_override("h_separation", 10)
 	grid.add_theme_constant_override("v_separation", 10)
 	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var entries: Array = _content.get("entries", [])
 	for index: int in entries.size():
-		var tile: Button = _tile(entries[index] as Dictionary)
-		tile.pressed.connect(show_entry.bind(index))
+		var data: Dictionary = entries[index]
+		var tile: Control = _picture_tile(data, show_entry.bind(index)) if wide else _tile(data)
+		if not wide:
+			(tile as Button).pressed.connect(show_entry.bind(index))
 		grid.add_child(tile)
 		_tiles.append(tile)
 	_right_holder.add_child(grid)
@@ -480,7 +485,51 @@ func _tile(data: Dictionary) -> Button:
 	return button
 
 
-func _paint_tile(button: Button, selected: bool) -> void:
+## 도감 그림 타일: 증강 선택 화면의 증강 카드(또는 손패 카드 앞면)를 줄여 두 칸씩 늘어놓는다.
+func _picture_tile(data: Dictionary, on_pick: Callable) -> Control:
+	var holder := Control.new()
+	holder.name = "Entry_" + str(data["title"])
+	holder.mouse_filter = Control.MOUSE_FILTER_PASS
+	var card_size: Vector2
+	if data.has("augment"):
+		var definition: AugmentDef = AugmentRegistry.get_def(data["augment"])
+		card_size = MainBoard.AUGMENT_CARD_SIZE * AUGMENT_TILE_SCALE
+		var card: Button = MainBoard.make_augment_card(MainBoard.augment_card_info(definition, null, 1), on_pick, AUGMENT_TILE_SCALE)
+		card.position = -MainBoard.AUGMENT_CARD_SIZE * (1.0 - AUGMENT_TILE_SCALE) / 2.0  # 가운데 기준으로 줄였으니 왼쪽 위를 맞춘다
+		holder.add_child(card)
+	else:
+		card_size = CARD_TILE
+		var face := Button.new()
+		face.focus_mode = Control.FOCUS_NONE
+		face.size = CARD_TILE
+		var card_data: BaseCard = CardRegistry.get_card(data["card"])
+		for state: String in ["normal", "hover", "pressed", "focus"]:
+			face.add_theme_stylebox_override(state, CardSkin.frame(card_data.category, state == "hover", 12))
+		var body: Control = CardSkin.body(card_data, CARD_TILE, MainBoard.card_summary(data["card"]), MainBoard.CARD_CATEGORY_NAMES[card_data.category], true)
+		body.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		face.add_child(body)
+		face.pressed.connect(on_pick)
+		holder.add_child(face)
+	holder.custom_minimum_size = card_size
+	var marker := Label.new()
+	marker.text = "보는 중"
+	marker.add_theme_font_size_override("font_size", 14)
+	marker.add_theme_color_override("font_color", Color("3a2400"))
+	marker.add_theme_stylebox_override("normal", _box(Color("ffd43b"), Color("b8860b"), 2, 10, 2, 4))
+	marker.position = Vector2(card_size.x - 70, -8)
+	marker.z_index = 6
+	marker.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	marker.visible = false
+	holder.add_child(marker)
+	holder.set_meta("marker", marker)
+	return holder
+
+
+func _paint_tile(tile: Control, selected: bool) -> void:
+	if tile.has_meta("marker"):
+		(tile.get_meta("marker") as Control).visible = selected  # 그림 타일: 보는 중 꼬리표
+		return
+	var button: Button = tile as Button
 	var tone: Color = button.get_meta("tone")
 	var normal: StyleBoxFlat = _box(Color.WHITE if selected else tone.lightened(0.62), tone.darkened(0.15) if selected else tone, 5 if selected else 3, 20, 4 if selected else 2, 0, Color(0, 0, 0, 0.18))
 	button.add_theme_stylebox_override("normal", normal)
@@ -706,16 +755,21 @@ func _tip(text: String) -> Control:
 	return panel
 
 
+## 장 내용. 항목 목록의 첫 항목은 그 장의 전체 설명(overview)으로 빼서 장을 열 때 왼쪽에 보여 주고, 오른쪽 타일에는 넣지 않는다.
 func _chapter(index: int) -> Dictionary:
+	var content: Dictionary
 	match index:
-		0: return _ch_start()
-		1: return _ch_turn()
-		2: return _ch_board()
-		3: return _ch_capture()
-		4: return _ch_tools()
-		5: return _ch_pawns()
-		6: return _ch_cards()
-	return _ch_laws()
+		0: content = _ch_start()
+		1: content = _ch_turn()
+		2: content = _ch_board()
+		3: content = _ch_capture()
+		4: content = _ch_tools()
+		5: content = _ch_pawns()
+		6: content = _ch_cards()
+		_: content = _ch_laws()
+	var entries: Array = content["entries"]
+	content["overview"] = entries.pop_front()
+	return content
 
 
 # ---------------------------------------------------------------------------
@@ -737,9 +791,6 @@ func _ch_start() -> Dictionary:
 		{"title": "카드와 법전", "art": &"card_law", "tone": Color("f0c14e"), "chips": ["생떼 카드", "특수 승리"],
 			"summary": "함정을 깔고, 상대 말을 날리고, 법전의 특수 승리를 노려 판을 뒤집어요.",
 			"points": ["카드는 빵집·증강에서 얻어요", "법전 조건을 먼저 달성하면 바로 졸업!"]},
-		{"title": "눈금은 공정해요", "art": &"fair_roll", "tone": Color("86d94f"),
-			"summary": "파워 게이지는 [b]연출[/b]일 뿐이에요. 세게 눌러도 큰 숫자가 더 잘 나오지 않아요.",
-			"points": ["결과는 엔진이 정하고 화면은 보여 주기만 해요"]},
 	]}
 
 
@@ -834,53 +885,61 @@ func _ch_capture() -> Dictionary:
 
 func _ch_tools() -> Dictionary:
 	var entries: Array = [
-		{"title": "고르는 요령", "art": &"tool_swap", "tone": Color("86d94f"), "chips": ["증강으로 교체"],
-			"summary": "처음엔 [b]기본 주사위[/b]. 증강으로 다른 도구로 바꿀 수 있어요.",
-			"rows": [["한 방", "친치로 · 777 슬롯"], ["안정", "주사위 · 윷"], ["짜릿함", "러시안 룰렛 · 블랙잭"]],
+		{"title": "굴리는 도구", "art": &"tool_swap", "tone": Color("86d94f"), "chips": ["증강으로 교체"],
+			"summary": "처음엔 [b]기본 주사위[/b](1~6칸). 증강의 [b]판정 도구 교체[/b]로 오른쪽 도구 중 하나로 바꿀 수 있어요.",
+			"rows": [["한 방", "친치로 · 777 슬롯"], ["안정", "윷 · 야추"], ["짜릿함", "러시안 룰렛 · 블랙잭"]],
+			"points": ["오른쪽 카드를 누르면 족보와 칸 수 표가 나와요", "파워 게이지는 연출일 뿐, 결과는 공정해요"],
 			"tip": "러시안 룰렛은 [b]멈추기[/b] 버튼이 생명이에요."},
 	]
-	var tones: Array[Color] = [Color("5fc1e8"), Color("86d94f"), Color("f0c14e"), Color("f08aa8"), Color("b197fc")]
-	for index: int in ToolRegistry.ALL_IDS.size():
-		var tool_id: StringName = ToolRegistry.ALL_IDS[index]
-		var tool: BaseJudgmentTool = ToolRegistry.create(tool_id)
+	for definition: AugmentDef in _augments(GameEnums.AugmentCategory.TOOL_SWAP):
+		var tool_id: StringName = definition.payload
 		var rules: Dictionary = MainBoard.TOOL_RULES.get(tool_id, {})
 		var card: Array = MainBoard.TOOL_CARDS.get(tool_id, ["", Color.WHITE, "", ""])
-		var data: Dictionary = {"title": tool.display_name, "texture": AugmentArt.load_first(AugmentArt.tool_candidates(tool_id)), "icon": &"dice",
-			"tone": tones[index % tones.size()], "summary": GameData.text("dice", tool_id, "desc", str(card[2])), "rows": rules.get("rows", [])}
+		var data: Dictionary = {"title": ToolRegistry.create(tool_id).display_name, "augment": definition.augment_id, "texture": AugmentArt.load_first(AugmentArt.tool_candidates(tool_id)), "icon": &"dice",
+			"tone": Color("9775fa"), "summary": GameData.text("dice", tool_id, "desc", str(card[2])), "rows": rules.get("rows", [])}
 		if rules.has("note"):
 			data["note"] = rules["note"]
 		if str(card[3]) != "":
 			data["chips"] = [str(card[3])]
 		entries.append(data)
-	return {"title": "도구", "entries": entries}
+	return {"title": "도구", "entries": entries, "wide": true}
+
+
+## 증강 표에서 한 종류의 증강만 (표 순서대로).
+static func _augments(category: GameEnums.AugmentCategory) -> Array[AugmentDef]:
+	var result: Array[AugmentDef] = []
+	for definition: AugmentDef in AugmentRegistry.all():
+		if definition.category == category:
+			result.append(definition)
+	return result
 
 
 func _ch_pawns() -> Dictionary:
 	var entries: Array = [
-		{"title": "진화와 필살기", "art": &"pawn_ability", "tone": Color("f08aa8"), "chips": ["한 판에 1회"],
-			"summary": "증강으로 말을 [b]7계열[/b] 중 하나로 진화시켜요.",
-			"points": ["보드 위 말에는 한 글자 라벨이 붙어요", "필살기는 내 프로필 카드에서 굴리기 전에 눌러요", "잡혀서 출발선으로 가도 필살기는 되살아나지 않아요"],
-			"tip": "오른쪽에서 계열을 누르면 세부 기물마다 능력과 필살기가 그림과 함께 나와요."},
+		{"title": "진화와 필살기", "art": &"pawn_ability", "tone": Color("f08aa8"), "chips": ["7계열", "필살기 1회"],
+			"summary": "증강의 [b]기물 지급[/b]으로 기본 말 하나를 오른쪽 기물로 진화시켜요.",
+			"rows": _family_rows(),
+			"points": ["보드 위 말에는 한 글자 라벨이 붙어요", "필살기는 내 프로필 카드에서 굴리기 전에 눌러요", "잡혀서 출발선으로 가도 필살기는 되살아나지 않아요"]},
 	]
-	var tones: Array[Color] = [Color("f08aa8"), Color("5fc1e8"), Color("f0c14e"), Color("86d94f"), Color("b197fc"), Color("ffa94d"), Color("63e6be")]
-	for index: int in PawnCatalog.EVOLVABLE_SETS.size():
-		var kind: GameEnums.PawnKind = PawnCatalog.EVOLVABLE_SETS[index]
-		var rows: Array = []
-		var seen: Array = []
-		for sub: Variant in PawnCatalog.SUB_TYPES[kind]:
-			if seen.has(sub):
-				continue
-			seen.append(sub)
-			var sub_name: String = str(PawnCatalog.SUB_NAMES.get(sub, ""))
-			sub_name = sub_name.split(":")[-1]
-			var text: String = str(PawnCatalog.SUB_ABILITIES.get(sub, ""))
-			var skill: StringName = PawnCatalog.SKILL_IDS.get(sub, &"")
-			if skill != &"":
-				text += "\n[color=#c2457a]필살기 %s[/color] %s" % [PawnCatalog.skill_name(skill), PawnCatalog.skill_text(skill)]
-			rows.append([_pawn_texture(sub, kind), sub_name, text])
-		entries.append({"title": PawnCatalog.display_set_name(kind), "texture": _pawn_texture(PawnCatalog.SUB_TYPES[kind][0], kind), "icon": &"crown",
-			"tone": tones[index % tones.size()], "chips": ["%d종" % rows.size()], "summary": PAWN_LINES.get(kind, ""), "rows": rows})
-	return {"title": "말", "entries": entries}
+	for definition: AugmentDef in _augments(GameEnums.AugmentCategory.PAWN_EVOLUTION):
+		var kind: GameEnums.PawnKind = definition.payload
+		var unit: int = definition.units[0]
+		var sub: GameEnums.PawnSubType = PawnCatalog.sub_type_of(kind, unit)
+		var rows: Array = [["패시브", PawnCatalog.ability_text(kind, unit)]]
+		var skill: StringName = PawnCatalog.SKILL_IDS.get(sub, &"")
+		if skill != &"":
+			rows.append(["필살기 %s" % PawnCatalog.skill_name(skill), PawnCatalog.skill_text(skill)])
+		entries.append({"title": PawnCatalog.unit_label(kind, unit).split(":")[-1], "augment": definition.augment_id, "texture": _pawn_texture(sub, kind), "icon": &"crown",
+			"tone": Color("20c997"), "chips": [PawnCatalog.display_set_name(kind)], "summary": PAWN_LINES.get(kind, ""), "rows": rows})
+	return {"title": "말", "entries": entries, "wide": true}
+
+
+## 전체 설명용: 계열마다 대표 그림 + 이름 + 한 줄 소개.
+func _family_rows() -> Array:
+	var rows: Array = []
+	for kind: GameEnums.PawnKind in PawnCatalog.EVOLVABLE_SETS:
+		rows.append([_pawn_texture(PawnCatalog.SUB_TYPES[kind][0], kind), PawnCatalog.display_set_name(kind), PAWN_LINES.get(kind, "")])
+	return rows
 
 
 ## 계열 한 줄 소개.
@@ -942,28 +1001,32 @@ func _ch_cards() -> Dictionary:
 		if quote != "":
 			data["note"] = "“%s”" % quote
 		entries.append(data)
-	return {"title": "카드", "entries": entries}
+	return {"title": "카드", "entries": entries, "wide": true}
 
 
 func _ch_laws() -> Dictionary:
 	var entries: Array = [
 		{"title": "증강과 법전", "art": &"card_law", "tone": Color("ffa94d"), "chips": ["3라운드마다", "법전 4칸"],
-			"summary": "법전의 교칙은 모두 [b]특수 승리 조건[/b]이에요. 먼저 달성하면 [b]다음 순위로 졸업[/b]!",
-			"rows": [["기물 지급", "말 하나를 새 기물로 진화"], ["도구 교체", "굴리는 도구 바꾸기"], ["특수 승리", "법전에 새 승리 조건 (3라운드부터)"], ["카드 패키지", "생떼 카드 여러 장"]],
-			"points": ["새 교칙이 들어오면 가장 오래된 교칙이 밀려나요", "달성된 교칙은 사라져요"],
+			"summary": "1·4·7라운드처럼 [b]3라운드마다[/b] 모두가 증강 3장 중 하나를 골라요. 법전의 교칙은 모두 [b]특수 승리 조건[/b]이에요.",
+			"rows": [["기물 지급", "말 하나를 새 기물로 진화 (도감 → 말)"], ["도구 교체", "굴리는 도구 바꾸기 (도감 → 도구)"], ["특수 승리", "법전에 새 승리 조건 (3라운드부터)"], ["카드 패키지", "생떼 카드 여러 장"], ["초증강", "판을 뒤흔드는 도박 증강"]],
+			"points": ["교칙을 먼저 달성하면 [b]다음 순위로 졸업[/b], 그 교칙은 사라져요", "새 교칙이 들어오면 가장 오래된 교칙이 밀려나요", "증강 카드마다 한 번 다시 뽑기"],
 			"tip": "법전 슬롯에 마우스를 올리면 모두의 진행도가 보여요. [color=#d6336c][b][위험!][/b][/color] 표시를 견제하세요!"},
 	]
-	for index: int in VictoryLaw.DEFS.size():
-		var law_id: String = "LAW_%02d" % (index + 1)
-		var law: VictoryLaw = LawRegistry.create(law_id) as VictoryLaw
+	for definition: AugmentDef in _augments(GameEnums.AugmentCategory.LAW_ENACT):
+		var law: VictoryLaw = LawRegistry.create(String(definition.payload)) as VictoryLaw
 		if law == null:
 			continue
 		var counting: String = "법전에 있는 동안만 세요" if VictoryLaw.SESSION_KEYS.has(law.stat_key) else "게임 내내 쌓여요"
-		entries.append({"title": law.law_name, "texture": TextureCache.fetch("res://content_trickcal/illustrations/laws/%s.png" % law_id), "icon": &"book",
-			"tone": Color("5fc1e8") if index % 2 == 0 else Color("b197fc"), "chips": ["목표 %d%s" % [law.goal(), law.unit()]],
-			"summary": law.condition_text(),
+		entries.append({"title": law.law_name, "augment": definition.augment_id, "texture": TextureCache.fetch("res://content_trickcal/illustrations/laws/%s.png" % law.law_id), "icon": &"book",
+			"tone": Color("ffd43b"), "chips": ["목표 %d%s" % [law.goal(), law.unit()]], "summary": law.condition_text(),
 			"rows": [["달성하면", "다음 순위로 졸업, 교칙은 사라져요"], ["기록", counting], ["이의 있음!", "기록을 0으로 되돌릴 수 %s" % ("있어요" if law.resettable() else "없어요")]]})
-	return {"title": "법전", "entries": entries}
+	for category: GameEnums.AugmentCategory in [GameEnums.AugmentCategory.CARD_PACKAGE, GameEnums.AugmentCategory.SUPER_GAMBLE]:
+		for definition: AugmentDef in _augments(category):
+			var info: Dictionary = MainBoard.augment_card_info(definition, null, 1)
+			var lines: Array = str(info["desc"]).split("\n")
+			entries.append({"title": str(info["title"]), "augment": definition.augment_id, "texture": info.get("art"), "icon": &"gear", "tone": info["color"],
+				"chips": [str(info["category"])], "summary": str(lines[0]).trim_prefix("◆ "), "points": lines.slice(1).map(func(line: String) -> String: return line.trim_prefix("◆ "))})
+	return {"title": "법전", "entries": entries, "wide": true}
 
 
 # ---------------------------------------------------------------------------

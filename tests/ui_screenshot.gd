@@ -208,7 +208,7 @@ func _setup_scene() -> void:
 			_finish_draft()
 			_board._announcer.cancel()
 			var book: Rulebook = Rulebook.open(_board)
-			book.show_spread(int(OS.get_environment("BOOK")) if OS.get_environment("BOOK") != "" else 4, int(OS.get_environment("ENTRY")) if OS.get_environment("ENTRY") != "" else 0)
+			book.show_spread(int(OS.get_environment("BOOK")) if OS.get_environment("BOOK") != "" else 4, int(OS.get_environment("ENTRY")) if OS.get_environment("ENTRY") != "" else -1)
 		"traps":
 			# 함정 칸 그림: 내 함정(지뢰·바나나)은 그림, 상대 함정은 물음표, 코너 함정은 공개, 옷장은 청록
 			_finish_draft()
