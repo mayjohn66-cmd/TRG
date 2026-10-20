@@ -115,15 +115,20 @@ const DECALS: Dictionary = {
 	"corner": preload("res://assets/board/decals/BOARD_CORNER.png"),
 	"boost": preload("res://assets/board/decals/BOARD_BOOST.png"),
 }
+const FLAT_INK: Shader = preload("res://assets/board/decals/flat_ink.gdshader")
 ## Opaque subject bounds in the unchanged 1254px native sources; discard only empty atlas margin.
 const DECAL_BOUNDS: Dictionary = {
-	"bakery": Rect2(131,318,994,622), "portal": Rect2(138,100,979,1056),
-	"start": Rect2(181,131,955,986), "half": Rect2(269,124,729,1000),
-	"corner": Rect2(134,256,993,734), "boost": Rect2(62,323,1155,597),
+	"bakery": Rect2(148,449,959,397), "portal": Rect2(296,268,662,739),
+	"start": Rect2(308,272,638,750), "half": Rect2(362,246,590,778),
+	"corner": Rect2(212,380,830,494), "boost": Rect2(175,431,909,391),
 }
 
 static func forward_world(index: int) -> Vector2:
 	return (BoardLayout.tile_norm((index+1)%BoardSpec.tile_count)-BoardLayout.tile_norm(index)).normalized()
+
+## A tile-local stamp: +X follows its short edge, -Y faces the board center.
+static func symbol_axis(index: int) -> Vector2:
+	return [Vector2.UP,Vector2.LEFT,Vector2.DOWN,Vector2.RIGHT][mini(index/BoardSpec.side,3)]
 
 ## Local decal +X follows a world-plane direction, not a screen-space angle.
 static func decal_frame(plane: Transform2D, span: float, direction: Vector2 = Vector2.RIGHT, center: Vector2 = Vector2.ZERO) -> Transform2D:
@@ -142,6 +147,13 @@ static func decal_texture(kind: String) -> AtlasTexture:
 class Symbol extends Node2D:
 	var kind: String = "normal"
 	var texture: Texture2D
+	var ink: Color = Color("416c2b")
+
+	func _ready() -> void:
+		var flat := ShaderMaterial.new()
+		flat.shader = BoardSkin.FLAT_INK
+		flat.set_shader_parameter("ink",ink)
+		material = flat
 
 	func _draw() -> void:
 		if not BoardSkin.DECALS.has(kind):
@@ -195,9 +207,8 @@ class Tile extends Control:
 	var band := PackedVector2Array()
 	var symbol: Symbol
 	var corner_arrow: Symbol
+	var boost_symbol: Symbol
 	var plane := Transform2D.IDENTITY
-	var dash_direction := Vector2.RIGHT
-	var boost_texture: Texture2D
 	var arrow_target: int = -1
 	## 함정이 깔린 발판: 타일 전체가 보라색으로 바뀌고 가운데에 그 함정의 그림(정체를 모르면 물음표)이 붙는다. pulse는 0~1로 main_board가 갱신한다.
 	var trap_on: bool = false
@@ -207,7 +218,7 @@ class Tile extends Control:
 	var danger_level: int = 0
 	var danger_dir: Vector2 = Vector2.ZERO
 	var danger_pulse: float = 0.0
-	## ⚡ 코랄 부스터 존. dash_direction은 보드 평면 방향, flow_dir은 화면 방향, dash_phase는 밝기 펄스다.
+	## ⚡ 코랄 부스터 존. 그림은 보드 평면의 진행 방향, flow_dir은 화면 방향, dash_phase는 밝기 펄스다.
 	var dash_on: bool = false
 	var flow_dir: Vector2 = Vector2.RIGHT
 	var dash_phase: float = 0.0
@@ -220,16 +231,21 @@ class Tile extends Control:
 		if data.kind != "normal":
 			symbol = Symbol.new()
 			symbol.kind = data.kind
+			symbol.ink = data.ink
 			add_child(symbol)
 		if data.kind in ["start","half"]:
 			corner_arrow = Symbol.new()
 			corner_arrow.kind = "corner"
 			add_child(corner_arrow)
+		if BoardSpec.dash_tiles.has(index):
+			boost_symbol = Symbol.new()
+			boost_symbol.kind = "boost"
+			boost_symbol.ink = Color("fff3d2")
+			add_child(boost_symbol)
 
 	func configure(projector: Callable, world_center: Vector2, span: float, visual_depth: float, direction: Vector2) -> void:
 		var center: Vector2 = projector.call(world_center)
 		plane = Transform2D(((projector.call(world_center+Vector2.RIGHT) as Vector2)-center)/scale,((projector.call(world_center+Vector2.DOWN) as Vector2)-center)/scale,size/2.0)
-		dash_direction = direction.normalized()
 		layers.clear()
 		for inset: float in [0.0,1.8,3.6]:
 			var points := PackedVector2Array()
@@ -260,11 +276,15 @@ class Tile extends Control:
 			var footprint: Vector2 = data.footprint
 			var mark_span: float = minf(footprint.x,footprint.y)*(0.62 if data.major else 0.74)
 			var mark_offset: Vector2 = Vector2(-0.014,-0.014) if corner_arrow != null else (Vector2.ZERO if data.major else -inward*0.011)
-			symbol.transform = BoardSkin.decal_frame(plane,mark_span,direction if data.kind == "corner" else Vector2.RIGHT,mark_offset)
+			var stamp_axis: Vector2 = direction if data.kind == "corner" else (Vector2.RIGHT if data.major else BoardSkin.symbol_axis(index))
+			symbol.transform = BoardSkin.decal_frame(plane,mark_span,stamp_axis,mark_offset)
 			symbol.queue_redraw()
 		if corner_arrow != null:
 			corner_arrow.transform = BoardSkin.decal_frame(plane,float(data.diameter)*0.28,direction,Vector2.ONE*float(data.diameter)*0.27)
 			corner_arrow.queue_redraw()
+		if boost_symbol != null:
+			var footprint: Vector2 = data.footprint
+			boost_symbol.transform = BoardSkin.decal_frame(plane,minf(footprint.x,footprint.y)*0.79,direction)
 		for child: Node in get_children():
 			if child is Ring:
 				(child as Ring).points = outline_points
@@ -281,6 +301,7 @@ class Tile extends Control:
 				symbol.visible = not on  # 빵집·옷장 그림 대신 함정 그림을 보여 준다
 			if corner_arrow != null:
 				corner_arrow.visible = not on
+			_refresh_boost_symbol()
 			queue_redraw()
 
 	func set_trap_pulse(value: float) -> void:
@@ -300,15 +321,23 @@ class Tile extends Control:
 	func set_goal(on: bool) -> void:
 		if goal_on != on:
 			goal_on = on
+			_refresh_boost_symbol()
 			queue_redraw()
 
 	func set_dash(on: bool, flow: Vector2) -> void:
 		dash_on = on
 		flow_dir = flow if flow != Vector2.ZERO else Vector2.RIGHT
+		_refresh_boost_symbol()
 		queue_redraw()
+
+	func _refresh_boost_symbol() -> void:
+		if boost_symbol != null:
+			boost_symbol.visible = dash_on and not trap_on and not goal_on
 
 	func set_dash_phase(value: float) -> void:
 		dash_phase = value
+		if boost_symbol != null:
+			boost_symbol.modulate.a = 0.88+0.12*sin(dash_phase*TAU)
 		queue_redraw()
 
 	func _draw() -> void:
@@ -370,16 +399,6 @@ class Tile extends Control:
 		var rim := inner.duplicate()
 		rim.append(rim[0])
 		draw_polyline(rim,Color("ffe4a3"),1.4,true)
-		if boost_texture == null:
-			boost_texture = BoardSkin.decal_texture("boost")
-		var footprint: Vector2 = data.footprint
-		var span: float = minf(footprint.x,footprint.y)*0.79
-		var frame := BoardSkin.decal_frame(plane,span,dash_direction)
-		draw_set_transform_matrix(frame)
-		var extent := Vector2(64,64)*boost_texture.get_size()/maxf(boost_texture.get_width(),boost_texture.get_height())
-		var brightness: float = 0.9+0.1*sin(dash_phase*TAU)
-		draw_texture_rect(boost_texture,Rect2(-extent/2.0,extent),false,Color(brightness,brightness,brightness))
-		draw_set_transform_matrix(Transform2D.IDENTITY)
 
 	## NPC 습격 예고: 붉게 깜빡이는 테두리, 위험 타일의 해골, NPC가 가는 쪽을 가리키는 화살표.
 	func _draw_danger() -> void:

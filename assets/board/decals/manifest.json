@@ -2,127 +2,127 @@
   {
     "id": "BOARD_BAKERY",
     "name": "빵집",
+    "prompt": "Create ONE ultra-simple monochrome board-game pictogram PNG on a genuinely transparent background. This is a tiny printed SYMBOL, like a classic board-game tile stamp, not an illustration. Perfectly flat, face-on orthographic, crisp smooth edges, thick rounded shapes, PURE WHITE solid fill only, transparent negative-space cutouts where requested. No black or colored stroke, no shading, gradients, highlights, texture, bevel, depth, glow, shadow, badge, frame, letters or background. Large centered symbol within a square canvas with generous 18% transparent padding. Keep its shape immediately readable at 24 pixels. One simple horizontal rounded bread-roll OVAL silhouette, with exactly THREE short parallel diagonal slits cut out of its center. Only an oval and three cutouts; absolutely no realistic bread detail.",
+    "correction_prompt": "Fix ONLY the rough edges and dirty slits of this bread symbol. Redraw it as a perfectly smooth horizontal OVAL, solid DARK TEAL #245B4A fill, with exactly THREE clean short rounded diagonal slots cut out as fully TRANSPARENT holes. Uniform opaque solid fill, smooth geometric vector-like silhouette. No white fill, no texture, speckles, scratches, roughness or highlights. The three slots are simple identical rounded capsules with smooth edges. True transparent background, centered with wide empty margin. Tiny board-game pictogram, not a bread illustration.",
     "path": "assets/board/decals/BOARD_BAKERY.png",
-    "native_source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-61c24890-e865-4e82-bf84-c9881288bc3e.png",
+    "native_source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-56d083b8-ca17-48cc-911c-0a4fe32e87c2.png",
     "width": 1254,
     "height": 1254,
     "alpha": true,
     "opaque_bounds": [
-      131,
-      318,
-      1125,
-      940
+      148,
+      449,
+      1107,
+      846
     ],
-    "sha256": "131508ccdd305c35b421dd9ebaab7352264ea5d52ffd9e933d7e93c48b9fdda1",
-    "attempts": 1,
+    "sha256": "c65f2e3d179b991833b2d30a6f07d55dd15231696f30b5445080e031b1934a3b",
     "tool": "native image_gen.imagegen",
     "image_model": "not exposed",
-    "prompt": "Use case: stylized-concept. Create ONE isolated board-game TILE DECAL icon on a genuinely transparent background. This will be mapped onto the board plane by the game engine, so the artwork MUST be perfectly flat orthographic face-on, no isometric angle, no perspective tilt, no visible side thickness, no floor or cast shadow. Cute rounded fantasy toy aesthetic, bold clean dark contours, simple broad color areas, one restrained glossy highlight, instantly readable at 32px. Compact centered square canvas, safe 15% transparent margin on all sides, no enclosing circular badge, no text or letters, no watermark. A single plump golden-brown bread roll, oval horizontal silhouette, exactly three large cream diagonal scoring marks on its top. Golden toasted rim, warm chestnut outline. No plate, hands, sparks or extra objects.",
-    "correction_prompt": null
+    "attempts": 2
   },
   {
     "id": "BOARD_PORTAL",
     "name": "옷장 포탈",
+    "prompt": "Create ONE tiny-board-game pictogram as a clean solid flat dark teal (#245B4A) symbol on a genuinely transparent background. This is a simple printed SYMBOL, not an illustration. Perfectly flat face-on orthographic, smooth crisp edges, thick rounded geometry and absolutely uniform opaque fill. Use only dark teal ink and transparent negative-space holes. No rough print texture, grunge, shading, gradients, highlights, bevel, depth, glow, shadow, badge, frame, letters or background. Square image; center the symbol within the middle 70% of the canvas. Must be immediately readable at 24px. A simple closed wardrobe SYMBOL: one squat rectangular outline with rounded corners, a thick straight center vertical divider to make two doors, two tiny circular knob dots, one short flat top cap and two short feet. Doors themselves are TRANSPARENT cutouts, all structural lines solid dark teal and very thick. No ornamental cornice or inset panels.",
+    "correction_prompt": null,
     "path": "assets/board/decals/BOARD_PORTAL.png",
-    "native_source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-8bc5aee2-4068-4093-b2f6-21a89e290190.png",
+    "native_source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-faf85db5-614e-4780-ba9a-fea3163b23e8.png",
     "width": 1254,
     "height": 1254,
     "alpha": true,
     "opaque_bounds": [
-      138,
-      100,
-      1117,
-      1156
+      296,
+      268,
+      958,
+      1007
     ],
-    "sha256": "da7fa8ff548cbc8e93d8a729fac1652fa005d832715fbd34a4aa83ad77477cde",
-    "attempts": 1,
+    "sha256": "690c606fb2bd163cfd7ee5c715757de3627165627d653f8d9c9de625bf12a982",
     "tool": "native image_gen.imagegen",
     "image_model": "not exposed",
-    "prompt": "Use case: stylized-concept. Create ONE isolated board-game TILE DECAL icon on a genuinely transparent background. This will be mapped onto the board plane by the game engine, so the artwork MUST be perfectly flat orthographic face-on, no isometric angle, no perspective tilt, no visible side thickness, no floor or cast shadow. Cute rounded fantasy toy aesthetic, bold clean dark contours, simple broad color areas, one restrained glossy highlight, instantly readable at 32px. Compact centered square canvas, safe 15% transparent margin on all sides, no enclosing circular badge, no text or letters, no watermark. A single cute teal wardrobe viewed straight on, broad squat proportions, two ivory door panels with teal frame, two large teal knobs, small simple arched teal cornice, two short feet. Make the wardrobe fill a compact almost-square silhouette, recognizable doors, no magical vortex, no background.",
-    "correction_prompt": null
+    "attempts": 1
   },
   {
     "id": "BOARD_START",
     "name": "출발·결승",
+    "prompt": "Create ONE tiny-board-game pictogram as a clean solid flat dark teal (#245B4A) symbol on a genuinely transparent background. This is a simple printed SYMBOL, not an illustration. Perfectly flat face-on orthographic, smooth crisp edges, thick rounded geometry and absolutely uniform opaque fill. Use only dark teal ink and transparent negative-space holes. No rough print texture, grunge, shading, gradients, highlights, bevel, depth, glow, shadow, badge, frame, letters or background. Square image; center the symbol within the middle 70% of the canvas. Must be immediately readable at 24px. One minimal straight flagpole and a small rectangular waving checkered flag. Only SIX large checks in a 3-column by 2-row grid, three checks are opaque dark teal and three are transparent holes. Thick dark teal flag perimeter keeps the flag shape unified. No finial ball, collars, tassels or decorative base.",
+    "correction_prompt": null,
     "path": "assets/board/decals/BOARD_START.png",
-    "native_source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-df8b48b4-27c7-45d2-b967-0694331ccdbb.png",
+    "native_source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-8253705a-15b4-4a3e-be9a-5c6e35594764.png",
     "width": 1254,
     "height": 1254,
     "alpha": true,
     "opaque_bounds": [
-      181,
-      131,
-      1136,
-      1117
+      308,
+      272,
+      946,
+      1022
     ],
-    "sha256": "b1f88e11008ecf3b283d86d6b7b0433baaf6d2744f6a23cb8908e64f4ba2bdd5",
-    "attempts": 1,
+    "sha256": "69d060b0ff884270c4c37fdb4e86030466cbcf22c6b7555e7ca581b4ba28b00f",
     "tool": "native image_gen.imagegen",
     "image_model": "not exposed",
-    "prompt": "Use case: stylized-concept. Create ONE isolated board-game TILE DECAL icon on a genuinely transparent background. This will be mapped onto the board plane by the game engine, so the artwork MUST be perfectly flat orthographic face-on, no isometric angle, no perspective tilt, no visible side thickness, no floor or cast shadow. Cute rounded fantasy toy aesthetic, bold clean dark contours, simple broad color areas, one restrained glossy highlight, instantly readable at 32px. Compact centered square canvas, safe 15% transparent margin on all sides, no enclosing circular badge, no text or letters, no watermark. One chunky green flagpole with a waving green-and-ivory checkerboard finish flag. Large simple 3-by-2 checks, not many tiny checks. Thick deep forest-green outline, cream highlights. Compact silhouette, no base tile, no secondary arrows.",
-    "correction_prompt": null
+    "attempts": 1
   },
   {
     "id": "BOARD_HALF",
     "name": "반환점",
+    "prompt": "Create ONE tiny-board-game pictogram as a clean solid flat dark teal (#245B4A) symbol on a genuinely transparent background. This is a simple printed SYMBOL, not an illustration. Perfectly flat face-on orthographic, smooth crisp edges, thick rounded geometry and absolutely uniform opaque fill. Use only dark teal ink and transparent negative-space holes. No rough print texture, grunge, shading, gradients, highlights, bevel, depth, glow, shadow, badge, frame, letters or background. Square image; center the symbol within the middle 70% of the canvas. Must be immediately readable at 24px. One minimal straight thick flagpole with one solid triangular pennant pointing RIGHT from its upper end, and a short rounded horizontal foot. Completely solid dark teal, no interior detail, no finial ball or collars.",
+    "correction_prompt": null,
     "path": "assets/board/decals/BOARD_HALF.png",
-    "native_source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-ca430b0e-cf55-4c6e-9549-21f944ce0a27.png",
+    "native_source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-c14df4b8-b10d-4fc5-b110-9fe742ff6b89.png",
     "width": 1254,
     "height": 1254,
     "alpha": true,
     "opaque_bounds": [
-      269,
-      124,
-      998,
-      1124
+      362,
+      246,
+      952,
+      1024
     ],
-    "sha256": "dd49ba28e98e348604ad200f9a25d4e469822b879ebcbe936deb8688a731b970",
-    "attempts": 1,
+    "sha256": "408a5c73194d5321fbcf705735d3ee6ee4fb48a865b470cbd3a6372c329a1ff9",
     "tool": "native image_gen.imagegen",
     "image_model": "not exposed",
-    "prompt": "Use case: stylized-concept. Create ONE isolated board-game TILE DECAL icon on a genuinely transparent background. This will be mapped onto the board plane by the game engine, so the artwork MUST be perfectly flat orthographic face-on, no isometric angle, no perspective tilt, no visible side thickness, no floor or cast shadow. Cute rounded fantasy toy aesthetic, bold clean dark contours, simple broad color areas, one restrained glossy highlight, instantly readable at 32px. Compact centered square canvas, safe 15% transparent margin on all sides, no enclosing circular badge, no text or letters, no watermark. One chunky honey-gold flagpole with a single bright coral-orange triangular pennant pointing right. Broad triangular flag, warm dark brown outline, cream highlights, no checks, no base tile or secondary symbols.",
-    "correction_prompt": null
+    "attempts": 1
   },
   {
     "id": "BOARD_CORNER",
     "name": "코너 진행 화살표",
+    "prompt": "Create ONE tiny-board-game pictogram as a clean solid flat dark teal (#245B4A) symbol on a genuinely transparent background. This is a simple printed SYMBOL, not an illustration. Perfectly flat face-on orthographic, smooth crisp edges, thick rounded geometry and absolutely uniform opaque fill. Use only dark teal ink and transparent negative-space holes. No rough print texture, grunge, shading, gradients, highlights, bevel, depth, glow, shadow, badge, frame, letters or background. Square image; center the symbol within the middle 70% of the canvas. Must be immediately readable at 24px. One classic chunky rounded RIGHT arrow silhouette, horizontal straight broad shaft and large triangular arrowhead, similar to a basic road-direction symbol. Completely solid dark teal, no interior detail and no separate outline.",
+    "correction_prompt": null,
     "path": "assets/board/decals/BOARD_CORNER.png",
-    "native_source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-b929d17f-9e80-42f2-af2c-6e824ffdce42.png",
+    "native_source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-06f93a67-f2bc-4459-898e-f1f6515fab69.png",
     "width": 1254,
     "height": 1254,
     "alpha": true,
     "opaque_bounds": [
-      134,
-      256,
-      1127,
-      990
+      212,
+      380,
+      1042,
+      874
     ],
-    "sha256": "6a05f8afec7a07948b232e45f6500454aa61040166d12946bec689a69480c9a4",
-    "attempts": 1,
+    "sha256": "fe3ad17b0012965215548177e84c0d36c6823760373b2325485844f710a5f94b",
     "tool": "native image_gen.imagegen",
     "image_model": "not exposed",
-    "prompt": "Use case: stylized-concept. Create ONE isolated board-game TILE DECAL icon on a genuinely transparent background. This will be mapped onto the board plane by the game engine, so the artwork MUST be perfectly flat orthographic face-on, no isometric angle, no perspective tilt, no visible side thickness, no floor or cast shadow. Cute rounded fantasy toy aesthetic, bold clean dark contours, simple broad color areas, one restrained glossy highlight, instantly readable at 32px. Compact centered square canvas, safe 15% transparent margin on all sides, no enclosing circular badge, no text or letters, no watermark. One single broad rounded arrow pointing exactly RIGHT horizontally. Cream ivory center, vivid leaf-green edging and thick dark forest-green contour, broad straight shaft and large triangular head. All parts are flat on one plane. Absolutely no extra arrows, circle, badge, swooshes or motion streaks.",
-    "correction_prompt": null
+    "attempts": 1
   },
   {
     "id": "BOARD_BOOST",
     "name": "부스터",
+    "prompt": "Create ONE tiny-board-game pictogram as a clean solid flat dark teal (#245B4A) symbol on a genuinely transparent background. This is a simple printed SYMBOL, not an illustration. Perfectly flat face-on orthographic, smooth crisp edges, thick rounded geometry and absolutely uniform opaque fill. Use only dark teal ink and transparent negative-space holes. No rough print texture, grunge, shading, gradients, highlights, bevel, depth, glow, shadow, badge, frame, letters or background. Square image; center the symbol within the middle 70% of the canvas. Must be immediately readable at 24px. Exactly THREE separate identical thick chevrons >>> pointing RIGHT in a horizontal row. Simple straight-sided V shapes turned right, slightly rounded ends, evenly spaced. Solid dark teal silhouette, no outline or detail. No arrow shafts, no motion trails.",
+    "correction_prompt": null,
     "path": "assets/board/decals/BOARD_BOOST.png",
-    "native_source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-2d4f9c80-3a98-4e6f-bca0-f1d2a49ba4b9.png",
+    "native_source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-6b84e2c4-36cd-4c7f-b5ea-5966925618dd.png",
     "width": 1254,
     "height": 1254,
     "alpha": true,
     "opaque_bounds": [
-      62,
-      323,
-      1217,
-      920
+      175,
+      431,
+      1084,
+      822
     ],
-    "sha256": "f6401cb4c22083c10e15f2d61afaa348814cee20fec01edfd770fd43cdd5ac14",
-    "attempts": 2,
+    "sha256": "c6668ccd78eb953b630dd197336f871b1a9808fb2fac742815f2267a39959083",
     "tool": "native image_gen.imagegen",
     "image_model": "not exposed",
-    "prompt": "Use case: stylized-concept. Create ONE isolated board-game TILE DECAL icon on a genuinely transparent background. This will be mapped onto the board plane by the game engine, so the artwork MUST be perfectly flat orthographic face-on, no isometric angle, no perspective tilt, no visible side thickness, no floor or cast shadow. Cute rounded fantasy toy aesthetic, bold clean dark contours, simple broad color areas, one restrained glossy highlight, instantly readable at 32px. Compact centered square canvas, safe 15% transparent margin on all sides, no enclosing circular badge, no text or letters, no watermark. Exactly THREE large separate rounded chevrons >>> pointing exactly RIGHT horizontally, arranged in one simple horizontal row. Each chevron has a bright ivory-white center with golden yellow inner highlight and bold dark burnt-orange contour. Simple thick identical V-shaped chevrons turned toward the RIGHT, no arrow shaft, no enclosing badge or tile, no sparks or text. Flat front-facing decal with transparency, not angled, no perspective.",
-    "correction_prompt": "Correct ONLY the background and edge treatment of these three chevrons. Keep exactly THREE ivory-white and golden-yellow >>> chevrons pointing RIGHT, identical broad rounded shapes, but REMOVE ALL orange haze, ALL glow and shadows from around and between the chevrons. Each chevron must be a crisp opaque solid icon with a thin dark burnt-orange outline, immediately surrounded by FULLY TRANSPARENT empty pixels. No semitransparent cloud, no backplate. Flat orthographic decal, square canvas, centered compact horizontal row, generous clear transparent margin. No text."
+    "attempts": 1
   }
 ]
