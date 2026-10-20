@@ -37,6 +37,11 @@ signal dash_pad_triggered(pawn_id: int, tile: int)
 ## 🔥 리벤지 부스터가 장전된 말이 출발한다 (첫 걸음 직전). base: 기본 눈금, bonus: 추가 칸, total: 최종 계획 칸 수.
 signal revenge_boost_fired(pawn_id: int, base_steps: int, bonus: int, total: int)
 signal pawn_pushed_back(pawn_id: int, from_tile: int, to_tile: int)
+## 바둑 백돌 방어막이 잡기·함정을 막고 깨졌다 / 다시 차올랐다.
+signal shield_broken(pawn_id: int, tile: int)
+signal shield_recharged(pawn_id: int)
+## 지뢰찾기 공병이 적 함정을 해체했다.
+signal trap_defused(tile: int, attachment_id: String, pawn_id: int)
 ## TRP_05 도미노 연쇄 붕괴: 밟은 말(pawn_id)이 지나간 타일들(passed)로 밀려났고 chain의 말들이 2칸씩 연쇄로 밀려났다.
 signal domino_collapsed(pawn_id: int, passed: Array[int], chain: Array[int])
 ## ACT_07 무너지는 탑이 tile에 벼락을 쳐 말들을 흩어 놓았다 (scattered: {"pawn_id", "from", "to"}).
@@ -226,14 +231,14 @@ func evolve_pawn(pawn: PlayerPawn, kind: GameEnums.PawnKind) -> bool:
 	return true
 
 
-## 이 플레이어가 이 세트에서 아직 받지 않은 호기(1~4) 목록. 승진한 퀸(5호기)은 세지 않는다.
+## 이 플레이어가 이 세트에서 아직 받지 않은 호기 목록 (대부분 1~4, 아케이드는 1~5). 승진한 퀸(5호기)은 세지 않는다.
 func free_units(player_id: int, kind: GameEnums.PawnKind) -> Array[int]:
 	var taken: Array[int] = []
 	for pawn: PlayerPawn in pawns:
 		if pawn.owner_id == player_id and pawn.kind == kind:
 			taken.append(pawn.unit_no)
 	var result: Array[int] = []
-	for unit: int in range(1, GameEnums.PAWNS_PER_PLAYER + 1):
+	for unit: int in range(1, PawnCatalog.unit_count(kind) + 1):
 		if not taken.has(unit):
 			result.append(unit)
 	return result
@@ -326,6 +331,8 @@ func send_to_start(pawn: PlayerPawn, by_player: int) -> void:
 		var was_out: bool = member.has_left_start and not member.is_finished
 		member.reset_to_start()
 		member.revenge_boost = member.revenge_boost or was_out
+		if member.sub_type() == GameEnums.PawnSubType.BADUK_WHITE and not member.shield:
+			member.shield_broken_hit = true  # 방어막이 깨진 채로 잡혔다: 다음 증강 라운드에 재충전되지 않는다
 		if was_out:
 			add_stat(pawn.owner_id, &"ejected")
 			if enemy_kill:
@@ -632,3 +639,25 @@ func owned_attachment_count(player_id: int) -> int:
 			if attachment.owner_id == player_id:
 				count += 1
 	return count
+
+
+## 바둑 백돌 방어막이 있으면 깨뜨리고 true (잡기·함정을 막았다).
+func break_shield(pawn: PlayerPawn) -> bool:
+	if pawn == null or not pawn.shield or pawn.sub_type() != GameEnums.PawnSubType.BADUK_WHITE:
+		return false
+	pawn.shield = false
+	pawn.shield_broken_hit = false
+	shield_broken.emit(pawn.entity_id, pawn.current_tile_idx)
+	return true
+
+
+## 증강 라운드: 방어막이 깨진 뒤 잡히지 않은 백돌은 방어막이 다시 차오른다.
+func recharge_shields() -> void:
+	for pawn: PlayerPawn in pawns:
+		if pawn.sub_type() != GameEnums.PawnSubType.BADUK_WHITE or pawn.shield:
+			continue
+		if not pawn.shield_broken_hit:
+			pawn.shield = true
+			shield_recharged.emit(pawn.entity_id)
+		pawn.shield_broken_hit = false
+

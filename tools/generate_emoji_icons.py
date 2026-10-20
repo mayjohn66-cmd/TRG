@@ -1,12 +1,14 @@
-"""Generate the 8 special-victory law icons: python3 tools/generate_law_icons.py
+"""Generate emoji-based icons: python3 tools/generate_emoji_icons.py
 
-Each icon is a Noto Color Emoji glyph (SIL Open Font License 1.1) on a dark warm backdrop with a golden glow,
-sized like the painted illustrations (1254 px) so the draft card and rulebook slots treat them the same way.
+All glyphs come from Noto Color Emoji (SIL Open Font License 1.1).
+- laws/LAW_0N.png: the 8 special-victory law icons on a dark warm backdrop with a golden glow,
+  sized like the painted illustrations (1254 px) so the draft card and rulebook slots treat them the same way.
+- pawns/<SUBTYPE>.png: transparent 256 px board tokens for the arcade pawn set, with a white sticker outline.
 """
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
-ROOT = Path(__file__).resolve().parents[1] / 'content_trickcal/illustrations/laws'
+ROOT = Path(__file__).resolve().parents[1] / 'content_trickcal/illustrations'
 FONT = '/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf'
 SIZE = 1254
 ICONS = {
@@ -19,6 +21,14 @@ ICONS = {
     'LAW_07': '⚡',            # 초전도체 무한 동력: 번개
     'LAW_08': '\U0001F40E',        # 다크호스의 하극상: 말
 }
+PAWNS = {
+    'CHECKERS_KING': '\U0001F451',     # 체커 킹: 왕관
+    'LUDO_AVENGER': '\U0001F525',      # 루도 복수자: 불꽃
+    'POOL_8BALL': '\U0001F3B1',        # 8번 공
+    'KART_STAR': '\U0001F3CE\ufe0f',  # 스타 카트: 경주차
+    'MINESWEEPER_FLAG': '\U0001F6A9',  # 지뢰찾기 공병: 깃발
+}
+TOKEN = 256
 
 
 def backdrop():
@@ -31,12 +41,25 @@ def backdrop():
     return Image.alpha_composite(image, glow.filter(ImageFilter.GaussianBlur(120)))
 
 
-def glyph(text):
+def glyph(text, width=760):
     font = ImageFont.truetype(FONT, 109)
     canvas = Image.new('RGBA', (160, 160), (0, 0, 0, 0))
     ImageDraw.Draw(canvas).text((80, 80), text, font=font, embedded_color=True, anchor='mm')
     box = canvas.getbbox()
-    return canvas.crop(box).resize((760, round(760 * (box[3] - box[1]) / (box[2] - box[0]))), Image.LANCZOS)
+    return canvas.crop(box).resize((width, round(width * (box[3] - box[1]) / (box[2] - box[0]))), Image.LANCZOS)
+
+
+def token(text):
+    art = glyph(text, 216)
+    image = Image.new('RGBA', (TOKEN, TOKEN), (0, 0, 0, 0))
+    x, y = (TOKEN - art.width) // 2, TOKEN - art.height - 12
+    outline = Image.new('RGBA', (TOKEN, TOKEN), (0, 0, 0, 0))
+    mask = art.split()[3].point(lambda a: 255 if a > 40 else 0)
+    outline.paste((255, 255, 255, 255), (x, y), mask)
+    outline = outline.filter(ImageFilter.MaxFilter(9))
+    image = Image.alpha_composite(image, outline)
+    image.alpha_composite(art, (x, y))
+    return image
 
 
 for law_id, text in ICONS.items():
@@ -48,5 +71,9 @@ for law_id, text in ICONS.items():
     halo.paste((255, 214, 120, 255), (x, y), mask)
     image = Image.alpha_composite(image, halo.filter(ImageFilter.GaussianBlur(28)))
     image.alpha_composite(art, (x, y))
-    image.convert('RGB').save(ROOT / f'{law_id}.png')
+    image.convert('RGB').save(ROOT / 'laws' / f'{law_id}.png')
     print('wrote', law_id)
+
+for subtype, text in PAWNS.items():
+    token(text).save(ROOT / 'pawns' / f'{subtype}.png')
+    print('wrote', subtype)

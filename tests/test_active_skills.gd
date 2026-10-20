@@ -57,19 +57,6 @@ func test_queen_always_moves_two_extra_tiles_and_ignores_traps() -> void:
 	check_eq(report.path.size(), 5, "눈금 3 + 퀸 보너스 2 = 5칸")
 	check(not report.stopped_early, "중간 칸 함정은 뛰어넘어 무시")
 
-
-func test_bishop_gets_two_extra_tiles_only_when_the_path_touches_a_corner() -> void:
-	var state := make_state(2, 1, {1: _units(Kind.CHESS, [3])})
-	place(state, 11, 3, [2])
-	check_eq(move(state, 11, 3).path.size(), 5, "6번 코너를 밟으면 +2칸 (3 + 2)")
-	var outer := make_state(2, 1, {1: _units(Kind.CHESS, [3])})
-	place(outer, 11, 1, [0])
-	check_eq(move(outer, 11, 2).path.size(), 2, "코너를 건드리지 않으면 보너스 없음")
-	var halfway := make_state(2, 1, {1: _units(Kind.CHESS, [3])})
-	place(halfway, 11, 10, [9])
-	check_eq(move(halfway, 11, 3).path.size(), 5, "12번 코너를 스쳐도 +2칸")
-
-
 func test_cannon_adds_three_tiles_when_any_pawn_is_in_the_middle_of_the_path() -> void:
 	var state := make_state(2, 1, {1: _units(Kind.JANGGI, [1])})
 	place(state, 11, 1, [0])
@@ -81,7 +68,7 @@ func test_cannon_adds_three_tiles_when_any_pawn_is_in_the_middle_of_the_path() -
 
 
 func test_horse_and_elephant_get_bonus_tiles_only_when_the_tile_ahead_is_clear() -> void:
-	for entry: Array in [[3, 2], [4, 3]]:
+	for entry: Array in [[3, 2], [4, 2]]:
 		var open := make_state(2, 1, {1: _units(Kind.JANGGI, [entry[0]])})
 		place(open, 11, 10, [9])
 		check_eq(move(open, 11, 2).path.size(), 2 + int(entry[1]), "앞이 비면 +%d칸 (%d호기)" % [entry[1], entry[0]])
@@ -89,24 +76,6 @@ func test_horse_and_elephant_get_bonus_tiles_only_when_the_tile_ahead_is_clear()
 		place(blocked, 11, 10, [9])
 		place(blocked, 21, 11, [10])
 		check_eq(move(blocked, 11, 2).path.size(), 2, "막혀 있으면 기본 눈금만 이동 (페널티 없음)")
-
-
-func test_white_stone_is_immune_and_slower_while_black_stone_captures_normally() -> void:
-	var state := make_state(2, 1, {1: _units(Kind.GO, [2]), 2: _units(Kind.GO, [1])})
-	place(state, 11, 4, [3])
-	place(state, 21, 2, [1])
-	var intruder: MoveReport = move(state, 21, 2)
-	check(not intruder.pushed_back and intruder.captured_pawn_ids.is_empty(), "백돌은 잡히지 않고 침입자도 밀려나지 않는다")
-	check_eq(state.get_pawn(11).current_tile_idx, 4, "백돌은 그대로")
-	place(state, 11, 11, [10])
-	check_eq(move(state, 11, 4).path.size(), 3, "백돌은 눈금 -1")
-	var black := make_state(2, 1, {1: _units(Kind.GO, [1]), 2: _units(Kind.GO, [1])})
-	place(black, 11, 2, [1])
-	place(black, 21, 4, [3])
-	var captured: MoveReport = move(black, 11, 2)
-	check_eq(captured.captured_pawn_ids, int_array([21]), "흑돌은 평범하게 잡는다 (알까기 상시 효과 없음)")
-	check_eq(black.get_pawn(21).current_tile_idx, 0, "잡힌 말은 출발선으로")
-
 
 func test_only_yut_pawns_earn_the_capture_extra_turn_and_no_set_effects_remain() -> void:
 	var state := make_state(2, 1, {1: _units(Kind.JANGGI, [1, 2, 3, 4])})
@@ -132,18 +101,20 @@ func test_only_the_mini_car_builds_hotels() -> void:
 
 # --- 필살기 ----------------------------------------------------------------
 
-func test_skill_catalog_has_exactly_four_one_shot_skills() -> void:
+func test_skill_catalog_has_eleven_one_shot_skills() -> void:
 	var found: Dictionary = {}
 	for kind: GameEnums.PawnKind in PawnCatalog.EVOLVABLE_SETS:
-		for unit: int in range(1, 5):
+		for unit: int in range(1, PawnCatalog.unit_count(kind) + 1):
 			var skill: StringName = PawnCatalog.skill_of(PawnCatalog.sub_type_of(kind, unit))
 			if skill != &"":
 				found[skill] = PawnCatalog.unit_label(kind, unit)
-	check_eq(found.size(), 5, "필살기는 5종 (알까기·전차·캐슬링·워프·모치고마 낙하)")
+	check_eq(found.size(), 11, "필살기 11종")
 	check_eq(found[&"shoot"], "바둑:흑돌", "알까기 슈팅은 흑돌")
-	check_eq(found[&"charge"], "장기:차", "직선 저격은 차")
 	check_eq(found[&"castle"], "체스:룩", "단독 캐슬링은 룩")
-	check_eq(found[&"warp"], "모노:비행기", "직항 워프는 비행기")
+	check_eq(found[&"fianchetto"], "체스:비숍", "피앙케토는 비숍")
+	check_eq(found[&"quake"], "장기:상", "코끼리 지진은 상")
+	check_eq(found[&"bank_shot"], "아케이드:8번 공", "뱅크샷은 8번 공")
+	check_eq(found[&"plant_mine"], "아케이드:지뢰찾기 공병", "지뢰 매설은 공병")
 
 
 func test_rook_castle_swaps_with_an_ally_once_and_keeps_the_roll() -> void:

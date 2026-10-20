@@ -29,6 +29,8 @@ static func capture(state: GameState) -> TurnSnapshot:
 			"imprisoned": pawn.is_imprisoned,
 			"skill_used": pawn.skill_used,
 			"promoted": pawn.promoted,
+			"shield": pawn.shield,
+			"shield_hit": pawn.shield_broken_hit,
 			"carrier": pawn.carrier.entity_id if pawn.carrier != null else -1,
 			"carried": carried_ids,
 		}
@@ -95,6 +97,8 @@ func restore(state: GameState, restore_meta: bool = false) -> void:
 		pawn.is_imprisoned = bool(entry["imprisoned"])
 		pawn.skill_used = bool(entry.get("skill_used", false))
 		pawn.promoted = bool(entry.get("promoted", false))
+		pawn.shield = bool(entry.get("shield", false))
+		pawn.shield_broken_hit = bool(entry.get("shield_hit", false))
 		pawn.carrier = null
 		pawn.carried.clear()
 	for pawn: PlayerPawn in state.pawns:

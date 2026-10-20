@@ -21,7 +21,7 @@ static var portal_warp_targets: Dictionary = {12: 22, 22: 27}
 static var plane_warp_targets: Dictionary = {12: 24, 22: 30}
 ## 점프 코너: 코너 기본 점프대는 삭제되었다 (코너는 코너 전용 함정 슬롯). 하위 호환을 위해 빈 사전으로 남긴다.
 static var jump_corner_targets: Dictionary = {}
-## 비숍·각행이 스쳐 지나가거나 멈추면 이동 거리 +2칸을 얻는 코너.
+## 출발선을 뺀 코너: 각행 코너 보너스·비숍 코너 진입·코너 전용 함정 슬롯.
 static var bonus_corner_tiles: Array[int] = [8, 16, 24]
 ## 체스 폰·쇼기 기물이 반환점 이상에 도달하거나 지나가는 순간 승진·승급하는 타일.
 static var promotion_tiles: Array[int] = []

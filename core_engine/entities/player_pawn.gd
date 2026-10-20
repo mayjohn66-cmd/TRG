@@ -27,6 +27,10 @@ var is_imprisoned: bool = false
 var promoted: bool = false
 ## 1회용 고유 필살기를 이미 썼는가 (게임당 기물별 1회, 잡혀서 출발선으로 가도 되살아나지 않는다).
 var skill_used: bool = false
+## 바둑 백돌 방어막: 잡기·함정을 한 번 막는다. 깨진 뒤 다음 증강 라운드까지 잡히지 않으면 다시 차오른다.
+var shield: bool = false
+## 방어막이 깨진 뒤 출발선으로 잡혀 간 적이 있는가 (그러면 다음 증강 라운드에 재충전되지 않는다).
+var shield_broken_hit: bool = false
 
 
 ## 이 말의 세부 기물 (호기에서 정해지며, 승진한 체스 퀸은 5번째 호기다).
@@ -34,10 +38,21 @@ func sub_type() -> GameEnums.PawnSubType:
 	return PawnCatalog.sub_type_of(kind, unit_no)
 
 
-## 체스 비숍·쇼기 각행의 고유 능력: 출발선 외 코너(BoardSpec.bonus_corner_tiles)를 스치거나 멈추면 이동 거리 +2칸.
+## 쇼기 각행의 고유 능력: 출발선 외 코너(BoardSpec.bonus_corner_tiles)를 스치거나 멈추면 이동 거리 +2칸 (용마는 +3칸).
 func gets_corner_bonus() -> bool:
+	return sub_type() == GameEnums.PawnSubType.SHOGI_KAKU
+
+
+## 체스 룩·쇼기 비차의 고유 능력: 코너를 꺾지 않는 직진이면 +2칸.
+func gets_straight_bonus() -> bool:
 	var sub: GameEnums.PawnSubType = sub_type()
-	return sub == GameEnums.PawnSubType.CHESS_BISHOP or sub == GameEnums.PawnSubType.SHOGI_KAKU
+	return sub == GameEnums.PawnSubType.CHESS_ROOK or sub == GameEnums.PawnSubType.SHOGI_HISHA
+
+
+## 함정에 걸리지 않는 기물: 지뢰찾기 공병(항상), 스타 카트(이동 중 항상).
+func is_trap_immune() -> bool:
+	var sub: GameEnums.PawnSubType = sub_type()
+	return sub == GameEnums.PawnSubType.MINESWEEPER_FLAG or sub == GameEnums.PawnSubType.KART_STAR
 
 
 ## 체스 나이트(와 퀸)의 고유 능력: 중간 칸의 설치물(함정·호텔)을 무시하고 도착 칸만 판정한다 (나이트 점프).
@@ -50,6 +65,8 @@ func jumps_over_attachments() -> bool:
 func evolve(new_kind: GameEnums.PawnKind, new_unit_no: int) -> void:
 	kind = new_kind
 	unit_no = new_unit_no
+	shield = sub_type() == GameEnums.PawnSubType.BADUK_WHITE
+	shield_broken_hit = false
 
 
 func display_label() -> String:

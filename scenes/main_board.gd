@@ -805,6 +805,16 @@ func _bind_state() -> void:
 	state.pawn_pushed_back.connect(func(pawn_id: int, _from: int, _to: int) -> void:
 		if not _fx_hints.has(pawn_id):
 			_set_hint(pawn_id, {"arc": 0.0, "dur": 0.5}))
+	state.shield_broken.connect(func(pawn_id: int, tile: int) -> void:
+		_log_line("[백돌 방어막] %s이(가) %d번 타일에서 공격을 막고 방어막이 깨졌습니다" % [_pawn_name(pawn_id), tile], Color("b197fc"))
+		if _fx_on():
+			_fx_when_announced(func() -> void:
+				_impact_ring(_tile_center(tile) + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO), Color("e5dbff"), 30.0)
+				Sfx.play(&"good")))
+	state.shield_recharged.connect(func(pawn_id: int) -> void: _log_line("[백돌 방어막] %s의 방어막이 다시 차올랐습니다" % _pawn_name(pawn_id), Color("b197fc")))
+	state.trap_defused.connect(func(tile: int, id: String, pawn_id: int) -> void:
+		_log_line("[지뢰찾기] %s이(가) %d번 타일의 %s을(를) 해체하고 카드 1장!" % [_pawn_name(pawn_id), tile, _attachment_name(id)], Color("63e6be"))
+		_refresh_tiles())
 	state.attachment_triggered.connect(func(tile: int, id: String, pawn_id: int, _cutscene: StringName) -> void:
 		var trapped: PlayerPawn = state.get_pawn(pawn_id)
 		if trapped != null:
@@ -3202,12 +3212,15 @@ func _fill_pawn_tip(pawn_id: int) -> void:
 		status += "  ★나리 승급(+1칸)"
 	if pawn.revenge_boost and not pawn.has_left_start:
 		status += "\n🔥 리벤지 부스터 활성화: 이번 출격 시 이동 거리 +%d칸!" % GameData.revenge_bonus()
+	if pawn.sub_type() == GameEnums.PawnSubType.BADUK_WHITE:
+		status += "  🛡 방어막 있음" if pawn.shield else "  (방어막 깨짐)"
 	_tip_title.text = "%s  - P%d%s" % [PawnCatalog.full_name(pawn.kind, pawn.unit_no), pawn.owner_id, status]
 	_tip_ability.text = "◆ 패시브: %s" % PawnCatalog.ability_text(pawn.kind, pawn.unit_no)
 	var skill: StringName = PawnCatalog.skill_of(pawn.sub_type())
 	_tip_skill.visible = skill != &""
 	if skill != &"":
-		_tip_skill.text = "◆ [1회] %s%s\n   %s" % [PawnCatalog.skill_name(skill), "  (사용됨)" if pawn.skill_used else "", PawnCatalog.skill_text(skill)]
+		var locked: String = "  (승급 후)" if PawnCatalog.PROMOTED_SKILLS.has(skill) and not pawn.promoted else ""
+		_tip_skill.text = "◆ [1회] %s%s%s\n   %s" % [PawnCatalog.skill_name(skill), "  (사용됨)" if pawn.skill_used else "", locked, PawnCatalog.skill_text(skill)]
 
 
 ## 법전 슬롯 툴팁: 특수 승리 조건과 모두의 실시간 진행도 ("P2  3/6 처치  [위험!]").
@@ -4304,6 +4317,18 @@ func _start_skill(pawn: PlayerPawn) -> void:
 			for partner: PlayerPawn in waiting:
 				drop_options.append({"label": "말 %d번 (출발 대기)" % partner.slot, "value": partner.entity_id})
 			_show_choice("낙하시킬 대기 말", drop_options, _on_drop_partner_picked.bind(pawn.entity_id))
+		&"fianchetto":
+			if PawnSkills.fianchetto_tile(pawn) == -1:
+				_log_line("[피앙케토] 대각선 코너가 결승선 너머라 쓸 수 없습니다.", Color("868e96"))
+				return
+			_act(&"use_skill", {"pawn_id": pawn.entity_id})
+		&"bank_shot":
+			if PawnSkills.bank_shot_path(state, pawn).is_empty():
+				_log_line("[뱅크샷] 앞쪽에 들이받을 적이 없습니다.", Color("868e96"))
+				return
+			_act(&"use_skill", {"pawn_id": pawn.entity_id})
+		&"quake", &"slash", &"horse", &"plant_mine":
+			_act(&"use_skill", {"pawn_id": pawn.entity_id})
 
 
 func _on_drop_partner_picked(value: Variant, fu_id: int) -> void:
@@ -4455,6 +4480,18 @@ func _on_skill_used(data: Dictionary) -> void:
 		&"drop":
 			body = "%s이(가) %d번 타일에 낙하!" % [_pawn_name(int(data["partner"])), int(data["tile"])]
 			_set_hint(int(data["partner"]), {"drop": true})
+		&"fianchetto":
+			body = "%d번 → %d번 대각선 코너로!" % [int(data["from"]), int(data["tile"])]
+			_set_hint(int(data["pawn_id"]), {"arc": 96.0, "peak": 1.7, "dur": 0.9})
+		&"bank_shot":
+			body = "%d번 타일의 적에게 돌진!" % int((data["path"] as Array).back())
+		&"quake":
+			body = "주변 설치물 %d개 파괴!" % (data["destroyed"] as Array).size()
+			screen_shake(10.0, 0.35)
+		&"slash", &"horse":
+			body = "%d개의 말을 베어 출발선으로!" % (data["victims"] as Array).size()
+		&"plant_mine":
+			body = "%d번 타일에 지뢰 매설" % int(data["from"])
 	_log_line("[필살기] %s: %s - %s" % [who, PawnCatalog.skill_name(skill), body.replace("\n", " ")], Color("ffa94d"))
 	_announce_gate("1회용 필살기", "[P%d 발동!] %s" % [player_id, PawnCatalog.skill_name(skill)], body, PLAYER_COLORS[player_id], null, 1.3)
 
@@ -6820,7 +6857,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_on_duel_event(kind, data)
 		&"skill_used": _on_skill_used(data)
 		&"pawn_pushed_back":
-			_log_line("[백돌 무적] 백돌에 막혀 %s이(가) %d번 → %d번으로 밀려났습니다" % [_pawn_name(int(data["pawn_id"])), data["from"], data["to"]], Color("b197fc"))
+			_log_line("[백돌 방어막] 백돌에 막혀 %s이(가) %d번 → %d번으로 밀려났습니다" % [_pawn_name(int(data["pawn_id"])), data["from"], data["to"]], Color("b197fc"))
 		&"bomb_applied":
 			_log_line("[우노 +4] P%d의 %s이(가) 출발선으로 장외 사출! 내 말은 +%d칸 전진" % [data["victim"], _pawn_name(int(data["pawn_id"])), PenaltyBombCommand.advance_steps()], Color("ffd43b"))
 			_fx_bang(int(data["shooter"]), int(data["pawn_id"]))
@@ -6931,8 +6968,10 @@ func _log_move(data: Dictionary) -> void:
 		text += "  [증기선] 상대 설치물 파괴 %d개" % (data["destroyed"] as Array).size()
 	if int(data["dog_cards"]) > 0:
 		text += "  [강아지] 지나친 빵집에서 카드 %d장" % data["dog_cards"]
+	if int(data.get("defused_cards", 0)) > 0:
+		text += "  [지뢰찾기] 함정 해체 카드 %d장" % data["defused_cards"]
 	if data["pushed_back"]:
-		text += "  [백돌 무적] 잡을 수 없어 함께 섭니다"
+		text += "  [백돌 방어막] 잡을 수 없어 함께 섭니다"
 	if data["hotel_built"]:
 		text += "  호텔 건설"
 	if int(data["salary_cards"]) > 0:

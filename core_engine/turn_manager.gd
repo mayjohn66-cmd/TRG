@@ -459,6 +459,22 @@ func _handle_use_skill(actor: int, params: Dictionary) -> void:
 				victims.append({"pawn_id": hit_id, "from": state.get_pawn(hit_id).current_tile_idx})
 			_emit_skill_event(actor, pawn, skill, {"from": pawn.current_tile_idx, "landing": shot["landing"], "angle": angle, "power": clampf(power, 0.0, 1.0), "hits": victims})
 			_execute_instant_skill(pawn, skill, params)
+		&"fianchetto":
+			var corner: int = PawnSkills.fianchetto_tile(pawn)
+			if corner == -1:
+				action_rejected.emit(actor, &"use_skill", &"invalid_skill")
+				return
+			_emit_skill_event(actor, pawn, skill, {"from": pawn.current_tile_idx, "tile": corner})
+			_execute_instant_skill(pawn, skill, {"tile": corner})
+		&"bank_shot":
+			var shot_path: Array[int] = PawnSkills.bank_shot_path(state, pawn)
+			if shot_path.is_empty():
+				action_rejected.emit(actor, &"use_skill", &"invalid_skill")
+				return
+			_emit_skill_event(actor, pawn, skill, {"path": shot_path})
+			_execute_move(pawn, shot_path)
+		&"quake", &"slash", &"horse", &"plant_mine":
+			_skill_effect(actor, pawn, skill)
 		_:
 			action_rejected.emit(actor, &"use_skill", &"invalid_skill")
 
@@ -485,6 +501,24 @@ func _skill_castle(actor: int, rook: PlayerPawn, params: Dictionary) -> void:
 		action_rejected.emit(actor, &"use_skill", &"invalid_skill")
 		return
 	_emit_skill_event(actor, rook, &"castle", {"partner": partner.entity_id})
+	_broadcast_state()
+
+
+## 굴림은 그대로 두는 즉시 필살기: 코끼리 지진 / 용왕 베기 / 용마 십자 베기 / 지뢰 매설.
+func _skill_effect(actor: int, pawn: PlayerPawn, skill: StringName) -> void:
+	var tiles: Array[int] = []
+	match skill:
+		&"quake": tiles = PawnSkills.quake_tiles(pawn)
+		&"slash", &"horse": tiles = PawnSkills.strike_tiles(pawn, skill)
+		&"plant_mine": tiles = [pawn.current_tile_idx] as Array[int]
+	var from_tile: int = pawn.current_tile_idx
+	var command := SkillEffectCommand.new(actor, pawn.entity_id, skill, tiles)
+	if not command_stack.execute_command(command, _make_ctx(actor)):
+		action_rejected.emit(actor, &"use_skill", &"invalid_skill")
+		return
+	_emit_skill_event(actor, pawn, skill, {"from": from_tile, "tiles": tiles, "destroyed": command.destroyed, "victims": command.victims})
+	if _check_victory(null):
+		return
 	_broadcast_state()
 
 
@@ -522,7 +556,7 @@ func _execute_instant_skill(pawn: PlayerPawn, skill: StringName, params: Diction
 	var report := MoveReport.new()
 	report.pawn_id = pawn.entity_id
 	var destination: int = pawn.current_tile_idx
-	if skill == &"warp":
+	if skill == &"warp" or skill == &"fianchetto":
 		destination = int(params["tile"])
 	else:
 		var shot: Dictionary = PawnSkills.shot_result(state, pawn, float(params["angle"]), clampf(float(params["power"]), 0.0, 1.0))
@@ -880,6 +914,8 @@ func _enter_round_start() -> void:
 	_draft_picks.clear()
 	_draft_rerolls.clear()
 	change_state(State.PHASE_ROUND_START)
+	if GameEnums.is_draft_round(state.round_number) and state.round_number > 1:
+		state.recharge_shields()  # 바둑 백돌: 증강 라운드마다 방어막 재충전
 	if draft_enabled and GameEnums.is_draft_round(state.round_number):
 		for player_id: int in player_order:
 			if not state.is_graduated(player_id):  # 졸업한 플레이어는 드래프트에서 빠진다

@@ -76,10 +76,10 @@ func test_evolution_rejects_full_set_and_non_basic_pawns() -> void:
 	check_eq(other.get_pawn(21).unit_no, 1, "상대의 첫 진화는 1호기")
 
 
-func test_chess_unit_three_is_the_bishop_with_corner_bonus() -> void:
-	var state := make_state(2, 1, {1: [Vector2i(Kind.CHESS, 3), Vector2i(Kind.CHESS, 2), 0, 0]})
-	check(state.get_pawn(11).gets_corner_bonus(), "체스 3호기 = 비숍")
-	check(not state.get_pawn(12).gets_corner_bonus(), "나이트는 아님")
+func test_chess_unit_three_is_the_bishop_and_unit_four_the_straight_rook() -> void:
+	var state := make_state(2, 1, {1: [Vector2i(Kind.CHESS, 3), Vector2i(Kind.CHESS, 4), 0, 0]})
+	check_eq(state.get_pawn(11).sub_type(), GameEnums.PawnSubType.CHESS_BISHOP, "체스 3호기 = 비숍")
+	check(state.get_pawn(12).gets_straight_bonus() and not state.get_pawn(11).gets_straight_bonus(), "룩만 직진 보너스")
 
 
 func test_stacking_rules_with_sets() -> void:
@@ -111,7 +111,7 @@ func test_augment_pool_has_all_four_categories() -> void:
 	var counts: Dictionary = {}
 	for def: AugmentDef in AugmentRegistry.all():
 		counts[def.category] = int(counts.get(def.category, 0)) + 1
-	check_eq(counts[GameEnums.AugmentCategory.PAWN_EVOLUTION], 19, "기물 지급: 윷 1 + 체스 4 + 장기 4 + 모노폴리 4 + 바둑 2 + 쇼기 4")
+	check_eq(counts[GameEnums.AugmentCategory.PAWN_EVOLUTION], 24, "기물 지급: 윷 1 + 체스 4 + 장기 4 + 모노폴리 4 + 바둑 2 + 쇼기 4 + 아케이드 5")
 	check_eq(counts[GameEnums.AugmentCategory.TOOL_SWAP], 12, "판정 도구 교체 12종 (D6 제외)")
 	check_eq(counts[GameEnums.AugmentCategory.LAW_ENACT], 8, "교칙 8종")
 	check_eq(counts[GameEnums.AugmentCategory.CARD_PACKAGE], 1, "카드 패키지")

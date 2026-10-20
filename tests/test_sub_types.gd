@@ -102,23 +102,6 @@ func test_promotion_survives_snapshot_restore() -> void:
 	snapshot.restore(state)
 	check_eq(state.get_pawn(11).sub_type(), Sub.CHESS_PAWN, "되감으면 폰으로 복구")
 
-
-func test_bishop_gets_plus_two_at_a_corner_and_law_01_only_stops_the_jump() -> void:
-	var state := make_state(2, 1, {1: _units(Kind.CHESS, [1, 2, 3])})
-	place(state, 13, 4, [3])
-	var report: MoveReport = move(state, 13, 2)
-	check_eq(report.path, int_array([5, 6, 7, 8]), "비숍은 6번 코너를 스치면 +2칸 (6번에 멈추지 않으므로 점프 없음)")
-	check(report.ability_notes.has("코너 보너스 +2칸"), "능력 보고")
-	var plain := make_state(2, 1, {1: _units(Kind.CHESS, [1, 2, 3])})
-	place(plain, 11, 4, [3])
-	check_eq(move(plain, 11, 2).path, int_array([5, 6]), "폰은 보너스 없이 6번 코너에 멈춘다")
-	var sealed := make_state(2, 1, {1: _units(Kind.CHESS, [1, 2, 3])})
-	var ctx: RuleContext = make_ctx(sealed, 2)
-	ctx.allow_shortcut = false  # LAW_01(지름길 공사 중)이 ON_MOVE_CALC에서 하는 일
-	place(sealed, 11, 4, [3])
-	check_eq(MoveExecutor.execute(sealed, sealed.get_pawn(11), ctx).path, int_array([5, 6]), "LAW_01 중에는 점프하지 않는다")
-
-
 # --- 장기 -----------------------------------------------------------------------
 
 
@@ -174,18 +157,32 @@ func test_dog_draws_a_card_for_every_bakery_it_only_passes() -> void:
 
 # --- 바둑 -----------------------------------------------------------------------
 
-
-func test_white_stone_is_immune_and_shields_other_allies_on_its_tile() -> void:
+func test_white_stone_shield_blocks_one_capture_then_recharges_at_a_draft_round() -> void:
 	var state := make_state(2, 1, {1: [Vector2i(Kind.GO, 2), 0, 0, 0]})
-	place(state, 11, 4, [3])  # 백돌
-	place(state, 12, 4, [3])  # 같은 칸의 일반 기물
+	var white: PlayerPawn = state.get_pawn(11)
+	check(white.shield, "진화하면 방어막")
+	place(state, 11, 4, [3])
 	place(state, 21, 2, [1])
-	check(MoveExecutor.is_capture_immune(state, state.get_pawn(11)), "백돌은 세트 없이도 무적")
-	check(MoveExecutor.is_capture_immune(state, state.get_pawn(12)), "같은 칸의 아군도 방어막으로 면역")
+	check(MoveExecutor.is_capture_immune(state, white), "방어막이 있으면 잡히지 않는 것으로 본다")
 	var report: MoveReport = move(state, 21, 2)
-	check(not report.pushed_back and report.captured_pawn_ids.is_empty(), "아무도 잡히지 않고 침입자는 밀려나지 않고 함께 선다")
-	state.get_pawn(11).current_tile_idx = 9
-	check(not MoveExecutor.is_capture_immune(state, state.get_pawn(12)), "백돌이 떠나면 방어막도 사라진다")
+	check(report.captured_pawn_ids.is_empty() and white.current_tile_idx == 4, "첫 잡기는 막는다")
+	check(not white.shield, "방어막이 깨졌다")
+	place(state, 21, 2, [1])
+	move(state, 21, 2)
+	check(not white.has_left_start, "두 번째 잡기에는 잡힌다")
+	state.recharge_shields()
+	check(not white.shield, "깨진 뒤 잡혔으면 이번 증강 라운드에는 재충전되지 않는다")
+	state.recharge_shields()
+	check(white.shield, "그다음 증강 라운드까지 안 잡히면 재충전")
+
+
+func test_white_stone_shield_blocks_an_enemy_trap_and_no_longer_slows_down() -> void:
+	var state := make_state(2, 1, {1: [Vector2i(Kind.GO, 2), 0, 0, 0]})
+	place(state, 11, 2, [1])
+	state.place_attachment(4, TrapMine.new(2))
+	var report: MoveReport = move(state, 11, 3)
+	check_eq(report.path, int_array([3, 4, 5]), "눈금 -1 페널티 없음, 지뢰도 막고 지나간다")
+	check(not state.get_pawn(11).shield and state.board.get_tile(4).attachments.is_empty(), "방어막과 함께 지뢰가 부서졌다")
 
 
 func test_black_stones_alone_are_not_immune() -> void:

@@ -417,6 +417,33 @@ static func skill_option(state: GameState, pawn: PlayerPawn) -> Dictionary:
 		&"warp": return _warp_option(state, pawn)
 		&"castle": return _castle_option(state, pawn)
 		&"drop": return _drop_option(state, pawn)
+		&"fianchetto":
+			var corner: int = PawnSkills.fianchetto_tile(pawn)
+			if corner == -1:
+				return {}
+			return {"params": {}, "value": float(state.pawn_progress_distance(pawn) - state.board.distance_to_goal(corner, true))}
+		&"bank_shot":
+			var route: Array[int] = PawnSkills.bank_shot_path(state, pawn)
+			if route.is_empty():
+				return {}
+			var target: float = 0.0
+			for leader: PlayerPawn in state.leaders_at(route.back()):
+				if leader.owner_id != pawn.owner_id and not MoveExecutor.is_capture_immune(state, leader):
+					target += pawn_progress(state, leader)
+			return {"params": {}, "value": target + float(route.size())} if target > 0.0 else {}
+		&"slash", &"horse":
+			var hits: float = 0.0
+			for tile: int in PawnSkills.strike_tiles(pawn, PawnCatalog.skill_of(pawn.sub_type())):
+				for leader: PlayerPawn in state.leaders_at(tile):
+					if leader.owner_id != pawn.owner_id and leader.has_left_start:
+						hits += pawn_progress(state, leader)
+			return {"params": {}, "value": hits} if hits > 0.0 else {}
+		&"quake":
+			var hostile: int = PawnSkills.attachments_on(state, pawn, PawnSkills.quake_tiles(pawn), true)
+			var mine: int = PawnSkills.attachments_on(state, pawn, PawnSkills.quake_tiles(pawn)) - hostile
+			return {"params": {}, "value": SKILL_USE_THRESHOLD + 4.0 * float(hostile - mine)} if hostile > mine else {}
+		&"plant_mine":
+			return {"params": {}, "value": SKILL_USE_THRESHOLD + 1.0} if state.board.get_tile(pawn.current_tile_idx).attachments.is_empty() else {}
 	return {}
 
 

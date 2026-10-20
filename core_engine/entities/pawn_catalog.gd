@@ -1,6 +1,6 @@
 # File: res://core_engine/entities/pawn_catalog.gd
 # Class: class_name PawnCatalog
-# Role: 기물 세트(윷/체스/장기/모노폴리/바둑)의 이름·약어·1~4호기 명칭 데이터. 뷰와 로그가 같은 표기를 쓰도록 한곳에 모은다
+# Role: 기물 세트(윷/체스/장기/모노폴리/바둑/쇼기/아케이드)의 이름·약어·호기 명칭·능력·필살기 데이터. 뷰와 로그가 같은 표기를 쓰도록 한곳에 모은다
 class_name PawnCatalog
 extends RefCounted
 
@@ -12,6 +12,7 @@ const SET_NAMES: Dictionary = {
 	GameEnums.PawnKind.MONOPOLY: "모노폴리",
 	GameEnums.PawnKind.GO: "바둑",
 	GameEnums.PawnKind.SHOGI: "쇼기",
+	GameEnums.PawnKind.ARCADE: "아케이드",
 }
 const EVOLVABLE_SETS: Array[GameEnums.PawnKind] = [
 	GameEnums.PawnKind.YUT,
@@ -20,6 +21,7 @@ const EVOLVABLE_SETS: Array[GameEnums.PawnKind] = [
 	GameEnums.PawnKind.MONOPOLY,
 	GameEnums.PawnKind.GO,
 	GameEnums.PawnKind.SHOGI,
+	GameEnums.PawnKind.ARCADE,
 ]
 const SubType := GameEnums.PawnSubType
 ## 세트별 1~4호기(체스는 5번째 = 승진한 퀸)의 세부 기물.
@@ -30,6 +32,7 @@ const SUB_TYPES: Dictionary = {
 	GameEnums.PawnKind.MONOPOLY: [SubType.MONO_CAR, SubType.MONO_PLANE, SubType.MONO_SHIP, SubType.MONO_DOG],
 	GameEnums.PawnKind.GO: [SubType.BADUK_BLACK, SubType.BADUK_WHITE, SubType.BADUK_BLACK, SubType.BADUK_WHITE],
 	GameEnums.PawnKind.SHOGI: [SubType.SHOGI_FU, SubType.SHOGI_HISHA, SubType.SHOGI_KAKU, SubType.SHOGI_KEIMA],
+	GameEnums.PawnKind.ARCADE: [SubType.CHECKERS_KING, SubType.LUDO_AVENGER, SubType.POOL_8BALL, SubType.KART_STAR, SubType.MINESWEEPER_FLAG],
 }
 ## 세부 기물 이름 / 보드 위 한 글자 라벨 / 한 줄 능력 설명.
 const SUB_NAMES: Dictionary = {
@@ -39,6 +42,7 @@ const SUB_NAMES: Dictionary = {
 	SubType.MONO_CAR: "모노:미니카", SubType.MONO_PLANE: "모노:비행기", SubType.MONO_SHIP: "모노:증기선", SubType.MONO_DOG: "모노:강아지",
 	SubType.BADUK_BLACK: "바둑:흑돌", SubType.BADUK_WHITE: "바둑:백돌",
 	SubType.SHOGI_FU: "쇼기:보병", SubType.SHOGI_HISHA: "쇼기:비차", SubType.SHOGI_KAKU: "쇼기:각행", SubType.SHOGI_KEIMA: "쇼기:계마",
+	SubType.CHECKERS_KING: "아케이드:킹 체커", SubType.LUDO_AVENGER: "아케이드:루도 복수자", SubType.POOL_8BALL: "아케이드:8번 공", SubType.KART_STAR: "아케이드:스타 카트", SubType.MINESWEEPER_FLAG: "아케이드:지뢰찾기 공병",
 }
 ## 나리(成り) 승급 뒤 이름 / 한 글자 라벨 (보병 -> 토금, 비차 -> 용왕, 각행 -> 용마, 계마 -> 성계).
 const PROMOTED_NAMES: Dictionary = {
@@ -54,28 +58,34 @@ const SUB_LETTERS: Dictionary = {
 	SubType.MONO_CAR: "카", SubType.MONO_PLANE: "비", SubType.MONO_SHIP: "배", SubType.MONO_DOG: "개",
 	SubType.BADUK_BLACK: "흑", SubType.BADUK_WHITE: "백",
 	SubType.SHOGI_FU: "보", SubType.SHOGI_HISHA: "비", SubType.SHOGI_KAKU: "각", SubType.SHOGI_KEIMA: "계",
+	SubType.CHECKERS_KING: "킹", SubType.LUDO_AVENGER: "루", SubType.POOL_8BALL: "8", SubType.KART_STAR: "★", SubType.MINESWEEPER_FLAG: "깃",
 }
 const SUB_ABILITIES: Dictionary = {
 	SubType.YUT_MAL: "처치·눈금 4/5 시 재굴림 +1 · 자동 업기",
 	SubType.CHESS_PAWN: "반환점 이상 도달 시 퀸 승급",
 	SubType.CHESS_KNIGHT: "경로 말·함정 관통 (도착 칸만 판정)",
-	SubType.CHESS_BISHOP: "코너 스치면 +2칸",
-	SubType.CHESS_ROOK: "없음",
+	SubType.CHESS_BISHOP: "코너 바로 앞에 멈추면 +1칸 코너 진입",
+	SubType.CHESS_ROOK: "코너를 꺾지 않는 직진 +2칸",
 	SubType.CHESS_QUEEN: "이동 +2칸 · 말·함정 관통",
 	SubType.JANGGI_PO: "경로에 말 있으면 넘어서 +3칸",
 	SubType.JANGGI_CHA: "없음",
 	SubType.JANGGI_MA: "앞 칸 비면 +2칸",
-	SubType.JANGGI_SANG: "앞 칸 비면 +3칸",
+	SubType.JANGGI_SANG: "앞 칸 비면 +2칸",
 	SubType.MONO_CAR: "도착 칸 호텔 5턴 · 출발선 통과 시 카드 +1",
 	SubType.MONO_PLANE: "옷장 → 더 먼 곳으로 워프",
 	SubType.MONO_SHIP: "첫 적 설치물 무시·파괴",
 	SubType.MONO_DOG: "빵집 스침만 해도 카드 +1",
 	SubType.BADUK_BLACK: "없음",
-	SubType.BADUK_WHITE: "처치 면역 · 아군 보호 (눈금 -1)",
+	SubType.BADUK_WHITE: "잡기·함정 1회 방어 (증강 라운드까지 안 잡히면 재충전)",
 	SubType.SHOGI_FU: "반환점 이상 통과 시 토금 승급 (+1칸)",
-	SubType.SHOGI_HISHA: "이동 +2칸",
-	SubType.SHOGI_KAKU: "코너 스치면 +2칸 · 승급 시 앞 1칸 처치",
+	SubType.SHOGI_HISHA: "직진 +2칸 · 반환점에서 용왕 승급",
+	SubType.SHOGI_KAKU: "코너 스치면 +2칸 (용마 +1칸 더)",
 	SubType.SHOGI_KEIMA: "첫 2칸 함정·말 관통 · 승급 시 +1칸",
+	SubType.CHECKERS_KING: "지나가는 칸의 적 처치",
+	SubType.LUDO_AVENGER: "복수 부스터 +8칸",
+	SubType.POOL_8BALL: "처치하면 +3칸",
+	SubType.KART_STAR: "모든 추가 이동 +2칸 · 이동 중 함정 면역",
+	SubType.MINESWEEPER_FLAG: "함정 면역 · 밟은 적 함정 해체 +카드 1장",
 }
 ## 1회용 필살기: 세부 기물 -> 스킬 ID / 이름 / 설명. 필살기가 없으면 스킬 ID가 빈 값이다.
 const SKILL_IDS: Dictionary = {
@@ -84,13 +94,27 @@ const SKILL_IDS: Dictionary = {
 	SubType.CHESS_ROOK: &"castle",
 	SubType.MONO_PLANE: &"warp",
 	SubType.SHOGI_FU: &"drop",
+	SubType.CHESS_BISHOP: &"fianchetto",
+	SubType.JANGGI_SANG: &"quake",
+	SubType.SHOGI_HISHA: &"slash",
+	SubType.SHOGI_KAKU: &"horse",
+	SubType.POOL_8BALL: &"bank_shot",
+	SubType.MINESWEEPER_FLAG: &"plant_mine",
 }
+## 나리 승급해야 쓸 수 있는 필살기 (용왕·용마).
+const PROMOTED_SKILLS: Array[StringName] = [&"slash", &"horse"]
 const SKILL_NAMES: Dictionary = {
 	&"shoot": "진짜 알까기 슈팅",
 	&"charge": "직선 전차 저격",
 	&"castle": "단독 캐슬링",
 	&"warp": "직항 워프",
 	&"drop": "모치고마 낙하",
+	&"fianchetto": "피앙케토",
+	&"quake": "코끼리 지진",
+	&"slash": "용왕 베기",
+	&"horse": "용마 십자 베기",
+	&"bank_shot": "뱅크샷",
+	&"plant_mine": "지뢰 매설",
 }
 const SKILL_TEXTS: Dictionary = {
 	&"shoot": "조준 발사 → 적 전원 출발선, 근처 안착",
@@ -98,6 +122,12 @@ const SKILL_TEXTS: Dictionary = {
 	&"castle": "굴리기 전 아군 1개와 위치 교환",
 	&"warp": "빵집·코너 중 1곳으로 직항",
 	&"drop": "대기 말 1개를 보병 옆에 즉시 낙하",
+	&"fianchetto": "대각선 코너로 즉시 이동",
+	&"quake": "앞뒤 2칸의 설치물 모두 파괴",
+	&"slash": "[용왕] 앞 2칸의 적 처치",
+	&"horse": "[용마] 앞뒤 1칸의 적 처치",
+	&"bank_shot": "앞쪽 가장 가까운 적에게 돌진",
+	&"plant_mine": "지금 칸에 지뢰 설치",
 }
 
 
@@ -166,11 +196,18 @@ static func full_name(kind: GameEnums.PawnKind, unit_no: int) -> String:
 	return "[%s %d호기 - %s]" % [display_set_name(kind), unit_no, sub_name]
 
 
+## 세트에서 지급할 수 있는 호기 수: 대부분 4, 아케이드는 5 (체스 퀸은 승진으로만 생기므로 세지 않는다).
+static func unit_count(kind: GameEnums.PawnKind) -> int:
+	if not SUB_TYPES.has(kind):
+		return 0
+	return GameEnums.PAWNS_PER_PLAYER if kind == GameEnums.PawnKind.CHESS else (SUB_TYPES[kind] as Array).size()
+
+
 ## 세트의 '같은 세부 기물' 묶음: 호기 번호들을 세부 기물 종류별로 묶는다 (체스는 [[1],[2],[3],[4]], 바둑은 [[1,3],[2,4]], 윷은 [[1,2,3,4]]).
 static func unit_groups(kind: GameEnums.PawnKind) -> Array:
 	var groups: Array = []
 	var seen: Array = []
-	for unit: int in range(1, GameEnums.PAWNS_PER_PLAYER + 1):
+	for unit: int in range(1, unit_count(kind) + 1):
 		var sub: GameEnums.PawnSubType = sub_type_of(kind, unit)
 		var index: int = seen.find(sub)
 		if index == -1:

@@ -103,17 +103,13 @@ func test_step_history_stack_backtracks_exact_route() -> void:
 	check_eq(back, int_array([4, 3, 2, 1]), "빽도는 스택을 역추적")
 	check(report.path.size() == 5, "보고서 경로")
 
-
-func test_bishop_gets_plus_2_when_passing_or_stopping_on_a_corner() -> void:
+func test_bishop_steps_into_a_corner_when_it_would_stop_just_before_it() -> void:
 	var state := make_state(2, 1, {1: [Vector2i(GameEnums.PawnKind.CHESS, 3), Vector2i(GameEnums.PawnKind.YUT, 1), Vector2i(GameEnums.PawnKind.YUT, 2), Vector2i(GameEnums.PawnKind.YUT, 3)]})
 	place(state, 11, 3, [2])
-	var ctx: RuleContext = make_ctx(state, 4)
-	var report := MoveReport.new()
-	check_eq(MoveExecutor.plan_path(state, state.get_pawn(11), ctx, report), int_array([4, 5, 6, 7, 8, 9]), "6번을 스치면 4칸 -> 6칸")
-	place(state, 11, 1, [0])
-	check_eq(MoveExecutor.plan_path(state, state.get_pawn(11), make_ctx(state, 5), MoveReport.new()), int_array([2, 3, 4, 5, 6, 7, 8]), "정확히 6번에 멈추는 눈금도 +2")
+	check_eq(MoveExecutor.plan_path(state, state.get_pawn(11), make_ctx(state, 2), MoveReport.new()), int_array([4, 5, 6]), "5번(코너 바로 앞)에 멈출 눈금이면 +1칸 코너 진입")
+	check_eq(MoveExecutor.plan_path(state, state.get_pawn(11), make_ctx(state, 4), MoveReport.new()), int_array([4, 5, 6, 7]), "코너를 스쳐 지나가면 보너스 없음")
 	place(state, 11, 7, [6])
-	check_eq(MoveExecutor.plan_path(state, state.get_pawn(11), make_ctx(state, 3), MoveReport.new()), int_array([8, 9, 10]), "코너를 안 건드리면 보너스 없음")
+	check_eq(MoveExecutor.plan_path(state, state.get_pawn(11), make_ctx(state, 3), MoveReport.new()), int_array([8, 9, 10]), "코너 앞이 아니면 보너스 없음")
 
 
 func test_find_nearest_entity_bfs_picks_closest_by_edges() -> void:

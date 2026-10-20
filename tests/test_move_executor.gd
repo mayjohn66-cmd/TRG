@@ -193,7 +193,7 @@ func test_non_yut_pawns_never_stack_and_coexist_on_one_tile() -> void:
 		var state := make_state(2, 1, {1: loadout})
 		place(state, 11, 4, [3])
 		place(state, 12, 2, [1])
-		var report: MoveReport = move(state, 12, 3 if kind == GameEnums.PawnKind.GO else 2)  # 바둑 2세트 포석은 눈금 -1
+		var report: MoveReport = move(state, 12, 2)
 		check(report.stacked_pawn_ids.is_empty() and report.stack_offer.is_empty(), "%d: 업기 없음" % kind)
 		check(state.get_pawn(11).carrier == null and state.get_pawn(12).carrier == null, "%d: 각각 별개 기물" % kind)
 		check_eq(state.get_pawn(11).current_tile_idx, state.get_pawn(12).current_tile_idx, "%d: 같은 타일에 나란히 공존" % kind)

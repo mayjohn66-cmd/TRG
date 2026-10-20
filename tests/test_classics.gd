@@ -48,9 +48,10 @@ func test_shogi_catalog_names_letters_and_skill() -> void:
 		check_eq(PawnCatalog.unit_letter(Kind.SHOGI, unit), entry[1], "%d호기 라벨" % unit)
 		check_eq(PawnCatalog.letter_of_pawn(Kind.SHOGI, unit, true), entry[2], "%d호기 승급 라벨" % unit)
 		check_eq(PawnCatalog.letter_of_pawn(Kind.SHOGI, unit, false), entry[1], "%d호기 승급 전 라벨" % unit)
-	check_eq(PawnCatalog.skill_of(Sub.SHOGI_FU), &"drop", "보병만 필살기(모치고마 낙하)")
-	for sub: GameEnums.PawnSubType in [Sub.SHOGI_HISHA, Sub.SHOGI_KAKU, Sub.SHOGI_KEIMA]:
-		check_eq(PawnCatalog.skill_of(sub), &"", "나머지 쇼기 기물은 필살기 없음")
+	check_eq(PawnCatalog.skill_of(Sub.SHOGI_FU), &"drop", "보병 필살기(모치고마 낙하)")
+	check_eq(PawnCatalog.skill_of(Sub.SHOGI_HISHA), &"slash", "비차는 용왕 베기 (승급 후)")
+	check_eq(PawnCatalog.skill_of(Sub.SHOGI_KAKU), &"horse", "각행은 용마 십자 베기 (승급 후)")
+	check_eq(PawnCatalog.skill_of(Sub.SHOGI_KEIMA), &"", "계마는 필살기 없음")
 	check(PawnCatalog.name_of_pawn(Kind.CHESS, 1, true) == "체스:폰", "쇼기가 아니면 승급 이름이 없다")
 
 

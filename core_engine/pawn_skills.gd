@@ -1,6 +1,6 @@
 # File: res://core_engine/pawn_skills.gd
 # Class: class_name PawnSkills
-# Role: 기물별 1회용 고유 필살기(바둑 흑돌 알까기 슈팅·장기 차 직선 저격·체스 룩 단독 캐슬링·모노 비행기 직항 워프)의 사용 조건과 결과 계산. 상태를 바꾸지 않는 순수 함수라 UI 미리보기·AI 평가가 그대로 쓴다
+# Role: 기물별 1회용 고유 필살기(알까기·전차 저격·캐슬링·직항 워프·낙하·피앙케토·코끼리 지진·용왕/용마 베기·뱅크샷·지뢰 매설)의 사용 조건과 결과 계산. 상태를 바꾸지 않는 순수 함수라 UI 미리보기·AI 평가가 그대로 쓴다
 class_name PawnSkills
 extends RefCounted
 
@@ -19,11 +19,80 @@ static func has_skill(pawn: PlayerPawn) -> bool:
 	return PawnCatalog.skill_of(pawn.sub_type()) != &""
 
 
-## 이 기물이 지금 필살기를 쓸 수 있는 상태인가 (필살기 보유·미사용·보드 위에 출발해 있음·구속/감옥/업힘 아님).
+## 이 기물이 지금 필살기를 쓸 수 있는 상태인가 (필살기 보유·미사용·보드 위에 출발해 있음·구속/감옥/업힘 아님, 용왕·용마 필살기는 승급 후).
 static func is_ready(pawn: PlayerPawn) -> bool:
+	var skill: StringName = PawnCatalog.skill_of(pawn.sub_type())
+	if PawnCatalog.PROMOTED_SKILLS.has(skill) and not pawn.promoted:
+		return false
 	return has_skill(pawn) and not pawn.skill_used and pawn.has_left_start and not pawn.is_finished \
 			and pawn.carrier == null and pawn.current_tile_idx != GameEnums.GOAL_TILE \
 			and not pawn.is_imprisoned and not pawn.blocked_this_turn and pawn.restrained_turns <= 0
+
+
+## 비숍 피앙케토 목적지: 비숍이 지나온 코너의 대각선 맞은편 코너(두 변 앞). 결승을 넘어가면 쓸 수 없다 (-1).
+static func fianchetto_tile(pawn: PlayerPawn) -> int:
+	var behind: int = (pawn.current_tile_idx / BoardSpec.side) * BoardSpec.side
+	var target: int = behind + 2 * BoardSpec.side
+	return target if target < BoardSpec.tile_count and target != pawn.current_tile_idx else -1
+
+
+## 8번 공 뱅크샷 경로: 앞쪽(결승 전까지)에서 가장 가까운 잡을 수 있는 적이 선 칸까지. 적이 없으면 빈 배열.
+static func bank_shot_path(state: GameState, pawn: PlayerPawn) -> Array[int]:
+	var route: Array[int] = []
+	for tile: int in state.board.calculate_path(pawn, BoardSpec.tile_count, RuleContext.new()):
+		if tile == GameEnums.GOAL_TILE:
+			break
+		route.append(tile)
+		if _has_enemy(state, pawn, tile):
+			return route
+	return [] as Array[int]
+
+
+## 상 코끼리 지진이 흔드는 칸: 앞뒤 2칸 (출발선 제외).
+static func quake_tiles(pawn: PlayerPawn) -> Array[int]:
+	return _ring_tiles(pawn.current_tile_idx, [-2, -1, 1, 2])
+
+
+## 용왕 베기(앞 2칸) / 용마 십자 베기(앞뒤 1칸)가 베는 칸.
+static func strike_tiles(pawn: PlayerPawn, skill: StringName) -> Array[int]:
+	return _ring_tiles(pawn.current_tile_idx, [1, 2] if skill == &"slash" else [-1, 1])
+
+
+static func _ring_tiles(center: int, offsets: Array) -> Array[int]:
+	var tiles: Array[int] = []
+	for offset: Variant in offsets:
+		var tile: int = posmod(center + int(offset), BoardSpec.tile_count)
+		if tile != GameEnums.GOAL_TILE:
+			tiles.append(tile)
+	return tiles
+
+
+## 베기·뱅크샷이 노리는 적: 이 칸에 선 출발한 적 대표 말.
+static func _has_enemy(state: GameState, mover: PlayerPawn, tile: int) -> bool:
+	for leader: PlayerPawn in state.leaders_at(tile):
+		if leader.owner_id != mover.owner_id and leader.has_left_start:
+			return true
+	return false
+
+
+## 칸들에 서 있는 적 대표 말 수 (AI·UI 판단용).
+static func enemies_on(state: GameState, mover: PlayerPawn, tiles: Array[int]) -> int:
+	var count: int = 0
+	for tile: int in tiles:
+		for leader: PlayerPawn in state.leaders_at(tile):
+			if leader.owner_id != mover.owner_id and leader.has_left_start:
+				count += 1
+	return count
+
+
+## 칸들에 깔린 설치물 수 (내 것 포함, AI·UI 판단용). own_only면 내 것만, enemy_only면 남의 것만 센다.
+static func attachments_on(state: GameState, mover: PlayerPawn, tiles: Array[int], enemy_only: bool = false) -> int:
+	var count: int = 0
+	for tile: int in tiles:
+		for attachment: TileAttachment in state.board.get_tile(tile).attachments:
+			if not enemy_only or attachment.owner_id != mover.owner_id:
+				count += 1
+	return count
 
 
 ## 룩 단독 캐슬링으로 위치를 맞바꿀 수 있는 내 다른 기물 (보드 위에 있고 룩과 다른 타일).

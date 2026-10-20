@@ -37,6 +37,8 @@ var ability_notes: Array[String] = []
 var promoted_pawn_ids: Array[int] = []
 var destroyed_attachments: Array[Dictionary] = []
 var dog_cards: int = 0
+## 지뢰찾기 공병이 적 함정을 해체하고 받은 카드 수.
+var defused_cards: int = 0
 ## 🏃 말 밟고 점프하기로 늘어난 칸수와 ⚡ 부스터 발판이 터진 타일들.
 var leapfrog_bonus: int = 0
 var dash_tiles: Array[int] = []
@@ -74,6 +76,7 @@ func merge(other: MoveReport) -> void:
 	promoted_pawn_ids.append_array(other.promoted_pawn_ids)
 	destroyed_attachments.append_array(other.destroyed_attachments)
 	dog_cards += other.dog_cards
+	defused_cards += other.defused_cards
 	leapfrog_bonus += other.leapfrog_bonus
 	dash_tiles.append_array(other.dash_tiles)
 
@@ -108,6 +111,7 @@ func to_dict() -> Dictionary:
 		"promoted": promoted_pawn_ids,
 		"destroyed": destroyed_attachments,
 		"dog_cards": dog_cards,
+		"defused_cards": defused_cards,
 		"leapfrog_bonus": leapfrog_bonus,
 		"dash_tiles": dash_tiles,
 	}
