@@ -49,11 +49,11 @@ signal tower_struck(tile: int, scattered: Array[Dictionary])
 ## ACT_07 무너지는 탑: 한 변의 설치물이 무너졌다. / ACT_10 빠루를 휘둘렀다.
 signal side_collapsed(side: int, tiles: Array[int], destroyed: int)
 signal crowbar_swung(player_id: int, tiles: Array[int])
-## 소환 카드: 도적떼·팩맨이 길을 쓸고 사라졌다.
+## 소환 카드·폭주 기관차: 사료스탕스·와구와구 유령·기관차가 길을 쓸었다.
 signal npc_swept(display_id: StringName, path: Array[int], ejected: Array[int])
 ## ACT_08 운명의 수레바퀴: outcome은 "swap"(내 말 mine_id와 적 말 enemy_id의 위치 교환) 또는 "retreat"(적 말 후퇴, mine_id = -1).
 signal wheel_turned(player_id: int, mine_id: int, enemy_id: int, outcome: StringName)
-## ACT_09 가위바위보 결투 신청: challenger가 defender에게 결투를 걸었다 (진행은 TurnManager가 입력을 받아 한다).
+## ACT_09 일기토 데스매치 신청: challenger가 defender에게 결투를 걸었다 (진행은 TurnManager가 입력을 받아 한다).
 signal duel_requested(challenger: int, defender: int)
 signal snapshot_restored()
 signal victory_declared(player_id: int, reason: StringName)

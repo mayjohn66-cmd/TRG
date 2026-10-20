@@ -68,6 +68,8 @@ var stack_choice_enabled: bool = false
 var _stack_offer: Dictionary = {}
 ## ACT_09 결투 진행 상태 (없으면 빈 Dictionary): {"challenger","defender","step"(pick/strike),"picks","draws","winner","loser","candidates"}.
 var _duel: Dictionary = {}
+## 테스트·연출 확인용: 0 이상이면 결투 종목을 이 값으로 고정한다 (DuelRules.Game).
+var duel_game_override: int = -1
 ## ⚔ 방어 대기: {"victim": 플레이어, "attack": 공격 기록 ID, "resume": &"turn_begin"/&"resolution", "cards": [낼 수 있는 방어 카드]}. 없으면 빈 Dictionary.
 var _counter_offer: Dictionary = {}
 ## 폭풍 전진 가속 기믹(⚡ 발판·🏃 점프·🔥 복수) 사용 여부. start_game 전에만 바꿀 수 있다.
@@ -175,7 +177,7 @@ func request_action(action: StringName, params: Dictionary = {}) -> void:
 	if is_game_over:
 		action_rejected.emit(actor, action, &"game_over")
 		return
-	if not _duel.is_empty() and action != &"duel_pick" and action != &"duel_strike":
+	if not _duel.is_empty() and action != &"duel_pick":
 		action_rejected.emit(actor, action, &"duel_pending")
 		return
 	# ⚔ 방어 대기 중에는 피해자의 방어 카드 / 넘기기만 받는다.
@@ -193,7 +195,6 @@ func request_action(action: StringName, params: Dictionary = {}) -> void:
 		&"use_skill": _handle_use_skill(actor, params)
 		&"stack_choice": _handle_stack_choice(actor, params)
 		&"duel_pick": _handle_duel_pick(actor, params)
-		&"duel_strike": _handle_duel_strike(actor, params)
 		&"counter_pass": _handle_counter_pass(actor)
 		_: action_rejected.emit(actor, action, &"unknown_action")
 
@@ -773,9 +774,11 @@ func pending_duel() -> Dictionary:
 
 
 func _on_duel_requested(challenger: int, defender: int) -> void:
-	_duel = {"challenger": challenger, "defender": defender, "step": &"pick", "picks": {}, "draws": 0, "winner": -1, "loser": -1, "candidates": []}
-	_duel_set_timer(DuelRules.TIME_PICK)
-	_emit_event(&"duel_started", {"challenger": challenger, "defender": defender})
+	var game: int = duel_game_override if duel_game_override >= 0 else state.rng.randi_range(0, DuelRules.GAME_COUNT - 1)
+	var setup: Dictionary = DuelRules.setup_game(game, state.rng)
+	_duel = {"challenger": challenger, "defender": defender, "game": game, "setup": setup, "step": &"pick", "picks": {}, "draws": 0, "winner": -1, "loser": -1, "turn": challenger, "opened": []}
+	_duel_set_timer(DuelRules.time_limit(game))
+	_emit_event(&"duel_started", {"challenger": challenger, "defender": defender, "game": game, "setup": setup.duplicate(true)})
 
 
 ## 결투 단계가 바뀔 때마다 제한 시간을 새로 걸고 직렬 번호를 올려 지난 시간 초과 신호를 무효화한다.
@@ -786,19 +789,30 @@ func _duel_set_timer(seconds: float) -> void:
 	_broadcast_state()
 
 
-## params: {"hand": 0 바위 / 1 가위 / 2 보}. 결투 당사자만, 한 판에 한 번.
+## params: {"value": int} (옛 형식 {"hand": int}도 받는다). 결투 당사자만, 한 판에 한 번.
+## 값: 가위바위보 0~2 / E카드 0~1 / 할리갈리·석양의 무법자 = 미니게임 시작부터 누른 시각(ms, 안 누름 -1) / 컬링 0~1150(0.1%) / 스피키 룰렛 = 구멍 번호(자기 차례에만).
 func _handle_duel_pick(actor: int, params: Dictionary) -> void:
-	var hand: int = int(params.get("hand", -1))
-	if _duel.is_empty() or _duel["step"] != &"pick" or hand < 0 or hand > 2:
+	var value: int = int(params.get("value", params.get("hand", -999)))
+	if _duel.is_empty() or _duel["step"] != &"pick":
 		action_rejected.emit(actor, &"duel_pick", &"wrong_phase")
 		return
 	if actor != int(_duel["challenger"]) and actor != int(_duel["defender"]):
 		action_rejected.emit(actor, &"duel_pick", &"not_your_duel")
 		return
+	var game: int = int(_duel["game"])
+	if not DuelRules.valid_input(game, value, actor == int(_duel["challenger"]), _duel["opened"]):
+		action_rejected.emit(actor, &"duel_pick", &"invalid_value")
+		return
+	if game == DuelRules.Game.BARREL:
+		if actor != int(_duel["turn"]):
+			action_rejected.emit(actor, &"duel_pick", &"not_your_turn")
+			return
+		_duel_barrel_pick(actor, value)
+		return
 	if (_duel["picks"] as Dictionary).has(actor):
 		action_rejected.emit(actor, &"duel_pick", &"already_picked")
 		return
-	(_duel["picks"] as Dictionary)[actor] = hand
+	(_duel["picks"] as Dictionary)[actor] = value
 	_emit_event(&"duel_pick_in", {"player_id": actor})
 	if (_duel["picks"] as Dictionary).size() == 2:
 		_duel_reveal()
@@ -806,67 +820,65 @@ func _handle_duel_pick(actor: int, params: Dictionary) -> void:
 		_broadcast_state()
 
 
-## 둘 다 냈다: 승패를 가리고 공개한다. 비기면 다시 고르고, MAX_DRAWS번 연달아 비기면 신청자의 판정승이다.
+## 스피키 룰렛: 구멍에 칼을 꽂는다. 폭탄이면 그 사람이 지고, 아니면 상대 차례.
+func _duel_barrel_pick(actor: int, hole: int) -> void:
+	(_duel["opened"] as Array).append(hole)
+	var bomb: bool = hole == int((_duel["setup"] as Dictionary)["bomb"])
+	_emit_event(&"duel_pick_in", {"player_id": actor, "hole": hole, "bomb": bomb})
+	var challenger: int = int(_duel["challenger"])
+	var defender: int = int(_duel["defender"])
+	if not bomb:
+		_duel["turn"] = defender if actor == challenger else challenger
+		_duel_set_timer(DuelRules.TIME_BARREL_PICK)
+		return
+	var winner: int = defender if actor == challenger else challenger
+	var picks: Dictionary = {"opened": (_duel["opened"] as Array).duplicate()}
+	_duel_announce(winner, &"bomb", DuelRules.winner_advance(), picks)
+
+
+## 둘 다 냈다: 승패를 가리고 공개한다. 가위바위보만 비기면 다시 고르고, MAX_DRAWS번 연달아 비기면 신청자의 판정승이다.
 func _duel_reveal() -> void:
 	var challenger: int = int(_duel["challenger"])
 	var defender: int = int(_duel["defender"])
+	var game: int = int(_duel["game"])
 	var picks: Dictionary = (_duel["picks"] as Dictionary).duplicate()
-	var outcome: int = DuelRules.compare(int(picks[challenger]), int(picks[defender]))
-	var winner: int = -1
-	var decided_by: StringName = &"hand"
-	if outcome > 0:
-		winner = challenger
-	elif outcome < 0:
-		winner = defender
-	else:
+	var result: Dictionary = DuelRules.resolve(game, _duel["setup"], challenger, defender, picks)
+	var winner: int = int(result["winner"])
+	var decided_by: StringName = result["decided_by"]
+	if winner == -1:
 		_duel["draws"] = int(_duel["draws"]) + 1
 		if int(_duel["draws"]) >= DuelRules.MAX_DRAWS:
 			winner = challenger
 			decided_by = &"draws"
-	_emit_event(&"duel_revealed", {"challenger": challenger, "defender": defender, "picks": picks, "winner": winner, "draws": int(_duel["draws"]), "decided_by": decided_by})
 	_duel["picks"] = {}
 	if winner == -1:
+		_emit_event(&"duel_revealed", _duel_reveal_data(-1, &"draw", picks, 0))
 		_duel_set_timer(DuelRules.TIME_PICK)  # 재대결
 		return
-	_duel_begin_strike(winner, defender if winner == challenger else challenger)
+	_duel_announce(winner, decided_by, int(result["advance"]), picks)
 
 
-## 이긴 사람이 진 사람의 말을 고른다. 말이 하나뿐이면 자동 선택, 하나도 없으면 효과 없이 끝난다.
-func _duel_begin_strike(winner: int, loser: int) -> void:
-	var candidates: Array[int] = DuelRules.strike_candidates(state, loser)
+func _duel_reveal_data(winner: int, decided_by: StringName, picks: Dictionary, advance: int) -> Dictionary:
+	var challenger: int = int(_duel["challenger"])
+	var defender: int = int(_duel["defender"])
+	var game: int = int(_duel["game"])
+	return {"challenger": challenger, "defender": defender, "game": game, "picks": picks, "winner": winner, "draws": int(_duel["draws"]), "decided_by": decided_by, "advance": advance,
+		"detail": DuelRules.detail_text(game, _duel["setup"], challenger, defender, picks)}
+
+
+## 승패가 났다: 공개 이벤트 뒤에 패자의 선두 말을 바로 사출하고 승자의 말을 전진시킨다.
+func _duel_announce(winner: int, decided_by: StringName, advance: int, picks: Dictionary) -> void:
+	var loser: int = int(_duel["defender"]) if winner == int(_duel["challenger"]) else int(_duel["challenger"])
 	_duel["winner"] = winner
 	_duel["loser"] = loser
-	_duel["candidates"] = candidates
-	if candidates.is_empty():
-		_emit_event(&"duel_resolved", {"winner": winner, "loser": loser, "pawn_id": -1})
+	_emit_event(&"duel_revealed", _duel_reveal_data(winner, decided_by, picks, advance))
+	var pawn_id: int = DuelRules.strike_target(state, loser)
+	if pawn_id == -1:
+		_emit_event(&"duel_resolved", {"winner": winner, "loser": loser, "pawn_id": -1, "advance": advance})
 		_duel_finish()
 		return
-	if candidates.size() == 1:
-		_duel_apply_strike(candidates[0])
-		return
-	_duel["step"] = &"strike"
-	_emit_event(&"duel_strike_wait", {"winner": winner, "loser": loser, "candidates": candidates})
-	_duel_set_timer(DuelRules.TIME_STRIKE)
-
-
-## params: {"pawn_id": int}. 이긴 사람만, 후보 말 중에서.
-func _handle_duel_strike(actor: int, params: Dictionary) -> void:
-	if _duel.is_empty() or _duel["step"] != &"strike" or actor != int(_duel["winner"]):
-		action_rejected.emit(actor, &"duel_strike", &"wrong_phase")
-		return
-	var pawn_id: int = int(params.get("pawn_id", -1))
-	if not (_duel["candidates"] as Array).has(pawn_id):
-		action_rejected.emit(actor, &"duel_strike", &"invalid_pawn")
-		return
-	_duel_apply_strike(pawn_id)
-
-
-func _duel_apply_strike(pawn_id: int) -> void:
-	var winner: int = int(_duel["winner"])
-	var loser: int = int(_duel["loser"])
-	var pawn: PlayerPawn = state.get_pawn(pawn_id)
-	var result: Dictionary = DuelRules.apply_strike(state, winner, pawn)
-	_emit_event(&"duel_resolved", {"winner": winner, "loser": loser, "pawn_id": pawn_id, "from": result["from"], "landing": result["landing"], "to": result["to"], "sent_to_start": result["sent_to_start"], "trapped": result["trapped"], "boost_pawn_id": result["boost_pawn_id"], "boost_from": result["boost_from"], "boost_to": result["boost_to"]})
+	var result: Dictionary = DuelRules.apply_strike(state, winner, state.get_pawn(pawn_id), advance)
+	_emit_event(&"duel_resolved", {"winner": winner, "loser": loser, "pawn_id": pawn_id, "advance": advance, "from": result["from"], "landing": result["landing"], "to": result["to"], "sent_to_start": result["sent_to_start"], "trapped": result["trapped"], "boost_pawn_id": result["boost_pawn_id"], "boost_from": result["boost_from"], "boost_to": result["boost_to"]})
 	_duel_finish()
 
 
@@ -878,18 +890,18 @@ func _duel_finish() -> void:
 	_broadcast_state()
 
 
-## 시간 초과: 안 낸 손은 무작위로, 말을 안 골랐으면 가장 앞선 말을 민다.
+## 시간 초과: 아직 안 낸 사람의 값을 채운다 (손·카드 무작위, 순발력 안 누름, 컬링 추락, 스피키 룰렛 무작위 구멍).
 func _duel_timeout() -> void:
-	if _duel["step"] == &"pick":
-		for player_id: int in [int(_duel["challenger"]), int(_duel["defender"])]:
-			if not (_duel["picks"] as Dictionary).has(player_id):
-				(_duel["picks"] as Dictionary)[player_id] = state.rng.randi_range(0, 2)
-				_emit_event(&"duel_pick_in", {"player_id": player_id})
-		_duel_reveal()
+	var game: int = int(_duel["game"])
+	if game == DuelRules.Game.BARREL:
+		var seat: int = int(_duel["turn"])
+		_duel_barrel_pick(seat, DuelRules.timeout_input(game, state.rng, _duel["opened"]))
 		return
-	var front: PlayerPawn = state.front_pawn_of(int(_duel["loser"]))
-	var pawn_id: int = front.entity_id if front != null and (_duel["candidates"] as Array).has(front.entity_id) else int((_duel["candidates"] as Array)[0])
-	_duel_apply_strike(pawn_id)
+	for player_id: int in [int(_duel["challenger"]), int(_duel["defender"])]:
+		if not (_duel["picks"] as Dictionary).has(player_id):
+			(_duel["picks"] as Dictionary)[player_id] = DuelRules.timeout_input(game, state.rng)
+			_emit_event(&"duel_pick_in", {"player_id": player_id})
+	_duel_reveal()
 
 
 ## 윷놀이 기물의 [선택적 업기] 답을 기다리는 중인가 (PHASE_RESOLUTION 안의 보조 상태).

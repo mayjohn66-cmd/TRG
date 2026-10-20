@@ -1,13 +1,13 @@
 # File: res://core_engine/cards/card_bang.gd
 # Class: class_name CardBang
-# Role: ACT_02 뱅! 저격 - 내 턴 시작에 저격할 상대 플레이어를 고르면 그 플레이어의 선두 말 하나가 즉시 출발선으로 장외 사출된다
+# Role: ACT_02 BANG! 저격 - 내 턴 시작에 저격할 상대 플레이어를 고르면 그 플레이어의 선두 말 하나가 즉시 출발선으로 장외 사출된다
 class_name CardBang
 extends BaseCard
 
 
 func _init() -> void:
 	card_id = &"ACT_02"
-	display_name = "뱅!"
+	display_name = "BANG!"
 	playable_phases = [TurnManager.State.PHASE_TURN_BEGIN]
 
 

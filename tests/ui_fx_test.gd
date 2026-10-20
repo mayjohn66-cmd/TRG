@@ -21,7 +21,7 @@ func _process(_delta: float) -> bool:
 	if _frames == 3 and not _started:
 		_started = true
 		_run()
-	# 다른 검사 중에 봇이 건 가위바위보 결투는 시간 초과로 넘겨 검사가 막히지 않게 한다 (결투 검사만 직접 진행).
+	# 다른 검사 중에 봇이 건 결투는 시간 초과로 넘겨 검사가 막히지 않게 한다 (결투 검사만 직접 진행).
 	if _started and not _duel_manual and _board.manager != null and _board.manager.duel_pending():
 		_board.manager.force_timeout()
 	return false
@@ -1355,82 +1355,92 @@ func _test_bot_pacing() -> void:
 func _test_duel_flow() -> void:
 	_duel_manual = true
 	var manager: TurnManager = _board.manager
-	var state: GameState = _board.state
 	_board.ai_mode = false  # 모든 자리를 이 화면에서 직접 조작한다 (핫시트)
 	_board._bot.set_enabled(false)
 	manager.set_process(false)
 	_board.instant_roll_for_test = false
 	_board.pacing_enabled = false
+	var orphans_before: int = int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT))
+	for game: int in DuelRules.GAME_COUNT:
+		await _play_one_duel(game)
+	await process_frame
+	await process_frame
+	_expect(root.find_child("DuelArenaModal", true, false) == null, "결투가 끝나면 결투장 모달이 트리에 남지 않는다 (queue_free)")
+	var orphans_after: int = int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT))
+	_expect(orphans_after <= orphans_before + 2, "결투 6판 뒤 고아 노드가 늘지 않는다 (%d -> %d)" % [orphans_before, orphans_after])
+	manager.duel_game_override = -1
+
+
+## 종목 하나를 핫시트로 끝까지: 화면의 입력 함수로 두 자리 모두 값을 낸다.
+func _play_one_duel(game: int) -> void:
+	var manager: TurnManager = _board.manager
+	var state: GameState = _board.state
 	_board._announcer.cancel()
 	_board._beat_until_msec = 0
 	_board._fx_until_msec = 0
 	_board._fx_busy = false
-	manager.force_timeout()  # 혹시 남은 단계는 넘겨 둔다
 	var guard: int = 0
 	while manager.current_state != TurnManager.State.PHASE_TURN_BEGIN and guard < 40:
 		manager.force_timeout()
 		guard += 1
+	manager.duel_game_override = game
+	manager._card_played_this_turn = false  # 검사용: 같은 턴에 종목마다 결투 카드를 다시 낸다
 	var player_id: int = manager.current_player_id()
 	var opponent: int = 2 if player_id != 2 else 1
 	for pawn: PlayerPawn in state.pawns:
 		pawn.reset_to_start()
-	state.get_pawn(opponent * 10 + 1).has_left_start = true
-	state.get_pawn(opponent * 10 + 1).current_tile_idx = 14
-	state.get_pawn(opponent * 10 + 2).has_left_start = true
-	state.get_pawn(opponent * 10 + 2).current_tile_idx = 8
+	for pair: Array in [[player_id * 10 + 1, 5], [opponent * 10 + 1, 14], [opponent * 10 + 2, 8]]:
+		state.get_pawn(pair[0]).has_left_start = true
+		state.get_pawn(pair[0]).current_tile_idx = pair[1]
 	_board._refresh_pawns()
 	state.give_card(player_id, &"ACT_09")
 	_board._duel_drop_target = opponent
 	_board._on_card_pressed(player_id, &"ACT_09")
 	await process_frame
-	_expect(manager.duel_pending(), "카드를 놓으면 결투가 시작된다")
+	var title: String = DuelRules.game_name(game)
+	_expect(manager.duel_pending() and int(manager.pending_duel()["game"]) == game, "%s: 카드를 놓으면 결투가 시작된다" % title)
 	var arena: DuelArena = _board._duel_arena
-	_expect(arena != null, "중앙 스테이지에 결투장이 열린다")
+	_expect(arena != null, "%s: 중앙 스테이지에 결투장이 열린다" % title)
 	if arena == null:
 		return
 	arena.open()
 	await process_frame
 	await process_frame
-	_expect(arena.get_global_rect().get_center().distance_to(_board._board_center()) < 4.0, "결투장은 보드 한가운데에 놓인다")
-	_expect(_board._roll_button.disabled, "결투 중에는 굴리기 버튼이 잠긴다")
+	_expect(arena.get_global_rect().get_center().distance_to(_board._board_center()) < 4.0, "%s: 결투장은 보드 한가운데" % title)
+	_expect(_board._roll_button.disabled, "%s: 결투 중에는 굴리기 버튼이 잠긴다" % title)
 	var waited: float = 0.0
-	await create_timer(2.0).timeout
-	while manager.duel_pending() and manager.pending_duel()["step"] == &"pick" and waited < 12.0:
-		if arena._pick_seat != -1 and arena._step == &"pick":
-			arena._on_hand_pressed(randi() % 3)
-		await create_timer(0.1).timeout
-		waited += 0.1
-	_expect(manager.duel_pending() and manager.pending_duel()["step"] == &"strike" or not manager.duel_pending(), "손을 모두 내면 승패가 나서 말 고르기로 넘어간다 (대기 %.1f초)" % waited)
-	if arena.animating or arena._queue_has(&"duel_revealed"):
-		_expect(arena.holds_board() and _board._fx_holding(), "가위바위보 공개가 끝나기 전에는 보드 연출(피격·사출)이 기다린다")
+	var saw_hold: bool = false
+	while manager.duel_pending() and waited < 20.0:
+		if arena._step == &"play":
+			match game:
+				DuelRules.Game.RPS, DuelRules.Game.ECARD:
+					if arena._pick_seat != -1:
+						arena._choose(randi() % (3 if game == DuelRules.Game.RPS else 2))
+				DuelRules.Game.CURLING:
+					if arena._pick_seat != -1 and arena._clock > 0.6:
+						arena._curling_stop()
+				DuelRules.Game.HALLI, DuelRules.Game.QUICKDRAW:
+					if arena._clock >= DuelRules.reaction_mark(game, arena.setup_data) + 0.1:
+						arena._press(arena.challenger)
+						arena._press(arena.defender)
+				DuelRules.Game.BARREL:
+					for hole: int in DuelRules.BARREL_HOLES:
+						if not arena._opened_holes.has(hole):
+							arena._pick_hole(hole)
+							break
+		if arena.holds_board():
+			saw_hold = saw_hold or _board._fx_holding()
+		await create_timer(0.05).timeout
+		waited += 0.05
+	_expect(not manager.duel_pending(), "%s: 입력만으로 결투가 끝난다 (%.1f초)" % [title, waited])
+	_expect(saw_hold, "%s: 승패 공개가 끝나기 전에는 보드 연출이 기다린다" % title)
+	var loser_front_gone: bool = not state.get_pawn(opponent * 10 + 1).has_left_start or not state.get_pawn(player_id * 10 + 1).has_left_start
+	_expect(loser_front_gone, "%s: 패자의 선두 말이 출발선으로" % title)
 	waited = 0.0
-	while manager.duel_pending() and manager.pending_duel()["step"] == &"pick" and waited < 20.0:
-		if arena._pick_seat != -1 and arena._step == &"pick":
-			arena._on_hand_pressed(0 if arena._pick_seat == player_id else 1)
+	while is_instance_valid(arena) and waited < 8.0:
 		await create_timer(0.1).timeout
 		waited += 0.1
-	waited = 0.0
-	while manager.duel_pending() and _board._duel_strike_marks.is_empty() and waited < 12.0:
-		await create_timer(0.1).timeout
-		waited += 0.1
-	if manager.duel_pending():
-		_expect(_board._duel_strike_marks.size() == 2, "이긴 자리의 화면에는 진 사람의 말 2개가 붉은 표식으로 깜빡인다")
-		var victim_id: int = _board._duel_strike_marks.keys()[0]
-		var before: int = state.get_pawn(victim_id).current_tile_idx
-		var view: Node2D = _board._pawn_views[victim_id]
-		var click := InputEventMouseButton.new()
-		click.button_index = MOUSE_BUTTON_LEFT
-		click.pressed = true
-		click.position = view.position + _board._pawn_layer.position
-		_board._input(click)
-		_expect(not manager.duel_pending(), "말을 클릭하면 결투가 끝난다")
-		_expect(state.get_pawn(victim_id).current_tile_idx == 0 and not state.get_pawn(victim_id).has_left_start, "고른 말이 출발선으로 사출 (%d -> %d)" % [before, state.get_pawn(victim_id).current_tile_idx])
-	waited = 0.0
-	while _board._duel_arena != null and is_instance_valid(_board._duel_arena) and waited < 5.0:
-		await create_timer(0.1).timeout
-		waited += 0.1
-	_expect(_board._duel_arena == null or not is_instance_valid(_board._duel_arena), "결투가 끝나면 결투장이 닫힌다 (%.1f초)" % waited)
-	_expect(not manager.duel_pending(), "결투 종료")
+	_expect(not is_instance_valid(arena) and _board._duel_arena == null, "%s: 결투가 끝나면 결투장이 닫히고 해제된다 (%.1f초)" % [title, waited])
 
 
 ## 점프 코너·포탈: 말이 먼저 발판에 멈춰 발동 연출을 보여 준 뒤 목적지로 날아간다 (한 번에 최종 칸으로 가지 않는다).
@@ -1684,9 +1694,9 @@ func _test_npc_danger_preview() -> void:
 	_expect(not _board._npc_danger.has(24), "말을 만난 칸에서 멈추므로 그 뒤는 표시하지 않는다")
 	# NPC 툴팁과 라벨
 	_board._fill_npc_tip(robber.entity_id)
-	_expect(_board._tip_title.text.contains("도적") and _board._tip_title.text.contains("▶") and _board._tip_ability.text.contains("3~6") and _board._tip_ability.text.contains("소멸합니다"), "도적 툴팁: 방향과 설명 (%s)" % _board._tip_title.text)
+	_expect(_board._tip_title.text.contains("사료스탕스") and _board._tip_title.text.contains("▶") and _board._tip_ability.text.contains("3~6") and _board._tip_ability.text.contains("소멸합니다"), "도적 툴팁: 방향과 설명 (%s)" % _board._tip_title.text)
 	_board._fill_npc_tip(ghost.entity_id)
-	_expect(_board._tip_title.text.contains("팩맨") and _board._tip_title.text.contains("◀") and _board._tip_ability.text.contains("역방향") and _board._tip_ability.text.contains("3~6"), "팩맨 툴팁: 역방향 3~6칸 전진")
+	_expect(_board._tip_title.text.contains("와구와구 유령") and _board._tip_title.text.contains("◀") and _board._tip_ability.text.contains("역방향") and _board._tip_ability.text.contains("3~6"), "팩맨 툴팁: 역방향 3~6칸 전진")
 	_expect(not _board._announce_gate_text_for_tests().contains("한 칸"), "NPC 이동 안내 문구가 실제 규칙을 말한다")
 	state.clear_npcs()
 	mine.has_left_start = false

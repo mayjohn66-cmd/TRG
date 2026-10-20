@@ -1,61 +1,78 @@
 # File: res://scenes/duel_arena.gd
 # Class: class_name DuelArena
-# Role: ACT_09 가위바위보 결투장. 보드 한가운데 오픈 스테이지에 열려 손 고르기(5초) -> "가위... 바위... 보!" 공개 -> 승패(무승부 재대결) -> 승자의 말 고르기 안내를 보여 준다. 엔진 이벤트를 큐로 받아 차례로 연출만 하며 승패는 엔진이 정한다
+# Role: ACT_09 ⚔️ 운명의 데스매치 결투장 (DuelArenaModal). 보드 한가운데에 열려 0.5초 종목 추첨 룰렛 -> 종목 안내 -> 6종 초고속 미니게임
+#       (묵찌빠 단두대 / 할리갈리 디럭스 / 병뚜껑 절벽 컬링 / 석양의 무법자 / 엘리아스 E카드 / 스피키 룰렛) -> 승패 공개 -> 결과를 보여 주고 닫히며 queue_free된다.
+#       승패는 엔진(TurnManager·DuelRules)이 정한다. 이 화면은 로컬 자리의 입력(손·카드·누른 시각·게이지 값·구멍)만 value_chosen으로 내보내고 엔진 이벤트를 큐로 받아 연출한다.
 class_name DuelArena
 extends PanelContainer
 
-## 로컬 플레이어가 손을 골랐다 (MainBoard가 duel_pick 행동으로 보낸다).
-signal hand_chosen(player_id: int, hand: int)
-## 시간이 다 됐다: step은 &"pick"(seat이 무작위로 낸다) 또는 &"strike"(가장 앞선 말을 민다).
-signal timed_out(step: StringName, seat: int)
-## 이긴 사람이 말을 고를 차례다: is_local이면 화면이 보드 위 말 선택을 연다.
-signal strike_started(winner: int, candidates: Array, is_local: bool)
-signal strike_ended
+## 로컬 자리가 값을 정했다 (MainBoard가 duel_pick 행동으로 보낸다).
+signal value_chosen(player_id: int, value: int)
 signal closed
 
-const SIZE: Vector2 = Vector2(404.0, 300.0)
-const HAND_NAMES: Array[String] = ["바위", "가위", "보"]
+const SIZE: Vector2 = Vector2(560.0, 360.0)
 const SKIN: Color = Color("f8d9a8")
 const SKIN_EDGE: Color = Color("8a5a2b")
+const GOLD: Color = Color("ffd43b")
+const RED: Color = Color("ff6b6b")
+const GREEN: Color = Color("8ce99a")
+## 가위바위보·E카드에서 한 자리가 고르는 시간(초).
+const PICK_SECONDS: float = 3.0
+## 핫시트 순발력 게임 단축키: 신청자 A / 수비자 L (혼자면 스페이스도 된다).
+const KEY_CHALLENGER: Key = KEY_A
+const KEY_DEFENDER: Key = KEY_L
 
 var board: MainBoard = null
 var challenger: int = -1
 var defender: int = -1
-## 이 화면에서 직접 손을 고를 수 있는 좌석 (AI 대전은 내 자리, 핫시트는 모든 자리).
+var game: int = DuelRules.Game.RPS
+var setup_data: Dictionary = {}
+## 이 화면에서 직접 입력할 수 있는 좌석 (AI 대전은 내 자리, 핫시트는 두 자리, 온라인은 내 자리).
 var local_seats: Array[int] = []
-## 공개 연출이 재생 중이다 (봇은 이 동안 기다린다).
+## 공개 연출이 재생 중이다 (봇·보드는 이 동안 기다린다).
 var animating: bool = false
 
 var _queue: Array[Dictionary] = []
 var _running: bool = false
 var _opened: bool = false
+var _closing: bool = false
 var _step: StringName = &"idle"
+## 미니게임 시계(초): 순발력 게임의 카드·신호 시각과 누른 시각은 이 시계 기준이다.
+var _clock: float = -1.0
+var _submitted: Dictionary = {}
 var _pick_seat: int = -1
-var _picked: Dictionary = {}
 var _timer_left: float = 0.0
 var _timer_total: float = 1.0
-var _timer_step: StringName = &""
-var _roll_clock: float = 0.0
-var _closing: bool = false
+var _gauge_value: float = 0.0
+var _opened_holes: Array[int] = []
+var _turn: int = -1
+var _shown_cards: int = 0
+var _signal_shown: int = 0
 
 var _title: Label = null
+var _vs: Label = null
+var _game_label: Label = null
 var _message: Label = null
-var _icons: Dictionary = {}
-var _chips: Dictionary = {}
-var _hands_row: HBoxContainer = null
-var _button_row: HBoxContainer = null
+var _stage: Control = null
+var _buttons: HBoxContainer = null
 var _bar: ProgressBar = null
+var _drawing: StageDrawing = null
+var _hole_buttons: Array[Button] = []
 
 
-func setup(owner_board: MainBoard, challenger_id: int, defender_id: int, seats: Array[int]) -> void:
+func setup(owner_board: MainBoard, challenger_id: int, defender_id: int, seats: Array[int], game_id: int = DuelRules.Game.RPS, game_setup: Dictionary = {}) -> void:
 	board = owner_board
 	challenger = challenger_id
 	defender = defender_id
 	local_seats = seats.duplicate()
+	game = game_id
+	setup_data = game_setup.duplicate(true)
+	_turn = challenger
+	name = "DuelArenaModal"
 	z_index = 60
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	custom_minimum_size = SIZE
-	add_theme_stylebox_override("panel", board._style(Color(0.063, 0.086, 0.14, 0.97), Color("ffd43b"), 5, 22, 26, 14))
+	add_theme_stylebox_override("panel", board._style(Color(0.063, 0.086, 0.14, 0.97), GOLD, 5, 22, 26, 14))
 	visible = false
 	_build()
 
@@ -74,7 +91,6 @@ func open() -> void:
 	tween.tween_property(self, "modulate:a", 1.0, 0.25)
 	tween.tween_property(self, "scale", Vector2.ONE, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	_pump()
-	# 컨테이너가 크기를 정한 다음 프레임에 한 번 더 가운데로 맞춘다.
 	await get_tree().process_frame
 	if is_inside_tree() and not _closing:
 		_place()
@@ -86,45 +102,37 @@ func push_event(kind: StringName, data: Dictionary) -> void:
 		_pump()
 
 
+# ---------------------------------------------------------------------------
+# 화면 구성
+# ---------------------------------------------------------------------------
+
 func _build() -> void:
 	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 5)
+	column.add_theme_constant_override("separation", 6)
 	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(column)
-	_title = board._make_label("[ 1:1 결투! %s vs %s ]" % [board._player_name(challenger), board._player_name(defender)], 22, Color("ffd43b"))
+	_title = board._make_label("⚔️ 운명의 데스매치 결투장!", 24, GOLD)
 	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_title.add_theme_constant_override("outline_size", 5)
+	_title.add_theme_constant_override("outline_size", 6)
 	_title.add_theme_color_override("font_outline_color", Color("3b2a00"))
 	column.add_child(_title)
-	_hands_row = HBoxContainer.new()
-	_hands_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	_hands_row.add_theme_constant_override("separation", 10)
-	column.add_child(_hands_row)
-	for player_id: int in [challenger, defender]:
-		var side := VBoxContainer.new()
-		side.add_theme_constant_override("separation", 4)
-		side.custom_minimum_size = Vector2(170, 0)
-		var chip: Label = board._make_label("%s%s" % [board._player_name(player_id), " (신청)" if player_id == challenger else ""], 16, board.PLAYER_COLORS[player_id])
-		chip.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		side.add_child(chip)
-		var icon := HandIcon.new()
-		icon.custom_minimum_size = Vector2(110, 92)
-		icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		icon.mirror = player_id == defender
-		icon.tint = board.PLAYER_COLORS[player_id]
-		side.add_child(icon)
-		var state_label: Label = board._make_label("", 14, Color("ced4da"))
-		state_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		side.add_child(state_label)
-		_hands_row.add_child(side)
-		_icons[player_id] = icon
-		_chips[player_id] = state_label
-		if player_id == challenger:
-			var versus: Label = board._make_label("VS", 26, Color("ff8787"))
-			versus.add_theme_constant_override("outline_size", 6)
-			versus.add_theme_color_override("font_outline_color", Color("2b0a0a"))
-			versus.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-			_hands_row.add_child(versus)
+	_vs = board._make_label("%s  VS  %s" % [board._player_name(challenger), board._player_name(defender)], 16, Color("ced4da"))
+	_vs.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(_vs)
+	_game_label = board._make_label("종목 추첨 중...", 30, Color.WHITE)
+	_game_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_game_label.add_theme_constant_override("outline_size", 7)
+	_game_label.add_theme_color_override("font_outline_color", Color("0b0e16"))
+	column.add_child(_game_label)
+	_stage = Control.new()
+	_stage.custom_minimum_size = Vector2(SIZE.x - 40.0, 150.0)
+	_stage.mouse_filter = Control.MOUSE_FILTER_PASS
+	column.add_child(_stage)
+	_drawing = StageDrawing.new()
+	_drawing.arena = self
+	_drawing.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_drawing.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_stage.add_child(_drawing)
 	_message = board._make_label("", 18, Color.WHITE)
 	_message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -133,69 +141,23 @@ func _build() -> void:
 	_message.add_theme_color_override("font_outline_color", Color("0b0e16"))
 	column.add_child(_message)
 	_bar = ProgressBar.new()
-	_bar.custom_minimum_size = Vector2(SIZE.x - 60.0, 10.0)
+	_bar.custom_minimum_size = Vector2(SIZE.x - 80.0, 10.0)
 	_bar.show_percentage = false
 	_bar.max_value = 1.0
-	_bar.value = 0.0
 	_bar.visible = false
 	_bar.add_theme_stylebox_override("background", board._style(Color("0b0e16"), Color("5c6b94"), 2, 8, 0, 0))
 	_bar.add_theme_stylebox_override("fill", board._style(Color("fcc419"), Color("fff3bf"), 2, 6, 0, 0))
 	column.add_child(_bar)
-	_button_row = HBoxContainer.new()
-	_button_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	_button_row.add_theme_constant_override("separation", 10)
-	_button_row.visible = false
-	column.add_child(_button_row)
-	for hand: int in 3:
-		var button: Button = board._make_button("%s" % HAND_NAMES[hand], _on_hand_pressed.bind(hand), 22, Color("3b4766"), 12)
-		button.name = "Hand%d" % hand
-		button.custom_minimum_size = Vector2(116, 58)
-		button.icon = null
-		_button_row.add_child(button)
+	_buttons = HBoxContainer.new()
+	_buttons.alignment = BoxContainer.ALIGNMENT_CENTER
+	_buttons.add_theme_constant_override("separation", 10)
+	column.add_child(_buttons)
 
 
 func _place() -> void:
 	reset_size()
 	position = board._board_center() - size / 2.0
 	pivot_offset = size / 2.0
-
-
-func _process(delta: float) -> void:
-	if not _opened or _closing:
-		return
-	_roll_clock += delta
-	# 아직 안 낸 쪽은 손 모양이 빠르게 돌아가며 고민하는 모습을 보여 준다.
-	if _step == &"pick" and not animating:
-		var frame: int = int(_roll_clock * 10.0) % 3
-		for player_id: int in [challenger, defender]:
-			if not _picked.has(player_id) and not _is_hidden_for_local(player_id):
-				(_icons[player_id] as HandIcon).set_hand(frame)
-	if _timer_left > 0.0:
-		_timer_left -= delta
-		_bar.value = clampf(_timer_left / _timer_total, 0.0, 1.0)
-		if _timer_left <= 0.0:
-			_timer_left = 0.0
-			_bar.visible = false
-			timed_out.emit(_timer_step, _pick_seat)
-
-
-## 내가 고르는 중인 자리의 손 모양은 비밀이라 돌리지 않고 물음표로 둔다.
-func _is_hidden_for_local(player_id: int) -> bool:
-	return player_id == _pick_seat
-
-
-func _start_timer(seconds: float, step: StringName) -> void:
-	_timer_total = maxf(seconds, 0.1)
-	_timer_left = seconds
-	_timer_step = step
-	_bar.max_value = 1.0
-	_bar.value = 1.0
-	_bar.visible = true
-
-
-func _stop_timer() -> void:
-	_timer_left = 0.0
-	_bar.visible = false
 
 
 func _say(text: String, color: Color = Color.WHITE) -> void:
@@ -205,6 +167,152 @@ func _say(text: String, color: Color = Color.WHITE) -> void:
 
 func _wait(seconds: float) -> void:
 	await get_tree().create_timer(seconds * board._pace()).timeout
+
+
+func _clear_buttons() -> void:
+	for child: Node in _buttons.get_children():
+		_buttons.remove_child(child)
+		child.queue_free()
+
+
+func _add_button(text: String, callback: Callable, color: Color = Color("3b4766"), width: float = 150.0) -> Button:
+	var button: Button = board._make_button(text, callback, 20, color, 12)
+	button.custom_minimum_size = Vector2(width, 54)
+	_buttons.add_child(button)
+	return button
+
+
+func _start_timer(seconds: float) -> void:
+	_timer_total = maxf(seconds, 0.1)
+	_timer_left = seconds
+	_bar.value = 1.0
+	_bar.visible = true
+
+
+func _stop_timer() -> void:
+	_timer_left = 0.0
+	_bar.visible = false
+
+
+func _seat_name(seat: int) -> String:
+	return board._player_name(seat)
+
+
+func _submit(seat: int, value: int) -> void:
+	if _submitted.has(seat) or _closing:
+		return
+	_submitted[seat] = value
+	value_chosen.emit(seat, value)
+
+
+func _local_open_seats() -> Array[int]:
+	var seats: Array[int] = []
+	for seat: int in [challenger, defender]:
+		if local_seats.has(seat) and not _submitted.has(seat):
+			seats.append(seat)
+	return seats
+
+
+# ---------------------------------------------------------------------------
+# 시계: 순발력 게임의 카드·신호·게이지
+# ---------------------------------------------------------------------------
+
+func _process(delta: float) -> void:
+	if not _opened or _closing:
+		return
+	if _timer_left > 0.0:
+		_timer_left -= delta
+		_bar.value = clampf(_timer_left / _timer_total, 0.0, 1.0)
+		if _timer_left <= 0.0:
+			_timer_left = 0.0
+			_bar.visible = false
+			_on_local_timeout()
+	if _clock < 0.0:
+		return
+	_clock += delta
+	match game:
+		DuelRules.Game.HALLI:
+			var cards: Array = setup_data.get("cards", [])
+			var dealt: int = mini(int(floor(_clock / float(setup_data.get("interval", DuelRules.HALLI_INTERVAL)))) + 1, cards.size())
+			if dealt != _shown_cards:
+				_shown_cards = dealt
+				Sfx.play(&"card_throw")
+				_drawing.queue_redraw()
+			_expire_reaction()
+		DuelRules.Game.QUICKDRAW:
+			var fake: float = float(setup_data.get("fake", -1.0))
+			var stage: int = 0
+			if _clock >= float(setup_data["signal"]):
+				stage = 2
+			elif fake >= 0.0 and _clock >= fake and _clock < fake + 0.35:
+				stage = 1
+			if stage != _signal_shown:
+				_signal_shown = stage
+				if stage == 1:
+					_game_label.text = "💨 트림!"
+					_game_label.add_theme_color_override("font_color", Color("adb5bd"))
+				elif stage == 2:
+					_game_label.text = "💥 뽑아라! (DRAW!)"
+					_game_label.add_theme_color_override("font_color", RED)
+					Sfx.play(&"slam")
+				else:
+					_game_label.text = "· · ·"
+					_game_label.add_theme_color_override("font_color", Color.WHITE)
+			_expire_reaction()
+		DuelRules.Game.CURLING:
+			if _pick_seat != -1:
+				var fill: float = float(setup_data.get("fill_time", DuelRules.CURLING_FILL_TIME))
+				_gauge_value = minf(_clock / fill, 1.0) * float(DuelRules.CURLING_MAX)
+				_drawing.queue_redraw()
+				if _clock >= fill:
+					_curling_stop()
+
+
+## 순발력 게임: 정답 순간이 지나고 창이 닫히면 안 누른 로컬 자리는 -1(못 누름)을 보낸다.
+func _expire_reaction() -> void:
+	if _step != &"play" or _clock < DuelRules.reaction_deadline(game, setup_data):
+		return
+	for seat: int in _local_open_seats():
+		_submit(seat, -1)
+	_clear_buttons()
+	_step = &"waiting"
+	_say("시간 끝! 판정 중...", Color("ced4da"))
+
+
+func _on_local_timeout() -> void:
+	match game:
+		DuelRules.Game.RPS:
+			if _pick_seat != -1:
+				_choose(randi() % 3)
+		DuelRules.Game.ECARD:
+			if _pick_seat != -1:
+				_choose(randi() % 2)
+		DuelRules.Game.BARREL:
+			if local_seats.has(_turn) and _step == &"play":
+				var free: Array[int] = []
+				for hole: int in DuelRules.BARREL_HOLES:
+					if not _opened_holes.has(hole):
+						free.append(hole)
+				if not free.is_empty():
+					_pick_hole(free[randi() % free.size()])
+
+
+func _input(event: InputEvent) -> void:
+	if _closing or _step != &"play" or not (event is InputEventKey) or not (event as InputEventKey).pressed or (event as InputEventKey).echo:
+		return
+	if game != DuelRules.Game.HALLI and game != DuelRules.Game.QUICKDRAW:
+		return
+	var key: Key = (event as InputEventKey).keycode
+	var seat: int = -1
+	if key == KEY_CHALLENGER and local_seats.has(challenger):
+		seat = challenger
+	elif key == KEY_DEFENDER and local_seats.has(defender):
+		seat = defender
+	elif key == KEY_SPACE and local_seats.size() == 1:
+		seat = local_seats[0]
+	if seat != -1:
+		_press(seat)
+		get_viewport().set_input_as_handled()
 
 
 # ---------------------------------------------------------------------------
@@ -226,74 +334,212 @@ func _pump() -> void:
 func _play(kind: StringName, data: Dictionary) -> void:
 	match kind:
 		&"duel_started":
-			_say("결투 신청! %s → %s" % [board._player_name(challenger), board._player_name(defender)], Color("ffe066"))
-			Sfx.play(&"card_impact")
-			await _wait(0.9)
-			_begin_pick()
+			await _play_roulette()
+			if is_inside_tree() and not _closing:
+				_begin_game()
 		&"duel_pick_in":
-			var player_id: int = int(data["player_id"])
-			_picked[player_id] = true
-			_refresh_chips()
+			if game == DuelRules.Game.BARREL and data.has("hole"):
+				await _play_barrel_stab(data)
+			elif not local_seats.has(int(data["player_id"])):
+				_say("%s 입력 완료!" % _seat_name(int(data["player_id"])), Color("ced4da"))
 		&"duel_revealed":
 			await _play_reveal(data)
-		&"duel_strike_wait":
-			_play_strike_wait(data)
 		&"duel_resolved":
 			await _play_resolved(data)
 
 
-## 이번 판에서 직접 고를 차례인 로컬 좌석을 찾아 버튼을 연다. 없으면(컴퓨터끼리 / 상대만 남음) 중계·대기 상태다.
-func _begin_pick() -> void:
-	_step = &"pick"
+## 0.5초 종목 추첨 룰렛: 종목 이름이 빠르게 돌다가 뽑힌 종목에 멈춘다. 이어서 종목 규칙을 잠깐 보여 준다.
+func _play_roulette() -> void:
+	_step = &"roulette"
+	Sfx.play(&"card_impact")
+	var spins: int = 9
+	for index: int in spins:
+		var shown: int = (game + index + 1 + DuelRules.GAME_COUNT - spins % DuelRules.GAME_COUNT) % DuelRules.GAME_COUNT
+		_game_label.text = DuelRules.game_title(shown)
+		_game_label.add_theme_color_override("font_color", Color("adb5bd"))
+		Sfx.play(&"roulette_tick")
+		await _wait(DuelRules.ROULETTE_TIME / float(spins))
+		if not is_inside_tree() or _closing:
+			return
+	_game_label.text = DuelRules.game_title(game)
+	_game_label.add_theme_color_override("font_color", GOLD)
+	Sfx.play(&"roulette_stop")
+	board.screen_shake(5.0, 0.2)
+	_say(DuelRules.GAME_RULES[game], Color("ffe066"))
+	await _wait(DuelRules.INTRO_TIME)
+
+
+func _begin_game() -> void:
+	_step = &"play"
+	_say("", Color.WHITE)
+	match game:
+		DuelRules.Game.RPS, DuelRules.Game.ECARD, DuelRules.Game.CURLING:
+			_next_pick_seat()
+		DuelRules.Game.HALLI, DuelRules.Game.QUICKDRAW:
+			_begin_reaction()
+		DuelRules.Game.BARREL:
+			_begin_barrel()
+	_drawing.queue_redraw()
+
+
+## 한 자리씩 고르는 게임(가위바위보·E카드·컬링): 핫시트라면 다음 로컬 자리가 이어서 고른다.
+func _next_pick_seat() -> void:
+	_clear_buttons()
 	_pick_seat = -1
-	for seat: int in [challenger, defender]:
-		if local_seats.has(seat) and not _picked.has(seat):
-			_pick_seat = seat
-			break
-	for player_id: int in [challenger, defender]:
-		(_icons[player_id] as HandIcon).set_hand(-1 if _picked.has(player_id) or player_id == _pick_seat else 0)
-	_refresh_chips()
-	if _pick_seat != -1:
-		_button_row.visible = true
-		var multiple: bool = local_seats.has(challenger) and local_seats.has(defender)
-		_say("%s, 손을 고르세요!" % board._player_name(_pick_seat) if multiple else "가위바위보! 손을 고르세요", Color.WHITE)
-		_start_timer(DuelRules.TIME_PICK * board.manager.timer_scale, &"pick")
-	else:
-		_button_row.visible = false
-		var both_computers: bool = not local_seats.has(challenger) and not local_seats.has(defender)
-		_say("컴퓨터끼리 결투 중..." if both_computers else "상대가 고민하는 중...", Color("ced4da"))
-		_stop_timer()
+	var open: Array[int] = _local_open_seats()
+	if open.is_empty():
+		_step = &"waiting"
+		_say(("컴퓨터끼리 결투 중..." if local_seats.is_empty() else "상대를 기다리는 중..."), Color("ced4da"))
+		return
+	_pick_seat = open[0]
+	var who: String = "%s, " % _seat_name(_pick_seat) if local_seats.size() > 1 else ""
+	match game:
+		DuelRules.Game.RPS:
+			_say("%s손을 고르세요!" % who, Color.WHITE)
+			for hand: int in 3:
+				_add_button(["✊ 바위", "✌️ 가위", "✋ 보"][hand], _choose.bind(hand), Color("3b4766"), 140.0)
+			_start_timer(PICK_SECONDS)
+		DuelRules.Game.ECARD:
+			var names: Array[String] = DuelRules.ECARD_CHALLENGER if _pick_seat == challenger else DuelRules.ECARD_DEFENDER
+			_say("%s카드 한 장을 엎어 내세요!" % who, Color.WHITE)
+			for index: int in 2:
+				_add_button(names[index], _choose.bind(index), Color("5f3dc4") if index == 0 else Color("3b4766"), 170.0)
+			_start_timer(PICK_SECONDS * 2.0)
+		DuelRules.Game.CURLING:
+			_say("%s게이지를 멈춰 100%%에 가깝게!" % who, Color.WHITE)
+			_add_button("🛑 스톱!", _curling_stop, Color("c92a2a"), 200.0)
+			_gauge_value = 0.0
+			_clock = 0.0
 
 
-func _refresh_chips() -> void:
-	for player_id: int in [challenger, defender]:
-		(_chips[player_id] as Label).text = "선택 완료!" if _picked.has(player_id) else ("고르는 중" if player_id == _pick_seat else "고민 중...")
-
-
-func _on_hand_pressed(hand: int) -> void:
-	if _pick_seat == -1 or _step != &"pick":
+func _choose(value: int) -> void:
+	if _pick_seat == -1 or _step != &"play":
 		return
 	var seat: int = _pick_seat
-	_picked[seat] = true
-	_pick_seat = -1
-	_button_row.visible = false
 	_stop_timer()
 	Sfx.play(&"ui_click")
-	hand_chosen.emit(seat, hand)
-	_refresh_chips()
-	# 핫시트라면 다음 자리가 이어서 고른다 (상대가 보지 못하게 손은 가려져 있다).
-	if _step == &"pick" and not _queue_has(&"duel_revealed"):
-		await get_tree().create_timer(0.25).timeout
-		if is_inside_tree() and _step == &"pick" and not animating:
-			_begin_pick()
+	_submit(seat, value)
+	_drawing.queue_redraw()
+	await get_tree().create_timer(0.15).timeout
+	if is_inside_tree() and _step == &"play":
+		_next_pick_seat()
 
+
+func _curling_stop() -> void:
+	if _pick_seat == -1 or _step != &"play" or _clock < 0.0:
+		return
+	var value: int = clampi(int(round(_gauge_value)), 0, DuelRules.CURLING_MAX)
+	_clock = -1.0
+	Sfx.play(&"hop")
+	_say("%s: %s" % [_seat_name(_pick_seat), DuelRules.curling_text(value)], RED if value > DuelRules.CURLING_EDGE else GREEN)
+	_drawing.mark_curl(_pick_seat, value)
+	_choose(value)
+
+
+## 순발력 게임(할리갈리·석양의 무법자): 시계를 0부터 돌리고 로컬 자리마다 누를 버튼을 연다.
+func _begin_reaction() -> void:
+	_clear_buttons()
+	_clock = 0.0
+	_shown_cards = 0
+	_signal_shown = 0
+	if game == DuelRules.Game.QUICKDRAW:
+		_game_label.text = "· · ·"
+		_game_label.add_theme_color_override("font_color", Color.WHITE)
+	var label: String = "🔔 데스벨 치기!" if game == DuelRules.Game.HALLI else "🔫 발사!"
+	var seats: Array[int] = _local_open_seats()
+	for seat: int in seats:
+		var key_hint: String = ""
+		if seats.size() > 1:
+			key_hint = " [%s]" % ("A" if seat == challenger else "L")
+		_add_button(("%s%s" % [label, key_hint]) if seats.size() == 1 else "%s\n%s%s" % [_seat_name(seat), label, key_hint], _press.bind(seat), Color("c92a2a"), 200.0 if seats.size() == 1 else 190.0)
+	if seats.is_empty():
+		_say("컴퓨터끼리 결투 중..." if local_seats.is_empty() else "상대를 기다리는 중...", Color("ced4da"))
+	elif game == DuelRules.Game.HALLI:
+		_say("두 카드의 그림 합이 정확히 5개일 때!", Color("ffe066"))
+	else:
+		_say("신호가 뜨면 바로! 먼저 쏘면 부정출발", Color("ffe066"))
+
+
+func _press(seat: int) -> void:
+	if _step != &"play" or _submitted.has(seat) or _clock < 0.0:
+		return
+	var pressed_ms: int = int(round(_clock * 1000.0))
+	_submit(seat, pressed_ms)
+	Sfx.play(&"shot" if game == DuelRules.Game.QUICKDRAW else &"card_impact")
+	var mark_ms: int = int(round(DuelRules.reaction_mark(game, setup_data) * 1000.0))
+	_say("%s: %s" % [_seat_name(seat), DuelRules.reaction_text(pressed_ms, mark_ms)], RED if pressed_ms < mark_ms else GREEN)
+	for child: Node in _buttons.get_children():
+		if (child as Button).text.contains(_seat_name(seat)) or local_seats.size() == 1:
+			(child as Button).disabled = true
+
+
+## 스피키 룰렛: 오크통 구멍 5개. 자기 차례인 로컬 자리만 누를 수 있다.
+func _begin_barrel() -> void:
+	_clear_buttons()
+	_hole_buttons.clear()
+	for hole: int in DuelRules.BARREL_HOLES:
+		var button: Button = _add_button("🔪 %d" % (hole + 1), _pick_hole.bind(hole), Color("8a5a2b"), 82.0)
+		button.name = "Hole%d" % hole
+		_hole_buttons.append(button)
+	_refresh_barrel_turn()
+
+
+func _refresh_barrel_turn() -> void:
+	var mine: bool = local_seats.has(_turn)
+	for hole: int in _hole_buttons.size():
+		_hole_buttons[hole].disabled = not mine or _opened_holes.has(hole)
+	if mine:
+		_say("%s 차례! 칼을 꽂을 구멍을 고르세요" % _seat_name(_turn), Color.WHITE)
+		_start_timer(DuelRules.TIME_BARREL_PICK * 0.75)
+	else:
+		_stop_timer()
+		_say("%s 차례... 두근두근" % _seat_name(_turn), Color("ced4da"))
+
+
+func _pick_hole(hole: int) -> void:
+	if _step != &"play" or not local_seats.has(_turn) or _opened_holes.has(hole):
+		return
+	_stop_timer()
+	for button: Button in _hole_buttons:
+		button.disabled = true
+	Sfx.play(&"ui_click")
+	value_chosen.emit(_turn, hole)
+
+
+func _play_barrel_stab(data: Dictionary) -> void:
+	var hole: int = int(data["hole"])
+	var seat: int = int(data["player_id"])
+	_opened_holes.append(hole)
+	_drawing.queue_redraw()
+	Sfx.play(&"hop")
+	if bool(data["bomb"]):
+		_step = &"waiting"
+		_stop_timer()
+		_say("펑! 사도가 튀어 올랐다! %s 꽝!" % _seat_name(seat), RED)
+		board.screen_shake(9.0, 0.3)
+		Sfx.play(&"trap")
+		_drawing.popped = true
+		_drawing.queue_redraw()
+		await _wait(0.8)
+		return
+	_say("%s: %d번 구멍 무사통과!" % [_seat_name(seat), hole + 1], GREEN)
+	await _wait(0.35)
+	if not is_inside_tree() or _closing:
+		return
+	_turn = defender if seat == challenger else challenger
+	if _step == &"play":
+		_refresh_barrel_turn()
+
+
+# ---------------------------------------------------------------------------
+# 공개와 결과
+# ---------------------------------------------------------------------------
 
 ## 보드 연출(사출·전진)이 기다려야 하는가: 결투장이 열린 뒤 승패 공개가 끝날 때까지는 보드가 결과를 먼저 보여 주면 안 된다.
 func holds_board() -> bool:
 	if not _opened or _closing:
 		return false
-	# 손을 고르는 중에는 붙잡지 않는다 (봇이 연출 큐가 비기를 기다리므로): 엔진이 승패를 냈다면 duel_revealed가 큐에 있다.
-	return (_step == &"reveal" and animating) or _queue_has(&"duel_revealed")
+	return animating or _queue_has(&"duel_revealed")
 
 
 func _queue_has(kind: StringName) -> bool:
@@ -303,120 +549,83 @@ func _queue_has(kind: StringName) -> bool:
 	return false
 
 
-## "가위... 바위... 보!" 박자 뒤에 양쪽 손이 중앙에서 부딪히며 승패가 드러난다.
 func _play_reveal(data: Dictionary) -> void:
 	animating = true
+	var picks: Dictionary = data["picks"]
+	# 순발력 게임: 봇이 먼저 냈어도 화면의 카드·신호가 그 순간까지 다 나온 다음 공개한다.
+	if game == DuelRules.Game.HALLI or game == DuelRules.Game.QUICKDRAW:
+		var until: float = DuelRules.reaction_mark(game, setup_data) + 0.4
+		for seat: int in [challenger, defender]:
+			var pressed: int = int(picks.get(seat, -1))
+			if pressed >= 0:
+				until = minf(until, float(pressed) / 1000.0 + 0.2)
+		if _clock < 0.0:
+			_clock = 0.0
+		while _clock >= 0.0 and _clock < until and is_inside_tree() and not _closing:
+			await get_tree().process_frame
+	_clock = -1.0
 	_step = &"reveal"
 	_stop_timer()
-	_button_row.visible = false
-	var picks: Dictionary = data["picks"]
-	var winner: int = int(data["winner"])
-	for player_id: int in [challenger, defender]:
-		(_icons[player_id] as HandIcon).set_hand(-1)
-		(_chips[player_id] as Label).text = ""
-	for beat: String in ["가위...", "바위...", "보!"]:
-		_say(beat, Color("ffe066"))
-		_shake_icons()
-		Sfx.play(&"hop")
-		await _wait(0.38)
-		if not is_inside_tree():
-			return
-	for player_id: int in [challenger, defender]:
-		var icon: HandIcon = _icons[player_id]
-		icon.set_hand(int(picks[player_id]))
-		icon.pivot_offset = icon.size / 2.0
-		icon.scale = Vector2(1.5, 1.5)
-		var pop: Tween = create_tween()
-		pop.tween_property(icon, "scale", Vector2.ONE, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-		(_chips[player_id] as Label).text = HAND_NAMES[int(picks[player_id])]
-	var center: Vector2 = global_position + size / 2.0
-	board.screen_shake(7.0, 0.25)
-	board._impact_ring(center, Color("ffe066"), 60.0)
-	Sfx.play(&"slam")
-	await _wait(0.5)
+	_clear_buttons()
+	_drawing.reveal = picks
+	_drawing.queue_redraw()
 	if not is_inside_tree():
 		return
-	if winner == -1:
-		_say("무승부! 재대결!", Color("ffe066"))
-		await _wait(1.0)
-		_picked.clear()
-		animating = false
-		_begin_pick()
-		return
-	var loser: int = defender if winner == challenger else challenger
-	(_chips[winner] as Label).add_theme_color_override("font_color", Color("ffe066"))
-	if data["decided_by"] == &"draws":
-		_say("연속 무승부! %s 판정승!" % board._player_name(winner), Color("ffe066"))
-	else:
-		_say("%s 승리!" % board._player_name(winner), Color("ffe066"))
-	(_icons[loser] as HandIcon).modulate = Color(1, 1, 1, 0.45)
-	await _wait(0.9)
-	animating = false
-
-
-func _shake_icons() -> void:
-	for player_id: int in [challenger, defender]:
-		var icon: HandIcon = _icons[player_id]
-		icon.pivot_offset = icon.size / 2.0
-		icon.rotation = 0.0
-		var tween: Tween = create_tween()
-		tween.tween_property(icon, "rotation", -0.22 if player_id == challenger else 0.22, 0.12)
-		tween.tween_property(icon, "rotation", 0.0, 0.2)
-
-
-## 승자가 진 사람의 말을 고를 차례. 손 그림은 접어 보드 위의 붉게 깜빡이는 말이 잘 보이게 한다.
-func _play_strike_wait(data: Dictionary) -> void:
-	_step = &"strike"
 	var winner: int = int(data["winner"])
-	var loser: int = int(data["loser"])
-	_compact()
-	var local_winner: bool = local_seats.has(winner)
-	if local_winner:
-		_say("결투 승리! 출발선으로 날려 버릴 상대방의 말을 클릭하세요! (내 말은 +%d칸 전진)" % DuelRules.winner_advance(), Color("8ce99a"))
-		_start_timer(DuelRules.TIME_STRIKE * board.manager.timer_scale, &"strike")
-		_pick_seat = winner
-	elif local_seats.has(loser):
-		_say("결투 패배! 상대가 내 말을 출발선으로 날려 버립니다!", Color("ff8787"))
-	else:
-		_say("%s 승리! 날려 버릴 말을 고르는 중..." % board._player_name(winner), Color("ffe066"))
-	strike_started.emit(winner, data["candidates"], local_winner)
-
-
-## 손 그림을 접어 메시지 줄만 남기고 패널을 줄인다 (보드 위의 말이 잘 보이게).
-func _compact() -> void:
-	_hands_row.visible = false
-	_button_row.visible = false
-	custom_minimum_size = Vector2(SIZE.x, 120.0)
-	reset_size()
-	_place()
+	board.screen_shake(7.0, 0.25)
+	board._impact_ring(global_position + size / 2.0, GOLD, 60.0)
+	Sfx.play(&"slam")
+	var detail: String = str(data.get("detail", ""))
+	if winner == -1:
+		_say("무승부 %s! 재대결!" % detail, Color("ffe066"))
+		await _wait(1.0)
+		_submitted.clear()
+		_drawing.reveal = {}
+		_drawing.queue_redraw()
+		animating = false
+		if is_inside_tree() and not _closing:
+			_step = &"play"
+			_next_pick_seat()
+		return
+	var suffix: String = ""
+	match data["decided_by"]:
+		&"draws": suffix = " (연속 무승부 판정승)"
+		&"foul": suffix = " (상대 반칙!)"
+		&"fall": suffix = " (상대 추락!)"
+		&"both_fell": suffix = " (둘 다 추락, 신청자 판정승)"
+		&"nobody": suffix = " (아무도 못 눌러 신청자 판정승)"
+		&"upset": suffix = " ⚡하극상!"
+	_say("%s  ➔  %s 승리!%s" % [detail, _seat_name(winner), suffix], GOLD)
+	_vs.text = "%s  VS  %s" % [board._player_name(challenger), board._player_name(defender)]
+	await _wait(1.1)
+	animating = false
 
 
 func _play_resolved(data: Dictionary) -> void:
 	var winner: int = int(data["winner"])
 	var loser: int = int(data["loser"])
 	_stop_timer()
-	if _step != &"strike":
-		# 말이 하나뿐이거나 없어서 고르는 단계 없이 바로 끝난 경우의 결과 안내
-		_compact()
 	_step = &"result"
-	strike_ended.emit()
+	var advance: int = int(data.get("advance", DuelRules.winner_advance()))
 	if int(data["pawn_id"]) == -1:
 		_say("날려 버릴 말이 없어 결투가 끝났습니다", Color("ced4da"))
-	elif local_seats.has(winner):
-		_say("결투 승리! 상대 말을 장외 사출, 내 말은 +%d칸 전진!" % DuelRules.winner_advance(), Color("8ce99a"))
-	elif local_seats.has(loser):
-		_say("결투 패배! 내 말이 출발선으로 날아갔습니다!", Color("ff8787"))
+	elif local_seats.has(winner) and not local_seats.has(loser):
+		_say("결투 승리! 상대 선두 말 장외 사출, 내 말 +%d칸!" % advance, GREEN)
+	elif local_seats.has(loser) and not local_seats.has(winner):
+		_say("결투 패배! 내 선두 말이 출발선으로 날아갑니다!", RED)
 	else:
-		_say("%s의 말이 출발선으로 날아갔습니다" % board._player_name(loser), Color("ffe066"))
-	await _wait(1.3)
+		_say("%s 선두 말 장외 사출! %s +%d칸" % [_seat_name(loser), _seat_name(winner), advance], Color("ffe066"))
+	await _wait(1.2)
 	close_now()
 
 
+## 결투장을 닫는다: 페이드아웃 뒤 closed를 알리고 곧바로 queue_free한다 (연출 노드가 남지 않게).
 func close_now() -> void:
 	if _closing:
 		return
 	_closing = true
 	animating = false
+	_clock = -1.0
 	var tween: Tween = create_tween().set_parallel(true)
 	tween.tween_property(self, "modulate:a", 0.0, 0.25)
 	tween.tween_property(self, "scale", Vector2(0.9, 0.9), 0.25)
@@ -425,59 +634,149 @@ func close_now() -> void:
 		queue_free())
 
 
-## 손 모양을 코드로 그리는 아이콘 (폰트에 이모지가 없어서 직접 그린다). hand: 0 바위 / 1 가위 / 2 보 / -1 물음표
-class HandIcon extends Control:
-	var hand: int = -1
-	var mirror: bool = false
-	var tint: Color = Color.WHITE
+# ---------------------------------------------------------------------------
+# 무대 그림: 종목마다 가운데 무대를 코드로 그린다 (이모지 글꼴에 기대지 않는다)
+# ---------------------------------------------------------------------------
 
-	func set_hand(value: int) -> void:
-		if value != hand:
-			hand = value
-			queue_redraw()
+class StageDrawing extends Control:
+	var arena: DuelArena = null
+	## 공개된 값 {player_id: value}. 비어 있으면 아직 가려 둔다.
+	var reveal: Dictionary = {}
+	var popped: bool = false
+	var _curls: Dictionary = {}
 
-	func _capsule(a: Vector2, b: Vector2, width: float) -> void:
-		draw_line(a, b, SKIN_EDGE, width + 5.0, true)
-		draw_circle(a, (width + 5.0) / 2.0, SKIN_EDGE)
-		draw_circle(b, (width + 5.0) / 2.0, SKIN_EDGE)
-		draw_line(a, b, SKIN, width, true)
-		draw_circle(a, width / 2.0, SKIN)
-		draw_circle(b, width / 2.0, SKIN)
-
-	func _palm(rect: Rect2) -> void:
-		var edge := StyleBoxFlat.new()
-		edge.bg_color = SKIN_EDGE
-		edge.set_corner_radius_all(14)
-		draw_style_box(edge, rect.grow(3.0))
-		var fill := StyleBoxFlat.new()
-		fill.bg_color = SKIN
-		fill.set_corner_radius_all(12)
-		draw_style_box(fill, rect)
+	func mark_curl(seat: int, value: int) -> void:
+		_curls[seat] = value
+		queue_redraw()
 
 	func _draw() -> void:
-		var origin: Vector2 = size / 2.0
-		var k: float = minf(size.x, size.y) / 120.0
-		draw_set_transform(origin, 0.0, Vector2((-1.0 if mirror else 1.0) * k, k))
-		draw_circle(Vector2.ZERO, 52.0, Color(tint.r, tint.g, tint.b, 0.22))
-		match hand:
-			0:
-				_palm(Rect2(-30, -6, 60, 44))
-				for x: float in [-23.0, -8.0, 8.0, 23.0]:
-					_capsule(Vector2(x, -10), Vector2(x, -10), 15.0)
-				_capsule(Vector2(-34, 12), Vector2(-26, 4), 14.0)
-			1:
-				_palm(Rect2(-26, 6, 52, 40))
-				_capsule(Vector2(-8, 8), Vector2(-24, -42), 14.0)
-				_capsule(Vector2(8, 8), Vector2(24, -42), 14.0)
-				_capsule(Vector2(-16, 12), Vector2(-16, 12), 13.0)
-				_capsule(Vector2(30, 24), Vector2(24, 18), 13.0)
-			2:
-				_palm(Rect2(-28, 4, 56, 42))
-				for index: int in 4:
-					var x: float = -21.0 + index * 14.0
-					_capsule(Vector2(x, 6), Vector2(x * 1.15, -40.0 + absf(x) * 0.2), 12.0)
-				_capsule(Vector2(-30, 24), Vector2(-46, 2), 12.0)
-			_:
-				_palm(Rect2(-30, -30, 60, 60))
-				draw_string(ThemeDB.fallback_font, Vector2(-14, 18), "?", HORIZONTAL_ALIGNMENT_CENTER, 28.0, 56, Color("8a5a2b"))
-		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		if arena == null or arena._step == &"roulette" or arena._step == &"idle":
+			return
+		match arena.game:
+			DuelRules.Game.RPS: _draw_hands()
+			DuelRules.Game.ECARD: _draw_ecards()
+			DuelRules.Game.HALLI: _draw_halli()
+			DuelRules.Game.QUICKDRAW: _draw_cowboys()
+			DuelRules.Game.CURLING: _draw_curling()
+			DuelRules.Game.BARREL: _draw_barrel()
+
+	func _seat_x(seat: int) -> float:
+		return size.x * (0.25 if seat == arena.challenger else 0.75)
+
+	func _name_at(seat: int, y: float) -> void:
+		var font: Font = ThemeDB.fallback_font
+		var text: String = arena._seat_name(seat)
+		var width: float = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 15).x
+		draw_string(font, Vector2(_seat_x(seat) - width / 2.0, y), text, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, MainBoard.PLAYER_COLORS.get(seat, Color.WHITE))
+
+	func _center_text(text: String, at: Vector2, font_size: int, color: Color) -> void:
+		var font: Font = ThemeDB.fallback_font
+		var width: float = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+		draw_string(font, Vector2(at.x - width / 2.0, at.y), text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, color)
+
+	func _draw_hands() -> void:
+		for seat: int in [arena.challenger, arena.defender]:
+			var center := Vector2(_seat_x(seat), size.y * 0.45)
+			draw_circle(center, 46.0, Color(MainBoard.PLAYER_COLORS.get(seat, Color.WHITE), 0.2))
+			var label: String = "?"
+			if reveal.has(seat):
+				label = ["✊ 바위", "✌️ 가위", "✋ 보"][clampi(int(reveal[seat]), 0, 2)]
+			elif arena._submitted.has(seat):
+				label = "선택 완료"
+			_center_text(label, center + Vector2(0, 8), 22, Color.WHITE)
+			_name_at(seat, size.y - 8.0)
+
+	func _draw_ecards() -> void:
+		for seat: int in [arena.challenger, arena.defender]:
+			var rect := Rect2(Vector2(_seat_x(seat) - 52.0, 8.0), Vector2(104.0, 118.0))
+			var faced: bool = reveal.has(seat)
+			draw_rect(rect, Color("f1e3c6") if faced else Color("5f3dc4"))
+			draw_rect(rect, Color("3b2a00"), false, 3.0)
+			var label: String = "E"
+			if faced:
+				var names: Array[String] = DuelRules.ECARD_CHALLENGER if seat == arena.challenger else DuelRules.ECARD_DEFENDER
+				label = names[clampi(int(reveal[seat]), 0, 1)]
+			_center_text(label, rect.get_center() + Vector2(0, 8), 18 if faced else 40, Color("3b2a00") if faced else GOLD)
+			_name_at(seat, size.y - 4.0)
+
+	func _draw_halli() -> void:
+		var cards: Array = arena.setup_data.get("cards", [])
+		var shown: int = arena._shown_cards if reveal.is_empty() else cards.size()
+		for pile: int in 2:
+			var seat: int = arena.challenger if pile == 0 else arena.defender
+			var top: int = -1
+			for index: int in shown:
+				if index % 2 == pile:
+					top = index
+			var rect := Rect2(Vector2(_seat_x(seat) - 50.0, 6.0), Vector2(100.0, 120.0))
+			draw_rect(rect, Color("fff9db") if top != -1 else Color("343a40"))
+			draw_rect(rect, Color("e67700"), false, 3.0)
+			if top != -1:
+				var count: int = int(cards[top])
+				for dot: int in count:
+					var col: int = dot % 2
+					var row: int = dot / 2
+					draw_circle(rect.position + Vector2(32.0 + col * 36.0, 34.0 + row * 46.0), 15.0, Color("ff8fab"))
+					draw_circle(rect.position + Vector2(27.0 + col * 36.0, 29.0 + row * 46.0), 5.0, Color("ffc9d6"))
+			_name_at(seat, size.y - 4.0)
+		var bell := Vector2(size.x / 2.0, size.y * 0.42)
+		draw_circle(bell, 26.0, GOLD)
+		draw_circle(bell + Vector2(0, -24), 6.0, Color("e67700"))
+		_center_text("5", bell + Vector2(0, 9), 24, Color("3b2a00"))
+
+	func _draw_cowboys() -> void:
+		for seat: int in [arena.challenger, arena.defender]:
+			var x: float = _seat_x(seat)
+			var base := Vector2(x, size.y - 30.0)
+			draw_line(base, base + Vector2(0, -60), Color("8a5a2b"), 10.0)
+			draw_circle(base + Vector2(0, -74), 16.0, SKIN)
+			draw_rect(Rect2(base + Vector2(-26, -98), Vector2(52, 10)), Color("5c3d2e"))
+			draw_rect(Rect2(base + Vector2(-14, -116), Vector2(28, 20)), Color("5c3d2e"))
+			if reveal.has(seat):
+				var mark_ms: int = int(round(DuelRules.reaction_mark(arena.game, arena.setup_data) * 1000.0))
+				var pressed: int = int(reveal[seat])
+				var side: float = -1.0 if seat == arena.challenger else 1.0
+				_center_text(DuelRules.reaction_text(pressed, mark_ms), base + Vector2(side * 78.0, -54.0), 18, Color("adb5bd") if pressed < 0 else (RED if pressed < mark_ms else GREEN))
+			_name_at(seat, size.y - 4.0)
+		draw_circle(Vector2(size.x / 2.0, 34.0), 22.0, Color("ff922b"))  # 석양
+
+	func _draw_curling() -> void:
+		var track := Rect2(Vector2(20.0, size.y * 0.42), Vector2(size.x - 40.0, 22.0))
+		draw_rect(track, Color("495057"))
+		var edge_x: float = track.position.x + track.size.x * float(DuelRules.CURLING_EDGE) / float(DuelRules.CURLING_MAX)
+		draw_rect(Rect2(Vector2(edge_x, track.position.y - 30.0), Vector2(track.end.x - edge_x, track.size.y + 60.0)), Color(0.9, 0.2, 0.2, 0.25))
+		draw_line(Vector2(edge_x, track.position.y - 34.0), Vector2(edge_x, track.end.y + 34.0), RED, 3.0)
+		_center_text("절벽 100%", Vector2(edge_x, track.position.y - 38.0), 14, RED)
+		if arena._pick_seat != -1 and reveal.is_empty() and arena._clock >= 0.0:
+			var fill: float = track.size.x * arena._gauge_value / float(DuelRules.CURLING_MAX)
+			draw_rect(Rect2(track.position, Vector2(fill, track.size.y)), Color("fcc419"))
+		var values: Dictionary = reveal if not reveal.is_empty() else _curls
+		var row: int = 0
+		for seat: int in [arena.challenger, arena.defender]:
+			if not values.has(seat):
+				continue
+			var value: int = int(values[seat])
+			var x: float = track.position.x + track.size.x * float(value) / float(DuelRules.CURLING_MAX)
+			var y: float = track.position.y + (-10.0 if row == 0 else track.size.y + 10.0)
+			draw_circle(Vector2(x, y), 11.0, MainBoard.PLAYER_COLORS.get(seat, Color.WHITE))
+			draw_arc(Vector2(x, y), 11.0, 0.0, TAU, 18, Color.WHITE, 2.0)
+			_center_text("%s %s" % [arena._seat_name(seat), DuelRules.curling_text(value)], Vector2(clampf(x, 90.0, size.x - 90.0), y + (-16.0 if row == 0 else 30.0)), 13, Color.WHITE)
+			row += 1
+
+	func _draw_barrel() -> void:
+		var center := Vector2(size.x / 2.0, size.y * 0.6)
+		draw_rect(Rect2(center - Vector2(110, 60), Vector2(220, 120)), Color("8a5a2b"))
+		for band: float in [-40.0, 40.0]:
+			draw_rect(Rect2(center + Vector2(-112, band - 4.0), Vector2(224, 8)), Color("495057"))
+		for hole: int in DuelRules.BARREL_HOLES:
+			var at: Vector2 = center + Vector2(-80.0 + hole * 40.0, 10.0)
+			draw_circle(at, 11.0, Color("212529"))
+			if arena._opened_holes.has(hole):
+				draw_line(at, at + Vector2(0, -34), Color("ced4da"), 4.0)
+				draw_rect(Rect2(at + Vector2(-7, -42), Vector2(14, 8)), Color("c92a2a"))
+		var head := center + Vector2(0, -66.0 - (14.0 if popped else 0.0))
+		draw_circle(head, 20.0, SKIN)
+		draw_circle(head + Vector2(-7, -3), 3.0, Color("212529"))
+		draw_circle(head + Vector2(7, -3), 3.0, Color("212529"))
+		if popped:
+			_center_text("으아악!", head + Vector2(46, 6), 18, RED)

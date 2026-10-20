@@ -1,6 +1,6 @@
 # File: res://core_engine/commands/duel_command.gd
 # Class: class_name DuelCommand
-# Role: ACT_09 운명의 가위바위보 결투 시작 - 결투 신청만 알리고(duel_requested), 손 고르기·승패·말 밀어내기는 TurnManager의 결투 상태가 입력을 받아 진행한다
+# Role: ACT_09 일기토 데스매치 시작 - 결투 신청만 알리고(duel_requested), 종목 추첨·입력·승패·사출은 TurnManager의 결투 상태가 진행한다
 class_name DuelCommand
 extends GameCommand
 
