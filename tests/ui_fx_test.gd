@@ -1625,8 +1625,8 @@ func _test_new_tool_stages() -> void:
 	await process_frame
 	await process_frame
 	_expect(_board._stage_pinball.active and _board._fx_busy, "핀볼: 구슬이 굴러가는 동안 입력이 잠긴다")
-	await get_root().get_tree().create_timer(3.4).timeout
-	_expect(not _board._stage_pinball.active and not _board._fx_busy and holes.size() == before_holes + 1 and _board._stage_pinball.last_hole == holes[-1], "핀볼: 약 2초 뒤 구슬이 엔진이 정한 구멍에 도착하고 입력이 풀린다")
+	await get_root().get_tree().create_timer(5.2).timeout
+	_expect(not _board._stage_pinball.active and not _board._fx_busy and holes.size() == before_holes + 1 and _board._stage_pinball.last_hole == holes[-1], "핀볼: 물리 낙하 후 엔진이 정한 구멍에 도착하고 입력이 풀린다")
 	_board.instant_roll_for_test = true
 	guard = 0
 	while manager.current_state != TurnManager.State.PHASE_TURN_BEGIN and guard < 300:

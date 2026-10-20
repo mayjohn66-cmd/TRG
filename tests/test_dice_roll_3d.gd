@@ -2,6 +2,15 @@ class_name TestDiceRoll3D
 extends TestCase
 
 
+func test_yacht_results_face_the_camera_without_moving_after_settle() -> void:
+	for face: int in range(1, 7):
+		for index: int in 5:
+			var pose: Transform3D = YachtRoll3D.pose_at(YachtRoll3D.TOTAL_TIME, face, index)
+			check((pose.basis * DiceRoll3D.FACE_NORMALS[face - 1]).is_equal_approx(Vector3.BACK), "all six results face the viewer squarely in every slot")
+			check(pose.is_equal_approx(YachtRoll3D.pose_at(8.0, face, index)), "held result remains completely still")
+			check(is_equal_approx(pose.origin.x, (index - 2) * YachtRoll3D.GAP) and is_zero_approx(pose.origin.y), "five results settle into one row")
+
+
 func test_all_six_results_show_the_correct_physical_top_face() -> void:
 	for face: int in range(1, 7):
 		for power: float in [0.0, 0.5, 1.0]:

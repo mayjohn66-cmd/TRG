@@ -1,29 +1,41 @@
-# File: res://scenes/stage_pinball.gd
-# Class: class_name PinballStage
-# Role: 클래식 구슬 핀볼의 중앙 오픈 스테이지. 오른쪽 스프링 발사대, 상단 아치 레일, 지그재그 못(Peg), 하단 숫자 구멍 7칸 [2][4][6][★10][5][3][1]을 그린다. 발사 버튼을 한 번 누르면 스프링이 당겨졌다 놓이며 구슬이 레일을 타고 올라가 못에 튕기며 내려와 엔진이 정한 구멍에 들어간다. 연출만 담당한다
+## Imported 3D base and polished ball. The authoritative ToolPinball result
+## selects the pocket; this local timeline only presents that fixed outcome.
 class_name PinballStage
 extends Control
 
-const STAGE_SIZE: Vector2 = Vector2(340.0, 400.0)
-const FIELD_LEFT: float = 26.0
-const FIELD_RIGHT: float = 258.0
-const LANE_X: float = 294.0
-const ARCH_CENTER: Vector2 = Vector2(172.0, 172.0)
-const ARCH_RADIUS: float = 124.0
-const PEG_ROWS: int = 6
-const PEG_TOP: float = 206.0
-const PEG_GAP: float = 22.0
-const HOLE_Y: float = 356.0
-const FALL_SECONDS: float = 1.0
-const ARCH_SECONDS: float = 0.5
+signal finished
+
+const STAGE_SIZE := Vector2(360.0, 430.0)
+const MOTION = preload("res://scenes/pinball_motion.gd")
+const BASE: PackedScene = preload("res://assets/models/pinball/pinball_base_v01.tscn")
+const BALL: PackedScene = preload("res://assets/models/pinball/steel_ball_v01.tscn")
+const STUDIO: Environment = preload("res://assets/models/pinball/steel_ball_preview_environment_v01.tres")
+const WIND_TIME: float = 0.16
+const ARCH_SECONDS: float = 0.52
+const HOLD_SECONDS: float = 0.45
 
 var pull: float = 0.0
 var active: bool = false
 var instant: bool = false
 var last_hole: int = -1
-var _ball: Vector2 = Vector2(LANE_X, 350.0)
-var _ball_in_play: bool = false
-var _highlight: int = -1
+var render_view: SubViewport
+var ball: Node3D
+var base: Node3D
+var _caption: Label
+var _coil: MeshInstance3D
+var _moving_plunger: Array[Node3D] = []
+var _plunger_home: Array[Vector3] = []
+var _floors: Array[MeshInstance3D] = []
+var _floor_colors: Array[Color] = []
+var _trajectory: Dictionary = {}
+var _fall_seconds: float = 0.0
+var _hole: int = -1
+var _elapsed: float = 0.0
+var _rise_seconds: float = 0.6
+var _arrival: float = 0.0
+var _total: float = 0.0
+var _last_bounce: int = -1
+var _result_played: bool = false
 
 
 func _init() -> void:
@@ -32,173 +44,259 @@ func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 
-## 발사대 스프링을 당긴 정도 (0~1). 발사하는 순간 스프링이 당겨졌다 놓인다.
+func _ready() -> void:
+	render_view = SubViewport.new()
+	render_view.name = "PinballViewport"
+	render_view.size = Vector2i(720, 800)
+	render_view.own_world_3d = true
+	render_view.transparent_bg = true
+	render_view.gui_disable_input = true
+	render_view.msaa_3d = Viewport.MSAA_2X
+	render_view.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	add_child(render_view)
+	var view := TextureRect.new()
+	view.texture = render_view.get_texture()
+	view.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	view.stretch_mode = TextureRect.STRETCH_SCALE
+	view.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	view.size = Vector2(360, 400)
+	view.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(view)
+	var camera := Camera3D.new()
+	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
+	camera.size = 9.8
+	camera.position = Vector3(0, 17, 11)
+	render_view.add_child(camera)
+	camera.look_at(Vector3(0, 0.1, -0.05))
+	camera.current = true
+	var world := WorldEnvironment.new()
+	world.environment = STUDIO.duplicate()
+	world.environment.ambient_light_energy = 0.25
+	render_view.add_child(world)
+	var light := DirectionalLight3D.new()
+	light.rotation_degrees = Vector3(-55, -25, 0)
+	light.light_energy = 0.45
+	light.shadow_enabled = true
+	render_view.add_child(light)
+	base = BASE.instantiate() as Node3D
+	render_view.add_child(base)
+	ball = BALL.instantiate() as Node3D
+	render_view.add_child(ball)
+	var plunger: Node3D = base.get_node("StaticSpringPlunger")
+	_coil = plunger.get_node("SevenTurnSteelSpring")
+	for node_name: String in ["PlungerRod", "BallPusher", "CoralPullKnob", "RoundedKnobEnd"]:
+		var part: Node3D = plunger.get_node(node_name)
+		_moving_plunger.append(part)
+		_plunger_home.append(part.position)
+	var pockets: Node3D = base.get_node("SevenRecessedPockets")
+	for index: int in 7:
+		var floor: MeshInstance3D = pockets.get_node("Pocket_%d_Value_%d/RecessFloor" % [index, ToolPinball.HOLES[index]])
+		floor.material_override = floor.material_override.duplicate()
+		_floors.append(floor)
+		_floor_colors.append((floor.material_override as StandardMaterial3D).albedo_color)
+	_batch_static_base()
+	var panel := Panel.new()
+	panel.position = Vector2(20, 400)
+	panel.size = Vector2(320, 28)
+	panel.add_theme_stylebox_override("panel", UiSkin.panel("panel", 2.0))
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(panel)
+	_caption = Label.new()
+	_caption.size = panel.size
+	_caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_caption.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_caption.add_theme_font_size_override("font_size", 17)
+	_caption.add_theme_color_override("font_color", UiSkin.INK)
+	_caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(_caption)
+	visibility_changed.connect(_visibility_changed)
+	reset()
+
+
+func _batch_static_base() -> void:
+	# Combine fixed pieces once, retaining the animated plunger and pocket
+	# floors separately instead of issuing 175 individual mesh draws.
+	var keep: Array[Node] = [_coil]
+	keep.append_array(_moving_plunger)
+	keep.append_array(_floors)
+	var groups: Dictionary = {}
+	var sources: Array[MeshInstance3D] = []
+	for node: Node in base.find_children("*", "MeshInstance3D", true, false):
+		if keep.has(node):
+			continue
+		var mesh := node as MeshInstance3D
+		for surface: int in mesh.mesh.get_surface_count():
+			var material: Material = mesh.material_override if mesh.material_override != null else mesh.mesh.surface_get_material(surface)
+			if not groups.has(material):
+				var builder := SurfaceTool.new()
+				builder.begin(Mesh.PRIMITIVE_TRIANGLES)
+				groups[material] = builder
+			# Primitive meshes have indices; the authored rails/slabs do not.
+			# Normalize both before appending so indexed primitives cannot hide
+			# the earlier unindexed triangles in the same material batch.
+			var source := SurfaceTool.new()
+			source.create_from(mesh.mesh, surface)
+			source.deindex()
+			(groups[material] as SurfaceTool).append_from(source.commit(), 0, base.global_transform.affine_inverse() * mesh.global_transform)
+		sources.append(mesh)
+	for material: Material in groups:
+		var merged := MeshInstance3D.new()
+		merged.name = "StaticBatch"
+		(groups[material] as SurfaceTool).index()
+		merged.mesh = (groups[material] as SurfaceTool).commit()
+		merged.material_override = material
+		base.add_child(merged)
+	for mesh: MeshInstance3D in sources:
+		mesh.get_parent().remove_child(mesh)
+		mesh.queue_free()
+
+
+func _process(delta: float) -> void:
+	if not active:
+		return
+	_elapsed += delta
+	apply_time(_elapsed)
+	var fall_start: float = WIND_TIME + _rise_seconds + ARCH_SECONDS
+	var impacts: PackedFloat32Array = _trajectory.get("impacts", PackedFloat32Array())
+	var bounced: bool = false
+	while _last_bounce + 1 < impacts.size() and _elapsed - fall_start >= impacts[_last_bounce + 1]:
+		_last_bounce += 1
+		bounced = true
+	if bounced and _elapsed < _arrival:
+		Sfx.play(&"hop", -11.0, 0.0, 1.5 + 0.04 * (_last_bounce % 4))
+	if _elapsed >= _arrival and not _result_played:
+		_result_played = true
+		Sfx.play(&"good", -6.0, 0.0)
+	if _elapsed >= _total:
+		active = false
+		set_process(false)
+		request_frame()
+		finished.emit()
+
+
 func set_pull(value: float) -> void:
 	pull = clampf(value, 0.0, 1.0)
+	if _coil == null:
+		return
+	var shift: float = pull * 0.22
+	_coil.scale.z = 1.0 - shift / 0.88
+	_coil.position.z = 4.31 * (1.0 - _coil.scale.z)
+	for index: int in _moving_plunger.size():
+		_moving_plunger[index].position = _plunger_home[index] + Vector3(0, 0, shift)
 	if not active:
-		_ball = Vector2(LANE_X, 350.0 + pull * 20.0)
-	queue_redraw()
+		ball.position = MOTION.PARK + Vector3(0, 0, shift)
+	request_frame()
 
 
-## 새 차례에 처음 모습으로 돌린다.
 func reset() -> void:
-	active = false
-	_ball_in_play = false
-	_highlight = -1
+	cancel()
 	last_hole = -1
-	pull = 0.0
-	_ball = Vector2(LANE_X, 350.0)
-	queue_redraw()
+	_hole = -1
+	if ball == null:
+		return
+	set_pull(0.0)
+	ball.position = MOTION.PARK
+	ball.quaternion = Quaternion.IDENTITY
+	_highlight(-1)
+	_caption.text = "클래식 구슬 핀볼 · 발사 버튼을 누르세요"
+	request_frame()
 
 
-func hole_center(hole: int) -> Vector2:
-	var width: float = (FIELD_RIGHT - FIELD_LEFT) / float(ToolPinball.HOLES.size())
-	return Vector2(FIELD_LEFT + width * (float(hole) + 0.5), HOLE_Y + 14.0)
-
-
-## 엔진 결과(RollResult.to_dict())를 구슬 낙하 연출로 보여 준다. power(0~1)는 발사 세기: 셀수록 빨리 솟구친다. 구슬은 언제나 엔진이 정한 구멍에 들어간다.
 func play(result: Dictionary, power: float = 0.5) -> void:
+	cancel()
 	var details: Dictionary = result["details"]
-	var hole: int = int(details["hole"])
-	var bounces: Array = details["bounces"]
-	var target: Vector2 = hole_center(hole)
+	_hole = clampi(int(details["hole"]), 0, 6)
+	last_hole = -1
+	_rise_seconds = lerpf(0.70, 0.45, clampf(power, 0.0, 1.0))
+	_trajectory = {}
+	_fall_seconds = 0.0
+	if not instant and is_inside_tree():
+		_trajectory = MOTION.trajectory(_hole, details.get("bounces", []))
+		_fall_seconds = float(_trajectory["duration"])
+	_arrival = WIND_TIME + _rise_seconds + ARCH_SECONDS + _fall_seconds
+	_total = _arrival + HOLD_SECONDS
 	if instant or not is_inside_tree():
-		_ball = target
-		_ball_in_play = true
-		_highlight = hole
-		last_hole = hole
-		pull = 0.0
-		queue_redraw()
+		last_hole = _hole
+		if ball != null:
+			apply_time(_total)
+			request_frame()
 		return
+	_highlight(-1)
+	_caption.text = "스프링을 당겼다가… 발사!"
+	_elapsed = 0.0
+	_last_bounce = -1
+	_result_played = false
 	active = true
-	_highlight = -1
-	_ball_in_play = true
-	# 원클릭: 스프링이 순식간에 당겨졌다가 튕겨 나간다 (꾹 누를 필요 없음)
-	var wind_up: Tween = create_tween()
-	wind_up.tween_method(set_pull, 0.0, 1.0, 0.16)
-	await wind_up.finished
-	if not is_inside_tree():
-		return
-	pull = 0.0
-	queue_redraw()
-	# 1) 발사대에서 레일을 타고 위로 솟구친다 (세게 쏠수록 빠르다)
-	var rise_seconds: float = lerpf(0.85, 0.45, clampf(power, 0.0, 1.0))
-	await _move(Vector2(LANE_X, 350.0), Vector2(LANE_X, ARCH_CENTER.y), rise_seconds, 0.0, true)
-	# 2) 상단 아치를 돌아 왼쪽 위로
-	var arch: Tween = create_tween()
-	arch.tween_method(_arch_step, 0.0, 1.0, ARCH_SECONDS).set_trans(Tween.TRANS_SINE)
-	await arch.finished
-	if not is_inside_tree():
-		return
-	# 3) 못에 통! 통! 통! 튕기며 내려와 구멍에 들어간다 (약 1초)
-	var points: Array[Vector2] = _fall_points(target, bounces)
-	var per_segment: float = FALL_SECONDS / float(points.size())
-	var from: Vector2 = _ball
-	for index: int in points.size():
-		var last: bool = index == points.size() - 1
-		await _move(from, points[index], per_segment, 0.0 if last else 7.0, false)
-		if not is_inside_tree():
-			return
-		if not last:
-			Sfx.play(&"hop", -9.0, 0.08, 1.5 + 0.06 * float(index))
-		from = points[index]
-	_highlight = hole
-	last_hole = hole
-	Sfx.play(&"good", -6.0, 0.0)
-	queue_redraw()
-	await get_tree().create_timer(0.35).timeout
-	active = false
+	render_view.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	set_process(true)
+	apply_time(0.0)
+	await finished
 
 
-## 아치 시작점(오른쪽)에서 위를 돌아 왼쪽까지 반원을 그린다.
-func _arch_step(t: float) -> void:
-	var angle: float = -PI * t
-	_ball = ARCH_CENTER + Vector2(cos(angle), sin(angle)) * ARCH_RADIUS
-	queue_redraw()
+func apply_time(seconds: float) -> void:
+	var t: float = maxf(seconds, 0.0)
+	var arch_start: float = WIND_TIME + _rise_seconds
+	var fall_start: float = arch_start + ARCH_SECONDS
+	var position: Vector3
+	if t < WIND_TIME:
+		set_pull(sin(t / WIND_TIME * PI * 0.5))
+		position = MOTION.PARK + Vector3(0, 0, pull * 0.22)
+	elif t < arch_start:
+		set_pull(0.0)
+		var u: float = (t - WIND_TIME) / _rise_seconds
+		position = (MOTION.PARK + Vector3(0, 0, 0.22)).lerp(MOTION.arch_position(0.0), (1.35 * u - 0.35 * u * u))
+	elif t < fall_start:
+		position = MOTION.arch_position((t - arch_start) / ARCH_SECONDS)
+	elif t < _arrival and not _trajectory.is_empty():
+		position = MOTION.sample(_trajectory["positions"], t - fall_start)
+		_caption.text = "핀에 튕기며 굴러가는 중…"
+	else:
+		set_pull(0.0)
+		position = (_trajectory["positions"] as PackedVector3Array)[-1] if not _trajectory.is_empty() else MOTION.hole_position(_hole)
+		last_hole = _hole
+		_highlight(_hole)
+		_caption.text = "%s 포켓 골인 · %d칸 전진" % ["★10" if ToolPinball.HOLES[_hole] == 10 else str(ToolPinball.HOLES[_hole]), ToolPinball.HOLES[_hole]]
+	# Roll about the travel direction without adding random position jitter.
+	var movement: Vector3 = position - ball.position
+	var axis := Vector3(movement.z, 0.0, -movement.x)
+	if axis.length_squared() > 0.0000001:
+		ball.quaternion = Quaternion(axis.normalized(), movement.length() / MOTION.RADIUS) * ball.quaternion
+	ball.position = position
 
 
-## 구슬 한 구간 이동. lift는 위로 튀는 높이(못에 튕기는 느낌).
-func _move(from: Vector2, to: Vector2, seconds: float, lift: float, ease_out: bool) -> void:
-	var tween: Tween = create_tween()
-	var step: Callable = func(t: float) -> void:
-		_ball = from.lerp(to, t) + Vector2(0.0, -lift * sin(PI * t))
-		queue_redraw()
-	var motion: MethodTweener = tween.tween_method(step, 0.0, 1.0, maxf(seconds, 0.01))
-	if ease_out:
-		motion.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	await tween.finished
+func _highlight(index: int) -> void:
+	for slot: int in _floors.size():
+		var material := _floors[slot].material_override as StandardMaterial3D
+		material.albedo_color = Color("ffe095") if slot == index else _floor_colors[slot]
+		material.emission_enabled = slot == index
+		material.emission = Color("a06e12")
+		material.emission_energy_multiplier = 0.35
 
 
-## 왼쪽 위에서 시작해 목표 구멍까지 가면서 좌우로 튕기는 지점들 (엔진이 정한 bounces로 모든 화면에서 똑같다). 마지막은 구멍 안.
-func _fall_points(target: Vector2, bounces: Array) -> Array[Vector2]:
-	var points: Array[Vector2] = []
-	var start_x: float = ARCH_CENTER.x - ARCH_RADIUS
-	for row: int in PEG_ROWS:
-		var progress: float = float(row + 1) / float(PEG_ROWS + 1)
-		var direction: float = 1.0 if int(bounces[row % bounces.size()]) == 1 else -1.0
-		var swing: float = 16.0 * (1.0 - progress)
-		var x: float = clampf(lerpf(start_x, target.x, progress) + direction * swing, FIELD_LEFT + 8.0, FIELD_RIGHT - 8.0)
-		points.append(Vector2(x, PEG_TOP + PEG_GAP * float(row) - 8.0))
-	points.append(target)
-	return points
+func request_frame() -> void:
+	if render_view != null and not active:
+		render_view.render_target_update_mode = SubViewport.UPDATE_ONCE if is_visible_in_tree() else SubViewport.UPDATE_DISABLED
 
 
-func _draw() -> void:
-	var font: Font = ThemeDB.fallback_font
-	# 몸체와 상단 아치
-	var body := StyleBoxFlat.new()
-	body.bg_color = Color("f1d9a3")
-	body.border_color = Color("8a5a2b")
-	body.set_border_width_all(8)
-	body.corner_radius_top_left = 160
-	body.corner_radius_top_right = 160
-	body.corner_radius_bottom_left = 26
-	body.corner_radius_bottom_right = 26
-	body.shadow_color = Color(0, 0, 0, 0.4)
-	body.shadow_size = 12
-	draw_style_box(body, Rect2(Vector2(8.0, 6.0), Vector2(STAGE_SIZE.x - 16.0, STAGE_SIZE.y - 12.0)))
-	var field := StyleBoxFlat.new()
-	field.bg_color = Color("6fbf8e")
-	field.set_corner_radius_all(18)
-	field.corner_radius_top_left = 110
-	draw_style_box(field, Rect2(Vector2(FIELD_LEFT - 8.0, 62.0), Vector2(FIELD_RIGHT - FIELD_LEFT + 16.0, 328.0)))
-	# 발사 레일과 아치 레일
-	draw_arc(ARCH_CENTER, ARCH_RADIUS + 12.0, -PI, 0.0, 40, Color("b08b4f"), 5.0)
-	draw_line(Vector2(LANE_X - 18.0, ARCH_CENTER.y), Vector2(LANE_X - 18.0, 372.0), Color("b08b4f"), 5.0)
-	draw_line(Vector2(LANE_X + 18.0, ARCH_CENTER.y), Vector2(LANE_X + 18.0, 392.0), Color("b08b4f"), 5.0)
-	# 못
-	for row: int in PEG_ROWS:
-		var columns: int = 6 if row % 2 == 0 else 5
-		var offset: float = 0.0 if row % 2 == 0 else 20.0
-		for column: int in columns:
-			var peg := Vector2(FIELD_LEFT + 10.0 + offset + 40.0 * float(column), PEG_TOP + PEG_GAP * float(row))
-			draw_circle(peg, 5.5, Color("e9ecef"))
-			draw_arc(peg, 5.5, 0.0, TAU, 12, Color("495057"), 1.5)
-	# 하단 숫자 구멍 7칸
-	var hole_width: float = (FIELD_RIGHT - FIELD_LEFT) / float(ToolPinball.HOLES.size())
-	for hole: int in ToolPinball.HOLES.size():
-		var rect := Rect2(Vector2(FIELD_LEFT + hole_width * float(hole) + 2.0, HOLE_Y), Vector2(hole_width - 4.0, 36.0))
-		var star: bool = ToolPinball.HOLES[hole] == 10
-		var lit: bool = hole == _highlight
-		var slot := StyleBoxFlat.new()
-		slot.bg_color = Color("ffd43b") if lit else (Color("7a2e8f") if star else Color("1c2433"))
-		slot.border_color = Color("fff3bf") if lit or star else Color("495057")
-		slot.set_border_width_all(3)
-		slot.set_corner_radius_all(8)
-		draw_style_box(slot, rect)
-		var text: String = "★10" if star else str(ToolPinball.HOLES[hole])
-		draw_string(font, rect.position + Vector2(0.0, 24.0), text, HORIZONTAL_ALIGNMENT_CENTER, rect.size.x, 12 if star else 20, Color("231600") if lit else Color("f8f9fa"))
-	# 스프링 발사대 (당길수록 줄어든다)
-	var spring_top: float = 370.0 + pull * 18.0
-	var spring_bottom: float = 392.0
-	var zig: int = 6
-	for i: int in zig:
-		var y0: float = lerpf(spring_top, spring_bottom, float(i) / float(zig))
-		var y1: float = lerpf(spring_top, spring_bottom, float(i + 1) / float(zig))
-		draw_line(Vector2(LANE_X - 11.0 if i % 2 == 0 else LANE_X + 11.0, y0), Vector2(LANE_X + 11.0 if i % 2 == 0 else LANE_X - 11.0, y1), Color("868e96"), 3.0)
-	draw_rect(Rect2(Vector2(LANE_X - 14.0, spring_top - 8.0), Vector2(28.0, 8.0)), Color("e03131"))
-	# 구슬
-	if _ball_in_play or not active:
-		draw_circle(_ball + Vector2(1.5, 2.5), 10.0, Color(0, 0, 0, 0.25))
-		draw_circle(_ball, 10.0, Color("adb5bd"))
-		draw_circle(_ball + Vector2(-3.0, -3.5), 4.0, Color("f8f9fa"))
+func stop_rendering() -> void:
+	if render_view != null:
+		render_view.render_target_update_mode = SubViewport.UPDATE_DISABLED
+
+
+func cancel() -> void:
+	set_process(false)
+	stop_rendering()
+	if active:
+		active = false
+		finished.emit()
+
+
+func _visibility_changed() -> void:
+	if not is_visible_in_tree():
+		cancel()
+	else:
+		request_frame()
+
+
+func _exit_tree() -> void:
+	cancel()

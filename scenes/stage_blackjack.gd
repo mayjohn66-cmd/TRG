@@ -10,30 +10,7 @@ signal stand_pressed
 
 const STAGE_SIZE: Vector2 = Vector2(620.0, 290.0)
 const DEAL_SECONDS: float = 0.2
-const SUITS: Array[String] = ["♠", "♥", "♦", "♣"]
-
-## 카드 한 장: 숫자(A/J/Q/K 포함)와 무늬를 그린다. 나타날 때 위에서 툭 떨어진다.
-class CardView extends Control:
-	var rank: int = 0
-	var suit: int = 0
-
-	func _init() -> void:
-		custom_minimum_size = Vector2(78.0, 112.0)
-		size = custom_minimum_size
-
-	func _draw() -> void:
-		var style := StyleBoxFlat.new()
-		style.bg_color = Color("f8f9fa")
-		style.border_color = Color("343a40")
-		style.set_border_width_all(3)
-		style.set_corner_radius_all(10)
-		draw_style_box(style, Rect2(Vector2.ZERO, size))
-		var red: bool = suit == 1 or suit == 2
-		var ink: Color = Color("c92a2a") if red else Color("212529")
-		var font: Font = ThemeDB.fallback_font
-		var name_text: String = ToolBlackjack.card_name(rank)
-		draw_string(font, Vector2(0.0, 58.0), name_text, HORIZONTAL_ALIGNMENT_CENTER, size.x, 40, ink)
-		draw_string(font, Vector2(0.0, 96.0), SUITS[suit], HORIZONTAL_ALIGNMENT_CENTER, size.x, 32, ink)
+const CARD_SIZE := Vector2(78.0, 112.0)
 
 
 var cards: Array[int] = []
@@ -49,7 +26,7 @@ var _start_button: Button = null
 var _hit_button: Button = null
 var _stand_button: Button = null
 var _result_text: String = ""
-var _result_color: Color = Color("fff3bf")
+var _result_color: Color = UiSkin.INK
 
 
 func _init() -> void:
@@ -60,18 +37,11 @@ func _init() -> void:
 
 func _ready() -> void:
 	var panel := Panel.new()
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.03, 0.17, 0.12, 0.94)
-	style.border_color = Color("ffd43b")
-	style.set_border_width_all(4)
-	style.set_corner_radius_all(22)
-	style.shadow_color = Color(0, 0, 0, 0.45)
-	style.shadow_size = 14
-	panel.add_theme_stylebox_override("panel", style)
+	panel.add_theme_stylebox_override("panel", UiSkin.panel("panel", 12.0))
 	panel.set_anchors_preset(Control.PRESET_FULL_RECT)
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(panel)
-	_title = _label("블랙잭 21 딜러", 18, Color("ffe066"))
+	_title = _label("블랙잭 21 딜러", 18, UiSkin.GREEN)
 	_title.position = Vector2(0.0, 10.0)
 	_title.size = Vector2(STAGE_SIZE.x, 26.0)
 	add_child(_title)
@@ -82,7 +52,7 @@ func _ready() -> void:
 	_row.size = Vector2(STAGE_SIZE.x - 20.0, 116.0)
 	_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_row)
-	_total_label = _label("", 30, Color("fff3bf"))
+	_total_label = _label("", 30, UiSkin.INK)
 	_total_label.position = Vector2(0.0, 166.0)
 	_total_label.size = Vector2(STAGE_SIZE.x, 40.0)
 	add_child(_total_label)
@@ -92,15 +62,15 @@ func _ready() -> void:
 	buttons.position = Vector2(10.0, 224.0)
 	buttons.size = Vector2(STAGE_SIZE.x - 20.0, 50.0)
 	add_child(buttons)
-	_start_button = _button("카드 받기", Color("2b8a3e"), 320.0)
+	_start_button = _button("카드 받기", true, 320.0)
 	_start_button.pressed.connect(func() -> void: start_pressed.emit())
 	buttons.add_child(_start_button)
-	_hit_button = _button("히트 (카드 1장 더 뽑기)", Color("1971c2"), 290.0)
+	_hit_button = _button("히트 (카드 1장 더 뽑기)", false, 290.0)
 	_hit_button.pressed.connect(func() -> void:
 		if can_act and started and not active:
 			hit_pressed.emit())
 	buttons.add_child(_hit_button)
-	_stand_button = _button("스탠드 (현재 0칸 이동 확정)", Color("e67700"), 290.0)
+	_stand_button = _button("스탠드 (현재 0칸 이동 확정)", true, 290.0)
 	_stand_button.pressed.connect(func() -> void:
 		if can_act and started and not active:
 			stand_pressed.emit())
@@ -113,30 +83,19 @@ func _label(text: String, size_px: int, color: Color) -> Label:
 	label.text = text
 	label.add_theme_font_size_override("font_size", size_px)
 	label.add_theme_color_override("font_color", color)
-	label.add_theme_constant_override("outline_size", 6)
-	label.add_theme_color_override("font_outline_color", Color("0d1018"))
+	label.add_theme_constant_override("outline_size", 0)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return label
 
 
-func _button(text: String, color: Color, width: float) -> Button:
+func _button(text: String, action: bool, width: float) -> Button:
 	var button := Button.new()
 	button.text = text
 	button.custom_minimum_size = Vector2(width, 46.0)
 	button.focus_mode = Control.FOCUS_NONE
 	button.add_theme_font_size_override("font_size", 18)
-	for state_name: String in ["normal", "hover", "pressed", "disabled"]:
-		var style := StyleBoxFlat.new()
-		style.bg_color = color if state_name != "disabled" else color.darkened(0.55)
-		if state_name == "hover":
-			style.bg_color = color.lightened(0.15)
-		if state_name == "pressed":
-			style.bg_color = color.darkened(0.2)
-		style.border_color = Color("fff3bf")
-		style.set_border_width_all(3)
-		style.set_corner_radius_all(14)
-		button.add_theme_stylebox_override(state_name, style)
+	UiSkin.button(button, action, 10.0, 6.0)
 	return button
 
 
@@ -207,13 +166,13 @@ func play(result: Dictionary) -> void:
 func _apply_result_text(confirmed: bool, bust: bool, blackjack: bool, steps: int, total: int) -> void:
 	if bust:
 		_result_text = "BUST! (21 초과 - 0칸 이동 실패)  합계 %d" % total
-		_result_color = Color("ff6b6b")
+		_result_color = Color("bf4941")
 	elif blackjack:
 		_result_text = "BLACKJACK! 21 → %d칸 + 한 번 더!" % steps
-		_result_color = Color("ffd43b")
+		_result_color = UiSkin.GREEN
 	elif confirmed:
 		_result_text = "스탠드: 합계 %d → %d칸 이동!" % [total, steps]
-		_result_color = Color("fff3bf")
+		_result_color = UiSkin.INK
 	else:
 		_result_text = ""
 
@@ -227,26 +186,27 @@ func _refresh() -> void:
 		_row.remove_child(extra)
 		extra.queue_free()
 	while _row.get_child_count() < cards.size():
-		var card := CardView.new()
 		var index: int = _row.get_child_count()
-		card.rank = cards[index]
-		card.suit = (cards[index] + index) % 4
+		var card := JudgmentCard.new()
+		card.configure(_card_model(cards[index], index), CARD_SIZE)
 		_row.add_child(card)
+		card.set_face_up(true)
 	for index: int in cards.size():
-		var view: CardView = _row.get_child(index) as CardView
-		view.rank = cards[index]
-		view.suit = (cards[index] + index) % 4
-		view.queue_redraw()
+		var view: JudgmentCard = _row.get_child(index) as JudgmentCard
+		var model: Dictionary = _card_model(cards[index], index)
+		if view.model.id != model.id:
+			view.model = model
+			view._layout_front()
 	var total: int = ToolBlackjack.total_of(cards)
 	if started and not cards.is_empty():
 		_total_label.text = "합계 %d  →  %d칸 전진" % [total, total - ToolBlackjack.STEPS_OFFSET]
-		_total_label.add_theme_color_override("font_color", Color("fff3bf"))
+		_total_label.add_theme_color_override("font_color", UiSkin.INK)
 	elif _result_text != "":
 		_total_label.text = _result_text
 		_total_label.add_theme_color_override("font_color", _result_color)
 	else:
 		_total_label.text = "카드를 받아 합계 11~21을 만드세요 (합계 -10칸 전진)"
-		_total_label.add_theme_color_override("font_color", Color("fff3bf"))
+		_total_label.add_theme_color_override("font_color", UiSkin.INK)
 	_total_label.add_theme_font_size_override("font_size", 30 if started and not cards.is_empty() else 20)
 	_start_button.visible = not started
 	_start_button.disabled = not can_act or active
@@ -256,3 +216,11 @@ func _refresh() -> void:
 	_stand_button.disabled = not (can_act and not active)
 	_stand_button.text = "스탠드 (현재 %d칸 이동 확정)" % (total - ToolBlackjack.STEPS_OFFSET)
 	_title.text = "블랙잭 21 딜러 - 히트 또는 스탠드" if started and can_act else "블랙잭 21 딜러"
+
+
+## Blackjack supplies ranks only (A=1); suits remain deterministic decoration.
+## Adapt to the existing Hold'em art IDs (2=0 ... A=12), not the scoring rules.
+static func _card_model(rank: int, index: int) -> Dictionary:
+	var suit: int = int([3, 2, 1, 0][(rank + index) % 4])
+	var face: int = 12 if rank == 1 else rank - 2
+	return JudgmentCardArt.poker(suit * 13 + face)

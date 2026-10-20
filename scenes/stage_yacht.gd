@@ -7,19 +7,18 @@ extends Control
 signal start_pressed
 signal reroll_pressed(keep: Array)
 signal confirm_pressed
+signal roll_finished
 
 const STAGE_SIZE: Vector2 = Vector2(620.0, 270.0)
-const ROLL_SECONDS: float = 0.6
-const SETTLE_STAGGER: float = 0.08
+const ROLL_SECONDS: float = YachtRoll3D.TOTAL_TIME
 
-## 주사위 한 개: 눈금을 그리고, 고정되면 노란 테두리와 [고정] 표시가 붙는다. 굴러가는 동안에는 눈금이 빠르게 바뀐다.
+## 3D 주사위 위의 입력 영역. 고정 테두리·태그와 굴리기 전 자리만 그린다.
 class DieView extends Control:
 	signal toggled
 	var value: int = 0
 	var kept: bool = false
 	var rolling: bool = false
 	var clickable: bool = false
-	var _shown: int = 0
 
 	func _init() -> void:
 		custom_minimum_size = Vector2(96.0, 120.0)
@@ -31,41 +30,24 @@ class DieView extends Control:
 			accept_event()
 			toggled.emit()
 
-	func _process(_delta: float) -> void:
-		if rolling:
-			_shown = randi_range(1, 6)
-			queue_redraw()
-
 	func show_value(face: int) -> void:
 		value = face
-		_shown = face
 		queue_redraw()
 
 	func _draw() -> void:
 		var side: float = 92.0
 		var origin := Vector2(2.0, 4.0)
-		var face: int = _shown if rolling else value
 		var body := Rect2(origin, Vector2(side, side))
-		var base: Color = Color("f8f9fa") if not rolling else Color("e9ecef")
-		var border: Color = Color("ffd43b") if kept else Color("495057")
-		draw_style_box(_box(base, border, 6 if kept else 3), body)
-		if face <= 0:
-			draw_string(ThemeDB.fallback_font, origin + Vector2(side / 2.0 - 12.0, side / 2.0 + 14.0), "?", HORIZONTAL_ALIGNMENT_LEFT, -1, 44, Color("adb5bd"))
-		else:
-			var grid: Dictionary = {
-				1: [Vector2(0.5, 0.5)], 2: [Vector2(0.27, 0.27), Vector2(0.73, 0.73)],
-				3: [Vector2(0.27, 0.27), Vector2(0.5, 0.5), Vector2(0.73, 0.73)],
-				4: [Vector2(0.27, 0.27), Vector2(0.73, 0.27), Vector2(0.27, 0.73), Vector2(0.73, 0.73)],
-				5: [Vector2(0.27, 0.27), Vector2(0.73, 0.27), Vector2(0.5, 0.5), Vector2(0.27, 0.73), Vector2(0.73, 0.73)],
-				6: [Vector2(0.27, 0.25), Vector2(0.73, 0.25), Vector2(0.27, 0.5), Vector2(0.73, 0.5), Vector2(0.27, 0.75), Vector2(0.73, 0.75)],
-			}
-			var pip: Color = Color("c92a2a") if face == 1 else Color("212529")
-			for point: Vector2 in grid[face]:
-				draw_circle(origin + point * side, side * (0.1 if face != 1 else 0.14), pip)
+		if value <= 0 and not rolling:
+			draw_style_box(UiSkin.panel("inset", 0.0), body)
+			draw_string(ThemeDB.fallback_font, origin + Vector2(side / 2.0 - 12.0, side / 2.0 + 14.0), "?", HORIZONTAL_ALIGNMENT_LEFT, -1, 44, UiSkin.SOFT)
 		if kept:
+			draw_style_box(_box(Color.TRANSPARENT, UiSkin.GREEN, 3), body)
 			var tag := Rect2(Vector2(origin.x + 6.0, origin.y + side + 4.0), Vector2(side - 12.0, 20.0))
-			draw_style_box(_box(Color("ffd43b"), Color("b8860b"), 2), tag)
-			draw_string(ThemeDB.fallback_font, tag.position + Vector2(0.0, 15.0), "고정", HORIZONTAL_ALIGNMENT_CENTER, tag.size.x, 14, Color("3b2a00"))
+			var tag_style: StyleBoxFlat = _box(Color("eaf4ce"), UiSkin.GREEN, 2)
+			tag_style.set_corner_radius_all(8)
+			draw_style_box(tag_style, tag)
+			draw_string(ThemeDB.fallback_font, tag.position + Vector2(0.0, 15.0), "고정", HORIZONTAL_ALIGNMENT_CENTER, tag.size.x, 14, UiSkin.INK)
 
 	static func _box(color: Color, border: Color, width: int) -> StyleBoxFlat:
 		var style := StyleBoxFlat.new()
@@ -92,6 +74,10 @@ var _start_button: Button = null
 var _reroll_button: Button = null
 var _confirm_button: Button = null
 var _result_text: String = ""  ## 확정된 뒤 상태 줄에 남겨 둘 결과 문구
+var _dice_3d: YachtRoll3D
+var _elapsed: float = 0.0
+var _play_serial: int = 0
+var _landed: bool = false
 
 
 func _init() -> void:
@@ -102,21 +88,17 @@ func _init() -> void:
 
 func _ready() -> void:
 	var panel := Panel.new()
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.05, 0.08, 0.16, 0.9)
-	style.border_color = Color("ffd43b")
-	style.set_border_width_all(4)
-	style.set_corner_radius_all(22)
-	style.shadow_color = Color(0, 0, 0, 0.45)
-	style.shadow_size = 14
-	panel.add_theme_stylebox_override("panel", style)
+	panel.add_theme_stylebox_override("panel", UiSkin.panel("panel", 12.0))
 	panel.set_anchors_preset(Control.PRESET_FULL_RECT)
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(panel)
-	_title = _label("야추 다이스", 18, Color("ffe066"))
+	_title = _label("야추 다이스", 18, UiSkin.GREEN)
 	_title.position = Vector2(0.0, 10.0)
 	_title.size = Vector2(STAGE_SIZE.x, 26.0)
 	add_child(_title)
+	_dice_3d = YachtRoll3D.new()
+	_dice_3d.position = Vector2(22.0, 24.0)
+	add_child(_dice_3d)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 14)
 	row.position = Vector2((STAGE_SIZE.x - (96.0 * 5.0 + 14.0 * 4.0)) / 2.0, 44.0)
@@ -127,7 +109,7 @@ func _ready() -> void:
 		die.toggled.connect(_on_die_toggled.bind(index))
 		row.add_child(die)
 		dice_views.append(die)
-	_status = _label("", 20, Color("fff3bf"))
+	_status = _label("", 20, UiSkin.INK)
 	_status.position = Vector2(0.0, 176.0)
 	_status.size = Vector2(STAGE_SIZE.x, 28.0)
 	add_child(_status)
@@ -137,16 +119,60 @@ func _ready() -> void:
 	buttons.position = Vector2(10.0, 212.0)
 	buttons.size = Vector2(STAGE_SIZE.x - 20.0, 46.0)
 	add_child(buttons)
-	_start_button = _button("주사위 5개 굴리기", Color("2b8a3e"), 340.0)
+	_start_button = _button("주사위 5개 굴리기", true, 340.0)
 	_start_button.pressed.connect(func() -> void: start_pressed.emit())
 	buttons.add_child(_start_button)
-	_reroll_button = _button("나머지 다시 굴리기", Color("1971c2"), 290.0)
+	_reroll_button = _button("나머지 다시 굴리기", false, 290.0)
 	_reroll_button.pressed.connect(_on_reroll)
 	buttons.add_child(_reroll_button)
-	_confirm_button = _button("현재 족보로 이동 확정!", Color("e67700"), 290.0)
+	_confirm_button = _button("현재 족보로 이동 확정!", true, 290.0)
 	_confirm_button.pressed.connect(func() -> void: confirm_pressed.emit())
 	buttons.add_child(_confirm_button)
 	_refresh()
+	set_process(false)
+	visibility_changed.connect(_on_visibility_changed)
+
+
+func _process(delta: float) -> void:
+	if not active:
+		return
+	_elapsed += delta
+	_dice_3d.apply_time(_elapsed)
+	if not _landed and _elapsed >= YachtRoll3D.ROLL_TIME * 0.62:
+		_landed = true
+		Sfx.play(&"thud")
+	if _elapsed >= ROLL_SECONDS:
+		dice.assign(_dice_3d.values)
+		for view: DieView in dice_views:
+			view.rolling = false
+		kept = [false, false, false, false, false]
+		active = false
+		set_process(false)
+		_refresh()
+		roll_finished.emit()
+
+
+func _on_visibility_changed() -> void:
+	if not is_visible_in_tree():
+		cancel()
+	elif _dice_3d != null and not active:
+		_dice_3d.show_values(dice)
+
+
+func cancel() -> void:
+	_play_serial += 1
+	if _dice_3d != null:
+		_dice_3d.stop_rendering()
+	set_process(false)
+	if active:
+		active = false
+		for view: DieView in dice_views:
+			view.rolling = false
+		roll_finished.emit()
+
+
+func _exit_tree() -> void:
+	cancel()
 
 
 func _label(text: String, size_px: int, color: Color) -> Label:
@@ -154,30 +180,19 @@ func _label(text: String, size_px: int, color: Color) -> Label:
 	label.text = text
 	label.add_theme_font_size_override("font_size", size_px)
 	label.add_theme_color_override("font_color", color)
-	label.add_theme_constant_override("outline_size", 5)
-	label.add_theme_color_override("font_outline_color", Color("0d1018"))
+	label.add_theme_constant_override("outline_size", 0)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return label
 
 
-func _button(text: String, color: Color, width: float) -> Button:
+func _button(text: String, action: bool, width: float) -> Button:
 	var button := Button.new()
 	button.text = text
 	button.custom_minimum_size = Vector2(width, 44.0)
 	button.focus_mode = Control.FOCUS_NONE
 	button.add_theme_font_size_override("font_size", 18)
-	for state_name: String in ["normal", "hover", "pressed", "disabled"]:
-		var style := StyleBoxFlat.new()
-		style.bg_color = color if state_name != "disabled" else color.darkened(0.55)
-		if state_name == "hover":
-			style.bg_color = color.lightened(0.15)
-		if state_name == "pressed":
-			style.bg_color = color.darkened(0.2)
-		style.border_color = Color("fff3bf")
-		style.set_border_width_all(3)
-		style.set_corner_radius_all(14)
-		button.add_theme_stylebox_override(state_name, style)
+	UiSkin.button(button, action, 10.0, 6.0)
 	return button
 
 
@@ -215,6 +230,7 @@ func sync(tool: ToolYacht, acting: bool) -> void:
 
 ## 새 차례가 되면 지난 결과를 지우고 처음 화면으로 돌린다.
 func reset() -> void:
+	cancel()
 	dice = [0, 0, 0, 0, 0]
 	kept = [false, false, false, false, false]
 	rerolls_left = 0
@@ -226,6 +242,7 @@ func reset() -> void:
 
 ## 엔진 결과(RollResult.to_dict())를 굴러가는 연출로 보여 준다. 끝나면 돌아온다.
 func play(result: Dictionary) -> void:
+	cancel()
 	var details: Dictionary = result["details"]
 	var values: Array = details["dice"]
 	var rolled: Array = details["rolled"]
@@ -249,27 +266,18 @@ func play(result: Dictionary) -> void:
 		_refresh()
 		return
 	active = true
+	_elapsed = 0.0
+	_landed = rolled.is_empty()
 	for index: int in 5:
 		if rolled.has(index):
 			dice_views[index].rolling = true
-			dice_views[index].set_process(true)
 	_refresh()
-	var tree: SceneTree = get_tree()
-	await tree.create_timer(ROLL_SECONDS).timeout
-	for index: int in 5:
-		if not rolled.has(index):
-			continue
-		if not is_instance_valid(self):
-			return
-		dice_views[index].rolling = false
-		dice_views[index].show_value(wanted[index])
-		await tree.create_timer(SETTLE_STAGGER).timeout
-	if not is_instance_valid(self):
+	_dice_3d.begin(wanted, rolled)
+	set_process(true)
+	var serial: int = _play_serial
+	await roll_finished
+	if serial != _play_serial:
 		return
-	dice = wanted
-	kept = [false, false, false, false, false]
-	active = false
-	_refresh()
 
 
 func _refresh() -> void:
@@ -281,8 +289,11 @@ func _refresh() -> void:
 			view.show_value(dice[index])
 		view.kept = kept[index] and started
 		view.clickable = _can_toggle()
-		view.set_process(view.rolling)
 		view.queue_redraw()
+	if not active:
+		_dice_3d.show_values(dice)
+		if not is_visible_in_tree():
+			_dice_3d.stop_rendering()
 	_start_button.visible = not started
 	_start_button.disabled = not can_act or active
 	_reroll_button.visible = started
@@ -290,7 +301,9 @@ func _refresh() -> void:
 	_reroll_button.text = "나머지 다시 굴리기 (남은 횟수: %d)" % rerolls_left
 	_reroll_button.disabled = not (can_act and rerolls_left > 0 and not active)
 	_confirm_button.disabled = not (can_act and not active)
-	if started and not active:
+	if active:
+		_status.text = "주사위 굴리는 중…"
+	elif started:
 		var hand: Dictionary = ToolYacht.evaluate(dice)
 		_status.text = "현재 족보: %s → %d칸%s" % [hand["label"], int(hand["steps"]), "  (+한 번 더!)" if hand["hand"] == &"yacht" else ""]
 	elif not started and not active:

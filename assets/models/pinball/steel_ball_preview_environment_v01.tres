@@ -1,0 +1,28 @@
+[gd_resource type="Environment" format=3]
+
+[sub_resource type="Shader" id="Shader_4ltr4"]
+code = "shader_type sky;
+void sky() {
+    vec3 d = normalize(EYEDIR);
+    vec3 col = mix(vec3(0.30,0.34,0.38), vec3(0.72,0.78,0.84), smoothstep(-0.2,0.8,d.y));
+    float horizon = exp(-pow((d.y+0.10)*14.0,2.0));
+    col = mix(col,vec3(0.10,0.13,0.16),horizon*0.7);
+    float left = smoothstep(0.92,0.94,dot(d,normalize(vec3(-0.8,0.8,0.5))));
+    float right = smoothstep(0.975,0.985,dot(d,normalize(vec3(0.9,0.5,0.1))));
+    float strip = smoothstep(0.86,0.88,d.z) * (1.0-smoothstep(0.12,0.16,abs(d.x+0.08))) * smoothstep(0.06,0.10,d.y);
+    COLOR = col + vec3(2.2)*left + vec3(1.5)*right + vec3(2.8)*strip;
+}"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_1hyy3"]
+shader = SubResource("Shader_4ltr4")
+
+[sub_resource type="Sky" id="Sky_yvksg"]
+sky_material = SubResource("ShaderMaterial_1hyy3")
+
+[resource]
+background_mode = 1
+background_color = Color(0.8627451, 0.89411765, 0.9019608, 1)
+sky = SubResource("Sky_yvksg")
+ambient_light_source = 3
+ambient_light_energy = 0.55
+reflected_light_source = 2
