@@ -23,18 +23,18 @@ EVO_7_2,TRUE,PAWN,NORMAL,100,1,[기물 진화] 아케이드: 루도 복수자,�
 EVO_7_3,TRUE,PAWN,NORMAL,100,1,[기물 진화] 아케이드: 8번 공,기물 진화,◆ 기본 말 1개 → [아케이드] 8번 공,◆ 패시브: 처치하면 +3칸\n◆ [1회] 뱅크샷: 앞쪽 가장 가까운 적에게 돌진\n※ 이미 가진 기물은 받을 수 없습니다,,,POOL_8BALL,pawns/POOL_8BALL.png
 EVO_7_4,TRUE,PAWN,NORMAL,100,1,[기물 진화] 아케이드: 스타 카트,기물 진화,◆ 기본 말 1개 → [아케이드] 스타 카트,◆ 패시브: 모든 추가 이동 +2칸 · 이동 중 함정 면역\n※ 이미 가진 기물은 받을 수 없습니다,,,KART_STAR,pawns/KART_STAR.png
 EVO_7_5,TRUE,PAWN,NORMAL,100,1,[기물 진화] 아케이드: 지뢰찾기 공병,기물 진화,◆ 기본 말 1개 → [아케이드] 지뢰찾기 공병,◆ 패시브: 함정 면역 · 밟은 적 함정 해체 +카드 1장\n◆ [1회] 지뢰 매설: 지금 칸에 지뢰 설치\n※ 이미 가진 기물은 받을 수 없습니다,,,MINESWEEPER_FLAG,pawns/MINESWEEPER_FLAG.png
-TOOL_YUT,TRUE,DICE,NORMAL,100,1,[판정 도구] 전통 박달나무 윷,판정 도구 교체,◆ 내 판정 도구 즉시 교체,,,,YUT,dice/DICE_YUT.png
-TOOL_HOLDEM,TRUE,DICE,NORMAL,100,1,[판정 도구] 텍사스 홀덤 딜러,판정 도구 교체,◆ 내 판정 도구 즉시 교체,,,,HOLDEM,dice/DICE_POKER.png
-TOOL_LIFE_ROULETTE,TRUE,DICE,NORMAL,100,1,[판정 도구] 인생게임 회전 룰렛,판정 도구 교체,◆ 내 판정 도구 즉시 교체,,,,LIFE_ROULETTE,dice/DICE_ROULETTE.png
-TOOL_CHINCHIRO,TRUE,DICE,NORMAL,100,1,[판정 도구] 지하노역장 친치로,판정 도구 교체,◆ 내 판정 도구 즉시 교체,,,,CHINCHIRO,dice/DICE_CHINCHIRO.png
-TOOL_SLOT_777,TRUE,DICE,NORMAL,100,1,[판정 도구] 777 슬롯머신,판정 도구 교체,◆ 내 판정 도구 즉시 교체,,,,SLOT_777,dice/DICE_SLOT.png
-TOOL_REVOLVER,TRUE,DICE,NORMAL,100,1,[판정 도구] 러시안 룰렛 리볼버,판정 도구 교체,◆ 내 판정 도구 즉시 교체,,,,REVOLVER,dice/REVOLVER.png
-TOOL_DICE_HWATU,TRUE,DICE,NORMAL,100,1,[판정 도구] 화투 패,판정 도구 교체,◆ 내 판정 도구 즉시 교체,,,,DICE_HWATU,dice/DICE_HWATU.png
-TOOL_DICE_MAHJONG,TRUE,DICE,NORMAL,100,1,[판정 도구] 리치 마작 만리장성,판정 도구 교체,◆ 내 판정 도구 즉시 교체,,,,DICE_MAHJONG,dice/DICE_MAHJONG.png
-TOOL_DICE_TAROT,TRUE,DICE,NORMAL,100,1,[판정 도구] 점성술사의 타로 덱,판정 도구 교체,◆ 내 판정 도구 즉시 교체,,,,DICE_TAROT,dice/DICE_TAROT.png
-TOOL_DICE_YACHT,TRUE,DICE,NORMAL,100,1,[판정 도구] 야추 다이스,판정 도구 교체,◆ 내 판정 도구 즉시 교체,,,,DICE_YACHT,dice/DICE_YACHT.png
-TOOL_DICE_BLACKJACK,TRUE,DICE,NORMAL,100,1,[판정 도구] 블랙잭 21 딜러,판정 도구 교체,◆ 내 판정 도구 즉시 교체,,,,DICE_BLACKJACK,dice/DICE_BLACKJACK.png
-TOOL_DICE_PINBALL,TRUE,DICE,NORMAL,100,1,[판정 도구] 클래식 구슬 핀볼,판정 도구 교체,◆ 내 판정 도구 즉시 교체,,,,DICE_PINBALL,dice/DICE_PINBALL.png
+TOOL_YUT,TRUE,DICE,NORMAL,100,1,[판정 도구] 전통 박달나무 윷,판정 도구 교체,◆ 내 판정 도구 즉시 교체,• 눈금표: 특도(2칸+한번더) / 도(1) / 개(2) / 걸(3) / 윷(4칸+한번더) / 모(5칸+한번더),,,YUT,dice/DICE_YUT.png
+TOOL_HOLDEM,TRUE,DICE,NORMAL,100,1,[판정 도구] 텍사스 홀덤 딜러,판정 도구 교체,◆ 내 판정 도구 즉시 교체,• 족보표: 노페어(1) / 원페어(3) / 투페어(5) / 트리플(7) / 스트레이트(10) / 플러시+(15칸),,,HOLDEM,dice/DICE_POKER.png
+TOOL_LIFE_ROULETTE,TRUE,DICE,NORMAL,100,1,[판정 도구] 인생게임 회전 룰렛,판정 도구 교체,◆ 내 판정 도구 즉시 교체,• 눈금표: 1~10 균등 (나온 숫자만큼) / ★7 당첨(7칸+한번더),,,LIFE_ROULETTE,dice/DICE_ROULETTE.png
+TOOL_CHINCHIRO,TRUE,DICE,NORMAL,100,1,[판정 도구] 지하노역장 친치로,판정 도구 교체,◆ 내 판정 도구 즉시 교체,• 눈금표: 4(2/6) / 5(2/6) / 6(1/6) / 삐끗(1/6) 이번 이동 0칸,,,CHINCHIRO,dice/DICE_CHINCHIRO.png
+TOOL_SLOT_777,TRUE,DICE,NORMAL,100,1,[판정 도구] 777 슬롯머신,판정 도구 교체,◆ 내 판정 도구 즉시 교체,• 족보표: 꽝(1) / 2일치(4) / 3일치(8) / ★777 잭팟(20칸!),,,SLOT_777,dice/DICE_SLOT.png
+TOOL_REVOLVER,TRUE,DICE,NORMAL,100,1,[판정 도구] 러시안 룰렛 리볼버,판정 도구 교체,◆ 내 판정 도구 즉시 교체,• 누적표: 방아쇠 1회 +3칸(최대 15) / 폭죽(6분의 1) 0칸·턴 종료 / 멈추면 누적 칸만큼,,,REVOLVER,dice/REVOLVER.png
+TOOL_DICE_HWATU,TRUE,DICE,NORMAL,100,1,[판정 도구] 화투 패,판정 도구 교체,◆ 내 판정 도구 즉시 교체,• 족보표: 망통(0칸·턴 종료) / 1~3끗(2) / 4~6끗(3) / 7~9끗(4) / 1~6땡(6) / 7~9땡(7) / 장땡·광땡(8칸),,,DICE_HWATU,dice/DICE_HWATU.png
+TOOL_DICE_MAHJONG,TRUE,DICE,NORMAL,100,1,[판정 도구] 리치 마작 만리장성,판정 도구 교체,◆ 내 판정 도구 즉시 교체,• 족보표: 핑후(2) / 또이츠(3) / 슌쯔(5) / 커쯔(8) / ★역만(12칸+한번더),,,DICE_MAHJONG,dice/DICE_MAHJONG.png
+TOOL_DICE_TAROT,TRUE,DICE,NORMAL,100,1,[판정 도구] 점성술사의 타로 덱,판정 도구 교체,◆ 내 판정 도구 즉시 교체,• 족보표: 광대(헛발질 0 또는 +7) / 전차(6) / 수레바퀴(4+한번더) / 매달린 남자(1+다음 +8) / 세계(9칸),,,DICE_TAROT,dice/DICE_TAROT.png
+TOOL_DICE_YACHT,TRUE,DICE,NORMAL,100,1,[판정 도구] 야추 다이스,판정 도구 교체,◆ 내 판정 도구 즉시 교체,• 족보표: 찬스(1~3) / 트리플(5) / 풀하·4연속(7) / 포카드·5연속(9) / ★야추(12칸+한번더),,,DICE_YACHT,dice/DICE_YACHT.png
+TOOL_DICE_BLACKJACK,TRUE,DICE,NORMAL,100,1,[판정 도구] 블랙잭 21 딜러,판정 도구 교체,◆ 내 판정 도구 즉시 교체,• 족보표: 11~20 스탠드 시 (합계-10)칸 / ★21 달성(11칸+한번더) / 22↑ 버스트(0칸),,,DICE_BLACKJACK,dice/DICE_BLACKJACK.png
+TOOL_DICE_PINBALL,TRUE,DICE,NORMAL,100,1,[판정 도구] 클래식 구슬 핀볼,판정 도구 교체,◆ 내 판정 도구 즉시 교체,• 구멍표: [2][4][6][★10][5][3][1] 골인한 숫자만큼 (1~10칸),,,DICE_PINBALL,dice/DICE_PINBALL.png
 AUG_LAW_01,TRUE,LAW,GOLD,20,3,[특수 승리] 투기장의 지배자,특수 승리 교칙,◆ 승리 조건: 적 말을 {p1}회 처치\n◆ 먼저 달성한 사람이 다음 순위로 졸업 (달성되면 법전에서 삭제),◆ 법전 4칸 (초과 시 가장 오래된 교칙 삭제)\n◆ 법전 슬롯에 마우스를 올리면 모두의 진행도,6,,LAW_01,laws/LAW_01.png
 AUG_LAW_02,TRUE,LAW,GOLD,20,3,[특수 승리] 봉인된 에르핀의 식권,특수 승리 교칙,◆ 승리 조건: 내 턴 시작 시 손패 {p1}장 이상\n◆ 먼저 달성한 사람이 다음 순위로 졸업 (달성되면 법전에서 삭제),◆ 법전 4칸 (초과 시 가장 오래된 교칙 삭제)\n◆ 법전 슬롯에 마우스를 올리면 모두의 진행도,5,,LAW_02,laws/LAW_02.png
 AUG_LAW_03,TRUE,LAW,GOLD,20,3,[특수 승리] 엘리아스 부동산 재벌,특수 승리 교칙,◆ 승리 조건: 내 설치물(호텔·함정) {p1}개를 보드에 동시 유지\n◆ 먼저 달성한 사람이 다음 순위로 졸업 (달성되면 법전에서 삭제),◆ 법전 4칸 (초과 시 가장 오래된 교칙 삭제)\n◆ 법전 슬롯에 마우스를 올리면 모두의 진행도,5,,LAW_03,laws/LAW_03.png

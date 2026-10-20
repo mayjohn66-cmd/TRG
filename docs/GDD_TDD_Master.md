@@ -729,6 +729,7 @@ res://
 
 ### 6.16 밸런스 CSV 표 (`content_trickcal/data/`)
 - 증강·판정 도구·생떼 카드의 수치·문구·등장 조건을 `augments_table.csv` / `dice_table.csv` / `cards_table.csv`로 분리했다. 사용법은 `content_trickcal/data/README.md`.
+- (v4.0) 판정 도구 교체(`TOOL_*`) 행의 `spec_preview`를 `dice_table.csv`의 `spec_table`로 채웠다 (`• ` 접두). 비워 두면 예전처럼 실행 중에 같은 문구를 붙인다. 카드 표의 `type`은 COUNTER / INSTANT / TRAP / TRAP_CORNER / SUMMON 다섯 가지다.
 - **로더:** `DataTable`(순수 텍스트 CSV 파서, 큰따옴표·BOM·`\n` 지원)와 `GameData`(표 조회 창구: `table/row/enabled/param/text`). Godot의 CSV 번역 임포터를 피하려고 각 `.csv.import`는 `importer="keep"`이고 런타임에 `FileAccess`로 직접 읽는다. 웹 내보내기는 `export_presets.cfg`의 `include_filter="*.csv, content_trickcal/data/*.csv"`로 패키징한다.
 - **코드 기본값이 폴백:** 표가 없거나 칸이 비어 있으면 코드의 기본 수치·문구를 쓴다 (`test_table_text_matches_the_built_in_defaults…`가 표와 기본 문구가 어긋나지 않는지 검사).
 - **드래프트:** `enabled`·`min_round`·`weight`는 `AugmentRegistry.generate_offers`가 쓴다. 계열이 겹치지 않게 뽑는 규칙은 그대로이고, 계열이 뽑힐 확률은 그 계열 후보의 평균 가중치에 비례(전부 100이면 균등, 초증강 기본 50), 계열 안에서는 가중치 비율. 새 id의 `DICE`/`LAW`/`CARD` 행은 새 증강이 된다.
