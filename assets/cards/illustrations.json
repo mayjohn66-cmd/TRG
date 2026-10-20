@@ -122,34 +122,34 @@
   {
     "card_id": "CNT_04",
     "file": "CNT_04.png",
-    "source_version": "emoji-v1",
+    "source_version": "character-v1",
     "width": 1448,
     "height": 1086,
-    "sha256": "f445053d87386f1228d0c40951024c08c1cf8eab692d7ed17b270a9acf1a0b43"
+    "sha256": "98e3bccf84ae4ccbdfeb85d080bfa219e3243a3755ccccb2ae7094b4f8c8100b"
   },
   {
     "card_id": "CNT_05",
     "file": "CNT_05.png",
-    "source_version": "emoji-v1",
+    "source_version": "character-v1",
     "width": 1448,
     "height": 1086,
-    "sha256": "043b73b39397ef9cdd35629758b2310b33345335bf13864f007a2316b2a43f38"
+    "sha256": "f45341fac11d4ceb1d567d5f23b7d8d84c7a11ef983d83f2d7f52707eb99208a"
   },
   {
     "card_id": "CNT_06",
     "file": "CNT_06.png",
-    "source_version": "emoji-v1",
+    "source_version": "character-v1",
     "width": 1448,
     "height": 1086,
-    "sha256": "3fd09328b995ecbf8337ff754bc9bd0e223749ad6e6e9d33727179ae0e113976"
+    "sha256": "8825bc60b9f25cf0d128d60a47fb9cb347ea795d6a728b34f6a56acd67e37bfc"
   },
   {
     "card_id": "CNT_07",
     "file": "CNT_07.png",
-    "source_version": "emoji-v1",
+    "source_version": "character-v1",
     "width": 1448,
     "height": 1086,
-    "sha256": "676825b21747ed04bdb89d3297fefedfacdded0e84f128bcfdafe8bbc3cc1cf5"
+    "sha256": "77078c66efd9dfd42752e4b404a416ae02a070cc77902e24eb4b46b50333424f"
   },
   {
     "card_id": "ACT_10",
