@@ -158,7 +158,8 @@ func calculate_path(entity: BoardEntity, steps: int, ctx: RuleContext) -> Array[
 			advance_backward(cursor)
 		remaining -= 1
 		path.append(cursor.tile)
-		if forward and cursor.tile == GameEnums.GOAL_TILE and (pawn == null or pawn.can_finish(ctx.state)):
+		var at_goal: bool = cursor.tile == GameEnums.GOAL_TILE or (pawn != null and ctx.state != null and TempoUp.in_goal_zone(ctx.state.round_number, cursor.tile))  # ⏩ 당겨진 결승선
+		if forward and at_goal and (pawn == null or pawn.can_finish(ctx.state)):
 			if remaining > 0 and ctx.exact_goal_required:
 				path.pop_back()  # 눈금이 남으면 결승선에 못 들어가고 바로 앞 칸에서 멈춘다
 			break

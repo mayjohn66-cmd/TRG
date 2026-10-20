@@ -782,7 +782,7 @@ func _bind_state() -> void:
 			_capture_cutin.cancel())
 	state.pawn_sent_to_start.connect(func(pawn_id: int, by_player: int) -> void:
 		var victim: PlayerPawn = state.get_pawn(pawn_id)
-		_log_line("%s 출발선으로 복귀%s" % [_pawn_name(pawn_id), "  [🔥 복수 부스터 획득: 다음 출발 +%d칸]" % GameData.revenge_bonus() if victim != null and victim.revenge_boost else ""], Color("ff8787"))
+		_log_line("%s 출발선으로 복귀%s" % [_pawn_name(pawn_id), "  [🔥 복수 부스터 획득: 다음 출발 +%d칸]" % _revenge_steps() if victim != null and victim.revenge_boost else ""], Color("ff8787"))
 		if victim == null:
 			return
 		_record_ejection(pawn_id, by_player)
@@ -2046,6 +2046,10 @@ func _refresh_tiles() -> void:
 			elif attachment.attachment_id == "HOTEL":
 				parts.append("호텔")
 				color = PLAYER_COLORS.get(attachment.owner_id, Color("ffd43b"))
+		var in_goal: bool = TempoUp.in_goal_zone(state.round_number, index)
+		(_tile_views[index] as BoardSkin.Tile).set_goal(in_goal)
+		if in_goal:
+			tips.append("🏁 당겨진 결승선 (템포 업): 여기 들어서면 완주")
 		var shown_trap: bool = has_trap and not _trap_pending.has(index)
 		(_tile_views[index] as BoardSkin.Tile).set_trap(shown_trap, trap_icon)
 		if shown_trap and not _trap_tiles.has(index):
@@ -2351,7 +2355,7 @@ func _revenge_charged_popup(player_id: int) -> void:
 	var at: Vector2 = get_global_transform().affine_inverse() * panel.get_global_rect().get_center()
 	at.x = clampf(at.x, 230.0, size.x - 230.0)  # 긴 문구가 화면 밖으로 잘리지 않게
 	at.y = clampf(at.y, 60.0, size.y - 60.0)
-	_floating_badge(at, "[🔥 복수심 장전! (다음 출격 시 +%d칸)]" % GameData.revenge_bonus(), Color("ff922b"))
+	_floating_badge(at, "[🔥 복수심 장전! (다음 출격 시 +%d칸)]" % _revenge_steps(), Color("ff922b"))
 	_fx_until_msec = maxi(_fx_until_msec, Time.get_ticks_msec() + int(450.0 * _motion_pace()))
 
 
@@ -2402,7 +2406,7 @@ func _play_rocket(pawn_id: int, to_pos: Vector2, to_scale: float, tile: int) -> 
 		return
 	screen_shake(7.0, 0.22)
 	_impact_ring(view.position, Color("ff6b00"), 50.0)
-	_floating_badge(view.position + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + Vector2(0, -42), "🔥 부스터 +%d칸!" % GameData.revenge_bonus(), Color("ff922b"))
+	_floating_badge(view.position + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + Vector2(0, -42), "🔥 부스터 +%d칸!" % _revenge_steps(), Color("ff922b"))
 
 
 ## 로켓 화염 잔상 한 점: 주황 원이 커지며 사라진다.
@@ -2586,6 +2590,12 @@ func _shown_turn_player() -> int:
 	return _shown_turn
 
 
+## 지금 라운드의 🔥 리벤지 부스터 칸 수 (⏩ 템포 업이 오르면 커진다).
+func _revenge_steps() -> int:
+	var base: int = GameData.revenge_bonus()
+	return maxi(base, TempoUp.revenge_bonus(state.round_number)) if base > 0 and state != null else base
+
+
 ## 라운드가 시작될 때(증강 선택이 끝나고 첫 플레이어의 턴이 오기 직전) 중앙에 크게 알린다.
 func _check_round_banner() -> void:
 	if _announcer == null or manager.is_game_over or manager.current_state == TurnManager.State.PHASE_ROUND_START:
@@ -2598,7 +2608,8 @@ func _check_round_banner() -> void:
 	_announced_turn_key = "%d:%d" % [state.round_number, manager.current_player_id()]
 	if _action_log != null:
 		_action_log.add_entry("[color=#ffd43b]──── %d라운드 ────[/color]" % state.round_number)
-	_announce("라운드", "%d라운드 시작!" % state.round_number, "", COLOR_GOLD, null, 1.2)
+	var tempo: int = TempoUp.level(state.round_number)
+	_announce("라운드", "%d라운드 시작!" % state.round_number, "⏩ 템포 업 Lv.%d · 최종 이동 +%d칸" % [tempo, TempoUp.move_bonus(state.round_number)] if tempo > 0 else "", COLOR_GOLD, null, 1.2)
 
 
 ## 새 플레이어의 턴이 시작될 때 [P2 차례] 알림을 짧게 보여 준다 (추가 턴·롤백 재시작에는 다시 띄우지 않는다).
@@ -2737,7 +2748,7 @@ func _paint_revenge_glow(host: Control, on: bool) -> void:
 		frame.shadow_size = 6
 		glow.add_theme_stylebox_override("panel", frame)
 		host.add_child(glow)
-		var badge: Label = _make_label("🔥출격 +%d" % GameData.revenge_bonus(), 10, Color("fff4e6"))
+		var badge: Label = _make_label("🔥출격 +%d" % _revenge_steps(), 10, Color("fff4e6"))
 		badge.name = "RevengeBadge"
 		badge.add_theme_constant_override("outline_size", 4)
 		badge.add_theme_color_override("font_outline_color", Color("8a2b00"))
@@ -3352,7 +3363,7 @@ func _fill_pawn_tip(pawn_id: int) -> void:
 	if pawn.is_promoted_shogi():
 		status += "  ★나리 승급(+1칸)"
 	if pawn.revenge_boost and not pawn.has_left_start:
-		status += "\n🔥 리벤지 부스터 활성화: 이번 출격 시 이동 거리 +%d칸!" % GameData.revenge_bonus()
+		status += "\n🔥 리벤지 부스터 활성화: 이번 출격 시 이동 거리 +%d칸!" % _revenge_steps()
 	if pawn.sub_type() == GameEnums.PawnSubType.BADUK_WHITE:
 		status += "  🛡 방어막 있음" if pawn.shield else "  (방어막 깨짐)"
 	_tip_title.text = "%s  - P%d%s" % [PawnCatalog.full_name(pawn.kind, pawn.unit_no), pawn.owner_id, status]
@@ -3648,7 +3659,7 @@ func _refresh_pawn_dock() -> void:
 		elif pawn.is_imprisoned:
 			place = "감옥"
 		elif pawn.revenge_boost and not pawn.has_left_start:
-			place = "🔥+%d" % GameData.revenge_bonus()
+			place = "🔥+%d" % _revenge_steps()
 		(parts["place"] as Label).text = place
 		_paint_revenge_glow(button, pawn.revenge_boost and not pawn.has_left_start and not pawn.is_finished)
 		var badge: Label = parts["badge"]
@@ -3861,7 +3872,7 @@ func _refresh_select_banner() -> void:
 		elif pawn.is_imprisoned:
 			status = "감옥"
 		elif not pawn.has_left_start and pawn.revenge_boost:
-			status = "🔥 출격 +%d (리벤지 부스터)" % GameData.revenge_bonus()
+			status = "🔥 출격 +%d (리벤지 부스터)" % _revenge_steps()
 		elif not pawn.has_left_start:
 			status = "출발 대기"
 		else:
@@ -7026,6 +7037,31 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_roll_total[int(data["player_id"])] = int(data["to"])
 			_log_line("[가속 보너스] P%d: 눈금 %d → %d!" % [data["player_id"], data["from"], data["to"]], Color("ffd43b"))
 			_record(int(data["player_id"]), "⚡ 가속 보너스 ➔ %d칸 → 총 %d칸 전진!" % [data["from"], data["to"]])
+		&"tempo_up":
+			var stage: int = int(data["level"])
+			var lines: Array = data["lines"]
+			_log_line("[⏩ 템포 업 Lv.%d] %d라운드부터: %s" % [stage, data["round"], " / ".join(PackedStringArray(lines))], Color("ff6b6b"))
+			if _action_log != null:
+				_action_log.add_entry("[color=#ff6b6b][b]⚠ 템포 업 Lv.%d[/b] - %s[/color]" % [stage, _bb(" · ".join(PackedStringArray(lines)))])
+			if _fx_on():
+				screen_shake(12.0, 0.5)
+				Sfx.play(&"trap")
+			_announce("템포 업", "⏩ 템포 업 Lv.%d" % stage, "%d라운드부터 게임이 빨라집니다!\n◆ %s" % [data["round"], "\n◆ ".join(PackedStringArray(lines))], Color("ff4d4d"), null, 3.2)
+		&"tempo_law":
+			var tempo_law: LawResource = LawRegistry.create(String(data["law_id"]))
+			_log_line("[⏩ 템포 업] 법전에 특수 승리 [%s] 자동 등록" % tempo_law.law_name, Color("ffd43b"))
+			_record(-1, "⏩ 템포 업: 법전에 %s 자동 등록" % _bq(tempo_law.law_name))
+		&"goal_shrunk":
+			var finished_ids: Array = data["finished"]
+			_refresh_tiles()
+			_log_line("[⏩ 템포 업] 결승선이 %d칸 당겨졌습니다 (%d번 칸부터 결승)%s" % [data["shrink"], data["zone_start"], ", 완주 %d" % finished_ids.size() if not finished_ids.is_empty() else ""], Color("ffd43b"))
+			_record(-1, "🏁 결승선 %d칸 당겨짐 (%d번부터 결승)%s" % [int(data["shrink"]), int(data["zone_start"]), " - 말 %d개 즉시 완주!" % finished_ids.size() if not finished_ids.is_empty() else ""])
+			if TempoUp.is_stage_round(int(data["round"])) or not finished_ids.is_empty():
+				_announce("템포 업", "🏁 결승선이 당겨진다!", "%d번 칸부터 결승선 - 라운드마다 %d칸씩 더 당겨집니다%s" % [data["zone_start"], TempoUp.GOAL_SHRINK_PER_ROUND, "\n말 %d개가 그 자리에서 완주!" % finished_ids.size() if not finished_ids.is_empty() else ""], Color("ffd43b"), null, 2.0)
+		&"tempo_boosted":
+			_roll_total[int(data["player_id"])] = int(data["to"])
+			_log_line("[⏩ 템포 업] P%d: 이동 %d → %d" % [data["player_id"], data["from"], data["to"]], Color("ff8787"))
+			_record(int(data["player_id"]), "⏩ 템포 업 +%d ➔ 총 %d칸 전진!" % [int(data["to"]) - int(data["from"]), int(data["to"])])
 		&"gambler_doubled":
 			_roll_total[int(data["player_id"])] = int(data["to"])
 			_log_line("[도박사의 영혼] P%d: 이동 %d → %d (x2)!" % [data["player_id"], data["from"], data["to"]], Color("ffa94d"))

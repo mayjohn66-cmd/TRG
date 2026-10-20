@@ -1079,6 +1079,8 @@ func _enter_round_start() -> void:
 	_draft_picks.clear()
 	_draft_rerolls.clear()
 	change_state(State.PHASE_ROUND_START)
+	if _apply_tempo_up():
+		return
 	if GameEnums.is_draft_round(state.round_number) and state.round_number > 1:
 		state.recharge_shields()  # 바둑 백돌: 증강 라운드마다 방어막 재충전
 	if draft_enabled and GameEnums.is_draft_round(state.round_number):
@@ -1088,6 +1090,53 @@ func _enter_round_start() -> void:
 		_emit_event(&"augment_offers", {"round": state.round_number, "offers": _draft_offers.duplicate(true)})
 	else:
 		_begin_turn()
+
+
+## ⏩ 템포 업: 단계가 오르는 라운드(11·21·31)는 라운드를 선언하기 전에 경고 이벤트를 먼저 보낸다.
+## 2단계(21R)는 법전에 무작위 특수 승리를 하나 올리고, 3단계부터는 라운드마다 결승선이 당겨져 그 안에 선 말이 바로 완주한다.
+## 완주로 게임이 끝났으면 true.
+func _apply_tempo_up() -> bool:
+	var round_number: int = state.round_number
+	if TempoUp.is_stage_round(round_number):
+		var stage: int = TempoUp.level(round_number)
+		_emit_event(&"tempo_up", {"round": round_number, "level": stage, "lines": TempoUp.effect_lines(stage)})
+		if stage == 2:
+			_enact_random_law()
+	var zone_start: int = TempoUp.goal_zone_start(round_number)
+	if zone_start < 0:
+		return false
+	var finished: Array[int] = []
+	for pawn: PlayerPawn in state.get_active_pawns():
+		if pawn.carrier == null and pawn.has_left_start and not pawn.is_finished and pawn.can_finish(state) and TempoUp.in_goal_zone(round_number, pawn.current_tile_idx):
+			for member: PlayerPawn in pawn.stack_members():
+				finished.append(member.entity_id)
+			state.finish_stack(pawn)
+	_emit_event(&"goal_shrunk", {"round": round_number, "zone_start": zone_start, "shrink": TempoUp.goal_shrink(round_number), "finished": finished})
+	if finished.is_empty():
+		return false
+	for entry: Dictionary in VictoryChecker.newly_qualified(state, player_order, current_player_id()):
+		_graduate(int(entry["player"]), entry["reason"])
+	var active: Array[int] = state.active_players(player_order)
+	if active.size() <= 1:
+		for last: int in active:
+			_graduate(last, VictoryChecker.LAST_PLACE)
+		_end_game()
+		return true
+	return false
+
+
+## 템포 업 2단계: 법전에 아직 없는 특수 승리 교칙 하나를 무작위로 올린다 (슬롯이 가득 차면 가장 오래된 교칙이 밀려난다).
+func _enact_random_law() -> void:
+	var candidates: Array[String] = []
+	for definition: AugmentDef in AugmentRegistry.all():
+		if definition.category == GameEnums.AugmentCategory.LAW_ENACT and definition.enabled and not state.rulebook.has_law(String(definition.payload)) and not candidates.has(String(definition.payload)):
+			candidates.append(String(definition.payload))
+	if candidates.is_empty():
+		return
+	var law: LawResource = LawRegistry.create(candidates[state.rng.randi_range(0, candidates.size() - 1)])
+	SpecialVictory.on_law_enacted(state, law)
+	state.rulebook.enqueue_law(law)
+	_emit_event(&"tempo_law", {"round": state.round_number, "law_id": law.law_id})
 
 
 ## 시간 초과 등으로 드래프트를 마감한다. 아직 고르지 않은 플레이어는 첫 번째 선택지로 자동 선택된다.
@@ -1197,6 +1246,11 @@ func _apply_roll_result(result: RollResult) -> void:
 		if int(state.gambler_round.get(roller, -1)) == state.round_number:
 			_emit_event(&"gambler_doubled", {"player_id": roller, "from": boosted, "to": boosted * SuperAugments.gambler_multiplier()})
 			boosted *= SuperAugments.gambler_multiplier()
+		# ⏩ 템포 업: 최종 이동 칸에 단계별 보너스 (11R +1 / 21R +3 / 31R +5)
+		var tempo: int = TempoUp.move_bonus(state.round_number)
+		if tempo > 0:
+			_emit_event(&"tempo_boosted", {"player_id": roller, "from": boosted, "to": boosted + tempo, "level": TempoUp.level(state.round_number)})
+			boosted += tempo
 		move_queue.append(boosted)
 	_roll_chain += 1
 	SpecialVictory.note_session(state, current_player_id(), VictoryLaw.BEST_CHAIN, _roll_chain)  # 🏆 초전도체 무한 동력

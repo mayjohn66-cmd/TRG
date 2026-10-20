@@ -250,6 +250,8 @@ class Tile extends Control:
 	var dash_on: bool = false
 	var flow_dir: Vector2 = Vector2.RIGHT
 	var dash_phase: float = 0.0
+	## ⏩ 템포 업으로 당겨진 결승선 안의 칸: 체크무늬 결승 깃발 무늬가 덮인다.
+	var goal_on: bool = false
 
 	func initialize(tile_index: int) -> void:
 		index = tile_index
@@ -329,6 +331,11 @@ class Tile extends Control:
 		danger_pulse = value
 		queue_redraw()
 
+	func set_goal(on: bool) -> void:
+		if goal_on != on:
+			goal_on = on
+			queue_redraw()
+
 	func set_dash(on: bool, flow: Vector2) -> void:
 		dash_on = on
 		flow_dir = flow if flow != Vector2.ZERO else Vector2.RIGHT
@@ -342,12 +349,33 @@ class Tile extends Control:
 		if layers.is_empty():
 			return
 		_draw_tile()
+		if goal_on:
+			_draw_goal()
 		if dash_on:
 			_draw_dash()
 		if danger_level > 0:
 			_draw_danger()
 		if trap_on:
 			_draw_trap()
+
+	## 당겨진 결승선: 타일 안쪽에 흑백 체크무늬를 깔고 금색 테두리를 두른다.
+	func _draw_goal() -> void:
+		var inner: PackedVector2Array = layers[layers.size() - 1]
+		var box := Rect2(inner[0], Vector2.ZERO)
+		for point: Vector2 in inner:
+			box = box.expand(point)
+		var cells: int = 4
+		var cell := box.size / float(cells)
+		for row: int in cells:
+			for column: int in cells:
+				var square := PackedVector2Array([box.position + cell * Vector2(column, row), box.position + cell * Vector2(column + 1, row), box.position + cell * Vector2(column + 1, row + 1), box.position + cell * Vector2(column, row + 1)])
+				var clipped: Array[PackedVector2Array] = Geometry2D.intersect_polygons(square, inner)
+				var tone: Color = Color(0.08, 0.08, 0.1, 0.78) if (row + column) % 2 == 0 else Color(0.97, 0.97, 0.97, 0.78)
+				for piece: PackedVector2Array in clipped:
+					draw_colored_polygon(piece, tone)
+		var closed: PackedVector2Array = outline_points.duplicate()
+		closed.append(closed[0])
+		draw_polyline(closed, Color("ffd43b"), 4.0, true)
 
 	## 함정 타일: 보라색 발판 + 함정 그림. 그림은 타일 안쪽 사각형에 맞춰 원근에 따라 살짝 납작하게 그린다.
 	func _draw_trap() -> void:

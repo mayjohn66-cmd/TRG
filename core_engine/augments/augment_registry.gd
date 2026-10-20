@@ -10,6 +10,14 @@ static var _cache: Array[AugmentDef] = []
 const SWAPPABLE_TOOLS: Array[StringName] = [&"YUT", &"HOLDEM", &"LIFE_ROULETTE", &"CHINCHIRO", &"SLOT_777", &"REVOLVER", &"DICE_HWATU", &"DICE_MAHJONG", &"DICE_TAROT", &"DICE_YACHT", &"DICE_BLACKJACK", &"DICE_PINBALL"]
 
 
+## 기본 가중치 (augments_table.csv weight가 우선). 계열이 뽑힐 확률은 계열 평균 가중치에 비례한다.
+const PAWN_WEIGHT: int = 50
+const TOOL_WEIGHT: int = 50
+const LAW_WEIGHT: int = 5
+const SUPER_WEIGHT: int = 10
+const CARD_WEIGHT: int = 50
+
+
 static func all() -> Array[AugmentDef]:
 	if _cache.is_empty():
 		# 기물 지급: 세부 기물 하나하나가 별도 선택지다 (윷말 1종 / 체스·장기·모노폴리 4종씩 / 바둑 흑·백 2종).
@@ -19,20 +27,26 @@ static func all() -> Array[AugmentDef]:
 				for unit: Variant in units:
 					typed_units.append(int(unit))
 				var sub_name: String = PawnCatalog.unit_label(kind, typed_units[0])
-				_cache.append(AugmentDef.new(StringName("EVO_%d_%d" % [kind, typed_units[0]]), GameEnums.AugmentCategory.PAWN_EVOLUTION, "기물 지급: %s" % sub_name, kind, typed_units))
+				var evolution := AugmentDef.new(StringName("EVO_%d_%d" % [kind, typed_units[0]]), GameEnums.AugmentCategory.PAWN_EVOLUTION, "기물 지급: %s" % sub_name, kind, typed_units)
+				evolution.weight = PAWN_WEIGHT
+				_cache.append(evolution)
 		for tool_id: StringName in SWAPPABLE_TOOLS:
-			_cache.append(AugmentDef.new(StringName("TOOL_%s" % tool_id), GameEnums.AugmentCategory.TOOL_SWAP, "판정 도구 교체: %s" % ToolRegistry.create(tool_id).display_name, tool_id))
+			var swap := AugmentDef.new(StringName("TOOL_%s" % tool_id), GameEnums.AugmentCategory.TOOL_SWAP, "판정 도구 교체: %s" % ToolRegistry.create(tool_id).display_name, tool_id)
+			swap.weight = TOOL_WEIGHT
+			_cache.append(swap)
 		for law_id: String in LawRegistry.ALL_IDS:
 			var law := AugmentDef.new(StringName("AUG_%s" % law_id), GameEnums.AugmentCategory.LAW_ENACT, "특수 승리: %s" % LawRegistry.create(law_id).law_name, law_id)
 			law.tier = "GOLD"
-			law.weight = 15 if ["LAW_04", "LAW_06", "LAW_07"].has(law_id) else 20  # 특수 승리는 드물게
+			law.weight = LAW_WEIGHT  # 특수 승리는 드물게
 			law.min_round = 3
 			_cache.append(law)
-		_cache.append(AugmentDef.new(&"CARD_PACKAGE", GameEnums.AugmentCategory.CARD_PACKAGE, "생떼 카드 패키지"))
+		var package := AugmentDef.new(&"CARD_PACKAGE", GameEnums.AugmentCategory.CARD_PACKAGE, "생떼 카드 패키지")
+		package.weight = CARD_WEIGHT
+		_cache.append(package)
 		for effect: StringName in SuperAugments.ALL_IDS:
 			var chaos := AugmentDef.new(effect, GameEnums.AugmentCategory.SUPER_GAMBLE, SuperAugments.display_name(effect), effect)
 			chaos.tier = "PRISMA"  # 초증강의 기본 테두리 (표에서 바꿀 수 있다)
-			chaos.weight = 50  # 기본 가중치: 예전의 [절반 확률로 제외]와 같은 효과
+			chaos.weight = SUPER_WEIGHT
 			_cache.append(chaos)
 		_apply_table(_cache)
 	return _cache
@@ -100,7 +114,7 @@ static func generate_offers(state: GameState, player_id: int, count: int = GameE
 			var candidates_of: Array = by_category[category]
 			var total: float = 0.0
 			for def: Variant in candidates_of:
-				total += float((def as AugmentDef).weight)
+				total += effective_weight(def as AugmentDef, state)
 			weights.append(total / float(candidates_of.size()))
 		var chosen: int = _weighted_index(weights, state.rng)
 		var picked_category: Variant = categories[chosen]
@@ -108,7 +122,7 @@ static func generate_offers(state: GameState, player_id: int, count: int = GameE
 		var pool: Array = by_category[picked_category]
 		var pool_weights: Array[float] = []
 		for def: Variant in pool:
-			pool_weights.append(float((def as AugmentDef).weight))
+			pool_weights.append(effective_weight(def as AugmentDef, state))
 		offers.append((pool[_weighted_index(pool_weights, state.rng)] as AugmentDef).augment_id)
 	if offers.size() < count:
 		var rest: Array[AugmentDef] = []
@@ -121,6 +135,11 @@ static func generate_offers(state: GameState, player_id: int, count: int = GameE
 				break
 			offers.append(def.augment_id)
 	return offers
+
+
+## 드래프트에 쓰는 가중치: 표의 weight × ⏩ 템포 업 배수 (11라운드부터 법전·초증강 ×3).
+static func effective_weight(def: AugmentDef, state: GameState) -> float:
+	return float(def.weight * TempoUp.weight_multiplier(state.round_number, def.category))
 
 
 ## 가중치 배열에서 비율대로 한 칸을 고른다 (합이 0이면 균등). 호스트 RNG만 쓰므로 모든 참가자가 같은 결과를 얻는다.

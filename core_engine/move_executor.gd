@@ -56,8 +56,8 @@ static func plan_path(state: GameState, mover: PlayerPawn, ctx: RuleContext, rep
 	if steps == 0:
 		return [] as Array[int]
 	# 🔥 리벤지 부스터: 사출된 말이 출발선에서 다시 나갈 때 눈금에 +4칸 (루도 복수자는 +8칸).
-	if state.boost_gimmicks and mover.revenge_boost and not mover.has_left_start and revenge_bonus_of(mover) > 0:
-		var revenge: int = revenge_bonus_of(mover)
+	if state.boost_gimmicks and mover.revenge_boost and not mover.has_left_start and revenge_bonus_of(mover, state) > 0:
+		var revenge: int = revenge_bonus_of(mover, state)
 		steps += revenge
 		report.revenge_bonus = revenge
 		report.ability_notes.append("🔥 복수 부스터 +%d칸" % revenge)
@@ -162,10 +162,13 @@ const EIGHT_BALL_CHARGE: int = 3
 
 
 ## 이 말의 리벤지 부스터 칸 수 (루도 복수자는 augments_table.csv EVO_7_2 param_1, 기본 8).
-static func revenge_bonus_of(mover: PlayerPawn) -> int:
+## ⏩ 템포 업이 오르면 리벤지 부스터가 커진다 (11R 6칸, 21R 8칸). 규칙이 꺼져 있으면 그대로 0.
+static func revenge_bonus_of(mover: PlayerPawn, state: GameState = null) -> int:
+	var tempo: int = TempoUp.revenge_bonus(state.round_number) if state != null else 0
 	if mover.sub_type() == GameEnums.PawnSubType.LUDO_AVENGER:
-		return GameData.param("augments", "EVO_7_2", 1, 8)
-	return GameData.revenge_bonus()
+		return maxi(GameData.param("augments", "EVO_7_2", 1, 8), tempo)
+	var base: int = GameData.revenge_bonus()
+	return maxi(base, tempo) if base > 0 else 0
 
 
 ## 룩·비차 직진 판정: 경로의 중간 칸(도착 칸 제외)에 코너가 없다.
@@ -288,7 +291,7 @@ static func apply_step(
 			return StepOutcome.FINISHED
 		return StepOutcome.HALTED
 
-	if is_forward and destination == GameEnums.GOAL_TILE and mover.can_finish(state):
+	if is_forward and (destination == GameEnums.GOAL_TILE or TempoUp.in_goal_zone(state.round_number, destination)) and mover.can_finish(state):
 		if not is_last and ctx.exact_goal_required:
 			report.bounced = true
 			return StepOutcome.CONTINUE

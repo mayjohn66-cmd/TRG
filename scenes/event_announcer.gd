@@ -14,6 +14,8 @@ const FADE_OUT: float = 0.18
 const MAX_QUEUE: int = 6
 ## 이 태그의 알림은 라운드 시작용으로 헤드라인을 크게 그린다.
 const BIG_TAG: String = "라운드"
+## 이 태그는 ⏩ 템포 업 경고: 헤드라인을 크게 그리고 붉은 경고 띠를 위아래에 두른다.
+const WARNING_TAG: String = "템포 업"
 
 ## true면 알림을 모두 건너뛴다 (헤드리스 테스트·ui_smoke 자동 진행).
 var instant: bool = false
@@ -109,7 +111,12 @@ func _start_next() -> void:
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_root)
 	_root.add_child(_label(str(_current["tag"]), 13, color.lightened(0.2)))
-	var big: bool = str(_current["tag"]) == BIG_TAG
+	var warning: bool = str(_current["tag"]) == WARNING_TAG
+	var big: bool = str(_current["tag"]) == BIG_TAG or warning
+	if warning:
+		style.bg_color = Color("2a0a0a")
+		style.set_border_width_all(8)
+		_root.add_child(_label("⚠  WARNING  ⚠  WARNING  ⚠  WARNING  ⚠", 18, Color("ffd43b")))
 	var headline: Label = _label(str(_current["headline"]), 64 if big else 26, color.lightened(0.3) if big else Color("f8f9fa"))
 	if big:
 		headline.add_theme_color_override("font_outline_color", color.darkened(0.6))
@@ -122,6 +129,8 @@ func _start_next() -> void:
 		_root.add_child(body)
 	if _current["extra"] != null:
 		_root.add_child(_current["extra"] as Control)
+	if warning:
+		_root.add_child(_label("⚠  WARNING  ⚠  WARNING  ⚠  WARNING  ⚠", 18, Color("ffd43b")))
 	if not big:
 		_root.add_child(_label("(클릭하면 넘어갑니다)", 10, Color("6c757d")))
 	modulate = Color(1, 1, 1, 0)

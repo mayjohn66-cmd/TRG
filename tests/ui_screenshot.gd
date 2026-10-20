@@ -33,7 +33,7 @@ func _process(_delta: float) -> bool:
 		if _banner_frame != -2 and _frames < 600:
 			return false
 		_banner_frame = -2
-	if (_shot != "banner" and _frames == (8 if _shot == "pick" else (20 if _shot in ["react", "classics", "traps", "log", "logx", "counterzoom", "book"] else 12))) or (_shot == "banner" and _banner_frame == -2):
+	if (_shot != "banner" and _frames == (8 if _shot == "pick" else (20 if _shot in ["react", "classics", "traps", "log", "logx", "counterzoom", "book", "tempo"] else 12))) or (_shot == "banner" and _banner_frame == -2):
 		var path: String = "/tmp/trg_shot_%s.png" % _shot
 		var image: Image = root.get_texture().get_image()
 		image.save_png(path)
@@ -51,6 +51,14 @@ func _setup_scene() -> void:
 	match _shot:
 		"draft":
 			pass
+		"tempo":
+			# ⏩ 템포 업 경고 + 당겨진 결승선 체크무늬
+			_board._close_opening()
+			state.round_number = 31
+			_board._announced_round = 31  # 이미 지난 라운드 배너는 건너뛴다
+			_board._announcer.cancel()
+			_board.manager._emit_event(&"tempo_up", {"round": 31, "level": 3, "lines": TempoUp.effect_lines(3)})
+			_board._refresh_all()
 		"evolved":
 			_finish_draft()
 			for pair: Array in [[11, GameEnums.PawnKind.CHESS], [12, GameEnums.PawnKind.CHESS], [13, GameEnums.PawnKind.CHESS], [14, GameEnums.PawnKind.CHESS], [21, GameEnums.PawnKind.JANGGI], [22, GameEnums.PawnKind.JANGGI], [23, GameEnums.PawnKind.JANGGI], [24, GameEnums.PawnKind.JANGGI], [31, GameEnums.PawnKind.MONOPOLY], [41, GameEnums.PawnKind.GO], [42, GameEnums.PawnKind.GO]]:
