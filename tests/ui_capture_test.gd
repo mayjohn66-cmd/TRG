@@ -21,6 +21,10 @@ func expect(value: bool, message: String) -> void:
 func _run() -> void:
 	board._bot.set_enabled(false)
 	board.ai_mode = false
+	# 실제 판처럼 1라운드 증강 드래프트 단계를 먼저 넘긴다 (드래프트 중의 연출은 증강 공개 뒤로 미뤄진다). 증강은 고르지 않는다.
+	board.manager._draft_offers.clear()
+	board.manager._draft_picks.clear()
+	board.manager._begin_turn()
 	board._close_draft_overlay()
 	board._close_opening()
 	board._intro_pending = false

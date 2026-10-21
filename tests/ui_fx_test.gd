@@ -81,6 +81,7 @@ func _run() -> void:
 	await _test_kill_cutin()
 	await _test_new_tool_stages()
 	await _test_npc_danger_preview()
+	await _test_event_order()
 	await _test_presentation_queue()
 	if _failures.is_empty():
 		print("UI_FX_OK")
@@ -1725,6 +1726,98 @@ func _test_npc_danger_preview() -> void:
 	mine.current_tile_idx = 0
 	_board._refresh_all()
 	_expect(_board._npc_danger.is_empty(), "NPC가 사라지면 위험 예고도 사라진다")
+
+
+## 바뀐 기물·카드·초증강의 연출 순서: 소환 기물은 달린 뒤에 말이 날아가고, 도미노는 [도미노 연쇄!]가 먼저, 드래프트 효과는 증강 공개 뒤.
+func _test_event_order() -> void:
+	var manager: TurnManager = _board.manager
+	var state: GameState = manager.state
+	_board._reset_presentation()
+	_board.instant_roll_for_test = false
+	_board.pacing_enabled = false
+	_board._announcer.cancel()
+	_board._bot.set_enabled(false)
+	manager.set_process(false)
+	var guard: int = 0
+	while manager.current_state != TurnManager.State.PHASE_TURN_BEGIN and guard < 40:
+		manager.force_timeout()
+		guard += 1
+	state.clear_npcs()
+	for pawn: PlayerPawn in state.pawns:
+		pawn.reset_to_start()
+	_board._refresh_all()
+	# 1) 소환: 사료스탕스가 달리는 동안 잡힐 말은 아직 보드에 있고, 달리기가 끝난 뒤에 사출된다
+	var victim: PlayerPawn = state.get_pawn(21)
+	victim.has_left_start = true
+	victim.current_tile_idx = BoardSpec.side + 2
+	_board._refresh_pawns()
+	await process_frame
+	var history_before: int = _board._announcer.history.size()
+	var command := SweepCommand.new(1, BoardSpec.side, &"SUM_01")
+	command.state = state
+	command.execute()
+	_expect(not victim.has_left_start, "엔진에서는 바로 잡힌다")
+	var saw_runner: bool = false
+	var victim_seen_while_running: bool = false
+	var waited: float = 0.0
+	while waited < 8.0 and (_board._presentation_active() or _board._announcer.active):
+		var runner: Node = _board._pawn_layer.find_child("NpcRunner", false, false)
+		if runner != null:
+			saw_runner = true
+			victim_seen_while_running = victim_seen_while_running or (_board._pawn_views[21] as Node2D).visible
+		await create_timer(0.05).timeout
+		waited += 0.05
+	_expect(saw_runner, "소환 기물이 길을 따라 달리는 모습이 보인다")
+	_expect(victim_seen_while_running, "기물이 달리는 동안 잡힐 말은 아직 보드 위에 있다 (사출은 그 뒤)")
+	var headlines: Array = _board._announcer.history.slice(history_before)
+	_expect(headlines.any(func(h: String) -> bool: return h.contains("사료스탕스 출동")), "[사료스탕스 출동!] 알림 (%s)" % str(headlines))
+	_expect(_board._pawn_layer.find_child("NpcRunner", false, false) == null, "달리기 연출 노드는 끝나면 사라진다")
+	# 2) 도미노: [도미노 연쇄!]가 연쇄로 터지는 함정보다 먼저, 도미노 자신의 [발동!]은 다시 뜨지 않는다
+	for pawn: PlayerPawn in state.pawns:
+		pawn.reset_to_start()
+	state.place_attachment(6, TrapDomino.new(2))
+	state.place_attachment(7, TrapPit.new(2))
+	var mover: PlayerPawn = state.get_pawn(11)
+	mover.has_left_start = true
+	mover.current_tile_idx = 4
+	var standing: PlayerPawn = state.get_pawn(12)
+	standing.has_left_start = true
+	standing.current_tile_idx = 7
+	_board._refresh_all()
+	history_before = _board._announcer.history.size()
+	var ctx := RuleContext.new()
+	ctx.state = state
+	ctx.pawn = mover
+	ctx.dice_value = 3
+	MoveExecutor.execute(state, mover, ctx)
+	waited = 0.0
+	while waited < 8.0 and (_board._presentation_active() or _board._announcer.active):
+		await create_timer(0.05).timeout
+		waited += 0.05
+	headlines = _board._announcer.history.slice(history_before)
+	var domino_at: int = headlines.find("도미노 연쇄!")
+	var pit_at: int = -1
+	for index: int in headlines.size():
+		if str(headlines[index]).contains("[발동!]") and str(headlines[index]).contains(_board._attachment_name("TRP_02")):
+			pit_at = index
+	_expect(domino_at != -1 and (pit_at == -1 or domino_at < pit_at), "[도미노 연쇄!]가 연쇄 함정보다 먼저 (%s)" % str(headlines))
+	_expect(not headlines.any(func(h: String) -> bool: return h.contains("[발동!]") and h.contains("도미노")), "도미노 자신의 [발동!] 알림은 다시 뜨지 않는다")
+	# 3) 드래프트 중에 생긴 효과 연출은 증강 공개 뒤로 미룬다
+	var ran: Array = []
+	manager.current_state = TurnManager.State.PHASE_ROUND_START
+	_board.enqueue_step(func() -> void: ran.append(true))
+	_expect(ran.is_empty() and _board._draft_deferred.size() == 1 and _board._fx_holding(), "드래프트 중의 효과 연출은 미뤄 두고 말 그림도 움직이지 않는다")
+	manager.current_state = TurnManager.State.PHASE_TURN_BEGIN
+	_board._on_phase_changed(TurnManager.State.PHASE_TURN_BEGIN, 1, 0.0)
+	waited = 0.0
+	while ran.is_empty() and waited < 6.0:
+		await create_timer(0.05).timeout
+		waited += 0.05
+	_expect(not ran.is_empty() and _board._draft_deferred.is_empty(), "드래프트가 끝나면 미룬 연출이 재생된다")
+	state.clear_npcs()
+	for tile: int in [6, 7]:
+		for attachment: TileAttachment in state.board.get_tile(tile).attachments.duplicate():
+			state.board.get_tile(tile).remove_attachment(attachment)
 
 
 ## 단일 연출 큐: 여러 연출이 한꺼번에 방송돼도 한 번에 하나씩 순서대로만 재생된다.

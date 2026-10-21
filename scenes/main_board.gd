@@ -377,6 +377,8 @@ var _draft_entrance: bool = false
 var _draft_banner_round: int = 0
 ## 이번 드래프트에서 고른 증강 모음 (끝나면 한 장으로 공개).
 var _draft_summary: Array[Dictionary] = []
+## 드래프트 중에 생긴 효과 연출: 증강 공개 카드 뒤로 미뤄 둔다 ({"step", "pawn"}).
+var _draft_deferred: Array[Dictionary] = []
 ## 게임 필: 화면 흔들림, 말 id -> 이동 연출을 필살기 스크립트가 맡는 중(걸음 무시), 차 돌진 중 잡힌 말이 나는 시점을 늦추는 값(초).
 var _shake_tween: Tween = null
 var _shake_origin: Vector2 = Vector2.ZERO
@@ -875,12 +877,7 @@ func _bind_state() -> void:
 		_log_line("[강제 연대책임] %s의 짝 %s도 %s" % [_pawn_name(pawn_id), _pawn_name(partner_id), verb], Color("ffa94d"))
 		if pawn != null:
 			_record(pawn.owner_id, "🔗 연대책임: %s 짝 말도 %s" % [_bq("%d번 말" % pawn.slot), verb], "", true))
-	state.npc_swept.connect(func(display_id: StringName, path: Array[int], ejected: Array[int]) -> void:
-		var runner: String = "폭주 기관차" if display_id == &"TRAIN" else ("사료스탕스" if display_id == &"SUM_01" else "와구와구 유령")
-		_log_line("[%s] %d번 → %d번 질주! 사출된 말 %d개" % [runner, path[0], path[-1], ejected.size()], Color("fa5252"))
-		_record(-1, "🦹 %s %d번 → %d번 질주! (사출 %d)" % [_bq(runner), path[0], path[-1], ejected.size()])
-		var outcome: String = "칸을 쓸고 사라졌습니다" if display_id == &"TRAIN" or not ejected.is_empty() else "칸까지 전진! 라운드가 끝날 때마다 계속 전진합니다"
-		_announce("소환", "[%s 질주!]" % runner, "%d번 → %d번 %s (사출 %d)" % [path[0], path[-1], outcome, ejected.size()], Color("fa5252"), null, 1.1))
+	state.npc_swept.connect(_on_npc_swept)
 	state.shield_recharged.connect(func(pawn_id: int) -> void: _log_line("[백돌 방어막] %s의 방어막이 다시 차올랐습니다" % _pawn_name(pawn_id), Color("b197fc")))
 	state.trap_defused.connect(func(tile: int, id: String, pawn_id: int) -> void:
 		_log_line("[지뢰찾기] %s이(가) %d번 타일의 %s을(를) 해체하고 카드 1장!" % [_pawn_name(pawn_id), tile, _attachment_name(id)], Color("63e6be"))
@@ -905,7 +902,8 @@ func _bind_state() -> void:
 		_log_line("[설치물] %d번 타일 %s 발동! (%s)" % [tile, _attachment_name(id), _pawn_name(pawn_id)], Color("ff6b6b"))
 		if trapped != null:
 			_record(trapped.owner_id, "🪤 %s 밟음! (%d번 타일, %s)" % [_bq(_attachment_name(id)), tile, _bq("%d번 말" % trapped.slot)])
-		_announce_gate("함정 발동", "[발동!] %s" % _attachment_name(id), "%s\n%d번 타일에서 %s에게 발동" % [card_summary(StringName(id)), tile, _pawn_name(pawn_id)], Color("ff6b6b"), null, 1.2))
+		if id != "TRP_05":  # 도미노는 [도미노 연쇄!] 알림(domino_collapsed)이 먼저 나왔다: 같은 알림을 연쇄 뒤에 또 띄우지 않는다
+			_announce_gate("함정 발동", "[발동!] %s" % _attachment_name(id), "%s\n%d번 타일에서 %s에게 발동" % [card_summary(StringName(id)), tile, _pawn_name(pawn_id)], Color("ff6b6b"), null, 1.2))
 	state.npc_vanished.connect(func(npc_id: int, tile: int) -> void:
 		_announce("중립 기물", "NPC가 사냥을 마치고 사라졌습니다", "%d번 타일 - 중립 기물은 말을 잡으면 사라집니다" % tile, Color("fa5252"), null, 1.3))
 	state.attachment_placed.connect(func(tile: int, id: String, owner_id: int) -> void:
@@ -1994,6 +1992,8 @@ func _refresh_pawns() -> void:
 			_pawn_layer.add_child(marker)
 			_npc_views[npc.entity_id] = marker
 		var npc_view: Node2D = _npc_views[npc.entity_id]
+		if npc_view.has_meta("npc_run"):
+			continue  # 달리는 연출이 끝나면 도착 칸에 다시 보인다
 		var npc_target: Vector2 = _tile_center(npc.current_tile_idx)
 		npc_view.scale = Vector2.ONE * _depth_scale(tile_norm(npc.current_tile_idx).y)
 		if _fx_on() and npc_view.position.distance_to(npc_target) > 3.0 and npc_view.position != Vector2.ZERO:
@@ -2571,6 +2571,84 @@ func _shown_turn_player() -> int:
 		return _shown_turn
 	_shown_turn = manager.current_player_id()
 	return _shown_turn
+
+
+func _npc_runner_name(display_id: StringName) -> String:
+	if display_id == &"TRAIN":
+		return "폭주 기관차"
+	return "사료스탕스" if display_id == &"SUM_01" else "와구와구 유령"
+
+
+## 소환 카드·폭주 기관차: 알림이 먼저 뜨고(어디서 출발하는지만), 기물이 길을 따라 달린 다음 결과(사출 수)가 나온다. 사출 연출은 그 뒤에 이어진다.
+func _on_npc_swept(display_id: StringName, path: Array[int], ejected: Array[int]) -> void:
+	var runner: String = _npc_runner_name(display_id)
+	var outcome: String = "%d번 → %d번 질주! " % [path[0], path[-1]]
+	if display_id == &"TRAIN":
+		outcome += "말 %d개 사출, 함정 파괴" % ejected.size()
+	elif ejected.is_empty():
+		outcome += "아무도 못 잡아 보드에 남아 계속 전진합니다"
+	else:
+		outcome += "말 %d개를 잡고 사라졌습니다" % ejected.size()
+	_announce("초증강" if display_id == &"TRAIN" else "소환", "[%s 출동!]" % runner, "%d번에서 출발합니다" % path[0], Color("fa5252"), null, 0.8)
+	var npc_id: int = -1
+	var behavior: int = GameEnums.NpcBehavior.PATROL_REVERSE if display_id == &"SUM_02" else GameEnums.NpcBehavior.CHASE_NEAREST
+	for npc: NeutralNPC in state.npcs:
+		if npc.display_id == display_id:
+			npc_id = npc.entity_id
+	var steps: Array = path.slice(1)
+	_play_npc_run(display_id, behavior, path[0], steps, npc_id, func() -> void:
+		_log_line("[%s] %s" % [runner, outcome], Color("fa5252"))
+		_record(-1, "🦹 %s %s" % [_bq(runner), outcome]))
+
+
+## 중립 기물이 한 칸씩 달리는 연출. 보드의 실제 기물 그림(npc_id)은 달리는 동안 숨기고, 끝나면 도착 칸에 다시 보인다.
+## 잡힌 말의 사출은 이 연출 뒤에 연출 큐가 이어서 보여 준다 (말이 먼저 날아가지 않게). 끝나면 after를 부른다.
+func _play_npc_run(display_id: StringName, behavior: int, from_tile: int, path: Array, npc_id: int, after: Callable) -> void:
+	if not _fx_on() or path.is_empty():
+		after.call()
+		return
+	var real: Node2D = _npc_views.get(npc_id)
+	if real != null:
+		real.visible = false
+		real.set_meta("npc_run", true)
+	enqueue_step(func() -> void:
+		var runner: Node2D
+		if display_id == &"TRAIN":
+			runner = Node2D.new()
+			var engine_label: Label = _make_label("🚂", 40, Color.WHITE)
+			engine_label.position = Vector2(-24, -48)
+			runner.add_child(engine_label)
+		else:
+			var token := PawnToken.new()
+			token.configure_npc(behavior)
+			runner = token
+		runner.name = "NpcRunner"
+		runner.z_index = 6
+		_pawn_layer.add_child(runner)
+		var start: int = from_tile if from_tile >= 0 else int(path[0])
+		runner.position = _tile_center(start)
+		runner.scale = Vector2.ONE * _depth_scale(tile_norm(start).y)
+		var step_time: float = (0.09 if display_id == &"TRAIN" else 0.16) * _motion_pace()
+		for tile: Variant in path:
+			var target: Vector2 = _tile_center(int(tile))
+			var hop: Tween = runner.create_tween().set_parallel(true)
+			hop.tween_property(runner, "position", target, step_time).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+			hop.tween_property(runner, "scale", Vector2.ONE * _depth_scale(tile_norm(int(tile)).y), step_time)
+			Sfx.play(&"hop")
+			await hop.finished
+			if not is_instance_valid(runner):
+				break
+		if is_instance_valid(runner):
+			_impact_ring(runner.position + _pawn_layer.position, Color("fa5252"), 36.0)
+			runner.queue_free()
+		if real != null and is_instance_valid(real):
+			real.remove_meta("npc_run")
+			var still: NeutralNPC = state.get_npc(npc_id)
+			if still != null:
+				real.position = _tile_center(still.current_tile_idx)
+				real.scale = Vector2.ONE * _depth_scale(tile_norm(still.current_tile_idx).y)
+			real.visible = true
+		after.call())
 
 
 ## 지금 라운드의 🔥 리벤지 부스터 칸 수 (⏩ 템포 업이 오르면 커진다).
@@ -5058,6 +5136,10 @@ func enqueue_step(step_callable: Callable, pawn_id: int = -1) -> void:
 	if is_headless_or_fast_smoke():
 		step_callable.call()  # 테스트 모드에선 즉시 실행
 		return
+	if _draft_in_progress():
+		# 증강 드래프트 중에 고른 증강의 효과(폭주 기관차·저격수 등)는 [선택한 증강] 공개 뒤에 보여 준다 (결과를 먼저 흘리지 않게)
+		_draft_deferred.append({"step": step_callable, "pawn": pawn_id})
+		return
 	if pawn_id != -1:
 		_pawn_pending[pawn_id] = int(_pawn_pending.get(pawn_id, 0)) + 1
 	_presentation_queue.append(func() -> void:
@@ -5073,6 +5155,7 @@ func _reset_presentation() -> void:
 	_fx_generation += 1
 	_presentation_queue.clear()
 	_late_steps.clear()
+	_draft_deferred.clear()
 	_roll_total.clear()
 	_rocket_target.clear()
 	_is_playing_presentation = false
@@ -5194,6 +5277,8 @@ func _fx_when_announced(action: Callable) -> void:
 func _fx_holding() -> bool:
 	if _duel_arena != null and is_instance_valid(_duel_arena) and _duel_arena.holds_board():
 		return true  # 결투 승패가 공개되기 전에 누가 날아가는지 보여 주지 않는다
+	if not _draft_deferred.is_empty():
+		return true  # 드래프트 효과는 증강 공개 뒤에: 그 전에는 말 그림을 옮기지 않는다
 	return _stage_warps > 0 or (_announcer != null and _announcer.active and not _fx_gate_open)
 
 
@@ -6787,7 +6872,23 @@ func _clear_highlight() -> void:
 func _on_phase_changed(new_state: TurnManager.State, _player_id: int, _limit: float) -> void:
 	if new_state != TurnManager.State.PHASE_ROUND_START:
 		_flush_draft_summary()
+		_release_draft_deferred()
 	_refresh_all()
+
+
+## 연출을 증강 공개 뒤로 미뤄야 하는 때: 연출을 켠 판의 증강 드래프트 중.
+func _draft_in_progress() -> bool:
+	return _fx_on() and manager != null and manager.current_state == TurnManager.State.PHASE_ROUND_START and not manager.is_game_over
+
+
+## 드래프트가 끝났다: 미뤄 둔 효과 연출을 [선택한 증강] 공개 카드 뒤에 차례로 세운다.
+func _release_draft_deferred() -> void:
+	if _draft_deferred.is_empty():
+		return
+	var batch: Array[Dictionary] = _draft_deferred.duplicate()
+	_draft_deferred.clear()
+	for entry: Dictionary in batch:
+		enqueue_step(entry["step"], int(entry["pawn"]))
 
 
 ## 이번 라운드에 모두가 고른 증강을 선택 카드 그림 그대로 한 줄에 나란히 공개한다.
@@ -7089,16 +7190,18 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_announce_gate("카드 발동", "[P%d 발동!] %s" % [data["player_id"], card.display_name], ("개입 대기열 등록 (후입선출)\n" if data["queued"] else "") + card_summary(data["card_id"]), PLAYER_COLORS[int(data["player_id"])], _make_card_preview(data["card_id"]), 1.2)
 		&"npc_phase_resolved":
 			if not (data["reports"] as Array).is_empty():
-				# 중립 NPC 이동: 안내 카드가 먼저 뜨고(0.6초), 카드가 끝난 뒤 한 칸 점프(0.35초)하며, 말을 잡으면 처치 알림이 이어진다.
-				_announce_gate("중립 기물", "[중립 NPC 이동]", NPC_ANNOUNCE_BODY, Color("fa5252"), null, 0.6)
+				# 중립 기물 이동: 안내 카드가 먼저 뜨고, 기물이 한 칸씩 달린 뒤, 말을 잡았으면 그다음에 처치 알림과 사출이 이어진다.
+				_announce_gate("중립 기물", "[중립 기물 이동]", NPC_ANNOUNCE_BODY, Color("fa5252"), null, 0.6)
 			for report: Dictionary in data["reports"]:
-				_log_line("[NPC] NPC가 %s로 이동 (잡힌 말: %s)" % [str(report["path"]), str(report["caught"])], Color("fa5252"))
-				if not (report["caught"] as Array).is_empty():
-					var npc_name: String = "사료스탕스" if report["display_id"] == &"SUM_01" else "와구와구 유령"
-					var stolen: String = ""
-					if not (report["stolen_cards"] as Array).is_empty():
-						stolen = " / 카드 %d장 강탈" % (report["stolen_cards"] as Array).size()
-					_announce("중립 기물", "%s가 말을 잡았습니다!" % npc_name, "잡힌 말 %d개%s" % [(report["caught"] as Array).size(), stolen], Color("fa5252"), null, 1.5)
+				var npc_name: String = _npc_runner_name(report["display_id"])
+				var caught: Array = report["caught"]
+				var run_path: Array = report["path"]
+				var result_text: String = "%s %s칸 전진%s" % [npc_name, run_path.size(), " - 말 %d개를 잡고 사라졌습니다!" % caught.size() if not caught.is_empty() else ""]
+				_play_npc_run(report["display_id"], int(report.get("behavior", GameEnums.NpcBehavior.CHASE_NEAREST)), int(report.get("from", -1)), run_path, int(report["npc_id"]), func() -> void:
+					_log_line("[중립 기물] %s" % result_text, Color("fa5252"))
+					if not caught.is_empty():
+						_record(-1, "🦹 %s" % result_text)
+						_announce("중립 기물", "%s가 말을 잡았습니다!" % npc_name, "잡힌 말 %d개" % caught.size(), Color("fa5252"), null, 1.2))
 		&"augment_offers":
 			_log_line("[증강] 라운드 %d 증강 드래프트가 열렸습니다." % data["round"], Color("ffa94d"))
 		&"augment_picked":
