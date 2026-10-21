@@ -2047,7 +2047,7 @@ func _refresh_tiles() -> void:
 		mark.add_theme_color_override("font_color", color)
 
 
-## 중립 NPC(도적떼·고스트)가 이번 라운드 끝에 덮칠 길을 붉게 깜빡이는 테두리·해골·화살표로 예고한다. 규칙은 NeutralNPC.danger_preview가 정하고 화면은 그리기만 한다.
+## 중립 NPC가 라운드 끝에 덮칠 길을 붉은 테두리·삼각 경고·진행 화살표로 예고한다. 위험 계산은 NeutralNPC.danger_preview가 맡는다.
 func _refresh_npc_danger() -> void:
 	_npc_danger.clear()
 	if state != null and not manager.is_game_over:

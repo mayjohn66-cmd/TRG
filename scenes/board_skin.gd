@@ -116,6 +116,8 @@ const DECALS: Dictionary = {
 	"boost": preload("res://assets/board/decals/BOARD_BOOST.png"),
 }
 const FLAT_INK: Shader = preload("res://assets/board/decals/flat_ink.gdshader")
+const WARNING_SOURCE: Texture2D = preload("res://assets/board/decals/NPC_WARNING.png")
+const WARNING_BOUNDS: Rect2 = Rect2(0.0632622,0.0733945,0.8681402,0.8323603)
 ## Opaque subject bounds in the unchanged 1254px native sources; discard only empty atlas margin.
 const DECAL_BOUNDS: Dictionary = {
 	"bakery": Rect2(196,409,862,482), "portal": Rect2(296,268,662,739),
@@ -164,6 +166,24 @@ static func decal_texture(kind: String) -> AtlasTexture:
 	atlas.region = Rect2((DECAL_BOUNDS[kind] as Rect2).position/1254.0*source.get_size(),(DECAL_BOUNDS[kind] as Rect2).size/1254.0*source.get_size())
 	atlas.filter_clip = true
 	return atlas
+
+static func warning_texture() -> AtlasTexture:
+	var atlas := AtlasTexture.new()
+	atlas.atlas = WARNING_SOURCE
+	var bounds := WARNING_BOUNDS.grow(0.006).intersection(Rect2(0,0,1,1))
+	atlas.region = Rect2(bounds.position*WARNING_SOURCE.get_size(),bounds.size*WARNING_SOURCE.get_size())
+	atlas.filter_clip = true
+	return atlas
+
+## Multicolor warning ink is preserved; the monochrome terrain shader is not used.
+class WarningMark extends Node2D:
+	var texture: Texture2D
+
+	func _draw() -> void:
+		if texture == null:
+			texture = BoardSkin.warning_texture()
+		var extent := Vector2(64,64)*texture.get_size()/maxf(texture.get_width(),texture.get_height())
+		draw_texture_rect(texture,Rect2(-extent/2.0,extent),false)
 
 class Symbol extends Node2D:
 	var kind: String = "normal"
@@ -229,13 +249,15 @@ class Tile extends Control:
 	var symbol: Symbol
 	var corner_arrow: Symbol
 	var boost_symbol: Symbol
+	var warning_mark: WarningMark
+	var warning_flow: Symbol
 	var plane := Transform2D.IDENTITY
 	var arrow_target: int = -1
 	## 함정이 깔린 발판: 타일 전체가 보라색으로 바뀌고 가운데에 그 함정의 그림(정체를 모르면 물음표)이 붙는다. pulse는 0~1로 main_board가 갱신한다.
 	var trap_on: bool = false
 	var trap_pulse: float = 0.0
 	var trap_icon: Texture2D = null
-	## 중립 NPC 습격 예고: 0 없음 / 1 NPC가 지나갈 길 / 2 말이 서 있으면 잡히는 위험 타일(붉은 해골). direction은 NPC가 가는 쪽(화면 방향)이다.
+	## 중립 NPC 습격 예고: 0 없음 / 1 이동 경로 / 2 잡히는 위험 타일(삼각 경고). direction은 화면 방향이다.
 	var danger_level: int = 0
 	var danger_dir: Vector2 = Vector2.ZERO
 	var danger_pulse: float = 0.0
@@ -263,6 +285,18 @@ class Tile extends Control:
 			boost_symbol.kind = "boost"
 			boost_symbol.ink = Color("fff3d2")
 			add_child(boost_symbol)
+		warning_mark = WarningMark.new()
+		warning_mark.name = "NpcWarning"
+		warning_mark.z_index = 10
+		warning_mark.visible = false
+		add_child(warning_mark)
+		warning_flow = Symbol.new()
+		warning_flow.name = "NpcHeading"
+		warning_flow.kind = "corner"
+		warning_flow.ink = Color("fff3d2")
+		warning_flow.z_index = 11
+		warning_flow.visible = false
+		add_child(warning_flow)
 
 	func configure(projector: Callable, world_center: Vector2, span: float, visual_depth: float, direction: Vector2) -> void:
 		var center: Vector2 = projector.call(world_center)
@@ -306,6 +340,7 @@ class Tile extends Control:
 		if boost_symbol != null:
 			var footprint: Vector2 = data.footprint
 			boost_symbol.transform = BoardSkin.decal_frame(plane,minf(footprint.x,footprint.y)*0.79,direction)
+		_refresh_danger_mark()
 		for child: Node in get_children():
 			if child is Ring:
 				(child as Ring).points = outline_points
@@ -318,11 +353,7 @@ class Tile extends Control:
 				trap_pulse = 0.0
 			trap_on = on
 			trap_icon = icon if on else null
-			if symbol != null:
-				symbol.visible = not on  # 빵집·옷장 그림 대신 함정 그림을 보여 준다
-			if corner_arrow != null:
-				corner_arrow.visible = not on
-			_refresh_boost_symbol()
+			_refresh_floor_symbols()
 			queue_redraw()
 
 	func set_trap_pulse(value: float) -> void:
@@ -333,6 +364,8 @@ class Tile extends Control:
 		if danger_level != level or danger_dir != direction:
 			danger_level = level
 			danger_dir = direction
+			_refresh_floor_symbols()
+			_refresh_danger_mark()
 			queue_redraw()
 
 	func set_danger_pulse(value: float) -> void:
@@ -353,7 +386,28 @@ class Tile extends Control:
 
 	func _refresh_boost_symbol() -> void:
 		if boost_symbol != null:
-			boost_symbol.visible = dash_on and not trap_on and not goal_on
+			boost_symbol.visible = dash_on and not trap_on and not goal_on and danger_level < 2
+
+	func _refresh_floor_symbols() -> void:
+		if symbol != null:
+			symbol.visible = not trap_on and danger_level < 2
+		if corner_arrow != null:
+			corner_arrow.visible = not trap_on and danger_level < 2
+		_refresh_boost_symbol()
+
+	func _refresh_danger_mark() -> void:
+		if warning_mark == null or warning_flow == null:
+			return
+		warning_mark.visible = danger_level >= 2
+		warning_flow.visible = danger_level > 0 and danger_dir != Vector2.ZERO
+		var footprint: Vector2 = data.footprint
+		var short_edge := minf(footprint.x,footprint.y)
+		var heading := plane.affine_inverse().basis_xform(danger_dir).normalized() if danger_dir != Vector2.ZERO else Vector2.ZERO
+		var axis := Vector2.RIGHT if data.major else BoardSkin.symbol_axis(index)
+		warning_mark.transform = BoardSkin.decal_frame(plane,short_edge*(0.59 if data.major else 0.72),axis,-heading*short_edge*0.06)
+		warning_flow.transform = BoardSkin.decal_frame(plane,short_edge*0.23,heading if heading != Vector2.ZERO else Vector2.RIGHT,heading*short_edge*0.37)
+		warning_mark.queue_redraw()
+		warning_flow.queue_redraw()
 
 	func set_dash_phase(value: float) -> void:
 		dash_phase = value
@@ -369,10 +423,10 @@ class Tile extends Control:
 			_draw_goal()
 		if dash_on and not trap_on and not goal_on:
 			_draw_dash()
-		if danger_level > 0:
-			_draw_danger()
 		if trap_on:
 			_draw_trap()
+		if danger_level > 0:
+			_draw_danger()
 
 	## 당겨진 결승선: 타일 안쪽에 흑백 체크무늬를 깔고 금색 테두리를 두른다.
 	func _draw_goal() -> void:
@@ -403,7 +457,7 @@ class Tile extends Control:
 		var inner: PackedVector2Array = layers[1].duplicate()
 		inner.append(inner[0])
 		draw_polyline(inner, Color(0.85, 0.65, 1.0, 0.35 + 0.5 * trap_pulse), 2.0, true)
-		if trap_icon == null:
+		if trap_icon == null or danger_level >= 2:
 			return
 		var footprint: Vector2 = data.footprint
 		var direction := Vector2.RIGHT if data.major else BoardSkin.symbol_axis(index)
@@ -423,7 +477,7 @@ class Tile extends Control:
 		rim.append(rim[0])
 		draw_polyline(rim,Color("ffe4a3"),1.4,true)
 
-	## NPC 습격 예고: 붉게 깜빡이는 테두리, 위험 타일의 해골, NPC가 가는 쪽을 가리키는 화살표.
+	## 경로 바닥만 펄스한다. 경고 그림과 방향 화살표는 위쪽 자식 레이어에서 타일 평면에 붙인다.
 	func _draw_danger() -> void:
 		var closed: PackedVector2Array = outline_points.duplicate()
 		closed.append(closed[0])
@@ -431,28 +485,6 @@ class Tile extends Control:
 		var alpha: float = (0.2 + 0.32 * danger_pulse) if strong else (0.08 + 0.14 * danger_pulse)
 		draw_colored_polygon(layers[layers.size() - 1], Color(0.9, 0.08, 0.08, alpha))
 		draw_polyline(closed, Color(0.85, 0.05, 0.05, 0.55 + 0.45 * danger_pulse), 5.0 if strong else 3.0, true)
-		var center := Vector2.ZERO
-		for point: Vector2 in outline_points:
-			center += point
-		center /= float(maxi(outline_points.size(), 1))
-		if strong:
-			_draw_skull(center + Vector2(0.0, -3.0))
-		if danger_dir != Vector2.ZERO:
-			var along: Vector2 = danger_dir.normalized()
-			var across := Vector2(-along.y, along.x)
-			var tip: Vector2 = center + along * 17.0 + Vector2(0.0, 10.0 if strong else 0.0)
-			var base: Vector2 = tip - along * 10.0
-			draw_colored_polygon(PackedVector2Array([tip, base + across * 7.0, base - across * 7.0]), Color(1.0, 0.25, 0.2, 0.7 + 0.3 * danger_pulse))
-
-	func _draw_skull(at: Vector2) -> void:
-		draw_circle(at, 11.5, Color(0.1, 0.0, 0.0, 0.85))
-		draw_circle(at, 10.0, Color("fff3f0"))
-		draw_rect(Rect2(at + Vector2(-6.0, 5.0), Vector2(12.0, 7.0)), Color("fff3f0"))
-		for x: float in [-4.0, 4.0]:
-			draw_circle(at + Vector2(x, -1.0), 2.8, Color("2b0000"))
-		draw_colored_polygon(PackedVector2Array([at + Vector2(0.0, 2.0), at + Vector2(-1.5, 4.5), at + Vector2(1.5, 4.5)]), Color("2b0000"))
-		for x: float in [-3.0, 0.0, 3.0]:
-			draw_line(at + Vector2(x, 7.0), at + Vector2(x, 11.0), Color("2b0000"), 1.2)
 
 	func _draw_tile() -> void:
 		var edge: Color = data.edge

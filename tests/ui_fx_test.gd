@@ -1676,7 +1676,7 @@ func _test_new_tool_stages() -> void:
 	_expect(not _board._stage_yacht.visible and not _board._stage_blackjack.visible and not _board._stage_pinball.visible, "다른 도구로 돌아오면 스테이지가 사라진다")
 
 
-## 중립 NPC 위험 예고: 붉게 깜빡이는 타일·해골·화살표, 내 말이 위험 타일에 서면 경고 문구, NPC 방향 라벨과 호버 툴팁.
+## 중립 NPC 위험 예고: 붉은 타일·경고 그림·진행 화살표, 위험 문구와 호버 툴팁.
 func _test_npc_danger_preview() -> void:
 	var manager: TurnManager = _board.manager
 	var state: GameState = manager.state
@@ -1695,7 +1695,10 @@ func _test_npc_danger_preview() -> void:
 	_board._refresh_all()
 	_expect(_board._npc_danger.has(11) and _board._npc_danger.has(10) and _board._npc_danger.has(9), "팩맨이 지나갈 칸(11·10·9번…)이 위험 구간으로 표시된다")
 	var danger_tile: BoardSkin.Tile = _board._tile_views[10]
-	_expect(danger_tile.danger_level == 2 and danger_tile.danger_dir != Vector2.ZERO, "위험 타일은 해골(level 2)과 진행 방향 화살표를 가진다")
+	_expect(danger_tile.danger_level == 2 and danger_tile.danger_dir != Vector2.ZERO, "위험 타일은 경고(level 2)와 진행 방향을 가진다")
+	_expect(danger_tile.warning_mark.visible and danger_tile.warning_flow.visible, "위험 타일의 경고 이미지와 화살표가 표시된다")
+	_expect(danger_tile.warning_flow.transform.x.normalized().dot(danger_tile.danger_dir.normalized()) > 0.999, "화살표가 타일 평면에서 실제 NPC 진행 방향을 가리킨다")
+	_expect(danger_tile.symbol == null or not danger_tile.symbol.visible, "위험 칸의 바닥 심볼은 경고 그림과 겹치지 않는다")
 	_expect(not _board._danger_label.visible, "내 말이 위험 구간 밖이면 경고 문구가 없다")
 	mine.current_tile_idx = 10
 	_board._refresh_all()
@@ -1731,6 +1734,8 @@ func _test_npc_danger_preview() -> void:
 	mine.current_tile_idx = 0
 	_board._refresh_all()
 	_expect(_board._npc_danger.is_empty(), "NPC가 사라지면 위험 예고도 사라진다")
+	_expect(not danger_tile.warning_mark.visible and not danger_tile.warning_flow.visible, "위험 해제 시 경고 이미지와 화살표가 사라진다")
+	_expect(danger_tile.symbol == null or danger_tile.symbol.visible == not danger_tile.trap_on, "위험 해제 시 원래 바닥 심볼 표시가 복원된다")
 
 
 ## 바뀐 기물·카드·초증강의 연출 순서: 소환 기물은 달린 뒤에 말이 날아가고, 도미노는 [도미노 연쇄!]가 먼저, 드래프트 효과는 증강 공개 뒤.
