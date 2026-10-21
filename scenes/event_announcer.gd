@@ -16,6 +16,8 @@ const FADE_OUT: float = 0.18
 const MAX_QUEUE: int = 6
 ## 이 태그의 알림은 라운드 시작용으로 헤드라인을 크게 그린다.
 const BIG_TAG: String = "라운드"
+## 이 태그는 공격 카드 경보: 헤드라인을 크게 그리고 등장할 때 크게 튀어나온다.
+const ATTACK_TAG: String = "공격"
 ## 이 태그는 템포 업 경고: 헤드라인을 크게 그리고 붉은 경고 띠를 위아래에 두른다.
 const WARNING_TAG: String = "템포 업"
 
@@ -149,7 +151,7 @@ func _start_next() -> void:
 	add_child(_root)
 	# 작은 꼬리표 글자(턴·라운드 등)는 그리지 않는다: 테두리 색과 헤드라인이 같은 말을 한다.
 	var warning: bool = str(_current["tag"]) == WARNING_TAG
-	var big: bool = str(_current["tag"]) == BIG_TAG or warning
+	var big: bool = str(_current["tag"]) == BIG_TAG or warning or str(_current["tag"]) == ATTACK_TAG
 	if warning:
 		style.bg_color = Color("2a0a0a")
 		style.set_border_width_all(8)
@@ -246,7 +248,8 @@ func _process(delta: float) -> void:
 		_timer_bar.size = Vector2(track.size.x * clampf(1.0 - _t / maxf(duration, 0.01), 0.0, 1.0), track.size.y)
 	# 등장할 때 살짝 커지며 튀어나온다 (0.88배 -> 1.0배).
 	var pop: float = clampf(_t / (FADE_IN * 2.0), 0.0, 1.0)
-	scale = Vector2.ONE * lerpf(0.88, 1.0, 1.0 - pow(1.0 - pop, 3.0))
+	var start_scale: float = 1.45 if str(_current.get("tag", "")) == ATTACK_TAG else 0.88  # 공격 경보는 크게 쾅 내려앉는다
+	scale = Vector2.ONE * lerpf(start_scale, 1.0, 1.0 - pow(1.0 - pop, 3.0))
 	if _t >= duration:
 		_finish_current()
 

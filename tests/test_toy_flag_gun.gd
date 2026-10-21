@@ -96,8 +96,8 @@ func test_flag_has_real_wave_geometry_and_clockwise_faces() -> void:
 
 func test_captions_and_sounds_describe_a_party_toy_and_actual_steps() -> void:
 	check_eq(ToyFlagGun3D.result_caption(true,0,6),"뿅! 누적 6칸 사라짐 · 턴 종료","flag reports actual lost steps")
-	check_eq(ToyFlagGun3D.result_caption(false,9,0),"찰칵! 누적 9칸","safe click is accumulation, not immediate movement")
-	check_eq(ToyFlagGun3D.result_caption(false,15,0,false),"15칸 이동 확정","automatic fifteen is a committed move")
+	check_eq(ToyFlagGun3D.result_caption(false,9,0),"","safe click shows no accumulation caption (the gun animation tells it)")
+	check_eq(ToyFlagGun3D.result_caption(false,15,0,false),"","automatic fifteen shows no planned-move caption")
 	check(Sfx.synth(&"toy_click").get_length()<0.06,"plastic click stays short")
 	check(Sfx.synth(&"toy_party_pop").data!=Sfx.synth(&"shot").data,"party spring does not reuse a gunshot")
 	check(Sfx.synth(&"toy_party_pop")==Sfx.synth(&"toy_party_pop"),"party sound is cached")

@@ -633,7 +633,7 @@ func _test_toy_flag_gun() -> void:
 	pad._process(0.02)
 	_expect(gun.chambers.count(true)==1 and not gun.flag_root.visible,"safe click reveals exactly one used position")
 	pad._process(ToyFlagGun3D.SAFE_TOTAL_TIME)
-	_expect(not pad.active and pad._hint_label.text=="찰칵! 누적 3칸","safe result reports accumulation and releases input")
+	_expect(not pad.active and pad._hint_label.text.is_empty(),"safe result releases input without a caption")
 	_expect(gun.render_view.render_target_update_mode==SubViewport.UPDATE_DISABLED,"safe completion sleeps the renderer")
 	pad.play_trigger(true,0,3,false)
 	pad._process(ToyFlagGun3D.CLICK_TIME-0.01)
@@ -721,6 +721,9 @@ func _test_gauge_and_lock() -> void:
 	_board.instant_roll_for_test = false
 	manager.state.tools[manager.current_player_id()] = ToolRegistry.create(&"D6")
 	_board._refresh_all()
+	# 새 라운드는 증강 확인을 마쳐야, 새 차례는 [OO 차례] 배너가 먼저 뜨고 끝나야 굴릴 수 있다
+	await _settle_turn_start()
+	_board._refresh_all()
 	var rolled: Array[Dictionary] = []
 	manager.event_received.connect(func(kind: StringName, data: Dictionary) -> void:
 		if kind == &"roll_resolved":
@@ -758,6 +761,18 @@ func _test_gauge_and_lock() -> void:
 	_expect(not _board._ui_busy() and not _board._fx_motion_pending(), "이전 턴의 연출이 끝난 뒤 다음 입력을 검사한다")
 
 
+## 증강 확인 창이 열려 있으면 모두 확인을 누르고, 차례 배너가 끝날 때까지 기다린다.
+func _settle_turn_start() -> void:
+	var manager: TurnManager = _board.manager
+	var wait_start: float = _now()
+	while (manager.review_pending() or _board._ui_busy()) and _now() - wait_start < 8.0:
+		if manager.review_pending():
+			for player_id: int in manager.review_waiting_for():
+				manager.act(&"review_done", {"player_id": player_id})
+		await process_frame
+	_board._refresh_all()
+
+
 func _test_instant_flag() -> void:
 	var manager: TurnManager = _board.manager
 	var resolved: Array[Dictionary] = []
@@ -767,6 +782,7 @@ func _test_instant_flag() -> void:
 	_board.instant_roll_for_test = true
 	manager.state.tools[manager.current_player_id()] = ToolRegistry.create(&"D6")
 	_board._refresh_all()
+	await _settle_turn_start()  # 증강 확인·앞 차례 배너가 끝나야 굴릴 수 있다
 	var key := InputEventKey.new()
 	key.keycode = KEY_R
 	key.pressed = true
@@ -1408,6 +1424,9 @@ func _test_bot_pacing() -> void:
 	_board.ai_mode = true
 	_board._bot.set_enabled(true)
 	_board._refresh_mode_toggle()
+	var settle: float = _now()
+	while _board._ui_busy() and _now() - settle < 8.0:  # 앞선 라운드·P1 차례 배너가 끝난 뒤부터 잰다
+		await process_frame
 	manager.advance_to_next_player()  # P2(봇)의 턴 시작
 	_expect(manager.current_player_id() == 2, "P2 차례")
 	manager.state.tools[2] = ToolRegistry.create(&"D6")
@@ -1426,7 +1445,7 @@ func _test_bot_pacing() -> void:
 	if events.has(&"roll_resolved") and events.has(&"move_resolved"):
 		var roll_after: float = float(events[&"roll_resolved"]) - start
 		var move_after: float = float(events[&"move_resolved"]) - float(events[&"roll_resolved"])
-		_expect(roll_after >= 0.45 and roll_after < 1.5, "봇은 턴 시작 후 0.3초 판단 + 0.2초 뒤에 굴린다 (%.2f초)" % roll_after)
+		_expect(roll_after >= 0.45 and roll_after < 3.0, "봇은 차례 배너(약 1.2초)가 끝난 뒤 0.3초 판단 + 0.2초 뒤에 굴린다 (%.2f초)" % roll_after)
 		_expect(move_after >= 0.45 and move_after < 4.0, "굴림 연출 + 결과 확인 0.3초 + 선택 0.2초 뒤에 말을 옮기고, 이동은 0.75초 안에 끝난다 (%.2f초)" % move_after)
 
 
@@ -2037,7 +2056,7 @@ func _test_presentation_queue() -> void:
 	_board._refresh_all()
 	var slot_panel: Control = (_board._profiles[1]["slots"] as Array)[1]["panel"]
 	var glow: Control = slot_panel.get_node_or_null("RevengeGlow")
-	_expect(glow != null and glow.visible and (glow.get_node("RevengeBadge") as Label).text.contains("+4"), "장전된 대기 말 슬롯에 불꽃 테두리와 [🔥출격 +4] 뱃지")
+	_expect(glow != null and glow.visible and glow.get_node_or_null("RevengeFire") != null and glow.get_node_or_null("RevengeBadge") == null, "장전된 대기 말 칸은 글자 없이 불타기만 한다")
 	guard = 0
 	while _board._presentation_active() and guard < 600:
 		guard += 1

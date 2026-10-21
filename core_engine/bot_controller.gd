@@ -194,6 +194,14 @@ func _step_duel() -> void:
 
 ## 증강 드래프트: 사람(P1)이 아직 고르는 중이면 기다리고, 다 고른 뒤 봇들이 차례로 고른다.
 func _step_draft() -> void:
+	if manager.review_pending():
+		# 증강 확인: 봇은 바로 [확인]을 누른다 (사람은 직접 누르거나 시간이 다 되면 넘어간다)
+		for player_id: int in manager.review_waiting_for():
+			if is_bot(player_id):
+				_act(player_id, &"review_done", {})
+				_delay(DELAY_DRAFT)
+				return
+		return
 	var pending: Array[int] = manager.draft_pending_players()
 	if pending.is_empty():
 		return

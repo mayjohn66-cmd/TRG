@@ -90,6 +90,10 @@ var move_queue: Array[int] = []
 var _roll_chain: int = 0
 ## 이번 라운드에 차례를 마친 플레이어 (졸업·휴식으로 건너뛴 차례 포함). 리버스로 방향이 바뀌어도 모두 정확히 한 번씩 하고 라운드가 끝난다.
 var _round_done: Dictionary = {}
+## 드래프트가 끝나면 고른 증강을 모두가 확인하는 단계를 둘지 (화면이 있는 판에서 MainBoard가 켠다. 엔진 단위 테스트는 바로 라운드를 시작한다).
+var review_enabled: bool = false
+## 증강 확인을 아직 누르지 않은 플레이어 (비어 있으면 확인 단계가 아니다).
+var _review_pending: Array[int] = []
 var _extra_turn_pending: bool = false
 var _bonus_roll_pending: bool = false
 var _draft_offers: Dictionary = {}
@@ -202,6 +206,7 @@ func request_action(action: StringName, params: Dictionary = {}) -> void:
 		&"select_pawn": _handle_select_pawn(actor, params)
 		&"play_card": _handle_play_card(actor, params)
 		&"pick_augment": _handle_pick_augment(actor, params)
+		&"review_done": _handle_review_done(actor)
 		&"reroll_augment": _handle_reroll_augment(actor, params)
 		&"use_skill": _handle_use_skill(actor, params)
 		&"stack_choice": _handle_stack_choice(actor, params)
@@ -1070,7 +1075,10 @@ func _on_timeout() -> void:
 		return
 	match current_state:
 		State.PHASE_ROUND_START:
-			_finish_draft()
+			if review_pending():
+				_finish_review()
+			else:
+				_finish_draft()
 		State.PHASE_TURN_BEGIN:
 			_enter_roll_wait()
 		State.PHASE_ROLL_WAIT:
@@ -1182,9 +1190,51 @@ func _finish_draft() -> void:
 	for player_id: int in player_order:
 		if _draft_offers.has(player_id) and not _draft_picks.has(player_id):
 			_pick_augment(player_id, 0, {}, true)
+	var participants: Array[int] = []
+	for player_id: int in player_order:
+		if _draft_offers.has(player_id):
+			participants.append(player_id)
 	_draft_offers.clear()
 	_draft_picks.clear()
 	_draft_rerolls.clear()
+	if review_enabled and not participants.is_empty():
+		_start_review(participants)
+		return
+	_begin_turn()
+
+
+## 증강 확인 단계: 고른 증강을 모두가 확인할 때까지(또는 시간이 다 될 때까지) 라운드를 시작하지 않는다.
+func _start_review(players: Array[int]) -> void:
+	_review_pending = players.duplicate()
+	phase_serial += 1  # 드래프트 시간 초과와 확인 시간 초과가 섞이지 않게 새 결정 지점으로 센다
+	phase_time_left = GameEnums.PHASE_TIME_REVIEW * timer_scale
+	_emit_event(&"augment_review", {"round": state.round_number, "players": _review_pending.duplicate()})
+	_broadcast_state()
+
+
+func review_pending() -> bool:
+	return not _review_pending.is_empty()
+
+
+## 아직 증강 확인을 누르지 않은 플레이어.
+func review_waiting_for() -> Array[int]:
+	return _review_pending.duplicate()
+
+
+func _handle_review_done(actor: int) -> void:
+	if current_state != State.PHASE_ROUND_START or not _review_pending.has(actor):
+		action_rejected.emit(actor, &"review_done", &"wrong_phase")
+		return
+	_review_pending.erase(actor)
+	_emit_event(&"augment_review_done", {"player_id": actor, "waiting": _review_pending.duplicate()})
+	if _review_pending.is_empty():
+		_finish_review()
+	else:
+		_broadcast_state()
+
+
+func _finish_review() -> void:
+	_review_pending.clear()
 	_begin_turn()
 
 

@@ -174,7 +174,7 @@ func ensure_revolver_prepared(key: String, pending: bool) -> void:
 	_prepare_time = 0.0
 	modulate = Color.WHITE
 	_gun.begin_preparation()
-	_hint_label.text = ToyFlagGun3D.preparation_caption(0)
+	_hint_label.text = ""  # 준비·발사 여부 안내 글자는 띄우지 않는다 (발사·정지 버튼과 총 연출이 대신한다)
 	_place_label(_hint_label, Vector2(-30,134), Vector2(260,22), 11, 4)
 
 
@@ -224,7 +224,6 @@ func _process(delta: float) -> void:
 	if preparing:
 		_prepare_time += delta
 		_gun.apply_preparation(_prepare_time)
-		_hint_label.text = ToyFlagGun3D.preparation_caption(_prepare_time)
 		if _prepare_time>=ToyFlagGun3D.PREP_TIME:
 			preparing = false
 			active = false

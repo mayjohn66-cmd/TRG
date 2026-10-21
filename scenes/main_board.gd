@@ -82,7 +82,11 @@ const REACTION_SECONDS: float = 6.0
 ## 행동 사이의 호흡(초): 이동이 끝난 뒤 멈춤 / [P2 차례] 알림 길이.
 const DRAFT_OPEN_BEAT: float = 0.12  ## 증강 창이 열리기 전 여운
 const BEAT_AFTER_MOVE: float = 0.12  ## 이동 뒤 여운 (0.8 -> 0.12: 마지막 행동이 끝나면 지체 없이 다음 턴·증강 창으로 넘어간다)
-const TURN_BANNER_SECONDS: float = 0.9
+## 차례 배너는 짧게 막는다: 누구 차례인지 보여 준 뒤에야 카드 선언·굴리기가 열린다 (봇도 배너가 끝난 뒤 움직인다).
+const TURN_BANNER_SECONDS: float = 0.7
+## 상대를 해치는 공격 카드: 카드를 공개하기 전에 [공격 카드 발동!] 경보를 먼저 띄운다.
+const ATTACK_CARDS: Array[StringName] = [&"ACT_02", &"ACT_03", &"ACT_06", &"ACT_07", &"ACT_08", &"ACT_09", &"ACT_10", &"ACT_14", &"ACT_15"]
+const ATTACK_TAG: String = "공격"
 const HAND_RAISED_Y: float = -92.0
 ## 우측 하단 기물 독에서 기물 슬롯이 놓이는 기준 y (필살기 버튼 줄 아래).
 const SLOT_BASE_Y: float = 50.0
@@ -377,7 +381,11 @@ var _log: RichTextLabel = null
 var _center_banner: PanelContainer = null
 var _center_label: Label = null
 ## 연출 대기 시간(await)을 0초로 건너뛰는 플래그 (헤드리스·ui_smoke 자동 진행용).
-var instant_roll_for_test: bool = false
+var instant_roll_for_test: bool = false:
+	set(value):
+		instant_roll_for_test = value
+		if manager != null:
+			manager.review_enabled = not value  # 연출을 켠 판에서만 증강 확인 단계를 둔다 (모든 참가자가 같은 값이어야 한다)
 var _presenter: RollPresenter = null
 var _announcer: EventAnnouncer = null
 var _pending_power: float = 0.5
@@ -552,6 +560,7 @@ func _ready() -> void:
 	manager.name = "TurnManager"
 	manager.hotseat_mode = true
 	manager.step_delay_sec = MOVE_STEP_SECONDS
+	manager.review_enabled = not instant_roll_for_test  # 드래프트 뒤 [선택한 증강] 확인 단계 (모두 확인하면 라운드 시작)
 	manager.stack_choice_enabled = false  # 윷말끼리 만나면 선택창 없이 자동으로 업는다 (선택 UI는 코어에 남아 있다)
 	_bot = BotController.new()
 	_bot.name = "BotController"
@@ -633,6 +642,10 @@ func _process(delta: float) -> void:
 	if not manager.is_game_over:
 		_phase_label.text = _phase_text()
 	_bot.instant = instant_roll_for_test
+	if _review_bar != null and is_instance_valid(_review_bar):
+		var track: Control = _review_bar.get_parent()
+		var full: float = GameEnums.PHASE_TIME_REVIEW * maxf(manager.timer_scale, 0.001)
+		_review_bar.size = Vector2(track.size.x * clampf(manager.phase_time_left / full, 0.0, 1.0), track.size.y)
 	_update_tip(delta)
 	_update_reaction_popup(delta)
 	if _motion_retry and not _fx_motion_pending():
@@ -2128,13 +2141,15 @@ func _refresh_tiles() -> void:
 		var has_trap: bool = false
 		var trap_icon: Texture2D = null
 		for attachment: TileAttachment in state.board.get_tile(index).attachments:
+			if _structure_kind(attachment) != &"":
+				tips.append("지뢰 (P%d) - 밟으면 폭발" % attachment.owner_id)  # 필살기로 묻은 공개 지뢰는 지뢰 모형으로 보인다
+				continue
 			if attachment.attachment_id.begins_with("TRP"):
 				has_trap = true
 				trap_icon = _trap_icon(attachment)
 				tips.append(_trap_tooltip(attachment))
 			elif attachment.attachment_id == "HOTEL":
-				parts.append("호텔")
-				color = PLAYER_COLORS.get(attachment.owner_id, Color("ffd43b"))
+				tips.append("호텔 (P%d) - 다른 플레이어가 멈추면 통행료" % attachment.owner_id)  # 칸 위 글자 대신 호텔 건물 모형이 선다 (_refresh_structures)
 		var in_goal: bool = TempoUp.in_goal_zone(state.round_number, index)
 		(_tile_views[index] as BoardSkin.Tile).set_goal(in_goal)
 		if in_goal:
@@ -2150,6 +2165,7 @@ func _refresh_tiles() -> void:
 		mark.text = " ".join(parts)
 		mark.position = Vector2((_tile_views[index] as Control).size.x - 2 - mark.get_minimum_size().x, 0)
 		mark.add_theme_color_override("font_color", color)
+	_refresh_structures()
 
 
 ## 중립 NPC가 라운드 끝에 덮칠 길을 붉은 테두리·삼각 경고·진행 화살표로 예고한다. 위험 계산은 NeutralNPC.danger_preview가 맡는다.
@@ -2220,6 +2236,56 @@ func _refresh_danger_label() -> void:
 		return
 	_danger_label.visible = _danger_warning_needed() and not manager.is_game_over
 	_danger_label.modulate.a = 1.0
+
+
+## 칸 위 건축물: 필살기로 지은 호텔·공개 지뢰는 부루마블 건물처럼 칸 위에 모형으로 선다 (지어질 때 솟아오른다).
+var _structure_views: Dictionary = {}
+
+
+## 이 설치물을 칸 위 모형으로 보여 줄지: 호텔, 그리고 필살기로 묻은 공개 지뢰(카드로 깐 지뢰는 숨은 함정이라 모형으로 보이지 않는다).
+static func _structure_kind(attachment: TileAttachment) -> StringName:
+	if attachment.attachment_id == "HOTEL":
+		return &"hotel"
+	if attachment.attachment_id == "TRP_03" and not attachment.is_hidden_trap:
+		return &"mine"
+	return &""
+
+
+func _refresh_structures() -> void:
+	if _pawn_layer == null or state == null:
+		return
+	var wanted: Dictionary = {}
+	for index: int in BoardSpec.tile_count:
+		for attachment: TileAttachment in state.board.get_tile(index).attachments:
+			var kind: StringName = _structure_kind(attachment)
+			if kind != &"":
+				wanted[index] = {"kind": kind, "owner": attachment.owner_id}
+				break
+	for index: int in _structure_views.keys():
+		var entry: Dictionary = _structure_views[index]
+		var want: Dictionary = wanted.get(index, {})
+		if want.is_empty() or want["kind"] != entry["kind"] or want["owner"] != entry["owner"] or not is_instance_valid(entry["node"]):
+			var old: Node = entry["node"]
+			if is_instance_valid(old):
+				old.queue_free()
+			_structure_views.erase(index)
+	for index: int in wanted.keys():
+		var model: BoardStructure
+		if _structure_views.has(index):
+			model = _structure_views[index]["node"]
+		else:
+			model = BoardStructure.new()
+			model.name = "Structure_%d" % index
+			model.kind = wanted[index]["kind"]
+			model.color = PLAYER_COLORS.get(int(wanted[index]["owner"]), Color("ffd43b"))
+			_pawn_layer.add_child(model)
+			_pawn_layer.move_child(model, 0)  # 말 그림보다 먼저 그려 말이 건물 앞에 선다 (z를 낮추면 보드 칸 밑으로 숨는다)
+			_structure_views[index] = {"kind": model.kind, "owner": wanted[index]["owner"], "node": model}
+			if _fx_on():
+				# 땅에서 솟아오르듯 세워진다
+				model.scale = Vector2(1.0, 0.05)
+				model.create_tween().tween_property(model, "scale", Vector2.ONE, 0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		model.position = _tile_center(index) + Vector2(0, -4) * _depth_scale(tile_norm(index).y)
 
 
 ## 함정이 깔린 발판의 보라색 깜빡임.
@@ -2875,7 +2941,20 @@ func _check_round_banner() -> void:
 	_announced_round = state.round_number
 	_announced_turn_key = "%d:%d" % [state.round_number, manager.current_player_id()]
 	var tempo: int = TempoUp.level(state.round_number)
-	_announce_soft("라운드", "%d라운드 시작!" % state.round_number, "템포 업 Lv.%d %s · 최종 이동 +%d칸" % [tempo, TempoUp.stage_name(tempo), TempoUp.move_bonus(state.round_number)] if tempo > 0 else "", COLOR_GOLD, null, 1.2)
+	# 라운드 첫 차례는 이 배너가 차례 배너를 겸한다: 누구 차례인지 함께 알리고, 끝날 때까지 굴리기를 막는다
+	var first: int = manager.current_player_id()
+	var whose: String = tr_ui("turn.mine") if ai_mode and first == local_player_id else tr_ui("turn.other", [_player_name(first)])
+	var body: String = whose + ("\n템포 업 Lv.%d %s · 최종 이동 +%d칸" % [tempo, TempoUp.stage_name(tempo), TempoUp.move_bonus(state.round_number)] if tempo > 0 else "")
+	_announce("라운드", "%d라운드 시작!" % state.round_number, body, COLOR_GOLD, null, 1.0)
+
+
+## 새 차례인데 아직 [OO 차례] 배너를 띄우지 못했다 (앞 연출이 끝나기를 기다리는 중): 그동안 봇·굴리기 버튼은 움직이지 않는다.
+func _turn_banner_pending() -> bool:
+	if not pacing_enabled or _announcer == null or instant_roll_for_test or manager == null or manager.is_game_over:
+		return false
+	if manager.current_state != TurnManager.State.PHASE_TURN_BEGIN:
+		return false
+	return "%d:%d" % [state.round_number, manager.current_player_id()] != _announced_turn_key
 
 
 ## 새 플레이어의 턴이 시작될 때 [P2 차례] 알림을 짧게 보여 준다 (추가 턴·롤백 재시작에는 다시 띄우지 않는다).
@@ -2890,7 +2969,7 @@ func _check_turn_banner() -> void:
 	_announced_turn_key = key
 	var player_id: int = manager.current_player_id()
 	var who: String = tr_ui("turn.mine") if (not ai_mode or player_id == local_player_id) and ai_mode else tr_ui("turn.other", [_player_name(player_id)])
-	_announce_soft("턴", who, "", PLAYER_COLORS[player_id], null, TURN_BANNER_SECONDS)
+	_announce("턴", who, "", PLAYER_COLORS[player_id], null, TURN_BANNER_SECONDS)
 
 
 ## 프로필에 보여 줄 이름: AI 대전에서는 내 닉네임과 "컴퓨터 n", 4P 수동 조작에서는 "플레이어 n".
@@ -3008,7 +3087,7 @@ func _paint_pawn_slot(parts: Dictionary, pawn: PlayerPawn, color: Color) -> void
 	_paint_revenge_glow(panel, pawn.revenge_boost and not pawn.has_left_start and not pawn.is_finished)
 
 
-## 리벤지 부스터가 장전된 대기 말: 슬롯 테두리가 붉은·주황 네온으로 두근거리고 아래에 [출격 +4] 뱃지가 붙는다.
+## 리벤지 부스터가 장전된 대기 말: 프로필 칸이 이글이글 불탄다 (주황 네온 테두리 + 칸 가장자리에서 넘실대는 불꽃, 글자 없음).
 func _paint_revenge_glow(host: Control, on: bool) -> void:
 	var glow: Panel = host.get_node_or_null("RevengeGlow") as Panel
 	if not on:
@@ -3029,15 +3108,11 @@ func _paint_revenge_glow(host: Control, on: bool) -> void:
 		frame.shadow_size = 6
 		glow.add_theme_stylebox_override("panel", frame)
 		host.add_child(glow)
-		var badge: Label = _make_label("출격 +%d" % _revenge_steps(), 10, Color("fff4e6"))
-		badge.name = "RevengeBadge"
-		badge.add_theme_constant_override("outline_size", 4)
-		badge.add_theme_color_override("font_outline_color", Color("8a2b00"))
-		badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		badge.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-		badge.offset_top = -14.0
-		glow.add_child(badge)
+		var fire := RevengeFire.new()
+		fire.name = "RevengeFire"
+		fire.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		fire.set_anchors_preset(Control.PRESET_FULL_RECT)
+		glow.add_child(fire)
 		var pulse: Tween = glow.create_tween().set_loops()
 		pulse.tween_property(glow, "modulate:a", 0.45, 0.45).set_trans(Tween.TRANS_SINE)
 		pulse.tween_property(glow, "modulate:a", 1.0, 0.45).set_trans(Tween.TRANS_SINE)
@@ -4023,7 +4098,7 @@ func _refresh_pawn_dock() -> void:
 		elif pawn.is_imprisoned:
 			place = "감옥"
 		elif pawn.revenge_boost and not pawn.has_left_start:
-			place = "복수+%d" % _revenge_steps()
+			place = "대기"  # 리벤지 부스터는 칸이 불타는 것으로 보여 준다 (글자 없음)
 		(parts["place"] as Label).text = place
 		_paint_revenge_glow(button, pawn.revenge_boost and not pawn.has_left_start and not pawn.is_finished)
 		var badge: Label = parts["badge"]
@@ -7254,6 +7329,7 @@ func _clear_highlight() -> void:
 
 func _on_phase_changed(new_state: TurnManager.State, _player_id: int, _limit: float) -> void:
 	if new_state != TurnManager.State.PHASE_ROUND_START:
+		_close_augment_review()
 		_draft_open = false
 		_flush_draft_summary()
 		_release_draft_deferred()
@@ -7281,6 +7357,12 @@ func _release_draft_deferred() -> void:
 func _flush_draft_summary() -> void:
 	if _draft_summary.is_empty():
 		return
+	var row: HBoxContainer = _take_draft_summary_row()
+	_announce(tr_ui("draft.reveal_tag"), tr_ui("draft.reveal"), "", Color("ffa94d"), row, 1.8)
+
+
+## 모아 둔 증강 선택을 기록에 남기고, 고른 증강 카드를 한 줄로 늘어놓은 줄을 만든다 (모은 목록은 비운다).
+func _take_draft_summary_row() -> HBoxContainer:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 22)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -7314,7 +7396,118 @@ func _flush_draft_summary() -> void:
 		column.add_child(holder)
 		row.add_child(column)
 	_draft_summary.clear()
-	_announce(tr_ui("draft.reveal_tag"), tr_ui("draft.reveal"), "", Color("ffa94d"), row, 1.8)
+	return row
+
+
+## 증강 확인 단계: [선택한 증강]을 모두에게 보여 주고, 다들 [확인]을 누르면(봇은 바로, 시간이 다 되면 자동) 라운드를 시작한다.
+var _review_overlay: Control = null
+var _review_chips: Dictionary = {}
+var _review_button: Button = null
+var _review_bar: ColorRect = null
+
+
+func _show_augment_review(players: Array) -> void:
+	_close_augment_review()
+	if _draft_summary.is_empty():
+		return
+	_review_overlay = _new_overlay(0.55)
+	_review_overlay.name = "AugmentReview"
+	_review_overlay.z_index = 45
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_review_overlay.add_child(center)
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", _style(Color("101626"), Color("ffa94d"), 4, 18, 24, 18))
+	center.add_child(panel)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 14)
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	panel.add_child(box)
+	var title: Label = _make_label(tr_ui("draft.reveal"), 30, Color("ffd8a8"))
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_constant_override("outline_size", 6)
+	title.add_theme_color_override("font_outline_color", Color("3d1f00"))
+	box.add_child(title)
+	var row: HBoxContainer = _take_draft_summary_row()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.add_child(row)
+	# 누가 확인했는지: 이름 칩이 확인하면 그 사람 색으로 켜진다
+	var chips := HBoxContainer.new()
+	chips.alignment = BoxContainer.ALIGNMENT_CENTER
+	chips.add_theme_constant_override("separation", 10)
+	box.add_child(chips)
+	_review_chips.clear()
+	for player_id: int in players:
+		var chip := PanelContainer.new()
+		chip.name = "ReviewChip%d" % player_id
+		chip.pivot_offset = Vector2(60, 16)
+		var chip_label: Label = _make_label(_player_name(player_id), 16, Color("ced4da"))
+		chip_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		chip_label.custom_minimum_size = Vector2(110, 0)
+		chip.add_child(chip_label)
+		chips.add_child(chip)
+		_review_chips[player_id] = chip
+		_paint_review_chip(player_id, false)
+	var track := Control.new()
+	track.custom_minimum_size = Vector2(0, 5)
+	_review_bar = ColorRect.new()
+	_review_bar.color = Color("ffa94d")
+	track.add_child(_review_bar)
+	box.add_child(track)
+	_review_button = _make_button("확인", _on_review_confirm, 22, Color("2b8a3e"))
+	_review_button.name = "ReviewConfirm"
+	_review_button.custom_minimum_size = Vector2(260, 54)
+	_review_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	box.add_child(_review_button)
+	add_child(_review_overlay)
+	_refresh_review_button()
+
+
+func _paint_review_chip(player_id: int, done: bool) -> void:
+	var chip: PanelContainer = _review_chips.get(player_id)
+	if chip == null:
+		return
+	var color: Color = PLAYER_COLORS.get(player_id, Color.WHITE)
+	chip.add_theme_stylebox_override("panel", _style(color.darkened(0.15) if done else Color("1b2030"), color.lightened(0.35) if done else Color("495057"), 2, 16, 6, 6))
+	(chip.get_child(0) as Label).add_theme_color_override("font_color", Color.WHITE if done else Color("868e96"))
+	if done and _fx_on():
+		chip.scale = Vector2(1.25, 1.25)
+		chip.create_tween().tween_property(chip, "scale", Vector2.ONE, 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+## 이 화면에서 대신 [확인]을 눌러 줄 사람들: 온라인·AI 대전은 나, 같은 화면 대전(핫시트)은 봇이 아닌 모두.
+func _review_local_players() -> Array[int]:
+	var result: Array[int] = []
+	for player_id: int in manager.review_waiting_for():
+		if net != null or ai_mode:
+			if player_id == local_player_id:
+				result.append(player_id)
+		elif not _bot.is_bot(player_id):
+			result.append(player_id)
+	return result
+
+
+func _on_review_confirm() -> void:
+	for player_id: int in _review_local_players():
+		manager.act(&"review_done", {"player_id": player_id})
+	_refresh_review_button()
+
+
+func _refresh_review_button() -> void:
+	if _review_button == null or not is_instance_valid(_review_button):
+		return
+	var mine: bool = not _review_local_players().is_empty()
+	_review_button.disabled = not mine
+	_review_button.text = "확인" if mine else "다른 플레이어를 기다리는 중"
+
+
+func _close_augment_review() -> void:
+	if _review_overlay != null and is_instance_valid(_review_overlay):
+		_review_overlay.queue_free()
+	_review_overlay = null
+	_review_button = null
+	_review_bar = null
+	_review_chips.clear()
 
 
 func _on_action_rejected(player_id: int, action: StringName, reason: StringName) -> void:
@@ -7342,7 +7535,7 @@ func _on_game_over(winner_id: int, reason: StringName) -> void:
 
 
 func _ui_busy() -> bool:
-	return _intro_blocks() or _presentation_active() or _fx_busy or (_capture_cutin != null and _capture_cutin.busy()) or _aim_pawn != -1 or (_announcer != null and _announcer.holding()) or Time.get_ticks_msec() < _beat_until_msec or (_fx_on() and Time.get_ticks_msec() < _fx_until_msec)
+	return _turn_banner_pending() or _intro_blocks() or _presentation_active() or _fx_busy or (_capture_cutin != null and _capture_cutin.busy()) or _aim_pawn != -1 or (_announcer != null and _announcer.holding()) or Time.get_ticks_msec() < _beat_until_msec or (_fx_on() and Time.get_ticks_msec() < _fx_until_msec)
 
 
 ## 지금부터 ms밀리초 뒤의 시각 (Time.get_ticks_msec 기준). 배속(Engine.time_scale)만큼 짧아진다: 트윈·타이머와 같은 빠르기로 풀린다.
@@ -7614,9 +7807,19 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_announce_move_failed("움직일 수 있는 말이 없어", int(data["player_id"]), "구속 중이거나 선택할 수 있는 말이 없습니다")
 		&"card_played":
 			var card: BaseCard = CardRegistry.get_card(data["card_id"])
-			_log_line("[카드] P%d [%s] 사용%s" % [data["player_id"], card.display_name, " (개입 대기열 - 나중에 낸 카드부터 실행)" if data["queued"] else ""], Color("74c0fc"))
+			var player: int = int(data["player_id"])
 			_record_card(data)
-			_announce_gate("카드 발동", "[P%d 발동!] %s" % [data["player_id"], card.display_name], ("개입 대기열 등록 (후입선출)\n" if data["queued"] else "") + card_summary(data["card_id"]), PLAYER_COLORS[int(data["player_id"])], _make_card_preview(data["card_id"]), 1.2)
+			if card.category == GameEnums.CardCategory.TRAP and not card.corner_only:
+				# 은신 함정: 무슨 카드인지는 숨기고 "누가 함정을 깔았다"만 알린다 (내 함정이면 로그에만 이름을 남긴다)
+				var mine: bool = (ai_mode or net != null) and player == local_player_id
+				_log_line("[카드] P%d 함정 카드 설치%s" % [player, " [%s]" % card.display_name if mine else ""], Color("74c0fc"))
+				_announce_gate("함정 설치", "%s의 함정 카드 설치!" % _player_name(player), "어딘가에 함정이 숨겨졌습니다. 조심하세요!", PLAYER_COLORS[player], null, 1.0)
+			else:
+				_log_line("[카드] P%d [%s] 사용%s" % [player, card.display_name, " (개입 대기열 - 나중에 낸 카드부터 실행)" if data["queued"] else ""], Color("74c0fc"))
+				if ATTACK_CARDS.has(StringName(data["card_id"])):
+					# 공격 카드: 먼저 [공격 카드 발동!] 경보를 크게 띄우고, 그다음에 어떤 카드인지 공개한다
+					_announce(ATTACK_TAG, "공격 카드 발동!", "%s의 공격!" % _player_name(player), Color("ff4d4d"), null, 0.6)
+				_announce_gate("카드 발동", "[P%d 발동!] %s" % [player, card.display_name], ("개입 대기열 등록 (후입선출)\n" if data["queued"] else "") + card_summary(data["card_id"]), PLAYER_COLORS[player], _make_card_preview(data["card_id"]), 1.2)
 		&"npc_phase_resolved":
 			if not (data["reports"] as Array).is_empty():
 				# 중립 기물 이동: 안내 카드가 먼저 뜨고, 기물이 한 칸씩 달린 뒤, 말을 잡았으면 그다음에 처치 알림과 사출이 이어진다.
@@ -7634,6 +7837,11 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 		&"augment_offers":
 			_draft_open = true
 			_log_line("[증강] 라운드 %d 증강 드래프트가 열렸습니다." % data["round"], Color("ffa94d"))
+		&"augment_review":
+			_show_augment_review(data["players"])
+		&"augment_review_done":
+			_paint_review_chip(int(data["player_id"]), true)
+			_refresh_review_button()
 		&"augment_picked":
 			_log_line("[증강] P%d%s: %s - %s" % [data["player_id"], " (자동)" if data["auto"] else "", AugmentRegistry.get_def(data["augment_id"]).display_name, data["text"]], Color("ffa94d"))
 			# 한 명씩 공개하면 늘어지므로 모아 두었다가 드래프트가 끝나면 한 장으로 한꺼번에 공개한다.
@@ -8006,7 +8214,11 @@ func _build_roll_fx() -> void:
 			_fx_after_announcer()
 			_refresh_all())
 	_announcer.entry_finished.connect(_on_announcer_entry_finished)
-	_announcer.entry_started.connect(func(_serial: int) -> void: _dismiss_center_banner())
+	_announcer.entry_started.connect(func(_serial: int) -> void:
+		_dismiss_center_banner()
+		if str(_announcer._current.get("tag", "")) == ATTACK_TAG and _fx_on():
+			Sfx.play(&"card_impact")
+			screen_shake(10.0, 0.3))
 
 
 ## 야추·블랙잭·핀볼의 중앙 오픈 스테이지를 만든다. 눈에 보이는 건 해당 도구를 쓰는 차례뿐이다.
@@ -8684,3 +8896,101 @@ func _human_can_intervene() -> bool:
 func _bot_should_wait() -> bool:
 	# 혼자 하는 판은 메뉴를 여는 동안 봇도 쉰다 (온라인은 다른 사람이 기다리므로 멈추지 않는다).
 	return _ui_busy() or (net == null and _menu_is_open()) or (_duel_arena != null and _duel_arena.animating)
+
+
+## 리벤지 부스터 칸의 불꽃: 칸 아래쪽과 양옆에서 혀 모양 불꽃이 제각각 넘실댄다 (코드로 그린다, 칸 크기에 맞춰 늘어난다).
+class RevengeFire extends Control:
+	const TONGUES: int = 7
+
+	func _process(_delta: float) -> void:
+		queue_redraw()
+
+	func _draw() -> void:
+		var t: float = Time.get_ticks_msec() / 1000.0
+		var w: float = size.x
+		var h: float = size.y
+		for index: int in TONGUES:
+			var phase: float = index * 1.7
+			var x: float = w * (index + 0.5) / TONGUES
+			var height: float = h * (0.32 + 0.18 * sin(t * 7.0 + phase) + 0.08 * sin(t * 13.0 + phase * 2.0))
+			var half: float = w / TONGUES * 0.62
+			var sway: float = half * 0.45 * sin(t * 5.0 + phase)
+			_tongue(Vector2(x, h + 2.0), half, height, sway, Color(1.0, 0.36, 0.05, 0.78))
+			_tongue(Vector2(x, h + 2.0), half * 0.55, height * 0.6, sway * 0.7, Color(1.0, 0.83, 0.25, 0.85))
+		# 양옆 가장자리를 타고 오르는 작은 불꽃
+		for side: int in 2:
+			var edge_x: float = 3.0 if side == 0 else w - 3.0
+			var flick: float = h * (0.45 + 0.15 * sin(t * 9.0 + side * 2.3))
+			_tongue(Vector2(edge_x, h), 5.0, flick, 3.0 * sin(t * 6.0 + side), Color(1.0, 0.45, 0.08, 0.6))
+
+	func _tongue(base: Vector2, half: float, height: float, sway: float, color: Color) -> void:
+		var tip := Vector2(base.x + sway, base.y - height)
+		var points := PackedVector2Array([
+			base + Vector2(-half, 0),
+			base + Vector2(-half * 0.7 + sway * 0.3, -height * 0.45),
+			tip,
+			base + Vector2(half * 0.7 + sway * 0.3, -height * 0.45),
+			base + Vector2(half, 0),
+		])
+		draw_colored_polygon(points, color)
+
+
+## 칸 위 건축물 모형 (코드로 그린다): 호텔은 주인 색 건물에 붉은 지붕과 불 켜진 창, 지뢰는 가시 돋친 검은 공과 깜빡이는 빨간 불.
+class BoardStructure extends Node2D:
+	var kind: StringName = &"hotel"
+	var color: Color = Color("ffd43b")
+	const INK: Color = Color("2b2420")
+
+	func _ready() -> void:
+		set_process(kind == &"mine")
+
+	func _process(_delta: float) -> void:
+		queue_redraw()
+
+	func _draw() -> void:
+		_ellipse(Vector2(0, 2), Vector2(16, 6), Color(0, 0, 0, 0.28))
+		if kind == &"mine":
+			_draw_mine()
+		else:
+			_draw_hotel()
+
+	func _draw_hotel() -> void:
+		var front: Color = color.lightened(0.25)
+		var side: Color = color.darkened(0.25)
+		# 몸통: 앞면 + 오른쪽 옆면
+		draw_colored_polygon(PackedVector2Array([Vector2(-11, 0), Vector2(5, 0), Vector2(5, -26), Vector2(-11, -26)]), front)
+		draw_colored_polygon(PackedVector2Array([Vector2(5, 0), Vector2(13, -5), Vector2(13, -31), Vector2(5, -26)]), side)
+		# 창문 (앞면 2열 x 3줄, 노란 불빛)
+		for row: int in 3:
+			for column: int in 2:
+				var at := Vector2(-8 + column * 7, -22 + row * 7)
+				draw_rect(Rect2(at, Vector2(4, 4)), Color("fff3bf"))
+		# 지붕: 붉은 박공
+		var roof := Color("e03131")
+		draw_colored_polygon(PackedVector2Array([Vector2(-13, -26), Vector2(7, -26), Vector2(-3, -36)]), roof)
+		draw_colored_polygon(PackedVector2Array([Vector2(7, -26), Vector2(15, -31), Vector2(5, -41), Vector2(-3, -36)]), roof.darkened(0.25))
+		draw_polyline(PackedVector2Array([Vector2(-11, 0), Vector2(-11, -26), Vector2(-13, -26), Vector2(-3, -36), Vector2(5, -41), Vector2(15, -31), Vector2(13, -31), Vector2(13, -5), Vector2(5, 0), Vector2(-11, 0)]), INK, 1.2, true)
+		draw_line(Vector2(5, 0), Vector2(5, -26), INK, 1.0, true)
+		draw_line(Vector2(-13, -26), Vector2(7, -26), INK, 1.0, true)
+
+	func _draw_mine() -> void:
+		_ellipse(Vector2(0, 0), Vector2(12, 4.5), color, INK)
+		var center := Vector2(0, -11)
+		for index: int in 8:
+			var direction := Vector2.RIGHT.rotated(TAU * index / 8.0)
+			draw_line(center + direction * 8.0, center + direction * 13.0, INK, 2.5, true)
+			draw_circle(center + direction * 13.0, 1.8, Color("495057"))
+		draw_circle(center, 9.0, Color("343a40"))
+		draw_circle(center + Vector2(-3, -3), 3.0, Color(1, 1, 1, 0.25))
+		var blink: float = 0.5 + 0.5 * sin(Time.get_ticks_msec() / 1000.0 * 6.0)
+		draw_circle(center + Vector2(0, -9), 2.6, Color(1.0, 0.15, 0.1, 0.45 + 0.55 * blink))
+
+	func _ellipse(center: Vector2, radii: Vector2, fill: Color, edge: Color = Color(0, 0, 0, 0)) -> void:
+		var points := PackedVector2Array()
+		for index: int in 24:
+			var angle: float = TAU * index / 24.0
+			points.append(center + Vector2(cos(angle) * radii.x, sin(angle) * radii.y))
+		draw_colored_polygon(points, fill)
+		if edge.a > 0.0:
+			points.append(points[0])
+			draw_polyline(points, edge, 1.2, true)
