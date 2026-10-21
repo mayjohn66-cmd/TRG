@@ -145,7 +145,7 @@ func test_roll_chain_is_recorded_by_the_turn_manager() -> void:
 	_dispose(manager)
 
 
-func test_several_achievers_at_round_end_are_ranked_by_race_progress() -> void:
+func test_same_law_achievers_at_round_end_only_the_leader_graduates() -> void:
 	var manager: TurnManager = _new_manager(3)
 	var state: GameState = manager.state
 	add_law(state, "LAW_01")
@@ -154,7 +154,8 @@ func test_several_achievers_at_round_end_are_ranked_by_race_progress() -> void:
 	place(state, 31, 20, [19])
 	place(state, 11, 4, [3])
 	_finish_round(manager)
-	check_eq(state.rankings.slice(0, 2), int_array([3, 1]), "같은 라운드에 둘 다 달성: 레이스에서 앞선 P3가 먼저")
+	check_eq(state.rankings, int_array([3]), "같은 교칙을 둘이 달성: 레이스에서 앞선 P3만 졸업 (교칙은 한 명을 졸업시키고 사라진다)")
+	check(not state.is_graduated(1) and not state.rulebook.has_law("LAW_01"), "P1은 레이스에 남고 교칙은 법전에서 사라졌다")
 	var standings: Array[Dictionary] = VictoryChecker.standings(state, manager.player_order, state.rankings[0])
 	var winner_row: Dictionary = standings[0]
 	check(int(winner_row["progress"]) < 100 and int(winner_row["finished"]) == 0, "결과표는 졸업 순간의 진행을 보여 준다 (철수한 말을 완주로 세지 않는다)")

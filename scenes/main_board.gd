@@ -6358,7 +6358,8 @@ func _make_augment_card(info: Dictionary, on_pick: Callable) -> Button:
 
 
 ## 판 밖(규칙 도감)에서도 쓰는 증강 카드. base_scale로 줄여 보여 줄 수 있다 (호버 확대도 그 배율 기준).
-static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: float = 1.0) -> Button:
+## static_frame: 도감처럼 보기만 하는 곳에서는 테두리 후광(번짐)과 마우스를 올렸을 때 커지는 효과를 끈다.
+static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: float = 1.0, static_frame: bool = false) -> Button:
 	var color: Color = info["color"]
 	var card := Button.new()
 	card.custom_minimum_size = AUGMENT_CARD_SIZE
@@ -6383,6 +6384,8 @@ static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: f
 		box.shadow_color = Color(1.0, 0.83, 0.23, 0.6)
 		box.shadow_size = 16
 		box.shadow_offset = Vector2.ZERO
+	if static_frame:
+		box.shadow_size = 0
 	for style_name: String in ["normal", "hover", "pressed", "focus", "disabled"]:
 		card.add_theme_stylebox_override(style_name, box)
 	var top := Panel.new()
@@ -6422,8 +6425,9 @@ static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: f
 	if on_pick.is_valid():
 		card.pressed.connect(on_pick)
 	card.set_meta("frame_box", box)
-	card.mouse_entered.connect(func() -> void: _hover_augment_card(card, box, color, true, base_scale))
-	card.mouse_exited.connect(func() -> void: _hover_augment_card(card, box, color, false, base_scale))
+	if not static_frame:
+		card.mouse_entered.connect(func() -> void: _hover_augment_card(card, box, color, true, base_scale))
+		card.mouse_exited.connect(func() -> void: _hover_augment_card(card, box, color, false, base_scale))
 	return card
 
 
