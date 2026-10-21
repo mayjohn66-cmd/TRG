@@ -414,6 +414,8 @@ var _fx_generation: int = 0
 ## 단일 연출 큐(FIFO): 말 걸음·발판 팝업·처치 컷인·배너·워프·출발선 사출이 이 줄에서 한 번에 하나씩만 재생된다.
 ## 엔진은 한 번에 결과를 계산하고 시그널을 연달아 쏘지만, 화면은 앞 연출이 완전히 끝난 뒤에야 다음 연출을 시작한다.
 var _presentation_queue: Array[Callable] = []
+## Own preview controls while their announcement is waiting in the presentation queue.
+var _announcement_extras: Node = null
 var _is_playing_presentation: bool = false
 ## 큐에 아직 남은 말별 연출 수 (이 말은 큐가 끝나기 전에 최종 위치로 순간 이동하지 않는다).
 var _pawn_pending: Dictionary = {}
@@ -5357,6 +5359,9 @@ func _reset_presentation() -> void:
 	_aim_pawn = -1
 	_fx_generation += 1
 	_presentation_queue.clear()
+	if is_instance_valid(_announcement_extras):
+		for extra: Node in _announcement_extras.get_children():
+			extra.queue_free()
 	_late_steps.clear()
 	_draft_deferred.clear()
 	_draft_open = false
@@ -7328,10 +7333,24 @@ func _start_beat(seconds: float) -> void:
 ## blocking=false: 띄워만 두는 안내(차례·라운드·휴식 등). 굴림·이동·봇은 이 알림을 기다리지 않고 바로 이어진다 (_announce_soft).
 func _announce(tag: String, headline: String, body: String, color: Color, extra: Control = null, duration: float = 1.5, blocking: bool = true) -> int:
 	if _announcer == null:
+		if extra != null:
+			extra.free()
 		return -1
-	# 앞선 연출이 큐에서 재생 중이면 배너도 그 뒤에 줄을 선다 (말이 움직이는 동안 배너가 먼저 뜨지 않는다).
+	# A queued preview is owned immediately; cancelling the queue must not
+	# strand an unattached card tree or leave it counted as an orphan.
 	if _fx_on() and _presentation_active():
-		enqueue_step(func() -> void: _announce_now(tag, headline, body, color, extra, duration, blocking))
+		if extra != null:
+			if not is_instance_valid(_announcement_extras):
+				_announcement_extras = Node.new()
+				_announcement_extras.name = "PendingAnnouncementExtras"
+				add_child(_announcement_extras)
+			_announcement_extras.add_child(extra)
+			extra.hide()
+		enqueue_step(func() -> void:
+			if is_instance_valid(extra):
+				_announcement_extras.remove_child(extra)
+				extra.show()
+			_announce_now(tag, headline, body, color, extra, duration, blocking))
 		return -1
 	return _announce_now(tag, headline, body, color, extra, duration, blocking)
 

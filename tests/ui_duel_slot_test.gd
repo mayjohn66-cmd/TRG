@@ -125,6 +125,15 @@ func run() -> void:
 	queued.close_now()
 	await create_timer(0.35).timeout
 	check(not is_instance_valid(queued) and board._duel_arena == null and not board._bot_should_wait(), "Closing during spin safely releases all presentation holds")
+	# Card previews queued behind an introduction must have an owner even if
+	# the presentation is reset before the announcement can consume them.
+	board._is_playing_presentation = true
+	var preview := board._make_card_preview(&"ACT_09")
+	board._announce("test", "test", "", Color.WHITE, preview)
+	check(preview.is_inside_tree() and not preview.visible, "Queued card previews remain owned and hidden")
+	board._reset_presentation()
+	await frames(3)
+	check(not is_instance_valid(preview), "Cancelling a presentation frees pending card previews")
 	board.instant_roll_for_test = true
 	if failures.is_empty():
 		print("DUEL_SLOT_OK")

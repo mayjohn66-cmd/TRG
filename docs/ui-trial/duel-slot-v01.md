@@ -13,3 +13,5 @@ Validation: 516 unit tests, 596466 assertions, zero failures; existing full UI F
 Large introduction follow-up: existing full UI FX and focused six-game selection tests pass, including start-button continuation, automatic continuation, input clock gating and desktop/mobile render captures. Capture artifacts: outputs/duel-intro-v02 in the task workspace.
 
 During play, static instructions below the stage are also removed. Hotseat turns use the upper participant line; live feedback and results remain available.
+
+Deferred card previews are now immediately owned by a hidden pending-announcement node. Cancelling the presentation frees its pending children. The focused test verifies ownership and cancellation; the existing six-duel orphan-count regression is retained.
