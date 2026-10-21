@@ -122,6 +122,27 @@ const DECAL_BOUNDS: Dictionary = {
 	"start": Rect2(308,272,638,750), "half": Rect2(362,246,590,778),
 	"corner": Rect2(99,307,1098,665), "boost": Rect2(175,431,909,391),
 }
+## Native multicolor trap subjects, normalized so imported mip sizes keep the same fit.
+const TRAP_BOUNDS: Dictionary = {
+	"TRP_02": Rect2(0.1602871,0.1977671,0.6794258,0.5693780),
+	"TRP_03": Rect2(0.1427432,0.1068581,0.7807018,0.7719298),
+	"TRP_05": Rect2(0.1172249,0.2432217,0.8301435,0.5303030),
+	"TRP_06": Rect2(0.1379585,0.2208931,0.7328549,0.5598086),
+	"TRP_07": Rect2(0.0725678,0.3317384,0.8548644,0.3492823),
+	"TRP_08": Rect2(0.1531100,0.2663477,0.6937799,0.4601276),
+	"TRP_C01": Rect2(0.1259968,0.1929825,0.7432217,0.6092504),
+	"TRP_C02": Rect2(0.2272727,0.0948963,0.5454545,0.8133971),
+	"TRP_C03": Rect2(0.1467305,0.2224880,0.7432217,0.5566188),
+	"TRP_C04": Rect2(0.1076555,0.1379585,0.7854864,0.7121212),
+	"HIDDEN": Rect2(0.2328549,0.1451356,0.5334928,0.7424242),
+	"TRP_01": Rect2(0.1714514,0.1586922,0.6730463,0.6921850),
+}
+
+static func trap_region(texture: Texture2D) -> Rect2:
+	var key := texture.resource_path.get_file().get_basename()
+	var bounds: Rect2 = TRAP_BOUNDS.get(key,Rect2(0,0,1,1))
+	bounds = bounds.grow(0.008).intersection(Rect2(0,0,1,1))
+	return Rect2(bounds.position*texture.get_size(),bounds.size*texture.get_size())
 
 static func forward_world(index: int) -> Vector2:
 	return (BoardLayout.tile_norm((index+1)%BoardSpec.tile_count)-BoardLayout.tile_norm(index)).normalized()
@@ -385,10 +406,12 @@ class Tile extends Control:
 		if trap_icon == null:
 			return
 		var footprint: Vector2 = data.footprint
-		var frame := BoardSkin.decal_frame(plane,minf(footprint.x,footprint.y)*0.82)
-		var extent := Vector2(64,64)*trap_icon.get_size()/maxf(trap_icon.get_width(),trap_icon.get_height())
+		var direction := Vector2.RIGHT if data.major else BoardSkin.symbol_axis(index)
+		var frame := BoardSkin.decal_frame(plane,minf(footprint.x,footprint.y)*0.86,direction)
+		var region := BoardSkin.trap_region(trap_icon)
+		var extent := Vector2(64,64)*region.size/maxf(region.size.x,region.size.y)
 		draw_set_transform_matrix(frame)
-		draw_texture_rect(trap_icon,Rect2(-extent/2.0,extent),false)
+		draw_texture_rect_region(trap_icon,Rect2(-extent/2.0,extent),region)
 		draw_set_transform_matrix(Transform2D.IDENTITY)
 
 	## Coral accelerator zone and a projected chevron decal; pulse never hides the floor.
