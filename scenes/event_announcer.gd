@@ -48,7 +48,9 @@ func _init() -> void:
 
 ## 알림 한 건을 대기열에 넣는다. extra는 헤드라인 아래에 붙일 임의의 Control(카드 프레임·법전 목록 등)이다.
 ## 알림 번호를 돌려준다 (건너뛰면 -1).
-func announce(tag: String, headline: String, body: String, color: Color, extra: Control = null, duration: float = 1.5) -> int:
+## blocking=false는 띄워만 두는 알림(차례·라운드 안내 등)이다: holding()이 참이 되지 않아 굴림·이동·봇이 기다리지 않는다.
+## 뒤에 기다려야 하는 알림이 들어오면 지금 떠 있는 띄워만 두는 알림은 바로 사라지기 시작한다.
+func announce(tag: String, headline: String, body: String, color: Color, extra: Control = null, duration: float = 1.5, blocking: bool = true) -> int:
 	history.append(headline)
 	if instant:
 		if extra != null:
@@ -59,11 +61,25 @@ func announce(tag: String, headline: String, body: String, color: Color, extra: 
 		if dropped["extra"] != null:
 			(dropped["extra"] as Control).free()
 	_serial += 1
-	_queue.append({"tag": tag, "headline": headline, "body": body, "color": color, "extra": extra, "duration": duration, "serial": _serial})
+	_queue.append({"tag": tag, "headline": headline, "body": body, "color": color, "extra": extra, "duration": duration, "serial": _serial, "blocking": blocking})
 	active = true
+	if blocking and not _current.is_empty() and not bool(_current.get("blocking", true)):
+		_t = maxf(_t, float(_current["duration"]) - FADE_OUT)
 	if _current.is_empty() and not _waiting:
 		_start_next()
 	return _serial
+
+
+## 게임 진행(굴림·이동·봇·입력)이 이 알림을 기다려야 하는가: 지금 떠 있거나 줄 서 있는 알림 중 하나라도 blocking이면 참.
+func holding() -> bool:
+	if not active:
+		return false
+	if not _current.is_empty() and bool(_current.get("blocking", true)):
+		return true
+	for entry: Dictionary in _queue:
+		if bool(entry.get("blocking", true)):
+			return true
+	return false
 
 
 ## 대기 중인 알림까지 모두 지운다 (새 게임·테스트).

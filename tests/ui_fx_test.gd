@@ -925,14 +925,27 @@ func _test_view_modes() -> void:
 	GameSession.view_mode = MainBoard.ViewMode.TOP
 
 
-## 상단 UI는 왼쪽 [피드백 / 버그 제보]와 오른쪽 [메뉴]뿐이고 (소리·언어는 설정), 메뉴 안에서 계속하기/게임 설정/전체 로그/새 게임/모드/치트/게임 나가기를 고른다.
+## 상단 UI는 왼쪽 [피드백 / 버그 제보]와 오른쪽 [배속]·[메뉴]뿐이고 (소리·언어는 설정), 메뉴 안에서 계속하기/게임 설정/전체 로그/새 게임/모드/치트/게임 나가기를 고른다.
 func _test_game_menu() -> void:
 	var top_buttons: Array[Button] = []
 	for child: Node in _board.get_children():
 		var button: Button = child as Button
 		if button != null and button.visible and button.position.y < 44.0 and button.size.y <= 40.0:
 			top_buttons.append(button)
-	_expect(top_buttons.size() == 2 and top_buttons.has(_board._menu_button) and top_buttons.has(_board._feedback_button), "상단에는 왼쪽 [피드백]·오른쪽 [메뉴] 두 개만 남는다 (%d개)" % top_buttons.size())
+	_expect(top_buttons.size() == 3 and top_buttons.has(_board._menu_button) and top_buttons.has(_board._feedback_button) and top_buttons.has(_board._speed_button), "상단에는 왼쪽 [피드백]·오른쪽 [배속]·[메뉴] 세 개만 남는다 (%d개)" % top_buttons.size())
+	# [배속]: 1x -> 2x -> 3x -> 1x, Engine.time_scale에 걸린다
+	var speed_before: int = GameSession.game_speed
+	GameSession.game_speed = 1
+	_board._apply_game_speed()
+	_board._speed_button.pressed.emit()
+	_expect(GameSession.game_speed == 2 and is_equal_approx(Engine.time_scale, 2.0) and _board._speed_button.text == "배속 2x", "배속 버튼: 2x (%s)" % _board._speed_button.text)
+	_board._speed_button.pressed.emit()
+	_expect(GameSession.game_speed == 3 and is_equal_approx(Engine.time_scale, 3.0), "배속 버튼: 3x")
+	_board._speed_button.pressed.emit()
+	_expect(GameSession.game_speed == 1 and is_equal_approx(Engine.time_scale, 1.0), "배속 버튼: 다시 1x")
+	GameSession.game_speed = speed_before
+	_board._apply_game_speed()
+	Engine.time_scale = 1.0
 	_expect(_board._feedback_button.position.x < 200.0 and _board._menu_button.position.x > 1000.0, "피드백은 왼쪽 위, 메뉴는 오른쪽 위")
 	_expect(_board._mode_toggle.get_parent() == null and _board._new_game_button.get_parent() == null and _board._debug_toggle.get_parent() == null, "닫힌 메뉴에서는 모드·새 게임·치트 버튼이 화면에 없다")
 	_expect(not _board._menu_is_open(), "처음에는 메뉴가 닫혀 있다")
