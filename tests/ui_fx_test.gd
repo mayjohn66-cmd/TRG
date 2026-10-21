@@ -1845,9 +1845,21 @@ func _test_event_order() -> void:
 	while waited < 8.0 and (_board._presentation_active() or _board._announcer.active):
 		await create_timer(0.05).timeout
 		waited += 0.05
-	# 4) 드래프트 중에 생긴 효과 연출은 증강 공개 뒤로 미룬다
-	var ran: Array = []
+	# 4) 라운드 마지막 턴의 처치처럼 드래프트가 열리기 전에 일어난 일은, 같은 프레임에 엔진이 다음 라운드 드래프트를 열어도
+	#    미루지 않고 바로 재생한다 (드래프트 창은 그 연출이 끝난 뒤에 열린다): 증강 선택 -> 처치 -> 다음 라운드로 보이던 버그
+	var before_draft: Array = []
+	manager.current_state = TurnManager.State.PHASE_RESOLUTION
+	_board._enqueue_late(func() -> void: before_draft.append(true))
 	manager.current_state = TurnManager.State.PHASE_ROUND_START
+	_board._on_event(&"augment_offers", {"round": state.round_number, "offers": {}})
+	_expect(_board._draft_open and _board._presentation_active(), "드래프트가 열리기 직전의 처치 연출은 큐에 들어가 드래프트 창을 기다리게 한다")
+	waited = 0.0
+	while before_draft.is_empty() and waited < 4.0:
+		await create_timer(0.05).timeout
+		waited += 0.05
+	_expect(not before_draft.is_empty() and _board._draft_deferred.is_empty(), "드래프트 전의 처치 연출은 증강 공개 뒤로 밀리지 않는다")
+	# 5) 드래프트 창이 열린 뒤에 생긴 효과 연출(고른 증강의 효과)은 증강 공개 뒤로 미룬다
+	var ran: Array = []
 	_board.enqueue_step(func() -> void: ran.append(true))
 	_expect(ran.is_empty() and _board._draft_deferred.size() == 1 and _board._fx_holding(), "드래프트 중의 효과 연출은 미뤄 두고 말 그림도 움직이지 않는다")
 	manager.current_state = TurnManager.State.PHASE_TURN_BEGIN
