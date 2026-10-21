@@ -3,9 +3,8 @@
 
 - 무손실(compress/mode=0) 텍스처는 손실 WebP(품질 0.85)로 바꾼다. 128px 이하 작은 그림은 그대로 둔다.
 - 화면에 작게(150px 이하) 그려지는 아이콘(기물·도구·증강·교칙 그림)은 최대 256px로 임포트한다.
-- 에르핀 고화질 대기 프레임(idle_hq)은 640px로 임포트하고 idle_hq.tres의 AtlasTexture 영역을 같은 비율로 맞춘다
-  (로비에서 520px 높이로 그려지고 표시 영역은 약 522px: 다른 사도의 512px 대기 프레임보다 여전히 크다).
-- 로비 대기 프레임(idle_hq, avatar_*/idle)은 거의 원래 크기로만 그려지므로 밉맵을 끈다 (밉맵은 용량을 약 1/3 늘린다).
+- 에르핀 고화질 대기 프레임(avatar_01/idle_hq)은 건드리지 않는다: 1024px 무손실 + 밉맵 그대로 (화질 100% 유지 결정, 2026-10-21).
+- 다른 사도의 로비 대기 프레임(avatar_*/idle, 512px)은 거의 원래 크기로만 그려지므로 밉맵을 끈다 (밉맵은 용량을 약 1/3 늘린다).
 - 제한이 없는 큰 그림은 최대 1280px(배경·컷인 크기)로 묶는다. 처치 컷인 포즈(attack/hit)는 1024px 이상을 유지한다.
 - 이미 손실 압축이고 품질이 0.85 이하인 텍스처, VRAM 압축 텍스처(3D)는 건드리지 않는다.
 
@@ -29,9 +28,6 @@ ICON_DIRS = [
     "content_trickcal/illustrations/laws",
 ]
 IDLE_HQ_DIR = "content_trickcal/avatars/avatar_01/idle_hq"
-IDLE_HQ_LIMIT = 640
-IDLE_HQ_SOURCE = 1536
-IDLE_HQ_SOURCE_REGION = (88.0, 140.0, 1373.0, 1253.0)  # README: 1536px 원본 좌표의 공통 실루엣 영역 (x, y, 너비, 높이)
 BIG_LIMIT = 1280
 SMALL_KEEP = 128
 
@@ -70,6 +66,8 @@ def main() -> int:
             continue
         biggest = max(width, height)
         folder = os.path.dirname(source)
+        if folder == IDLE_HQ_DIR:
+            continue  # 에르핀 고화질 프레임은 무손실·원래 해상도 그대로
         new_mode, new_quality, new_limit = mode, quality, limit
         if mode not in (0, 1):
             continue  # VRAM 압축 등은 그대로
@@ -77,16 +75,14 @@ def main() -> int:
             continue
         if mode == 0 or quality > QUALITY:
             new_mode, new_quality = 1, QUALITY
-        if folder == IDLE_HQ_DIR:
-            new_limit = IDLE_HQ_LIMIT
-        elif any(folder == d or folder.startswith(d + "/") for d in ICON_DIRS):
+        if any(folder == d or folder.startswith(d + "/") for d in ICON_DIRS):
             new_limit = ICON_LIMIT if limit == 0 else min(limit, ICON_LIMIT)
         elif biggest > BIG_LIMIT and (limit == 0 or limit > BIG_LIMIT):
             new_limit = BIG_LIMIT
         mipmaps = re.search(r"^mipmaps/generate=(\w+)", text, re.M)
         old_mip = mipmaps.group(1) if mipmaps else "false"
         new_mip = old_mip
-        if folder == IDLE_HQ_DIR or re.fullmatch(r"content_trickcal/avatars/avatar_\d+/idle", folder):
+        if re.fullmatch(r"content_trickcal/avatars/avatar_\d+/idle", folder):
             new_mip = "false"
         if (new_mode, new_quality, new_limit, new_mip) == (mode, quality, limit, old_mip):
             continue
@@ -96,15 +92,6 @@ def main() -> int:
         text = set_option(text, "process/size_limit", str(new_limit))
         open(imp, "w", encoding="utf-8").write(text)
         changed += 1
-    # idle_hq.tres: 임포트 크기가 바뀌었으니 AtlasTexture 영역도 같은 비율로
-    tres = "content_trickcal/avatars/avatar_01/idle_hq.tres"
-    if os.path.exists(tres):
-        scale = IDLE_HQ_LIMIT / IDLE_HQ_SOURCE
-        x, y, w, h = (v * scale for v in IDLE_HQ_SOURCE_REGION)
-        region = "region = Rect2(%g, %g, %g, %g)" % (x, y, w, h)
-        body = open(tres, encoding="utf-8").read()
-        body = re.sub(r"^region = Rect2\([^)]*\)$", region, body, flags=re.M)
-        open(tres, "w", encoding="utf-8").write(body)
     print("changed imports:", changed)
     return 0
 

@@ -97,12 +97,12 @@ jobs:
           for asset in Path('build/web').iterdir():
               if asset.is_file() and asset.stat().st_size >= 100 * 1024 * 1024:
                   raise SystemExit(f'{asset} exceeds GitHub 100 MiB: exclude unused source assets or split the pack')
-          # 용량 예산: 웹 첫 로딩·메모리를 위해 묶음은 60 MiB 안에서 관리한다 (2026-10 다이어트 뒤 약 46 MiB).
+          # 용량 예산: 웹 첫 로딩·메모리를 위해 묶음은 80 MiB 안에서 관리한다 (2026-10: 에르핀 고화질 무손실 유지로 약 73 MiB).
           # 넘으면 tools/optimize_texture_imports.py로 새 그림의 임포트 설정을 맞춘다.
           pck = Path('build/web/index.pck')
           print(f'index.pck = {pck.stat().st_size / 1048576:.2f} MiB')
-          if pck.stat().st_size >= 60 * 1024 * 1024:
-              raise SystemExit(f'{pck} is over the 60 MiB web budget: run tools/optimize_texture_imports.py for new images')
+          if pck.stat().st_size >= 80 * 1024 * 1024:
+              raise SystemExit(f'{pck} is over the 80 MiB web budget: run tools/optimize_texture_imports.py for new images')
           PY
           ls -la build/web
 
