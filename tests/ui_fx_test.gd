@@ -235,7 +235,10 @@ func _test_card_art_layout() -> void:
 			if card_id != &"ACT_09":
 				_expect(art != null and art.texture.resource_path == "res://assets/cards/%s.png" % card_id, "%s uses its own reviewed illustration" % card_id)
 				if art != null:
-					_expect(is_equal_approx(art.size.x / art.size.y, 4.0 / 3.0), "%s keeps the entire 4:3 illustration, detailed=%s" % [card_id, detailed])
+					# Native PNGs can differ by a few pixels; retain their actual aspect without stretching.
+					var source_aspect: float = float(art.texture.get_width()) / float(art.texture.get_height())
+					_expect(absf(source_aspect - 4.0 / 3.0) < 0.01, "%s illustration remains approximately 4:3" % card_id)
+					_expect(is_equal_approx(art.size.x / art.size.y, source_aspect), "%s preserves the entire source illustration without distortion, detailed=%s" % [card_id, detailed])
 					var art_window: Control = art.get_parent()
 					_expect(art.position.x >= 0.0 and art.position.y >= 0.0 and art.position.x + art.size.x <= art_window.size.x and art.position.y + art.size.y <= art_window.size.y, "%s illustration remains inside its frame, detailed=%s" % [card_id, detailed])
 			body.queue_free()
