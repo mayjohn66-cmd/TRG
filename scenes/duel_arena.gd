@@ -1,6 +1,6 @@
 # File: res://scenes/duel_arena.gd
 # Class: class_name DuelArena
-# Role: ACT_09 운명의 데스매치 결투장 (DuelArenaModal). 보드 한가운데에 열려 0.5초 종목 추첨 룰렛 -> 종목 안내 -> 6종 초고속 미니게임
+# Role: ACT_09 운명의 데스매치 결투장 (DuelArenaModal). 보드 한가운데에 열려 카지노 릴 종목 추첨 -> 종목 안내 -> 6종 초고속 미니게임
 #       (묵찌빠 단두대 / 할리갈리 디럭스 / 병뚜껑 절벽 컬링 / 석양의 무법자 / 엘리아스 E카드 / 스피키 룰렛) -> 승패 공개 -> 결과를 보여 주고 닫히며 queue_free된다.
 #       승패는 엔진(TurnManager·DuelRules)이 정한다. 이 화면은 로컬 자리의 입력(손·카드·누른 시각·게이지 값·구멍)만 value_chosen으로 내보내고 엔진 이벤트를 큐로 받아 연출한다.
 class_name DuelArena
@@ -9,6 +9,8 @@ extends PanelContainer
 ## 로컬 자리가 값을 정했다 (MainBoard가 duel_pick 행동으로 보낸다).
 signal value_chosen(player_id: int, value: int)
 signal closed
+## Emitted only once the casino reel has visibly stopped.
+signal game_selected(game_id: int)
 
 const SIZE: Vector2 = Vector2(560.0, 360.0)
 const SKIN: Color = Color("f8d9a8")
@@ -30,7 +32,7 @@ var setup_data: Dictionary = {}
 ## 이 화면에서 직접 입력할 수 있는 좌석 (AI 대전은 내 자리, 핫시트는 두 자리, 온라인은 내 자리).
 var local_seats: Array[int] = []
 ## 공개 연출이 재생 중이다 (봇·보드는 이 동안 기다린다).
-var animating: bool = false
+var animating: bool = true
 
 var _queue: Array[Dictionary] = []
 var _running: bool = false
@@ -57,6 +59,7 @@ var _stage: Control = null
 var _buttons: HBoxContainer = null
 var _bar: ProgressBar = null
 var _drawing: StageDrawing = null
+var _game_slot: DuelGameSlot = null
 var _hole_buttons: Array[Button] = []
 
 
@@ -84,12 +87,15 @@ func open() -> void:
 	_opened = true
 	visible = true
 	_place()
+	if not get_viewport().size_changed.is_connected(_place):
+		get_viewport().size_changed.connect(_place)
+	var fitted_scale := scale
 	modulate.a = 0.0
-	scale = Vector2(0.85, 0.85)
+	scale = fitted_scale * 0.85
 	pivot_offset = size / 2.0
 	var tween: Tween = create_tween().set_parallel(true)
 	tween.tween_property(self, "modulate:a", 1.0, 0.25)
-	tween.tween_property(self, "scale", Vector2.ONE, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(self, "scale", fitted_scale, 0.3).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	_pump()
 	await get_tree().process_frame
 	if is_inside_tree() and not _closing:
@@ -111,7 +117,7 @@ func _build() -> void:
 	column.add_theme_constant_override("separation", 6)
 	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(column)
-	_title = board._make_label("운명의 데스매치 결투장!", 24, GOLD)
+	_title = board._make_label("일기토 데스매치", 24, GOLD)
 	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_title.add_theme_constant_override("outline_size", 6)
 	_title.add_theme_color_override("font_outline_color", Color("3b2a00"))
@@ -133,6 +139,10 @@ func _build() -> void:
 	_drawing.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_drawing.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_stage.add_child(_drawing)
+	_game_slot = DuelGameSlot.new()
+	_game_slot.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_game_slot.visible = false
+	_stage.add_child(_game_slot)
 	_message = board._make_label("", 18, Color.WHITE)
 	_message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -158,6 +168,9 @@ func _place() -> void:
 	reset_size()
 	position = board._board_center() - size / 2.0
 	pivot_offset = size / 2.0
+	var available := get_viewport_rect().size - Vector2(32, 32)
+	var fit := minf(1.0, minf(available.x / maxf(size.x, 1.0), available.y / maxf(size.y, 1.0)))
+	scale = Vector2.ONE * maxf(0.1, fit)
 
 
 func _say(text: String, color: Color = Color.WHITE) -> void:
@@ -199,7 +212,7 @@ func _seat_name(seat: int) -> String:
 
 
 func _submit(seat: int, value: int) -> void:
-	if _submitted.has(seat) or _closing:
+	if _submitted.has(seat) or _closing or _step != &"play":
 		return
 	_submitted[seat] = value
 	value_chosen.emit(seat, value)
@@ -348,25 +361,45 @@ func _play(kind: StringName, data: Dictionary) -> void:
 			await _play_resolved(data)
 
 
-## 0.5초 종목 추첨 룰렛: 종목 이름이 빠르게 돌다가 뽑힌 종목에 멈춘다. 이어서 종목 규칙을 잠깐 보여 준다.
+## Reel -> locked ticket -> short rule introduction -> live inputs.
+## Presentation time is fixed (but follows the global game-speed button), so
+## every pace setting fits inside the engine's common introduction allowance.
 func _play_roulette() -> void:
 	_step = &"roulette"
-	Sfx.play(&"card_impact")
-	var spins: int = 9
-	for index: int in spins:
-		var shown: int = (game + index + 1 + DuelRules.GAME_COUNT - spins % DuelRules.GAME_COUNT) % DuelRules.GAME_COUNT
-		_game_label.text = DuelRules.game_title(shown)
-		_game_label.add_theme_color_override("font_color", Color("adb5bd"))
-		Sfx.play(&"roulette_tick")
-		await _wait(DuelRules.ROULETTE_TIME / float(spins))
-		if not is_inside_tree() or _closing:
-			return
-	_game_label.text = DuelRules.game_title(game)
+	animating = true
+	_clock = -1.0
+	_stop_timer()
+	_clear_buttons()
+	_drawing.visible = false
+	_stage.custom_minimum_size.y = 218.0
+	_game_label.text = "대결 종목 추첨"
 	_game_label.add_theme_color_override("font_color", GOLD)
-	Sfx.play(&"roulette_stop")
-	board.screen_shake(5.0, 0.2)
-	_say(DuelRules.GAME_RULES[game], Color("ffe066"))
-	await _wait(DuelRules.INTRO_TIME)
+	_say("", Color.WHITE)
+	_game_slot.play(game)
+	await get_tree().process_frame
+	_place()
+	await _game_slot.finished
+	if not is_inside_tree() or _closing:
+		return
+	_step = &"selected"
+	_game_label.text = "오늘의 대결!"
+	_say(DuelRules.game_name(game), GOLD)
+	game_selected.emit(game)
+	await get_tree().create_timer(0.55).timeout
+	if not is_inside_tree() or _closing:
+		return
+	_step = &"rules"
+	_game_label.text = DuelRules.game_name(game)
+	_say(DuelRules.GAME_RULES[game], Color("ffe6ad"))
+	await get_tree().create_timer(DuelRules.INTRO_TIME - 0.55).timeout
+	if not is_inside_tree() or _closing:
+		return
+	_game_slot.visible = false
+	_drawing.visible = true
+	_stage.custom_minimum_size.y = 150.0
+	animating = false
+	await get_tree().process_frame
+	_place()
 
 
 func _begin_game() -> void:
@@ -626,6 +659,9 @@ func close_now() -> void:
 	_closing = true
 	animating = false
 	_clock = -1.0
+	_game_slot.cancel()
+	_stop_timer()
+	_clear_buttons()
 	var tween: Tween = create_tween().set_parallel(true)
 	tween.tween_property(self, "modulate:a", 0.0, 0.25)
 	tween.tween_property(self, "scale", Vector2(0.9, 0.9), 0.25)

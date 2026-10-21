@@ -50,14 +50,14 @@ const CURLING_FILL_TIME: float = 1.6
 ## 스피키 룰렛 구멍 수.
 const BARREL_HOLES: int = 5
 
-## 엔진 제한 시간(초, TurnManager.timer_scale이 곱해진다). 화면의 룰렛·안내 시간까지 넉넉히 포함한다.
+## 입력 제한 시간(초, TurnManager.timer_scale이 곱해진다). time_limit()이 추첨·안내 여유를 별도로 더한다.
 const TIME_PICK: float = 12.0
 const TIME_REACTION: float = 14.0
 const TIME_CURLING: float = 16.0
 const TIME_BARREL_PICK: float = 8.0
 ## 화면: 종목 추첨 룰렛과 종목 안내 시간(초).
-const ROULETTE_TIME: float = 0.5
-const INTRO_TIME: float = 1.1
+const ROULETTE_TIME: float = 2.6
+const INTRO_TIME: float = 1.6
 
 ## 봇 밸런스: 순발력 반응 딜레이(초), 컬링 정밀도(%)와 실수 확률.
 const BOT_REACT_MIN: float = 0.38
@@ -137,10 +137,10 @@ static func reaction_deadline(game: int, setup: Dictionary) -> float:
 
 static func time_limit(game: int) -> float:
 	match game:
-		Game.HALLI, Game.QUICKDRAW: return TIME_REACTION
-		Game.CURLING: return TIME_CURLING
+		Game.HALLI, Game.QUICKDRAW: return TIME_REACTION + ROULETTE_TIME + INTRO_TIME
+		Game.CURLING: return TIME_CURLING + ROULETTE_TIME + INTRO_TIME
 		Game.BARREL: return TIME_BARREL_PICK + ROULETTE_TIME + INTRO_TIME
-	return TIME_PICK
+	return TIME_PICK + ROULETTE_TIME + INTRO_TIME
 
 
 ## 동시에 내는 게임인가 (스피키 룰렛만 번갈아 둔다).

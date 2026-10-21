@@ -70,6 +70,9 @@ jobs:
       - name: Run track laying and runaway train presentation test
         run: godot --headless --path . -s res://tests/ui_train_test.gd
 
+      - name: Run duel game selection slot and introduction test
+        run: godot --headless --path . -s res://tests/ui_duel_slot_test.gd
+
       - name: Run in-game feedback test (modal, snapshot, local webhook, cleanup)
         run: godot --headless --path . -s res://tests/ui_feedback_test.gd
 

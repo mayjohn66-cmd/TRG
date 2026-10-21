@@ -6113,7 +6113,7 @@ func _duel_target_at(pointer: Vector2, player_id: int) -> int:
 func _on_duel_event(kind: StringName, data: Dictionary) -> void:
 	match kind:
 		&"duel_started":
-			_log_line("[결투] %s가 %s에게 일기토 데스매치를 신청했습니다! 종목: %s" % [_player_name(int(data["challenger"])), _player_name(int(data["defender"])), DuelRules.game_title(int(data["game"]))], Color("ffd43b"))
+			_log_line("[결투] %s가 %s에게 일기토 데스매치를 신청했습니다!" % [_player_name(int(data["challenger"])), _player_name(int(data["defender"]))], Color("ffd43b"))
 			if _fx_on():
 				_open_duel_arena(int(data["challenger"]), int(data["defender"]), int(data["game"]), data["setup"])
 		&"duel_revealed":
@@ -6145,6 +6145,8 @@ func _open_duel_arena(challenger: int, defender: int, game: int, game_setup: Dic
 			seats.append(seat)
 	_duel_arena = DuelArena.new()
 	_duel_arena.setup(self, challenger, defender, seats, game, game_setup)
+	_duel_arena.game_selected.connect(func(game_id: int) -> void:
+		_log_line("[결투 종목] %s" % DuelRules.game_name(game_id), Color("ffd43b")))
 	_duel_arena.value_chosen.connect(func(player_id: int, value: int) -> void: _act(&"duel_pick", {"player_id": player_id, "value": value}))
 	_duel_arena.closed.connect(func() -> void:
 		_duel_arena = null
@@ -7512,7 +7514,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_react_hit_pawn(int(data["target"]))
 		&"duel_started", &"duel_pick_in", &"duel_revealed", &"duel_resolved":
 			if kind == &"duel_started":
-				_record(int(data["challenger"]), "%s에게 일기토 데스매치 신청! 종목: %s" % [_log_who(int(data["defender"])), _bq(DuelRules.game_name(int(data["game"])))])
+				_record(int(data["challenger"]), "%s에게 일기토 데스매치 신청!" % _log_who(int(data["defender"])))
 			_on_duel_event(kind, data)
 			if kind == &"duel_revealed" and int(data["winner"]) != -1:
 				# 결투장이 공개를 받은 뒤라 공개 연출을 기다린다
