@@ -26,10 +26,24 @@ func on_step_trigger(victim: BoardEntity, ctx: RuleContext) -> bool:
 	var state: GameState = ctx.state
 	ctx.metadata["cutscene_id"] = &"trap_domino"
 	duration_turns = 0
-	var chain: Array[int] = chain_reaction(state, state.board.tile_of_attachment(self), self)
+	var center: int = state.board.tile_of_attachment(self)
+	# 연출 순서: [도미노 연쇄!] 알림이 먼저, 그다음 연쇄로 터지는 함정들 (알림은 터질 칸 목록을 미리 담는다)
+	state.domino_collapsed.emit(pawn.entity_id, [] as Array[int], chain_tiles(state, center, self))
+	var chain: Array[int] = chain_reaction(state, center, self)
 	ctx.metadata["domino_chain"] = chain
-	state.domino_collapsed.emit(pawn.entity_id, [] as Array[int], chain)
 	return true
+
+
+## 연쇄로 터질 함정이 있는 칸들 (가까운 칸부터, 같은 칸의 함정 수만큼 반복).
+static func chain_tiles(state: GameState, center: int, skip: TileAttachment) -> Array[int]:
+	var tiles: Array[int] = []
+	if not state.board.is_valid_tile(center):
+		return tiles
+	for tile_index: int in state.board.tiles_within(center, chain_radius()):
+		for attachment: TileAttachment in state.board.get_tile(tile_index).attachments:
+			if attachment != skip and attachment.attachment_id.begins_with("TRP"):
+				tiles.append(tile_index)
+	return tiles
 
 
 ## center 반경 안의 함정(skip 제외)을 가까운 칸부터 모두 터뜨린다. 반환: 함정이 터진 칸 목록.

@@ -13,12 +13,12 @@ const MAX_STEPS: int = 6
 
 
 ## 라운드 종료 NPC 페이즈에서 호출된다. 정해진 방향(도적떼 정방향, 팩맨 역방향)으로 3~6칸 전진하고, 말을 처음 만난 칸에서 그 칸의 말을 모두 사출한 뒤 사라진다.
-## 반환: {"npc_id", "path", "caught": [말 ID], "stolen_cards": [], "vanished"}
+## 반환: {"npc_id", "from": 출발 칸, "path": 지난 칸들, "caught": [말 ID], "stolen_cards": [], "vanished", "behavior"}
 func run_ai(state: GameState) -> Dictionary:
 	var run: Dictionary = NpcSweep.advance(state, self, state.rng.randi_range(MIN_STEPS, MAX_STEPS))
 	var path: Array[int] = []
 	path.assign((run["path"] as Array).slice(1))
-	return {"npc_id": entity_id, "path": path, "caught": run["ejected"], "stolen_cards": [] as Array[StringName], "vanished": run["vanished"]}
+	return {"npc_id": entity_id, "from": int((run["path"] as Array)[0]), "path": path, "caught": run["ejected"], "stolen_cards": [] as Array[StringName], "vanished": run["vanished"], "behavior": behavior}
 
 
 func direction() -> int:

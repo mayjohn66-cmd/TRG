@@ -9,8 +9,13 @@ extends RefCounted
 ## 반환: {"npc_id", "display_id", "path": [칸], "ejected": [말 ID]}
 ## destroy_traps가 true면 지나가는 칸의 함정(TRP_*)도 모두 부순다 (폭주 기관차). 반환의 "destroyed"는 부순 함정 수.
 static func run(state: GameState, start_tile: int, direction: int, steps: int, display_id: StringName, by_player: int, destroy_traps: bool = false) -> Dictionary:
-	var behavior: GameEnums.NpcBehavior = GameEnums.NpcBehavior.PATROL_REVERSE if direction < 0 else GameEnums.NpcBehavior.CHASE_NEAREST
-	var npc: NeutralNPC = state.spawn_npc(start_tile, behavior, by_player, display_id)
+	# 한 번 쓸고 끝나는 질주라 보드의 중립 기물 목록에 올리지 않는다 (소환·소멸 알림도 내지 않는다).
+	var npc := NeutralNPC.new()
+	npc.entity_id = -1
+	npc.owner_id = by_player
+	npc.place_at(start_tile)
+	npc.behavior = GameEnums.NpcBehavior.PATROL_REVERSE if direction < 0 else GameEnums.NpcBehavior.CHASE_NEAREST
+	npc.display_id = display_id
 	var result: Dictionary = {"npc_id": npc.entity_id, "display_id": display_id, "path": [start_tile] as Array[int], "ejected": [] as Array[int], "destroyed": 0, "destroy_traps": destroy_traps}
 	_eject_at(state, start_tile, by_player, result)
 	var tile: int = start_tile
@@ -25,7 +30,6 @@ static func run(state: GameState, start_tile: int, direction: int, steps: int, d
 		(result["path"] as Array[int]).append(tile)
 		state.npc_stepped.emit(npc.entity_id, from_tile, tile)
 		_eject_at(state, tile, by_player, result)
-	state.remove_npc(npc)
 	return result
 
 
