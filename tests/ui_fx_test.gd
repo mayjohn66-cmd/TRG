@@ -1083,6 +1083,19 @@ func _test_announcer() -> void:
 		await process_frame
 	_expect(announcer.holding() and str(announcer._current.get("headline", "")) == "막는 알림", "막는 알림은 그대로 남는다")
 	announcer.cancel()
+	# 줄 서 있는 알림의 카드 미리보기는 숨긴 채 트리에 붙어 있어야 한다 (고아 노드로 세지 않게), 차례가 오면 보인다
+	var first_preview: Control = _board._make_card_preview(&"ACT_02")
+	var queued_preview: Control = _board._make_card_preview(&"ACT_09")
+	announcer.announce("테스트", "미리보기 1", "", Color.WHITE, first_preview, 0.3)
+	announcer.announce("테스트", "미리보기 2", "", Color.WHITE, queued_preview, 0.3)
+	_expect(queued_preview.is_inside_tree() and not queued_preview.visible, "줄 선 미리보기는 숨긴 채 트리에 보관된다")
+	announcer.skip_current()
+	for _i: int in 6:
+		await process_frame
+	_expect(is_instance_valid(queued_preview) and queued_preview.visible and queued_preview.get_parent() == announcer._root, "차례가 오면 미리보기가 카드에 붙어 보인다")
+	announcer.cancel()
+	await process_frame
+	_expect(not is_instance_valid(queued_preview) or not queued_preview.is_inside_tree(), "취소하면 미리보기도 정리된다")
 	announcer.history.clear()
 	_board.instant_roll_for_test = true
 	_board._announce("테스트", "건너뜀", "", Color.WHITE, null, 0.5)
