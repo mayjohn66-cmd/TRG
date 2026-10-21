@@ -425,9 +425,7 @@ var _stage_blackjack: BlackjackStage = null
 var _stage_pinball: PinballStage = null
 var _stage_turn_key: String = ""
 var _menu_button: Button = null
-var _sound_button: Button = null  ## 우측 상단 소리 켜짐/꺼짐 토글
-var _language_button: Button = null  ## 우측 상단 언어 표시/전환 (지구본 + KO)
-var _feedback_button: Button = null  ## 우측 상단 피드백 / 버그 제보
+var _feedback_button: Button = null  ## 왼쪽 위 피드백 / 버그 제보 (소리·언어는 설정 화면에 있다)
 ## 이 판을 시작한 시각 (피드백 스냅샷의 플레이 타임).
 var _game_started_msec: int = 0
 ## 액션 로그에 마지막으로 적은 라운드 구분선 (_log_round_divider).
@@ -1039,9 +1037,9 @@ func _build_ui() -> void:
 ## 어느 묶음에 속하는지 등록해 둔다: 0 왼쪽 / 1 가운데(보드) / 2 오른쪽. 기준 위치(base)에 묶음 오프셋을 더해 배치한다.
 func _register_layout() -> void:
 	_layout_entries.clear()
-	var left: Array = [_law_panel]
+	var left: Array = [_law_panel, _feedback_button]
 	var center: Array = [_select_banner, _dir_left, _dir_right, _board_layer, _pawn_layer, _dock, _drop_zone, _aim_layer, _pick_banner, _pick_cancel, _roll_button, _roll_pad, _gun_row, _stage_yacht, _stage_blackjack, _stage_pinball, _danger_label]
-	var right: Array = [_tool_board, _action_row, _pawn_bar, _emote_row, _menu_button, _sound_button, _language_button, _feedback_button, _debug_box, _log_panel]
+	var right: Array = [_tool_board, _action_row, _pawn_bar, _emote_row, _menu_button, _debug_box, _log_panel]
 	for index: int in PLAYER_IDS.size():
 		var player_id: int = PLAYER_IDS[index]
 		var panel: Control = _profiles[player_id]["panel"]
@@ -1450,26 +1448,10 @@ func _build_status_strip() -> void:
 	_menu_button.size = Vector2(84, 32)
 	_menu_button.tooltip_text = tr_ui("btn.menu_tip")
 	add_child(_menu_button)
-	_sound_button = _make_button("", _on_sound_toggle_pressed, 13, Color("3b4766"), 8)
-	_sound_button.name = "SoundToggle"
-	_sound_button.position = Vector2(1170, 10)
-	_sound_button.size = Vector2(94, 32)
-	_sound_button.tooltip_text = tr_ui("btn.sound_tip")
-	add_child(_sound_button)
-	_refresh_sound_button()
-	_language_button = _make_button(L10n.language_label(), _on_language_pressed, 13, Color("3b4766"), 8)
-	_language_button.name = "LanguageButton"
-	_language_button.position = Vector2(1100, 10)
-	_language_button.size = Vector2(64, 32)
-	_language_button.alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_language_button.tooltip_text = tr_ui("btn.language_tip")
-	var globe := GlobeIcon.new(18.0, Color("5c4128"))
-	globe.position = Vector2(9, 7)
-	_language_button.add_child(globe)
-	add_child(_language_button)
 	_feedback_button = _make_button(tr_ui("btn.feedback"), _open_feedback.bind("상단 버튼"), 13, Color("c2255c"), 8)
 	_feedback_button.name = "FeedbackButton"
-	_feedback_button.position = Vector2(944, 10)
+	# 소리·언어는 설정 화면으로 옮겼다. 피드백은 왼쪽 위 (오른쪽 위는 [메뉴] 하나)
+	_feedback_button.position = Vector2(SAFE_MARGIN, 10)
 	_feedback_button.size = Vector2(150, 32)
 	_feedback_button.tooltip_text = tr_ui("btn.feedback_tip")
 	add_child(_feedback_button)
@@ -4323,21 +4305,6 @@ func _set_gun_buttons(gun: bool) -> void:
 	_stop_button.custom_minimum_size = Vector2(150, 58) if gun else Vector2(150, 30)
 	_stop_button.add_theme_font_size_override("font_size", 24 if gun else 13)
 	_gun_row.visible = gun and _gun_row.visible
-
-
-func _on_sound_toggle_pressed() -> void:
-	GameSession.audio_muted = not GameSession.audio_muted
-	GameSession.save_settings()
-	Sfx.unlock()
-	Sfx.apply_settings()
-	_refresh_sound_button()
-	Sfx.play(&"ui_click")  # 켜질 때만 들린다 (꺼져 있으면 재생되지 않음)
-
-
-func _refresh_sound_button() -> void:
-	if _sound_button != null:
-		_sound_button.text = tr_ui("btn.sound_off") if GameSession.audio_muted else tr_ui("btn.sound_on")
-		_sound_button.modulate = Color(1.0, 0.75, 0.75) if GameSession.audio_muted else Color.WHITE
 
 
 ## 주사위 계열 도구인가 (굴림 소리가 주사위 던지는 소리다).
@@ -8004,7 +7971,6 @@ func _close_menu() -> void:
 	_menu_overlay.queue_free()
 	_menu_overlay = null
 	_menu_box = null
-	_refresh_sound_button()  # 설정의 전체 음소거는 위쪽 [소리] 버튼과 같은 값
 
 
 ## 오래 쓰는 버튼(새 게임·모드·치트·로그)은 지우지 않고 메뉴에서 떼어 둔다.
@@ -8091,16 +8057,6 @@ func _build_exit_page() -> void:
 	_menu_item(_make_button(tr_ui("btn.cancel"), _show_menu_page.bind(&"main"), 17, Color("3b4766"), 10))
 
 
-## 언어 버튼: 다음 언어로 넘긴다 (ko -> en -> ja). 증강·카드 표의 문구는 바로 다시 읽고, 이미 만든 화면 문구는 다음에 만들 때 바뀐다.
-## 아직 번역이 비어 있는 문구는 한국어로 나온다 (L10n 폴백).
-func _on_language_pressed() -> void:
-	GameSession.language = L10n.cycle_language()
-	GameSession.save_settings()
-	AugmentRegistry.reload()
-	_language_button.text = L10n.language_label()
-	_log_line("[언어] %s - 번역이 없는 문구는 한국어로 표시됩니다" % L10n.language_label(), Color("adb5bd"))
-
-
 ## 피드백 창을 연다 (상단 버튼 / 결과 화면). 이미 열려 있으면 그 창을 둔다.
 func _open_feedback(from: String = "", initial_kind: FeedbackModal.Kind = FeedbackModal.Kind.BUG) -> FeedbackModal:
 	var existing: Node = find_child("FeedbackModal", false, false)
@@ -8168,7 +8124,6 @@ static func _plain_text(bbcode: String) -> String:
 
 func _on_menu_reset_settings() -> void:
 	LobbyTheme.reset_settings()
-	_refresh_sound_button()
 	_show_menu_page(&"settings")
 
 

@@ -63,7 +63,9 @@ static func to_int(value: Variant, default: int) -> int:
 
 
 static func _split_records(text: String) -> Array[Array]:
-	if text.begins_with("﻿"):
+	# BOM은 글자 코드로 비교한다. 소스에 BOM 글자를 그대로 적으면 웹 내보내기가 스크립트를 변환하며 그 글자를 지워
+	# begins_with("")가 되어 늘 참이 되고, 모든 CSV의 첫 글자(헤더 "id"의 i)가 잘려 표 전체가 무시됐다.
+	if text.length() > 0 and text.unicode_at(0) == 0xFEFF:
 		text = text.substr(1)
 	var records: Array[Array] = []
 	var record: Array = []

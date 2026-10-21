@@ -925,26 +925,17 @@ func _test_view_modes() -> void:
 	GameSession.view_mode = MainBoard.ViewMode.TOP
 
 
-## 상단 UI는 [피드백 / 버그 제보]·[언어]·[소리 켜짐/꺼짐]·[메뉴]뿐이고, 메뉴 안에서 계속하기/게임 설정/전체 로그/새 게임/모드/치트/게임 나가기를 고른다.
+## 상단 UI는 왼쪽 [피드백 / 버그 제보]와 오른쪽 [메뉴]뿐이고 (소리·언어는 설정), 메뉴 안에서 계속하기/게임 설정/전체 로그/새 게임/모드/치트/게임 나가기를 고른다.
 func _test_game_menu() -> void:
 	var top_buttons: Array[Button] = []
 	for child: Node in _board.get_children():
 		var button: Button = child as Button
 		if button != null and button.visible and button.position.y < 44.0 and button.size.y <= 40.0:
 			top_buttons.append(button)
-	_expect(top_buttons.size() == 4 and top_buttons.has(_board._menu_button) and top_buttons.has(_board._sound_button) and top_buttons.has(_board._language_button) and top_buttons.has(_board._feedback_button), "상단에는 [피드백]·[언어]·[소리]·[메뉴] 네 개만 남는다 (%d개)" % top_buttons.size())
+	_expect(top_buttons.size() == 2 and top_buttons.has(_board._menu_button) and top_buttons.has(_board._feedback_button), "상단에는 왼쪽 [피드백]·오른쪽 [메뉴] 두 개만 남는다 (%d개)" % top_buttons.size())
+	_expect(_board._feedback_button.position.x < 200.0 and _board._menu_button.position.x > 1000.0, "피드백은 왼쪽 위, 메뉴는 오른쪽 위")
 	_expect(_board._mode_toggle.get_parent() == null and _board._new_game_button.get_parent() == null and _board._debug_toggle.get_parent() == null, "닫힌 메뉴에서는 모드·새 게임·치트 버튼이 화면에 없다")
 	_expect(not _board._menu_is_open(), "처음에는 메뉴가 닫혀 있다")
-	var was_muted: bool = GameSession.audio_muted
-	GameSession.audio_muted = false
-	_board._refresh_sound_button()
-	_expect(_board._sound_button.text == "소리 켜짐", "소리 토글 버튼은 켜진 상태를 보여 준다")
-	_board._sound_button.pressed.emit()
-	_expect(GameSession.audio_muted and _board._sound_button.text == "소리 꺼짐", "누르면 음소거되고 문구가 바뀐다")
-	_board._sound_button.pressed.emit()
-	_expect(not GameSession.audio_muted and _board._sound_button.text == "소리 켜짐", "다시 누르면 소리가 켜진다")
-	GameSession.audio_muted = was_muted
-	_board._refresh_sound_button()
 	_board._menu_button.pressed.emit()
 	_expect(_board._menu_is_open() and _board._menu_page == &"main", "[메뉴]를 누르면 메뉴가 열린다")
 	var labels: Array[String] = []

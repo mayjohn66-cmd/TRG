@@ -333,7 +333,7 @@ static func show_settings(parent: Control) -> void:
 	buttons.add_child(close)
 
 
-## 설정 화면 공통 내용: [화면] 전체화면·화면 흔들림·배터리 절약 / [소리] 전체·효과음·배경음악. 시작 화면 팝업과 게임 메뉴가 같이 쓴다.
+## 설정 화면 공통 내용: [화면] 전체화면·화면 흔들림·배터리 절약 / [소리] 전체·효과음·배경음악 / [언어]. 시작 화면 팝업과 게임 메뉴가 같이 쓴다.
 static func add_settings_controls(box: Container, ink: Color) -> void:
 	box.add_child(_section_label("화면", ink))
 	_add_switch(box, ink, "FullscreenSwitch", "전체화면", DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN, func(on: bool) -> void:
@@ -348,6 +348,39 @@ static func add_settings_controls(box: Container, ink: Color) -> void:
 		GameSession.save_settings())
 	box.add_child(_section_label("소리", ink))
 	add_audio_controls(box, ink)
+	box.add_child(_section_label("언어", ink))
+	_add_language_row(box, ink)
+
+
+const LANGUAGE_NAMES: Dictionary = {"ko": "한국어", "en": "English", "ja": "日本語"}
+
+
+## 언어 고르기: 바로 저장하고 증강·카드 표 문구를 다시 읽는다. 화면 문구는 다음에 만들 때부터 바뀐다 (번역이 빈 문구는 한국어).
+static func _add_language_row(box: Container, ink: Color) -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	box.add_child(row)
+	var title: Label = label("화면 언어", 16, ink)
+	title.custom_minimum_size = Vector2(112.0, 0.0)
+	row.add_child(title)
+	var option := OptionButton.new()
+	option.name = "LanguageOption"
+	option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	option.add_theme_font_size_override("font_size", 15)
+	for index: int in L10n.LANGUAGES.size():
+		var code: String = L10n.LANGUAGES[index]
+		option.add_item("%s (%s)" % [LANGUAGE_NAMES.get(code, code), L10n.language_label(code)], index)
+	option.select(maxi(L10n.LANGUAGES.find(L10n.current_lang), 0))
+	option.item_selected.connect(func(index: int) -> void:
+		if L10n.set_language(L10n.LANGUAGES[index]):
+			GameSession.language = L10n.current_lang
+			GameSession.save_settings()
+			AugmentRegistry.reload()
+		Sfx.play(&"ui_click"))
+	row.add_child(option)
+	var note: Label = label("번역이 아직 없는 문구는 한국어로 나옵니다", 12, ink)
+	note.modulate = Color(1, 1, 1, 0.65)
+	box.add_child(note)
 
 
 ## [기본값으로]: 소리·화면 설정을 처음 값으로 되돌리고 바로 적용한다.

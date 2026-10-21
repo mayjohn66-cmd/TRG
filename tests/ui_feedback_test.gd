@@ -38,9 +38,9 @@ func _run() -> void:
 	FeedbackModal.reset_cooldown()
 	# 상단 버튼
 	var feedback_button: Button = board.find_child("FeedbackButton", true, false)
-	var language_button: Button = board.find_child("LanguageButton", true, false)
 	expect(feedback_button != null and feedback_button.text == L10n.tr_ui("btn.feedback"), "상단에 피드백 버튼")
-	expect(language_button != null and language_button.text == "KO" and language_button.get_child_count() >= 1, "상단에 지구본 + KO 언어 버튼")
+	expect(board.find_child("LanguageButton", true, false) == null and board.find_child("SoundToggle", true, false) == null, "상단에는 언어·소리 버튼이 없다 (설정으로 옮김)")
+	expect(feedback_button != null and feedback_button.position.x < 200.0, "피드백 버튼은 왼쪽 위")
 	feedback_button.pressed.emit()
 	var modal: FeedbackModal = board.find_child("FeedbackModal", false, false)
 	expect(modal != null, "피드백 버튼이 창을 연다")
@@ -151,15 +151,21 @@ func _run() -> void:
 		if from_result != null:
 			from_result.close_modal()
 	board._close_result_overlay()
-	# 언어 버튼: KO -> EN -> JA -> KO. 번역이 비어 있으면 한국어로 나온다.
+	# 언어는 설정 화면에서 고른다. 번역이 비어 있으면 한국어로 나온다.
 	var saved_lang: String = L10n.current_lang
-	language_button.pressed.emit()
-	expect(L10n.current_lang == "en" and language_button.text == "EN", "언어 버튼: EN")
-	expect(L10n.tr_ui("btn.roll") == "굴리기", "번역이 비어 있으면 한국어 폴백")
-	language_button.pressed.emit()
-	expect(L10n.current_lang == "ja" and language_button.text == "JA", "언어 버튼: JA")
-	language_button.pressed.emit()
-	expect(L10n.current_lang == "ko" and language_button.text == "KO", "언어 버튼: 다시 KO")
+	board._open_menu()
+	board._show_menu_page(&"settings")
+	var option: OptionButton = board._menu_box.find_child("LanguageOption", true, false)
+	expect(option != null and option.item_count == 3, "게임 설정에 언어 선택 (한국어·English·日本語)")
+	if option != null:
+		option.select(1)
+		option.item_selected.emit(1)
+		expect(L10n.current_lang == "en" and GameSession.language == "en", "English를 고르면 언어가 바뀌고 저장된다")
+		expect(L10n.tr_ui("btn.roll") == "굴리기", "번역이 비어 있으면 한국어 폴백")
+		option.select(0)
+		option.item_selected.emit(0)
+		expect(L10n.current_lang == "ko", "다시 한국어")
+	board._close_menu()
 	L10n.set_language(saved_lang)
 	GameSession.language = saved_lang
 	GameSession.save_settings()
@@ -171,7 +177,7 @@ func _finish() -> void:
 	board.queue_free()
 	await process_frame
 	if failures.is_empty():
-		print("UI_FEEDBACK_OK: buttons, limits, snapshot, copy, webhook POST, cooldown, failure, cleanup, language")
+		print("UI_FEEDBACK_OK: buttons, limits, snapshot, copy, webhook POST, cooldown, failure, cleanup, language setting")
 	else:
 		for failure: String in failures:
 			push_error(failure)

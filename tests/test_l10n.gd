@@ -90,6 +90,23 @@ func test_every_tr_ui_key_used_in_code_exists() -> void:
 		check(L10n.has_key(key), "%s의 '%s'가 ui_strings.csv에 있다" % [str(used[key]).get_file(), key])
 
 
+## 웹 내보내기는 스크립트를 변환하면서 보이지 않는 글자(BOM 등)를 지울 수 있다. 문자열 안에 이런 글자를 직접 적으면
+## 에디터에서는 맞고 웹에서만 틀린다 (예: CSV BOM 검사가 begins_with("")가 되어 모든 표의 첫 글자가 잘렸다). 글자 코드로 써야 한다.
+func test_scripts_have_no_invisible_characters() -> void:
+	var invisible: Array[int] = [0xFEFF, 0x200B, 0x200C, 0x200D, 0x2060]
+	for path: String in _scripts("res://scenes") + _scripts("res://core_engine"):
+		var text: String = FileAccess.get_file_as_string(path)
+		for code: int in invisible:
+			check(not text.contains(char(code)), "%s: 보이지 않는 글자 U+%04X를 문자열에 직접 쓰지 않는다" % [path.get_file(), code])
+
+
+func test_csv_header_first_character_is_kept() -> void:
+	var rows: Array[Dictionary] = DataTable.parse("key,ko\nbtn.roll,굴리기\n")
+	check(rows.size() == 1 and rows[0].has("key"), "BOM 없는 CSV는 첫 글자를 자르지 않는다 (%s)" % str(rows))
+	var with_bom: Array[Dictionary] = DataTable.parse(char(0xFEFF) + "key,ko\nbtn.roll,굴리기\n")
+	check(with_bom.size() == 1 and with_bom[0].has("key"), "BOM은 지운다")
+
+
 func _scripts(folder: String) -> Array[String]:
 	var result: Array[String] = []
 	var dir: DirAccess = DirAccess.open(folder)

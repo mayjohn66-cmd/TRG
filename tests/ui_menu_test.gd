@@ -133,7 +133,7 @@ func _run() -> void:
 	book.free()
 	menu._bottom["center"].pressed.emit()
 	var popup: Node = menu.find_child("Popup", true, false)
-	_expect(popup != null and popup.find_child("PacingCheck", true, false) == null and popup.find_child("FullscreenSwitch", true, false) != null and popup.find_child("BatterySwitch", true, false) != null and popup.find_child("MasterMute", true, false) != null and popup.find_child("ViewMode", true, false) == null and popup.find_child("PaceOption", true, false) == null and popup.find_child("SfxMute", true, false) != null and popup.find_child("BgmMute", true, false) != null, "설정 팝업: 화면 스위치·전체/효과음/배경음 음소거 (연출 멈춤·속도·시점은 없음)")
+	_expect(popup != null and popup.find_child("PacingCheck", true, false) == null and popup.find_child("FullscreenSwitch", true, false) != null and popup.find_child("BatterySwitch", true, false) != null and popup.find_child("MasterMute", true, false) != null and popup.find_child("LanguageOption", true, false) != null and popup.find_child("ViewMode", true, false) == null and popup.find_child("PaceOption", true, false) == null and popup.find_child("SfxMute", true, false) != null and popup.find_child("BgmMute", true, false) != null, "설정 팝업: 화면 스위치·전체/효과음/배경음 음소거·언어 (연출 멈춤·속도·시점은 없음)")
 	popup.free()
 	_expect(MobileSupport.is_portrait(Vector2i(390, 844)) and not MobileSupport.is_portrait(Vector2i(844, 390)), "세로/가로 판정")
 	menu._mobile.refresh(Vector2i(390, 844))
