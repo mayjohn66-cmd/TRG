@@ -15,9 +15,9 @@ dest_files=["res://.godot/imported/UI_RULE_BADGE.png-f4edaf81e1f60df9f07a1748dcb
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.7
+compress/lossy_quality=0.85
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
