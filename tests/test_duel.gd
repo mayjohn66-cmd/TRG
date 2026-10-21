@@ -167,6 +167,24 @@ func test_curling_closest_to_the_edge_wins_and_overshoot_falls() -> void:
 	check_eq(DuelRules.detail_text(curling, {}, 1, 2, {1: 960, 2: 880}), "(96.0% vs 88.0%)", "결과 문구")
 
 
+func test_curling_shots_are_sequential_visible_and_sync_the_real_impulses() -> void:
+	var manager: TurnManager = _new_manager(DuelRules.Game.CURLING)
+	_setup(manager)
+	_challenge(manager)
+	var rejected := _rejections(manager)
+	_do(manager, 2, &"duel_pick", {"value": BottleCapPhysics.encode(1100)})
+	check_eq(rejected.back(), [2, &"duel_pick", &"not_your_turn"], "The defender cannot shoot before the challenger")
+	var first := BottleCapPhysics.encode(850)
+	_do(manager, 1, &"duel_pick", {"value": first})
+	var payload: Dictionary = manager._build_sync_payload()["duel"]
+	check_eq(int(payload["turn"]), 2, "The second shooter is authoritative and synchronized")
+	check_eq(int(payload["picks"][1]), first, "First cap input is preserved for shared-table replay")
+	check(bool(payload["setup"].get("physics", false)), "The duel uses the physical ruleset")
+	_do(manager, 2, &"duel_pick", {"value": BottleCapPhysics.encode(1100)})
+	check(not manager.duel_pending(), "Both physical shots resolve the actual duel")
+	_dispose(manager)
+
+
 func test_ecard_upset_gives_the_defender_five_tiles() -> void:
 	var manager: TurnManager = _new_manager(DuelRules.Game.ECARD)
 	_setup(manager)

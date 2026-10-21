@@ -14,7 +14,7 @@ const GAME_NAMES: Array[String] = ["묵찌빠 단두대", "할리갈리 디럭�
 const GAME_RULES: Array[String] = [
 	"3초 안에 가위·바위·보! 같은 손이면 다시 골라 승부를 낸다",
 	"두 더미 맨 위 카드의 그림 합이 정확히 5개일 때 먼저 종을 쳐라! (아닐 때 치면 반칙패)",
-	"게이지를 멈춰 100%에 가장 가깝게! 100%를 넘으면 절벽 아래로 추락",
+	"병뚜껑을 뒤로 당겨 튕겨라! 번갈아 한 번씩, 상대를 밀어내고 절벽 가까이에 멈추면 승리",
 	"정적 뒤 [뽑아라!] 신호에 먼저 쏴라! 신호 전에 쏘면 부정출발 패배",
 	"신청자는 여왕·평민, 수비자는 반란군·평민 중 한 장! 반란군이 여왕을 잡으면 하극상 +5칸",
 	"구멍 5개 중 하나에 폭탄! 번갈아 칼을 꽂아 사도를 튀어 오르게 한 쪽이 패배",
@@ -41,10 +41,9 @@ const REACTION_WINDOW: float = 2.5
 ## 석양의 무법자: 신호까지의 정적(초) 범위.
 const DRAW_MIN: float = 1.5
 const DRAW_MAX: float = 3.0
-## 병뚜껑 컬링: 게이지 끝(115%)과 한 번 차오르는 시간(초). 값은 0.1% 단위 정수(0~1150)로 주고받는다.
+## Legacy straight-shot input compatibility. New pointer shots pack power + aim in BottleCapPhysics.
 const CURLING_MAX: int = 1150
 const CURLING_EDGE: int = 1000
-const CURLING_FILL_TIME: float = 1.6
 ## 스피키 룰렛 구멍 수.
 const BARREL_HOLES: int = 5
 
@@ -91,7 +90,7 @@ static func setup_game(game: int, rng: RandomNumberGenerator) -> Dictionary:
 				fake_at = snappedf(rng.randf_range(0.6, maxf(signal_at - 0.5, 0.7)), 0.01)  # 💨 트림! 가짜 신호
 			return {"signal": signal_at, "fake": fake_at}
 		Game.CURLING:
-			return {"fill_time": CURLING_FILL_TIME}
+			return {"physics": true}
 		Game.BARREL:
 			return {"bomb": rng.randi_range(0, BARREL_HOLES - 1), "holes": BARREL_HOLES}
 	return {}
@@ -141,9 +140,9 @@ static func time_limit(game: int) -> float:
 	return TIME_PICK + ROULETTE_TIME + INTRO_TIME
 
 
-## 동시에 내는 게임인가 (스피키 룰렛만 번갈아 둔다).
+## 컬링과 스피키 룰렛은 신청자부터 한 번씩 번갈아 둔다.
 static func is_simultaneous(game: int) -> bool:
-	return game != Game.BARREL
+	return game != Game.BARREL and game != Game.CURLING
 
 
 ## 이 자리가 보낸 값이 올바른가.
@@ -152,7 +151,7 @@ static func valid_input(game: int, value: int, is_challenger: bool, opened: Arra
 		Game.RPS: return value >= 0 and value <= 2
 		Game.ECARD: return value == 0 or value == 1
 		Game.HALLI, Game.QUICKDRAW: return value >= -1 and value <= 60000
-		Game.CURLING: return value >= 0 and value <= CURLING_MAX
+		Game.CURLING: return BottleCapPhysics.valid(value)
 		Game.BARREL: return value >= 0 and value < BARREL_HOLES and not opened.has(value)
 	return false
 
@@ -213,6 +212,11 @@ static func resolve(game: int, setup: Dictionary, challenger: int, defender: int
 			else:
 				result["winner"] = first
 		Game.CURLING:
+			if bool(setup.get("physics", false)):
+				var outcome := BottleCapPhysics.simulate(a, b).result()
+				result["winner"] = challenger if int(outcome["index"]) == 0 else defender
+				result["decided_by"] = outcome["decided_by"]
+				return result
 			var a_ok: bool = a <= CURLING_EDGE
 			var b_ok: bool = b <= CURLING_EDGE
 			if a_ok and b_ok:
@@ -235,6 +239,9 @@ static func detail_text(game: int, setup: Dictionary, challenger: int, defender:
 		Game.ECARD:
 			return "(%s vs %s)" % [ECARD_CHALLENGER[clampi(a, 0, 1)], ECARD_DEFENDER[clampi(b, 0, 1)]]
 		Game.CURLING:
+			if bool(setup.get("physics", false)):
+				var world := BottleCapPhysics.simulate(a, b)
+				return "(%s vs %s)" % [world.distance_text(0), world.distance_text(1)]
 			return "(%s vs %s)" % [curling_text(a), curling_text(b)]
 		Game.HALLI, Game.QUICKDRAW:
 			var mark_ms: int = int(round(reaction_mark(game, setup) * 1000.0))
@@ -266,6 +273,11 @@ static func bot_input(game: int, setup: Dictionary, is_challenger: bool, rng: Ra
 		Game.HALLI, Game.QUICKDRAW:
 			return int(round((reaction_mark(game, setup) + rng.randf_range(BOT_REACT_MIN, BOT_REACT_MAX)) * 1000.0))
 		Game.CURLING:
+			if bool(setup.get("physics", false)):
+				var power := rng.randi_range(BOT_CURL_MIN, BOT_CURL_MAX)
+				if rng.randf() < BOT_CURL_FAIL:
+					power = rng.randi_range(1010, 1120)
+				return BottleCapPhysics.encode(power, rng.randi_range(-8, 8))
 			if rng.randf() < BOT_CURL_FAIL:
 				return rng.randi_range(CURLING_EDGE + 5, 1100)
 			return rng.randi_range(BOT_CURL_MIN, BOT_CURL_MAX)

@@ -79,6 +79,9 @@ jobs:
       - name: Run Halli Galli card boundaries, bell reaction and foul test
         run: godot --headless --path . -s res://tests/ui_halli_test.gd
 
+      - name: Run bottle cap curling gestures, physical collisions and deterministic replay test
+        run: godot --headless --path . -s res://tests/ui_curling_test.gd
+
       - name: Run in-game feedback test (modal, snapshot, local webhook, cleanup)
         run: godot --headless --path . -s res://tests/ui_feedback_test.gd
 

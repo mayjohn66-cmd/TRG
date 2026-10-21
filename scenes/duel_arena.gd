@@ -45,7 +45,6 @@ var _submitted: Dictionary = {}
 var _pick_seat: int = -1
 var _timer_left: float = 0.0
 var _timer_total: float = 1.0
-var _gauge_value: float = 0.0
 var _opened_holes: Array[int] = []
 var _turn: int = -1
 var _shown_cards: int = 0
@@ -62,6 +61,7 @@ var _drawing: StageDrawing = null
 var _game_slot: DuelGameSlot = null
 var _rps_stage: DuelRpsStage = null
 var _halli_stage: DuelHalliStage = null
+var _curling_stage: DuelCurlingStage = null
 var _intro_panel: PanelContainer
 var _intro_headline: Label
 var _intro_how: Label
@@ -75,7 +75,7 @@ const INTRO_HEADLINES: Array[String] = [
 const INTRO_HOW: Array[String] = [
 	"3초 안에 바위 · 가위 · 보 중 하나를 고르세요.",
 	"두 카드의 그림을 더해 5개가 되는 순간,\n[데스벨 치기!]를 누르세요.",
-	"차오르는 게이지를 보고 [스톱!]을 누르세요.\n100%에 더 가까운 쪽이 승리합니다.",
+	"내 병뚜껑을 누르고 뒤로 당긴 뒤 놓으세요.\n번갈아 한 번씩, 절벽 가까이에 멈추면 승리합니다.",
 	"[뽑아라!] 신호가 뜨면 [발사!]를 누르세요.\n진짜 신호에 더 빨리 반응하면 승리합니다.",
 	"신청자: 여왕 / 평민 · 수비자: 반란군 / 평민\n카드 한 장을 골라 상대와 겨루세요.",
 	"차례가 오면 칼을 꽂을 구멍을 고르세요.\n번갈아 한 번씩, 다섯 구멍 중 하나에는 폭탄!",
@@ -83,7 +83,7 @@ const INTRO_HOW: Array[String] = [
 const INTRO_WARNINGS: Array[String] = [
 	"같은 손이면 무승부! 다시 골라 승부를 냅니다.",
 	"합이 5개가 아닐 때 누르면 반칙패!",
-	"100%를 넘기면 절벽 아래로 추락합니다!",
+	"상대 병뚜껑을 밀어낼 수 있어요! 끝선을 넘으면 추락!",
 	"트림은 가짜 신호! 신호보다 먼저 쏘면 반칙패!",
 	"여왕 > 평민 > 반란군 > 여왕 · 반란군의 하극상은 +5칸!",
 	"사도가 튀어 오르게 한 사람이 패배합니다!",
@@ -177,6 +177,12 @@ func _build() -> void:
 	_halli_stage.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_halli_stage.visible = false
 	_stage.add_child(_halli_stage)
+	_curling_stage = DuelCurlingStage.new()
+	_curling_stage.arena = self
+	_curling_stage.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_curling_stage.visible = false
+	_curling_stage.shot_requested.connect(_curling_release)
+	_stage.add_child(_curling_stage)
 	_game_slot = DuelGameSlot.new()
 	_game_slot.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_game_slot.visible = false
@@ -358,13 +364,6 @@ func _process(delta: float) -> void:
 					_game_label.text = "· · ·"
 					_game_label.add_theme_color_override("font_color", Color.WHITE)
 			_expire_reaction()
-		DuelRules.Game.CURLING:
-			if _pick_seat != -1:
-				var fill: float = float(setup_data.get("fill_time", DuelRules.CURLING_FILL_TIME))
-				_gauge_value = minf(_clock / fill, 1.0) * float(DuelRules.CURLING_MAX)
-				_drawing.queue_redraw()
-				if _clock >= fill:
-					_curling_stop()
 
 
 ## 순발력 게임: 정답 순간이 지나고 창이 닫히면 안 누른 로컬 자리는 -1(못 누름)을 보낸다.
@@ -386,6 +385,9 @@ func _on_local_timeout() -> void:
 		DuelRules.Game.ECARD:
 			if _pick_seat != -1:
 				_choose(randi() % 2)
+		DuelRules.Game.CURLING:
+			if _pick_seat != -1:
+				_curling_release(DuelRules.CURLING_MAX)
 		DuelRules.Game.BARREL:
 			if local_seats.has(_turn) and _step == &"play":
 				var free: Array[int] = []
@@ -397,6 +399,10 @@ func _on_local_timeout() -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if game == DuelRules.Game.CURLING and _opened and not _closing and _step == &"play" and _pick_seat != -1:
+		if _curling_stage.handle_input(event):
+			get_viewport().set_input_as_handled()
+		return
 	if _closing or _step != &"play" or not (event is InputEventKey) or not (event as InputEventKey).pressed or (event as InputEventKey).echo:
 		return
 	if game != DuelRules.Game.HALLI and game != DuelRules.Game.QUICKDRAW:
@@ -437,7 +443,9 @@ func _play(kind: StringName, data: Dictionary) -> void:
 			if is_inside_tree() and not _closing:
 				_begin_game()
 		&"duel_pick_in":
-			if game == DuelRules.Game.RPS:
+			if game == DuelRules.Game.CURLING and data.has("value"):
+				await _play_curling_shot(int(data["player_id"]), int(data["value"]))
+			elif game == DuelRules.Game.RPS:
 				_rps_stage.mark_ready(int(data["player_id"]))
 			elif game == DuelRules.Game.BARREL and data.has("hole"):
 				await _play_barrel_stab(data)
@@ -530,11 +538,20 @@ func _begin_game() -> void:
 		_drawing.visible = false
 		_halli_stage.visible = true
 		_place.call_deferred()
+	elif game == DuelRules.Game.CURLING:
+		custom_minimum_size.x = 860.0
+		_stage.custom_minimum_size.y = 360.0
+		_drawing.visible = false
+		_curling_stage.visible = true
+		_curling_stage.reset_table()
+		_place.call_deferred()
 	_step = &"play"
 	_say("", Color.WHITE)
 	match game:
-		DuelRules.Game.RPS, DuelRules.Game.ECARD, DuelRules.Game.CURLING:
+		DuelRules.Game.RPS, DuelRules.Game.ECARD:
 			_next_pick_seat()
+		DuelRules.Game.CURLING:
+			_begin_curling_pick()
 		DuelRules.Game.HALLI, DuelRules.Game.QUICKDRAW:
 			_begin_reaction()
 		DuelRules.Game.BARREL:
@@ -564,10 +581,6 @@ func _next_pick_seat() -> void:
 			for index: int in 2:
 				_add_button(names[index], _choose.bind(index), Color("5f3dc4") if index == 0 else Color("3b4766"), 170.0)
 			_start_timer(PICK_SECONDS * 2.0)
-		DuelRules.Game.CURLING:
-			_add_button("스톱!", _curling_stop, Color("c92a2a"), 200.0)
-			_gauge_value = 0.0
-			_clock = 0.0
 
 
 func _choose(value: int) -> void:
@@ -588,14 +601,55 @@ func _choose(value: int) -> void:
 
 
 func _curling_stop() -> void:
-	if _pick_seat == -1 or _step != &"play" or _clock < 0.0:
+	# Keyboard/button fallback uses the same aimed impulse as a pointer release.
+	_curling_stage.fire()
+
+
+func _begin_curling_pick() -> void:
+	_step = &"play"
+	_clock = 0.0
+	_clear_buttons()
+	_pick_seat = _turn if local_seats.has(_turn) and not _submitted.has(_turn) else -1
+	_vs.text = "%s 차례" % _seat_name(_turn)
+	_say("")
+	_curling_stage.begin_aim(0 if _turn == challenger else 1, _pick_seat != -1)
+	if _pick_seat != -1:
+		_add_button("튕기기 [Space]", _curling_stop, Color("c92a2a"), 230.0)
+		_start_timer(DuelRules.TIME_CURLING - 2.0)
+		_bar.visible = false  # The countdown must not resemble the removed power gauge.
+	animating = false
+	_place.call_deferred()
+
+
+func _curling_release(value: int) -> void:
+	if _pick_seat == -1 or _step != &"play" or not local_seats.has(_pick_seat) or _submitted.has(_pick_seat):
 		return
-	var value: int = clampi(int(round(_gauge_value)), 0, DuelRules.CURLING_MAX)
+	var seat := _pick_seat
+	_pick_seat = -1
+	_stop_timer()
+	_clear_buttons()
+	_submit(seat, value)
+	_step = &"waiting"
+
+
+func _play_curling_shot(seat: int, value: int) -> void:
+	animating = true
+	_step = &"waiting"
+	_pick_seat = -1
 	_clock = -1.0
-	Sfx.play(&"hop")
-	_say("%s: %s" % [_seat_name(_pick_seat), DuelRules.curling_text(value)], RED if value > DuelRules.CURLING_EDGE else GREEN)
-	_drawing.mark_curl(_pick_seat, value)
-	_choose(value)
+	_stop_timer()
+	_clear_buttons()
+	_say("")
+	_vs.text = "%s 투구" % _seat_name(seat)
+	_curling_stage.play_shot(0 if seat == challenger else 1, value)
+	await _curling_stage.settled
+	if not is_inside_tree() or _closing:
+		return
+	if seat == challenger:
+		_turn = defender
+		_begin_curling_pick()
+	else:
+		animating = false
 
 
 ## 순발력 게임(할리갈리·석양의 무법자): 시계를 0부터 돌리고 로컬 자리마다 누를 버튼을 연다.
@@ -721,6 +775,20 @@ func _queue_has(kind: StringName) -> bool:
 
 
 func _play_reveal(data: Dictionary) -> void:
+	if game == DuelRules.Game.CURLING:
+		animating = true
+		_step = &"reveal"
+		_clock = -1.0
+		_clear_buttons()
+		_stop_timer()
+		_curling_stage.show_result(int(data["winner"]))
+		_vs.text = "%s  VS  %s" % [_seat_name(challenger), _seat_name(defender)]
+		_say("둘 다 추락! 신청자 판정승" if data["decided_by"] == &"both_fell" else "")
+		Sfx.play(&"good", -5.0)
+		await get_tree().create_timer(1.20).timeout
+		if is_inside_tree() and not _closing:
+			animating = false
+		return
 	if game == DuelRules.Game.RPS:
 		await _play_rps_reveal(data)
 		return
@@ -849,6 +917,7 @@ func close_now() -> void:
 	_game_slot.cancel()
 	_rps_stage.cancel()
 	_halli_stage.cancel()
+	_curling_stage.cancel()
 	_stop_timer()
 	_clear_buttons()
 	var tween: Tween = create_tween().set_parallel(true)
@@ -868,19 +937,12 @@ class StageDrawing extends Control:
 	## 공개된 값 {player_id: value}. 비어 있으면 아직 가려 둔다.
 	var reveal: Dictionary = {}
 	var popped: bool = false
-	var _curls: Dictionary = {}
-
-	func mark_curl(seat: int, value: int) -> void:
-		_curls[seat] = value
-		queue_redraw()
-
 	func _draw() -> void:
 		if arena == null or arena._step == &"roulette" or arena._step == &"idle":
 			return
 		match arena.game:
 			DuelRules.Game.ECARD: _draw_ecards()
 			DuelRules.Game.QUICKDRAW: _draw_cowboys()
-			DuelRules.Game.CURLING: _draw_curling()
 			DuelRules.Game.BARREL: _draw_barrel()
 
 	func _seat_x(seat: int) -> float:
@@ -925,29 +987,6 @@ class StageDrawing extends Control:
 				_center_text(DuelRules.reaction_text(pressed, mark_ms), base + Vector2(side * 78.0, -54.0), 18, Color("adb5bd") if pressed < 0 else (RED if pressed < mark_ms else GREEN))
 			_name_at(seat, size.y - 4.0)
 		draw_circle(Vector2(size.x / 2.0, 34.0), 22.0, Color("ff922b"))  # 석양
-
-	func _draw_curling() -> void:
-		var track := Rect2(Vector2(20.0, size.y * 0.42), Vector2(size.x - 40.0, 22.0))
-		draw_rect(track, Color("495057"))
-		var edge_x: float = track.position.x + track.size.x * float(DuelRules.CURLING_EDGE) / float(DuelRules.CURLING_MAX)
-		draw_rect(Rect2(Vector2(edge_x, track.position.y - 30.0), Vector2(track.end.x - edge_x, track.size.y + 60.0)), Color(0.9, 0.2, 0.2, 0.25))
-		draw_line(Vector2(edge_x, track.position.y - 34.0), Vector2(edge_x, track.end.y + 34.0), RED, 3.0)
-		_center_text("절벽 100%", Vector2(edge_x, track.position.y - 38.0), 14, RED)
-		if arena._pick_seat != -1 and reveal.is_empty() and arena._clock >= 0.0:
-			var fill: float = track.size.x * arena._gauge_value / float(DuelRules.CURLING_MAX)
-			draw_rect(Rect2(track.position, Vector2(fill, track.size.y)), Color("fcc419"))
-		var values: Dictionary = reveal if not reveal.is_empty() else _curls
-		var row: int = 0
-		for seat: int in [arena.challenger, arena.defender]:
-			if not values.has(seat):
-				continue
-			var value: int = int(values[seat])
-			var x: float = track.position.x + track.size.x * float(value) / float(DuelRules.CURLING_MAX)
-			var y: float = track.position.y + (-10.0 if row == 0 else track.size.y + 10.0)
-			draw_circle(Vector2(x, y), 11.0, MainBoard.PLAYER_COLORS.get(seat, Color.WHITE))
-			draw_arc(Vector2(x, y), 11.0, 0.0, TAU, 18, Color.WHITE, 2.0)
-			_center_text("%s %s" % [arena._seat_name(seat), DuelRules.curling_text(value)], Vector2(clampf(x, 90.0, size.x - 90.0), y + (-16.0 if row == 0 else 30.0)), 13, Color.WHITE)
-			row += 1
 
 	func _draw_barrel() -> void:
 		var center := Vector2(size.x / 2.0, size.y * 0.6)
