@@ -118,9 +118,9 @@ const DECALS: Dictionary = {
 const FLAT_INK: Shader = preload("res://assets/board/decals/flat_ink.gdshader")
 ## Opaque subject bounds in the unchanged 1254px native sources; discard only empty atlas margin.
 const DECAL_BOUNDS: Dictionary = {
-	"bakery": Rect2(148,449,959,397), "portal": Rect2(296,268,662,739),
+	"bakery": Rect2(196,409,862,482), "portal": Rect2(296,268,662,739),
 	"start": Rect2(308,272,638,750), "half": Rect2(362,246,590,778),
-	"corner": Rect2(212,380,830,494), "boost": Rect2(175,431,909,391),
+	"corner": Rect2(99,307,1098,665), "boost": Rect2(175,431,909,391),
 }
 
 static func forward_world(index: int) -> Vector2:
