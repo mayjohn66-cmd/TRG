@@ -35,7 +35,7 @@ enum PawnSubType {
 ## 체스 폰이 승진해 퀸이 된 뒤의 호기 번호.
 const CHESS_QUEEN_UNIT: int = 5
 
-enum AugmentCategory { PAWN_EVOLUTION, TOOL_SWAP, LAW_ENACT, CARD_PACKAGE, SUPER_GAMBLE }
+enum AugmentCategory { PAWN_EVOLUTION, TOOL_SWAP, LAW_ENACT, CARD_PACKAGE, SUPER_GAMBLE, UTILITY }
 
 enum CardCategory { INSTANT, TRAP, SUMMON, COUNTER }
 

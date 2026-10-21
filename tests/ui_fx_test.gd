@@ -925,14 +925,14 @@ func _test_view_modes() -> void:
 	GameSession.view_mode = MainBoard.ViewMode.TOP
 
 
-## 상단 UI는 [메뉴]와 [소리 켜짐/꺼짐] 토글뿐이고, 메뉴 안에서 계속하기/게임 설정/전체 로그/새 게임/모드/치트/게임 나가기를 고른다.
+## 상단 UI는 [피드백 / 버그 제보]·[언어]·[소리 켜짐/꺼짐]·[메뉴]뿐이고, 메뉴 안에서 계속하기/게임 설정/전체 로그/새 게임/모드/치트/게임 나가기를 고른다.
 func _test_game_menu() -> void:
 	var top_buttons: Array[Button] = []
 	for child: Node in _board.get_children():
 		var button: Button = child as Button
 		if button != null and button.visible and button.position.y < 44.0 and button.size.y <= 40.0:
 			top_buttons.append(button)
-	_expect(top_buttons.size() == 2 and top_buttons.has(_board._menu_button) and top_buttons.has(_board._sound_button), "상단에는 [메뉴]와 [소리] 토글 두 개만 남는다 (%d개)" % top_buttons.size())
+	_expect(top_buttons.size() == 4 and top_buttons.has(_board._menu_button) and top_buttons.has(_board._sound_button) and top_buttons.has(_board._language_button) and top_buttons.has(_board._feedback_button), "상단에는 [피드백]·[언어]·[소리]·[메뉴] 네 개만 남는다 (%d개)" % top_buttons.size())
 	_expect(_board._mode_toggle.get_parent() == null and _board._new_game_button.get_parent() == null and _board._debug_toggle.get_parent() == null, "닫힌 메뉴에서는 모드·새 게임·치트 버튼이 화면에 없다")
 	_expect(not _board._menu_is_open(), "처음에는 메뉴가 닫혀 있다")
 	var was_muted: bool = GameSession.audio_muted
@@ -1841,7 +1841,8 @@ func _test_event_order() -> void:
 	waited = 0.0
 	while waited < 8.0 and cutin_at == -1:
 		var hunter_view: Node2D = _board._pawn_views[11]
-		if arrived_at == -1 and hunter_view.position.distance_to(_board._tile_center(bakery)) < 30.0:
+		# 도착 판정은 그 말이 서는 자리(사람별 칸 안 위치) 기준이다 (칸 중심은 사람에 따라 30px 넘게 떨어질 수 있다)
+		if arrived_at == -1 and hunter_view.position.distance_to(_board._pawn_position_at(hunter, bakery)) < 14.0:
 			arrived_at = Time.get_ticks_msec()
 		if _board._capture_cutin.active:
 			cutin_at = Time.get_ticks_msec()

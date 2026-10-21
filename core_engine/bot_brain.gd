@@ -119,6 +119,10 @@ static func score_augment(state: GameState, player_id: int, definition: AugmentD
 			return 40.0
 		GameEnums.AugmentCategory.SUPER_GAMBLE:
 			return super_augment_score(definition.payload)
+		GameEnums.AugmentCategory.UTILITY:
+			# 필살기를 이미 쓴 기물이 있으면 리필·변이가 이득이다
+			var spent: bool = state.pawns_of(player_id).any(func(pawn: PlayerPawn) -> bool: return pawn.skill_used and not pawn.is_finished)
+			return 65.0 if spent else 45.0
 	return 30.0
 
 

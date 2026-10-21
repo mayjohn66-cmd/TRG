@@ -67,6 +67,32 @@ static func param(card_id: StringName, default: int) -> int:
 	return GameData.param("cards", card_id, 1, default)
 
 
+## cards_table.csv type 열의 카드 종류.
+const CARD_TYPES: Array[String] = ["COUNTER", "INSTANT", "TRAP", "TRAP_CORNER", "SUMMON"]
+
+
+## 이 카드의 종류 (cards_table.csv type, 표에 없으면 ID 머리글자로 추정).
+static func type_of(card_id: StringName) -> String:
+	var code: String = GameData.text("cards", card_id, "type").strip_edges().to_upper()
+	if CARD_TYPES.has(code):
+		return code
+	var id: String = String(card_id)
+	if id.begins_with("CNT_"): return "COUNTER"
+	if id.begins_with("TRP_C"): return "TRAP_CORNER"
+	if id.begins_with("TRP_"): return "TRAP"
+	if id.begins_with("SUM_"): return "SUMMON"
+	return "INSTANT"
+
+
+## 켜진 카드 중 이 종류인 카드 ID들 (방어 보급·공병 보급 패키지 풀).
+static func ids_of_type(type_code: String) -> Array[StringName]:
+	var ids: Array[StringName] = []
+	for card_id: StringName in all_ids():
+		if type_of(card_id) == type_code:
+			ids.append(card_id)
+	return ids
+
+
 ## 구현된 모든 카드 ID (증강 '생떼 카드 패키지'가 무작위로 뽑는 풀).
 static func all_ids() -> Array[StringName]:
 	var ids: Array[StringName] = []

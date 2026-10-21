@@ -8,9 +8,19 @@ const AUGMENTS_PATH: String = "res://content_trickcal/data/augments_table.csv"
 const DICE_PATH: String = "res://content_trickcal/data/dice_table.csv"
 const CARDS_PATH: String = "res://content_trickcal/data/cards_table.csv"
 
-const AUGMENT_COLUMNS: Array[String] = ["id", "enabled", "category", "tier", "weight", "min_round", "title", "subtitle", "desc", "spec_preview", "param_1", "param_2", "target_ref", "icon_file"]
-const DICE_COLUMNS: Array[String] = ["id", "enabled", "name", "desc", "spec_table", "min_step", "max_step", "jackpot_step", "icon_file"]
-const CARD_COLUMNS: Array[String] = ["id", "enabled", "type", "name", "parody_quote", "desc", "param_1", "param_2", "icon_file"]
+## 각 표의 열. 끝의 *_en / *_ja는 번역 열이다 (비어 있으면 한국어 열을 쓴다, L10n.pick).
+const AUGMENT_COLUMNS: Array[String] = ["id", "enabled", "category", "tier", "weight", "min_round", "title", "subtitle", "desc", "spec_preview", "param_1", "param_2", "target_ref", "icon_file",
+	"title_en", "subtitle_en", "desc_en", "spec_preview_en", "title_ja", "subtitle_ja", "desc_ja", "spec_preview_ja"]
+const DICE_COLUMNS: Array[String] = ["id", "enabled", "name", "desc", "spec_table", "min_step", "max_step", "jackpot_step", "icon_file",
+	"name_en", "desc_en", "spec_table_en", "name_ja", "desc_ja", "spec_table_ja"]
+const CARD_COLUMNS: Array[String] = ["id", "enabled", "type", "name", "parody_quote", "desc", "param_1", "param_2", "icon_file",
+	"name_en", "parody_quote_en", "desc_en", "name_ja", "parody_quote_ja", "desc_ja"]
+## 번역 열이 있는 문구 열 (L10n.pick이 현재 언어 열을 먼저 찾는다).
+const LOCALIZED_COLUMNS: Dictionary = {
+	"augments": ["title", "subtitle", "desc", "spec_preview"],
+	"dice": ["name", "desc", "spec_table"],
+	"cards": ["name", "parody_quote", "desc"],
+}
 
 ## 증강 표의 category 열 -> AugmentCategory.
 const CATEGORY_CODES: Dictionary = {
@@ -19,6 +29,7 @@ const CATEGORY_CODES: Dictionary = {
 	"LAW": GameEnums.AugmentCategory.LAW_ENACT,
 	"CARD": GameEnums.AugmentCategory.CARD_PACKAGE,
 	"CHAOS": GameEnums.AugmentCategory.SUPER_GAMBLE,
+	"UTIL": GameEnums.AugmentCategory.UTILITY,
 }
 
 static var _tables: Dictionary = {}
@@ -67,9 +78,10 @@ static func column_int(name: String, id: Variant, column: String, default: int) 
 	return DataTable.to_int(row(name, id).get(column, ""), default)
 
 
-## 텍스트 열. 비어 있으면 default.
+## 텍스트 열. 비어 있으면 default. 문구 열은 현재 언어의 번역 열(예: desc_en)을 먼저 보고, 비어 있으면 한국어 열로 돌아간다.
 static func text(name: String, id: Variant, column: String, default: String = "") -> String:
-	var value: String = str(row(name, id).get(column, ""))
+	var data: Dictionary = row(name, id)
+	var value: String = L10n.pick(data, column) if (LOCALIZED_COLUMNS.get(name, []) as Array).has(column) else str(data.get(column, ""))
 	return value if value.strip_edges() != "" else default
 
 

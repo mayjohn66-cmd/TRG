@@ -13,6 +13,7 @@ const MINI_LINES: int = 4
 const MINI_SIZE: Vector2 = Vector2(300.0, 150.0)
 const EXPANDED_SIZE: Vector2 = Vector2(460.0, 470.0)
 
+const SMALL_FONT: Font = preload("res://assets/fonts/game_small_font.tres")
 var expanded: bool = false
 ## 미니 모드에서 패널이 놓일 왼쪽 위 (확장하면 위로 커져 보드 쪽을 가리지 않는다).
 var mini_position: Vector2 = Vector2.ZERO
@@ -38,14 +39,14 @@ func _init() -> void:
 	var header := HBoxContainer.new()
 	column.add_child(header)
 	_title = Label.new()
-	_title.text = "최근 기록"
+	_title.text = L10n.tr_ui("log.title")
 	_title.add_theme_font_size_override("font_size", 13)
 	_title.add_theme_color_override("font_color", Color("ffd43b"))
 	_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(_title)
 	_toggle = Button.new()
-	_toggle.text = "로그 펼치기"
-	_toggle.tooltip_text = "지금까지의 전체 기록을 펼쳐 봅니다 (단축키 L)"
+	_toggle.text = L10n.tr_ui("log.expand")
+	_toggle.tooltip_text = L10n.tr_ui("log.expand_tip")
 	_toggle.focus_mode = Control.FOCUS_NONE
 	_toggle.add_theme_font_size_override("font_size", 12)
 	_toggle.pressed.connect(toggle)
@@ -61,8 +62,11 @@ func _init() -> void:
 	_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_text.mouse_filter = Control.MOUSE_FILTER_PASS
-	_text.add_theme_font_size_override("normal_font_size", 12)
-	_text.add_theme_font_size_override("bold_font_size", 12)
+	_text.add_theme_font_size_override("normal_font_size", 13)
+	_text.add_theme_font_size_override("bold_font_size", 13)
+	# 로그처럼 작은 글자가 빽빽한 곳은 또렷한 고딕으로 쓴다 (ONE Mobile POP은 작으면 뭉개진다)
+	_text.add_theme_font_override("normal_font", SMALL_FONT)
+	_text.add_theme_font_override("bold_font", SMALL_FONT)
 	_scroll.add_child(_text)
 	_apply_mode()
 
@@ -127,8 +131,8 @@ func place(at: Vector2) -> void:
 
 func _apply_mode() -> void:
 	add_theme_stylebox_override("panel", _expanded_style if expanded else _mini_style)
-	_toggle.text = "로그 접기" if expanded else "로그 펼치기"
-	_title.text = "액션 로그 (최근 %d줄)" % MAX_LOG_LINES if expanded else "최근 기록"
+	_toggle.text = L10n.tr_ui("log.collapse") if expanded else L10n.tr_ui("log.expand")
+	_title.text = L10n.tr_ui("log.title_full", [MAX_LOG_LINES]) if expanded else L10n.tr_ui("log.title")
 	_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO if expanded else ScrollContainer.SCROLL_MODE_SHOW_NEVER
 	z_index = 70 if expanded else 0
 	var panel_size: Vector2 = EXPANDED_SIZE if expanded else MINI_SIZE
@@ -144,7 +148,7 @@ func _render() -> void:
 	if _text == null:
 		return
 	if _lines.is_empty():
-		_text.text = "[color=#868e96]아직 기록이 없습니다[/color]"
+		_text.text = "[color=#868e96]%s[/color]" % L10n.tr_ui("log.empty")
 	else:
 		_text.text = "\n".join(PackedStringArray(_lines.slice(_lines.size() - visible_line_count())))
 	if is_inside_tree():

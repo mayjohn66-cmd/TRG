@@ -33,7 +33,7 @@ func _process(_delta: float) -> bool:
 		if _banner_frame != -2 and _frames < 600:
 			return false
 		_banner_frame = -2
-	var shot_frame: int = 8 if _shot == "pick" else (20 if _shot in ["react", "classics", "traps", "log", "logx", "counterzoom", "book", "tempo", "emote", "emotepick", "result", "settings", "popupsettings"] else (int(OS.get_environment("DUEL_FRAME")) if _shot == "duel" and OS.get_environment("DUEL_FRAME") != "" else (150 if _shot == "duel" else 12)))
+	var shot_frame: int = 8 if _shot == "pick" else (20 if _shot in ["react", "classics", "traps", "log", "logx", "counterzoom", "book", "tempo", "emote", "emotepick", "result", "settings", "popupsettings", "feedback", "resultfeedback"] else (int(OS.get_environment("DUEL_FRAME")) if _shot == "duel" and OS.get_environment("DUEL_FRAME") != "" else (150 if _shot == "duel" else 12)))
 	if OS.get_environment("SHOT_FRAME") != "":
 		shot_frame = int(OS.get_environment("SHOT_FRAME"))
 	if (_shot != "banner" and _frames == shot_frame) or (_shot == "banner" and _banner_frame == -2):
@@ -53,7 +53,16 @@ func _setup_scene() -> void:
 	var state: GameState = _board.state
 	match _shot:
 		"draft":
-			pass
+			# DRAFT_IDS=AUG_LAW_01,SUPER_01,UTIL_01 처럼 정하면 그 증강들을 내 선택지로 보여 준다
+			if OS.get_environment("DRAFT_IDS") != "":
+				var ids: Array[StringName] = []
+				for id: String in OS.get_environment("DRAFT_IDS").split(","):
+					ids.append(StringName(id))
+				_board.manager._draft_offers[_board.local_player_id] = ids
+				_board._close_opening()
+				_board._intro_pending = false
+				_board._close_draft_overlay()
+				_board._refresh_draft_overlay()
 		"duel":
 			# ⚔️ 데스매치 결투장: DUEL_GAME 종목을 핫시트로 열어 미니게임 화면을 찍는다
 			_board._close_opening()
@@ -268,6 +277,18 @@ func _setup_scene() -> void:
 			_board._announcer.cancel()
 			var book: Rulebook = Rulebook.open(_board)
 			book.show_spread(int(OS.get_environment("BOOK")) if OS.get_environment("BOOK") != "" else 4, int(OS.get_environment("ENTRY")) if OS.get_environment("ENTRY") != "" else -1)
+		"feedback":
+			# 피드백 창 (상단 버튼으로 연 상태)
+			_board.instant_roll_for_test = true
+			_finish_draft()
+			_board._announcer.cancel()
+			var modal: FeedbackModal = _board._open_feedback("상단 버튼")
+			modal.set_message("3라운드에 변이 물약을 골랐는데 말 그림이 그대로였어요")
+		"resultfeedback":
+			_board.instant_roll_for_test = true
+			_finish_draft()
+			_board._announcer.cancel()
+			_board._show_result_overlay()
 		"settings", "popupsettings":
 			# 설정: settings = 게임 메뉴의 [게임 설정], popupsettings = 시작 화면·로비의 설정 팝업
 			_board.instant_roll_for_test = true

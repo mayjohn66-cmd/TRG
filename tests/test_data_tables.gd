@@ -5,8 +5,8 @@ class_name TestDataTables
 extends TestCase
 
 const FLAGS: Array[String] = ["TRUE", "FALSE"]
-const TIERS: Array[String] = ["NORMAL", "GOLD", "PRISMA"]
-const CATEGORIES: Array[String] = ["PAWN", "DICE", "LAW", "CARD", "CHAOS", "RULE"]
+const TIERS: Array[String] = ["NORMAL", "GOLD", "PRISMA", "HOLO"]
+const CATEGORIES: Array[String] = ["PAWN", "DICE", "LAW", "CARD", "CHAOS", "UTIL", "RULE"]
 
 
 func cleanup() -> void:
@@ -78,7 +78,7 @@ func test_every_augment_is_in_the_table_exactly_once_with_valid_fields() -> void
 			check(str(row["title"]) != "" and str(row["desc"]) != "", "%s: title·desc가 있다" % id)
 	for def: AugmentDef in AugmentRegistry.all():
 		check(seen.has(str(def.augment_id)), "%s: 코드의 증강이 표에 빠지지 않았다" % def.augment_id)
-	check_eq(AugmentRegistry.all().size(), 57, "증강 57종 (기물 24 + 도구 12 + 교칙 8 + 카드 1 + 초증강 12)")
+	check_eq(AugmentRegistry.all().size(), 62, "증강 62종 (기물 24 + 도구 12 + 교칙 8 + 카드 3 + 초증강 12 + 범용 3)")
 	for rule_id: String in ["RULE_REVENGE_BOOST", "RULE_DASH_PAD", "RULE_LEAPFROG"]:
 		check(seen.has(rule_id), "%s 규칙 수치 행" % rule_id)
 
@@ -97,6 +97,8 @@ func test_table_text_matches_the_built_in_defaults_for_every_augment() -> void:
 	# CSV를 한 글자도 안 고쳤다면 선택 카드 설명은 코드 기본 문구와 같아야 한다 (표를 만들 때 문구가 어긋나지 않았는지).
 	var state: GameState = make_state(2, 5)
 	for def: AugmentDef in AugmentRegistry.all():
+		if def.category == GameEnums.AugmentCategory.CARD_PACKAGE and def.augment_id != &"CARD_PACKAGE":
+			continue  # 표에만 있는 카드 패키지(방어·공병 보급)는 코드 기본 문구가 없다
 		var from_table: String = def.describe(state, 1)
 		def.desc = ""
 		var built_in: String = def.describe(state, 1)
@@ -331,7 +333,7 @@ func test_missing_or_empty_table_falls_back_to_code_defaults() -> void:
 	GameData.override_table("dice", [] as Array[Dictionary])
 	GameData.override_table("cards", [] as Array[Dictionary])
 	AugmentRegistry.reload()
-	check_eq(AugmentRegistry.all().size(), 57, "표가 비어도 증강 57종이 코드 기본값으로 만들어진다")
+	check_eq(AugmentRegistry.all().size(), 60, "표가 비어도 증강 60종이 코드 기본값으로 만들어진다 (표에만 있는 카드 패키지 2종 제외)")
 	check_eq(GameData.revenge_bonus(), 4, "규칙 수치 기본값")
 	check_eq(SuperAugments.minefield_count(), 2, "초증강 수치 기본값")
 	check(CardRegistry.default_deck().size() > 0, "카드 덱 기본값")

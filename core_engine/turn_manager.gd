@@ -98,6 +98,11 @@ var _move_report: MoveReport = null
 var _move_outcome: MoveExecutor.StepOutcome = MoveExecutor.StepOutcome.CONTINUE
 
 
+
+## 화면 문구 (content_trickcal/data/ui_strings.csv). TurnManager는 문구 대신 이벤트 데이터를 방송하므로(화면이 문구를 만든다) 엔진에서 문구가 꼭 필요할 때만 쓴다.
+static func tr_ui(key: String, args: Array = []) -> String:
+	return L10n.tr_ui(key, args)
+
 func _process(delta: float) -> void:
 	if state != null and _is_authority():
 		tick(delta)
