@@ -1293,10 +1293,14 @@ func _avatar_for(player_id: int) -> StringName:
 
 
 func _apply_avatars() -> void:
+	# 웹: 이 판에 앉은 아바타의 애니메이션 묶음을 내 것부터 뒤에서 받는다 (인트로·첫 드래프트 동안 도착)
+	if _player_ids.has(local_player_id):
+		AvatarPacks.request(_avatar_for(local_player_id), true)
 	for player_id: int in PLAYER_IDS:
 		if _player_ids.has(player_id):
 			(_profiles[player_id]["avatar"] as AvatarSlot).set_character(_avatar_for(player_id))
 			AvatarCombatArt.warm(_avatar_for(player_id))
+			AvatarPacks.request(_avatar_for(player_id))
 
 
 ## 플레이어의 아바타가 감정을 보인다 (에셋이 있으면 그 애니메이션, 없으면 자리표시자 연출).

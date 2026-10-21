@@ -257,6 +257,11 @@ class IdleLoop extends TextureRect:
 		set_process(_frames.size() > 1)
 
 	func _process(delta: float) -> void:
+		# 노드가 트리에 들어가면 _process가 자동으로 켜지므로 setup의 set_process(false)만 믿지 않는다:
+		# 웹에서 대기 프레임 묶음(AvatarPacks)을 받기 전에는 프레임이 없다 (0으로 나누면 웹 빌드가 멈춘다).
+		if _frames.size() < 2:
+			set_process(false)
+			return
 		_clock += delta
 		var current: Texture2D = _frames[int(_clock * FPS) % _frames.size()]
 		if texture != current:  # 프레임이 바뀔 때만 텍스처를 갈아 끼운다 (겹쳐 섞으면 가장자리가 겹쳐 깜빡이고 흐려진다)

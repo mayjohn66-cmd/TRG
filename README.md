@@ -111,6 +111,7 @@ Godot 웹 빌드는 스레드를 쓰지 않아(`thread_support=false`) 별도의
 ## 테스터용 안내
 
 - 치트/디버그 메뉴는 기본으로 숨겨져 있습니다. 게임 안에서 [메뉴]를 연 채로 `↑ ↑ ↓ ↓ ← → ← → B A`를 키 사이 1.5초 안에 끝까지 입력하면 켜지고, 한 번 더 입력하면 꺼집니다 (온라인 대전에서는 불가). 개발용으로 실행 인자 `--debug`도 받습니다. 예전의 `F9`·`Ctrl+Shift+D`·`?debug=1`은 없앴습니다.
+- **웹 로딩:** 첫 로딩에는 본체(약 25 MiB)만 받고, 아바타 애니메이션은 `avatars/<id>.pck`로 나눠 게임 중에 뒤에서 받습니다 (`scenes/avatar_packs.gd`, 내보내기 `tools/export_avatar_packs.py`). 아바타 애니메이션 파일을 추가하면 `export_presets.cfg`의 제외 목록과 내보내기 스크립트의 분리 대상이 같은지 `tests/test_avatar_packs.gd`가 검사합니다.
 - **버전:** 시맨틱 버저닝 `MAJOR.MINOR.PATCH`를 씁니다 (`project.godot`의 `config/version`, 지금 `0.9.0`). 배포 빌드는 CI가 뒤에 커밋을 붙여 `0.9.0+abc1234`처럼 표시하고, 시작 화면 아래 줄과 피드백 스냅샷에 찍힙니다. 버그 수정만 있으면 PATCH, 기능·콘텐츠가 늘면 MINOR, 저장 데이터나 규칙이 호환되지 않게 바뀌면 MAJOR(1.0 전에는 MINOR)를 올리고 `CHANGELOG.md`에 적습니다.
 - 링크 미리보기 이미지는 `web/og-image.png`, 아이콘은 `web/icon.png`이며 배포 워크플로우가 함께 올립니다.
 

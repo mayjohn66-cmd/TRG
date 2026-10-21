@@ -264,6 +264,8 @@ func has_art() -> bool:
 ## 감정을 보여 준다. seconds 뒤에 IDLE로 돌아간다 (0이면 그대로 둔다).
 func react(new_emotion: Emotion, seconds: float = 1.4) -> void:
 	emotion = new_emotion
+	if new_emotion != Emotion.IDLE:
+		AvatarPacks.request(character_id)  # 웹: 애니메이션 묶음을 아직 안 받았으면 뒤에서 받는다 (이번 반응은 정지 그림 + 튕김)
 	_sync_emotion_art()
 	_reset_serial += 1
 	var serial: int = _reset_serial

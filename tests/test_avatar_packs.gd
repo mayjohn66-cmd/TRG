@@ -1,0 +1,27 @@
+# File: res://tests/test_avatar_packs.gd
+# Class: class_name TestAvatarPacks
+# Role: 아바타 애니메이션 분리 다운로더(AvatarPacks)의 순수 로직 - 묶음 주소, 데스크톱·테스트에서는 받지 않음, 분리 대상과 본체 제외 목록이 맞는지
+class_name TestAvatarPacks
+extends TestCase
+
+
+func test_pack_url_is_relative_to_the_page_and_busts_cache_per_version() -> void:
+	check_eq(AvatarPacks.pack_url("https://trickcal-board.vercel.app/", &"avatar_02", "0.9.0+abc1234"), "https://trickcal-board.vercel.app/avatars/avatar_02.pck?v=0.9.0%2Babc1234", "루트 주소")
+	check_eq(AvatarPacks.pack_url("https://mayjohn66-cmd.github.io/TRG/index.html", &"avatar_01", "0.9.0"), "https://mayjohn66-cmd.github.io/TRG/avatars/avatar_01.pck?v=0.9.0", "하위 폴더 + index.html")
+
+
+func test_desktop_and_tests_have_every_animation_and_never_download() -> void:
+	check(not AvatarPacks.downloads_enabled(), "웹이 아니면 따로 받지 않는다")
+	for id: StringName in AvatarCatalog.ids():
+		check(AvatarPacks.is_ready(id), "%s: 에디터·테스트에서는 애니메이션이 이미 있다" % id)
+	AvatarPacks.request(&"avatar_02", true)
+	AvatarPacks.request(&"not_an_avatar")
+	check(not is_instance_valid(AvatarPacks._node) or AvatarPacks._node._queue.is_empty(), "준비된 아바타·없는 id는 줄을 세우지 않는다")
+
+
+func test_web_export_excludes_exactly_the_split_animation_files() -> void:
+	var presets: String = FileAccess.get_file_as_string("res://export_presets.cfg")
+	for pattern: String in ["content_trickcal/avatars/*/emotion_*.tres", "content_trickcal/avatars/*/frames/*", "content_trickcal/avatars/*/idle/*", "content_trickcal/avatars/*/idle_hq/*", "content_trickcal/avatars/*/idle_hq.tres"]:
+		check(presets.contains(pattern), "웹 본체 제외 목록에 %s" % pattern)
+	for kept: String in ["portrait.png", "icon.webp", "fullbody.png", "attack.png", "hit.png"]:
+		check(not presets.contains("avatars/*/" + kept), "정지 그림 %s는 본체에 남는다" % kept)

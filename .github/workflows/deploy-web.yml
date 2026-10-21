@@ -97,6 +97,10 @@ jobs:
           godot --headless --path . --export-release "Web" build/web/index.html
           # 내보낸 묶음을 직접 읽어 웹에서만 깨지는 데이터(문구 표·밸런스 CSV)를 검사한다
           (cd build/web && godot --headless --main-pack index.pck -s "$GITHUB_WORKSPACE/tests/export_smoke.gd")
+          # 아바타 애니메이션은 본체에서 빼고 아바타별 묶음(avatars/<id>.pck)으로 따로 내보낸다: 게임이 필요한 것부터 뒤에서 받는다 (scenes/avatar_packs.gd)
+          python3 tools/export_avatar_packs.py godot build/web/avatars
+          # 본체에는 정지 그림만 있고, 묶음을 붙이면 애니메이션이 실제로 읽히는지 내보낸 파일로 검사한다
+          (cd build/web && godot --headless --main-pack index.pck -s "$GITHUB_WORKSPACE/tests/avatar_pack_smoke.gd")
           touch build/web/.nojekyll
           # Vercel이 gh-pages 브랜치(또는 이 폴더)를 빌드 없이 그대로 호스팅하도록 설정 파일을 함께 싣는다.
           cp vercel.json build/web/vercel.json
@@ -109,15 +113,18 @@ jobs:
           # with an actionable message if future asset additions reach it.
           python3 - <<'PY'
           from pathlib import Path
-          for asset in Path('build/web').iterdir():
+          for asset in Path('build/web').rglob('*'):
               if asset.is_file() and asset.stat().st_size >= 100 * 1024 * 1024:
                   raise SystemExit(f'{asset} exceeds GitHub 100 MiB: exclude unused source assets or split the pack')
-          # 용량 예산: 웹 첫 로딩·메모리를 위해 묶음은 80 MiB 안에서 관리한다 (2026-10: 에르핀 고화질 무손실 유지로 약 73 MiB).
-          # 넘으면 tools/optimize_texture_imports.py로 새 그림의 임포트 설정을 맞춘다.
+          # 용량 예산: 첫 로딩에 받는 본체는 40 MiB 안에서 관리한다 (2026-10: 아바타 애니메이션 분리 후 약 25 MiB).
+          # 아바타 애니메이션은 avatars/*.pck로 따로 받으므로 본체 예산에 들지 않는다 (에르핀 고화질 무손실 묶음 약 32 MiB).
+          # 넘으면 tools/optimize_texture_imports.py로 새 그림의 임포트 설정을 맞추거나, 늦게 받아도 되는 에셋을 묶음으로 뺀다.
           pck = Path('build/web/index.pck')
           print(f'index.pck = {pck.stat().st_size / 1048576:.2f} MiB')
-          if pck.stat().st_size >= 80 * 1024 * 1024:
-              raise SystemExit(f'{pck} is over the 80 MiB web budget: run tools/optimize_texture_imports.py for new images')
+          for pack in sorted(Path('build/web/avatars').glob('*.pck')):
+              print(f'{pack} = {pack.stat().st_size / 1048576:.2f} MiB')
+          if pck.stat().st_size >= 40 * 1024 * 1024:
+              raise SystemExit(f'{pck} is over the 40 MiB first-load budget: move late assets into packs or run tools/optimize_texture_imports.py')
           PY
           ls -la build/web
 

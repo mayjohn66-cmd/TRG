@@ -184,6 +184,11 @@ func _build_mode_page() -> void:
 	rename.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	buttons_row.add_child(rename)
 	_hub_profile = {"name": name_label, "avatar": avatar, "holder": avatar_holder}
+	# 웹: 내 아바타의 대기 애니메이션 묶음을 먼저 받고, 도착하면 허브의 전신 아바타를 움직이는 그림으로 바꾼다
+	AvatarPacks.request(id, true)
+	AvatarPacks.when_ready(self, func(ready_id: StringName) -> void:
+		if ready_id == AvatarCatalog.sanitize(GameSession.avatar_id):
+			_refresh_hub())
 	# 오른쪽: 대결 장소 고르기
 	var right := VBoxContainer.new()
 	right.name = "ModeColumn"
@@ -409,6 +414,7 @@ func _refresh_avatar_page() -> void:
 ## 아바타를 고른다 (저장되어 훈련·방·게임에서 내 아바타로 쓰인다).
 func select_avatar(id: StringName) -> void:
 	GameSession.avatar_id = AvatarCatalog.sanitize(id)
+	AvatarPacks.request(GameSession.avatar_id, true)
 	GameSession.save_settings()
 	_refresh_avatar_page()
 	_avatar_preview.react(AvatarSlot.Emotion.HAPPY, 1.0)
