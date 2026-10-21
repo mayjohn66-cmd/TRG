@@ -807,7 +807,7 @@ func _duel_set_timer(seconds: float) -> void:
 
 
 ## params: {"value": int} (옛 형식 {"hand": int}도 받는다). 결투 당사자만, 한 판에 한 번.
-## 값: 가위바위보 0~2 / E카드 0~1 / 할리갈리·석양의 무법자 = 미니게임 시작부터 누른 시각(ms, 안 누름 -1) / 컬링 0~1150(0.1%) / 스피키 룰렛 = 구멍 번호(자기 차례에만).
+## 값: 손 0~2 / E카드 0~1 / 순발력 ms(-1 안 누름) / 컬링 BottleCapPhysics.encode(세기, 방향), 0~1150 직선 입력도 호환 / 스피키 룰렛 구멍 번호.
 func _handle_duel_pick(actor: int, params: Dictionary) -> void:
 	var value: int = int(params.get("value", params.get("hand", -999)))
 	if _duel.is_empty() or _duel["step"] != &"pick":
@@ -826,13 +826,22 @@ func _handle_duel_pick(actor: int, params: Dictionary) -> void:
 			return
 		_duel_barrel_pick(actor, value)
 		return
+	if game == DuelRules.Game.CURLING and actor != int(_duel["turn"]):
+		action_rejected.emit(actor, &"duel_pick", &"not_your_turn")
+		return
 	if (_duel["picks"] as Dictionary).has(actor):
 		action_rejected.emit(actor, &"duel_pick", &"already_picked")
 		return
 	(_duel["picks"] as Dictionary)[actor] = value
-	_emit_event(&"duel_pick_in", {"player_id": actor})
+	var pick_event := {"player_id": actor}
+	if game == DuelRules.Game.CURLING:
+		pick_event["value"] = value  # The first cap remains on the shared table.
+	_emit_event(&"duel_pick_in", pick_event)
 	if (_duel["picks"] as Dictionary).size() == 2:
 		_duel_reveal()
+	elif game == DuelRules.Game.CURLING:
+		_duel["turn"] = int(_duel["defender"])
+		_duel_set_timer(DuelRules.TIME_CURLING + 4.0)  # Includes first cap settlement.
 	else:
 		_broadcast_state()
 
@@ -907,6 +916,9 @@ func _duel_finish() -> void:
 ## 시간 초과: 아직 안 낸 사람의 값을 채운다 (손·카드 무작위, 순발력 안 누름, 컬링 추락, 스피키 룰렛 무작위 구멍).
 func _duel_timeout() -> void:
 	var game: int = int(_duel["game"])
+	if game == DuelRules.Game.CURLING:
+		_handle_duel_pick(int(_duel["turn"]), {"value": DuelRules.timeout_input(game, state.rng)})
+		return
 	if game == DuelRules.Game.BARREL:
 		var seat: int = int(_duel["turn"])
 		_duel_barrel_pick(seat, DuelRules.timeout_input(game, state.rng, _duel["opened"]))

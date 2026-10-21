@@ -181,7 +181,7 @@ func _step_duel() -> void:
 		return
 	var game: int = int(duel["game"])
 	var challenger: int = int(duel["challenger"])
-	if game == DuelRules.Game.BARREL:
+	if not DuelRules.is_simultaneous(game):
 		var seat: int = int(duel["turn"])
 		if is_bot(seat):
 			_act(seat, &"duel_pick", {"value": DuelRules.bot_input(game, duel["setup"], seat == challenger, rng, duel["opened"])})
