@@ -16,7 +16,7 @@ ACT_09,TRUE,INSTANT,일기토 데스매치,종목은 운명이 정한다! 6종 �
 ACT_10,TRUE,INSTANT,내 앞을 막지마!,,내 선두 말 앞 {p1}칸의 적 사출 + 설치물 파괴,3,2,ACT_10.png
 ACT_11,TRUE,INSTANT,싸늘한 밑장빼기,싸늘하다… 가슴에 비수가 날아와 꽂힌다,다음 굴림 결과를 1~6칸 중 직접 지정,,1,ACT_11.png
 ACT_12,TRUE,INSTANT,XI. The World!!,시간이여 멈춰라! 한 턴 더!,이번 턴이 끝나면 한 턴 더,,1,ACT_12.png
-ACT_13,TRUE,INSTANT,슈팡 특급 배송,원하는 칸 문 앞까지 특급 배송!,내 선두 말을 고른 빈 칸으로 순간이동,,2,ACT_13.png
+ACT_13,TRUE,INSTANT,슈팡 특급 배송,원하는 칸 문 앞까지 특급 배송!,내 선두 말을 반환점까지의 빈 칸 중 고른 칸으로 순간이동,,2,ACT_13.png
 ACT_14,TRUE,INSTANT,알고리즘 밴,,상대 1명 {p1}턴 동안 카드·필살기·리롤 금지,2,1,ACT_14.png
 ACT_15,TRUE,INSTANT,UDO 스킵,다음 분은 쉬어 가세요~,상대 1명의 다음 턴 건너뛰기,,2,ACT_15.png
 TRP_02,TRUE,TRAP,함정 속으로 (나락),유희왕 '함정 카드 발동!',눈금 {p1}+ 로 지나가는 적 말 출발선 사출,4,2,TRP_02.png
