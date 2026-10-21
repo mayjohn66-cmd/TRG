@@ -58,10 +58,10 @@
   {
     "card_id": "ACT_08",
     "file": "ACT_08.png",
-    "source_version": "v0.2",
+    "source_version": "character-scenes-v3",
     "width": 1448,
     "height": 1086,
-    "sha256": "c1c491e452bdc2731e2833b3f7d48f2978e2a752546e4f55d324e0b717915cc7"
+    "sha256": "224d56173f0f4e0f0739c59524c7dfb9f8062671c022afd454fbc9c2ea66a265"
   },
   {
     "card_id": "CNT_02",
@@ -178,10 +178,10 @@
   {
     "card_id": "ACT_13",
     "file": "ACT_13.png",
-    "source_version": "character-v1",
+    "source_version": "character-scenes-v3",
     "width": 1448,
     "height": 1086,
-    "sha256": "b7c0caf665457a0fafa40832efd10f8cbaf95e131488acf48e340da7dc17871d"
+    "sha256": "894c21253b8bcc8a8acfbe8aac6c40fd5ecf4c5efafe1cca38238c91a646e718"
   },
   {
     "card_id": "ACT_14",
@@ -194,10 +194,10 @@
   {
     "card_id": "ACT_15",
     "file": "ACT_15.png",
-    "source_version": "character-v2",
+    "source_version": "character-scenes-v3",
     "width": 1448,
     "height": 1086,
-    "sha256": "51ea74732b24371db7b7ec422485fdc21d254a81848aa05d8aba2dabd93f6796"
+    "sha256": "897c2b8f4e8d2b6c0980fd450b0675dcb372d867f98a70d31a04428bb17f3dfb"
   },
   {
     "card_id": "TRP_06",
@@ -246,5 +246,13 @@
     "width": 1448,
     "height": 1086,
     "sha256": "afe53557146609ca4733cedece86361ca38f8846bcce56285ae50454dde75f59"
+  },
+  {
+    "card_id": "ACT_09",
+    "file": "ACT_09.png",
+    "source_version": "character-scenes-v3",
+    "width": 1447,
+    "height": 1087,
+    "sha256": "7f587a47e7598bd06f3d1f74d01831f554f0652ef89640183b0fd05f0cfebc55"
   }
 ]

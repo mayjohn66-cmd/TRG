@@ -7,7 +7,7 @@ extends BaseCard
 
 func _init() -> void:
 	card_id = &"ACT_04"
-	display_name = "로켓"
+	display_name = "고출력 로켓 부스터"
 	playable_phases = [TurnManager.State.PHASE_TURN_BEGIN]
 
 

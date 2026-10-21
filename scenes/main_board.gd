@@ -867,7 +867,7 @@ func _bind_state() -> void:
 					_impact_ring(_tile_center(tile) + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO), Color("ffa94d"), 22.0)
 				Sfx.play(&"slam")))
 	state.crowbar_swung.connect(func(player_id: int, tiles: Array[int]) -> void:
-		_log_line("[빠루] %s이(가) %s번 칸을 휘둘렀습니다" % [_player_name(player_id), ", ".join(PackedStringArray(tiles.map(func(tile: int) -> String: return str(tile))))], Color("ffa94d"))
+		_log_line("[내 앞을 막지마!] %s이(가) %s번 칸을 휘둘렀습니다" % [_player_name(player_id), ", ".join(PackedStringArray(tiles.map(func(tile: int) -> String: return str(tile))))], Color("ffa94d"))
 		_refresh_tiles())
 	state.pawns_bonded.connect(func(a: int, b: int) -> void:
 		_log_line("[강제 연대책임] %s ↔ %s 일심동체!" % [_pawn_name(a), _pawn_name(b)], Color("ffa94d")))

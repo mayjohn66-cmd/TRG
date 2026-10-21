@@ -232,7 +232,7 @@ func test_rollback_command_undoes_turn_history_and_is_not_recorded() -> void:
 func test_act_04_rocket_reserves_plus_four_for_the_next_roll() -> void:
 	var state := make_state()
 	var card: BaseCard = CardRegistry.get_card(&"ACT_04")
-	check_eq(card.display_name, "로켓", "카드 이름")
+	check_eq(card.display_name, "고출력 로켓 부스터", "카드 이름")
 	check(card.can_play(state, 1, {}), "조건 없이 사용 가능")
 	exec(state, card.create_command(state, 1, {}))
 	check_eq(state.roll_bonus, 4, "+4 예약")
