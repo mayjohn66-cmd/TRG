@@ -61,6 +61,7 @@ var _bar: ProgressBar = null
 var _drawing: StageDrawing = null
 var _game_slot: DuelGameSlot = null
 var _rps_stage: DuelRpsStage = null
+var _halli_stage: DuelHalliStage = null
 var _intro_panel: PanelContainer
 var _intro_headline: Label
 var _intro_how: Label
@@ -171,6 +172,11 @@ func _build() -> void:
 	_rps_stage.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_rps_stage.visible = false
 	_stage.add_child(_rps_stage)
+	_halli_stage = DuelHalliStage.new()
+	_halli_stage.arena = self
+	_halli_stage.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_halli_stage.visible = false
+	_stage.add_child(_halli_stage)
 	_game_slot = DuelGameSlot.new()
 	_game_slot.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_game_slot.visible = false
@@ -330,8 +336,7 @@ func _process(delta: float) -> void:
 			var dealt: int = mini(int(floor(_clock / float(setup_data.get("interval", DuelRules.HALLI_INTERVAL)))) + 1, cards.size())
 			if dealt != _shown_cards:
 				_shown_cards = dealt
-				Sfx.play(&"card_throw")
-				_drawing.queue_redraw()
+			_halli_stage.sync_clock()
 			_expire_reaction()
 		DuelRules.Game.QUICKDRAW:
 			var fake: float = float(setup_data.get("fake", -1.0))
@@ -436,7 +441,7 @@ func _play(kind: StringName, data: Dictionary) -> void:
 				_rps_stage.mark_ready(int(data["player_id"]))
 			elif game == DuelRules.Game.BARREL and data.has("hole"):
 				await _play_barrel_stab(data)
-			elif not local_seats.has(int(data["player_id"])):
+			elif game != DuelRules.Game.HALLI and not local_seats.has(int(data["player_id"])):
 				_say("%s 입력 완료!" % _seat_name(int(data["player_id"])), Color("ced4da"))
 		&"duel_revealed":
 			await _play_reveal(data)
@@ -519,6 +524,12 @@ func _begin_game() -> void:
 		_rps_stage.visible = true
 		_rps_stage.reset_round()
 		_place.call_deferred()
+	elif game == DuelRules.Game.HALLI:
+		custom_minimum_size.x = 740.0
+		_stage.custom_minimum_size.y = 300.0
+		_drawing.visible = false
+		_halli_stage.visible = true
+		_place.call_deferred()
 	_step = &"play"
 	_say("", Color.WHITE)
 	match game:
@@ -593,6 +604,8 @@ func _begin_reaction() -> void:
 	_clock = 0.0
 	_shown_cards = 0
 	_signal_shown = 0
+	if game == DuelRules.Game.HALLI:
+		_halli_stage.start()
 	if game == DuelRules.Game.QUICKDRAW:
 		_game_label.text = "· · ·"
 		_game_label.add_theme_color_override("font_color", Color.WHITE)
@@ -602,7 +615,11 @@ func _begin_reaction() -> void:
 		var key_hint: String = ""
 		if seats.size() > 1:
 			key_hint = " [%s]" % ("A" if seat == challenger else "L")
-		_add_button(("%s%s" % [label, key_hint]) if seats.size() == 1 else "%s\n%s%s" % [_seat_name(seat), label, key_hint], _press.bind(seat), Color("c92a2a"), 200.0 if seats.size() == 1 else 190.0)
+		if game == DuelRules.Game.HALLI and seats.size() == 1:
+			key_hint = " [Space]"
+		var button := _add_button(("%s%s" % [label, key_hint]) if seats.size() == 1 else "%s\n%s%s" % [_seat_name(seat), label, key_hint], _press.bind(seat), Color("c92a2a"), 240.0 if seats.size() == 1 else 230.0)
+		if game == DuelRules.Game.HALLI:
+			button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 	if seats.is_empty():
 		_say("컴퓨터끼리 결투 중..." if local_seats.is_empty() else "상대를 기다리는 중...", Color("ced4da"))
 	else:
@@ -610,13 +627,17 @@ func _begin_reaction() -> void:
 
 
 func _press(seat: int) -> void:
-	if _step != &"play" or _submitted.has(seat) or _clock < 0.0:
+	if _step != &"play" or _submitted.has(seat) or _clock < 0.0 or not local_seats.has(seat):
 		return
 	var pressed_ms: int = int(round(_clock * 1000.0))
+	if game == DuelRules.Game.HALLI:
+		_halli_stage.strike(seat, pressed_ms)
 	_submit(seat, pressed_ms)
-	Sfx.play(&"shot" if game == DuelRules.Game.QUICKDRAW else &"card_impact")
+	if game == DuelRules.Game.QUICKDRAW:
+		Sfx.play(&"shot")
 	var mark_ms: int = int(round(DuelRules.reaction_mark(game, setup_data) * 1000.0))
-	_say("%s: %s" % [_seat_name(seat), DuelRules.reaction_text(pressed_ms, mark_ms)], RED if pressed_ms < mark_ms else GREEN)
+	if game != DuelRules.Game.HALLI:
+		_say("%s: %s" % [_seat_name(seat), DuelRules.reaction_text(pressed_ms, mark_ms)], RED if pressed_ms < mark_ms else GREEN)
 	for child: Node in _buttons.get_children():
 		if (child as Button).text.contains(_seat_name(seat)) or local_seats.size() == 1:
 			(child as Button).disabled = true
@@ -703,6 +724,9 @@ func _play_reveal(data: Dictionary) -> void:
 	if game == DuelRules.Game.RPS:
 		await _play_rps_reveal(data)
 		return
+	if game == DuelRules.Game.HALLI:
+		await _play_halli_reveal(data)
+		return
 	animating = true
 	var picks: Dictionary = data["picks"]
 	# 순발력 게임: 봇이 먼저 냈어도 화면의 카드·신호가 그 순간까지 다 나온 다음 공개한다.
@@ -773,6 +797,30 @@ func _play_rps_reveal(data: Dictionary) -> void:
 	animating = false
 
 
+func _play_halli_reveal(data: Dictionary) -> void:
+	animating = true
+	var at := DuelRules.reaction_deadline(game, setup_data)
+	for seat: int in [challenger, defender]:
+		var pressed := int((data["picks"] as Dictionary).get(seat, -1))
+		if pressed >= 0:
+			at = minf(at, float(pressed) / 1000.0)
+	# Early network/bot outcomes wait for the same card boundary humans see.
+	# Timeout may already have stopped input, but its clock keeps advancing.
+	while _clock >= 0.0 and _clock < at and is_inside_tree() and not _closing:
+		await get_tree().process_frame
+	if not is_inside_tree() or _closing:
+		return
+	_clock = -1.0
+	_step = &"reveal"
+	_stop_timer()
+	_clear_buttons()
+	_say("")
+	_halli_stage.show_result(data, at)
+	await get_tree().create_timer(1.35).timeout
+	if is_inside_tree() and not _closing:
+		animating = false
+
+
 func _play_resolved(data: Dictionary) -> void:
 	var winner: int = int(data["winner"])
 	var loser: int = int(data["loser"])
@@ -800,6 +848,7 @@ func close_now() -> void:
 	_clock = -1.0
 	_game_slot.cancel()
 	_rps_stage.cancel()
+	_halli_stage.cancel()
 	_stop_timer()
 	_clear_buttons()
 	var tween: Tween = create_tween().set_parallel(true)
@@ -830,7 +879,6 @@ class StageDrawing extends Control:
 			return
 		match arena.game:
 			DuelRules.Game.ECARD: _draw_ecards()
-			DuelRules.Game.HALLI: _draw_halli()
 			DuelRules.Game.QUICKDRAW: _draw_cowboys()
 			DuelRules.Game.CURLING: _draw_curling()
 			DuelRules.Game.BARREL: _draw_barrel()
@@ -861,31 +909,6 @@ class StageDrawing extends Control:
 				label = names[clampi(int(reveal[seat]), 0, 1)]
 			_center_text(label, rect.get_center() + Vector2(0, 8), 18 if faced else 40, Color("3b2a00") if faced else GOLD)
 			_name_at(seat, size.y - 4.0)
-
-	func _draw_halli() -> void:
-		var cards: Array = arena.setup_data.get("cards", [])
-		var shown: int = arena._shown_cards if reveal.is_empty() else cards.size()
-		for pile: int in 2:
-			var seat: int = arena.challenger if pile == 0 else arena.defender
-			var top: int = -1
-			for index: int in shown:
-				if index % 2 == pile:
-					top = index
-			var rect := Rect2(Vector2(_seat_x(seat) - 50.0, 6.0), Vector2(100.0, 120.0))
-			draw_rect(rect, Color("fff9db") if top != -1 else Color("343a40"))
-			draw_rect(rect, Color("e67700"), false, 3.0)
-			if top != -1:
-				var count: int = int(cards[top])
-				for dot: int in count:
-					var col: int = dot % 2
-					var row: int = dot / 2
-					draw_circle(rect.position + Vector2(32.0 + col * 36.0, 34.0 + row * 46.0), 15.0, Color("ff8fab"))
-					draw_circle(rect.position + Vector2(27.0 + col * 36.0, 29.0 + row * 46.0), 5.0, Color("ffc9d6"))
-			_name_at(seat, size.y - 4.0)
-		var bell := Vector2(size.x / 2.0, size.y * 0.42)
-		draw_circle(bell, 26.0, GOLD)
-		draw_circle(bell + Vector2(0, -24), 6.0, Color("e67700"))
-		_center_text("5", bell + Vector2(0, 9), 24, Color("3b2a00"))
 
 	func _draw_cowboys() -> void:
 		for seat: int in [arena.challenger, arena.defender]:

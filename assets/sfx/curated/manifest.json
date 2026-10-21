@@ -775,5 +775,21 @@
       }
     ],
     "fade_out_ms": 40
+  },
+  {
+    "event": "halli_bell",
+    "file": "halli_bell_01.ogg",
+    "source": "kenney_impact/Audio/impactBell_heavy_000.ogg",
+    "author": "Kenney",
+    "url": "https://kenney.nl/assets/impact-sounds",
+    "license": "CC0-1.0",
+    "source_sha256": "94b8bb5f2d43ab65e4bcc32b28562416e9bc2c51d9fd4be1e333660ee52f977f",
+    "sha256": "140464b6d8bed9ab8d57d93e7cfeed1221da613b9bf81a39b5484c6e1f0d6d5b",
+    "seconds": 0.72,
+    "target_rms_db": -25,
+    "speed": 1.6,
+    "max_seconds": 0.72,
+    "fade_out_ms": 60,
+    "fade_in_ms": 1
   }
 ]

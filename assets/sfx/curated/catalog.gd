@@ -38,4 +38,5 @@ const FILES: Dictionary = {
 	&"rocket": ["res://assets/sfx/curated/rocket_01.ogg"],
 	&"warp": ["res://assets/sfx/curated/warp_01.ogg"],
 	&"trap_set": ["res://assets/sfx/curated/trap_set_01.ogg"],
+	&"halli_bell": ["res://assets/sfx/curated/halli_bell_01.ogg"],
 }

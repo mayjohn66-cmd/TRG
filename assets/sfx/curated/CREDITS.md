@@ -28,3 +28,8 @@ the flag. No realistic firearm discharge recording is used.
 The generated `catalog.gd` takes priority over legacy random candidates.
 User files in `content_trickcal/audio/sfx/` still replace an event's whole set.
 Rebuild with `tools/audio/curate_sfx.py` (NumPy and FFmpeg required).
+
+Halli Galli adds `halli_bell_01.ogg`, a 0.72-second derivative of Kenney's
+`impactBell_heavy_000.ogg` (Impact Sounds, CC0). It is pitched up, shortened,
+faded and normalized for a small game bell. Rebuild this clip separately with
+`tools/audio/add_halli_bell.py`; processing and hashes are in the manifest.

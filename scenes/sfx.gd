@@ -33,6 +33,7 @@ const EVENTS: Dictionary = {
 	&"card_throw": ["카드 던짐", ["card-shove", "card-slide", "whoosh"]],
 	&"card_get": ["카드 획득·드로우", ["card-place", "card-fan"]],
 	&"card_impact": ["카드 발동 임팩트", ["card-place", "impact", "thud"]],
+	&"halli_bell": ["할리갈리 데스벨 (딩!)", ["halli-bell"]],
 	&"mahjong_tap": ["마작패 단단한 착지 (탁)", ["mahjong-tap", "tile-clack"]],
 	&"yut_clack": ["나무 윷가락 착지 (따닥)", ["yut-clack", "wood-clack"]],
 	&"yut_toss": ["네 윷가락을 함께 던지는 바람", ["yut-toss"]],
