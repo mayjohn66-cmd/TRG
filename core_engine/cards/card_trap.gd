@@ -1,6 +1,6 @@
 # File: res://core_engine/cards/card_trap.gd
 # Class: class_name CardTrap
-# Role: 타일에 설치하는 함정 카드 (TRP_06 바나나·TRP_07 스파이크·TRP_08 강제 환승 포탈 / 코너 전용 TRP_C02 피아식별 점프대·TRP_C03 톨게이트·TRP_C04 타르). 한 칸에는 종류와 상관없이 함정 하나만
+# Role: 타일에 설치하는 함정 카드 (TRP_06 바나나·TRP_07 스파이크·TRP_08 강제 환승 포탈 / 코너 전용 TRP_C02 우이의 소원빌기·TRP_C03 지나가는 상인·TRP_C04 물의 세례를 받아라). 한 칸에는 종류와 상관없이 함정 하나만
 class_name CardTrap
 extends BaseCard
 
@@ -8,9 +8,9 @@ const NAMES: Dictionary = {
 	&"TRP_06": "바나나 껍질",
 	&"TRP_07": "스파이크",
 	&"TRP_08": "강제 환승 포탈",
-	&"TRP_C02": "피아식별 점프대",
-	&"TRP_C03": "톨게이트",
-	&"TRP_C04": "타르",
+	&"TRP_C02": "우이의 소원빌기",
+	&"TRP_C03": "지나가는 상인",
+	&"TRP_C04": "물의 세례를 받아라",
 }
 
 

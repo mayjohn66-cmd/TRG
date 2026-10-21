@@ -7507,9 +7507,9 @@ func _attachment_name(attachment_id: String) -> String:
 		"TRP_07": return "스파이크"
 		"TRP_08": return "강제 환승 포탈"
 		"TRP_C01": return "무인도"
-		"TRP_C02": return "피아식별 점프대"
-		"TRP_C03": return "톨게이트"
-		"TRP_C04": return "타르"
+		"TRP_C02": return "우이의 소원빌기"
+		"TRP_C03": return "지나가는 상인"
+		"TRP_C04": return "물의 세례를 받아라"
 		"HOTEL": return "호텔"
 	return attachment_id
 

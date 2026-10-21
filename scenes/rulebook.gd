@@ -849,7 +849,7 @@ func _ch_board() -> Dictionary:
 			"points": ["옷장과 부스터 발판은 [b]딱 멈출 때만[/b] 작동해요", "오른쪽 칸 이름을 누르면 자세히 볼 수 있어요"]},
 		{"title": "코너", "icon": &"grid", "tone": Color("2f8f4e"), "chips": [_join_tiles(BoardSpec.corner_tiles.slice(1)) + "번"],
 			"summary": "[b]코너 전용 함정[/b]만 설치할 수 있는 칸이에요.",
-			"points": ["무인도·점프대·톨게이트·타르"]},
+			"points": ["무인도·우이의 소원빌기", "지나가는 상인·물의 세례를 받아라"]},
 		{"title": "반환점", "icon": &"crown", "tone": Color("c98a14"), "chips": ["%d번" % BoardSpec.halfway_tile],
 			"summary": "여기를 지나면 체스 폰은 [b]퀸[/b]으로, 쇼기 말은 [b]승급[/b]해요."},
 		{"title": "빵집", "icon": &"book", "tone": Color("d9822b"), "chips": [_join_tiles(BoardSpec.bakery_tiles) + "번"],

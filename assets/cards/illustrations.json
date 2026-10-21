@@ -202,50 +202,50 @@
   {
     "card_id": "TRP_06",
     "file": "TRP_06.png",
-    "source_version": "emoji-v1",
+    "source_version": "trap-character-scenes-v4",
     "width": 1448,
     "height": 1086,
-    "sha256": "bcd1a30b39232c0cdf6e1297d481dc99ee4aaee840348497aabb362c3205dcdc"
+    "sha256": "50835032a7b2a5031b102647dccb83787e737f0780de4c103d379a65ce43ce09"
   },
   {
     "card_id": "TRP_07",
     "file": "TRP_07.png",
-    "source_version": "emoji-v1",
+    "source_version": "trap-character-scenes-v4",
     "width": 1448,
     "height": 1086,
-    "sha256": "a7ff80c3aa48e76ce47fe325ebb1fdd3a1bf6bc1234cfd5e7f8330ffd1b5b834"
+    "sha256": "baa039c5ce7b6196a95f77922f328a841c6735404b203e124a62f451aa4b07a2"
   },
   {
     "card_id": "TRP_08",
     "file": "TRP_08.png",
-    "source_version": "emoji-v1",
+    "source_version": "trap-character-scenes-v4",
     "width": 1448,
     "height": 1086,
-    "sha256": "f741bd88e836f7e46f55440499c6a36b328cd4b68d8846e05c6236a5df545dc8"
+    "sha256": "ef7b7eb51587d4bbc512888fc1c58c61efda8584cbf5c23d00f2070d0a3cc106"
   },
   {
     "card_id": "TRP_C02",
     "file": "TRP_C02.png",
-    "source_version": "emoji-v1",
+    "source_version": "trap-character-scenes-v4",
     "width": 1448,
     "height": 1086,
-    "sha256": "369804a6dc06371d1eebc70481e0a446a0ea6451b977e817bec2bf49b849f895"
+    "sha256": "6012fa068de02922e555f5935f9db6d8d152a6c7258f149a00980c83908f5255"
   },
   {
     "card_id": "TRP_C03",
     "file": "TRP_C03.png",
-    "source_version": "emoji-v1",
-    "width": 1448,
-    "height": 1086,
-    "sha256": "ea6d9b934cb3290fab483056b3d366f835571aaab30d23f269500a10582baa0e"
+    "source_version": "trap-character-scenes-v4",
+    "width": 1447,
+    "height": 1087,
+    "sha256": "971863e48dcd519c890190b9e7def3ad6ffb3f686a2a43f6497de9251edcc5d8"
   },
   {
     "card_id": "TRP_C04",
     "file": "TRP_C04.png",
-    "source_version": "emoji-v1",
+    "source_version": "trap-character-scenes-v4",
     "width": 1448,
     "height": 1086,
-    "sha256": "afe53557146609ca4733cedece86361ca38f8846bcce56285ae50454dde75f59"
+    "sha256": "bdf09cfbdacea06d70cdbc10bb452621a7d6ebfa06c7cd7815cba171c8902b90"
   },
   {
     "card_id": "ACT_09",
