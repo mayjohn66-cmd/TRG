@@ -38,6 +38,7 @@ var _current: Dictionary = {}
 var _t: float = 0.0
 var _root: VBoxContainer = null
 var _timer_bar: ColorRect = null
+var _parked: Node = null
 
 
 func _init() -> void:
@@ -63,6 +64,7 @@ func announce(tag: String, headline: String, body: String, color: Color, extra: 
 			(dropped["extra"] as Control).free()
 	_serial += 1
 	_queue.append({"tag": tag, "headline": headline, "body": body, "color": color, "extra": extra, "duration": duration, "serial": _serial, "blocking": blocking})
+	_park(extra)
 	active = true
 	if blocking and not _current.is_empty() and not bool(_current.get("blocking", true)):
 		_t = maxf(_t, float(_current["duration"]) - FADE_OUT)
@@ -163,7 +165,11 @@ func _start_next() -> void:
 		body.custom_minimum_size = Vector2(380, 0)
 		_root.add_child(body)
 	if _current["extra"] != null:
-		_root.add_child(_current["extra"] as Control)
+		var shown: Control = _current["extra"]
+		if shown.get_parent() != null:
+			shown.get_parent().remove_child(shown)
+		shown.show()
+		_root.add_child(shown)
 	if warning:
 		_root.add_child(_label("!!  WARNING  !!  WARNING  !!  WARNING  !!", 18, Color("ffd43b")))
 	if not big:
@@ -181,6 +187,20 @@ func _start_next() -> void:
 	reset_size()
 	_place()
 	call_deferred("_place")
+
+
+## 줄 서 있는 알림의 미리보기(카드 프레임 등)는 숨긴 채 보관해 둔다: 트리에 붙어 있어야 고아 노드로 남지 않는다.
+func _park(extra: Control) -> void:
+	if extra == null:
+		return
+	if _parked == null:
+		_parked = Node.new()
+		_parked.name = "ParkedExtras"
+		add_child(_parked)
+	if extra.get_parent() != null:
+		extra.get_parent().remove_child(extra)
+	extra.hide()
+	_parked.add_child(extra)
 
 
 func _place() -> void:

@@ -958,18 +958,33 @@ func _test_game_menu() -> void:
 	_expect(labels.has("계속하기") and labels.has("게임 설정") and labels.has("규칙 책자") and labels.has("게임 나가기"), "메뉴 항목: %s" % str(labels))
 	_expect(not labels.has("전체 로그") and not labels.has("새 게임") and _board._mode_toggle.get_parent() != _board._menu_box, "디버그가 꺼져 있으면 로그·새 게임·모드는 메뉴에 없다")
 	_expect(not _board._debug_enabled and not _board._debug_toggle.visible and _board._debug_toggle.get_parent() != _board._menu_box, "치트/디버그는 평소에 숨겨져 있다")
+	# 예전 단축키(F9 · Ctrl+Shift+D)로는 켜지지 않는다
 	var f9 := InputEventKey.new()
 	f9.keycode = KEY_F9
 	f9.pressed = true
 	_board._unhandled_key_input(f9)
-	_expect(_board._debug_enabled and _board._debug_box.visible, "F9를 누르면 치트/디버그가 켜진다")
+	_board._input(f9)
 	var combo := InputEventKey.new()
 	combo.keycode = KEY_D
 	combo.ctrl_pressed = true
 	combo.shift_pressed = true
 	combo.pressed = true
 	_board._unhandled_key_input(combo)
-	_expect(not _board._debug_enabled and not _board._debug_box.visible, "Ctrl+Shift+D로 다시 끈다")
+	_expect(not _board._debug_enabled, "F9 · Ctrl+Shift+D로는 치트가 켜지지 않는다")
+	# 메뉴를 닫은 채로 비밀 입력을 쳐도 켜지지 않는다
+	var was_open: bool = _board._menu_is_open()
+	if was_open:
+		_board._close_menu()
+	_type_cheat_sequence()
+	_expect(not _board._debug_enabled, "메뉴가 닫혀 있으면 비밀 입력이 통하지 않는다")
+	# 메뉴를 연 채로 ↑↑↓↓←→←→BA -> 켜짐, 한 번 더 -> 꺼짐
+	_board._open_menu()
+	_type_cheat_sequence()
+	_expect(_board._debug_enabled and _board._debug_box.visible, "메뉴를 연 채로 비밀 입력을 끝까지 치면 치트/디버그가 켜진다")
+	_type_cheat_sequence()
+	_expect(not _board._debug_enabled and not _board._debug_box.visible, "한 번 더 치면 다시 꺼진다")
+	if not was_open:
+		_board._close_menu()
 	_expect(_board._emote_row != null and _board._emote_row.visible and _board._emote_button != null and not _board._emote_picker.visible, "AI 대전에는 [감정 표현] 버튼 하나만 보이고 이모트 판은 접혀 있다")
 	_board._emote_ready_msec = 0
 	_board._emote_button.pressed.emit()
@@ -1083,6 +1098,19 @@ func _test_announcer() -> void:
 		await process_frame
 	_expect(announcer.holding() and str(announcer._current.get("headline", "")) == "막는 알림", "막는 알림은 그대로 남는다")
 	announcer.cancel()
+	# 줄 서 있는 알림의 카드 미리보기는 숨긴 채 트리에 붙어 있어야 한다 (고아 노드로 세지 않게), 차례가 오면 보인다
+	var first_preview: Control = _board._make_card_preview(&"ACT_02")
+	var queued_preview: Control = _board._make_card_preview(&"ACT_09")
+	announcer.announce("테스트", "미리보기 1", "", Color.WHITE, first_preview, 0.3)
+	announcer.announce("테스트", "미리보기 2", "", Color.WHITE, queued_preview, 0.3)
+	_expect(queued_preview.is_inside_tree() and not queued_preview.visible, "줄 선 미리보기는 숨긴 채 트리에 보관된다")
+	announcer.skip_current()
+	for _i: int in 6:
+		await process_frame
+	_expect(is_instance_valid(queued_preview) and queued_preview.visible and queued_preview.get_parent() == announcer._root, "차례가 오면 미리보기가 카드에 붙어 보인다")
+	announcer.cancel()
+	await process_frame
+	_expect(not is_instance_valid(queued_preview) or not queued_preview.is_inside_tree(), "취소하면 미리보기도 정리된다")
 	announcer.history.clear()
 	_board.instant_roll_for_test = true
 	_board._announce("테스트", "건너뜀", "", Color.WHITE, null, 0.5)
@@ -2123,3 +2151,12 @@ func _test_presentation_queue() -> void:
 	_board._fx_until_msec = 0
 	_board.instant_roll_for_test = true
 	print("PRESENTATION_QUEUE_OK")
+
+
+## 치트 비밀 입력(↑↑↓↓←→←→BA)을 _input으로 흘려 넣는다.
+func _type_cheat_sequence() -> void:
+	for keycode: int in MainBoard.CHEAT_SEQUENCE:
+		var key := InputEventKey.new()
+		key.keycode = keycode
+		key.pressed = true
+		_board._input(key)

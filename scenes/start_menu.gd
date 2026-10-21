@@ -51,7 +51,7 @@ func _ready() -> void:
 	_hello_label = _bottom["name"]
 	var fan_notice := Label.new()
 	fan_notice.name = "FanNotice"
-	fan_notice.text = "비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 무료 배포물입니다"
+	fan_notice.text = "v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 무료 배포물입니다" % GameSession.version()
 	fan_notice.add_theme_font_size_override("font_size", 13)
 	fan_notice.add_theme_color_override("font_color", Color(0.17, 0.35, 0.12, 0.85))
 	fan_notice.add_theme_color_override("font_outline_color", Color("fff6df"))
@@ -324,10 +324,16 @@ func _build_avatar_page(parent: VBoxContainer) -> void:
 	body.alignment = BoxContainer.ALIGNMENT_CENTER
 	_avatar_page.add_child(body)
 	# 왼쪽: 미리보기 + 감정 시험 버튼
+	# 배경 그림 위에서도 이름·안내 문구가 읽히도록 오른쪽 격자와 같은 민트 카드 위에 올린다
+	var left_panel := PanelContainer.new()
+	left_panel.name = "AvatarPreviewPanel"
+	left_panel.add_theme_stylebox_override("panel", LobbyTheme.style(Color(LobbyTheme.MINT, 0.9), LobbyTheme.MINT_EDGE, 3, 26, 8, 16))
+	left_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	body.add_child(left_panel)
 	var left := VBoxContainer.new()
 	left.add_theme_constant_override("separation", 10)
 	left.custom_minimum_size = Vector2(280, 0)
-	body.add_child(left)
+	left_panel.add_child(left)
 	_avatar_preview = AvatarSlot.new()
 	_avatar_preview.name = "AvatarPreview"
 	_avatar_preview.catalog_tint = true
@@ -369,6 +375,7 @@ func _build_avatar_page(parent: VBoxContainer) -> void:
 		thumb.catalog_tint = true
 		thumb.prefer_icon = true
 		thumb.icon_border = false
+		thumb.outline = false  # 칸(버튼) 테두리 하나만: 그림에 테두리를 또 두르면 두 겹 틈처럼 보인다
 		thumb.placeholder_text = AvatarCatalog.name_of(id).trim_prefix("아바타 ")
 		thumb.setup(1, AvatarCatalog.color_of(id), Vector2(88, 88))
 		thumb.set_character(id)

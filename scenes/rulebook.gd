@@ -503,9 +503,11 @@ func _picture_tile(data: Dictionary, on_pick: Callable) -> Control:
 	holder.name = "Entry_" + str(data["title"])
 	holder.mouse_filter = Control.MOUSE_FILTER_PASS
 	var card_size: Vector2
+	var card_radius: int = 12
 	if data.has("augment"):
 		var definition: AugmentDef = AugmentRegistry.get_def(data["augment"])
 		card_size = MainBoard.AUGMENT_CARD_SIZE * AUGMENT_TILE_SCALE
+		card_radius = int(round(16.0 * AUGMENT_TILE_SCALE))  # 증강 카드 모서리(16)를 줄인 배율 그대로
 		var card: Button = MainBoard.make_augment_card(MainBoard.augment_card_info(definition, null, 1), on_pick, AUGMENT_TILE_SCALE, true)
 		card.position = -MainBoard.AUGMENT_CARD_SIZE * (1.0 - AUGMENT_TILE_SCALE) / 2.0  # 가운데 기준으로 줄였으니 왼쪽 위를 맞춘다
 		holder.add_child(card)
@@ -526,9 +528,10 @@ func _picture_tile(data: Dictionary, on_pick: Callable) -> Control:
 	# 지금 보고 있는 항목: 꼬리표 대신 눈에 띄는 색의 굵은 외곽선
 	var marker := Panel.new()
 	marker.name = "SelectedOutline"
-	marker.add_theme_stylebox_override("panel", _box(Color(0, 0, 0, 0), SELECTED_OUTLINE, 6, 18))
-	marker.position = Vector2.ZERO  # 목록 스크롤에 잘리지 않게 카드 안쪽에 그린다
-	marker.size = card_size
+	# 외곽선 모서리는 카드 모서리와 같은 둥글기로, 1px 바깥까지 덮어 카드 테두리가 모서리 틈으로 비치지 않게 한다
+	marker.add_theme_stylebox_override("panel", _box(Color(0, 0, 0, 0), SELECTED_OUTLINE, 6, card_radius + 1))
+	marker.position = -Vector2.ONE  # 목록 스크롤에 잘리지 않게 거의 카드 안쪽에 그린다
+	marker.size = card_size + Vector2.ONE * 2.0
 	marker.z_index = 6
 	marker.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	marker.visible = false

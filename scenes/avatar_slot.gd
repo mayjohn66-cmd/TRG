@@ -34,6 +34,8 @@ var icon_border: bool = true
 var static_only: bool = false
 ## true면 평소에는 고해상도 정지 이미지를 보여 주고, 감정 반응 동안만 애니메이션 프레임으로 바꾼다 (아바타 선택 미리보기).
 var hq_idle: bool = false
+## 맨 위 테두리를 그릴지 (바깥 칸에 이미 테두리가 있는 선택 격자처럼 그림만 둥글게 보여 줄 자리는 끈다). setup 전에 정한다.
+var outline: bool = true
 
 var _stage: Control = null
 ## 둥근 창: 그림은 이 창 모양으로만 보인다 (clip_children). 그림은 창보다 OVERSCAN만큼 크게 그려 들썩여도 가장자리가 드러나지 않는다.
@@ -96,6 +98,7 @@ func setup(seat_number: int, color: Color, slot_size: Vector2) -> void:
 	_outline = Panel.new()
 	_outline.name = "Outline"
 	_outline.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_outline.visible = outline
 	add_child(_outline)
 	_apply_frame(color.lightened(0.55))
 	_seat_label = Label.new()
@@ -361,6 +364,10 @@ func _apply_frame(color: Color) -> void:
 	window.bg_color = base_color.darkened(0.05)
 	window.set_corner_radius_all(_corner_radius())
 	window.anti_aliasing = true
+	# 창 가장자리를 테두리 굵기의 절반만큼 안으로 들인다 (투명 테두리 = 그림이 보이지 않는 띠).
+	# 창 끝이 테두리 띠 한가운데에 숨어서, 모서리 안티에일리어싱 틈으로 그림·배경이 비치지 않는다.
+	window.border_color = Color(0, 0, 0, 0)
+	window.set_border_width_all(maxi(1, outline_width() / 2) if outline else 0)
 	_mask.add_theme_stylebox_override("panel", window)
 	_outline_color = color
 	_set_outline_color(color)
