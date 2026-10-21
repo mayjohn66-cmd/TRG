@@ -857,3 +857,8 @@ res://
 - **복사:** `DisplayServer.clipboard_set` + 웹에서는 `navigator.clipboard.writeText`도 함께 부른다. 창 아래쪽에 토스트(2.4초 뒤 사라지며 해제)와 상태 문구.
 - **이모지 없음:** 요청 문구의 이모지(📢·🐛·⚖️·👍·☑️·🚀·📋·✅·🌐)는 게임 글꼴에 없어 웹에서 상자로 깨지므로 글자·색·코드 그림으로 대신했다.
 - **검사:** `tests/ui_feedback_test.gd`(CI 포함) — 버튼, 글자 수, 스냅샷 내용, 복사, 로컬 가짜 웹후크 서버(TCPServer)로 실제 POST 본문 확인, 쿨타임, 닫힌 포트 실패, 창·HTTPRequest 해제, 결과 화면 버튼, 언어 버튼 폴백.
+
+### 6.30 웹 묶음(pck) 100 MiB 한도
+- GitHub에 올라가는 `index.pck`가 100 MiB를 넘으면 배포가 멈춘다. 범용 증강 그림 5장을 더하자 100.13 MiB가 되어 배포가 실패했다.
+- 대응: 새 엠블럼은 512px로 줄였고, `export_presets.cfg` exclude_filter에 게임 안에서 쓰지 않는 파일을 뺐다 — `web/og-image.png`·`web/loading-petit-speaki.webp`(HTML 껍데기가 따로 복사해 쓴다), `content_trickcal/avatars/avatar_01/idle/*`(에르핀은 고화질 `idle_hq.tres`를 쓰고 `idle/`는 `idle_hq`가 없을 때만 읽는 예비 프레임). 결과 96.53 MiB (여유 약 3.5 MiB).
+- 남은 큰 덩어리: 에르핀 로비 대기 고화질 무손실 프레임 `avatar_01/idle_hq`(약 31 MiB). 그림을 더 넣다가 다시 한도에 닿으면 이 프레임을 손실 압축(webp 품질 0.9 등)하거나 해상도를 줄이는 것이 가장 효과가 크다. `avatar_01/idle_hq`를 지우면 예비 `idle/` 프레임을 다시 묶음에 넣어야 한다.
