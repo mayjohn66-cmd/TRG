@@ -180,13 +180,13 @@ func test_bot_turn_follows_the_documented_pacing() -> void:
 	var d_move: float = BotController.DELAY_MOVE
 	controller.tick(0.0)
 	check_eq(manager.current_state, TurnManager.State.PHASE_TURN_BEGIN, "턴 시작 직후에는 행동하지 않는다")
-	controller.tick(d_start - 0.05)
+	controller.tick(d_start - 0.01)
 	check_eq(manager.current_state, TurnManager.State.PHASE_TURN_BEGIN, "턴 시작 대기가 끝나기 전에는 카드/함정 판단 전")
-	controller.tick(0.1)
+	controller.tick(0.02)
 	check_eq(manager.current_state, TurnManager.State.PHASE_ROLL_WAIT, "대기 뒤 판단을 마치고 굴리러 진행")
-	controller.tick(d_pre - 0.05)
+	controller.tick(d_pre - 0.01)
 	check_eq(manager.current_state, TurnManager.State.PHASE_ROLL_WAIT, "굴리기 직전 잠깐 대기")
-	controller.tick(0.1)
+	controller.tick(0.02)
 	check(manager.current_state != TurnManager.State.PHASE_ROLL_WAIT, "굴렸다")
 	var before: int = manager.state.get_pawn(21).current_tile_idx
 	controller.tick(d_result - 0.1)

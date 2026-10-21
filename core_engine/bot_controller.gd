@@ -8,13 +8,15 @@ extends Node
 signal bot_acted(player_id: int, action: StringName, detail: Dictionary)
 
 ## 단계별 대기 시간(초). instant가 켜지면(헤드리스·ui_smoke) 모두 0초로 건너뛴다.
-const DELAY_TURN_START: float = 0.8   # 봇 턴 시작 -> 카드/함정 사용 판단
-const DELAY_PRE_ROLL: float = 0.6     # 굴리기 직전
-const DELAY_ROLL_RESULT: float = 1.0  # 굴림 연출 뒤 결과를 확인하는 호흡
-const DELAY_MOVE: float = 0.9         # 이동할 말 선택 및 이동
-const DELAY_WINDOW: float = 0.7       # 개입 창에서 봇이 카드를 고민하는 시간
-const DELAY_AUTO_PASS: float = 0.8    # 사람이 낼 카드가 없을 때 개입 창이 자동으로 넘어가기까지
-const DELAY_DRAFT: float = 0.6        # 봇의 증강 선택 간격
+## 2026-10 템포 패치: 봇은 굴림·이동 연출(busy_check)이 끝나기를 이미 기다리므로 여기 대기는 '생각하는 척' 짧은 여운만 둔다.
+## (예전 값 0.8/0.6/1.0/0.9에 연출 속도 1.7배가 곱해져 봇 한 턴에 약 6초가 대기로만 흘렀다.)
+const DELAY_TURN_START: float = 0.3   # 봇 턴 시작 -> 카드/함정 사용 판단
+const DELAY_PRE_ROLL: float = 0.2     # 굴리기 직전
+const DELAY_ROLL_RESULT: float = 0.3  # 굴림 연출 뒤 결과를 확인하는 호흡
+const DELAY_MOVE: float = 0.2         # 이동할 말 선택 및 이동
+const DELAY_WINDOW: float = 0.15      # 개입 창·방어 카드에서 봇이 결정하는 시간 (0.15초 안)
+const DELAY_AUTO_PASS: float = 0.0    # 아무도 낼 카드가 없는 개입 창은 기다리지 않고 바로 넘긴다
+const DELAY_DRAFT: float = 0.3        # 봇의 증강 선택 간격
 const DELAY_DUEL_THINK: float = 0.8   # 봇이 결투 값을 내기까지의 시간 (사람이 상대일 때)
 const DELAY_DUEL_RELAY: float = 1.2   # 봇끼리의 결투는 중앙 스테이지 중계를 볼 시간을 준다
 
@@ -30,7 +32,7 @@ var wait_for_human_windows: bool = true
 var busy_check: Callable = Callable()
 var rng := RandomNumberGenerator.new()
 
-## 대기 시간 배율 (연출 속도 설정: 1.0이 기본 길이)
+## 대기 시간 배율 (1.0이 기본 길이). 배속(1x/2x/3x)은 Engine.time_scale이 delta를 줄여 함께 빨라진다.
 var pace: float = 1.0
 var _wait: float = 0.0
 var _seen_serial: int = -1
@@ -291,7 +293,7 @@ func _step_window() -> void:
 			return
 	if _human_can_intervene():
 		return  # 사람이 [개입 카드 사용 / 패스]를 고르는 시간
-	if not _auto_pass_armed:
+	if DELAY_AUTO_PASS > 0.0 and not _auto_pass_armed:
 		_auto_pass_armed = true
 		_delay(DELAY_AUTO_PASS)
 		if _wait > 0.0:

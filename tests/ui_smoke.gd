@@ -352,9 +352,9 @@ func _check_select_banner(manager: TurnManager, options: Array[Button]) -> void:
 		_assert(card.disabled == not _board._can_pick_now(slot_pawn), "배너 카드의 활성 상태는 말을 고를 수 있는지와 같아야 한다")
 		_assert(not (_board._pawn_buttons[index] as Button).has_theme_stylebox_override("hover") or not (_board._pawn_buttons[index] as Button).disabled, "독 슬롯은 선택 단계에서도 눌러서 고르는 용도가 아니다")
 		var result_text: String = (_board._select_parts[index]["result"] as Label).text
-		_assert(result_text != "", "카드마다 결과 예고 문구가 있어야 한다")
-		if not card.disabled:
-			_assert(result_text.begins_with("→"), "선택 가능한 카드의 예고는 [→ N번 ...] 형식")
+		_assert(not result_text.contains("번") and not result_text.contains("→") and result_text.length() <= 4, "결과 예고는 칸 번호 없이 짧은 한마디(처치!·완주! 등) 또는 빈칸 (%s)" % result_text)
+		if card.disabled:
+			_assert(result_text == "", "고를 수 없는 카드에는 예고 글자를 쓰지 않는다 (흐린 카드가 알려 준다)")
 
 
 func _check_draft_cards() -> void:

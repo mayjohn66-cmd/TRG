@@ -37,6 +37,7 @@ var _queue: Array[Dictionary] = []
 var _current: Dictionary = {}
 var _t: float = 0.0
 var _root: VBoxContainer = null
+var _timer_bar: ColorRect = null
 
 
 func _init() -> void:
@@ -48,7 +49,9 @@ func _init() -> void:
 
 ## 알림 한 건을 대기열에 넣는다. extra는 헤드라인 아래에 붙일 임의의 Control(카드 프레임·법전 목록 등)이다.
 ## 알림 번호를 돌려준다 (건너뛰면 -1).
-func announce(tag: String, headline: String, body: String, color: Color, extra: Control = null, duration: float = 1.5) -> int:
+## blocking=false는 띄워만 두는 알림(차례·라운드 안내 등)이다: holding()이 참이 되지 않아 굴림·이동·봇이 기다리지 않는다.
+## 뒤에 기다려야 하는 알림이 들어오면 지금 떠 있는 띄워만 두는 알림은 바로 사라지기 시작한다.
+func announce(tag: String, headline: String, body: String, color: Color, extra: Control = null, duration: float = 1.5, blocking: bool = true) -> int:
 	history.append(headline)
 	if instant:
 		if extra != null:
@@ -59,11 +62,25 @@ func announce(tag: String, headline: String, body: String, color: Color, extra: 
 		if dropped["extra"] != null:
 			(dropped["extra"] as Control).free()
 	_serial += 1
-	_queue.append({"tag": tag, "headline": headline, "body": body, "color": color, "extra": extra, "duration": duration, "serial": _serial})
+	_queue.append({"tag": tag, "headline": headline, "body": body, "color": color, "extra": extra, "duration": duration, "serial": _serial, "blocking": blocking})
 	active = true
+	if blocking and not _current.is_empty() and not bool(_current.get("blocking", true)):
+		_t = maxf(_t, float(_current["duration"]) - FADE_OUT)
 	if _current.is_empty() and not _waiting:
 		_start_next()
 	return _serial
+
+
+## 게임 진행(굴림·이동·봇·입력)이 이 알림을 기다려야 하는가: 지금 떠 있거나 줄 서 있는 알림 중 하나라도 blocking이면 참.
+func holding() -> bool:
+	if not active:
+		return false
+	if not _current.is_empty() and bool(_current.get("blocking", true)):
+		return true
+	for entry: Dictionary in _queue:
+		if bool(entry.get("blocking", true)):
+			return true
+	return false
 
 
 ## 대기 중인 알림까지 모두 지운다 (새 게임·테스트).
@@ -113,7 +130,7 @@ func _start_next() -> void:
 	_root.add_theme_constant_override("separation", 6)
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_root)
-	_root.add_child(_label(str(_current["tag"]), 13, color.lightened(0.2)))
+	# 작은 꼬리표 글자(턴·라운드 등)는 그리지 않는다: 테두리 색과 헤드라인이 같은 말을 한다.
 	var warning: bool = str(_current["tag"]) == WARNING_TAG
 	var big: bool = str(_current["tag"]) == BIG_TAG or warning
 	if warning:
@@ -135,7 +152,15 @@ func _start_next() -> void:
 	if warning:
 		_root.add_child(_label("!!  WARNING  !!  WARNING  !!  WARNING  !!", 18, Color("ffd43b")))
 	if not big:
-		_root.add_child(_label("(클릭하면 넘어갑니다)", 10, Color("6c757d")))
+		# "(클릭하면 넘어갑니다)" 글자 대신 줄어드는 시간 막대: 곧 사라진다는 것(클릭하면 바로 넘어간다)을 보여 준다.
+		var track := Control.new()
+		track.custom_minimum_size = Vector2(0, 4)
+		track.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_timer_bar = ColorRect.new()
+		_timer_bar.color = color
+		_timer_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		track.add_child(_timer_bar)
+		_root.add_child(track)
 	modulate = Color(1, 1, 1, 0)
 	visible = true
 	reset_size()
@@ -164,6 +189,7 @@ func _clear() -> void:
 		remove_child(_root)
 		_root.queue_free()
 		_root = null
+		_timer_bar = null
 
 
 func _process(delta: float) -> void:
@@ -180,6 +206,9 @@ func _process(delta: float) -> void:
 	elif _t > duration - FADE_OUT:
 		alpha = clampf((duration - _t) / FADE_OUT, 0.0, 1.0)
 	modulate = Color(1, 1, 1, alpha)
+	if is_instance_valid(_timer_bar):
+		var track: Control = _timer_bar.get_parent()
+		_timer_bar.size = Vector2(track.size.x * clampf(1.0 - _t / maxf(duration, 0.01), 0.0, 1.0), track.size.y)
 	# 등장할 때 살짝 커지며 튀어나온다 (0.88배 -> 1.0배).
 	var pop: float = clampf(_t / (FADE_IN * 2.0), 0.0, 1.0)
 	scale = Vector2.ONE * lerpf(0.88, 1.0, 1.0 - pow(1.0 - pop, 3.0))

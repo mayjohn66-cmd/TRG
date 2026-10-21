@@ -47,6 +47,10 @@ var is_game_over: bool = false
 
 ## 한 칸 이동 사이의 연출 대기 시간(초). 0이면 await 없이 즉시 끝까지 이동한다 (헤드리스/테스트). 뷰 연결 시 올린다.
 @export var step_delay_sec: float = 0.0
+## 한 번의 이동 연출 총시간 상한(초): 칸이 많을수록 칸당 시간을 줄여 몇 칸을 가든 이 시간을 넘지 않는다 (칸당 = min(step_delay_sec, 상한 / 칸 수)).
+const MOVE_TIME_CAP: float = 0.75
+## 지금 이동의 칸당 시간 (화면의 한 칸 점프 길이를 엔진 걸음과 맞춘다).
+var current_step_seconds: float = 0.0
 
 ## true면 모든 참가자가 같은 시드로 같은 규칙 엔진을 각자 돌린다(락스텝). 행동은 방장이 정한 순서대로 apply_replicated()로 들어오고, 네트워크로 상태·이벤트를 따로 보내지 않는다.
 var lockstep: bool = false
@@ -105,7 +109,8 @@ static func tr_ui(key: String, args: Array = []) -> String:
 
 func _process(delta: float) -> void:
 	if state != null and _is_authority():
-		tick(delta)
+		# 제한 시간은 실제 초로 센다: 배속(Engine.time_scale)을 올려도 사람이 생각할 시간은 줄지 않는다.
+		tick(delta / maxf(Engine.time_scale, 0.01))
 
 
 ## 규칙을 실행할 권한이 있는가: 방장(서버)이거나 락스텝 참가자.
@@ -317,13 +322,15 @@ func execute_step_by_step_move(entity: BoardEntity, path: Array[int], ctx: RuleC
 		_move_report.pawn_id = pawn.entity_id
 	_move_outcome = MoveExecutor.StepOutcome.CONTINUE
 	ctx.pawn = pawn
+	# 장거리 이동(부스터·후반 가속)도 한 번에 MOVE_TIME_CAP초 안에 끝난다: 칸당 시간을 칸 수로 나눠 줄인다.
+	current_step_seconds = minf(step_delay_sec, MOVE_TIME_CAP / float(maxi(path.size(), 1)))
 	for index: int in path.size():
 		var is_last: bool = index == path.size() - 1
 		_move_outcome = MoveExecutor.apply_step(state, pawn, ctx, path[index], is_last, index == 0, _move_report)
 		if _move_outcome != MoveExecutor.StepOutcome.CONTINUE:
 			break
-		if not is_last and step_delay_sec > 0.0 and is_inside_tree():
-			await get_tree().create_timer(step_delay_sec).timeout
+		if not is_last and current_step_seconds > 0.0 and is_inside_tree():
+			await get_tree().create_timer(current_step_seconds).timeout
 
 
 # ---------------------------------------------------------------------------

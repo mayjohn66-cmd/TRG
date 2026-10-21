@@ -71,7 +71,11 @@ func _draw() -> void:
 		return
 	# Ground shadow, thick side wall, top ring, and inset make owner color visible.
 	if ground_shadow:
-		_ellipse(Vector2(0, 5), Vector2(17, 6), Color(0, 0, 0, 0.28))
+		_ellipse(Vector2(0, 5 + 4 * mini(pawn.carried.size(), 3)), Vector2(17, 6), Color(0, 0, 0, 0.28))
+	# 업은 말은 글자(x2) 대신 받침 원판을 아래로 겹겹이 쌓아 보여 준다 (최대 3장).
+	for layer: int in range(mini(pawn.carried.size(), 3), 0, -1):
+		_ellipse(Vector2(0, 3 + 4 * layer), Vector2(15, 6), owner_color.darkened(0.6), INK)
+		_ellipse(Vector2(0, 4 * layer), Vector2(15, 6), owner_color.darkened(0.15), INK, 1.0)
 	_ellipse(Vector2(0, 3), Vector2(15, 6), owner_color.darkened(0.48), INK)
 	_ellipse(Vector2.ZERO, Vector2(15, 6), owner_color, owner_color.lightened(0.5), 1.5)
 	_ellipse(Vector2.ZERO, Vector2(11, 3.5), owner_color.darkened(0.3))
@@ -94,10 +98,6 @@ func _draw() -> void:
 	if pawn.is_promoted_shogi() and artwork.is_empty():
 		_poly(PackedVector2Array([Vector2(0,-32),Vector2(13,-23),Vector2(11,-2),Vector2(-11,-2),Vector2(-13,-23)]), Color.TRANSPARENT, Color("ff5e50"), 2.0)
 	# 슬롯 번호 배지는 그리지 않는다 (기물 그림을 가려 거슬린다는 피드백). 몇 번 말인지는 고르기 카드의 [N번 말]이 알려 준다.
-	if not pawn.carried.is_empty():
-		var box := Rect2(-10, -1, 20, 9)
-		draw_style_box(_badge_style(), box)
-		_caption("x%d" % (pawn.carried.size()+1), Vector2(0,3.5), 9, INK)
 	if pawn.revenge_boost:
 		_draw_revenge_flame()
 	if skill_ready():
@@ -113,16 +113,6 @@ func _draw_revenge_flame() -> void:
 	_poly(outer, Color(1.0, 0.36, 0.1, 0.95), INK, 1.0)
 	var inner := PackedVector2Array([base + Vector2(-3, 0), base + Vector2(-3, -5), base + Vector2(0, -9 - 2 * flick), base + Vector2(4, -5), base + Vector2(3, 0)])
 	_poly(inner, Color(1.0, 0.85, 0.25, 0.95), Color.TRANSPARENT, 0.0)
-	_caption("+4", base + Vector2(1, 8), 8, Color("fff3bf"))
-
-
-static func _badge_style() -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color("ffe68b")
-	style.border_color = INK
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(4)
-	return style
 
 
 func _draw_shape() -> void:

@@ -925,14 +925,27 @@ func _test_view_modes() -> void:
 	GameSession.view_mode = MainBoard.ViewMode.TOP
 
 
-## 상단 UI는 왼쪽 [피드백 / 버그 제보]와 오른쪽 [메뉴]뿐이고 (소리·언어는 설정), 메뉴 안에서 계속하기/게임 설정/전체 로그/새 게임/모드/치트/게임 나가기를 고른다.
+## 상단 UI는 왼쪽 [피드백 / 버그 제보]와 오른쪽 [배속]·[메뉴]뿐이고 (소리·언어는 설정), 메뉴 안에서 계속하기/게임 설정/전체 로그/새 게임/모드/치트/게임 나가기를 고른다.
 func _test_game_menu() -> void:
 	var top_buttons: Array[Button] = []
 	for child: Node in _board.get_children():
 		var button: Button = child as Button
 		if button != null and button.visible and button.position.y < 44.0 and button.size.y <= 40.0:
 			top_buttons.append(button)
-	_expect(top_buttons.size() == 2 and top_buttons.has(_board._menu_button) and top_buttons.has(_board._feedback_button), "상단에는 왼쪽 [피드백]·오른쪽 [메뉴] 두 개만 남는다 (%d개)" % top_buttons.size())
+	_expect(top_buttons.size() == 3 and top_buttons.has(_board._menu_button) and top_buttons.has(_board._feedback_button) and top_buttons.has(_board._speed_button), "상단에는 왼쪽 [피드백]·오른쪽 [배속]·[메뉴] 세 개만 남는다 (%d개)" % top_buttons.size())
+	# [배속]: 1x -> 2x -> 3x -> 1x, Engine.time_scale에 걸린다
+	var speed_before: int = GameSession.game_speed
+	GameSession.game_speed = 1
+	_board._apply_game_speed()
+	_board._speed_button.pressed.emit()
+	_expect(GameSession.game_speed == 2 and is_equal_approx(Engine.time_scale, 2.0) and _board._speed_button.text == "배속 2x", "배속 버튼: 2x (%s)" % _board._speed_button.text)
+	_board._speed_button.pressed.emit()
+	_expect(GameSession.game_speed == 3 and is_equal_approx(Engine.time_scale, 3.0), "배속 버튼: 3x")
+	_board._speed_button.pressed.emit()
+	_expect(GameSession.game_speed == 1 and is_equal_approx(Engine.time_scale, 1.0), "배속 버튼: 다시 1x")
+	GameSession.game_speed = speed_before
+	_board._apply_game_speed()
+	Engine.time_scale = 1.0
 	_expect(_board._feedback_button.position.x < 200.0 and _board._menu_button.position.x > 1000.0, "피드백은 왼쪽 위, 메뉴는 오른쪽 위")
 	_expect(_board._mode_toggle.get_parent() == null and _board._new_game_button.get_parent() == null and _board._debug_toggle.get_parent() == null, "닫힌 메뉴에서는 모드·새 게임·치트 버튼이 화면에 없다")
 	_expect(not _board._menu_is_open(), "처음에는 메뉴가 닫혀 있다")
@@ -1366,8 +1379,8 @@ func _test_bot_pacing() -> void:
 	if events.has(&"roll_resolved") and events.has(&"move_resolved"):
 		var roll_after: float = float(events[&"roll_resolved"]) - start
 		var move_after: float = float(events[&"move_resolved"]) - float(events[&"roll_resolved"])
-		_expect(roll_after >= 0.75, "봇은 턴 시작 후 0.5초 판단 + 0.3초 뒤에 굴린다 (%.2f초)" % roll_after)
-		_expect(move_after >= 1.8, "굴림 연출(약 0.9초) + 결과 확인 0.6초 + 선택 0.5초 뒤에 말을 옮긴다 (%.2f초)" % move_after)
+		_expect(roll_after >= 0.45 and roll_after < 1.5, "봇은 턴 시작 후 0.3초 판단 + 0.2초 뒤에 굴린다 (%.2f초)" % roll_after)
+		_expect(move_after >= 0.45 and move_after < 4.0, "굴림 연출 + 결과 확인 0.3초 + 선택 0.2초 뒤에 말을 옮기고, 이동은 0.75초 안에 끝난다 (%.2f초)" % move_after)
 
 
 ## ACT_09 결투: 카드를 놓으면 중앙 스테이지에 결투장이 열리고, 손 고르기 -> 공개 -> 승자의 말 클릭 -> 후퇴까지 이어진다.
@@ -2001,11 +2014,13 @@ func _test_presentation_queue() -> void:
 	_expect(landings == [4, 5, 6], "1~3번은 건너뛰고 4번에 로켓 착지 뒤 5 -> 6번 한 칸씩 (%s)" % str(landings))
 	_board._refresh_all()
 	_expect(glow == null or not glow.visible, "출격하면 불꽃 테두리가 꺼진다")
-	# 7) 빵집: 카드를 받으면 [빵집! 카드 획득] 알림이 뜬다 (손패가 가득 차면 이유를 알려 준다)
+	# 7) 빵집: 카드를 받으면 카드 뒷면이 프로필로 날아간다 (글자 없음). 손패가 가득 차면 카드가 튕겨 나가며 부서진다
 	var bakery: int = BoardSpec.bakery_tiles[0]
 	var badge_texts: Array[String] = []
 	var watcher: Callable = func(node: Node) -> void:
-		if node is Label and (node as Label).text.contains("빵집"):
+		if node.has_meta("hand_card_fx"):
+			badge_texts.append(str(node.get_meta("hand_card_fx")))
+		elif node is Label and (node as Label).text.contains("빵집"):
 			badge_texts.append((node as Label).text)
 	_board.child_entered_tree.connect(watcher)
 	var baker: PlayerPawn = state.get_pawn(13)
@@ -2017,7 +2032,7 @@ func _test_presentation_queue() -> void:
 	while _board._presentation_active() and guard < 600:
 		guard += 1
 		await process_frame
-	_expect(badge_texts.any(func(text: String) -> bool: return text.contains("카드 획득")), "빵집에 멈춰 카드를 받으면 [빵집! 카드 획득] 알림이 뜬다 (%s)" % str(badge_texts))
+	_expect(str(badge_texts) == str(["drawn"]), "빵집에 멈춰 카드를 받으면 카드 뒷면이 프로필로 날아간다 (글자 배지 없음) (%s)" % str(badge_texts))
 	_expect(not badge_texts.any(func(text: String) -> bool: return text.contains(_board._card_name(&"TRP_03"))), "빵집 알림은 어떤 카드인지 알려 주지 않는다 (%s)" % str(badge_texts))
 	badge_texts.clear()
 	for i: int in GameEnums.MAX_HAND_SIZE:
@@ -2027,7 +2042,7 @@ func _test_presentation_queue() -> void:
 	while _board._presentation_active() and guard < 600:
 		guard += 1
 		await process_frame
-	_expect(badge_texts.any(func(text: String) -> bool: return text.contains("가득")), "손패가 가득 차면 못 받은 이유를 알려 준다 (%s)" % str(badge_texts))
+	_expect(str(badge_texts) == str(["rejected"]), "손패가 가득 차면 카드가 튕겨 나가며 부서진다 (%s)" % str(badge_texts))
 	_board.child_entered_tree.disconnect(watcher)
 	state.hands[1].clear()
 	# 8) 장외 홈런 뒤 말은 내려앉는 연출 없이 출발선 자리에 조용히 돌아와 있다
