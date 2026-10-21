@@ -53,7 +53,16 @@ func _setup_scene() -> void:
 	var state: GameState = _board.state
 	match _shot:
 		"draft":
-			pass
+			# DRAFT_IDS=AUG_LAW_01,SUPER_01,UTIL_01 처럼 정하면 그 증강들을 내 선택지로 보여 준다
+			if OS.get_environment("DRAFT_IDS") != "":
+				var ids: Array[StringName] = []
+				for id: String in OS.get_environment("DRAFT_IDS").split(","):
+					ids.append(StringName(id))
+				_board.manager._draft_offers[_board.local_player_id] = ids
+				_board._close_opening()
+				_board._intro_pending = false
+				_board._close_draft_overlay()
+				_board._refresh_draft_overlay()
 		"duel":
 			# ⚔️ 데스매치 결투장: DUEL_GAME 종목을 핫시트로 열어 미니게임 화면을 찍는다
 			_board._close_opening()

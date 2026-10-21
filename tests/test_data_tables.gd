@@ -5,7 +5,7 @@ class_name TestDataTables
 extends TestCase
 
 const FLAGS: Array[String] = ["TRUE", "FALSE"]
-const TIERS: Array[String] = ["NORMAL", "GOLD", "PRISMA"]
+const TIERS: Array[String] = ["NORMAL", "GOLD", "PRISMA", "HOLO"]
 const CATEGORIES: Array[String] = ["PAWN", "DICE", "LAW", "CARD", "CHAOS", "UTIL", "RULE"]
 
 

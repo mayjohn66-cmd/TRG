@@ -37,7 +37,7 @@ static func all() -> Array[AugmentDef]:
 			_cache.append(swap)
 		for law_id: String in LawRegistry.ALL_IDS:
 			var law := AugmentDef.new(StringName("AUG_%s" % law_id), GameEnums.AugmentCategory.LAW_ENACT, "특수 승리: %s" % LawRegistry.create(law_id).law_name, law_id)
-			law.tier = "GOLD"
+			law.tier = "HOLO"  # 가장 드문 계열: 크리스탈 무지개빛 테두리
 			law.weight = LAW_WEIGHT  # 특수 승리는 드물게
 			law.min_round = 3
 			_cache.append(law)

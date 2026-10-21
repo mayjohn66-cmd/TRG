@@ -602,6 +602,21 @@ func _finish() -> bool:
 	_board._fill_law_tip(0)
 	_assert(_board._tip_title.text.contains("투기장의 지배자"), "법전 툴팁 제목")
 	_assert(_board._tip_skill.visible and _board._tip_skill.text.split("\n").size() == _board._player_ids.size() and _board._tip_skill.text.contains("/6 처치"), "법전 툴팁에 플레이어마다 진행도 줄: " + _board._tip_skill.text)
+	# 액션 로그: 모든 [Rn ...] 줄은 ──── n라운드 ──── 구분선 아래에 있다 (증강 기록이 구분선 위로 새지 않는다)
+	var divider_round: int = 0
+	var log_regex: RegEx = RegEx.create_from_string("^\\[color=#868e96\\]\\[lb\\]R(\\d+)")
+	var divider_regex: RegEx = RegEx.create_from_string("──── (\\d+)라운드 ────")
+	for entry: String in _board._action_log.lines():
+		var divider: RegExMatch = divider_regex.search(entry)
+		if divider != null:
+			_assert(int(divider.get_string(1)) > divider_round, "라운드 구분선은 한 번씩 차례대로 (%s)" % entry)
+			divider_round = int(divider.get_string(1))
+			continue
+		var tagged: RegExMatch = log_regex.search(entry)
+		if tagged != null:
+			if divider_round == 0:
+				continue  # 로그는 최근 100줄만 남아 첫 구분선이 밀려났을 수 있다
+			_assert(int(tagged.get_string(1)) == divider_round, "R%s 줄은 %s라운드 구분선 아래에 (%s)" % [tagged.get_string(1), tagged.get_string(1), entry.substr(0, 80)])
 	for round_number: int in _draft_rounds:
 		_assert(GameEnums.is_draft_round(round_number), "드래프트는 1라운드부터 3라운드마다만 열려야 한다 (%d)" % round_number)
 	if _failures.is_empty():

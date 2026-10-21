@@ -58,8 +58,8 @@ func _run() -> void:
 	# 글자 수
 	modal.set_message("짧음")
 	expect(modal.send() == &"too_short", "5자 미만은 보내지 않는다")
-	modal.set_message("가".repeat(700))
-	expect(modal.message().length() == FeedbackModal.MAX_LENGTH, "500자에서 잘린다 (%d)" % modal.message().length())
+	modal.set_message("가".repeat(5200))
+	expect(modal.message().length() == FeedbackModal.MAX_LENGTH, "5000자에서 잘린다 (%d)" % modal.message().length())
 	modal.set_message("3라운드에 변이 물약을 골랐더니 말이 사라졌어요")
 	# 스냅샷
 	var snapshot: String = modal.snapshot()
@@ -73,38 +73,66 @@ func _run() -> void:
 	(modal.find_child("AttachCheck", true, false) as CheckBox).button_pressed = false
 	expect(not modal.build_report().contains("[게임 스냅샷]"), "첨부를 끄면 스냅샷이 빠진다")
 	(modal.find_child("AttachCheck", true, false) as CheckBox).button_pressed = true
-	# 주소가 없으면 복사로 안내
+	# 주소가 없으면 복사로 안내 (실제 디스코드 주소로는 절대 보내지 않는다)
 	modal.webhook_url = ""
-	modal.form_url = ""
-	expect(modal.send() == &"no_target", "웹후크·설문 주소가 없으면 복사로 안내")
-	# 가짜 웹후크 서버로 실제 POST
-	var server := TCPServer.new()
+	modal.form_action_url = ""
+	modal.form_view_url = ""
+	expect(modal.send() == &"no_target", "웹후크·폼 주소가 없으면 복사로 안내")
+	modal.form_view_url = "https://docs.google.com/forms/d/e/TEST/viewform"
+	var prefill: String = modal.build_prefill_url()
+	expect(prefill.contains("usp=pp_url") and prefill.contains(FeedbackModal.GFORM_ENTRY_MESSAGE.uri_encode()) and prefill.contains(FeedbackModal.GFORM_ENTRY_CATEGORY.uri_encode()), "미리 채운 구글 폼 링크 (%s)" % prefill.substr(0, 90))
+	modal.form_view_url = ""
+	# 장문: 4000자 피드백도 잘리지 않고 디스코드 첨부 파일과 구글 폼 항목에 전부 들어간다
+	var long_text: String = "긴 밸런스 의견 시작 " + "가나다라마바사".repeat(560) + " 끝"
+	modal.set_message(long_text)
+	expect(modal.message() == long_text.strip_edges(), "5000자 안의 장문은 그대로 (%d자)" % long_text.length())
+	var discord := TCPServer.new()
+	var form := TCPServer.new()
 	var port: int = 18765
-	while server.listen(port, "127.0.0.1") != OK and port < 18800:
+	while discord.listen(port, "127.0.0.1") != OK and port < 18800:
 		port += 1
+	var form_port: int = port + 1
+	while form.listen(form_port, "127.0.0.1") != OK and form_port < 18830:
+		form_port += 1
 	modal.webhook_url = "http://127.0.0.1:%d/hook" % port
-	expect(modal.send() == &"webhook", "웹후크로 보낸다")
-	expect(root.find_child("FeedbackRequest", true, false) != null, "요청 노드는 루트에 붙어 창을 닫아도 끝까지 간다")
-	var body: String = await _serve_once(server, 204)
-	await _wait_until(func() -> bool: return root.find_child("FeedbackRequest", true, false) == null, 5000)
-	expect(root.find_child("FeedbackRequest", true, false) == null, "보낸 뒤 HTTPRequest가 해제된다")
-	var payload: Variant = JSON.parse_string(body)
-	expect(payload is Dictionary, "디스코드 웹후크 JSON 본문 (%s)" % body.substr(0, 80))
+	modal.form_action_url = "http://127.0.0.1:%d/formResponse" % form_port
+	expect(modal.send() == &"sent", "디스코드·구글 폼에 동시에 보낸다")
+	expect(root.find_child("FeedbackRequest_discord", true, false) != null and root.find_child("FeedbackRequest_form", true, false) != null, "요청 노드 두 개는 루트에 붙어 창을 닫아도 끝까지 간다")
+	var discord_raw: Dictionary = await _serve_once(discord, 204)
+	var form_raw: Dictionary = await _serve_once(form, 200)
+	await _wait_until(func() -> bool: return root.find_child("FeedbackRequest_*", true, false) == null, 5000)
+	expect(root.find_child("FeedbackRequest_*", true, false) == null, "보낸 뒤 HTTPRequest가 모두 해제된다")
+	var discord_body: String = str(discord_raw.get("body", ""))
+	expect(str(discord_raw.get("headers", "")).to_lower().contains("multipart/form-data; boundary="), "디스코드는 multipart (payload_json + 첨부 파일)")
+	var json_start: int = discord_body.find("{")
+	var json_end: int = discord_body.find("\r\n--", json_start)
+	var payload: Variant = JSON.parse_string(discord_body.substr(json_start, json_end - json_start)) if json_start != -1 and json_end != -1 else null
+	expect(payload is Dictionary, "payload_json 파싱")
 	if payload is Dictionary:
-		expect(str(payload.get("content", "")).contains("변이 물약") and str(payload.get("content", "")).contains("익명 교주"), "content = 유형·작성자·내용")
+		expect(str(payload.get("content", "")).contains("긴 밸런스 의견 시작") and str(payload.get("content", "")).contains("feedback.txt") and str(payload.get("content", "")).length() < 2000, "content는 2000자 안의 미리보기 + 첨부 안내")
 		var embeds: Array = payload.get("embeds", [])
-		expect(embeds.size() == 1 and str((embeds[0] as Dictionary).get("description", "")).begins_with("```") and str((embeds[0] as Dictionary).get("description", "")).contains("[게임 스냅샷]"), "embeds = 스냅샷 코드 블록")
+		expect(embeds.size() == 1 and str((embeds[0] as Dictionary).get("description", "")).contains("[게임 스냅샷]"), "embeds = 스냅샷 미리보기")
+	expect(discord_body.contains("filename=\"feedback.txt\"") and discord_body.contains(long_text.strip_edges()) and discord_body.contains("[게임 스냅샷]"), "첨부 파일에 장문 전체 + 스냅샷 (잘리지 않음)")
+	var form_fields: Dictionary = {}
+	for pair: String in str(form_raw.get("body", "")).split("&"):
+		var kv: PackedStringArray = pair.split("=")
+		if kv.size() == 2:
+			form_fields[kv[0].uri_decode()] = kv[1].replace("+", " ").uri_decode()
+	expect(str(form_raw.get("headers", "")).to_lower().contains("application/x-www-form-urlencoded"), "구글 폼은 폼 인코딩 POST")
+	expect(str(form_fields.get(FeedbackModal.GFORM_ENTRY_MESSAGE, "")) == long_text.strip_edges(), "구글 폼 본문 항목 = 장문 전체")
+	expect(str(form_fields.get(FeedbackModal.GFORM_ENTRY_NICKNAME, "")) == "익명 교주" and str(form_fields.get(FeedbackModal.GFORM_ENTRY_CATEGORY, "")) == "밸런스·기획 의견", "구글 폼 유형·닉네임 항목")
+	expect(str(form_fields.get(FeedbackModal.GFORM_ENTRY_SNAPSHOT, "")).contains("-- 최근 액션 로그"), "구글 폼 스냅샷 항목 = 자동 게임 로그")
 	expect((modal.find_child("Status", true, false) as Label).text == L10n.tr_ui("feedback.sent"), "전송 완료 문구")
 	expect(FeedbackModal.cooldown_left() > 50, "보내면 60초 쿨타임")
 	modal.set_message("한 번 더 보내 봅니다")
 	expect(modal.send() == &"cooldown", "쿨타임 중에는 다시 보내지 않는다")
-	server.stop()
-	# 실패: 닫힌 포트
+	discord.stop()
+	form.stop()
+	# 실패: 닫힌 포트 두 곳 -> 복사 폴백 안내, 쿨타임 없음
 	FeedbackModal.reset_cooldown()
-	modal.webhook_url = "http://127.0.0.1:%d/hook" % port
-	expect(modal.send() == &"webhook", "닫힌 주소로 보내 본다")
-	await _wait_until(func() -> bool: return root.find_child("FeedbackRequest", true, false) == null, 8000)
-	expect(root.find_child("FeedbackRequest", true, false) == null, "실패해도 HTTPRequest가 해제된다")
+	expect(modal.send() == &"sent", "닫힌 주소로 보내 본다")
+	await _wait_until(func() -> bool: return root.find_child("FeedbackRequest_*", true, false) == null, 8000)
+	expect(root.find_child("FeedbackRequest_*", true, false) == null, "실패해도 HTTPRequest가 해제된다")
 	expect((modal.find_child("Status", true, false) as Label).text == L10n.tr_ui("feedback.send_failed"), "실패 안내 (복사 폴백)")
 	expect(FeedbackModal.cooldown_left() == 0, "실패는 쿨타임을 걸지 않는다")
 	# 닫기 -> 해제
@@ -150,8 +178,8 @@ func _finish() -> void:
 	quit(0 if failures.is_empty() else 1)
 
 
-## 가짜 웹후크: 연결 하나를 받아 요청 본문을 읽고 status로 답한다. 반환: 본문.
-func _serve_once(server: TCPServer, status: int) -> String:
+## 가짜 서버: 연결 하나를 받아 요청 헤더·본문을 읽고 status로 답한다. 반환: {"headers", "body"}.
+func _serve_once(server: TCPServer, status: int) -> Dictionary:
 	var until: int = Time.get_ticks_msec() + 5000
 	var peer: StreamPeerTCP = null
 	while Time.get_ticks_msec() < until and peer == null:
@@ -159,23 +187,26 @@ func _serve_once(server: TCPServer, status: int) -> String:
 			peer = server.take_connection()
 		await process_frame
 	if peer == null:
-		failures.append("가짜 웹후크 서버에 연결이 오지 않았다")
-		return ""
-	var raw: PackedByteArray = PackedByteArray()
+		failures.append("가짜 서버에 연결이 오지 않았다")
+		return {}
+	var raw := PackedByteArray()
 	var body_length: int = -1
-	var header_end: int = -1
+	var header_bytes: int = -1
 	while Time.get_ticks_msec() < until:
 		peer.poll()
 		var available: int = peer.get_available_bytes()
 		if available > 0:
 			raw.append_array(peer.get_data(available)[1])
-			var text: String = raw.get_string_from_utf8()
-			header_end = text.find("\r\n\r\n")
-			if header_end != -1 and body_length == -1:
-				for line: String in text.substr(0, header_end).split("\r\n"):
-					if line.to_lower().begins_with("content-length:"):
-						body_length = int(line.split(":")[1].strip_edges())
-			if header_end != -1 and body_length != -1 and raw.size() >= _byte_offset(raw, header_end) + body_length:
+			if header_bytes == -1:
+				for index: int in range(maxi(raw.size() - available - 4, 0), raw.size() - 3):
+					if raw[index] == 13 and raw[index + 1] == 10 and raw[index + 2] == 13 and raw[index + 3] == 10:
+						header_bytes = index + 4
+						break
+				if header_bytes != -1:
+					for line: String in raw.slice(0, header_bytes).get_string_from_utf8().split("\r\n"):
+						if line.to_lower().begins_with("content-length:"):
+							body_length = int(line.split(":")[1].strip_edges())
+			if header_bytes != -1 and body_length != -1 and raw.size() >= header_bytes + body_length:
 				break
 		await process_frame
 	var reason: String = "No Content" if status == 204 else "OK"
@@ -183,13 +214,9 @@ func _serve_once(server: TCPServer, status: int) -> String:
 	peer.poll()
 	await process_frame
 	peer.disconnect_from_host()
-	var full: String = raw.get_string_from_utf8()
-	return full.substr(full.find("\r\n\r\n") + 4)
-
-
-## 글자 위치 header_end(헤더는 ASCII)의 바이트 위치 + 빈 줄 4바이트.
-func _byte_offset(_raw: PackedByteArray, header_end: int) -> int:
-	return header_end + 4
+	if header_bytes == -1:
+		return {"headers": raw.get_string_from_utf8(), "body": ""}
+	return {"headers": raw.slice(0, header_bytes).get_string_from_utf8(), "body": raw.slice(header_bytes).get_string_from_utf8()}
 
 
 func _wait_until(condition: Callable, timeout_msec: int) -> void:

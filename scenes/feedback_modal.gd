@@ -1,25 +1,40 @@
 # File: res://scenes/feedback_modal.gd
 # Class: class_name FeedbackModal
-# Role: 인게임 피드백 창. 유형(버그 / 밸런스 / 재미·기타) + 닉네임(선택) + 내용(5~500자) + 게임 스냅샷 첨부 여부를 받아
-#       [개발자에게 바로 전송](디스코드 웹후크 POST, 60초 쿨타임 / 웹후크가 없으면 외부 설문 + 클립보드) 또는
+# Role: 인게임 피드백 창 (하이브리드 전송). 유형(버그 / 밸런스 / 재미·기타) + 닉네임(선택) + 내용(5~5000자) + 게임 스냅샷 첨부 여부를 받아
+#       [개발자에게 바로 전송] = 디스코드 웹후크(실시간 알림, 전문은 txt 첨부) + 구글 폼(장문·시트 보관)에 동시에 보내고(60초 쿨타임),
+#       보낼 곳이 없거나 모두 실패하면 클립보드 복사 + 미리 채운 구글 폼 열기로 넘어간다. 또는
 #       [리포트+로그 복사하기](클립보드)로 내보낸다. 스냅샷은 여는 쪽(MainBoard)이 넘긴 snapshot_source를 보낼 때마다 불러 최신 상태로 만든다.
 #       창과 HTTPRequest는 쓰고 나면 queue_free된다 (요청은 창을 닫아도 끝까지 가고, 끝나면 스스로 지워진다).
 class_name FeedbackModal
 extends Control
 
-## 디스코드 웹후크 또는 피드백을 받는 API 주소. 비워 두면 바로 전송 대신 아래 설문/복사로 안내한다.
-const FEEDBACK_WEBHOOK_URL: String = ""
-## 구글 폼 같은 외부 설문 주소. 웹후크가 비어 있고 이것이 있으면 리포트를 클립보드에 복사한 뒤 설문 창을 연다.
-const EXTERNAL_FORM_URL: String = ""
+# --- 보낼 곳 설정 (개발자가 URL·항목 ID만 채워 넣는다. 비어 있는 곳은 건너뛴다) ---------------------------
+# 1) 디스코드 웹후크 URL (실시간 푸시 알림용). 짧은 미리보기는 메시지로, 전체 내용·스냅샷은 txt 첨부 파일로 보내 장문도 잘리지 않는다.
+#    주의: 웹 빌드는 누구나 내려받아 볼 수 있으므로 이 주소도 공개된다 (악용되면 디스코드에서 웹후크를 다시 만들어 바꿔 끼운다).
+const DISCORD_WEBHOOK_URL: String = "https://discord.com/api/webhooks/1562298513155686430/FLqE6H-njP7u0Cq6m4xbVsId7TRdC9Vz9L2jrVQewhqq9qrCHG49GuvgMtLXju0Q44fF"
+
+# 2) 구글 폼 연동 설정 (장문 무제한 수집 & 스프레드시트 자동 저장용)
+# 예: "https://docs.google.com/forms/d/e/1FAIpQLSe.../viewform"
+const GOOGLE_FORM_VIEW_URL: String = ""
+# 예: "https://docs.google.com/forms/d/e/1FAIpQLSe.../formResponse"
+const GOOGLE_FORM_ACTION_URL: String = ""
+const GFORM_ENTRY_CATEGORY: String = "entry.111111111" # 유형 항목 ID
+const GFORM_ENTRY_NICKNAME: String = "entry.222222222" # 닉네임 항목 ID
+const GFORM_ENTRY_MESSAGE: String  = "entry.333333333" # 피드백 본문 항목 ID
+const GFORM_ENTRY_SNAPSHOT: String = "entry.444444444" # 자동 게임 로그 항목 ID
 
 const MIN_LENGTH: int = 5
-const MAX_LENGTH: int = 500
+## 장문 밸런스 피드백도 받도록 넉넉하게 (디스코드는 첨부 파일, 구글 폼은 항목 값으로 전부 간다).
+const MAX_LENGTH: int = 5000
 const NAME_MAX_LENGTH: int = 30
 ## 도배 방지: 한 번 보내면 이 시간 동안 다시 보낼 수 없다 (창을 다시 열어도 유지).
 const COOLDOWN_SECONDS: int = 60
 const REQUEST_TIMEOUT_SECONDS: float = 15.0
-## 디스코드 embed 설명 한도(4096자) 안에 맞춘다.
-const SNAPSHOT_LIMIT: int = 3800
+## 디스코드 메시지·embed 한도 안의 미리보기 길이 (전체 내용은 첨부 파일에 있다).
+const PREVIEW_LIMIT: int = 1500
+const SNAPSHOT_PREVIEW_LIMIT: int = 3500
+## 구글 폼 미리 채우기 링크(viewform?...)는 주소 길이 한도가 있어 본문을 이만큼만 담는다 (전체는 클립보드).
+const PREFILL_LIMIT: int = 1500
 const RECENT_LOG_LINES: int = 15
 
 enum Kind { BUG, BALANCE, FUN }
@@ -36,8 +51,12 @@ var snapshot_source: Callable = Callable()
 ## 어디서 열었는지 (상단 버튼 / 결과 화면) - 리포트 머리말에 붙는다.
 var context: String = ""
 ## 테스트가 바꿔 끼우는 주소 (기본은 위 상수).
-var webhook_url: String = FEEDBACK_WEBHOOK_URL
-var form_url: String = EXTERNAL_FORM_URL
+var webhook_url: String = DISCORD_WEBHOOK_URL
+var form_action_url: String = GOOGLE_FORM_ACTION_URL
+var form_view_url: String = GOOGLE_FORM_VIEW_URL
+## 이번 전송에서 아직 끝나지 않은 요청 수와 성공한 곳들.
+var _pending_requests: int = 0
+var _delivered: Array[String] = []
 
 var _kind_buttons: Array[Button] = []
 var _name_edit: LineEdit = null
@@ -249,20 +268,68 @@ func build_report() -> String:
 	return "\n".join(lines)
 
 
-## 디스코드 웹후크 형식: content(유형·작성자·내용) + embeds(스냅샷 코드 블록).
+## 디스코드 웹후크 JSON(payload_json): content = 유형·작성자·내용 미리보기, embeds = 스냅샷 미리보기. 전체는 첨부 파일(report_file_text).
 func build_webhook_payload() -> Dictionary:
+	var body: String = message()
+	var preview: String = body if body.length() <= PREVIEW_LIMIT else body.substr(0, PREVIEW_LIMIT) + "\n... (전체 %d자는 첨부 파일 feedback.txt)" % body.length()
 	var payload: Dictionary = {
 		"username": "TRG 피드백",
-		"content": ("**[%s]** %s\n%s" % [L10n.tr_ui(KIND_KEYS[int(kind)]), author(), message()]).substr(0, 1900),
+		"content": "**[%s]** %s\n%s" % [L10n.tr_ui(KIND_KEYS[int(kind)]), author(), preview],
+		"attachments": [{"id": 0, "filename": "feedback.txt", "description": "피드백 전문 + 게임 스냅샷"}],
 	}
 	var snap: String = snapshot()
 	if snap != "":
 		payload["embeds"] = [{
 			"title": "게임 스냅샷" + (" (%s)" % context if context != "" else ""),
-			"description": "```\n%s\n```" % snap.replace("```", "'''").substr(0, SNAPSHOT_LIMIT),
+			"description": "```\n%s\n```" % snap.replace("```", "\'\'\'").substr(0, SNAPSHOT_PREVIEW_LIMIT),
 			"color": KIND_COLORS[int(kind)].to_rgba32() >> 8,
 		}]
 	return payload
+
+
+## 첨부 파일 feedback.txt: 잘리지 않은 전체 리포트 (UTF-8).
+func report_file_text() -> String:
+	return build_report()
+
+
+## 디스코드로 보내는 multipart/form-data 본문 (payload_json + files[0]). 반환: [본문 바이트, Content-Type 헤더 값].
+func build_webhook_multipart() -> Array:
+	var boundary: String = "----TRGFeedback%d" % Time.get_ticks_usec()
+	var body := PackedByteArray()
+	body.append_array(("--%s\r\nContent-Disposition: form-data; name=\"payload_json\"\r\nContent-Type: application/json\r\n\r\n" % boundary).to_utf8_buffer())
+	body.append_array(JSON.stringify(build_webhook_payload()).to_utf8_buffer())
+	body.append_array(("\r\n--%s\r\nContent-Disposition: form-data; name=\"files[0]\"; filename=\"feedback.txt\"\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n" % boundary).to_utf8_buffer())
+	body.append_array(report_file_text().to_utf8_buffer())
+	body.append_array(("\r\n--%s--\r\n" % boundary).to_utf8_buffer())
+	return [body, "multipart/form-data; boundary=%s" % boundary]
+
+
+## 구글 폼 formResponse로 보내는 항목 (전부 잘리지 않은 값). 스냅샷 첨부를 끄면 스냅샷 항목은 비운다.
+func build_form_fields() -> Dictionary:
+	var fields: Dictionary = {}
+	fields[GFORM_ENTRY_CATEGORY] = L10n.tr_ui(KIND_KEYS[int(kind)])
+	fields[GFORM_ENTRY_NICKNAME] = author()
+	fields[GFORM_ENTRY_MESSAGE] = message()
+	fields[GFORM_ENTRY_SNAPSHOT] = ("보낸 곳: %s\n" % context if context != "" else "") + snapshot()
+	return fields
+
+
+static func _urlencode(fields: Dictionary) -> String:
+	var parts: PackedStringArray = []
+	for key: Variant in fields:
+		parts.append("%s=%s" % [str(key).uri_encode(), str(fields[key]).uri_encode()])
+	return "&".join(parts)
+
+
+## 구글 폼 미리 채우기 링크 (보낼 곳이 모두 막혔을 때 사용자가 직접 제출하게 연다). 주소 길이 때문에 본문은 앞부분만 담는다.
+func build_prefill_url() -> String:
+	if form_view_url == "":
+		return ""
+	var fields: Dictionary = {}
+	fields[GFORM_ENTRY_CATEGORY] = L10n.tr_ui(KIND_KEYS[int(kind)])
+	fields[GFORM_ENTRY_NICKNAME] = author()
+	fields[GFORM_ENTRY_MESSAGE] = message().substr(0, PREFILL_LIMIT)
+	return "%s%susp=pp_url&%s" % [form_view_url, "&" if form_view_url.contains("?") else "?", _urlencode(fields)]
 
 
 ## 남은 쿨타임(초). 0이면 보낼 수 있다.
@@ -278,61 +345,84 @@ static func reset_cooldown() -> void:
 	_last_sent_msec = -1
 
 
-## [개발자에게 바로 전송]. 반환: 실제로 한 일 (&"too_short" / &"cooldown" / &"webhook" / &"form" / &"no_target").
+## [개발자에게 바로 전송]: 디스코드(실시간 알림)와 구글 폼(장문 보관) 중 설정된 곳 모두에 동시에 보낸다.
+## 반환: &"too_short" / &"cooldown" / &"busy" / &"sent"(요청 시작) / &"form_link"(미리 채운 폼 열기) / &"no_target"(복사만).
 func send() -> StringName:
 	if message().length() < MIN_LENGTH:
 		_set_status(L10n.tr_ui("feedback.too_short", [MIN_LENGTH]), false)
 		return &"too_short"
-	if webhook_url != "":
+	if _pending_requests > 0:
+		return &"busy"
+	if webhook_url != "" or form_action_url != "":
 		if cooldown_left() > 0:
 			_set_status(L10n.tr_ui("feedback.cooldown", [cooldown_left()]), false)
 			return &"cooldown"
-		_post(build_webhook_payload())
-		return &"webhook"
-	if form_url != "":
-		_copy_text(build_report())
-		OS.shell_open(form_url)
-		_set_status(L10n.tr_ui("feedback.form_opened"), true)
-		return &"form"
+		_last_sent_msec = Time.get_ticks_msec()
+		_delivered.clear()
+		if webhook_url != "":
+			var multipart: Array = build_webhook_multipart()
+			_post("discord", webhook_url, PackedStringArray(["Content-Type: %s" % multipart[1]]), multipart[0])
+		if form_action_url != "":
+			_post("form", form_action_url, PackedStringArray(["Content-Type: application/x-www-form-urlencoded"]), _urlencode(build_form_fields()).to_utf8_buffer())
+		if _pending_requests > 0:
+			_set_status(L10n.tr_ui("feedback.sending"), true)
+			_send_button.disabled = true
+		return &"sent"
+	return _fallback()
+
+
+## 보낼 곳이 없거나 모두 실패했을 때: 리포트를 클립보드에 복사하고, 구글 폼 주소가 있으면 미리 채운 폼을 연다.
+func _fallback() -> StringName:
 	_copy_text(build_report())
+	var prefill: String = build_prefill_url()
+	if prefill != "":
+		OS.shell_open(prefill)
+		_set_status(L10n.tr_ui("feedback.form_opened"), true)
+		return &"form_link"
 	_set_status(L10n.tr_ui("feedback.no_target"), false)
 	return &"no_target"
 
 
-## 웹후크로 비동기 POST. 요청 노드는 트리 루트에 붙여 창을 닫아도 끝까지 보내고, 끝나면(성공·실패·시간 초과) 스스로 지워진다.
-func _post(payload: Dictionary) -> HTTPRequest:
-	_last_sent_msec = Time.get_ticks_msec()
+## 비동기 POST 한 건. 요청 노드는 트리 루트에 붙어 창을 닫아도 끝까지 가고, 끝나면(성공·실패·시간 초과) 스스로 지워진다.
+func _post(channel: String, url: String, headers: PackedStringArray, body: PackedByteArray) -> void:
 	var request := HTTPRequest.new()
-	request.name = "FeedbackRequest"
+	request.name = "FeedbackRequest_%s" % channel
 	request.timeout = REQUEST_TIMEOUT_SECONDS
 	var host: Node = get_tree().root if is_inside_tree() else self
 	host.add_child(request)
+	_pending_requests += 1
 	var modal_ref: WeakRef = weakref(self)
 	request.request_completed.connect(func(result: int, code: int, _headers: PackedStringArray, _body: PackedByteArray) -> void:
-		var ok: bool = result == HTTPRequest.RESULT_SUCCESS and code >= 200 and code < 300
+		var ok: bool = result == HTTPRequest.RESULT_SUCCESS and code >= 200 and code < 400
+		# 웹 빌드에서 구글 폼은 응답을 읽을 수 없다(CORS). 제출 자체는 서버에 들어가므로 보낸 것으로 친다.
+		if channel == "form" and OS.has_feature("web") and code == 0:
+			ok = true
 		var modal: FeedbackModal = modal_ref.get_ref() as FeedbackModal
 		if modal != null:
-			modal._on_sent(ok)
+			modal._on_request_done(channel, ok)
 		request.queue_free())
-	var error: Error = request.request(webhook_url, PackedStringArray(["Content-Type: application/json"]), HTTPClient.METHOD_POST, JSON.stringify(payload))
+	var error: Error = request.request_raw(url, headers, HTTPClient.METHOD_POST, body)
 	if error != OK:
 		request.queue_free()
-		_on_sent(false)
-		return null
-	_set_status(L10n.tr_ui("feedback.sending"), true)
-	_send_button.disabled = true
-	return request
+		_on_request_done(channel, false)
 
 
-func _on_sent(ok: bool) -> void:
+func _on_request_done(channel: String, ok: bool) -> void:
+	_pending_requests = maxi(_pending_requests - 1, 0)
 	if ok:
-		_set_status(L10n.tr_ui("feedback.sent"), true)
-		_body_edit.text = ""
-		_on_body_changed()
-	else:
-		_last_sent_msec = -1  # 실패는 쿨타임을 걸지 않는다
-		_set_status(L10n.tr_ui("feedback.send_failed"), false)
+		_delivered.append(channel)
+	if _pending_requests > 0:
+		return
 	_send_button.disabled = false
+	if _delivered.is_empty():
+		_last_sent_msec = -1  # 실패는 쿨타임을 걸지 않는다
+		_fallback()
+		_set_status(L10n.tr_ui("feedback.send_failed"), false)
+		return
+	_set_status(L10n.tr_ui("feedback.sent"), true)
+	_toast(L10n.tr_ui("feedback.sent"))
+	_body_edit.text = ""
+	_on_body_changed()
 
 
 ## [리포트+로그 복사하기]: 내용이 비어 있어도 스냅샷만이라도 복사한다.

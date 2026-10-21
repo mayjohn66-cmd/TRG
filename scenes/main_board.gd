@@ -228,12 +228,19 @@ const REJECT_REASONS: Dictionary = {
 	&"card_limit": "카드는 굴리기 전에 턴당 1장만 쓸 수 있습니다",
 	&"no_candidate": "바꿀 수 있는 다른 증강이 없습니다",
 }
+## 법전(교칙 제정)은 가장 드문 증강이라 크리스탈 청록 + 무지개빛 후광(HOLO), 초증강은 보라 네온 + 황금 테두리(PRISMA)로 구분한다.
+## 13px 이하 작은 글자에 쓰는 또렷한 고딕 (ONE Mobile POP은 작게 쓰면 획이 뭉개져 흐릿하고 찌그러져 보인다).
+const SMALL_FONT: Font = preload("res://assets/fonts/game_small_font.tres")
+const SMALL_TEXT_MAX: int = 13
+const LAW_COLOR: Color = Color("66e3f5")
+const SUPER_COLOR: Color = Color("cc5de8")
+const HOLO_GLOW: Array[Color] = [Color(0.4, 0.89, 0.96, 0.9), Color(0.93, 0.45, 0.95, 0.9), Color(1.0, 0.85, 0.35, 0.9)]
 const CATEGORY_COLORS: Dictionary = {
 	GameEnums.AugmentCategory.PAWN_EVOLUTION: Color("ffa94d"),
 	GameEnums.AugmentCategory.TOOL_SWAP: Color("74c0fc"),
-	GameEnums.AugmentCategory.LAW_ENACT: Color("ffe066"),
+	GameEnums.AugmentCategory.LAW_ENACT: Color("66e3f5"),
 	GameEnums.AugmentCategory.CARD_PACKAGE: Color("da77f2"),
-	GameEnums.AugmentCategory.SUPER_GAMBLE: Color("ffd43b"),
+	GameEnums.AugmentCategory.SUPER_GAMBLE: Color("cc5de8"),
 	GameEnums.AugmentCategory.UTILITY: Color("63e6be"),
 }
 
@@ -423,6 +430,8 @@ var _language_button: Button = null  ## 우측 상단 언어 표시/전환 (지�
 var _feedback_button: Button = null  ## 우측 상단 피드백 / 버그 제보
 ## 이 판을 시작한 시각 (피드백 스냅샷의 플레이 타임).
 var _game_started_msec: int = 0
+## 액션 로그에 마지막으로 적은 라운드 구분선 (_log_round_divider).
+var _divider_round: int = 0
 var _step_chain: int = 0
 var _step_sound_msec: int = -10000
 ## 메뉴 오버레이(계속하기/게임 설정/전체 로그/새 게임/치트/게임 나가기). 열려 있지 않으면 null.
@@ -728,6 +737,7 @@ func _new_game() -> void:
 	_log.clear()
 	if _action_log != null:
 		_action_log.clear_entries()
+	_divider_round = 0
 	_toast_label.text = ""
 	_dock_player = -1
 	_announced_round = 0
@@ -1641,6 +1651,8 @@ static func _make_label(text: String, font_size: int, color: Color) -> Label:
 	label.text = text
 	label.add_theme_font_size_override("font_size", font_size)
 	label.add_theme_color_override("font_color", color)
+	if font_size <= SMALL_TEXT_MAX:
+		label.add_theme_font_override("font", SMALL_FONT)  # 작은 글자는 ONE Mobile POP이 뭉개져 보여 또렷한 고딕으로
 	return label
 
 
@@ -2698,8 +2710,6 @@ func _check_round_banner() -> void:
 		return
 	_announced_round = state.round_number
 	_announced_turn_key = "%d:%d" % [state.round_number, manager.current_player_id()]
-	if _action_log != null:
-		_action_log.add_entry("[color=#ffd43b]──── %d라운드 ────[/color]" % state.round_number)
 	var tempo: int = TempoUp.level(state.round_number)
 	_announce("라운드", "%d라운드 시작!" % state.round_number, "템포 업 Lv.%d · 최종 이동 +%d칸" % [tempo, TempoUp.move_bonus(state.round_number)] if tempo > 0 else "", COLOR_GOLD, null, 1.2)
 
@@ -4390,11 +4400,15 @@ func _refresh_roll_pad() -> void:
 	if mode != _roll_geometry:
 		_set_roll_geometry(mode)
 	# 굴림 위젯은 굴릴 차례에만 보인다. 굴림이 끝나면 지워서 보드 한가운데가 가리지 않게 한다 (룰렛·리볼버 패드는 돌아가는 연출 중에는 남긴다).
-	var roll_phase: bool = not manager.is_game_over and (manager.current_state == TurnManager.State.PHASE_TURN_BEGIN or manager.current_state == TurnManager.State.PHASE_ROLL_WAIT) and not _is_bot_turn()
+	# 중앙 알림(라운드 시작·차례 알림 등)·오프닝이 떠 있는 동안에는 숨겼다가, 알림이 끝나면(drained -> _refresh_all) 다시 나온다.
+	var stage_blocked: bool = _intro_blocks() or (_announcer != null and _announcer.active)
+	var roll_phase: bool = not manager.is_game_over and (manager.current_state == TurnManager.State.PHASE_TURN_BEGIN or manager.current_state == TurnManager.State.PHASE_ROLL_WAIT) and not _is_bot_turn() and not stage_blocked
+	# 연출 중에 남겨 두는 것은 '내 도구'가 굴러가는 연출일 때뿐이다 (다른 사람이 굴리는 동안 내 리볼버·룰렛이 밑에 비치지 않게).
+	var own_fx: bool = _fx_busy and manager.current_player_id() == _dock_owner()
 	_roll_button.visible = wanted == RollPad.Kind.NONE and roll_phase and mode != &"stage"
 	if wanted != RollPad.Kind.NONE:
-		_roll_pad.visible = roll_phase or _fx_busy or _roll_pad.active
-	_gun_row.visible = wanted == RollPad.Kind.REVOLVER and (roll_phase or _fx_busy or _roll_pad.active)
+		_roll_pad.visible = roll_phase or own_fx or _roll_pad.active
+	_gun_row.visible = wanted == RollPad.Kind.REVOLVER and (roll_phase or own_fx or _roll_pad.active)
 	if mode == &"big" or mode == &"charge" or mode == &"pinball":
 		_roll_button.text = _roll_button_label(owner_tool)
 	_roll_pad.set_enabled(not _roll_button.disabled)
@@ -4416,6 +4430,7 @@ func _set_roll_geometry(mode: StringName) -> void:
 	_set_layout_base(_roll_button, center - Vector2(diameter, diameter) / 2.0)
 	_roll_pad.pivot_offset = _roll_pad.size / 2.0
 	_roll_pad.scale = Vector2(1.9, 1.9) if big else Vector2.ONE
+	_roll_pad.set_text_scale(_roll_pad.scale.x)  # 키운 패드의 글자는 화면 픽셀 크기로 다시 그린다 (흐림 방지)
 	_apply_layout_now()
 
 
@@ -6316,11 +6331,11 @@ static func augment_card_info(definition: AugmentDef, game_state: GameState, pla
 		GameEnums.AugmentCategory.LAW_ENACT:
 			var law: LawResource = LawRegistry.create(definition.payload)
 			glyph = "법"
-			color = Color("ffd43b")
+			color = LAW_COLOR
 			title = "[교칙 제정] %s" % law.law_name
 		GameEnums.AugmentCategory.SUPER_GAMBLE:
 			glyph = "초"
-			color = Color("ffd43b")
+			color = SUPER_COLOR
 			title = definition.display_name
 		GameEnums.AugmentCategory.UTILITY:
 			glyph = "보"
@@ -6414,6 +6429,12 @@ static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: f
 		box.shadow_color = Color(0.62, 0.3, 0.95, 0.85)
 		box.shadow_size = 22
 		box.shadow_offset = Vector2.ZERO
+	elif tier == "HOLO":
+		# HOLO(법전 전용, 가장 희귀): 크리스탈 청록 테두리 + 청록 -> 분홍 -> 금빛으로 천천히 도는 무지개 후광
+		box = _style(Color("08171d"), Color("b8f6ff"), 5, 16, 8, 0)
+		box.shadow_color = HOLO_GLOW[0]
+		box.shadow_size = 22
+		box.shadow_offset = Vector2.ZERO
 	elif tier == "GOLD":
 		# GOLD: 황금 테두리와 금빛 후광
 		box = _style(Color("1a1608"), Color("ffd43b"), 4, 16, 8, 0)
@@ -6424,13 +6445,20 @@ static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: f
 		box.shadow_size = 0
 	for style_name: String in ["normal", "hover", "pressed", "focus", "disabled"]:
 		card.add_theme_stylebox_override(style_name, box)
+	if tier == "HOLO" and not static_frame:
+		# 무지개 후광은 카드가 살아 있는 동안만 돈다 (카드가 해제되면 트윈도 같이 멈춘다)
+		var shimmer: Tween = card.create_tween().set_loops()
+		for index: int in HOLO_GLOW.size():
+			var from: Color = HOLO_GLOW[index]
+			var to: Color = HOLO_GLOW[(index + 1) % HOLO_GLOW.size()]
+			shimmer.tween_method(func(t: float) -> void: box.shadow_color = from.lerp(to, t), 0.0, 1.0, 0.9)
 	var top := Panel.new()
 	top.position = Vector2(4, 4)
 	top.size = Vector2(AUGMENT_CARD_SIZE.x - 8.0, 172)
 	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	top.add_theme_stylebox_override("panel", _style(color.darkened(0.8), Color(0, 0, 0, 0), 0, 13, 0, 0))
 	card.add_child(top)
-	var tag := _make_label(("★ " if bool(info.get("super", false)) else "") + str(info["category"]), 13 if bool(info.get("super", false)) else 12, color.lightened(0.3))
+	var tag := _make_label(("★ " if bool(info.get("super", false)) else ("◆ 희귀 · " if tier == "HOLO" else "")) + str(info["category"]), 13 if bool(info.get("super", false)) else 12, color.lightened(0.3))
 	tag.position = Vector2(12, 8)
 	tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	card.add_child(tag)
@@ -6954,7 +6982,7 @@ func _flush_draft_summary() -> void:
 	for entry: Dictionary in _draft_summary:
 		var picked_id: StringName = entry["augment"]
 		var picked_def: AugmentDef = AugmentRegistry.get_def(picked_id)
-		var line: String = "%s 선택!" % _bq(("초증강 - " if String(picked_id).begins_with("SUPER") else "") + picked_def.display_name)
+		var line: String = "%s 선택!" % _bq(picked_def.display_name)  # 초증강 이름에는 이미 [초증강]이 붙어 있다
 		# 범용 보급·카드 패키지는 무엇이 무엇으로 바뀌었는지, 어떤 카드를 받았는지까지 남긴다
 		if picked_def.category == GameEnums.AugmentCategory.UTILITY or picked_def.category == GameEnums.AugmentCategory.CARD_PACKAGE:
 			line += " " + str(entry.get("text", ""))
@@ -7178,8 +7206,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			var stage: int = int(data["level"])
 			var lines: Array = data["lines"]
 			_log_line("[템포 업 Lv.%d] %d라운드부터: %s" % [stage, data["round"], " / ".join(PackedStringArray(lines))], Color("ff6b6b"))
-			if _action_log != null:
-				_action_log.add_entry("[color=#ff6b6b][b]!! 템포 업 Lv.%d[/b] - %s[/color]" % [stage, _bb(" · ".join(PackedStringArray(lines)))])
+			_record(-1, "[color=#ff6b6b][b]!! 템포 업 Lv.%d[/b] - %s[/color]" % [stage, _bb(" · ".join(PackedStringArray(lines)))])
 			if _fx_on():
 				screen_shake(12.0, 0.5)
 				Sfx.play(&"trap")
@@ -7473,6 +7500,8 @@ func _bb(text: String) -> String:
 
 ## [이름] 꼴로 감싼다.
 func _bq(text: String) -> String:
+	if text.begins_with("["):
+		return _bb(text)  # 이미 [분류] 이름 꼴이면 괄호를 겹치지 않는다
 	return "[lb]%s]" % _bb(text)
 
 
@@ -7483,6 +7512,16 @@ func _log_who(player_id: int) -> String:
 	return "%s [color=#%s]%s[/color]" % [PLAYER_MARKS.get(player_id, ""), (PLAYER_COLORS[player_id] as Color).lightened(0.3).to_html(false), _bb(_player_name(player_id))]
 
 
+## 액션 로그의 ──── N라운드 ──── 구분선: 그 라운드의 어떤 줄보다 먼저, 한 번만 적는다.
+## 엔진은 라운드 시작 -> 템포 업 -> 증강 드래프트 순서지만, 화면의 증강 기록은 [선택한 증강] 공개 때(연출 큐) 적히므로
+## 구분선을 라운드 알림 때 바로 적으면 증강 기록이 구분선 위아래로 갈라져 보였다.
+func _log_round_divider(round_number: int) -> void:
+	if _action_log == null or round_number <= _divider_round:
+		return
+	_divider_round = round_number
+	_action_log.add_entry("[color=#ffd43b]──── %d라운드 ────[/color]" % round_number)
+
+
 ## 액션 로그 한 줄: [R3] 🟦 컴퓨터 2 : 내용 (player_id가 -1이면 이름 없이).
 ## 연출을 켠 화면에서는 연출 큐를 따라 그 장면이 나올 때 적는다 (결과를 먼저 흘리지 않는다). late는 사출처럼 맨 뒤 연출과 함께 적는다.
 func _record(player_id: int, text: String, tag: String = "", late: bool = false) -> void:
@@ -7491,8 +7530,10 @@ func _record(player_id: int, text: String, tag: String = "", late: bool = false)
 	var round_tag: String = "[color=#868e96][lb]R%d%s][/color]" % [state.round_number, (" " + tag) if tag != "" else ""]
 	var line: String = "%s %s : %s" % [round_tag, _log_who(player_id), text] if player_id >= 1 else "%s %s" % [round_tag, text]
 	var log_panel: ActionLogPanel = _action_log
+	var round_number: int = state.round_number
 	var add: Callable = func() -> void:
 		if is_instance_valid(log_panel):
+			_log_round_divider(round_number)  # 그 라운드의 첫 줄보다 구분선이 먼저 (증강 공개는 라운드 알림보다 늦게 적힌다)
 			log_panel.add_entry(line)
 	if not _fx_on():
 		add.call()
@@ -7587,6 +7628,17 @@ func _show_center_banner(text: String, color: Color) -> void:
 	_center_banner.set_meta("fade", tween)
 
 
+## 굴림 결과 띠를 바로 걷는다: 중앙 알림 카드가 뜨면 같은 자리에 문구 두 개가 겹치지 않게 한다 (이동 실패·친치로 삐끗·한 번 더 등).
+func _dismiss_center_banner() -> void:
+	if _center_banner == null or not _center_banner.visible:
+		return
+	if _center_banner.has_meta("fade"):
+		var previous: Tween = _center_banner.get_meta("fade")
+		if previous != null and previous.is_valid():
+			previous.kill()
+	_center_banner.visible = false
+
+
 ## 파워 게이지(굴림 버튼 위)와 판정 도구 연출기를 만든다.
 func _build_roll_fx() -> void:
 	_build_tool_stages()
@@ -7612,6 +7664,7 @@ func _build_roll_fx() -> void:
 			_fx_after_announcer()
 			_refresh_all())
 	_announcer.entry_finished.connect(_on_announcer_entry_finished)
+	_announcer.entry_started.connect(func(_serial: int) -> void: _dismiss_center_banner())
 
 
 ## 야추·블랙잭·핀볼의 중앙 오픈 스테이지를 만든다. 눈에 보이는 건 해당 도구를 쓰는 차례뿐이다.
@@ -7836,14 +7889,15 @@ func _reveal_roll(data: Dictionary) -> void:
 	if bool((data["result"] as Dictionary).get("can_continue", false)):
 		return  # 이어지는 굴림(러시안 룰렛 생존 등)은 패드가 누적을 보여 준다: 이동 칸수는 최종 결과가 나온 뒤 한 번만 띄운다
 	if bool(details.get("oops", false)):
-		_show_center_banner("[친치로 삐끗!] 주사위가 접시 밖으로 나갔습니다! (이번 이동 0칸)", Color("ff6b6b"))
 		_announce("지하노역장 친치로", "[친치로 삐끗!]", "주사위가 접시 밖으로 나갔습니다! (이번 이동 0칸)", Color("ff6b6b"), null, 1.3)
 		return
-	_show_center_banner("P%d  %s" % [data["player_id"], roll_text.strip_edges()], Color("ff8787") if fired else Color("fff3bf"))
 	if bool((data["result"] as Dictionary).get("ends_turn", false)):
 		# 이동 없이 턴이 끝나는 굴림(러시안 룰렛 실탄·화투 망통): 결과 알림과 피격 반응을 충분히 보여 준 뒤에야 다음 차례로 넘어간다.
+		# 굴림 결과 띠와 실패 카드가 같은 말을 두 번 하지 않게, 결과 문구는 실패 카드 본문에만 싣는다.
 		var fail_name: String = "폭죽 깃발!" if fired else ("낙!" if roll_tool == &"YUT" else ("광대!" if roll_tool == &"DICE_TAROT" else "망통!"))
-		_announce_move_failed(fail_name, roller)
+		_announce_move_failed(fail_name, roller, "P%d  %s" % [roller, roll_text.strip_edges()])
+		return
+	_show_center_banner("P%d  %s" % [data["player_id"], roll_text.strip_edges()], Color("ff8787") if fired else Color("fff3bf"))
 
 
 ## 윷놀이 기물의 [선택적 업기] 팝업: 화면 중앙에 [업기 (하나로 합체)] / [그냥 두기 (개별 유지)] 두 버튼을 띄운다.

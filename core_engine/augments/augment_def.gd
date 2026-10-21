@@ -15,7 +15,7 @@ var units: Array[int] = []
 # --- augments_table.csv가 덮어쓰는 값 (표에 행이 없으면 기본값 그대로) -----------------------------------
 ## FALSE면 드래프트 풀에서 제외된다.
 var enabled: bool = true
-## NORMAL / GOLD / PRISMA: 선택 카드 테두리 연출.
+## NORMAL / GOLD / PRISMA / HOLO: 선택 카드 테두리 연출 (HOLO = 법전(교칙 제정) 전용, 가장 희귀한 크리스탈 무지개빛).
 var tier: String = "NORMAL"
 ## 드래프트 등장 가중치(기본 100). 같은 계열 안에서 후보를 고르는 비율과, 계열이 뽑히는 비율에 쓰인다.
 var weight: int = 100
@@ -228,7 +228,7 @@ func _card_types() -> Array[String]:
 func apply_row(data: Dictionary) -> void:
 	enabled = DataTable.to_bool(data.get("enabled", "TRUE"), true)
 	tier = str(data.get("tier", "NORMAL")).strip_edges().to_upper()
-	if not ["NORMAL", "GOLD", "PRISMA"].has(tier):
+	if not ["NORMAL", "GOLD", "PRISMA", "HOLO"].has(tier):
 		tier = "NORMAL"
 	weight = maxi(DataTable.to_int(data.get("weight", ""), 100), 0)
 	min_round = maxi(DataTable.to_int(data.get("min_round", ""), 1), 1)

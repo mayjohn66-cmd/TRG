@@ -8,6 +8,8 @@ extends PanelContainer
 signal drained
 ## 알림 한 건이 끝났다 (serial은 announce()가 돌려준 번호). 보드가 [카드가 끝난 뒤 말이 움직이는] 연출을 이어 붙이는 데 쓴다.
 signal entry_finished(serial: int)
+## 알림 한 건이 화면에 나타났다 (보드가 같은 자리의 굴림 결과 띠를 걷어 중앙 문구가 겹치지 않게 한다).
+signal entry_started(serial: int)
 
 const FADE_IN: float = 0.12
 const FADE_OUT: float = 0.18
@@ -96,6 +98,7 @@ func _start_next() -> void:
 		return
 	_current = _queue.pop_front()
 	_t = 0.0
+	entry_started.emit(int(_current.get("serial", -1)))
 	var color: Color = _current["color"]
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color("101626")

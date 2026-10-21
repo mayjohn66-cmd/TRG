@@ -13,6 +13,7 @@ const MINI_LINES: int = 4
 const MINI_SIZE: Vector2 = Vector2(300.0, 150.0)
 const EXPANDED_SIZE: Vector2 = Vector2(460.0, 470.0)
 
+const SMALL_FONT: Font = preload("res://assets/fonts/game_small_font.tres")
 var expanded: bool = false
 ## 미니 모드에서 패널이 놓일 왼쪽 위 (확장하면 위로 커져 보드 쪽을 가리지 않는다).
 var mini_position: Vector2 = Vector2.ZERO
@@ -61,8 +62,11 @@ func _init() -> void:
 	_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_text.mouse_filter = Control.MOUSE_FILTER_PASS
-	_text.add_theme_font_size_override("normal_font_size", 12)
-	_text.add_theme_font_size_override("bold_font_size", 12)
+	_text.add_theme_font_size_override("normal_font_size", 13)
+	_text.add_theme_font_size_override("bold_font_size", 13)
+	# 로그처럼 작은 글자가 빽빽한 곳은 또렷한 고딕으로 쓴다 (ONE Mobile POP은 작으면 뭉개진다)
+	_text.add_theme_font_override("normal_font", SMALL_FONT)
+	_text.add_theme_font_override("bold_font", SMALL_FONT)
 	_scroll.add_child(_text)
 	_apply_mode()
 

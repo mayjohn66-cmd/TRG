@@ -31,6 +31,8 @@ var last_face: int = 0
 
 var _wheel: RouletteSpin3D = null
 var _face_label: Label = null
+## 보드가 패드를 키운 배수 (set_text_scale). 글자 라벨은 이 배수로 크게 그리고 1/배수로 줄인다.
+var text_scale: float = 1.0
 var _hint_label: Label = null
 var _gun: ToyFlagGun3D = null
 
@@ -63,14 +65,11 @@ func _ready() -> void:
 	_wheel.visible = false
 	add_child(_wheel)
 	_face_label = Label.new()
-	_face_label.add_theme_font_size_override("font_size", 21)
 	_face_label.add_theme_color_override("font_color", Color("ffd43b"))
-	_face_label.add_theme_constant_override("outline_size", 8)
 	_face_label.add_theme_color_override("font_outline_color", Color("0d1018"))
 	_face_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_face_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_face_label.size = Vector2(200, 28)
-	_face_label.position = Vector2(0,118)
+	_place_label(_face_label, Vector2(0,118), Vector2(200, 28), 21, 8)
 	_face_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_face_label.visible = false
 	add_child(_face_label)
@@ -81,13 +80,11 @@ func _ready() -> void:
 	_gun.visible = false
 	add_child(_gun)
 	_hint_label = Label.new()
-	_hint_label.add_theme_font_size_override("font_size", 13)
 	_hint_label.add_theme_color_override("font_color", Color("fff3bf"))
-	_hint_label.add_theme_constant_override("outline_size", 4)
+	_hint_label.add_theme_font_override("font", preload("res://assets/fonts/game_small_font.tres"))  # 작은 안내 글자는 또렷한 고딕
 	_hint_label.add_theme_color_override("font_outline_color", Color("0d1018"))
 	_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_hint_label.size = Vector2(size.x, 20)
-	_hint_label.position = Vector2(0, size.y - 22.0)
+	_place_label(_hint_label, Vector2(0, size.y - 22.0), Vector2(size.x, 20), 13, 4)
 	_hint_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_hint_label)
 	set_kind(Kind.NONE)
@@ -116,11 +113,40 @@ func set_kind(value: Kind) -> void:
 	match value:
 		Kind.ROULETTE:
 			_hint_label.text = "원판을 잡고 빙글 돌려 놓으세요"
-			_hint_label.position = Vector2(0,size.y-22.0)
-			_hint_label.size = Vector2(size.x,20)
-			_hint_label.add_theme_font_size_override("font_size",13)
+			_place_label(_hint_label, Vector2(0,size.y-22.0), Vector2(size.x,20), 13, 4)
 		Kind.REVOLVER: _hint_label.text = ""  # 발사·정지 두 버튼이 안내를 대신한다
 		_: _hint_label.text = ""
+
+
+## 보드는 이 패드를 Control scale로 키워(최대 1.9배) 보여 준다. 글자를 작게 그린 뒤 키우면 흐릿하고 뭉개지므로
+## 글자 라벨만 반대로 1/배수로 줄이고, 그 배수만큼 큰 글자(외곽선 포함)로 그려 화면 픽셀에 맞춘다.
+func set_text_scale(value: float) -> void:
+	text_scale = maxf(value, 0.01)
+	for label: Label in [_face_label, _hint_label]:
+		if label != null and label.has_meta("layout"):
+			var layout: Array = label.get_meta("layout")
+			_place_label(label, layout[0], layout[1], layout[2], layout[3])
+
+
+## 결과 숫자를 가운데를 축으로 k배 통통 키운다 (라벨은 1/배수로 줄여 둔 상태라 위치를 직접 맞춘다).
+func _pulse_face(k: float) -> void:
+	if _face_label == null or not _face_label.has_meta("layout"):
+		return
+	var layout: Array = _face_label.get_meta("layout")
+	var logical: Vector2 = layout[1]
+	_face_label.scale = Vector2.ONE * k / text_scale
+	_face_label.position = (layout[0] as Vector2) + logical / 2.0 - logical * k / 2.0
+
+
+## 라벨을 패드 좌표 position에 logical_size 크기로 놓는다 (글자 크기 px · 외곽선 outline은 배수 1 기준).
+func _place_label(label: Label, at: Vector2, logical_size: Vector2, px: int, outline: int) -> void:
+	label.set_meta("layout", [at, logical_size, px, outline])
+	label.position = at
+	label.size = logical_size * text_scale
+	label.pivot_offset = Vector2.ZERO
+	label.scale = Vector2.ONE / text_scale
+	label.add_theme_font_size_override("font_size", roundi(px * text_scale))
+	label.add_theme_constant_override("outline_size", roundi(outline * text_scale))
 
 
 func set_enabled(value: bool) -> void:
@@ -149,9 +175,7 @@ func ensure_revolver_prepared(key: String, pending: bool) -> void:
 	modulate = Color.WHITE
 	_gun.begin_preparation()
 	_hint_label.text = ToyFlagGun3D.preparation_caption(0)
-	_hint_label.add_theme_font_size_override("font_size",11)
-	_hint_label.position = Vector2(-30,134)
-	_hint_label.size = Vector2(260,22)
+	_place_label(_hint_label, Vector2(-30,134), Vector2(260,22), 11, 4)
 
 
 func _gui_input(event: InputEvent) -> void:
@@ -180,7 +204,7 @@ func _show_face_under_needle() -> void:
 func play_spin(face: int, power: float) -> void:
 	cancel_spin()
 	last_face = face
-	_face_label.scale = Vector2.ONE
+	_pulse_face(1.0)
 	if instant or not is_inside_tree():
 		_wheel.set_idle_angle((face-1)*RouletteSpin3D.STEP)
 		_wheel.stop_rendering()
@@ -226,13 +250,12 @@ func _process(delta: float) -> void:
 		_face_label.text = str(last_face)
 		_hint_label.text = "%d칸 전진%s" % [last_face," · 한 번 더!" if last_face==ToolLifeRoulette.JACKPOT_FACE else ""]
 		var phase: float = clampf((_spin_time-RouletteSpin3D.RESULT_TIME)/0.18,0,1)
-		_face_label.pivot_offset = _face_label.size/2.0
-		_face_label.scale = Vector2.ONE*(1.0+0.20*sin(phase*PI)*(1.0-phase))
+		_pulse_face(1.0+0.20*sin(phase*PI)*(1.0-phase))
 	if _spin_time >= RouletteSpin3D.TOTAL_TIME:
 		_spinning = false
 		active = false
 		_wheel.stop_rendering()
-		_face_label.scale = Vector2.ONE
+		_pulse_face(1.0)
 		finished.emit()
 
 
@@ -253,7 +276,7 @@ func cancel_spin() -> void:
 	_spinning = false
 	_firing = false
 	active = false
-	_face_label.scale = Vector2.ONE
+	_pulse_face(1.0)
 	finished.emit()
 
 

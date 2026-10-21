@@ -17,7 +17,7 @@
 | `id` | 증강 ID (바꾸지 마세요) |
 | `enabled` | `TRUE`/`FALSE`. FALSE면 드래프트에 나오지 않습니다 |
 | `category` | `PAWN`(기물) `DICE`(판정 도구) `LAW`(교칙) `CARD`(카드 패키지) `CHAOS`(초증강) `UTIL`(범용 보급) `RULE`(규칙 수치 행, 드래프트 아님) |
-| `tier` | 카드 테두리: `NORMAL` / `GOLD`(금빛) / `PRISMA`(보라 후광+금 테두리) |
+| `tier` | 카드 테두리: `NORMAL` / `GOLD`(금빛) / `PRISMA`(보라 후광+금 테두리, 초증강) / `HOLO`(크리스탈 청록+무지개 후광, 법전 전용 희귀) |
 | `weight` | 등장 가중치(기본 100, 초증강 50). 0이면 제외. 한 계열 안에서는 비율대로, 계열 사이에서는 평균 가중치 비율대로 뽑힙니다 |
 | `min_round` | 이 라운드부터 등장 |
 | `title` `subtitle` `desc` `spec_preview` | 카드 제목 / 위쪽 계열 표시 / 효과 설명 / 족보·공식 요약. `{p1}` `{p2}`는 아래 param 값으로 바뀝니다. `DICE` 행의 spec_preview를 비우면 dice_table의 `spec_table`을 씁니다 |
