@@ -804,3 +804,51 @@ func test_ban_skip_stacked_deck_and_the_world() -> void:
 	_do(skip, 1, &"select_pawn", {"pawn_id": 11})
 	check_eq(skip.state.current_player, 1, "우노 스킵: P2를 건너뛰고 다시 P1")
 	_dispose(skip)
+
+
+func _review_manager(players: int) -> TurnManager:
+	var manager := TurnManager.new()
+	manager.boost_gimmicks = false
+	manager.hotseat_mode = true
+	manager.draft_enabled = true
+	manager.review_enabled = true
+	tree.root.add_child(manager)
+	var ids: Array[int] = []
+	for i: int in range(1, players + 1):
+		ids.append(i)
+	manager.start_game(ids, 4242)
+	return manager
+
+
+## 증강 확인 단계: 모두 고른 뒤에도 바로 라운드를 시작하지 않고, 모두 [확인]을 누르면 그때 첫 차례가 열린다.
+func test_augment_review_waits_for_every_player_before_the_round_starts() -> void:
+	var manager: TurnManager = _review_manager(3)
+	var events: Array = _collect_events(manager)
+	check_eq(manager.current_state, Phase.PHASE_ROUND_START, "1라운드 드래프트")
+	for player_id: int in [1, 2, 3]:
+		_do(manager, player_id, &"pick_augment", {"index": 0, "pawn_id": player_id * 10 + 1})
+	check(manager.review_pending(), "모두 골라도 확인 단계에 머문다")
+	check_eq(manager.current_state, Phase.PHASE_ROUND_START, "아직 라운드 시작 전")
+	check(events.any(func(e: Dictionary) -> bool: return e["kind"] == &"augment_review"), "확인 단계 알림")
+	_do(manager, 2, &"review_done")
+	_do(manager, 2, &"review_done")  # 두 번 눌러도 한 번만 센다
+	check_eq(manager.review_waiting_for(), int_array([1, 3]), "P2 확인, P1·P3 대기")
+	_do(manager, 1, &"review_done")
+	check_eq(manager.current_state, Phase.PHASE_ROUND_START, "한 명이라도 남으면 기다린다")
+	_do(manager, 3, &"review_done")
+	check(not manager.review_pending(), "모두 확인")
+	check_eq(manager.current_state, Phase.PHASE_TURN_BEGIN, "모두 확인하면 첫 차례가 열린다")
+	_dispose(manager)
+
+
+func test_augment_review_times_out_and_is_off_by_default() -> void:
+	var manager: TurnManager = _review_manager(2)
+	for player_id: int in [1, 2]:
+		_do(manager, player_id, &"pick_augment", {"index": 0, "pawn_id": player_id * 10 + 1})
+	check(manager.review_pending(), "확인 단계")
+	manager.tick(GameEnums.PHASE_TIME_REVIEW + 0.1)
+	check(not manager.review_pending() and manager.current_state == Phase.PHASE_TURN_BEGIN, "시간이 다 되면 확인하지 않은 사람이 있어도 시작한다")
+	_dispose(manager)
+	var plain := TurnManager.new()
+	check(not plain.review_enabled, "엔진 기본값은 확인 단계 없음 (화면이 있는 판에서만 켠다)")
+	plain.free()

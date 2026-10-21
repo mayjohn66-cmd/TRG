@@ -167,14 +167,6 @@ func apply_preparation(seconds: float) -> void:
 	if t>=PREP_TIME: show_side()
 
 
-static func preparation_caption(seconds: float) -> String:
-	if seconds<0.85: return "여섯 약실 · 한 발 장전"
-	if seconds<1.30: return "실린더 결합"
-	if seconds<2.35: return "실린더 회전…"
-	if seconds<PREP_TIME: return "준비 중…"
-	return "발사하거나 정지하세요"
-
-
 func show_side() -> void:
 	_mount.position = _mount_home
 	_cartridge.hide()
@@ -308,10 +300,11 @@ static func total_time(fired: bool) -> float:
 	return FLAG_TOTAL_TIME if fired else SAFE_TOTAL_TIME
 
 
-static func result_caption(fired: bool, accumulated: int, lost: int, can_continue: bool = true) -> String:
+## 발사 결과 문구: 깃발이 나와 턴이 끝날 때만 알린다. 안전한 찰칵(누적·이동 예정 칸)은 글자 없이 총 연출로만 보여 준다.
+static func result_caption(fired: bool, _accumulated: int, lost: int, _can_continue: bool = true) -> String:
 	if fired:
 		return "뿅! 누적 %d칸 사라짐 · 턴 종료" % lost
-	return "찰칵! 누적 %d칸" % accumulated if can_continue else "%d칸 이동 확정" % accumulated
+	return ""
 
 
 static func spring_extension(seconds: float) -> float:

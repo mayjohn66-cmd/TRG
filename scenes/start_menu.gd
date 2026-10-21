@@ -418,6 +418,7 @@ func select_avatar(id: StringName) -> void:
 	GameSession.save_settings()
 	_refresh_avatar_page()
 	_avatar_preview.react(AvatarSlot.Emotion.HAPPY, 1.0)
+	Sfx.play_voice(AvatarCatalog.select_voice_path(GameSession.avatar_id))  # 고른 캐릭터의 선택 대사
 
 
 ## [아바타 설정]: 아바타 선택 화면으로 간다.

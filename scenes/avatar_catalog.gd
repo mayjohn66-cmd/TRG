@@ -24,6 +24,12 @@ static func ids() -> Array[StringName]:
 	return result
 
 
+## 아바타를 고를 때 나오는 캐릭터 대사 파일 (없으면 빈 문자열).
+static func select_voice_path(id: StringName) -> String:
+	var path: String = AvatarSlot.character_path(id) + "/select_voice.ogg"
+	return path if ResourceLoader.exists(path) else ""
+
+
 static func is_valid(id: StringName) -> bool:
 	return ids().has(id)
 

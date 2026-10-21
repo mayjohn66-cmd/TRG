@@ -28,7 +28,7 @@ func configure(value: PlayerPawn, color: Color, images: bool = true) -> void:
 		return
 	_signature = key
 	artwork = art
-	set_process(skill_ready() or pawn.revenge_boost)
+	set_process(skill_ready())
 	queue_redraw()
 
 
@@ -98,21 +98,10 @@ func _draw() -> void:
 	if pawn.is_promoted_shogi() and artwork.is_empty():
 		_poly(PackedVector2Array([Vector2(0,-32),Vector2(13,-23),Vector2(11,-2),Vector2(-11,-2),Vector2(-13,-23)]), Color.TRANSPARENT, Color("ff5e50"), 2.0)
 	# 슬롯 번호 배지는 그리지 않는다 (기물 그림을 가려 거슬린다는 피드백). 몇 번 말인지는 고르기 카드의 [N번 말]이 알려 준다.
-	if pawn.revenge_boost:
-		_draw_revenge_flame()
+	# 리벤지 부스터는 말 옆 불꽃 대신 프로필 칸이 불타는 것으로만 보여 준다 (main_board._paint_revenge_glow)
 	if skill_ready():
 		var bolt := PackedVector2Array([Vector2(13,-29),Vector2(8,-20),Vector2(12,-20),Vector2(10,-13),Vector2(18,-23),Vector2(14,-23)])
 		_poly(bolt, Color(1,0.88,0.25,_pulse), INK, 0.9)
-
-
-## 리벤지 부스터: 말 옆에서 일렁이는 불꽃 (다음 출발에 +4칸).
-func _draw_revenge_flame() -> void:
-	var flick: float = 0.5 + 0.5 * sin(Time.get_ticks_msec() * TAU / 420.0)
-	var base := Vector2(17, -8)
-	var outer := PackedVector2Array([base + Vector2(-6, 0), base + Vector2(-7, -8), base + Vector2(-2, -13 - 4 * flick), base + Vector2(0, -7), base + Vector2(3, -17 - 5 * flick), base + Vector2(8, -7), base + Vector2(7, 0)])
-	_poly(outer, Color(1.0, 0.36, 0.1, 0.95), INK, 1.0)
-	var inner := PackedVector2Array([base + Vector2(-3, 0), base + Vector2(-3, -5), base + Vector2(0, -9 - 2 * flick), base + Vector2(4, -5), base + Vector2(3, 0)])
-	_poly(inner, Color(1.0, 0.85, 0.25, 0.95), Color.TRANSPARENT, 0.0)
 
 
 func _draw_shape() -> void:

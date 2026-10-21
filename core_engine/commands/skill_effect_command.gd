@@ -50,7 +50,9 @@ func _run() -> void:
 					state.pawn_captured.emit(pawn.entity_id, enemy.entity_id)
 					state.send_to_start(enemy, pawn.owner_id)
 		&"plant_mine":
-			state.place_attachment(pawn.current_tile_idx, TrapMine.new(pawn.owner_id))
+			var mine := TrapMine.new(pawn.owner_id)
+			mine.is_hidden_trap = false  # 필살기 지뢰는 모두가 보는 앞에서 묻는다: 칸 위에 지뢰 모형으로 보인다 (카드 지뢰는 숨은 함정)
+			state.place_attachment(pawn.current_tile_idx, mine)
 		&"hotel":
 			# 미니카 [호텔 건설]: 같은 칸의 내 호텔은 새것으로 바꾼다
 			var node: TileNode = state.board.get_tile(pawn.current_tile_idx)
