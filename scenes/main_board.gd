@@ -388,6 +388,8 @@ var _draft_banner_round: int = 0
 var _draft_summary: Array[Dictionary] = []
 ## 드래프트 중에 생긴 효과 연출: 증강 공개 카드 뒤로 미뤄 둔다 ({"step", "pawn"}).
 var _draft_deferred: Array[Dictionary] = []
+## 드래프트 창이 열렸다 (augment_offers 이후). 이때부터 생긴 연출만 [선택한 증강] 공개 뒤로 미룬다.
+var _draft_open: bool = false
 ## 게임 필: 화면 흔들림, 말 id -> 이동 연출을 필살기 스크립트가 맡는 중(걸음 무시), 차 돌진 중 잡힌 말이 나는 시점을 늦추는 값(초).
 var _shake_tween: Tween = null
 var _shake_origin: Vector2 = Vector2.ZERO
@@ -5149,11 +5151,12 @@ func is_headless_or_fast_smoke() -> bool:
 
 ## 연출 한 단계를 큐 맨 뒤에 세운다. 큐가 비어 있고 알림 카드가 없으면 그 자리에서 바로 시작하고,
 ## 아니면 앞 연출이 100% 끝난 뒤에 시작한다. pawn_id를 주면 그 말은 이 단계가 끝날 때까지 최종 위치로 건너뛰지 않는다.
-func enqueue_step(step_callable: Callable, pawn_id: int = -1) -> void:
+## allow_defer=false: 드래프트가 열리기 전에 일어난 일의 연출(라운드 마지막 턴의 처치 등)이라 드래프트 공개 뒤로 미루지 않는다.
+func enqueue_step(step_callable: Callable, pawn_id: int = -1, allow_defer: bool = true) -> void:
 	if is_headless_or_fast_smoke():
 		step_callable.call()  # 테스트 모드에선 즉시 실행
 		return
-	if _draft_in_progress():
+	if allow_defer and _draft_in_progress():
 		# 증강 드래프트 중에 고른 증강의 효과(폭주 기관차·저격수 등)는 [선택한 증강] 공개 뒤에 보여 준다 (결과를 먼저 흘리지 않게)
 		_draft_deferred.append({"step": step_callable, "pawn": pawn_id})
 		return
@@ -5173,6 +5176,7 @@ func _reset_presentation() -> void:
 	_presentation_queue.clear()
 	_late_steps.clear()
 	_draft_deferred.clear()
+	_draft_open = false
 	_roll_total.clear()
 	_rocket_target.clear()
 	_is_playing_presentation = false
@@ -5186,7 +5190,8 @@ func _enqueue_late(step_callable: Callable, pawn_id: int = -1) -> void:
 		return
 	if pawn_id != -1:
 		_pawn_pending[pawn_id] = int(_pawn_pending.get(pawn_id, 0)) + 1
-	_late_steps.append({"step": step_callable, "pawn": pawn_id})
+	# 미룰지는 지금(이 일이 일어난 순간) 정한다: 프레임 끝에 큐로 옮길 때는 엔진이 이미 다음 라운드 드래프트를 열었을 수 있다.
+	_late_steps.append({"step": step_callable, "pawn": pawn_id, "defer": _draft_in_progress()})
 	if _late_steps.size() == 1:
 		_flush_late_steps.call_deferred()
 
@@ -5196,7 +5201,7 @@ func _flush_late_steps() -> void:
 	_late_steps.clear()
 	for entry: Dictionary in batch:
 		var pawn_id: int = int(entry["pawn"])
-		enqueue_step(entry["step"], pawn_id)
+		enqueue_step(entry["step"], pawn_id, bool(entry.get("defer", true)))
 		if pawn_id != -1:
 			_pawn_pending[pawn_id] = maxi(int(_pawn_pending.get(pawn_id, 1)) - 1, 0)
 
@@ -6918,14 +6923,17 @@ func _clear_highlight() -> void:
 
 func _on_phase_changed(new_state: TurnManager.State, _player_id: int, _limit: float) -> void:
 	if new_state != TurnManager.State.PHASE_ROUND_START:
+		_draft_open = false
 		_flush_draft_summary()
 		_release_draft_deferred()
 	_refresh_all()
 
 
-## 연출을 증강 공개 뒤로 미뤄야 하는 때: 연출을 켠 판의 증강 드래프트 중.
+## 연출을 증강 공개 뒤로 미뤄야 하는 때: 연출을 켠 판에서 드래프트 창이 열린 뒤(augment_offers를 받은 뒤)부터 드래프트가 끝날 때까지.
+## 라운드 시작 상태(PHASE_ROUND_START)만 보면, 라운드 마지막 턴의 처치·NPC 페이즈처럼 드래프트 전에 일어난 일의 연출까지
+## 드래프트 공개 뒤로 밀려 [증강 선택 -> 처치 -> 다음 라운드] 순서로 보였다.
 func _draft_in_progress() -> bool:
-	return _fx_on() and manager != null and manager.current_state == TurnManager.State.PHASE_ROUND_START and not manager.is_game_over
+	return _draft_open and _fx_on() and manager != null and manager.current_state == TurnManager.State.PHASE_ROUND_START and not manager.is_game_over
 
 
 ## 드래프트가 끝났다: 미뤄 둔 효과 연출을 [선택한 증강] 공개 카드 뒤에 차례로 세운다.
@@ -7258,6 +7266,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 						_record(-1, "%s" % result_text)
 						_announce("중립 기물", "%s가 말을 잡았습니다!" % npc_name, "잡힌 말 %d개" % caught.size(), Color("fa5252"), null, 1.2))
 		&"augment_offers":
+			_draft_open = true
 			_log_line("[증강] 라운드 %d 증강 드래프트가 열렸습니다." % data["round"], Color("ffa94d"))
 		&"augment_picked":
 			_log_line("[증강] P%d%s: %s - %s" % [data["player_id"], " (자동)" if data["auto"] else "", AugmentRegistry.get_def(data["augment_id"]).display_name, data["text"]], Color("ffa94d"))
