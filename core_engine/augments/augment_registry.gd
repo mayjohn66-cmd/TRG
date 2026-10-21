@@ -16,6 +16,7 @@ const TOOL_WEIGHT: int = 50
 const LAW_WEIGHT: int = 5
 const SUPER_WEIGHT: int = 10
 const CARD_WEIGHT: int = 50
+const UTIL_WEIGHT: int = 85
 
 
 static func all() -> Array[AugmentDef]:
@@ -48,6 +49,11 @@ static func all() -> Array[AugmentDef]:
 			chaos.tier = "PRISMA"  # 초증강의 기본 테두리 (표에서 바꿀 수 있다)
 			chaos.weight = SUPER_WEIGHT
 			_cache.append(chaos)
+		for effect: StringName in UtilityAugments.ALL_IDS:
+			var utility := AugmentDef.new(effect, GameEnums.AugmentCategory.UTILITY, UtilityAugments.display_name(effect), effect)
+			utility.weight = UTIL_WEIGHT
+			utility.min_round = 2
+			_cache.append(utility)
 		_apply_table(_cache)
 	return _cache
 
@@ -80,10 +86,13 @@ static func _apply_table(defs: Array[AugmentDef]) -> void:
 					made = AugmentDef.new(StringName(id), GameEnums.AugmentCategory.LAW_ENACT, id, target)
 			"CARD":
 				made = AugmentDef.new(StringName(id), GameEnums.AugmentCategory.CARD_PACKAGE, id)
+				made.target_ref = target
 		if made == null:
 			push_warning("augments_table.csv: '%s' 행을 만들 수 없습니다 (category=%s, target_ref=%s)" % [id, category_code, target])
 			continue
 		made.apply_row(data)
+		if made.title != "":
+			made.display_name = made.title  # 표에서 새로 만든 증강은 표의 제목을 이름으로 쓴다
 		defs.append(made)
 
 

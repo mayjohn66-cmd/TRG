@@ -19,6 +19,7 @@ const CATEGORY_CODES: Dictionary = {
 	"LAW": GameEnums.AugmentCategory.LAW_ENACT,
 	"CARD": GameEnums.AugmentCategory.CARD_PACKAGE,
 	"CHAOS": GameEnums.AugmentCategory.SUPER_GAMBLE,
+	"UTIL": GameEnums.AugmentCategory.UTILITY,
 }
 
 static var _tables: Dictionary = {}

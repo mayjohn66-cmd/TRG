@@ -1049,6 +1049,8 @@ func _ch_laws() -> Dictionary:
 			"rows": [["판정", "라운드가 끝나기 직전, 달성했으면 졸업하고 교칙은 사라져요"], ["기록", counting], ["이의 있음!", "기록을 0으로 되돌릴 수 %s" % ("있어요" if law.resettable() else "없어요")]]})
 	for definition: AugmentDef in _augments(GameEnums.AugmentCategory.CARD_PACKAGE):
 		entries.append(_augment_entry(definition, &"gear"))
+	for definition: AugmentDef in _augments(GameEnums.AugmentCategory.UTILITY):
+		entries.append(_augment_entry(definition, &"gear"))
 	return {"title": "법전", "entries": entries, "wide": true}
 
 

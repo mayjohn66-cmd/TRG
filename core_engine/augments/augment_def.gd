@@ -46,6 +46,7 @@ static func category_name(value: GameEnums.AugmentCategory) -> String:
 		GameEnums.AugmentCategory.TOOL_SWAP: return "판정 도구 교체"
 		GameEnums.AugmentCategory.LAW_ENACT: return "교칙 제정"
 		GameEnums.AugmentCategory.SUPER_GAMBLE: return "초증강 : 하이리스크 하이리턴"
+		GameEnums.AugmentCategory.UTILITY: return "범용 보급"
 	return "생떼 카드 패키지"
 
 
@@ -73,9 +74,16 @@ func is_available(state: GameState, player_id: int) -> bool:
 			return not state.rulebook.has_law(payload)
 		GameEnums.AugmentCategory.SUPER_GAMBLE:
 			return SuperAugments.is_available(payload, state, player_id)
+		GameEnums.AugmentCategory.UTILITY:
+			return UtilityAugments.is_available(payload, state, player_id)
 		GameEnums.AugmentCategory.CARD_PACKAGE:
 			# 손패가 가득 차 있으면 받을 수 없어 선택해도 적용되지 않는다 (드래프트가 멈추는 것을 막는다).
-			return (state.hands[player_id] as Array).size() < GameEnums.MAX_HAND_SIZE and not CardRegistry.all_ids().is_empty()
+			if (state.hands[player_id] as Array).size() >= GameEnums.MAX_HAND_SIZE:
+				return false
+			for pool: Array[StringName] in card_pools():
+				if pool.is_empty():
+					return false
+			return true
 	return true
 
 
@@ -120,7 +128,9 @@ func _default_text(state: GameState, player_id: int) -> String:
 			return "◆ 승리 조건: %s\n◆ 라운드가 끝날 때 달성해 있으면 다음 순위로 졸업 (달성되면 법전에서 삭제)\n◆ 법전 4칸 (초과 시 가장 오래된 교칙 삭제)\n◆ 법전 슬롯에 마우스를 올리면 모두의 진행도" % law.description
 		GameEnums.AugmentCategory.SUPER_GAMBLE:
 			return SuperAugments.describe(payload)
-	return "◆ 무작위 생떼 카드 2장 획득"
+		GameEnums.AugmentCategory.UTILITY:
+			return UtilityAugments.describe(payload)
+	return "◆ 무작위 생떼 카드 %d장 획득" % card_count()
 
 
 ## 증강을 적용한다. params["pawn_id"]로 진화할 기본 말을 지정할 수 있고, 생략하면 슬롯 번호가 가장 낮은 기본 말을 쓴다.
@@ -131,6 +141,7 @@ func apply(state: GameState, player_id: int, params: Dictionary = {}) -> Diction
 		GameEnums.AugmentCategory.TOOL_SWAP: return _apply_tool(state, player_id)
 		GameEnums.AugmentCategory.LAW_ENACT: return _apply_law(state)
 		GameEnums.AugmentCategory.SUPER_GAMBLE: return SuperAugments.apply(payload, state, player_id)
+		GameEnums.AugmentCategory.UTILITY: return UtilityAugments.apply(payload, state, player_id)
 	return _apply_cards(state, player_id)
 
 
@@ -164,20 +175,53 @@ func _apply_law(state: GameState) -> Dictionary:
 
 
 func _apply_cards(state: GameState, player_id: int) -> Dictionary:
-	var pool: Array[StringName] = CardRegistry.all_ids()
 	var names: Array[String] = []
-	if pool.is_empty():
-		return {"ok": false, "text": "받을 수 있는 생떼 카드가 없습니다"}
-	for i: int in card_count():
-		var picked: StringName = pool[state.rng.randi_range(0, pool.size() - 1)]
-		if state.give_card(player_id, picked):
-			names.append(CardRegistry.get_card(picked).display_name)
+	var pools: Array = card_pools()
+	var counts: Array[int] = card_counts()
+	for index: int in pools.size():
+		var pool: Array[StringName] = pools[index]
+		if pool.is_empty():
+			return {"ok": false, "text": "받을 수 있는 생떼 카드가 없습니다"}
+		for i: int in counts[index]:
+			var picked: StringName = pool[state.rng.randi_range(0, pool.size() - 1)]
+			if state.give_card(player_id, picked):
+				names.append(CardRegistry.get_card(picked).display_name)
 	return {"ok": not names.is_empty(), "text": "생떼 카드 획득: %s" % ", ".join(names)}
 
 
 ## 카드 패키지가 주는 카드 수 (augments_table.csv param_1, 기본 2).
 func card_count() -> int:
 	return maxi(DataTable.to_int(param_1, 2), 0)
+
+
+## 카드 패키지의 카드 풀들: target_ref가 카드 종류(COUNTER / TRAP / TRAP_CORNER / INSTANT / SUMMON)면 그 종류만,
+## "TRAP_CORNER+TRAP"처럼 +로 이으면 풀이 여러 개이고 각각 param_1·param_2장씩 준다. 그 밖(CARD_PACKAGE 등)은 모든 카드.
+func card_pools() -> Array:
+	var pools: Array = []
+	for type_code: String in _card_types():
+		pools.append(CardRegistry.all_ids() if type_code == "" else CardRegistry.ids_of_type(type_code))
+	return pools
+
+
+## card_pools()와 같은 순서의 장수 (첫 풀 param_1, 둘째 풀 param_2, 비어 있으면 1장).
+func card_counts() -> Array[int]:
+	var types: Array[String] = _card_types()
+	if types.size() == 1:
+		return [card_count()] as Array[int]
+	var counts: Array[int] = []
+	for index: int in types.size():
+		counts.append(maxi(DataTable.to_int([param_1, param_2][mini(index, 1)], 1), 0))
+	return counts
+
+
+func _card_types() -> Array[String]:
+	var types: Array[String] = []
+	for part: String in target_ref.to_upper().split("+", false):
+		if CardRegistry.CARD_TYPES.has(part.strip_edges()):
+			types.append(part.strip_edges())
+	if types.is_empty():
+		types.append("")
+	return types
 
 
 ## 표의 한 행을 이 증강에 입힌다.

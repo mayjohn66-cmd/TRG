@@ -233,6 +233,7 @@ const CATEGORY_COLORS: Dictionary = {
 	GameEnums.AugmentCategory.LAW_ENACT: Color("ffe066"),
 	GameEnums.AugmentCategory.CARD_PACKAGE: Color("da77f2"),
 	GameEnums.AugmentCategory.SUPER_GAMBLE: Color("ffd43b"),
+	GameEnums.AugmentCategory.UTILITY: Color("63e6be"),
 }
 
 ## 이 화면을 보는 플레이어. 이 플레이어의 프로필·기물 독이 우측 하단에 놓인다 (멀티플레이에서 P2~P4로 접속해도 본인이 우측 하단).
@@ -6290,10 +6291,14 @@ static func augment_card_info(definition: AugmentDef, game_state: GameState, pla
 			glyph = "초"
 			color = Color("ffd43b")
 			title = definition.display_name
+		GameEnums.AugmentCategory.UTILITY:
+			glyph = "보"
+			color = Color("38d9a9")
+			title = definition.display_name
 		_:
 			glyph = "J"
 			color = Color("ff6b6b")
-			title = "[카드 패키지] 생떼 카드 2장"
+			title = "[카드 패키지] 생떼 카드 %d장" % definition.card_count()
 	var lines: PackedStringArray = []
 	for line: String in definition.describe(game_state, player_id).split("\n"):
 		if not line.begins_with("※"):
@@ -6912,7 +6917,12 @@ func _flush_draft_summary() -> void:
 	var card_scale: float = 0.6 if _draft_summary.size() > 2 else 0.8
 	for entry: Dictionary in _draft_summary:
 		var picked_id: StringName = entry["augment"]
-		_record(int(entry["player"]), "%s 선택!" % _bq(("초증강 - " if String(picked_id).begins_with("SUPER") else "") + AugmentRegistry.get_def(picked_id).display_name), "증강")
+		var picked_def: AugmentDef = AugmentRegistry.get_def(picked_id)
+		var line: String = "%s 선택!" % _bq(("초증강 - " if String(picked_id).begins_with("SUPER") else "") + picked_def.display_name)
+		# 범용 보급·카드 패키지는 무엇이 무엇으로 바뀌었는지, 어떤 카드를 받았는지까지 남긴다
+		if picked_def.category == GameEnums.AugmentCategory.UTILITY or picked_def.category == GameEnums.AugmentCategory.CARD_PACKAGE:
+			line += " " + str(entry.get("text", ""))
+		_record(int(entry["player"]), line, "증강")
 	for entry: Dictionary in _draft_summary:
 		var player_id: int = int(entry["player"])
 		var column := VBoxContainer.new()
@@ -7222,7 +7232,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 		&"augment_picked":
 			_log_line("[증강] P%d%s: %s - %s" % [data["player_id"], " (자동)" if data["auto"] else "", AugmentRegistry.get_def(data["augment_id"]).display_name, data["text"]], Color("ffa94d"))
 			# 한 명씩 공개하면 늘어지므로 모아 두었다가 드래프트가 끝나면 한 장으로 한꺼번에 공개한다.
-			_draft_summary.append({"player": int(data["player_id"]), "augment": data["augment_id"]})
+			_draft_summary.append({"player": int(data["player_id"]), "augment": data["augment_id"], "text": str(data["text"])})
 		&"bang_resolved":
 			var target_name: String = _pawn_name(int(data["target"]))
 			_log_line("[BANG!] P%d가 %s을(를) 저격! %d번 → %d번 타일로 2칸 밀려납니다." % [data["shooter"], target_name, data["from"], data["to"]], Color("ff6b6b"))
