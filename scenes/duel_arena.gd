@@ -62,6 +62,7 @@ var _game_slot: DuelGameSlot = null
 var _rps_stage: DuelRpsStage = null
 var _halli_stage: DuelHalliStage = null
 var _curling_stage: DuelCurlingStage = null
+var _quickdraw_stage: DuelQuickdrawStage = null
 var _intro_panel: PanelContainer
 var _intro_headline: Label
 var _intro_how: Label
@@ -183,6 +184,11 @@ func _build() -> void:
 	_curling_stage.visible = false
 	_curling_stage.shot_requested.connect(_curling_release)
 	_stage.add_child(_curling_stage)
+	_quickdraw_stage = DuelQuickdrawStage.new()
+	_quickdraw_stage.arena = self
+	_quickdraw_stage.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_quickdraw_stage.visible = false
+	_stage.add_child(_quickdraw_stage)
 	_game_slot = DuelGameSlot.new()
 	_game_slot.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_game_slot.visible = false
@@ -345,24 +351,7 @@ func _process(delta: float) -> void:
 			_halli_stage.sync_clock()
 			_expire_reaction()
 		DuelRules.Game.QUICKDRAW:
-			var fake: float = float(setup_data.get("fake", -1.0))
-			var stage: int = 0
-			if _clock >= float(setup_data["signal"]):
-				stage = 2
-			elif fake >= 0.0 and _clock >= fake and _clock < fake + 0.35:
-				stage = 1
-			if stage != _signal_shown:
-				_signal_shown = stage
-				if stage == 1:
-					_game_label.text = "트림!"
-					_game_label.add_theme_color_override("font_color", Color("adb5bd"))
-				elif stage == 2:
-					_game_label.text = "뽑아라! (DRAW!)"
-					_game_label.add_theme_color_override("font_color", RED)
-					Sfx.play(&"slam")
-				else:
-					_game_label.text = "· · ·"
-					_game_label.add_theme_color_override("font_color", Color.WHITE)
+			_quickdraw_stage.sync_clock(_clock)
 			_expire_reaction()
 
 
@@ -441,7 +430,7 @@ func _play(kind: StringName, data: Dictionary) -> void:
 		&"duel_started":
 			await _play_roulette()
 			if is_inside_tree() and not _closing:
-				_begin_game()
+				await _begin_game()
 		&"duel_pick_in":
 			if game == DuelRules.Game.CURLING and data.has("value"):
 				await _play_curling_shot(int(data["player_id"]), int(data["value"]))
@@ -449,7 +438,7 @@ func _play(kind: StringName, data: Dictionary) -> void:
 				_rps_stage.mark_ready(int(data["player_id"]))
 			elif game == DuelRules.Game.BARREL and data.has("hole"):
 				await _play_barrel_stab(data)
-			elif game != DuelRules.Game.HALLI and not local_seats.has(int(data["player_id"])):
+			elif game not in [DuelRules.Game.HALLI, DuelRules.Game.QUICKDRAW] and not local_seats.has(int(data["player_id"])):
 				_say("%s 입력 완료!" % _seat_name(int(data["player_id"])), Color("ced4da"))
 		&"duel_revealed":
 			await _play_reveal(data)
@@ -545,6 +534,23 @@ func _begin_game() -> void:
 		_curling_stage.visible = true
 		_curling_stage.reset_table()
 		_place.call_deferred()
+	elif game == DuelRules.Game.QUICKDRAW:
+		custom_minimum_size.x = 860.0
+		_stage.custom_minimum_size.y = 330.0
+		_drawing.visible = false
+		_quickdraw_stage.visible = true
+		_step = &"preparing"
+		animating = true
+		_clock = -1.0
+		_stop_timer()
+		_clear_buttons()
+		_say("")
+		_quickdraw_stage.prepare()
+		_place.call_deferred()
+		await _quickdraw_stage.prepared
+		if not is_inside_tree() or _closing:
+			return
+		animating = false
 	_step = &"play"
 	_say("", Color.WHITE)
 	match game:
@@ -661,7 +667,8 @@ func _begin_reaction() -> void:
 	if game == DuelRules.Game.HALLI:
 		_halli_stage.start()
 	if game == DuelRules.Game.QUICKDRAW:
-		_game_label.text = "· · ·"
+		_quickdraw_stage.start_reaction()
+		_game_label.text = DuelRules.game_name(game)
 		_game_label.add_theme_color_override("font_color", Color.WHITE)
 	var label: String = "데스벨 치기!" if game == DuelRules.Game.HALLI else "발사!"
 	var seats: Array[int] = _local_open_seats()
@@ -669,10 +676,10 @@ func _begin_reaction() -> void:
 		var key_hint: String = ""
 		if seats.size() > 1:
 			key_hint = " [%s]" % ("A" if seat == challenger else "L")
-		if game == DuelRules.Game.HALLI and seats.size() == 1:
+		if seats.size() == 1:
 			key_hint = " [Space]"
 		var button := _add_button(("%s%s" % [label, key_hint]) if seats.size() == 1 else "%s\n%s%s" % [_seat_name(seat), label, key_hint], _press.bind(seat), Color("c92a2a"), 240.0 if seats.size() == 1 else 230.0)
-		if game == DuelRules.Game.HALLI:
+		if game in [DuelRules.Game.HALLI, DuelRules.Game.QUICKDRAW]:
 			button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 	if seats.is_empty():
 		_say("컴퓨터끼리 결투 중..." if local_seats.is_empty() else "상대를 기다리는 중...", Color("ced4da"))
@@ -686,11 +693,11 @@ func _press(seat: int) -> void:
 	var pressed_ms: int = int(round(_clock * 1000.0))
 	if game == DuelRules.Game.HALLI:
 		_halli_stage.strike(seat, pressed_ms)
-	_submit(seat, pressed_ms)
 	if game == DuelRules.Game.QUICKDRAW:
-		Sfx.play(&"shot")
+		_quickdraw_stage.fire(seat, pressed_ms)
+	_submit(seat, pressed_ms)
 	var mark_ms: int = int(round(DuelRules.reaction_mark(game, setup_data) * 1000.0))
-	if game != DuelRules.Game.HALLI:
+	if game not in [DuelRules.Game.HALLI, DuelRules.Game.QUICKDRAW]:
 		_say("%s: %s" % [_seat_name(seat), DuelRules.reaction_text(pressed_ms, mark_ms)], RED if pressed_ms < mark_ms else GREEN)
 	for child: Node in _buttons.get_children():
 		if (child as Button).text.contains(_seat_name(seat)) or local_seats.size() == 1:
@@ -775,6 +782,9 @@ func _queue_has(kind: StringName) -> bool:
 
 
 func _play_reveal(data: Dictionary) -> void:
+	if game == DuelRules.Game.QUICKDRAW:
+		await _play_quickdraw_reveal(data)
+		return
 	if game == DuelRules.Game.CURLING:
 		animating = true
 		_step = &"reveal"
@@ -889,6 +899,37 @@ func _play_halli_reveal(data: Dictionary) -> void:
 		animating = false
 
 
+func _play_quickdraw_reveal(data: Dictionary) -> void:
+	animating = true
+	var deadline := DuelRules.reaction_deadline(game, setup_data)
+	var at := 0.0
+	var any_shot := false
+	for value: int in (data["picks"] as Dictionary).values():
+		if value >= 0:
+			at = maxf(at, minf(float(value) / 1000.0, deadline))
+			any_shot = true
+	if not any_shot:
+		at = deadline
+	_quickdraw_stage.queue_picks(data["picks"])
+	while _clock >= 0.0 and _clock < at and is_inside_tree() and not _closing:
+		await get_tree().process_frame
+	if not is_inside_tree() or _closing:
+		return
+	_clock = -1.0
+	_step = &"reveal"
+	_stop_timer()
+	_clear_buttons()
+	_say("")
+	while not _quickdraw_stage.shots_finished() and is_inside_tree() and not _closing:
+		await get_tree().process_frame
+	if not is_inside_tree() or _closing:
+		return
+	_quickdraw_stage.show_result(data)
+	await get_tree().create_timer(1.10).timeout
+	if is_inside_tree() and not _closing:
+		animating = false
+
+
 func _play_resolved(data: Dictionary) -> void:
 	var winner: int = int(data["winner"])
 	var loser: int = int(data["loser"])
@@ -918,6 +959,7 @@ func close_now() -> void:
 	_rps_stage.cancel()
 	_halli_stage.cancel()
 	_curling_stage.cancel()
+	_quickdraw_stage.cancel()
 	_stop_timer()
 	_clear_buttons()
 	var tween: Tween = create_tween().set_parallel(true)

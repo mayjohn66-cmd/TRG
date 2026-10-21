@@ -3,7 +3,9 @@ extends TestCase
 
 
 func test_assembled_model_keeps_the_fitted_cylinder_and_independent_parts() -> void:
+	var before := int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT))
 	var model: Node3D = ToyFlagGun3D.MODEL.instantiate()
+	check_eq(int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT)), before + 46, "The flat approved assembly contains exactly its 46 owned nodes, without displaced copies")
 	defer_free(model)
 	var mount: Node3D = model.get_node("Body/CylinderMount")
 	var drum: Node3D = mount.get_node("Cylinder")

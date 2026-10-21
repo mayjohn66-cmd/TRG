@@ -41,6 +41,7 @@ const REACTION_WINDOW: float = 2.5
 ## 석양의 무법자: 신호까지의 정적(초) 범위.
 const DRAW_MIN: float = 1.5
 const DRAW_MAX: float = 3.0
+const DRAW_PREP_TIME: float = 2.85
 ## Legacy straight-shot input compatibility. New pointer shots pack power + aim in BottleCapPhysics.
 const CURLING_MAX: int = 1150
 const CURLING_EDGE: int = 1000
@@ -134,7 +135,8 @@ static func reaction_deadline(game: int, setup: Dictionary) -> float:
 
 static func time_limit(game: int) -> float:
 	match game:
-		Game.HALLI, Game.QUICKDRAW: return TIME_REACTION + ROULETTE_TIME + INTRO_TIME
+		Game.HALLI: return TIME_REACTION + ROULETTE_TIME + INTRO_TIME
+		Game.QUICKDRAW: return TIME_REACTION + ROULETTE_TIME + INTRO_TIME + DRAW_PREP_TIME
 		Game.CURLING: return TIME_CURLING + ROULETTE_TIME + INTRO_TIME
 		Game.BARREL: return TIME_BARREL_PICK + ROULETTE_TIME + INTRO_TIME
 	return TIME_PICK + ROULETTE_TIME + INTRO_TIME

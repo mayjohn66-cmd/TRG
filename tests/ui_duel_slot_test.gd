@@ -68,7 +68,7 @@ func run() -> void:
 		var brake_shot := false
 		var selected_shot := false
 		var rules_shot := false
-		while arena._step in [&"roulette", &"selected", &"rules"]:
+		while arena._step in [&"roulette", &"selected", &"rules", &"preparing"]:
 			var slot := arena._game_slot
 			if slot.active:
 				check(selected.is_empty() and arena._drawing.reveal.is_empty(), "The authoritative result stays hidden during the draw")

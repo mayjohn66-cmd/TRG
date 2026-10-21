@@ -28,6 +28,8 @@ const CONFETTI_COLORS: Array[String] = ["efa3c2","a5db76","f6cd63","8dcfe4","fff
 const BODY_SHADER: Shader = preload("res://assets/ui/trickcal/dice/toy_die.gdshader")
 const FLAG_SHADER: Shader = preload("res://assets/ui/trickcal/revolver/party_flag.gdshader")
 var render_view: SubViewport
+## Paired-duel preparation shares one sound track while both models animate.
+var sound_enabled := true
 var settled: bool = false
 var fired_result: bool = false
 var safe_count: int = 0
@@ -157,11 +159,11 @@ func apply_preparation(seconds: float) -> void:
 	_camera.look_at(target)
 	if t>=1.30 and not _prep_click:
 		_prep_click = true
-		if t<1.37: Sfx.play(&"toy_click",-6.0,0.0)
+		if t<1.37 and sound_enabled: Sfx.play(&"toy_click",-6.0,0.0)
 	var tick: int = int(spin*18.0)
 	if t>=1.30 and t<2.35 and tick!=_spin_tick:
 		_spin_tick = tick
-		Sfx.play(&"toy_click",-13.0,0.0)
+		if sound_enabled: Sfx.play(&"toy_click",-13.0,0.0)
 	if t>=PREP_TIME: show_side()
 
 
@@ -294,7 +296,7 @@ func apply_time(seconds: float) -> void:
 	if _time>=CLICK_TIME and not _outcome_emitted:
 		_outcome_emitted = true
 		outcome_reached.emit(fired_result)
-		if _time-CLICK_TIME<0.07:
+		if _time-CLICK_TIME<0.07 and sound_enabled:
 			Sfx.play(&"toy_party_pop" if fired_result else &"toy_click",-4.0,0.0)
 
 
