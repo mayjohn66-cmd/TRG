@@ -1379,8 +1379,8 @@ func _test_bot_pacing() -> void:
 	if events.has(&"roll_resolved") and events.has(&"move_resolved"):
 		var roll_after: float = float(events[&"roll_resolved"]) - start
 		var move_after: float = float(events[&"move_resolved"]) - float(events[&"roll_resolved"])
-		_expect(roll_after >= 0.75, "봇은 턴 시작 후 0.5초 판단 + 0.3초 뒤에 굴린다 (%.2f초)" % roll_after)
-		_expect(move_after >= 1.8, "굴림 연출(약 0.9초) + 결과 확인 0.6초 + 선택 0.5초 뒤에 말을 옮긴다 (%.2f초)" % move_after)
+		_expect(roll_after >= 0.45 and roll_after < 1.5, "봇은 턴 시작 후 0.3초 판단 + 0.2초 뒤에 굴린다 (%.2f초)" % roll_after)
+		_expect(move_after >= 0.45 and move_after < 4.0, "굴림 연출 + 결과 확인 0.3초 + 선택 0.2초 뒤에 말을 옮기고, 이동은 0.75초 안에 끝난다 (%.2f초)" % move_after)
 
 
 ## ACT_09 결투: 카드를 놓으면 중앙 스테이지에 결투장이 열리고, 손 고르기 -> 공개 -> 승자의 말 클릭 -> 후퇴까지 이어진다.
