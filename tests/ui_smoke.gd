@@ -429,7 +429,7 @@ func _check_fog_of_war() -> void:
 				_assert(not mark_text.contains("?함정"), "내 함정은 이름이 보여야 한다 (%s)" % mark_text)
 			else:
 				_assert(mark_text.contains("? 함정") and not mark_text.contains(_board._attachment_name(attachment.attachment_id)), "봇의 함정은 [? 함정]으로만 보여야 한다 (%s)" % mark_text)
-				_assert(_board._trap_icon(attachment).resource_path.ends_with("HIDDEN.png"), "봇의 함정 칸에는 물음표 그림만 보여야 한다")
+				_assert(_board._trap_icon(attachment).resource_path.ends_with("HIDDEN.png"), "봇의 미공개 함정 칸에는 공통 카드 뒷면만 보여야 한다")
 
 
 func _check_bounds() -> void:
