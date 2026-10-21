@@ -25,12 +25,12 @@ func capture(name: String) -> void:
 	await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png(directory.path_join(name + ".png"))
 
-func mouse(stage: DuelCurlingStage, point: Vector2, pressed: bool) -> void:
+func mouse(stage: DuelCurlingStage, point: Vector2, pressed: bool) -> bool:
 	var event := InputEventMouseButton.new()
 	event.button_index = MOUSE_BUTTON_LEFT
 	event.position = point
 	event.pressed = pressed
-	stage.handle_input(event)
+	return stage.handle_input(event)
 
 func drag(stage: DuelCurlingStage, point: Vector2) -> void:
 	var event := InputEventMouseMotion.new()
@@ -106,8 +106,8 @@ func run() -> void:
 	check(DuelCurlingStage.ART.get_image().get_pixel(0, 0).a == 0.0, "The bottle cap sprite retains transparent alpha")
 	var start := stage.to_screen(Vector2(BottleCapPhysics.START) / BottleCapPhysics.SCALE)
 	var before_rng := board.state.rng.state
-	mouse(stage, start + Vector2(160, 120), true)
-	check(not stage.dragging, "Only pressing the cap begins a pull")
+	check(not mouse(stage, start + Vector2(160, 120), true) and not stage.dragging, "Only pressing the cap begins a pull")
+	check(not mouse(stage, start + Vector2(160, 120), false), "Non-gesture releases remain available to GUI buttons")
 	mouse(stage, start, true)
 	check(stage.dragging and stage.power == 0.0, "Pressing the cap immediately shows the forward arrow")
 	mouse(stage, start + Vector2.ONE, false)
@@ -193,6 +193,29 @@ func run() -> void:
 	check(not board.state.get_pawn(challenger * 10 + 1).has_left_start, "The actual losing board pawn is ejected")
 	board._reset_presentation()
 	board._announcer.cancel()
+	# Exercise the normal Godot GUI route as well as direct drag gestures.
+	arena = fixture()
+	arena.local_seats = [1]
+	arena._begin_curling_pick()
+	await frames(4)
+	var button := arena._buttons.get_child(0) as Button
+	var click_point := button.get_global_transform_with_canvas() * (button.size / 2.0)
+	var motion := InputEventMouseMotion.new()
+	motion.position = click_point
+	root.notify_mouse_entered()
+	root.push_input(motion, true)
+	for down: bool in [true, false]:
+		var click := InputEventMouseButton.new()
+		click.position = click_point
+		click.global_position = click_point
+		click.button_index = MOUSE_BUTTON_LEFT
+		click.button_mask = MOUSE_BUTTON_MASK_LEFT if down else 0
+		click.pressed = down
+		root.push_input(click, true)
+		await process_frame
+	check(arena._submitted.has(1), "The visible flick button works through the actual GUI mouse press/release route")
+	arena.close_now()
+	await create_timer(0.30).timeout
 	# Variable render frame sizes only change sampling, never the physical outcome.
 	for rate: int in [30, 60, 144]:
 		arena = fixture()

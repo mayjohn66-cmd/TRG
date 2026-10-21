@@ -100,6 +100,7 @@ func handle_input(event: InputEvent) -> bool:
 	var id := -1
 	var press := false
 	var release := false
+	var handled := false
 	var point := Vector2.ZERO
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_RIGHT:
@@ -130,18 +131,20 @@ func handle_input(event: InputEvent) -> bool:
 	else:
 		return false
 	if press and _model_point(point).distance_to(Vector2(BottleCapPhysics.START) / BottleCapPhysics.SCALE) <= 33.0:
+		handled = true
 		dragging = true
 		_pointer = id
 		_drag_start = _model_point(point)
 		power = 0.0
 		aim = 0
 	elif release and dragging and id == _pointer:
+		handled = true
 		update_pull(point)
 		cancel_drag()
 		if power >= 0.04:
 			fire()
 	queue_redraw()
-	return dragging or release
+	return handled
 
 func update_pull(point: Vector2) -> void:
 	var pull := _drag_start - _model_point(point)

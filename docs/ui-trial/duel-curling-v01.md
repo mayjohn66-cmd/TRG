@@ -24,3 +24,5 @@
 `tests/test_bottle_cap_physics.gd`는 입력 코딩, 마찰 정지, 충돌에 의한 운동량 전달·상대 추락, 빗맞힘·측면 반사, 정수 재생 결정성·엔진 승자 일치를 검사한다. `tests/test_duel.gd`는 두 번째 자리의 선입력 거부와 투구 동기화·시간 초과·봇 진행을 검사한다.
 
 `tests/ui_curling_test.gd`는 실제 ACT_09 사용→마우스 투구→터치 투구→밀어내기·추락→기물 사출→정리를 실행하며, 30·60·144 FPS에서 같은 물리 결과인지 검증한다. 조준 위치, 미세 드래그·중복 릴리즈·OS 취소·리사이즈 취소, 먼저 도착한 원격 결과 대기와 닫기 취소도 검사한다. 네이티브 PC·844×390 모바일 캡처와 시연 영상은 작업 폴더 `outputs/duel-curling-v01/`에 저장한다.
+
+일반 버튼 클릭을 조준 입력이 가로채지 않는지도 실제 GUI 경로로 검사한다. 테스트는 [Godot Viewport 입력 API](https://docs.godotengine.org/en/stable/classes/class_viewport.html#class-viewport-method-push-input)의 뷰포트 좌표 주입을 사용하며, 물리 조작을 직접 호출하는 검사와 별도로 아래 ‘튕기기’ 버튼을 눌러 투구 제출까지 확인한다.
