@@ -118,6 +118,8 @@ static var _next: int = 0
 static var _host: Node = null
 static var _bgm: AudioStreamPlayer = null
 static var _bgm_name: StringName = &""
+## 캐릭터 대사 전용 재생기 (효과음 버스). 새 대사가 나오면 앞 대사는 끊는다.
+static var _voice: AudioStreamPlayer = null
 
 
 ## 소리를 낼 수 있는 환경인가 (헤드리스 테스트에서는 항상 꺼져 있다).
@@ -144,6 +146,28 @@ static func play(event: StringName, volume_db: float = 0.0, pitch_variance: floa
 	player.volume_db = volume_db
 	player.pitch_scale = pitch * (1.0 + randf_range(-pitch_variance, pitch_variance))
 	player.play()
+
+
+## 캐릭터 대사 한 줄을 낸다 (아바타 선택 대사 등). 앞 대사가 아직 나오는 중이면 끊고 새 대사를 낸다.
+static func play_voice(path: String, volume_db: float = 0.0) -> void:
+	if path == "" or not enabled() or GameSession.audio_muted:
+		return
+	var stream: AudioStream = load(path) as AudioStream
+	if stream == null:
+		return
+	if not _ensure_ready():
+		_play_voice_when_ready.call_deferred(stream, volume_db)  # 재생기 노드가 트리에 붙는 다음 프레임에 낸다
+		return
+	_play_voice_when_ready(stream, volume_db)
+
+
+static func _play_voice_when_ready(stream: AudioStream, volume_db: float) -> void:
+	if _voice == null or not is_instance_valid(_voice) or not _voice.is_inside_tree():
+		return
+	_voice.stop()
+	_voice.stream = stream
+	_voice.volume_db = volume_db
+	_voice.play()
 
 
 ## 웹 브라우저의 소리 자동 재생 차단 해제: 사용자가 처음 클릭할 때 호출한다 (오디오 장치와 버스를 미리 깨워 둔다).
@@ -238,6 +262,10 @@ static func _ensure_ready() -> bool:
 		_bgm = AudioStreamPlayer.new()
 		_bgm.bus = BUS_BGM
 		_host.add_child(_bgm)
+		_voice = AudioStreamPlayer.new()
+		_voice.name = "Voice"
+		_voice.bus = BUS_SFX
+		_host.add_child(_voice)
 		tree.root.add_child.call_deferred(_host)
 		apply_settings()
 	return _host.is_inside_tree()

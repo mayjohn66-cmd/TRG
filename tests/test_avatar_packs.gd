@@ -25,3 +25,13 @@ func test_web_export_excludes_exactly_the_split_animation_files() -> void:
 		check(presets.contains(pattern), "웹 본체 제외 목록에 %s" % pattern)
 	for kept: String in ["portrait.png", "icon.webp", "fullbody.png", "attack.png", "hit.png"]:
 		check(not presets.contains("avatars/*/" + kept), "정지 그림 %s는 본체에 남는다" % kept)
+
+
+func test_every_avatar_has_a_select_voice_kept_in_the_main_pack() -> void:
+	var presets: String = FileAccess.get_file_as_string("res://export_presets.cfg")
+	check(not presets.contains("select_voice"), "선택 대사는 본체에 남아 고르는 즉시 나온다")
+	for id: StringName in AvatarCatalog.ids():
+		var path: String = AvatarCatalog.select_voice_path(id)
+		check(path != "", "%s: 선택 대사 파일이 있다" % id)
+		check(load(path) is AudioStreamOggVorbis, "%s: 선택 대사를 Ogg로 읽는다" % id)
+	check_eq(AvatarCatalog.select_voice_path(&"not_an_avatar"), "", "없는 아바타는 대사가 없다")
