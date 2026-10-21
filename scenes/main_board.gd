@@ -86,7 +86,6 @@ const SELECT_CARD_SIZE: Vector2 = Vector2(135, 165)
 const SELECT_BANNER_POS: Vector2 = Vector2(380, 568)
 const SLOT_SIZE: Vector2 = Vector2(76, 88)
 ## 슬링샷 조준: 이 거리(px)만큼 당기면 파워 100%.
-const AIM_MAX_PULL: float = 150.0
 ## 호버 툴팁이 뜨기까지 커서를 가만히 대고 있어야 하는 시간(초).
 const TIP_DELAY: float = 0.35
 const COLOR_BG: Color = Color("0d1018")
@@ -307,13 +306,9 @@ var _skill_buttons: Array[Button] = []
 var _dock_skill_buttons: Array[Button] = []
 var _tile_pick_skill_pawn: int = -1
 var _aim_pawn: int = -1
-var _aim_dragging: bool = false
-var _aim_origin: Vector2 = Vector2.ZERO
 var _aim_angle: float = 0.0
 var _aim_power: float = 0.0
-var _aim_layer: Node2D = null
-var _aim_line: Line2D = null
-var _aim_label: Label = null
+var _alkkagi: AlkkagiStage = null
 var _tool_board: PanelContainer = null
 var _tool_title: Label = null
 var _tool_icon: PanelContainer = null
@@ -1040,7 +1035,7 @@ func _build_ui() -> void:
 func _register_layout() -> void:
 	_layout_entries.clear()
 	var left: Array = [_law_panel, _feedback_button]
-	var center: Array = [_select_banner, _dir_left, _dir_right, _board_layer, _pawn_layer, _dock, _drop_zone, _aim_layer, _pick_banner, _pick_cancel, _roll_button, _roll_pad, _gun_row, _stage_yacht, _stage_blackjack, _stage_pinball, _danger_label]
+	var center: Array = [_select_banner, _dir_left, _dir_right, _board_layer, _pawn_layer, _dock, _drop_zone, _pick_banner, _pick_cancel, _roll_button, _roll_pad, _gun_row, _stage_yacht, _stage_blackjack, _stage_pinball, _danger_label]
 	var right: Array = [_tool_board, _action_row, _pawn_bar, _emote_row, _menu_button, _debug_box, _log_panel]
 	for index: int in PLAYER_IDS.size():
 		var player_id: int = PLAYER_IDS[index]
@@ -4724,14 +4719,10 @@ func _begin_skill_tile_pick(pawn: PlayerPawn) -> void:
 ## 흑돌 알까기 조준 모드: 마우스를 누른 채 뒤로 당겼다 놓으면 당긴 반대 방향으로 파워만큼 날아간다 (슬링샷).
 func _begin_aim(pawn: PlayerPawn) -> void:
 	_aim_pawn = pawn.entity_id
-	_aim_dragging = false
 	_aim_power = 0.0
-	_aim_layer.visible = true
-	_aim_line.clear_points()
-	_aim_label.text = ""
-	_pick_banner.text = "[알까기] 누른 채 뒤로 당겼다 놓기 (ESC 취소)"
-	_pick_banner.visible = true
-	_pick_cancel.visible = true
+	_alkkagi.open_aim(AlkkagiStage.snapshot(state,pawn,PLAYER_COLORS),pawn.entity_id,func(angle: float,power: float) -> Dictionary: return PawnSkills.shot_result(state,pawn,angle,power))
+	_pick_banner.visible = false
+	_pick_cancel.visible = false
 	_refresh_controls()
 
 
@@ -4739,9 +4730,8 @@ func _cancel_aim() -> void:
 	if _aim_pawn == -1:
 		return
 	_aim_pawn = -1
-	_aim_dragging = false
-	if _aim_layer != null:
-		_aim_layer.visible = false
+	if _alkkagi != null:
+		_alkkagi.cancel()
 	if _pick_banner != null and not _tile_pick_active:
 		_pick_banner.visible = false
 		_pick_cancel.visible = false
@@ -4751,53 +4741,11 @@ func _cancel_aim() -> void:
 
 ## 조준 모드의 마우스 입력. 처리했으면 true.
 func _handle_aim_input(event: InputEvent) -> bool:
-	if _aim_pawn == -1:
-		return false
-	var button: InputEventMouseButton = event as InputEventMouseButton
-	if button != null:
-		if button.button_index == MOUSE_BUTTON_RIGHT and button.pressed:
-			_cancel_aim()
-			return true
-		if button.button_index != MOUSE_BUTTON_LEFT:
-			return false
-		if _pick_cancel.visible and _pick_cancel.get_global_rect().has_point(button.position):
-			return false  # [취소] 버튼은 그대로 눌리게 둔다
-		if button.pressed:
-			_aim_dragging = true
-			_aim_origin = button.position
-			_aim_update(button.position)
-		elif _aim_dragging:
-			_aim_dragging = false
-			_aim_fire()
-		return true
-	var motion: InputEventMouseMotion = event as InputEventMouseMotion
-	if motion != null and _aim_dragging:
-		_aim_update(motion.position)
-		return true
-	return false
-
-
-## 당긴 벡터(누른 자리 - 현재 자리)로 발사 각도와 파워를 정하고 예상 궤적을 그린다.
-func _aim_update(pointer: Vector2) -> void:
-	var pull: Vector2 = _aim_origin - pointer
-	_aim_power = clampf(pull.length() / AIM_MAX_PULL, 0.0, 1.0)
-	if pull.length() > 1.0:
-		_aim_angle = pull.angle()
-	var pawn: PlayerPawn = state.get_pawn(_aim_pawn)
-	if pawn == null:
-		return
-	var shot: Dictionary = PawnSkills.shot_result(state, pawn, _aim_angle, _aim_power)
-	_aim_line.clear_points()
-	_aim_line.add_point(_tile_center(pawn.current_tile_idx))
-	_aim_line.add_point(_project(shot["to"] as Vector2))
-	_aim_line.default_color = Color("ffd43b") if (shot["hits"] as Array).is_empty() else Color("ff6b6b")
-	_aim_label.text = "파워 %d%%  명중 %d" % [int(_aim_power * 100.0), (shot["hits"] as Array).size()]
-	_aim_label.position = _tile_center(pawn.current_tile_idx) + Vector2(14, -34)
+	return _alkkagi.handle_input(event) if _aim_pawn != -1 and _alkkagi != null else false
 
 
 func _aim_fire() -> void:
 	if _aim_power < 0.08:
-		_aim_label.text = "더 길게 당기세요"
 		return
 	var pawn_id: int = _aim_pawn
 	var angle: float = _aim_angle
@@ -4807,18 +4755,18 @@ func _aim_fire() -> void:
 
 
 func _build_aim_layer() -> void:
-	_aim_layer = Node2D.new()
-	_aim_layer.z_index = 15
-	_aim_layer.visible = false
-	add_child(_aim_layer)
-	_aim_line = Line2D.new()
-	_aim_line.width = 6.0
-	_aim_line.default_color = Color("ffd43b")
-	_aim_layer.add_child(_aim_line)
-	_aim_label = _make_label("", 16, Color("fff3bf"))
-	_aim_label.add_theme_constant_override("outline_size", 5)
-	_aim_label.add_theme_color_override("font_outline_color", Color("0d1018"))
-	_aim_layer.add_child(_aim_label)
+	var stage_layer := CanvasLayer.new()
+	stage_layer.name = "AlkkagiPresentation"
+	stage_layer.layer = 45
+	add_child(stage_layer)
+	_alkkagi = AlkkagiStage.new()
+	_alkkagi.name = "AlkkagiStage"
+	stage_layer.add_child(_alkkagi)
+	_alkkagi.cancel_requested.connect(_cancel_aim)
+	_alkkagi.shot_requested.connect(func(angle: float,power: float) -> void:
+		_aim_angle = angle
+		_aim_power = power
+		_aim_fire())
 
 
 ## 필살기 발동 연출: 알림 카드(무엇이 발동했는지) -> 보드 위 말들의 움직임. 엔진 결과가 확정되기 직전에 도착하는 이벤트다.
@@ -4862,7 +4810,8 @@ func _on_skill_used(data: Dictionary) -> void:
 		&"hotel":
 			body = "%d번 타일에 호텔 건설 (밟은 적은 멈춤)" % int(data["from"])
 	_log_line("[필살기] %s: %s - %s" % [who, PawnCatalog.skill_name(skill), body.replace("\n", " ")], Color("ffa94d"))
-	_announce_gate(tr_ui("skill.tag"), "[P%d 발동!] %s" % [player_id, PawnCatalog.skill_name(skill)], body, PLAYER_COLORS[player_id], null, 1.3)
+	if skill != &"shoot":
+		_announce_gate(tr_ui("skill.tag"), "[P%d 발동!] %s" % [player_id, PawnCatalog.skill_name(skill)], body, PLAYER_COLORS[player_id], null, 1.3)
 
 
 ## 실제 잡기만 공격자/피격자 아바타 포즈로 강조한다 (함정·자기 복귀 제외).
@@ -4987,84 +4936,24 @@ func _prepare_charge_fx(data: Dictionary) -> void:
 		_fx_until_msec = maxi(_fx_until_msec, Time.get_ticks_msec() + int((0.3 * pace + 0.5) * 1000.0)))
 
 
-## 흑돌 알까기 연출을 미리 만들어 둔다 (이 시점에는 말들이 아직 옛 자리에 있다):
-## 뒤로 살짝 당김 -> 직선으로 발사(맞은 말은 닿는 순간 튕겨 나감) -> 멈춘 자리에서 가까운 타일로 자리를 다시 잡음.
+## Before the engine mutates pawns, retain the real board-plane positions for the alkkagi table.
 func _prepare_shoot_fx(data: Dictionary) -> void:
 	if not _fx_on():
 		return
-	var shooter_id: int = int(data["pawn_id"])
-	var shooter: PlayerPawn = state.get_pawn(shooter_id)
-	var view: Node2D = _pawn_views.get(shooter_id)
-	if shooter == null or view == null:
+	var shooter: PlayerPawn = state.get_pawn(int(data["pawn_id"]))
+	if shooter == null:
 		return
-	var shot: Dictionary = PawnSkills.shot_result(state, shooter, float(data["angle"]), float(data["power"]))
-	var start: Vector2 = view.position
-	var free_end: Vector2 = _project(shot["to"] as Vector2)
-	var distance: float = maxf(start.distance_to(free_end), 1.0)
-	var direction: Vector2 = (free_end - start) / distance
-	var victims: Array[Dictionary] = []
-	for hit: Variant in data["hits"]:
-		var victim_id: int = int((hit as Dictionary)["pawn_id"])
-		var victim_view: Node2D = _pawn_views.get(victim_id)
-		var victim: PlayerPawn = state.get_pawn(victim_id)
-		if victim_view == null or victim == null:
-			continue
-		var along: float = clampf((victim_view.position - start).dot(direction) / distance, 0.08, 1.0)
-		victims.append({"id": victim_id, "pos": victim_view.position, "frac": along, "color": PLAYER_COLORS[victim.owner_id]})
-	_fx_when_announced(func() -> void: _play_shoot_fx(shooter_id, start, free_end, direction, distance, victims))
-
-
-func _play_shoot_fx(shooter_id: int, start: Vector2, free_end: Vector2, direction: Vector2, distance: float, victims: Array[Dictionary]) -> void:
-	var view: Node2D = _pawn_views.get(shooter_id)
-	if view == null:
-		return
-	var pace: float = _motion_pace()
-	var t_pull: float = 0.25 * pace
-	var t_fly: float = clampf(0.4 + distance / 1000.0, 0.45, 0.85) * pace
-	var t_settle: float = 0.3 * pace
-	var base_scale: float = view.scale.x
-	_kill_fx(view)
-	view.visible = true
-	view.position = start
-	view.z_index = 6
-	var tween: Tween = create_tween()
-	tween.tween_property(view, "position", start - direction * 16.0, t_pull).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.parallel().tween_property(view, "scale", Vector2.ONE * base_scale * 1.3, t_pull)
-	tween.tween_callback(func() -> void: _fx_trail(view, t_fly, Color("ced4da")))
-	tween.tween_property(view, "position", free_end, t_fly).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.parallel().tween_property(view, "scale", Vector2.ONE * base_scale, t_fly)
-	tween.tween_interval(t_settle)
-	tween.tween_callback(_fx_script_done.bind(view))
-	view.set_meta("fx", tween)
-	view.set_meta("fx_script", true)
-	var total: float = t_pull + t_fly + t_settle
-	for victim: Dictionary in victims:
-		var victim_view: Node2D = _pawn_views.get(int(victim["id"]))
-		if victim_view == null:
-			continue
-		var hit_at: float = t_pull + t_fly * (1.0 - sqrt(1.0 - float(victim["frac"])))
-		var vpos: Vector2 = victim["pos"]
-		_kill_fx(victim_view)
-		victim_view.visible = true
-		victim_view.position = vpos
-		victim_view.z_index = 5
-		var vt: Tween = create_tween()
-		vt.tween_interval(hit_at)
-		vt.tween_callback(func() -> void:
-			_impact_ring(vpos, victim["color"], 30.0)
-			screen_shake(7.0, 0.2))
-		# 당구공처럼 충돌 방향과 화면 가장자리 방향이 섞인 쪽으로 튕겨 나간다
-		var outward: Vector2 = (vpos - _board_center()).normalized()
-		var knock: Vector2 = (direction * 0.6 + outward * 0.4).normalized() * 72.0
-		vt.tween_property(victim_view, "position", vpos + knock, 0.22 * pace).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		vt.parallel().tween_property(victim_view, "rotation", TAU, 0.22 * pace)
-		vt.tween_interval(0.12 * pace)
-		vt.tween_callback(_fx_script_done.bind(victim_view))
-		victim_view.set_meta("fx", vt)
-		victim_view.set_meta("fx_script", true)
-		_set_hint(int(victim["id"]), {"arc": 110.0, "spin": -2.0 * TAU, "dur": 0.45, "land_thud": true})
-		total = maxf(total, hit_at + 0.34 * pace)
-	_fx_until_msec = maxi(_fx_until_msec, Time.get_ticks_msec() + int(total * 1000.0) + 80)
+	var items := AlkkagiStage.snapshot(state,shooter,PLAYER_COLORS)
+	var shot := PawnSkills.shot_result(state,shooter,float(data["angle"]),float(data["power"]))
+	var id: int = shooter.entity_id
+	var strength: float = float(data["power"])
+	enqueue_step(func() -> void:
+		var generation: int = _fx_generation
+		_alkkagi.play_shot(items,id,shot,strength,_motion_pace())
+		while generation == _fx_generation and _alkkagi.mode != &"idle":
+			await get_tree().process_frame
+		if generation == _fx_generation:
+			_refresh_all(),id)
 
 
 func _fx_script_done(view: Node2D) -> void:
@@ -5172,6 +5061,9 @@ func enqueue_step(step_callable: Callable, pawn_id: int = -1, allow_defer: bool 
 
 ## 연출 큐를 비우고 재생 중인 러너를 멈춘다 (판 초기화·되감기·테스트 정리용). 이미 시작된 트윈은 건드리지 않는다.
 func _reset_presentation() -> void:
+	if _alkkagi != null:
+		_alkkagi.cancel()
+	_aim_pawn = -1
 	_fx_generation += 1
 	_presentation_queue.clear()
 	_late_steps.clear()
