@@ -60,6 +60,32 @@ var _buttons: HBoxContainer = null
 var _bar: ProgressBar = null
 var _drawing: StageDrawing = null
 var _game_slot: DuelGameSlot = null
+var _intro_panel: PanelContainer
+var _intro_headline: Label
+var _intro_how: Label
+var _intro_warning: Label
+var _intro_ready := false
+var _intro_elapsed := 0.0
+const INTRO_HEADLINES: Array[String] = [
+	"상대의 손을 이겨라!", "합이 5개일 때 종을 쳐라!", "절벽 직전에서 멈춰라!",
+	"신호가 뜨면 먼저 쏴라!", "한 장으로 승부를 뒤집어라!", "튀어나오게 하면 패배!",
+]
+const INTRO_HOW: Array[String] = [
+	"3초 안에 바위 · 가위 · 보 중 하나를 고르세요.",
+	"두 카드의 그림을 더해 5개가 되는 순간,\n[데스벨 치기!]를 누르세요.",
+	"차오르는 게이지를 보고 [스톱!]을 누르세요.\n100%에 더 가까운 쪽이 승리합니다.",
+	"[뽑아라!] 신호가 뜨면 [발사!]를 누르세요.\n진짜 신호에 더 빨리 반응하면 승리합니다.",
+	"신청자: 여왕 / 평민 · 수비자: 반란군 / 평민\n카드 한 장을 골라 상대와 겨루세요.",
+	"차례가 오면 칼을 꽂을 구멍을 고르세요.\n번갈아 한 번씩, 다섯 구멍 중 하나에는 폭탄!",
+]
+const INTRO_WARNINGS: Array[String] = [
+	"비기면 재대결! 두 번 연속 비기면 신청자가 승리합니다.",
+	"합이 5개가 아닐 때 누르면 반칙패!",
+	"100%를 넘기면 절벽 아래로 추락합니다!",
+	"트림은 가짜 신호! 신호보다 먼저 쏘면 반칙패!",
+	"여왕 > 평민 > 반란군 > 여왕 · 반란군의 하극상은 +5칸!",
+	"사도가 튀어 오르게 한 사람이 패배합니다!",
+]
 var _hole_buttons: Array[Button] = []
 
 
@@ -143,12 +169,14 @@ func _build() -> void:
 	_game_slot.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_game_slot.visible = false
 	_stage.add_child(_game_slot)
+	_build_rule_intro()
 	_message = board._make_label("", 18, Color.WHITE)
 	_message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_message.custom_minimum_size = Vector2(SIZE.x - 40.0, 30.0)
 	_message.add_theme_constant_override("outline_size", 5)
 	_message.add_theme_color_override("font_outline_color", Color("0b0e16"))
+	_message.visible = false
 	column.add_child(_message)
 	_bar = ProgressBar.new()
 	_bar.custom_minimum_size = Vector2(SIZE.x - 80.0, 10.0)
@@ -164,6 +192,47 @@ func _build() -> void:
 	column.add_child(_buttons)
 
 
+func _build_rule_intro() -> void:
+	_intro_panel = PanelContainer.new()
+	_intro_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_intro_panel.add_theme_stylebox_override("panel", board._style(Color("fff4dc"), Color("eac074"), 3, 18, 24, 18))
+	_intro_panel.visible = false
+	_stage.add_child(_intro_panel)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 14)
+	_intro_panel.add_child(column)
+	var heading := HBoxContainer.new()
+	heading.alignment = BoxContainer.ALIGNMENT_CENTER
+	heading.add_theme_constant_override("separation", 8)
+	column.add_child(heading)
+	var icon := IntroIcon.new()
+	icon.arena = self
+	icon.custom_minimum_size = Vector2(80, 80)
+	heading.add_child(icon)
+	_intro_headline = board._make_label("", 30, Color("493951"))
+	_intro_headline.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_intro_headline.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_intro_headline.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	heading.add_child(_intro_headline)
+	_intro_how = board._make_label("", 24, Color("493951"))
+	_intro_how.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_intro_how.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	column.add_child(_intro_how)
+	_intro_warning = board._make_label("", 20, Color("a84c4b"))
+	_intro_warning.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_intro_warning.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	column.add_child(_intro_warning)
+	for label: Label in [_intro_headline, _intro_how, _intro_warning]:
+		label.add_theme_constant_override("outline_size", 0)
+
+
+class IntroIcon extends Control:
+	var arena: DuelArena
+	func _draw() -> void:
+		draw_set_transform(size / 2.0, 0.0, Vector2.ONE * 1.4)
+		arena._game_slot._icon(arena.game, Vector2.ZERO, self)
+
+
 func _place() -> void:
 	reset_size()
 	position = board._board_center() - size / 2.0
@@ -175,6 +244,7 @@ func _place() -> void:
 
 func _say(text: String, color: Color = Color.WHITE) -> void:
 	_message.text = text
+	_message.visible = not text.is_empty() and _step not in [&"roulette", &"selected", &"rules"]
 	_message.add_theme_color_override("font_color", color)
 
 
@@ -233,6 +303,11 @@ func _local_open_seats() -> Array[int]:
 func _process(delta: float) -> void:
 	if not _opened or _closing:
 		return
+	if _step == &"rules":
+		# Reading time is real time, including at 2x/3x game speed.
+		_intro_elapsed += delta / maxf(Engine.time_scale, 0.01)
+		if _intro_elapsed >= DuelRules.INTRO_TIME - 0.55:
+			_confirm_intro()
 	if _timer_left > 0.0:
 		_timer_left -= delta
 		_bar.value = clampf(_timer_left / _timer_total, 0.0, 1.0)
@@ -361,9 +436,9 @@ func _play(kind: StringName, data: Dictionary) -> void:
 			await _play_resolved(data)
 
 
-## Reel -> locked ticket -> short rule introduction -> live inputs.
-## Presentation time is fixed (but follows the global game-speed button), so
-## every pace setting fits inside the engine's common introduction allowance.
+## Reel -> locked ticket -> separate large instructions -> live inputs.
+## Reading can finish with the start button or a bounded real-time fallback;
+## the engine deadline reserves the entire introduction for every peer.
 func _play_roulette() -> void:
 	_step = &"roulette"
 	animating = true
@@ -383,23 +458,49 @@ func _play_roulette() -> void:
 		return
 	_step = &"selected"
 	_game_label.text = "오늘의 대결!"
-	_say(DuelRules.game_name(game), GOLD)
+	_say("", GOLD)
 	game_selected.emit(game)
 	await get_tree().create_timer(0.55).timeout
 	if not is_inside_tree() or _closing:
 		return
 	_step = &"rules"
+	_game_slot.visible = false
 	_game_label.text = DuelRules.game_name(game)
-	_say(DuelRules.GAME_RULES[game], Color("ffe6ad"))
-	await get_tree().create_timer(DuelRules.INTRO_TIME - 0.55).timeout
+	_say("", Color.WHITE)
+	_intro_headline.text = INTRO_HEADLINES[game]
+	_intro_how.text = INTRO_HOW[game]
+	_intro_warning.text = INTRO_WARNINGS[game]
+	_intro_panel.visible = true
+	custom_minimum_size.x = 700.0
+	_stage.custom_minimum_size.y = 246.0
+	_intro_elapsed = 0.0
+	_intro_ready = false
+	var start := _add_button("대결 시작" if not local_seats.is_empty() else "대결 보기", _confirm_intro, Color("b57c30"), 260.0)
+	start.custom_minimum_size.y = 64.0
+	start.add_theme_font_size_override("font_size", 25)
+	await get_tree().process_frame
+	_place()
+	while not _intro_ready and is_inside_tree() and not _closing:
+		await get_tree().process_frame
 	if not is_inside_tree() or _closing:
 		return
-	_game_slot.visible = false
+	_intro_panel.visible = false
+	_clear_buttons()
 	_drawing.visible = true
+	custom_minimum_size = SIZE
 	_stage.custom_minimum_size.y = 150.0
 	animating = false
 	await get_tree().process_frame
 	_place()
+
+
+func _confirm_intro() -> void:
+	if _step != &"rules" or _closing or _intro_ready:
+		return
+	_intro_ready = true
+	Sfx.play(&"ui_click")
+	for child: Node in _buttons.get_children():
+		(child as Button).disabled = true
 
 
 func _begin_game() -> void:

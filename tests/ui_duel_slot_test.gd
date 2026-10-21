@@ -59,6 +59,7 @@ func run() -> void:
 		var selected: Array[int] = []
 		arena.game_selected.connect(func(value: int) -> void: selected.append(value))
 		await frames(3)
+		check(not arena._message.visible, "No bottom description during the slot reveal")
 		check(arena._step == &"roulette" and arena.animating and board._bot_should_wait(), "Bots wait until the reel and rule introduction finish")
 		check(arena._clock < 0.0 and arena._timer_left == 0.0 and arena._buttons.get_child_count() == 0, "No game clock, timeout or input before selection")
 		arena._submit(1, 0)
@@ -84,8 +85,21 @@ func run() -> void:
 				await capture("selected")
 			if arena._step == &"rules" and not rules_shot:
 				rules_shot = true
-				check(arena._message.text == DuelRules.GAME_RULES[game_id], "The selected game's own rule follows its reveal")
+				check(not arena._message.visible and not slot.visible and arena._intro_panel.visible, "Rules replace the slot rather than appearing underneath it")
+				check(arena._intro_headline.text == DuelArena.INTRO_HEADLINES[game_id] and arena._intro_how.text == DuelArena.INTRO_HOW[game_id], "Large instructions match the selected game")
+				check(arena._intro_how.get_theme_font_size("font_size") >= 24 and arena._buttons.get_child_count() == 1, "Large readable instructions have a single start button")
 				await capture("rules")
+				if OS.get_environment("DUEL_CAPTURE_DIR") != "":
+					root.size = Vector2i(844, 390)
+					await frames(3)
+					await capture("rules_mobile")
+					root.size = Vector2i(1366, 768)
+					await frames(3)
+			if arena._step == &"rules" and not arena._intro_ready:
+				check(arena._clock < 0.0 and arena._timer_left == 0.0 and arena.animating, "Reading never starts a gameplay clock")
+				# One game exercises automatic continuation; the others use the button.
+				if game_id != 0 and arena._intro_elapsed > 0.8:
+					arena._confirm_intro()
 			await process_frame
 		check(spin_shot and brake_shot and selected_shot and rules_shot, "Spin, braking, selected ticket and rule introduction all occur")
 		check(selected == [game_id] and arena._game_slot.visited.size() > DuelRules.GAME_COUNT, "Only one selected event after multiple reel cycles")

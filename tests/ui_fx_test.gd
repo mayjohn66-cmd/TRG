@@ -1443,6 +1443,8 @@ func _play_one_duel(game: int) -> void:
 	var waited: float = 0.0
 	var saw_hold: bool = false
 	while manager.duel_pending() and waited < 20.0:
+		if arena._step == &"rules" and arena._intro_elapsed > 0.2:
+			arena._confirm_intro()
 		if arena._step == &"play":
 			match game:
 				DuelRules.Game.RPS, DuelRules.Game.ECARD:

@@ -57,7 +57,7 @@ const TIME_CURLING: float = 16.0
 const TIME_BARREL_PICK: float = 8.0
 ## 화면: 종목 추첨 룰렛과 종목 안내 시간(초).
 const ROULETTE_TIME: float = 2.6
-const INTRO_TIME: float = 1.6
+const INTRO_TIME: float = 6.6
 
 ## 봇 밸런스: 순발력 반응 딜레이(초), 컬링 정밀도(%)와 실수 확률.
 const BOT_REACT_MIN: float = 0.38
