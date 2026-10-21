@@ -526,21 +526,19 @@ func _next_pick_seat() -> void:
 		_say(("컴퓨터끼리 결투 중..." if local_seats.is_empty() else "상대를 기다리는 중..."), Color("ced4da"))
 		return
 	_pick_seat = open[0]
-	var who: String = "%s, " % _seat_name(_pick_seat) if local_seats.size() > 1 else ""
+	_vs.text = "%s 차례" % _seat_name(_pick_seat)
+	_say("", Color.WHITE)
 	match game:
 		DuelRules.Game.RPS:
-			_say("%s손을 고르세요!" % who, Color.WHITE)
 			for hand: int in 3:
 				_add_button(["바위", "가위", "보"][hand], _choose.bind(hand), Color("3b4766"), 140.0)
 			_start_timer(PICK_SECONDS)
 		DuelRules.Game.ECARD:
 			var names: Array[String] = DuelRules.ECARD_CHALLENGER if _pick_seat == challenger else DuelRules.ECARD_DEFENDER
-			_say("%s카드 한 장을 엎어 내세요!" % who, Color.WHITE)
 			for index: int in 2:
 				_add_button(names[index], _choose.bind(index), Color("5f3dc4") if index == 0 else Color("3b4766"), 170.0)
 			_start_timer(PICK_SECONDS * 2.0)
 		DuelRules.Game.CURLING:
-			_say("%s게이지를 멈춰 100%%에 가깝게!" % who, Color.WHITE)
 			_add_button("스톱!", _curling_stop, Color("c92a2a"), 200.0)
 			_gauge_value = 0.0
 			_clock = 0.0
@@ -588,10 +586,8 @@ func _begin_reaction() -> void:
 		_add_button(("%s%s" % [label, key_hint]) if seats.size() == 1 else "%s\n%s%s" % [_seat_name(seat), label, key_hint], _press.bind(seat), Color("c92a2a"), 200.0 if seats.size() == 1 else 190.0)
 	if seats.is_empty():
 		_say("컴퓨터끼리 결투 중..." if local_seats.is_empty() else "상대를 기다리는 중...", Color("ced4da"))
-	elif game == DuelRules.Game.HALLI:
-		_say("두 카드의 그림 합이 정확히 5개일 때!", Color("ffe066"))
 	else:
-		_say("신호가 뜨면 바로! 먼저 쏘면 부정출발", Color("ffe066"))
+		_say("", Color.WHITE)
 
 
 func _press(seat: int) -> void:
@@ -623,7 +619,8 @@ func _refresh_barrel_turn() -> void:
 	for hole: int in _hole_buttons.size():
 		_hole_buttons[hole].disabled = not mine or _opened_holes.has(hole)
 	if mine:
-		_say("%s 차례! 칼을 꽂을 구멍을 고르세요" % _seat_name(_turn), Color.WHITE)
+		_vs.text = "%s 차례" % _seat_name(_turn)
+		_say("", Color.WHITE)
 		_start_timer(DuelRules.TIME_BARREL_PICK * 0.75)
 	else:
 		_stop_timer()

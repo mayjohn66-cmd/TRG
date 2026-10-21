@@ -11,3 +11,5 @@ ACT_09 now opens with one wide casino reel containing all six minigames. Each ti
 Validation: 516 unit tests, 596466 assertions, zero failures; existing full UI FX test including six complete duels; focused six-game selection/queue/cancellation test; desktop and short-mobile render captures.
 
 Large introduction follow-up: existing full UI FX and focused six-game selection tests pass, including start-button continuation, automatic continuation, input clock gating and desktop/mobile render captures. Capture artifacts: outputs/duel-intro-v02 in the task workspace.
+
+During play, static instructions below the stage are also removed. Hotseat turns use the upper participant line; live feedback and results remain available.
