@@ -28,6 +28,9 @@ func arrange(state: GameState) -> PlayerPawn:
 	for pawn: PlayerPawn in state.pawns:
 		pawn.reset_to_start()
 		pawn.skill_used = false
+		pawn.kind = GameEnums.PawnKind.BASIC
+		pawn.unit_no = 1
+		pawn.shield = false
 	var shooter: PlayerPawn = state.get_pawn(11)
 	shooter.kind = GameEnums.PawnKind.GO
 	shooter.unit_no = 1
@@ -176,6 +179,7 @@ func run() -> void:
 	board._begin_aim(shooter)
 	mouse(stage,start,true)
 	drag(stage,start+Vector2(110,0)*stage.layout_scale())
+	check((stage.preview.hits as Array).has(21) and (stage.preview.hits as Array).has(31),"Real-game aim preview includes both lined-up opponents")
 	mouse(stage,start+Vector2(110,0)*stage.layout_scale(),false)
 	check(shooter.skill_used and not board.state.get_pawn(21).has_left_start,"Releasing submits one real engine skill")
 	var saw_slide := false
@@ -192,6 +196,7 @@ func run() -> void:
 			break
 		await process_frame
 	check(saw_slide and saw_impact,"Real skill waits for the visible slide and contact stages")
+	check(stage.impacts==[21,31],"Real engine hit list matches the two displayed stone contacts")
 	for frame: int in 1100:
 		if not board._presentation_active() and stage.mode==&"idle":
 			break
