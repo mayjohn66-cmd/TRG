@@ -63,6 +63,7 @@ var _rps_stage: DuelRpsStage = null
 var _halli_stage: DuelHalliStage = null
 var _curling_stage: DuelCurlingStage = null
 var _quickdraw_stage: DuelQuickdrawStage = null
+var _ecard_stage: DuelEcardStage = null
 var _intro_panel: PanelContainer
 var _intro_headline: Label
 var _intro_how: Label
@@ -78,7 +79,7 @@ const INTRO_HOW: Array[String] = [
 	"두 카드의 그림을 더해 5개가 되는 순간,\n[데스벨 치기!]를 누르세요.",
 	"내 병뚜껑을 누르고 뒤로 당긴 뒤 놓으세요.\n번갈아 한 번씩, 절벽 가까이에 멈추면 승리합니다.",
 	"[뽑아라!] 신호가 뜨면 [발사!]를 누르세요.\n진짜 신호에 더 빨리 반응하면 승리합니다.",
-	"신청자: 여왕 / 평민 · 수비자: 반란군 / 평민\n카드 한 장을 골라 상대와 겨루세요.",
+	"양쪽은 특수 카드 1장과 시민 4장으로 시작합니다.\n한 장씩 내고, 시민끼리 만나면 버린 뒤 다시 고르세요.",
 	"차례가 오면 칼을 꽂을 구멍을 고르세요.\n번갈아 한 번씩, 다섯 구멍 중 하나에는 폭탄!",
 ]
 const INTRO_WARNINGS: Array[String] = [
@@ -86,7 +87,7 @@ const INTRO_WARNINGS: Array[String] = [
 	"합이 5개가 아닐 때 누르면 반칙패!",
 	"상대 병뚜껑을 밀어낼 수 있어요! 끝선을 넘으면 추락!",
 	"트림은 가짜 신호! 신호보다 먼저 쏘면 반칙패!",
-	"여왕 > 평민 > 반란군 > 여왕 · 반란군의 하극상은 +5칸!",
+	"여왕 > 시민 > 반란군 > 여왕 · 사용한 카드는 다시 쓸 수 없어요!",
 	"사도가 튀어 오르게 한 사람이 패배합니다!",
 ]
 var _hole_buttons: Array[Button] = []
@@ -189,6 +190,11 @@ func _build() -> void:
 	_quickdraw_stage.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_quickdraw_stage.visible = false
 	_stage.add_child(_quickdraw_stage)
+	_ecard_stage = DuelEcardStage.new()
+	_ecard_stage.arena = self
+	_ecard_stage.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_ecard_stage.visible = false
+	_stage.add_child(_ecard_stage)
 	_game_slot = DuelGameSlot.new()
 	_game_slot.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_game_slot.visible = false
@@ -373,7 +379,7 @@ func _on_local_timeout() -> void:
 				_choose(randi() % 3)
 		DuelRules.Game.ECARD:
 			if _pick_seat != -1:
-				_choose(randi() % 2)
+				_choose(1 if DuelRules.ecard_count(setup_data, _pick_seat == challenger, 1) > 0 else 0)
 		DuelRules.Game.CURLING:
 			if _pick_seat != -1:
 				_curling_release(DuelRules.CURLING_MAX)
@@ -436,6 +442,8 @@ func _play(kind: StringName, data: Dictionary) -> void:
 				await _play_curling_shot(int(data["player_id"]), int(data["value"]))
 			elif game == DuelRules.Game.RPS:
 				_rps_stage.mark_ready(int(data["player_id"]))
+			elif game == DuelRules.Game.ECARD:
+				_ecard_stage.mark_ready(int(data["player_id"]))
 			elif game == DuelRules.Game.BARREL and data.has("hole"):
 				await _play_barrel_stab(data)
 			elif game not in [DuelRules.Game.HALLI, DuelRules.Game.QUICKDRAW] and not local_seats.has(int(data["player_id"])):
@@ -521,6 +529,13 @@ func _begin_game() -> void:
 		_rps_stage.visible = true
 		_rps_stage.reset_round()
 		_place.call_deferred()
+	elif game == DuelRules.Game.ECARD:
+		custom_minimum_size.x = 820.0
+		_stage.custom_minimum_size.y = 290.0
+		_drawing.visible = false
+		_ecard_stage.visible = true
+		_ecard_stage.reset_round()
+		_place.call_deferred()
 	elif game == DuelRules.Game.HALLI:
 		custom_minimum_size.x = 740.0
 		_stage.custom_minimum_size.y = 300.0
@@ -572,7 +587,7 @@ func _next_pick_seat() -> void:
 	var open: Array[int] = _local_open_seats()
 	if open.is_empty():
 		_step = &"waiting"
-		_say("" if game == DuelRules.Game.RPS else ("컴퓨터끼리 결투 중..." if local_seats.is_empty() else "상대를 기다리는 중..."), Color("ced4da"))
+		_say("" if game in [DuelRules.Game.RPS, DuelRules.Game.ECARD] else ("컴퓨터끼리 결투 중..." if local_seats.is_empty() else "상대를 기다리는 중..."), Color("ced4da"))
 		return
 	_pick_seat = open[0]
 	_vs.text = "%s 차례" % _seat_name(_pick_seat)
@@ -583,9 +598,8 @@ func _next_pick_seat() -> void:
 				_buttons.add_child(_rps_stage.make_choice(hand, _choose.bind(hand)))
 			_start_timer(PICK_SECONDS)
 		DuelRules.Game.ECARD:
-			var names: Array[String] = DuelRules.ECARD_CHALLENGER if _pick_seat == challenger else DuelRules.ECARD_DEFENDER
-			for index: int in 2:
-				_add_button(names[index], _choose.bind(index), Color("5f3dc4") if index == 0 else Color("3b4766"), 170.0)
+			for value: int in DuelRules.ecard_choices(setup_data, _pick_seat == challenger):
+				_buttons.add_child(_ecard_stage.make_choice(value, _pick_seat, _choose.bind(value)))
 			_start_timer(PICK_SECONDS * 2.0)
 
 
@@ -593,6 +607,12 @@ func _choose(value: int) -> void:
 	if _pick_seat == -1 or _step != &"play" or _submitted.has(_pick_seat):
 		return
 	var seat: int = _pick_seat
+	if game == DuelRules.Game.ECARD:
+		if not DuelRules.ecard_choices(setup_data, seat == challenger).has(value):
+			return
+		_pick_seat = -1
+		_ecard_stage.mark_ready(seat)
+		_clear_buttons()
 	if game == DuelRules.Game.RPS:
 		_pick_seat = -1
 		_rps_stage.mark_ready(seat)
@@ -782,6 +802,9 @@ func _queue_has(kind: StringName) -> bool:
 
 
 func _play_reveal(data: Dictionary) -> void:
+	if game == DuelRules.Game.ECARD:
+		await _play_ecard_reveal(data)
+		return
 	if game == DuelRules.Game.QUICKDRAW:
 		await _play_quickdraw_reveal(data)
 		return
@@ -899,6 +922,26 @@ func _play_halli_reveal(data: Dictionary) -> void:
 		animating = false
 
 
+func _play_ecard_reveal(data: Dictionary) -> void:
+	animating = true
+	_step = &"reveal"
+	_pick_seat = -1
+	_stop_timer()
+	_clear_buttons()
+	_say("")
+	_vs.text = "%s  VS  %s" % [_seat_name(challenger), _seat_name(defender)]
+	_ecard_stage.play_reveal(data)
+	await _ecard_stage.finished
+	if not is_inside_tree() or _closing:
+		return
+	if int(data["winner"]) == -1:
+		_submitted.clear()
+		_ecard_stage.reset_round()
+		_step = &"play"
+		_next_pick_seat()
+	animating = false
+
+
 func _play_quickdraw_reveal(data: Dictionary) -> void:
 	animating = true
 	var deadline := DuelRules.reaction_deadline(game, setup_data)
@@ -960,6 +1003,7 @@ func close_now() -> void:
 	_halli_stage.cancel()
 	_curling_stage.cancel()
 	_quickdraw_stage.cancel()
+	_ecard_stage.cancel()
 	_stop_timer()
 	_clear_buttons()
 	var tween: Tween = create_tween().set_parallel(true)
@@ -983,7 +1027,6 @@ class StageDrawing extends Control:
 		if arena == null or arena._step == &"roulette" or arena._step == &"idle":
 			return
 		match arena.game:
-			DuelRules.Game.ECARD: _draw_ecards()
 			DuelRules.Game.QUICKDRAW: _draw_cowboys()
 			DuelRules.Game.BARREL: _draw_barrel()
 
@@ -1000,19 +1043,6 @@ class StageDrawing extends Control:
 		var font: Font = ThemeDB.fallback_font
 		var width: float = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
 		draw_string(font, Vector2(at.x - width / 2.0, at.y), text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, color)
-
-	func _draw_ecards() -> void:
-		for seat: int in [arena.challenger, arena.defender]:
-			var rect := Rect2(Vector2(_seat_x(seat) - 52.0, 8.0), Vector2(104.0, 118.0))
-			var faced: bool = reveal.has(seat)
-			draw_rect(rect, Color("f1e3c6") if faced else Color("5f3dc4"))
-			draw_rect(rect, Color("3b2a00"), false, 3.0)
-			var label: String = "E"
-			if faced:
-				var names: Array[String] = DuelRules.ECARD_CHALLENGER if seat == arena.challenger else DuelRules.ECARD_DEFENDER
-				label = names[clampi(int(reveal[seat]), 0, 1)]
-			_center_text(label, rect.get_center() + Vector2(0, 8), 18 if faced else 40, Color("3b2a00") if faced else GOLD)
-			_name_at(seat, size.y - 4.0)
 
 	func _draw_cowboys() -> void:
 		for seat: int in [arena.challenger, arena.defender]:
