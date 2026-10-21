@@ -37,6 +37,7 @@ var _queue: Array[Dictionary] = []
 var _current: Dictionary = {}
 var _t: float = 0.0
 var _root: VBoxContainer = null
+var _timer_bar: ColorRect = null
 
 
 func _init() -> void:
@@ -129,7 +130,7 @@ func _start_next() -> void:
 	_root.add_theme_constant_override("separation", 6)
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_root)
-	_root.add_child(_label(str(_current["tag"]), 13, color.lightened(0.2)))
+	# 작은 꼬리표 글자(턴·라운드 등)는 그리지 않는다: 테두리 색과 헤드라인이 같은 말을 한다.
 	var warning: bool = str(_current["tag"]) == WARNING_TAG
 	var big: bool = str(_current["tag"]) == BIG_TAG or warning
 	if warning:
@@ -151,7 +152,15 @@ func _start_next() -> void:
 	if warning:
 		_root.add_child(_label("!!  WARNING  !!  WARNING  !!  WARNING  !!", 18, Color("ffd43b")))
 	if not big:
-		_root.add_child(_label("(클릭하면 넘어갑니다)", 10, Color("6c757d")))
+		# "(클릭하면 넘어갑니다)" 글자 대신 줄어드는 시간 막대: 곧 사라진다는 것(클릭하면 바로 넘어간다)을 보여 준다.
+		var track := Control.new()
+		track.custom_minimum_size = Vector2(0, 4)
+		track.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_timer_bar = ColorRect.new()
+		_timer_bar.color = color
+		_timer_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		track.add_child(_timer_bar)
+		_root.add_child(track)
 	modulate = Color(1, 1, 1, 0)
 	visible = true
 	reset_size()
@@ -180,6 +189,7 @@ func _clear() -> void:
 		remove_child(_root)
 		_root.queue_free()
 		_root = null
+		_timer_bar = null
 
 
 func _process(delta: float) -> void:
@@ -196,6 +206,9 @@ func _process(delta: float) -> void:
 	elif _t > duration - FADE_OUT:
 		alpha = clampf((duration - _t) / FADE_OUT, 0.0, 1.0)
 	modulate = Color(1, 1, 1, alpha)
+	if is_instance_valid(_timer_bar):
+		var track: Control = _timer_bar.get_parent()
+		_timer_bar.size = Vector2(track.size.x * clampf(1.0 - _t / maxf(duration, 0.01), 0.0, 1.0), track.size.y)
 	# 등장할 때 살짝 커지며 튀어나온다 (0.88배 -> 1.0배).
 	var pop: float = clampf(_t / (FADE_IN * 2.0), 0.0, 1.0)
 	scale = Vector2.ONE * lerpf(0.88, 1.0, 1.0 - pow(1.0 - pop, 3.0))

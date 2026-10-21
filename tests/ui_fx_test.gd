@@ -2014,11 +2014,13 @@ func _test_presentation_queue() -> void:
 	_expect(landings == [4, 5, 6], "1~3번은 건너뛰고 4번에 로켓 착지 뒤 5 -> 6번 한 칸씩 (%s)" % str(landings))
 	_board._refresh_all()
 	_expect(glow == null or not glow.visible, "출격하면 불꽃 테두리가 꺼진다")
-	# 7) 빵집: 카드를 받으면 [빵집! 카드 획득] 알림이 뜬다 (손패가 가득 차면 이유를 알려 준다)
+	# 7) 빵집: 카드를 받으면 카드 뒷면이 프로필로 날아간다 (글자 없음). 손패가 가득 차면 카드가 튕겨 나가며 부서진다
 	var bakery: int = BoardSpec.bakery_tiles[0]
 	var badge_texts: Array[String] = []
 	var watcher: Callable = func(node: Node) -> void:
-		if node is Label and (node as Label).text.contains("빵집"):
+		if node.has_meta("hand_card_fx"):
+			badge_texts.append(str(node.get_meta("hand_card_fx")))
+		elif node is Label and (node as Label).text.contains("빵집"):
 			badge_texts.append((node as Label).text)
 	_board.child_entered_tree.connect(watcher)
 	var baker: PlayerPawn = state.get_pawn(13)
@@ -2030,7 +2032,7 @@ func _test_presentation_queue() -> void:
 	while _board._presentation_active() and guard < 600:
 		guard += 1
 		await process_frame
-	_expect(badge_texts.any(func(text: String) -> bool: return text.contains("카드 획득")), "빵집에 멈춰 카드를 받으면 [빵집! 카드 획득] 알림이 뜬다 (%s)" % str(badge_texts))
+	_expect(str(badge_texts) == str(["drawn"]), "빵집에 멈춰 카드를 받으면 카드 뒷면이 프로필로 날아간다 (글자 배지 없음) (%s)" % str(badge_texts))
 	_expect(not badge_texts.any(func(text: String) -> bool: return text.contains(_board._card_name(&"TRP_03"))), "빵집 알림은 어떤 카드인지 알려 주지 않는다 (%s)" % str(badge_texts))
 	badge_texts.clear()
 	for i: int in GameEnums.MAX_HAND_SIZE:
@@ -2040,7 +2042,7 @@ func _test_presentation_queue() -> void:
 	while _board._presentation_active() and guard < 600:
 		guard += 1
 		await process_frame
-	_expect(badge_texts.any(func(text: String) -> bool: return text.contains("가득")), "손패가 가득 차면 못 받은 이유를 알려 준다 (%s)" % str(badge_texts))
+	_expect(str(badge_texts) == str(["rejected"]), "손패가 가득 차면 카드가 튕겨 나가며 부서진다 (%s)" % str(badge_texts))
 	_board.child_entered_tree.disconnect(watcher)
 	state.hands[1].clear()
 	# 8) 장외 홈런 뒤 말은 내려앉는 연출 없이 출발선 자리에 조용히 돌아와 있다
