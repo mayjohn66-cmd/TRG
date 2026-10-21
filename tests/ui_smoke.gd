@@ -517,7 +517,8 @@ func _try_skill(manager: TurnManager, player_id: int) -> bool:
 						var event := InputEventMouseButton.new()
 						event.button_index = MOUSE_BUTTON_LEFT
 						event.pressed = step == 0
-						event.position = Vector2(600, 300) if step == 0 else Vector2(600.0 - 20.0 * _rng.randi_range(1, 7), 300.0 + _rng.randi_range(-80, 80))
+						var origin: Vector2 = _board._alkkagi.to_screen(_board._alkkagi.origin)
+						event.position = origin if step == 0 else origin + Vector2(-20.0 * _rng.randi_range(1, 7), _rng.randi_range(-80, 80)) * _board._alkkagi.layout_scale()
 						if step == 1:
 							var move := InputEventMouseMotion.new()
 							move.position = event.position
