@@ -24,6 +24,7 @@ var _drag_start := Vector2.ZERO
 var _accumulator := 0.0
 var _rest_time := 0.0
 var _shot_ticks := 0
+var launch_direction := Vector2.RIGHT
 var _sparks: Array[Dictionary] = []
 var _falls: Dictionary = {}
 var _trails: Array = [[], []]
@@ -87,8 +88,8 @@ func handle_input(event: InputEvent) -> bool:
 			return false
 		match event.keycode:
 			KEY_ESCAPE: cancel_drag()
-			KEY_LEFT: aim = maxi(-BottleCapPhysics.AIM_MAX, aim - 2)
-			KEY_RIGHT: aim = mini(BottleCapPhysics.AIM_MAX, aim + 2)
+			KEY_LEFT: aim = posmod(aim - 3, 360)
+			KEY_RIGHT: aim = posmod(aim + 3, 360)
 			KEY_UP: power = minf(1.0, power + 0.04)
 			KEY_DOWN: power = maxf(0.06, power - 0.04)
 			KEY_SPACE:
@@ -148,17 +149,17 @@ func handle_input(event: InputEvent) -> bool:
 
 func update_pull(point: Vector2) -> void:
 	var pull := _drag_start - _model_point(point)
-	if pull.x <= 2.0:
+	if pull.length() <= 2.0:
 		power = 0.0
 		return
 	power = clampf(pull.length() / MAX_PULL, 0.0, 1.0)
-	aim = roundi(clampf(pull.y / pull.x / 0.018, -BottleCapPhysics.AIM_MAX, BottleCapPhysics.AIM_MAX))
+	aim = posmod(roundi(rad_to_deg(pull.angle())), 360)
 	queue_redraw()
 
 func fire() -> void:
 	if mode != &"aim" or power < 0.04:
 		return
-	var value := BottleCapPhysics.encode(roundi(power * power * BottleCapPhysics.POWER_MAX), aim)
+	var value := BottleCapPhysics.encode_direction(roundi(power * power * BottleCapPhysics.POWER_MAX), aim)
 	mode = &"waiting"
 	cancel_drag()
 	shot_requested.emit(value)
@@ -167,6 +168,7 @@ func play_shot(index: int, value: int) -> void:
 	cancel_drag()
 	shooter = index
 	world.shoot(index, value)
+	launch_direction = Vector2(world.caps[index].vel).normalized()
 	_accumulator = 0.0
 	_rest_time = 0.0
 	_shot_ticks = 0
@@ -273,6 +275,13 @@ func _draw() -> void:
 		_cap(Vector2(BottleCapPhysics.START) / BottleCapPhysics.SCALE, 0.0, MainBoard.PLAYER_COLORS.get(seat, Color.WHITE), sc, 1.0)
 		if mode == &"aim":
 			_draw_arrow(origin, sc)
+	if mode == &"slide" and _shot_ticks < 30 and launch_direction != Vector2.ZERO:
+		var from := origin + Vector2(BottleCapPhysics.START) / BottleCapPhysics.SCALE * sc
+		var fade := 1.0 - float(_shot_ticks) / 30.0
+		var tip := from + launch_direction * 105 * sc
+		var normal := launch_direction.orthogonal()
+		draw_line(from + launch_direction * 28 * sc, tip - launch_direction * 14 * sc, Color(1.0, 0.91, 0.45, fade), 3 * sc, true)
+		draw_colored_polygon(PackedVector2Array([tip, tip - launch_direction * 17 * sc + normal * 8 * sc, tip - launch_direction * 17 * sc - normal * 8 * sc]), Color(1.0, 0.72, 0.25, fade))
 	for spark: Dictionary in _sparks:
 		var age := float(spark.age)
 		if age >= 0.25:
@@ -294,7 +303,7 @@ func _cap(point: Vector2, angle: float, tint: Color, sc: float, alpha: float) ->
 
 func _draw_arrow(origin: Vector2, sc: float) -> void:
 	var start := origin + Vector2(BottleCapPhysics.START) / BottleCapPhysics.SCALE * sc
-	var direction := Vector2(1.0, float(aim) * 0.018).normalized()
+	var direction := Vector2.from_angle(deg_to_rad(float(aim)))
 	var normal := direction.orthogonal()
 	var base := start + direction * 29 * sc
 	var tip := start + direction * (78 + power * 108) * sc

@@ -82,6 +82,9 @@ jobs:
       - name: Run bottle cap curling gestures, physical collisions and deterministic replay test
         run: godot --headless --path . -s res://tests/ui_curling_test.gd
 
+      - name: Run paired revolver preparation, quickdraw timing and flag effects test
+        run: godot --headless --path . -s res://tests/ui_quickdraw_test.gd
+
       - name: Run in-game feedback test (modal, snapshot, local webhook, cleanup)
         run: godot --headless --path . -s res://tests/ui_feedback_test.gd
 

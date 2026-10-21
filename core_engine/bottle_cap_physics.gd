@@ -14,6 +14,9 @@ const SHOT_BASE := 10000
 const POWER_MAX := 1150
 const AIM_MAX := 24
 const MAX_TICKS := 420
+const DIRECTION_BASE := 1000000
+## Rounded micro-unit sine table keeps full-circle input deterministic on every client.
+const QUARTER_SIN: Array[int] = [0, 17452, 34899, 52336, 69756, 87156, 104528, 121869, 139173, 156434, 173648, 190809, 207912, 224951, 241922, 258819, 275637, 292372, 309017, 325568, 342020, 358368, 374607, 390731, 406737, 422618, 438371, 453990, 469472, 484810, 500000, 515038, 529919, 544639, 559193, 573576, 587785, 601815, 615661, 629320, 642788, 656059, 669131, 681998, 694658, 707107, 719340, 731354, 743145, 754710, 766044, 777146, 788011, 798636, 809017, 819152, 829038, 838671, 848048, 857167, 866025, 874620, 882948, 891007, 898794, 906308, 913545, 920505, 927184, 933580, 939693, 945519, 951057, 956305, 961262, 965926, 970296, 974370, 978148, 981627, 984808, 987688, 990268, 992546, 994522, 996195, 997564, 998630, 999391, 999848, 1000000]
 
 var caps: Array[Dictionary] = []
 var events: Array[Dictionary] = []
@@ -28,9 +31,30 @@ static func encode(power: int, aim: int = 0) -> int:
 	return SHOT_BASE + (clampi(aim, -AIM_MAX, AIM_MAX) + AIM_MAX) * (POWER_MAX + 1) + clampi(power, 0, POWER_MAX)
 
 static func valid(value: int) -> bool:
-	return (value >= 0 and value <= POWER_MAX) or (value >= SHOT_BASE and value < SHOT_BASE + (AIM_MAX * 2 + 1) * (POWER_MAX + 1))
+	return (value >= 0 and value <= POWER_MAX) or (value >= SHOT_BASE and value < SHOT_BASE + (AIM_MAX * 2 + 1) * (POWER_MAX + 1)) or (value >= DIRECTION_BASE and value < DIRECTION_BASE + 360 * (POWER_MAX + 1))
+
+static func encode_direction(power: int, degrees: int) -> int:
+	return DIRECTION_BASE + posmod(degrees, 360) * (POWER_MAX + 1) + clampi(power, 0, POWER_MAX)
+
+static func direction(degrees: int) -> Vector2i:
+	var theta := posmod(degrees, 360)
+	var sine := 0
+	if theta <= 90: sine = QUARTER_SIN[theta]
+	elif theta <= 180: sine = QUARTER_SIN[180 - theta]
+	elif theta <= 270: sine = -QUARTER_SIN[theta - 180]
+	else: sine = -QUARTER_SIN[360 - theta]
+	var cosine_degrees := posmod(theta + 90, 360)
+	var cosine := 0
+	if cosine_degrees <= 90: cosine = QUARTER_SIN[cosine_degrees]
+	elif cosine_degrees <= 180: cosine = QUARTER_SIN[180 - cosine_degrees]
+	elif cosine_degrees <= 270: cosine = -QUARTER_SIN[cosine_degrees - 180]
+	else: cosine = -QUARTER_SIN[360 - cosine_degrees]
+	return Vector2i(cosine, sine)
 
 static func decode(value: int) -> Vector2i:
+	if value >= DIRECTION_BASE:
+		var packed := value - DIRECTION_BASE
+		return Vector2i(packed % (POWER_MAX + 1), div_int(packed, POWER_MAX + 1))
 	if value < SHOT_BASE:
 		return Vector2i(clampi(value, 0, POWER_MAX), 0)
 	var packed := value - SHOT_BASE
@@ -60,9 +84,13 @@ func shoot(index: int, value: int) -> void:
 	var speed := maxi(0, isqrt(2 * DRAG * distance + div_int(DRAG * DRAG, 4)) - div_int(DRAG, 2))
 	var slope := shot.y * 18
 	var vx := div_int(speed * 1000, isqrt(1000000 + slope * slope))
+	var velocity := Vector2i(vx, div_int(vx * slope, 1000))
+	if value >= DIRECTION_BASE:
+		var facing := direction(shot.y)
+		velocity = Vector2i(div_int(speed * facing.x, 1000000), div_int(speed * facing.y, 1000000))
 	var body: Dictionary = caps[index]
-	body.merge({"pos": START, "vel": Vector2i(vx, div_int(vx * slope, 1000)), "active": true, "out": false,
-		"spin": 1100 + div_int(shot.x, 45) * 100 + shot.y * 70, "angle": index * 37000, "fall_tick": -1}, true)
+	body.merge({"pos": START, "vel": velocity, "active": true, "out": false,
+		"spin": 1100 + div_int(shot.x, 45) * 100 + (clampi(posmod(shot.y + 180, 360) - 180, -24, 24) if value >= DIRECTION_BASE else shot.y) * 70, "angle": index * 37000, "fall_tick": -1}, true)
 	events.clear()
 
 func moving() -> bool:

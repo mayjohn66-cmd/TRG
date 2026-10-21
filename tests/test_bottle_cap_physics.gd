@@ -90,3 +90,22 @@ func test_fixed_steps_replay_identically_and_match_duel_authority() -> void:
 		check_eq(result["winner"], 3 if int(first.result()["index"]) == 0 else 7, "The engine winner is the replay winner")
 	var timeout_world := BottleCapPhysics.simulate(1150, 1150)
 	check_eq(timeout_world.result()["decided_by"], &"both_fell", "Both missed turns retain the challenger fallback after two falls")
+
+func test_full_circle_directions_and_legacy_compatibility() -> void:
+	for heading: int in 360:
+		var packed := BottleCapPhysics.encode_direction(850, heading)
+		check(BottleCapPhysics.valid(packed), "Every full-circle direction is a legal network input")
+		check_eq(BottleCapPhysics.decode(packed), Vector2i(850, heading), "Heading round trips exactly")
+		var world := BottleCapPhysics.new()
+		world.shoot(0, packed)
+		world.settle()
+		var replay := BottleCapPhysics.new()
+		replay.shoot(0, packed)
+		replay.settle()
+		check_eq(world.caps, replay.caps, "Full-circle shots replay deterministically")
+	for pair: Array in [[0, Vector2i(1000000, 0)], [90, Vector2i(0, 1000000)], [180, Vector2i(-1000000, 0)], [270, Vector2i(0, -1000000)]]:
+		check_eq(BottleCapPhysics.direction(pair[0]), pair[1], "Cardinal impulse points in the chosen direction")
+	check_eq(BottleCapPhysics.encode_direction(850, -90), BottleCapPhysics.encode_direction(850, 270), "Negative headings wrap")
+	check(not BottleCapPhysics.valid(BottleCapPhysics.DIRECTION_BASE + 360 * 1151), "Packed headings beyond 359 are rejected")
+	check_eq(BottleCapPhysics.decode(850), Vector2i(850, 0), "Original straight shot remains unchanged")
+	check_eq(DuelRules.DRAW_PREP_TIME, ToyFlagGun3D.PREP_TIME, "Engine reserves the entire revolver loading sequence")

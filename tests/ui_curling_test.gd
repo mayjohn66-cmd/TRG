@@ -121,6 +121,11 @@ func run() -> void:
 	touch.pressed = false
 	stage.handle_input(touch)
 	check(not stage.dragging and arena._submitted.is_empty(), "Cancelled OS touch never shoots")
+	for pair: Array in [[Vector2(0, -70), 90], [Vector2(70, 0), 180], [Vector2(0, 70), 270]]:
+		mouse(stage, start, true)
+		drag(stage, start + pair[0])
+		check(stage.aim == pair[1] and stage.power > 0.0, "Pulling in any direction aims opposite to the pointer")
+		stage.cancel_drag()
 	if not OS.get_environment("CURLING_CAPTURE_DIR").is_empty():
 		mouse(stage, start, true)
 		drag(stage, stage.to_screen(Vector2(72 - 117, 126)))
