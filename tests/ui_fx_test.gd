@@ -1697,6 +1697,7 @@ func _test_npc_danger_preview() -> void:
 	var danger_tile: BoardSkin.Tile = _board._tile_views[10]
 	_expect(danger_tile.danger_level == 2 and danger_tile.danger_dir != Vector2.ZERO, "위험 타일은 경고(level 2)와 진행 방향을 가진다")
 	_expect(danger_tile.warning_mark.visible and danger_tile.warning_flow.visible, "위험 타일의 경고 이미지와 화살표가 표시된다")
+	_expect(danger_tile.warning_mark.z_index == 0 and danger_tile.warning_flow.z_index == 0, "보드 경고가 상위 UI 팝업을 뚫고 표시되지 않는다")
 	_expect(danger_tile.warning_flow.transform.x.normalized().dot(danger_tile.danger_dir.normalized()) > 0.999, "화살표가 타일 평면에서 실제 NPC 진행 방향을 가리킨다")
 	_expect(danger_tile.symbol == null or not danger_tile.symbol.visible, "위험 칸의 바닥 심볼은 경고 그림과 겹치지 않는다")
 	_expect(not _board._danger_label.visible, "내 말이 위험 구간 밖이면 경고 문구가 없다")

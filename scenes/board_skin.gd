@@ -285,16 +285,15 @@ class Tile extends Control:
 			boost_symbol.kind = "boost"
 			boost_symbol.ink = Color("fff3d2")
 			add_child(boost_symbol)
+		# Child order layers the decal above terrain without raising it above UI modals.
 		warning_mark = WarningMark.new()
 		warning_mark.name = "NpcWarning"
-		warning_mark.z_index = 10
 		warning_mark.visible = false
 		add_child(warning_mark)
 		warning_flow = Symbol.new()
 		warning_flow.name = "NpcHeading"
 		warning_flow.kind = "corner"
 		warning_flow.ink = Color("fff3d2")
-		warning_flow.z_index = 11
 		warning_flow.visible = false
 		add_child(warning_flow)
 
