@@ -54,6 +54,7 @@ func _notification(what: int) -> void:
 		dragging = false
 		power = 0.0
 		stone = origin
+		preview.clear()
 		queue_redraw()
 
 static func snapshot(state: GameState, pawn: PlayerPawn, colors: Dictionary) -> Array[Dictionary]:
@@ -128,6 +129,7 @@ func handle_input(event: InputEvent) -> bool:
 			dragging = false
 			power = 0.0
 			stone = origin
+			preview.clear()
 			queue_redraw()
 			return true
 		point = _local_pointer(event.position)
@@ -153,6 +155,8 @@ func handle_input(event: InputEvent) -> bool:
 			shot_requested.emit(angle,power)
 		else:
 			stone = origin
+			power = 0.0
+			preview.clear()
 	queue_redraw()
 	return true
 
