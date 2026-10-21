@@ -68,6 +68,8 @@ const CARD_FACE: Vector2 = Vector2(170, 238)
 ## 도감 오른쪽 그림 타일: 증강 카드 배율(두 칸씩)과 손패 카드 크기.
 const AUGMENT_TILE_SCALE: float = 0.8
 const CARD_TILE: Vector2 = Vector2(200, 280)
+## 지금 보고 있는 그림 타일의 외곽선 색 (눈에 띄는 형광 분홍).
+const SELECTED_OUTLINE: Color = Color("ff2d95")
 
 
 ## 부모 위에 규칙 도감을 연다. 반환: 도감 노드 (이름은 Popup이라 설정 팝업과 같은 방식으로 찾는다).
@@ -504,7 +506,7 @@ func _picture_tile(data: Dictionary, on_pick: Callable) -> Control:
 	if data.has("augment"):
 		var definition: AugmentDef = AugmentRegistry.get_def(data["augment"])
 		card_size = MainBoard.AUGMENT_CARD_SIZE * AUGMENT_TILE_SCALE
-		var card: Button = MainBoard.make_augment_card(MainBoard.augment_card_info(definition, null, 1), on_pick, AUGMENT_TILE_SCALE)
+		var card: Button = MainBoard.make_augment_card(MainBoard.augment_card_info(definition, null, 1), on_pick, AUGMENT_TILE_SCALE, true)
 		card.position = -MainBoard.AUGMENT_CARD_SIZE * (1.0 - AUGMENT_TILE_SCALE) / 2.0  # 가운데 기준으로 줄였으니 왼쪽 위를 맞춘다
 		holder.add_child(card)
 	else:
@@ -514,19 +516,19 @@ func _picture_tile(data: Dictionary, on_pick: Callable) -> Control:
 		face.size = CARD_TILE
 		var card_data: BaseCard = CardRegistry.get_card(data["card"])
 		for state: String in ["normal", "hover", "pressed", "focus"]:
-			face.add_theme_stylebox_override(state, CardSkin.frame(card_data.category, state == "hover", 12))
+			face.add_theme_stylebox_override(state, CardSkin.frame(card_data.category, false, 12))  # 도감은 마우스를 올려도 그대로
 		var body: Control = CardSkin.body(card_data, CARD_TILE, MainBoard.card_summary(data["card"]), MainBoard.CARD_CATEGORY_NAMES[card_data.category], true)
 		body.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		face.add_child(body)
 		face.pressed.connect(on_pick)
 		holder.add_child(face)
 	holder.custom_minimum_size = card_size
-	var marker := Label.new()
-	marker.text = "보는 중"
-	marker.add_theme_font_size_override("font_size", 14)
-	marker.add_theme_color_override("font_color", Color("3a2400"))
-	marker.add_theme_stylebox_override("normal", _box(Color("ffd43b"), Color("b8860b"), 2, 10, 2, 4))
-	marker.position = Vector2(card_size.x - 74, 6)
+	# 지금 보고 있는 항목: 꼬리표 대신 눈에 띄는 색의 굵은 외곽선
+	var marker := Panel.new()
+	marker.name = "SelectedOutline"
+	marker.add_theme_stylebox_override("panel", _box(Color(0, 0, 0, 0), SELECTED_OUTLINE, 6, 18))
+	marker.position = Vector2.ZERO  # 목록 스크롤에 잘리지 않게 카드 안쪽에 그린다
+	marker.size = card_size
 	marker.z_index = 6
 	marker.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	marker.visible = false
@@ -537,7 +539,7 @@ func _picture_tile(data: Dictionary, on_pick: Callable) -> Control:
 
 func _paint_tile(tile: Control, selected: bool) -> void:
 	if tile.has_meta("marker"):
-		(tile.get_meta("marker") as Control).visible = selected  # 그림 타일: 보는 중 꼬리표
+		(tile.get_meta("marker") as Control).visible = selected  # 그림 타일: 지금 보는 항목의 외곽선
 		return
 	var button: Button = tile as Button
 	var tone: Color = button.get_meta("tone")
@@ -1034,7 +1036,7 @@ func _ch_laws() -> Dictionary:
 		{"title": "증강과 법전", "art": &"card_law", "tone": Color("ffa94d"), "chips": ["3라운드마다", "법전 4칸"],
 			"summary": "1·4·7라운드처럼 [b]3라운드마다[/b] 모두가 증강 3장 중 하나를 골라요. 법전의 교칙은 모두 [b]특수 승리 조건[/b]이에요.",
 			"rows": [["기물 지급", "말 하나를 새 기물로 진화 (도감 → 말)"], ["도구 교체", "굴리는 도구 바꾸기 (도감 → 도구)"], ["특수 승리", "법전에 새 승리 조건 (3라운드부터)"], ["카드 패키지", "생떼 카드 여러 장"], ["초증강", "하이리스크 하이리턴 (도감 → 초증강)"]],
-			"points": ["라운드가 끝날 때 교칙을 달성해 있으면 [b]다음 순위로 졸업[/b], 그 교칙은 사라져요 (같은 라운드에 여럿이면 레이스에서 앞선 순)", "새 교칙이 들어오면 가장 오래된 교칙이 밀려나요", "증강 카드마다 한 번 다시 뽑기"],
+			"points": ["라운드가 끝날 때 교칙을 달성해 있으면 [b]다음 순위로 졸업[/b], 그 교칙은 사라져요 (같은 교칙을 여럿이 채우면 레이스에서 앞선 한 명만)", "새 교칙이 들어오면 가장 오래된 교칙이 밀려나요", "증강 카드마다 한 번 다시 뽑기"],
 			"tip": "법전 슬롯에 마우스를 올리면 모두의 진행도가 보여요. [color=#d6336c][b][위험!][/b][/color] 표시를 견제하세요!"},
 	]
 	for definition: AugmentDef in _augments(GameEnums.AugmentCategory.LAW_ENACT):

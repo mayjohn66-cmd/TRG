@@ -617,6 +617,13 @@ func graduate(player_id: int, reason: StringName) -> int:
 	rankings.append(player_id)
 	rank_reasons[player_id] = reason
 	rank_stats[player_id] = VictoryChecker.progress_of(self, player_id)
+	# 레이스에서 빠진다: 내 설치물(호텔·함정)은 보드에서 치우고(내 턴이 다시 오지 않아 남은 턴이 줄지 않는다), 강제 연대책임 묶음도 푼다.
+	for tile: TileNode in board.tiles:
+		for attachment: TileAttachment in tile.attachments.duplicate():
+			if attachment.owner_id == player_id:
+				tile.remove_attachment(attachment)
+	for pawn: PlayerPawn in pawns_of(player_id):
+		_take_bond(pawn)
 	for pawn: PlayerPawn in pawns_of(player_id):
 		if pawn.carrier != null:
 			pawn.carrier.carried.erase(pawn)

@@ -225,8 +225,6 @@ func advance_to_next_player() -> void:
 	_turns_in_round += 1
 	if _turns_in_round >= player_order.size():
 		_turns_in_round = 0
-		if _check_round_end_victory():
-			return
 		_enter_neutral_npc_phase()
 		return
 	_step_turn_index()
@@ -1184,15 +1182,16 @@ func _begin_turn(new_turn: bool = true) -> void:
 	if state.is_graduated(current_player_id()) and not is_game_over:
 		advance_to_next_player()
 		return
-	# [초증강] 판 뒤집기 실패: 이번 턴은 쉰다 (바로 다음 사람 차례).
+	# [초증강] 판 뒤집기 실패: 이번 턴은 쉰다 (바로 다음 사람 차례). 쉬는 턴에도 내 설치물의 남은 턴은 줄어든다.
 	if new_turn and bool(state.rest_next_turn.get(current_player_id(), false)):
 		state.rest_next_turn[current_player_id()] = false
+		_tick_owned_attachments(current_player_id())
 		_emit_event(&"turn_rested", {"player_id": current_player_id()})
 		advance_to_next_player()
 		return
 	if new_turn:
 		_tick_restraints(current_player_id())
-		# 🏆 봉인된 에르핀의 식권: 내 턴이 시작될 때의 손패를 기록하고, 특수 승리(설치물·포위망 포함)를 판정한다.
+		# 봉인된 에르핀의 식권: 내 턴이 시작될 때의 손패를 기록한다. 특수 승리 판정은 라운드 끝에, 여기서는 말 4개 완주만 본다.
 		SpecialVictory.note_session(state, current_player_id(), VictoryLaw.HAND, (state.hands[current_player_id()] as Array).size())
 		if _check_victory(null):
 			return
@@ -1438,6 +1437,9 @@ func _enter_neutral_npc_phase() -> void:
 		if bool(report["vanished"]):
 			state.remove_npc(npc)
 	_emit_event(&"npc_phase_resolved", {"reports": reports})
+	# 라운드의 마지막 단계: 중립 기물까지 움직인 뒤 특수 승리를 판정한다 (NPC의 처치·사출도 이번 라운드 기록에 들어간다).
+	if _check_round_end_victory():
+		return
 	if state.reverse_move_rounds_left > 0:
 		state.reverse_move_rounds_left -= 1
 	state.round_number += 1
@@ -1486,13 +1488,17 @@ func _check_round_end_victory() -> bool:
 		return int(pa["remaining"]) < int(pb["remaining"]))
 	_emit_event(&"round_end_judgement", {"round": state.round_number, "players": qualified.map(func(e: Dictionary) -> int: return int(e["player"]))})
 	for entry: Dictionary in qualified:
-		_graduate(int(entry["player"]), entry["reason"])
-	var active: Array[int] = state.active_players(player_order)
-	if active.size() <= 1:
-		for last: int in active:
-			_graduate(last, VictoryChecker.LAST_PLACE)
-		_end_game()
-		return true
+		# 앞사람이 졸업하며 그 교칙이 법전에서 사라졌으면(한 교칙은 한 명만 졸업시킨다) 다시 확인한다.
+		var reason: StringName = VictoryChecker.player_reason(state, int(entry["player"]), true)
+		if reason == &"":
+			continue
+		_graduate(int(entry["player"]), reason)
+		var remaining: Array[int] = state.active_players(player_order)
+		if remaining.size() <= 1:
+			for last: int in remaining:
+				_graduate(last, VictoryChecker.LAST_PLACE)
+			_end_game()
+			return true
 	return false
 
 
