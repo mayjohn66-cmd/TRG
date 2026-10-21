@@ -36,6 +36,12 @@ var static_only: bool = false
 var hq_idle: bool = false
 
 var _stage: Control = null
+## 둥근 창: 그림은 이 창 모양으로만 보인다 (clip_children). 그림은 창보다 OVERSCAN만큼 크게 그려 들썩여도 가장자리가 드러나지 않는다.
+var _mask: Panel = null
+## 맨 위 테두리: 그림이 테두리를 덮지 않게 그림 위에 따로 그린다.
+var _outline: Panel = null
+var _overscan: float = 0.0
+var _outline_color: Color = Color.WHITE
 var _sprite: AnimatedSprite2D = null
 var _portrait: TextureRect = null
 var _seat_label: Label = null
@@ -73,14 +79,25 @@ func setup(seat_number: int, color: Color, slot_size: Vector2) -> void:
 	custom_minimum_size = slot_size
 	size = slot_size
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	clip_contents = true
-	add_theme_stylebox_override("panel", _frame_style(color.lightened(0.55)))
+	add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	_overscan = ceilf(minf(slot_size.x, slot_size.y) * OVERSCAN_RATIO) + 1.0
+	_mask = Panel.new()
+	_mask.name = "Mask"
+	_mask.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_mask.clip_children = CanvasItem.CLIP_CHILDREN_AND_DRAW
+	add_child(_mask)
 	_stage = Control.new()
 	_stage.name = "Stage"
 	_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_stage.custom_minimum_size = slot_size
-	_stage.pivot_offset = slot_size / 2.0
-	add_child(_stage)
+	_stage.size = slot_size + Vector2.ONE * _overscan * 2.0
+	_stage.position = _stage_rest()
+	_stage.pivot_offset = _stage.size / 2.0
+	_mask.add_child(_stage)
+	_outline = Panel.new()
+	_outline.name = "Outline"
+	_outline.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_outline)
+	_apply_frame(color.lightened(0.55))
 	_seat_label = Label.new()
 	_seat_label.text = "P%d" % seat
 	_seat_label.add_theme_font_size_override("font_size", int(slot_size.y * 0.36))
@@ -89,7 +106,7 @@ func setup(seat_number: int, color: Color, slot_size: Vector2) -> void:
 	_seat_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_seat_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_seat_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_stage.add_child(_seat_label)
+	_mask.add_child(_seat_label)
 	_caption = Label.new()
 	_caption.add_theme_font_size_override("font_size", maxi(int(slot_size.y * 0.16), 9))
 	_caption.add_theme_color_override("font_color", Color("fff3bf"))
@@ -99,7 +116,7 @@ func setup(seat_number: int, color: Color, slot_size: Vector2) -> void:
 	_caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_caption.visible = false
-	_stage.add_child(_caption)
+	_mask.add_child(_caption)
 	set_character(DEFAULT_CHARACTER)
 
 
@@ -110,7 +127,7 @@ func set_character(id: StringName) -> bool:
 	character_id = id
 	if catalog_tint:
 		base_color = AvatarCatalog.color_of(id)
-		add_theme_stylebox_override("panel", _frame_style(base_color.lightened(0.55)))
+		_apply_frame(base_color.lightened(0.55))
 	_has_art = false
 	_sprite_is_emotion = false
 	if _sprite != null:
@@ -218,6 +235,8 @@ func use_portrait(texture: Texture2D, as_icon: bool = false) -> void:
 
 
 const ART_RADIUS: float = 0.18
+## 그림을 칸보다 크게 그리는 비율 (들썩임·흔들림 폭보다 넉넉하게).
+const OVERSCAN_RATIO: float = 0.05
 const ROUND_SHADER: Shader = preload("res://scenes/avatar_round.gdshader")
 
 
@@ -229,20 +248,10 @@ func _round_material() -> ShaderMaterial:
 	return material
 
 
+## 얼굴 아이콘은 흰 둥근 테두리를 쓴다 (맨 위 테두리 색만 바꾼다).
 func _frame_icon() -> void:
 	_portrait.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_theme_stylebox_override("panel", StyleBoxEmpty.new())  # 칸 자체 테두리는 끄고 아래 둥근 테두리 하나만 쓴다
-	var border := Panel.new()
-	border.name = "IconBorder"
-	border.set_anchors_preset(Control.PRESET_FULL_RECT)
-	border.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0, 0, 0, 0)
-	style.border_color = Color.WHITE
-	style.set_border_width_all(maxi(2, int(minf(size.x, size.y) / 22.0)))
-	style.set_corner_radius_all(maxi(6, int(minf(size.x, size.y) * ART_RADIUS)))
-	border.add_theme_stylebox_override("panel", style)
-	_stage.add_child(border)
+	_apply_frame(Color.WHITE)
 
 
 func has_art() -> bool:
@@ -285,50 +294,86 @@ func _fit_sprite() -> void:
 	var texture: Texture2D = frames.get_frame_texture(names[0], 0)
 	if texture == null:
 		return
-	var fit: float = size.y / maxf(texture.get_height(), 1.0)
+	var fit: float = art_height() / maxf(texture.get_height(), 1.0)
 	_sprite.scale = Vector2.ONE * fit
-	_sprite.position = size / 2.0
+	_sprite.position = _stage.size / 2.0
 
 
 ## 감정에 맞는 짧은 몸짓과 테두리 번쩍임 (에셋이 있든 없든 보인다).
 func _perform(new_emotion: Emotion) -> void:
 	if _tween != null and _tween.is_valid():
 		_tween.kill()
-	_stage.position = Vector2.ZERO
+	var rest: Vector2 = _stage_rest()
+	_stage.position = rest
 	_stage.scale = Vector2.ONE
 	_stage.modulate = Color.WHITE
 	if not is_inside_tree() or new_emotion == Emotion.IDLE:
-		add_theme_stylebox_override("panel", _frame_style(base_color.lightened(0.55)))
+		_set_outline_color(_outline_color)
 		return
+	# 들썩임 폭은 칸 크기에 비례하고 항상 OVERSCAN보다 작다: 그림 가장자리가 둥근 창 안으로 들어오지 않는다.
+	var hop: float = _overscan * 0.85
+	var shake: float = _overscan * 0.4
 	_tween = create_tween()
 	match new_emotion:
 		Emotion.HAPPY:
-			_tween.tween_property(_stage, "position:y", -6.0, 0.12)
-			_tween.tween_property(_stage, "position:y", 0.0, 0.14)
+			_tween.tween_property(_stage, "position:y", rest.y - hop * 0.66, 0.12)
+			_tween.tween_property(_stage, "position:y", rest.y, 0.14)
 		Emotion.CHEER:
 			for _i: int in 2:
-				_tween.tween_property(_stage, "position:y", -9.0, 0.11)
-				_tween.tween_property(_stage, "position:y", 0.0, 0.11)
+				_tween.tween_property(_stage, "position:y", rest.y - hop, 0.11)
+				_tween.tween_property(_stage, "position:y", rest.y, 0.11)
 		Emotion.ANGRY:
 			for _i: int in 3:
-				_tween.tween_property(_stage, "position:x", 4.0, 0.05)
-				_tween.tween_property(_stage, "position:x", -4.0, 0.05)
-			_tween.tween_property(_stage, "position:x", 0.0, 0.05)
+				_tween.tween_property(_stage, "position:x", rest.x + shake, 0.05)
+				_tween.tween_property(_stage, "position:x", rest.x - shake, 0.05)
+			_tween.tween_property(_stage, "position:x", rest.x, 0.05)
 		Emotion.SURPRISED:
 			_tween.tween_property(_stage, "scale", Vector2(1.12, 1.12), 0.1)
 			_tween.tween_property(_stage, "scale", Vector2.ONE, 0.2)
 		Emotion.SAD:
 			_stage.modulate = Color(0.72, 0.74, 0.85)
-			_tween.tween_property(_stage, "position:y", 4.0, 0.25)
+			_tween.tween_property(_stage, "position:y", rest.y + hop * 0.45, 0.25)
 	var flash: Color = {Emotion.HAPPY: Color("ffe066"), Emotion.CHEER: Color("ffd43b"), Emotion.ANGRY: Color("ff6b6b"), Emotion.SURPRISED: Color("74c0fc"), Emotion.SAD: Color("868e96")}.get(new_emotion, Color.WHITE)
-	add_theme_stylebox_override("panel", _frame_style(flash))
+	_set_outline_color(flash, false)
 
 
-func _frame_style(border: Color) -> StyleBoxFlat:
+## 그림을 그리는 높이 (칸 + 위아래 OVERSCAN).
+func art_height() -> float:
+	return _stage.size.y if _stage != null else size.y
+
+
+func _stage_rest() -> Vector2:
+	return -Vector2.ONE * _overscan
+
+
+func _corner_radius() -> int:
+	return maxi(8, int(minf(custom_minimum_size.x, custom_minimum_size.y) * ART_RADIUS))
+
+
+## 테두리 굵기: 큰 칸일수록 조금 두껍게 (240px 칸 = 5px, 작은 칸도 최소 4px).
+func outline_width() -> int:
+	return maxi(4, int(round(minf(custom_minimum_size.x, custom_minimum_size.y) * 0.022)))
+
+
+## 둥근 창(배경)과 맨 위 테두리를 함께 칠한다. color는 평소 테두리 색이다.
+func _apply_frame(color: Color) -> void:
+	var window := StyleBoxFlat.new()
+	window.bg_color = base_color.darkened(0.05)
+	window.set_corner_radius_all(_corner_radius())
+	window.anti_aliasing = true
+	_mask.add_theme_stylebox_override("panel", window)
+	_outline_color = color
+	_set_outline_color(color)
+
+
+func _set_outline_color(color: Color, remember: bool = true) -> void:
+	if remember:
+		_outline_color = color
 	var style := StyleBoxFlat.new()
-	style.bg_color = base_color.darkened(0.05)
-	style.border_color = border
-	style.set_border_width_all(3)
-	style.set_corner_radius_all(maxi(8, int(minf(size.x, size.y) * ART_RADIUS)))
-	style.set_content_margin_all(0)
-	return style
+	style.bg_color = Color(0, 0, 0, 0)
+	style.draw_center = false
+	style.border_color = color
+	style.set_border_width_all(outline_width())
+	style.set_corner_radius_all(_corner_radius())
+	style.anti_aliasing = true
+	_outline.add_theme_stylebox_override("panel", style)

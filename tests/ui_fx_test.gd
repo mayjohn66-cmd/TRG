@@ -830,7 +830,7 @@ func _test_avatar_seats() -> void:
 		frames.remove_animation(&"default")
 	avatar.use_frames(frames)
 	_expect(avatar.has_art() and avatar._sprite != null and avatar._sprite.animation == &"idle", "스프라이트 시트를 넣으면 idle이 재생된다")
-	_expect(is_equal_approx(avatar._sprite.scale.y, avatar.size.y / 60.0), "스프라이트는 칸 높이에 맞춰진다")
+	_expect(is_equal_approx(avatar._sprite.scale.y, avatar.art_height() / 60.0) and avatar.art_height() > avatar.size.y, "스프라이트는 칸보다 조금 크게(들썩여도 가장자리가 안 보이게) 맞춰진다")
 	avatar.react(AvatarSlot.Emotion.HAPPY, 0.0)
 	_expect(avatar._sprite.animation == &"happy" and not avatar._caption.visible, "happy 애니메이션 재생 (에셋이 있으면 자리표시자 글자는 숨김)")
 	avatar.react(AvatarSlot.Emotion.ANGRY, 0.0)
