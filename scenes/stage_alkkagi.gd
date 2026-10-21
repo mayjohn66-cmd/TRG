@@ -305,7 +305,7 @@ func _draw() -> void:
 			draw_arc(from,(29.0+sin(_clock*5.0)*2.0)*sc,0,TAU,64,Color("83f7d5"),2.0*sc,true)
 		var hint := "흑돌을 누르고 뒤로 당기세요 · 놓으면 발사"
 		if dragging:
-			hint = "놓으면 발사 · 힘 %d%%" % int(power*100.0)
+			hint = "뒤로 당겨 조준 · 놓으면 발사"
 		var rect := Rect2(size.x/2.0-260.0*sc,size.y-48.0*sc,402.0*sc,36.0*sc)
 		draw_style_box(CardSkin.style(Color("1f3038"),Color("b0d791"),2,12),rect)
 		draw_string(CardSkin.FONT,rect.position+Vector2(14,24)*sc,hint,HORIZONTAL_ALIGNMENT_LEFT,-1, int(17*sc),Color("fff3cf"))
@@ -328,17 +328,27 @@ func _draw_aim() -> void:
 	var from := to_screen(origin)
 	var dir := (to_screen(origin+Vector2.from_angle(angle)*0.1)-from).normalized()
 	var normal := dir.orthogonal()
-	var tint := Color("ffe36a").lerp(Color("fa593f"),power)
-	var length := (54.0+power*122.0)*sc
-	var width := (7.0+power*7.0)*sc
+	var tint := Color("ffec55").lerp(Color("ff4b21"),0.35+power*0.65)
+	var length := (76.0+power*104.0)*sc
+	var width := (4.5+power*1.0)*sc
 	var base := from+dir*22.0*sc
 	var tip := from+dir*length
-	var neck := tip-dir*22.0*sc
-	var polygon := PackedVector2Array([base+normal*width,neck+normal*width,neck+normal*width*2.0,tip,neck-normal*width*2.0,neck-normal*width,base-normal*width])
-	var outline := polygon.duplicate()
-	outline.append(outline[0])
-	draw_polyline(outline,Color(0.22,0.14,0.05,0.85),5.0*sc,true)
-	draw_colored_polygon(polygon,tint)
+	var neck := tip-dir*18.0*sc
+	# Unequal slats grow toward the head; gaps and yellow-to-red color carry the force cue.
+	var shaft_length := base.distance_to(neck)
+	var gap := 3.0*sc
+	var available := (shaft_length-gap*5.0)*0.72
+	var cursor := base
+	for index: int in 5:
+		var t := float(index)/5.0
+		var segment_length := available*(0.4+index*0.3)/5.0
+		var half_width := width*lerpf(0.6,1.0,t)
+		var end := cursor+dir*segment_length
+		var fill := Color("ffec55").lerp(tint,t)
+		_draw_aim_shape(PackedVector2Array([cursor+normal*half_width,end+normal*half_width,end-normal*half_width,cursor-normal*half_width]),fill,sc)
+		cursor = end+dir*gap
+	var head_half_width := width*2.3
+	_draw_aim_shape(PackedVector2Array([cursor+normal*width,neck+normal*width,neck+normal*head_half_width,tip,neck-normal*head_half_width,neck-normal*width,cursor-normal*width]),tint,sc)
 	if not preview.is_empty():
 		var target := to_screen(preview.to)
 		var distance := from.distance_to(target)
@@ -349,6 +359,9 @@ func _draw_aim() -> void:
 	if power>0.05:
 		draw_line(from-dir*24.0*sc,pull_end,Color(1,1,0.8,0.75),3.0*sc,true)
 		draw_circle(pull_end,6.0*sc,Color("fff5d7"),true,-1,true)
-	var label_at := from+Vector2(25,38)*sc
-	draw_string_outline(CardSkin.FONT,label_at,"%d%%" % int(power*100.0),HORIZONTAL_ALIGNMENT_LEFT,-1,int(22*sc),int(5*sc),Color("26303a"))
-	draw_string(CardSkin.FONT,label_at,"%d%%" % int(power*100.0),HORIZONTAL_ALIGNMENT_LEFT,-1,int(22*sc),tint)
+
+func _draw_aim_shape(polygon: PackedVector2Array, fill: Color, sc: float) -> void:
+	draw_colored_polygon(polygon,fill)
+	var outline := polygon.duplicate()
+	outline.append(outline[0])
+	draw_polyline(outline,Color(0.3,0.22,0.08,0.65),1.2*sc,true)
