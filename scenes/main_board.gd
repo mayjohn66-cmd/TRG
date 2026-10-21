@@ -309,6 +309,12 @@ var _aim_pawn: int = -1
 var _aim_angle: float = 0.0
 var _aim_power: float = 0.0
 var _alkkagi: AlkkagiStage = null
+var _alkkagi_camera := 0.0
+var _alkkagi_camera_tween: Tween
+var _alkkagi_saved_view := -1
+var _alkkagi_controlled: Dictionary = {}
+var _alkkagi_skip_primary_warp := false
+var _alkkagi_actor_offset := Vector2.ZERO
 var _tool_board: PanelContainer = null
 var _tool_title: Label = null
 var _tool_icon: PanelContainer = null
@@ -796,6 +802,8 @@ func _bind_state() -> void:
 		if victim == null:
 			return
 		_record_ejection(pawn_id, by_player)
+		if _alkkagi_controlled.has(pawn_id):
+			return
 		var victim_owner: int = victim.owner_id
 		# 실제 잡기: [컷신 -> 장외 홈런 -> 0번 복귀]를 이동·발판 연출이 모두 끝난 뒤(큐 맨 뒤)에 재생한다.
 		# 아바타 표정은 바뀌지 않는다: 표정은 플레이어가 고른 감정 표현(이모트)으로만 바뀐다.
@@ -1734,7 +1742,7 @@ func _surface_project(norm: Vector2) -> Vector2:
 	var center: Vector2 = BOARD_ORIGIN + Vector2(BOARD_SIZE, BOARD_SIZE) / 2.0
 	var offset: Vector2 = norm - Vector2(0.5, 0.5)
 	var rotated := Vector2((offset.x - offset.y) * 0.70710678, (offset.x + offset.y) * 0.70710678)
-	return center + Vector2(rotated.x * DIAMOND_KX, rotated.y * DIAMOND_KY)
+	return (center + Vector2(rotated.x * DIAMOND_KX, rotated.y * DIAMOND_KY)).lerp(center+offset*500.0,_alkkagi_camera)
 
 
 ## 마름모에는 원근 크기 차이가 없다.
@@ -1790,7 +1798,7 @@ func set_view_mode(mode: int) -> void:
 	_apply_view_mode()
 
 
-func _apply_view_mode() -> void:
+func _apply_view_mode(refresh_pawns: bool = true) -> void:
 	var tilt: bool = true  # 마름모 보드는 항상 보드 면 메시로 그린다 (평면 받침 판은 쓰지 않는다)
 	if _plate != null:
 		_plate.visible = false
@@ -1820,7 +1828,7 @@ func _apply_view_mode() -> void:
 		line.queue_free()
 	_track_lines.clear()
 	_add_track_lines()
-	if state != null:
+	if state != null and refresh_pawns:
 		_refresh_pawns()
 
 
@@ -2304,6 +2312,9 @@ func _show_tile_banner(tile: int, text: String, color: Color, seconds: float) ->
 
 ## 순간이동(옷장·비행기·탑 흩어짐 등): 높이 떠올라 포물선으로 날아가 내려앉는다.
 func _on_pawn_warped(pawn_id: int, _from_tile: int, _to_tile: int) -> void:
+	if _alkkagi_skip_primary_warp and _alkkagi_controlled.get(pawn_id,{}).get("shooter",false):
+		_alkkagi_skip_primary_warp = false
+		return
 	var view: Node2D = _pawn_views.get(pawn_id)
 	var pawn: PlayerPawn = state.get_pawn(pawn_id)
 	if view == null or pawn == null:
@@ -4718,6 +4729,8 @@ func _begin_skill_tile_pick(pawn: PlayerPawn) -> void:
 
 ## 흑돌 알까기 조준 모드: 마우스를 누른 채 뒤로 당겼다 놓으면 당긴 반대 방향으로 파워만큼 날아간다 (슬링샷).
 func _begin_aim(pawn: PlayerPawn) -> void:
+	_alkkagi_top_view(true)
+	_alkkagi_actor_offset = _pawn_position(pawn)-_tile_center(pawn.current_tile_idx)+Vector2(0,-14)
 	_aim_pawn = pawn.entity_id
 	_aim_power = 0.0
 	_alkkagi.open_aim(AlkkagiStage.snapshot(state,pawn,PLAYER_COLORS),pawn.entity_id,func(angle: float,power: float) -> Dictionary: return PawnSkills.shot_result(state,pawn,angle,power))
@@ -4730,6 +4743,7 @@ func _cancel_aim() -> void:
 	if _aim_pawn == -1:
 		return
 	_aim_pawn = -1
+	_alkkagi_top_view(false)
 	if _alkkagi != null:
 		_alkkagi.cancel()
 	if _pick_banner != null and not _tile_pick_active:
@@ -4750,7 +4764,8 @@ func _aim_fire() -> void:
 	var pawn_id: int = _aim_pawn
 	var angle: float = _aim_angle
 	var power: float = _aim_power
-	_cancel_aim()
+	_aim_pawn = -1
+	_alkkagi.cancel()
 	_act(&"use_skill", {"pawn_id": pawn_id, "angle": angle, "power": power})
 
 
@@ -4762,6 +4777,10 @@ func _build_aim_layer() -> void:
 	_alkkagi = AlkkagiStage.new()
 	_alkkagi.name = "AlkkagiStage"
 	stage_layer.add_child(_alkkagi)
+	_alkkagi.projector = _alkkagi_screen
+	_alkkagi.unprojector = _alkkagi_world
+	_alkkagi.screen_scale = func() -> float: return get_global_transform().get_scale().x
+	_alkkagi.pose_changed.connect(_alkkagi_pose)
 	_alkkagi.cancel_requested.connect(_cancel_aim)
 	_alkkagi.shot_requested.connect(func(angle: float,power: float) -> void:
 		_aim_angle = angle
@@ -4816,6 +4835,8 @@ func _on_skill_used(data: Dictionary) -> void:
 
 ## 실제 잡기만 공격자/피격자 아바타 포즈로 강조한다 (함정·자기 복귀 제외).
 func _on_pawn_captured(attacker_pawn_id: int, victim_pawn_id: int) -> void:
+	if _alkkagi_controlled.has(victim_pawn_id):
+		return
 	if not _fx_on() or _capture_cutin == null:
 		return
 	var attacker: PlayerPawn = state.get_pawn(attacker_pawn_id)
@@ -4947,13 +4968,122 @@ func _prepare_shoot_fx(data: Dictionary) -> void:
 	var shot := PawnSkills.shot_result(state,shooter,float(data["angle"]),float(data["power"]))
 	var id: int = shooter.entity_id
 	var strength: float = float(data["power"])
+	_alkkagi_top_view(true)
+	_alkkagi_actor_offset = _pawn_position(shooter)-_tile_center(shooter.current_tile_idx)+Vector2(0,-14)
+	for piece: Dictionary in items:
+		if int(piece.id)!=id and not (shot.hits as Array).has(int(piece.id)):
+			continue
+		var pawn: PlayerPawn = state.get_pawn(int(piece.id))
+		for member: PlayerPawn in pawn.stack_members():
+			var view: Node2D = _pawn_views.get(member.entity_id)
+			if view != null:
+				_kill_fx(view)
+				_alkkagi_controlled[member.entity_id] = {"shooter":int(piece.id)==id,"leader":int(piece.id),"offset":view.position-_project(piece.pos),"origin":piece.pos}
+	_alkkagi_skip_primary_warp = true
 	enqueue_step(func() -> void:
 		var generation: int = _fx_generation
+		while generation == _fx_generation and _alkkagi_camera_tween != null and _alkkagi_camera_tween.is_running():
+			await get_tree().process_frame
+		if generation != _fx_generation:
+			return
 		_alkkagi.play_shot(items,id,shot,strength,_motion_pace())
 		while generation == _fx_generation and _alkkagi.mode != &"idle":
 			await get_tree().process_frame
 		if generation == _fx_generation:
-			_refresh_all(),id)
+			_alkkagi_release()
+			_alkkagi_top_view(false)
+			while generation == _fx_generation and _alkkagi_camera_tween != null and _alkkagi_camera_tween.is_running():
+				await get_tree().process_frame,id)
+
+
+func _alkkagi_plane() -> Transform2D:
+	var at := _project(Vector2.ZERO)
+	return Transform2D(_project(Vector2.RIGHT)-at,_project(Vector2.DOWN)-at,at)
+
+func _alkkagi_screen(point: Vector2) -> Vector2:
+	return get_global_transform()*(_project(point)+_pawn_layer.position+_alkkagi_actor_offset)
+
+func _alkkagi_world(point: Vector2) -> Vector2:
+	return _alkkagi_plane().affine_inverse()*(get_global_transform().affine_inverse()*point-_pawn_layer.position-_alkkagi_actor_offset)
+
+func _alkkagi_top_view(active: bool, immediate: bool = false) -> void:
+	if active:
+		if _alkkagi_saved_view!=-1:
+			return
+		_alkkagi_saved_view = view_mode
+		view_mode = ViewMode.TOP
+	elif _alkkagi_saved_view==-1:
+		if not immediate or (is_zero_approx(_alkkagi_camera) and (_alkkagi_camera_tween==null or not _alkkagi_camera_tween.is_running())):
+			return
+	else:
+		view_mode = _alkkagi_saved_view
+		_alkkagi_saved_view = -1
+	if _alkkagi_camera_tween != null:
+		_alkkagi_camera_tween.kill()
+	var target := 1.0 if active else 0.0
+	if immediate or instant_roll_for_test:
+		_alkkagi_camera_step(target)
+	else:
+		_alkkagi_camera_tween = create_tween()
+		_alkkagi_camera_tween.tween_method(_alkkagi_camera_step,_alkkagi_camera,target,0.26).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+func _alkkagi_camera_step(value: float) -> void:
+	var positions: Dictionary = {}
+	var plane := _alkkagi_plane().affine_inverse()
+	for id: int in _pawn_views:
+		var view: Node2D = _pawn_views[id]
+		var pawn: PlayerPawn = state.get_pawn(id) if state != null else null
+		var offset := Vector2.ZERO
+		if pawn != null:
+			offset = _pawn_position(pawn)-_tile_center(pawn.current_tile_idx)
+		positions[view] = {"norm":plane*(view.position-offset),"offset":offset}
+	for view: Node2D in _npc_views.values():
+		positions[view] = {"norm":plane*view.position,"offset":Vector2.ZERO}
+	_alkkagi_camera = value
+	_apply_view_mode(false)
+	for view: Node2D in positions:
+		view.position = _project(positions[view].norm)+(positions[view].offset as Vector2)
+	if _alkkagi != null:
+		_alkkagi.queue_redraw()
+
+func _alkkagi_pose() -> void:
+	if _alkkagi == null or _alkkagi.mode in [&"idle",&"aim"]:
+		return
+	for id: int in _alkkagi_controlled:
+		var view: Node2D = _pawn_views.get(id)
+		var info: Dictionary = _alkkagi_controlled[id]
+		if view == null:
+			continue
+		view.visible = true
+		view.z_index = 12
+		if bool(info.shooter):
+			var position_norm := _alkkagi.stone
+			if _alkkagi.mode in [&"settle",&"done"]:
+				var blend := 1.0 if _alkkagi.mode==&"done" else smoothstep(0.0,0.35,_alkkagi.elapsed-_alkkagi._out_time)
+				position_norm = position_norm.lerp(BoardLayout.tile_norm(_alkkagi.landing),blend)
+			view.position = _project(position_norm)+(info.offset as Vector2)
+		else:
+			var pose := _alkkagi.victim_pose(int(info.leader))
+			if not pose.is_empty():
+				view.position = _project(pose.pos)+(info.offset as Vector2)+Vector2(0,-sin(minf(float(pose.age)/0.85,1.0)*PI)*65.0)
+				view.rotation = float(pose.rotation)
+				view.modulate.a = float(pose.alpha)
+				view.scale = Vector2.ONE*(1.0+sin(minf(float(pose.age)/0.85,1.0)*PI)*0.2)
+
+func _alkkagi_release(reset: bool = false) -> void:
+	for id: int in _alkkagi_controlled:
+		var view: Node2D = _pawn_views.get(id)
+		var pawn: PlayerPawn = state.get_pawn(id) if state != null else null
+		if view != null:
+			view.rotation = 0.0
+			view.modulate = Color.WHITE
+			view.scale = Vector2.ONE
+			view.z_index = 0
+			if pawn != null and (reset or not bool(_alkkagi_controlled[id].shooter)):
+				view.position = _pawn_position(pawn)
+				view.visible = pawn.has_left_start and not pawn.is_finished and pawn.carrier==null
+	_alkkagi_controlled.clear()
+	_alkkagi_skip_primary_warp = false
 
 
 func _fx_script_done(view: Node2D) -> void:
@@ -5063,6 +5193,8 @@ func enqueue_step(step_callable: Callable, pawn_id: int = -1, allow_defer: bool 
 func _reset_presentation() -> void:
 	if _alkkagi != null:
 		_alkkagi.cancel()
+	_alkkagi_release(true)
+	_alkkagi_top_view(false,true)
 	_aim_pawn = -1
 	_fx_generation += 1
 	_presentation_queue.clear()
@@ -5353,6 +5485,8 @@ func _glide_node(node: Node2D, to_pos: Vector2, seconds: float) -> void:
 
 ## 상태가 바뀐 뒤 말의 화면 자리를 맞춘다: 자리가 달라졌으면 순간이동 대신 포물선으로 움직이고(힌트가 있으면 그 모양으로), 끝나면 보이기/숨기기를 정한다.
 func _settle_pawn_view(view: Node2D, pawn: PlayerPawn, force: bool = false) -> void:
+	if _alkkagi_controlled.has(pawn.entity_id):
+		return
 	var target_pos: Vector2 = _pawn_position(pawn)
 	var target_scale: float = _depth_scale(tile_norm(pawn.current_tile_idx).y)
 	var want_visible: bool = pawn.carrier == null and not pawn.is_finished and pawn.has_left_start

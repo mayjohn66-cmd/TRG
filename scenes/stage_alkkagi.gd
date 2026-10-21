@@ -5,11 +5,14 @@ extends Control
 signal shot_requested(angle: float, power: float)
 signal cancel_requested
 signal contact(pawn_id: int)
+signal pose_changed
 signal finished
 
 const DESIGN := Vector2(960,660)
 const FIELD := Rect2(70,122,480,480)
-const RADIUS := 18.0 # Two stones together match PawnSkills.SHOT_HIT_RADIUS in board coordinates.
+var projector: Callable
+var unprojector: Callable
+var screen_scale: Callable
 const MAX_PULL := 150.0
 var mode: StringName = &"idle"
 var pieces: Array[Dictionary] = []
@@ -39,7 +42,7 @@ var _out_time := 0.0
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	mouse_filter = Control.MOUSE_FILTER_STOP
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hide()
 	resized.connect(func() -> void:
 		if mode==&"aim":
@@ -75,7 +78,14 @@ func open_aim(items: Array[Dictionary], id: int, calculate: Callable) -> void:
 			origin = piece.pos
 	stone = origin
 	power = 0.0
-	angle = 0.0
+	angle = (Vector2.ONE/2.0-origin).angle()
+	var nearest := INF
+	for piece: Dictionary in pieces:
+		if int(piece.id)!=id and not bool(piece.immune) and piece.owner!=_shooter_owner():
+			var distance: float = origin.distance_to(piece.pos)
+			if distance<nearest:
+				nearest = distance
+				angle = ((piece.pos as Vector2)-origin).angle()
 	preview.clear()
 	impacts.clear()
 	mode = &"aim"
@@ -92,17 +102,28 @@ func cancel() -> void:
 	shakes = 0.0
 	hide()
 
+func _shooter_owner() -> int:
+	for piece: Dictionary in pieces:
+		if int(piece.id)==shooter_id:
+			return int(piece.owner)
+	return -1
+
 func layout_scale() -> float:
-	return minf(size.x/DESIGN.x,size.y/DESIGN.y)*0.94
+	return float(screen_scale.call()) if screen_scale.is_valid() else minf(size.x/DESIGN.x,size.y/DESIGN.y)*0.94
 
 func layout_origin() -> Vector2:
 	return (size-DESIGN*layout_scale())/2.0
 
 func to_screen(point: Vector2) -> Vector2:
+	if projector.is_valid():
+		return projector.call(point)
 	return get_global_transform()*(layout_origin()+(FIELD.position+point*FIELD.size)*layout_scale())
 
 func _local_pointer(point: Vector2) -> Vector2:
-	return (get_global_transform().affine_inverse()*point-layout_origin())/layout_scale()
+	return point
+
+func _cancel_rect() -> Rect2:
+	return Rect2(size.x/2.0+150.0*layout_scale(),size.y-48.0*layout_scale(),100.0*layout_scale(),36.0*layout_scale())
 
 func handle_input(event: InputEvent) -> bool:
 	if mode!=&"aim":
@@ -142,9 +163,9 @@ func handle_input(event: InputEvent) -> bool:
 	else:
 		return false
 	if press:
-		if Rect2(632,560,260,52).has_point(point):
+		if _cancel_rect().has_point(point):
 			cancel_requested.emit()
-		elif Rect2(24,78,572,562).has_point(point):
+		elif point.distance_to(to_screen(origin))<=36.0*layout_scale():
 			dragging = true
 			_drag_start = point
 			update_pull(point)
@@ -161,11 +182,14 @@ func handle_input(event: InputEvent) -> bool:
 	return true
 
 func update_pull(point: Vector2) -> void:
-	var pull := _drag_start-point
+	var pull := (_drag_start-point)/maxf(layout_scale(),0.01)
 	power = clampf(pull.length()/MAX_PULL,0.0,1.0)
 	if pull.length()>1.0:
-		angle = pull.angle()
-	stone = origin-Vector2.from_angle(angle)*power*0.045
+		if unprojector.is_valid():
+			angle = ((unprojector.call(_drag_start) as Vector2)-(unprojector.call(point) as Vector2)).angle()
+		else:
+			angle = pull.angle()
+	stone = origin
 	if _previewer.is_valid():
 		preview = _previewer.call(angle,power)
 	queue_redraw()
@@ -199,7 +223,9 @@ func play_shot(items: Array[Dictionary], id: int, shot: Dictionary, shot_power: 
 		var fraction := clampf(contact_distance/distance,0.0,1.0)
 		_hits.append({"id":int(piece.id),"fraction":fraction,"pos":piece.pos,"time":-1.0,"direction":(direction+((piece.pos as Vector2)-Vector2.ONE/2.0).normalized()*0.6).normalized()})
 	_hits.sort_custom(func(a: Dictionary,b: Dictionary) -> bool: return float(a.fraction)<float(b.fraction))
-	mode = &"pull"
+	mode = &"slide"
+	Sfx.play(&"yut_clack",-5.0,0.02,1.4)
+	pose_changed.emit()
 	show()
 	queue_redraw()
 
@@ -220,18 +246,13 @@ func advance(delta: float) -> void:
 		spark.age = float(spark.age)+delta
 	if hold_seconds>0.0:
 		hold_seconds = maxf(0.0,hold_seconds-delta)
+		pose_changed.emit()
 		queue_redraw()
 		return
 	var dt := delta/pace
 	elapsed += dt
 	var direction := (endpoint-origin).normalized()
-	if mode==&"pull":
-		stone = origin-direction*0.045*sin(minf(elapsed/0.22,1.0)*PI/2.0)
-		if elapsed>=0.22:
-			mode = &"slide"
-			elapsed = 0.0
-			Sfx.play(&"yut_clack",-5.0,0.02,1.4)
-	elif mode==&"slide":
+	if mode==&"slide":
 		var phase := clampf(elapsed/flight_seconds,0.0,1.0)
 		var travel := 1.0-pow(1.0-phase,2.4)
 		stone = origin.lerp(endpoint,travel)
@@ -256,120 +277,78 @@ func advance(delta: float) -> void:
 		mode = &"done"
 		elapsed = 0.0
 	elif mode==&"done" and elapsed>=0.45:
+		pose_changed.emit()
 		cancel()
 		finished.emit()
+	pose_changed.emit()
 	queue_redraw()
 
-func _text(at: Vector2,text: String,px: int,color: Color=Color("fff2cf")) -> void:
-	draw_string(CardSkin.FONT,at,text,HORIZONTAL_ALIGNMENT_LEFT,-1,px,color)
-
-func _panel(rect: Rect2,fill: Color,edge: Color,radius: int=14) -> void:
-	draw_style_box(CardSkin.style(fill,edge,2,radius),rect)
+func victim_pose(id: int) -> Dictionary:
+	for hit: Dictionary in _hits:
+		if int(hit.id)==id and float(hit.time)>=0.0:
+			var time := elapsed if mode!=&"done" else _out_time+0.65
+			var age := maxf(0.0,time-float(hit.time))
+			return {"pos":(hit.pos as Vector2)+(hit.direction as Vector2)*(1.0-exp(-age*4.2))*0.9,
+				"alpha":1.0-smoothstep(0.35,0.85,age),"rotation":age*7.0,"age":age}
+	return {}
 
 func _draw() -> void:
-	draw_rect(Rect2(Vector2.ZERO,size),Color(0.02,0.025,0.04,0.8))
-	var shake := Vector2.ZERO
-	if GameSession.screen_shake and shakes>0.0:
-		shake = Vector2(sin(_clock*78.0),cos(_clock*63.0))*shakes*3.2
-	draw_set_transform(layout_origin()+shake,0.0,Vector2.ONE*layout_scale())
-	_panel(Rect2(Vector2.ZERO,DESIGN),Color("222b31"),Color("e8c680"),22)
-	_text(Vector2(36,48),"흑돌 필살기 · 알까기",30)
-	_text(Vector2(630,48),"당겨서 조준 · 놓아서 발사",17,Color("b8cbd1"))
-	_panel(Rect2(26,80,568,558),Color("674526"),Color("a8753f"),16)
-	_panel(Rect2(34,88,552,542),Color("e6b974"),Color("f8d99e"),12)
-	for line: int in 17:
-		var y := 98.0+line*31.0
-		draw_line(Vector2(42,y),Vector2(578,y+5.0),Color(0.5,0.3,0.12,0.10),1.0,true)
-	for index: int in 9:
-		var offset := float(index)/8.0*FIELD.size.x
-		draw_line(FIELD.position+Vector2(offset,0),FIELD.position+Vector2(offset,FIELD.size.y),Color("99703e"),1.0,true)
-		draw_line(FIELD.position+Vector2(0,offset),FIELD.position+Vector2(FIELD.size.x,offset),Color("99703e"),1.0,true)
-	for x: float in [0.25,0.5,0.75]:
-		for y: float in [0.25,0.5,0.75]:
-			draw_circle(FIELD.position+Vector2(x,y)*FIELD.size,3.0,Color("805329"),true,-1,true)
-	if mode==&"aim" and dragging and not preview.is_empty():
-		_draw_aim()
-	for index: int in _trail.size():
-		var alpha := (1.0-float(index)/10.0)*0.15
-		draw_circle(FIELD.position+_trail[index]*FIELD.size,RADIUS*0.8,Color(0.1,0.08,0.06,alpha),true,-1,true)
-	for piece: Dictionary in pieces:
-		if int(piece.id)==shooter_id:
-			continue
-		var at: Vector2 = piece.pos
-		var alpha := 1.0
-		for hit: Dictionary in _hits:
-			if int(hit.id)==int(piece.id) and float(hit.time)>=0.0:
-				var age := maxf(0.0,(elapsed if mode!=&"done" else _out_time+0.65)-float(hit.time))
-				at += (hit.direction as Vector2)*(1.0-exp(-age*4.2))*0.65
-				alpha = 1.0-smoothstep(0.28,0.6,age)
-		_draw_stone(at,bool(piece.black),piece.color,alpha,bool(piece.immune),int(piece.slot))
-	_draw_stone(stone,true,Color("ffdd84"),1.0,false,0)
+	if mode==&"idle":
+		return
+	var sc := layout_scale()
+	var from := to_screen(origin)
 	if mode==&"aim":
-		var center := FIELD.position+origin*FIELD.size
-		draw_arc(center,RADIUS+7.0,0,TAU,64,Color("fff0b6"),2.5,true)
+		draw_arc(from,25.0*sc,0,TAU,64,Color("fff5bf"),3.0*sc,true)
+		if dragging:
+			_draw_aim()
+		else:
+			draw_arc(from,(29.0+sin(_clock*5.0)*2.0)*sc,0,TAU,64,Color("83f7d5"),2.0*sc,true)
+		var hint := "흑돌을 누르고 뒤로 당기세요 · 놓으면 발사"
+		if dragging:
+			hint = "놓으면 발사 · 힘 %d%%" % int(power*100.0)
+		var rect := Rect2(size.x/2.0-260.0*sc,size.y-48.0*sc,402.0*sc,36.0*sc)
+		draw_style_box(CardSkin.style(Color("1f3038"),Color("b0d791"),2,12),rect)
+		draw_string(CardSkin.FONT,rect.position+Vector2(14,24)*sc,hint,HORIZONTAL_ALIGNMENT_LEFT,-1, int(17*sc),Color("fff3cf"))
+		var cancel_rect := _cancel_rect()
+		draw_style_box(CardSkin.style(Color("36464e"),Color("a4bac0"),2,10),cancel_rect)
+		draw_string(CardSkin.FONT,cancel_rect.position+Vector2(14,24)*sc,"취소 ESC",HORIZONTAL_ALIGNMENT_LEFT,-1,int(16*sc),Color.WHITE)
+	for index: int in range(1,_trail.size()):
+		draw_line(to_screen(_trail[index-1]),to_screen(_trail[index]),Color(1,0.9,0.55,(1.0-float(index)/10.0)*0.5),(10.0-index*0.7)*sc,true)
 	for spark: Dictionary in _sparks:
 		var age: float = spark.age
-		if age>0.32:
+		if age>0.26:
 			continue
-		var at: Vector2 = FIELD.position+(spark.pos as Vector2)*FIELD.size
+		var at := to_screen(spark.pos)
 		for ray: int in 8:
 			var dir := Vector2.from_angle(ray*TAU/8.0)
-			draw_line(at+dir*(12.0+age*35.0),at+dir*(24.0+age*80.0),Color(1,0.96,0.75,1.0-age/0.32),3.0,true)
-	_draw_sidebar()
-	draw_set_transform(Vector2.ZERO)
-
-func _draw_stone(point: Vector2,black: bool,rim: Color,alpha: float,immune: bool,slot: int) -> void:
-	if alpha<=0.0:
-		return
-	var at := FIELD.position+point*FIELD.size
-	draw_circle(at+Vector2(2,5),RADIUS+2,Color(0.16,0.08,0.02,0.28*alpha),true,-1,true)
-	draw_circle(at,RADIUS+1.5,Color(rim,alpha),true,-1,true)
-	draw_circle(at,RADIUS,Color(Color("080b10") if black else Color("9b988e"),alpha),true,-1,true)
-	for layer: int in 14:
-		var t := float(layer)/14.0
-		var shade := Color("11151b").lerp(Color("52616c"),t) if black else Color("c5c1af").lerp(Color("fffdef"),t)
-		draw_circle(at+Vector2(-2,-3)*t,RADIUS*(1.0-t*0.83),Color(shade,alpha),true,-1,true)
-	draw_arc(at+Vector2(-2,-3),11.0,PI*1.1,PI*1.7,18,Color(0.85,0.95,1.0,0.7*alpha),2.0,true)
-	if slot>0:
-		_text(at+Vector2(-4,5),str(slot),12,Color(0.25,0.23,0.2,alpha))
-	if immune:
-		draw_arc(at,RADIUS+5,0,TAU,32,Color(0.5,0.95,1,alpha*0.8),2,true)
+			draw_line(at+dir*(10.0+age*35.0)*sc,at+dir*(24.0+age*100.0)*sc,Color(1,0.96,0.75,1.0-age/0.26),3.5*sc,true)
 
 func _draw_aim() -> void:
-	var from := FIELD.position+origin*FIELD.size
-	var target: Vector2 = FIELD.position+(preview["to"] as Vector2)*FIELD.size
-	var length := from.distance_to(target)
-	var dir := (target-from).normalized()
-	var tint := Color("ffec9f") if (preview["hits"] as Array).is_empty() else Color("cb4935")
-	for step: int in maxi(0,int((length-28.0)/17.0)):
-		draw_circle(from+dir*(28.0+step*17.0),2.6,tint,true,-1,true)
-	draw_arc(target,11,0,TAU,32,tint,2,true)
-	draw_line(from,FIELD.position+stone*FIELD.size,Color("fff1c1"),5,true)
-	var pull_end := from-dir*(35.0+power*48.0)
-	draw_line(from-dir*25.0,pull_end,Color("e55540"),5,true)
-	draw_circle(pull_end,8,Color("fff5d7"),true,-1,true)
-	for piece: Dictionary in pieces:
-		if (preview["hits"] as Array).has(int(piece.id)):
-			draw_arc(FIELD.position+(piece.pos as Vector2)*FIELD.size,RADIUS+7.0,0,TAU,48,Color("c63b29"),3,true)
-
-func _draw_sidebar() -> void:
-	var aiming := mode==&"aim"
-	_text(Vector2(632,122),"흑돌을 튕겨 보내세요" if aiming else ("정지 · 안착" if mode==&"done" else "탁!  알까기 슈팅"),25)
-	_text(Vector2(632,163),"판 위를 누른 채 뒤로 당겨요." if aiming else "돌이 닿는 순간 상대를 밀어냅니다.",16,Color("c0d1d5"))
-	_text(Vector2(632,190),"놓으면 반대 방향으로 발사!" if aiming else "",16,Color("c0d1d5"))
-	_text(Vector2(632,251),"당기는 힘  %d%%" % int(power*100.0),22)
-	_panel(Rect2(632,270,260,24),Color("10191f"),Color("607079"),8)
-	if power>0.01:
-		_panel(Rect2(635,273,254*power,18),Color("eea34a").lerp(Color("ed6351"),power),Color("ffdc8a"),6)
-	for index: int in range(1,10):
-		draw_line(Vector2(632+index*26,272),Vector2(632+index*26,292),Color(0.1,0.1,0.1,0.35),1)
-	var hits: int = (preview.get("hits",[]) as Array).size() if aiming else impacts.size()
-	_text(Vector2(632,345),("예상 명중  %d개" if aiming else "명중  %d개") % hits,26,Color("ffda85"))
-	var target: int = int(preview.get("landing",-1)) if aiming else landing
-	if target>=0:
-		_text(Vector2(632,384),"안착  %d번 칸" % target,20,Color("b4d5c7"))
-	_text(Vector2(632,455),"테두리 색은 플레이어 색상",15,Color("b8cbd1"))
-	_text(Vector2(632,480),"푸른 보호막은 피격 면역",15,Color("b8cbd1"))
-	if aiming:
-		_panel(Rect2(632,560,260,52),Color("36464e"),Color("a4bac0"),10)
-		_text(Vector2(700,594),"취소 · ESC",21)
+	var sc := layout_scale()
+	var from := to_screen(origin)
+	var dir := (to_screen(origin+Vector2.from_angle(angle)*0.1)-from).normalized()
+	var normal := dir.orthogonal()
+	var tint := Color("ffe36a").lerp(Color("fa593f"),power)
+	var length := (54.0+power*122.0)*sc
+	var width := (7.0+power*7.0)*sc
+	var base := from+dir*22.0*sc
+	var tip := from+dir*length
+	var neck := tip-dir*22.0*sc
+	var polygon := PackedVector2Array([base+normal*width,neck+normal*width,neck+normal*width*2.0,tip,neck-normal*width*2.0,neck-normal*width,base-normal*width])
+	var outline := polygon.duplicate()
+	outline.append(outline[0])
+	draw_polyline(outline,Color(0.22,0.14,0.05,0.85),5.0*sc,true)
+	draw_colored_polygon(polygon,tint)
+	if not preview.is_empty():
+		var target := to_screen(preview.to)
+		var distance := from.distance_to(target)
+		for step: int in maxi(0,int((distance-length-10.0*sc)/(15.0*sc))):
+			draw_circle(from+dir*(length+10.0*sc+step*15.0*sc),2.6*sc,Color(tint,0.8),true,-1,true)
+		draw_arc(target,10.0*sc,0,TAU,32,tint,2.0*sc,true)
+	var pull_end := from-dir*power*MAX_PULL*sc
+	if power>0.05:
+		draw_line(from-dir*24.0*sc,pull_end,Color(1,1,0.8,0.75),3.0*sc,true)
+		draw_circle(pull_end,6.0*sc,Color("fff5d7"),true,-1,true)
+	var label_at := from+Vector2(25,38)*sc
+	draw_string_outline(CardSkin.FONT,label_at,"%d%%" % int(power*100.0),HORIZONTAL_ALIGNMENT_LEFT,-1,int(22*sc),int(5*sc),Color("26303a"))
+	draw_string(CardSkin.FONT,label_at,"%d%%" % int(power*100.0),HORIZONTAL_ALIGNMENT_LEFT,-1,int(22*sc),tint)
