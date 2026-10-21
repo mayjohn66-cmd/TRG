@@ -88,7 +88,8 @@ var peer_to_player: Dictionary = {1: 1}
 
 var move_queue: Array[int] = []
 var _roll_chain: int = 0
-var _turns_in_round: int = 0
+## 이번 라운드에 차례를 마친 플레이어 (졸업·휴식으로 건너뛴 차례 포함). 리버스로 방향이 바뀌어도 모두 정확히 한 번씩 하고 라운드가 끝난다.
+var _round_done: Dictionary = {}
 var _extra_turn_pending: bool = false
 var _bonus_roll_pending: bool = false
 var _draft_offers: Dictionary = {}
@@ -157,7 +158,7 @@ func start_game(player_ids: Array[int], seed_value: int = 0, loadouts: Dictionar
 	for player_id: int in player_ids:
 		augments[player_id] = [] as Array[StringName]
 	move_queue.clear()
-	_turns_in_round = 0
+	_round_done.clear()
 	_extra_turn_pending = false
 	_bonus_roll_pending = false
 	_enter_round_start()
@@ -232,12 +233,16 @@ func advance_to_next_player() -> void:
 		_emit_event(&"extra_turn", {"player_id": leaving})
 		_begin_turn()
 		return
-	_turns_in_round += 1
-	if _turns_in_round >= player_order.size():
-		_turns_in_round = 0
+	_round_done[leaving] = true
+	if _round_done.size() >= player_order.size():
+		_round_done.clear()
 		_enter_neutral_npc_phase()
 		return
-	_step_turn_index()
+	# 진행 방향으로 돌며 이번 라운드에 아직 차례가 없었던 사람에게 넘긴다 (리버스 뒤에 같은 사람이 두 번 하지 않는다).
+	for _i: int in player_order.size():
+		_step_turn_index()
+		if not _round_done.has(current_player_id()):
+			break
 	_begin_turn()
 
 

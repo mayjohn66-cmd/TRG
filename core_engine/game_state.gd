@@ -90,7 +90,7 @@ var roll_bonus: int = 0
 var permanent_roll_bonus: Dictionary = {}
 ## [초증강] 주사위 도박사의 영혼: 플레이어 -> 효과가 켜진 라운드 번호 (그 라운드 동안만 이동 2배).
 var gambler_round: Dictionary = {}
-## [초증강] 판 뒤집기 실패: 다음 내 턴을 쉬어야 하는 플레이어들.
+## UDO 스킵(ACT_15)으로 다음 내 턴을 쉬어야 하는 플레이어들 (강제 턴 패스).
 var rest_next_turn: Dictionary = {}
 var winner: int = -1
 ## 서바이벌 순위제: 승리 조건을 먼저 달성한 순서대로 쌓이는 플레이어 ID (0번째 = 1위). 졸업한 플레이어는 레이스에서 빠지고 턴을 건너뛴다.

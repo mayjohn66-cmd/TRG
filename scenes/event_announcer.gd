@@ -83,6 +83,21 @@ func holding() -> bool:
 	return false
 
 
+## 띄워만 두는 알림(차례·라운드 안내 등)을 치운다: 떠 있는 것은 바로 페이드아웃하고, 줄 서 있는 것은 버린다.
+## 굴림 연출이 시작될 때 부른다 (판 한가운데에 배너와 주사위가 겹치지 않게). 기다려야 하는 알림은 건드리지 않는다.
+func dismiss_soft() -> void:
+	for index: int in range(_queue.size() - 1, -1, -1):
+		var entry: Dictionary = _queue[index]
+		if not bool(entry.get("blocking", true)):
+			if entry["extra"] != null:
+				(entry["extra"] as Control).free()
+			_queue.remove_at(index)
+	if not _current.is_empty() and not bool(_current.get("blocking", true)):
+		_t = maxf(_t, float(_current["duration"]) - FADE_OUT)
+	elif _current.is_empty() and _queue.is_empty() and not _waiting:
+		active = false
+
+
 ## 대기 중인 알림까지 모두 지운다 (새 게임·테스트).
 func cancel() -> void:
 	for entry: Dictionary in _queue:

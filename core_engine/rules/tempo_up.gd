@@ -10,6 +10,8 @@ extends RefCounted
 
 ## 단계가 오르는 라운드 (1단계, 2단계, 3단계).
 const STAGE_ROUNDS: Array[int] = [11, 21, 31]
+## 단계별 부제 (경고 배너에 붙는다): 1단계 과열 · 2단계 광기 · 3단계 대붕괴.
+const STAGE_NAMES: Array[String] = ["", "과열", "광기", "대붕괴"]
 ## 단계별 최종 이동 보너스 (0단계 = 없음).
 const MOVE_BONUS: Array[int] = [0, 1, 3, 5]
 ## 단계별 리벤지 부스터 칸 수 (0이면 기본값 그대로).
@@ -69,6 +71,11 @@ static func goal_zone_start(round_number: int) -> int:
 static func in_goal_zone(round_number: int, tile: int) -> bool:
 	var start: int = goal_zone_start(round_number)
 	return start > 0 and tile >= start and tile < BoardSpec.tile_count
+
+
+## 단계 부제 (0단계는 빈 문자열).
+static func stage_name(stage: int) -> String:
+	return STAGE_NAMES[clampi(stage, 0, STAGE_NAMES.size() - 1)]
 
 
 ## 경고 화면에 보여 줄 단계별 효과 문구.

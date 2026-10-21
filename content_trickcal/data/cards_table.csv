@@ -1,7 +1,7 @@
 id,enabled,type,name,parody_quote,desc,param_1,param_2,icon_file,name_en,parody_quote_en,desc_en,name_ja,parody_quote_ja,desc_ja
 CNT_01,TRUE,COUNTER,바이츠 더 더스트,죠죠의 기묘한 모험 '바이츠 더 더스트',[방어] 공격당하면 이번 턴을 통째로 되감고 공격자의 턴 종료,,1,CNT_01.png,,,,,,
 CNT_02,TRUE,COUNTER,거울의 힘,유희왕 '성스러운 방어막 - 거울의 힘 -',[방어] 잡기를 막고 공격한 말을 출발선으로 사출,,2,CNT_02.png,,,,,,
-CNT_03,TRUE,COUNTER,UDO 리버스 카드,"방향도 반대, 화살도 반대! 그대로 돌려드립니다",[방어] 공격 카드를 막고 공격자에게 그대로 반사,,2,CNT_03.png,,,,,,
+CNT_03,TRUE,COUNTER,UDO 리버스 카드,"방향도 반대, 화살도 반대! 그대로 돌려드립니다",[방어] 공격 카드를 막고 반사: 밴·스킵·이의 있음은 공격자에게 그대로 · 그 밖의 카드는 공격자 선두 말 사출,,2,CNT_03.png,,,,,,
 CNT_04,TRUE,COUNTER,감나빗!,,[방어] 잡기·공격 카드 1회 회피,,2,CNT_04.png,,,,,,
 CNT_05,TRUE,COUNTER,싸이크론,유희왕 '싸이크론',[방어] 걸린 함정을 부수고 +{p1}칸 전진,3,1,CNT_05.png,,,,,,
 CNT_06,TRUE,COUNTER,교단의 칙령,교단의 이름으로 그 함정은 무효다!,[방어] 걸린 함정 무효 + 설치자 카드 1장 강탈,,1,CNT_06.png,,,,,,
