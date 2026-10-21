@@ -5,6 +5,11 @@ class_name GameSession
 extends RefCounted
 
 const PROFILE_PATH: String = "user://profile.cfg"
+
+
+## 게임 버전 (시맨틱 버저닝 MAJOR.MINOR.PATCH, project.godot의 config/version). 배포 빌드는 CI가 뒤에 +커밋을 붙인다 (예: 0.9.0+abc1234).
+static func version() -> String:
+	return str(ProjectSettings.get_setting("application/config/version", "0.0.0-dev"))
 const MAX_NICKNAME_LENGTH: int = 10
 const MODE_AI: StringName = &"ai"
 const MODE_MULTIPLAYER: StringName = &"multiplayer"

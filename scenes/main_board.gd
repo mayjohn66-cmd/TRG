@@ -361,8 +361,12 @@ var _dock_player: int = -1
 var _debug_toggle: Button = null
 var _emote_row: HBoxContainer = null
 var _emote_ready_msec: int = 0
-## 치트/디버그 메뉴 노출 여부: 평소에는 숨기고, F9 / Ctrl+Shift+D 또는 웹 주소의 ?debug=1 일 때만 켠다.
+## 치트/디버그 메뉴 노출 여부: 평소에는 숨긴다. 게임 메뉴를 연 채로 비밀 입력(CHEAT_SEQUENCE)을 끝까지 쳐야 켜지고 꺼진다.
+## (개발용 실행 인자 --debug로도 켤 수 있다. 웹 주소로는 켤 수 없다.)
 var _debug_enabled: bool = false
+## 메뉴를 연 채로 친 키 (비밀 입력 판정용)와 마지막 키 시각.
+var _cheat_keys: Array[int] = []
+var _cheat_key_msec: int = 0
 var _log_toggle: Button = null
 var _debug_box: PanelContainer = null
 var _log_panel: PanelContainer = null
@@ -652,6 +656,9 @@ func _process(delta: float) -> void:
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
 		Sfx.unlock()  # 웹 브라우저가 소리를 막아 두므로 첫 클릭에서 오디오를 깨운다
+	if _track_cheat_sequence(event):
+		get_viewport().set_input_as_handled()
+		return
 	_emote_picker_input(event)
 	if manager == null or state == null or _menu_is_open():
 		return
@@ -706,9 +713,6 @@ func _pawn_at(mouse: Vector2) -> int:
 func _unhandled_key_input(event: InputEvent) -> void:
 	var key_event: InputEventKey = event as InputEventKey
 	if key_event == null or key_event.echo:
-		return
-	if key_event.pressed and (key_event.keycode == KEY_F9 or (key_event.keycode == KEY_D and key_event.ctrl_pressed and key_event.shift_pressed)):
-		toggle_debug_access()
 		return
 	# Ctrl/Alt/Meta/Shift 조합은 브라우저·OS 단축키(예: Ctrl+Shift+R 강력 새로고침)이므로 게임 단축키로 쓰지 않는다.
 	if key_event.ctrl_pressed or key_event.alt_pressed or key_event.meta_pressed or key_event.shift_pressed:
@@ -1730,17 +1734,39 @@ static func _style(bg: Color, border: Color = Color(0, 0, 0, 0), border_width: i
 	return box
 
 
-## 웹 주소에 ?debug=1 이 있거나 실행 인자에 --debug 가 있는가.
+## 개발용 실행 인자 --debug 가 있는가 (웹 주소 ?debug=1 은 더 이상 받지 않는다: 테스터가 쉽게 켜지 않게).
 static func debug_requested() -> bool:
-	if OS.get_cmdline_user_args().has("--debug"):
-		return true
-	if OS.has_feature("web"):
-		var value: Variant = JavaScriptBridge.eval("new URLSearchParams(window.location.search).get('debug')", true)
-		return str(value) == "1"
-	return false
+	return OS.get_cmdline_user_args().has("--debug")
 
 
-## F9 / Ctrl+Shift+D: 치트/디버그 메뉴 항목을 켜고 끈다 (온라인 대전에서는 쓸 수 없다). 켜면 디버그 서랍도 바로 연다.
+## 치트를 켜고 끄는 비밀 입력: 게임 메뉴를 연 채로 ↑↑↓↓←→←→BA (키 사이 1.5초 안).
+const CHEAT_SEQUENCE: Array[int] = [KEY_UP, KEY_UP, KEY_DOWN, KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_LEFT, KEY_RIGHT, KEY_B, KEY_A]
+const CHEAT_KEY_GAP_MSEC: int = 1500
+
+
+## 메뉴가 열려 있을 때만 키를 모아 비밀 입력이 끝까지 맞으면 치트를 켜고 끈다. 마지막 키를 먹었으면 true.
+func _track_cheat_sequence(event: InputEvent) -> bool:
+	var key_event: InputEventKey = event as InputEventKey
+	if key_event == null or not key_event.pressed or key_event.echo:
+		return false
+	if not _menu_is_open() or net != null:
+		_cheat_keys.clear()
+		return false
+	var now: int = Time.get_ticks_msec()
+	if now - _cheat_key_msec > CHEAT_KEY_GAP_MSEC:
+		_cheat_keys.clear()
+	_cheat_key_msec = now
+	_cheat_keys.append(int(key_event.keycode))
+	if _cheat_keys.size() > CHEAT_SEQUENCE.size():
+		_cheat_keys = _cheat_keys.slice(_cheat_keys.size() - CHEAT_SEQUENCE.size())
+	if _cheat_keys != CHEAT_SEQUENCE:
+		return false
+	_cheat_keys.clear()
+	toggle_debug_access()
+	return true
+
+
+## 비밀 입력이 끝나면 치트/디버그 메뉴 항목을 켜고 끈다 (온라인 대전에서는 쓸 수 없다). 켜면 디버그 서랍도 바로 연다.
 func toggle_debug_access() -> void:
 	if net != null:
 		return
@@ -8450,7 +8476,7 @@ func _build_diagnostic_snapshot() -> String:
 	var lines: PackedStringArray = []
 	var seconds: int = maxi(int((Time.get_ticks_msec() - _game_started_msec) / 1000.0), 0)
 	var mode: String = "온라인" if net != null else ("AI 대전" if ai_mode else "핫시트")
-	lines.append("[게임 스냅샷] 버전 %s · %s · 시드 %d · 언어 %s" % [ProjectSettings.get_setting("application/config/version", "dev"), mode, _game_seed, L10n.language_label()])
+	lines.append("[게임 스냅샷] 버전 %s · %s · 시드 %d · 언어 %s" % [GameSession.version(), mode, _game_seed, L10n.language_label()])
 	var phase: String = _phase_name(manager.current_state) if not manager.is_game_over else "게임 종료"
 	lines.append("라운드 %d (%s) · 템포 업 %d단계 · 현재 턴: %s · 플레이 타임 %02d:%02d" % [state.round_number, phase, TempoUp.level(state.round_number), _player_name(manager.current_player_id()), seconds / 60, seconds % 60])
 	lines.append("-- 플레이어 --")

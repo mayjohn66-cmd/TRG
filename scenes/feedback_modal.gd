@@ -14,14 +14,11 @@ extends Control
 const DISCORD_WEBHOOK_URL: String = "https://discord.com/api/webhooks/1562298513155686430/FLqE6H-njP7u0Cq6m4xbVsId7TRdC9Vz9L2jrVQewhqq9qrCHG49GuvgMtLXju0Q44fF"
 
 # 2) 구글 폼 연동 설정 (장문 무제한 수집 & 스프레드시트 자동 저장용)
-# 예: "https://docs.google.com/forms/d/e/1FAIpQLSe.../viewform"
-const GOOGLE_FORM_VIEW_URL: String = ""
-# 예: "https://docs.google.com/forms/d/e/1FAIpQLSe.../formResponse"
-const GOOGLE_FORM_ACTION_URL: String = ""
-const GFORM_ENTRY_CATEGORY: String = "entry.111111111" # 유형 항목 ID
-const GFORM_ENTRY_NICKNAME: String = "entry.222222222" # 닉네임 항목 ID
-const GFORM_ENTRY_MESSAGE: String  = "entry.333333333" # 피드백 본문 항목 ID
-const GFORM_ENTRY_SNAPSHOT: String = "entry.444444444" # 자동 게임 로그 항목 ID
+# 폼 "게임 플레이 평가 및 건의사항": 질문은 [유형(체크박스)]과 [내용(장문)] 두 개뿐이라 닉네임·보낸 곳·게임 로그는 내용 뒤에 붙인다.
+const GOOGLE_FORM_VIEW_URL: String = "https://docs.google.com/forms/d/e/1FAIpQLSeMcBsModXXuraf3lw9no7hlcge3LOPs3LsHiuZvnxFdFlpOA/viewform"
+const GOOGLE_FORM_ACTION_URL: String = "https://docs.google.com/forms/d/e/1FAIpQLSeMcBsModXXuraf3lw9no7hlcge3LOPs3LsHiuZvnxFdFlpOA/formResponse"
+const GFORM_ENTRY_CATEGORY: String = "entry.485471462" # 유형 (개선이 필요한 항목이 무엇입니까)
+const GFORM_ENTRY_MESSAGE: String  = "entry.1207629814" # 내용 (전달할 내용에 대해 서술하시면 됩니다.)
 
 const MIN_LENGTH: int = 5
 ## 장문 밸런스 피드백도 받도록 넉넉하게 (디스코드는 첨부 파일, 구글 폼은 항목 값으로 전부 간다).
@@ -304,13 +301,29 @@ func build_webhook_multipart() -> Array:
 	return [body, "multipart/form-data; boundary=%s" % boundary]
 
 
-## 구글 폼 formResponse로 보내는 항목 (전부 잘리지 않은 값). 스냅샷 첨부를 끄면 스냅샷 항목은 비운다.
+## 폼 유형(체크박스) 선택지 글자. 폼의 선택지와 글자 하나까지 같아야 접수된다.
+## 이모지·변형 선택자(U+FE0F)는 웹 내보내기에서 깨지지 않게 글자 코드로 만든다.
+static func form_kind_options() -> Array[String]:
+	return [char(0x1F41B) + " 버그/오류", char(0x2696) + char(0xFE0F) + " 밸런스", char(0x1F4A1) + " 추가 건의"] as Array[String]
+
+
+## 폼 [내용] 칸에 넣을 글: 본문 + 닉네임 + 보낸 곳 (+ 자동 게임 로그). with_log=false면 미리 채우기용으로 로그를 뺀다.
+func form_message(with_log: bool = true) -> String:
+	var lines: PackedStringArray = [message(), "", "- 닉네임: %s" % author()]
+	if context != "":
+		lines.append("- 보낸 곳: %s" % context)
+	var log_text: String = snapshot() if with_log else ""
+	if log_text != "":
+		lines.append("")
+		lines.append(log_text)
+	return "\n".join(lines)
+
+
+## 구글 폼 formResponse로 보내는 항목 (전부 잘리지 않은 값). 스냅샷 첨부를 끄면 게임 로그는 붙이지 않는다.
 func build_form_fields() -> Dictionary:
 	var fields: Dictionary = {}
-	fields[GFORM_ENTRY_CATEGORY] = L10n.tr_ui(KIND_KEYS[int(kind)])
-	fields[GFORM_ENTRY_NICKNAME] = author()
-	fields[GFORM_ENTRY_MESSAGE] = message()
-	fields[GFORM_ENTRY_SNAPSHOT] = ("보낸 곳: %s\n" % context if context != "" else "") + snapshot()
+	fields[GFORM_ENTRY_CATEGORY] = form_kind_options()[int(kind)]
+	fields[GFORM_ENTRY_MESSAGE] = form_message()
 	return fields
 
 
@@ -326,9 +339,8 @@ func build_prefill_url() -> String:
 	if form_view_url == "":
 		return ""
 	var fields: Dictionary = {}
-	fields[GFORM_ENTRY_CATEGORY] = L10n.tr_ui(KIND_KEYS[int(kind)])
-	fields[GFORM_ENTRY_NICKNAME] = author()
-	fields[GFORM_ENTRY_MESSAGE] = message().substr(0, PREFILL_LIMIT)
+	fields[GFORM_ENTRY_CATEGORY] = form_kind_options()[int(kind)]
+	fields[GFORM_ENTRY_MESSAGE] = form_message(false).substr(0, PREFILL_LIMIT)
 	return "%s%susp=pp_url&%s" % [form_view_url, "&" if form_view_url.contains("?") else "?", _urlencode(fields)]
 
 

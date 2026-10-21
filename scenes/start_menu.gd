@@ -51,7 +51,7 @@ func _ready() -> void:
 	_hello_label = _bottom["name"]
 	var fan_notice := Label.new()
 	fan_notice.name = "FanNotice"
-	fan_notice.text = "비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 무료 배포물입니다"
+	fan_notice.text = "v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 무료 배포물입니다" % GameSession.version()
 	fan_notice.add_theme_font_size_override("font_size", 13)
 	fan_notice.add_theme_color_override("font_color", Color(0.17, 0.35, 0.12, 0.85))
 	fan_notice.add_theme_color_override("font_outline_color", Color("fff6df"))

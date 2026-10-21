@@ -958,18 +958,33 @@ func _test_game_menu() -> void:
 	_expect(labels.has("계속하기") and labels.has("게임 설정") and labels.has("규칙 책자") and labels.has("게임 나가기"), "메뉴 항목: %s" % str(labels))
 	_expect(not labels.has("전체 로그") and not labels.has("새 게임") and _board._mode_toggle.get_parent() != _board._menu_box, "디버그가 꺼져 있으면 로그·새 게임·모드는 메뉴에 없다")
 	_expect(not _board._debug_enabled and not _board._debug_toggle.visible and _board._debug_toggle.get_parent() != _board._menu_box, "치트/디버그는 평소에 숨겨져 있다")
+	# 예전 단축키(F9 · Ctrl+Shift+D)로는 켜지지 않는다
 	var f9 := InputEventKey.new()
 	f9.keycode = KEY_F9
 	f9.pressed = true
 	_board._unhandled_key_input(f9)
-	_expect(_board._debug_enabled and _board._debug_box.visible, "F9를 누르면 치트/디버그가 켜진다")
+	_board._input(f9)
 	var combo := InputEventKey.new()
 	combo.keycode = KEY_D
 	combo.ctrl_pressed = true
 	combo.shift_pressed = true
 	combo.pressed = true
 	_board._unhandled_key_input(combo)
-	_expect(not _board._debug_enabled and not _board._debug_box.visible, "Ctrl+Shift+D로 다시 끈다")
+	_expect(not _board._debug_enabled, "F9 · Ctrl+Shift+D로는 치트가 켜지지 않는다")
+	# 메뉴를 닫은 채로 비밀 입력을 쳐도 켜지지 않는다
+	var was_open: bool = _board._menu_is_open()
+	if was_open:
+		_board._close_menu()
+	_type_cheat_sequence()
+	_expect(not _board._debug_enabled, "메뉴가 닫혀 있으면 비밀 입력이 통하지 않는다")
+	# 메뉴를 연 채로 ↑↑↓↓←→←→BA -> 켜짐, 한 번 더 -> 꺼짐
+	_board._open_menu()
+	_type_cheat_sequence()
+	_expect(_board._debug_enabled and _board._debug_box.visible, "메뉴를 연 채로 비밀 입력을 끝까지 치면 치트/디버그가 켜진다")
+	_type_cheat_sequence()
+	_expect(not _board._debug_enabled and not _board._debug_box.visible, "한 번 더 치면 다시 꺼진다")
+	if not was_open:
+		_board._close_menu()
 	_expect(_board._emote_row != null and _board._emote_row.visible and _board._emote_button != null and not _board._emote_picker.visible, "AI 대전에는 [감정 표현] 버튼 하나만 보이고 이모트 판은 접혀 있다")
 	_board._emote_ready_msec = 0
 	_board._emote_button.pressed.emit()
@@ -2136,3 +2151,12 @@ func _test_presentation_queue() -> void:
 	_board._fx_until_msec = 0
 	_board.instant_roll_for_test = true
 	print("PRESENTATION_QUEUE_OK")
+
+
+## 치트 비밀 입력(↑↑↓↓←→←→BA)을 _input으로 흘려 넣는다.
+func _type_cheat_sequence() -> void:
+	for keycode: int in MainBoard.CHEAT_SEQUENCE:
+		var key := InputEventKey.new()
+		key.keycode = keycode
+		key.pressed = true
+		_board._input(key)
