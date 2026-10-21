@@ -397,8 +397,25 @@ static func _trigger_attachments(
 		if attachment.is_expired():
 			tile.remove_attachment(attachment)
 		if halted:
+			_chain_forced_arrival(state, mover, ctx, tile_index, report)
 			return true
 	return false
+
+
+## 한 이동에서 함정이 말을 다른 칸으로 옮긴 뒤(바나나 미끄러짐·소원빌기 점프·환승 포탈) 도착 칸의 함정을 이어서 판정하는 최대 횟수.
+const MAX_TRAP_CHAIN: int = 3
+
+
+## 함정이 말을 다른 칸으로 옮겼다면 그 도착 칸의 설치물도 발동시킨다 (연쇄는 MAX_TRAP_CHAIN번까지: 무한 루프 방지).
+static func _chain_forced_arrival(state: GameState, mover: PlayerPawn, ctx: RuleContext, from_tile: int, report: MoveReport) -> void:
+	var landed: int = mover.current_tile_idx
+	if landed == from_tile or landed == GameEnums.GOAL_TILE or not mover.has_left_start or mover.is_finished:
+		return
+	var depth: int = int(ctx.metadata.get("trap_chain", 0))
+	if depth >= MAX_TRAP_CHAIN:
+		return
+	ctx.metadata["trap_chain"] = depth + 1
+	_trigger_attachments(state, mover, ctx, landed, true, report)
 
 
 ## 끌려가거나 밀려나 이미 자리 잡은 말이 그 칸의 설치물(함정·지뢰·도미노·호텔)에 걸리게 한다 (ACT_09 결투 후퇴 등).

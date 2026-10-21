@@ -1064,6 +1064,25 @@ func _test_announcer() -> void:
 	await process_frame
 	_board._fx_until_msec = 0  # (이 검사는 알림 잠금만 본다: 말 움직임 연출 잠금은 따로 검증)
 	_expect(not announcer.active and not announcer.visible and not _board._ui_busy(), "대기열이 비면 잠금 해제")
+	# 굴림이 시작되면 안 막는 배너(차례·라운드)는 걷히고, 줄 서 있던 안 막는 배너는 버려진다. 막는 알림은 남는다
+	_board._announce_soft("라운드", "3라운드 시작!", "", Color.WHITE, null, 2.0)
+	_board._announce_soft("안내", "컴퓨터 2 차례", "", Color.WHITE, null, 2.0)
+	_expect(announcer.active and str(announcer._current.get("headline", "")) == "3라운드 시작!", "안 막는 배너가 떠 있고 다음 배너가 줄 서 있다")
+	var shown: Array[String] = []
+	var on_start: Callable = func(_serial: int) -> void: shown.append(str(announcer._current.get("headline", "")))
+	announcer.entry_started.connect(on_start)
+	announcer.dismiss_soft()
+	for _i: int in 30:
+		await process_frame
+	announcer.entry_started.disconnect(on_start)
+	_expect(not announcer.active and not announcer.visible and shown.is_empty(), "굴림 시작 시 안 막는 배너는 걷히고 줄 선 배너는 뜨지 않는다 (%s)" % str(shown))
+	_board._announce_soft("안내", "컴퓨터 3 차례", "", Color.WHITE, null, 2.0)
+	_board._announce("테스트", "막는 알림", "", Color.WHITE, null, 2.0)
+	announcer.dismiss_soft()
+	for _i: int in 30:
+		await process_frame
+	_expect(announcer.holding() and str(announcer._current.get("headline", "")) == "막는 알림", "막는 알림은 그대로 남는다")
+	announcer.cancel()
 	announcer.history.clear()
 	_board.instant_roll_for_test = true
 	_board._announce("테스트", "건너뜀", "", Color.WHITE, null, 0.5)
@@ -2073,6 +2092,16 @@ func _test_presentation_queue() -> void:
 	_board._show_result_overlay()
 	var ranking: Node = _board._result_overlay.find_child("RankingList", true, false)
 	_expect(ranking != null and ranking.get_child_count() == _board._player_ids.size(), "순위 줄이 참가자 수만큼 있다")
+	var podium: Node = _board._result_overlay.find_child("Podium", true, false)
+	var podium_ranks: Array[int] = []
+	if podium != null:
+		for column: Node in podium.get_children():
+			podium_ranks.append(int(column.get_meta("rank")))
+	_expect(str(podium_ranks) == str([2, 1, 3, 4]), "시상대는 2위·1위·3위·4위 순으로 선다 (%s)" % str(podium_ranks))
+	if podium != null and podium.get_child_count() == 4:
+		var first_block: Control = podium.get_child(1).find_child("Block", true, false)
+		var fourth_block: Control = podium.get_child(3).find_child("Block", true, false)
+		_expect(first_block.custom_minimum_size.y > fourth_block.custom_minimum_size.y, "1위 단상이 가장 높다")
 	var reveal_order: Array[int] = []
 	guard = 0
 	while reveal_order.size() < ranking.get_child_count() and guard < 900:

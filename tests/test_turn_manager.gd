@@ -483,6 +483,30 @@ func test_advance_to_next_player_follows_reverse_direction() -> void:
 	check_eq(manager.current_turn_index, 2, "계속 역순")
 	_dispose(manager)
 
+
+## 라운드 도중 리버스: 아직 차례가 없던 사람만 돌고, 모두 정확히 한 번씩 한 뒤 라운드가 끝난다 (누가 두 번·0번 하지 않는다).
+func test_reverse_mid_round_still_gives_everyone_exactly_one_turn() -> void:
+	var manager: TurnManager = _new_manager(4)
+	var turns: Array[int] = [manager.current_player_id()]
+	manager.phase_changed.connect(func(new_state: int, player: int, _limit: float) -> void:
+		if new_state == Phase.PHASE_TURN_BEGIN and manager.state.round_number == 1:
+			turns.append(player))
+	manager.advance_to_next_player()  # P1 -> P2
+	manager.reverse_turn_order()  # P2가 리버스
+	manager.advance_to_next_player()  # 역방향: P1은 이미 했으니 건너뛰고 P4
+	check_eq(manager.current_player_id(), 4, "이미 한 P1을 건너뛰고 P4")
+	manager.advance_to_next_player()  # P3
+	check_eq(manager.current_player_id(), 3, "P3")
+	check_eq(manager.state.round_number, 1, "아직 1라운드 (P3 차례가 남았다)")
+	manager.advance_to_next_player()  # 모두 끝 -> 다음 라운드
+	check_eq(manager.state.round_number, 2, "네 명이 한 번씩 하고 라운드 끝")
+	var unique: Dictionary = {}
+	for player: int in turns:
+		unique[player] = true
+	check_eq(turns.size(), 4, "1라운드 차례는 정확히 4번 (%s)" % str(turns))
+	check_eq(unique.size(), 4, "네 명 모두 한 번씩 (%s)" % str(turns))
+	_dispose(manager)
+
 func test_step_by_step_move_stops_immediately_when_a_trap_fires() -> void:
 	var manager: TurnManager = _new_manager()
 	var state: GameState = manager.state

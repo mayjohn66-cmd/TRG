@@ -147,7 +147,7 @@ const CARD_SHORT: Dictionary = {
 const CARD_SUMMARIES: Dictionary = {
 	&"CNT_01": "[방어] 공격당하면 이번 턴을 통째로 되감고 공격자의 턴 종료",
 	&"CNT_02": "[방어] 잡기를 막고 공격한 말을 출발선으로 사출",
-	&"CNT_03": "[방어] 공격 카드를 막고 공격자에게 그대로 반사",
+	&"CNT_03": "[방어] 공격 카드를 막고 반사: 밴·스킵·이의 있음은 공격자에게 그대로 · 그 밖의 카드는 공격자 선두 말 사출",
 	&"CNT_04": "[방어] 잡기·공격 카드 1회 회피",
 	&"CNT_05": "[방어] 걸린 함정을 부수고 +3칸 전진",
 	&"CNT_06": "[방어] 걸린 함정 무효 + 설치자 카드 1장 강탈",
@@ -2845,7 +2845,7 @@ func _check_round_banner() -> void:
 	_announced_round = state.round_number
 	_announced_turn_key = "%d:%d" % [state.round_number, manager.current_player_id()]
 	var tempo: int = TempoUp.level(state.round_number)
-	_announce_soft("라운드", "%d라운드 시작!" % state.round_number, "템포 업 Lv.%d · 최종 이동 +%d칸" % [tempo, TempoUp.move_bonus(state.round_number)] if tempo > 0 else "", COLOR_GOLD, null, 1.2)
+	_announce_soft("라운드", "%d라운드 시작!" % state.round_number, "템포 업 Lv.%d %s · 최종 이동 +%d칸" % [tempo, TempoUp.stage_name(tempo), TempoUp.move_bonus(state.round_number)] if tempo > 0 else "", COLOR_GOLD, null, 1.2)
 
 
 ## 새 플레이어의 턴이 시작될 때 [P2 차례] 알림을 짧게 보여 준다 (추가 턴·롤백 재시작에는 다시 띄우지 않는다).
@@ -6964,7 +6964,7 @@ func _show_result_overlay() -> void:
 	center.add_child(panel)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 14)
-	box.custom_minimum_size = Vector2(560, 0)
+	box.custom_minimum_size = Vector2(1000, 0)
 	panel.add_child(box)
 	var winner_id: int = state.winner
 	var title: Label = _make_label("게임 종료!", 34, Color("ffd43b"))
@@ -6974,16 +6974,35 @@ func _show_result_overlay() -> void:
 	announcer.name = "RankingAnnouncer"
 	announcer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(announcer)
+	# 왼쪽: 1~4위를 한눈에 보는 시상대 / 오른쪽: 순위 근거·진행도가 적힌 순위표
+	var stage_row := HBoxContainer.new()
+	stage_row.add_theme_constant_override("separation", 20)
+	box.add_child(stage_row)
+	var podium := HBoxContainer.new()
+	podium.name = "Podium"
+	podium.add_theme_constant_override("separation", 8)
+	podium.alignment = BoxContainer.ALIGNMENT_CENTER
+	podium.custom_minimum_size = Vector2(420, 0)
+	stage_row.add_child(podium)
 	var ranking := VBoxContainer.new()
 	ranking.name = "RankingList"
 	ranking.add_theme_constant_override("separation", 8)
-	box.add_child(ranking)
+	ranking.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	ranking.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	stage_row.add_child(ranking)
 	var standings: Array[Dictionary] = VictoryChecker.standings(state, manager.player_order, winner_id)
 	var rows: Array[Control] = []
+	var columns: Dictionary = {}
 	for entry: Dictionary in standings:
 		var row: Control = _make_rank_row(entry)
 		ranking.add_child(row)
 		rows.append(row)
+		columns[int(entry["rank"])] = _make_podium_column(entry)
+	for rank_no: int in PODIUM_ORDER:  # 2위 · 1위 · 3위 · 4위 순으로 세워 1위 단상이 가운데에 가장 높다
+		if columns.has(rank_no):
+			podium.add_child(columns[rank_no])
+	for row: Control in rows:
+		row.set_meta("podium", columns.get(int(row.get_meta("rank"))))
 	var facts := VBoxContainer.new()
 	facts.add_theme_constant_override("separation", 4)
 	box.add_child(facts)
@@ -7019,7 +7038,49 @@ func _show_result_overlay() -> void:
 
 
 const RANK_MEDALS: Array[String] = ["1", "2", "3", "4"]
+## 시상대 왼쪽부터 세우는 순위와 순위별 단상 높이(px).
+const PODIUM_ORDER: Array[int] = [2, 1, 3, 4]
+const PODIUM_HEIGHTS: Array[float] = [150.0, 110.0, 80.0, 50.0]
 const RANK_COLORS: Array[Color] = [Color("ffd43b"), Color("ced4da"), Color("e8a364"), Color("868e96")]
+
+
+## 시상대 한 칸: 아바타 · 이름 · 순위 숫자가 적힌 단상 (1위가 가장 높다).
+func _make_podium_column(entry: Dictionary) -> Control:
+	var rank: int = int(entry["rank"])
+	var player_id: int = int(entry["player"])
+	var color: Color = RANK_COLORS[mini(rank, 4) - 1]
+	var column := VBoxContainer.new()
+	column.name = "Podium%d" % rank
+	column.set_meta("rank", rank)
+	column.alignment = BoxContainer.ALIGNMENT_END
+	column.add_theme_constant_override("separation", 4)
+	column.custom_minimum_size = Vector2(96, 0)
+	column.size_flags_vertical = Control.SIZE_FILL
+	var avatar := AvatarSlot.new()
+	avatar.icon_border = false
+	avatar.static_only = true
+	var face: float = 84.0 if rank == 1 else 68.0
+	avatar.setup(player_id, PLAYER_COLORS.get(player_id, Color.WHITE), Vector2(face, face))
+	avatar.set_character(_avatar_for(player_id))
+	avatar.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	column.add_child(avatar)
+	var name_label: Label = _make_label(_player_name(player_id), 16 if rank == 1 else 14, PLAYER_COLORS.get(player_id, Color.WHITE).lightened(0.3))
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.clip_text = true
+	name_label.custom_minimum_size = Vector2(96, 0)
+	column.add_child(name_label)
+	var block := PanelContainer.new()
+	block.name = "Block"
+	block.custom_minimum_size = Vector2(96, PODIUM_HEIGHTS[mini(rank, 4) - 1])
+	block.add_theme_stylebox_override("panel", _style(color, color.darkened(0.35), 3, 8, 8, 4))
+	column.add_child(block)
+	var number: Label = _make_label(str(rank), 44 if rank == 1 else 34, Color.WHITE)
+	number.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	number.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	number.add_theme_color_override("font_outline_color", color.darkened(0.55))
+	number.add_theme_constant_override("outline_size", 6)
+	block.add_child(number)
+	return column
 
 
 ## 순위표 한 줄: [순위] [아바타] 이름 / 순위 근거(특수 승리 교칙·완주) · 완주 n/4 · 진행도 막대.
@@ -7076,6 +7137,9 @@ func _reveal_ranking(rows: Array[Control], announcer: Label) -> void:
 		return
 	for row: Control in rows:
 		row.modulate.a = 0.0
+		var hidden_column: Control = row.get_meta("podium", null)
+		if hidden_column != null:
+			hidden_column.modulate.a = 0.0
 	var overlay: Control = _result_overlay
 	var frames: int = 0
 	while _presentation_active() and frames < 600:  # 마지막 이동·처치 연출이 끝난 뒤에 발표한다
@@ -7100,6 +7164,13 @@ func _reveal_ranking(rows: Array[Control], announcer: Label) -> void:
 		var tween: Tween = row.create_tween().set_parallel(true)
 		tween.tween_property(row, "modulate:a", 1.0, 0.18)
 		tween.tween_property(row, "scale", Vector2.ONE, 0.32).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		var column: Control = row.get_meta("podium", null)
+		if column != null and is_instance_valid(column):
+			# 단상이 아래에서 솟아오르며 그 자리의 주인이 나타난다
+			column.pivot_offset = Vector2(column.size.x / 2.0, column.size.y)
+			column.scale = Vector2(1.0, 0.2)
+			tween.tween_property(column, "modulate:a", 1.0, 0.18)
+			tween.tween_property(column, "scale", Vector2.ONE, 0.36).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		if first:
 			Sfx.play(&"win")
 			announcer.text = "★ %s 우승! ★" % _player_name(int(row.get_meta("player")))
@@ -7284,6 +7355,13 @@ func _announce(tag: String, headline: String, body: String, color: Color, extra:
 	return _announce_now(tag, headline, body, color, extra, duration, blocking)
 
 
+## 차례 배너가 늦었는가: 굴림 연출 중이거나, 굴리기 전 단계(턴 시작·굴리기 대기)를 이미 지났다.
+func _turn_banner_stale() -> bool:
+	if _fx_busy or manager == null:
+		return _fx_busy
+	return manager.current_state != TurnManager.State.PHASE_TURN_BEGIN and manager.current_state != TurnManager.State.PHASE_ROLL_WAIT
+
+
 ## 띄워만 두는 안내 (Fire-and-Forget): 처치 컷인·결투·방어 선택 같은 중요한 장면이 아닌 일반 안내 배너.
 func _announce_soft(tag: String, headline: String, body: String, color: Color, extra: Control = null, duration: float = 1.5) -> int:
 	return _announce(tag, headline, body, color, extra, duration, false)
@@ -7292,6 +7370,10 @@ func _announce_soft(tag: String, headline: String, body: String, color: Color, e
 func _announce_now(tag: String, headline: String, body: String, color: Color, extra: Control = null, duration: float = 1.5, blocking: bool = true) -> int:
 	if _announcer == null:
 		return -1
+	if tag == "턴" and _turn_banner_stale():
+		if extra != null:
+			extra.free()
+		return -1  # 연출 큐에서 차례가 늦게 돌아왔다: 이미 굴렸거나 다음 단계로 넘어갔으면 차례 배너는 띄우지 않는다
 	_announcer.instant = instant_roll_for_test
 	var serial: int = _announcer.announce(tag, headline, body, color, extra, duration * _pace(), blocking)
 	if _announcer.active:
@@ -7440,7 +7522,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			if _fx_on():
 				screen_shake(12.0, 0.5)
 				Sfx.play(&"trap")
-			_announce("템포 업", "템포 업 Lv.%d" % stage, "%d라운드부터 게임이 빨라집니다!\n◆ %s" % [data["round"], "\n◆ ".join(PackedStringArray(lines))], Color("ff4d4d"), null, 3.2)
+			_announce("템포 업", "템포 업 Lv.%d · %s" % [stage, TempoUp.stage_name(stage)], "%d라운드부터 게임이 빨라집니다!\n◆ %s" % [data["round"], "\n◆ ".join(PackedStringArray(lines))], Color("ff4d4d"), null, 3.2)
 		&"round_end_judgement":
 			var achievers: Array = data["players"]
 			_log_line("[라운드 %d 종료 판정] 특수 승리 달성: %s" % [int(data["round"]), ", ".join(PackedStringArray(achievers.map(func(id: int) -> String: return _player_name(id))))], Color("ffd43b"))
@@ -7473,9 +7555,9 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_start_beat(0.9)
 		&"turn_rested":
 			var rested: int = int(data["player_id"])
-			_log_line("[휴식] P%d가 이번 턴을 쉽니다 (판 뒤집기 실패)" % rested, Color("adb5bd"))
-			_record(rested, "이번 턴 휴식")
-			_announce_soft("휴식", "[%s 이번 턴 휴식!]" % _player_name(rested), "판 뒤집기에 실패해 차례를 건너뜁니다", Color("adb5bd"), null, 0.9)  # 쉬는 턴은 기다리지 않고 바로 다음 차례로
+			_log_line("[강제 턴 패스] P%d가 이번 차례를 쉽니다 (UDO 스킵)" % rested, Color("adb5bd"))
+			_record(rested, "강제 턴 패스")
+			_announce_soft("휴식", "강제 턴 패스!", "%s 이번 차례 쉬기" % _player_name(rested), Color("adb5bd"), null, 0.9)  # 쉬는 턴은 기다리지 않고 바로 다음 차례로
 		&"stack_resolved":
 			var stack_names: Array[String] = []
 			for member_id: Variant in data["members"]:
@@ -7988,6 +8070,8 @@ func _on_stage_stand() -> void:
 func _handle_roll_event(data: Dictionary) -> void:
 	var result: Dictionary = data["result"]
 	var tool_id: StringName = result["tool_id"]
+	if _announcer != null:
+		_announcer.dismiss_soft()  # 굴림이 시작되면 남아 있는 차례·라운드 안내 배너는 걷는다 (주사위와 겹치지 않게)
 	_presenter.instant = instant_roll_for_test
 	var details: Dictionary = result["details"]
 	if _is_stage_tool(tool_id):

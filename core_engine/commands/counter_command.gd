@@ -49,7 +49,7 @@ func _run() -> void:
 				state.give_card(sender_id, trap_card)
 
 
-## 우노 리버스: 되돌린 공격 카드를 공격한 사람에게 그대로 돌려준다.
+## 우노 리버스: 되돌린 공격 카드를 공격한 사람에게 돌려준다 (밴·스킵·이의 있음은 같은 효과, 그 밖의 카드는 공격자 선두 말 사출).
 static func reflect(game: GameState, entry: Dictionary, reflector: int) -> void:
 	var attacker: int = int(entry.get("attacker", -1))
 	if attacker < 1:

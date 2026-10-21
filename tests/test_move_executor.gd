@@ -232,3 +232,31 @@ func test_mirror_force_trap_stops_and_expels_enemy_but_not_owner() -> void:
 	check_eq(report.path, int_array([1, 2, 3]), "함정 칸에서 즉시 중단")
 	check_eq(state.get_pawn(11).current_tile_idx, 0, "출발선으로 복귀")
 	check_eq(state.board.get_tile(3).attachments.size(), 0, "발동 후 소모")
+
+
+## 함정이 말을 다른 칸으로 옮기면(바나나 미끄러짐) 그 도착 칸의 함정도 발동한다.
+func test_trap_that_moves_the_pawn_triggers_the_trap_where_it_lands() -> void:
+	var state := make_state()
+	var slide: int = CardRegistry.param(&"TRP_06", TrapBanana.SLIDE_STEPS)
+	place(state, 11, 1)
+	state.place_attachment(2, TrapBanana.new(2))
+	state.place_attachment(2 + slide, TrapMirrorForce.new(2))
+	move(state, 11, 1)  # 2번 바나나 -> 미끄러져 도착한 칸의 함정
+	var pawn: PlayerPawn = state.get_pawn(11)
+	check(not pawn.has_left_start, "미끄러져 도착한 칸의 함정에 걸려 출발선으로 (%d번)" % pawn.current_tile_idx)
+	check_eq(state.board.get_tile(2 + slide).attachments.size(), 0, "도착 칸 함정도 소모됨")
+
+
+## 연쇄는 MAX_TRAP_CHAIN번까지만: 바나나가 줄줄이 깔려 있어도 무한히 미끄러지지 않는다.
+func test_forced_arrival_trap_chain_is_capped() -> void:
+	var state := make_state()
+	var slide: int = CardRegistry.param(&"TRP_06", TrapBanana.SLIDE_STEPS)
+	place(state, 11, 1)
+	var tiles: Array[int] = []
+	for i: int in MoveExecutor.MAX_TRAP_CHAIN + 2:
+		tiles.append(2 + slide * i)
+		state.place_attachment(tiles.back(), TrapBanana.new(2))
+	move(state, 11, 1)
+	var last: int = tiles[MoveExecutor.MAX_TRAP_CHAIN + 1]
+	check_eq(state.get_pawn(11).current_tile_idx, last, "처음 1번 + 연쇄 %d번 미끄러진 뒤 멈춘다" % MoveExecutor.MAX_TRAP_CHAIN)
+	check_eq(state.board.get_tile(last).attachments.size(), 1, "상한을 넘은 칸의 바나나는 발동하지 않고 남는다")

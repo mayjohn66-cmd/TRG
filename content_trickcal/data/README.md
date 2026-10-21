@@ -43,7 +43,7 @@
 | `SUPER_08` 빵집 털이 | 받는 카드 수 | |
 | `SUPER_09` 저격수 | 내 말 전진 칸 | |
 | `SUPER_10` 아우토반 니트로 | 추가 칸 | 홀수라도 가속하는 최소 눈금 |
-| `SUPER_11` 폭주 기관차 | 처치 뒤 돌진 칸 | |
+| `SUPER_11` 폭주 기관차 | (수치 없음: 무작위 한 변을 기관차가 쓸고 지나간다) | |
 | `EVO_7_2` 루도 복수자 | 복수 부스터 칸 | |
 | `RULE_REVENGE_BOOST` 🔥 | 복수 부스터 칸 | |
 | `RULE_DASH_PAD` ⚡ | 발판 추가 전진 칸 | |
@@ -55,7 +55,7 @@
 `enabled`(FALSE면 교체 증강에서 빠짐, 기본 주사위 D6는 제외) · `name`(도구 이름) · `desc`(도구 카드 한 줄) · `spec_table`(족보표 문구) · `min_step`/`max_step`(이동 칸을 이 범위로 맞춤. 0칸·턴 종료 결과는 건드리지 않음, 비우면 제한 없음) · `jackpot_step`(그 도구의 최고 결과 칸 수를 이 값으로 교체, 상한과 무관. 윷·홀덤·슬롯·화투·마작·야추·블랙잭·핀볼만 지원) · `icon_file`(`illustrations/dice/` 아래).
 
 ## cards_table.csv
-`enabled`(FALSE면 덱과 카드 패키지에서 빠짐) · `type`(COUNTER/INSTANT/TRAP/TRAP_CORNER/SUMMON, 표시용) · `name` · `parody_quote`(툴팁에 나오는 출처 문구) · `desc`(카드 확대 설명, `{p1}`) · `param_1`(수치: 싸이크론 전진 `CNT_05`, 우노 +4 폭탄 이동 보너스 `ACT_03`, 로켓 `ACT_04`, 결투 승자 전진 `ACT_09`, 빠루 범위 `ACT_10`, 알고리즘 밴 턴 `ACT_14`, 나락 최소 눈금 `TRP_02`, 지뢰 반경 `TRP_03`, 스프링 대포 `TRP_05`, 바나나 미끄러짐 `TRP_06`, 무인도 유지 턴 `TRP_C01`, 점프대 `TRP_C02`, 톨게이트 유지 턴 `TRP_C03`, 타르 범위 `TRP_C04`) · `param_2`(덱에 들어가는 장수) · `icon_file`(`assets/cards/` 아래).
+`enabled`(FALSE면 덱과 카드 패키지에서 빠짐) · `type`(COUNTER/INSTANT/TRAP/TRAP_CORNER/SUMMON, 표시용) · `name` · `parody_quote`(툴팁에 나오는 출처 문구) · `desc`(카드 확대 설명, `{p1}`) · `param_1`(수치: 싸이크론 전진 `CNT_05`, 우노 +4 폭탄 이동 보너스 `ACT_03`, 로켓 `ACT_04`, 결투 승자 전진 `ACT_09`, 빠루 범위 `ACT_10`, 알고리즘 밴 턴 `ACT_14`, 나락 최소 눈금 `TRP_02`, 지뢰 반경 `TRP_03`, 도미노 연쇄 반경 `TRP_05`, 바나나 미끄러짐 `TRP_06`, 무인도 유지 턴 `TRP_C01`, 소원빌기 점프 칸 `TRP_C02`, 지나가는 상인 유지 턴 `TRP_C03`, 물의 세례 끌어오기 범위 `TRP_C04`) · `param_2`(덱에 들어가는 장수) · `icon_file`(`assets/cards/` 아래).
 
 ## 번역 열 (다국어 대비)
 세 표 끝의 `*_en` / `*_ja` 열(증강 `title`·`subtitle`·`desc`·`spec_preview`, 도구 `name`·`desc`·`spec_table`, 카드 `name`·`parody_quote`·`desc`)에 번역을 적으면 그 언어일 때 그 값을 씁니다. 비워 두면 한국어 열을 씁니다. 화면 버튼·알림 문구는 `ui_strings.csv`의 `en`·`ja` 열에 적습니다 (`{p1}`·`%s` 같은 자리 표시는 그대로 두세요).
