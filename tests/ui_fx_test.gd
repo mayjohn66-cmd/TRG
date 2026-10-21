@@ -840,25 +840,18 @@ func _test_avatar_seats() -> void:
 	avatar.react(AvatarSlot.Emotion.IDLE, 0.0)
 	avatar.set_character(AvatarSlot.DEFAULT_CHARACTER)
 	_expect(not avatar.has_art(), "기본 캐릭터 에셋이 없으면 자리표시자로 돌아간다")
-	# 게임 이벤트가 아바타를 반응시킨다: 말이 잡히면 피해자는 분노, 잡은 쪽은 웃음
+	# 게임 이벤트는 아바타 표정을 바꾸지 않는다: 표정은 플레이어가 고른 감정 표현(이모트)으로만 바뀐다.
+	for player_id: int in [1, 2, 3, 4]:
+		(_board._profiles[player_id]["avatar"] as AvatarSlot).react(AvatarSlot.Emotion.IDLE, 0.0)
 	var victim: PlayerPawn = _board.state.get_pawn(21)
-	# 반응은 연출 큐에서 사출·골인 장면과 함께 나온다 (결과를 먼저 흘리지 않는다)
 	_board.state.pawn_sent_to_start.emit(victim.entity_id, 1)
-	var reacted: bool = false
-	for i: int in 120:  # 최대 6초 (헤드리스는 프레임이 빨라 시간으로 기다린다)
-		reacted = (_board._profiles[2]["avatar"] as AvatarSlot).emotion == AvatarSlot.Emotion.ANGRY and (_board._profiles[1]["avatar"] as AvatarSlot).emotion == AvatarSlot.Emotion.HAPPY
-		if reacted:
-			break
-		await create_timer(0.05).timeout
-	_expect(reacted, "말이 잡히면 피해자 분노 / 잡은 쪽 웃음")
 	_board.state.pawn_finished.emit(31)
-	reacted = false
-	for i: int in 120:  # 최대 6초 (헤드리스는 프레임이 빨라 시간으로 기다린다)
-		reacted = (_board._profiles[3]["avatar"] as AvatarSlot).emotion == AvatarSlot.Emotion.CHEER
-		if reacted:
-			break
+	var changed: bool = false
+	for i: int in 60:  # 3초 동안 연출 큐가 돌아도
+		for player_id: int in [1, 2, 3]:
+			changed = changed or (_board._profiles[player_id]["avatar"] as AvatarSlot).emotion != AvatarSlot.Emotion.IDLE
 		await create_timer(0.05).timeout
-	_expect(reacted, "완주하면 환호")
+	_expect(not changed, "말이 잡히거나 완주해도 아바타 표정은 그대로다")
 	for player_id: int in [1, 2, 3, 4]:
 		(_board._profiles[player_id]["avatar"] as AvatarSlot).react(AvatarSlot.Emotion.IDLE, 0.0)
 
@@ -969,12 +962,41 @@ func _test_game_menu() -> void:
 	combo.pressed = true
 	_board._unhandled_key_input(combo)
 	_expect(not _board._debug_enabled and not _board._debug_box.visible, "Ctrl+Shift+D로 다시 끈다")
-	_expect(_board._emote_row != null and _board._emote_row.get_child_count() == 5 and _board._emote_row.visible, "AI 대전에는 감정 표현 버튼 5개가 보인다")
+	_expect(_board._emote_row != null and _board._emote_row.visible and _board._emote_button != null and not _board._emote_picker.visible, "AI 대전에는 [감정 표현] 버튼 하나만 보이고 이모트 판은 접혀 있다")
 	_board._emote_ready_msec = 0
-	(_board._emote_row.get_child(1) as Button).pressed.emit()
-	_expect((_board._profiles[_board.local_player_id]["avatar"] as AvatarSlot).emotion == AvatarSlot.Emotion.ANGRY, "감정 버튼을 누르면 내 아바타가 반응한다")
-	(_board._emote_row.get_child(2) as Button).pressed.emit()
-	_expect((_board._profiles[_board.local_player_id]["avatar"] as AvatarSlot).emotion == AvatarSlot.Emotion.ANGRY, "연타는 대기 시간 동안 무시된다")
+	_board._emote_button.pressed.emit()
+	_expect(_board._emote_picker.visible and _board._emote_picker.find_children("Emote*", "Button", true, false).size() == EmoteCatalog.count(), "버튼을 누르면 이모트 %d종이 펼쳐진다" % EmoteCatalog.count())
+	(_board._emote_picker.find_child("Emote2", true, false) as Button).pressed.emit()
+	var bubble: EmoteBubble = _board._emote_bubbles.get(_board.local_player_id)
+	_expect(not _board._emote_picker.visible and bubble != null and is_instance_valid(bubble) and bubble.emote_id == 2, "이모트를 고르면 판이 닫히고 내 프로필에 말풍선이 뜬다")
+	_expect((_board._profiles[_board.local_player_id]["avatar"] as AvatarSlot).emotion == AvatarSlot.Emotion.ANGRY, "말풍선과 함께 아바타 표정이 바뀐다 (억까 → 분노)")
+	if bubble != null:
+		var avatar_rect: Rect2 = _board.get_global_transform().affine_inverse() * (_board._profiles[_board.local_player_id]["avatar"] as Control).get_global_rect()
+		_expect(bubble.position.y + bubble.size.y <= avatar_rect.position.y + 4.0, "아래쪽 내 프로필의 말풍선은 아바타 위로 뜬다 (%.0f <= %.0f)" % [bubble.position.y + bubble.size.y, avatar_rect.position.y])
+	_board._emote_button.pressed.emit()
+	(_board._emote_picker.find_child("Emote4", true, false) as Button).pressed.emit()
+	_expect(_board._emote_bubbles.get(_board.local_player_id) == bubble and (_board._profiles[_board.local_player_id]["avatar"] as AvatarSlot).emotion == AvatarSlot.Emotion.ANGRY, "연타는 대기 시간 동안 무시된다")
+	var other: int = 2 if _board.local_player_id != 2 else 1
+	_board._on_net_emote(other, 6)
+	var their: EmoteBubble = _board._emote_bubbles.get(other)
+	_expect(their != null and is_instance_valid(their) and their.emote_id == 6, "온라인 상대의 이모트도 그 사람 프로필에 말풍선으로 뜬다")
+	if their != null:
+		var their_rect: Rect2 = _board.get_global_transform().affine_inverse() * (_board._profiles[other]["avatar"] as Control).get_global_rect()
+		var below: bool = their_rect.get_center().y < _board._board_center().y
+		_expect(their.position.y >= their_rect.end.y - 4.0 if below else their.position.y + their.size.y <= their_rect.position.y + 4.0, "상대 말풍선은 아바타에서 화면 안쪽으로 뜬다")
+	_board._emote_button.pressed.emit()
+	var outside := InputEventMouseButton.new()
+	outside.button_index = MOUSE_BUTTON_LEFT
+	outside.pressed = true
+	outside.position = Vector2(20, 20)
+	_board._input(outside)
+	_expect(not _board._emote_picker.visible, "이모트 판 밖을 누르면 닫힌다")
+	for player_id: int in _board._emote_bubbles.keys():
+		var shown: Variant = _board._emote_bubbles[player_id]
+		if shown != null and is_instance_valid(shown):
+			(shown as Node).queue_free()
+		if _board._profiles.has(player_id):
+			(_board._profiles[player_id]["avatar"] as AvatarSlot).react(AvatarSlot.Emotion.IDLE, 0.0)
 	# 메뉴가 열려 있는 동안 봇은 쉰다
 	_expect(_board._bot_should_wait(), "혼자 하는 판은 메뉴가 열려 있는 동안 봇이 멈춘다")
 	# 게임 설정

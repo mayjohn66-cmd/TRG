@@ -612,6 +612,7 @@ func _process(delta: float) -> void:
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
 		Sfx.unlock()  # 웹 브라우저가 소리를 막아 두므로 첫 클릭에서 오디오를 깨운다
+	_emote_picker_input(event)
 	if manager == null or state == null or _menu_is_open():
 		return
 	if _snipe_pick and _handle_snipe_input(event):
@@ -782,19 +783,13 @@ func _bind_state() -> void:
 			return
 		_record_ejection(pawn_id, by_player)
 		var victim_owner: int = victim.owner_id
-		var react: Callable = func() -> void:
-			_avatar_react(victim_owner, AvatarSlot.Emotion.ANGRY)
-			if by_player != victim_owner and _player_ids.has(by_player):
-				_avatar_react(by_player, AvatarSlot.Emotion.HAPPY)
-		# 실제 잡기: [컷신 -> 장외 홈런 -> 0번 복귀]를 이동·발판 연출이 모두 끝난 뒤(큐 맨 뒤)에 재생한다. 아바타도 그때 반응한다 (결과를 먼저 흘리지 않게).
+		# 실제 잡기: [컷신 -> 장외 홈런 -> 0번 복귀]를 이동·발판 연출이 모두 끝난 뒤(큐 맨 뒤)에 재생한다.
+		# 아바타 표정은 바뀌지 않는다: 표정은 플레이어가 고른 감정 표현(이모트)으로만 바뀐다.
 		var cutin_capture: bool = _capture_marks.has(pawn_id)
 		_capture_marks.erase(pawn_id)
 		if _fx_on():
 			_enqueue_late(func() -> void:
-				react.call()
-				await _play_capture_eject(pawn_id, by_player, victim_owner, cutin_capture), pawn_id)
-		else:
-			react.call())
+				await _play_capture_eject(pawn_id, by_player, victim_owner, cutin_capture), pawn_id))
 	state.revenge_boost_fired.connect(_on_revenge_boost_fired)
 	state.dash_pad_triggered.connect(func(pawn_id: int, tile: int) -> void:
 		_log_line("[부스터 발판] %s %d번 발판! +%d칸 추가 전진" % [_pawn_name(pawn_id), tile, GameData.dash_steps()], Color("63e6be"))
@@ -809,10 +804,7 @@ func _bind_state() -> void:
 		var finisher: PlayerPawn = state.get_pawn(pawn_id)
 		if finisher != null:
 			var finisher_owner: int = finisher.owner_id
-			if not _fx_on():
-				_avatar_react(finisher_owner, AvatarSlot.Emotion.CHEER, 1.8)
 			_fx_when_announced(func() -> void:
-				_avatar_react(finisher_owner, AvatarSlot.Emotion.CHEER, 1.8)  # 말이 결승선에 닿은 뒤 환호
 				_profile_react(finisher_owner, true, "[골인!]")))
 	state.pawn_promoted.connect(func(pawn_id: int) -> void:
 		var promoted_pawn: PlayerPawn = state.get_pawn(pawn_id)
@@ -900,13 +892,10 @@ func _bind_state() -> void:
 		var trapped: PlayerPawn = state.get_pawn(pawn_id)
 		if trapped != null:
 			var trapped_owner: int = trapped.owner_id
-			if not _fx_on():
-				_avatar_react(trapped_owner, AvatarSlot.Emotion.SURPRISED)
 			var trap_pos: Vector2 = _tile_center(tile)
 			# 순서: 함정이 터진다(충격) -> 잠깐 뒤 프로필 반응 -> 그 뒤 말이 날아간다 (_fx_hint_bonus)
 			_fx_hint_bonus = maxf(_fx_hint_bonus, 0.4)
 			_fx_when_announced(func() -> void:
-				_avatar_react(trapped_owner, AvatarSlot.Emotion.SURPRISED)
 				Sfx.play(&"trap")
 				screen_shake(8.0, 0.25)
 				_impact_ring(trap_pos, Color("ff6b6b"), 56.0)
@@ -2442,7 +2431,6 @@ func _bakery_feedback(data: Dictionary) -> void:
 		if drawn != &"":
 			Sfx.play(&"good")
 			_floating_badge(at, "🍞 빵집! 카드 획득 +1", Color("ffd43b"))  # 어떤 카드인지는 알려 주지 않는다
-			_avatar_react(owner_id, AvatarSlot.Emotion.HAPPY, 1.2)
 		else:
 			_floating_badge(at, "🍞 빵집: 손패가 가득 차서 카드를 받지 못했어요", Color("adb5bd"))
 		_fx_until_msec = maxi(_fx_until_msec, Time.get_ticks_msec() + int(500.0 * _motion_pace())))
@@ -3564,15 +3552,13 @@ func _build_pawn_dock() -> void:
 		_pawn_slot_parts.append({"letter": letter, "place": place, "badge": badge})
 
 
-## 내 프로필 위의 감정 표현 버튼 5개: 누르면 내 아바타가 반응하고, 온라인이면 상대 화면의 내 아바타도 같은 반응을 한다.
-const EMOTE_BUTTONS: Array[Dictionary] = [
-	{"emotion": AvatarSlot.Emotion.HAPPY, "text": "웃음", "color": Color("e0a100")},
-	{"emotion": AvatarSlot.Emotion.ANGRY, "text": "분노", "color": Color("c92a2a")},
-	{"emotion": AvatarSlot.Emotion.SURPRISED, "text": "놀람", "color": Color("1971c2")},
-	{"emotion": AvatarSlot.Emotion.SAD, "text": "낙담", "color": Color("5f6b7a")},
-	{"emotion": AvatarSlot.Emotion.CHEER, "text": "환호", "color": Color("2b8a3e")},
-]
+## 내 프로필 위의 [감정 표현] 버튼: 누르면 이모트 판(EmoteCatalog 8종)이 펼쳐지고, 고르면 내 아바타 옆에 말풍선이 튀어나오며 아바타 표정이 바뀐다.
+## 온라인이면 상대 화면의 내 프로필에도 같은 말풍선이 뜬다 (클래시 로얄식 이모트).
 const EMOTE_COOLDOWN_MSEC: int = 1200
+
+var _emote_button: Button = null
+var _emote_picker: PanelContainer = null
+var _emote_bubbles: Dictionary = {}
 
 
 func _build_emote_row() -> void:
@@ -3580,36 +3566,117 @@ func _build_emote_row() -> void:
 	_emote_row.name = "EmoteRow"
 	_emote_row.position = Vector2(1030, 554)
 	_emote_row.size = Vector2(320, 32)
-	_emote_row.add_theme_constant_override("separation", 6)
+	_emote_row.alignment = BoxContainer.ALIGNMENT_END
 	add_child(_emote_row)
-	for entry: Dictionary in EMOTE_BUTTONS:
-		var button: Button = _make_button(str(entry["text"]), _on_emote_pressed.bind(int(entry["emotion"])), 13, entry["color"], 8)
-		button.custom_minimum_size = Vector2(58, 30)
+	_emote_button = _make_button("😀 감정 표현", _toggle_emote_picker, 14, Color("f08c00"), 14)
+	_emote_button.name = "EmoteButton"
+	_emote_button.custom_minimum_size = Vector2(124, 32)
+	_emote_button.focus_mode = Control.FOCUS_NONE
+	_emote_button.tooltip_text = "말풍선으로 감정 표현 (상대에게도 보입니다)"
+	_emote_row.add_child(_emote_button)
+	_emote_picker = PanelContainer.new()
+	_emote_picker.name = "EmotePicker"
+	_emote_picker.visible = false
+	_emote_picker.z_index = 65
+	_emote_picker.add_theme_stylebox_override("panel", _style(Color(0.07, 0.09, 0.15, 0.96), Color("ffd43b"), 3, 16, 12, 10))
+	add_child(_emote_picker)
+	var grid := GridContainer.new()
+	grid.columns = 4
+	grid.add_theme_constant_override("h_separation", 6)
+	grid.add_theme_constant_override("v_separation", 6)
+	_emote_picker.add_child(grid)
+	for emote_id: int in EmoteCatalog.count():
+		var entry: Dictionary = EmoteCatalog.entry(emote_id)
+		var button: Button = _make_button("%s\n%s" % [entry["emoji"], entry["text"]], _on_emote_pressed.bind(emote_id), 13, entry["color"], 12)
+		button.name = "Emote%d" % emote_id
+		button.custom_minimum_size = Vector2(84, 66)
 		button.focus_mode = Control.FOCUS_NONE
-		button.tooltip_text = "내 아바타로 감정 표현 (상대에게도 보입니다)"
-		_emote_row.add_child(button)
+		grid.add_child(button)
 
 
 ## 감정 표현은 내 자리를 직접 조작하는 판(AI 대전·온라인)에서만 쓴다. 4인 수동 조작은 기물 독이 같은 자리를 쓴다.
 func _refresh_emote_row() -> void:
 	if _emote_row != null:
 		_emote_row.visible = (ai_mode or net != null) and not manager.is_game_over and _player_ids.has(local_player_id)
+		if not _emote_row.visible:
+			_close_emote_picker()
 
 
-func _on_emote_pressed(emotion: int) -> void:
+func _toggle_emote_picker() -> void:
+	if _emote_picker == null:
+		return
+	if _emote_picker.visible:
+		_close_emote_picker()
+		return
+	Sfx.play(&"ui_click")
+	_emote_picker.visible = true
+	_emote_picker.reset_size()
+	var anchor: Rect2 = _emote_button.get_global_rect()
+	var at: Vector2 = get_global_transform().affine_inverse() * Vector2(anchor.end.x - _emote_picker.size.x, anchor.position.y - _emote_picker.size.y - 8.0)
+	_emote_picker.position = Vector2(clampf(at.x, 8.0, size.x - _emote_picker.size.x - 8.0), maxf(at.y, 8.0))
+	_emote_picker.pivot_offset = Vector2(_emote_picker.size.x, _emote_picker.size.y)
+	_emote_picker.scale = Vector2(0.6, 0.6)
+	_emote_picker.create_tween().tween_property(_emote_picker, "scale", Vector2.ONE, 0.15).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+func _close_emote_picker() -> void:
+	if _emote_picker != null:
+		_emote_picker.visible = false
+
+
+## 이모트 판 밖을 누르면 닫는다.
+func _emote_picker_input(event: InputEvent) -> void:
+	if _emote_picker == null or not _emote_picker.visible:
+		return
+	var click: InputEventMouseButton = event as InputEventMouseButton
+	if click == null or not click.pressed:
+		return
+	if not _emote_picker.get_global_rect().has_point(click.position) and not _emote_button.get_global_rect().has_point(click.position):
+		_close_emote_picker()
+
+
+func _on_emote_pressed(emote_id: int) -> void:
+	_close_emote_picker()
 	var now: int = Time.get_ticks_msec()
-	if now < _emote_ready_msec or manager.is_game_over:
+	if now < _emote_ready_msec or manager.is_game_over or not EmoteCatalog.is_valid(emote_id):
 		return
 	_emote_ready_msec = now + EMOTE_COOLDOWN_MSEC
-	_avatar_react(local_player_id, emotion as AvatarSlot.Emotion, 2.0)
+	_show_emote(local_player_id, emote_id)
 	if net != null:
-		net.send_emote(emotion)
+		net.send_emote(emote_id)
 
 
-func _on_net_emote(seat: int, emotion: int) -> void:
-	if not _player_ids.has(seat) or seat == local_player_id:
+func _on_net_emote(seat: int, emote_id: int) -> void:
+	if not _player_ids.has(seat) or seat == local_player_id or not EmoteCatalog.is_valid(emote_id):
 		return
-	_avatar_react(seat, emotion as AvatarSlot.Emotion, 2.0)
+	_show_emote(seat, emote_id)
+
+
+## 이모트 재생: 아바타 표정 + 프로필 옆 말풍선. 같은 사람의 앞 말풍선은 바로 치운다.
+func _show_emote(player_id: int, emote_id: int) -> void:
+	if not _profiles.has(player_id):
+		return
+	var entry: Dictionary = EmoteCatalog.entry(emote_id)
+	_avatar_react(player_id, int(entry["emotion"]) as AvatarSlot.Emotion, 2.4)
+	Sfx.play(&"card_get")
+	var previous: Variant = _emote_bubbles.get(player_id)
+	if previous != null and is_instance_valid(previous):
+		(previous as Node).queue_free()
+	var avatar: Control = _profiles[player_id]["avatar"]
+	var to_local: Transform2D = get_global_transform().affine_inverse()
+	var rect: Rect2 = to_local * avatar.get_global_rect()
+	var view: Rect2 = to_local * get_viewport().get_visible_rect()
+	var above: bool = rect.get_center().y > _board_center().y  # 보드 중심보다 아래 프로필은 위로, 위 프로필은 아래로 말풍선을 띄운다
+	var bubble := EmoteBubble.new()
+	bubble.setup(emote_id, above)
+	add_child(bubble)
+	var tip := Vector2(rect.get_center().x, rect.position.y - 2.0 if above else rect.end.y + 2.0)
+	var x: float = clampf(tip.x - bubble.size.x * 0.3, view.position.x + 8.0, view.end.x - bubble.size.x - 8.0)
+	bubble.tail_x = clampf(tip.x - x, 22.0, bubble.size.x - 22.0)
+	bubble.position = Vector2(x, tip.y - bubble.size.y if above else tip.y)
+	bubble.queue_redraw()
+	_emote_bubbles[player_id] = bubble
+	bubble.play()
 
 
 ## 기물 독이 보여 주는 주인: AI 모드는 항상 로컬 플레이어, 4P 수동 모드는 현재 턴 플레이어.
@@ -6983,7 +7050,6 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_log_line("[도박사의 영혼] P%d: 눈금 %d - 과열! %s 출발선으로 사출" % [busted, data["roll"], _pawn_name(int(data["pawn_id"]))], Color("ff6b6b"))
 			_record(busted, "🎰 도박사의 영혼 과열! (눈금 %d)" % int(data["roll"]))
 			_profile_react(busted, false, "[으악!]")
-			_avatar_react(busted, AvatarSlot.Emotion.SAD, 1.2)
 			_announce("도박사의 영혼", "[과열!]", "눈금 %d - 이동한 말이 과열되어 출발선으로 사출됩니다" % data["roll"], Color("ff6b6b"), null, 1.1)
 			_start_beat(0.9)
 		&"turn_rested":
@@ -7017,7 +7083,6 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_record(int(data["player_id"]), "⛔ 움직일 수 있는 말이 없어 이동 실패")
 			_announce_move_failed("움직일 수 있는 말이 없어", int(data["player_id"]), "구속 중이거나 선택할 수 있는 말이 없습니다")
 		&"card_played":
-			_avatar_react(int(data["player_id"]), AvatarSlot.Emotion.HAPPY)
 			var card: BaseCard = CardRegistry.get_card(data["card_id"])
 			_log_line("[카드] P%d [%s] 사용%s" % [data["player_id"], card.display_name, " (개입 대기열 - 나중에 낸 카드부터 실행)" if data["queued"] else ""], Color("74c0fc"))
 			_record_card(data)
@@ -7573,7 +7638,6 @@ func _play_stage(stage: Control, tool_id: StringName, result: Dictionary) -> voi
 ## 블랙잭 버스트: 이동 없이 턴이 끝난다. 결과 카드를 0.9초 보여 주고 프로필이 피격 반응을 한다.
 func _announce_bust(player_id: int, total: int) -> void:
 	_profile_react(player_id, false, "[으악!]")
-	_avatar_react(player_id, AvatarSlot.Emotion.SAD, 1.2)
 	_announce("블랙잭", "[BUST! (21 초과 - 0칸 이동 실패)]", "카드 합계 %d" % total, Color("ff6b6b"), null, 0.9)
 	_start_beat(0.9)
 
@@ -7581,7 +7645,6 @@ func _announce_bust(player_id: int, total: int) -> void:
 ## 이동 실패 알림: 결과 카드를 0.9초 보여 주고 프로필이 피격 반응을 한다. 알림이 떠 있는 동안 입력과 봇 행동은 멈춰 있어 다음 차례가 먼저 시작되지 않는다.
 func _announce_move_failed(headline: String, player_id: int, body: String = "") -> void:
 	_profile_react(player_id, false, "[으악!]")
-	_avatar_react(player_id, AvatarSlot.Emotion.SAD, 1.2)
 	_announce("이동 실패", "[%s 이번 턴 이동 실패!]" % headline, body, Color("ff6b6b"), null, 0.9)
 	_start_beat(0.9)
 
