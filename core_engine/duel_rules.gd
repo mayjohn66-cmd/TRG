@@ -12,7 +12,7 @@ enum Hand { ROCK, SCISSORS, PAPER }
 const GAME_COUNT: int = 6
 const GAME_NAMES: Array[String] = ["묵찌빠 단두대", "할리갈리 디럭스", "병뚜껑 절벽 컬링", "석양의 무법자", "엘리아스 E카드", "스피키 룰렛"]
 const GAME_RULES: Array[String] = [
-	"3초 안에 가위·바위·보! 비기면 한 번 더, 또 비기면 신청자 승",
+	"3초 안에 가위·바위·보! 같은 손이면 다시 골라 승부를 낸다",
 	"두 더미 맨 위 카드의 그림 합이 정확히 5개일 때 먼저 종을 쳐라! (아닐 때 치면 반칙패)",
 	"게이지를 멈춰 100%에 가장 가깝게! 100%를 넘으면 절벽 아래로 추락",
 	"정적 뒤 [뽑아라!] 신호에 먼저 쏴라! 신호 전에 쏘면 부정출발 패배",
@@ -31,8 +31,6 @@ const ECARD_REBEL: int = 0
 const WINNER_ADVANCE: int = 3
 ## E카드에서 반란군이 여왕을 잡은 하극상 보너스 칸수.
 const UPSET_ADVANCE: int = 5
-## 가위바위보: 비기면 다시 겨루는 최대 횟수 (이 횟수만큼 연달아 비기면 신청자의 판정승).
-const MAX_DRAWS: int = 2
 
 ## 할리갈리: 카드가 깔리는 간격(초), 카드 그림 수 범위, 합계 목표.
 const HALLI_INTERVAL: float = 0.55

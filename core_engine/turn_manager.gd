@@ -848,7 +848,7 @@ func _duel_barrel_pick(actor: int, hole: int) -> void:
 	_duel_announce(winner, &"bomb", DuelRules.winner_advance(), picks)
 
 
-## 둘 다 냈다: 승패를 가리고 공개한다. 가위바위보만 비기면 다시 고르고, MAX_DRAWS번 연달아 비기면 신청자의 판정승이다.
+## 둘 다 냈다: 승패를 가리고 공개한다. 가위바위보는 같은 손이면 다시 고른다.
 func _duel_reveal() -> void:
 	var challenger: int = int(_duel["challenger"])
 	var defender: int = int(_duel["defender"])
@@ -859,9 +859,6 @@ func _duel_reveal() -> void:
 	var decided_by: StringName = result["decided_by"]
 	if winner == -1:
 		_duel["draws"] = int(_duel["draws"]) + 1
-		if int(_duel["draws"]) >= DuelRules.MAX_DRAWS:
-			winner = challenger
-			decided_by = &"draws"
 	_duel["picks"] = {}
 	if winner == -1:
 		_emit_event(&"duel_revealed", _duel_reveal_data(-1, &"draw", picks, 0))

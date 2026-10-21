@@ -1449,7 +1449,7 @@ func _play_one_duel(game: int) -> void:
 			match game:
 				DuelRules.Game.RPS, DuelRules.Game.ECARD:
 					if arena._pick_seat != -1:
-						arena._choose(randi() % (3 if game == DuelRules.Game.RPS else 2))
+						arena._choose((0 if arena._pick_seat == arena.challenger else 1) if game == DuelRules.Game.RPS else randi() % 2)
 				DuelRules.Game.CURLING:
 					if arena._pick_seat != -1 and arena._clock > 0.6:
 						arena._curling_stop()

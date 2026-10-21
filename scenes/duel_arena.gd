@@ -60,6 +60,7 @@ var _buttons: HBoxContainer = null
 var _bar: ProgressBar = null
 var _drawing: StageDrawing = null
 var _game_slot: DuelGameSlot = null
+var _rps_stage: DuelRpsStage = null
 var _intro_panel: PanelContainer
 var _intro_headline: Label
 var _intro_how: Label
@@ -79,7 +80,7 @@ const INTRO_HOW: Array[String] = [
 	"차례가 오면 칼을 꽂을 구멍을 고르세요.\n번갈아 한 번씩, 다섯 구멍 중 하나에는 폭탄!",
 ]
 const INTRO_WARNINGS: Array[String] = [
-	"비기면 재대결! 두 번 연속 비기면 신청자가 승리합니다.",
+	"같은 손이면 무승부! 다시 골라 승부를 냅니다.",
 	"합이 5개가 아닐 때 누르면 반칙패!",
 	"100%를 넘기면 절벽 아래로 추락합니다!",
 	"트림은 가짜 신호! 신호보다 먼저 쏘면 반칙패!",
@@ -165,6 +166,11 @@ func _build() -> void:
 	_drawing.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_drawing.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_stage.add_child(_drawing)
+	_rps_stage = DuelRpsStage.new()
+	_rps_stage.arena = self
+	_rps_stage.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_rps_stage.visible = false
+	_stage.add_child(_rps_stage)
 	_game_slot = DuelGameSlot.new()
 	_game_slot.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_game_slot.visible = false
@@ -426,7 +432,9 @@ func _play(kind: StringName, data: Dictionary) -> void:
 			if is_inside_tree() and not _closing:
 				_begin_game()
 		&"duel_pick_in":
-			if game == DuelRules.Game.BARREL and data.has("hole"):
+			if game == DuelRules.Game.RPS:
+				_rps_stage.mark_ready(int(data["player_id"]))
+			elif game == DuelRules.Game.BARREL and data.has("hole"):
 				await _play_barrel_stab(data)
 			elif not local_seats.has(int(data["player_id"])):
 				_say("%s 입력 완료!" % _seat_name(int(data["player_id"])), Color("ced4da"))
@@ -504,6 +512,13 @@ func _confirm_intro() -> void:
 
 
 func _begin_game() -> void:
+	if game == DuelRules.Game.RPS:
+		custom_minimum_size.x = 700.0
+		_stage.custom_minimum_size.y = 250.0
+		_drawing.visible = false
+		_rps_stage.visible = true
+		_rps_stage.reset_round()
+		_place.call_deferred()
 	_step = &"play"
 	_say("", Color.WHITE)
 	match game:
@@ -523,7 +538,7 @@ func _next_pick_seat() -> void:
 	var open: Array[int] = _local_open_seats()
 	if open.is_empty():
 		_step = &"waiting"
-		_say(("컴퓨터끼리 결투 중..." if local_seats.is_empty() else "상대를 기다리는 중..."), Color("ced4da"))
+		_say("" if game == DuelRules.Game.RPS else ("컴퓨터끼리 결투 중..." if local_seats.is_empty() else "상대를 기다리는 중..."), Color("ced4da"))
 		return
 	_pick_seat = open[0]
 	_vs.text = "%s 차례" % _seat_name(_pick_seat)
@@ -531,7 +546,7 @@ func _next_pick_seat() -> void:
 	match game:
 		DuelRules.Game.RPS:
 			for hand: int in 3:
-				_add_button(["바위", "가위", "보"][hand], _choose.bind(hand), Color("3b4766"), 140.0)
+				_buttons.add_child(_rps_stage.make_choice(hand, _choose.bind(hand)))
 			_start_timer(PICK_SECONDS)
 		DuelRules.Game.ECARD:
 			var names: Array[String] = DuelRules.ECARD_CHALLENGER if _pick_seat == challenger else DuelRules.ECARD_DEFENDER
@@ -545,9 +560,13 @@ func _next_pick_seat() -> void:
 
 
 func _choose(value: int) -> void:
-	if _pick_seat == -1 or _step != &"play":
+	if _pick_seat == -1 or _step != &"play" or _submitted.has(_pick_seat):
 		return
 	var seat: int = _pick_seat
+	if game == DuelRules.Game.RPS:
+		_pick_seat = -1
+		_rps_stage.mark_ready(seat)
+		_clear_buttons()
 	_stop_timer()
 	Sfx.play(&"ui_click")
 	_submit(seat, value)
@@ -681,6 +700,9 @@ func _queue_has(kind: StringName) -> bool:
 
 
 func _play_reveal(data: Dictionary) -> void:
+	if game == DuelRules.Game.RPS:
+		await _play_rps_reveal(data)
+		return
 	animating = true
 	var picks: Dictionary = data["picks"]
 	# 순발력 게임: 봇이 먼저 냈어도 화면의 카드·신호가 그 순간까지 다 나온 다음 공개한다.
@@ -720,7 +742,6 @@ func _play_reveal(data: Dictionary) -> void:
 		return
 	var suffix: String = ""
 	match data["decided_by"]:
-		&"draws": suffix = " (연속 무승부 판정승)"
 		&"foul": suffix = " (상대 반칙!)"
 		&"fall": suffix = " (상대 추락!)"
 		&"both_fell": suffix = " (둘 다 추락, 신청자 판정승)"
@@ -729,6 +750,26 @@ func _play_reveal(data: Dictionary) -> void:
 	_say("%s  →  %s 승리!%s" % [detail, _seat_name(winner), suffix], GOLD)
 	_vs.text = "%s  VS  %s" % [board._player_name(challenger), board._player_name(defender)]
 	await _wait(1.1)
+	animating = false
+
+
+func _play_rps_reveal(data: Dictionary) -> void:
+	animating = true
+	_step = &"reveal"
+	_pick_seat = -1
+	_stop_timer()
+	_clear_buttons()
+	_say("", Color.WHITE)
+	_vs.text = "%s  VS  %s" % [_seat_name(challenger), _seat_name(defender)]
+	_rps_stage.play_reveal(data["picks"], int(data["winner"]))
+	await _rps_stage.finished
+	if not is_inside_tree() or _closing:
+		return
+	if int(data["winner"]) == -1:
+		_submitted.clear()
+		_rps_stage.reset_round()
+		_step = &"play"
+		_next_pick_seat()
 	animating = false
 
 
@@ -758,6 +799,7 @@ func close_now() -> void:
 	animating = false
 	_clock = -1.0
 	_game_slot.cancel()
+	_rps_stage.cancel()
 	_stop_timer()
 	_clear_buttons()
 	var tween: Tween = create_tween().set_parallel(true)
@@ -787,7 +829,6 @@ class StageDrawing extends Control:
 		if arena == null or arena._step == &"roulette" or arena._step == &"idle":
 			return
 		match arena.game:
-			DuelRules.Game.RPS: _draw_hands()
 			DuelRules.Game.ECARD: _draw_ecards()
 			DuelRules.Game.HALLI: _draw_halli()
 			DuelRules.Game.QUICKDRAW: _draw_cowboys()
@@ -807,18 +848,6 @@ class StageDrawing extends Control:
 		var font: Font = ThemeDB.fallback_font
 		var width: float = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
 		draw_string(font, Vector2(at.x - width / 2.0, at.y), text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, color)
-
-	func _draw_hands() -> void:
-		for seat: int in [arena.challenger, arena.defender]:
-			var center := Vector2(_seat_x(seat), size.y * 0.45)
-			draw_circle(center, 46.0, Color(MainBoard.PLAYER_COLORS.get(seat, Color.WHITE), 0.2))
-			var label: String = "?"
-			if reveal.has(seat):
-				label = ["바위", "가위", "보"][clampi(int(reveal[seat]), 0, 2)]
-			elif arena._submitted.has(seat):
-				label = "선택 완료"
-			_center_text(label, center + Vector2(0, 8), 22, Color.WHITE)
-			_name_at(seat, size.y - 8.0)
 
 	func _draw_ecards() -> void:
 		for seat: int in [arena.challenger, arena.defender]:
