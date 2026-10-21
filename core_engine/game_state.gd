@@ -51,6 +51,8 @@ signal side_collapsed(side: int, tiles: Array[int], destroyed: int)
 signal crowbar_swung(player_id: int, tiles: Array[int])
 ## 소환 카드·폭주 기관차: 사료스탕스·와구와구 유령·기관차가 길을 쓸었다.
 signal npc_swept(display_id: StringName, path: Array[int], ejected: Array[int])
+## Presentation snapshot point, before the one-shot sweep resets pawns or removes traps.
+signal npc_sweep_started(display_id: StringName, path: Array[int])
 ## ACT_08 운명의 수레바퀴: outcome은 "swap"(내 말 mine_id와 적 말 enemy_id의 위치 교환) 또는 "retreat"(적 말 후퇴, mine_id = -1).
 signal wheel_turned(player_id: int, mine_id: int, enemy_id: int, outcome: StringName)
 ## ACT_09 일기토 데스매치 신청: challenger가 defender에게 결투를 걸었다 (진행은 TurnManager가 입력을 받아 한다).

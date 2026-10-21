@@ -309,6 +309,9 @@ var _aim_pawn: int = -1
 var _aim_angle: float = 0.0
 var _aim_power: float = 0.0
 var _alkkagi: AlkkagiStage = null
+var _train_stage: RunawayTrainStage
+var _train_controlled: Dictionary = {}
+var _train_trap_hold: Dictionary = {}
 var _alkkagi_camera := 0.0
 var _alkkagi_camera_tween: Tween
 var _alkkagi_saved_view := -1
@@ -802,7 +805,7 @@ func _bind_state() -> void:
 		if victim == null:
 			return
 		_record_ejection(pawn_id, by_player)
-		if _alkkagi_controlled.has(pawn_id):
+		if _alkkagi_controlled.has(pawn_id) or _train_controlled.has(pawn_id):
 			return
 		var victim_owner: int = victim.owner_id
 		# 실제 잡기: [컷신 -> 장외 홈런 -> 0번 복귀]를 이동·발판 연출이 모두 끝난 뒤(큐 맨 뒤)에 재생한다.
@@ -897,6 +900,7 @@ func _bind_state() -> void:
 		_log_line("[강제 연대책임] %s의 짝 %s도 %s" % [_pawn_name(pawn_id), _pawn_name(partner_id), verb], Color("ffa94d"))
 		if pawn != null:
 			_record(pawn.owner_id, "연대책임: %s 짝 말도 %s" % [_bq("%d번 말" % pawn.slot), verb], "", true))
+	state.npc_sweep_started.connect(_on_train_sweep_started)
 	state.npc_swept.connect(_on_npc_swept)
 	state.shield_recharged.connect(func(pawn_id: int) -> void: _log_line("[백돌 방어막] %s의 방어막이 다시 차올랐습니다" % _pawn_name(pawn_id), Color("b197fc")))
 	state.trap_defused.connect(func(tile: int, id: String, pawn_id: int) -> void:
@@ -1014,6 +1018,7 @@ func _build_ui() -> void:
 	_build_menu()
 	_build_drop_zone()
 	_build_aim_layer()
+	_build_train_stage()
 	_build_hover_tip()
 	var capture_layer := CanvasLayer.new()
 	capture_layer.name = "CapturePresentation"
@@ -2042,6 +2047,8 @@ func _refresh_tiles() -> void:
 	if _tile_marks.is_empty():
 		return
 	for index: int in BoardSpec.tile_count:
+		if _train_trap_hold.has(index):
+			continue
 		var parts: Array[String] = []
 		if BoardSpec.jump_corner_targets.has(index):
 			if (_tile_views[index] as BoardSkin.Tile).arrow_target != _jump_arrow_target(index):
@@ -2617,6 +2624,9 @@ func _npc_runner_name(display_id: StringName) -> String:
 
 ## 소환 카드·폭주 기관차: 알림이 먼저 뜨고(어디서 출발하는지만), 기물이 길을 따라 달린 다음 결과(사출 수)가 나온다. 사출 연출은 그 뒤에 이어진다.
 func _on_npc_swept(display_id: StringName, path: Array[int], ejected: Array[int]) -> void:
+	if display_id==&"TRAIN":
+		_play_train_sweep(path,ejected)
+		return
 	var runner: String = _npc_runner_name(display_id)
 	var outcome: String = "%d번 → %d번 질주! " % [path[0], path[-1]]
 	if display_id == &"TRAIN":
@@ -2637,6 +2647,128 @@ func _on_npc_swept(display_id: StringName, path: Array[int], ejected: Array[int]
 		_record(-1, "%s %s" % [_bq(runner), outcome]))
 
 
+func _build_train_stage() -> void:
+	_train_stage = RunawayTrainStage.new()
+	_train_stage.name = "RunawayTrainPresentation"
+	add_child(_train_stage)
+	# Above board/pawns at rest, below HUD controls. Launched pawns use z=12.
+	move_child(_train_stage,_pawn_layer.get_index()+1)
+	_train_stage.tile_passed.connect(_train_contact)
+	_train_stage.pose_changed.connect(_train_pose)
+
+func _train_plane() -> Transform2D:
+	var at := _project(Vector2.ZERO)
+	return Transform2D(_project(Vector2.RIGHT)-at,_project(Vector2.DOWN)-at,at+_pawn_layer.position)
+
+func _on_train_sweep_started(display_id: StringName, path: Array[int]) -> void:
+	if display_id!=&"TRAIN" or not _fx_on():
+		return
+	for tile: int in path:
+		if tile==GameEnums.GOAL_TILE:
+			continue
+		for attachment: TileAttachment in state.board.get_tile(tile).attachments:
+			if attachment.attachment_id.begins_with("TRP"):
+				_train_trap_hold[tile] = true
+		for pawn: PlayerPawn in state.leaders_at(tile):
+			if not pawn.has_left_start or pawn.is_finished:
+				continue
+			for member: PlayerPawn in pawn.stack_members():
+				var view: Node2D = _pawn_views.get(member.entity_id)
+				if view!=null:
+					_kill_fx(view)
+					_train_controlled[member.entity_id] = {"tile":tile,"position":view.position,"visible":view.visible,"hit":-1.0}
+
+func _play_train_sweep(path: Array[int], ejected: Array[int]) -> void:
+	if not _fx_on() or path.size()<2:
+		_train_release()
+		return
+	var route := path.duplicate()
+	var count := ejected.size()
+	enqueue_step(func() -> void:
+		var generation := _fx_generation
+		_train_stage.play(route,_motion_pace(),_train_plane)
+		while generation==_fx_generation and _train_stage.mode!=&"idle":
+			await get_tree().process_frame
+		if generation!=_fx_generation:
+			return
+		_train_release()
+		_refresh_tiles()
+		_log_line("[폭주 기관차] %d번 → %d번 질주! 말 %d개 사출 · 경로의 함정 파괴" % [route[0],route[-1],count],Color("fa5252"))
+		_record(-1,"폭주 기관차 · 말 %d개 사출" % count))
+
+func _train_contact(tile: int) -> void:
+	var hit := false
+	for id: int in _train_controlled:
+		var info: Dictionary = _train_controlled[id]
+		if int(info.tile)==tile and float(info.hit)<0.0:
+			info.hit = _train_stage.elapsed
+			var view: Node2D = _pawn_views.get(id)
+			if view!=null:
+				view.z_index = 12
+			hit = true
+	if _train_trap_hold.has(tile):
+		_train_trap_hold.erase(tile)
+		_refresh_tiles()
+		_burst_shards(_tile_center(tile),Color("b995eb"),10)
+		hit = true
+	if hit:
+		Sfx.play(&"slam",-4.0,0.02,1.12)
+		_train_impact(_tile_center(tile))
+		_burst_shards(_tile_center(tile),Color("ffe5a1"),8)
+		screen_shake(3.5,0.12)
+
+func _train_impact(at: Vector2) -> void:
+	var ring := Line2D.new()
+	ring.position = at+Vector2(0,-10)
+	ring.width = 2.5
+	ring.closed = true
+	ring.default_color = Color("ffe0a3")
+	ring.z_index = 17
+	_pawn_layer.add_child(ring)
+	var tween := create_tween()
+	tween.tween_method(func(p: float) -> void:
+		ring.points = _circle_points(lerpf(7.0,29.0,p),32)
+		ring.modulate.a = 1.0-p,0.0,1.0,0.24*_motion_pace())
+	tween.tween_callback(ring.queue_free)
+
+func _train_pose() -> void:
+	if _train_stage==null:
+		return
+	for id: int in _train_controlled:
+		var info: Dictionary = _train_controlled[id]
+		var view: Node2D = _pawn_views.get(id)
+		if view==null:
+			continue
+		if float(info.hit)<0.0:
+			view.position = info.position
+			view.visible = info.visible
+			continue
+		var age := maxf(0.0,_train_stage.elapsed-float(info.hit))
+		var phase := clampf(age/0.72,0,1)
+		var outward := (_tile_center(int(info.tile))-_project(Vector2.ONE/2.0)).normalized()
+		var forward := (_project(_train_stage.origin+_train_stage.direction*0.1)-_project(_train_stage.origin)).normalized()
+		view.position = (info.position as Vector2)+(outward*180.0+forward*55.0)*(1.0-pow(1.0-phase,2.0))+Vector2(0,-sin(phase*PI)*85.0)
+		view.rotation = age*(7.0 if id%2==0 else -7.0)
+		view.scale = Vector2.ONE*(1.0+sin(phase*PI)*0.16)
+		view.modulate.a = 1.0-smoothstep(0.35,0.72,age)
+		view.visible = bool(info.visible) and phase<1.0
+
+func _train_release() -> void:
+	for id: int in _train_controlled:
+		var view: Node2D = _pawn_views.get(id)
+		var pawn: PlayerPawn = state.get_pawn(id) if state!=null else null
+		if view!=null:
+			view.rotation = 0.0
+			view.scale = Vector2.ONE
+			view.modulate = Color.WHITE
+			view.z_index = 0
+			if pawn!=null:
+				view.position = _pawn_position(pawn)
+				view.visible = pawn.has_left_start and not pawn.is_finished and pawn.carrier==null
+	_train_controlled.clear()
+	_train_trap_hold.clear()
+
+
 ## 중립 기물이 한 칸씩 달리는 연출. 보드의 실제 기물 그림(npc_id)은 달리는 동안 숨기고, 끝나면 도착 칸에 다시 보인다.
 ## 잡힌 말의 사출은 이 연출 뒤에 연출 큐가 이어서 보여 준다 (말이 먼저 날아가지 않게). 끝나면 after를 부른다.
 func _play_npc_run(display_id: StringName, behavior: int, from_tile: int, path: Array, npc_id: int, after: Callable) -> void:
@@ -2648,20 +2780,16 @@ func _play_npc_run(display_id: StringName, behavior: int, from_tile: int, path: 
 		real.visible = false
 		real.set_meta("npc_run", true)
 	enqueue_step(func() -> void:
-		var runner: Node2D
-		if display_id == &"TRAIN":
-			runner = TrainSprite.new()
-		else:
-			var token := PawnToken.new()
-			token.configure_npc(behavior)
-			runner = token
+		var token := PawnToken.new()
+		token.configure_npc(behavior)
+		var runner: Node2D = token
 		runner.name = "NpcRunner"
 		runner.z_index = 6
 		_pawn_layer.add_child(runner)
 		var start: int = from_tile if from_tile >= 0 else int(path[0])
 		runner.position = _tile_center(start)
 		runner.scale = Vector2.ONE * _depth_scale(tile_norm(start).y)
-		var step_time: float = (0.09 if display_id == &"TRAIN" else 0.16) * _motion_pace()
+		var step_time: float = 0.16 * _motion_pace()
 		for tile: Variant in path:
 			var target: Vector2 = _tile_center(int(tile))
 			var hop: Tween = runner.create_tween().set_parallel(true)
@@ -5191,6 +5319,9 @@ func enqueue_step(step_callable: Callable, pawn_id: int = -1, allow_defer: bool 
 
 ## 연출 큐를 비우고 재생 중인 러너를 멈춘다 (판 초기화·되감기·테스트 정리용). 이미 시작된 트윈은 건드리지 않는다.
 func _reset_presentation() -> void:
+	if _train_stage != null:
+		_train_stage.cancel()
+	_train_release()
 	if _alkkagi != null:
 		_alkkagi.cancel()
 	_alkkagi_release(true)
@@ -5485,7 +5616,7 @@ func _glide_node(node: Node2D, to_pos: Vector2, seconds: float) -> void:
 
 ## 상태가 바뀐 뒤 말의 화면 자리를 맞춘다: 자리가 달라졌으면 순간이동 대신 포물선으로 움직이고(힌트가 있으면 그 모양으로), 끝나면 보이기/숨기기를 정한다.
 func _settle_pawn_view(view: Node2D, pawn: PlayerPawn, force: bool = false) -> void:
-	if _alkkagi_controlled.has(pawn.entity_id):
+	if _alkkagi_controlled.has(pawn.entity_id) or _train_controlled.has(pawn.entity_id):
 		return
 	var target_pos: Vector2 = _pawn_position(pawn)
 	var target_scale: float = _depth_scale(tile_norm(pawn.current_tile_idx).y)
@@ -8317,18 +8448,3 @@ func _human_can_intervene() -> bool:
 func _bot_should_wait() -> bool:
 	# 혼자 하는 판은 메뉴를 여는 동안 봇도 쉰다 (온라인은 다른 사람이 기다리므로 멈추지 않는다).
 	return _ui_busy() or (net == null and _menu_is_open()) or (_duel_arena != null and _duel_arena.animating)
-
-
-## 폭주 기관차 그림 (게임 글꼴에 기차 이모지가 없어 코드로 그린다).
-class TrainSprite extends Node2D:
-	func _draw() -> void:
-		draw_rect(Rect2(-24, -26, 34, 18), Color("c92a2a"))
-		draw_rect(Rect2(4, -36, 16, 28), Color("862e2e"))
-		draw_rect(Rect2(8, -32, 8, 8), Color("ffe066"))
-		draw_rect(Rect2(-20, -40, 7, 14), Color("343a40"))
-		draw_rect(Rect2(-26, -10, 48, 4), Color("343a40"))
-		for x: float in [-16.0, -2.0, 12.0]:
-			draw_circle(Vector2(x, -4), 6.0, Color("212529"))
-			draw_circle(Vector2(x, -4), 2.5, Color("adb5bd"))
-		draw_circle(Vector2(-17, -46), 5.0, Color(0.85, 0.85, 0.85, 0.8))
-		draw_circle(Vector2(-11, -54), 4.0, Color(0.85, 0.85, 0.85, 0.6))

@@ -16,13 +16,17 @@ static func run(state: GameState, start_tile: int, direction: int, steps: int, d
 	npc.place_at(start_tile)
 	npc.behavior = GameEnums.NpcBehavior.PATROL_REVERSE if direction < 0 else GameEnums.NpcBehavior.CHASE_NEAREST
 	npc.display_id = display_id
+	var route: Array[int] = [start_tile]
+	for step: int in steps:
+		var next: int = posmod(route[-1]+direction,BoardSpec.tile_count)
+		if next==GameEnums.GOAL_TILE:
+			break
+		route.append(next)
+	state.npc_sweep_started.emit(display_id,route.duplicate())
 	var result: Dictionary = {"npc_id": npc.entity_id, "display_id": display_id, "path": [start_tile] as Array[int], "ejected": [] as Array[int], "destroyed": 0, "destroy_traps": destroy_traps}
 	_eject_at(state, start_tile, by_player, result)
 	var tile: int = start_tile
-	for i: int in steps:
-		var next: int = posmod(tile + direction, BoardSpec.tile_count)
-		if next == GameEnums.GOAL_TILE:
-			break  # 출발선(결승)은 안전지대: 그 앞에서 멈춘다
+	for next: int in route.slice(1):
 		var from_tile: int = tile
 		tile = next
 		npc.current_tile_idx = tile

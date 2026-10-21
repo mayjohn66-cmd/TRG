@@ -161,6 +161,22 @@ func test_runaway_train_clears_one_whole_side_of_pawns_and_traps() -> void:
 	check_eq(cleared_sides, 1, "정확히 한 변만 쓸었다 (내 말도 예외 없음)")
 
 
+func test_sweep_snapshot_precedes_clearing_without_changing_rng_or_route() -> void:
+	var state := _state(17)
+	_place(state,11,10)
+	state.place_attachment(11,TrapMine.new(2))
+	var snapshots: Array = []
+	state.npc_sweep_started.connect(func(id: StringName,route: Array[int]) -> void:
+		snapshots.append({"id":id,"route":route.duplicate(),"pawn_present":state.get_pawn(11).has_left_start,"traps_present":state.board.get_tile(11).attachments.size()}))
+	var rng_before := state.rng.state
+	var result := NpcSweep.run(state,8,1,8,&"TRAIN",1,true)
+	check_eq(snapshots.size(),1,"One presentation snapshot per sweep")
+	check(snapshots[0].pawn_present and snapshots[0].traps_present==1,"Snapshot observes victims and traps before clearing")
+	check_eq(snapshots[0].route,result.path,"Snapshot and authoritative route match")
+	check_eq(state.rng.state,rng_before,"Presentation snapshot consumes no gameplay RNG")
+	check(not state.get_pawn(11).has_left_start and state.board.get_tile(11).attachments.is_empty(),"Sweep still applies immediately in the engine")
+
+
 func test_joint_responsibility_bonds_my_front_and_rear_pawns() -> void:
 	var state: GameState = _state()
 	check(not SuperAugments.is_available(SuperAugments.GUARANTEE, state, 1), "보드에 말이 둘 이상 있어야 한다")
