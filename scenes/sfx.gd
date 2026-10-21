@@ -200,6 +200,7 @@ static func apply_settings() -> void:
 	AudioServer.set_bus_volume_db(bgm_index, linear_to_db(maxf(GameSession.bgm_volume, 0.0001)))
 	AudioServer.set_bus_mute(sfx_index, GameSession.audio_muted or GameSession.sfx_muted)
 	AudioServer.set_bus_mute(bgm_index, GameSession.audio_muted or GameSession.bgm_muted)
+	AudioServer.set_bus_volume_db(0, linear_to_db(maxf(GameSession.master_volume, 0.0001)))
 
 
 # --- 내부 -----------------------------------------------------------------------

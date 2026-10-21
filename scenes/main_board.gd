@@ -5511,7 +5511,7 @@ func _fx_bang(shooter: int, target_pawn_id: int) -> void:
 
 ## 보드 화면 전체가 intensity(px)만큼 duration초 동안 점점 약해지며 흔들린다.
 func screen_shake(intensity: float, duration: float) -> void:
-	if not _fx_on():
+	if not _fx_on() or not GameSession.screen_shake:
 		return
 	if not _shake_active:
 		_shake_origin = position
@@ -7904,6 +7904,7 @@ func _close_menu() -> void:
 	_menu_overlay.queue_free()
 	_menu_overlay = null
 	_menu_box = null
+	_refresh_sound_button()  # 설정의 전체 음소거는 위쪽 [소리] 버튼과 같은 값
 
 
 ## 오래 쓰는 버튼(새 게임·모드·치트·로그)은 지우지 않고 메뉴에서 떼어 둔다.
@@ -7961,18 +7962,12 @@ func _open_rulebook() -> void:
 
 func _build_settings_page() -> void:
 	_menu_title("게임 설정")
-	var fullscreen_text: String = "전체화면 끄기" if DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN else "전체화면 켜기"
-	_menu_item(_make_button(fullscreen_text, _on_menu_fullscreen_pressed, 16, Color("3b4766"), 10))
-	var pacing := CheckBox.new()
-	pacing.name = "PacingCheck"
-	pacing.text = "행동 사이에 잠깐 멈춰 보여 주기 (턴 알림·이동 뒤 호흡)"
-	pacing.button_pressed = pacing_enabled
-	pacing.toggled.connect(_on_pacing_toggled)
-	_menu_box.add_child(pacing)
+	LobbyTheme.add_settings_controls(_menu_box, LobbyTheme.INK)
 	if net == null:
-		var timer := CheckBox.new()
+		var timer := CheckButton.new()
 		timer.name = "TimerCheck"
-		timer.text = "제한 시간 사용 (시간이 지나면 자동 진행)"
+		timer.text = "제한 시간 (시간이 지나면 자동 진행)"
+		LobbyTheme.style_switch(timer, LobbyTheme.INK)
 		timer.button_pressed = _timer_check != null and _timer_check.button_pressed
 		timer.toggled.connect(_on_menu_timer_toggled)
 		_menu_box.add_child(timer)
@@ -7980,7 +7975,9 @@ func _build_settings_page() -> void:
 		var note: Label = _make_label("온라인 대전은 제한 시간이 항상 켜져 있습니다 (3배 길게).", 12, Color("868e96"))
 		note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_menu_box.add_child(note)
-	LobbyTheme.add_audio_controls(_menu_box, Color("ced4da"))
+	var reset: Button = _make_button("기본값으로", _on_menu_reset_settings, 16, Color("495057"), 10)
+	reset.name = "ResetSettings"
+	_menu_item(reset)
 	_menu_item(_make_button("뒤로", _show_menu_page.bind(&"main"), 16, Color("4a3a66"), 10))
 
 
@@ -7994,16 +7991,10 @@ func _build_exit_page() -> void:
 	_menu_item(_make_button("취소", _show_menu_page.bind(&"main"), 17, Color("3b4766"), 10))
 
 
-func _on_menu_fullscreen_pressed() -> void:
-	MobileSupport.toggle_fullscreen()
+func _on_menu_reset_settings() -> void:
+	LobbyTheme.reset_settings()
+	_refresh_sound_button()
 	_show_menu_page(&"settings")
-
-
-func _on_pacing_toggled(enabled: bool) -> void:
-	pacing_enabled = enabled
-	GameSession.pacing_enabled = enabled
-	GameSession.save_settings()
-	_apply_pace()
 
 
 ## 연출 속도 배율: 연출 멈춤이 켜져 있고 테스트용 즉시 모드가 아닐 때만 GameSession.pace_scale을 쓴다.

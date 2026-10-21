@@ -33,7 +33,7 @@ func _process(_delta: float) -> bool:
 		if _banner_frame != -2 and _frames < 600:
 			return false
 		_banner_frame = -2
-	var shot_frame: int = 8 if _shot == "pick" else (20 if _shot in ["react", "classics", "traps", "log", "logx", "counterzoom", "book", "tempo", "emote", "emotepick", "result"] else (int(OS.get_environment("DUEL_FRAME")) if _shot == "duel" and OS.get_environment("DUEL_FRAME") != "" else (150 if _shot == "duel" else 12)))
+	var shot_frame: int = 8 if _shot == "pick" else (20 if _shot in ["react", "classics", "traps", "log", "logx", "counterzoom", "book", "tempo", "emote", "emotepick", "result", "settings", "popupsettings"] else (int(OS.get_environment("DUEL_FRAME")) if _shot == "duel" and OS.get_environment("DUEL_FRAME") != "" else (150 if _shot == "duel" else 12)))
 	if OS.get_environment("SHOT_FRAME") != "":
 		shot_frame = int(OS.get_environment("SHOT_FRAME"))
 	if (_shot != "banner" and _frames == shot_frame) or (_shot == "banner" and _banner_frame == -2):
@@ -268,6 +268,16 @@ func _setup_scene() -> void:
 			_board._announcer.cancel()
 			var book: Rulebook = Rulebook.open(_board)
 			book.show_spread(int(OS.get_environment("BOOK")) if OS.get_environment("BOOK") != "" else 4, int(OS.get_environment("ENTRY")) if OS.get_environment("ENTRY") != "" else -1)
+		"settings", "popupsettings":
+			# 설정: settings = 게임 메뉴의 [게임 설정], popupsettings = 시작 화면·로비의 설정 팝업
+			_board.instant_roll_for_test = true
+			_finish_draft()
+			_board._announcer.cancel()
+			if _shot == "settings":
+				_board._open_menu()
+				_board._show_menu_page(&"settings")
+			else:
+				LobbyTheme.show_settings(_board)
 		"traps":
 			# 함정 칸 그림: 내 함정(지뢰·바나나)은 그림, 상대 함정은 물음표, 코너 함정은 공개, 옷장은 청록
 			_finish_draft()

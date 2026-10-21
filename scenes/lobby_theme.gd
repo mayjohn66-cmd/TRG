@@ -311,30 +311,113 @@ static func show_rules(parent: Control) -> void:
 	Rulebook.open(parent)
 
 
-## 설정 팝업(전체화면, 행동 사이 연출 멈춤, 소리).
+## 설정 팝업(화면·소리 + 기본값으로 되돌리기).
 static func show_settings(parent: Control) -> void:
 	var parts: Dictionary = popup(parent, 520.0)
+	var overlay: Control = parts["overlay"]
 	var box: VBoxContainer = parts["box"]
 	box.add_child(label("설정", 26, TEAL))
-	var fullscreen := big_button("전체화면 켜기/끄기", func() -> void: MobileSupport.toggle_fullscreen(), 20)
-	box.add_child(fullscreen)
-	var pacing := CheckBox.new()
-	pacing.name = "PacingCheck"
-	pacing.text = "행동 사이에 잠깐 멈춰 보여 주기 (턴 알림·이동 뒤 호흡)"
-	pacing.button_pressed = GameSession.pacing_enabled
-	pacing.add_theme_color_override("font_color", INK)
-	pacing.add_theme_color_override("font_hover_color", INK)
-	pacing.add_theme_color_override("font_pressed_color", INK)
-	pacing.toggled.connect(func(enabled: bool) -> void:
-		GameSession.pacing_enabled = enabled
+	add_settings_controls(box, INK)
+	var buttons := HBoxContainer.new()
+	buttons.add_theme_constant_override("separation", 10)
+	box.add_child(buttons)
+	var reset := big_button("기본값으로", func() -> void:
+		reset_settings()
+		overlay.queue_free()
+		show_settings(parent), 18, Color("6c757d"))
+	reset.name = "ResetSettings"
+	reset.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	buttons.add_child(reset)
+	var close := big_button("닫기", overlay.queue_free, 20)
+	close.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	buttons.add_child(close)
+
+
+## 설정 화면 공통 내용: [화면] 전체화면·화면 흔들림·배터리 절약 / [소리] 전체·효과음·배경음악. 시작 화면 팝업과 게임 메뉴가 같이 쓴다.
+static func add_settings_controls(box: Container, ink: Color) -> void:
+	box.add_child(_section_label("화면", ink))
+	_add_switch(box, ink, "FullscreenSwitch", "전체화면", DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN, func(on: bool) -> void:
+		if on != (DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN):
+			MobileSupport.toggle_fullscreen())
+	_add_switch(box, ink, "ShakeSwitch", "화면 흔들림", GameSession.screen_shake, func(on: bool) -> void:
+		GameSession.screen_shake = on
 		GameSession.save_settings())
-	box.add_child(pacing)
-	add_audio_controls(box, INK)
-	box.add_child(big_button("닫기", (parts["overlay"] as Control).queue_free, 22))
+	_add_switch(box, ink, "BatterySwitch", "배터리 절약 (초당 30프레임)", GameSession.battery_saver, func(on: bool) -> void:
+		GameSession.battery_saver = on
+		GameSession.apply_frame_limit()
+		GameSession.save_settings())
+	box.add_child(_section_label("소리", ink))
+	add_audio_controls(box, ink)
 
 
-## 소리 설정(효과음·배경음악: 이름 옆 음소거 버튼 + 같은 크기의 볼륨 바). 설정 팝업과 게임 메뉴가 같이 쓴다.
+## [기본값으로]: 소리·화면 설정을 처음 값으로 되돌리고 바로 적용한다.
+static func reset_settings() -> void:
+	GameSession.reset_settings()
+	Sfx.apply_settings()
+
+
+static func _section_label(text: String, ink: Color) -> Label:
+	var item: Label = label(text, 15, ink)
+	item.modulate = Color(1, 1, 1, 0.65)
+	return item
+
+
+## 한 줄: [이름 ........ 스위치]. 누르면 바로 적용된다.
+static func _add_switch(box: Container, ink: Color, switch_name: String, title: String, value: bool, on_toggled: Callable) -> void:
+	var switch := CheckButton.new()
+	switch.name = switch_name
+	switch.text = title
+	switch.button_pressed = value
+	style_switch(switch, ink)
+	switch.toggled.connect(func(on: bool) -> void:
+		on_toggled.call(on)
+		Sfx.play(&"ui_click"))
+	box.add_child(switch)
+
+
+## 설정 화면 스위치 모양(글자 색·크기, 초록/회색 스위치 그림).
+static func style_switch(switch: CheckButton, ink: Color) -> void:
+	switch.add_theme_font_size_override("font_size", 16)
+	for key: String in ["font_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color", "font_focus_color"]:
+		switch.add_theme_color_override(key, ink)
+	for key: String in ["checked", "checked_mirrored"]:
+		switch.add_theme_icon_override(key, _switch_icon(true))
+	for key: String in ["unchecked", "unchecked_mirrored"]:
+		switch.add_theme_icon_override(key, _switch_icon(false))
+
+
+static var _switch_icons: Dictionary = {}
+
+
+## 켜짐(초록 바탕, 손잡이 오른쪽) / 꺼짐(회색 바탕, 손잡이 왼쪽) 스위치 그림. 한 번 만들어 같이 쓴다.
+static func _switch_icon(on: bool) -> Texture2D:
+	if _switch_icons.has(on):
+		return _switch_icons[on]
+	var width: int = 52
+	var height: int = 28
+	var image := Image.create(width, height, false, Image.FORMAT_RGBA8)
+	var track: Color = Color("2fb36b") if on else Color("adb5bd")
+	var radius: float = height / 2.0
+	var knob := Vector2(width - radius if on else radius, radius)
+	for y: int in height:
+		for x: int in width:
+			var point := Vector2(x + 0.5, y + 0.5)
+			var nearest := Vector2(clampf(point.x, radius, width - radius), radius)
+			var track_alpha: float = clampf(radius - point.distance_to(nearest) + 0.5, 0.0, 1.0)
+			var knob_alpha: float = clampf(radius - 3.0 - point.distance_to(knob) + 0.5, 0.0, 1.0)
+			var color: Color = track.lerp(Color.WHITE, knob_alpha)
+			color.a = track_alpha
+			image.set_pixel(x, y, color)
+	var texture := ImageTexture.create_from_image(image)
+	_switch_icons[on] = texture
+	return texture
+
+
+## 소리 설정(전체·효과음·배경음악: 이름 옆 음소거 버튼 + 같은 크기의 볼륨 바). 전체 음소거는 게임 화면 위쪽 [소리] 버튼과 같은 값이다.
 static func add_audio_controls(box: Container, ink: Color) -> void:
+	_add_volume_row(box, ink, "전체 음량", "MasterVolume", "MasterMute", GameSession.master_volume, GameSession.audio_muted,
+		func(value: float) -> void: GameSession.master_volume = value,
+		func(muted: bool) -> void: GameSession.audio_muted = muted, true)
 	_add_volume_row(box, ink, "효과음 크기", "SfxVolume", "SfxMute", GameSession.sfx_volume, GameSession.sfx_muted,
 		func(value: float) -> void: GameSession.sfx_volume = value,
 		func(muted: bool) -> void: GameSession.sfx_muted = muted, true)

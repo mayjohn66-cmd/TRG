@@ -1002,12 +1002,14 @@ func _test_game_menu() -> void:
 	_expect(_board._bot_should_wait(), "혼자 하는 판은 메뉴가 열려 있는 동안 봇이 멈춘다")
 	# 게임 설정
 	_board._show_menu_page(&"settings")
-	_expect(_board._menu_page == &"settings" and _board._menu_box.find_child("PacingCheck", true, false) != null and _board._menu_box.find_child("TimerCheck", true, false) != null, "게임 설정 화면: 연출 멈춤·제한 시간 옵션")
-	var pacing_before: bool = _board.pacing_enabled
-	(_board._menu_box.find_child("PacingCheck", true, false) as CheckBox).button_pressed = not pacing_before
-	_expect(_board.pacing_enabled == not pacing_before, "연출 멈춤 옵션이 바로 적용된다")
-	(_board._menu_box.find_child("PacingCheck", true, false) as CheckBox).button_pressed = pacing_before
-	_expect(_board.pacing_enabled == pacing_before, "다시 원래대로")
+	_expect(_board._menu_page == &"settings" and _board._menu_box.find_child("PacingCheck", true, false) == null and _board._menu_box.find_child("TimerCheck", true, false) != null and _board._menu_box.find_child("ShakeSwitch", true, false) != null and _board._menu_box.find_child("MasterVolume", true, false) != null and _board._menu_box.find_child("ResetSettings", true, false) != null, "게임 설정 화면: 화면·소리·제한 시간·기본값 (연출 멈춤 없음)")
+	var shake_before: bool = GameSession.screen_shake
+	(_board._menu_box.find_child("ShakeSwitch", true, false) as CheckButton).button_pressed = not shake_before
+	_expect(GameSession.screen_shake == not shake_before, "화면 흔들림 스위치가 바로 적용된다")
+	(_board._menu_box.find_child("MasterMute", true, false) as Button).button_pressed = true
+	_expect(GameSession.audio_muted, "전체 음소거 = 위쪽 소리 버튼과 같은 값")
+	(_board._menu_box.find_child("ResetSettings", true, false) as Button).pressed.emit()
+	_expect(GameSession.screen_shake and not GameSession.audio_muted and _board._menu_page == &"settings", "기본값으로: 설정이 처음 값으로 돌아간다")
 	# 나가기는 한 번 더 확인한다
 	_board._show_menu_page(&"confirm_exit")
 	var confirm_labels: Array[String] = []

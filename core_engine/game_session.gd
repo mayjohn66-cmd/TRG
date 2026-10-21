@@ -19,8 +19,10 @@ static var lobby_intent: StringName = &"secret"
 
 ## 게임 설정(메뉴 > 게임 설정): user://settings.cfg에 저장된다.
 const SETTINGS_PATH: String = "user://settings.cfg"
+## 행동 사이 연출 멈춤(턴 알림·이동 뒤 호흡). 설정 화면에서 선택을 없앴다: 항상 켜져 있다 (테스트만 끈다).
 static var pacing_enabled: bool = true
-## 소리 설정: 효과음·배경음 음량(0~1)과 전체 음소거.
+## 소리 설정: 전체·효과음·배경음 음량(0~1)과 전체 음소거. 전체 음량은 Master 버스에 걸린다.
+static var master_volume: float = 1.0
 static var sfx_volume: float = 0.8
 static var bgm_volume: float = 0.6
 static var audio_muted: bool = false
@@ -32,6 +34,11 @@ const PACE_FAST: float = 1.0
 const PACE_NORMAL: float = 1.7
 const PACE_SLOW: float = 2.5
 static var pace_scale: float = PACE_NORMAL
+## 화면 흔들림(말 잡기·내리찍기 등의 진동 연출). 끄면 흔들리지 않는다.
+static var screen_shake: bool = true
+## 배터리 절약: 화면을 초당 30장까지만 그린다 (휴대폰 발열·배터리용).
+static var battery_saver: bool = false
+const BATTERY_SAVER_FPS: int = 30
 ## 보드 시점: 0 탑뷰 / 1 기울인 탑뷰 (MainBoard.ViewMode)
 static var view_mode: int = 0
 ## 내가 고른 아바타 id (AvatarCatalog). 시작 화면의 아바타 설정에서 정한다.
@@ -40,7 +47,9 @@ static var avatar_id: StringName = &"avatar_01"
 
 static func save_settings() -> void:
 	var config := ConfigFile.new()
-	config.set_value("game", "pacing_enabled", pacing_enabled)
+	config.set_value("game", "master_volume", master_volume)
+	config.set_value("game", "screen_shake", screen_shake)
+	config.set_value("game", "battery_saver", battery_saver)
 	config.set_value("game", "view_mode", view_mode)
 	config.set_value("game", "sfx_volume", sfx_volume)
 	config.set_value("game", "bgm_volume", bgm_volume)
@@ -55,7 +64,9 @@ static func save_settings() -> void:
 static func load_settings() -> void:
 	var config := ConfigFile.new()
 	if config.load(SETTINGS_PATH) == OK:
-		pacing_enabled = bool(config.get_value("game", "pacing_enabled", true))
+		master_volume = clampf(float(config.get_value("game", "master_volume", 1.0)), 0.0, 1.0)
+		screen_shake = bool(config.get_value("game", "screen_shake", true))
+		battery_saver = bool(config.get_value("game", "battery_saver", false))
 		view_mode = 0  # 설정 화면에서 시점 선택을 없앴다: 저장값과 무관하게 탑뷰
 		sfx_volume = clampf(float(config.get_value("game", "sfx_volume", 0.8)), 0.0, 1.0)
 		bgm_volume = clampf(float(config.get_value("game", "bgm_volume", 0.6)), 0.0, 1.0)
@@ -64,6 +75,26 @@ static func load_settings() -> void:
 		bgm_muted = bool(config.get_value("game", "bgm_muted", false))
 		pace_scale = PACE_NORMAL  # 연출 속도 선택을 없앴다: 저장값과 무관하게 보통
 		avatar_id = StringName(str(config.get_value("game", "avatar", "avatar_01")))
+	apply_frame_limit()
+
+
+## 설정 화면의 [기본값으로]: 소리·화면 설정을 처음 값으로 되돌린다 (아바타는 그대로).
+static func reset_settings() -> void:
+	master_volume = 1.0
+	sfx_volume = 0.8
+	bgm_volume = 0.6
+	audio_muted = false
+	sfx_muted = false
+	bgm_muted = false
+	screen_shake = true
+	battery_saver = false
+	apply_frame_limit()
+	save_settings()
+
+
+## 배터리 절약이면 초당 그리는 장수를 묶고, 아니면 제한을 푼다.
+static func apply_frame_limit() -> void:
+	Engine.max_fps = BATTERY_SAVER_FPS if battery_saver else 0
 
 
 ## 온라인 대전 설정: 로비가 시작 때 채우고 메인 보드가 읽는다 (net_active가 false면 기존 컴퓨터 대전/핫시트).
