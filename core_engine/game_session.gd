@@ -39,6 +39,8 @@ static var screen_shake: bool = true
 ## 배터리 절약: 화면을 초당 30장까지만 그린다 (휴대폰 발열·배터리용).
 static var battery_saver: bool = false
 const BATTERY_SAVER_FPS: int = 30
+## 화면 언어 (L10n.LANGUAGES). 번역이 비어 있는 문구는 한국어로 나온다.
+static var language: String = L10n.DEFAULT_LANG
 ## 보드 시점: 0 탑뷰 / 1 기울인 탑뷰 (MainBoard.ViewMode)
 static var view_mode: int = 0
 ## 내가 고른 아바타 id (AvatarCatalog). 시작 화면의 아바타 설정에서 정한다.
@@ -49,6 +51,7 @@ static func save_settings() -> void:
 	var config := ConfigFile.new()
 	config.set_value("game", "master_volume", master_volume)
 	config.set_value("game", "screen_shake", screen_shake)
+	config.set_value("game", "language", language)
 	config.set_value("game", "battery_saver", battery_saver)
 	config.set_value("game", "view_mode", view_mode)
 	config.set_value("game", "sfx_volume", sfx_volume)
@@ -67,6 +70,10 @@ static func load_settings() -> void:
 		master_volume = clampf(float(config.get_value("game", "master_volume", 1.0)), 0.0, 1.0)
 		screen_shake = bool(config.get_value("game", "screen_shake", true))
 		battery_saver = bool(config.get_value("game", "battery_saver", false))
+		language = str(config.get_value("game", "language", L10n.DEFAULT_LANG))
+		if not L10n.set_language(language):
+			language = L10n.DEFAULT_LANG
+			L10n.set_language(language)
 		view_mode = 0  # 설정 화면에서 시점 선택을 없앴다: 저장값과 무관하게 탑뷰
 		sfx_volume = clampf(float(config.get_value("game", "sfx_volume", 0.8)), 0.0, 1.0)
 		bgm_volume = clampf(float(config.get_value("game", "bgm_volume", 0.6)), 0.0, 1.0)

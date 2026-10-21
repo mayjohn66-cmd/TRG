@@ -195,15 +195,16 @@ class DashedBorder extends Control:
 			draw_dashed_line(corners[index], corners[(index + 1) % 4], line_color, 2.0, 6.0)
 
 
-const PHASE_NAMES: Dictionary = {
-	TurnManager.State.PHASE_ROUND_START: "라운드 시작 - 증강 드래프트",
-	TurnManager.State.PHASE_TURN_BEGIN: "턴 시작 - 카드·함정·소환 사용 가능",
-	TurnManager.State.PHASE_ROLL_WAIT: "판정 도구 굴리기",
-	TurnManager.State.PHASE_INTERRUPT_ROLL: "개입 타이밍 A - 카드 사용 가능",
-	TurnManager.State.PHASE_SELECT_PAWN: "이동할 말 선택",
-	TurnManager.State.PHASE_MOVING_STEP: "이동 중...",
-	TurnManager.State.PHASE_RESOLUTION: "정산 / 개입 타이밍 B - 카드 사용 가능",
-	TurnManager.State.PHASE_NEUTRAL_NPC: "중립 NPC 페이즈",
+## 페이즈 이름의 화면 문구 키 (content_trickcal/data/ui_strings.csv, tr_ui로 꺼낸다).
+const PHASE_KEYS: Dictionary = {
+	TurnManager.State.PHASE_ROUND_START: "phase.round_start",
+	TurnManager.State.PHASE_TURN_BEGIN: "phase.turn_begin",
+	TurnManager.State.PHASE_ROLL_WAIT: "phase.roll_wait",
+	TurnManager.State.PHASE_INTERRUPT_ROLL: "phase.interrupt",
+	TurnManager.State.PHASE_SELECT_PAWN: "phase.select_pawn",
+	TurnManager.State.PHASE_MOVING_STEP: "phase.moving",
+	TurnManager.State.PHASE_RESOLUTION: "phase.resolution",
+	TurnManager.State.PHASE_NEUTRAL_NPC: "phase.npc",
 }
 const YUT_NAMES: Dictionary = {0: "낙", 1: "도", 2: "개", 3: "걸", 4: "윷", 5: "모"}
 const HAND_NAMES: Dictionary = {
@@ -418,6 +419,10 @@ var _stage_pinball: PinballStage = null
 var _stage_turn_key: String = ""
 var _menu_button: Button = null
 var _sound_button: Button = null  ## 우측 상단 소리 켜짐/꺼짐 토글
+var _language_button: Button = null  ## 우측 상단 언어 표시/전환 (지구본 + KO)
+var _feedback_button: Button = null  ## 우측 상단 피드백 / 버그 제보
+## 이 판을 시작한 시각 (피드백 스냅샷의 플레이 타임).
+var _game_started_msec: int = 0
 var _step_chain: int = 0
 var _step_sound_msec: int = -10000
 ## 메뉴 오버레이(계속하기/게임 설정/전체 로그/새 게임/치트/게임 나가기). 열려 있지 않으면 null.
@@ -770,6 +775,7 @@ func _new_game() -> void:
 
 
 func _bind_state() -> void:
+	_game_started_msec = Time.get_ticks_msec()
 	state.pawn_stepped.connect(_on_pawn_stepped)
 	state.pawn_warped.connect(_on_pawn_warped)
 	state.pawn_captured.connect(_on_pawn_captured)
@@ -803,7 +809,7 @@ func _bind_state() -> void:
 			_floating_badge(pad_pos + Vector2(0, -30), "[부스터 발판! +%d칸 추가 전진!]" % GameData.dash_steps(), Color("63e6be"))
 			_fx_until_msec = maxi(_fx_until_msec, Time.get_ticks_msec() + int(300.0 * _motion_pace()))))
 	state.pawn_finished.connect(func(pawn_id: int) -> void:
-		_log_line("[완주] %s 완주!" % _pawn_name(pawn_id), Color("69db7c"))
+		_log_line(tr_ui("log.finish", [_pawn_name(pawn_id)]), Color("69db7c"))
 		var finisher: PlayerPawn = state.get_pawn(pawn_id)
 		if finisher != null:
 			var finisher_owner: int = finisher.owner_id
@@ -1025,7 +1031,7 @@ func _register_layout() -> void:
 	_layout_entries.clear()
 	var left: Array = [_law_panel]
 	var center: Array = [_select_banner, _dir_left, _dir_right, _board_layer, _pawn_layer, _dock, _drop_zone, _aim_layer, _pick_banner, _pick_cancel, _roll_button, _roll_pad, _gun_row, _stage_yacht, _stage_blackjack, _stage_pinball, _danger_label]
-	var right: Array = [_tool_board, _action_row, _pawn_bar, _emote_row, _menu_button, _sound_button, _debug_box, _log_panel]
+	var right: Array = [_tool_board, _action_row, _pawn_bar, _emote_row, _menu_button, _sound_button, _language_button, _feedback_button, _debug_box, _log_panel]
 	for index: int in PLAYER_IDS.size():
 		var player_id: int = PLAYER_IDS[index]
 		var panel: Control = _profiles[player_id]["panel"]
@@ -1172,7 +1178,7 @@ func _build_profiles() -> void:
 			_bind_tip(icon, _fill_pawn_tip.bind(player_id * 10 + slot))
 			cell.add_child(icon)
 			if big:
-				var skill_button: Button = _make_button("필살기", _on_skill_pressed.bind(slot - 1), 11, Color("c77d0a"), 6)
+				var skill_button: Button = _make_button(tr_ui("btn.skill"), _on_skill_pressed.bind(slot - 1), 11, Color("c77d0a"), 6)
 				skill_button.custom_minimum_size = Vector2(slot_size, 26)
 				skill_button.focus_mode = Control.FOCUS_NONE
 				skill_button.add_theme_color_override("font_color", Color("fff9db"))
@@ -1260,7 +1266,7 @@ func _build_law_board() -> void:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)
 	panel.add_child(box)
-	var law_title := _make_label("엘리아스 중앙 법전", 16, Color.WHITE)
+	var law_title := _make_label(tr_ui("law.board_title"), 16, Color.WHITE)
 	UiSkin.title(law_title)
 	box.add_child(law_title)
 	for slot: int in GameEnums.MAX_LAWS:
@@ -1421,7 +1427,7 @@ func _build_status_strip() -> void:
 	_pick_banner.add_theme_stylebox_override("normal", _style(Color("0b3b33"), Color("63e6be"), 2, 8, 0, 3))
 	_pick_banner.visible = false
 	add_child(_pick_banner)
-	_pick_cancel = _make_button("취소", _on_pick_cancel_pressed, 12, Color("5c2b2b"), 8)
+	_pick_cancel = _make_button(tr_ui("btn.cancel"), _on_pick_cancel_pressed, 12, Color("5c2b2b"), 8)
 	_pick_cancel.position = Vector2(831, 58)
 	_pick_cancel.size = Vector2(88, 30)
 	_pick_cancel.visible = false
@@ -1429,23 +1435,39 @@ func _build_status_strip() -> void:
 	add_child(_pick_cancel)
 	# 상단에는 [메뉴] 버튼 하나만 둔다. 새 게임·모드·치트·전체 로그·설정·나가기는 메뉴 안에 있다 (_build_menu).
 	_new_game_button = _make_button("새 게임", _new_game, 12, Color("3b4766"), 8)
-	_menu_button = _make_button("메뉴", _toggle_menu, 13, Color("3b4766"), 8)
+	_menu_button = _make_button(tr_ui("btn.menu"), _toggle_menu, 13, Color("3b4766"), 8)
 	_menu_button.position = Vector2(1270, 10)
 	_menu_button.size = Vector2(84, 32)
-	_menu_button.tooltip_text = "메뉴 (ESC)"
+	_menu_button.tooltip_text = tr_ui("btn.menu_tip")
 	add_child(_menu_button)
 	_sound_button = _make_button("", _on_sound_toggle_pressed, 13, Color("3b4766"), 8)
 	_sound_button.name = "SoundToggle"
 	_sound_button.position = Vector2(1170, 10)
 	_sound_button.size = Vector2(94, 32)
-	_sound_button.tooltip_text = "소리 켜기/끄기 (크기는 메뉴 > 게임 설정)"
+	_sound_button.tooltip_text = tr_ui("btn.sound_tip")
 	add_child(_sound_button)
 	_refresh_sound_button()
+	_language_button = _make_button(L10n.language_label(), _on_language_pressed, 13, Color("3b4766"), 8)
+	_language_button.name = "LanguageButton"
+	_language_button.position = Vector2(1100, 10)
+	_language_button.size = Vector2(64, 32)
+	_language_button.alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_language_button.tooltip_text = tr_ui("btn.language_tip")
+	var globe := GlobeIcon.new(18.0, Color("5c4128"))
+	globe.position = Vector2(9, 7)
+	_language_button.add_child(globe)
+	add_child(_language_button)
+	_feedback_button = _make_button(tr_ui("btn.feedback"), _open_feedback.bind("상단 버튼"), 13, Color("c2255c"), 8)
+	_feedback_button.name = "FeedbackButton"
+	_feedback_button.position = Vector2(944, 10)
+	_feedback_button.size = Vector2(150, 32)
+	_feedback_button.tooltip_text = tr_ui("btn.feedback_tip")
+	add_child(_feedback_button)
 
 
 ## 우측 중앙의 큼직한 둥근 [굴리기] 버튼(모두의 마블 방식)과 그 아래의 멈추기·개입 패스·폭탄 떠넘기기 버튼.
 func _build_action_bar() -> void:
-	_roll_button = _make_button("굴리기", _on_roll_pressed, 24, Color("2b8a3e"), 60)
+	_roll_button = _make_button(tr_ui("btn.roll"), _on_roll_pressed, 24, Color("2b8a3e"), 60)
 	_roll_button.position = Vector2(623, 320)
 	_roll_button.size = Vector2(120, 120)
 	_roll_button.custom_minimum_size = Vector2(120, 120)
@@ -1624,6 +1646,15 @@ static func _make_label(text: String, font_size: int, color: Color) -> Label:
 
 func _make_section(text: String) -> Label:
 	return _make_label(text, 13, Color("74c0fc"))
+
+
+## 화면 문구 (content_trickcal/data/ui_strings.csv). 지금 언어의 번역이 없으면 한국어로 돌아간다 (L10n).
+static func tr_ui(key: String, args: Array = []) -> String:
+	return L10n.tr_ui(key, args)
+
+
+func _phase_name(phase: int) -> String:
+	return tr_ui(PHASE_KEYS[phase]) if PHASE_KEYS.has(phase) else ""
 
 
 func _make_button(text: String, callback: Callable, font_size: int, base_color: Color = Color("3b4766"), radius: int = 8) -> Button:
@@ -2477,7 +2508,7 @@ func _refresh_all() -> void:
 
 
 func _phase_text() -> String:
-	var text: String = PHASE_NAMES[manager.current_state]
+	var text: String = _phase_name(manager.current_state)
 	if ((_timer_check != null and _timer_check.button_pressed) or net != null) and manager.phase_time_left > 0.0:
 		text += "  (%.1f초)" % manager.phase_time_left
 	return text
@@ -2684,7 +2715,7 @@ func _check_turn_banner() -> void:
 		return
 	_announced_turn_key = key
 	var player_id: int = manager.current_player_id()
-	var who: String = "내 차례!" if (not ai_mode or player_id == local_player_id) and ai_mode else "%s 차례" % _player_name(player_id)
+	var who: String = tr_ui("turn.mine") if (not ai_mode or player_id == local_player_id) and ai_mode else tr_ui("turn.other", [_player_name(player_id)])
 	_announce("턴", who, "", PLAYER_COLORS[player_id], null, TURN_BANNER_SECONDS)
 
 
@@ -3348,7 +3379,7 @@ func _card_timing_text(card: BaseCard) -> String:
 		return "피격 시 (내 말이 잡히거나 공격 카드·함정에 당했을 때)"
 	var names: Array[String] = []
 	for phase: int in card.playable_phases:
-		var full: String = PHASE_NAMES.get(phase, "")
+		var full: String = _phase_name(phase)
 		names.append(full.split(" - ")[0])
 	return " / ".join(names) if not names.is_empty() else "-"
 
@@ -3646,7 +3677,7 @@ func _build_emote_row() -> void:
 	_emote_row.size = Vector2(320, 32)
 	_emote_row.alignment = BoxContainer.ALIGNMENT_END
 	add_child(_emote_row)
-	_emote_button = _make_button("감정 표현", _toggle_emote_picker, 14, Color("f08c00"), 14)
+	_emote_button = _make_button(tr_ui("btn.emote"), _toggle_emote_picker, 14, Color("f08c00"), 14)
 	_emote_button.name = "EmoteButton"
 	_emote_button.custom_minimum_size = Vector2(124, 32)
 	_emote_button.focus_mode = Control.FOCUS_NONE
@@ -3828,7 +3859,7 @@ func _refresh_pawn_dock() -> void:
 		for skill_button: Button in [profile_button, dock_button]:
 			skill_button.disabled = not usable
 			skill_button.modulate = Color(1.15, 1.0, 0.7) if usable else Color.WHITE
-		profile_button.text = "사용됨" if pawn.skill_used else "필살기"
+		profile_button.text = tr_ui("btn.skill_used") if pawn.skill_used else tr_ui("btn.skill")
 		dock_button.text = "사용 완료" if pawn.skill_used else "필살기\n발동!"
 
 
@@ -3945,7 +3976,7 @@ func _pawn_prediction(pawn: PlayerPawn) -> Dictionary:
 	if path.is_empty():
 		return {"text": "→ 제자리 (이동 없음)", "good": false}
 	if path.has(GameEnums.GOAL_TILE) and pawn.has_left_start and pawn.can_finish(state):
-		return {"text": "→ 결승선 완주!", "good": true}
+		return {"text": tr_ui("preview.finish"), "good": true}
 	var dest: int = path.back()
 	var tile: TileNode = state.board.get_tile(dest)
 	var promote_hint: String = ""
@@ -4295,7 +4326,7 @@ func _on_sound_toggle_pressed() -> void:
 
 func _refresh_sound_button() -> void:
 	if _sound_button != null:
-		_sound_button.text = "소리 꺼짐" if GameSession.audio_muted else "소리 켜짐"
+		_sound_button.text = tr_ui("btn.sound_off") if GameSession.audio_muted else tr_ui("btn.sound_on")
 		_sound_button.modulate = Color(1.0, 0.75, 0.75) if GameSession.audio_muted else Color.WHITE
 
 
@@ -4318,7 +4349,7 @@ func _roll_button_label(tool: BaseJudgmentTool) -> String:
 		return "운명\n뽑기"
 	if tool is ToolPinball:
 		return "발사!"
-	return "굴리기"
+	return tr_ui("btn.roll")
 
 
 ## 굴림 조작 방식: 차징형(기본 주사위·윷·친치로)은 보드 아래 작은 굴리기 버튼+파워 게이지, 그 외(룰렛 원판·리볼버·홀덤/슬롯 큰 버튼)는 보드 한가운데에 크게 보여 준다.
@@ -4847,7 +4878,7 @@ func _on_skill_used(data: Dictionary) -> void:
 		&"hotel":
 			body = "%d번 타일에 호텔 건설 (밟은 적은 멈춤)" % int(data["from"])
 	_log_line("[필살기] %s: %s - %s" % [who, PawnCatalog.skill_name(skill), body.replace("\n", " ")], Color("ffa94d"))
-	_announce_gate("1회용 필살기", "[P%d 발동!] %s" % [player_id, PawnCatalog.skill_name(skill)], body, PLAYER_COLORS[player_id], null, 1.3)
+	_announce_gate(tr_ui("skill.tag"), "[P%d 발동!] %s" % [player_id, PawnCatalog.skill_name(skill)], body, PLAYER_COLORS[player_id], null, 1.3)
 
 
 ## 실제 잡기만 공격자/피격자 아바타 포즈로 강조한다 (함정·자기 복귀 제외).
@@ -5941,7 +5972,7 @@ func _on_duel_resolved(data: Dictionary) -> void:
 		_impact_ring(hit_pos, Color("ff6b6b"), 54.0)
 		_impact_ring(hit_pos, Color.WHITE, 30.0)
 		_burst_shards(hit_pos, Color("ff8787"), 12)
-		_floating_badge(hit_pos + Vector2(0, -26), "장외 사출!", Color("ff8787"))
+		_floating_badge(hit_pos + Vector2(0, -26), tr_ui("fx.knockout"), Color("ff8787"))
 		_profile_react(loser, false, "[억까!]")
 		_profile_react(winner, true, "[승리!]"), pawn_id)
 
@@ -6748,6 +6779,11 @@ func _show_result_overlay() -> void:
 	lobby.custom_minimum_size = Vector2(0, 52)
 	lobby.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	buttons.add_child(lobby)
+	# 한 판이 끝난 순간이 가장 할 말이 많을 때다: 결과 창 아래에 후기·밸런스 피드백 버튼을 크게 둔다.
+	var review: Button = _make_button(tr_ui("result.feedback"), _open_feedback.bind("결과 화면", FeedbackModal.Kind.BALANCE), 18, Color("c2255c"))
+	review.name = "ReviewFeedbackButton"
+	review.custom_minimum_size = Vector2(0, 50)
+	box.add_child(review)
 	add_child(_result_overlay)
 	_reveal_ranking(rows, announcer)
 
@@ -6944,7 +6980,7 @@ func _flush_draft_summary() -> void:
 		column.add_child(holder)
 		row.add_child(column)
 	_draft_summary.clear()
-	_announce("증강 공개", "선택한 증강", "", Color("ffa94d"), row, 2.8)
+	_announce(tr_ui("draft.reveal_tag"), tr_ui("draft.reveal"), "", Color("ffa94d"), row, 2.8)
 
 
 func _on_action_rejected(player_id: int, action: StringName, reason: StringName) -> void:
@@ -7261,7 +7297,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_log_line("[순위 확정] %s %d위 - %s" % [_player_name(ranked), rank_no, VictoryChecker.reason_text(data["reason"])], Color("ffd43b"))
 			_record(ranked, "★ %d위 확정! (%s)" % [rank_no, _bb(VictoryChecker.reason_text(data["reason"]))])
 			if rank_no < _player_ids.size() - 1:  # 3위(마지막 졸업)부터는 결과 화면이 바로 이어진다
-				_announce("순위 확정", "[%s%s %d위 확정!]" % ["★ " if rank_no == 1 else "", _player_name(ranked), rank_no], "%s\n남은 말은 보드에서 철수하고 레이스를 졸업합니다" % VictoryChecker.reason_text(data["reason"]), PLAYER_COLORS[ranked], null, 1.4)
+				_announce(tr_ui("rank.tag"), tr_ui("rank.banner", ["★ " if rank_no == 1 else "", _player_name(ranked), rank_no]), tr_ui("rank.body", [VictoryChecker.reason_text(data["reason"])]), PLAYER_COLORS[ranked], null, 1.4)
 				_profile_react(ranked, true, "[%d위!]" % rank_no)
 				_start_beat(1.0)
 		&"counter_offer":
@@ -7275,7 +7311,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_record(int(data["player_id"]), "이번 턴이 통째로 되감겼습니다")
 			_announce("방어", "[바이츠 더 더스트!]", "%s의 턴이 통째로 되감기고 끝났습니다" % _player_name(int(data["player_id"])), Color("4c6ef5"), null, 1.3)
 		&"extra_turn":
-			_announce("XI. The World!!", "[%s 한 턴 더!]" % _player_name(int(data["player_id"])), "시간이 멈춘 사이 한 번 더 움직입니다", PLAYER_COLORS[int(data["player_id"])], null, 1.1)
+			_announce("XI. The World!!", tr_ui("turn.extra", [_player_name(int(data["player_id"]))]), "시간이 멈춘 사이 한 번 더 움직입니다", PLAYER_COLORS[int(data["player_id"])], null, 1.1)
 		&"game_over":
 			_last_reason = data["reason"]
 	_refresh_all()
@@ -7950,10 +7986,10 @@ func _show_menu_page(page: StringName) -> void:
 
 
 func _build_main_page() -> void:
-	_menu_title("메뉴")
-	_menu_item(_make_button("계속하기", _close_menu, 17, Color("2b8a3e"), 10))
-	_menu_item(_make_button("게임 설정", _show_menu_page.bind(&"settings"), 17, Color("3b4766"), 10))
-	_menu_item(_make_button("규칙 책자", _open_rulebook, 17, Color("8a5a0a"), 10))
+	_menu_title(tr_ui("menu.title"))
+	_menu_item(_make_button(tr_ui("menu.continue"), _close_menu, 17, Color("2b8a3e"), 10))
+	_menu_item(_make_button(tr_ui("menu.settings"), _show_menu_page.bind(&"settings"), 17, Color("3b4766"), 10))
+	_menu_item(_make_button(tr_ui("menu.rulebook"), _open_rulebook, 17, Color("8a5a0a"), 10))
 	# 전체 로그·새 게임·모드 전환은 개발용이라 디버그를 켰을 때만 메뉴에 나온다 (평소엔 게임답게 숨긴다).
 	if _debug_enabled:
 		_menu_item(_log_toggle)
@@ -7961,7 +7997,7 @@ func _build_main_page() -> void:
 			_menu_item(_new_game_button)
 			_menu_item(_mode_toggle)
 			_menu_item(_debug_toggle)
-	_menu_item(_make_button("게임 나가기", _show_menu_page.bind(&"confirm_exit"), 17, Color("7a2a2a"), 10))
+	_menu_item(_make_button(tr_ui("menu.exit"), _show_menu_page.bind(&"confirm_exit"), 17, Color("7a2a2a"), 10))
 
 
 ## 메뉴의 [규칙 책자]: 게임 위(메뉴보다 위)에 규칙 책자를 연다.
@@ -7971,7 +8007,7 @@ func _open_rulebook() -> void:
 
 
 func _build_settings_page() -> void:
-	_menu_title("게임 설정")
+	_menu_title(tr_ui("menu.settings"))
 	LobbyTheme.add_settings_controls(_menu_box, LobbyTheme.INK)
 	if net == null:
 		var timer := CheckButton.new()
@@ -7985,20 +8021,95 @@ func _build_settings_page() -> void:
 		var note: Label = _make_label("온라인 대전은 제한 시간이 항상 켜져 있습니다 (3배 길게).", 12, Color("868e96"))
 		note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_menu_box.add_child(note)
-	var reset: Button = _make_button("기본값으로", _on_menu_reset_settings, 16, Color("495057"), 10)
+	var reset: Button = _make_button(tr_ui("menu.reset"), _on_menu_reset_settings, 16, Color("495057"), 10)
 	reset.name = "ResetSettings"
 	_menu_item(reset)
-	_menu_item(_make_button("뒤로", _show_menu_page.bind(&"main"), 16, Color("4a3a66"), 10))
+	_menu_item(_make_button(tr_ui("menu.back"), _show_menu_page.bind(&"main"), 16, Color("4a3a66"), 10))
 
 
 func _build_exit_page() -> void:
-	_menu_title("게임을 나갈까요?")
+	_menu_title(tr_ui("menu.exit_title"))
 	var note: Label = _make_label("나가면 시작 화면으로 돌아갑니다. 진행 중인 판은 저장되지 않으며, 온라인 대전이면 내 자리는 컴퓨터가 이어받습니다." if net != null else "나가면 시작 화면으로 돌아갑니다. 진행 중인 판은 저장되지 않습니다.", 14, Color("ced4da"))
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_menu_box.add_child(note)
-	_menu_item(_make_button("나가기", _on_menu_pressed, 17, Color("7a2a2a"), 10))
-	_menu_item(_make_button("취소", _show_menu_page.bind(&"main"), 17, Color("3b4766"), 10))
+	_menu_item(_make_button(tr_ui("menu.exit_confirm"), _on_menu_pressed, 17, Color("7a2a2a"), 10))
+	_menu_item(_make_button(tr_ui("btn.cancel"), _show_menu_page.bind(&"main"), 17, Color("3b4766"), 10))
+
+
+## 언어 버튼: 다음 언어로 넘긴다 (ko -> en -> ja). 증강·카드 표의 문구는 바로 다시 읽고, 이미 만든 화면 문구는 다음에 만들 때 바뀐다.
+## 아직 번역이 비어 있는 문구는 한국어로 나온다 (L10n 폴백).
+func _on_language_pressed() -> void:
+	GameSession.language = L10n.cycle_language()
+	GameSession.save_settings()
+	AugmentRegistry.reload()
+	_language_button.text = L10n.language_label()
+	_log_line("[언어] %s - 번역이 없는 문구는 한국어로 표시됩니다" % L10n.language_label(), Color("adb5bd"))
+
+
+## 피드백 창을 연다 (상단 버튼 / 결과 화면). 이미 열려 있으면 그 창을 둔다.
+func _open_feedback(from: String = "", initial_kind: FeedbackModal.Kind = FeedbackModal.Kind.BUG) -> FeedbackModal:
+	var existing: Node = find_child("FeedbackModal", false, false)
+	if existing != null and not existing.is_queued_for_deletion():
+		return existing as FeedbackModal
+	return FeedbackModal.open(self, _build_diagnostic_snapshot, from, initial_kind)
+
+
+const SNAPSHOT_LOG_LINES: int = 15
+static var _bbcode_tags: RegEx = null
+
+
+## 개발자가 바로 재현할 수 있게 지금 판을 글로 요약한다: 진행 정보 / 사람별 완주·기물·도구·손패·증강 / 법전과 달성 정도 / 최근 액션 로그 15줄.
+func _build_diagnostic_snapshot() -> String:
+	if state == null or manager == null:
+		return "(게임 상태 없음)"
+	var lines: PackedStringArray = []
+	var seconds: int = maxi(int((Time.get_ticks_msec() - _game_started_msec) / 1000.0), 0)
+	var mode: String = "온라인" if net != null else ("AI 대전" if ai_mode else "핫시트")
+	lines.append("[게임 스냅샷] 버전 %s · %s · 시드 %d · 언어 %s" % [ProjectSettings.get_setting("application/config/version", "dev"), mode, _game_seed, L10n.language_label()])
+	var phase: String = _phase_name(manager.current_state) if not manager.is_game_over else "게임 종료"
+	lines.append("라운드 %d (%s) · 템포 업 %d단계 · 현재 턴: %s · 플레이 타임 %02d:%02d" % [state.round_number, phase, TempoUp.level(state.round_number), _player_name(manager.current_player_id()), seconds / 60, seconds % 60])
+	lines.append("-- 플레이어 --")
+	for player_id: int in _player_ids:
+		var rank_text: String = ""
+		if state.rankings.has(player_id):
+			rank_text = " [%d위 · %s]" % [state.rankings.find(player_id) + 1, VictoryChecker.short_reason(state.rank_reasons.get(player_id, &""))]
+		var pawn_texts: PackedStringArray = []
+		for pawn: PlayerPawn in state.pawns_of(player_id):
+			var where: String = "완주" if pawn.is_finished else ("대기" if not pawn.has_left_start else "%d번" % pawn.current_tile_idx)
+			pawn_texts.append("%d:%s(%s%s)" % [pawn.slot, pawn.display_label(), where, ",필살기 씀" if pawn.skill_used else ""])
+		var tool: BaseJudgmentTool = state.tools.get(player_id)
+		var picked: PackedStringArray = []
+		for augment_id: Variant in manager.augments.get(player_id, []):
+			var definition: AugmentDef = AugmentRegistry.get_def(augment_id)
+			picked.append(definition.display_name if definition != null else str(augment_id))
+		lines.append("P%d %s%s · 완주 %d/%d · 도구 %s · 손패 %d장" % [player_id, _player_name(player_id), rank_text, state.finished_count(player_id), GameEnums.PAWNS_PER_PLAYER, tool.display_name if tool != null else "-", (state.hands.get(player_id, []) as Array).size()])
+		lines.append("   기물: %s" % ", ".join(pawn_texts))
+		lines.append("   증강: %s" % (", ".join(picked) if not picked.is_empty() else "없음"))
+	lines.append("-- 중앙 법전 --")
+	if state.rulebook.active_laws_queue.is_empty():
+		lines.append("(비어 있음)")
+	for law: LawResource in state.rulebook.active_laws_queue:
+		var victory: VictoryLaw = law as VictoryLaw
+		if victory == null:
+			lines.append("%s %s" % [law.law_id, law.law_name])
+			continue
+		var counts: PackedStringArray = []
+		for player_id: int in _player_ids:
+			counts.append("P%d %d/%d" % [player_id, victory.progress(state, player_id), victory.goal()])
+		lines.append("%s %s: %s" % [law.law_id, law.law_name, " · ".join(counts)])
+	lines.append("-- 최근 액션 로그 (%d줄) --" % SNAPSHOT_LOG_LINES)
+	var recent: Array[String] = _action_log.lines() if _action_log != null else [] as Array[String]
+	for entry: String in recent.slice(maxi(recent.size() - SNAPSHOT_LOG_LINES, 0)):
+		lines.append(_plain_text(entry))
+	return "\n".join(lines)
+
+
+## BBCode 꾸밈을 지운 글자 (액션 로그 줄을 스냅샷에 옮길 때).
+static func _plain_text(bbcode: String) -> String:
+	if _bbcode_tags == null:
+		_bbcode_tags = RegEx.create_from_string("\\[/?(color|b|i|u|s|font_size|bgcolor|outline_color|outline_size|url|center)(=[^\\]]*)?\\]")
+	return _bbcode_tags.sub(bbcode, "", true).replace("[lb]", "[").replace("[rb]", "]")
 
 
 func _on_menu_reset_settings() -> void:
