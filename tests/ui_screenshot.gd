@@ -33,7 +33,9 @@ func _process(_delta: float) -> bool:
 		if _banner_frame != -2 and _frames < 600:
 			return false
 		_banner_frame = -2
-	var shot_frame: int = 8 if _shot == "pick" else (20 if _shot in ["react", "classics", "traps", "log", "logx", "counterzoom", "book", "tempo", "emote", "emotepick"] else (int(OS.get_environment("DUEL_FRAME")) if _shot == "duel" and OS.get_environment("DUEL_FRAME") != "" else (150 if _shot == "duel" else 12)))
+	var shot_frame: int = 8 if _shot == "pick" else (20 if _shot in ["react", "classics", "traps", "log", "logx", "counterzoom", "book", "tempo", "emote", "emotepick", "result"] else (int(OS.get_environment("DUEL_FRAME")) if _shot == "duel" and OS.get_environment("DUEL_FRAME") != "" else (150 if _shot == "duel" else 12)))
+	if OS.get_environment("SHOT_FRAME") != "":
+		shot_frame = int(OS.get_environment("SHOT_FRAME"))
 	if (_shot != "banner" and _frames == shot_frame) or (_shot == "banner" and _banner_frame == -2):
 		var path: String = "/tmp/trg_shot_%s.png" % _shot
 		var image: Image = root.get_texture().get_image()
@@ -71,6 +73,24 @@ func _setup_scene() -> void:
 			_board._on_card_pressed(me, &"ACT_09")
 			if _board._duel_arena != null:
 				_board._duel_arena.open()
+		"result":
+			# 특수 승리로 끝난 판의 결과 화면
+			_board._close_opening()
+			_finish_draft()
+			_board._announcer.cancel()
+			var spots: Dictionary = {11: 6, 12: 14, 21: 3, 31: 25, 32: 20, 41: 9}
+			for pawn_id: int in spots:
+				state.get_pawn(pawn_id).has_left_start = true
+				state.get_pawn(pawn_id).current_tile_idx = spots[pawn_id]
+			state.get_pawn(13).is_finished = true
+			var manager: TurnManager = _board.manager
+			manager._graduate(1, &"LAW_08")
+			manager._graduate(3, &"LAW_01")
+			manager._graduate(4, &"LAW_04")
+			manager._graduate(2, VictoryChecker.LAST_PLACE)
+			manager._end_game()
+			_board._announcer.cancel()
+			_board._reset_presentation()
 		"emote", "emotepick":
 			# 감정 표현: 이모트 판(emotepick) 또는 내 말풍선 + 상대 말풍선(emote)
 			_board._close_opening()

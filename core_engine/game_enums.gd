@@ -43,9 +43,9 @@ enum NpcBehavior { CHASE_NEAREST, PATROL_REVERSE }
 
 const GOAL_TILE: int = 0
 const DASH_STEPS: int = 3
-## 🔥 리벤지 부스터: 사출된 말이 다시 출발할 때 붙는 보너스 칸수.
+## 리벤지 부스터: 사출된 말이 다시 출발할 때 붙는 보너스 칸수.
 const REVENGE_BONUS: int = 4
-## 🏃 말 밟고 점프하기: 경로 중간의 말 하나마다 +1칸, 한 번의 이동에서 최대 LEAPFROG_MAX칸까지.
+## 말 밟고 점프하기: 경로 중간의 말 하나마다 +1칸, 한 번의 이동에서 최대 LEAPFROG_MAX칸까지.
 const LEAPFROG_MAX: int = 3
 
 const PAWNS_PER_PLAYER: int = 4

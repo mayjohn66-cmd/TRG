@@ -11,7 +11,6 @@ enum Hand { ROCK, SCISSORS, PAPER }
 
 const GAME_COUNT: int = 6
 const GAME_NAMES: Array[String] = ["묵찌빠 단두대", "할리갈리 디럭스", "병뚜껑 절벽 컬링", "석양의 무법자", "엘리아스 E카드", "스피키 룰렛"]
-const GAME_ICONS: Array[String] = ["✊", "🔔", "🍾", "🔫", "👑", "🛢️"]
 const GAME_RULES: Array[String] = [
 	"3초 안에 가위·바위·보! 비기면 한 번 더, 또 비기면 신청자 승",
 	"두 더미 맨 위 카드의 그림 합이 정확히 5개일 때 먼저 종을 쳐라! (아닐 때 치면 반칙패)",
@@ -23,8 +22,8 @@ const GAME_RULES: Array[String] = [
 
 const HAND_NAMES: Array[String] = ["바위", "가위", "보"]
 ## E카드: 신청자 0 여왕 / 1 평민, 수비자 0 반란군 / 1 평민.
-const ECARD_CHALLENGER: Array[String] = ["👑 여왕", "🍞 평민"]
-const ECARD_DEFENDER: Array[String] = ["💣 반란군", "🍞 평민"]
+const ECARD_CHALLENGER: Array[String] = ["여왕", "평민"]
+const ECARD_DEFENDER: Array[String] = ["반란군", "평민"]
 const ECARD_QUEEN: int = 0
 const ECARD_REBEL: int = 0
 
@@ -77,8 +76,9 @@ static func game_name(game: int) -> String:
 	return GAME_NAMES[clampi(game, 0, GAME_COUNT - 1)]
 
 
+## 화면용 종목 제목 (게임 글꼴에 이모지가 없어 기호 대신 괄호로 감싼다).
 static func game_title(game: int) -> String:
-	return "%s %s" % [GAME_ICONS[clampi(game, 0, GAME_COUNT - 1)], game_name(game)]
+	return "[%s]" % game_name(game)
 
 
 ## 종목을 고르고 준비값을 만든다. 모든 참가자가 같은 결과를 얻도록 호스트 RNG만 쓴다.

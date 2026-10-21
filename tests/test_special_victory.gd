@@ -22,6 +22,15 @@ func _new_manager(player_count: int = 4) -> TurnManager:
 	return manager
 
 
+## 이번 라운드를 끝까지 넘긴다 (특수 승리는 라운드가 끝나기 직전에 판정한다).
+func _finish_round(manager: TurnManager) -> void:
+	var start_round: int = manager.state.round_number
+	var guard: int = 0
+	while manager.state.round_number == start_round and not manager.is_game_over and guard < 300:
+		manager.force_timeout()
+		guard += 1
+
+
 func _dispose(manager: TurnManager) -> void:
 	tree.root.remove_child(manager)
 	manager.free()
@@ -64,7 +73,10 @@ func test_arena_master_graduates_the_killer_and_removes_the_law() -> void:
 	manager.act(&"proceed", {"player_id": 1})
 	manager.act(&"roll", {"player_id": 1})
 	manager.act(&"select_pawn", {"player_id": 1, "pawn_id": 11})
-	check_eq(state.rankings, int_array([1]), "6번째 처치로 1위 졸업")
+	check_eq(state.stat(1, VictoryLaw.KILLS), 6, "6번째 처치")
+	check(state.rankings.is_empty(), "달성해도 바로 졸업하지 않는다 (라운드 끝에 판정)")
+	_finish_round(manager)
+	check_eq(state.rankings, int_array([1]), "라운드가 끝나기 직전에 6처치 확인 -> 1위 졸업")
 	check_eq(state.rank_reasons[1], &"LAW_01", "사유는 교칙 ID")
 	check(not state.rulebook.has_law("LAW_01"), "달성된 교칙은 법전에서 삭제")
 	check(state.rulebook.has_law("LAW_06"), "다른 교칙은 남는다")
@@ -84,8 +96,9 @@ func test_hand_law_is_checked_when_my_turn_starts() -> void:
 	manager.act(&"proceed", {"player_id": 1})
 	manager.act(&"roll", {"player_id": 1})
 	manager.act(&"select_pawn", {"player_id": 1, "pawn_id": 11})
-	check_eq(state.rankings, int_array([2]), "P2 턴 시작 시 손패 5장 -> 졸업")
-	check_eq(state.current_player, 3, "졸업한 P2의 턴은 넘어간다")
+	check(state.rankings.is_empty() and state.current_player == 2, "P2 턴 시작에 손패 5장이 기록되지만 아직 졸업하지 않는다")
+	_finish_round(manager)
+	check_eq(state.rankings, int_array([2]), "라운드 끝 판정에서 P2 졸업")
 	_dispose(manager)
 
 
@@ -124,10 +137,28 @@ func test_roll_chain_is_recorded_by_the_turn_manager() -> void:
 	for i: int in 4:
 		manager.act(&"roll", {"player_id": 1})
 	check_eq(manager.state.stat(1, VictoryLaw.BEST_CHAIN), 4, "4연속 굴림 기록")
-	if not manager.state.is_graduated(1):  # 이동 선택 단계라면 이동을 마치면 판정된다
-		manager.act(&"select_pawn", {"player_id": 1, "pawn_id": 11})
-	check_eq(manager.state.rankings, int_array([1, 2]), "초전도체 달성 -> 1위 졸업, 남은 P2는 2위")
+	manager.act(&"select_pawn", {"player_id": 1, "pawn_id": 11})
+	check(manager.state.rankings.is_empty(), "라운드 중에는 아직 졸업하지 않는다")
+	_finish_round(manager)
+	check_eq(manager.state.rankings, int_array([1, 2]), "라운드 끝 판정: 초전도체 달성 -> 1위 졸업, 남은 P2는 2위")
 	check(manager.is_game_over, "2인 판은 1위가 나오면 끝")
+	_dispose(manager)
+
+
+func test_several_achievers_at_round_end_are_ranked_by_race_progress() -> void:
+	var manager: TurnManager = _new_manager(3)
+	var state: GameState = manager.state
+	add_law(state, "LAW_01")
+	state.law_stats[1] = {VictoryLaw.KILLS: 6}
+	state.law_stats[3] = {VictoryLaw.KILLS: 6}
+	place(state, 31, 20, [19])
+	place(state, 11, 4, [3])
+	_finish_round(manager)
+	check_eq(state.rankings.slice(0, 2), int_array([3, 1]), "같은 라운드에 둘 다 달성: 레이스에서 앞선 P3가 먼저")
+	var standings: Array[Dictionary] = VictoryChecker.standings(state, manager.player_order, state.rankings[0])
+	var winner_row: Dictionary = standings[0]
+	check(int(winner_row["progress"]) < 100 and int(winner_row["finished"]) == 0, "결과표는 졸업 순간의 진행을 보여 준다 (철수한 말을 완주로 세지 않는다)")
+	check_eq(VictoryChecker.short_reason(winner_row["reason"]), "특수 승리: 투기장의 지배자", "결과표 사유")
 	_dispose(manager)
 
 

@@ -1,6 +1,6 @@
 # File: res://scenes/duel_arena.gd
 # Class: class_name DuelArena
-# Role: ACT_09 ⚔️ 운명의 데스매치 결투장 (DuelArenaModal). 보드 한가운데에 열려 0.5초 종목 추첨 룰렛 -> 종목 안내 -> 6종 초고속 미니게임
+# Role: ACT_09 운명의 데스매치 결투장 (DuelArenaModal). 보드 한가운데에 열려 0.5초 종목 추첨 룰렛 -> 종목 안내 -> 6종 초고속 미니게임
 #       (묵찌빠 단두대 / 할리갈리 디럭스 / 병뚜껑 절벽 컬링 / 석양의 무법자 / 엘리아스 E카드 / 스피키 룰렛) -> 승패 공개 -> 결과를 보여 주고 닫히며 queue_free된다.
 #       승패는 엔진(TurnManager·DuelRules)이 정한다. 이 화면은 로컬 자리의 입력(손·카드·누른 시각·게이지 값·구멍)만 value_chosen으로 내보내고 엔진 이벤트를 큐로 받아 연출한다.
 class_name DuelArena
@@ -111,7 +111,7 @@ func _build() -> void:
 	column.add_theme_constant_override("separation", 6)
 	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(column)
-	_title = board._make_label("⚔️ 운명의 데스매치 결투장!", 24, GOLD)
+	_title = board._make_label("운명의 데스매치 결투장!", 24, GOLD)
 	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_title.add_theme_constant_override("outline_size", 6)
 	_title.add_theme_color_override("font_outline_color", Color("3b2a00"))
@@ -249,10 +249,10 @@ func _process(delta: float) -> void:
 			if stage != _signal_shown:
 				_signal_shown = stage
 				if stage == 1:
-					_game_label.text = "💨 트림!"
+					_game_label.text = "트림!"
 					_game_label.add_theme_color_override("font_color", Color("adb5bd"))
 				elif stage == 2:
-					_game_label.text = "💥 뽑아라! (DRAW!)"
+					_game_label.text = "뽑아라! (DRAW!)"
 					_game_label.add_theme_color_override("font_color", RED)
 					Sfx.play(&"slam")
 				else:
@@ -397,7 +397,7 @@ func _next_pick_seat() -> void:
 		DuelRules.Game.RPS:
 			_say("%s손을 고르세요!" % who, Color.WHITE)
 			for hand: int in 3:
-				_add_button(["✊ 바위", "✌️ 가위", "✋ 보"][hand], _choose.bind(hand), Color("3b4766"), 140.0)
+				_add_button(["바위", "가위", "보"][hand], _choose.bind(hand), Color("3b4766"), 140.0)
 			_start_timer(PICK_SECONDS)
 		DuelRules.Game.ECARD:
 			var names: Array[String] = DuelRules.ECARD_CHALLENGER if _pick_seat == challenger else DuelRules.ECARD_DEFENDER
@@ -407,7 +407,7 @@ func _next_pick_seat() -> void:
 			_start_timer(PICK_SECONDS * 2.0)
 		DuelRules.Game.CURLING:
 			_say("%s게이지를 멈춰 100%%에 가깝게!" % who, Color.WHITE)
-			_add_button("🛑 스톱!", _curling_stop, Color("c92a2a"), 200.0)
+			_add_button("스톱!", _curling_stop, Color("c92a2a"), 200.0)
 			_gauge_value = 0.0
 			_clock = 0.0
 
@@ -445,7 +445,7 @@ func _begin_reaction() -> void:
 	if game == DuelRules.Game.QUICKDRAW:
 		_game_label.text = "· · ·"
 		_game_label.add_theme_color_override("font_color", Color.WHITE)
-	var label: String = "🔔 데스벨 치기!" if game == DuelRules.Game.HALLI else "🔫 발사!"
+	var label: String = "데스벨 치기!" if game == DuelRules.Game.HALLI else "발사!"
 	var seats: Array[int] = _local_open_seats()
 	for seat: int in seats:
 		var key_hint: String = ""
@@ -478,7 +478,7 @@ func _begin_barrel() -> void:
 	_clear_buttons()
 	_hole_buttons.clear()
 	for hole: int in DuelRules.BARREL_HOLES:
-		var button: Button = _add_button("🔪 %d" % (hole + 1), _pick_hole.bind(hole), Color("8a5a2b"), 82.0)
+		var button: Button = _add_button("구멍 %d" % (hole + 1), _pick_hole.bind(hole), Color("8a5a2b"), 82.0)
 		button.name = "Hole%d" % hole
 		_hole_buttons.append(button)
 	_refresh_barrel_turn()
@@ -594,8 +594,8 @@ func _play_reveal(data: Dictionary) -> void:
 		&"fall": suffix = " (상대 추락!)"
 		&"both_fell": suffix = " (둘 다 추락, 신청자 판정승)"
 		&"nobody": suffix = " (아무도 못 눌러 신청자 판정승)"
-		&"upset": suffix = " ⚡하극상!"
-	_say("%s  ➔  %s 승리!%s" % [detail, _seat_name(winner), suffix], GOLD)
+		&"upset": suffix = " 하극상!"
+	_say("%s  →  %s 승리!%s" % [detail, _seat_name(winner), suffix], GOLD)
 	_vs.text = "%s  VS  %s" % [board._player_name(challenger), board._player_name(defender)]
 	await _wait(1.1)
 	animating = false
@@ -680,7 +680,7 @@ class StageDrawing extends Control:
 			draw_circle(center, 46.0, Color(MainBoard.PLAYER_COLORS.get(seat, Color.WHITE), 0.2))
 			var label: String = "?"
 			if reveal.has(seat):
-				label = ["✊ 바위", "✌️ 가위", "✋ 보"][clampi(int(reveal[seat]), 0, 2)]
+				label = ["바위", "가위", "보"][clampi(int(reveal[seat]), 0, 2)]
 			elif arena._submitted.has(seat):
 				label = "선택 완료"
 			_center_text(label, center + Vector2(0, 8), 22, Color.WHITE)

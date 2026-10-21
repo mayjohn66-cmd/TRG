@@ -1,6 +1,6 @@
 # File: res://scenes/emote_bubble.gd
 # Class: class_name EmoteBubble
-# Role: 감정 표현 말풍선 (클래시 로얄 이모트 같은 연출). 프로필 아바타 옆에서 통통 튀며 나타나 이모지 + 한마디를 보여 주고, 잠시 뒤 줄어들며 사라진 다음 queue_free된다.
+# Role: 감정 표현 말풍선 (클래시 로얄 이모트 같은 연출). 프로필 아바타 옆에서 통통 튀며 나타나 얼굴 아이콘(EmoteFace) + 한마디를 보여 주고, 잠시 뒤 줄어들며 사라진 다음 queue_free된다.
 #       꼬리는 tail_dir 쪽(아래 = 아바타가 아래에 있음, 위 = 아바타가 위에 있음)을 향하고 tail_x(말풍선 안 x 좌표)에서 아바타를 가리킨다.
 class_name EmoteBubble
 extends Control
@@ -14,7 +14,7 @@ var emote_id: int = 0
 var tail_dir: int = 1
 var tail_x: float = 40.0
 
-var _emoji: Label = null
+var _emoji: EmoteFace = null
 var _text: Label = null
 var _box_size: Vector2 = Vector2.ZERO
 
@@ -26,10 +26,7 @@ func setup(id: int, pointing_down: bool) -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	z_index = 70
 	var entry: Dictionary = EmoteCatalog.entry(id)
-	_emoji = Label.new()
-	_emoji.text = str(entry["emoji"])
-	_emoji.add_theme_font_size_override("font_size", 38)
-	_emoji.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_emoji = EmoteFace.new(entry["face"], 42.0)
 	add_child(_emoji)
 	_text = Label.new()
 	_text.text = str(entry["text"])

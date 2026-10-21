@@ -74,7 +74,7 @@ static func in_goal_zone(round_number: int, tile: int) -> bool:
 ## 경고 화면에 보여 줄 단계별 효과 문구.
 static func effect_lines(stage: int) -> Array[String]:
 	match stage:
-		1: return ["모든 굴림 최종 이동 +1칸", "🔥 리벤지 부스터 +6칸", "법전·초증강 증강 등장 확률 상승"] as Array[String]
-		2: return ["모든 굴림 최종 이동 +3칸", "🔥 리벤지 부스터 +8칸", "법전에 무작위 특수 승리 1개 등록"] as Array[String]
+		1: return ["모든 굴림 최종 이동 +1칸", "리벤지 부스터 +6칸", "법전·초증강 증강 등장 확률 상승"] as Array[String]
+		2: return ["모든 굴림 최종 이동 +3칸", "리벤지 부스터 +8칸", "법전에 무작위 특수 승리 1개 등록"] as Array[String]
 		3: return ["전원 이동 +5칸", "결승선이 라운드마다 %d칸씩 당겨진다" % GOAL_SHRINK_PER_ROUND] as Array[String]
 	return [] as Array[String]

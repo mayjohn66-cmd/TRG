@@ -62,6 +62,7 @@ static func capture(state: GameState) -> TurnSnapshot:
 		"extra_turns": state.extra_turns.duplicate(),
 		"rankings": state.rankings.duplicate(),
 		"rank_reasons": state.rank_reasons.duplicate(),
+		"rank_stats": state.rank_stats.duplicate(true),
 		"meta": {
 			"current_player": state.current_player,
 			"reverse_move_rounds_left": state.reverse_move_rounds_left,
@@ -148,6 +149,7 @@ func restore(state: GameState, restore_meta: bool = false) -> void:
 	if data.has("rankings"):
 		state.rankings.assign(data["rankings"])
 		state.rank_reasons = (data.get("rank_reasons", {}) as Dictionary).duplicate()
+		state.rank_stats = (data.get("rank_stats", {}) as Dictionary).duplicate(true)
 
 	if restore_meta:
 		var meta: Dictionary = data["meta"]

@@ -70,9 +70,9 @@ var _stack_offer: Dictionary = {}
 var _duel: Dictionary = {}
 ## 테스트·연출 확인용: 0 이상이면 결투 종목을 이 값으로 고정한다 (DuelRules.Game).
 var duel_game_override: int = -1
-## ⚔ 방어 대기: {"victim": 플레이어, "attack": 공격 기록 ID, "resume": &"turn_begin"/&"resolution", "cards": [낼 수 있는 방어 카드]}. 없으면 빈 Dictionary.
+## 방어 대기: {"victim": 플레이어, "attack": 공격 기록 ID, "resume": &"turn_begin"/&"resolution", "cards": [낼 수 있는 방어 카드]}. 없으면 빈 Dictionary.
 var _counter_offer: Dictionary = {}
-## 폭풍 전진 가속 기믹(⚡ 발판·🏃 점프·🔥 복수) 사용 여부. start_game 전에만 바꿀 수 있다.
+## 폭풍 전진 가속 기믹(발판·점프·복수) 사용 여부. start_game 전에만 바꿀 수 있다.
 var boost_gimmicks: bool = true
 ## 도박사의 영혼이 눈금 1 이하로 과열된 플레이어 (이동이 끝나면 움직인 말이 출발선으로 사출된다). 없으면 -1.
 var _overheat_player: int = -1
@@ -180,7 +180,7 @@ func request_action(action: StringName, params: Dictionary = {}) -> void:
 	if not _duel.is_empty() and action != &"duel_pick":
 		action_rejected.emit(actor, action, &"duel_pending")
 		return
-	# ⚔ 방어 대기 중에는 피해자의 방어 카드 / 넘기기만 받는다.
+	# 방어 대기 중에는 피해자의 방어 카드 / 넘기기만 받는다.
 	if counter_pending() and not (actor == int(_counter_offer["victim"]) and (action == &"counter_pass" or (action == &"play_card" and CardCounter.is_counter(StringName(params.get("card_id", &"")))))):
 		action_rejected.emit(actor, action, &"counter_pending")
 		return
@@ -225,6 +225,8 @@ func advance_to_next_player() -> void:
 	_turns_in_round += 1
 	if _turns_in_round >= player_order.size():
 		_turns_in_round = 0
+		if _check_round_end_victory():
+			return
 		_enter_neutral_npc_phase()
 		return
 	_step_turn_index()
@@ -410,7 +412,7 @@ func _handle_play_card(actor: int, params: Dictionary) -> void:
 	command.bind_state(ctx.state)
 	if not queued and command.can_execute(ctx):
 		_emit_event(&"card_played", {"player_id": actor, "card_id": card_id, "params": params, "queued": queued})
-		state.begin_attack({"kind": &"card", "card_id": card_id, "attacker": actor})  # ⚔ 이 카드로 입힌 피해는 방어 대상
+		state.begin_attack({"kind": &"card", "card_id": card_id, "attacker": actor})  # 이 카드로 입힌 피해는 방어 대상
 		accepted = command_stack.execute_command(command, ctx)
 		state.end_attack()
 		if not accepted:
@@ -1104,7 +1106,7 @@ func _enter_round_start() -> void:
 		_begin_turn()
 
 
-## ⏩ 템포 업: 단계가 오르는 라운드(11·21·31)는 라운드를 선언하기 전에 경고 이벤트를 먼저 보낸다.
+## 템포 업: 단계가 오르는 라운드(11·21·31)는 라운드를 선언하기 전에 경고 이벤트를 먼저 보낸다.
 ## 2단계(21R)는 법전에 무작위 특수 승리를 하나 올리고, 3단계부터는 라운드마다 결승선이 당겨져 그 안에 선 말이 바로 완주한다.
 ## 완주로 게임이 끝났으면 true.
 func _apply_tempo_up() -> bool:
@@ -1126,7 +1128,7 @@ func _apply_tempo_up() -> bool:
 	_emit_event(&"goal_shrunk", {"round": round_number, "zone_start": zone_start, "shrink": TempoUp.goal_shrink(round_number), "finished": finished})
 	if finished.is_empty():
 		return false
-	for entry: Dictionary in VictoryChecker.newly_qualified(state, player_order, current_player_id()):
+	for entry: Dictionary in VictoryChecker.newly_qualified(state, player_order, current_player_id(), false):
 		_graduate(int(entry["player"]), entry["reason"])
 	var active: Array[int] = state.active_players(player_order)
 	if active.size() <= 1:
@@ -1178,7 +1180,7 @@ func _begin_turn(new_turn: bool = true) -> void:
 	if new_turn:
 		state.attack_log.clear()
 	_sync_current_player()
-	# 🏁 이미 순위가 확정되어 졸업한 플레이어는 턴을 건너뛴다.
+	# 이미 순위가 확정되어 졸업한 플레이어는 턴을 건너뛴다.
 	if state.is_graduated(current_player_id()) and not is_game_over:
 		advance_to_next_player()
 		return
@@ -1258,7 +1260,7 @@ func _apply_roll_result(result: RollResult) -> void:
 		if int(state.gambler_round.get(roller, -1)) == state.round_number:
 			_emit_event(&"gambler_doubled", {"player_id": roller, "from": boosted, "to": boosted * SuperAugments.gambler_multiplier()})
 			boosted *= SuperAugments.gambler_multiplier()
-		# ⏩ 템포 업: 최종 이동 칸에 단계별 보너스 (11R +1 / 21R +3 / 31R +5)
+		# 템포 업: 최종 이동 칸에 단계별 보너스 (11R +1 / 21R +3 / 31R +5)
 		var tempo: int = TempoUp.move_bonus(state.round_number)
 		if tempo > 0:
 			_emit_event(&"tempo_boosted", {"player_id": roller, "from": boosted, "to": boosted + tempo, "level": TempoUp.level(state.round_number)})
@@ -1443,7 +1445,7 @@ func _enter_neutral_npc_phase() -> void:
 	_enter_round_start()
 
 
-## 🏁 서바이벌 순위 판정 (VictoryChecker): 승리 조건을 달성한 사람을 다음 순위로 졸업시킨다.
+## 서바이벌 순위 판정 (VictoryChecker): 승리 조건을 달성한 사람을 다음 순위로 졸업시킨다.
 ## 남은 사람이 1명이면 그 사람이 꼴찌로 확정되고 게임이 끝난다. 게임이 끝났거나 지금 차례인 사람이 졸업해 턴이 넘어갔으면 true (호출한 쪽은 진행을 멈춘다).
 func _check_victory(report: MoveReport) -> bool:
 	if is_game_over:
@@ -1452,7 +1454,8 @@ func _check_victory(report: MoveReport) -> bool:
 	if report != null:
 		SpecialVictory.note_session(state, current, VictoryLaw.BEST_MOVE, report.path.size())  # 🏆 카이지의 한방 역전법
 	var current_graduated: bool = false
-	for entry: Dictionary in VictoryChecker.newly_qualified(state, player_order, current):
+	# 특수 승리는 라운드가 끝나기 직전에만 판정한다 (_check_round_end_victory). 여기서는 말 4개 완주만 본다.
+	for entry: Dictionary in VictoryChecker.newly_qualified(state, player_order, current, false):
 		_graduate(int(entry["player"]), entry["reason"])
 		current_graduated = current_graduated or int(entry["player"]) == current
 	var active: Array[int] = state.active_players(player_order)
@@ -1463,6 +1466,32 @@ func _check_victory(report: MoveReport) -> bool:
 		return true
 	if current_graduated:
 		advance_to_next_player()
+		return true
+	return false
+
+
+## 라운드가 끝나기 직전: 법전의 특수 승리를 판정한다. 이번 라운드 끝에 조건을 채운 사람은 모두 졸업하고,
+## 여럿이면 레이스에서 앞선 사람(완주 수 많고 남은 거리 짧은 순)이 먼저 순위를 받는다. 게임이 끝났으면 true.
+func _check_round_end_victory() -> bool:
+	if is_game_over or state == null:
+		return is_game_over
+	var qualified: Array[Dictionary] = VictoryChecker.newly_qualified(state, player_order, current_player_id(), true)
+	if qualified.is_empty():
+		return false
+	qualified.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		var pa: Dictionary = VictoryChecker.progress_of(state, int(a["player"]))
+		var pb: Dictionary = VictoryChecker.progress_of(state, int(b["player"]))
+		if int(pa["finished"]) != int(pb["finished"]):
+			return int(pa["finished"]) > int(pb["finished"])
+		return int(pa["remaining"]) < int(pb["remaining"]))
+	_emit_event(&"round_end_judgement", {"round": state.round_number, "players": qualified.map(func(e: Dictionary) -> int: return int(e["player"]))})
+	for entry: Dictionary in qualified:
+		_graduate(int(entry["player"]), entry["reason"])
+	var active: Array[int] = state.active_players(player_order)
+	if active.size() <= 1:
+		for last: int in active:
+			_graduate(last, VictoryChecker.LAST_PLACE)
+		_end_game()
 		return true
 	return false
 

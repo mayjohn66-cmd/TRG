@@ -18,7 +18,7 @@ func on_step_trigger(victim: BoardEntity, ctx: RuleContext) -> bool:
 	var pawn: PlayerPawn = victim as PlayerPawn
 	if pawn == null or pawn.owner_id == owner_id:
 		return false
-	# ⚡ 부스터 발판·폭주 기관차처럼 효과로 날아가는 이동은 지나치는 호텔에 붙잡히지 않는다 (멈춘 칸의 호텔만 통행료를 받는다).
+	# 부스터 발판·폭주 기관차처럼 효과로 날아가는 이동은 지나치는 호텔에 붙잡히지 않는다 (멈춘 칸의 호텔만 통행료를 받는다).
 	# 그렇지 않으면 발판 가속 중에 빵집 호텔에 걸려 빵집 위에 멈추고도 카드는 못 받는 손해가 생긴다.
 	if ctx.charge_depth > 0 and not bool(ctx.metadata.get("is_landing", true)):
 		return false

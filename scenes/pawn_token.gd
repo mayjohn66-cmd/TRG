@@ -108,7 +108,7 @@ func _draw() -> void:
 		_poly(bolt, Color(1,0.88,0.25,_pulse), INK, 0.9)
 
 
-## 🔥 리벤지 부스터: 말 옆에서 일렁이는 불꽃 (다음 출발에 +4칸).
+## 리벤지 부스터: 말 옆에서 일렁이는 불꽃 (다음 출발에 +4칸).
 func _draw_revenge_flame() -> void:
 	var flick: float = 0.5 + 0.5 * sin(Time.get_ticks_msec() * TAU / 420.0)
 	var base := Vector2(17, -8)

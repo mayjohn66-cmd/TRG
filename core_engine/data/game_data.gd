@@ -79,17 +79,17 @@ static func rule_enabled(rule_id: String) -> bool:
 	return enabled("augments", rule_id)
 
 
-## 🔥 리벤지 부스터: 사출됐던 말이 다시 나갈 때 더해지는 칸 수 (꺼 두면 0).
+## 리벤지 부스터: 사출됐던 말이 다시 나갈 때 더해지는 칸 수 (꺼 두면 0).
 static func revenge_bonus() -> int:
 	return maxi(param("augments", "RULE_REVENGE_BOOST", 1, GameEnums.REVENGE_BONUS), 0) if rule_enabled("RULE_REVENGE_BOOST") else 0
 
 
-## ⚡ 부스터 발판 추가 전진 칸 수 (꺼 두면 0).
+## 부스터 발판 추가 전진 칸 수 (꺼 두면 0).
 static func dash_steps() -> int:
 	return maxi(param("augments", "RULE_DASH_PAD", 1, GameEnums.DASH_STEPS), 0) if rule_enabled("RULE_DASH_PAD") else 0
 
 
-## 🏃 말 밟고 점프하기: 말 하나당 칸 수(param_1)와 한 번에 얻는 최대 칸 수(param_2). 꺼 두면 (0, 0).
+## 말 밟고 점프하기: 말 하나당 칸 수(param_1)와 한 번에 얻는 최대 칸 수(param_2). 꺼 두면 (0, 0).
 static func leapfrog_per_pawn() -> int:
 	return maxi(param("augments", "RULE_LEAPFROG", 1, 1), 0) if rule_enabled("RULE_LEAPFROG") else 0
 

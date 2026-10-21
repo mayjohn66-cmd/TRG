@@ -826,3 +826,8 @@ res://
 - **결투장:** `ACT_09`를 내면 6종 초고속 미니게임 중 하나가 무작위로 뽑힌다 (`DuelRules.Game`): ✊ 묵찌빠 단두대(가위바위보) · 🔔 할리갈리 디럭스(합 5에 데스벨) · 🍾 병뚜껑 절벽 컬링(게이지 0~115%, 100% 초과 추락) · 🔫 석양의 무법자(1.5~3.0초 정적 뒤 DRAW!, 💨 트림 가짜 신호) · 👑 엘리아스 E카드(여왕·평민 vs 반란군·평민, 하극상 +5칸) · 🛢️ 스피키 룰렛(구멍 5개 중 폭탄 1개). 승자 선두 말 +3칸, 패자 선두 말 즉시 출발선 사출. 세부 규칙·시간·봇 밸런스는 EDGE_CASE_SPEC의 ACT_09 절.
 - **구조:** 규칙·준비값·판정은 `DuelRules`(순수 함수), 진행·입력·타임아웃은 `TurnManager`(`duel_pick {value}`), 봇은 `BotController._step_duel` → `DuelRules.bot_input`, 화면은 `DuelArena`(룰렛·미니게임 무대·공개, 종료 즉시 `queue_free`).
 - **패러디 명칭 (`cards_table.csv` name·parody_quote, 코드 기본값도 같게):** CNT_03 UDO 리버스 카드 · CNT_06 교단의 칙령 · ACT_02 BANG! · ACT_03 UDO +4 · ACT_09 일기토 데스매치 · ACT_11 싸늘한 밑장빼기 · ACT_12 XI. The World!! · ACT_13 슈팡 특급 배송 · ACT_15 UDO 스킵 · SUM_01 사료스탕스 출동 · SUM_02 와구와구 유령. 이름을 바꾼 카드의 인용문(parody_quote)에서도 원작 상표를 뺐다.
+
+### 6.26 특수 승리 판정 시점 + 결과 화면 + 글꼴 없는 글자
+- **특수 승리는 라운드가 끝나기 직전에 판정한다 (`TurnManager._check_round_end_victory`):** 라운드 마지막 턴이 끝나면 NPC 페이즈 전에 법전의 교칙을 판정해, 그때 조건을 채운 사람이 모두 졸업한다. 같은 라운드에 여럿이면 레이스에서 앞선 순(완주 수 → 남은 거리)으로 순위를 받는다. 라운드 중간에는 말 4개 완주만 즉시 판정한다 (`VictoryChecker.newly_qualified(..., include_special=false)`). 판정 전에 [특수 승리 판정] 알림(`round_end_judgement`)이 뜬다.
+- **결과 화면은 순위의 근거를 보여 준다:** 각 줄에 `특수 승리: 교칙 이름` / `말 4개 모두 완주` / `마지막까지 남음`과, 졸업한 순간(말을 철수하기 전)의 완주 수·진행도(`GameState.rank_stats`, 스냅샷 포함). 아래 `승리 요인`은 1위의 사유(`VictoryChecker.short_reason`).
+- **글꼴에 없는 글자 금지:** 게임 글꼴(ONE Mobile POP + 나눔고딕)에는 이모지가 없어 웹에서 `0 1F 947` 같은 상자로 깨진다. 화면 문구에서 이모지와 ⚠·⚡·➔·♦ 등을 모두 지우거나 ★·■·→·◆ 같은 글꼴에 있는 기호로 바꿨다. 감정 표현 얼굴(`EmoteFace`)과 폭주 기관차(`TrainSprite`)는 코드로 그린다. `tests/test_font_glyphs.gd`가 스크립트(주석 밖)와 데이터 표의 모든 글자를 글꼴에서 찾아 새로 들어오지 못하게 막는다.

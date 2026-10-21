@@ -218,11 +218,11 @@ class Tile extends Control:
 	var danger_level: int = 0
 	var danger_dir: Vector2 = Vector2.ZERO
 	var danger_pulse: float = 0.0
-	## ⚡ 코랄 부스터 존. 그림은 보드 평면의 진행 방향, flow_dir은 화면 방향, dash_phase는 밝기 펄스다.
+	## 코랄 부스터 존. 그림은 보드 평면의 진행 방향, flow_dir은 화면 방향, dash_phase는 밝기 펄스다.
 	var dash_on: bool = false
 	var flow_dir: Vector2 = Vector2.RIGHT
 	var dash_phase: float = 0.0
-	## ⏩ 템포 업으로 당겨진 결승선 안의 칸: 체크무늬 결승 깃발 무늬가 덮인다.
+	## 템포 업으로 당겨진 결승선 안의 칸: 체크무늬 결승 깃발 무늬가 덮인다.
 	var goal_on: bool = false
 
 	func initialize(tile_index: int) -> void:

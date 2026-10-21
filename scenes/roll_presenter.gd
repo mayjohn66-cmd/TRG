@@ -10,7 +10,7 @@ signal finished
 const SUPPORTED: Array[StringName] = [&"D6", &"CHINCHIRO", &"YUT", &"LIFE_ROULETTE", &"SLOT_777", &"HOLDEM", &"DICE_HWATU", &"DICE_MAHJONG", &"DICE_TAROT", &"REVOLVER"]
 const YUT_NAMES: Dictionary = {0: "낙", 1: "도", 2: "개", 3: "걸", 4: "윷", 5: "모"}
 const SLOT_SYMBOLS: Array[String] = ["체리", "레몬", "종", "BAR", "다이아", "7"]
-const SUITS: Array[String] = ["♣", "♦", "♥", "♠"]
+const SUITS: Array[String] = ["♣", "◆", "♥", "♠"]
 const RANKS: Array[String] = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"]
 ## 연출 시간(초).
 const CARD_FLIP_INTERVAL: float = 0.15
@@ -632,7 +632,7 @@ func _update_cards(t: float) -> void:
 			if not _card_flipped[index]:
 				_card_flipped[index] = true
 				_card_labels[index].text = _card_faces[index]
-				var red: bool = _card_faces[index].begins_with("♥") or _card_faces[index].begins_with("♦")
+				var red: bool = _card_faces[index].begins_with("♥") or _card_faces[index].begins_with("◆")
 				if index < _card_face_colors.size() and _mode != &"HOLDEM":
 					_card_labels[index].add_theme_color_override("font_color", _card_face_colors[index])
 				else:

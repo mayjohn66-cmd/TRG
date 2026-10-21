@@ -55,12 +55,12 @@ static func plan_path(state: GameState, mover: PlayerPawn, ctx: RuleContext, rep
 	var sign_dir: int = 1
 	if steps == 0:
 		return [] as Array[int]
-	# 🔥 리벤지 부스터: 사출된 말이 출발선에서 다시 나갈 때 눈금에 +4칸 (루도 복수자는 +8칸).
+	# 리벤지 부스터: 사출된 말이 출발선에서 다시 나갈 때 눈금에 +4칸 (루도 복수자는 +8칸).
 	if state.boost_gimmicks and mover.revenge_boost and not mover.has_left_start and revenge_bonus_of(mover, state) > 0:
 		var revenge: int = revenge_bonus_of(mover, state)
 		steps += revenge
 		report.revenge_bonus = revenge
-		report.ability_notes.append("🔥 복수 부스터 +%d칸" % revenge)
+		report.ability_notes.append("복수 부스터 +%d칸" % revenge)
 	var sub: GameEnums.PawnSubType = mover.sub_type()
 	# 스타 카트: 발판·돌진 같은 추가 이동은 모두 +2칸.
 	if sub == GameEnums.PawnSubType.KART_STAR and ctx.charge_depth > 0:
@@ -108,7 +108,7 @@ static func plan_path(state: GameState, mover: PlayerPawn, ctx: RuleContext, rep
 			if not path.is_empty() and not _tile_has_other_pawn(state, mover, path[0]):
 				path = state.board.calculate_path(mover, steps + 2 * sign_dir, ctx)
 				report.ability_notes.append("상 도약 +2칸")
-	# 🏃 말 밟고 점프하기: 경로 중간에 서 있는 말(아군·적군 무관)마다 +1칸 (최대 3칸). 경로를 무시하는 기물은 제외.
+	# 말 밟고 점프하기: 경로 중간에 서 있는 말(아군·적군 무관)마다 +1칸 (최대 3칸). 경로를 무시하는 기물은 제외.
 	var leap: int = leapfrog_bonus(state, mover, path)
 	if leap > 0:
 		path = state.board.calculate_path(mover, steps + leap, ctx)
@@ -162,7 +162,7 @@ const EIGHT_BALL_CHARGE: int = 3
 
 
 ## 이 말의 리벤지 부스터 칸 수 (루도 복수자는 augments_table.csv EVO_7_2 param_1, 기본 8).
-## ⏩ 템포 업이 오르면 리벤지 부스터가 커진다 (11R 6칸, 21R 8칸). 규칙이 꺼져 있으면 그대로 0.
+## 템포 업이 오르면 리벤지 부스터가 커진다 (11R 6칸, 21R 8칸). 규칙이 꺼져 있으면 그대로 0.
 static func revenge_bonus_of(mover: PlayerPawn, state: GameState = null) -> int:
 	var tempo: int = TempoUp.revenge_bonus(state.round_number) if state != null else 0
 	if mover.sub_type() == GameEnums.PawnSubType.LUDO_AVENGER:
@@ -372,7 +372,7 @@ static func _trigger_attachments(
 		if is_trap and attachment.owner_id != mover.owner_id and state.break_shield(mover):
 			tile.remove_attachment(attachment)  # 백돌 방어막이 함정을 막고 함께 부서진다
 			continue
-		# ⚔ 남의 함정은 방어 카드(싸이크론·포고령·도굴꾼)의 대상이 되도록 피해 직전 상태를 기록한다.
+		# 남의 함정은 방어 카드(싸이크론·포고령·도굴꾼)의 대상이 되도록 피해 직전 상태를 기록한다.
 		var hostile: bool = is_trap and attachment.owner_id != mover.owner_id
 		var hand_before: int = (state.hands.get(mover.owner_id, []) as Array).size()
 		if hostile:
@@ -443,7 +443,7 @@ static func _resolve_landing(state: GameState, mover: PlayerPawn, ctx: RuleConte
 		return
 	_kaku_strike(state, mover, ctx, report)
 	_resolve_stacking(state, mover, ctx, report)
-	# ⚡ 부스터 발판: 멈춘 자리가 발판이면 곧바로 앞으로 3칸 더 날아간다 (뒤따르는 이동이 도착 정산을 이어서 한다).
+	# 부스터 발판: 멈춘 자리가 발판이면 곧바로 앞으로 3칸 더 날아간다 (뒤따르는 이동이 도착 정산을 이어서 한다).
 	if state.boost_gimmicks and GameData.dash_steps() > 0 and BoardSpec.dash_tiles.has(mover.current_tile_idx) and ctx.charge_depth == 0 and not mover.is_finished and not mover.is_imprisoned:
 		report.dash_tiles.append(mover.current_tile_idx)
 		state.dash_pad_triggered.emit(mover.entity_id, mover.current_tile_idx)

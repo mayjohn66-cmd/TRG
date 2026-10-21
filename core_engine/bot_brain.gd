@@ -9,7 +9,7 @@ const SCORE_GOAL: float = 100.0
 const SCORE_CAPTURE: float = 60.0
 const SCORE_STOP_SPOT: float = 40.0
 const SCORE_ADVANCE: float = 20.0
-## ⚡ 부스터 발판에 멈추면 3칸 더 날아간다.
+## 부스터 발판에 멈추면 3칸 더 날아간다.
 const SCORE_DASH_PAD: float = 30.0
 ## 점프 코너와 반환점 (정확히 멈추면 유리한 칸).
 ## 턴 시작에 함정·소환 카드를 쓸 확률.

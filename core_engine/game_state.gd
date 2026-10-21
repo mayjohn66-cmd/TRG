@@ -34,7 +34,7 @@ signal bang_resolved(shooter: int, target_pawn_id: int, from_tile: int, to_tile:
 ## 기물 능력 알림: 룩 캐슬링(위치 교환) / 백돌 무적에 막혀 밀려남.
 signal pawns_castled(pawn_a_id: int, pawn_b_id: int)
 signal dash_pad_triggered(pawn_id: int, tile: int)
-## 🔥 리벤지 부스터가 장전된 말이 출발한다 (첫 걸음 직전). base: 기본 눈금, bonus: 추가 칸, total: 최종 계획 칸 수.
+## 리벤지 부스터가 장전된 말이 출발한다 (첫 걸음 직전). base: 기본 눈금, bonus: 추가 칸, total: 최종 계획 칸 수.
 signal revenge_boost_fired(pawn_id: int, base_steps: int, bonus: int, total: int)
 signal pawn_pushed_back(pawn_id: int, from_tile: int, to_tile: int)
 ## 바둑 백돌 방어막이 잡기·함정을 막고 깨졌다 / 다시 차올랐다.
@@ -76,7 +76,7 @@ var hands: Dictionary = {}
 var tools: Dictionary = {}
 var card_deck: Array[StringName] = []
 
-## 폭풍 전진 가속 기믹(⚡ 부스터 발판 · 🏃 말 밟고 점프 · 🔥 리벤지 부스터)을 켠다. 규칙 판정용 스위치라 단위 테스트가 기본 이동 규칙만 따로 검증할 때 끈다.
+## 폭풍 전진 가속 기믹(부스터 발판 · 말 밟고 점프 · 리벤지 부스터)을 켠다. 규칙 판정용 스위치라 단위 테스트가 기본 이동 규칙만 따로 검증할 때 끈다.
 var boost_gimmicks: bool = true
 var current_player: int = -1
 var round_number: int = 1
@@ -91,11 +91,13 @@ var gambler_round: Dictionary = {}
 ## [초증강] 판 뒤집기 실패: 다음 내 턴을 쉬어야 하는 플레이어들.
 var rest_next_turn: Dictionary = {}
 var winner: int = -1
-## 🏁 서바이벌 순위제: 승리 조건을 먼저 달성한 순서대로 쌓이는 플레이어 ID (0번째 = 1위). 졸업한 플레이어는 레이스에서 빠지고 턴을 건너뛴다.
+## 서바이벌 순위제: 승리 조건을 먼저 달성한 순서대로 쌓이는 플레이어 ID (0번째 = 1위). 졸업한 플레이어는 레이스에서 빠지고 턴을 건너뛴다.
 var rankings: Array[int] = []
 ## 플레이어 ID -> 순위를 확정한 사유 (all_home / 특수 승리 교칙 ID / last_place)
 var rank_reasons: Dictionary = {}
-## ⚔ 이번 턴의 공격 기록 (방어 카드 대상). 턴이 시작될 때 비운다. 원소: {id, kind(capture/card/trap), victim, attacker, attacker_pawn,
+## 순위가 확정된 순간의 레이스 진행 (말을 철수하기 전): 플레이어 ID -> {"finished", "remaining", "progress"}. 결과 화면이 쓴다.
+var rank_stats: Dictionary = {}
+## 이번 턴의 공격 기록 (방어 카드 대상). 턴이 시작될 때 비운다. 원소: {id, kind(capture/card/trap), victim, attacker, attacker_pawn,
 ## card_id, trap_id, trap_tile, trap_owner, trap_data, pawns: {말 ID: 피해 직전 상태}, stats: {kills, ejected, underdog}, effects: {}, offered, countered}
 var attack_log: Array[Dictionary] = []
 ## 지금 진행 중인 공격의 출처 (begin_attack ~ end_attack 사이). 비어 있으면 공격으로 기록하지 않는다.
@@ -601,7 +603,7 @@ func step_back_one(pawn: PlayerPawn) -> int:
 
 
 # ---------------------------------------------------------------------------
-# 🏁 서바이벌 순위제
+# 서바이벌 순위제
 # ---------------------------------------------------------------------------
 
 func is_graduated(player_id: int) -> bool:
@@ -614,6 +616,7 @@ func graduate(player_id: int, reason: StringName) -> int:
 		return rankings.find(player_id) + 1
 	rankings.append(player_id)
 	rank_reasons[player_id] = reason
+	rank_stats[player_id] = VictoryChecker.progress_of(self, player_id)
 	for pawn: PlayerPawn in pawns_of(player_id):
 		if pawn.carrier != null:
 			pawn.carrier.carried.erase(pawn)
@@ -723,7 +726,7 @@ func recharge_shields() -> void:
 
 
 # ---------------------------------------------------------------------------
-# ⚔ 공격 기록 (방어 카드)
+# 공격 기록 (방어 카드)
 # ---------------------------------------------------------------------------
 
 ## 공격 출처를 연다: {"kind": &"capture"/&"card"/&"trap", "attacker": 플레이어, ...}. 같은 출처 안의 피해는 피해자별로 한 기록에 모인다.

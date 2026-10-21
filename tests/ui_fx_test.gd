@@ -1778,6 +1778,10 @@ func _test_event_order() -> void:
 	state.place_attachment(6, TrapDomino.new(2))
 	state.place_attachment(7, TrapPit.new(2))
 	var mover: PlayerPawn = state.get_pawn(11)
+	for test_pawn: PlayerPawn in [mover, state.get_pawn(12)]:
+		test_pawn.kind = GameEnums.PawnKind.BASIC  # 앞선 검사의 드래프트가 함정을 뛰어넘는 기물로 진화시켰을 수 있다
+		test_pawn.promoted = false
+		test_pawn.shield = false
 	mover.has_left_start = true
 	mover.current_tile_idx = 4
 	var standing: PlayerPawn = state.get_pawn(12)

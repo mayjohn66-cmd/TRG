@@ -41,10 +41,10 @@ var dog_cards: int = 0
 var paid_bail: bool = false
 ## 지뢰찾기 공병이 적 함정을 해체하고 받은 카드 수.
 var defused_cards: int = 0
-## 🏃 말 밟고 점프하기로 늘어난 칸수와 ⚡ 부스터 발판이 터진 타일들.
+## 말 밟고 점프하기로 늘어난 칸수와 부스터 발판이 터진 타일들.
 var leapfrog_bonus: int = 0
 var dash_tiles: Array[int] = []
-## 🔥 리벤지 부스터로 더해진 칸 수 (0이면 발동하지 않음)와 그때의 최종 계획 칸 수.
+## 리벤지 부스터로 더해진 칸 수 (0이면 발동하지 않음)와 그때의 최종 계획 칸 수.
 var revenge_bonus: int = 0
 var revenge_total: int = 0
 

@@ -1,7 +1,7 @@
 # File: res://scenes/action_log_panel.gd
 # Class: class_name ActionLogPanel
 # Role: 인게임 액션 히스토리 로그. 누가 무엇을 했는지(굴림·카드·방어·함정·처치·필살기·증강·법전) 한 줄씩 쌓는다.
-#       평소(미니)에는 최근 MINI_LINES줄만 작게, 펼치면([📜 로그] 버튼·L 키) 전체 내역을 스크롤로 본다.
+#       평소(미니)에는 최근 MINI_LINES줄만 작게, 펼치면([로그] 버튼·L 키) 전체 내역을 스크롤로 본다.
 #       메모리 보호: 최대 MAX_LOG_LINES줄만 보관하고 넘치면 가장 오래된 줄부터 버린다 (링 버퍼)
 class_name ActionLogPanel
 extends PanelContainer
@@ -44,7 +44,7 @@ func _init() -> void:
 	_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(_title)
 	_toggle = Button.new()
-	_toggle.text = "📜 로그 펼치기"
+	_toggle.text = "로그 펼치기"
 	_toggle.tooltip_text = "지금까지의 전체 기록을 펼쳐 봅니다 (단축키 L)"
 	_toggle.focus_mode = Control.FOCUS_NONE
 	_toggle.add_theme_font_size_override("font_size", 12)
@@ -127,7 +127,7 @@ func place(at: Vector2) -> void:
 
 func _apply_mode() -> void:
 	add_theme_stylebox_override("panel", _expanded_style if expanded else _mini_style)
-	_toggle.text = "📜 로그 접기" if expanded else "📜 로그 펼치기"
+	_toggle.text = "로그 접기" if expanded else "로그 펼치기"
 	_title.text = "액션 로그 (최근 %d줄)" % MAX_LOG_LINES if expanded else "최근 기록"
 	_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO if expanded else ScrollContainer.SCROLL_MODE_SHOW_NEVER
 	z_index = 70 if expanded else 0

@@ -13,7 +13,7 @@ var has_left_start: bool = false
 var is_finished: bool = false
 ## 출발선(0번)에서 뒤로 물러난 뒤 아직 0번을 다시 지나가지 않은 말. 역주행 상태가 아니면 이 말은 완주할 수 없다 (한 바퀴를 더 돌아야 함).
 var retreated_run: bool = false
-## 🔥 리벤지 부스터: 보드 위에서 출발선으로 사출된 말이 다음에 출발할 때 눈금에 +4칸이 붙는다 (1회 출발 시 소모).
+## 리벤지 부스터: 보드 위에서 출발선으로 사출된 말이 다음에 출발할 때 눈금에 +4칸이 붙는다 (1회 출발 시 소모).
 var revenge_boost: bool = false
 ## 업기: 나를 업고 있는 말(없으면 null) / 내가 업고 있는 말들.
 var carrier: PlayerPawn = null

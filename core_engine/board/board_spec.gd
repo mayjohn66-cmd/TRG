@@ -25,7 +25,7 @@ static var jump_corner_targets: Dictionary = {}
 static var bonus_corner_tiles: Array[int] = [8, 16, 24]
 ## 체스 폰·쇼기 기물이 반환점 이상에 도달하거나 지나가는 순간 승진·승급하는 타일.
 static var promotion_tiles: Array[int] = []
-## ⚡ 부스터 발판 (5번은 빵집과 겹친다).
+## 부스터 발판 (5번은 빵집과 겹친다).
 static var dash_tiles: Array[int] = [4, 15, 26]
 
 

@@ -1,0 +1,37 @@
+# File: res://tests/test_font_glyphs.gd
+# Class: class_name TestFontGlyphs
+# Role: 화면에 나오는 문자열(스크립트의 주석 밖·데이터 표)에 게임 글꼴(ONE Mobile POP + 나눔고딕)에 없는 글자가 없는지 검사한다.
+#       웹 빌드에는 시스템 이모지 글꼴이 없어 이런 글자는 "0 1F 947" 같은 상자로 깨진다.
+class_name TestFontGlyphs
+extends TestCase
+
+const SOURCE_DIRS: Array[String] = ["res://scenes", "res://core_engine", "res://core_engine/augments", "res://core_engine/cards", "res://core_engine/commands", "res://core_engine/entities", "res://core_engine/board", "res://core_engine/rules", "res://core_engine/rules/laws", "res://core_engine/tools", "res://core_engine/data", "res://content_trickcal/data"]
+
+
+func test_every_displayed_character_exists_in_the_game_font() -> void:
+	var font: Font = load("res://assets/fonts/game_ui_font.tres")
+	var missing: Array[String] = []
+	for dir_path: String in SOURCE_DIRS:
+		var dir := DirAccess.open(dir_path)
+		if dir == null:
+			continue
+		for file_name: String in dir.get_files():
+			if not (file_name.ends_with(".gd") or file_name.ends_with(".csv")):
+				continue
+			var line_no: int = 0
+			for line: String in FileAccess.get_file_as_string(dir_path + "/" + file_name).split("\n"):
+				line_no += 1
+				var shown: String = line
+				if file_name.ends_with(".gd"):
+					if line.strip_edges().begins_with("#"):
+						continue
+					var hash_at: int = line.find("#")
+					if hash_at != -1 and line.substr(0, hash_at).count("\"") % 2 == 0:
+						shown = line.substr(0, hash_at)
+				for index: int in shown.length():
+					var code: int = shown.unicode_at(index)
+					if code < 0x2000 or (code >= 0xAC00 and code <= 0xD7A3) or (code >= 0xFE00 and code <= 0xFE0F) or code == 0xFEFF:
+						continue
+					if not font.has_char(code):
+						missing.append("%s:%d U+%X" % [file_name, line_no, code])
+	check(missing.is_empty(), "게임 글꼴에 없는 글자 %d개: %s" % [missing.size(), ", ".join(PackedStringArray(missing.slice(0, 12)))])
