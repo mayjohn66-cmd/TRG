@@ -17,7 +17,7 @@ dest_files=["res://.godot/imported/CNT_01.png-f1cc42f18b4385f0418a0af404b6c4a3.c
 
 compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.9
+compress/lossy_quality=0.85
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
