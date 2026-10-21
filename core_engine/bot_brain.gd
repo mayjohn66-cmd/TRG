@@ -292,13 +292,13 @@ static func _plan_one_turn_card(state: GameState, player_id: int, card: BaseCard
 		&"ACT_12":  # 더 월드: 바로 쓴다
 			if card.could_play(state, player_id):
 				return {"card_id": card.card_id, "params": {}}
-		&"ACT_13":  # 어디로든 문: 결승에 가장 가까운 빈 칸으로 (지금보다 앞일 때만)
+		&"ACT_13":  # 슈팡 특급 배송: 반환점까지의 빈 칸 중 가장 앞선 칸으로 (지금보다 앞일 때만)
 			var traveler: PlayerPawn = DoorCommand.traveler(state, player_id)
 			if traveler != null and rng.randf() < 0.6:
 				var best_tile: int = -1
 				var best_distance: int = state.pawn_progress_distance(traveler)
 				for tile: int in BoardSpec.tile_count:
-					if DoorCommand.is_empty_tile(state, tile) and state.board.distance_to_goal(tile, true) < best_distance:
+					if DoorCommand.is_target_tile(state, tile) and state.board.distance_to_goal(tile, true) < best_distance:
 						best_distance = state.board.distance_to_goal(tile, true)
 						best_tile = tile
 				if best_tile != -1:

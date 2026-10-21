@@ -97,9 +97,12 @@ func test_anywhere_door_warps_my_front_pawn_to_an_empty_tile() -> void:
 	place(state, 11, 2, [1])
 	place(state, 21, 8, [7])
 	check(not card.is_legal(state, 1, {"tile": 8}), "말이 있는 칸은 빈 칸이 아니다")
-	check(card.is_legal(state, 1, {"tile": 15}), "빈 칸")
-	exec(state, card.create_command(state, 1, {"tile": 15}))
-	check_eq(state.get_pawn(11).current_tile_idx, 15, "순간이동")
+	var target: int = BoardSpec.halfway_tile - 1
+	check(card.is_legal(state, 1, {"tile": target}), "반환점 이내의 빈 칸")
+	check(not card.is_legal(state, 1, {"tile": BoardSpec.halfway_tile + 1}) and not card.is_legal(state, 1, {"tile": BoardSpec.tile_count - 1}), "반환점을 넘는 칸(결승선 직전 포함)은 고를 수 없다")
+	check(card.is_legal(state, 1, {"tile": BoardSpec.halfway_tile}), "반환점 칸까지는 된다")
+	exec(state, card.create_command(state, 1, {"tile": target}))
+	check_eq(state.get_pawn(11).current_tile_idx, target, "순간이동")
 
 
 func test_royal_decree_and_grave_robber_answer_traps() -> void:

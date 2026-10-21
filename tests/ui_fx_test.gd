@@ -1806,7 +1806,43 @@ func _test_event_order() -> void:
 			pit_at = index
 	_expect(domino_at != -1 and (pit_at == -1 or domino_at < pit_at), "[도미노 연쇄!]가 연쇄 함정보다 먼저 (%s)" % str(headlines))
 	_expect(not headlines.any(func(h: String) -> bool: return h.contains("[발동!]") and h.contains("도미노")), "도미노 자신의 [발동!] 알림은 다시 뜨지 않는다")
-	# 3) 드래프트 중에 생긴 효과 연출은 증강 공개 뒤로 미룬다
+	# 3) 처치는 말이 도착하자마자: 같은 이동의 빵집·점프 배지보다 컷인·사출이 먼저 나온다
+	for pawn: PlayerPawn in state.pawns:
+		pawn.reset_to_start()
+	var bakery: int = BoardSpec.bakery_tiles[0]
+	var hunter: PlayerPawn = state.get_pawn(11)
+	hunter.kind = GameEnums.PawnKind.BASIC
+	hunter.has_left_start = true
+	hunter.current_tile_idx = bakery - 2
+	var prey: PlayerPawn = state.get_pawn(21)
+	prey.kind = GameEnums.PawnKind.BASIC
+	prey.shield = false
+	prey.has_left_start = true
+	prey.current_tile_idx = bakery
+	_board._refresh_all()
+	await create_timer(0.3).timeout
+	var kill_ctx := RuleContext.new()
+	kill_ctx.state = state
+	kill_ctx.pawn = hunter
+	kill_ctx.dice_value = 2
+	MoveExecutor.execute(state, hunter, kill_ctx)
+	var arrived_at: int = -1
+	var cutin_at: int = -1
+	waited = 0.0
+	while waited < 8.0 and cutin_at == -1:
+		var hunter_view: Node2D = _board._pawn_views[11]
+		if arrived_at == -1 and hunter_view.position.distance_to(_board._tile_center(bakery)) < 30.0:
+			arrived_at = Time.get_ticks_msec()
+		if _board._capture_cutin.active:
+			cutin_at = Time.get_ticks_msec()
+		await process_frame
+		waited += 0.016
+	_expect(arrived_at != -1 and cutin_at != -1 and cutin_at - arrived_at < 600, "처치 컷인은 말이 도착하고 곧바로 나온다 (%d ms)" % (cutin_at - arrived_at))
+	waited = 0.0
+	while waited < 8.0 and (_board._presentation_active() or _board._announcer.active):
+		await create_timer(0.05).timeout
+		waited += 0.05
+	# 4) 드래프트 중에 생긴 효과 연출은 증강 공개 뒤로 미룬다
 	var ran: Array = []
 	manager.current_state = TurnManager.State.PHASE_ROUND_START
 	_board.enqueue_step(func() -> void: ran.append(true))

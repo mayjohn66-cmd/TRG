@@ -120,7 +120,7 @@ const CARD_SHORT: Dictionary = {
 	&"ACT_10": "앞 3칸 적 사출",
 	&"ACT_11": "굴림 결과 지정",
 	&"ACT_12": "한 턴 더",
-	&"ACT_13": "빈 칸 순간이동",
+	&"ACT_13": "반환점까지 순간이동",
 	&"ACT_14": "2턴 카드·스킬 금지",
 	&"ACT_15": "상대 턴 건너뛰기",
 	&"TRP_02": "눈금 4+ 적 사출",
@@ -155,7 +155,7 @@ const CARD_SUMMARIES: Dictionary = {
 	&"ACT_10": "내 선두 말 앞 3칸의 적 사출 + 설치물 파괴",
 	&"ACT_11": "다음 굴림 결과를 1~6칸 중 직접 지정",
 	&"ACT_12": "이번 턴이 끝나면 한 턴 더",
-	&"ACT_13": "내 선두 말을 고른 빈 칸으로 순간이동",
+	&"ACT_13": "내 선두 말을 반환점까지의 빈 칸 중 고른 칸으로 순간이동",
 	&"ACT_14": "상대 1명 2턴 동안 카드·필살기·리롤 금지",
 	&"ACT_15": "상대 1명의 다음 턴 건너뛰기",
 	&"TRP_02": "눈금 4+ 로 지나가는 적 말 출발선 사출",
@@ -2320,7 +2320,8 @@ func _play_eject_settle(pawn_id: int) -> void:
 ## 큐의 한 단계: 잡힌 말이 회전하며 장외로 날아가 출발선(0번)에 떨어지고, 주인들이 반응한다.
 func _play_capture_eject(pawn_id: int, by_player: int, owner_id: int, cutin_capture: bool) -> void:
 	_fx_impact_at_pawn(pawn_id, 0.0)
-	_set_hint(pawn_id, {"homerun": cutin_capture, "arc": 110.0, "spin": 2.0 * TAU, "dur": 0.45, "land_thud": true})
+	# 처치·사출은 어떤 경우든(잡기·필살기·함정·카드) 보드 밖으로 날아가는 장외 홈런으로 보여 준다 (출발선으로 걸어 돌아가지 않는다).
+	_set_hint(pawn_id, {"homerun": true, "arc": 110.0, "spin": 2.0 * TAU, "dur": 0.45, "land_thud": true})
 	get_tree().create_timer(0.2 * _motion_pace()).timeout.connect(func() -> void:
 		_profile_react(owner_id, false, ["[억까!]", "[으악!]"][randi() % 2])
 		if by_player != owner_id:
@@ -2340,7 +2341,7 @@ func _revenge_charged_popup(player_id: int) -> void:
 	at.x = clampf(at.x, 230.0, size.x - 230.0)  # 긴 문구가 화면 밖으로 잘리지 않게
 	at.y = clampf(at.y, 60.0, size.y - 60.0)
 	_floating_badge(at, "[복수심 장전! (다음 출격 시 +%d칸)]" % _revenge_steps(), Color("ff922b"))
-	_fx_until_msec = maxi(_fx_until_msec, Time.get_ticks_msec() + int(450.0 * _motion_pace()))
+	_fx_until_msec = maxi(_fx_until_msec, Time.get_ticks_msec() + int(120.0 * _motion_pace()))  # 배지는 혼자 떠오르므로 큐를 오래 붙잡지 않는다
 
 
 ## 리벤지 부스터 [발동]: 기본 눈금 -> 부스터 합산을 두 단계로 보여 주고, 첫 BONUS칸은 로켓으로 날아간다.
@@ -2427,13 +2428,14 @@ func _bakery_feedback(data: Dictionary) -> void:
 	if drawn == &"" and not full:
 		return
 	var at: Vector2 = (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + _tile_center(tile) + Vector2(0, -46)
-	_fx_when_announced(func() -> void:
+	# 같은 이동에서 잡기가 있었다면 처치 연출(컷인·사출)이 먼저 나오도록 그 뒤에 세운다 (잡기도 프레임 끝에 큐로 들어간다).
+	_enqueue_late(func() -> void:
 		if drawn != &"":
 			Sfx.play(&"good")
 			_floating_badge(at, "빵집! 카드 획득 +1", Color("ffd43b"))  # 어떤 카드인지는 알려 주지 않는다
 		else:
 			_floating_badge(at, "빵집: 손패가 가득 차서 카드를 받지 못했어요", Color("adb5bd"))
-		_fx_until_msec = maxi(_fx_until_msec, Time.get_ticks_msec() + int(500.0 * _motion_pace())))
+		_fx_until_msec = maxi(_fx_until_msec, Time.get_ticks_msec() + int(180.0 * _motion_pace())))  # 배지는 혼자 떠오르므로 큐를 오래 붙잡지 않는다
 
 
 ## 테스트용: move_resolved 없이 빵집 알림만 확인한다.
@@ -7182,8 +7184,8 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			if int(data.get("leapfrog_bonus", 0)) > 0 and _pawn_views.has(int(data["pawn_id"])):
 				var leap_view: Node2D = _pawn_views[int(data["pawn_id"])]
 				var leap_bonus: int = int(data["leapfrog_bonus"])
-				# 위치는 말 걸음이 끝난 뒤(이 단계가 재생될 때) 읽는다
-				_fx_when_announced(func() -> void:
+				# 위치는 말 걸음이 끝난 뒤(이 단계가 재생될 때) 읽는다. 처치 연출(컷인·사출)이 먼저 나오도록 그 뒤에 세운다.
+				_enqueue_late(func() -> void:
 					if is_instance_valid(leap_view):
 						_floating_badge(leap_view.position + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + Vector2(0, -40), "점프 부스트! (+%d칸)" % leap_bonus, Color("ffd43b")))
 			_bakery_feedback(data)
