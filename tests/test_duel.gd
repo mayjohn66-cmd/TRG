@@ -115,17 +115,22 @@ func test_rps_winner_ejects_the_losers_lead_pawn_and_advances_three() -> void:
 	_dispose(manager)
 
 
-func test_rps_draw_rematches_once_then_the_challenger_wins() -> void:
+func test_rps_repeated_draws_wait_for_an_actual_winning_hand() -> void:
 	var manager: TurnManager = _new_manager()
 	_setup(manager)
+	place(manager.state, 11, 5, [4])
 	_challenge(manager)
 	_do(manager, 1, &"duel_pick", {"value": ROCK})
 	_do(manager, 2, &"duel_pick", {"value": ROCK})
 	check(manager.duel_pending(), "비기면 재대결")
 	_do(manager, 1, &"duel_pick", {"value": PAPER})
 	_do(manager, 2, &"duel_pick", {"value": PAPER})
-	check(not manager.duel_pending(), "재대결도 비기면 끝")
-	check(not manager.state.get_pawn(22).has_left_start, "신청자 판정승: 수비자의 선두 말 사출")
+	check(manager.duel_pending(), "두 번 비겨도 신청자 판정승 없이 재대결")
+	check(manager.state.get_pawn(22).has_left_start, "무승부로는 말이 사출되지 않는다")
+	_do(manager, 1, &"duel_pick", {"value": ROCK})
+	_do(manager, 2, &"duel_pick", {"value": PAPER})
+	check(not manager.duel_pending(), "실제로 이긴 손이 나오면 결투가 끝난다")
+	check(not manager.state.get_pawn(11).has_left_start, "보가 바위를 이긴 수비자가 승리한다")
 	_dispose(manager)
 
 
