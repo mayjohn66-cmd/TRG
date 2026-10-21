@@ -6566,12 +6566,14 @@ func _show_pawn_choice(player_id: int, definition: AugmentDef, on_pick: Callable
 		sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		sub.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		card.add_child(sub)
-		var action := _make_label("→ %s 진화!" % str(info["glyph"]) if can_pick else "진화 불가", 15, evo_color.lightened(0.4) if can_pick else Color("868e96"))
-		action.position = Vector2(0, 166)
-		action.size = Vector2(150, 24)
-		action.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		action.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		card.add_child(action)
+		if not can_pick:
+			# 고를 수 있는 카드에는 [→ 차 진화!] 같은 문구를 붙이지 않는다 (제목이 이미 무엇으로 진화하는지 말해 준다)
+			var action := _make_label("진화 불가", 15, Color("868e96"))
+			action.position = Vector2(0, 166)
+			action.size = Vector2(150, 24)
+			action.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			action.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			card.add_child(action)
 		card.pressed.connect(_on_pawn_choice_picked.bind(pawn.entity_id, on_pick, slot))
 		card.mouse_entered.connect(_hover_pawn_choice_card.bind(card, true))
 		card.mouse_exited.connect(_hover_pawn_choice_card.bind(card, false))

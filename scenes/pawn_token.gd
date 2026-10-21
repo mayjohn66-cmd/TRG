@@ -93,10 +93,7 @@ func _draw() -> void:
 		_draw_shape()
 	if pawn.is_promoted_shogi() and artwork.is_empty():
 		_poly(PackedVector2Array([Vector2(0,-32),Vector2(13,-23),Vector2(11,-2),Vector2(-11,-2),Vector2(-13,-23)]), Color.TRANSPARENT, Color("ff5e50"), 2.0)
-	# Slot always stays in its own small badge, never over the central illustration.
-	draw_circle(Vector2(-12, -27), 5.7, INK)
-	draw_circle(Vector2(-12, -27), 4.7, owner_color.lightened(0.65))
-	_caption(str(pawn.slot), Vector2(-12,-27), 9, INK)
+	# 슬롯 번호 배지는 그리지 않는다 (기물 그림을 가려 거슬린다는 피드백). 몇 번 말인지는 고르기 카드의 [N번 말]이 알려 준다.
 	if not pawn.carried.is_empty():
 		var box := Rect2(-10, -1, 20, 9)
 		draw_style_box(_badge_style(), box)

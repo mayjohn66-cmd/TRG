@@ -358,6 +358,8 @@ func _setup_scene() -> void:
 					break
 			_board._on_card_hover(hovered, _board._card_frame_style(GameEnums.CardCategory.TRAP, true), true)
 		"pawnchoice":
+			_board._close_opening()
+			_board._intro_pending = false
 			state.get_pawn(12).place_at(5)
 			state.get_pawn(12).has_left_start = true
 			state.get_pawn(13).is_finished = true
