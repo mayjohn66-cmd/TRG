@@ -12,6 +12,7 @@ const INK := Color("493951")
 const GOLD := Color("f3c764")
 const FACE_AT := 0.48
 const DISCARD_AT := 1.72
+const CARD_SIZE := Vector2(112, 144)
 var arena: DuelArena
 var ready_seats: Array[int] = []
 var revealed: Dictionary = {}
@@ -98,7 +99,7 @@ func make_choice(value: int, seat: int, callback: Callable) -> Button:
 	icon.texture = symbol(seat, value)
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	icon.custom_minimum_size = Vector2(78, 78)
+	icon.custom_minimum_size = Vector2(84, 84)
 	column.add_child(icon)
 	var label := arena.board._make_label("%s ×%d" % [card_name(seat, value), count], 22, INK)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -112,22 +113,39 @@ func _text(text: String, at: Vector2, px: int, color: Color = INK) -> void:
 	draw_string(FONT, at + Vector2(-width / 2, px * 0.35), text, HORIZONTAL_ALIGNMENT_LEFT, -1, px, color)
 
 func _card(rect: Rect2, seat: int, value: int, face: bool, alpha: float = 1.0) -> void:
+	var large := rect.size.y > 90
+	var tint := Color("f9edcf") if value == 0 and seat == arena.challenger else (Color("e9efe4") if value == 1 else Color("e7edf1"))
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color("fff3d5") if face else Color("645780")
+	style.bg_color = Color("fff8e8") if face else Color("665775")
 	style.bg_color.a = alpha
-	style.border_color = Color(GOLD, alpha)
-	style.set_border_width_all(3)
-	style.set_corner_radius_all(10)
+	style.border_color = Color("c9a76f", alpha)
+	style.set_border_width_all(3 if large else 2)
+	style.set_corner_radius_all(10 if large else 7)
+	style.shadow_color = Color("3a2d38", alpha * 0.13)
+	style.shadow_size = 3 if large else 1
+	style.shadow_offset = Vector2(0, 2)
 	draw_style_box(style, rect)
 	if rect.size.x < 24: return
+	var inset := 6.0 if large else 4.0
+	var keyline := StyleBoxFlat.new()
+	keyline.bg_color = Color(tint if face else Color("736382"), alpha * 0.4)
+	keyline.border_color = Color("dcccaa" if face else "c5b08a", alpha * 0.65)
+	keyline.set_border_width_all(1)
+	keyline.set_corner_radius_all(6 if large else 4)
+	draw_style_box(keyline, rect.grow(-inset))
 	if face:
-		var icon_size := minf(rect.size.x - 14, rect.size.y * 0.68)
-		draw_texture_rect(symbol(seat, value), Rect2(rect.get_center() - Vector2(icon_size / 2, icon_size * 0.62), Vector2.ONE * icon_size), false, Color(1, 1, 1, alpha))
-		if rect.size.y > 90 and rect.size.x > 70:
-			_text(card_name(seat, value), Vector2(rect.get_center().x, rect.end.y - 18), 19, Color(INK, alpha))
+		var icon_size := minf(rect.size.x - (14 if large else 6), rect.size.y - (43 if large else 6))
+		var icon_center := Vector2(rect.get_center().x, rect.position.y + 9 + icon_size / 2) if large else rect.get_center()
+		draw_texture_rect(symbol(seat, value), Rect2(icon_center - Vector2.ONE * icon_size / 2, Vector2.ONE * icon_size), false, Color(1, 1, 1, alpha))
+		if large and rect.size.x > 70:
+			var divider_y := rect.end.y - 34
+			draw_line(Vector2(rect.position.x + 14, divider_y), Vector2(rect.end.x - 14, divider_y), Color("c4b394", alpha * 0.65), 1, true)
+			_text(card_name(seat, value), Vector2(rect.get_center().x, rect.end.y - 19), 19, Color(INK, alpha))
 	else:
-		draw_rect(rect.grow(-9), Color(GOLD, alpha * 0.4), false, 1.5)
-		_text("E", rect.get_center(), 23 if rect.size.y > 80 else 16, Color(GOLD, alpha))
+		var center := rect.get_center()
+		var radius := minf(rect.size.x * 0.28, 28)
+		draw_polyline(PackedVector2Array([center + Vector2(0, -radius), center + Vector2(radius, 0), center + Vector2(0, radius), center - Vector2(radius, 0), center + Vector2(0, -radius)]), Color(GOLD, alpha * 0.5), 1.5, true)
+		_text("E", center, 26 if large else 16, Color(GOLD, alpha))
 
 func _draw() -> void:
 	var style := StyleBoxFlat.new()
@@ -149,15 +167,15 @@ func _draw() -> void:
 			var t := smoothstep(1.25, DISCARD_AT, elapsed)
 			center += Vector2((-1 if index == 0 else 1) * 78, 72) * t
 			alpha = 1.0 - t
-		var width := 96.0
+		var width := CARD_SIZE.x
 		if active and elapsed >= 0.28 and elapsed < 0.68:
 			width *= maxf(absf((elapsed - FACE_AT) / 0.20), 0.025)
 		if active or ready_seats.has(seat) or face:
 			if face and int(result["winner"]) == seat:
 				draw_circle(center, 76, Color("fff3b0", 0.5))
-			_card(Rect2(center - Vector2(width / 2, 64), Vector2(width, 128)), seat, value, face, alpha)
+			_card(Rect2(center - Vector2(width / 2, CARD_SIZE.y / 2), Vector2(width, CARD_SIZE.y)), seat, value, face, alpha)
 		else:
-			draw_rect(Rect2(center - Vector2(48, 64), Vector2(96, 128)), Color("b8a78c", 0.4), false, 2)
+			draw_rect(Rect2(center - CARD_SIZE / 2, CARD_SIZE), Color("b8a78c", 0.4), false, 2)
 		var special := DuelRules.ecard_count(arena.setup_data, index == 0, 0)
 		var citizens := DuelRules.ecard_count(arena.setup_data, index == 0, 1)
 		var hand_count := special + citizens
