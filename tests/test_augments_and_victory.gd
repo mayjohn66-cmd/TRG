@@ -267,6 +267,17 @@ func test_draft_reroll_replaces_one_slot_once_with_a_different_augment() -> void
 	_dispose(manager)
 
 
+func test_banned_player_can_still_reroll_an_augment() -> void:
+	var manager: TurnManager = _manager(2, true)
+	var rejected: Array = []
+	manager.action_rejected.connect(func(_player_id: int, _action: StringName, reason: StringName) -> void: rejected.append(reason))
+	manager.state.banned_turns[1] = 2
+	var before: Array[StringName] = manager.draft_offers_for(1)
+	_do(manager, 1, &"reroll_augment", {"index": 0})
+	check(rejected.is_empty(), "알고리즘 밴은 증강 리롤을 막지 않는다 (%s)" % str(rejected))
+	check(manager.draft_reroll_used(1, 0) and manager.draft_offers_for(1)[0] != before[0], "밴 중에도 슬롯이 바뀐다")
+	_dispose(manager)
+
 func test_auto_pick_and_timeout_auto_pick() -> void:
 	var manager: TurnManager = _manager(3, true)
 	manager.auto_pick_draft(1)

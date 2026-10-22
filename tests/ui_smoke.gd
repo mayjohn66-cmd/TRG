@@ -317,7 +317,7 @@ func _play_draft(manager: TurnManager) -> void:
 	var player_id: int = pending[0]
 	_check_draft_cards()
 	var offers: Array[StringName] = manager.draft_offers_for(player_id)
-	if _rng.randi_range(0, 2) == 0 and not _board.state.is_banned(player_id):  # 알고리즘 밴(ACT_14) 중에는 리롤이 막힌다
+	if _rng.randi_range(0, 2) == 0:  # 알고리즘 밴(ACT_14) 중에도 증강 리롤은 된다
 		# 리롤: 슬롯 하나가 다른 증강으로 바뀌고 오버레이가 새로 그려지며 그 슬롯의 리롤 버튼은 잠긴다
 		var slot: int = _rng.randi_range(0, offers.size() - 1)
 		_board._on_augment_reroll(player_id, slot)
@@ -367,14 +367,14 @@ func _check_draft_cards() -> void:
 	_assert(_board._draft_reroll_buttons.size() == 3, "카드마다 리롤 버튼이 있어야 한다")
 	if not _ban_reroll_checked:
 		_ban_reroll_checked = true
-		# 알고리즘 밴에 걸린 사람은 리롤할 수 없다: 버튼이 눌리기만 하고 아무 일도 없던 버그 -> 잠그고 이유를 적는다
+		# 알고리즘 밴에 걸려도 증강 리롤은 할 수 있다 (밴은 카드·필살기·주사위 리롤만 막는다)
 		var saved: Dictionary = _board.state.banned_turns.duplicate()
 		for player_id: int in [1, 2, 3, 4]:
 			_board.state.banned_turns[player_id] = 2
 		_board._close_draft_overlay()
 		_board._refresh_draft_overlay()
 		for button: Button in _board._draft_reroll_buttons:
-			_assert(button.disabled and button.text.contains("밴"), "밴 중에는 리롤 버튼이 잠기고 [리롤 금지 (밴)]이라고 적힌다 (%s)" % button.text)
+			_assert(not button.disabled and not button.text.contains("밴"), "밴 중에도 증강 리롤 버튼은 열려 있다 (%s)" % button.text)
 		_board.state.banned_turns = saved
 		_board._close_draft_overlay()
 		_board._refresh_draft_overlay()

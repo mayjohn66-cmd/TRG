@@ -1003,7 +1003,7 @@ func _handle_reroll_augment(actor: int, params: Dictionary) -> void:
 	if index < 0 or index >= offers.size():
 		action_rejected.emit(actor, &"reroll_augment", &"invalid_index")
 		return
-	if draft_reroll_used(actor, index) or state.is_banned(actor):
+	if draft_reroll_used(actor, index):  # 밴은 증강 리롤을 막지 않는다 (주사위 리롤·카드·필살기만)
 		action_rejected.emit(actor, &"reroll_augment", &"reroll_used")
 		return
 	var replacement: StringName = AugmentRegistry.reroll_candidate(state, actor, offers)
