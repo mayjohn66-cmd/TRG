@@ -29,6 +29,9 @@ signal state_synced()
 signal game_over(winner_id: int, reason: StringName)
 ## 외부 타임아웃 모드에서 제한 시간이 끝났다 (serial: 그 시점의 phase_serial). 방장의 NetGame이 이 신호를 받아 모두에게 같은 타임아웃 행동을 보낸다.
 signal timeout_due(serial: int)
+## 행동 하나(또는 시간 초과 처리)를 시작/끝냈다. 화면은 그 사이의 갱신 요청을 모아 끝날 때 한 번만 그린다 (같은 처리 안에서 짝이 맞는다).
+signal processing_started()
+signal processing_finished()
 
 var state: GameState = null
 var current_state: State = State.PHASE_ROUND_START
@@ -183,6 +186,12 @@ func act(action: StringName, params: Dictionary = {}) -> void:
 func request_action(action: StringName, params: Dictionary = {}) -> void:
 	if not _is_authority() or state == null:
 		return
+	processing_started.emit()
+	_handle_action(action, params)
+	processing_finished.emit()
+
+
+func _handle_action(action: StringName, params: Dictionary) -> void:
 	var actor: int = _resolve_actor(int(params.get("player_id", -1)))
 	if actor == -1 or not player_order.has(actor):
 		action_rejected.emit(actor, action, &"unknown_player")
@@ -290,7 +299,9 @@ func force_timeout() -> void:
 	if state == null or is_game_over or current_state == State.PHASE_MOVING_STEP or phase_time_left <= 0.0:
 		return
 	phase_time_left = 0.0
+	processing_started.emit()
 	_on_timeout()
+	processing_finished.emit()
 
 
 ## 이 상태에 제한 시간이 있는가 (없는 상태는 타임아웃 행동을 무시한다).
@@ -312,7 +323,9 @@ func apply_replicated(action: StringName, params: Dictionary) -> void:
 				action_rejected.emit(-1, action, &"stale_timeout")
 				return
 			phase_time_left = 0.0
+			processing_started.emit()
 			_on_timeout()
+			processing_finished.emit()
 		ACTION_AUTO_DRAFT:
 			auto_pick_draft_now(int(params.get("player_id", -1)))
 		_:

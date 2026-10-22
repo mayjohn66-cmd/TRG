@@ -13,6 +13,25 @@ static func is_touch_device() -> bool:
 	return DisplayServer.is_touchscreen_available() or OS.has_feature("web_android") or OS.has_feature("web_ios")
 
 
+## true면 터치 기기처럼 큰 버튼 배치를 쓴다 (헤드리스 화면 테스트용).
+static var force_touch: bool = false
+## 터치 배치에서 버튼의 최소 높이 (기준 해상도 1366x768 픽셀). 폰 가로 화면에서는 약 0.5배로 줄어 보이므로 손가락 크기(약 44pt)에 맞춰 크게 잡는다.
+const TOUCH_BUTTON_HEIGHT: float = 48.0
+
+
+## 큰 터치 버튼 배치를 쓸 것인가.
+static func touch_mode() -> bool:
+	return force_touch or is_touch_device()
+
+
+## 터치용으로 버튼을 다듬는다: 손가락이 살짝 미끄러져도 눌리도록 누르는 순간 반응하고(ACTION_MODE_BUTTON_PRESS), 최소 높이를 키운다.
+static func touch_button(button: BaseButton, min_height: float = TOUCH_BUTTON_HEIGHT) -> void:
+	button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+	button.custom_minimum_size.y = maxf(button.custom_minimum_size.y, min_height)
+	if button.size.y < min_height:
+		button.size.y = min_height
+
+
 ## 창이 세로(높이 > 너비)인가.
 static func is_portrait(window_size: Vector2i) -> bool:
 	return window_size.y > window_size.x

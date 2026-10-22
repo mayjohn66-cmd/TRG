@@ -271,6 +271,11 @@ var _seat_anchor: Dictionary = {}
 var net: NetGame = null
 ## 이번 AI 턴에 사람 말 처치·특수 승리·법전 변화가 있었다: 이 턴의 연출은 보통 속도로 (주목 구간).
 var _spotlight_turn: bool = false
+## 행동 처리 묶음 안에서 화면 갱신 요청이 있었다 / 묶음 깊이 (_refresh_all 묶음).
+var _refresh_queued: bool = false
+var _refresh_batch: int = 0
+## 화면 전체 갱신을 실제로 그린 횟수 (테스트용).
+var refresh_count: int = 0
 var _game_seed: int = 0
 var _net_lost_overlay: Control = null
 var _net_status_label: Label = null
@@ -618,6 +623,8 @@ func _ready() -> void:
 	if GameSession.net_active:
 		_setup_net()
 	manager.phase_changed.connect(_on_phase_changed)
+	manager.processing_started.connect(_begin_refresh_batch)
+	manager.processing_finished.connect(_end_refresh_batch)
 	manager.event_received.connect(_on_event)
 	manager.action_rejected.connect(_on_action_rejected)
 	manager.turn_order_reversed.connect(_on_turn_order_reversed)
@@ -1673,6 +1680,23 @@ func _build_status_strip() -> void:
 	_speed_button.size = Vector2(84, 32)
 	add_child(_speed_button)
 	_refresh_speed_button()
+	if MobileSupport.touch_mode():
+		_apply_touch_top_bar()
+
+
+## 터치 기기: 위쪽 [피드백]·[배속]·[메뉴] 버튼을 손가락 크기로 키운다 (기준 84x32 -> 124x48, 프로필 패널 위 여백 안에서).
+func _apply_touch_top_bar() -> void:
+	var height: float = MobileSupport.TOUCH_BUTTON_HEIGHT
+	var right: float = 1366.0 - SAFE_MARGIN + 4.0
+	_menu_button.size = Vector2(124, height)
+	_menu_button.position = Vector2(right - 124.0, 3)
+	_speed_button.size = Vector2(124, height)
+	_speed_button.position = Vector2(right - 124.0 * 2.0 - 8.0, 3)
+	_feedback_button.size = Vector2(190, height)
+	_feedback_button.position = Vector2(SAFE_MARGIN, 3)
+	for button: Button in [_menu_button, _speed_button, _feedback_button]:
+		button.add_theme_font_size_override("font_size", 17)
+		MobileSupport.touch_button(button, height)
 
 
 ## 우측 중앙의 큼직한 둥근 [굴리기] 버튼(모두의 마블 방식)과 그 아래의 멈추기·개입 패스·폭탄 떠넘기기 버튼.
@@ -2847,7 +2871,34 @@ func _play_warp_glide(pawn_id: int, to_pos: Vector2, to_scale: float, options: D
 # 갱신
 # ---------------------------------------------------------------------------
 
+## 화면 전체를 상태에 맞춘다. 행동 하나를 처리하는 동안(_begin_refresh_batch ~ _end_refresh_batch)에는 요청만 모아 두고
+## 행동이 끝날 때 한 번만 그린다: 행동 하나가 신호 여러 개(단계 변경·이벤트·로그)를 내며 매번 프로필·손패·버튼을 다시 그리던 것이
+## 웹에서 끊김(한 번에 수십 ms 멈춤)의 주원인이었다. 묶음 밖에서는 예전처럼 바로 그린다.
 func _refresh_all() -> void:
+	if manager == null or manager.state == null:
+		return
+	state = manager.state
+	if _refresh_batch > 0:
+		_refresh_queued = true
+		return
+	_refresh_now()
+
+
+## 행동 처리 묶음 시작 (겹쳐 불러도 된다).
+func _begin_refresh_batch() -> void:
+	_refresh_batch += 1
+
+
+## 행동 처리 묶음 끝: 그 사이 요청된 화면 갱신을 한 번에 그린다.
+func _end_refresh_batch() -> void:
+	_refresh_batch = maxi(_refresh_batch - 1, 0)
+	if _refresh_batch == 0 and _refresh_queued:
+		_refresh_now()
+
+
+func _refresh_now() -> void:
+	_refresh_queued = false
+	refresh_count += 1
 	if manager == null or manager.state == null:
 		return
 	state = manager.state
@@ -3276,10 +3327,13 @@ func _refresh_players() -> void:
 		var is_turn: bool = player_id == _shown_turn_player() and not manager.is_game_over
 		var game_over: bool = manager.is_game_over
 		var margin: int = 8
-		if is_turn:
-			panel.add_theme_stylebox_override("panel", _style(Color("273049"), Color("fff3bf"), 4, 14, 26, margin))
-		else:
-			panel.add_theme_stylebox_override("panel", _style(COLOR_PANEL, color.darkened(0.35), 2, 14, 4, margin))
+		var lit_key: String = "%s:%s" % [is_turn, game_over]
+		if str(panel.get_meta("lit_key", "")) != lit_key:  # 바뀌었을 때만 다시 칠한다 (매 갱신마다 스타일·트윈을 새로 만들지 않게)
+			panel.set_meta("lit_key", lit_key)
+			if is_turn:
+				panel.add_theme_stylebox_override("panel", _style(Color("273049"), Color("fff3bf"), 4, 14, 26, margin))
+			else:
+				panel.add_theme_stylebox_override("panel", _style(COLOR_PANEL, color.darkened(0.35), 2, 14, 4, margin))
 		_set_profile_light(panel, PROFILE_LIT if (is_turn or game_over) else PROFILE_DIM, Vector2(1.05, 1.05) if is_turn else Vector2.ONE)
 		_refresh_status_stamps(player_id)
 
@@ -3317,6 +3371,10 @@ func _refresh_pawn_slots(player_id: int) -> void:
 
 ## 프로필 패널의 명암(modulate)과 크기를 목표로 보낸다 (테스트·초기화 때는 즉시, 평소에는 짧은 트윈).
 func _set_profile_light(panel: Control, tint: Color, target_scale: Vector2) -> void:
+	var target: Array = [tint, target_scale]
+	if panel.has_meta("light_target") and panel.get_meta("light_target") == target and not instant_roll_for_test:
+		return  # 이미 그 목표로 가는 중이거나 도착했다: 트윈을 다시 시작하지 않는다
+	panel.set_meta("light_target", target)
 	if panel.has_meta("light_tween"):
 		var previous: Tween = panel.get_meta("light_tween")
 		if previous != null and previous.is_valid():
@@ -3352,10 +3410,15 @@ func _paint_pawn_slot(parts: Dictionary, pawn: PlayerPawn, color: Color) -> void
 	letter.visible = false
 	status.visible = false
 	_token_in(panel, pawn, color, Vector2.ZERO, 1.0)
+	# 칸 모양을 정하는 값이 그대로면 스타일을 새로 만들지 않는다 (16칸 x 갱신마다 스타일·테마를 다시 씌우던 것이 갱신 비용의 대부분이었다).
 	var reflow: Callable = _fit_profile_token.bind(panel)
 	if not panel.resized.is_connected(reflow):
 		panel.resized.connect(reflow)
 	_fit_profile_token(panel)
+	var paint_key: Array = [pawn.letter(), pawn.is_promoted_shogi(), pawn.is_finished, pawn.has_left_start, pawn.revenge_boost, color]
+	if panel.has_meta("paint_key") and panel.get_meta("paint_key") == paint_key:
+		return
+	panel.set_meta("paint_key", paint_key)
 	var shown: String = pawn.letter()
 	letter.text = shown if shown != "" else "말"
 	letter.add_theme_color_override("font_color", Color("ff6b6b") if pawn.is_promoted_shogi() else Color("f8f9fa"))
@@ -4275,13 +4338,16 @@ var _emote_bubbles: Dictionary = {}
 func _build_emote_row() -> void:
 	_emote_row = HBoxContainer.new()
 	_emote_row.name = "EmoteRow"
-	_emote_row.position = Vector2(1030, 554)
-	_emote_row.size = Vector2(320, 32)
+	_emote_row.position = Vector2(1030, 538) if MobileSupport.touch_mode() else Vector2(1030, 554)  # 터치 버튼(48px)이 아래 프로필에 닿지 않게 16px 위로
+	_emote_row.size = Vector2(320, MobileSupport.TOUCH_BUTTON_HEIGHT if MobileSupport.touch_mode() else 32.0)
 	_emote_row.alignment = BoxContainer.ALIGNMENT_END
 	add_child(_emote_row)
 	_emote_button = _make_button(tr_ui("btn.emote"), _toggle_emote_picker, 14, Color("f08c00"), 14)
 	_emote_button.name = "EmoteButton"
-	_emote_button.custom_minimum_size = Vector2(124, 32)
+	_emote_button.custom_minimum_size = Vector2(150, MobileSupport.TOUCH_BUTTON_HEIGHT) if MobileSupport.touch_mode() else Vector2(124, 32)
+	if MobileSupport.touch_mode():
+		_emote_button.add_theme_font_size_override("font_size", 17)
+		MobileSupport.touch_button(_emote_button)
 	_emote_button.focus_mode = Control.FOCUS_NONE
 	_emote_button.tooltip_text = "말풍선으로 감정 표현 (상대에게도 보입니다)"
 	_emote_row.add_child(_emote_button)
@@ -9137,7 +9203,7 @@ func _open_menu() -> void:
 	center.add_child(panel)
 	_menu_box = VBoxContainer.new()
 	_menu_box.add_theme_constant_override("separation", 10)
-	_menu_box.custom_minimum_size = Vector2(380, 0)
+	_menu_box.custom_minimum_size = Vector2(440 if MobileSupport.touch_mode() else 380, 0)
 	panel.add_child(_menu_box)
 	add_child(_menu_overlay)
 	_show_menu_page(&"main")
@@ -9163,8 +9229,11 @@ func _release_menu_buttons() -> void:
 
 
 func _menu_item(item: Button, font_size: int = 17) -> void:
-	item.custom_minimum_size = Vector2(380, 46)
-	item.add_theme_font_size_override("font_size", font_size)
+	var touch: bool = MobileSupport.touch_mode()
+	item.custom_minimum_size = Vector2(440, 64) if touch else Vector2(380, 46)  # 폰에서는 메뉴 항목을 크게 (화면이 약 0.5배로 줄어 보인다)
+	item.add_theme_font_size_override("font_size", font_size + (4 if touch else 0))
+	if touch:
+		MobileSupport.touch_button(item, 64.0)
 	_menu_box.add_child(item)
 
 

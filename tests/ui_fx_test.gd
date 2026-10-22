@@ -82,6 +82,7 @@ func _run() -> void:
 	await _test_stage_warp()
 	await _test_trap_tile_marking()
 	_test_turbo_ai_turn()
+	_test_refresh_batch_and_touch_menu()
 	await _test_kill_cutin()
 	await _test_new_tool_stages()
 	await _test_npc_danger_preview()
@@ -1800,6 +1801,40 @@ func _test_stage_warp() -> void:
 		_board._fx_until_msec = 0
 		_board._beat_until_msec = 0
 	_board.instant_roll_for_test = true
+
+
+## 끊김 방지: 행동 하나를 처리하는 동안의 화면 갱신 요청은 모아서 끝날 때 한 번만 그린다. 터치 기기의 메뉴 항목은 크게, 누르는 순간 반응한다.
+func _test_refresh_batch_and_touch_menu() -> void:
+	var before: int = _board.refresh_count
+	_board._begin_refresh_batch()
+	_board._refresh_all()
+	_board._refresh_all()
+	_board._refresh_all()
+	_expect(_board.refresh_count == before, "묶음 안의 갱신 요청은 바로 그리지 않는다")
+	_board._end_refresh_batch()
+	_expect(_board.refresh_count == before + 1, "묶음이 끝나면 한 번만 그린다 (%d회)" % (_board.refresh_count - before))
+	_board._refresh_all()
+	_expect(_board.refresh_count == before + 2, "묶음 밖에서는 바로 그린다")
+	var counted: Array = [0]
+	var probe: Callable = func() -> void: counted[0] += 1
+	_board.manager.processing_started.connect(probe)
+	_board.manager.force_timeout()
+	_board.manager.processing_started.disconnect(probe)
+	_expect(_board._refresh_batch == 0, "처리 묶음은 짝이 맞게 닫힌다")
+	MobileSupport.force_touch = true
+	_board._open_menu()
+	var first: Button = null
+	for child: Node in _board._menu_box.get_children():
+		if child is Button:
+			first = child
+			break
+	_expect(first != null and first.custom_minimum_size.y >= 64.0 and first.action_mode == BaseButton.ACTION_MODE_BUTTON_PRESS, "터치 기기의 메뉴 항목은 높이 64 이상, 누르는 순간 반응")
+	_board._close_menu()
+	var probe_button := Button.new()
+	MobileSupport.touch_button(probe_button)
+	_expect(probe_button.custom_minimum_size.y >= MobileSupport.TOUCH_BUTTON_HEIGHT and probe_button.action_mode == BaseButton.ACTION_MODE_BUTTON_PRESS, "터치 버튼 도우미: 최소 높이와 누름 반응")
+	probe_button.free()
+	MobileSupport.force_touch = false
 
 
 ## 터보 AI 턴: AI 차례에는 연출 배율이 TURBO_PACE_SCALE로 줄고, 사람 말을 잡거나 법전·특수 승리가 움직인 턴(주목 구간)과 사람 차례는 보통 속도다.
