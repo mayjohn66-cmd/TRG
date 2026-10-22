@@ -87,7 +87,6 @@ func _ready() -> void:
 	else:
 		_show_step(1)  # 모바일에서 키보드가 불쑥 뜨지 않도록 입력칸은 눌러야 입력된다
 	_mobile = MobileSupport.new()
-	_mobile.button_position = Vector2(1070, 2)
 	add_child(_mobile)
 
 

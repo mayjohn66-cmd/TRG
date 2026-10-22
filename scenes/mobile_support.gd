@@ -1,15 +1,12 @@
 # File: res://scenes/mobile_support.gd
 # Class: class_name MobileSupport
-# Role: 모바일 브라우저 대응 보조 계층. 세로 화면이면 "가로로 돌려 주세요" 안내를 덮어 가리고, 터치·웹 환경에서는 [전체화면] 버튼(가능하면 가로 고정까지)을 보여 준다
+# Role: 모바일 브라우저 대응 보조 계층. 세로 화면이면 "가로로 돌려 주세요" 안내를 덮어 가린다. 전체화면 전환은 설정 화면 스위치(toggle_fullscreen)와 웹 세로 안내 터치가 맡는다 (화면 구석의 작은 [전체화면] 버튼은 없앴다)
 class_name MobileSupport
 extends CanvasLayer
 
 const COLOR_GOLD: Color = Color("ffd43b")
 
 var overlay: ColorRect = null
-var fullscreen_button: Button = null
-## 전체화면 버튼이 놓일 위치 (논리 좌표 1366x768 기준). add_child 전에 정한다.
-var button_position: Vector2 = Vector2(1260, 12)
 
 
 static func is_touch_device() -> bool:
@@ -48,14 +45,6 @@ func _ready() -> void:
 	hint.add_theme_color_override("font_color", Color("adb5bd"))
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(hint)
-	fullscreen_button = Button.new()
-	fullscreen_button.text = "전체화면"
-	fullscreen_button.position = button_position
-	fullscreen_button.size = Vector2(92, 30)
-	fullscreen_button.add_theme_font_size_override("font_size", 13)
-	fullscreen_button.visible = is_touch_device()
-	fullscreen_button.pressed.connect(toggle_fullscreen)
-	add_child(fullscreen_button)
 	refresh(DisplayServer.window_get_size())
 
 

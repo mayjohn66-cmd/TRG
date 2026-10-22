@@ -613,7 +613,6 @@ func _ready() -> void:
 		_new_game()
 	_apply_game_speed()
 	var mobile := MobileSupport.new()
-	mobile.button_position = Vector2(170, 10)  # 터치 기기의 [전체화면]은 왼쪽 위 [피드백] 버튼 옆
 	add_child(mobile)
 
 
