@@ -1807,6 +1807,7 @@ func _test_trap_tile_marking() -> void:
 	var state: GameState = _board.manager.state
 	_board.instant_roll_for_test = false
 	_board._announcer.cancel()
+	state.board.get_tile(14).attachments.clear()  # 앞선 검사(무작위 판)가 14번에 함정을 남겼을 수 있다
 	_board._refresh_all()
 	var tile: BoardSkin.Tile = _board._tile_views[14]
 	_expect(not tile.trap_on, "함정이 없으면 발판은 평소 모습이다")
