@@ -433,6 +433,8 @@ var _enqueue_batching: bool = false
 ## 마지막으로 누른 증강 리롤 버튼 번호 (거절되면 그 버튼에 이유를 적는다).
 var _last_reroll_index: int = -1
 var _last_reroll_player: int = -1
+## 지난 프레임에 굴리기 화면을 띄울 수 있었는가 (바뀌는 순간에만 화면을 다시 맞춘다).
+var _last_roll_view: bool = false
 ## 드래프트 창이 열렸다 (augment_offers 이후). 이때부터 생긴 연출만 [선택한 증강] 공개 뒤로 미룬다.
 var _draft_open: bool = false
 ## 게임 필: 화면 흔들림, 말 id -> 이동 연출을 필살기 스크립트가 맡는 중(걸음 무시), 차 돌진 중 잡힌 말이 나는 시점을 늦추는 값(초).
@@ -662,6 +664,11 @@ func _process(delta: float) -> void:
 		_phase_label.text = _phase_text()
 	_bot.instant = instant_roll_for_test
 	_update_time_pressure(delta)
+	# 굴리기 화면은 앞선 연출·카드 끌기·필살기 겨누기가 끝나는 순간 켜지고, 시작되는 순간 꺼진다 (어떤 경로로 바뀌든 프레임마다 맞춘다)
+	var roll_view: bool = _roll_view_allowed()
+	if roll_view != _last_roll_view:
+		_last_roll_view = roll_view
+		_refresh_controls()
 	if _review_bar != null and is_instance_valid(_review_bar):
 		var track: Control = _review_bar.get_parent()
 		var full: float = GameEnums.PHASE_TIME_REVIEW * maxf(manager.timer_scale, 0.001)
@@ -4755,6 +4762,23 @@ func _roll_mode_for(tool: BaseJudgmentTool) -> StringName:
 
 
 ## 내 판정 도구에 맞는 굴림 위젯을 보여 준다.
+## 굴리기 화면(굴리기 버튼·룰렛/리볼버 패드·야추/블랙잭/핀볼 스테이지)을 띄워도 되는가.
+## 앞선 연출이 하나라도 남아 있으면(라운드·차례 배너, 연출 큐, 처치 컷인, 오프닝·드래프트·확인 창) 띄우지 않는다.
+## 카드를 끌거나 칸을 고르는 중, 필살기를 겨누는 중에도 화면을 끄고 그 연출을 보여 준다 (끝나면 다시 뜬다).
+func _roll_view_allowed() -> bool:
+	if manager.is_game_over or not (manager.current_state == TurnManager.State.PHASE_TURN_BEGIN or manager.current_state == TurnManager.State.PHASE_ROLL_WAIT):
+		return false
+	if _intro_blocks() or _turn_banner_pending() or (_announcer != null and _announcer.holding()):
+		return false
+	if _presentation_active() or (_capture_cutin != null and _capture_cutin.busy()) or _stage_warps > 0:
+		return false
+	if _tile_pick_active or _aim_pawn != -1 or _drag_active:
+		return false
+	if _draft_overlay != null or (_review_overlay != null and is_instance_valid(_review_overlay)):
+		return false
+	return true
+
+
 func _refresh_roll_pad() -> void:
 	# A fired outcome advances the engine turn immediately. Keep the current
 	# visual until its local timeline finishes, even if the next tool differs.
@@ -4778,8 +4802,7 @@ func _refresh_roll_pad() -> void:
 		_set_roll_geometry(mode)
 	# 굴림 위젯은 굴릴 차례에만 보인다. 굴림이 끝나면 지워서 보드 한가운데가 가리지 않게 한다 (룰렛·리볼버 패드는 돌아가는 연출 중에는 남긴다).
 	# 중앙 알림(라운드 시작·차례 알림 등)·오프닝이 떠 있는 동안에는 숨겼다가, 알림이 끝나면(drained -> _refresh_all) 다시 나온다.
-	var stage_blocked: bool = _intro_blocks() or (_announcer != null and _announcer.holding())
-	var roll_phase: bool = not manager.is_game_over and (manager.current_state == TurnManager.State.PHASE_TURN_BEGIN or manager.current_state == TurnManager.State.PHASE_ROLL_WAIT) and not _is_bot_turn() and not stage_blocked
+	var roll_phase: bool = _roll_view_allowed() and not _is_bot_turn()
 	# 연출 중에 남겨 두는 것은 '내 도구'가 굴러가는 연출일 때뿐이다 (다른 사람이 굴리는 동안 내 리볼버·룰렛이 밑에 비치지 않게).
 	var own_fx: bool = _fx_busy and manager.current_player_id() == _dock_owner()
 	_roll_button.visible = wanted == RollPad.Kind.NONE and roll_phase and mode != &"stage"
@@ -8530,9 +8553,11 @@ func _refresh_tool_stage() -> void:
 	if turn_key != _stage_turn_key and not tool.has_pending_state() and not bool(stage.get("active")):
 		_stage_turn_key = turn_key
 		stage.call("reset")
-	var in_roll: bool = not manager.is_game_over and (manager.current_state == TurnManager.State.PHASE_TURN_BEGIN or manager.current_state == TurnManager.State.PHASE_ROLL_WAIT)
+	# 굴리기 화면은 앞선 연출이 다 끝난 뒤에만 뜬다. 이미 굴리는 중(연출·야추 중간 상태)이면 그대로 둔다.
+	var in_roll: bool = _roll_view_allowed()
+	var mid_roll: bool = _fx_busy or bool(stage.get("active")) or (tool.has_pending_state() and not (_announcer != null and _announcer.holding()))
 	stage.set("instant", instant_roll_for_test)
-	stage.visible = in_roll or _fx_busy or bool(stage.get("active")) or tool.has_pending_state()
+	stage.visible = in_roll or mid_roll
 	var acting: bool = not _roll_button.disabled
 	if stage == _stage_yacht:
 		_stage_yacht.sync(tool as ToolYacht, acting)
