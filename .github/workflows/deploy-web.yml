@@ -88,6 +88,9 @@ jobs:
       - name: Run E-card remaining hands, citizen discards and deciding reveal test
         run: godot --headless --path . -s res://tests/ui_ecard_test.gd
 
+      - name: Run pumpkin switches, explosion and native Angry1_1 test
+        run: godot --headless --path . -s res://tests/ui_pumpkin_test.gd
+
       - name: Run in-game feedback test (modal, snapshot, local webhook, cleanup)
         run: godot --headless --path . -s res://tests/ui_feedback_test.gd
 

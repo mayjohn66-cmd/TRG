@@ -17,7 +17,7 @@ const GAME_RULES: Array[String] = [
 	"병뚜껑을 뒤로 당겨 튕겨라! 번갈아 한 번씩, 상대를 밀어내고 절벽 가까이에 멈추면 승리",
 	"정적 뒤 [뽑아라!] 신호에 먼저 쏴라! 신호 전에 쏘면 부정출발 패배",
 	"각자 특수 1장·시민 4장! 여왕 > 시민 > 반란군 > 여왕. 시민끼리는 버리고 재대결, 반란군이 여왕을 잡으면 +5칸",
-	"구멍 5개 중 하나에 폭탄! 번갈아 칼을 꽂아 사도를 튀어 오르게 한 쪽이 패배",
+	"호박에 연결된 버튼 5개를 번갈아 누른다! 딱 하나의 버튼이 호박을 터뜨리며 누른 사람이 패배",
 ]
 
 const HAND_NAMES: Array[String] = ["바위", "가위", "보"]
@@ -49,7 +49,7 @@ const DRAW_PREP_TIME: float = 2.85
 ## Legacy straight-shot input compatibility. New pointer shots pack power + aim in BottleCapPhysics.
 const CURLING_MAX: int = 1150
 const CURLING_EDGE: int = 1000
-## 스피키 룰렛 구멍 수.
+## 스피키 룰렛 버튼 수 (BARREL enum/packet fields retained for compatibility).
 const BARREL_HOLES: int = 5
 
 ## 입력 제한 시간(초, TurnManager.timer_scale이 곱해진다). time_limit()이 추첨·안내 여유를 별도로 더한다.
@@ -278,7 +278,7 @@ static func detail_text(game: int, setup: Dictionary, challenger: int, defender:
 			var mark_ms: int = int(round(reaction_mark(game, setup) * 1000.0))
 			return "(%s vs %s)" % [reaction_text(a, mark_ms), reaction_text(b, mark_ms)]
 		Game.BARREL:
-			return "(구멍 %d개째에 폭탄)" % (picks.get("opened", []) as Array).size()
+			return "(%d번째 버튼에서 호박 폭발)" % (picks.get("opened", []) as Array).size()
 	return ""
 
 

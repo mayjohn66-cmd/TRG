@@ -10,6 +10,7 @@ const BELL: Texture2D = preload("res://assets/ui/trickcal/slot/SLOT_BELL.png")
 const POKER: Texture2D = preload("res://content_trickcal/illustrations/dice/DICE_POKER.png")
 const GUN: Texture2D = preload("res://content_trickcal/illustrations/dice/REVOLVER.png")
 const COLORS: Array[Color] = [Color("f28c98"), Color("e8b34f"), Color("56b8be"), Color("ef9868"), Color("a58ae5"), Color("7bad73")]
+const PUMPKIN: Texture2D = preload("res://assets/ui/trickcal/duel/pumpkin/pumpkin.png")
 const GOLD := Color("ffdb79")
 const ROW_HEIGHT: float = 76.0
 
@@ -154,11 +155,7 @@ func _icon(game_id: int, at: Vector2, pen: CanvasItem = null) -> void:
 			pen.draw_circle(at, 11, Color("b7e4dd"))
 			pen.draw_arc(at, 11, 0, TAU, 24, Color("286d80"), 2, true)
 		DuelRules.Game.BARREL:
-			_box(Rect2(at - Vector2(15, 18), Vector2(30, 37)), Color("b47c49"), Color("6f4d39"), 8, 2, pen)
-			for offset_y: int in [-10, 10]:
-				pen.draw_line(at + Vector2(-14, offset_y), at + Vector2(14, offset_y), Color("e6c274"), 4)
-			for offset_x: int in [-8, 0, 8]:
-				pen.draw_circle(at + Vector2(offset_x, 1), 2.4, Color("503b35"))
+			pen.draw_texture_rect(PUMPKIN, Rect2(at - Vector2(31, 29), Vector2(62, 58)), false)
 
 class ReelWindow extends Control:
 	var owner_slot: DuelGameSlot
