@@ -84,6 +84,10 @@ const DRAFT_OPEN_BEAT: float = 0.12  ## 증강 창이 열리기 전 여운
 const BEAT_AFTER_MOVE: float = 0.12  ## 이동 뒤 여운 (0.8 -> 0.12: 마지막 행동이 끝나면 지체 없이 다음 턴·증강 창으로 넘어간다)
 ## 차례 배너는 짧게 막는다: 누구 차례인지 보여 준 뒤에야 카드 선언·굴리기가 열린다 (봇도 배너가 끝난 뒤 움직인다).
 const TURN_BANNER_SECONDS: float = 0.7
+## 터보 AI 턴: AI 차례의 연출 시간 배율 (보통 속도 대비 65% 단축). 사람 말을 잡거나 특수 승리·법전이 움직인 턴은 보통 속도로 보여 준다.
+const TURBO_PACE_SCALE: float = 0.35
+## AI 차례 배너는 더 짧게 (사람 차례 배너는 그대로).
+const TURBO_TURN_BANNER_SECONDS: float = 0.35
 ## 처치 확정 대기의 최대 시간(초): 방어 결정이 이보다 오래 걸리면(연결 끊김 등) 연출을 계속한다.
 const COUNTER_GATE_LIMIT: float = 30.0
 ## 상대를 해치는 공격 카드: 카드를 공개하기 전에 [공격 카드 발동!] 경보를 먼저 띄운다.
@@ -265,6 +269,8 @@ var _player_ids: Array[int] = PLAYER_IDS.duplicate()
 var _seat_anchor: Dictionary = {}
 ## 온라인 대전(락스텝) 동기화. 온라인이 아니면 null.
 var net: NetGame = null
+## 이번 AI 턴에 사람 말 처치·특수 승리·법전 변화가 있었다: 이 턴의 연출은 보통 속도로 (주목 구간).
+var _spotlight_turn: bool = false
 var _game_seed: int = 0
 var _net_lost_overlay: Control = null
 var _net_status_label: Label = null
@@ -970,6 +976,8 @@ func _bind_state() -> void:
 				_record_ejection(pawn_id, by_player)
 			return
 		var victim_owner: int = victim.owner_id
+		if by_player != victim_owner and not _is_computer_seat(victim_owner):
+			_mark_spotlight()  # AI가 사람 말을 잡은 턴은 보통 속도로 보여 준다
 		# 반격(거울의 힘·우노 리버스): 방어 대기 중에 막은 사람이 공격한 말을 날렸다 -> 공격자가 역으로 처치 컷인을 맞는다.
 		if _fx_on() and manager.counter_pending() and by_player == int(manager.pending_counter()["victim"]) and by_player != victim_owner and not _capture_marks.has(pawn_id):
 			_enqueue_reflect_cutin(pawn_id, by_player, victim_owner)
@@ -3228,7 +3236,7 @@ func _check_turn_banner() -> void:
 	var who: String = tr_ui("turn.mine") if (not ai_mode or player_id == local_player_id) and ai_mode else tr_ui("turn.other", [_player_name(player_id)])
 	if _fx_on():
 		Sfx.play(&"turn_start")
-	_announce("턴", who, "", PLAYER_COLORS[player_id], null, TURN_BANNER_SECONDS)
+	_announce("턴", who, "", PLAYER_COLORS[player_id], null, TURBO_TURN_BANNER_SECONDS if _turbo_turn() else TURN_BANNER_SECONDS)
 
 
 ## 프로필에 보여 줄 이름: AI 대전에서는 내 닉네임과 "컴퓨터 n", 4P 수동 조작에서는 "플레이어 n".
@@ -5540,8 +5548,9 @@ func _enqueue_reflect_cutin(pawn_id: int, by_player: int, victim_owner: int) -> 
 	_enqueue_late(func() -> void:
 		if generation != _capture_epoch or not _ejection_confirmed(pawn_id):
 			return
-		_capture_cutin.enqueue(attack_avatar, hit_avatar, by_player, victim_owner)
-		_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(CaptureCutin.DURATION * 1000.0)))
+		var cut_speed: float = _cutin_speed()
+		_capture_cutin.enqueue(attack_avatar, hit_avatar, by_player, victim_owner, cut_speed)
+		_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(CaptureCutin.DURATION / cut_speed * 1000.0)))
 
 
 func _on_pawn_captured(attacker_pawn_id: int, victim_pawn_id: int) -> void:
@@ -5562,12 +5571,15 @@ func _on_pawn_captured(attacker_pawn_id: int, victim_pawn_id: int) -> void:
 	var attack_avatar: StringName = _avatar_for(attacking_player)
 	var hit_avatar: StringName = _avatar_for(defending_player)
 	var generation: int = _capture_epoch
+	if not _is_computer_seat(defending_player):
+		_mark_spotlight()  # 사람 말이 잡히는 턴은 보통 속도로 주목
 	_enqueue_counter_gate()
 	_enqueue_late(func() -> void:
 		if generation != _capture_epoch or not _ejection_confirmed(victim_pawn_id):
 			return  # 방어 카드로 막았다: 처치 컷인 없이 방어 이펙트만 (사출 단계에서 한 번)
-		_capture_cutin.enqueue(attack_avatar, hit_avatar, attacking_player, defending_player)
-		_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(CaptureCutin.DURATION * 1000.0)))
+		var cut_speed: float = _cutin_speed()
+		_capture_cutin.enqueue(attack_avatar, hit_avatar, attacking_player, defending_player, cut_speed)
+		_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(CaptureCutin.DURATION / cut_speed * 1000.0)))
 
 
 ## 아바타 컷인 외의 복귀 효과에서 쓰는 보드 말 내리찍기.
@@ -7860,6 +7872,8 @@ func _clear_highlight() -> void:
 # ---------------------------------------------------------------------------
 
 func _on_phase_changed(new_state: TurnManager.State, _player_id: int, _limit: float) -> void:
+	if new_state == TurnManager.State.PHASE_TURN_BEGIN or new_state == TurnManager.State.PHASE_ROUND_START:
+		_spotlight_turn = false  # 주목 구간은 한 턴 동안만
 	if new_state != TurnManager.State.PHASE_ROUND_START:
 		_close_augment_review()
 		_draft_open = false
@@ -8210,6 +8224,7 @@ func _make_card_face(card_id: StringName) -> PanelContainer:
 
 
 func _on_law_added(new_law: LawResource, removed_law: LawResource) -> void:
+	_mark_spotlight()  # 법전(특수 승리 교칙)이 바뀐 턴은 보통 속도
 	var text: String = "[법전] 교칙 제정: [%s] %s" % [new_law.law_id, new_law.law_name]
 	if removed_law != null:
 		text += "  (가장 오래된 [%s] %s이(가) 밀려났습니다)" % [removed_law.law_id, removed_law.law_name]
@@ -8305,6 +8320,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 					Sfx.play(&"tempo_warning")
 				_announce_now("템포 업", "템포 업 Lv.%d · %s" % [stage, TempoUp.stage_name(stage)], "%d라운드부터 게임이 빨라집니다!\n◆ %s" % [tempo_round, "\n◆ ".join(PackedStringArray(lines))], Color("ff4d4d"), null, 3.2))
 		&"special_victory_judgement":
+			_mark_spotlight()
 			var achievers: Array = data["players"]
 			_log_line("[%d라운드 특수 승리] 달성: %s" % [int(data["round"]), ", ".join(PackedStringArray(achievers.map(func(id: int) -> String: return _player_name(id))))], Color("ffd43b"))
 			var judged_round: int = int(data["round"])
@@ -9319,7 +9335,29 @@ func _on_menu_reset_settings() -> void:
 
 ## 연출 속도 배율: 연출 멈춤이 켜져 있고 테스트용 즉시 모드가 아닐 때만 GameSession.pace_scale을 쓴다.
 func _pace() -> float:
-	return GameSession.pace_scale if pacing_enabled and not instant_roll_for_test else 1.0
+	if not pacing_enabled or instant_roll_for_test:
+		return 1.0
+	return GameSession.pace_scale * (TURBO_PACE_SCALE if _turbo_turn() else 1.0)
+
+
+## 터보 AI 턴인가: 지금 차례가 AI(싱글의 컴퓨터 자리·온라인의 빈자리 봇)이고, 이번 턴에 주목할 장면(사람 말 처치·특수 승리·법전)이 없다.
+func _turbo_turn() -> bool:
+	if _spotlight_turn or manager == null or state == null or manager.is_game_over:
+		return false
+	var current: int = manager.current_player_id()
+	if net != null:
+		return net.is_bot(current)
+	return ai_mode and _bot != null and _bot.is_bot(current)
+
+
+## 처치 컷인 재생 빠르기: 터보 AI 턴(AI끼리의 처치)은 빠르게, 그 밖에는 보통.
+func _cutin_speed() -> float:
+	return minf(1.0 / TURBO_PACE_SCALE, 2.0) if _turbo_turn() else 1.0
+
+
+## 이번 AI 턴을 주목 구간으로 돌린다 (그 턴의 남은 연출은 보통 속도). 다음 차례가 시작되면 풀린다.
+func _mark_spotlight() -> void:
+	_spotlight_turn = true
 
 
 ## 속도 설정이 바뀌면 걸음 간격·봇 대기에 바로 적용한다 (알림·호흡은 쓸 때마다 _pace()를 읽는다).
@@ -9450,6 +9488,13 @@ func _on_mode_toggle_pressed() -> void:
 	_refresh_mode_toggle()
 	if manager != null and manager.state != null:
 		_refresh_all()
+
+
+## 이 자리가 컴퓨터(AI 대전의 봇·온라인의 빈자리 봇)인가.
+func _is_computer_seat(player_id: int) -> bool:
+	if net != null:
+		return net.is_bot(player_id)
+	return ai_mode and _bot != null and _bot.is_bot(player_id)
 
 
 ## 지금 턴이 AI 봇의 차례인가 (AI 모드에서 P2~P4).

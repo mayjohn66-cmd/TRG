@@ -81,6 +81,7 @@ func _run() -> void:
 	await _test_duel_flow()
 	await _test_stage_warp()
 	await _test_trap_tile_marking()
+	_test_turbo_ai_turn()
 	await _test_kill_cutin()
 	await _test_new_tool_stages()
 	await _test_npc_danger_preview()
@@ -1799,6 +1800,38 @@ func _test_stage_warp() -> void:
 		_board._fx_until_msec = 0
 		_board._beat_until_msec = 0
 	_board.instant_roll_for_test = true
+
+
+## 터보 AI 턴: AI 차례에는 연출 배율이 TURBO_PACE_SCALE로 줄고, 사람 말을 잡거나 법전·특수 승리가 움직인 턴(주목 구간)과 사람 차례는 보통 속도다.
+func _test_turbo_ai_turn() -> void:
+	var old_ai: bool = _board.ai_mode
+	var old_pacing: bool = _board.pacing_enabled
+	var old_instant: bool = _board.instant_roll_for_test
+	var old_bots: Array[int] = _board._bot.bot_players.duplicate()
+	_board.ai_mode = true
+	_board.pacing_enabled = true
+	_board.instant_roll_for_test = false
+	_board._bot.bot_players = [2, 3, 4] as Array[int]
+	_board._spotlight_turn = false
+	var current: int = _board.manager.current_player_id()
+	var normal: float = GameSession.pace_scale
+	if current == _board.local_player_id:
+		_expect(not _board._turbo_turn() and is_equal_approx(_board._pace(), normal), "사람 차례는 보통 속도")
+	_board._bot.bot_players = [1, 2, 3, 4] as Array[int]
+	_board.local_player_id = 99 if current == _board.local_player_id else _board.local_player_id
+	_expect(_board._turbo_turn() and is_equal_approx(_board._pace(), normal * MainBoard.TURBO_PACE_SCALE), "AI 차례는 연출 배율이 %.2f배로 줄어든다" % MainBoard.TURBO_PACE_SCALE)
+	_expect(_board._cutin_speed() > 1.0, "AI끼리의 처치 컷인은 빠르게 재생")
+	_board._mark_spotlight()
+	_expect(not _board._turbo_turn() and is_equal_approx(_board._pace(), normal) and is_equal_approx(_board._cutin_speed(), 1.0), "사람 말 처치·법전 변화가 있는 AI 턴은 보통 속도로 주목")
+	_board._on_phase_changed(TurnManager.State.PHASE_TURN_BEGIN, current, 0.0)
+	_expect(not _board._spotlight_turn, "다음 차례가 시작되면 주목 구간이 풀린다")
+	if _board.local_player_id == 99:
+		_board.local_player_id = current
+	_board._bot.bot_players = old_bots
+	_board.ai_mode = old_ai
+	_board.pacing_enabled = old_pacing
+	_board.instant_roll_for_test = old_instant
+	_board._spotlight_turn = false
 
 
 ## 함정이 깔린 발판은 카드 알림이 끝난 뒤 짙은 보라색 테두리로 깜빡인다.
