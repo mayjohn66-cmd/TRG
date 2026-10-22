@@ -25,7 +25,8 @@ func expect(value: bool, message: String) -> void:
 func _run() -> void:
 	for super_id: StringName in [&"SUPER_04", &"SUPER_05"]:
 		await _scenario(super_id)
-	await _tempo_after_capture()
+	await _tempo_after_capture(false)
+	await _tempo_after_capture(true)
 	if failures.is_empty():
 		print("UI_ROUND_SEQUENCE_OK: review logs -> review closed -> augment effects -> round banner -> first turn")
 	quit(0 if failures.is_empty() else 1)
@@ -116,7 +117,7 @@ func _scenario(super_id: StringName) -> void:
 
 
 ## 라운드 끝 처치(마지막 차례의 잡기)와 같은 순간에 템포 업이 오면: [처치 컷인 -> 장외 사출] 이 다 끝난 뒤에 템포 업 경고가 뜬다.
-func _tempo_after_capture() -> void:
+func _tempo_after_capture(via_npc: bool) -> void:
 	if board != null:
 		board.queue_free()
 		await process_frame
@@ -159,19 +160,31 @@ func _tempo_after_capture() -> void:
 	ctx.raw_roll = 1
 	ctx.dice_value = 1
 	board.instant_roll_for_test = false
-	MoveExecutor.execute(state, mine, ctx)
+	if via_npc:
+		# 라운드 끝 NPC 페이즈: P2가 소환한 사료스탕스가 가장 가까운 적(P1의 1번 칸 말)을 덮치고 사라진 직후 라운드가 넘어가며 템포 업
+		enemy.reset_to_start()
+		var npc: NeutralNPC = state.spawn_npc(BoardSpec.tile_count - 2, GameEnums.NpcBehavior.CHASE_NEAREST, 2, &"SUM_01")
+		board._refresh_all()
+		await process_frame
+		var report: Dictionary = npc.run_ai(state)
+		report["display_id"] = npc.display_id
+		report["tile"] = npc.current_tile_idx
+		state.remove_npc(npc)
+		board._on_event(&"npc_phase_resolved", {"reports": [report]})
+	else:
+		MoveExecutor.execute(state, mine, ctx)
 	board._on_event(&"tempo_up", {"level": 1, "round": 10, "lines": ["모든 이동 +1칸"]})  # 같은 순간 라운드가 넘어가며 템포 업
 	var cutin_at: int = -1
 	var eject_done_at: int = -1
-	var view: Node2D = board._pawn_views[21]
+	var view: Node2D = board._pawn_views[11 if via_npc else 21]
 	var deadline: int = Time.get_ticks_msec() + 15000
 	while Time.get_ticks_msec() < deadline and tempo_at[0] == -1:
 		await process_frame
 		clock[0] += 1
-		if cutin_at == -1 and board._capture_cutin.active:
-			cutin_at = clock[0]
+		if cutin_at == -1 and (board._capture_cutin.active or (via_npc and board._pawn_layer.find_child("NpcRunner", false, false) != null)):
+			cutin_at = clock[0]  # 중립 기물은 컷인 대신 기물이 달리는 장면
 		if cutin_at != -1 and eject_done_at == -1 and not board._capture_cutin.busy() and not board._fx_running(view) and not view.visible:
 			eject_done_at = clock[0]
-	expect(cutin_at != -1 and tempo_at[0] != -1, "템포 업: 처치 컷인과 템포 업 경고가 모두 나온다 (컷인 %d, 경고 %d)" % [cutin_at, tempo_at[0]])
-	expect(eject_done_at != -1 and eject_done_at <= tempo_at[0], "템포 업 경고는 처치 컷인·장외 사출이 끝난 뒤 (컷인 %d, 사출 끝 %d, 경고 %d)" % [cutin_at, eject_done_at, tempo_at[0]])
+	expect(cutin_at != -1 and tempo_at[0] != -1, "템포 업(%s): 처치 컷인과 템포 업 경고가 모두 나온다 (컷인 %d, 경고 %d)" % ["중립 기물" if via_npc else "잡기", cutin_at, tempo_at[0]])
+	expect(eject_done_at != -1 and eject_done_at <= tempo_at[0], "템포 업 경고는 처치 컷인·장외 사출이 끝난 뒤 (%s: 컷인 %d, 사출 끝 %d, 경고 %d)" % ["중립 기물" if via_npc else "잡기", cutin_at, eject_done_at, tempo_at[0]])
 	board.instant_roll_for_test = true

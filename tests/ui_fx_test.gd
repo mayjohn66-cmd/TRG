@@ -1886,32 +1886,47 @@ func _test_npc_danger_preview() -> void:
 			other.reset_to_start()  # 앞선 테스트가 남긴 말이 NPC를 멈춰 세우지 않게 한다
 	_board._refresh_all()
 	_expect(_board._npc_danger.is_empty() and not _board._danger_label.visible, "NPC가 없으면 위험 예고도 경고도 없다")
-	var ghost: NeutralNPC = state.spawn_npc(12, GameEnums.NpcBehavior.PATROL_REVERSE, 1, &"SUM_02")
+	# 소환한 사람이 아닌 쪽에서 보는 위험 예고: 팩맨(역방향)은 가장 가까운 적 말까지 달려가 그 말을 덮친다
+	var summoner: int = 1 if mine.owner_id != 1 else 2
+	var bystander: PlayerPawn = null
+	for other: PlayerPawn in state.pawns:
+		if other.owner_id != mine.owner_id and other.owner_id != summoner and not other.is_finished:
+			bystander = other
+			break
+	bystander.has_left_start = true
+	bystander.current_tile_idx = 8
+	state.spawn_npc(12, GameEnums.NpcBehavior.PATROL_REVERSE, summoner, &"SUM_02")
 	_board._refresh_all()
-	_expect(_board._npc_danger.has(11) and _board._npc_danger.has(10) and _board._npc_danger.has(9), "팩맨이 지나갈 칸(11·10·9번…)이 위험 구간으로 표시된다")
+	_expect(_board._npc_danger.has(11) and _board._npc_danger.has(10) and _board._npc_danger.has(9) and _board._npc_danger.has(8), "팩맨이 가장 가까운 적(8번)까지 지나갈 칸이 위험 구간으로 표시된다")
+	_expect(not _board._npc_danger.has(7), "덮칠 칸 뒤로는 표시하지 않는다")
+	_expect(int(_board._npc_danger[8]["level"]) == 2 and int(_board._npc_danger[10]["level"]) == 1, "덮칠 칸만 경고(level 2)")
 	var danger_tile: BoardSkin.Tile = _board._tile_views[10]
-	_expect(danger_tile.danger_level == 2 and danger_tile.danger_dir != Vector2.ZERO, "위험 타일은 경고(level 2)와 진행 방향을 가진다")
-	_expect(danger_tile.warning_mark.visible and danger_tile.warning_flow.visible, "위험 타일의 경고 이미지와 화살표가 표시된다")
+	_expect(danger_tile.danger_level >= 1 and danger_tile.danger_dir != Vector2.ZERO, "위험 타일은 진행 방향을 가진다")
+	_expect(danger_tile.warning_flow.visible and not danger_tile.warning_mark.visible, "기물이 지나갈 칸에는 진행 화살표만")
+	var strike_tile: BoardSkin.Tile = _board._tile_views[8]
+	_expect(strike_tile.warning_mark.visible, "덮칠 칸에는 경고 그림")
 	_expect(danger_tile.warning_mark.z_index == 0 and danger_tile.warning_flow.z_index == 0, "보드 경고가 상위 UI 팝업을 뚫고 표시되지 않는다")
 	_expect(danger_tile.warning_flow.transform.x.normalized().dot(danger_tile.danger_dir.normalized()) > 0.999, "화살표가 타일 평면에서 실제 NPC 진행 방향을 가리킨다")
 	_expect(danger_tile.symbol == null or not danger_tile.symbol.visible, "위험 칸의 바닥 심볼은 경고 그림과 겹치지 않는다")
 	_expect(not _board._danger_label.visible, "내 말이 위험 구간 밖이면 경고 문구가 없다")
 	mine.current_tile_idx = 10
 	_board._refresh_all()
-	_expect(_board._danger_label.visible and _board._danger_label.text.contains("위험") and _board._danger_label.text.contains("NPC에게 잡힙니다"), "내 말이 위험 타일에 서면 [위험! 라운드 종료 시 NPC에게 잡힙니다!]")
+	_expect(_board._danger_label.visible and _board._danger_label.text.contains("위험") and _board._danger_label.text.contains("NPC에게 잡힙니다"), "내 말이 가장 가까운 적이 되면 [위험! 라운드 종료 시 NPC에게 잡힙니다!]")
 	mine.current_tile_idx = 2
 	_board._refresh_all()
 	_expect(not _board._danger_label.visible, "벗어나면 경고가 사라진다")
-	# 이동 미리보기(호버)가 위험 타일에 닿을 때
+	# 이동 미리보기(호버)가 기물의 앞길에 닿으면 내가 가장 가까운 적이 된다
 	_board._hover_danger_tile = 9
 	_board._refresh_danger_label()
-	_expect(_board._danger_label.visible, "미리보기 도착 타일이 위험하면 경고")
+	_expect(_board._danger_label.visible, "미리보기 도착 타일이 기물의 앞길이면 경고")
 	_board._hover_danger_tile = 3
 	_board._refresh_danger_label()
 	_expect(not _board._danger_label.visible, "안전한 타일이면 경고 없음")
 	_board._hover_danger_tile = -1
-	# 도적떼: 가장 가까운 말까지의 경로
-	var robber: NeutralNPC = state.spawn_npc(20, GameEnums.NpcBehavior.CHASE_NEAREST, 1, &"SUM_01")
+	bystander.reset_to_start()
+	# 도적떼: 가장 가까운 적 말까지의 경로
+	state.clear_npcs()
+	var robber: NeutralNPC = state.spawn_npc(20, GameEnums.NpcBehavior.CHASE_NEAREST, summoner, &"SUM_01")
 	for other: PlayerPawn in state.pawns:
 		if other != mine and not other.is_finished:
 			other.reset_to_start()  # 앞선 테스트가 남긴 말이 도적의 추격 대상이 되지 않게 한다
@@ -1921,16 +1936,15 @@ func _test_npc_danger_preview() -> void:
 	_expect(not _board._npc_danger.has(24), "말을 만난 칸에서 멈추므로 그 뒤는 표시하지 않는다")
 	# NPC 툴팁과 라벨
 	_board._fill_npc_tip(robber.entity_id)
-	_expect(_board._tip_title.text.contains("사료스탕스") and _board._tip_title.text.contains("▶") and _board._tip_ability.text.contains("3~6") and _board._tip_ability.text.contains("소멸합니다"), "도적 툴팁: 방향과 설명 (%s)" % _board._tip_title.text)
-	_board._fill_npc_tip(ghost.entity_id)
-	_expect(_board._tip_title.text.contains("와구와구 유령") and _board._tip_title.text.contains("◀") and _board._tip_ability.text.contains("역방향") and _board._tip_ability.text.contains("3~6"), "팩맨 툴팁: 역방향 3~6칸 전진")
-	_expect(not _board._announce_gate_text_for_tests().contains("한 칸"), "NPC 이동 안내 문구가 실제 규칙을 말한다")
+	_expect(_board._tip_title.text.contains("사료스탕스") and _board._tip_title.text.contains("▶") and _board._tip_ability.text.contains("가장 가까운 적") and _board._tip_ability.text.contains("사라집니다"), "도적 툴팁: 방향과 설명 (%s)" % _board._tip_title.text)
+	_expect(_board._tip_ability.text == _board.NPC_TIP_ROBBER and _board.NPC_TIP_GHOST.contains("역방향") and not _board.NPC_TIP_GHOST.contains("3~6"), "팩맨 설명: 역방향, 3~6칸 규칙 없음")
+	_expect(not _board._announce_gate_text_for_tests().contains("3~6"), "NPC 이동 안내 문구가 실제 규칙을 말한다")
 	state.clear_npcs()
 	mine.has_left_start = false
 	mine.current_tile_idx = 0
 	_board._refresh_all()
 	_expect(_board._npc_danger.is_empty(), "NPC가 사라지면 위험 예고도 사라진다")
-	_expect(not danger_tile.warning_mark.visible and not danger_tile.warning_flow.visible, "위험 해제 시 경고 이미지와 화살표가 사라진다")
+	_expect(not danger_tile.warning_mark.visible and not danger_tile.warning_flow.visible and not strike_tile.warning_mark.visible, "위험 해제 시 경고 이미지와 화살표가 사라진다")
 	_expect(danger_tile.symbol == null or danger_tile.symbol.visible == not danger_tile.trap_on, "위험 해제 시 원래 바닥 심볼 표시가 복원된다")
 
 
@@ -1952,7 +1966,7 @@ func _test_event_order() -> void:
 	for pawn: PlayerPawn in state.pawns:
 		pawn.reset_to_start()
 	_board._refresh_all()
-	# 1) 소환: 사료스탕스가 달리는 동안 잡힐 말은 아직 보드에 있고, 달리기가 끝난 뒤에 사출된다
+	# 1) 소환: 사료스탕스는 소환 즉시 움직이지 않는다. 라운드 끝 NPC 페이즈에 달리고, 달리는 동안 잡힐 말은 아직 보드에 있다가 그 뒤에 사출된다
 	var victim: PlayerPawn = state.get_pawn(21)
 	victim.has_left_start = true
 	victim.current_tile_idx = BoardSpec.side + 2
@@ -1962,7 +1976,14 @@ func _test_event_order() -> void:
 	var command := SweepCommand.new(1, BoardSpec.side, &"SUM_01")
 	command.state = state
 	command.execute()
-	_expect(not victim.has_left_start, "엔진에서는 바로 잡힌다")
+	_expect(victim.has_left_start and state.npcs.size() == 1 and state.npcs[0].current_tile_idx == BoardSpec.side, "소환 즉시는 움직이지도 잡지도 않는다")
+	var summoned: NeutralNPC = state.npcs[0]
+	var npc_report: Dictionary = summoned.run_ai(state)  # 라운드 끝 NPC 페이즈 (TurnManager._enter_neutral_npc_phase와 같은 순서)
+	npc_report["display_id"] = summoned.display_id
+	npc_report["tile"] = summoned.current_tile_idx
+	state.remove_npc(summoned)
+	_board._on_event(&"npc_phase_resolved", {"reports": [npc_report]})
+	_expect(not victim.has_left_start and state.npcs.is_empty(), "라운드 끝에 가장 가까운 적을 잡고 사라진다")
 	var saw_runner: bool = false
 	var victim_seen_while_running: bool = false
 	var waited: float = 0.0
@@ -1976,7 +1997,7 @@ func _test_event_order() -> void:
 	_expect(saw_runner, "소환 기물이 길을 따라 달리는 모습이 보인다")
 	_expect(victim_seen_while_running, "기물이 달리는 동안 잡힐 말은 아직 보드 위에 있다 (사출은 그 뒤)")
 	var headlines: Array = _board._announcer.history.slice(history_before)
-	_expect(headlines.any(func(h: String) -> bool: return h.contains("사료스탕스 출동")), "[사료스탕스 출동!] 알림 (%s)" % str(headlines))
+	_expect(headlines.any(func(h: String) -> bool: return h.contains("중립 기물 이동")), "[중립 기물 이동] 알림 (%s)" % str(headlines))
 	_expect(_board._pawn_layer.find_child("NpcRunner", false, false) == null, "달리기 연출 노드는 끝나면 사라진다")
 	# 2) 도미노: [도미노 연쇄!]가 연쇄로 터지는 함정보다 먼저, 도미노 자신의 [발동!]은 다시 뜨지 않는다
 	for pawn: PlayerPawn in state.pawns:
