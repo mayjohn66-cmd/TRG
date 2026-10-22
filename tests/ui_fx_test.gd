@@ -1410,7 +1410,21 @@ func _test_hud_overhaul() -> void:
 	# 카드는 커서를 대도 설명 상자가 없다
 	var hand_card: PanelContainer = _board._make_card_view(1, &"TRP_03")
 	_expect(hand_card.tooltip_text == "", "카드에 마우스 설명이 없다 (%s)" % hand_card.tooltip_text)
+	# 내 말도 휘말리는 카드: 카드 왼쪽 위 경고 아이콘, 문구는 상세(확대) 설명에만
+	_expect(hand_card.find_child("SelfRiskIcon", true, false) != null, "지뢰찾기 카드에 경고 아이콘")
+	_expect(not CardSkin.SELF_RISK.is_empty() and not MainBoard.card_summary(&"TRP_03").contains("주의"), "카드 앞면 문구에는 주의 글이 없다")
 	hand_card.free()
+	for risk_id: StringName in [&"TRP_05", &"ACT_09"]:
+		var risky: PanelContainer = _board._make_card_view(1, risk_id)
+		_expect(risky.find_child("SelfRiskIcon", true, false) != null, "%s 카드에 경고 아이콘" % risk_id)
+		risky.free()
+	var safe_card: PanelContainer = _board._make_card_view(1, &"TRP_02")
+	_expect(safe_card.find_child("SelfRiskIcon", true, false) == null, "내 말을 잡지 않는 카드에는 아이콘 없음")
+	safe_card.free()
+	_board._open_zoom(1, &"ACT_09")
+	var caution: Node = _board._zoom_view.find_child("CardCaution", true, false)
+	_expect(caution != null and str((caution.get_child(1) as Label).text).contains("지면 내 선두 말"), "확대 설명에 주의 문구")
+	_board._close_zoom()
 	# 4) 클릭 확대 (남의 턴에도 가능)
 	var holder: int = current
 	(manager.state.hands[holder] as Array).clear()

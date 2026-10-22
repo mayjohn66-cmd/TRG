@@ -129,7 +129,7 @@ const CARD_SHORT: Dictionary = {
 	&"ACT_06": "승리 기록 초기화",
 	&"ACT_07": "한 변 설치물 붕괴",
 	&"ACT_08": "꼴찌 ↔ 선두 교환",
-	&"ACT_09": "승자 +3칸·패자 사출 (지면 내 말도)",
+	&"ACT_09": "승자 +3칸·패자 사출",
 	&"ACT_10": "앞 3칸 적 사출",
 	&"ACT_11": "굴림 결과 지정",
 	&"ACT_12": "한 턴 더",
@@ -137,8 +137,8 @@ const CARD_SHORT: Dictionary = {
 	&"ACT_14": "2턴 카드·스킬 금지",
 	&"ACT_15": "상대 턴 건너뛰기",
 	&"TRP_02": "눈금 4+ 적 사출",
-	&"TRP_03": "반경 2칸 폭파 (내 말도)",
-	&"TRP_05": "반경 함정 연쇄 (내 말도)",
+	&"TRP_03": "반경 2칸 폭파",
+	&"TRP_05": "반경 함정 연쇄",
 	&"TRP_06": "미끄러짐+카드 강탈",
 	&"TRP_07": "지나가면 정지",
 	&"TRP_08": "꼴찌와 자리 교환",
@@ -164,7 +164,7 @@ const CARD_SUMMARIES: Dictionary = {
 	&"ACT_06": "특수 승리 기록 1개를 0으로 초기화",
 	&"ACT_07": "고른 한 변의 설치물 전부 붕괴",
 	&"ACT_08": "내 꼴찌 말 ↔ 1등 적 선두 말 위치 교환",
-	&"ACT_09": "적 1명과 6종 랜덤 미니게임 데스매치! 승자 말 +3칸, 패자 선두 말 사출 · [주의] 내가 지면 내 말이 사출",
+	&"ACT_09": "적 1명과 6종 랜덤 미니게임 데스매치! 승자 말 +3칸, 패자 선두 말 사출",
 	&"ACT_10": "내 선두 말 앞 3칸의 적 사출 + 설치물 파괴",
 	&"ACT_11": "다음 굴림 결과를 1~6칸 중 직접 지정",
 	&"ACT_12": "이번 턴이 끝나면 한 턴 더",
@@ -172,8 +172,8 @@ const CARD_SUMMARIES: Dictionary = {
 	&"ACT_14": "상대 1명 2턴 동안 카드·필살기·주사위 리롤 금지",
 	&"ACT_15": "상대 1명의 다음 턴 건너뛰기",
 	&"TRP_02": "눈금 4+ 로 지나가는 적 말 출발선 사출",
-	&"TRP_03": "밟으면 반경 2칸 내 모든 말 폭파 · [주의] 내 말도 휘말림",
-	&"TRP_05": "밟은 말은 멈추고, 반경 2칸 안의 함정이 전부 연쇄 발동 · [주의] 내 말도 멈추고 휘말림",
+	&"TRP_03": "밟으면 반경 2칸 내 모든 말 폭파",
+	&"TRP_05": "밟은 말은 멈추고, 반경 2칸 안의 함정이 전부 연쇄 발동",
 	&"TRP_06": "밟은 적 말 +3칸 미끄러짐 + 카드 1장 강탈",
 	&"TRP_07": "지나가던 적 말 그 칸에 강제 정지",
 	&"TRP_08": "밟은 적 말 ↔ 보드 꼴찌 말 위치 교환",
@@ -3785,6 +3785,21 @@ func _open_zoom(player_id: int, card_id: StringName) -> void:
 	timing.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	timing.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	guide_box.add_child(timing)
+	if CardSkin.SELF_RISK.has(card_id):
+		# 내 말도 휘말리는 카드: 카드 왼쪽 위의 경고 아이콘과 같은 그림 + 상세 문구
+		var caution := HBoxContainer.new()
+		caution.name = "CardCaution"
+		caution.add_theme_constant_override("separation", 6)
+		caution.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var caution_icon := CardSkin.WarningIcon.new()
+		caution_icon.custom_minimum_size = Vector2(22, 22)
+		caution.add_child(caution_icon)
+		var caution_text := _make_label("주의: %s" % CardSkin.SELF_RISK[card_id], 14, CardSkin.WARNING_RED)
+		caution_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		caution_text.custom_minimum_size = Vector2(card_size.x - 24.0 - 28.0, 0)
+		caution_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		caution.add_child(caution_text)
+		guide_box.add_child(caution)
 	var usable: bool = _card_usable_now(player_id, card)
 	var status_text: String = "지금 사용 가능" if usable else "지금은 사용 불가"
 	if card.category == GameEnums.CardCategory.COUNTER:

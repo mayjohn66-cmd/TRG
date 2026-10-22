@@ -1052,6 +1052,8 @@ func _ch_cards() -> Dictionary:
 			"rows": [["언제", when], ["방법", how]]}
 		if quote != "":
 			data["note"] = "“%s”" % quote
+		if CardSkin.SELF_RISK.has(card_id):
+			(data["rows"] as Array).append(["주의", CardSkin.SELF_RISK[card_id]])  # 카드 앞면에는 경고 아이콘
 		if card_id == &"ACT_09":
 			# 일기토 데스매치: 6종 미니게임 중 하나가 무작위로 뽑힌다
 			for game: int in DuelRules.GAME_COUNT:
