@@ -74,12 +74,23 @@ func test_checkers_king_captures_enemies_it_passes_over() -> void:
 	check_eq(state.stat(1, VictoryLaw.KILLS), 2, "처치 기록")
 
 
-func test_ludo_avenger_revenge_booster_is_eight() -> void:
+func test_ludo_avenger_adds_four_when_its_revenge_booster_fires() -> void:
 	var state := make_state(2, 1, {1: _units(Kind.ARCADE, [2])})
 	state.boost_gimmicks = true
 	var pawn: PlayerPawn = state.get_pawn(11)
+	check_eq(PawnCatalog.ability_text(Kind.ARCADE, 2), "리벤지 부스터 발동 시 +4칸 전진", "능력 설명")
 	pawn.revenge_boost = true
-	check_eq(move(state, 11, 2).path.size(), 2 + 8, "복수 부스터 +8")
+	check_eq(MoveExecutor.revenge_bonus_of(pawn, state), GameData.revenge_bonus() + 4, "리벤지 부스터 4 + 루도 4")
+	state.round_number = 10
+	check_eq(MoveExecutor.revenge_bonus_of(pawn, state), 6 + 4, "템포 업으로 커진 부스터(6)에도 +4")
+	state.round_number = 1
+	check_eq(move(state, 11, 2).path.size(), 2 + 4 + 4, "눈금 2 + 부스터 4 + 루도 4")
+	var plain := make_state(2, 1)
+	plain.boost_gimmicks = true
+	check_eq(MoveExecutor.revenge_bonus_of(plain.get_pawn(11), plain), GameData.revenge_bonus(), "부스터가 없으면 루도 보너스도 없다 (기본 말은 4)")
+	pawn.revenge_boost = false
+	place(state, 11, 0, [], false)
+	check_eq(move(state, 11, 2).path.size(), 2, "리벤지 부스터가 발동하지 않으면 +4칸도 없다")
 
 
 func test_eight_ball_rolls_three_more_after_a_kill() -> void:

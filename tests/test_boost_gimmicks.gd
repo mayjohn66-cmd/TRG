@@ -169,7 +169,7 @@ func test_ludo_avenger_eight_tiles_are_the_revenge_booster_stage() -> void:
 	var fired: Array = []
 	state.revenge_boost_fired.connect(func(pawn_id: int, base: int, bonus: int, total: int) -> void: fired.append([pawn_id, base, bonus, total]))
 	var report: MoveReport = move(state, 11, 2)
-	check_eq(fired, [[11, 2, 8, 10]], "1단계(리벤지 부스터)에서 +8칸 선행 전진, 이어서 눈금 2칸")
+	check_eq(fired, [[11, 2, 8, 10]], "1단계(리벤지 부스터 4 + 루도 4)에서 +8칸 선행 전진, 이어서 눈금 2칸")
 	check_eq(report.revenge_bonus, 8, "보고서의 부스터 칸수")
 	check_eq(pawn.current_tile_idx, 10, "8 + 2 = 10번 칸")
 

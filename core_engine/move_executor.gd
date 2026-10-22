@@ -56,7 +56,7 @@ static func preview_path(state: GameState, pawn: PlayerPawn, dice_value: int) ->
 
 
 ## 기물 능력을 반영한 이동 경로를 계산한다. 동기 실행(execute)과 TurnManager 비동기 이동이 공유한다.
-## 세부 기물: 퀸 +2칸, 룩·비차 직진 +2칸, 각행 코너 +2칸(용마 +3), 비숍 코너 진입 +1칸, 포 +3칸(경로 중간에 말), 마·상 +2칸(바로 앞 칸이 비면), 스타 카트 추가 이동 +2칸, 루도 복수자 복수 부스터 +8칸.
+## 세부 기물: 퀸 +2칸, 룩·비차 직진 +2칸, 각행 코너 +2칸(용마 +3), 비숍 코너 진입 +1칸, 포 +3칸(경로 중간에 말), 마·상 +2칸(바로 앞 칸이 비면), 스타 카트 추가 이동 +2칸, 루도 복수자 리벤지 부스터 발동 시 +4칸.
 static func plan_path(state: GameState, mover: PlayerPawn, ctx: RuleContext, report: MoveReport) -> Array[int]:
 	# 후퇴는 없다: 눈금이 음수여도 0칸으로 본다.
 	var steps: int = maxi(ctx.dice_value, 0)
@@ -66,7 +66,7 @@ static func plan_path(state: GameState, mover: PlayerPawn, ctx: RuleContext, rep
 	# 점프 부스트로 이어 가는 추가 이동은 그 칸수만 그대로 간다 (기물 능력·부스트를 다시 붙이지 않는다).
 	if is_leap_follow_up(ctx):
 		return state.board.calculate_path(mover, steps, ctx)
-	# 리벤지 부스터: 사출된 말이 출발선에서 다시 나갈 때 눈금에 +4칸 (루도 복수자는 +8칸).
+	# 리벤지 부스터: 사출된 말이 출발선에서 다시 나갈 때 눈금에 +4칸 (루도 복수자는 발동 시 +4칸 더).
 	if state.boost_gimmicks and mover.revenge_boost and not mover.has_left_start and revenge_bonus_of(mover, state) > 0:
 		var revenge: int = revenge_bonus_of(mover, state)
 		steps += revenge
@@ -184,14 +184,15 @@ const KART_FOLLOW_UP_BONUS: int = 2
 const EIGHT_BALL_CHARGE: int = 3
 
 
-## 이 말의 리벤지 부스터 칸 수 (루도 복수자는 augments_table.csv EVO_7_2 param_1, 기본 8).
+## 이 말의 리벤지 부스터 칸 수. 루도 복수자는 발동할 때 augments_table.csv EVO_7_2 param_1(기본 4)칸을 더 간다.
 ## 템포 업이 오르면 리벤지 부스터가 커진다 (10R 6칸, 20R 8칸). 규칙이 꺼져 있으면 그대로 0.
 static func revenge_bonus_of(mover: PlayerPawn, state: GameState = null) -> int:
 	var tempo: int = TempoUp.revenge_bonus(state.round_number) if state != null else 0
-	if mover.sub_type() == GameEnums.PawnSubType.LUDO_AVENGER:
-		return maxi(GameData.param("augments", "EVO_7_2", 1, 8), tempo)
 	var base: int = GameData.revenge_bonus()
-	return maxi(base, tempo) if base > 0 else 0
+	var bonus: int = maxi(base, tempo) if base > 0 else 0
+	if bonus > 0 and mover.sub_type() == GameEnums.PawnSubType.LUDO_AVENGER:
+		bonus += GameData.param("augments", "EVO_7_2", 1, 4)
+	return bonus
 
 
 ## 룩·비차 직진 판정: 경로의 중간 칸(도착 칸 제외)에 코너가 없다.

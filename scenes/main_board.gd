@@ -960,7 +960,7 @@ func _bind_state() -> void:
 			_capture_cutin.cancel())
 	state.pawn_sent_to_start.connect(func(pawn_id: int, by_player: int) -> void:
 		var victim: PlayerPawn = state.get_pawn(pawn_id)
-		_log_line("%s 출발선으로 복귀%s" % [_pawn_name(pawn_id), "  [복수 부스터 획득: 다음 출발 +%d칸]" % _revenge_steps() if victim != null and victim.revenge_boost else ""], Color("ff8787"))
+		_log_line("%s 출발선으로 복귀%s" % [_pawn_name(pawn_id), "  [복수 부스터 획득: 다음 출발 +%d칸]" % _revenge_steps(victim) if victim != null and victim.revenge_boost else ""], Color("ff8787"))
 		if victim == null:
 			return
 		if not _fx_on():
@@ -2635,18 +2635,18 @@ func _play_capture_eject(pawn_id: int, by_player: int, owner_id: int, cutin_capt
 	await _play_eject_settle(pawn_id)
 	var ejected: PlayerPawn = state.get_pawn(pawn_id) if state != null else null
 	if ejected != null and ejected.revenge_boost and not ejected.has_left_start:
-		_revenge_charged_popup(ejected.owner_id)
+		_revenge_charged_popup(ejected.owner_id, ejected)
 
 
 ## 리벤지 부스터 [획득]: 그 플레이어 모서리 프로필 위에 복수심 장전 문구를 띄운다.
-func _revenge_charged_popup(player_id: int) -> void:
+func _revenge_charged_popup(player_id: int, pawn: PlayerPawn = null) -> void:
 	if not _fx_on() or not _profiles.has(player_id):
 		return
 	var panel: Control = _profiles[player_id]["panel"]
 	var at: Vector2 = get_global_transform().affine_inverse() * panel.get_global_rect().get_center()
 	at.x = clampf(at.x, 60.0, size.x - 60.0)
 	at.y = clampf(at.y, 60.0, size.y - 60.0)
-	_number_pop(at, "+%d" % _revenge_steps(), Color("ff922b"))
+	_number_pop(at, "+%d" % _revenge_steps(pawn), Color("ff922b"))
 	Sfx.play(&"revenge_ignite")
 	_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(120.0 * _motion_pace()))  # 배지는 혼자 떠오르므로 큐를 오래 붙잡지 않는다
 
@@ -2751,7 +2751,7 @@ func _play_rocket(pawn_id: int, to_pos: Vector2, to_scale: float, tile: int) -> 
 		return
 	screen_shake(7.0, 0.22)
 	_impact_ring(view.position, Color("ff6b00"), 50.0)
-	_floating_badge(view.position + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + Vector2(0, -42), "+%d" % _revenge_steps(), Color("ff922b"), 40)
+	_floating_badge(view.position + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + Vector2(0, -42), "+%d" % _revenge_steps(state.get_pawn(pawn_id) if state != null else null), Color("ff922b"), 40)
 	# 1단계(부스터)와 2단계(눈금 이동) 사이의 짧은 호흡: 경유지라 아직 판정하지 않는다
 	var dice_part: int = int(_rocket_followup.get(pawn_id, 0))
 	_rocket_followup.erase(pawn_id)
@@ -3174,7 +3174,10 @@ func _play_npc_run(display_id: StringName, behavior: int, from_tile: int, path: 
 
 
 ## 지금 라운드의 리벤지 부스터 칸 수 (템포 업이 오르면 커진다).
-func _revenge_steps() -> int:
+## 리벤지 부스터 칸수. 말을 주면 그 말 기준(루도 복수자는 +4칸 더).
+func _revenge_steps(pawn: PlayerPawn = null) -> int:
+	if pawn != null and state != null:
+		return MoveExecutor.revenge_bonus_of(pawn, state)
 	var base: int = GameData.revenge_bonus()
 	return maxi(base, TempoUp.revenge_bonus(state.round_number)) if base > 0 and state != null else base
 
@@ -4016,7 +4019,7 @@ func _fill_pawn_tip(pawn_id: int) -> void:
 	if pawn.is_promoted_shogi():
 		status += "  ★나리 승급(+1칸)"
 	if pawn.revenge_boost and not pawn.has_left_start:
-		status += "\n리벤지 부스터 활성화: 이번 출격 시 이동 거리 +%d칸!" % _revenge_steps()
+		status += "\n리벤지 부스터 활성화: 이번 출격 시 이동 거리 +%d칸!" % _revenge_steps(pawn)
 	if pawn.sub_type() == GameEnums.PawnSubType.BADUK_WHITE:
 		status += "  방어막 있음" if pawn.shield else "  (방어막 깨짐)"
 	_tip_title.text = "%s  - P%d%s" % [PawnCatalog.full_name(pawn.kind, pawn.unit_no), pawn.owner_id, status]
@@ -4645,7 +4648,7 @@ func _refresh_select_banner() -> void:
 		elif pawn.is_imprisoned:
 			status = "감옥"
 		elif not pawn.has_left_start and pawn.revenge_boost:
-			status = "출격 +%d (리벤지 부스터)" % _revenge_steps()
+			status = "출격 +%d (리벤지 부스터)" % _revenge_steps(pawn)
 		elif not pawn.has_left_start:
 			status = "출발 대기"
 		else:

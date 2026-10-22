@@ -19,7 +19,7 @@ EVO_6_2,TRUE,PAWN,NORMAL,50,1,[기물 진화] 쇼기: 비차,기물 진화,◆ �
 EVO_6_3,TRUE,PAWN,NORMAL,50,1,[기물 진화] 쇼기: 각행,기물 진화,◆ 기본 말 1개 → [쇼기] 각행,◆ 패시브: 코너 스치면 +2칸 (용마 +1칸 더)\n◆ [1회] 용마 십자 베기: [용마] 앞뒤 1칸의 적 처치\n※ 이미 가진 기물은 받을 수 없습니다,,,SHOGI_KAKU,pawns/SHOGI_KAKU.png,,,,,,,,
 EVO_6_4,TRUE,PAWN,NORMAL,50,1,[기물 진화] 쇼기: 계마,기물 진화,◆ 기본 말 1개 → [쇼기] 계마,◆ 패시브: 첫 2칸 함정·말 관통 · 승급 시 +1칸\n※ 이미 가진 기물은 받을 수 없습니다,,,SHOGI_KEIMA,pawns/SHOGI_KEIMA.png,,,,,,,,
 EVO_7_1,TRUE,PAWN,NORMAL,50,1,[기물 진화] 아케이드: 킹 체커,기물 진화,◆ 기본 말 1개 → [아케이드] 킹 체커,◆ 패시브: 지나가는 칸의 적 처치\n※ 이미 가진 기물은 받을 수 없습니다,,,CHECKERS_KING,pawns/CHECKERS_KING.png,,,,,,,,
-EVO_7_2,TRUE,PAWN,NORMAL,50,1,[기물 진화] 아케이드: 루도 복수자,기물 진화,◆ 기본 말 1개 → [아케이드] 루도 복수자,◆ 패시브: 복수 부스터 +8칸\n※ 이미 가진 기물은 받을 수 없습니다,8,,LUDO_AVENGER,pawns/LUDO_AVENGER.png,,,,,,,,
+EVO_7_2,TRUE,PAWN,NORMAL,50,1,[기물 진화] 아케이드: 루도 복수자,기물 진화,◆ 기본 말 1개 → [아케이드] 루도 복수자,◆ 패시브: 리벤지 부스터 발동 시 +4칸 전진\n※ 이미 가진 기물은 받을 수 없습니다,4,,LUDO_AVENGER,pawns/LUDO_AVENGER.png,,,,,,,,
 EVO_7_3,TRUE,PAWN,NORMAL,50,1,[기물 진화] 아케이드: 8번 공,기물 진화,◆ 기본 말 1개 → [아케이드] 8번 공,◆ 패시브: 처치하면 +3칸\n◆ [1회] 뱅크샷: 앞쪽 가장 가까운 적에게 돌진\n※ 이미 가진 기물은 받을 수 없습니다,,,POOL_8BALL,pawns/POOL_8BALL.png,,,,,,,,
 EVO_7_4,TRUE,PAWN,NORMAL,50,1,[기물 진화] 아케이드: 스타 카트,기물 진화,◆ 기본 말 1개 → [아케이드] 스타 카트,◆ 패시브: 모든 추가 이동 +2칸 · 이동 중 함정 면역\n※ 이미 가진 기물은 받을 수 없습니다,,,KART_STAR,pawns/KART_STAR.png,,,,,,,,
 EVO_7_5,TRUE,PAWN,NORMAL,50,1,[기물 진화] 아케이드: 지뢰찾기 공병,기물 진화,◆ 기본 말 1개 → [아케이드] 지뢰찾기 공병,◆ 패시브: 함정 면역 · 밟은 적 함정 해체 +카드 1장\n◆ [1회] 지뢰 매설: 지금 칸에 지뢰 설치\n※ 이미 가진 기물은 받을 수 없습니다,,,MINESWEEPER_FLAG,pawns/MINESWEEPER_FLAG.png,,,,,,,,

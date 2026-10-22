@@ -82,7 +82,7 @@ const SUB_ABILITIES: Dictionary = {
 	SubType.SHOGI_KAKU: "코너 스치면 +2칸 (용마 +1칸 더)",
 	SubType.SHOGI_KEIMA: "첫 2칸 함정·말 관통 · 승급 시 +1칸",
 	SubType.CHECKERS_KING: "지나가는 칸의 적 처치",
-	SubType.LUDO_AVENGER: "복수 부스터 +8칸",
+	SubType.LUDO_AVENGER: "리벤지 부스터 발동 시 +4칸 전진",
 	SubType.POOL_8BALL: "처치하면 +3칸",
 	SubType.KART_STAR: "모든 추가 이동 +2칸 · 이동 중 함정 면역",
 	SubType.MINESWEEPER_FLAG: "함정 면역 · 밟은 적 함정 해체 +카드 1장",
