@@ -58,6 +58,7 @@ const EVENTS: Dictionary = {
 	&"trap": ["함정 발동 (경보·폭발)", ["explosion", "alarm", "trap"]],
 	&"ui_hover": ["버튼에 올림", ["hover"]],
 	&"turn_start": ["[OO 차례] 배너", ["turn-start"]],
+	&"round_start": ["[N라운드 시작!] 배너", ["round-start"]],
 	&"review_open": ["증강 확인 창 열림", ["review-open"]],
 	&"review_confirm": ["증강 [확인] 누름", ["review-confirm"]],
 	&"attack_alert": ["공격 카드 발동! 경보", ["attack-alert"]],

@@ -28,7 +28,7 @@
 | `card_throw` | 카드 던짐 | card-shove, card-slide, whoosh |
 | `card_impact` | 카드 발동 임팩트 | card-place, impact, thud |
 | `turn_start` | [OO 차례] 배너 | turn-start |
-| `round_start` | [N라운드 시작!] 배너 (파일을 넣으면 `EVENTS`에 한 줄 추가) | round-start |
+| `round_start` | [N라운드 시작!] 배너 | round-start |
 | `review_open` / `review_confirm` | 증강 확인 창 열림 / [확인] 누름 | review-open, review-confirm |
 | `attack_alert` | 공격 카드 발동! 경보 | attack-alert |
 | `trap_hidden` | 비밀 함정 설치 알림 | trap-hidden |
