@@ -315,6 +315,7 @@ func confirm_nickname() -> bool:
 	GameSession.set_nickname(_name_edit.text)
 	_hello_label.text = "%s 교주님" % GameSession.nickname
 	_show_step(2)
+	MatchTelemetry.report_lobby_entry(self)  # 통계: 게임을 켜서 실제로 들어온 사람 (이번 접속에 한 번)
 	return true
 
 

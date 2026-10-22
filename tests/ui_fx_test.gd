@@ -809,6 +809,8 @@ func _test_match_report_is_sent_once() -> void:
 	var sent: Array[String] = []
 	MatchTelemetry.test_force_enabled = true
 	MatchTelemetry.test_sender = func(_url: String, body: PackedByteArray, _type: String) -> void: sent.append(body.get_string_from_utf8())
+	_board._report_match_start()  # 보드 진입: [매치 시작]
+	var nth: int = _board._match_number
 	manager.is_game_over = true
 	manager.state.winner = 1
 	_board._match_reported = false
@@ -818,8 +820,9 @@ func _test_match_report_is_sent_once() -> void:
 	manager.state.winner = -1
 	MatchTelemetry.test_force_enabled = false
 	MatchTelemetry.test_sender = Callable()
-	_expect(sent.size() == 1, "한 판에 알림은 한 번 (%d번)" % sent.size())
-	_expect(sent.size() == 1 and sent[0].contains(MatchTelemetry.mode_label(false, _board.ai_mode) + " |"), "지금 모드(%s)로 알린다" % MatchTelemetry.mode_label(false, _board.ai_mode))
+	_expect(sent.size() == 2, "매치 시작 1번 + 매치 완료 1번 (%d번)" % sent.size())
+	_expect(sent.size() == 2 and sent[0].contains("%d번째 판 시작" % nth) and sent[1].contains("(%d번째 판)" % nth), "시작과 완료가 같은 판 번호 (%d)" % nth)
+	_expect(sent.size() == 2 and sent[1].contains("| %s |" % MatchTelemetry.mode_label(false, _board.ai_mode)) and sent[1].contains("내 최종 순위:"), "지금 모드와 내 순위로 알린다")
 	_board._match_reported = false
 
 

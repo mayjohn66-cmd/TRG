@@ -364,6 +364,10 @@ var _dock: Control = null
 var _dock_player: int = -1
 var _debug_toggle: Button = null
 var _match_reported: bool = false
+## 통계: 이 판이 이 사람의 몇 번째 판인지, 언제 시작했는지, 내가 고른 증강 이름들.
+var _match_number: int = 0
+var _match_started_msec: int = 0
+var _my_augments: Array[String] = []
 var _pressure_serial: int = -1
 var _pressure_second: int = -1
 var _pressure_left: float = 0.0
@@ -765,15 +769,37 @@ func _unhandled_key_input(event: InputEvent) -> void:
 # 새 게임
 # ---------------------------------------------------------------------------
 
-## 결과 화면에 닿은 판을 통계 한 줄로 알린다 (판마다 한 번). 온라인에서는 방장만 보내 같은 판이 여러 번 세어지지 않는다.
+## 통계에 쓰는 이 판의 모드 이름 (놀이터 / 친선 / 익명 / 4인 수동).
+func _telemetry_mode() -> String:
+	return MatchTelemetry.mode_label(net != null, ai_mode, GameSession.lobby_intent == &"quick")
+
+
+## 통계에서 '나'로 칠 자리: 컴퓨터 대전·온라인은 내 자리, 한 화면 4인 수동은 없다(-1).
+func _telemetry_seat() -> int:
+	return local_player_id if (ai_mode or net != null) else -1
+
+
+## 보드판에 들어와 새 판이 시작됐다: [매치 시작]을 알리고 걸린 시간·고른 증강을 모으기 시작한다.
+func _report_match_start() -> void:
+	_match_started_msec = Time.get_ticks_msec()
+	_my_augments.clear()
+	_match_number = 0
+	if not MatchTelemetry.is_active():
+		return
+	_match_number = GameSession.begin_match()
+	MatchTelemetry.report_match_start(self, _telemetry_mode(), _match_number)
+
+
+## 결과 화면에 닿은 판을 [매치 완료]로 알린다 (판마다 한 번). 온라인에서는 사람마다 자기 순위로 보낸다.
 func _report_match_once() -> void:
 	if _match_reported or state == null or not manager.is_game_over:
 		return
 	_match_reported = true
-	if net != null and not net.is_host:
-		return
+	var seat: int = _telemetry_seat()
+	var my_rank: int = state.rankings.find(seat) + 1 if seat != -1 else 0
 	var reason: StringName = state.rank_reasons.get(state.winner, VictoryChecker.ALL_HOME)
-	MatchTelemetry.report_match(self, net != null, ai_mode, state.round_number, reason)
+	var seconds: int = int((Time.get_ticks_msec() - _match_started_msec) / 1000)
+	MatchTelemetry.report_match_end(self, _match_number if _match_number > 0 else GameSession.match_count(), _telemetry_mode(), state.round_number, seconds, my_rank, reason, _my_augments)
 
 
 func _new_game() -> void:
@@ -828,6 +854,7 @@ func _new_game() -> void:
 	state = null
 	manager.start_game(_player_ids, _game_seed)
 	state = manager.state
+	_report_match_start()
 	_bind_state()
 	_build_tiles_once()
 	_build_pawn_views()
@@ -7945,6 +7972,8 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_log_line("[증강] P%d%s: %s - %s" % [data["player_id"], " (자동)" if data["auto"] else "", AugmentRegistry.get_def(data["augment_id"]).display_name, data["text"]], Color("ffa94d"))
 			# 한 명씩 공개하면 늘어지므로 모아 두었다가 드래프트가 끝나면 한 장으로 한꺼번에 공개한다.
 			_draft_summary.append({"player": int(data["player_id"]), "augment": data["augment_id"], "text": str(data["text"])})
+			if int(data["player_id"]) == _telemetry_seat():
+				_my_augments.append(AugmentRegistry.get_def(data["augment_id"]).display_name)
 		&"bang_resolved":
 			var target_name: String = _pawn_name(int(data["target"]))
 			_log_line("[BANG!] P%d가 %s을(를) 저격! %d번 → %d번 타일로 2칸 밀려납니다." % [data["shooter"], target_name, data["from"], data["to"]], Color("ff6b6b"))

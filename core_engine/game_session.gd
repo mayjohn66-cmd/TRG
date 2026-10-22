@@ -179,7 +179,78 @@ static func set_nickname(raw: String) -> bool:
 
 static func save() -> void:
 	var config := ConfigFile.new()
+	config.load(PROFILE_PATH)  # 익명 태그·판 수(stats)는 그대로 두고 닉네임만 바꾼다
 	config.set_value("profile", "nickname", nickname)
+	config.save(PROFILE_PATH)
+
+
+# --- 익명 통계 태그 ------------------------------------------------------------------------------
+## 통계 알림에서 사람을 구분하는 4자리 익명 태그와 누적 판 수. 브라우저 저장소(user://profile.cfg의 stats)에 남아 다음 접속에도 같다.
+## 닉네임을 기본값으로 둔 사람끼리도 [플레이어 1(#A7B2)]처럼 서로 다른 사람인지, 한 사람이 여러 판 했는지 알 수 있다.
+const TAG_LENGTH: int = 4
+## 헷갈리는 글자(0·O·1·I)는 뺀다.
+const TAG_ALPHABET: String = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+static var _player_tag: String = ""
+static var _match_count: int = -1
+
+
+## 이 브라우저의 익명 태그 (없으면 처음 부를 때 만들어 저장한다).
+static func player_tag() -> String:
+	_load_stats()
+	return _player_tag
+
+
+## 통계에 쓰는 이름: [닉네임(#태그)].
+static func tagged_name() -> String:
+	return "%s(#%s)" % [display_nickname(), player_tag()]
+
+
+## 지금까지 시작한 판 수.
+static func match_count() -> int:
+	_load_stats()
+	return _match_count
+
+
+## 새 판을 시작한다: 판 수를 하나 올려 저장하고 이번 판이 몇 번째인지 돌려준다.
+static func begin_match() -> int:
+	_load_stats()
+	_match_count += 1
+	_save_stats()
+	return _match_count
+
+
+static func is_valid_tag(tag: String) -> bool:
+	if tag.length() != TAG_LENGTH:
+		return false
+	for character: String in tag:
+		if not TAG_ALPHABET.contains(character):
+			return false
+	return true
+
+
+static func _load_stats() -> void:
+	if _player_tag != "" and _match_count >= 0:
+		return
+	var config := ConfigFile.new()
+	config.load(PROFILE_PATH)
+	var saved: String = str(config.get_value("stats", "tag", ""))
+	_match_count = maxi(int(config.get_value("stats", "match_count", 0)), 0)
+	if is_valid_tag(saved):
+		_player_tag = saved
+		return
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	_player_tag = ""
+	for i: int in TAG_LENGTH:
+		_player_tag += TAG_ALPHABET[rng.randi_range(0, TAG_ALPHABET.length() - 1)]
+	_save_stats()
+
+
+static func _save_stats() -> void:
+	var config := ConfigFile.new()
+	config.load(PROFILE_PATH)
+	config.set_value("stats", "tag", _player_tag)
+	config.set_value("stats", "match_count", _match_count)
 	config.save(PROFILE_PATH)
 
 
