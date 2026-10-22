@@ -993,7 +993,7 @@ func _bind_state() -> void:
 	state.rulebook.law_added.connect(_on_law_added)
 	state.rulebook.law_removed.connect(func(law: LawResource) -> void:
 		_log_line("[법전] 교칙 파기: [%s] %s" % [law.law_id, law.law_name], Color("ff8787"))
-		_record(-1, "[color=#ff8787][lb]법전] %s 파기[/color]" % _bb(law.law_name))
+		_record(-1, "[color=#ff8787][lb]법전] %s 파기[/color]" % _bb(law.law_name), "", true)  # 그 라운드 마지막 처치 기록보다 먼저 찍히지 않게
 		_refresh_laws())
 	state.rulebook.law_applied.connect(_on_law_applied)
 
@@ -7829,7 +7829,9 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 		&"round_end_judgement":
 			var achievers: Array = data["players"]
 			_log_line("[라운드 %d 종료 판정] 특수 승리 달성: %s" % [int(data["round"]), ", ".join(PackedStringArray(achievers.map(func(id: int) -> String: return _player_name(id))))], Color("ffd43b"))
-			_announce("라운드 종료", "[특수 승리 판정]", "%d라운드가 끝나기 직전, 법전 조건을 채운 사람이 졸업합니다" % int(data["round"]), Color("ffd43b"), null, 1.2)
+			var judged_round: int = int(data["round"])
+			_enqueue_late(func() -> void:
+				_announce("라운드 종료", "[특수 승리 판정]", "%d라운드가 끝나기 직전, 법전 조건을 채운 사람이 졸업합니다" % judged_round, Color("ffd43b"), null, 1.2))
 		&"tempo_law":
 			var tempo_law: LawResource = LawRegistry.create(String(data["law_id"]))
 			_log_line("[템포 업] 법전에 특수 승리 [%s] 자동 등록" % tempo_law.law_name, Color("ffd43b"))
@@ -7955,13 +7957,17 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			var ranked: int = int(data["player_id"])
 			var rank_no: int = int(data["rank"])
 			_log_line("[순위 확정] %s %d위 - %s" % [_player_name(ranked), rank_no, VictoryChecker.reason_text(data["reason"])], Color("ffd43b"))
-			_record(ranked, "★ %d위 확정! (%s)" % [rank_no, _bb(VictoryChecker.reason_text(data["reason"]))])
-			if _fx_on():
-				Sfx.play(&"graduate")
-			if rank_no < _player_ids.size() - 1:  # 3위(마지막 졸업)부터는 결과 화면이 바로 이어진다
-				_announce(tr_ui("rank.tag"), tr_ui("rank.banner", ["★ " if rank_no == 1 else "", _player_name(ranked), rank_no]), tr_ui("rank.body", [VictoryChecker.reason_text(data["reason"])]), PLAYER_COLORS[ranked], null, 1.4)
-				_profile_react(ranked, true, "%d위" % rank_no)
-				_start_beat(1.0)
+			# 순위는 라운드가 끝나는 순간(마지막 차례의 이동·처치 뒤)에 확정된다: 그 처치 연출·기록이 끝난 뒤에 알린다.
+			var reason_text: String = VictoryChecker.reason_text(data["reason"])
+			var rank_reason: StringName = data["reason"]
+			_record(ranked, "★ %d위 확정! (%s)" % [rank_no, _bb(reason_text)], "", true)
+			_enqueue_late(func() -> void:
+				if _fx_on():
+					Sfx.play(&"graduate")
+				if rank_no < _player_ids.size() - 1:  # 3위(마지막 졸업)부터는 결과 화면이 바로 이어진다
+					_announce(tr_ui("rank.tag"), tr_ui("rank.banner", ["★ " if rank_no == 1 else "", _player_name(ranked), rank_no]), tr_ui("rank.body", [VictoryChecker.reason_text(rank_reason)]), PLAYER_COLORS[ranked], null, 1.4)
+					_profile_react(ranked, true, "%d위" % rank_no)
+					_start_beat(1.0))
 		&"counter_offer":
 			_log_line("[방어 대기] %s: %s - 방어 카드 %d장" % [_player_name(int(data["victim"])), _attack_text(data), (data["cards"] as Array).size()], Color("bac8ff"))
 		&"counter_passed":

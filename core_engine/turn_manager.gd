@@ -1575,6 +1575,8 @@ func _check_round_end_victory() -> bool:
 		return int(pa["remaining"]) < int(pb["remaining"]))
 	_emit_event(&"round_end_judgement", {"round": state.round_number, "players": qualified.map(func(e: Dictionary) -> int: return int(e["player"]))})
 	for entry: Dictionary in qualified:
+		if state.is_graduated(int(entry["player"])):
+			continue  # 이미 순위가 확정된 사람은 다시 판정하지 않는다
 		# 앞사람이 졸업하며 그 교칙이 법전에서 사라졌으면(한 교칙은 한 명만 졸업시킨다) 다시 확인한다.
 		var reason: StringName = VictoryChecker.player_reason(state, int(entry["player"]), true)
 		if reason == &"":
