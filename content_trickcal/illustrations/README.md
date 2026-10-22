@@ -1,8 +1,8 @@
-# 증강 원형 메달 v0.5
+# 증강 원형 메달 v0.7
 
 2026-10-21: 야추·블랙잭·핀볼의 임시 평면 도형을 전용 장난감 스타일 일러스트로 교체했다. DICE_YACHT는 상아색 주사위 5개, DICE_BLACKJACK은 A·K 카드와 21 칩, DICE_PINBALL은 쇠구슬·핀·7개 포켓·발사대로 표현했다. 원본 1254×1254를 그대로 보관하며 이 세 자산은 런타임 최대 512px·손실 품질 0.9·밉맵을 사용한다. 기존 UID·경로·매핑과 실제 판정 규칙은 유지했다. [검수 기록](../../docs/ui-trial/tool-symbols-v02.md).
 
-현재 57개 증강은 세부 기물 24종·판정 도구 12종·교칙 8종·카드 패키지 1종·초증강 12종의 고유 이미지에 연결된다. 전체 점검과 연결표는 docs/ui-trial/augment-icon-audit-v03.md에 기록했다.
+현재 62개 증강은 세부 기물 24종·판정 도구 12종·교칙 8종·카드 패키지 3종·초증강 12종·범용 보급 3종의 고유 이미지에 연결된다. 전체 점검과 연결표는 docs/ui-trial/augment-icon-audit-v03.md에 기록했다.
 
 ## 표시 규격
 
@@ -18,7 +18,7 @@
 1. 기물: pawns/<세부 타입>.png → 윷이면 pawns/YUT.png → augments/<증강 ID>.png → augments/pawns/<계열 대표>.png → pawns/<계열 대표>.png → 글자.
 2. 교칙: laws/<LAW_ID>.png → augments/<증강 ID>.png → augments/AUG_LAW.png → 글자. 현재 LAW_01~08은 모두 효과별 전용 그림이다.
 3. 도구: dice/<런타임 ID>.png → TOOL_FILES의 대표 PNG → 글자. 기본 D6는 선택지에서 제외되며 HUD에서 기존 6 표시를 유지한다.
-4. 카드: augments/CARD_PACKAGE.png → augments/AUG_CARD_PACK.png → 글자. 현재는 카드 2장 그림을 사용한다.
+4. 카드·범용 보급: augments/<증강 ID>.png → augments/AUG_CARD_PACK.png → 글자. 각 보급 효과에 맞는 전용 그림을 사용한다.
 
 예: pawns/CHESS_KNIGHT.png, pawns/YUT.png, laws/LAW_03.png, augments/CARD_PACKAGE.png, dice/REVOLVER.png. 리볼버 신규 그림은 선택 화면과 HUD에 함께 적용된다.
 
@@ -39,3 +39,9 @@ native image_gen.imagegen을 사용했다. 생성 모델 ID는 공개되지 않�
 ## 특수 승리 교칙 심볼 v0.5 (2026-10-21)
 
 LAW_01~08을 현재 VictoryLaw의 여덟 조건에 맞춰 다시 그렸다. 전투 트로피 / 식권 5장 / 호텔·열쇠·함정 / 장거리 전진 / 분산한 말 4개 / 장외 사출과 후광 / 주사위 4개 순환 / 다크호스의 선두 격파로 구분한다. 원본 1254 × 1254 PNG, 기존 512px·손실 품질 0.7·밉맵과 UID를 유지했다. 식권 장수와 사출 그림 여백을 각 1회 보정했다. 원본·프롬프트·해시는 manifest.json, 실제 증강 카드와 규칙 도감 검수는 [law-symbols-v01.md](../../docs/ui-trial/law-symbols-v01.md)에 기록한다.
+
+## 카드 패키지·범용 보급 심볼 v0.7 (2026-10-22)
+
+CARD_PACKAGE·CARD_02·CARD_03·UTIL_01·UTIL_02·UTIL_03을 같은 굵은 윤곽선과 장난감 질감으로 제작했다. 일반 카드 2장 / 방패·반격 카드 2장 / 코너·일반 함정 카드 각 1장 / 변이 물약 / 서로 다른 기물 4개 / 필살기 충전 주사기로 효과를 구분한다. 배경은 단순한 어두운 색과 약한 광원만 사용한다.
+
+기존 파일 경로·UID·선택 매핑을 유지했고 원본 1254 × 1254 PNG는 재가공 없이 복사했다. 런타임은 최대 512px·손실 품질 0.9·밉맵으로 통일했다. built-in imagegen의 전체 프롬프트·원본 위치·이전/현재 파일 해시는 [제작 기록](../../docs/ui-trial/supply-symbols-v01.json)에 있다.
