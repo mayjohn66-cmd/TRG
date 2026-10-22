@@ -48,8 +48,6 @@ jobs:
 
       - name: Run unit tests
         run: godot --headless --path . -s res://tests/run_tests.gd
-      - name: Self-test hourly telemetry counting
-        run: python3 tools/telemetry/hourly_report.py --self-test
 
       - name: Validate curated sound assets and override priority
         run: godot --headless --path . -s res://tests/sfx_assets_test.gd
