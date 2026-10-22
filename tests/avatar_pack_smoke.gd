@@ -24,6 +24,8 @@ func _init() -> void:
 		if not ProjectSettings.load_resource_pack(pack, false):
 			failures.append("%s: 묶음을 붙이지 못했다" % id)
 			continue
+		if AvatarPacks.register_uids(id) <= 0:
+			failures.append("%s: 묶음 그림의 UID를 하나도 등록하지 못했다" % id)
 		if not AvatarPacks.is_ready(id):
 			failures.append("%s: 묶음을 붙였는데 준비되지 않았다" % id)
 		var frames: SpriteFrames = load(emotion) as SpriteFrames

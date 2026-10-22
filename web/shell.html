@@ -383,5 +383,10 @@
 			}
 		})();
 	</script>
+	<!-- Vercel Web Analytics: 방문자 집계. 배포 후처리(.github/workflows/deploy-web.yml)도 이 두 줄이 index.html에 있는지 확인하고 없으면 넣는다. -->
+	<script>
+		window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+	</script>
+	<script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>

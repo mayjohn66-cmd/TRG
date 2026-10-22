@@ -1102,3 +1102,10 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
   - 같은 내용을 `window.trgTrack('match_complete', {mode, rounds, win})`로도 알려, 애널리틱스를 켜면 [몇 판이 플레이됐는지]도 볼 수 있다.
   - 하루·시간당 판 수는 디스코드 채널의 메시지 시각으로 센다.
 - **검증:** `tests/test_match_telemetry.gd` (문구·모드·우승 방식·웹이 아니면 안 보냄·조용한 본문), `ui_fx_test`의 `_test_match_report_is_sent_once` (결과 화면 반복 표시에도 판마다 1회).
+
+### 6.52 Vercel Analytics 고정 · 묶음 그림 UID 경고 제거
+- **Vercel Web Analytics:** `web/shell.html`의 `</body>` 바로 앞에 [`window.va` 초기화 + `/_vercel/insights/script.js`(defer)] 두 블록을 넣었다. 웹 내보내기는 이 쉘로 `index.html`을 만들므로 내보낼 때마다 그대로 나온다 (실제로 내보내 확인). 배포 워크플로의 내보내기 단계에도 후처리를 더했다: `index.html`에 스크립트가 없으면 `</body>` 앞에 넣고, 그래도 `</body>` 앞에 없으면 배포를 멈춘다. 이 스크립트는 Vercel로 배포된 주소에서만 응답한다 (gh-pages 주소에서는 404가 나지만 게임에는 영향이 없다). 집계를 보려면 Vercel 프로젝트의 Analytics 탭에서 Web Analytics를 켜야 한다.
+- **idle_hq `invalid UID` 경고 제거:**
+  - 원인: 묶음(`avatars/<id>.pck`)으로 내보낼 때 `.tres`가 바이너리로 바뀌며 그림을 `uid://…`로 가리키게 되는데, 본체의 UID 목록에는 묶음 안 그림이 없어서 읽을 때마다 [invalid UID … using text path instead]가 찍혔다 (모든 아바타 합쳐 133줄, 에르핀 하나만 86줄). 웹 콘솔 출력이 느려 묶음을 붙이는 순간 로딩이 끊겼다. 소스 `.tres`에는 UID가 없고 내보낼 때 생기는 것이라 소스를 고쳐서는 없앨 수 없다.
+  - 수정: 묶음을 붙인 직후, 그 묶음의 `.tres`를 읽기 전에 `AvatarPacks.register_uids(id)`가 묶음 그림들의 `.import`에 적힌 UID를 `ResourceUID`에 등록한다. 내보낸 파일로 재현해 경고 133줄 → 0줄을 확인했다.
+  - 검증: `avatar_pack_smoke.gd`가 묶음마다 UID가 등록됐는지 보고, 배포 워크플로가 그 실행 출력에 `invalid UID`가 한 줄이라도 있으면 배포를 막는다. `test_avatar_packs.gd`는 `.import`에서 UID를 읽는 부분을 본다.
