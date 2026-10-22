@@ -430,6 +430,9 @@ var presentation_label: String = ""
 var _draft_deferred: Array[Dictionary] = []
 ## 여러 단계를 한꺼번에 세우는 중 (_enqueue_batch): 다 세울 때까지 재생을 시작하지 않는다.
 var _enqueue_batching: bool = false
+## 마지막으로 누른 증강 리롤 버튼 번호 (거절되면 그 버튼에 이유를 적는다).
+var _last_reroll_index: int = -1
+var _last_reroll_player: int = -1
 ## 드래프트 창이 열렸다 (augment_offers 이후). 이때부터 생긴 연출만 [선택한 증강] 공개 뒤로 미룬다.
 var _draft_open: bool = false
 ## 게임 필: 화면 흔들림, 말 id -> 이동 연출을 필살기 스크립트가 맡는 중(걸음 무시), 차 돌진 중 잡힌 말이 나는 시점을 늦추는 값(초).
@@ -7064,9 +7067,12 @@ func _build_draft_overlay(player_id: int, remaining: int) -> void:
 		slot.add_child(card)
 		_draft_cards.append(card)
 		var used: bool = manager.draft_reroll_used(player_id, index)
-		var reroll: Button = _make_button("리롤 완료" if used else "[ 리롤 (1회) ]", _on_augment_reroll.bind(player_id, index), 15, Color("495a85"), 10)
+		var banned: bool = state.is_banned(player_id)  # 알고리즘 밴: 카드·필살기·리롤 금지 (엔진이 거절한다)
+		var reroll: Button = _make_button("리롤 완료" if used else ("리롤 금지 (밴)" if banned else "[ 리롤 (1회) ]"), _on_augment_reroll.bind(player_id, index), 15, Color("495a85"), 10)
 		reroll.custom_minimum_size = Vector2(AUGMENT_CARD_SIZE.x, 40)
-		reroll.disabled = used
+		reroll.disabled = used or banned
+		if banned:
+			reroll.tooltip_text = "알고리즘 밴에 걸려 있는 동안은 증강을 다시 뽑을 수 없습니다 (밴 %d턴 남음)" % int(state.banned_turns.get(player_id, 0))
 		reroll.focus_mode = Control.FOCUS_NONE
 		slot.add_child(reroll)
 		_draft_reroll_buttons.append(reroll)
@@ -7125,6 +7131,8 @@ func _play_pick_animation(cards: Array, chosen: int) -> void:
 
 
 func _on_augment_reroll(player_id: int, index: int) -> void:
+	_last_reroll_index = index
+	_last_reroll_player = player_id
 	_act(&"reroll_augment", {"player_id": player_id, "index": index})
 
 
@@ -7726,6 +7734,23 @@ func _on_action_rejected(player_id: int, action: StringName, reason: StringName)
 	if net != null and (player_id != local_player_id or String(action).begins_with("__")):
 		return  # 온라인: 내 행동이 거부됐을 때만 알린다 (다른 사람의 거부나 늦은 타임아웃은 조용히 넘어간다)
 	_log_line("P%d %s 거부: %s" % [player_id, action, REJECT_REASONS.get(reason, str(reason))], Color("ff8787"))
+	if action == &"reroll_augment":
+		_mark_reroll_refused(reason)
+
+
+## 리롤이 거절되면 그 버튼에 이유를 적고 잠근다 (아무 반응 없이 눌리기만 하던 버그).
+func _mark_reroll_refused(reason: StringName) -> void:
+	if _last_reroll_index < 0 or _last_reroll_index >= _draft_reroll_buttons.size():
+		return
+	var button: Button = _draft_reroll_buttons[_last_reroll_index]
+	if not is_instance_valid(button):
+		return
+	match reason:
+		&"no_candidate": button.text = "바꿀 증강이 없음"
+		&"reroll_used": button.text = "리롤 금지 (밴)" if state.is_banned(_last_reroll_player) else "리롤 완료"
+		_: button.text = "지금은 리롤할 수 없음"
+	button.disabled = true
+	Sfx.play(&"bad", -6.0)
 
 
 func _on_turn_order_reversed(new_direction: int) -> void:

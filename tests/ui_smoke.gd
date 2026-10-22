@@ -357,11 +357,27 @@ func _check_select_banner(manager: TurnManager, options: Array[Button]) -> void:
 			_assert(result_text == "", "고를 수 없는 카드에는 예고 글자를 쓰지 않는다 (흐린 카드가 알려 준다)")
 
 
+var _ban_reroll_checked: bool = false
+
+
 func _check_draft_cards() -> void:
 	_assert(_board._draft_cards.size() == 3, "증강 카드는 3장이어야 한다")
 	for card: Button in _board._draft_cards:
 		_assert(card.size.x >= 260.0 and card.size.y >= 390.0, "증강 카드는 최소 260x390")
 	_assert(_board._draft_reroll_buttons.size() == 3, "카드마다 리롤 버튼이 있어야 한다")
+	if not _ban_reroll_checked:
+		_ban_reroll_checked = true
+		# 알고리즘 밴에 걸린 사람은 리롤할 수 없다: 버튼이 눌리기만 하고 아무 일도 없던 버그 -> 잠그고 이유를 적는다
+		var saved: Dictionary = _board.state.banned_turns.duplicate()
+		for player_id: int in [1, 2, 3, 4]:
+			_board.state.banned_turns[player_id] = 2
+		_board._close_draft_overlay()
+		_board._refresh_draft_overlay()
+		for button: Button in _board._draft_reroll_buttons:
+			_assert(button.disabled and button.text.contains("밴"), "밴 중에는 리롤 버튼이 잠기고 [리롤 금지 (밴)]이라고 적힌다 (%s)" % button.text)
+		_board.state.banned_turns = saved
+		_board._close_draft_overlay()
+		_board._refresh_draft_overlay()
 
 
 func _try_tile_card(manager: TurnManager) -> bool:
