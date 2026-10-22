@@ -103,7 +103,7 @@ func run() -> void:
 			await process_frame
 		check(spin_shot and brake_shot and selected_shot and rules_shot, "Spin, braking, selected ticket and rule introduction all occur")
 		check(selected == [game_id] and arena._game_slot.visited.size() > DuelRules.GAME_COUNT, "Only one selected event after multiple reel cycles")
-		check(arena._step == &"play" and not arena.animating and not arena._game_slot.visible and arena._buttons.get_child_count() > 0, "Inputs only open once the introduction ends")
+		check(arena._step == &"play" and not arena.animating and not arena._game_slot.visible and (arena._buttons.get_child_count() > 0 or (game_id == DuelRules.Game.BARREL and arena._hole_buttons.size() == 5)), "Inputs only open once the introduction ends")
 		check(board.state.rng.state == rng_before, "Cosmetic reel does not consume authoritative RNG")
 		check(DuelRules.time_limit(game_id) >= DuelRules.ROULETTE_TIME + DuelRules.INTRO_TIME + DuelRules.TIME_BARREL_PICK, "Engine deadline includes the complete presentation allowance")
 		await capture("play")

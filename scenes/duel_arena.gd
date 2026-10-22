@@ -64,6 +64,7 @@ var _halli_stage: DuelHalliStage = null
 var _curling_stage: DuelCurlingStage = null
 var _quickdraw_stage: DuelQuickdrawStage = null
 var _ecard_stage: DuelEcardStage = null
+var _pumpkin_stage: DuelPumpkinStage = null
 var _intro_panel: PanelContainer
 var _intro_headline: Label
 var _intro_how: Label
@@ -72,7 +73,7 @@ var _intro_ready := false
 var _intro_elapsed := 0.0
 const INTRO_HEADLINES: Array[String] = [
 	"상대의 손을 이겨라!", "합이 5개일 때 종을 쳐라!", "절벽 직전에서 멈춰라!",
-	"신호가 뜨면 먼저 쏴라!", "한 장으로 승부를 뒤집어라!", "튀어나오게 하면 패배!",
+	"신호가 뜨면 먼저 쏴라!", "한 장으로 승부를 뒤집어라!", "호박을 터뜨리면 패배!",
 ]
 const INTRO_HOW: Array[String] = [
 	"3초 안에 바위 · 가위 · 보 중 하나를 고르세요.",
@@ -80,7 +81,7 @@ const INTRO_HOW: Array[String] = [
 	"내 병뚜껑을 누르고 뒤로 당긴 뒤 놓으세요.\n번갈아 한 번씩, 절벽 가까이에 멈추면 승리합니다.",
 	"[뽑아라!] 신호가 뜨면 [발사!]를 누르세요.\n진짜 신호에 더 빨리 반응하면 승리합니다.",
 	"양쪽은 특수 카드 1장과 시민 4장으로 시작합니다.\n한 장씩 내고, 시민끼리 만나면 버린 뒤 다시 고르세요.",
-	"차례가 오면 칼을 꽂을 구멍을 고르세요.\n번갈아 한 번씩, 다섯 구멍 중 하나에는 폭탄!",
+	"호박에 연결된 버튼 다섯 개를 번갈아 누르세요.\n딱 하나의 버튼이 호박을 터뜨립니다!",
 ]
 const INTRO_WARNINGS: Array[String] = [
 	"같은 손이면 무승부! 다시 골라 승부를 냅니다.",
@@ -88,7 +89,7 @@ const INTRO_WARNINGS: Array[String] = [
 	"상대 병뚜껑을 밀어낼 수 있어요! 끝선을 넘으면 추락!",
 	"트림은 가짜 신호! 신호보다 먼저 쏘면 반칙패!",
 	"여왕 > 시민 > 반란군 > 여왕 · 사용한 카드는 다시 쓸 수 없어요!",
-	"사도가 튀어 오르게 한 사람이 패배합니다!",
+	"호박을 터뜨린 사람이 패배! 누른 버튼은 다시 쓸 수 없어요.",
 ]
 var _hole_buttons: Array[Button] = []
 
@@ -195,6 +196,11 @@ func _build() -> void:
 	_ecard_stage.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_ecard_stage.visible = false
 	_stage.add_child(_ecard_stage)
+	_pumpkin_stage = DuelPumpkinStage.new()
+	_pumpkin_stage.arena = self
+	_pumpkin_stage.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_pumpkin_stage.visible = false
+	_stage.add_child(_pumpkin_stage)
 	_game_slot = DuelGameSlot.new()
 	_game_slot.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_game_slot.visible = false
@@ -400,6 +406,12 @@ func _input(event: InputEvent) -> void:
 		return
 	if _closing or _step != &"play" or not (event is InputEventKey) or not (event as InputEventKey).pressed or (event as InputEventKey).echo:
 		return
+	if game == DuelRules.Game.BARREL:
+		var hole := int((event as InputEventKey).keycode) - KEY_1
+		if hole >= 0 and hole < 5:
+			_pick_hole(hole)
+			get_viewport().set_input_as_handled()
+		return
 	if game != DuelRules.Game.HALLI and game != DuelRules.Game.QUICKDRAW:
 		return
 	var key: Key = (event as InputEventKey).keycode
@@ -548,6 +560,12 @@ func _begin_game() -> void:
 		_drawing.visible = false
 		_curling_stage.visible = true
 		_curling_stage.reset_table()
+		_place.call_deferred()
+	elif game == DuelRules.Game.BARREL:
+		custom_minimum_size.x = 740.0
+		_stage.custom_minimum_size.y = 380.0
+		_drawing.visible = false
+		_pumpkin_stage.visible = true
 		_place.call_deferred()
 	elif game == DuelRules.Game.QUICKDRAW:
 		custom_minimum_size.x = 860.0
@@ -724,63 +742,47 @@ func _press(seat: int) -> void:
 			(child as Button).disabled = true
 
 
-## 스피키 룰렛: 오크통 구멍 5개. 자기 차례인 로컬 자리만 누를 수 있다.
+## 스피키 룰렛: 연결된 버튼 5개. 자기 차례인 로컬 자리만 누른다.
 func _begin_barrel() -> void:
 	_clear_buttons()
-	_hole_buttons.clear()
-	for hole: int in DuelRules.BARREL_HOLES:
-		var button: Button = _add_button("구멍 %d" % (hole + 1), _pick_hole.bind(hole), Color("8a5a2b"), 82.0)
-		button.name = "Hole%d" % hole
-		_hole_buttons.append(button)
+	_hole_buttons.assign(_pumpkin_stage.buttons)
 	_refresh_barrel_turn()
 
 
 func _refresh_barrel_turn() -> void:
 	var mine: bool = local_seats.has(_turn)
-	for hole: int in _hole_buttons.size():
-		_hole_buttons[hole].disabled = not mine or _opened_holes.has(hole)
-	if mine:
-		_vs.text = "%s 차례" % _seat_name(_turn)
-		_say("", Color.WHITE)
-		_start_timer(DuelRules.TIME_BARREL_PICK * 0.75)
-	else:
-		_stop_timer()
-		_say("%s 차례... 두근두근" % _seat_name(_turn), Color("ced4da"))
+	_pumpkin_stage.refresh(mine)
+	_vs.text = "%s 차례" % _seat_name(_turn)
+	_say("")
+	if mine: _start_timer(DuelRules.TIME_BARREL_PICK * 0.75)
+	else: _stop_timer()
 
 
 func _pick_hole(hole: int) -> void:
-	if _step != &"play" or not local_seats.has(_turn) or _opened_holes.has(hole):
+	if _step != &"play" or not local_seats.has(_turn) or hole < 0 or hole >= 5 or _opened_holes.has(hole):
 		return
+	_step = &"waiting"
 	_stop_timer()
-	for button: Button in _hole_buttons:
-		button.disabled = true
-	Sfx.play(&"ui_click")
+	_pumpkin_stage.mark_pending(hole)
 	value_chosen.emit(_turn, hole)
 
 
 func _play_barrel_stab(data: Dictionary) -> void:
 	var hole: int = int(data["hole"])
 	var seat: int = int(data["player_id"])
+	if _opened_holes.has(hole): return
 	_opened_holes.append(hole)
-	_drawing.queue_redraw()
-	Sfx.play(&"hop")
-	if bool(data["bomb"]):
-		_step = &"waiting"
-		_stop_timer()
-		_say("펑! 사도가 튀어 올랐다! %s 꽝!" % _seat_name(seat), RED)
-		board.screen_shake(9.0, 0.3)
-		Sfx.play(&"trap")
-		_drawing.popped = true
-		_drawing.queue_redraw()
-		await _wait(0.8)
-		return
-	_say("%s: %d번 구멍 무사통과!" % [_seat_name(seat), hole + 1], GREEN)
-	await _wait(0.35)
-	if not is_inside_tree() or _closing:
-		return
+	_step = &"waiting"
+	animating = true
+	_stop_timer()
+	_pumpkin_stage.play_press(hole, bool(data["bomb"]))
+	await _pumpkin_stage.finished
+	if not is_inside_tree() or _closing: return
+	if bool(data["bomb"]): return
 	_turn = defender if seat == challenger else challenger
-	if _step == &"play":
-		_refresh_barrel_turn()
+	_step = &"play"
+	animating = false
+	_refresh_barrel_turn()
 
 
 # ---------------------------------------------------------------------------
@@ -802,6 +804,15 @@ func _queue_has(kind: StringName) -> bool:
 
 
 func _play_reveal(data: Dictionary) -> void:
+	if game == DuelRules.Game.BARREL:
+		_step = &"reveal"
+		animating = true
+		_stop_timer()
+		var loser: int = defender if int(data["winner"]) == challenger else challenger
+		_pumpkin_stage.show_result(_seat_name(loser))
+		await _wait(1.0)
+		if is_inside_tree() and not _closing: animating = false
+		return
 	if game == DuelRules.Game.ECARD:
 		await _play_ecard_reveal(data)
 		return
@@ -1004,6 +1015,7 @@ func close_now() -> void:
 	_curling_stage.cancel()
 	_quickdraw_stage.cancel()
 	_ecard_stage.cancel()
+	_pumpkin_stage.cancel()
 	_stop_timer()
 	_clear_buttons()
 	var tween: Tween = create_tween().set_parallel(true)
@@ -1028,7 +1040,6 @@ class StageDrawing extends Control:
 			return
 		match arena.game:
 			DuelRules.Game.QUICKDRAW: _draw_cowboys()
-			DuelRules.Game.BARREL: _draw_barrel()
 
 	func _seat_x(seat: int) -> float:
 		return size.x * (0.25 if seat == arena.challenger else 0.75)
@@ -1059,21 +1070,3 @@ class StageDrawing extends Control:
 				_center_text(DuelRules.reaction_text(pressed, mark_ms), base + Vector2(side * 78.0, -54.0), 18, Color("adb5bd") if pressed < 0 else (RED if pressed < mark_ms else GREEN))
 			_name_at(seat, size.y - 4.0)
 		draw_circle(Vector2(size.x / 2.0, 34.0), 22.0, Color("ff922b"))  # 석양
-
-	func _draw_barrel() -> void:
-		var center := Vector2(size.x / 2.0, size.y * 0.6)
-		draw_rect(Rect2(center - Vector2(110, 60), Vector2(220, 120)), Color("8a5a2b"))
-		for band: float in [-40.0, 40.0]:
-			draw_rect(Rect2(center + Vector2(-112, band - 4.0), Vector2(224, 8)), Color("495057"))
-		for hole: int in DuelRules.BARREL_HOLES:
-			var at: Vector2 = center + Vector2(-80.0 + hole * 40.0, 10.0)
-			draw_circle(at, 11.0, Color("212529"))
-			if arena._opened_holes.has(hole):
-				draw_line(at, at + Vector2(0, -34), Color("ced4da"), 4.0)
-				draw_rect(Rect2(at + Vector2(-7, -42), Vector2(14, 8)), Color("c92a2a"))
-		var head := center + Vector2(0, -66.0 - (14.0 if popped else 0.0))
-		draw_circle(head, 20.0, SKIN)
-		draw_circle(head + Vector2(-7, -3), 3.0, Color("212529"))
-		draw_circle(head + Vector2(7, -3), 3.0, Color("212529"))
-		if popped:
-			_center_text("으아악!", head + Vector2(46, 6), 18, RED)

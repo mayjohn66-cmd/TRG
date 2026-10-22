@@ -5517,7 +5517,9 @@ func enqueue_step(step_callable: Callable, pawn_id: int = -1, allow_defer: bool 
 	var label: String = String(step_callable.get_method())
 	_presentation_queue.append(func() -> void:
 		presentation_label = label
-		await step_callable.call()
+		# A modal may close while its opening is still queued behind an effect.
+		if step_callable.is_valid():
+			await step_callable.call()
 		if pawn_id != -1:
 			_pawn_pending[pawn_id] = maxi(int(_pawn_pending.get(pawn_id, 1)) - 1, 0))
 	if not _is_playing_presentation:
