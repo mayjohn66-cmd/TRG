@@ -84,6 +84,8 @@ const DRAFT_OPEN_BEAT: float = 0.12  ## 증강 창이 열리기 전 여운
 const BEAT_AFTER_MOVE: float = 0.12  ## 이동 뒤 여운 (0.8 -> 0.12: 마지막 행동이 끝나면 지체 없이 다음 턴·증강 창으로 넘어간다)
 ## 차례 배너는 짧게 막는다: 누구 차례인지 보여 준 뒤에야 카드 선언·굴리기가 열린다 (봇도 배너가 끝난 뒤 움직인다).
 const TURN_BANNER_SECONDS: float = 0.7
+## 처치 확정 대기의 최대 시간(초): 방어 결정이 이보다 오래 걸리면(연결 끊김 등) 연출을 계속한다.
+const COUNTER_GATE_LIMIT: float = 30.0
 ## 상대를 해치는 공격 카드: 카드를 공개하기 전에 [공격 카드 발동!] 경보를 먼저 띄운다.
 const ATTACK_CARDS: Array[StringName] = [&"ACT_02", &"ACT_03", &"ACT_06", &"ACT_07", &"ACT_08", &"ACT_09", &"ACT_10", &"ACT_14", &"ACT_15"]
 const ATTACK_TAG: String = "공격"
@@ -400,6 +402,10 @@ var _pending_power: float = 0.5
 var _fx_busy: bool = false
 var _capture_cutin: CaptureCutin = null
 var _capture_marks: Dictionary = {}
+## 처치 확정 대기: 잡기·공격으로 말이 날아가기 전에, 맞은 사람이 방어 카드를 낼지 정할 때까지 처치 연출을 멈춰 둔다 (연출 큐의 한 단계가 기다리는 중).
+var _counter_gate_waiting: bool = false
+## 방어 카드로 막아 낸 말: 처치 연출 대신 방어 이펙트를 한 번 보여 준다 (pawn_id -> true).
+var _defended_shown: Dictionary = {}
 var _capture_epoch: int = 0
 ## 말 움직임 연출(PawnFx): 이 시각(msec)까지는 입력·봇을 잠가 움직임이 끝나기를 기다린다.
 var _fx_until_msec: int = 0
@@ -422,6 +428,8 @@ var _draft_summary: Array[Dictionary] = []
 ## 지금 재생 중인 연출 단계의 함수 이름 (템포 계측기 tests/turn_tempo_probe.gd가 어디서 시간이 드는지 나눠 본다).
 var presentation_label: String = ""
 var _draft_deferred: Array[Dictionary] = []
+## 여러 단계를 한꺼번에 세우는 중 (_enqueue_batch): 다 세울 때까지 재생을 시작하지 않는다.
+var _enqueue_batching: bool = false
 ## 드래프트 창이 열렸다 (augment_offers 이후). 이때부터 생긴 연출만 [선택한 증강] 공개 뒤로 미룬다.
 var _draft_open: bool = false
 ## 게임 필: 화면 흔들림, 말 id -> 이동 연출을 필살기 스크립트가 맡는 중(걸음 무시), 차 돌진 중 잡힌 말이 나는 시점을 늦추는 값(초).
@@ -884,16 +892,28 @@ func _bind_state() -> void:
 		_log_line("%s 출발선으로 복귀%s" % [_pawn_name(pawn_id), "  [복수 부스터 획득: 다음 출발 +%d칸]" % _revenge_steps() if victim != null and victim.revenge_boost else ""], Color("ff8787"))
 		if victim == null:
 			return
-		_record_ejection(pawn_id, by_player)
+		if not _fx_on():
+			_record_ejection(pawn_id, by_player)
 		if _alkkagi_controlled.has(pawn_id) or _train_controlled.has(pawn_id):
+			if _fx_on():
+				_record_ejection(pawn_id, by_player)
 			return
 		var victim_owner: int = victim.owner_id
-		# 실제 잡기: [컷신 -> 장외 홈런 -> 0번 복귀]를 이동·발판 연출이 모두 끝난 뒤(큐 맨 뒤)에 재생한다.
+		# 반격(거울의 힘·우노 리버스): 방어 대기 중에 막은 사람이 공격한 말을 날렸다 -> 공격자가 역으로 처치 컷인을 맞는다.
+		if _fx_on() and manager.counter_pending() and by_player == int(manager.pending_counter()["victim"]) and by_player != victim_owner and not _capture_marks.has(pawn_id):
+			_enqueue_reflect_cutin(pawn_id, by_player, victim_owner)
+		# 실제 잡기: [방어 결정 대기 -> 컷신 -> 장외 홈런 -> 0번 복귀]를 이동·발판 연출이 모두 끝난 뒤(큐 맨 뒤)에 재생한다.
+		# 방어 카드로 막았으면 컷신·홈런·처치 기록 없이 방어 이펙트만 보여 준다 (날아갔다가 돌아오는 장면을 만들지 않는다).
 		# 아바타 표정은 바뀌지 않는다: 표정은 플레이어가 고른 감정 표현(이모트)으로만 바뀐다.
 		var cutin_capture: bool = _capture_marks.has(pawn_id)
 		_capture_marks.erase(pawn_id)
 		if _fx_on():
+			_enqueue_counter_gate()
 			_enqueue_late(func() -> void:
+				if not _ejection_confirmed(pawn_id):
+					_show_defended(pawn_id)
+					return
+				_record_ejection(pawn_id, by_player, true)  # 처치 기록은 처치가 확정되고 연출이 나올 때 적는다
 				await _play_capture_eject(pawn_id, by_player, victim_owner, cutin_capture), pawn_id))
 	state.revenge_boost_fired.connect(_on_revenge_boost_fired)
 	state.dash_pad_triggered.connect(func(pawn_id: int, tile: int) -> void:
@@ -1019,7 +1039,8 @@ func _bind_state() -> void:
 				_refresh_tiles()
 				_tile_glow(tile)
 				_impact_ring(_tile_center(tile) + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO), Color("7b2cbf"), 26.0)
-				Sfx.play(&"trap_set"))
+				Sfx.play(&"trap_set")
+				_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(350.0 * _motion_pace())))  # 깜빡임을 볼 틈: 다음 알림은 그 뒤에
 		_log_line("P%d가 %d번 타일에 [%s]을(를) 설치했습니다" % [owner_id, tile, "뒷면 카드" if id.begins_with("TRP") else _attachment_name(id)], Color("adb5bd"))
 		_refresh_tiles())
 	state.card_drawn.connect(func(_player_id: int, _card_id: StringName) -> void:
@@ -3016,6 +3037,9 @@ func _revenge_steps() -> int:
 func _check_round_banner() -> void:
 	if _announcer == null or manager.is_game_over or manager.current_state == TurnManager.State.PHASE_ROUND_START:
 		return
+	if _fx_on() and (_draft_open or not _draft_deferred.is_empty() or (_review_overlay != null and is_instance_valid(_review_overlay))):
+		_motion_retry = true
+		return  # 증강 확인 창이 닫히고, 고른 증강의 즉시 효과(진화·도구 교체·카드 보급·초증강) 연출이 다 끝난 뒤에 라운드를 연다
 	if _defer_for_motion():
 		return
 	if state.round_number == _announced_round:
@@ -3295,6 +3319,8 @@ func _refresh_hands() -> void:
 func _reaction_holder() -> int:
 	if manager.is_game_over or not manager.counter_pending():
 		return -1
+	if _fx_on() and _presentation_active() and not _counter_gate_waiting:
+		return -1  # 공격하는 말이 그 칸에 도착해 대치할 때까지(연출 큐가 방어 대기 단계에 닿을 때까지) 팝업을 띄우지 않는다
 	var victim: int = int(manager.pending_counter()["victim"])
 	if ai_mode or net != null:
 		return victim if victim == local_player_id else -1
@@ -5207,6 +5233,60 @@ func _on_skill_used(data: Dictionary) -> void:
 
 
 ## 실제 잡기만 공격자/피격자 아바타 포즈로 강조한다 (함정·자기 복귀 제외).
+## 처치 확정 대기 단계: 맞은 사람의 방어 결정(방어 카드 팝업·봇 판단)이 끝날 때까지 연출 큐를 세운다.
+## 이 단계에 닿은 순간 공격한 말은 이미 그 칸에 도착해 대치하고 있고, 그때부터 방어 팝업이 뜬다 (_reaction_holder).
+func _enqueue_counter_gate() -> void:
+	if not _fx_on():
+		return
+	var generation: int = _capture_epoch
+	_enqueue_late(func() -> void:
+		if generation != _capture_epoch:
+			return
+		_counter_gate_waiting = true
+		var waited: float = 0.0
+		while generation == _capture_epoch and is_instance_valid(manager) and manager.counter_pending() and not manager.is_game_over and waited < COUNTER_GATE_LIMIT:
+			waited += get_process_delta_time()
+			await get_tree().process_frame
+		_counter_gate_waiting = false)
+
+
+## 날아갈 말이 지금도 출발선에 있는가 (방어 카드가 되돌렸으면 false: 처치가 확정되지 않았다).
+func _ejection_confirmed(pawn_id: int) -> bool:
+	var pawn: PlayerPawn = state.get_pawn(pawn_id) if state != null else null
+	return pawn != null and not pawn.has_left_start and not pawn.is_finished
+
+
+## 방어 성공: 말은 제자리에 둔 채 방패 이펙트만 한 번 (같은 말의 컷인·사출 단계가 둘 다 건너뛰어도 한 번만).
+func _show_defended(pawn_id: int) -> void:
+	if _defended_shown.has(pawn_id):
+		return
+	_defended_shown[pawn_id] = true
+	var view: Node2D = _pawn_views.get(pawn_id)
+	if view == null or not is_instance_valid(view):
+		return
+	var at: Vector2 = view.position + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO)
+	Sfx.play(&"promote", -4.0)
+	_impact_ring(at, Color("74c0fc"), 52.0)
+	_floating_badge(at + Vector2(0, -44), "방어!", Color("74c0fc"), 30)
+	_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(450.0 * _motion_pace()))
+	get_tree().create_timer(1.0).timeout.connect(func() -> void: _defended_shown.erase(pawn_id))
+
+
+## 반격 컷인: 방어한 사람이 공격한 말을 역으로 처치한다 (공격자가 컷인을 맞고 날아간다).
+func _enqueue_reflect_cutin(pawn_id: int, by_player: int, victim_owner: int) -> void:
+	if _capture_cutin == null or not _player_ids.has(by_player) or not _player_ids.has(victim_owner):
+		return
+	_capture_marks[pawn_id] = true
+	var attack_avatar: StringName = _avatar_for(by_player)
+	var hit_avatar: StringName = _avatar_for(victim_owner)
+	var generation: int = _capture_epoch
+	_enqueue_late(func() -> void:
+		if generation != _capture_epoch or not _ejection_confirmed(pawn_id):
+			return
+		_capture_cutin.enqueue(attack_avatar, hit_avatar, by_player, victim_owner)
+		_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(CaptureCutin.DURATION * 1000.0)))
+
+
 func _on_pawn_captured(attacker_pawn_id: int, victim_pawn_id: int) -> void:
 	if _alkkagi_controlled.has(victim_pawn_id):
 		return
@@ -5225,9 +5305,10 @@ func _on_pawn_captured(attacker_pawn_id: int, victim_pawn_id: int) -> void:
 	var attack_avatar: StringName = _avatar_for(attacking_player)
 	var hit_avatar: StringName = _avatar_for(defending_player)
 	var generation: int = _capture_epoch
+	_enqueue_counter_gate()
 	_enqueue_late(func() -> void:
-		if generation != _capture_epoch:
-			return
+		if generation != _capture_epoch or not _ejection_confirmed(victim_pawn_id):
+			return  # 방어 카드로 막았다: 처치 컷인 없이 방어 이펙트만 (사출 단계에서 한 번)
 		_capture_cutin.enqueue(attack_avatar, hit_avatar, attacking_player, defending_player)
 		_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(CaptureCutin.DURATION * 1000.0)))
 
@@ -5562,7 +5643,18 @@ func enqueue_step(step_callable: Callable, pawn_id: int = -1, allow_defer: bool 
 			await step_callable.call()
 		if pawn_id != -1:
 			_pawn_pending[pawn_id] = maxi(int(_pawn_pending.get(pawn_id, 1)) - 1, 0))
-	if not _is_playing_presentation:
+	if not _is_playing_presentation and not _enqueue_batching:
+		_process_presentation_queue()
+
+
+## 여러 단계를 한꺼번에 세운다: 다 세운 뒤에 재생을 시작한다. (하나씩 세우면 기다릴 것 없는 첫 단계가 그 자리에서 끝나 큐가 잠깐 비고,
+## 그 틈에 [N라운드 시작!] 같은 다음 알림이 남은 단계보다 먼저 끼어들었다.)
+func _enqueue_batch(entries: Array[Dictionary]) -> void:
+	_enqueue_batching = true
+	for entry: Dictionary in entries:
+		enqueue_step(entry["step"], int(entry.get("pawn", -1)), bool(entry.get("defer", true)))
+	_enqueue_batching = false
+	if not _is_playing_presentation and not _presentation_queue.is_empty():
 		_process_presentation_queue()
 
 
@@ -5606,9 +5698,9 @@ func _enqueue_late(step_callable: Callable, pawn_id: int = -1) -> void:
 func _flush_late_steps() -> void:
 	var batch: Array[Dictionary] = _late_steps.duplicate()
 	_late_steps.clear()
+	_enqueue_batch(batch)
 	for entry: Dictionary in batch:
 		var pawn_id: int = int(entry["pawn"])
-		enqueue_step(entry["step"], pawn_id, bool(entry.get("defer", true)))
 		if pawn_id != -1:
 			_pawn_pending[pawn_id] = maxi(int(_pawn_pending.get(pawn_id, 1)) - 1, 0)
 
@@ -7468,8 +7560,7 @@ func _release_draft_deferred() -> void:
 		return
 	var batch: Array[Dictionary] = _draft_deferred.duplicate()
 	_draft_deferred.clear()
-	for entry: Dictionary in batch:
-		enqueue_step(entry["step"], int(entry["pawn"]))
+	_enqueue_batch(batch)
 
 
 ## 이번 라운드에 모두가 고른 증강을 선택 카드 그림 그대로 한 줄에 나란히 공개한다.
@@ -7493,7 +7584,7 @@ func _take_draft_summary_row() -> HBoxContainer:
 		# 범용 보급·카드 패키지는 무엇이 무엇으로 바뀌었는지, 어떤 카드를 받았는지까지 남긴다
 		if picked_def.category == GameEnums.AugmentCategory.UTILITY or picked_def.category == GameEnums.AugmentCategory.CARD_PACKAGE:
 			line += " " + str(entry.get("text", ""))
-		_record(int(entry["player"]), line, "증강")
+		_record(int(entry["player"]), line, "증강", false, true)  # 고른 증강이 화면(확인 창·공개 카드)에 나오는 바로 그 순간에 적는다
 	for entry: Dictionary in _draft_summary:
 		var player_id: int = int(entry["player"])
 		var column := VBoxContainer.new()
@@ -7656,6 +7747,8 @@ func _on_game_over(winner_id: int, reason: StringName) -> void:
 
 
 func _ui_busy() -> bool:
+	if _counter_gate_waiting and manager != null and manager.counter_pending():
+		return false  # 처치 연출이 방어 결정을 기다리는 중: 봇·사람이 방어 카드를 고를 수 있어야 한다
 	return _turn_banner_pending() or _intro_blocks() or _presentation_active() or _fx_busy or (_capture_cutin != null and _capture_cutin.busy()) or _aim_pawn != -1 or (_announcer != null and _announcer.holding()) or Time.get_ticks_msec() < _beat_until_msec or (_fx_on() and Time.get_ticks_msec() < _fx_until_msec)
 
 
@@ -8208,7 +8301,8 @@ func _log_round_divider(round_number: int) -> void:
 
 ## 액션 로그 한 줄: [R3] 🟦 컴퓨터 2 : 내용 (player_id가 -1이면 이름 없이).
 ## 연출을 켠 화면에서는 연출 큐를 따라 그 장면이 나올 때 적는다 (결과를 먼저 흘리지 않는다). late는 사출처럼 맨 뒤 연출과 함께 적는다.
-func _record(player_id: int, text: String, tag: String = "", late: bool = false) -> void:
+## now: 연출 큐의 한 단계 안에서 부를 때 (그 연출과 같은 순간에 바로 적는다).
+func _record(player_id: int, text: String, tag: String = "", late: bool = false, now: bool = false) -> void:
 	if _action_log == null or state == null:
 		return
 	var round_tag: String = "[color=#868e96][lb]R%d%s][/color]" % [state.round_number, (" " + tag) if tag != "" else ""]
@@ -8219,7 +8313,7 @@ func _record(player_id: int, text: String, tag: String = "", late: bool = false)
 		if is_instance_valid(log_panel):
 			_log_round_divider(round_number)  # 그 라운드의 첫 줄보다 구분선이 먼저 (증강 공개는 라운드 알림보다 늦게 적힌다)
 			log_panel.add_entry(line)
-	if not _fx_on():
+	if not _fx_on() or now:
 		add.call()
 	elif late:
 		_enqueue_late(add)
@@ -8258,15 +8352,16 @@ func _record_card(data: Dictionary) -> void:
 
 
 ## 말이 출발선으로 날아갔다: 다른 사람이 보냈으면 처치, 아니면 사출.
-func _record_ejection(pawn_id: int, by_player: int) -> void:
+## now: 처치 연출 단계 안에서 부르면 그 순간 바로 적는다 (아니면 이동 연출이 끝난 뒤로 미룬다).
+func _record_ejection(pawn_id: int, by_player: int, now: bool = false) -> void:
 	var victim: PlayerPawn = state.get_pawn(pawn_id)
 	if victim == null:
 		return
 	var label: String = _bq("%d번 말" % victim.slot)
 	if _player_ids.has(by_player) and by_player != victim.owner_id:
-		_record(by_player, "%s의 %s 처치!" % [_log_who(victim.owner_id), label], "", true)
+		_record(by_player, "%s의 %s 처치!" % [_log_who(victim.owner_id), label], "", true, now)
 	else:
-		_record(victim.owner_id, "%s이(가) 출발선으로 사출" % label, "", true)
+		_record(victim.owner_id, "%s이(가) 출발선으로 사출" % label, "", true, now)
 
 
 func _card_name(card_id: StringName) -> String:

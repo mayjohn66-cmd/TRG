@@ -785,7 +785,7 @@ func _test_rank_log_follows_the_capture() -> void:
 	var victim: PlayerPawn = state.get_pawn(21)
 	victim.has_left_start = true
 	victim.current_tile_idx = 5
-	state.pawn_sent_to_start.emit(21, 4)  # 엔진이 알리는 순서: 처치 -> 법전 파기 -> 순위 확정
+	state.send_to_start(victim, 4)  # 엔진이 알리는 순서: 처치 -> 법전 파기 -> 순위 확정
 	_board._on_event(&"player_ranked", {"player_id": 4, "rank": 1, "reason": &"LAW_01"})
 	var waited: float = _now()
 	while (_board._ui_busy() or _board._presentation_active()) and _now() - waited < 10.0:
@@ -1557,6 +1557,9 @@ func _play_one_duel(game: int) -> void:
 	arena.open()
 	await process_frame
 	await process_frame
+	var shake_wait: float = _now()
+	while _board._shake_active and _now() - shake_wait < 2.0:  # 공격 카드 경보의 화면 흔들림이 멎은 뒤에 잰다
+		await process_frame
 	_expect(arena.get_global_rect().get_center().distance_to(_board._board_center()) < 4.0, "%s: 결투장은 보드 한가운데" % title)
 	_expect(_board._roll_button.disabled, "%s: 결투 중에는 굴리기 버튼이 잠긴다" % title)
 	var waited: float = 0.0

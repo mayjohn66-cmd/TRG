@@ -85,6 +85,7 @@ func _run() -> void:
 	expect(not board._capture_cutin.active, "trap-like generic reset does not show the attack")
 	await _wait_for_queue()
 	board._on_pawn_captured(21, 11)
+	state.send_to_start(state.get_pawn(11), 2)  # 실제 잡기처럼 잡힌 말이 출발선으로 (처치가 확정돼야 컷인이 나온다)
 	await _wait_for_pose()
 	expect(board._capture_cutin.attacker_avatar == board._avatar_for(2) and board._capture_cutin.defender_avatar == &"avatar_03", "roles reverse when the opponent captures me")
 	state.snapshot_restored.emit()

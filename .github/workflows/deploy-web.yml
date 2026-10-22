@@ -64,6 +64,12 @@ jobs:
       - name: Run avatar capture presentation test
         run: godot --headless --path . -s res://tests/ui_capture_test.gd
 
+      - name: Run counter-before-kill presentation sequence test (dodge, mirror, no counter)
+        run: godot --headless --path . -s res://tests/ui_counter_sequence_test.gd
+
+      - name: Run augment round to round start sequence test
+        run: godot --headless --path . -s res://tests/ui_round_sequence_test.gd
+
       - name: Run alkkagi aiming and contact presentation test
         run: godot --headless --path . -s res://tests/ui_alkkagi_test.gd
 
