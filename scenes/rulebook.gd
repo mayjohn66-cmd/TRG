@@ -1160,6 +1160,12 @@ class MiniBoard extends Control:
 			parts.append("%d → %d" % [from_tile, int(targets[from_tile])])
 		return ", ".join(parts)
 
+	static func _join_dash(tiles: Array) -> String:
+		var parts: Array[String] = []
+		for tile: Variant in tiles:
+			parts.append(str(tile))
+		return "·".join(parts)
+
 	func _tile_pos(index: int) -> Vector2:
 		var pad: float = 34.0
 		var span: float = size.x - pad * 2.0
@@ -1190,6 +1196,9 @@ class MiniBoard extends Control:
 			elif BoardSpec.portal_tiles.has(index):
 				fill = Color("c8eef0")
 				edge = Color("2f9aa3")
+			elif BoardSpec.dash_tiles.has(index):
+				fill = Color("ffd3e2")
+				edge = Color("d9577f")
 			elif index == 0:
 				fill = Color("86d94f")
 				edge = Color("2f8f4e")
@@ -1212,7 +1221,7 @@ class MiniBoard extends Control:
 			var width: float = font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, label_size).x
 			draw_string(font, center + Vector2(-width / 2.0, label_size * 0.36), label, HORIZONTAL_ALIGNMENT_LEFT, -1, label_size, Color("3a2f1f"))
 		# 안쪽 범례
-		var legend: Array = [[Color("86d94f"), "출발 · 결승"], [Color("b6ea8c"), "코너 (코너 전용 함정)"], [Color("ffe48a"), "반환점 (승급 기준)"], [Color("ffd98a"), "빵집 (카드 1장)"], [Color("c8eef0"), "옷장 (%s)" % _warp_text(BoardSpec.portal_warp_targets)]]
+		var legend: Array = [[Color("86d94f"), "출발 · 결승"], [Color("b6ea8c"), "코너 (코너 전용 함정)"], [Color("ffe48a"), "반환점 (승급 기준)"], [Color("ffd98a"), "빵집 (카드 1장)"], [Color("c8eef0"), "옷장 (%s)" % _warp_text(BoardSpec.portal_warp_targets)], [Color("ffd3e2"), "부스터 발판 (%s번, 딱 멈추면 +%d칸)" % [_join_dash(BoardSpec.dash_tiles), GameEnums.DASH_STEPS]]]
 		var origin := Vector2(92, 118)
 		for index: int in legend.size():
 			var spot: Vector2 = origin + Vector2(0, index * 30.0)
