@@ -1,0 +1,30 @@
+name: Hourly telemetry report
+
+# 매 정시: 디스코드 통계 채널의 [로비 입장]·[매치 시작]·[매치 완료] 알림을 세어 [⏰ 정시 집계] 한 줄을 올린다.
+# GitHub 예약 실행은 기본 브랜치(main)에 있는 이 파일로만 돈다. 필요한 시크릿: DISCORD_BOT_TOKEN (없으면 건너뜀).
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hourly-telemetry
+  cancel-in-progress: false
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Self-test counting rules
+        run: python3 tools/telemetry/hourly_report.py --self-test
+      - name: Post hourly totals
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          TELEMETRY_WEBHOOK_URL: ${{ secrets.TELEMETRY_WEBHOOK_URL }}
+          TELEMETRY_CHANNEL_ID: ${{ secrets.TELEMETRY_CHANNEL_ID }}
+        run: python3 tools/telemetry/hourly_report.py
