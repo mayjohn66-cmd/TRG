@@ -3093,10 +3093,10 @@ func _play_npc_run(display_id: StringName, behavior: int, from_tile: int, path: 
 	if not _fx_on() or path.is_empty():
 		after.call()
 		return
-	var real: Node2D = _npc_views.get(npc_id)
-	if real != null:
-		real.visible = false
-		real.set_meta("npc_run", true)
+	var hidden: Node2D = _npc_views.get(npc_id)
+	if hidden != null:
+		hidden.visible = false
+		hidden.set_meta("npc_run", true)
 	enqueue_step(func() -> void:
 		var token := PawnToken.new()
 		token.configure_npc(behavior)
@@ -3120,6 +3120,8 @@ func _play_npc_run(display_id: StringName, behavior: int, from_tile: int, path: 
 		if is_instance_valid(runner):
 			_impact_ring(runner.position + _pawn_layer.position, Color("fa5252"), 36.0)
 			runner.queue_free()
+		# 기물 그림은 달리는 동안 지워질 수 있다(사라진 기물): 람다에 노드를 잡지 않고 다 달린 뒤에 다시 찾는다.
+		var real: Node2D = _npc_views.get(npc_id)
 		if real != null and is_instance_valid(real):
 			real.remove_meta("npc_run")
 			var still: NeutralNPC = state.get_npc(npc_id)
@@ -6335,9 +6337,8 @@ func _burst_shards(at: Vector2, color: Color, amount: int = 12) -> void:
 	particles.scale_amount_max = 5.0
 	particles.color = color
 	_pawn_layer.add_child(particles)
-	get_tree().create_timer(0.8).timeout.connect(func() -> void:
-		if is_instance_valid(particles):
-			particles.queue_free())
+	# 노드를 람다에 잡아 두지 않는다: 그 전에 보드가 지워지면 타이머가 지워진 노드를 넘기며 오류를 낸다. 노드의 메서드에 연결하면 노드가 지워질 때 연결도 함께 풀린다.
+	get_tree().create_timer(0.8).timeout.connect(particles.queue_free)
 
 
 ## 말이 지나간 자리에 남는 잔상: seconds 동안 짧은 간격으로 흐려지는 원을 남긴다.
@@ -6682,9 +6683,10 @@ func _open_duel_arena(challenger: int, defender: int, game: int, game_setup: Dic
 		_refresh_all())
 	add_child(_duel_arena)
 	# 카드 발동 알림이 끝난 뒤 열린다 (그 전에 온 이벤트는 결투장 큐에 쌓인다).
-	var arena: DuelArena = _duel_arena
+	var arena_ref: WeakRef = weakref(_duel_arena)  # 결투장 노드를 직접 잡지 않는다 (먼저 닫혀 지워지면 람다가 지워진 노드를 받는다)
 	_fx_when_announced(func() -> void:
-		if is_instance_valid(arena):  # 알림이 끝나기 전에 결투장이 닫혔으면(되감기·강제 종료) 열지 않는다
+		var arena: DuelArena = arena_ref.get_ref() as DuelArena
+		if arena != null and not arena.is_queued_for_deletion():  # 알림이 끝나기 전에 결투장이 닫혔으면(되감기·강제 종료) 열지 않는다
 			arena.open())
 	if not _fx_holding():
 		_duel_arena.open()

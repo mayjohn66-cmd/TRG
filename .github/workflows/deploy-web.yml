@@ -59,16 +59,28 @@ jobs:
         run: SMOKE_AI=1 godot --headless --path . -s res://tests/ui_smoke.gd
 
       - name: Run roll effect test (gauge, spin, reels, card flips)
-        run: godot --headless --path . -s res://tests/ui_fx_test.gd
+        run: |
+          # 연출 큐·타이머가 이미 지워진 노드를 잡은 람다를 부르면 [Lambda capture ... was freed] 오류가 찍힌다: 한 줄이라도 있으면 막는다
+          godot --headless --path . -s res://tests/ui_fx_test.gd 2>&1 | tee /tmp/ui_fx_test.log
+          test "${PIPESTATUS[0]}" -eq 0
+          if grep -q "Lambda capture" /tmp/ui_fx_test.log; then echo "freed lambda captures remain"; grep -c "Lambda capture" /tmp/ui_fx_test.log; exit 1; fi
 
       - name: Run avatar capture presentation test
         run: godot --headless --path . -s res://tests/ui_capture_test.gd
 
       - name: Run counter-before-kill presentation sequence test (dodge, mirror, no counter)
-        run: godot --headless --path . -s res://tests/ui_counter_sequence_test.gd
+        run: |
+          # 연출 큐·타이머가 이미 지워진 노드를 잡은 람다를 부르면 [Lambda capture ... was freed] 오류가 찍힌다: 한 줄이라도 있으면 막는다
+          godot --headless --path . -s res://tests/ui_counter_sequence_test.gd 2>&1 | tee /tmp/ui_counter_sequence_test.log
+          test "${PIPESTATUS[0]}" -eq 0
+          if grep -q "Lambda capture" /tmp/ui_counter_sequence_test.log; then echo "freed lambda captures remain"; grep -c "Lambda capture" /tmp/ui_counter_sequence_test.log; exit 1; fi
 
       - name: Run augment round to round start sequence test
-        run: godot --headless --path . -s res://tests/ui_round_sequence_test.gd
+        run: |
+          # 연출 큐·타이머가 이미 지워진 노드를 잡은 람다를 부르면 [Lambda capture ... was freed] 오류가 찍힌다: 한 줄이라도 있으면 막는다
+          godot --headless --path . -s res://tests/ui_round_sequence_test.gd 2>&1 | tee /tmp/ui_round_sequence_test.log
+          test "${PIPESTATUS[0]}" -eq 0
+          if grep -q "Lambda capture" /tmp/ui_round_sequence_test.log; then echo "freed lambda captures remain"; grep -c "Lambda capture" /tmp/ui_round_sequence_test.log; exit 1; fi
 
       - name: Run alkkagi aiming and contact presentation test
         run: godot --headless --path . -s res://tests/ui_alkkagi_test.gd
