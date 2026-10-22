@@ -1,6 +1,6 @@
 # File: res://tests/test_super_augments.gd
 # Class: class_name TestSuperAugments
-# Role: [초증강 : 하이리스크 하이리턴] 12종의 조건·효과·드래프트 등장·턴 매니저 연동(영구 가속, 도박사 2배/과열 사출, 휴식)을 검사한다
+# Role: [초증강 : 하이리스크 하이리턴] 12종의 조건·효과·드래프트 등장·턴 매니저 연동(영구 가속, 도박사 2배/과열 즉시 턴 종료, 휴식)을 검사한다
 class_name TestSuperAugments
 extends TestCase
 
@@ -348,28 +348,23 @@ func test_gambler_applies_after_other_bonuses_and_only_in_its_round() -> void:
 	_dispose(other)
 
 
-func test_gambler_overheat_ejects_the_moved_pawn_after_a_doubled_move() -> void:
+func test_gambler_overheat_ends_the_turn_at_once_without_moving() -> void:
 	var manager: TurnManager = _manager()
 	var player: int = manager.current_player_id()
 	manager.state.gambler_round[player] = manager.state.round_number
 	var pawn_a: PlayerPawn = manager.state.get_pawn(player * 10 + 1)
-	var pawn_b: PlayerPawn = manager.state.get_pawn(player * 10 + 2)
-	for pawn: PlayerPawn in [pawn_a, pawn_b]:
-		pawn.has_left_start = true
+	pawn_a.has_left_start = true
 	pawn_a.current_tile_idx = 10
 	pawn_a.step_history.assign([8, 9, 10])
-	pawn_b.current_tile_idx = 6
-	pawn_b.step_history.assign([3, 4, 5, 6])
 	var events: Array = []
 	manager.event_received.connect(func(kind: StringName, data: Dictionary) -> void:
 		if kind == &"gambler_busted":
 			events.append(data))
 	_roll(manager, player, 1)
-	check_eq(manager.move_queue, [2] as Array[int], "눈금 1도 x2로 이동은 한다")
-	manager.act(&"select_pawn", {"player_id": player, "pawn_id": pawn_a.entity_id})
 	check_eq(events.size(), 1, "과열 이벤트")
-	check(not pawn_a.has_left_start and pawn_a.current_tile_idx == 0 and pawn_a.revenge_boost, "이동한 말이 출발선으로 사출 + 복수 부스터")
-	check_eq(pawn_b.current_tile_idx, 6, "다른 말은 그대로")
+	check(manager.move_queue.is_empty(), "이동하지 않는다 (0칸)")
+	check(manager.current_player_id() != player, "차례가 바로 다음 사람으로 넘어간다")
+	check(pawn_a.has_left_start and pawn_a.current_tile_idx == 10, "말은 사출되지 않고 그 자리에 있다")
 	_dispose(manager)
 
 

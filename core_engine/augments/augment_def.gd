@@ -125,7 +125,7 @@ func _default_text(state: GameState, player_id: int) -> String:
 			return "◆ 내 판정 도구 즉시 교체\n%s" % ToolRegistry.table_line(payload)
 		GameEnums.AugmentCategory.LAW_ENACT:
 			var law: LawResource = LawRegistry.create(payload)
-			return "◆ 승리 조건: %s\n◆ 라운드가 끝날 때 달성해 있으면 다음 순위로 졸업 (달성되면 법전에서 삭제)" % law.description
+			return "◆ 승리 조건: %s\n◆ 차례가 끝날 때 달성해 있으면 바로 다음 순위로 졸업 (달성되면 법전에서 삭제)" % law.description
 		GameEnums.AugmentCategory.SUPER_GAMBLE:
 			return SuperAugments.describe(payload)
 		GameEnums.AugmentCategory.UTILITY:

@@ -44,7 +44,7 @@ static func progress_of(state: GameState, player_id: int) -> Dictionary:
 
 
 ## 아직 순위가 없는 플레이어 중 지금 승리 조건을 달성한 사람들 (현재 턴 플레이어가 먼저). [{player, reason}]
-## include_special이 false면 말 4개 완주만 본다 (특수 승리는 라운드가 끝나기 직전에만 판정한다).
+## include_special이 false면 말 4개 완주만 본다 (특수 승리는 차례가 끝날 때 판정한다).
 static func newly_qualified(state: GameState, player_order: Array[int], current_player: int, include_special: bool = true) -> Array[Dictionary]:
 	var order: Array[int] = [current_player]
 	for player_id: int in player_order:

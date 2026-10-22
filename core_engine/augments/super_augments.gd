@@ -93,7 +93,7 @@ const INFO: Dictionary = {
 	DEVIL: ["악마의 계약 (영구 가속)", "◆ 완주한 내 말 1개를 출발선으로 되돌리고\n◆ 남은 게임 내내 내 모든 굴림 결과에 +3칸"],
 	MINEFIELD: ["광란의 지뢰밭", "◆ 빈 일반 타일 2곳에 지뢰 매설\n◆ 함정 카드 1장 획득"],
 	RAID: ["도적단 대습격", "◆ 중립 기물(소환) 카드 1장 획득\n◆ 나를 뺀 모든 플레이어의 카드 1장씩을 내 패로"],
-	GAMBLER: ["주사위 도박사의 영혼", "◆ 이번 라운드 이동 거리 2배(x2) 증폭!\n◆ 단 눈금 1 이하면 이동한 내 말이 과열되어 0번 출발선으로 사출"],
+	GAMBLER: ["주사위 도박사의 영혼", "◆ 이번 라운드 이동 거리 2배(x2) 증폭!\n◆ 단 눈금 1 이하면 과열: 이동 없이(0칸) 이번 차례가 바로 끝남"],
 	CASTLING: ["강제 캐슬링 룰렛", "◆ 보드 위 모든 플레이어 말의 위치를 무작위로 전부 섞는다"],
 	BAKERY: ["에르핀의 빵집 털이", "◆ 무작위 생떼 카드 3장 획득\n◆ 대기 중인 내 말 1개를 첫 빵집으로 출격"],
 	SNIPER: ["저격수의 표적", "◆ 가장 앞선 적 말 1개를 즉시 0번 출발선으로 장외 사출\n◆ 내 말 1개 +4칸 전진"],
@@ -359,7 +359,7 @@ static func _apply_guarantee(state: GameState, player_id: int) -> Dictionary:
 
 static func _apply_gambler(state: GameState, player_id: int) -> Dictionary:
 	state.gambler_round[player_id] = state.round_number
-	return {"ok": true, "text": "이번 라운드 이동 거리 %d배! (눈금 %d 이하면 이동한 말이 과열되어 출발선으로 사출)" % [gambler_multiplier(), gambler_overheat_at()]}
+	return {"ok": true, "text": "이번 라운드 이동 거리 %d배! (눈금 %d 이하면 과열: 이동 없이 차례가 바로 끝남)" % [gambler_multiplier(), gambler_overheat_at()]}
 
 
 static func _apply_castling(state: GameState) -> Dictionary:

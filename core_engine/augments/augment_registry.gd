@@ -146,7 +146,7 @@ static func generate_offers(state: GameState, player_id: int, count: int = GameE
 	return offers
 
 
-## 드래프트에 쓰는 가중치: 표의 weight × 템포 업 배수 (11라운드부터 법전·초증강 ×3).
+## 드래프트에 쓰는 가중치: 표의 weight × 템포 업 배수 (10라운드부터 법전·초증강 ×3).
 static func effective_weight(def: AugmentDef, state: GameState) -> float:
 	return float(def.weight * TempoUp.weight_multiplier(state.round_number, def.category))
 

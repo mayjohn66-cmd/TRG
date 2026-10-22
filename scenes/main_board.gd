@@ -3878,7 +3878,7 @@ func _fill_law_tip(slot: int) -> void:
 		return
 	var law: LawResource = state.rulebook.active_laws_queue[slot]
 	_tip_title.text = "★ [특수 승리] %s" % law.law_name
-	_tip_ability.text = "◆ 조건: %s\n◆ 라운드가 끝나기 직전에 판정: 달성해 있으면 다음 순위로 졸업하고, 이 교칙은 법전에서 사라집니다" % law.description
+	_tip_ability.text = "◆ 조건: %s\n◆ 차례가 끝날 때마다 판정: 달성해 있으면 바로 다음 순위로 졸업하고, 이 교칙은 법전에서 사라집니다" % law.description
 	_tip_skill.visible = law is VictoryLaw
 	if law is VictoryLaw:
 		_tip_skill.text = law_progress_text(state, law as VictoryLaw, _player_name)
@@ -7960,12 +7960,12 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 				screen_shake(12.0, 0.5)
 				Sfx.play(&"tempo_warning")
 			_announce("템포 업", "템포 업 Lv.%d · %s" % [stage, TempoUp.stage_name(stage)], "%d라운드부터 게임이 빨라집니다!\n◆ %s" % [data["round"], "\n◆ ".join(PackedStringArray(lines))], Color("ff4d4d"), null, 3.2)
-		&"round_end_judgement":
+		&"special_victory_judgement":
 			var achievers: Array = data["players"]
-			_log_line("[라운드 %d 종료 판정] 특수 승리 달성: %s" % [int(data["round"]), ", ".join(PackedStringArray(achievers.map(func(id: int) -> String: return _player_name(id))))], Color("ffd43b"))
+			_log_line("[%d라운드 특수 승리] 달성: %s" % [int(data["round"]), ", ".join(PackedStringArray(achievers.map(func(id: int) -> String: return _player_name(id))))], Color("ffd43b"))
 			var judged_round: int = int(data["round"])
 			_enqueue_late(func() -> void:
-				_announce("라운드 종료", "[특수 승리 판정]", "%d라운드가 끝나기 직전, 법전 조건을 채운 사람이 졸업합니다" % judged_round, Color("ffd43b"), null, 1.2))
+				_announce("특수 승리", "[특수 승리 달성!]", "법전 조건을 채웠습니다 - 바로 다음 순위로 졸업합니다 (%d라운드)" % judged_round, Color("ffd43b"), null, 1.2))
 		&"tempo_law":
 			var tempo_law: LawResource = LawRegistry.create(String(data["law_id"]))
 			_log_line("[템포 업] 법전에 특수 승리 [%s] 자동 등록" % tempo_law.law_name, Color("ffd43b"))
@@ -7987,10 +7987,10 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_record(int(data["player_id"]), "도박사의 영혼 x2 → %d칸 → 총 %d칸 전진!" % [data["from"], data["to"]])
 		&"gambler_busted":
 			var busted: int = int(data["player_id"])
-			_log_line("[도박사의 영혼] P%d: 눈금 %d - 과열! %s 출발선으로 사출" % [busted, data["roll"], _pawn_name(int(data["pawn_id"]))], Color("ff6b6b"))
-			_record(busted, "도박사의 영혼 과열! (눈금 %d)" % int(data["roll"]))
+			_log_line("[도박사의 영혼] P%d: 눈금 %d - 과열! 이동 없이 차례 끝" % [busted, data["roll"]], Color("ff6b6b"))
+			_record(busted, "도박사의 영혼 과열! (눈금 %d, 이동 없이 차례 끝)" % int(data["roll"]))
 			_profile_react(busted, false)
-			_announce("도박사의 영혼", "[과열!]", "눈금 %d - 이동한 말이 과열되어 출발선으로 사출됩니다" % data["roll"], Color("ff6b6b"), null, 1.1)
+			_announce("도박사의 영혼", "[과열!]", "눈금 %d - 이번 차례는 이동 없이 바로 끝납니다" % data["roll"], Color("ff6b6b"), null, 1.1)
 			_start_beat(0.9)
 		&"turn_rested":
 			var rested: int = int(data["player_id"])

@@ -79,8 +79,6 @@ var _counter_offer: Dictionary = {}
 ## 폭풍 전진 가속 기믹(발판·점프·복수) 사용 여부. start_game 전에만 바꿀 수 있다.
 var boost_gimmicks: bool = true
 ## 도박사의 영혼이 눈금 1 이하로 과열된 플레이어 (이동이 끝나면 움직인 말이 출발선으로 사출된다). 없으면 -1.
-var _overheat_player: int = -1
-var _overheat_roll: int = 0
 ## 플레이어 ID -> 지금까지 고른 증강 ID 목록.
 var augments: Dictionary = {}
 ## 피어 ID -> 플레이어 좌석. NetworkService가 있으면 그쪽을 우선한다.
@@ -230,6 +228,9 @@ func advance_to_next_player() -> void:
 	_bonus_roll_pending = false
 	_counter_offer = {}
 	var leaving: int = current_player_id()
+	# 특수 승리: 한 차례의 행동(이동·처치·카드·방어)이 다 끝나 차례가 넘어가는 순간 판정한다 (행동 도중에는 기록만 오른다).
+	if _judge_special_victory():
+		return
 	if state != null and int(state.banned_turns.get(leaving, 0)) > 0:
 		state.banned_turns[leaving] = int(state.banned_turns[leaving]) - 1  # 알고리즘 밴: 밴 당한 사람의 턴이 끝날 때마다 하나씩 줄어든다
 	# ACT_12 더 월드: 이 턴이 끝나면 같은 사람이 한 턴 더 한다.
@@ -1147,8 +1148,8 @@ func _enter_round_start() -> void:
 		_begin_turn()
 
 
-## 템포 업: 단계가 오르는 라운드(11·21·31)는 라운드를 선언하기 전에 경고 이벤트를 먼저 보낸다.
-## 2단계(21R)는 법전에 무작위 특수 승리를 하나 올리고, 3단계부터는 라운드마다 결승선이 당겨져 그 안에 선 말이 바로 완주한다.
+## 템포 업: 단계가 오르는 라운드(10·20·30)는 라운드를 선언하기 전에 경고 이벤트를 먼저 보낸다.
+## 2단계(20R)는 법전에 무작위 특수 승리를 하나 올리고, 3단계부터는 라운드마다 결승선이 당겨져 그 안에 선 말이 바로 완주한다.
 ## 완주로 게임이 끝났으면 true.
 func _apply_tempo_up() -> bool:
 	var round_number: int = state.round_number
@@ -1253,7 +1254,6 @@ func _begin_turn(new_turn: bool = true) -> void:
 		_card_played_this_turn = false
 	state.hurt_players.clear()
 	state.roll_bonus = 0
-	_overheat_player = -1
 	state.rollback_requested = false
 	move_queue.clear()
 	_stack_offer = {}
@@ -1332,10 +1332,12 @@ func _apply_roll_result(result: RollResult) -> void:
 	ctx = state.rulebook.process_context(ctx)
 	if not ctx.is_canceled:
 		var roller: int = current_player_id()
-		# [초증강] 주사위 도박사의 영혼: 이번 라운드 이동 거리 2배! 단 눈금이 1 이하면 이동한 말이 과열되어 이동 뒤 0번으로 사출된다.
+		# [초증강] 주사위 도박사의 영혼: 이번 라운드 이동 거리 2배! 단 눈금이 1 이하면 과열: 이동 없이(0칸) 이번 차례가 바로 끝난다.
 		if int(state.gambler_round.get(roller, -1)) == state.round_number and ctx.dice_value <= SuperAugments.gambler_overheat_at():
-			_overheat_player = roller
-			_overheat_roll = ctx.dice_value
+			_emit_event(&"gambler_busted", {"player_id": roller, "roll": ctx.dice_value})
+			move_queue.clear()
+			advance_to_next_player()
+			return
 		var permanent: int = int(state.permanent_roll_bonus.get(roller, 0))
 		var corner: int = int(state.corner_buff.get(roller, 0))
 		state.corner_buff.erase(roller)
@@ -1346,7 +1348,7 @@ func _apply_roll_result(result: RollResult) -> void:
 		if int(state.gambler_round.get(roller, -1)) == state.round_number:
 			_emit_event(&"gambler_doubled", {"player_id": roller, "from": boosted, "to": boosted * SuperAugments.gambler_multiplier()})
 			boosted *= SuperAugments.gambler_multiplier()
-		# 템포 업: 최종 이동 칸에 단계별 보너스 (11R +1 / 21R +3 / 31R +5)
+		# 템포 업: 최종 이동 칸에 단계별 보너스 (10R +1 / 20R +2 / 30R +3)
 		var tempo: int = TempoUp.move_bonus(state.round_number)
 		if tempo > 0:
 			_emit_event(&"tempo_boosted", {"player_id": roller, "from": boosted, "to": boosted + tempo, "level": TempoUp.level(state.round_number)})
@@ -1354,11 +1356,11 @@ func _apply_roll_result(result: RollResult) -> void:
 		move_queue.append(boosted)
 	_roll_chain += 1
 	SpecialVictory.note_session(state, current_player_id(), VictoryLaw.BEST_CHAIN, _roll_chain)  # 🏆 초전도체 무한 동력
+	# 추가 굴림(윷·모, 야추, 역만, 블랙잭, 타로, 룰렛 대박): 이번 눈금으로 먼저 움직이고, 이동이 끝난 뒤 다시 굴린다.
+	# 카드는 턴당 1장 그대로다 (추가 굴림 앞에 카드 단계가 다시 오지만, 이미 냈으면 더 낼 수 없다).
 	if result.reroll and _roll_chain < GameEnums.MAX_REROLL_CHAIN:
-		phase_time_left = GameEnums.PHASE_TIME_ROLL * timer_scale
-		_broadcast_state()
-	else:
-		_enter_interrupt_roll()
+		_bonus_roll_pending = true
+	_enter_interrupt_roll()
 
 
 ## 이번 턴에 굴리기 전 카드를 이미 썼는가 (UI·봇이 카드 사용 가능 여부를 판단할 때 쓴다).
@@ -1443,12 +1445,6 @@ func _execute_move(pawn: PlayerPawn, forced_path: Array[int] = []) -> void:
 	var report: MoveReport = _move_report
 	_move_report = null
 	_extra_turn_pending = _extra_turn_pending or report.extra_turn
-	if _overheat_player == pawn.owner_id:
-		var overheated_roll: int = _overheat_roll
-		_overheat_player = -1
-		if not pawn.is_finished and pawn.has_left_start and pawn.current_tile_idx != GameEnums.GOAL_TILE:
-			state.send_to_start(pawn, pawn.owner_id)
-			_emit_event(&"gambler_busted", {"player_id": pawn.owner_id, "roll": overheated_roll, "pawn_id": pawn.entity_id})
 	_emit_event(&"move_resolved", report.to_dict())
 	if _check_victory(report):
 		return
@@ -1503,9 +1499,9 @@ func _close_resolution_window() -> void:
 	if not move_queue.is_empty():
 		_enter_select_pawn()
 	elif _bonus_roll_pending:
+		# 추가 굴림: 같은 플레이어가 카드 단계부터 다시 (턴당 카드 1장 제한·연속 굴림 수는 이어진다)
 		_bonus_roll_pending = false
-		_roll_chain = 0
-		_enter_roll_wait()
+		change_state(State.PHASE_TURN_BEGIN)
 	elif _extra_turn_pending:
 		_extra_turn_pending = false
 		_begin_turn(false)
@@ -1524,8 +1520,8 @@ func _enter_neutral_npc_phase() -> void:
 		if bool(report["vanished"]):
 			state.remove_npc(npc)
 	_emit_event(&"npc_phase_resolved", {"reports": reports})
-	# 라운드의 마지막 단계: 중립 기물까지 움직인 뒤 특수 승리를 판정한다 (NPC의 처치·사출도 이번 라운드 기록에 들어간다).
-	if _check_round_end_victory():
+	# 라운드의 마지막 단계: 중립 기물이 움직인 뒤 한 번 더 판정한다 (NPC의 처치·사출로 채워진 조건).
+	if _judge_special_victory():
 		return
 	if state.reverse_move_rounds_left > 0:
 		state.reverse_move_rounds_left -= 1
@@ -1543,7 +1539,7 @@ func _check_victory(report: MoveReport) -> bool:
 	if report != null:
 		SpecialVictory.note_session(state, current, VictoryLaw.BEST_MOVE, report.path.size())  # 🏆 카이지의 한방 역전법
 	var current_graduated: bool = false
-	# 특수 승리는 라운드가 끝나기 직전에만 판정한다 (_check_round_end_victory). 여기서는 말 4개 완주만 본다.
+	# 특수 승리는 차례가 끝날 때(_judge_special_victory) 판정한다. 행동 도중인 여기서는 말 4개 완주만 본다.
 	for entry: Dictionary in VictoryChecker.newly_qualified(state, player_order, current, false):
 		_graduate(int(entry["player"]), entry["reason"])
 		current_graduated = current_graduated or int(entry["player"]) == current
@@ -1559,9 +1555,9 @@ func _check_victory(report: MoveReport) -> bool:
 	return false
 
 
-## 라운드가 끝나기 직전: 법전의 특수 승리를 판정한다. 이번 라운드 끝에 조건을 채운 사람은 모두 졸업하고,
-## 여럿이면 레이스에서 앞선 사람(완주 수 많고 남은 거리 짧은 순)이 먼저 순위를 받는다. 게임이 끝났으면 true.
-func _check_round_end_victory() -> bool:
+## 차례가 끝날 때(그리고 라운드 끝 NPC 단계 뒤): 법전의 특수 승리를 판정한다. 조건을 채운 사람은 바로 졸업하고,
+## 여럿이면 레이스에서 앞선 사람(완주 수 많고 남은 거리 짧은 순)이 먼저 순위를 받는다. 이미 졸업한 사람·지워진 교칙은 보지 않는다. 게임이 끝났으면 true.
+func _judge_special_victory() -> bool:
 	if is_game_over or state == null:
 		return is_game_over
 	var qualified: Array[Dictionary] = VictoryChecker.newly_qualified(state, player_order, current_player_id(), true)
@@ -1573,7 +1569,7 @@ func _check_round_end_victory() -> bool:
 		if int(pa["finished"]) != int(pb["finished"]):
 			return int(pa["finished"]) > int(pb["finished"])
 		return int(pa["remaining"]) < int(pb["remaining"]))
-	_emit_event(&"round_end_judgement", {"round": state.round_number, "players": qualified.map(func(e: Dictionary) -> int: return int(e["player"]))})
+	_emit_event(&"special_victory_judgement", {"round": state.round_number, "players": qualified.map(func(e: Dictionary) -> int: return int(e["player"]))})
 	for entry: Dictionary in qualified:
 		if state.is_graduated(int(entry["player"])):
 			continue  # 이미 순위가 확정된 사람은 다시 판정하지 않는다

@@ -800,7 +800,7 @@ func _ch_start() -> Dictionary:
 			"tip": "처음이라면 [b]놀이터[/b]에서 컴퓨터와 한 판 해 보세요."},
 		{"title": "완주와 순위", "icon": &"crown", "tone": Color("86d94f"),
 			"summary": "말이 0번에 닿으면 완주. 4개 모두 완주하면 [b]순위 확정[/b]!",
-			"rows": [["1·2·3위", "먼저 해낸 순서대로"], ["4위", "마지막 남은 한 명"], ["특수 승리", "라운드 끝에 법전 조건을 채웠으면 졸업"]]},
+			"rows": [["1·2·3위", "먼저 해낸 순서대로"], ["4위", "마지막 남은 한 명"], ["특수 승리", "법전 조건을 채운 채 차례가 끝나면 바로 졸업"]]},
 		{"title": "말마다 능력", "art": &"pawn_ability", "tone": Color("f08aa8"), "chips": ["증강", "필살기 1회"],
 			"summary": "증강으로 말을 [b]체스·장기·쇼기…[/b]로 진화시켜요. 말마다 상시 능력과 한 판에 한 번 쓰는 필살기가 있어요.",
 			"points": ["보드 위 말에 마우스를 올리면 능력이 보여요", "자세한 건 [b]도감 → 말[/b]"]},
@@ -809,7 +809,7 @@ func _ch_start() -> Dictionary:
 			"points": ["도구마다 족보와 칸 수가 달라요", "게임 중 오른쪽 카드에 규칙표가 나와요", "자세한 건 [b]도감 → 도구[/b]"]},
 		{"title": "카드와 법전", "art": &"card_law", "tone": Color("f0c14e"), "chips": ["생떼 카드", "특수 승리"],
 			"summary": "함정을 깔고, 상대 말을 날리고, 법전의 특수 승리를 노려 판을 뒤집어요.",
-			"points": ["카드는 빵집·증강에서 얻어요", "법전 조건은 라운드가 끝날 때 판정해요"]},
+			"points": ["카드는 빵집·증강에서 얻어요", "법전 조건은 차례가 끝날 때마다 판정해요"]},
 	]}
 
 
@@ -838,9 +838,9 @@ func _ch_turn() -> Dictionary:
 		{"title": "증강 라운드", "icon": &"crown", "tone": Color("ffa94d"), "chips": ["3라운드마다"],
 			"summary": "1·4·7라운드처럼 [b]3라운드마다[/b] 모두가 3장 중 하나를 골라요.",
 			"points": ["카드마다 한 번 다시 뽑기", "자세한 건 [b]도감 → 법전[/b]"]},
-		{"title": "템포 업", "icon": &"hourglass", "tone": Color("ff6b6b"), "chips": ["11·21·31라운드"],
+		{"title": "템포 업", "icon": &"hourglass", "tone": Color("ff6b6b"), "chips": ["10·20·30라운드"],
 			"summary": "판이 길어지면 [b]게임이 점점 빨라져요[/b]. 단계가 오르는 라운드 시작 전에 크게 경고해요.",
-			"rows": [["11라운드", "최종 이동 +1칸 · 리벤지 +6칸 · 법전·초증강 확률 상승"], ["21라운드", "최종 이동 +3칸 · 리벤지 +8칸 · 법전에 무작위 특수 승리 1개 등록"], ["31라운드", "전원 이동 +5칸 · 결승선이 라운드마다 2칸씩 당겨짐"]],
+			"rows": [["10라운드 · 과열", "최종 이동 +1칸 · 리벤지 +6칸 · 법전·초증강 확률 상승"], ["20라운드 · 광기", "최종 이동 +2칸 · 리벤지 +8칸 · 법전에 무작위 특수 승리 1개 등록"], ["30라운드 · 대붕괴", "전원 이동 +3칸 · 결승선이 라운드마다 2칸씩 당겨짐"]],
 			"points": ["당겨진 결승선은 체크무늬 칸으로 보여요", "그 칸에 들어서거나 서 있으면 바로 완주!"]},
 	]}
 
@@ -1065,7 +1065,7 @@ func _ch_laws() -> Dictionary:
 		{"title": "증강과 법전", "art": &"card_law", "tone": Color("ffa94d"), "chips": ["3라운드마다", "법전 4칸"],
 			"summary": "1·4·7라운드처럼 [b]3라운드마다[/b] 모두가 증강 3장 중 하나를 골라요. 법전의 교칙은 모두 [b]특수 승리 조건[/b]이에요.",
 			"rows": [["기물 지급", "말 하나를 새 기물로 진화 (도감 → 말)"], ["도구 교체", "굴리는 도구 바꾸기 (도감 → 도구)"], ["특수 승리", "법전에 새 승리 조건 (3라운드부터)"], ["카드 패키지", "생떼 카드 여러 장 (방어·함정만 주는 보급도)"], ["범용 보급", "기물 변이 · 전군 돌연변이 · 필살기 리필"], ["초증강", "하이리스크 하이리턴 (도감 → 초증강)"]],
-			"points": ["라운드가 끝날 때 교칙을 달성해 있으면 [b]다음 순위로 졸업[/b], 그 교칙은 사라져요 (같은 교칙을 여럿이 채우면 레이스에서 앞선 한 명만)", "새 교칙이 들어오면 가장 오래된 교칙이 밀려나요", "증강 카드마다 한 번 다시 뽑기"],
+			"points": ["차례가 끝날 때 교칙을 달성해 있으면 [b]바로 다음 순위로 졸업[/b], 그 교칙은 사라져요 (같은 교칙을 여럿이 채우면 레이스에서 앞선 한 명만)", "새 교칙이 들어오면 가장 오래된 교칙이 밀려나요", "증강 카드마다 한 번 다시 뽑기"],
 			"tip": "법전 슬롯에 마우스를 올리면 모두의 진행도가 보여요. [color=#d6336c][b][위험!][/b][/color] 표시를 견제하세요!"},
 	]
 	for definition: AugmentDef in _augments(GameEnums.AugmentCategory.LAW_ENACT):
@@ -1075,7 +1075,7 @@ func _ch_laws() -> Dictionary:
 		var counting: String = "법전에 있는 동안만 세요" if VictoryLaw.SESSION_KEYS.has(law.stat_key) else "게임 내내 쌓여요"
 		entries.append({"title": law.law_name, "augment": definition.augment_id, "texture": TextureCache.fetch("res://content_trickcal/illustrations/laws/%s.png" % law.law_id), "icon": &"book",
 			"tone": Color("ffd43b"), "chips": ["목표 %d%s" % [law.goal(), law.unit()]], "summary": law.condition_text(),
-			"rows": [["판정", "라운드가 끝나기 직전, 달성했으면 졸업하고 교칙은 사라져요"], ["기록", counting], ["이의 있음!", "기록을 0으로 되돌릴 수 %s" % ("있어요" if law.resettable() else "없어요")]]})
+			"rows": [["판정", "차례가 끝날 때마다, 달성했으면 바로 졸업하고 교칙은 사라져요"], ["기록", counting], ["이의 있음!", "기록을 0으로 되돌릴 수 %s" % ("있어요" if law.resettable() else "없어요")]]})
 	for definition: AugmentDef in _augments(GameEnums.AugmentCategory.CARD_PACKAGE):
 		entries.append(_augment_entry(definition, &"gear"))
 	for definition: AugmentDef in _augments(GameEnums.AugmentCategory.UTILITY):
