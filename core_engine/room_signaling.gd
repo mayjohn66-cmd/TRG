@@ -10,7 +10,8 @@ var code: String = ""
 
 func _init(new_broker: SignalBroker = null, room_code: String = "") -> void:
 	broker = new_broker
-	code = room_code
+	# 방장·참가자가 언제나 같은 토픽을 쓰도록 대문자·공백 제거로 맞춘다.
+	code = RoomCode.normalize(room_code)
 
 
 # ---------------------------------------------------------------------------
@@ -19,6 +20,7 @@ func _init(new_broker: SignalBroker = null, room_code: String = "") -> void:
 
 ## 좌석 seat의 초대 코드를 올린다. done(ok: bool).
 func post_offer(seat: int, nonce: String, offer_code: String, done: Callable) -> void:
+	NetTrace.step("signal.post_offer", "topic=%s nonce=%s len=%d" % [RoomCode.offer_topic(code, seat), nonce, offer_code.length()])
 	broker.publish(RoomCode.offer_topic(code, seat), RoomCode.wrap(nonce, offer_code), done)
 
 
@@ -58,8 +60,10 @@ func find_offers(done: Callable) -> void:
 	var offer_topics: Array = []
 	for seat: int in range(2, LobbyModel.SEAT_COUNT + 1):
 		offer_topics.append(RoomCode.offer_topic(code, seat))
+	NetTrace.step("signal.find_offers", "room=%s topics=%s" % [code, ",".join(PackedStringArray(offer_topics))])
 	broker.fetch_many(offer_topics, 0, func(ok: bool, offers: Dictionary) -> void:
 		if not ok:
+			NetTrace.step("signal.find_offers.failed", "relay unreachable")
 			done.call({"ok": false, "saw_room": false, "candidates": []})
 			return
 		var saw_room: bool = false
@@ -74,6 +78,7 @@ func find_offers(done: Callable) -> void:
 			var offer: String = str(parts["body"])
 			if nonce != "" and nonce != RoomCode.CLOSED_MARK and offer.begins_with(LobbyCode.PREFIX):
 				open[seat] = {"seat": seat, "nonce": nonce, "offer": offer}
+		NetTrace.step("signal.find_offers.open", "saw_room=%s open_seats=%s" % [saw_room, str(open.keys())])
 		if open.is_empty():
 			done.call({"ok": true, "saw_room": saw_room, "candidates": []})
 			return
@@ -94,11 +99,14 @@ func find_offers(done: Callable) -> void:
 							break
 				if not taken:
 					candidates.append(open[seat])
+				else:
+					NetTrace.step("signal.find_offers.taken", "seat=%d" % int(seat))
 			done.call({"ok": true, "saw_room": saw_room, "candidates": candidates})))
 
 
 ## 응답 코드를 올린다. done(ok: bool).
 func post_answer(seat: int, nonce: String, answer_code: String, done: Callable) -> void:
+	NetTrace.step("signal.post_answer", "topic=%s nonce=%s len=%d" % [RoomCode.answer_topic(code, seat), nonce, answer_code.length()])
 	broker.publish(RoomCode.answer_topic(code, seat), RoomCode.wrap(nonce, answer_code), done)
 
 
@@ -112,5 +120,6 @@ func claim_won(seat: int, nonce: String, answer_code: String, done: Callable) ->
 				if str(parts["nonce"]) == nonce:
 					won = str(parts["body"]) == answer_code
 					break
+		NetTrace.step("signal.claim", "seat=%d ok=%s answers=%d won=%s" % [seat, ok, messages.size(), won])
 		if done.is_valid():
 			done.call(won))

@@ -169,6 +169,27 @@ func _run() -> void:
 	_lobby.join_with_room_code()
 	await process_frame
 	_expect(_lobby._status.text != "" and not _lobby._guest_busy and not service.in_room(), "연결을 못 맺으면 실패를 알리고 방에서 빠진다")
+	_expect(_lobby.mode == Lobby.Mode.CHOOSE and _lobby.find_child("JoinFailedPopup", false, false) != null, "입장 실패는 팝업으로 알리고 로비(코드 입력) 화면으로 돌아간다")
+	(_lobby.find_child("JoinFailedPopup", false, false).find_child("Confirm", true, false) as Button).pressed.emit()
+	await process_frame
+	_expect(_lobby.find_child("JoinFailedPopup", false, false) == null, "[확인]으로 팝업을 닫는다")
+	# 응답 없는 릴레이: "방장과 연결하는 중..."에서 무한 대기하지 않고 감시 타임아웃으로 돌려보낸다
+	MemoryBroker.reset_all()
+	broker.silent = true
+	input = _lobby._guest_box.find_child("RoomCodeInput", true, false)
+	input.text = "7K9M2"
+	input.text_changed.emit("7K9M2")
+	_lobby.join_with_room_code()
+	await process_frame
+	_expect(_lobby._guest_busy and _lobby.find_child("JoinFailedPopup", false, false) == null, "응답을 기다리는 동안은 연결 중")
+	service.check_join_watchdog(Time.get_ticks_msec() + int(service.signaling_timeout_seconds * 1000.0) + 500)
+	await process_frame
+	var popup: Node = _lobby.find_child("JoinFailedPopup", false, false)
+	_expect(popup != null and (popup.find_child("Message", true, false) as Label).text == LobbyService.JOIN_TIMEOUT_MESSAGE, "타임아웃 안내 팝업: 방 연결에 실패했습니다...")
+	_expect(_lobby.mode == Lobby.Mode.CHOOSE and not _lobby._guest_busy and not service.in_room(), "타임아웃 뒤 로비 화면으로 돌아가 다시 입력할 수 있다")
+	_expect((_lobby._guest_box.find_child("RoomCodeInput", true, false) as LineEdit).text == "7K9M2", "입력한 방 코드는 남겨 둔다")
+	broker.silent = false
+	popup.queue_free()
 	_lobby.start_guest()
 	await process_frame
 	service.joined.emit()
