@@ -202,3 +202,58 @@ func test_progress_rows_flag_danger_and_survive_snapshots() -> void:
 	state.law_stats.clear()
 	snapshot.restore(state)
 	check_eq(state.stat(2, VictoryLaw.EJECTED), 7, "되감기·동기화로 기록 복원")
+
+
+## 라운드 마지막 차례에 처치로 조건을 채워도 턴 도중에는 졸업하지 않고, 라운드가 끝나는 순간 딱 한 번만 판정한다.
+func test_capture_during_the_round_never_graduates_before_the_round_ends() -> void:
+	var manager: TurnManager = _new_manager(4)
+	var state: GameState = manager.state
+	add_law(state, "LAW_01")
+	state.law_stats[1] = {VictoryLaw.KILLS: 5}
+	var judgements: Array[int] = []
+	manager.event_received.connect(func(kind: StringName, _data: Dictionary) -> void:
+		if kind == &"round_end_judgement":
+			judgements.append(state.round_number))
+	place(state, 11, 2, [1])
+	place(state, 21, 4, [3])
+	manager.state.tools[1] = ScriptedTool.new([2])
+	manager.act(&"proceed", {"player_id": 1})
+	manager.act(&"roll", {"player_id": 1})
+	manager.act(&"select_pawn", {"player_id": 1, "pawn_id": 11})
+	check_eq(state.stat(1, VictoryLaw.KILLS), 6, "처치로 진행도만 오른다")
+	check(state.rankings.is_empty() and judgements.is_empty(), "라운드 도중(내 턴 직후)에는 판정이 일어나지 않는다")
+	manager.force_timeout()  # 다음 사람들의 차례를 넘긴다
+	check(state.rankings.is_empty() and judgements.is_empty(), "다른 사람 차례가 끝나기 전에도 판정이 없다")
+	_finish_round(manager)
+	check_eq(judgements, [1], "라운드 끝에 정확히 한 번만 판정한다")
+	check_eq(state.rankings, int_array([1]), "그때 졸업")
+	_dispose(manager)
+
+
+## 졸업한 사람은 이후 라운드의 특수 승리 판정에서 빠지고, 달성된 교칙은 법전에서 사라져 다시 판정되지 않는다.
+func test_graduate_and_destroyed_law_are_never_checked_again_in_later_rounds() -> void:
+	var manager: TurnManager = _new_manager(4)
+	var state: GameState = manager.state
+	add_law(state, "LAW_01")
+	state.law_stats[1] = {VictoryLaw.KILLS: 6}
+	var ranked: Array[int] = []
+	manager.event_received.connect(func(kind: StringName, data: Dictionary) -> void:
+		if kind == &"player_ranked":
+			ranked.append(int(data["player_id"])))
+	_finish_round(manager)
+	check_eq(state.rankings, int_array([1]), "1라운드 끝에 P1이 졸업")
+	check(not state.rulebook.has_law("LAW_01"), "달성된 교칙은 법전에서 완전히 사라진다")
+	# 남은 사람이 같은 교칙을 다시 제정해도 졸업한 P1의 옛 기록 때문에 P1이 다시 걸리지 않는다.
+	state.law_stats[1] = {VictoryLaw.KILLS: 99}
+	add_law(state, "LAW_01")
+	state.law_stats[3] = {VictoryLaw.KILLS: 6}
+	_finish_round(manager)
+	check_eq(ranked.count(1), 1, "P1은 한 번만 순위를 받는다")
+	check_eq(state.rankings, int_array([1, 3]), "다음 라운드에는 새로 달성한 P3만 졸업한다")
+	check(not state.rulebook.has_law("LAW_01"), "다시 달성된 교칙도 법전에서 사라진다")
+	var third_round: int = state.round_number
+	_finish_round(manager)
+	_finish_round(manager)
+	check_eq(state.rankings, int_array([1, 3]), "교칙이 없는 라운드들에는 아무도 졸업하지 않는다 (옛 기록이 남아 있어도)")
+	check(state.round_number > third_round or manager.is_game_over, "라운드는 계속 진행된다")
+	_dispose(manager)

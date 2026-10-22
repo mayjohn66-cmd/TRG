@@ -65,6 +65,7 @@ func _run() -> void:
 	_board._announcer.cancel()
 	await _test_gauge_and_lock()
 	await _test_instant_flag()
+	await _test_rank_log_follows_the_capture()
 	await _test_announcer()
 	await _test_aspect_layout()
 	await _test_roll_pad()
@@ -770,6 +771,34 @@ func _settle_turn_start() -> void:
 			for player_id: int in manager.review_waiting_for():
 				manager.act(&"review_done", {"player_id": player_id})
 		await process_frame
+	_board._refresh_all()
+
+
+## 라운드 마지막 차례의 처치로 졸업이 확정되면, 액션 로그에는 [처치] 다음에 [순위 확정]이 찍혀야 한다 (순위가 처치보다 먼저 터진 것처럼 보이면 안 된다).
+func _test_rank_log_follows_the_capture() -> void:
+	var manager: TurnManager = _board.manager
+	var state: GameState = manager.state
+	_board.instant_roll_for_test = false
+	await _settle_turn_start()
+	_board._action_log.clear_entries()
+	var victim: PlayerPawn = state.get_pawn(21)
+	victim.has_left_start = true
+	victim.current_tile_idx = 5
+	state.pawn_sent_to_start.emit(21, 4)  # 엔진이 알리는 순서: 처치 -> 법전 파기 -> 순위 확정
+	_board._on_event(&"player_ranked", {"player_id": 4, "rank": 1, "reason": &"LAW_01"})
+	var waited: float = _now()
+	while (_board._ui_busy() or _board._presentation_active()) and _now() - waited < 10.0:
+		await process_frame
+	var capture_at: int = -1
+	var rank_at: int = -1
+	var lines: Array[String] = _board._action_log.lines()
+	for index: int in lines.size():
+		if lines[index].contains("처치!") and capture_at == -1:
+			capture_at = index
+		if lines[index].contains("1위 확정"):
+			rank_at = index
+	_expect(capture_at != -1 and rank_at != -1 and capture_at < rank_at, "처치 기록 뒤에 순위 확정 기록이 찍힌다 (처치 %d줄, 순위 %d줄)" % [capture_at, rank_at])
+	_board._announcer.cancel()
 	_board._refresh_all()
 
 
