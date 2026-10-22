@@ -855,7 +855,20 @@ func _send_match_complete_webhook(my_rank: int) -> bool:
 	var augments: Array[String] = []
 	for name: Variant in _my_augments:
 		augments.append(str(name))
-	return MatchTelemetry.report_match_end(self, nth, _telemetry_mode(), int(state.round_number), seconds, maxi(my_rank, 0), reason, augments)
+	return MatchTelemetry.report_match_end(self, nth, _telemetry_mode(), int(state.round_number), seconds, maxi(my_rank, 0), reason, augments, _difficulty_report(my_rank, first))
+
+
+## 체감 난이도 지표: 1위 이름, 내 킬/데스, 누적 [N판 중 1위 M회] ('나'가 없는 4인 수동은 1위 이름만). 누적 기록은 이때 한 판 늘린다.
+func _difficulty_report(my_rank: int, first: int) -> Dictionary:
+	var report: Dictionary = {"winner": _player_name(first) if first != -1 else ""}
+	var seat: int = _telemetry_seat()
+	if seat == -1:
+		return report
+	report["kills"] = state.stat(seat, GameState.TALLY_KILLS)
+	report["deaths"] = state.stat(seat, GameState.TALLY_DEATHS)
+	if my_rank > 0 and MatchTelemetry.is_active():
+		report.merge(GameSession.record_match_result(my_rank))
+	return report
 
 
 func _new_game() -> void:
@@ -7532,6 +7545,7 @@ func _show_result_overlay() -> void:
 	reason.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	reason.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	facts.add_child(reason)
+	box.add_child(_build_vote_bar())
 	var buttons := HBoxContainer.new()
 	buttons.add_theme_constant_override("separation", 12)
 	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -7554,6 +7568,60 @@ func _show_result_overlay() -> void:
 	box.add_child(review)
 	add_child(_result_overlay)
 	_reveal_ranking(rows, announcer)
+
+
+## 결과 화면의 원클릭 소감 투표 바: 질문 한 줄 + (선택) 한줄평 입력칸 + 버튼 4개. 누르면 바로 개발자 웹후크로 가고, 감사 문구로 바뀌어 다시 누를 수 없다.
+func _build_vote_bar() -> Control:
+	var bar := PanelContainer.new()
+	bar.name = "VoteBar"
+	bar.add_theme_stylebox_override("panel", _style(Color(1, 1, 1, 0.06), Color("ffd43b"), 1, 12, 10, 8))
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 6)
+	bar.add_child(column)
+	var question: Label = _make_label("이번 판 난이도와 템포는 어떠셨나요? (클릭 시 개발자에게 바로 전달됩니다!)", 16, COLOR_GOLD)
+	question.name = "VoteQuestion"
+	question.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(question)
+	var comment := LineEdit.new()
+	comment.name = "VoteComment"
+	comment.placeholder_text = "아쉬운 점이나 사기였던 증강 한 줄 제보 (선택)"
+	comment.max_length = MatchTelemetry.VOTE_COMMENT_LIMIT
+	comment.custom_minimum_size = Vector2(0, 34)
+	comment.add_theme_font_size_override("font_size", 15)
+	column.add_child(comment)
+	var row := HBoxContainer.new()
+	row.name = "VoteButtons"
+	row.add_theme_constant_override("separation", 8)
+	column.add_child(row)
+	var tints: Array[Color] = [Color("e8590c"), Color("c2255c"), Color("5f3dc4"), Color("2b8a3e")]
+	var choices: Array = MatchTelemetry.vote_choices()
+	for index: int in choices.size():
+		var choice: Array = choices[index]
+		var button: Button = _make_button(str(choice[2]), Callable(), 15, tints[index % tints.size()])
+		button.name = "Vote_%s" % choice[0]
+		button.custom_minimum_size = Vector2(0, 40)
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.pressed.connect(_on_vote_pressed.bind(bar, str(choice[1])))
+		row.add_child(button)
+	return bar
+
+
+func _on_vote_pressed(bar: Control, choice: String) -> void:
+	if not is_instance_valid(bar) or bool(bar.get_meta("voted", false)):
+		return
+	bar.set_meta("voted", true)
+	var comment: LineEdit = bar.find_child("VoteComment", true, false)
+	var text: String = comment.text if comment != null else ""
+	var seat: int = _telemetry_seat()
+	var my_rank: int = state.rankings.find(seat) + 1 if seat != -1 and state != null else 0
+	MatchTelemetry.report_vote(self, choice, text, my_rank, state.round_number if state != null else 0)
+	for child: Node in bar.get_children():
+		child.queue_free()
+	var thanks: Label = _make_label("소중한 의견 감사합니다!", 18, Color("69db7c"))
+	thanks.name = "VoteThanks"
+	thanks.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	bar.add_child(thanks)
+	Sfx.play(&"card_get", -6.0)
 
 
 const RANK_MEDALS: Array[String] = ["1", "2", "3", "4"]

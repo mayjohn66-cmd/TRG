@@ -66,7 +66,7 @@ func _run() -> void:
 	await _test_gauge_and_lock()
 	await _test_instant_flag()
 	await _test_rank_log_follows_the_capture()
-	_test_match_report_is_sent_once()
+	await _test_match_report_is_sent_once()
 	_test_unplayable_card_explains_itself()
 	await _test_announcer()
 	await _test_aspect_layout()
@@ -841,7 +841,8 @@ func _test_match_report_is_sent_once() -> void:
 		state.rankings.assign([seat])
 		state.rank_reasons = {seat: &"LAW_01"}
 		_board._report_player_ranked(seat, 1)
-		_expect(sent.size() == 1 and sent[0].contains("내 최종 순위: 1위") and sent[0].contains("특수승리(투기장의 지배자)"), "내 특수 승리 졸업 즉시 [매치 완료] (%s)" % str(sent))
+		_expect(sent.size() == 1 and sent[0].contains("내 최종 순위: 1위 / 우승자: ") and sent[0].contains("특수승리(투기장의 지배자)"), "내 특수 승리 졸업 즉시 [매치 완료] (%s)" % str(sent))
+		_expect(sent.size() == 1 and sent[0].contains("킬/데스: ") and sent[0].contains("누적: ") and sent[0].contains("1위 "), "체감 난이도 지표: 킬/데스·누적 승률")
 		manager.is_game_over = true
 		_board._report_match_once()
 		manager.is_game_over = false
@@ -870,6 +871,21 @@ func _test_match_report_is_sent_once() -> void:
 		var end: int = body.find("\r\n--", start)
 		var parsed: Variant = JSON.parse_string(body.substr(start, end - start))
 		_expect(parsed is Dictionary and str((parsed as Dictionary).get("content", "")).begins_with(MatchTelemetry.tag()) and int((parsed as Dictionary).get("flags", 0)) == 4096, "payload_json이 올바른 JSON (%s)" % body.substr(start, 80))
+	# 결과 화면의 원클릭 소감 투표: 한줄평과 함께 한 번만 보내고 감사 문구로 바뀐다
+	sent.clear()
+	var bar: Control = _board._build_vote_bar()
+	_board.add_child(bar)
+	_expect((bar.find_child("VoteQuestion", true, false) as Label).text == "이번 판 난이도와 템포는 어떠셨나요? (클릭 시 개발자에게 바로 전달됩니다!)", "투표 질문 문구")
+	var buttons: Node = bar.find_child("VoteButtons", true, false)
+	_expect(buttons != null and buttons.get_child_count() == 4, "투표 버튼 4개")
+	(bar.find_child("VoteComment", true, false) as LineEdit).text = "빵집 털이 사기"
+	var spicy: Button = bar.find_child("Vote_spicy", true, false)
+	spicy.pressed.emit()
+	spicy.pressed.emit()  # 두 번 눌러도 한 번만
+	_expect(sent.size() == 1 and sent[0].contains(MatchTelemetry.vote_tag()) and sent[0].contains("AI/억까가 너무 매워요") and sent[0].contains("| 빵집 털이 사기 |"), "투표 한 줄 전송 (%s)" % str(sent))
+	await process_frame
+	_expect(bar.find_child("VoteThanks", true, false) != null and bar.find_child("VoteButtons", true, false) == null, "누르면 [소중한 의견 감사합니다!]로 바뀐다")
+	bar.queue_free()
 	state.rankings.assign(saved_rankings)
 	state.rank_reasons = saved_reasons
 	MatchTelemetry.test_force_enabled = false

@@ -73,3 +73,47 @@ func test_enabled_reports_are_quiet_and_lobby_entry_is_once_per_session() -> voi
 	for entry: Array in sent:
 		check((entry[1] as String).contains("\"flags\":4096") and (entry[1] as String).contains("\"allowed_mentions\":{\"parse\":[]}"), "알림음 없이, 멘션 막고")
 		check((entry[2] as String).begins_with("multipart/form-data; boundary="), "사전 확인 없이 가는 multipart")
+
+
+func test_end_line_carries_the_difficulty_figures() -> void:
+	var line: String = MatchTelemetry.end_line("교주(#A7B2)", 10, "놀이터", 14, 900, 3, "일반", AUGMENTS, {"winner": "컴퓨터 4", "kills": 3, "deaths": 5, "played": 10, "wins": 2})
+	check(line.contains("내 최종 순위: 3위 / 우승자: 컴퓨터 4 | 1위 우승방식: 일반"), "내 순위와 우승자 (%s)" % line)
+	check(line.contains("| 킬/데스: 3킬 5데스 |") and line.contains("| 누적: 10판 중 1위 2회 |"), "킬/데스와 누적 승률")
+	check(line.ends_with("고른 증강: 체스 퀸 진화, 주사위 교체"), "증강은 마지막")
+	var hotseat: String = MatchTelemetry.end_line("A(#B2C3)", 1, "4인 수동", 5, 30, 0, "일반", [] as Array[String], {"winner": "플레이어 2"})
+	check(hotseat.contains("내 최종 순위: - / 우승자: 플레이어 2") and not hotseat.contains("킬/데스") and not hotseat.contains("누적:"), "4인 수동은 우승자만")
+
+
+func test_vote_line_and_choices() -> void:
+	check_eq(MatchTelemetry.vote_tag(), "[%s%s 유저 미니투표]" % [String.chr(0x1F5F3), String.chr(0xFE0F)], "🗳️")
+	var choices: Array = MatchTelemetry.vote_choices()
+	check_eq(choices.size(), 4, "버튼 4개")
+	check(str(choices[0][1]).ends_with("딱 재밌어요!") and str(choices[3][2]) == "한 판이 너무 길어요", "디스코드 글·화면 글")
+	var line: String = MatchTelemetry.vote_line("교주(#A7B2)", str(choices[1][1]), "  빵집 털이 사기\n진짜로  ", 3, 14)
+	check_eq(line, "%s 교주(#A7B2) | %s | 빵집 털이 사기 진짜로 | (3위 · 14라운드)" % [MatchTelemetry.vote_tag(), choices[1][1]], "투표 한 줄 (줄바꿈·앞뒤 공백 정리)")
+	check(MatchTelemetry.vote_line("A(#B2C3)", "x", "", 0, 5).ends_with("| x | - | (순위 - · 5라운드)"), "한줄평이 없으면 -")
+	check(MatchTelemetry.vote_line("A", "x", "가".repeat(300), 1, 1).length() < 200, "한줄평은 잘린다")
+
+
+func test_vote_is_sent_only_when_active() -> void:
+	var sent: Array = []
+	MatchTelemetry.test_sender = func(_url: String, body: PackedByteArray, _type: String) -> void: sent.append(body.get_string_from_utf8())
+	check(not MatchTelemetry.report_vote(null, "x", "", 1, 1), "웹 빌드가 아니면 보내지 않는다")
+	MatchTelemetry.test_force_enabled = true
+	check(MatchTelemetry.report_vote(null, "x", "한 줄", 1, 1), "켜져 있으면 보낸다")
+	check(sent.size() == 1 and (sent[0] as String).contains(MatchTelemetry.vote_tag()), "투표 한 줄")
+
+
+func test_tally_kills_and_deaths_follow_ejections_and_survive_objection() -> void:
+	var state := make_state(2)
+	place(state, 21, 3, [2])
+	place(state, 11, 5, [4])
+	state.send_to_start(state.get_pawn(21), 1)  # P1이 P2 말을 잡았다
+	state.send_to_start(state.get_pawn(11), 1)  # 내 지뢰에 내 말이 날아갔다 (데스만)
+	check_eq(state.stat(1, GameState.TALLY_KILLS), 1, "P1 킬 1")
+	check_eq(state.stat(2, GameState.TALLY_DEATHS), 1, "P2 데스 1")
+	check_eq(state.stat(1, GameState.TALLY_DEATHS), 1, "자기 말이 날아가도 데스")
+	state.law_stats[1][&"kills"] = 0  # 이의 있음!은 교칙 기록만 지운다
+	check_eq(state.stat(1, GameState.TALLY_KILLS), 1, "통계 킬은 남는다")
+	state.send_to_start(state.get_pawn(22), 1)
+	check_eq(state.stat(1, GameState.TALLY_KILLS), 1, "출발선 대기 말은 잡은 것이 아니다")

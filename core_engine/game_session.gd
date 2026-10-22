@@ -192,6 +192,9 @@ const TAG_LENGTH: int = 4
 const TAG_ALPHABET: String = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 static var _player_tag: String = ""
 static var _match_count: int = -1
+## 끝까지 마친 판 수(내 순위가 확정된 판)와 그중 1위 횟수 (통계 알림의 [누적 N판 중 1위 M회]).
+static var _finished_count: int = 0
+static var _win_count: int = 0
 
 
 ## 이 브라우저의 익명 태그 (없으면 처음 부를 때 만들어 저장한다).
@@ -219,6 +222,26 @@ static func begin_match() -> int:
 	return _match_count
 
 
+## 한 판을 끝까지 마쳤다 (내 순위 확정). 반환: {"played": 끝까지 마친 판 수, "wins": 그중 1위 횟수}.
+static func record_match_result(rank: int) -> Dictionary:
+	_load_stats()
+	_finished_count += 1
+	if rank == 1:
+		_win_count += 1
+	_save_stats()
+	return {"played": _finished_count, "wins": _win_count}
+
+
+static func finished_matches() -> int:
+	_load_stats()
+	return _finished_count
+
+
+static func win_count() -> int:
+	_load_stats()
+	return _win_count
+
+
 static func is_valid_tag(tag: String) -> bool:
 	if tag.length() != TAG_LENGTH:
 		return false
@@ -235,6 +258,8 @@ static func _load_stats() -> void:
 	config.load(PROFILE_PATH)
 	var saved: String = str(config.get_value("stats", "tag", ""))
 	_match_count = maxi(int(config.get_value("stats", "match_count", 0)), 0)
+	_finished_count = maxi(int(config.get_value("stats", "finished_count", 0)), 0)
+	_win_count = maxi(int(config.get_value("stats", "win_count", 0)), 0)
 	if is_valid_tag(saved):
 		_player_tag = saved
 		return
@@ -251,6 +276,8 @@ static func _save_stats() -> void:
 	config.load(PROFILE_PATH)
 	config.set_value("stats", "tag", _player_tag)
 	config.set_value("stats", "match_count", _match_count)
+	config.set_value("stats", "finished_count", _finished_count)
+	config.set_value("stats", "win_count", _win_count)
 	config.save(PROFILE_PATH)
 
 

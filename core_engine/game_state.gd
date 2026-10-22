@@ -371,9 +371,14 @@ func send_to_start(pawn: PlayerPawn, by_player: int) -> void:
 		if was_out:
 			add_stat(pawn.owner_id, &"ejected")
 			_note_entry_stat(entry, &"ejected")
+			# 통계 알림용 킬/데스 (교칙 기록과 달리 [이의 있음!]으로 지워지지 않는다). 데스는 어떤 이유로든 보드에서 출발선으로 날아간 횟수
+			add_stat(pawn.owner_id, TALLY_DEATHS)
+			_note_entry_stat(entry, TALLY_DEATHS)
 			if enemy_kill:
 				add_stat(by_player, &"kills")
 				_note_entry_stat(entry, &"kills")
+				add_stat(by_player, TALLY_KILLS)
+				_note_entry_stat(entry, TALLY_KILLS)
 			if underdog:
 				add_stat(by_player, &"underdog")
 				_note_entry_stat(entry, &"underdog")
@@ -658,6 +663,11 @@ func active_players(order: Array[int]) -> Array[int]:
 # 🏆 특수 승리 기록
 # ---------------------------------------------------------------------------
 
+## 통계 알림용 누적 킬·데스 (law_stats에 같이 담겨 스냅샷·방어 되감기를 따른다).
+const TALLY_KILLS: StringName = &"tally_kills"
+const TALLY_DEATHS: StringName = &"tally_deaths"
+
+
 func stat(player_id: int, key: StringName) -> int:
 	return int((law_stats.get(player_id, {}) as Dictionary).get(key, 0))
 
@@ -858,8 +868,10 @@ func undo_attack(entry: Dictionary) -> void:
 	var attacker: int = int(entry.get("attacker", -1))
 	var stats: Dictionary = entry["stats"]
 	add_stat(victim, &"ejected", -int(stats.get(&"ejected", 0)))
+	add_stat(victim, TALLY_DEATHS, -int(stats.get(TALLY_DEATHS, 0)))
 	if attacker >= 1:
 		add_stat(attacker, &"kills", -int(stats.get(&"kills", 0)))
+		add_stat(attacker, TALLY_KILLS, -int(stats.get(TALLY_KILLS, 0)))
 		add_stat(attacker, &"underdog", -int(stats.get(&"underdog", 0)))
 	var effects: Dictionary = entry["effects"]
 	if effects.has("rest"):

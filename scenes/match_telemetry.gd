@@ -48,6 +48,31 @@ static func tag() -> String:
 	return "[%s 매치 완료]" % String.chr(0x1F4CA)  # 📊
 
 
+static func vote_tag() -> String:
+	return "[%s%s 유저 미니투표]" % [String.chr(0x1F5F3), String.chr(0xFE0F)]  # 🗳️
+
+
+## 결과 화면의 원클릭 소감 투표: [id, 디스코드에 보낼 글(이모지 포함), 화면에 쓸 글]. 게임 글꼴에는 이모지가 없어 화면 글자에서는 뺀다.
+static func vote_choices() -> Array:
+	return [
+		[&"fun", "%s 딱 재밌어요!" % String.chr(0x1F525), "딱 재밌어요!"],  # 🔥
+		[&"spicy", "%s AI/억까가 너무 매워요" % String.chr(0x1F608), "AI/억까가 너무 매워요"],  # 😈
+		[&"confusing", "%s 룰·효과 파악이 어려워요" % String.chr(0x1F92F), "룰·효과 파악이 어려워요"],  # 🤯
+		[&"long", "%s 한 판이 너무 길어요" % String.chr(0x1F422), "한 판이 너무 길어요"],  # 🐢
+	]
+
+
+## 한줄평 길이 제한과 정리 (줄바꿈 제거).
+const VOTE_COMMENT_LIMIT: int = 120
+
+
+static func vote_line(who: String, choice: String, comment: String, my_rank: int, rounds: int) -> String:
+	var note: String = comment.replace("\n", " ").replace("\r", " ").strip_edges()
+	if note.length() > VOTE_COMMENT_LIMIT:
+		note = note.substr(0, VOTE_COMMENT_LIMIT) + "…"
+	return "%s %s | %s | %s | (%s · %d라운드)" % [vote_tag(), who, choice, note if note != "" else "-", "%d위" % my_rank if my_rank > 0 else "순위 -", rounds]
+
+
 ## 모드 이름: 놀이터(컴퓨터와 대전) / 친선(방 코드로 만든 방) / 익명(빠른 매칭) / 4인 수동(한 화면 핫시트).
 static func mode_label(online: bool, vs_computer: bool, quick_match: bool = false) -> String:
 	if online:
@@ -89,12 +114,21 @@ static func start_line(who: String, mode: String, nth: int) -> String:
 
 
 ## my_rank가 0 이하면(한 화면 4인 수동처럼 '나'가 없으면) 순위 칸에 [-]를 적는다.
-static func end_line(who: String, nth: int, mode: String, rounds: int, seconds: int, my_rank: int, win: String, augments: Array[String]) -> String:
+## difficulty(선택): 체감 난이도 지표 {"winner": 1위 이름, "kills", "deaths", "played": 끝까지 마친 판 수, "wins": 그중 1위 횟수}. 있는 항목만 붙인다.
+static func end_line(who: String, nth: int, mode: String, rounds: int, seconds: int, my_rank: int, win: String, augments: Array[String], difficulty: Dictionary = {}) -> String:
 	var summary: String = ", ".join(PackedStringArray(augments)) if not augments.is_empty() else "없음"
 	if summary.length() > AUGMENT_SUMMARY_LIMIT:
 		summary = summary.substr(0, AUGMENT_SUMMARY_LIMIT) + "…"
-	return "%s %s (%d번째 판) | %s | %d라운드(소요시간 %s) | 내 최종 순위: %s | 1위 우승방식: %s | 고른 증강: %s" % [
-		tag(), str(who) if str(who) != "" else "이름 없음", nth, str(mode) if str(mode) != "" else "-", rounds, duration_text(seconds), "%d위" % my_rank if my_rank > 0 else "-", str(win) if str(win) != "" else "일반", summary]
+	var rank_text: String = "%d위" % my_rank if my_rank > 0 else "-"
+	if str(difficulty.get("winner", "")) != "":
+		rank_text += " / 우승자: %s" % str(difficulty["winner"])
+	var extra: String = ""
+	if difficulty.has("kills") or difficulty.has("deaths"):
+		extra += " | 킬/데스: %d킬 %d데스" % [int(difficulty.get("kills", 0)), int(difficulty.get("deaths", 0))]
+	if int(difficulty.get("played", 0)) > 0:
+		extra += " | 누적: %d판 중 1위 %d회" % [int(difficulty["played"]), int(difficulty.get("wins", 0))]
+	return "%s %s (%d번째 판) | %s | %d라운드(소요시간 %s) | 내 최종 순위: %s | 1위 우승방식: %s%s | 고른 증강: %s" % [
+		tag(), str(who) if str(who) != "" else "이름 없음", nth, str(mode) if str(mode) != "" else "-", rounds, duration_text(seconds), rank_text, str(win) if str(win) != "" else "일반", extra, summary]
 
 
 # --- 보내기 -------------------------------------------------------------------------------------
@@ -117,12 +151,20 @@ static func report_match_start(host: Node, mode: String, nth: int) -> bool:
 
 
 ## 내 순위가 확정됐다(또는 결과 화면에 닿았다).
-static func report_match_end(host: Node, nth: int, mode: String, rounds: int, seconds: int, my_rank: int, reason: StringName, augments: Array[String]) -> bool:
+static func report_match_end(host: Node, nth: int, mode: String, rounds: int, seconds: int, my_rank: int, reason: StringName, augments: Array[String], difficulty: Dictionary = {}) -> bool:
 	if not is_active():
 		return false
 	var win: String = win_label(reason)
-	_notify_page("match_complete", {"mode": mode, "rounds": rounds, "win": win, "rank": my_rank, "seconds": seconds})
-	return send_line(host, end_line(GameSession.tagged_name(), nth, mode, rounds, seconds, my_rank, win, augments))
+	_notify_page("match_complete", {"mode": mode, "rounds": rounds, "win": win, "rank": my_rank, "seconds": seconds, "kills": int(difficulty.get("kills", 0)), "deaths": int(difficulty.get("deaths", 0))})
+	return send_line(host, end_line(GameSession.tagged_name(), nth, mode, rounds, seconds, my_rank, win, augments, difficulty))
+
+
+## 결과 화면의 원클릭 소감 투표를 보낸다.
+static func report_vote(host: Node, choice: String, comment: String, my_rank: int, rounds: int) -> bool:
+	if not is_active():
+		return false
+	_notify_page("match_vote", {"choice": choice, "rank": my_rank})
+	return send_line(host, vote_line(GameSession.tagged_name(), choice, comment, my_rank, rounds))
 
 
 ## 한 줄을 웹후크로 보낸다. host는 요청 노드를 붙일 곳(트리 안의 아무 노드).
