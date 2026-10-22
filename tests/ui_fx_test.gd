@@ -878,14 +878,23 @@ func _test_match_report_is_sent_once() -> void:
 	_expect((bar.find_child("VoteQuestion", true, false) as Label).text == "이번 판 난이도와 템포는 어떠셨나요? (클릭 시 개발자에게 바로 전달됩니다!)", "투표 질문 문구")
 	var buttons: Node = bar.find_child("VoteButtons", true, false)
 	_expect(buttons != null and buttons.get_child_count() == 4, "투표 버튼 4개")
-	(bar.find_child("VoteComment", true, false) as LineEdit).text = "빵집 털이 사기"
+	_expect(bar.find_child("VoteComment", true, false) == null, "한줄 입력칸은 없다 (버튼 4개만)")
 	var spicy: Button = bar.find_child("Vote_spicy", true, false)
 	spicy.pressed.emit()
 	spicy.pressed.emit()  # 두 번 눌러도 한 번만
-	_expect(sent.size() == 1 and sent[0].contains(MatchTelemetry.vote_tag()) and sent[0].contains("AI/억까가 너무 매워요") and sent[0].contains("| 빵집 털이 사기 |"), "투표 한 줄 전송 (%s)" % str(sent))
+	_expect(sent.size() == 1 and sent[0].contains(MatchTelemetry.vote_tag()) and sent[0].contains("AI/억까가 너무 매워요") and sent[0].contains("| - |"), "투표 한 줄 전송 (%s)" % str(sent))
+	var modal: Node = _board.find_child("FeedbackModal", false, false)
+	_expect(modal != null, "[딱 재밌어요!]가 아닌 버튼은 피드백/버그 제보 창을 띄운다")
+	if modal != null:
+		modal.free()
 	await process_frame
 	_expect(bar.find_child("VoteThanks", true, false) != null and bar.find_child("VoteButtons", true, false) == null, "누르면 [소중한 의견 감사합니다!]로 바뀐다")
 	bar.queue_free()
+	var fun_bar: Control = _board._build_vote_bar()
+	_board.add_child(fun_bar)
+	(fun_bar.find_child("Vote_fun", true, false) as Button).pressed.emit()
+	_expect(_board.find_child("FeedbackModal", false, false) == null, "[딱 재밌어요!]는 투표만 보내고 창은 띄우지 않는다")
+	fun_bar.queue_free()
 	state.rankings.assign(saved_rankings)
 	state.rank_reasons = saved_reasons
 	MatchTelemetry.test_force_enabled = false

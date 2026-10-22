@@ -7570,7 +7570,8 @@ func _show_result_overlay() -> void:
 	_reveal_ranking(rows, announcer)
 
 
-## 결과 화면의 원클릭 소감 투표 바: 질문 한 줄 + (선택) 한줄평 입력칸 + 버튼 4개. 누르면 바로 개발자 웹후크로 가고, 감사 문구로 바뀌어 다시 누를 수 없다.
+## 결과 화면의 원클릭 소감 투표 바: 질문 한 줄 + 버튼 4개. 누르면 바로 개발자 웹후크로 가고, 감사 문구로 바뀌어 다시 누를 수 없다.
+## [딱 재밌어요!]가 아닌 버튼은 이어서 피드백/버그 제보 창을 띄워, 더 하고 싶은 말이 있으면 바로 적게 한다.
 func _build_vote_bar() -> Control:
 	var bar := PanelContainer.new()
 	bar.name = "VoteBar"
@@ -7582,13 +7583,6 @@ func _build_vote_bar() -> Control:
 	question.name = "VoteQuestion"
 	question.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(question)
-	var comment := LineEdit.new()
-	comment.name = "VoteComment"
-	comment.placeholder_text = "아쉬운 점이나 사기였던 증강 한 줄 제보 (선택)"
-	comment.max_length = MatchTelemetry.VOTE_COMMENT_LIMIT
-	comment.custom_minimum_size = Vector2(0, 34)
-	comment.add_theme_font_size_override("font_size", 15)
-	column.add_child(comment)
 	var row := HBoxContainer.new()
 	row.name = "VoteButtons"
 	row.add_theme_constant_override("separation", 8)
@@ -7601,20 +7595,20 @@ func _build_vote_bar() -> Control:
 		button.name = "Vote_%s" % choice[0]
 		button.custom_minimum_size = Vector2(0, 40)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.pressed.connect(_on_vote_pressed.bind(bar, str(choice[1])))
+		button.pressed.connect(_on_vote_pressed.bind(bar, str(choice[1]), index != 0))
 		row.add_child(button)
 	return bar
 
 
-func _on_vote_pressed(bar: Control, choice: String) -> void:
+func _on_vote_pressed(bar: Control, choice: String, ask_more: bool) -> void:
 	if not is_instance_valid(bar) or bool(bar.get_meta("voted", false)):
 		return
 	bar.set_meta("voted", true)
-	var comment: LineEdit = bar.find_child("VoteComment", true, false)
-	var text: String = comment.text if comment != null else ""
 	var seat: int = _telemetry_seat()
 	var my_rank: int = state.rankings.find(seat) + 1 if seat != -1 and state != null else 0
-	MatchTelemetry.report_vote(self, choice, text, my_rank, state.round_number if state != null else 0)
+	MatchTelemetry.report_vote(self, choice, "", my_rank, state.round_number if state != null else 0)
+	if ask_more:
+		_open_feedback("결과 화면 투표: %s" % choice, FeedbackModal.Kind.BALANCE)
 	for child: Node in bar.get_children():
 		child.queue_free()
 	var thanks: Label = _make_label("소중한 의견 감사합니다!", 18, Color("69db7c"))
