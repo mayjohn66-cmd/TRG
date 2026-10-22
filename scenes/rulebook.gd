@@ -19,8 +19,8 @@ const FRAME: Color = Color("bfe9d8")
 const FRAME_EDGE: Color = Color("5fc9a0")
 const TEAL: Color = Color("7cc4b4")
 const TEAL_DARK: Color = Color("4a9a8a")
-const TAB_NAMES: Array[String] = ["시작하기", "한 턴", "보드", "잡기", "도구", "말", "카드", "법전", "초증강"]
-const TAB_ICONS: Array[StringName] = [&"face", &"hourglass", &"grid", &"sword", &"dice", &"crown", &"book", &"gear", &"star"]
+const TAB_NAMES: Array[String] = ["시작하기", "한 턴", "보드", "잡기", "도구", "말", "카드", "법전", "범용", "초증강"]
+const TAB_ICONS: Array[StringName] = [&"face", &"hourglass", &"grid", &"sword", &"dice", &"crown", &"book", &"gear", &"key", &"star"]
 const TAB_ART: Array[StringName] = [&"start", &"turn", &"board", &"capture"]
 const ART: Dictionary = {
 	&"start": preload("res://assets/ui/trickcal/rulebook/UI_RULE_START.tres"),
@@ -37,7 +37,7 @@ const ART: Dictionary = {
 	&"badge": preload("res://assets/ui/trickcal/rulebook/UI_RULE_BADGE.tres"),
 	&"laurel": preload("res://assets/ui/trickcal/rulebook/UI_RULE_LAUREL.tres"),
 }
-## 위쪽 두 탭이 묶는 장: 규칙 기본(0~3), 도감(4~7).
+## 위쪽 두 탭이 묶는 장: 규칙 기본(0~3), 도감(4~9: 도구·말·카드·법전·범용·초증강).
 const GROUP_NAMES: Array[String] = ["기본 규칙", "도감"]
 ## 위쪽 탭(묶음)마다 첫 장의 번호: 기본 규칙 0~3, 도감 4~8.
 const GROUP_STARTS: Array[int] = [0, 4]
@@ -215,7 +215,7 @@ func _build_list() -> void:
 	_list_box = VBoxContainer.new()
 	_list_box.add_theme_constant_override("separation", 8)
 	_list_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_place(_list_box, Vector2(28, 148), Vector2(196, 420))
+	_place(_list_box, Vector2(28, 148), Vector2(196, 520))  # 도감 묶음 6장(도구~초증강)이 들어간다
 	for index: int in TAB_NAMES.size():
 		var button := Button.new()
 		button.name = "Tab%d" % index
@@ -782,6 +782,7 @@ func _chapter(index: int) -> Dictionary:
 		5: content = _ch_pawns()
 		6: content = _ch_cards()
 		7: content = _ch_laws()
+		8: content = _ch_general()
 		_: content = _ch_super()
 	var entries: Array = content["entries"]
 	content["overview"] = entries.pop_front()
@@ -789,7 +790,7 @@ func _chapter(index: int) -> Dictionary:
 
 
 # ---------------------------------------------------------------------------
-# 내용 (장 9개). 장마다 항목 목록: title / tone / 그림(texture·art·number·icon) / chips / summary / rows / points / note / tip / extra
+# 내용 (장 10개). 장마다 항목 목록: title / tone / 그림(texture·art·number·icon) / chips / summary / rows / points / note / tip / extra
 # ---------------------------------------------------------------------------
 
 func _ch_start() -> Dictionary:
@@ -1066,7 +1067,7 @@ func _ch_laws() -> Dictionary:
 	var entries: Array = [
 		{"title": "증강과 법전", "art": &"card_law", "tone": Color("ffa94d"), "chips": ["3라운드마다", "법전 4칸"],
 			"summary": "1·4·7라운드처럼 [b]3라운드마다[/b] 모두가 증강 3장 중 하나를 골라요. 법전의 교칙은 모두 [b]특수 승리 조건[/b]이에요.",
-			"rows": [["기물 지급", "말 하나를 새 기물로 진화 (도감 → 말)"], ["도구 교체", "굴리는 도구 바꾸기 (도감 → 도구)"], ["특수 승리", "법전에 새 승리 조건 (3라운드부터)"], ["카드 패키지", "생떼 카드 여러 장 (방어·함정만 주는 보급도)"], ["범용 보급", "기물 변이 · 전군 돌연변이 · 필살기 리필"], ["초증강", "하이리스크 하이리턴 (도감 → 초증강)"]],
+			"rows": [["기물 지급", "말 하나를 새 기물로 진화 (도감 → 말)"], ["도구 교체", "굴리는 도구 바꾸기 (도감 → 도구)"], ["특수 승리", "법전에 새 승리 조건 (3라운드부터)"], ["카드 패키지", "생떼 카드 여러 장 (도감 → 범용)"], ["범용 보급", "기물 변이 · 전군 돌연변이 · 필살기 리필 (도감 → 범용)"], ["초증강", "하이리스크 하이리턴 (도감 → 초증강)"]],
 			"points": ["차례가 끝날 때 교칙을 달성해 있으면 [b]바로 다음 순위로 졸업[/b], 그 교칙은 사라져요 (같은 교칙을 여럿이 채우면 레이스에서 앞선 한 명만)", "새 교칙이 들어오면 가장 오래된 교칙이 밀려나요", "증강 카드마다 한 번 다시 뽑기"],
 			"tip": "법전 슬롯에 마우스를 올리면 모두의 진행도가 보여요. [color=#d6336c][b][위험!][/b][/color] 표시를 견제하세요!"},
 	]
@@ -1078,11 +1079,22 @@ func _ch_laws() -> Dictionary:
 		entries.append({"title": law.law_name, "augment": definition.augment_id, "texture": TextureCache.fetch("res://content_trickcal/illustrations/laws/%s.png" % law.law_id), "icon": &"book",
 			"tone": Color("ffd43b"), "chips": ["목표 %d%s" % [law.goal(), law.unit()]], "summary": law.condition_text(),
 			"rows": [["판정", "차례가 끝날 때마다, 달성했으면 바로 졸업하고 교칙은 사라져요"], ["기록", counting], ["이의 있음!", "기록을 0으로 되돌릴 수 %s" % ("있어요" if law.resettable() else "없어요")]]})
+	return {"title": "법전", "entries": entries, "wide": true}
+
+
+## 범용: 생떼 카드 패키지와 범용 보급 (법전 장에서 따로 뺐다).
+func _ch_general() -> Dictionary:
+	var entries: Array = [
+		{"title": "카드 패키지와 범용 보급", "art": &"card_law", "tone": Color("74c0fc"), "chips": ["증강 라운드", "누구나"],
+			"summary": "판을 뒤집지는 않지만 [b]손패와 기물을 든든하게[/b] 채워 주는 증강이에요.",
+			"rows": [["카드 패키지", "생떼 카드 여러 장 (방어·함정만 주는 보급도)"], ["범용 보급", "기물 변이 · 전군 돌연변이 · 필살기 리필"]],
+			"points": ["필살기를 이미 쓴 기물이 있으면 리필이 이득이에요", "손패는 최대 장수를 넘으면 더 받지 못해요"]},
+	]
 	for definition: AugmentDef in _augments(GameEnums.AugmentCategory.CARD_PACKAGE):
 		entries.append(_augment_entry(definition, &"gear"))
 	for definition: AugmentDef in _augments(GameEnums.AugmentCategory.UTILITY):
 		entries.append(_augment_entry(definition, &"gear"))
-	return {"title": "법전", "entries": entries, "wide": true}
+	return {"title": "범용", "entries": entries, "wide": true}
 
 
 ## 증강 카드 한 장을 도감 항목으로: 첫 줄은 요약, 나머지 ◆ 줄은 항목 점.

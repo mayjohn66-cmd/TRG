@@ -103,13 +103,13 @@ func _run() -> void:
 	menu._top["right"].pressed.emit()
 	_expect(menu.find_child("Popup", true, false) != null, "규칙 팝업이 뜬다")
 	var book: Rulebook = menu.find_child("Popup", true, false) as Rulebook
-	_expect(book != null and book.spread == 0 and book.spread_count() == 9 and book._prev.disabled and not book._next.disabled, "규칙은 9장짜리 규칙 도감의 첫 장으로 열린다")
+	_expect(book != null and book.spread == 0 and book.spread_count() == 10 and book._prev.disabled and not book._next.disabled, "규칙은 10장짜리 규칙 도감의 첫 장으로 열린다")
 	book._next.pressed.emit()
 	_expect(book.spread == 1 and not book._prev.disabled, "다음 쪽으로 넘어간다")
-	for tab_index: int in 9:
+	for tab_index: int in 10:
 		book.show_spread(tab_index)
 		_expect(book._left_holder.get_child_count() >= 3 and book._right_holder.get_child_count() >= 1, "펼침면 %d에 내용이 있다" % tab_index)
-	_expect(book._next.disabled and book._page_label.text == "9 / 9", "마지막 장에서는 다음 쪽이 잠긴다")
+	_expect(book._next.disabled and book._page_label.text == "10 / 10", "마지막 장에서는 다음 쪽이 잠긴다")
 	var all_text: String = ""
 	book.show_spread(6)
 	for node: Node in book.find_children("*", "Label", true, false):
@@ -121,8 +121,13 @@ func _run() -> void:
 	_expect(book.find_children("*", "Label", true, false).any(func(node: Node) -> bool: return (node as Label).text.contains("투기장의 지배자")), "법전 쪽에 실제 특수 승리 교칙 8종이 나온다")
 	_expect(not book.find_children("*", "Label", true, false).any(func(node: Node) -> bool: return (node as Label).text == "?"), "제목 옆 ? 표시는 없다")
 	_expect(not (book._content["entries"] as Array).any(func(data: Dictionary) -> bool: return str(data.get("augment", "")).begins_with("SUPER")), "초증강은 법전 장에서 빠졌다")
+	var package_kinds: Array = [GameEnums.AugmentCategory.CARD_PACKAGE, GameEnums.AugmentCategory.UTILITY]
+	_expect(not (book._content["entries"] as Array).any(func(data: Dictionary) -> bool: return data.has("augment") and package_kinds.has(AugmentRegistry.get_def(StringName(data["augment"])).category)), "카드 패키지·범용 보급은 법전 장에서 빠졌다")
 	book.show_spread(8)
-	_expect(book._notebook_title.text == "하이리스크 하이리턴" and book.entry_count() == SuperAugments.ALL_IDS.size() and book._list_buttons[8].visible and book._list_buttons[4].visible, "초증강 장: 하이리스크 하이리턴 설명 + 초증강 %d종 (도감 묶음)" % SuperAugments.ALL_IDS.size())
+	var general_count: int = AugmentRegistry.all().filter(func(d: AugmentDef) -> bool: return package_kinds.has(d.category)).size()
+	_expect(book._notebook_title.text == "카드 패키지와 범용 보급" and book.entry_count() == general_count and general_count > 0 and book._list_buttons[8].visible, "범용 장: 카드 패키지·범용 보급 %d종" % general_count)
+	book.show_spread(9)
+	_expect(book._notebook_title.text == "하이리스크 하이리턴" and book.entry_count() == SuperAugments.ALL_IDS.size() and book._list_buttons[9].visible and book._list_buttons[4].visible, "초증강 장: 하이리스크 하이리턴 설명 + 초증강 %d종 (도감 묶음)" % SuperAugments.ALL_IDS.size())
 	book.show_spread(4)
 	var swappable: int = AugmentRegistry.all().filter(func(d: AugmentDef) -> bool: return d.category == GameEnums.AugmentCategory.TOOL_SWAP).size()
 	_expect(book.entry == -1 and book._notebook_title.text == "굴리는 도구" and book._tiles.size() == book.entry_count() and book.entry_count() == swappable, "도구 장: 처음엔 전체 설명, 오른쪽엔 증강 카드 %d장 (전체 설명 타일 없음)" % swappable)
