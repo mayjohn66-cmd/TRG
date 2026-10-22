@@ -16,16 +16,20 @@ const GAME_RULES: Array[String] = [
 	"두 더미 맨 위 카드의 그림 합이 정확히 5개일 때 먼저 종을 쳐라! (아닐 때 치면 반칙패)",
 	"병뚜껑을 뒤로 당겨 튕겨라! 번갈아 한 번씩, 상대를 밀어내고 절벽 가까이에 멈추면 승리",
 	"정적 뒤 [뽑아라!] 신호에 먼저 쏴라! 신호 전에 쏘면 부정출발 패배",
-	"신청자는 여왕·평민, 수비자는 반란군·평민 중 한 장! 반란군이 여왕을 잡으면 하극상 +5칸",
+	"각자 특수 1장·시민 4장! 여왕 > 시민 > 반란군 > 여왕. 시민끼리는 버리고 재대결, 반란군이 여왕을 잡으면 +5칸",
 	"구멍 5개 중 하나에 폭탄! 번갈아 칼을 꽂아 사도를 튀어 오르게 한 쪽이 패배",
 ]
 
 const HAND_NAMES: Array[String] = ["바위", "가위", "보"]
-## E카드: 신청자 0 여왕 / 1 평민, 수비자 0 반란군 / 1 평민.
-const ECARD_CHALLENGER: Array[String] = ["여왕", "평민"]
-const ECARD_DEFENDER: Array[String] = ["반란군", "평민"]
+## E카드: 신청자 0 여왕 / 1 시민, 수비자 0 반란군 / 1 시민.
+const ECARD_CHALLENGER: Array[String] = ["여왕", "시민"]
+const ECARD_DEFENDER: Array[String] = ["반란군", "시민"]
 const ECARD_QUEEN: int = 0
 const ECARD_REBEL: int = 0
+const ECARD_CITIZEN: int = 1
+const ECARD_CITIZENS: int = 4
+const ECARD_REVEAL_TIME: float = 2.25
+const ECARD_PICK_TIME: float = 14.0
 
 ## 결투 승자의 말이 앞으로 날아가는 칸수 (패자의 선두 말은 출발선으로 사출된다).
 const WINNER_ADVANCE: int = 3
@@ -90,6 +94,8 @@ static func setup_game(game: int, rng: RandomNumberGenerator) -> Dictionary:
 			if rng.randf() < 0.5:
 				fake_at = snappedf(rng.randf_range(0.6, maxf(signal_at - 0.5, 0.7)), 0.01)  # 💨 트림! 가짜 신호
 			return {"signal": signal_at, "fake": fake_at}
+		Game.ECARD:
+			return {"hands": [[1, ECARD_CITIZENS], [1, ECARD_CITIZENS]]}
 		Game.CURLING:
 			return {"physics": true}
 		Game.BARREL:
@@ -137,9 +143,29 @@ static func time_limit(game: int) -> float:
 	match game:
 		Game.HALLI: return TIME_REACTION + ROULETTE_TIME + INTRO_TIME
 		Game.QUICKDRAW: return TIME_REACTION + ROULETTE_TIME + INTRO_TIME + DRAW_PREP_TIME
+		Game.ECARD: return ECARD_PICK_TIME + ROULETTE_TIME + INTRO_TIME
 		Game.CURLING: return TIME_CURLING + ROULETTE_TIME + INTRO_TIME
 		Game.BARREL: return TIME_BARREL_PICK + ROULETTE_TIME + INTRO_TIME
 	return TIME_PICK + ROULETTE_TIME + INTRO_TIME
+
+
+## Public remaining counts only; a face-down pending choice never changes them.
+static func ecard_count(setup: Dictionary, is_challenger: bool, value: int) -> int:
+	if value not in [0, 1]: return 0
+	var hands: Array = setup.get("hands", [[1, ECARD_CITIZENS], [1, ECARD_CITIZENS]])
+	return int(hands[0 if is_challenger else 1][value])
+
+static func ecard_choices(setup: Dictionary, is_challenger: bool) -> Array[int]:
+	var choices: Array[int] = []
+	for value: int in 2:
+		if ecard_count(setup, is_challenger, value) > 0: choices.append(value)
+	return choices
+
+static func ecard_discard(setup: Dictionary, is_challenger: bool, value: int) -> void:
+	if not setup.has("hands"):
+		setup["hands"] = [[1, ECARD_CITIZENS], [1, ECARD_CITIZENS]]
+	var hand: Array = (setup["hands"] as Array)[0 if is_challenger else 1]
+	hand[value] = maxi(int(hand[value]) - 1, 0)
 
 
 ## 컬링과 스피키 룰렛은 신청자부터 한 번씩 번갈아 둔다.
@@ -190,8 +216,11 @@ static func resolve(game: int, setup: Dictionary, challenger: int, defender: int
 			var outcome: int = compare(a, b)
 			result["winner"] = challenger if outcome > 0 else (defender if outcome < 0 else -1)
 		Game.ECARD:
-			# 여왕 > 평민 > 반란군 > 여왕. 둘 다 평민이면 신청자 승.
-			if a == ECARD_QUEEN and b == ECARD_REBEL:
+			# 여왕 > 시민 > 반란군 > 여왕. 시민끼리는 버리고 남은 패로 재대결.
+			if a == ECARD_CITIZEN and b == ECARD_CITIZEN:
+				result["winner"] = -1
+				result["advance"] = 0
+			elif a == ECARD_QUEEN and b == ECARD_REBEL:
 				result["winner"] = defender
 				result["decided_by"] = &"upset"
 				result["advance"] = UPSET_ADVANCE
@@ -270,8 +299,9 @@ static func bot_input(game: int, setup: Dictionary, is_challenger: bool, rng: Ra
 	match game:
 		Game.RPS: return rng.randi_range(0, 2)
 		Game.ECARD:
-			# 신청자는 여왕을 반쯤, 수비자는 반란군을 40% 정도로 노린다.
-			return (0 if rng.randf() < 0.5 else 1) if is_challenger else (0 if rng.randf() < 0.4 else 1)
+			var special := ecard_count(setup, is_challenger, 0)
+			var citizens := ecard_count(setup, is_challenger, 1)
+			return 0 if rng.randi_range(1, maxi(special + citizens, 1)) <= special else 1
 		Game.HALLI, Game.QUICKDRAW:
 			return int(round((reaction_mark(game, setup) + rng.randf_range(BOT_REACT_MIN, BOT_REACT_MAX)) * 1000.0))
 		Game.CURLING:

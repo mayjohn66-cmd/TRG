@@ -825,6 +825,9 @@ func _handle_duel_pick(actor: int, params: Dictionary) -> void:
 	if not DuelRules.valid_input(game, value, actor == int(_duel["challenger"]), _duel["opened"]):
 		action_rejected.emit(actor, &"duel_pick", &"invalid_value")
 		return
+	if game == DuelRules.Game.ECARD and DuelRules.ecard_count(_duel["setup"], actor == int(_duel["challenger"]), value) <= 0:
+		action_rejected.emit(actor, &"duel_pick", &"card_spent")
+		return
 	if game == DuelRules.Game.BARREL:
 		if actor != int(_duel["turn"]):
 			action_rejected.emit(actor, &"duel_pick", &"not_your_turn")
@@ -874,6 +877,9 @@ func _duel_reveal() -> void:
 	var game: int = int(_duel["game"])
 	var picks: Dictionary = (_duel["picks"] as Dictionary).duplicate()
 	var result: Dictionary = DuelRules.resolve(game, _duel["setup"], challenger, defender, picks)
+	if game == DuelRules.Game.ECARD:
+		DuelRules.ecard_discard(_duel["setup"], true, int(picks[challenger]))
+		DuelRules.ecard_discard(_duel["setup"], false, int(picks[defender]))
 	var winner: int = int(result["winner"])
 	var decided_by: StringName = result["decided_by"]
 	if winner == -1:
@@ -881,7 +887,7 @@ func _duel_reveal() -> void:
 	_duel["picks"] = {}
 	if winner == -1:
 		_emit_event(&"duel_revealed", _duel_reveal_data(-1, &"draw", picks, 0))
-		_duel_set_timer(DuelRules.TIME_PICK)  # 재대결
+		_duel_set_timer(DuelRules.ECARD_PICK_TIME + DuelRules.ECARD_REVEAL_TIME if game == DuelRules.Game.ECARD else DuelRules.TIME_PICK)  # Reveal + new legal hand.
 		return
 	_duel_announce(winner, decided_by, int(result["advance"]), picks)
 
@@ -890,8 +896,11 @@ func _duel_reveal_data(winner: int, decided_by: StringName, picks: Dictionary, a
 	var challenger: int = int(_duel["challenger"])
 	var defender: int = int(_duel["defender"])
 	var game: int = int(_duel["game"])
-	return {"challenger": challenger, "defender": defender, "game": game, "picks": picks, "winner": winner, "draws": int(_duel["draws"]), "decided_by": decided_by, "advance": advance,
+	var data := {"challenger": challenger, "defender": defender, "game": game, "picks": picks, "winner": winner, "draws": int(_duel["draws"]), "decided_by": decided_by, "advance": advance,
 		"detail": DuelRules.detail_text(game, _duel["setup"], challenger, defender, picks)}
+	if game == DuelRules.Game.ECARD:
+		data["ecard_hands"] = (_duel["setup"]["hands"] as Array).duplicate(true)
+	return data
 
 
 ## 승패가 났다: 공개 이벤트 뒤에 패자의 선두 말을 바로 사출하고 승자의 말을 전진시킨다.
@@ -930,7 +939,7 @@ func _duel_timeout() -> void:
 		return
 	for player_id: int in [int(_duel["challenger"]), int(_duel["defender"])]:
 		if not (_duel["picks"] as Dictionary).has(player_id):
-			(_duel["picks"] as Dictionary)[player_id] = DuelRules.timeout_input(game, state.rng)
+			(_duel["picks"] as Dictionary)[player_id] = DuelRules.bot_input(game, _duel["setup"], player_id == int(_duel["challenger"]), state.rng) if game == DuelRules.Game.ECARD else DuelRules.timeout_input(game, state.rng)
 			_emit_event(&"duel_pick_in", {"player_id": player_id})
 	_duel_reveal()
 

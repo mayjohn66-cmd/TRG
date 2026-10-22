@@ -196,9 +196,9 @@ func test_ecard_upset_gives_the_defender_five_tiles() -> void:
 	_do(manager, 2, &"duel_pick", {"value": DuelRules.ECARD_REBEL})
 	check(not manager.state.get_pawn(11).has_left_start, "반란군이 여왕을 잡았다: 신청자의 선두 말 사출")
 	check_eq(manager.state.get_pawn(22).current_tile_idx, 8, "하극상 보너스: 수비자의 선두 말 +5칸")
-	check_eq(int(DuelRules.resolve(DuelRules.Game.ECARD, {}, 1, 2, {1: 1, 2: 1})["winner"]), 1, "둘 다 평민이면 신청자 승")
-	check_eq(int(DuelRules.resolve(DuelRules.Game.ECARD, {}, 1, 2, {1: 1, 2: 0})["winner"]), 1, "평민 > 반란군")
-	check_eq(int(DuelRules.resolve(DuelRules.Game.ECARD, {}, 1, 2, {1: 0, 2: 1})["winner"]), 1, "여왕 > 평민")
+	check_eq(int(DuelRules.resolve(DuelRules.Game.ECARD, {}, 1, 2, {1: 1, 2: 1})["winner"]), -1, "시민끼리는 버리고 재대결")
+	check_eq(int(DuelRules.resolve(DuelRules.Game.ECARD, {}, 1, 2, {1: 1, 2: 0})["winner"]), 1, "시민 > 반란군")
+	check_eq(int(DuelRules.resolve(DuelRules.Game.ECARD, {}, 1, 2, {1: 0, 2: 1})["winner"]), 1, "여왕 > 시민")
 	_dispose(manager)
 
 
@@ -334,3 +334,53 @@ func test_bot_reaction_and_curling_balance() -> void:
 		else:
 			check(curl >= 720 and curl <= 960, "정밀도 72~96%% (%d)" % curl)
 	check(overshoot > 30 and overshoot < 95, "약 15%% 확률로 100%% 초과 실수 (%d/400)" % overshoot)
+
+func test_ecard_four_citizen_draws_discard_cards_and_force_specials() -> void:
+	var manager := _new_manager(DuelRules.Game.ECARD)
+	_setup(manager)
+	place(manager.state, 11, 5, [4])
+	var events := _events(manager)
+	var rejected := _rejections(manager)
+	_challenge(manager)
+	check_eq(manager.pending_duel()["setup"]["hands"], [[1, 4], [1, 4]], "One special and four citizens each")
+	for round_index: int in 4:
+		var before: Dictionary = manager.pending_duel()["setup"].duplicate(true)
+		_do(manager, 1, &"duel_pick", {"value": 1})
+		check_eq(manager.pending_duel()["setup"], before, "A face-down choice cannot leak which card was used")
+		_do(manager, 2, &"duel_pick", {"value": 1})
+		check(manager.duel_pending(), "Citizens draw without ejecting a pawn")
+		check_eq(manager.pending_duel()["draws"], round_index + 1, "Rematch number is authoritative")
+		check_eq(manager.pending_duel()["setup"]["hands"], [[1, 3 - round_index], [1, 3 - round_index]], "Each revealed citizen is removed from the remaining hand")
+		var reveals := events.filter(func(e: Dictionary) -> bool: return e.kind == &"duel_revealed")
+		var data: Dictionary = reveals.back().data
+		check_eq(data["ecard_hands"], manager.pending_duel()["setup"]["hands"], "Peers receive the exact post-discard hands")
+		check_eq(data["winner"], -1, "Neither player wins a citizen tie")
+		check(manager.state.get_pawn(11).has_left_start and manager.state.get_pawn(22).has_left_start, "No board effect before the deciding cards")
+	_do(manager, 1, &"duel_pick", {"value": 1})
+	check_eq(rejected.back(), [1, &"duel_pick", &"card_spent"], "An exhausted citizen cannot be reused")
+	check((manager.pending_duel()["picks"] as Dictionary).is_empty(), "Rejected card never locks the choice")
+	_do(manager, 1, &"duel_pick", {"value": 0})
+	_do(manager, 2, &"duel_pick", {"value": 0})
+	check(not manager.duel_pending() and not manager.state.get_pawn(11).has_left_start, "Fifth-round rebellion beats the queen and resolves the duel")
+	_dispose(manager)
+
+func test_ecard_sync_and_timeout_only_use_the_remaining_hand() -> void:
+	var manager := _new_manager(DuelRules.Game.ECARD)
+	_setup(manager)
+	_challenge(manager)
+	for index: int in 4:
+		_do(manager, 1, &"duel_pick", {"value": 1})
+		_do(manager, 2, &"duel_pick", {"value": 1})
+	var setup: Dictionary = manager.pending_duel()["setup"]
+	check_eq(manager._build_sync_payload()["duel"]["setup"], setup, "Full sync preserves depleted hands")
+	var rng := RandomNumberGenerator.new()
+	for index: int in 100:
+		check_eq(DuelRules.bot_input(DuelRules.Game.ECARD, setup, true, rng), 0, "Queen bot cannot reuse a discarded citizen")
+		check_eq(DuelRules.bot_input(DuelRules.Game.ECARD, setup, false, rng), 0, "Rebel bot cannot reuse a discarded citizen")
+	var restored := _new_manager(DuelRules.Game.ECARD)
+	restored._rpc_sync_state(manager._build_sync_payload())
+	check_eq(restored.pending_duel()["setup"]["hands"], [[1, 0], [1, 0]], "Reconnect restores remaining cards")
+	manager.force_timeout()
+	check(not manager.duel_pending(), "Timeout chooses the only two remaining specials and finishes the duel")
+	_dispose(manager)
+	_dispose(restored)
