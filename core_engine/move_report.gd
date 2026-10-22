@@ -44,6 +44,10 @@ var defused_cards: int = 0
 ## 말 밟고 점프하기로 늘어난 칸수와 부스터 발판이 터진 타일들.
 var leapfrog_bonus: int = 0
 var dash_tiles: Array[int] = []
+## 도착 칸에 함정이 있었다 (코너 버프 대신 함정이 발동한다).
+var trap_at_landing: bool = false
+## 코너에 정확히 도착해 다음 굴림 +N 버프를 받았다 (0이면 없음).
+var corner_buff: int = 0
 ## 리벤지 부스터로 더해진 칸 수 (0이면 발동하지 않음)와 그때의 최종 계획 칸 수.
 var revenge_bonus: int = 0
 var revenge_total: int = 0
@@ -68,6 +72,8 @@ func merge(other: MoveReport) -> void:
 	if drawn_card == &"":
 		drawn_card = other.drawn_card
 	attachment_events.append_array(other.attachment_events)
+	trap_at_landing = trap_at_landing or other.trap_at_landing
+	corner_buff = maxi(corner_buff, other.corner_buff)
 	effect_names.append_array(other.effect_names)
 	cannon_bonus = cannon_bonus or other.cannon_bonus
 	pushed_back = pushed_back or other.pushed_back
@@ -118,4 +124,5 @@ func to_dict() -> Dictionary:
 		"paid_bail": paid_bail,
 		"leapfrog_bonus": leapfrog_bonus,
 		"dash_tiles": dash_tiles,
+		"corner_buff": corner_buff,
 	}

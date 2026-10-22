@@ -4,6 +4,9 @@
 class_name MoveExecutor
 extends RefCounted
 
+## 코너에 정확히 도착했을 때 받는 다음 굴림 보너스 칸수.
+const CORNER_BUFF_STEPS: int = 1
+
 ## 한 걸음을 밟은 결과.
 enum StepOutcome {
 	CONTINUE, # 계속 이동
@@ -333,6 +336,17 @@ static func _checkers_jump_at(state: GameState, mover: PlayerPawn, tile: int, re
 static func finalize(state: GameState, mover: PlayerPawn, ctx: RuleContext, report: MoveReport, outcome: StepOutcome) -> void:
 	if outcome == StepOutcome.CONTINUE or outcome == StepOutcome.HALTED:
 		_resolve_landing(state, mover, ctx, report)
+		_grant_corner_buff(state, mover, report)
+
+
+## 코너에 정확히 멈추면 다음 굴림 결과에 +1 (함정이 있던 칸이면 버프 대신 함정이 발동한 것으로 끝난다). 워프·잡기로 자리를 옮겼으면 받지 못한다.
+static func _grant_corner_buff(state: GameState, mover: PlayerPawn, report: MoveReport) -> void:
+	if mover.is_finished or mover.is_imprisoned or report.trap_at_landing or report.warped:
+		return
+	if not BoardSpec.bonus_corner_tiles.has(mover.current_tile_idx) or report.path.is_empty() or int(report.path.back()) != mover.current_tile_idx:
+		return
+	state.corner_buff[mover.owner_id] = CORNER_BUFF_STEPS  # 겹쳐 쌓이지 않는다
+	report.corner_buff = CORNER_BUFF_STEPS
 
 
 ## 모노폴리 미니카: 반환점(BoardSpec.halfway_tile)을 지나거나 밟을 때마다 손패에 생떼 카드 1장을 보충한다.
@@ -361,6 +375,8 @@ static func _trigger_attachments(
 	for attachment: TileAttachment in tile.attachments.duplicate():
 		ctx.metadata.erase("cutscene_id")
 		var is_trap: bool = attachment.attachment_id.begins_with("TRP")
+		if is_trap and is_landing:
+			report.trap_at_landing = true
 		if is_trap and mover.is_trap_immune():
 			# 지뢰찾기 공병: 적 함정은 해체하고 카드 1장. 스타 카트·공병은 어떤 함정에도 걸리지 않는다.
 			if mover.sub_type() == GameEnums.PawnSubType.MINESWEEPER_FLAG and attachment.owner_id != mover.owner_id:

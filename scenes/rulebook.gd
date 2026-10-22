@@ -798,6 +798,9 @@ func _ch_start() -> Dictionary:
 			"summary": "말 [b]4개를 모두[/b] 결승선(0번)에 먼저 넣는 레이스예요.",
 			"rows": [["이기는 법", "말 4개 완주 → 먼저 해낸 순서로 1·2·3위"], ["특수 승리", "법전의 조건을 라운드 끝까지 채우면 졸업"], ["손패", "생떼 카드 최대 7장"], ["출발", "말 4개 모두 출발선(0번)에서"]],
 			"tip": "처음이라면 [b]놀이터[/b]에서 컴퓨터와 한 판 해 보세요."},
+		{"title": "완주와 순위", "icon": &"crown", "tone": Color("86d94f"),
+			"summary": "말이 0번에 닿으면 완주. 4개 모두 완주하면 [b]순위 확정[/b]!",
+			"rows": [["1·2·3위", "먼저 해낸 순서대로"], ["4위", "마지막 남은 한 명"], ["특수 승리", "라운드 끝에 법전 조건을 채웠으면 졸업"]]},
 		{"title": "말마다 능력", "art": &"pawn_ability", "tone": Color("f08aa8"), "chips": ["증강", "필살기 1회"],
 			"summary": "증강으로 말을 [b]체스·장기·쇼기…[/b]로 진화시켜요. 말마다 상시 능력과 한 판에 한 번 쓰는 필살기가 있어요.",
 			"points": ["보드 위 말에 마우스를 올리면 능력이 보여요", "자세한 건 [b]도감 → 말[/b]"]},
@@ -853,20 +856,20 @@ func _ch_board() -> Dictionary:
 			"summary": "우하단 0번에서 출발해 반시계로 한 바퀴. 다시 0번이 [b]결승선[/b]이에요.", "extra": make_board,
 			"points": ["옷장과 부스터 발판은 [b]딱 멈출 때만[/b] 작동해요", "오른쪽 칸 이름을 누르면 자세히 볼 수 있어요"]},
 		{"title": "코너", "icon": &"grid", "tone": Color("2f8f4e"), "chips": [_join_tiles(BoardSpec.corner_tiles.slice(1)) + "번"],
-			"summary": "[b]코너 전용 함정[/b]만 설치할 수 있는 칸이에요.",
-			"points": ["무인도·우이의 소원빌기", "지나가는 상인·물의 세례를 받아라"]},
+			"summary": "딱 멈추면 [b]다음 굴림 결과 +1[/b]! 단, 이 칸에 함정이 있으면 버프 대신 함정이 발동해요.",
+			"points": ["[b]코너 전용 함정[/b]만 설치할 수 있는 칸이에요", "무인도·우이의 소원빌기", "지나가는 상인·물의 세례를 받아라"]},
 		{"title": "반환점", "icon": &"crown", "tone": Color("c98a14"), "chips": ["%d번" % BoardSpec.halfway_tile],
 			"summary": "여기를 지나면 체스 폰은 [b]퀸[/b]으로, 쇼기 말은 [b]승급[/b]해요."},
 		{"title": "빵집", "icon": &"book", "tone": Color("d9822b"), "chips": [_join_tiles(BoardSpec.bakery_tiles) + "번"],
 			"summary": "딱 멈추면 [b]생떼 카드 1장[/b]! 어떤 카드인지는 본인만 알아요."},
 		{"title": "옷장", "icon": &"key", "tone": Color("2f9aa3"), "chips": [_join_tiles(BoardSpec.portal_tiles) + "번"],
-			"summary": "딱 멈추면 [b]순간이동[/b]! 지나가기만 하면 아무 일도 없어요.",
+			"summary": "딱 멈추면 [b]순간이동[/b]! 두 옷장은 [b]왕복[/b]이라 밟은 쪽의 반대편으로 가요. 지나가기만 하면 아무 일도 없어요.",
 			"rows": _warp_rows()},
 		{"title": "부스터 발판", "icon": &"play", "tone": Color("2fb59a"), "chips": [_join_tiles(BoardSpec.dash_tiles) + "번"],
 			"summary": "딱 멈추면 [b]+3칸[/b] 더 날아가요."},
 		{"title": "함정 칸", "texture": TextureCache.fetch("res://assets/board/traps/HIDDEN.png"), "tone": Color("7a5cd6"), "chips": ["한 칸에 하나"],
 			"summary": "함정이 깔린 칸은 [b]보라색[/b]으로 바뀌고 그 함정 그림이 보여요.",
-			"points": ["상대가 숨긴 함정은 물음표로 보여요", "코너 함정은 누구에게나 공개"]},
+			"points": ["상대가 숨긴 함정은 물음표로 보여요", "코너 함정은 누구에게나 공개", "코너·빵집·옷장·부스터 발판에는 일반 함정을 깔 수 없어요"]},
 	]}
 
 
@@ -883,24 +886,47 @@ func _ch_capture() -> Dictionary:
 			"summary": "적 말이 있는 칸에 [b]멈추면[/b] 그 말은 출발선으로 날아가요.",
 			"rows": [["잡기", "멈춘 쪽이 잡아요 (스치기만 하면 안 잡혀요)"], ["출발선(0번)", "안전 지대: 잡을 수 없어요"], ["내 말끼리", "잡지 않아요"]],
 			"tip": "완주 직전에 잡히면 억울해요. 선두 말은 적 앞을 조심!"},
-		{"title": "지나가기", "art": &"pass", "tone": Color("5fc1e8"),
-			"summary": "적이 막고 있어도 [b]멈추지만 않으면[/b] 지나가요.",
-			"points": ["밟고 지나가면 점프 부스트 +1칸 (최대 +3)"]},
-		{"title": "업기 (윷말)", "icon": &"play", "tone": Color("f0c14e"),
-			"summary": "윷말끼리 같은 칸에서 만나면 [b]하나로 합쳐[/b] 함께 움직여요.",
-			"points": ["잡히면 [color=#d6336c]같이 잡혀요[/color]"]},
-		{"title": "완주와 순위", "icon": &"crown", "tone": Color("86d94f"),
-			"summary": "말이 0번에 닿으면 완주. 4개 모두 완주하면 [b]순위 확정[/b]!",
-			"rows": [["1·2·3위", "먼저 해낸 순서대로"], ["4위", "마지막 남은 한 명"], ["특수 승리", "라운드 끝에 법전 조건을 채웠으면 졸업"]]},
+		{"title": "말의 기본", "icon": &"play", "tone": Color("5fc1e8"), "chips": ["말 4개", "굴린 만큼 전진"],
+			"summary": "내 말은 모두 [b]4개[/b]. 처음엔 전부 출발선(0번)에서 기다려요.",
+			"rows": [["출발", "굴림 눈금만큼 한 말을 골라 내보내요"], ["이동", "눈금만큼 반시계로 한 칸씩 전진해요"], ["잡기", "적 말 위에 멈추면 그 말은 출발선으로"], ["잡히면", "출발선으로 돌아가 다시 출발해요 (리벤지 부스터 획득)"], ["완주", "0번에 닿으면 끝. 4개 모두 완주하면 순위 확정"]],
+			"points": ["말마다 능력과 필살기가 달라요 ([b]도감 → 말[/b])", "보드 위 말에 마우스를 올리면 상태가 보여요"]},
+		{"title": "공격 카드", "icon": &"sword", "tone": Color("ff6b6b"), "chips": ["%d종" % MainBoard.ATTACK_CARDS.size(), "발동 경보"],
+			"summary": "상대 말과 차례를 흔드는 카드예요. 쓰면 먼저 [b]공격 카드 발동![/b] 경보가 뜨고 어떤 카드인지 공개돼요.",
+			"rows": _card_rows(MainBoard.ATTACK_CARDS),
+			"tip": "공격은 상대가 [b]방어 카드[/b]로 막을 수 있어요."},
+		{"title": "방어 카드", "icon": &"sword", "tone": Color("74c0fc"), "chips": ["피격 시", "%d종" % _cards_of(GameEnums.CardCategory.COUNTER).size()],
+			"summary": "내가 공격받으면 [b]방어 카드를 쓸지[/b] 팝업으로 물어봐요.",
+			"rows": _card_rows(_cards_of(GameEnums.CardCategory.COUNTER)),
+			"points": ["잡기·공격 카드·함정이 공격이에요", "그냥 맞기를 고르면 그 공격엔 다시 못 써요"]},
+		{"title": "함정 카드", "art": &"hidden_trap", "tone": Color("b197fc"), "chips": ["칸에 깔기", "한 칸에 하나"],
+			"summary": "칸을 골라 몰래 깔아 두는 카드예요. 누가 깔았는지만 알려지고 [b]어떤 카드인지는 비밀[/b]!",
+			"rows": _card_rows(_cards_of(GameEnums.CardCategory.TRAP)),
+			"points": ["일반 함정은 코너·빵집·옷장·부스터 발판을 뺀 칸에 깔아요", "코너 전용 함정은 코너에만 깔고, 누구에게나 공개돼요"]},
 		{"title": "숨은 함정", "art": &"hidden_trap", "tone": Color("b197fc"),
 			"summary": "상대가 깐 함정은 [b]물음표[/b]로만 보여요. 밟아 보기 전엔 몰라요.",
 			"points": ["내 함정은 내 화면에서 그림이 보여요"]},
-		{"title": "무인도", "art": &"island", "tone": Color("f0c14e"),
-			"summary": "갇히면 [b]짝수 눈금[/b]이 나와야 탈출해요."},
-		{"title": "방어", "icon": &"sword", "tone": Color("74c0fc"), "chips": ["피격 시"],
-			"summary": "내가 공격받으면 [b]방어 카드를 쓸지[/b] 팝업으로 물어봐요.",
-			"points": ["잡기·공격 카드·함정이 공격이에요", "그냥 맞기를 고르면 그 공격엔 다시 못 써요"]},
 	]}
+
+
+## 이 종류의 카드 (덱에 들어가는 것만, 카드 번호 순).
+func _cards_of(category: int) -> Array:
+	var result: Array = []
+	for card_id: StringName in CardRegistry.DECK_COMPOSITION.keys():
+		if CardRegistry.get_card(card_id).category == category:
+			result.append(card_id)
+	return result
+
+
+## 카드 목록을 [이름, 한 줄 설명] 표로: 설명 앞의 [방어]·[코너] 같은 머리표는 뗀다.
+func _card_rows(card_ids: Array) -> Array:
+	var rows: Array = []
+	for card_id: Variant in card_ids:
+		var card: BaseCard = CardRegistry.get_card(StringName(card_id))
+		var line: String = MainBoard.card_summary(StringName(card_id)).replace("\n", " ")
+		if line.begins_with("[방어] "):
+			line = line.trim_prefix("[방어] ")
+		rows.append([card.display_name, line])
+	return rows
 
 
 func _ch_tools() -> Dictionary:

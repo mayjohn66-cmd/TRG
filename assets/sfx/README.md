@@ -27,6 +27,18 @@
 | `card_pick` | 카드 집어 듦 | card-fan, card-slide, card-shove |
 | `card_throw` | 카드 던짐 | card-shove, card-slide, whoosh |
 | `card_impact` | 카드 발동 임팩트 | card-place, impact, thud |
+| `turn_start` | [OO 차례] 배너 | turn-start |
+| `round_start` | [N라운드 시작!] 배너 (파일을 넣으면 `EVENTS`에 한 줄 추가) | round-start |
+| `review_open` / `review_confirm` | 증강 확인 창 열림 / [확인] 누름 | review-open, review-confirm |
+| `attack_alert` | 공격 카드 발동! 경보 | attack-alert |
+| `trap_hidden` | 비밀 함정 설치 알림 | trap-hidden |
+| `build_hotel` / `build_mine` | 호텔 건물 / 필살기 지뢰가 솟아오름 | build-hotel, build-mine |
+| `revenge_ignite` | 리벤지 부스터 점화 | revenge-ignite |
+| `tempo_warning` | 템포 업 경고 | tempo-warning |
+| `emote_pop` | 이모트 말풍선 | emote-pop |
+| `timer_tick` / `timeout` | 제한 시간 5초 전 째깍 / 시간 초과·강제 턴 패스 | timer-tick, timeout |
+| `graduate` | 순위 확정(졸업) | graduate |
+| `podium` | 결과 시상대 | podium |
 | `augment_show` | 증강 카드 등장 | card-fan, card-shuffle, shuffle |
 | `augment_pick` | 증강 선택 | card-place, select, click |
 | `law` | 새 교칙 찍힘 | impact, stamp, thud, chips-collide |
