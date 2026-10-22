@@ -25,6 +25,7 @@ func expect(value: bool, message: String) -> void:
 func _run() -> void:
 	for super_id: StringName in [&"SUPER_04", &"SUPER_05"]:
 		await _scenario(super_id)
+	await _tempo_after_capture()
 	if failures.is_empty():
 		print("UI_ROUND_SEQUENCE_OK: review logs -> review closed -> augment effects -> round banner -> first turn")
 	quit(0 if failures.is_empty() else 1)
@@ -112,3 +113,65 @@ func _scenario(super_id: StringName) -> void:
 		for at: int in effect_steps:
 			expect(at <= int(times["banner"]), "%s: 효과 연출(%d프레임)이 라운드 배너(%d프레임)보다 먼저" % [label, at, int(times["banner"])])
 		expect(int(times["banner"]) <= int(times["first_turn"]), "%s: 첫 차례는 라운드 배너 뒤" % label)
+
+
+## 라운드 끝 처치(마지막 차례의 잡기)와 같은 순간에 템포 업이 오면: [처치 컷인 -> 장외 사출] 이 다 끝난 뒤에 템포 업 경고가 뜬다.
+func _tempo_after_capture() -> void:
+	if board != null:
+		board.queue_free()
+		await process_frame
+	board = load("res://scenes/main_board.tscn").instantiate()
+	board.instant_roll_for_test = true
+	root.add_child(board)
+	await process_frame
+	await process_frame
+	board._bot.set_enabled(false)
+	board.manager._draft_offers.clear()
+	board.manager._draft_picks.clear()
+	board.manager.review_enabled = false
+	board.manager._begin_turn()
+	board._close_draft_overlay()
+	board._close_opening()
+	board._intro_pending = false
+	board._announcer.cancel()
+	board._announced_round = board.state.round_number
+	board._reset_presentation()
+	board._fx_until_msec = 0
+	var state: GameState = board.state
+	var mine: PlayerPawn = state.get_pawn(11)
+	var enemy: PlayerPawn = state.get_pawn(21)
+	mine.current_tile_idx = 1
+	mine.has_left_start = true
+	mine.step_history.assign([1])
+	enemy.current_tile_idx = 2
+	enemy.has_left_start = true
+	enemy.step_history.assign([2])
+	board._refresh_all()
+	board._announcer.cancel()
+	var clock: Array[int] = [0]
+	var tempo_at: Array[int] = [-1]
+	board._announcer.entry_started.connect(func(_serial: int) -> void:
+		if str(board._announcer._current.get("tag", "")) == "템포 업" and tempo_at[0] == -1:
+			tempo_at[0] = clock[0])
+	var ctx := RuleContext.new()
+	ctx.state = state
+	ctx.actor_id = 1
+	ctx.raw_roll = 1
+	ctx.dice_value = 1
+	board.instant_roll_for_test = false
+	MoveExecutor.execute(state, mine, ctx)
+	board._on_event(&"tempo_up", {"level": 1, "round": 10, "lines": ["모든 이동 +1칸"]})  # 같은 순간 라운드가 넘어가며 템포 업
+	var cutin_at: int = -1
+	var eject_done_at: int = -1
+	var view: Node2D = board._pawn_views[21]
+	var deadline: int = Time.get_ticks_msec() + 15000
+	while Time.get_ticks_msec() < deadline and tempo_at[0] == -1:
+		await process_frame
+		clock[0] += 1
+		if cutin_at == -1 and board._capture_cutin.active:
+			cutin_at = clock[0]
+		if cutin_at != -1 and eject_done_at == -1 and not board._capture_cutin.busy() and not board._fx_running(view) and not view.visible:
+			eject_done_at = clock[0]
+	expect(cutin_at != -1 and tempo_at[0] != -1, "템포 업: 처치 컷인과 템포 업 경고가 모두 나온다 (컷인 %d, 경고 %d)" % [cutin_at, tempo_at[0]])
+	expect(eject_done_at != -1 and eject_done_at <= tempo_at[0], "템포 업 경고는 처치 컷인·장외 사출이 끝난 뒤 (컷인 %d, 사출 끝 %d, 경고 %d)" % [cutin_at, eject_done_at, tempo_at[0]])
+	board.instant_roll_for_test = true

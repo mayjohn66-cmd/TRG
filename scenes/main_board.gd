@@ -2188,8 +2188,6 @@ func _refresh_pawns() -> void:
 			badge_text += " 구속"
 		if pawn.is_imprisoned:
 			badge_text += " 감옥"
-		if pawn.revenge_boost:
-			badge_text += " 복수"
 		if state.bonds.has(pawn.entity_id):
 			badge_text += " 연대"  # 강제 연대책임: 일심동체로 묶인 말
 		(view.get_node("Bounce/Badge") as Label).text = badge_text
@@ -6033,10 +6031,12 @@ func _apply_homerun(t: float, view: Node2D, from_pos: Vector2, exit_pos: Vector2
 		_burst_shards(view.position, Color("ffe066"), 2)
 
 
-## 홈런 뒤: 말은 날아가기만 한다. 내려앉는 연출 없이 출발선 자리에 조용히 돌아와 있다.
+## 홈런 뒤: 말은 날아가기만 한다. 출발선 대기 말은 보드에 그리지 않으므로 숨긴 채로 출발선 자리에 둔다
+## (예전에는 보이는 채로 옮겨 두어 연출 큐가 끝날 때까지 출발선에 잠깐 나타났다가 사라졌다).
 func _homerun_return(view: Node2D, to_pos: Vector2, to_scale: float, _land_thud: bool) -> void:
 	if not is_instance_valid(view):
 		return
+	view.visible = false
 	if view.has_meta("trail_step"):
 		view.remove_meta("trail_step")
 	view.rotation = 0.0
@@ -8097,11 +8097,15 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			var stage: int = int(data["level"])
 			var lines: Array = data["lines"]
 			_log_line("[템포 업 Lv.%d] %d라운드부터: %s" % [stage, data["round"], " / ".join(PackedStringArray(lines))], Color("ff6b6b"))
-			_record(-1, "[color=#ff6b6b][b]!! 템포 업 Lv.%d[/b] - %s[/color]" % [stage, _bb(" · ".join(PackedStringArray(lines)))])
-			if _fx_on():
-				screen_shake(12.0, 0.5)
-				Sfx.play(&"tempo_warning")
-			_announce("템포 업", "템포 업 Lv.%d · %s" % [stage, TempoUp.stage_name(stage)], "%d라운드부터 게임이 빨라집니다!\n◆ %s" % [data["round"], "\n◆ ".join(PackedStringArray(lines))], Color("ff4d4d"), null, 3.2)
+			var tempo_round: int = int(data["round"])
+			# 라운드 끝(마지막 차례·NPC 페이즈)의 처치 연출이 다 끝난 뒤에 경고하고, 증강 선택 창은 그 경고 뒤에 연다.
+			# (지연 큐에 넣는다: 처치 연출도 지연 큐로 들어오므로 그보다 앞서 끼어들지 않는다)
+			_enqueue_late(func() -> void:
+				_record(-1, "[color=#ff6b6b][b]!! 템포 업 Lv.%d[/b] - %s[/color]" % [stage, _bb(" · ".join(PackedStringArray(lines)))], "", false, true)
+				if _fx_on():
+					screen_shake(12.0, 0.5)
+					Sfx.play(&"tempo_warning")
+				_announce_now("템포 업", "템포 업 Lv.%d · %s" % [stage, TempoUp.stage_name(stage)], "%d라운드부터 게임이 빨라집니다!\n◆ %s" % [tempo_round, "\n◆ ".join(PackedStringArray(lines))], Color("ff4d4d"), null, 3.2))
 		&"special_victory_judgement":
 			var achievers: Array = data["players"]
 			_log_line("[%d라운드 특수 승리] 달성: %s" % [int(data["round"]), ", ".join(PackedStringArray(achievers.map(func(id: int) -> String: return _player_name(id))))], Color("ffd43b"))
