@@ -363,6 +363,7 @@ var _drop_label: Label = null
 var _dock: Control = null
 var _dock_player: int = -1
 var _debug_toggle: Button = null
+var _match_reported: bool = false
 var _pressure_serial: int = -1
 var _pressure_second: int = -1
 var _pressure_left: float = 0.0
@@ -764,7 +765,19 @@ func _unhandled_key_input(event: InputEvent) -> void:
 # 새 게임
 # ---------------------------------------------------------------------------
 
+## 결과 화면에 닿은 판을 통계 한 줄로 알린다 (판마다 한 번). 온라인에서는 방장만 보내 같은 판이 여러 번 세어지지 않는다.
+func _report_match_once() -> void:
+	if _match_reported or state == null or not manager.is_game_over:
+		return
+	_match_reported = true
+	if net != null and not net.is_host:
+		return
+	var reason: StringName = state.rank_reasons.get(state.winner, VictoryChecker.ALL_HOME)
+	MatchTelemetry.report_match(self, net != null, ai_mode, state.round_number, reason)
+
+
 func _new_game() -> void:
+	_match_reported = false
 	# Initial scene entry has already selected a backdrop; an actual rematch repicks.
 	if state != null and _match_background != null:
 		_match_background.choose_random()
@@ -7135,6 +7148,7 @@ func _pick_augment_with_pawn(pawn_id: int, player_id: int, index: int) -> void:
 
 
 func _show_result_overlay() -> void:
+	_report_match_once()
 	_close_result_overlay()
 	_result_overlay = _new_overlay()
 	var center := CenterContainer.new()

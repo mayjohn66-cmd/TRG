@@ -66,6 +66,7 @@ func _run() -> void:
 	await _test_gauge_and_lock()
 	await _test_instant_flag()
 	await _test_rank_log_follows_the_capture()
+	_test_match_report_is_sent_once()
 	await _test_announcer()
 	await _test_aspect_layout()
 	await _test_roll_pad()
@@ -800,6 +801,26 @@ func _test_rank_log_follows_the_capture() -> void:
 	_expect(capture_at != -1 and rank_at != -1 and capture_at < rank_at, "처치 기록 뒤에 순위 확정 기록이 찍힌다 (처치 %d줄, 순위 %d줄)" % [capture_at, rank_at])
 	_board._announcer.cancel()
 	_board._refresh_all()
+
+
+## 판이 끝나 결과 화면에 닿으면 매치 완료 알림이 판마다 정확히 한 번만 나간다.
+func _test_match_report_is_sent_once() -> void:
+	var manager: TurnManager = _board.manager
+	var sent: Array[String] = []
+	MatchTelemetry.test_force_enabled = true
+	MatchTelemetry.test_sender = func(_url: String, body: PackedByteArray, _type: String) -> void: sent.append(body.get_string_from_utf8())
+	manager.is_game_over = true
+	manager.state.winner = 1
+	_board._match_reported = false
+	_board._report_match_once()
+	_board._report_match_once()  # 결과 화면을 다시 그려도 두 번 세지 않는다
+	manager.is_game_over = false
+	manager.state.winner = -1
+	MatchTelemetry.test_force_enabled = false
+	MatchTelemetry.test_sender = Callable()
+	_expect(sent.size() == 1, "한 판에 알림은 한 번 (%d번)" % sent.size())
+	_expect(sent.size() == 1 and sent[0].contains(MatchTelemetry.mode_label(false, _board.ai_mode) + " |"), "지금 모드(%s)로 알린다" % MatchTelemetry.mode_label(false, _board.ai_mode))
+	_board._match_reported = false
 
 
 func _test_instant_flag() -> void:
