@@ -214,6 +214,8 @@ static func choose_card_tile(state: GameState, player_id: int, card: BaseCard, r
 ## 내 턴 시작에 쓸 카드 하나: {"card_id": StringName, "params": Dictionary}. 쓸 카드가 없으면 빈 Dictionary.
 ## tried: 이번 턴에 이미 검토한 카드 ID (같은 카드를 두 번 검토하지 않는다). 검토한 카드는 tried에 추가된다.
 static func plan_turn_card(state: GameState, player_id: int, tried: Dictionary, rng: RandomNumberGenerator) -> Dictionary:
+	if state.is_banned(player_id):
+		return {}  # 알고리즘 밴: 카드를 낼 수 없다
 	var hand: Array = state.hands[player_id]
 	for card_id: StringName in hand:
 		if tried.has(card_id):
@@ -255,6 +257,8 @@ static func _plan_one_turn_card(state: GameState, player_id: int, card: BaseCard
 				var gain: int = 0
 				for tile: int in TowerCommand.side_tiles(side):
 					for attachment: TileAttachment in state.board.get_tile(tile).attachments:
+						if attachment.owner_id != player_id and attachment.is_hidden_trap:
+							continue  # 남이 숨긴 함정은 사람처럼 봇도 모른다
 						gain += 1 if attachment.owner_id != player_id else -1
 				if gain > best_gain:
 					best_gain = gain
@@ -328,6 +332,8 @@ static func _plan_one_turn_card(state: GameState, player_id: int, card: BaseCard
 ## 개입 창(지금은 피해를 입은 뒤의 RESOLUTION 창뿐)에서 이 봇이 낼 카드 하나. 없으면 빈 Dictionary.
 ## roll_value: 방금 확정된 눈금 (INTERRUPT_ROLL에서만 의미 있음). actor_is_bot: 지금 턴인 플레이어가 봇인가.
 static func plan_window_card(state: GameState, player_id: int, phase: int, roll_value: int, actor_is_bot: bool, current_player: int, tried: Dictionary, rng: RandomNumberGenerator) -> Dictionary:
+	if state.is_banned(player_id):
+		return {}
 	var hand: Array = state.hands[player_id]
 	for card_id: StringName in hand:
 		if tried.has(card_id):
@@ -491,8 +497,14 @@ static func skill_option(state: GameState, pawn: PlayerPawn) -> Dictionary:
 						hits += pawn_progress(state, leader)
 			return {"params": {}, "value": hits} if hits > 0.0 else {}
 		&"quake":
-			var hostile: int = PawnSkills.attachments_on(state, pawn, PawnSkills.quake_tiles(pawn), true)
-			var mine: int = PawnSkills.attachments_on(state, pawn, PawnSkills.quake_tiles(pawn)) - hostile
+			var hostile: int = 0  # 보이는 남의 설치물만 센다 (남이 숨긴 함정은 모른다)
+			var mine: int = 0
+			for tile: int in PawnSkills.quake_tiles(pawn):
+				for attachment: TileAttachment in state.board.get_tile(tile).attachments:
+					if attachment.owner_id == pawn.owner_id:
+						mine += 1
+					elif not attachment.is_hidden_trap:
+						hostile += 1
 			return {"params": {}, "value": SKILL_USE_THRESHOLD + 4.0 * float(hostile - mine)} if hostile > mine else {}
 		&"hotel":
 			var own_hotel: bool = state.board.get_tile(pawn.current_tile_idx).attachments.any(func(a: TileAttachment) -> bool: return a.attachment_id == "HOTEL" and a.owner_id == pawn.owner_id)
