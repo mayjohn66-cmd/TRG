@@ -626,12 +626,12 @@ func test_card_requires_phase_ownership_and_valid_target() -> void:
 	var rejected: Array = _rejections(manager)
 	manager.state.give_card(2, &"TRP_07")
 	manager.state.give_card(1, &"TRP_07")
-	_do(manager, 2, &"play_card", {"card_id": &"TRP_07", "tile": 9})  # 내 턴 아님
+	_do(manager, 2, &"play_card", {"card_id": &"TRP_07", "tile": 7})  # 내 턴 아님
 	_do(manager, 1, &"play_card", {"card_id": &"TRP_07", "tile": 0})  # 잘못된 대상
 	_do(manager, 1, &"play_card", {"card_id": &"ACT_04"})  # 손패에 없음
-	_do(manager, 1, &"play_card", {"card_id": &"TRP_07", "tile": 9})  # 정상
+	_do(manager, 1, &"play_card", {"card_id": &"TRP_07", "tile": 7})  # 정상
 	check_eq(rejected.size(), 3, "비정상 요청 3건 거부")
-	check(manager.state.board.get_tile(9).has_attachment("TRP_07"), "정상 요청은 설치")
+	check(manager.state.board.get_tile(7).has_attachment("TRP_07"), "정상 요청은 설치")
 	check((manager.state.hands[1] as Array).is_empty(), "사용한 카드 소모")
 	_dispose(manager)
 

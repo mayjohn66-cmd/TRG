@@ -38,7 +38,8 @@ func test_special_tiles_are_valid_and_distinct() -> void:
 		check(BoardSpec.corner_tiles.has(from_tile), "점프는 코너에서 시작")
 		check(int(BoardSpec.jump_corner_targets[from_tile]) > from_tile, "점프는 앞으로만")
 	for from_tile: int in BoardSpec.portal_warp_targets.keys():
-		check(BoardSpec.portal_tiles.has(from_tile) and int(BoardSpec.portal_warp_targets[from_tile]) > from_tile, "옷장 워프는 앞으로만")
+		check(BoardSpec.portal_tiles.has(from_tile) and BoardSpec.portal_tiles.has(int(BoardSpec.portal_warp_targets[from_tile])), "옷장 워프는 다른 옷장으로")
+		check_eq(int(BoardSpec.portal_warp_targets[int(BoardSpec.portal_warp_targets[from_tile])]), from_tile, "옷장 두 곳은 왕복이다")
 	for from_tile: int in BoardSpec.plane_warp_targets.keys():
 		check(int(BoardSpec.plane_warp_targets[from_tile]) < 32, "비행기 워프 목적지는 보드 안")
 
@@ -73,10 +74,70 @@ func test_boost_pads_and_promotion_follow_the_32_tile_layout() -> void:
 	_use_32()
 	var state: GameState = make_state()
 	state.boost_gimmicks = true
-	place(state, 11, 2, [1])
-	move(state, 11, 2)  # 4번 부스터 발판 -> +3
-	check_eq(state.get_pawn(11).current_tile_idx, 7, "4번 발판에 멈추면 +3칸 날아가 7번에 선다")
+	place(state, 11, 1, [0])
+	move(state, 11, 2)  # 3번 부스터 발판 -> +3
+	check_eq(state.get_pawn(11).current_tile_idx, 6, "3번 발판에 멈추면 +3칸 날아가 6번에 선다")
 	check(BoardSpec.promotion_tiles.has(16) and not BoardSpec.promotion_tiles.has(15), "승급은 16번(반환점)부터")
+
+
+func test_special_tile_layout_after_the_rework() -> void:
+	_use_32()
+	check_eq(BoardSpec.dash_tiles, int_array([3, 27]), "부스터 발판 3·27번")
+	check_eq(BoardSpec.bakery_tiles, int_array([5, 13, 19, 30]), "빵집 5·13·19·30번")
+	check_eq(BoardSpec.portal_tiles, int_array([12, 22]), "옷장 12·22번")
+	check_eq(int(BoardSpec.portal_warp_targets[12]), 22, "12번을 밟으면 22번으로")
+	check_eq(int(BoardSpec.portal_warp_targets[22]), 12, "22번을 밟으면 12번으로")
+
+
+func test_wardrobe_warps_back_and_forth() -> void:
+	_use_32()
+	var state: GameState = make_state()
+	place(state, 11, 20, [19])
+	move(state, 11, 2)
+	check_eq(state.get_pawn(11).current_tile_idx, 12, "22번 옷장을 밟으면 12번으로")
+	place(state, 12, 10, [9])
+	move(state, 12, 2)
+	check_eq(state.get_pawn(12).current_tile_idx, 22, "12번 옷장을 밟으면 22번으로")
+
+
+func test_exact_corner_arrival_buffs_only_the_next_roll() -> void:
+	_use_32()
+	var state: GameState = make_state()
+	var owner: int = state.get_pawn(11).owner_id
+	place(state, 11, 6, [5])
+	var report: MoveReport = move(state, 11, 2)
+	check_eq(state.get_pawn(11).current_tile_idx, 8, "코너에 정확히 도착")
+	check_eq(int(state.corner_buff.get(owner, 0)), 1, "다음 굴림 +1 버프")
+	check_eq(report.corner_buff, 1, "보고서에 버프 기록")
+	place(state, 11, 5, [4])
+	move(state, 11, 5)  # 코너를 지나쳐 간다
+	check_eq(state.get_pawn(11).current_tile_idx, 10, "코너를 지나친 이동")
+	var other: GameState = make_state()
+	place(other, 11, 6, [5])
+	move(other, 11, 1)
+	check(not other.corner_buff.has(other.get_pawn(11).owner_id), "코너를 지나치거나 못 미치면 버프가 없다")
+
+
+func test_corner_trap_fires_instead_of_the_buff() -> void:
+	_use_32()
+	var state: GameState = make_state()
+	var enemy: int = 2 if state.get_pawn(11).owner_id == 1 else 1
+	state.place_attachment(8, TrapMine.new(enemy))
+	place(state, 11, 6, [5])
+	move(state, 11, 2)
+	check(not state.corner_buff.has(state.get_pawn(11).owner_id), "코너에 함정이 있으면 버프 대신 함정이 발동한다")
+
+
+func test_ordinary_traps_cannot_be_set_on_special_tiles() -> void:
+	_use_32()
+	var state: GameState = make_state()
+	var trap: BaseCard = CardRegistry.get_card(&"TRP_07")
+	for tile: int in [0, 3, 5, 8, 12, 13, 16, 19, 22, 24, 27, 30]:
+		check(not trap.is_legal(state, 1, {"tile": tile}), "%d번에는 일반 함정을 설치할 수 없다" % tile)
+	for tile: int in [1, 2, 4, 6, 7, 9, 10, 11, 14, 15]:
+		check(trap.is_legal(state, 1, {"tile": tile}), "%d번에는 일반 함정을 설치할 수 있다" % tile)
+	var corner_trap: BaseCard = CardRegistry.get_card(&"TRP_C01")
+	check(corner_trap.is_legal(state, 1, {"tile": 8}), "코너 전용 함정은 코너에 설치할 수 있다")
 
 
 func test_board_skin_tiles_do_not_overlap_on_a_longer_side() -> void:

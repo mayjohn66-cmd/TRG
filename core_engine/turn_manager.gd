@@ -1337,9 +1337,11 @@ func _apply_roll_result(result: RollResult) -> void:
 			_overheat_player = roller
 			_overheat_roll = ctx.dice_value
 		var permanent: int = int(state.permanent_roll_bonus.get(roller, 0))
-		var boosted: int = maxi(ctx.dice_value + state.roll_bonus + permanent, 0)
-		if state.roll_bonus != 0 or permanent != 0:
-			_emit_event(&"roll_boosted", {"player_id": roller, "from": ctx.dice_value, "to": boosted})
+		var corner: int = int(state.corner_buff.get(roller, 0))
+		state.corner_buff.erase(roller)
+		var boosted: int = maxi(ctx.dice_value + state.roll_bonus + permanent + corner, 0)
+		if state.roll_bonus != 0 or permanent != 0 or corner != 0:
+			_emit_event(&"roll_boosted", {"player_id": roller, "from": ctx.dice_value, "to": boosted, "corner": corner})
 			state.roll_bonus = 0
 		if int(state.gambler_round.get(roller, -1)) == state.round_number:
 			_emit_event(&"gambler_doubled", {"player_id": roller, "from": boosted, "to": boosted * SuperAugments.gambler_multiplier()})

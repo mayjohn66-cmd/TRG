@@ -67,6 +67,7 @@ static func capture(state: GameState) -> TurnSnapshot:
 			"current_player": state.current_player,
 			"reverse_move_rounds_left": state.reverse_move_rounds_left,
 			"roll_bonus": state.roll_bonus,
+			"corner_buff": state.corner_buff.duplicate(),
 			"round_number": state.round_number,
 		},
 	}
@@ -156,5 +157,6 @@ func restore(state: GameState, restore_meta: bool = false) -> void:
 		state.current_player = int(meta["current_player"])
 		state.reverse_move_rounds_left = int(meta["reverse_move_rounds_left"])
 		state.roll_bonus = int(meta.get("roll_bonus", 0))
+		state.corner_buff = (meta.get("corner_buff", {}) as Dictionary).duplicate()
 		state.round_number = int(meta["round_number"])
 	state.snapshot_restored.emit()

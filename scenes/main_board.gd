@@ -2597,6 +2597,23 @@ func _bakery_feedback(data: Dictionary) -> void:
 		_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(180.0 * _motion_pace())))  # 배지는 혼자 떠오르므로 큐를 오래 붙잡지 않는다
 
 
+## 코너에 정확히 도착해 받은 버프: 그 말 위에 [다음 굴림 +N]이 떠오른다.
+func _corner_buff_feedback(data: Dictionary) -> void:
+	var buff: int = int(data.get("corner_buff", 0))
+	if buff <= 0 or not _pawn_views.has(int(data["pawn_id"])):
+		return
+	var owner_id: int = int(data["player_id"]) if data.has("player_id") else manager.current_player_id()
+	var tile: int = int((data["path"] as Array).back()) if not (data["path"] as Array).is_empty() else -1
+	_log_line("[코너 도착] P%d: 다음 굴림 +%d!" % [owner_id, buff], Color("8ce99a"))
+	if tile == -1 or not _fx_on():
+		return
+	var at: Vector2 = (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + _tile_center(tile) + Vector2(0, -46)
+	_enqueue_late(func() -> void:
+		Sfx.play(&"good", -6.0)
+		_floating_badge(at, "다음 굴림 +%d" % buff, Color("8ce99a"), 26)
+		_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(180.0 * _motion_pace())))
+
+
 ## 테스트용: move_resolved 없이 빵집 알림만 확인한다.
 func _enqueue_bakery_for_test(data: Dictionary) -> void:
 	_bakery_feedback(data)
@@ -7834,6 +7851,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 					if is_instance_valid(leap_view):
 						_floating_badge(leap_view.position + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + Vector2(0, -40), "+%d" % leap_bonus, Color("ffd43b"), 40))
 			_bakery_feedback(data)
+			_corner_buff_feedback(data)
 			if bool(data.get("jailed", false)) and (data.get("path", []) as Array).is_empty():
 				_announce_move_failed("무인도 탈출 실패!", manager.current_player_id(), "짝수 눈금이 나와야 탈출할 수 있습니다")
 		&"turn_skipped":

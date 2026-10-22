@@ -37,6 +37,8 @@ func is_legal(state: GameState, player_id: int, params: Dictionary) -> bool:
 	if category == GameEnums.CardCategory.TRAP and params.has("tile"):
 		if BoardSpec.bonus_corner_tiles.has(int(params["tile"])) != corner_only:
 			return false
+		if not corner_only and BoardSpec.is_special_tile(int(params["tile"])):
+			return false  # 일반 함정은 빵집·옷장·부스터 발판·코너에 설치할 수 없다
 	return can_play(state, player_id, params)
 
 

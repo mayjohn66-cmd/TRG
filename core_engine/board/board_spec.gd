@@ -14,10 +14,10 @@ static var corner_tiles: Array[int] = [0, 8, 16, 24]
 ## 반환점 코너: 폰·쇼기 승급 기준이자 고스트 NPC의 소환·연행 지점.
 static var halfway_tile: int = 16
 static var last_tile: int = 31
-static var bakery_tiles: Array[int] = [5, 13, 19, 27]
+static var bakery_tiles: Array[int] = [5, 13, 19, 30]
 static var portal_tiles: Array[int] = [12, 22]
-## 옷장 포탈 일반 워프 (LAW_01 중에는 작동하지 않는다) / 모노폴리 비행기가 워프하는 곳.
-static var portal_warp_targets: Dictionary = {12: 22, 22: 27}
+## 옷장 포탈 일반 워프 (LAW_01 중에는 작동하지 않는다): 두 옷장은 왕복이라 12번을 밟으면 22번으로, 22번을 밟으면 12번으로 간다 / 모노폴리 비행기가 워프하는 곳.
+static var portal_warp_targets: Dictionary = {12: 22, 22: 12}
 static var plane_warp_targets: Dictionary = {12: 24, 22: 30}
 ## 점프 코너: 코너 기본 점프대는 삭제되었다 (코너는 코너 전용 함정 슬롯). 하위 호환을 위해 빈 사전으로 남긴다.
 static var jump_corner_targets: Dictionary = {}
@@ -25,8 +25,13 @@ static var jump_corner_targets: Dictionary = {}
 static var bonus_corner_tiles: Array[int] = [8, 16, 24]
 ## 체스 폰·쇼기 기물이 반환점 이상에 도달하거나 지나가는 순간 승진·승급하는 타일.
 static var promotion_tiles: Array[int] = []
-## 부스터 발판 (5번은 빵집과 겹친다).
-static var dash_tiles: Array[int] = [4, 15, 26]
+## 부스터 발판.
+static var dash_tiles: Array[int] = [3, 27]
+
+
+## 일반 함정을 설치할 수 없는 칸: 코너(출발선 포함)·빵집·옷장·부스터 발판. 코너는 코너 전용 함정 슬롯이다.
+static func is_special_tile(index: int) -> bool:
+	return corner_tiles.has(index) or bakery_tiles.has(index) or portal_tiles.has(index) or dash_tiles.has(index)
 
 
 ## 칸 수를 24(한 변 6칸) 또는 32(한 변 8칸)로 정한다. 특수 타일 번호도 함께 바뀐다.
@@ -47,13 +52,13 @@ static func apply(count: int) -> void:
 	else:
 		corner_tiles = [0, 8, 16, 24]
 		halfway_tile = 16
-		bakery_tiles = [5, 13, 19, 27]
+		bakery_tiles = [5, 13, 19, 30]
 		portal_tiles = [12, 22]
-		portal_warp_targets = {12: 22, 22: 27}
+		portal_warp_targets = {12: 22, 22: 12}
 		plane_warp_targets = {12: 24, 22: 30}
 		jump_corner_targets = {}
 		bonus_corner_tiles = [8, 16, 24]
-		dash_tiles = [4, 15, 26]
+		dash_tiles = [3, 27]
 	promotion_tiles = []
 	for index: int in range(halfway_tile, count):
 		promotion_tiles.append(index)
