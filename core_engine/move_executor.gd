@@ -89,13 +89,15 @@ static func plan_path(state: GameState, mover: PlayerPawn, ctx: RuleContext, rep
 		steps += sign_dir
 		report.ability_notes.append("나리 승급 +1칸")
 	var path: Array[int] = state.board.calculate_path(mover, steps, ctx)
+	# 이동 1단계(리벤지 부스터 선행 전진) 칸은 판정하지 않는다: 경로를 보는 기물 능력·점프 부스트는 2단계(눈금 이동) 구간만 본다.
+	var lead: int = report.revenge_bonus
 	# 룩·비차: 코너를 꺾지 않는 직진(중간 칸에 코너가 없음)이면 +2칸.
-	if mover.gets_straight_bonus() and is_straight(path):
+	if mover.gets_straight_bonus() and is_straight(dice_segment(path, lead)):
 		steps += 2 * sign_dir
 		path = state.board.calculate_path(mover, steps, ctx)
 		report.ability_notes.append(("용왕" if mover.promoted else "비차" if sub == GameEnums.PawnSubType.SHOGI_HISHA else "룩") + " 직진 +2칸")
 	# 각행: 출발선 외 코너를 스쳐 지나가거나 멈추면 +2칸 (용마는 +3칸).
-	if mover.gets_corner_bonus() and _path_touches_bonus_corner(path):
+	if mover.gets_corner_bonus() and _path_touches_bonus_corner(dice_segment(path, lead)):
 		var corner_bonus: int = 3 if mover.promoted else 2
 		steps += corner_bonus * sign_dir
 		path = state.board.calculate_path(mover, steps, ctx)
@@ -107,28 +109,37 @@ static func plan_path(state: GameState, mover: PlayerPawn, ctx: RuleContext, rep
 		report.ability_notes.append("비숍 코너 진입 +1칸")
 	match sub:
 		GameEnums.PawnSubType.JANGGI_PO:
-			if _path_jumps_over_pawn(state, mover, path):
+			if _path_jumps_over_pawn(state, mover, dice_segment(path, lead)):
 				path = state.board.calculate_path(mover, steps + 3 * sign_dir, ctx)
 				report.cannon_bonus = true
 				report.ability_notes.append("포 넘기 +3칸")
 		GameEnums.PawnSubType.JANGGI_MA:
-			if not path.is_empty() and not _tile_has_other_pawn(state, mover, path[0]):
+			var first: Array[int] = dice_segment(path, lead)
+			if not first.is_empty() and not _tile_has_other_pawn(state, mover, first[0]):
 				path = state.board.calculate_path(mover, steps + 2 * sign_dir, ctx)
 				report.ability_notes.append("마 +2칸")
 		GameEnums.PawnSubType.JANGGI_SANG:
-			if not path.is_empty() and not _tile_has_other_pawn(state, mover, path[0]):
+			var first: Array[int] = dice_segment(path, lead)
+			if not first.is_empty() and not _tile_has_other_pawn(state, mover, first[0]):
 				path = state.board.calculate_path(mover, steps + 2 * sign_dir, ctx)
 				report.ability_notes.append("상 도약 +2칸")
 	# 말 밟고 점프하기: 경로 중간에 서 있는 말(아군·적군 무관)마다 +1칸 (최대 3칸). 경로를 무시하는 기물은 제외.
 	# 경로에 합치지 않는다: 눈금 이동으로 도착한 칸에서 처치를 먼저 판정한 뒤, 그 자리에서 추가 이동으로 이어 간다 (finalize).
 	if ctx.charge_depth == 0:
-		var leap: int = leapfrog_bonus(state, mover, path)
+		var leap: int = leapfrog_bonus(state, mover, dice_segment(path, lead))
 		if leap > 0:
 			report.leapfrog_pending = leap
 			report.ability_notes.append("점프 부스트! (+%d칸)" % leap)
 	if report.revenge_bonus > 0:
 		report.revenge_total = path.size()
 	return path
+
+
+## 이동 2단계(눈금 이동) 구간: 경로에서 리벤지 부스터 선행 전진 칸(lead)을 뺀 나머지.
+static func dice_segment(path: Array[int], lead: int) -> Array[int]:
+	if lead <= 0:
+		return path
+	return path.slice(mini(lead, path.size()))
 
 
 ## 경로 중간(도착 칸 제외)에 서 있는 말 수만큼의 추가 칸수 (최대 LEAPFROG_MAX). 나이트·퀸·포·마·상은 경로를 무시하므로 0.

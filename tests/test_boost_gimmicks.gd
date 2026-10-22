@@ -156,6 +156,44 @@ func test_revenge_boost_does_nothing_when_gimmicks_are_off() -> void:
 	check_eq(move(state, 21, 3).path.size(), 3, "스위치를 끄면 +4칸이 붙지 않는다")
 
 
+func _loadout(kind: GameEnums.PawnKind, unit: int) -> Array:
+	return [Vector2i(kind, unit), 0, 0, 0]
+
+
+func test_ludo_avenger_eight_tiles_are_the_revenge_booster_stage() -> void:
+	var state: GameState = make_state(2, 1, {1: _loadout(GameEnums.PawnKind.ARCADE, 2)})
+	state.boost_gimmicks = true
+	var pawn: PlayerPawn = state.get_pawn(11)
+	check_eq(pawn.sub_type(), GameEnums.PawnSubType.LUDO_AVENGER, "루도 복수자")
+	pawn.revenge_boost = true
+	var fired: Array = []
+	state.revenge_boost_fired.connect(func(pawn_id: int, base: int, bonus: int, total: int) -> void: fired.append([pawn_id, base, bonus, total]))
+	var report: MoveReport = move(state, 11, 2)
+	check_eq(fired, [[11, 2, 8, 10]], "1단계(리벤지 부스터)에서 +8칸 선행 전진, 이어서 눈금 2칸")
+	check_eq(report.revenge_bonus, 8, "보고서의 부스터 칸수")
+	check_eq(pawn.current_tile_idx, 10, "8 + 2 = 10번 칸")
+
+
+func test_path_abilities_only_look_at_the_dice_stage_after_the_booster() -> void:
+	# 마: "바로 앞 칸"은 부스터가 끝난 자리의 다음 칸이다 (부스터 첫 칸에 말이 있어도 +2칸).
+	var state: GameState = make_state(2, 1, {1: _loadout(GameEnums.PawnKind.JANGGI, 3)})
+	state.boost_gimmicks = true
+	var ma: PlayerPawn = state.get_pawn(11)
+	check_eq(ma.sub_type(), GameEnums.PawnSubType.JANGGI_MA, "장기 마")
+	ma.revenge_boost = true
+	place(state, 21, 1, [0])
+	var report: MoveReport = move(state, 11, 2)
+	check(str(report.ability_notes).contains("마 +2칸"), "2단계 첫 칸(5번)이 비어 있으면 마 +2칸: %s" % str(report.ability_notes))
+	check_eq(ma.current_tile_idx, GameEnums.REVENGE_BONUS + 2 + 2, "부스터 4 + 눈금 2 + 마 2")
+	# 점프 부스트: 부스터로 지나간 칸의 말은 세지 않는다.
+	var basic: GameState = _boost_state()
+	var runner: PlayerPawn = basic.get_pawn(11)
+	runner.revenge_boost = true
+	place(basic, 21, 2, [1])
+	var leap: MoveReport = move(basic, 11, 3)
+	check_eq(leap.leapfrog_pending, 0, "부스터 구간(1~4번)의 말은 점프 부스트 대상이 아니다")
+
+
 # --- 효과로 전진시키기 / 후퇴 삭제 -------------------------------------------------------
 
 func test_forced_advance_runs_the_normal_move_rules() -> void:
