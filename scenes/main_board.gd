@@ -460,6 +460,12 @@ var _pawn_pending: Dictionary = {}
 var _late_steps: Array[Dictionary] = []
 ## 리벤지 부스터 로켓 출격 중인 말 -> 로켓이 내려앉을 타일 (그 칸까지의 걸음은 한 칸씩 뛰지 않고 한 번에 날아간다)
 var _rocket_target: Dictionary = {}
+## 리벤지 부스터 로켓 뒤에 이어 갈 눈금 칸수 (경유지에서 [눈금 N칸]을 띄운다).
+var _rocket_followup: Dictionary = {}
+## 도착 칸 정산 뒤 추가 이동 중인 말 (점프 부스트·부스터 발판·8번 공 돌진): 이 말의 걸음은 앞선 처치 연출 뒤에 선다. 이동이 끝나면(move_resolved) 지운다.
+var _follow_up_pawns: Dictionary = {}
+## 이동 단계 사이(부스터 도착·점프 부스트 직전)의 짧은 멈춤(초).
+const WAYPOINT_PAUSE: float = 0.25
 ## 굴림 직후 확정 칸수 표시용: 플레이어 -> 가속 보너스까지 합친 최종 칸수
 var _roll_total: Dictionary = {}
 ## 점프 코너·옷장 포탈의 2단계 이동(발판에 멈춤 -> 발동 연출 -> 비행/워프)이 진행 중인 수. 0보다 크면 다른 말의 연출과 알림은 끝날 때까지 기다린다.
@@ -982,10 +988,15 @@ func _bind_state() -> void:
 				await _play_capture_eject(pawn_id, by_player, victim_owner, cutin_capture), pawn_id))
 	state.revenge_boost_fired.connect(_on_revenge_boost_fired)
 	state.nitro_dashed.connect(_on_nitro_dashed)
+	state.leapfrog_boosted.connect(_on_leapfrog_boosted)
+	state.capture_charge_started.connect(func(pawn_id: int, _steps: int) -> void: _follow_up_pawns[pawn_id] = true)
 	state.dash_pad_triggered.connect(func(pawn_id: int, tile: int) -> void:
 		_log_line("[부스터 발판] %s %d번 발판! +%d칸 추가 전진" % [_pawn_name(pawn_id), tile, GameData.dash_steps()], Color("63e6be"))
 		var pad_pos: Vector2 = (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + _tile_center(tile)
-		_fx_when_announced(func() -> void:
+		_follow_up_pawns[pawn_id] = true  # 발판 추가 이동은 도착 칸 처치 연출 뒤에
+		if not _fx_on():
+			return
+		_enqueue_after_kills(func() -> void:
 			Sfx.play(&"dash")
 			_impact_ring(pad_pos, Color("63e6be"), 46.0)
 			_number_pop(pad_pos + Vector2(0, -30), "+%d" % GameData.dash_steps(), Color("63e6be"))
@@ -2485,7 +2496,12 @@ func _on_pawn_stepped(pawn_id: int, _from_tile: int, _to_tile: int) -> void:
 			enqueue_step(_play_rocket.bind(pawn_id, _pawn_position(pawn), target_scale, rocket_tile), pawn_id)
 			return
 	# 한 칸씩 연출 큐에 세운다: 엔진이 여러 걸음(발판 가속·효과 전진)을 한꺼번에 방송해도 화면은 앞 걸음이 끝난 뒤에 다음 걸음을 뛴다.
-	enqueue_step(_play_hop.bind(pawn_id, _pawn_position(pawn), target_scale, pawn.current_tile_idx), pawn_id)
+	# 도착 정산 뒤의 추가 이동(점프 부스트·발판·8번 공 돌진)이면 도착 칸 처치 연출이 끝난 뒤에 뛴다 (이동 4단계).
+	var hop: Callable = _play_hop.bind(pawn_id, _pawn_position(pawn), target_scale, pawn.current_tile_idx)
+	if _follow_up_pawns.has(pawn_id):
+		_enqueue_after_kills(hop, pawn_id)
+	else:
+		enqueue_step(hop, pawn_id)
 
 
 ## 큐의 한 단계: 말이 한 칸을 통통 뛰고 착지할 때까지 기다린다.
@@ -2635,15 +2651,17 @@ func _revenge_charged_popup(player_id: int) -> void:
 	_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(120.0 * _motion_pace()))  # 배지는 혼자 떠오르므로 큐를 오래 붙잡지 않는다
 
 
-## 리벤지 부스터 [발동]: 기본 눈금 -> 부스터 합산을 두 단계로 보여 주고, 첫 BONUS칸은 로켓으로 날아간다.
+## 리벤지 부스터 [발동] = 이동 4단계 중 1단계: 부스터 칸수만큼 로켓으로 먼저 날아가 잠깐 멈추고(경유지라 판정 없음), 2단계로 눈금만큼 한 칸씩 간다.
 func _on_revenge_boost_fired(pawn_id: int, base_steps: int, bonus: int, total: int) -> void:
 	var pawn: PlayerPawn = state.get_pawn(pawn_id)
-	_log_line("[리벤지 부스터] %s 출격! 눈금 %d칸 + 부스터 %d칸 = 총 %d칸" % [_pawn_name(pawn_id), base_steps, bonus, total], Color("ff922b"))
+	var dice_part: int = maxi(total - bonus, 0)  # 눈금 + 기물 능력 (부스터 뒤에 이어 가는 본 이동)
+	_log_line("[리벤지 부스터] %s +%d칸 선행 전진! 이어서 눈금 %d칸" % [_pawn_name(pawn_id), bonus, dice_part], Color("ff922b"))
 	if pawn != null:
-		_record(pawn.owner_id, "리벤지 부스터 → 눈금 %d칸 + 복수 %d칸 = 총 %d칸 전진!" % [base_steps, bonus, total])
+		_record(pawn.owner_id, "리벤지 부스터 +%d칸 선행 전진 → 이어서 눈금 %d칸 전진" % [bonus, dice_part])
 	if not _fx_on() or pawn == null:
 		return
 	_rocket_target[pawn_id] = GameEnums.GOAL_TILE + bonus
+	_rocket_followup[pawn_id] = dice_part
 	enqueue_step(_play_revenge_launch.bind(pawn_id, base_steps, bonus, total), pawn_id)
 
 
@@ -2652,14 +2670,27 @@ func _on_revenge_boost_fired(pawn_id: int, base_steps: int, bonus: int, total: i
 func _play_revenge_launch(pawn_id: int, base_steps: int, bonus: int, total: int) -> void:
 	Sfx.play(&"rocket")
 	screen_shake(6.0, 0.2)
-	var extra: int = total - base_steps - bonus
-	var formula: String = "%d칸 + 복수 %d칸 = 총 %d칸 전진!" % [base_steps, bonus, total] if extra == 0 else "%d칸 + 복수 %d칸 (+능력 %d칸) = 총 %d칸 전진!" % [base_steps, bonus, extra, total]
-	_show_center_banner("[리벤지 부스터 발동! +%d칸 추가!]\n%s" % [bonus, formula], Color("ff922b"))
+	_show_center_banner("[리벤지 부스터] +%d칸 선행 전진!\n도착하면 이어서 눈금 %d칸" % [bonus, maxi(total - bonus, 0)], Color("ff922b"))
 	var view: Node2D = _pawn_views.get(pawn_id)
 	if view != null and _pawn_layer != null:
 		_impact_ring(view.position, Color("ff6b00"), 58.0)
 		_burst_shards(view.position, Color("ff922b"), 14)
 	await get_tree().create_timer(REVENGE_LAUNCH_LEAD).timeout
+
+
+## 점프 부스트 = 이동 4단계 중 4단계: 눈금 이동이 끝난 칸(경유지)의 처치 연출이 다 끝난 뒤, [점프 부스트 +N] 배지와 함께 잠깐 멈췄다가 추가 이동을 시작한다.
+func _on_leapfrog_boosted(pawn_id: int, waypoint: int, bonus: int) -> void:
+	_log_line("[점프 부스트] %s %d번 칸에서 +%d칸 추가 이동!" % [_pawn_name(pawn_id), waypoint, bonus], Color("ffd43b"))
+	_follow_up_pawns[pawn_id] = true
+	if not _fx_on():
+		return
+	_enqueue_after_kills(func() -> void:
+		var view: Node2D = _pawn_views.get(pawn_id)
+		if view == null or not is_instance_valid(view):
+			return
+		Sfx.play(&"dash")
+		_floating_badge(view.position + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + Vector2(0, -40), "점프 부스트 +%d" % bonus, Color("ffd43b"), 34)
+		await get_tree().create_timer(WAYPOINT_PAUSE * _motion_pace()).timeout, pawn_id)
 
 
 ## 초증강 아우토반 니트로: 선두 말이 리벤지 부스터처럼 화염을 뿜으며 코너(또는 길을 막은 말이 있는 칸)까지 한 번에 날아간다.
@@ -2721,6 +2752,12 @@ func _play_rocket(pawn_id: int, to_pos: Vector2, to_scale: float, tile: int) -> 
 	screen_shake(7.0, 0.22)
 	_impact_ring(view.position, Color("ff6b00"), 50.0)
 	_floating_badge(view.position + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + Vector2(0, -42), "+%d" % _revenge_steps(), Color("ff922b"), 40)
+	# 1단계(부스터)와 2단계(눈금 이동) 사이의 짧은 호흡: 경유지라 아직 판정하지 않는다
+	var dice_part: int = int(_rocket_followup.get(pawn_id, 0))
+	_rocket_followup.erase(pawn_id)
+	await get_tree().create_timer(WAYPOINT_PAUSE * _motion_pace()).timeout
+	if dice_part > 0 and is_instance_valid(view):
+		_floating_badge(view.position + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + Vector2(0, -42), "눈금 %d칸" % dice_part, Color("f8f9fa"), 30)
 
 
 ## 로켓 화염 잔상 한 점: 주황 원이 커지며 사라진다.
@@ -5877,6 +5914,8 @@ func _enqueue_batch(entries: Array[Dictionary]) -> void:
 
 ## 연출 큐를 비우고 재생 중인 러너를 멈춘다 (판 초기화·되감기·테스트 정리용). 이미 시작된 트윈은 건드리지 않는다.
 func _reset_presentation() -> void:
+	_follow_up_pawns.clear()
+	_rocket_followup.clear()
 	if _train_stage != null:
 		_train_stage.cancel()
 	_train_release()
@@ -5900,6 +5939,14 @@ func _reset_presentation() -> void:
 
 
 ## 처치 연출(컷신·장외 사출)은 같은 행동의 이동·발판 연출이 모두 끝난 뒤에 재생한다: 엔진은 한 번에 방송하므로 프레임 끝에 큐 맨 뒤로 보낸다.
+## 처치(사출)가 아직 지연 큐에 있으면 그 뒤에, 없으면 바로 연출 큐에 세운다. 이동 4단계: 도착 칸 처치 연출이 끝난 뒤에 추가 이동(점프 부스트·발판·8번 공 돌진)을 보여 준다.
+func _enqueue_after_kills(step_callable: Callable, pawn_id: int = -1) -> void:
+	if not _late_steps.is_empty():
+		_enqueue_late(step_callable, pawn_id)
+	else:
+		enqueue_step(step_callable, pawn_id)
+
+
 func _enqueue_late(step_callable: Callable, pawn_id: int = -1) -> void:
 	if not _fx_on():
 		step_callable.call()
@@ -8302,15 +8349,9 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			else:
 				_log_line("[업기] P%d: 그냥 두기 - 개별 유지" % data["player_id"], Color("adb5bd"))
 		&"move_resolved":
+			_follow_up_pawns.erase(int(data.get("pawn_id", -1)))
 			_log_move(data)
 			_start_beat(BEAT_AFTER_MOVE)
-			if int(data.get("leapfrog_bonus", 0)) > 0 and _pawn_views.has(int(data["pawn_id"])):
-				var leap_view: Node2D = _pawn_views[int(data["pawn_id"])]
-				var leap_bonus: int = int(data["leapfrog_bonus"])
-				# 위치는 말 걸음이 끝난 뒤(이 단계가 재생될 때) 읽는다. 처치 연출(컷인·사출)이 먼저 나오도록 그 뒤에 세운다.
-				_enqueue_late(func() -> void:
-					if is_instance_valid(leap_view):
-						_floating_badge(leap_view.position + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + Vector2(0, -40), "+%d" % leap_bonus, Color("ffd43b"), 40))
 			_bakery_feedback(data)
 			_corner_buff_feedback(data)
 			if bool(data.get("jailed", false)) and (data.get("path", []) as Array).is_empty():

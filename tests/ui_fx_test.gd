@@ -86,6 +86,7 @@ func _run() -> void:
 	await _test_npc_danger_preview()
 	await _test_event_order()
 	await _test_nitro_dash()
+	await _test_move_four_steps()
 	await _test_presentation_queue()
 	if _failures.is_empty():
 		print("UI_FX_OK")
@@ -2459,4 +2460,102 @@ func _test_nitro_dash() -> void:
 	_expect(not hopped, "한 칸씩 뛰지 않고 한 번에 날아간다")
 	_expect(not blocker_gone_before_arrival, "막은 말은 니트로 말이 도착한 뒤에 날아간다")
 	_expect(not (_board._pawn_views[21] as Node2D).visible, "막은 말은 사출되어 보드에서 사라진다")
+	_board.instant_roll_for_test = true
+
+
+## 이동 4단계: (1) 리벤지 부스터 로켓 -> 잠깐 멈춤 -> (2) 눈금 이동 -> (3) 도착 칸 처치 연출 -> (4) 점프 부스트 추가 이동.
+func _test_move_four_steps() -> void:
+	var state: GameState = _board.state
+	_board._reset_presentation()
+	_board.instant_roll_for_test = false
+	_board.pacing_enabled = false
+	_board._announcer.cancel()
+	state.clear_npcs()
+	state.bonds.clear()
+	var saved_boost: bool = state.boost_gimmicks
+	state.boost_gimmicks = true
+	for pawn: PlayerPawn in state.pawns:
+		pawn.reset_to_start()
+		pawn.is_finished = false
+		pawn.revenge_boost = false
+	# (3)->(4): 17번에서 2칸(18, 19). 18번의 아군을 밟고 지나가 점프 부스트 +1, 19번(눈금 도착)의 적을 먼저 잡고 20번으로
+	var mover: PlayerPawn = state.get_pawn(11)
+	mover.has_left_start = true
+	mover.current_tile_idx = 17
+	mover.step_history.assign([17])
+	var ally: PlayerPawn = state.get_pawn(12)
+	ally.has_left_start = true
+	ally.current_tile_idx = 18
+	ally.step_history.assign([18])
+	var enemy: PlayerPawn = state.get_pawn(21)
+	enemy.has_left_start = true
+	enemy.current_tile_idx = 19
+	enemy.step_history.assign([19])
+	_board._refresh_all()
+	await process_frame
+	var view: Node2D = _board._pawn_views[11]
+	var enemy_view: Node2D = _board._pawn_views[21]
+	var enemy_home: Vector2 = enemy_view.position
+	var waypoint_pos: Vector2 = _board._pawn_position_at(mover, 19)
+	var ctx := RuleContext.new()
+	ctx.state = state
+	ctx.actor_id = 1
+	ctx.dice_value = 2
+	ctx.raw_roll = 2
+	MoveExecutor.execute(state, mover, ctx)
+	_expect(mover.current_tile_idx == 20 and not enemy.has_left_start, "엔진: 19번 적 처치 뒤 20번 (%d)" % mover.current_tile_idx)
+	var final_pos: Vector2 = _board._pawn_position(mover)
+	var at_waypoint: int = -1
+	var enemy_flew: int = -1
+	var at_final: int = -1
+	var frame: int = 0
+	while frame < 900 and (_board._presentation_active() or _board._fx_running(view) or _board._capture_cutin.busy()):
+		frame += 1
+		if at_waypoint == -1 and view.position.distance_to(waypoint_pos) < 3.0:
+			at_waypoint = frame
+		if enemy_flew == -1 and enemy_view.position.distance_to(enemy_home) > 30.0:
+			enemy_flew = frame
+		if at_final == -1 and view.position.distance_to(final_pos) < 3.0:
+			at_final = frame
+		await process_frame
+	_expect(at_waypoint != -1 and enemy_flew != -1 and at_final != -1, "경유지 도착·처치 사출·추가 이동이 모두 보인다 (%d, %d, %d)" % [at_waypoint, enemy_flew, at_final])
+	_expect(at_waypoint < enemy_flew and enemy_flew < at_final, "눈금 이동 -> 처치 -> 점프 부스트 추가 이동 순서 (%d -> %d -> %d)" % [at_waypoint, enemy_flew, at_final])
+	# (1)->(2): 리벤지 부스터 말은 부스터 칸까지 로켓으로 간 뒤 잠깐 멈췄다가 눈금만큼 간다
+	_board._reset_presentation()
+	for pawn: PlayerPawn in state.pawns:
+		pawn.reset_to_start()
+	var boosted: PlayerPawn = state.get_pawn(11)
+	boosted.revenge_boost = true
+	_board._refresh_all()
+	await process_frame
+	var bonus: int = MoveExecutor.revenge_bonus_of(boosted, state)
+	var rocket_pos: Vector2 = _board._pawn_position_at(boosted, bonus)
+	var banners: Array[String] = []
+	var ctx2 := RuleContext.new()
+	ctx2.state = state
+	ctx2.actor_id = 1
+	ctx2.dice_value = 2
+	ctx2.raw_roll = 2
+	MoveExecutor.execute(state, boosted, ctx2)
+	var rest_frames: int = 0
+	var left_rocket: bool = false
+	var start_ms: int = 0
+	var rest_ms: int = 0
+	frame = 0
+	while frame < 900 and (_board._presentation_active() or _board._fx_running(view)):
+		frame += 1
+		if _board._center_banner != null and _board._center_banner.visible and not banners.has(_board._center_label.text):
+			banners.append(_board._center_label.text)
+		if view.position.distance_to(rocket_pos) < 3.0 and not _board._fx_running(view) and not left_rocket:
+			if start_ms == 0:
+				start_ms = Time.get_ticks_msec()
+			rest_ms = Time.get_ticks_msec() - start_ms
+		elif start_ms != 0:
+			left_rocket = true
+		await process_frame
+	_expect(banners.any(func(text: String) -> bool: return text.contains("리벤지 부스터") and text.contains("+%d칸 선행 전진" % bonus)), "1단계 배너: [리벤지 부스터] +N칸 선행 전진! (%s)" % str(banners))
+	_expect(rest_ms >= 150, "부스터 도착 칸에서 잠깐 멈춘다 (%dms)" % rest_ms)
+	_expect(boosted.current_tile_idx == bonus + 2, "엔진: 부스터 %d칸 + 눈금 2칸" % bonus)
+	state.boost_gimmicks = saved_boost
+	_board._reset_presentation()
 	_board.instant_roll_for_test = true

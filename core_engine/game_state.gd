@@ -64,6 +64,10 @@ signal pawns_bonded(pawn_a_id: int, pawn_b_id: int)
 signal bond_resolved(kind: StringName, pawn_id: int, partner_id: int)
 ## 초증강 아우토반 니트로: 말이 코너를 향해 직진한다 (움직이기 전에 방송한다). path: 지날 칸들(마지막이 멈출 칸, 결승이면 0), blocked: 말이 서 있어 멈춘 칸(-1이면 막힘 없음).
 signal nitro_dashed(pawn_id: int, path: Array[int], blocked: int)
+## 점프 부스트: 눈금 이동으로 도착한 경유지(waypoint)에서 처치 판정을 마치고 bonus칸 더 간다 (이동 4단계 중 4단계).
+signal leapfrog_boosted(pawn_id: int, waypoint: int, bonus: int)
+## 8번 공: 처치한 자리에서 steps칸 더 굴러간다 (추가 이동 시작).
+signal capture_charge_started(pawn_id: int, steps: int)
 
 var board: BoardGraph = BoardGraph.new()
 ## Node 기반 법전. 씬 트리에 붙이지 않고 GameState가 수명을 관리한다.
