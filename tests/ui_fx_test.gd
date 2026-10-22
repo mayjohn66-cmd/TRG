@@ -1341,18 +1341,39 @@ func _test_hud_overhaul() -> void:
 		manager.state.tools[current] = ToolRegistry.create(tool_id)
 		_board._refresh_controls()
 		_expect(_board._tool_main.text != "" and _board.TOOL_CARDS.has(tool_id), "%s 카드 규칙 요약 있음" % tool_id)
+		# 상세 족보를 펼쳐도 화면 오른쪽 밖으로 잘리지 않고, 아래 [감정 표현] 버튼을 덮지 않는다
+		_board._tool_expanded = true
+		_board._apply_tool_expand()
+		_board._tool_board.reset_size()
+		_board._place_action_row_below_tool_card()
+		var card_rect: Rect2 = _board._tool_board.get_global_rect()
+		_expect(card_rect.end.x <= 1366.0 and card_rect.position.y >= 0.0, "%s 족보 카드가 화면 안 (%s)" % [tool_id, card_rect])
+		_expect(card_rect.end.y <= _board._emote_button.get_global_rect().position.y, "%s 족보 카드가 감정 표현 버튼을 덮지 않는다 (%s)" % [tool_id, card_rect])
+		_board._tool_expanded = false
+		_board._apply_tool_expand()
+		_board._tool_board.reset_size()
+		_board._place_action_row_below_tool_card()
 	manager.state.tools[current] = ToolRegistry.create(&"D6")
 	_board._refresh_controls()
-	# 3) 기물 독 + 호버 툴팁
+	# 3) 기물 독 + 기물 설명: 커서만 대면 안 뜨고, 누르면 바로 뜨고, 다시 누르면 닫힌다
 	_expect(_board._pawn_buttons.size() == 4 and (_board._pawn_buttons[0] as Button).size.x >= 76.0 and (_board._pawn_buttons[0] as Button).size.y >= 88.0, "기물 슬롯은 최소 76x88")
 	_board._on_pawn_slot_hover(0)
-	for i: int in 5:
-		await process_frame
-	_expect(not _board._tip_panel.visible, "0.35초 전에는 툴팁이 없다")
 	var wait_start: float = _now()
 	while _now() - wait_start < 0.6:
 		await process_frame
-	_expect(_board._tip_panel.visible and _board._tip_title.text != "" and _board._tip_ability.text != "", "0.35초 뒤 툴팁이 뜬다 (%s)" % _board._tip_title.text)
+	_expect(not _board._tip_panel.visible, "커서만 대서는 기물 설명이 뜨지 않는다")
+	_board._on_pawn_slot_pressed(0)
+	_expect(_board._tip_panel.visible and _board._tip_title.text != "" and _board._tip_ability.text != "", "누르면 바로 기물 설명이 뜬다 (%s)" % _board._tip_title.text)
+	var pinned_at: Vector2 = _board._tip_panel.position
+	for i: int in 5:
+		await process_frame
+	_expect(_board._tip_panel.visible and _board._tip_panel.position == pinned_at, "열린 설명은 그대로 머문다")
+	_board._on_pawn_slot_unhover(_board._pawn_buttons[0])
+	_expect(_board._tip_panel.visible, "커서를 치워도 닫히지 않는다 (다시 눌러야 닫힘)")
+	_board._on_pawn_slot_pressed(0)
+	_expect(not _board._tip_panel.visible, "같은 말 칸을 다시 누르면 닫힌다")
+	_board._on_pawn_slot_pressed(0)
+	_expect(_board._tip_panel.visible, "다시 열기")
 	# 세트 설명은 없고 필살기 보유 기물에만 필살기 줄이 있다
 	_expect(not _board._tip_title.text.contains("세트 (") and not _board._tip_ability.text.contains("세트"), "툴팁에 세트 시너지 설명이 없다")
 	var rook: PlayerPawn = null
@@ -1369,8 +1390,27 @@ func _test_hud_overhaul() -> void:
 			break
 	_board._fill_pawn_tip(plain.entity_id)
 	_expect(not _board._tip_skill.visible, "필살기 없는 기물에는 필살기 줄이 없다")
-	_board._on_pawn_slot_unhover(_board._pawn_buttons[0])
-	_expect(not _board._tip_panel.visible, "커서를 치우면 즉시 사라진다")
+	_board._on_board_tip_click(Vector2(5, 380))
+	_expect(not _board._tip_panel.visible, "다른 곳을 누르면 닫힌다")
+	# 보드 위 말: 누르면 열리고 같은 말을 다시 누르면 닫힌다
+	var on_board: PlayerPawn = manager.state.get_pawn(21)
+	on_board.current_tile_idx = 5
+	on_board.has_left_start = true
+	on_board.step_history.assign([5])
+	_board._refresh_all()
+	for i: int in 3:
+		await process_frame
+	var board_view: Node2D = _board._pawn_views[21]
+	var spot: Vector2 = board_view.position + _board._pawn_layer.position + Vector2(0, -12)
+	_expect(not _board._board_tip_target(spot).is_empty(), "말 위 좌표를 찾는다")
+	_board._on_board_tip_click(spot)
+	_expect(_board._tip_panel.visible and _board._tip_title.text.contains("P2"), "보드 말을 누르면 설명 (%s)" % _board._tip_title.text)
+	_board._on_board_tip_click(spot)
+	_expect(not _board._tip_panel.visible, "같은 말을 다시 누르면 닫힌다")
+	# 카드는 커서를 대도 설명 상자가 없다
+	var hand_card: PanelContainer = _board._make_card_view(1, &"TRP_03")
+	_expect(hand_card.tooltip_text == "", "카드에 마우스 설명이 없다 (%s)" % hand_card.tooltip_text)
+	hand_card.free()
 	# 4) 클릭 확대 (남의 턴에도 가능)
 	var holder: int = current
 	(manager.state.hands[holder] as Array).clear()

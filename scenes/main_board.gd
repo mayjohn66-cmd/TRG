@@ -354,6 +354,9 @@ var _tip_skill: Label = null
 var _tip_source: Variant = null
 var _tip_provider: Callable = Callable()
 var _tip_clock: float = 0.0
+## 기물 설명은 클릭으로 연다(고정): 같은 기물을 다시 누르거나 다른 곳을 누르면 닫힌다. 고정된 설명은 커서를 따라가지 않는다.
+var _tip_pinned: bool = false
+var _tip_anchor: Vector2 = Vector2.ZERO
 var _zoom_view: PanelContainer = null
 var _hold_card: PanelContainer = null  ## 포인터가 영역 안에 있어 올라온 채 유지 중인 손패 카드
 var _zoom_key: String = ""
@@ -709,17 +712,18 @@ func _input(event: InputEvent) -> void:
 		return
 	if _handle_card_pointer(event):
 		return
-	if event is InputEventMouseMotion:
-		_update_board_pawn_tip((event as InputEventMouseMotion).position)
+	var press: InputEventMouseButton = event as InputEventMouseButton
+	if press != null and press.pressed and press.button_index == MOUSE_BUTTON_LEFT and _pawn_click_target(press.position) == -1:
+		_on_board_tip_click(press.position)  # 이동으로 쓰이지 않는 클릭은 말 설명을 열고 닫는다
 	if manager.current_state != TurnManager.State.PHASE_SELECT_PAWN:
 		return
-	if _ui_busy() or _is_bot_turn() or _choice_overlay != null or _draft_overlay != null or _result_overlay != null or _stack_overlay != null or _tile_pick_active:
+	if _pawn_pick_blocked():
 		return
 	var button_event: InputEventMouseButton = event as InputEventMouseButton
 	if button_event != null:
 		# 보드 위의 내 말 도형을 직접 클릭해 이동한다.
-		if button_event.pressed and button_event.button_index == MOUSE_BUTTON_LEFT and not (_select_banner != null and _select_banner.visible and _select_banner.get_global_rect().has_point(button_event.position)):
-			var clicked: int = _pawn_at(button_event.position)
+		if button_event.pressed and button_event.button_index == MOUSE_BUTTON_LEFT:
+			var clicked: int = _pawn_click_target(button_event.position)
 			if clicked != -1:
 				get_viewport().set_input_as_handled()
 				_on_pawn_pressed(clicked)
@@ -732,6 +736,20 @@ func _input(event: InputEvent) -> void:
 		_board_hover_pawn = hovered
 	elif hovered == -1 and _board_hover_pawn != -1:
 		_clear_highlight()
+
+
+## 지금은 보드에서 말을 골라 움직일 수 없다 (연출·봇 차례·다른 창·칸 고르기 중).
+func _pawn_pick_blocked() -> bool:
+	return _ui_busy() or _is_bot_turn() or _choice_overlay != null or _draft_overlay != null or _result_overlay != null or _stack_overlay != null or _tile_pick_active
+
+
+## 이 클릭으로 움직일 내 말 ID (말 선택 단계에서 고를 수 있는 내 말을 눌렀을 때). 이동으로 쓰이지 않으면 -1.
+func _pawn_click_target(pointer: Vector2) -> int:
+	if manager.current_state != TurnManager.State.PHASE_SELECT_PAWN or _pawn_pick_blocked():
+		return -1
+	if _select_banner != null and _select_banner.visible and _select_banner.get_global_rect().has_point(pointer):
+		return -1
+	return _pawn_at(pointer)
 
 
 ## 화면 좌표 근처(18px)에 있는, 지금 고를 수 있는 내 말의 ID. 없으면 -1.
@@ -1315,7 +1333,7 @@ func _build_profiles() -> void:
 			status.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			status.visible = true
 			box.add_child(status)
-			_bind_tip(icon, _fill_pawn_tip.bind(player_id * 10 + slot))
+			icon.gui_input.connect(_on_pawn_icon_input.bind(icon, player_id * 10 + slot))
 			cell.add_child(icon)
 			if big:
 				var skill_button: Button = _make_button(tr_ui("btn.skill"), _on_skill_pressed.bind(slot - 1), 11, Color("c77d0a"), 6)
@@ -1326,7 +1344,7 @@ func _build_profiles() -> void:
 				skill_button.add_theme_constant_override("outline_size", 3)
 				skill_button.visible = false
 				skill_button.mouse_entered.connect(_on_pawn_slot_hover.bind(slot - 1))
-				skill_button.mouse_exited.connect(_tip_end.bind(skill_button))
+				skill_button.mouse_exited.connect(_on_pawn_slot_unhover.bind(skill_button))
 				cell.add_child(skill_button)
 				_skill_buttons.append(skill_button)
 			slots.append({"panel": icon, "letter": letter, "status": status})
@@ -3489,9 +3507,7 @@ func _make_card_view(player_id: int, card_id: StringName) -> PanelContainer:
 	var glow_style: StyleBoxFlat = _card_frame_style(card.category, true)
 	view.add_theme_stylebox_override("panel", idle_style)
 	view.modulate = Color.WHITE if usable else Color(0.62, 0.62, 0.68)
-	var quote: String = GameData.text("cards", card_id, "parody_quote")
-	view.tooltip_text = "%s (%s) - %s\n%s%s%s" % [card.display_name, card_id, _category_text(card.category), card_summary(card_id),
-		"\n발동: 내가 공격받으면 발동 여부를 묻습니다" if card.category == GameEnums.CardCategory.COUNTER else "", ("\n“%s”" % quote) if quote != "" else ""]
+	# 커서를 대면 뜨던 설명 상자는 없앴다: 카드 앞면이 이름·효과를 이미 보여 준다.
 	view.add_child(_build_card_body(card_id, HAND_CARD_SIZE))
 	view.gui_input.connect(_on_card_gui_input.bind(player_id, card_id, view))
 	view.set_meta("idle_style", idle_style)
@@ -3913,6 +3929,7 @@ func _bind_tip(control: Control, provider: Callable) -> void:
 
 
 func _tip_begin(source: Variant, provider: Callable) -> void:
+	_tip_pinned = false
 	_tip_source = source
 	_tip_provider = provider
 	_tip_clock = 0.0
@@ -3923,9 +3940,34 @@ func _tip_end(source: Variant = null) -> void:
 	if source != null and _tip_source != source:
 		return
 	_tip_source = null
+	_tip_pinned = false
 	_tip_clock = 0.0
 	if _tip_panel != null:
 		_tip_panel.visible = false
+
+
+## 기물 설명 열기/닫기: 열려 있는 같은 기물을 다시 누르면 닫고, 아니면 누른 자리 옆에 바로 연다.
+func _tip_toggle(source: Variant, provider: Callable) -> void:
+	if _tip_pinned and _tip_source == source:
+		_tip_end()
+		return
+	_tip_source = source
+	_tip_provider = provider
+	_tip_pinned = true
+	_tip_anchor = get_viewport().get_mouse_position()
+	_tip_clock = TIP_DELAY
+	_tip_panel.visible = false
+	_update_tip(0.0)
+
+
+## 클릭 한 번이 고정된 기물 설명을 닫아야 하는가: 그 설명을 연 칸(프로필·독)이 아닌 곳을 눌렀다.
+## 보드 위 말 설명은 _on_board_tip_click이, 그 칸 자신의 클릭은 _tip_toggle이 처리한다.
+func _tip_click_elsewhere(pointer: Vector2) -> bool:
+	if not _tip_pinned or _tip_source == null:
+		return false
+	if _tip_source is Control:
+		return not (_tip_source as Control).get_global_rect().has_point(pointer)
+	return false
 
 
 func _update_tip(delta: float) -> void:
@@ -3941,7 +3983,7 @@ func _update_tip(delta: float) -> void:
 		_tip_provider.call()
 		_tip_panel.visible = true
 		_tip_panel.reset_size()
-	var pointer: Vector2 = get_viewport().get_mouse_position()
+	var pointer: Vector2 = _tip_anchor if _tip_pinned else get_viewport().get_mouse_position()
 	var spot: Vector2 = pointer + Vector2(16, 18)
 	var limit: Vector2 = Vector2(1366, 768) - _tip_panel.size - Vector2(4, 4)
 	if spot.x > limit.x:
@@ -3964,18 +4006,24 @@ func _fill_npc_tip(npc_id: int) -> void:
 	_tip_skill.visible = false
 
 
-## 보드 위의 아무 말(상대 말 포함) 위에 커서가 있으면 그 말의 툴팁을 예약한다.
-func _update_board_pawn_tip(pointer: Vector2) -> void:
-	var npc_found: int = -1
+## 보드 클릭: 아무 말(상대 말·중립 기물 포함)을 누르면 그 설명을 열고, 같은 말을 다시 누르면 닫는다. 빈 곳을 누르면 열린 설명을 닫는다.
+func _on_board_tip_click(pointer: Vector2) -> void:
+	if _tile_pick_active or _snipe_pick:
+		return
+	var target: Array = _board_tip_target(pointer)
+	if target.is_empty():
+		if _tip_pinned and (_tip_source is String or _tip_click_elsewhere(pointer)):
+			_tip_end()
+		return
+	_tip_toggle(target[0], target[1])
+
+
+## 화면 좌표 아래의 말·중립 기물: [설명 키, 내용 채우기]. 없으면 빈 배열.
+func _board_tip_target(pointer: Vector2) -> Array:
 	for npc: NeutralNPC in state.npcs:
 		var npc_view: Node2D = _npc_views.get(npc.entity_id)
 		if npc_view != null and (npc_view.position + _pawn_layer.position + Vector2(0, -14)).distance_to(pointer) < 26.0:
-			npc_found = npc.entity_id
-	if npc_found != -1:
-		var npc_key: String = "npc:%d" % npc_found
-		if _tip_source != npc_key:
-			_tip_begin(npc_key, _fill_npc_tip.bind(npc_found))
-		return
+			return ["npc:%d" % npc.entity_id, _fill_npc_tip.bind(npc.entity_id)]
 	var found: int = -1
 	var best: float = 50.0
 	for pawn: PlayerPawn in state.pawns:
@@ -3986,12 +4034,9 @@ func _update_board_pawn_tip(pointer: Vector2) -> void:
 		if PawnToken.HIT_BOX.has_point((view.get_node("Bounce") as Node2D).to_local(pointer)) and distance < best:
 			best = distance
 			found = pawn.entity_id
-	var key: String = "board:%d" % found
 	if found == -1:
-		if _tip_source is String and (str(_tip_source).begins_with("board:") or str(_tip_source).begins_with("npc:")):
-			_tip_end()
-	elif _tip_source != key:
-		_tip_begin(key, _fill_pawn_tip.bind(found))
+		return []
+	return ["board:%d" % found, _fill_pawn_tip.bind(found)]
 
 
 ## 기물 설명 텍스트(테스트·로그용): 이름 / 고유 능력 / 필살기.
@@ -4032,7 +4077,7 @@ func _build_pawn_dock() -> void:
 		skill_button.add_theme_constant_override("outline_size", 4)
 		skill_button.visible = false
 		skill_button.mouse_entered.connect(_on_pawn_slot_hover.bind(slot))
-		skill_button.mouse_exited.connect(_tip_end.bind(skill_button))
+		skill_button.mouse_exited.connect(_on_pawn_slot_unhover.bind(skill_button))
 		_pawn_bar.add_child(skill_button)
 		_dock_skill_buttons.append(skill_button)
 		var button := Button.new()
@@ -4067,6 +4112,7 @@ func _build_pawn_dock() -> void:
 		button.add_child(badge)
 		button.mouse_entered.connect(_on_pawn_slot_hover.bind(slot))
 		button.mouse_exited.connect(_on_pawn_slot_unhover.bind(button))
+		button.pressed.connect(_on_pawn_slot_pressed.bind(slot))
 		_pawn_bar.add_child(button)
 		_pawn_buttons.append(button)
 		_pawn_slot_parts.append({"letter": letter, "place": place, "badge": badge})
@@ -4213,15 +4259,26 @@ func active_skill_buttons() -> Array[Button]:
 	return _skill_buttons if ai_mode else _dock_skill_buttons
 
 
+## 말 칸·필살기 버튼에 커서를 대면 그 말의 경로만 미리 보여 준다 (설명은 말 칸을 눌러야 열린다).
 func _on_pawn_slot_hover(slot: int) -> void:
-	var pawn_id: int = _dock_owner() * 10 + slot + 1
-	_preview_pawn(pawn_id)
-	_tip_begin(_pawn_buttons[slot], _fill_pawn_tip.bind(pawn_id))
+	_preview_pawn(_dock_owner() * 10 + slot + 1)
 
 
-func _on_pawn_slot_unhover(button: Button) -> void:
+func _on_pawn_slot_unhover(_button: Button) -> void:
 	_clear_highlight()
-	_tip_end(button)
+
+
+## 기물 독의 말 칸을 누르면 그 말 설명을 열고, 다시 누르면 닫는다.
+func _on_pawn_slot_pressed(slot: int) -> void:
+	_tip_toggle(_pawn_buttons[slot], _fill_pawn_tip.bind(_dock_owner() * 10 + slot + 1))
+
+
+## 프로필의 말 칸을 누르면 그 말 설명을 열고, 다시 누르면 닫는다.
+func _on_pawn_icon_input(event: InputEvent, icon: Control, pawn_id: int) -> void:
+	var press: InputEventMouseButton = event as InputEventMouseButton
+	if press != null and press.pressed and press.button_index == MOUSE_BUTTON_LEFT:
+		_tip_toggle(icon, _fill_pawn_tip.bind(pawn_id))
+		icon.accept_event()
 
 
 func _refresh_pawn_dock() -> void:
@@ -4556,6 +4613,9 @@ func _stop_pawn_flash() -> void:
 # ---------------------------------------------------------------------------
 
 ## 도구별 [심볼 글자, 심볼 색, 전진 규칙 첫 줄, 둘째 줄].
+## 판정 도구 카드 안 족보표의 한 줄 폭 (카드 폭 210에서 여백을 뺀 값).
+const TOOL_RULE_WIDTH: float = 180.0
+
 const TOOL_CARDS: Dictionary = {
 	&"D6": ["6", Color("c92a2a"), "굴려서 전진한다", ""],
 	&"YUT": ["윷", Color("8a5a2b"), "윷을 던져 나온 만큼 전진한다", "윷·모 재굴림 +1"],
@@ -4585,9 +4645,9 @@ const TOOL_RULES: Dictionary = {
 	&"DICE_MAHJONG": {"rows": [["핑후 (불일치)", "2칸"], ["또이츠 (같은 패 2개)", "3칸"], ["슌쯔 (연속 숫자)", "5칸"], ["커쯔 (같은 패 3개)", "8칸"], ["역만 (8%)", "12칸 + 한 번 더!"]], "note": "역만 = 국사무쌍·대삼원"},
 	&"DICE_TAROT": {"rows": [["0. 광대", "0칸, 턴 종료"], ["VII. 전차", "6칸"], ["X. 운명의 수레바퀴", "4칸 + 한 번 더!"], ["XII. 매달린 남자", "1칸, 다음 굴림 +8칸"], ["XXI. 세계", "9칸"]], "note": "5장 중 1장 · 축복은 다음 굴림"},
 	&"REVOLVER": {"rows": [["방아쇠 1회", "+3칸 누적"], ["최대 누적", "15칸"], ["폭죽 (6칸 중 1칸)", "누적 0칸, 턴 종료"], ["멈추기", "누적한 칸만큼 이동"]], "note": "6칸 중 1칸은 폭죽 · 깃발이 나오면 누적 소멸"},
-	&"DICE_YACHT": {"rows": [["노페어 (찬스)", "가장 높은 눈금의 절반 올림 (1~3칸)"], ["트리플 (3개 동일)", "5칸"], ["스몰 스트레이트 (4연속) / 풀하우스", "7칸"], ["포카드 / 라지 스트레이트 (5연속)", "9칸"], ["★ 야추 (5개 동일)", "12칸 + 한 번 더!"]], "note": "주사위 5개 · 고정(Keep)하고 나머지를 최대 2번 다시 굴림"},
-	&"DICE_BLACKJACK": {"rows": [["시작", "합계 11 이상이 되도록 카드를 받음 (A는 11, 넘으면 1)"], ["11 ~ 20에서 스탠드", "(합계 - 10)칸 (1~10칸)"], ["★ 정확히 21", "11칸 + 한 번 더!"], ["22 이상 (버스트)", "0칸, 턴 종료"]], "note": "히트로 카드를 더 뽑거나 스탠드로 확정"},
-	&"DICE_PINBALL": {"rows": [["하단 구멍 7칸", "[2] [4] [6] [★10] [5] [3] [1]"], ["골인한 구멍의 숫자", "그 숫자만큼 전진 (1~10칸)"], ["★10 구멍", "가장 드문 대박"]], "note": "발사 버튼을 꾹 눌렀다 놓으면 스프링이 당겨졌다 발사"},
+	&"DICE_YACHT": {"rows": [["찬스 (족보 없음)", "최고 눈÷2 올림 (1~3칸)"], ["트리플 (3개 동일)", "5칸"], ["4연속 / 풀하우스", "7칸"], ["포카드 / 5연속", "9칸"], ["★ 야추 (5개 동일)", "12칸 + 한 번 더!"]], "note": "고정(Keep)하고 나머지를 최대 2번 다시 굴림"},
+	&"DICE_BLACKJACK": {"rows": [["시작", "합 11 이상까지 받음"], ["11 ~ 20 스탠드", "(합 - 10)칸"], ["★ 정확히 21", "11칸 + 한 번 더!"], ["22 이상 (버스트)", "0칸, 턴 종료"]], "note": "A는 11 (넘으면 1) · 히트로 더 뽑거나 스탠드로 확정"},
+	&"DICE_PINBALL": {"rows": [["하단 구멍 7칸", "2·4·6·★10·5·3·1"], ["골인한 구멍", "그 숫자만큼 (1~10칸)"], ["★10 구멍", "가장 드문 대박"]], "note": "발사 버튼을 꾹 눌렀다 놓으면 발사"},
 }
 
 
@@ -4615,6 +4675,12 @@ func _refresh_tool_board(tool: BaseJudgmentTool, player_id: int) -> void:
 
 
 ## 규칙표를 다시 그린다: 행마다 [항목 ......... 결과] 한 줄.
+## 라벨 글자가 한 줄로 차지하는 폭.
+func _text_width(label: Label) -> float:
+	var font: Font = label.get_theme_font("font")
+	return font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, label.get_theme_font_size("font_size")).x
+
+
 func _rebuild_tool_rules(rules: Dictionary, _accent: Color) -> void:
 	for child: Node in _tool_rules.get_children():
 		_tool_rules.remove_child(child)
@@ -4628,6 +4694,7 @@ func _rebuild_tool_rules(rules: Dictionary, _accent: Color) -> void:
 		var line := HBoxContainer.new()
 		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.add_child(line)
+		# 카드 폭(TOOL_RULE_WIDTH)을 넘는 줄만 줄바꿈한다: 긴 족보(야추·블랙잭·핀볼)가 카드를 넓혀 화면 오른쪽 밖으로 잘렸다.
 		var name_label := _make_label(str(pair[0]), 12, UiSkin.INK)
 		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -4635,6 +4702,15 @@ func _rebuild_tool_rules(rules: Dictionary, _accent: Color) -> void:
 		var value_label := _make_label(str(pair[1]), 12, UiSkin.GREEN)
 		value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		value_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var name_width: float = _text_width(name_label)
+		var value_width: float = _text_width(value_label)
+		var gap: float = float(line.get_theme_constant("separation"))
+		if name_width + value_width + gap > TOOL_RULE_WIDTH:
+			var value_room: float = minf(value_width, TOOL_RULE_WIDTH * 0.5)
+			value_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			value_label.custom_minimum_size = Vector2(value_room, 0)
+			name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			name_label.custom_minimum_size = Vector2(TOOL_RULE_WIDTH - value_room - gap, 0)
 		line.add_child(value_label)
 		_tool_rules.add_child(row)
 	_tool_note.text = str(rules.get("note", ""))
