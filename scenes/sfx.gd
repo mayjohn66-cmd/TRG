@@ -57,6 +57,20 @@ const EVENTS: Dictionary = {
 	&"win": ["승리", ["win", "fanfare", "victory"]],
 	&"trap": ["함정 발동 (경보·폭발)", ["explosion", "alarm", "trap"]],
 	&"ui_hover": ["버튼에 올림", ["hover"]],
+	&"turn_start": ["[OO 차례] 배너", ["turn-start"]],
+	&"review_open": ["증강 확인 창 열림", ["review-open"]],
+	&"review_confirm": ["증강 [확인] 누름", ["review-confirm"]],
+	&"attack_alert": ["공격 카드 발동! 경보", ["attack-alert"]],
+	&"trap_hidden": ["비밀 함정 설치 알림", ["trap-hidden"]],
+	&"build_hotel": ["호텔 건물이 솟아오름", ["build-hotel"]],
+	&"build_mine": ["필살기 지뢰 설치", ["build-mine"]],
+	&"revenge_ignite": ["리벤지 부스터 불꽃 점화", ["revenge-ignite"]],
+	&"tempo_warning": ["템포 업 경고", ["tempo-warning"]],
+	&"emote_pop": ["이모트 말풍선", ["emote-pop"]],
+	&"timer_tick": ["제한 시간 임박 (째깍)", ["timer-tick"]],
+	&"timeout": ["시간 초과·강제 턴 패스", ["timeout"]],
+	&"graduate": ["특수 승리·순위 확정", ["graduate"]],
+	&"podium": ["결과 시상대 등장", ["podium"]],
 }
 
 ## 기획서의 사운드 이름 -> 실제 이벤트 이름 (어느 이름으로 불러도 같은 소리가 난다).

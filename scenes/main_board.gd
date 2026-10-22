@@ -363,6 +363,9 @@ var _drop_label: Label = null
 var _dock: Control = null
 var _dock_player: int = -1
 var _debug_toggle: Button = null
+var _pressure_serial: int = -1
+var _pressure_second: int = -1
+var _pressure_left: float = 0.0
 var _emote_row: HBoxContainer = null
 var _emote_ready_msec: int = 0
 ## 치트/디버그 메뉴 노출 여부: 평소에는 숨긴다. 게임 메뉴를 연 채로 비밀 입력(CHEAT_SEQUENCE)을 끝까지 쳐야 켜지고 꺼진다.
@@ -642,6 +645,7 @@ func _process(delta: float) -> void:
 	if not manager.is_game_over:
 		_phase_label.text = _phase_text()
 	_bot.instant = instant_roll_for_test
+	_update_time_pressure(delta)
 	if _review_bar != null and is_instance_valid(_review_bar):
 		var track: Control = _review_bar.get_parent()
 		var full: float = GameEnums.PHASE_TIME_REVIEW * maxf(manager.timer_scale, 0.001)
@@ -2282,6 +2286,7 @@ func _refresh_structures() -> void:
 			_pawn_layer.move_child(model, 0)  # 말 그림보다 먼저 그려 말이 건물 앞에 선다 (z를 낮추면 보드 칸 밑으로 숨는다)
 			_structure_views[index] = {"kind": model.kind, "owner": wanted[index]["owner"], "node": model}
 			if _fx_on():
+				Sfx.play(&"build_hotel" if model.kind == &"hotel" else &"build_mine", -2.0)
 				# 땅에서 솟아오르듯 세워진다
 				model.scale = Vector2(1.0, 0.05)
 				model.create_tween().tween_property(model, "scale", Vector2.ONE, 0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
@@ -2498,6 +2503,7 @@ func _revenge_charged_popup(player_id: int) -> void:
 	at.x = clampf(at.x, 60.0, size.x - 60.0)
 	at.y = clampf(at.y, 60.0, size.y - 60.0)
 	_number_pop(at, "+%d" % _revenge_steps(), Color("ff922b"))
+	Sfx.play(&"revenge_ignite")
 	_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(120.0 * _motion_pace()))  # 배지는 혼자 떠오르므로 큐를 오래 붙잡지 않는다
 
 
@@ -2626,6 +2632,25 @@ func _refresh_all() -> void:
 	_refresh_overlays()
 	_check_round_banner()
 	_check_turn_banner()
+
+
+## 제한 시간 효과음: 내가 정할 차례에 남은 시간이 5초 안으로 들어오면 1초마다 째깍, 시간이 다 돼 넘어가면 부저.
+## 타이머를 화면에 보여 주는 판(타이머 켜기·온라인)에서만 울린다.
+func _update_time_pressure(delta: float) -> void:
+	var left: float = manager.phase_time_left
+	var serial: int = manager.phase_serial
+	if serial != _pressure_serial:
+		# 째깍거리던 단계가 시간이 다 돼서 끝났다 (마지막 프레임에 남은 시간이 한 프레임 안쪽이었다)
+		if _pressure_second != -1 and _pressure_left <= delta * 3.0 + 0.05 and _fx_on():
+			Sfx.play(&"timeout")
+		_pressure_serial = serial
+		_pressure_second = -1
+	var visible_timer: bool = (_timer_check != null and _timer_check.button_pressed) or net != null
+	var waiting_on_me: bool = manager.current_state == TurnManager.State.PHASE_ROUND_START or not (ai_mode or net != null) or manager.current_player_id() == local_player_id
+	if visible_timer and waiting_on_me and not manager.is_game_over and _fx_on() and left > 0.0 and left <= 5.0 and int(ceilf(left)) != _pressure_second:
+		_pressure_second = int(ceilf(left))
+		Sfx.play(&"timer_tick")
+	_pressure_left = left
 
 
 func _phase_text() -> String:
@@ -2945,6 +2970,8 @@ func _check_round_banner() -> void:
 	var first: int = manager.current_player_id()
 	var whose: String = tr_ui("turn.mine") if ai_mode and first == local_player_id else tr_ui("turn.other", [_player_name(first)])
 	var body: String = whose + ("\n템포 업 Lv.%d %s · 최종 이동 +%d칸" % [tempo, TempoUp.stage_name(tempo), TempoUp.move_bonus(state.round_number)] if tempo > 0 else "")
+	if _fx_on():
+		Sfx.play(&"round_start")
 	_announce("라운드", "%d라운드 시작!" % state.round_number, body, COLOR_GOLD, null, 1.0)
 
 
@@ -2969,6 +2996,8 @@ func _check_turn_banner() -> void:
 	_announced_turn_key = key
 	var player_id: int = manager.current_player_id()
 	var who: String = tr_ui("turn.mine") if (not ai_mode or player_id == local_player_id) and ai_mode else tr_ui("turn.other", [_player_name(player_id)])
+	if _fx_on():
+		Sfx.play(&"turn_start")
 	_announce("턴", who, "", PLAYER_COLORS[player_id], null, TURN_BANNER_SECONDS)
 
 
@@ -4035,7 +4064,7 @@ func _show_emote(player_id: int, emote_id: int) -> void:
 		return
 	var entry: Dictionary = EmoteCatalog.entry(emote_id)
 	_avatar_react(player_id, int(entry["emotion"]) as AvatarSlot.Emotion, 2.4)
-	Sfx.play(&"card_get")
+	Sfx.play(&"emote_pop")
 	var previous: Variant = _emote_bubbles.get(player_id)
 	if previous != null and is_instance_valid(previous):
 		(previous as Node).queue_free()
@@ -7075,6 +7104,7 @@ func _show_result_overlay() -> void:
 	var title: Label = _make_label("게임 종료!", 34, Color("ffd43b"))
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(title)
+	Sfx.play(&"podium")
 	var announcer: Label = _make_label("최종 순위를 발표합니다!", 20, Color("f1f3f5"))
 	announcer.name = "RankingAnnouncer"
 	announcer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -7410,6 +7440,7 @@ func _show_augment_review(players: Array) -> void:
 	_close_augment_review()
 	if _draft_summary.is_empty():
 		return
+	Sfx.play(&"review_open")
 	_review_overlay = _new_overlay(0.55)
 	_review_overlay.name = "AugmentReview"
 	_review_overlay.z_index = 45
@@ -7488,6 +7519,7 @@ func _review_local_players() -> Array[int]:
 
 
 func _on_review_confirm() -> void:
+	Sfx.play(&"review_confirm")
 	for player_id: int in _review_local_players():
 		manager.act(&"review_done", {"player_id": player_id})
 	_refresh_review_button()
@@ -7744,7 +7776,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_record(-1, "[color=#ff6b6b][b]!! 템포 업 Lv.%d[/b] - %s[/color]" % [stage, _bb(" · ".join(PackedStringArray(lines)))])
 			if _fx_on():
 				screen_shake(12.0, 0.5)
-				Sfx.play(&"trap")
+				Sfx.play(&"tempo_warning")
 			_announce("템포 업", "템포 업 Lv.%d · %s" % [stage, TempoUp.stage_name(stage)], "%d라운드부터 게임이 빨라집니다!\n◆ %s" % [data["round"], "\n◆ ".join(PackedStringArray(lines))], Color("ff4d4d"), null, 3.2)
 		&"round_end_judgement":
 			var achievers: Array = data["players"]
@@ -7780,6 +7812,8 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			var rested: int = int(data["player_id"])
 			_log_line("[강제 턴 패스] P%d가 이번 차례를 쉽니다 (UDO 스킵)" % rested, Color("adb5bd"))
 			_record(rested, "강제 턴 패스")
+			if _fx_on():
+				Sfx.play(&"timeout")
 			_announce_soft("휴식", "강제 턴 패스!", "%s 이번 차례 쉬기" % _player_name(rested), Color("adb5bd"), null, 0.9)  # 쉬는 턴은 기다리지 않고 바로 다음 차례로
 		&"stack_resolved":
 			var stack_names: Array[String] = []
@@ -7873,6 +7907,8 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			var rank_no: int = int(data["rank"])
 			_log_line("[순위 확정] %s %d위 - %s" % [_player_name(ranked), rank_no, VictoryChecker.reason_text(data["reason"])], Color("ffd43b"))
 			_record(ranked, "★ %d위 확정! (%s)" % [rank_no, _bb(VictoryChecker.reason_text(data["reason"]))])
+			if _fx_on():
+				Sfx.play(&"graduate")
 			if rank_no < _player_ids.size() - 1:  # 3위(마지막 졸업)부터는 결과 화면이 바로 이어진다
 				_announce(tr_ui("rank.tag"), tr_ui("rank.banner", ["★ " if rank_no == 1 else "", _player_name(ranked), rank_no]), tr_ui("rank.body", [VictoryChecker.reason_text(data["reason"])]), PLAYER_COLORS[ranked], null, 1.4)
 				_profile_react(ranked, true, "%d위" % rank_no)
@@ -8216,9 +8252,12 @@ func _build_roll_fx() -> void:
 	_announcer.entry_finished.connect(_on_announcer_entry_finished)
 	_announcer.entry_started.connect(func(_serial: int) -> void:
 		_dismiss_center_banner()
-		if str(_announcer._current.get("tag", "")) == ATTACK_TAG and _fx_on():
-			Sfx.play(&"card_impact")
-			screen_shake(10.0, 0.3))
+		var entry_tag: String = str(_announcer._current.get("tag", ""))
+		if entry_tag == ATTACK_TAG and _fx_on():
+			Sfx.play(&"attack_alert")
+			screen_shake(10.0, 0.3)
+		elif entry_tag == "함정 설치" and _fx_on():
+			Sfx.play(&"trap_hidden"))
 
 
 ## 야추·블랙잭·핀볼의 중앙 오픈 스테이지를 만든다. 눈에 보이는 건 해당 도구를 쓰는 차례뿐이다.

@@ -1,5 +1,9 @@
 extends SceneTree
 
+## 한 번만 나오는 팡파르·긴 연출음은 1.85초보다 길어도 된다 (이벤트별 상한).
+const LONG_EVENTS: Dictionary = {&"graduate": 4.2, &"podium": 5.5, &"revenge_ignite": 2.6, &"build_hotel": 2.4, &"build_mine": 2.0}
+
+
 func _initialize() -> void:
 	var failures: Array[String] = []
 	if Sfx.CURATED.FILES.size() != Sfx.EVENTS.size():
@@ -11,7 +15,7 @@ func _initialize() -> void:
 			if not path.begins_with("res://assets/sfx/curated/"):
 				failures.append("Legacy sound mixed into " + String(event))
 			var stream: AudioStream = load(path) as AudioStream
-			if stream == null or stream.get_length() <= 0.0 or stream.get_length() > 1.85:
+			if stream == null or stream.get_length() <= 0.0 or stream.get_length() > float(LONG_EVENTS.get(event, 1.85)):
 				failures.append("Invalid or excessive duration: " + path)
 		if paths.size() > 1:
 			var previous: AudioStream = Sfx._stream_for(event)
