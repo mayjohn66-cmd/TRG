@@ -67,6 +67,7 @@ func _run() -> void:
 	await _test_instant_flag()
 	await _test_rank_log_follows_the_capture()
 	_test_match_report_is_sent_once()
+	_test_unplayable_card_explains_itself()
 	await _test_announcer()
 	await _test_aspect_layout()
 	await _test_roll_pad()
@@ -824,6 +825,32 @@ func _test_match_report_is_sent_once() -> void:
 	_expect(sent.size() == 2 and sent[0].contains("%d번째 판 시작" % nth) and sent[1].contains("(%d번째 판)" % nth), "시작과 완료가 같은 판 번호 (%d)" % nth)
 	_expect(sent.size() == 2 and sent[1].contains("| %s |" % MatchTelemetry.mode_label(false, _board.ai_mode)) and sent[1].contains("내 최종 순위:"), "지금 모드와 내 순위로 알린다")
 	_board._match_reported = false
+
+
+## 낼 수 없는 카드(예: UDO +4인데 다음 차례 사람의 말이 보드에 없음)는 흐리게 보이고, 누르면 이유가 화면 가운데 뜬다 (아무 반응 없던 버그).
+func _test_unplayable_card_explains_itself() -> void:
+	var manager: TurnManager = _board.manager
+	var state: GameState = manager.state
+	var player: int = manager.current_player_id()
+	var victim: int = PenaltyBombCommand.victim_of(state, player)
+	var saved: Array = []
+	for pawn: PlayerPawn in state.pawns_of(victim):
+		saved.append([pawn, pawn.has_left_start, pawn.current_tile_idx])
+		pawn.has_left_start = false
+		pawn.current_tile_idx = 0
+	var card: BaseCard = CardRegistry.get_card(&"ACT_03")
+	_expect(not _board._card_usable_now(player, card), "UDO +4: 다음 사람의 말이 보드에 없으면 흐린 카드")
+	_expect(_board._card_block_reason(player, card).contains("보드 위에 없어"), "UDO +4: 낼 수 없는 이유 (%s)" % _board._card_block_reason(player, card))
+	state.give_card(player, &"ACT_03")
+	_board._on_card_pressed(player, &"ACT_03")
+	_expect(_board._center_banner.visible and _board._center_label.text.contains("UDO +4"), "누르면 이유가 화면 가운데 뜬다 (%s)" % _board._center_label.text)
+	_expect(state.has_card(player, &"ACT_03"), "카드는 쓰이지 않고 손에 남는다")
+	(state.hands[player] as Array).erase(&"ACT_03")
+	for entry: Array in saved:
+		(entry[0] as PlayerPawn).has_left_start = entry[1]
+		(entry[0] as PlayerPawn).current_tile_idx = entry[2]
+	_board._center_banner.visible = false
+	_board._refresh_all()
 
 
 func _test_instant_flag() -> void:

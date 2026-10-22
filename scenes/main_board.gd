@@ -4667,7 +4667,26 @@ func _card_usable_now(player_id: int, card: BaseCard) -> bool:
 		return false
 	if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN and (player_id != manager.current_player_id() or manager.card_played_this_turn()):
 		return false
+	if state.is_banned(player_id) or not card.could_play(state, player_id):
+		return false  # 지금은 대상이 없다 (예: UDO +4의 다음 차례 사람이 보드에 말이 없음): 흐리게 두고 이유는 _card_block_reason
 	return true
+
+
+## 지금 이 카드를 낼 수 없는 이유 (낼 수 있으면 빈 문자열). 카드를 눌렀는데 아무 일도 없던 것처럼 보이지 않게 화면에 띄운다.
+func _card_block_reason(player_id: int, card: BaseCard) -> String:
+	if state.is_banned(player_id):
+		return "알고리즘 밴! %d턴 동안 카드를 쓸 수 없습니다" % int(state.banned_turns[player_id])
+	if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN and manager.card_played_this_turn():
+		return "카드는 굴리기 전에 턴당 1장만 쓸 수 있습니다"
+	if card.could_play(state, player_id):
+		return ""
+	match card.card_id:
+		&"ACT_03":
+			var victim: int = PenaltyBombCommand.victim_of(state, player_id)
+			if victim == -1:
+				return "[UDO +4] 폭탄을 넘길 다음 사람이 없습니다"
+			return "[UDO +4] 다음 차례인 %s의 말이 보드 위에 없어 쓸 수 없습니다" % _player_name(victim)
+	return "[%s] 지금은 대상이 없어 쓸 수 없습니다" % card.display_name
 
 
 func _refresh_controls() -> void:
@@ -5002,11 +5021,11 @@ func _on_card_pressed(player_id: int, card_id: StringName) -> void:
 		else:
 			_log_line("[%s] 방어 카드는 공격을 받았을 때 뜨는 방어 팝업에서 씁니다." % card.display_name, Color("868e96"))
 		return
-	if state.is_banned(player_id):
-		_log_line("알고리즘 밴! %d턴 동안 카드를 쓸 수 없습니다." % int(state.banned_turns[player_id]), Color("ff8787"))
-		return
-	if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN and manager.card_played_this_turn():
-		_log_line("카드는 굴리기 전에 턴당 1장만 쓸 수 있습니다.", Color("868e96"))
+	var blocked: String = _card_block_reason(player_id, card)
+	if blocked != "":
+		_log_line(blocked, Color("ff8787"))
+		_show_center_banner(blocked, Color("ff8787"))  # 숨은 로그만 남기면 눌러도 아무 반응이 없는 것처럼 보인다
+		Sfx.play(&"bad", -6.0)
 		return
 	if card.needs_tile():
 		_begin_tile_pick(player_id, card_id)
@@ -7757,6 +7776,8 @@ func _on_action_rejected(player_id: int, action: StringName, reason: StringName)
 	if net != null and (player_id != local_player_id or String(action).begins_with("__")):
 		return  # 온라인: 내 행동이 거부됐을 때만 알린다 (다른 사람의 거부나 늦은 타임아웃은 조용히 넘어간다)
 	_log_line("P%d %s 거부: %s" % [player_id, action, REJECT_REASONS.get(reason, str(reason))], Color("ff8787"))
+	if action == &"play_card" and (player_id == local_player_id or not (ai_mode or net != null)) and not _is_bot_turn():
+		_show_center_banner("카드를 쓸 수 없습니다: %s" % REJECT_REASONS.get(reason, str(reason)), Color("ff8787"))
 	if action == &"reroll_augment":
 		_mark_reroll_refused(reason)
 

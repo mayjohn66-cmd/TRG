@@ -17,10 +17,16 @@ func _init(acting_player: int = -1) -> void:
 	command_name = "PenaltyBomb"
 
 
-## 맞을 플레이어: 진행 방향의 다음 플레이어 (없으면 -1).
+## 맞을 플레이어: 진행 방향의 다음 플레이어. 이미 졸업한 사람은 레이스에 없으므로 건너뛴다 (없으면 -1).
 static func victim_of(game_state: GameState, shooter_id: int) -> int:
-	var next_id: int = game_state.next_player_after(shooter_id)
-	return next_id if next_id != shooter_id else -1
+	var next_id: int = shooter_id
+	for _i: int in game_state.player_ids.size():
+		next_id = game_state.next_player_after(next_id)
+		if next_id == shooter_id or next_id == -1:
+			return -1
+		if not game_state.is_graduated(next_id):
+			return next_id
+	return -1
 
 
 func can_execute(_ctx: RuleContext) -> bool:
