@@ -1,6 +1,6 @@
 # File: res://core_engine/rules/law_registry.gd
 # Class: class_name LawRegistry
-# Role: 교칙 ID -> 구현 클래스 팩토리. 중앙 법전의 특수 승리 교칙(LAW_01~08)과 초증강 개인 패시브(SUPER_10 아우토반 니트로)를 만든다. 스냅샷 복원과 네트워크 동기화에서 법전을 재구성한다
+# Role: 교칙 ID -> 구현 클래스 팩토리. 중앙 법전의 특수 승리 교칙(LAW_01~08)과 개인 패시브 예시(SUPER_10, 지금은 드래프트로 얻지 않는다)를 만든다. 스냅샷 복원과 네트워크 동기화에서 법전을 재구성한다
 class_name LawRegistry
 extends RefCounted
 

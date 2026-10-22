@@ -1,6 +1,7 @@
 # File: res://core_engine/rules/laws/law_autobahn.gd
 # Class: class_name LawAutobahn
-# Role: [초증강 SUPER_10] 아우토반 니트로 - 개인 영구 패시브. 내 눈금이 짝수이거나 5 이상이면 이동 거리 +3칸 (옛 법전 교칙 아우토반·짝수 니트로를 합쳤다)
+# Role: 개인 영구 패시브 예시 - 내 눈금이 짝수이거나 5 이상이면 이동 거리 +3칸. 초증강 아우토반 니트로(SUPER_10)는 [선두 말 코너 질주] 즉시 효과로 바뀌어 드래프트로는 더 이상 얻지 않는다.
+#       개인 패시브 파이프라인(RuleBookManager.personal_laws·스냅샷·변조 추적)을 위해 같은 ID로 남겨 둔다
 class_name LawAutobahn
 extends LawResource
 
@@ -8,14 +9,14 @@ const BOOST_THRESHOLD: int = 5
 const BOOST_STEPS: int = 3
 
 
-## 추가 칸 수 (augments_table.csv SUPER_10 param_1).
+## 추가 칸 수 (augments_table.csv의 SUPER_10 행은 이제 니트로 질주라 고정값을 쓴다).
 static func boost_steps() -> int:
-	return GameData.param("augments", "SUPER_10", 1, BOOST_STEPS)
+	return BOOST_STEPS
 
 
-## 이 눈금 이상이면 홀수라도 가속한다 (param_2).
+## 이 눈금 이상이면 홀수라도 가속한다.
 static func threshold() -> int:
-	return GameData.param("augments", "SUPER_10", 2, BOOST_THRESHOLD)
+	return BOOST_THRESHOLD
 
 
 func _init() -> void:

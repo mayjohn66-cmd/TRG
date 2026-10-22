@@ -62,6 +62,8 @@ signal victory_declared(player_id: int, reason: StringName)
 ## 강제 연대책임: 두 말이 묶였다 / 묶인 짝이 같이 골인(&"finish")·탈락(&"eject")했다.
 signal pawns_bonded(pawn_a_id: int, pawn_b_id: int)
 signal bond_resolved(kind: StringName, pawn_id: int, partner_id: int)
+## 초증강 아우토반 니트로: 말이 코너를 향해 직진한다 (움직이기 전에 방송한다). path: 지날 칸들(마지막이 멈출 칸, 결승이면 0), blocked: 말이 서 있어 멈춘 칸(-1이면 막힘 없음).
+signal nitro_dashed(pawn_id: int, path: Array[int], blocked: int)
 
 var board: BoardGraph = BoardGraph.new()
 ## Node 기반 법전. 씬 트리에 붙이지 않고 GameState가 수명을 관리한다.

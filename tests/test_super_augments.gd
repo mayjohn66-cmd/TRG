@@ -259,19 +259,40 @@ func test_castling_shuffles_all_board_pawns_positions() -> void:
 			changed += 1
 	check(changed >= 15, "대부분의 시드에서 실제로 섞인다 (%d/20)" % changed)
 
-func test_personal_passive_supers_stay_for_the_rest_of_the_game() -> void:
+func test_nitro_dashes_the_front_pawn_to_the_next_corner() -> void:
 	var state: GameState = _state()
-	for effect: StringName in SuperAugments.PERSONAL:
-		check(SuperAugments.is_available(effect, state, 1), "%s 선택 가능" % effect)
-		check(bool(SuperAugments.apply(effect, state, 1)["ok"]), "%s 적용" % effect)
-		check(state.rulebook.has_personal(String(effect), 1), "%s 개인 패시브 등록" % effect)
-		check(not SuperAugments.is_available(effect, state, 1), "%s 두 번은 받지 않는다" % effect)
-		check(SuperAugments.is_available(effect, state, 2), "%s 다른 사람은 받을 수 있다" % effect)
-	check(state.rulebook.law_ids().is_empty(), "법전 슬롯은 비어 있다")
-	var restored: GameState = _state()
-	TurnSnapshot.from_dict(TurnSnapshot.capture(state).to_dict()).restore(restored)
-	check(restored.rulebook.has_personal("SUPER_10", 1), "스냅샷으로 복원된다")
+	check(not SuperAugments.is_available(SuperAugments.NITRO, state, 1), "보드 위에 내 말이 없으면 고를 수 없다")
+	var front: PlayerPawn = _place(state, 11, 3)
+	_place(state, 12, 1)  # 뒤에 있는 내 말은 그대로
+	check(SuperAugments.is_available(SuperAugments.NITRO, state, 1), "보드 위에 말이 있으면 고를 수 있다")
+	var dashes: Array = []
+	state.nitro_dashed.connect(func(pawn_id: int, path: Array[int], blocked: int) -> void: dashes.append([pawn_id, path, blocked]))
+	var result: Dictionary = SuperAugments.apply(SuperAugments.NITRO, state, 1)
+	check(bool(result["ok"]), "적용")
+	check_eq(front.current_tile_idx, BoardSpec.side, "선두 말이 다음 코너(%d번)까지 직진" % BoardSpec.side)
+	check_eq(state.get_pawn(12).current_tile_idx, 1, "다른 말은 그대로")
+	check_eq(dashes.size(), 1, "질주 연출 신호")
+	check_eq(dashes[0][2], -1, "막힘 없음")
+	check(not state.rulebook.has_personal("SUPER_10", 1), "더 이상 영구 패시브가 아니다")
 
+
+func test_nitro_stops_at_the_first_pawn_and_ejects_everyone_there() -> void:
+	var state: GameState = _state()
+	var front: PlayerPawn = _place(state, 11, 2)
+	var enemy: PlayerPawn = _place(state, 21, 5)
+	var other: PlayerPawn = _place(state, 41, 5)  # 같은 칸의 다른 사람 말도 함께 날아간다
+	var beyond: PlayerPawn = _place(state, 31, 6)
+	SuperAugments.apply(SuperAugments.NITRO, state, 1)
+	check_eq(front.current_tile_idx, 5, "말이 서 있는 첫 칸에서 멈춘다")
+	check(not enemy.has_left_start and not other.has_left_start, "그 칸의 말은 모두 출발선으로")
+	check(beyond.has_left_start and beyond.current_tile_idx == 6, "그 뒤의 말은 무사")
+
+
+func test_nitro_on_the_last_side_crosses_the_finish_line() -> void:
+	var state: GameState = _state()
+	var front: PlayerPawn = _place(state, 11, BoardSpec.tile_count - 3)
+	SuperAugments.apply(SuperAugments.NITRO, state, 1)
+	check(front.is_finished, "다음 코너가 결승선이면 완주한다")
 
 func test_super_category_appears_at_most_once_per_draft_and_not_every_time() -> void:
 	var state: GameState = _state()

@@ -118,8 +118,6 @@ func test_defaults_from_the_table_keep_the_original_numbers() -> void:
 	check_eq(GameData.revenge_bonus(), 4, "리벤지 +4")
 	check_eq(GameData.dash_steps(), 3, "발판 +3")
 	check_eq(GameData.leapfrog_max(), 3, "점프 최대 +3")
-	check_eq(LawAutobahn.boost_steps(), 3, "아우토반 +3")
-	check_eq(LawAutobahn.threshold(), 5, "아우토반 눈금 5")
 	check_eq((LawRegistry.create("LAW_01") as VictoryLaw).goal(), 6, "투기장 6처치")
 	check_eq((LawRegistry.create("LAW_04") as VictoryLaw).goal(), 16, "한방 16칸")
 
@@ -233,14 +231,9 @@ func test_super_augment_params_change_the_game_logic() -> void:
 
 func test_law_params_change_the_dice_rules() -> void:
 	_edit_augment("AUG_LAW_01", {"param_1": "2"})
-	var state: GameState = make_state(2, 3)
 	var arena: VictoryLaw = LawRegistry.create("LAW_01")
 	check_eq(arena.goal(), 2, "표의 목표 처치 수")
 	check(arena.description.contains("2회"), "법전 문구도 2로 바뀐다")
-	_edit_augment("SUPER_10", {"param_1": "10", "param_2": "3"})
-	var ctx2: RuleContext = make_ctx(state, 3)
-	ctx2 = LawAutobahn.new().intercept(ctx2)
-	check_eq(ctx2.dice_value, 13, "눈금 3 이상이면 +10")
 
 
 func test_rule_rows_change_revenge_dash_and_leapfrog() -> void:

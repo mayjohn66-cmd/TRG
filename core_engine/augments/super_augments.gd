@@ -1,6 +1,6 @@
 # File: res://core_engine/augments/super_augments.gd
 # Class: class_name SuperAugments
-# Role: [초증강 : 하이리스크 하이리턴] 12종 (영구 패시브 1종 포함) - 드래프트에서만 나오는, 판을 크게 뒤집지만 나도 크게 다칠 수 있는 증강의 조건·효과. 모든 난수는 호스트 RNG(state.rng)를 쓰고 효과는 GameState 시그널로 방송되어 화면이 연출한다
+# Role: [초증강 : 하이리스크 하이리턴] 12종 - 드래프트에서만 나오는, 판을 크게 뒤집지만 나도 크게 다칠 수 있는 증강의 조건·효과. 모든 난수는 호스트 RNG(state.rng)를 쓰고 효과는 GameState 시그널로 방송되어 화면이 연출한다
 class_name SuperAugments
 extends RefCounted
 
@@ -13,13 +13,13 @@ const GAMBLER: StringName = &"SUPER_06"        # 주사위 도박사의 영혼
 const CASTLING: StringName = &"SUPER_07"       # 강제 캐슬링 룰렛
 const BAKERY: StringName = &"SUPER_08"         # 에르핀의 빵집 털이
 const SNIPER: StringName = &"SUPER_09"         # 저격수의 표적
-const NITRO: StringName = &"SUPER_10"          # 아우토반 니트로 (개인 영구 패시브)
+const NITRO: StringName = &"SUPER_10"          # 아우토반 니트로 (선두 말 코너까지 직진, 길을 막은 칸의 말 전부 사출)
 const RUNAWAY: StringName = &"SUPER_11"        # 폭주 기관차 (무작위 한 변 쓸기)
 const GUARANTEE: StringName = &"SUPER_12"      # 강제 연대책임 (선두·후방 말 일심동체)
 
 const ALL_IDS: Array[StringName] = [FLIP, REDISTRIBUTE, DEVIL, MINEFIELD, RAID, GAMBLER, CASTLING, BAKERY, SNIPER, NITRO, RUNAWAY, GUARANTEE]
-## 남은 게임 내내 그 플레이어에게만 작동하는 패시브 (RuleBookManager.personal_laws, 법전 슬롯을 차지하지 않는다).
-const PERSONAL: Array[StringName] = [NITRO]
+## 남은 게임 내내 그 플레이어에게만 작동하는 패시브 (RuleBookManager.personal_laws, 법전 슬롯을 차지하지 않는다). 지금은 없다 (아우토반 니트로는 즉시 효과로 바뀌었다).
+const PERSONAL: Array[StringName] = []
 
 ## 수치 기본값 (content_trickcal/data/augments_table.csv의 param_1·param_2가 비어 있을 때만 쓴다).
 const FLIP_FINISH_CHANCE_PERCENT: int = 50
@@ -97,7 +97,7 @@ const INFO: Dictionary = {
 	CASTLING: ["강제 캐슬링 룰렛", "◆ 보드 위 모든 플레이어 말의 위치를 무작위로 전부 섞는다"],
 	BAKERY: ["에르핀의 빵집 털이", "◆ 무작위 생떼 카드 3장 획득\n◆ 대기 중인 내 말 1개를 첫 빵집으로 출격"],
 	SNIPER: ["저격수의 표적", "◆ 가장 앞선 적 말 1개를 즉시 0번 출발선으로 장외 사출\n◆ 내 말 1개 +4칸 전진"],
-	NITRO: ["아우토반 니트로", "◆ 남은 게임 내내 내 눈금이 짝수이거나 5 이상이면 +3칸!"],
+	NITRO: ["아우토반 니트로", "◆ 내 선두 말이 다음 코너까지 일직선으로 질주!\n◆ 길에 말이 있으면 그 칸에서 멈추고 그 칸의 말을 전부 장외 사출"],
 	RUNAWAY: ["폭주 기관차", "◆ 무작위 한 변을 기관차가 질주!\n◆ 그 변의 모든 말(내 말 포함) 출발선으로 · 함정 카드 전부 파괴"],
 	GUARANTEE: ["강제 연대책임", "◆ 내 선두 말과 가장 뒤 말이 일심동체\n◆ 하나가 골인하면 둘 다 골인 · 탈락하면 둘 다 탈락"],
 }
@@ -148,7 +148,7 @@ static func is_available(effect: StringName, state: GameState, player_id: int) -
 		SNIPER:
 			return not board_leaders(state, -1, player_id).is_empty()
 		NITRO:
-			return not state.rulebook.has_personal(String(effect), player_id)
+			return state.front_pawn_of(player_id) != null  # 보드 위에 내 말이 있어야 달린다
 		GUARANTEE:
 			return bond_pair(state, player_id).size() == 2  # 보드 위에 내 말이 둘 이상이어야 묶을 수 있다
 	return true  # 재분배·대습격·도박사·빵집 털이·폭주 기관차는 언제든
@@ -168,7 +168,7 @@ static func apply(effect: StringName, state: GameState, player_id: int) -> Dicti
 		SNIPER: return _apply_sniper(state, player_id)
 		RUNAWAY: return _apply_runaway(state, player_id)
 		GUARANTEE: return _apply_guarantee(state, player_id)
-		NITRO: return _apply_personal(effect, state, player_id)
+		NITRO: return _apply_nitro(state, player_id)
 	return {"ok": false, "text": "알 수 없는 초증강입니다"}
 
 
@@ -413,6 +413,53 @@ static func _apply_sniper(state: GameState, player_id: int) -> Dictionary:
 	if booster != null:
 		MoveExecutor.forced_advance(state, booster, sniper_advance())
 	return {"ok": true, "text": "선두 적 말을 출발선으로 사출하고 내 말 +%d칸!" % sniper_advance()}
+
+
+## 아우토반 니트로가 달릴 길: 선두 말 다음 칸부터 다음 코너까지 (결승선이면 0번까지). 말이 서 있는 칸을 만나면 거기서 끊는다.
+## 반환: {"path": [칸], "blocked": 말이 있어 멈춘 칸 또는 -1}
+static func nitro_route(state: GameState, pawn: PlayerPawn) -> Dictionary:
+	var path: Array[int] = []
+	var tile: int = pawn.current_tile_idx
+	for _i: int in BoardSpec.tile_count:
+		tile = posmod(tile + 1, BoardSpec.tile_count)
+		path.append(tile)
+		if tile == GameEnums.GOAL_TILE:
+			return {"path": path, "blocked": -1}  # 결승선까지 막힘 없이 달렸다
+		for other: PlayerPawn in state.leaders_at(tile):
+			if other != pawn and other.has_left_start:
+				return {"path": path, "blocked": tile}
+		if BoardSpec.corner_tiles.has(tile):
+			break
+	return {"path": path, "blocked": -1}
+
+
+## 아우토반 니트로: 내 선두 말(업힌 말과 함께)이 다음 코너까지 설치물 판정 없이 일직선으로 질주한다.
+## 길에 어떤 말이든 서 있으면 그 칸에서 멈추고 그 칸의 말을 전부 출발선으로 장외 사출한다. 다음 코너가 결승선이면 완주한다.
+static func _apply_nitro(state: GameState, player_id: int) -> Dictionary:
+	var pawn: PlayerPawn = state.front_pawn_of(player_id)
+	if pawn == null:
+		return {"ok": false, "text": "보드 위에 내 말이 없습니다"}
+	var route: Dictionary = nitro_route(state, pawn)
+	var path: Array[int] = route["path"]
+	var blocked: int = int(route["blocked"])
+	state.nitro_dashed.emit(pawn.entity_id, path.duplicate(), blocked)
+	for destination: int in path:
+		if destination == GameEnums.GOAL_TILE:
+			state.finish_stack(pawn)
+			return {"ok": true, "text": "아우토반 니트로! 말 %d번이 결승선까지 질주해 완주했습니다" % pawn.slot}
+		var from_tile: int = pawn.current_tile_idx
+		state.board.commit_step(pawn, destination)
+		state.sync_stack_position(pawn)
+		state.pawn_stepped.emit(pawn.entity_id, from_tile, destination)
+	if blocked == -1:
+		return {"ok": true, "text": "아우토반 니트로! 말 %d번이 %d번 코너까지 질주했습니다" % [pawn.slot, path.back()]}
+	var ejected: int = 0
+	for victim: PlayerPawn in state.leaders_at(blocked):
+		if victim == pawn or not victim.has_left_start:
+			continue
+		ejected += victim.stack_members().size()
+		state.send_to_start(victim, player_id)
+	return {"ok": true, "text": "아우토반 니트로! %d번 칸에서 말 %d개를 장외 사출했습니다" % [blocked, ejected]}
 
 
 static func _apply_personal(effect: StringName, state: GameState, player_id: int) -> Dictionary:

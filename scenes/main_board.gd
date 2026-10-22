@@ -943,6 +943,7 @@ func _bind_state() -> void:
 				_record_ejection(pawn_id, by_player, true)  # 처치 기록은 처치가 확정되고 연출이 나올 때 적는다
 				await _play_capture_eject(pawn_id, by_player, victim_owner, cutin_capture), pawn_id))
 	state.revenge_boost_fired.connect(_on_revenge_boost_fired)
+	state.nitro_dashed.connect(_on_nitro_dashed)
 	state.dash_pad_triggered.connect(func(pawn_id: int, tile: int) -> void:
 		_log_line("[부스터 발판] %s %d번 발판! +%d칸 추가 전진" % [_pawn_name(pawn_id), tile, GameData.dash_steps()], Color("63e6be"))
 		var pad_pos: Vector2 = (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + _tile_center(tile)
@@ -2621,6 +2622,46 @@ func _play_revenge_launch(pawn_id: int, base_steps: int, bonus: int, total: int)
 		_impact_ring(view.position, Color("ff6b00"), 58.0)
 		_burst_shards(view.position, Color("ff922b"), 14)
 	await get_tree().create_timer(REVENGE_LAUNCH_LEAD).timeout
+
+
+## 초증강 아우토반 니트로: 선두 말이 리벤지 부스터처럼 화염을 뿜으며 코너(또는 길을 막은 말이 있는 칸)까지 한 번에 날아간다.
+## 엔진은 움직이기 전에 방송하므로 지금 자리에서 출발하고, 한 칸씩 뛰는 걸음은 건너뛴다. 막은 칸의 말 사출은 그 뒤 처치 연출로 이어진다.
+func _on_nitro_dashed(pawn_id: int, path: Array[int], blocked: int) -> void:
+	var pawn: PlayerPawn = state.get_pawn(pawn_id)
+	_log_line("[아우토반 니트로] %s %s" % [_pawn_name(pawn_id), "%d번 칸의 말을 들이받고 멈춤!" % blocked if blocked != -1 else "%d번까지 질주!" % path.back()], Color("ff922b"))
+	if not _fx_on() or pawn == null or path.is_empty() or not _pawn_views.has(pawn_id):
+		return
+	var tile: int = int(path.back())
+	var goal: Vector2 = _tile_center(tile) if tile == GameEnums.GOAL_TILE else _pawn_position_at(pawn, tile)
+	var goal_scale: float = _depth_scale(tile_norm(tile).y)
+	_fx_skip_steps[pawn_id] = true
+	enqueue_step(func() -> void:
+		var view: Node2D = _pawn_views.get(pawn_id)
+		if view == null or not is_instance_valid(view):
+			_fx_skip_steps.erase(pawn_id)
+			return
+		Sfx.play(&"rocket")
+		screen_shake(6.0, 0.2)
+		_show_center_banner("[아우토반 니트로!]\n%s" % ("%d번 칸 들이받기!" % blocked if blocked != -1 else "%d번까지 질주!" % tile), Color("ff922b"))
+		_impact_ring(view.position, Color("ff6b00"), 58.0)
+		_burst_shards(view.position, Color("ff922b"), 14)
+		await get_tree().create_timer(REVENGE_LAUNCH_LEAD).timeout
+		if not is_instance_valid(view):
+			_fx_skip_steps.erase(pawn_id)
+			return
+		_glide(view, goal, goal_scale, {"from_pos": view.position, "dur": 0.32, "arc": 14.0, "pace_cap": 1.0, "land_tile": tile, "land_big": true})
+		var generation: int = _fx_generation
+		var frame: int = 0
+		while generation == _fx_generation and is_instance_valid(view) and _fx_running(view):
+			if frame % 2 == 0:
+				_rocket_puff(view.position)
+			frame += 1
+			await get_tree().process_frame
+		_fx_skip_steps.erase(pawn_id)
+		if generation != _fx_generation or not is_instance_valid(view):
+			return
+		screen_shake(7.0, 0.22)
+		_impact_ring(view.position, Color("ff6b00"), 50.0), pawn_id)
 
 
 ## 큐의 한 단계: 출발선에서 부스터 칸까지 화염 잔상을 남기며 0.28초 만에 낮은 아치로 날아가 쾅 착지한다.

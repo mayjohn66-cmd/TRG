@@ -85,6 +85,7 @@ func _run() -> void:
 	await _test_new_tool_stages()
 	await _test_npc_danger_preview()
 	await _test_event_order()
+	await _test_nitro_dash()
 	await _test_presentation_queue()
 	if _failures.is_empty():
 		print("UI_FX_OK")
@@ -2337,3 +2338,48 @@ func _type_cheat_sequence() -> void:
 		key.keycode = keycode
 		key.pressed = true
 		_board._input(key)
+
+
+## 아우토반 니트로: 선두 말이 로켓처럼 한 번에 날아가 길을 막은 말이 있는 칸에 멈추고, 그 칸의 말은 그 뒤에 장외 사출된다 (한 칸씩 뛰지 않는다).
+func _test_nitro_dash() -> void:
+	var state: GameState = _board.state
+	_board._reset_presentation()
+	_board.instant_roll_for_test = false
+	_board.pacing_enabled = false
+	_board._announcer.cancel()
+	state.clear_npcs()
+	for pawn: PlayerPawn in state.pawns:
+		pawn.reset_to_start()
+	var dasher: PlayerPawn = state.get_pawn(11)
+	dasher.has_left_start = true
+	dasher.current_tile_idx = 2
+	dasher.step_history.assign([2])
+	var blocker: PlayerPawn = state.get_pawn(21)
+	blocker.has_left_start = true
+	blocker.current_tile_idx = 6
+	blocker.step_history.assign([6])
+	_board._refresh_all()
+	await process_frame
+	var view: Node2D = _board._pawn_views[11]
+	var start: Vector2 = view.position
+	SuperAugments.apply(SuperAugments.NITRO, state, 1)
+	_expect(dasher.current_tile_idx == 6 and not blocker.has_left_start, "엔진: 6번에서 멈추고 막은 말을 사출")
+	var hopped: bool = false
+	var blocker_gone_before_arrival: bool = false
+	var arrived: bool = false
+	var goal: Vector2 = _board._pawn_position_at(dasher, 6)
+	var waited: float = 0.0
+	while waited < 8.0 and (_board._presentation_active() or _board._fx_running(view)):
+		if _board.presentation_label == "_play_hop":
+			hopped = true
+		if not arrived and view.position.distance_to(goal) < 3.0:
+			arrived = true
+		if not arrived and not (_board._pawn_views[21] as Node2D).visible:
+			blocker_gone_before_arrival = true
+		await create_timer(0.02).timeout
+		waited += 0.02
+	_expect(arrived and view.position.distance_to(start) > 20.0, "니트로 말이 막힌 칸까지 날아간다")
+	_expect(not hopped, "한 칸씩 뛰지 않고 한 번에 날아간다")
+	_expect(not blocker_gone_before_arrival, "막은 말은 니트로 말이 도착한 뒤에 날아간다")
+	_expect(not (_board._pawn_views[21] as Node2D).visible, "막은 말은 사출되어 보드에서 사라진다")
+	_board.instant_roll_for_test = true
