@@ -2422,8 +2422,10 @@ func _test_nitro_dash() -> void:
 	_board.pacing_enabled = false
 	_board._announcer.cancel()
 	state.clear_npcs()
+	state.bonds.clear()
 	for pawn: PlayerPawn in state.pawns:
 		pawn.reset_to_start()
+		pawn.is_finished = false  # reset_to_start는 완주 표시를 지우지 않는다: 앞선 검사가 완주시킨 말이 있으면 선두 판정·길막이 달라진다
 	var dasher: PlayerPawn = state.get_pawn(11)
 	dasher.has_left_start = true
 	dasher.current_tile_idx = 2
@@ -2437,7 +2439,7 @@ func _test_nitro_dash() -> void:
 	var view: Node2D = _board._pawn_views[11]
 	var start: Vector2 = view.position
 	SuperAugments.apply(SuperAugments.NITRO, state, 1)
-	_expect(dasher.current_tile_idx == 6 and not blocker.has_left_start, "엔진: 6번에서 멈추고 막은 말을 사출")
+	_expect(dasher.current_tile_idx == 6 and not blocker.has_left_start, "엔진: 6번에서 멈추고 막은 말을 사출 (니트로 말 %d번 칸, 막은 말 출전 %s)" % [dasher.current_tile_idx, blocker.has_left_start])
 	var hopped: bool = false
 	var blocker_gone_before_arrival: bool = false
 	var arrived: bool = false
