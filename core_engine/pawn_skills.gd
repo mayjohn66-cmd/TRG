@@ -163,13 +163,25 @@ static func _has_vulnerable_enemy(state: GameState, mover: PlayerPawn, tile: int
 	return false
 
 
+## 0~1 보드 안의 점 origin에서 direction 쪽으로 보드를 벗어나기 전까지 갈 수 있는 거리.
+static func ray_room(origin: Vector2, direction: Vector2) -> float:
+	var room: float = INF
+	for axis: int in 2:
+		if direction[axis] > 0.000001:
+			room = minf(room, (1.0 - origin[axis]) / direction[axis])
+		elif direction[axis] < -0.000001:
+			room = minf(room, -origin[axis] / direction[axis])
+	return maxf(room, 0.0)
+
+
 ## 알까기 슈팅 결과 계산: angle은 화면 좌표(오른쪽 0, 아래쪽 +)의 라디안, power는 0~1. 반환:
 ## {"from": 출발 좌표, "to": 도착 좌표(보드 안으로 보정), "landing": 안착할 타일, "hits": 맞은 적 대표 말 ID들}
 static func shot_result(state: GameState, pawn: PlayerPawn, angle: float, power: float) -> Dictionary:
 	var origin: Vector2 = BoardLayout.tile_norm(pawn.current_tile_idx)
 	var distance: float = lerpf(SHOT_MIN_DISTANCE, SHOT_MAX_DISTANCE, clampf(power, 0.0, 1.0))
-	var target: Vector2 = origin + Vector2(cos(angle), sin(angle)) * distance
-	target = Vector2(clampf(target.x, 0.0, 1.0), clampf(target.y, 0.0, 1.0))
+	var direction := Vector2(cos(angle), sin(angle))
+	# 보드 밖으로 나가는 샷은 겨눈 직선 그대로 경계에서 멈춘다 (x·y를 따로 자르면 경계를 따라 미끄러져 엉뚱한 방향으로 날아갔다)
+	var target: Vector2 = origin + direction * minf(distance, ray_room(origin, direction))
 	var hits: Array[int] = []
 	for enemy: PlayerPawn in state.pawns:
 		if enemy.owner_id == pawn.owner_id or enemy.is_finished or not enemy.has_left_start or enemy.carrier != null:

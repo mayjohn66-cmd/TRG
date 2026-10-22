@@ -109,7 +109,7 @@ var attack_source: Dictionary = {}
 var _attack_stack: Array[Dictionary] = []
 var _attack_serial: int = 0
 var _attack_next_id: int = 1
-## ACT_14 알고리즘 밴: 플레이어 ID -> 남은 내 턴 수 (카드·필살기·리롤 금지).
+## ACT_14 알고리즘 밴: 플레이어 ID -> 남은 내 턴 수 (카드·필살기·주사위 리롤 금지).
 var banned_turns: Dictionary = {}
 ## ACT_11 밑장빼기: 플레이어 ID -> 다음 굴림 결과로 쓸 칸 수.
 var forced_roll: Dictionary = {}
