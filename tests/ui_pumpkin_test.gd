@@ -155,8 +155,10 @@ func run() -> void:
 	check(not stage.popped and stage.result_text.is_empty(), "Inflation precedes the explosion and defeat announcement")
 	await capture("inflating")
 	while stage.elapsed < DuelPumpkinStage.POP_AT + 0.10: await process_frame
-	check(stage.popped and stage.active and arena.holds_board(), "Pumpkin bursts and native Angry1_1 begins before board effects")
+	check(stage.popped and stage.active and arena.holds_board(), "Pumpkin bursts before the pet fades in and board effects remain held")
 	await capture("burst")
+	while stage.elapsed < DuelPumpkinStage.POP_AT + 0.45: await process_frame
+	await capture("fading_in")
 	while stage.elapsed < DuelPumpkinStage.POP_AT + 1.10: await process_frame
 	check(loser_view.position.distance_to(loser_position) < 0.1 and board._fx_holding(), "Losing pawn stays visually in place throughout the angry animation")
 	await capture("angry")

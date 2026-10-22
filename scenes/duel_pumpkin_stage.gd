@@ -12,6 +12,8 @@ const ANGRY_DURATION := 2.43
 const ANGRY_FRAMES := 73
 const FRAME_TIMES: Array[int] = [30, 40, 30]
 const POP_AT := 0.76
+const APPEAR_DELAY := 0.12
+const APPEAR_TIME := 0.65
 const SAFE_TIME := 0.95
 const COLORS: Array[Color] = [Color("f49091"), Color("f5bd58"), Color("8dbe82"), Color("72baca"), Color("b49cdb")]
 var arena: DuelArena
@@ -97,7 +99,7 @@ func _process(delta: float) -> void:
 		Sfx.play(&"trap", -3.0)
 		if is_instance_valid(arena) and is_instance_valid(arena.board):
 			arena.board.screen_shake(7.0, 0.20)
-	var end: float = POP_AT + ANGRY_DURATION + 0.35 if bomb else SAFE_TIME
+	var end: float = POP_AT + APPEAR_DELAY + ANGRY_DURATION + 0.35 if bomb else SAFE_TIME
 	if elapsed >= end:
 		active = false
 		if not bomb: Sfx.play(&"good", -10.0)
@@ -155,7 +157,8 @@ func _draw() -> void:
 	else:
 		var t := maxf(elapsed - POP_AT, 0.0)
 		_draw_burst(center, t)
-		var elapsed_ms := int(minf(t, ANGRY_DURATION - 0.001) * 1000.0)
+		var motion_time := maxf(t - APPEAR_DELAY, 0.0)
+		var elapsed_ms := int(minf(motion_time, ANGRY_DURATION - 0.001) * 1000.0)
 		var frame := 0
 		for index: int in ANGRY_FRAMES:
 			var duration: int = FRAME_TIMES[index % 3]
@@ -163,10 +166,12 @@ func _draw() -> void:
 			elapsed_ms -= duration
 			frame += 1
 		frame = mini(frame, ANGRY_FRAMES - 1)
-		var appear := ease(clampf(t / 0.16, 0, 1), 0.4)
-		var extent := Vector2(232, 232) * appear
-		var at := center + Vector2(0, 4 + (1 - appear) * 40)
-		draw_texture_rect_region(ANGRY, Rect2(at - extent / 2.0, extent), Rect2(Vector2((frame % 10) * 256, floori(float(frame) / 10.0) * 256), Vector2(256, 256)))
+		# Let the first flash clear, then grow gently while fading into the smoke.
+		var progress := clampf(motion_time / APPEAR_TIME, 0.0, 1.0)
+		var appear := progress * progress * (3.0 - 2.0 * progress)
+		var extent := Vector2(232, 232) * lerpf(0.58, 1.0, appear)
+		var at := center + Vector2(0, 4 + (1.0 - appear) * 24.0)
+		draw_texture_rect_region(ANGRY, Rect2(at - extent / 2.0, extent), Rect2(Vector2((frame % 10) * 256, floori(float(frame) / 10.0) * 256), Vector2(256, 256)), Color(1, 1, 1, appear))
 		if t < 0.7:
 			_text("펑!", center + Vector2(132, -58), 35, Color("a55537"))
 	if not result_text.is_empty(): _text(result_text, Vector2(size.x / 2.0, 247), 25, Color("9b403f"))
