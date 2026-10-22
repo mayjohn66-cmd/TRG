@@ -146,6 +146,9 @@ func _run() -> void:
 	(book._tiles[2].get_child(0) as Button).pressed.emit()
 	_expect(book.entry == 2 and book._tiles[2].get_meta("marker").visible, "증강 카드를 누르면 왼쪽에 그 도구가 크게 나온다 (%s)" % book._notebook_title.text)
 	_expect(book._left_holder.get_child_count() >= 2, "항목 화면: 그림·요약 + 규칙표")
+	var rounded: Control = book._left_holder.find_child("RoundedArt", true, false)
+	var mask: Panel = rounded.get_node("Mask") if rounded != null else null
+	_expect(mask != null and mask.clip_children == CanvasItem.CLIP_CHILDREN_ONLY and mask.get_child(0) is TextureRect and rounded.get_node("Outline") != null, "도감 큰 그림은 둥근 네모로 잘리고 같은 둥글기의 외곽선이 그림에 맞춰 붙는다")
 	book.free()
 	menu._bottom["center"].pressed.emit()
 	var popup: Node = menu.find_child("Popup", true, false)

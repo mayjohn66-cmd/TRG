@@ -22,6 +22,9 @@ const TEAL_DARK: Color = Color("4a9a8a")
 const TAB_NAMES: Array[String] = ["시작하기", "한 턴", "보드", "잡기", "도구", "말", "카드", "법전", "범용", "초증강"]
 const TAB_ICONS: Array[StringName] = [&"face", &"hourglass", &"grid", &"sword", &"dice", &"crown", &"book", &"gear", &"key", &"star"]
 const TAB_ART: Array[StringName] = [&"start", &"turn", &"board", &"capture"]
+## 왼쪽 노트의 큰 그림 크기와 모서리 둥글기.
+const HERO_ART: Vector2 = Vector2(132, 132)
+const HERO_RADIUS: int = 24
 const ART: Dictionary = {
 	&"start": preload("res://assets/ui/trickcal/rulebook/UI_RULE_START.tres"),
 	&"turn": preload("res://assets/ui/trickcal/rulebook/UI_RULE_TURN.tres"),
@@ -555,6 +558,67 @@ func _paint_tile(tile: Control, selected: bool) -> void:
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 
 
+## 일러스트를 둥근 네모로 잘라 담는다: 둥근 판(clip_children)이 그림의 모서리를 가리고, 같은 둥글기의 외곽선을 그림 가장자리에 딱 맞춰 덧그린다.
+static func _rounded_art(picture: Control, extent: Vector2, radius: int, tone: Color) -> Control:
+	var holder := Control.new()
+	holder.name = "RoundedArt"
+	holder.custom_minimum_size = extent
+	holder.size = extent
+	holder.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var shadow := Panel.new()  # 그림 뒤의 옅은 그림자 (둥근 판과 같은 모양)
+	shadow.name = "Shadow"
+	shadow.add_theme_stylebox_override("panel", _box(tone.lightened(0.7), Color(0, 0, 0, 0), 0, radius, 4, 0, Color(0, 0, 0, 0.18)))
+	shadow.set_anchors_preset(Control.PRESET_FULL_RECT)
+	shadow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.add_child(shadow)
+	var mask := Panel.new()
+	mask.name = "Mask"
+	var mask_style: StyleBoxFlat = _box(Color.WHITE, Color(0, 0, 0, 0), 0, radius)
+	mask_style.anti_aliasing = true
+	mask.add_theme_stylebox_override("panel", mask_style)
+	mask.clip_children = CanvasItem.CLIP_CHILDREN_ONLY  # 둥근 판 모양대로만 그림이 보인다
+	mask.set_anchors_preset(Control.PRESET_FULL_RECT)
+	mask.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.add_child(mask)
+	var inset: float = 0.0
+	var art: TextureRect = picture as TextureRect
+	if art != null and art.texture != null:
+		var ratio: float = float(art.texture.get_width()) / maxf(float(art.texture.get_height()), 1.0)
+		if absf(ratio - 1.0) < 0.12 and not _is_cutout(art.texture):
+			art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED  # 배경까지 그린 정사각 일러스트는 네모 칸을 빈틈없이 채운다
+		else:
+			inset = 10.0  # 배경이 투명한 오려 낸 그림은 외곽선에 닿지 않게 살짝 안쪽 가운데
+	picture.custom_minimum_size = Vector2.ZERO
+	picture.set_anchors_preset(Control.PRESET_FULL_RECT)  # 둥근 판에 맞춰 늘이고 inset만큼 안쪽으로
+	picture.offset_left = inset
+	picture.offset_top = inset
+	picture.offset_right = -inset
+	picture.offset_bottom = -inset
+	mask.add_child(picture)
+	var outline := Panel.new()
+	outline.name = "Outline"
+	outline.add_theme_stylebox_override("panel", _box(Color(0, 0, 0, 0), tone, 4, radius))
+	outline.set_anchors_preset(Control.PRESET_FULL_RECT)
+	outline.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.add_child(outline)
+	return holder
+
+
+## 모서리 픽셀이 투명하면 배경 없이 오려 낸 그림으로 본다.
+static func _is_cutout(texture: Texture2D) -> bool:
+	if texture is AtlasTexture:
+		return true  # 도감 그림(ART)은 투명 여백을 잘라 낸 오려 낸 그림
+	var image: Image = texture.get_image()
+	if image == null or image.is_empty():
+		return false
+	if image.is_compressed():
+		image = image.duplicate()
+		if image.decompress() != OK:
+			return false
+	return image.get_pixel(1, 1).a < 0.5 or image.get_pixel(image.get_width() - 2, image.get_height() - 2).a < 0.5
+
+
 ## 항목의 그림: 실제 일러스트(texture) > 도감 그림(art) > 번호 > 아이콘 순.
 func _picture(data: Dictionary, extent: Vector2) -> Control:
 	var tone: Color = data.get("tone", Color("5fc1e8"))
@@ -601,6 +665,8 @@ func _detail(data: Dictionary) -> Array[Control]:
 	hero.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if data.has("card"):
 		hero.add_child(_card_face(data["card"]))
+	elif data.get("texture", null) != null or ART.has(data.get("art", &"")):
+		hero.add_child(_rounded_art(_picture(data, HERO_ART), HERO_ART, HERO_RADIUS, tone))
 	else:
 		var frame := PanelContainer.new()
 		frame.custom_minimum_size = Vector2(132, 132)
