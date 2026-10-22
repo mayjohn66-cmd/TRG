@@ -1,7 +1,7 @@
 # File: res://scenes/match_telemetry.gd
 # Class: class_name MatchTelemetry
 # Role: 플레이 통계를 디스코드 웹후크로 조용히 보낸다 (방문자 수·판 수·같은 사람이 여러 판 했는지·누가 이겼는지 보는 용도).
-#       세 가지 순간에 한 줄씩 보낸다: 로비 입장(타이틀의 [입장하기], 세션당 1회) / 매치 시작(보드 진입) / 매치 완료(결과 화면).
+#       세 가지 순간에 한 줄씩 보낸다: 로비 입장(타이틀의 [입장하기], 세션당 1회) / 매치 시작(보드 진입) / 매치 완료(내 순위가 확정된 즉시, 4인 수동은 결과 화면).
 #       사람마다 브라우저에 저장한 익명 태그(#4자리)와 누적 판 수를 붙여 [닉네임(#A7B2)]으로 구분한다 (GameSession.player_tag).
 #       웹 빌드에서만 보낸다 (에디터·데스크톱·테스트에서는 아무것도 보내지 않는다). 끄려면 ENABLE_MATCH_TELEMETRY를 false로.
 #       웹 페이지에 애널리틱스 슬롯(web/shell.html의 TRG_GA_ID)이 켜져 있으면 같은 순간을 window.trgTrack으로도 알린다.
@@ -57,7 +57,7 @@ static func mode_label(online: bool, vs_computer: bool, quick_match: bool = fals
 
 ## 1위의 우승 방식: 말 4개 완주면 [일반], 중앙 법전의 특수 승리면 [특수승리(교칙 이름)].
 static func win_label(reason: StringName) -> String:
-	if not VictoryLaw.is_victory_id(String(reason)):
+	if String(reason) == "" or not VictoryLaw.is_victory_id(String(reason)):
 		return "일반"
 	var law: LawResource = LawRegistry.create(String(reason))
 	return "특수승리(%s)" % law.law_name if law != null else "특수승리"
@@ -94,7 +94,7 @@ static func end_line(who: String, nth: int, mode: String, rounds: int, seconds: 
 	if summary.length() > AUGMENT_SUMMARY_LIMIT:
 		summary = summary.substr(0, AUGMENT_SUMMARY_LIMIT) + "…"
 	return "%s %s (%d번째 판) | %s | %d라운드(소요시간 %s) | 내 최종 순위: %s | 1위 우승방식: %s | 고른 증강: %s" % [
-		tag(), who, nth, mode, rounds, duration_text(seconds), "%d위" % my_rank if my_rank > 0 else "-", win, summary]
+		tag(), str(who) if str(who) != "" else "이름 없음", nth, str(mode) if str(mode) != "" else "-", rounds, duration_text(seconds), "%d위" % my_rank if my_rank > 0 else "-", str(win) if str(win) != "" else "일반", summary]
 
 
 # --- 보내기 -------------------------------------------------------------------------------------
@@ -116,7 +116,7 @@ static func report_match_start(host: Node, mode: String, nth: int) -> bool:
 	return send_line(host, start_line(GameSession.tagged_name(), mode, nth))
 
 
-## 결과 화면에 닿았다.
+## 내 순위가 확정됐다(또는 결과 화면에 닿았다).
 static func report_match_end(host: Node, nth: int, mode: String, rounds: int, seconds: int, my_rank: int, reason: StringName, augments: Array[String]) -> bool:
 	if not is_active():
 		return false
@@ -143,12 +143,14 @@ static func send_line(host: Node, text: String) -> bool:
 	if test_sender.is_valid():
 		test_sender.call(webhook_url(), body, content_type)
 		return true
-	if host == null or not host.is_inside_tree():
+	# 요청 노드는 보드판이 아니라 트리 루트에 붙인다: 로비로 씬을 바꿔도 보드판과 함께 지워지지 않고, 응답을 받은 뒤 스스로 정리된다.
+	var tree: SceneTree = host.get_tree() if host != null and host.is_inside_tree() else Engine.get_main_loop() as SceneTree
+	if tree == null or tree.root == null:
 		return false
 	var request := HTTPRequest.new()
 	request.name = "MatchTelemetryRequest"
 	request.timeout = REQUEST_TIMEOUT_SECONDS
-	host.get_tree().root.add_child(request)
+	tree.root.add_child(request)
 	request.request_completed.connect(func(_result: int, _code: int, _headers: PackedStringArray, _body: PackedByteArray) -> void:
 		request.queue_free())  # 성공·실패와 상관없이 조용히 정리한다 (통계라서 게임에는 아무 영향이 없다)
 	if request.request_raw(webhook_url(), PackedStringArray(["Content-Type: %s" % content_type]), HTTPClient.METHOD_POST, body) != OK:

@@ -805,27 +805,76 @@ func _test_rank_log_follows_the_capture() -> void:
 	_board._refresh_all()
 
 
-## 판이 끝나 결과 화면에 닿으면 매치 완료 알림이 판마다 정확히 한 번만 나간다.
+## [매치 완료] 알림: 결과 화면에 닿으면 판마다 정확히 한 번. 내가 먼저 졸업하면(일반 완주·특수 승리) 그 즉시 보내고 결과 화면에서 다시 보내지 않는다.
+## 페이로드(multipart의 payload_json)가 올바른 JSON인지도 본다.
 func _test_match_report_is_sent_once() -> void:
 	var manager: TurnManager = _board.manager
+	var state: GameState = manager.state
 	var sent: Array[String] = []
 	MatchTelemetry.test_force_enabled = true
 	MatchTelemetry.test_sender = func(_url: String, body: PackedByteArray, _type: String) -> void: sent.append(body.get_string_from_utf8())
+	var saved_rankings: Array[int] = state.rankings.duplicate()
+	var saved_reasons: Dictionary = state.rank_reasons.duplicate()
+	# 1) 결과 화면 경로 (일반 승리)
 	_board._report_match_start()  # 보드 진입: [매치 시작]
 	var nth: int = _board._match_number
 	manager.is_game_over = true
-	manager.state.winner = 1
-	_board._match_reported = false
+	state.winner = 1
+	state.rankings.assign([1, 2, 3, 4])
+	state.rank_reasons = {1: VictoryChecker.ALL_HOME}
+	_board._match_complete_sent = false
 	_board._report_match_once()
 	_board._report_match_once()  # 결과 화면을 다시 그려도 두 번 세지 않는다
 	manager.is_game_over = false
-	manager.state.winner = -1
-	MatchTelemetry.test_force_enabled = false
-	MatchTelemetry.test_sender = Callable()
+	state.winner = -1
 	_expect(sent.size() == 2, "매치 시작 1번 + 매치 완료 1번 (%d번)" % sent.size())
 	_expect(sent.size() == 2 and sent[0].contains("%d번째 판 시작" % nth) and sent[1].contains("(%d번째 판)" % nth), "시작과 완료가 같은 판 번호 (%d)" % nth)
-	_expect(sent.size() == 2 and sent[1].contains("| %s |" % MatchTelemetry.mode_label(false, _board.ai_mode)) and sent[1].contains("내 최종 순위:"), "지금 모드와 내 순위로 알린다")
-	_board._match_reported = false
+	_expect(sent.size() == 2 and sent[1].contains("| %s |" % MatchTelemetry.mode_label(false, _board.ai_mode)) and sent[1].contains("내 최종 순위:") and sent[1].contains("1위 우승방식: 일반"), "지금 모드·내 순위·일반 승리로 알린다")
+	# 2) 컴퓨터 대전에서 내가 특수 승리로 1위 졸업한 즉시 (봇끼리 남은 판을 기다리지 않는다)
+	var was_ai: bool = _board.ai_mode
+	_board.ai_mode = true
+	var seat: int = _board._telemetry_seat()
+	_expect(seat != -1, "컴퓨터 대전에는 '나'의 자리가 있다")
+	if seat != -1:
+		sent.clear()
+		_board._match_complete_sent = false
+		state.rankings.assign([seat])
+		state.rank_reasons = {seat: &"LAW_01"}
+		_board._report_player_ranked(seat, 1)
+		_expect(sent.size() == 1 and sent[0].contains("내 최종 순위: 1위") and sent[0].contains("특수승리(투기장의 지배자)"), "내 특수 승리 졸업 즉시 [매치 완료] (%s)" % str(sent))
+		manager.is_game_over = true
+		_board._report_match_once()
+		manager.is_game_over = false
+		_expect(sent.size() == 1, "졸업 때 보냈으면 결과 화면에서 다시 보내지 않는다")
+		# 다른 사람이 졸업할 때는 보내지 않는다
+		sent.clear()
+		_board._match_complete_sent = false
+		var other: int = 2 if seat != 2 else 3
+		_board._report_player_ranked(other, 2)
+		_expect(sent.is_empty(), "다른 사람의 졸업은 [매치 완료]가 아니다")
+		# 3) 내가 일반 완주로 2위 졸업
+		state.rankings.assign([other, seat])
+		state.rank_reasons = {other: VictoryChecker.ALL_HOME, seat: VictoryChecker.ALL_HOME}
+		_board._report_player_ranked(seat, 2)
+		_expect(sent.size() == 1 and sent[0].contains("내 최종 순위: 2위") and sent[0].contains("1위 우승방식: 일반"), "내 일반 완주 졸업 즉시 [매치 완료]")
+	_board.ai_mode = was_ai
+	# 값이 비어 있어도 뻗지 않는다 (증강 목록·순위·1위가 없음)
+	_board._match_complete_sent = false
+	state.rankings.clear()
+	state.rank_reasons = {}
+	_board._my_augments.clear()
+	sent.clear()
+	_expect(_board._send_match_complete_webhook(0) and sent.size() == 1 and sent[0].contains("내 최종 순위: -") and sent[0].contains("고른 증강: 없음"), "빈 값은 안전한 기본값으로")
+	for body: String in sent:
+		var start: int = body.find("\r\n\r\n") + 4
+		var end: int = body.find("\r\n--", start)
+		var parsed: Variant = JSON.parse_string(body.substr(start, end - start))
+		_expect(parsed is Dictionary and str((parsed as Dictionary).get("content", "")).begins_with(MatchTelemetry.tag()) and int((parsed as Dictionary).get("flags", 0)) == 4096, "payload_json이 올바른 JSON (%s)" % body.substr(start, 80))
+	state.rankings.assign(saved_rankings)
+	state.rank_reasons = saved_reasons
+	MatchTelemetry.test_force_enabled = false
+	MatchTelemetry.test_sender = Callable()
+	_board._match_complete_sent = false
 
 
 ## 낼 수 없는 카드(예: UDO +4인데 다음 차례 사람의 말이 보드에 없음)는 흐리게 보이고, 누르면 이유가 화면 가운데 뜬다 (아무 반응 없던 버그).

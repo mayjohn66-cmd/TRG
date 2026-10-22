@@ -368,7 +368,8 @@ var _drop_label: Label = null
 var _dock: Control = null
 var _dock_player: int = -1
 var _debug_toggle: Button = null
-var _match_reported: bool = false
+## 이 판의 [매치 완료]를 이미 보냈다 (판마다 한 번).
+var _match_complete_sent: bool = false
 ## 통계: 이 판이 이 사람의 몇 번째 판인지, 언제 시작했는지, 내가 고른 증강 이름들.
 var _match_number: int = 0
 var _match_started_msec: int = 0
@@ -825,20 +826,40 @@ func _report_match_start() -> void:
 	MatchTelemetry.report_match_start(self, _telemetry_mode(), _match_number)
 
 
-## 결과 화면에 닿은 판을 [매치 완료]로 알린다 (판마다 한 번). 온라인에서는 사람마다 자기 순위로 보낸다.
+## 결과 화면(시상대)이 뜬 판을 [매치 완료]로 알린다. 내가 먼저 졸업했으면 그때 이미 보냈다 (판마다 한 번).
 func _report_match_once() -> void:
-	if _match_reported or state == null or not manager.is_game_over:
+	if state == null or manager == null or not manager.is_game_over:
 		return
-	_match_reported = true
 	var seat: int = _telemetry_seat()
-	var my_rank: int = state.rankings.find(seat) + 1 if seat != -1 else 0
-	var reason: StringName = state.rank_reasons.get(state.winner, VictoryChecker.ALL_HOME)
-	var seconds: int = int((Time.get_ticks_msec() - _match_started_msec) / 1000)
-	MatchTelemetry.report_match_end(self, _match_number if _match_number > 0 else GameSession.match_count(), _telemetry_mode(), state.round_number, seconds, my_rank, reason, _my_augments)
+	_send_match_complete_webhook(state.rankings.find(seat) + 1 if seat != -1 else 0)
+
+
+## 순위가 확정됐다: 그 사람이 '나'면 즉시 [매치 완료]를 보낸다 (봇끼리 남은 판을 기다리지 않는다).
+func _report_player_ranked(player_id: int, rank: int) -> bool:
+	if player_id == -1 or player_id != _telemetry_seat():
+		return false
+	return _send_match_complete_webhook(rank)
+
+
+## [매치 완료] 보내기: 로컬 플레이어의 순위가 확정되는 순간(일반 완주·특수 승리) 또는 결과 화면이 뜨는 순간 중 먼저 오는 쪽에서 한 번만.
+## 컴퓨터 대전에서 내가 먼저 졸업하면 봇끼리 끝까지 두는 동안 로비로 나가 버려 결과 화면(게임 종료)까지 가지 않는 경우가 많다 -> 졸업 즉시 보낸다.
+## 1위의 우승 방식은 지금까지 확정된 1위 기준이다. 값이 비어 있어도 안전한 기본값으로 보낸다.
+func _send_match_complete_webhook(my_rank: int) -> bool:
+	if _match_complete_sent or state == null:
+		return false
+	_match_complete_sent = true
+	var first: int = int(state.rankings[0]) if not state.rankings.is_empty() else -1
+	var reason: StringName = StringName(str(state.rank_reasons.get(first, VictoryChecker.ALL_HOME)))
+	var seconds: int = maxi(int((Time.get_ticks_msec() - _match_started_msec) / 1000), 0) if _match_started_msec > 0 else 0
+	var nth: int = _match_number if _match_number > 0 else GameSession.match_count()
+	var augments: Array[String] = []
+	for name: Variant in _my_augments:
+		augments.append(str(name))
+	return MatchTelemetry.report_match_end(self, nth, _telemetry_mode(), int(state.round_number), seconds, maxi(my_rank, 0), reason, augments)
 
 
 func _new_game() -> void:
-	_match_reported = false
+	_match_complete_sent = false
 	# Initial scene entry has already selected a backdrop; an actual rematch repicks.
 	if state != null and _match_background != null:
 		_match_background.choose_random()
@@ -8271,7 +8292,8 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			# 한 명씩 공개하면 늘어지므로 모아 두었다가 드래프트가 끝나면 한 장으로 한꺼번에 공개한다.
 			_draft_summary.append({"player": int(data["player_id"]), "augment": data["augment_id"], "text": str(data["text"])})
 			if int(data["player_id"]) == _telemetry_seat():
-				_my_augments.append(AugmentRegistry.get_def(data["augment_id"]).display_name)
+				var picked_def: AugmentDef = AugmentRegistry.get_def(data.get("augment_id", &""))
+				_my_augments.append(picked_def.display_name if picked_def != null else str(data.get("augment_id", "")))
 		&"bang_resolved":
 			var target_name: String = _pawn_name(int(data["target"]))
 			_log_line("[BANG!] P%d가 %s을(를) 저격! %d번 → %d번 타일로 2칸 밀려납니다." % [data["shooter"], target_name, data["from"], data["to"]], Color("ff6b6b"))
@@ -8297,6 +8319,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 		&"player_ranked":
 			var ranked: int = int(data["player_id"])
 			var rank_no: int = int(data["rank"])
+			_report_player_ranked(ranked, rank_no)
 			_log_line("[순위 확정] %s %d위 - %s" % [_player_name(ranked), rank_no, VictoryChecker.reason_text(data["reason"])], Color("ffd43b"))
 			# 순위는 라운드가 끝나는 순간(마지막 차례의 이동·처치 뒤)에 확정된다: 그 처치 연출·기록이 끝난 뒤에 알린다.
 			var reason_text: String = VictoryChecker.reason_text(data["reason"])
