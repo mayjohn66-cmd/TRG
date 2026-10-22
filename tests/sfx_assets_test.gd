@@ -1,7 +1,7 @@
 extends SceneTree
 
 ## 한 번만 나오는 팡파르·긴 연출음은 1.85초보다 길어도 된다 (이벤트별 상한).
-const LONG_EVENTS: Dictionary = {&"graduate": 4.2, &"podium": 5.5, &"revenge_ignite": 2.6, &"build_hotel": 2.4, &"build_mine": 2.0}
+const LONG_EVENTS: Dictionary = {&"graduate": 4.2, &"podium": 5.5, &"revenge_ignite": 2.6, &"build_hotel": 2.4, &"build_mine": 2.0, &"round_start": 2.2}
 
 
 func _initialize() -> void:

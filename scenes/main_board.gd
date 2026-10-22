@@ -3060,6 +3060,32 @@ func _refresh_players() -> void:
 		else:
 			panel.add_theme_stylebox_override("panel", _style(COLOR_PANEL, color.darkened(0.35), 2, 14, 4, margin))
 		_set_profile_light(panel, PROFILE_LIT if (is_turn or game_over) else PROFILE_DIM, Vector2(1.05, 1.05) if is_turn else Vector2.ONE)
+		_refresh_status_stamps(player_id)
+
+
+## 알고리즘 밴·UDO 스킵을 맞은 플레이어는 자기가 당했는지 알 수 있도록 프로필 그림 위에 도장이 찍힌다.
+## 밴은 [BANNED] 붉은 도장(밴이 풀릴 때까지), 스킵은 [금지] 표시(건너뛰는 차례가 올 때까지). 새로 걸리는 순간 쾅 찍히는 연출이 나온다.
+func _refresh_status_stamps(player_id: int) -> void:
+	var host: Control = _profiles[player_id]["avatar"]
+	var wanted: Dictionary = {&"skip": bool(state.rest_next_turn.get(player_id, false)) and not state.is_graduated(player_id), &"ban": state.is_banned(player_id) and not state.is_graduated(player_id)}
+	for kind: StringName in [&"skip", &"ban"]:
+		var node_name: String = "Stamp_%s" % kind
+		var stamp: StatusStamp = host.get_node_or_null(node_name) as StatusStamp
+		if not wanted[kind]:
+			if stamp != null:
+				stamp.queue_free()
+				host.remove_child(stamp)  # 같은 프레임에 다시 걸려도 이름이 겹치지 않게 바로 뗀다
+			continue
+		if stamp != null:
+			continue
+		stamp = StatusStamp.new()
+		stamp.name = node_name
+		stamp.kind = kind
+		stamp.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		stamp.set_anchors_preset(Control.PRESET_FULL_RECT)
+		host.add_child(stamp)
+		if _fx_on() and not instant_roll_for_test:
+			stamp.slam_in(self)
 
 
 func _refresh_pawn_slots(player_id: int) -> void:
@@ -6309,7 +6335,10 @@ func _open_duel_arena(challenger: int, defender: int, game: int, game_setup: Dic
 		_refresh_all())
 	add_child(_duel_arena)
 	# 카드 발동 알림이 끝난 뒤 열린다 (그 전에 온 이벤트는 결투장 큐에 쌓인다).
-	_fx_when_announced(_duel_arena.open)
+	var arena: DuelArena = _duel_arena
+	_fx_when_announced(func() -> void:
+		if is_instance_valid(arena):  # 알림이 끝나기 전에 결투장이 닫혔으면(되감기·강제 종료) 열지 않는다
+			arena.open())
 	if not _fx_holding():
 		_duel_arena.open()
 
@@ -9051,3 +9080,58 @@ class BoardStructure extends Node2D:
 		if edge.a > 0.0:
 			points.append(points[0])
 			draw_polyline(points, edge, 1.2, true)
+
+
+## 프로필 위에 찍히는 상태 도장 (코드로 그린다): 밴은 붉은 [BANNED] 직인, 스킵은 붉은 금지 표시.
+class StatusStamp extends Control:
+	var kind: StringName = &"ban"
+	const RED: Color = Color("e0262c")
+
+	func _ready() -> void:
+		z_index = 3
+		resized.connect(func() -> void: pivot_offset = size / 2.0)
+		pivot_offset = size / 2.0
+
+	## 위에서 크게 떨어져 쾅 찍힌다 (효과음과 짧은 화면 흔들림).
+	func slam_in(board: MainBoard) -> void:
+		scale = Vector2(2.6, 2.6)
+		modulate.a = 0.0
+		var tween: Tween = create_tween().set_parallel(true)
+		tween.tween_property(self, "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+		tween.tween_property(self, "modulate:a", 1.0, 0.12)
+		tween.chain().tween_callback(func() -> void:
+			Sfx.play(&"slam", -3.0)
+			board.screen_shake(5.0, 0.18))
+
+	func _draw() -> void:
+		var w: float = minf(size.x, size.y)
+		if w <= 0.0:
+			return
+		var center: Vector2 = size / 2.0
+		if kind == &"skip":
+			var radius: float = w * 0.40
+			var thick: float = maxf(w * 0.11, 3.0)
+			draw_arc(center + Vector2(1.5, 2.5), radius, 0.0, TAU, 40, Color(0, 0, 0, 0.35), thick)  # 그림자
+			draw_arc(center, radius, 0.0, TAU, 40, RED, thick)
+			var d: float = radius * 0.7071
+			draw_line(center + Vector2(-d, -d) + Vector2(1.5, 2.5), center + Vector2(d, d) + Vector2(1.5, 2.5), Color(0, 0, 0, 0.35), thick)
+			draw_line(center + Vector2(-d, -d), center + Vector2(d, d), RED, thick)
+			return
+		# 밴: 기울어진 붉은 직인 (이중 테두리 + 흰 글씨 + 긁힌 자국)
+		draw_set_transform(center, -0.32, Vector2.ONE)
+		var half := Vector2(w * 0.5, w * 0.2) * 0.98
+		var rect := Rect2(-half, half * 2.0)
+		draw_rect(Rect2(rect.position + Vector2(1.5, 2.5), rect.size), Color(0, 0, 0, 0.35))
+		draw_rect(rect, Color(RED, 0.94))
+		draw_rect(rect.grow(-w * 0.025), Color(1, 1, 1, 0.9), false, maxf(w * 0.018, 1.2))
+		var font: Font = ThemeDB.fallback_font
+		var font_size: int = int(w * 0.25)
+		var text: String = "BANNED"
+		var text_size: Vector2 = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
+		draw_string(font, Vector2(-text_size.x / 2.0, text_size.y * 0.32), text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color(1, 1, 1, 0.96))
+		for index: int in 14:  # 긁힌 흰 자국 (모양은 늘 같다)
+			var u: float = fposmod(sin(index * 12.9898) * 43758.5453, 1.0)
+			var v: float = fposmod(sin(index * 78.233) * 12345.678, 1.0)
+			var at := Vector2(lerpf(rect.position.x, rect.end.x, u), lerpf(rect.position.y, rect.end.y, v))
+			draw_line(at, at + Vector2(w * 0.05 * (1.0 + v), w * 0.012), Color(1, 1, 1, 0.55), maxf(w * 0.012, 1.0))
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)

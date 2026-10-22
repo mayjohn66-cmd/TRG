@@ -277,6 +277,16 @@ func _setup_scene() -> void:
 			_board._announcer.cancel()
 			var book: Rulebook = Rulebook.open(_board)
 			book.show_spread(int(OS.get_environment("BOOK")) if OS.get_environment("BOOK") != "" else 4, int(OS.get_environment("ENTRY")) if OS.get_environment("ENTRY") != "" else -1)
+		"stamps":
+			# 밴·스킵을 맞은 플레이어의 프로필 도장
+			_board.instant_roll_for_test = true
+			_finish_draft()
+			_board._announcer.cancel()
+			state.banned_turns[2] = 2
+			state.rest_next_turn[3] = true
+			state.banned_turns[4] = 1
+			state.rest_next_turn[4] = true
+			_board._refresh_all()
 		"feedback":
 			# 피드백 창 (상단 버튼으로 연 상태)
 			_board.instant_roll_for_test = true

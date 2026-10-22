@@ -53,4 +53,5 @@ const FILES: Dictionary = {
 	&"timer_tick": ["res://assets/sfx/curated/timer_tick_01.ogg"],
 	&"trap_hidden": ["res://assets/sfx/curated/trap_hidden_01.ogg"],
 	&"turn_start": ["res://assets/sfx/curated/turn_start_01.ogg"],
+	&"round_start": ["res://assets/sfx/curated/round_start_01.ogg"],
 }

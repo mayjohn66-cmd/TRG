@@ -986,5 +986,18 @@
     "peak_db": -4,
     "max_seconds": 1.5,
     "fade_out_ms": 400
+  },
+  {
+    "event": "round_start",
+    "file": "round_start_01.ogg",
+    "source": "user-supplied/round_start.mp3",
+    "author": "project supplied",
+    "license": "user-supplied (verify before public release)",
+    "source_sha256": "ad92d9c232e945c5bb3ef941777cd20703f9caf3ef09e875797dee2c2f8e8c32",
+    "sha256": "9cc937066a6b5c9561e634d028172ae0724e5d5a33829787ff19c9039406be04",
+    "seconds": 2.0,
+    "peak_db": -3,
+    "max_seconds": 2.0,
+    "fade_out_ms": 400
   }
 ]
