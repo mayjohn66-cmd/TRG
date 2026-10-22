@@ -599,6 +599,7 @@ func _ready() -> void:
 			if seat != local_player_id:
 				computer_seats.append(seat)
 		_bot.bot_players = computer_seats
+		_bot.difficulty = GameSession.bot_difficulty()  # 놀이터 난이도 (순한맛·보통맛·마라맛)
 	add_child(_bot)
 	add_child(manager)
 	manager.set_process(false)  # 제한 시간은 체크박스로 켤 때만 흐른다 (혼자 테스트할 때 자동 진행 방지)
@@ -807,7 +808,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
 
 ## 통계에 쓰는 이 판의 모드 이름 (놀이터 / 친선 / 익명 / 4인 수동).
 func _telemetry_mode() -> String:
-	return MatchTelemetry.mode_label(net != null, ai_mode, GameSession.lobby_intent == &"quick")
+	var label: String = MatchTelemetry.mode_label(net != null, ai_mode, GameSession.lobby_intent == &"quick")
+	if net == null and ai_mode:
+		label += "-%s" % BotTemper.label(_bot.difficulty if _bot != null else GameSession.bot_difficulty())  # 놀이터-보통맛
+	return label
 
 
 ## 통계에서 '나'로 칠 자리: 컴퓨터 대전·온라인은 내 자리, 한 화면 4인 수동은 없다(-1).

@@ -177,6 +177,26 @@ static func set_nickname(raw: String) -> bool:
 	return true
 
 
+## 놀이터(컴퓨터 대전) 난이도: BotTemper.MILD / NORMAL / SPICY. 브라우저 프로필에 남는다.
+static var _bot_difficulty: StringName = &""
+
+
+static func bot_difficulty() -> StringName:
+	if _bot_difficulty == &"":
+		var config := ConfigFile.new()
+		config.load(PROFILE_PATH)
+		_bot_difficulty = BotTemper.sanitize(StringName(str(config.get_value("profile", "bot_difficulty", String(BotTemper.NORMAL)))))
+	return _bot_difficulty
+
+
+static func set_bot_difficulty(value: StringName) -> void:
+	_bot_difficulty = BotTemper.sanitize(value)
+	var config := ConfigFile.new()
+	config.load(PROFILE_PATH)
+	config.set_value("profile", "bot_difficulty", String(_bot_difficulty))
+	config.save(PROFILE_PATH)
+
+
 static func save() -> void:
 	var config := ConfigFile.new()
 	config.load(PROFILE_PATH)  # 익명 태그·판 수(stats)는 그대로 두고 닉네임만 바꾼다

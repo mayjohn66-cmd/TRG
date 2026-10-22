@@ -99,6 +99,17 @@ func _run() -> void:
 	GameSession.avatar_id = &"not_a_real_avatar"
 	_expect(AvatarCatalog.sanitize(GameSession.avatar_id) == AvatarCatalog.DEFAULT_ID, "알 수 없는 아바타 id는 기본으로 보정")
 	GameSession.avatar_id = &"avatar_03"
+	# 놀이터 난이도 3단 토글: 기본 보통맛, 누르면 저장되고 설명이 바뀐다
+	var saved_level: StringName = GameSession.bot_difficulty()
+	menu.open_training()
+	var row: Node = menu.find_child("DifficultyRow", true, false)
+	_expect(row != null and row.get_child_count() == 3, "놀이터에 난이도 버튼 3개")
+	(menu.find_child("Difficulty_mild", true, false) as Button).pressed.emit()
+	_expect(GameSession.bot_difficulty() == BotTemper.MILD and (menu.find_child("Difficulty_mild", true, false) as Button).button_pressed and not (menu.find_child("Difficulty_normal", true, false) as Button).button_pressed, "순한맛을 누르면 순한맛만 켜진다")
+	_expect((menu.find_child("DifficultyNote", true, false) as Label).text.contains("입문"), "순한맛 설명")
+	GameSession.set_bot_difficulty(saved_level)
+	menu._refresh_difficulty()
+	menu._show_step(2)
 	# 규칙/설정 팝업
 	menu._top["right"].pressed.emit()
 	_expect(menu.find_child("Popup", true, false) != null, "규칙 팝업이 뜬다")

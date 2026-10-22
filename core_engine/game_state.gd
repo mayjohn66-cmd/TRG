@@ -375,6 +375,8 @@ func send_to_start(pawn: PlayerPawn, by_player: int) -> void:
 			add_stat(pawn.owner_id, TALLY_DEATHS)
 			_note_entry_stat(entry, TALLY_DEATHS)
 			if enemy_kill:
+				law_stats[pawn.owner_id][LAST_HIT_ROUND] = round_number  # 봇의 연속 처치 자비(BotTemper)가 본다
+			if enemy_kill:
 				add_stat(by_player, &"kills")
 				_note_entry_stat(entry, &"kills")
 				add_stat(by_player, TALLY_KILLS)
@@ -666,6 +668,8 @@ func active_players(order: Array[int]) -> Array[int]:
 ## 통계 알림용 누적 킬·데스 (law_stats에 같이 담겨 스냅샷·방어 되감기를 따른다).
 const TALLY_KILLS: StringName = &"tally_kills"
 const TALLY_DEATHS: StringName = &"tally_deaths"
+## 이 사람의 말이 적에게 마지막으로 잡힌 라운드 (봇의 연속 처치 자비).
+const LAST_HIT_ROUND: StringName = &"last_hit_round"
 
 
 func stat(player_id: int, key: StringName) -> int:

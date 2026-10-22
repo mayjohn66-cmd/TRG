@@ -829,7 +829,7 @@ func _test_match_report_is_sent_once() -> void:
 	state.winner = -1
 	_expect(sent.size() == 2, "매치 시작 1번 + 매치 완료 1번 (%d번)" % sent.size())
 	_expect(sent.size() == 2 and sent[0].contains("%d번째 판 시작" % nth) and sent[1].contains("(%d번째 판)" % nth), "시작과 완료가 같은 판 번호 (%d)" % nth)
-	_expect(sent.size() == 2 and sent[1].contains("| %s |" % MatchTelemetry.mode_label(false, _board.ai_mode)) and sent[1].contains("내 최종 순위:") and sent[1].contains("1위 우승방식: 일반"), "지금 모드·내 순위·일반 승리로 알린다")
+	_expect(sent.size() == 2 and sent[1].contains("| %s |" % _board._telemetry_mode()) and sent[1].contains("내 최종 순위:") and sent[1].contains("1위 우승방식: 일반"), "지금 모드·내 순위·일반 승리로 알린다")
 	# 2) 컴퓨터 대전에서 내가 특수 승리로 1위 졸업한 즉시 (봇끼리 남은 판을 기다리지 않는다)
 	var was_ai: bool = _board.ai_mode
 	_board.ai_mode = true
@@ -858,6 +858,7 @@ func _test_match_report_is_sent_once() -> void:
 		state.rank_reasons = {other: VictoryChecker.ALL_HOME, seat: VictoryChecker.ALL_HOME}
 		_board._report_player_ranked(seat, 2)
 		_expect(sent.size() == 1 and sent[0].contains("내 최종 순위: 2위") and sent[0].contains("1위 우승방식: 일반"), "내 일반 완주 졸업 즉시 [매치 완료]")
+	_expect(_board._telemetry_mode() == "놀이터-%s" % BotTemper.label(_board._bot.difficulty), "놀이터 통계에 난이도가 붙는다 (%s)" % _board._telemetry_mode())
 	_board.ai_mode = was_ai
 	# 값이 비어 있어도 뻗지 않는다 (증강 목록·순위·1위가 없음)
 	_board._match_complete_sent = false
