@@ -245,6 +245,7 @@ const SMALL_FONT: Font = preload("res://assets/fonts/game_small_font.tres")
 const SMALL_TEXT_MAX: int = 13
 const LAW_COLOR: Color = Color("66e3f5")
 const SUPER_COLOR: Color = Color("cc5de8")
+const UTILITY_COLOR: Color = Color("4dabf7")
 const HOLO_GLOW: Array[Color] = [Color(0.4, 0.89, 0.96, 0.9), Color(0.93, 0.45, 0.95, 0.9), Color(1.0, 0.85, 0.35, 0.9)]
 const CATEGORY_COLORS: Dictionary = {
 	GameEnums.AugmentCategory.PAWN_EVOLUTION: Color("ffa94d"),
@@ -252,7 +253,7 @@ const CATEGORY_COLORS: Dictionary = {
 	GameEnums.AugmentCategory.LAW_ENACT: Color("66e3f5"),
 	GameEnums.AugmentCategory.CARD_PACKAGE: Color("da77f2"),
 	GameEnums.AugmentCategory.SUPER_GAMBLE: Color("cc5de8"),
-	GameEnums.AugmentCategory.UTILITY: Color("63e6be"),
+	GameEnums.AugmentCategory.UTILITY: UTILITY_COLOR,
 }
 
 ## 이 화면을 보는 플레이어. 이 플레이어의 프로필·기물 독이 우측 하단에 놓인다 (멀티플레이에서 P2~P4로 접속해도 본인이 우측 하단).
@@ -6721,7 +6722,7 @@ static func augment_card_info(definition: AugmentDef, game_state: GameState, pla
 			title = definition.display_name
 		GameEnums.AugmentCategory.UTILITY:
 			glyph = "보"
-			color = Color("38d9a9")
+			color = UTILITY_COLOR
 			title = definition.display_name
 		_:
 			glyph = "J"
@@ -6834,21 +6835,12 @@ static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: f
 			var from: Color = HOLO_GLOW[index]
 			var to: Color = HOLO_GLOW[(index + 1) % HOLO_GLOW.size()]
 			shimmer.tween_method(func(t: float) -> void: box.shadow_color = from.lerp(to, t), 0.0, 1.0, 0.9)
-	var top := Panel.new()
-	top.position = Vector2(4, 4)
-	top.size = Vector2(AUGMENT_CARD_SIZE.x - 8.0, 172)
-	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	top.add_theme_stylebox_override("panel", _style(color.darkened(0.8), Color(0, 0, 0, 0), 0, 13, 0, 0))
-	card.add_child(top)
-	var tag := _make_label(("★ " if bool(info.get("super", false)) else ("◆ 희귀 · " if tier == "HOLO" else "")) + str(info["category"]), 13 if bool(info.get("super", false)) else 12, color.lightened(0.3))
-	tag.position = Vector2(12, 8)
-	tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	card.add_child(tag)
+	card.add_child(AugmentCardSkin.make_background(color, AUGMENT_CARD_SIZE))
 	var emblem: Control = _make_emblem(str(info["glyph"]), color, info.get("art") as Texture2D)
 	emblem.position = Vector2((AUGMENT_CARD_SIZE.x - 150.0) / 2.0, 14)
 	card.add_child(emblem)
 	var title := _make_label(str(info["title"]), 21, Color("ffffff"))
-	title.position = Vector2(10, 182)
+	title.position = Vector2(10, 170)
 	title.size = Vector2(AUGMENT_CARD_SIZE.x - 20.0, 54)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
