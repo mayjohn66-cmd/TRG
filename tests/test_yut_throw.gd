@@ -33,7 +33,8 @@ func test_actual_half_round_mesh_stays_rigid_and_above_the_mat() -> void:
 					var lowest: float = INF
 					for vertex: Vector3 in vertices:
 						lowest = minf(lowest,(pose*vertex).y)
-					check(lowest >= YutThrow3D.TABLE_Y-0.00001,"actual mesh corners stay above the landing mat")
+					if value != 0 or index != YutThrow3D.MARKED_STICK or time <= YutThrow3D.impact_time(index):
+						check(lowest >= YutThrow3D.TABLE_Y-0.00001,"actual mesh corners stay above the landing mat")
 					check(absf(pose.basis.determinant()-1.0)<0.0001,"hard wooden sticks never squash or stretch")
 				var hit: float = YutThrow3D.impact_time(index)
 				var before: Transform3D = YutThrow3D.pose_at(hit-0.00001,index,value,power)
@@ -63,6 +64,20 @@ func test_every_toss_fits_the_camera_and_settled_sticks_do_not_overlap() -> void
 			var a_width: float = absf(a.basis.x.x)*YutThrow3D.RADIUS+absf(a.basis.z.x)*YutThrow3D.HALF_LENGTH
 			var b_width: float = absf(b.basis.x.x)*YutThrow3D.RADIUS+absf(b.basis.z.x)*YutThrow3D.HALF_LENGTH
 			check(a.origin.x+a_width<b.origin.x-b_width,"resting sticks have a real gap rather than interpenetrating")
+
+
+func test_nak_second_hop_crosses_the_edge_then_falls_without_moving_the_other_three() -> void:
+	var target := Vector3(7.0,YutThrow3D.TABLE_Y,5.0)
+	var hit: float = YutThrow3D.impact_time(3)
+	var before: Transform3D = YutThrow3D.pose_at(hit-0.00001,3,0,0.5,target)
+	var after: Transform3D = YutThrow3D.pose_at(hit+0.00001,3,0,0.5,target)
+	check(before.origin.distance_to(after.origin)<0.003,"nak departs from its real touchdown without teleporting")
+	var end: Transform3D = YutThrow3D.pose_at(YutThrow3D.NAK_RESULT_TIME,3,0,0.5,target)
+	check(absf(end.origin.x-target.x)<0.001 and absf(end.origin.z-target.z)<0.001,"nak reaches the projected off-board destination")
+	check(end.origin.y < YutThrow3D.TABLE_Y,"stick drops below the board only after leaving it")
+	for index: int in 3:
+		check(YutThrow3D.pose_at(2.0,index,0,0.5,target).is_equal_approx(YutThrow3D.pose_at(2.0,index,0,0.5)),"remaining three sticks stay on the board")
+	check(YutThrow3D.result_time(0)>YutThrow3D.RESULT_TIME,"nak waits for the escaping stick before releasing the result")
 
 
 func test_wood_surface_and_carvings_face_outward_in_godot() -> void:

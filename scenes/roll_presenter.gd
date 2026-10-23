@@ -54,6 +54,8 @@ var active: bool = false
 var center: Vector2 = Vector2(683.0, 308.0)
 ## 투척 출발점: 굴린 사람 프로필의 화면 좌표 (MainBoard가 굴림마다 넣는다). 모르면 화면 아래쪽에서 던진다.
 var toss_from: Vector2 = Vector2(INF, INF)
+## Actual projected board outline, refreshed by MainBoard on layout/view changes.
+var toss_board_outline := PackedVector2Array()
 ## 지금(또는 방금 끝난) 연출이 보드 위 투척인가.
 var tossing: bool = false
 ## 투척 중인 주사위가 바닥에서 떠 있는 높이 (화면 px, 테스트용).
@@ -262,8 +264,25 @@ func _begin_toss() -> void:
 	_die_label.pivot_offset = Vector2.ZERO
 	if _mode == &"CHINCHIRO":
 		_dice_3d.set_bowl_entry(_toss_start - center - TOSS_LAND_OFFSET)
+	if _mode == &"YUT" and _yut_3d.result_value == 0:
+		_configure_yut_nak()
 	modulate.a = 0.0
 	_update_toss(0.0)
+
+
+func _configure_yut_nak() -> void:
+	var origin: Vector2 = center+TOSS_LAND_OFFSET
+	var direction := Vector2(1.0,0.60).normalized()
+	var rim: Vector2 = origin+direction*300.0
+	for index: int in toss_board_outline.size():
+		var hit: Variant = Geometry2D.segment_intersects_segment(origin,origin+direction*2000.0,toss_board_outline[index],toss_board_outline[(index+1)%toss_board_outline.size()])
+		if hit != null:
+			rim = hit
+			break
+	var end: Vector2 = rim+direction*110.0
+	var start: Vector2 = origin+Vector2(YutThrow3D.FINAL_X[3]*YutThrow3D.VIEW_SIZE.y/YutThrow3D.CAMERA_SIZE,0)
+	var fraction: float = start.distance_to(rim)/maxf(start.distance_to(end),1.0)
+	_yut_3d.set_nak_exit(end-origin,fraction)
 
 
 func _toss_ground(u: float) -> Vector2:
@@ -294,8 +313,9 @@ func _update_contacts(t: float) -> void:
 			var age: float = t - real_time(&"YUT", YutThrow3D.impact_time(index))
 			if age >= 0.0 and age < 0.20:
 				var pixel: Vector2 = _yut_3d.ground_pixel_at(index)
-				var fit: float = minf(_yut_3d.size.x / YutThrow3D.RENDER_SIZE.x, _yut_3d.size.y / YutThrow3D.RENDER_SIZE.y)
-				var local: Vector2 = (_yut_3d.size - Vector2(YutThrow3D.RENDER_SIZE) * fit) / 2.0 + pixel * fit
+				var render_size := Vector2(_yut_3d.render_view.size)
+				var fit: float = minf(_yut_3d.size.x / render_size.x, _yut_3d.size.y / render_size.y)
+				var local: Vector2 = (_yut_3d.size - render_size * fit) / 2.0 + pixel * fit
 				_contact_fx.marks.append({"at": _yut_3d.get_global_transform() * local, "age": age, "strength": 0.48})
 	_contact_fx.queue_redraw()
 
@@ -570,7 +590,6 @@ func _build(tool_id: StringName) -> void:
 			_root.add_child(_die_label)
 		&"YUT":
 			_title.text = "전통 박달나무 윷"
-			_total = real_time(&"YUT", YutThrow3D.RESULT_TIME) + 0.02
 			if _yut_3d == null:
 				_yut_3d = YutThrow3D.new()
 				_stage.add_child(_yut_3d)
@@ -579,6 +598,7 @@ func _build(tool_id: StringName) -> void:
 			_yut_3d.show()
 			_yut_3d.set_mat_visible(false)  # 보드 마당이 곧 윷판이다
 			var face: int = int((_result.get("details", {}) as Dictionary).get("face",_result.get("steps",1)))
+			_total = real_time(&"YUT", YutThrow3D.result_time(face)) + 0.02
 			_yut_3d.begin(face,_power)
 			var caption: String = "%s · %s" % [YUT_NAMES[face],"0칸, 턴 종료" if bool(_result.get("ends_turn",false)) else _card_move_text()]
 			if bool(_result.get("reroll",false)):
@@ -859,6 +879,8 @@ func _update_yut(t: float) -> void:
 		_die_label.text = _card_result_caption
 		_die_label.modulate.a = 1.0
 		last_display = str(YUT_NAMES[_yut_3d.result_value])
+		if _yut_3d.result_value == 0:
+			_die_label.add_theme_color_override("font_color",Color("ff8787"))
 
 
 ## The same physical rotor is used by the direct pad and this remote reveal.

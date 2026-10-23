@@ -598,8 +598,15 @@ func _test_yut_throw() -> void:
 		presenter._update(RollPresenter.real_time(&"YUT", YutThrow3D.impact_time(index)+0.001))
 		_expect(view.landed.count(true)==index+1,"wooden sticks land at separate clustered times")
 		_expect(presenter._die_label.text.is_empty(),"Yut waits for all sticks to settle before naming the result")
-	presenter._update(RollPresenter.real_time(&"YUT", YutThrow3D.RESULT_TIME+0.001))
-	presenter._update(RollPresenter.real_time(&"YUT", YutThrow3D.RESULT_TIME+0.01))
+	presenter._update(RollPresenter.real_time(&"YUT", YutThrow3D.NAK_RESULT_TIME+0.001))
+	presenter._update(RollPresenter.real_time(&"YUT", YutThrow3D.NAK_RESULT_TIME+0.01))
+	var vertices: PackedVector3Array = YutThrow3D.make_body_mesh().surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+	var fit: float = view.size.y/view.render_view.size.y
+	for vertex: Vector3 in vertices:
+		var pixel: Vector2 = view._camera.unproject_position(view.sticks[3].transform*vertex)
+		var screen: Vector2 = view.get_global_transform()*(pixel*fit)
+		_expect(not Geometry2D.is_point_in_polygon(screen,presenter.toss_board_outline),"the entire nak stick visibly clears the real board outline")
+	_expect(not view.shadows[3].visible,"escaped stick has no floating board shadow")
 	_expect(events==[0,1,2,3],"exactly four primary landing events occur")
 	_expect(view.displayed_value()==0 and presenter.last_display=="낙","marked stick off the mat and engine 낙 agree")
 	_expect(presenter._die_label.text=="낙 · 0칸, 턴 종료","낙 is shown as 0 steps and the turn ends")
@@ -610,8 +617,10 @@ func _test_yut_throw() -> void:
 	_expect(presenter.scale == Vector2.ONE, "윷은 착지 후 묶음 전체가 고무처럼 늘어나지 않는다")
 	for value: int in ToolYut.FACES:
 		presenter.play(&"YUT",{"steps":value,"ends_turn":value==0,"reroll":value>=4,"details":{"face":value}},0.1)
-		presenter._update(RollPresenter.real_time(&"YUT", YutThrow3D.RESULT_TIME+0.001))
+		presenter._update(RollPresenter.real_time(&"YUT", YutThrow3D.result_time(value)+0.001))
 		_expect(presenter._yut_3d==view,"all outcomes reuse the same four meshes and viewport")
+		if value != 0:
+			_expect(view.render_view.size==YutThrow3D.RENDER_SIZE and view.size==YutThrow3D.VIEW_SIZE and is_equal_approx(view._camera.size,YutThrow3D.CAMERA_SIZE),"ordinary throws restore their original resolution, scale and framing after nak")
 		_expect(view.displayed_value()==value and presenter.last_display==RollPresenter.YUT_NAMES[value],"six physical outcomes agree with engine values")
 		_expect(presenter._die_label.text.contains("한 번 더")==bool(value>=4),"only Yut/Mo results show reroll")
 		presenter.cancel()

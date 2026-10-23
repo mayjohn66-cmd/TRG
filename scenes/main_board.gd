@@ -1342,6 +1342,7 @@ func layout_for(viewport_size: Vector2) -> void:
 		_announcer.center = _board_center()
 	if _presenter != null:
 		_presenter.center = _board_center() + Vector2(0, -40)
+		_presenter.toss_board_outline = BoardSkin.outline(_surface_project, _off_center)
 	if _draw_fx != null:
 		_draw_fx.deck_position = _board_center() + DECK_OFFSET
 
@@ -2121,6 +2122,8 @@ func set_view_mode(mode: int) -> void:
 
 
 func _apply_view_mode(refresh_pawns: bool = true) -> void:
+	if _presenter != null:
+		_presenter.toss_board_outline = BoardSkin.outline(_surface_project, _off_center)
 	var tilt: bool = true  # 마름모 보드는 항상 보드 면 메시로 그린다 (평면 받침 판은 쓰지 않는다)
 	if _plate != null:
 		_plate.visible = false

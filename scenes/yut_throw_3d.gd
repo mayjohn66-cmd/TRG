@@ -11,6 +11,7 @@ const LEAD_TIME: float = 0.10
 const FLIGHT_TIMES: Array[float] = [0.66,0.70,0.735,0.775]
 const REBOUND_TIME: float = 0.22
 const RESULT_TIME: float = 1.12
+const NAK_RESULT_TIME: float = 1.75
 const TOTAL_TIME: float = RESULT_TIME+0.65
 const RADIUS: float = 0.27
 const HALF_LENGTH: float = 1.15
@@ -42,6 +43,8 @@ var _power: float = 0.5
 var _camera: Camera3D
 var _mat: MeshInstance3D
 var _time: float = 0.0
+var _nak_target := Vector3(NAK_X, TABLE_Y, NAK_Z)
+var _nak_edge_fraction: float = 0.70
 
 
 func _init() -> void:
@@ -122,6 +125,13 @@ func _ready() -> void:
 
 func begin(value: int, power: float) -> void:
 	result_value = value
+	# Normal throws retain their small cached render target and original framing.
+	custom_minimum_size = VIEW_SIZE
+	size = VIEW_SIZE
+	render_view.size = RENDER_SIZE
+	_camera.size = CAMERA_SIZE
+	_nak_target = Vector3(NAK_X, TABLE_Y, NAK_Z)
+	_nak_edge_fraction = 0.70
 	_power = clampf(power,0,1)
 	landed = [false,false,false,false]
 	_rebounded = [false,false,false,false]
@@ -130,6 +140,25 @@ func begin(value: int, power: float) -> void:
 	render_view.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	apply_time(0.0)
 	Sfx.play(&"yut_toss",-6.0,0.0)
+
+
+static func result_time(value: int) -> float:
+	return NAK_RESULT_TIME if value == 0 else RESULT_TIME
+
+
+## Enlarge only the transparent frame for 낙, keeping pixels per world unit
+## unchanged. The fourth stick can cross the real board rim without clipping.
+func set_nak_exit(screen_offset: Vector2, edge_fraction: float) -> void:
+	var frame := Vector2(maxf(VIEW_SIZE.x, absf(screen_offset.x)*2.0+180.0), maxf(VIEW_SIZE.y, absf(screen_offset.y)*2.0+220.0)).ceil()
+	custom_minimum_size = frame
+	size = frame
+	render_view.size = Vector2i(frame*2.0)
+	_camera.size = CAMERA_SIZE*frame.y/VIEW_SIZE.y
+	var pixel: Vector2 = (frame/2.0+screen_offset)*2.0
+	var ray: Vector3 = _camera.project_ray_normal(pixel)
+	var origin: Vector3 = _camera.project_ray_origin(pixel)
+	_nak_target = origin+ray*((TABLE_Y-origin.y)/ray.y)
+	_nak_edge_fraction = clampf(edge_fraction, 0.2, 0.9)
 
 
 static func flat_faces(value: int) -> Array[bool]:
@@ -161,7 +190,7 @@ static func support_height(rotation: Quaternion) -> float:
 	return RADIUS*cross_section+b*RADIUS*0.5+absf(c)*HALF_LENGTH
 
 
-static func pose_at(seconds: float, index: int, value: int, power: float) -> Transform3D:
+static func pose_at(seconds: float, index: int, value: int, power: float, nak_target: Vector3 = Vector3(NAK_X, TABLE_Y, NAK_Z), edge_fraction: float = 0.70) -> Transform3D:
 	var strength: float = clampf(power,0,1)
 	var flight: float = FLIGHT_TIMES[index]
 	var u: float = clampf((seconds-LEAD_TIME)/flight,0,1)
@@ -183,12 +212,16 @@ static func pose_at(seconds: float, index: int, value: int, power: float) -> Tra
 		lift = 0.10*sin(PI*rebound)*(1.0-rebound)
 	var final_x: float = FINAL_X[index]
 	var final_z: float = FINAL_Z[index]
-	if value == 0 and index == MARKED_STICK:
-		# 낙: 표시 가락 하나가 멀리 튕겨 판 밖으로 떨어진다
-		final_x = NAK_X
-		final_z = NAK_Z
 	var x: float = lerpf(FINAL_X[index]*0.56,final_x,progress)
 	var z: float = lerpf(0.85+index*0.025,final_z,progress)
+	if value == 0 and index == MARKED_STICK and seconds >= impact_time(index):
+		# One continuous second hop: three stay put, this stick skips over the rim.
+		var escape: float = clampf((seconds-impact_time(index))/(NAK_RESULT_TIME-impact_time(index)),0,1)
+		x = lerpf(final_x,nak_target.x,escape)
+		z = lerpf(final_z,nak_target.z,escape)
+		rotation = target*Quaternion(Vector3.RIGHT,TAU*escape)*Quaternion(Vector3.UP,PI*sin(PI*escape))
+		lift = 0.38*sin(PI*escape)-0.8*pow(clampf((escape-edge_fraction)/(1.0-edge_fraction),0,1),2.0)
+		return Transform3D(Basis(rotation),Vector3(x,TABLE_Y+support_height(rotation)+lift,z))
 	return Transform3D(Basis(rotation),Vector3(x,TABLE_Y+support_height(rotation)+maxf(lift,0),z))
 
 
@@ -196,9 +229,12 @@ func apply_time(seconds: float) -> void:
 	var shake: float = 0.0
 	for index: int in 4:
 		sticks[index].visible = seconds >= LEAD_TIME
-		sticks[index].transform = pose_at(seconds,index,result_value,_power)
+		sticks[index].transform = pose_at(seconds,index,result_value,_power,_nak_target,_nak_edge_fraction)
 		var lift: float = maxf(sticks[index].position.y-TABLE_Y-support_height(sticks[index].quaternion),0)
 		shadows[index].visible = sticks[index].visible
+		if result_value == 0 and index == MARKED_STICK:
+			var escape: float = (seconds-impact_time(index))/(NAK_RESULT_TIME-impact_time(index))
+			shadows[index].visible = shadows[index].visible and escape < _nak_edge_fraction
 		shadows[index].position.x = sticks[index].position.x
 		shadows[index].position.z = sticks[index].position.z
 		shadows[index].rotation.y = deg_to_rad(FINAL_YAW[index])
@@ -217,12 +253,12 @@ func apply_time(seconds: float) -> void:
 			if index in [0,2] and since-REBOUND_TIME < 0.06:
 				Sfx.play(&"yut_clack",-11.0,0.0,1.10)
 	_camera.position = CAMERA_HOME+Vector3(0,shake,0)
-	settled = seconds >= RESULT_TIME
+	settled = seconds >= result_time(result_value)
 	_time = seconds
 
 
 func displayed_value() -> int:
-	if sticks[MARKED_STICK].position.x > NAK_X - 0.4:
+	if result_value == 0 and settled:
 		return 0  # 표시 가락이 판 밖: 낙
 	var count: int = 0
 	var marked: bool = false
