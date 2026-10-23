@@ -1754,6 +1754,8 @@ func _test_bot_pacing() -> void:
 	var settle: float = _now()
 	while _board._ui_busy() and _now() - settle < 8.0:  # 앞선 라운드·P1 차례 배너가 끝난 뒤부터 잰다
 		await process_frame
+	# 같은 라운드에 P2 차례가 이미 지나갔으면(앞선 진행이 빠르거나 느린 환경) 차례 배너가 다시 뜨지 않는다: 새 차례로 보이게 비운다
+	_board._announced_turn_key = ""
 	manager.advance_to_next_player()  # P2(봇)의 턴 시작
 	_expect(manager.current_player_id() == 2, "P2 차례")
 	manager.state.tools[2] = ToolRegistry.create(&"D6")
