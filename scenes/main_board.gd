@@ -77,6 +77,8 @@ const DOCK_CARD_Y: float = 6.0
 ## 손패 카드는 한 장 전체 일러스트(140x196)가 따로 있고, 화면 아래로 반쯤 가려진 채 부채꼴로 펼쳐진다. 호버하면 전체가 올라와 보인다.
 const HAND_CARD_SIZE: Vector2 = Vector2(140, 196)
 const HAND_FAN_DEGREES: float = 5.0
+## 카드 획득 연출의 덱 뭉치 자리 (보드 한가운데에서 조금 위: 주사위가 떨어지는 자리와 겹치지 않게).
+const DECK_OFFSET: Vector2 = Vector2(0.0, -78.0)
 ## 피해 되돌리기 팝업이 자동으로 넘어가기까지의 시간(초).
 const REACTION_SECONDS: float = 6.0
 ## 행동 사이의 호흡(초): 이동이 끝난 뒤 멈춤 / [P2 차례] 알림 길이.
@@ -413,6 +415,8 @@ var instant_roll_for_test: bool = false:
 		if manager != null:
 			manager.review_enabled = not value  # 연출을 켠 판에서만 증강 확인 단계를 둔다 (모든 참가자가 같은 값이어야 한다)
 var _presenter: RollPresenter = null
+## 카드 획득 연출: 보드 한가운데 덱에서 카드가 뽑혀 손패·프로필로 날아간다.
+var _draw_fx: CardDrawFX = null
 var _announcer: EventAnnouncer = null
 var _pending_power: float = 0.5
 var _fx_busy: bool = false
@@ -937,6 +941,8 @@ func _new_game() -> void:
 	_fx_busy = false
 	_bot.set_enabled(_bot_active())
 	_presenter.cancel()
+	if _draw_fx != null:
+		_draw_fx.clear()
 	_roll_pad.cancel_spin()
 	_roll_pad.reset_revolver()
 	_announcer.cancel()
@@ -1153,9 +1159,9 @@ func _bind_state() -> void:
 				_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(350.0 * _motion_pace())))  # 깜빡임을 볼 틈: 다음 알림은 그 뒤에
 		_log_line("P%d가 %d번 타일에 [%s]을(를) 설치했습니다" % [owner_id, tile, "뒷면 카드" if id.begins_with("TRP") else _attachment_name(id)], Color("adb5bd"))
 		_refresh_tiles())
-	state.card_drawn.connect(func(_player_id: int, _card_id: StringName) -> void:
+	state.card_drawn.connect(func(player_id: int, card_id: StringName) -> void:
 		if _fx_on():
-			Sfx.play(&"card_get"))
+			_fly_drawn_card(player_id, card_id))
 	state.card_drawn.connect(func(player_id: int, _card_id: StringName) -> void: _log_line("[카드] P%d 생떼 카드 1장 획득" % player_id, Color("ffa94d")))  # 뽑은 카드는 비공개
 	state.card_stolen.connect(func(player_id: int, card_id: StringName) -> void: _log_line("P%d의 카드 [%s]를 도적이 빼앗았습니다" % [player_id, _card_name(card_id)], Color("ff6b6b")))
 	state.npc_spawned.connect(func(_npc_id: int, tile: int) -> void:
@@ -1307,6 +1313,8 @@ func layout_for(viewport_size: Vector2) -> void:
 		_announcer.center = _board_center()
 	if _presenter != null:
 		_presenter.center = _board_center() + Vector2(0, -40)
+	if _draw_fx != null:
+		_draw_fx.deck_position = _board_center() + DECK_OFFSET
 
 
 ## 보드 한가운데의 화면 좌표 (창 비율 오프셋 포함).
@@ -3555,20 +3563,78 @@ func _refresh_hands() -> void:
 	if hand.is_empty():
 		return
 	var count: int = hand.size()
-	var step: float = minf(HAND_CARD_SIZE.x - 14.0, (_dock.size.x - HAND_CARD_SIZE.x) / maxf(count - 1, 1))
-	var total: float = HAND_CARD_SIZE.x + step * (count - 1)
-	var start_x: float = (_dock.size.x - total) / 2.0
+	# 덱에서 날아오는 중인 카드는 내려앉을 때까지 숨겨 둔다 (도착하면 다시 그린다)
+	var arriving: int = int(_draw_fx.pending.get(player_id, 0)) if _draw_fx != null else 0
 	for index: int in count:
 		var card_id: StringName = hand[index]
 		var card_view: PanelContainer = _make_card_view(player_id, card_id)
 		var offset: float = float(index) - float(count - 1) / 2.0
 		var home_rot: float = clampf(offset * HAND_FAN_DEGREES, -16.0, 16.0)
 		var home_y: float = DOCK_CARD_Y + minf(offset * offset * 2.0, 16.0)
-		card_view.position = Vector2(start_x + step * index, home_y)
+		card_view.position = _dock_slot(index, count)
 		card_view.rotation = deg_to_rad(home_rot)
+		if index >= count - arriving:
+			card_view.modulate.a = 0.0
 		card_view.set_meta("home_y", home_y)
 		card_view.set_meta("home_rot", home_rot)
 		_dock.add_child(card_view)
+
+
+## 손패 독에서 index번째 카드의 자리 (독 안 좌표, 카드 왼쪽 위). count장이 부채꼴로 펼쳐진다.
+func _dock_slot(index: int, count: int) -> Vector2:
+	var step: float = minf(HAND_CARD_SIZE.x - 14.0, (_dock.size.x - HAND_CARD_SIZE.x) / maxf(count - 1, 1))
+	var total: float = HAND_CARD_SIZE.x + step * (count - 1)
+	var start_x: float = (_dock.size.x - total) / 2.0
+	var offset: float = float(index) - float(count - 1) / 2.0
+	return Vector2(start_x + step * index, DOCK_CARD_Y + minf(offset * offset * 2.0, 16.0))
+
+
+## 카드를 얻었다: 덱 뭉치에서 뽑혀 내 손패(앞면으로 뒤집혀) 또는 그 사람 프로필(뒷면 그대로)로 날아간다.
+func _fly_drawn_card(player_id: int, card_id: StringName) -> void:
+	var local: bool = player_id == _dock_owner() and _dock != null and _dock.is_visible_in_tree()
+	var target: Vector2 = Vector2(INF, INF)
+	if local:
+		var count: int = (state.hands[player_id] as Array).size()
+		target = _dock.get_global_transform() * (_dock_slot(count - 1, count) + HAND_CARD_SIZE / 2.0)
+	else:
+		target = _profile_center(player_id)
+	if _draw_fx == null or not target.is_finite():
+		Sfx.play(&"card_get")
+		return
+	_draw_fx.draw_card(player_id, card_id, local, target, Callable() if local else _profile_nudge.bind(player_id))
+
+
+## 날아온 카드가 내 손패에 내려앉았다: 숨겨 둔 카드를 보이고 톡 튀게 한다.
+func _on_drawn_card_landed(player_id: int, local: bool) -> void:
+	if not local or player_id != _dock_player or state == null:
+		return
+	_refresh_hands()
+	var shown: int = (state.hands[player_id] as Array).size() - int(_draw_fx.pending.get(player_id, 0)) - 1
+	var live: Array[Node] = _dock.get_children().filter(func(child: Node) -> bool: return not child.is_queued_for_deletion())
+	if shown < 0 or shown >= live.size():
+		return
+	var card_view: Control = live[shown]
+	card_view.scale = Vector2.ONE * 1.12
+	card_view.create_tween().tween_property(card_view, "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+## 카드가 프로필에 꽂히는 순간 프로필이 살짝 흔들린다 (큰 반응 연출이 진행 중이면 그것을 둔다).
+func _profile_nudge(player_id: int) -> void:
+	if not _profiles.has(player_id):
+		return
+	var panel: Control = _profiles[player_id]["panel"]
+	if panel.has_meta("react_tween"):
+		var running: Tween = panel.get_meta("react_tween")
+		if running != null and running.is_valid() and running.is_running():
+			return
+	var base: Vector2 = panel.get_meta("react_base", panel.position) if panel.has_meta("react_tween") else panel.position
+	panel.position = base
+	panel.set_meta("react_base", base)
+	var tween: Tween = create_tween()
+	for shift: float in [5.0, -4.0, 2.0]:
+		tween.tween_property(panel, "position:x", base.x + shift, 0.04)
+	tween.tween_property(panel, "position:x", base.x, 0.04)
+	panel.set_meta("react_tween", tween)
 
 
 ## 방어 팝업(InterceptionPrompt): 내 말이 잡히거나, 공격 카드를 맞거나, 함정에 걸렸을 때 그 공격을 받아칠 방어 카드가 손에 있으면
@@ -8930,6 +8996,13 @@ func _build_roll_fx() -> void:
 	add_child(_danger_label)
 	_presenter = RollPresenter.new()
 	add_child(_presenter)
+	_draw_fx = CardDrawFX.new()
+	_draw_fx.name = "CardDrawFX"
+	_draw_fx.z_index = 30
+	_draw_fx.face_builder = _make_card_face
+	_draw_fx.deck_position = _board_center() + DECK_OFFSET
+	_draw_fx.landed.connect(_on_drawn_card_landed)
+	add_child(_draw_fx)
 	_announcer = EventAnnouncer.new()
 	add_child(_announcer)
 	_announcer.drained.connect(func() -> void:
@@ -9045,6 +9118,7 @@ func _handle_roll_event(data: Dictionary) -> void:
 	if _announcer != null:
 		_announcer.dismiss_soft()  # 굴림이 시작되면 남아 있는 차례·라운드 안내 배너는 걷는다 (주사위와 겹치지 않게)
 	_presenter.instant = instant_roll_for_test
+	_presenter.toss_from = _profile_center(int(data["player_id"]))  # 기본 주사위·친치로·윷은 굴린 사람 프로필에서 마당으로 던진다
 	var details: Dictionary = result["details"]
 	if _is_stage_tool(tool_id):
 		_handle_stage_roll(data)
@@ -9183,7 +9257,19 @@ func _reveal_roll(data: Dictionary) -> void:
 		var fail_name: String = "폭죽 깃발!" if fired else ("낙!" if roll_tool == &"YUT" else ("광대!" if roll_tool == &"DICE_TAROT" else "망통!"))
 		_announce_move_failed(fail_name, roller, "P%d  %s" % [roller, roll_text.strip_edges()])
 		return
+	if _presenter.tossing and not instant_roll_for_test and RollPresenter.TOSS_TOOLS.has(roll_tool):
+		return  # 보드 위로 던진 주사위·윷이 바로 위에 "N칸 전진!"을 띄웠다: 같은 말을 띠로 또 하지 않는다
 	_show_center_banner("P%d  %s" % [data["player_id"], roll_text.strip_edges()], Color("ff8787") if fired else Color("fff3bf"))
+
+
+## 프로필 카드 한가운데의 화면 좌표 (투척·카드 비행의 출발·도착점). 프로필이 없으면 INF.
+func _profile_center(player_id: int) -> Vector2:
+	if not _profiles.has(player_id):
+		return Vector2(INF, INF)
+	var panel: Control = _profiles[player_id]["panel"]
+	if not panel.is_visible_in_tree():
+		return Vector2(INF, INF)
+	return panel.get_global_rect().get_center()
 
 
 ## 윷놀이 기물의 [선택적 업기] 팝업: 화면 중앙에 [업기 (하나로 합체)] / [그냥 두기 (개별 유지)] 두 버튼을 띄운다.

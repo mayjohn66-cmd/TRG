@@ -56,6 +56,8 @@ func _run() -> void:
 	# _process()에서 지정했던 테스트용 즉시 이동 조건을 다시 복원한다.
 	_board.manager.step_delay_sec = 0.0
 	await _test_presenters()
+	await _test_board_toss()
+	await _test_card_draw_fx()
 	await _test_illustrated_judgment_cards()
 	await _test_mahjong_landings()
 	await _test_yut_throw()
@@ -263,6 +265,95 @@ func _play(tool_id: StringName, result: Dictionary, sampler: Callable = Callable
 			sampler.call(_now() - started)
 		await process_frame
 	return _now() - started
+
+
+## 카드 획득: 덱 뭉치에서 뽑혀 내 카드는 앞면으로 뒤집혀 손패 자리로, 남의 카드는 뒷면 그대로 프로필로. 여러 장은 0.08초 간격.
+func _test_card_draw_fx() -> void:
+	var fx: CardDrawFX = _board._draw_fx
+	_expect(fx != null, "카드 획득 연출기")
+	var saved_instant: bool = _board.instant_roll_for_test
+	_board.instant_roll_for_test = false
+	var owner: int = _board._dock_owner()
+	var other: int = owner % 4 + 1
+	var hand: Array = _board.state.hands[owner]
+	while hand.size() > 3:
+		hand.pop_back()
+	(_board.state.hands[other] as Array).clear()
+	_board._refresh_all()
+	var arrivals: Array[Array] = []
+	var record: Callable = func(player_id: int, local: bool) -> void: arrivals.append([player_id, local, _now()])
+	fx.landed.connect(record)
+	var started: float = _now()
+	_board.state.give_card(owner, &"ACT_09")
+	_board.state.give_card(owner, &"ACT_02")
+	_board.state.give_card(other, &"ACT_03")
+	_expect(fx.in_flight == 3 and int(fx.pending.get(owner, 0)) == 2, "카드 3장이 덱에서 뽑혀 날아간다 (%d장, 내 손패 대기 %s)" % [fx.in_flight, str(fx.pending)])
+	_board._refresh_hands()
+	var live: Array[Node] = _board._dock.get_children().filter(func(child: Node) -> bool: return not child.is_queued_for_deletion())
+	_expect(live.size() == hand.size() and (live[live.size() - 1] as Control).modulate.a == 0.0 and (live[live.size() - 2] as Control).modulate.a == 0.0, "날아오는 중인 카드는 손패에서 숨겨 둔다")
+	var deck: Control = fx.find_child("DeckPile", true, false)
+	_expect(deck != null and deck.visible, "보드 한가운데에 덱 뭉치")
+	var flipped: bool = false
+	while fx.busy() and _now() - started < 3.0:
+		for card: Node in fx.get_children():
+			if card.name.begins_with("DrawnCard") and card.get_child_count() > 1:
+				flipped = true
+		await process_frame
+	fx.landed.disconnect(record)
+	_expect(not fx.busy() and arrivals.size() == 3, "모두 도착 (%d장)" % arrivals.size())
+	_expect(flipped, "내 카드는 앞면으로 뒤집힌다")
+	var elapsed: float = _now() - started
+	_expect(elapsed < 1.4, "세 장이 1.4초 안에 끝난다 (%.2f초)" % elapsed)
+	var others: Array = arrivals.filter(func(entry: Array) -> bool: return not bool(entry[1]))
+	_expect(others.size() == 1 and int(others[0][0]) == other, "남의 카드는 프로필로 (뒷면)")
+	live = _board._dock.get_children().filter(func(child: Node) -> bool: return not child.is_queued_for_deletion())
+	_expect(live.size() == hand.size() and (live[live.size() - 1] as Control).modulate.a > 0.0, "도착하면 손패에 보인다")
+	_board.instant_roll_for_test = saved_instant
+	print("CARD_DRAW_FX_OK")
+
+
+## 기본 주사위 투척: 팝업 상자 없이 굴린 사람 프로필에서 보드 마당으로 포물선 비행 → 2~3번 통통 → 1.25배 임팩트 + "N칸 전진!" → 기다리지 않고 끝난다.
+func _test_board_toss() -> void:
+	var presenter: RollPresenter = _board._presenter
+	presenter.instant = false
+	presenter.set_process(false)
+	var from: Vector2 = _board._profile_center(1)
+	_expect(from.is_finite(), "P1 프로필 위치")
+	presenter.toss_from = from
+	presenter.play(&"D6", {"tool_id": &"D6", "steps": 5, "details": {"face": 5}}, 0.8)
+	_expect(presenter.get_theme_stylebox("panel") is StyleBoxEmpty and not presenter._title.visible, "네모난 팝업 상자·이름표 없이 주사위만")
+	var start_center: Vector2 = presenter.position + presenter.size / 2.0
+	_expect(start_center.distance_to(from) < 40.0, "프로필에서 출발 (%s ~ %s)" % [str(start_center), str(from)])
+	var contacts: int = 0
+	var was_up: bool = false
+	var low_shadow: float = 999.0
+	var steps: int = 60
+	for index: int in range(1, steps + 1):
+		var t: float = RollPresenter.TOSS_LAND_TIME * index / steps
+		presenter._update(t)
+		var lift: float = presenter.toss_height
+		if lift > 25.0:
+			was_up = true
+			low_shadow = minf(low_shadow, presenter._ground_shadow.size.x / presenter.scale.x)
+		elif lift < 3.0 and was_up:
+			contacts += 1
+			was_up = false
+	_expect(contacts >= 2 and contacts <= 4, "바닥에 2~3번 통통 튄다 (%d번)" % contacts)
+	_expect(low_shadow < 118.0 * 0.8, "높이 뜨면 그림자가 작아진다 (%.1f)" % low_shadow)
+	presenter.set_process(true)
+	presenter._process(RollPresenter.TOSS_LAND_TIME)
+	_expect(not presenter.active and presenter.visible, "눈금이 정해지는 순간 바로 끝난다 (입력이 풀리고 그림은 잠깐 남는다)")
+	_expect(presenter._die_label.text == "5칸 전진!" and presenter.last_display == "5", "주사위 위에 N칸 전진! (%s)" % presenter._die_label.text)
+	var peak: float = 0.0
+	for index: int in 20:
+		presenter._process(RollPresenter.PUNCH_TIME / 20.0)
+		peak = maxf(peak, presenter.scale.y)
+	_expect(absf(peak - RollPresenter.PUNCH_SCALE) < 0.05, "착지 임팩트 1.25배 (%.2f)" % peak)
+	_expect(presenter._die_label.global_position.y < presenter.position.y + presenter.size.y / 2.0, "결과 글자는 주사위 위")
+	presenter._process(RollPresenter.LINGER_TIME + RollPresenter.FADE_TIME)
+	_expect(not presenter.visible and presenter.scale == Vector2.ONE, "잠깐 남았다가 사라진다")
+	presenter.cancel()
+	print("BOARD_TOSS_FX_OK")
 
 
 func _test_presenters() -> void:
@@ -478,14 +569,14 @@ func _test_yut_throw() -> void:
 	var events: Array[int] = []
 	var observer: Callable = func(index: int) -> void: events.append(index)
 	view.stick_landed.connect(observer)
-	presenter._update(0.65)
+	presenter._update(RollPresenter.real_time(&"YUT", 0.65))
 	_expect(view.landed.count(true)==0 and presenter.last_display.is_empty() and presenter._die_label.text.is_empty(),"Yut keeps its outcome hidden while all four sticks are in flight")
 	for index: int in 4:
-		presenter._update(YutThrow3D.impact_time(index)+0.001)
+		presenter._update(RollPresenter.real_time(&"YUT", YutThrow3D.impact_time(index)+0.001))
 		_expect(view.landed.count(true)==index+1,"wooden sticks land at separate clustered times")
 		_expect(presenter._die_label.text.is_empty(),"Yut waits for all sticks to settle before naming the result")
-	presenter._update(YutThrow3D.RESULT_TIME+0.001)
-	presenter._update(YutThrow3D.RESULT_TIME+0.01)
+	presenter._update(RollPresenter.real_time(&"YUT", YutThrow3D.RESULT_TIME+0.001))
+	presenter._update(RollPresenter.real_time(&"YUT", YutThrow3D.RESULT_TIME+0.01))
 	_expect(events==[0,1,2,3],"exactly four primary landing events occur")
 	_expect(view.displayed_value()==0 and presenter.last_display=="낙","marked stick off the mat and engine 낙 agree")
 	_expect(presenter._die_label.text=="낙 · 0칸, 턴 종료","낙 is shown as 0 steps and the turn ends")
@@ -494,7 +585,7 @@ func _test_yut_throw() -> void:
 	_expect(not presenter.active and view.render_view.render_target_update_mode==SubViewport.UPDATE_DISABLED,"completion releases input and stops Yut rendering")
 	for value: int in ToolYut.FACES:
 		presenter.play(&"YUT",{"steps":value,"ends_turn":value==0,"reroll":value>=4,"details":{"face":value}},0.1)
-		presenter._update(YutThrow3D.RESULT_TIME+0.001)
+		presenter._update(RollPresenter.real_time(&"YUT", YutThrow3D.RESULT_TIME+0.001))
 		_expect(presenter._yut_3d==view,"all outcomes reuse the same four meshes and viewport")
 		_expect(view.displayed_value()==value and presenter.last_display==RollPresenter.YUT_NAMES[value],"six physical outcomes agree with engine values")
 		_expect(presenter._die_label.text.contains("한 번 더")==bool(value>=4),"only Yut/Mo results show reroll")
@@ -749,7 +840,10 @@ func _test_gauge_and_lock() -> void:
 		await process_frame
 	_expect(not _board._fx_busy, "연출이 끝나면 입력 잠금이 풀린다")
 	_expect(_board._presenter.last_display == str(int((rolled[0]["result"] as Dictionary)["steps"])), "연출의 최종 눈금이 엔진 결과와 같아야 한다 (%s)" % _board._presenter.last_display)
-	_expect(_board._center_banner.visible, "연출 뒤 중앙 결과 배너가 뜬다")
+	# 보드 위로 던진 주사위는 팝업·결과 띠 대신 주사위 바로 위에 "N칸 전진!"을 띄운 채 잠깐 남고, 입력은 이미 풀려 있다
+	_expect(_board._presenter.tossing and _board._presenter.visible and _board._presenter._die_label.text.contains("칸"), "투척 결과가 주사위 위에 뜬다 (%s)" % _board._presenter._die_label.text)
+	_expect(not _board._center_banner.visible, "투척 결과를 띠로 또 띄우지 않는다")
+	_expect(_board._presenter.get_theme_stylebox("panel") is StyleBoxEmpty, "네모난 팝업 상자가 없다")
 	# 키보드: R을 한 번 누르면 굴린다
 	_board.manager.force_timeout()
 	for i: int in 3:

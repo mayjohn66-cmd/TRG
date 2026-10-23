@@ -113,6 +113,7 @@ ko,en,ja
 %d칸,%d spaces,%dマス
 %d칸 이동 확정,Moving %d spaces,%dマス移動確定
 %d칸 전진,Move %d spaces,%dマス前進
+%d칸 전진!,Move %d!,%dマス前進！
 %d칸 전진%s,Move %d spaces%s,%dマス前進%s
 %d칸!,%d spaces!,%dマス！
 %d통,%d Pin,%d筒

@@ -40,6 +40,7 @@ var result_value: int = 1
 var settled: bool = false
 var _power: float = 0.5
 var _camera: Camera3D
+var _mat: MeshInstance3D
 var _time: float = 0.0
 
 
@@ -77,6 +78,7 @@ func _ready() -> void:
 	felt.albedo_color = Color("9cbb77")
 	mat.material_override = felt
 	render_view.add_child(mat)
+	_mat = mat
 	if _body_mesh == null:
 		_body_mesh = make_body_mesh()
 		_mark_meshes = [make_mark_mesh(false),make_mark_mesh(true)]
@@ -229,6 +231,12 @@ func displayed_value() -> int:
 			count += 1
 			marked = marked or index == MARKED_STICK
 	return 5 if count == 0 else count
+
+
+## 펠트 윷판을 보이거나 숨긴다 (보드 마당 위로 던질 때는 마당이 곧 윷판이다).
+func set_mat_visible(shown: bool) -> void:
+	if _mat != null:
+		_mat.visible = shown
 
 
 func stop_rendering() -> void:
