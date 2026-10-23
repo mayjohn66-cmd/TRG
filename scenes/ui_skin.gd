@@ -7,8 +7,39 @@ const INK: Color = Color("333333")
 const SOFT: Color = Color("747c64")
 const GREEN: Color = Color("5da530")
 const PATH: String = "res://assets/ui/trickcal/"
+const SIMPLE_CROPS: Dictionary = {
+	"panel": Rect2(0.01515152, 0.02312600, 0.96810207, 0.95693780),
+	"action": Rect2(0.01152074, 0.07034483, 0.97695853, 0.85103448),
+	"secondary": Rect2(0.01244813, 0.07034483, 0.97464269, 0.84965517),
+}
+static var _simple_cache: Dictionary = {}
+
+## Keep generated originals intact; prepare a display-size texture once per height.
+static func _simple_texture(asset: String, height: int) -> Texture2D:
+	var key: String = "%s:%d" % [asset, height]
+	if not _simple_cache.has(key):
+		var source: Texture2D = TextureCache.fetch(PATH + "simple_v01/" + asset + ".png")
+		var crop: Rect2 = SIMPLE_CROPS[asset]
+		var pixels: Image = source.get_image()
+		var region := Rect2i(crop.position * Vector2(pixels.get_size()), crop.size * Vector2(pixels.get_size()))
+		pixels = pixels.get_region(region)
+		var width: int = maxi(height, roundi(float(pixels.get_width()) * height / pixels.get_height()))
+		pixels.resize(width, height, Image.INTERPOLATE_LANCZOS)
+		_simple_cache[key] = ImageTexture.create_from_image(pixels)
+	return _simple_cache[key] as Texture2D
+
+static func _simple_style(asset: String, height: int, margin: float) -> StyleBoxTexture:
+	var box := StyleBoxTexture.new()
+	box.texture = _simple_texture(asset, height)
+	box.set_texture_margin_all(float(height) * 0.48)
+	box.set_content_margin_all(margin)
+	box.set_meta("ui_simple_asset", asset)
+	box.set_meta("ui_simple_height", height)
+	return box
 
 static func panel(kind: String = "panel", margin: float = 10.0) -> StyleBoxTexture:
+	if kind == "panel":
+		return _simple_style("panel", 64, margin)
 	var box := StyleBoxTexture.new()
 	box.texture = TextureCache.fetch(PATH + kind + ".png")
 	box.set_texture_margin_all(20.0)
@@ -21,8 +52,17 @@ static func button(item: Button, action: bool = false, horizontal: float = 12.0,
 	item.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	var prefix: String = "action" if action else "cancel"
 	for state: String in ["normal", "hover", "pressed", "disabled", "focus"]:
+		if state == "focus":
+			var focus := StyleBoxFlat.new()
+			focus.draw_center = false
+			focus.border_color = GREEN.darkened(0.25)
+			focus.set_border_width_all(2)
+			focus.set_content_margin_all(0)
+			item.add_theme_stylebox_override(state, focus)
+			continue
 		var texture_name: String = state if state in ["disabled", "focus"] else prefix + "_" + state
-		var box: StyleBoxTexture = panel(texture_name, vertical)
+		var box: StyleBoxTexture = _simple_style("action" if action else "secondary", 40, vertical)
+		box.modulate_color = {"normal": Color.WHITE, "hover": Color(1.04, 1.04, 1.04), "pressed": Color(0.93, 0.93, 0.93), "disabled": Color(0.72, 0.72, 0.72, 0.7)}[state]
 		box.set_meta("ui_button_texture", texture_name)
 		box.set_content_margin(SIDE_LEFT, horizontal)
 		box.set_content_margin(SIDE_RIGHT, horizontal)
@@ -42,11 +82,20 @@ static func _fit_button(item: Button) -> void:
 	if not normal.has_meta("ui_button_texture"):
 		return # A specialized skin, e.g. the circular roll button, took over.
 	var compact: bool = item.size.y > 0.0 and item.size.y < 40.0
+	var height: int = clampi(roundi(item.size.y), 24, 96) if item.size.y > 0.0 else 40
 	for state: String in ["normal", "hover", "pressed", "disabled", "focus"]:
 		var box: StyleBox = item.get_theme_stylebox(state)
+		if state == "focus" and box is StyleBoxFlat:
+			(box as StyleBoxFlat).set_corner_radius_all(roundi(height * 0.30))
 		if not box is StyleBoxTexture or not box.has_meta("ui_button_texture"):
 			continue
 		var image_box := box as StyleBoxTexture
+		if image_box.has_meta("ui_simple_asset"):
+			if int(image_box.get_meta("ui_simple_height")) != height:
+				image_box.texture = _simple_texture(str(image_box.get_meta("ui_simple_asset")), height)
+				image_box.set_texture_margin_all(float(height) * 0.48)
+				image_box.set_meta("ui_simple_height", height)
+			continue
 		var asset: String = str(box.get_meta("ui_button_texture"))
 		var target: String = PATH + ("compact_" if compact else "") + asset + ".png"
 		if image_box.texture.resource_path != target:
