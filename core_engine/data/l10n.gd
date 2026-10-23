@@ -536,14 +536,15 @@ static func _ensure_dict() -> void:
 		return
 	_dict_loaded = true
 	var pairs: Dictionary = {}
-	for entry: Dictionary in DataTable.load_file(TRANSLATIONS_PATH):
-		_add_pair(pairs, str(entry.get("ko", "")), str(entry.get("en", "")))
+	# 같은 원문이 여러 곳에 있으면 먼저 넣은 것이 이긴다: 밸런스 표 *_en → ui_strings.csv en → 코드 문구(translations.csv)
 	for path: String in DATA_TABLES:
 		for row: Dictionary in DataTable.load_file(path):
 			for column: String in DATA_TABLES[path]:
 				_add_pair(pairs, str(row.get(column, "")), str(row.get(column + "_en", "")))
 	for row: Dictionary in _table().values():
 		_add_pair(pairs, _cell(row, DEFAULT_LANG), _cell(row, "en"))
+	for entry: Dictionary in DataTable.load_file(TRANSLATIONS_PATH):
+		_add_pair(pairs, str(entry.get("ko", "")), str(entry.get("en", "")))
 	# 화면이 원문을 다듬어 쓰는 경우(줄마다 나누기, "◆ "·"[방어] " 머리표 떼기)도 찾도록 줄 단위·머리표 뗀 짝을 더한다
 	var head_regex := RegEx.create_from_string("^(?:[◆•※▶] |\\[[^\\]]+\\] )")
 	for ko: String in pairs.keys():

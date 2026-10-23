@@ -1,74 +1,74 @@
 key,ko,en,ja
-btn.roll,굴리기,Roll,
-btn.skill,필살기,Ultimate,
-btn.skill_used,사용됨,Used,
-btn.menu,메뉴,Menu,
-btn.menu_tip,메뉴 (ESC),Menu (ESC),
-btn.cancel,취소,Cancel,
-btn.emote,감정 표현,Emote,
-btn.sound_on,소리 켜짐,Sound on,
-btn.sound_off,소리 꺼짐,Sound off,
-btn.sound_tip,소리 켜기/끄기 (크기는 메뉴 > 게임 설정),Sound on/off (volume: Menu > Settings),
-btn.language_tip,언어 바꾸기 (번역이 없는 문구는 한국어로 표시됩니다),Change language (untranslated text shows in Korean),
-btn.feedback,피드백 / 버그 제보,Feedback / Bug report,
-btn.feedback_tip,개발자에게 의견이나 버그를 보냅니다 (게임 상태를 함께 첨부할 수 있어요),Send feedback or bugs to the developer (you can attach the game state),
-menu.title,메뉴,Menu,
-menu.continue,계속하기,Continue,
-menu.settings,게임 설정,Settings,
-menu.rulebook,규칙 책자,Rulebook,
-menu.exit,게임 나가기,Exit Game,
-menu.back,뒤로,Back,
-menu.reset,기본값으로,Reset,
-menu.exit_title,게임을 나갈까요?,Leave the game?,
-menu.exit_confirm,나가기,Leave,
-phase.round_start,라운드 시작 - 증강 드래프트,Round start - Augment draft,
-phase.turn_begin,턴 시작 - 카드·함정·소환 사용 가능,"Turn start - cards, traps, summons usable",
-phase.roll_wait,판정 도구 굴리기,Roll the Roll Tool,
-phase.interrupt,개입 타이밍 A - 카드 사용 가능,Interrupt A - cards usable,
-phase.select_pawn,이동할 말 선택,Pick a pawn to move,
-phase.moving,이동 중...,Moving...,
-phase.resolution,정산 / 개입 타이밍 B - 카드 사용 가능,Resolve / Interrupt B - cards usable,
-phase.npc,중립 NPC 페이즈,Neutral NPC phase,
-turn.mine,내 차례!,Your turn!,
-turn.other,%s 차례,%s's turn,
-turn.extra,[%s 한 턴 더!],[%s: one more turn!],
-draft.reveal_tag,증강 공개,Augments Revealed,
-draft.reveal,선택한 증강,Chosen Augments,
-rank.tag,순위 확정,Rank Locked,
-rank.banner,[%s%s %d위 확정!],[%s%s #%d locked in!],
-rank.body,%s\n남은 말은 보드에서 철수하고 레이스를 졸업합니다,%s\nRemaining pawns leave the board; graduated from the race,
-preview.finish,완주!,Finish!,
-log.finish,[완주] %s 완주!,[Finish] %s finished!,
-skill.tag,1회용 필살기,One-shot Ultimate,
-law.board_title,엘리아스 중앙 법전,Elias Codex,
-log.title,최근 기록,Recent log,
-log.title_full,액션 로그 (최근 %d줄),Action log (last %d lines),
-log.expand,로그 펼치기,Expand log,
-log.collapse,로그 접기,Collapse log,
-log.expand_tip,지금까지의 전체 기록을 펼쳐 봅니다 (단축키 L),Expand the full log so far (shortcut L),
-log.empty,아직 기록이 없습니다,No records yet,
-result.feedback,이번 판 후기 / 밸런스 피드백 남기기,Leave a review / balance feedback,
-feedback.title,피드백 / 버그 제보,Feedback / Bug report,
-feedback.kind_bug,버그·오류 제보,Bug / Error report,
-feedback.kind_balance,밸런스·기획 의견,Balance / Design idea,
-feedback.kind_fun,재미있던 점·기타,Fun stuff / Other,
-feedback.name,닉네임 / 연락처 (선택),Nickname / Contact (optional),
-feedback.name_hint,비워 두면 익명 교주,Anonymous Master if left blank,
-feedback.anonymous,익명 교주,Anonymous Master,
-feedback.body_hint,"어떤 상황이었는지, 혹은 개선 아이디어를 편하게 적어주세요!","Tell us what happened, or share your ideas freely!",
-feedback.count,%d / %d자,%d / %d chars,
-feedback.attach,정확한 확인을 위해 현재 게임 상태(라운드/보유 증강/최근 액션 로그 15줄)를 함께 첨부합니다,"For accuracy, the current game state (round / Augments held / last 15 log lines) is attached",
-feedback.send,개발자에게 바로 전송,Send to developer,
-feedback.copy,리포트+로그 복사하기,Copy report + log,
-feedback.close,닫기,Close,
-feedback.too_short,내용을 %d자 이상 적어 주세요,Please write at least %d characters,
-feedback.sending,보내는 중...,Sending...,
-feedback.sent,보냈습니다! 소중한 의견 감사합니다,Sent! Thanks for your feedback,
-feedback.send_failed,전송에 실패했습니다. [리포트+로그 복사하기]로 복사해 댓글이나 채팅창에 붙여넣어 주세요,Sending failed. Copy with [Copy report + log] and paste it in a comment or chat,
-feedback.cooldown,잠시 뒤에 다시 보낼 수 있어요 (%d초),You can send again shortly (%ds),
-feedback.no_target,아직 전송 주소가 없어요. [리포트+로그 복사하기]로 복사해 댓글이나 채팅창에 붙여넣어 주세요,No destination yet. Copy with [Copy report + log] and paste it in a comment or chat,
-feedback.form_opened,설문 창을 열었어요. 리포트가 클립보드에 복사되어 있으니 붙여넣어 주세요,Opened the survey. The report is in your clipboard; please paste it,
-feedback.copied,클립보드에 피드백과 게임 로그가 복사되었습니다! 댓글이나 채팅창에 붙여넣어 주세요!,Feedback and game log copied to the clipboard! Paste it in a comment or chat!,
-btn.speed,배속 %dx,Speed %dx,
-btn.speed_tip,진행 속도 (1x -> 2x -> 3x): 말 이동·연출·컴퓨터 생각 시간이 모두 빨라집니다,"Speed (1x -> 2x -> 3x): pawn moves, effects and CPU thinking all speed up",
-btn.speed_online_tip,온라인 대전은 모두가 같은 속도로 보도록 1x로 고정됩니다,Online games are locked to 1x so everyone sees the same speed,
+btn.roll,굴리기,Roll,振る
+btn.skill,필살기,Skill,必殺技
+btn.skill_used,사용됨,Used,使用済
+btn.menu,메뉴,Menu,メニュー
+btn.menu_tip,메뉴 (ESC),Menu (ESC),メニュー (ESC)
+btn.cancel,취소,Cancel,キャンセル
+btn.emote,감정 표현,Emote,スタンプ
+btn.sound_on,소리 켜짐,Sound ON,音 ON
+btn.sound_off,소리 꺼짐,Sound OFF,音 OFF
+btn.sound_tip,소리 켜기/끄기 (크기는 메뉴 > 게임 설정),Toggle sound (Volume in Menu > Settings),音のON/OFF (音量はメニュー > ゲーム設定)
+btn.language_tip,언어 바꾸기 (번역이 없는 문구는 한국어로 표시됩니다),Change language (Untranslated text shows in Korean),言語切替 (未翻訳の文は韓国語で表示されます)
+btn.feedback,피드백 / 버그 제보,Feedback / Bug Report,意見・バグ報告
+btn.feedback_tip,개발자에게 의견이나 버그를 보냅니다 (게임 상태를 함께 첨부할 수 있어요),Send feedback or bug reports to the dev (Game state can be attached),開発者に意見やバグを送ります (ゲーム状態を添付可能)
+menu.title,메뉴,Menu,メニュー
+menu.continue,계속하기,Resume,続ける
+menu.settings,게임 설정,Settings,ゲーム設定
+menu.rulebook,규칙 책자,Rulebook,ルールブック
+menu.exit,게임 나가기,Leave Game,ゲーム終了
+menu.back,뒤로,Back,戻る
+menu.reset,기본값으로,Reset to Default,初期値に戻す
+menu.exit_title,게임을 나갈까요?,Leave the game?,ゲームを終了しますか？
+menu.exit_confirm,나가기,Leave,終了する
+phase.round_start,라운드 시작 - 증강 드래프트,Round Start - Augment Draft,ラウンド開始 - 増強ドラフト
+phase.turn_begin,턴 시작 - 카드·함정·소환 사용 가능,Turn Start - Cards / Traps / Summons Open,ターン開始 - カード・罠・召喚使用可能
+phase.roll_wait,판정 도구 굴리기,Roll Judgment Tool,判定ツールを振る
+phase.interrupt,개입 타이밍 A - 카드 사용 가능,Timing A - Counter / Instant Cards Open,介入タイミングA - カード使用可能
+phase.select_pawn,이동할 말 선택,Select a Pawn to Move,動かす駒を選択
+phase.moving,이동 중...,Moving...,移動中...
+phase.resolution,정산 / 개입 타이밍 B - 카드 사용 가능,Resolution / Timing B - Cards Open,精算 / 介入タイミングB - カード使用可能
+phase.npc,중립 NPC 페이즈,Neutral NPC Phase,中立NPCフェーズ
+turn.mine,내 차례!,Your Turn!,自分の番！
+turn.other,%s 차례,%s's Turn,%sの番
+turn.extra,[%s 한 턴 더!],[%s Extra Turn!],[%s もう1ターン！]
+draft.reveal_tag,증강 공개,Augment Reveal,増強公開
+draft.reveal,선택한 증강,Selected Augments,選択した増強
+rank.tag,순위 확정,Rank Locked,順位確定
+rank.banner,[%s%s %d위 확정!],[%s%s Ranked #%d!],[%s%s %d位確定！]
+rank.body,%s\n남은 말은 보드에서 철수하고 레이스를 졸업합니다,%s\nRemaining pawns withdraw from the board and graduate from the race.,%s\n残りの駒はボードから撤収し、レースを卒業します。
+preview.finish,완주!,GOAL!,ゴール！
+log.finish,[완주] %s 완주!,[GOAL] %s finished!,[ゴール] %s 完走！
+skill.tag,1회용 필살기,1-Use Skill,1回限定必殺技
+law.board_title,엘리아스 중앙 법전,Elias Central Codex,エリアス中央法典
+log.title,최근 기록,Recent Log,最近の記録
+log.title_full,액션 로그 (최근 %d줄),Action Log (Last %d lines),アクションログ (最新%d行)
+log.expand,로그 펼치기,Expand Log,ログを開く
+log.collapse,로그 접기,Collapse Log,ログを閉じる
+log.expand_tip,지금까지의 전체 기록을 펼쳐 봅니다 (단축키 L),View full action history (Shortcut: L),これまでの全記録を表示します (ショートカット: L)
+log.empty,아직 기록이 없습니다,No records yet.,まだ記録がありません
+result.feedback,이번 판 후기 / 밸런스 피드백 남기기,Leave Match Review / Balance Feedback,今回の感想・バランス意見を送る
+feedback.title,피드백 / 버그 제보,Feedback / Bug Report,意見・バグ報告
+feedback.kind_bug,버그·오류 제보,Bug / Error Report,バグ・不具合報告
+feedback.kind_balance,밸런스·기획 의견,Balance / Design Idea,バランス・企画意見
+feedback.kind_fun,재미있던 점·기타,Fun Moments / Other,面白かった点・その他
+feedback.name,닉네임 / 연락처 (선택),Nickname / Contact (Optional),ニックネーム / 連絡先 (任意)
+feedback.name_hint,비워 두면 익명 교주,Leave blank for Anonymous,空欄なら匿名教主
+feedback.anonymous,익명 교주,Anon Cult Leader,匿名教主
+feedback.body_hint,"어떤 상황이었는지, 혹은 개선 아이디어를 편하게 적어주세요!",Feel free to describe what happened or share your ideas!,どんな状況だったか、改善アイデアなどを気軽に書いてください！
+feedback.count,%d / %d자,%d / %d chars,%d / %d文字
+feedback.attach,정확한 확인을 위해 현재 게임 상태(라운드/보유 증강/최근 액션 로그 15줄)를 함께 첨부합니다,Attach current game state (Round / Augments / Last 15 log lines) for accurate checking,正確な確認のため現在のゲーム状態(ラウンド/保有増強/最新ログ15行)を一緒に添付します
+feedback.send,개발자에게 바로 전송,Send Directly to Dev,開発者に直接送信
+feedback.copy,리포트+로그 복사하기,Copy Report + Log,レポート＋ログをコピー
+feedback.close,닫기,Close,閉じる
+feedback.too_short,내용을 %d자 이상 적어 주세요,Please enter at least %d characters.,%d文字以上入力してください
+feedback.sending,보내는 중...,Sending...,送信中...
+feedback.sent,보냈습니다! 소중한 의견 감사합니다,Sent! Thank you for your feedback!,送信完了！貴重なご意見ありがとうございます
+feedback.send_failed,전송에 실패했습니다. [리포트+로그 복사하기]로 복사해 댓글이나 채팅창에 붙여넣어 주세요,Send failed. Please click [Copy Report + Log] and paste it in comments or chat.,送信に失敗しました。[レポート＋ログをコピー]してコメントやチャットに貼り付けてください。
+feedback.cooldown,잠시 뒤에 다시 보낼 수 있어요 (%d초),You can send again in a moment (%ds),少し待ってから再送信できます (%d秒)
+feedback.no_target,아직 전송 주소가 없어요. [리포트+로그 복사하기]로 복사해 댓글이나 채팅창에 붙여넣어 주세요,No destination URL set. Please click [Copy Report + Log] and paste it in comments or chat.,送信先がありません。[レポート＋ログをコピー]してコメントやチャットに貼り付けてください。
+feedback.form_opened,설문 창을 열었어요. 리포트가 클립보드에 복사되어 있으니 붙여넣어 주세요,Opened survey form. Report is copied to clipboard—just paste it!,フォームを開きました。レポートがクリップボードにコピーされているので貼り付けてください。
+feedback.copied,클립보드에 피드백과 게임 로그가 복사되었습니다! 댓글이나 채팅창에 붙여넣어 주세요!,Feedback & game log copied to clipboard! Paste it in comments or chat!,クリップボードに意見とゲームログをコピーしました！コメント欄やチャットに貼り付けてください！
+btn.speed,배속 %dx,Speed %dx,倍速 %dx
+btn.speed_tip,진행 속도 (1x -> 2x -> 3x): 말 이동·연출·컴퓨터 생각 시간이 모두 빨라집니다,"Game Speed (1x -> 2x -> 3x): Speeds up pawn movement, cutscenes, and AI thinking.",進行速度 (1x -> 2x -> 3x): 駒の移動・演出・AIの思考時間がすべて速くなります
+btn.speed_online_tip,온라인 대전은 모두가 같은 속도로 보도록 1x로 고정됩니다,Locked to 1x in Online matches so everyone stays synced.,オンライン対戦では全員が同じ速度で見るため1xに固定されます
