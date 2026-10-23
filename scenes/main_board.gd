@@ -174,7 +174,7 @@ const CARD_SUMMARIES: Dictionary = {
 	&"ACT_04": "굴리기 전 사용! 이번 굴림 +4칸",
 	&"ACT_06": "특수 승리 기록 1개를 0으로 초기화",
 	&"ACT_07": "고른 한 변의 설치물 전부 붕괴",
-	&"ACT_08": "내 꼴찌 말 ↔ 1등 적 선두 말 위치 교환",
+	&"ACT_08": "내 꼴찌 말 ↔ 1등 적 선두 말 위치 교환 (내 말이 보드에 없으면 선두 사출 + 대기 말이 그 자리로)",
 	&"ACT_09": "적 1명과 6종 랜덤 미니게임 데스매치! 승자 말 +3칸, 패자 선두 말 사출",
 	&"ACT_10": "내 선두 말 앞 3칸의 적 사출 + 설치물 파괴",
 	&"ACT_11": "다음 굴림 결과를 1~6칸 중 직접 지정",
@@ -1094,6 +1094,10 @@ func _bind_state() -> void:
 		if outcome == &"swap":
 			_log_line("[타로] P%d의 운명의 수레바퀴: %s ↔ %s 위치 교환" % [player_id, _pawn_name(mine_id), _pawn_name(enemy_id)], Color("ffa94d"))
 			_announce_gate("타로", "X. 운명의 수레바퀴!", "%s과(와) %s의 위치가 뒤바뀝니다" % [_pawn_name(mine_id), _pawn_name(enemy_id)], Color("ffa94d"), null, 1.5)
+		elif outcome == &"eject_place":
+			_log_line("[타로] P%d의 운명의 수레바퀴: %s 장외 사출 → %s이(가) 그 자리로" % [player_id, _pawn_name(enemy_id), _pawn_name(mine_id)], Color("ffa94d"))
+			_announce_gate("타로", "X. 운명의 수레바퀴!", "%s이(가) 출발선으로 날아가고 %s이(가) 그 자리를 차지합니다" % [_pawn_name(enemy_id), _pawn_name(mine_id)], Color("ffa94d"), null, 1.5)
+			_set_hint(mine_id, {"arc": 52.0, "peak": 1.3, "dur": 0.6, "delay": 0.35})
 		else:
 			_log_line("[타로] 운명의 수레바퀴: %s 장외 사출" % _pawn_name(enemy_id), Color("ffa94d"))
 			_announce_gate("타로", "X. 운명의 수레바퀴!", "%s이(가) 출발선으로 날아갑니다" % _pawn_name(enemy_id), Color("ffa94d"), null, 1.5)

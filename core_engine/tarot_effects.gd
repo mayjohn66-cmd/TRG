@@ -45,6 +45,14 @@ static func trailing_own(state: GameState, player_id: int) -> PlayerPawn:
 	return best
 
 
+## 출발선에서 기다리는 내 말 하나 (아직 출발하지 않았고 완주하지 않은 말, 슬롯 번호가 가장 낮은 것). 없으면 null.
+static func waiting_own(state: GameState, player_id: int) -> PlayerPawn:
+	for pawn: PlayerPawn in state.pawns_of(player_id):
+		if not pawn.has_left_start and not pawn.is_finished and pawn.carrier == null:
+			return pawn
+	return null
+
+
 ## 무너지는 탑이 내리치는 타일: 말(업힌 말 포함)이 가장 많이 모인 타일 (동수면 적 말이 많은 쪽, 그다음 결승에 가까운 쪽).
 ## 어느 타일에도 말이 2개 이상 모여 있지 않으면 가장 앞선 적 말의 타일. 보드 위에 말이 없으면 -1.
 static func tower_target(state: GameState, player_id: int) -> int:

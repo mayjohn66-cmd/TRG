@@ -491,15 +491,33 @@ func test_wheel_swaps_my_trailing_pawn_with_the_leading_enemy() -> void:
 	check_eq(command.outcome, &"swap", "결과 기록")
 
 
-func test_wheel_ejects_the_enemy_when_i_have_no_pawn_on_the_field() -> void:
+func test_wheel_ejects_the_leader_and_puts_my_waiting_pawn_on_its_spot() -> void:
 	var state := make_state(2, 1)
 	place(state, 21, 12, [10, 11])
 	check(TarotEffects.trailing_own(state, 1) == null, "내 말은 보드 위에 없다")
+	var events: Array = []
+	state.wheel_turned.connect(func(player_id: int, mine_id: int, enemy_id: int, outcome: StringName) -> void: events.append([player_id, mine_id, enemy_id, outcome]))
 	var command := WheelOfFortuneCommand.new(1)
 	check(exec(state, command), "실행")
-	check_eq(command.outcome, &"eject", "장외 사출 결과")
+	check_eq(command.outcome, &"eject_place", "사출 + 내 대기 말을 그 자리에")
 	check_eq(state.get_pawn(21).current_tile_idx, 0, "가장 앞선 적 말이 출발선으로 사출")
 	check(not state.get_pawn(21).has_left_start, "출발 대기 상태로 복귀")
+	var mine: PlayerPawn = state.get_pawn(11)
+	check(mine.has_left_start and mine.current_tile_idx == 12, "기다리던 내 말(11)이 선두가 있던 12번 칸에")
+	check_eq(mine.step_history, [10, 11, 12] as Array[int], "그 자리의 진행 기록을 이어받는다")
+	check_eq(events, [[1, 11, 21, &"eject_place"]] as Array, "신호")
+	check_eq(int(state.law_stats[2].get(&"ejected", 0)), 1, "적 말 사출 기록")
+
+
+func test_wheel_only_ejects_when_i_have_no_waiting_pawn_either() -> void:
+	var state := make_state(2, 1)
+	place(state, 21, 12, [10, 11])
+	for pawn: PlayerPawn in state.pawns_of(1):
+		pawn.is_finished = true
+	var command := WheelOfFortuneCommand.new(1)
+	check(exec(state, command), "실행")
+	check_eq(command.outcome, &"eject", "기다리는 말도 없으면 사출만")
+	check_eq(state.get_pawn(21).current_tile_idx, 0, "선두 적 말은 출발선으로")
 
 
 func test_wheel_cannot_be_played_without_an_enemy_on_the_field() -> void:
