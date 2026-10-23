@@ -26,6 +26,15 @@ static func outlined(text: String, size_px: int, color: Color = Color.WHITE, out
 	return item
 
 
+## 윤곽 글자를 담은 고정 크기 한 줄 상자 (길면 흘러간다).
+static func _marquee(text: String, size_px: int, color: Color, outline: Color, outline_px: int, label_name: String) -> MarqueeLabel:
+	var box: MarqueeLabel = MarqueeLabel.create(text, size_px, color, Vector2.ZERO, HORIZONTAL_ALIGNMENT_LEFT, label_name)
+	box.custom_minimum_size = Vector2.ZERO
+	box.label().add_theme_color_override("font_outline_color", outline)
+	box.label().add_theme_constant_override("outline_size", outline_px)
+	return box
+
+
 # ---------------------------------------------------------------------------
 # 아이콘: 폰트에 이모지가 없어서 도형으로 직접 그린다
 # ---------------------------------------------------------------------------
@@ -366,23 +375,20 @@ static func mode_card(node_name: String, icon_kind: StringName, title_text: Stri
 	icon.position = Vector2(12, 12)
 	icon.size = Vector2(58, 58)
 	disc.add_child(icon)
-	var title := outlined(title_text, 44, Color.WHITE, dark, 9)
-	title.name = "CardTitle"
+	# 제목·부제는 칸 크기 고정: 번역이 길면 천천히 흘러간다 (카드 크기·글자 크기는 그대로)
+	var title: MarqueeLabel = _marquee(title_text, 44, Color.WHITE, dark, 9, "CardTitle")
 	title.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	title.offset_left = 126
 	title.offset_right = -96
 	title.offset_top = 16
 	title.offset_bottom = 78
-	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	button.add_child(title)
-	var sub := outlined(sub_text, 19, Color("fffbe6"), dark, 5)
-	sub.name = "CardSub"
+	var sub: MarqueeLabel = _marquee(sub_text, 19, Color("fffbe6"), dark, 5, "CardSub")
 	sub.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	sub.offset_left = 128
 	sub.offset_right = -96
 	sub.offset_top = 80
 	sub.offset_bottom = 108
-	sub.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	button.add_child(sub)
 	var arrow: TextureRect = HubArt.icon(&"next")
 	arrow.set_anchors_preset(Control.PRESET_TOP_RIGHT)
@@ -488,16 +494,10 @@ static func tip_bar(first_text: String, on_next: Callable) -> Dictionary:
 	dot_icon.offset_bottom = -6
 	dot.add_child(dot_icon)
 	row.add_child(dot)
-	var text := Label.new()
-	text.name = "TipText"
-	text.text = first_text
-	text.add_theme_font_size_override("font_size", 17)
-	text.add_theme_color_override("font_color", Color("2f4a2a"))
+	# 팁은 한 줄 고정: 상자보다 긴 팁(번역이 긴 언어 등)은 천천히 흘러가며 읽힌다 (띠의 크기·글자 크기는 그대로)
+	var text: MarqueeLabel = MarqueeLabel.create(first_text, 17, Color("2f4a2a"), Vector2(430, 38), HORIZONTAL_ALIGNMENT_LEFT, "TipText")
 	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	text.custom_minimum_size = Vector2(430, 0)
-	text.max_lines_visible = 2
+	text.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(text)
 	var next := Button.new()
 	next.name = "TipNext"

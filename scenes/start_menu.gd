@@ -37,11 +37,11 @@ var _ai_button: Button = null
 var _multi_button: Button = null
 var _quick_button: Button = null
 var _back_button: Button = null
-var _train_label: Label = null
+var _train_label: MarqueeLabel = null
 var _train_start: Button = null
 ## 놀이터 난이도 토글 (순한맛 · 보통맛 · 마라맛).
 var _difficulty_buttons: Dictionary = {}
-var _difficulty_note: Label = null
+var _difficulty_note: MarqueeLabel = null
 const DIFFICULTY_TONES: Dictionary = {&"mild": &"teal", &"normal": &"blue", &"spicy": &"pink"}
 const DIFFICULTY_NOTES: Dictionary = {
 	&"mild": "입문·힐링: 컴퓨터가 내 말을 자주 봐주고, 나를 노리는 공격 카드도 덜 써요",
@@ -252,7 +252,7 @@ func _refresh_hub() -> void:
 ## 팁 띠의 [>>]: 다음 게임 팁으로 넘긴다.
 func _next_tip() -> void:
 	_tip_index = (_tip_index + 1) % GameTips.TIPS.size()
-	(_hub_tip["label"] as Label).text = GameTips.TIPS[_tip_index]
+	(_hub_tip["label"] as MarqueeLabel).text = GameTips.TIPS[_tip_index]
 
 
 func _build_train_page(parent: VBoxContainer) -> void:
@@ -271,17 +271,14 @@ func _build_train_page(parent: VBoxContainer) -> void:
 	minus.name = "AiMinus"
 	minus.custom_minimum_size = Vector2(64, 64)
 	row.add_child(minus)
-	_train_label = LobbyTheme.label("", 52, LobbyTheme.BLUE)
-	_train_label.name = "AiCount"
-	_train_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_train_label.custom_minimum_size = Vector2(330, 0)
+	# 글 길이(언어)와 상관없이 칸 크기는 그대로: 길면 천천히 흘러간다
+	_train_label = MarqueeLabel.create("", 52, LobbyTheme.BLUE, Vector2(330, 72), HORIZONTAL_ALIGNMENT_CENTER, "AiCount")
 	row.add_child(_train_label)
 	var plus := LobbyTheme.small_button("+", change_ai_count.bind(1), &"blue", 34)
 	plus.name = "AiPlus"
 	plus.custom_minimum_size = Vector2(64, 64)
 	row.add_child(plus)
-	var note := LobbyTheme.label("컴퓨터와 겨룹니다. 제한 시간 없이 천천히 연습하세요.", 18, LobbyTheme.BLUE)
-	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var note: MarqueeLabel = MarqueeLabel.create("컴퓨터와 겨룹니다. 제한 시간 없이 천천히 연습하세요.", 18, LobbyTheme.BLUE, Vector2(560, 28), HORIZONTAL_ALIGNMENT_CENTER, "TrainNote")
 	_train_page.add_child(note)
 	# 난이도 3단 토글 (기본 보통맛, 고른 값은 다음 접속에도 남는다)
 	var levels := HBoxContainer.new()
@@ -293,16 +290,17 @@ func _build_train_page(parent: VBoxContainer) -> void:
 		var button := LobbyTheme.small_button(BotTemper.label(level), set_difficulty.bind(level), DIFFICULTY_TONES[level], 24)
 		button.name = "Difficulty_%s" % level
 		button.toggle_mode = true
+		button.clip_text = true  # 글이 길어도 버튼 크기는 그대로
 		button.custom_minimum_size = Vector2(170, 56)
 		levels.add_child(button)
 		_difficulty_buttons[level] = button
-	_difficulty_note = LobbyTheme.label("", 17, LobbyTheme.BLUE)
-	_difficulty_note.name = "DifficultyNote"
-	_difficulty_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_difficulty_note = MarqueeLabel.create("", 17, LobbyTheme.BLUE, Vector2(560, 26), HORIZONTAL_ALIGNMENT_CENTER, "DifficultyNote")
 	_train_page.add_child(_difficulty_note)
 	_refresh_difficulty()
 	_train_start = LobbyTheme.cream_button("게임 시작", start_ai_game, 40)
 	_train_start.name = "StartTraining"
+	_train_start.clip_text = true
+	_train_start.custom_minimum_size = Vector2(0, 78)  # 글꼴(언어)에 따라 줄 높이가 달라도 버튼 높이는 그대로
 	_train_page.add_child(_train_start)
 	_refresh_train_label()
 
