@@ -66,7 +66,7 @@ static var _bbcode: RegEx = null
 static var _peel_pattern: RegEx = null
 static var _tag_dict: Dictionary = {}  ## BBCode 태그를 뺀 원문 → [원문, 영어]
 static var _translation: Translation = null
-static var _base_fonts: Dictionary = {}  ## 글꼴 경로 → [원래 base_font, 원래 fallbacks]
+static var _base_fonts: Dictionary = {}  ## 글꼴 경로 → [원래 base_font, 원래 fallbacks, 그 FontVariation]
 
 
 ## 언어를 바꾼다. 모르는 언어 코드면 무시하고 false. 화면 노드는 TranslationServer를 통해 바로 다시 번역된다.
@@ -240,7 +240,8 @@ static func _apply_fonts() -> void:
 		if variation == null:
 			continue
 		if not _base_fonts.has(path):
-			_base_fonts[path] = [variation.base_font, variation.fallbacks.duplicate()]
+			# 바꾼 글꼴 리소스를 붙잡아 둔다: 아무도 안 쓰는 순간 풀려나면 다음 load()가 바뀌기 전 파일을 다시 읽는다
+			_base_fonts[path] = [variation.base_font, variation.fallbacks.duplicate(), variation]
 		var original: Array = _base_fonts[path]
 		if current_lang == "ja" and ResourceLoader.exists(JA_FONT_PATH):
 			var ja_font := load(JA_FONT_PATH) as Font

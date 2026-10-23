@@ -137,10 +137,11 @@ func test_japanese_swaps_the_theme_font_to_mochiy_pop() -> void:
 	var ja_font: Font = load(L10n.JA_FONT_PATH)
 	L10n.set_language("ja")
 	check(font.base_font == ja_font, "일본어: 테마 글꼴의 기본 글꼴이 Mochiy Pop One")
+	check((load("res://assets/fonts/game_small_font.tres") as FontVariation).base_font == ja_font, "일본어: 작은 글꼴도 Mochiy Pop One (리소스가 풀려나도 바뀐 채로)")
 	check(not font.fallbacks.is_empty() and font.fallbacks[0].resource_path.ends_with("ONE-Mobile-POP.otf"), "원래 글꼴은 대체 글꼴로")
 	L10n.set_language("ko")
 	check(font.base_font.resource_path.ends_with("ONE-Mobile-POP.otf"), "한국어: 원래 글꼴")
-	check(font.fallbacks.has(ja_font), "한국어·영어 화면에서도 일본어 글자는 Mochiy로 (대체 글꼴)")
+	check(not font.fallbacks.has(ja_font), "한국어·영어 화면의 대체 글꼴에는 Mochiy를 넣지 않는다 (줄 높이가 달라져 한국어 화면 배치가 바뀐다)")
 	for text: String in ["こんにちは", "振り", "漢字"]:
 		for code: int in text.to_utf32_buffer().to_int32_array():
 			check(ja_font.has_char(code), "Mochiy Pop One에 U+%04X" % code)

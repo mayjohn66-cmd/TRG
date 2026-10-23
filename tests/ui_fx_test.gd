@@ -1100,14 +1100,14 @@ func _test_view_modes() -> void:
 	GameSession.view_mode = MainBoard.ViewMode.TOP
 
 
-## 상단 UI는 왼쪽 [피드백 / 버그 제보]와 오른쪽 [배속]·[메뉴]뿐이고 (소리·언어는 설정), 메뉴 안에서 계속하기/게임 설정/전체 로그/새 게임/모드/치트/게임 나가기를 고른다.
+## 상단 UI는 왼쪽 [피드백 / 버그 제보]와 오른쪽 [KR / EN]·[배속]·[메뉴]뿐이고 (소리는 설정), 메뉴 안에서 계속하기/게임 설정/전체 로그/새 게임/모드/치트/게임 나가기를 고른다.
 func _test_game_menu() -> void:
 	var top_buttons: Array[Button] = []
 	for child: Node in _board.get_children():
 		var button: Button = child as Button
 		if button != null and button.visible and button.position.y < 44.0 and button.size.y <= 40.0:
 			top_buttons.append(button)
-	_expect(top_buttons.size() == 3 and top_buttons.has(_board._menu_button) and top_buttons.has(_board._feedback_button) and top_buttons.has(_board._speed_button), "상단에는 왼쪽 [피드백]·오른쪽 [배속]·[메뉴] 세 개만 남는다 (%d개)" % top_buttons.size())
+	_expect(top_buttons.size() == 4 and top_buttons.has(_board._menu_button) and top_buttons.has(_board._feedback_button) and top_buttons.has(_board._speed_button) and top_buttons.has(_board._language_button), "상단에는 왼쪽 [피드백]·오른쪽 [KR / EN]·[배속]·[메뉴] 네 개만 남는다 (%d개)" % top_buttons.size())
 	# [배속]: 1x -> 2x -> 3x -> 1x, Engine.time_scale에 걸린다
 	var speed_before: int = GameSession.game_speed
 	GameSession.game_speed = 1
