@@ -73,6 +73,22 @@ const SUB_LETTERS_EN: Dictionary = {
 	SubType.SHOGI_FU: "Fu", SubType.SHOGI_HISHA: "Hi", SubType.SHOGI_KAKU: "Ka", SubType.SHOGI_KEIMA: "Ke",
 	SubType.CHECKERS_KING: "K", SubType.LUDO_AVENGER: "Lu", SubType.POOL_8BALL: "8", SubType.KART_STAR: "★", SubType.MINESWEEPER_FLAG: "Ms",
 }
+## 일본어 화면의 보드판 라벨 (한 글자, 한자·가나).
+const PROMOTED_LETTERS_JA: Dictionary = {
+	SubType.SHOGI_FU: "と", SubType.SHOGI_HISHA: "竜", SubType.SHOGI_KAKU: "馬", SubType.SHOGI_KEIMA: "圭",
+}
+const SUB_LETTERS_JA: Dictionary = {
+	SubType.YUT_MAL: "ユ",
+	SubType.CHESS_PAWN: "ポ", SubType.CHESS_KNIGHT: "ナ", SubType.CHESS_BISHOP: "ビ", SubType.CHESS_ROOK: "ル", SubType.CHESS_QUEEN: "ク",
+	SubType.JANGGI_PO: "包", SubType.JANGGI_CHA: "車", SubType.JANGGI_MA: "馬", SubType.JANGGI_SANG: "象",
+	SubType.MONO_CAR: "カ", SubType.MONO_PLANE: "飛", SubType.MONO_SHIP: "船", SubType.MONO_DOG: "犬",
+	SubType.BADUK_BLACK: "黒", SubType.BADUK_WHITE: "白",
+	SubType.SHOGI_FU: "歩", SubType.SHOGI_HISHA: "飛", SubType.SHOGI_KAKU: "角", SubType.SHOGI_KEIMA: "桂",
+	SubType.CHECKERS_KING: "キ", SubType.LUDO_AVENGER: "ド", SubType.POOL_8BALL: "8", SubType.KART_STAR: "★", SubType.MINESWEEPER_FLAG: "旗",
+}
+## 언어별 보드판 라벨 표 (한국어는 SUB_LETTERS·PROMOTED_LETTERS).
+const LETTERS_BY_LANG: Dictionary = {"en": [SUB_LETTERS_EN, PROMOTED_LETTERS_EN], "ja": [SUB_LETTERS_JA, PROMOTED_LETTERS_JA]}
+const BASIC_LETTERS: Dictionary = {"ko": "말", "en": "P", "ja": "駒"}
 const SUB_ABILITIES: Dictionary = {
 	SubType.YUT_MAL: "처치 시 재굴림 +1 · 자동 업기",
 	SubType.CHESS_PAWN: "반환점 이상 도달 시 퀸 승급",
@@ -157,10 +173,10 @@ static func name_of_pawn(kind: GameEnums.PawnKind, unit_no: int, promoted: bool)
 
 static func letter_of_pawn(kind: GameEnums.PawnKind, unit_no: int, promoted: bool) -> String:
 	var sub: GameEnums.PawnSubType = sub_type_of(kind, unit_no)
-	var english: bool = L10n.current_lang == "en"
+	var tables: Array = LETTERS_BY_LANG.get(L10n.current_lang, [SUB_LETTERS, PROMOTED_LETTERS])
 	if promoted and PROMOTED_LETTERS.has(sub):
-		return PROMOTED_LETTERS_EN[sub] if english else PROMOTED_LETTERS[sub]
-	return (SUB_LETTERS_EN if english else SUB_LETTERS).get(sub, "")
+		return (tables[1] as Dictionary)[sub]
+	return (tables[0] as Dictionary).get(sub, "")
 
 
 ## 세부 기물의 필살기 ID. 없으면 빈 StringName.
@@ -190,12 +206,12 @@ static func display_set_name(kind: GameEnums.PawnKind) -> String:
 
 ## 보드판 위 말에 붙이는 라벨 (폰·나·비·룩·퀸 / 포·차·마·상 / 카·비·배·개 / 흑·백 / 윷). 기본 말은 빈 문자열.
 static func unit_letter(kind: GameEnums.PawnKind, unit_no: int) -> String:
-	return (SUB_LETTERS_EN if L10n.current_lang == "en" else SUB_LETTERS).get(sub_type_of(kind, unit_no), "")
+	return (LETTERS_BY_LANG.get(L10n.current_lang, [SUB_LETTERS])[0] as Dictionary).get(sub_type_of(kind, unit_no), "")
 
 
-## 진화하지 않은 기본 말의 보드판 라벨 (한국어 "말", 영어 "P").
+## 진화하지 않은 기본 말의 보드판 라벨 (한국어 "말", 영어 "P", 일본어 "駒").
 static func basic_letter() -> String:
-	return "P" if L10n.current_lang == "en" else "말"
+	return str(BASIC_LETTERS.get(L10n.current_lang, "말"))
 
 
 ## "체스:폰" 형태의 말 표기 (윷은 "윷말"). 기본 말은 "기본".

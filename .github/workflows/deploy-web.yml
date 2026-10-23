@@ -58,10 +58,12 @@ jobs:
       - name: Run UI smoke test in AI mode (1P vs 3AI bots)
         run: SMOKE_AI=1 godot --headless --path . -s res://tests/ui_smoke.gd
 
-      - name: Run English UI checks (no Hangul left on screen, KR/EN toggle)
+      - name: Run English / Japanese UI checks (no Hangul left on screen, language picker)
         run: |
           godot --headless --path . -s res://tests/ui_english_test.gd
+          UI_LANG=ja godot --headless --path . -s res://tests/ui_english_test.gd
           SMOKE_LANG=en SMOKE_AI=1 godot --headless --path . -s res://tests/ui_smoke.gd
+          SMOKE_LANG=ja SMOKE_AI=1 godot --headless --path . -s res://tests/ui_smoke.gd
 
       - name: Run roll effect test (gauge, spin, reels, card flips)
         run: |

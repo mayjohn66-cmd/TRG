@@ -503,7 +503,7 @@ var _stage_turn_key: String = ""
 var _menu_button: Button = null
 var _feedback_button: Button = null  ## 왼쪽 위 피드백 / 버그 제보 (소리·언어는 설정 화면에 있다)
 var _speed_button: Button = null  ## 오른쪽 위 [배속 1x] 진행 속도 (1x -> 2x -> 3x)
-var _language_button: LanguageToggle = null  ## [배속] 왼쪽의 [🌐 KR / EN] 언어 토글 (누르면 화면 글자가 바로 바뀐다)
+var _language_button: LanguageToggle = null  ## [배속] 왼쪽의 [🌐 한국어 ▾] 언어 버튼 (한국어 / ENGLISH / 日本語 중 고르면 화면 글자가 바로 바뀐다)
 ## 이 판을 시작한 시각 (피드백 스냅샷의 플레이 타임).
 var _game_started_msec: int = 0
 ## 액션 로그에 마지막으로 적은 라운드 구분선 (_log_round_divider).
@@ -1701,8 +1701,8 @@ func _build_status_strip() -> void:
 	_language_button = LanguageToggle.create(13, Color.WHITE)
 	_apply_button_style(_language_button, Color("3b4766"), 8)
 	Sfx.bind_button(_language_button)
-	_language_button.position = Vector2(1180 - 8 - 118, 10)
-	_language_button.size = Vector2(118, 32)
+	_language_button.position = Vector2(1180 - 8 - 132, 10)
+	_language_button.size = Vector2(132, 32)
 	add_child(_language_button)
 	if MobileSupport.touch_mode():
 		_apply_touch_top_bar()
