@@ -7387,15 +7387,23 @@ static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: f
 	var emblem: Control = _make_emblem(str(info["glyph"]), color, info.get("art") as Texture2D)
 	emblem.position = Vector2((AUGMENT_CARD_SIZE.x - 150.0) / 2.0, 14)
 	card.add_child(emblem)
-	var title := _make_label(str(info["title"]), 21, Color("ffffff"))
-	title.position = Vector2(10, 170)
-	title.size = Vector2(AUGMENT_CARD_SIZE.x - 20.0, 54)
+	var title_width: float = AUGMENT_CARD_SIZE.x - 36.0
+	var shown_title: String = L10n.t(str(info["title"]))
+	var title_px: int = CardSkin.fit_title_px(shown_title, title_width, 54.0, 20, 16)
+	var measured_width: float = CardSkin.FONT.get_string_size(shown_title, HORIZONTAL_ALIGNMENT_LEFT, -1, title_px).x
+	# Nearly one-line names should not leave just one or two syllables on a second line.
+	if measured_width > title_width and measured_width <= title_width * 1.2:
+		title_px = maxi(16, floori(title_px * title_width / measured_width))
+	var title := _make_label("", title_px, Color("ffffff"))
+	title.position = Vector2(18, 170)
+	title.size = Vector2(title_width, 54)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	title.autowrap_mode = TextServer.AUTOWRAP_WORD
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	title.add_theme_color_override("font_outline_color", Color.BLACK)
 	title.add_theme_constant_override("outline_size", 4)
+	title.text = str(info["title"])
 	card.add_child(title)
 	var desc := _make_label("", 17, Color("dee2e6"))
 	desc.position = Vector2(14, 240)
