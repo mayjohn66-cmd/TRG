@@ -168,9 +168,9 @@ func _run() -> void:
 	_expect(bowl.pour > 0.9, "핵불닭은 소스 폭포가 계속 쏟아진다 (%.2f)" % bowl.pour)
 	_expect((bowl.find_child("SauceParticles", true, false) as CPUParticles2D).emitting, "파티클이 날린다")
 	(menu.find_child("Difficulty_1", true, false) as Button).pressed.emit()
-	_expect(GameSession.bot_difficulty() == 1 and bowl.sauce == FireLevelPicker.SAUCE[1] and bowl.shake_offset() == Vector2.ZERO, "까르보: 크림 소스, 떨림 없음")
+	_expect(GameSession.bot_difficulty() == 1 and bowl.sauce == FireLevelPicker.SAUCE[1] and bowl.shake_offset() == Vector2.ZERO, "크림: 크림 소스, 떨림 없음")
 	await create_timer(1.2).timeout
-	_expect(bowl.pour < 0.05, "까르보는 소스를 붓고 줄기를 거둔다 (%.2f)" % bowl.pour)
+	_expect(bowl.pour < 0.05, "크림는 소스를 붓고 줄기를 거둔다 (%.2f)" % bowl.pour)
 	var lit: int = 0
 	(menu.find_child("Difficulty_3", true, false) as Button).pressed.emit()
 	for step: int in 5:

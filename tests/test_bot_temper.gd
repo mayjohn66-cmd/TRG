@@ -2,7 +2,7 @@
 # Class: class_name TestBotTemper
 # Role: 놀이터 난이도 = 불닭 Fire Level 1~5 파라미터 표(BotTemper.LEVELS) 검사.
 #       자비 확률(70%·35%·0%), 연속 처치 자비, 로제의 1등 아닌 사람 보호와 1위 봇 견제, 오리지널의 1위 최우선 견제,
-#       마라의 카드·필살기 적극성, 핵불닭의 사람 가중치 2배(잡는 수·대상 카드·함정 위치·이의 있음), 까르보의 법전 증강 회피, 옛 저장값 변환
+#       마라의 카드·필살기 적극성, 핵불닭의 사람 가중치 2배(잡는 수·대상 카드·함정 위치·이의 있음), 크림의 법전 증강 회피, 옛 저장값 변환
 class_name TestBotTemper
 extends TestCase
 
@@ -45,19 +45,19 @@ func test_level_table_and_labels() -> void:
 		var table: Dictionary = BotTemper.params(level)
 		for key: String in ["spare", "card_spare", "recent_mercy", "protect_rank", "leader_bonus", "kill_bonus", "human_weight", "card_passes", "skill_bar", "avoid_law"]:
 			check(table.has(key), "Lv.%d 표에 %s" % [level, key])
-	check_eq(float(BotTemper.params(1)["spare"]), 0.70, "까르보 자비 70%")
+	check_eq(float(BotTemper.params(1)["spare"]), 0.70, "크림 자비 70%")
 	check_eq(float(BotTemper.params(2)["spare"]), 0.35, "로제 자비 35%")
 	for level: int in [3, 4, 5]:
 		check_eq(float(BotTemper.params(level)["spare"]), 0.0, "Lv.%d 자비 0%%" % level)
 	check_eq(float(BotTemper.params(5)["human_weight"]), 2.0, "핵불닭 사람 가중치 2배")
 	check(int(BotTemper.params(4)["card_passes"]) > int(BotTemper.params(3)["card_passes"]), "마라는 카드를 더 적극적으로")
-	check_eq(BotTemper.label(1), "Lv.1 까르보", "이름")
+	check_eq(BotTemper.label(1), "Lv.1 크림", "이름")
 	check_eq(BotTemper.label(5), "Lv.5 핵불닭", "이름")
 	check_eq(BotTemper.tag(3), "[Lv.3 오리지널]", "디스코드 태그")
 
 
 func test_sanitize_and_saved_difficulty() -> void:
-	check_eq(BotTemper.sanitize("mild"), 1, "옛 순한맛 → 까르보")
+	check_eq(BotTemper.sanitize("mild"), 1, "옛 순한맛 → 크림")
 	check_eq(BotTemper.sanitize("normal"), 2, "옛 보통맛 → 로제")
 	check_eq(BotTemper.sanitize("spicy"), 4, "옛 마라맛 → 마라")
 	check_eq(BotTemper.sanitize("nonsense"), BotTemper.DEFAULT_LEVEL, "모르는 값은 기본")
@@ -74,7 +74,7 @@ func test_mercy_chance_by_level() -> void:
 	check_eq(BotTemper.race_rank(state, 1), 1, "사람이 1등 (보호 대상 아님)")
 	check_eq(BotBrain.choose_pawn(state, 2, 3), 21, "BotBrain은 잡는 수를 고른다")
 	var carbonara: float = _spare_rate(state, 1)
-	check(carbonara > 0.62 and carbonara < 0.78, "까르보는 약 70%% 다른 말을 전진 (%.2f)" % carbonara)
+	check(carbonara > 0.62 and carbonara < 0.78, "크림는 약 70%% 다른 말을 전진 (%.2f)" % carbonara)
 	var rose: float = _spare_rate(state, 2)
 	check(rose > 0.27 and rose < 0.43, "로제는 약 35%% (%.2f)" % rose)
 	for level: int in [3, 4, 5]:
@@ -88,7 +88,7 @@ func test_recent_mercy_only_on_soft_levels() -> void:
 	var rose: float = _spare_rate(state, 2)
 	check(rose > 0.4 and rose < 0.6, "로제 자비: 방금 잡힌 사람은 약 50%% 봐준다 (%.2f)" % rose)
 	var carbonara: float = _spare_rate(state, 1)
-	check(carbonara > 0.72 and carbonara < 0.88, "까르보 자비: 약 80%% (%.2f)" % carbonara)
+	check(carbonara > 0.72 and carbonara < 0.88, "크림 자비: 약 80%% (%.2f)" % carbonara)
 	check_eq(_spare_rate(state, 3), 0.0, "오리지널은 연속 처치도 봐주지 않는다")
 	state.law_stats[1] = {GameState.LAST_HIT_ROUND: state.round_number - 3}
 	var later: float = _spare_rate(state, 2)
@@ -157,7 +157,7 @@ func test_attack_spare_on_a_leading_human() -> void:
 			rng.seed = seed_value
 			if BotTemper.filter_card_plan(state, 2, plan, level, HUMAN, rng).is_empty():
 				dropped[level] += 1
-	check(dropped[1] > 290 and dropped[1] < 350, "까르보: 사람을 노리는 데스매치를 약 80%% 거른다 (%d/400)" % dropped[1])
+	check(dropped[1] > 290 and dropped[1] < 350, "크림: 사람을 노리는 데스매치를 약 80%% 거른다 (%d/400)" % dropped[1])
 	check(dropped[2] > 110 and dropped[2] < 170, "로제: 약 35%% (%d/400)" % dropped[2])
 	check_eq(dropped[3], 0, "오리지널: 1등인 사람은 견제한다")
 
@@ -213,4 +213,4 @@ func test_carbonara_draft_avoids_special_victory_laws() -> void:
 	var rng := RandomNumberGenerator.new()
 	for seed_value: int in 20:
 		rng.seed = seed_value
-		check_eq(offers[BotTemper.choose_augment(state, 2, offers, 1, rng)], other, "까르보는 법전 증강을 고르지 않는다")
+		check_eq(offers[BotTemper.choose_augment(state, 2, offers, 1, rng)], other, "크림는 법전 증강을 고르지 않는다")

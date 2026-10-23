@@ -2,7 +2,7 @@
 # Class: class_name FireLevelPicker
 # Role: 놀이터 난이도 고르기 = 불닭 매운맛 지표 Fire Level 1~5. 위에는 표정이 바뀌는 사도 얼굴 + 1~5칸 불꽃 게이지(칸을 누르면 그 단계),
 #       가운데에는 라면 그릇: 단계를 바꾸면 위에서 그 단계 소스가 쏟아지고(Tween) 국물·면발 색이 바로 바뀌며 단계별 파티클(CPUParticles2D)이 날린다.
-#       Lv.1 까르보 크림 소스 + 치즈 가루, Lv.2 로제 + 반짝이, Lv.3 빨간 액상스프 + 김가루, Lv.4 마라유 + 보라 스파크·산초, Lv.5 핵불닭 용암 소스 폭포 + 화염 + 그릇 상시 떨림.
+#       Lv.1 크림 소스 + 치즈 가루, Lv.2 로제 + 반짝이, Lv.3 빨간 액상스프 + 김가루, Lv.4 마라유 + 보라 스파크·산초, Lv.5 핵불닭 용암 소스 폭포 + 화염 + 그릇 상시 떨림.
 #       아래에는 단계 설명(흐르는 글). 글은 원문 한국어로 두고 화면에서 번역된다. AI 수치는 BotTemper.LEVELS가 맡는다.
 class_name FireLevelPicker
 extends VBoxContainer
@@ -15,7 +15,7 @@ const SAUCE: Dictionary = {1: Color("FFD1DC"), 2: Color("FF9E7A"), 3: Color("E62
 const CELL: Dictionary = {1: Color("ffd36b"), 2: Color("ffa04a"), 3: Color("f2552c"), 4: Color("b3123a"), 5: Color("ff0033")}
 const CELL_EMPTY: Color = Color("dcdbe8")
 const NOTES: Dictionary = {
-	1: "까르보: 컴퓨터가 70% 확률로 내 말을 봐주고, 나를 노리는 공격 카드도 거의 안 써요",
+	1: "크림: 컴퓨터가 70% 확률로 내 말을 봐주고, 나를 노리는 공격 카드도 거의 안 써요",
 	2: "로제: 가끔(35%) 봐주고, 내가 1등일 때만 견제해요. 평소엔 컴퓨터끼리 싸워요",
 	3: "오리지널: 봐주기 없는 공정한 승부! 지금 1등을 가장 먼저 견제해요",
 	4: "마라: 봐주기 없이 공격 카드·함정·필살기를 아낌없이 써요 (킬각 최우선)",
@@ -355,7 +355,7 @@ class RamenBowl:
 			points.append(at + Vector2(cos(angle) * radius.x, sin(angle) * radius.y))
 		draw_colored_polygon(points, color)
 
-	## 단계별 파티클: 까르보 치즈 가루, 로제 반짝이, 오리지널 김가루, 마라 보라 스파크·산초, 핵불닭 화염.
+	## 단계별 파티클: 크림 치즈 가루, 로제 반짝이, 오리지널 김가루, 마라 보라 스파크·산초, 핵불닭 화염.
 	func _configure_particles() -> void:
 		var rim: Rect2 = _rim() if size.x > 0.0 else Rect2(Vector2(170, 54), Vector2(220, 22))
 		var p: CPUParticles2D = _particles

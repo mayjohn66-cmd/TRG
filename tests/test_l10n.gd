@@ -262,3 +262,23 @@ func _scripts(folder: String) -> Array[String]:
 	for sub: String in dir.get_directories():
 		result.append_array(_scripts(folder.path_join(sub)))
 	return result
+
+
+## 영어 번역(translations.csv en 열)에 게임 글꼴에 없는 글자가 없다 (예: Rosé의 é는 웹에서 □로 깨진다).
+func test_english_translations_use_only_glyphs_in_the_game_font() -> void:
+	var font: Font = load("res://assets/fonts/game_ui_font.tres")
+	var file := FileAccess.open("res://content_trickcal/data/translations.csv", FileAccess.READ)
+	check(file != null, "translations.csv")
+	if file == null:
+		return
+	file.get_csv_line()
+	var missing: Dictionary = {}
+	while not file.eof_reached():
+		var row: PackedStringArray = file.get_csv_line()
+		if row.size() < 2:
+			continue
+		for index: int in row[1].length():
+			var code: int = row[1].unicode_at(index)
+			if code > 127 and not (code >= 0xAC00 and code <= 0xD7A3) and not font.has_char(code):
+				missing[row[1][index]] = row[0]
+	check(missing.is_empty(), "영어 번역에 글꼴에 없는 글자: %s" % str(missing))
