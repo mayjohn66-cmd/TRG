@@ -91,11 +91,39 @@ func _run() -> void:
 	L10n.set_language("en")
 	await process_frame
 	await process_frame
-	_expect(menu._train_label.scrolling(), "영어 \"AI 상대\" 문구는 칸보다 길어 흘러간다 (칸을 넓히지 않는다)")
+	# 짧은 칸(AI 인원·안내 문구)은 흐르지 않고 글자를 줄여 칸에 맞춘다
 	var inner: Label = menu._train_label.label()
-	var start_x: float = inner.position.x
+	_expect(not menu._train_label.scrolling() and menu._train_label.font_px() < 52 and menu._train_label.font_px() >= 30, "영어 \"AI 상대\" 문구는 흐르지 않고 글자를 줄인다 (%dpx)" % menu._train_label.font_px())
+	_expect(inner.get_minimum_size().x <= menu._train_label.size.x + 1.0, "줄인 글이 칸에 들어간다")
+	var train_note: MarqueeLabel = menu.find_child("TrainNoteBox", true, false)
+	_expect(train_note != null and not train_note.scrolling(), "영어 안내 문구도 줄여서 맞춘다")
+	# 긴 설명(난이도 설명)은 전광판처럼 순환한다: 글 뒤에 같은 글이 간격을 두고 이어 붙고, 되감기 없이 처음 모습으로 이어진다
+	menu.set_difficulty(4)
+	await process_frame
+	await process_frame
+	var marquee: MarqueeLabel = menu.find_child("DifficultyNoteBox", true, false)
+	var note_label: Label = marquee.label()
+	_expect(marquee.scrolling(), "영어 마라 설명은 칸보다 길어 흐른다")
+	var tail: Label = marquee.find_child("TailCopy", true, false)
+	var start_x: float = note_label.position.x
 	await create_timer(MarqueeLabel.HOLD + 0.8).timeout
-	_expect(inner.position.x < start_x, "멈췄다가 천천히 왼쪽으로 흐른다 (%.1f -> %.1f)" % [start_x, inner.position.x])
+	_expect(note_label.position.x < start_x, "멈췄다가 천천히 왼쪽으로 흐른다 (%.1f -> %.1f)" % [start_x, note_label.position.x])
+	_expect(tail != null and tail.visible and tail.text == note_label.text, "흐르는 글 뒤에 같은 글이 이어 붙는다")
+	_expect(tail != null and is_equal_approx(tail.position.x - note_label.position.x, note_label.get_minimum_size().x + MarqueeLabel.GAP), "이어 붙은 글은 글 폭 + 간격만큼 뒤에 있다")
+	var wrapped: bool = false
+	var rewound: bool = false
+	var previous: float = note_label.position.x
+	var deadline: int = Time.get_ticks_msec() + 30000
+	while Time.get_ticks_msec() < deadline and not wrapped:
+		await process_frame
+		if note_label.position.x > previous + 1.0 and is_equal_approx(note_label.position.x, 0.0):
+			wrapped = true  # 한 바퀴 돌아 단번에 처음 자리로 이어졌다
+		elif note_label.position.x > previous + 0.01:
+			rewound = true  # 조금씩 되돌아가는 되감기
+			break
+		previous = note_label.position.x
+	_expect(wrapped and not rewound, "되감기 없이 순환한다")
+	menu.set_difficulty(2)
 	L10n.set_language("ko")
 	await process_frame
 	await process_frame

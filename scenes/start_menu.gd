@@ -265,13 +265,13 @@ func _build_train_page(parent: VBoxContainer) -> void:
 	minus.custom_minimum_size = Vector2(64, 64)
 	row.add_child(minus)
 	# 글 길이(언어)와 상관없이 칸 크기는 그대로: 길면 천천히 흘러간다
-	_train_label = MarqueeLabel.create("", 52, LobbyTheme.BLUE, Vector2(330, 72), HORIZONTAL_ALIGNMENT_CENTER, "AiCount")
+	_train_label = MarqueeLabel.create("", 52, LobbyTheme.BLUE, Vector2(330, 72), HORIZONTAL_ALIGNMENT_CENTER, "AiCount").shrink_to_fit(30)  # 흐르지 않고 글자를 줄여 맞춘다
 	row.add_child(_train_label)
 	var plus := LobbyTheme.small_button("+", change_ai_count.bind(1), &"blue", 34)
 	plus.name = "AiPlus"
 	plus.custom_minimum_size = Vector2(64, 64)
 	row.add_child(plus)
-	var note: MarqueeLabel = MarqueeLabel.create("컴퓨터와 겨룹니다. 제한 시간 없이 천천히 연습하세요.", 18, LobbyTheme.BLUE, Vector2(560, 28), HORIZONTAL_ALIGNMENT_CENTER, "TrainNote")
+	var note: MarqueeLabel = MarqueeLabel.create("컴퓨터와 겨룹니다. 제한 시간 없이 천천히 연습하세요.", 18, LobbyTheme.BLUE, Vector2(560, 28), HORIZONTAL_ALIGNMENT_CENTER, "TrainNote").shrink_to_fit(13)
 	_train_page.add_child(note)
 	# 난이도: 불닭 매운맛 지표 Fire Level 1~5 (기본 Lv.2 로제, 고른 값은 다음 접속에도 남는다)
 	_fire_picker = FireLevelPicker.create(GameSession.bot_difficulty())
