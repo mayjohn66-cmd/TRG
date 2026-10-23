@@ -31,7 +31,7 @@ func test_tr_ui_formats_and_keeps_korean_source_for_english() -> void:
 	_with_lang("en", func() -> void:
 		check_eq(L10n.tr_ui("btn.roll"), "굴리기", "영어 화면도 원문은 한국어 (화면에 나갈 때 번역)")
 		check_eq(L10n.t(L10n.tr_ui("btn.roll")), "Roll", "화면 번역은 ui_strings.csv의 en 열")
-		check_eq(L10n.t(L10n.tr_ui("turn.other", ["컴퓨터 2"])), "CPU 2's turn", "형식 문구 + 인자도 번역"))
+		check_eq(L10n.t(L10n.tr_ui("turn.other", ["컴퓨터 2"])), "CPU 2's Turn", "형식 문구 + 인자도 번역"))
 	check_eq(L10n.tr_ui("no.such.key"), "no.such.key", "없는 키는 키 그대로 (빠진 문구가 바로 보이게)")
 
 
@@ -60,6 +60,9 @@ func test_pick_keeps_korean_for_english_and_uses_japanese_column() -> void:
 	check_eq(L10n.pick(row, "title", "en"), "랜덤 변이 물약", "영어는 원문을 두고 화면에서 번역 (KR <-> EN 전환이 이미 만든 글에도 먹는다)")
 	check_eq(L10n.pick(row, "title", "ja"), "変異ポーション", "일본어 열이 있으면 일본어")
 	check_eq(L10n.pick(row, "desc", "ja"), "설명", "일본어 열이 비어 있으면 한국어")
+	_with_lang("ja", func() -> void:
+		check_eq(L10n.tr_ui("btn.roll"), "振る", "일본어 화면 문구는 ui_strings.csv의 ja 열")
+		check_eq(GameData.text("cards", "ACT_09", "name"), "一騎討ちデスマッチ", "카드 이름 일본어"))
 
 
 func test_data_tables_have_english_for_every_korean_text_cell() -> void:
@@ -83,12 +86,12 @@ func test_data_tables_have_english_for_every_korean_text_cell() -> void:
 func test_loaded_augments_and_cards_show_english_on_screen() -> void:
 	_with_lang("en", func() -> void:
 		AugmentRegistry.reload()
-		check_eq(L10n.t(AugmentRegistry.get_def(&"UTIL_01").title), "[Re-Alchemy] Random Mutation Potion", "증강 제목 영어")
-		check_eq(L10n.t(AugmentRegistry.get_def(&"SUPER_11").title), "[Hyper] Runaway Train", "초증강 제목 영어")
+		check_eq(L10n.t(AugmentRegistry.get_def(&"UTIL_01").title), "[Pawn Reforge] Random Mutation Potion", "증강 제목 영어")
+		check_eq(L10n.t(AugmentRegistry.get_def(&"SUPER_11").title), "[Hyper Augment] Runaway Locomotive", "초증강 제목 영어")
 		check(not L10n.has_hangul(L10n.t(AugmentRegistry.get_def(&"SUPER_06").desc)), "초증강 설명({p1} 채운 뒤)도 영어: %s" % L10n.t(AugmentRegistry.get_def(&"SUPER_06").desc))
-		check_eq(L10n.t(GameData.text("cards", "ACT_09", "name")), "Duel Deathmatch", "카드 이름 영어")
+		check_eq(L10n.t(GameData.text("cards", "ACT_09", "name")), "1v1 Deathmatch", "카드 이름 영어")
 		check_eq(L10n.t(GameData.text("cards", "ACT_02", "name")), "BANG!", "원래 영어인 카드 이름은 그대로")
-		check_eq(L10n.t(GameData.text("dice", "YUT", "name")), "Birchwood Yut", "판정 도구 이름 영어"))
+		check_eq(L10n.t(GameData.text("dice", "YUT", "name")), "Birchwood Yut Sticks", "판정 도구 이름 영어"))
 	AugmentRegistry.reload()
 	check_eq(AugmentRegistry.get_def(&"UTIL_01").title, "[기물 재연성] 랜덤 변이 물약", "한국어로 돌아온다")
 
@@ -99,14 +102,14 @@ func test_templates_fill_numbers_and_translate_names() -> void:
 		check_eq(L10n.t("%d라운드 시작!"), "Round %d Start!", "틀 자체도 번역 (L10n.tf)")
 		check_eq(L10n.tf("%d라운드 시작!", [7]), "Round 7 Start!", "tf")
 		check_eq(L10n.t("말 2번이 [체스:폰] 기물로 바뀌었습니다"), "Pawn 2 became a [Chess: Pawn]", "인자(기물 이름)도 번역")
-		check_eq(L10n.t("[color=#ffe066][lb]법전] 투기장의 지배자 등록![/color]"), "[color=#ffe066][lb]Codex] Arena Overlord enacted![/color]", "BBCode 틀")
-		check_eq(L10n.t("◆ 기본 말 1개 → [체스] 폰\n◆ 패시브: 반환점 이상 도달 시 퀸 승급"), "◆ 1 Basic pawn → [Chess] Pawn\n◆ Passive: Promotes to Queen past the halfway corner", "여러 줄")
+		check_eq(L10n.t("[color=#ffe066][lb]법전] 투기장의 지배자 등록![/color]"), "[color=#ffe066][lb]Codex] Ruler of the Colosseum enacted![/color]", "BBCode 틀")
+		check_eq(L10n.t("◆ 기본 말 1개 → [체스] 폰\n◆ 패시브: 반환점 이상 도달 시 퀸 승급"), "◆ 1 Basic Pawn → [Chess] Pawn\n◆ Passive: Promotes to Queen upon reaching the midpoint+", "여러 줄")
 		check_eq(L10n.t("템포 업 Lv.2 · 광기"), "Tempo Up Lv.2 · Frenzy", "구분자로 이은 글")
 		check_eq(L10n.t("마"), "M", "글자 하나짜리 라벨은 아이콘 글자")
 		check_eq(L10n.t("★ 3위 확정! (승리 (말 4개 모두 완주))"), "★ #3 locked in! (Victory (all 4 pawns finished))", "겹친 괄호")
-		check_eq(L10n.t("1번 [윷말]→[쇼기:각행], 3번 [장기:포]→[쇼기:보병]"), "#1 [Yut Pawn]→[Shogi: Kaku], #3 [Janggi: Cannon]→[Shogi: Fuhyo]", "[%s] 자리는 닫는 괄호를 넘지 않는다")
-		check_eq(L10n.t("[color=#868e96][lb]R3][/color] ■ [color=#aaaaaa]컴퓨터 2[/color] : [lb]기본 주사위] 굴림 → 6칸"), "[color=#868e96][lb]R3][/color] ■ [color=#aaaaaa]CPU 2[/color] : [lb]Basic Die] roll → 6 tiles", "액션 로그 한 줄 ([lb] 이스케이프 유지)")
-		check_eq(L10n.t("[lb]방어 보급] 절대 방어 패키지 선택! 생떼 카드 획득: 교단의 칙령"), "Picked [lb]Defense Supply] Absolute Defense Pack! Tantrum Cards gained: Cult Decree", "문장 두 개를 이은 글")
+		check_eq(L10n.t("1번 [윷말]→[쇼기:각행], 3번 [장기:포]→[쇼기:보병]"), "#1 [Yut Token]→[Shogi: Kaku], #3 [Janggi: Cannon]→[Shogi: Fuhyo]", "[%s] 자리는 닫는 괄호를 넘지 않는다")
+		check_eq(L10n.t("[color=#868e96][lb]R3][/color] ■ [color=#aaaaaa]컴퓨터 2[/color] : [lb]기본 주사위] 굴림 → 6칸"), "[color=#868e96][lb]R3][/color] ■ [color=#aaaaaa]CPU 2[/color] : [lb]Standard Dice] roll → 6 spaces", "액션 로그 한 줄 ([lb] 이스케이프 유지)")
+		check_eq(L10n.t("[lb]방어 보급] 절대 방어 패키지 선택! 생떼 카드 획득: 교단의 칙령"), "Picked [lb]Defense Supply] Absolute Defense Pack! Tantrum Cards gained: Order Decree", "문장 두 개를 이은 글")
 		check_eq(L10n.t("플레이어 이름 없음 xyz"), L10n.t("플레이어 이름 없음 xyz"), "모르는 글도 멈추지 않는다"))
 	check_eq(L10n.t("3라운드 시작!"), "3라운드 시작!", "한국어 화면은 그대로")
 

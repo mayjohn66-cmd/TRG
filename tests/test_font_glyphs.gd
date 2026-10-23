@@ -10,6 +10,7 @@ const SOURCE_DIRS: Array[String] = ["res://scenes", "res://core_engine", "res://
 
 func test_every_displayed_character_exists_in_the_game_font() -> void:
 	var font: Font = load("res://assets/fonts/game_ui_font.tres")
+	var ja_font: Font = load(L10n.JA_FONT_PATH)  # 표의 일본어 열(가나·한자)은 일본어 화면에서 Mochiy Pop One으로 그린다
 	var missing: Array[String] = []
 	for dir_path: String in SOURCE_DIRS:
 		var dir := DirAccess.open(dir_path)
@@ -32,6 +33,7 @@ func test_every_displayed_character_exists_in_the_game_font() -> void:
 					var code: int = shown.unicode_at(index)
 					if code < 0x2000 or (code >= 0xAC00 and code <= 0xD7A3) or (code >= 0xFE00 and code <= 0xFE0F) or code == 0xFEFF:
 						continue
-					if not font.has_char(code):
+					var japanese: bool = (code >= 0x3000 and code <= 0x30FF) or (code >= 0x4E00 and code <= 0x9FFF) or (code >= 0xFF00 and code <= 0xFFEF)
+					if not font.has_char(code) and not (japanese and file_name.ends_with(".csv") and ja_font.has_char(code)):
 						missing.append("%s:%d U+%X" % [file_name, line_no, code])
 	check(missing.is_empty(), "게임 글꼴에 없는 글자 %d개: %s" % [missing.size(), ", ".join(PackedStringArray(missing.slice(0, 12)))])
