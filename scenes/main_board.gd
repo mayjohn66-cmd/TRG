@@ -9964,13 +9964,16 @@ class RevengeFire extends Control:
 		draw_colored_polygon(points, color)
 
 
-## 칸 위 건축물 모형 (코드로 그린다): 호텔은 주인 색 건물에 붉은 지붕과 불 켜진 창, 지뢰는 가시 돋친 검은 공과 깜빡이는 빨간 불.
+## 설치형 기물: 투명 호텔·지뢰 그림과 주인 색 받침. 코드 모형은 파일 누락 시에만 사용한다.
 class BoardStructure extends Node2D:
 	var kind: StringName = &"hotel"
 	var color: Color = Color("ffd43b")
 	const INK: Color = Color("2b2420")
+	var artwork: Dictionary = {}
 
 	func _ready() -> void:
+		var filename: String = "MINE.png" if kind == &"mine" else "HOTEL.png"
+		artwork = PawnArt.load_sprite(["res://assets/board/structures/" + filename])
 		set_process(kind == &"mine")
 
 	func _process(_delta: float) -> void:
@@ -9978,10 +9981,32 @@ class BoardStructure extends Node2D:
 
 	func _draw() -> void:
 		_ellipse(Vector2(0, 2), Vector2(16, 6), Color(0, 0, 0, 0.28))
+		if not artwork.is_empty():
+			_draw_artwork()
+			return
 		if kind == &"mine":
 			_draw_mine()
 		else:
 			_draw_hotel()
+
+	func _draw_artwork() -> void:
+		# The foundation stays independent of the neutral sprite so all four
+		# owners remain identifiable without tinting roofs, windows or the lamp.
+		_ellipse(Vector2(0, 2), Vector2(16, 5.5), color.darkened(0.5), INK)
+		_ellipse(Vector2.ZERO, Vector2(16, 5), color, color.lightened(0.45))
+		var region: Rect2 = artwork.region
+		var bounds := Vector2(30, 27) if kind == &"mine" else Vector2(32, 40)
+		var factor: float = minf(bounds.x / region.size.x, bounds.y / region.size.y)
+		var size: Vector2 = region.size * factor
+		var rect := Rect2(Vector2(-size.x / 2.0, -size.y), size)
+		draw_texture_rect_region(artwork.texture, rect, region)
+		if kind == &"mine":
+			# Native image's red dome is 18% down from the visible silhouette.
+			# Pulse its light only; the mine itself stays planted on the tile.
+			var lamp := Vector2(0, -size.y * 0.82)
+			var pulse: float = 0.5 + 0.5 * sin(Time.get_ticks_msec() / 1000.0 * 6.0)
+			_ellipse(lamp, Vector2(3.2, 2.1), Color(1.0, 0.12, 0.08, 0.18 * pulse))
+			_ellipse(lamp, Vector2(1.4, 0.9), Color(1.0, 0.7, 0.5, 0.65 * pulse))
 
 	func _draw_hotel() -> void:
 		var front: Color = color.lightened(0.25)
