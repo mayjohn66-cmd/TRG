@@ -18,10 +18,13 @@ func publish(topic: String, text: String, done: Callable) -> void:
 	var request := _new_request()
 	request.request_completed.connect(func(result: int, code: int, _headers: PackedStringArray, _body: PackedByteArray) -> void:
 		request.queue_free()
+		NetTrace.step("ntfy.publish.done", "topic=%s result=%d http=%d" % [topic, result, code])
 		if done.is_valid():
 			done.call(result == HTTPRequest.RESULT_SUCCESS and code >= 200 and code < 300))
+	NetTrace.step("ntfy.publish", "topic=%s bytes=%d" % [topic, text.length()])
 	var error: int = request.request("%s/%s" % [server, topic], PackedStringArray(["Content-Type: text/plain"]), HTTPClient.METHOD_POST, text)
 	if error != OK:
+		NetTrace.step("ntfy.publish.error", "topic=%s error=%d" % [topic, error])
 		request.queue_free()
 		if done.is_valid():
 			done.call(false)
@@ -32,13 +35,18 @@ func fetch(topic: String, done: Callable) -> void:
 	request.request_completed.connect(func(result: int, code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
 		request.queue_free()
 		if result != HTTPRequest.RESULT_SUCCESS or code < 200 or code >= 300:
+			NetTrace.step("ntfy.fetch.failed", "topic=%s result=%d http=%d" % [topic, result, code])
 			if done.is_valid():
 				done.call(false, [])
 			return
+		var messages: Array = parse_poll_body(body.get_string_from_utf8())
+		NetTrace.step("ntfy.fetch.done", "topic=%s messages=%d" % [topic, messages.size()])
 		if done.is_valid():
-			done.call(true, parse_poll_body(body.get_string_from_utf8())))
+			done.call(true, messages))
+	NetTrace.step("ntfy.fetch", "topic=%s" % topic)
 	var error: int = request.request("%s/%s/json?poll=1&since=all" % [server, topic])
 	if error != OK:
+		NetTrace.step("ntfy.fetch.error", "topic=%s error=%d" % [topic, error])
 		request.queue_free()
 		if done.is_valid():
 			done.call(false, [])
@@ -53,6 +61,7 @@ func fetch_many(topics: Array, since_seconds: int, done: Callable) -> void:
 	request.request_completed.connect(func(result: int, code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
 		request.queue_free()
 		if result != HTTPRequest.RESULT_SUCCESS or code < 200 or code >= 300:
+			NetTrace.step("ntfy.fetch_many.failed", "topics=%d result=%d http=%d" % [topics.size(), result, code])
 			if done.is_valid():
 				done.call(false, by_topic)
 			return
@@ -64,11 +73,16 @@ func fetch_many(topics: Array, since_seconds: int, done: Callable) -> void:
 			var topic_name: String = str(event.get("topic", ""))
 			if str(event.get("event", "")) == "message" and by_topic.has(topic_name):
 				(by_topic[topic_name] as Array).append(str(event.get("message", "")))
+		var counts: PackedStringArray = []
+		for topic_key: String in by_topic.keys():
+			counts.append("%s=%d" % [topic_key, (by_topic[topic_key] as Array).size()])
+		NetTrace.step("ntfy.fetch_many.done", ", ".join(counts))
 		if done.is_valid():
 			done.call(true, by_topic))
 	var since: String = "all" if since_seconds <= 0 else "%ds" % since_seconds
 	var error: int = request.request("%s/%s/json?poll=1&since=%s" % [server, ",".join(PackedStringArray(topics)), since])
 	if error != OK:
+		NetTrace.step("ntfy.fetch_many.error", "error=%d" % error)
 		request.queue_free()
 		if done.is_valid():
 			done.call(false, by_topic)

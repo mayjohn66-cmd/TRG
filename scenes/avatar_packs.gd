@@ -73,6 +73,35 @@ static func when_ready(owner: Node, callback: Callable) -> void:
 			node.pack_ready.disconnect(relay), CONNECT_ONE_SHOT)
 
 
+## 이 아바타 묶음 안 그림들의 UID를 엔진에 알린다. 묶음에서 읽는 감정·대기 .tres는 그림을 uid://로 가리키는데, 본체의 UID 목록에는 묶음 그림이 없어서
+## 읽을 때마다 [invalid UID ... using text path instead] 경고가 수십~수백 줄 찍혔다 (웹 콘솔 출력이 느려 로딩이 끊겼다). 그림의 .import 파일에 적힌 UID를 먼저 등록하면 경고 없이 읽힌다.
+## 묶음을 붙인 직후, 그 묶음의 .tres를 처음 읽기 전에 부른다. 새로 등록한 UID 수를 돌려준다.
+static func register_uids(id: StringName) -> int:
+	var added: int = 0
+	var folder: String = AvatarSlot.character_path(id)
+	for sub: String in ["frames", "idle", "idle_hq"]:
+		var directory: String = "%s/%s" % [folder, sub]
+		var dir: DirAccess = DirAccess.open(directory)
+		if dir == null:
+			continue
+		for file_name: String in dir.get_files():
+			if not file_name.ends_with(".import"):
+				continue
+			var uid: int = uid_from_import_text(FileAccess.get_file_as_string("%s/%s" % [directory, file_name]))
+			if uid != ResourceUID.INVALID_ID and not ResourceUID.has_id(uid):
+				ResourceUID.add_id(uid, "%s/%s" % [directory, file_name.trim_suffix(".import")])
+				added += 1
+	return added
+
+
+## .import 파일 내용에서 [remap] uid="uid://..." 를 읽는다 (없으면 INVALID_ID).
+static func uid_from_import_text(text: String) -> int:
+	for line: String in text.split("\n"):
+		if line.begins_with("uid=\""):
+			return ResourceUID.text_to_id(line.trim_prefix("uid=\"").strip_edges().trim_suffix("\""))
+	return ResourceUID.INVALID_ID
+
+
 ## 묶음 주소: 페이지 주소 기준 avatars/<id>.pck (?v=버전으로 배포마다 브라우저 캐시를 새로 받는다).
 static func pack_url(base: String, id: StringName, version: String) -> String:
 	var root: String = base if base.ends_with("/") else base.get_base_dir() + "/"
@@ -121,7 +150,10 @@ func _on_completed(result: int, code: int, _headers: PackedStringArray, body: Pa
 	var ok: bool = false
 	if result == HTTPRequest.RESULT_SUCCESS and code == 200 and not body.is_empty():
 		var path: String = _write_pack(_loading, body)
-		ok = path != "" and ProjectSettings.load_resource_pack(path, false) and is_ready(_loading)
+		ok = path != "" and ProjectSettings.load_resource_pack(path, false)
+		if ok:
+			register_uids(_loading)  # 이 묶음의 .tres를 읽기 전에 그림 UID부터 등록한다
+		ok = ok and is_ready(_loading)
 	_finish(ok)
 
 

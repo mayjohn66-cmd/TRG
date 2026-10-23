@@ -47,7 +47,7 @@ class DieView extends Control:
 			var tag_style: StyleBoxFlat = _box(Color("eaf4ce"), UiSkin.GREEN, 2)
 			tag_style.set_corner_radius_all(8)
 			draw_style_box(tag_style, tag)
-			draw_string(ThemeDB.fallback_font, tag.position + Vector2(0.0, 15.0), "고정", HORIZONTAL_ALIGNMENT_CENTER, tag.size.x, 14, UiSkin.INK)
+			draw_string(ThemeDB.fallback_font, tag.position + Vector2(0.0, 15.0), L10n.t("고정"), HORIZONTAL_ALIGNMENT_CENTER, tag.size.x, 14, UiSkin.INK)
 
 	static func _box(color: Color, border: Color, width: int) -> StyleBoxFlat:
 		var style := StyleBoxFlat.new()

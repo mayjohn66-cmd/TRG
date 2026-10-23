@@ -27,6 +27,12 @@ var _gather_serial: int = 0
 var _gathering: bool = false
 var _done: bool = false
 var _tree: SceneTree = null
+var _last_state: int = -1
+var _last_gathering: int = -1
+
+## WebRTCPeerConnection.ConnectionState 이름 (로그용).
+const STATE_NAMES: Array[String] = ["new", "connecting", "connected", "disconnected", "failed", "closed"]
+const GATHERING_NAMES: Array[String] = ["new", "gathering", "complete"]
 
 
 func _init(existing_connection: RefCounted = null) -> void:
@@ -49,6 +55,7 @@ func setup(ice_servers: Array = DEFAULT_ICE_SERVERS) -> bool:
 func start_offer(peer_id: int) -> void:
 	_peer_id = peer_id
 	_kind = LobbyCode.KIND_OFFER
+	NetTrace.step("rtc.create_offer", "peer=%d" % peer_id)
 	var error: int = int(connection.call("create_offer"))
 	if error != OK:
 		_fail("초대 코드를 만들지 못했습니다 (오류 %d)." % error)
@@ -65,8 +72,10 @@ func accept_offer(code_text: String) -> void:
 		return
 	_peer_id = int(decoded["peer_id"])
 	_kind = LobbyCode.KIND_ANSWER
+	NetTrace.step("rtc.accept_offer", "peer=%d remote_candidates=%d" % [_peer_id, (decoded["candidates"] as Array).size()])
 	var error: int = int(connection.call("set_remote_description", "offer", str(decoded["sdp"])))
 	if error != OK:
+		NetTrace.step("rtc.set_remote_offer.failed", "error=%d" % error)
 		_fail("초대 코드를 적용하지 못했습니다 (오류 %d)." % error)
 		return
 	_apply_remote_candidates(decoded["candidates"])
@@ -84,8 +93,10 @@ func accept_answer(code_text: String) -> bool:
 	if int(decoded["peer_id"]) != _peer_id:
 		_fail("다른 좌석의 응답 코드입니다 (좌석 %d 코드가 필요합니다)." % _peer_id)
 		return false
+	NetTrace.step("rtc.accept_answer", "peer=%d remote_candidates=%d" % [_peer_id, (decoded["candidates"] as Array).size()])
 	var error: int = int(connection.call("set_remote_description", "answer", str(decoded["sdp"])))
 	if error != OK:
+		NetTrace.step("rtc.set_remote_answer.failed", "error=%d" % error)
 		_fail("응답 코드를 적용하지 못했습니다 (오류 %d)." % error)
 		return false
 	_apply_remote_candidates(decoded["candidates"])
@@ -105,10 +116,28 @@ func close() -> void:
 func _apply_remote_candidates(candidates: Array) -> void:
 	for entry: Variant in candidates:
 		var candidate: Dictionary = entry
-		connection.call("add_ice_candidate", str(candidate["media"]), int(candidate["index"]), str(candidate["name"]))
+		var error: Variant = connection.call("add_ice_candidate", str(candidate["media"]), int(candidate["index"]), str(candidate["name"]))
+		NetTrace.step("rtc.add_remote_candidate", "type=%s result=%s" % [NetTrace.candidate_type(str(candidate["name"])), str(error)])
+
+
+## 연결 상태가 바뀌었으면 로그로 남기고 지금 상태를 돌려준다 (WebRTCPeerConnection.ConnectionState, 알 수 없으면 -1). LobbyService가 매 프레임 부른다.
+func poll_state() -> int:
+	if connection == null or not connection.has_method("get_connection_state"):
+		return -1
+	var state: int = int(connection.call("get_connection_state"))
+	if state != _last_state:
+		_last_state = state
+		NetTrace.step("rtc.connection_state", "peer=%d %s" % [_peer_id, STATE_NAMES[state] if state >= 0 and state < STATE_NAMES.size() else str(state)])
+	if connection.has_method("get_gathering_state"):
+		var gathering: int = int(connection.call("get_gathering_state"))
+		if gathering != _last_gathering:
+			_last_gathering = gathering
+			NetTrace.step("rtc.gathering_state", "peer=%d %s" % [_peer_id, GATHERING_NAMES[gathering] if gathering >= 0 and gathering < GATHERING_NAMES.size() else str(gathering)])
+	return state
 
 
 func _on_description_created(type: String, sdp: String) -> void:
+	NetTrace.step("rtc.%s_created" % type, "peer=%d sdp_len=%d" % [_peer_id, sdp.length()])
 	connection.call("set_local_description", type, sdp)
 	_local_sdp = sdp
 	_gathering = true
@@ -121,6 +150,7 @@ func _on_candidate_created(media: String, index: int, name: String) -> void:
 	if _done:
 		return
 	_candidates.append({"media": media, "index": index, "name": name})
+	NetTrace.step("rtc.local_candidate", "peer=%d #%d type=%s" % [_peer_id, _candidates.size(), NetTrace.candidate_type(name)])
 	if _gathering:
 		_arm_quiet_timer()
 
@@ -140,6 +170,7 @@ func _finish_gathering() -> void:
 		return
 	_gathering = false
 	_done = true
+	NetTrace.step("rtc.gathering_done", "peer=%d kind=%s candidates=%d" % [_peer_id, _kind, _candidates.size()])
 	if _candidates.is_empty():
 		_fail("연결 후보를 찾지 못했습니다. 네트워크 연결을 확인해 주세요.")
 		return
@@ -147,4 +178,5 @@ func _finish_gathering() -> void:
 
 
 func _fail(message: String) -> void:
+	NetTrace.step("rtc.failed", message)
 	failed.emit(message)

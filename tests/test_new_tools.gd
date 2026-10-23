@@ -366,32 +366,34 @@ func _npc_state() -> GameState:
 	return state
 
 
-func test_ghost_danger_preview_is_the_next_six_tiles_backward() -> void:
+func test_ghost_danger_preview_is_empty_without_an_enemy() -> void:
 	var state: GameState = _npc_state()
 	var ghost: NeutralNPC = state.spawn_npc(12, GameEnums.NpcBehavior.PATROL_REVERSE, 1, &"SUM_02")
 	var preview: Dictionary = ghost.danger_preview(state)
 	check_eq(preview["direction"], -1, "팩맨은 역방향")
-	check_eq(preview["tiles"], [11, 10, 9, 8, 7, 6] as Array[int], "12번에서 역방향으로 최대 6칸")
-	check_eq(preview["catch_tiles"], [11, 10, 9, 8, 7, 6] as Array[int], "지나는 타일에 서 있으면 잡힌다")
+	check((preview["tiles"] as Array).is_empty() and (preview["catch_tiles"] as Array).is_empty(), "적이 없으면 예고도 없다")
 	check_eq(float(preview["chance"]), 0.0, "지금은 아무도 없다")
 	var before: int = ghost.current_tile_idx
 	ghost.danger_preview(state)
 	check_eq(ghost.current_tile_idx, before, "미리보기는 NPC를 움직이지 않는다")
 
 
-func test_robber_danger_preview_stops_at_the_first_pawn_ahead() -> void:
+func test_robber_danger_preview_runs_to_the_nearest_enemy_however_far() -> void:
 	var state: GameState = _npc_state()
-	var pawn: PlayerPawn = state.get_pawn(11)
+	var pawn: PlayerPawn = state.get_pawn(21)
 	pawn.has_left_start = true
 	pawn.current_tile_idx = 12
 	var robber: NeutralNPC = state.spawn_npc(10, GameEnums.NpcBehavior.CHASE_NEAREST, 1, &"SUM_01")
 	var preview: Dictionary = robber.danger_preview(state)
 	check_eq(preview["direction"], 1, "도적떼는 정방향")
-	check_eq(preview["tiles"], [11, 12] as Array[int], "말을 만나는 칸에서 멈춘다")
-	check_eq(float(preview["chance"]), 1.0, "3칸 안의 말은 반드시 잡힌다")
-	pawn.current_tile_idx = 15
-	check(absf(float(robber.danger_preview(state)["chance"]) - 0.5) < 0.001, "5칸 앞이면 5·6칸이 나올 때만 (2/4)")
+	check_eq(preview["tiles"], [11, 12] as Array[int], "가장 가까운 적이 선 칸까지")
+	check_eq(preview["catch_tiles"], [12] as Array[int], "덮칠 칸 하나")
+	check_eq(float(preview["chance"]), 1.0, "반드시 잡힌다")
 	pawn.current_tile_idx = 20
 	var far: Dictionary = robber.danger_preview(state)
-	check_eq((far["tiles"] as Array).size(), 6, "최대 6칸까지만 간다")
-	check_eq(float(far["chance"]), 0.0, "6칸보다 멀면 이번 라운드에는 못 잡는다")
+	check_eq((far["tiles"] as Array).size(), 10, "멀어도 끝까지 달려간다")
+	check_eq(float(far["chance"]), 1.0, "멀어도 잡힌다")
+	var own: PlayerPawn = state.get_pawn(11)
+	own.has_left_start = true
+	own.current_tile_idx = 11
+	check_eq(robber.danger_preview(state)["catch_tiles"], [20] as Array[int], "소환한 사람의 말은 덮치지 않는다")

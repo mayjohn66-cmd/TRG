@@ -196,6 +196,25 @@ func test_black_stone_shot_skips_immune_white_stones_and_takes_whole_stacks() ->
 	check(BoardLayout.nearest_tile(Vector2(1.0, 1.0)) != 0, "출발선(0번)은 안착 후보에서 제외")
 
 
+func test_black_stone_shot_flies_along_the_aimed_line_even_toward_the_edge() -> void:
+	var state := make_state(2, 1, {1: _units(Kind.GO, [1]), 2: _units(Kind.GO, [2])})
+	# 오른쪽 변(x=1) 위의 돌을 오른쪽 위로 비스듬히 쏘면 보드 밖을 향한다: 겨눈 직선 그대로 경계에서 멈춰야 한다 (예전에는 x만 잘려 위로 꺾였다)
+	place(state, 11, 3, [2])
+	for angle: float in [-PI / 6.0, -PI / 3.0, -PI * 0.75, PI * 0.6, PI * 0.9]:
+		var shot: Dictionary = PawnSkills.shot_result(state, state.get_pawn(11), angle, 1.0)
+		var travel: Vector2 = (shot["to"] as Vector2) - (shot["from"] as Vector2)
+		var to: Vector2 = shot["to"]
+		check(to.x >= -0.000001 and to.x <= 1.000001 and to.y >= -0.000001 and to.y <= 1.000001, "도착점은 보드 안 (%.2f)" % angle)
+		if travel.length() > 0.001:
+			check(absf(angle_difference(travel.angle(), angle)) < 0.001, "겨눈 방향 그대로 날아간다 (겨눔 %.2f, 실제 %.2f)" % [angle, travel.angle()])
+	var outward: Dictionary = PawnSkills.shot_result(state, state.get_pawn(11), 0.0, 1.0)
+	check((outward["to"] as Vector2).is_equal_approx(outward["from"]), "보드 바깥쪽으로 곧장 쏘면 제자리")
+	# 모서리를 향해 강하게 쏘면 처음 닿는 경계에서 멈춘다
+	place(state, 11, 1, [0])
+	var corner: Dictionary = PawnSkills.shot_result(state, state.get_pawn(11), -PI / 2.0 + 0.3, 1.0)
+	var corner_travel: Vector2 = (corner["to"] as Vector2) - (corner["from"] as Vector2)
+	check(corner_travel.length() < 0.001 or absf(angle_difference(corner_travel.angle(), -PI / 2.0 + 0.3)) < 0.001, "모서리 쪽도 방향이 꺾이지 않는다")
+
 func test_skills_are_refused_in_the_wrong_phase_or_state() -> void:
 	var manager: TurnManager = _manager({1: _units(Kind.JANGGI, [2])})
 	var rejected: Array = _rejections(manager)

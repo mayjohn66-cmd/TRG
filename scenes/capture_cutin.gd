@@ -18,6 +18,8 @@ var active: bool = false
 var attacker_avatar: StringName = &""
 var defender_avatar: StringName = &""
 var elapsed: float = 0.0
+## 재생 빠르기 (1.0 = DURATION초). AI끼리의 처치는 터보 AI 턴에서 빠르게 재생한다.
+var speed: float = 1.0
 var _attack: Texture2D = null
 var _hit: Texture2D = null
 var _ink: Texture2D = null
@@ -45,14 +47,14 @@ func _ready() -> void:
 
 
 ## All timing belongs to this visual layer; the authoritative simulation and RNG are untouched.
-func enqueue(attacker: StringName, defender: StringName, attacking_player: int, defending_player: int) -> bool:
+func enqueue(attacker: StringName, defender: StringName, attacking_player: int, defending_player: int, play_speed: float = 1.0) -> bool:
 	if attacking_player == defending_player:
 		return false
 	var key: String = "%d:%d" % [attacking_player, defending_player]
 	if _keys.has(key) or _keys.size() >= MAX_PAIRS:
 		return false
 	_keys[key] = true
-	_queue.append({"attack": attacker, "hit": defender, "key": key})
+	_queue.append({"attack": attacker, "hit": defender, "key": key, "speed": maxf(play_speed, 0.1)})
 	if not active:
 		_start_next()
 	return true
@@ -89,6 +91,7 @@ func _start_next() -> void:
 	_attack = AvatarCombatArt.texture(attacker_avatar, &"attack")
 	_hit = AvatarCombatArt.texture(defender_avatar, &"hit")
 	elapsed = 0.0
+	speed = float(pair.get("speed", 1.0))
 	_hit_fired = false
 	_swing_fired = false
 	active = true
@@ -100,7 +103,7 @@ func _start_next() -> void:
 func _process(delta: float) -> void:
 	if not active:
 		return
-	elapsed += delta
+	elapsed += delta * speed
 	if not _swing_fired and elapsed >= SWING_AT:
 		_swing_fired = true
 		Sfx.play(&"dash", -9.0, 0.01)

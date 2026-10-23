@@ -217,3 +217,50 @@ func test_countdown_waits_a_little_for_a_guest_that_is_still_connecting() -> voi
 	check_eq(quick.state, QuickMatch.State.HOSTING, "연결 중인 참가자가 있으면 15초가 지나도 잠깐 더 기다린다")
 	quick.tick(10.0)
 	check_eq(quick.state, QuickMatch.State.STARTING, "그래도 안 되면 유예(10초) 뒤 시작한다")
+
+
+# --- 접속 감시 (방장과 연결하는 중... 무한 대기 방지) ------------------------
+
+func test_join_watchdog_times_out_when_relay_never_answers() -> void:
+	var parts: Dictionary = _make_quick()
+	var service: LobbyService = parts["service"]
+	(parts["broker"] as MemoryBroker).silent = true
+	var failures: Array = []
+	service.join_failed.connect(func(message: String) -> void: failures.append(message))
+	var start: int = Time.get_ticks_msec()
+	check(service.join_by_room_code("테스터", "  abcde "), "입장 시도가 시작된다")
+	check(service.is_connecting_guest() or service._joining, "응답 없는 릴레이를 기다리는 중")
+	check(not service.check_join_watchdog(start + int(service.signaling_timeout_seconds * 1000.0) - 1000), "제한 시간 전에는 계속 기다린다")
+	check(failures.is_empty(), "아직 실패 안내 없음")
+	check(service.check_join_watchdog(start + int(service.signaling_timeout_seconds * 1000.0) + 1000), "제한 시간을 넘기면 감시가 끊는다")
+	check_eq(failures, [LobbyService.JOIN_TIMEOUT_MESSAGE], "실패 안내 문구")
+	check(not service._joining and not service.in_room(), "입장 상태를 정리하고 방에서 빠진다")
+	check(not service.check_join_watchdog(start + 60000), "끝난 뒤에는 다시 울리지 않는다")
+	check(NetTrace.saw("join.timeout") and NetTrace.saw("join.watchdog"), "콘솔 추적 로그에 감시·타임아웃 단계가 남는다")
+
+
+func test_join_watchdog_limits_the_webrtc_connect_phase() -> void:
+	var parts: Dictionary = _make_quick()
+	var service: LobbyService = parts["service"]
+	(parts["broker"] as MemoryBroker).silent = true
+	var failures: Array = []
+	service.join_failed.connect(func(message: String) -> void: failures.append(message))
+	service.join_by_room_code("테스터", "ABCDE")
+	# 선점 확인까지 끝나 "방장과 연결하는 중..." 단계에 들어간 상황
+	var now: int = Time.get_ticks_msec()
+	service._arm_join_watchdog("webrtc_connect", 12.0, now)
+	check(not service.check_join_watchdog(now + 11900), "12초 전에는 기다린다")
+	check(service.check_join_watchdog(now + 12100), "12초 안에 채널이 열리지 않으면 실패")
+	check_eq(failures, [LobbyService.JOIN_TIMEOUT_MESSAGE], "방장이 게임 중이거나 네트워크 문제 안내")
+
+
+func test_connected_guest_disarms_the_watchdog() -> void:
+	var parts: Dictionary = _make_quick()
+	var service: LobbyService = parts["service"]
+	(parts["broker"] as MemoryBroker).silent = true
+	var failures: Array = []
+	service.join_failed.connect(func(message: String) -> void: failures.append(message))
+	service.join_by_room_code("테스터", "ABCDE")
+	service._cancel_join()  # 연결 성공(connected_to_server)·나가기와 같은 정리
+	check(not service.check_join_watchdog(Time.get_ticks_msec() + 60000), "입장이 끝나면 감시가 꺼진다")
+	check(failures.is_empty(), "실패 안내 없음")

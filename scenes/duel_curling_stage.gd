@@ -227,6 +227,7 @@ func show_result(winner: int) -> void:
 	queue_redraw()
 
 func _text(text: String, point: Vector2, px: int, tint: Color) -> void:
+	text = L10n.t(text)
 	var width := FONT.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
 	draw_string(FONT, point + Vector2(-width / 2.0, px * 0.35), text, HORIZONTAL_ALIGNMENT_LEFT, -1, px, tint)
 

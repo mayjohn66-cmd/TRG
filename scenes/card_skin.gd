@@ -21,6 +21,32 @@ const EDGES: Dictionary = {
 	GameEnums.CardCategory.COUNTER: Color("2b3f9e"),
 }
 
+const WARNING_RED: Color = Color("e03131")
+## 설치자·사용자 본인의 말까지 잡거나 멈출 수 있는 카드: 카드 왼쪽 위에 경고 아이콘을 띄우고 상세 설명에 이 문구를 적는다.
+const SELF_RISK: Dictionary = {
+	&"TRP_03": "폭발 반경 안에 있으면 내 말도 출발선으로 날아갑니다",
+	&"TRP_05": "내 말이 밟아도 멈추고, 연쇄로 터진 지뢰에 내 말도 휘말립니다",
+	&"ACT_09": "데스매치에서 지면 내 선두 말이 출발선으로 날아갑니다",
+}
+
+
+## 빨간 삼각 경고 아이콘 (흰 안쪽 테두리 + 느낌표). 그림 파일 없이 크기에 맞춰 그린다.
+class WarningIcon extends Control:
+	func _init() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _draw() -> void:
+		var s: float = minf(size.x, size.y)
+		var o: Vector2 = (size - Vector2(s, s)) / 2.0
+		var outer := PackedVector2Array([o + Vector2(s * 0.5, s * 0.04), o + Vector2(s * 0.98, s * 0.92), o + Vector2(s * 0.02, s * 0.92)])
+		draw_colored_polygon(outer, WARNING_RED)
+		var ring := PackedVector2Array([o + Vector2(s * 0.5, s * 0.04), o + Vector2(s * 0.98, s * 0.92), o + Vector2(s * 0.02, s * 0.92), o + Vector2(s * 0.5, s * 0.04)])
+		draw_polyline(ring, Color("a51111"), maxf(1.0, s * 0.06), true)
+		var inner := PackedVector2Array([o + Vector2(s * 0.5, s * 0.2), o + Vector2(s * 0.84, s * 0.83), o + Vector2(s * 0.16, s * 0.83), o + Vector2(s * 0.5, s * 0.2)])
+		draw_polyline(inner, Color.WHITE, maxf(1.0, s * 0.045), true)
+		draw_line(o + Vector2(s * 0.5, s * 0.36), o + Vector2(s * 0.5, s * 0.62), Color.WHITE, maxf(1.5, s * 0.1), true)
+		draw_circle(o + Vector2(s * 0.5, s * 0.73), maxf(1.0, s * 0.06), Color.WHITE)
+
 
 static func style(fill: Color, edge: Color, width: int, radius: int) -> StyleBoxFlat:
 	var box := StyleBoxFlat.new()
@@ -50,6 +76,19 @@ static func panel(parent: Control, node_name: String, rect: Rect2, fill: Color, 
 	item.add_theme_stylebox_override("panel", style(fill, edge, border, radius))
 	parent.add_child(item)
 	return item
+
+
+## 번역된 긴 이름이 손패 카드의 이름 칸(두 줄까지)에 들어가도록 글자 크기를 줄인다.
+## 한 줄로 들어가는 크기와 두 줄로 들어가는 크기 중 큰 쪽을 쓴다 (줄 높이는 글꼴의 실제 높이).
+static func fit_title_px(text: String, box_width: float, box_height: float, start_px: int, min_px: int) -> int:
+	for px: int in range(start_px, min_px - 1, -1):
+		var text_width: float = FONT.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
+		var line_height: float = FONT.get_height(px)
+		if text_width <= box_width and line_height <= box_height:
+			return px
+		if text_width <= box_width * 1.8 and line_height * 2.0 - 2.0 <= box_height:
+			return px
+	return min_px
 
 
 static func label(parent: Control, node_name: String, text: String, rect: Rect2, px: int, color: Color = INK, centered: bool = false, wrap: bool = false) -> Label:
@@ -83,9 +122,12 @@ static func body(card: BaseCard, card_size: Vector2, summary_text: String, categ
 	var width: float = card_size.x - margin * 2.0
 	var title_px: int = roundi((20.0 if detailed else 12.0) * k)
 	var title_h: float = (36.0 if detailed else 30.0) * k
-	if detailed and FONT.get_string_size(card.display_name, HORIZONTAL_ALIGNMENT_LEFT, -1, title_px).x > width - 12.0 * k:
+	var shown_name: String = L10n.t(card.display_name)  # 화면에 실제로 나갈 이름 (영어 화면이면 영어)
+	if detailed and FONT.get_string_size(shown_name, HORIZONTAL_ALIGNMENT_LEFT, -1, title_px).x > width - 12.0 * k:
 		title_px = roundi(18.0 * k)
 		title_h = 52.0 * k
+	if not detailed and shown_name != card.display_name:
+		title_px = fit_title_px(shown_name, width - 12.0 * k, title_h - 4.0 * k, title_px, roundi(8.0 * k))
 	var name_panel: Panel = panel(holder, "NamePanel", Rect2(margin, margin, width, title_h), HEADER, GREEN, maxi(1, roundi(2 * k)), roundi(10 * k))
 	var title: Label = label(name_panel, "CardTitle", card.display_name, Rect2(6 * k, 2 * k, width - 12 * k, title_h - 4 * k), title_px, INK, true, true)
 	title.max_lines_visible = 2
@@ -123,7 +165,15 @@ static func body(card: BaseCard, card_size: Vector2, summary_text: String, categ
 		art.add_child(picture)
 	else:
 		# Retain a neutral letter emblem for cards whose own art isn't ready.
-		label(art, "CardEmblem", card.display_name.left(1), Rect2(Vector2.ZERO, art.size), roundi((56.0 if detailed else 36.0) * k), EDGES[card.category], true)
+		label(art, "CardEmblem", shown_name.left(1), Rect2(Vector2.ZERO, art.size), roundi((56.0 if detailed else 36.0) * k), EDGES[card.category], true)
+	if SELF_RISK.has(card.card_id):
+		# 내 말도 휘말리는 카드: 일러스트 창 왼쪽 위에 경고 아이콘 (문구는 상세 설명에)
+		var icon := WarningIcon.new()
+		icon.name = "SelfRiskIcon"
+		var icon_size: float = (40.0 if detailed else 26.0) * k
+		icon.position = Vector2(margin - 4.0 * k, art_y - 3.0 * k)
+		icon.size = Vector2(icon_size, icon_size)
+		holder.add_child(icon)
 	var detail: Panel = panel(holder, "EffectPanel", Rect2(margin, detail_y, width, card_size.y - detail_y - margin), PANEL, GREEN, maxi(1, roundi(2 * k)), roundi(10 * k))
 	var badge_size := Vector2((48.0 if detailed else 30.0) * k, (20.0 if detailed else 14.0) * k)
 	var padding: float = (8.0 if detailed else 4.0) * k

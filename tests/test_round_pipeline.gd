@@ -1,7 +1,7 @@
 # File: res://tests/test_round_pipeline.gd
 # Class: class_name TestRoundPipeline
 # Role: 한 라운드마다 도는 파이프라인 대조 검사. 봇 네 명이 실제 규칙(드래프트·발판·템포 업 포함)으로 여러 판을 끝까지 두는 동안 라운드마다 순서와 불변식을 확인한다:
-#       라운드 시작(템포 업 경고·드래프트) -> 사람마다 턴 1번 이상(휴식·졸업 제외) -> 라운드 끝 NPC 페이즈 -> 특수 승리 판정 -> 다음 라운드.
+#       라운드 시작(템포 업 경고·드래프트) -> 사람마다 턴 1번 이상(휴식·졸업 제외, 차례가 끝날 때마다 특수 승리 판정) -> 라운드 끝 NPC 페이즈(그 뒤 한 번 더 판정) -> 다음 라운드.
 class_name TestRoundPipeline
 extends TestCase
 
@@ -76,10 +76,8 @@ func _check_round_order(manager: TurnManager, seed_value: int) -> void:
 		check(kinds.count(&"augment_offers") <= (1 if GameEnums.is_draft_round(round_number) else 0), "%s: 드래프트는 증강 라운드에만 한 번" % tag)
 		if round_number == last_round and manager.is_game_over:
 			continue  # 게임이 끝난 라운드는 도중에 끊긴다
-		# 라운드 끝: NPC 페이즈 한 번, 특수 승리 판정은 그 뒤에만
+		# 라운드 끝: NPC 페이즈 한 번
 		check_eq(kinds.count(&"npc_phase_resolved"), 1, "%s: 라운드 끝 NPC 페이즈는 한 번" % tag)
-		if kinds.has(&"round_end_judgement"):
-			check(kinds.find(&"round_end_judgement") > kinds.find(&"npc_phase_resolved"), "%s: 특수 승리 판정은 NPC 페이즈 뒤" % tag)
 		# 턴: 라운드 시작 때 레이스에 남은 사람마다 한 번 이상 (휴식·졸업한 사람 제외)
 		var start_entry: Dictionary = {}
 		for entry: Dictionary in events:
@@ -109,12 +107,19 @@ func _check_round_order(manager: TurnManager, seed_value: int) -> void:
 			check(not law_reasons.has(reason), "시드 %d: 같은 교칙(%s)으로 두 명이 졸업했다" % [seed_value, reason])
 			law_reasons.append(reason)
 	check(manager.state.rank_reasons.values().has(VictoryChecker.LAST_PLACE) or manager.state.rankings.size() < 4, "시드 %d: 마지막 한 명은 꼴찌로 남는다 (%s)" % [seed_value, str(manager.state.rank_reasons)])
-	# 특수 승리 졸업은 라운드 끝(NPC 페이즈)에서만
+	# 특수 승리 졸업은 행동이 다 끝난 뒤(차례가 넘어가는 순간 또는 라운드 끝 NPC 페이즈 뒤)에만: 이동 도중·말 선택 도중에는 없다
+	var judged: bool = false
 	for entry: Dictionary in _log:
-		if entry["kind"] == &"player_ranked":
+		if entry["kind"] == &"special_victory_judgement":
+			judged = true
+			check(entry["phase"] != State.PHASE_MOVING_STEP and entry["phase"] != State.PHASE_SELECT_PAWN, "시드 %d R%d: 특수 승리 판정이 이동 도중에 끼어들었다" % [seed_value, int(entry["round"])])
+		elif entry["kind"] == &"player_ranked":
 			var reason: StringName = entry["data"]["reason"]
 			if reason != VictoryChecker.ALL_HOME and reason != VictoryChecker.LAST_PLACE:
-				check_eq(entry["phase"], State.PHASE_NEUTRAL_NPC, "시드 %d R%d: 특수 승리(%s)는 라운드 끝에만 졸업" % [seed_value, int(entry["round"]), reason])
+				check(judged, "시드 %d R%d: 특수 승리(%s) 졸업 앞에 판정 이벤트가 있다" % [seed_value, int(entry["round"]), reason])
+				check(entry["phase"] != State.PHASE_MOVING_STEP and entry["phase"] != State.PHASE_SELECT_PAWN, "시드 %d R%d: 특수 승리(%s)는 행동이 끝난 뒤에 졸업" % [seed_value, int(entry["round"]), reason])
+		elif entry["kind"] == &"__turn":
+			judged = false
 
 
 func test_round_pipeline_holds_over_whole_bot_games() -> void:

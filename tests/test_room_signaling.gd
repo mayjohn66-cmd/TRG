@@ -41,6 +41,19 @@ func test_normalize_and_validate_user_input() -> void:
 		check(not RoomCode.is_valid(bad), "잘못된 코드 거부: '%s'" % bad)
 
 
+func test_signaling_normalizes_room_code_so_host_and_guest_share_topics() -> void:
+	MemoryBroker.reset_all()
+	var broker := MemoryBroker.new()
+	defer_free(broker)
+	var host := RoomSignaling.new(broker, "7k9m2")
+	var guest := RoomSignaling.new(broker, "  7K9M2 \n")
+	check_eq(host.code, "7K9M2", "방장 코드도 대문자로 맞춘다")
+	check_eq(guest.code, "7K9M2", "참가자 코드의 공백·줄바꿈 제거")
+	host.post_offer(2, "AAAAAA", _offer_code(), Callable())
+	var found: Dictionary = _find(guest)
+	check_eq((found["candidates"] as Array).size(), 1, "대소문자·공백이 달라도 같은 토픽에서 초대를 찾는다")
+
+
 func test_topics_are_separate_per_seat_and_direction() -> void:
 	check_eq(RoomCode.offer_topic("7K9M2", 3), "trg_sig_7K9M2_o3", "초대 토픽")
 	check_eq(RoomCode.answer_topic("7K9M2", 3), "trg_sig_7K9M2_a3", "응답 토픽")

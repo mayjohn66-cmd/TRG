@@ -10,15 +10,16 @@ signal bot_acted(player_id: int, action: StringName, detail: Dictionary)
 ## 단계별 대기 시간(초). instant가 켜지면(헤드리스·ui_smoke) 모두 0초로 건너뛴다.
 ## 2026-10 템포 패치: 봇은 굴림·이동 연출(busy_check)이 끝나기를 이미 기다리므로 여기 대기는 '생각하는 척' 짧은 여운만 둔다.
 ## (예전 값 0.8/0.6/1.0/0.9에 연출 속도 1.7배가 곱해져 봇 한 턴에 약 6초가 대기로만 흘렀다.)
-const DELAY_TURN_START: float = 0.3   # 봇 턴 시작 -> 카드/함정 사용 판단
-const DELAY_PRE_ROLL: float = 0.2     # 굴리기 직전
-const DELAY_ROLL_RESULT: float = 0.3  # 굴림 연출 뒤 결과를 확인하는 호흡
-const DELAY_MOVE: float = 0.2         # 이동할 말 선택 및 이동
-const DELAY_WINDOW: float = 0.15      # 개입 창·방어 카드에서 봇이 결정하는 시간 (0.15초 안)
+## 2026-10 터보 AI 턴: 대기를 다시 절반 이하로 줄였다 (봇 한 턴의 '생각하는 척' 합계 1.0초 -> 0.4초).
+const DELAY_TURN_START: float = 0.1   # 봇 턴 시작 -> 카드/함정 사용 판단
+const DELAY_PRE_ROLL: float = 0.05    # 굴리기 직전
+const DELAY_ROLL_RESULT: float = 0.15 # 굴림 연출 뒤 결과를 확인하는 호흡
+const DELAY_MOVE: float = 0.1         # 이동할 말 선택 및 이동
+const DELAY_WINDOW: float = 0.1       # 개입 창·방어 카드에서 봇이 결정하는 시간
 const DELAY_AUTO_PASS: float = 0.0    # 아무도 낼 카드가 없는 개입 창은 기다리지 않고 바로 넘긴다
-const DELAY_DRAFT: float = 0.3        # 봇의 증강 선택 간격
-const DELAY_DUEL_THINK: float = 0.8   # 봇이 결투 값을 내기까지의 시간 (사람이 상대일 때)
-const DELAY_DUEL_RELAY: float = 1.2   # 봇끼리의 결투는 중앙 스테이지 중계를 볼 시간을 준다
+const DELAY_DRAFT: float = 0.15       # 봇의 증강 선택 간격
+const DELAY_DUEL_THINK: float = 0.4   # 봇이 결투 값을 내기까지의 시간 (사람이 상대일 때)
+const DELAY_DUEL_RELAY: float = 0.6   # 봇끼리의 결투는 중앙 스테이지 중계를 볼 시간을 준다
 
 var manager: TurnManager = null
 var bot_players: Array[int] = [2, 3, 4]
@@ -31,6 +32,8 @@ var wait_for_human_windows: bool = true
 ## true를 돌려주면 봇은 잠시 기다린다 (화면의 굴림 연출 중 등).
 var busy_check: Callable = Callable()
 var rng := RandomNumberGenerator.new()
+## 놀이터 난이도 (BotTemper.MILD / NORMAL / SPICY). 기본은 보정 없는 마라맛 (온라인 빈자리 봇·테스트).
+var difficulty: StringName = BotTemper.SPICY
 
 ## 대기 시간 배율 (1.0이 기본 길이). 배속(1x/2x/3x)은 Engine.time_scale이 delta를 줄여 함께 빨라진다.
 var pace: float = 1.0
@@ -55,6 +58,17 @@ func set_enabled(value: bool) -> void:
 	_tried_skills.clear()
 	_seen_serial = -1
 	_wait = 0.0
+
+
+## 봇이 아닌 자리 (사람). 억까 방지 보정이 이 사람들을 봐준다.
+func humans() -> Array[int]:
+	var result: Array[int] = []
+	if manager == null:
+		return result
+	for player_id: int in manager.player_order:
+		if not is_bot(player_id):
+			result.append(player_id)
+	return result
 
 
 func is_bot(player_id: int) -> bool:
@@ -91,7 +105,7 @@ func _bot_turn() -> bool:
 ## 대기 시간을 더한다 (이미 남은 대기가 있으면 그 뒤에 이어진다: 굴림 결과 확인 0.6초 -> 말 선택 0.5초).
 func _delay(seconds: float) -> void:
 	if not instant:
-		_wait += seconds * pace
+		_wait = maxf(_wait, 0.0) + seconds * pace  # 앞 대기에서 넘친 시간(음수)이 다음 대기를 깎아 먹지 않게
 
 
 ## 새 결정 지점에 들어왔다: 이번 단계에서 쓸 대기 시간과 기억을 초기화한다.
@@ -215,7 +229,7 @@ func _step_draft() -> void:
 	if bot_id == -1:
 		return
 	var offers: Array[StringName] = manager.draft_offers_for(bot_id)
-	var index: int = BotBrain.choose_augment(manager.state, bot_id, offers, rng)
+	var index: int = BotTemper.choose_augment(manager.state, bot_id, offers, difficulty, rng)
 	var params: Dictionary = {"index": index}
 	var definition: AugmentDef = AugmentRegistry.get_def(offers[index])
 	if definition.category == GameEnums.AugmentCategory.PAWN_EVOLUTION:
@@ -228,7 +242,7 @@ func _step_draft() -> void:
 func _step_turn_begin() -> void:
 	var player_id: int = manager.current_player_id()
 	# 카드는 굴리기 전 턴당 1장만 쓸 수 있다.
-	var plan: Dictionary = {} if manager.card_played_this_turn() else BotBrain.plan_turn_card(manager.state, player_id, _tried, rng)
+	var plan: Dictionary = {} if manager.card_played_this_turn() else BotTemper.filter_card_plan(manager.state, player_id, BotBrain.plan_turn_card(manager.state, player_id, _tried, rng), difficulty, humans(), rng)
 	if not plan.is_empty():
 		var params: Dictionary = (plan["params"] as Dictionary).duplicate()
 		params["card_id"] = plan["card_id"]
@@ -272,7 +286,7 @@ func _step_select() -> void:
 	if manager.move_queue.is_empty():
 		manager.force_timeout()
 		return
-	var pawn_id: int = BotBrain.choose_pawn(manager.state, player_id, manager.move_queue[0])
+	var pawn_id: int = BotTemper.choose_pawn(manager.state, player_id, manager.move_queue[0], difficulty, humans(), rng)
 	if pawn_id == -1:
 		manager.force_timeout()
 		return

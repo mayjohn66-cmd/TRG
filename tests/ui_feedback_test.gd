@@ -153,7 +153,7 @@ func _run() -> void:
 		if from_result != null:
 			from_result.close_modal()
 	board._close_result_overlay()
-	# 언어는 설정 화면에서 고른다. 번역이 비어 있으면 한국어로 나온다.
+	# 언어는 설정 화면(또는 위쪽 [KR / EN] 토글)에서 고른다.
 	var saved_lang: String = L10n.current_lang
 	board._open_menu()
 	board._show_menu_page(&"settings")
@@ -163,7 +163,8 @@ func _run() -> void:
 		option.select(1)
 		option.item_selected.emit(1)
 		expect(L10n.current_lang == "en" and GameSession.language == "en", "English를 고르면 언어가 바뀌고 저장된다")
-		expect(L10n.tr_ui("btn.roll") == "굴리기", "번역이 비어 있으면 한국어 폴백")
+		expect(L10n.tr_ui("btn.roll") == "굴리기", "원문은 한국어로 두고 화면에서 번역한다")
+		expect(board._roll_button.atr(board._roll_button.text) == "Roll", "영어 화면의 굴리기 버튼은 Roll (%s)" % board._roll_button.atr(board._roll_button.text))
 		option.select(0)
 		option.item_selected.emit(0)
 		expect(L10n.current_lang == "ko", "다시 한국어")

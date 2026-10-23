@@ -44,7 +44,7 @@ static var screen_shake: bool = true
 ## 배터리 절약: 화면을 초당 30장까지만 그린다 (휴대폰 발열·배터리용).
 static var battery_saver: bool = false
 const BATTERY_SAVER_FPS: int = 30
-## 화면 언어 (L10n.LANGUAGES). 번역이 비어 있는 문구는 한국어로 나온다.
+## 화면 언어 (L10n.LANGUAGES). 처음 실행하면 기기 언어를 따른다 (한국어 기기 KR, 그 밖 EN). 번역이 없는 문구는 한국어로 나온다.
 static var language: String = L10n.DEFAULT_LANG
 ## 진행 배속 (1·2·3): 혼자 하는 판에서 Engine.time_scale로 모든 트윈·타이머·봇 대기를 함께 빠르게 한다. 온라인 대전은 늘 1배.
 static var game_speed: int = 1
@@ -82,10 +82,8 @@ static func load_settings() -> void:
 		game_speed = int(config.get_value("game", "game_speed", 1))
 		if not GAME_SPEEDS.has(game_speed):
 			game_speed = 1
-		language = str(config.get_value("game", "language", L10n.DEFAULT_LANG))
-		if not L10n.set_language(language):
-			language = L10n.DEFAULT_LANG
-			L10n.set_language(language)
+		# 저장된 언어가 없으면(처음 실행) 기기 언어를 따른다: 한국어 기기면 KR, 그 밖은 EN
+		language = str(config.get_value("game", "language", L10n.detect_os_language()))
 		view_mode = 0  # 설정 화면에서 시점 선택을 없앴다: 저장값과 무관하게 탑뷰
 		sfx_volume = clampf(float(config.get_value("game", "sfx_volume", 0.8)), 0.0, 1.0)
 		bgm_volume = clampf(float(config.get_value("game", "bgm_volume", 0.6)), 0.0, 1.0)
@@ -94,6 +92,12 @@ static func load_settings() -> void:
 		bgm_muted = bool(config.get_value("game", "bgm_muted", false))
 		pace_scale = PACE_NORMAL  # 연출 속도 선택을 없앴다: 저장값과 무관하게 보통
 		avatar_id = StringName(str(config.get_value("game", "avatar", "avatar_01")))
+	else:
+		language = L10n.detect_os_language()
+	if not L10n.set_language(language):
+		language = L10n.DEFAULT_LANG
+		L10n.set_language(language)
+	L10n.install()
 	apply_frame_limit()
 
 
@@ -177,9 +181,127 @@ static func set_nickname(raw: String) -> bool:
 	return true
 
 
+## 놀이터(컴퓨터 대전) 난이도: BotTemper.MILD / NORMAL / SPICY. 브라우저 프로필에 남는다.
+static var _bot_difficulty: StringName = &""
+
+
+static func bot_difficulty() -> StringName:
+	if _bot_difficulty == &"":
+		var config := ConfigFile.new()
+		config.load(PROFILE_PATH)
+		_bot_difficulty = BotTemper.sanitize(StringName(str(config.get_value("profile", "bot_difficulty", String(BotTemper.NORMAL)))))
+	return _bot_difficulty
+
+
+static func set_bot_difficulty(value: StringName) -> void:
+	_bot_difficulty = BotTemper.sanitize(value)
+	var config := ConfigFile.new()
+	config.load(PROFILE_PATH)
+	config.set_value("profile", "bot_difficulty", String(_bot_difficulty))
+	config.save(PROFILE_PATH)
+
+
 static func save() -> void:
 	var config := ConfigFile.new()
+	config.load(PROFILE_PATH)  # 익명 태그·판 수(stats)는 그대로 두고 닉네임만 바꾼다
 	config.set_value("profile", "nickname", nickname)
+	config.save(PROFILE_PATH)
+
+
+# --- 익명 통계 태그 ------------------------------------------------------------------------------
+## 통계 알림에서 사람을 구분하는 4자리 익명 태그와 누적 판 수. 브라우저 저장소(user://profile.cfg의 stats)에 남아 다음 접속에도 같다.
+## 닉네임을 기본값으로 둔 사람끼리도 [플레이어 1(#A7B2)]처럼 서로 다른 사람인지, 한 사람이 여러 판 했는지 알 수 있다.
+const TAG_LENGTH: int = 4
+## 헷갈리는 글자(0·O·1·I)는 뺀다.
+const TAG_ALPHABET: String = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+static var _player_tag: String = ""
+static var _match_count: int = -1
+## 끝까지 마친 판 수(내 순위가 확정된 판)와 그중 1위 횟수 (통계 알림의 [누적 N판 중 1위 M회]).
+static var _finished_count: int = 0
+static var _win_count: int = 0
+
+
+## 이 브라우저의 익명 태그 (없으면 처음 부를 때 만들어 저장한다).
+static func player_tag() -> String:
+	_load_stats()
+	return _player_tag
+
+
+## 통계에 쓰는 이름: [닉네임(#태그)].
+static func tagged_name() -> String:
+	return "%s(#%s)" % [display_nickname(), player_tag()]
+
+
+## 지금까지 시작한 판 수.
+static func match_count() -> int:
+	_load_stats()
+	return _match_count
+
+
+## 새 판을 시작한다: 판 수를 하나 올려 저장하고 이번 판이 몇 번째인지 돌려준다.
+static func begin_match() -> int:
+	_load_stats()
+	_match_count += 1
+	_save_stats()
+	return _match_count
+
+
+## 한 판을 끝까지 마쳤다 (내 순위 확정). 반환: {"played": 끝까지 마친 판 수, "wins": 그중 1위 횟수}.
+static func record_match_result(rank: int) -> Dictionary:
+	_load_stats()
+	_finished_count += 1
+	if rank == 1:
+		_win_count += 1
+	_save_stats()
+	return {"played": _finished_count, "wins": _win_count}
+
+
+static func finished_matches() -> int:
+	_load_stats()
+	return _finished_count
+
+
+static func win_count() -> int:
+	_load_stats()
+	return _win_count
+
+
+static func is_valid_tag(tag: String) -> bool:
+	if tag.length() != TAG_LENGTH:
+		return false
+	for character: String in tag:
+		if not TAG_ALPHABET.contains(character):
+			return false
+	return true
+
+
+static func _load_stats() -> void:
+	if _player_tag != "" and _match_count >= 0:
+		return
+	var config := ConfigFile.new()
+	config.load(PROFILE_PATH)
+	var saved: String = str(config.get_value("stats", "tag", ""))
+	_match_count = maxi(int(config.get_value("stats", "match_count", 0)), 0)
+	_finished_count = maxi(int(config.get_value("stats", "finished_count", 0)), 0)
+	_win_count = maxi(int(config.get_value("stats", "win_count", 0)), 0)
+	if is_valid_tag(saved):
+		_player_tag = saved
+		return
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	_player_tag = ""
+	for i: int in TAG_LENGTH:
+		_player_tag += TAG_ALPHABET[rng.randi_range(0, TAG_ALPHABET.length() - 1)]
+	_save_stats()
+
+
+static func _save_stats() -> void:
+	var config := ConfigFile.new()
+	config.load(PROFILE_PATH)
+	config.set_value("stats", "tag", _player_tag)
+	config.set_value("stats", "match_count", _match_count)
+	config.set_value("stats", "finished_count", _finished_count)
+	config.set_value("stats", "win_count", _win_count)
 	config.save(PROFILE_PATH)
 
 

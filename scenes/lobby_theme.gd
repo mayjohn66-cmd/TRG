@@ -81,11 +81,21 @@ static func add_top_bar(parent: Control, title_text: String, on_back: Callable, 
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	row.add_child(title)
+	var language := language_toggle()
+	row.add_child(language)
 	var right := pale_button(right_text, on_right, 14)
 	right.custom_minimum_size = Vector2(180, 0)
 	right.name = "RulesButton"
 	row.add_child(right)
-	return {"bar": bar, "back": back, "title": title, "right": right}
+	return {"bar": bar, "back": back, "title": title, "right": right, "language": language}
+
+
+## [🌐 KR / EN] 언어 토글 (상단 띠의 [규칙] 왼쪽). 누르면 KR ↔ EN이 바로 바뀐다.
+static func language_toggle() -> LanguageToggle:
+	var button := LanguageToggle.create(14, TEAL)
+	UiSkin.button(button, false, 2.0, 2.0)
+	button.custom_minimum_size = Vector2(130, 0)
+	return button
 
 
 ## 아래쪽 청록 띠: 내 이름(왼쪽) ... [설정](가운데). 반환: {"bar", "name", "center"}

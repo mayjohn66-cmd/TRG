@@ -158,6 +158,20 @@ func test_uno_plus_four_ejects_the_next_players_front_pawn_and_boosts_mine() -> 
 	check_eq(reversed.roll_bonus, PenaltyBombCommand.advance_steps(), "이동 보너스")
 
 
+func test_uno_plus_four_skips_a_graduated_next_player() -> void:
+	var state := make_state(4, 1)
+	state.turn_direction = 1
+	state.graduate(2, VictoryChecker.ALL_HOME)  # 다음 차례였던 P2는 이미 졸업해 레이스에 없다
+	place(state, 31, 9, [8])
+	check_eq(PenaltyBombCommand.victim_of(state, 1), 3, "졸업한 P2를 건너뛰고 P3에게 폭탄을 넘긴다")
+	check(CardRegistry.get_card(&"ACT_03").could_play(state, 1), "P3의 말이 보드에 있으니 낼 수 있다")
+	check(new_stack().execute_command(PenaltyBombCommand.new(1), make_ctx(state, 0)), "발동")
+	check_eq(state.get_pawn(31).current_tile_idx, 0, "P3의 선두 말이 사출")
+	var alone := make_state(2, 1)
+	alone.graduate(2, VictoryChecker.ALL_HOME)
+	check_eq(PenaltyBombCommand.victim_of(alone, 1), -1, "남은 상대가 없으면 대상이 없다")
+
+
 func test_uno_plus_four_needs_a_pawn_on_the_board_and_is_played_at_turn_begin() -> void:
 	var manager: TurnManager = _manager({}, 2)
 	var rejected: Array = []

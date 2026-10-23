@@ -134,6 +134,7 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 func _text(text: String, center: Vector2, px: int, color: Color) -> void:
+	text = L10n.t(text)
 	var width := FONT.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
 	draw_string(FONT, center + Vector2(-width / 2.0, px * 0.35), text, HORIZONTAL_ALIGNMENT_LEFT, -1, px, color)
 

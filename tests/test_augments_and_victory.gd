@@ -267,6 +267,17 @@ func test_draft_reroll_replaces_one_slot_once_with_a_different_augment() -> void
 	_dispose(manager)
 
 
+func test_banned_player_can_still_reroll_an_augment() -> void:
+	var manager: TurnManager = _manager(2, true)
+	var rejected: Array = []
+	manager.action_rejected.connect(func(_player_id: int, _action: StringName, reason: StringName) -> void: rejected.append(reason))
+	manager.state.banned_turns[1] = 2
+	var before: Array[StringName] = manager.draft_offers_for(1)
+	_do(manager, 1, &"reroll_augment", {"index": 0})
+	check(rejected.is_empty(), "알고리즘 밴은 증강 리롤을 막지 않는다 (%s)" % str(rejected))
+	check(manager.draft_reroll_used(1, 0) and manager.draft_offers_for(1)[0] != before[0], "밴 중에도 슬롯이 바뀐다")
+	_dispose(manager)
+
 func test_auto_pick_and_timeout_auto_pick() -> void:
 	var manager: TurnManager = _manager(3, true)
 	manager.auto_pick_draft(1)
@@ -572,32 +583,29 @@ func test_summon_cards_stay_on_the_board_and_vanish_after_their_first_catch() ->
 	check(bandit.needs_tile() and ghost.needs_tile(), "둘 다 소환할 코너를 고른다")
 	check(bandit.can_play(state, 1, {"tile": BoardSpec.side}) and bandit.can_play(state, 1, {"tile": BoardSpec.halfway_tile}), "상단 코너 두 곳")
 	check(not bandit.can_play(state, 1, {"tile": 3}) and not ghost.can_play(state, 1, {"tile": 3 * BoardSpec.side}), "다른 칸에는 소환할 수 없다")
-	# 말이 없는 길: 소환 직후 3~6칸 전진하고 보드에 남는다
+	# 소환 즉시 움직이지 않는다: 코너에 그대로 서 있다 (그 칸에 말이 있어도 잡지 않는다)
+	place(state, 23, BoardSpec.halfway_tile, [BoardSpec.halfway_tile - 1])
 	exec(state, bandit.create_command(state, 1, {"tile": BoardSpec.side}))
-	check_eq(state.npcs.size(), 1, "아무도 못 만나면 보드에 남는다")
+	check_eq(state.npcs.size(), 1, "소환되면 보드에 남는다")
 	var npc: NeutralNPC = state.npcs[0]
-	var advanced: int = npc.current_tile_idx - BoardSpec.side
-	check(advanced >= 3 and advanced <= 6, "정방향으로 3~6칸 전진 (%d)" % advanced)
+	check_eq(npc.current_tile_idx, BoardSpec.side, "소환 즉시 움직이지 않는다")
 	check(not bandit.can_play(state, 1, {"tile": BoardSpec.side}) and not ghost.can_play(state, 1, {"tile": BoardSpec.halfway_tile}), "중립 기물은 한 번에 하나만")
-	# 앞에 말이 서면 그 칸에서 잡고 사라진다 (첫 칸의 말만)
+	# 라운드 끝: 정방향으로 가장 가까운 적 말 하나까지 달려가 처치하고 사라진다
 	place(state, 21, npc.current_tile_idx + 2, [npc.current_tile_idx + 1])
 	place(state, 22, npc.current_tile_idx + 3, [npc.current_tile_idx + 2])
 	var report: Dictionary = npc.run_ai(state)
-	check(bool(report["vanished"]), "말을 잡으면 사라진다")
-	check_eq(report["caught"], [21], "처음 만난 칸의 말만 잡는다")
+	check(bool(report["vanished"]), "라운드 끝에 처치하고 사라진다")
+	check_eq(report["caught"], [21], "가장 가까운 적 하나만 잡는다")
 	check(state.get_pawn(22).has_left_start, "그 뒤의 말은 안전")
 	state.remove_npc(npc)
-	# 소환한 칸에 말이 있으면 바로 잡는다
-	place(state, 23, BoardSpec.halfway_tile, [BoardSpec.halfway_tile - 1])
+	# 소환 칸에 말이 서 있어도 소환할 때는 잡지 않는다
 	exec(state, ghost.create_command(state, 1, {"tile": BoardSpec.halfway_tile}))
-	check(not state.get_pawn(23).has_left_start and state.npcs.is_empty(), "소환 칸의 말을 잡고 바로 사라진다")
+	check(state.get_pawn(23).has_left_start and state.npcs.size() == 1, "소환 칸의 말은 소환만으로는 잡히지 않는다")
 
 
-func test_neutral_npc_phase_keeps_marching_until_it_catches() -> void:
+func test_neutral_npc_vanishes_at_round_end_even_without_a_target() -> void:
 	var state := make_state()
 	var ghost: NeutralNPC = state.spawn_npc(BoardSpec.halfway_tile, GameEnums.NpcBehavior.PATROL_REVERSE, 1, &"SUM_02")
 	var report: Dictionary = ghost.run_ai(state)
-	check(not bool(report["vanished"]), "아무도 없으면 계속 전진")
-	var moved: int = BoardSpec.halfway_tile - ghost.current_tile_idx
-	check(moved >= 3 and moved <= 6, "팩맨은 역방향 3~6칸 (%d)" % moved)
-	check_eq((report["path"] as Array).size(), moved, "경로 기록")
+	check(bool(report["vanished"]), "적이 없어도 라운드 끝에 사라진다")
+	check((report["path"] as Array).is_empty() and (report["caught"] as Array).is_empty(), "움직이지도 잡지도 않는다")

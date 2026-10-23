@@ -43,9 +43,9 @@ const REVENGE_LAUNCH_LEAD: float = 0.15
 const GATE_MAX_SECONDS: float = 0.8
 ## 한 칸 점프: 걸리는 시간(초)과 솟구치는 높이(px). 도착 직후 납작하게 찌그러졌다가 탱글하게 돌아온다.
 const ONE_CLICK_POWER: float = 0.75  ## 원클릭 굴림의 연출 세기 (파워 게이지를 없앴다)
-const NPC_ANNOUNCE_BODY: String = "사료스탕스는 정방향, 와구와구 유령은 역방향으로 3~6칸 전진합니다"
-const NPC_TIP_ROBBER: String = "라운드 종료마다 정방향으로 3~6칸 전진하며, 처음 마주친 칸의 말을 모두 출발선으로 날려버리고 소멸합니다"
-const NPC_TIP_GHOST: String = "라운드 종료마다 역방향으로 3~6칸 전진하며, 처음 마주친 칸의 말을 모두 출발선으로 날려버리고 소멸합니다"
+const NPC_ANNOUNCE_BODY: String = "사료스탕스는 정방향, 와구와구 유령은 역방향으로 가장 가까운 적 말을 덮치고 사라집니다"
+const NPC_TIP_ROBBER: String = "소환된 자리에서 기다리다가 라운드가 끝나면 정방향으로 가장 가까운 적 말까지 달려가 그 말 하나를 출발선으로 날려버리고 사라집니다"
+const NPC_TIP_GHOST: String = "소환된 자리에서 기다리다가 라운드가 끝나면 역방향으로 가장 가까운 적 말까지 달려가 그 말 하나를 출발선으로 날려버리고 사라집니다"
 const HOP_SECONDS: float = 0.10
 const HOP_HEIGHT: float = 20.0
 const SLAM_HEIGHT: float = 45.0
@@ -84,6 +84,12 @@ const DRAFT_OPEN_BEAT: float = 0.12  ## 증강 창이 열리기 전 여운
 const BEAT_AFTER_MOVE: float = 0.12  ## 이동 뒤 여운 (0.8 -> 0.12: 마지막 행동이 끝나면 지체 없이 다음 턴·증강 창으로 넘어간다)
 ## 차례 배너는 짧게 막는다: 누구 차례인지 보여 준 뒤에야 카드 선언·굴리기가 열린다 (봇도 배너가 끝난 뒤 움직인다).
 const TURN_BANNER_SECONDS: float = 0.7
+## 터보 AI 턴: AI 차례의 연출 시간 배율 (보통 속도 대비 65% 단축). 사람 말을 잡거나 특수 승리·법전이 움직인 턴은 보통 속도로 보여 준다.
+const TURBO_PACE_SCALE: float = 0.35
+## AI 차례 배너는 더 짧게 (사람 차례 배너는 그대로).
+const TURBO_TURN_BANNER_SECONDS: float = 0.35
+## 처치 확정 대기의 최대 시간(초): 방어 결정이 이보다 오래 걸리면(연결 끊김 등) 연출을 계속한다.
+const COUNTER_GATE_LIMIT: float = 30.0
 ## 상대를 해치는 공격 카드: 카드를 공개하기 전에 [공격 카드 발동!] 경보를 먼저 띄운다.
 const ATTACK_CARDS: Array[StringName] = [&"ACT_02", &"ACT_03", &"ACT_06", &"ACT_07", &"ACT_08", &"ACT_09", &"ACT_10", &"ACT_14", &"ACT_15"]
 const ATTACK_TAG: String = "공격"
@@ -136,7 +142,7 @@ const CARD_SHORT: Dictionary = {
 	&"ACT_15": "상대 턴 건너뛰기",
 	&"TRP_02": "눈금 4+ 적 사출",
 	&"TRP_03": "반경 2칸 폭파",
-	&"TRP_05": "반경 함정 연쇄 발동",
+	&"TRP_05": "반경 함정 연쇄",
 	&"TRP_06": "미끄러짐+카드 강탈",
 	&"TRP_07": "지나가면 정지",
 	&"TRP_08": "꼴찌와 자리 교환",
@@ -167,7 +173,7 @@ const CARD_SUMMARIES: Dictionary = {
 	&"ACT_11": "다음 굴림 결과를 1~6칸 중 직접 지정",
 	&"ACT_12": "이번 턴이 끝나면 한 턴 더",
 	&"ACT_13": "내 선두 말을 반환점까지의 빈 칸 중 고른 칸으로 순간이동",
-	&"ACT_14": "상대 1명 2턴 동안 카드·필살기·리롤 금지",
+	&"ACT_14": "상대 1명 2턴 동안 카드·필살기·주사위 리롤 금지",
 	&"ACT_15": "상대 1명의 다음 턴 건너뛰기",
 	&"TRP_02": "눈금 4+ 로 지나가는 적 말 출발선 사출",
 	&"TRP_03": "밟으면 반경 2칸 내 모든 말 폭파",
@@ -179,8 +185,8 @@ const CARD_SUMMARIES: Dictionary = {
 	&"TRP_C02": "[코너] 내 말 +5칸 점프 / 적 말 출발선 사출",
 	&"TRP_C03": "[코너] 지나가는 적은 카드 1장 상납, 없으면 강제 정지 (5턴 유지)",
 	&"TRP_C04": "[코너] 밟은 적 정지 + 코너 2칸 안의 적 말 끌어오기",
-	&"SUM_01": "[상단 코너] 소환 후 매 라운드 정방향 3~6칸 전진 · 처음 만난 칸의 말 전부 사출 후 소멸 (1마리만)",
-	&"SUM_02": "[상단 코너] 소환 후 매 라운드 역방향 3~6칸 전진 · 처음 만난 칸의 말 전부 사출 후 소멸 (1마리만)",
+	&"SUM_01": "[상단 코너] 소환 · 라운드가 끝나면 정방향으로 가장 가까운 적 말 하나를 처치하고 사라짐 (1마리만)",
+	&"SUM_02": "[상단 코너] 소환 · 라운드가 끝나면 역방향으로 가장 가까운 적 말 하나를 처치하고 사라짐 (1마리만)",
 }
 
 
@@ -264,6 +270,13 @@ var _player_ids: Array[int] = PLAYER_IDS.duplicate()
 var _seat_anchor: Dictionary = {}
 ## 온라인 대전(락스텝) 동기화. 온라인이 아니면 null.
 var net: NetGame = null
+## 이번 AI 턴에 사람 말 처치·특수 승리·법전 변화가 있었다: 이 턴의 연출은 보통 속도로 (주목 구간).
+var _spotlight_turn: bool = false
+## 행동 처리 묶음 안에서 화면 갱신 요청이 있었다 / 묶음 깊이 (_refresh_all 묶음).
+var _refresh_queued: bool = false
+var _refresh_batch: int = 0
+## 화면 전체 갱신을 실제로 그린 횟수 (테스트용).
+var refresh_count: int = 0
 var _game_seed: int = 0
 var _net_lost_overlay: Control = null
 var _net_status_label: Label = null
@@ -353,6 +366,9 @@ var _tip_skill: Label = null
 var _tip_source: Variant = null
 var _tip_provider: Callable = Callable()
 var _tip_clock: float = 0.0
+## 기물 설명은 클릭으로 연다(고정): 같은 기물을 다시 누르거나 다른 곳을 누르면 닫힌다. 고정된 설명은 커서를 따라가지 않는다.
+var _tip_pinned: bool = false
+var _tip_anchor: Vector2 = Vector2.ZERO
 var _zoom_view: PanelContainer = null
 var _hold_card: PanelContainer = null  ## 포인터가 영역 안에 있어 올라온 채 유지 중인 손패 카드
 var _zoom_key: String = ""
@@ -364,6 +380,12 @@ var _drop_label: Label = null
 var _dock: Control = null
 var _dock_player: int = -1
 var _debug_toggle: Button = null
+## 이 판의 [매치 완료]를 이미 보냈다 (판마다 한 번).
+var _match_complete_sent: bool = false
+## 통계: 이 판이 이 사람의 몇 번째 판인지, 언제 시작했는지, 내가 고른 증강 이름들.
+var _match_number: int = 0
+var _match_started_msec: int = 0
+var _my_augments: Array[String] = []
 var _pressure_serial: int = -1
 var _pressure_second: int = -1
 var _pressure_left: float = 0.0
@@ -396,6 +418,10 @@ var _pending_power: float = 0.5
 var _fx_busy: bool = false
 var _capture_cutin: CaptureCutin = null
 var _capture_marks: Dictionary = {}
+## 처치 확정 대기: 잡기·공격으로 말이 날아가기 전에, 맞은 사람이 방어 카드를 낼지 정할 때까지 처치 연출을 멈춰 둔다 (연출 큐의 한 단계가 기다리는 중).
+var _counter_gate_waiting: bool = false
+## 방어 카드로 막아 낸 말: 처치 연출 대신 방어 이펙트를 한 번 보여 준다 (pawn_id -> true).
+var _defended_shown: Dictionary = {}
 var _capture_epoch: int = 0
 ## 말 움직임 연출(PawnFx): 이 시각(msec)까지는 입력·봇을 잠가 움직임이 끝나기를 기다린다.
 var _fx_until_msec: int = 0
@@ -418,6 +444,13 @@ var _draft_summary: Array[Dictionary] = []
 ## 지금 재생 중인 연출 단계의 함수 이름 (템포 계측기 tests/turn_tempo_probe.gd가 어디서 시간이 드는지 나눠 본다).
 var presentation_label: String = ""
 var _draft_deferred: Array[Dictionary] = []
+## 여러 단계를 한꺼번에 세우는 중 (_enqueue_batch): 다 세울 때까지 재생을 시작하지 않는다.
+var _enqueue_batching: bool = false
+## 마지막으로 누른 증강 리롤 버튼 번호 (거절되면 그 버튼에 이유를 적는다).
+var _last_reroll_index: int = -1
+var _last_reroll_player: int = -1
+## 지난 프레임에 굴리기 화면을 띄울 수 있었는가 (바뀌는 순간에만 화면을 다시 맞춘다).
+var _last_roll_view: bool = false
 ## 드래프트 창이 열렸다 (augment_offers 이후). 이때부터 생긴 연출만 [선택한 증강] 공개 뒤로 미룬다.
 var _draft_open: bool = false
 ## 게임 필: 화면 흔들림, 말 id -> 이동 연출을 필살기 스크립트가 맡는 중(걸음 무시), 차 돌진 중 잡힌 말이 나는 시점을 늦추는 값(초).
@@ -439,6 +472,15 @@ var _pawn_pending: Dictionary = {}
 var _late_steps: Array[Dictionary] = []
 ## 리벤지 부스터 로켓 출격 중인 말 -> 로켓이 내려앉을 타일 (그 칸까지의 걸음은 한 칸씩 뛰지 않고 한 번에 날아간다)
 var _rocket_target: Dictionary = {}
+## 리벤지 부스터 로켓 뒤에 이어 갈 눈금 칸수 (경유지에서 [눈금 N칸]을 띄운다).
+var _rocket_followup: Dictionary = {}
+## 플레이어 -> 이번 굴림 칸수를 늘린 이유들 (가속 보너스·템포 업·도박사) / 말 -> 리벤지 부스터 뒤 눈금 이동에 붙일 기물 능력 이유.
+var _roll_reasons: Dictionary = {}
+var _move_bonus_notes: Dictionary = {}
+## 도착 칸 정산 뒤 추가 이동 중인 말 (점프 부스트·부스터 발판·8번 공 돌진): 이 말의 걸음은 앞선 처치 연출 뒤에 선다. 이동이 끝나면(move_resolved) 지운다.
+var _follow_up_pawns: Dictionary = {}
+## 이동 단계 사이(부스터 도착·점프 부스트 직전)의 짧은 멈춤(초).
+const WAYPOINT_PAUSE: float = 0.25
 ## 굴림 직후 확정 칸수 표시용: 플레이어 -> 가속 보너스까지 합친 최종 칸수
 var _roll_total: Dictionary = {}
 ## 점프 코너·옷장 포탈의 2단계 이동(발판에 멈춤 -> 발동 연출 -> 비행/워프)이 진행 중인 수. 0보다 크면 다른 말의 연출과 알림은 끝날 때까지 기다린다.
@@ -461,6 +503,7 @@ var _stage_turn_key: String = ""
 var _menu_button: Button = null
 var _feedback_button: Button = null  ## 왼쪽 위 피드백 / 버그 제보 (소리·언어는 설정 화면에 있다)
 var _speed_button: Button = null  ## 오른쪽 위 [배속 1x] 진행 속도 (1x -> 2x -> 3x)
+var _language_button: LanguageToggle = null  ## [배속] 왼쪽의 [🌐 KR / EN] 언어 토글 (누르면 화면 글자가 바로 바뀐다)
 ## 이 판을 시작한 시각 (피드백 스냅샷의 플레이 타임).
 var _game_started_msec: int = 0
 ## 액션 로그에 마지막으로 적은 라운드 구분선 (_log_round_divider).
@@ -544,6 +587,8 @@ var _tile_pick_card: StringName = &""
 
 
 func _ready() -> void:
+	L10n.install()
+	L10n.on_changed(_on_language_changed)
 	Sfx.bgm_stop()
 	Sfx.apply_settings()
 	Sfx.unlock()
@@ -578,12 +623,15 @@ func _ready() -> void:
 			if seat != local_player_id:
 				computer_seats.append(seat)
 		_bot.bot_players = computer_seats
+		_bot.difficulty = GameSession.bot_difficulty()  # 놀이터 난이도 (순한맛·보통맛·마라맛)
 	add_child(_bot)
 	add_child(manager)
 	manager.set_process(false)  # 제한 시간은 체크박스로 켤 때만 흐른다 (혼자 테스트할 때 자동 진행 방지)
 	if GameSession.net_active:
 		_setup_net()
 	manager.phase_changed.connect(_on_phase_changed)
+	manager.processing_started.connect(_begin_refresh_batch)
+	manager.processing_finished.connect(_end_refresh_batch)
 	manager.event_received.connect(_on_event)
 	manager.action_rejected.connect(_on_action_rejected)
 	manager.turn_order_reversed.connect(_on_turn_order_reversed)
@@ -596,7 +644,6 @@ func _ready() -> void:
 		_new_game()
 	_apply_game_speed()
 	var mobile := MobileSupport.new()
-	mobile.button_position = Vector2(170, 10)  # 터치 기기의 [전체화면]은 왼쪽 위 [피드백] 버튼 옆
 	add_child(mobile)
 
 
@@ -647,6 +694,11 @@ func _process(delta: float) -> void:
 		_phase_label.text = _phase_text()
 	_bot.instant = instant_roll_for_test
 	_update_time_pressure(delta)
+	# 굴리기 화면은 앞선 연출·카드 끌기·필살기 겨누기가 끝나는 순간 켜지고, 시작되는 순간 꺼진다 (어떤 경로로 바뀌든 프레임마다 맞춘다)
+	var roll_view: bool = _roll_view_allowed()
+	if roll_view != _last_roll_view:
+		_last_roll_view = roll_view
+		_refresh_controls()
 	if _review_bar != null and is_instance_valid(_review_bar):
 		var track: Control = _review_bar.get_parent()
 		var full: float = GameEnums.PHASE_TIME_REVIEW * maxf(manager.timer_scale, 0.001)
@@ -688,17 +740,18 @@ func _input(event: InputEvent) -> void:
 		return
 	if _handle_card_pointer(event):
 		return
-	if event is InputEventMouseMotion:
-		_update_board_pawn_tip((event as InputEventMouseMotion).position)
+	var press: InputEventMouseButton = event as InputEventMouseButton
+	if press != null and press.pressed and press.button_index == MOUSE_BUTTON_LEFT and _pawn_click_target(press.position) == -1:
+		_on_board_tip_click(press.position)  # 이동으로 쓰이지 않는 클릭은 말 설명을 열고 닫는다
 	if manager.current_state != TurnManager.State.PHASE_SELECT_PAWN:
 		return
-	if _ui_busy() or _is_bot_turn() or _choice_overlay != null or _draft_overlay != null or _result_overlay != null or _stack_overlay != null or _tile_pick_active:
+	if _pawn_pick_blocked():
 		return
 	var button_event: InputEventMouseButton = event as InputEventMouseButton
 	if button_event != null:
 		# 보드 위의 내 말 도형을 직접 클릭해 이동한다.
-		if button_event.pressed and button_event.button_index == MOUSE_BUTTON_LEFT and not (_select_banner != null and _select_banner.visible and _select_banner.get_global_rect().has_point(button_event.position)):
-			var clicked: int = _pawn_at(button_event.position)
+		if button_event.pressed and button_event.button_index == MOUSE_BUTTON_LEFT:
+			var clicked: int = _pawn_click_target(button_event.position)
 			if clicked != -1:
 				get_viewport().set_input_as_handled()
 				_on_pawn_pressed(clicked)
@@ -711,6 +764,20 @@ func _input(event: InputEvent) -> void:
 		_board_hover_pawn = hovered
 	elif hovered == -1 and _board_hover_pawn != -1:
 		_clear_highlight()
+
+
+## 지금은 보드에서 말을 골라 움직일 수 없다 (연출·봇 차례·다른 창·칸 고르기 중).
+func _pawn_pick_blocked() -> bool:
+	return _ui_busy() or _is_bot_turn() or _choice_overlay != null or _draft_overlay != null or _result_overlay != null or _stack_overlay != null or _tile_pick_active
+
+
+## 이 클릭으로 움직일 내 말 ID (말 선택 단계에서 고를 수 있는 내 말을 눌렀을 때). 이동으로 쓰이지 않으면 -1.
+func _pawn_click_target(pointer: Vector2) -> int:
+	if manager.current_state != TurnManager.State.PHASE_SELECT_PAWN or _pawn_pick_blocked():
+		return -1
+	if _select_banner != null and _select_banner.visible and _select_banner.get_global_rect().has_point(pointer):
+		return -1
+	return _pawn_at(pointer)
 
 
 ## 화면 좌표 근처(18px)에 있는, 지금 고를 수 있는 내 말의 ID. 없으면 -1.
@@ -765,7 +832,77 @@ func _unhandled_key_input(event: InputEvent) -> void:
 # 새 게임
 # ---------------------------------------------------------------------------
 
+## 통계에 쓰는 이 판의 모드 이름 (놀이터 / 친선 / 익명 / 4인 수동).
+func _telemetry_mode() -> String:
+	var label: String = MatchTelemetry.mode_label(net != null, ai_mode, GameSession.lobby_intent == &"quick")
+	if net == null and ai_mode:
+		label += "-%s" % BotTemper.label(_bot.difficulty if _bot != null else GameSession.bot_difficulty())  # 놀이터-보통맛
+	return label
+
+
+## 통계에서 '나'로 칠 자리: 컴퓨터 대전·온라인은 내 자리, 한 화면 4인 수동은 없다(-1).
+func _telemetry_seat() -> int:
+	return local_player_id if (ai_mode or net != null) else -1
+
+
+## 보드판에 들어와 새 판이 시작됐다: [매치 시작]을 알리고 걸린 시간·고른 증강을 모으기 시작한다.
+func _report_match_start() -> void:
+	_match_started_msec = Time.get_ticks_msec()
+	_my_augments.clear()
+	_match_number = 0
+	if not MatchTelemetry.is_active():
+		return
+	_match_number = GameSession.begin_match()
+	MatchTelemetry.report_match_start(self, _telemetry_mode(), _match_number)
+
+
+## 결과 화면(시상대)이 뜬 판을 [매치 완료]로 알린다. 내가 먼저 졸업했으면 그때 이미 보냈다 (판마다 한 번).
+func _report_match_once() -> void:
+	if state == null or manager == null or not manager.is_game_over:
+		return
+	var seat: int = _telemetry_seat()
+	_send_match_complete_webhook(state.rankings.find(seat) + 1 if seat != -1 else 0)
+
+
+## 순위가 확정됐다: 그 사람이 '나'면 즉시 [매치 완료]를 보낸다 (봇끼리 남은 판을 기다리지 않는다).
+func _report_player_ranked(player_id: int, rank: int) -> bool:
+	if player_id == -1 or player_id != _telemetry_seat():
+		return false
+	return _send_match_complete_webhook(rank)
+
+
+## [매치 완료] 보내기: 로컬 플레이어의 순위가 확정되는 순간(일반 완주·특수 승리) 또는 결과 화면이 뜨는 순간 중 먼저 오는 쪽에서 한 번만.
+## 컴퓨터 대전에서 내가 먼저 졸업하면 봇끼리 끝까지 두는 동안 로비로 나가 버려 결과 화면(게임 종료)까지 가지 않는 경우가 많다 -> 졸업 즉시 보낸다.
+## 1위의 우승 방식은 지금까지 확정된 1위 기준이다. 값이 비어 있어도 안전한 기본값으로 보낸다.
+func _send_match_complete_webhook(my_rank: int) -> bool:
+	if _match_complete_sent or state == null:
+		return false
+	_match_complete_sent = true
+	var first: int = int(state.rankings[0]) if not state.rankings.is_empty() else -1
+	var reason: StringName = StringName(str(state.rank_reasons.get(first, VictoryChecker.ALL_HOME)))
+	var seconds: int = maxi(int((Time.get_ticks_msec() - _match_started_msec) / 1000), 0) if _match_started_msec > 0 else 0
+	var nth: int = _match_number if _match_number > 0 else GameSession.match_count()
+	var augments: Array[String] = []
+	for name: Variant in _my_augments:
+		augments.append(str(name))
+	return MatchTelemetry.report_match_end(self, nth, _telemetry_mode(), int(state.round_number), seconds, maxi(my_rank, 0), reason, augments, _difficulty_report(my_rank, first))
+
+
+## 체감 난이도 지표: 1위 이름, 내 킬/데스, 누적 [N판 중 1위 M회] ('나'가 없는 4인 수동은 1위 이름만). 누적 기록은 이때 한 판 늘린다.
+func _difficulty_report(my_rank: int, first: int) -> Dictionary:
+	var report: Dictionary = {"winner": _player_name(first) if first != -1 else ""}
+	var seat: int = _telemetry_seat()
+	if seat == -1:
+		return report
+	report["kills"] = state.stat(seat, GameState.TALLY_KILLS)
+	report["deaths"] = state.stat(seat, GameState.TALLY_DEATHS)
+	if my_rank > 0 and MatchTelemetry.is_active():
+		report.merge(GameSession.record_match_result(my_rank))
+	return report
+
+
 func _new_game() -> void:
+	_match_complete_sent = false
 	# Initial scene entry has already selected a backdrop; an actual rematch repicks.
 	if state != null and _match_background != null:
 		_match_background.choose_random()
@@ -816,6 +953,7 @@ func _new_game() -> void:
 	state = null
 	manager.start_game(_player_ids, _game_seed)
 	state = manager.state
+	_report_match_start()
 	_bind_state()
 	_build_tiles_once()
 	_build_pawn_views()
@@ -842,28 +980,57 @@ func _bind_state() -> void:
 			_capture_cutin.cancel())
 	state.pawn_sent_to_start.connect(func(pawn_id: int, by_player: int) -> void:
 		var victim: PlayerPawn = state.get_pawn(pawn_id)
-		_log_line("%s 출발선으로 복귀%s" % [_pawn_name(pawn_id), "  [복수 부스터 획득: 다음 출발 +%d칸]" % _revenge_steps() if victim != null and victim.revenge_boost else ""], Color("ff8787"))
+		_log_line("%s 출발선으로 복귀%s" % [_pawn_name(pawn_id), "  [복수 부스터 획득: 다음 출발 +%d칸]" % _revenge_steps(victim) if victim != null and victim.revenge_boost else ""], Color("ff8787"))
 		if victim == null:
 			return
-		_record_ejection(pawn_id, by_player)
+		if not _fx_on():
+			_record_ejection(pawn_id, by_player)
 		if _alkkagi_controlled.has(pawn_id) or _train_controlled.has(pawn_id):
+			if _fx_on():
+				_record_ejection(pawn_id, by_player)
 			return
 		var victim_owner: int = victim.owner_id
-		# 실제 잡기: [컷신 -> 장외 홈런 -> 0번 복귀]를 이동·발판 연출이 모두 끝난 뒤(큐 맨 뒤)에 재생한다.
+		if by_player != victim_owner and not _is_computer_seat(victim_owner):
+			_mark_spotlight()  # AI가 사람 말을 잡은 턴은 보통 속도로 보여 준다
+		# 반격(거울의 힘·우노 리버스): 방어 대기 중에 막은 사람이 공격한 말을 날렸다 -> 공격자가 역으로 처치 컷인을 맞는다.
+		if _fx_on() and manager.counter_pending() and by_player == int(manager.pending_counter()["victim"]) and by_player != victim_owner and not _capture_marks.has(pawn_id):
+			_enqueue_reflect_cutin(pawn_id, by_player, victim_owner)
+		# 실제 잡기: [방어 결정 대기 -> 컷신 -> 장외 홈런 -> 0번 복귀]를 이동·발판 연출이 모두 끝난 뒤(큐 맨 뒤)에 재생한다.
+		# 방어 카드로 막았으면 컷신·홈런·처치 기록 없이 방어 이펙트만 보여 준다 (날아갔다가 돌아오는 장면을 만들지 않는다).
 		# 아바타 표정은 바뀌지 않는다: 표정은 플레이어가 고른 감정 표현(이모트)으로만 바뀐다.
 		var cutin_capture: bool = _capture_marks.has(pawn_id)
 		_capture_marks.erase(pawn_id)
 		if _fx_on():
+			_enqueue_counter_gate()
 			_enqueue_late(func() -> void:
+				if not _ejection_confirmed(pawn_id):
+					_show_defended(pawn_id)
+					return
+				_record_ejection(pawn_id, by_player, true)  # 처치 기록은 처치가 확정되고 연출이 나올 때 적는다
 				await _play_capture_eject(pawn_id, by_player, victim_owner, cutin_capture), pawn_id))
 	state.revenge_boost_fired.connect(_on_revenge_boost_fired)
+	state.nitro_dashed.connect(_on_nitro_dashed)
+	state.leapfrog_boosted.connect(_on_leapfrog_boosted)
+	state.capture_charge_started.connect(func(pawn_id: int, charge_steps: int) -> void:
+		_follow_up_pawns[pawn_id] = true
+		_log_line("[8번 공 돌진] %s 처치 후 +%d칸 더 굴러갑니다" % [_pawn_name(pawn_id), charge_steps], Color("ffd43b"))
+		if not _fx_on():
+			return
+		_enqueue_after_kills(func() -> void:
+			var ball: Node2D = _pawn_views.get(pawn_id)
+			if ball == null or not is_instance_valid(ball):
+				return
+			_floating_badge(ball.position + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + Vector2(0, -40), "8번 공 돌진 +%d" % charge_steps, Color("ffd43b"), 30), pawn_id))
 	state.dash_pad_triggered.connect(func(pawn_id: int, tile: int) -> void:
 		_log_line("[부스터 발판] %s %d번 발판! +%d칸 추가 전진" % [_pawn_name(pawn_id), tile, GameData.dash_steps()], Color("63e6be"))
 		var pad_pos: Vector2 = (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + _tile_center(tile)
-		_fx_when_announced(func() -> void:
+		_follow_up_pawns[pawn_id] = true  # 발판 추가 이동은 도착 칸 처치 연출 뒤에
+		if not _fx_on():
+			return
+		_enqueue_after_kills(func() -> void:
 			Sfx.play(&"dash")
 			_impact_ring(pad_pos, Color("63e6be"), 46.0)
-			_number_pop(pad_pos + Vector2(0, -30), "+%d" % GameData.dash_steps(), Color("63e6be"))
+			_number_pop(pad_pos + Vector2(0, -30), "부스터 발판 +%d" % GameData.dash_steps(), Color("63e6be"))
 			_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(300.0 * _motion_pace()))))
 	state.pawn_finished.connect(func(pawn_id: int) -> void:
 		_log_line(tr_ui("log.finish", [_pawn_name(pawn_id)]), Color("69db7c"))
@@ -969,8 +1136,10 @@ func _bind_state() -> void:
 			_record(trapped.owner_id, "%s 밟음! (%d번 타일, %s)" % [_bq(_attachment_name(id)), tile, _bq("%d번 말" % trapped.slot)])
 		if id != "TRP_05":  # 도미노는 [도미노 연쇄!] 알림(domino_collapsed)이 먼저 나왔다: 같은 알림을 연쇄 뒤에 또 띄우지 않는다
 			_announce_gate("함정 발동", "[발동!] %s" % _attachment_name(id), "%s\n%d번 타일에서 %s에게 발동" % [card_summary(StringName(id)), tile, _pawn_name(pawn_id)], Color("ff6b6b"), null, 1.2))
-	state.npc_vanished.connect(func(npc_id: int, tile: int) -> void:
-		_announce("중립 기물", "NPC가 사냥을 마치고 사라졌습니다", "%d번 타일 - 중립 기물은 말을 잡으면 사라집니다" % tile, Color("fa5252"), null, 1.3))
+	# 중립 기물이 사라질 때는 알림 카드를 띄우지 않는다: 엔진이 즉시 내는 신호라 진행 중인 다른 연출(처치·이동) 사이에 끼어들었다.
+	# 결과는 [중립 기물 이동] 카드·달리기·처치 컷인과 기록(로그)으로 이미 보인다.
+	state.npc_vanished.connect(func(_npc_id: int, tile: int) -> void:
+		_log_line("[중립 기물] %d번 타일에서 사라졌습니다" % tile, Color("fa5252")))
 	state.attachment_placed.connect(func(tile: int, id: String, owner_id: int) -> void:
 		if id.begins_with("TRP") and _fx_on():
 			# 카드를 먼저 보여 준 뒤 발판이 짙은 보라색으로 깜빡이며 나타난다.
@@ -980,7 +1149,8 @@ func _bind_state() -> void:
 				_refresh_tiles()
 				_tile_glow(tile)
 				_impact_ring(_tile_center(tile) + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO), Color("7b2cbf"), 26.0)
-				Sfx.play(&"trap_set"))
+				Sfx.play(&"trap_set")
+				_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(350.0 * _motion_pace())))  # 깜빡임을 볼 틈: 다음 알림은 그 뒤에
 		_log_line("P%d가 %d번 타일에 [%s]을(를) 설치했습니다" % [owner_id, tile, "뒷면 카드" if id.begins_with("TRP") else _attachment_name(id)], Color("adb5bd"))
 		_refresh_tiles())
 	state.card_drawn.connect(func(_player_id: int, _card_id: StringName) -> void:
@@ -989,7 +1159,7 @@ func _bind_state() -> void:
 	state.card_drawn.connect(func(player_id: int, _card_id: StringName) -> void: _log_line("[카드] P%d 생떼 카드 1장 획득" % player_id, Color("ffa94d")))  # 뽑은 카드는 비공개
 	state.card_stolen.connect(func(player_id: int, card_id: StringName) -> void: _log_line("P%d의 카드 [%s]를 도적이 빼앗았습니다" % [player_id, _card_name(card_id)], Color("ff6b6b")))
 	state.npc_spawned.connect(func(_npc_id: int, tile: int) -> void:
-		_log_line("중립 기물이 %d번 타일에 소환되었습니다. 말을 잡을 때까지 계속 전진합니다." % tile, Color("fa5252"))
+		_log_line("중립 기물이 %d번 타일에 소환되었습니다. 라운드가 끝나면 가장 가까운 적 말 하나를 처치하고 사라집니다." % tile, Color("fa5252"))
 		_refresh_all())
 	state.rulebook.law_added.connect(_on_law_added)
 	state.rulebook.law_removed.connect(func(law: LawResource) -> void:
@@ -1090,7 +1260,7 @@ func _register_layout() -> void:
 	_layout_entries.clear()
 	var left: Array = [_law_panel, _feedback_button]
 	var center: Array = [_select_banner, _dir_left, _dir_right, _board_layer, _pawn_layer, _dock, _drop_zone, _pick_banner, _pick_cancel, _roll_button, _roll_pad, _gun_row, _stage_yacht, _stage_blackjack, _stage_pinball, _danger_label]
-	var right: Array = [_tool_board, _action_row, _pawn_bar, _emote_row, _menu_button, _speed_button, _debug_box, _log_panel]
+	var right: Array = [_tool_board, _action_row, _pawn_bar, _emote_row, _menu_button, _speed_button, _language_button, _debug_box, _log_panel]
 	for index: int in PLAYER_IDS.size():
 		var player_id: int = PLAYER_IDS[index]
 		var panel: Control = _profiles[player_id]["panel"]
@@ -1246,7 +1416,7 @@ func _build_profiles() -> void:
 			status.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			status.visible = true
 			box.add_child(status)
-			_bind_tip(icon, _fill_pawn_tip.bind(player_id * 10 + slot))
+			icon.gui_input.connect(_on_pawn_icon_input.bind(icon, player_id * 10 + slot))
 			cell.add_child(icon)
 			if big:
 				var skill_button: Button = _make_button(tr_ui("btn.skill"), _on_skill_pressed.bind(slot - 1), 11, Color("c77d0a"), 6)
@@ -1257,7 +1427,7 @@ func _build_profiles() -> void:
 				skill_button.add_theme_constant_override("outline_size", 3)
 				skill_button.visible = false
 				skill_button.mouse_entered.connect(_on_pawn_slot_hover.bind(slot - 1))
-				skill_button.mouse_exited.connect(_tip_end.bind(skill_button))
+				skill_button.mouse_exited.connect(_on_pawn_slot_unhover.bind(skill_button))
 				cell.add_child(skill_button)
 				_skill_buttons.append(skill_button)
 			slots.append({"panel": icon, "letter": letter, "status": status})
@@ -1528,6 +1698,31 @@ func _build_status_strip() -> void:
 	_speed_button.size = Vector2(84, 32)
 	add_child(_speed_button)
 	_refresh_speed_button()
+	_language_button = LanguageToggle.create(13, Color.WHITE)
+	_apply_button_style(_language_button, Color("3b4766"), 8)
+	Sfx.bind_button(_language_button)
+	_language_button.position = Vector2(1180 - 8 - 118, 10)
+	_language_button.size = Vector2(118, 32)
+	add_child(_language_button)
+	if MobileSupport.touch_mode():
+		_apply_touch_top_bar()
+
+
+## 터치 기기: 위쪽 [피드백]·[배속]·[메뉴] 버튼을 손가락 크기로 키운다 (기준 84x32 -> 124x48, 프로필 패널 위 여백 안에서).
+func _apply_touch_top_bar() -> void:
+	var height: float = MobileSupport.TOUCH_BUTTON_HEIGHT
+	var right: float = 1366.0 - SAFE_MARGIN + 4.0
+	_menu_button.size = Vector2(124, height)
+	_menu_button.position = Vector2(right - 124.0, 3)
+	_speed_button.size = Vector2(124, height)
+	_speed_button.position = Vector2(right - 124.0 * 2.0 - 8.0, 3)
+	_language_button.size = Vector2(132, height)
+	_language_button.position = Vector2(right - 124.0 * 2.0 - 8.0 - 132.0 - 8.0, 3)
+	_feedback_button.size = Vector2(190, height)
+	_feedback_button.position = Vector2(SAFE_MARGIN, 3)
+	for button: Button in [_menu_button, _speed_button, _language_button, _feedback_button]:
+		button.add_theme_font_size_override("font_size", 17)
+		MobileSupport.touch_button(button, height)
 
 
 ## 우측 중앙의 큼직한 둥근 [굴리기] 버튼(모두의 마블 방식)과 그 아래의 멈추기·개입 패스·폭탄 떠넘기기 버튼.
@@ -2101,8 +2296,6 @@ func _refresh_pawns() -> void:
 			badge_text += " 구속"
 		if pawn.is_imprisoned:
 			badge_text += " 감옥"
-		if pawn.revenge_boost:
-			badge_text += " 복수"
 		if state.bonds.has(pawn.entity_id):
 			badge_text += " 연대"  # 강제 연대책임: 일심동체로 묶인 말
 		(view.get_node("Bounce/Badge") as Label).text = badge_text
@@ -2226,8 +2419,11 @@ func _update_dash_pulse() -> void:
 func _danger_warning_needed() -> bool:
 	if _npc_danger.is_empty() or state == null:
 		return false
-	if _hover_danger_tile != -1 and int((_npc_danger.get(_hover_danger_tile, {}) as Dictionary).get("level", 0)) >= 2:
-		return true
+	# 이동 미리보기: 기물이 덮칠 칸이거나, 그 앞길(내가 서면 가장 가까운 적이 된다)이면 위험. 내가 소환한 기물은 내 말을 덮치지 않는다.
+	if _hover_danger_tile != -1 and int((_npc_danger.get(_hover_danger_tile, {}) as Dictionary).get("level", 0)) >= 1:
+		for npc: NeutralNPC in state.npcs:
+			if npc.owner_id != _dock_owner():
+				return true
 	for pawn: PlayerPawn in state.pawns_of(_dock_owner()):
 		if pawn.is_finished or not pawn.has_left_start or pawn.carrier != null:
 			continue
@@ -2358,7 +2554,12 @@ func _on_pawn_stepped(pawn_id: int, _from_tile: int, _to_tile: int) -> void:
 			enqueue_step(_play_rocket.bind(pawn_id, _pawn_position(pawn), target_scale, rocket_tile), pawn_id)
 			return
 	# 한 칸씩 연출 큐에 세운다: 엔진이 여러 걸음(발판 가속·효과 전진)을 한꺼번에 방송해도 화면은 앞 걸음이 끝난 뒤에 다음 걸음을 뛴다.
-	enqueue_step(_play_hop.bind(pawn_id, _pawn_position(pawn), target_scale, pawn.current_tile_idx), pawn_id)
+	# 도착 정산 뒤의 추가 이동(점프 부스트·발판·8번 공 돌진)이면 도착 칸 처치 연출이 끝난 뒤에 뛴다 (이동 4단계).
+	var hop: Callable = _play_hop.bind(pawn_id, _pawn_position(pawn), target_scale, pawn.current_tile_idx)
+	if _follow_up_pawns.has(pawn_id):
+		_enqueue_after_kills(hop, pawn_id)
+	else:
+		enqueue_step(hop, pawn_id)
 
 
 ## 큐의 한 단계: 말이 한 칸을 통통 뛰고 착지할 때까지 기다린다.
@@ -2492,31 +2693,33 @@ func _play_capture_eject(pawn_id: int, by_player: int, owner_id: int, cutin_capt
 	await _play_eject_settle(pawn_id)
 	var ejected: PlayerPawn = state.get_pawn(pawn_id) if state != null else null
 	if ejected != null and ejected.revenge_boost and not ejected.has_left_start:
-		_revenge_charged_popup(ejected.owner_id)
+		_revenge_charged_popup(ejected.owner_id, ejected)
 
 
 ## 리벤지 부스터 [획득]: 그 플레이어 모서리 프로필 위에 복수심 장전 문구를 띄운다.
-func _revenge_charged_popup(player_id: int) -> void:
+func _revenge_charged_popup(player_id: int, pawn: PlayerPawn = null) -> void:
 	if not _fx_on() or not _profiles.has(player_id):
 		return
 	var panel: Control = _profiles[player_id]["panel"]
 	var at: Vector2 = get_global_transform().affine_inverse() * panel.get_global_rect().get_center()
 	at.x = clampf(at.x, 60.0, size.x - 60.0)
 	at.y = clampf(at.y, 60.0, size.y - 60.0)
-	_number_pop(at, "+%d" % _revenge_steps(), Color("ff922b"))
+	_number_pop(at, "+%d" % _revenge_steps(pawn), Color("ff922b"))
 	Sfx.play(&"revenge_ignite")
 	_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(120.0 * _motion_pace()))  # 배지는 혼자 떠오르므로 큐를 오래 붙잡지 않는다
 
 
-## 리벤지 부스터 [발동]: 기본 눈금 -> 부스터 합산을 두 단계로 보여 주고, 첫 BONUS칸은 로켓으로 날아간다.
+## 리벤지 부스터 [발동] = 이동 4단계 중 1단계: 부스터 칸수만큼 로켓으로 먼저 날아가 잠깐 멈추고(경유지라 판정 없음), 2단계로 눈금만큼 한 칸씩 간다.
 func _on_revenge_boost_fired(pawn_id: int, base_steps: int, bonus: int, total: int) -> void:
 	var pawn: PlayerPawn = state.get_pawn(pawn_id)
-	_log_line("[리벤지 부스터] %s 출격! 눈금 %d칸 + 부스터 %d칸 = 총 %d칸" % [_pawn_name(pawn_id), base_steps, bonus, total], Color("ff922b"))
+	var dice_part: int = maxi(total - bonus, 0)  # 눈금 + 기물 능력 (부스터 뒤에 이어 가는 본 이동)
+	_log_line("[리벤지 부스터] %s +%d칸 선행 전진! 이어서 눈금 %d칸" % [_pawn_name(pawn_id), bonus, dice_part], Color("ff922b"))
 	if pawn != null:
-		_record(pawn.owner_id, "리벤지 부스터 → 눈금 %d칸 + 복수 %d칸 = 총 %d칸 전진!" % [base_steps, bonus, total])
+		_record(pawn.owner_id, "리벤지 부스터 +%d칸 선행 전진 → 이어서 눈금 %d칸 전진" % [bonus, dice_part])
 	if not _fx_on() or pawn == null:
 		return
 	_rocket_target[pawn_id] = GameEnums.GOAL_TILE + bonus
+	_rocket_followup[pawn_id] = dice_part
 	enqueue_step(_play_revenge_launch.bind(pawn_id, base_steps, bonus, total), pawn_id)
 
 
@@ -2525,14 +2728,67 @@ func _on_revenge_boost_fired(pawn_id: int, base_steps: int, bonus: int, total: i
 func _play_revenge_launch(pawn_id: int, base_steps: int, bonus: int, total: int) -> void:
 	Sfx.play(&"rocket")
 	screen_shake(6.0, 0.2)
-	var extra: int = total - base_steps - bonus
-	var formula: String = "%d칸 + 복수 %d칸 = 총 %d칸 전진!" % [base_steps, bonus, total] if extra == 0 else "%d칸 + 복수 %d칸 (+능력 %d칸) = 총 %d칸 전진!" % [base_steps, bonus, extra, total]
-	_show_center_banner("[리벤지 부스터 발동! +%d칸 추가!]\n%s" % [bonus, formula], Color("ff922b"))
+	_show_center_banner("[리벤지 부스터] +%d칸 선행 전진!\n도착하면 이어서 눈금 %d칸" % [bonus, maxi(total - bonus, 0)], Color("ff922b"))
 	var view: Node2D = _pawn_views.get(pawn_id)
 	if view != null and _pawn_layer != null:
 		_impact_ring(view.position, Color("ff6b00"), 58.0)
 		_burst_shards(view.position, Color("ff922b"), 14)
 	await get_tree().create_timer(REVENGE_LAUNCH_LEAD).timeout
+
+
+## 점프 부스트 = 이동 4단계 중 4단계: 눈금 이동이 끝난 칸(경유지)의 처치 연출이 다 끝난 뒤, [점프 부스트 +N] 배지와 함께 잠깐 멈췄다가 추가 이동을 시작한다.
+func _on_leapfrog_boosted(pawn_id: int, waypoint: int, bonus: int) -> void:
+	_log_line("[점프 부스트] %s %d번 칸에서 +%d칸 추가 이동!" % [_pawn_name(pawn_id), waypoint, bonus], Color("ffd43b"))
+	_follow_up_pawns[pawn_id] = true
+	if not _fx_on():
+		return
+	_enqueue_after_kills(func() -> void:
+		var view: Node2D = _pawn_views.get(pawn_id)
+		if view == null or not is_instance_valid(view):
+			return
+		Sfx.play(&"dash")
+		_floating_badge(view.position + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + Vector2(0, -40), "점프 부스트 +%d" % bonus, Color("ffd43b"), 34)
+		await get_tree().create_timer(WAYPOINT_PAUSE * _motion_pace()).timeout, pawn_id)
+
+
+## 초증강 아우토반 니트로: 선두 말이 리벤지 부스터처럼 화염을 뿜으며 코너(또는 길을 막은 말이 있는 칸)까지 한 번에 날아간다.
+## 엔진은 움직이기 전에 방송하므로 지금 자리에서 출발하고, 한 칸씩 뛰는 걸음은 건너뛴다. 막은 칸의 말 사출은 그 뒤 처치 연출로 이어진다.
+func _on_nitro_dashed(pawn_id: int, path: Array[int], blocked: int) -> void:
+	var pawn: PlayerPawn = state.get_pawn(pawn_id)
+	_log_line("[아우토반 니트로] %s %s" % [_pawn_name(pawn_id), "%d번 칸의 말을 들이받고 멈춤!" % blocked if blocked != -1 else "%d번까지 질주!" % path.back()], Color("ff922b"))
+	if not _fx_on() or pawn == null or path.is_empty() or not _pawn_views.has(pawn_id):
+		return
+	var tile: int = int(path.back())
+	var goal: Vector2 = _tile_center(tile) if tile == GameEnums.GOAL_TILE else _pawn_position_at(pawn, tile)
+	var goal_scale: float = _depth_scale(tile_norm(tile).y)
+	_fx_skip_steps[pawn_id] = true
+	enqueue_step(func() -> void:
+		var view: Node2D = _pawn_views.get(pawn_id)
+		if view == null or not is_instance_valid(view):
+			_fx_skip_steps.erase(pawn_id)
+			return
+		Sfx.play(&"rocket")
+		screen_shake(6.0, 0.2)
+		_show_center_banner("[아우토반 니트로!]\n%s" % ("%d번 칸 들이받기!" % blocked if blocked != -1 else "%d번까지 질주!" % tile), Color("ff922b"))
+		_impact_ring(view.position, Color("ff6b00"), 58.0)
+		_burst_shards(view.position, Color("ff922b"), 14)
+		await get_tree().create_timer(REVENGE_LAUNCH_LEAD).timeout
+		if not is_instance_valid(view):
+			_fx_skip_steps.erase(pawn_id)
+			return
+		_glide(view, goal, goal_scale, {"from_pos": view.position, "dur": 0.32, "arc": 14.0, "pace_cap": 1.0, "land_tile": tile, "land_big": true})
+		var generation: int = _fx_generation
+		var frame: int = 0
+		while generation == _fx_generation and is_instance_valid(view) and _fx_running(view):
+			if frame % 2 == 0:
+				_rocket_puff(view.position)
+			frame += 1
+			await get_tree().process_frame
+		_fx_skip_steps.erase(pawn_id)
+		if generation != _fx_generation or not is_instance_valid(view):
+			return
+		screen_shake(7.0, 0.22)
+		_impact_ring(view.position, Color("ff6b00"), 50.0), pawn_id)
 
 
 ## 큐의 한 단계: 출발선에서 부스터 칸까지 화염 잔상을 남기며 0.28초 만에 낮은 아치로 날아가 쾅 착지한다.
@@ -2553,7 +2809,15 @@ func _play_rocket(pawn_id: int, to_pos: Vector2, to_scale: float, tile: int) -> 
 		return
 	screen_shake(7.0, 0.22)
 	_impact_ring(view.position, Color("ff6b00"), 50.0)
-	_floating_badge(view.position + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + Vector2(0, -42), "+%d" % _revenge_steps(), Color("ff922b"), 40)
+	_floating_badge(view.position + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + Vector2(0, -42), "리벤지 부스터 +%d" % _revenge_steps(state.get_pawn(pawn_id) if state != null else null), Color("ff922b"), 34)
+	# 1단계(부스터)와 2단계(눈금 이동) 사이의 짧은 호흡: 경유지라 아직 판정하지 않는다
+	var dice_part: int = int(_rocket_followup.get(pawn_id, 0))
+	_rocket_followup.erase(pawn_id)
+	await get_tree().create_timer(WAYPOINT_PAUSE * _motion_pace()).timeout
+	if dice_part > 0 and is_instance_valid(view):
+		var bonus_notes: Array = _move_bonus_notes.get(pawn_id, [])
+		_move_bonus_notes.erase(pawn_id)
+		_floating_badge(view.position + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + Vector2(0, -42), ("눈금 %d칸" % dice_part) + (" (%s)" % " · ".join(PackedStringArray(bonus_notes)) if not bonus_notes.is_empty() else ""), Color("f8f9fa"), 30)
 
 
 ## 로켓 화염 잔상 한 점: 주황 원이 커지며 사라진다.
@@ -2635,7 +2899,43 @@ func _play_warp_glide(pawn_id: int, to_pos: Vector2, to_scale: float, options: D
 # 갱신
 # ---------------------------------------------------------------------------
 
+## 화면 전체를 상태에 맞춘다. 행동 하나를 처리하는 동안(_begin_refresh_batch ~ _end_refresh_batch)에는 요청만 모아 두고
+## 행동이 끝날 때 한 번만 그린다: 행동 하나가 신호 여러 개(단계 변경·이벤트·로그)를 내며 매번 프로필·손패·버튼을 다시 그리던 것이
+## 웹에서 끊김(한 번에 수십 ms 멈춤)의 주원인이었다. 묶음 밖에서는 예전처럼 바로 그린다.
+## [KR / EN] 토글: 글자는 자동 번역 노드가 알아서 바뀌고, 보드판 말 라벨(한두 글자)과 손패 카드(이름 글자 크기를 언어에 맞춤)만 다시 그린다.
+func _on_language_changed() -> void:
+	if not is_inside_tree() or manager == null or manager.state == null:
+		return
+	_refresh_all()
+	if _dock != null:
+		_refresh_hands()
+
+
 func _refresh_all() -> void:
+	if manager == null or manager.state == null:
+		return
+	state = manager.state
+	if _refresh_batch > 0:
+		_refresh_queued = true
+		return
+	_refresh_now()
+
+
+## 행동 처리 묶음 시작 (겹쳐 불러도 된다).
+func _begin_refresh_batch() -> void:
+	_refresh_batch += 1
+
+
+## 행동 처리 묶음 끝: 그 사이 요청된 화면 갱신을 한 번에 그린다.
+func _end_refresh_batch() -> void:
+	_refresh_batch = maxi(_refresh_batch - 1, 0)
+	if _refresh_batch == 0 and _refresh_queued:
+		_refresh_now()
+
+
+func _refresh_now() -> void:
+	_refresh_queued = false
+	refresh_count += 1
 	if manager == null or manager.state == null:
 		return
 	state = manager.state
@@ -2930,10 +3230,10 @@ func _play_npc_run(display_id: StringName, behavior: int, from_tile: int, path: 
 	if not _fx_on() or path.is_empty():
 		after.call()
 		return
-	var real: Node2D = _npc_views.get(npc_id)
-	if real != null:
-		real.visible = false
-		real.set_meta("npc_run", true)
+	var hidden: Node2D = _npc_views.get(npc_id)
+	if hidden != null:
+		hidden.visible = false
+		hidden.set_meta("npc_run", true)
 	enqueue_step(func() -> void:
 		var token := PawnToken.new()
 		token.configure_npc(behavior)
@@ -2957,6 +3257,8 @@ func _play_npc_run(display_id: StringName, behavior: int, from_tile: int, path: 
 		if is_instance_valid(runner):
 			_impact_ring(runner.position + _pawn_layer.position, Color("fa5252"), 36.0)
 			runner.queue_free()
+		# 기물 그림은 달리는 동안 지워질 수 있다(사라진 기물): 람다에 노드를 잡지 않고 다 달린 뒤에 다시 찾는다.
+		var real: Node2D = _npc_views.get(npc_id)
 		if real != null and is_instance_valid(real):
 			real.remove_meta("npc_run")
 			var still: NeutralNPC = state.get_npc(npc_id)
@@ -2968,7 +3270,10 @@ func _play_npc_run(display_id: StringName, behavior: int, from_tile: int, path: 
 
 
 ## 지금 라운드의 리벤지 부스터 칸 수 (템포 업이 오르면 커진다).
-func _revenge_steps() -> int:
+## 리벤지 부스터 칸수. 말을 주면 그 말 기준(루도 복수자는 +4칸 더).
+func _revenge_steps(pawn: PlayerPawn = null) -> int:
+	if pawn != null and state != null:
+		return MoveExecutor.revenge_bonus_of(pawn, state)
 	var base: int = GameData.revenge_bonus()
 	return maxi(base, TempoUp.revenge_bonus(state.round_number)) if base > 0 and state != null else base
 
@@ -2977,6 +3282,9 @@ func _revenge_steps() -> int:
 func _check_round_banner() -> void:
 	if _announcer == null or manager.is_game_over or manager.current_state == TurnManager.State.PHASE_ROUND_START:
 		return
+	if _fx_on() and (_draft_open or not _draft_deferred.is_empty() or (_review_overlay != null and is_instance_valid(_review_overlay))):
+		_motion_retry = true
+		return  # 증강 확인 창이 닫히고, 고른 증강의 즉시 효과(진화·도구 교체·카드 보급·초증강) 연출이 다 끝난 뒤에 라운드를 연다
 	if _defer_for_motion():
 		return
 	if state.round_number == _announced_round:
@@ -3016,7 +3324,7 @@ func _check_turn_banner() -> void:
 	var who: String = tr_ui("turn.mine") if (not ai_mode or player_id == local_player_id) and ai_mode else tr_ui("turn.other", [_player_name(player_id)])
 	if _fx_on():
 		Sfx.play(&"turn_start")
-	_announce("턴", who, "", PLAYER_COLORS[player_id], null, TURN_BANNER_SECONDS)
+	_announce("턴", who, "", PLAYER_COLORS[player_id], null, TURBO_TURN_BANNER_SECONDS if _turbo_turn() else TURN_BANNER_SECONDS)
 
 
 ## 프로필에 보여 줄 이름: AI 대전에서는 내 닉네임과 "컴퓨터 n", 4P 수동 조작에서는 "플레이어 n".
@@ -3056,10 +3364,13 @@ func _refresh_players() -> void:
 		var is_turn: bool = player_id == _shown_turn_player() and not manager.is_game_over
 		var game_over: bool = manager.is_game_over
 		var margin: int = 8
-		if is_turn:
-			panel.add_theme_stylebox_override("panel", _style(Color("273049"), Color("fff3bf"), 4, 14, 26, margin))
-		else:
-			panel.add_theme_stylebox_override("panel", _style(COLOR_PANEL, color.darkened(0.35), 2, 14, 4, margin))
+		var lit_key: String = "%s:%s" % [is_turn, game_over]
+		if str(panel.get_meta("lit_key", "")) != lit_key:  # 바뀌었을 때만 다시 칠한다 (매 갱신마다 스타일·트윈을 새로 만들지 않게)
+			panel.set_meta("lit_key", lit_key)
+			if is_turn:
+				panel.add_theme_stylebox_override("panel", _style(Color("273049"), Color("fff3bf"), 4, 14, 26, margin))
+			else:
+				panel.add_theme_stylebox_override("panel", _style(COLOR_PANEL, color.darkened(0.35), 2, 14, 4, margin))
 		_set_profile_light(panel, PROFILE_LIT if (is_turn or game_over) else PROFILE_DIM, Vector2(1.05, 1.05) if is_turn else Vector2.ONE)
 		_refresh_status_stamps(player_id)
 
@@ -3097,6 +3408,10 @@ func _refresh_pawn_slots(player_id: int) -> void:
 
 ## 프로필 패널의 명암(modulate)과 크기를 목표로 보낸다 (테스트·초기화 때는 즉시, 평소에는 짧은 트윈).
 func _set_profile_light(panel: Control, tint: Color, target_scale: Vector2) -> void:
+	var target: Array = [tint, target_scale]
+	if panel.has_meta("light_target") and panel.get_meta("light_target") == target and not instant_roll_for_test:
+		return  # 이미 그 목표로 가는 중이거나 도착했다: 트윈을 다시 시작하지 않는다
+	panel.set_meta("light_target", target)
 	if panel.has_meta("light_tween"):
 		var previous: Tween = panel.get_meta("light_tween")
 		if previous != null and previous.is_valid():
@@ -3132,12 +3447,17 @@ func _paint_pawn_slot(parts: Dictionary, pawn: PlayerPawn, color: Color) -> void
 	letter.visible = false
 	status.visible = false
 	_token_in(panel, pawn, color, Vector2.ZERO, 1.0)
+	# 칸 모양을 정하는 값이 그대로면 스타일을 새로 만들지 않는다 (16칸 x 갱신마다 스타일·테마를 다시 씌우던 것이 갱신 비용의 대부분이었다).
 	var reflow: Callable = _fit_profile_token.bind(panel)
 	if not panel.resized.is_connected(reflow):
 		panel.resized.connect(reflow)
 	_fit_profile_token(panel)
+	var paint_key: Array = [pawn.letter(), L10n.current_lang, pawn.is_promoted_shogi(), pawn.is_finished, pawn.has_left_start, pawn.revenge_boost, color]
+	if panel.has_meta("paint_key") and panel.get_meta("paint_key") == paint_key:
+		return
+	panel.set_meta("paint_key", paint_key)
 	var shown: String = pawn.letter()
-	letter.text = shown if shown != "" else "말"
+	letter.text = shown if shown != "" else PawnCatalog.basic_letter()
 	letter.add_theme_color_override("font_color", Color("ff6b6b") if pawn.is_promoted_shogi() else Color("f8f9fa"))
 	if pawn.is_finished:
 		panel.add_theme_stylebox_override("panel", _style(Color("d4a72c"), Color("fff3bf"), 3, 8, 12, 1))
@@ -3256,6 +3576,8 @@ func _refresh_hands() -> void:
 func _reaction_holder() -> int:
 	if manager.is_game_over or not manager.counter_pending():
 		return -1
+	if _fx_on() and _presentation_active() and not _counter_gate_waiting:
+		return -1  # 공격하는 말이 그 칸에 도착해 대치할 때까지(연출 큐가 방어 대기 단계에 닿을 때까지) 팝업을 띄우지 않는다
 	var victim: int = int(manager.pending_counter()["victim"])
 	if ai_mode or net != null:
 		return victim if victim == local_player_id else -1
@@ -3415,9 +3737,7 @@ func _make_card_view(player_id: int, card_id: StringName) -> PanelContainer:
 	var glow_style: StyleBoxFlat = _card_frame_style(card.category, true)
 	view.add_theme_stylebox_override("panel", idle_style)
 	view.modulate = Color.WHITE if usable else Color(0.62, 0.62, 0.68)
-	var quote: String = GameData.text("cards", card_id, "parody_quote")
-	view.tooltip_text = "%s (%s) - %s\n%s%s%s" % [card.display_name, card_id, _category_text(card.category), card_summary(card_id),
-		"\n발동: 내가 공격받으면 발동 여부를 묻습니다" if card.category == GameEnums.CardCategory.COUNTER else "", ("\n“%s”" % quote) if quote != "" else ""]
+	# 커서를 대면 뜨던 설명 상자는 없앴다: 카드 앞면이 이름·효과를 이미 보여 준다.
 	view.add_child(_build_card_body(card_id, HAND_CARD_SIZE))
 	view.gui_input.connect(_on_card_gui_input.bind(player_id, card_id, view))
 	view.set_meta("idle_style", idle_style)
@@ -3694,6 +4014,21 @@ func _open_zoom(player_id: int, card_id: StringName) -> void:
 	timing.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	timing.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	guide_box.add_child(timing)
+	if CardSkin.SELF_RISK.has(card_id):
+		# 내 말도 휘말리는 카드: 카드 왼쪽 위의 경고 아이콘과 같은 그림 + 상세 문구
+		var caution := HBoxContainer.new()
+		caution.name = "CardCaution"
+		caution.add_theme_constant_override("separation", 6)
+		caution.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var caution_icon := CardSkin.WarningIcon.new()
+		caution_icon.custom_minimum_size = Vector2(22, 22)
+		caution.add_child(caution_icon)
+		var caution_text := _make_label("주의: %s" % CardSkin.SELF_RISK[card_id], 14, CardSkin.WARNING_RED)
+		caution_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		caution_text.custom_minimum_size = Vector2(card_size.x - 24.0 - 28.0, 0)
+		caution_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		caution.add_child(caution_text)
+		guide_box.add_child(caution)
 	var usable: bool = _card_usable_now(player_id, card)
 	var status_text: String = "지금 사용 가능" if usable else "지금은 사용 불가"
 	if card.category == GameEnums.CardCategory.COUNTER:
@@ -3792,7 +4127,7 @@ func _fill_pawn_tip(pawn_id: int) -> void:
 	if pawn.is_promoted_shogi():
 		status += "  ★나리 승급(+1칸)"
 	if pawn.revenge_boost and not pawn.has_left_start:
-		status += "\n리벤지 부스터 활성화: 이번 출격 시 이동 거리 +%d칸!" % _revenge_steps()
+		status += "\n리벤지 부스터 활성화: 이번 출격 시 이동 거리 +%d칸!" % _revenge_steps(pawn)
 	if pawn.sub_type() == GameEnums.PawnSubType.BADUK_WHITE:
 		status += "  방어막 있음" if pawn.shield else "  (방어막 깨짐)"
 	_tip_title.text = "%s  - P%d%s" % [PawnCatalog.full_name(pawn.kind, pawn.unit_no), pawn.owner_id, status]
@@ -3813,7 +4148,7 @@ func _fill_law_tip(slot: int) -> void:
 		return
 	var law: LawResource = state.rulebook.active_laws_queue[slot]
 	_tip_title.text = "★ [특수 승리] %s" % law.law_name
-	_tip_ability.text = "◆ 조건: %s\n◆ 라운드가 끝나기 직전에 판정: 달성해 있으면 다음 순위로 졸업하고, 이 교칙은 법전에서 사라집니다" % law.description
+	_tip_ability.text = "◆ 조건: %s\n◆ 차례가 끝날 때마다 판정: 달성해 있으면 바로 다음 순위로 졸업하고, 이 교칙은 법전에서 사라집니다" % law.description
 	_tip_skill.visible = law is VictoryLaw
 	if law is VictoryLaw:
 		_tip_skill.text = law_progress_text(state, law as VictoryLaw, _player_name)
@@ -3839,6 +4174,7 @@ func _bind_tip(control: Control, provider: Callable) -> void:
 
 
 func _tip_begin(source: Variant, provider: Callable) -> void:
+	_tip_pinned = false
 	_tip_source = source
 	_tip_provider = provider
 	_tip_clock = 0.0
@@ -3849,9 +4185,34 @@ func _tip_end(source: Variant = null) -> void:
 	if source != null and _tip_source != source:
 		return
 	_tip_source = null
+	_tip_pinned = false
 	_tip_clock = 0.0
 	if _tip_panel != null:
 		_tip_panel.visible = false
+
+
+## 기물 설명 열기/닫기: 열려 있는 같은 기물을 다시 누르면 닫고, 아니면 누른 자리 옆에 바로 연다.
+func _tip_toggle(source: Variant, provider: Callable) -> void:
+	if _tip_pinned and _tip_source == source:
+		_tip_end()
+		return
+	_tip_source = source
+	_tip_provider = provider
+	_tip_pinned = true
+	_tip_anchor = get_viewport().get_mouse_position()
+	_tip_clock = TIP_DELAY
+	_tip_panel.visible = false
+	_update_tip(0.0)
+
+
+## 클릭 한 번이 고정된 기물 설명을 닫아야 하는가: 그 설명을 연 칸(프로필·독)이 아닌 곳을 눌렀다.
+## 보드 위 말 설명은 _on_board_tip_click이, 그 칸 자신의 클릭은 _tip_toggle이 처리한다.
+func _tip_click_elsewhere(pointer: Vector2) -> bool:
+	if not _tip_pinned or _tip_source == null:
+		return false
+	if _tip_source is Control:
+		return not (_tip_source as Control).get_global_rect().has_point(pointer)
+	return false
 
 
 func _update_tip(delta: float) -> void:
@@ -3867,7 +4228,7 @@ func _update_tip(delta: float) -> void:
 		_tip_provider.call()
 		_tip_panel.visible = true
 		_tip_panel.reset_size()
-	var pointer: Vector2 = get_viewport().get_mouse_position()
+	var pointer: Vector2 = _tip_anchor if _tip_pinned else get_viewport().get_mouse_position()
 	var spot: Vector2 = pointer + Vector2(16, 18)
 	var limit: Vector2 = Vector2(1366, 768) - _tip_panel.size - Vector2(4, 4)
 	if spot.x > limit.x:
@@ -3890,18 +4251,24 @@ func _fill_npc_tip(npc_id: int) -> void:
 	_tip_skill.visible = false
 
 
-## 보드 위의 아무 말(상대 말 포함) 위에 커서가 있으면 그 말의 툴팁을 예약한다.
-func _update_board_pawn_tip(pointer: Vector2) -> void:
-	var npc_found: int = -1
+## 보드 클릭: 아무 말(상대 말·중립 기물 포함)을 누르면 그 설명을 열고, 같은 말을 다시 누르면 닫는다. 빈 곳을 누르면 열린 설명을 닫는다.
+func _on_board_tip_click(pointer: Vector2) -> void:
+	if _tile_pick_active or _snipe_pick:
+		return
+	var target: Array = _board_tip_target(pointer)
+	if target.is_empty():
+		if _tip_pinned and (_tip_source is String or _tip_click_elsewhere(pointer)):
+			_tip_end()
+		return
+	_tip_toggle(target[0], target[1])
+
+
+## 화면 좌표 아래의 말·중립 기물: [설명 키, 내용 채우기]. 없으면 빈 배열.
+func _board_tip_target(pointer: Vector2) -> Array:
 	for npc: NeutralNPC in state.npcs:
 		var npc_view: Node2D = _npc_views.get(npc.entity_id)
 		if npc_view != null and (npc_view.position + _pawn_layer.position + Vector2(0, -14)).distance_to(pointer) < 26.0:
-			npc_found = npc.entity_id
-	if npc_found != -1:
-		var npc_key: String = "npc:%d" % npc_found
-		if _tip_source != npc_key:
-			_tip_begin(npc_key, _fill_npc_tip.bind(npc_found))
-		return
+			return ["npc:%d" % npc.entity_id, _fill_npc_tip.bind(npc.entity_id)]
 	var found: int = -1
 	var best: float = 50.0
 	for pawn: PlayerPawn in state.pawns:
@@ -3912,12 +4279,9 @@ func _update_board_pawn_tip(pointer: Vector2) -> void:
 		if PawnToken.HIT_BOX.has_point((view.get_node("Bounce") as Node2D).to_local(pointer)) and distance < best:
 			best = distance
 			found = pawn.entity_id
-	var key: String = "board:%d" % found
 	if found == -1:
-		if _tip_source is String and (str(_tip_source).begins_with("board:") or str(_tip_source).begins_with("npc:")):
-			_tip_end()
-	elif _tip_source != key:
-		_tip_begin(key, _fill_pawn_tip.bind(found))
+		return []
+	return ["board:%d" % found, _fill_pawn_tip.bind(found)]
 
 
 ## 기물 설명 텍스트(테스트·로그용): 이름 / 고유 능력 / 필살기.
@@ -3958,7 +4322,7 @@ func _build_pawn_dock() -> void:
 		skill_button.add_theme_constant_override("outline_size", 4)
 		skill_button.visible = false
 		skill_button.mouse_entered.connect(_on_pawn_slot_hover.bind(slot))
-		skill_button.mouse_exited.connect(_tip_end.bind(skill_button))
+		skill_button.mouse_exited.connect(_on_pawn_slot_unhover.bind(skill_button))
 		_pawn_bar.add_child(skill_button)
 		_dock_skill_buttons.append(skill_button)
 		var button := Button.new()
@@ -3993,6 +4357,7 @@ func _build_pawn_dock() -> void:
 		button.add_child(badge)
 		button.mouse_entered.connect(_on_pawn_slot_hover.bind(slot))
 		button.mouse_exited.connect(_on_pawn_slot_unhover.bind(button))
+		button.pressed.connect(_on_pawn_slot_pressed.bind(slot))
 		_pawn_bar.add_child(button)
 		_pawn_buttons.append(button)
 		_pawn_slot_parts.append({"letter": letter, "place": place, "badge": badge})
@@ -4010,13 +4375,16 @@ var _emote_bubbles: Dictionary = {}
 func _build_emote_row() -> void:
 	_emote_row = HBoxContainer.new()
 	_emote_row.name = "EmoteRow"
-	_emote_row.position = Vector2(1030, 554)
-	_emote_row.size = Vector2(320, 32)
+	_emote_row.position = Vector2(1030, 538) if MobileSupport.touch_mode() else Vector2(1030, 554)  # 터치 버튼(48px)이 아래 프로필에 닿지 않게 16px 위로
+	_emote_row.size = Vector2(320, MobileSupport.TOUCH_BUTTON_HEIGHT if MobileSupport.touch_mode() else 32.0)
 	_emote_row.alignment = BoxContainer.ALIGNMENT_END
 	add_child(_emote_row)
 	_emote_button = _make_button(tr_ui("btn.emote"), _toggle_emote_picker, 14, Color("f08c00"), 14)
 	_emote_button.name = "EmoteButton"
-	_emote_button.custom_minimum_size = Vector2(124, 32)
+	_emote_button.custom_minimum_size = Vector2(150, MobileSupport.TOUCH_BUTTON_HEIGHT) if MobileSupport.touch_mode() else Vector2(124, 32)
+	if MobileSupport.touch_mode():
+		_emote_button.add_theme_font_size_override("font_size", 17)
+		MobileSupport.touch_button(_emote_button)
 	_emote_button.focus_mode = Control.FOCUS_NONE
 	_emote_button.tooltip_text = "말풍선으로 감정 표현 (상대에게도 보입니다)"
 	_emote_row.add_child(_emote_button)
@@ -4139,15 +4507,26 @@ func active_skill_buttons() -> Array[Button]:
 	return _skill_buttons if ai_mode else _dock_skill_buttons
 
 
+## 말 칸·필살기 버튼에 커서를 대면 그 말의 경로만 미리 보여 준다 (설명은 말 칸을 눌러야 열린다).
 func _on_pawn_slot_hover(slot: int) -> void:
-	var pawn_id: int = _dock_owner() * 10 + slot + 1
-	_preview_pawn(pawn_id)
-	_tip_begin(_pawn_buttons[slot], _fill_pawn_tip.bind(pawn_id))
+	_preview_pawn(_dock_owner() * 10 + slot + 1)
 
 
-func _on_pawn_slot_unhover(button: Button) -> void:
+func _on_pawn_slot_unhover(_button: Button) -> void:
 	_clear_highlight()
-	_tip_end(button)
+
+
+## 기물 독의 말 칸을 누르면 그 말 설명을 열고, 다시 누르면 닫는다.
+func _on_pawn_slot_pressed(slot: int) -> void:
+	_tip_toggle(_pawn_buttons[slot], _fill_pawn_tip.bind(_dock_owner() * 10 + slot + 1))
+
+
+## 프로필의 말 칸을 누르면 그 말 설명을 열고, 다시 누르면 닫는다.
+func _on_pawn_icon_input(event: InputEvent, icon: Control, pawn_id: int) -> void:
+	var press: InputEventMouseButton = event as InputEventMouseButton
+	if press != null and press.pressed and press.button_index == MOUSE_BUTTON_LEFT:
+		_tip_toggle(icon, _fill_pawn_tip.bind(pawn_id))
+		icon.accept_event()
 
 
 func _refresh_pawn_dock() -> void:
@@ -4163,7 +4542,7 @@ func _refresh_pawn_dock() -> void:
 		(parts["letter"] as Label).visible = false
 		_token_in(button, pawn, color, Vector2(SLOT_SIZE.x/2.0,44),1.28)
 		var letter: String = pawn.letter()
-		(parts["letter"] as Label).text = letter if letter != "" else "말"
+		(parts["letter"] as Label).text = letter if letter != "" else PawnCatalog.basic_letter()
 		(parts["letter"] as Label).add_theme_color_override("font_color", Color("ff6b6b") if pawn.is_promoted_shogi() else Color("f8f9fa"))
 		var place: String = "완주" if pawn.is_finished else ("대기" if not pawn.has_left_start else "%d번" % pawn.current_tile_idx)
 		if pawn.blocked_this_turn or pawn.restrained_turns > 0:
@@ -4380,14 +4759,14 @@ func _refresh_select_banner() -> void:
 		elif pawn.is_imprisoned:
 			status = "감옥"
 		elif not pawn.has_left_start and pawn.revenge_boost:
-			status = "출격 +%d (리벤지 부스터)" % _revenge_steps()
+			status = "출격 +%d (리벤지 부스터)" % _revenge_steps(pawn)
 		elif not pawn.has_left_start:
 			status = "출발 대기"
 		else:
 			status = "출전 중 (%d번)" % pawn.current_tile_idx
 		(parts["status"] as Label).text = status
 		var letter: String = pawn.letter()
-		(parts["mark"] as Label).text = letter if letter != "" else "말"
+		(parts["mark"] as Label).text = letter if letter != "" else PawnCatalog.basic_letter()
 		(parts["disc"] as Panel).add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 		(parts["mark"] as Label).visible = false
 		_token_in(parts["disc"], pawn, color, Vector2(22,34),0.95)
@@ -4482,6 +4861,9 @@ func _stop_pawn_flash() -> void:
 # ---------------------------------------------------------------------------
 
 ## 도구별 [심볼 글자, 심볼 색, 전진 규칙 첫 줄, 둘째 줄].
+## 판정 도구 카드 안 족보표의 한 줄 폭 (카드 폭 210에서 여백을 뺀 값).
+const TOOL_RULE_WIDTH: float = 180.0
+
 const TOOL_CARDS: Dictionary = {
 	&"D6": ["6", Color("c92a2a"), "굴려서 전진한다", ""],
 	&"YUT": ["윷", Color("8a5a2b"), "윷을 던져 나온 만큼 전진한다", "윷·모 재굴림 +1"],
@@ -4511,9 +4893,9 @@ const TOOL_RULES: Dictionary = {
 	&"DICE_MAHJONG": {"rows": [["핑후 (불일치)", "2칸"], ["또이츠 (같은 패 2개)", "3칸"], ["슌쯔 (연속 숫자)", "5칸"], ["커쯔 (같은 패 3개)", "8칸"], ["역만 (8%)", "12칸 + 한 번 더!"]], "note": "역만 = 국사무쌍·대삼원"},
 	&"DICE_TAROT": {"rows": [["0. 광대", "0칸, 턴 종료"], ["VII. 전차", "6칸"], ["X. 운명의 수레바퀴", "4칸 + 한 번 더!"], ["XII. 매달린 남자", "1칸, 다음 굴림 +8칸"], ["XXI. 세계", "9칸"]], "note": "5장 중 1장 · 축복은 다음 굴림"},
 	&"REVOLVER": {"rows": [["방아쇠 1회", "+3칸 누적"], ["최대 누적", "15칸"], ["폭죽 (6칸 중 1칸)", "누적 0칸, 턴 종료"], ["멈추기", "누적한 칸만큼 이동"]], "note": "6칸 중 1칸은 폭죽 · 깃발이 나오면 누적 소멸"},
-	&"DICE_YACHT": {"rows": [["노페어 (찬스)", "가장 높은 눈금의 절반 올림 (1~3칸)"], ["트리플 (3개 동일)", "5칸"], ["스몰 스트레이트 (4연속) / 풀하우스", "7칸"], ["포카드 / 라지 스트레이트 (5연속)", "9칸"], ["★ 야추 (5개 동일)", "12칸 + 한 번 더!"]], "note": "주사위 5개 · 고정(Keep)하고 나머지를 최대 2번 다시 굴림"},
-	&"DICE_BLACKJACK": {"rows": [["시작", "합계 11 이상이 되도록 카드를 받음 (A는 11, 넘으면 1)"], ["11 ~ 20에서 스탠드", "(합계 - 10)칸 (1~10칸)"], ["★ 정확히 21", "11칸 + 한 번 더!"], ["22 이상 (버스트)", "0칸, 턴 종료"]], "note": "히트로 카드를 더 뽑거나 스탠드로 확정"},
-	&"DICE_PINBALL": {"rows": [["하단 구멍 7칸", "[2] [4] [6] [★10] [5] [3] [1]"], ["골인한 구멍의 숫자", "그 숫자만큼 전진 (1~10칸)"], ["★10 구멍", "가장 드문 대박"]], "note": "발사 버튼을 꾹 눌렀다 놓으면 스프링이 당겨졌다 발사"},
+	&"DICE_YACHT": {"rows": [["찬스 (족보 없음)", "최고 눈÷2 올림 (1~3칸)"], ["트리플 (3개 동일)", "5칸"], ["4연속 / 풀하우스", "7칸"], ["포카드 / 5연속", "9칸"], ["★ 야추 (5개 동일)", "12칸 + 한 번 더!"]], "note": "고정(Keep)하고 나머지를 최대 2번 다시 굴림"},
+	&"DICE_BLACKJACK": {"rows": [["시작", "합 11 이상까지 받음"], ["11 ~ 20 스탠드", "(합 - 10)칸"], ["★ 정확히 21", "11칸 + 한 번 더!"], ["22 이상 (버스트)", "0칸, 턴 종료"]], "note": "A는 11 (넘으면 1) · 히트로 더 뽑거나 스탠드로 확정"},
+	&"DICE_PINBALL": {"rows": [["하단 구멍 7칸", "2·4·6·★10·5·3·1"], ["골인한 구멍", "그 숫자만큼 (1~10칸)"], ["★10 구멍", "가장 드문 대박"]], "note": "발사 버튼을 꾹 눌렀다 놓으면 발사"},
 }
 
 
@@ -4541,6 +4923,12 @@ func _refresh_tool_board(tool: BaseJudgmentTool, player_id: int) -> void:
 
 
 ## 규칙표를 다시 그린다: 행마다 [항목 ......... 결과] 한 줄.
+## 라벨 글자가 한 줄로 차지하는 폭.
+func _text_width(label: Label) -> float:
+	var font: Font = label.get_theme_font("font")
+	return font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, label.get_theme_font_size("font_size")).x
+
+
 func _rebuild_tool_rules(rules: Dictionary, _accent: Color) -> void:
 	for child: Node in _tool_rules.get_children():
 		_tool_rules.remove_child(child)
@@ -4554,6 +4942,7 @@ func _rebuild_tool_rules(rules: Dictionary, _accent: Color) -> void:
 		var line := HBoxContainer.new()
 		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.add_child(line)
+		# 카드 폭(TOOL_RULE_WIDTH)을 넘는 줄만 줄바꿈한다: 긴 족보(야추·블랙잭·핀볼)가 카드를 넓혀 화면 오른쪽 밖으로 잘렸다.
 		var name_label := _make_label(str(pair[0]), 12, UiSkin.INK)
 		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -4561,6 +4950,15 @@ func _rebuild_tool_rules(rules: Dictionary, _accent: Color) -> void:
 		var value_label := _make_label(str(pair[1]), 12, UiSkin.GREEN)
 		value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		value_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var name_width: float = _text_width(name_label)
+		var value_width: float = _text_width(value_label)
+		var gap: float = float(line.get_theme_constant("separation"))
+		if name_width + value_width + gap > TOOL_RULE_WIDTH:
+			var value_room: float = minf(value_width, TOOL_RULE_WIDTH * 0.5)
+			value_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			value_label.custom_minimum_size = Vector2(value_room, 0)
+			name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			name_label.custom_minimum_size = Vector2(TOOL_RULE_WIDTH - value_room - gap, 0)
 		line.add_child(value_label)
 		_tool_rules.add_child(row)
 	_tool_note.text = str(rules.get("note", ""))
@@ -4592,7 +4990,26 @@ func _card_usable_now(player_id: int, card: BaseCard) -> bool:
 		return false
 	if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN and (player_id != manager.current_player_id() or manager.card_played_this_turn()):
 		return false
+	if state.is_banned(player_id) or not card.could_play(state, player_id):
+		return false  # 지금은 대상이 없다 (예: UDO +4의 다음 차례 사람이 보드에 말이 없음): 흐리게 두고 이유는 _card_block_reason
 	return true
+
+
+## 지금 이 카드를 낼 수 없는 이유 (낼 수 있으면 빈 문자열). 카드를 눌렀는데 아무 일도 없던 것처럼 보이지 않게 화면에 띄운다.
+func _card_block_reason(player_id: int, card: BaseCard) -> String:
+	if state.is_banned(player_id):
+		return "알고리즘 밴! %d턴 동안 카드를 쓸 수 없습니다" % int(state.banned_turns[player_id])
+	if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN and manager.card_played_this_turn():
+		return "카드는 굴리기 전에 턴당 1장만 쓸 수 있습니다"
+	if card.could_play(state, player_id):
+		return ""
+	match card.card_id:
+		&"ACT_03":
+			var victim: int = PenaltyBombCommand.victim_of(state, player_id)
+			if victim == -1:
+				return "[UDO +4] 폭탄을 넘길 다음 사람이 없습니다"
+			return "[UDO +4] 다음 차례인 %s의 말이 보드 위에 없어 쓸 수 없습니다" % _player_name(victim)
+	return "[%s] 지금은 대상이 없어 쓸 수 없습니다" % card.display_name
 
 
 func _refresh_controls() -> void:
@@ -4687,6 +5104,23 @@ func _roll_mode_for(tool: BaseJudgmentTool) -> StringName:
 
 
 ## 내 판정 도구에 맞는 굴림 위젯을 보여 준다.
+## 굴리기 화면(굴리기 버튼·룰렛/리볼버 패드·야추/블랙잭/핀볼 스테이지)을 띄워도 되는가.
+## 앞선 연출이 하나라도 남아 있으면(라운드·차례 배너, 연출 큐, 처치 컷인, 오프닝·드래프트·확인 창) 띄우지 않는다.
+## 카드를 끌거나 칸을 고르는 중, 필살기를 겨누는 중에도 화면을 끄고 그 연출을 보여 준다 (끝나면 다시 뜬다).
+func _roll_view_allowed() -> bool:
+	if manager.is_game_over or not (manager.current_state == TurnManager.State.PHASE_TURN_BEGIN or manager.current_state == TurnManager.State.PHASE_ROLL_WAIT):
+		return false
+	if _intro_blocks() or _turn_banner_pending() or (_announcer != null and _announcer.holding()):
+		return false
+	if _presentation_active() or (_capture_cutin != null and _capture_cutin.busy()) or _stage_warps > 0:
+		return false
+	if _tile_pick_active or _aim_pawn != -1 or _drag_active:
+		return false
+	if _draft_overlay != null or (_review_overlay != null and is_instance_valid(_review_overlay)):
+		return false
+	return true
+
+
 func _refresh_roll_pad() -> void:
 	# A fired outcome advances the engine turn immediately. Keep the current
 	# visual until its local timeline finishes, even if the next tool differs.
@@ -4710,8 +5144,7 @@ func _refresh_roll_pad() -> void:
 		_set_roll_geometry(mode)
 	# 굴림 위젯은 굴릴 차례에만 보인다. 굴림이 끝나면 지워서 보드 한가운데가 가리지 않게 한다 (룰렛·리볼버 패드는 돌아가는 연출 중에는 남긴다).
 	# 중앙 알림(라운드 시작·차례 알림 등)·오프닝이 떠 있는 동안에는 숨겼다가, 알림이 끝나면(drained -> _refresh_all) 다시 나온다.
-	var stage_blocked: bool = _intro_blocks() or (_announcer != null and _announcer.holding())
-	var roll_phase: bool = not manager.is_game_over and (manager.current_state == TurnManager.State.PHASE_TURN_BEGIN or manager.current_state == TurnManager.State.PHASE_ROLL_WAIT) and not _is_bot_turn() and not stage_blocked
+	var roll_phase: bool = _roll_view_allowed() and not _is_bot_turn()
 	# 연출 중에 남겨 두는 것은 '내 도구'가 굴러가는 연출일 때뿐이다 (다른 사람이 굴리는 동안 내 리볼버·룰렛이 밑에 비치지 않게).
 	var own_fx: bool = _fx_busy and manager.current_player_id() == _dock_owner()
 	_roll_button.visible = wanted == RollPad.Kind.NONE and roll_phase and mode != &"stage"
@@ -4911,11 +5344,11 @@ func _on_card_pressed(player_id: int, card_id: StringName) -> void:
 		else:
 			_log_line("[%s] 방어 카드는 공격을 받았을 때 뜨는 방어 팝업에서 씁니다." % card.display_name, Color("868e96"))
 		return
-	if state.is_banned(player_id):
-		_log_line("알고리즘 밴! %d턴 동안 카드를 쓸 수 없습니다." % int(state.banned_turns[player_id]), Color("ff8787"))
-		return
-	if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN and manager.card_played_this_turn():
-		_log_line("카드는 굴리기 전에 턴당 1장만 쓸 수 있습니다.", Color("868e96"))
+	var blocked: String = _card_block_reason(player_id, card)
+	if blocked != "":
+		_log_line(blocked, Color("ff8787"))
+		_show_center_banner(blocked, Color("ff8787"))  # 숨은 로그만 남기면 눌러도 아무 반응이 없는 것처럼 보인다
+		Sfx.play(&"bad", -6.0)
 		return
 	if card.needs_tile():
 		_begin_tile_pick(player_id, card_id)
@@ -5168,6 +5601,61 @@ func _on_skill_used(data: Dictionary) -> void:
 
 
 ## 실제 잡기만 공격자/피격자 아바타 포즈로 강조한다 (함정·자기 복귀 제외).
+## 처치 확정 대기 단계: 맞은 사람의 방어 결정(방어 카드 팝업·봇 판단)이 끝날 때까지 연출 큐를 세운다.
+## 이 단계에 닿은 순간 공격한 말은 이미 그 칸에 도착해 대치하고 있고, 그때부터 방어 팝업이 뜬다 (_reaction_holder).
+func _enqueue_counter_gate() -> void:
+	if not _fx_on():
+		return
+	var generation: int = _capture_epoch
+	_enqueue_late(func() -> void:
+		if generation != _capture_epoch:
+			return
+		_counter_gate_waiting = true
+		var waited: float = 0.0
+		while generation == _capture_epoch and is_instance_valid(manager) and manager.counter_pending() and not manager.is_game_over and waited < COUNTER_GATE_LIMIT:
+			waited += get_process_delta_time()
+			await get_tree().process_frame
+		_counter_gate_waiting = false)
+
+
+## 날아갈 말이 지금도 출발선에 있는가 (방어 카드가 되돌렸으면 false: 처치가 확정되지 않았다).
+func _ejection_confirmed(pawn_id: int) -> bool:
+	var pawn: PlayerPawn = state.get_pawn(pawn_id) if state != null else null
+	return pawn != null and not pawn.has_left_start and not pawn.is_finished
+
+
+## 방어 성공: 말은 제자리에 둔 채 방패 이펙트만 한 번 (같은 말의 컷인·사출 단계가 둘 다 건너뛰어도 한 번만).
+func _show_defended(pawn_id: int) -> void:
+	if _defended_shown.has(pawn_id):
+		return
+	_defended_shown[pawn_id] = true
+	var view: Node2D = _pawn_views.get(pawn_id)
+	if view == null or not is_instance_valid(view):
+		return
+	var at: Vector2 = view.position + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO)
+	Sfx.play(&"promote", -4.0)
+	_impact_ring(at, Color("74c0fc"), 52.0)
+	_floating_badge(at + Vector2(0, -44), "방어!", Color("74c0fc"), 30)
+	_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(450.0 * _motion_pace()))
+	get_tree().create_timer(1.0).timeout.connect(func() -> void: _defended_shown.erase(pawn_id))
+
+
+## 반격 컷인: 방어한 사람이 공격한 말을 역으로 처치한다 (공격자가 컷인을 맞고 날아간다).
+func _enqueue_reflect_cutin(pawn_id: int, by_player: int, victim_owner: int) -> void:
+	if _capture_cutin == null or not _player_ids.has(by_player) or not _player_ids.has(victim_owner):
+		return
+	_capture_marks[pawn_id] = true
+	var attack_avatar: StringName = _avatar_for(by_player)
+	var hit_avatar: StringName = _avatar_for(victim_owner)
+	var generation: int = _capture_epoch
+	_enqueue_late(func() -> void:
+		if generation != _capture_epoch or not _ejection_confirmed(pawn_id):
+			return
+		var cut_speed: float = _cutin_speed()
+		_capture_cutin.enqueue(attack_avatar, hit_avatar, by_player, victim_owner, cut_speed)
+		_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(CaptureCutin.DURATION / cut_speed * 1000.0)))
+
+
 func _on_pawn_captured(attacker_pawn_id: int, victim_pawn_id: int) -> void:
 	if _alkkagi_controlled.has(victim_pawn_id):
 		return
@@ -5186,11 +5674,15 @@ func _on_pawn_captured(attacker_pawn_id: int, victim_pawn_id: int) -> void:
 	var attack_avatar: StringName = _avatar_for(attacking_player)
 	var hit_avatar: StringName = _avatar_for(defending_player)
 	var generation: int = _capture_epoch
+	if not _is_computer_seat(defending_player):
+		_mark_spotlight()  # 사람 말이 잡히는 턴은 보통 속도로 주목
+	_enqueue_counter_gate()
 	_enqueue_late(func() -> void:
-		if generation != _capture_epoch:
-			return
-		_capture_cutin.enqueue(attack_avatar, hit_avatar, attacking_player, defending_player)
-		_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(CaptureCutin.DURATION * 1000.0)))
+		if generation != _capture_epoch or not _ejection_confirmed(victim_pawn_id):
+			return  # 방어 카드로 막았다: 처치 컷인 없이 방어 이펙트만 (사출 단계에서 한 번)
+		var cut_speed: float = _cutin_speed()
+		_capture_cutin.enqueue(attack_avatar, hit_avatar, attacking_player, defending_player, cut_speed)
+		_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(CaptureCutin.DURATION / cut_speed * 1000.0)))
 
 
 ## 아바타 컷인 외의 복귀 효과에서 쓰는 보드 말 내리찍기.
@@ -5523,12 +6015,27 @@ func enqueue_step(step_callable: Callable, pawn_id: int = -1, allow_defer: bool 
 			await step_callable.call()
 		if pawn_id != -1:
 			_pawn_pending[pawn_id] = maxi(int(_pawn_pending.get(pawn_id, 1)) - 1, 0))
-	if not _is_playing_presentation:
+	if not _is_playing_presentation and not _enqueue_batching:
+		_process_presentation_queue()
+
+
+## 여러 단계를 한꺼번에 세운다: 다 세운 뒤에 재생을 시작한다. (하나씩 세우면 기다릴 것 없는 첫 단계가 그 자리에서 끝나 큐가 잠깐 비고,
+## 그 틈에 [N라운드 시작!] 같은 다음 알림이 남은 단계보다 먼저 끼어들었다.)
+func _enqueue_batch(entries: Array[Dictionary]) -> void:
+	_enqueue_batching = true
+	for entry: Dictionary in entries:
+		enqueue_step(entry["step"], int(entry.get("pawn", -1)), bool(entry.get("defer", true)))
+	_enqueue_batching = false
+	if not _is_playing_presentation and not _presentation_queue.is_empty():
 		_process_presentation_queue()
 
 
 ## 연출 큐를 비우고 재생 중인 러너를 멈춘다 (판 초기화·되감기·테스트 정리용). 이미 시작된 트윈은 건드리지 않는다.
 func _reset_presentation() -> void:
+	_follow_up_pawns.clear()
+	_rocket_followup.clear()
+	_roll_reasons.clear()
+	_move_bonus_notes.clear()
 	if _train_stage != null:
 		_train_stage.cancel()
 	_train_release()
@@ -5552,6 +6059,14 @@ func _reset_presentation() -> void:
 
 
 ## 처치 연출(컷신·장외 사출)은 같은 행동의 이동·발판 연출이 모두 끝난 뒤에 재생한다: 엔진은 한 번에 방송하므로 프레임 끝에 큐 맨 뒤로 보낸다.
+## 처치(사출)가 아직 지연 큐에 있으면 그 뒤에, 없으면 바로 연출 큐에 세운다. 이동 4단계: 도착 칸 처치 연출이 끝난 뒤에 추가 이동(점프 부스트·발판·8번 공 돌진)을 보여 준다.
+func _enqueue_after_kills(step_callable: Callable, pawn_id: int = -1) -> void:
+	if not _late_steps.is_empty():
+		_enqueue_late(step_callable, pawn_id)
+	else:
+		enqueue_step(step_callable, pawn_id)
+
+
 func _enqueue_late(step_callable: Callable, pawn_id: int = -1) -> void:
 	if not _fx_on():
 		step_callable.call()
@@ -5567,11 +6082,36 @@ func _enqueue_late(step_callable: Callable, pawn_id: int = -1) -> void:
 func _flush_late_steps() -> void:
 	var batch: Array[Dictionary] = _late_steps.duplicate()
 	_late_steps.clear()
+	_enqueue_batch(batch)
 	for entry: Dictionary in batch:
 		var pawn_id: int = int(entry["pawn"])
-		enqueue_step(entry["step"], pawn_id, bool(entry.get("defer", true)))
 		if pawn_id != -1:
 			_pawn_pending[pawn_id] = maxi(int(_pawn_pending.get(pawn_id, 1)) - 1, 0)
+
+
+func _add_roll_reason(player_id: int, reason: String) -> void:
+	if not _fx_on():
+		return
+	if not _roll_reasons.has(player_id):
+		_roll_reasons[player_id] = []
+	(_roll_reasons[player_id] as Array).append(reason)
+
+
+## 눈금보다 더 가는 이유(퀸 +2칸·룩 직진 +2칸·나리 승급 등)를 말 위에 띄운 뒤 이동한다. 리벤지 부스터 이동이면 부스터 착지 뒤 [눈금 M칸 (이유)]에 붙인다.
+func _on_move_bonus(pawn_id: int, notes: Array, revenge: int) -> void:
+	_log_line("[추가 전진] %s: %s" % [_pawn_name(pawn_id), ", ".join(PackedStringArray(notes))], Color("ffd43b"))
+	if not _fx_on():
+		return
+	if revenge > 0:
+		_move_bonus_notes[pawn_id] = notes
+		return
+	var text: String = " · ".join(PackedStringArray(notes))
+	enqueue_step(func() -> void:
+		var view: Node2D = _pawn_views.get(pawn_id)
+		if view == null or not is_instance_valid(view):
+			return
+		_floating_badge(view.position + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + Vector2(0, -42), text, Color("ffd43b"), 28)
+		await get_tree().create_timer(0.2 * _motion_pace()).timeout, pawn_id)
 
 
 ## 굴림이 끝나면(주사위가 완전히 멈춘 뒤) 가속 보너스까지 합친 최종 이동 칸수를 숫자로 보여 주고 0.3초 뒤에 이동을 시작한다.
@@ -5586,6 +6126,8 @@ func _enqueue_roll_summary(data: Dictionary) -> void:
 		return
 	var player: int = int(data["player_id"])
 	_roll_total[player] = steps
+	if not _roll_reasons.has(player):
+		_roll_reasons[player] = []
 	enqueue_step(func() -> void:
 		await get_tree().process_frame  # 같은 굴림의 보너스 이벤트가 모두 도착한 뒤
 		var frames: int = 0
@@ -5594,8 +6136,12 @@ func _enqueue_roll_summary(data: Dictionary) -> void:
 			await get_tree().process_frame
 		var total: int = int(_roll_total.get(player, steps))
 		_roll_total.erase(player)
+		var reasons: Array = _roll_reasons.get(player, [])
+		_roll_reasons.erase(player)
 		if total != steps:  # 보너스가 붙었을 때만 최종 칸 수를 크게 (기본 눈금은 굴림 스테이지가 이미 보여 줬다)
 			_number_pop(_board_center() + Vector2(0, -60), "%d칸!" % total, Color("ffd43b"))  # 혼자 떠올랐다 사라진다 (이동을 붙잡지 않는다)
+			if not reasons.is_empty():  # 왜 늘었는지: 가속 보너스·템포 업·도박사의 영혼
+				_floating_badge(_board_center() + Vector2(0, -12), " · ".join(PackedStringArray(reasons)), Color("fff3bf"), 24)
 		await get_tree().create_timer(ROLL_SUMMARY_LEAD).timeout)
 
 
@@ -5782,10 +6328,12 @@ func _apply_homerun(t: float, view: Node2D, from_pos: Vector2, exit_pos: Vector2
 		_burst_shards(view.position, Color("ffe066"), 2)
 
 
-## 홈런 뒤: 말은 날아가기만 한다. 내려앉는 연출 없이 출발선 자리에 조용히 돌아와 있다.
+## 홈런 뒤: 말은 날아가기만 한다. 출발선 대기 말은 보드에 그리지 않으므로 숨긴 채로 출발선 자리에 둔다
+## (예전에는 보이는 채로 옮겨 두어 연출 큐가 끝날 때까지 출발선에 잠깐 나타났다가 사라졌다).
 func _homerun_return(view: Node2D, to_pos: Vector2, to_scale: float, _land_thud: bool) -> void:
 	if not is_instance_valid(view):
 		return
+	view.visible = false
 	if view.has_meta("trail_step"):
 		view.remove_meta("trail_step")
 	view.rotation = 0.0
@@ -5991,9 +6539,8 @@ func _burst_shards(at: Vector2, color: Color, amount: int = 12) -> void:
 	particles.scale_amount_max = 5.0
 	particles.color = color
 	_pawn_layer.add_child(particles)
-	get_tree().create_timer(0.8).timeout.connect(func() -> void:
-		if is_instance_valid(particles):
-			particles.queue_free())
+	# 노드를 람다에 잡아 두지 않는다: 그 전에 보드가 지워지면 타이머가 지워진 노드를 넘기며 오류를 낸다. 노드의 메서드에 연결하면 노드가 지워질 때 연결도 함께 풀린다.
+	get_tree().create_timer(0.8).timeout.connect(particles.queue_free)
 
 
 ## 말이 지나간 자리에 남는 잔상: seconds 동안 짧은 간격으로 흐려지는 원을 남긴다.
@@ -6338,9 +6885,10 @@ func _open_duel_arena(challenger: int, defender: int, game: int, game_setup: Dic
 		_refresh_all())
 	add_child(_duel_arena)
 	# 카드 발동 알림이 끝난 뒤 열린다 (그 전에 온 이벤트는 결투장 큐에 쌓인다).
-	var arena: DuelArena = _duel_arena
+	var arena_ref: WeakRef = weakref(_duel_arena)  # 결투장 노드를 직접 잡지 않는다 (먼저 닫혀 지워지면 람다가 지워진 노드를 받는다)
 	_fx_when_announced(func() -> void:
-		if is_instance_valid(arena):  # 알림이 끝나기 전에 결투장이 닫혔으면(되감기·강제 종료) 열지 않는다
+		var arena: DuelArena = arena_ref.get_ref() as DuelArena
+		if arena != null and not arena.is_queued_for_deletion():  # 알림이 끝나기 전에 결투장이 닫혔으면(되감기·강제 종료) 열지 않는다
 			arena.open())
 	if not _fx_holding():
 		_duel_arena.open()
@@ -6924,6 +7472,7 @@ func _build_draft_overlay(player_id: int, remaining: int) -> void:
 		slot.add_child(card)
 		_draft_cards.append(card)
 		var used: bool = manager.draft_reroll_used(player_id, index)
+		# 알고리즘 밴은 증강 리롤을 막지 않는다 (밴: 카드·필살기·주사위 리롤만)
 		var reroll: Button = _make_button("리롤 완료" if used else "[ 리롤 (1회) ]", _on_augment_reroll.bind(player_id, index), 15, Color("495a85"), 10)
 		reroll.custom_minimum_size = Vector2(AUGMENT_CARD_SIZE.x, 40)
 		reroll.disabled = used
@@ -6985,6 +7534,8 @@ func _play_pick_animation(cards: Array, chosen: int) -> void:
 
 
 func _on_augment_reroll(player_id: int, index: int) -> void:
+	_last_reroll_index = index
+	_last_reroll_player = player_id
 	_act(&"reroll_augment", {"player_id": player_id, "index": index})
 
 
@@ -7127,6 +7678,7 @@ func _pick_augment_with_pawn(pawn_id: int, player_id: int, index: int) -> void:
 
 
 func _show_result_overlay() -> void:
+	_report_match_once()
 	_close_result_overlay()
 	_result_overlay = _new_overlay()
 	var center := CenterContainer.new()
@@ -7188,6 +7740,7 @@ func _show_result_overlay() -> void:
 	reason.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	reason.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	facts.add_child(reason)
+	box.add_child(_build_vote_bar())
 	var buttons := HBoxContainer.new()
 	buttons.add_theme_constant_override("separation", 12)
 	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -7210,6 +7763,54 @@ func _show_result_overlay() -> void:
 	box.add_child(review)
 	add_child(_result_overlay)
 	_reveal_ranking(rows, announcer)
+
+
+## 결과 화면의 원클릭 소감 투표 바: 질문 한 줄 + 버튼 4개. 누르면 바로 개발자 웹후크로 가고, 감사 문구로 바뀌어 다시 누를 수 없다.
+## [딱 재밌어요!]가 아닌 버튼은 이어서 피드백/버그 제보 창을 띄워, 더 하고 싶은 말이 있으면 바로 적게 한다.
+func _build_vote_bar() -> Control:
+	var bar := PanelContainer.new()
+	bar.name = "VoteBar"
+	bar.add_theme_stylebox_override("panel", _style(Color(1, 1, 1, 0.06), Color("ffd43b"), 1, 12, 10, 8))
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 6)
+	bar.add_child(column)
+	var question: Label = _make_label("이번 판 난이도와 템포는 어떠셨나요? (클릭 시 개발자에게 바로 전달됩니다!)", 16, COLOR_GOLD)
+	question.name = "VoteQuestion"
+	question.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(question)
+	var row := HBoxContainer.new()
+	row.name = "VoteButtons"
+	row.add_theme_constant_override("separation", 8)
+	column.add_child(row)
+	var tints: Array[Color] = [Color("e8590c"), Color("c2255c"), Color("5f3dc4"), Color("2b8a3e")]
+	var choices: Array = MatchTelemetry.vote_choices()
+	for index: int in choices.size():
+		var choice: Array = choices[index]
+		var button: Button = _make_button(str(choice[2]), Callable(), 15, tints[index % tints.size()])
+		button.name = "Vote_%s" % choice[0]
+		button.custom_minimum_size = Vector2(0, 40)
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.pressed.connect(_on_vote_pressed.bind(bar, str(choice[1]), index != 0))
+		row.add_child(button)
+	return bar
+
+
+func _on_vote_pressed(bar: Control, choice: String, ask_more: bool) -> void:
+	if not is_instance_valid(bar) or bool(bar.get_meta("voted", false)):
+		return
+	bar.set_meta("voted", true)
+	var seat: int = _telemetry_seat()
+	var my_rank: int = state.rankings.find(seat) + 1 if seat != -1 and state != null else 0
+	MatchTelemetry.report_vote(self, choice, "", my_rank, state.round_number if state != null else 0)
+	if ask_more:
+		_open_feedback("결과 화면 투표: %s" % choice, FeedbackModal.Kind.BALANCE)
+	for child: Node in bar.get_children():
+		child.queue_free()
+	var thanks: Label = _make_label("소중한 의견 감사합니다!", 18, Color("69db7c"))
+	thanks.name = "VoteThanks"
+	thanks.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	bar.add_child(thanks)
+	Sfx.play(&"card_get", -6.0)
 
 
 const RANK_MEDALS: Array[String] = ["1", "2", "3", "4"]
@@ -7398,6 +7999,8 @@ func _clear_highlight() -> void:
 # ---------------------------------------------------------------------------
 
 func _on_phase_changed(new_state: TurnManager.State, _player_id: int, _limit: float) -> void:
+	if new_state == TurnManager.State.PHASE_TURN_BEGIN or new_state == TurnManager.State.PHASE_ROUND_START:
+		_spotlight_turn = false  # 주목 구간은 한 턴 동안만
 	if new_state != TurnManager.State.PHASE_ROUND_START:
 		_close_augment_review()
 		_draft_open = false
@@ -7419,8 +8022,7 @@ func _release_draft_deferred() -> void:
 		return
 	var batch: Array[Dictionary] = _draft_deferred.duplicate()
 	_draft_deferred.clear()
-	for entry: Dictionary in batch:
-		enqueue_step(entry["step"], int(entry["pawn"]))
+	_enqueue_batch(batch)
 
 
 ## 이번 라운드에 모두가 고른 증강을 선택 카드 그림 그대로 한 줄에 나란히 공개한다.
@@ -7444,7 +8046,7 @@ func _take_draft_summary_row() -> HBoxContainer:
 		# 범용 보급·카드 패키지는 무엇이 무엇으로 바뀌었는지, 어떤 카드를 받았는지까지 남긴다
 		if picked_def.category == GameEnums.AugmentCategory.UTILITY or picked_def.category == GameEnums.AugmentCategory.CARD_PACKAGE:
 			line += " " + str(entry.get("text", ""))
-		_record(int(entry["player"]), line, "증강")
+		_record(int(entry["player"]), line, "증강", false, true)  # 고른 증강이 화면(확인 창·공개 카드)에 나오는 바로 그 순간에 적는다
 	for entry: Dictionary in _draft_summary:
 		var player_id: int = int(entry["player"])
 		var column := VBoxContainer.new()
@@ -7586,6 +8188,25 @@ func _on_action_rejected(player_id: int, action: StringName, reason: StringName)
 	if net != null and (player_id != local_player_id or String(action).begins_with("__")):
 		return  # 온라인: 내 행동이 거부됐을 때만 알린다 (다른 사람의 거부나 늦은 타임아웃은 조용히 넘어간다)
 	_log_line("P%d %s 거부: %s" % [player_id, action, REJECT_REASONS.get(reason, str(reason))], Color("ff8787"))
+	if action == &"play_card" and (player_id == local_player_id or not (ai_mode or net != null)) and not _is_bot_turn():
+		_show_center_banner("카드를 쓸 수 없습니다: %s" % REJECT_REASONS.get(reason, str(reason)), Color("ff8787"))
+	if action == &"reroll_augment":
+		_mark_reroll_refused(reason)
+
+
+## 리롤이 거절되면 그 버튼에 이유를 적고 잠근다 (아무 반응 없이 눌리기만 하던 버그).
+func _mark_reroll_refused(reason: StringName) -> void:
+	if _last_reroll_index < 0 or _last_reroll_index >= _draft_reroll_buttons.size():
+		return
+	var button: Button = _draft_reroll_buttons[_last_reroll_index]
+	if not is_instance_valid(button):
+		return
+	match reason:
+		&"no_candidate": button.text = "바꿀 증강이 없음"
+		&"reroll_used": button.text = "리롤 완료"
+		_: button.text = "지금은 리롤할 수 없음"
+	button.disabled = true
+	Sfx.play(&"bad", -6.0)
 
 
 func _on_turn_order_reversed(new_direction: int) -> void:
@@ -7607,6 +8228,8 @@ func _on_game_over(winner_id: int, reason: StringName) -> void:
 
 
 func _ui_busy() -> bool:
+	if _counter_gate_waiting and manager != null and manager.counter_pending():
+		return false  # 처치 연출이 방어 결정을 기다리는 중: 봇·사람이 방어 카드를 고를 수 있어야 한다
 	return _turn_banner_pending() or _intro_blocks() or _presentation_active() or _fx_busy or (_capture_cutin != null and _capture_cutin.busy()) or _aim_pawn != -1 or (_announcer != null and _announcer.holding()) or Time.get_ticks_msec() < _beat_until_msec or (_fx_on() and Time.get_ticks_msec() < _fx_until_msec)
 
 
@@ -7728,6 +8351,7 @@ func _make_card_face(card_id: StringName) -> PanelContainer:
 
 
 func _on_law_added(new_law: LawResource, removed_law: LawResource) -> void:
+	_mark_spotlight()  # 법전(특수 승리 교칙)이 바뀐 턴은 보통 속도
 	var text: String = "[법전] 교칙 제정: [%s] %s" % [new_law.law_id, new_law.law_name]
 	if removed_law != null:
 		text += "  (가장 오래된 [%s] %s이(가) 밀려났습니다)" % [removed_law.law_id, removed_law.law_name]
@@ -7807,23 +8431,29 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_record_roll(data)
 		&"roll_boosted":
 			_roll_total[int(data["player_id"])] = int(data["to"])
+			_add_roll_reason(int(data["player_id"]), "가속 보너스 +%d" % (int(data["to"]) - int(data["from"])))
 			_log_line("[가속 보너스] P%d: 눈금 %d → %d!" % [data["player_id"], data["from"], data["to"]], Color("ffd43b"))
 			_record(int(data["player_id"]), "가속 보너스 → %d칸 → 총 %d칸 전진!" % [data["from"], data["to"]])
 		&"tempo_up":
 			var stage: int = int(data["level"])
 			var lines: Array = data["lines"]
 			_log_line("[템포 업 Lv.%d] %d라운드부터: %s" % [stage, data["round"], " / ".join(PackedStringArray(lines))], Color("ff6b6b"))
-			_record(-1, "[color=#ff6b6b][b]!! 템포 업 Lv.%d[/b] - %s[/color]" % [stage, _bb(" · ".join(PackedStringArray(lines)))])
-			if _fx_on():
-				screen_shake(12.0, 0.5)
-				Sfx.play(&"tempo_warning")
-			_announce("템포 업", "템포 업 Lv.%d · %s" % [stage, TempoUp.stage_name(stage)], "%d라운드부터 게임이 빨라집니다!\n◆ %s" % [data["round"], "\n◆ ".join(PackedStringArray(lines))], Color("ff4d4d"), null, 3.2)
-		&"round_end_judgement":
+			var tempo_round: int = int(data["round"])
+			# 라운드 끝(마지막 차례·NPC 페이즈)의 처치 연출이 다 끝난 뒤에 경고하고, 증강 선택 창은 그 경고 뒤에 연다.
+			# (지연 큐에 넣는다: 처치 연출도 지연 큐로 들어오므로 그보다 앞서 끼어들지 않는다)
+			_enqueue_late(func() -> void:
+				_record(-1, "[color=#ff6b6b][b]!! 템포 업 Lv.%d[/b] - %s[/color]" % [stage, _bb(" · ".join(PackedStringArray(lines)))], "", false, true)
+				if _fx_on():
+					screen_shake(12.0, 0.5)
+					Sfx.play(&"tempo_warning")
+				_announce_now("템포 업", "템포 업 Lv.%d · %s" % [stage, TempoUp.stage_name(stage)], "%d라운드부터 게임이 빨라집니다!\n◆ %s" % [tempo_round, "\n◆ ".join(PackedStringArray(lines))], Color("ff4d4d"), null, 3.2))
+		&"special_victory_judgement":
+			_mark_spotlight()
 			var achievers: Array = data["players"]
-			_log_line("[라운드 %d 종료 판정] 특수 승리 달성: %s" % [int(data["round"]), ", ".join(PackedStringArray(achievers.map(func(id: int) -> String: return _player_name(id))))], Color("ffd43b"))
+			_log_line("[%d라운드 특수 승리] 달성: %s" % [int(data["round"]), ", ".join(PackedStringArray(achievers.map(func(id: int) -> String: return _player_name(id))))], Color("ffd43b"))
 			var judged_round: int = int(data["round"])
 			_enqueue_late(func() -> void:
-				_announce("라운드 종료", "[특수 승리 판정]", "%d라운드가 끝나기 직전, 법전 조건을 채운 사람이 졸업합니다" % judged_round, Color("ffd43b"), null, 1.2))
+				_announce("특수 승리", "[특수 승리 달성!]", "법전 조건을 채웠습니다 - 바로 다음 순위로 졸업합니다 (%d라운드)" % judged_round, Color("ffd43b"), null, 1.2))
 		&"tempo_law":
 			var tempo_law: LawResource = LawRegistry.create(String(data["law_id"]))
 			_log_line("[템포 업] 법전에 특수 승리 [%s] 자동 등록" % tempo_law.law_name, Color("ffd43b"))
@@ -7837,18 +8467,22 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 				_announce("템포 업", "결승선이 당겨진다!", "%d번 칸부터 결승선 - 라운드마다 %d칸씩 더 당겨집니다%s" % [data["zone_start"], TempoUp.GOAL_SHRINK_PER_ROUND, "\n말 %d개가 그 자리에서 완주!" % finished_ids.size() if not finished_ids.is_empty() else ""], Color("ffd43b"), null, 2.0)
 		&"tempo_boosted":
 			_roll_total[int(data["player_id"])] = int(data["to"])
+			_add_roll_reason(int(data["player_id"]), "템포 업 +%d" % (int(data["to"]) - int(data["from"])))
 			_log_line("[템포 업] P%d: 이동 %d → %d" % [data["player_id"], data["from"], data["to"]], Color("ff8787"))
 			_record(int(data["player_id"]), "템포 업 +%d → 총 %d칸 전진!" % [int(data["to"]) - int(data["from"]), int(data["to"])])
 		&"gambler_doubled":
 			_roll_total[int(data["player_id"])] = int(data["to"])
+			_add_roll_reason(int(data["player_id"]), "도박사의 영혼 x2")
 			_log_line("[도박사의 영혼] P%d: 이동 %d → %d (x2)!" % [data["player_id"], data["from"], data["to"]], Color("ffa94d"))
 			_record(int(data["player_id"]), "도박사의 영혼 x2 → %d칸 → 총 %d칸 전진!" % [data["from"], data["to"]])
+		&"move_bonus":
+			_on_move_bonus(int(data["pawn_id"]), data["notes"], int(data.get("revenge", 0)))
 		&"gambler_busted":
 			var busted: int = int(data["player_id"])
-			_log_line("[도박사의 영혼] P%d: 눈금 %d - 과열! %s 출발선으로 사출" % [busted, data["roll"], _pawn_name(int(data["pawn_id"]))], Color("ff6b6b"))
-			_record(busted, "도박사의 영혼 과열! (눈금 %d)" % int(data["roll"]))
+			_log_line("[도박사의 영혼] P%d: 눈금 %d - 과열! 이동 없이 차례 끝" % [busted, data["roll"]], Color("ff6b6b"))
+			_record(busted, "도박사의 영혼 과열! (눈금 %d, 이동 없이 차례 끝)" % int(data["roll"]))
 			_profile_react(busted, false)
-			_announce("도박사의 영혼", "[과열!]", "눈금 %d - 이동한 말이 과열되어 출발선으로 사출됩니다" % data["roll"], Color("ff6b6b"), null, 1.1)
+			_announce("도박사의 영혼", "[과열!]", "눈금 %d - 이번 차례는 이동 없이 바로 끝납니다" % data["roll"], Color("ff6b6b"), null, 1.1)
 			_start_beat(0.9)
 		&"turn_rested":
 			var rested: int = int(data["player_id"])
@@ -7866,15 +8500,9 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			else:
 				_log_line("[업기] P%d: 그냥 두기 - 개별 유지" % data["player_id"], Color("adb5bd"))
 		&"move_resolved":
+			_follow_up_pawns.erase(int(data.get("pawn_id", -1)))
 			_log_move(data)
 			_start_beat(BEAT_AFTER_MOVE)
-			if int(data.get("leapfrog_bonus", 0)) > 0 and _pawn_views.has(int(data["pawn_id"])):
-				var leap_view: Node2D = _pawn_views[int(data["pawn_id"])]
-				var leap_bonus: int = int(data["leapfrog_bonus"])
-				# 위치는 말 걸음이 끝난 뒤(이 단계가 재생될 때) 읽는다. 처치 연출(컷인·사출)이 먼저 나오도록 그 뒤에 세운다.
-				_enqueue_late(func() -> void:
-					if is_instance_valid(leap_view):
-						_floating_badge(leap_view.position + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + Vector2(0, -40), "+%d" % leap_bonus, Color("ffd43b"), 40))
 			_bakery_feedback(data)
 			_corner_buff_feedback(data)
 			if bool(data.get("jailed", false)) and (data.get("path", []) as Array).is_empty():
@@ -7905,12 +8533,11 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 				var npc_name: String = _npc_runner_name(report["display_id"])
 				var caught: Array = report["caught"]
 				var run_path: Array = report["path"]
-				var result_text: String = "%s %s칸 전진%s" % [npc_name, run_path.size(), " - 말 %d개를 잡고 사라졌습니다!" % caught.size() if not caught.is_empty() else ""]
+				var result_text: String = ("%s %d칸 질주 - 말 %d개를 잡고 사라졌습니다!" % [npc_name, run_path.size(), caught.size()]) if not caught.is_empty() else "%s - 처치할 적이 없어 그대로 사라졌습니다" % npc_name
 				_play_npc_run(report["display_id"], int(report.get("behavior", GameEnums.NpcBehavior.CHASE_NEAREST)), int(report.get("from", -1)), run_path, int(report["npc_id"]), func() -> void:
 					_log_line("[중립 기물] %s" % result_text, Color("fa5252"))
 					if not caught.is_empty():
-						_record(-1, "%s" % result_text)
-						_announce("중립 기물", "%s가 말을 잡았습니다!" % npc_name, "잡힌 말 %d개" % caught.size(), Color("fa5252"), null, 1.2))
+						_record(-1, "%s" % result_text))  # 잡은 말은 처치 컷인·사출로 보인다 (따로 [말을 잡았습니다!] 카드는 띄우지 않는다)
 		&"augment_offers":
 			_draft_open = true
 			_log_line("[증강] 라운드 %d 증강 드래프트가 열렸습니다." % data["round"], Color("ffa94d"))
@@ -7923,6 +8550,9 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_log_line("[증강] P%d%s: %s - %s" % [data["player_id"], " (자동)" if data["auto"] else "", AugmentRegistry.get_def(data["augment_id"]).display_name, data["text"]], Color("ffa94d"))
 			# 한 명씩 공개하면 늘어지므로 모아 두었다가 드래프트가 끝나면 한 장으로 한꺼번에 공개한다.
 			_draft_summary.append({"player": int(data["player_id"]), "augment": data["augment_id"], "text": str(data["text"])})
+			if int(data["player_id"]) == _telemetry_seat():
+				var picked_def: AugmentDef = AugmentRegistry.get_def(data.get("augment_id", &""))
+				_my_augments.append(picked_def.display_name if picked_def != null else str(data.get("augment_id", "")))
 		&"bang_resolved":
 			var target_name: String = _pawn_name(int(data["target"]))
 			_log_line("[BANG!] P%d가 %s을(를) 저격! %d번 → %d번 타일로 2칸 밀려납니다." % [data["shooter"], target_name, data["from"], data["to"]], Color("ff6b6b"))
@@ -7948,6 +8578,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 		&"player_ranked":
 			var ranked: int = int(data["player_id"])
 			var rank_no: int = int(data["rank"])
+			_report_player_ranked(ranked, rank_no)
 			_log_line("[순위 확정] %s %d위 - %s" % [_player_name(ranked), rank_no, VictoryChecker.reason_text(data["reason"])], Color("ffd43b"))
 			# 순위는 라운드가 끝나는 순간(마지막 차례의 이동·처치 뒤)에 확정된다: 그 처치 연출·기록이 끝난 뒤에 알린다.
 			var reason_text: String = VictoryChecker.reason_text(data["reason"])
@@ -8095,6 +8726,7 @@ func _log_move(data: Dictionary) -> void:
 
 
 func _log_line(text: String, color: Color) -> void:
+	text = L10n.t(text)
 	if _log == null:
 		return
 	if text.is_empty():
@@ -8157,7 +8789,8 @@ func _log_round_divider(round_number: int) -> void:
 
 ## 액션 로그 한 줄: [R3] 🟦 컴퓨터 2 : 내용 (player_id가 -1이면 이름 없이).
 ## 연출을 켠 화면에서는 연출 큐를 따라 그 장면이 나올 때 적는다 (결과를 먼저 흘리지 않는다). late는 사출처럼 맨 뒤 연출과 함께 적는다.
-func _record(player_id: int, text: String, tag: String = "", late: bool = false) -> void:
+## now: 연출 큐의 한 단계 안에서 부를 때 (그 연출과 같은 순간에 바로 적는다).
+func _record(player_id: int, text: String, tag: String = "", late: bool = false, now: bool = false) -> void:
 	if _action_log == null or state == null:
 		return
 	var round_tag: String = "[color=#868e96][lb]R%d%s][/color]" % [state.round_number, (" " + tag) if tag != "" else ""]
@@ -8168,7 +8801,7 @@ func _record(player_id: int, text: String, tag: String = "", late: bool = false)
 		if is_instance_valid(log_panel):
 			_log_round_divider(round_number)  # 그 라운드의 첫 줄보다 구분선이 먼저 (증강 공개는 라운드 알림보다 늦게 적힌다)
 			log_panel.add_entry(line)
-	if not _fx_on():
+	if not _fx_on() or now:
 		add.call()
 	elif late:
 		_enqueue_late(add)
@@ -8207,15 +8840,16 @@ func _record_card(data: Dictionary) -> void:
 
 
 ## 말이 출발선으로 날아갔다: 다른 사람이 보냈으면 처치, 아니면 사출.
-func _record_ejection(pawn_id: int, by_player: int) -> void:
+## now: 처치 연출 단계 안에서 부르면 그 순간 바로 적는다 (아니면 이동 연출이 끝난 뒤로 미룬다).
+func _record_ejection(pawn_id: int, by_player: int, now: bool = false) -> void:
 	var victim: PlayerPawn = state.get_pawn(pawn_id)
 	if victim == null:
 		return
 	var label: String = _bq("%d번 말" % victim.slot)
 	if _player_ids.has(by_player) and by_player != victim.owner_id:
-		_record(by_player, "%s의 %s 처치!" % [_log_who(victim.owner_id), label], "", true)
+		_record(by_player, "%s의 %s 처치!" % [_log_who(victim.owner_id), label], "", true, now)
 	else:
-		_record(victim.owner_id, "%s이(가) 출발선으로 사출" % label, "", true)
+		_record(victim.owner_id, "%s이(가) 출발선으로 사출" % label, "", true, now)
 
 
 func _card_name(card_id: StringName) -> String:
@@ -8359,9 +8993,11 @@ func _refresh_tool_stage() -> void:
 	if turn_key != _stage_turn_key and not tool.has_pending_state() and not bool(stage.get("active")):
 		_stage_turn_key = turn_key
 		stage.call("reset")
-	var in_roll: bool = not manager.is_game_over and (manager.current_state == TurnManager.State.PHASE_TURN_BEGIN or manager.current_state == TurnManager.State.PHASE_ROLL_WAIT)
+	# 굴리기 화면은 앞선 연출이 다 끝난 뒤에만 뜬다. 이미 굴리는 중(연출·야추 중간 상태)이면 그대로 둔다.
+	var in_roll: bool = _roll_view_allowed()
+	var mid_roll: bool = _fx_busy or bool(stage.get("active")) or (tool.has_pending_state() and not (_announcer != null and _announcer.holding()))
 	stage.set("instant", instant_roll_for_test)
-	stage.visible = in_roll or _fx_busy or bool(stage.get("active")) or tool.has_pending_state()
+	stage.visible = in_roll or mid_roll
 	var acting: bool = not _roll_button.disabled
 	if stage == _stage_yacht:
 		_stage_yacht.sync(tool as ToolYacht, acting)
@@ -8611,6 +9247,8 @@ func _menu_is_open() -> bool:
 
 
 func _toggle_menu() -> void:
+	if not _accept_tap(&"menu"):
+		return
 	if _menu_is_open():
 		_close_menu()
 	else:
@@ -8633,7 +9271,7 @@ func _open_menu() -> void:
 	center.add_child(panel)
 	_menu_box = VBoxContainer.new()
 	_menu_box.add_theme_constant_override("separation", 10)
-	_menu_box.custom_minimum_size = Vector2(380, 0)
+	_menu_box.custom_minimum_size = Vector2(440 if MobileSupport.touch_mode() else 380, 0)
 	panel.add_child(_menu_box)
 	add_child(_menu_overlay)
 	_show_menu_page(&"main")
@@ -8659,8 +9297,11 @@ func _release_menu_buttons() -> void:
 
 
 func _menu_item(item: Button, font_size: int = 17) -> void:
-	item.custom_minimum_size = Vector2(380, 46)
-	item.add_theme_font_size_override("font_size", font_size)
+	var touch: bool = MobileSupport.touch_mode()
+	item.custom_minimum_size = Vector2(440, 64) if touch else Vector2(380, 46)  # 폰에서는 메뉴 항목을 크게 (화면이 약 0.5배로 줄어 보인다)
+	item.add_theme_font_size_override("font_size", font_size + (4 if touch else 0))
+	if touch:
+		MobileSupport.touch_button(item, 64.0)
 	_menu_box.add_child(item)
 
 
@@ -8733,8 +9374,23 @@ func _build_exit_page() -> void:
 
 
 ## [배속] 버튼: 1x -> 2x -> 3x -> 1x. 혼자 하는 판에서만 바뀐다 (온라인은 모두가 같은 화면 속도를 보도록 1x 고정).
+## 같은 버튼이 아주 짧은 시간(TAP_GUARD_MSEC) 안에 두 번 눌리면 두 번째는 무시한다 (터치 한 번이 두 번 들어오는 기기 대비: 배속이 두 칸씩 넘어가거나 메뉴가 열렸다 닫히지 않게).
+const TAP_GUARD_MSEC: int = 300
+var _last_tap_msec: Dictionary = {}
+
+
+func _accept_tap(key: StringName) -> bool:
+	if not MobileSupport.touch_mode():
+		return true
+	var now: int = Time.get_ticks_msec()
+	if now - int(_last_tap_msec.get(key, -100000)) < TAP_GUARD_MSEC:
+		return false
+	_last_tap_msec[key] = now
+	return true
+
+
 func _on_speed_pressed() -> void:
-	if net != null:
+	if net != null or not _accept_tap(&"speed"):
 		return
 	var speeds: Array[int] = GameSession.GAME_SPEEDS
 	GameSession.game_speed = speeds[(speeds.find(GameSession.game_speed) + 1) % speeds.size()]
@@ -8831,7 +9487,29 @@ func _on_menu_reset_settings() -> void:
 
 ## 연출 속도 배율: 연출 멈춤이 켜져 있고 테스트용 즉시 모드가 아닐 때만 GameSession.pace_scale을 쓴다.
 func _pace() -> float:
-	return GameSession.pace_scale if pacing_enabled and not instant_roll_for_test else 1.0
+	if not pacing_enabled or instant_roll_for_test:
+		return 1.0
+	return GameSession.pace_scale * (TURBO_PACE_SCALE if _turbo_turn() else 1.0)
+
+
+## 터보 AI 턴인가: 지금 차례가 AI(싱글의 컴퓨터 자리·온라인의 빈자리 봇)이고, 이번 턴에 주목할 장면(사람 말 처치·특수 승리·법전)이 없다.
+func _turbo_turn() -> bool:
+	if _spotlight_turn or manager == null or state == null or manager.is_game_over:
+		return false
+	var current: int = manager.current_player_id()
+	if net != null:
+		return net.is_bot(current)
+	return ai_mode and _bot != null and _bot.is_bot(current)
+
+
+## 처치 컷인 재생 빠르기: 터보 AI 턴(AI끼리의 처치)은 빠르게, 그 밖에는 보통.
+func _cutin_speed() -> float:
+	return minf(1.0 / TURBO_PACE_SCALE, 2.0) if _turbo_turn() else 1.0
+
+
+## 이번 AI 턴을 주목 구간으로 돌린다 (그 턴의 남은 연출은 보통 속도). 다음 차례가 시작되면 풀린다.
+func _mark_spotlight() -> void:
+	_spotlight_turn = true
 
 
 ## 속도 설정이 바뀌면 걸음 간격·봇 대기에 바로 적용한다 (알림·호흡은 쓸 때마다 _pace()를 읽는다).
@@ -8962,6 +9640,13 @@ func _on_mode_toggle_pressed() -> void:
 	_refresh_mode_toggle()
 	if manager != null and manager.state != null:
 		_refresh_all()
+
+
+## 이 자리가 컴퓨터(AI 대전의 봇·온라인의 빈자리 봇)인가.
+func _is_computer_seat(player_id: int) -> bool:
+	if net != null:
+		return net.is_bot(player_id)
+	return ai_mode and _bot != null and _bot.is_bot(player_id)
 
 
 ## 지금 턴이 AI 봇의 차례인가 (AI 모드에서 P2~P4).

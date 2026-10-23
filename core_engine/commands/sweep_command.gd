@@ -1,15 +1,12 @@
 # File: res://core_engine/commands/sweep_command.gd
 # Class: class_name SweepCommand
-# Role: 소환 카드 실행 - 고른 상단 코너(오른쪽 위·반환점)에 도적떼(정방향)나 팩맨(역방향)을 소환해 바로 3~6칸 전진시킨다. 말을 만나면 그 칸의 말을 모두 사출하고 사라지고, 못 만나면 보드에 남아 라운드가 끝날 때마다 다시 3~6칸 전진한다 (NpcSweep.advance)
+# Role: 소환 카드 실행 - 고른 상단 코너(오른쪽 위·반환점)에 도적떼(정방향)나 팩맨(역방향)을 소환만 한다 (소환 즉시 움직이지 않는다). 라운드가 끝날 때 가장 가까운 적 말 하나를 처치하고 사라진다 (NeutralNPC.run_ai -> NpcSweep.strike)
 class_name SweepCommand
 extends GameCommand
 
-const MIN_STEPS: int = 3
-const MAX_STEPS: int = 6
-
 var tile: int = -1
 var display_id: StringName = &"SUM_01"
-## 실행 뒤 UI가 읽는다: NpcSweep 결과 {"npc_id", "display_id", "path", "ejected"}.
+## 실행 뒤 읽는다: {"npc_id", "display_id", "path": [소환 칸], "ejected": [], "vanished": false} (소환만 하므로 움직임·사출 없음).
 var result: Dictionary = {}
 
 
@@ -38,7 +35,4 @@ func can_execute(_ctx: RuleContext) -> bool:
 func _run() -> void:
 	var behavior: GameEnums.NpcBehavior = GameEnums.NpcBehavior.PATROL_REVERSE if display_id == &"SUM_02" else GameEnums.NpcBehavior.CHASE_NEAREST
 	var npc: NeutralNPC = state.spawn_npc(tile, behavior, sender_id, display_id)
-	result = NpcSweep.advance(state, npc, state.rng.randi_range(MIN_STEPS, MAX_STEPS), true)
-	if bool(result["vanished"]):
-		state.remove_npc(npc)
-	state.npc_swept.emit(display_id, result["path"], result["ejected"])
+	result = {"npc_id": npc.entity_id, "display_id": display_id, "path": [tile] as Array[int], "ejected": [] as Array[int], "vanished": false}

@@ -131,6 +131,7 @@ func _process(delta: float) -> void:
 				guns[index].stop_rendering()
 
 func _text(text: String, center: Vector2, font_size: int, color: Color) -> void:
+	text = L10n.t(text)
 	var pos := center - Vector2(FONT.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x / 2.0, 0)
 	draw_string_outline(FONT, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, 7, Color("352b38"))
 	draw_string(FONT, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, color)

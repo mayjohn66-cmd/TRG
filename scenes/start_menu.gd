@@ -39,6 +39,15 @@ var _quick_button: Button = null
 var _back_button: Button = null
 var _train_label: Label = null
 var _train_start: Button = null
+## 놀이터 난이도 토글 (순한맛 · 보통맛 · 마라맛).
+var _difficulty_buttons: Dictionary = {}
+var _difficulty_note: Label = null
+const DIFFICULTY_TONES: Dictionary = {&"mild": &"teal", &"normal": &"blue", &"spicy": &"pink"}
+const DIFFICULTY_NOTES: Dictionary = {
+	&"mild": "입문·힐링: 컴퓨터가 내 말을 자주 봐주고, 나를 노리는 공격 카드도 덜 써요",
+	&"normal": "기본: 컴퓨터가 1등을 먼저 견제하고, 방금 잡힌 사람은 잠깐 봐줘요",
+	&"spicy": "하드코어: 봐주기 없이 최적의 킬각·카드·특수 승리를 노려요",
+}
 var _mobile: MobileSupport = null
 
 
@@ -87,7 +96,6 @@ func _ready() -> void:
 	else:
 		_show_step(1)  # 모바일에서 키보드가 불쑥 뜨지 않도록 입력칸은 눌러야 입력된다
 	_mobile = MobileSupport.new()
-	_mobile.button_position = Vector2(1070, 2)
 	add_child(_mobile)
 
 
@@ -141,6 +149,10 @@ func _build_mode_page() -> void:
 	buttons.add_theme_constant_override("separation", 10)
 	buttons.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	top.add_child(buttons)
+	var language := LobbyTheme.language_toggle()  # [🌐 KR / EN]: 규칙·설정 버튼 옆
+	language.custom_minimum_size = Vector2(140, 56)
+	language.add_theme_font_size_override("font_size", 17)
+	buttons.add_child(language)
 	buttons.add_child(HubKit.round_button("HubRules", &"book", _show_rules, 56.0))
 	buttons.add_child(HubKit.round_button("HubSettings", &"gear", _show_settings, 56.0))
 	# 왼쪽: 큼직한 전신 아바타 + 닉네임 + 아바타 설정 (타이틀은 오른쪽 아래)
@@ -271,6 +283,24 @@ func _build_train_page(parent: VBoxContainer) -> void:
 	var note := LobbyTheme.label("컴퓨터와 겨룹니다. 제한 시간 없이 천천히 연습하세요.", 18, LobbyTheme.BLUE)
 	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_train_page.add_child(note)
+	# 난이도 3단 토글 (기본 보통맛, 고른 값은 다음 접속에도 남는다)
+	var levels := HBoxContainer.new()
+	levels.name = "DifficultyRow"
+	levels.add_theme_constant_override("separation", 10)
+	levels.alignment = BoxContainer.ALIGNMENT_CENTER
+	_train_page.add_child(levels)
+	for level: StringName in BotTemper.ALL:
+		var button := LobbyTheme.small_button(BotTemper.label(level), set_difficulty.bind(level), DIFFICULTY_TONES[level], 24)
+		button.name = "Difficulty_%s" % level
+		button.toggle_mode = true
+		button.custom_minimum_size = Vector2(170, 56)
+		levels.add_child(button)
+		_difficulty_buttons[level] = button
+	_difficulty_note = LobbyTheme.label("", 17, LobbyTheme.BLUE)
+	_difficulty_note.name = "DifficultyNote"
+	_difficulty_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_train_page.add_child(_difficulty_note)
+	_refresh_difficulty()
 	_train_start = LobbyTheme.cream_button("게임 시작", start_ai_game, 40)
 	_train_start.name = "StartTraining"
 	_train_page.add_child(_train_start)
@@ -315,6 +345,7 @@ func confirm_nickname() -> bool:
 	GameSession.set_nickname(_name_edit.text)
 	_hello_label.text = "%s 교주님" % GameSession.nickname
 	_show_step(2)
+	MatchTelemetry.report_lobby_entry(self)  # 통계: 게임을 켜서 실제로 들어온 사람 (이번 접속에 한 번)
 	return true
 
 
@@ -430,6 +461,22 @@ func open_avatar() -> void:
 ## [놀이터]: AI 인원을 고르는 화면으로 간다.
 func open_training() -> void:
 	_show_step(3)
+
+
+## 놀이터 난이도를 고른다 (BotTemper.MILD / NORMAL / SPICY).
+func set_difficulty(level: StringName) -> void:
+	GameSession.set_bot_difficulty(level)
+	_refresh_difficulty()
+
+
+func _refresh_difficulty() -> void:
+	var current: StringName = GameSession.bot_difficulty()
+	for level: Variant in _difficulty_buttons:
+		var button: Button = _difficulty_buttons[level]
+		button.set_pressed_no_signal(level == current)
+		button.modulate = Color.WHITE if level == current else Color(1, 1, 1, 0.55)
+	if _difficulty_note != null:
+		_difficulty_note.text = str(DIFFICULTY_NOTES.get(current, ""))
 
 
 func change_ai_count(delta: int) -> void:

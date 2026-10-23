@@ -35,3 +35,10 @@ func test_every_avatar_has_a_select_voice_kept_in_the_main_pack() -> void:
 		check(path != "", "%s: 선택 대사 파일이 있다" % id)
 		check(load(path) is AudioStreamOggVorbis, "%s: 선택 대사를 Ogg로 읽는다" % id)
 	check_eq(AvatarCatalog.select_voice_path(&"not_an_avatar"), "", "없는 아바타는 대사가 없다")
+
+
+func test_uid_is_read_from_an_import_file() -> void:
+	var text: String = "[remap]\n\nimporter=\"texture\"\ntype=\"CompressedTexture2D\"\nuid=\"uid://bbiuerh31fi3h\"\npath=\"res://.godot/imported/happy_0.webp-x.ctex\"\n"
+	check_eq(AvatarPacks.uid_from_import_text(text), ResourceUID.text_to_id("uid://bbiuerh31fi3h"), "UID를 읽는다")
+	check_eq(AvatarPacks.uid_from_import_text("[remap]\nimporter=\"texture\"\n"), ResourceUID.INVALID_ID, "UID가 없으면 무효")
+	check_eq(AvatarPacks.uid_from_import_text(""), ResourceUID.INVALID_ID, "빈 파일")

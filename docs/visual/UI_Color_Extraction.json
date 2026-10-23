@@ -1,0 +1,5374 @@
+{
+  "method": "UI ROI only; RGB bins width 8; greedy clusters radius 20 in RGB; representative is most frequent actual source RGB within cluster. Cluster counts approximate similar colors, not exact HEX counts.",
+  "rois": {
+    "trickcal_01_birthday.png": [
+      [
+        155,
+        66,
+        440,
+        270
+      ]
+    ],
+    "trickcal_02_recruit.png": [
+      [
+        147,
+        69,
+        446,
+        268
+      ]
+    ],
+    "trickcal_03_character.png": [
+      [
+        1,
+        35,
+        108,
+        280
+      ],
+      [
+        480,
+        102,
+        590,
+        273
+      ]
+    ],
+    "trickcal_04_skill.png": [
+      [
+        376,
+        35,
+        596,
+        307
+      ],
+      [
+        89,
+        35,
+        123,
+        307
+      ]
+    ],
+    "trickcal_05_purchase.png": [
+      [
+        151,
+        59,
+        442,
+        174
+      ],
+      [
+        196,
+        174,
+        442,
+        282
+      ]
+    ],
+    "trickcal_06_mail.png": [
+      [
+        87,
+        35,
+        513,
+        309
+      ]
+    ]
+  },
+  "total_pixels": 408511,
+  "per_image_pixels": {
+    "trickcal_01_birthday.png": 58140,
+    "trickcal_02_recruit.png": 59501,
+    "trickcal_03_character.png": 45025,
+    "trickcal_04_skill.png": 69088,
+    "trickcal_05_purchase.png": 60033,
+    "trickcal_06_mail.png": 116724
+  },
+  "clusters": [
+    {
+      "hex": "#F9F9F3",
+      "rgb": [
+        249,
+        249,
+        243
+      ],
+      "count": 143137,
+      "exact_count": 69000,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 17952,
+        "trickcal_02_recruit.png": 40109,
+        "trickcal_03_character.png": 650,
+        "trickcal_04_skill.png": 1596,
+        "trickcal_05_purchase.png": 15609,
+        "trickcal_06_mail.png": 67221
+      }
+    },
+    {
+      "hex": "#CDE793",
+      "rgb": [
+        205,
+        231,
+        147
+      ],
+      "count": 72907,
+      "exact_count": 62006,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 3,
+        "trickcal_03_character.png": 16898,
+        "trickcal_04_skill.png": 51731,
+        "trickcal_05_purchase.png": 292,
+        "trickcal_06_mail.png": 3983
+      }
+    },
+    {
+      "hex": "#E9F5CF",
+      "rgb": [
+        233,
+        245,
+        207
+      ],
+      "count": 67742,
+      "exact_count": 54056,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 24507,
+        "trickcal_02_recruit.png": 2517,
+        "trickcal_03_character.png": 700,
+        "trickcal_04_skill.png": 426,
+        "trickcal_05_purchase.png": 27278,
+        "trickcal_06_mail.png": 12314
+      }
+    },
+    {
+      "hex": "#BFDB7C",
+      "rgb": [
+        191,
+        219,
+        124
+      ],
+      "count": 28672,
+      "exact_count": 25431,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 1,
+        "trickcal_02_recruit.png": 3,
+        "trickcal_03_character.png": 19264,
+        "trickcal_04_skill.png": 7060,
+        "trickcal_05_purchase.png": 27,
+        "trickcal_06_mail.png": 2317
+      }
+    },
+    {
+      "hex": "#2F9931",
+      "rgb": [
+        47,
+        153,
+        49
+      ],
+      "count": 11584,
+      "exact_count": 761,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 4265,
+        "trickcal_02_recruit.png": 3885,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 3,
+        "trickcal_05_purchase.png": 3404,
+        "trickcal_06_mail.png": 27
+      }
+    },
+    {
+      "hex": "#89CD4C",
+      "rgb": [
+        137,
+        205,
+        76
+      ],
+      "count": 11172,
+      "exact_count": 7614,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 4,
+        "trickcal_02_recruit.png": 5,
+        "trickcal_03_character.png": 2944,
+        "trickcal_04_skill.png": 89,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 8130
+      }
+    },
+    {
+      "hex": "#5DA530",
+      "rgb": [
+        93,
+        165,
+        48
+      ],
+      "count": 10418,
+      "exact_count": 1194,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 2833,
+        "trickcal_02_recruit.png": 3189,
+        "trickcal_03_character.png": 1219,
+        "trickcal_04_skill.png": 85,
+        "trickcal_05_purchase.png": 2781,
+        "trickcal_06_mail.png": 311
+      }
+    },
+    {
+      "hex": "#A9A9A7",
+      "rgb": [
+        169,
+        169,
+        167
+      ],
+      "count": 7466,
+      "exact_count": 3978,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 2773,
+        "trickcal_02_recruit.png": 2847,
+        "trickcal_03_character.png": 27,
+        "trickcal_04_skill.png": 74,
+        "trickcal_05_purchase.png": 549,
+        "trickcal_06_mail.png": 1196
+      }
+    },
+    {
+      "hex": "#747C64",
+      "rgb": [
+        116,
+        124,
+        100
+      ],
+      "count": 4334,
+      "exact_count": 1967,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 2463,
+        "trickcal_02_recruit.png": 616,
+        "trickcal_03_character.png": 25,
+        "trickcal_04_skill.png": 258,
+        "trickcal_05_purchase.png": 300,
+        "trickcal_06_mail.png": 672
+      }
+    },
+    {
+      "hex": "#333333",
+      "rgb": [
+        51,
+        51,
+        51
+      ],
+      "count": 4086,
+      "exact_count": 2949,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 185,
+        "trickcal_02_recruit.png": 990,
+        "trickcal_03_character.png": 139,
+        "trickcal_04_skill.png": 879,
+        "trickcal_05_purchase.png": 713,
+        "trickcal_06_mail.png": 1180
+      }
+    },
+    {
+      "hex": "#9DDF60",
+      "rgb": [
+        157,
+        223,
+        96
+      ],
+      "count": 3552,
+      "exact_count": 1736,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 1,
+        "trickcal_02_recruit.png": 3,
+        "trickcal_03_character.png": 262,
+        "trickcal_04_skill.png": 125,
+        "trickcal_05_purchase.png": 45,
+        "trickcal_06_mail.png": 3116
+      }
+    },
+    {
+      "hex": "#76C12E",
+      "rgb": [
+        118,
+        193,
+        46
+      ],
+      "count": 2647,
+      "exact_count": 1634,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 894,
+        "trickcal_02_recruit.png": 913,
+        "trickcal_03_character.png": 49,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 769,
+        "trickcal_06_mail.png": 22
+      }
+    },
+    {
+      "hex": "#FFDD74",
+      "rgb": [
+        255,
+        221,
+        116
+      ],
+      "count": 2446,
+      "exact_count": 1973,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 1,
+        "trickcal_03_character.png": 112,
+        "trickcal_04_skill.png": 57,
+        "trickcal_05_purchase.png": 2276,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#DDEFAB",
+      "rgb": [
+        221,
+        239,
+        171
+      ],
+      "count": 2158,
+      "exact_count": 638,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 10,
+        "trickcal_02_recruit.png": 5,
+        "trickcal_03_character.png": 95,
+        "trickcal_04_skill.png": 102,
+        "trickcal_05_purchase.png": 803,
+        "trickcal_06_mail.png": 1143
+      }
+    },
+    {
+      "hex": "#ECECE6",
+      "rgb": [
+        236,
+        236,
+        230
+      ],
+      "count": 1969,
+      "exact_count": 221,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 31,
+        "trickcal_02_recruit.png": 344,
+        "trickcal_03_character.png": 21,
+        "trickcal_04_skill.png": 309,
+        "trickcal_05_purchase.png": 320,
+        "trickcal_06_mail.png": 944
+      }
+    },
+    {
+      "hex": "#17992E",
+      "rgb": [
+        23,
+        153,
+        46
+      ],
+      "count": 1931,
+      "exact_count": 1427,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 806,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 704,
+        "trickcal_06_mail.png": 421
+      }
+    },
+    {
+      "hex": "#E3C360",
+      "rgb": [
+        227,
+        195,
+        96
+      ],
+      "count": 1681,
+      "exact_count": 373,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 377,
+        "trickcal_02_recruit.png": 455,
+        "trickcal_03_character.png": 75,
+        "trickcal_04_skill.png": 142,
+        "trickcal_05_purchase.png": 334,
+        "trickcal_06_mail.png": 298
+      }
+    },
+    {
+      "hex": "#B9B9B7",
+      "rgb": [
+        185,
+        185,
+        183
+      ],
+      "count": 1595,
+      "exact_count": 532,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 98,
+        "trickcal_02_recruit.png": 183,
+        "trickcal_03_character.png": 17,
+        "trickcal_04_skill.png": 58,
+        "trickcal_05_purchase.png": 666,
+        "trickcal_06_mail.png": 573
+      }
+    },
+    {
+      "hex": "#666666",
+      "rgb": [
+        102,
+        102,
+        102
+      ],
+      "count": 1523,
+      "exact_count": 331,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 22,
+        "trickcal_02_recruit.png": 134,
+        "trickcal_03_character.png": 9,
+        "trickcal_04_skill.png": 215,
+        "trickcal_05_purchase.png": 370,
+        "trickcal_06_mail.png": 773
+      }
+    },
+    {
+      "hex": "#ADD593",
+      "rgb": [
+        173,
+        213,
+        147
+      ],
+      "count": 1499,
+      "exact_count": 185,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 26,
+        "trickcal_02_recruit.png": 20,
+        "trickcal_03_character.png": 102,
+        "trickcal_04_skill.png": 301,
+        "trickcal_05_purchase.png": 373,
+        "trickcal_06_mail.png": 677
+      }
+    },
+    {
+      "hex": "#F18787",
+      "rgb": [
+        241,
+        135,
+        135
+      ],
+      "count": 1416,
+      "exact_count": 241,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 87,
+        "trickcal_02_recruit.png": 165,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 2,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 1162
+      }
+    },
+    {
+      "hex": "#1E77E3",
+      "rgb": [
+        30,
+        119,
+        227
+      ],
+      "count": 1180,
+      "exact_count": 1077,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 116,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 1064
+      }
+    },
+    {
+      "hex": "#5FA11E",
+      "rgb": [
+        95,
+        161,
+        30
+      ],
+      "count": 1159,
+      "exact_count": 1139,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 13,
+        "trickcal_04_skill.png": 1146,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#FFD95C",
+      "rgb": [
+        255,
+        217,
+        92
+      ],
+      "count": 1146,
+      "exact_count": 548,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 1,
+        "trickcal_03_character.png": 638,
+        "trickcal_04_skill.png": 505,
+        "trickcal_05_purchase.png": 2,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#CDD7B7",
+      "rgb": [
+        205,
+        215,
+        183
+      ],
+      "count": 1124,
+      "exact_count": 378,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 27,
+        "trickcal_02_recruit.png": 42,
+        "trickcal_03_character.png": 35,
+        "trickcal_04_skill.png": 57,
+        "trickcal_05_purchase.png": 214,
+        "trickcal_06_mail.png": 749
+      }
+    },
+    {
+      "hex": "#D1D7CB",
+      "rgb": [
+        209,
+        215,
+        203
+      ],
+      "count": 1039,
+      "exact_count": 97,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 24,
+        "trickcal_02_recruit.png": 126,
+        "trickcal_03_character.png": 21,
+        "trickcal_04_skill.png": 139,
+        "trickcal_05_purchase.png": 85,
+        "trickcal_06_mail.png": 644
+      }
+    },
+    {
+      "hex": "#F35470",
+      "rgb": [
+        243,
+        84,
+        112
+      ],
+      "count": 1020,
+      "exact_count": 567,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 420,
+        "trickcal_02_recruit.png": 541,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 59
+      }
+    },
+    {
+      "hex": "#999997",
+      "rgb": [
+        153,
+        153,
+        151
+      ],
+      "count": 975,
+      "exact_count": 80,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 92,
+        "trickcal_02_recruit.png": 106,
+        "trickcal_03_character.png": 9,
+        "trickcal_04_skill.png": 43,
+        "trickcal_05_purchase.png": 286,
+        "trickcal_06_mail.png": 439
+      }
+    },
+    {
+      "hex": "#4D4D4C",
+      "rgb": [
+        77,
+        77,
+        76
+      ],
+      "count": 956,
+      "exact_count": 41,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 39,
+        "trickcal_02_recruit.png": 220,
+        "trickcal_03_character.png": 29,
+        "trickcal_04_skill.png": 228,
+        "trickcal_05_purchase.png": 152,
+        "trickcal_06_mail.png": 288
+      }
+    },
+    {
+      "hex": "#F56C68",
+      "rgb": [
+        245,
+        108,
+        104
+      ],
+      "count": 953,
+      "exact_count": 30,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 4,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 13,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 936
+      }
+    },
+    {
+      "hex": "#7C7C78",
+      "rgb": [
+        124,
+        124,
+        120
+      ],
+      "count": 862,
+      "exact_count": 39,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 65,
+        "trickcal_02_recruit.png": 141,
+        "trickcal_03_character.png": 12,
+        "trickcal_04_skill.png": 86,
+        "trickcal_05_purchase.png": 108,
+        "trickcal_06_mail.png": 450
+      }
+    },
+    {
+      "hex": "#69B73C",
+      "rgb": [
+        105,
+        183,
+        60
+      ],
+      "count": 707,
+      "exact_count": 180,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 4,
+        "trickcal_02_recruit.png": 3,
+        "trickcal_03_character.png": 336,
+        "trickcal_04_skill.png": 166,
+        "trickcal_05_purchase.png": 7,
+        "trickcal_06_mail.png": 191
+      }
+    },
+    {
+      "hex": "#E1B1AB",
+      "rgb": [
+        225,
+        177,
+        171
+      ],
+      "count": 620,
+      "exact_count": 308,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 56,
+        "trickcal_03_character.png": 2,
+        "trickcal_04_skill.png": 552,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 10
+      }
+    },
+    {
+      "hex": "#F1A330",
+      "rgb": [
+        241,
+        163,
+        48
+      ],
+      "count": 608,
+      "exact_count": 118,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 152,
+        "trickcal_04_skill.png": 81,
+        "trickcal_05_purchase.png": 375,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#CB89EB",
+      "rgb": [
+        203,
+        137,
+        235
+      ],
+      "count": 596,
+      "exact_count": 146,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 596
+      }
+    },
+    {
+      "hex": "#899278",
+      "rgb": [
+        137,
+        146,
+        120
+      ],
+      "count": 529,
+      "exact_count": 65,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 134,
+        "trickcal_02_recruit.png": 72,
+        "trickcal_03_character.png": 8,
+        "trickcal_04_skill.png": 23,
+        "trickcal_05_purchase.png": 101,
+        "trickcal_06_mail.png": 191
+      }
+    },
+    {
+      "hex": "#187E28",
+      "rgb": [
+        24,
+        126,
+        40
+      ],
+      "count": 463,
+      "exact_count": 276,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 19,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 444
+      }
+    },
+    {
+      "hex": "#B973DF",
+      "rgb": [
+        185,
+        115,
+        223
+      ],
+      "count": 448,
+      "exact_count": 7,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 448
+      }
+    },
+    {
+      "hex": "#FF9593",
+      "rgb": [
+        255,
+        149,
+        147
+      ],
+      "count": 399,
+      "exact_count": 18,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 47,
+        "trickcal_02_recruit.png": 82,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 270
+      }
+    },
+    {
+      "hex": "#FFB3A7",
+      "rgb": [
+        255,
+        179,
+        167
+      ],
+      "count": 390,
+      "exact_count": 37,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 14,
+        "trickcal_02_recruit.png": 24,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 2,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 350
+      }
+    },
+    {
+      "hex": "#FCE288",
+      "rgb": [
+        252,
+        226,
+        136
+      ],
+      "count": 384,
+      "exact_count": 83,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 5,
+        "trickcal_02_recruit.png": 17,
+        "trickcal_03_character.png": 8,
+        "trickcal_04_skill.png": 7,
+        "trickcal_05_purchase.png": 255,
+        "trickcal_06_mail.png": 92
+      }
+    },
+    {
+      "hex": "#AFC57E",
+      "rgb": [
+        175,
+        197,
+        126
+      ],
+      "count": 375,
+      "exact_count": 71,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 1,
+        "trickcal_02_recruit.png": 1,
+        "trickcal_03_character.png": 124,
+        "trickcal_04_skill.png": 199,
+        "trickcal_05_purchase.png": 24,
+        "trickcal_06_mail.png": 26
+      }
+    },
+    {
+      "hex": "#515150",
+      "rgb": [
+        81,
+        81,
+        80
+      ],
+      "count": 370,
+      "exact_count": 10,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 19,
+        "trickcal_02_recruit.png": 65,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 135,
+        "trickcal_05_purchase.png": 54,
+        "trickcal_06_mail.png": 97
+      }
+    },
+    {
+      "hex": "#F9CFCF",
+      "rgb": [
+        249,
+        207,
+        207
+      ],
+      "count": 368,
+      "exact_count": 71,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 70,
+        "trickcal_02_recruit.png": 158,
+        "trickcal_03_character.png": 20,
+        "trickcal_04_skill.png": 2,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 118
+      }
+    },
+    {
+      "hex": "#F9EADC",
+      "rgb": [
+        249,
+        234,
+        220
+      ],
+      "count": 367,
+      "exact_count": 90,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 40,
+        "trickcal_02_recruit.png": 94,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 1,
+        "trickcal_06_mail.png": 232
+      }
+    },
+    {
+      "hex": "#E3E3DE",
+      "rgb": [
+        227,
+        227,
+        222
+      ],
+      "count": 316,
+      "exact_count": 10,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 18,
+        "trickcal_02_recruit.png": 108,
+        "trickcal_03_character.png": 9,
+        "trickcal_04_skill.png": 69,
+        "trickcal_05_purchase.png": 6,
+        "trickcal_06_mail.png": 106
+      }
+    },
+    {
+      "hex": "#93A76A",
+      "rgb": [
+        147,
+        167,
+        106
+      ],
+      "count": 307,
+      "exact_count": 57,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 2,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 11,
+        "trickcal_04_skill.png": 240,
+        "trickcal_05_purchase.png": 20,
+        "trickcal_06_mail.png": 34
+      }
+    },
+    {
+      "hex": "#E91A44",
+      "rgb": [
+        233,
+        26,
+        68
+      ],
+      "count": 296,
+      "exact_count": 13,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 296
+      }
+    },
+    {
+      "hex": "#714648",
+      "rgb": [
+        113,
+        70,
+        72
+      ],
+      "count": 281,
+      "exact_count": 106,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 10,
+        "trickcal_02_recruit.png": 1,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 270,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#FF5FAB",
+      "rgb": [
+        255,
+        95,
+        171
+      ],
+      "count": 271,
+      "exact_count": 211,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 271,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#DD8983",
+      "rgb": [
+        221,
+        137,
+        131
+      ],
+      "count": 196,
+      "exact_count": 95,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 4,
+        "trickcal_04_skill.png": 192,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#E9ABFF",
+      "rgb": [
+        233,
+        171,
+        255
+      ],
+      "count": 194,
+      "exact_count": 24,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 194
+      }
+    },
+    {
+      "hex": "#FAAFBC",
+      "rgb": [
+        250,
+        175,
+        188
+      ],
+      "count": 162,
+      "exact_count": 6,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 75,
+        "trickcal_02_recruit.png": 67,
+        "trickcal_03_character.png": 12,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 8
+      }
+    },
+    {
+      "hex": "#F93848",
+      "rgb": [
+        249,
+        56,
+        72
+      ],
+      "count": 159,
+      "exact_count": 11,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 159
+      }
+    },
+    {
+      "hex": "#88C990",
+      "rgb": [
+        136,
+        201,
+        144
+      ],
+      "count": 158,
+      "exact_count": 45,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 20,
+        "trickcal_02_recruit.png": 15,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 117,
+        "trickcal_06_mail.png": 6
+      }
+    },
+    {
+      "hex": "#D2EAC1",
+      "rgb": [
+        210,
+        234,
+        193
+      ],
+      "count": 155,
+      "exact_count": 46,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 20,
+        "trickcal_02_recruit.png": 20,
+        "trickcal_03_character.png": 5,
+        "trickcal_04_skill.png": 6,
+        "trickcal_05_purchase.png": 30,
+        "trickcal_06_mail.png": 74
+      }
+    },
+    {
+      "hex": "#F8ECBF",
+      "rgb": [
+        248,
+        236,
+        191
+      ],
+      "count": 151,
+      "exact_count": 85,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 99,
+        "trickcal_02_recruit.png": 18,
+        "trickcal_03_character.png": 2,
+        "trickcal_04_skill.png": 4,
+        "trickcal_05_purchase.png": 19,
+        "trickcal_06_mail.png": 9
+      }
+    },
+    {
+      "hex": "#781D1D",
+      "rgb": [
+        120,
+        29,
+        29
+      ],
+      "count": 149,
+      "exact_count": 87,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 3,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 146
+      }
+    },
+    {
+      "hex": "#80B046",
+      "rgb": [
+        128,
+        176,
+        70
+      ],
+      "count": 148,
+      "exact_count": 77,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 20,
+        "trickcal_04_skill.png": 8,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 120
+      }
+    },
+    {
+      "hex": "#325A19",
+      "rgb": [
+        50,
+        90,
+        25
+      ],
+      "count": 147,
+      "exact_count": 96,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 46,
+        "trickcal_04_skill.png": 101,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#C9A5FF",
+      "rgb": [
+        201,
+        165,
+        255
+      ],
+      "count": 145,
+      "exact_count": 6,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 145
+      }
+    },
+    {
+      "hex": "#5A2A2A",
+      "rgb": [
+        90,
+        42,
+        42
+      ],
+      "count": 134,
+      "exact_count": 2,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 3,
+        "trickcal_02_recruit.png": 1,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 130,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#4EB53B",
+      "rgb": [
+        78,
+        181,
+        59
+      ],
+      "count": 121,
+      "exact_count": 4,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 31,
+        "trickcal_02_recruit.png": 36,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 3,
+        "trickcal_05_purchase.png": 28,
+        "trickcal_06_mail.png": 23
+      }
+    },
+    {
+      "hex": "#B9DCA2",
+      "rgb": [
+        185,
+        220,
+        162
+      ],
+      "count": 121,
+      "exact_count": 14,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 14,
+        "trickcal_02_recruit.png": 17,
+        "trickcal_03_character.png": 8,
+        "trickcal_04_skill.png": 5,
+        "trickcal_05_purchase.png": 35,
+        "trickcal_06_mail.png": 42
+      }
+    },
+    {
+      "hex": "#F5CE91",
+      "rgb": [
+        245,
+        206,
+        145
+      ],
+      "count": 119,
+      "exact_count": 83,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 8,
+        "trickcal_02_recruit.png": 7,
+        "trickcal_03_character.png": 8,
+        "trickcal_04_skill.png": 2,
+        "trickcal_05_purchase.png": 89,
+        "trickcal_06_mail.png": 5
+      }
+    },
+    {
+      "hex": "#B4A96A",
+      "rgb": [
+        180,
+        169,
+        106
+      ],
+      "count": 119,
+      "exact_count": 85,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 87,
+        "trickcal_02_recruit.png": 1,
+        "trickcal_03_character.png": 10,
+        "trickcal_04_skill.png": 4,
+        "trickcal_05_purchase.png": 17,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#EDDFA9",
+      "rgb": [
+        237,
+        223,
+        169
+      ],
+      "count": 115,
+      "exact_count": 83,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 7,
+        "trickcal_02_recruit.png": 5,
+        "trickcal_03_character.png": 2,
+        "trickcal_04_skill.png": 2,
+        "trickcal_05_purchase.png": 92,
+        "trickcal_06_mail.png": 7
+      }
+    },
+    {
+      "hex": "#F46E85",
+      "rgb": [
+        244,
+        110,
+        133
+      ],
+      "count": 101,
+      "exact_count": 9,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 49,
+        "trickcal_02_recruit.png": 49,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 3
+      }
+    },
+    {
+      "hex": "#4797FF",
+      "rgb": [
+        71,
+        151,
+        255
+      ],
+      "count": 101,
+      "exact_count": 83,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 98,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 3
+      }
+    },
+    {
+      "hex": "#96C478",
+      "rgb": [
+        150,
+        196,
+        120
+      ],
+      "count": 101,
+      "exact_count": 2,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 35,
+        "trickcal_02_recruit.png": 19,
+        "trickcal_03_character.png": 19,
+        "trickcal_04_skill.png": 2,
+        "trickcal_05_purchase.png": 17,
+        "trickcal_06_mail.png": 9
+      }
+    },
+    {
+      "hex": "#FF8733",
+      "rgb": [
+        255,
+        135,
+        51
+      ],
+      "count": 92,
+      "exact_count": 77,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 92,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#5A7A46",
+      "rgb": [
+        90,
+        122,
+        70
+      ],
+      "count": 91,
+      "exact_count": 6,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 15,
+        "trickcal_04_skill.png": 41,
+        "trickcal_05_purchase.png": 18,
+        "trickcal_06_mail.png": 17
+      }
+    },
+    {
+      "hex": "#E4AB42",
+      "rgb": [
+        228,
+        171,
+        66
+      ],
+      "count": 89,
+      "exact_count": 48,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 12,
+        "trickcal_04_skill.png": 71,
+        "trickcal_05_purchase.png": 6,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#00B97F",
+      "rgb": [
+        0,
+        185,
+        127
+      ],
+      "count": 87,
+      "exact_count": 6,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 87,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#957070",
+      "rgb": [
+        149,
+        112,
+        112
+      ],
+      "count": 83,
+      "exact_count": 13,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 24,
+        "trickcal_02_recruit.png": 1,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 56,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 2
+      }
+    },
+    {
+      "hex": "#3283E5",
+      "rgb": [
+        50,
+        131,
+        229
+      ],
+      "count": 76,
+      "exact_count": 12,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 2,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 74
+      }
+    },
+    {
+      "hex": "#A0A986",
+      "rgb": [
+        160,
+        169,
+        134
+      ],
+      "count": 73,
+      "exact_count": 2,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 8,
+        "trickcal_02_recruit.png": 4,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 5,
+        "trickcal_05_purchase.png": 41,
+        "trickcal_06_mail.png": 15
+      }
+    },
+    {
+      "hex": "#BB8584",
+      "rgb": [
+        187,
+        133,
+        132
+      ],
+      "count": 69,
+      "exact_count": 2,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 64,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 5
+      }
+    },
+    {
+      "hex": "#5DBA4A",
+      "rgb": [
+        93,
+        186,
+        74
+      ],
+      "count": 65,
+      "exact_count": 6,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 20,
+        "trickcal_02_recruit.png": 15,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 7,
+        "trickcal_05_purchase.png": 18,
+        "trickcal_06_mail.png": 5
+      }
+    },
+    {
+      "hex": "#81925D",
+      "rgb": [
+        129,
+        146,
+        93
+      ],
+      "count": 64,
+      "exact_count": 3,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 2,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 7,
+        "trickcal_04_skill.png": 39,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 16
+      }
+    },
+    {
+      "hex": "#E38BE7",
+      "rgb": [
+        227,
+        139,
+        231
+      ],
+      "count": 60,
+      "exact_count": 2,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 60
+      }
+    },
+    {
+      "hex": "#A5C451",
+      "rgb": [
+        165,
+        196,
+        81
+      ],
+      "count": 58,
+      "exact_count": 3,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 16,
+        "trickcal_04_skill.png": 13,
+        "trickcal_05_purchase.png": 18,
+        "trickcal_06_mail.png": 11
+      }
+    },
+    {
+      "hex": "#F35F5E",
+      "rgb": [
+        243,
+        95,
+        94
+      ],
+      "count": 57,
+      "exact_count": 2,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 3,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 54
+      }
+    },
+    {
+      "hex": "#48DB7F",
+      "rgb": [
+        72,
+        219,
+        127
+      ],
+      "count": 56,
+      "exact_count": 3,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 55,
+        "trickcal_05_purchase.png": 1,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#54952B",
+      "rgb": [
+        84,
+        149,
+        43
+      ],
+      "count": 54,
+      "exact_count": 3,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 25,
+        "trickcal_04_skill.png": 12,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 17
+      }
+    },
+    {
+      "hex": "#18C764",
+      "rgb": [
+        24,
+        199,
+        100
+      ],
+      "count": 54,
+      "exact_count": 3,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 54,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#F69CA8",
+      "rgb": [
+        246,
+        156,
+        168
+      ],
+      "count": 53,
+      "exact_count": 4,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 27,
+        "trickcal_02_recruit.png": 22,
+        "trickcal_03_character.png": 4,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#7B6766",
+      "rgb": [
+        123,
+        103,
+        102
+      ],
+      "count": 53,
+      "exact_count": 2,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 5,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 48,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#086818",
+      "rgb": [
+        8,
+        104,
+        24
+      ],
+      "count": 52,
+      "exact_count": 16,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 52
+      }
+    },
+    {
+      "hex": "#42672B",
+      "rgb": [
+        66,
+        103,
+        43
+      ],
+      "count": 52,
+      "exact_count": 5,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 9,
+        "trickcal_04_skill.png": 40,
+        "trickcal_05_purchase.png": 1,
+        "trickcal_06_mail.png": 2
+      }
+    },
+    {
+      "hex": "#C9A7A6",
+      "rgb": [
+        201,
+        167,
+        166
+      ],
+      "count": 49,
+      "exact_count": 2,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 45,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 4
+      }
+    },
+    {
+      "hex": "#EAC3E7",
+      "rgb": [
+        234,
+        195,
+        231
+      ],
+      "count": 46,
+      "exact_count": 31,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 46
+      }
+    },
+    {
+      "hex": "#389954",
+      "rgb": [
+        56,
+        153,
+        84
+      ],
+      "count": 44,
+      "exact_count": 11,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 1,
+        "trickcal_02_recruit.png": 3,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 39,
+        "trickcal_05_purchase.png": 1,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#D1B551",
+      "rgb": [
+        209,
+        181,
+        81
+      ],
+      "count": 42,
+      "exact_count": 3,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 12,
+        "trickcal_04_skill.png": 21,
+        "trickcal_05_purchase.png": 9,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#411260",
+      "rgb": [
+        65,
+        18,
+        96
+      ],
+      "count": 41,
+      "exact_count": 15,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 41
+      }
+    },
+    {
+      "hex": "#3D8629",
+      "rgb": [
+        61,
+        134,
+        41
+      ],
+      "count": 41,
+      "exact_count": 3,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 41
+      }
+    },
+    {
+      "hex": "#4D93DC",
+      "rgb": [
+        77,
+        147,
+        220
+      ],
+      "count": 40,
+      "exact_count": 22,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 1,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 39
+      }
+    },
+    {
+      "hex": "#63A0EA",
+      "rgb": [
+        99,
+        160,
+        234
+      ],
+      "count": 40,
+      "exact_count": 3,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 9,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 31
+      }
+    },
+    {
+      "hex": "#70C25F",
+      "rgb": [
+        112,
+        194,
+        95
+      ],
+      "count": 40,
+      "exact_count": 2,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 10,
+        "trickcal_02_recruit.png": 2,
+        "trickcal_03_character.png": 8,
+        "trickcal_04_skill.png": 2,
+        "trickcal_05_purchase.png": 13,
+        "trickcal_06_mail.png": 5
+      }
+    },
+    {
+      "hex": "#E5EFFB",
+      "rgb": [
+        229,
+        239,
+        251
+      ],
+      "count": 39,
+      "exact_count": 4,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 39
+      }
+    },
+    {
+      "hex": "#8F2829",
+      "rgb": [
+        143,
+        40,
+        41
+      ],
+      "count": 39,
+      "exact_count": 2,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 2,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 37
+      }
+    },
+    {
+      "hex": "#E7CC79",
+      "rgb": [
+        231,
+        204,
+        121
+      ],
+      "count": 37,
+      "exact_count": 7,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 10,
+        "trickcal_02_recruit.png": 15,
+        "trickcal_03_character.png": 1,
+        "trickcal_04_skill.png": 3,
+        "trickcal_05_purchase.png": 2,
+        "trickcal_06_mail.png": 6
+      }
+    },
+    {
+      "hex": "#D4C7E8",
+      "rgb": [
+        212,
+        199,
+        232
+      ],
+      "count": 34,
+      "exact_count": 10,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 34
+      }
+    },
+    {
+      "hex": "#AE403E",
+      "rgb": [
+        174,
+        64,
+        62
+      ],
+      "count": 34,
+      "exact_count": 2,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 2,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 32
+      }
+    },
+    {
+      "hex": "#865352",
+      "rgb": [
+        134,
+        83,
+        82
+      ],
+      "count": 31,
+      "exact_count": 2,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 31,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#8E7D45",
+      "rgb": [
+        142,
+        125,
+        69
+      ],
+      "count": 30,
+      "exact_count": 2,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 10,
+        "trickcal_04_skill.png": 15,
+        "trickcal_05_purchase.png": 5,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#CBC2A1",
+      "rgb": [
+        203,
+        194,
+        161
+      ],
+      "count": 29,
+      "exact_count": 3,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 8,
+        "trickcal_02_recruit.png": 5,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 5,
+        "trickcal_06_mail.png": 11
+      }
+    },
+    {
+      "hex": "#9589F3",
+      "rgb": [
+        149,
+        137,
+        243
+      ],
+      "count": 28,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 28
+      }
+    },
+    {
+      "hex": "#956261",
+      "rgb": [
+        149,
+        98,
+        97
+      ],
+      "count": 26,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 18,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 8
+      }
+    },
+    {
+      "hex": "#48C06D",
+      "rgb": [
+        72,
+        192,
+        109
+      ],
+      "count": 26,
+      "exact_count": 2,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 1,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 24,
+        "trickcal_05_purchase.png": 1,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#6E9F0A",
+      "rgb": [
+        110,
+        159,
+        10
+      ],
+      "count": 25,
+      "exact_count": 12,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 25,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#AF994A",
+      "rgb": [
+        175,
+        153,
+        74
+      ],
+      "count": 24,
+      "exact_count": 2,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 7,
+        "trickcal_04_skill.png": 11,
+        "trickcal_05_purchase.png": 6,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#0B3D2C",
+      "rgb": [
+        11,
+        61,
+        44
+      ],
+      "count": 24,
+      "exact_count": 2,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 11,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 13,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#DD67DE",
+      "rgb": [
+        221,
+        103,
+        222
+      ],
+      "count": 23,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 23
+      }
+    },
+    {
+      "hex": "#C3DAF6",
+      "rgb": [
+        195,
+        218,
+        246
+      ],
+      "count": 23,
+      "exact_count": 2,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 3,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 20
+      }
+    },
+    {
+      "hex": "#62804E",
+      "rgb": [
+        98,
+        128,
+        78
+      ],
+      "count": 22,
+      "exact_count": 2,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 1,
+        "trickcal_03_character.png": 4,
+        "trickcal_04_skill.png": 12,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 5
+      }
+    },
+    {
+      "hex": "#921A9F",
+      "rgb": [
+        146,
+        26,
+        159
+      ],
+      "count": 22,
+      "exact_count": 3,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 22
+      }
+    },
+    {
+      "hex": "#A9FF97",
+      "rgb": [
+        169,
+        255,
+        151
+      ],
+      "count": 21,
+      "exact_count": 3,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 4,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 6,
+        "trickcal_05_purchase.png": 2,
+        "trickcal_06_mail.png": 9
+      }
+    },
+    {
+      "hex": "#C863E6",
+      "rgb": [
+        200,
+        99,
+        230
+      ],
+      "count": 21,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 21
+      }
+    },
+    {
+      "hex": "#AFDBB3",
+      "rgb": [
+        175,
+        219,
+        179
+      ],
+      "count": 20,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 5,
+        "trickcal_02_recruit.png": 5,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 8,
+        "trickcal_06_mail.png": 2
+      }
+    },
+    {
+      "hex": "#59523A",
+      "rgb": [
+        89,
+        82,
+        58
+      ],
+      "count": 19,
+      "exact_count": 2,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 5,
+        "trickcal_04_skill.png": 13,
+        "trickcal_05_purchase.png": 1,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#009552",
+      "rgb": [
+        0,
+        149,
+        82
+      ],
+      "count": 19,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 19,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#98927C",
+      "rgb": [
+        152,
+        146,
+        124
+      ],
+      "count": 18,
+      "exact_count": 3,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 3,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 7,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 8
+      }
+    },
+    {
+      "hex": "#CC3C48",
+      "rgb": [
+        204,
+        60,
+        72
+      ],
+      "count": 18,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 1,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 17
+      }
+    },
+    {
+      "hex": "#672385",
+      "rgb": [
+        103,
+        35,
+        133
+      ],
+      "count": 18,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 18
+      }
+    },
+    {
+      "hex": "#06AD97",
+      "rgb": [
+        6,
+        173,
+        151
+      ],
+      "count": 17,
+      "exact_count": 4,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 17,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#7AADED",
+      "rgb": [
+        122,
+        173,
+        237
+      ],
+      "count": 17,
+      "exact_count": 2,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 2,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 15
+      }
+    },
+    {
+      "hex": "#D09D9C",
+      "rgb": [
+        208,
+        157,
+        156
+      ],
+      "count": 17,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 16,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 1
+      }
+    },
+    {
+      "hex": "#A15DCA",
+      "rgb": [
+        161,
+        93,
+        202
+      ],
+      "count": 17,
+      "exact_count": 2,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 17
+      }
+    },
+    {
+      "hex": "#1EAF83",
+      "rgb": [
+        30,
+        175,
+        131
+      ],
+      "count": 16,
+      "exact_count": 2,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 2,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 14,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#89BFEE",
+      "rgb": [
+        137,
+        191,
+        238
+      ],
+      "count": 16,
+      "exact_count": 2,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 4,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 12
+      }
+    },
+    {
+      "hex": "#583173",
+      "rgb": [
+        88,
+        49,
+        115
+      ],
+      "count": 16,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 16
+      }
+    },
+    {
+      "hex": "#A885F1",
+      "rgb": [
+        168,
+        133,
+        241
+      ],
+      "count": 16,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 16
+      }
+    },
+    {
+      "hex": "#305A4C",
+      "rgb": [
+        48,
+        90,
+        76
+      ],
+      "count": 16,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 6,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 1,
+        "trickcal_05_purchase.png": 9,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#0E3B40",
+      "rgb": [
+        14,
+        59,
+        64
+      ],
+      "count": 16,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 7,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 1,
+        "trickcal_05_purchase.png": 8,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#FFC360",
+      "rgb": [
+        255,
+        195,
+        96
+      ],
+      "count": 15,
+      "exact_count": 4,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 12,
+        "trickcal_05_purchase.png": 3,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#4BDD83",
+      "rgb": [
+        75,
+        221,
+        131
+      ],
+      "count": 14,
+      "exact_count": 2,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 1,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 13,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#FC81B6",
+      "rgb": [
+        252,
+        129,
+        182
+      ],
+      "count": 14,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 14,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#83BB5D",
+      "rgb": [
+        131,
+        187,
+        93
+      ],
+      "count": 14,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 7,
+        "trickcal_04_skill.png": 1,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 6
+      }
+    },
+    {
+      "hex": "#BABBE9",
+      "rgb": [
+        186,
+        187,
+        233
+      ],
+      "count": 14,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 14
+      }
+    },
+    {
+      "hex": "#70653E",
+      "rgb": [
+        112,
+        101,
+        62
+      ],
+      "count": 13,
+      "exact_count": 2,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 3,
+        "trickcal_04_skill.png": 9,
+        "trickcal_05_purchase.png": 1,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#D7F958",
+      "rgb": [
+        215,
+        249,
+        88
+      ],
+      "count": 13,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 8,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 5,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#D896F8",
+      "rgb": [
+        216,
+        150,
+        248
+      ],
+      "count": 13,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 13
+      }
+    },
+    {
+      "hex": "#DF5D5C",
+      "rgb": [
+        223,
+        93,
+        92
+      ],
+      "count": 12,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 1,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 11
+      }
+    },
+    {
+      "hex": "#A1E9A0",
+      "rgb": [
+        161,
+        233,
+        160
+      ],
+      "count": 12,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 3,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 5,
+        "trickcal_05_purchase.png": 4,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#6F9A52",
+      "rgb": [
+        111,
+        154,
+        82
+      ],
+      "count": 12,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 8,
+        "trickcal_04_skill.png": 2,
+        "trickcal_05_purchase.png": 1,
+        "trickcal_06_mail.png": 1
+      }
+    },
+    {
+      "hex": "#E1C6C5",
+      "rgb": [
+        225,
+        198,
+        197
+      ],
+      "count": 11,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 1,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 9,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 1
+      }
+    },
+    {
+      "hex": "#69363A",
+      "rgb": [
+        105,
+        54,
+        58
+      ],
+      "count": 11,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 2,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 9,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#3CB450",
+      "rgb": [
+        60,
+        180,
+        80
+      ],
+      "count": 11,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 10,
+        "trickcal_05_purchase.png": 1,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#CECC70",
+      "rgb": [
+        206,
+        204,
+        112
+      ],
+      "count": 11,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 3,
+        "trickcal_02_recruit.png": 5,
+        "trickcal_03_character.png": 1,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 2,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#6CBE7A",
+      "rgb": [
+        108,
+        190,
+        122
+      ],
+      "count": 11,
+      "exact_count": 2,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 1,
+        "trickcal_02_recruit.png": 8,
+        "trickcal_03_character.png": 1,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 1,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#B8C494",
+      "rgb": [
+        184,
+        196,
+        148
+      ],
+      "count": 10,
+      "exact_count": 2,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 10,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#0EAF6C",
+      "rgb": [
+        14,
+        175,
+        108
+      ],
+      "count": 10,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 10,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#B0CCDC",
+      "rgb": [
+        176,
+        204,
+        220
+      ],
+      "count": 10,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 2,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 8
+      }
+    },
+    {
+      "hex": "#7BA91D",
+      "rgb": [
+        123,
+        169,
+        29
+      ],
+      "count": 9,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 9,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#98B98C",
+      "rgb": [
+        152,
+        185,
+        140
+      ],
+      "count": 9,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 7,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 1,
+        "trickcal_06_mail.png": 1
+      }
+    },
+    {
+      "hex": "#E67A98",
+      "rgb": [
+        230,
+        122,
+        152
+      ],
+      "count": 9,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 9,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#98CAB0",
+      "rgb": [
+        152,
+        202,
+        176
+      ],
+      "count": 9,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 5,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 3,
+        "trickcal_06_mail.png": 1
+      }
+    },
+    {
+      "hex": "#933F47",
+      "rgb": [
+        147,
+        63,
+        71
+      ],
+      "count": 9,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 5,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 4
+      }
+    },
+    {
+      "hex": "#789CBB",
+      "rgb": [
+        120,
+        156,
+        187
+      ],
+      "count": 9,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 2,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 2,
+        "trickcal_06_mail.png": 5
+      }
+    },
+    {
+      "hex": "#571E1E",
+      "rgb": [
+        87,
+        30,
+        30
+      ],
+      "count": 8,
+      "exact_count": 2,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 8,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#5D7E3F",
+      "rgb": [
+        93,
+        126,
+        63
+      ],
+      "count": 8,
+      "exact_count": 2,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 1,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 7
+      }
+    },
+    {
+      "hex": "#9C8947",
+      "rgb": [
+        156,
+        137,
+        71
+      ],
+      "count": 8,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 2,
+        "trickcal_04_skill.png": 5,
+        "trickcal_05_purchase.png": 1,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#C3B047",
+      "rgb": [
+        195,
+        176,
+        71
+      ],
+      "count": 8,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 8,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#A97776",
+      "rgb": [
+        169,
+        119,
+        118
+      ],
+      "count": 8,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 6,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 2
+      }
+    },
+    {
+      "hex": "#65B371",
+      "rgb": [
+        101,
+        179,
+        113
+      ],
+      "count": 8,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 1,
+        "trickcal_02_recruit.png": 2,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 4,
+        "trickcal_05_purchase.png": 1,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#5A7B71",
+      "rgb": [
+        90,
+        123,
+        113
+      ],
+      "count": 8,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 4,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 4,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#446F8B",
+      "rgb": [
+        68,
+        111,
+        139
+      ],
+      "count": 8,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 4,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 4,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#5BE049",
+      "rgb": [
+        91,
+        224,
+        73
+      ],
+      "count": 8,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 1,
+        "trickcal_04_skill.png": 7,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#F6BD46",
+      "rgb": [
+        246,
+        189,
+        70
+      ],
+      "count": 7,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 5,
+        "trickcal_04_skill.png": 1,
+        "trickcal_05_purchase.png": 1,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#FC9649",
+      "rgb": [
+        252,
+        150,
+        73
+      ],
+      "count": 7,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 7,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#E93E5A",
+      "rgb": [
+        233,
+        62,
+        90
+      ],
+      "count": 7,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 7
+      }
+    },
+    {
+      "hex": "#C99880",
+      "rgb": [
+        201,
+        152,
+        128
+      ],
+      "count": 7,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 5,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 2,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#FAA862",
+      "rgb": [
+        250,
+        168,
+        98
+      ],
+      "count": 7,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 7,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#6192C4",
+      "rgb": [
+        97,
+        146,
+        196
+      ],
+      "count": 7,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 1,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 6
+      }
+    },
+    {
+      "hex": "#D777E3",
+      "rgb": [
+        215,
+        119,
+        227
+      ],
+      "count": 7,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 7
+      }
+    },
+    {
+      "hex": "#DA9E35",
+      "rgb": [
+        218,
+        158,
+        53
+      ],
+      "count": 6,
+      "exact_count": 5,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 5,
+        "trickcal_05_purchase.png": 1,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#0FE1AA",
+      "rgb": [
+        15,
+        225,
+        170
+      ],
+      "count": 6,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 3,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 3,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#D8508F",
+      "rgb": [
+        216,
+        80,
+        143
+      ],
+      "count": 6,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 6,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#9DCBED",
+      "rgb": [
+        157,
+        203,
+        237
+      ],
+      "count": 6,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 3,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 3
+      }
+    },
+    {
+      "hex": "#4DD14A",
+      "rgb": [
+        77,
+        209,
+        74
+      ],
+      "count": 6,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 6,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#A2B7C1",
+      "rgb": [
+        162,
+        183,
+        193
+      ],
+      "count": 6,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 2,
+        "trickcal_06_mail.png": 4
+      }
+    },
+    {
+      "hex": "#088B8B",
+      "rgb": [
+        8,
+        139,
+        139
+      ],
+      "count": 6,
+      "exact_count": 2,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 3,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 3,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#AD8CB5",
+      "rgb": [
+        173,
+        140,
+        181
+      ],
+      "count": 6,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 2,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 2,
+        "trickcal_06_mail.png": 2
+      }
+    },
+    {
+      "hex": "#E6D1F9",
+      "rgb": [
+        230,
+        209,
+        249
+      ],
+      "count": 6,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 6
+      }
+    },
+    {
+      "hex": "#5FEBB5",
+      "rgb": [
+        95,
+        235,
+        181
+      ],
+      "count": 5,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 3,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 2,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#7B549A",
+      "rgb": [
+        123,
+        84,
+        154
+      ],
+      "count": 5,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 1,
+        "trickcal_03_character.png": 3,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 1,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#7DA699",
+      "rgb": [
+        125,
+        166,
+        153
+      ],
+      "count": 5,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 5,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#B75E62",
+      "rgb": [
+        183,
+        94,
+        98
+      ],
+      "count": 5,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 4,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 1
+      }
+    },
+    {
+      "hex": "#9B1B25",
+      "rgb": [
+        155,
+        27,
+        37
+      ],
+      "count": 5,
+      "exact_count": 2,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 5
+      }
+    },
+    {
+      "hex": "#75389B",
+      "rgb": [
+        117,
+        56,
+        155
+      ],
+      "count": 5,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 5
+      }
+    },
+    {
+      "hex": "#ED79CC",
+      "rgb": [
+        237,
+        121,
+        204
+      ],
+      "count": 5,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 5
+      }
+    },
+    {
+      "hex": "#992BAD",
+      "rgb": [
+        153,
+        43,
+        173
+      ],
+      "count": 5,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 5
+      }
+    },
+    {
+      "hex": "#428357",
+      "rgb": [
+        66,
+        131,
+        87
+      ],
+      "count": 5,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 4,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 1
+      }
+    },
+    {
+      "hex": "#108440",
+      "rgb": [
+        16,
+        132,
+        64
+      ],
+      "count": 5,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 5,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#C69461",
+      "rgb": [
+        198,
+        148,
+        97
+      ],
+      "count": 5,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 3,
+        "trickcal_05_purchase.png": 2,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#239E38",
+      "rgb": [
+        35,
+        158,
+        56
+      ],
+      "count": 4,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 3,
+        "trickcal_06_mail.png": 1
+      }
+    },
+    {
+      "hex": "#CB1937",
+      "rgb": [
+        203,
+        25,
+        55
+      ],
+      "count": 4,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 4
+      }
+    },
+    {
+      "hex": "#DCC738",
+      "rgb": [
+        220,
+        199,
+        56
+      ],
+      "count": 4,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 2,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 2,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#C97179",
+      "rgb": [
+        201,
+        113,
+        121
+      ],
+      "count": 4,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 4,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#B75BB5",
+      "rgb": [
+        183,
+        91,
+        181
+      ],
+      "count": 4,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 4
+      }
+    },
+    {
+      "hex": "#BF55CC",
+      "rgb": [
+        191,
+        85,
+        204
+      ],
+      "count": 4,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 4
+      }
+    },
+    {
+      "hex": "#57D4B4",
+      "rgb": [
+        87,
+        212,
+        180
+      ],
+      "count": 4,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 1,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 3,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#4D7262",
+      "rgb": [
+        77,
+        114,
+        98
+      ],
+      "count": 4,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 1,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 3,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#2C7ECC",
+      "rgb": [
+        44,
+        126,
+        204
+      ],
+      "count": 4,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 2,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 2
+      }
+    },
+    {
+      "hex": "#CAAFB9",
+      "rgb": [
+        202,
+        175,
+        185
+      ],
+      "count": 4,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 1,
+        "trickcal_06_mail.png": 3
+      }
+    },
+    {
+      "hex": "#934CAC",
+      "rgb": [
+        147,
+        76,
+        172
+      ],
+      "count": 4,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 4
+      }
+    },
+    {
+      "hex": "#C7AD46",
+      "rgb": [
+        199,
+        173,
+        70
+      ],
+      "count": 3,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 3,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#6AA72D",
+      "rgb": [
+        106,
+        167,
+        45
+      ],
+      "count": 3,
+      "exact_count": 2,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 3,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#FC1645",
+      "rgb": [
+        252,
+        22,
+        69
+      ],
+      "count": 3,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 3
+      }
+    },
+    {
+      "hex": "#54AF58",
+      "rgb": [
+        84,
+        175,
+        88
+      ],
+      "count": 3,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 1,
+        "trickcal_02_recruit.png": 1,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 1,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#A573B0",
+      "rgb": [
+        165,
+        115,
+        176
+      ],
+      "count": 3,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 1,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 1,
+        "trickcal_06_mail.png": 1
+      }
+    },
+    {
+      "hex": "#995656",
+      "rgb": [
+        153,
+        86,
+        86
+      ],
+      "count": 3,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 1,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 2
+      }
+    },
+    {
+      "hex": "#88AC91",
+      "rgb": [
+        136,
+        172,
+        145
+      ],
+      "count": 3,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 1,
+        "trickcal_04_skill.png": 2,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#D5E9EC",
+      "rgb": [
+        213,
+        233,
+        236
+      ],
+      "count": 3,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 3
+      }
+    },
+    {
+      "hex": "#E8F26E",
+      "rgb": [
+        232,
+        242,
+        110
+      ],
+      "count": 3,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 1,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 2,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#80E7B4",
+      "rgb": [
+        128,
+        231,
+        180
+      ],
+      "count": 3,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 1,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 1,
+        "trickcal_05_purchase.png": 1,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#DFE73C",
+      "rgb": [
+        223,
+        231,
+        60
+      ],
+      "count": 3,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 1,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 2,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#76709F",
+      "rgb": [
+        118,
+        112,
+        159
+      ],
+      "count": 3,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 1,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 1,
+        "trickcal_06_mail.png": 1
+      }
+    },
+    {
+      "hex": "#8C97A6",
+      "rgb": [
+        140,
+        151,
+        166
+      ],
+      "count": 3,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 2,
+        "trickcal_03_character.png": 1,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#205131",
+      "rgb": [
+        32,
+        81,
+        49
+      ],
+      "count": 3,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 2,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 1,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#8CC2C8",
+      "rgb": [
+        140,
+        194,
+        200
+      ],
+      "count": 3,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 1,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 1,
+        "trickcal_06_mail.png": 1
+      }
+    },
+    {
+      "hex": "#4EE25F",
+      "rgb": [
+        78,
+        226,
+        95
+      ],
+      "count": 3,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 3,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#C3FBB1",
+      "rgb": [
+        195,
+        251,
+        177
+      ],
+      "count": 3,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 3,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#71E754",
+      "rgb": [
+        113,
+        231,
+        84
+      ],
+      "count": 3,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 3,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#879E78",
+      "rgb": [
+        135,
+        158,
+        120
+      ],
+      "count": 3,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 1,
+        "trickcal_05_purchase.png": 2,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#4A87CA",
+      "rgb": [
+        74,
+        135,
+        202
+      ],
+      "count": 3,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 3
+      }
+    },
+    {
+      "hex": "#A69CF5",
+      "rgb": [
+        166,
+        156,
+        245
+      ],
+      "count": 3,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 3
+      }
+    },
+    {
+      "hex": "#8554DF",
+      "rgb": [
+        133,
+        84,
+        223
+      ],
+      "count": 3,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 3
+      }
+    },
+    {
+      "hex": "#9C5DE2",
+      "rgb": [
+        156,
+        93,
+        226
+      ],
+      "count": 3,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 3
+      }
+    },
+    {
+      "hex": "#8079B8",
+      "rgb": [
+        128,
+        121,
+        184
+      ],
+      "count": 2,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 1,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 1,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#D5D87E",
+      "rgb": [
+        213,
+        216,
+        126
+      ],
+      "count": 2,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 1,
+        "trickcal_04_skill.png": 1,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#A4C9D4",
+      "rgb": [
+        164,
+        201,
+        212
+      ],
+      "count": 2,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 1,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 1
+      }
+    },
+    {
+      "hex": "#1A8070",
+      "rgb": [
+        26,
+        128,
+        112
+      ],
+      "count": 2,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 2,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#DBCB97",
+      "rgb": [
+        219,
+        203,
+        151
+      ],
+      "count": 2,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 1,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 1
+      }
+    },
+    {
+      "hex": "#30CAC6",
+      "rgb": [
+        48,
+        202,
+        198
+      ],
+      "count": 2,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 1,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 1,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#61DCD2",
+      "rgb": [
+        97,
+        220,
+        210
+      ],
+      "count": 2,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 1,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 1,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#649686",
+      "rgb": [
+        100,
+        150,
+        134
+      ],
+      "count": 2,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 1,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 1
+      }
+    },
+    {
+      "hex": "#325977",
+      "rgb": [
+        50,
+        89,
+        119
+      ],
+      "count": 2,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 1,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 1,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#BAE04D",
+      "rgb": [
+        186,
+        224,
+        77
+      ],
+      "count": 2,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 2,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#A557A0",
+      "rgb": [
+        165,
+        87,
+        160
+      ],
+      "count": 2,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 2,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#FCA55C",
+      "rgb": [
+        252,
+        165,
+        92
+      ],
+      "count": 2,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 2,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#2DC373",
+      "rgb": [
+        45,
+        195,
+        115
+      ],
+      "count": 2,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 2,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#35774A",
+      "rgb": [
+        53,
+        119,
+        74
+      ],
+      "count": 2,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 2,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#209358",
+      "rgb": [
+        32,
+        147,
+        88
+      ],
+      "count": 2,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 2,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#733929",
+      "rgb": [
+        115,
+        57,
+        41
+      ],
+      "count": 2,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 2,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#2BA39A",
+      "rgb": [
+        43,
+        163,
+        154
+      ],
+      "count": 2,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 2,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#6373B9",
+      "rgb": [
+        99,
+        115,
+        185
+      ],
+      "count": 2,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 2,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#A42C32",
+      "rgb": [
+        164,
+        44,
+        50
+      ],
+      "count": 2,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 2
+      }
+    },
+    {
+      "hex": "#EA4A4C",
+      "rgb": [
+        234,
+        74,
+        76
+      ],
+      "count": 2,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 2
+      }
+    },
+    {
+      "hex": "#C4BAD5",
+      "rgb": [
+        196,
+        186,
+        213
+      ],
+      "count": 2,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 2
+      }
+    },
+    {
+      "hex": "#8784E7",
+      "rgb": [
+        135,
+        132,
+        231
+      ],
+      "count": 2,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 2
+      }
+    },
+    {
+      "hex": "#CF88C8",
+      "rgb": [
+        207,
+        136,
+        200
+      ],
+      "count": 2,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 2
+      }
+    },
+    {
+      "hex": "#A540C2",
+      "rgb": [
+        165,
+        64,
+        194
+      ],
+      "count": 2,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 2
+      }
+    },
+    {
+      "hex": "#57BFD0",
+      "rgb": [
+        87,
+        191,
+        208
+      ],
+      "count": 1,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 1,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#268587",
+      "rgb": [
+        38,
+        133,
+        135
+      ],
+      "count": 1,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 1,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#7DC4B4",
+      "rgb": [
+        125,
+        196,
+        180
+      ],
+      "count": 1,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 1,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#EBF198",
+      "rgb": [
+        235,
+        241,
+        152
+      ],
+      "count": 1,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 1,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#6B9164",
+      "rgb": [
+        107,
+        145,
+        100
+      ],
+      "count": 1,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 1,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#7DABD3",
+      "rgb": [
+        125,
+        171,
+        211
+      ],
+      "count": 1,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 1,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#B27FB5",
+      "rgb": [
+        178,
+        127,
+        181
+      ],
+      "count": 1,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 1,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#60963E",
+      "rgb": [
+        96,
+        150,
+        62
+      ],
+      "count": 1,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 1,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#C18AA8",
+      "rgb": [
+        193,
+        138,
+        168
+      ],
+      "count": 1,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 1,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#64AAC0",
+      "rgb": [
+        100,
+        170,
+        192
+      ],
+      "count": 1,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 1,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#CCE7E2",
+      "rgb": [
+        204,
+        231,
+        226
+      ],
+      "count": 1,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 1,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#34D35D",
+      "rgb": [
+        52,
+        211,
+        93
+      ],
+      "count": 1,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 1,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#A9FFA9",
+      "rgb": [
+        169,
+        255,
+        169
+      ],
+      "count": 1,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 1,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#6FAB60",
+      "rgb": [
+        111,
+        171,
+        96
+      ],
+      "count": 1,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 1,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#3B1E1D",
+      "rgb": [
+        59,
+        30,
+        29
+      ],
+      "count": 1,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 1,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#09783F",
+      "rgb": [
+        9,
+        120,
+        63
+      ],
+      "count": 1,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 1,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#BE874E",
+      "rgb": [
+        190,
+        135,
+        78
+      ],
+      "count": 1,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 1,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#8D563B",
+      "rgb": [
+        141,
+        86,
+        59
+      ],
+      "count": 1,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 1,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#A0AE7E",
+      "rgb": [
+        160,
+        174,
+        126
+      ],
+      "count": 1,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 1,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#38B04C",
+      "rgb": [
+        56,
+        176,
+        76
+      ],
+      "count": 1,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 1,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#AFA3CF",
+      "rgb": [
+        175,
+        163,
+        207
+      ],
+      "count": 1,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 1,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#B2CC5B",
+      "rgb": [
+        178,
+        204,
+        91
+      ],
+      "count": 1,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 1,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#89D735",
+      "rgb": [
+        137,
+        215,
+        53
+      ],
+      "count": 1,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 1,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#D1A36E",
+      "rgb": [
+        209,
+        163,
+        110
+      ],
+      "count": 1,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 1,
+        "trickcal_06_mail.png": 0
+      }
+    },
+    {
+      "hex": "#A7D979",
+      "rgb": [
+        167,
+        217,
+        121
+      ],
+      "count": 1,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 1
+      }
+    },
+    {
+      "hex": "#A0C7D6",
+      "rgb": [
+        160,
+        199,
+        214
+      ],
+      "count": 1,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 1
+      }
+    },
+    {
+      "hex": "#D52D4B",
+      "rgb": [
+        213,
+        45,
+        75
+      ],
+      "count": 1,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 1
+      }
+    },
+    {
+      "hex": "#B9C8C6",
+      "rgb": [
+        185,
+        200,
+        198
+      ],
+      "count": 1,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 1
+      }
+    },
+    {
+      "hex": "#9F89B0",
+      "rgb": [
+        159,
+        137,
+        176
+      ],
+      "count": 1,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 1
+      }
+    },
+    {
+      "hex": "#5F3C8A",
+      "rgb": [
+        95,
+        60,
+        138
+      ],
+      "count": 1,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 1
+      }
+    },
+    {
+      "hex": "#C7BCF8",
+      "rgb": [
+        199,
+        188,
+        248
+      ],
+      "count": 1,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 1
+      }
+    },
+    {
+      "hex": "#805E95",
+      "rgb": [
+        128,
+        94,
+        149
+      ],
+      "count": 1,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 1
+      }
+    },
+    {
+      "hex": "#822991",
+      "rgb": [
+        130,
+        41,
+        145
+      ],
+      "count": 1,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 1
+      }
+    },
+    {
+      "hex": "#9E5DAF",
+      "rgb": [
+        158,
+        93,
+        175
+      ],
+      "count": 1,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 1
+      }
+    },
+    {
+      "hex": "#D4ACD9",
+      "rgb": [
+        212,
+        172,
+        217
+      ],
+      "count": 1,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 1
+      }
+    },
+    {
+      "hex": "#7761D4",
+      "rgb": [
+        119,
+        97,
+        212
+      ],
+      "count": 1,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 1
+      }
+    },
+    {
+      "hex": "#774386",
+      "rgb": [
+        119,
+        67,
+        134
+      ],
+      "count": 1,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 1
+      }
+    },
+    {
+      "hex": "#C181D5",
+      "rgb": [
+        193,
+        129,
+        213
+      ],
+      "count": 1,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 1
+      }
+    },
+    {
+      "hex": "#F491EC",
+      "rgb": [
+        244,
+        145,
+        236
+      ],
+      "count": 1,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 1
+      }
+    },
+    {
+      "hex": "#A6B5E4",
+      "rgb": [
+        166,
+        181,
+        228
+      ],
+      "count": 1,
+      "exact_count": 1,
+      "screen_counts": {
+        "trickcal_01_birthday.png": 0,
+        "trickcal_02_recruit.png": 0,
+        "trickcal_03_character.png": 0,
+        "trickcal_04_skill.png": 0,
+        "trickcal_05_purchase.png": 0,
+        "trickcal_06_mail.png": 1
+      }
+    }
+  ]
+}

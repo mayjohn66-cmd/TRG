@@ -89,6 +89,34 @@ func test_the_destination_tile_does_not_count_as_stepped_over() -> void:
 	check(not state.get_pawn(21).has_left_start, "도착 칸의 적은 평소처럼 잡는다")
 
 
+func test_leapfrog_kills_at_the_dice_landing_first_then_jumps_on() -> void:
+	# 이동 4단계: 눈금 이동(14~16) -> 도착 칸(16)의 적 처치 판정 -> 그 자리에서 점프 부스트 +1칸 (17)
+	# 16번은 옷장이지만 경유지라 워프하지 않는다 (도착 정산은 최종 도착 칸에서만)
+	var state: GameState = _boost_state()
+	place(state, 11, 13, [12])
+	place(state, 12, 14, [13])  # 밟고 지나갈 아군
+	place(state, 21, 16, [15])  # 눈금 도착 칸의 적
+	var order: Array = []
+	state.pawn_sent_to_start.connect(func(pawn_id: int, _by: int) -> void: order.append(["kill", pawn_id]))
+	state.leapfrog_boosted.connect(func(pawn_id: int, waypoint: int, bonus: int) -> void: order.append(["leap", pawn_id, waypoint, bonus]))
+	state.pawn_stepped.connect(func(_pawn_id: int, _from: int, to: int) -> void: order.append(["step", to]))
+	var report: MoveReport = move(state, 11, 3)
+	check(not state.get_pawn(21).has_left_start, "눈금 도착 칸의 적을 먼저 잡는다")
+	check_eq(state.get_pawn(11).current_tile_idx, 17, "그 뒤 +1칸 더 간다 (경유지 옷장은 타지 않는다)")
+	check_eq(report.leapfrog_bonus, 1, "점프 부스트 기록")
+	check_eq(order, [["step", 14], ["step", 15], ["step", 16], ["kill", 21], ["leap", 11, 16, 1], ["step", 17]], "눈금 이동 -> 처치 -> 점프 부스트 -> 추가 이동 순서 (%s)" % str(order))
+
+
+func test_leapfrog_landing_can_capture_again() -> void:
+	var state: GameState = _boost_state()
+	place(state, 11, 13, [12])
+	place(state, 12, 14, [13])
+	place(state, 21, 17, [16])  # 점프 부스트로 도착할 칸의 적
+	move(state, 11, 3)
+	check_eq(state.get_pawn(11).current_tile_idx, 17, "점프 부스트 도착")
+	check(not state.get_pawn(21).has_left_start, "추가 이동 도착 칸에서도 처치 판정")
+
+
 func test_leapfrog_is_included_in_the_move_preview() -> void:
 	var state: GameState = _boost_state()
 	place(state, 11, 12, [11])
@@ -126,6 +154,44 @@ func test_revenge_boost_does_nothing_when_gimmicks_are_off() -> void:
 	place(state, 21, 9, [8])
 	state.send_to_start(state.get_pawn(21), 1)
 	check_eq(move(state, 21, 3).path.size(), 3, "스위치를 끄면 +4칸이 붙지 않는다")
+
+
+func _loadout(kind: GameEnums.PawnKind, unit: int) -> Array:
+	return [Vector2i(kind, unit), 0, 0, 0]
+
+
+func test_ludo_avenger_eight_tiles_are_the_revenge_booster_stage() -> void:
+	var state: GameState = make_state(2, 1, {1: _loadout(GameEnums.PawnKind.ARCADE, 2)})
+	state.boost_gimmicks = true
+	var pawn: PlayerPawn = state.get_pawn(11)
+	check_eq(pawn.sub_type(), GameEnums.PawnSubType.LUDO_AVENGER, "루도 복수자")
+	pawn.revenge_boost = true
+	var fired: Array = []
+	state.revenge_boost_fired.connect(func(pawn_id: int, base: int, bonus: int, total: int) -> void: fired.append([pawn_id, base, bonus, total]))
+	var report: MoveReport = move(state, 11, 2)
+	check_eq(fired, [[11, 2, 8, 10]], "1단계(리벤지 부스터 4 + 루도 4)에서 +8칸 선행 전진, 이어서 눈금 2칸")
+	check_eq(report.revenge_bonus, 8, "보고서의 부스터 칸수")
+	check_eq(pawn.current_tile_idx, 10, "8 + 2 = 10번 칸")
+
+
+func test_path_abilities_only_look_at_the_dice_stage_after_the_booster() -> void:
+	# 마: "바로 앞 칸"은 부스터가 끝난 자리의 다음 칸이다 (부스터 첫 칸에 말이 있어도 +2칸).
+	var state: GameState = make_state(2, 1, {1: _loadout(GameEnums.PawnKind.JANGGI, 3)})
+	state.boost_gimmicks = true
+	var ma: PlayerPawn = state.get_pawn(11)
+	check_eq(ma.sub_type(), GameEnums.PawnSubType.JANGGI_MA, "장기 마")
+	ma.revenge_boost = true
+	place(state, 21, 1, [0])
+	var report: MoveReport = move(state, 11, 2)
+	check(str(report.ability_notes).contains("마 +2칸"), "2단계 첫 칸(5번)이 비어 있으면 마 +2칸: %s" % str(report.ability_notes))
+	check_eq(ma.current_tile_idx, GameEnums.REVENGE_BONUS + 2 + 2, "부스터 4 + 눈금 2 + 마 2")
+	# 점프 부스트: 부스터로 지나간 칸의 말은 세지 않는다.
+	var basic: GameState = _boost_state()
+	var runner: PlayerPawn = basic.get_pawn(11)
+	runner.revenge_boost = true
+	place(basic, 21, 2, [1])
+	var leap: MoveReport = move(basic, 11, 3)
+	check_eq(leap.leapfrog_pending, 0, "부스터 구간(1~4번)의 말은 점프 부스트 대상이 아니다")
 
 
 # --- 효과로 전진시키기 / 후퇴 삭제 -------------------------------------------------------

@@ -10,6 +10,8 @@ static var boxes: Dictionary = {}
 static var stamps: Dictionary = {}
 
 var offline: bool = false
+## true면 요청을 받기만 하고 영영 답하지 않는다 (응답 없는 릴레이 → 접속 감시 타임아웃 테스트용).
+var silent: bool = false
 var published_count: int = 0
 
 
@@ -28,6 +30,8 @@ static func inject(topic: String, text: String, age_seconds: float) -> void:
 
 
 func publish(topic: String, text: String, done: Callable) -> void:
+	if silent:
+		return
 	if offline or text.length() > MAX_MESSAGE_LENGTH:
 		if done.is_valid():
 			done.call(false)
@@ -39,6 +43,8 @@ func publish(topic: String, text: String, done: Callable) -> void:
 
 
 func fetch(topic: String, done: Callable) -> void:
+	if silent:
+		return
 	if offline:
 		if done.is_valid():
 			done.call(false, [])
@@ -51,6 +57,8 @@ func fetch_many(topics: Array, since_seconds: int, done: Callable) -> void:
 	var result: Dictionary = {}
 	for topic: Variant in topics:
 		result[str(topic)] = []
+	if silent:
+		return
 	if offline:
 		if done.is_valid():
 			done.call(false, result)

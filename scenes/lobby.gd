@@ -529,8 +529,43 @@ func _on_join_progress(message: String) -> void:
 
 func _on_join_failed(message: String) -> void:
 	_guest_busy = false
-	_rebuild()
+	if mode == Mode.QUICK:
+		_rebuild()
+		_set_status(message, true)
+		return
+	# 방 코드 입장 실패: 입력해 둔 코드는 남긴 채 로비(코드 입력) 화면으로 돌려보내고 안내 팝업을 띄운다.
+	var typed: String = _guest_room_text
+	_show_choose()
+	_guest_room_text = typed
+	if _join_input != null:
+		_join_input.text = typed
 	_set_status(message, true)
+	show_join_failed_popup(message)
+
+
+## 입장 실패 안내 팝업 ([확인]으로 닫는다).
+func show_join_failed_popup(message: String) -> void:
+	var old: Node = get_node_or_null("JoinFailedPopup")
+	if old != null:
+		remove_child(old)
+		old.queue_free()
+	var parts: Dictionary = LobbyTheme.popup(self, 520.0)
+	var overlay: Control = parts["overlay"]
+	overlay.name = "JoinFailedPopup"
+	var box: VBoxContainer = parts["box"]
+	var title := LobbyTheme.label("입장 실패", 24, Color("d6336c"))
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(title)
+	var body := LobbyTheme.label(message, 16)
+	body.name = "Message"
+	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	body.custom_minimum_size = Vector2(460, 0)
+	box.add_child(body)
+	var ok := LobbyTheme.small_button("확인", overlay.queue_free, &"teal", 16)
+	ok.name = "Confirm"
+	ok.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	box.add_child(ok)
 
 
 func _on_link_failed(seat: int, message: String) -> void:

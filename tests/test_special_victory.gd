@@ -74,9 +74,7 @@ func test_arena_master_graduates_the_killer_and_removes_the_law() -> void:
 	manager.act(&"roll", {"player_id": 1})
 	manager.act(&"select_pawn", {"player_id": 1, "pawn_id": 11})
 	check_eq(state.stat(1, VictoryLaw.KILLS), 6, "6번째 처치")
-	check(state.rankings.is_empty(), "달성해도 바로 졸업하지 않는다 (라운드 끝에 판정)")
-	_finish_round(manager)
-	check_eq(state.rankings, int_array([1]), "라운드가 끝나기 직전에 6처치 확인 -> 1위 졸업")
+	check_eq(state.rankings, int_array([1]), "처치한 차례가 끝나는 순간 6처치 확인 -> 1위 졸업 (라운드 끝까지 기다리지 않는다)")
 	check_eq(state.rank_reasons[1], &"LAW_01", "사유는 교칙 ID")
 	check(not state.rulebook.has_law("LAW_01"), "달성된 교칙은 법전에서 삭제")
 	check(state.rulebook.has_law("LAW_06"), "다른 교칙은 남는다")
@@ -132,15 +130,16 @@ func test_one_shot_move_and_roll_chain_count_only_while_the_law_is_on_the_board(
 func test_roll_chain_is_recorded_by_the_turn_manager() -> void:
 	var manager: TurnManager = _new_manager(2)
 	add_law(manager.state, "LAW_07")
-	manager.state.tools[1] = ScriptedTool.new([ScriptedTool.reroll_of(4), ScriptedTool.reroll_of(4), ScriptedTool.reroll_of(4), 2])
-	manager.act(&"proceed", {"player_id": 1})
+	manager.state.tools[1] = ScriptedTool.new([ScriptedTool.reroll_of(1), ScriptedTool.reroll_of(1), ScriptedTool.reroll_of(1), 1])
 	for i: int in 4:
+		# 추가 굴림은 이동한 뒤 다시 굴린다: 굴림 -> 말 선택 -> (카드 단계) -> 굴림 ...
+		manager.act(&"proceed", {"player_id": 1})
 		manager.act(&"roll", {"player_id": 1})
-	check_eq(manager.state.stat(1, VictoryLaw.BEST_CHAIN), 4, "4연속 굴림 기록")
-	manager.act(&"select_pawn", {"player_id": 1, "pawn_id": 11})
-	check(manager.state.rankings.is_empty(), "라운드 중에는 아직 졸업하지 않는다")
-	_finish_round(manager)
-	check_eq(manager.state.rankings, int_array([1, 2]), "라운드 끝 판정: 초전도체 달성 -> 1위 졸업, 남은 P2는 2위")
+		if i < 3:
+			check(manager.state.rankings.is_empty(), "차례 도중(%d번째 굴림)에는 아직 졸업하지 않는다" % (i + 1))
+		manager.act(&"select_pawn", {"player_id": 1, "pawn_id": 11})
+	check_eq(manager.state.stat(1, VictoryLaw.BEST_CHAIN), 4, "한 차례 4연속 굴림 기록")
+	check_eq(manager.state.rankings, int_array([1, 2]), "차례가 끝나는 순간 판정: 초전도체 달성 -> 1위 졸업, 남은 P2는 2위")
 	check(manager.is_game_over, "2인 판은 1위가 나오면 끝")
 	_dispose(manager)
 
@@ -204,29 +203,28 @@ func test_progress_rows_flag_danger_and_survive_snapshots() -> void:
 	check_eq(state.stat(2, VictoryLaw.EJECTED), 7, "되감기·동기화로 기록 복원")
 
 
-## 라운드 마지막 차례에 처치로 조건을 채워도 턴 도중에는 졸업하지 않고, 라운드가 끝나는 순간 딱 한 번만 판정한다.
-func test_capture_during_the_round_never_graduates_before_the_round_ends() -> void:
+## 처치로 조건을 채우면 이동·처치가 다 끝나고 그 차례가 넘어가는 순간에 판정한다 (이동 도중에 끼어들지 않고, 라운드 끝까지 기다리지도 않는다).
+func test_capture_graduates_right_after_the_acting_turn_not_mid_move() -> void:
 	var manager: TurnManager = _new_manager(4)
 	var state: GameState = manager.state
 	add_law(state, "LAW_01")
 	state.law_stats[1] = {VictoryLaw.KILLS: 5}
-	var judgements: Array[int] = []
+	var order: Array[StringName] = []
 	manager.event_received.connect(func(kind: StringName, _data: Dictionary) -> void:
-		if kind == &"round_end_judgement":
-			judgements.append(state.round_number))
+		if kind in [&"move_resolved", &"special_victory_judgement", &"player_ranked"]:
+			order.append(kind))
 	place(state, 11, 2, [1])
 	place(state, 21, 4, [3])
 	manager.state.tools[1] = ScriptedTool.new([2])
 	manager.act(&"proceed", {"player_id": 1})
 	manager.act(&"roll", {"player_id": 1})
+	check(state.rankings.is_empty(), "굴리고 아직 움직이지 않았을 때는 판정이 없다")
 	manager.act(&"select_pawn", {"player_id": 1, "pawn_id": 11})
-	check_eq(state.stat(1, VictoryLaw.KILLS), 6, "처치로 진행도만 오른다")
-	check(state.rankings.is_empty() and judgements.is_empty(), "라운드 도중(내 턴 직후)에는 판정이 일어나지 않는다")
-	manager.force_timeout()  # 다음 사람들의 차례를 넘긴다
-	check(state.rankings.is_empty() and judgements.is_empty(), "다른 사람 차례가 끝나기 전에도 판정이 없다")
-	_finish_round(manager)
-	check_eq(judgements, [1], "라운드 끝에 정확히 한 번만 판정한다")
-	check_eq(state.rankings, int_array([1]), "그때 졸업")
+	check_eq(state.stat(1, VictoryLaw.KILLS), 6, "처치로 진행도가 오른다")
+	check_eq(order, [&"move_resolved", &"special_victory_judgement", &"player_ranked"] as Array[StringName], "이동·처치가 끝난 뒤 판정, 그 뒤 순위 확정")
+	check_eq(state.rankings, int_array([1]), "라운드 끝을 기다리지 않고 바로 1위 졸업")
+	check(state.round_number == 1, "아직 1라운드")
+	check(not state.rulebook.has_law("LAW_01"), "달성된 교칙은 바로 법전에서 사라진다")
 	_dispose(manager)
 
 

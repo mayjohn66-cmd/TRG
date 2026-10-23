@@ -28,6 +28,8 @@ signal join_progress(message: String)
 signal join_failed(message: String)
 
 const HOST_PEER_ID: int = 1
+## 접속 감시 타임아웃 때 띄우는 안내.
+const JOIN_TIMEOUT_MESSAGE: String = "방 연결에 실패했습니다. (방장이 게임 중이거나 네트워크가 원활하지 않습니다)"
 
 var model: LobbyModel = LobbyModel.new()
 var is_host: bool = false
@@ -44,7 +46,9 @@ var room_code: String = ""
 var poll_seconds: float = 2.0
 var slow_poll_seconds: float = 5.0
 var claim_check_seconds: float = 1.2
-var connect_timeout_seconds: float = 15.0
+var connect_timeout_seconds: float = 12.0
+## 방 찾기~선점 확인(시그널링) 단계가 이 시간(초) 안에 끝나지 않으면 입장 실패로 돌려보낸다 (후보 자리마다 새로 잰다).
+var signaling_timeout_seconds: float = 15.0
 var recycle_seconds: float = 25.0
 var rng := RandomNumberGenerator.new()
 
@@ -68,6 +72,9 @@ var _join_candidates: Array = []
 var _join_nonce: String = ""
 var _join_seat: int = 0
 var _join_answer: String = ""
+## 접속 감시: 이 시각(ms)을 넘기면 입장 실패 (0이면 감시 안 함) / 지금 기다리는 단계 이름 (로그용).
+var _join_deadline_msec: int = 0
+var _join_phase: String = ""
 
 
 func _init() -> void:
@@ -155,6 +162,7 @@ func create_invite(seat: int) -> bool:
 func submit_answer(seat: int, code: String) -> bool:
 	if not is_host or not _links.has(seat):
 		return false
+	NetTrace.step("host.answer_received", "seat=%d len=%d" % [seat, code.length()])
 	return (_links[seat] as RtcLink).accept_answer(code)
 
 
@@ -290,6 +298,8 @@ func _forget_offer(seat: int) -> void:
 
 
 func _process(delta: float) -> void:
+	_poll_links()
+	check_join_watchdog(Time.get_ticks_msec())
 	if not is_host or not _in_room or _signaling == null or _offer_nonce.is_empty():
 		return
 	_poll_left -= delta
@@ -339,6 +349,32 @@ func poll_answers_now() -> void:
 # 참가자
 # ---------------------------------------------------------------------------
 
+## 접속 감시를 다시 건다: 지금부터 seconds초 안에 다음 단계로 넘어가지 못하면 입장 실패.
+func _arm_join_watchdog(phase: String, seconds: float, now_msec: int = Time.get_ticks_msec()) -> void:
+	_join_phase = phase
+	_join_deadline_msec = now_msec + int(seconds * 1000.0)
+	NetTrace.step("join.watchdog", "phase=%s limit=%.1fs" % [phase, seconds])
+
+
+## 입장 중인데 감시 시각을 넘겼으면 연결을 끊고 실패 안내를 보낸다 (매 프레임 불리며, 테스트가 시각을 넣어 직접 부를 수 있다). 시간 초과로 끝냈으면 true.
+func check_join_watchdog(now_msec: int) -> bool:
+	if not _joining or _join_deadline_msec <= 0 or now_msec < _join_deadline_msec:
+		return false
+	NetTrace.step("join.timeout", "phase=%s seat=%d" % [_join_phase, _join_seat])
+	_fail_join(JOIN_TIMEOUT_MESSAGE)
+	return true
+
+
+## 연결마다 WebRTC 상태 변화를 로그로 남기고, 참가자 연결이 실패 상태가 되면 기다리지 않고 바로 돌려보낸다.
+func _poll_links() -> void:
+	for seat: Variant in _links.keys():
+		var link: RtcLink = _links[seat]
+		var state: int = link.poll_state()
+		if _joining and int(seat) == HOST_PEER_ID and state == WebRTCPeerConnection.STATE_FAILED:
+			NetTrace.step("join.ice_failed", "seat=%d" % _join_seat)
+			_fail_join(JOIN_TIMEOUT_MESSAGE)
+			return
+
 ## 방 코드로 찾은 초대 코드로 실제 연결을 시작한다 (응답 코드는 자동으로 릴레이에 올라간다).
 func _connect_with_offer(guest_nickname: String, invite_code: String) -> bool:
 	var decoded: Dictionary = LobbyCode.decode(invite_code)
@@ -349,6 +385,7 @@ func _connect_with_offer(guest_nickname: String, invite_code: String) -> bool:
 		link_failed.emit(0, "이 코드는 응답 코드입니다. 방장에게 받은 초대 코드를 붙여 넣어 주세요.")
 		return false
 	var seat: int = int(decoded["peer_id"])
+	NetTrace.step("join.connect_with_offer", "seat=%d" % seat)
 	var link := RtcLink.new()
 	if not link.setup():
 		return false
@@ -395,10 +432,13 @@ func join_by_room_code(guest_nickname: String, text: String) -> bool:
 	_join_nickname = guest_nickname
 	_signaling = RoomSignaling.new(broker, code)
 	var serial: int = _join_serial
+	NetTrace.step("join.start", "room=%s" % code)
+	_arm_join_watchdog("find_offers", signaling_timeout_seconds)
 	join_progress.emit("방을 찾는 중...")
 	_signaling.find_offers(func(result: Dictionary) -> void:
 		if serial != _join_serial or not _joining:
 			return
+		NetTrace.step("join.offers", "ok=%s saw_room=%s candidates=%d" % [result["ok"], result["saw_room"], (result["candidates"] as Array).size()])
 		if not bool(result["ok"]):
 			_fail_join("중계 서버에 연결하지 못했습니다. 인터넷 연결을 확인하고 다시 시도해 주세요.")
 		elif (result["candidates"] as Array).is_empty():
@@ -410,6 +450,7 @@ func join_by_room_code(guest_nickname: String, text: String) -> bool:
 
 
 func _fail_join(message: String) -> void:
+	NetTrace.step("join.failed", message)
 	_cancel_join()
 	_disconnect_all()
 	join_failed.emit(message)
@@ -426,6 +467,8 @@ func _try_next_candidate(reason: String) -> void:
 	_join_seat = int(candidate["seat"])
 	_join_nonce = str(candidate["nonce"])
 	_signaling = RoomSignaling.new(broker, code)
+	NetTrace.step("join.try_seat", "seat=%d nonce=%s left=%d reason=%s" % [_join_seat, _join_nonce, _join_candidates.size(), reason])
+	_arm_join_watchdog("signaling", signaling_timeout_seconds)
 	join_progress.emit("방에 연결하는 중...")
 	if not _connect_with_offer(_join_nickname, str(candidate["offer"])):
 		_try_next_candidate("연결을 준비하지 못했습니다.")
@@ -460,9 +503,8 @@ func _check_claim(serial: int) -> void:
 			_try_next_candidate("다른 사람이 먼저 그 자리에 들어갔습니다.")
 			return
 		join_progress.emit("방장과 연결하는 중...")
-		get_tree().create_timer(connect_timeout_seconds).timeout.connect(func() -> void:
-			if serial == _join_serial and _joining:
-				_try_next_candidate("방장과 연결되지 않았습니다. 네트워크 환경이 직접 연결을 막고 있을 수 있습니다.")))
+		# 방장과 데이터 채널이 열릴 때까지(connected_to_server) connect_timeout_seconds초만 기다린다. 넘기면 감시가 실패 안내를 띄우고 로비로 돌려보낸다.
+		_arm_join_watchdog("webrtc_connect", connect_timeout_seconds))
 
 
 # ---------------------------------------------------------------------------
@@ -476,6 +518,8 @@ func leave() -> void:
 
 func _cancel_join() -> void:
 	_joining = false
+	_join_deadline_msec = 0
+	_join_phase = ""
 	_join_serial += 1
 	_join_candidates.clear()
 
@@ -515,6 +559,7 @@ func _drop_link(seat: int) -> void:
 
 
 func _on_peer_connected(peer_id: int) -> void:
+	NetTrace.step("mp.peer_connected", "peer=%d host=%s" % [peer_id, is_host])
 	if not is_host:
 		return
 	if model.state_of(peer_id) == LobbyModel.SeatState.INVITED:
@@ -523,6 +568,7 @@ func _on_peer_connected(peer_id: int) -> void:
 
 
 func _on_peer_disconnected(peer_id: int) -> void:
+	NetTrace.step("mp.peer_disconnected", "peer=%d host=%s" % [peer_id, is_host])
 	if not is_host or peer_id < 2:
 		return
 	_drop_link(peer_id)
@@ -535,13 +581,16 @@ func _on_peer_disconnected(peer_id: int) -> void:
 
 
 func _on_connected_to_server() -> void:
+	NetTrace.step("join.connected", "seat=%d" % multiplayer.get_unique_id())
 	_joining = false
+	_join_deadline_msec = 0
 	_join_serial += 1  # 대기 중인 입장 타이머를 모두 무효로 만든다
 	_hello.rpc_id(HOST_PEER_ID, nickname, String(GameSession.avatar_id))
 	joined.emit()
 
 
 func _on_server_disconnected() -> void:
+	NetTrace.step("mp.server_disconnected")
 	var was_in: bool = _in_room
 	leave()
 	if was_in:

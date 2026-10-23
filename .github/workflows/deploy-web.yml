@@ -58,11 +58,34 @@ jobs:
       - name: Run UI smoke test in AI mode (1P vs 3AI bots)
         run: SMOKE_AI=1 godot --headless --path . -s res://tests/ui_smoke.gd
 
+      - name: Run English UI checks (no Hangul left on screen, KR/EN toggle)
+        run: |
+          godot --headless --path . -s res://tests/ui_english_test.gd
+          SMOKE_LANG=en SMOKE_AI=1 godot --headless --path . -s res://tests/ui_smoke.gd
+
       - name: Run roll effect test (gauge, spin, reels, card flips)
-        run: godot --headless --path . -s res://tests/ui_fx_test.gd
+        run: |
+          # 연출 큐·타이머가 이미 지워진 노드를 잡은 람다를 부르면 [Lambda capture ... was freed] 오류가 찍힌다: 한 줄이라도 있으면 막는다
+          godot --headless --path . -s res://tests/ui_fx_test.gd 2>&1 | tee /tmp/ui_fx_test.log
+          test "${PIPESTATUS[0]}" -eq 0
+          if grep -q "Lambda capture" /tmp/ui_fx_test.log; then echo "freed lambda captures remain"; grep -c "Lambda capture" /tmp/ui_fx_test.log; exit 1; fi
 
       - name: Run avatar capture presentation test
         run: godot --headless --path . -s res://tests/ui_capture_test.gd
+
+      - name: Run counter-before-kill presentation sequence test (dodge, mirror, no counter)
+        run: |
+          # 연출 큐·타이머가 이미 지워진 노드를 잡은 람다를 부르면 [Lambda capture ... was freed] 오류가 찍힌다: 한 줄이라도 있으면 막는다
+          godot --headless --path . -s res://tests/ui_counter_sequence_test.gd 2>&1 | tee /tmp/ui_counter_sequence_test.log
+          test "${PIPESTATUS[0]}" -eq 0
+          if grep -q "Lambda capture" /tmp/ui_counter_sequence_test.log; then echo "freed lambda captures remain"; grep -c "Lambda capture" /tmp/ui_counter_sequence_test.log; exit 1; fi
+
+      - name: Run augment round to round start sequence test
+        run: |
+          # 연출 큐·타이머가 이미 지워진 노드를 잡은 람다를 부르면 [Lambda capture ... was freed] 오류가 찍힌다: 한 줄이라도 있으면 막는다
+          godot --headless --path . -s res://tests/ui_round_sequence_test.gd 2>&1 | tee /tmp/ui_round_sequence_test.log
+          test "${PIPESTATUS[0]}" -eq 0
+          if grep -q "Lambda capture" /tmp/ui_round_sequence_test.log; then echo "freed lambda captures remain"; grep -c "Lambda capture" /tmp/ui_round_sequence_test.log; exit 1; fi
 
       - name: Run alkkagi aiming and contact presentation test
         run: godot --headless --path . -s res://tests/ui_alkkagi_test.gd
@@ -115,7 +138,29 @@ jobs:
           # 아바타 애니메이션은 본체에서 빼고 아바타별 묶음(avatars/<id>.pck)으로 따로 내보낸다: 게임이 필요한 것부터 뒤에서 받는다 (scenes/avatar_packs.gd)
           python3 tools/export_avatar_packs.py godot build/web/avatars
           # 본체에는 정지 그림만 있고, 묶음을 붙이면 애니메이션이 실제로 읽히는지 내보낸 파일로 검사한다
-          (cd build/web && godot --headless --main-pack index.pck -s "$GITHUB_WORKSPACE/tests/avatar_pack_smoke.gd")
+          # 묶음 그림의 UID를 등록하지 못하면 [invalid UID ... using text path instead] 경고가 수백 줄 찍혀 웹 로딩이 끊기므로, 경고가 한 줄이라도 있으면 막는다.
+          (cd build/web && godot --headless --main-pack index.pck -s "$GITHUB_WORKSPACE/tests/avatar_pack_smoke.gd") 2>&1 | tee /tmp/avatar_pack_smoke.log
+          test "${PIPESTATUS[0]}" -eq 0
+          if grep -q "invalid UID" /tmp/avatar_pack_smoke.log; then echo "avatar pack: invalid UID warnings remain"; grep -c "invalid UID" /tmp/avatar_pack_smoke.log; exit 1; fi
+          # Vercel Web Analytics: 내보낸 index.html의 </body> 바로 앞에 스크립트가 반드시 있게 고정한다 (쉘에 이미 있으면 그대로, 없으면 여기서 넣고, 그래도 없으면 배포를 멈춘다).
+          python3 - <<'PY'
+          from pathlib import Path
+          page = Path('build/web/index.html')
+          html = page.read_text(encoding='utf-8')
+          marker = '/_vercel/insights/script.js'
+          if marker not in html:
+              snippet = ('<script>\n  window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };\n</script>\n'
+                         '<script defer src="/_vercel/insights/script.js"></script>\n')
+              if '</body>' not in html:
+                  raise SystemExit('index.html에 </body>가 없어 Vercel Analytics를 넣을 수 없다')
+              html = html.replace('</body>', snippet + '</body>')
+              page.write_text(html, encoding='utf-8')
+              print('Vercel Analytics 스크립트를 후처리로 넣었다')
+          html = page.read_text(encoding='utf-8')
+          assert marker in html and html.rfind(marker) < html.rfind('</body>'), 'Vercel Analytics 스크립트가 </body> 앞에 없다'
+          assert 'window.va = window.va' in html, 'Vercel Analytics 초기화 줄이 없다'
+          print('Vercel Analytics 스크립트 확인')
+          PY
           touch build/web/.nojekyll
           # Vercel이 gh-pages 브랜치(또는 이 폴더)를 빌드 없이 그대로 호스팅하도록 설정 파일을 함께 싣는다.
           cp vercel.json build/web/vercel.json

@@ -1,6 +1,6 @@
 # File: res://core_engine/commands/status_card_command.gd
 # Class: class_name StatusCardCommand
-# Role: 상태만 바꾸는 즉발 카드 - ACT_11 밑장빼기(다음 굴림 결과 지정) / ACT_12 더 월드(추가 턴) / ACT_14 알고리즘 밴(2턴 카드·필살기·리롤 금지) / ACT_15 우노 스킵(대상의 다음 턴 건너뛰기)
+# Role: 상태만 바꾸는 즉발 카드 - ACT_11 밑장빼기(다음 굴림 결과 지정) / ACT_12 더 월드(추가 턴) / ACT_14 알고리즘 밴(2턴 카드·필살기·주사위 리롤 금지) / ACT_15 우노 스킵(대상의 다음 턴 건너뛰기)
 class_name StatusCardCommand
 extends GameCommand
 

@@ -99,17 +99,28 @@ func _run() -> void:
 	GameSession.avatar_id = &"not_a_real_avatar"
 	_expect(AvatarCatalog.sanitize(GameSession.avatar_id) == AvatarCatalog.DEFAULT_ID, "알 수 없는 아바타 id는 기본으로 보정")
 	GameSession.avatar_id = &"avatar_03"
+	# 놀이터 난이도 3단 토글: 기본 보통맛, 누르면 저장되고 설명이 바뀐다
+	var saved_level: StringName = GameSession.bot_difficulty()
+	menu.open_training()
+	var row: Node = menu.find_child("DifficultyRow", true, false)
+	_expect(row != null and row.get_child_count() == 3, "놀이터에 난이도 버튼 3개")
+	(menu.find_child("Difficulty_mild", true, false) as Button).pressed.emit()
+	_expect(GameSession.bot_difficulty() == BotTemper.MILD and (menu.find_child("Difficulty_mild", true, false) as Button).button_pressed and not (menu.find_child("Difficulty_normal", true, false) as Button).button_pressed, "순한맛을 누르면 순한맛만 켜진다")
+	_expect((menu.find_child("DifficultyNote", true, false) as Label).text.contains("입문"), "순한맛 설명")
+	GameSession.set_bot_difficulty(saved_level)
+	menu._refresh_difficulty()
+	menu._show_step(2)
 	# 규칙/설정 팝업
 	menu._top["right"].pressed.emit()
 	_expect(menu.find_child("Popup", true, false) != null, "규칙 팝업이 뜬다")
 	var book: Rulebook = menu.find_child("Popup", true, false) as Rulebook
-	_expect(book != null and book.spread == 0 and book.spread_count() == 9 and book._prev.disabled and not book._next.disabled, "규칙은 9장짜리 규칙 도감의 첫 장으로 열린다")
+	_expect(book != null and book.spread == 0 and book.spread_count() == 10 and book._prev.disabled and not book._next.disabled, "규칙은 10장짜리 규칙 도감의 첫 장으로 열린다")
 	book._next.pressed.emit()
 	_expect(book.spread == 1 and not book._prev.disabled, "다음 쪽으로 넘어간다")
-	for tab_index: int in 9:
+	for tab_index: int in 10:
 		book.show_spread(tab_index)
 		_expect(book._left_holder.get_child_count() >= 3 and book._right_holder.get_child_count() >= 1, "펼침면 %d에 내용이 있다" % tab_index)
-	_expect(book._next.disabled and book._page_label.text == "9 / 9", "마지막 장에서는 다음 쪽이 잠긴다")
+	_expect(book._next.disabled and book._page_label.text == "10 / 10", "마지막 장에서는 다음 쪽이 잠긴다")
 	var all_text: String = ""
 	book.show_spread(6)
 	for node: Node in book.find_children("*", "Label", true, false):
@@ -121,8 +132,13 @@ func _run() -> void:
 	_expect(book.find_children("*", "Label", true, false).any(func(node: Node) -> bool: return (node as Label).text.contains("투기장의 지배자")), "법전 쪽에 실제 특수 승리 교칙 8종이 나온다")
 	_expect(not book.find_children("*", "Label", true, false).any(func(node: Node) -> bool: return (node as Label).text == "?"), "제목 옆 ? 표시는 없다")
 	_expect(not (book._content["entries"] as Array).any(func(data: Dictionary) -> bool: return str(data.get("augment", "")).begins_with("SUPER")), "초증강은 법전 장에서 빠졌다")
+	var package_kinds: Array = [GameEnums.AugmentCategory.CARD_PACKAGE, GameEnums.AugmentCategory.UTILITY]
+	_expect(not (book._content["entries"] as Array).any(func(data: Dictionary) -> bool: return data.has("augment") and package_kinds.has(AugmentRegistry.get_def(StringName(data["augment"])).category)), "카드 패키지·범용 보급은 법전 장에서 빠졌다")
 	book.show_spread(8)
-	_expect(book._notebook_title.text == "하이리스크 하이리턴" and book.entry_count() == SuperAugments.ALL_IDS.size() and book._list_buttons[8].visible and book._list_buttons[4].visible, "초증강 장: 하이리스크 하이리턴 설명 + 초증강 %d종 (도감 묶음)" % SuperAugments.ALL_IDS.size())
+	var general_count: int = AugmentRegistry.all().filter(func(d: AugmentDef) -> bool: return package_kinds.has(d.category)).size()
+	_expect(book._notebook_title.text == "카드 패키지와 범용 보급" and book.entry_count() == general_count and general_count > 0 and book._list_buttons[8].visible, "범용 장: 카드 패키지·범용 보급 %d종" % general_count)
+	book.show_spread(9)
+	_expect(book._notebook_title.text == "하이리스크 하이리턴" and book.entry_count() == SuperAugments.ALL_IDS.size() and book._list_buttons[9].visible and book._list_buttons[4].visible, "초증강 장: 하이리스크 하이리턴 설명 + 초증강 %d종 (도감 묶음)" % SuperAugments.ALL_IDS.size())
 	book.show_spread(4)
 	var swappable: int = AugmentRegistry.all().filter(func(d: AugmentDef) -> bool: return d.category == GameEnums.AugmentCategory.TOOL_SWAP).size()
 	_expect(book.entry == -1 and book._notebook_title.text == "굴리는 도구" and book._tiles.size() == book.entry_count() and book.entry_count() == swappable, "도구 장: 처음엔 전체 설명, 오른쪽엔 증강 카드 %d장 (전체 설명 타일 없음)" % swappable)
@@ -130,6 +146,9 @@ func _run() -> void:
 	(book._tiles[2].get_child(0) as Button).pressed.emit()
 	_expect(book.entry == 2 and book._tiles[2].get_meta("marker").visible, "증강 카드를 누르면 왼쪽에 그 도구가 크게 나온다 (%s)" % book._notebook_title.text)
 	_expect(book._left_holder.get_child_count() >= 2, "항목 화면: 그림·요약 + 규칙표")
+	var rounded: Control = book._left_holder.find_child("RoundedArt", true, false)
+	var mask: Panel = rounded.get_node("Mask") if rounded != null else null
+	_expect(mask != null and mask.clip_children == CanvasItem.CLIP_CHILDREN_ONLY and mask.get_child(0) is TextureRect and rounded.get_node("Outline") != null, "도감 큰 그림은 둥근 네모로 잘리고 같은 둥글기의 외곽선이 그림에 맞춰 붙는다")
 	book.free()
 	menu._bottom["center"].pressed.emit()
 	var popup: Node = menu.find_child("Popup", true, false)

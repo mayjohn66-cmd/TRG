@@ -66,6 +66,8 @@ func _run() -> void:
 	await _test_gauge_and_lock()
 	await _test_instant_flag()
 	await _test_rank_log_follows_the_capture()
+	await _test_match_report_is_sent_once()
+	_test_unplayable_card_explains_itself()
 	await _test_announcer()
 	await _test_aspect_layout()
 	await _test_roll_pad()
@@ -79,10 +81,14 @@ func _run() -> void:
 	await _test_duel_flow()
 	await _test_stage_warp()
 	await _test_trap_tile_marking()
+	_test_turbo_ai_turn()
+	_test_refresh_batch_and_touch_menu()
 	await _test_kill_cutin()
 	await _test_new_tool_stages()
 	await _test_npc_danger_preview()
 	await _test_event_order()
+	await _test_nitro_dash()
+	await _test_move_four_steps()
 	await _test_presentation_queue()
 	if _failures.is_empty():
 		print("UI_FX_OK")
@@ -784,7 +790,7 @@ func _test_rank_log_follows_the_capture() -> void:
 	var victim: PlayerPawn = state.get_pawn(21)
 	victim.has_left_start = true
 	victim.current_tile_idx = 5
-	state.pawn_sent_to_start.emit(21, 4)  # 엔진이 알리는 순서: 처치 -> 법전 파기 -> 순위 확정
+	state.send_to_start(victim, 4)  # 엔진이 알리는 순서: 처치 -> 법전 파기 -> 순위 확정
 	_board._on_event(&"player_ranked", {"player_id": 4, "rank": 1, "reason": &"LAW_01"})
 	var waited: float = _now()
 	while (_board._ui_busy() or _board._presentation_active()) and _now() - waited < 10.0:
@@ -799,6 +805,130 @@ func _test_rank_log_follows_the_capture() -> void:
 			rank_at = index
 	_expect(capture_at != -1 and rank_at != -1 and capture_at < rank_at, "처치 기록 뒤에 순위 확정 기록이 찍힌다 (처치 %d줄, 순위 %d줄)" % [capture_at, rank_at])
 	_board._announcer.cancel()
+	_board._refresh_all()
+
+
+## [매치 완료] 알림: 결과 화면에 닿으면 판마다 정확히 한 번. 내가 먼저 졸업하면(일반 완주·특수 승리) 그 즉시 보내고 결과 화면에서 다시 보내지 않는다.
+## 페이로드(multipart의 payload_json)가 올바른 JSON인지도 본다.
+func _test_match_report_is_sent_once() -> void:
+	var manager: TurnManager = _board.manager
+	var state: GameState = manager.state
+	var sent: Array[String] = []
+	MatchTelemetry.test_force_enabled = true
+	MatchTelemetry.test_sender = func(_url: String, body: PackedByteArray, _type: String) -> void: sent.append(body.get_string_from_utf8())
+	var saved_rankings: Array[int] = state.rankings.duplicate()
+	var saved_reasons: Dictionary = state.rank_reasons.duplicate()
+	# 1) 결과 화면 경로 (일반 승리)
+	_board._report_match_start()  # 보드 진입: [매치 시작]
+	var nth: int = _board._match_number
+	manager.is_game_over = true
+	state.winner = 1
+	state.rankings.assign([1, 2, 3, 4])
+	state.rank_reasons = {1: VictoryChecker.ALL_HOME}
+	_board._match_complete_sent = false
+	_board._report_match_once()
+	_board._report_match_once()  # 결과 화면을 다시 그려도 두 번 세지 않는다
+	manager.is_game_over = false
+	state.winner = -1
+	_expect(sent.size() == 2, "매치 시작 1번 + 매치 완료 1번 (%d번)" % sent.size())
+	_expect(sent.size() == 2 and sent[0].contains("%d번째 판 시작" % nth) and sent[1].contains("(%d번째 판)" % nth), "시작과 완료가 같은 판 번호 (%d)" % nth)
+	_expect(sent.size() == 2 and sent[1].contains("| %s |" % _board._telemetry_mode()) and sent[1].contains("내 최종 순위:") and sent[1].contains("1위 우승방식: 일반"), "지금 모드·내 순위·일반 승리로 알린다")
+	# 2) 컴퓨터 대전에서 내가 특수 승리로 1위 졸업한 즉시 (봇끼리 남은 판을 기다리지 않는다)
+	var was_ai: bool = _board.ai_mode
+	_board.ai_mode = true
+	var seat: int = _board._telemetry_seat()
+	_expect(seat != -1, "컴퓨터 대전에는 '나'의 자리가 있다")
+	if seat != -1:
+		sent.clear()
+		_board._match_complete_sent = false
+		state.rankings.assign([seat])
+		state.rank_reasons = {seat: &"LAW_01"}
+		_board._report_player_ranked(seat, 1)
+		_expect(sent.size() == 1 and sent[0].contains("내 최종 순위: 1위 / 우승자: ") and sent[0].contains("특수승리(투기장의 지배자)"), "내 특수 승리 졸업 즉시 [매치 완료] (%s)" % str(sent))
+		_expect(sent.size() == 1 and sent[0].contains("킬/데스: ") and sent[0].contains("누적: ") and sent[0].contains("1위 "), "체감 난이도 지표: 킬/데스·누적 승률")
+		manager.is_game_over = true
+		_board._report_match_once()
+		manager.is_game_over = false
+		_expect(sent.size() == 1, "졸업 때 보냈으면 결과 화면에서 다시 보내지 않는다")
+		# 다른 사람이 졸업할 때는 보내지 않는다
+		sent.clear()
+		_board._match_complete_sent = false
+		var other: int = 2 if seat != 2 else 3
+		_board._report_player_ranked(other, 2)
+		_expect(sent.is_empty(), "다른 사람의 졸업은 [매치 완료]가 아니다")
+		# 3) 내가 일반 완주로 2위 졸업
+		state.rankings.assign([other, seat])
+		state.rank_reasons = {other: VictoryChecker.ALL_HOME, seat: VictoryChecker.ALL_HOME}
+		_board._report_player_ranked(seat, 2)
+		_expect(sent.size() == 1 and sent[0].contains("내 최종 순위: 2위") and sent[0].contains("1위 우승방식: 일반"), "내 일반 완주 졸업 즉시 [매치 완료]")
+	_expect(_board._telemetry_mode() == "놀이터-%s" % BotTemper.label(_board._bot.difficulty), "놀이터 통계에 난이도가 붙는다 (%s)" % _board._telemetry_mode())
+	_board.ai_mode = was_ai
+	# 값이 비어 있어도 뻗지 않는다 (증강 목록·순위·1위가 없음)
+	_board._match_complete_sent = false
+	state.rankings.clear()
+	state.rank_reasons = {}
+	_board._my_augments.clear()
+	sent.clear()
+	_expect(_board._send_match_complete_webhook(0) and sent.size() == 1 and sent[0].contains("내 최종 순위: -") and sent[0].contains("고른 증강: 없음"), "빈 값은 안전한 기본값으로")
+	for body: String in sent:
+		var start: int = body.find("\r\n\r\n") + 4
+		var end: int = body.find("\r\n--", start)
+		var parsed: Variant = JSON.parse_string(body.substr(start, end - start))
+		_expect(parsed is Dictionary and str((parsed as Dictionary).get("content", "")).begins_with(MatchTelemetry.tag()) and int((parsed as Dictionary).get("flags", 0)) == 4096, "payload_json이 올바른 JSON (%s)" % body.substr(start, 80))
+	# 결과 화면의 원클릭 소감 투표: 한줄평과 함께 한 번만 보내고 감사 문구로 바뀐다
+	sent.clear()
+	var bar: Control = _board._build_vote_bar()
+	_board.add_child(bar)
+	_expect((bar.find_child("VoteQuestion", true, false) as Label).text == "이번 판 난이도와 템포는 어떠셨나요? (클릭 시 개발자에게 바로 전달됩니다!)", "투표 질문 문구")
+	var buttons: Node = bar.find_child("VoteButtons", true, false)
+	_expect(buttons != null and buttons.get_child_count() == 4, "투표 버튼 4개")
+	_expect(bar.find_child("VoteComment", true, false) == null, "한줄 입력칸은 없다 (버튼 4개만)")
+	var spicy: Button = bar.find_child("Vote_spicy", true, false)
+	spicy.pressed.emit()
+	spicy.pressed.emit()  # 두 번 눌러도 한 번만
+	_expect(sent.size() == 1 and sent[0].contains(MatchTelemetry.vote_tag()) and sent[0].contains("AI/억까가 너무 매워요") and sent[0].contains("| - |"), "투표 한 줄 전송 (%s)" % str(sent))
+	var modal: Node = _board.find_child("FeedbackModal", false, false)
+	_expect(modal != null, "[딱 재밌어요!]가 아닌 버튼은 피드백/버그 제보 창을 띄운다")
+	if modal != null:
+		modal.free()
+	await process_frame
+	_expect(bar.find_child("VoteThanks", true, false) != null and bar.find_child("VoteButtons", true, false) == null, "누르면 [소중한 의견 감사합니다!]로 바뀐다")
+	bar.queue_free()
+	var fun_bar: Control = _board._build_vote_bar()
+	_board.add_child(fun_bar)
+	(fun_bar.find_child("Vote_fun", true, false) as Button).pressed.emit()
+	_expect(_board.find_child("FeedbackModal", false, false) == null, "[딱 재밌어요!]는 투표만 보내고 창은 띄우지 않는다")
+	fun_bar.queue_free()
+	state.rankings.assign(saved_rankings)
+	state.rank_reasons = saved_reasons
+	MatchTelemetry.test_force_enabled = false
+	MatchTelemetry.test_sender = Callable()
+	_board._match_complete_sent = false
+
+
+## 낼 수 없는 카드(예: UDO +4인데 다음 차례 사람의 말이 보드에 없음)는 흐리게 보이고, 누르면 이유가 화면 가운데 뜬다 (아무 반응 없던 버그).
+func _test_unplayable_card_explains_itself() -> void:
+	var manager: TurnManager = _board.manager
+	var state: GameState = manager.state
+	var player: int = manager.current_player_id()
+	var victim: int = PenaltyBombCommand.victim_of(state, player)
+	var saved: Array = []
+	for pawn: PlayerPawn in state.pawns_of(victim):
+		saved.append([pawn, pawn.has_left_start, pawn.current_tile_idx])
+		pawn.has_left_start = false
+		pawn.current_tile_idx = 0
+	var card: BaseCard = CardRegistry.get_card(&"ACT_03")
+	_expect(not _board._card_usable_now(player, card), "UDO +4: 다음 사람의 말이 보드에 없으면 흐린 카드")
+	_expect(_board._card_block_reason(player, card).contains("보드 위에 없어"), "UDO +4: 낼 수 없는 이유 (%s)" % _board._card_block_reason(player, card))
+	state.give_card(player, &"ACT_03")
+	_board._on_card_pressed(player, &"ACT_03")
+	_expect(_board._center_banner.visible and _board._center_label.text.contains("UDO +4"), "누르면 이유가 화면 가운데 뜬다 (%s)" % _board._center_label.text)
+	_expect(state.has_card(player, &"ACT_03"), "카드는 쓰이지 않고 손에 남는다")
+	(state.hands[player] as Array).erase(&"ACT_03")
+	for entry: Array in saved:
+		(entry[0] as PlayerPawn).has_left_start = entry[1]
+		(entry[0] as PlayerPawn).current_tile_idx = entry[2]
+	_board._center_banner.visible = false
 	_board._refresh_all()
 
 
@@ -970,14 +1100,14 @@ func _test_view_modes() -> void:
 	GameSession.view_mode = MainBoard.ViewMode.TOP
 
 
-## 상단 UI는 왼쪽 [피드백 / 버그 제보]와 오른쪽 [배속]·[메뉴]뿐이고 (소리·언어는 설정), 메뉴 안에서 계속하기/게임 설정/전체 로그/새 게임/모드/치트/게임 나가기를 고른다.
+## 상단 UI는 왼쪽 [피드백 / 버그 제보]와 오른쪽 [KR / EN]·[배속]·[메뉴]뿐이고 (소리는 설정), 메뉴 안에서 계속하기/게임 설정/전체 로그/새 게임/모드/치트/게임 나가기를 고른다.
 func _test_game_menu() -> void:
 	var top_buttons: Array[Button] = []
 	for child: Node in _board.get_children():
 		var button: Button = child as Button
 		if button != null and button.visible and button.position.y < 44.0 and button.size.y <= 40.0:
 			top_buttons.append(button)
-	_expect(top_buttons.size() == 3 and top_buttons.has(_board._menu_button) and top_buttons.has(_board._feedback_button) and top_buttons.has(_board._speed_button), "상단에는 왼쪽 [피드백]·오른쪽 [배속]·[메뉴] 세 개만 남는다 (%d개)" % top_buttons.size())
+	_expect(top_buttons.size() == 4 and top_buttons.has(_board._menu_button) and top_buttons.has(_board._feedback_button) and top_buttons.has(_board._speed_button) and top_buttons.has(_board._language_button), "상단에는 왼쪽 [피드백]·오른쪽 [KR / EN]·[배속]·[메뉴] 네 개만 남는다 (%d개)" % top_buttons.size())
 	# [배속]: 1x -> 2x -> 3x -> 1x, Engine.time_scale에 걸린다
 	var speed_before: int = GameSession.game_speed
 	GameSession.game_speed = 1
@@ -1290,18 +1420,39 @@ func _test_hud_overhaul() -> void:
 		manager.state.tools[current] = ToolRegistry.create(tool_id)
 		_board._refresh_controls()
 		_expect(_board._tool_main.text != "" and _board.TOOL_CARDS.has(tool_id), "%s 카드 규칙 요약 있음" % tool_id)
+		# 상세 족보를 펼쳐도 화면 오른쪽 밖으로 잘리지 않고, 아래 [감정 표현] 버튼을 덮지 않는다
+		_board._tool_expanded = true
+		_board._apply_tool_expand()
+		_board._tool_board.reset_size()
+		_board._place_action_row_below_tool_card()
+		var card_rect: Rect2 = _board._tool_board.get_global_rect()
+		_expect(card_rect.end.x <= 1366.0 and card_rect.position.y >= 0.0, "%s 족보 카드가 화면 안 (%s)" % [tool_id, card_rect])
+		_expect(card_rect.end.y <= _board._emote_button.get_global_rect().position.y, "%s 족보 카드가 감정 표현 버튼을 덮지 않는다 (%s)" % [tool_id, card_rect])
+		_board._tool_expanded = false
+		_board._apply_tool_expand()
+		_board._tool_board.reset_size()
+		_board._place_action_row_below_tool_card()
 	manager.state.tools[current] = ToolRegistry.create(&"D6")
 	_board._refresh_controls()
-	# 3) 기물 독 + 호버 툴팁
+	# 3) 기물 독 + 기물 설명: 커서만 대면 안 뜨고, 누르면 바로 뜨고, 다시 누르면 닫힌다
 	_expect(_board._pawn_buttons.size() == 4 and (_board._pawn_buttons[0] as Button).size.x >= 76.0 and (_board._pawn_buttons[0] as Button).size.y >= 88.0, "기물 슬롯은 최소 76x88")
 	_board._on_pawn_slot_hover(0)
-	for i: int in 5:
-		await process_frame
-	_expect(not _board._tip_panel.visible, "0.35초 전에는 툴팁이 없다")
 	var wait_start: float = _now()
 	while _now() - wait_start < 0.6:
 		await process_frame
-	_expect(_board._tip_panel.visible and _board._tip_title.text != "" and _board._tip_ability.text != "", "0.35초 뒤 툴팁이 뜬다 (%s)" % _board._tip_title.text)
+	_expect(not _board._tip_panel.visible, "커서만 대서는 기물 설명이 뜨지 않는다")
+	_board._on_pawn_slot_pressed(0)
+	_expect(_board._tip_panel.visible and _board._tip_title.text != "" and _board._tip_ability.text != "", "누르면 바로 기물 설명이 뜬다 (%s)" % _board._tip_title.text)
+	var pinned_at: Vector2 = _board._tip_panel.position
+	for i: int in 5:
+		await process_frame
+	_expect(_board._tip_panel.visible and _board._tip_panel.position == pinned_at, "열린 설명은 그대로 머문다")
+	_board._on_pawn_slot_unhover(_board._pawn_buttons[0])
+	_expect(_board._tip_panel.visible, "커서를 치워도 닫히지 않는다 (다시 눌러야 닫힘)")
+	_board._on_pawn_slot_pressed(0)
+	_expect(not _board._tip_panel.visible, "같은 말 칸을 다시 누르면 닫힌다")
+	_board._on_pawn_slot_pressed(0)
+	_expect(_board._tip_panel.visible, "다시 열기")
 	# 세트 설명은 없고 필살기 보유 기물에만 필살기 줄이 있다
 	_expect(not _board._tip_title.text.contains("세트 (") and not _board._tip_ability.text.contains("세트"), "툴팁에 세트 시너지 설명이 없다")
 	var rook: PlayerPawn = null
@@ -1318,8 +1469,41 @@ func _test_hud_overhaul() -> void:
 			break
 	_board._fill_pawn_tip(plain.entity_id)
 	_expect(not _board._tip_skill.visible, "필살기 없는 기물에는 필살기 줄이 없다")
-	_board._on_pawn_slot_unhover(_board._pawn_buttons[0])
-	_expect(not _board._tip_panel.visible, "커서를 치우면 즉시 사라진다")
+	_board._on_board_tip_click(Vector2(5, 380))
+	_expect(not _board._tip_panel.visible, "다른 곳을 누르면 닫힌다")
+	# 보드 위 말: 누르면 열리고 같은 말을 다시 누르면 닫힌다
+	var on_board: PlayerPawn = manager.state.get_pawn(21)
+	on_board.current_tile_idx = 5
+	on_board.has_left_start = true
+	on_board.step_history.assign([5])
+	_board._refresh_all()
+	for i: int in 3:
+		await process_frame
+	var board_view: Node2D = _board._pawn_views[21]
+	var spot: Vector2 = board_view.position + _board._pawn_layer.position + Vector2(0, -12)
+	_expect(not _board._board_tip_target(spot).is_empty(), "말 위 좌표를 찾는다")
+	_board._on_board_tip_click(spot)
+	_expect(_board._tip_panel.visible and _board._tip_title.text.contains("P2"), "보드 말을 누르면 설명 (%s)" % _board._tip_title.text)
+	_board._on_board_tip_click(spot)
+	_expect(not _board._tip_panel.visible, "같은 말을 다시 누르면 닫힌다")
+	# 카드는 커서를 대도 설명 상자가 없다
+	var hand_card: PanelContainer = _board._make_card_view(1, &"TRP_03")
+	_expect(hand_card.tooltip_text == "", "카드에 마우스 설명이 없다 (%s)" % hand_card.tooltip_text)
+	# 내 말도 휘말리는 카드: 카드 왼쪽 위 경고 아이콘, 문구는 상세(확대) 설명에만
+	_expect(hand_card.find_child("SelfRiskIcon", true, false) != null, "지뢰찾기 카드에 경고 아이콘")
+	_expect(not CardSkin.SELF_RISK.is_empty() and not MainBoard.card_summary(&"TRP_03").contains("주의"), "카드 앞면 문구에는 주의 글이 없다")
+	hand_card.free()
+	for risk_id: StringName in [&"TRP_05", &"ACT_09"]:
+		var risky: PanelContainer = _board._make_card_view(1, risk_id)
+		_expect(risky.find_child("SelfRiskIcon", true, false) != null, "%s 카드에 경고 아이콘" % risk_id)
+		risky.free()
+	var safe_card: PanelContainer = _board._make_card_view(1, &"TRP_02")
+	_expect(safe_card.find_child("SelfRiskIcon", true, false) == null, "내 말을 잡지 않는 카드에는 아이콘 없음")
+	safe_card.free()
+	_board._open_zoom(1, &"ACT_09")
+	var caution: Node = _board._zoom_view.find_child("CardCaution", true, false)
+	_expect(caution != null and str((caution.get_child(1) as Label).text).contains("지면 내 선두 말"), "확대 설명에 주의 문구")
+	_board._close_zoom()
 	# 4) 클릭 확대 (남의 턴에도 가능)
 	var holder: int = current
 	(manager.state.hands[holder] as Array).clear()
@@ -1533,6 +1717,9 @@ func _play_one_duel(game: int) -> void:
 	arena.open()
 	await process_frame
 	await process_frame
+	var shake_wait: float = _now()
+	while _board._shake_active and _now() - shake_wait < 2.0:  # 공격 카드 경보의 화면 흔들림이 멎은 뒤에 잰다
+		await process_frame
 	_expect(arena.get_global_rect().get_center().distance_to(_board._board_center()) < 4.0, "%s: 결투장은 보드 한가운데" % title)
 	_expect(_board._roll_button.disabled, "%s: 결투 중에는 굴리기 버튼이 잠긴다" % title)
 	var waited: float = 0.0
@@ -1616,12 +1803,118 @@ func _test_stage_warp() -> void:
 	_board.instant_roll_for_test = true
 
 
+## 끊김 방지: 행동 하나를 처리하는 동안의 화면 갱신 요청은 모아서 끝날 때 한 번만 그린다. 터치 기기의 메뉴 항목은 크게, 누르는 순간 반응한다.
+func _test_refresh_batch_and_touch_menu() -> void:
+	var before: int = _board.refresh_count
+	_board._begin_refresh_batch()
+	_board._refresh_all()
+	_board._refresh_all()
+	_board._refresh_all()
+	_expect(_board.refresh_count == before, "묶음 안의 갱신 요청은 바로 그리지 않는다")
+	_board._end_refresh_batch()
+	_expect(_board.refresh_count == before + 1, "묶음이 끝나면 한 번만 그린다 (%d회)" % (_board.refresh_count - before))
+	_board._refresh_all()
+	_expect(_board.refresh_count == before + 2, "묶음 밖에서는 바로 그린다")
+	var counted: Array = [0]
+	var probe: Callable = func() -> void: counted[0] += 1
+	_board.manager.processing_started.connect(probe)
+	_board.manager.force_timeout()
+	_board.manager.processing_started.disconnect(probe)
+	_expect(_board._refresh_batch == 0, "처리 묶음은 짝이 맞게 닫힌다")
+	MobileSupport.force_touch = true
+	_board._open_menu()
+	var first: Button = null
+	for child: Node in _board._menu_box.get_children():
+		if child is Button:
+			first = child
+			break
+	_expect(first != null and first.custom_minimum_size.y >= 64.0 and first.action_mode == BaseButton.ACTION_MODE_BUTTON_PRESS, "터치 기기의 메뉴 항목은 높이 64 이상, 누르는 순간 반응")
+	_board._close_menu()
+	var probe_button := Button.new()
+	MobileSupport.touch_button(probe_button)
+	_expect(probe_button.custom_minimum_size.y >= MobileSupport.TOUCH_BUTTON_HEIGHT and probe_button.action_mode == BaseButton.ACTION_MODE_BUTTON_PRESS, "터치 버튼 도우미: 최소 높이와 누름 반응")
+	probe_button.free()
+	# 터치 한 번 = 한 번 누름: 터치 직후 같은 자리의 브라우저 마우스 누름은 버리고, 엔진이 흉내 낸 누름·떨어진 자리·시간이 지난 누름은 받는다.
+	var mobile := MobileSupport.new()
+	var touch := InputEventScreenTouch.new()
+	touch.pressed = true
+	touch.position = Vector2(1300, 30)
+	_expect(mobile.accept_press(touch, 1000), "터치는 받는다")
+	var emulated := InputEventMouseButton.new()
+	emulated.pressed = true
+	emulated.button_index = MOUSE_BUTTON_LEFT
+	emulated.position = Vector2(1300, 30)
+	emulated.device = InputEvent.DEVICE_ID_EMULATION
+	_expect(mobile.accept_press(emulated, 1001), "터치를 흉내 낸 마우스 누름은 받는다")
+	var browser_click := InputEventMouseButton.new()
+	browser_click.pressed = true
+	browser_click.button_index = MOUSE_BUTTON_LEFT
+	browser_click.position = Vector2(1302, 31)
+	_expect(not mobile.accept_press(browser_click, 1200), "터치 직후 같은 자리의 브라우저 마우스 누름은 버린다 (두 번 눌림 방지)")
+	browser_click.position = Vector2(600, 400)
+	_expect(mobile.accept_press(browser_click, 1250), "다른 자리의 누름은 받는다")
+	browser_click.position = Vector2(1300, 30)
+	_expect(mobile.accept_press(browser_click, 2000), "시간이 지난 누름은 받는다")
+	mobile.free()
+	# 추가 전진 이유: 기물 능력(퀸 +2칸 등)은 이동 전에 말 위에 이유를 띄우고 로그에 남긴다
+	_board._on_event(&"move_bonus", {"pawn_id": 11, "notes": ["퀸 +2칸"], "revenge": 0})
+	_expect(_board._log.get_parsed_text().contains("[추가 전진]") and _board._log.get_parsed_text().contains("퀸 +2칸"), "추가 전진 이유가 로그에 남는다")
+	var old_instant_bonus: bool = _board.instant_roll_for_test
+	_board.instant_roll_for_test = false
+	_board._on_event(&"move_bonus", {"pawn_id": 12, "notes": ["룩 직진 +2칸"], "revenge": 4})
+	_board.instant_roll_for_test = old_instant_bonus
+	_expect(_board._move_bonus_notes.get(12, []) == ["룩 직진 +2칸"], "리벤지 부스터 이동이면 부스터 뒤 [눈금 M칸 (이유)]에 붙인다")
+	_board._reset_presentation()
+	var old_speed: int = GameSession.game_speed
+	GameSession.game_speed = 1
+	_board._last_tap_msec.clear()
+	_board._on_speed_pressed()
+	_board._on_speed_pressed()  # 같은 순간 두 번 = 기기가 한 번의 터치를 두 번 보낸 경우
+	_expect(GameSession.game_speed == 2, "배속 버튼: 한 번 터치에 1 -> 2 한 칸만 (1 -> 3 -> 2로 건너뛰지 않음, 지금 %d)" % GameSession.game_speed)
+	GameSession.game_speed = old_speed
+	_board._apply_game_speed()
+	MobileSupport.force_touch = false
+
+
+## 터보 AI 턴: AI 차례에는 연출 배율이 TURBO_PACE_SCALE로 줄고, 사람 말을 잡거나 법전·특수 승리가 움직인 턴(주목 구간)과 사람 차례는 보통 속도다.
+func _test_turbo_ai_turn() -> void:
+	var old_ai: bool = _board.ai_mode
+	var old_pacing: bool = _board.pacing_enabled
+	var old_instant: bool = _board.instant_roll_for_test
+	var old_bots: Array[int] = _board._bot.bot_players.duplicate()
+	_board.ai_mode = true
+	_board.pacing_enabled = true
+	_board.instant_roll_for_test = false
+	_board._bot.bot_players = [2, 3, 4] as Array[int]
+	_board._spotlight_turn = false
+	var current: int = _board.manager.current_player_id()
+	var normal: float = GameSession.pace_scale
+	if current == _board.local_player_id:
+		_expect(not _board._turbo_turn() and is_equal_approx(_board._pace(), normal), "사람 차례는 보통 속도")
+	_board._bot.bot_players = [1, 2, 3, 4] as Array[int]
+	_board.local_player_id = 99 if current == _board.local_player_id else _board.local_player_id
+	_expect(_board._turbo_turn() and is_equal_approx(_board._pace(), normal * MainBoard.TURBO_PACE_SCALE), "AI 차례는 연출 배율이 %.2f배로 줄어든다" % MainBoard.TURBO_PACE_SCALE)
+	_expect(_board._cutin_speed() > 1.0, "AI끼리의 처치 컷인은 빠르게 재생")
+	_board._mark_spotlight()
+	_expect(not _board._turbo_turn() and is_equal_approx(_board._pace(), normal) and is_equal_approx(_board._cutin_speed(), 1.0), "사람 말 처치·법전 변화가 있는 AI 턴은 보통 속도로 주목")
+	_board._on_phase_changed(TurnManager.State.PHASE_TURN_BEGIN, current, 0.0)
+	_expect(not _board._spotlight_turn, "다음 차례가 시작되면 주목 구간이 풀린다")
+	if _board.local_player_id == 99:
+		_board.local_player_id = current
+	_board._bot.bot_players = old_bots
+	_board.ai_mode = old_ai
+	_board.pacing_enabled = old_pacing
+	_board.instant_roll_for_test = old_instant
+	_board._spotlight_turn = false
+
+
 ## 함정이 깔린 발판은 카드 알림이 끝난 뒤 짙은 보라색 테두리로 깜빡인다.
 func _test_trap_tile_marking() -> void:
 	_board._reset_presentation()  # 앞선 검사가 남긴 연출 큐를 비운다
 	var state: GameState = _board.manager.state
 	_board.instant_roll_for_test = false
 	_board._announcer.cancel()
+	state.board.get_tile(14).attachments.clear()  # 앞선 검사(무작위 판)가 14번에 함정을 남겼을 수 있다
 	_board._refresh_all()
 	var tile: BoardSkin.Tile = _board._tile_views[14]
 	_expect(not tile.trap_on, "함정이 없으면 발판은 평소 모습이다")
@@ -1792,32 +2085,47 @@ func _test_npc_danger_preview() -> void:
 			other.reset_to_start()  # 앞선 테스트가 남긴 말이 NPC를 멈춰 세우지 않게 한다
 	_board._refresh_all()
 	_expect(_board._npc_danger.is_empty() and not _board._danger_label.visible, "NPC가 없으면 위험 예고도 경고도 없다")
-	var ghost: NeutralNPC = state.spawn_npc(12, GameEnums.NpcBehavior.PATROL_REVERSE, 1, &"SUM_02")
+	# 소환한 사람이 아닌 쪽에서 보는 위험 예고: 팩맨(역방향)은 가장 가까운 적 말까지 달려가 그 말을 덮친다
+	var summoner: int = 1 if mine.owner_id != 1 else 2
+	var bystander: PlayerPawn = null
+	for other: PlayerPawn in state.pawns:
+		if other.owner_id != mine.owner_id and other.owner_id != summoner and not other.is_finished:
+			bystander = other
+			break
+	bystander.has_left_start = true
+	bystander.current_tile_idx = 8
+	state.spawn_npc(12, GameEnums.NpcBehavior.PATROL_REVERSE, summoner, &"SUM_02")
 	_board._refresh_all()
-	_expect(_board._npc_danger.has(11) and _board._npc_danger.has(10) and _board._npc_danger.has(9), "팩맨이 지나갈 칸(11·10·9번…)이 위험 구간으로 표시된다")
+	_expect(_board._npc_danger.has(11) and _board._npc_danger.has(10) and _board._npc_danger.has(9) and _board._npc_danger.has(8), "팩맨이 가장 가까운 적(8번)까지 지나갈 칸이 위험 구간으로 표시된다")
+	_expect(not _board._npc_danger.has(7), "덮칠 칸 뒤로는 표시하지 않는다")
+	_expect(int(_board._npc_danger[8]["level"]) == 2 and int(_board._npc_danger[10]["level"]) == 1, "덮칠 칸만 경고(level 2)")
 	var danger_tile: BoardSkin.Tile = _board._tile_views[10]
-	_expect(danger_tile.danger_level == 2 and danger_tile.danger_dir != Vector2.ZERO, "위험 타일은 경고(level 2)와 진행 방향을 가진다")
-	_expect(danger_tile.warning_mark.visible and danger_tile.warning_flow.visible, "위험 타일의 경고 이미지와 화살표가 표시된다")
+	_expect(danger_tile.danger_level >= 1 and danger_tile.danger_dir != Vector2.ZERO, "위험 타일은 진행 방향을 가진다")
+	_expect(danger_tile.warning_flow.visible and not danger_tile.warning_mark.visible, "기물이 지나갈 칸에는 진행 화살표만")
+	var strike_tile: BoardSkin.Tile = _board._tile_views[8]
+	_expect(strike_tile.warning_mark.visible, "덮칠 칸에는 경고 그림")
 	_expect(danger_tile.warning_mark.z_index == 0 and danger_tile.warning_flow.z_index == 0, "보드 경고가 상위 UI 팝업을 뚫고 표시되지 않는다")
 	_expect(danger_tile.warning_flow.transform.x.normalized().dot(danger_tile.danger_dir.normalized()) > 0.999, "화살표가 타일 평면에서 실제 NPC 진행 방향을 가리킨다")
 	_expect(danger_tile.symbol == null or not danger_tile.symbol.visible, "위험 칸의 바닥 심볼은 경고 그림과 겹치지 않는다")
 	_expect(not _board._danger_label.visible, "내 말이 위험 구간 밖이면 경고 문구가 없다")
 	mine.current_tile_idx = 10
 	_board._refresh_all()
-	_expect(_board._danger_label.visible and _board._danger_label.text.contains("위험") and _board._danger_label.text.contains("NPC에게 잡힙니다"), "내 말이 위험 타일에 서면 [위험! 라운드 종료 시 NPC에게 잡힙니다!]")
+	_expect(_board._danger_label.visible and _board._danger_label.text.contains("위험") and _board._danger_label.text.contains("NPC에게 잡힙니다"), "내 말이 가장 가까운 적이 되면 [위험! 라운드 종료 시 NPC에게 잡힙니다!]")
 	mine.current_tile_idx = 2
 	_board._refresh_all()
 	_expect(not _board._danger_label.visible, "벗어나면 경고가 사라진다")
-	# 이동 미리보기(호버)가 위험 타일에 닿을 때
+	# 이동 미리보기(호버)가 기물의 앞길에 닿으면 내가 가장 가까운 적이 된다
 	_board._hover_danger_tile = 9
 	_board._refresh_danger_label()
-	_expect(_board._danger_label.visible, "미리보기 도착 타일이 위험하면 경고")
+	_expect(_board._danger_label.visible, "미리보기 도착 타일이 기물의 앞길이면 경고")
 	_board._hover_danger_tile = 3
 	_board._refresh_danger_label()
 	_expect(not _board._danger_label.visible, "안전한 타일이면 경고 없음")
 	_board._hover_danger_tile = -1
-	# 도적떼: 가장 가까운 말까지의 경로
-	var robber: NeutralNPC = state.spawn_npc(20, GameEnums.NpcBehavior.CHASE_NEAREST, 1, &"SUM_01")
+	bystander.reset_to_start()
+	# 도적떼: 가장 가까운 적 말까지의 경로
+	state.clear_npcs()
+	var robber: NeutralNPC = state.spawn_npc(20, GameEnums.NpcBehavior.CHASE_NEAREST, summoner, &"SUM_01")
 	for other: PlayerPawn in state.pawns:
 		if other != mine and not other.is_finished:
 			other.reset_to_start()  # 앞선 테스트가 남긴 말이 도적의 추격 대상이 되지 않게 한다
@@ -1827,16 +2135,15 @@ func _test_npc_danger_preview() -> void:
 	_expect(not _board._npc_danger.has(24), "말을 만난 칸에서 멈추므로 그 뒤는 표시하지 않는다")
 	# NPC 툴팁과 라벨
 	_board._fill_npc_tip(robber.entity_id)
-	_expect(_board._tip_title.text.contains("사료스탕스") and _board._tip_title.text.contains("▶") and _board._tip_ability.text.contains("3~6") and _board._tip_ability.text.contains("소멸합니다"), "도적 툴팁: 방향과 설명 (%s)" % _board._tip_title.text)
-	_board._fill_npc_tip(ghost.entity_id)
-	_expect(_board._tip_title.text.contains("와구와구 유령") and _board._tip_title.text.contains("◀") and _board._tip_ability.text.contains("역방향") and _board._tip_ability.text.contains("3~6"), "팩맨 툴팁: 역방향 3~6칸 전진")
-	_expect(not _board._announce_gate_text_for_tests().contains("한 칸"), "NPC 이동 안내 문구가 실제 규칙을 말한다")
+	_expect(_board._tip_title.text.contains("사료스탕스") and _board._tip_title.text.contains("▶") and _board._tip_ability.text.contains("가장 가까운 적") and _board._tip_ability.text.contains("사라집니다"), "도적 툴팁: 방향과 설명 (%s)" % _board._tip_title.text)
+	_expect(_board._tip_ability.text == _board.NPC_TIP_ROBBER and _board.NPC_TIP_GHOST.contains("역방향") and not _board.NPC_TIP_GHOST.contains("3~6"), "팩맨 설명: 역방향, 3~6칸 규칙 없음")
+	_expect(not _board._announce_gate_text_for_tests().contains("3~6"), "NPC 이동 안내 문구가 실제 규칙을 말한다")
 	state.clear_npcs()
 	mine.has_left_start = false
 	mine.current_tile_idx = 0
 	_board._refresh_all()
 	_expect(_board._npc_danger.is_empty(), "NPC가 사라지면 위험 예고도 사라진다")
-	_expect(not danger_tile.warning_mark.visible and not danger_tile.warning_flow.visible, "위험 해제 시 경고 이미지와 화살표가 사라진다")
+	_expect(not danger_tile.warning_mark.visible and not danger_tile.warning_flow.visible and not strike_tile.warning_mark.visible, "위험 해제 시 경고 이미지와 화살표가 사라진다")
 	_expect(danger_tile.symbol == null or danger_tile.symbol.visible == not danger_tile.trap_on, "위험 해제 시 원래 바닥 심볼 표시가 복원된다")
 
 
@@ -1858,7 +2165,7 @@ func _test_event_order() -> void:
 	for pawn: PlayerPawn in state.pawns:
 		pawn.reset_to_start()
 	_board._refresh_all()
-	# 1) 소환: 사료스탕스가 달리는 동안 잡힐 말은 아직 보드에 있고, 달리기가 끝난 뒤에 사출된다
+	# 1) 소환: 사료스탕스는 소환 즉시 움직이지 않는다. 라운드 끝 NPC 페이즈에 달리고, 달리는 동안 잡힐 말은 아직 보드에 있다가 그 뒤에 사출된다
 	var victim: PlayerPawn = state.get_pawn(21)
 	victim.has_left_start = true
 	victim.current_tile_idx = BoardSpec.side + 2
@@ -1868,7 +2175,14 @@ func _test_event_order() -> void:
 	var command := SweepCommand.new(1, BoardSpec.side, &"SUM_01")
 	command.state = state
 	command.execute()
-	_expect(not victim.has_left_start, "엔진에서는 바로 잡힌다")
+	_expect(victim.has_left_start and state.npcs.size() == 1 and state.npcs[0].current_tile_idx == BoardSpec.side, "소환 즉시는 움직이지도 잡지도 않는다")
+	var summoned: NeutralNPC = state.npcs[0]
+	var npc_report: Dictionary = summoned.run_ai(state)  # 라운드 끝 NPC 페이즈 (TurnManager._enter_neutral_npc_phase와 같은 순서)
+	npc_report["display_id"] = summoned.display_id
+	npc_report["tile"] = summoned.current_tile_idx
+	state.remove_npc(summoned)
+	_board._on_event(&"npc_phase_resolved", {"reports": [npc_report]})
+	_expect(not victim.has_left_start and state.npcs.is_empty(), "라운드 끝에 가장 가까운 적을 잡고 사라진다")
 	var saw_runner: bool = false
 	var victim_seen_while_running: bool = false
 	var waited: float = 0.0
@@ -1882,7 +2196,9 @@ func _test_event_order() -> void:
 	_expect(saw_runner, "소환 기물이 길을 따라 달리는 모습이 보인다")
 	_expect(victim_seen_while_running, "기물이 달리는 동안 잡힐 말은 아직 보드 위에 있다 (사출은 그 뒤)")
 	var headlines: Array = _board._announcer.history.slice(history_before)
-	_expect(headlines.any(func(h: String) -> bool: return h.contains("사료스탕스 출동")), "[사료스탕스 출동!] 알림 (%s)" % str(headlines))
+	_expect(headlines.any(func(h: String) -> bool: return h.contains("중립 기물 이동")), "[중립 기물 이동] 알림 (%s)" % str(headlines))
+	var npc_cards: Array = headlines.filter(func(h: String) -> bool: return h.contains("중립 기물") or h.contains("NPC") or h.contains("사라졌") or h.contains("말을 잡았습니다"))
+	_expect(npc_cards.size() == 1, "중립 기물 알림 카드는 [중립 기물 이동] 한 장뿐 (사라짐·잡음 카드는 띄우지 않는다: %s)" % str(npc_cards))
 	_expect(_board._pawn_layer.find_child("NpcRunner", false, false) == null, "달리기 연출 노드는 끝나면 사라진다")
 	# 2) 도미노: [도미노 연쇄!]가 연쇄로 터지는 함정보다 먼저, 도미노 자신의 [발동!]은 다시 뜨지 않는다
 	for pawn: PlayerPawn in state.pawns:
@@ -2208,3 +2524,148 @@ func _type_cheat_sequence() -> void:
 		key.keycode = keycode
 		key.pressed = true
 		_board._input(key)
+
+
+## 아우토반 니트로: 선두 말이 로켓처럼 한 번에 날아가 길을 막은 말이 있는 칸에 멈추고, 그 칸의 말은 그 뒤에 장외 사출된다 (한 칸씩 뛰지 않는다).
+func _test_nitro_dash() -> void:
+	var state: GameState = _board.state
+	_board._reset_presentation()
+	_board.instant_roll_for_test = false
+	_board.pacing_enabled = false
+	_board._announcer.cancel()
+	state.clear_npcs()
+	state.bonds.clear()
+	for pawn: PlayerPawn in state.pawns:
+		pawn.reset_to_start()
+		pawn.is_finished = false  # reset_to_start는 완주 표시를 지우지 않는다: 앞선 검사가 완주시킨 말이 있으면 선두 판정·길막이 달라진다
+	var dasher: PlayerPawn = state.get_pawn(11)
+	dasher.has_left_start = true
+	dasher.current_tile_idx = 2
+	dasher.step_history.assign([2])
+	var blocker: PlayerPawn = state.get_pawn(21)
+	blocker.has_left_start = true
+	blocker.current_tile_idx = 6
+	blocker.step_history.assign([6])
+	_board._refresh_all()
+	await process_frame
+	var view: Node2D = _board._pawn_views[11]
+	var start: Vector2 = view.position
+	SuperAugments.apply(SuperAugments.NITRO, state, 1)
+	_expect(dasher.current_tile_idx == 6 and not blocker.has_left_start, "엔진: 6번에서 멈추고 막은 말을 사출 (니트로 말 %d번 칸, 막은 말 출전 %s)" % [dasher.current_tile_idx, blocker.has_left_start])
+	var hopped: bool = false
+	var blocker_gone_before_arrival: bool = false
+	var arrived: bool = false
+	var goal: Vector2 = _board._pawn_position_at(dasher, 6)
+	var waited: float = 0.0
+	while waited < 8.0 and (_board._presentation_active() or _board._fx_running(view)):
+		if _board.presentation_label == "_play_hop":
+			hopped = true
+		if not arrived and view.position.distance_to(goal) < 3.0:
+			arrived = true
+		if not arrived and not (_board._pawn_views[21] as Node2D).visible:
+			blocker_gone_before_arrival = true
+		await create_timer(0.02).timeout
+		waited += 0.02
+	_expect(arrived and view.position.distance_to(start) > 20.0, "니트로 말이 막힌 칸까지 날아간다")
+	_expect(not hopped, "한 칸씩 뛰지 않고 한 번에 날아간다")
+	_expect(not blocker_gone_before_arrival, "막은 말은 니트로 말이 도착한 뒤에 날아간다")
+	_expect(not (_board._pawn_views[21] as Node2D).visible, "막은 말은 사출되어 보드에서 사라진다")
+	_board.instant_roll_for_test = true
+
+
+## 이동 4단계: (1) 리벤지 부스터 로켓 -> 잠깐 멈춤 -> (2) 눈금 이동 -> (3) 도착 칸 처치 연출 -> (4) 점프 부스트 추가 이동.
+func _test_move_four_steps() -> void:
+	var state: GameState = _board.state
+	_board._reset_presentation()
+	_board.instant_roll_for_test = false
+	_board.pacing_enabled = false
+	_board._announcer.cancel()
+	state.clear_npcs()
+	state.bonds.clear()
+	var saved_boost: bool = state.boost_gimmicks
+	state.boost_gimmicks = true
+	for pawn: PlayerPawn in state.pawns:
+		pawn.reset_to_start()
+		pawn.is_finished = false
+		pawn.revenge_boost = false
+	# (3)->(4): 17번에서 2칸(18, 19). 18번의 아군을 밟고 지나가 점프 부스트 +1, 19번(눈금 도착)의 적을 먼저 잡고 20번으로
+	var mover: PlayerPawn = state.get_pawn(11)
+	mover.has_left_start = true
+	mover.current_tile_idx = 17
+	mover.step_history.assign([17])
+	var ally: PlayerPawn = state.get_pawn(12)
+	ally.has_left_start = true
+	ally.current_tile_idx = 18
+	ally.step_history.assign([18])
+	var enemy: PlayerPawn = state.get_pawn(21)
+	enemy.has_left_start = true
+	enemy.current_tile_idx = 19
+	enemy.step_history.assign([19])
+	_board._refresh_all()
+	await process_frame
+	var view: Node2D = _board._pawn_views[11]
+	var enemy_view: Node2D = _board._pawn_views[21]
+	var enemy_home: Vector2 = enemy_view.position
+	var waypoint_pos: Vector2 = _board._pawn_position_at(mover, 19)
+	var ctx := RuleContext.new()
+	ctx.state = state
+	ctx.actor_id = 1
+	ctx.dice_value = 2
+	ctx.raw_roll = 2
+	MoveExecutor.execute(state, mover, ctx)
+	_expect(mover.current_tile_idx == 20 and not enemy.has_left_start, "엔진: 19번 적 처치 뒤 20번 (%d)" % mover.current_tile_idx)
+	var final_pos: Vector2 = _board._pawn_position(mover)
+	var at_waypoint: int = -1
+	var enemy_flew: int = -1
+	var at_final: int = -1
+	var frame: int = 0
+	while frame < 900 and (_board._presentation_active() or _board._fx_running(view) or _board._capture_cutin.busy()):
+		frame += 1
+		if at_waypoint == -1 and view.position.distance_to(waypoint_pos) < 3.0:
+			at_waypoint = frame
+		if enemy_flew == -1 and enemy_view.position.distance_to(enemy_home) > 30.0:
+			enemy_flew = frame
+		if at_final == -1 and view.position.distance_to(final_pos) < 3.0:
+			at_final = frame
+		await process_frame
+	_expect(at_waypoint != -1 and enemy_flew != -1 and at_final != -1, "경유지 도착·처치 사출·추가 이동이 모두 보인다 (%d, %d, %d)" % [at_waypoint, enemy_flew, at_final])
+	_expect(at_waypoint < enemy_flew and enemy_flew < at_final, "눈금 이동 -> 처치 -> 점프 부스트 추가 이동 순서 (%d -> %d -> %d)" % [at_waypoint, enemy_flew, at_final])
+	# (1)->(2): 리벤지 부스터 말은 부스터 칸까지 로켓으로 간 뒤 잠깐 멈췄다가 눈금만큼 간다
+	_board._reset_presentation()
+	for pawn: PlayerPawn in state.pawns:
+		pawn.reset_to_start()
+	var boosted: PlayerPawn = state.get_pawn(11)
+	boosted.revenge_boost = true
+	_board._refresh_all()
+	await process_frame
+	var bonus: int = MoveExecutor.revenge_bonus_of(boosted, state)
+	var rocket_pos: Vector2 = _board._pawn_position_at(boosted, bonus)
+	var banners: Array[String] = []
+	var ctx2 := RuleContext.new()
+	ctx2.state = state
+	ctx2.actor_id = 1
+	ctx2.dice_value = 2
+	ctx2.raw_roll = 2
+	MoveExecutor.execute(state, boosted, ctx2)
+	var rest_frames: int = 0
+	var left_rocket: bool = false
+	var start_ms: int = 0
+	var rest_ms: int = 0
+	frame = 0
+	while frame < 900 and (_board._presentation_active() or _board._fx_running(view)):
+		frame += 1
+		if _board._center_banner != null and _board._center_banner.visible and not banners.has(_board._center_label.text):
+			banners.append(_board._center_label.text)
+		if view.position.distance_to(rocket_pos) < 3.0 and not _board._fx_running(view) and not left_rocket:
+			if start_ms == 0:
+				start_ms = Time.get_ticks_msec()
+			rest_ms = Time.get_ticks_msec() - start_ms
+		elif start_ms != 0:
+			left_rocket = true
+		await process_frame
+	_expect(banners.any(func(text: String) -> bool: return text.contains("리벤지 부스터") and text.contains("+%d칸 선행 전진" % bonus)), "1단계 배너: [리벤지 부스터] +N칸 선행 전진! (%s)" % str(banners))
+	_expect(rest_ms >= 150, "부스터 도착 칸에서 잠깐 멈춘다 (%dms)" % rest_ms)
+	_expect(boosted.current_tile_idx == bonus + 2, "엔진: 부스터 %d칸 + 눈금 2칸" % bonus)
+	state.boost_gimmicks = saved_boost
+	_board._reset_presentation()
+	_board.instant_roll_for_test = true

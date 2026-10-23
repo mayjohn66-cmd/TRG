@@ -33,11 +33,19 @@ const STALL_FRAMES: int = 20000
 var _stall_frames: int = 0
 var _stall_signature: String = ""
 var _rejections: Array[String] = []
+## SMOKE_LANG=en: 영어 화면으로 한 판을 돌리며 HANGUL_SCAN_EVERY 프레임마다 화면 글자에 한글이 남았는지 본다.
+var _english: bool = false
+var _hangul_leaks: Dictionary = {}
+const HANGUL_SCAN_EVERY: int = 12
 
 
 func _process(_delta: float) -> bool:
 	_frames += 1
 	if _frames == 1:
+		_english = OS.get_environment("SMOKE_LANG") == "en"
+		if _english:
+			L10n.install()
+			L10n.set_language("en")
 		_rng.seed = int(OS.get_environment("SMOKE_SEED")) if OS.get_environment("SMOKE_SEED") != "" else 20261015
 		GameSession.view_mode = 1 if OS.get_environment("SMOKE_VIEW") == "tilt" else 0  # SMOKE_VIEW=tilt: 기울인 탑뷰로 한 판 진행
 		var scene: PackedScene = load("res://scenes/main_board.tscn")
@@ -55,7 +63,11 @@ func _process(_delta: float) -> bool:
 		_checked_layout = true
 		_check_layout()
 		return false
+	if _english and _frames % HANGUL_SCAN_EVERY == 0:
+		HangulScan.scan(root, _hangul_leaks)
 	if _board.manager.is_game_over or _actions >= MAX_ACTIONS:
+		if _english:
+			HangulScan.scan(root, _hangul_leaks)  # 결과창
 		return _finish()
 	if _stalled():
 		return _finish()
@@ -317,7 +329,7 @@ func _play_draft(manager: TurnManager) -> void:
 	var player_id: int = pending[0]
 	_check_draft_cards()
 	var offers: Array[StringName] = manager.draft_offers_for(player_id)
-	if _rng.randi_range(0, 2) == 0 and not _board.state.is_banned(player_id):  # 알고리즘 밴(ACT_14) 중에는 리롤이 막힌다
+	if _rng.randi_range(0, 2) == 0:  # 알고리즘 밴(ACT_14) 중에도 증강 리롤은 된다
 		# 리롤: 슬롯 하나가 다른 증강으로 바뀌고 오버레이가 새로 그려지며 그 슬롯의 리롤 버튼은 잠긴다
 		var slot: int = _rng.randi_range(0, offers.size() - 1)
 		_board._on_augment_reroll(player_id, slot)
@@ -357,11 +369,27 @@ func _check_select_banner(manager: TurnManager, options: Array[Button]) -> void:
 			_assert(result_text == "", "고를 수 없는 카드에는 예고 글자를 쓰지 않는다 (흐린 카드가 알려 준다)")
 
 
+var _ban_reroll_checked: bool = false
+
+
 func _check_draft_cards() -> void:
 	_assert(_board._draft_cards.size() == 3, "증강 카드는 3장이어야 한다")
 	for card: Button in _board._draft_cards:
 		_assert(card.size.x >= 260.0 and card.size.y >= 390.0, "증강 카드는 최소 260x390")
 	_assert(_board._draft_reroll_buttons.size() == 3, "카드마다 리롤 버튼이 있어야 한다")
+	if not _ban_reroll_checked:
+		_ban_reroll_checked = true
+		# 알고리즘 밴에 걸려도 증강 리롤은 할 수 있다 (밴은 카드·필살기·주사위 리롤만 막는다)
+		var saved: Dictionary = _board.state.banned_turns.duplicate()
+		for player_id: int in [1, 2, 3, 4]:
+			_board.state.banned_turns[player_id] = 2
+		_board._close_draft_overlay()
+		_board._refresh_draft_overlay()
+		for button: Button in _board._draft_reroll_buttons:
+			_assert(not button.disabled and not button.text.contains("밴"), "밴 중에도 증강 리롤 버튼은 열려 있다 (%s)" % button.text)
+		_board.state.banned_turns = saved
+		_board._close_draft_overlay()
+		_board._refresh_draft_overlay()
 
 
 func _try_tile_card(manager: TurnManager) -> bool:
@@ -574,6 +602,13 @@ func _finish() -> bool:
 	for phase: int in _seen_phases.keys():
 		phase_names.append(str(phase))
 	print("UI_SMOKE actions=%d round=%d game_over=%s winner=%d reason=%s phases=%d drafts=%s tile_picks=%d cards=%d evolutions=%d bombs_passed=%d skills=%d bangs=%d roulette=%d board_clicks=%d banner_picks=%d popups=%d stack_choices=%d ai=%s fog_checks=%d" % [_actions, _board.state.round_number, manager.is_game_over, _board.state.winner, VictoryChecker.reason_text(_board._last_reason), _seen_phases.size(), str(_draft_rounds), _tile_picks, _cards_played, _evolutions, _bombs_passed, _skills, _bangs, _roulette_seen, _board_clicks, _banner_picks, _popups, _stack_choices, str(_ai), _fog_checks])
+	if _english:
+		var leaks: Array = _hangul_leaks.keys()
+		leaks.sort()
+		print("UI_SMOKE english leaks=%d" % leaks.size())
+		for leak: Variant in leaks:
+			print("  HANGUL ", leak)
+		_assert(leaks.is_empty(), "영어 화면에 한글이 남지 않는다 (%d곳)" % leaks.size())
 	_assert(manager.is_game_over, "치트 없이 한 판이 끝까지 진행되어 승리자가 나와야 한다 (조작 %d회)" % _actions)
 	_assert(_draft_rounds.has(1), "1라운드 드래프트가 열렸어야 한다")
 	_assert(_board._result_overlay != null, "게임 종료 결과창이 떠야 한다")

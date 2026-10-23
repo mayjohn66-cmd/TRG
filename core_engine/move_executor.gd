@@ -47,18 +47,26 @@ static func preview_path(state: GameState, pawn: PlayerPawn, dice_value: int) ->
 	ctx = state.rulebook.process_context(ctx)
 	if ctx.is_canceled:
 		return [] as Array[int]
-	return plan_path(state, pawn, ctx, MoveReport.new())
+	var report := MoveReport.new()
+	var path: Array[int] = plan_path(state, pawn, ctx, report)
+	if report.leapfrog_pending > 0 and not path.is_empty():
+		# 실제로는 도착 칸에서 처치를 먼저 판정한 뒤 점프 부스트만큼 더 가지만, 미리보기는 최종 도착 칸까지 보여 준다.
+		path = state.board.calculate_path(pawn, path.size() + report.leapfrog_pending, ctx)
+	return path
 
 
 ## 기물 능력을 반영한 이동 경로를 계산한다. 동기 실행(execute)과 TurnManager 비동기 이동이 공유한다.
-## 세부 기물: 퀸 +2칸, 룩·비차 직진 +2칸, 각행 코너 +2칸(용마 +3), 비숍 코너 진입 +1칸, 포 +3칸(경로 중간에 말), 마·상 +2칸(바로 앞 칸이 비면), 스타 카트 추가 이동 +2칸, 루도 복수자 복수 부스터 +8칸.
+## 세부 기물: 퀸 +2칸, 룩·비차 직진 +2칸, 각행 코너 +2칸(용마 +3), 비숍 코너 진입 +1칸, 포 +3칸(경로 중간에 말), 마·상 +2칸(바로 앞 칸이 비면), 스타 카트 추가 이동 +2칸, 루도 복수자 리벤지 부스터 발동 시 +4칸.
 static func plan_path(state: GameState, mover: PlayerPawn, ctx: RuleContext, report: MoveReport) -> Array[int]:
 	# 후퇴는 없다: 눈금이 음수여도 0칸으로 본다.
 	var steps: int = maxi(ctx.dice_value, 0)
 	var sign_dir: int = 1
 	if steps == 0:
 		return [] as Array[int]
-	# 리벤지 부스터: 사출된 말이 출발선에서 다시 나갈 때 눈금에 +4칸 (루도 복수자는 +8칸).
+	# 점프 부스트로 이어 가는 추가 이동은 그 칸수만 그대로 간다 (기물 능력·부스트를 다시 붙이지 않는다).
+	if is_leap_follow_up(ctx):
+		return state.board.calculate_path(mover, steps, ctx)
+	# 리벤지 부스터: 사출된 말이 출발선에서 다시 나갈 때 눈금에 +4칸 (루도 복수자는 발동 시 +4칸 더).
 	if state.boost_gimmicks and mover.revenge_boost and not mover.has_left_start and revenge_bonus_of(mover, state) > 0:
 		var revenge: int = revenge_bonus_of(mover, state)
 		steps += revenge
@@ -81,13 +89,15 @@ static func plan_path(state: GameState, mover: PlayerPawn, ctx: RuleContext, rep
 		steps += sign_dir
 		report.ability_notes.append("나리 승급 +1칸")
 	var path: Array[int] = state.board.calculate_path(mover, steps, ctx)
+	# 이동 1단계(리벤지 부스터 선행 전진) 칸은 판정하지 않는다: 경로를 보는 기물 능력·점프 부스트는 2단계(눈금 이동) 구간만 본다.
+	var lead: int = report.revenge_bonus
 	# 룩·비차: 코너를 꺾지 않는 직진(중간 칸에 코너가 없음)이면 +2칸.
-	if mover.gets_straight_bonus() and is_straight(path):
+	if mover.gets_straight_bonus() and is_straight(dice_segment(path, lead)):
 		steps += 2 * sign_dir
 		path = state.board.calculate_path(mover, steps, ctx)
 		report.ability_notes.append(("용왕" if mover.promoted else "비차" if sub == GameEnums.PawnSubType.SHOGI_HISHA else "룩") + " 직진 +2칸")
 	# 각행: 출발선 외 코너를 스쳐 지나가거나 멈추면 +2칸 (용마는 +3칸).
-	if mover.gets_corner_bonus() and _path_touches_bonus_corner(path):
+	if mover.gets_corner_bonus() and _path_touches_bonus_corner(dice_segment(path, lead)):
 		var corner_bonus: int = 3 if mover.promoted else 2
 		steps += corner_bonus * sign_dir
 		path = state.board.calculate_path(mover, steps, ctx)
@@ -99,27 +109,37 @@ static func plan_path(state: GameState, mover: PlayerPawn, ctx: RuleContext, rep
 		report.ability_notes.append("비숍 코너 진입 +1칸")
 	match sub:
 		GameEnums.PawnSubType.JANGGI_PO:
-			if _path_jumps_over_pawn(state, mover, path):
+			if _path_jumps_over_pawn(state, mover, dice_segment(path, lead)):
 				path = state.board.calculate_path(mover, steps + 3 * sign_dir, ctx)
 				report.cannon_bonus = true
 				report.ability_notes.append("포 넘기 +3칸")
 		GameEnums.PawnSubType.JANGGI_MA:
-			if not path.is_empty() and not _tile_has_other_pawn(state, mover, path[0]):
+			var first: Array[int] = dice_segment(path, lead)
+			if not first.is_empty() and not _tile_has_other_pawn(state, mover, first[0]):
 				path = state.board.calculate_path(mover, steps + 2 * sign_dir, ctx)
 				report.ability_notes.append("마 +2칸")
 		GameEnums.PawnSubType.JANGGI_SANG:
-			if not path.is_empty() and not _tile_has_other_pawn(state, mover, path[0]):
+			var first: Array[int] = dice_segment(path, lead)
+			if not first.is_empty() and not _tile_has_other_pawn(state, mover, first[0]):
 				path = state.board.calculate_path(mover, steps + 2 * sign_dir, ctx)
 				report.ability_notes.append("상 도약 +2칸")
 	# 말 밟고 점프하기: 경로 중간에 서 있는 말(아군·적군 무관)마다 +1칸 (최대 3칸). 경로를 무시하는 기물은 제외.
-	var leap: int = leapfrog_bonus(state, mover, path)
-	if leap > 0:
-		path = state.board.calculate_path(mover, steps + leap, ctx)
-		report.leapfrog_bonus += leap
-		report.ability_notes.append("점프 부스트! (+%d칸)" % leap)
+	# 경로에 합치지 않는다: 눈금 이동으로 도착한 칸에서 처치를 먼저 판정한 뒤, 그 자리에서 추가 이동으로 이어 간다 (finalize).
+	if ctx.charge_depth == 0:
+		var leap: int = leapfrog_bonus(state, mover, dice_segment(path, lead))
+		if leap > 0:
+			report.leapfrog_pending = leap
+			report.ability_notes.append("점프 부스트! (+%d칸)" % leap)
 	if report.revenge_bonus > 0:
 		report.revenge_total = path.size()
 	return path
+
+
+## 이동 2단계(눈금 이동) 구간: 경로에서 리벤지 부스터 선행 전진 칸(lead)을 뺀 나머지.
+static func dice_segment(path: Array[int], lead: int) -> Array[int]:
+	if lead <= 0:
+		return path
+	return path.slice(mini(lead, path.size()))
 
 
 ## 경로 중간(도착 칸 제외)에 서 있는 말 수만큼의 추가 칸수 (최대 LEAPFROG_MAX). 나이트·퀸·포·마·상은 경로를 무시하므로 0.
@@ -164,14 +184,15 @@ const KART_FOLLOW_UP_BONUS: int = 2
 const EIGHT_BALL_CHARGE: int = 3
 
 
-## 이 말의 리벤지 부스터 칸 수 (루도 복수자는 augments_table.csv EVO_7_2 param_1, 기본 8).
-## 템포 업이 오르면 리벤지 부스터가 커진다 (11R 6칸, 21R 8칸). 규칙이 꺼져 있으면 그대로 0.
+## 이 말의 리벤지 부스터 칸 수. 루도 복수자는 발동할 때 augments_table.csv EVO_7_2 param_1(기본 4)칸을 더 간다.
+## 템포 업이 오르면 리벤지 부스터가 커진다 (10R 6칸, 20R 8칸). 규칙이 꺼져 있으면 그대로 0.
 static func revenge_bonus_of(mover: PlayerPawn, state: GameState = null) -> int:
 	var tempo: int = TempoUp.revenge_bonus(state.round_number) if state != null else 0
-	if mover.sub_type() == GameEnums.PawnSubType.LUDO_AVENGER:
-		return maxi(GameData.param("augments", "EVO_7_2", 1, 8), tempo)
 	var base: int = GameData.revenge_bonus()
-	return maxi(base, tempo) if base > 0 else 0
+	var bonus: int = maxi(base, tempo) if base > 0 else 0
+	if bonus > 0 and mover.sub_type() == GameEnums.PawnSubType.LUDO_AVENGER:
+		bonus += GameData.param("augments", "EVO_7_2", 1, 4)
+	return bonus
 
 
 ## 룩·비차 직진 판정: 경로의 중간 칸(도착 칸 제외)에 코너가 없다.
@@ -334,9 +355,40 @@ static func _checkers_jump_at(state: GameState, mover: PlayerPawn, tile: int, re
 
 ## 이동 마무리: 정상 도착(CONTINUE/HALTED)이면 도착 처리(빵집·워프·잡기·업기·후속 효과)를 수행한다.
 static func finalize(state: GameState, mover: PlayerPawn, ctx: RuleContext, report: MoveReport, outcome: StepOutcome) -> void:
+	if outcome == StepOutcome.CONTINUE and report.leapfrog_pending > 0 and ctx.charge_depth == 0 and _leap_onward(state, mover, ctx, report):
+		return
 	if outcome == StepOutcome.CONTINUE or outcome == StepOutcome.HALTED:
 		_resolve_landing(state, mover, ctx, report)
 		_grant_corner_buff(state, mover, report)
+
+
+## 점프 부스트(Step 4): 눈금 이동이 끝난 칸은 경유지다. 그 칸의 적만 먼저 처치 판정하고(Step 3), 그 자리에서 점프 부스트 칸수만큼 더 간다.
+## 발판·빵집·코너 버프 같은 도착 정산은 최종 도착 칸에서만 한다. 처치 판정으로 말이 다른 곳으로 옮겨졌으면(8번 공 돌진 등) 이어 가지 않는다. 이어 갔으면 true.
+static func _leap_onward(state: GameState, mover: PlayerPawn, ctx: RuleContext, report: MoveReport) -> bool:
+	var waypoint: int = mover.current_tile_idx
+	var leap: int = report.leapfrog_pending
+	report.leapfrog_pending = 0
+	_resolve_captures(state, mover, ctx, report)
+	if mover.is_finished or mover.is_imprisoned or not mover.has_left_start:
+		return true
+	if mover.current_tile_idx != waypoint:
+		return true  # 처치 효과로 이미 더 움직였다
+	report.leapfrog_bonus += leap
+	state.leapfrog_boosted.emit(mover.entity_id, waypoint, leap)
+	var follow: RuleContext = ctx.make_follow_up(leap)
+	follow.metadata["leap_follow_up"] = true
+	report.merge(execute(state, mover, follow))
+	return true
+
+
+## 점프 부스트로 이어 가는 추가 이동인가 (도착 정산은 첫 이동처럼 한다).
+static func is_leap_follow_up(ctx: RuleContext) -> bool:
+	return bool(ctx.metadata.get("leap_follow_up", false))
+
+
+## 이 이동이 굴림에서 나온 본 이동(또는 그 점프 부스트 연장)인가: 빵집·부스터 발판·8번 공 돌진은 본 이동의 도착에서만 일어난다.
+static func _primary_move(ctx: RuleContext) -> bool:
+	return ctx.charge_depth == 0 or is_leap_follow_up(ctx)
 
 
 ## 코너에 정확히 멈추면 다음 굴림 결과에 +1 (함정이 있던 칸이면 버프 대신 함정이 발동한 것으로 끝난다). 워프·잡기로 자리를 옮겼으면 받지 못한다.
@@ -467,7 +519,7 @@ static func _resolve_landing(state: GameState, mover: PlayerPawn, ctx: RuleConte
 			if not _warp_to(state, mover, ctx, report, warp_target):
 				return
 			tile = state.board.get_tile(mover.current_tile_idx)
-	if tile.tile_type == TileNode.TileType.BAKERY and ctx.charge_depth == 0:
+	if tile.tile_type == TileNode.TileType.BAKERY and _primary_move(ctx):
 		var card_id: StringName = state.draw_card(mover.owner_id)
 		if card_id != &"":
 			report.drawn_card = card_id
@@ -477,7 +529,7 @@ static func _resolve_landing(state: GameState, mover: PlayerPawn, ctx: RuleConte
 	_kaku_strike(state, mover, ctx, report)
 	_resolve_stacking(state, mover, ctx, report)
 	# 부스터 발판: 멈춘 자리가 발판이면 곧바로 앞으로 3칸 더 날아간다 (뒤따르는 이동이 도착 정산을 이어서 한다).
-	if state.boost_gimmicks and GameData.dash_steps() > 0 and BoardSpec.dash_tiles.has(mover.current_tile_idx) and ctx.charge_depth == 0 and not mover.is_finished and not mover.is_imprisoned:
+	if state.boost_gimmicks and GameData.dash_steps() > 0 and BoardSpec.dash_tiles.has(mover.current_tile_idx) and _primary_move(ctx) and not mover.is_finished and not mover.is_imprisoned:
 		report.dash_tiles.append(mover.current_tile_idx)
 		state.dash_pad_triggered.emit(mover.entity_id, mover.current_tile_idx)
 		report.merge(execute(state, mover, ctx.make_follow_up(GameData.dash_steps())))
@@ -613,7 +665,8 @@ static func _resolve_captures(state: GameState, mover: PlayerPawn, ctx: RuleCont
 	state.end_attack()
 	if ctx.capture_extra_turn:
 		report.extra_turn = true
-	if ctx.capture_charge_steps > 0 and ctx.charge_depth == 0:
+	if ctx.capture_charge_steps > 0 and _primary_move(ctx):
+		state.capture_charge_started.emit(mover.entity_id, ctx.capture_charge_steps)
 		var charge_ctx: RuleContext = ctx.make_follow_up(ctx.capture_charge_steps)
 		var charge_report: MoveReport = execute(state, mover, charge_ctx)
 		report.merge(charge_report)

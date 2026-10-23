@@ -19,9 +19,12 @@ const FRAME: Color = Color("bfe9d8")
 const FRAME_EDGE: Color = Color("5fc9a0")
 const TEAL: Color = Color("7cc4b4")
 const TEAL_DARK: Color = Color("4a9a8a")
-const TAB_NAMES: Array[String] = ["시작하기", "한 턴", "보드", "잡기", "도구", "말", "카드", "법전", "초증강"]
-const TAB_ICONS: Array[StringName] = [&"face", &"hourglass", &"grid", &"sword", &"dice", &"crown", &"book", &"gear", &"star"]
+const TAB_NAMES: Array[String] = ["시작하기", "한 턴", "보드", "잡기", "도구", "말", "카드", "법전", "범용", "초증강"]
+const TAB_ICONS: Array[StringName] = [&"face", &"hourglass", &"grid", &"sword", &"dice", &"crown", &"book", &"gear", &"key", &"star"]
 const TAB_ART: Array[StringName] = [&"start", &"turn", &"board", &"capture"]
+## 왼쪽 노트의 큰 그림 크기와 모서리 둥글기.
+const HERO_ART: Vector2 = Vector2(132, 132)
+const HERO_RADIUS: int = 24
 const ART: Dictionary = {
 	&"start": preload("res://assets/ui/trickcal/rulebook/UI_RULE_START.tres"),
 	&"turn": preload("res://assets/ui/trickcal/rulebook/UI_RULE_TURN.tres"),
@@ -37,7 +40,7 @@ const ART: Dictionary = {
 	&"badge": preload("res://assets/ui/trickcal/rulebook/UI_RULE_BADGE.tres"),
 	&"laurel": preload("res://assets/ui/trickcal/rulebook/UI_RULE_LAUREL.tres"),
 }
-## 위쪽 두 탭이 묶는 장: 규칙 기본(0~3), 도감(4~7).
+## 위쪽 두 탭이 묶는 장: 규칙 기본(0~3), 도감(4~9: 도구·말·카드·법전·범용·초증강).
 const GROUP_NAMES: Array[String] = ["기본 규칙", "도감"]
 ## 위쪽 탭(묶음)마다 첫 장의 번호: 기본 규칙 0~3, 도감 4~8.
 const GROUP_STARTS: Array[int] = [0, 4]
@@ -215,7 +218,7 @@ func _build_list() -> void:
 	_list_box = VBoxContainer.new()
 	_list_box.add_theme_constant_override("separation", 8)
 	_list_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_place(_list_box, Vector2(28, 148), Vector2(196, 420))
+	_place(_list_box, Vector2(28, 148), Vector2(196, 520))  # 도감 묶음 6장(도구~초증강)이 들어간다
 	for index: int in TAB_NAMES.size():
 		var button := Button.new()
 		button.name = "Tab%d" % index
@@ -555,6 +558,67 @@ func _paint_tile(tile: Control, selected: bool) -> void:
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 
 
+## 일러스트를 둥근 네모로 잘라 담는다: 둥근 판(clip_children)이 그림의 모서리를 가리고, 같은 둥글기의 외곽선을 그림 가장자리에 딱 맞춰 덧그린다.
+static func _rounded_art(picture: Control, extent: Vector2, radius: int, tone: Color) -> Control:
+	var holder := Control.new()
+	holder.name = "RoundedArt"
+	holder.custom_minimum_size = extent
+	holder.size = extent
+	holder.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var shadow := Panel.new()  # 그림 뒤의 옅은 그림자 (둥근 판과 같은 모양)
+	shadow.name = "Shadow"
+	shadow.add_theme_stylebox_override("panel", _box(tone.lightened(0.7), Color(0, 0, 0, 0), 0, radius, 4, 0, Color(0, 0, 0, 0.18)))
+	shadow.set_anchors_preset(Control.PRESET_FULL_RECT)
+	shadow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.add_child(shadow)
+	var mask := Panel.new()
+	mask.name = "Mask"
+	var mask_style: StyleBoxFlat = _box(Color.WHITE, Color(0, 0, 0, 0), 0, radius)
+	mask_style.anti_aliasing = true
+	mask.add_theme_stylebox_override("panel", mask_style)
+	mask.clip_children = CanvasItem.CLIP_CHILDREN_ONLY  # 둥근 판 모양대로만 그림이 보인다
+	mask.set_anchors_preset(Control.PRESET_FULL_RECT)
+	mask.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.add_child(mask)
+	var inset: float = 0.0
+	var art: TextureRect = picture as TextureRect
+	if art != null and art.texture != null:
+		var ratio: float = float(art.texture.get_width()) / maxf(float(art.texture.get_height()), 1.0)
+		if absf(ratio - 1.0) < 0.12 and not _is_cutout(art.texture):
+			art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED  # 배경까지 그린 정사각 일러스트는 네모 칸을 빈틈없이 채운다
+		else:
+			inset = 10.0  # 배경이 투명한 오려 낸 그림은 외곽선에 닿지 않게 살짝 안쪽 가운데
+	picture.custom_minimum_size = Vector2.ZERO
+	picture.set_anchors_preset(Control.PRESET_FULL_RECT)  # 둥근 판에 맞춰 늘이고 inset만큼 안쪽으로
+	picture.offset_left = inset
+	picture.offset_top = inset
+	picture.offset_right = -inset
+	picture.offset_bottom = -inset
+	mask.add_child(picture)
+	var outline := Panel.new()
+	outline.name = "Outline"
+	outline.add_theme_stylebox_override("panel", _box(Color(0, 0, 0, 0), tone, 4, radius))
+	outline.set_anchors_preset(Control.PRESET_FULL_RECT)
+	outline.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.add_child(outline)
+	return holder
+
+
+## 모서리 픽셀이 투명하면 배경 없이 오려 낸 그림으로 본다.
+static func _is_cutout(texture: Texture2D) -> bool:
+	if texture is AtlasTexture:
+		return true  # 도감 그림(ART)은 투명 여백을 잘라 낸 오려 낸 그림
+	var image: Image = texture.get_image()
+	if image == null or image.is_empty():
+		return false
+	if image.is_compressed():
+		image = image.duplicate()
+		if image.decompress() != OK:
+			return false
+	return image.get_pixel(1, 1).a < 0.5 or image.get_pixel(image.get_width() - 2, image.get_height() - 2).a < 0.5
+
+
 ## 항목의 그림: 실제 일러스트(texture) > 도감 그림(art) > 번호 > 아이콘 순.
 func _picture(data: Dictionary, extent: Vector2) -> Control:
 	var tone: Color = data.get("tone", Color("5fc1e8"))
@@ -601,6 +665,8 @@ func _detail(data: Dictionary) -> Array[Control]:
 	hero.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if data.has("card"):
 		hero.add_child(_card_face(data["card"]))
+	elif data.get("texture", null) != null or ART.has(data.get("art", &"")):
+		hero.add_child(_rounded_art(_picture(data, HERO_ART), HERO_ART, HERO_RADIUS, tone))
 	else:
 		var frame := PanelContainer.new()
 		frame.custom_minimum_size = Vector2(132, 132)
@@ -782,6 +848,7 @@ func _chapter(index: int) -> Dictionary:
 		5: content = _ch_pawns()
 		6: content = _ch_cards()
 		7: content = _ch_laws()
+		8: content = _ch_general()
 		_: content = _ch_super()
 	var entries: Array = content["entries"]
 	content["overview"] = entries.pop_front()
@@ -789,7 +856,7 @@ func _chapter(index: int) -> Dictionary:
 
 
 # ---------------------------------------------------------------------------
-# 내용 (장 9개). 장마다 항목 목록: title / tone / 그림(texture·art·number·icon) / chips / summary / rows / points / note / tip / extra
+# 내용 (장 10개). 장마다 항목 목록: title / tone / 그림(texture·art·number·icon) / chips / summary / rows / points / note / tip / extra
 # ---------------------------------------------------------------------------
 
 func _ch_start() -> Dictionary:
@@ -800,7 +867,7 @@ func _ch_start() -> Dictionary:
 			"tip": "처음이라면 [b]놀이터[/b]에서 컴퓨터와 한 판 해 보세요."},
 		{"title": "완주와 순위", "icon": &"crown", "tone": Color("86d94f"),
 			"summary": "말이 0번에 닿으면 완주. 4개 모두 완주하면 [b]순위 확정[/b]!",
-			"rows": [["1·2·3위", "먼저 해낸 순서대로"], ["4위", "마지막 남은 한 명"], ["특수 승리", "라운드 끝에 법전 조건을 채웠으면 졸업"]]},
+			"rows": [["1·2·3위", "먼저 해낸 순서대로"], ["4위", "마지막 남은 한 명"], ["특수 승리", "법전 조건을 채운 채 차례가 끝나면 바로 졸업"]]},
 		{"title": "말마다 능력", "art": &"pawn_ability", "tone": Color("f08aa8"), "chips": ["증강", "필살기 1회"],
 			"summary": "증강으로 말을 [b]체스·장기·쇼기…[/b]로 진화시켜요. 말마다 상시 능력과 한 판에 한 번 쓰는 필살기가 있어요.",
 			"points": ["보드 위 말에 마우스를 올리면 능력이 보여요", "자세한 건 [b]도감 → 말[/b]"]},
@@ -809,7 +876,7 @@ func _ch_start() -> Dictionary:
 			"points": ["도구마다 족보와 칸 수가 달라요", "게임 중 오른쪽 카드에 규칙표가 나와요", "자세한 건 [b]도감 → 도구[/b]"]},
 		{"title": "카드와 법전", "art": &"card_law", "tone": Color("f0c14e"), "chips": ["생떼 카드", "특수 승리"],
 			"summary": "함정을 깔고, 상대 말을 날리고, 법전의 특수 승리를 노려 판을 뒤집어요.",
-			"points": ["카드는 빵집·증강에서 얻어요", "법전 조건은 라운드가 끝날 때 판정해요"]},
+			"points": ["카드는 빵집·증강에서 얻어요", "법전 조건은 차례가 끝날 때마다 판정해요"]},
 	]}
 
 
@@ -838,9 +905,9 @@ func _ch_turn() -> Dictionary:
 		{"title": "증강 라운드", "icon": &"crown", "tone": Color("ffa94d"), "chips": ["3라운드마다"],
 			"summary": "1·4·7라운드처럼 [b]3라운드마다[/b] 모두가 3장 중 하나를 골라요.",
 			"points": ["카드마다 한 번 다시 뽑기", "자세한 건 [b]도감 → 법전[/b]"]},
-		{"title": "템포 업", "icon": &"hourglass", "tone": Color("ff6b6b"), "chips": ["11·21·31라운드"],
+		{"title": "템포 업", "icon": &"hourglass", "tone": Color("ff6b6b"), "chips": ["10·20·30라운드"],
 			"summary": "판이 길어지면 [b]게임이 점점 빨라져요[/b]. 단계가 오르는 라운드 시작 전에 크게 경고해요.",
-			"rows": [["11라운드", "최종 이동 +1칸 · 리벤지 +6칸 · 법전·초증강 확률 상승"], ["21라운드", "최종 이동 +3칸 · 리벤지 +8칸 · 법전에 무작위 특수 승리 1개 등록"], ["31라운드", "전원 이동 +5칸 · 결승선이 라운드마다 2칸씩 당겨짐"]],
+			"rows": [["10라운드 · 과열", "최종 이동 +1칸 · 리벤지 +6칸 · 법전·초증강 확률 상승"], ["20라운드 · 광기", "최종 이동 +2칸 · 리벤지 +8칸 · 법전에 무작위 특수 승리 1개 등록"], ["30라운드 · 대붕괴", "전원 이동 +3칸 · 결승선이 라운드마다 2칸씩 당겨짐"]],
 			"points": ["당겨진 결승선은 체크무늬 칸으로 보여요", "그 칸에 들어서거나 서 있으면 바로 완주!"]},
 	]}
 
@@ -1052,6 +1119,8 @@ func _ch_cards() -> Dictionary:
 			"rows": [["언제", when], ["방법", how]]}
 		if quote != "":
 			data["note"] = "“%s”" % quote
+		if CardSkin.SELF_RISK.has(card_id):
+			(data["rows"] as Array).append(["주의", CardSkin.SELF_RISK[card_id]])  # 카드 앞면에는 경고 아이콘
 		if card_id == &"ACT_09":
 			# 일기토 데스매치: 6종 미니게임 중 하나가 무작위로 뽑힌다
 			for game: int in DuelRules.GAME_COUNT:
@@ -1064,8 +1133,8 @@ func _ch_laws() -> Dictionary:
 	var entries: Array = [
 		{"title": "증강과 법전", "art": &"card_law", "tone": Color("ffa94d"), "chips": ["3라운드마다", "법전 4칸"],
 			"summary": "1·4·7라운드처럼 [b]3라운드마다[/b] 모두가 증강 3장 중 하나를 골라요. 법전의 교칙은 모두 [b]특수 승리 조건[/b]이에요.",
-			"rows": [["기물 지급", "말 하나를 새 기물로 진화 (도감 → 말)"], ["도구 교체", "굴리는 도구 바꾸기 (도감 → 도구)"], ["특수 승리", "법전에 새 승리 조건 (3라운드부터)"], ["카드 패키지", "생떼 카드 여러 장 (방어·함정만 주는 보급도)"], ["범용 보급", "기물 변이 · 전군 돌연변이 · 필살기 리필"], ["초증강", "하이리스크 하이리턴 (도감 → 초증강)"]],
-			"points": ["라운드가 끝날 때 교칙을 달성해 있으면 [b]다음 순위로 졸업[/b], 그 교칙은 사라져요 (같은 교칙을 여럿이 채우면 레이스에서 앞선 한 명만)", "새 교칙이 들어오면 가장 오래된 교칙이 밀려나요", "증강 카드마다 한 번 다시 뽑기"],
+			"rows": [["기물 지급", "말 하나를 새 기물로 진화 (도감 → 말)"], ["도구 교체", "굴리는 도구 바꾸기 (도감 → 도구)"], ["특수 승리", "법전에 새 승리 조건 (3라운드부터)"], ["카드 패키지", "생떼 카드 여러 장 (도감 → 범용)"], ["범용 보급", "기물 변이 · 전군 돌연변이 · 필살기 리필 (도감 → 범용)"], ["초증강", "하이리스크 하이리턴 (도감 → 초증강)"]],
+			"points": ["차례가 끝날 때 교칙을 달성해 있으면 [b]바로 다음 순위로 졸업[/b], 그 교칙은 사라져요 (같은 교칙을 여럿이 채우면 레이스에서 앞선 한 명만)", "새 교칙이 들어오면 가장 오래된 교칙이 밀려나요", "증강 카드마다 한 번 다시 뽑기"],
 			"tip": "법전 슬롯에 마우스를 올리면 모두의 진행도가 보여요. [color=#d6336c][b][위험!][/b][/color] 표시를 견제하세요!"},
 	]
 	for definition: AugmentDef in _augments(GameEnums.AugmentCategory.LAW_ENACT):
@@ -1075,12 +1144,23 @@ func _ch_laws() -> Dictionary:
 		var counting: String = "법전에 있는 동안만 세요" if VictoryLaw.SESSION_KEYS.has(law.stat_key) else "게임 내내 쌓여요"
 		entries.append({"title": law.law_name, "augment": definition.augment_id, "texture": TextureCache.fetch("res://content_trickcal/illustrations/laws/%s.png" % law.law_id), "icon": &"book",
 			"tone": Color("ffd43b"), "chips": ["목표 %d%s" % [law.goal(), law.unit()]], "summary": law.condition_text(),
-			"rows": [["판정", "라운드가 끝나기 직전, 달성했으면 졸업하고 교칙은 사라져요"], ["기록", counting], ["이의 있음!", "기록을 0으로 되돌릴 수 %s" % ("있어요" if law.resettable() else "없어요")]]})
+			"rows": [["판정", "차례가 끝날 때마다, 달성했으면 바로 졸업하고 교칙은 사라져요"], ["기록", counting], ["이의 있음!", "기록을 0으로 되돌릴 수 %s" % ("있어요" if law.resettable() else "없어요")]]})
+	return {"title": "법전", "entries": entries, "wide": true}
+
+
+## 범용: 생떼 카드 패키지와 범용 보급 (법전 장에서 따로 뺐다).
+func _ch_general() -> Dictionary:
+	var entries: Array = [
+		{"title": "카드 패키지와 범용 보급", "art": &"card_law", "tone": Color("74c0fc"), "chips": ["증강 라운드", "누구나"],
+			"summary": "판을 뒤집지는 않지만 [b]손패와 기물을 든든하게[/b] 채워 주는 증강이에요.",
+			"rows": [["카드 패키지", "생떼 카드 여러 장 (방어·함정만 주는 보급도)"], ["범용 보급", "기물 변이 · 전군 돌연변이 · 필살기 리필"]],
+			"points": ["필살기를 이미 쓴 기물이 있으면 리필이 이득이에요", "손패는 최대 장수를 넘으면 더 받지 못해요"]},
+	]
 	for definition: AugmentDef in _augments(GameEnums.AugmentCategory.CARD_PACKAGE):
 		entries.append(_augment_entry(definition, &"gear"))
 	for definition: AugmentDef in _augments(GameEnums.AugmentCategory.UTILITY):
 		entries.append(_augment_entry(definition, &"gear"))
-	return {"title": "법전", "entries": entries, "wide": true}
+	return {"title": "범용", "entries": entries, "wide": true}
 
 
 ## 증강 카드 한 장을 도감 항목으로: 첫 줄은 요약, 나머지 ◆ 줄은 항목 점.
@@ -1096,7 +1176,7 @@ func _ch_super() -> Dictionary:
 	var entries: Array = [
 		{"title": "하이리스크 하이리턴", "art": &"card_law", "tone": Color("ffd43b"), "chips": ["초증강", "%d종" % SuperAugments.ALL_IDS.size()],
 			"summary": "초증강은 [b]판을 한 번에 뒤집는[/b] 증강이에요. 크게 얻는 대신 [b]내 말도 다칠 수 있어요[/b].",
-			"rows": [["한 방", "판 뒤집기 · 저격수의 표적"], ["도박", "주사위 도박사 · 악마의 계약"], ["강탈", "도적단 대습격 · 빵집 털이 · 공산주의 재분배"], ["난장판", "폭주 기관차 · 강제 캐슬링 · 광란의 지뢰밭 · 강제 연대책임"], ["끝까지", "아우토반 니트로는 게임 내내 남는 패시브"]],
+			"rows": [["한 방", "판 뒤집기 · 저격수의 표적"], ["도박", "주사위 도박사 · 악마의 계약"], ["강탈", "도적단 대습격 · 빵집 털이 · 공산주의 재분배"], ["난장판", "폭주 기관차 · 강제 캐슬링 · 광란의 지뢰밭 · 강제 연대책임"], ["질주", "아우토반 니트로: 선두 말이 코너까지 직진, 길을 막은 칸은 전부 장외 사출"]],
 			"points": ["폭주 기관차는 내 말도 가리지 않아요", "강제 연대책임은 선두와 꼴찌 말의 운명을 묶어요", "조건이 안 맞는 초증강은 드래프트에 나오지 않아요"],
 			"tip": "질 것 같을 때가 초증강을 고를 때예요. [b]역전은 한 번이면 충분[/b]하니까요!"},
 	]
@@ -1160,6 +1240,12 @@ class MiniBoard extends Control:
 			parts.append("%d → %d" % [from_tile, int(targets[from_tile])])
 		return ", ".join(parts)
 
+	static func _join_dash(tiles: Array) -> String:
+		var parts: Array[String] = []
+		for tile: Variant in tiles:
+			parts.append(str(tile))
+		return "·".join(parts)
+
 	func _tile_pos(index: int) -> Vector2:
 		var pad: float = 34.0
 		var span: float = size.x - pad * 2.0
@@ -1190,6 +1276,9 @@ class MiniBoard extends Control:
 			elif BoardSpec.portal_tiles.has(index):
 				fill = Color("c8eef0")
 				edge = Color("2f9aa3")
+			elif BoardSpec.dash_tiles.has(index):
+				fill = Color("ffd3e2")
+				edge = Color("d9577f")
 			elif index == 0:
 				fill = Color("86d94f")
 				edge = Color("2f8f4e")
@@ -1209,10 +1298,11 @@ class MiniBoard extends Control:
 			if index == 0:
 				label = "출발"
 			var label_size: int = 13 if not corner else 15
+			label = L10n.t(label)
 			var width: float = font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, label_size).x
 			draw_string(font, center + Vector2(-width / 2.0, label_size * 0.36), label, HORIZONTAL_ALIGNMENT_LEFT, -1, label_size, Color("3a2f1f"))
 		# 안쪽 범례
-		var legend: Array = [[Color("86d94f"), "출발 · 결승"], [Color("b6ea8c"), "코너 (코너 전용 함정)"], [Color("ffe48a"), "반환점 (승급 기준)"], [Color("ffd98a"), "빵집 (카드 1장)"], [Color("c8eef0"), "옷장 (%s)" % _warp_text(BoardSpec.portal_warp_targets)]]
+		var legend: Array = [[Color("86d94f"), "출발 · 결승"], [Color("b6ea8c"), "코너 (코너 전용 함정)"], [Color("ffe48a"), "반환점 (승급 기준)"], [Color("ffd98a"), "빵집 (카드 1장)"], [Color("c8eef0"), "옷장 (%s)" % _warp_text(BoardSpec.portal_warp_targets)], [Color("ffd3e2"), "부스터 발판 (%s번, 딱 멈추면 +%d칸)" % [_join_dash(BoardSpec.dash_tiles), GameEnums.DASH_STEPS]]]
 		var origin := Vector2(92, 118)
 		for index: int in legend.size():
 			var spot: Vector2 = origin + Vector2(0, index * 30.0)
@@ -1222,7 +1312,7 @@ class MiniBoard extends Control:
 			swatch.set_border_width_all(2)
 			swatch.set_corner_radius_all(5)
 			draw_style_box(swatch, Rect2(spot, Vector2(20, 20)))
-			draw_string(font, spot + Vector2(28, 16), legend[index][1], HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("3a2f1f"))
+			draw_string(font, spot + Vector2(28, 16), L10n.t(legend[index][1]), HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("3a2f1f"))
 
 	func _arc(from_tile: int, to_tile: int, color: Color) -> void:
 		var a: Vector2 = _tile_pos(from_tile)

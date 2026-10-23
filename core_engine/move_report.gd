@@ -43,6 +43,8 @@ var paid_bail: bool = false
 var defused_cards: int = 0
 ## 말 밟고 점프하기로 늘어난 칸수와 부스터 발판이 터진 타일들.
 var leapfrog_bonus: int = 0
+## 눈금 이동 뒤 이어 갈 점프 부스트 칸수 (finalize가 경유지 처치 판정 뒤 추가 이동으로 쓴다).
+var leapfrog_pending: int = 0
 var dash_tiles: Array[int] = []
 ## 도착 칸에 함정이 있었다 (코너 버프 대신 함정이 발동한다).
 var trap_at_landing: bool = false

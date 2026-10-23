@@ -62,6 +62,12 @@ signal victory_declared(player_id: int, reason: StringName)
 ## 강제 연대책임: 두 말이 묶였다 / 묶인 짝이 같이 골인(&"finish")·탈락(&"eject")했다.
 signal pawns_bonded(pawn_a_id: int, pawn_b_id: int)
 signal bond_resolved(kind: StringName, pawn_id: int, partner_id: int)
+## 초증강 아우토반 니트로: 말이 코너를 향해 직진한다 (움직이기 전에 방송한다). path: 지날 칸들(마지막이 멈출 칸, 결승이면 0), blocked: 말이 서 있어 멈춘 칸(-1이면 막힘 없음).
+signal nitro_dashed(pawn_id: int, path: Array[int], blocked: int)
+## 점프 부스트: 눈금 이동으로 도착한 경유지(waypoint)에서 처치 판정을 마치고 bonus칸 더 간다 (이동 4단계 중 4단계).
+signal leapfrog_boosted(pawn_id: int, waypoint: int, bonus: int)
+## 8번 공: 처치한 자리에서 steps칸 더 굴러간다 (추가 이동 시작).
+signal capture_charge_started(pawn_id: int, steps: int)
 
 var board: BoardGraph = BoardGraph.new()
 ## Node 기반 법전. 씬 트리에 붙이지 않고 GameState가 수명을 관리한다.
@@ -109,7 +115,7 @@ var attack_source: Dictionary = {}
 var _attack_stack: Array[Dictionary] = []
 var _attack_serial: int = 0
 var _attack_next_id: int = 1
-## ACT_14 알고리즘 밴: 플레이어 ID -> 남은 내 턴 수 (카드·필살기·리롤 금지).
+## ACT_14 알고리즘 밴: 플레이어 ID -> 남은 내 턴 수 (카드·필살기·주사위 리롤 금지).
 var banned_turns: Dictionary = {}
 ## ACT_11 밑장빼기: 플레이어 ID -> 다음 굴림 결과로 쓸 칸 수.
 var forced_roll: Dictionary = {}
@@ -369,9 +375,16 @@ func send_to_start(pawn: PlayerPawn, by_player: int) -> void:
 		if was_out:
 			add_stat(pawn.owner_id, &"ejected")
 			_note_entry_stat(entry, &"ejected")
+			# 통계 알림용 킬/데스 (교칙 기록과 달리 [이의 있음!]으로 지워지지 않는다). 데스는 어떤 이유로든 보드에서 출발선으로 날아간 횟수
+			add_stat(pawn.owner_id, TALLY_DEATHS)
+			_note_entry_stat(entry, TALLY_DEATHS)
+			if enemy_kill:
+				law_stats[pawn.owner_id][LAST_HIT_ROUND] = round_number  # 봇의 연속 처치 자비(BotTemper)가 본다
 			if enemy_kill:
 				add_stat(by_player, &"kills")
 				_note_entry_stat(entry, &"kills")
+				add_stat(by_player, TALLY_KILLS)
+				_note_entry_stat(entry, TALLY_KILLS)
 			if underdog:
 				add_stat(by_player, &"underdog")
 				_note_entry_stat(entry, &"underdog")
@@ -656,6 +669,13 @@ func active_players(order: Array[int]) -> Array[int]:
 # 🏆 특수 승리 기록
 # ---------------------------------------------------------------------------
 
+## 통계 알림용 누적 킬·데스 (law_stats에 같이 담겨 스냅샷·방어 되감기를 따른다).
+const TALLY_KILLS: StringName = &"tally_kills"
+const TALLY_DEATHS: StringName = &"tally_deaths"
+## 이 사람의 말이 적에게 마지막으로 잡힌 라운드 (봇의 연속 처치 자비).
+const LAST_HIT_ROUND: StringName = &"last_hit_round"
+
+
 func stat(player_id: int, key: StringName) -> int:
 	return int((law_stats.get(player_id, {}) as Dictionary).get(key, 0))
 
@@ -856,8 +876,10 @@ func undo_attack(entry: Dictionary) -> void:
 	var attacker: int = int(entry.get("attacker", -1))
 	var stats: Dictionary = entry["stats"]
 	add_stat(victim, &"ejected", -int(stats.get(&"ejected", 0)))
+	add_stat(victim, TALLY_DEATHS, -int(stats.get(TALLY_DEATHS, 0)))
 	if attacker >= 1:
 		add_stat(attacker, &"kills", -int(stats.get(&"kills", 0)))
+		add_stat(attacker, TALLY_KILLS, -int(stats.get(TALLY_KILLS, 0)))
 		add_stat(attacker, &"underdog", -int(stats.get(&"underdog", 0)))
 	var effects: Dictionary = entry["effects"]
 	if effects.has("rest"):
