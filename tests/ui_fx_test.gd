@@ -267,7 +267,7 @@ func _play(tool_id: StringName, result: Dictionary, sampler: Callable = Callable
 	return _now() - started
 
 
-## 카드 획득: 덱 뭉치에서 뽑혀 내 카드는 앞면으로 뒤집혀 손패 자리로, 남의 카드는 뒷면 그대로 프로필로. 여러 장은 0.08초 간격.
+## Cards leave the off-board pile, reveal individually, then enter the live fan.
 func _test_card_draw_fx() -> void:
 	var fx: CardDrawFX = _board._draw_fx
 	_expect(fx != null, "카드 획득 연출기")
@@ -295,18 +295,43 @@ func _test_card_draw_fx() -> void:
 	var live: Array[Node] = _board._dock.get_children().filter(func(child: Node) -> bool: return not child.is_queued_for_deletion())
 	_expect(live.size() == hand.size() and (live[live.size() - 1] as Control).modulate.a == 0.0 and (live[live.size() - 2] as Control).modulate.a == 0.0, "날아오는 중인 카드는 손패에서 숨겨 둔다")
 	var deck: Control = fx.find_child("DeckPile", true, false)
-	_expect(deck != null and deck.visible, "보드 한가운데에 덱 뭉치")
+	_expect(deck != null and deck.visible, "보드 바깥에 덱 뭉치")
+	var outline: PackedVector2Array = BoardSkin.outline(_board._surface_project,_board._off_center)
+	for corner: Vector2 in [Vector2.ZERO,Vector2(CardDrawFX.CARD_SIZE.x,0),CardDrawFX.CARD_SIZE,Vector2(0,CardDrawFX.CARD_SIZE.y)]:
+		_expect(not Geometry2D.is_point_in_polygon(deck.global_position+corner,outline),"deck footprint stays clear of the board")
 	var flipped: bool = false
-	while fx.busy() and _now() - started < 3.0:
+	var shown_since: float = -1.0
+	var shown_duration: float = 0.0
+	var saw_carry: bool = false
+	while fx.busy() and _now() - started < 5.0:
+		var visible_faces: int = 0
 		for card: Node in fx.get_children():
-			if card.name.begins_with("DrawnCard") and card.get_child_count() > 1:
+			if not card.name.begins_with("DrawnCard") or card.is_queued_for_deletion():
+				continue
+			var local: bool = bool(card.get_meta("local",false))
+			var phase: StringName = card.get_meta("phase",&"")
+			if phase == &"carry_back":
+				saw_carry = true
+				_expect(card.get_child_count()==1,"card travels from deck to reveal face down")
+			if card.get_child_count()>1:
+				_expect(local,"remote draws never construct a secret face")
 				flipped = true
+				visible_faces += 1
+			if phase == &"show":
+				if shown_since < 0.0:
+					shown_since = _now()
+				shown_duration = maxf(shown_duration,_now()-shown_since)
+				_expect((card as Control).scale==Vector2.ONE*CardDrawFX.REVEAL_SCALE,"reveal is large and rigid long enough to read")
+			elif shown_since >= 0.0:
+				shown_since = -1.0
+		_expect(visible_faces<=1,"multiple local cards never obscure each other's reveal")
 		await process_frame
 	fx.landed.disconnect(record)
 	_expect(not fx.busy() and arrivals.size() == 3, "모두 도착 (%d장)" % arrivals.size())
 	_expect(flipped, "내 카드는 앞면으로 뒤집힌다")
+	_expect(saw_carry and shown_duration>0.45,"draw, carry and readable reveal occur before delivery")
 	var elapsed: float = _now() - started
-	_expect(elapsed < 1.4, "세 장이 1.4초 안에 끝난다 (%.2f초)" % elapsed)
+	_expect(elapsed < 4.5, "local cards reveal individually; three draws finish within 4.5s (%.2f)" % elapsed)
 	var others: Array = arrivals.filter(func(entry: Array) -> bool: return not bool(entry[1]))
 	_expect(others.size() == 1 and int(others[0][0]) == other, "남의 카드는 프로필로 (뒷면)")
 	live = _board._dock.get_children().filter(func(child: Node) -> bool: return not child.is_queued_for_deletion())
@@ -322,6 +347,35 @@ func _test_card_draw_fx() -> void:
 	_board._draft_open = saved_draft
 	_board.instant_roll_for_test = saved_instant
 	_board._refresh_hands()
+	# A new match must discard every pending card without later arrival signals.
+	var arrival_count: Array[int] = [0]
+	var cancelled_record: Callable = func(_player: int,_local: bool) -> void: arrival_count[0] += 1
+	fx.landed.connect(cancelled_record)
+	fx.draw_card(owner,&"ACT_09",true,_board._board_center())
+	fx.draw_card(owner,&"ACT_02",true,_board._board_center())
+	fx.clear()
+	fx._process(CardDrawFX.LOCAL_TIME*3.0)
+	_expect(not fx.busy() and fx.pending.is_empty() and arrival_count[0]==0,"clearing active and queued draws cannot insert stale cards")
+	fx.draw_card(other,&"ACT_03",false,_board._profile_center(other),Callable(),false,_board._profile_center(owner))
+	_expect(fx._current.start==_board._profile_center(owner),"stolen card still leaves the victim profile instead of the deck")
+	fx.clear()
+	fx.landed.disconnect(cancelled_record)
+	_board._reset_presentation()
+	_board._announcer.cancel()
+	_board.instant_roll_for_test = false
+	var next_step: Array[bool] = [false]
+	fx.draw_card(owner,&"ACT_02",true,_board._board_center())
+	_expect(_board._ui_busy(),"card inspection blocks the next action")
+	_board.enqueue_step(func() -> void:
+		_expect(not fx.busy(),"following board effects wait until the card reaches the hand")
+		next_step[0] = true)
+	var deadline: float = _now()+6.0
+	while not next_step[0] and _now()<deadline:
+		await process_frame
+	_expect(next_step[0],"presentation resumes after the acquisition")
+	while _board._presentation_active() and _now()<deadline:
+		await process_frame
+	_board.instant_roll_for_test = saved_instant
 	print("CARD_DRAW_FX_OK")
 
 
@@ -1048,7 +1102,7 @@ func _test_unplayable_card_explains_itself() -> void:
 	var card: BaseCard = CardRegistry.get_card(&"ACT_03")
 	_expect(not _board._card_usable_now(player, card), "UDO +4: 다음 사람의 말이 보드에 없으면 흐린 카드")
 	_expect(_board._card_block_reason(player, card).contains("보드 위에 없어"), "UDO +4: 낼 수 없는 이유 (%s)" % _board._card_block_reason(player, card))
-	state.give_card(player, &"ACT_03")
+	(state.hands[player] as Array).append(&"ACT_03")  # fixture: inspect unusable card, not its acquisition
 	_board._on_card_pressed(player, &"ACT_03")
 	_expect(_board._center_banner.visible and _board._center_label.text.contains("UDO +4"), "누르면 이유가 화면 가운데 뜬다 (%s)" % _board._center_label.text)
 	_expect(state.has_card(player, &"ACT_03"), "카드는 쓰이지 않고 손에 남는다")
@@ -1365,6 +1419,7 @@ func _test_game_menu() -> void:
 
 ## 중앙 이벤트 알림: 대기열 순서대로 한 건씩 뜨고, 떠 있는 동안 입력이 잠기며, 클릭(skip)으로 넘어가고, instant면 건너뛴다.
 func _test_announcer() -> void:
+	_board._reset_presentation()  # isolate banner sequencing from prior reward-card flights
 	_board.instant_roll_for_test = false
 	var announcer: EventAnnouncer = _board._announcer
 	announcer.cancel()
@@ -1508,6 +1563,14 @@ func _test_aspect_layout() -> void:
 	_expect(is_equal_approx(board._plate.position.x, MainBoard.PLATE_POS.x), "디자인보다 작은 창은 오프셋 0 (엔진이 축소)")
 	board.layout_for(Vector2(1366, 768))
 	_expect(is_equal_approx(plate_x, board._plate.position.x), "원래 크기로 돌아온다")
+	for viewport_size: Vector2 in [Vector2(1366,768),Vector2(1920,1080)]:
+		board.layout_for(viewport_size)
+		var outline: PackedVector2Array = BoardSkin.outline(board._surface_project,board._off_center)
+		var deck: Control = board._draw_fx._deck
+		for corner: Vector2 in [Vector2.ZERO,Vector2(CardDrawFX.CARD_SIZE.x,0),CardDrawFX.CARD_SIZE,Vector2(0,CardDrawFX.CARD_SIZE.y)]:
+			_expect(not Geometry2D.is_point_in_polygon(deck.global_position+corner,outline),"deck remains outside board at %s"%viewport_size)
+		_expect(board._draw_fx.reveal_position.distance_to(board._board_center()+Vector2(0,-15))<0.01,"card inspection follows board centre when resized")
+	board.layout_for(Vector2(1366,768))
 
 
 ## 좌석 상대 매핑·판정 도구 전광판·기물 독과 0.35초 호버 툴팁·카드 클릭 확대·드래그 앤 드롭 발동.

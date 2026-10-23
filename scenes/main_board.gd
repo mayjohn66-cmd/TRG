@@ -77,8 +77,6 @@ const DOCK_CARD_Y: float = 6.0
 ## 손패 카드는 한 장 전체 일러스트(140x196)가 따로 있고, 화면 아래로 반쯤 가려진 채 부채꼴로 펼쳐진다. 호버하면 전체가 올라와 보인다.
 const HAND_CARD_SIZE: Vector2 = Vector2(140, 196)
 const HAND_FAN_DEGREES: float = 5.0
-## 카드 획득 연출의 덱 뭉치 자리 (보드 한가운데에서 조금 위: 주사위가 떨어지는 자리와 겹치지 않게).
-const DECK_OFFSET: Vector2 = Vector2(0.0, -78.0)
 ## 피해 되돌리기 팝업이 자동으로 넘어가기까지의 시간(초).
 const REACTION_SECONDS: float = 6.0
 ## 행동 사이의 호흡(초): 이동이 끝난 뒤 멈춤 / [P2 차례] 알림 길이.
@@ -1347,12 +1345,30 @@ func layout_for(viewport_size: Vector2) -> void:
 		_presenter.center = _board_center() + Vector2(0, -40)
 		_presenter.toss_board_outline = BoardSkin.outline(_surface_project, _off_center)
 	if _draw_fx != null:
-		_draw_fx.deck_position = _board_center() + DECK_OFFSET
+		_layout_card_deck()
 
 
 ## 보드 한가운데의 화면 좌표 (창 비율 오프셋 포함).
 func _board_center() -> Vector2:
 	return BOARD_ORIGIN + Vector2(BOARD_SIZE, BOARD_SIZE) / 2.0 + _off_center
+
+
+## Place the pile beside the lower-right board edge, clear of tiles and dock.
+func _layout_card_deck() -> void:
+	if _draw_fx == null:
+		return
+	var center: Vector2 = _board_center()
+	var direction := Vector2(1.0,0.52).normalized()
+	var outline: PackedVector2Array = BoardSkin.outline(_surface_project,_off_center)
+	var rim: Vector2 = center+direction*330.0
+	for index: int in outline.size():
+		var hit: Variant = Geometry2D.segment_intersects_segment(center,center+direction*2000.0,outline[index],outline[(index+1)%outline.size()])
+		if hit != null:
+			rim = hit
+			break
+	_draw_fx.deck_position = rim+direction*100.0
+	_draw_fx.reveal_position = center+Vector2(0,-15)
+	_draw_fx.place_deck()
 
 
 ## 상단 리본은 없앴다: 현재 턴은 프로필의 밝기·강조선, 라운드는 중앙 알림이 알려 준다. 로그 문구만 받는 숨김 라벨만 남긴다.
@@ -2136,6 +2152,7 @@ func set_view_mode(mode: int) -> void:
 func _apply_view_mode(refresh_pawns: bool = true) -> void:
 	if _presenter != null:
 		_presenter.toss_board_outline = BoardSkin.outline(_surface_project, _off_center)
+	_layout_card_deck()
 	var tilt: bool = true  # 마름모 보드는 항상 보드 면 메시로 그린다 (평면 받침 판은 쓰지 않는다)
 	if _plate != null:
 		_plate.visible = false
@@ -3004,6 +3021,8 @@ func _refresh_now() -> void:
 	_refresh_controls()
 	_refresh_overlays()
 	_refresh_super_marks()
+	if _draw_fx != null:
+		_draw_fx.set_deck_visible(not _draft_in_progress() and not _intro_blocks() and not manager.is_game_over)
 	_check_round_banner()
 	_check_turn_banner()
 
@@ -3091,6 +3110,8 @@ func _build_direction_icons() -> void:
 func _fx_motion_pending() -> bool:
 	if not _fx_on():
 		return false
+	if _draw_fx != null and _draw_fx.busy():
+		return true
 	if _capture_cutin != null and _capture_cutin.busy():
 		return true
 	if _stage_warps > 0 or _presentation_active():
@@ -3657,14 +3678,23 @@ func _fly_drawn_card(player_id: int, card_id: StringName) -> void:
 	if _draft_in_progress():
 		_draft_deferred.append({"step": launch, "pawn": -1, "pick": _pick_serial})
 		return
+	if _presentation_active() or _fx_busy or (_announcer != null and _announcer.holding()):
+		# Engine broadcasts rewards and captures in one call. Let late captures
+		# register before putting the reward card after them.
+		call_deferred("_queue_drawn_after_effects",launch,_fx_generation)
+		return
 	launch.call()
+
+
+func _queue_drawn_after_effects(launch: Callable, generation: int) -> void:
+	if generation == _fx_generation:
+		_enqueue_after_kills(launch)
 
 
 func _launch_drawn_card(player_id: int, card_id: StringName, local: bool, index: int, origin: Vector2) -> void:
 	var target: Vector2 = Vector2(INF, INF)
 	if local:
-		var count: int = (state.hands[player_id] as Array).size()
-		target = _dock.get_global_transform() * (_dock_slot(clampi(index, 0, maxi(count - 1, 0)), maxi(count, 1)) + HAND_CARD_SIZE / 2.0)
+		target = _drawn_card_destination(player_id,index).position
 	else:
 		target = _profile_center(player_id)
 	if not target.is_finite():
@@ -3673,7 +3703,19 @@ func _launch_drawn_card(player_id: int, card_id: StringName, local: bool, index:
 			_refresh_hands()
 		Sfx.play(&"card_get")
 		return
-	_draw_fx.draw_card(player_id, card_id, local, target, Callable() if local else _profile_nudge.bind(player_id), local, origin)
+	_draw_fx.draw_card(player_id, card_id, local, target, Callable() if local else _profile_nudge.bind(player_id), local, origin, _drawn_card_destination.bind(player_id,index) if local else Callable())
+	_refresh_controls()
+
+
+## Match the visual centre and angle of the live fan, whose pivot is its foot.
+func _drawn_card_destination(player_id: int, index: int) -> Dictionary:
+	var count: int = maxi((state.hands[player_id] as Array).size(),1)
+	index = clampi(index,0,count-1)
+	var offset: float = float(index)-float(count-1)/2.0
+	var angle: float = deg_to_rad(clampf(offset*HAND_FAN_DEGREES,-16.0,16.0))
+	var pivot := Vector2(HAND_CARD_SIZE.x/2.0,HAND_CARD_SIZE.y)
+	var centre: Vector2 = _dock_slot(index,count)+pivot+(HAND_CARD_SIZE/2.0-pivot).rotated(angle)
+	return {"position":_dock.get_global_transform()*centre,"rotation":angle+_dock.get_global_transform().get_rotation()}
 
 
 ## 날아온 카드가 내 손패에 내려앉았다: 숨겨 둔 카드를 보이고 톡 튀게 한다.
@@ -6444,7 +6486,7 @@ func _presentation_linger(generation: int) -> void:
 ## 알림 카드·워프 연출이 보드를 가리고 있으면 끝날 때까지 기다린다 (최대 12초).
 func _presentation_wait_ready(generation: int) -> void:
 	var frames: int = 0
-	while generation == _fx_generation and (_fx_holding() or _fx_busy) and frames < 720:
+	while generation == _fx_generation and (_fx_holding() or _fx_busy or (_draw_fx != null and _draw_fx.busy())) and (frames < 720 or (_draw_fx != null and _draw_fx.busy())):
 		frames += 1
 		await get_tree().process_frame
 
@@ -6452,12 +6494,14 @@ func _presentation_wait_ready(generation: int) -> void:
 ## 한 단계가 시작한 움직임·컷인·배너·여운이 모두 끝나기를 기다린다 (최대 12초).
 func _presentation_settle(generation: int) -> void:
 	var frames: int = 0
-	while generation == _fx_generation and _presentation_step_busy() and frames < 720:
+	while generation == _fx_generation and _presentation_step_busy() and (frames < 720 or (_draw_fx != null and _draw_fx.busy())):
 		frames += 1
 		await get_tree().process_frame
 
 
 func _presentation_step_busy() -> bool:
+	if _draw_fx != null and _draw_fx.busy():
+		return true
 	if _stage_warps > 0 or _fx_busy:
 		return true
 	if _capture_cutin != null and _capture_cutin.busy():
@@ -8685,6 +8729,8 @@ func _on_game_over(winner_id: int, reason: StringName) -> void:
 func _ui_busy() -> bool:
 	if _counter_gate_waiting and manager != null and manager.counter_pending():
 		return false  # 처치 연출이 방어 결정을 기다리는 중: 봇·사람이 방어 카드를 고를 수 있어야 한다
+	if _fx_on() and _draw_fx != null and _draw_fx.busy():
+		return true
 	return _turn_banner_pending() or _intro_blocks() or _presentation_active() or _fx_busy or (_capture_cutin != null and _capture_cutin.busy()) or _aim_pawn != -1 or (_announcer != null and _announcer.holding()) or Time.get_ticks_msec() < _beat_until_msec or (_fx_on() and Time.get_ticks_msec() < _fx_until_msec)
 
 
@@ -8711,7 +8757,7 @@ func _announce(tag: String, headline: String, body: String, color: Color, extra:
 		return -1
 	# A queued preview is owned immediately; cancelling the queue must not
 	# strand an unattached card tree or leave it counted as an orphan.
-	if _fx_on() and _presentation_active():
+	if _fx_on() and (_presentation_active() or (_draw_fx != null and _draw_fx.busy())):
 		if extra != null:
 			if not is_instance_valid(_announcement_extras):
 				_announcement_extras = Node.new()
@@ -9387,9 +9433,10 @@ func _build_roll_fx() -> void:
 	_draw_fx.name = "CardDrawFX"
 	_draw_fx.z_index = 30
 	_draw_fx.face_builder = _make_card_face
-	_draw_fx.deck_position = _board_center() + DECK_OFFSET
 	_draw_fx.landed.connect(_on_drawn_card_landed)
+	_draw_fx.drained.connect(_refresh_all)
 	add_child(_draw_fx)
+	_layout_card_deck()
 	_super_fx = SuperFX.new(self)
 	_announcer = EventAnnouncer.new()
 	add_child(_announcer)
