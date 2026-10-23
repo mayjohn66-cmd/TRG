@@ -93,6 +93,41 @@ func needs_pawn_choice(state: GameState, player_id: int) -> bool:
 
 
 ## 선택지에 보여 줄 설명 (플레이어 상태를 반영한다).
+## 카드 본문에서 빼고 드래프트 화면 아래 공통 안내 바에 한 번만 보여 주는 문구 (원문 한국어, 화면에서 번역).
+## 증강 카드마다 같은 규칙 설명이 되풀이되어 글자가 많아 보이던 것을 줄인다. 표(augments_table.csv)의 글은 그대로 둔다.
+const COMMON_NOTE_PAWN: String = "※ 이미 가진 기물은 받을 수 없습니다"
+const COMMON_NOTE_LAW: String = "◆ 차례가 끝날 때 달성해 있으면 바로 다음 순위로 졸업 (달성되면 법전에서 삭제)"
+const COMMON_NOTE_TOOL: String = "◆ 내 판정 도구 즉시 교체"
+## 공통 안내 바에 쓰는 짧은 문구 (계열별).
+const NOTE_BAR: Dictionary = {
+	GameEnums.AugmentCategory.PAWN_EVOLUTION: "※ 이미 가진 기물은 받을 수 없어요",
+	GameEnums.AugmentCategory.LAW_ENACT: "※ 특수 승리: 차례가 끝날 때 달성해 있으면 바로 다음 순위로 졸업 (달성되면 법전에서 삭제)",
+	GameEnums.AugmentCategory.TOOL_SWAP: "※ 판정 도구는 고르는 즉시 내 것과 바뀌어요",
+}
+
+
+## 카드 본문에 넣지 않는 공통 문구인가 (원문 한국어 한 줄).
+static func is_common_note(line: String) -> bool:
+	var trimmed: String = line.strip_edges()
+	return trimmed == COMMON_NOTE_PAWN or trimmed == COMMON_NOTE_LAW or trimmed == COMMON_NOTE_TOOL
+
+
+## 판정 도구가 한 번에 움직이는 칸 수 범위 [최소, 최대] (dice_table.csv의 min_step·max_step·jackpot_step). 모르면 빈 배열.
+static func tool_step_range(tool_id: StringName) -> Array[int]:
+	var low: int = GameData.param("dice", String(tool_id), 1, 0)
+	var high: int = maxi(GameData.param("dice", String(tool_id), 2, 0), GameData.param("dice", String(tool_id), 3, 0))
+	var result: Array[int] = []
+	if low > 0 and high > 0:
+		result.assign([low, high])
+	else:
+		result.assign(TOOL_RANGE_FALLBACK.get(tool_id, []))
+	return result
+
+
+## 표에 범위가 비어 있는 도구 (타로: 매달린 남자 1칸 ~ 세계 9칸).
+const TOOL_RANGE_FALLBACK: Dictionary = {&"DICE_TAROT": [1, 9]}
+
+
 func describe(state: GameState, player_id: int) -> String:
 	if desc.strip_edges() != "":
 		return _table_text(state, player_id)

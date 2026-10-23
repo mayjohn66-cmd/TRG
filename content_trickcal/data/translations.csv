@@ -197,8 +197,8 @@ ko,en,ja
 "0칸, 턴 종료","0 spaces, turn ends",0マス、ターン終了
 1 ~ 10 균등 · 원판 돌리기,1 ~ 10 even · spin the wheel,1 ~ 10 均等 · ルーレットを回す
 1 ~ 6 눈금,Roll 1 ~ 6,出目 1 ~ 6
-10·20·30라운드,Rounds 10·20·30,10·20·30ラウンド
-10라운드 · 과열,Round 10 · Overheat,10ラウンド · オーバーヒート
+8·15·22라운드,Rounds 8·15·22,8·15·22ラウンド
+8라운드 · 과열,Round 8 · Overheat,8ラウンド · オーバーヒート
 10칸,10 spaces,10マス
 11 ~ 20 스탠드,Stand at 11 ~ 20,11 ~ 20 でスタンド
 11칸 + 한 번 더!,11 spaces + roll again!,11マス + もう1回！
@@ -216,7 +216,7 @@ ko,en,ja
 "1칸, 다음 굴림 +8칸","1 space, next roll +8",1マス、次の出目 +8マス
 1회용 필살기,One-shot Skill,1回限定必殺技
 2 / 3 / 4칸,2 / 3 / 4 spaces,2 / 3 / 4マス
-20라운드 · 광기,Round 20 · Frenzy,20ラウンド · 狂気
+15라운드 · 광기,Round 15 · Frenzy,15ラウンド · 狂気
 20칸,20 spaces,20マス
 22 이상 (버스트),22+ (bust),22以上 (バースト)
 2~4인,2~4 players,2~4人
@@ -224,7 +224,7 @@ ko,en,ja
 2개 일치!,2 match!,2個揃い！
 2칸,2 spaces,2マス
 2턴 카드·스킬 금지,No cards/skills for 2 turns,2ターン カード・スキル禁止
-30라운드 · 대붕괴,Round 30 · Meltdown,30ラウンド · 大崩壊
+22라운드 · 대붕괴,Round 22 · Meltdown,22ラウンド · 大崩壊
 3개 모두 다름,All 3 different,3個すべて違う
 3개 일치,3 match,3個揃い
 3개 일치!,3 match!,3個揃い！
@@ -1998,3 +1998,9 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 봐주기 없는 정정당당한 승부! 1등을 먼저 노려요,A fair fight with no mercy! The leader gets targeted first,手加減なしの真剣勝負! 1位が真っ先に狙われます
 컴퓨터가 카드·함정·필살기를 아낌없이 써요,"The computers use cards, traps and skills without holding back",コンピューターがカード・罠・必殺技を惜しみなく使います
 공식 억까 모드! 컴퓨터들이 나만 집요하게 노려요,The official unfair mode! The computers relentlessly hunt only you,公式理不尽モード! コンピューターたちが自分だけをしつこく狙います
+※ 이미 가진 기물은 받을 수 없어요,※ You can't get a pawn type you already own,※ 既に持っている駒は獲得できません
+※ 특수 승리: 차례가 끝날 때 달성해 있으면 바로 다음 순위로 졸업 (달성되면 법전에서 삭제),"※ Special Win: if met at the end of your turn, you graduate in the next rank (removed from the Codex once claimed)",※ 特殊勝利: ターン終了時に達成していれば次の順位で即卒業 (達成されると法典から消滅)
+최소 %d칸 ~ 최대 %d칸,Min %d ~ Max %d spaces,最小%dマス ~ 最大%dマス
+※ 판정 도구는 고르는 즉시 내 것과 바뀌어요,※ Picking a Judgment Tool swaps yours immediately,※ 判定ツールは選んだ瞬間に自分のものと入れ替わります
+"1라운드는 기물 진화, 4라운드는 판정 도구·카드·기물 진화","Round 1: Pawn Evolutions; Round 4: Tools, Cards and Pawn Evolutions",1ラウンドは駒進化、4ラウンドは判定ツール・カード・駒進化
+7라운드부터 법전·초증강도 등장,Special Wins and Hyper Augments appear from Round 7,7ラウンドから法典・超増強も登場

@@ -299,6 +299,7 @@ func test_super_category_appears_at_most_once_per_draft_and_not_every_time() -> 
 	for pawn_id: int in [11, 12]:
 		_place(state, pawn_id, 8 + pawn_id % 10)
 	_place(state, 21, 14)
+	state.round_number = 7  # 초증강은 7라운드(세 번째 드래프트)부터
 	var drafts_with_super: int = 0
 	for i: int in 200:
 		var offers: Array[StringName] = AugmentRegistry.generate_offers(state, 1)

@@ -121,6 +121,7 @@ func test_augment_pool_has_all_four_categories() -> void:
 
 func test_offers_are_three_distinct_mixed_categories() -> void:
 	var state := make_state(2, 99)
+	state.round_number = 7  # 3번째 드래프트부터 모든 계열이 섞인다 (1·2번째는 계열을 좁힌다: test_tempo_up)
 	for trial: int in 40:
 		var offers: Array[StringName] = AugmentRegistry.generate_offers(state, 1)
 		check_eq(offers.size(), 3, "3지선다")

@@ -104,13 +104,33 @@ static func get_def(augment_id: StringName) -> AugmentDef:
 	return null
 
 
+## 초반 드래프트는 계열을 좁혀 정보량을 줄인다 (단계별 증강 등장): 몇 번째 드래프트 → 그때 제시하는 계열.
+## 1번째(1라운드)는 기물 진화만(자기 말에 먼저 애착이 가게), 2번째(4라운드)는 판정 도구·카드·기물 진화. 3번째(7라운드)부터는 제한 없이
+## 법전·초증강까지 섞인다 (법전·초증강 행의 min_round도 7). 그 계열에 받을 수 있는 증강이 모자라면 다른 계열로 채운다.
+const DRAFT_FOCUS: Dictionary = {
+	1: [GameEnums.AugmentCategory.PAWN_EVOLUTION],
+	2: [GameEnums.AugmentCategory.TOOL_SWAP, GameEnums.AugmentCategory.CARD_PACKAGE, GameEnums.AugmentCategory.PAWN_EVOLUTION],
+}
+
+
+## 이 라운드가 몇 번째 드래프트인가 (1라운드 = 1번째). 드래프트 라운드가 아니어도 직전 드래프트 번호.
+static func draft_number(round_number: int) -> int:
+	return maxi(round_number - 1, 0) / GameEnums.DRAFT_INTERVAL + 1
+
+
+## 이번 드래프트에 제시할 계열 (빈 배열이면 제한 없음).
+static func draft_focus(round_number: int) -> Array:
+	return DRAFT_FOCUS.get(draft_number(round_number), [])
+
+
 ## 플레이어에게 보여 줄 선택지를 count개 뽑는다. 4대 카테고리를 무작위 순서로 한 번씩 돌며 가능한 증강을 하나씩 뽑으므로
 ## 선택지가 서로 다른 카테고리로 섞여 나온다. 가능한 카테고리가 부족하면 남은 증강에서 채운다.
 static func generate_offers(state: GameState, player_id: int, count: int = GameEnums.DRAFT_OFFER_COUNT) -> Array[StringName]:
 	var offers: Array[StringName] = []
 	var by_category: Dictionary = {}
+	var focus: Array = draft_focus(state.round_number)
 	for def: AugmentDef in all():
-		if def.is_available(state, player_id) and def.weight > 0:
+		if def.is_available(state, player_id) and def.weight > 0 and (focus.is_empty() or focus.has(def.category)):
 			if not by_category.has(def.category):
 				by_category[def.category] = [] as Array[AugmentDef]
 			(by_category[def.category] as Array).append(def)
@@ -134,11 +154,18 @@ static func generate_offers(state: GameState, player_id: int, count: int = GameE
 			pool_weights.append(effective_weight(def as AugmentDef, state))
 		offers.append((pool[_weighted_index(pool_weights, state.rng)] as AugmentDef).augment_id)
 	if offers.size() < count:
+		# 모자라면 이번 드래프트 계열 안에서 먼저(가중치대로) 채우고, 그래도 모자라면 다른 계열에서 채운다
 		var rest: Array[AugmentDef] = []
+		var others: Array[AugmentDef] = []
 		for def: AugmentDef in all():
 			if def.weight > 0 and def.is_available(state, player_id) and not offers.has(def.augment_id):
-				rest.append(def)
+				if focus.is_empty() or focus.has(def.category):
+					rest.append(def)
+				else:
+					others.append(def)
 		_shuffle(rest, state.rng)
+		_shuffle(others, state.rng)
+		rest.append_array(others)
 		for def: AugmentDef in rest:
 			if offers.size() >= count:
 				break
@@ -146,7 +173,7 @@ static func generate_offers(state: GameState, player_id: int, count: int = GameE
 	return offers
 
 
-## 드래프트에 쓰는 가중치: 표의 weight × 템포 업 배수 (10라운드부터 법전·초증강 ×3).
+## 드래프트에 쓰는 가중치: 표의 weight × 템포 업 배수 (템포 업 1단계 8라운드부터 법전·초증강 ×3).
 static func effective_weight(def: AugmentDef, state: GameState) -> float:
 	return float(def.weight * TempoUp.weight_multiplier(state.round_number, def.category))
 
@@ -170,9 +197,16 @@ static func _weighted_index(weights: Array[float], rng: RandomNumberGenerator) -
 ## 리롤: 현재 제시된 선택지(current)에 없는 선택 가능 증강 중 하나를 무작위로 뽑는다. 후보가 없으면 빈 ID.
 static func reroll_candidate(state: GameState, player_id: int, current: Array) -> StringName:
 	var pool: Array[StringName] = []
+	var outside: Array[StringName] = []
+	var focus: Array = draft_focus(state.round_number)
 	for def: AugmentDef in all():
 		if def.weight > 0 and def.is_available(state, player_id) and not current.has(def.augment_id):
-			pool.append(def.augment_id)
+			if focus.is_empty() or focus.has(def.category):
+				pool.append(def.augment_id)
+			else:
+				outside.append(def.augment_id)
+	if pool.is_empty():
+		pool = outside  # 이번 드래프트 계열이 바닥나면 다른 계열에서
 	if pool.is_empty():
 		return &""
 	return pool[state.rng.randi_range(0, pool.size() - 1)]

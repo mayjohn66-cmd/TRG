@@ -128,12 +128,14 @@ func test_disabling_an_augment_in_the_table_removes_it_from_every_draft() -> voi
 	_edit_augment("CARD_PACKAGE", {"enabled": "FALSE"})
 	for seed_value: int in 40:
 		var state: GameState = make_state(2, seed_value + 1)
+		state.round_number = 7  # 모든 계열이 섞이는 드래프트
 		for offered: StringName in AugmentRegistry.generate_offers(state, 1, 5):
 			check(offered != &"CARD_PACKAGE", "꺼진 증강은 제시되지 않는다 (시드 %d)" % seed_value)
 	_edit_augment("CARD_PACKAGE", {"enabled": "TRUE"})
 	var found: bool = false
 	for seed_value: int in 60:
 		var state2: GameState = make_state(2, seed_value + 1)
+		state2.round_number = 7
 		found = found or AugmentRegistry.generate_offers(state2, 1, 5).has(&"CARD_PACKAGE")
 	check(found, "켜면 다시 나온다")
 
@@ -155,7 +157,7 @@ func test_weight_zero_excludes_and_weights_steer_the_draft() -> void:
 	for seed_value: int in 20:
 		var names: Array[String] = []
 		var weighted_state: GameState = make_state(2, seed_value + 1)
-		weighted_state.round_number = 3  # 특수 승리 교칙은 3라운드부터
+		weighted_state.round_number = 7  # 특수 승리 교칙은 7라운드(3번째 드래프트)부터
 		for offered: StringName in AugmentRegistry.generate_offers(weighted_state, 1):
 			names.append(str(offered))
 		names.sort()
@@ -172,7 +174,9 @@ func test_weight_zero_excludes_and_weights_steer_the_draft() -> void:
 	AugmentRegistry.reload()
 	var holdem: int = 0
 	for seed_value: int in 60:
-		var offered: Array[StringName] = AugmentRegistry.generate_offers(make_state(2, seed_value + 100), 1, 1)
+		var dice_state: GameState = make_state(2, seed_value + 100)
+		dice_state.round_number = 7
+		var offered: Array[StringName] = AugmentRegistry.generate_offers(dice_state, 1, 1)
 		if offered.size() == 1 and offered[0] == &"TOOL_HOLDEM":
 			holdem += 1
 	check(holdem >= 55, "가중치 1000 대 1: 거의 항상 홀덤 (%d/60)" % holdem)

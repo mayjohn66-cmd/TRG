@@ -50,7 +50,7 @@
 | `RULE_DASH_PAD` ⚡ | 발판 추가 전진 칸 | |
 | `RULE_LEAPFROG` 🏃 | 말 하나당 칸 | 한 번에 최대 칸 |
 
-`RULE_*` 행은 `enabled=FALSE`로 그 기믹 자체를 끌 수 있습니다. 특수 승리 교칙(`LAW`) 행의 기본값은 `GOLD` · 가중치 20(한방·동네북·초전도체는 15) · 3라운드부터입니다.
+`RULE_*` 행은 `enabled=FALSE`로 그 기믹 자체를 끌 수 있습니다. 특수 승리 교칙(`LAW`)과 초증강(`CHAOS`) 행은 7라운드(세 번째 드래프트)부터 나옵니다 (`min_round` 7). 첫 드래프트(1라운드)는 기물 진화(`PAWN`)만, 두 번째(4라운드)는 판정 도구(`DICE`)·카드(`CARD`)·기물 진화만 제시합니다 (`AugmentRegistry.DRAFT_FOCUS`, 그 계열에 받을 수 있는 증강이 모자라면 다른 계열로 채움).
 
 ## dice_table.csv
 `enabled`(FALSE면 교체 증강에서 빠짐, 기본 주사위 D6는 제외) · `name`(도구 이름) · `desc`(도구 카드 한 줄) · `spec_table`(족보표 문구) · `min_step`/`max_step`(이동 칸을 이 범위로 맞춤. 0칸·턴 종료 결과는 건드리지 않음, 비우면 제한 없음) · `jackpot_step`(그 도구의 최고 결과 칸 수를 이 값으로 교체, 상한과 무관. 윷·홀덤·슬롯·화투·마작·야추·블랙잭·핀볼만 지원) · `icon_file`(`illustrations/dice/` 아래).

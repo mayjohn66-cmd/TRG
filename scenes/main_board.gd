@@ -7430,14 +7430,33 @@ static func augment_card_info(definition: AugmentDef, game_state: GameState, pla
 			glyph = "J"
 			color = Color("ff6b6b")
 			title = "[카드 패키지] 생떼 카드 %d장" % definition.card_count()
+	# 텍스트 다이어트: 카드마다 되풀이되는 공통 문구(이미 가진 기물·법전 졸업 안내)는 본문에서 빼고 드래프트 아래 공통 안내 바에 한 번만 둔다
 	var lines: PackedStringArray = []
 	for line: String in definition.describe(game_state, player_id).split("\n"):
-		if not line.begins_with("※"):
+		if not line.begins_with("※") and not AugmentDef.is_common_note(line):
 			lines.append(line)
+	# 판정 도구: 핵심 한 줄 + [최소 N칸 ~ 최대 M칸] 요약을 먼저 크게, 긴 족보표는 구분선 아래 작은 보조 정보로
+	var summary: String = ""
+	var detail: String = ""
+	if definition.category == GameEnums.AugmentCategory.TOOL_SWAP:
+		# 공통 문구([내 판정 도구 즉시 교체])를 뺀 나머지 중 표의 desc 줄은 핵심, spec(족보표) 줄은 보조
+		var core_lines: PackedStringArray = []
+		for line: String in definition.desc.replace("{p1}", definition.param_1).replace("{p2}", definition.param_2).split("\n"):
+			if not AugmentDef.is_common_note(line) and line.strip_edges() != "":
+				core_lines.append(line)
+		var detail_lines: PackedStringArray = []
+		for line: String in lines:
+			if not core_lines.has(line):
+				detail_lines.append(line)
+		lines = core_lines
+		detail = "\n".join(detail_lines)
+		var span: Array[int] = AugmentDef.tool_step_range(definition.payload)
+		if span.size() == 2:
+			summary = "최소 %d칸 ~ 최대 %d칸" % [span[0], span[1]]
 	if definition.title != "":
 		title = definition.title  # augments_table.csv의 title
 	var tag_text: String = definition.subtitle if definition.subtitle != "" else AugmentDef.category_name(definition.category)
-	return {"glyph": glyph, "color": color, "title": title, "desc": "\n".join(lines), "category": tag_text, "art": AugmentArt.load_first(AugmentArt.candidates(definition)), "super": definition.category == GameEnums.AugmentCategory.SUPER_GAMBLE, "tier": definition.tier}
+	return {"glyph": glyph, "color": color, "title": title, "desc": "\n".join(lines), "summary": summary, "detail": detail, "category": tag_text, "art": AugmentArt.load_first(AugmentArt.candidates(definition)), "super": definition.category == GameEnums.AugmentCategory.SUPER_GAMBLE, "tier": definition.tier}
 
 
 ## 150px 후광 / 120px 네온 메달 / 110px 원형 이미지. 이미지가 없으면 글자.
@@ -7561,16 +7580,68 @@ static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: f
 	title.add_theme_constant_override("outline_size", 4)
 	title.text = str(info["title"])
 	card.add_child(title)
-	var desc := _make_label("", 17, Color("dee2e6"))
-	desc.position = Vector2(14, 240)
+	# 설명 칸 (카드 아래 끝까지). 판정 도구는 [핵심 한 줄] [최소~최대 요약] ─ [작은 족보표] 순서로 나눠 쓴다.
+	var text_top: float = 240.0
+	var text_bottom: float = AUGMENT_CARD_SIZE.y - 12.0
+	var detail_text: String = str(info.get("detail", ""))
+	var summary_text: String = str(info.get("summary", ""))
+	var detail_h: float = 0.0
+	if detail_text != "":
+		# 족보표는 아래쪽 보조 칸 (작은 글자, 구분선 위)
+		detail_h = 62.0
+		var detail_box := Vector2(AUGMENT_CARD_SIZE.x - 28.0, detail_h)
+		var detail := _make_label("", 12, Color("98a1ad"))
+		detail.name = "AugmentDetail"
+		detail.position = Vector2(14, text_bottom - detail_h)
+		detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		detail.custom_minimum_size = Vector2(detail_box.x, 0)
+		detail.size = detail_box
+		detail.clip_text = true
+		detail.add_theme_font_size_override("font_size", CardSkin.fit_px(L10n.t(detail_text), detail_box.x, detail_box.y, 13, 9, NAN, detail.get_theme_font("font")))
+		detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		detail.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		detail.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		detail.text = detail_text
+		card.add_child(detail)
+		var rule := ColorRect.new()
+		rule.name = "AugmentDetailRule"
+		rule.color = Color(color.r, color.g, color.b, 0.55)
+		rule.position = Vector2(40, text_bottom - detail_h - 6.0)
+		rule.size = Vector2(AUGMENT_CARD_SIZE.x - 80.0, 2)
+		rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		card.add_child(rule)
+		text_bottom -= detail_h + 10.0
+	if summary_text != "":
+		# 한눈에 보는 이동 범위: 크고 밝게 (핵심 문구가 없으면 설명 칸 전체를 쓴다)
+		var only: bool = str(info["desc"]).strip_edges() == ""
+		var summary_h: float = text_bottom - text_top if only else 30.0
+		var summary := _make_label("", 20, Color("ffe066"))
+		summary.name = "AugmentSummary"
+		summary.position = Vector2(14, text_bottom - summary_h)
+		summary.size = Vector2(AUGMENT_CARD_SIZE.x - 28.0, summary_h)
+		summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		summary.clip_text = true
+		summary.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		summary.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		summary.add_theme_font_size_override("font_size", CardSkin.fit_px(L10n.t(summary_text), AUGMENT_CARD_SIZE.x - 28.0, summary_h, 24 if only else 20, 13))
+		summary.add_theme_color_override("font_outline_color", Color.BLACK)
+		summary.add_theme_constant_override("outline_size", 4)
+		summary.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		summary.text = summary_text
+		card.add_child(summary)
+		text_bottom -= summary_h + 2.0
+	var desc := _make_label("", 19, Color("eef1f4"))
+	desc.name = "AugmentDesc"
+	desc.position = Vector2(14, text_top)
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	var desc_box := Vector2(AUGMENT_CARD_SIZE.x - 28.0, AUGMENT_CARD_SIZE.y - 240.0 - 12.0)
+	var desc_box := Vector2(AUGMENT_CARD_SIZE.x - 28.0, text_bottom - text_top)
 	desc.custom_minimum_size = Vector2(desc_box.x, 0)
 	desc.size = desc_box
 	desc.clip_text = true
-	# 설명이 카드 아래 끝까지의 칸에 다 들어가는 크기로 (판정 도구 족보표·긴 번역도 카드 밖으로 나가지 않게)
-	desc.add_theme_font_size_override("font_size", CardSkin.fit_px(L10n.t(str(info["desc"])), desc_box.x, desc_box.y, 17 if str(info["desc"]).length() <= 70 else 14, 10))
+	# 핵심 효과는 예전(17/14px)보다 2~3px 크게 시작해 칸에 맞춘다 (공통 문구가 빠져 자리가 남는다)
+	desc.add_theme_font_size_override("font_size", CardSkin.fit_px(L10n.t(str(info["desc"])), desc_box.x, desc_box.y, 20 if str(info["desc"]).length() <= 70 else 17, 10))
 	desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	desc.vertical_alignment = VERTICAL_ALIGNMENT_CENTER if summary_text != "" else VERTICAL_ALIGNMENT_TOP
 	desc.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	desc.text = str(info["desc"])  # 줄바꿈 폭이 정해진 뒤에 글자를 넣어야 라벨이 글자 폭만큼 늘어나지 않는다
 	card.add_child(desc)
@@ -7645,6 +7716,16 @@ func _build_draft_overlay(player_id: int, remaining: int) -> void:
 		reroll.focus_mode = Control.FOCUS_NONE
 		slot.add_child(reroll)
 		_draft_reroll_buttons.append(reroll)
+	# 공통 안내 바: 카드 본문에서 뺀 공통 규칙 문구를 이번 선택지에 해당하는 것만 한 줄로 작게
+	var notes: PackedStringArray = []
+	for offer: StringName in offers:
+		var note: String = str(AugmentDef.NOTE_BAR.get(AugmentRegistry.get_def(offer).category, ""))
+		if note != "" and not notes.has(note):
+			notes.append(note)
+	if not notes.is_empty():
+		var note_bar: MarqueeLabel = MarqueeLabel.create("   ".join(notes), 14, Color("aab3bf"), Vector2(AUGMENT_CARD_SIZE.x * 3.0 + 60.0, 24), HORIZONTAL_ALIGNMENT_CENTER, "DraftNoteBar")
+		note_bar.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		box.add_child(note_bar)
 	if net != null:
 		# 온라인에서만 [무작위로 자동 선택]을 둔다 (혼자 하는 판은 군더더기라 뺐다).
 		var footer := HBoxContainer.new()
