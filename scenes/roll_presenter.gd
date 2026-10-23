@@ -26,6 +26,7 @@ const CARD_RESULT_HOLD: float = 0.50
 const TOSS_TOOLS: Array[StringName] = [&"D6", &"CHINCHIRO", &"YUT"]
 ## 주사위가 손을 떠나 착지·눈금 확정까지 (3D 굴림 1초를 이 시간으로 압축한다).
 const TOSS_LAND_TIME: float = 0.72
+const CHINCHIRO_LAND_TIME: float = 1.12
 ## 윷 3D 시간 배속: 네 가락이 모두 멈추는 1.12초가 0.8초가 된다.
 const YUT_TIME_SCALE: float = 1.4
 ## 윷 묶음의 이동은 먼저 끝내고, 이후에는 가락별 3D 비행과 착지만 보여 준다.
@@ -162,7 +163,8 @@ static func supports(tool_id: StringName) -> bool:
 ## 3D 연출 시간이 화면에서 몇 배로 흐르는가 (투척 도구는 빠르게 압축한다).
 static func speed_for(tool_id: StringName) -> float:
 	match tool_id:
-		&"D6", &"CHINCHIRO": return DiceRoll3D.ROLL_TIME / TOSS_LAND_TIME
+		&"D6": return DiceRoll3D.ROLL_TIME / TOSS_LAND_TIME
+		&"CHINCHIRO": return DiceRoll3D.ROLL_TIME / CHINCHIRO_LAND_TIME
 		&"YUT": return YUT_TIME_SCALE
 	return 1.0
 
@@ -239,25 +241,27 @@ func _begin_toss() -> void:
 	_last_contact = -1
 	_toss_view = _dice_3d if dice else _yut_3d
 	if dice and _dice_3d.shadow != null:
-		_dice_3d.shadow.visible = false
+		_dice_3d.shadow.visible = _mode == &"CHINCHIRO"
 	_toss_start = toss_from if toss_from.is_finite() else center + Vector2(0.0, 260.0)
 	if _ground_shadow == null:
 		_ground_shadow = GroundShadow.new()
 		add_child(_ground_shadow)
-	_ground_shadow.visible = dice  # 윷가락은 3D 판 안에 가락마다 그림자가 있다
+	_ground_shadow.visible = _mode == &"D6"  # 친치로 그릇·윷은 3D 공간에서 깊이를 판정한다.
 	# top_level은 형제 순서와 별개로 그려진다. 명시적인 z로 면 위에 그림자가 덮이지 않게 한다.
 	_ground_shadow.z_index = 0
 	_root.z_index = 2
 	if _contact_fx == null:
 		_contact_fx = ContactFX.new()
 		add_child(_contact_fx)
-	_contact_fx.show()
+	_contact_fx.visible = _mode != &"CHINCHIRO"
 	# Result captions are screen-space overlays, not VBox layout participants.
 	# Otherwise a text resize can move the label back into the die on the next sort.
 	_die_label.reparent(self, false)
 	_die_label.top_level = true
 	_die_label.z_index = 3
 	_die_label.pivot_offset = Vector2.ZERO
+	if _mode == &"CHINCHIRO":
+		_dice_3d.set_bowl_entry(_toss_start - center - TOSS_LAND_OFFSET)
 	modulate.a = 0.0
 	_update_toss(0.0)
 
@@ -298,6 +302,9 @@ func _update_contacts(t: float) -> void:
 
 ## 포물선과 접지 시각을 공유한다. 남은 수평 속도로 조금 더 굴러간 뒤 멈춘다.
 func _update_toss(t: float) -> void:
+	if _mode == &"CHINCHIRO":
+		_update_bowl_toss(t)
+		return
 	var travel: float = TOSS_LAND_TIME if _mode != &"YUT" else YUT_TRAVEL_TIME
 	var u: float = clampf(t / travel, 0.0, 1.0)
 	var eased: float = 1.0 - pow(1.0 - u, 2.0)
@@ -342,20 +349,37 @@ func _update_toss(t: float) -> void:
 					Sfx.play(&"thud", -5.0 - index * 7.0, 0.0, 1.05 + index * 0.08)
 
 
+func _update_bowl_toss(t: float) -> void:
+	# The dish stays on the board; only the 3D die travels into its cavity.
+	toss_height = 0.0
+	scale = Vector2.ONE
+	rotation = 0.0
+	var landed: Vector2 = center + TOSS_LAND_OFFSET
+	_place_toss_body(landed)
+	_place_toss_label(landed)
+	modulate.a = clampf(t / 0.10, 0.0, 1.0)
+	for index: int in DiceRoll3D.BOWL_CONTACTS.size():
+		var since: float = t - DiceRoll3D.BOWL_CONTACTS[index] * CHINCHIRO_LAND_TIME
+		if since >= 0.0 and index > _last_contact:
+			_last_contact = index
+			if since < 0.10:
+				Sfx.play(&"mahjong_tap", -4.0-index*6.0, 0.0, 1.12+index*0.10)
+
+
 ## "N칸 전진!"은 주사위(윷 묶음) 바로 위에 뜬다.
 func _place_toss_label(view_center: Vector2) -> void:
 	if _die_label == null:
 		return
 	_die_label.reset_size()
-	var above: float = (82.0 if _mode != &"YUT" else 96.0) * scale.y
+	var above: float = (140.0 if _mode == &"CHINCHIRO" else (96.0 if _mode == &"YUT" else 82.0)) * scale.y
 	_die_label.position = view_center + Vector2(-_die_label.size.x * _die_label.scale.x / 2.0, -above - _die_label.size.y * _die_label.scale.y)
 
 
 ## 결과 글자만 톡 띄우고 물체의 반동은 작게 마감한다. 입력은 이미 풀려 있다.
 func _update_linger(t: float) -> void:
-	var peak: float = PUNCH_SCALE if _mode != &"YUT" else 1.0
+	var peak: float = PUNCH_SCALE if _mode == &"D6" else 1.0
 	var p: float = clampf(t / PUNCH_TIME, 0.0, 1.0)
-	var squash := Vector2(1.04, 0.97) if _mode != &"YUT" else Vector2.ONE
+	var squash := Vector2(1.04, 0.97) if _mode == &"D6" else Vector2.ONE
 	var k: Vector2
 	if p < 0.3:
 		k = Vector2.ONE.lerp(squash, p / 0.3)
@@ -377,7 +401,8 @@ func _update_linger(t: float) -> void:
 		_die_label.scale = Vector2.ONE * Tween.interpolate_value(0.6, 0.4, pop, 1.0, Tween.TRANS_BACK, Tween.EASE_OUT)
 		_die_label.modulate.a = 1.0
 	_place_toss_label(landed)
-	_update_contacts(_total + t)
+	if _mode != &"CHINCHIRO":
+		_update_contacts(_total + t)
 	modulate.a = 1.0 if t < LINGER_TIME else clampf(1.0 - (t - LINGER_TIME) / FADE_TIME, 0.0, 1.0)
 	if t >= LINGER_TIME + FADE_TIME:
 		_end_linger()
@@ -531,7 +556,7 @@ func _build(tool_id: StringName) -> void:
 	match tool_id:
 		&"D6", &"CHINCHIRO":
 			_title.text = "기본 주사위" if tool_id == &"D6" else "지하노역장 친치로"
-			_total = TOSS_LAND_TIME
+			_total = CHINCHIRO_LAND_TIME if tool_id == &"CHINCHIRO" else TOSS_LAND_TIME
 			if _dice_3d == null:
 				_dice_3d = DiceRoll3D.new()
 				_stage.add_child(_dice_3d)
@@ -814,7 +839,10 @@ func _update(t: float) -> void:
 
 
 func _update_3d_die(t: float) -> void:
-	_dice_3d.apply_board_time(t, toss_height)
+	if _mode == &"CHINCHIRO":
+		_dice_3d.apply_time(t)
+	else:
+		_dice_3d.apply_board_time(t, toss_height)
 	if t >= DiceRoll3D.ROLL_TIME and not _settled:
 		_settled = true
 		var steps: int = int(_result.get("steps", _final_face))

@@ -7,6 +7,11 @@ const ROLL_TIME: float = 1.0
 const HOLD_TIME: float = 0.35
 const VIEW_SIZE: Vector2 = Vector2(280, 232)
 const RENDER_SIZE: Vector2i = Vector2i(560, 464)
+const BOWL_VIEW_SIZE: Vector2 = Vector2(440, 340)
+const BOWL_RENDER_SIZE: Vector2i = Vector2i(880, 680)
+const BOWL_MODEL = preload("res://scenes/chinchiro_bowl_model.gd")
+const BOWL_SCENE: PackedScene = preload("res://assets/models/chinchiro/rice_bowl_v01.tscn")
+const BOWL_CONTACTS: Array[float] = [0.42, 0.70]
 const HALF_SIZE: float = 1.0
 const ROUND_RADIUS: float = 0.22
 const PIP_RADIUS: float = 0.125
@@ -32,6 +37,10 @@ var settled: bool = false
 var _power: float = 0.5
 var _tool_id: StringName = &"D6"
 var _pips: MeshInstance3D
+var _camera: Camera3D
+var bowl: Node3D
+var _bowl_shadow: MeshInstance3D
+var _bowl_entry: Vector2 = Vector2(0.8, 0.6)
 
 
 func _init() -> void:
@@ -54,6 +63,7 @@ func _ready() -> void:
 	add_child(render_view)
 	texture = render_view.get_texture()
 	var camera := Camera3D.new()
+	_camera = camera
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
 	camera.size = 5.4
 	camera.position = Vector3(6.0, 7.25, 6.0)
@@ -102,6 +112,7 @@ func begin(value: int, power: float, tool_id: StringName = &"D6") -> void:
 	_pips.mesh = _pip_mesh_for(tool_id)
 	_power = clampf(power, 0.0, 1.0)
 	settled = false
+	_configure_bowl(tool_id == &"CHINCHIRO")
 	render_view.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	apply_time(0.0)
 
@@ -132,6 +143,9 @@ func stop_rendering() -> void:
 
 
 func apply_time(seconds: float) -> void:
+	if _tool_id == &"CHINCHIRO":
+		_apply_bowl_time(seconds)
+		return
 	die.transform = pose_at(seconds, result_face, _power)
 	settled = seconds >= ROLL_TIME
 	var lift: float = die.position.y - support_height(die.quaternion)
@@ -139,6 +153,84 @@ func apply_time(seconds: float) -> void:
 	shadow.position.z = die.position.z
 	shadow.scale = Vector3.ONE * (1.0 + lift * 0.18)
 	(shadow.material_override as ShaderMaterial).set_shader_parameter("opacity", 0.25 / (1.0 + lift))
+
+
+func _configure_bowl(enabled: bool) -> void:
+	if enabled and bowl == null:
+		bowl = BOWL_SCENE.instantiate() as Node3D
+		render_view.add_child(bowl)
+		_bowl_shadow = MeshInstance3D.new()
+		var plane := PlaneMesh.new()
+		plane.size = Vector2(7.4, 7.4)
+		_bowl_shadow.mesh = plane
+		_bowl_shadow.position.y = 0.01
+		var shade := ShaderMaterial.new()
+		shade.shader = SHADOW_SHADER
+		shade.set_shader_parameter("opacity", 0.22)
+		_bowl_shadow.material_override = shade
+		render_view.add_child(_bowl_shadow)
+	if bowl != null:
+		bowl.visible = enabled
+		_bowl_shadow.visible = enabled
+	custom_minimum_size = BOWL_VIEW_SIZE if enabled else VIEW_SIZE
+	size = custom_minimum_size
+	render_view.size = BOWL_RENDER_SIZE if enabled else RENDER_SIZE
+	_camera.size = 6.9 if enabled else 5.4
+	_camera.position = Vector3(0, 8.2, 12.0) if enabled else Vector3(6.0, 7.25, 6.0)
+	_camera.look_at(Vector3(0, 1.05, 0) if enabled else Vector3(0, 1.25, 0))
+	die.scale = Vector3.ONE
+	shadow.visible = true
+	shadow.scale = Vector3.ONE
+	shadow.position = Vector3(0, BOWL_MODEL.FLOOR_Y + 0.012 if enabled else 0.005, 0)
+	_bowl_entry = Vector2(0.8, 0.6)
+
+
+func set_bowl_entry(screen_direction: Vector2) -> void:
+	_bowl_entry = Vector2(screen_direction.x, screen_direction.y * 0.65).normalized()
+	if _bowl_entry.is_zero_approx():
+		_bowl_entry = Vector2(0.8, 0.6)
+	if _tool_id == &"CHINCHIRO":
+		_apply_bowl_time(0.0)
+
+
+## Throw into the fixed bowl, glance off the curved side, rebound across the
+## floor, and settle on the engine's physical face. No random outcome is drawn.
+static func bowl_pose_at(seconds: float, face: int, power: float, entry: Vector2) -> Transform3D:
+	var u: float = clampf(seconds / ROLL_TIME, 0, 1)
+	var source: Vector2 = entry.normalized()
+	var turn: Quaternion = pose_at(seconds, face, power).basis.get_rotation_quaternion()
+	var floor_point: Vector2
+	var lift: float
+	var flight_progress: float = -1.0
+	if u < BOWL_CONTACTS[0]:
+		var p: float = u / BOWL_CONTACTS[0]
+		flight_progress = p
+		floor_point = source * lerpf(3.7, 1.45, smoothstep(0, 1, p))
+		lift = 0.0  # Entry height is handled above the rim, below.
+	elif u < BOWL_CONTACTS[1]:
+		var p: float = (u - BOWL_CONTACTS[0]) / (BOWL_CONTACTS[1]-BOWL_CONTACTS[0])
+		floor_point = source * lerpf(1.45, -0.85, p) + source.orthogonal() * sin(PI*p) * 0.22
+		lift = sin(PI*p) * lerpf(0.32, 0.50, power)
+	else:
+		var p: float = (u-BOWL_CONTACTS[1]) / (1.0-BOWL_CONTACTS[1])
+		floor_point = (-source*0.85).lerp(Vector2(0.08,0.02),1.0-pow(1.0-p,2.0))
+		lift = sin(PI*p) * 0.14 * (1.0-p)
+	var support: float = BOWL_MODEL.support_y(turn, floor_point)
+	var y: float = support + maxf(lift, 0.0)
+	if flight_progress >= 0.0:
+		# Above/outside the rim there is no ceramic floor to extrapolate upward.
+		var rim_clearance: float = minf(support, 3.6)
+		y = lerpf(4.5, rim_clearance, flight_progress) + sin(PI*flight_progress)*0.45
+	return Transform3D(Basis(turn).scaled(Vector3.ONE * BOWL_MODEL.DIE_SCALE), Vector3(floor_point.x, y, floor_point.y))
+
+
+func _apply_bowl_time(seconds: float) -> void:
+	die.transform = bowl_pose_at(seconds, result_face, _power, _bowl_entry)
+	settled = seconds >= ROLL_TIME
+	shadow.position = Vector3(die.position.x, BOWL_MODEL.FLOOR_Y+0.012, die.position.z)
+	var lift: float = maxf(die.position.y - BOWL_MODEL.FLOOR_Y - BOWL_MODEL.DIE_SCALE, 0.0)
+	shadow.scale = Vector3.ONE * (0.72 + lift * 0.10)
+	(shadow.material_override as ShaderMaterial).set_shader_parameter("opacity", 0.30/(1.0+lift*1.5))
 
 
 ## Board presenter owns flight and travel in screen space. Keep the 3D die's

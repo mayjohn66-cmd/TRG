@@ -395,6 +395,10 @@ func _test_presenters() -> void:
 	# face at completion without advancing the live game's unrelated turn timer.
 	for value: int in [4, 5, 6, -6]:
 		presenter.play(&"CHINCHIRO", {"steps": maxi(value, 0), "details": {"face": value, "oops": value == -6}}, 0.8)
+		_expect(die_view.bowl != null and die_view.bowl.visible and not presenter._ground_shadow.visible, "친치로는 깊이가 있는 전용 그릇 안에서 굴린다")
+		var bowl_center: Vector2 = die_view.get_global_transform() * (die_view.size / 2.0)
+		presenter._update(0.40)
+		_expect((die_view.get_global_transform()*(die_view.size/2.0)).distance_to(bowl_center)<1.0,"그릇은 보드에 고정되고 주사위만 날아든다")
 		presenter._process(DiceRoll3D.ROLL_TIME + DiceRoll3D.HOLD_TIME)
 		_expect(presenter._dice_3d == die_view, "loaded die shares the same 3D viewport")
 		_expect(die_view.displayed_value() == value and presenter.last_display == str(maxi(value, 0)), "loaded physical face and displayed result match %d" % value)
@@ -404,6 +408,7 @@ func _test_presenters() -> void:
 			_expect(presenter._die_label.text.contains("0칸") and not presenter._die_label.text.contains("후퇴"), "oops is shown as a zero-tile failure, never a retreat")
 	presenter.play(&"D6", {"steps": 1, "details": {"face": 1}}, 0.5)
 	_expect(die_view._pips.mesh == ordinary_mesh, "switching back restores ordinary D6 pips")
+	_expect(not die_view.bowl.visible and die_view.custom_minimum_size == DiceRoll3D.VIEW_SIZE and die_view.render_view.size == DiceRoll3D.RENDER_SIZE,"친치로 뒤 기본 주사위는 그릇·큰 카메라를 남기지 않는다")
 	presenter.cancel()
 	# 윷
 	elapsed = await _play(&"YUT", {"tool_id": &"YUT", "steps": 3, "details": {"face": 3}})
@@ -1728,6 +1733,7 @@ func _test_action_beats() -> void:
 
 func _test_bot_pacing() -> void:
 	var manager: TurnManager = _board.manager
+	var saved_pacing: bool = _board.pacing_enabled
 	_board.instant_roll_for_test = false
 	var guard: int = 0
 	while not (manager.current_state == TurnManager.State.PHASE_TURN_BEGIN and manager.current_player_id() == 1) and guard < 600:
@@ -1754,6 +1760,10 @@ func _test_bot_pacing() -> void:
 	var settle: float = _now()
 	while _board._ui_busy() and _now() - settle < 8.0:  # 앞선 라운드·P1 차례 배너가 끝난 뒤부터 잰다
 		await process_frame
+	# Earlier effect probes disable pacing. This probe measures the turn banner,
+	# so enable it explicitly instead of relying on a leftover announcement.
+	_board.pacing_enabled = true
+	_board._announced_round = manager.state.round_number
 	# 같은 라운드에 P2 차례가 이미 지나갔으면(앞선 진행이 빠르거나 느린 환경) 차례 배너가 다시 뜨지 않는다: 새 차례로 보이게 비운다
 	_board._announced_turn_key = ""
 	manager.advance_to_next_player()  # P2(봇)의 턴 시작
@@ -1774,8 +1784,9 @@ func _test_bot_pacing() -> void:
 	if events.has(&"roll_resolved") and events.has(&"move_resolved"):
 		var roll_after: float = float(events[&"roll_resolved"]) - start
 		var move_after: float = float(events[&"move_resolved"]) - float(events[&"roll_resolved"])
-		_expect(roll_after >= 0.45 and roll_after < 3.0, "봇은 차례 배너(약 1.2초)가 끝난 뒤 0.3초 판단 + 0.2초 뒤에 굴린다 (%.2f초)" % roll_after)
+		_expect(roll_after >= 0.45 and roll_after < 3.0, "봇은 차례 배너가 끝난 뒤 판단·굴림 대기를 거쳐 굴린다 (%.2f초)" % roll_after)
 		_expect(move_after >= 0.45 and move_after < 4.0, "굴림 연출 + 결과 확인 0.3초 + 선택 0.2초 뒤에 말을 옮기고, 이동은 0.75초 안에 끝난다 (%.2f초)" % move_after)
+	_board.pacing_enabled = saved_pacing
 
 
 ## ACT_09 결투: 카드를 놓으면 중앙 스테이지에 결투장이 열리고, 손 고르기 -> 공개 -> 승자의 말 클릭 -> 후퇴까지 이어진다.

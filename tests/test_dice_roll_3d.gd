@@ -1,5 +1,50 @@
 class_name TestDiceRoll3D
 extends TestCase
+const Bowl = preload("res://scenes/chinchiro_bowl_model.gd")
+
+
+func test_chinchiro_bowl_has_a_solid_wall_open_cavity_and_no_degenerate_faces() -> void:
+	var mesh: ArrayMesh = Bowl.make_mesh()
+	var arrays: Array = mesh.surface_get_arrays(0)
+	var points: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+	var edges: Dictionary = {}
+	for index: int in range(0, points.size(), 3):
+		var a: Vector3 = points[index]
+		var b: Vector3 = points[index+1]
+		var c: Vector3 = points[index+2]
+		check((b-a).cross(c-a).length_squared()>0.000000001,"bowl has no zero-area triangles")
+		for vertex: int in range(index,index+3):
+			check(points[vertex].is_finite() and normals[vertex].is_finite(),"finite ceramic geometry and normals")
+			var next: int = index+(vertex-index+1)%3
+			var p: Vector3 = (points[vertex]*10000.0).round()
+			var q: Vector3 = (points[next]*10000.0).round()
+			var key: String = "%s|%s"%[str(p),str(q)] if str(p)<str(q) else "%s|%s"%[str(q),str(p)]
+			edges[key] = int(edges.get(key,0))+1
+	for count: int in edges.values():
+		check(count==2,"ceramic shell is watertight, including the foot and lip")
+	check(mesh.get_aabb().size.y>2.1,"rice bowl has visible depth")
+	check(is_equal_approx(Bowl.floor_height(0),Bowl.FLOOR_Y) and Bowl.floor_height(3.1)>2.0,"low central cavity rises into a curved wall")
+
+
+func test_chinchiro_bounces_stay_inside_the_bowl_and_keep_every_loaded_result() -> void:
+	var vertices: PackedVector3Array = DiceRoll3D._make_body_mesh().surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+	for entry: Vector2 in [Vector2(-1,-1),Vector2(-1,1),Vector2(1,-1),Vector2(1,1)]:
+		for face: int in range(1,7):
+			for power: float in [0.0,1.0]:
+				for time: float in [0.42,0.55,0.70,0.85,1.0]:
+					var pose: Transform3D = DiceRoll3D.bowl_pose_at(time,face,power,entry)
+					check(absf(pose.basis.determinant()-pow(Bowl.DIE_SCALE,3))<0.0001,"die stays rigid inside the bowl")
+					for vertex: int in range(0,vertices.size(),32):
+						var point: Vector3 = pose*vertices[vertex]
+						check(point.y>=Bowl.floor_height(Vector2(point.x,point.z).length())-0.002,"rounded die does not penetrate the ceramic")
+				var final: Transform3D = DiceRoll3D.bowl_pose_at(1.0,face,power,entry)
+				check_eq(DiceRoll3D.top_face(final.basis.orthonormalized().get_rotation_quaternion()),face,"loaded die result is preserved")
+				check(final.is_equal_approx(DiceRoll3D.bowl_pose_at(3.0,face,power,entry)),"result remains still in the bowl")
+	for contact: float in DiceRoll3D.BOWL_CONTACTS:
+		var before: Transform3D = DiceRoll3D.bowl_pose_at(contact-0.00001,3,0.75,Vector2(1,1))
+		var after: Transform3D = DiceRoll3D.bowl_pose_at(contact+0.00001,3,0.75,Vector2(1,1))
+		check(before.origin.distance_to(after.origin)<0.003,"wall and floor contacts are continuous")
 
 
 func test_yacht_results_face_the_camera_without_moving_after_settle() -> void:
