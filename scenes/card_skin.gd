@@ -91,6 +91,35 @@ static func fit_title_px(text: String, box_width: float, box_height: float, star
 	return min_px
 
 
+## 여러 줄로 감싼 글이 상자(가로 box_width, 세로 box_height)에 다 들어가는 가장 큰 글자 크기 (start_px에서 min_px까지 줄여 본다).
+## 낱말 경계에서 나누되 칸보다 긴 낱말(띄어쓰기 없는 일본어 등)은 글자 단위로 나눈다 (AUTOWRAP_WORD_SMART와 같다). 화면에 나갈 글(번역된 글)을 넘긴다.
+## line_spacing: 그 라벨의 줄 간격 (NAN이면 테마 기본값, 라벨은 줄마다 이만큼 더 띄운다).
+static func fit_px(text: String, box_width: float, box_height: float, start_px: int, min_px: int, line_spacing: float = NAN, font: Font = null) -> int:
+	var face: Font = font if font != null else FONT
+	if is_nan(line_spacing):
+		line_spacing = default_line_spacing()
+	var flags: int = TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_ADAPTIVE
+	for px: int in range(start_px, min_px - 1, -1):
+		var wrapped: Vector2 = face.get_multiline_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, box_width, px, -1, flags)
+		var line_height: float = face.get_height(px)
+		var lines: int = maxi(1, roundi(wrapped.y / line_height))
+		if lines * (line_height + line_spacing) - line_spacing <= box_height + 0.5:
+			return px
+	return min_px
+
+
+static var _default_spacing: float = NAN
+
+
+## 라벨의 기본 줄 간격 (테마 값).
+static func default_line_spacing() -> float:
+	if is_nan(_default_spacing):
+		var probe := Label.new()
+		_default_spacing = float(probe.get_theme_constant("line_spacing"))
+		probe.free()
+	return _default_spacing
+
+
 static func label(parent: Control, node_name: String, text: String, rect: Rect2, px: int, color: Color = INK, centered: bool = false, wrap: bool = false) -> Label:
 	var item := Label.new()
 	item.name = node_name
@@ -99,8 +128,11 @@ static func label(parent: Control, node_name: String, text: String, rect: Rect2,
 		item.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		item.clip_text = true
 	item.text = text
-	item.position = rect.position
-	item.size = rect.size
+	if not wrap:
+		# 한 줄 글(종류 배지·효과 종류 등): 글꼴(언어)에 따라 줄 높이·폭이 커져도 칸 밖으로 밀려나지 않게 칸에 맞춰 줄인다
+		var shown: String = L10n.t(text)
+		while px > 6 and (FONT.get_height(px) > rect.size.y + 1.0 or FONT.get_string_size(shown, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x > rect.size.x + 1.0):
+			px -= 1
 	item.add_theme_font_override("font", FONT)
 	item.add_theme_font_size_override("font_size", px)
 	item.add_theme_color_override("font_color", color)
@@ -108,6 +140,11 @@ static func label(parent: Control, node_name: String, text: String, rect: Rect2,
 	item.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER if centered else HORIZONTAL_ALIGNMENT_LEFT
 	item.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(item)
+	item.position = rect.position
+	item.size = rect.size
+	# 카드가 아직 화면 트리 밖이면 글꼴 지정이 반영되기 전 기본 글꼴(16px)로 잰 글 폭만큼 칸이 늘어나 있다 (작은 배지 글이 밖으로 밀림).
+	# 트리에 들어간 뒤 칸 크기를 다시 준다
+	item.set_deferred("size", rect.size)
 	return item
 
 
@@ -126,8 +163,8 @@ static func body(card: BaseCard, card_size: Vector2, summary_text: String, categ
 	if detailed and FONT.get_string_size(shown_name, HORIZONTAL_ALIGNMENT_LEFT, -1, title_px).x > width - 12.0 * k:
 		title_px = roundi(18.0 * k)
 		title_h = 52.0 * k
-	if not detailed and shown_name != card.display_name:
-		title_px = fit_title_px(shown_name, width - 12.0 * k, title_h - 4.0 * k, title_px, roundi(8.0 * k))
+	# 이름이 이름 칸(최대 두 줄)에 다 들어가도록 글자를 줄인다 (언어마다 길이가 달라도 칸 밖으로 나가거나 잘리지 않게)
+	title_px = fit_px(shown_name, width - 12.0 * k, title_h - 4.0 * k, title_px, roundi((12.0 if detailed else 8.0) * k), -roundi(2 * k))
 	var name_panel: Panel = panel(holder, "NamePanel", Rect2(margin, margin, width, title_h), HEADER, GREEN, maxi(1, roundi(2 * k)), roundi(10 * k))
 	var title: Label = label(name_panel, "CardTitle", card.display_name, Rect2(6 * k, 2 * k, width - 12 * k, title_h - 4 * k), title_px, INK, true, true)
 	title.max_lines_visible = 2
@@ -175,11 +212,14 @@ static func body(card: BaseCard, card_size: Vector2, summary_text: String, categ
 		icon.size = Vector2(icon_size, icon_size)
 		holder.add_child(icon)
 	var detail: Panel = panel(holder, "EffectPanel", Rect2(margin, detail_y, width, card_size.y - detail_y - margin), PANEL, GREEN, maxi(1, roundi(2 * k)), roundi(10 * k))
-	var badge_size := Vector2((48.0 if detailed else 30.0) * k, (20.0 if detailed else 14.0) * k)
+	# 종류 배지는 글에 맞춰 넓어진다 (영어 Summon·일본어 召喚처럼 한국어보다 긴 이름도 배지 안에 들어가게, 효과 칸 폭의 절반까지)
+	var badge_px: int = roundi((14.0 if detailed else 9.0) * k)
+	var badge_text_width: float = FONT.get_string_size(L10n.t(category_name), HORIZONTAL_ALIGNMENT_LEFT, -1, badge_px).x
+	var badge_size := Vector2(clampf(badge_text_width + (12.0 if detailed else 8.0) * k, (48.0 if detailed else 30.0) * k, width * 0.5), maxf((20.0 if detailed else 15.0) * k, FONT.get_height(badge_px) + 2.0))
 	var padding: float = (8.0 if detailed else 4.0) * k
 	var badge: Panel = panel(detail, "CategoryBadge", Rect2(Vector2.ONE * padding, badge_size), FILLS[card.category], FILLS[card.category], 0, roundi(7 * k))
 	var badge_ink: Color = Color("f9f9f3") if card.category == GameEnums.CardCategory.TRAP or card.category == GameEnums.CardCategory.COUNTER else Color("111111")
-	label(badge, "CategoryName", category_name, Rect2(Vector2.ZERO, badge_size), roundi((14.0 if detailed else 10.0) * k), badge_ink, true)
+	label(badge, "CategoryName", category_name, Rect2(Vector2.ZERO, badge_size), badge_px, badge_ink, true)
 	if detailed:
 		var tag: String = "타일 설치" if card.needs_tile() else "즉시 효과"
 		if card.category == GameEnums.CardCategory.SUMMON:
@@ -187,10 +227,13 @@ static func body(card: BaseCard, card_size: Vector2, summary_text: String, categ
 		elif card.category == GameEnums.CardCategory.COUNTER:
 			tag = "피격 시 발동"
 		label(detail, "EffectKind", tag, Rect2(padding * 2 + badge_size.x, padding, width - badge_size.x - padding * 3, badge_size.y), roundi(14 * k))
-	var summary_y: float = (36.0 if detailed else 21.0) * k
-	var summary: Label = label(detail, "CardSummary", summary_text, Rect2(padding, summary_y, width - padding * 2, detail.size.y - summary_y - padding), roundi((16.0 if detailed else 11.0) * k), INK, false, true)
-	summary.max_lines_visible = 3 if detailed else 2
+	var summary_y: float = maxf((36.0 if detailed else 21.0) * k, padding + badge_size.y + 2.0 * k)
+	var summary_box := Rect2(padding, summary_y, width - padding * 2, detail.size.y - summary_y - padding)
+	var summary_spacing: float = default_line_spacing() if detailed else -roundi(3 * k)
+	# 효과 설명이 칸에 끝까지 들어가도록 글자를 줄인다 (긴 번역도 잘리지 않게)
+	var summary_px: int = fit_px(L10n.t(summary_text), summary_box.size.x, summary_box.size.y, roundi((16.0 if detailed else 11.0) * k), roundi((10.0 if detailed else 7.0) * k), summary_spacing)
+	var summary: Label = label(detail, "CardSummary", summary_text, summary_box, summary_px, INK, false, true)
 	if not detailed:
-		summary.add_theme_constant_override("line_spacing", -roundi(3 * k))
+		summary.add_theme_constant_override("line_spacing", roundi(summary_spacing))
 	summary.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 	return holder

@@ -66,6 +66,9 @@ jobs:
           SMOKE_LANG=en SMOKE_AI=1 godot --headless --path . -s res://tests/ui_smoke.gd
           SMOKE_LANG=ja SMOKE_AI=1 godot --headless --path . -s res://tests/ui_smoke.gd
 
+      - name: Run text fit scan (cards / augments / rulebook in ko, en, ja)
+        run: godot --headless --path . -s res://tests/ui_text_fit_test.gd
+
       - name: Run super augment board effect test (SUPER_01~10, 12)
         run: |
           godot --headless --path . -s res://tests/ui_super_fx_test.gd 2>&1 | tee /tmp/ui_super_fx_test.log

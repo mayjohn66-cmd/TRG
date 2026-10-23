@@ -7522,17 +7522,19 @@ static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: f
 	card.add_child(emblem)
 	var title_width: float = AUGMENT_CARD_SIZE.x - 36.0
 	var shown_title: String = L10n.t(str(info["title"]))
-	var title_px: int = CardSkin.fit_title_px(shown_title, title_width, 54.0, 20, 16)
+	# 제목이 두 줄 칸(54px)에 다 들어가는 크기로: 띄어쓰기 없는 긴 이름(일본어 등)은 글자 단위로 나눈다
+	var title_px: int = CardSkin.fit_px(shown_title, title_width, 54.0, 20, 12)
 	var measured_width: float = CardSkin.FONT.get_string_size(shown_title, HORIZONTAL_ALIGNMENT_LEFT, -1, title_px).x
 	# Nearly one-line names should not leave just one or two syllables on a second line.
 	if measured_width > title_width and measured_width <= title_width * 1.2:
-		title_px = maxi(16, floori(title_px * title_width / measured_width))
+		title_px = maxi(12, mini(title_px, floori(title_px * title_width / measured_width)))
 	var title := _make_label("", title_px, Color("ffffff"))
 	title.position = Vector2(18, 170)
 	title.size = Vector2(title_width, 54)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	title.autowrap_mode = TextServer.AUTOWRAP_WORD
+	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	title.clip_text = true
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	title.add_theme_color_override("font_outline_color", Color.BLACK)
 	title.add_theme_constant_override("outline_size", 4)
@@ -7541,10 +7543,12 @@ static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: f
 	var desc := _make_label("", 17, Color("dee2e6"))
 	desc.position = Vector2(14, 240)
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	desc.custom_minimum_size = Vector2(AUGMENT_CARD_SIZE.x - 28.0, 0)
-	desc.size = Vector2(AUGMENT_CARD_SIZE.x - 28.0, 140)
-	if str(info["desc"]).length() > 70:
-		desc.add_theme_font_size_override("font_size", 14)  # 판정 도구 카드의 족보표처럼 긴 설명은 작게 해 카드 안에 다 담는다
+	var desc_box := Vector2(AUGMENT_CARD_SIZE.x - 28.0, AUGMENT_CARD_SIZE.y - 240.0 - 12.0)
+	desc.custom_minimum_size = Vector2(desc_box.x, 0)
+	desc.size = desc_box
+	desc.clip_text = true
+	# 설명이 카드 아래 끝까지의 칸에 다 들어가는 크기로 (판정 도구 족보표·긴 번역도 카드 밖으로 나가지 않게)
+	desc.add_theme_font_size_override("font_size", CardSkin.fit_px(L10n.t(str(info["desc"])), desc_box.x, desc_box.y, 17 if str(info["desc"]).length() <= 70 else 14, 10))
 	desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	desc.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	desc.text = str(info["desc"])  # 줄바꿈 폭이 정해진 뒤에 글자를 넣어야 라벨이 글자 폭만큼 늘어나지 않는다
