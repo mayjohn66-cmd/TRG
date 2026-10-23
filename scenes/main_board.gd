@@ -7383,7 +7383,7 @@ static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: f
 			var from: Color = HOLO_GLOW[index]
 			var to: Color = HOLO_GLOW[(index + 1) % HOLO_GLOW.size()]
 			shimmer.tween_method(func(t: float) -> void: box.shadow_color = from.lerp(to, t), 0.0, 1.0, 0.9)
-	card.add_child(AugmentCardSkin.make_background(color, AUGMENT_CARD_SIZE))
+	card.add_child(AugmentCardSkin.make_background(color, AUGMENT_CARD_SIZE, box))
 	var emblem: Control = _make_emblem(str(info["glyph"]), color, info.get("art") as Texture2D)
 	emblem.position = Vector2((AUGMENT_CARD_SIZE.x - 150.0) / 2.0, 14)
 	card.add_child(emblem)

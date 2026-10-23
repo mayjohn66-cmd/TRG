@@ -17,5 +17,17 @@
   },
   "qa": "Source copied byte-for-byte with transparent corners. Shared base and category tint verified in six category/rarity cards and three actual draft screens, including all three blue utility cards. Small upper debug category labels removed; backdrop ignores input and live icons, rules, rarity borders and hover remain separate.",
   "utility_color": "#4dabf7",
-  "debug_category_label": false
+  "debug_category_label": false,
+  "frame_alignment": {
+    "source_visible_bounds_px": [
+      11,
+      8,
+      1003,
+      1498
+    ],
+    "source_corner_patch_px": 128,
+    "inset": "Live StyleBoxFlat border width",
+    "corner_radius": "Live outer radius minus border width",
+    "method": "GPU sampling crops transparent canvas margins and warps only corner patches; rounded inner-frame mask prevents spill. Original PNG unchanged."
+  }
 }
