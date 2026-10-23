@@ -272,7 +272,10 @@ func _test_card_draw_fx() -> void:
 	var fx: CardDrawFX = _board._draw_fx
 	_expect(fx != null, "카드 획득 연출기")
 	var saved_instant: bool = _board.instant_roll_for_test
+	var saved_draft: bool = _board._draft_open
 	_board.instant_roll_for_test = false
+	_board._draft_open = false  # 드래프트 중에 얻은 카드는 [선택한 증강] 공개 뒤에 날아간다: 여기서는 바로 날리는 경로를 본다
+	fx.clear()
 	var owner: int = _board._dock_owner()
 	var other: int = owner % 4 + 1
 	var hand: Array = _board.state.hands[owner]
@@ -308,7 +311,17 @@ func _test_card_draw_fx() -> void:
 	_expect(others.size() == 1 and int(others[0][0]) == other, "남의 카드는 프로필로 (뒷면)")
 	live = _board._dock.get_children().filter(func(child: Node) -> bool: return not child.is_queued_for_deletion())
 	_expect(live.size() == hand.size() and (live[live.size() - 1] as Control).modulate.a > 0.0, "도착하면 손패에 보인다")
+	# 드래프트 중에 얻은 카드는 손패에서 바로 숨겨 두고, 비행은 공개 뒤로 미룬다
+	_board._draft_open = true
+	if _board._draft_in_progress():
+		var deferred: int = _board._draft_deferred.size()
+		_board.state.give_card(owner, &"ACT_03")
+		_expect(_board._draft_deferred.size() == deferred + 1 and not fx.busy() and int(fx.pending.get(owner, 0)) == 1, "드래프트 중 카드는 공개 뒤에 날아간다")
+		_board._draft_deferred.pop_back()
+		fx.release(owner)
+	_board._draft_open = saved_draft
 	_board.instant_roll_for_test = saved_instant
+	_board._refresh_hands()
 	print("CARD_DRAW_FX_OK")
 
 

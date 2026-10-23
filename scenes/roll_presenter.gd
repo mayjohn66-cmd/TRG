@@ -145,6 +145,7 @@ static func real_time(tool_id: StringName, native: float) -> float:
 ## power: 0~1 파워 게이지 값 - 셔플 속도·회전 수·펀치 크기 같은 '연출'에만 쓰이고 결과(눈금)에는 영향이 없다.
 func play(tool_id: StringName, result: Dictionary, power: float = 0.5) -> void:
 	cancel()
+	modulate = Color.WHITE  # 도박사 과열로 그을린 색을 지운다
 	if instant or not supports(tool_id):
 		last_display = _final_text(tool_id, result)
 		return

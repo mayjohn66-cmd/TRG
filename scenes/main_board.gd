@@ -417,6 +417,16 @@ var instant_roll_for_test: bool = false:
 var _presenter: RollPresenter = null
 ## 카드 획득 연출: 보드 한가운데 덱에서 카드가 뽑혀 손패·프로필로 날아간다.
 var _draw_fx: CardDrawFX = null
+## 초증강 전용 보드 연출.
+var _super_fx: SuperFX = null
+## 드래프트에서 지금 처리 중인 증강 선택의 번호: 그 선택이 만든 연출 단계에 붙여, 초증강 연출을 그 단계들 바로 앞에 끼운다.
+var _pick_serial: int = 0
+## 이번 증강 선택 동안 엔진이 낸 변화 (초증강 연출이 무엇을 보여 줄지 정한다).
+var _super_changes: Array[Dictionary] = []
+## 카드를 빼앗긴 사람: 바로 뒤에 오는 카드 획득은 그 사람 프로필에서 날아온다.
+var _steal_from: int = -1
+## 도박사의 영혼: 이번 굴림이 배수가 됐거나(배수) 과열됐다(-1) - 굴림 결과가 나올 때 주사위 위에 보여 준다.
+var _gambler_flash: Dictionary = {}
 var _announcer: EventAnnouncer = null
 var _pending_power: float = 0.5
 var _fx_busy: bool = false
@@ -977,6 +987,7 @@ func _bind_state() -> void:
 	_game_started_msec = Time.get_ticks_msec()
 	state.pawn_stepped.connect(_on_pawn_stepped)
 	state.pawn_warped.connect(_on_pawn_warped)
+	state.pawn_warped.connect(func(pawn_id: int, _from_tile: int, to_tile: int) -> void: _note_super({"kind": "teleport", "pawn": pawn_id, "tile": to_tile}))
 	state.pawn_captured.connect(_on_pawn_captured)
 	state.snapshot_restored.connect(func() -> void:
 		_reset_presentation()
@@ -984,7 +995,9 @@ func _bind_state() -> void:
 		_capture_marks.clear()
 		if _capture_cutin != null:
 			_capture_cutin.cancel())
+	state.pawn_teleported.connect(func(pawn_id: int, to_tile: int) -> void: _note_super({"kind": "teleport", "pawn": pawn_id, "tile": to_tile}))
 	state.pawn_sent_to_start.connect(func(pawn_id: int, by_player: int) -> void:
+		_note_super({"kind": "start", "pawn": pawn_id, "by": by_player})
 		var victim: PlayerPawn = state.get_pawn(pawn_id)
 		_log_line("%s 출발선으로 복귀%s" % [_pawn_name(pawn_id), "  [복수 부스터 획득: 다음 출발 +%d칸]" % _revenge_steps(victim) if victim != null and victim.revenge_boost else ""], Color("ff8787"))
 		if victim == null:
@@ -1039,6 +1052,7 @@ func _bind_state() -> void:
 			_number_pop(pad_pos + Vector2(0, -30), "부스터 발판 +%d" % GameData.dash_steps(), Color("63e6be"))
 			_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(300.0 * _motion_pace()))))
 	state.pawn_finished.connect(func(pawn_id: int) -> void:
+		_note_super({"kind": "finish", "pawn": pawn_id})
 		_log_line(tr_ui("log.finish", [_pawn_name(pawn_id)]), Color("69db7c"))
 		var finisher: PlayerPawn = state.get_pawn(pawn_id)
 		if finisher != null:
@@ -1084,7 +1098,9 @@ func _bind_state() -> void:
 	state.pawns_swapped.connect(func(a_id: int, b_id: int) -> void:
 		_log_line("%s ↔ %s 위치 교환" % [_pawn_name(a_id), _pawn_name(b_id)], Color("ffd43b"))
 		_hint_swap(a_id, b_id))
-	state.pawns_castled.connect(func(a_id: int, b_id: int) -> void: _hint_swap(a_id, b_id))
+	state.pawns_castled.connect(func(a_id: int, b_id: int) -> void:
+		_note_super({"kind": "castle", "a": a_id, "b": b_id})
+		_hint_swap(a_id, b_id))
 	state.pawn_pushed_back.connect(func(pawn_id: int, _from: int, _to: int) -> void:
 		if not _fx_hints.has(pawn_id):
 			_set_hint(pawn_id, {"arc": 0.0, "dur": 0.5}))
@@ -1107,6 +1123,7 @@ func _bind_state() -> void:
 		_log_line("[내 앞을 막지마!] %s이(가) %s번 칸을 휘둘렀습니다" % [_player_name(player_id), ", ".join(PackedStringArray(tiles.map(func(tile: int) -> String: return str(tile))))], Color("ffa94d"))
 		_refresh_tiles())
 	state.pawns_bonded.connect(func(a: int, b: int) -> void:
+		_note_super({"kind": "bond", "a": a, "b": b})
 		_log_line("[강제 연대책임] %s ↔ %s 일심동체!" % [_pawn_name(a), _pawn_name(b)], Color("ffa94d")))
 	state.bond_resolved.connect(func(kind: StringName, pawn_id: int, partner_id: int) -> void:
 		var pawn: PlayerPawn = state.get_pawn(pawn_id)
@@ -1147,6 +1164,7 @@ func _bind_state() -> void:
 	state.npc_vanished.connect(func(_npc_id: int, tile: int) -> void:
 		_log_line("[중립 기물] %d번 타일에서 사라졌습니다" % tile, Color("fa5252")))
 	state.attachment_placed.connect(func(tile: int, id: String, owner_id: int) -> void:
+		_note_super({"kind": "place", "tile": tile, "id": id})
 		if id.begins_with("TRP") and _fx_on():
 			# 카드를 먼저 보여 준 뒤 발판이 짙은 보라색으로 깜빡이며 나타난다.
 			_trap_pending[tile] = true
@@ -1163,7 +1181,9 @@ func _bind_state() -> void:
 		if _fx_on():
 			_fly_drawn_card(player_id, card_id))
 	state.card_drawn.connect(func(player_id: int, _card_id: StringName) -> void: _log_line("[카드] P%d 생떼 카드 1장 획득" % player_id, Color("ffa94d")))  # 뽑은 카드는 비공개
-	state.card_stolen.connect(func(player_id: int, card_id: StringName) -> void: _log_line("P%d의 카드 [%s]를 도적이 빼앗았습니다" % [player_id, _card_name(card_id)], Color("ff6b6b")))
+	state.card_stolen.connect(func(player_id: int, card_id: StringName) -> void:
+		_steal_from = player_id  # 바로 뒤의 카드 획득은 이 사람 프로필에서 날아온다
+		_log_line("P%d의 카드 [%s]를 도적이 빼앗았습니다" % [player_id, _card_name(card_id)], Color("ff6b6b")))
 	state.npc_spawned.connect(func(_npc_id: int, tile: int) -> void:
 		_log_line("중립 기물이 %d번 타일에 소환되었습니다. 라운드가 끝나면 가장 가까운 적 말 하나를 처치하고 사라집니다." % tile, Color("fa5252"))
 		_refresh_all())
@@ -2762,6 +2782,7 @@ func _on_leapfrog_boosted(pawn_id: int, waypoint: int, bonus: int) -> void:
 ## 초증강 아우토반 니트로: 선두 말이 리벤지 부스터처럼 화염을 뿜으며 코너(또는 길을 막은 말이 있는 칸)까지 한 번에 날아간다.
 ## 엔진은 움직이기 전에 방송하므로 지금 자리에서 출발하고, 한 칸씩 뛰는 걸음은 건너뛴다. 막은 칸의 말 사출은 그 뒤 처치 연출로 이어진다.
 func _on_nitro_dashed(pawn_id: int, path: Array[int], blocked: int) -> void:
+	_note_super({"kind": "nitro", "pawn": pawn_id, "path": path.duplicate(), "blocked": blocked})
 	var pawn: PlayerPawn = state.get_pawn(pawn_id)
 	_log_line("[아우토반 니트로] %s %s" % [_pawn_name(pawn_id), "%d번 칸의 말을 들이받고 멈춤!" % blocked if blocked != -1 else "%d번까지 질주!" % path.back()], Color("ff922b"))
 	if not _fx_on() or pawn == null or path.is_empty() or not _pawn_views.has(pawn_id):
@@ -2790,6 +2811,8 @@ func _on_nitro_dashed(pawn_id: int, path: Array[int], blocked: int) -> void:
 		while generation == _fx_generation and is_instance_valid(view) and _fx_running(view):
 			if frame % 2 == 0:
 				_rocket_puff(view.position)
+			if _super_fx != null:
+				_super_fx.ghost(view, PLAYER_COLORS[pawn.owner_id])  # 초고속 잔상
 			frame += 1
 			await get_tree().process_frame
 		_fx_skip_steps.erase(pawn_id)
@@ -2956,6 +2979,7 @@ func _refresh_now() -> void:
 	_refresh_hands()
 	_refresh_controls()
 	_refresh_overlays()
+	_refresh_super_marks()
 	_check_round_banner()
 	_check_turn_banner()
 
@@ -3590,18 +3614,42 @@ func _dock_slot(index: int, count: int) -> Vector2:
 
 
 ## 카드를 얻었다: 덱 뭉치에서 뽑혀 내 손패(앞면으로 뒤집혀) 또는 그 사람 프로필(뒷면 그대로)로 날아간다.
+## 빼앗은 카드(도적단 대습격·바나나 껍질 등)는 덱이 아니라 빼앗긴 사람 프로필에서 날아온다.
+## 드래프트 중에 얻은 카드는 [선택한 증강] 공개 뒤에 날아간다 (손패에서는 바로 숨겨 둔다).
 func _fly_drawn_card(player_id: int, card_id: StringName) -> void:
+	var origin: Vector2 = Vector2(INF, INF)
+	if _steal_from != -1:
+		if _steal_from != player_id:
+			origin = _profile_center(_steal_from)
+		_steal_from = -1
+	if _draw_fx == null:
+		Sfx.play(&"card_get")
+		return
 	var local: bool = player_id == _dock_owner() and _dock != null and _dock.is_visible_in_tree()
+	var index: int = (state.hands[player_id] as Array).size() - 1
+	if local:
+		_draw_fx.reserve(player_id)
+	var launch: Callable = _launch_drawn_card.bind(player_id, card_id, local, index, origin)
+	if _draft_in_progress():
+		_draft_deferred.append({"step": launch, "pawn": -1, "pick": _pick_serial})
+		return
+	launch.call()
+
+
+func _launch_drawn_card(player_id: int, card_id: StringName, local: bool, index: int, origin: Vector2) -> void:
 	var target: Vector2 = Vector2(INF, INF)
 	if local:
 		var count: int = (state.hands[player_id] as Array).size()
-		target = _dock.get_global_transform() * (_dock_slot(count - 1, count) + HAND_CARD_SIZE / 2.0)
+		target = _dock.get_global_transform() * (_dock_slot(clampi(index, 0, maxi(count - 1, 0)), maxi(count, 1)) + HAND_CARD_SIZE / 2.0)
 	else:
 		target = _profile_center(player_id)
-	if _draw_fx == null or not target.is_finite():
+	if not target.is_finite():
+		if local:
+			_draw_fx.release(player_id)
+			_refresh_hands()
 		Sfx.play(&"card_get")
 		return
-	_draw_fx.draw_card(player_id, card_id, local, target, Callable() if local else _profile_nudge.bind(player_id))
+	_draw_fx.draw_card(player_id, card_id, local, target, Callable() if local else _profile_nudge.bind(player_id), local, origin)
 
 
 ## 날아온 카드가 내 손패에 내려앉았다: 숨겨 둔 카드를 보이고 톡 튀게 한다.
@@ -6063,13 +6111,13 @@ func is_headless_or_fast_smoke() -> bool:
 ## 연출 한 단계를 큐 맨 뒤에 세운다. 큐가 비어 있고 알림 카드가 없으면 그 자리에서 바로 시작하고,
 ## 아니면 앞 연출이 100% 끝난 뒤에 시작한다. pawn_id를 주면 그 말은 이 단계가 끝날 때까지 최종 위치로 건너뛰지 않는다.
 ## allow_defer=false: 드래프트가 열리기 전에 일어난 일의 연출(라운드 마지막 턴의 처치 등)이라 드래프트 공개 뒤로 미루지 않는다.
-func enqueue_step(step_callable: Callable, pawn_id: int = -1, allow_defer: bool = true) -> void:
+func enqueue_step(step_callable: Callable, pawn_id: int = -1, allow_defer: bool = true, pick: int = -1) -> void:
 	if is_headless_or_fast_smoke():
 		step_callable.call()  # 테스트 모드에선 즉시 실행
 		return
 	if allow_defer and _draft_in_progress():
 		# 증강 드래프트 중에 고른 증강의 효과(폭주 기관차·저격수 등)는 [선택한 증강] 공개 뒤에 보여 준다 (결과를 먼저 흘리지 않게)
-		_draft_deferred.append({"step": step_callable, "pawn": pawn_id})
+		_draft_deferred.append({"step": step_callable, "pawn": pawn_id, "pick": pick if pick != -1 else _pick_serial})
 		return
 	if pawn_id != -1:
 		_pawn_pending[pawn_id] = int(_pawn_pending.get(pawn_id, 0)) + 1
@@ -6090,7 +6138,7 @@ func enqueue_step(step_callable: Callable, pawn_id: int = -1, allow_defer: bool 
 func _enqueue_batch(entries: Array[Dictionary]) -> void:
 	_enqueue_batching = true
 	for entry: Dictionary in entries:
-		enqueue_step(entry["step"], int(entry.get("pawn", -1)), bool(entry.get("defer", true)))
+		enqueue_step(entry["step"], int(entry.get("pawn", -1)), bool(entry.get("defer", true)), int(entry.get("pick", -1)))
 	_enqueue_batching = false
 	if not _is_playing_presentation and not _presentation_queue.is_empty():
 		_process_presentation_queue()
@@ -6117,6 +6165,11 @@ func _reset_presentation() -> void:
 			extra.queue_free()
 	_late_steps.clear()
 	_draft_deferred.clear()
+	_super_changes.clear()
+	_steal_from = -1
+	_gambler_flash.clear()
+	if _draw_fx != null:
+		_draw_fx.clear()
 	_draft_open = false
 	_roll_total.clear()
 	_rocket_target.clear()
@@ -6140,7 +6193,7 @@ func _enqueue_late(step_callable: Callable, pawn_id: int = -1) -> void:
 	if pawn_id != -1:
 		_pawn_pending[pawn_id] = int(_pawn_pending.get(pawn_id, 0)) + 1
 	# 미룰지는 지금(이 일이 일어난 순간) 정한다: 프레임 끝에 큐로 옮길 때는 엔진이 이미 다음 라운드 드래프트를 열었을 수 있다.
-	_late_steps.append({"step": step_callable, "pawn": pawn_id, "defer": _draft_in_progress()})
+	_late_steps.append({"step": step_callable, "pawn": pawn_id, "defer": _draft_in_progress(), "pick": _pick_serial})
 	if _late_steps.size() == 1:
 		_flush_late_steps.call_deferred()
 
@@ -6153,6 +6206,20 @@ func _flush_late_steps() -> void:
 		var pawn_id: int = int(entry["pawn"])
 		if pawn_id != -1:
 			_pawn_pending[pawn_id] = maxi(int(_pawn_pending.get(pawn_id, 1)) - 1, 0)
+
+
+## 아직 큐로 옮기지 않은 늦은 단계(처치 사출 등) 중 이 말의 것을 빼낸다: 초증강 연출이 그 장면을 자기 순서 안에서 직접 보여 줄 때.
+func _take_late_steps_for(pawn_id: int) -> int:
+	var kept: Array[Dictionary] = []
+	var taken: int = 0
+	for entry: Dictionary in _late_steps:
+		if int(entry["pawn"]) == pawn_id:
+			taken += 1
+			_pawn_pending[pawn_id] = maxi(int(_pawn_pending.get(pawn_id, 1)) - 1, 0)
+		else:
+			kept.append(entry)
+	_late_steps = kept
+	return taken
 
 
 func _add_roll_reason(player_id: int, reason: String) -> void:
@@ -8099,6 +8166,91 @@ func _release_draft_deferred() -> void:
 	_enqueue_batch(batch)
 
 
+## 드래프트 중 엔진이 낸 변화를 모아 둔다 (방금 고른 증강이 초증강이면 그 연출이 무엇을 보여 줄지 정한다).
+func _note_super(change: Dictionary) -> void:
+	if _draft_in_progress():
+		_super_changes.append(change)
+
+
+## 초증강을 골랐다: 그 선택이 만든 연출 단계들 바로 앞에 전용 보드 연출을 끼운다 (모두 [선택한 증강] 공개 뒤에 재생된다).
+## 그 연출이 처치 장면을 직접 보여 주는 초증강은 늦게 붙는 처치 단계를 미리 빼낸다 (같은 장면이 두 번 나오지 않게).
+func _on_super_picked(player_id: int, augment_id: StringName) -> void:
+	var definition: AugmentDef = AugmentRegistry.get_def(augment_id)
+	if definition == null or definition.category != GameEnums.AugmentCategory.SUPER_GAMBLE or _super_fx == null or not _draft_in_progress():
+		return
+	var effect: StringName = definition.payload
+	if not SuperFX.handles(effect):
+		return
+	var changes: Array[Dictionary] = []
+	for change: Dictionary in _super_changes:
+		changes.append(change.duplicate(true))
+	if effect in [SuperAugments.FLIP, SuperAugments.SNIPER, SuperAugments.DEVIL]:
+		for change: Dictionary in changes:
+			if change["kind"] == "start":
+				_take_late_steps_for(int(change["pawn"]))
+	var hidden_key: String = "%d:%s" % [player_id, effect]
+	_super_hidden[hidden_key] = true  # 지속 표시(불꽃 테두리·발밑 고리)는 연출이 나올 때 켠다
+	var serial: int = _pick_serial
+	var step: Callable = func() -> void:
+		_super_hidden.erase(hidden_key)
+		await _super_fx.play(effect, player_id, changes)
+		_refresh_super_marks()
+	var at: int = _draft_deferred.size()
+	for index: int in _draft_deferred.size():
+		if int(_draft_deferred[index].get("pick", -1)) == serial:
+			at = index
+			break
+	_draft_deferred.insert(at, {"step": step, "pawn": -1, "pick": serial})
+
+
+## 초증강 연출이 아직 나오지 않아 지속 표시를 숨겨 둔 것 ("플레이어:초증강").
+var _super_hidden: Dictionary = {}
+
+
+## 지속 표시: 악마의 계약(보라/붉은 불꽃 테두리, 게임 끝까지)·도박사의 영혼(황금 불꽃, 그 라운드)·강제 연대책임(묶인 두 말 발밑 붉은 고리).
+func _refresh_super_marks() -> void:
+	if state == null:
+		return
+	for player_id: int in _player_ids:
+		if not _profiles.has(player_id):
+			continue
+		SuperFX.set_flame(_profiles[player_id]["panel"], "SuperFlame", _flame_colors(player_id))
+	var shown: int = int(_tool_board_key.get_slice(":", 0)) if _tool_board_key != "" else -1
+	SuperFX.set_flame(_tool_board, "SuperFlame", _flame_colors(shown) if shown != -1 else [] as Array[Color])
+	for pawn: PlayerPawn in state.pawns:
+		var view: Node2D = _pawn_views.get(pawn.entity_id)
+		if view != null:
+			var bonded: bool = _fx_on() and state.bonds.has(pawn.entity_id) and not _super_hidden.has("%d:%s" % [pawn.owner_id, SuperAugments.GUARANTEE])
+			SuperFX.set_bond_ring(view, bonded)
+
+
+## 이 플레이어를 감쌀 불꽃 색 (없으면 빈 배열).
+func _flame_colors(player_id: int) -> Array[Color]:
+	var colors: Array[Color] = []
+	if not _fx_on() or state == null or player_id == -1:
+		return colors
+	if int(state.permanent_roll_bonus.get(player_id, 0)) > 0 and not _super_hidden.has("%d:%s" % [player_id, SuperAugments.DEVIL]):
+		colors.append_array([Color("9c36b5"), Color("e03131")])
+	if int(state.gambler_round.get(player_id, -1)) == state.round_number and not _super_hidden.has("%d:%s" % [player_id, SuperAugments.GAMBLER]):
+		colors.append_array([Color("ffd43b"), Color("ff922b")])
+	return colors
+
+
+## 도박사의 영혼이 이번 굴림을 바꿨다: 주사위 위에 x배수! 또는 그을린 과열 연기.
+func _show_gambler_flash(player_id: int) -> void:
+	if not _gambler_flash.has(player_id):
+		return
+	var multiplier: int = int(_gambler_flash[player_id])
+	_gambler_flash.erase(player_id)
+	if not _fx_on() or _super_fx == null:
+		return
+	var at: Vector2 = _presenter.position + _presenter.size * _presenter.scale / 2.0 if _presenter.visible else _board_center()
+	if multiplier > 0:
+		_super_fx.gambler_boost(at, multiplier)
+	else:
+		_super_fx.gambler_overheat(at, _presenter)
+
+
 ## 이번 라운드에 모두가 고른 증강을 선택 카드 그림 그대로 한 줄에 나란히 공개한다.
 func _flush_draft_summary() -> void:
 	if _draft_summary.is_empty():
@@ -8545,6 +8697,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_log_line("[템포 업] P%d: 이동 %d → %d" % [data["player_id"], data["from"], data["to"]], Color("ff8787"))
 			_record(int(data["player_id"]), "템포 업 +%d → 총 %d칸 전진!" % [int(data["to"]) - int(data["from"]), int(data["to"])])
 		&"gambler_doubled":
+			_gambler_flash[int(data["player_id"])] = SuperAugments.gambler_multiplier()
 			_roll_total[int(data["player_id"])] = int(data["to"])
 			_add_roll_reason(int(data["player_id"]), "도박사의 영혼 x2")
 			_log_line("[도박사의 영혼] P%d: 이동 %d → %d (x2)!" % [data["player_id"], data["from"], data["to"]], Color("ffa94d"))
@@ -8553,6 +8706,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_on_move_bonus(int(data["pawn_id"]), data["notes"], int(data.get("revenge", 0)))
 		&"gambler_busted":
 			var busted: int = int(data["player_id"])
+			_gambler_flash[busted] = -1
 			_log_line("[도박사의 영혼] P%d: 눈금 %d - 과열! 이동 없이 차례 끝" % [busted, data["roll"]], Color("ff6b6b"))
 			_record(busted, "도박사의 영혼 과열! (눈금 %d, 이동 없이 차례 끝)" % int(data["roll"]))
 			_profile_react(busted, false)
@@ -8613,6 +8767,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 					if not caught.is_empty():
 						_record(-1, "%s" % result_text))  # 잡은 말은 처치 컷인·사출로 보인다 (따로 [말을 잡았습니다!] 카드는 띄우지 않는다)
 		&"augment_offers":
+			_super_changes.clear()
 			_draft_open = true
 			_log_line("[증강] 라운드 %d 증강 드래프트가 열렸습니다." % data["round"], Color("ffa94d"))
 		&"augment_review":
@@ -8627,6 +8782,9 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			if int(data["player_id"]) == _telemetry_seat():
 				var picked_def: AugmentDef = AugmentRegistry.get_def(data.get("augment_id", &""))
 				_my_augments.append(picked_def.display_name if picked_def != null else str(data.get("augment_id", "")))
+			_on_super_picked(int(data["player_id"]), data.get("augment_id", &""))
+			_pick_serial += 1
+			_super_changes.clear()
 		&"bang_resolved":
 			var target_name: String = _pawn_name(int(data["target"]))
 			_log_line("[BANG!] P%d가 %s을(를) 저격! %d번 → %d번 타일로 2칸 밀려납니다." % [data["shooter"], target_name, data["from"], data["to"]], Color("ff6b6b"))
@@ -9003,6 +9161,7 @@ func _build_roll_fx() -> void:
 	_draw_fx.deck_position = _board_center() + DECK_OFFSET
 	_draw_fx.landed.connect(_on_drawn_card_landed)
 	add_child(_draw_fx)
+	_super_fx = SuperFX.new(self)
 	_announcer = EventAnnouncer.new()
 	add_child(_announcer)
 	_announcer.drained.connect(func() -> void:
@@ -9227,6 +9386,7 @@ func _announce_move_failed(headline: String, player_id: int, body: String = "") 
 
 
 func _reveal_roll(data: Dictionary) -> void:
+	_show_gambler_flash(int(data["player_id"]))
 	var roll_text: String = _log_roll(data)
 	var details: Dictionary = (data["result"] as Dictionary)["details"]
 	var fired: bool = bool(details.get("fired", false))

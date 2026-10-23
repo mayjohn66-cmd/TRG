@@ -73,33 +73,49 @@ func _ready() -> void:
 	_build_deck()  # 덱 뭉치는 처음부터 만들어 두고 뽑을 때만 보인다
 
 
+## 내 손패에 들어올 카드 한 장을 미리 숨겨 둔다 (날아오기 전에 손패에 먼저 보이지 않게). draw_card(..., reserved=true)와 짝.
+func reserve(player_id: int) -> void:
+	pending[player_id] = int(pending.get(player_id, 0)) + 1
+
+
+## 숨겨 둔 카드를 날리지 않고 그냥 보인다.
+func release(player_id: int) -> void:
+	pending[player_id] = maxi(int(pending.get(player_id, 0)) - 1, 0)
+
+
 ## 카드 한 장을 뽑아 날린다. local이면 앞면으로 뒤집어 target(손패 자리 가운데)으로, 아니면 뒷면 그대로 target(프로필 가운데)으로.
-## on_arrive: 도착 순간에 부를 함수 (프로필 흔들기 등).
-func draw_card(player_id: int, card_id: StringName, local: bool, target: Vector2, on_arrive: Callable = Callable()) -> void:
+## on_arrive: 도착 순간에 부를 함수 (프로필 흔들기 등). reserved: reserve()로 이미 숨겨 두었다.
+## origin: 덱 대신 이 화면 좌표(빼앗긴 사람 프로필)에서 뜯겨 나온다.
+func draw_card(player_id: int, card_id: StringName, local: bool, target: Vector2, on_arrive: Callable = Callable(), reserved: bool = false, origin: Vector2 = Vector2(INF, INF)) -> void:
 	var now: float = Time.get_ticks_msec() / 1000.0
 	var delay: float = maxf(0.0, _last_launch + STAGGER - now)
 	_last_launch = now + delay
-	if local:
+	if local and not reserved:
 		pending[player_id] = int(pending.get(player_id, 0)) + 1
 	in_flight += 1
-	_show_deck()
+	var from_deck: bool = not origin.is_finite()
+	var start: Vector2 = deck_position if from_deck else origin
+	if from_deck:
+		_show_deck()
 	var card := Control.new()
 	card.name = "DrawnCard"
 	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	card.size = CARD_SIZE
 	card.pivot_offset = CARD_SIZE / 2.0
-	card.position = deck_position - CARD_SIZE / 2.0
+	card.position = start - CARD_SIZE / 2.0
 	card.modulate.a = 0.0
 	var back := CardBack.new()
 	back.size = CARD_SIZE
 	card.add_child(back)
 	add_child(card)
-	var lifted: Vector2 = deck_position + Vector2(0.0, -POP_RISE)
+	var lifted: Vector2 = start + Vector2(0.0, -POP_RISE)
 	var tween: Tween = card.create_tween()
 	if delay > 0.0:
 		tween.tween_interval(delay)
-	# 1) 덱 뭉치에서 0.15초 만에 위로 톡
+	# 1) 덱 뭉치에서(빼앗은 카드는 그 사람 프로필에서 뜯겨) 0.15초 만에 위로 톡
 	tween.tween_property(card, "modulate:a", 1.0, 0.05)
+	if not from_deck:
+		tween.parallel().tween_property(card, "rotation", 0.35, POP_TIME * 0.5)
 	tween.parallel().tween_property(card, "position", lifted - CARD_SIZE / 2.0, POP_TIME).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween.parallel().tween_property(card, "scale", Vector2.ONE * 1.08, POP_TIME).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	if local:
