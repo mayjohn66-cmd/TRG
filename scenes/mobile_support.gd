@@ -71,6 +71,37 @@ func _process(_delta: float) -> void:
 	refresh(DisplayServer.window_get_size())
 
 
+## 터치 한 번이 두 번 눌림으로 들어오는 것을 막는다: 모바일 브라우저는 터치 뒤에 같은 자리의 마우스 클릭을 한 번 더 흘려보내므로
+## (배속이 1 -> 3 -> 2처럼 두 칸씩 넘어가고, 메뉴가 열렸다 바로 닫혔다), 짧은 시간 안에 거의 같은 자리에서 다시 들어온 누름은 버린다.
+func _input(event: InputEvent) -> void:
+	if not touch_mode():
+		return
+	if accept_press(event, Time.get_ticks_msec()):
+		return
+	get_viewport().set_input_as_handled()
+
+
+## 터치 뒤에 브라우저가 덧붙이는 마우스 누름인지 가려낸다 (테스트가 시각을 넣어 직접 부를 수 있다). 받아들이면 true, 버릴 중복이면 false.
+## 엔진이 터치를 흉내 낸 마우스 누름(device = DEVICE_ID_EMULATION)은 정상 입력이라 그대로 두고, 터치 직후 같은 자리의 "진짜" 마우스 누름만 버린다.
+const DUPLICATE_PRESS_MSEC: int = 600
+const DUPLICATE_PRESS_DISTANCE: float = 60.0
+var _last_touch_msec: int = -100000
+var _last_touch_at: Vector2 = Vector2(-9999, -9999)
+
+
+func accept_press(event: InputEvent, now_msec: int) -> bool:
+	if event is InputEventScreenTouch:
+		var touch: InputEventScreenTouch = event
+		if touch.pressed:
+			_last_touch_msec = now_msec
+			_last_touch_at = touch.position
+		return true
+	var mouse: InputEventMouseButton = event as InputEventMouseButton
+	if mouse == null or mouse.device == InputEvent.DEVICE_ID_EMULATION:
+		return true
+	return not (now_msec - _last_touch_msec < DUPLICATE_PRESS_MSEC and mouse.position.distance_to(_last_touch_at) < DUPLICATE_PRESS_DISTANCE)
+
+
 ## 창 크기에 맞춰 세로 안내를 켜고 끈다.
 func refresh(window_size: Vector2i) -> void:
 	if overlay != null:

@@ -1834,6 +1834,45 @@ func _test_refresh_batch_and_touch_menu() -> void:
 	MobileSupport.touch_button(probe_button)
 	_expect(probe_button.custom_minimum_size.y >= MobileSupport.TOUCH_BUTTON_HEIGHT and probe_button.action_mode == BaseButton.ACTION_MODE_BUTTON_PRESS, "터치 버튼 도우미: 최소 높이와 누름 반응")
 	probe_button.free()
+	# 터치 한 번 = 한 번 누름: 터치 직후 같은 자리의 브라우저 마우스 누름은 버리고, 엔진이 흉내 낸 누름·떨어진 자리·시간이 지난 누름은 받는다.
+	var mobile := MobileSupport.new()
+	var touch := InputEventScreenTouch.new()
+	touch.pressed = true
+	touch.position = Vector2(1300, 30)
+	_expect(mobile.accept_press(touch, 1000), "터치는 받는다")
+	var emulated := InputEventMouseButton.new()
+	emulated.pressed = true
+	emulated.button_index = MOUSE_BUTTON_LEFT
+	emulated.position = Vector2(1300, 30)
+	emulated.device = InputEvent.DEVICE_ID_EMULATION
+	_expect(mobile.accept_press(emulated, 1001), "터치를 흉내 낸 마우스 누름은 받는다")
+	var browser_click := InputEventMouseButton.new()
+	browser_click.pressed = true
+	browser_click.button_index = MOUSE_BUTTON_LEFT
+	browser_click.position = Vector2(1302, 31)
+	_expect(not mobile.accept_press(browser_click, 1200), "터치 직후 같은 자리의 브라우저 마우스 누름은 버린다 (두 번 눌림 방지)")
+	browser_click.position = Vector2(600, 400)
+	_expect(mobile.accept_press(browser_click, 1250), "다른 자리의 누름은 받는다")
+	browser_click.position = Vector2(1300, 30)
+	_expect(mobile.accept_press(browser_click, 2000), "시간이 지난 누름은 받는다")
+	mobile.free()
+	# 추가 전진 이유: 기물 능력(퀸 +2칸 등)은 이동 전에 말 위에 이유를 띄우고 로그에 남긴다
+	_board._on_event(&"move_bonus", {"pawn_id": 11, "notes": ["퀸 +2칸"], "revenge": 0})
+	_expect(_board._log.get_parsed_text().contains("[추가 전진]") and _board._log.get_parsed_text().contains("퀸 +2칸"), "추가 전진 이유가 로그에 남는다")
+	var old_instant_bonus: bool = _board.instant_roll_for_test
+	_board.instant_roll_for_test = false
+	_board._on_event(&"move_bonus", {"pawn_id": 12, "notes": ["룩 직진 +2칸"], "revenge": 4})
+	_board.instant_roll_for_test = old_instant_bonus
+	_expect(_board._move_bonus_notes.get(12, []) == ["룩 직진 +2칸"], "리벤지 부스터 이동이면 부스터 뒤 [눈금 M칸 (이유)]에 붙인다")
+	_board._reset_presentation()
+	var old_speed: int = GameSession.game_speed
+	GameSession.game_speed = 1
+	_board._last_tap_msec.clear()
+	_board._on_speed_pressed()
+	_board._on_speed_pressed()  # 같은 순간 두 번 = 기기가 한 번의 터치를 두 번 보낸 경우
+	_expect(GameSession.game_speed == 2, "배속 버튼: 한 번 터치에 1 -> 2 한 칸만 (1 -> 3 -> 2로 건너뛰지 않음, 지금 %d)" % GameSession.game_speed)
+	GameSession.game_speed = old_speed
+	_board._apply_game_speed()
 	MobileSupport.force_touch = false
 
 

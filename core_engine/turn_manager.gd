@@ -350,7 +350,9 @@ func execute_step_by_step_move(entity: BoardEntity, path: Array[int], ctx: RuleC
 	current_step_seconds = minf(step_delay_sec, MOVE_TIME_CAP / float(maxi(path.size(), 1)))
 	for index: int in path.size():
 		var is_last: bool = index == path.size() - 1
+		processing_started.emit()  # 걸음마다 화면 갱신을 한 번으로 묶는다 (걸음은 await 사이에 따로 일어난다)
 		_move_outcome = MoveExecutor.apply_step(state, pawn, ctx, path[index], is_last, index == 0, _move_report)
+		processing_finished.emit()
 		if _move_outcome != MoveExecutor.StepOutcome.CONTINUE:
 			break
 		if not is_last and current_step_seconds > 0.0 and is_inside_tree():
@@ -1453,7 +1455,26 @@ func _execute_move(pawn: PlayerPawn, forced_path: Array[int] = []) -> void:
 		var path: Array[int] = forced_path.duplicate() if forced else MoveExecutor.plan_path(state, pawn, ctx, _move_report)
 		if not forced:
 			_note_altering_laws(pawn, ctx, path, _move_report)
+			_announce_move_bonus(pawn, _move_report)
 		await execute_step_by_step_move(pawn, path, ctx)
+	# 도착 정산(처치·발판·법전·승리 판정)도 한 묶음으로 처리한다 (걸음 await 뒤라 행동 처리 묶음 밖이다).
+	processing_started.emit()
+	_finish_move(pawn, ctx)
+	processing_finished.emit()
+
+
+## 눈금보다 더 가는 이유(기물 능력·나리 승급 등)를 화면에 알린다 (리벤지 부스터·점프 부스트는 따로 알린다). 표시 전용 이벤트.
+func _announce_move_bonus(pawn: PlayerPawn, report: MoveReport) -> void:
+	var notes: Array = []
+	for note: String in report.ability_notes:
+		if not note.begins_with("복수 부스터") and not note.begins_with("점프 부스트"):
+			notes.append(note)
+	if not notes.is_empty():
+		_emit_event(&"move_bonus", {"pawn_id": pawn.entity_id, "notes": notes, "revenge": report.revenge_bonus})
+
+
+func _finish_move(pawn: PlayerPawn, ctx: RuleContext) -> void:
+	if not _move_report.canceled:
 		MoveExecutor.finalize(state, pawn, ctx, _move_report, _move_outcome)
 	var report: MoveReport = _move_report
 	_move_report = null

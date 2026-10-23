@@ -473,6 +473,9 @@ var _late_steps: Array[Dictionary] = []
 var _rocket_target: Dictionary = {}
 ## 리벤지 부스터 로켓 뒤에 이어 갈 눈금 칸수 (경유지에서 [눈금 N칸]을 띄운다).
 var _rocket_followup: Dictionary = {}
+## 플레이어 -> 이번 굴림 칸수를 늘린 이유들 (가속 보너스·템포 업·도박사) / 말 -> 리벤지 부스터 뒤 눈금 이동에 붙일 기물 능력 이유.
+var _roll_reasons: Dictionary = {}
+var _move_bonus_notes: Dictionary = {}
 ## 도착 칸 정산 뒤 추가 이동 중인 말 (점프 부스트·부스터 발판·8번 공 돌진): 이 말의 걸음은 앞선 처치 연출 뒤에 선다. 이동이 끝나면(move_resolved) 지운다.
 var _follow_up_pawns: Dictionary = {}
 ## 이동 단계 사이(부스터 도착·점프 부스트 직전)의 짧은 멈춤(초).
@@ -1004,7 +1007,16 @@ func _bind_state() -> void:
 	state.revenge_boost_fired.connect(_on_revenge_boost_fired)
 	state.nitro_dashed.connect(_on_nitro_dashed)
 	state.leapfrog_boosted.connect(_on_leapfrog_boosted)
-	state.capture_charge_started.connect(func(pawn_id: int, _steps: int) -> void: _follow_up_pawns[pawn_id] = true)
+	state.capture_charge_started.connect(func(pawn_id: int, charge_steps: int) -> void:
+		_follow_up_pawns[pawn_id] = true
+		_log_line("[8번 공 돌진] %s 처치 후 +%d칸 더 굴러갑니다" % [_pawn_name(pawn_id), charge_steps], Color("ffd43b"))
+		if not _fx_on():
+			return
+		_enqueue_after_kills(func() -> void:
+			var ball: Node2D = _pawn_views.get(pawn_id)
+			if ball == null or not is_instance_valid(ball):
+				return
+			_floating_badge(ball.position + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + Vector2(0, -40), "8번 공 돌진 +%d" % charge_steps, Color("ffd43b"), 30), pawn_id))
 	state.dash_pad_triggered.connect(func(pawn_id: int, tile: int) -> void:
 		_log_line("[부스터 발판] %s %d번 발판! +%d칸 추가 전진" % [_pawn_name(pawn_id), tile, GameData.dash_steps()], Color("63e6be"))
 		var pad_pos: Vector2 = (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + _tile_center(tile)
@@ -1014,7 +1026,7 @@ func _bind_state() -> void:
 		_enqueue_after_kills(func() -> void:
 			Sfx.play(&"dash")
 			_impact_ring(pad_pos, Color("63e6be"), 46.0)
-			_number_pop(pad_pos + Vector2(0, -30), "+%d" % GameData.dash_steps(), Color("63e6be"))
+			_number_pop(pad_pos + Vector2(0, -30), "부스터 발판 +%d" % GameData.dash_steps(), Color("63e6be"))
 			_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(300.0 * _motion_pace()))))
 	state.pawn_finished.connect(func(pawn_id: int) -> void:
 		_log_line(tr_ui("log.finish", [_pawn_name(pawn_id)]), Color("69db7c"))
@@ -2783,13 +2795,15 @@ func _play_rocket(pawn_id: int, to_pos: Vector2, to_scale: float, tile: int) -> 
 		return
 	screen_shake(7.0, 0.22)
 	_impact_ring(view.position, Color("ff6b00"), 50.0)
-	_floating_badge(view.position + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + Vector2(0, -42), "+%d" % _revenge_steps(state.get_pawn(pawn_id) if state != null else null), Color("ff922b"), 40)
+	_floating_badge(view.position + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + Vector2(0, -42), "리벤지 부스터 +%d" % _revenge_steps(state.get_pawn(pawn_id) if state != null else null), Color("ff922b"), 34)
 	# 1단계(부스터)와 2단계(눈금 이동) 사이의 짧은 호흡: 경유지라 아직 판정하지 않는다
 	var dice_part: int = int(_rocket_followup.get(pawn_id, 0))
 	_rocket_followup.erase(pawn_id)
 	await get_tree().create_timer(WAYPOINT_PAUSE * _motion_pace()).timeout
 	if dice_part > 0 and is_instance_valid(view):
-		_floating_badge(view.position + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + Vector2(0, -42), "눈금 %d칸" % dice_part, Color("f8f9fa"), 30)
+		var bonus_notes: Array = _move_bonus_notes.get(pawn_id, [])
+		_move_bonus_notes.erase(pawn_id)
+		_floating_badge(view.position + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + Vector2(0, -42), ("눈금 %d칸" % dice_part) + (" (%s)" % " · ".join(PackedStringArray(bonus_notes)) if not bonus_notes.is_empty() else ""), Color("f8f9fa"), 30)
 
 
 ## 로켓 화염 잔상 한 점: 주황 원이 커지며 사라진다.
@@ -5997,6 +6011,8 @@ func _enqueue_batch(entries: Array[Dictionary]) -> void:
 func _reset_presentation() -> void:
 	_follow_up_pawns.clear()
 	_rocket_followup.clear()
+	_roll_reasons.clear()
+	_move_bonus_notes.clear()
 	if _train_stage != null:
 		_train_stage.cancel()
 	_train_release()
@@ -6050,6 +6066,31 @@ func _flush_late_steps() -> void:
 			_pawn_pending[pawn_id] = maxi(int(_pawn_pending.get(pawn_id, 1)) - 1, 0)
 
 
+func _add_roll_reason(player_id: int, reason: String) -> void:
+	if not _fx_on():
+		return
+	if not _roll_reasons.has(player_id):
+		_roll_reasons[player_id] = []
+	(_roll_reasons[player_id] as Array).append(reason)
+
+
+## 눈금보다 더 가는 이유(퀸 +2칸·룩 직진 +2칸·나리 승급 등)를 말 위에 띄운 뒤 이동한다. 리벤지 부스터 이동이면 부스터 착지 뒤 [눈금 M칸 (이유)]에 붙인다.
+func _on_move_bonus(pawn_id: int, notes: Array, revenge: int) -> void:
+	_log_line("[추가 전진] %s: %s" % [_pawn_name(pawn_id), ", ".join(PackedStringArray(notes))], Color("ffd43b"))
+	if not _fx_on():
+		return
+	if revenge > 0:
+		_move_bonus_notes[pawn_id] = notes
+		return
+	var text: String = " · ".join(PackedStringArray(notes))
+	enqueue_step(func() -> void:
+		var view: Node2D = _pawn_views.get(pawn_id)
+		if view == null or not is_instance_valid(view):
+			return
+		_floating_badge(view.position + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + Vector2(0, -42), text, Color("ffd43b"), 28)
+		await get_tree().create_timer(0.2 * _motion_pace()).timeout, pawn_id)
+
+
 ## 굴림이 끝나면(주사위가 완전히 멈춘 뒤) 가속 보너스까지 합친 최종 이동 칸수를 숫자로 보여 주고 0.3초 뒤에 이동을 시작한다.
 func _enqueue_roll_summary(data: Dictionary) -> void:
 	if not _fx_on():
@@ -6062,6 +6103,8 @@ func _enqueue_roll_summary(data: Dictionary) -> void:
 		return
 	var player: int = int(data["player_id"])
 	_roll_total[player] = steps
+	if not _roll_reasons.has(player):
+		_roll_reasons[player] = []
 	enqueue_step(func() -> void:
 		await get_tree().process_frame  # 같은 굴림의 보너스 이벤트가 모두 도착한 뒤
 		var frames: int = 0
@@ -6070,8 +6113,12 @@ func _enqueue_roll_summary(data: Dictionary) -> void:
 			await get_tree().process_frame
 		var total: int = int(_roll_total.get(player, steps))
 		_roll_total.erase(player)
+		var reasons: Array = _roll_reasons.get(player, [])
+		_roll_reasons.erase(player)
 		if total != steps:  # 보너스가 붙었을 때만 최종 칸 수를 크게 (기본 눈금은 굴림 스테이지가 이미 보여 줬다)
 			_number_pop(_board_center() + Vector2(0, -60), "%d칸!" % total, Color("ffd43b"))  # 혼자 떠올랐다 사라진다 (이동을 붙잡지 않는다)
+			if not reasons.is_empty():  # 왜 늘었는지: 가속 보너스·템포 업·도박사의 영혼
+				_floating_badge(_board_center() + Vector2(0, -12), " · ".join(PackedStringArray(reasons)), Color("fff3bf"), 24)
 		await get_tree().create_timer(ROLL_SUMMARY_LEAD).timeout)
 
 
@@ -8370,6 +8417,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_record_roll(data)
 		&"roll_boosted":
 			_roll_total[int(data["player_id"])] = int(data["to"])
+			_add_roll_reason(int(data["player_id"]), "가속 보너스 +%d" % (int(data["to"]) - int(data["from"])))
 			_log_line("[가속 보너스] P%d: 눈금 %d → %d!" % [data["player_id"], data["from"], data["to"]], Color("ffd43b"))
 			_record(int(data["player_id"]), "가속 보너스 → %d칸 → 총 %d칸 전진!" % [data["from"], data["to"]])
 		&"tempo_up":
@@ -8405,12 +8453,16 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 				_announce("템포 업", "결승선이 당겨진다!", "%d번 칸부터 결승선 - 라운드마다 %d칸씩 더 당겨집니다%s" % [data["zone_start"], TempoUp.GOAL_SHRINK_PER_ROUND, "\n말 %d개가 그 자리에서 완주!" % finished_ids.size() if not finished_ids.is_empty() else ""], Color("ffd43b"), null, 2.0)
 		&"tempo_boosted":
 			_roll_total[int(data["player_id"])] = int(data["to"])
+			_add_roll_reason(int(data["player_id"]), "템포 업 +%d" % (int(data["to"]) - int(data["from"])))
 			_log_line("[템포 업] P%d: 이동 %d → %d" % [data["player_id"], data["from"], data["to"]], Color("ff8787"))
 			_record(int(data["player_id"]), "템포 업 +%d → 총 %d칸 전진!" % [int(data["to"]) - int(data["from"]), int(data["to"])])
 		&"gambler_doubled":
 			_roll_total[int(data["player_id"])] = int(data["to"])
+			_add_roll_reason(int(data["player_id"]), "도박사의 영혼 x2")
 			_log_line("[도박사의 영혼] P%d: 이동 %d → %d (x2)!" % [data["player_id"], data["from"], data["to"]], Color("ffa94d"))
 			_record(int(data["player_id"]), "도박사의 영혼 x2 → %d칸 → 총 %d칸 전진!" % [data["from"], data["to"]])
+		&"move_bonus":
+			_on_move_bonus(int(data["pawn_id"]), data["notes"], int(data.get("revenge", 0)))
 		&"gambler_busted":
 			var busted: int = int(data["player_id"])
 			_log_line("[도박사의 영혼] P%d: 눈금 %d - 과열! 이동 없이 차례 끝" % [busted, data["roll"]], Color("ff6b6b"))
@@ -9181,6 +9233,8 @@ func _menu_is_open() -> bool:
 
 
 func _toggle_menu() -> void:
+	if not _accept_tap(&"menu"):
+		return
 	if _menu_is_open():
 		_close_menu()
 	else:
@@ -9306,8 +9360,23 @@ func _build_exit_page() -> void:
 
 
 ## [배속] 버튼: 1x -> 2x -> 3x -> 1x. 혼자 하는 판에서만 바뀐다 (온라인은 모두가 같은 화면 속도를 보도록 1x 고정).
+## 같은 버튼이 아주 짧은 시간(TAP_GUARD_MSEC) 안에 두 번 눌리면 두 번째는 무시한다 (터치 한 번이 두 번 들어오는 기기 대비: 배속이 두 칸씩 넘어가거나 메뉴가 열렸다 닫히지 않게).
+const TAP_GUARD_MSEC: int = 300
+var _last_tap_msec: Dictionary = {}
+
+
+func _accept_tap(key: StringName) -> bool:
+	if not MobileSupport.touch_mode():
+		return true
+	var now: int = Time.get_ticks_msec()
+	if now - int(_last_tap_msec.get(key, -100000)) < TAP_GUARD_MSEC:
+		return false
+	_last_tap_msec[key] = now
+	return true
+
+
 func _on_speed_pressed() -> void:
-	if net != null:
+	if net != null or not _accept_tap(&"speed"):
 		return
 	var speeds: Array[int] = GameSession.GAME_SPEEDS
 	GameSession.game_speed = speeds[(speeds.find(GameSession.game_speed) + 1) % speeds.size()]
