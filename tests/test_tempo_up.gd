@@ -1,17 +1,17 @@
 # File: res://tests/test_tempo_up.gd
 # Class: class_name TestTempoUp
-# Role: ⏩ 템포 업(10·20·30라운드 가속: 과열·광기·대붕괴)과 증강 가중치(법전 5·초증강 10·말 50·도구 50) 검증
+# Role: ⏩ 템포 업(8·15·22라운드 가속: 과열·광기·대붕괴)과 증강 가중치(법전 5·초증강 10·말 50·도구 50), 단계별 증강 등장, 카이지 판정, 판정 도구 중복 억제, AI 대전 조기 종료 검증
 class_name TestTempoUp
 extends TestCase
 
 
-func _new_manager() -> TurnManager:
+func _new_manager(players: Array[int] = [1, 2]) -> TurnManager:
 	var manager := TurnManager.new()
 	manager.boost_gimmicks = false
 	manager.hotseat_mode = true
 	manager.draft_enabled = false
 	tree.root.add_child(manager)
-	manager.start_game([1, 2] as Array[int], 4242)
+	manager.start_game(players, 4242)
 	return manager
 
 
@@ -165,3 +165,85 @@ func test_first_draft_falls_back_when_no_pawn_evolution_is_possible() -> void:
 	check_eq(offers.size(), GameEnums.DRAFT_OFFER_COUNT, "그래도 3장")
 	for offer: StringName in offers:
 		check(AugmentRegistry.get_def(offer).category != GameEnums.AugmentCategory.PAWN_EVOLUTION, "받을 수 없는 기물 진화는 없다")
+
+
+## 카이지의 한방 역전법은 리벤지 부스터 칸과 템포 업 보너스를 빼고 센다 (요구 18칸).
+func test_kaiji_counts_without_revenge_and_tempo_bonus() -> void:
+	check_eq((LawRegistry.create("LAW_04") as VictoryLaw).goal(), 18, "한방 18칸")
+	var manager := _new_manager()
+	var report := MoveReport.new()
+	report.path.assign(range(1, 19))  # 18칸 이동
+	report.revenge_bonus = 8
+	manager._move_tempo_bonus = 3
+	check_eq(manager.kaiji_steps(report), 7, "18칸 - 리벤지 8 - 템포 3 = 7칸")
+	report.revenge_bonus = 0
+	manager._move_tempo_bonus = 0
+	check_eq(manager.kaiji_steps(report), 18, "보너스가 없으면 그대로")
+	# 실제 굴림: 15라운드(템포 +2)에 눈금 2를 굴려 4칸 이동해도 카이지는 2칸으로 센다
+	var events: Array = _events(manager)
+	manager.state.rulebook.enqueue_law(LawRegistry.create("LAW_04"))
+	manager.state.round_number = 15
+	manager.state.tools[1] = ScriptedTool.new([2])
+	manager.act(&"proceed", {"player_id": 1})
+	manager.act(&"roll", {"player_id": 1})
+	if manager.current_state == TurnManager.State.PHASE_SELECT_PAWN:
+		manager.act(&"select_pawn", {"player_id": 1, "pawn_id": manager.state.selectable_pawns(1, 4)[0].entity_id})
+	check(events.any(func(event: Dictionary) -> bool: return event["kind"] == &"move_resolved"), "이동했다")
+	check_eq(manager.state.stat(1, VictoryLaw.BEST_MOVE), 2, "템포 업 +2를 뺀 2칸만 기록")
+	_dispose(manager)
+
+
+## 특수 판정 도구를 이미 가진 사람에게는 판정 도구 교체 증강이 드물게 나오고, 봇은 다른 계열을 먼저 고른다.
+func test_tool_swap_is_rare_and_unwanted_once_a_special_tool_is_held() -> void:
+	var state := make_state()
+	state.round_number = 7
+	var yut: AugmentDef = AugmentRegistry.get_def(&"TOOL_YUT")
+	var holdem: AugmentDef = AugmentRegistry.get_def(&"TOOL_HOLDEM")
+	check_eq(AugmentRegistry.effective_weight(holdem, state, 1), float(holdem.weight), "기본 주사위면 그대로")
+	state.tools[1] = ToolRegistry.create(&"YUT")
+	check(AugmentRegistry.has_special_tool(state, 1), "윷을 쓰고 있다")
+	check_eq(AugmentRegistry.effective_weight(holdem, state, 1), float(holdem.weight) * AugmentRegistry.OWNED_TOOL_SWAP_FACTOR, "특수 도구가 있으면 크게 줄인다")
+	var with_tool: int = 0
+	var without_tool: int = 0
+	for seed_value: int in 200:
+		state.rng.seed = seed_value
+		state.tools[1] = ToolRegistry.create(&"YUT")
+		if AugmentRegistry.generate_offers(state, 1).any(func(id: StringName) -> bool: return AugmentRegistry.get_def(id).category == GameEnums.AugmentCategory.TOOL_SWAP):
+			with_tool += 1
+		state.rng.seed = seed_value
+		state.tools[1] = ToolRegistry.create(&"D6")
+		if AugmentRegistry.generate_offers(state, 1).any(func(id: StringName) -> bool: return AugmentRegistry.get_def(id).category == GameEnums.AugmentCategory.TOOL_SWAP):
+			without_tool += 1
+	check(with_tool * 2 < without_tool, "특수 도구가 있으면 판정 도구 증강이 훨씬 덜 나온다 (%d vs %d)" % [with_tool, without_tool])
+	state.tools[2] = ToolRegistry.create(&"YUT")
+	var offers: Array[StringName] = [&"TOOL_HOLDEM", &"CARD_PACKAGE", &"AUG_LAW_01"]
+	var rng := RandomNumberGenerator.new()
+	for seed_value: int in 20:
+		rng.seed = seed_value
+		check(offers[BotBrain.choose_augment(state, 2, offers, rng)] != &"TOOL_HOLDEM", "특수 도구를 가진 봇은 판정 도구를 다시 고르지 않는다")
+	state.tools[2] = ToolRegistry.create(&"D6")
+	check_eq(offers[BotBrain.choose_augment(state, 2, offers, rng)], &"TOOL_HOLDEM", "기본 주사위 봇은 판정 도구를 고른다")
+	check(yut != null, "윷 증강")
+
+
+## AI 대전: 사람 자리(end_when_graduated)가 졸업하면 남은 컴퓨터는 레이스 진행 순서(완주 수 → 남은 칸)로 순위가 매겨지고 판이 바로 끝난다.
+func test_single_player_game_ends_when_the_human_graduates() -> void:
+	var manager := _new_manager([1, 2, 3, 4] as Array[int])
+	var state: GameState = manager.state
+	var events: Array = _events(manager)
+	manager.end_when_graduated.assign([1])
+	state.get_pawn(41).is_finished = true  # P4: 1개 완주
+	place(state, 21, 20, [19])  # P2: 결승에 더 가깝다
+	place(state, 31, 5, [4])
+	manager._graduate(1, VictoryChecker.ALL_HOME)
+	check(manager._end_if_decided(), "사람이 졸업하면 바로 끝난다")
+	check(manager.is_game_over, "게임 종료")
+	check_eq(state.rankings, [1, 4, 2, 3] as Array[int], "1위 사람, 그다음 완주 수 → 남은 칸 순서")
+	check_eq(state.rank_reasons.get(4), VictoryChecker.RACE_ORDER, "남은 컴퓨터는 진행 순위로 확정")
+	check(_kinds(events).has(&"game_over"), "결과 화면으로")
+	_dispose(manager)
+	# 온라인·4인 수동(end_when_graduated 비어 있음)은 끝까지 진행한다
+	var full := _new_manager([1, 2, 3, 4] as Array[int])
+	full._graduate(1, VictoryChecker.ALL_HOME)
+	check(not full._end_if_decided() and not full.is_game_over, "사람 자리 지정이 없으면 계속")
+	_dispose(full)

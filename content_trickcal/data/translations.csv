@@ -2007,3 +2007,18 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 [타로] P%d의 운명의 수레바퀴: %s 장외 사출 → %s이(가) 그 자리로,[Tarot] P%d's Wheel of Fortune: %s knocked off → %s takes its spot,[タロット] P%d の運命の輪: %s 場外射出 → %s がその場所へ
 %s이(가) 출발선으로 날아가고 %s이(가) 그 자리를 차지합니다,%s flies back to Start and %s takes its spot,%s がスタートへ飛ばされ、%s がその場所を奪います
 내 꼴찌 말 ↔ 1등 적 선두 말 위치 교환 (내 말이 보드에 없으면 선두 사출 + 대기 말이 그 자리로),"Swap your last pawn with the top rival's lead pawn. (None on the board? The leader is knocked off and your waiting pawn takes its spot.)",自分の最下位駒 ↔ 1位の敵の先頭駒を入れ替え (自分の駒がボードになければ先頭駒を射出し、待機駒がその場所へ)
+레이스 진행 순위로 확정,Ranked by race progress,レース進行順で確定
+진행 순위로 확정,Ranked by progress,進行順で確定
+[%s] %s  (설치자: P%d),[%s] %s  (Placed by P%d),[%s] %s  (設置者: P%d)
+남은 유지: %d턴,Turns left: %d,残り: %dターン
+유지: 발동할 때까지,Lasts until triggered,発動するまで持続
+뒷면 함정: 밟으면 정체가 드러나요,Face-down trap: revealed when someone steps on it,伏せ罠: 踏むと正体が明らかに
+다른 플레이어가 멈추면 통행료,Others pay a toll when they stop here,他のプレイヤーが止まると通行料
+코너 함정,Corner Trap,コーナー罠
+소환: P%d · 라운드가 끝나면 움직이고 사라짐,Summoned by P%d · moves and vanishes at round end,召喚: P%d · ラウンド終了時に動いて消える
+%s · 보유 증강 %d개,%s · Augments owned: %d,%s · 所持増強 %d個
+아직 고른 증강이 없어요,No augments picked yet,まだ増強を選んでいません
+%d번 말: %s,Pawn %d: %s,%d番の駒: %s
+%d번 말: %s  (완주),Pawn %d: %s  (Finished),%d番の駒: %s  (完走)
+판정 도구: %s,Judgment Tool: %s,判定ツール: %s
+%s ×%d,%s ×%d,%s ×%d

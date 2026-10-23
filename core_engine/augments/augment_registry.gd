@@ -143,7 +143,7 @@ static func generate_offers(state: GameState, player_id: int, count: int = GameE
 			var candidates_of: Array = by_category[category]
 			var total: float = 0.0
 			for def: Variant in candidates_of:
-				total += effective_weight(def as AugmentDef, state)
+				total += effective_weight(def as AugmentDef, state, player_id)
 			weights.append(total / float(candidates_of.size()))
 		var chosen: int = _weighted_index(weights, state.rng)
 		var picked_category: Variant = categories[chosen]
@@ -151,7 +151,7 @@ static func generate_offers(state: GameState, player_id: int, count: int = GameE
 		var pool: Array = by_category[picked_category]
 		var pool_weights: Array[float] = []
 		for def: Variant in pool:
-			pool_weights.append(effective_weight(def as AugmentDef, state))
+			pool_weights.append(effective_weight(def as AugmentDef, state, player_id))
 		offers.append((pool[_weighted_index(pool_weights, state.rng)] as AugmentDef).augment_id)
 	if offers.size() < count:
 		# 모자라면 이번 드래프트 계열 안에서 먼저(가중치대로) 채우고, 그래도 모자라면 다른 계열에서 채운다
@@ -173,9 +173,25 @@ static func generate_offers(state: GameState, player_id: int, count: int = GameE
 	return offers
 
 
+## 이미 기본 주사위(D6)가 아닌 특수 판정 도구를 가진 사람에게 판정 도구 교체 증강이 나올 가중치 배수 (도구를 의미 없이 계속 덮어쓰지 않게).
+const OWNED_TOOL_SWAP_FACTOR: float = 0.2
+
+
 ## 드래프트에 쓰는 가중치: 표의 weight × 템포 업 배수 (템포 업 1단계 8라운드부터 법전·초증강 ×3).
-static func effective_weight(def: AugmentDef, state: GameState) -> float:
-	return float(def.weight * TempoUp.weight_multiplier(state.round_number, def.category))
+## player_id를 주면 그 사람이 이미 특수 판정 도구를 가졌을 때 판정 도구 교체 증강을 OWNED_TOOL_SWAP_FACTOR배로 줄인다.
+static func effective_weight(def: AugmentDef, state: GameState, player_id: int = -1) -> float:
+	var weight: float = float(def.weight * TempoUp.weight_multiplier(state.round_number, def.category))
+	if def.category == GameEnums.AugmentCategory.TOOL_SWAP and has_special_tool(state, player_id):
+		weight *= OWNED_TOOL_SWAP_FACTOR
+	return weight
+
+
+## 기본 주사위(D6)가 아닌 판정 도구를 쓰고 있는가.
+static func has_special_tool(state: GameState, player_id: int) -> bool:
+	if player_id < 0 or not state.tools.has(player_id):
+		return false
+	var tool: BaseJudgmentTool = state.tools[player_id]
+	return tool != null and tool.tool_id != &"D6"
 
 
 ## 가중치 배열에서 비율대로 한 칸을 고른다 (합이 0이면 균등). 호스트 RNG만 쓰므로 모든 참가자가 같은 결과를 얻는다.

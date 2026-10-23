@@ -105,6 +105,10 @@ var _card_played_this_turn: bool = false
 var _draft_rerolls: Dictionary = {}
 ## 진행 중인 이동의 보고서와 마지막 걸음 결과 (execute_step_by_step_move가 채운다).
 var _move_report: MoveReport = null
+## 이번 이동의 눈금에 들어 있는 템포 업 보너스 (카이지의 한방 역전법 판정에서 뺀다).
+var _move_tempo_bonus: int = 0
+## AI 대전의 사람 자리: 이 사람들이 모두 졸업하면 남은 컴퓨터는 레이스 진행 순서로 순위를 매기고 판을 바로 끝낸다 (비어 있으면 끝까지 진행, 온라인·4인 수동).
+var end_when_graduated: Array[int] = []
 var _move_outcome: MoveExecutor.StepOutcome = MoveExecutor.StepOutcome.CONTINUE
 
 
@@ -1187,13 +1191,7 @@ func _apply_tempo_up() -> bool:
 		return false
 	for entry: Dictionary in VictoryChecker.newly_qualified(state, player_order, current_player_id(), false):
 		_graduate(int(entry["player"]), entry["reason"])
-	var active: Array[int] = state.active_players(player_order)
-	if active.size() <= 1:
-		for last: int in active:
-			_graduate(last, VictoryChecker.LAST_PLACE)
-		_end_game()
-		return true
-	return false
+	return _end_if_decided()
 
 
 ## 템포 업 2단계: 법전에 아직 없는 특수 승리 교칙 하나를 무작위로 올린다 (슬롯이 가득 차면 가장 오래된 교칙이 밀려난다).
@@ -1439,6 +1437,8 @@ func _execute_move(pawn: PlayerPawn, forced_path: Array[int] = []) -> void:
 	var ctx: RuleContext = _make_ctx(current_player_id())
 	var forced: bool = not forced_path.is_empty()
 	ctx.dice_value = forced_path.size() if forced else move_queue.pop_front()
+	# 대기열의 눈금은 모두 굴림에서 왔고 템포 업 보너스가 이미 더해져 있다 (같은 라운드). 필살기 직선 이동에는 없다.
+	_move_tempo_bonus = 0 if forced else TempoUp.move_bonus(state.round_number)
 	ctx.raw_roll = ctx.dice_value
 	ctx.direction = state.movement_direction()
 	ctx.defer_stack_choice = stack_choice_enabled
@@ -1566,22 +1566,25 @@ func _enter_neutral_npc_phase() -> void:
 
 ## 서바이벌 순위 판정 (VictoryChecker): 승리 조건을 달성한 사람을 다음 순위로 졸업시킨다.
 ## 남은 사람이 1명이면 그 사람이 꼴찌로 확정되고 게임이 끝난다. 게임이 끝났거나 지금 차례인 사람이 졸업해 턴이 넘어갔으면 true (호출한 쪽은 진행을 멈춘다).
+## 카이지의 한방 역전법이 세는 이번 이동 칸 수: 실제로 간 칸 - 리벤지 부스터 칸 - 템포 업 보너스(굴림으로 한 이동만).
+func kaiji_steps(report: MoveReport) -> int:
+	return maxi(report.path.size() - report.revenge_bonus - _move_tempo_bonus, 0)
+
+
 func _check_victory(report: MoveReport) -> bool:
 	if is_game_over:
 		return true
 	var current: int = current_player_id()
 	if report != null:
-		SpecialVictory.note_session(state, current, VictoryLaw.BEST_MOVE, report.path.size())  # 🏆 카이지의 한방 역전법
+		# 🏆 카이지의 한방 역전법: 출발선 리벤지 부스터 칸과 라운드 템포 업 고정 보너스는 빼고 센다
+		# (순수 판정 도구 눈금 + 기물 패시브 + 카드 효과로 크게 움직였을 때만 달성되게)
+		SpecialVictory.note_session(state, current, VictoryLaw.BEST_MOVE, kaiji_steps(report))
 	var current_graduated: bool = false
 	# 특수 승리는 차례가 끝날 때(_judge_special_victory) 판정한다. 행동 도중인 여기서는 말 4개 완주만 본다.
 	for entry: Dictionary in VictoryChecker.newly_qualified(state, player_order, current, false):
 		_graduate(int(entry["player"]), entry["reason"])
 		current_graduated = current_graduated or int(entry["player"]) == current
-	var active: Array[int] = state.active_players(player_order)
-	if active.size() <= 1:
-		for last: int in active:
-			_graduate(last, VictoryChecker.LAST_PLACE)
-		_end_game()
+	if _end_if_decided():
 		return true
 	if current_graduated:
 		advance_to_next_player()
@@ -1612,13 +1615,33 @@ func _judge_special_victory() -> bool:
 		if reason == &"":
 			continue
 		_graduate(int(entry["player"]), reason)
-		var remaining: Array[int] = state.active_players(player_order)
-		if remaining.size() <= 1:
-			for last: int in remaining:
-				_graduate(last, VictoryChecker.LAST_PLACE)
-			_end_game()
+		if _end_if_decided():
 			return true
 	return false
+
+
+## 순위가 다 정해졌으면 남은 사람을 마저 매기고 판을 끝낸다 (끝냈으면 true).
+## - 남은 사람이 1명 이하: 그 사람이 꼴찌.
+## - end_when_graduated(AI 대전의 사람 자리)가 모두 졸업: 남은 컴퓨터는 그 순간의 레이스 진행 순서로 순위를 매기고 바로 끝낸다 (구경만 하는 시간을 없앤다).
+func _end_if_decided() -> bool:
+	if is_game_over:
+		return true
+	var active: Array[int] = state.active_players(player_order)
+	if active.size() <= 1:
+		for last: int in active:
+			_graduate(last, VictoryChecker.LAST_PLACE)
+		_end_game()
+		return true
+	if end_when_graduated.is_empty():
+		return false
+	for watcher: int in end_when_graduated:
+		if not state.is_graduated(watcher):
+			return false
+	_emit_event(&"race_ranked", {"players": VictoryChecker.sort_by_race(state, active)})
+	for rest: int in VictoryChecker.sort_by_race(state, active):
+		_graduate(rest, VictoryChecker.RACE_ORDER)
+	_end_game()
+	return true
 
 
 ## 한 명을 다음 순위로 졸업시키고 알린다 (남은 말은 보드에서 철수).
@@ -1682,7 +1705,16 @@ func _build_sync_payload() -> Dictionary:
 		"stack_offer": _stack_offer.duplicate(true),
 		"duel": _duel.duplicate(true),
 		"counter": _counter_offer.duplicate(true),
+		"augments": _augments_payload(),
 	}
+
+
+## 플레이어별 보유 증강 (프로필의 [증강] 요약용): {플레이어: [증강 ID 문자열]}.
+func _augments_payload() -> Dictionary:
+	var result: Dictionary = {}
+	for player_id: Variant in augments:
+		result[player_id] = (augments[player_id] as Array).map(func(id: StringName) -> String: return String(id))
+	return result
 
 
 ## 클라이언트 전용: 호스트가 확정한 상태를 그대로 미러링한다 (규칙은 실행하지 않는다).
@@ -1700,6 +1732,12 @@ func _rpc_sync_state(payload: Dictionary) -> void:
 	_stack_offer = (payload["stack_offer"] as Dictionary).duplicate(true)
 	_duel = (payload.get("duel", {}) as Dictionary).duplicate(true)
 	_counter_offer = (payload.get("counter", {}) as Dictionary).duplicate(true)
+	var owned: Dictionary = payload.get("augments", {})
+	for player_id: Variant in owned:
+		var ids: Array[StringName] = []
+		for id: Variant in owned[player_id]:
+			ids.append(StringName(str(id)))
+		augments[int(player_id)] = ids
 	is_game_over = bool(payload["game_over"])
 	move_queue.assign(payload["move_queue"])
 	current_state = payload["phase"]

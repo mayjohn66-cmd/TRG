@@ -119,7 +119,7 @@ func test_defaults_from_the_table_keep_the_original_numbers() -> void:
 	check_eq(GameData.dash_steps(), 3, "발판 +3")
 	check_eq(GameData.leapfrog_max(), 3, "점프 최대 +3")
 	check_eq((LawRegistry.create("LAW_01") as VictoryLaw).goal(), 6, "투기장 6처치")
-	check_eq((LawRegistry.create("LAW_04") as VictoryLaw).goal(), 16, "한방 16칸")
+	check_eq((LawRegistry.create("LAW_04") as VictoryLaw).goal(), 18, "한방 18칸")
 
 
 # --- enabled / weight / min_round ------------------------------------------------------------

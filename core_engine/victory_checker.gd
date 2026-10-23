@@ -7,12 +7,29 @@ extends RefCounted
 const ALL_HOME: StringName = &"all_home"
 ## 마지막까지 남아 자동으로 꼴찌가 된 플레이어.
 const LAST_PLACE: StringName = &"last_place"
+## AI 대전에서 내가 졸업해 판이 바로 끝날 때, 남은 컴퓨터에게 그 순간의 레이스 진행(완주한 말 수 → 남은 칸 합) 순서로 매긴 순위.
+const RACE_ORDER: StringName = &"race_order"
+
+
+## 남은 사람들을 레이스 진행 순서로 (완주한 말이 많을수록, 결승까지 남은 칸 합이 짧을수록 앞).
+static func sort_by_race(state: GameState, players: Array[int]) -> Array[int]:
+	var ordered: Array[int] = players.duplicate()
+	ordered.sort_custom(func(a: int, b: int) -> bool:
+		var pa: Dictionary = progress_of(state, a)
+		var pb: Dictionary = progress_of(state, b)
+		if int(pa["finished"]) != int(pb["finished"]):
+			return int(pa["finished"]) > int(pb["finished"])
+		if int(pa["remaining"]) != int(pb["remaining"]):
+			return int(pa["remaining"]) < int(pb["remaining"])
+		return players.find(a) < players.find(b))
+	return ordered
 
 
 static func reason_text(reason: StringName) -> String:
 	match reason:
 		ALL_HOME: return "승리 (말 4개 모두 완주)"
 		LAST_PLACE: return "마지막까지 남음"
+		RACE_ORDER: return "레이스 진행 순위로 확정"
 	var law: LawResource = LawRegistry.create(String(reason)) if LawRegistry.ALL_IDS.has(String(reason)) else null
 	if law != null:
 		return "특수 승리 (%s)" % law.law_name
@@ -24,6 +41,7 @@ static func short_reason(reason: StringName) -> String:
 	match reason:
 		ALL_HOME: return "말 4개 모두 완주"
 		LAST_PLACE: return "마지막까지 남음"
+		RACE_ORDER: return "진행 순위로 확정"
 	var law: LawResource = LawRegistry.create(String(reason)) if LawRegistry.ALL_IDS.has(String(reason)) else null
 	if law != null:
 		return "특수 승리: %s" % law.law_name

@@ -114,7 +114,8 @@ static func score_augment(state: GameState, player_id: int, definition: AugmentD
 				return 75.0
 			return 60.0 if _evolved_count(state, player_id) < 2 else 45.0
 		GameEnums.AugmentCategory.TOOL_SWAP:
-			return 50.0
+			# 이미 특수 판정 도구가 있으면 다시 바꾸는 이득이 거의 없다: 다른 계열(기물·카드·법전·초증강)을 먼저 고른다
+			return 10.0 if AugmentRegistry.has_special_tool(state, player_id) else 50.0
 		GameEnums.AugmentCategory.LAW_ENACT:
 			return 40.0
 		GameEnums.AugmentCategory.SUPER_GAMBLE:

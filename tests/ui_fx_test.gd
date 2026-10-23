@@ -2069,6 +2069,33 @@ func _test_trap_tile_marking() -> void:
 		seen_high = seen_high or tile.trap_pulse > 0.7
 	_expect(seen_low and seen_high, "보라색이 깜빡인다 (pulse가 오르내린다)")
 	_expect((tile.tooltip_text as String).contains("함정"), "마우스를 올리면 함정 설명이 나온다")
+	# 설치물 플로팅 툴팁: 커서를 올리면(모바일은 탭) [이름] (설치자) / 효과 / 남은 유지 턴
+	var draft_was: Control = _board._draft_overlay
+	_board._draft_overlay = null
+	var spot: Vector2 = _board._tile_center(14) + _board._pawn_layer.position
+	_expect(_board._attachment_tile_at(spot) == 14, "커서 아래 설치물 칸을 찾는다")
+	_board._tip_end()
+	_board._hover_attachment_tip(spot)
+	_board._update_tip(0.0)
+	_expect(_board._tip_panel.visible and _board._tip_title.text.contains("설치자: P2"), "설치물 위에 올리면 바로 툴팁 (%s)" % _board._tip_title.text)
+	var known: bool = _board._trap_known(state.board.get_tile(14).attachments[0])
+	_expect(_board._tip_title.text.contains("나락") == known, "모르는 뒷면 함정은 이름을 숨긴다")
+	_expect(_board._tip_skill.text.contains("유지"), "남은 유지 표시")
+	_board._hover_attachment_tip(spot + Vector2(400, 400))
+	_expect(not _board._tip_panel.visible, "벗어나면 닫힌다")
+	_expect(_board._board_tip_target(spot).size() == 2 or _board._pawn_at(spot) != -1, "탭(클릭)으로도 연다")
+	# 프로필 [증강]: 보유 증강·기물·판정 도구 요약
+	_board.manager.augments[2] = [&"TOOL_HOLDEM", &"CARD_02", &"CARD_02"] as Array[StringName]
+	var info_button: Button = (_board._profiles[2]["panel"] as Control).find_child("ProfileInfo", true, false)
+	_expect(info_button != null, "프로필에 [증강] 버튼")
+	info_button.pressed.emit()
+	_board._update_tip(0.0)
+	_expect(_board._tip_panel.visible and _board._tip_title.text.contains("보유 증강 3개") and _board._tip_ability.text.contains("×2"), "증강 목록 (%s / %s)" % [_board._tip_title.text, _board._tip_ability.text])
+	_expect(_board._tip_skill.text.contains("1번 말") and _board._tip_skill.text.contains("판정 도구"), "기물·판정 도구 요약")
+	info_button.pressed.emit()
+	_expect(not _board._tip_panel.visible, "다시 누르면 닫힌다")
+	_board.manager.augments[2] = [] as Array[StringName]
+	_board._draft_overlay = draft_was
 	state.board.get_tile(14).attachments.clear()
 	_board._refresh_tiles()
 	_expect(not tile.trap_on and not _board._trap_tiles.has(14), "함정이 사라지면 표시도 사라진다")

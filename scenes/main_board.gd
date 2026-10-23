@@ -655,6 +655,7 @@ func _ready() -> void:
 	manager.action_rejected.connect(_on_action_rejected)
 	manager.turn_order_reversed.connect(_on_turn_order_reversed)
 	manager.game_over.connect(_on_game_over)
+	_sync_race_end()
 	_build_ui()
 	if net != null:
 		_log_line("상대를 기다리는 중입니다...", Color("ffe066"))
@@ -761,7 +762,9 @@ func _input(event: InputEvent) -> void:
 		return
 	var press: InputEventMouseButton = event as InputEventMouseButton
 	if press != null and press.pressed and press.button_index == MOUSE_BUTTON_LEFT and _pawn_click_target(press.position) == -1:
-		_on_board_tip_click(press.position)  # 이동으로 쓰이지 않는 클릭은 말 설명을 열고 닫는다
+		_on_board_tip_click(press.position)  # 이동으로 쓰이지 않는 클릭은 말·설치물 설명을 열고 닫는다
+	if event is InputEventMouseMotion:
+		_hover_attachment_tip((event as InputEventMouseMotion).position)  # 설치물 위에 커서를 올리면 바로 설명
 	if manager.current_state != TurnManager.State.PHASE_SELECT_PAWN:
 		return
 	if _pawn_pick_blocked():
@@ -1400,6 +1403,15 @@ func _build_profiles() -> void:
 		name_label.add_theme_color_override("font_outline_color", Color("0d1018"))
 		name_label.add_theme_constant_override("outline_size", 3)
 		top.add_child(name_label)
+		# [증강]: 이 플레이어의 보유 증강·기물·판정 도구 요약 (올리면 미리 보기, 누르면 고정)
+		var info_button: Button = _make_button("증강", Callable(), 11 if not big else 12, Color("3b4a6b"), 4)
+		info_button.name = "ProfileInfo"
+		info_button.focus_mode = Control.FOCUS_NONE
+		info_button.custom_minimum_size = Vector2(40 if not big else 46, 20 if not big else 24)
+		info_button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		info_button.pressed.connect(func() -> void: _tip_toggle(info_button, _fill_profile_tip.bind(player_id)))
+		_bind_tip(info_button, _fill_profile_tip.bind(player_id))
+		top.add_child(info_button)
 		var hand_pips := HBoxContainer.new()  # 손패 수는 글자(x3) 대신 카드 뒷면 칩 개수로 보여 준다
 		hand_pips.add_theme_constant_override("separation", 2)
 		hand_pips.alignment = BoxContainer.ALIGNMENT_END
@@ -4265,6 +4277,41 @@ func _fill_pawn_tip(pawn_id: int) -> void:
 		_tip_skill.text = "◆ [1회] %s%s%s\n   %s" % [PawnCatalog.skill_name(skill), "  (사용됨)" if pawn.skill_used else "", locked, PawnCatalog.skill_text(skill)]
 
 
+## 프로필 [증강] 요약: 지금까지 고른 증강 / 말 4개의 기물과 패시브 / 장착한 판정 도구.
+func _fill_profile_tip(player_id: int) -> void:
+	if state == null or manager == null:
+		return
+	var owned: Array = manager.augments.get(player_id, [])
+	_tip_title.text = "%s · 보유 증강 %d개" % [_player_name(player_id), owned.size()]
+	var counts: Dictionary = {}
+	var order: Array[StringName] = []
+	for id: Variant in owned:
+		if not counts.has(id):
+			order.append(StringName(str(id)))
+		counts[id] = int(counts.get(id, 0)) + 1
+	var lines: PackedStringArray = []
+	for id: StringName in order:
+		var definition: AugmentDef = AugmentRegistry.get_def(id)
+		if definition == null:
+			continue
+		var name_text: String = definition.title if definition.title != "" else definition.display_name
+		lines.append(name_text if int(counts[id]) <= 1 else "%s ×%d" % [name_text, int(counts[id])])
+	_tip_ability.text = "\n".join(lines) if not lines.is_empty() else "아직 고른 증강이 없어요"
+	var info: PackedStringArray = []
+	for pawn: PlayerPawn in state.pawns_of(player_id):
+		info.append(("%d번 말: %s  (완주)" if pawn.is_finished else "%d번 말: %s") % [pawn.slot, PawnCatalog.full_name(pawn.kind, pawn.unit_no)])
+		if pawn.kind != GameEnums.PawnKind.BASIC:
+			info.append("◆ 패시브: %s" % PawnCatalog.ability_text(pawn.kind, pawn.unit_no))
+	var tool: BaseJudgmentTool = state.tools.get(player_id)
+	if tool != null:
+		info.append("판정 도구: %s" % tool.display_name)
+		var span: Array[int] = AugmentDef.tool_step_range(tool.tool_id)
+		if span.size() == 2:
+			info.append("최소 %d칸 ~ 최대 %d칸" % [span[0], span[1]])
+	_tip_skill.visible = true
+	_tip_skill.text = "\n".join(info)
+
+
 ## 법전 슬롯 툴팁: 특수 승리 조건과 모두의 실시간 진행도 ("P2  3/6 처치  [위험!]").
 func _fill_law_tip(slot: int) -> void:
 	if state == null or slot >= state.rulebook.active_laws_queue.size():
@@ -4374,7 +4421,8 @@ func _fill_npc_tip(npc_id: int) -> void:
 	var robber: bool = npc.behavior != GameEnums.NpcBehavior.PATROL_REVERSE
 	_tip_title.text = "사료스탕스  ▶ 정방향 전진" if robber else "와구와구 유령  ◀ 역방향 전진"
 	_tip_ability.text = NPC_TIP_ROBBER if robber else NPC_TIP_GHOST
-	_tip_skill.visible = false
+	_tip_skill.visible = npc.owner_id >= 1
+	_tip_skill.text = "소환: P%d · 라운드가 끝나면 움직이고 사라짐" % npc.owner_id
 
 
 ## 보드 클릭: 아무 말(상대 말·중립 기물 포함)을 누르면 그 설명을 열고, 같은 말을 다시 누르면 닫는다. 빈 곳을 누르면 열린 설명을 닫는다.
@@ -4389,7 +4437,74 @@ func _on_board_tip_click(pointer: Vector2) -> void:
 	_tip_toggle(target[0], target[1])
 
 
-## 화면 좌표 아래의 말·중립 기물: [설명 키, 내용 채우기]. 없으면 빈 배열.
+## 설치물(함정·코너 함정·호텔·지뢰)이 있는 칸 중 화면 좌표 아래의 칸. 없으면 -1.
+func _attachment_tile_at(pointer: Vector2) -> int:
+	if state == null or _pawn_layer == null:
+		return -1
+	var best: int = -1
+	var best_distance: float = 24.0
+	for index: int in BoardSpec.tile_count:
+		if state.board.get_tile(index).attachments.is_empty():
+			continue
+		var distance: float = (_tile_center(index) + _pawn_layer.position).distance_to(pointer)
+		if distance < best_distance:
+			best_distance = distance
+			best = index
+	return best
+
+
+## 커서가 설치물 칸 위에 오면 설명을 바로 띄우고, 벗어나면 닫는다 (눌러서 고정한 설명은 건드리지 않는다).
+func _hover_attachment_tip(pointer: Vector2) -> void:
+	if _tip_pinned or _tip_panel == null:
+		return
+	if _draft_overlay != null or _result_overlay != null or _choice_overlay != null:
+		return  # 보드를 가린 창 너머의 칸은 설명하지 않는다
+	var tile: int = _attachment_tile_at(pointer)
+	var key: String = "tile:%d" % tile
+	if tile != -1:
+		if _tip_source != key:
+			_tip_begin(key, _fill_attachment_tip.bind(tile))
+			_tip_clock = TIP_DELAY  # 기다리지 않고 바로
+	elif _tip_source is String and String(_tip_source).begins_with("tile:"):
+		_tip_end(_tip_source)
+
+
+## 설치물 한 개의 설명 [제목, 효과, 유지]. 정체를 모르는 뒷면 함정은 이름·효과를 숨긴다.
+func _attachment_tip_lines(attachment: TileAttachment) -> Array[String]:
+	var id: String = attachment.attachment_id
+	var kind: String = "호텔" if id == "HOTEL" else ("코너 함정" if id.begins_with("TRP_C") else "함정")
+	if _structure_kind(attachment) == &"mine":
+		kind = "지뢰"
+	var known: bool = id == "HOTEL" or _trap_known(attachment)
+	var title: String = "[%s] %s  (설치자: P%d)" % [kind, _attachment_name(id) if known else "?", attachment.owner_id]
+	var effect: String = "뒷면 함정: 밟으면 정체가 드러나요"
+	if id == "HOTEL":
+		effect = "다른 플레이어가 멈추면 통행료"
+	elif known:
+		effect = card_summary(StringName(id))
+	var keep: String = "남은 유지: %d턴" % attachment.duration_turns if attachment.duration_turns > 0 else "유지: 발동할 때까지"
+	return [title, effect, keep] as Array[String]
+
+
+## 설치물 칸 툴팁: 그 칸의 설치물마다 [이름] (설치자) / 효과 요약 / 남은 유지 턴.
+func _fill_attachment_tip(tile: int) -> void:
+	if state == null:
+		return
+	var titles: PackedStringArray = []
+	var bodies: PackedStringArray = []
+	var keeps: PackedStringArray = []
+	for attachment: TileAttachment in state.board.get_tile(tile).attachments:
+		var lines: Array[String] = _attachment_tip_lines(attachment)
+		titles.append(lines[0])
+		bodies.append("◆ " + lines[1])
+		keeps.append(lines[2])
+	_tip_title.text = "\n".join(titles)
+	_tip_ability.text = "\n".join(bodies)
+	_tip_skill.visible = not keeps.is_empty()
+	_tip_skill.text = "\n".join(keeps)
+
+
+## 화면 좌표 아래의 말·중립 기물·설치물: [설명 키, 내용 채우기]. 없으면 빈 배열.
 func _board_tip_target(pointer: Vector2) -> Array:
 	for npc: NeutralNPC in state.npcs:
 		var npc_view: Node2D = _npc_views.get(npc.entity_id)
@@ -4406,7 +4521,8 @@ func _board_tip_target(pointer: Vector2) -> Array:
 			best = distance
 			found = pawn.entity_id
 	if found == -1:
-		return []
+		var tile: int = _attachment_tile_at(pointer)
+		return ["tile:%d" % tile, _fill_attachment_tip.bind(tile)] if tile != -1 else []  # 말이 없는 설치물 칸 (모바일은 탭)
 	return ["board:%d" % found, _fill_pawn_tip.bind(found)]
 
 
@@ -9997,6 +10113,17 @@ func _on_menu_pressed() -> void:
 
 func _refresh_mode_toggle() -> void:
 	_mode_toggle.text = "[모드: 1P vs 3AI 봇]" if ai_mode else "[모드: 4P 수동 조작]"
+	_sync_race_end()
+
+
+## AI 대전(혼자 하는 판)은 내가 졸업하는 즉시 끝낸다: 남은 컴퓨터는 레이스 진행 순서로 순위를 매긴다.
+## 온라인·한 화면 4인 수동은 끝까지 진행한다.
+func _sync_race_end() -> void:
+	if manager == null:
+		return
+	manager.end_when_graduated.clear()
+	if net == null and ai_mode and not GameSession.net_active:
+		manager.end_when_graduated.append(local_player_id)
 
 
 func _on_mode_toggle_pressed() -> void:
