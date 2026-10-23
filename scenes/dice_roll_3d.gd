@@ -141,6 +141,16 @@ func apply_time(seconds: float) -> void:
 	(shadow.material_override as ShaderMaterial).set_shader_parameter("opacity", 0.25 / (1.0 + lift))
 
 
+## Board presenter owns flight and travel in screen space. Keep the 3D die's
+## rotation, but do not add a second jump or a fixed left-to-right translation.
+func apply_board_time(seconds: float, screen_lift: float) -> void:
+	die.transform = pose_at(seconds, result_face, _power)
+	var support: float = support_height(die.quaternion)
+	var clearance: float = (HALF_SIZE - ROUND_RADIUS) * sqrt(3.0) + ROUND_RADIUS
+	die.position = Vector3(0.0, lerpf(support, clearance, smoothstep(0.0, 30.0, screen_lift)), 0.0)
+	settled = seconds >= ROLL_TIME
+
+
 static func final_orientation(face: int) -> Quaternion:
 	var normal: Vector3 = FACE_NORMALS[clampi(face, 1, 6) - 1]
 	return Quaternion(Vector3.UP, deg_to_rad(12.0)) * Quaternion(normal, Vector3.UP)

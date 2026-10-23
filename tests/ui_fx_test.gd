@@ -325,7 +325,7 @@ func _test_card_draw_fx() -> void:
 	print("CARD_DRAW_FX_OK")
 
 
-## 기본 주사위 투척: 팝업 상자 없이 굴린 사람 프로필에서 보드 마당으로 포물선 비행 → 2~3번 통통 → 1.25배 임팩트 + "N칸 전진!" → 기다리지 않고 끝난다.
+## 투척의 접지·가독성·취소를 검증한다. 판정 즉시 입력을 풀고 결과 그림만 잠시 남긴다.
 func _test_board_toss() -> void:
 	var presenter: RollPresenter = _board._presenter
 	presenter.instant = false
@@ -335,8 +335,10 @@ func _test_board_toss() -> void:
 	presenter.toss_from = from
 	presenter.play(&"D6", {"tool_id": &"D6", "steps": 5, "details": {"face": 5}}, 0.8)
 	_expect(presenter.get_theme_stylebox("panel") is StyleBoxEmpty and not presenter._title.visible, "네모난 팝업 상자·이름표 없이 주사위만")
-	var start_center: Vector2 = presenter.position + presenter.size / 2.0
+	var start_center: Vector2 = presenter._dice_3d.get_global_transform() * (presenter._dice_3d.size / 2.0)
 	_expect(start_center.distance_to(from) < 40.0, "프로필에서 출발 (%s ~ %s)" % [str(start_center), str(from)])
+	_expect(presenter._root.z_index > presenter._ground_shadow.z_index and presenter._root.z_index > presenter._contact_fx.z_index, "그림자·접지 파문은 주사위 앞면 아래에 그린다")
+	_expect(presenter._die_label.get_parent() == presenter and presenter._die_label.z_index > presenter._root.z_index, "결과 글자는 레이아웃과 분리해 주사위 위에 유지한다")
 	var contacts: int = 0
 	var was_up: bool = false
 	var low_shadow: float = 999.0
@@ -357,15 +359,18 @@ func _test_board_toss() -> void:
 	presenter._process(RollPresenter.TOSS_LAND_TIME)
 	_expect(not presenter.active and presenter.visible, "눈금이 정해지는 순간 바로 끝난다 (입력이 풀리고 그림은 잠깐 남는다)")
 	_expect(presenter._die_label.text == "5칸 전진!" and presenter.last_display == "5", "주사위 위에 N칸 전진! (%s)" % presenter._die_label.text)
+	var landed: Vector2 = presenter._dice_3d.get_global_transform() * (presenter._dice_3d.size / 2.0)
+	_expect(landed.distance_to(presenter.center + RollPresenter.TOSS_LAND_OFFSET) < 1.0, "결과 글자가 나타나도 착지한 주사위 중심은 움직이지 않는다")
 	var peak: float = 0.0
 	for index: int in 20:
 		presenter._process(RollPresenter.PUNCH_TIME / 20.0)
 		peak = maxf(peak, presenter.scale.y)
-	_expect(absf(peak - RollPresenter.PUNCH_SCALE) < 0.05, "착지 임팩트 1.25배 (%.2f)" % peak)
+	_expect(absf(peak - RollPresenter.PUNCH_SCALE) < 0.025, "착지 반동은 짧고 작게 마감한다 (%.2f)" % peak)
 	_expect(presenter._die_label.global_position.y < presenter.position.y + presenter.size.y / 2.0, "결과 글자는 주사위 위")
 	presenter._process(RollPresenter.LINGER_TIME + RollPresenter.FADE_TIME)
 	_expect(not presenter.visible and presenter.scale == Vector2.ONE, "잠깐 남았다가 사라진다")
 	presenter.cancel()
+	_expect(not presenter._contact_fx.visible and presenter.rotation == 0.0, "취소하면 접지 이펙트·기울기를 남기지 않는다")
 	print("BOARD_TOSS_FX_OK")
 
 
@@ -596,6 +601,8 @@ func _test_yut_throw() -> void:
 	view.stick_landed.disconnect(observer)
 	presenter._process(presenter._total)
 	_expect(not presenter.active and view.render_view.render_target_update_mode==SubViewport.UPDATE_DISABLED,"completion releases input and stops Yut rendering")
+	presenter._process(RollPresenter.PUNCH_TIME * 0.65)
+	_expect(presenter.scale == Vector2.ONE, "윷은 착지 후 묶음 전체가 고무처럼 늘어나지 않는다")
 	for value: int in ToolYut.FACES:
 		presenter.play(&"YUT",{"steps":value,"ends_turn":value==0,"reroll":value>=4,"details":{"face":value}},0.1)
 		presenter._update(RollPresenter.real_time(&"YUT", YutThrow3D.RESULT_TIME+0.001))

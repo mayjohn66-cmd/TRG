@@ -2,7 +2,7 @@
 # Class: class_name RollPresenter
 # Role: 판정 도구 결과 연출기. 확정된 결과를 D6의 실제 3D 굴림·윷 던지기·룰렛 감속·슬롯 순차 정지·카드 플립으로 표시한다. 연출만 담당하며 결과는 절대 바꾸지 않는다
 #       네모난 팝업 상자 없이 보드판 위에 바로 그린다. 기본 주사위·친치로·윷은 던진 사람 프로필에서 보드 한가운데 마당으로 날아와
-#       통통 튀며 굴러가고(투척), 눈금이 정해지는 순간 쫀득하게 튕기며 "N칸 전진!"을 띄운 뒤 기다리지 않고 바로 끝난다 (그림은 말이 움직이는 동안 잠깐 남았다 사라진다).
+#       낮아지는 반동과 접지 파문을 남긴다. 눈금 확정 즉시 입력을 풀고 "N칸 전진!" 그림만 잠시 남긴다.
 class_name RollPresenter
 extends PanelContainer
 
@@ -25,22 +25,24 @@ const CARD_RESULT_HOLD: float = 0.50
 ## 보드 위로 던지는 도구 (팝업 없이 프로필 → 보드 한가운데로 날아온다).
 const TOSS_TOOLS: Array[StringName] = [&"D6", &"CHINCHIRO", &"YUT"]
 ## 주사위가 손을 떠나 착지·눈금 확정까지 (3D 굴림 1초를 이 시간으로 압축한다).
-const TOSS_LAND_TIME: float = 0.6
+const TOSS_LAND_TIME: float = 0.72
 ## 윷 3D 시간 배속: 네 가락이 모두 멈추는 1.12초가 0.8초가 된다.
 const YUT_TIME_SCALE: float = 1.4
-## 윷 묶음이 프로필에서 마당까지 미끄러져 오는 시간.
+## 윷 묶음의 이동은 먼저 끝내고, 이후에는 가락별 3D 비행과 착지만 보여 준다.
 const YUT_TRAVEL_TIME: float = 0.42
-## 포물선 최고 높이(화면 px)와 손을 떠나 꼭대기까지의 비율 (나머지는 TRANS_BOUNCE로 떨어지며 2~3번 튄다).
+## 큰 비행 → 낮은 튀기 → 잔구름. 화면 이동과 3D 내부 도약을 중복하지 않는다.
 const TOSS_HEIGHT: float = 150.0
-const TOSS_RISE: float = 0.26
-## 착지 임팩트(1.25배 쫀득하게)와 결과를 띄워 둔 채 말이 움직이는 동안 남아 있는 시간.
-const PUNCH_TIME: float = 0.18
-const PUNCH_SCALE: float = 1.25
+const TOSS_CONTACTS: Array[float] = [0.60, 0.84, 1.0]
+## 결과는 작은 반동만 준다. 입력은 결과 확정 즉시 풀린다.
+const PUNCH_TIME: float = 0.14
+const PUNCH_SCALE: float = 1.08
 const LINGER_TIME: float = 0.5
 const FADE_TIME: float = 0.2
 ## 투척은 보드 마당 한가운데(연출 패널 자리보다 조금 아래)에 떨어진다. 그림자는 주사위 밑면에 붙는다.
 const TOSS_LAND_OFFSET: Vector2 = Vector2(0.0, 52.0)
-const SHADOW_DROP: float = 30.0
+## Dice camera projects its floor origin 44 px below the texture centre.
+const SHADOW_DROP: float = 44.0
+const SHADOW_SIZE: Vector2 = Vector2(128.0, 46.0)
 
 ## true면 모든 연출을 0초로 건너뛴다 (헤드리스 테스트·ui_smoke 자동 진행).
 var instant: bool = false
@@ -93,8 +95,10 @@ var _speed: float = 1.0
 ## 결과를 보여 준 뒤 남아 있는 시간 (-1이면 남아 있지 않다). 이 동안 입력은 이미 풀려 있다.
 var _linger: float = -1.0
 var _ground_shadow: GroundShadow = null
+var _contact_fx: ContactFX = null
 var _toss_view: Control = null
 var _toss_start: Vector2 = Vector2.ZERO
+var _last_contact: int = -1
 
 
 ## 투척하는 주사위 아래 바닥에 깔리는 반투명 타원 그림자 (높이 뜨면 작고 옅어진다).
@@ -105,8 +109,35 @@ class GroundShadow extends Control:
 
 	func _draw() -> void:
 		draw_set_transform(size / 2.0, 0.0, Vector2(1.0, size.y / maxf(size.x, 1.0)))
-		draw_circle(Vector2.ZERO, size.x / 2.0, Color(0.0, 0.0, 0.0, 0.42))
-		draw_circle(Vector2.ZERO, size.x * 0.32, Color(0.0, 0.0, 0.0, 0.25))
+		for layer: int in 6:
+			draw_circle(Vector2.ZERO, size.x * (0.50 - layer * 0.055), Color(0.13, 0.18, 0.09, 0.045))
+
+
+## 접지한 자리에만 짧은 파문과 먼지를 남긴다. 물체와 함께 움직이지 않고 보드 바닥에 그린다.
+class ContactFX extends Control:
+	var marks: Array[Dictionary] = []
+
+	func _init() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		top_level = true
+		z_index = 1
+
+	func _draw() -> void:
+		for mark: Dictionary in marks:
+			var age: float = mark["age"]
+			var strength: float = mark["strength"]
+			var progress: float = clampf(age / 0.20, 0.0, 1.0)
+			var at: Vector2 = mark["at"]
+			var radius: float = lerpf(12.0, 45.0, 1.0 - pow(1.0 - progress, 2.0)) * strength
+			var ink := Color(1.0, 0.96, 0.77, (1.0 - progress) * 0.6)
+			draw_set_transform(at, 0.0, Vector2(1.0, 0.32))
+			draw_arc(Vector2.ZERO, radius, 0.0, TAU, 40, ink, 1.5, true)
+			draw_set_transform(Vector2.ZERO)
+			for index: int in 4:
+				var angle: float = PI * (0.15 + index * 0.57)
+				var drift := Vector2(cos(angle), sin(angle) * 0.28) * radius
+				drift.y -= sin(progress * PI) * 7.0 * strength
+				draw_circle(at + drift, (1.0 - progress) * 2.8 * strength, ink, true, -1.0, true)
 
 
 func _init() -> void:
@@ -171,6 +202,10 @@ func play(tool_id: StringName, result: Dictionary, power: float = 0.5) -> void:
 func cancel() -> void:
 	_end_linger()
 	scale = Vector2.ONE
+	rotation = 0.0
+	if _contact_fx != null:
+		_contact_fx.marks.clear()
+		_contact_fx.hide()
 	modulate.a = 1.0
 	if _dice_3d != null:
 		_dice_3d.stop_rendering()
@@ -201,6 +236,7 @@ func _position_center() -> void:
 ## 투척 준비: 던진 사람 프로필에서 출발한다. 3D 판 안의 그림자 대신 보드 바닥에 타원 그림자를 깐다.
 func _begin_toss() -> void:
 	var dice: bool = _mode != &"YUT"
+	_last_contact = -1
 	_toss_view = _dice_3d if dice else _yut_3d
 	if dice and _dice_3d.shadow != null:
 		_dice_3d.shadow.visible = false
@@ -209,39 +245,101 @@ func _begin_toss() -> void:
 		_ground_shadow = GroundShadow.new()
 		add_child(_ground_shadow)
 	_ground_shadow.visible = dice  # 윷가락은 3D 판 안에 가락마다 그림자가 있다
-	move_child(_ground_shadow, 0)  # 주사위 밑에 그린다
+	# top_level은 형제 순서와 별개로 그려진다. 명시적인 z로 면 위에 그림자가 덮이지 않게 한다.
+	_ground_shadow.z_index = 0
+	_root.z_index = 2
+	if _contact_fx == null:
+		_contact_fx = ContactFX.new()
+		add_child(_contact_fx)
+	_contact_fx.show()
+	# Result captions are screen-space overlays, not VBox layout participants.
+	# Otherwise a text resize can move the label back into the die on the next sort.
+	_die_label.reparent(self, false)
 	_die_label.top_level = true
+	_die_label.z_index = 3
 	_die_label.pivot_offset = Vector2.ZERO
 	modulate.a = 0.0
 	_update_toss(0.0)
 
 
-## 투척 위치: 기본 주사위·친치로는 포물선으로 솟았다가 TRANS_BOUNCE로 떨어지며 2~3번 통통 튄다. 윷 묶음은 프로필에서 마당으로 빠르게 미끄러져 온다(가락은 3D에서 날아간다).
-func _update_toss(t: float) -> void:
+func _toss_ground(u: float) -> Vector2:
+	var target: Vector2 = center + TOSS_LAND_OFFSET
+	var direction: Vector2 = (target - _toss_start).normalized()
+	var eased: float = 1.0 - pow(1.0 - u, 2.0)
+	var curve: Vector2 = direction.orthogonal() * 18.0 * sin(PI * u) * (1.0 - u)
+	return _toss_start.lerp(target, eased) + curve
+
+
+## 실제 렌더 영역의 중심을 맞춘다. 결과 글자로 컨테이너 크기가 바뀌어도 착지한 물체는 움직이지 않는다.
+func _place_toss_body(view_center: Vector2) -> void:
 	pivot_offset = size / 2.0
+	position = view_center - size / 2.0
+	global_position += view_center - _toss_view.get_global_transform() * (_toss_view.size / 2.0)
+
+
+func _update_contacts(t: float) -> void:
+	_contact_fx.marks.clear()
+	if _mode != &"YUT":
+		for index: int in TOSS_CONTACTS.size():
+			var contact: float = TOSS_CONTACTS[index]
+			var age: float = t - contact * TOSS_LAND_TIME
+			if age >= 0.0 and age < 0.20:
+				_contact_fx.marks.append({"at": _toss_ground(contact) + Vector2(0, SHADOW_DROP), "age": age, "strength": [1.0, 0.65, 0.35][index]})
+	else:
+		for index: int in 4:
+			var age: float = t - real_time(&"YUT", YutThrow3D.impact_time(index))
+			if age >= 0.0 and age < 0.20:
+				var pixel: Vector2 = _yut_3d.ground_pixel_at(index)
+				var fit: float = minf(_yut_3d.size.x / YutThrow3D.RENDER_SIZE.x, _yut_3d.size.y / YutThrow3D.RENDER_SIZE.y)
+				var local: Vector2 = (_yut_3d.size - Vector2(YutThrow3D.RENDER_SIZE) * fit) / 2.0 + pixel * fit
+				_contact_fx.marks.append({"at": _yut_3d.get_global_transform() * local, "age": age, "strength": 0.48})
+	_contact_fx.queue_redraw()
+
+
+## 포물선과 접지 시각을 공유한다. 남은 수평 속도로 조금 더 굴러간 뒤 멈춘다.
+func _update_toss(t: float) -> void:
 	var travel: float = TOSS_LAND_TIME if _mode != &"YUT" else YUT_TRAVEL_TIME
 	var u: float = clampf(t / travel, 0.0, 1.0)
-	var eased: float = 1.0 - pow(1.0 - u, 3.0)
-	var ground: Vector2 = _toss_start.lerp(center + TOSS_LAND_OFFSET, eased)
+	var eased: float = 1.0 - pow(1.0 - u, 2.0)
+	var ground: Vector2 = _toss_ground(u)
 	var height: float = 0.0
+	var compression: float = 0.0
 	if _mode != &"YUT":
-		if u < TOSS_RISE:
-			height = TOSS_HEIGHT * sin(u / TOSS_RISE * PI * 0.5)
-		else:
-			height = Tween.interpolate_value(TOSS_HEIGHT, -TOSS_HEIGHT, u - TOSS_RISE, 1.0 - TOSS_RISE, Tween.TRANS_BOUNCE, Tween.EASE_OUT)
+		var start: float = 0.0
+		for index: int in TOSS_CONTACTS.size():
+			var end: float = TOSS_CONTACTS[index]
+			if u <= end:
+				var arc: float = clampf((u - start) / (end - start), 0.0, 1.0)
+				height = 4.0 * arc * (1.0 - arc) * TOSS_HEIGHT * lerpf(0.75, 1.05, _power) * [1.0, 0.24, 0.065][index]
+				break
+			start = end
+		for contact: float in TOSS_CONTACTS:
+			var since: float = t - contact * travel
+			if since >= 0.0 and since < 0.055:
+				compression = maxf(compression, sin(PI * since / 0.055) * 0.045)
 	toss_height = height
 	var lift: float = clampf(height / TOSS_HEIGHT, 0.0, 1.0)
-	var grow: float = lerpf(0.55 if _mode != &"YUT" else 0.45, 1.0, eased)
-	scale = Vector2.ONE * grow * (1.0 + lift * 0.12)
-	position = ground + Vector2(0.0, -height) - size / 2.0
+	var grow: float = lerpf(0.68 if _mode != &"YUT" else 0.58, 1.0, eased)
+	scale = Vector2(1.0 + compression, 1.0 - compression) * grow
+	var direction: Vector2 = (center + TOSS_LAND_OFFSET - _toss_start).normalized()
+	rotation = direction.x * 0.10 * sin(PI * u) * (1.0 - u)
+	_place_toss_body(ground + Vector2(0.0, -height))
 	modulate.a = clampf(u * 6.0, 0.0, 1.0)
 	if _ground_shadow != null and _ground_shadow.visible:
-		var shadow_size: Vector2 = Vector2(118.0, 38.0) * grow * (1.0 - 0.5 * lift)
+		var shadow_size: Vector2 = SHADOW_SIZE * grow * (1.0 - 0.5 * lift)
 		_ground_shadow.size = shadow_size
 		_ground_shadow.position = ground + Vector2(0.0, SHADOW_DROP * grow) - shadow_size / 2.0
-		_ground_shadow.modulate.a = 1.0 - 0.6 * lift
+		_ground_shadow.modulate.a = 1.0 - 0.7 * lift
 		_ground_shadow.queue_redraw()
 	_place_toss_label(ground + Vector2(0.0, -height))
+	_update_contacts(t)
+	if _mode != &"YUT":
+		for index: int in TOSS_CONTACTS.size():
+			var since: float = t - TOSS_CONTACTS[index] * travel
+			if since >= 0.0 and index > _last_contact:
+				_last_contact = index
+				if since < 0.10 and index < 2:
+					Sfx.play(&"thud", -5.0 - index * 7.0, 0.0, 1.05 + index * 0.08)
 
 
 ## "N칸 전진!"은 주사위(윷 묶음) 바로 위에 뜬다.
@@ -253,11 +351,11 @@ func _place_toss_label(view_center: Vector2) -> void:
 	_die_label.position = view_center + Vector2(-_die_label.size.x * _die_label.scale.x / 2.0, -above - _die_label.size.y * _die_label.scale.y)
 
 
-## 결과가 정해진 뒤: 착지 임팩트(살짝 눌렸다가 1.25배로 튕기고 돌아온다) + 결과 글자가 톡 튀어나온다. 입력은 이미 풀려 말이 움직이는 동안 잠깐 남았다가 사라진다.
+## 결과 글자만 톡 띄우고 물체의 반동은 작게 마감한다. 입력은 이미 풀려 있다.
 func _update_linger(t: float) -> void:
-	var peak: float = PUNCH_SCALE if _mode != &"YUT" else 1.1
+	var peak: float = PUNCH_SCALE if _mode != &"YUT" else 1.0
 	var p: float = clampf(t / PUNCH_TIME, 0.0, 1.0)
-	var squash := Vector2(1.18, 0.84) if _mode != &"YUT" else Vector2(1.05, 0.95)
+	var squash := Vector2(1.04, 0.97) if _mode != &"YUT" else Vector2.ONE
 	var k: Vector2
 	if p < 0.3:
 		k = Vector2.ONE.lerp(squash, p / 0.3)
@@ -267,10 +365,11 @@ func _update_linger(t: float) -> void:
 		k = (Vector2.ONE * peak).lerp(Vector2.ONE, (p - 0.65) / 0.35)
 	pivot_offset = size / 2.0
 	scale = k
+	rotation = 0.0
 	var landed: Vector2 = center + TOSS_LAND_OFFSET
-	position = landed - size / 2.0
+	_place_toss_body(landed - Vector2(0.0, SHADOW_DROP * (k.y - 1.0)))
 	if _ground_shadow != null and _ground_shadow.visible:
-		_ground_shadow.size = Vector2(118.0, 38.0) * k.x
+		_ground_shadow.size = SHADOW_SIZE * k.x
 		_ground_shadow.position = landed + Vector2(0.0, SHADOW_DROP) - _ground_shadow.size / 2.0
 		_ground_shadow.modulate.a = 1.0
 	if _die_label != null:
@@ -278,6 +377,7 @@ func _update_linger(t: float) -> void:
 		_die_label.scale = Vector2.ONE * Tween.interpolate_value(0.6, 0.4, pop, 1.0, Tween.TRANS_BACK, Tween.EASE_OUT)
 		_die_label.modulate.a = 1.0
 	_place_toss_label(landed)
+	_update_contacts(_total + t)
 	modulate.a = 1.0 if t < LINGER_TIME else clampf(1.0 - (t - LINGER_TIME) / FADE_TIME, 0.0, 1.0)
 	if t >= LINGER_TIME + FADE_TIME:
 		_end_linger()
@@ -367,7 +467,7 @@ func _clear() -> void:
 		if _toy_gun.get_parent() != self:
 			_toy_gun.reparent(self)
 	for child: Node in get_children():
-		if child == _dice_3d or child == _mahjong_3d or child == _yut_3d or child == _wheel or child == _slot_3d or child == _toy_gun or child == _ground_shadow:
+		if child == _dice_3d or child == _mahjong_3d or child == _yut_3d or child == _wheel or child == _slot_3d or child == _toy_gun or child == _ground_shadow or child == _contact_fx:
 			continue
 		remove_child(child)
 		child.queue_free()
@@ -688,7 +788,9 @@ func _update(t: float) -> void:
 	match _mode:
 		&"D6", &"CHINCHIRO":
 			_update_toss(t)
-			_update_3d_die(t * _speed)
+			# Snap the endpoint exactly; multiplying the shortened timeline can
+			# otherwise leave native time a float epsilon below the result frame.
+			_update_3d_die(DiceRoll3D.ROLL_TIME if t >= _total else t * _speed)
 		&"YUT":
 			_update_toss(t)
 			_update_yut(t * _speed)
@@ -712,7 +814,7 @@ func _update(t: float) -> void:
 
 
 func _update_3d_die(t: float) -> void:
-	_dice_3d.apply_time(t)
+	_dice_3d.apply_board_time(t, toss_height)
 	if t >= DiceRoll3D.ROLL_TIME and not _settled:
 		_settled = true
 		var steps: int = int(_result.get("steps", _final_face))
@@ -721,7 +823,6 @@ func _update_3d_die(t: float) -> void:
 		_die_label.text = "삐끗! 이번 이동 0칸" if oops else "%d칸 전진!" % steps
 		if oops:
 			_die_label.add_theme_color_override("font_color", Color("ff8787"))
-		Sfx.play(&"thud")
 
 
 func _update_yut(t: float) -> void:

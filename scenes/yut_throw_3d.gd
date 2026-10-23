@@ -233,6 +233,14 @@ func displayed_value() -> int:
 	return 5 if count == 0 else count
 
 
+## Floor contact in render pixels, for small board-space dust rings. The stick
+## and its shadow remain in the same 3D world; no second group bounce is added.
+func ground_pixel_at(index: int) -> Vector2:
+	var floor_point: Vector3 = pose_at(impact_time(index), index, result_value, _power).origin
+	floor_point.y = TABLE_Y
+	return _camera.unproject_position(floor_point)
+
+
 ## 펠트 윷판을 보이거나 숨긴다 (보드 마당 위로 던질 때는 마당이 곧 윷판이다).
 func set_mat_visible(shown: bool) -> void:
 	if _mat != null:
