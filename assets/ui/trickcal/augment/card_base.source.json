@@ -20,14 +20,15 @@
   "debug_category_label": false,
   "frame_alignment": {
     "source_visible_bounds_px": [
-      11,
-      8,
-      1003,
-      1498
+      13,
+      13,
+      999,
+      1492
     ],
     "source_corner_patch_px": 128,
     "inset": "Live StyleBoxFlat border width",
     "corner_radius": "Live outer radius minus border width",
-    "method": "GPU sampling crops transparent canvas margins and warps only corner patches; rounded inner-frame mask prevents spill. Original PNG unchanged."
-  }
+    "method": "GPU sampling omits transparent margins and warps only corner patches. Straight rim and divider spans repeat the center cross-section, blended into unchanged corners. Explicit LOD follows unwarped screen-space UV footprint to avoid mip seams. Original PNG unchanged."
+  },
+  "straight_edge_qa": "Native renderer before/after captures: lower highlight peak varied by 1px before and 0px after; left highlight varied by 6px before and 0px after in the audited straight spans. All six category/rarity skins and 2x CARD_PACKAGE close-up visually checked; no shader/script errors."
 }
