@@ -20,14 +20,15 @@
   "debug_category_label": false,
   "frame_alignment": {
     "source_visible_bounds_px": [
-      11,
-      8,
-      1003,
-      1498
+      13,
+      13,
+      999,
+      1492
     ],
-    "source_corner_patch_px": 128,
     "inset": "Live StyleBoxFlat border width",
     "corner_radius": "Live outer radius minus border width",
-    "method": "GPU sampling crops transparent canvas margins and warps only corner patches; rounded inner-frame mask prevents spill. Original PNG unchanged."
-  }
+    "inner_rim_width_px": 4.5,
+    "method": "Two concentric rounded rectangles replace the entire painted rim, including concave corner joins, with a constant-width flat band. Source leaves are sampled separately. Reading surfaces retain source paper texture and separators use a repeated center profile. Explicit LOD follows screen-space UV footprint. Original PNG unchanged."
+  },
+  "straight_edge_qa": "The prior center-profile-only correction did not remove the inward-sloping painted corner joins. Native renderer 2x purple TOOL_YUT and red CARD_PACKAGE captures now show a constant-width flat rim and rounded corners. Six-category gallery and three draft screens checked; no shader/script errors. Captures: task outputs/augment-flat-v02."
 }
