@@ -181,23 +181,24 @@ static func set_nickname(raw: String) -> bool:
 	return true
 
 
-## 놀이터(컴퓨터 대전) 난이도: BotTemper.MILD / NORMAL / SPICY. 브라우저 프로필에 남는다.
-static var _bot_difficulty: StringName = &""
+## 놀이터(컴퓨터 대전) 난이도: 불닭 Fire Level 1~5 (BotTemper.LEVELS, 기본 Lv.2 로제). 브라우저 프로필에 남는다.
+## 옛 저장값(mild/normal/spicy)은 Lv.1/2/4로 읽는다.
+static var _bot_difficulty: int = -1
 
 
-static func bot_difficulty() -> StringName:
-	if _bot_difficulty == &"":
+static func bot_difficulty() -> int:
+	if _bot_difficulty == -1:
 		var config := ConfigFile.new()
 		config.load(PROFILE_PATH)
-		_bot_difficulty = BotTemper.sanitize(StringName(str(config.get_value("profile", "bot_difficulty", String(BotTemper.NORMAL)))))
+		_bot_difficulty = BotTemper.sanitize(config.get_value("profile", "bot_difficulty", BotTemper.DEFAULT_LEVEL))
 	return _bot_difficulty
 
 
-static func set_bot_difficulty(value: StringName) -> void:
+static func set_bot_difficulty(value: int) -> void:
 	_bot_difficulty = BotTemper.sanitize(value)
 	var config := ConfigFile.new()
 	config.load(PROFILE_PATH)
-	config.set_value("profile", "bot_difficulty", String(_bot_difficulty))
+	config.set_value("profile", "bot_difficulty", _bot_difficulty)
 	config.save(PROFILE_PATH)
 
 

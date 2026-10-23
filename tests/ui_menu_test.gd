@@ -85,7 +85,8 @@ func _run() -> void:
 		await process_frame
 		await process_frame
 		var panel: Control = menu._train_label.get_parent().get_parent()
-		sizes.append("%s %s %s %s" % [menu._train_page.size.x, panel.size, menu._train_start.size, tip_bar.size if tip_bar != null else Vector2.ZERO])
+		var fire_panel: Control = menu.find_child("FirePanel", true, false)
+		sizes.append("%s %s %s %s %s" % [menu._train_page.size.x, panel.size, menu._train_start.size, tip_bar.size if tip_bar != null else Vector2.ZERO, fire_panel.size if fire_panel != null else Vector2.ZERO])
 	_expect(sizes[0] == sizes[1] and sizes[1] == sizes[2], "놀이터 칸·팁 띠 크기가 언어마다 같다 %s" % str(sizes))
 	L10n.set_language("en")
 	await process_frame
@@ -124,14 +125,31 @@ func _run() -> void:
 	GameSession.avatar_id = &"not_a_real_avatar"
 	_expect(AvatarCatalog.sanitize(GameSession.avatar_id) == AvatarCatalog.DEFAULT_ID, "알 수 없는 아바타 id는 기본으로 보정")
 	GameSession.avatar_id = &"avatar_03"
-	# 놀이터 난이도 3단 토글: 기본 보통맛, 누르면 저장되고 설명이 바뀐다
-	var saved_level: StringName = GameSession.bot_difficulty()
+	# 놀이터 난이도 = 불닭 Fire Level 1~5: 게이지 칸 5개, 누르면 저장되고 설명·표정·라면 그릇(소스 색·파티클·떨림)이 바뀐다
+	var saved_level: int = GameSession.bot_difficulty()
 	menu.open_training()
 	var row: Node = menu.find_child("DifficultyRow", true, false)
-	_expect(row != null and row.get_child_count() == 3, "놀이터에 난이도 버튼 3개")
-	(menu.find_child("Difficulty_mild", true, false) as Button).pressed.emit()
-	_expect(GameSession.bot_difficulty() == BotTemper.MILD and (menu.find_child("Difficulty_mild", true, false) as Button).button_pressed and not (menu.find_child("Difficulty_normal", true, false) as Button).button_pressed, "순한맛을 누르면 순한맛만 켜진다")
-	_expect((menu.find_child("DifficultyNote", true, false) as Label).text.contains("입문"), "순한맛 설명")
+	_expect(row != null and row.get_child_count() == 5, "놀이터에 불꽃 게이지 칸 5개")
+	var picker: FireLevelPicker = menu.find_child("FireLevelPicker", true, false)
+	(menu.find_child("Difficulty_5", true, false) as Button).pressed.emit()
+	_expect(GameSession.bot_difficulty() == 5 and (menu.find_child("Difficulty_5", true, false) as Button).button_pressed and not (menu.find_child("Difficulty_2", true, false) as Button).button_pressed, "Lv.5를 누르면 Lv.5만 눌린다")
+	_expect((menu.find_child("DifficultyNote", true, false) as Label).text.contains("억까"), "핵불닭 설명")
+	var bowl: FireLevelPicker.RamenBowl = picker.find_child("RamenBowl", true, false)
+	_expect(bowl.sauce == FireLevelPicker.SAUCE[5] and bowl.level == 5, "핵불닭 소스 색 (네온 용암)")
+	await create_timer(0.7).timeout
+	_expect(bowl.pour > 0.9, "핵불닭은 소스 폭포가 계속 쏟아진다 (%.2f)" % bowl.pour)
+	_expect((bowl.find_child("SauceParticles", true, false) as CPUParticles2D).emitting, "파티클이 날린다")
+	(menu.find_child("Difficulty_1", true, false) as Button).pressed.emit()
+	_expect(GameSession.bot_difficulty() == 1 and bowl.sauce == FireLevelPicker.SAUCE[1] and bowl.shake_offset() == Vector2.ZERO, "까르보: 크림 소스, 떨림 없음")
+	await create_timer(1.2).timeout
+	_expect(bowl.pour < 0.05, "까르보는 소스를 붓고 줄기를 거둔다 (%.2f)" % bowl.pour)
+	var lit: int = 0
+	(menu.find_child("Difficulty_3", true, false) as Button).pressed.emit()
+	for step: int in 5:
+		if (row.get_child(step).find_child("Flame", true, false) as FireLevelPicker.FlameIcon).lit:
+			lit += 1
+	_expect(lit == 3, "Lv.3이면 게이지 3칸이 찬다 (%d)" % lit)
+	_expect((picker._face as FireLevelPicker.FireFace).level == 3, "사도 얼굴 표정이 단계를 따른다")
 	GameSession.set_bot_difficulty(saved_level)
 	menu._refresh_difficulty()
 	menu._show_step(2)

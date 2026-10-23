@@ -93,6 +93,9 @@ func test_vote_line_and_choices() -> void:
 	check_eq(line, "%s 교주(#A7B2) | %s | 빵집 털이 사기 진짜로 | (3위 · 14라운드)" % [MatchTelemetry.vote_tag(), choices[1][1]], "투표 한 줄 (줄바꿈·앞뒤 공백 정리)")
 	check(MatchTelemetry.vote_line("A(#B2C3)", "x", "", 0, 5).ends_with("| x | - | (순위 - · 5라운드)"), "한줄평이 없으면 -")
 	check(MatchTelemetry.vote_line("A", "x", "가".repeat(300), 1, 1).length() < 200, "한줄평은 잘린다")
+	check_eq(MatchTelemetry.vote_line("A", "x", "", 2, 9, "놀이터 %s" % BotTemper.tag(5)), "%s A | 놀이터 [Lv.5 핵불닭] | x | - | (2위 · 9라운드)" % MatchTelemetry.vote_tag(), "투표에 놀이터 난이도 태그")
+	for level: int in BotTemper.ALL:
+		check(BotTemper.tag(level).begins_with("[Lv.%d " % level), "난이도 태그 %d" % level)
 
 
 func test_vote_is_sent_only_when_active() -> void:

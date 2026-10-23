@@ -455,9 +455,10 @@ static func pawn_progress(state: GameState, pawn: PlayerPawn) -> float:
 
 
 ## 내 필살기 중 지금 쓸 만한 것 하나: {"pawn_id": int, "params": Dictionary, "value": float}. 없으면 빈 Dictionary.
-static func plan_skill(state: GameState, player_id: int) -> Dictionary:
+## threshold: 쓰는 최소 가치 (난이도가 높으면 낮춰 더 적극적으로 쓴다).
+static func plan_skill(state: GameState, player_id: int, threshold: float = SKILL_USE_THRESHOLD) -> Dictionary:
 	var best: Dictionary = {}
-	var best_value: float = SKILL_USE_THRESHOLD
+	var best_value: float = threshold
 	for pawn: PlayerPawn in state.pawns_of(player_id):
 		if not PawnSkills.is_ready(pawn):
 			continue

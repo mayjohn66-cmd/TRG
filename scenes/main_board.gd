@@ -637,7 +637,7 @@ func _ready() -> void:
 			if seat != local_player_id:
 				computer_seats.append(seat)
 		_bot.bot_players = computer_seats
-		_bot.difficulty = GameSession.bot_difficulty()  # 놀이터 난이도 (순한맛·보통맛·마라맛)
+		_bot.difficulty = GameSession.bot_difficulty()  # 놀이터 난이도 (불닭 Fire Level 1~5)
 	add_child(_bot)
 	add_child(manager)
 	manager.set_process(false)  # 제한 시간은 체크박스로 켤 때만 흐른다 (혼자 테스트할 때 자동 진행 방지)
@@ -850,7 +850,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 func _telemetry_mode() -> String:
 	var label: String = MatchTelemetry.mode_label(net != null, ai_mode, GameSession.lobby_intent == &"quick")
 	if net == null and ai_mode:
-		label += "-%s" % BotTemper.label(_bot.difficulty if _bot != null else GameSession.bot_difficulty())  # 놀이터-보통맛
+		label += " %s" % BotTemper.tag(_bot.difficulty if _bot != null else GameSession.bot_difficulty())  # 놀이터 [Lv.2 로제] (디스코드 통계는 한국어)
 	return label
 
 
@@ -7946,7 +7946,7 @@ func _on_vote_pressed(bar: Control, choice: String, ask_more: bool) -> void:
 	bar.set_meta("voted", true)
 	var seat: int = _telemetry_seat()
 	var my_rank: int = state.rankings.find(seat) + 1 if seat != -1 and state != null else 0
-	MatchTelemetry.report_vote(self, choice, "", my_rank, state.round_number if state != null else 0)
+	MatchTelemetry.report_vote(self, choice, "", my_rank, state.round_number if state != null else 0, _telemetry_mode())
 	if ask_more:
 		_open_feedback("결과 화면 투표: %s" % choice, FeedbackModal.Kind.BALANCE)
 	for child: Node in bar.get_children():

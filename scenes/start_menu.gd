@@ -39,15 +39,8 @@ var _quick_button: Button = null
 var _back_button: Button = null
 var _train_label: MarqueeLabel = null
 var _train_start: Button = null
-## 놀이터 난이도 토글 (순한맛 · 보통맛 · 마라맛).
-var _difficulty_buttons: Dictionary = {}
-var _difficulty_note: MarqueeLabel = null
-const DIFFICULTY_TONES: Dictionary = {&"mild": &"teal", &"normal": &"blue", &"spicy": &"pink"}
-const DIFFICULTY_NOTES: Dictionary = {
-	&"mild": "입문·힐링: 컴퓨터가 내 말을 자주 봐주고, 나를 노리는 공격 카드도 덜 써요",
-	&"normal": "기본: 컴퓨터가 1등을 먼저 견제하고, 방금 잡힌 사람은 잠깐 봐줘요",
-	&"spicy": "하드코어: 봐주기 없이 최적의 킬각·카드·특수 승리를 노려요",
-}
+## 놀이터 난이도 = 불닭 Fire Level 1~5 (게이지·라면 그릇).
+var _fire_picker: FireLevelPicker = null
 var _mobile: MobileSupport = null
 
 
@@ -280,23 +273,14 @@ func _build_train_page(parent: VBoxContainer) -> void:
 	row.add_child(plus)
 	var note: MarqueeLabel = MarqueeLabel.create("컴퓨터와 겨룹니다. 제한 시간 없이 천천히 연습하세요.", 18, LobbyTheme.BLUE, Vector2(560, 28), HORIZONTAL_ALIGNMENT_CENTER, "TrainNote")
 	_train_page.add_child(note)
-	# 난이도 3단 토글 (기본 보통맛, 고른 값은 다음 접속에도 남는다)
-	var levels := HBoxContainer.new()
-	levels.name = "DifficultyRow"
-	levels.add_theme_constant_override("separation", 10)
-	levels.alignment = BoxContainer.ALIGNMENT_CENTER
-	_train_page.add_child(levels)
-	for level: StringName in BotTemper.ALL:
-		var button := LobbyTheme.small_button(BotTemper.label(level), set_difficulty.bind(level), DIFFICULTY_TONES[level], 24)
-		button.name = "Difficulty_%s" % level
-		button.toggle_mode = true
-		button.clip_text = true  # 글이 길어도 버튼 크기는 그대로
-		button.custom_minimum_size = Vector2(170, 56)
-		levels.add_child(button)
-		_difficulty_buttons[level] = button
-	_difficulty_note = MarqueeLabel.create("", 17, LobbyTheme.BLUE, Vector2(560, 26), HORIZONTAL_ALIGNMENT_CENTER, "DifficultyNote")
-	_train_page.add_child(_difficulty_note)
-	_refresh_difficulty()
+	# 난이도: 불닭 매운맛 지표 Fire Level 1~5 (기본 Lv.2 로제, 고른 값은 다음 접속에도 남는다)
+	_fire_picker = FireLevelPicker.create(GameSession.bot_difficulty())
+	_fire_picker.level_chosen.connect(set_difficulty)
+	var fire_panel := PanelContainer.new()
+	fire_panel.name = "FirePanel"
+	fire_panel.add_theme_stylebox_override("panel", LobbyTheme.style(Color(1, 1, 1, 0.82), LobbyTheme.BLUE, 3, 26, 0, 10))
+	fire_panel.add_child(_fire_picker)
+	_train_page.add_child(fire_panel)
 	_train_start = LobbyTheme.cream_button("게임 시작", start_ai_game, 40)
 	_train_start.name = "StartTraining"
 	_train_start.clip_text = true
@@ -461,20 +445,15 @@ func open_training() -> void:
 	_show_step(3)
 
 
-## 놀이터 난이도를 고른다 (BotTemper.MILD / NORMAL / SPICY).
-func set_difficulty(level: StringName) -> void:
+## 놀이터 난이도를 고른다 (Fire Level 1~5).
+func set_difficulty(level: int) -> void:
 	GameSession.set_bot_difficulty(level)
 	_refresh_difficulty()
 
 
 func _refresh_difficulty() -> void:
-	var current: StringName = GameSession.bot_difficulty()
-	for level: Variant in _difficulty_buttons:
-		var button: Button = _difficulty_buttons[level]
-		button.set_pressed_no_signal(level == current)
-		button.modulate = Color.WHITE if level == current else Color(1, 1, 1, 0.55)
-	if _difficulty_note != null:
-		_difficulty_note.text = str(DIFFICULTY_NOTES.get(current, ""))
+	if _fire_picker != null and _fire_picker.level != GameSession.bot_difficulty():
+		_fire_picker.set_level(GameSession.bot_difficulty())
 
 
 func change_ai_count(delta: int) -> void:

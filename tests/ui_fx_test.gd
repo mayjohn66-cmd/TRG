@@ -968,7 +968,7 @@ func _test_match_report_is_sent_once() -> void:
 		state.rank_reasons = {other: VictoryChecker.ALL_HOME, seat: VictoryChecker.ALL_HOME}
 		_board._report_player_ranked(seat, 2)
 		_expect(sent.size() == 1 and sent[0].contains("내 최종 순위: 2위") and sent[0].contains("1위 우승방식: 일반"), "내 일반 완주 졸업 즉시 [매치 완료]")
-	_expect(_board._telemetry_mode() == "놀이터-%s" % BotTemper.label(_board._bot.difficulty), "놀이터 통계에 난이도가 붙는다 (%s)" % _board._telemetry_mode())
+	_expect(_board._telemetry_mode() == "놀이터 %s" % BotTemper.tag(_board._bot.difficulty) and _board._telemetry_mode().contains("[Lv."), "놀이터 통계에 난이도 태그가 붙는다 (%s)" % _board._telemetry_mode())
 	_board.ai_mode = was_ai
 	# 값이 비어 있어도 뻗지 않는다 (증강 목록·순위·1위가 없음)
 	_board._match_complete_sent = false

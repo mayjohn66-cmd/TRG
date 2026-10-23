@@ -32,8 +32,8 @@ var wait_for_human_windows: bool = true
 ## true를 돌려주면 봇은 잠시 기다린다 (화면의 굴림 연출 중 등).
 var busy_check: Callable = Callable()
 var rng := RandomNumberGenerator.new()
-## 놀이터 난이도 (BotTemper.MILD / NORMAL / SPICY). 기본은 보정 없는 마라맛 (온라인 빈자리 봇·테스트).
-var difficulty: StringName = BotTemper.SPICY
+## 놀이터 난이도 Fire Level 1~5 (BotTemper.LEVELS). 기본은 보정 없는 BotTemper.RAW (온라인 빈자리 봇·테스트).
+var difficulty: int = BotTemper.RAW
 
 ## 대기 시간 배율 (1.0이 기본 길이). 배속(1x/2x/3x)은 Engine.time_scale이 delta를 줄여 함께 빨라진다.
 var pace: float = 1.0
@@ -242,7 +242,7 @@ func _step_draft() -> void:
 func _step_turn_begin() -> void:
 	var player_id: int = manager.current_player_id()
 	# 카드는 굴리기 전 턴당 1장만 쓸 수 있다.
-	var plan: Dictionary = {} if manager.card_played_this_turn() else BotTemper.filter_card_plan(manager.state, player_id, BotBrain.plan_turn_card(manager.state, player_id, _tried, rng), difficulty, humans(), rng)
+	var plan: Dictionary = {} if manager.card_played_this_turn() else BotTemper.filter_card_plan(manager.state, player_id, BotTemper.plan_turn_card(manager.state, player_id, difficulty, _tried, rng), difficulty, humans(), rng)
 	if not plan.is_empty():
 		var params: Dictionary = (plan["params"] as Dictionary).duplicate()
 		params["card_id"] = plan["card_id"]
@@ -250,7 +250,7 @@ func _step_turn_begin() -> void:
 		_delay(DELAY_TURN_START)
 		return
 	# 1회용 필살기: 유리한 각이 나오면 주사위 대신(룩은 굴리기 전에) 쓴다.
-	var skill: Dictionary = BotBrain.plan_skill(manager.state, player_id)
+	var skill: Dictionary = BotTemper.plan_skill(manager.state, player_id, difficulty)
 	if not skill.is_empty() and not _tried_skills.has(skill["pawn_id"]) and manager.can_use_skill(player_id, int(skill["pawn_id"])):
 		_tried_skills[skill["pawn_id"]] = true
 		var skill_params: Dictionary = (skill["params"] as Dictionary).duplicate()

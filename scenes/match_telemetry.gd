@@ -66,11 +66,12 @@ static func vote_choices() -> Array:
 const VOTE_COMMENT_LIMIT: int = 120
 
 
-static func vote_line(who: String, choice: String, comment: String, my_rank: int, rounds: int) -> String:
+## mode(선택): 이 판의 모드 이름 (놀이터면 난이도 태그 포함, 예: "놀이터 [Lv.5 핵불닭]"). 있으면 이름 뒤에 붙는다.
+static func vote_line(who: String, choice: String, comment: String, my_rank: int, rounds: int, mode: String = "") -> String:
 	var note: String = comment.replace("\n", " ").replace("\r", " ").strip_edges()
 	if note.length() > VOTE_COMMENT_LIMIT:
 		note = note.substr(0, VOTE_COMMENT_LIMIT) + "…"
-	return "%s %s | %s | %s | (%s · %d라운드)" % [vote_tag(), who, choice, note if note != "" else "-", "%d위" % my_rank if my_rank > 0 else "순위 -", rounds]
+	return "%s %s | %s | %s | (%s · %d라운드)" % [vote_tag(), who + (" | " + mode if mode != "" else ""), choice, note if note != "" else "-", "%d위" % my_rank if my_rank > 0 else "순위 -", rounds]
 
 
 ## 모드 이름: 놀이터(컴퓨터와 대전) / 친선(방 코드로 만든 방) / 익명(빠른 매칭) / 4인 수동(한 화면 핫시트).
@@ -160,11 +161,11 @@ static func report_match_end(host: Node, nth: int, mode: String, rounds: int, se
 
 
 ## 결과 화면의 원클릭 소감 투표를 보낸다.
-static func report_vote(host: Node, choice: String, comment: String, my_rank: int, rounds: int) -> bool:
+static func report_vote(host: Node, choice: String, comment: String, my_rank: int, rounds: int, mode: String = "") -> bool:
 	if not is_active():
 		return false
-	_notify_page("match_vote", {"choice": choice, "rank": my_rank})
-	return send_line(host, vote_line(GameSession.tagged_name(), choice, comment, my_rank, rounds))
+	_notify_page("match_vote", {"choice": choice, "rank": my_rank, "mode": mode})
+	return send_line(host, vote_line(GameSession.tagged_name(), choice, comment, my_rank, rounds, mode))
 
 
 ## 한 줄을 웹후크로 보낸다. host는 요청 노드를 붙일 곳(트리 안의 아무 노드).
