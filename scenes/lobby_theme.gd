@@ -90,7 +90,7 @@ static func add_top_bar(parent: Control, title_text: String, on_back: Callable, 
 	return {"bar": bar, "back": back, "title": title, "right": right, "language": language}
 
 
-## [🌐 KR / EN] 언어 토글 (상단 띠의 [규칙] 왼쪽). 누르면 KR ↔ EN이 바로 바뀐다.
+## [🌐 한국어 ▾] 언어 버튼 (상단 띠의 [규칙] 왼쪽). 한국어 / ENGLISH / 日本語 중 고르면 바로 바뀐다.
 static func language_toggle() -> LanguageToggle:
 	var button := LanguageToggle.create(14, TEAL)
 	UiSkin.button(button, false, 2.0, 2.0)
@@ -362,10 +362,7 @@ static func add_settings_controls(box: Container, ink: Color) -> void:
 	_add_language_row(box, ink)
 
 
-const LANGUAGE_NAMES: Dictionary = {"ko": "한국어", "en": "English", "ja": "日本語"}
-
-
-## 언어 고르기: 바로 저장하고 증강·카드 표 문구를 다시 읽는다. 화면 문구는 다음에 만들 때부터 바뀐다 (번역이 빈 문구는 한국어).
+## 언어 고르기: 바로 저장하고 모든 화면 글자가 그 자리에서 다시 번역된다 (번역이 빈 문구는 한국어). 언어 이름은 늘 그 언어 글자 그대로.
 static func _add_language_row(box: Container, ink: Color) -> void:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
@@ -377,16 +374,13 @@ static func _add_language_row(box: Container, ink: Color) -> void:
 	option.name = "LanguageOption"
 	option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	option.add_theme_font_size_override("font_size", 15)
+	option.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	option.add_theme_font_override("font", LanguageToggle.picker_font())  # 한국어·영어 화면에서도 "日本語"가 보이게
+	option.get_popup().add_theme_font_override("font", LanguageToggle.picker_font())
 	for index: int in L10n.LANGUAGES.size():
-		var code: String = L10n.LANGUAGES[index]
-		option.add_item("%s (%s)" % [LANGUAGE_NAMES.get(code, code), L10n.language_label(code)], index)
+		option.add_item(L10n.language_name(L10n.LANGUAGES[index]), index)
 	option.select(maxi(L10n.LANGUAGES.find(L10n.current_lang), 0))
-	option.item_selected.connect(func(index: int) -> void:
-		if L10n.set_language(L10n.LANGUAGES[index]):
-			GameSession.language = L10n.current_lang
-			GameSession.save_settings()
-			AugmentRegistry.reload()
-		Sfx.play(&"ui_click"))
+	option.item_selected.connect(func(index: int) -> void: LanguageToggle.pick_language(L10n.LANGUAGES[index]))
 	row.add_child(option)
 	var note: Label = label("번역이 아직 없는 문구는 한국어로 나옵니다", 12, ink)
 	note.modulate = Color(1, 1, 1, 0.65)

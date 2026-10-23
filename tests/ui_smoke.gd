@@ -33,7 +33,7 @@ const STALL_FRAMES: int = 20000
 var _stall_frames: int = 0
 var _stall_signature: String = ""
 var _rejections: Array[String] = []
-## SMOKE_LANG=en: 영어 화면으로 한 판을 돌리며 HANGUL_SCAN_EVERY 프레임마다 화면 글자에 한글이 남았는지 본다.
+## SMOKE_LANG=en|ja: 영어·일본어 화면으로 한 판을 돌리며 HANGUL_SCAN_EVERY 프레임마다 화면 글자에 한글이 남았는지 본다.
 var _english: bool = false
 var _hangul_leaks: Dictionary = {}
 const HANGUL_SCAN_EVERY: int = 12
@@ -42,10 +42,11 @@ const HANGUL_SCAN_EVERY: int = 12
 func _process(_delta: float) -> bool:
 	_frames += 1
 	if _frames == 1:
-		_english = OS.get_environment("SMOKE_LANG") == "en"
+		var smoke_lang: String = OS.get_environment("SMOKE_LANG")
+		_english = L10n.TRANSLATED_LANGUAGES.has(smoke_lang)
 		if _english:
 			L10n.install()
-			L10n.set_language("en")
+			L10n.set_language(smoke_lang)
 		_rng.seed = int(OS.get_environment("SMOKE_SEED")) if OS.get_environment("SMOKE_SEED") != "" else 20261015
 		GameSession.view_mode = 1 if OS.get_environment("SMOKE_VIEW") == "tilt" else 0  # SMOKE_VIEW=tilt: 기울인 탑뷰로 한 판 진행
 		var scene: PackedScene = load("res://scenes/main_board.tscn")

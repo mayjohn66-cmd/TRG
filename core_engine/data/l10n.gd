@@ -1,18 +1,18 @@
 # File: res://core_engine/data/l10n.gd
 # Class: class_name L10n
 # Role: 다국어(KO / EN / JA) 창구. 게임 코드는 지금처럼 한국어 문구를 만들고, 화면에 나갈 때 t()가 현재 언어로 바꾼다.
-#       - 영어 사전: content_trickcal/data/translations.csv(ko, en, 코드 문구) + 밸런스 표의 *_en 열(증강·카드·판정 도구) + ui_strings.csv의 en 열.
-#       - 형식 문구("%d라운드 시작!" 같은 틀)는 원문 틀을 정규식으로 바꿔 숫자·이름을 뽑아낸 뒤 영어 틀에 다시 끼운다 (이름 같은 인자도 다시 번역).
+#       - 언어마다 사전이 따로 있다 (en, ja): content_trickcal/data/translations.csv(ko, en, ja 코드 문구) + 밸런스 표의 *_en·*_ja 열(증강·카드·판정 도구) + ui_strings.csv의 en·ja 열.
+#       - 형식 문구("%d라운드 시작!" 같은 틀)는 원문 틀을 정규식으로 바꿔 숫자·이름을 뽑아낸 뒤 번역 틀에 다시 끼운다 (이름 같은 인자도 다시 번역).
 #       - 줄 단위·BBCode 태그 단위로 나눠서도 찾으므로 여러 문구를 이어 붙인 글도 번역된다.
 #       - install()이 TranslationServer에 이 사전을 붙여 Label·Button·툴팁 등 자동 번역 노드는 글자를 바꿀 때마다 저절로 번역되고,
-#         언어를 바꾸면 모든 노드가 즉시 다시 번역된다 (원문은 늘 한국어라 KR ↔ EN을 몇 번 오가도 어긋나지 않는다).
+#         언어를 바꾸면 모든 노드가 즉시 다시 번역된다 (원문은 늘 한국어라 KR · EN · JA를 몇 번 오가도 어긋나지 않는다).
 #       번역이 없으면 한국어 그대로(폴백)라 게임은 항상 돈다. 문구는 시뮬레이션에 쓰지 않아 참가자마다 언어가 달라도 온라인 판은 어긋나지 않는다.
 class_name L10n
 extends RefCounted
 
 const UI_STRINGS_PATH: String = "res://content_trickcal/data/ui_strings.csv"
 const TRANSLATIONS_PATH: String = "res://content_trickcal/data/translations.csv"
-## 밸런스 표의 번역 열: 표 경로 → 문구 열들 (<열>_en이 영어).
+## 밸런스 표의 번역 열: 표 경로 → 문구 열들 (<열>_en이 영어, <열>_ja가 일본어).
 const DATA_TABLES: Dictionary = {
 	"res://content_trickcal/data/augments_table.csv": ["title", "subtitle", "desc", "spec_preview"],
 	"res://content_trickcal/data/cards_table.csv": ["name", "parody_quote", "desc"],
@@ -22,9 +22,14 @@ const DEFAULT_LANG: String = "ko"
 ## 지원 언어 (설정 화면 목록 순서).
 const LANGUAGES: Array[String] = ["ko", "en", "ja"]
 const LANGUAGE_LABELS: Dictionary = {"ko": "KR", "en": "EN", "ja": "JA"}
+## 언어 선택 목록에 보이는 이름 (각 언어로 적어 어느 화면에서도 읽힌다).
+const LANGUAGE_NAMES: Dictionary = {"ko": "한국어", "en": "ENGLISH", "ja": "日本語"}
+## 사전으로 번역하는 언어 (한국어는 원문).
+const TRANSLATED_LANGUAGES: Array[String] = ["en", "ja"]
 ## 일본어 화면에서 기본 글꼴로 쓰는 글꼴 (ONE 모바일 POP체는 한자 칸이 비어 있어 일본어 문장이 □로 빠진다).
 const JA_FONT_PATH: String = "res://assets/fonts/MochiyPopOne-Regular.ttf"
 const THEME_FONT_PATHS: Array[String] = ["res://assets/fonts/game_ui_font.tres", "res://assets/fonts/game_small_font.tres"]
+const RAW_FONT_PATHS: Array[String] = ["res://assets/fonts/ONE-Mobile-POP.otf"]
 const HANGUL_PATTERN: String = "[가-힣ㄱ-ㆎ]"
 ## 원문 틀의 자리표시자: %s %d %.1f %02d %% 와 밸런스 표의 {p1}.
 const SPEC_PATTERN: String = "%(?:%|[-+0 #]*\\d*(?:\\.\\d+)?[sdfixXc])|\\{p\\d\\}"
@@ -49,6 +54,19 @@ const SINGLE_WORDS_EN: Dictionary = {
 	"폰": "Pawn", "퀸": "Queen", "킹": "King", "포": "Cannon", "차": "Chariot", "마": "Horse", "상": "Elephant",
 	"광": "Gwang", "띠": "Ribbon", "피": "Junk", "말": "Pieces",
 }
+## 일본어 화면의 글자 하나짜리 라벨 (일본어 글꼴은 한자가 있어 한 글자 그대로 쓴다).
+const GLYPHS_JA: Dictionary = {
+	"윷": "ユ", "룰": "ル", "친": "チ", "탄": "銃", "화": "花", "마": "麻", "타": "タ", "야": "ヨ", "핀": "ピ",
+	"법": "法", "초": "超", "보": "補",
+	"토": "と", "용": "竜", "금": "圭", "비": "飛", "카": "カ", "배": "船", "흑": "黒", "백": "白",
+	"각": "角", "계": "桂", "루": "ド", "깃": "旗", "나": "ナ", "룩": "ル",
+}
+const SINGLE_WORDS_JA: Dictionary = {
+	"폰": "ポーン", "퀸": "クイーン", "킹": "キング", "포": "包", "차": "車", "마": "馬", "상": "象",
+	"광": "光", "띠": "短冊", "피": "カス", "말": "駒",
+}
+const GLYPHS: Dictionary = {"en": GLYPHS_EN, "ja": GLYPHS_JA}
+const SINGLE_WORDS: Dictionary = {"en": SINGLE_WORDS_EN, "ja": SINGLE_WORDS_JA}
 
 ## 지금 언어. 설정(user://settings.cfg)에 저장되며 GameSession.load_settings가 되살린다.
 static var current_lang: String = DEFAULT_LANG
@@ -56,16 +74,18 @@ static var current_lang: String = DEFAULT_LANG
 static var _listeners: Array[Callable] = []
 static var _ui: Dictionary = {}
 static var _loaded: bool = false
-static var _dict: Dictionary = {}  ## 한국어 원문 → 영어
-static var _templates: Array = []  ## [{"regex", "anchor", "specs", "en"}] (구체적인 틀이 앞)
-static var _fragments: Array = []  ## 마지막 수단: 글 속 한국어 조각을 바꿀 [원문, 영어] (긴 것부터)
+## 언어별 사전: 언어 → {"dict", "templates", "fragments", "tag_dict", "cache"}. 아래 _dict 등은 지금 번역 중인 언어(_pack_lang)의 것을 가리킨다.
+static var _packs: Dictionary = {}
+static var _pack_lang: String = ""
+static var _dict: Dictionary = {}  ## 한국어 원문 → 번역
+static var _templates: Array = []  ## [{"regex", "anchor", "specs", "en"}] (구체적인 틀이 앞, "en"은 번역 틀)
+static var _fragments: Array = []  ## 마지막 수단: 글 속 한국어 조각을 바꿀 [원문, 번역] (긴 것부터)
 static var _cache: Dictionary = {}
-static var _dict_loaded: bool = false
 static var _hangul: RegEx = null
 static var _bbcode: RegEx = null
 static var _peel_pattern: RegEx = null
-static var _tag_dict: Dictionary = {}  ## BBCode 태그를 뺀 원문 → [원문, 영어]
-static var _translation: Translation = null
+static var _tag_dict: Dictionary = {}  ## BBCode 태그를 뺀 원문 → [원문, 번역]
+static var _translations: Array[Translation] = []
 static var _base_fonts: Dictionary = {}  ## 글꼴 경로 → [원래 base_font, 원래 fallbacks, 그 FontVariation]
 
 
@@ -75,12 +95,11 @@ static func set_language(lang: String) -> bool:
 	if not LANGUAGES.has(code):
 		return false
 	current_lang = code
-	_cache.clear()
 	_apply()
 	return true
 
 
-## 처음 실행이라 저장된 언어가 없을 때: 기기 언어가 한국어면 KR, 아니면 EN.
+## 처음 실행이라 저장된 언어가 없을 때: 기기 언어가 한국어면 KR, 일본어면 JA, 아니면 EN.
 ## 환경 변수 TRG_LANG(ko/en/ja)이 있으면 그것을, 테스트 러너(-s 스크립트로 띄운 SceneTree)는 늘 한국어로 시작한다.
 static func detect_os_language() -> String:
 	var forced: String = OS.get_environment("TRG_LANG").strip_edges().to_lower()
@@ -89,16 +108,11 @@ static func detect_os_language() -> String:
 	var loop: MainLoop = Engine.get_main_loop()
 	if loop != null and loop.get_script() != null:
 		return DEFAULT_LANG
-	return "ko" if OS.get_locale_language().to_lower() == "ko" else "en"
+	var os_lang: String = OS.get_locale_language().to_lower()
+	return os_lang if LANGUAGES.has(os_lang) else "en"
 
 
-## 상단 [KR / EN] 토글: KR ↔ EN (일본어 화면에서 누르면 KR로).
-static func toggle_language() -> String:
-	set_language("en" if current_lang == "ko" else "ko")
-	return current_lang
-
-
-## 설정 화면 목록용: 다음 언어로 넘긴다 (ko -> en -> ja -> ko).
+## 다음 언어로 넘긴다 (ko -> en -> ja -> ko).
 static func cycle_language() -> String:
 	set_language(LANGUAGES[(LANGUAGES.find(current_lang) + 1) % LANGUAGES.size()])
 	return current_lang
@@ -108,11 +122,16 @@ static func language_label(lang: String = "") -> String:
 	return str(LANGUAGE_LABELS.get(lang if lang != "" else current_lang, "KR"))
 
 
+## 언어 선택 목록의 이름 (한국어 / ENGLISH / 日本語).
+static func language_name(lang: String = "") -> String:
+	return str(LANGUAGE_NAMES.get(lang if lang != "" else current_lang, "한국어"))
+
+
 ## 화면 문구 번역의 중앙 함수: 한국어 원문(완성된 글이든 형식 틀이든)을 현재 언어로. 한국어 화면이거나 번역이 없으면 그대로.
 static func t(text: String) -> String:
-	if current_lang != "en" or text == "":
+	if current_lang == DEFAULT_LANG or text == "":
 		return text
-	return translate_text(text, "en")
+	return translate_text(text, current_lang)
 
 
 ## t()를 쓴 형식 틀 채우기: L10n.tf("%d라운드 시작!", [3]).
@@ -121,15 +140,13 @@ static func tf(template: String, args: Array) -> String:
 
 
 ## 화면 문구 하나. args가 있으면 %로 채운다 (예: tr_ui("turn.other", [이름])). 표에 없는 키는 키 자체를 돌려준다 (빠진 문구가 화면에서 바로 보이게).
-## 영어는 한국어 원문을 돌려주고 화면에 나갈 때 번역한다 (ui_strings.csv의 en 열이 사전에 들어 있다). 그래야 이미 만든 버튼도 KR ↔ EN 전환에 바로 바뀐다.
+## 늘 한국어 원문을 돌려주고 화면에 나갈 때 번역한다 (ui_strings.csv의 en·ja 열이 언어별 사전에 들어 있다). 그래야 이미 만든 버튼도 언어 전환에 바로 바뀐다.
 static func tr_ui(key: String, args: Array = []) -> String:
 	var row: Dictionary = _table().get(key, {})
 	if row.is_empty():
 		push_warning("ui_strings.csv: 없는 키 '%s'" % key)
 		return key
-	var text: String = _cell(row, current_lang if current_lang != "en" else DEFAULT_LANG)
-	if text == "":
-		text = _cell(row, DEFAULT_LANG)
+	var text: String = _cell(row, DEFAULT_LANG)
 	if text == "":
 		return key
 	return text % args if not args.is_empty() else text
@@ -145,14 +162,8 @@ static func keys() -> Array:
 	return _table().keys()
 
 
-## 밸런스 표 한 행의 문구 열. 일본어는 "<열>_ja"가 있으면 그 값을 쓴다.
-## 영어는 원문(한국어)을 그대로 두고 화면에 나갈 때 t()가 *_en 열로 바꾼다 (그래야 KR ↔ EN 전환이 이미 만든 글에도 바로 먹는다).
-static func pick(row: Dictionary, column: String, lang: String = "") -> String:
-	var code: String = lang if lang != "" else current_lang
-	if code != DEFAULT_LANG and code != "en":
-		var translated: String = str(row.get("%s_%s" % [column, code], ""))
-		if translated.strip_edges() != "":
-			return translated
+## 밸런스 표 한 행의 문구 열. 원문(한국어)을 그대로 두고 화면에 나갈 때 t()가 *_en·*_ja 열로 바꾼다 (그래야 언어 전환이 이미 만든 글에도 바로 먹는다).
+static func pick(row: Dictionary, column: String) -> String:
 	return str(row.get(column, ""))
 
 
@@ -160,15 +171,11 @@ static func pick(row: Dictionary, column: String, lang: String = "") -> String:
 static func reload() -> void:
 	_loaded = false
 	_ui.clear()
-	_dict_loaded = false
-	_dict.clear()
-	_templates.clear()
-	_fragments.clear()
-	_tag_dict.clear()
-	_cache.clear()
+	_packs.clear()
+	_pack_lang = ""
 
 
-## 글 속에 한글이 남았는가 (영어 화면 검사용).
+## 글 속에 한글이 남았는가 (번역 화면 검사용).
 static func has_hangul(text: String) -> bool:
 	return _hangul_regex().search(text) != null
 
@@ -177,10 +184,12 @@ static func has_hangul(text: String) -> bool:
 ## 스크립트로 만든 Translation이 엔진 종료 때까지 TranslationServer에 남아 있으면 GDScript가 먼저 내려간 뒤 지워지며 엔진이 멈춘다(SIGABRT).
 ## 그래서 씬 트리의 root가 내려갈 때(스크립트가 아직 살아 있을 때) 떼어 낸다.
 static func install() -> void:
-	if _translation == null:
-		_translation = L10nTranslation.new()
-		_translation.locale = "en"
-		TranslationServer.add_translation(_translation)
+	if _translations.is_empty():
+		for lang: String in TRANSLATED_LANGUAGES:
+			var translation := L10nTranslation.new()
+			translation.locale = lang
+			TranslationServer.add_translation(translation)
+			_translations.append(translation)
 		var tree := Engine.get_main_loop() as SceneTree
 		if tree != null and tree.root != null and not tree.root.tree_exiting.is_connected(uninstall):
 			tree.root.tree_exiting.connect(uninstall)
@@ -189,18 +198,18 @@ static func install() -> void:
 
 ## TranslationServer에서 사전을 뗀다 (게임 종료 때 자동, 테스트용).
 static func uninstall() -> void:
-	if _translation != null:
-		TranslationServer.remove_translation(_translation)
-		_translation = null
+	for translation: Translation in _translations:
+		TranslationServer.remove_translation(translation)
+	_translations.clear()
 
 
-## 원문 → 지정 언어 (지금은 영어 사전만 있다). 캐시를 쓴다.
+## 원문 → 지정 언어 (언어마다 사전과 캐시가 따로 있다).
 static func translate_text(text: String, lang: String = "en") -> String:
-	if lang != "en" or text == "" or not has_hangul(text):
+	if not TRANSLATED_LANGUAGES.has(lang) or text == "" or not has_hangul(text):
 		return text
+	_use_pack(lang)
 	if _cache.has(text):
 		return _cache[text]
-	_ensure_dict()
 	# BBCode 글([lb]로 [를 적은 액션 로그 등)은 [lb]를 [로 풀어 번역한 뒤 태그가 아닌 [를 다시 [lb]로 적는다
 	var escaped: bool = text.contains("[lb]")
 	var result: String = _translate(text.replace("[lb]", "[") if escaped else text, 0)
@@ -213,7 +222,7 @@ static func translate_text(text: String, lang: String = "en") -> String:
 
 
 static func _apply() -> void:
-	if _translation != null:
+	if not _translations.is_empty():
 		TranslationServer.set_locale(current_lang)
 	_apply_fonts()
 	var alive: Array[Callable] = []
@@ -232,7 +241,22 @@ static func on_changed(listener: Callable) -> void:
 
 
 ## 일본어면 전역 글꼴(테마 글꼴)의 기본 글꼴을 Mochiy Pop One으로 바꾸고 원래 글꼴을 대체 글꼴로 돌린다. 다른 언어면 원래대로.
+## 테마 글꼴을 거치지 않고 ONE 모바일 POP체를 바로 쓰는 화면(주사위 숫자·안내 글)도 일본어일 때만 Mochiy를 대체 글꼴로 단다 (한국어 줄 높이는 그대로).
 static func _apply_fonts() -> void:
+	var japanese: bool = current_lang == "ja" and ResourceLoader.exists(JA_FONT_PATH)
+	for path: String in RAW_FONT_PATHS:
+		if not ResourceLoader.exists(path):
+			continue
+		var raw := load(path) as Font
+		if raw == null:
+			continue
+		if not _base_fonts.has(path):
+			_base_fonts[path] = [null, raw.fallbacks.duplicate(), raw]
+		var raw_fallbacks: Array[Font] = []
+		raw_fallbacks.assign(_base_fonts[path][1])
+		if japanese:
+			raw_fallbacks.append(load(JA_FONT_PATH) as Font)
+		raw.fallbacks = raw_fallbacks
 	for path: String in THEME_FONT_PATHS:
 		if not ResourceLoader.exists(path):
 			continue
@@ -243,7 +267,7 @@ static func _apply_fonts() -> void:
 			# 바꾼 글꼴 리소스를 붙잡아 둔다: 아무도 안 쓰는 순간 풀려나면 다음 load()가 바뀌기 전 파일을 다시 읽는다
 			_base_fonts[path] = [variation.base_font, variation.fallbacks.duplicate(), variation]
 		var original: Array = _base_fonts[path]
-		if current_lang == "ja" and ResourceLoader.exists(JA_FONT_PATH):
+		if japanese:
 			var ja_font := load(JA_FONT_PATH) as Font
 			var chain: Array[Font] = [original[0] as Font]
 			for font: Font in original[1]:
@@ -270,10 +294,12 @@ static func _translate(text: String, depth: int) -> String:
 
 static func _translate_uncached(text: String, depth: int) -> String:
 	if text.length() == 1:
-		if depth == 0 and GLYPHS_EN.has(text):
-			return GLYPHS_EN[text]
-		if SINGLE_WORDS_EN.has(text):
-			return SINGLE_WORDS_EN[text]
+		var glyphs: Dictionary = GLYPHS.get(_pack_lang, {})
+		var words: Dictionary = SINGLE_WORDS.get(_pack_lang, {})
+		if depth == 0 and glyphs.has(text):
+			return glyphs[text]
+		if words.has(text):
+			return words[text]
 	if _dict.has(text):
 		return _dict[text]
 	# 0) BBCode 태그를 빼고 같은 원문이면 영어에 입력 쪽 태그를 같은 순서로 다시 끼운다 (도감의 [b] -> [bgcolor] 등)
@@ -531,20 +557,39 @@ static func _replace_fragments(text: String) -> String:
 	return result
 
 
-static func _ensure_dict() -> void:
-	if _dict_loaded:
+## 이 언어의 사전을 지금 쓰는 사전으로 (처음이면 만든다).
+static func _use_pack(lang: String) -> void:
+	if _pack_lang == lang and _packs.has(lang):
 		return
-	_dict_loaded = true
+	if not _packs.has(lang):
+		_dict = {}
+		_templates = []
+		_fragments = []
+		_tag_dict = {}
+		_cache = {}
+		_pack_lang = lang
+		_build_pack(lang)
+		_packs[lang] = {"dict": _dict, "templates": _templates, "fragments": _fragments, "tag_dict": _tag_dict, "cache": _cache}
+	var pack: Dictionary = _packs[lang]
+	_pack_lang = lang
+	_dict = pack["dict"]
+	_templates = pack["templates"]
+	_fragments = pack["fragments"]
+	_tag_dict = pack["tag_dict"]
+	_cache = pack["cache"]
+
+
+static func _build_pack(lang: String) -> void:
 	var pairs: Dictionary = {}
-	# 같은 원문이 여러 곳에 있으면 먼저 넣은 것이 이긴다: 밸런스 표 *_en → ui_strings.csv en → 코드 문구(translations.csv)
+	# 같은 원문이 여러 곳에 있으면 먼저 넣은 것이 이긴다: 밸런스 표 *_<언어> → ui_strings.csv <언어> → 코드 문구(translations.csv)
 	for path: String in DATA_TABLES:
 		for row: Dictionary in DataTable.load_file(path):
 			for column: String in DATA_TABLES[path]:
-				_add_pair(pairs, str(row.get(column, "")), str(row.get(column + "_en", "")))
+				_add_pair(pairs, str(row.get(column, "")), str(row.get(column + "_" + lang, "")))
 	for row: Dictionary in _table().values():
-		_add_pair(pairs, _cell(row, DEFAULT_LANG), _cell(row, "en"))
+		_add_pair(pairs, _cell(row, DEFAULT_LANG), _cell(row, lang))
 	for entry: Dictionary in DataTable.load_file(TRANSLATIONS_PATH):
-		_add_pair(pairs, str(entry.get("ko", "")), str(entry.get("en", "")))
+		_add_pair(pairs, str(entry.get("ko", "")), str(entry.get(lang, "")))
 	# 화면이 원문을 다듬어 쓰는 경우(줄마다 나누기, "◆ "·"[방어] " 머리표 떼기)도 찾도록 줄 단위·머리표 뗀 짝을 더한다
 	var head_regex := RegEx.create_from_string("^(?:[◆•※▶] |\\[[^\\]]+\\] )")
 	for ko: String in pairs.keys():

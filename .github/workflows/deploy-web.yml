@@ -58,10 +58,18 @@ jobs:
       - name: Run UI smoke test in AI mode (1P vs 3AI bots)
         run: SMOKE_AI=1 godot --headless --path . -s res://tests/ui_smoke.gd
 
-      - name: Run English UI checks (no Hangul left on screen, KR/EN toggle)
+      - name: Run English / Japanese UI checks (no Hangul left on screen, language picker)
         run: |
           godot --headless --path . -s res://tests/ui_english_test.gd
+          UI_LANG=ja godot --headless --path . -s res://tests/ui_english_test.gd
           SMOKE_LANG=en SMOKE_AI=1 godot --headless --path . -s res://tests/ui_smoke.gd
+          SMOKE_LANG=ja SMOKE_AI=1 godot --headless --path . -s res://tests/ui_smoke.gd
+
+      - name: Run super augment board effect test (SUPER_01~10, 12)
+        run: |
+          godot --headless --path . -s res://tests/ui_super_fx_test.gd 2>&1 | tee /tmp/ui_super_fx_test.log
+          test "${PIPESTATUS[0]}" -eq 0
+          if grep -q "Lambda capture" /tmp/ui_super_fx_test.log; then echo "freed lambda captures remain"; exit 1; fi
 
       - name: Run roll effect test (gauge, spin, reels, card flips)
         run: |

@@ -1,6 +1,8 @@
 # File: res://scenes/roll_presenter.gd
 # Class: class_name RollPresenter
 # Role: 판정 도구 결과 연출기. 확정된 결과를 D6의 실제 3D 굴림·윷 던지기·룰렛 감속·슬롯 순차 정지·카드 플립으로 표시한다. 연출만 담당하며 결과는 절대 바꾸지 않는다
+#       네모난 팝업 상자 없이 보드판 위에 바로 그린다. 기본 주사위·친치로·윷은 던진 사람 프로필에서 보드 한가운데 마당으로 날아와
+#       통통 튀며 굴러가고(투척), 눈금이 정해지는 순간 쫀득하게 튕기며 "N칸 전진!"을 띄운 뒤 기다리지 않고 바로 끝난다 (그림은 말이 움직이는 동안 잠깐 남았다 사라진다).
 class_name RollPresenter
 extends PanelContainer
 
@@ -20,6 +22,25 @@ const CARD_DEAL_TIME: float = 0.20
 const ART_CARD_FLIP_TIME: float = 0.22
 const TAROT_FOCUS_TIME: float = 0.22
 const CARD_RESULT_HOLD: float = 0.50
+## 보드 위로 던지는 도구 (팝업 없이 프로필 → 보드 한가운데로 날아온다).
+const TOSS_TOOLS: Array[StringName] = [&"D6", &"CHINCHIRO", &"YUT"]
+## 주사위가 손을 떠나 착지·눈금 확정까지 (3D 굴림 1초를 이 시간으로 압축한다).
+const TOSS_LAND_TIME: float = 0.6
+## 윷 3D 시간 배속: 네 가락이 모두 멈추는 1.12초가 0.8초가 된다.
+const YUT_TIME_SCALE: float = 1.4
+## 윷 묶음이 프로필에서 마당까지 미끄러져 오는 시간.
+const YUT_TRAVEL_TIME: float = 0.42
+## 포물선 최고 높이(화면 px)와 손을 떠나 꼭대기까지의 비율 (나머지는 TRANS_BOUNCE로 떨어지며 2~3번 튄다).
+const TOSS_HEIGHT: float = 150.0
+const TOSS_RISE: float = 0.26
+## 착지 임팩트(1.25배 쫀득하게)와 결과를 띄워 둔 채 말이 움직이는 동안 남아 있는 시간.
+const PUNCH_TIME: float = 0.18
+const PUNCH_SCALE: float = 1.25
+const LINGER_TIME: float = 0.5
+const FADE_TIME: float = 0.2
+## 투척은 보드 마당 한가운데(연출 패널 자리보다 조금 아래)에 떨어진다. 그림자는 주사위 밑면에 붙는다.
+const TOSS_LAND_OFFSET: Vector2 = Vector2(0.0, 52.0)
+const SHADOW_DROP: float = 30.0
 
 ## true면 모든 연출을 0초로 건너뛴다 (헤드리스 테스트·ui_smoke 자동 진행).
 var instant: bool = false
@@ -28,6 +49,12 @@ var last_display: String = ""
 var active: bool = false
 ## 연출 패널이 가운데 정렬될 화면 좌표 (창 비율에 따라 MainBoard가 갱신한다).
 var center: Vector2 = Vector2(683.0, 308.0)
+## 투척 출발점: 굴린 사람 프로필의 화면 좌표 (MainBoard가 굴림마다 넣는다). 모르면 화면 아래쪽에서 던진다.
+var toss_from: Vector2 = Vector2(INF, INF)
+## 지금(또는 방금 끝난) 연출이 보드 위 투척인가.
+var tossing: bool = false
+## 투척 중인 주사위가 바닥에서 떠 있는 높이 (화면 px, 테스트용).
+var toss_height: float = 0.0
 
 var _mode: StringName = &""
 var _t: float = 0.0
@@ -61,6 +88,25 @@ var _slot_3d: SlotMachine3D = null
 var _toy_gun: ToyFlagGun3D = null
 var _gun_intro: float = 0.0
 var _gun_pull_started: bool = false
+## 3D 시간 배속 (투척 도구는 압축한다).
+var _speed: float = 1.0
+## 결과를 보여 준 뒤 남아 있는 시간 (-1이면 남아 있지 않다). 이 동안 입력은 이미 풀려 있다.
+var _linger: float = -1.0
+var _ground_shadow: GroundShadow = null
+var _toss_view: Control = null
+var _toss_start: Vector2 = Vector2.ZERO
+
+
+## 투척하는 주사위 아래 바닥에 깔리는 반투명 타원 그림자 (높이 뜨면 작고 옅어진다).
+class GroundShadow extends Control:
+	func _init() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		top_level = true
+
+	func _draw() -> void:
+		draw_set_transform(size / 2.0, 0.0, Vector2(1.0, size.y / maxf(size.x, 1.0)))
+		draw_circle(Vector2.ZERO, size.x / 2.0, Color(0.0, 0.0, 0.0, 0.42))
+		draw_circle(Vector2.ZERO, size.x * 0.32, Color(0.0, 0.0, 0.0, 0.25))
 
 
 func _init() -> void:
@@ -82,10 +128,24 @@ static func supports(tool_id: StringName) -> bool:
 	return SUPPORTED.has(tool_id)
 
 
+## 3D 연출 시간이 화면에서 몇 배로 흐르는가 (투척 도구는 빠르게 압축한다).
+static func speed_for(tool_id: StringName) -> float:
+	match tool_id:
+		&"D6", &"CHINCHIRO": return DiceRoll3D.ROLL_TIME / TOSS_LAND_TIME
+		&"YUT": return YUT_TIME_SCALE
+	return 1.0
+
+
+## 3D 연출의 시각(native)이 화면에서는 몇 초인가 (테스트가 윷 착지 시각 등을 맞출 때 쓴다).
+static func real_time(tool_id: StringName, native: float) -> float:
+	return native / speed_for(tool_id)
+
+
 ## 결과 연출을 재생한다. 끝나면(또는 cancel()되면) 돌아온다. instant면 아무것도 그리지 않고 바로 돌아온다.
 ## power: 0~1 파워 게이지 값 - 셔플 속도·회전 수·펀치 크기 같은 '연출'에만 쓰이고 결과(눈금)에는 영향이 없다.
 func play(tool_id: StringName, result: Dictionary, power: float = 0.5) -> void:
 	cancel()
+	modulate = Color.WHITE  # 도박사 과열로 그을린 색을 지운다
 	if instant or not supports(tool_id):
 		last_display = _final_text(tool_id, result)
 		return
@@ -96,8 +156,12 @@ func play(tool_id: StringName, result: Dictionary, power: float = 0.5) -> void:
 	_mode = tool_id
 	_t = 0.0
 	_settled = false
+	_speed = speed_for(tool_id)
+	tossing = TOSS_TOOLS.has(tool_id)
 	_build(tool_id)
 	_position_center()
+	if tossing:
+		_begin_toss()
 	active = true
 	visible = true
 	await finished
@@ -105,6 +169,9 @@ func play(tool_id: StringName, result: Dictionary, power: float = 0.5) -> void:
 
 ## 진행 중인 연출을 즉시 끝내고 숨긴다 (새 게임 등).
 func cancel() -> void:
+	_end_linger()
+	scale = Vector2.ONE
+	modulate.a = 1.0
 	if _dice_3d != null:
 		_dice_3d.stop_rendering()
 	if _mahjong_3d != null:
@@ -131,14 +198,123 @@ func _position_center() -> void:
 	position = center - size / 2.0
 
 
+## 투척 준비: 던진 사람 프로필에서 출발한다. 3D 판 안의 그림자 대신 보드 바닥에 타원 그림자를 깐다.
+func _begin_toss() -> void:
+	var dice: bool = _mode != &"YUT"
+	_toss_view = _dice_3d if dice else _yut_3d
+	if dice and _dice_3d.shadow != null:
+		_dice_3d.shadow.visible = false
+	_toss_start = toss_from if toss_from.is_finite() else center + Vector2(0.0, 260.0)
+	if _ground_shadow == null:
+		_ground_shadow = GroundShadow.new()
+		add_child(_ground_shadow)
+	_ground_shadow.visible = dice  # 윷가락은 3D 판 안에 가락마다 그림자가 있다
+	move_child(_ground_shadow, 0)  # 주사위 밑에 그린다
+	_die_label.top_level = true
+	_die_label.pivot_offset = Vector2.ZERO
+	modulate.a = 0.0
+	_update_toss(0.0)
+
+
+## 투척 위치: 기본 주사위·친치로는 포물선으로 솟았다가 TRANS_BOUNCE로 떨어지며 2~3번 통통 튄다. 윷 묶음은 프로필에서 마당으로 빠르게 미끄러져 온다(가락은 3D에서 날아간다).
+func _update_toss(t: float) -> void:
+	pivot_offset = size / 2.0
+	var travel: float = TOSS_LAND_TIME if _mode != &"YUT" else YUT_TRAVEL_TIME
+	var u: float = clampf(t / travel, 0.0, 1.0)
+	var eased: float = 1.0 - pow(1.0 - u, 3.0)
+	var ground: Vector2 = _toss_start.lerp(center + TOSS_LAND_OFFSET, eased)
+	var height: float = 0.0
+	if _mode != &"YUT":
+		if u < TOSS_RISE:
+			height = TOSS_HEIGHT * sin(u / TOSS_RISE * PI * 0.5)
+		else:
+			height = Tween.interpolate_value(TOSS_HEIGHT, -TOSS_HEIGHT, u - TOSS_RISE, 1.0 - TOSS_RISE, Tween.TRANS_BOUNCE, Tween.EASE_OUT)
+	toss_height = height
+	var lift: float = clampf(height / TOSS_HEIGHT, 0.0, 1.0)
+	var grow: float = lerpf(0.55 if _mode != &"YUT" else 0.45, 1.0, eased)
+	scale = Vector2.ONE * grow * (1.0 + lift * 0.12)
+	position = ground + Vector2(0.0, -height) - size / 2.0
+	modulate.a = clampf(u * 6.0, 0.0, 1.0)
+	if _ground_shadow != null and _ground_shadow.visible:
+		var shadow_size: Vector2 = Vector2(118.0, 38.0) * grow * (1.0 - 0.5 * lift)
+		_ground_shadow.size = shadow_size
+		_ground_shadow.position = ground + Vector2(0.0, SHADOW_DROP * grow) - shadow_size / 2.0
+		_ground_shadow.modulate.a = 1.0 - 0.6 * lift
+		_ground_shadow.queue_redraw()
+	_place_toss_label(ground + Vector2(0.0, -height))
+
+
+## "N칸 전진!"은 주사위(윷 묶음) 바로 위에 뜬다.
+func _place_toss_label(view_center: Vector2) -> void:
+	if _die_label == null:
+		return
+	_die_label.reset_size()
+	var above: float = (82.0 if _mode != &"YUT" else 96.0) * scale.y
+	_die_label.position = view_center + Vector2(-_die_label.size.x * _die_label.scale.x / 2.0, -above - _die_label.size.y * _die_label.scale.y)
+
+
+## 결과가 정해진 뒤: 착지 임팩트(살짝 눌렸다가 1.25배로 튕기고 돌아온다) + 결과 글자가 톡 튀어나온다. 입력은 이미 풀려 말이 움직이는 동안 잠깐 남았다가 사라진다.
+func _update_linger(t: float) -> void:
+	var peak: float = PUNCH_SCALE if _mode != &"YUT" else 1.1
+	var p: float = clampf(t / PUNCH_TIME, 0.0, 1.0)
+	var squash := Vector2(1.18, 0.84) if _mode != &"YUT" else Vector2(1.05, 0.95)
+	var k: Vector2
+	if p < 0.3:
+		k = Vector2.ONE.lerp(squash, p / 0.3)
+	elif p < 0.65:
+		k = squash.lerp(Vector2.ONE * peak, (p - 0.3) / 0.35)
+	else:
+		k = (Vector2.ONE * peak).lerp(Vector2.ONE, (p - 0.65) / 0.35)
+	pivot_offset = size / 2.0
+	scale = k
+	var landed: Vector2 = center + TOSS_LAND_OFFSET
+	position = landed - size / 2.0
+	if _ground_shadow != null and _ground_shadow.visible:
+		_ground_shadow.size = Vector2(118.0, 38.0) * k.x
+		_ground_shadow.position = landed + Vector2(0.0, SHADOW_DROP) - _ground_shadow.size / 2.0
+		_ground_shadow.modulate.a = 1.0
+	if _die_label != null:
+		var pop: float = clampf(t / 0.14, 0.0, 1.0)
+		_die_label.scale = Vector2.ONE * Tween.interpolate_value(0.6, 0.4, pop, 1.0, Tween.TRANS_BACK, Tween.EASE_OUT)
+		_die_label.modulate.a = 1.0
+	_place_toss_label(landed)
+	modulate.a = 1.0 if t < LINGER_TIME else clampf(1.0 - (t - LINGER_TIME) / FADE_TIME, 0.0, 1.0)
+	if t >= LINGER_TIME + FADE_TIME:
+		_end_linger()
+
+
+func _end_linger() -> void:
+	if _linger < 0.0:
+		return
+	_linger = -1.0
+	scale = Vector2.ONE
+	modulate.a = 1.0
+	if not active:
+		visible = false
+
+
+func _outline(label: Label, width: int) -> void:
+	label.add_theme_constant_override("outline_size", width)
+	label.add_theme_color_override("font_outline_color", Color("1b1f2b"))
+
+
 func _process(delta: float) -> void:
+	if _linger >= 0.0 and not active:
+		_linger += delta
+		_update_linger(_linger)
+		return
 	if not active:
 		return
 	_t += delta
 	_update(_t)
 	if _t >= _total:
 		active = false
-		visible = false
+		# 투척은 결과를 띄운 채 잠깐 남는다 (말 이동이 바로 시작된다). 그 밖의 연출은 바로 사라진다.
+		if tossing:
+			_linger = 0.0
+			_update_linger(0.0)
+		else:
+			visible = false
 		if _dice_3d != null:
 			_dice_3d.stop_rendering()
 		if _mahjong_3d != null:
@@ -191,7 +367,7 @@ func _clear() -> void:
 		if _toy_gun.get_parent() != self:
 			_toy_gun.reparent(self)
 	for child: Node in get_children():
-		if child == _dice_3d or child == _mahjong_3d or child == _yut_3d or child == _wheel or child == _slot_3d or child == _toy_gun:
+		if child == _dice_3d or child == _mahjong_3d or child == _yut_3d or child == _wheel or child == _slot_3d or child == _toy_gun or child == _ground_shadow:
 			continue
 		remove_child(child)
 		child.queue_free()
@@ -234,7 +410,10 @@ func _box(bg: Color, border: Color, radius: int, min_size: Vector2) -> PanelCont
 func _build(tool_id: StringName) -> void:
 	_clear()
 	var illustrated: bool = tool_id in [&"HOLDEM", &"DICE_HWATU", &"DICE_TAROT", &"DICE_MAHJONG", &"YUT", &"LIFE_ROULETTE", &"SLOT_777", &"REVOLVER"]
-	add_theme_stylebox_override("panel", UiSkin.panel("panel", 12.0) if illustrated or tool_id in [&"D6", &"CHINCHIRO"] else _default_style)
+	# 네모난 팝업 상자 없이 보드판 위에 바로 그린다 (글자는 굵은 외곽선으로 보드 위에서도 읽힌다)
+	add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	if _ground_shadow != null:
+		_ground_shadow.visible = false
 	_root = VBoxContainer.new()
 	_root.add_theme_constant_override("separation", 8)
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -242,7 +421,9 @@ func _build(tool_id: StringName) -> void:
 	_title = _label("", 14, Color("adb5bd"))
 	if illustrated:
 		_title.add_theme_font_size_override("font_size", 18)
-		_title.add_theme_color_override("font_color", UiSkin.GREEN)
+		_title.add_theme_color_override("font_color", Color("fff3bf"))
+	_outline(_title, 6)
+	_title.visible = not TOSS_TOOLS.has(tool_id)  # 던지는 도구는 이름표 없이 주사위만 날아온다
 	_root.add_child(_title)
 	_stage = CenterContainer.new()
 	_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -250,9 +431,7 @@ func _build(tool_id: StringName) -> void:
 	match tool_id:
 		&"D6", &"CHINCHIRO":
 			_title.text = "기본 주사위" if tool_id == &"D6" else "지하노역장 친치로"
-			_title.add_theme_font_size_override("font_size", 18)
-			_title.add_theme_color_override("font_color", UiSkin.GREEN)
-			_total = DiceRoll3D.ROLL_TIME + DiceRoll3D.HOLD_TIME
+			_total = TOSS_LAND_TIME
 			if _dice_3d == null:
 				_dice_3d = DiceRoll3D.new()
 				_stage.add_child(_dice_3d)
@@ -261,22 +440,26 @@ func _build(tool_id: StringName) -> void:
 			_dice_3d.show()
 			_final_face = int((_result.get("details", {}) as Dictionary).get("face", _result.get("steps", 1)))
 			_dice_3d.begin(_final_face, _power, tool_id)
-			_die_label = _label("굴리는 중…", 22, UiSkin.INK)
+			_die_label = _label("", 34, Color("fff3bf"))
+			_outline(_die_label, 10)
 			_root.add_child(_die_label)
 		&"YUT":
 			_title.text = "전통 박달나무 윷"
-			_total = YutThrow3D.TOTAL_TIME
+			_total = real_time(&"YUT", YutThrow3D.RESULT_TIME) + 0.02
 			if _yut_3d == null:
 				_yut_3d = YutThrow3D.new()
 				_stage.add_child(_yut_3d)
 			else:
 				_yut_3d.reparent(_stage)
 			_yut_3d.show()
+			_yut_3d.set_mat_visible(false)  # 보드 마당이 곧 윷판이다
 			var face: int = int((_result.get("details", {}) as Dictionary).get("face",_result.get("steps",1)))
 			_yut_3d.begin(face,_power)
 			var caption: String = "%s · %s" % [YUT_NAMES[face],"0칸, 턴 종료" if bool(_result.get("ends_turn",false)) else _card_move_text()]
 			if bool(_result.get("reroll",false)):
 				caption += " · 한 번 더"
+			if not bool(_result.get("ends_turn",false)):
+				caption += "!"  # 보드 위로 던진 윷: "걸 · 3칸 전진!"
 			_make_card_result(caption)
 		&"LIFE_ROULETTE":
 			_title.text = "인생게임 회전 룰렛"
@@ -428,10 +611,12 @@ func _card_move_text() -> String:
 
 func _make_card_result(caption: String) -> void:
 	_card_result_caption = caption
-	_die_label = _label("", 20, UiSkin.INK)
+	var px: int = 30 if TOSS_TOOLS.has(_mode) else 22
+	_die_label = _label("", px, Color("fff3bf"))
+	_outline(_die_label, 10)
 	_root.add_child(_die_label)
 	var font: Font = _die_label.get_theme_font("font")
-	_die_label.custom_minimum_size = Vector2(font.get_string_size(caption, HORIZONTAL_ALIGNMENT_LEFT, -1, 20).x + 4.0, 32.0)
+	_die_label.custom_minimum_size = Vector2(font.get_string_size(L10n.t(caption), HORIZONTAL_ALIGNMENT_LEFT, -1, px).x + 24.0, px + 14.0)
 	_die_label.modulate.a = 0.0
 
 
@@ -501,8 +686,12 @@ static func card_text(card: int) -> String:
 
 func _update(t: float) -> void:
 	match _mode:
-		&"D6", &"CHINCHIRO": _update_3d_die(t)
-		&"YUT": _update_yut(t)
+		&"D6", &"CHINCHIRO":
+			_update_toss(t)
+			_update_3d_die(t * _speed)
+		&"YUT":
+			_update_toss(t)
+			_update_yut(t * _speed)
 		&"LIFE_ROULETTE": _update_wheel(t)
 		&"SLOT_777": _update_slot(t)
 		&"REVOLVER":
@@ -529,9 +718,9 @@ func _update_3d_die(t: float) -> void:
 		var steps: int = int(_result.get("steps", _final_face))
 		last_display = str(steps)
 		var oops: bool = bool((_result.get("details", {}) as Dictionary).get("oops", false))
-		_die_label.text = "삐끗! 이번 이동 0칸" if oops else "%d칸 전진" % steps
+		_die_label.text = "삐끗! 이번 이동 0칸" if oops else "%d칸 전진!" % steps
 		if oops:
-			_die_label.add_theme_color_override("font_color", Color("bf4941"))
+			_die_label.add_theme_color_override("font_color", Color("ff8787"))
 		Sfx.play(&"thud")
 
 
