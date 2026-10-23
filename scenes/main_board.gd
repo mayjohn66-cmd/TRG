@@ -36,11 +36,11 @@ const STEP_DELAY: float = 0.22
 ## 엔진이 한 칸 걸을 때마다 기다리는 시간 (연출 속도 배율을 곱하지 않는다). 장거리면 TurnManager.MOVE_TIME_CAP(0.75초)이 칸당 시간을 더 줄인다.
 const MOVE_STEP_SECONDS: float = 0.12
 ## 굴림 결과 칸수 배지가 뜬 뒤 말이 출발하기까지의 틈 (예전 0.3초 x 연출 속도 1.7 + 잠금 0.5초 -> 0.12초, 배지는 이동과 함께 떠 있다).
-const ROLL_SUMMARY_LEAD: float = 0.12
+const ROLL_SUMMARY_LEAD: float = 0.25  ## 2026-10 여운 패치: 0.12 -> 0.25 ("N칸 전진!"을 읽을 틈)
 ## 리벤지 부스터 배너가 뜬 뒤 말이 날아가기까지의 틈.
 const REVENGE_LAUNCH_LEAD: float = 0.15
 ## 카드·함정·필살기 발동 카드(뒤이어 효과가 이어지는 [문] 알림)의 최대 길이(초, 연출 속도 배율 전).
-const GATE_MAX_SECONDS: float = 0.8
+const GATE_MAX_SECONDS: float = 1.1  ## 2026-10 여운 패치: 0.8 -> 1.1
 ## 한 칸 점프: 걸리는 시간(초)과 솟구치는 높이(px). 도착 직후 납작하게 찌그러졌다가 탱글하게 돌아온다.
 const ONE_CLICK_POWER: float = 0.75  ## 원클릭 굴림의 연출 세기 (파워 게이지를 없앴다)
 const NPC_ANNOUNCE_BODY: String = "사료스탕스는 정방향, 와구와구 유령은 역방향으로 가장 가까운 적 말을 덮치고 사라집니다"
@@ -82,14 +82,19 @@ const DECK_OFFSET: Vector2 = Vector2(0.0, -78.0)
 ## 피해 되돌리기 팝업이 자동으로 넘어가기까지의 시간(초).
 const REACTION_SECONDS: float = 6.0
 ## 행동 사이의 호흡(초): 이동이 끝난 뒤 멈춤 / [P2 차례] 알림 길이.
-const DRAFT_OPEN_BEAT: float = 0.12  ## 증강 창이 열리기 전 여운
-const BEAT_AFTER_MOVE: float = 0.12  ## 이동 뒤 여운 (0.8 -> 0.12: 마지막 행동이 끝나면 지체 없이 다음 턴·증강 창으로 넘어간다)
+const DRAFT_OPEN_BEAT: float = 0.3  ## 증강 창이 열리기 전 여운 (0.12 -> 0.3)
+const BEAT_AFTER_MOVE: float = 0.3  ## 이동 뒤 여운 (0.8 -> 0.12 -> 2026-10 여운 패치 0.3: 도착 결과를 잠깐 보여 준 뒤 다음 턴·증강 창으로)
 ## 차례 배너는 짧게 막는다: 누구 차례인지 보여 준 뒤에야 카드 선언·굴리기가 열린다 (봇도 배너가 끝난 뒤 움직인다).
-const TURN_BANNER_SECONDS: float = 0.7
-## 터보 AI 턴: AI 차례의 연출 시간 배율 (보통 속도 대비 65% 단축). 사람 말을 잡거나 특수 승리·법전이 움직인 턴은 보통 속도로 보여 준다.
-const TURBO_PACE_SCALE: float = 0.35
+const TURN_BANNER_SECONDS: float = 0.85
+## 터보 AI 턴: AI 차례의 연출 시간 배율 (보통 속도 대비 50% 단축, 2026-10 여운 패치 전에는 65%). 사람 말을 잡거나 특수 승리·법전이 움직인 턴은 보통 속도로 보여 준다.
+const TURBO_PACE_SCALE: float = 0.5
 ## AI 차례 배너는 더 짧게 (사람 차례 배너는 그대로).
-const TURBO_TURN_BANNER_SECONDS: float = 0.35
+const TURBO_TURN_BANNER_SECONDS: float = 0.45
+## 연출 여운: 화면에 무언가를 보여 준 연출 단계(움직임·컷인·배너·여운이 있던 단계)가 끝난 뒤 다음 단계로 넘어가기 전에 결과를 보여 주는 시간(초).
+## 기록 줄처럼 그 자리에서 끝나는 단계에는 붙지 않는다. AI 터보 턴에는 절반.
+const STEP_LINGER_SECONDS: float = 0.35
+## 이보다 오래 걸린 단계를 '보여 준 단계'로 본다 (밀리초).
+const STEP_LINGER_MIN_MSEC: int = 60
 ## 처치 확정 대기의 최대 시간(초): 방어 결정이 이보다 오래 걸리면(연결 끊김 등) 연출을 계속한다.
 const COUNTER_GATE_LIMIT: float = 30.0
 ## 상대를 해치는 공격 카드: 카드를 공개하기 전에 [공격 카드 발동!] 경보를 먼저 띄운다.
@@ -6286,16 +6291,31 @@ func _process_presentation_queue() -> void:
 		await _presentation_wait_ready(generation)
 		if generation != _fx_generation:
 			break
+		var started_msec: int = Time.get_ticks_msec()
 		await next_step.call()  # ★ 앞 연출이 100% 끝날 때까지 다음 연출은 절대 시작하지 않는다
 		await _presentation_settle(generation)
 		if generation != _fx_generation:
 			break
+		if Time.get_ticks_msec() - started_msec >= STEP_LINGER_MIN_MSEC:
+			await _presentation_linger(generation)  # 결과를 잠깐 보여 준 뒤 넘긴다
+			if generation != _fx_generation:
+				break
 	if generation != _fx_generation:
 		return  # 판이 초기화됐다: 새 큐가 이어받는다
 	_is_playing_presentation = false
 	_pawn_pending.clear()
 	if state != null and manager != null and is_inside_tree():
 		_refresh_all()  # 큐가 비면 연출이 건드리지 않은 나머지 변화를 화면에 맞춘다
+
+
+## 연출 여운: 보여 준 단계가 끝난 뒤 STEP_LINGER_SECONDS(AI 터보 턴은 절반)만큼 결과를 보여 준다.
+func _presentation_linger(generation: int) -> void:
+	var seconds: float = STEP_LINGER_SECONDS * (0.5 if _turbo_turn() else 1.0)
+	if seconds <= 0.0 or not pacing_enabled or instant_roll_for_test:
+		return
+	var until: int = Time.get_ticks_msec() + int(seconds * 1000.0)
+	while generation == _fx_generation and Time.get_ticks_msec() < until:
+		await get_tree().process_frame
 
 
 ## 알림 카드·워프 연출이 보드를 가리고 있으면 끝날 때까지 기다린다 (최대 12초).
@@ -6795,8 +6815,9 @@ func _floating_badge(at: Vector2, text: String, color: Color, font_size: int = 2
 	label.scale = Vector2(0.4, 0.4)
 	var tween: Tween = label.create_tween().set_parallel(true)
 	tween.tween_property(label, "scale", Vector2.ONE, 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(label, "position:y", label.position.y - 56.0, 1.0).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(label, "modulate:a", 0.0, 0.3).set_delay(0.75)
+	# 2026-10 여운 패치: 읽을 틈을 늘렸다 (보이는 시간 0.75초 -> 1.2초)
+	tween.tween_property(label, "position:y", label.position.y - 56.0, 1.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(label, "modulate:a", 0.0, 0.3).set_delay(1.2)
 	tween.chain().tween_callback(label.queue_free)
 
 
