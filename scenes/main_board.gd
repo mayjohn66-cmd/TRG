@@ -1132,8 +1132,10 @@ func _bind_state() -> void:
 			_record(trapped.owner_id, "%s 밟음! (%d번 타일, %s)" % [_bq(_attachment_name(id)), tile, _bq("%d번 말" % trapped.slot)])
 		if id != "TRP_05":  # 도미노는 [도미노 연쇄!] 알림(domino_collapsed)이 먼저 나왔다: 같은 알림을 연쇄 뒤에 또 띄우지 않는다
 			_announce_gate("함정 발동", "[발동!] %s" % _attachment_name(id), "%s\n%d번 타일에서 %s에게 발동" % [card_summary(StringName(id)), tile, _pawn_name(pawn_id)], Color("ff6b6b"), null, 1.2))
-	state.npc_vanished.connect(func(npc_id: int, tile: int) -> void:
-		_announce("중립 기물", "NPC가 사냥을 마치고 사라졌습니다", "%d번 타일 - 중립 기물은 말을 잡으면 사라집니다" % tile, Color("fa5252"), null, 1.3))
+	# 중립 기물이 사라질 때는 알림 카드를 띄우지 않는다: 엔진이 즉시 내는 신호라 진행 중인 다른 연출(처치·이동) 사이에 끼어들었다.
+	# 결과는 [중립 기물 이동] 카드·달리기·처치 컷인과 기록(로그)으로 이미 보인다.
+	state.npc_vanished.connect(func(_npc_id: int, tile: int) -> void:
+		_log_line("[중립 기물] %d번 타일에서 사라졌습니다" % tile, Color("fa5252")))
 	state.attachment_placed.connect(func(tile: int, id: String, owner_id: int) -> void:
 		if id.begins_with("TRP") and _fx_on():
 			# 카드를 먼저 보여 준 뒤 발판이 짙은 보라색으로 깜빡이며 나타난다.
@@ -8523,8 +8525,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 				_play_npc_run(report["display_id"], int(report.get("behavior", GameEnums.NpcBehavior.CHASE_NEAREST)), int(report.get("from", -1)), run_path, int(report["npc_id"]), func() -> void:
 					_log_line("[중립 기물] %s" % result_text, Color("fa5252"))
 					if not caught.is_empty():
-						_record(-1, "%s" % result_text)
-						_announce("중립 기물", "%s가 말을 잡았습니다!" % npc_name, "잡힌 말 %d개" % caught.size(), Color("fa5252"), null, 1.2))
+						_record(-1, "%s" % result_text))  # 잡은 말은 처치 컷인·사출로 보인다 (따로 [말을 잡았습니다!] 카드는 띄우지 않는다)
 		&"augment_offers":
 			_draft_open = true
 			_log_line("[증강] 라운드 %d 증강 드래프트가 열렸습니다." % data["round"], Color("ffa94d"))

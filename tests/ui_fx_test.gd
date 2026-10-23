@@ -2197,6 +2197,8 @@ func _test_event_order() -> void:
 	_expect(victim_seen_while_running, "기물이 달리는 동안 잡힐 말은 아직 보드 위에 있다 (사출은 그 뒤)")
 	var headlines: Array = _board._announcer.history.slice(history_before)
 	_expect(headlines.any(func(h: String) -> bool: return h.contains("중립 기물 이동")), "[중립 기물 이동] 알림 (%s)" % str(headlines))
+	var npc_cards: Array = headlines.filter(func(h: String) -> bool: return h.contains("중립 기물") or h.contains("NPC") or h.contains("사라졌") or h.contains("말을 잡았습니다"))
+	_expect(npc_cards.size() == 1, "중립 기물 알림 카드는 [중립 기물 이동] 한 장뿐 (사라짐·잡음 카드는 띄우지 않는다: %s)" % str(npc_cards))
 	_expect(_board._pawn_layer.find_child("NpcRunner", false, false) == null, "달리기 연출 노드는 끝나면 사라진다")
 	# 2) 도미노: [도미노 연쇄!]가 연쇄로 터지는 함정보다 먼저, 도미노 자신의 [발동!]은 다시 뜨지 않는다
 	for pawn: PlayerPawn in state.pawns:
