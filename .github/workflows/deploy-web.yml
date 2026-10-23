@@ -60,6 +60,7 @@ jobs:
 
       - name: Run English / Japanese UI checks (no Hangul left on screen, language picker)
         run: |
+          godot --headless --path . -s res://tests/ui_menu_test.gd
           godot --headless --path . -s res://tests/ui_english_test.gd
           UI_LANG=ja godot --headless --path . -s res://tests/ui_english_test.gd
           SMOKE_LANG=en SMOKE_AI=1 godot --headless --path . -s res://tests/ui_smoke.gd

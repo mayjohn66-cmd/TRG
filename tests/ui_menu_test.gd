@@ -75,6 +75,31 @@ func _run() -> void:
 	_expect(menu.ai_count == 1 and (menu._train_page.find_child("AiMinus", true, false) as Button).disabled, "AI는 1명까지")
 	menu.change_ai_count(1)
 	_expect(menu._train_label.text == "AI 상대 2명", "AI 2명으로 조정")
+	# 글 길이(언어)와 상관없이 상자 크기는 그대로, 상자보다 긴 글은 천천히 흘러간다
+	L10n.install()
+	var saved_lang: String = L10n.current_lang
+	var sizes: Array[String] = []
+	var tip_bar: Control = menu.find_child("TipBar", true, false)
+	for lang: String in ["ko", "en", "ja"]:
+		L10n.set_language(lang)
+		await process_frame
+		await process_frame
+		var panel: Control = menu._train_label.get_parent().get_parent()
+		sizes.append("%s %s %s %s" % [menu._train_page.size.x, panel.size, menu._train_start.size, tip_bar.size if tip_bar != null else Vector2.ZERO])
+	_expect(sizes[0] == sizes[1] and sizes[1] == sizes[2], "놀이터 칸·팁 띠 크기가 언어마다 같다 %s" % str(sizes))
+	L10n.set_language("en")
+	await process_frame
+	await process_frame
+	_expect(menu._train_label.scrolling(), "영어 \"AI 상대\" 문구는 칸보다 길어 흘러간다 (칸을 넓히지 않는다)")
+	var inner: Label = menu._train_label.label()
+	var start_x: float = inner.position.x
+	await create_timer(MarqueeLabel.HOLD + 0.8).timeout
+	_expect(inner.position.x < start_x, "멈췄다가 천천히 왼쪽으로 흐른다 (%.1f -> %.1f)" % [start_x, inner.position.x])
+	L10n.set_language("ko")
+	await process_frame
+	await process_frame
+	_expect(not menu._train_label.scrolling() and is_equal_approx(menu._train_label.label().position.x, 0.0), "들어가는 글은 흐르지 않는다")
+	L10n.set_language(saved_lang)
 	menu._back_button.pressed.emit()
 	_expect(menu.step == 2, "훈련 화면의 뒤로가기는 모드 선택으로")
 	menu._ai_button.pressed.emit()
