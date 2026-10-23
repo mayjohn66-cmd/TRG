@@ -109,6 +109,7 @@ func make_choice(value: int, seat: int, callback: Callable) -> Button:
 	return button
 
 func _text(text: String, at: Vector2, px: int, color: Color = INK) -> void:
+	text = L10n.t(text)
 	var width := FONT.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
 	draw_string(FONT, at + Vector2(-width / 2, px * 0.35), text, HORIZONTAL_ALIGNMENT_LEFT, -1, px, color)
 

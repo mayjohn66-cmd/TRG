@@ -78,6 +78,19 @@ static func panel(parent: Control, node_name: String, rect: Rect2, fill: Color, 
 	return item
 
 
+## 번역된 긴 이름이 손패 카드의 이름 칸(두 줄까지)에 들어가도록 글자 크기를 줄인다.
+## 한 줄로 들어가는 크기와 두 줄로 들어가는 크기 중 큰 쪽을 쓴다 (줄 높이는 글꼴의 실제 높이).
+static func fit_title_px(text: String, box_width: float, box_height: float, start_px: int, min_px: int) -> int:
+	for px: int in range(start_px, min_px - 1, -1):
+		var text_width: float = FONT.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
+		var line_height: float = FONT.get_height(px)
+		if text_width <= box_width and line_height <= box_height:
+			return px
+		if text_width <= box_width * 1.8 and line_height * 2.0 - 2.0 <= box_height:
+			return px
+	return min_px
+
+
 static func label(parent: Control, node_name: String, text: String, rect: Rect2, px: int, color: Color = INK, centered: bool = false, wrap: bool = false) -> Label:
 	var item := Label.new()
 	item.name = node_name
@@ -109,9 +122,12 @@ static func body(card: BaseCard, card_size: Vector2, summary_text: String, categ
 	var width: float = card_size.x - margin * 2.0
 	var title_px: int = roundi((20.0 if detailed else 12.0) * k)
 	var title_h: float = (36.0 if detailed else 30.0) * k
-	if detailed and FONT.get_string_size(card.display_name, HORIZONTAL_ALIGNMENT_LEFT, -1, title_px).x > width - 12.0 * k:
+	var shown_name: String = L10n.t(card.display_name)  # 화면에 실제로 나갈 이름 (영어 화면이면 영어)
+	if detailed and FONT.get_string_size(shown_name, HORIZONTAL_ALIGNMENT_LEFT, -1, title_px).x > width - 12.0 * k:
 		title_px = roundi(18.0 * k)
 		title_h = 52.0 * k
+	if not detailed and shown_name != card.display_name:
+		title_px = fit_title_px(shown_name, width - 12.0 * k, title_h - 4.0 * k, title_px, roundi(8.0 * k))
 	var name_panel: Panel = panel(holder, "NamePanel", Rect2(margin, margin, width, title_h), HEADER, GREEN, maxi(1, roundi(2 * k)), roundi(10 * k))
 	var title: Label = label(name_panel, "CardTitle", card.display_name, Rect2(6 * k, 2 * k, width - 12 * k, title_h - 4 * k), title_px, INK, true, true)
 	title.max_lines_visible = 2
@@ -149,7 +165,7 @@ static func body(card: BaseCard, card_size: Vector2, summary_text: String, categ
 		art.add_child(picture)
 	else:
 		# Retain a neutral letter emblem for cards whose own art isn't ready.
-		label(art, "CardEmblem", card.display_name.left(1), Rect2(Vector2.ZERO, art.size), roundi((56.0 if detailed else 36.0) * k), EDGES[card.category], true)
+		label(art, "CardEmblem", shown_name.left(1), Rect2(Vector2.ZERO, art.size), roundi((56.0 if detailed else 36.0) * k), EDGES[card.category], true)
 	if SELF_RISK.has(card.card_id):
 		# 내 말도 휘말리는 카드: 일러스트 창 왼쪽 위에 경고 아이콘 (문구는 상세 설명에)
 		var icon := WarningIcon.new()

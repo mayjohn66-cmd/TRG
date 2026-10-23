@@ -308,10 +308,10 @@ func _draw() -> void:
 			hint = "뒤로 당겨 조준 · 놓으면 발사"
 		var rect := Rect2(size.x/2.0-260.0*sc,size.y-48.0*sc,402.0*sc,36.0*sc)
 		draw_style_box(CardSkin.style(Color("1f3038"),Color("b0d791"),2,12),rect)
-		draw_string(CardSkin.FONT,rect.position+Vector2(14,24)*sc,hint,HORIZONTAL_ALIGNMENT_LEFT,-1, int(17*sc),Color("fff3cf"))
+		draw_string(CardSkin.FONT,rect.position+Vector2(14,24)*sc,L10n.t(hint),HORIZONTAL_ALIGNMENT_LEFT,-1, int(17*sc),Color("fff3cf"))
 		var cancel_rect := _cancel_rect()
 		draw_style_box(CardSkin.style(Color("36464e"),Color("a4bac0"),2,10),cancel_rect)
-		draw_string(CardSkin.FONT,cancel_rect.position+Vector2(14,24)*sc,"취소 ESC",HORIZONTAL_ALIGNMENT_LEFT,-1,int(16*sc),Color.WHITE)
+		draw_string(CardSkin.FONT,cancel_rect.position+Vector2(14,24)*sc,L10n.t("취소 ESC"),HORIZONTAL_ALIGNMENT_LEFT,-1,int(16*sc),Color.WHITE)
 	for index: int in range(1,_trail.size()):
 		draw_line(to_screen(_trail[index-1]),to_screen(_trail[index]),Color(1,0.9,0.55,(1.0-float(index)/10.0)*0.5),(10.0-index*0.7)*sc,true)
 	for spark: Dictionary in _sparks:

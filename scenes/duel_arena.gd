@@ -1046,11 +1046,12 @@ class StageDrawing extends Control:
 
 	func _name_at(seat: int, y: float) -> void:
 		var font: Font = ThemeDB.fallback_font
-		var text: String = arena._seat_name(seat)
+		var text: String = L10n.t(arena._seat_name(seat))
 		var width: float = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 15).x
 		draw_string(font, Vector2(_seat_x(seat) - width / 2.0, y), text, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, MainBoard.PLAYER_COLORS.get(seat, Color.WHITE))
 
 	func _center_text(text: String, at: Vector2, font_size: int, color: Color) -> void:
+		text = L10n.t(text)
 		var font: Font = ThemeDB.fallback_font
 		var width: float = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
 		draw_string(font, Vector2(at.x - width / 2.0, at.y), text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, color)

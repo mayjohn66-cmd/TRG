@@ -149,6 +149,10 @@ func _build_mode_page() -> void:
 	buttons.add_theme_constant_override("separation", 10)
 	buttons.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	top.add_child(buttons)
+	var language := LobbyTheme.language_toggle()  # [🌐 KR / EN]: 규칙·설정 버튼 옆
+	language.custom_minimum_size = Vector2(140, 56)
+	language.add_theme_font_size_override("font_size", 17)
+	buttons.add_child(language)
 	buttons.add_child(HubKit.round_button("HubRules", &"book", _show_rules, 56.0))
 	buttons.add_child(HubKit.round_button("HubSettings", &"gear", _show_settings, 56.0))
 	# 왼쪽: 큼직한 전신 아바타 + 닉네임 + 아바타 설정 (타이틀은 오른쪽 아래)

@@ -90,6 +90,7 @@ func _box(rect: Rect2, fill: Color, edge: Color, radius: int = 12, width: int = 
 	pen.draw_style_box(style, rect)
 
 func _text(text: String, at: Vector2, font_size: int, color: Color, width: float = -1.0, pen: CanvasItem = null) -> void:
+	text = L10n.t(text)
 	if pen == null:
 		pen = self
 	pen.draw_string(FONT, at, text, HORIZONTAL_ALIGNMENT_LEFT, width, font_size, color)

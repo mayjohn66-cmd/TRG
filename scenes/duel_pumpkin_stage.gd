@@ -115,6 +115,7 @@ func _wire(index: int, t: float) -> Vector2:
 	return start.bezier_interpolate(start + Vector2(0, -68), end + Vector2((index - 2) * 14, 60), end, t)
 
 func _text(text: String, at: Vector2, font_size: int, color: Color) -> void:
+	text = L10n.t(text)
 	var width := FONT.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
 	draw_string(FONT, at - Vector2(width / 2.0, 0), text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, color)
 

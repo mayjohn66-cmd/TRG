@@ -60,6 +60,7 @@ func _poly(points: PackedVector2Array, color: Color, edge: Color = INK, width: f
 
 
 func _caption(text: String, center: Vector2, size: int, color: Color) -> void:
+	text = L10n.t(text)
 	var width: float = FONT.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
 	draw_string(FONT, center + Vector2(-width / 2.0, size * 0.35), text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, color)
 
@@ -211,7 +212,7 @@ func _draw_npc() -> void:
 ## NPC 토큰 아래 이동 방향 라벨: 사료스탕스(▶3~6칸) / 와구와구 유령(◀3~6칸).
 func _draw_npc_label() -> void:
 	var robber: bool = npc_behavior != GameEnums.NpcBehavior.PATROL_REVERSE
-	var text: String = "사료스탕스(▶3~6칸)" if robber else "와구와구(◀3~6칸)"
+	var text: String = L10n.t("사료스탕스(▶3~6칸)" if robber else "와구와구(◀3~6칸)")
 	var color: Color = Color("ffe3e3") if robber else Color("d0f4ff")
 	var width: float = 76.0
 	var origin := Vector2(-width / 2.0, 20.0)

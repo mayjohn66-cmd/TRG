@@ -33,11 +33,19 @@ const STALL_FRAMES: int = 20000
 var _stall_frames: int = 0
 var _stall_signature: String = ""
 var _rejections: Array[String] = []
+## SMOKE_LANG=en: 영어 화면으로 한 판을 돌리며 HANGUL_SCAN_EVERY 프레임마다 화면 글자에 한글이 남았는지 본다.
+var _english: bool = false
+var _hangul_leaks: Dictionary = {}
+const HANGUL_SCAN_EVERY: int = 12
 
 
 func _process(_delta: float) -> bool:
 	_frames += 1
 	if _frames == 1:
+		_english = OS.get_environment("SMOKE_LANG") == "en"
+		if _english:
+			L10n.install()
+			L10n.set_language("en")
 		_rng.seed = int(OS.get_environment("SMOKE_SEED")) if OS.get_environment("SMOKE_SEED") != "" else 20261015
 		GameSession.view_mode = 1 if OS.get_environment("SMOKE_VIEW") == "tilt" else 0  # SMOKE_VIEW=tilt: 기울인 탑뷰로 한 판 진행
 		var scene: PackedScene = load("res://scenes/main_board.tscn")
@@ -55,7 +63,11 @@ func _process(_delta: float) -> bool:
 		_checked_layout = true
 		_check_layout()
 		return false
+	if _english and _frames % HANGUL_SCAN_EVERY == 0:
+		HangulScan.scan(root, _hangul_leaks)
 	if _board.manager.is_game_over or _actions >= MAX_ACTIONS:
+		if _english:
+			HangulScan.scan(root, _hangul_leaks)  # 결과창
 		return _finish()
 	if _stalled():
 		return _finish()
@@ -590,6 +602,13 @@ func _finish() -> bool:
 	for phase: int in _seen_phases.keys():
 		phase_names.append(str(phase))
 	print("UI_SMOKE actions=%d round=%d game_over=%s winner=%d reason=%s phases=%d drafts=%s tile_picks=%d cards=%d evolutions=%d bombs_passed=%d skills=%d bangs=%d roulette=%d board_clicks=%d banner_picks=%d popups=%d stack_choices=%d ai=%s fog_checks=%d" % [_actions, _board.state.round_number, manager.is_game_over, _board.state.winner, VictoryChecker.reason_text(_board._last_reason), _seen_phases.size(), str(_draft_rounds), _tile_picks, _cards_played, _evolutions, _bombs_passed, _skills, _bangs, _roulette_seen, _board_clicks, _banner_picks, _popups, _stack_choices, str(_ai), _fog_checks])
+	if _english:
+		var leaks: Array = _hangul_leaks.keys()
+		leaks.sort()
+		print("UI_SMOKE english leaks=%d" % leaks.size())
+		for leak: Variant in leaks:
+			print("  HANGUL ", leak)
+		_assert(leaks.is_empty(), "영어 화면에 한글이 남지 않는다 (%d곳)" % leaks.size())
 	_assert(manager.is_game_over, "치트 없이 한 판이 끝까지 진행되어 승리자가 나와야 한다 (조작 %d회)" % _actions)
 	_assert(_draft_rounds.has(1), "1라운드 드래프트가 열렸어야 한다")
 	_assert(_board._result_overlay != null, "게임 종료 결과창이 떠야 한다")

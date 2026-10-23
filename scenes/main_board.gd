@@ -502,6 +502,7 @@ var _stage_turn_key: String = ""
 var _menu_button: Button = null
 var _feedback_button: Button = null  ## 왼쪽 위 피드백 / 버그 제보 (소리·언어는 설정 화면에 있다)
 var _speed_button: Button = null  ## 오른쪽 위 [배속 1x] 진행 속도 (1x -> 2x -> 3x)
+var _language_button: LanguageToggle = null  ## [배속] 왼쪽의 [🌐 KR / EN] 언어 토글 (누르면 화면 글자가 바로 바뀐다)
 ## 이 판을 시작한 시각 (피드백 스냅샷의 플레이 타임).
 var _game_started_msec: int = 0
 ## 액션 로그에 마지막으로 적은 라운드 구분선 (_log_round_divider).
@@ -585,6 +586,8 @@ var _tile_pick_card: StringName = &""
 
 
 func _ready() -> void:
+	L10n.install()
+	L10n.on_changed(_on_language_changed)
 	Sfx.bgm_stop()
 	Sfx.apply_settings()
 	Sfx.unlock()
@@ -1256,7 +1259,7 @@ func _register_layout() -> void:
 	_layout_entries.clear()
 	var left: Array = [_law_panel, _feedback_button]
 	var center: Array = [_select_banner, _dir_left, _dir_right, _board_layer, _pawn_layer, _dock, _drop_zone, _pick_banner, _pick_cancel, _roll_button, _roll_pad, _gun_row, _stage_yacht, _stage_blackjack, _stage_pinball, _danger_label]
-	var right: Array = [_tool_board, _action_row, _pawn_bar, _emote_row, _menu_button, _speed_button, _debug_box, _log_panel]
+	var right: Array = [_tool_board, _action_row, _pawn_bar, _emote_row, _menu_button, _speed_button, _language_button, _debug_box, _log_panel]
 	for index: int in PLAYER_IDS.size():
 		var player_id: int = PLAYER_IDS[index]
 		var panel: Control = _profiles[player_id]["panel"]
@@ -1694,6 +1697,12 @@ func _build_status_strip() -> void:
 	_speed_button.size = Vector2(84, 32)
 	add_child(_speed_button)
 	_refresh_speed_button()
+	_language_button = LanguageToggle.create(13, Color.WHITE)
+	_apply_button_style(_language_button, Color("3b4766"), 8)
+	Sfx.bind_button(_language_button)
+	_language_button.position = Vector2(1180 - 8 - 118, 10)
+	_language_button.size = Vector2(118, 32)
+	add_child(_language_button)
 	if MobileSupport.touch_mode():
 		_apply_touch_top_bar()
 
@@ -1706,9 +1715,11 @@ func _apply_touch_top_bar() -> void:
 	_menu_button.position = Vector2(right - 124.0, 3)
 	_speed_button.size = Vector2(124, height)
 	_speed_button.position = Vector2(right - 124.0 * 2.0 - 8.0, 3)
+	_language_button.size = Vector2(132, height)
+	_language_button.position = Vector2(right - 124.0 * 2.0 - 8.0 - 132.0 - 8.0, 3)
 	_feedback_button.size = Vector2(190, height)
 	_feedback_button.position = Vector2(SAFE_MARGIN, 3)
-	for button: Button in [_menu_button, _speed_button, _feedback_button]:
+	for button: Button in [_menu_button, _speed_button, _language_button, _feedback_button]:
 		button.add_theme_font_size_override("font_size", 17)
 		MobileSupport.touch_button(button, height)
 
@@ -2890,6 +2901,15 @@ func _play_warp_glide(pawn_id: int, to_pos: Vector2, to_scale: float, options: D
 ## 화면 전체를 상태에 맞춘다. 행동 하나를 처리하는 동안(_begin_refresh_batch ~ _end_refresh_batch)에는 요청만 모아 두고
 ## 행동이 끝날 때 한 번만 그린다: 행동 하나가 신호 여러 개(단계 변경·이벤트·로그)를 내며 매번 프로필·손패·버튼을 다시 그리던 것이
 ## 웹에서 끊김(한 번에 수십 ms 멈춤)의 주원인이었다. 묶음 밖에서는 예전처럼 바로 그린다.
+## [KR / EN] 토글: 글자는 자동 번역 노드가 알아서 바뀌고, 보드판 말 라벨(한두 글자)과 손패 카드(이름 글자 크기를 언어에 맞춤)만 다시 그린다.
+func _on_language_changed() -> void:
+	if not is_inside_tree() or manager == null or manager.state == null:
+		return
+	_refresh_all()
+	if _dock != null:
+		_refresh_hands()
+
+
 func _refresh_all() -> void:
 	if manager == null or manager.state == null:
 		return
@@ -3431,12 +3451,12 @@ func _paint_pawn_slot(parts: Dictionary, pawn: PlayerPawn, color: Color) -> void
 	if not panel.resized.is_connected(reflow):
 		panel.resized.connect(reflow)
 	_fit_profile_token(panel)
-	var paint_key: Array = [pawn.letter(), pawn.is_promoted_shogi(), pawn.is_finished, pawn.has_left_start, pawn.revenge_boost, color]
+	var paint_key: Array = [pawn.letter(), L10n.current_lang, pawn.is_promoted_shogi(), pawn.is_finished, pawn.has_left_start, pawn.revenge_boost, color]
 	if panel.has_meta("paint_key") and panel.get_meta("paint_key") == paint_key:
 		return
 	panel.set_meta("paint_key", paint_key)
 	var shown: String = pawn.letter()
-	letter.text = shown if shown != "" else "말"
+	letter.text = shown if shown != "" else PawnCatalog.basic_letter()
 	letter.add_theme_color_override("font_color", Color("ff6b6b") if pawn.is_promoted_shogi() else Color("f8f9fa"))
 	if pawn.is_finished:
 		panel.add_theme_stylebox_override("panel", _style(Color("d4a72c"), Color("fff3bf"), 3, 8, 12, 1))
@@ -4521,7 +4541,7 @@ func _refresh_pawn_dock() -> void:
 		(parts["letter"] as Label).visible = false
 		_token_in(button, pawn, color, Vector2(SLOT_SIZE.x/2.0,44),1.28)
 		var letter: String = pawn.letter()
-		(parts["letter"] as Label).text = letter if letter != "" else "말"
+		(parts["letter"] as Label).text = letter if letter != "" else PawnCatalog.basic_letter()
 		(parts["letter"] as Label).add_theme_color_override("font_color", Color("ff6b6b") if pawn.is_promoted_shogi() else Color("f8f9fa"))
 		var place: String = "완주" if pawn.is_finished else ("대기" if not pawn.has_left_start else "%d번" % pawn.current_tile_idx)
 		if pawn.blocked_this_turn or pawn.restrained_turns > 0:
@@ -4745,7 +4765,7 @@ func _refresh_select_banner() -> void:
 			status = "출전 중 (%d번)" % pawn.current_tile_idx
 		(parts["status"] as Label).text = status
 		var letter: String = pawn.letter()
-		(parts["mark"] as Label).text = letter if letter != "" else "말"
+		(parts["mark"] as Label).text = letter if letter != "" else PawnCatalog.basic_letter()
 		(parts["disc"] as Panel).add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 		(parts["mark"] as Label).visible = false
 		_token_in(parts["disc"], pawn, color, Vector2(22,34),0.95)
@@ -8714,6 +8734,7 @@ func _log_move(data: Dictionary) -> void:
 
 
 func _log_line(text: String, color: Color) -> void:
+	text = L10n.t(text)
 	if _log == null:
 		return
 	if text.is_empty():

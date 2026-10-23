@@ -1298,6 +1298,7 @@ class MiniBoard extends Control:
 			if index == 0:
 				label = "출발"
 			var label_size: int = 13 if not corner else 15
+			label = L10n.t(label)
 			var width: float = font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, label_size).x
 			draw_string(font, center + Vector2(-width / 2.0, label_size * 0.36), label, HORIZONTAL_ALIGNMENT_LEFT, -1, label_size, Color("3a2f1f"))
 		# 안쪽 범례
@@ -1311,7 +1312,7 @@ class MiniBoard extends Control:
 			swatch.set_border_width_all(2)
 			swatch.set_corner_radius_all(5)
 			draw_style_box(swatch, Rect2(spot, Vector2(20, 20)))
-			draw_string(font, spot + Vector2(28, 16), legend[index][1], HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("3a2f1f"))
+			draw_string(font, spot + Vector2(28, 16), L10n.t(legend[index][1]), HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("3a2f1f"))
 
 	func _arc(from_tile: int, to_tile: int, color: Color) -> void:
 		var a: Vector2 = _tile_pos(from_tile)

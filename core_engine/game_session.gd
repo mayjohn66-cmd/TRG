@@ -44,7 +44,7 @@ static var screen_shake: bool = true
 ## 배터리 절약: 화면을 초당 30장까지만 그린다 (휴대폰 발열·배터리용).
 static var battery_saver: bool = false
 const BATTERY_SAVER_FPS: int = 30
-## 화면 언어 (L10n.LANGUAGES). 번역이 비어 있는 문구는 한국어로 나온다.
+## 화면 언어 (L10n.LANGUAGES). 처음 실행하면 기기 언어를 따른다 (한국어 기기 KR, 그 밖 EN). 번역이 없는 문구는 한국어로 나온다.
 static var language: String = L10n.DEFAULT_LANG
 ## 진행 배속 (1·2·3): 혼자 하는 판에서 Engine.time_scale로 모든 트윈·타이머·봇 대기를 함께 빠르게 한다. 온라인 대전은 늘 1배.
 static var game_speed: int = 1
@@ -82,10 +82,8 @@ static func load_settings() -> void:
 		game_speed = int(config.get_value("game", "game_speed", 1))
 		if not GAME_SPEEDS.has(game_speed):
 			game_speed = 1
-		language = str(config.get_value("game", "language", L10n.DEFAULT_LANG))
-		if not L10n.set_language(language):
-			language = L10n.DEFAULT_LANG
-			L10n.set_language(language)
+		# 저장된 언어가 없으면(처음 실행) 기기 언어를 따른다: 한국어 기기면 KR, 그 밖은 EN
+		language = str(config.get_value("game", "language", L10n.detect_os_language()))
 		view_mode = 0  # 설정 화면에서 시점 선택을 없앴다: 저장값과 무관하게 탑뷰
 		sfx_volume = clampf(float(config.get_value("game", "sfx_volume", 0.8)), 0.0, 1.0)
 		bgm_volume = clampf(float(config.get_value("game", "bgm_volume", 0.6)), 0.0, 1.0)
@@ -94,6 +92,12 @@ static func load_settings() -> void:
 		bgm_muted = bool(config.get_value("game", "bgm_muted", false))
 		pace_scale = PACE_NORMAL  # 연출 속도 선택을 없앴다: 저장값과 무관하게 보통
 		avatar_id = StringName(str(config.get_value("game", "avatar", "avatar_01")))
+	else:
+		language = L10n.detect_os_language()
+	if not L10n.set_language(language):
+		language = L10n.DEFAULT_LANG
+		L10n.set_language(language)
+	L10n.install()
 	apply_frame_limit()
 
 
