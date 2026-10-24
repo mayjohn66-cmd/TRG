@@ -138,6 +138,9 @@ jobs:
       - name: Run online lockstep test (2 humans + 2 bots)
         run: SEATS=4 BOTS=3,4 godot --headless --path . -s res://tests/ui_net_test.gd
 
+      - name: Run web cache guard test (cache busting + old cache cleanup in web/shell.html)
+        run: node tests/web/cache_guard_test.mjs
+
       - name: Export web build
         run: |
           mkdir -p build/web
@@ -145,6 +148,8 @@ jobs:
           sed -i -E "s/^config\/version=\"([^\"+]*)[^\"]*\"/config\/version=\"\1+${GITHUB_SHA::7}\"/" project.godot
           grep '^config/version=' project.godot
           godot --headless --path . --export-release "Web" build/web/index.html
+          # 캐시 버스팅: index.html에 커밋(?v=)과 버전(옛 캐시 청소 기준)을 새긴다 (web/shell.html trg-cache-guard)
+          python3 tools/stamp_web_build.py build/web "${GITHUB_SHA::7}"
           # 내보낸 묶음을 직접 읽어 웹에서만 깨지는 데이터(문구 표·밸런스 CSV)를 검사한다
           (cd build/web && godot --headless --main-pack index.pck -s "$GITHUB_WORKSPACE/tests/export_smoke.gd")
           # 아바타 애니메이션은 본체에서 빼고 아바타별 묶음(avatars/<id>.pck)으로 따로 내보낸다: 게임이 필요한 것부터 뒤에서 받는다 (scenes/avatar_packs.gd)

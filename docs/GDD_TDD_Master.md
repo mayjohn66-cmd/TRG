@@ -1340,3 +1340,12 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
   - 결과: 리벤지 +6 + 눈금 7칸이 출발 배너부터 마지막 칸까지 약 1.0~1.2초 (칸당 약 0.06초).
 - **액션 로그:** 줄이 들어올 때마다 보이는 줄 전체를 `text`로 다시 넣어(BBCode 재파싱) 펼친 100줄 상태에서 무거웠다. 이제 새 줄은 `append_text`, 넘친 줄은 `remove_paragraph`로 지우고, 맨 아래로 스크롤은 한 프레임에 한 번만 (`ActionLogPanel._append_shown`). 펼치기·접기·비우기만 처음부터 그린다.
 - **검사:** `tests/ui_fx_test.gd` 이동 4단계(리벤지 부스터 + 눈금 7칸이 1.5초 안, 부스터 칸 멈춤 0.15초), `tests/test_memory_guards.gd`(덧붙인 로그 = 다시 그린 로그, 여러 줄 항목 포함).
+
+### 6.68 웹 캐시 관리: 배포마다 최신 빌드 · 옛 캐시 자동 청소 · 일회성 연출 정리
+- **캐시 버스팅 (`web/shell.html` `trg-cache-guard` + `tools/stamp_web_build.py`):** 배포 워크플로가 웹 내보내기 직후 index.html의 `__TRG_BUILD_ID__`(커밋 7자리)·`__TRG_VERSION__`(`config/version`, 예: 0.9.0+abc1234)를 채운다.
+  - `index.js`는 script 태그에 `?v=커밋`. 엔진이 `fetch`로 받는 `index.wasm`·`index.pck`, `AudioWorklet.addModule`로 받는 오디오 워클릿은 감싼 함수가 같은 사이트·쿼리 없는 `.wasm/.pck/.worklet.js` 주소에만 `?v=커밋`을 붙인다. 스플래시 그림(타이틀 로고·로딩 펫)도 `?v=`.
+  - 아바타 묶음(`avatars/<id>.pck`)은 원래대로 게임이 `?v=버전`을 붙인다(`AvatarPacks.pack_url`, 버전에 커밋 포함). 이미 쿼리가 있는 주소는 감싼 함수가 건드리지 않는다.
+  - 로컬 내보내기는 토큰이 그대로 남아 아무것도 바꾸지 않는다. 남은 `__TRG_` 토큰·`index.js?v=` 누락은 배포를 멈춘다.
+- **옛 캐시 청소:** 부팅 전에 `localStorage['trg_cached_version']`과 현재 버전을 비교해 다르면 Cache Storage 전부를 `caches.delete`, 등록된 서비스 워커를 `unregister`한 뒤 현재 버전을 저장하고 부팅한다 (실패하거나 2초가 지나면 그냥 부팅). 다른 localStorage 값(닉네임·언어·볼륨)과 게임 세이브(IndexedDB `user://`)는 건드리지 않는다. 게임은 PWA·스레드를 쓰지 않아 자체 서비스 워커가 없으므로 모두 해제해도 된다. index.html 자체는 Vercel 헤더 `max-age=0, must-revalidate`로 매번 다시 확인한다.
+- **일회성 연출 정리:** 파편(`_burst_shards`)·충격 링·플로팅 글자·로켓 잔상·날아가는 카드·튕겨 나가는 잔상과 초증강 파티클을 `trg_oneshot_fx` 묶음에 수명과 함께 등록한다(`MainBoard._mark_oneshot`, 수명 + 2초 여유, 게임 배속 반영). 보통은 자기 트윈·타이머가 지우지만, 트윈이 끊겨 남은 것은 턴 시작·라운드 시작마다 `sweep_oneshot_fx()`가 수명이 지난 것만 지우고, 다시 하기(`_new_game`)는 모두 지운다. 로비로 나가면 보드 트리째 지워져 노드·트윈이 남지 않는다(검사로 확인).
+- **검사:** `tests/web/cache_guard_test.mjs`(node, 배포 워크플로: 버스팅 대상·청소·개인 설정 보존·같은 버전 재부팅·로컬 무동작), `tests/ui_fx_test.gd`(끊긴 연출 정리, 보드 해제 뒤 고아 노드·트윈 0), 기존 `tests/ui_soak_test.gd`(여러 판 연속 노드·고아·트윈 수).

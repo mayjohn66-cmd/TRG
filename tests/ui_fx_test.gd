@@ -22,7 +22,7 @@ func _process(_delta: float) -> bool:
 		_started = true
 		_run()
 	# 다른 검사 중에 봇이 건 결투는 시간 초과로 넘겨 검사가 막히지 않게 한다 (결투 검사만 직접 진행).
-	if _started and not _duel_manual and _board.manager != null and _board.manager.duel_pending():
+	if _started and not _duel_manual and _board != null and _board.manager != null and _board.manager.duel_pending():
 		_board.manager.force_timeout()
 	return false
 
@@ -92,6 +92,8 @@ func _run() -> void:
 	await _test_nitro_dash()
 	await _test_move_four_steps()
 	await _test_presentation_queue()
+	await _test_oneshot_fx_sweep()
+	await _test_board_teardown()  # 보드를 지운다: 반드시 마지막
 	if _failures.is_empty():
 		print("UI_FX_OK")
 		quit(0)
@@ -99,6 +101,55 @@ func _run() -> void:
 		for message: String in _failures:
 			printerr("UI_FX_FAIL: " + message)
 		quit(1)
+
+
+## 일회성 연출 정리: 트윈이 끊겨 남은 연출 노드는 수명이 지나면 턴·라운드 경계(sweep_oneshot_fx)에서 지워지고, 다시 하기는 모두 지운다.
+func _test_oneshot_fx_sweep() -> void:
+	_board._reset_presentation()
+	_board.instant_roll_for_test = false  # 연출을 켜야 파편이 생긴다
+	_board.sweep_oneshot_fx(true)
+	await process_frame
+	var center: Vector2 = _board._board_center()
+	_board._burst_shards(center, Color.WHITE, 6)
+	_board._floating_badge(center, "정리 검사", Color.WHITE)
+	_board._impact_ring(center, Color.WHITE, 30.0)
+	var marked: Array[Node] = get_nodes_in_group(MainBoard.ONESHOT_FX_GROUP)
+	_expect(marked.size() >= 3, "파편·글자·충격 링이 일회성 연출로 등록된다 (%d)" % marked.size())
+	_expect(_board.sweep_oneshot_fx() == 0, "수명이 남은 연출은 지우지 않는다")
+	# 트윈이 도중에 끊긴 상황: 트윈을 멈추고 수명이 지난 것으로 만든다
+	for tween: Tween in get_processed_tweens():
+		tween.kill()
+	for node: Node in marked:
+		node.set_meta(&"fx_expire_msec", 0)
+	_board._on_phase_changed(TurnManager.State.PHASE_TURN_BEGIN, 1, 0.0)
+	await process_frame
+	var left: int = 0
+	for node: Node in marked:
+		if is_instance_valid(node):
+			left += 1
+	_expect(left == 0, "턴 시작에 수명이 지난 연출 노드를 모두 치운다 (남음 %d)" % left)
+	_board._floating_badge(center, "다시 하기", Color.WHITE)
+	_expect(_board.sweep_oneshot_fx(true) >= 1, "다시 하기(강제)는 수명과 상관없이 치운다")
+	_board.instant_roll_for_test = true
+	_board._refresh_all()
+
+
+## 로비로 돌아가기: 보드를 지우면 보드의 노드·트윈이 남김없이 풀린다 (고아 노드·남은 트윈 0).
+func _test_board_teardown() -> void:
+	var center: Vector2 = _board._board_center()
+	_board._burst_shards(center, Color.WHITE, 6)
+	_board._floating_badge(center, "떠나기", Color.WHITE)
+	await process_frame
+	var orphans_before: int = int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT))
+	_board.queue_free()
+	_board = null
+	for i: int in 3:
+		await process_frame
+	var orphans_after: int = int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT))
+	_expect(orphans_after <= orphans_before, "보드를 지운 뒤 고아 노드가 늘지 않는다 (%d -> %d)" % [orphans_before, orphans_after])
+	_expect(root.get_child_count() == 0 or not root.get_children().any(func(n: Node) -> bool: return n is MainBoard), "보드가 트리에서 사라진다")
+	var tweens: int = get_processed_tweens().size()
+	_expect(tweens == 0, "보드를 지우면 연출 트윈이 남지 않는다 (%d개 남음)" % tweens)
 
 
 ## The six sprites must load; all other kinds still render without images.

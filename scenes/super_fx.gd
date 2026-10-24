@@ -1004,6 +1004,7 @@ func _aura(at: Vector2, duration: float) -> void:
 	embers.color = DEVIL_PURPLE.lightened(0.2)
 	embers.emitting = true
 	_layer().add_child(embers)
+	board._mark_oneshot(embers, duration + 0.7)
 	board.get_tree().create_timer(duration + 0.7).timeout.connect(embers.queue_free)
 
 
@@ -1029,6 +1030,7 @@ func _flame_burst(at: Vector2, color: Color) -> void:
 	fire.color_ramp = ramp
 	fire.emitting = true
 	_layer().add_child(fire)
+	board._mark_oneshot(fire, 1.2)
 	board.get_tree().create_timer(1.2).timeout.connect(fire.queue_free)
 	_ring(at, color, 70.0, 5.0, 0.35)
 
@@ -1052,6 +1054,7 @@ func _bread_burst(at: Vector2) -> void:
 	bread.color = BREAD
 	bread.emitting = true
 	_layer().add_child(bread)
+	board._mark_oneshot(bread, 1.0)
 	board.get_tree().create_timer(1.0).timeout.connect(bread.queue_free)
 
 

@@ -509,6 +509,9 @@ var _roll_reasons: Dictionary = {}
 var _move_bonus_notes: Dictionary = {}
 ## 도착 칸 정산 뒤 추가 이동 중인 말 (점프 부스트·부스터 발판·8번 공 돌진): 이 말의 걸음은 앞선 처치 연출 뒤에 선다. 이동이 끝나면(move_resolved) 지운다.
 var _follow_up_pawns: Dictionary = {}
+## 일회성 연출 노드 묶음 이름과, 수명에 더하는 여유(초): 이 여유가 지나도 남아 있으면 끊긴 연출로 보고 치운다.
+const ONESHOT_FX_GROUP: StringName = &"trg_oneshot_fx"
+const ONESHOT_GRACE_SECONDS: float = 2.0
 ## 이동 단계 사이(부스터 도착·점프 부스트 직전)의 짧은 멈춤(초). 연출 속도 배율을 곱하지 않는 고정값.
 const WAYPOINT_PAUSE: float = 0.15
 ## 굴림 직후 확정 칸수 표시용: 플레이어 -> 가속 보너스까지 합친 최종 칸수
@@ -936,6 +939,7 @@ func _difficulty_report(my_rank: int, first: int) -> Dictionary:
 
 func _new_game() -> void:
 	_match_complete_sent = false
+	sweep_oneshot_fx(true)  # 다시 하기: 앞 판의 일회성 연출은 수명과 상관없이 모두 치운다
 	# Initial scene entry has already selected a backdrop; an actual rematch repicks.
 	if state != null and _match_background != null:
 		_match_background.choose_random()
@@ -2917,6 +2921,7 @@ func _rocket_puff(at: Vector2) -> void:
 	puff.position = at + Vector2(randf_range(-3, 3), randf_range(-3, 3))
 	puff.z_index = 3
 	_pawn_layer.add_child(puff)
+	_mark_oneshot(puff, 0.35)
 	var tween: Tween = puff.create_tween().set_parallel(true)
 	tween.tween_property(puff, "scale", Vector2.ONE * 2.2, 0.35)
 	tween.tween_property(puff, "modulate:a", 0.0, 0.35)
@@ -6898,6 +6903,7 @@ func _burst_shards(at: Vector2, color: Color, amount: int = 12) -> void:
 	particles.scale_amount_max = 5.0
 	particles.color = color
 	_pawn_layer.add_child(particles)
+	_mark_oneshot(particles, 0.8)
 	# 노드를 람다에 잡아 두지 않는다: 그 전에 보드가 지워지면 타이머가 지워진 노드를 넘기며 오류를 낸다. 노드의 메서드에 연결하면 노드가 지워질 때 연결도 함께 풀린다.
 	get_tree().create_timer(0.8).timeout.connect(particles.queue_free)
 
@@ -6992,6 +6998,7 @@ func _fly_card_to_profile(from: Vector2, player_id: int, rejected: bool) -> void
 	card.scale = Vector2(0.3, 0.3)
 	card.set_meta("hand_card_fx", "rejected" if rejected else "drawn")
 	add_child(card)
+	_mark_oneshot(card, 0.8)
 	var tween: Tween = card.create_tween()
 	tween.tween_property(card, "scale", Vector2(1.2, 1.2), 0.15).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	if rejected:
@@ -7008,6 +7015,30 @@ func _fly_card_to_profile(from: Vector2, player_id: int, rejected: bool) -> void
 	tween.tween_callback(card.queue_free)
 
 
+## 일회성 연출 노드(파편·충격 링·플로팅 글자·잔상)를 등록한다: 보통은 자기 트윈·타이머가 지우지만,
+## 트윈이 도중에 끊기면(연출 취소·판 초기화) 남을 수 있어 턴·라운드 경계에서 sweep_oneshot_fx()가 수명이 지난 것을 치운다.
+func _mark_oneshot(node: Node, lifetime: float) -> void:
+	node.add_to_group(ONESHOT_FX_GROUP)
+	# 게임 배속이 느리면 트윈도 그만큼 늦게 끝난다: 실제 시간 수명은 배속으로 나눈다
+	var real_seconds: float = (lifetime + ONESHOT_GRACE_SECONDS) / maxf(Engine.time_scale, 0.1)
+	node.set_meta(&"fx_expire_msec", Time.get_ticks_msec() + int(real_seconds * 1000.0))
+
+
+## 수명이 지난 일회성 연출 노드를 지운다 (force면 모두). 지운 개수를 돌려준다.
+func sweep_oneshot_fx(force: bool = false) -> int:
+	if not is_inside_tree():
+		return 0
+	var now: int = Time.get_ticks_msec()
+	var swept: int = 0
+	for node: Node in get_tree().get_nodes_in_group(ONESHOT_FX_GROUP):
+		if node.is_queued_for_deletion() or not is_ancestor_of(node):
+			continue
+		if force or now >= int(node.get_meta(&"fx_expire_msec", 0)):
+			node.queue_free()
+			swept += 1
+	return swept
+
+
 ## 위로 솟아올랐다 사라지는 플로팅 텍스트 배지.
 func _floating_badge(at: Vector2, text: String, color: Color, font_size: int = 24) -> void:
 	var label := _make_label(text, font_size, color)
@@ -7019,6 +7050,7 @@ func _floating_badge(at: Vector2, text: String, color: Color, font_size: int = 2
 	label.position = at - label.get_minimum_size() / 2.0
 	label.pivot_offset = label.get_minimum_size() / 2.0
 	label.scale = Vector2(0.4, 0.4)
+	_mark_oneshot(label, 1.5)
 	var tween: Tween = label.create_tween().set_parallel(true)
 	tween.tween_property(label, "scale", Vector2.ONE, 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	# 2026-10 여운 패치: 읽을 틈을 늘렸다 (보이는 시간 0.75초 -> 1.2초)
@@ -7085,6 +7117,7 @@ func _impact_ring(at: Vector2, color: Color, radius: float) -> void:
 	ring.scale = Vector2.ONE * (PAWN_RADIUS * 0.6)
 	ring.z_index = 17
 	_pawn_layer.add_child(ring)
+	_mark_oneshot(ring, 0.3 * _motion_pace())
 	var tween: Tween = create_tween().set_parallel(true)
 	tween.tween_property(ring, "scale", Vector2.ONE * radius, 0.3 * _motion_pace()).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween.tween_property(ring, "modulate:a", 0.0, 0.3 * _motion_pace())
@@ -7099,6 +7132,7 @@ func _fly_away(from: Vector2, direction: Vector2, color: Color) -> void:
 	ghost.position = from
 	ghost.z_index = 18
 	_pawn_layer.add_child(ghost)
+	_mark_oneshot(ghost, 0.6)
 	var tween: Tween = create_tween()
 	tween.set_parallel(true)
 	tween.tween_property(ghost, "position", from + direction * 900.0, 0.6).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
@@ -8455,6 +8489,7 @@ func _clear_highlight() -> void:
 func _on_phase_changed(new_state: TurnManager.State, _player_id: int, _limit: float) -> void:
 	if new_state == TurnManager.State.PHASE_TURN_BEGIN or new_state == TurnManager.State.PHASE_ROUND_START:
 		_spotlight_turn = false  # 주목 구간은 한 턴 동안만
+		sweep_oneshot_fx()  # 턴·라운드 경계: 수명이 지났는데 남은 일회성 연출 노드를 치운다
 	if new_state != TurnManager.State.PHASE_ROUND_START:
 		_close_augment_review()
 		_draft_open = false
