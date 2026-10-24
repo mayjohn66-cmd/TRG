@@ -97,6 +97,7 @@ var _gun_pull_started: bool = false
 var _speed: float = 1.0
 ## 결과를 보여 준 뒤 남아 있는 시간 (-1이면 남아 있지 않다). 이 동안 입력은 이미 풀려 있다.
 var _linger: float = -1.0
+var _augment_hold := 0.0
 var _ground_shadow: GroundShadow = null
 var _contact_fx: ContactFX = null
 var _toss_view: Control = null
@@ -204,6 +205,10 @@ func play(tool_id: StringName, result: Dictionary, power: float = 0.5) -> void:
 
 ## 진행 중인 연출을 즉시 끝내고 숨긴다 (새 게임 등).
 func cancel() -> void:
+	_augment_hold = 0.0
+	if has_meta("gambler_tint_owner"):
+		remove_meta("gambler_tint_owner")
+	modulate = Color.WHITE
 	_end_linger()
 	scale = Vector2.ONE
 	rotation = 0.0
@@ -443,8 +448,22 @@ func _outline(label: Label, width: int) -> void:
 	label.add_theme_color_override("font_outline_color", Color("1b1f2b"))
 
 
+## Keep the settled, real face readable during a result augment; no new roll.
+func hold_augmented_result(seconds: float, caption: String) -> void:
+	if _linger>=0.0 and not active:
+		_augment_hold = maxf(_augment_hold,seconds)
+		if _die_label!=null:
+			_die_label.text = caption
+			_die_label.hide()  # The augment owns the result caption while it is held.
+			last_display = caption
+
 func _process(delta: float) -> void:
 	if _linger >= 0.0 and not active:
+		if _augment_hold>0.0:
+			_augment_hold = maxf(_augment_hold-delta,0.0)
+			_linger = maxf(_linger,PUNCH_TIME)
+			_update_linger(_linger)
+			return
 		_linger += delta
 		_update_linger(_linger)
 		return

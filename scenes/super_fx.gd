@@ -12,6 +12,7 @@ const REDISTRIBUTION_STAGE = preload("res://scenes/redistribution_stage.gd")
 const DEVIL_STAGE = preload("res://scenes/devil_contract_stage.gd")
 const MINEFIELD_STAGE = preload("res://scenes/minefield_stage.gd")
 const RAID_STAGE = preload("res://scenes/raid_stage.gd")
+const GAMBLER_STAGE = preload("res://scenes/gambler_fx.gd")
 const FATE_COIN = preload("res://scenes/fate_coin_3d.gd")
 const STAGE_SPOTLIGHT = preload("res://scenes/pawn_stage_spotlight.gd")
 
@@ -216,69 +217,33 @@ func _raid(player_id: int, changes: Array) -> void:
 # ---------------------------------------------------------------------------
 
 func _gambler(player_id: int) -> void:
-	board._refresh_super_marks()
-	var at: Vector2 = board._profile_center(player_id)
-	Sfx.play(&"revenge_ignite")
-	if at.is_finite():
-		_flame_burst(_local(at), GOLD)
-		board._floating_badge(at + Vector2(0, -50), "이동 x%d!" % SuperAugments.gambler_multiplier(), GOLD, 34)
-	var tool: Vector2 = board._tool_board.get_global_rect().get_center() if board._tool_board != null and board._tool_board.is_visible_in_tree() else Vector2(INF, INF)
-	if tool.is_finite():
-		_flame_burst(_local(tool), GOLD)
-	await _wait(0.8)
+	var stage := GAMBLER_STAGE.new()
+	board.add_child(stage)
+	stage.play(board,&"activate",player_id,{},Vector2.ZERO,null,board._motion_pace())
+	while _alive() and is_instance_valid(stage) and not stage._complete:
+		await board.get_tree().process_frame
+	if is_instance_valid(stage):
+		stage.queue_free()
 
 
-## 굴림이 배수로 커졌다: 주사위 위에 거대한 x배수! 임팩트.
-func gambler_boost(at_screen: Vector2, multiplier: int) -> void:
-	var at: Vector2 = _local(at_screen)
-	_flame_burst(at, GOLD)
-	_ring(at, GOLD, 90.0, 6.0, 0.35)
-	var label: Label = _label("x%d!" % multiplier, 64, GOLD)
-	label.add_theme_constant_override("outline_size", 14)
-	label.add_theme_color_override("font_outline_color", Color("5c2b00"))
-	label.z_index = 62
-	_layer().add_child(label)
-	_center_label(label)
-	label.position += at + Vector2(0.0, -70.0)
-	label.scale = Vector2.ONE * 2.2
-	var pop: Tween = label.create_tween()
-	pop.tween_property(label, "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	pop.tween_interval(0.5)
-	pop.tween_property(label, "modulate:a", 0.0, 0.25)
-	pop.tween_callback(label.queue_free)
-	board.screen_shake(7.0, 0.2)
-	Sfx.play(&"win")
+func gambler_boost(at_screen: Vector2, multiplier: int, values: Dictionary = {}, target: Control = null) -> void:
+	var data := values.duplicate()
+	data["multiplier"] = multiplier
+	_gambler_result(&"boost",at_screen,target,data)
 
 
-## 과열: 주사위가 까맣게 그을리고 연기가 피어오른다.
-func gambler_overheat(at_screen: Vector2, presenter: Control) -> void:
-	var at: Vector2 = _local(at_screen)
-	if presenter != null and presenter.visible:
-		presenter.modulate = Color(0.28, 0.25, 0.25, presenter.modulate.a)
-	for i: int in 9:
-		var puff := Polygon2D.new()
-		puff.polygon = _circle(10.0 + randf() * 6.0, 14)
-		puff.color = Color(0.25, 0.25, 0.27, 0.75)
-		puff.position = at + Vector2(randf_range(-28, 28), randf_range(-6, 10))
-		puff.z_index = 42
-		_layer().add_child(puff)
-		var rise: Tween = puff.create_tween().set_parallel(true)
-		rise.tween_property(puff, "position:y", puff.position.y - 70.0 - randf() * 40.0, 0.9).set_delay(i * 0.04)
-		rise.tween_property(puff, "scale", Vector2.ONE * 2.4, 0.9).set_delay(i * 0.04)
-		rise.tween_property(puff, "modulate:a", 0.0, 0.9).set_delay(i * 0.04)
-		rise.chain().tween_callback(puff.queue_free)
-	var label: Label = _label("과열!", 44, Color("ced4da"))
-	label.add_theme_constant_override("outline_size", 12)
-	label.add_theme_color_override("font_outline_color", Color("212529"))
-	label.z_index = 62
-	_layer().add_child(label)
-	_center_label(label)
-	label.position += at + Vector2(0.0, -80.0)
-	var drift: Tween = label.create_tween()
-	drift.tween_property(label, "position:y", label.position.y - 30.0, 0.8)
-	drift.parallel().tween_property(label, "modulate:a", 0.0, 0.3).set_delay(0.55)
-	drift.tween_callback(label.queue_free)
-	Sfx.play(&"bad")
+func gambler_overheat(at_screen: Vector2, presenter: Control, values: Dictionary = {}) -> void:
+	_gambler_result(&"overheat",at_screen,presenter,values)
+
+
+func _gambler_result(mode: StringName, at_screen: Vector2, target: Control, values: Dictionary) -> void:
+	var previous: Node2D = board.get_node_or_null("GamblerResult")
+	if previous!=null:
+		previous.cancel()
+		previous.name = "RetiredGamblerResult"
+	var stage := GAMBLER_STAGE.new()
+	board.add_child(stage)
+	stage.play(board,mode,-1,values,at_screen,target,board._motion_pace())
 
 
 # ---------------------------------------------------------------------------

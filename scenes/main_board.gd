@@ -6429,6 +6429,9 @@ func _enqueue_batch(entries: Array[Dictionary]) -> void:
 
 ## 연출 큐를 비우고 재생 중인 러너를 멈춘다 (판 초기화·되감기·테스트 정리용). 이미 시작된 트윈은 건드리지 않는다.
 func _reset_presentation() -> void:
+	var gambler_result: Node2D = get_node_or_null("GamblerResult")
+	if gambler_result!=null:
+		gambler_result.cancel()
 	_follow_up_pawns.clear()
 	_rocket_followup.clear()
 	_roll_reasons.clear()
@@ -6551,7 +6554,7 @@ func _enqueue_roll_summary(data: Dictionary) -> void:
 	enqueue_step(func() -> void:
 		await get_tree().process_frame  # 같은 굴림의 보너스 이벤트가 모두 도착한 뒤
 		var frames: int = 0
-		while _fx_busy and frames < 720:
+		while (_fx_busy or _gambler_result_busy()) and frames < 720:
 			frames += 1
 			await get_tree().process_frame
 		var total: int = int(_roll_total.get(player, steps))
@@ -6623,7 +6626,7 @@ func _presentation_wait_ready(generation: int) -> void:
 	var frames: int = 0
 	# 큐에 든 단계는 이미 지금 재생해도 되는 것들이다 (드래프트 뒤로 미룰 연출은 _draft_deferred에 따로 모인다).
 	# 그래서 미뤄 둔 드래프트 연출이 있다고 기다리지 않는다: 기다리면 드래프트가 열린 동안 남은 걸음마다 12초 상한까지 멈춰 한 칸씩 기어갔다.
-	while generation == _fx_generation and (_fx_holding(false) or _fx_busy or (_draw_fx != null and _draw_fx.busy())) and (frames < 720 or (_draw_fx != null and _draw_fx.busy())):
+	while generation == _fx_generation and (_fx_holding(false) or _fx_busy or _gambler_result_busy() or (_draw_fx != null and _draw_fx.busy())) and (frames < 720 or _gambler_result_busy() or (_draw_fx != null and _draw_fx.busy())):
 		frames += 1
 		await get_tree().process_frame
 
@@ -6637,6 +6640,8 @@ func _presentation_settle(generation: int) -> void:
 
 
 func _presentation_step_busy() -> bool:
+	if _gambler_result_busy():
+		return true
 	if _draw_fx != null and _draw_fx.busy():
 		return true
 	if _stage_warps > 0 or _fx_busy:
@@ -8777,10 +8782,10 @@ func _on_super_picked(player_id: int, augment_id: StringName) -> void:
 	var step: Callable = func() -> void:
 		var generation: int = _fx_generation
 		# The contract pays out only after its offering reaches the player's profile.
-		if effect!=SuperAugments.DEVIL:
+		if effect not in [SuperAugments.DEVIL,SuperAugments.GAMBLER]:
 			_super_hidden.erase(hidden_key)
 		await _super_fx.play(effect, player_id, changes)
-		if effect==SuperAugments.DEVIL:
+		if effect in [SuperAugments.DEVIL,SuperAugments.GAMBLER]:
 			if generation!=_fx_generation:
 				return
 			_super_hidden.erase(hidden_key)
@@ -8827,18 +8832,33 @@ func _flame_colors(player_id: int) -> Array[Color]:
 
 
 ## 도박사의 영혼이 이번 굴림을 바꿨다: 주사위 위에 x배수! 또는 그을린 과열 연기.
-func _show_gambler_flash(player_id: int) -> void:
+func _gambler_result_busy() -> bool:
+	var result_fx: Node2D = get_node_or_null("GamblerResult")
+	return result_fx!=null and not result_fx._complete and result_fx.generation==_fx_generation
+
+func _show_gambler_flash(player_id: int, tool_id: StringName = &"") -> void:
 	if not _gambler_flash.has(player_id):
 		return
-	var multiplier: int = int(_gambler_flash[player_id])
+	var raw: Variant = _gambler_flash[player_id]
+	var details: Dictionary = raw if raw is Dictionary else {"multiplier":int(raw)}
+	var multiplier: int = int(details.multiplier)
 	_gambler_flash.erase(player_id)
 	if not _fx_on() or _super_fx == null:
 		return
-	var at: Vector2 = _presenter.position + _presenter.size * _presenter.scale / 2.0 if _presenter.visible else _board_center()
+	var target: Control = _presenter if _presenter.visible else _stage_for(tool_id)
+	if target!=null and not target.is_visible_in_tree():
+		target = null
+	var at: Vector2 = target.get_global_rect().get_center() if target!=null else get_global_transform()*_board_center()
+	if target==_presenter and _presenter.tossing and is_instance_valid(_presenter._toss_view):
+		at = _presenter._toss_view.get_global_rect().get_center()
+	var caption := "%d칸" % int(details.get("to",0)) if multiplier>0 and details.has("to") else ("×%d" % multiplier if multiplier>0 else "과열! 0칸")
+	if target==_presenter:
+		_presenter.hold_augmented_result(SuperFX.GAMBLER_STAGE.RESULT_TIME*_motion_pace(),caption)
 	if multiplier > 0:
-		_super_fx.gambler_boost(at, multiplier)
+		_super_fx.gambler_boost(at,multiplier,details,target)
 	else:
-		_super_fx.gambler_overheat(at, _presenter)
+		_profile_react(player_id,false)
+		_super_fx.gambler_overheat(at,target,details)
 
 
 ## 이번 라운드에 모두가 고른 증강을 선택 카드 그림 그대로 한 줄에 나란히 공개한다.
@@ -9048,7 +9068,7 @@ func _ui_busy() -> bool:
 		return false  # 처치 연출이 방어 결정을 기다리는 중: 봇·사람이 방어 카드를 고를 수 있어야 한다
 	if _fx_on() and _draw_fx != null and _draw_fx.busy():
 		return true
-	return _turn_banner_pending() or _intro_blocks() or _presentation_active() or _fx_busy or (_capture_cutin != null and _capture_cutin.busy()) or _aim_pawn != -1 or (_announcer != null and _announcer.holding()) or Time.get_ticks_msec() < _beat_until_msec or (_fx_on() and Time.get_ticks_msec() < _fx_until_msec)
+	return _turn_banner_pending() or _intro_blocks() or _presentation_active() or _fx_busy or _gambler_result_busy() or (_capture_cutin != null and _capture_cutin.busy()) or _aim_pawn != -1 or (_announcer != null and _announcer.holding()) or Time.get_ticks_msec() < _beat_until_msec or (_fx_on() and Time.get_ticks_msec() < _fx_until_msec)
 
 
 ## 지금부터 ms밀리초 뒤의 시각 (Time.get_ticks_msec 기준). 배속(Engine.time_scale)만큼 짧아진다: 트윈·타이머와 같은 빠르기로 풀린다.
@@ -9289,7 +9309,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_log_line("[템포 업] P%d: 이동 %d → %d" % [data["player_id"], data["from"], data["to"]], Color("ff8787"))
 			_record(int(data["player_id"]), "템포 업 +%d → 총 %d칸 전진!" % [int(data["to"]) - int(data["from"]), int(data["to"])])
 		&"gambler_doubled":
-			_gambler_flash[int(data["player_id"])] = SuperAugments.gambler_multiplier()
+			_gambler_flash[int(data["player_id"])] = {"multiplier":SuperAugments.gambler_multiplier(),"from":int(data["from"]),"to":int(data["to"])}
 			_roll_total[int(data["player_id"])] = int(data["to"])
 			_add_roll_reason(int(data["player_id"]), "도박사의 영혼 x2")
 			_log_line("[도박사의 영혼] P%d: 이동 %d → %d (x2)!" % [data["player_id"], data["from"], data["to"]], Color("ffa94d"))
@@ -9298,12 +9318,12 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_on_move_bonus(int(data["pawn_id"]), data["notes"], int(data.get("revenge", 0)))
 		&"gambler_busted":
 			var busted: int = int(data["player_id"])
-			_gambler_flash[busted] = -1
+			_gambler_flash[busted] = {"multiplier":-1,"roll":int(data["roll"])}
 			_log_line("[도박사의 영혼] P%d: 눈금 %d - 과열! 이동 없이 차례 끝" % [busted, data["roll"]], Color("ff6b6b"))
 			_record(busted, "도박사의 영혼 과열! (눈금 %d, 이동 없이 차례 끝)" % int(data["roll"]))
-			_profile_react(busted, false)
-			_announce("도박사의 영혼", "[과열!]", "눈금 %d - 이번 차례는 이동 없이 바로 끝납니다" % data["roll"], Color("ff6b6b"), null, 1.1)
-			_start_beat(0.9)
+			# Reveal the failure with the settled roll, instead of spoiling it mid-toss.
+			if not _fx_on():
+				_announce("도박사의 영혼", "[과열!]", "눈금 %d - 이번 차례는 이동 없이 바로 끝납니다" % data["roll"], Color("ff6b6b"), null, 1.1)
 		&"turn_rested":
 			var rested: int = int(data["player_id"])
 			_log_line("[강제 턴 패스] P%d가 이번 차례를 쉽니다 (UDO 스킵)" % rested, Color("adb5bd"))
@@ -9979,7 +9999,7 @@ func _announce_move_failed(headline: String, player_id: int, body: String = "") 
 
 
 func _reveal_roll(data: Dictionary) -> void:
-	_show_gambler_flash(int(data["player_id"]))
+	_show_gambler_flash(int(data["player_id"]),(data["result"] as Dictionary).get("tool_id",&""))
 	var roll_text: String = _log_roll(data)
 	var details: Dictionary = (data["result"] as Dictionary)["details"]
 	var fired: bool = bool(details.get("fired", false))
