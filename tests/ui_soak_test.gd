@@ -12,6 +12,7 @@ const NODE_SLACK: int = 120
 const ORPHAN_SLACK: int = 8
 const OBJECT_SLACK: int = 1500
 const MAX_SECONDS: float = 1500.0
+const FONT_FILES: Array[String] = ["res://assets/fonts/ONE-Mobile-POP.otf", "res://assets/fonts/TRGGothic-Bold.ttf", "res://assets/fonts/NanumGothic-Regular.ttf", "res://assets/fonts/MochiyPopOne-Regular.ttf"]
 
 var _board: MainBoard = null
 var _frames: int = 0
@@ -120,16 +121,58 @@ func _sample(kind: String) -> void:
 		"resources": int(Performance.get_monitor(Performance.OBJECT_RESOURCE_COUNT)),
 		"tweens": get_processed_tweens().size(),
 		"memory_mb": snappedf(float(Performance.get_monitor(Performance.MEMORY_STATIC)) / 1048576.0, 0.1),
+		"texture_mb": snappedf(float(Performance.get_monitor(Performance.RENDER_TEXTURE_MEM_USED)) / 1048576.0, 0.1),
+		"font_sizes": _font_size_count(),
 		"log_lines": _board._action_log.line_count() if _board.get("_action_log") != null else -1,
 		"queue": _board._presentation_queue.size(),
 	}
 	_samples.append(sample)
+	if kind == "round" and OS.get_environment("SOAK_TEX_DUMP").split(",").has(str(_rounds_played)):
+		_dump_textures()  # 진단용: 이 라운드에 메모리에 올라 있는 큰 텍스처 목록
 	if OS.get_environment("SOAK_ORPHANS") == str(_rounds_played) and kind == "round":
 		Node.print_orphan_nodes()  # 진단용: 이 라운드에 메모리에만 남은 노드 목록
 	if _baseline.is_empty() and _rounds_played >= WARMUP_ROUNDS and kind == "round":
 		_baseline = sample
 		_baseline_census = _census()
-	print("SOAK %s r=%d g=%d nodes=%d orphans=%d objects=%d resources=%d tweens=%d mem=%.1fMB log=%d queue=%d" % [kind, sample["round"], sample["game"], sample["nodes"], sample["orphans"], sample["objects"], sample["resources"], sample["tweens"], sample["memory_mb"], sample["log_lines"], sample["queue"]])
+	print("SOAK %s r=%d g=%d nodes=%d orphans=%d objects=%d resources=%d tweens=%d mem=%.1fMB tex=%.1fMB fonts=%d log=%d queue=%d" % [kind, sample["round"], sample["game"], sample["nodes"], sample["orphans"], sample["objects"], sample["resources"], sample["tweens"], sample["memory_mb"], sample["texture_mb"], sample["font_sizes"], sample["log_lines"], sample["queue"]])
+
+
+func _dump_textures() -> void:
+	print("TEXDUMP r=%d vram=%.1fMB cache_entries=%d cache=%.1fMB fonts=%.1fMB" % [_rounds_played, Performance.get_monitor(Performance.RENDER_TEXTURE_MEM_USED) / 1048576.0, TextureCache.size(), TextureCache.total_bytes() / 1048576.0, _font_atlas_bytes() / 1048576.0])
+	var entries: Array = []
+	for path: String in TextureCache._sizes.keys():
+		entries.append([int(TextureCache._sizes[path]), path])
+	entries.sort_custom(func(a: Array, b: Array) -> bool: return int(a[0]) > int(b[0]))
+	for entry: Array in entries.slice(0, 30):
+		print("TEX %.2fMB %s" % [int(entry[0]) / 1048576.0, str(entry[1])])
+
+
+## 글꼴이 구워 둔 글리프 텍스처의 바이트 합.
+func _font_atlas_bytes() -> int:
+	var total: int = 0
+	for path: String in FONT_FILES:
+		var font: FontFile = load(path) as FontFile
+		if font == null:
+			continue
+		for cache: int in font.get_cache_count():
+			for size: Vector2i in font.get_size_cache_list(cache):
+				for index: int in font.get_texture_count(cache, size):
+					var image: Image = font.get_texture_image(cache, size, index)
+					if image != null:
+						total += image.get_data_size()
+	return total
+
+
+## 글꼴 파일마다 글리프를 구워 둔 (크기, 외곽선) 조합 수의 합: 글자 크기가 제각각이면 크기마다 글리프 텍스처를 새로 굽는다.
+func _font_size_count() -> int:
+	var total: int = 0
+	for path: String in FONT_FILES:
+		var font: FontFile = load(path) as FontFile
+		if font == null:
+			continue
+		for cache: int in font.get_cache_count():
+			total += font.get_size_cache_list(cache).size()
+	return total
 
 
 ## 진단용: 트리의 노드를 [부모 이름/클래스]별로 센다. 실패하면 기준선보다 늘어난 묶음을 출력한다.

@@ -205,7 +205,8 @@ func _pick_art(rng: RandomNumberGenerator) -> Texture2D:
 			found.append(path)
 	if found.is_empty():
 		return null
-	return TextureCache.fetch(found[rng.randi() % found.size()])
+	# 한 번 잠깐 쓰는 큰 일러스트: 캐시에 붙잡지 않고, 컷인이 끝나 지워지면 바로 내려간다
+	return TextureCache.fetch_transient(found[rng.randi() % found.size()])
 
 
 func _make_label(text: String, size_px: int, color: Color) -> Label:

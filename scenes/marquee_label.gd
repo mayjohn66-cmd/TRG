@@ -95,6 +95,8 @@ func scrolling() -> bool:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_RESIZED or what == NOTIFICATION_TRANSLATION_CHANGED or what == NOTIFICATION_THEME_CHANGED:
 		_restart.call_deferred()
+	elif what == NOTIFICATION_VISIBILITY_CHANGED:
+		set_process(is_visible_in_tree())  # 숨은 페이지의 흐르는 글은 멈춘다 (보이면 이어서 흐른다)
 
 
 func _restart() -> void:
@@ -104,9 +106,9 @@ func _restart() -> void:
 		# 상자에 들어갈 때까지 글자를 줄인다 (원래 크기에서 다시 잰다: 언어를 바꿔 글이 짧아지면 다시 커진다)
 		var shown: String = _label.atr(_label.text)
 		var font: Font = _label.get_theme_font("font")
-		var px: int = _base_px
+		var px: int = FontSizes.snap(_base_px)
 		while px > shrink_min_px and font.get_string_size(shown, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x > size.x:
-			px -= 1
+			px = FontSizes.next_down(px)  # 표준 크기로만 줄인다 (크기마다 글리프를 굽는다)
 		_label.add_theme_font_size_override("font_size", px)
 	_label.reset_size()
 	var width: float = _label.get_minimum_size().x
@@ -137,6 +139,7 @@ func _sync_tail() -> void:
 
 
 func _ready() -> void:
+	set_process(is_visible_in_tree())
 	_restart()
 
 

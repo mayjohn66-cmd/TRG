@@ -81,14 +81,14 @@ static func panel(parent: Control, node_name: String, rect: Rect2, fill: Color, 
 ## 번역된 긴 이름이 손패 카드의 이름 칸(두 줄까지)에 들어가도록 글자 크기를 줄인다.
 ## 한 줄로 들어가는 크기와 두 줄로 들어가는 크기 중 큰 쪽을 쓴다 (줄 높이는 글꼴의 실제 높이).
 static func fit_title_px(text: String, box_width: float, box_height: float, start_px: int, min_px: int) -> int:
-	for px: int in range(start_px, min_px - 1, -1):
+	for px: int in FontSizes.steps(start_px, min_px):  # 표준 크기만 재 본다 (크기마다 글리프를 굽는다)
 		var text_width: float = FONT.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
 		var line_height: float = FONT.get_height(px)
 		if text_width <= box_width and line_height <= box_height:
 			return px
 		if text_width <= box_width * 1.8 and line_height * 2.0 - 2.0 <= box_height:
 			return px
-	return min_px
+	return FontSizes.snap(min_px)
 
 
 ## 여러 줄로 감싼 글이 상자(가로 box_width, 세로 box_height)에 다 들어가는 가장 큰 글자 크기 (start_px에서 min_px까지 줄여 본다).
@@ -99,13 +99,13 @@ static func fit_px(text: String, box_width: float, box_height: float, start_px: 
 	if is_nan(line_spacing):
 		line_spacing = default_line_spacing()
 	var flags: int = TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_ADAPTIVE
-	for px: int in range(start_px, min_px - 1, -1):
+	for px: int in FontSizes.steps(start_px, min_px):  # 표준 크기만 재 본다 (크기마다 글리프를 굽는다)
 		var wrapped: Vector2 = face.get_multiline_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, box_width, px, -1, flags)
 		var line_height: float = face.get_height(px)
 		var lines: int = maxi(1, roundi(wrapped.y / line_height))
 		if lines * (line_height + line_spacing) - line_spacing <= box_height + 0.5:
 			return px
-	return min_px
+	return FontSizes.snap(min_px)
 
 
 static var _default_spacing: float = NAN
@@ -146,8 +146,9 @@ static func label(parent: Control, node_name: String, text: String, rect: Rect2,
 	if not wrap:
 		# 한 줄 글(종류 배지·효과 종류 등): 글꼴(언어)에 따라 줄 높이·폭이 커져도 칸 밖으로 밀려나지 않게 칸에 맞춰 줄인다
 		var shown: String = L10n.t(text)
+		px = FontSizes.snap(px)
 		while px > 6 and (FONT.get_height(px) > rect.size.y + 1.0 or FONT.get_string_size(shown, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x > rect.size.x + 1.0):
-			px -= 1
+			px = FontSizes.next_down(px)  # 표준 크기로만 줄인다
 	item.add_theme_font_override("font", FONT)
 	item.add_theme_font_size_override("font_size", px)
 	item.add_theme_color_override("font_color", color)

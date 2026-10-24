@@ -44,7 +44,7 @@ static func style(bg: Color, border: Color, border_width: int, radius: int, shad
 static func label(text: String, size_px: int, color: Color = INK) -> Label:
 	var item := Label.new()
 	item.text = text
-	item.add_theme_font_size_override("font_size", size_px)
+	item.add_theme_font_size_override("font_size", FontSizes.snap(size_px))  # 표준 크기로 (글꼴이 크기마다 글리프를 굽는다)
 	item.add_theme_color_override("font_color", color)
 	return item
 

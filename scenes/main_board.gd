@@ -509,8 +509,12 @@ var _roll_reasons: Dictionary = {}
 var _move_bonus_notes: Dictionary = {}
 ## 도착 칸 정산 뒤 추가 이동 중인 말 (점프 부스트·부스터 발판·8번 공 돌진): 이 말의 걸음은 앞선 처치 연출 뒤에 선다. 이동이 끝나면(move_resolved) 지운다.
 var _follow_up_pawns: Dictionary = {}
+## 한 번에 터지는 파편 수 상한 (웹·모바일에서 한 화면에 파티클이 몰리지 않게).
+const MAX_BURST_PARTICLES: int = 24
 ## 일회성 연출 노드 묶음 이름과, 수명에 더하는 여유(초): 이 여유가 지나도 남아 있으면 끊긴 연출로 보고 치운다.
 const ONESHOT_FX_GROUP: StringName = &"trg_oneshot_fx"
+## 자주 생겼다 사라지는 연출 노드(플로팅 글자·파편·충격 링)를 지우지 않고 다시 쓴다.
+var _fx_pool: FxPool = FxPool.new()
 const ONESHOT_GRACE_SECONDS: float = 2.0
 ## 이동 단계 사이(부스터 도착·점프 부스트 직전)의 짧은 멈춤(초). 연출 속도 배율을 곱하지 않는 고정값.
 const WAYPOINT_PAUSE: float = 0.15
@@ -1564,6 +1568,13 @@ func _avatar_for(player_id: int) -> StringName:
 
 
 func _apply_avatars() -> void:
+	# 이번 판에 앉지 않은 사도의 그림·자세는 캐시에서 내린다 (여러 판을 이어 하면 판마다 다른 사도가 쌓였다)
+	var seated: Array = []
+	for player_id: int in PLAYER_IDS:
+		if _player_ids.has(player_id):
+			seated.append(_avatar_for(player_id))
+	TextureCache.forget_under(AvatarSlot.AVATAR_DIR, seated.map(func(id: StringName) -> String: return AvatarSlot.character_path(id)))
+	AvatarCombatArt.retain(seated)
 	# 웹: 이 판에 앉은 아바타의 애니메이션 묶음을 내 것부터 뒤에서 받는다 (인트로·첫 드래프트 동안 도착)
 	if _player_ids.has(local_player_id):
 		AvatarPacks.request(_avatar_for(local_player_id), true)
@@ -1981,12 +1992,20 @@ func _build_debug_panel() -> VBoxContainer:
 
 static func _make_label(text: String, font_size: int, color: Color) -> Label:
 	var label := Label.new()
+	_restyle_label(label, text, font_size, color)
+	return label
+
+
+## 라벨의 글·크기·색을 바꾼다 (새 라벨과 풀에서 다시 쓰는 라벨이 같은 모습이 되게).
+static func _restyle_label(label: Label, text: String, font_size: int, color: Color) -> void:
+	font_size = FontSizes.snap(font_size)  # 표준 크기로 (글꼴이 크기마다 글리프를 굽는다)
 	label.text = text
 	label.add_theme_font_size_override("font_size", font_size)
 	label.add_theme_color_override("font_color", color)
 	if font_size <= SMALL_TEXT_MAX:
 		label.add_theme_font_override("font", SMALL_FONT)  # 작은 글자는 ONE Mobile POP이 뭉개져 보여 또렷한 고딕으로
-	return label
+	else:
+		label.remove_theme_font_override("font")
 
 
 func _make_section(text: String) -> Label:
@@ -6886,12 +6905,17 @@ func _tile_glow(tile: int) -> void:
 func _burst_shards(at: Vector2, color: Color, amount: int = 12) -> void:
 	if not _fx_on() or not is_inside_tree():
 		return
-	var particles := CPUParticles2D.new()
+	var particles: CPUParticles2D = _fx_pool.take(&"shards")
+	if particles == null:
+		particles = _fx_pool.adopt(&"shards", CPUParticles2D.new())
+		particles.z_index = 18
+		particles.one_shot = true
+		# 다 터지면 지우지 않고 풀로 돌려놓는다 (노드의 신호에 연결: 노드가 지워지면 연결도 풀린다)
+		particles.finished.connect(_fx_pool.give_back.bind(particles))
+		_pawn_layer.add_child(particles)
 	particles.position = at
-	particles.z_index = 18
-	particles.one_shot = true
-	particles.emitting = true
-	particles.amount = amount
+	particles.visible = true
+	particles.amount = mini(amount, MAX_BURST_PARTICLES)
 	particles.lifetime = 0.55
 	particles.explosiveness = 1.0
 	particles.direction = Vector2.UP
@@ -6902,10 +6926,8 @@ func _burst_shards(at: Vector2, color: Color, amount: int = 12) -> void:
 	particles.scale_amount_min = 2.5
 	particles.scale_amount_max = 5.0
 	particles.color = color
-	_pawn_layer.add_child(particles)
+	particles.restart()  # 풀에서 꺼낸 노드도 처음부터 다시 터진다
 	_mark_oneshot(particles, 0.8)
-	# 노드를 람다에 잡아 두지 않는다: 그 전에 보드가 지워지면 타이머가 지워진 노드를 넘기며 오류를 낸다. 노드의 메서드에 연결하면 노드가 지워질 때 연결도 함께 풀린다.
-	get_tree().create_timer(0.8).timeout.connect(particles.queue_free)
 
 
 ## 말이 지나간 자리에 남는 잔상: seconds 동안 짧은 간격으로 흐려지는 원을 남긴다.
@@ -7034,29 +7056,41 @@ func sweep_oneshot_fx(force: bool = false) -> int:
 		if node.is_queued_for_deletion() or not is_ancestor_of(node):
 			continue
 		if force or now >= int(node.get_meta(&"fx_expire_msec", 0)):
-			node.queue_free()
+			if FxPool.is_pooled(node):
+				_fx_pool.give_back(node)  # 풀 노드는 지우지 않고 숨겨 돌려놓는다
+			else:
+				node.queue_free()
 			swept += 1
 	return swept
 
 
 ## 위로 솟아올랐다 사라지는 플로팅 텍스트 배지.
 func _floating_badge(at: Vector2, text: String, color: Color, font_size: int = 24) -> void:
-	var label := _make_label(text, font_size, color)
-	label.add_theme_constant_override("outline_size", 8)
-	label.add_theme_color_override("font_outline_color", Color("1b1405"))
-	label.z_index = 60
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(label)
+	var label: Label = _fx_pool.take(&"badge")
+	if label == null:
+		label = _fx_pool.adopt(&"badge", _make_label(text, font_size, color))
+		label.add_theme_constant_override("outline_size", 8)
+		label.add_theme_color_override("font_outline_color", Color("1b1405"))
+		label.z_index = 60
+		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(label)
+	else:
+		_restyle_label(label, text, font_size, color)
+		label.modulate = Color.WHITE
+		label.visible = true
+		move_child(label, -1)  # 새 배지가 위에 그려지게
+	label.reset_size()
 	label.position = at - label.get_minimum_size() / 2.0
 	label.pivot_offset = label.get_minimum_size() / 2.0
 	label.scale = Vector2(0.4, 0.4)
 	_mark_oneshot(label, 1.5)
 	var tween: Tween = label.create_tween().set_parallel(true)
+	label.set_meta(FxPool.TWEEN_META, tween)
 	tween.tween_property(label, "scale", Vector2.ONE, 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	# 2026-10 여운 패치: 읽을 틈을 늘렸다 (보이는 시간 0.75초 -> 1.2초)
 	tween.tween_property(label, "position:y", label.position.y - 56.0, 1.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween.tween_property(label, "modulate:a", 0.0, 0.3).set_delay(1.2)
-	tween.chain().tween_callback(label.queue_free)
+	tween.chain().tween_callback(_fx_pool.give_back.bind(label))
 
 
 ## 손패 카드를 보드로 던졌다: 카드가 목표 지점으로 날아가 커졌다가 쾅 내리찍히며 파편이 퍼진다.
@@ -7107,21 +7141,26 @@ func _fx_impact_at_pawn(pawn_id: int, delay: float) -> void:
 func _impact_ring(at: Vector2, color: Color, radius: float) -> void:
 	if not is_inside_tree():
 		return
-	var ring := Line2D.new()
-	ring.width = 3.0
+	var ring: Line2D = _fx_pool.take(&"ring")
+	if ring == null:
+		ring = _fx_pool.adopt(&"ring", Line2D.new())
+		ring.width = 3.0
+		ring.closed = true
+		for point: Vector2 in _circle_points(1.0, 24):
+			ring.add_point(point)
+		ring.z_index = 17
+		_pawn_layer.add_child(ring)
 	ring.default_color = color.lightened(0.4)
-	ring.closed = true
-	for point: Vector2 in _circle_points(1.0, 24):
-		ring.add_point(point)
 	ring.position = at
 	ring.scale = Vector2.ONE * (PAWN_RADIUS * 0.6)
-	ring.z_index = 17
-	_pawn_layer.add_child(ring)
+	ring.modulate = Color.WHITE
+	ring.visible = true
 	_mark_oneshot(ring, 0.3 * _motion_pace())
-	var tween: Tween = create_tween().set_parallel(true)
+	var tween: Tween = ring.create_tween().set_parallel(true)
+	ring.set_meta(FxPool.TWEEN_META, tween)
 	tween.tween_property(ring, "scale", Vector2.ONE * radius, 0.3 * _motion_pace()).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween.tween_property(ring, "modulate:a", 0.0, 0.3 * _motion_pace())
-	tween.chain().tween_callback(ring.queue_free)
+	tween.chain().tween_callback(_fx_pool.give_back.bind(ring))
 
 
 ## 맞은 말의 자리에서 화면 밖으로 튕겨 나가는 원형 잔상.

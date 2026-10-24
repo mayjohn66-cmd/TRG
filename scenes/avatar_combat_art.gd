@@ -22,6 +22,14 @@ static func texture(avatar: StringName, pose: StringName) -> Texture2D:
 	return null
 
 
+## 이번 판에 앉은 사도의 자세 그림만 남긴다 (다른 판의 사도 그림이 계속 쌓이지 않게).
+static func retain(avatars: Array) -> void:
+	var keep: Array = avatars.map(func(id: Variant) -> StringName: return AvatarCatalog.sanitize(StringName(str(id))))
+	for key: String in _cache.keys():
+		if not keep.has(StringName(key.get_slice("/", 0))):
+			_cache.erase(key)
+
+
 static func has_pose(avatar: StringName, pose: StringName) -> bool:
 	return ResourceLoader.exists("%s/%s/%s.png" % [ROOT, AvatarCatalog.sanitize(avatar), pose])
 

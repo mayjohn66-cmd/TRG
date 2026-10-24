@@ -10,7 +10,8 @@ const STEP_VS: float = 1.7
 const STEP_FLY: float = 0.7
 const STEP_TITLE: float = 1.05
 const CARD_SIZE: Vector2 = Vector2(190, 250)
-const START_RIBBON: Texture2D = preload("res://assets/ui/trickcal/opening/UI_RACE_START_RIBBON.png")
+## 한 판에 한 번 잠깐 쓰는 큰 그림: 상수로 붙잡지 않고 타이틀을 띄울 때 읽는다 (오프닝이 끝나 노드가 지워지면 함께 놓는다).
+const START_RIBBON_PATH: String = "res://assets/ui/trickcal/opening/UI_RACE_START_RIBBON.png"
 const START_RIBBON_WIDTH: float = 960.0
 
 var _board: MainBoard = null
@@ -166,15 +167,16 @@ func _step_title() -> void:
 	Sfx.play(&"game_start")
 	# 투명 리본의 원본 3:1 비율을 유지한다. 글자는 중앙의 빈 크림색 영역에 별도 출력한다.
 	var screen: Vector2 = get_viewport_rect().size
+	var start_ribbon: Texture2D = load(START_RIBBON_PATH)
 	var width: float = minf(START_RIBBON_WIDTH, screen.x * 0.86)
 	var art_scale: float = width / START_RIBBON_WIDTH
 	var ribbon := Control.new()
 	ribbon.name = "RaceStartRibbon"
-	ribbon.size = Vector2(width, width * START_RIBBON.get_height() / START_RIBBON.get_width())
+	ribbon.size = Vector2(width, width * start_ribbon.get_height() / start_ribbon.get_width())
 	ribbon.position = (screen - ribbon.size) / 2.0
 	ribbon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var artwork := TextureRect.new()
-	artwork.texture = START_RIBBON
+	artwork.texture = start_ribbon
 	artwork.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	artwork.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	artwork.size = ribbon.size

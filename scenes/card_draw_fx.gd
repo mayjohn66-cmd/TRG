@@ -34,6 +34,9 @@ var _deck: Control = null
 var _queue: Array[Dictionary] = []
 var _current: Dictionary = {}
 var _gap: float = 0.0
+## 다 쓴 카드 껍데기 (다음 카드에 다시 쓴다).
+const MAX_IDLE_SHELLS: int = 4
+var _idle_shells: Array[Control] = []
 
 
 ## Portrait card projected flat onto the table, with its key facing right.
@@ -152,8 +155,50 @@ func busy() -> bool:
 	return in_flight > 0
 
 
+## 날아가는 카드 껍데기(뒷면)는 다 쓰면 숨겨 두었다가 다음 카드에 다시 쓴다 (카드마다 노드를 새로 만들고 지우지 않게).
+func _take_shell() -> Control:
+	while not _idle_shells.is_empty():
+		var shell: Control = _idle_shells.pop_back()
+		if is_instance_valid(shell) and not shell.is_queued_for_deletion():
+			shell.name = "DrawnCard"
+			shell.remove_meta("phase")  # 앞 카드의 단계가 남지 않게
+			shell.modulate = Color.WHITE
+			shell.visible = true
+			move_child(shell, -1)
+			return shell
+	var card := Control.new()
+	card.name = "DrawnCard"
+	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	card.size = CARD_SIZE
+	card.pivot_offset = CARD_SIZE/2.0
+	var back := CardBack.new()
+	back.size = CARD_SIZE
+	var surface := Node2D.new()
+	surface.add_child(back)
+	card.add_child(surface)
+	card.set_meta(&"back_surface", surface)
+	add_child(card)
+	return card
+
+
+## 도착한 카드: 앞면은 지우고 뒷면 껍데기만 숨겨 둔다 (MAX_IDLE_SHELLS개까지).
+func _park_shell(card: Control) -> void:
+	var surface: Node2D = card.get_meta(&"back_surface")
+	for child: Node in card.get_children():
+		if child != surface:
+			child.queue_free()
+	surface.show()
+	if _idle_shells.size() >= MAX_IDLE_SHELLS:
+		card.queue_free()
+		return
+	card.visible = false
+	card.name = "IdleCardShell"
+	_idle_shells.append(card)
+
+
 ## No detached timers/tweens can reinsert a card after a new game or clear.
 func clear() -> void:
+	_idle_shells.clear()
 	_queue.clear()
 	_current.clear()
 	for child: Node in get_children():
@@ -169,18 +214,9 @@ func _start_next() -> void:
 		return
 	_current = _queue.pop_front()
 	var start: Vector2 = _current.origin if (_current.origin as Vector2).is_finite() else deck_position
-	var card := Control.new()
-	card.name = "DrawnCard"
+	var card: Control = _take_shell()
 	card.set_meta("local",bool(_current.local))
-	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	card.size = CARD_SIZE
-	card.pivot_offset = CARD_SIZE/2.0
-	var back := CardBack.new()
-	back.size = CARD_SIZE
-	var surface := Node2D.new()
-	surface.add_child(back)
-	card.add_child(surface)
-	add_child(card)
+	var surface: Node2D = card.get_meta(&"back_surface")
 	_current.merge({"card":card,"back":surface,"start":start,"lifted":start+Vector2(-12.0,-POP_RISE),"reveal":reveal_position,"time":0.0,"face":false,"from_deck":not (_current.origin as Vector2).is_finite()})
 	place_deck()
 	Sfx.play(&"card_pick",-5.0)
@@ -285,7 +321,7 @@ func _show_face() -> void:
 func _arrive() -> void:
 	var job: Dictionary = _current
 	_current = {}
-	(job.card as Control).queue_free()
+	_park_shell(job.card as Control)
 	in_flight = maxi(in_flight-1,0)
 	_gap = STAGGER
 	if bool(job.local):

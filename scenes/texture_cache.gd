@@ -34,6 +34,35 @@ static func fetch(path: String) -> Texture2D:
 	return texture
 
 
+## 한순간만 쓰는 큰 그림(처치 컷인 일러스트 등): 캐시에 붙잡지 않는다. 연출 노드가 지워져 참조가 0이 되면 메모리(VRAM)에서 바로 내려간다.
+## 이미 캐시에 있는 그림이면 그것을 쓴다.
+static func fetch_transient(path: String) -> Texture2D:
+	if path.is_empty():
+		return null
+	if _texture_cache.has(path):
+		return _texture_cache[path]
+	if not ResourceLoader.exists(path):
+		return null
+	return _shrink_if_huge(load(path) as Texture2D)
+
+
+## root 아래의 그림 중 keep_dirs(폴더 경로) 어디에도 들지 않는 것을 캐시에서 놓는다. 놓은 개수를 돌려준다.
+## 판이 시작할 때 이번 판에 앉지 않은 사도의 그림·애니메이션을 내린다 (화면에 떠 있는 것은 노드가 계속 붙잡는다).
+static func forget_under(root: String, keep_dirs: Array) -> int:
+	var dropped: int = 0
+	for path: String in _sizes.keys():
+		if not path.begins_with(root + "/"):
+			continue
+		if keep_dirs.any(func(dir: String) -> bool: return path.begins_with(dir + "/")):
+			continue
+		_total_bytes -= int(_sizes[path])
+		_sizes.erase(path)
+		_texture_cache.erase(path)
+		_frames_cache.erase(path)
+		dropped += 1
+	return dropped
+
+
 ## 스프라이트 시트(SpriteFrames) 캐시.
 static func fetch_frames(path: String) -> SpriteFrames:
 	if path.is_empty():

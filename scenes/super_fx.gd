@@ -1013,7 +1013,7 @@ func _flame_burst(at: Vector2, color: Color) -> void:
 	var fire := CPUParticles2D.new()
 	fire.position = at
 	fire.z_index = 33
-	fire.amount = 34
+	fire.amount = 30  # 한 번에 터지는 파티클은 30개 이하
 	fire.lifetime = 0.55
 	fire.one_shot = true
 	fire.explosiveness = 0.6

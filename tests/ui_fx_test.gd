@@ -125,9 +125,27 @@ func _test_oneshot_fx_sweep() -> void:
 	await process_frame
 	var left: int = 0
 	for node: Node in marked:
-		if is_instance_valid(node):
+		# 풀 노드는 지우지 않고 숨겨 돌려놓는다 (다음 연출이 다시 쓴다)
+		if is_instance_valid(node) and not (FxPool.is_pooled(node) and not (node as CanvasItem).visible and not bool(node.get_meta(FxPool.BUSY_META, true))):
 			left += 1
 	_expect(left == 0, "턴 시작에 수명이 지난 연출 노드를 모두 치운다 (남음 %d)" % left)
+	# 풀: 돌려놓은 노드를 다음 연출이 다시 쓴다 (새로 만들지 않는다)
+	var created_before: int = _board._fx_pool.created
+	_board._floating_badge(center, "재사용", Color.WHITE)
+	_board._burst_shards(center, Color.WHITE, 6)
+	_board._impact_ring(center, Color.WHITE, 30.0)
+	_expect(_board._fx_pool.created == created_before, "풀에 돌려놓은 글자·파편·링을 다시 쓴다 (새로 만든 수 %d)" % (_board._fx_pool.created - created_before))
+	var reused_badge: Label = null
+	for node: Node in get_nodes_in_group(MainBoard.ONESHOT_FX_GROUP):
+		if node is Label and (node as Label).text == "재사용":
+			reused_badge = node
+	_expect(reused_badge != null and reused_badge.visible and reused_badge.modulate.a > 0.9, "다시 쓴 글자 배지가 새 글로 보인다")
+	_board._burst_shards(center, Color.WHITE, 80)
+	var biggest: int = 0
+	for node: Node in get_nodes_in_group(MainBoard.ONESHOT_FX_GROUP):
+		if node is CPUParticles2D:
+			biggest = maxi(biggest, (node as CPUParticles2D).amount)
+	_expect(biggest <= MainBoard.MAX_BURST_PARTICLES, "파편은 한 번에 %d개 이하 (%d)" % [MainBoard.MAX_BURST_PARTICLES, biggest])
 	_board._floating_badge(center, "다시 하기", Color.WHITE)
 	_expect(_board.sweep_oneshot_fx(true) >= 1, "다시 하기(강제)는 수명과 상관없이 치운다")
 	_board.instant_roll_for_test = true

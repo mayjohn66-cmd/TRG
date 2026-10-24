@@ -5,7 +5,9 @@ extends Control
 signal finished
 
 const PUMPKIN: Texture2D = preload("res://assets/ui/trickcal/duel/pumpkin/pumpkin.png")
-const ANGRY: Texture2D = preload("res://assets/ui/trickcal/duel/pumpkin/petit-speaki-angry.webp")
+## 2560x2048 무손실 스프라이트 시트(약 27MB): 상수로 preload하면 결투장 스크립트가 읽히는 순간(보드 로딩)부터 끝까지 붙잡는다.
+## 이 미니게임이 열릴 때 읽고, 무대가 지워지면 함께 놓는다.
+const ANGRY_PATH: String = "res://assets/ui/trickcal/duel/pumpkin/petit-speaki-angry.webp"
 const FONT: Font = preload("res://assets/fonts/game_ui_font.tres")
 ## Native 30 FPS GIF has 73 frames with a 30/40/30 ms cadence (2.43 s).
 const ANGRY_DURATION := 2.43
@@ -26,8 +28,10 @@ var bomb := false
 var popped := false
 var result_text := ""
 var _pop_sound := false
+var _angry: Texture2D = null
 
 func _ready() -> void:
+	_angry = load(ANGRY_PATH)
 	clip_contents = true
 	mouse_filter = Control.MOUSE_FILTER_PASS
 	for index: int in 5:
@@ -172,7 +176,7 @@ func _draw() -> void:
 		var appear := progress * progress * (3.0 - 2.0 * progress)
 		var extent := Vector2(232, 232) * lerpf(0.58, 1.0, appear)
 		var at := center + Vector2(0, 4 + (1.0 - appear) * 24.0)
-		draw_texture_rect_region(ANGRY, Rect2(at - extent / 2.0, extent), Rect2(Vector2((frame % 10) * 256, floori(float(frame) / 10.0) * 256), Vector2(256, 256)), Color(1, 1, 1, appear))
+		draw_texture_rect_region(_angry, Rect2(at - extent / 2.0, extent), Rect2(Vector2((frame % 10) * 256, floori(float(frame) / 10.0) * 256), Vector2(256, 256)), Color(1, 1, 1, appear))
 		if t < 0.7:
 			_text("펑!", center + Vector2(132, -58), 35, Color("a55537"))
 	if not result_text.is_empty(): _text(result_text, Vector2(size.x / 2.0, 247), 25, Color("9b403f"))
