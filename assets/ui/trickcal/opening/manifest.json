@@ -1,0 +1,48 @@
+{
+  "id": "UI_RACE_START_RIBBON",
+  "date": "2026-10-18",
+  "path": "res://assets/ui/trickcal/opening/UI_RACE_START_RIBBON.png",
+  "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-384cb597-5f03-48b5-9225-cda449a3db54.png",
+  "generator": "native image_gen.imagegen",
+  "image_model": "not exposed",
+  "dimensions": [
+    2172,
+    724
+  ],
+  "mode": "RGBA",
+  "sha256": "07e51101554fafa15fcb032295a9d0e00b206c5939f6862534a05173c6b86a3d",
+  "pixels_modified": false,
+  "prompt": "Create ONE production-ready game UI illustration: a horizontal race-start ribbon banner for a cute Trickcal Revive-inspired fan board game. Wide 3:1 canvas, transparent background with real alpha. This is an isolated illustrated UI asset, NOT a screenshot or whole interface. A softly rounded, broad warm-ivory central plaque bordered by a thick leaf-green rim and thin buttery-gold trim; folded green ribbon tails behind both ends. Cute chunky shapes, thick continuous clean dark moss-green outlines, restrained glossy cel shading, no tiny details, friendly pastel toy-like finish. Palette: leaf green #86D94F, deeper green #5DA530, ivory #FFF5D7, butter gold #FFD66B, outline #36543C. Left end: ONE simple waving green-and-ivory checkered race flag on a short golden pole. Right end: TWO small classic rounded board-game pawns, one coral and one sky-blue. End ornaments occupy outer 18% on each side only. Essential requirement: the central 58% of banner width from x=21% to79%, and y=28% to72% of canvas, is a completely plain clean ivory text-safe field with NO illustration, lines or ornament. Banner full silhouette within x=5%..95% y=10%..90%, all ends complete with clear transparent margins. Very subtle contained shadow directly under ribbon, no gray haze or white matte on transparent edges. Crisp clean alpha edges. No letters, no words, no numbers, no logos, no watermark, no crown, no extra objects, no confetti, no radial rays. Match the supplied reference's warm rounded clean game-art finish, but use the stated green palette and ribbon design.",
+  "reference": "res://assets/ui/trickcal/rulebook/UI_RULE_BADGE.png",
+  "runtime": {
+    "max_width_logical_px": 960,
+    "max_viewport_width_fraction": 0.86,
+    "aspect_ratio": "3:1",
+    "text_x_fraction": 0.28,
+    "text_width_fraction": 0.49,
+    "title_font_px": 54,
+    "subtitle_font_px": 18,
+    "import_limit": 2048,
+    "mipmaps": true,
+    "compression": "lossless",
+    "uniform_entrance_scale": [
+      0.88,
+      1.0
+    ]
+  },
+  "qa": {
+    "native_generation_calls": 1,
+    "correction_calls": 0,
+    "alpha_range": [
+      0,
+      255
+    ],
+    "visible_alpha_bbox_at20": [
+      67,
+      111,
+      2105,
+      574
+    ],
+    "note": "Complete flag, two pawns, blank center and no baked text visually checked. Low-opacity shadow reaches some canvas edges; visible silhouette is fully inside. Original pixels preserved; no background-removal processing. Actual Godot captures visually checked, natural completion and click skip passed."
+  }
+}

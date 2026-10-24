@@ -1,0 +1,334 @@
+name: Deploy web build
+
+# 이 저장소에 푸시할 때마다 테스트를 돌리고, 통과하면 Godot 웹(HTML5) 빌드를 gh-pages 브랜치에 올려
+# https://<계정>.github.io/<저장소>/ 에서 항상 최신 버전을 바로 플레이할 수 있게 한다.
+on:
+  push:
+    branches:
+      - main
+      - "claude/**"
+  workflow_dispatch:
+    inputs:
+      validation:
+        description: Validation scope
+        type: choice
+        default: full
+        options:
+          - full
+          - ramen
+          - train
+          - flip
+          - redistribution
+          - devil
+          - minefield
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deploy-web
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "4.7.1"
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # UI iteration can explicitly select only the requested component check.
+      # Commit markers select focused checks. Manual runs offer the same scopes.
+      - name: Choose validation scope
+        id: validation
+        env:
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          REQUESTED_SCOPE: ${{ inputs.validation }}
+        run: |
+          if [[ "${REQUESTED_SCOPE}" == "minefield" || "${COMMIT_MESSAGE}" == *"[check:minefield]"* ]]; then
+            echo "scope=minefield" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "devil" || "${COMMIT_MESSAGE}" == *"[check:devil]"* ]]; then
+            echo "scope=devil" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "redistribution" || "${COMMIT_MESSAGE}" == *"[check:redistribution]"* ]]; then
+            echo "scope=redistribution" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "flip" || "${COMMIT_MESSAGE}" == *"[check:flip]"* ]]; then
+            echo "scope=flip" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "train" || "${COMMIT_MESSAGE}" == *"[check:train]"* ]]; then
+            echo "scope=train" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "ramen" || "${COMMIT_MESSAGE}" == *"[check:ramen]"* ]]; then
+            echo "scope=ramen" >> "${GITHUB_OUTPUT}"
+          else
+            echo "scope=full" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Install Godot and web export templates
+        run: |
+          set -euo pipefail
+          BASE="https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable"
+          curl -fsSL -o godot.zip "${BASE}/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip
+          sudo mv "Godot_v${GODOT_VERSION}-stable_linux.x86_64" /usr/local/bin/godot
+          curl -fsSL -o templates.tpz "${BASE}/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          mkdir -p "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          unzip -q templates.tpz -d tpl
+          mv tpl/templates/* "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable/"
+          rm -rf godot.zip templates.tpz tpl
+          godot --version
+
+      - name: Import project
+        run: |
+          godot --headless --path . --import || true
+          godot --headless --path . --import
+
+      - name: Run focused minefield presentation check
+        if: steps.validation.outputs.scope == 'minefield'
+        run: |
+          set -o pipefail
+          godot --headless --path . -s res://tests/ui_minefield_test.gd 2>&1 | tee /tmp/ui_minefield_test.log
+          grep -q 'UI_MINEFIELD_OK' /tmp/ui_minefield_test.log
+          if grep -q 'SCRIPT ERROR' /tmp/ui_minefield_test.log; then exit 1; fi
+
+      - name: Run focused devil contract presentation check
+        if: steps.validation.outputs.scope == 'devil'
+        run: |
+          set -o pipefail
+          godot --headless --path . -s res://tests/ui_devil_test.gd 2>&1 | tee /tmp/ui_devil_test.log
+          grep -q 'UI_DEVIL_OK' /tmp/ui_devil_test.log
+          if grep -q 'SCRIPT ERROR' /tmp/ui_devil_test.log; then exit 1; fi
+
+      - name: Run focused redistribution presentation check
+        if: steps.validation.outputs.scope == 'redistribution'
+        run: godot --headless --path . -s res://tests/ui_redistribution_test.gd
+
+      - name: Run focused board flip presentation check
+        if: steps.validation.outputs.scope == 'flip'
+        run: godot --headless --path . -s res://tests/ui_flip_test.gd
+
+      - name: Run focused ramen bowl check
+        if: steps.validation.outputs.scope == 'full' || steps.validation.outputs.scope == 'ramen'
+        run: godot --headless --path . -s res://tests/ui_ramen_bowl_test.gd
+
+      - name: Run unit tests
+        if: steps.validation.outputs.scope == 'full'
+        run: godot --headless --path . -s res://tests/run_tests.gd
+
+      - name: Validate curated sound assets and override priority
+        if: steps.validation.outputs.scope == 'full'
+        run: godot --headless --path . -s res://tests/sfx_assets_test.gd
+
+      - name: Run UI smoke test (full game without cheats)
+        if: steps.validation.outputs.scope == 'full'
+        run: godot --headless --path . -s res://tests/ui_smoke.gd
+
+      - name: Run UI smoke test in AI mode (1P vs 3AI bots)
+        if: steps.validation.outputs.scope == 'full'
+        run: SMOKE_AI=1 godot --headless --path . -s res://tests/ui_smoke.gd
+
+      - name: Run English / Japanese UI checks (no Hangul left on screen, language picker)
+        if: steps.validation.outputs.scope == 'full'
+        run: |
+          godot --headless --path . -s res://tests/ui_menu_test.gd
+          godot --headless --path . -s res://tests/ui_english_test.gd
+          UI_LANG=ja godot --headless --path . -s res://tests/ui_english_test.gd
+          SMOKE_LANG=en SMOKE_AI=1 godot --headless --path . -s res://tests/ui_smoke.gd
+          SMOKE_LANG=ja SMOKE_AI=1 godot --headless --path . -s res://tests/ui_smoke.gd
+
+      - name: Run text fit scan (cards / augments / rulebook in ko, en, ja)
+        if: steps.validation.outputs.scope == 'full'
+        run: godot --headless --path . -s res://tests/ui_text_fit_test.gd
+
+      - name: Run super augment board effect test (SUPER_01~10, 12)
+        if: steps.validation.outputs.scope == 'full'
+        run: |
+          godot --headless --path . -s res://tests/ui_super_fx_test.gd 2>&1 | tee /tmp/ui_super_fx_test.log
+          test "${PIPESTATUS[0]}" -eq 0
+          if grep -q "Lambda capture" /tmp/ui_super_fx_test.log; then echo "freed lambda captures remain"; exit 1; fi
+
+      - name: Run roll effect test (gauge, spin, reels, card flips)
+        if: steps.validation.outputs.scope == 'full'
+        run: |
+          # 연출 큐·타이머가 이미 지워진 노드를 잡은 람다를 부르면 [Lambda capture ... was freed] 오류가 찍힌다: 한 줄이라도 있으면 막는다
+          godot --headless --path . -s res://tests/ui_fx_test.gd 2>&1 | tee /tmp/ui_fx_test.log
+          test "${PIPESTATUS[0]}" -eq 0
+          if grep -q "Lambda capture" /tmp/ui_fx_test.log; then echo "freed lambda captures remain"; grep -c "Lambda capture" /tmp/ui_fx_test.log; exit 1; fi
+
+      - name: Run avatar capture presentation test
+        if: steps.validation.outputs.scope == 'full'
+        run: godot --headless --path . -s res://tests/ui_capture_test.gd
+
+      - name: Run counter-before-kill presentation sequence test (dodge, mirror, no counter)
+        if: steps.validation.outputs.scope == 'full'
+        run: |
+          # 연출 큐·타이머가 이미 지워진 노드를 잡은 람다를 부르면 [Lambda capture ... was freed] 오류가 찍힌다: 한 줄이라도 있으면 막는다
+          godot --headless --path . -s res://tests/ui_counter_sequence_test.gd 2>&1 | tee /tmp/ui_counter_sequence_test.log
+          test "${PIPESTATUS[0]}" -eq 0
+          if grep -q "Lambda capture" /tmp/ui_counter_sequence_test.log; then echo "freed lambda captures remain"; grep -c "Lambda capture" /tmp/ui_counter_sequence_test.log; exit 1; fi
+
+      - name: Run augment round to round start sequence test
+        if: steps.validation.outputs.scope == 'full'
+        run: |
+          # 연출 큐·타이머가 이미 지워진 노드를 잡은 람다를 부르면 [Lambda capture ... was freed] 오류가 찍힌다: 한 줄이라도 있으면 막는다
+          godot --headless --path . -s res://tests/ui_round_sequence_test.gd 2>&1 | tee /tmp/ui_round_sequence_test.log
+          test "${PIPESTATUS[0]}" -eq 0
+          if grep -q "Lambda capture" /tmp/ui_round_sequence_test.log; then echo "freed lambda captures remain"; grep -c "Lambda capture" /tmp/ui_round_sequence_test.log; exit 1; fi
+
+      - name: Run alkkagi aiming and contact presentation test
+        if: steps.validation.outputs.scope == 'full'
+        run: godot --headless --path . -s res://tests/ui_alkkagi_test.gd
+
+      - name: Run track laying and runaway train presentation test
+        if: steps.validation.outputs.scope == 'full' || steps.validation.outputs.scope == 'train'
+        run: godot --headless --path . -s res://tests/ui_train_test.gd
+
+      - name: Run duel game selection slot and introduction test
+        if: steps.validation.outputs.scope == 'full'
+        run: godot --headless --path . -s res://tests/ui_duel_slot_test.gd
+
+      - name: Run illustrated rock paper scissors reveal and rematch test
+        if: steps.validation.outputs.scope == 'full'
+        run: godot --headless --path . -s res://tests/ui_rps_test.gd
+
+      - name: Run Halli Galli card boundaries, bell reaction and foul test
+        if: steps.validation.outputs.scope == 'full'
+        run: godot --headless --path . -s res://tests/ui_halli_test.gd
+
+      - name: Run bottle cap curling gestures, physical collisions and deterministic replay test
+        if: steps.validation.outputs.scope == 'full'
+        run: godot --headless --path . -s res://tests/ui_curling_test.gd
+
+      - name: Run paired revolver preparation, quickdraw timing and flag effects test
+        if: steps.validation.outputs.scope == 'full'
+        run: godot --headless --path . -s res://tests/ui_quickdraw_test.gd
+
+      - name: Run E-card remaining hands, citizen discards and deciding reveal test
+        if: steps.validation.outputs.scope == 'full'
+        run: godot --headless --path . -s res://tests/ui_ecard_test.gd
+
+      - name: Run pumpkin switches, explosion and native Angry1_1 test
+        if: steps.validation.outputs.scope == 'full'
+        run: godot --headless --path . -s res://tests/ui_pumpkin_test.gd
+
+      - name: Run persistent record display test (buldak crowns, law stamps, save code, record copy)
+        if: steps.validation.outputs.scope == 'full'
+        run: godot --headless --path . -s res://tests/ui_meta_progress_test.gd
+
+      - name: Run in-game feedback test (modal, snapshot, local webhook, cleanup)
+        if: steps.validation.outputs.scope == 'full'
+        run: godot --headless --path . -s res://tests/ui_feedback_test.gd
+
+      - name: Run lobby UI test (WebRTC lobby screens, no network)
+        if: steps.validation.outputs.scope == 'full'
+        run: godot --headless --path . -s res://tests/ui_lobby_test.gd
+
+      - name: Run online lockstep test (2 players, no bots)
+        if: steps.validation.outputs.scope == 'full'
+        run: godot --headless --path . -s res://tests/ui_net_test.gd
+
+      - name: Run online lockstep test (2 humans + 2 bots)
+        if: steps.validation.outputs.scope == 'full'
+        run: SEATS=4 BOTS=3,4 godot --headless --path . -s res://tests/ui_net_test.gd
+
+      - name: Run web cache guard test (cache busting + old cache cleanup in web/shell.html)
+        if: steps.validation.outputs.scope == 'full'
+        run: node tests/web/cache_guard_test.mjs
+
+      - name: Export web build
+        env:
+          VALIDATION_SCOPE: ${{ steps.validation.outputs.scope }}
+        run: |
+          mkdir -p build/web
+          # 시맨틱 버전 뒤에 빌드 메타데이터(+커밋 7자리)를 붙여, 피드백 제보가 어느 빌드에서 왔는지 알 수 있게 한다 (예: 0.9.0+abc1234)
+          sed -i -E "s/^config\/version=\"([^\"+]*)[^\"]*\"/config\/version=\"\1+${GITHUB_SHA::7}\"/" project.godot
+          grep '^config/version=' project.godot
+          godot --headless --path . --export-release "Web" build/web/index.html
+          # 캐시 버스팅: index.html에 커밋(?v=)과 버전(옛 캐시 청소 기준)을 새긴다 (web/shell.html trg-cache-guard)
+          python3 tools/stamp_web_build.py build/web "${GITHUB_SHA::7}"
+          # 내보낸 묶음을 직접 읽어 웹에서만 깨지는 데이터(문구 표·밸런스 CSV)를 검사한다
+          if [[ "${VALIDATION_SCOPE}" == "full" ]]; then
+            (cd build/web && godot --headless --main-pack index.pck -s "$GITHUB_WORKSPACE/tests/export_smoke.gd")
+          fi
+          # 아바타 애니메이션은 본체에서 빼고 아바타별 묶음(avatars/<id>.pck)으로 따로 내보낸다: 게임이 필요한 것부터 뒤에서 받는다 (scenes/avatar_packs.gd)
+          python3 tools/export_avatar_packs.py godot build/web/avatars
+          # 본체에는 정지 그림만 있고, 묶음을 붙이면 애니메이션이 실제로 읽히는지 내보낸 파일로 검사한다
+          # 묶음 그림의 UID를 등록하지 못하면 [invalid UID ... using text path instead] 경고가 수백 줄 찍혀 웹 로딩이 끊기므로, 경고가 한 줄이라도 있으면 막는다.
+          if [[ "${VALIDATION_SCOPE}" == "full" ]]; then
+            (cd build/web && godot --headless --main-pack index.pck -s "$GITHUB_WORKSPACE/tests/avatar_pack_smoke.gd") 2>&1 | tee /tmp/avatar_pack_smoke.log
+            test "${PIPESTATUS[0]}" -eq 0
+            if grep -q "invalid UID" /tmp/avatar_pack_smoke.log; then echo "avatar pack: invalid UID warnings remain"; grep -c "invalid UID" /tmp/avatar_pack_smoke.log; exit 1; fi
+          fi
+          # Vercel Web Analytics: 내보낸 index.html의 </body> 바로 앞에 스크립트가 반드시 있게 고정한다 (쉘에 이미 있으면 그대로, 없으면 여기서 넣고, 그래도 없으면 배포를 멈춘다).
+          python3 - <<'PY'
+          from pathlib import Path
+          page = Path('build/web/index.html')
+          html = page.read_text(encoding='utf-8')
+          marker = '/_vercel/insights/script.js'
+          if marker not in html:
+              snippet = ('<script>\n  window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };\n</script>\n'
+                         '<script defer src="/_vercel/insights/script.js"></script>\n')
+              if '</body>' not in html:
+                  raise SystemExit('index.html에 </body>가 없어 Vercel Analytics를 넣을 수 없다')
+              html = html.replace('</body>', snippet + '</body>')
+              page.write_text(html, encoding='utf-8')
+              print('Vercel Analytics 스크립트를 후처리로 넣었다')
+          html = page.read_text(encoding='utf-8')
+          assert marker in html and html.rfind(marker) < html.rfind('</body>'), 'Vercel Analytics 스크립트가 </body> 앞에 없다'
+          assert 'window.va = window.va' in html, 'Vercel Analytics 초기화 줄이 없다'
+          print('Vercel Analytics 스크립트 확인')
+          PY
+          touch build/web/.nojekyll
+          # Vercel이 gh-pages 브랜치(또는 이 폴더)를 빌드 없이 그대로 호스팅하도록 설정 파일을 함께 싣는다.
+          cp vercel.json build/web/vercel.json
+          # 링크 미리보기(Open Graph)용 이미지와 홈 화면 아이콘: shell.html이 index.html 기준 상대/절대 주소로 참조한다.
+          cp web/og-image.png build/web/og-image.png
+          cp web/icon.png build/web/icon.png
+          cp web/title-logo.png build/web/title-logo.png
+          cp web/loading-petit-speaki.webp build/web/loading-petit-speaki.webp
+          # GitHub rejects individual files above 100 MiB. Fail before upload
+          # with an actionable message if future asset additions reach it.
+          python3 - <<'PY'
+          from pathlib import Path
+          for asset in Path('build/web').rglob('*'):
+              if asset.is_file() and asset.stat().st_size >= 100 * 1024 * 1024:
+                  raise SystemExit(f'{asset} exceeds GitHub 100 MiB: exclude unused source assets or split the pack')
+          # 용량 예산: 첫 로딩에 받는 본체는 40 MiB 안에서 관리한다 (2026-10: 아바타 애니메이션 분리 후 약 25 MiB).
+          # 아바타 애니메이션은 avatars/*.pck로 따로 받으므로 본체 예산에 들지 않는다 (에르핀 고화질 무손실 묶음 약 32 MiB).
+          # 넘으면 tools/optimize_texture_imports.py로 새 그림의 임포트 설정을 맞추거나, 늦게 받아도 되는 에셋을 묶음으로 뺀다.
+          pck = Path('build/web/index.pck')
+          print(f'index.pck = {pck.stat().st_size / 1048576:.2f} MiB')
+          for pack in sorted(Path('build/web/avatars').glob('*.pck')):
+              print(f'{pack} = {pack.stat().st_size / 1048576:.2f} MiB')
+          if pck.stat().st_size >= 40 * 1024 * 1024:
+              raise SystemExit(f'{pck} is over the 40 MiB first-load budget: move late assets into packs or run tools/optimize_texture_imports.py')
+          PY
+          ls -la build/web
+
+      - name: Publish to gh-pages
+        run: |
+          set -euo pipefail
+          cd build/web
+          git init -q
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -q -b gh-pages
+          git add -A
+          git commit -q -m "Deploy web build from ${GITHUB_SHA}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" gh-pages
+
+      # 선택: 저장소 시크릿 VERCEL_TOKEN / VERCEL_ORG_ID / VERCEL_PROJECT_ID가 있으면 같은 빌드를 Vercel에도 바로 배포한다.
+      # (없으면 건너뜀. 시크릿 없이도 Vercel 프로젝트의 Production Branch를 gh-pages로 두면 자동 배포된다 - README 참고)
+      - name: Deploy to Vercel (optional)
+        if: ${{ github.ref_name == 'main' || startsWith(github.ref_name, 'claude/') }}
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          if [ -z "${VERCEL_TOKEN}" ] || [ -z "${VERCEL_ORG_ID}" ] || [ -z "${VERCEL_PROJECT_ID}" ]; then
+            echo "Vercel 시크릿이 없어 건너뜁니다."
+            exit 0
+          fi
+          cd build/web
+          npx --yes vercel@latest deploy --prod --yes --token "${VERCEL_TOKEN}"
