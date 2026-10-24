@@ -40,7 +40,7 @@ func _check(effect: StringName) -> void:
 		await _drop_board()
 		return
 	_stage(effect)
-	var layer_before: int = _board._pawn_layer.get_child_count()
+	var layer_before: int = _live_children(_board._pawn_layer)
 	var aug_id: StringName = &""
 	for def: AugmentDef in AugmentRegistry.all():
 		if def.category == GameEnums.AugmentCategory.SUPER_GAMBLE and def.payload == effect:
@@ -91,9 +91,14 @@ func _check(effect: StringName) -> void:
 	var settle: int = Time.get_ticks_msec()
 	while Time.get_ticks_msec() - settle < 1800:
 		await process_frame
-	var leftover: int = _board._pawn_layer.get_child_count() - layer_before
+	var leftover: int = _live_children(_board._pawn_layer) - layer_before
 	_expect(leftover <= 3, "%s: 연출 조각이 남지 않는다 (+%d)" % [effect, leftover])
 	await _drop_board()
+
+
+## 말 층의 자식 수 (풀에서 다음 연출을 기다리며 숨어 있는 노드는 빼고 센다).
+func _live_children(layer: Node) -> int:
+	return layer.get_children().filter(func(node: Node) -> bool: return not (FxPool.is_pooled(node) and not bool(node.get_meta(FxPool.BUSY_META, false)))).size()
 
 
 ## 보드 위에 말을 흩어 놓는다 (연출에 등장할 말이 있게).

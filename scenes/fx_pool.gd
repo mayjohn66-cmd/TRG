@@ -43,10 +43,11 @@ func give_back(node: Node) -> void:
 	if not is_instance_valid(node) or node.is_queued_for_deletion() or not bool(node.get_meta(BUSY_META, false)):
 		return
 	node.set_meta(BUSY_META, false)
-	var tween: Variant = node.get_meta(TWEEN_META, null)
-	if tween is Tween and (tween as Tween).is_valid():
-		(tween as Tween).kill()
-	node.remove_meta(TWEEN_META)
+	if node.has_meta(TWEEN_META):
+		var tween: Variant = node.get_meta(TWEEN_META)
+		if tween is Tween and (tween as Tween).is_valid():
+			(tween as Tween).kill()
+		node.remove_meta(TWEEN_META)
 	if node is CPUParticles2D:
 		(node as CPUParticles2D).emitting = false
 	if node is CanvasItem:
