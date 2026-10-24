@@ -19,6 +19,7 @@ on:
           - train
           - flip
           - redistribution
+          - devil
 
 permissions:
   contents: write
@@ -39,14 +40,16 @@ jobs:
         uses: actions/checkout@v4
 
       # UI iteration can explicitly select only the requested component check.
-      # Commit markers select ramen, train, flip or redistribution checks. Manual runs offer the same scopes.
+      # Commit markers select focused checks. Manual runs offer the same scopes.
       - name: Choose validation scope
         id: validation
         env:
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
           REQUESTED_SCOPE: ${{ inputs.validation }}
         run: |
-          if [[ "${REQUESTED_SCOPE}" == "redistribution" || "${COMMIT_MESSAGE}" == *"[check:redistribution]"* ]]; then
+          if [[ "${REQUESTED_SCOPE}" == "devil" || "${COMMIT_MESSAGE}" == *"[check:devil]"* ]]; then
+            echo "scope=devil" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "redistribution" || "${COMMIT_MESSAGE}" == *"[check:redistribution]"* ]]; then
             echo "scope=redistribution" >> "${GITHUB_OUTPUT}"
           elif [[ "${REQUESTED_SCOPE}" == "flip" || "${COMMIT_MESSAGE}" == *"[check:flip]"* ]]; then
             echo "scope=flip" >> "${GITHUB_OUTPUT}"
@@ -76,6 +79,14 @@ jobs:
         run: |
           godot --headless --path . --import || true
           godot --headless --path . --import
+
+      - name: Run focused devil contract presentation check
+        if: steps.validation.outputs.scope == 'devil'
+        run: |
+          set -o pipefail
+          godot --headless --path . -s res://tests/ui_devil_test.gd 2>&1 | tee /tmp/ui_devil_test.log
+          grep -q 'UI_DEVIL_OK' /tmp/ui_devil_test.log
+          if grep -q 'SCRIPT ERROR' /tmp/ui_devil_test.log; then exit 1; fi
 
       - name: Run focused redistribution presentation check
         if: steps.validation.outputs.scope == 'redistribution'

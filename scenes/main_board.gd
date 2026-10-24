@@ -8717,12 +8717,23 @@ func _on_super_picked(player_id: int, augment_id: StringName) -> void:
 		for change: Dictionary in changes:
 			if change["kind"] == "start":
 				_take_late_steps_for(int(change["pawn"]))
+				if effect==SuperAugments.DEVIL:
+					var offering: PlayerPawn = state.get_pawn(int(change.pawn))
+					change["rest_position"] = _pawn_position(offering)
+					change["rest_visible"] = offering.has_left_start and not offering.is_finished and offering.carrier==null
 	var hidden_key: String = "%d:%s" % [player_id, effect]
 	_super_hidden[hidden_key] = true  # 지속 표시(불꽃 테두리·발밑 고리)는 연출이 나올 때 켠다
 	var serial: int = _pick_serial
 	var step: Callable = func() -> void:
-		_super_hidden.erase(hidden_key)
+		var generation: int = _fx_generation
+		# The contract pays out only after its offering reaches the player's profile.
+		if effect!=SuperAugments.DEVIL:
+			_super_hidden.erase(hidden_key)
 		await _super_fx.play(effect, player_id, changes)
+		if effect==SuperAugments.DEVIL:
+			if generation!=_fx_generation:
+				return
+			_super_hidden.erase(hidden_key)
 		_refresh_super_marks()
 	var at: int = _draft_deferred.size()
 	for index: int in _draft_deferred.size():

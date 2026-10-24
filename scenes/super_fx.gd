@@ -9,6 +9,7 @@ class_name SuperFX
 extends RefCounted
 
 const REDISTRIBUTION_STAGE = preload("res://scenes/redistribution_stage.gd")
+const DEVIL_STAGE = preload("res://scenes/devil_contract_stage.gd")
 const FATE_COIN = preload("res://scenes/fate_coin_3d.gd")
 const STAGE_SPOTLIGHT = preload("res://scenes/pawn_stage_spotlight.gd")
 
@@ -152,42 +153,23 @@ func _redistribute(_player_id: int, changes: Array) -> void:
 
 
 # ---------------------------------------------------------------------------
-# 3. 악마의 계약: 완주한 말이 검붉은 오라에 휩싸여 출발선으로 끌려 나옴 → 프로필·주사위 UI에 영구 불꽃 테두리
+# 3. 악마의 계약: 완주 말 봉헌 → 봉인에 흡수 → 계약의 힘이 프로필로 이동 → 영구 가속 점화
 # ---------------------------------------------------------------------------
 
 func _devil(player_id: int, changes: Array) -> void:
 	var sent: Dictionary = _first(changes, "start")
 	var pawn_id: int = int(sent.get("pawn", -1))
-	var view: Node2D = _view(pawn_id)
-	var goal: Vector2 = board._tile_center(GameEnums.GOAL_TILE) + Vector2(0.0, 38.0)
-	_aura(goal, 0.6)
-	Sfx.play(&"revenge_ignite")
-	if view != null:
-		board._kill_fx(view)
-		view.visible = true
-		view.position = goal
-		view.modulate = Color(1.6, 0.35, 0.55)
-		var drag: Tween = view.create_tween()
-		drag.tween_property(view, "position", goal + Vector2(0.0, -40.0), 0.25).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-		drag.tween_property(view, "position", board._tile_center(GameEnums.GOAL_TILE), 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-		drag.parallel().tween_property(view, "scale", Vector2.ONE * 0.35, 0.3)
-		drag.parallel().tween_property(view, "modulate:a", 0.0, 0.3)
-		drag.tween_callback(func() -> void:
-			view.visible = false
-			view.modulate = Color.WHITE
-			view.scale = Vector2.ONE)
-	await _wait(0.55)
-	if not _alive():
+	if _view(pawn_id)==null:
 		return
-	# 계약 성립: 내 프로필과 주사위 UI에 게임이 끝날 때까지 꺼지지 않는 보라/붉은 불꽃 테두리
-	board._refresh_super_marks()
-	var at: Vector2 = board._profile_center(player_id)
-	if at.is_finite():
-		_ring(_local(at), DEVIL_RED, 90.0, 6.0, 0.4)
-		board._burst_shards(_local(at), DEVIL_PURPLE, 18)
-		board._floating_badge(at + Vector2(0, -50), "영구 가속 +%d" % SuperAugments.devil_bonus(), Color("f783ac"), 30)
-	Sfx.play(&"skill_ult")
-	await _wait(0.4)
+	var stage := DEVIL_STAGE.new()
+	board.add_child(stage)
+	stage.play(board,player_id,pawn_id,board._motion_pace(),sent)
+	while _alive() and is_instance_valid(stage) and not stage._complete:
+		await board.get_tree().process_frame
+	if is_instance_valid(stage):
+		stage.queue_free()
+	if _alive():
+		board._fx_hints.erase(pawn_id)
 
 
 # ---------------------------------------------------------------------------
