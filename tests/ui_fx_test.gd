@@ -2810,6 +2810,12 @@ func _test_move_four_steps() -> void:
 	state.bonds.clear()
 	var saved_boost: bool = state.boost_gimmicks
 	state.boost_gimmicks = true
+	# 점프 부스트는 표에서 꺼 두었다 (RULE_LEAPFROG enabled=FALSE): 연출 순서를 보려고 이 검사 동안만 켠다
+	var rows: Array = (GameData.table("augments") as Dictionary).values().duplicate(true)
+	for row: Dictionary in rows:
+		if str(row["id"]) == "RULE_LEAPFROG":
+			row["enabled"] = "TRUE"
+	GameData.override_table("augments", rows)
 	for pawn: PlayerPawn in state.pawns:
 		pawn.reset_to_start()
 		pawn.is_finished = false
@@ -2856,6 +2862,7 @@ func _test_move_four_steps() -> void:
 		await process_frame
 	_expect(at_waypoint != -1 and enemy_flew != -1 and at_final != -1, "경유지 도착·처치 사출·추가 이동이 모두 보인다 (%d, %d, %d)" % [at_waypoint, enemy_flew, at_final])
 	_expect(at_waypoint < enemy_flew and enemy_flew < at_final, "눈금 이동 -> 처치 -> 점프 부스트 추가 이동 순서 (%d -> %d -> %d)" % [at_waypoint, enemy_flew, at_final])
+	GameData.reload()
 	# (1)->(2): 리벤지 부스터 말은 부스터 칸까지 로켓으로 간 뒤 잠깐 멈췄다가 눈금만큼 간다
 	_board._reset_presentation()
 	for pawn: PlayerPawn in state.pawns:

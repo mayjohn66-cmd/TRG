@@ -4315,12 +4315,12 @@ func _fill_pawn_tip(pawn_id: int) -> void:
 	if pawn.sub_type() == GameEnums.PawnSubType.BADUK_WHITE:
 		status += "  방어막 있음" if pawn.shield else "  (방어막 깨짐)"
 	_tip_title.text = "%s  - P%d%s" % [PawnCatalog.full_name(pawn.kind, pawn.unit_no), pawn.owner_id, status]
-	_tip_ability.text = "◆ 패시브: %s" % PawnCatalog.ability_text(pawn.kind, pawn.unit_no)
+	_tip_ability.text = "패시브: %s" % PawnCatalog.ability_text(pawn.kind, pawn.unit_no)
 	var skill: StringName = PawnCatalog.skill_of(pawn.sub_type())
 	_tip_skill.visible = skill != &""
 	if skill != &"":
 		var locked: String = "  (승급 후)" if PawnCatalog.PROMOTED_SKILLS.has(skill) and not pawn.promoted else ""
-		_tip_skill.text = "◆ [1회] %s%s%s\n   %s" % [PawnCatalog.skill_name(skill), "  (사용됨)" if pawn.skill_used else "", locked, PawnCatalog.skill_text(skill)]
+		_tip_skill.text = "[1회] %s%s%s\n   %s" % [PawnCatalog.skill_name(skill), "  (사용됨)" if pawn.skill_used else "", locked, PawnCatalog.skill_text(skill)]
 
 
 ## 프로필 [증강] 요약: 지금까지 고른 증강 / 말 4개의 기물과 패시브 / 장착한 판정 도구.
@@ -4347,7 +4347,7 @@ func _fill_profile_tip(player_id: int) -> void:
 	for pawn: PlayerPawn in state.pawns_of(player_id):
 		info.append(("%d번 말: %s  (완주)" if pawn.is_finished else "%d번 말: %s") % [pawn.slot, PawnCatalog.full_name(pawn.kind, pawn.unit_no)])
 		if pawn.kind != GameEnums.PawnKind.BASIC:
-			info.append("◆ 패시브: %s" % PawnCatalog.ability_text(pawn.kind, pawn.unit_no))
+			info.append("패시브: %s" % PawnCatalog.ability_text(pawn.kind, pawn.unit_no))
 	var tool: BaseJudgmentTool = state.tools.get(player_id)
 	if tool != null:
 		info.append("판정 도구: %s" % tool.display_name)
@@ -4367,7 +4367,7 @@ func _fill_law_tip(slot: int) -> void:
 		return
 	var law: LawResource = state.rulebook.active_laws_queue[slot]
 	_tip_title.text = "★ [특수 승리] %s" % law.law_name
-	_tip_ability.text = "◆ 조건: %s\n◆ 차례가 끝날 때마다 판정: 달성해 있으면 바로 다음 순위로 졸업하고, 이 교칙은 법전에서 사라집니다" % law.description
+	_tip_ability.text = "조건: %s\n차례가 끝날 때마다 판정: 달성해 있으면 바로 다음 순위로 졸업하고, 이 교칙은 법전에서 사라집니다" % law.description
 	_tip_skill.visible = law is VictoryLaw
 	if law is VictoryLaw:
 		_tip_skill.text = law_progress_text(state, law as VictoryLaw, _player_name)
@@ -4542,7 +4542,7 @@ func _fill_attachment_tip(tile: int) -> void:
 	for attachment: TileAttachment in state.board.get_tile(tile).attachments:
 		var lines: Array[String] = _attachment_tip_lines(attachment)
 		titles.append(lines[0])
-		bodies.append("◆ " + lines[1])
+		bodies.append(lines[1])
 		keeps.append(lines[2])
 	_tip_title.text = "\n".join(titles)
 	_tip_ability.text = "\n".join(bodies)
@@ -4577,12 +4577,12 @@ func _pawn_info_text(pawn_id: int) -> String:
 	var pawn: PlayerPawn = state.get_pawn(pawn_id) if state != null else null
 	if pawn == null:
 		return ""
-	var lines: Array[String] = [PawnCatalog.full_name(pawn.kind, pawn.unit_no), "◆ 패시브: %s" % PawnCatalog.ability_text(pawn.kind, pawn.unit_no)]
+	var lines: Array[String] = [PawnCatalog.full_name(pawn.kind, pawn.unit_no), "패시브: %s" % PawnCatalog.ability_text(pawn.kind, pawn.unit_no)]
 	if pawn.is_promoted_shogi():
 		lines.append("나리(成り) 승급 상태: %s - 이동할 때마다 +1칸" % pawn.display_label())
 	var skill: StringName = PawnCatalog.skill_of(pawn.sub_type())
 	if skill != &"":
-		lines.append("◆ [1회] %s: %s%s" % [PawnCatalog.skill_name(skill), PawnCatalog.skill_text(skill), " (사용됨)" if pawn.skill_used else ""])
+		lines.append("[1회] %s: %s%s" % [PawnCatalog.skill_name(skill), PawnCatalog.skill_text(skill), " (사용됨)" if pawn.skill_used else ""])
 	return "\n".join(lines)
 
 
@@ -7614,7 +7614,7 @@ static func augment_card_info(definition: AugmentDef, game_state: GameState, pla
 	var lines: PackedStringArray = []
 	for line: String in definition.describe(game_state, player_id).split("\n"):
 		if not line.begins_with("※") and not AugmentDef.is_common_note(line):
-			lines.append(line)
+			lines.append(line.trim_prefix("◆ "))  # ◆ 머리표는 쓰지 않는다 (번역 사전에 머리표를 뗀 짝이 있다)
 	# 판정 도구: 핵심 한 줄 + [최소 N칸 ~ 최대 M칸] 요약을 먼저 크게, 긴 족보표는 구분선 아래 작은 보조 정보로
 	var summary: String = ""
 	var detail: String = ""
@@ -7623,7 +7623,7 @@ static func augment_card_info(definition: AugmentDef, game_state: GameState, pla
 		var core_lines: PackedStringArray = []
 		for line: String in definition.desc.replace("{p1}", definition.param_1).replace("{p2}", definition.param_2).split("\n"):
 			if not AugmentDef.is_common_note(line) and line.strip_edges() != "":
-				core_lines.append(line)
+				core_lines.append(line.trim_prefix("◆ "))
 		var detail_lines: PackedStringArray = []
 		for line: String in lines:
 			if not core_lines.has(line):
@@ -7635,6 +7635,7 @@ static func augment_card_info(definition: AugmentDef, game_state: GameState, pla
 			summary = "최소 %d칸 ~ 최대 %d칸" % [span[0], span[1]]
 	if definition.title != "":
 		title = definition.title  # augments_table.csv의 title
+	title = AugmentDef.strip_title_tag(title)  # 제목 앞 [기물 진화]·[판정 도구]·[특수 승리] 같은 계열 머리표는 뗀다
 	var tag_text: String = definition.subtitle if definition.subtitle != "" else AugmentDef.category_name(definition.category)
 	return {"glyph": glyph, "color": color, "title": title, "desc": "\n".join(lines), "summary": summary, "detail": detail, "category": tag_text, "art": AugmentArt.load_first(AugmentArt.candidates(definition)), "super": definition.category == GameEnums.AugmentCategory.SUPER_GAMBLE, "tier": definition.tier}
 

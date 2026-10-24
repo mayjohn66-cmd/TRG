@@ -98,6 +98,7 @@ func needs_pawn_choice(state: GameState, player_id: int) -> bool:
 const COMMON_NOTE_PAWN: String = "※ 이미 가진 기물은 받을 수 없습니다"
 const COMMON_NOTE_LAW: String = "◆ 차례가 끝날 때 달성해 있으면 바로 다음 순위로 졸업 (달성되면 법전에서 삭제)"
 const COMMON_NOTE_TOOL: String = "◆ 내 판정 도구 즉시 교체"
+const COMMON_NOTE_EVOLVE: String = "◆ 기본 말 1개 →"
 ## 공통 안내 바에 쓰는 짧은 문구 (계열별).
 const NOTE_BAR: Dictionary = {
 	GameEnums.AugmentCategory.PAWN_EVOLUTION: "※ 이미 가진 기물은 받을 수 없어요",
@@ -107,9 +108,20 @@ const NOTE_BAR: Dictionary = {
 
 
 ## 카드 본문에 넣지 않는 공통 문구인가 (원문 한국어 한 줄).
+## 기물 진화의 "◆ 기본 말 1개 → [세트] 기물"도 모든 기물 진화 카드에 되풀이되는 문구라 뺀다 (제목이 이미 기물 이름이다).
 static func is_common_note(line: String) -> bool:
 	var trimmed: String = line.strip_edges()
-	return trimmed == COMMON_NOTE_PAWN or trimmed == COMMON_NOTE_LAW or trimmed == COMMON_NOTE_TOOL
+	return trimmed == COMMON_NOTE_PAWN or trimmed == COMMON_NOTE_LAW or trimmed == COMMON_NOTE_TOOL or trimmed.begins_with(COMMON_NOTE_EVOLVE)
+
+
+## 카드 제목 앞의 계열 머리표("[기물 진화] ", "[판정 도구] " 등)를 뗀다. 계열은 카드 색·테두리·엠블럼이 보여 준다.
+static func strip_title_tag(title: String) -> String:
+	var trimmed: String = title.strip_edges()
+	if trimmed.begins_with("["):
+		var close: int = trimmed.find("] ")
+		if close > 0:
+			return trimmed.substr(close + 2)
+	return trimmed
 
 
 ## 판정 도구가 한 번에 움직이는 칸 수 범위 [최소, 최대] (dice_table.csv의 min_step·max_step·jackpot_step). 모르면 빈 배열.

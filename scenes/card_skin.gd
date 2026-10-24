@@ -120,6 +120,21 @@ static func default_line_spacing() -> float:
 	return _default_spacing
 
 
+## 함정 카드의 발동 방식: 즉시 발동(밟는 순간, 지나가든 멈추든) / 조건 발동(조건이 붙음) / 착지 발동(멈췄을 때만).
+const TRAP_TRIGGERS: Dictionary = {
+	&"TRP_02": "조건 발동",  # 눈금 4 이상으로 지나가거나 멈출 때
+	&"TRP_03": "즉시 발동",
+	&"TRP_05": "즉시 발동",
+	&"TRP_06": "즉시 발동",
+	&"TRP_07": "조건 발동",  # 멈추지 않고 지나갈 때만
+	&"TRP_08": "즉시 발동",
+	&"TRP_C01": "착지 발동",
+	&"TRP_C02": "즉시 발동",
+	&"TRP_C03": "조건 발동",  # 카드 1장을 바치거나, 없으면 멈춤
+	&"TRP_C04": "즉시 발동",
+}
+
+
 static func label(parent: Control, node_name: String, text: String, rect: Rect2, px: int, color: Color = INK, centered: bool = false, wrap: bool = false) -> Label:
 	var item := Label.new()
 	item.name = node_name
@@ -222,6 +237,8 @@ static func body(card: BaseCard, card_size: Vector2, summary_text: String, categ
 	label(badge, "CategoryName", category_name, Rect2(Vector2.ZERO, badge_size), badge_px, badge_ink, true)
 	if detailed:
 		var tag: String = "타일 설치" if card.needs_tile() else "즉시 효과"
+		if TRAP_TRIGGERS.has(card.card_id):
+			tag = TRAP_TRIGGERS[card.card_id]  # 함정은 모두 타일에 깔리므로 언제 발동하는지로 나눠 보여 준다
 		if card.category == GameEnums.CardCategory.SUMMON:
 			tag = "NPC 소환"
 		elif card.category == GameEnums.CardCategory.COUNTER:

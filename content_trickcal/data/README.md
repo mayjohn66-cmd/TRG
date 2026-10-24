@@ -48,7 +48,7 @@
 | `EVO_7_2` 루도 복수자 | 리벤지 부스터 발동 시 추가 전진 칸 (기본 4) | |
 | `RULE_REVENGE_BOOST` 🔥 | 복수 부스터 칸 | |
 | `RULE_DASH_PAD` ⚡ | 발판 추가 전진 칸 | |
-| `RULE_LEAPFROG` 🏃 | 말 하나당 칸 | 한 번에 최대 칸 |
+| `RULE_LEAPFROG` 🏃 (기본 꺼짐) | 말 하나당 칸 | 한 번에 최대 칸 |
 
 `RULE_*` 행은 `enabled=FALSE`로 그 기믹 자체를 끌 수 있습니다. 특수 승리 교칙(`LAW`)과 초증강(`CHAOS`) 행은 7라운드(세 번째 드래프트)부터 나옵니다 (`min_round` 7). 첫 드래프트(1라운드)는 기물 진화(`PAWN`)만, 두 번째(4라운드)는 판정 도구(`DICE`)·카드(`CARD`)·기물 진화만 제시합니다 (`AugmentRegistry.DRAFT_FOCUS`, 그 계열에 받을 수 있는 증강이 모자라면 다른 계열로 채움).
 

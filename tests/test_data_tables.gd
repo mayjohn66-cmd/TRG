@@ -117,7 +117,8 @@ func test_defaults_from_the_table_keep_the_original_numbers() -> void:
 	check_eq(SuperAugments.gambler_overheat_at(), 1, "도박사 과열 눈금 1")
 	check_eq(GameData.revenge_bonus(), 4, "리벤지 +4")
 	check_eq(GameData.dash_steps(), 3, "발판 +3")
-	check_eq(GameData.leapfrog_max(), 3, "점프 최대 +3")
+	check_eq(GameData.leapfrog_max(), 0, "말 밟고 점프(점프 부스트)는 표에서 꺼져 있다 (RULE_LEAPFROG enabled=FALSE)")
+	check_eq(GameData.param("augments", "RULE_LEAPFROG", 2, 0), 3, "켜면 최대 +3 (수치는 그대로)")
 	check_eq((LawRegistry.create("LAW_01") as VictoryLaw).goal(), 6, "투기장 6처치")
 	check_eq((LawRegistry.create("LAW_04") as VictoryLaw).goal(), 18, "한방 18칸")
 
@@ -263,7 +264,7 @@ func test_rule_rows_change_revenge_dash_and_leapfrog() -> void:
 	var pawn3: PlayerPawn = place(state3, 11, dash_tile - 2, [dash_tile - 3])
 	MoveExecutor.forced_advance(state3, pawn3, 2)
 	check_eq(pawn3.current_tile_idx, dash_tile + 2, "발판 +2칸")
-	_edit_augment("RULE_LEAPFROG", {"param_1": "2", "param_2": "4"})
+	_edit_augment("RULE_LEAPFROG", {"enabled": "TRUE", "param_1": "2", "param_2": "4"})  # 기본은 꺼져 있다
 	check_eq(GameData.leapfrog_per_pawn(), 2, "말 하나당 +2")
 	check_eq(GameData.leapfrog_max(), 4, "최대 +4")
 

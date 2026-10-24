@@ -2022,3 +2022,7 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 %d번 말: %s  (완주),Pawn %d: %s  (Finished),%d番の駒: %s  (完走)
 판정 도구: %s,Judgment Tool: %s,判定ツール: %s
 %s ×%d,%s ×%d,%s ×%d
+즉시 발동,Instant Trigger,即時発動
+조건 발동,Conditional,条件発動
+착지 발동,On Landing,着地発動
+◆ 기본 말 1개 →,◆ 1 Basic Pawn →,◆ 基本駒1個 →

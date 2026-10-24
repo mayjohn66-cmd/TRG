@@ -1,8 +1,23 @@
 # File: res://tests/test_boost_gimmicks.gd
 # Class: class_name TestBoostGimmicks
-# Role: 후퇴 삭제 개편의 '폭풍 전진 3대 기믹'(🔥 리벤지 부스터 · ⚡ 부스터 발판 · 🏃 말 밟고 점프)과 장외 사출 규칙(음수 눈금 0칸, 짝수 니트로, 결승선 문턱)을 검사한다
+# Role: 후퇴 삭제 개편의 '폭풍 전진 기믹'(🔥 리벤지 부스터 · ⚡ 부스터 발판 · 🏃 말 밟고 점프(기본 꺼짐))과 장외 사출 규칙(음수 눈금 0칸, 짝수 니트로, 결승선 문턱)을 검사한다
 class_name TestBoostGimmicks
 extends TestCase
+
+
+## 말 밟고 점프(점프 부스트)는 직관적이지 않아 표에서 꺼 두었다 (RULE_LEAPFROG enabled=FALSE). 규칙 자체는 남아 있어 켜면 동작한다: 이 검사들은 켜고 본다.
+func _enable_leapfrog() -> void:
+	var rows: Array = (GameData.table("augments") as Dictionary).values().duplicate(true)
+	for row: Dictionary in rows:
+		if str(row["id"]) == "RULE_LEAPFROG":
+			row["enabled"] = "TRUE"
+	GameData.override_table("augments", rows)
+
+
+func cleanup() -> void:
+	GameData.reload()
+	AugmentRegistry.reload()
+	super()
 
 
 func _boost_state(players: int = 2) -> GameState:
@@ -58,6 +73,7 @@ func test_dash_pads_are_off_without_the_gimmick_switch() -> void:
 # --- 🏃 말 밟고 점프하기 -------------------------------------------------------------
 
 func test_each_pawn_in_the_middle_of_the_path_adds_one_tile() -> void:
+	_enable_leapfrog()
 	var state: GameState = _boost_state()
 	place(state, 11, 12, [11])
 	place(state, 21, 13, [12])  # 적
@@ -69,6 +85,7 @@ func test_each_pawn_in_the_middle_of_the_path_adds_one_tile() -> void:
 
 
 func test_leapfrog_is_capped_at_three_tiles() -> void:
+	_enable_leapfrog()
 	var state: GameState = _boost_state(4)
 	place(state, 11, 7, [6])
 	place(state, 21, 8, [7])
@@ -90,6 +107,7 @@ func test_the_destination_tile_does_not_count_as_stepped_over() -> void:
 
 
 func test_leapfrog_kills_at_the_dice_landing_first_then_jumps_on() -> void:
+	_enable_leapfrog()
 	# 이동 4단계: 눈금 이동(14~16) -> 도착 칸(16)의 적 처치 판정 -> 그 자리에서 점프 부스트 +1칸 (17)
 	# 16번은 옷장이지만 경유지라 워프하지 않는다 (도착 정산은 최종 도착 칸에서만)
 	var state: GameState = _boost_state()
@@ -108,6 +126,7 @@ func test_leapfrog_kills_at_the_dice_landing_first_then_jumps_on() -> void:
 
 
 func test_leapfrog_landing_can_capture_again() -> void:
+	_enable_leapfrog()
 	var state: GameState = _boost_state()
 	place(state, 11, 13, [12])
 	place(state, 12, 14, [13])
@@ -118,6 +137,7 @@ func test_leapfrog_landing_can_capture_again() -> void:
 
 
 func test_leapfrog_is_included_in_the_move_preview() -> void:
+	_enable_leapfrog()
 	var state: GameState = _boost_state()
 	place(state, 11, 12, [11])
 	place(state, 21, 13, [12])
