@@ -298,9 +298,11 @@ class RamenBowl:
 	var _shown_sauce: Color = FireLevelPicker.SAUCE[1]
 	var _previous_sauce: Color = FireLevelPicker.SAUCE[1]
 	var _particles: CPUParticles2D = null
+	var _noodles: Array[PackedVector2Array] = []
 
 	func _init() -> void:
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_build_noodles()
 		_particles = CPUParticles2D.new()
 		_particles.name = "SauceParticles"
 		_particles.local_coords = true
@@ -322,12 +324,34 @@ class RamenBowl:
 	func _process(delta: float) -> void:
 		_time += delta
 		_reaction = minf(1.0, _reaction + delta)
-		pour = smoothstep(0.0, 0.22, _reaction)
-		if level < 5:
-			pour *= 1.0 - smoothstep(0.48, 0.82, _reaction)
-		_shown_sauce = _previous_sauce.lerp(sauce, smoothstep(0.18, 0.66, _reaction))
+		var span: Vector2 = pour_span()
+		pour = span.y - span.x
+		_shown_sauce = _previous_sauce.lerp(sauce, smoothstep(0.22, 0.72, _reaction))
 		_particles.emitting = is_visible_in_tree() and (level == 5 or _reaction < 0.58)
 		queue_redraw()
+
+	## x는 줄기의 뒷끝, y는 앞끝. 둘 다 아래로만 이동한다.
+	## 공급을 끊으면 아래 끝을 끌어올리지 않고 위 끝부터 면 쪽으로 떨어뜨린다.
+	func pour_span() -> Vector2:
+		var front: float = clampf(_reaction / 0.22, 0.0, 1.0)
+		var tail: float = 0.0 if level == 5 else clampf((_reaction - 0.52) / 0.22, 0.0, 1.0)
+		return Vector2(tail, front)
+
+	func _build_noodles() -> void:
+		# 긴 면 한 가닥이 여러 번 되돌아 감긴다. 끝은 아래층에 묻고 위쪽 고리로 덮는다.
+		for strand: int in 15:
+			var line := PackedVector2Array()
+			var phase: float = strand * 1.87
+			var rotation_angle: float = strand * 0.79
+			for index: int in 145:
+				var t: float = float(index) / 144.0
+				var angle: float = t * TAU * (2.4 + (strand % 3) * 0.19) + phase
+				var u: float = lerpf(-0.64, 0.64, t) + sin(angle) * 0.23 + sin(angle * 2.3 + phase) * 0.024
+				var v: float = (strand - 7) * 0.032 + cos(angle) * 0.24 + sin(angle * 3.1) * 0.045
+				# 그릇 평면에서 서로 다른 방향으로 얽힌 후 타원 원근을 적용한다.
+				var point: Vector2 = Vector2(u, v).rotated(rotation_angle)
+				line.append(point * Vector2(109, 31) + Vector2(0, -4))
+			_noodles.append(line)
 
 	func shake_offset() -> Vector2:
 		if level != 5:
@@ -375,18 +399,7 @@ class RamenBowl:
 		_ellipse(center, Vector2(120, 20), Color("f9ecd2"))
 		_ellipse(center + Vector2(0, -2), Vector2(112, 16), _shown_sauce.darkened(0.35))
 		_ellipse(center + Vector2(0, -7), Vector2(99, 23), _shown_sauce.darkened(0.15))
-		# 고정된 굵은 면발 곡선으로 도톰하게 쌓아 매 프레임 깜빡이지 않는다.
-		for row: int in 7:
-			var line := PackedVector2Array()
-			var span: float = 80.0 + sin(float(row) / 6.0 * PI) * 20.0
-			for step: int in 49:
-				var t: float = float(step) / 48.0
-				var x: float = center.x - span + span * 2.0 * t
-				var y: float = center.y - 23.0 + row * 5.2
-				y += sin(t * TAU * 4.0 + row * 1.9) * 3.5 + (t - 0.5) * (t - 0.5) * 20.0
-				line.append(Vector2(x, y))
-			draw_polyline(line, _shown_sauce.darkened(0.28), 7.0, true)
-			draw_polyline(line, _shown_sauce.lightened(0.13 if row % 2 == 0 else 0.03), 4.2, true)
+		_draw_noodles(center + Vector2(0, -5))
 		for index: int in 9:
 			var at := center + Vector2(sin(index * 2.1) * 78.0, -9.0 + cos(index * 3.5) * 14.0)
 			draw_line(at, at + Vector2(2.5, -1.5), Color("fff0bd"), 1.8, true)
@@ -397,6 +410,21 @@ class RamenBowl:
 		if pour > 0.01:
 			_draw_pour(center)
 		draw_set_transform(Vector2.ZERO)
+
+	func _draw_noodles(center: Vector2) -> void:
+		for strand: int in _noodles.size():
+			var line := PackedVector2Array()
+			var sheen := PackedVector2Array()
+			for point: Vector2 in _noodles[strand]:
+				line.append(center + point)
+				sheen.append(center + point + Vector2(0, -0.7))
+			var noodle: Color = _shown_sauce.lightened(0.12 + (strand % 3) * 0.035)
+			draw_polyline(line, _shown_sauce.darkened(0.33), 7.4, true)
+			draw_polyline(line, noodle, 5.4, true)
+			draw_polyline(sheen, noodle.lightened(0.18), 1.5, true)
+			# 끝마저 둥글게 닫아 잘린 사각 조각처럼 보이지 않게 한다.
+			for endpoint: Vector2 in [line[0], line[-1]]:
+				draw_circle(endpoint, 2.7, noodle, true, -1.0, true)
 
 	func _draw_steam(center: Vector2) -> void:
 		for index: int in (2 if level <= 2 else 3):
@@ -411,19 +439,33 @@ class RamenBowl:
 
 	func _draw_pour(center: Vector2) -> void:
 		var x: float = center.x + 19.0
-		var bottom: float = lerpf(4.0, center.y - 9.0, pour)
+		var span: Vector2 = pour_span()
+		var source_y: float = 4.0
+		var hit_y: float = center.y - 9.0
+		var top: float = lerpf(source_y, hit_y, span.x)
+		var bottom: float = lerpf(source_y, hit_y, span.y)
 		var line := PackedVector2Array()
-		for index: int in 13:
-			var t: float = float(index) / 12.0
-			line.append(Vector2(x + sin(t * 6.0 + _time * 10.0) * 1.5, 4 + (bottom - 4) * t))
-		var width: float = 14.0 if level == 5 else 8.0
-		draw_polyline(line, sauce.darkened(0.2), width + 2.0, true)
-		draw_polyline(line, sauce, width - 2.0, true)
-		if pour > 0.92:
-			_ellipse(Vector2(x, center.y - 9), Vector2(width, 3), sauce.lightened(0.15))
+		for index: int in 19:
+			var y: float = lerpf(top, bottom, float(index) / 18.0)
+			# 아래로 이동하는 잔물결. 위로 흔들리는 긴 면발처럼 보이지 않게 폭을 억제한다.
+			line.append(Vector2(x + sin(y * 0.16 - _time * 27.0) * 0.6, y))
+		var width: float = 10.0 if level == 5 else 6.0
+		draw_polyline(line, sauce.darkened(0.15), width + 1.0, true)
+		draw_polyline(line, sauce, width - 1.0, true)
+		draw_circle(line[-1], width * 0.5, sauce, true, -1.0, true)
+		if span.x > 0.0:
+			draw_circle(line[0], width * 0.5, sauce, true, -1.0, true)
+		# 소스 안의 짧은 윤기도 아래로만 지나간다.
+		for index: int in 3:
+			var y: float = source_y + fmod(_time * 150.0 + index * 18.0, hit_y - source_y)
+			if y >= top and y + 4.0 <= bottom:
+				draw_line(Vector2(x - 1.0, y), Vector2(x - 1.0, y + 4.0), sauce.lightened(0.25), 1.7, true)
+		if span.y >= 1.0:
+			var spread: float = smoothstep(0.22, 0.5, _reaction)
+			_ellipse(Vector2(x, hit_y), Vector2(9.0 + spread * 9.0, 3), Color(sauce, 0.7))
 			for side: float in [-1.0, 1.0]:
-				var phase: float = fmod(_time * 2.0 + (0.5 if side < 0 else 0.0), 1.0)
-				draw_circle(Vector2(x + side * (8.0 + phase * 17.0), center.y - 9.0 - sin(phase * PI) * 13.0), 2.5 * (1.0 - phase), sauce)
+				var phase: float = fmod(_time * 3.0 + (0.5 if side < 0 else 0.0), 1.0)
+				draw_circle(Vector2(x + side * (8.0 + phase * 15.0), hit_y - sin(phase * PI) * 8.0), 1.7 * (1.0 - phase), sauce, true, -1.0, true)
 
 	func _ellipse(at: Vector2, radius: Vector2, color: Color) -> void:
 		var points := PackedVector2Array()

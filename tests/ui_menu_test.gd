@@ -178,6 +178,23 @@ func _run() -> void:
 			lit += 1
 	_expect(lit == 3, "Lv.3이면 게이지 3칸이 찬다 (%d)" % lit)
 	_expect((picker._face as FireLevelPicker.FireFace).level == 3, "사도 얼굴 표정이 단계를 따른다")
+	# 소스가 끝날 때도 앞끝을 위로 되감지 않고 뒷끝이 아래로 떨어져야 한다.
+	var stream_probe := FireLevelPicker.RamenBowl.new()
+	stream_probe.level = 3
+	var previous_span := Vector2.ZERO
+	var only_falls: bool = true
+	for sample: int in 101:
+		stream_probe._reaction = float(sample) / 100.0
+		var span: Vector2 = stream_probe.pour_span()
+		only_falls = only_falls and span.x >= previous_span.x and span.y >= previous_span.y and span.x <= span.y
+		previous_span = span
+	_expect(only_falls and previous_span == Vector2.ONE, "소스의 앞끝·뒷끝이 모두 아래로만 이동하고 면에 닿아 사라진다")
+	stream_probe._reaction = 0.63
+	var cutoff_span: Vector2 = stream_probe.pour_span()
+	_expect(cutoff_span.x > 0.0 and cutoff_span.y == 1.0, "소스 공급을 끊어도 아래 끝은 면에 남고 위 끝이 떨어진다")
+	stream_probe.level = 5
+	_expect(stream_probe.pour_span() == Vector2(0, 1), "핵불닭 소스는 공급을 유지한다")
+	stream_probe.free()
 	# 선택을 빠르게 되돌려도 마지막 단계로만 마무리되고, 화면을 숨기면 애니메이션을 멈춘다.
 	for choice: int in [5, 1, 4, 2]:
 		(menu.find_child("Difficulty_%d" % choice, true, false) as Button).pressed.emit()
