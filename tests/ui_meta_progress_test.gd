@@ -60,11 +60,13 @@ func _run() -> void:
 	_expect(stamps.size() == 1, "달성한 법전 1개에만 [달성 완료 ★] 도장 (%d)" % stamps.size())
 	var badge: Button = book.find_child("LawCollection", true, false)
 	_expect(badge != null and badge.text == "법전 수집 1/8", "도감 [법전 수집 1/8]")
-	var other: Dictionary = PlayerSave.blank()
-	other.merge({"player_tag": "ZX97", "nickname": "모바일교주", "cleared_laws": ["LAW_01", "LAW_08"]}, true)
-	var code: String = PlayerSave.CODE_PREFIX + Marshalls.utf8_to_base64(JSON.stringify(other))
-	_expect(not book.apply_save_code("TRG1.잘못된"), "잘못된 코드는 거절")
-	_expect(book.apply_save_code(code), "기록 코드를 불러온다")
+	_expect(book.find_child("CopyShareLink", true, false) != null and book.find_child("ShortCodeField", true, false) != null, "큼직한 [내 기록 전용 링크 복사] + 짧은 코드 입력 칸")
+	book._copy_share_link()
+	var link: String = PlayerSave.share_url()
+	_expect(link == PlayerSave.SHARE_BASE_URL + "?s=MP23-0808&n=%s" % "기록왕".uri_encode(), "이어하기 링크: ?s=짧은코드&n=닉네임 (%s)" % link)
+	_expect((book.find_child("SaveNotice", true, false) as Label).text.contains("MP23-0808"), "복사 안내에 짧은 코드가 보인다")
+	_expect(not book.apply_save_code("ABCD-ZZ"), "잘못된 코드는 거절")
+	_expect(book.apply_save_code("모바일교주#ZX97-8100"), "짧은 코드(닉네임#태그-비트)를 불러온다")
 	for i: int in 2:
 		await process_frame
 	_expect(GameSession.player_tag() == "ZX97" and GameSession.nickname == "모바일교주", "불러온 #태그·닉네임 (%s %s)" % [GameSession.player_tag(), GameSession.nickname])
@@ -84,6 +86,7 @@ func _run() -> void:
 	board.state.rankings.assign([me])
 	board.state.rank_reasons[me] = &"LAW_04"
 	board.state.round_number = 18
+	L10n.set_language("ko")  # 앞선 검사가 저장한 언어 설정(예: ja)과 상관없이 한국어로 본다
 	var text: String = board.brag_text(me)
 	_expect(text.contains("1위 졸업") and text.contains("18라운드") and text.contains("특수 승리") and text.contains("\n"), "기록 글: 순위·라운드·졸업 방식·두 줄 (%s)" % text)
 	_expect(text.contains("Lv."), "놀이터 난이도가 들어간다")

@@ -41,6 +41,8 @@ var _train_label: MarqueeLabel = null
 var _train_start: Button = null
 ## 놀이터 난이도 = 불닭 Fire Level 1~5 (게이지·라면 그릇).
 var _fire_picker: FireLevelPicker = null
+## 이어하기 링크 주소(?s=)는 접속 후 첫 메뉴에서 한 번만 읽는다.
+static var _url_checked: bool = false
 ## 웹 로딩 스플래시는 첫 메뉴에서 한 번만 걷는다 (게임에서 돌아와 메뉴를 다시 만들 때는 이미 걷혀 있다).
 static var _splash_released: bool = false
 var _mobile: MobileSupport = null
@@ -78,6 +80,12 @@ func _ready() -> void:
 	_build_train_page(stack)
 	_build_avatar_page(stack)
 	GameSession.load_settings()
+	# 웹: 이어하기 링크(?s=코드&n=닉네임)로 들어왔으면 그 기록을 이 브라우저에 합치고 바로 그 계정으로 시작한다 (한 번만)
+	if not _url_checked:
+		_url_checked = true
+		if PlayerSave.consume_url_applied():
+			GameSession.reload_from_save()
+		PlayerSave.save()  # 처음 접속(기록 없음)도 저장하고 주소창을 이 브라우저의 이어하기 링크로
 	Sfx.unlock()  # 저장된 음량을 적용하고 첫 버튼 클릭 전에 플레이어 풀을 준비한다.
 	Sfx.bgm_play.call_deferred(Sfx.LOBBY_TRACK)
 	var saved: String = GameSession.load_saved()

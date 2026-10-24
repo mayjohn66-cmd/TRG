@@ -10,6 +10,8 @@ extends RefCounted
 const STORAGE_KEY: String = "trg_player_save_v1"
 const VERSION: int = 1
 const CODE_PREFIX: String = "TRG1."
+## 웹이 아닐 때 이어하기 링크의 주소 (배포 주소).
+const SHARE_BASE_URL: String = "https://trickcal-board.vercel.app/"
 const LEGACY_PROFILE: String = "user://profile.cfg"
 const LEGACY_SETTINGS: String = "user://settings.cfg"
 
@@ -20,6 +22,8 @@ static var use_browser: bool = OS.has_feature("web")
 
 static var _data: Dictionary = {}
 static var _loaded: bool = false
+static var _url_checked: bool = false
+static var _url_applied: bool = false
 
 
 ## 비어 있는 기록.
@@ -66,6 +70,7 @@ static func save() -> void:
 		file.close()
 	if use_browser:
 		JavaScriptBridge.eval("try { window.localStorage.setItem(%s, %s); } catch (e) {}" % [JSON.stringify(STORAGE_KEY), JSON.stringify(text)], true)
+		sync_browser_url()  # 주소창도 지금 기록의 이어하기 링크로
 
 
 ## 다시 읽게 한다 (검사·기록 코드 불러오기 뒤).
@@ -128,7 +133,137 @@ static func record_buldak(level: int, round_number: int) -> bool:
 	return improved
 
 
-# --- 기록 코드 --------------------------------------------------------------------------------
+# --- 짧은 기록 코드 · 이어하기 링크 ------------------------------------------------------------
+# 짧은 코드: 태그 4자 + '-' + 법전 8종 비트(16진 2자) + 불닭 5단계 비트(16진 2자). 예: 4BGC-A51F (닉네임까지면 에르핀#4BGC-A51F).
+# 담는 것은 태그와 클리어 여부뿐이다 (최단 라운드·판 수는 이 브라우저의 기록에만 남는다).
+
+## 법전 8종 달성 비트 (LawRegistry.ALL_IDS 순서, LAW_01이 1비트).
+static func laws_mask() -> int:
+	var mask: int = 0
+	for index: int in LawRegistry.ALL_IDS.size():
+		if has_law(LawRegistry.ALL_IDS[index]):
+			mask |= 1 << index
+	return mask
+
+
+## 불닭 5단계 클리어 비트 (Lv.1이 1비트).
+static func buldak_mask() -> int:
+	var mask: int = 0
+	for level: int in BotTemper.ALL:
+		if buldak_cleared(level):
+			mask |= 1 << (level - 1)
+	return mask
+
+
+## 지금 기록의 짧은 코드 (예: 4BGC-A51F).
+static func short_code() -> String:
+	return "%s-%02X%02X" % [str(get_value("player_tag", "")), laws_mask(), buldak_mask()]
+
+
+## 짧은 코드를 읽는다: "4BGC-A51F" 또는 "닉네임#4BGC-A51F" (대소문자·앞뒤 공백 무시). 잘못되면 빈 사전.
+static func parse_short(text: String) -> Dictionary:
+	var raw: String = text.strip_edges()
+	var nickname: String = ""
+	var hash_at: int = raw.rfind("#")
+	if hash_at >= 0:
+		nickname = raw.substr(0, hash_at).strip_edges()
+		raw = raw.substr(hash_at + 1)
+	var regex := RegEx.create_from_string("^([A-Za-z0-9]{4})-([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})$")
+	var found: RegExMatch = regex.search(raw.strip_edges())
+	if found == null:
+		return {}
+	var tag: String = found.get_string(1).to_upper()
+	var laws: int = found.get_string(2).hex_to_int()
+	var buldak: int = found.get_string(3).hex_to_int()
+	if not GameSession.is_valid_tag(tag) or buldak > 31:
+		return {}
+	return {"player_tag": tag, "laws": laws, "buldak": buldak, "nickname": nickname}
+
+
+## 짧은 코드·닉네임으로 기록을 되살린다: 그 #태그를 쓰고(닉네임이 있으면 닉네임도) 법전·불닭 클리어는 지금 기록과 합친다(더 높은 기록 유지).
+static func import_short(text: String, nickname: String = "") -> bool:
+	var parsed: Dictionary = parse_short(text)
+	if parsed.is_empty():
+		return false
+	_ensure_loaded()
+	var incoming: Dictionary = blank()
+	incoming["player_tag"] = parsed["player_tag"]
+	var chosen: String = nickname if nickname != "" else str(parsed["nickname"])
+	if GameSession.validate_nickname(chosen) == "":
+		incoming["nickname"] = chosen.strip_edges()
+	var laws: Array = []
+	for index: int in LawRegistry.ALL_IDS.size():
+		if int(parsed["laws"]) & (1 << index):
+			laws.append(LawRegistry.ALL_IDS[index])
+	incoming["cleared_laws"] = laws
+	var buldak: Dictionary = {}
+	for level: int in BotTemper.ALL:
+		if int(parsed["buldak"]) & (1 << (level - 1)):
+			buldak[str(level)] = {"clears": 1, "best_round": 0}  # 최단 라운드는 코드에 없다
+	incoming["cleared_buldak"] = buldak
+	var merged: Dictionary = merge(_data, incoming)
+	merged["player_tag"] = incoming["player_tag"]
+	if str(incoming["nickname"]) != "":
+		merged["nickname"] = incoming["nickname"]
+	_data = merged
+	save()
+	return true
+
+
+## 짧은 코드든 예전 긴 코드(TRG1.…)든 받아서 불러온다.
+static func import_any(text: String) -> bool:
+	if text.strip_edges().begins_with(CODE_PREFIX):
+		return import_code(text)
+	return import_short(text)
+
+
+## 이어하기 링크의 쿼리: ?s=4BGC-A51F&n=닉네임 (닉네임이 없으면 s만).
+static func share_query() -> String:
+	var query: String = "?s=%s" % short_code()
+	var nickname: String = str(get_value("nickname", ""))
+	if nickname != "":
+		query += "&n=%s" % nickname.uri_encode()
+	return query
+
+
+## 내 기록 전용 이어하기 링크 (웹은 지금 페이지 주소, 그 밖은 배포 주소).
+static func share_url() -> String:
+	var base: String = SHARE_BASE_URL
+	if OS.has_feature("web"):
+		var here: Variant = JavaScriptBridge.eval("window.location.origin + window.location.pathname", true)
+		if here != null and str(here) != "":
+			base = str(here)
+	return base + share_query()
+
+
+## 웹: 주소창을 지금 기록의 이어하기 링크로 바꾼다 (새로고침 없이 history.replaceState). 이대로 즐겨찾기하면 기록이 남는다.
+static func sync_browser_url() -> void:
+	if not use_browser or not GameSession.is_valid_tag(str(get_value("player_tag", ""))):
+		return
+	JavaScriptBridge.eval("try { history.replaceState(history.state, '', window.location.pathname + %s + window.location.hash); } catch (e) {}" % JSON.stringify(share_query()), true)
+
+
+## 이어하기 링크로 들어와 기록을 합쳤는가 (시작 메뉴가 한 번 읽고 지운다).
+static func consume_url_applied() -> bool:
+	_ensure_loaded()
+	var applied: bool = _url_applied
+	_url_applied = false
+	return applied
+
+
+## 웹 부팅: 주소의 ?s=코드&n=닉네임이 있으면 이 브라우저 기록에 합친다 (링크를 눌러 들어오면 바로 내 기록으로). 합쳤으면 true.
+## 기록을 처음 읽을 때 한 번 부른다: 그 전에 무엇이든 저장하면 주소창이 이 브라우저의 기록으로 바뀌어 링크가 사라진다.
+static func _apply_url_params() -> bool:
+	if not use_browser:
+		return false
+	var raw: Variant = JavaScriptBridge.eval("(function () { try { var p = new URLSearchParams(window.location.search); return JSON.stringify({ s: p.get('s') || '', n: p.get('n') || '' }); } catch (e) { return '{}'; } })()", true)
+	var params: Variant = JSON.parse_string(str(raw)) if raw != null else null
+	if not params is Dictionary or str((params as Dictionary).get("s", "")) == "":
+		return false
+	return import_short(str(params["s"]), str(params.get("n", "")))
+
+
+# --- 긴 기록 코드 (예전 형식, 불러오기만) ---------------------------------------------------------
 
 ## 다른 기기로 옮기는 짧은 코드: TRG1.<JSON Base64>.
 static func export_code() -> String:
@@ -206,17 +341,25 @@ static func _ensure_loaded() -> void:
 	if _loaded:
 		return
 	_loaded = true
+	_load_stores()
+	if not _url_checked:
+		_url_checked = true
+		_url_applied = _apply_url_params()
+
+
+static func _load_stores() -> void:
 	var from_file: Dictionary = _read_json(_read_file())
 	var from_browser: Dictionary = _read_json(_read_browser())
 	if from_file.is_empty() and from_browser.is_empty():
 		_data = _from_legacy()
-		save()
+		if not use_browser:
+			save()  # 웹은 주소의 이어하기 링크를 먼저 읽은 뒤 저장한다 (_ensure_loaded)
 		return
 	# 더 최근에 저장한 쪽의 태그·닉네임·언어를 우선하고 진행은 합친다
 	var newer_first: bool = int(from_file.get("saved_at", 0)) >= int(from_browser.get("saved_at", 0))
 	_data = merge(from_file, from_browser) if newer_first else merge(from_browser, from_file)
-	if from_file.is_empty() or from_browser.is_empty():
-		save()  # 한쪽이 지워졌으면 다시 채운다
+	if (from_file.is_empty() or from_browser.is_empty()) and not use_browser:
+		save()  # 한쪽이 지워졌으면 다시 채운다 (웹은 시작 메뉴가 링크를 읽은 뒤 저장한다)
 
 
 static func _read_file() -> String:

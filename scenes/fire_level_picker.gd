@@ -183,7 +183,13 @@ func refresh_records() -> void:
 	var cleared_now: bool = int(record.get("clears", 0)) > 0
 	_record_icon.set_kind(&"crown" if cleared_now else &"lock")
 	# 원문 한국어를 넣으면 화면에서 번역된다 (언어를 바꿔도 따라 바뀐다)
-	_record_label.text = "클리어! 최고: %d라운드" % int(record.get("best_round", 0)) if cleared_now else "미정복"
+	var best: int = int(record.get("best_round", 0))
+	if not cleared_now:
+		_record_label.text = "미정복"
+	elif best > 0:
+		_record_label.text = "클리어! 최고: %d라운드" % best
+	else:
+		_record_label.text = "클리어!"  # 짧은 코드·링크로 옮긴 기록에는 최단 라운드가 없다"
 	_conquer_label.text = "· 정복 %d/5" % conquered
 
 

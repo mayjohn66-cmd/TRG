@@ -115,3 +115,37 @@ func test_legacy_profile_is_migrated_once() -> void:
 	else:
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(PlayerSave.LEGACY_PROFILE))
 	cleanup()
+
+
+func test_short_code_is_ten_characters_and_round_trips() -> void:
+	setup()
+	PlayerSave.set_value("player_tag", "4BGC")
+	PlayerSave.set_value("nickname", "에르핀")
+	for law: String in ["LAW_01", "LAW_03", "LAW_06", "LAW_08"]:
+		PlayerSave.mark_law(law)
+	for level: int in [1, 2, 3, 4, 5]:
+		PlayerSave.record_buldak(level, 20)
+	check_eq(PlayerSave.laws_mask(), 0xA5, "법전 비트: LAW_01·03·06·08 = A5")
+	check_eq(PlayerSave.buldak_mask(), 0x1F, "불닭 5단계 비트 = 1F")
+	check_eq(PlayerSave.short_code(), "4BGC-A51F", "짧은 코드 9자")
+	check_eq(PlayerSave.share_query(), "?s=4BGC-A51F&n=%s" % "에르핀".uri_encode(), "이어하기 링크 쿼리")
+	check_eq(PlayerSave.parse_short(" 에르핀#4bgc-a51f "), {"player_tag": "4BGC", "laws": 0xA5, "buldak": 0x1F, "nickname": "에르핀"}, "닉네임#코드, 소문자도 읽는다")
+	check(PlayerSave.parse_short("4BG0-A51F").is_empty(), "태그에 없는 글자(0)는 거절")
+	check(PlayerSave.parse_short("4BGC-A520").is_empty(), "불닭 비트가 5단계를 넘으면 거절")
+	check(PlayerSave.parse_short("4BGC-A5").is_empty(), "길이가 다르면 거절")
+	# 다른 기기: 기록이 적은 브라우저에서 짧은 코드를 넣는다 -> 더 높은 기록으로 합쳐진다
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(PATH))
+	PlayerSave.reset_cache()
+	PlayerSave.set_value("player_tag", "ZZZZ")
+	PlayerSave.mark_law("LAW_02")
+	PlayerSave.record_buldak(2, 15)
+	check(PlayerSave.import_short("4BGC-A51F", "에르핀"), "짧은 코드로 불러온다")
+	check_eq(str(PlayerSave.get_value("player_tag")), "4BGC", "코드의 태그를 쓴다")
+	check_eq(str(PlayerSave.get_value("nickname")), "에르핀", "링크의 닉네임을 쓴다")
+	check_eq(PlayerSave.law_count(), 5, "법전은 합친다 (4 + 이 브라우저의 1)")
+	check_eq(PlayerSave.buldak_mask(), 0x1F, "불닭 5단계 모두 클리어")
+	check_eq(int(PlayerSave.buldak_record(2)["best_round"]), 15, "이 브라우저의 최단 라운드는 남는다")
+	check_eq(int(PlayerSave.buldak_record(4)["best_round"]), 0, "코드로 온 단계는 최단 라운드 없음")
+	check(PlayerSave.import_any("4BGC-0000"), "import_any는 짧은 코드도 받는다")
+	check_eq(PlayerSave.law_count(), 5, "더 낮은 코드를 넣어도 기록이 줄지 않는다")
+	cleanup()

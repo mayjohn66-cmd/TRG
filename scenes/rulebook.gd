@@ -62,7 +62,7 @@ var _list_buttons: Array[Button] = []
 var _group_tabs: Array[Button] = []
 var _law_badge: Button = null
 var _save_notice: Label = null
-var _code_panel: PanelContainer = null
+var _code_field: LineEdit = null
 var _page_label: Label = null
 var _prev: Button = null
 var _next: Button = null
@@ -222,22 +222,30 @@ func _build_header() -> void:
 		_group_tabs.append(tab)
 
 
-## 위 오른쪽: [트로피 법전 수집 N/8] + [기록 코드 복사] [기록 코드 입력] (영구 기록 PlayerSave를 다른 기기로 옮긴다).
+## 위 오른쪽: [트로피 법전 수집 N/8] + 큼직한 [내 기록 전용 링크 복사] / 아래 줄에 짧은 코드(4BGC-A51F) 입력 칸 + [입력].
+## 링크를 눌러 접속하기만 하면 기록이 이어진다 (PlayerSave.apply_url_params). 코드 입력은 보조 수단.
 func _build_save_tools() -> void:
 	_law_badge = MetaIcon.pill("LawCollection", "", func() -> void: show_spread(LAW_SPREAD), 16)
-	_place(_law_badge, Vector2(846, 62), Vector2(196, 46))
-	var copy: Button = LobbyTheme.small_button("기록 코드 복사", _copy_save_code, &"teal", 15)
-	copy.name = "CopySaveCode"
-	copy.clip_text = true
-	_place(copy, Vector2(1050, 62), Vector2(142, 46))
-	var paste: Button = LobbyTheme.small_button("기록 코드 입력", _ask_save_code, &"teal", 15)
-	paste.name = "ImportSaveCode"
-	paste.clip_text = true
-	_place(paste, Vector2(1198, 62), Vector2(142, 46))
-	_save_notice = HubKit.outlined("", 16, Color.WHITE, Color("3a3250"), 5)
+	_place(_law_badge, Vector2(846, 18), Vector2(196, 44))
+	var link: Button = LobbyTheme.small_button("내 기록 전용 링크 복사", _copy_share_link, &"teal", 17)
+	link.name = "CopyShareLink"
+	link.clip_text = true
+	_place(link, Vector2(1050, 18), Vector2(290, 44))
+	_code_field = LineEdit.new()
+	_code_field.name = "ShortCodeField"
+	_code_field.placeholder_text = "4BGC-A51F"
+	_code_field.max_length = 40
+	_code_field.add_theme_font_size_override("font_size", 16)
+	_code_field.text_submitted.connect(func(text: String) -> void: apply_save_code(text))
+	_place(_code_field, Vector2(846, 66), Vector2(150, 40))
+	var apply: Button = LobbyTheme.small_button("입력", func() -> void: apply_save_code(_code_field.text), &"blue", 15)
+	apply.name = "ApplyShortCode"
+	_place(apply, Vector2(1000, 66), Vector2(64, 40))
+	_save_notice = HubKit.outlined("", 14, Color.WHITE, Color("3a3250"), 4)
 	_save_notice.name = "SaveNotice"
-	_save_notice.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_place(_save_notice, Vector2(846, 18), Vector2(494, 36))
+	_save_notice.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_save_notice.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_place(_save_notice, Vector2(1070, 62), Vector2(272, 48))
 	_refresh_law_badge()
 
 
@@ -246,70 +254,28 @@ func _refresh_law_badge() -> void:
 		_law_badge.text = "법전 수집 %d/8" % PlayerSave.law_count()
 
 
-## [기록 코드 복사]: 태그·닉네임·법전·불닭 기록을 짧은 코드(TRG1.…)로 클립보드에 넣는다.
-func _copy_save_code() -> void:
-	MetaIcon.copy_to_clipboard(PlayerSave.export_code())
-	_save_notice.text = "기록 코드를 복사했어요 (#%s)" % GameSession.player_tag()
+## [내 기록 전용 링크 복사]: ?s=짧은코드&n=닉네임 링크를 클립보드에 넣는다 (카톡 나에게 보내기·메모에 두었다가 누르면 이어진다).
+func _copy_share_link() -> void:
+	MetaIcon.copy_to_clipboard(PlayerSave.share_url())
+	_save_notice.text = "링크를 복사했어요! 누르기만 하면 이어져요 (%s)" % PlayerSave.short_code()
 
 
-## [기록 코드 입력]: 웹은 브라우저 입력 창(모바일에서도 붙여넣기가 된다), 그 밖은 화면 안 입력 칸.
-func _ask_save_code() -> void:
-	if OS.has_feature("web"):
-		var answer: Variant = JavaScriptBridge.eval("window.prompt(%s, '') || ''" % JSON.stringify(L10n.t("기록 코드를 붙여 넣어 주세요")), true)
-		apply_save_code(str(answer) if answer != null else "")
-		return
-	_open_code_input()
-
-
-## 붙여 넣은 기록 코드를 불러온다: 성공하면 #태그·닉네임·도장이 바로 바뀐다. 성공하면 true.
+## 짧은 코드(4BGC-A51F, 닉네임#4BGC-A51F)나 예전 긴 코드를 불러온다: 성공하면 #태그·닉네임·도장이 바로 바뀐다. 성공하면 true.
 func apply_save_code(code: String) -> bool:
 	if code.strip_edges().is_empty():
 		return false
-	if not PlayerSave.import_code(code):
-		_save_notice.text = "기록 코드를 확인해 주세요"
+	if not PlayerSave.import_any(code):
+		_save_notice.text = "코드를 확인해 주세요 (예: 4BGC-A51F)"
 		return false
 	GameSession.reload_from_save()
 	_save_notice.text = "기록을 불러왔어요 (#%s)" % GameSession.player_tag()
+	if _code_field != null:
+		_code_field.text = ""
 	_refresh_law_badge()
 	if _content.get("entries", []) is Array and not (_content.get("entries", []) as Array).is_empty():
 		_rebuild_tiles()
 	records_imported.emit()
 	return true
-
-
-func _open_code_input() -> void:
-	if _code_panel != null and is_instance_valid(_code_panel):
-		_code_panel.visible = true
-		return
-	_code_panel = PanelContainer.new()
-	_code_panel.name = "SaveCodeInput"
-	_code_panel.add_theme_stylebox_override("panel", _box(Color("fffbea"), FRAME, 6, 24, 18, 0, Color(0, 0, 0, 0.4)))
-	_code_panel.z_index = 20
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 12)
-	_code_panel.add_child(column)
-	var title := Label.new()
-	title.text = "기록 코드를 붙여 넣어 주세요"
-	title.add_theme_font_size_override("font_size", 20)
-	title.add_theme_color_override("font_color", INK)
-	column.add_child(title)
-	var field := LineEdit.new()
-	field.name = "CodeField"
-	field.custom_minimum_size = Vector2(520, 48)
-	field.placeholder_text = "TRG1."
-	column.add_child(field)
-	var row := HBoxContainer.new()
-	row.alignment = BoxContainer.ALIGNMENT_END
-	row.add_theme_constant_override("separation", 10)
-	column.add_child(row)
-	var ok: Button = LobbyTheme.small_button("불러오기", func() -> void:
-		if apply_save_code(field.text):
-			_code_panel.visible = false, &"teal", 16)
-	ok.name = "CodeApply"
-	row.add_child(ok)
-	var cancel: Button = LobbyTheme.small_button("닫기", func() -> void: _code_panel.visible = false, &"blue", 16)
-	row.add_child(cancel)
-	_place(_code_panel, Vector2(403, 300), Vector2(560, 170))
 
 
 ## 왼쪽 세로 항목 줄: 현재 탭의 장 4개. 고른 항목은 흰 알약에 점선 느낌의 초록 테두리.
