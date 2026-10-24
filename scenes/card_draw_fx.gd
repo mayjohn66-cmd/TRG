@@ -20,6 +20,10 @@ const OTHER_FLY_TIME: float = 0.30
 const STAGGER: float = 0.06
 const OTHER_END_SCALE: float = 0.4
 const LOCAL_TIME: float = POP_TIME+TAKE_TIME+FLIP_HALF*2.0+SHOW_TIME+FLY_TIME
+## 뒤에 기다리는 카드 한 장마다 지금 카드의 재생 속도에 더하는 배수 (여러 장을 한꺼번에 받을 때 연출이 길게 늘어지지 않게).
+const BATCH_SPEEDUP: float = 0.7
+## 묶음으로 받은 카드의 최소 재생 배속 (마지막 장 포함).
+const BATCH_MIN_RATE: float = 1.5
 
 var deck_position := Vector2(1040.0,510.0)
 var reveal_position := Vector2(683.0,320.0)
@@ -93,7 +97,11 @@ func draw_card(player_id: int, card_id: StringName, local: bool, target: Vector2
 	if local and not reserved:
 		reserve(player_id)
 	in_flight += 1
-	_queue.append({"player":player_id,"id":card_id,"local":local,"target":target,"arrive":on_arrive,"origin":origin,"provider":target_provider})
+	# 이미 날고 있거나 줄 선 카드가 있으면 한꺼번에 받는 묶음이다: 묶음의 카드는 마지막 장까지 조금 빨리 돈다
+	var batch: bool = not _current.is_empty() or not _queue.is_empty()
+	if batch and not _current.is_empty():
+		_current["batch"] = true
+	_queue.append({"player":player_id,"id":card_id,"local":local,"target":target,"arrive":on_arrive,"origin":origin,"provider":target_provider,"batch":batch})
 	_start_next()
 
 
@@ -139,7 +147,13 @@ func _process(delta: float) -> void:
 		_gap = maxf(_gap-delta,0.0)
 		_start_next()
 		return
-	_current.time = float(_current.time)+delta
+	# 뒤에 카드가 줄 서 있으면(초증강·패키지로 여러 장) 뽑기·옮기기·날아가기를 빨리 감는다: 한 장만 받으면 원래 속도, 줄이 길수록 최대 3.1배, 묶음은 최소 1.5배.
+	var rate: float = 1.0+BATCH_SPEEDUP*float(mini(_queue.size(),3))
+	if bool(_current.get("batch",false)):
+		rate = maxf(rate,BATCH_MIN_RATE)
+	if (_current.card as Control).get_meta("phase",&"") == &"show":
+		rate = 1.0  # 앞면을 크게 보여 주는 동안은 원래 속도 (읽을 틈)
+	_current.time = float(_current.time)+delta*rate
 	_apply_card(float(_current.time))
 	var duration: float = LOCAL_TIME if bool(_current.local) else POP_TIME+OTHER_FLY_TIME
 	if float(_current.time) >= duration:

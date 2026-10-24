@@ -46,6 +46,12 @@ func _check(effect: StringName) -> void:
 		if def.category == GameEnums.AugmentCategory.SUPER_GAMBLE and def.payload == effect:
 			aug_id = def.augment_id
 	_board._super_changes.clear()
+	# 내가 받는 카드는 한 장씩 앞면을 크게 보여 준 뒤 손패로 들어간다 (묶음이면 빨리 감기): 그만큼 연출 시간 예산을 늘린다
+	var local_cards: Array[int] = [0]
+	var count_card: Callable = func(player_id: int, _card_id: StringName) -> void:
+		if player_id == _board._dock_owner():
+			local_cards[0] += 1
+	_board.state.card_drawn.connect(count_card)
 	var result: Dictionary = SuperAugments.apply(effect, _board.state, 1)
 	_expect(bool(result.get("ok", false)), "%s 적용 (%s)" % [effect, result.get("text", "")])
 	_board._on_super_picked(1, aug_id)
@@ -57,11 +63,13 @@ func _check(effect: StringName) -> void:
 	_board._draft_open = false
 	var started: int = Time.get_ticks_msec()
 	_board._release_draft_deferred()
-	while _board._presentation_active() and Time.get_ticks_msec() - started < 8000:
+	while _board._presentation_active() and Time.get_ticks_msec() - started < 14000:
 		await process_frame
 	var elapsed: float = (Time.get_ticks_msec() - started) / 1000.0
 	_expect(not _board._presentation_active(), "%s: 연출 큐가 끝난다 (%.2f초)" % [effect, elapsed])
-	_expect(elapsed >= 0.6 and elapsed <= 6.0, "%s: 연출 시간 %.2f초" % [effect, elapsed])
+	_board.state.card_drawn.disconnect(count_card)
+	var budget: float = 6.0 + 1.0 * float(local_cards[0])
+	_expect(elapsed >= 0.6 and elapsed <= budget, "%s: 연출 시간 %.2f초 (예산 %.1f초, 내 카드 %d장)" % [effect, elapsed, budget, local_cards[0]])
 	match effect:
 		&"SUPER_03":
 			_expect(not _board._flame_colors(1).is_empty() and _board._profiles[1]["panel"].get_node_or_null("SuperFlame") != null, "악마의 계약: 프로필에 영구 불꽃 테두리")

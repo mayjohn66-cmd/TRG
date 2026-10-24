@@ -480,6 +480,10 @@ var _fx_generation: int = 0
 ## 단일 연출 큐(FIFO): 말 걸음·발판 팝업·처치 컷인·배너·워프·출발선 사출이 이 줄에서 한 번에 하나씩만 재생된다.
 ## 엔진은 한 번에 결과를 계산하고 시그널을 연달아 쏘지만, 화면은 앞 연출이 완전히 끝난 뒤에야 다음 연출을 시작한다.
 var _presentation_queue: Array[Callable] = []
+## 연출 큐의 단계마다 카드 획득 비행(_launch_drawn_card)인가 (큐와 같은 순서).
+var _presentation_draws: Array[bool] = []
+## 바로 앞 단계가 다음 카드 비행과 이어지는 카드 비행이었다 (다음 카드는 기다리지 않고 띄운다).
+var _chained_draw: bool = false
 ## Own preview controls while their announcement is waiting in the presentation queue.
 var _announcement_extras: Node = null
 var _is_playing_presentation: bool = false
@@ -6292,6 +6296,7 @@ func enqueue_step(step_callable: Callable, pawn_id: int = -1, allow_defer: bool 
 	if pawn_id != -1:
 		_pawn_pending[pawn_id] = int(_pawn_pending.get(pawn_id, 0)) + 1
 	var label: String = String(step_callable.get_method())
+	_presentation_draws.append(label == "_launch_drawn_card")
 	_presentation_queue.append(func() -> void:
 		presentation_label = label
 		# A modal may close while its opening is still queued behind an effect.
@@ -6330,6 +6335,7 @@ func _reset_presentation() -> void:
 	_aim_pawn = -1
 	_fx_generation += 1
 	_presentation_queue.clear()
+	_presentation_draws.clear()
 	if is_instance_valid(_announcement_extras):
 		for extra: Node in _announcement_extras.get_children():
 			extra.queue_free()
@@ -6453,11 +6459,18 @@ func _process_presentation_queue() -> void:
 	var generation: int = _fx_generation
 	while not _presentation_queue.is_empty():
 		var next_step: Callable = _presentation_queue.pop_front()
-		await _presentation_wait_ready(generation)
+		var is_draw: bool = bool(_presentation_draws.pop_front()) if not _presentation_draws.is_empty() else false
+		if not (is_draw and _chained_draw):
+			await _presentation_wait_ready(generation)
 		if generation != _fx_generation:
 			break
 		var started_msec: int = Time.get_ticks_msec()
 		await next_step.call()  # ★ 앞 연출이 100% 끝날 때까지 다음 연출은 절대 시작하지 않는다
+		# 카드 여러 장을 연달아 받으면(초증강·패키지) 다음 카드도 바로 띄운다: 순서는 카드 연출(CardDrawFX)의 줄이 지키고,
+		# 줄이 길면 빨리 감는다. 마지막 카드가 끝난 뒤에야 다음 연출로 넘어간다.
+		_chained_draw = is_draw and not _presentation_draws.is_empty() and bool(_presentation_draws[0])
+		if _chained_draw:
+			continue
 		await _presentation_settle(generation)
 		if generation != _fx_generation:
 			break
