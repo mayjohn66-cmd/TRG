@@ -1358,3 +1358,11 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
   - 면발 메시는 `tools/bake_ramen_noodles.gd`로 구운 `assets/models/ramen/noodles_baked.res`(0.55MB)를 읽는다 (0.24초 → 4ms). `noodle_mesh()`를 바꾸면 다시 구워야 하며 `tests/ui_ramen_bowl_test.gd`가 구운 것과 지금 만든 것이 같은지 확인한다.
   - 미리 데우기: 시작 메뉴가 뜨는 첫 프레임에 숨은 그릇을 한 번 그려 셰이더를 컴파일한다(`FireLevelPicker.prewarm`, `StartMenu._prewarm_and_reveal`). 그 프레임이 지나면 `window.trgBootReady()`로 웹 로딩 스플래시를 걷는다(엔진 시작 신호보다 먼저 와도 기억, 신호가 없으면 엔진 시작 6초 뒤). 멈춘 첫 프레임은 스플래시 [곧 시작해요!]가 가린다.
 - **결과 (같은 조건):** 놀이터를 연 첫 프레임 3.3~3.6초 → 0.17초. 메뉴 첫 프레임 1.0초 → 2.5초(스플래시 아래). 그림자를 켜 두면 메뉴 첫 프레임이 3.5초가 되어 끔.
+
+### 6.70 장기전 메모리 최적화: 연출 노드 풀링 · 큰 텍스처 지연 로드 · 글자 크기 사다리 · 숨은 UI 정지
+- **측정 (실제 렌더러, 봇 4명, `tests/ui_soak_test.gd`에 텍스처 메모리·글꼴 크기 캐시 수·`SOAK_TEX_DUMP` 진단 추가):** 노드 수는 라운드가 지나도 일정했다(1,330~1,400). 텍스처 메모리는 시작 288MB에서 30라운드 371MB로 계속 늘었고, 늘어난 대부분은 전역 텍스처 캐시(LRU)가 128MB 예산까지 차는 것이었다(카드 그림이 장당 4MB). 글꼴 크기 캐시는 66 → 95종.
+- **풀링 (`FxPool`):** 플로팅 글자(`_floating_badge`)·파편 파티클(`_burst_shards`)·충격 링(`_impact_ring`)은 연출이 끝나면 지우지 않고 숨겨 종류당 16개까지 대기시켰다가 다시 쓴다 (트윈을 멈추고 visible=false, 파티클은 `finished`에 연결). 카드 드로우 비행의 뒷면 껍데기도 4개까지 다시 쓴다(`CardDrawFX._take_shell`). 끊긴 연출 정리(`sweep_oneshot_fx`)는 풀 노드를 지우지 않고 돌려놓는다. 타일 발광은 원래 기존 칸의 색만 트윈해 새 노드가 없다.
+- **큰 텍스처:** 호박 미니게임 스프라이트 시트(2560×2048 무손실, 약 27MB)와 오프닝 리본을 상수 preload 대신 쓸 때 읽는다 (결투장 스크립트는 보드와 함께 읽혀 상수로 두면 판 내내 붙잡았다). 처치 컷인 일러스트는 캐시에 남기지 않는다(`TextureCache.fetch_transient`). 판 시작 때 이번 판에 앉지 않은 사도의 그림·자세 캐시를 내린다(`TextureCache.forget_under`, `AvatarCombatArt.retain`). 카드 그림 임포트 상한 1024 → 640px(장당 4.2MB → 1.6MB, 가장 크게 그려도 약 300px, `tools/optimize_texture_imports.py` 규칙). 텍스처 캐시 예산 128 → 64MB.
+- **파티클·글꼴:** 파티클은 모두 CPUParticles2D(GPUParticles 없음), 한 번에 파편 24개·초증강 불꽃 30개 이하. 글자 크기는 표준 사다리(`FontSizes.LADDER`: 6~14는 1px, 그 위는 16·18·20·22·24·26·28·32·36·40·44·48·56·64·72·96·120)로 맞춘다: 글자 맞추기(`CardSkin.fit_px`·`fit_title_px`·`label`, `MarqueeLabel.shrink_to_fit`)가 1px씩 줄이며 재면 그 크기마다 글리프를 구웠으므로 사다리 크기만 재고, 라벨 도우미(`MainBoard._make_label`, `LobbyTheme.label`)도 사다리로 맞춘다. font_size를 애니메이션하는 곳은 없다(크기 연출은 scale 트윈).
+- **숨은 UI:** 규칙 도감·드래프트·결과 시상대·설정은 닫으면 노드째 지운다. 숨은 페이지에서 흐르던 긴 글(`MarqueeLabel`)은 보이지 않으면 `_process`를 멈춘다. 라면 그릇·불꽃 아이콘은 이미 보일 때만 처리한다.
+- **검사:** `tests/ui_fx_test.gd`(풀 재사용·파편 상한), `tests/ui_text_fit_test.gd`(사다리 적용 뒤 3언어 글자 넘침 0), `tests/ui_soak_test.gd`.

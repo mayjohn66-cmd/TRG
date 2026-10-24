@@ -9,8 +9,9 @@ extends RefCounted
 
 const MAX_SOURCE_SIZE: int = 2048
 const RESIZE_TO: int = 1280
-## 캐시가 붙잡아 둘 그림의 추정 메모리 상한 (RGBA8 + 밉맵 기준).
-const BUDGET_BYTES: int = 128 * 1024 * 1024
+## 캐시가 붙잡아 둘 그림의 추정 메모리 상한 (RGBA8 + 밉맵 기준). 128MB였을 때 30라운드 장기전에서 캐시가 상한까지 차며
+## 텍스처 메모리가 계속 늘었다 (웹·모바일). 화면에 떠 있는 그림은 노드가 붙잡으므로 캐시에서 놓아도 사라지지 않는다.
+const BUDGET_BYTES: int = 64 * 1024 * 1024
 
 static var _texture_cache: Dictionary = {}
 static var _frames_cache: Dictionary = {}

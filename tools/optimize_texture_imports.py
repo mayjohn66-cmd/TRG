@@ -5,6 +5,7 @@
 - 화면에 작게(150px 이하) 그려지는 아이콘(기물·도구·증강·교칙 그림)은 최대 256px로 임포트한다.
 - 에르핀 고화질 대기 프레임(avatar_01/idle_hq)은 건드리지 않는다: 1024px 무손실 + 밉맵 그대로 (화질 100% 유지 결정, 2026-10-21).
 - 다른 사도의 로비 대기 프레임(avatar_*/idle, 512px)은 거의 원래 크기로만 그려지므로 밉맵을 끈다 (밉맵은 용량을 약 1/3 늘린다).
+- 카드 그림(assets/cards)은 최대 640px로 임포트한다: 화면에서는 가장 크게 그려도 약 300px(카드 공개·도감)이라 1024px는 장당 4MB를 메모리에 올렸다 (2026-10-24, 장당 약 1.6MB).
 - 제한이 없는 큰 그림은 최대 1280px(배경·컷인 크기)로 묶는다. 처치 컷인 포즈(attack/hit)는 1024px 이상을 유지한다.
 - 이미 손실 압축이고 품질이 0.85 이하인 텍스처, VRAM 압축 텍스처(3D)는 건드리지 않는다.
 
@@ -28,6 +29,12 @@ ICON_DIRS = [
     "content_trickcal/illustrations/laws",
 ]
 IDLE_HQ_DIR = "content_trickcal/avatars/avatar_01/idle_hq"
+CARD_DIR = "assets/cards"
+## 픽셀 좌표로 칸을 잘라 쓰는 스프라이트 시트: 크기·압축을 바꾸면 프레임이 어긋난다.
+KEEP_AS_IS = {
+    "assets/ui/trickcal/duel/pumpkin/petit-speaki-angry.webp",
+}
+CARD_LIMIT = 640
 BIG_LIMIT = 1280
 SMALL_KEEP = 128
 
@@ -66,7 +73,7 @@ def main() -> int:
             continue
         biggest = max(width, height)
         folder = os.path.dirname(source)
-        if folder == IDLE_HQ_DIR:
+        if folder == IDLE_HQ_DIR or source in KEEP_AS_IS:
             continue  # 에르핀 고화질 프레임은 무손실·원래 해상도 그대로
         new_mode, new_quality, new_limit = mode, quality, limit
         if mode not in (0, 1):
@@ -77,6 +84,8 @@ def main() -> int:
             new_mode, new_quality = 1, QUALITY
         if any(folder == d or folder.startswith(d + "/") for d in ICON_DIRS):
             new_limit = ICON_LIMIT if limit == 0 else min(limit, ICON_LIMIT)
+        elif folder == CARD_DIR:
+            new_limit = CARD_LIMIT if limit == 0 else min(limit, CARD_LIMIT)
         elif biggest > BIG_LIMIT and (limit == 0 or limit > BIG_LIMIT):
             new_limit = BIG_LIMIT
         mipmaps = re.search(r"^mipmaps/generate=(\w+)", text, re.M)
