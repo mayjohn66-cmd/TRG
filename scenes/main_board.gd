@@ -3752,6 +3752,7 @@ func _dock_slot(index: int, count: int) -> Vector2:
 ## 드래프트 중에 얻은 카드는 [선택한 증강] 공개 뒤에 날아간다 (손패에서는 바로 숨겨 둔다).
 func _fly_drawn_card(player_id: int, card_id: StringName) -> void:
 	var origin: Vector2 = Vector2(INF, INF)
+	var source_player: int = _steal_from
 	if _steal_from != -1:
 		if _steal_from != player_id:
 			origin = _profile_center(_steal_from)
@@ -3765,7 +3766,8 @@ func _fly_drawn_card(player_id: int, card_id: StringName) -> void:
 		_draw_fx.reserve(player_id)
 	var launch: Callable = _launch_drawn_card.bind(player_id, card_id, local, index, origin)
 	if _draft_in_progress():
-		_draft_deferred.append({"step": launch, "pawn": -1, "pick": _pick_serial})
+		_draft_deferred.append({"step": launch, "pawn": -1, "pick": _pick_serial,
+			"draw_job":{"player":player_id,"id":card_id,"local":local,"index":index,"source":source_player}})
 		return
 	if _presentation_active() or _fx_busy or (_announcer != null and _announcer.holding()):
 		# Engine broadcasts rewards and captures in one call. Let late captures
@@ -3780,7 +3782,7 @@ func _queue_drawn_after_effects(launch: Callable, generation: int) -> void:
 		_enqueue_after_kills(launch)
 
 
-func _launch_drawn_card(player_id: int, card_id: StringName, local: bool, index: int, origin: Vector2) -> void:
+func _launch_drawn_card(player_id: int, card_id: StringName, local: bool, index: int, origin: Vector2, grouped: bool = false) -> void:
 	var target: Vector2 = Vector2(INF, INF)
 	if local:
 		target = _drawn_card_destination(player_id,index).position
@@ -3792,7 +3794,7 @@ func _launch_drawn_card(player_id: int, card_id: StringName, local: bool, index:
 			_refresh_hands()
 		Sfx.play(&"card_get")
 		return
-	_draw_fx.draw_card(player_id, card_id, local, target, Callable() if local else _profile_nudge.bind(player_id), local, origin, _drawn_card_destination.bind(player_id,index) if local else Callable())
+	_draw_fx.draw_card(player_id, card_id, local, target, Callable() if local else _profile_nudge.bind(player_id), local, origin, _drawn_card_destination.bind(player_id,index) if local else Callable(), grouped)
 	_refresh_controls()
 
 
@@ -8719,6 +8721,25 @@ func _on_super_picked(player_id: int, augment_id: StringName) -> void:
 	var changes: Array[Dictionary] = []
 	for change: Dictionary in _super_changes:
 		changes.append(change.duplicate(true))
+	if effect==SuperAugments.RAID:
+		# Synchronize the real reserved deliveries with each successful snatch.
+		# Returned cards (full recipient hand) are restorations, not new rewards.
+		var rewards: Array[Dictionary] = []
+		var retained: Array[Dictionary] = []
+		for entry: Dictionary in _draft_deferred:
+			if int(entry.get("pick",-1))!=_pick_serial or not entry.has("draw_job"):
+				retained.append(entry)
+				continue
+			var job: Dictionary = entry.draw_job
+			if int(job.player)==player_id:
+				rewards.append(job.duplicate(true))
+			elif int(job.source)==int(job.player):
+				if bool(job.local) and _draw_fx!=null:
+					_draw_fx.release(int(job.player))
+			else:
+				retained.append(entry)
+		_draft_deferred = retained
+		changes.append({"kind":"raid_rewards","jobs":rewards})
 	if effect==SuperAugments.MINEFIELD:
 		# This stage owns the same pick's mine reveals; don't replay generic trap FX.
 		var mine_tiles: Array[int] = []
