@@ -24,6 +24,8 @@ signal npc_stepped(npc_id: int, from_tile: int, to_tile: int)
 signal attachment_placed(tile: int, attachment_id: String, owner_id: int)
 signal attachment_triggered(tile: int, attachment_id: String, pawn_id: int, cutscene_id: StringName)
 signal card_drawn(player_id: int, card_id: StringName)
+## Read-only presentation snapshot, before redistribution changes pieces/hands.
+signal redistribution_started(hand_counts: Dictionary, reference_player: int)
 signal card_stolen(player_id: int, card_id: StringName)
 ## ACT_01이 턴 순서 반전을 요청했다. 턴 순서는 TurnManager가 소유하므로 TurnManager가 구독해 처리한다.
 signal turn_order_reverse_requested()

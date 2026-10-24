@@ -196,6 +196,10 @@ static func _apply_redistribute(state: GameState, player_id: int) -> Dictionary:
 			laggard = candidate
 			worst = key
 	var template: Array[Dictionary] = []
+	var hand_counts: Dictionary = {}
+	for owner: int in active:
+		hand_counts[owner] = (state.hands[owner] as Array).size()
+	state.redistribution_started.emit(hand_counts,laggard)
 	for pawn: PlayerPawn in _by_progress(state, state.pawns_of(laggard)):
 		template.append({"tile": pawn.current_tile_idx, "history": pawn.step_history.duplicate(), "started": pawn.has_left_start, "finished": pawn.is_finished})
 	for owner: int in active:
