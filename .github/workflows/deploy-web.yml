@@ -21,6 +21,7 @@ on:
           - redistribution
           - devil
           - minefield
+          - raid
 
 permissions:
   contents: write
@@ -48,7 +49,9 @@ jobs:
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
           REQUESTED_SCOPE: ${{ inputs.validation }}
         run: |
-          if [[ "${REQUESTED_SCOPE}" == "minefield" || "${COMMIT_MESSAGE}" == *"[check:minefield]"* ]]; then
+          if [[ "${REQUESTED_SCOPE}" == "raid" || "${COMMIT_MESSAGE}" == *"[check:raid]"* ]]; then
+            echo "scope=raid" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "minefield" || "${COMMIT_MESSAGE}" == *"[check:minefield]"* ]]; then
             echo "scope=minefield" >> "${GITHUB_OUTPUT}"
           elif [[ "${REQUESTED_SCOPE}" == "devil" || "${COMMIT_MESSAGE}" == *"[check:devil]"* ]]; then
             echo "scope=devil" >> "${GITHUB_OUTPUT}"
@@ -82,6 +85,14 @@ jobs:
         run: |
           godot --headless --path . --import || true
           godot --headless --path . --import
+
+      - name: Run focused raid presentation check
+        if: steps.validation.outputs.scope == 'raid'
+        run: |
+          set -o pipefail
+          godot --headless --path . -s res://tests/ui_raid_test.gd 2>&1 | tee /tmp/ui_raid_test.log
+          grep -q 'UI_RAID_OK' /tmp/ui_raid_test.log
+          if grep -q 'SCRIPT ERROR' /tmp/ui_raid_test.log; then exit 1; fi
 
       - name: Run focused minefield presentation check
         if: steps.validation.outputs.scope == 'minefield'

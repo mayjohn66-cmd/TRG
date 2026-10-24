@@ -11,6 +11,7 @@ extends RefCounted
 const REDISTRIBUTION_STAGE = preload("res://scenes/redistribution_stage.gd")
 const DEVIL_STAGE = preload("res://scenes/devil_contract_stage.gd")
 const MINEFIELD_STAGE = preload("res://scenes/minefield_stage.gd")
+const RAID_STAGE = preload("res://scenes/raid_stage.gd")
 const FATE_COIN = preload("res://scenes/fate_coin_3d.gd")
 const STAGE_SPOTLIGHT = preload("res://scenes/pawn_stage_spotlight.gd")
 
@@ -194,22 +195,20 @@ func _minefield(_player_id: int, changes: Array) -> void:
 
 
 # ---------------------------------------------------------------------------
-# 5. 도적단 대습격: 상대 프로필마다 할퀴기 → 뜯겨 나온 카드가 내 손패로 (빼앗긴 카드 비행은 덱 연출이 각 프로필에서 출발한다)
+# 5. 도적단 대습격: 지원 카드 → 성공한 상대에게 도적 등장 → 실제 카드 강탈·손패 배달
 # ---------------------------------------------------------------------------
 
-func _raid(player_id: int, _changes: Array) -> void:
-	var victims: Array[int] = []
-	for other: int in board.state.active_players(board.state.player_ids):
-		if other != player_id:
-			victims.append(other)
-	Sfx.play(&"attack_alert")
-	for index: int in victims.size():
-		var at: Vector2 = board._profile_center(victims[index])
-		if not at.is_finite():
-			continue
-		_claw(at, index * 0.08)
-		board.get_tree().create_timer(index * 0.08 + 0.12).timeout.connect(board._profile_nudge.bind(victims[index]))
-	await _wait(0.45 + victims.size() * 0.08)
+func _raid(player_id: int, changes: Array) -> void:
+	var receipt := _first(changes,"raid_rewards")
+	var jobs: Array[Dictionary] = []
+	jobs.assign(receipt.get("jobs",[]))
+	var stage := RAID_STAGE.new()
+	board.add_child(stage)
+	stage.play(board,player_id,jobs,board._motion_pace())
+	while _alive() and is_instance_valid(stage) and not stage._complete:
+		await board.get_tree().process_frame
+	if is_instance_valid(stage):
+		stage.queue_free()
 
 
 # ---------------------------------------------------------------------------
@@ -1021,36 +1020,6 @@ func _bullet_hole(at: Vector2) -> void:
 		hole.add_child(crack)
 	_layer().add_child(hole)
 	_fade_out(hole, 0.9, 0.4)
-
-
-## 할퀴기: 비스듬한 붉은 발톱 자국 세 줄이 확 그어지고 파편이 튄다 (화면 좌표).
-func _claw(at_screen: Vector2, delay: float) -> void:
-	var at: Vector2 = _local(at_screen)
-	var timer: SceneTreeTimer = board.get_tree().create_timer(delay)
-	timer.timeout.connect(func() -> void:
-		if board == null or not is_instance_valid(board):
-			return
-		Sfx.play(&"slam")
-		board._burst_shards(at, RED, 12)
-		for i: int in 3:
-			var scratch := Line2D.new()
-			var offset: Vector2 = Vector2(-16.0 + i * 16.0, 0.0)
-			var start: Vector2 = at + offset + Vector2(-26.0, -30.0)
-			var finish: Vector2 = at + offset + Vector2(26.0, 30.0)
-			scratch.points = PackedVector2Array([start, start])
-			scratch.width = 7.0
-			scratch.default_color = Color(1.0, 0.2, 0.2, 0.95)
-			scratch.begin_cap_mode = Line2D.LINE_CAP_ROUND
-			scratch.end_cap_mode = Line2D.LINE_CAP_ROUND
-			scratch.z_index = 66
-			_layer().add_child(scratch)
-			var tear: Callable = func(t: float) -> void:
-				if is_instance_valid(scratch):
-					scratch.points = PackedVector2Array([start, start.lerp(finish, t)])
-			var rip: Tween = scratch.create_tween()
-			rip.tween_method(tear, 0.0, 1.0, 0.1).set_delay(i * 0.03)
-			rip.tween_property(scratch, "modulate:a", 0.0, 0.3).set_delay(0.15)
-			rip.tween_callback(scratch.queue_free))
 
 
 ## 앞쪽을 가리키는 네온 화살표.

@@ -139,12 +139,12 @@ func set_deck_visible(shown: bool) -> void:
 
 ## target_provider resolves the current fan slot as new cards enter the hand.
 ## origin preserves the existing theft animation: stolen cards leave a profile.
-func draw_card(player_id: int, card_id: StringName, local: bool, target: Vector2, on_arrive: Callable = Callable(), reserved: bool = false, origin: Vector2 = Vector2(INF,INF), target_provider: Callable = Callable()) -> void:
+func draw_card(player_id: int, card_id: StringName, local: bool, target: Vector2, on_arrive: Callable = Callable(), reserved: bool = false, origin: Vector2 = Vector2(INF,INF), target_provider: Callable = Callable(), grouped: bool = false) -> void:
 	if local and not reserved:
 		reserve(player_id)
 	in_flight += 1
 	# 이미 날고 있거나 줄 선 카드가 있으면 한꺼번에 받는 묶음이다: 묶음의 카드는 마지막 장까지 조금 빨리 돈다
-	var batch: bool = not _current.is_empty() or not _queue.is_empty()
+	var batch: bool = grouped or not _current.is_empty() or not _queue.is_empty()
 	if batch and not _current.is_empty():
 		_current["batch"] = true
 	_queue.append({"player":player_id,"id":card_id,"local":local,"target":target,"arrive":on_arrive,"origin":origin,"provider":target_provider,"batch":batch})
