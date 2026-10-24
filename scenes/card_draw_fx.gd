@@ -36,7 +36,45 @@ var _current: Dictionary = {}
 var _gap: float = 0.0
 
 
-## 카드 뒷면: 남색 바탕 + 금색 테두리 + 가운데 마름모 문양.
+## Portrait card projected flat onto the table, with its key facing right.
+static func deck_transform() -> Transform2D:
+	var frame := Transform2D(Vector2(0.28,0.62),Vector2(-1.10,0.23),Vector2.ZERO)
+	frame.origin = -frame.basis_xform(CARD_SIZE/2.0)
+	return frame
+
+
+static func deck_outline() -> PackedVector2Array:
+	var points := PackedVector2Array()
+	for corner: Vector2 in [Vector2.ZERO,Vector2(CARD_SIZE.x,0),CARD_SIZE,Vector2(0,CARD_SIZE.y)]:
+		var point: Vector2 = deck_transform()*corner
+		points.append(point)
+		points.append(point+Vector2(0,12))
+	return Geometry2D.convex_hull(points)
+
+
+## White paper edges make the pile read as a flat stack rather than a fan.
+class DeckPile extends Control:
+	func _init() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _draw() -> void:
+		var top := PackedVector2Array()
+		for corner: Vector2 in [Vector2.ZERO,Vector2(CardDrawFX.CARD_SIZE.x,0),CardDrawFX.CARD_SIZE,Vector2(0,CardDrawFX.CARD_SIZE.y)]:
+			top.append(CardDrawFX.deck_transform()*corner)
+		var shadow := PackedVector2Array()
+		for point: Vector2 in top:
+			shadow.append(point+Vector2(2,17))
+		draw_colored_polygon(shadow,Color(0.03,0.04,0.06,0.28))
+		for edge: int in [1,2]:
+			var a: Vector2 = top[edge]
+			var b: Vector2 = top[(edge+1)%4]
+			draw_colored_polygon(PackedVector2Array([a,b,b+Vector2(0,12),a+Vector2(0,12)]),Color("fff8e7") if edge==1 else Color("ddd5bf"))
+			for layer: int in range(2,13,2):
+				draw_line(a+Vector2(0,layer),b+Vector2(0,layer),Color("c6bca2"),0.7,true)
+			draw_line(a+Vector2(0,12),b+Vector2(0,12),Color("755330"),1.0,true)
+
+
+## Navy back, warm gold frame and a simple key emblem, matching the reference.
 class CardBack extends Control:
 	func _init() -> void:
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -44,23 +82,28 @@ class CardBack extends Control:
 	func _draw() -> void:
 		var rect := Rect2(Vector2.ZERO, size)
 		var body := StyleBoxFlat.new()
-		body.bg_color = Color("2b3a67")
-		body.border_color = Color("ffd43b")
+		body.bg_color = Color("18263f")
+		body.border_color = Color("dc9d37")
 		body.set_border_width_all(3)
 		body.set_corner_radius_all(9)
 		body.shadow_color = Color(0.0, 0.0, 0.0, 0.35)
 		body.shadow_size = 4
 		draw_style_box(body, rect)
 		var inner := StyleBoxFlat.new()
-		inner.bg_color = Color("3b4f8a")
+		inner.bg_color = Color("20314c")
 		inner.border_color = Color(1.0, 0.85, 0.3, 0.55)
 		inner.set_border_width_all(1)
 		inner.set_corner_radius_all(6)
 		draw_style_box(inner, rect.grow(-7.0))
 		var c: Vector2 = size / 2.0
-		var r: Vector2 = size * Vector2(0.24, 0.2)
-		draw_colored_polygon(PackedVector2Array([c + Vector2(0, -r.y), c + Vector2(r.x, 0), c + Vector2(0, r.y), c + Vector2(-r.x, 0)]), Color("ffd43b"))
-		draw_colored_polygon(PackedVector2Array([c + Vector2(0, -r.y * 0.5), c + Vector2(r.x * 0.5, 0), c + Vector2(0, r.y * 0.5), c + Vector2(-r.x * 0.5, 0)]), Color("2b3a67"))
+		var gold := Color("f5c45c")
+		var head: Vector2 = c+Vector2(0,-20)
+		draw_arc(head,8.0,0,TAU,32,gold,3.0,true)
+		draw_arc(head+Vector2(-5,-4),4.0,PI*0.5,PI*1.9,20,gold,2.0,true)
+		draw_arc(head+Vector2(5,-4),4.0,PI*1.1,TAU*1.25,20,gold,2.0,true)
+		draw_line(head+Vector2(0,8),head+Vector2(0,43),gold,3.0,true)
+		draw_polyline(PackedVector2Array([head+Vector2(0,30),head+Vector2(7,30),head+Vector2(7,35)]),gold,3.0,true)
+		draw_polyline(PackedVector2Array([head+Vector2(0,39),head+Vector2(7,39),head+Vector2(7,44)]),gold,3.0,true)
 
 
 func _init() -> void:
@@ -83,7 +126,7 @@ func release(player_id: int) -> void:
 
 func place_deck() -> void:
 	if _deck != null:
-		_deck.position = deck_position-CARD_SIZE/2.0+Vector2(2.5,-3.0)
+		_deck.position = deck_position
 
 
 func set_deck_visible(shown: bool) -> void:
@@ -134,9 +177,11 @@ func _start_next() -> void:
 	card.pivot_offset = CARD_SIZE/2.0
 	var back := CardBack.new()
 	back.size = CARD_SIZE
-	card.add_child(back)
+	var surface := Node2D.new()
+	surface.add_child(back)
+	card.add_child(surface)
 	add_child(card)
-	_current.merge({"card":card,"back":back,"start":start,"lifted":start+Vector2(-12.0,-POP_RISE),"reveal":reveal_position,"time":0.0,"face":false})
+	_current.merge({"card":card,"back":surface,"start":start,"lifted":start+Vector2(-12.0,-POP_RISE),"reveal":reveal_position,"time":0.0,"face":false,"from_deck":not (_current.origin as Vector2).is_finite()})
 	place_deck()
 	Sfx.play(&"card_pick",-5.0)
 	_apply_card(0.0)
@@ -179,6 +224,13 @@ func _apply_card(t: float) -> void:
 	var start: Vector2 = _current.start
 	var lifted: Vector2 = _current.lifted
 	var reveal: Vector2 = _current.reveal
+	var upright: float = _ease((t-POP_TIME)/(TAKE_TIME if bool(_current.local) else OTHER_FLY_TIME))
+	var surface: Node2D = _current.back
+	var frame: Transform2D = deck_transform() if bool(_current.from_deck) else Transform2D.IDENTITY
+	frame.origin = Vector2.ZERO
+	frame = frame.interpolate_with(Transform2D.IDENTITY,upright)
+	frame.origin = CARD_SIZE/2.0-frame.basis_xform(CARD_SIZE/2.0)
+	surface.transform = frame
 	card.modulate.a = clampf(t/0.045,0.0,1.0)
 	if t < POP_TIME:
 		card.set_meta("phase",&"draw")
@@ -221,7 +273,7 @@ func _apply_card(t: float) -> void:
 
 func _show_face() -> void:
 	_current.face = true
-	(_current.back as Control).hide()
+	(_current.back as CanvasItem).hide()
 	if face_builder.is_valid():
 		var face: Control = face_builder.call(_current.id)
 		if face != null:
@@ -248,14 +300,13 @@ func _arrive() -> void:
 
 
 func _build_deck() -> void:
-	_deck = Control.new()
+	_deck = DeckPile.new()
 	_deck.name = "DeckPile"
 	_deck.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	for index: int in 3:
-		var back := CardBack.new()
-		back.size = CARD_SIZE
-		back.position = Vector2(-index*2.5,index*3.0)
-		back.rotation = deg_to_rad(-4.0+index*3.5)
-		_deck.add_child(back)
-		_deck.move_child(back,0)
+	var surface := Node2D.new()
+	surface.transform = deck_transform()
+	var back := CardBack.new()
+	back.size = CARD_SIZE
+	surface.add_child(back)
+	_deck.add_child(surface)
 	add_child(_deck)
