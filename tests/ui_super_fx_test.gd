@@ -19,6 +19,7 @@ func _initialize() -> void:
 func _run() -> void:
 	for effect: StringName in EFFECTS:
 		await _check(effect)
+	await _check_several_in_one_draft()
 	if _failures.is_empty():
 		print("UI_SUPER_FX_OK: %d super augments" % EFFECTS.size())
 		quit(0)
@@ -99,6 +100,52 @@ func _check(effect: StringName) -> void:
 ## 말 층의 자식 수 (풀에서 다음 연출을 기다리며 숨어 있는 노드는 빼고 센다).
 func _live_children(layer: Node) -> int:
 	return layer.get_children().filter(func(node: Node) -> bool: return not (FxPool.is_pooled(node) and not bool(node.get_meta(FxPool.BUSY_META, false)))).size()
+
+
+## 한 드래프트에서 여럿이 초증강을 고르면: 엔진은 고른 순서대로 적용하고, 연출은 [선택한 증강] 공개 뒤 고른 순서대로 하나씩
+## (앞 연출이 끝나야 다음 연출이 시작, 동시에 겹치지 않는다).
+func _check_several_in_one_draft() -> void:
+	_board = (load("res://scenes/main_board.tscn") as PackedScene).instantiate()
+	root.add_child(_board)
+	var guard: int = 0
+	while (not _board._draft_open or _board._intro_blocks()) and guard < 2400:
+		guard += 1
+		await process_frame
+	if not _board._draft_open:
+		_failures.append("여럿 선택: 드래프트가 열리지 않았다")
+		await _drop_board()
+		return
+	_stage(&"SUPER_07")
+	var picks: Array = [[2, &"SUPER_07"], [3, &"SUPER_01"], [1, &"SUPER_06"]]
+	for pick: Array in picks:
+		var aug_id: StringName = &""
+		for def: AugmentDef in AugmentRegistry.all():
+			if def.category == GameEnums.AugmentCategory.SUPER_GAMBLE and def.payload == pick[1]:
+				aug_id = def.augment_id
+		_board._super_changes.clear()
+		SuperAugments.apply(pick[1], _board.state, int(pick[0]))
+		_board._on_super_picked(int(pick[0]), aug_id)
+		_board._pick_serial += 1
+	await process_frame
+	var keys: Array = ["2:SUPER_07", "3:SUPER_01", "1:SUPER_06"]
+	_expect(keys.all(func(key: String) -> bool: return _board._super_hidden.has(key)), "여럿 선택: 공개 전에는 어느 초증강 연출도 시작하지 않는다")
+	_board._draft_open = false
+	var started_at: Dictionary = {}
+	var t0: int = Time.get_ticks_msec()
+	_board._release_draft_deferred()
+	while _board._presentation_active() and Time.get_ticks_msec() - t0 < 30000:
+		for key: String in keys:
+			if not started_at.has(key) and not _board._super_hidden.has(key):
+				started_at[key] = Time.get_ticks_msec() - t0
+				# 다음 연출이 시작할 때 앞 연출은 끝나 있다: 시작한 초증강은 하나씩만 (아직 시작 안 한 것은 그대로 숨김)
+				var waiting: int = keys.filter(func(other: String) -> bool: return _board._super_hidden.has(other)).size()
+				_expect(waiting == keys.size() - started_at.size(), "여럿 선택: %s가 시작할 때 뒤 순서 연출은 아직 기다린다" % key)
+		await process_frame
+	_expect(started_at.size() == keys.size(), "여럿 선택: 세 연출이 모두 나온다 (%s)" % str(started_at))
+	if started_at.size() == keys.size():
+		_expect(int(started_at[keys[0]]) < int(started_at[keys[1]]) and int(started_at[keys[1]]) < int(started_at[keys[2]]), "여럿 선택: 고른 순서대로 (%s)" % str(started_at))
+		_expect(int(started_at[keys[1]]) - int(started_at[keys[0]]) >= 500 and int(started_at[keys[2]]) - int(started_at[keys[1]]) >= 500, "여럿 선택: 앞 연출이 끝난 뒤 다음 연출 (%s)" % str(started_at))
+	await _drop_board()
 
 
 ## 보드 위에 말을 흩어 놓는다 (연출에 등장할 말이 있게).
