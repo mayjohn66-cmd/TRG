@@ -16,6 +16,7 @@ const GAMBLER_STAGE = preload("res://scenes/gambler_fx.gd")
 const PROFILE_AURA = preload("res://scenes/profile_super_aura.gd")
 const CASTLING_STAGE = preload("res://scenes/castling_stage.gd")
 const BAKERY_STAGE = preload("res://scenes/bakery_stage.gd")
+const SNIPER_STAGE = preload("res://scenes/sniper_stage.gd")
 const FATE_COIN = preload("res://scenes/fate_coin_3d.gd")
 const STAGE_SPOTLIGHT = preload("res://scenes/pawn_stage_spotlight.gd")
 
@@ -282,42 +283,17 @@ func _bakery(player_id: int, changes: Array) -> void:
 # ---------------------------------------------------------------------------
 
 func _sniper(player_id: int, changes: Array) -> void:
-	var target_id: int = -1
-	for change: Dictionary in changes:
-		if change["kind"] == "start":
-			target_id = int(change["pawn"])
-			break
-	var view: Node2D = _view(target_id)
-	if view == null:
-		return
-	var scope := _crosshair()
-	scope.position = view.position
-	scope.scale = Vector2.ONE * 3.2
-	scope.modulate.a = 0.0
-	_layer().add_child(scope)
-	Sfx.play(&"charge")
-	var lock: Tween = scope.create_tween().set_parallel(true)
-	lock.tween_property(scope, "scale", Vector2.ONE, 0.4).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	lock.tween_property(scope, "rotation", PI * 0.5, 0.4).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	lock.tween_property(scope, "modulate:a", 1.0, 0.12)
-	await _wait(0.4)
-	if not _alive():
-		scope.queue_free()
-		return
-	# 록온: 조준경이 한 번 깜빡인 뒤 탕!
-	var blink: Tween = scope.create_tween()
-	blink.tween_property(scope, "modulate", Color(2.0, 2.0, 2.0), 0.05)
-	blink.tween_property(scope, "modulate", Color.WHITE, 0.05)
-	await _wait(0.1)
-	Sfx.play(&"shot")
-	var at: Vector2 = view.position
-	_flash(at, Color.WHITE, 90.0)
-	_bullet_hole(at)
-	_ring(at, RED, 60.0, 5.0, 0.3)
-	board.screen_shake(12.0, 0.22)
-	_fade_out(scope, 0.05, 0.2)
-	await _wait(0.12)
-	await _eject_now(target_id, player_id)
+	var target := _first(changes,"start")
+	var target_id := int(target.get("pawn",-1))
+	var stage := SNIPER_STAGE.new()
+	board.add_child(stage)
+	stage.play(board,player_id,target_id,board._motion_pace(),target)
+	while _alive() and is_instance_valid(stage) and not stage._complete:
+		await board.get_tree().process_frame
+	if is_instance_valid(stage):
+		stage.queue_free()
+	if _alive():
+		await _eject_now(target_id,player_id)
 
 
 # ---------------------------------------------------------------------------

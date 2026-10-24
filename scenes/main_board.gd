@@ -6429,6 +6429,9 @@ func _enqueue_batch(entries: Array[Dictionary]) -> void:
 
 ## 연출 큐를 비우고 재생 중인 러너를 멈춘다 (판 초기화·되감기·테스트 정리용). 이미 시작된 트윈은 건드리지 않는다.
 func _reset_presentation() -> void:
+	var sniper_stage: Node2D = get_node_or_null("SniperStage")
+	if sniper_stage!=null:
+		sniper_stage.cancel()
 	var bakery_stage: Node2D = get_node_or_null("BakeryStage")
 	if bakery_stage!=null:
 		bakery_stage.cancel()
@@ -8802,8 +8805,15 @@ func _on_super_picked(player_id: int, augment_id: StringName) -> void:
 				poses.append({"pawn":pawn.entity_id,"tile":pawn.current_tile_idx,"position":_pawn_position(pawn),"visible":pawn.has_left_start and not pawn.is_finished and pawn.carrier==null})
 		changes.append({"kind":"redistribution_pose","pawns":poses})
 	if effect in [SuperAugments.FLIP, SuperAugments.SNIPER, SuperAugments.DEVIL]:
+		var sniper_target := -1
 		for change: Dictionary in changes:
 			if change["kind"] == "start":
+				if effect==SuperAugments.SNIPER:
+					if sniper_target!=-1:
+						continue  # Other real ejections retain their own queued visuals.
+					sniper_target = int(change.pawn)
+					var target_view: Node2D = _pawn_views.get(sniper_target)
+					change["position"] = target_view.position if target_view!=null else Vector2.ZERO
 				_take_late_steps_for(int(change["pawn"]))
 				if effect==SuperAugments.DEVIL:
 					var offering: PlayerPawn = state.get_pawn(int(change.pawn))

@@ -26,6 +26,7 @@ on:
           - profile-aura
           - castling
           - bakery
+          - sniper
 
 permissions:
   contents: write
@@ -53,7 +54,9 @@ jobs:
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
           REQUESTED_SCOPE: ${{ inputs.validation }}
         run: |
-          if [[ "${REQUESTED_SCOPE}" == "bakery" || "${COMMIT_MESSAGE}" == *"[check:bakery]"* ]]; then
+          if [[ "${REQUESTED_SCOPE}" == "sniper" || "${COMMIT_MESSAGE}" == *"[check:sniper]"* ]]; then
+            echo "scope=sniper" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "bakery" || "${COMMIT_MESSAGE}" == *"[check:bakery]"* ]]; then
             echo "scope=bakery" >> "${GITHUB_OUTPUT}"
           elif [[ "${REQUESTED_SCOPE}" == "castling" || "${COMMIT_MESSAGE}" == *"[check:castling]"* ]]; then
             echo "scope=castling" >> "${GITHUB_OUTPUT}"
@@ -97,6 +100,14 @@ jobs:
         run: |
           godot --headless --path . --import || true
           godot --headless --path . --import
+
+      - name: Run focused sniper presentation check
+        if: steps.validation.outputs.scope == 'sniper'
+        run: |
+          set -o pipefail
+          godot --headless --path . -s res://tests/ui_sniper_test.gd 2>&1 | tee /tmp/ui_sniper_test.log
+          grep -q 'UI_SNIPER_OK' /tmp/ui_sniper_test.log
+          if grep -q 'SCRIPT ERROR' /tmp/ui_sniper_test.log; then exit 1; fi
 
       - name: Run focused bakery presentation check
         if: steps.validation.outputs.scope == 'bakery'
