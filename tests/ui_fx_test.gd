@@ -296,8 +296,12 @@ func _test_card_draw_fx() -> void:
 	_expect(live.size() == hand.size() and (live[live.size() - 1] as Control).modulate.a == 0.0 and (live[live.size() - 2] as Control).modulate.a == 0.0, "날아오는 중인 카드는 손패에서 숨겨 둔다")
 	var deck: Control = fx.find_child("DeckPile", true, false)
 	_expect(deck != null and deck.visible, "보드 바깥에 덱 뭉치")
-	var outline: PackedVector2Array = BoardSkin.outline(_board._surface_project,_board._off_center)
+	var top_surface: Node2D = deck.get_child(0)
+	var lifted_surface: Node2D = fx._current.back
 	for corner: Vector2 in [Vector2.ZERO,Vector2(CardDrawFX.CARD_SIZE.x,0),CardDrawFX.CARD_SIZE,Vector2(0,CardDrawFX.CARD_SIZE.y)]:
+		_expect((top_surface.get_global_transform()*corner).distance_to(lifted_surface.get_global_transform()*corner)<0.01,"drawn back starts exactly on the projected top card")
+	var outline: PackedVector2Array = BoardSkin.outline(_board._surface_project,_board._off_center)
+	for corner: Vector2 in CardDrawFX.deck_outline():
 		_expect(not Geometry2D.is_point_in_polygon(deck.global_position+corner,outline),"deck footprint stays clear of the board")
 	var flipped: bool = false
 	var shown_since: float = -1.0
@@ -1567,7 +1571,7 @@ func _test_aspect_layout() -> void:
 		board.layout_for(viewport_size)
 		var outline: PackedVector2Array = BoardSkin.outline(board._surface_project,board._off_center)
 		var deck: Control = board._draw_fx._deck
-		for corner: Vector2 in [Vector2.ZERO,Vector2(CardDrawFX.CARD_SIZE.x,0),CardDrawFX.CARD_SIZE,Vector2(0,CardDrawFX.CARD_SIZE.y)]:
+		for corner: Vector2 in CardDrawFX.deck_outline():
 			_expect(not Geometry2D.is_point_in_polygon(deck.global_position+corner,outline),"deck remains outside board at %s"%viewport_size)
 		_expect(board._draw_fx.reveal_position.distance_to(board._board_center()+Vector2(0,-15))<0.01,"card inspection follows board centre when resized")
 	board.layout_for(Vector2(1366,768))
