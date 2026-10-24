@@ -9,6 +9,7 @@ class_name SuperFX
 extends RefCounted
 
 const FATE_COIN = preload("res://scenes/fate_coin_3d.gd")
+const STAGE_SPOTLIGHT = preload("res://scenes/pawn_stage_spotlight.gd")
 
 const GOLD: Color = Color("ffd43b")
 const RED: Color = Color("ff3b30")
@@ -64,7 +65,7 @@ func _flip(player_id: int, changes: Array) -> void:
 	if view == null:
 		return
 	var at: Vector2 = view.position
-	_spotlight(at, Color(1.0, 0.97, 0.75),1.35*board._motion_pace())
+	_spotlight(view, Color(1.0, 0.97, 0.75),1.35*board._motion_pace())
 	Sfx.play(&"charge")
 	await _wait(0.25)
 	if not _alive():
@@ -796,21 +797,11 @@ func _title(effect: StringName, player_id: int) -> void:
 	board._floating_badge(at, "%s %s" % [board._player_name(player_id), name], Color("e599f7"), 28)
 
 
-## 스포트라이트: 화면을 살짝 어둡게 하고 대상만 밝은 원으로 비춘다.
-func _spotlight(at: Vector2, color: Color, hold_time: float = 0.6) -> void:
-	var light := Polygon2D.new()
-	light.polygon = _circle(46.0, 32)
-	light.color = Color(color, 0.45)
-	light.position = at
-	light.z_index = 1
-	light.scale = Vector2.ONE * 2.2
-	_layer().add_child(light)
-	var beam: Tween = light.create_tween()
-	beam.tween_property(light, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	beam.tween_interval(hold_time)
-	beam.tween_property(light, "modulate:a", 0.0, 0.3)
-	beam.tween_callback(light.queue_free)
-	_ring(at, color, 50.0, 4.0, 0.3)
+## 주변은 어둡게, 선택된 말에는 위에서 내려오는 무대 조명.
+func _spotlight(view: Node2D, color: Color, hold_time: float = 0.6) -> void:
+	var light := STAGE_SPOTLIGHT.new()
+	board.add_child(light)
+	light.illuminate(board,view,color,hold_time)
 
 
 ## 커지며 사라지는 원 테두리.
