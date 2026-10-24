@@ -1227,6 +1227,8 @@ func _bind_state() -> void:
 				_impact_ring(_tile_center(tile) + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO), Color("7b2cbf"), 26.0)
 				Sfx.play(&"trap_set")
 				_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(350.0 * _motion_pace())))  # 깜빡임을 볼 틈: 다음 알림은 그 뒤에
+			if _draft_in_progress() and not _draft_deferred.is_empty():
+				_draft_deferred[-1]["trap_tile"] = tile
 		_log_line("P%d가 %d번 타일에 [%s]을(를) 설치했습니다" % [owner_id, tile, "뒷면 카드" if id.begins_with("TRP") else _attachment_name(id)], Color("adb5bd"))
 		_refresh_tiles())
 	state.card_drawn.connect(func(player_id: int, card_id: StringName) -> void:
@@ -8717,6 +8719,14 @@ func _on_super_picked(player_id: int, augment_id: StringName) -> void:
 	var changes: Array[Dictionary] = []
 	for change: Dictionary in _super_changes:
 		changes.append(change.duplicate(true))
+	if effect==SuperAugments.MINEFIELD:
+		# This stage owns the same pick's mine reveals; don't replay generic trap FX.
+		var mine_tiles: Array[int] = []
+		for change: Dictionary in changes:
+			if change.get("kind")=="place" and change.get("id")=="TRP_03":
+				mine_tiles.append(int(change.tile))
+		_draft_deferred = _draft_deferred.filter(func(entry: Dictionary) -> bool:
+			return not (int(entry.get("pick",-1))==_pick_serial and mine_tiles.has(int(entry.get("trap_tile",-1)))))
 	if effect==SuperAugments.REDISTRIBUTE:
 		# Capture this pick's targets now, before another selected augment changes them.
 		var poses: Array[Dictionary] = []

@@ -10,6 +10,7 @@ extends RefCounted
 
 const REDISTRIBUTION_STAGE = preload("res://scenes/redistribution_stage.gd")
 const DEVIL_STAGE = preload("res://scenes/devil_contract_stage.gd")
+const MINEFIELD_STAGE = preload("res://scenes/minefield_stage.gd")
 const FATE_COIN = preload("res://scenes/fate_coin_3d.gd")
 const STAGE_SPOTLIGHT = preload("res://scenes/pawn_stage_spotlight.gd")
 
@@ -179,47 +180,17 @@ func _devil(player_id: int, changes: Array) -> void:
 func _minefield(_player_id: int, changes: Array) -> void:
 	var tiles: Array[int] = []
 	for change: Dictionary in changes:
-		if change["kind"] == "place":
+		if change.get("kind")=="place" and change.get("id")=="TRP_03":
 			tiles.append(int(change["tile"]))
 	if tiles.is_empty():
 		return
-	var warnings: Array[Node2D] = []
-	for tile: int in tiles:
-		var mark := _warning_mark(board._tile_center(tile))
-		warnings.append(mark)
-	Sfx.play(&"attack_alert")
-	await _wait(0.38)
-	if not _alive():
-		return
-	var top: float = _local(Vector2(0.0, -40.0)).y
-	for index: int in tiles.size():
-		var tile: int = tiles[index]
-		var target: Vector2 = board._tile_center(tile)
-		var mine := _mine_icon()
-		mine.position = Vector2(target.x, top)
-		mine.z_index = 41
-		_layer().add_child(mine)
-		var fall: Tween = mine.create_tween()
-		fall.tween_interval(index * 0.07)
-		fall.tween_property(mine, "position", target, 0.26).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-		fall.tween_callback(_mine_landed.bind(target, warnings[index]))
-		fall.tween_property(mine, "scale", Vector2(1.3, 0.75), 0.05)
-		fall.tween_property(mine, "scale", Vector2.ONE, 0.08)
-		fall.tween_property(mine, "modulate:a", 0.0, 0.25).set_delay(0.15)
-		fall.tween_callback(mine.queue_free)
-	await _wait(0.26 + tiles.size() * 0.07 + 0.12)
-	if _alive():
-		board.screen_shake(12.0, 0.28)
-		Sfx.play(&"build_mine")
-	await _wait(0.2)
-
-
-func _mine_landed(at: Vector2, warning: Node2D) -> void:
-	if is_instance_valid(warning):
-		warning.queue_free()
-	_ring(at, RED, 34.0, 4.0, 0.25)
-	board._burst_shards(at, Color("495057"), 6)
-	Sfx.play(&"thud")
+	var stage := MINEFIELD_STAGE.new()
+	board.add_child(stage)
+	stage.play(board,tiles,board._motion_pace())
+	while _alive() and is_instance_valid(stage) and not stage._complete:
+		await board.get_tree().process_frame
+	if is_instance_valid(stage):
+		stage.queue_free()
 
 
 # ---------------------------------------------------------------------------
@@ -1006,51 +977,6 @@ func _bread_burst(at: Vector2) -> void:
 	_layer().add_child(bread)
 	board._mark_oneshot(bread, 1.0)
 	board.get_tree().create_timer(1.0).timeout.connect(bread.queue_free)
-
-
-## 지뢰 칸 위의 붉은 경고 표식 (깜빡인다). 지뢰가 꽂히면 지운다.
-func _warning_mark(at: Vector2) -> Node2D:
-	var mark := Node2D.new()
-	mark.position = at
-	mark.z_index = 29
-	var halo := Polygon2D.new()
-	halo.polygon = _circle(30.0, 24)
-	halo.color = Color(1.0, 0.1, 0.05, 0.35)
-	mark.add_child(halo)
-	var diamond := Polygon2D.new()
-	diamond.polygon = PackedVector2Array([Vector2(0, -24), Vector2(24, 0), Vector2(0, 24), Vector2(-24, 0)])
-	diamond.color = Color(1.0, 0.15, 0.1, 0.9)
-	mark.add_child(diamond)
-	var bang: Label = _label("!", 30, Color.WHITE)
-	mark.add_child(bang)
-	_center_label(bang)
-	_layer().add_child(mark)
-	var blink: Tween = mark.create_tween().set_loops(6)
-	blink.tween_property(mark, "modulate:a", 0.25, 0.08)
-	blink.tween_property(mark, "modulate:a", 1.0, 0.08)
-	board.get_tree().create_timer(2.0).timeout.connect(mark.queue_free)
-	return mark
-
-
-## 지뢰 아이콘: 검은 공 + 뇌관 + 빨간 불빛.
-func _mine_icon() -> Node2D:
-	var mine := Node2D.new()
-	var body := Polygon2D.new()
-	body.polygon = _circle(11.0, 18)
-	body.color = Color("212529")
-	mine.add_child(body)
-	for angle: float in [0.0, PI * 0.5, PI, PI * 1.5]:
-		var spike := Polygon2D.new()
-		spike.polygon = PackedVector2Array([Vector2(-3, 0), Vector2(0, -16), Vector2(3, 0)])
-		spike.color = Color("343a40")
-		spike.rotation = angle
-		mine.add_child(spike)
-	var light := Polygon2D.new()
-	light.polygon = _circle(3.5, 10)
-	light.color = Color("ff3b30")
-	light.position = Vector2(3, -3)
-	mine.add_child(light)
-	return mine
 
 
 ## 조준경: 원 두 개 + 십자선 + 가운데 점.
