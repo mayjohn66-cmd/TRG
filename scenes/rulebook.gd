@@ -1270,7 +1270,10 @@ func _ch_super() -> Dictionary:
 			"tip": "질 것 같을 때가 초증강을 고를 때예요. [b]역전은 한 번이면 충분[/b]하니까요!"},
 	]
 	for definition: AugmentDef in _augments(GameEnums.AugmentCategory.SUPER_GAMBLE):
-		entries.append(_augment_entry(definition, &"star"))
+		var entry: Dictionary = _augment_entry(definition, &"star")
+		if SuperAugments.SELF_RISK.has(StringName(str(definition.payload))):
+			entry["rows"] = [["주의", SuperAugments.SELF_RISK_NOTE.trim_prefix("주의: ")]]  # 카드 왼쪽 위에는 경고 아이콘 (카드와 같은 방식)
+		entries.append(entry)
 	return {"title": "초증강", "entries": entries, "wide": true}
 
 

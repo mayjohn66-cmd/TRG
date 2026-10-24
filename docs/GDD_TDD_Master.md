@@ -1389,3 +1389,8 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 - **패시브 둘은 줄 나눔:** `SUB_ABILITIES`에서 ` · `로 이은 패시브(윷말·퀸·비차·계마·스타 카트·지뢰찾기 공병)는 줄을 나눠 쓴다 (`PawnCatalog.passive_lines` / `split_passive`, 필살기 줄은 `skill_line`). 나눈 줄마다 en/ja 번역 행을 둔다.
 - **적용 화면:** 기물 진화 증강 카드(`AugmentSkill` 칸 + `AugmentSkillRule` 구분선), 보드 위 기물 툴팁(`_tip_rule`), 프로필 [증강] 요약의 말 목록, 도감 말 항목(머리말 없는 한 칸 행 + 필살기 이름 꼬리표 행). 문구 자체(데이터 표 `spec_preview`)는 이후 재조정 예정.
 - **검사:** `tests/test_pawn_renewal.gd::test_pawn_text_splits_passives_and_drops_labels` (줄 나눔, 차의 빈 패시브, 머리말 없음, 나눈 줄 번역, 비숍 카드 정보).
+
+### 6.74 내 말도 사출될 수 있는 초증강 경고
+- **대상 (`SuperAugments.SELF_RISK`):** 판 뒤집기(실패하면 내 말 출발선 추방), 광란의 지뢰밭(누구든 밟으면 반경 2칸 안 전원, 피아 구분 없음), 아우토반 니트로(멈춘 칸의 말 전부, 내 말 포함), 폭주 기관차(그 변의 말 전부), 강제 연대책임(하나가 탈락하면 둘 다). 악마의 계약은 완주한 말을 되돌리는 정해진 대가라 넣지 않는다.
+- **표시:** 카드(`CardSkin.SELF_RISK`)와 같은 빨간 삼각 경고 아이콘을 증강 카드 왼쪽 위에 둔다(`SelfRiskIcon`). 커서를 대면 툴팁 "주의: 본인의 말이 사출될 수 있음" (커서 모양 도움말). 아이콘은 `MOUSE_FILTER_PASS`라 눌러도 카드가 골라진다. 도감 초증강 항목에는 [주의] 행.
+- **검사:** `tests/test_super_augments.gd::test_self_risk_supers_show_a_warning_icon_with_a_caution_tooltip` (대상 5종만 아이콘, 툴팁 문구, 커서를 대면 아이콘이 호버, 아이콘 클릭으로 카드 선택).

@@ -7810,7 +7810,8 @@ static func augment_card_info(definition: AugmentDef, game_state: GameState, pla
 		title = definition.title  # augments_table.csv의 title
 	title = AugmentDef.strip_title_tag(title)  # 제목 앞 [기물 진화]·[판정 도구]·[특수 승리] 같은 계열 머리표는 뗀다
 	var tag_text: String = definition.subtitle if definition.subtitle != "" else AugmentDef.category_name(definition.category)
-	return {"glyph": glyph, "color": color, "title": title, "desc": "\n".join(lines), "summary": summary, "detail": detail, "skill": skill_text, "category": tag_text, "art": AugmentArt.load_first(AugmentArt.candidates(definition)), "super": definition.category == GameEnums.AugmentCategory.SUPER_GAMBLE, "tier": definition.tier}
+	return {"glyph": glyph, "color": color, "title": title, "desc": "\n".join(lines), "summary": summary, "detail": detail, "skill": skill_text, "category": tag_text, "art": AugmentArt.load_first(AugmentArt.candidates(definition)), "super": definition.category == GameEnums.AugmentCategory.SUPER_GAMBLE, "tier": definition.tier,
+		"self_risk": definition.category == GameEnums.AugmentCategory.SUPER_GAMBLE and SuperAugments.SELF_RISK.has(StringName(str(definition.payload)))}
 
 
 ## 150px 후광 / 120px 네온 메달 / 110px 원형 이미지. 이미지가 없으면 글자.
@@ -7914,6 +7915,16 @@ static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: f
 	var emblem: Control = _make_emblem(str(info["glyph"]), color, info.get("art") as Texture2D)
 	emblem.position = Vector2((AUGMENT_CARD_SIZE.x - 150.0) / 2.0, 14)
 	card.add_child(emblem)
+	if bool(info.get("self_risk", false)):
+		# 내 말도 휘말려 사출될 수 있는 초증강: 카드 왼쪽 위 경고 아이콘 (카드와 같은 그림), 커서를 대면 주의 문구
+		var risk := CardSkin.WarningIcon.new()
+		risk.name = "SelfRiskIcon"
+		risk.position = Vector2(14, 14)
+		risk.size = Vector2(38, 38)
+		risk.mouse_filter = Control.MOUSE_FILTER_PASS  # 툴팁은 받고 클릭은 카드로 넘긴다
+		risk.mouse_default_cursor_shape = Control.CURSOR_HELP
+		risk.tooltip_text = SuperAugments.SELF_RISK_NOTE
+		card.add_child(risk)
 	var title_width: float = AUGMENT_CARD_SIZE.x - 36.0
 	var shown_title: String = L10n.t(str(info["title"]))
 	# 제목이 두 줄 칸(54px)에 다 들어가는 크기로: 띄어쓰기 없는 긴 이름(일본어 등)은 글자 단위로 나눈다

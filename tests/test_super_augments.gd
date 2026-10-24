@@ -408,3 +408,34 @@ func test_rest_next_turn_skips_exactly_one_turn() -> void:
 	check_eq(events, [first], "쉬어야 하는 사람의 차례가 건너뛰어졌다")
 	check(not bool(manager.state.rest_next_turn.get(first, false)), "휴식은 한 번만")
 	_dispose(manager)
+
+
+## 내 말도 휘말려 사출될 수 있는 초증강만 카드 왼쪽 위에 경고 아이콘: 커서를 대면 주의 문구, 아이콘을 눌러도 카드가 골라진다.
+func test_self_risk_supers_show_a_warning_icon_with_a_caution_tooltip() -> void:
+	check_eq(SuperAugments.SELF_RISK, [SuperAugments.FLIP, SuperAugments.MINEFIELD, SuperAugments.NITRO, SuperAugments.RUNAWAY, SuperAugments.GUARANTEE] as Array[StringName], "판 뒤집기·지뢰밭·니트로·기관차·연대책임")
+	for effect: StringName in SuperAugments.ALL_IDS:
+		var picked: Array[int] = [0]
+		var card: Button = MainBoard.make_augment_card(MainBoard.augment_card_info(_def(effect), null, 1), func() -> void: picked[0] += 1)
+		tree.root.add_child(card)
+		var icon: Control = card.get_node_or_null("SelfRiskIcon")
+		check_eq(icon != null, SuperAugments.SELF_RISK.has(effect), "%s 경고 아이콘" % effect)
+		if icon != null:
+			check_eq(icon.tooltip_text, "주의: 본인의 말이 사출될 수 있음", "%s 툴팁" % effect)
+			check_eq(icon.mouse_filter, Control.MOUSE_FILTER_PASS, "%s 아이콘은 툴팁을 받고 클릭은 카드로" % effect)
+			var point: Vector2 = icon.get_global_rect().get_center()
+			var motion := InputEventMouseMotion.new()
+			motion.position = point
+			tree.root.notify_mouse_entered()
+			tree.root.push_input(motion, true)
+			check(tree.root.gui_get_hovered_control() == icon, "%s 커서를 대면 아이콘이 툴팁을 띄운다" % effect)
+			for pressed: bool in [true, false]:
+				var click := InputEventMouseButton.new()
+				click.button_index = MOUSE_BUTTON_LEFT
+				click.button_mask = MOUSE_BUTTON_MASK_LEFT if pressed else 0
+				click.pressed = pressed
+				click.position = point
+				click.global_position = point
+				tree.root.push_input(click, true)
+			check_eq(picked[0], 1, "%s 아이콘을 눌러도 카드가 골라진다" % effect)
+		tree.root.remove_child(card)
+		card.free()

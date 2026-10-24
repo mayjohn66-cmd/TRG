@@ -18,6 +18,11 @@ const RUNAWAY: StringName = &"SUPER_11"        # 폭주 기관차 (무작위 한
 const GUARANTEE: StringName = &"SUPER_12"      # 강제 연대책임 (선두·후방 말 일심동체)
 
 const ALL_IDS: Array[StringName] = [FLIP, REDISTRIBUTE, DEVIL, MINEFIELD, RAID, GAMBLER, CASTLING, BAKERY, SNIPER, NITRO, RUNAWAY, GUARANTEE]
+## 고른 사람의 말도 휘말려 출발선으로 사출될 수 있는 초증강: 증강 카드 왼쪽 위에 경고 아이콘(커서를 대면 SELF_RISK_NOTE)을 띄운다.
+## 판 뒤집기(실패하면 내 말 추방) / 지뢰밭(누구든 밟으면 반경 안 전원) / 니트로(멈춘 칸의 말 전부) / 기관차(그 변의 말 전부) / 연대책임(하나가 탈락하면 둘 다).
+## 악마의 계약은 완주한 말을 되돌리는 정해진 대가라 넣지 않는다.
+const SELF_RISK: Array[StringName] = [FLIP, MINEFIELD, NITRO, RUNAWAY, GUARANTEE]
+const SELF_RISK_NOTE: String = "주의: 본인의 말이 사출될 수 있음"
 ## 남은 게임 내내 그 플레이어에게만 작동하는 패시브 (RuleBookManager.personal_laws, 법전 슬롯을 차지하지 않는다). 지금은 없다 (아우토반 니트로는 즉시 효과로 바뀌었다).
 const PERSONAL: Array[StringName] = []
 
