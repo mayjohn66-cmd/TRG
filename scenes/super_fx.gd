@@ -305,6 +305,22 @@ func _nitro(changes: Array) -> void:
 	await board._play_nitro_stage(_first(changes,"nitro"))
 
 
+## Shared rocket helper; NitroStage renders its own pawn-shaped afterimages.
+func ghost(view: Node2D, color: Color) -> void:
+	if view == null or not is_instance_valid(view):
+		return
+	var shade := Polygon2D.new()
+	shade.polygon = _circle(15.0, 16)
+	shade.color = Color(color.lightened(0.25), 0.55)
+	shade.position = view.position + Vector2(0.0, -14.0)
+	shade.z_index = 2
+	_layer().add_child(shade)
+	var fade: Tween = shade.create_tween().set_parallel(true)
+	fade.tween_property(shade, "modulate:a", 0.0, 0.3)
+	fade.tween_property(shade, "scale", Vector2(1.4, 0.8), 0.3)
+	fade.chain().tween_callback(shade.queue_free)
+
+
 # ---------------------------------------------------------------------------
 # 12. 강제 연대책임: 선두 말과 꼴찌 말 사이에 붉은 에너지 사슬이 철컥! 연결되어 팽팽해진다 (발밑 고리는 묶여 있는 내내 남는다)
 # ---------------------------------------------------------------------------
