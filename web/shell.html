@@ -359,7 +359,18 @@
 					return originalAddModule.call(this, bust(url), options);
 				};
 			}
-			root.trgCacheGuard = { bust: bust, clean: clean, version: CURRENT_VERSION, buildId: BUILD_ID, stamped: stamped };
+			// 영구 기록(#태그·닉네임·도장, localStorage["trg_player_save_v1"] + IndexedDB user://)이 브라우저 공간 정리 때 지워지지 않게 '보존 저장소'를 요청한다.
+			// 청소는 Cache Storage·서비스 워커만 지운다: localStorage 전체 비우기는 절대 하지 않는다.
+			function keepStorage() {
+				try {
+					if (root.navigator && root.navigator.storage && root.navigator.storage.persist) {
+						return root.navigator.storage.persist().catch(function () { return false; });
+					}
+				} catch (e) {}
+				return Promise.resolve(false);
+			}
+			keepStorage();
+			root.trgCacheGuard = { bust: bust, clean: clean, keepStorage: keepStorage, version: CURRENT_VERSION, buildId: BUILD_ID, stamped: stamped };
 		})(window);
 	</script>
 	<script src="$GODOT_URL?v=__TRG_BUILD_ID__"></script>

@@ -5,6 +5,9 @@
 class_name Rulebook
 extends Control
 
+## 기록 코드를 불러왔다 (허브의 #태그·닉네임·법전 수 배지를 다시 그린다).
+signal records_imported
+
 const PAPER: Color = Color("fbf4df")
 const PAPER_LINE: Color = Color(0.72, 0.6, 0.4, 0.22)
 const LEATHER: Color = Color("8a6a4a")
@@ -19,6 +22,8 @@ const FRAME: Color = Color("bfe9d8")
 const FRAME_EDGE: Color = Color("5fc9a0")
 const TEAL: Color = Color("7cc4b4")
 const TEAL_DARK: Color = Color("4a9a8a")
+## 법전 장 (도감 묶음의 법전 탭): 허브의 [법전 수집 N/8]이 바로 연다.
+const LAW_SPREAD: int = 7
 const TAB_NAMES: Array[String] = ["시작하기", "한 턴", "보드", "잡기", "도구", "말", "카드", "법전", "범용", "초증강"]
 const TAB_ICONS: Array[StringName] = [&"face", &"hourglass", &"grid", &"sword", &"dice", &"crown", &"book", &"gear", &"key", &"star"]
 const TAB_ART: Array[StringName] = [&"start", &"turn", &"board", &"capture"]
@@ -55,6 +60,9 @@ var _right_scroll: ScrollContainer = null
 var _notebook_title: Label = null
 var _list_buttons: Array[Button] = []
 var _group_tabs: Array[Button] = []
+var _law_badge: Button = null
+var _save_notice: Label = null
+var _code_panel: PanelContainer = null
 var _page_label: Label = null
 var _prev: Button = null
 var _next: Button = null
@@ -111,6 +119,7 @@ func _ready() -> void:
 	_build_cards_area()
 	_build_arrows()
 	_build_ribbon()
+	_build_save_tools()
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -211,6 +220,96 @@ func _build_header() -> void:
 		tab.pressed.connect(func() -> void: show_spread(GROUP_STARTS[index]))
 		_place(tab, Vector2(500 + index * 170, 66), Vector2(160, 52))
 		_group_tabs.append(tab)
+
+
+## 위 오른쪽: [트로피 법전 수집 N/8] + [기록 코드 복사] [기록 코드 입력] (영구 기록 PlayerSave를 다른 기기로 옮긴다).
+func _build_save_tools() -> void:
+	_law_badge = MetaIcon.pill("LawCollection", "", func() -> void: show_spread(LAW_SPREAD), 16)
+	_place(_law_badge, Vector2(846, 62), Vector2(196, 46))
+	var copy: Button = LobbyTheme.small_button("기록 코드 복사", _copy_save_code, &"teal", 15)
+	copy.name = "CopySaveCode"
+	copy.clip_text = true
+	_place(copy, Vector2(1050, 62), Vector2(142, 46))
+	var paste: Button = LobbyTheme.small_button("기록 코드 입력", _ask_save_code, &"teal", 15)
+	paste.name = "ImportSaveCode"
+	paste.clip_text = true
+	_place(paste, Vector2(1198, 62), Vector2(142, 46))
+	_save_notice = HubKit.outlined("", 16, Color.WHITE, Color("3a3250"), 5)
+	_save_notice.name = "SaveNotice"
+	_save_notice.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_place(_save_notice, Vector2(846, 18), Vector2(494, 36))
+	_refresh_law_badge()
+
+
+func _refresh_law_badge() -> void:
+	if _law_badge != null:
+		_law_badge.text = "법전 수집 %d/8" % PlayerSave.law_count()
+
+
+## [기록 코드 복사]: 태그·닉네임·법전·불닭 기록을 짧은 코드(TRG1.…)로 클립보드에 넣는다.
+func _copy_save_code() -> void:
+	MetaIcon.copy_to_clipboard(PlayerSave.export_code())
+	_save_notice.text = "기록 코드를 복사했어요 (#%s)" % GameSession.player_tag()
+
+
+## [기록 코드 입력]: 웹은 브라우저 입력 창(모바일에서도 붙여넣기가 된다), 그 밖은 화면 안 입력 칸.
+func _ask_save_code() -> void:
+	if OS.has_feature("web"):
+		var answer: Variant = JavaScriptBridge.eval("window.prompt(%s, '') || ''" % JSON.stringify(L10n.t("기록 코드를 붙여 넣어 주세요")), true)
+		apply_save_code(str(answer) if answer != null else "")
+		return
+	_open_code_input()
+
+
+## 붙여 넣은 기록 코드를 불러온다: 성공하면 #태그·닉네임·도장이 바로 바뀐다. 성공하면 true.
+func apply_save_code(code: String) -> bool:
+	if code.strip_edges().is_empty():
+		return false
+	if not PlayerSave.import_code(code):
+		_save_notice.text = "기록 코드를 확인해 주세요"
+		return false
+	GameSession.reload_from_save()
+	_save_notice.text = "기록을 불러왔어요 (#%s)" % GameSession.player_tag()
+	_refresh_law_badge()
+	if _content.get("entries", []) is Array and not (_content.get("entries", []) as Array).is_empty():
+		_rebuild_tiles()
+	records_imported.emit()
+	return true
+
+
+func _open_code_input() -> void:
+	if _code_panel != null and is_instance_valid(_code_panel):
+		_code_panel.visible = true
+		return
+	_code_panel = PanelContainer.new()
+	_code_panel.name = "SaveCodeInput"
+	_code_panel.add_theme_stylebox_override("panel", _box(Color("fffbea"), FRAME, 6, 24, 18, 0, Color(0, 0, 0, 0.4)))
+	_code_panel.z_index = 20
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 12)
+	_code_panel.add_child(column)
+	var title := Label.new()
+	title.text = "기록 코드를 붙여 넣어 주세요"
+	title.add_theme_font_size_override("font_size", 20)
+	title.add_theme_color_override("font_color", INK)
+	column.add_child(title)
+	var field := LineEdit.new()
+	field.name = "CodeField"
+	field.custom_minimum_size = Vector2(520, 48)
+	field.placeholder_text = "TRG1."
+	column.add_child(field)
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_END
+	row.add_theme_constant_override("separation", 10)
+	column.add_child(row)
+	var ok: Button = LobbyTheme.small_button("불러오기", func() -> void:
+		if apply_save_code(field.text):
+			_code_panel.visible = false, &"teal", 16)
+	ok.name = "CodeApply"
+	row.add_child(ok)
+	var cancel: Button = LobbyTheme.small_button("닫기", func() -> void: _code_panel.visible = false, &"blue", 16)
+	row.add_child(cancel)
+	_place(_code_panel, Vector2(403, 300), Vector2(560, 170))
 
 
 ## 왼쪽 세로 항목 줄: 현재 탭의 장 4개. 고른 항목은 흰 알약에 점선 느낌의 초록 테두리.
@@ -528,6 +627,12 @@ func _picture_tile(data: Dictionary, on_pick: Callable) -> Control:
 		face.pressed.connect(on_pick)
 		holder.add_child(face)
 	holder.custom_minimum_size = card_size
+	# 특수 승리 법전으로 졸업해 본 교칙: [달성 완료 ★] 도장 (영구 기록)
+	if data.has("law_id") and PlayerSave.has_law(str(data["law_id"])):
+		var stamp: PanelContainer = MetaIcon.stamp("달성 완료 ★", 18)
+		stamp.position = Vector2(card_size.x * 0.5 - 64.0, card_size.y * 0.30)
+		stamp.z_index = 7
+		holder.add_child(stamp)
 	# 지금 보고 있는 항목: 꼬리표 대신 눈에 띄는 색의 굵은 외곽선
 	var marker := Panel.new()
 	marker.name = "SelectedOutline"
@@ -1142,7 +1247,7 @@ func _ch_laws() -> Dictionary:
 		if law == null:
 			continue
 		var counting: String = "법전에 있는 동안만 세요" if VictoryLaw.SESSION_KEYS.has(law.stat_key) else "게임 내내 쌓여요"
-		entries.append({"title": law.law_name, "augment": definition.augment_id, "texture": TextureCache.fetch("res://content_trickcal/illustrations/laws/%s.png" % law.law_id), "icon": &"book",
+		entries.append({"title": law.law_name, "augment": definition.augment_id, "law_id": law.law_id, "texture": TextureCache.fetch("res://content_trickcal/illustrations/laws/%s.png" % law.law_id), "icon": &"book",
 			"tone": Color("ffd43b"), "chips": ["목표 %d%s" % [law.goal(), law.unit()]], "summary": law.condition_text(),
 			"rows": [["판정", "차례가 끝날 때마다, 달성했으면 바로 졸업하고 교칙은 사라져요"], ["기록", counting], ["이의 있음!", "기록을 0으로 되돌릴 수 %s" % ("있어요" if law.resettable() else "없어요")]]})
 	return {"title": "법전", "entries": entries, "wide": true}

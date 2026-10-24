@@ -71,6 +71,7 @@ static func save_settings() -> void:
 	config.set_value("game", "pace_scale", pace_scale)
 	config.set_value("game", "avatar", String(avatar_id))
 	config.save(SETTINGS_PATH)
+	PlayerSave.set_value("lang", language)  # 영구 기록에도 (설정 파일이 사라져도 언어를 되살린다)
 
 
 static func load_settings() -> void:
@@ -93,7 +94,9 @@ static func load_settings() -> void:
 		pace_scale = PACE_NORMAL  # 연출 속도 선택을 없앴다: 저장값과 무관하게 보통
 		avatar_id = StringName(str(config.get_value("game", "avatar", "avatar_01")))
 	else:
-		language = L10n.detect_os_language()
+		# 설정 파일이 없으면 영구 기록의 언어, 그것도 없으면 기기 언어
+		var saved_lang: String = str(PlayerSave.get_value("lang", ""))
+		language = saved_lang if L10n.LANGUAGES.has(saved_lang) else L10n.detect_os_language()
 	if not L10n.set_language(language):
 		language = L10n.DEFAULT_LANG
 		L10n.set_language(language)
@@ -207,6 +210,7 @@ static func save() -> void:
 	config.load(PROFILE_PATH)  # 익명 태그·판 수(stats)는 그대로 두고 닉네임만 바꾼다
 	config.set_value("profile", "nickname", nickname)
 	config.save(PROFILE_PATH)
+	PlayerSave.set_value("nickname", nickname)
 
 
 # --- 익명 통계 태그 ------------------------------------------------------------------------------
@@ -276,15 +280,14 @@ static func is_valid_tag(tag: String) -> bool:
 	return true
 
 
+## 태그·판 수는 영구 기록(PlayerSave: user:// + 브라우저 localStorage)에서 읽는다. 이미 있는 태그는 절대 새로 뽑지 않는다.
 static func _load_stats() -> void:
 	if _player_tag != "" and _match_count >= 0:
 		return
-	var config := ConfigFile.new()
-	config.load(PROFILE_PATH)
-	var saved: String = str(config.get_value("stats", "tag", ""))
-	_match_count = maxi(int(config.get_value("stats", "match_count", 0)), 0)
-	_finished_count = maxi(int(config.get_value("stats", "finished_count", 0)), 0)
-	_win_count = maxi(int(config.get_value("stats", "win_count", 0)), 0)
+	var saved: String = str(PlayerSave.get_value("player_tag", ""))
+	_match_count = maxi(int(PlayerSave.get_value("match_count", 0)), 0)
+	_finished_count = maxi(int(PlayerSave.get_value("finished_count", 0)), 0)
+	_win_count = maxi(int(PlayerSave.get_value("win_count", 0)), 0)
 	if is_valid_tag(saved):
 		_player_tag = saved
 		return
@@ -297,19 +300,25 @@ static func _load_stats() -> void:
 
 
 static func _save_stats() -> void:
-	var config := ConfigFile.new()
-	config.load(PROFILE_PATH)
-	config.set_value("stats", "tag", _player_tag)
-	config.set_value("stats", "match_count", _match_count)
-	config.set_value("stats", "finished_count", _finished_count)
-	config.set_value("stats", "win_count", _win_count)
-	config.save(PROFILE_PATH)
+	var record: Dictionary = PlayerSave.data()
+	record["player_tag"] = _player_tag
+	record["match_count"] = _match_count
+	record["finished_count"] = _finished_count
+	record["win_count"] = _win_count
+	PlayerSave.save()
+
+
+## 기록 코드를 불러온 뒤: 태그·판 수·닉네임을 영구 기록에서 다시 읽는다.
+static func reload_from_save() -> void:
+	_player_tag = ""
+	_match_count = -1
+	_load_stats()
+	var saved: String = str(PlayerSave.get_value("nickname", ""))
+	if validate_nickname(saved) == "":
+		nickname = saved
 
 
 ## 저장된 닉네임을 불러온다 (없으면 빈 문자열).
 static func load_saved() -> String:
-	var config := ConfigFile.new()
-	if config.load(PROFILE_PATH) != OK:
-		return ""
-	var saved: String = str(config.get_value("profile", "nickname", ""))
+	var saved: String = str(PlayerSave.get_value("nickname", ""))
 	return saved if validate_nickname(saved) == "" else ""

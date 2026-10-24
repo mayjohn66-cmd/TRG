@@ -24,10 +24,16 @@ const NOTES: Dictionary = {
 }
 const CELL_SIZE: Vector2 = Vector2(88, 80)
 const BOWL_SIZE: Vector2 = Vector2(540, 154)
+const RECORD_HEIGHT: float = 30.0
 
 var level: int = BotTemper.DEFAULT_LEVEL
 var _face: FireFace = null
 var _cells: Dictionary = {}
+## 단계별 정복 표시 (황금 왕관 / 회색 자물쇠)와 고른 단계의 전적 줄.
+var _crowns: Dictionary = {}
+var _record_icon: MetaIcon = null
+var _record_label: Label = null
+var _conquer_label: Label = null
 var _bowl: RamenBowl = null
 var _note: MarqueeLabel = null
 
@@ -89,6 +95,37 @@ func _build() -> void:
 		stack.add_child(title)
 		gauge.add_child(cell)
 		_cells[step] = cell
+		var crown: MetaIcon = MetaIcon.create(&"lock", Vector2(20, 17))
+		crown.name = "Crown"
+		crown.position = Vector2(CELL_SIZE.x - 25.0, 5.0)
+		cell.add_child(crown)
+		_crowns[step] = crown
+	# 고른 단계의 전적: [왕관] 클리어! 최고: N라운드 · 정복 M/5 / [자물쇠] 미정복 (영구 기록 PlayerSave)
+	var record := HBoxContainer.new()
+	record.name = "DifficultyRecord"
+	record.alignment = BoxContainer.ALIGNMENT_CENTER
+	record.add_theme_constant_override("separation", 6)
+	record.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	record.custom_minimum_size = Vector2(0, RECORD_HEIGHT)  # 글꼴(언어)마다 줄 높이가 달라도 칸 높이는 그대로
+	add_child(record)
+	_record_icon = MetaIcon.create(&"lock", Vector2(22, 19))
+	_record_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	record.add_child(_record_icon)
+	_record_label = Label.new()
+	_record_label.name = "RecordText"
+	_record_label.add_theme_font_size_override("font_size", 16)
+	_record_label.add_theme_color_override("font_color", Color("6b3d05"))
+	_record_label.custom_minimum_size = Vector2(0, RECORD_HEIGHT)
+	_record_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_record_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	record.add_child(_record_label)
+	_conquer_label = Label.new()
+	_conquer_label.name = "ConquerCount"
+	_conquer_label.add_theme_font_size_override("font_size", 14)
+	_conquer_label.add_theme_color_override("font_color", Color("8a6a3a"))
+	_conquer_label.custom_minimum_size = Vector2(0, RECORD_HEIGHT)
+	_conquer_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	record.add_child(_conquer_label)
 	_bowl = RamenBowl.new()
 	_bowl.name = "RamenBowl"
 	_bowl.custom_minimum_size = BOWL_SIZE
@@ -129,6 +166,25 @@ func set_level(value: int, animate: bool = true) -> void:
 	_face.set_level(level, animate)
 	_bowl.set_level(level, animate)
 	_note.text = str(NOTES[level])
+	refresh_records()
+
+
+## 영구 기록의 정복 표시를 다시 그린다 (판이 끝나 메뉴로 돌아오면 새 기록이 보인다).
+func refresh_records() -> void:
+	var conquered: int = 0
+	for step: int in _crowns:
+		var cleared: bool = PlayerSave.buldak_cleared(step)
+		(_crowns[step] as MetaIcon).set_kind(&"crown" if cleared else &"lock")
+		if cleared:
+			conquered += 1
+	if _record_label == null:
+		return
+	var record: Dictionary = PlayerSave.buldak_record(level)
+	var cleared_now: bool = int(record.get("clears", 0)) > 0
+	_record_icon.set_kind(&"crown" if cleared_now else &"lock")
+	# 원문 한국어를 넣으면 화면에서 번역된다 (언어를 바꿔도 따라 바뀐다)
+	_record_label.text = "클리어! 최고: %d라운드" % int(record.get("best_round", 0)) if cleared_now else "미정복"
+	_conquer_label.text = "· 정복 %d/5" % conquered
 
 
 ## 작은 크기에서도 읽히는 표정 배지. 얼굴의 실루엣·눈·입은 고정하고 짧은 반응만 더한다.

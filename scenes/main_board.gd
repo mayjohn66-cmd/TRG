@@ -513,6 +513,8 @@ var _follow_up_pawns: Dictionary = {}
 const MAX_BURST_PARTICLES: int = 24
 ## 일회성 연출 노드 묶음 이름과, 수명에 더하는 여유(초): 이 여유가 지나도 남아 있으면 끊긴 연출로 보고 치운다.
 const ONESHOT_FX_GROUP: StringName = &"trg_oneshot_fx"
+## 1위·법전 졸업을 영구 기록(PlayerSave)에 남기는가 (실제 플레이만: 검사 장면은 끈다).
+var record_meta_progress: bool = not OS.has_feature("editor")
 ## 자주 생겼다 사라지는 연출 노드(플로팅 글자·파편·충격 링)를 지우지 않고 다시 쓴다.
 var _fx_pool: FxPool = FxPool.new()
 const ONESHOT_GRACE_SECONDS: float = 2.0
@@ -908,7 +910,22 @@ func _report_match_once() -> void:
 func _report_player_ranked(player_id: int, rank: int) -> bool:
 	if player_id == -1 or player_id != _telemetry_seat():
 		return false
+	_record_meta_progress(player_id, rank)
 	return _send_match_complete_webhook(rank)
+
+
+## 영구 기록(PlayerSave): 특수 승리 법전으로 졸업하면 그 법전을 도감 도장으로, 놀이터(컴퓨터 대전)에서 1위면 그 불닭 난이도의 왕관·최단 라운드를 남긴다.
+## 게임 규칙에는 영향이 없는 표시용 기록이다. 검사·연출 끈 판은 남기지 않는다.
+func _record_meta_progress(player_id: int, rank: int) -> void:
+	if state == null or not record_meta_progress:
+		return
+	var reason: String = str(state.rank_reasons.get(player_id, ""))
+	if LawRegistry.ALL_IDS.has(reason) and PlayerSave.mark_law(reason):
+		_log_line("[법전 수집] 새 도장: %s (%d/8)" % [VictoryChecker.short_reason(StringName(reason)), PlayerSave.law_count()], Color("ffd43b"))
+	if rank == 1 and net == null and ai_mode:
+		var level: int = _bot.difficulty if _bot != null else GameSession.bot_difficulty()
+		if PlayerSave.record_buldak(level, int(state.round_number)):
+			_log_line("[불닭 정복] %s 최고 기록: %d라운드" % [BotTemper.label(level), int(state.round_number)], Color("ffd43b"))
 
 
 ## [매치 완료] 보내기: 로컬 플레이어의 순위가 확정되는 순간(일반 완주·특수 승리) 또는 결과 화면이 뜨는 순간 중 먼저 오는 쪽에서 한 번만.
@@ -8283,6 +8300,18 @@ func _show_result_overlay() -> void:
 	lobby.custom_minimum_size = Vector2(0, 52)
 	lobby.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	buttons.add_child(lobby)
+	# [내 우승 기록 복사하기]: 커뮤니티·디스코드에 바로 붙여 넣는 두 줄 요약 (내 자리가 있는 판만)
+	var seat: int = _telemetry_seat()
+	if seat != -1 and state.rankings.has(seat):
+		var won: bool = int(state.rankings[0]) == seat
+		var brag: Button = _make_button("내 우승 기록 복사하기" if won else "내 기록 복사하기", Callable(), 19, Color("e8590c"))
+		brag.name = "CopyRecordButton"
+		brag.custom_minimum_size = Vector2(0, 52)
+		brag.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		brag.pressed.connect(func() -> void:
+			MetaIcon.copy_to_clipboard(brag_text(seat))
+			brag.text = "복사했어요! 붙여 넣어 자랑하세요")
+		buttons.add_child(brag)
 	# 한 판이 끝난 순간이 가장 할 말이 많을 때다: 결과 창 아래에 후기·밸런스 피드백 버튼을 크게 둔다.
 	var review: Button = _make_button(tr_ui("result.feedback"), _open_feedback.bind("결과 화면", FeedbackModal.Kind.BALANCE), 18, Color("c2255c"))
 	review.name = "ReviewFeedbackButton"
@@ -8290,6 +8319,29 @@ func _show_result_overlay() -> void:
 	box.add_child(review)
 	add_child(_result_overlay)
 	_reveal_ranking(rows, announcer)
+
+
+## 결과 화면 [내 기록 복사하기]의 글 (지금 언어): 1줄 게임·난이도·순위·라운드·졸업 방식, 2줄 판정 도구·기물 4개.
+func brag_text(player_id: int) -> String:
+	var rank: int = state.rankings.find(player_id) + 1
+	var reason: StringName = StringName(str(state.rank_reasons.get(player_id, VictoryChecker.ALL_HOME)))
+	var mode: String = BotTemper.label(_bot.difficulty if _bot != null else GameSession.bot_difficulty()) if (net == null and ai_mode) else L10n.t("온라인 대전" if net != null else "친선 대결")
+	var head: String = "%s [%s] %s %s! (%s / %s)" % [String.chr(0x1F3C6), L10n.t("초증강 엘리아스 마블"), mode, L10n.t("%d위 졸업" % rank),
+		L10n.t("%d라운드 만에" % int(state.round_number)), L10n.t(VictoryChecker.short_reason(reason))]
+	var tool: BaseJudgmentTool = state.tools.get(player_id)
+	var pawns: PackedStringArray = []
+	var counts: Dictionary = {}
+	for pawn: PlayerPawn in state.pawns_of(player_id):
+		var pawn_name: String = L10n.t(PawnCatalog.full_name(pawn.kind, pawn.unit_no)).trim_prefix("[").trim_suffix("]")
+		if not counts.has(pawn_name):
+			pawns.append(pawn_name)
+		counts[pawn_name] = int(counts.get(pawn_name, 0)) + 1
+	for index: int in pawns.size():
+		if int(counts[pawns[index]]) > 1:
+			pawns[index] = "%s ×%d" % [pawns[index], int(counts[pawns[index]])]  # 같은 기물은 묶는다
+	var gear: String = "%s %s: %s | %s %s: %s" % [String.chr(0x1F3B2), L10n.t("판정 도구"), L10n.t(tool.display_name) if tool != null else "-",
+		String.chr(0x265F), L10n.t("기물"), ", ".join(pawns)]
+	return head + "\n" + gear
 
 
 ## 결과 화면의 원클릭 소감 투표 바: 질문 한 줄 + 버튼 4개. 누르면 바로 개발자 웹후크로 가고, 감사 문구로 바뀌어 다시 누를 수 없다.

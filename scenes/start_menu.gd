@@ -157,6 +157,10 @@ func _build_mode_page() -> void:
 	buttons.add_theme_constant_override("separation", 10)
 	buttons.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	top.add_child(buttons)
+	# [트로피 법전 수집 N/8]: 특수 승리 법전으로 졸업해 본 종류 수 (영구 기록). 누르면 도감의 법전 장을 연다.
+	var laws: Button = MetaIcon.pill("LawCollection", "법전 수집 %d/8" % PlayerSave.law_count(), func() -> void: _open_rulebook(Rulebook.LAW_SPREAD))
+	laws.custom_minimum_size = Vector2(0, 56)
+	buttons.add_child(laws)
 	var language := LobbyTheme.language_toggle()  # [🌐 KR / EN]: 규칙·설정 버튼 옆
 	language.custom_minimum_size = Vector2(140, 56)
 	language.add_theme_font_size_override("font_size", 17)
@@ -203,7 +207,14 @@ func _build_mode_page() -> void:
 	rename.name = "RenameButton"
 	rename.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	buttons_row.add_child(rename)
-	_hub_profile = {"name": name_label, "avatar": avatar, "holder": avatar_holder}
+	# 이 브라우저의 고유 #태그 (영구 기록: 다음 접속에도 같다)
+	var tag_label := HubKit.outlined("#%s" % GameSession.player_tag(), 18, Color("fff6df"), Color("17591f"), 5)
+	tag_label.name = "ProfileTag"
+	tag_label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	tag_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	left.add_child(tag_label)
+	left.move_child(tag_label, plate_row.get_index() + 1)
+	_hub_profile = {"name": name_label, "avatar": avatar, "holder": avatar_holder, "tag": tag_label, "laws": laws}
 	# 웹: 내 아바타의 대기 애니메이션 묶음을 먼저 받고, 도착하면 허브의 전신 아바타를 움직이는 그림으로 바꾼다
 	AvatarPacks.request(id, true)
 	AvatarPacks.when_ready(self, func(ready_id: StringName) -> void:
@@ -249,6 +260,8 @@ func _refresh_hub() -> void:
 	if _hub_profile.is_empty():
 		return
 	(_hub_profile["name"] as Label).text = GameSession.display_nickname()
+	(_hub_profile["tag"] as Label).text = "#%s" % GameSession.player_tag()
+	(_hub_profile["laws"] as Button).text = "법전 수집 %d/8" % PlayerSave.law_count()
 	var id: StringName = AvatarCatalog.sanitize(GameSession.avatar_id)
 	var holder: Control = _hub_profile["holder"]
 	(_hub_profile["avatar"] as Control).queue_free()
@@ -326,7 +339,21 @@ func _on_back_pressed() -> void:
 
 
 func _show_rules() -> void:
-	LobbyTheme.show_rules(self)
+	_open_rulebook(0)
+
+
+## 규칙 도감을 연다: 도감에서 기록 코드를 불러오면 허브의 #태그·닉네임·법전 수를 다시 그린다.
+func _open_rulebook(spread: int) -> Rulebook:
+	var book: Rulebook = Rulebook.open(self, spread)
+	book.records_imported.connect(_on_records_imported)
+	return book
+
+
+func _on_records_imported() -> void:
+	if GameSession.nickname != "":
+		_name_edit.text = GameSession.nickname
+		_hello_label.text = "%s 교주님" % GameSession.nickname
+	_refresh_hub()
 
 
 func _show_settings() -> void:

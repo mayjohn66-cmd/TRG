@@ -2026,3 +2026,25 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 조건 발동,Conditional,条件発動
 착지 발동,On Landing,着地発動
 ◆ 기본 말 1개 →,◆ 1 Basic Pawn →,◆ 基本駒1個 →
+클리어! 최고: %d라운드,Cleared! Best: Round %d,クリア！ 最速: %dラウンド
+미정복,Unconquered,未制覇
+· 정복 %d/5,· Conquered %d/5,· 制覇 %d/5
+[법전 수집] 새 도장: %s (%d/8),[Law Collection] New stamp: %s (%d/8),[法典コレクション] 新スタンプ: %s (%d/8)
+[불닭 정복] %s 최고 기록: %d라운드,[Buldak Conquest] %s best record: Round %d,[ブルダック制覇] %s 最速記録: %dラウンド
+내 우승 기록 복사하기,Copy My Victory Record,優勝記録をコピー
+내 기록 복사하기,Copy My Record,自分の記録をコピー
+복사했어요! 붙여 넣어 자랑하세요,Copied! Paste it to show off,コピーしました！ 貼り付けて自慢しよう
+온라인 대전,Online Match,オンライン対戦
+친선 대결,Friendly Match,フレンドリーマッチ
+%d위 졸업,Graduated #%d,%d位で卒業
+기물,Pawns,駒
+기록 코드 복사,Copy Save Code,記録コードをコピー
+기록 코드 입력,Enter Save Code,記録コードを入力
+법전 수집 %d/8,Laws Collected %d/8,法典コレクション %d/8
+기록 코드를 복사했어요 (#%s),Save code copied (#%s),記録コードをコピーしました (#%s)
+기록 코드를 붙여 넣어 주세요,Paste your save code,記録コードを貼り付けてください
+기록 코드를 확인해 주세요,Please check the save code,記録コードを確認してください
+기록을 불러왔어요 (#%s),Records loaded (#%s),記録を読み込みました (#%s)
+불러오기,Load,読み込む
+달성 완료 ★,Achieved ★,達成済み ★
+%d라운드 만에,in %d rounds,%dラウンドで

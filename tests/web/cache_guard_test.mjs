@@ -23,6 +23,7 @@ function fakeWindow({ buildId, version, stored }) {
   const unregistered = [];
   const fetched = [];
   const modules = [];
+  const persisted = [];
   class FakeWorklet {}
   FakeWorklet.prototype.addModule = function (url) { modules.push(url); return Promise.resolve(); };
   const window = {
@@ -36,6 +37,7 @@ function fakeWindow({ buildId, version, stored }) {
       delete: (key) => { deleted.push(key); return Promise.resolve(true); },
     },
     navigator: {
+      storage: { persist: () => { persisted.push(1); return Promise.resolve(true); } },
       serviceWorker: {
         getRegistrations: () => Promise.resolve([{ unregister: () => { unregistered.push(1); return Promise.resolve(true); } }]),
       },
@@ -48,12 +50,13 @@ function fakeWindow({ buildId, version, stored }) {
   };
   const code = source.replace("__TRG_BUILD_ID__", buildId).replace("__TRG_VERSION__", version);
   vm.runInNewContext(code, { window, URL, setTimeout, Promise });
-  return { window, storage, deleted, unregistered, fetched, modules };
+  return { window, storage, deleted, unregistered, fetched, modules, persisted };
 }
 
 // 1) 새 버전: 엔진 파일 주소에 ?v=, 옛 캐시·서비스 워커 정리, 개인 설정은 그대로
 {
-  const page = fakeWindow({ buildId: "abc1234", version: "0.9.0+abc1234", stored: { trg_cached_version: "0.9.0+0000000", nickname: "말랑", lang: "ja", volume: "0.4" } });
+  const save = JSON.stringify({ v: 1, player_tag: "K7PQ", nickname: "말랑", cleared_laws: ["LAW_04"] });
+  const page = fakeWindow({ buildId: "abc1234", version: "0.9.0+abc1234", stored: { trg_cached_version: "0.9.0+0000000", nickname: "말랑", lang: "ja", volume: "0.4", trg_player_save_v1: save } });
   const guard = page.window.trgCacheGuard;
   check(guard.stamped, "토큰을 채우면 동작한다");
   check(guard.bust("index.wasm") === "https://trickcal-board.vercel.app/index.wasm?v=abc1234", "index.wasm에 ?v=커밋: " + guard.bust("index.wasm"));
@@ -72,6 +75,9 @@ function fakeWindow({ buildId, version, stored }) {
   check(page.unregistered.length === 1, "옛 서비스 워커를 해제한다");
   check(page.storage.get("trg_cached_version") === "0.9.0+abc1234", "청소 뒤 현재 버전을 저장한다");
   check(page.storage.get("nickname") === "말랑" && page.storage.get("lang") === "ja" && page.storage.get("volume") === "0.4", "닉네임·언어·볼륨은 그대로");
+  check(page.storage.get("trg_player_save_v1") === save, "영구 기록(trg_player_save_v1)은 새 버전 청소 뒤에도 그대로");
+  check(page.persisted.length >= 1, "브라우저에 보존 저장소를 요청한다 (공간 정리 때 지워지지 않게)");
+  check(!/localStorage\.clear\s*\(/.test(shell), "청소 스크립트는 localStorage.clear()를 부르지 않는다");
   // 2) 같은 버전으로 다시 열면 청소하지 않는다
   page.deleted.length = 0;
   check((await guard.clean()) === false && page.deleted.length === 0, "같은 버전이면 그대로 부팅한다");
