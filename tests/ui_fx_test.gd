@@ -93,6 +93,7 @@ func _run() -> void:
 	await _test_move_four_steps()
 	await _test_presentation_queue()
 	await _test_oneshot_fx_sweep()
+	await _test_queue_ignores_deferred_draft()
 	await _test_board_teardown()  # 보드를 지운다: 반드시 마지막
 	if _failures.is_empty():
 		print("UI_FX_OK")
@@ -2873,6 +2874,44 @@ func _test_nitro_dash() -> void:
 
 
 ## 이동 4단계: (1) 리벤지 부스터 로켓 -> 잠깐 멈춤 -> (2) 눈금 이동 -> (3) 도착 칸 처치 연출 -> (4) 점프 부스트 추가 이동.
+## 거북이 이동 회귀 2: 드래프트 뒤로 미뤄 둔 연출(_draft_deferred)이 남아 있어도 이미 큐에 든 걸음은 바로 이어 뛴다.
+## 예전에는 큐가 미뤄 둔 연출을 '보드가 가려짐'으로 보고 걸음마다 720프레임(웹 60fps면 12초) 상한까지 기다렸다:
+## 라운드 마지막 턴에 받은 카드(비행기가 옷장 워프로 빵집에 내릴 때 등)가 드래프트 쪽으로 밀리면 남은 걸음이 한 칸씩 기어갔다.
+func _test_queue_ignores_deferred_draft() -> void:
+	var state: GameState = _board.state
+	_board._reset_presentation()
+	var saved_instant: bool = _board.instant_roll_for_test
+	_board.instant_roll_for_test = false  # 연출 큐를 실제로 거친다
+	_board.pacing_enabled = false
+	for pawn: PlayerPawn in state.pawns:
+		pawn.reset_to_start()
+	var mover: PlayerPawn = state.get_pawn(11)
+	mover.has_left_start = true
+	mover.current_tile_idx = 5
+	mover.step_history.assign([5])
+	_board._refresh_all()
+	await process_frame
+	var played: Array[int] = [0]
+	_board._draft_deferred.append({"step": func() -> void: played[0] += 1, "pawn": -1, "pick": _board._pick_serial})
+	var ctx := RuleContext.new()
+	ctx.state = state
+	ctx.actor_id = 1
+	ctx.dice_value = 2
+	ctx.raw_roll = 2
+	var started: int = Time.get_ticks_msec()
+	MoveExecutor.execute(state, mover, ctx)
+	var frames: int = 0
+	while frames < 1500 and _board._presentation_active():
+		frames += 1
+		await process_frame
+	var elapsed: int = Time.get_ticks_msec() - started
+	_expect(not _board._presentation_active() and elapsed < 1500, "미뤄 둔 드래프트 연출이 있어도 큐의 걸음 2칸은 1.5초 안에 끝난다 (%dms)" % elapsed)
+	_expect(played[0] == 0 and _board._draft_deferred.size() == 1, "미뤄 둔 연출은 드래프트가 끝날 때까지 그대로 기다린다")
+	_expect(_board._fx_holding(), "보드 밖 연출(말 위치 맞춤 등)은 여전히 드래프트 공개를 기다린다")
+	_board._draft_deferred.clear()
+	_board.instant_roll_for_test = saved_instant
+
+
 func _test_move_four_steps() -> void:
 	var state: GameState = _board.state
 	_board._reset_presentation()

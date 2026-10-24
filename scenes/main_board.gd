@@ -3772,14 +3772,19 @@ func _fly_drawn_card(player_id: int, card_id: StringName) -> void:
 	if _presentation_active() or _fx_busy or (_announcer != null and _announcer.holding()):
 		# Engine broadcasts rewards and captures in one call. Let late captures
 		# register before putting the reward card after them.
+		# 드래프트 전에 받은 카드다: 프레임 끝에 줄을 설 때 드래프트가 이미 열렸어도 드래프트 뒤로 미루지 않는다.
 		call_deferred("_queue_drawn_after_effects",launch,_fx_generation)
 		return
 	launch.call()
 
 
 func _queue_drawn_after_effects(launch: Callable, generation: int) -> void:
-	if generation == _fx_generation:
-		_enqueue_after_kills(launch)
+	if generation != _fx_generation:
+		return
+	if not _late_steps.is_empty():
+		_late_steps.append({"step": launch, "pawn": -1, "defer": false, "pick": _pick_serial})
+	else:
+		enqueue_step(launch, -1, false)
 
 
 func _launch_drawn_card(player_id: int, card_id: StringName, local: bool, index: int, origin: Vector2, grouped: bool = false) -> void:
@@ -6616,7 +6621,9 @@ func _presentation_linger(generation: int) -> void:
 ## 알림 카드·워프 연출이 보드를 가리고 있으면 끝날 때까지 기다린다 (최대 12초).
 func _presentation_wait_ready(generation: int) -> void:
 	var frames: int = 0
-	while generation == _fx_generation and (_fx_holding() or _fx_busy or (_draw_fx != null and _draw_fx.busy())) and (frames < 720 or (_draw_fx != null and _draw_fx.busy())):
+	# 큐에 든 단계는 이미 지금 재생해도 되는 것들이다 (드래프트 뒤로 미룰 연출은 _draft_deferred에 따로 모인다).
+	# 그래서 미뤄 둔 드래프트 연출이 있다고 기다리지 않는다: 기다리면 드래프트가 열린 동안 남은 걸음마다 12초 상한까지 멈춰 한 칸씩 기어갔다.
+	while generation == _fx_generation and (_fx_holding(false) or _fx_busy or (_draw_fx != null and _draw_fx.busy())) and (frames < 720 or (_draw_fx != null and _draw_fx.busy())):
 		frames += 1
 		await get_tree().process_frame
 
@@ -6659,10 +6666,11 @@ func _fx_when_announced(action: Callable) -> void:
 
 
 ## 알림 카드가 가리고 있어서 말을 움직이면 안 되는 때인가.
-func _fx_holding() -> bool:
+## include_draft=false: 연출 큐 자신이 묻는 경우 (큐의 단계는 드래프트와 상관없이 재생해도 된다).
+func _fx_holding(include_draft: bool = true) -> bool:
 	if _duel_arena != null and is_instance_valid(_duel_arena) and _duel_arena.holds_board():
 		return true  # 결투 승패가 공개되기 전에 누가 날아가는지 보여 주지 않는다
-	if not _draft_deferred.is_empty():
+	if include_draft and not _draft_deferred.is_empty():
 		return true  # 드래프트 효과는 증강 공개 뒤에: 그 전에는 말 그림을 옮기지 않는다
 	return _stage_warps > 0 or (_announcer != null and _announcer.holding() and not _fx_gate_open)
 
