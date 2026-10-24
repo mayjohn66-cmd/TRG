@@ -52,7 +52,7 @@ const GLYPHS_EN: Dictionary = {
 ## 문장 속 글자 하나짜리 기물 이름.
 const SINGLE_WORDS_EN: Dictionary = {
 	"폰": "Pawn", "퀸": "Queen", "킹": "King", "포": "Cannon", "차": "Chariot", "마": "Horse", "상": "Elephant",
-	"광": "Gwang", "띠": "Ribbon", "피": "Junk", "말": "Pieces",
+	"광": "Gwang", "띠": "Ribbon", "피": "Junk", "말": "Pieces", "보": "Paper",
 }
 ## 일본어 화면의 글자 하나짜리 라벨 (일본어 글꼴은 한자가 있어 한 글자 그대로 쓴다).
 const GLYPHS_JA: Dictionary = {
@@ -63,7 +63,7 @@ const GLYPHS_JA: Dictionary = {
 }
 const SINGLE_WORDS_JA: Dictionary = {
 	"폰": "ポーン", "퀸": "クイーン", "킹": "キング", "포": "包", "차": "車", "마": "馬", "상": "象",
-	"광": "光", "띠": "短冊", "피": "カス", "말": "駒",
+	"광": "光", "띠": "短冊", "피": "カス", "말": "駒", "보": "パー",
 }
 const GLYPHS: Dictionary = {"en": GLYPHS_EN, "ja": GLYPHS_JA}
 const SINGLE_WORDS: Dictionary = {"en": SINGLE_WORDS_EN, "ja": SINGLE_WORDS_JA}

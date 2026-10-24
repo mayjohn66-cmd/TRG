@@ -47,6 +47,17 @@ func test_unknown_language_is_ignored_and_cycle_wraps() -> void:
 	L10n.set_language(saved)
 
 
+func test_paper_in_duel_logs_is_translated_without_changing_supply_glyphs() -> void:
+	for lang: String in ["en","ja"]:
+		_with_lang(lang,func() -> void:
+			for left: String in DuelRules.HAND_NAMES:
+				for right: String in DuelRules.HAND_NAMES:
+					var detail: String = L10n.t("(%s vs %s)"%[left,right])
+					check(not L10n.has_hangul(detail),"all rock-paper-scissors pairs translate in %s: %s"%[lang,detail])
+			check_eq(L10n.t("(보 vs 바위)"),"(Paper vs Rock)" if lang=="en" else "(パー vs グー)","paper is a word inside duel detail")
+			check_eq(L10n.t("보"),"S" if lang=="en" else "補","the standalone supply icon keeps its existing abbreviation"))
+
+
 func test_test_runner_starts_in_korean_regardless_of_os_locale() -> void:
 	check_eq(L10n.detect_os_language(), "ko", "테스트 러너(-s 스크립트)는 기기 언어와 상관없이 한국어로 시작")
 
