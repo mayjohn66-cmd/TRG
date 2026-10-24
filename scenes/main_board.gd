@@ -6429,6 +6429,9 @@ func _enqueue_batch(entries: Array[Dictionary]) -> void:
 
 ## 연출 큐를 비우고 재생 중인 러너를 멈춘다 (판 초기화·되감기·테스트 정리용). 이미 시작된 트윈은 건드리지 않는다.
 func _reset_presentation() -> void:
+	var castling_stage: Node2D = get_node_or_null("CastlingStage")
+	if castling_stage!=null:
+		castling_stage.cancel()
 	var gambler_result: Node2D = get_node_or_null("GamblerResult")
 	if gambler_result!=null:
 		gambler_result.cancel()
@@ -8761,6 +8764,12 @@ func _on_super_picked(player_id: int, augment_id: StringName) -> void:
 				mine_tiles.append(int(change.tile))
 		_draft_deferred = _draft_deferred.filter(func(entry: Dictionary) -> bool:
 			return not (int(entry.get("pick",-1))==_pick_serial and mine_tiles.has(int(entry.get("trap_tile",-1)))))
+	if effect==SuperAugments.CASTLING:
+		# Preserve this pick's permutation if another drafted augment changes it later.
+		var poses: Array[Dictionary] = []
+		for pawn: PlayerPawn in SuperAugments.board_leaders(state):
+			poses.append({"pawn":pawn.entity_id,"tile":pawn.current_tile_idx,"position":_pawn_position(pawn)})
+		changes.append({"kind":"castling_pose","pawns":poses})
 	if effect==SuperAugments.REDISTRIBUTE:
 		# Capture this pick's targets now, before another selected augment changes them.
 		var poses: Array[Dictionary] = []

@@ -14,6 +14,7 @@ const MINEFIELD_STAGE = preload("res://scenes/minefield_stage.gd")
 const RAID_STAGE = preload("res://scenes/raid_stage.gd")
 const GAMBLER_STAGE = preload("res://scenes/gambler_fx.gd")
 const PROFILE_AURA = preload("res://scenes/profile_super_aura.gd")
+const CASTLING_STAGE = preload("res://scenes/castling_stage.gd")
 const FATE_COIN = preload("res://scenes/fate_coin_3d.gd")
 const STAGE_SPOTLIGHT = preload("res://scenes/pawn_stage_spotlight.gd")
 
@@ -252,89 +253,13 @@ func _gambler_result(mode: StringName, at_screen: Vector2, target: Control, valu
 # ---------------------------------------------------------------------------
 
 func _castling(changes: Array) -> void:
-	var ids: Array[int] = []
-	for change: Dictionary in changes:
-		if change["kind"] == "castle":
-			for key: String in ["a", "b"]:
-				var pid: int = int(change[key])
-				if not ids.has(pid):
-					ids.append(pid)
-	# 섞인 말과 같이 보드에 있는 말 전부 (선두 말 기준)
-	for pawn: PlayerPawn in SuperAugments.board_leaders(board.state):
-		if not ids.has(pawn.entity_id):
-			ids.append(pawn.entity_id)
-	var views: Array[Node2D] = []
-	var pawns: Array[PlayerPawn] = []
-	for pid: int in ids:
-		var view: Node2D = _view(pid)
-		var pawn: PlayerPawn = board.state.get_pawn(pid)
-		if view == null or pawn == null or not view.visible:
-			continue
-		board._kill_fx(view)
-		views.append(view)
-		pawns.append(pawn)
-	if views.size() < 2:
-		return
-	var center: Vector2 = _local(board._board_center()) + Vector2(0.0, -30.0)
-	var radius: float = 70.0
-	var starts: Array[Vector2] = []
-	for view: Node2D in views:
-		starts.append(view.position)
-	Sfx.play(&"launch")
-	var count: int = views.size()
-	var rise: Callable = func(t: float) -> void:
-		for index: int in count:
-			if not is_instance_valid(views[index]):
-				continue
-			var slot: Vector2 = center + Vector2.from_angle(TAU * index / count) * radius
-			views[index].position = starts[index].lerp(slot, t) + Vector2(0.0, -60.0 * sin(t * PI))
-	var lift: Tween = board.create_tween()
-	lift.tween_method(rise, 0.0, 1.0, 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	await _wait(0.3)
-	if not _alive():
-		return
-	var ring := Line2D.new()
-	ring.points = _circle(radius + 18.0, 40)
-	ring.closed = true
-	ring.width = 4.0
-	ring.default_color = Color(GOLD, 0.7)
-	ring.position = center
-	ring.z_index = 15
-	_layer().add_child(ring)
-	Sfx.play(&"roulette_tick")
-	var spin: Callable = func(t: float) -> void:
-		for index: int in count:
-			if is_instance_valid(views[index]):
-				views[index].position = center + Vector2.from_angle(TAU * index / count + t * TAU * 2.0) * radius
-		if is_instance_valid(ring):
-			ring.rotation = -t * TAU
-	var whirl: Tween = board.create_tween()
-	whirl.tween_method(spin, 0.0, 1.0, 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	await _wait(0.5)
-	_fade_out(ring, 0.0, 0.2)
-	if not _alive():
-		return
-	# 새 자리로 일제히 낙하
-	var lands: Array[Vector2] = []
-	var heads: Array[Vector2] = []
-	for index: int in count:
-		lands.append(board._pawn_position(pawns[index]))
-		heads.append(views[index].position)
-		board._fx_hints.erase(pawns[index].entity_id)
-	var fall: Callable = func(t: float) -> void:
-		for index: int in count:
-			if is_instance_valid(views[index]):
-				views[index].position = heads[index].lerp(lands[index], t) + Vector2(0.0, -40.0 * sin(t * PI))
-	var drop: Tween = board.create_tween()
-	drop.tween_method(fall, 0.0, 1.0, 0.32).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	await _wait(0.32)
-	if not _alive():
-		return
-	for land: Vector2 in lands:
-		_ring(land, GOLD, 30.0, 3.0, 0.22)
-	board.screen_shake(8.0, 0.2)
-	Sfx.play(&"slam")
-	await _wait(0.1)
+	var stage := CASTLING_STAGE.new()
+	board.add_child(stage)
+	stage.play(board,changes,board._motion_pace())
+	while _alive() and is_instance_valid(stage) and not stage._complete:
+		await board.get_tree().process_frame
+	if is_instance_valid(stage):
+		stage.queue_free()
 
 
 # ---------------------------------------------------------------------------

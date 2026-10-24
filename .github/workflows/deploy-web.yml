@@ -24,6 +24,7 @@ on:
           - raid
           - gambler
           - profile-aura
+          - castling
 
 permissions:
   contents: write
@@ -51,7 +52,9 @@ jobs:
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
           REQUESTED_SCOPE: ${{ inputs.validation }}
         run: |
-          if [[ "${REQUESTED_SCOPE}" == "profile-aura" || "${COMMIT_MESSAGE}" == *"[check:profile-aura]"* ]]; then
+          if [[ "${REQUESTED_SCOPE}" == "castling" || "${COMMIT_MESSAGE}" == *"[check:castling]"* ]]; then
+            echo "scope=castling" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "profile-aura" || "${COMMIT_MESSAGE}" == *"[check:profile-aura]"* ]]; then
             echo "scope=profile-aura" >> "${GITHUB_OUTPUT}"
           elif [[ "${REQUESTED_SCOPE}" == "gambler" || "${COMMIT_MESSAGE}" == *"[check:gambler]"* ]]; then
             echo "scope=gambler" >> "${GITHUB_OUTPUT}"
@@ -91,6 +94,14 @@ jobs:
         run: |
           godot --headless --path . --import || true
           godot --headless --path . --import
+
+      - name: Run focused castling presentation check
+        if: steps.validation.outputs.scope == 'castling'
+        run: |
+          set -o pipefail
+          godot --headless --path . -s res://tests/ui_castling_test.gd 2>&1 | tee /tmp/ui_castling_test.log
+          grep -q 'UI_CASTLING_OK' /tmp/ui_castling_test.log
+          if grep -q 'SCRIPT ERROR' /tmp/ui_castling_test.log; then exit 1; fi
 
       - name: Run focused profile aura check
         if: steps.validation.outputs.scope == 'profile-aura'
