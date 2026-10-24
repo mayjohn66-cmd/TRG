@@ -27,6 +27,7 @@ on:
           - castling
           - bakery
           - sniper
+          - nitro
 
 permissions:
   contents: write
@@ -54,7 +55,9 @@ jobs:
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
           REQUESTED_SCOPE: ${{ inputs.validation }}
         run: |
-          if [[ "${REQUESTED_SCOPE}" == "sniper" || "${COMMIT_MESSAGE}" == *"[check:sniper]"* ]]; then
+          if [[ "${REQUESTED_SCOPE}" == "nitro" || "${COMMIT_MESSAGE}" == *"[check:nitro]"* ]]; then
+            echo "scope=nitro" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "sniper" || "${COMMIT_MESSAGE}" == *"[check:sniper]"* ]]; then
             echo "scope=sniper" >> "${GITHUB_OUTPUT}"
           elif [[ "${REQUESTED_SCOPE}" == "bakery" || "${COMMIT_MESSAGE}" == *"[check:bakery]"* ]]; then
             echo "scope=bakery" >> "${GITHUB_OUTPUT}"
@@ -100,6 +103,14 @@ jobs:
         run: |
           godot --headless --path . --import || true
           godot --headless --path . --import
+
+      - name: Run focused nitro presentation check
+        if: steps.validation.outputs.scope == 'nitro'
+        run: |
+          set -o pipefail
+          godot --headless --path . -s res://tests/ui_nitro_test.gd 2>&1 | tee /tmp/ui_nitro_test.log
+          grep -q 'UI_NITRO_OK' /tmp/ui_nitro_test.log
+          if grep -q 'SCRIPT ERROR' /tmp/ui_nitro_test.log; then exit 1; fi
 
       - name: Run focused sniper presentation check
         if: steps.validation.outputs.scope == 'sniper'

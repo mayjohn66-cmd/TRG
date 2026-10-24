@@ -17,6 +17,7 @@ const PROFILE_AURA = preload("res://scenes/profile_super_aura.gd")
 const CASTLING_STAGE = preload("res://scenes/castling_stage.gd")
 const BAKERY_STAGE = preload("res://scenes/bakery_stage.gd")
 const SNIPER_STAGE = preload("res://scenes/sniper_stage.gd")
+const NITRO_STAGE = preload("res://scenes/nitro_stage.gd")
 const FATE_COIN = preload("res://scenes/fate_coin_3d.gd")
 const STAGE_SPOTLIGHT = preload("res://scenes/pawn_stage_spotlight.gd")
 
@@ -301,80 +302,7 @@ func _sniper(player_id: int, changes: Array) -> void:
 # ---------------------------------------------------------------------------
 
 func _nitro(changes: Array) -> void:
-	var dash: Dictionary = _first(changes, "nitro")
-	var view: Node2D = _view(int(dash.get("pawn", -1)))
-	var path: Array = dash.get("path", [])
-	if view == null or path.is_empty():
-		return
-	var points := PackedVector2Array([view.position])
-	for tile: Variant in path:
-		points.append(board._tile_center(int(tile)))
-	var glow := Line2D.new()
-	glow.points = points
-	glow.width = 26.0
-	glow.default_color = Color(NEON, 0.45)
-	glow.joint_mode = Line2D.LINE_JOINT_ROUND
-	glow.begin_cap_mode = Line2D.LINE_CAP_ROUND
-	glow.end_cap_mode = Line2D.LINE_CAP_ROUND
-	glow.z_index = 14
-	var core := Line2D.new()
-	core.points = points
-	core.width = 9.0
-	core.default_color = NEON.lightened(0.4)
-	core.joint_mode = Line2D.LINE_JOINT_ROUND
-	core.z_index = 14
-	var gradient := Gradient.new()
-	gradient.set_color(0, NEON_HOT)
-	gradient.set_color(1, NEON)
-	core.gradient = gradient
-	_layer().add_child(glow)
-	_layer().add_child(core)
-	# 라인이 출발점에서 끝까지 쫙 깔린다
-	var full: PackedVector2Array = points.duplicate()
-	var lay: Callable = func(t: float) -> void:
-		var shown: PackedVector2Array = _partial(full, t)
-		if is_instance_valid(core):
-			core.points = shown
-		if is_instance_valid(glow):
-			glow.points = shown
-	var draw: Tween = board.create_tween()
-	draw.tween_method(lay, 0.0, 1.0, 0.25).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	Sfx.play(&"dash")
-	await _wait(0.25)
-	# 칸마다 화살표가 앞으로 점멸한다
-	var arrows: Array[Node2D] = []
-	for index: int in range(1, points.size()):
-		var arrow := _chevron(points[index - 1].direction_to(points[index]))
-		arrow.position = points[index]
-		arrow.modulate.a = 0.0
-		_layer().add_child(arrow)
-		arrows.append(arrow)
-		var flick: Tween = arrow.create_tween()
-		flick.tween_interval(index * 0.03)
-		for i: int in 2:
-			flick.tween_property(arrow, "modulate:a", 1.0, 0.06)
-			flick.tween_property(arrow, "modulate:a", 0.25, 0.08)
-	await _wait(0.4)
-	for node: Node2D in [glow, core]:
-		_fade_out(node, 0.35, 0.3)
-	for arrow: Node2D in arrows:
-		_fade_out(arrow, 0.1, 0.2)
-
-
-## 니트로 질주 중의 잔상: 말 모양 자리에 빛나는 원이 남았다 사라진다.
-func ghost(view: Node2D, color: Color) -> void:
-	if view == null or not is_instance_valid(view):
-		return
-	var shade := Polygon2D.new()
-	shade.polygon = _circle(15.0, 16)
-	shade.color = Color(color.lightened(0.25), 0.55)
-	shade.position = view.position + Vector2(0.0, -14.0)
-	shade.z_index = 2
-	_layer().add_child(shade)
-	var fade: Tween = shade.create_tween().set_parallel(true)
-	fade.tween_property(shade, "modulate:a", 0.0, 0.3)
-	fade.tween_property(shade, "scale", Vector2(1.4, 0.8), 0.3)
-	fade.chain().tween_callback(shade.queue_free)
+	await board._play_nitro_stage(_first(changes,"nitro"))
 
 
 # ---------------------------------------------------------------------------

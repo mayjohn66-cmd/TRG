@@ -477,6 +477,7 @@ var _shake_tween: Tween = null
 var _shake_origin: Vector2 = Vector2.ZERO
 var _shake_active: bool = false
 var _fx_skip_steps: Dictionary = {}
+var _nitro_skips: Dictionary = {}
 var _fx_hint_bonus: float = 0.0
 var _fx_generation: int = 0
 ## 단일 연출 큐(FIFO): 말 걸음·발판 팝업·처치 컷인·배너·워프·출발선 사출이 이 줄에서 한 번에 하나씩만 재생된다.
@@ -2887,44 +2888,27 @@ func _on_leapfrog_boosted(pawn_id: int, waypoint: int, bonus: int) -> void:
 ## 초증강 아우토반 니트로: 선두 말이 리벤지 부스터처럼 화염을 뿜으며 코너(또는 길을 막은 말이 있는 칸)까지 한 번에 날아간다.
 ## 엔진은 움직이기 전에 방송하므로 지금 자리에서 출발하고, 한 칸씩 뛰는 걸음은 건너뛴다. 막은 칸의 말 사출은 그 뒤 처치 연출로 이어진다.
 func _on_nitro_dashed(pawn_id: int, path: Array[int], blocked: int) -> void:
-	_note_super({"kind": "nitro", "pawn": pawn_id, "path": path.duplicate(), "blocked": blocked})
 	var pawn: PlayerPawn = state.get_pawn(pawn_id)
 	_log_line("[아우토반 니트로] %s %s" % [_pawn_name(pawn_id), "%d번 칸의 말을 들이받고 멈춤!" % blocked if blocked != -1 else "%d번까지 질주!" % path.back()], Color("ff922b"))
-	if not _fx_on() or pawn == null or path.is_empty() or not _pawn_views.has(pawn_id):
+	if not _fx_on() or pawn==null or path.is_empty() or not _pawn_views.has(pawn_id):
 		return
-	var tile: int = int(path.back())
-	var goal: Vector2 = _tile_center(tile) if tile == GameEnums.GOAL_TILE else _pawn_position_at(pawn, tile)
-	var goal_scale: float = _depth_scale(tile_norm(tile).y)
+	var dash := {"kind":"nitro","pawn":pawn_id,"path":path.duplicate(),"blocked":blocked,"goal_scale":_depth_scale(tile_norm(int(path.back())).y)}
+	_note_super(dash)
 	_fx_skip_steps[pawn_id] = true
-	enqueue_step(func() -> void:
-		var view: Node2D = _pawn_views.get(pawn_id)
-		if view == null or not is_instance_valid(view):
-			_fx_skip_steps.erase(pawn_id)
-			return
-		Sfx.play(&"rocket")
-		screen_shake(6.0, 0.2)
-		_show_center_banner("[아우토반 니트로!]\n%s" % ("%d번 칸 들이받기!" % blocked if blocked != -1 else "%d번까지 질주!" % tile), Color("ff922b"))
-		_impact_ring(view.position, Color("ff6b00"), 58.0)
-		_burst_shards(view.position, Color("ff922b"), 14)
-		await get_tree().create_timer(REVENGE_LAUNCH_LEAD).timeout
-		if not is_instance_valid(view):
-			_fx_skip_steps.erase(pawn_id)
-			return
-		_glide(view, goal, goal_scale, {"from_pos": view.position, "dur": 0.32, "arc": 14.0, "pace_cap": 1.0, "land_tile": tile, "land_big": true})
-		var generation: int = _fx_generation
-		var frame: int = 0
-		while generation == _fx_generation and is_instance_valid(view) and _fx_running(view):
-			if frame % 2 == 0:
-				_rocket_puff(view.position)
-			if _super_fx != null:
-				_super_fx.ghost(view, PLAYER_COLORS[pawn.owner_id])  # 초고속 잔상
-			frame += 1
-			await get_tree().process_frame
-		_fx_skip_steps.erase(pawn_id)
-		if generation != _fx_generation or not is_instance_valid(view):
-			return
-		screen_shake(7.0, 0.22)
-		_impact_ring(view.position, Color("ff6b00"), 50.0), pawn_id)
+	_nitro_skips[pawn_id] = true
+	# Draft play is owned by its SUPER_10 step, which combines lane and movement.
+	if not _draft_in_progress():
+		enqueue_step(_play_nitro_stage.bind(dash),pawn_id)
+
+
+func _play_nitro_stage(dash: Dictionary) -> void:
+	var stage := SuperFX.NITRO_STAGE.new()
+	add_child(stage)
+	stage.play(self,dash,_motion_pace())
+	while is_instance_valid(stage) and not stage._complete:
+		await get_tree().process_frame
+	if is_instance_valid(stage):
+		stage.queue_free()
 
 
 ## 큐의 한 단계: 출발선에서 부스터 칸까지 화염 잔상을 남기며 0.28초 만에 낮은 아치로 날아가 쾅 착지한다.
@@ -6429,6 +6413,12 @@ func _enqueue_batch(entries: Array[Dictionary]) -> void:
 
 ## 연출 큐를 비우고 재생 중인 러너를 멈춘다 (판 초기화·되감기·테스트 정리용). 이미 시작된 트윈은 건드리지 않는다.
 func _reset_presentation() -> void:
+	var nitro_stage: Node2D = get_node_or_null("NitroStage")
+	if nitro_stage!=null:
+		nitro_stage.cancel()
+	for pawn_id: int in _nitro_skips:
+		_fx_skip_steps.erase(pawn_id)
+	_nitro_skips.clear()
 	var sniper_stage: Node2D = get_node_or_null("SniperStage")
 	if sniper_stage!=null:
 		sniper_stage.cancel()
