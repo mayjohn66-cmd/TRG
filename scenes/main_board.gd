@@ -478,6 +478,7 @@ var _shake_origin: Vector2 = Vector2.ZERO
 var _shake_active: bool = false
 var _fx_skip_steps: Dictionary = {}
 var _nitro_skips: Dictionary = {}
+var _nitro_victims: Dictionary = {}
 var _fx_hint_bonus: float = 0.0
 var _fx_generation: int = 0
 ## 단일 연출 큐(FIFO): 말 걸음·발판 팝업·처치 컷인·배너·워프·출발선 사출이 이 줄에서 한 번에 하나씩만 재생된다.
@@ -1053,7 +1054,7 @@ func _bind_state() -> void:
 			return
 		if not _fx_on():
 			_record_ejection(pawn_id, by_player)
-		if _alkkagi_controlled.has(pawn_id) or _train_controlled.has(pawn_id):
+		if _alkkagi_controlled.has(pawn_id) or _train_controlled.has(pawn_id) or _nitro_victims.has(pawn_id):
 			if _fx_on():
 				_record_ejection(pawn_id, by_player)
 			return
@@ -2893,6 +2894,19 @@ func _on_nitro_dashed(pawn_id: int, path: Array[int], blocked: int) -> void:
 	if not _fx_on() or pawn==null or path.is_empty() or not _pawn_views.has(pawn_id):
 		return
 	var dash := {"kind":"nitro","pawn":pawn_id,"path":path.duplicate(),"blocked":blocked,"goal_scale":_depth_scale(tile_norm(int(path.back())).y)}
+	var victims: Dictionary = {}
+	if blocked>=0:
+		for leader: PlayerPawn in state.leaders_at(blocked):
+			if leader.entity_id==pawn_id or not leader.has_left_start or leader.is_finished:
+				continue
+			for member: PlayerPawn in leader.stack_members():
+				var view: Node2D = _pawn_views.get(member.entity_id)
+				if view==null:
+					continue
+				_kill_fx(view)
+				victims[member.entity_id] = {"position":view.position,"visible":view.visible,"scale":view.scale,"rotation":view.rotation,"tint":view.modulate,"z":view.z_index}
+				_nitro_victims[member.entity_id] = true
+	dash["victims"] = victims
 	_note_super(dash)
 	_fx_skip_steps[pawn_id] = true
 	_nitro_skips[pawn_id] = true
@@ -2909,6 +2923,20 @@ func _play_nitro_stage(dash: Dictionary) -> void:
 		await get_tree().process_frame
 	if is_instance_valid(stage):
 		stage.queue_free()
+
+
+func _release_nitro_victims(ids: Array) -> void:
+	for id: int in ids:
+		_nitro_victims.erase(id)
+		var view: Node2D = _pawn_views.get(id)
+		var pawn: PlayerPawn = state.get_pawn(id) if state!=null else null
+		if view!=null and pawn!=null:
+			view.rotation = 0.0
+			view.modulate = Color.WHITE
+			view.z_index = 0
+			view.scale = Vector2.ONE*_depth_scale(tile_norm(pawn.current_tile_idx).y)
+			view.position = _pawn_position(pawn)
+			view.visible = pawn.has_left_start and not pawn.is_finished and pawn.carrier==null
 
 
 ## 큐의 한 단계: 출발선에서 부스터 칸까지 화염 잔상을 남기며 0.28초 만에 낮은 아치로 날아가 쾅 착지한다.
@@ -6419,6 +6447,7 @@ func _reset_presentation() -> void:
 	for pawn_id: int in _nitro_skips:
 		_fx_skip_steps.erase(pawn_id)
 	_nitro_skips.clear()
+	_release_nitro_victims(_nitro_victims.keys())
 	var sniper_stage: Node2D = get_node_or_null("SniperStage")
 	if sniper_stage!=null:
 		sniper_stage.cancel()
@@ -6838,7 +6867,7 @@ func _glide_node(node: Node2D, to_pos: Vector2, seconds: float) -> void:
 
 ## 상태가 바뀐 뒤 말의 화면 자리를 맞춘다: 자리가 달라졌으면 순간이동 대신 포물선으로 움직이고(힌트가 있으면 그 모양으로), 끝나면 보이기/숨기기를 정한다.
 func _settle_pawn_view(view: Node2D, pawn: PlayerPawn, force: bool = false) -> void:
-	if _alkkagi_controlled.has(pawn.entity_id) or _train_controlled.has(pawn.entity_id):
+	if _alkkagi_controlled.has(pawn.entity_id) or _train_controlled.has(pawn.entity_id) or _nitro_victims.has(pawn.entity_id):
 		return
 	var target_pos: Vector2 = _pawn_position(pawn)
 	var target_scale: float = _depth_scale(tile_norm(pawn.current_tile_idx).y)

@@ -1,11 +1,14 @@
-## SUPER_10 owns both the lane cue and the real pawn's accelerated dash.
+## SUPER_10 owns ignition, close camera, impact slow motion and one simultaneous launch.
 extends Node2D
 
-const CHARGE_START := 0.26
-const DASH_START := 0.52
+const CHARGE_START := 0.24
+const DASH_START := 0.60
 const END_TIME := 0.28
+const SLOW_TIME := 0.24
+const FLIGHT_TIME := 0.74
+const RECOVER_TIME := 0.24
 const CYAN := Color("63e4ed")
-const HOT := Color("ffae68")
+const BLUE := Color("268bff")
 var elapsed := 0.0
 var phase: StringName = &"lane"
 var pace := 1.0
@@ -28,6 +31,9 @@ var _goal := false
 var _body_color := Color.WHITE
 var _restored := false
 var _last_phase: StringName = &""
+var victims: Dictionary = {}
+var launch_age := -1.0
+var camera_weight := 0.0
 
 func play(board: MainBoard, dash: Dictionary, speed: float) -> void:
 	name = "NitroStage"
@@ -38,12 +44,14 @@ func play(board: MainBoard, dash: Dictionary, speed: float) -> void:
 	pawn_id = int(dash.get("pawn",-1))
 	blocked = int(dash.get("blocked",-1))
 	path.assign(dash.get("path",[]))
+	victims = dash.get("victims",{})
 	var view: Node2D = board._pawn_views.get(pawn_id)
 	var pawn: PlayerPawn = board.state.get_pawn(pawn_id)
 	if view==null or pawn==null or path.is_empty():
 		_complete = true
 		board._fx_skip_steps.erase(pawn_id)
 		board._nitro_skips.erase(pawn_id)
+		board._release_nitro_victims(victims.keys())
 		return
 	board._kill_fx(view)
 	_view_ref = weakref(view)
@@ -60,6 +68,13 @@ func play(board: MainBoard, dash: Dictionary, speed: float) -> void:
 	_goal = path.back()==GameEnums.GOAL_TILE
 	artwork = PawnArt.sprite(pawn)
 	_body_color = MainBoard.PLAYER_COLORS[pawn.owner_id] if pawn.kind==GameEnums.PawnKind.BASIC else Color.WHITE
+	for id: int in victims:
+		var target: Node2D = board._pawn_views.get(id)
+		if target!=null:
+			board._kill_fx(target)
+			target.position = victims[id].position
+			target.visible = victims[id].visible
+			target.z_index = 24
 	Sfx.play(&"charge",-9.0)
 
 func _process(delta: float) -> void:
@@ -71,20 +86,79 @@ func _process(delta: float) -> void:
 		return
 	elapsed += delta/pace
 	var end := DASH_START+dash_time
-	phase = &"lane" if elapsed<CHARGE_START else (&"charge" if elapsed<DASH_START else (&"dash" if elapsed<end else (&"impact" if blocked>=0 else &"brake")))
+	var collision := blocked>=0
+	var duration := SLOW_TIME+FLIGHT_TIME+RECOVER_TIME if collision else END_TIME
+	if elapsed<CHARGE_START:
+		phase = &"lane"
+	elif elapsed<DASH_START:
+		phase = &"charge"
+	elif elapsed<end:
+		phase = &"dash"
+	elif not collision:
+		phase = &"brake"
+	elif elapsed<end+SLOW_TIME:
+		phase = &"impact"
+	elif elapsed<end+SLOW_TIME+FLIGHT_TIME:
+		phase = &"eject"
+	else:
+		phase = &"recover"
 	if phase!=_last_phase:
 		_last_phase = phase
 		if phase==&"dash": Sfx.play(&"rocket",-6.0)
-		if phase==&"impact":
-			Sfx.play(&"thud",-5.0)
-			board.screen_shake(6.0,0.16*pace)
+		if phase==&"impact": Sfx.play(&"thud",-5.0)
+		if phase==&"eject":
+			board.screen_shake(7.0,0.18*pace)
+			Sfx.play(&"rocket",-10.0)
 		if phase==&"brake": Sfx.play(&"toy_click",-8.0)
 	_update_pose()
+	_update_victims(board,end)
+	_update_camera(board,end,duration)
 	queue_redraw()
-	if elapsed>=end+END_TIME:
+	if elapsed>=end+duration:
 		_restore(false)
 		_complete = true
 		set_process(false)
+
+## All target views share this clock. The impact beat advances at 12% speed;
+## release happens once for the whole tile, never through the serial kill queue.
+func _update_victims(board: MainBoard, end: float) -> void:
+	launch_age = elapsed-end-SLOW_TIME
+	var heading := _heading(length)
+	var side := heading.orthogonal()
+	var index := 0
+	var count := victims.size()
+	for id: int in victims:
+		var view: Node2D = board._pawn_views.get(id)
+		var info: Dictionary = victims[id]
+		if view==null:
+			continue
+		view.position = info.position
+		view.scale = info.scale
+		if elapsed>=end and launch_age<0:
+			var slow := (elapsed-end)*0.12
+			view.position += heading*slow*28
+			view.scale = (info.scale as Vector2)*Vector2(1.12,0.90)
+		elif launch_age>=0:
+			var t := minf(launch_age,FLIGHT_TIME)
+			var fan := (float(index)-(count-1)*0.5)*160.0
+			view.position += (heading*460+side*fan+Vector2(0,-330))*t+Vector2(0,260)*t*t
+			view.rotation = t*(8.0 if index%2==0 else -9.0)
+			view.scale = (info.scale as Vector2)*(1+sin(t/FLIGHT_TIME*PI)*0.14)
+			view.modulate.a = 1-smoothstep(FLIGHT_TIME*0.64,FLIGHT_TIME,t)
+		view.visible = bool(info.visible) and launch_age<FLIGHT_TIME
+		index += 1
+
+func _update_camera(board: MainBoard, end: float, duration: float) -> void:
+	camera_weight = smoothstep(0,0.28,elapsed)*(1-smoothstep(end+duration-RECOVER_TIME,end+duration,elapsed))
+	var zoom := 1.0+0.65*camera_weight
+	var center := MainBoard.BOARD_ORIGIN+Vector2.ONE*MainBoard.BOARD_SIZE*0.5
+	var focus := _sample(distance)+Vector2(0,-18)
+	var offset := board._off_center+center*(1-zoom)+(center-focus)*zoom*0.65*camera_weight
+	board._board_layer.scale = Vector2.ONE*zoom
+	board._pawn_layer.scale = Vector2.ONE*zoom
+	board._board_layer.position = offset
+	board._pawn_layer.position = offset
+	transform = board._pawn_layer.transform
 
 func _sample(at_distance: float) -> Vector2:
 	var remaining := clampf(at_distance,0,length)
@@ -133,45 +207,76 @@ func _draw() -> void:
 	if points.size()<2:
 		return
 	var end := DASH_START+dash_time
-	var fade := 1-smoothstep(end,end+END_TIME,elapsed)
-	var laid := _partial(length*smoothstep(0,CHARGE_START,elapsed))
-	if laid.size()>1:
-		draw_polyline(laid,Color(CYAN,0.12*fade),14,true)
-		draw_polyline(laid,Color(CYAN,0.72*fade),2.5,true)
-	# Directional chevrons flow down the actual path, in the board's projection.
-	for index: int in maxi(1,int(length/38)):
-		var d := fposmod(index*38.0+elapsed*92,length)
-		var at := _sample(d)
-		var heading := _heading(d)
-		var side := heading.orthogonal()
-		var arrow := PackedVector2Array([at-heading*5+side*5,at+heading*2,at-heading*5-side*5])
-		draw_polyline(arrow,Color(CYAN,0.55*fade*smoothstep(0,CHARGE_START,elapsed)),2,true)
+	var duration := SLOW_TIME+FLIGHT_TIME+RECOVER_TIME if blocked>=0 else END_TIME
+	var fade := 1-smoothstep(end+0.12,end+duration,elapsed)
+	var heading := _heading(distance)
+	var foot := _sample(distance)
+	# Blue fire gathers around the actual pawn before any track appears.
+	var ignition := smoothstep(0,0.18,elapsed)*(1-smoothstep(end,end+0.18,elapsed))
+	draw_circle(foot+Vector2(0,-12),22+sin(elapsed*24)*2,Color(BLUE,0.12*ignition))
+	for index: int in 7:
+		var x := (index-3)*5.5
+		var height := (29+sin(elapsed*31+index*2.1)*9)*ignition
+		var base := foot+Vector2(x,1+absf(x)*0.1)
+		_flame(base,Vector2.UP,height,5.4,ignition,elapsed*29+index)
+	# The burning rails/grid only extends where the pawn has actually dashed.
+	if distance>1:
+		var trail := _partial(distance)
+		draw_polyline(trail,Color(BLUE,0.12*fade),29,true)
+		draw_polyline(trail,Color(CYAN,0.24*fade),14,true)
+		for d: int in range(0,int(distance),12):
+			var at := _sample(d)
+			var forward := _heading(d)
+			var side := forward.orthogonal()
+			draw_line(at-side*9,at+side*9,Color(CYAN,0.35*fade),1.5,true)
+			for sign: int in [-1,1]:
+				var base := at+side*9*sign
+				draw_line(base,base+forward*13,Color(BLUE,0.9*fade),3,true)
+				_flame(base,Vector2.UP-forward*0.4,16+sin(elapsed*37+d)*7,4.4,fade,elapsed*35+d)
 	if phase==&"dash":
-		var heading := _heading(distance)
-		var foot := _sample(distance)
-		var normal := heading.orthogonal()
 		for offset: int in 4:
 			var behind := distance-(offset+1)*19.0
 			if behind>0 and not artwork.is_empty():
 				var region: Rect2 = artwork.region
 				var size: Vector2 = region.size*minf(26.0/region.size.x,31.0/region.size.y)*_goal_scale
 				draw_texture_rect_region(artwork.texture,Rect2(_sample(behind)+Vector2(-size.x/2,-size.y),size),region,Color(_body_color,0.27-offset*0.055))
-		var flame := PackedVector2Array([foot+normal*7-heading*6,foot-heading*(38+sin(elapsed*55)*7)+normal*2,foot-heading*23-normal*5,foot-heading*7-normal*7])
-		draw_colored_polygon(flame,Color(CYAN,0.65))
-		draw_line(foot-heading*7,foot-heading*27,Color(1,0.96,0.76,0.85),3,true)
+		_flame(foot-heading*7,-heading,48+sin(elapsed*53)*7,8,1,elapsed*43)
 	if arrived:
-		var u := clampf((elapsed-end)/END_TIME,0,1)
+		# The flash/rays barely advance during the slow beat, then burst outward.
+		var age := elapsed-end
+		var visual_age := minf(age,SLOW_TIME)*0.12+maxf(0,age-SLOW_TIME)
+		var u := clampf(visual_age/(FLIGHT_TIME*0.75),0,1) if blocked>=0 else clampf(age/END_TIME,0,1)
 		var at := points[-1]
-		var tint := HOT if blocked>=0 else Color("abf5db") if not _goal else Color("ffe69c")
+		var tint := CYAN if blocked>=0 else Color("abf5db")
 		var ring := PackedVector2Array()
-		for index: int in 41:
-			var angle := index*TAU/40.0
-			ring.append(at+Vector2(cos(angle)*28,sin(angle)*13)*(1+u*0.7))
-		draw_polyline(ring,Color(tint,(1-u)*0.8),2.5,true)
+		for index: int in 49:
+			var angle := index*TAU/48.0
+			ring.append(at+Vector2(cos(angle)*32,sin(angle)*16)*(1+u*2.3))
+		draw_polyline(ring,Color(tint,(1-u)*0.9),3,true)
 		if blocked>=0:
-			for index: int in 8:
-				var ray := Vector2.from_angle(index*TAU/8.0)
-				draw_line(at+Vector2(0,-17)+ray*(13+u*15),at+Vector2(0,-17)+ray*(31+u*23),Color(HOT,(1-u)*0.85),2.5,true)
+			var hit := at+Vector2(0,-17)
+			for index: int in 12:
+				var ray := Vector2.from_angle(index*TAU/12.0)
+				draw_line(hit+ray*(10+u*35),hit+ray*(29+(index%3)*7+u*70),Color(CYAN,(1-u)*0.9),3,true)
+			draw_circle(hit,11*(1-u),Color(0.86,1,1,(1-u)*0.8))
+
+func _flame(base: Vector2, direction: Vector2, height: float, width: float, alpha: float, flicker: float) -> void:
+	var side := direction.orthogonal()
+	var shape := PackedVector2Array()
+	for index: int in 9:
+		var u := index/8.0
+		var sway := sin(flicker+u*4.5)*width*u*0.75
+		shape.append(base+direction*height*u+side*(sway-width*(1-u)*sqrt(1-u)))
+	for index: int in range(7,-1,-1):
+		var u := index/8.0
+		var sway := sin(flicker+u*4.5)*width*u*0.75
+		shape.append(base+direction*height*u+side*(sway+width*(1-u)*sqrt(1-u)))
+	draw_colored_polygon(shape,Color(BLUE,alpha*0.72))
+	var core := PackedVector2Array()
+	for index: int in 7:
+		var u := index/8.0
+		core.append(base+direction*height*u+side*sin(flicker+u*4.5)*width*u*0.75)
+	draw_polyline(core,Color(CYAN,alpha*0.9),width*0.6,true)
 
 func _restore(cancelled: bool) -> void:
 	if _restored:
@@ -193,6 +298,12 @@ func _restore(cancelled: bool) -> void:
 	if board!=null:
 		board._fx_skip_steps.erase(pawn_id)
 		board._nitro_skips.erase(pawn_id)
+		board._release_nitro_victims(victims.keys())
+		board._board_layer.scale = Vector2.ONE
+		board._pawn_layer.scale = Vector2.ONE
+		board._board_layer.position = board._off_center
+		board._pawn_layer.position = board._off_center
+		transform = board._pawn_layer.transform
 
 func cancel() -> void:
 	_restore(true)

@@ -15,6 +15,9 @@ var last_elapsed := 0.0
 var early_speed := 0.0
 var late_speed := 0.0
 var stage_count := 0
+var flight_seen := false
+var slow_seen := false
+var zoom_seen := false
 
 func _run() -> void:
 	GameSession.mode = GameSession.MODE_AI
@@ -26,6 +29,7 @@ func _run() -> void:
 	await _edge("collision",false)
 	await _edge("finish",false)
 	await _edge("corner",true)
+	await _edge("collision",true)
 	await _pending_reset()
 	if _failures.is_empty():
 		print("UI_NITRO_OK")
@@ -89,13 +93,26 @@ func _process(_delta: float) -> bool:
 		var readable: bool = stage.phase!=&"dash" or (float(stage.elapsed)-stage.DASH_START)/float(stage.dash_time)>0.70
 		if float(stage.elapsed)>0.14 and case_name=="corner" and readable:
 			capture(String(stage.phase))
-		if stage.phase==&"impact":
+		if stage.camera_weight>0.9:
+			zoom_seen = true
+			_expect(_board._pawn_layer.scale.x>1.5 and _board._board_layer.get_transform()==_board._pawn_layer.transform and stage.transform==_board._pawn_layer.transform,"Camera keeps the board, runner, victims and flames together")
+		if case_name=="collision" and stage.phase==&"impact":
+			slow_seen = true
+			for id: int in [21,41]:
+				_expect(_board._pawn_views[id].position.distance_to(stage.victims[id].position)<2.0,"All victims stay at contact for the slow impact beat")
 			capture("collision")
+		if case_name=="collision" and stage.phase==&"eject":
+			flight_seen = true
+			for id: int in [21,41]:
+				_expect(_board._pawn_views[id].position.distance_to(stage.victims[id].position)>0.01,"Every target starts flying in the same frame")
+				_expect(not _board._fx_running(_board._pawn_views[id]),"No separate ejection tween competes with the shared launch")
+			if stage.launch_age>0.20:
+				capture("simultaneous_flight")
 		if case_name=="finish" and stage.arrived:
 			capture("finish")
 	elif started and not ended:
 		ended = true
-		_expect(not _board._nitro_skips.has(11) and not _board._fx_skip_steps.has(11),"The dash releases all movement gates")
+		_expect(_board._nitro_victims.is_empty() and not _board._nitro_skips.has(11) and not _board._fx_skip_steps.has(11),"The dash releases all movement gates")
 	return false
 
 func _verify_result() -> void:
@@ -106,7 +123,13 @@ func _verify_result() -> void:
 		_expect(pawn.is_finished and not view.visible,"The real finish is shown once, then the pawn leaves the board")
 	else:
 		_expect(pawn.current_tile_idx==(5 if case_name=="collision" else BoardSpec.side) and view.position.distance_to(_board._pawn_position(pawn))<0.1,"The dash lands at the authoritative destination")
+	_expect(_board._board_layer.scale==Vector2.ONE and _board._pawn_layer.scale==Vector2.ONE and _board._pawn_layer.position==_board._off_center,"The close camera returns exactly to the board layout")
 	if case_name=="collision":
+		if ended:
+			_expect(flight_seen and slow_seen and zoom_seen,"Collision includes close camera, slow impact and simultaneous flight")
+		for id: int in [21,41]:
+			var target: Node2D = _board._pawn_views[id]
+			_expect(not target.visible and is_zero_approx(target.rotation) and target.modulate==Color.WHITE and target.z_index==0,"Launched victims finish hidden and restore their presentation")
 		_expect(not _board.state.get_pawn(21).has_left_start and not _board.state.get_pawn(41).has_left_start,"Both actual blockers are ejected")
 		_expect(_board.state.get_pawn(31).current_tile_idx==6,"A pawn beyond the blocker is untouched")
 
@@ -120,6 +143,9 @@ func _new_board(kind: String) -> void:
 	started = false
 	ended = false
 	stage_count = 0
+	flight_seen = false
+	slow_seen = false
+	zoom_seen = false
 	seen.clear()
 	last_distance = 0
 	last_elapsed = 0
@@ -144,12 +170,12 @@ func _edge(kind: String, cancel: bool) -> void:
 	while _board._presentation_active() and Time.get_ticks_msec()-start<16000:
 		await process_frame
 		var stage: Node2D = _board.get_node_or_null("NitroStage")
-		if cancel and stage!=null and stage.phase==&"dash":
+		if cancel and stage!=null and stage.phase==(&"eject" if kind=="collision" else &"dash"):
 			observing = false
 			_board._reset_presentation()
 			await process_frame
 			await process_frame
-			_expect(_board.get_node_or_null("NitroStage")==null and _board._nitro_skips.is_empty() and not _board._fx_skip_steps.has(11),"Reset clears the running stage and movement gates")
+			_expect(_board.get_node_or_null("NitroStage")==null and _board._nitro_skips.is_empty() and _board._nitro_victims.is_empty() and not _board._fx_skip_steps.has(11),"Reset clears the running stage and movement gates")
 			_verify_result()
 			break
 	if not cancel:
@@ -158,11 +184,11 @@ func _edge(kind: String, cancel: bool) -> void:
 	observing = true
 
 func _pending_reset() -> void:
-	await _new_board("corner")
+	await _new_board("collision")
 	observing = false
 	_expect(_board._nitro_skips.has(11),"A deferred dash reserves movement ownership")
 	_board._reset_presentation()
-	_expect(_board._nitro_skips.is_empty() and not _board._fx_skip_steps.has(11),"Reset before playback releases the deferred movement gate")
+	_expect(_board._nitro_skips.is_empty() and _board._nitro_victims.is_empty() and not _board._fx_skip_steps.has(11),"Reset before playback releases the deferred movement gate")
 	await _drop_board()
 
 func capture(label: String) -> void:
