@@ -15,6 +15,7 @@ const RAID_STAGE = preload("res://scenes/raid_stage.gd")
 const GAMBLER_STAGE = preload("res://scenes/gambler_fx.gd")
 const PROFILE_AURA = preload("res://scenes/profile_super_aura.gd")
 const CASTLING_STAGE = preload("res://scenes/castling_stage.gd")
+const BAKERY_STAGE = preload("res://scenes/bakery_stage.gd")
 const FATE_COIN = preload("res://scenes/fate_coin_3d.gd")
 const STAGE_SPOTLIGHT = preload("res://scenes/pawn_stage_spotlight.gd")
 
@@ -263,50 +264,17 @@ func _castling(changes: Array) -> void:
 
 
 # ---------------------------------------------------------------------------
-# 8. 에르핀의 빵집 털이: 빵집이 노랗게 반짝 + 빵 파티클 → 대기 중이던 내 말이 높은 포물선으로 빵집에 착지 (카드는 덱에서 날아온다)
+# 8. 에르핀의 빵집 털이: 빵집 강조 → 대기 말 출격 → 에르핀의 빵 챙기기 → 실제 보상을 손패로 전달
 # ---------------------------------------------------------------------------
 
 func _bakery(player_id: int, changes: Array) -> void:
-	if BoardSpec.bakery_tiles.is_empty():
-		return
-	var tile: int = BoardSpec.bakery_tiles[0]
-	var at: Vector2 = board._tile_center(tile)
-	board._tile_glow(tile)
-	_ring(at, GOLD, 50.0, 4.0, 0.35)
-	_bread_burst(at)
-	Sfx.play(&"good")
-	await _wait(0.3)
-	if not _alive():
-		return
-	var jumper: Dictionary = {}
-	for change: Dictionary in changes:
-		if change["kind"] == "teleport" and int(change.get("tile", -1)) == tile:
-			jumper = change
-	var pawn: PlayerPawn = board.state.get_pawn(int(jumper.get("pawn", -1)))
-	var view: Node2D = _view(int(jumper.get("pawn", -1)))
-	if pawn == null or view == null or pawn.owner_id != player_id:
-		await _wait(0.3)
-		return
-	board._kill_fx(view)
-	var from: Vector2 = board._tile_center(GameEnums.GOAL_TILE)
-	var to: Vector2 = board._pawn_position(pawn)
-	view.visible = true
-	view.position = from
-	board._fx_hints.erase(pawn.entity_id)
-	Sfx.play(&"hop")
-	var jump: Tween = view.create_tween()
-	jump.tween_method(func(t: float) -> void:
-		view.position = from.lerp(to, t) + Vector2(0.0, -170.0 * sin(t * PI))
-		view.rotation = sin(t * PI) * 0.4, 0.0, 1.0, 0.55).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	await _wait(0.55)
-	if not is_instance_valid(view):
-		return
-	view.rotation = 0.0
-	_ring(to, GOLD, 40.0, 4.0, 0.25)
-	_bread_burst(to)
-	board.screen_shake(5.0, 0.15)
-	Sfx.play(&"thud")
-	await _wait(0.15)
+	var stage := BAKERY_STAGE.new()
+	board.add_child(stage)
+	stage.play(board,player_id,changes,board._motion_pace())
+	while _alive() and is_instance_valid(stage) and not stage._complete:
+		await board.get_tree().process_frame
+	if is_instance_valid(stage):
+		stage.queue_free()
 
 
 # ---------------------------------------------------------------------------

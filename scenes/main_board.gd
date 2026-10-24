@@ -6429,6 +6429,9 @@ func _enqueue_batch(entries: Array[Dictionary]) -> void:
 
 ## 연출 큐를 비우고 재생 중인 러너를 멈춘다 (판 초기화·되감기·테스트 정리용). 이미 시작된 트윈은 건드리지 않는다.
 func _reset_presentation() -> void:
+	var bakery_stage: Node2D = get_node_or_null("BakeryStage")
+	if bakery_stage!=null:
+		bakery_stage.cancel()
 	var castling_stage: Node2D = get_node_or_null("CastlingStage")
 	if castling_stage!=null:
 		castling_stage.cancel()
@@ -8756,6 +8759,27 @@ func _on_super_picked(player_id: int, augment_id: StringName) -> void:
 				retained.append(entry)
 		_draft_deferred = retained
 		changes.append({"kind":"raid_rewards","jobs":rewards})
+	if effect==SuperAugments.BAKERY:
+		var tile := BoardSpec.bakery_tiles[0] if not BoardSpec.bakery_tiles.is_empty() else -1
+		var jumper := -1
+		for change: Dictionary in changes:
+			if change.get("kind")=="teleport" and int(change.get("tile",-1))==tile:
+				var pawn: PlayerPawn = state.get_pawn(int(change.pawn))
+				if pawn!=null and pawn.owner_id==player_id:
+					jumper = pawn.entity_id
+		var rewards: Array[Dictionary] = []
+		var retained: Array[Dictionary] = []
+		for entry: Dictionary in _draft_deferred:
+			if int(entry.get("pick",-1))==_pick_serial:
+				if entry.has("draw_job") and int(entry.draw_job.player)==player_id:
+					rewards.append(entry.draw_job.duplicate(true))
+					continue
+				if jumper!=-1 and int(entry.get("pawn",-1))==jumper and (entry.step as Callable).get_method() in [&"_play_warp_glide",&"_stage_warp"]:
+					continue  # The bakery stage owns this exact launch, once.
+			retained.append(entry)
+		_draft_deferred = retained
+		var position := _pawn_position_at(state.get_pawn(jumper),tile) if jumper!=-1 else _tile_center(tile) if tile>=0 else Vector2.ZERO
+		changes.append({"kind":"bakery_scene","tile":tile,"pawn":jumper,"position":position,"jobs":rewards})
 	if effect==SuperAugments.MINEFIELD:
 		# This stage owns the same pick's mine reveals; don't replay generic trap FX.
 		var mine_tiles: Array[int] = []
