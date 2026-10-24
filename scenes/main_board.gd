@@ -8809,7 +8809,7 @@ func _refresh_super_marks() -> void:
 	for player_id: int in _player_ids:
 		if not _profiles.has(player_id):
 			continue
-		SuperFX.set_flame(_profiles[player_id]["panel"], "SuperFlame", _flame_colors(player_id))
+		SuperFX.set_flame(_profiles[player_id]["panel"], "SuperFlame", _flame_colors(player_id),true)
 	var shown: int = int(_tool_board_key.get_slice(":", 0)) if _tool_board_key != "" else -1
 	SuperFX.set_flame(_tool_board, "SuperFlame", _flame_colors(shown) if shown != -1 else [] as Array[Color])
 	for pawn: PlayerPawn in state.pawns:

@@ -13,6 +13,7 @@ const DEVIL_STAGE = preload("res://scenes/devil_contract_stage.gd")
 const MINEFIELD_STAGE = preload("res://scenes/minefield_stage.gd")
 const RAID_STAGE = preload("res://scenes/raid_stage.gd")
 const GAMBLER_STAGE = preload("res://scenes/gambler_fx.gd")
+const PROFILE_AURA = preload("res://scenes/profile_super_aura.gd")
 const FATE_COIN = preload("res://scenes/fate_coin_3d.gd")
 const STAGE_SPOTLIGHT = preload("res://scenes/pawn_stage_spotlight.gd")
 
@@ -646,16 +647,17 @@ class FlameBorder extends Control:
 
 
 ## host 위에 불꽃 테두리를 켜거나 끈다. colors가 비면 끈다.
-static func set_flame(host: Control, flame_name: String, colors: Array[Color]) -> void:
+static func set_flame(host: Control, flame_name: String, colors: Array[Color], profile: bool = false) -> void:
 	if host == null:
 		return
-	var flame: FlameBorder = host.get_node_or_null(flame_name) as FlameBorder
+	var flame: Control = host.get_node_or_null(flame_name) as Control
 	if colors.is_empty():
 		if flame != null:
+			host.remove_child(flame)
 			flame.queue_free()
 		return
 	if flame == null:
-		flame = FlameBorder.new()
+		flame = PROFILE_AURA.new() if profile else FlameBorder.new()
 		flame.name = flame_name
 		host.add_child(flame)
 	flame.colors = colors
