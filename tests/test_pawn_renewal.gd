@@ -209,3 +209,19 @@ func test_minesweeper_plants_a_mine_on_its_tile() -> void:
 	check(tile.attachments.size() == 1 and tile.attachments[0].attachment_id == "TRP_03" and tile.attachments[0].owner_id == 1, "내 지뢰가 깔렸다")
 	check(state.get_pawn(11).skill_used, "1회 사용")
 	_dispose(manager)
+
+
+# --- 설명 문구: 판정 도구처럼 구분선 위 패시브 / 아래 필살기 ----------------------
+
+func test_pawn_text_splits_passives_and_drops_labels() -> void:
+	check_eq(PawnCatalog.passive_lines(Kind.SHOGI, 2), "직진 +2칸\n반환점에서 용왕 승급", "패시브 둘은 줄을 나눈다")
+	check_eq(PawnCatalog.passive_lines(Kind.JANGGI, 2), "", "패시브가 없으면 빈 글 (차)")
+	var line: String = PawnCatalog.skill_line(&"castle")
+	check(line.begins_with(PawnCatalog.skill_name(&"castle")) and not line.contains("필살기") and not line.contains("[1회]"), "필살기 줄에 머리말이 없다 (%s)" % line)
+	for kind: GameEnums.PawnKind in PawnCatalog.EVOLVABLE_SETS:
+		for unit: int in range(1, (PawnCatalog.SUB_TYPES[kind] as Array).size() + 1):
+			for part: String in PawnCatalog.passive_lines(kind, unit).split("\n", false):
+				check(not L10n.has_hangul(L10n.translate_text(part, "en")) and not L10n.has_hangul(L10n.translate_text(part, "ja")), "나눈 패시브 줄도 번역된다 (%s)" % part)
+	var definition: AugmentDef = AugmentRegistry.get_def(&"EVO_2_3")
+	var info: Dictionary = MainBoard.augment_card_info(definition, null, 1)
+	check(not str(info["desc"]).contains("패시브") and str(info["skill"]).begins_with(PawnCatalog.skill_name(&"fianchetto")), "비숍 카드: 위 패시브 / 아래 필살기 (%s | %s)" % [info["desc"], info["skill"]])

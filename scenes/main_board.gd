@@ -369,6 +369,7 @@ var _tip_panel: PanelContainer = null
 var _tip_title: Label = null
 var _tip_ability: Label = null
 var _tip_skill: Label = null
+var _tip_rule: ColorRect = null
 var _tip_source: Variant = null
 var _tip_provider: Callable = Callable()
 var _tip_clock: float = 0.0
@@ -4370,6 +4371,13 @@ func _build_hover_tip() -> void:
 	_tip_ability.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_tip_ability.custom_minimum_size = Vector2(360, 0)
 	column.add_child(_tip_ability)
+	# 기물 툴팁: 패시브와 필살기 사이 구분선 (다른 툴팁에서는 숨긴다)
+	_tip_rule = ColorRect.new()
+	_tip_rule.color = Color(COLOR_GOLD.r, COLOR_GOLD.g, COLOR_GOLD.b, 0.45)
+	_tip_rule.custom_minimum_size = Vector2(0, 2)
+	_tip_rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tip_rule.visible = false
+	column.add_child(_tip_rule)
 	_tip_skill = _make_label("", 19, Color("ffa94d"))
 	_tip_skill.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_tip_skill.custom_minimum_size = Vector2(360, 0)
@@ -4395,12 +4403,16 @@ func _fill_pawn_tip(pawn_id: int) -> void:
 	if pawn.sub_type() == GameEnums.PawnSubType.BADUK_WHITE:
 		status += "  방어막 있음" if pawn.shield else "  (방어막 깨짐)"
 	_tip_title.text = "%s  - P%d%s" % [PawnCatalog.full_name(pawn.kind, pawn.unit_no), pawn.owner_id, status]
-	_tip_ability.text = "패시브: %s" % PawnCatalog.ability_text(pawn.kind, pawn.unit_no)
+	# 판정 도구 카드처럼 구분선 위에 패시브(둘이면 줄 나눔), 아래에 필살기. [패시브]·[필살기] 머리말은 쓰지 않는다.
+	var passive: String = PawnCatalog.passive_lines(pawn.kind, pawn.unit_no)
+	_tip_ability.visible = passive != ""
+	_tip_ability.text = passive
 	var skill: StringName = PawnCatalog.skill_of(pawn.sub_type())
 	_tip_skill.visible = skill != &""
+	_tip_rule.visible = _tip_ability.visible and _tip_skill.visible
 	if skill != &"":
 		var locked: String = "  (승급 후)" if PawnCatalog.PROMOTED_SKILLS.has(skill) and not pawn.promoted else ""
-		_tip_skill.text = "[1회] %s%s%s\n   %s" % [PawnCatalog.skill_name(skill), "  (사용됨)" if pawn.skill_used else "", locked, PawnCatalog.skill_text(skill)]
+		_tip_skill.text = "%s%s%s\n%s" % [PawnCatalog.skill_name(skill), "  (사용됨)" if pawn.skill_used else "", locked, PawnCatalog.skill_text(skill)]
 
 
 ## 프로필 [증강] 요약: 지금까지 고른 증강 / 말 4개의 기물과 패시브 / 장착한 판정 도구.
@@ -4427,7 +4439,9 @@ func _fill_profile_tip(player_id: int) -> void:
 	for pawn: PlayerPawn in state.pawns_of(player_id):
 		info.append(("%d번 말: %s  (완주)" if pawn.is_finished else "%d번 말: %s") % [pawn.slot, PawnCatalog.full_name(pawn.kind, pawn.unit_no)])
 		if pawn.kind != GameEnums.PawnKind.BASIC:
-			info.append("패시브: %s" % PawnCatalog.ability_text(pawn.kind, pawn.unit_no))
+			var passive: String = PawnCatalog.passive_lines(pawn.kind, pawn.unit_no)
+			if passive != "":
+				info.append(passive)
 	var tool: BaseJudgmentTool = state.tools.get(player_id)
 	if tool != null:
 		info.append("판정 도구: %s" % tool.display_name)
@@ -4524,6 +4538,8 @@ func _update_tip(delta: float) -> void:
 	if _tip_clock < TIP_DELAY:
 		return
 	if not _tip_panel.visible:
+		_tip_ability.visible = true  # 기물 툴팁만 패시브 칸을 숨기고 구분선을 켠다
+		_tip_rule.visible = false
 		_tip_provider.call()
 		_tip_panel.visible = true
 		_tip_panel.reset_size()
@@ -7777,11 +7793,22 @@ static func augment_card_info(definition: AugmentDef, game_state: GameState, pla
 		var span: Array[int] = AugmentDef.tool_step_range(definition.payload)
 		if span.size() == 2:
 			summary = "최소 %d칸 ~ 최대 %d칸" % [span[0], span[1]]
+	# 기물 진화: 판정 도구처럼 구분선 위에 패시브(둘이면 줄 나눔), 아래에 필살기. [패시브]·[필살기] 머리말은 쓰지 않는다.
+	var skill_text: String = ""
+	if definition.category == GameEnums.AugmentCategory.PAWN_EVOLUTION:
+		var evo_kind: GameEnums.PawnKind = definition.payload
+		var evo_unit: int = definition.units[0]
+		var passive: String = PawnCatalog.passive_lines(evo_kind, evo_unit)
+		lines = PackedStringArray([passive]) if passive != "" else PackedStringArray()
+		skill_text = PawnCatalog.skill_line(PawnCatalog.skill_of(PawnCatalog.sub_type_of(evo_kind, evo_unit)))
+		if lines.is_empty() and skill_text != "":
+			lines = PackedStringArray([skill_text])  # 패시브가 없으면 필살기만 (구분선 없이)
+			skill_text = ""
 	if definition.title != "":
 		title = definition.title  # augments_table.csv의 title
 	title = AugmentDef.strip_title_tag(title)  # 제목 앞 [기물 진화]·[판정 도구]·[특수 승리] 같은 계열 머리표는 뗀다
 	var tag_text: String = definition.subtitle if definition.subtitle != "" else AugmentDef.category_name(definition.category)
-	return {"glyph": glyph, "color": color, "title": title, "desc": "\n".join(lines), "summary": summary, "detail": detail, "category": tag_text, "art": AugmentArt.load_first(AugmentArt.candidates(definition)), "super": definition.category == GameEnums.AugmentCategory.SUPER_GAMBLE, "tier": definition.tier}
+	return {"glyph": glyph, "color": color, "title": title, "desc": "\n".join(lines), "summary": summary, "detail": detail, "skill": skill_text, "category": tag_text, "art": AugmentArt.load_first(AugmentArt.candidates(definition)), "super": definition.category == GameEnums.AugmentCategory.SUPER_GAMBLE, "tier": definition.tier}
 
 
 ## 150px 후광 / 120px 네온 메달 / 110px 원형 이미지. 이미지가 없으면 글자.
@@ -7936,6 +7963,32 @@ static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: f
 		rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		card.add_child(rule)
 		text_bottom -= detail_h + 10.0
+	var skill_text: String = str(info.get("skill", ""))
+	if skill_text != "":
+		# 기물 필살기: 구분선 아래 칸 (패시브보다 조금 작게, 필살기 색)
+		var skill_h: float = 62.0  # 위 패시브 칸(두 줄)과 반씩 나눈다
+		var skill_box := Vector2(AUGMENT_CARD_SIZE.x - 28.0, skill_h)
+		var skill := _make_label("", 16, Color("ffc078"))
+		skill.name = "AugmentSkill"
+		skill.position = Vector2(14, text_bottom - skill_h)
+		skill.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		skill.custom_minimum_size = Vector2(skill_box.x, 0)
+		skill.size = skill_box
+		skill.clip_text = true
+		skill.add_theme_font_size_override("font_size", CardSkin.fit_px(L10n.t(skill_text), skill_box.x, skill_box.y, 16, 10, NAN, skill.get_theme_font("font")))
+		skill.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		skill.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		skill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		skill.text = skill_text
+		card.add_child(skill)
+		var skill_rule := ColorRect.new()
+		skill_rule.name = "AugmentSkillRule"
+		skill_rule.color = Color(color.r, color.g, color.b, 0.55)
+		skill_rule.position = Vector2(40, text_bottom - skill_h - 6.0)
+		skill_rule.size = Vector2(AUGMENT_CARD_SIZE.x - 80.0, 2)
+		skill_rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		card.add_child(skill_rule)
+		text_bottom -= skill_h + 10.0
 	if summary_text != "":
 		# 한눈에 보는 이동 범위: 크고 밝게 (핵심 문구가 없으면 설명 칸 전체를 쓴다)
 		var only: bool = str(info["desc"]).strip_edges() == ""
@@ -7966,7 +8019,7 @@ static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: f
 	# 핵심 효과는 예전(17/14px)보다 2~3px 크게 시작해 칸에 맞춘다 (공통 문구가 빠져 자리가 남는다)
 	desc.add_theme_font_size_override("font_size", CardSkin.fit_px(L10n.t(str(info["desc"])), desc_box.x, desc_box.y, 20 if str(info["desc"]).length() <= 70 else 17, 10))
 	desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	desc.vertical_alignment = VERTICAL_ALIGNMENT_CENTER if summary_text != "" else VERTICAL_ALIGNMENT_TOP
+	desc.vertical_alignment = VERTICAL_ALIGNMENT_CENTER if summary_text != "" or skill_text != "" else VERTICAL_ALIGNMENT_TOP
 	desc.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	desc.text = str(info["desc"])  # 줄바꿈 폭이 정해진 뒤에 글자를 넣어야 라벨이 글자 폭만큼 늘어나지 않는다
 	card.add_child(desc)

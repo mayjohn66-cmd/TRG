@@ -817,6 +817,16 @@ func _table(rows: Array, tone: Color) -> Control:
 			icon_holder.add_child(picture)
 			line.add_child(icon_holder)
 			cells = row.slice(1)
+		if cells.size() == 1:
+			# 머리말 없는 한 칸 행 (기물 패시브 등): 오른쪽 칸만 폭 전체로
+			var whole: RichTextLabel = _rich(str(cells[0]), 16, Color("3a2f1f"))
+			whole.custom_minimum_size = Vector2(0, 0)
+			whole.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			line.add_child(whole)
+			column.add_child(line)
+			if row_index < rows.size() - 1:
+				column.add_child(_table_rule(tone))
+			continue
 		var key := Label.new()
 		key.text = str(cells[0])
 		key.add_theme_font_size_override("font_size", 16)
@@ -834,12 +844,16 @@ func _table(rows: Array, tone: Color) -> Control:
 		line.add_child(value)
 		column.add_child(line)
 		if row_index < rows.size() - 1:
-			var rule := ColorRect.new()
-			rule.color = Color(tone, 0.25)
-			rule.custom_minimum_size = Vector2(0, 2)
-			rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			column.add_child(rule)
+			column.add_child(_table_rule(tone))
 	return panel
+
+
+func _table_rule(tone: Color) -> ColorRect:
+	var rule := ColorRect.new()
+	rule.color = Color(tone, 0.25)
+	rule.custom_minimum_size = Vector2(0, 2)
+	rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return rule
 
 
 ## 요점 목록: 줄마다 색 점 + 짧은 문장.
@@ -1109,15 +1123,19 @@ func _ch_pawns() -> Dictionary:
 		var kind: GameEnums.PawnKind = definition.payload
 		var unit: int = definition.units[0]
 		var sub: GameEnums.PawnSubType = PawnCatalog.sub_type_of(kind, unit)
-		var rows: Array = [["패시브", PawnCatalog.ability_text(kind, unit)]]
+		# 구분선 위 패시브(둘이면 줄 나눔), 아래 필살기 (이름 꼬리표 + 설명). [패시브]·[필살기] 머리말은 쓰지 않는다.
+		var rows: Array = []
+		var passive: String = PawnCatalog.passive_lines(kind, unit)
+		if passive != "":
+			rows.append([passive])
 		var skill: StringName = PawnCatalog.SKILL_IDS.get(sub, &"")
 		if skill != &"":
-			rows.append(["필살기 %s" % PawnCatalog.skill_name(skill), PawnCatalog.skill_text(skill)])
+			rows.append([PawnCatalog.skill_name(skill), PawnCatalog.skill_text(skill)])
 		var chips: Array = [PawnCatalog.display_set_name(kind)]
 		if sub == GameEnums.PawnSubType.CHESS_PAWN:
 			# 폰은 반환점에서 퀸이 된다: 승급한 뒤의 능력을 퀸 그림과 함께 보여 준다
 			var queen: GameEnums.PawnSubType = GameEnums.PawnSubType.CHESS_QUEEN
-			rows.append([_pawn_texture(queen, kind), "퀸 승급 후", "%s\n반환점(%d번) 이상을 밟는 순간 영구 승급 (잡혀도 퀸 유지)" % [PawnCatalog.SUB_ABILITIES[queen], BoardSpec.halfway_tile]])
+			rows.append([_pawn_texture(queen, kind), "퀸 승급 후", "%s\n반환점(%d번) 이상을 밟는 순간 영구 승급 (잡혀도 퀸 유지)" % [PawnCatalog.split_passive(PawnCatalog.SUB_ABILITIES[queen]), BoardSpec.halfway_tile]])
 			chips.append("퀸 승급")
 		entries.append({"title": PawnCatalog.unit_label(kind, unit).split(":")[-1], "augment": definition.augment_id, "texture": _pawn_texture(sub, kind), "icon": &"crown",
 			"tone": Color("20c997"), "chips": chips, "summary": PAWN_LINES.get(kind, ""), "rows": rows})

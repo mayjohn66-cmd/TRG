@@ -192,6 +192,25 @@ static func skill_text(skill_id: StringName) -> String:
 	return SKILL_TEXTS.get(skill_id, "")
 
 
+## 필살기 한 줄 (카드·툴팁의 구분선 아래): "이름: 설명". [1회]·필살기 같은 머리말은 붙이지 않는다.
+static func skill_line(skill_id: StringName) -> String:
+	if skill_id == &"":
+		return ""
+	return "%s: %s" % [skill_name(skill_id), skill_text(skill_id)]
+
+
+## 패시브 설명 (카드·툴팁의 구분선 위): 패시브가 둘이면(" · "로 이은 것) 줄을 나눈다. 패시브가 없으면 빈 글.
+## "패시브:" 같은 머리말은 붙이지 않는다.
+static func passive_lines(kind: GameEnums.PawnKind, unit_no: int) -> String:
+	return split_passive(ability_text(kind, unit_no))
+
+
+static func split_passive(text: String) -> String:
+	if text == "없음" or text == "능력 없음":
+		return ""
+	return text.replace(" · ", "\n")
+
+
 ## (세트, 호기)의 세부 기물. 기본 말은 NONE.
 static func sub_type_of(kind: GameEnums.PawnKind, unit_no: int) -> GameEnums.PawnSubType:
 	if not SUB_TYPES.has(kind):
