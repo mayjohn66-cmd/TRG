@@ -3,11 +3,12 @@
 # Role: 초증강 전용 보드 연출. 로그를 읽지 않아도 보드만 보고 "이 초증강 때문에 이렇게 됐구나"를 알 수 있게, 초증강마다 고유한 장면을 보여 준다.
 #       엔진은 증강을 고르는 순간 이미 결과를 정했다. MainBoard가 그 사이 엔진이 낸 변화(움직인 말·지뢰 칸·빼앗긴 카드·묶인 말·질주 길)를
 #       기록해 넘기면(play의 changes), 여기서 그 결과를 연출로 보여 준다. 말 그림은 연출이 끝날 때까지 제자리에 붙잡혀 있다.
-#       외부 그림 없이 Line2D·Polygon2D·CPUParticles2D·Tween·modulate로만 그린다. 초증강 하나는 0.8~1.2초 안팎.
+#       기존 리소스·코드 메시·트윈으로 각 효과의 과정과 결과를 보여 준다.
 #       폭주 기관차(SUPER_11)는 RunawayTrainStage가 따로 보여 준다.
 class_name SuperFX
 extends RefCounted
 
+const REDISTRIBUTION_STAGE = preload("res://scenes/redistribution_stage.gd")
 const FATE_COIN = preload("res://scenes/fate_coin_3d.gd")
 const STAGE_SPOTLIGHT = preload("res://scenes/pawn_stage_spotlight.gd")
 
@@ -131,39 +132,23 @@ func _redistribute(_player_id: int, changes: Array) -> void:
 	siren.modulate.a = 0.0
 	Sfx.play(&"attack_alert")
 	await _wait(0.18)
-	_stamp("재분배", RED)
+	_stamp("재분배", RED,Vector2(0,-70))
 	await _wait(0.22)
 	if not _alive():
 		return
-	# 모든 말이 동시에 꼴찌의 자리로 휙 끌려간다
-	var moved: int = 0
-	for change: Dictionary in changes:
-		if change["kind"] != "teleport":
-			continue
-		var pawn: PlayerPawn = board.state.get_pawn(int(change["pawn"]))
-		var view: Node2D = _view(int(change["pawn"]))
-		if pawn == null or view == null:
-			continue
-		var target: Vector2 = board._pawn_position(pawn)
-		_pull_line(view.position, target, RED)
-		board._glide(view, target, board._depth_scale(0.0), {"dur": 0.42, "arc": 36.0, "pace_cap": 1.0, "land_tile": pawn.current_tile_idx})
-		board._fx_hints.erase(pawn.entity_id)
-		moved += 1
-	if moved > 0:
-		Sfx.play(&"warp")
-	# 네 사람의 손패가 가운데로 빨려 들어간다 (다시 나눠 주는 건 덱에서 날아가는 카드가 보여 준다)
-	var center: Vector2 = board._board_center()
-	for player_id: int in board.state.active_players(board.state.player_ids):
-		var from: Vector2 = board._profile_center(player_id)
-		if not from.is_finite():
-			continue
-		for i: int in 2:
-			_card_back_flight(from, center, 0.3, i * 0.06, true)
-	await _wait(0.5)
+	var stage := REDISTRIBUTION_STAGE.new()
+	board.add_child(stage)
+	stage.play(board,changes,board._motion_pace())
+	while _alive() and is_instance_valid(stage) and not stage._complete:
+		await board.get_tree().process_frame
+	if is_instance_valid(stage):
+		stage.queue_free()
 	if _alive():
-		_ring(_local(center), RED, 80.0, 6.0, 0.3)
-		board.screen_shake(5.0, 0.15)
-	await _wait(0.12)
+		for change: Dictionary in changes:
+			if change.kind=="teleport":
+				board._fx_hints.erase(int(change.pawn))
+		Sfx.play(&"card_get",-6.0)
+	# The existing reserved draw queue now deals once from the real table-side deck.
 
 
 # ---------------------------------------------------------------------------
@@ -895,7 +880,7 @@ class Siren extends Control:
 
 
 ## 큰 도장: 크게 떨어지며 쾅 찍히고 잠깐 남는다.
-func _stamp(text: String, color: Color) -> void:
+func _stamp(text: String, color: Color, offset: Vector2 = Vector2.ZERO) -> void:
 	var stamp := PanelContainer.new()
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(1.0, 0.95, 0.9, 0.12)
@@ -913,7 +898,7 @@ func _stamp(text: String, color: Color) -> void:
 	board.add_child(stamp)
 	stamp.reset_size()
 	stamp.pivot_offset = stamp.size / 2.0
-	stamp.position = board._board_center() - stamp.size / 2.0
+	stamp.position = board._board_center()+offset-stamp.size/2.0
 	stamp.rotation = -0.32
 	stamp.scale = Vector2.ONE * 2.6
 	stamp.modulate.a = 0.0

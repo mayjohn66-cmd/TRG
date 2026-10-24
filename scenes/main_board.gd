@@ -1041,6 +1041,8 @@ func _bind_state() -> void:
 		if _capture_cutin != null:
 			_capture_cutin.cancel())
 	state.pawn_teleported.connect(func(pawn_id: int, to_tile: int) -> void: _note_super({"kind": "teleport", "pawn": pawn_id, "tile": to_tile}))
+	state.redistribution_started.connect(func(hand_counts: Dictionary, reference_player: int) -> void:
+		_note_super({"kind":"redistribution", "hands":hand_counts.duplicate(), "reference":reference_player}))
 	state.pawn_sent_to_start.connect(func(pawn_id: int, by_player: int) -> void:
 		_note_super({"kind": "start", "pawn": pawn_id, "by": by_player})
 		var victim: PlayerPawn = state.get_pawn(pawn_id)
@@ -8651,6 +8653,13 @@ func _on_super_picked(player_id: int, augment_id: StringName) -> void:
 	var changes: Array[Dictionary] = []
 	for change: Dictionary in _super_changes:
 		changes.append(change.duplicate(true))
+	if effect==SuperAugments.REDISTRIBUTE:
+		# Capture this pick's targets now, before another selected augment changes them.
+		var poses: Array[Dictionary] = []
+		for pawn: PlayerPawn in state.pawns:
+			if pawn.owner_id in state.active_players(state.player_ids):
+				poses.append({"pawn":pawn.entity_id,"tile":pawn.current_tile_idx,"position":_pawn_position(pawn),"visible":pawn.has_left_start and not pawn.is_finished and pawn.carrier==null})
+		changes.append({"kind":"redistribution_pose","pawns":poses})
 	if effect in [SuperAugments.FLIP, SuperAugments.SNIPER, SuperAugments.DEVIL]:
 		for change: Dictionary in changes:
 			if change["kind"] == "start":
