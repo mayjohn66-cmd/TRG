@@ -343,6 +343,7 @@ var _alkkagi: AlkkagiStage = null
 var _train_stage: RunawayTrainStage
 var _train_controlled: Dictionary = {}
 var _train_trap_hold: Dictionary = {}
+var _train_camera_weight := 0.0
 var _alkkagi_camera := 0.0
 var _alkkagi_camera_tween: Tween
 var _alkkagi_saved_view := -1
@@ -1384,6 +1385,9 @@ func layout_for(viewport_size: Vector2) -> void:
 		_presenter.toss_board_outline = BoardSkin.outline(_surface_project, _off_center)
 	if _draw_fx != null:
 		_layout_card_deck()
+	if _train_stage != null and _train_stage.mode!=&"idle":
+		_train_camera_step()
+		_train_stage.sync_projection()
 
 
 ## 보드 한가운데의 화면 좌표 (창 비율 오프셋 포함).
@@ -3246,7 +3250,20 @@ func _build_train_stage() -> void:
 
 func _train_plane() -> Transform2D:
 	var at := _project(Vector2.ZERO)
-	return Transform2D(_project(Vector2.RIGHT)-at,_project(Vector2.DOWN)-at,at+_pawn_layer.position)
+	return _pawn_layer.transform*Transform2D(_project(Vector2.RIGHT)-at,_project(Vector2.DOWN)-at,at)
+
+## A small world-only camera move: board, pawns and train share one transform.
+## HUD stays still, and layout/resizing can reapply this without accumulating drift.
+func _train_camera_step() -> void:
+	_train_camera_weight = _train_stage.camera_weight() if _train_stage != null else 0.0
+	var zoom := 1.0+0.12*_train_camera_weight
+	var center := BOARD_ORIGIN+Vector2.ONE*BOARD_SIZE*0.5
+	var focus := _project(_train_stage.camera_focus()) if _train_camera_weight>0.0 else center
+	var offset := _off_center+center*(1.0-zoom)+(center-focus)*0.16*_train_camera_weight
+	_board_layer.scale = Vector2.ONE*zoom
+	_pawn_layer.scale = Vector2.ONE*zoom
+	_board_layer.position = offset
+	_pawn_layer.position = offset
 
 func _on_train_sweep_started(display_id: StringName, path: Array[int]) -> void:
 	if display_id!=&"TRAIN" or not _fx_on():
@@ -3289,7 +3306,7 @@ func _train_contact(tile: int) -> void:
 	for id: int in _train_controlled:
 		var info: Dictionary = _train_controlled[id]
 		if int(info.tile)==tile and float(info.hit)<0.0:
-			info.hit = _train_stage.elapsed
+			info.hit = _train_stage.contact_times[tile]
 			var view: Node2D = _pawn_views.get(id)
 			if view!=null:
 				view.z_index = 12
@@ -3322,6 +3339,7 @@ func _train_impact(at: Vector2) -> void:
 func _train_pose() -> void:
 	if _train_stage==null:
 		return
+	_train_camera_step()
 	for id: int in _train_controlled:
 		var info: Dictionary = _train_controlled[id]
 		var view: Node2D = _pawn_views.get(id)
@@ -3332,16 +3350,25 @@ func _train_pose() -> void:
 			view.visible = info.visible
 			continue
 		var age := maxf(0.0,_train_stage.elapsed-float(info.hit))
-		var phase := clampf(age/0.72,0,1)
-		var outward := (_tile_center(int(info.tile))-_project(Vector2.ONE/2.0)).normalized()
+		var phase := clampf(age/0.80,0,1)
 		var forward := (_project(_train_stage.origin+_train_stage.direction*0.1)-_project(_train_stage.origin)).normalized()
-		view.position = (info.position as Vector2)+(outward*180.0+forward*55.0)*(1.0-pow(1.0-phase,2.0))+Vector2(0,-sin(phase*PI)*85.0)
-		view.rotation = age*(7.0 if id%2==0 else -7.0)
+		var outward := forward.orthogonal()
+		if outward.dot(_tile_center(int(info.tile))-_project(Vector2.ONE/2.0))<0.0:
+			outward = -outward
+		var flight := minf(age,0.80)
+		view.position = (info.position as Vector2)+(forward*300.0+outward*145.0+Vector2(0,-240.0))*flight+Vector2(0,320.0)*flight*flight
+		view.rotation = age*(9.0 if id%2==0 else -9.0)
 		view.scale = Vector2.ONE*(1.0+sin(phase*PI)*0.16)
-		view.modulate.a = 1.0-smoothstep(0.35,0.72,age)
+		view.modulate.a = 1.0-smoothstep(0.48,0.80,age)
 		view.visible = bool(info.visible) and phase<1.0
 
 func _train_release() -> void:
+	_train_camera_weight = 0.0
+	if _board_layer != null and _pawn_layer != null:
+		_board_layer.scale = Vector2.ONE
+		_pawn_layer.scale = Vector2.ONE
+		_board_layer.position = _off_center
+		_pawn_layer.position = _off_center
 	for id: int in _train_controlled:
 		var view: Node2D = _pawn_views.get(id)
 		var pawn: PlayerPawn = state.get_pawn(id) if state!=null else null

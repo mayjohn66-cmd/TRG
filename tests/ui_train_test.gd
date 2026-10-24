@@ -93,6 +93,10 @@ func run() -> void:
 		var saw_impact := false
 		var victim_moved := false
 		var saw_all_wagons := false
+		var saw_zoom := false
+		var saw_forward_flight := false
+		var last_motion := -1.0
+		var motion_index := 0
 		for tick: int in 1800:
 			check(Engine.time_scale==1.0,"Presentation does not change global time scale")
 			if stage.mode==&"lay":
@@ -112,6 +116,14 @@ func run() -> void:
 					root.size = Vector2i(1366,768)
 					await frames(2)
 			if stage.mode==&"run":
+				if not saw_zoom:
+					saw_zoom = true
+					check(is_equal_approx(board._pawn_layer.scale.x,1.12) and board._pawn_layer.scale==board._board_layer.scale,"Entry zoom reaches 12 percent and board/pawns share the camera")
+					check(board._tool_board.scale==Vector2.ONE,"HUD is not enlarged by the world camera")
+					var norm := BoardLayout.tile_norm(stage.path[2])
+					var model_ground := stage.image.transform*stage.camera.unproject_position(Vector3(norm.x,0,norm.y))
+					check(model_ground.distance_to(board._pawn_layer.transform*board._tile_center(stage.path[2]))<0.1,"3D rail projection stays attached to the zoomed board in the same frame")
+					await capture("entry_zoom")
 				if stage.front_distance>stage.distance*0.65 and not saw_train:
 					saw_train = true
 					saw_all_wagons = stage.train.get_node_or_null("FreightWagon04")!=null
@@ -121,27 +133,63 @@ func run() -> void:
 					check(not (board._tile_views[traps[0]] as BoardSkin.Tile).trap_on,"Trap art breaks when the front reaches its tile")
 					await capture("impact")
 			victim_moved = victim_moved or (board._pawn_views[21] as Node2D).position.distance_to(victim_start)>20.0
+			for id: int in board._train_controlled:
+				var info: Dictionary = board._train_controlled[id]
+				var view: Node2D = board._pawn_views[id]
+				if float(info.hit)<0.0:
+					check(view.position.is_equal_approx(info.position),"Victim waits at its original tile until the locomotive arrives")
+				elif not saw_forward_flight:
+					var age := stage.elapsed-float(info.hit)
+					if age>0.08 and age<0.3:
+						saw_forward_flight = true
+						var forward := (board._project(stage.origin+stage.direction*0.1)-board._project(stage.origin)).normalized()
+						var horizontal_flight := view.position-(info.position as Vector2)-Vector2(0,-240.0*age+320.0*age*age)
+						check(horizontal_flight.dot(forward)>age*250.0,"Impact throws the actual pawn mainly in the train's travel direction")
+						await capture("pawn_flight")
 			if stage.mode==&"idle" and not board._presentation_active():
 				break
+			if OS.get_environment("TRAIN_RECORD")=="1" and stage.elapsed-last_motion>=0.05:
+				last_motion = stage.elapsed
+				await capture("motion_%03d" % motion_index)
+				motion_index += 1
 			await process_frame
 		check(saw_lay and saw_pause and saw_train and saw_impact,"Track laying, pause, moving train and timed impacts all appear")
 		check(saw_all_wagons and stage.wheels.size()==22,"Approved locomotive, all four wagons and rotating wheels are retained")
 		check(stage.passed==(report.path as Array[int]),"Every route tile is contacted once and in the correct direction")
 		check(victim_moved,"Actual victim sprites are physically thrown off the track")
+		check(saw_zoom and saw_forward_flight,"Entry camera and forward collision flight both play")
+		check(board._pawn_layer.scale==Vector2.ONE and board._board_layer.scale==Vector2.ONE and is_zero_approx(board._train_camera_weight),"Camera restores its original scale after the wagons pass")
 		check(stage.mode==&"idle" and not stage.visible and board._train_controlled.is_empty() and board._train_trap_hold.is_empty(),"The presentation and all temporary holds finish cleanly")
 		check(not board._presentation_active(),"No duplicate late capture animation remains in the queue")
 		await capture("result")
-	# Reset during construction must release both sprite and trap holds.
+	# Interrupt during the zoomed run must release camera, sprite and trap holds.
 	arrange(2)
 	var aborted := NpcSweep.run(board.state,16,1,8,&"TRAIN",1,true)
 	board.state.npc_swept.emit(&"TRAIN",aborted.path,aborted.ejected)
-	await frames(4)
+	while board._train_stage.mode!=&"run":
+		await process_frame
 	board._reset_presentation()
 	board._refresh_all()
-	check(board._train_stage.mode==&"idle" and not board._train_stage.visible and board._train_controlled.is_empty() and board._train_trap_hold.is_empty(),"Reset during track placement restores the authoritative board safely")
+	check(board._train_stage.mode==&"idle" and not board._train_stage.visible and board._train_controlled.is_empty() and board._train_trap_hold.is_empty(),"Reset during the run restores the authoritative board safely")
+	check(board._pawn_layer.scale==Vector2.ONE and board._board_layer.scale==Vector2.ONE and board._pawn_layer.position==board._off_center,"Interrupting a zoom restores the world camera")
+	# A stalled browser frame must retain exact, ordered contact times rather than
+	# starting all victim flights from the late frame's timestamp.
+	var stage := board._train_stage
+	stage.set_process(false)
+	stage.play(aborted.path,1.0,board._train_plane)
+	stage.advance(stage.run_start+RunawayTrainStage.RUN_TIME+0.05)
+	var previous_hit := -1.0
+	for tile: int in stage.path:
+		check(stage.contact_times.has(tile) and float(stage.contact_times[tile])>previous_hit,"Skipped frames retain distinct contacts in route order")
+		previous_hit = float(stage.contact_times[tile])
+	check(previous_hit<stage.elapsed,"Late frames preserve the real impact time")
+	stage.cancel()
+	board._train_release()
 	board.instant_roll_for_test = true
 	board._announcer.cancel()
 	await frames(2)
+	board.queue_free()
+	await frames(3)
 	if failures.is_empty():
 		print("TRAIN_UI_OK")
 	else:

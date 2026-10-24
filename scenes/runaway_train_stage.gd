@@ -168,8 +168,26 @@ func sync_projection() -> void:
 
 func _process(delta: float) -> void:
 	if mode!=&"idle":
-		sync_projection()
 		advance(delta)
+
+## Solve the same acceleration curve used by the visible locomotive front.
+## Contacts retain their actual time when a browser frame crosses several tiles.
+func contact_time(tile: int) -> float:
+	var along := (BoardLayout.tile_norm(tile)-origin).dot(direction)
+	var fraction := clampf((along+0.38)/(distance+1.16),0.0,1.0)
+	var progress := (-0.35+sqrt(0.1225+2.6*fraction))/1.3
+	return run_start+progress*RUN_TIME
+
+func camera_weight() -> float:
+	if mode==&"idle":
+		return 0.0
+	var enter := smoothstep(run_start-0.38,run_start,elapsed)
+	var leave := smoothstep(run_start+RUN_TIME+0.12,run_start+RUN_TIME+AFTER_TIME+CLEAR_TIME,elapsed)
+	return enter*(1.0-leave)
+
+func camera_focus() -> Vector2:
+	var progress := smoothstep(run_start,run_start+RUN_TIME,elapsed)
+	return origin+direction*distance*lerpf(0.18,0.60,progress)
 
 func advance(delta: float) -> void:
 	if mode==&"idle":
@@ -206,12 +224,6 @@ func advance(delta: float) -> void:
 		if _smoke_clock>0.085:
 			_smoke_clock = 0.0
 			_spawn_smoke()
-		for tile: int in path:
-			var along := (BoardLayout.tile_norm(tile)-origin).dot(direction)
-			if not passed.has(tile) and front_distance>=along:
-				passed.append(tile)
-				contact_times[tile] = elapsed
-				tile_passed.emit(tile)
 	elif elapsed<run_start+RUN_TIME+AFTER_TIME:
 		mode = &"after"
 		train.hide()
@@ -227,16 +239,20 @@ func advance(delta: float) -> void:
 			hide()
 			render_view.render_target_update_mode = SubViewport.UPDATE_DISABLED
 			finished.emit()
+	# Move the visible model before delivering its collision events.
+	_update_pose()
 	# Recover ordered contacts even if a browser frame skips across the run boundary.
 	if elapsed>=run_start and passed.size()<path.size():
 		for tile: int in path:
-			if not passed.has(tile) and (mode!=&"run" or front_distance>=(BoardLayout.tile_norm(tile)-origin).dot(direction)):
+			var hit_at := contact_time(tile)
+			if not passed.has(tile) and elapsed>=hit_at:
 				passed.append(tile)
-				contact_times[tile] = elapsed
+				contact_times[tile] = hit_at
 				tile_passed.emit(tile)
-	_update_pose()
 	_update_smoke(dt)
 	pose_changed.emit()
+	# The board's camera rig is updated by pose_changed; use that same frame's plane.
+	sync_projection()
 
 func _update_pose() -> void:
 	image.modulate.a = 1.0 if mode!=&"clear" else image.modulate.a

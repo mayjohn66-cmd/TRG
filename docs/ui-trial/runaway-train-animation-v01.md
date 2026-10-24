@@ -1,5 +1,15 @@
 # Runaway train on the board
 
+## Camera and collision polish (2026-10-24)
+
+Before the locomotive enters, the board camera eases into a restrained 12% zoom toward the entry side, then gently pans along its route. Board artwork, pawn sprites, 3D rails and train share the same transform; HUD panels stay at their normal scale. The camera returns smoothly after the train passes and restores immediately on cancellation or reset, including a window resize during the shot.
+
+Victims remain on their original tiles until the accelerating front reaches them. Contact times are solved from the visible train's acceleration curve, so a skipped browser frame preserves individual collision times instead of launching every victim at the late frame. Pawns launch primarily along the train's travel direction with an outward deflection, upward impulse, gravity, tumble and a late fade.
+
+Validation for this iteration is limited to `tests/ui_train_test.gd`: all four entry sides, same-frame world projection, pre-contact retention, forward flights, ordered contacts after a stalled frame and camera restoration after completion/interruption. Native desktop/mobile captures are in workspace `outputs/train-camera-20261024`. `[check:train]` selects only this focused test during deployment; broader suites remain available separately.
+
+## Original implementation
+
 The TRAIN sweep now uses the approved 3D toy locomotive, four freight wagons and modular track on the existing board. It lays short track segments in travel order with a low drop and dry wooden clacks, waits 0.40 seconds after construction, then accelerates the train through the selected side. All 22 wheels rotate and steam drifts behind the stack. Surviving tracks fade after the last wagon has exited.
 
 An isolated transparent SubViewport renders real meshes. Its ground projection maps onto the same board plane as the tile artwork, so track position, gauge and train orientation remain aligned on all four sides and after window resizing. Static meshes are combined by material on presentation instances; source model assets remain intact, and wheel pivots stay separate for rotation. The render target stops updating while idle.
