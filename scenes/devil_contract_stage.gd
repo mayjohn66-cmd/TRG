@@ -7,6 +7,9 @@ const ARRIVAL := 2.02
 const TOTAL_TIME := 2.78
 const CRIMSON := Color("f04465")
 const VIOLET := Color("b467ee")
+const SCROLL_ART := preload("res://assets/fx/devil_contract/contract_scroll.png")
+const WAX_ART := preload("res://assets/fx/devil_contract/devil_wax_seal.png")
+const SIGIL_ART := preload("res://assets/fx/devil_contract/summoning_sigil.png")
 var elapsed := 0.0
 var pace := 1.0
 var phase: StringName = &"offering"
@@ -136,17 +139,10 @@ func _draw() -> void:
 	draw_set_transform(_origin,0,Vector2(1,0.4))
 	draw_circle(Vector2.ZERO,67,Color(0.10,0.025,0.13,0.93*open))
 	draw_set_transform(Vector2.ZERO)
-	_ellipse(_origin,Vector2(70,28),Color(CRIMSON,open),3.0)
-	_ellipse(_origin,Vector2(56,22.4),Color(VIOLET,open*0.8),1.4)
-	var star := PackedVector2Array()
-	for index: int in 6:
-		var angle := -PI/2.0+index*TAU*2.0/5.0+elapsed*0.18
-		star.append(_origin+Vector2(cos(angle)*49,sin(angle)*19.6))
-	draw_polyline(star,Color(CRIMSON,open*0.55),1.4,true)
-	for index: int in 10:
-		var angle := index*TAU/10.0-elapsed*0.35
-		var point := _origin+Vector2(cos(angle)*62,sin(angle)*24.8)
-		draw_line(point,point+Vector2(cos(angle)*5,sin(angle)*2),Color(1,0.70,0.64,open),2.0,true)
+	# The native circular sprite is flattened onto the same board footprint.
+	draw_set_transform(_origin,0,Vector2(1,0.4))
+	draw_texture_rect(SIGIL_ART,Rect2(-81,-81,162,162),false,Color(1,1,1,open*0.86))
+	draw_set_transform(Vector2.ZERO)
 	# Restrained embers rise into the offering, with no simulation RNG.
 	for index: int in 12:
 		var t := fposmod(elapsed*0.75+index/12.0,1.0)
@@ -176,23 +172,11 @@ func _energy_position(u: float) -> Vector2:
 
 func _draw_contract(at: Vector2, alpha: float) -> void:
 	draw_set_transform(at,-0.10)
-	var paper := Rect2(-29,-42,58,82)
-	draw_rect(paper.grow(2),Color(0.26,0.12,0.08,alpha))
-	draw_rect(paper,Color(1.0,0.84,0.60,alpha))
-	for y: float in [-42.0,40.0]:
-		draw_line(Vector2(-33,y+3),Vector2(33,y+3),Color(0.45,0.23,0.12,alpha),9,true)
-		draw_line(Vector2(-33,y),Vector2(33,y),Color(1,0.76,0.44,alpha),7,true)
-	for y: float in [-25.0,-17.0,-9.0]:
-		draw_line(Vector2(-18,y),Vector2(18 if y!=-17.0 else 7,y),Color(0.45,0.24,0.18,alpha*0.65),2,true)
+	draw_texture_rect(SCROLL_ART,Rect2(-39,-58.5,78,117),false,Color(1,1,1,alpha))
 	var seal := smoothstep(CONSUME_END-0.12,CONSUME_END+0.08,elapsed)
 	var s := 1.0+0.8*(1-seal)
-	draw_set_transform(at+Vector2(0,17),-0.10,Vector2.ONE*s)
-	draw_circle(Vector2.ZERO,15,Color(0.50,0.035,0.12,alpha*seal))
-	draw_circle(Vector2(0,-1),11,Color(CRIMSON,alpha*seal))
-	for side: float in [-1.0,1.0]:
-		draw_colored_polygon(PackedVector2Array([Vector2(side*5,-6),Vector2(side*10,-15),Vector2(side*11,-3)]),Color(CRIMSON,alpha*seal))
-		draw_line(Vector2(side*3,-2),Vector2(side*7,-4),Color(0.25,0.02,0.06,alpha*seal),2,true)
-	draw_arc(Vector2(0,1),5,0.2,PI-0.2,10,Color(0.25,0.02,0.06,alpha*seal),1.6,true)
+	draw_set_transform(at+Vector2(0,15),-0.10,Vector2.ONE*s)
+	draw_texture_rect(WAX_ART,Rect2(-20,-20,40,40),false,Color(1,1,1,alpha*seal))
 	draw_set_transform(Vector2.ZERO)
 
 func _release_mark(board: MainBoard) -> void:
