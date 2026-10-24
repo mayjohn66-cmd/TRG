@@ -8,6 +8,8 @@
 class_name SuperFX
 extends RefCounted
 
+const FATE_COIN = preload("res://scenes/fate_coin_3d.gd")
+
 const GOLD: Color = Color("ffd43b")
 const RED: Color = Color("ff3b30")
 const DEVIL_RED: Color = Color("c2255c")
@@ -62,41 +64,31 @@ func _flip(player_id: int, changes: Array) -> void:
 	if view == null:
 		return
 	var at: Vector2 = view.position
-	_spotlight(at, Color(1.0, 0.97, 0.75))
+	_spotlight(at, Color(1.0, 0.97, 0.75),1.35*board._motion_pace())
 	Sfx.play(&"charge")
 	await _wait(0.25)
-	# 보드 한가운데에서 거대한 코인이 빙글빙글 돌며 튀어 오른다
-	var center: Vector2 = _local(board._board_center())
-	var coin := Node2D.new()
-	coin.position = center
-	coin.z_index = 40
-	var rim := Polygon2D.new()
-	rim.polygon = _circle(40.0, 32)
-	rim.color = Color("b8860b")
-	coin.add_child(rim)
-	var face := Polygon2D.new()
-	face.polygon = _circle(33.0, 32)
-	face.color = GOLD
-	coin.add_child(face)
-	var mark: Label = _label("?", 38, Color("7a5200"))
-	coin.add_child(mark)
-	_center_label(mark)
+	if not _alive():
+		return
+	# The result is already authoritative. A real two-sided coin shows that result
+	# after its rising spin, slower descent and a short, readable result hold.
+	var coin := FATE_COIN.new()
+	coin.position = _local(board._board_center())+Vector2(0,-32)
 	_layer().add_child(coin)
 	Sfx.play(&"toy_click")
-	var spin: Tween = coin.create_tween()
-	spin.tween_method(func(t: float) -> void:
-		coin.position = center + Vector2(0.0, -150.0 * sin(t * PI))
-		coin.scale = Vector2(cos(t * TAU * 3.0), 1.0) * (1.0 + 0.35 * sin(t * PI)), 0.0, 1.0, 0.55)
-	await _wait(0.55)
-	if not _alive():
-		coin.queue_free()
+	coin.play(success,board._motion_pace())
+	while _alive() and is_instance_valid(coin) and not coin.settled:
+		await board.get_tree().process_frame
+	if not _alive() or not is_instance_valid(coin):
+		if is_instance_valid(coin):
+			coin.queue_free()
 		return
-	coin.scale = Vector2.ONE * 1.15
-	face.color = GOLD if success else Color("ff8787")
-	mark.text = "★" if success else "X"
-	mark.add_theme_color_override("font_color", Color("7a5200") if success else Color("7d0a0a"))
 	Sfx.play(&"good" if success else &"bad")
-	_fade_out(coin, 0.25, 0.35)
+	await _wait(0.28*board._motion_pace())
+	if not _alive() or not is_instance_valid(coin):
+		if is_instance_valid(coin):
+			coin.queue_free()
+		return
+	_fade_out(coin,0.0,0.25*board._motion_pace())
 	var pawn: PlayerPawn = board.state.get_pawn(pawn_id)
 	if success:
 		# 황금빛으로 터지며 결승선으로 로켓처럼 직행
@@ -805,7 +797,7 @@ func _title(effect: StringName, player_id: int) -> void:
 
 
 ## 스포트라이트: 화면을 살짝 어둡게 하고 대상만 밝은 원으로 비춘다.
-func _spotlight(at: Vector2, color: Color) -> void:
+func _spotlight(at: Vector2, color: Color, hold_time: float = 0.6) -> void:
 	var light := Polygon2D.new()
 	light.polygon = _circle(46.0, 32)
 	light.color = Color(color, 0.45)
@@ -815,7 +807,7 @@ func _spotlight(at: Vector2, color: Color) -> void:
 	_layer().add_child(light)
 	var beam: Tween = light.create_tween()
 	beam.tween_property(light, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	beam.tween_interval(0.6)
+	beam.tween_interval(hold_time)
 	beam.tween_property(light, "modulate:a", 0.0, 0.3)
 	beam.tween_callback(light.queue_free)
 	_ring(at, color, 50.0, 4.0, 0.3)
