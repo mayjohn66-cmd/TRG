@@ -1707,7 +1707,9 @@ func _test_hud_overhaul() -> void:
 		await process_frame
 	_expect(not _board._tip_panel.visible, "커서만 대서는 기물 설명이 뜨지 않는다")
 	_board._on_pawn_slot_pressed(0)
-	_expect(_board._tip_panel.visible and _board._tip_title.text != "" and _board._tip_ability.text != "", "누르면 바로 기물 설명이 뜬다 (%s)" % _board._tip_title.text)
+	# 패시브가 없는 기물(장기 차)은 패시브 칸 없이 필살기만 보인다
+	var described: bool = (_board._tip_ability.visible and _board._tip_ability.text != "") or (_board._tip_skill.visible and _board._tip_skill.text != "")
+	_expect(_board._tip_panel.visible and _board._tip_title.text != "" and described, "누르면 바로 기물 설명이 뜬다 (%s)" % _board._tip_title.text)
 	var pinned_at: Vector2 = _board._tip_panel.position
 	for i: int in 5:
 		await process_frame
