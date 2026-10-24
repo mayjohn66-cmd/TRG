@@ -52,6 +52,9 @@ var is_game_over: bool = false
 @export var step_delay_sec: float = 0.0
 ## 한 번의 이동 연출 총시간 상한(초): 칸이 많을수록 칸당 시간을 줄여 몇 칸을 가든 이 시간을 넘지 않는다 (칸당 = min(step_delay_sec, 상한 / 칸 수)).
 const MOVE_TIME_CAP: float = 0.75
+## 이 칸 수 이상의 장거리 이동(리벤지 부스터 + 고눈금 등)은 칸당 시간을 LONG_MOVE_STEP_SECONDS로 줄여 타다닥 지나간다.
+const LONG_MOVE_TILES: int = 5
+const LONG_MOVE_STEP_SECONDS: float = 0.06
 ## 지금 이동의 칸당 시간 (화면의 한 칸 점프 길이를 엔진 걸음과 맞춘다).
 var current_step_seconds: float = 0.0
 
@@ -352,6 +355,8 @@ func execute_step_by_step_move(entity: BoardEntity, path: Array[int], ctx: RuleC
 	ctx.pawn = pawn
 	# 장거리 이동(부스터·후반 가속)도 한 번에 MOVE_TIME_CAP초 안에 끝난다: 칸당 시간을 칸 수로 나눠 줄인다.
 	current_step_seconds = minf(step_delay_sec, MOVE_TIME_CAP / float(maxi(path.size(), 1)))
+	if path.size() >= LONG_MOVE_TILES:
+		current_step_seconds = minf(current_step_seconds, LONG_MOVE_STEP_SECONDS)
 	for index: int in path.size():
 		var is_last: bool = index == path.size() - 1
 		processing_started.emit()  # 걸음마다 화면 갱신을 한 번으로 묶는다 (걸음은 await 사이에 따로 일어난다)

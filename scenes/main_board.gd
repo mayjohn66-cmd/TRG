@@ -484,6 +484,15 @@ var _presentation_queue: Array[Callable] = []
 var _presentation_draws: Array[bool] = []
 ## 바로 앞 단계가 다음 카드 비행과 이어지는 카드 비행이었다 (다음 카드는 기다리지 않고 띄운다).
 var _chained_draw: bool = false
+## 연출 큐의 단계마다 말 이동 단계(한 칸 점프·리벤지 로켓)인가 (큐와 같은 순서).
+var _presentation_moves: Array[bool] = []
+## 말 이동 단계: 이어지는 걸음 사이에는 여운·정리 대기를 두지 않는다 (걸음마다 0.35초 여운이 붙어 13칸 이동이 3초 넘게 걸렸다).
+const MOVE_STEP_LABELS: Array[String] = ["_play_hop", "_play_rocket"]
+## 여운을 붙이지 않는 단계: 걸음과 리벤지 부스터 출발 배너 (이동은 끊기지 않고 이어져야 한다).
+const NO_LINGER_LABELS: Array[String] = ["_play_hop", "_play_rocket", "_play_revenge_launch"]
+## 지금 이어 뛰는 걸음 줄의 길이 (줄의 첫 걸음에서 센다). TurnManager.LONG_MOVE_TILES 이상이면 한 칸 점프를 LONG_MOVE_STEP_SECONDS로 줄인다.
+var _move_chain_len: int = 0
+var _move_chained: bool = false
 ## Own preview controls while their announcement is waiting in the presentation queue.
 var _announcement_extras: Node = null
 var _is_playing_presentation: bool = false
@@ -500,8 +509,8 @@ var _roll_reasons: Dictionary = {}
 var _move_bonus_notes: Dictionary = {}
 ## 도착 칸 정산 뒤 추가 이동 중인 말 (점프 부스트·부스터 발판·8번 공 돌진): 이 말의 걸음은 앞선 처치 연출 뒤에 선다. 이동이 끝나면(move_resolved) 지운다.
 var _follow_up_pawns: Dictionary = {}
-## 이동 단계 사이(부스터 도착·점프 부스트 직전)의 짧은 멈춤(초).
-const WAYPOINT_PAUSE: float = 0.25
+## 이동 단계 사이(부스터 도착·점프 부스트 직전)의 짧은 멈춤(초). 연출 속도 배율을 곱하지 않는 고정값.
+const WAYPOINT_PAUSE: float = 0.15
 ## 굴림 직후 확정 칸수 표시용: 플레이어 -> 가속 보너스까지 합친 최종 칸수
 var _roll_total: Dictionary = {}
 ## 점프 코너·옷장 포탈의 2단계 이동(발판에 멈춤 -> 발동 연출 -> 비행/워프)이 진행 중인 수. 0보다 크면 다른 말의 연출과 알림은 끝날 때까지 기다린다.
@@ -2645,6 +2654,8 @@ func _play_hop(pawn_id: int, to_pos: Vector2, to_scale: float, tile: int) -> voi
 		view.visible = pawn.carrier == null and not pawn.is_finished
 	# 한 칸 점프 길이는 엔진의 이번 이동 칸당 시간과 같다 (장거리일수록 짧아져 이동 전체가 0.75초 안에 끝난다).
 	var hop: float = manager.current_step_seconds if manager != null and manager.current_step_seconds > 0.0 else HOP_SECONDS
+	if _move_chain_len >= TurnManager.LONG_MOVE_TILES:
+		hop = minf(hop, TurnManager.LONG_MOVE_STEP_SECONDS)  # 장거리 이동: 큐에 이어진 걸음이 많으면 타다닥
 	_glide(view, to_pos, to_scale, {"dur": minf(hop, HOP_SECONDS * minf(_pace(), 1.5)), "arc": HOP_HEIGHT, "pace_cap": 1.0, "land_tile": tile})
 	var generation: int = _fx_generation
 	while generation == _fx_generation and is_instance_valid(view) and _fx_running(view):
@@ -2821,7 +2832,7 @@ func _on_leapfrog_boosted(pawn_id: int, waypoint: int, bonus: int) -> void:
 			return
 		Sfx.play(&"dash")
 		_floating_badge(view.position + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + Vector2(0, -40), "점프 부스트 +%d" % bonus, Color("ffd43b"), 34)
-		await get_tree().create_timer(WAYPOINT_PAUSE * _motion_pace()).timeout, pawn_id)
+		await get_tree().create_timer(WAYPOINT_PAUSE).timeout, pawn_id)
 
 
 ## 초증강 아우토반 니트로: 선두 말이 리벤지 부스터처럼 화염을 뿜으며 코너(또는 길을 막은 말이 있는 칸)까지 한 번에 날아간다.
@@ -2889,7 +2900,7 @@ func _play_rocket(pawn_id: int, to_pos: Vector2, to_scale: float, tile: int) -> 
 	# 1단계(부스터)와 2단계(눈금 이동) 사이의 짧은 호흡: 경유지라 아직 판정하지 않는다
 	var dice_part: int = int(_rocket_followup.get(pawn_id, 0))
 	_rocket_followup.erase(pawn_id)
-	await get_tree().create_timer(WAYPOINT_PAUSE * _motion_pace()).timeout
+	await get_tree().create_timer(WAYPOINT_PAUSE).timeout
 	if dice_part > 0 and is_instance_valid(view):
 		var bonus_notes: Array = _move_bonus_notes.get(pawn_id, [])
 		_move_bonus_notes.erase(pawn_id)
@@ -6297,6 +6308,7 @@ func enqueue_step(step_callable: Callable, pawn_id: int = -1, allow_defer: bool 
 		_pawn_pending[pawn_id] = int(_pawn_pending.get(pawn_id, 0)) + 1
 	var label: String = String(step_callable.get_method())
 	_presentation_draws.append(label == "_launch_drawn_card")
+	_presentation_moves.append(MOVE_STEP_LABELS.has(label))
 	_presentation_queue.append(func() -> void:
 		presentation_label = label
 		# A modal may close while its opening is still queued behind an effect.
@@ -6336,6 +6348,9 @@ func _reset_presentation() -> void:
 	_fx_generation += 1
 	_presentation_queue.clear()
 	_presentation_draws.clear()
+	_presentation_moves.clear()
+	_move_chain_len = 0
+	_move_chained = false
 	if is_instance_valid(_announcement_extras):
 		for extra: Node in _announcement_extras.get_children():
 			extra.queue_free()
@@ -6460,10 +6475,17 @@ func _process_presentation_queue() -> void:
 	while not _presentation_queue.is_empty():
 		var next_step: Callable = _presentation_queue.pop_front()
 		var is_draw: bool = bool(_presentation_draws.pop_front()) if not _presentation_draws.is_empty() else false
+		var is_move: bool = bool(_presentation_moves.pop_front()) if not _presentation_moves.is_empty() else false
 		if not (is_draw and _chained_draw):
 			await _presentation_wait_ready(generation)
 		if generation != _fx_generation:
 			break
+		if is_move and not _move_chained:
+			_move_chain_len = 1
+			while _move_chain_len <= _presentation_moves.size() and bool(_presentation_moves[_move_chain_len - 1]):
+				_move_chain_len += 1
+		elif not is_move:
+			_move_chain_len = 0
 		var started_msec: int = Time.get_ticks_msec()
 		await next_step.call()  # ★ 앞 연출이 100% 끝날 때까지 다음 연출은 절대 시작하지 않는다
 		# 카드 여러 장을 연달아 받으면(초증강·패키지) 다음 카드도 바로 띄운다: 순서는 카드 연출(CardDrawFX)의 줄이 지키고,
@@ -6471,10 +6493,14 @@ func _process_presentation_queue() -> void:
 		_chained_draw = is_draw and not _presentation_draws.is_empty() and bool(_presentation_draws[0])
 		if _chained_draw:
 			continue
+		# 걸음이 이어지면(다음 단계도 걸음) 정리 대기·여운 없이 바로 다음 칸으로 뛴다: 걸음 단계는 자기 점프가 끝날 때까지 이미 기다렸다.
+		_move_chained = is_move and not _presentation_moves.is_empty() and bool(_presentation_moves[0])
+		if _move_chained:
+			continue
 		await _presentation_settle(generation)
 		if generation != _fx_generation:
 			break
-		if Time.get_ticks_msec() - started_msec >= STEP_LINGER_MIN_MSEC:
+		if not NO_LINGER_LABELS.has(presentation_label) and Time.get_ticks_msec() - started_msec >= STEP_LINGER_MIN_MSEC:
 			await _presentation_linger(generation)  # 결과를 잠깐 보여 준 뒤 넘긴다
 			if generation != _fx_generation:
 				break

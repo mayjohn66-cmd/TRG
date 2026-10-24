@@ -19,6 +19,9 @@ var expanded: bool = false
 var mini_position: Vector2 = Vector2.ZERO
 
 var _lines: Array[String] = []
+## 화면 글자에 들어 있는 줄 수와 줄마다의 문단 수 (새 줄은 덧붙이고 넘친 줄은 문단째 지운다: 줄마다 전체를 다시 파싱하지 않는다).
+var _shown: Array[int] = []
+var _scroll_pending: bool = false
 var _title: Label = null
 var _toggle: Button = null
 var _text: RichTextLabel = null
@@ -91,7 +94,23 @@ func add_entry(bbcode: String) -> void:
 	_lines.append(bbcode)
 	while _lines.size() > MAX_LOG_LINES:
 		_lines.pop_front()
-	_render()
+	_append_shown(bbcode)
+
+
+## 새 줄만 덧붙인다 (append_text). 보이는 줄 수를 넘으면 가장 오래된 줄의 문단을 지운다.
+func _append_shown(bbcode: String) -> void:
+	if _text == null:
+		return
+	if _shown.is_empty():
+		_render()  # [기록 없음] 안내를 지우고 처음부터 그린다
+		return
+	_text.append_text("\n" + bbcode)
+	_shown.append(bbcode.count("\n") + 1)
+	while _shown.size() > visible_line_count():
+		var paragraphs: int = int(_shown.pop_front())
+		for i: int in paragraphs:
+			_text.remove_paragraph(0)
+	_queue_scroll()
 
 
 func clear_entries() -> void:
@@ -147,17 +166,30 @@ func _apply_mode() -> void:
 func _render() -> void:
 	if _text == null:
 		return
+	_shown.clear()
 	if _lines.is_empty():
 		_text.text = "[color=#868e96]%s[/color]" % L10n.tr_ui("log.empty")
 	else:
-		_text.text = "\n".join(PackedStringArray(_lines.slice(_lines.size() - visible_line_count())))
-	if is_inside_tree():
-		_scroll_to_bottom.call_deferred()  # 미니든 펼침이든 가장 최근 줄이 보이게
+		var shown: Array[String] = _lines.slice(_lines.size() - visible_line_count())
+		_text.text = "\n".join(PackedStringArray(shown))
+		for line: String in shown:
+			_shown.append(line.count("\n") + 1)
+	_queue_scroll()
+
+
+## 미니든 펼침이든 가장 최근 줄이 보이게 (한 프레임에 줄이 여러 개 들어와도 한 번만).
+func _queue_scroll() -> void:
+	if _scroll_pending or not is_inside_tree():
+		return
+	_scroll_pending = true
+	_scroll_to_bottom.call_deferred()
 
 
 func _scroll_to_bottom() -> void:
 	if _scroll == null or not is_inside_tree():
+		_scroll_pending = false
 		return
 	await get_tree().process_frame  # 글자 높이가 정해진 다음 프레임에 맨 아래로
+	_scroll_pending = false
 	if is_instance_valid(_scroll):
 		_scroll.scroll_vertical = int(_scroll.get_v_scroll_bar().max_value)

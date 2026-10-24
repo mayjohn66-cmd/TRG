@@ -2877,9 +2877,12 @@ func _test_move_four_steps() -> void:
 	var ctx2 := RuleContext.new()
 	ctx2.state = state
 	ctx2.actor_id = 1
-	ctx2.dice_value = 2
-	ctx2.raw_roll = 2
+	ctx2.dice_value = 7
+	ctx2.raw_roll = 7
+	var launched_ms: int = 0  # [리벤지 부스터] 출발 단계가 시작된 때 (앞 검사의 남은 연출은 빼고 잰다)
+	var arrived_ms: int = 0
 	MoveExecutor.execute(state, boosted, ctx2)
+	var final_boost_pos: Vector2 = _board._pawn_position(boosted)
 	var rest_frames: int = 0
 	var left_rocket: bool = false
 	var start_ms: int = 0
@@ -2895,10 +2898,16 @@ func _test_move_four_steps() -> void:
 			rest_ms = Time.get_ticks_msec() - start_ms
 		elif start_ms != 0:
 			left_rocket = true
+		if launched_ms == 0 and _board.presentation_label == "_play_revenge_launch":
+			launched_ms = Time.get_ticks_msec()
+		if arrived_ms == 0 and left_rocket and view.position.distance_to(final_boost_pos) < 2.0 and not _board._fx_running(view):
+			arrived_ms = Time.get_ticks_msec()
 		await process_frame
 	_expect(banners.any(func(text: String) -> bool: return text.contains("리벤지 부스터") and text.contains("+%d칸 선행 전진" % bonus)), "1단계 배너: [리벤지 부스터] +N칸 선행 전진! (%s)" % str(banners))
-	_expect(rest_ms >= 150, "부스터 도착 칸에서 잠깐 멈춘다 (%dms)" % rest_ms)
-	_expect(boosted.current_tile_idx == bonus + 2, "엔진: 부스터 %d칸 + 눈금 2칸" % bonus)
+	_expect(rest_ms >= 120 and rest_ms < 400, "부스터 도착 칸에서 0.15초 멈춘다 (%dms)" % rest_ms)
+	_expect(boosted.current_tile_idx == bonus + 7, "엔진: 부스터 %d칸 + 눈금 7칸" % bonus)
+	# 거북이 이동 회귀: 걸음마다 여운(0.35초)이 붙으면 부스터 + 눈금 7칸이 4~5초 걸렸다. 걸음은 이어서 뛰어 1.5초 안에 끝난다.
+	_expect(launched_ms > 0 and arrived_ms > 0 and arrived_ms - launched_ms < 1500, "리벤지 부스터 + 눈금 7칸이 1.5초 안에 끝난다 (%dms)" % (arrived_ms - launched_ms))
 	state.boost_gimmicks = saved_boost
 	_board._reset_presentation()
 	_board.instant_roll_for_test = true

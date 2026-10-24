@@ -36,6 +36,22 @@ func test_action_log_mini_shows_recent_lines_and_expands() -> void:
 	panel.free()
 
 
+## 이동 중 로그가 쌓여도 전체 글을 다시 파싱하지 않는다: 새 줄은 덧붙이고 넘친 줄만 지운다. 화면 글은 다시 그린 것과 같아야 한다.
+func test_action_log_appends_without_rebuilding() -> void:
+	var panel := ActionLogPanel.new()
+	for i: int in 7:
+		panel.add_entry("[color=#ffffff]줄 %d[/color]" % i)
+	check_eq(panel._text.get_parsed_text().strip_edges(), "줄 3\n줄 4\n줄 5\n줄 6", "미니: 최근 4줄만 보인다")
+	panel.toggle()
+	for i: int in 120:
+		panel.add_entry("줄 %d" % (7 + i) if i != 5 else "두 줄\n짜리")
+	var appended: String = panel._text.get_parsed_text()
+	check_eq(panel._shown.size(), ActionLogPanel.MAX_LOG_LINES, "펼침: 100줄까지")
+	panel._render()
+	check_eq(appended, panel._text.get_parsed_text(), "덧붙인 화면 글 = 처음부터 다시 그린 글 (여러 줄 항목 포함)")
+	panel.free()
+
+
 func test_texture_cache_reuses_the_same_texture() -> void:
 	var path: String = "res://assets/board/traps/TRP_03.png"
 	var first: Texture2D = TextureCache.fetch(path)
