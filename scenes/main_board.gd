@@ -3243,8 +3243,9 @@ func _build_train_stage() -> void:
 	_train_stage = RunawayTrainStage.new()
 	_train_stage.name = "RunawayTrainPresentation"
 	add_child(_train_stage)
-	# Above board/pawns at rest, below HUD controls. Launched pawns use z=12.
-	move_child(_train_stage,_pawn_layer.get_index()+1)
+	# Rails cover tile artwork, while pieces remain readable above the rails.
+	# The HUD stays above the presentation; launched pawns still use z=12.
+	move_child(_train_stage,_pawn_layer.get_index())
 	_train_stage.tile_passed.connect(_train_contact)
 	_train_stage.pose_changed.connect(_train_pose)
 
