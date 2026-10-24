@@ -422,6 +422,7 @@
 			}
 
 			function hideSplash() {
+				if (splash.classList.contains('hidden')) return;
 				splash.classList.add('hidden');
 				setTimeout(function () { splash.style.display = 'none'; }, 600);
 			}
@@ -438,6 +439,14 @@
 				percent.textContent = '확인 필요';
 			}
 
+			// 첫 화면이 3D 셰이더를 미리 컴파일하는 동안(멈춘 첫 프레임) 스플래시를 남겨 둔다: 게임이 준비되면 window.trgBootReady()를 부른다.
+			let engineStarted = false;
+			let gameReady = false;
+			window.trgBootReady = function () {
+				gameReady = true;
+				if (engineStarted) { hideSplash(); }
+			};
+
 			const missing = Engine.getMissingFeatures({ threads: GODOT_THREADS_ENABLED });
 			if (missing.length !== 0) {
 				showNotice('이 브라우저에서는 게임을 실행할 수 없습니다. 최신 브라우저를 사용해 주세요.\n(부족한 기능: ' + missing.join(', ') + ')');
@@ -449,7 +458,9 @@
 					});
 				}).then(function () {
 					setProgress(1, 1);
-					hideSplash();
+					// 엔진 시작 신호보다 게임의 준비 신호가 먼저 왔으면 바로 걷고, 아니면 신호(또는 6초 안전장치)를 기다린다.
+					engineStarted = true;
+					if (gameReady) { hideSplash(); } else { setTimeout(hideSplash, 6000); }
 				}, function (err) {
 					console.error(err);
 					showNotice('게임을 불러오지 못했습니다: ' + err);

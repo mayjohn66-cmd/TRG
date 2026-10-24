@@ -86,6 +86,10 @@ function fakeWindow({ buildId, version, stored }) {
   check((await guard.clean()) === false && page.deleted.length === 0, "로컬에서는 캐시를 지우지 않는다");
 }
 
+// 4) 부팅: 엔진이 시작돼도 게임이 첫 화면(셰이더 미리 컴파일)을 마칠 때까지 스플래시를 남기고, 6초 안전장치를 둔다
+check(shell.includes("window.trgBootReady = function ()") && shell.includes("if (gameReady) { hideSplash(); } else { setTimeout(hideSplash, 6000); }"), "스플래시는 게임 신호(trgBootReady, 엔진 시작 전에 와도 기억) 또는 6초 뒤에 걷힌다");
+check(/function hideSplash\(\) \{\s*if \(splash\.classList\.contains\('hidden'\)\) return;/.test(shell), "스플래시 걷기는 두 번 불려도 한 번만");
+
 if (failures > 0) {
   process.exit(1);
 }

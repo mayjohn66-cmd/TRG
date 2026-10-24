@@ -3,6 +3,9 @@
 extends RefCounted
 
 const SEGMENTS: int = 72
+## Building the noodle tubes point by point costs about 0.25 s natively (more on the web), so the menu
+## loads a baked copy made by tools/bake_ramen_noodles.gd and only builds it when the file is missing.
+const BAKED_NOODLES: String = "res://assets/models/ramen/noodles_baked.res"
 const FOOD_Y: float = 1.19
 const LIP_Y: float = 1.52
 const PROFILE: Array[Vector2] = [
@@ -31,7 +34,7 @@ static func make_model() -> Node3D:
 	if _ceramic == null:
 		_ceramic = lathe(PROFILE, true)
 		_band = lathe([Vector2(1.258, 0.63), Vector2(1.316, 0.72), Vector2(1.362, 0.81)], false)
-		_noodles = noodle_mesh()
+		_noodles = load(BAKED_NOODLES) as ArrayMesh if ResourceLoader.exists(BAKED_NOODLES) else noodle_mesh()
 	var root := Node3D.new()
 	root.name = "DeepRamenBowl3D"
 	var ceramic: MeshInstance3D = part(root, "CeramicBody", _ceramic, material(Color.WHITE, 0.27))

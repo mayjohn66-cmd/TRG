@@ -31,7 +31,8 @@ func _ready() -> void:
 	render_view.own_world_3d = true
 	render_view.transparent_bg = true
 	render_view.gui_disable_input = true
-	render_view.msaa_3d = Viewport.MSAA_2X
+	# The viewport is already twice the display size (supersampled), so MSAA only added shader cost.
+	render_view.msaa_3d = Viewport.MSAA_DISABLED
 	render_view.render_target_update_mode = SubViewport.UPDATE_DISABLED
 	add_child(render_view)
 	var world := Node3D.new()
@@ -46,8 +47,8 @@ func _ready() -> void:
 	var key := DirectionalLight3D.new()
 	key.rotation_degrees = Vector3(-48, -30, 0)
 	key.light_energy = 1.0
-	key.shadow_enabled = true
-	key.directional_shadow_max_distance = 10.0
+	# No shadow pass: on WebGL its first render compiled extra shaders and froze the menu for ~1.5 s.
+	key.shadow_enabled = false
 	world.add_child(key)
 	var fill := DirectionalLight3D.new()
 	fill.rotation_degrees = Vector3(-25, 135, 0)
@@ -83,6 +84,12 @@ func _ready() -> void:
 		_drops.append(item)
 	_sync_model()
 	_sync_visibility()
+
+## Render one hidden frame so WebGL compiles the bowl's 3D shaders before the menu shows it
+## (the first 3D frame otherwise froze the screen for 2-3 s when the AI setup page opened).
+func prewarm() -> void:
+	if render_view != null:
+		render_view.render_target_update_mode = SubViewport.UPDATE_ONCE
 
 func set_level(value: int, animate: bool) -> void:
 	level = clampi(value, 1, 5)

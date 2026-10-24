@@ -41,6 +41,8 @@ var _train_label: MarqueeLabel = null
 var _train_start: Button = null
 ## 놀이터 난이도 = 불닭 Fire Level 1~5 (게이지·라면 그릇).
 var _fire_picker: FireLevelPicker = null
+## 웹 로딩 스플래시는 첫 메뉴에서 한 번만 걷는다 (게임에서 돌아와 메뉴를 다시 만들 때는 이미 걷혀 있다).
+static var _splash_released: bool = false
 var _mobile: MobileSupport = null
 
 
@@ -90,6 +92,19 @@ func _ready() -> void:
 		_show_step(1)  # 모바일에서 키보드가 불쑥 뜨지 않도록 입력칸은 눌러야 입력된다
 	_mobile = MobileSupport.new()
 	add_child(_mobile)
+	# 놀이터 라면 그릇의 3D 셰이더를 첫 화면과 함께 미리 컴파일한다: 놀이터를 처음 열 때 2~3초 멈추던 것을 메뉴 로딩에 묻는다.
+	_prewarm_and_reveal.call_deferred()
+
+
+## 그릇을 한 번 몰래 그려 셰이더를 컴파일하고, 그 프레임이 지나면 웹 로딩 스플래시를 걷는다 (멈춘 첫 프레임을 스플래시가 가린다).
+func _prewarm_and_reveal() -> void:
+	if _fire_picker != null:
+		_fire_picker.prewarm()
+	for i: int in 2:
+		await get_tree().process_frame
+	if OS.has_feature("web") and not _splash_released:
+		_splash_released = true
+		JavaScriptBridge.eval("window.trgBootReady && window.trgBootReady()", true)
 
 
 func _build_name_page(parent: VBoxContainer) -> void:

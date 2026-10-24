@@ -98,6 +98,12 @@ func _build() -> void:
 	add_child(_note)
 
 
+## 그릇의 3D 셰이더를 미리 컴파일한다 (화면에 보이기 전에 한 번 그린다).
+func prewarm() -> void:
+	if _bowl != null:
+		_bowl.prewarm()
+
+
 func _on_cell_pressed(step: int) -> void:
 	set_level(step)
 	level_chosen.emit(step)

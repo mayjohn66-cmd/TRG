@@ -69,7 +69,6 @@ jobs:
           godot --headless --path . --import
 
       - name: Run focused ramen bowl check
-        if: steps.validation.outputs.scope == 'ramen'
         run: godot --headless --path . -s res://tests/ui_ramen_bowl_test.gd
 
       - name: Run unit tests
