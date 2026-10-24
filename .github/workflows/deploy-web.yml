@@ -8,6 +8,14 @@ on:
       - main
       - "claude/**"
   workflow_dispatch:
+    inputs:
+      validation:
+        description: Validation scope
+        type: choice
+        default: full
+        options:
+          - full
+          - ramen
 
 permissions:
   contents: write
@@ -26,6 +34,20 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      # UI iteration can explicitly select only the requested component check.
+      # Commit marker: [check:ramen]. A manual run can choose the same scope.
+      - name: Choose validation scope
+        id: validation
+        env:
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          REQUESTED_SCOPE: ${{ inputs.validation }}
+        run: |
+          if [[ "${REQUESTED_SCOPE}" == "ramen" || "${COMMIT_MESSAGE}" == *"[check:ramen]"* ]]; then
+            echo "scope=ramen" >> "${GITHUB_OUTPUT}"
+          else
+            echo "scope=full" >> "${GITHUB_OUTPUT}"
+          fi
 
       - name: Install Godot and web export templates
         run: |
@@ -46,19 +68,28 @@ jobs:
           godot --headless --path . --import || true
           godot --headless --path . --import
 
+      - name: Run focused ramen bowl check
+        if: steps.validation.outputs.scope == 'ramen'
+        run: godot --headless --path . -s res://tests/ui_ramen_bowl_test.gd
+
       - name: Run unit tests
+        if: steps.validation.outputs.scope != 'ramen'
         run: godot --headless --path . -s res://tests/run_tests.gd
 
       - name: Validate curated sound assets and override priority
+        if: steps.validation.outputs.scope != 'ramen'
         run: godot --headless --path . -s res://tests/sfx_assets_test.gd
 
       - name: Run UI smoke test (full game without cheats)
+        if: steps.validation.outputs.scope != 'ramen'
         run: godot --headless --path . -s res://tests/ui_smoke.gd
 
       - name: Run UI smoke test in AI mode (1P vs 3AI bots)
+        if: steps.validation.outputs.scope != 'ramen'
         run: SMOKE_AI=1 godot --headless --path . -s res://tests/ui_smoke.gd
 
       - name: Run English / Japanese UI checks (no Hangul left on screen, language picker)
+        if: steps.validation.outputs.scope != 'ramen'
         run: |
           godot --headless --path . -s res://tests/ui_menu_test.gd
           godot --headless --path . -s res://tests/ui_english_test.gd
@@ -67,15 +98,18 @@ jobs:
           SMOKE_LANG=ja SMOKE_AI=1 godot --headless --path . -s res://tests/ui_smoke.gd
 
       - name: Run text fit scan (cards / augments / rulebook in ko, en, ja)
+        if: steps.validation.outputs.scope != 'ramen'
         run: godot --headless --path . -s res://tests/ui_text_fit_test.gd
 
       - name: Run super augment board effect test (SUPER_01~10, 12)
+        if: steps.validation.outputs.scope != 'ramen'
         run: |
           godot --headless --path . -s res://tests/ui_super_fx_test.gd 2>&1 | tee /tmp/ui_super_fx_test.log
           test "${PIPESTATUS[0]}" -eq 0
           if grep -q "Lambda capture" /tmp/ui_super_fx_test.log; then echo "freed lambda captures remain"; exit 1; fi
 
       - name: Run roll effect test (gauge, spin, reels, card flips)
+        if: steps.validation.outputs.scope != 'ramen'
         run: |
           # 연출 큐·타이머가 이미 지워진 노드를 잡은 람다를 부르면 [Lambda capture ... was freed] 오류가 찍힌다: 한 줄이라도 있으면 막는다
           godot --headless --path . -s res://tests/ui_fx_test.gd 2>&1 | tee /tmp/ui_fx_test.log
@@ -83,9 +117,11 @@ jobs:
           if grep -q "Lambda capture" /tmp/ui_fx_test.log; then echo "freed lambda captures remain"; grep -c "Lambda capture" /tmp/ui_fx_test.log; exit 1; fi
 
       - name: Run avatar capture presentation test
+        if: steps.validation.outputs.scope != 'ramen'
         run: godot --headless --path . -s res://tests/ui_capture_test.gd
 
       - name: Run counter-before-kill presentation sequence test (dodge, mirror, no counter)
+        if: steps.validation.outputs.scope != 'ramen'
         run: |
           # 연출 큐·타이머가 이미 지워진 노드를 잡은 람다를 부르면 [Lambda capture ... was freed] 오류가 찍힌다: 한 줄이라도 있으면 막는다
           godot --headless --path . -s res://tests/ui_counter_sequence_test.gd 2>&1 | tee /tmp/ui_counter_sequence_test.log
@@ -93,6 +129,7 @@ jobs:
           if grep -q "Lambda capture" /tmp/ui_counter_sequence_test.log; then echo "freed lambda captures remain"; grep -c "Lambda capture" /tmp/ui_counter_sequence_test.log; exit 1; fi
 
       - name: Run augment round to round start sequence test
+        if: steps.validation.outputs.scope != 'ramen'
         run: |
           # 연출 큐·타이머가 이미 지워진 노드를 잡은 람다를 부르면 [Lambda capture ... was freed] 오류가 찍힌다: 한 줄이라도 있으면 막는다
           godot --headless --path . -s res://tests/ui_round_sequence_test.gd 2>&1 | tee /tmp/ui_round_sequence_test.log
@@ -100,48 +137,64 @@ jobs:
           if grep -q "Lambda capture" /tmp/ui_round_sequence_test.log; then echo "freed lambda captures remain"; grep -c "Lambda capture" /tmp/ui_round_sequence_test.log; exit 1; fi
 
       - name: Run alkkagi aiming and contact presentation test
+        if: steps.validation.outputs.scope != 'ramen'
         run: godot --headless --path . -s res://tests/ui_alkkagi_test.gd
 
       - name: Run track laying and runaway train presentation test
+        if: steps.validation.outputs.scope != 'ramen'
         run: godot --headless --path . -s res://tests/ui_train_test.gd
 
       - name: Run duel game selection slot and introduction test
+        if: steps.validation.outputs.scope != 'ramen'
         run: godot --headless --path . -s res://tests/ui_duel_slot_test.gd
 
       - name: Run illustrated rock paper scissors reveal and rematch test
+        if: steps.validation.outputs.scope != 'ramen'
         run: godot --headless --path . -s res://tests/ui_rps_test.gd
 
       - name: Run Halli Galli card boundaries, bell reaction and foul test
+        if: steps.validation.outputs.scope != 'ramen'
         run: godot --headless --path . -s res://tests/ui_halli_test.gd
 
       - name: Run bottle cap curling gestures, physical collisions and deterministic replay test
+        if: steps.validation.outputs.scope != 'ramen'
         run: godot --headless --path . -s res://tests/ui_curling_test.gd
 
       - name: Run paired revolver preparation, quickdraw timing and flag effects test
+        if: steps.validation.outputs.scope != 'ramen'
         run: godot --headless --path . -s res://tests/ui_quickdraw_test.gd
 
       - name: Run E-card remaining hands, citizen discards and deciding reveal test
+        if: steps.validation.outputs.scope != 'ramen'
         run: godot --headless --path . -s res://tests/ui_ecard_test.gd
 
       - name: Run pumpkin switches, explosion and native Angry1_1 test
+        if: steps.validation.outputs.scope != 'ramen'
         run: godot --headless --path . -s res://tests/ui_pumpkin_test.gd
 
       - name: Run in-game feedback test (modal, snapshot, local webhook, cleanup)
+        if: steps.validation.outputs.scope != 'ramen'
         run: godot --headless --path . -s res://tests/ui_feedback_test.gd
 
       - name: Run lobby UI test (WebRTC lobby screens, no network)
+        if: steps.validation.outputs.scope != 'ramen'
         run: godot --headless --path . -s res://tests/ui_lobby_test.gd
 
       - name: Run online lockstep test (2 players, no bots)
+        if: steps.validation.outputs.scope != 'ramen'
         run: godot --headless --path . -s res://tests/ui_net_test.gd
 
       - name: Run online lockstep test (2 humans + 2 bots)
+        if: steps.validation.outputs.scope != 'ramen'
         run: SEATS=4 BOTS=3,4 godot --headless --path . -s res://tests/ui_net_test.gd
 
       - name: Run web cache guard test (cache busting + old cache cleanup in web/shell.html)
+        if: steps.validation.outputs.scope != 'ramen'
         run: node tests/web/cache_guard_test.mjs
 
       - name: Export web build
+        env:
+          VALIDATION_SCOPE: ${{ steps.validation.outputs.scope }}
         run: |
           mkdir -p build/web
           # 시맨틱 버전 뒤에 빌드 메타데이터(+커밋 7자리)를 붙여, 피드백 제보가 어느 빌드에서 왔는지 알 수 있게 한다 (예: 0.9.0+abc1234)
@@ -151,14 +204,18 @@ jobs:
           # 캐시 버스팅: index.html에 커밋(?v=)과 버전(옛 캐시 청소 기준)을 새긴다 (web/shell.html trg-cache-guard)
           python3 tools/stamp_web_build.py build/web "${GITHUB_SHA::7}"
           # 내보낸 묶음을 직접 읽어 웹에서만 깨지는 데이터(문구 표·밸런스 CSV)를 검사한다
-          (cd build/web && godot --headless --main-pack index.pck -s "$GITHUB_WORKSPACE/tests/export_smoke.gd")
+          if [[ "${VALIDATION_SCOPE}" != "ramen" ]]; then
+            (cd build/web && godot --headless --main-pack index.pck -s "$GITHUB_WORKSPACE/tests/export_smoke.gd")
+          fi
           # 아바타 애니메이션은 본체에서 빼고 아바타별 묶음(avatars/<id>.pck)으로 따로 내보낸다: 게임이 필요한 것부터 뒤에서 받는다 (scenes/avatar_packs.gd)
           python3 tools/export_avatar_packs.py godot build/web/avatars
           # 본체에는 정지 그림만 있고, 묶음을 붙이면 애니메이션이 실제로 읽히는지 내보낸 파일로 검사한다
           # 묶음 그림의 UID를 등록하지 못하면 [invalid UID ... using text path instead] 경고가 수백 줄 찍혀 웹 로딩이 끊기므로, 경고가 한 줄이라도 있으면 막는다.
-          (cd build/web && godot --headless --main-pack index.pck -s "$GITHUB_WORKSPACE/tests/avatar_pack_smoke.gd") 2>&1 | tee /tmp/avatar_pack_smoke.log
-          test "${PIPESTATUS[0]}" -eq 0
-          if grep -q "invalid UID" /tmp/avatar_pack_smoke.log; then echo "avatar pack: invalid UID warnings remain"; grep -c "invalid UID" /tmp/avatar_pack_smoke.log; exit 1; fi
+          if [[ "${VALIDATION_SCOPE}" != "ramen" ]]; then
+            (cd build/web && godot --headless --main-pack index.pck -s "$GITHUB_WORKSPACE/tests/avatar_pack_smoke.gd") 2>&1 | tee /tmp/avatar_pack_smoke.log
+            test "${PIPESTATUS[0]}" -eq 0
+            if grep -q "invalid UID" /tmp/avatar_pack_smoke.log; then echo "avatar pack: invalid UID warnings remain"; grep -c "invalid UID" /tmp/avatar_pack_smoke.log; exit 1; fi
+          fi
           # Vercel Web Analytics: 내보낸 index.html의 </body> 바로 앞에 스크립트가 반드시 있게 고정한다 (쉘에 이미 있으면 그대로, 없으면 여기서 넣고, 그래도 없으면 배포를 멈춘다).
           python3 - <<'PY'
           from pathlib import Path

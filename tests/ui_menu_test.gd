@@ -163,11 +163,11 @@ func _run() -> void:
 	_expect(GameSession.bot_difficulty() == 5 and (menu.find_child("Difficulty_5", true, false) as Button).button_pressed and not (menu.find_child("Difficulty_2", true, false) as Button).button_pressed, "Lv.5를 누르면 Lv.5만 눌린다")
 	_expect((menu.find_child("DifficultyNote", true, false) as Label).text.contains("억까"), "핵불닭 설명")
 	var bowl: FireLevelPicker.RamenBowl = picker.find_child("RamenBowl", true, false)
-	_expect(not Geometry2D.triangulate_polygon(bowl._front_wall).is_empty(), "깊은 그릇의 앞벽이 정상적으로 채워져 면발을 가린다")
+	_expect(bowl.model_root != null and bowl.model_root.get_node("CeramicBody") is MeshInstance3D, "실제 3D 그릇의 깊이로 면발을 가린다")
 	_expect(bowl.sauce == FireLevelPicker.SAUCE[5] and bowl.level == 5, "핵불닭 소스 색 (네온 용암)")
 	await create_timer(0.7).timeout
 	_expect(bowl.pour > 0.9, "핵불닭은 소스 폭포가 계속 쏟아진다 (%.2f)" % bowl.pour)
-	_expect((bowl.find_child("SauceParticles", true, false) as CPUParticles2D).emitting, "파티클이 날린다")
+	_expect(bowl.source_node.visible, "3D 소스 줄기가 계속 흐른다")
 	(menu.find_child("Difficulty_1", true, false) as Button).pressed.emit()
 	_expect(GameSession.bot_difficulty() == 1 and bowl.sauce == FireLevelPicker.SAUCE[1] and bowl.shake_offset() == Vector2.ZERO, "크림: 크림 소스, 떨림 없음")
 	await create_timer(1.2).timeout
@@ -212,7 +212,7 @@ func _run() -> void:
 	var paused_face: float = face._time
 	var paused_bowl: float = bowl._time
 	await create_timer(0.08).timeout
-	_expect(face._time == paused_face and bowl._time == paused_bowl and not bowl._particles.emitting, "숨긴 난이도 선택기는 얼굴·그릇·파티클을 멈춘다")
+	_expect(face._time == paused_face and bowl._time == paused_bowl and bowl.render_view.render_target_update_mode == SubViewport.UPDATE_DISABLED, "숨긴 난이도 선택기는 얼굴·그릇 렌더를 멈춘다")
 	menu.open_training()
 	await create_timer(0.08).timeout
 	_expect(face._time > paused_face and bowl._time > paused_bowl, "다시 열면 표정·열기 모션을 재개한다")
