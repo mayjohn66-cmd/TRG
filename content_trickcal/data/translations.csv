@@ -2069,3 +2069,16 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 계약 성립,Contract Sealed,契約成立
 주의: 본인의 말이 사출될 수 있음,"Caution: Your own pawns can be ejected",注意：自分の駒が射出される可能性あり
 본인의 말이 사출될 수 있음,Your own pawns can be ejected,自分の駒が射出される可能性あり
+경로 말·함정 관통,Passes through pawns & traps,経路上の駒・罠を貫通
+잡기·함정 1회 방어,Blocks 1 capture/trap,捕獲・罠を1回防御
+반환점 이상 통과 시 토금 승급,Promotes to Tokin past the halfway corner,折り返し地点以上通過で「と金」に成る
+코너 스치면 +2칸,+2 spaces when grazing a corner,コーナー通過時 +2マス
+직선 돌진 → 선두 적 처치,Straight charge → KO the leading enemy,直線突進 → 先頭の敵を撃破
+지금 칸에 내 호텔 설치,Build my Hotel here,今のマスに自分のホテルを設置
+상대 선두 말을 출발선으로 장외 사출,Knock a rival's lead pawn back to Start,相手の先頭駒をスタート地点へ場外射出
+[코너] 멈춘 적 말 감금,[Corner] Jail enemy pawns that stop,[コーナー] 止まった敵の駒を監禁
+"[코너] 지나가는 적은 카드 1장 상납, 없으면 강제 정지","[Corner] Passing enemies pay 1 card, or are forced to stop",[コーナー] 通過する敵はカード1枚を上納、なければ強制停止
+[상단 코너] 소환 · 라운드가 끝나면 정방향으로 가장 가까운 적 말 하나를 처치하고 사라짐,"[Top corner] Summon · at round end, KOs the nearest enemy pawn going forward, then vanishes",[上コーナー] 召喚 · ラウンド終了時、順方向で最も近い敵の駒1つを撃破して消える
+[상단 코너] 소환 · 라운드가 끝나면 역방향으로 가장 가까운 적 말 하나를 처치하고 사라짐,"[Top corner] Summon · at round end, KOs the nearest enemy pawn going backward, then vanishes",[上コーナー] 召喚 · ラウンド終了時、逆方向で最も近い敵の駒1つを撃破して消える
+내 설치물 {p1}개를 보드에 동시 유지,Keep {p1} of my objects on the board at once,自分の設置物をボード上に同時{p1}個維持
+※ 특수 승리: 차례가 끝날 때 달성해 있으면 바로 다음 순위로 졸업,"※ Special Win: if met at the end of your turn, you graduate in the next rank",※ 特殊勝利: ターン終了時に達成していれば次の順位で即卒業

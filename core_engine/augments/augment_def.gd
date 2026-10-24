@@ -96,13 +96,13 @@ func needs_pawn_choice(state: GameState, player_id: int) -> bool:
 ## 카드 본문에서 빼고 드래프트 화면 아래 공통 안내 바에 한 번만 보여 주는 문구 (원문 한국어, 화면에서 번역).
 ## 증강 카드마다 같은 규칙 설명이 되풀이되어 글자가 많아 보이던 것을 줄인다. 표(augments_table.csv)의 글은 그대로 둔다.
 const COMMON_NOTE_PAWN: String = "※ 이미 가진 기물은 받을 수 없습니다"
-const COMMON_NOTE_LAW: String = "◆ 차례가 끝날 때 달성해 있으면 바로 다음 순위로 졸업 (달성되면 법전에서 삭제)"
+const COMMON_NOTE_LAW: String = "◆ 차례가 끝날 때 달성해 있으면 바로 다음 순위로 졸업"
 const COMMON_NOTE_TOOL: String = "◆ 내 판정 도구 즉시 교체"
 const COMMON_NOTE_EVOLVE: String = "◆ 기본 말 1개 →"
 ## 공통 안내 바에 쓰는 짧은 문구 (계열별).
 const NOTE_BAR: Dictionary = {
 	GameEnums.AugmentCategory.PAWN_EVOLUTION: "※ 이미 가진 기물은 받을 수 없어요",
-	GameEnums.AugmentCategory.LAW_ENACT: "※ 특수 승리: 차례가 끝날 때 달성해 있으면 바로 다음 순위로 졸업 (달성되면 법전에서 삭제)",
+	GameEnums.AugmentCategory.LAW_ENACT: "※ 특수 승리: 차례가 끝날 때 달성해 있으면 바로 다음 순위로 졸업",
 	GameEnums.AugmentCategory.TOOL_SWAP: "※ 판정 도구는 고르는 즉시 내 것과 바뀌어요",
 }
 
@@ -172,7 +172,7 @@ func _default_text(state: GameState, player_id: int) -> String:
 			return "◆ 내 판정 도구 즉시 교체\n%s" % ToolRegistry.table_line(payload)
 		GameEnums.AugmentCategory.LAW_ENACT:
 			var law: LawResource = LawRegistry.create(payload)
-			return "◆ 승리 조건: %s\n◆ 차례가 끝날 때 달성해 있으면 바로 다음 순위로 졸업 (달성되면 법전에서 삭제)" % law.description
+			return "◆ 승리 조건: %s\n◆ 차례가 끝날 때 달성해 있으면 바로 다음 순위로 졸업" % law.description
 		GameEnums.AugmentCategory.SUPER_GAMBLE:
 			return SuperAugments.describe(payload)
 		GameEnums.AugmentCategory.UTILITY:

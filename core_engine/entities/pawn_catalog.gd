@@ -92,7 +92,7 @@ const BASIC_LETTERS: Dictionary = {"ko": "말", "en": "P", "ja": "駒"}
 const SUB_ABILITIES: Dictionary = {
 	SubType.YUT_MAL: "처치 시 재굴림 +1 · 자동 업기",
 	SubType.CHESS_PAWN: "반환점 이상 도달 시 퀸 승급",
-	SubType.CHESS_KNIGHT: "경로 말·함정 관통 (도착 칸만 판정)",
+	SubType.CHESS_KNIGHT: "경로 말·함정 관통",
 	SubType.CHESS_BISHOP: "코너 바로 앞에 멈추면 +1칸 코너 진입",
 	SubType.CHESS_ROOK: "코너를 꺾지 않는 직진 +2칸",
 	SubType.CHESS_QUEEN: "이동 +2칸 · 말·함정 관통",
@@ -105,10 +105,10 @@ const SUB_ABILITIES: Dictionary = {
 	SubType.MONO_SHIP: "첫 적 설치물 무시·파괴",
 	SubType.MONO_DOG: "빵집 스침만 해도 카드 +1",
 	SubType.BADUK_BLACK: "홀수 눈금으로 전진하면 +1칸",
-	SubType.BADUK_WHITE: "잡기·함정 1회 방어 (증강 라운드까지 안 잡히면 재충전)",
-	SubType.SHOGI_FU: "반환점 이상 통과 시 토금 승급 (+1칸)",
+	SubType.BADUK_WHITE: "잡기·함정 1회 방어",
+	SubType.SHOGI_FU: "반환점 이상 통과 시 토금 승급",
 	SubType.SHOGI_HISHA: "직진 +2칸 · 반환점에서 용왕 승급",
-	SubType.SHOGI_KAKU: "코너 스치면 +2칸 (용마 +1칸 더)",
+	SubType.SHOGI_KAKU: "코너 스치면 +2칸",
 	SubType.SHOGI_KEIMA: "첫 2칸 함정·말 관통 · 승급 시 +1칸",
 	SubType.CHECKERS_KING: "지나가는 칸의 적 처치",
 	SubType.LUDO_AVENGER: "리벤지 부스터 발동 시 +4칸 전진",
@@ -149,7 +149,7 @@ const SKILL_NAMES: Dictionary = {
 }
 const SKILL_TEXTS: Dictionary = {
 	&"shoot": "조준 발사 → 적 전원 출발선, 근처 안착",
-	&"charge": "직선 돌진 → 선두 적 처치 (없으면 다음 코너)",
+	&"charge": "직선 돌진 → 선두 적 처치",
 	&"castle": "굴리기 전 아군 1개와 위치 교환",
 	&"warp": "빵집·코너 중 1곳으로 직항",
 	&"drop": "대기 말 1개를 보병 옆에 즉시 낙하",
@@ -159,7 +159,7 @@ const SKILL_TEXTS: Dictionary = {
 	&"horse": "[용마] 앞뒤 1칸의 적 처치",
 	&"bank_shot": "앞쪽 가장 가까운 적에게 돌진",
 	&"plant_mine": "지금 칸에 지뢰 설치",
-	&"hotel": "지금 칸에 내 호텔 설치 (5턴, 밟은 적은 멈춤)",
+	&"hotel": "지금 칸에 내 호텔 설치",
 }
 
 
