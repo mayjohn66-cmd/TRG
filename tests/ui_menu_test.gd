@@ -178,6 +178,26 @@ func _run() -> void:
 			lit += 1
 	_expect(lit == 3, "Lv.3이면 게이지 3칸이 찬다 (%d)" % lit)
 	_expect((picker._face as FireLevelPicker.FireFace).level == 3, "사도 얼굴 표정이 단계를 따른다")
+	# 선택을 빠르게 되돌려도 마지막 단계로만 마무리되고, 화면을 숨기면 애니메이션을 멈춘다.
+	for choice: int in [5, 1, 4, 2]:
+		(menu.find_child("Difficulty_%d" % choice, true, false) as Button).pressed.emit()
+	await create_timer(0.95).timeout
+	_expect(GameSession.bot_difficulty() == 2 and bowl.pour < 0.01 and bowl._shown_sauce.is_equal_approx(FireLevelPicker.SAUCE[2]), "연속 선택 후 로제 면 색과 소스가 마지막 단계로 안정된다")
+	var face: FireLevelPicker.FireFace = picker._face
+	var before_face: float = face._time
+	await create_timer(0.08).timeout
+	_expect(face._time > before_face, "낮은 난이도 표정도 대기 모션이 진행된다")
+	for flame_size: Vector2 in [Vector2(5, 8), Vector2(12, 26), Vector2(22, 31)]:
+		var silhouette: PackedVector2Array = FireLevelPicker.FlameIcon.silhouette(Vector2.ZERO, flame_size.x, flame_size.y)
+		_expect(not Geometry2D.triangulate_polygon(silhouette).is_empty(), "불꽃 심볼을 작은 크기에서도 정상적으로 채운다: %s" % str(flame_size))
+	menu._show_step(2)
+	var paused_face: float = face._time
+	var paused_bowl: float = bowl._time
+	await create_timer(0.08).timeout
+	_expect(face._time == paused_face and bowl._time == paused_bowl and not bowl._particles.emitting, "숨긴 난이도 선택기는 얼굴·그릇·파티클을 멈춘다")
+	menu.open_training()
+	await create_timer(0.08).timeout
+	_expect(face._time > paused_face and bowl._time > paused_bowl, "다시 열면 표정·열기 모션을 재개한다")
 	GameSession.set_bot_difficulty(saved_level)
 	menu._refresh_difficulty()
 	menu._show_step(2)
