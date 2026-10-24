@@ -163,6 +163,7 @@ func _run() -> void:
 	_expect(GameSession.bot_difficulty() == 5 and (menu.find_child("Difficulty_5", true, false) as Button).button_pressed and not (menu.find_child("Difficulty_2", true, false) as Button).button_pressed, "Lv.5를 누르면 Lv.5만 눌린다")
 	_expect((menu.find_child("DifficultyNote", true, false) as Label).text.contains("억까"), "핵불닭 설명")
 	var bowl: FireLevelPicker.RamenBowl = picker.find_child("RamenBowl", true, false)
+	_expect(not Geometry2D.triangulate_polygon(bowl._front_wall).is_empty(), "깊은 그릇의 앞벽이 정상적으로 채워져 면발을 가린다")
 	_expect(bowl.sauce == FireLevelPicker.SAUCE[5] and bowl.level == 5, "핵불닭 소스 색 (네온 용암)")
 	await create_timer(0.7).timeout
 	_expect(bowl.pour > 0.9, "핵불닭은 소스 폭포가 계속 쏟아진다 (%.2f)" % bowl.pour)

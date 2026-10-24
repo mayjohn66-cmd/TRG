@@ -23,7 +23,7 @@ const NOTES: Dictionary = {
 	5: "공식 억까 모드! 컴퓨터들이 나만 집요하게 노려요",
 }
 const CELL_SIZE: Vector2 = Vector2(88, 80)
-const BOWL_SIZE: Vector2 = Vector2(540, 116)
+const BOWL_SIZE: Vector2 = Vector2(540, 154)
 
 var level: int = BotTemper.DEFAULT_LEVEL
 var _face: FireFace = null
@@ -299,10 +299,13 @@ class RamenBowl:
 	var _previous_sauce: Color = FireLevelPicker.SAUCE[1]
 	var _particles: CPUParticles2D = null
 	var _noodles: Array[PackedVector2Array] = []
+	var _front_wall := PackedVector2Array()
+	var _front_lip := PackedVector2Array()
 
 	func _init() -> void:
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_build_noodles()
+		_build_bowl()
 		_particles = CPUParticles2D.new()
 		_particles.name = "SauceParticles"
 		_particles.local_coords = true
@@ -338,20 +341,34 @@ class RamenBowl:
 		return Vector2(tail, front)
 
 	func _build_noodles() -> void:
-		# 긴 면 한 가닥이 여러 번 되돌아 감긴다. 끝은 아래층에 묻고 위쪽 고리로 덮는다.
-		for strand: int in 15:
+		# 큰 파스타 고리 대신 잔굴곡이 많은 가는 라면 가닥을 서로 얽는다.
+		for strand: int in 28:
 			var line := PackedVector2Array()
 			var phase: float = strand * 1.87
 			var rotation_angle: float = strand * 0.79
-			for index: int in 145:
-				var t: float = float(index) / 144.0
-				var angle: float = t * TAU * (2.4 + (strand % 3) * 0.19) + phase
-				var u: float = lerpf(-0.64, 0.64, t) + sin(angle) * 0.23 + sin(angle * 2.3 + phase) * 0.024
-				var v: float = (strand - 7) * 0.032 + cos(angle) * 0.24 + sin(angle * 3.1) * 0.045
-				# 그릇 평면에서 서로 다른 방향으로 얽힌 후 타원 원근을 적용한다.
+			for index: int in 169:
+				var t: float = float(index) / 168.0
+				var angle: float = t * TAU * (8.0 + strand % 4) + phase
+				var u: float = lerpf(-0.79, 0.79, t) + sin(angle) * 0.045
+				var v: float = sin(phase) * 0.19 + cos(t * TAU * 1.2 + phase) * 0.14 + cos(angle) * 0.11
 				var point: Vector2 = Vector2(u, v).rotated(rotation_angle)
-				line.append(point * Vector2(109, 31) + Vector2(0, -4))
+				line.append(point * Vector2(100, 23))
 			_noodles.append(line)
+
+	func _build_bowl() -> void:
+		# 앞쪽 테두리의 반타원과 깊은 외벽을 한 면으로 만들어 면발을 그린 뒤 덮는다.
+		for index: int in 41:
+			var angle: float = PI - float(index) / 40.0 * PI
+			_front_lip.append(Vector2(cos(angle) * 112, sin(angle) * 28))
+		_front_wall = _front_lip.duplicate()
+		var profile := Curve2D.new()
+		profile.add_point(Vector2(112, 0), Vector2.ZERO, Vector2(0, 38))
+		profile.add_point(Vector2(63, 83), Vector2(25, -6), Vector2(-30, 8))
+		profile.add_point(Vector2(-63, 83), Vector2(30, 8), Vector2(-25, -6))
+		profile.add_point(Vector2(-112, 0), Vector2(0, 38))
+		var points: PackedVector2Array = profile.tessellate(4, 3.0)
+		for index: int in range(1, points.size() - 1):
+			_front_wall.append(points[index])
 
 	func shake_offset() -> Vector2:
 		if level != 5:
@@ -359,19 +376,20 @@ class RamenBowl:
 		return Vector2(sin(_time * 17.0) * 0.75, sin(_time * 13.0) * 0.4)
 
 	func _art_scale() -> float:
-		return minf(1.0, minf(size.x / 540.0, size.y / 116.0))
+		return minf(1.0, minf(size.x / 540.0, size.y / 154.0))
 
 	func _rim() -> Rect2:
 		var art_scale: float = _art_scale()
-		return Rect2(Vector2(size.x * 0.5 - 120.0 * art_scale, 42.0 * art_scale), Vector2(240, 40) * art_scale)
+		return Rect2(Vector2(size.x * 0.5 - 112.0 * art_scale, 18.0 * art_scale), Vector2(224, 56) * art_scale)
 
 	func _draw() -> void:
 		var art_scale: float = _art_scale()
 		if art_scale <= 0.0:
 			return
 		draw_set_transform(Vector2(size.x * 0.5 - 270.0 * art_scale, 0) + shake_offset(), 0.0, Vector2.ONE * art_scale)
-		var center := Vector2(270, 62)
-		_ellipse(Vector2(270, 111), Vector2(100, 4), Color(0.3, 0.23, 0.2, 0.09))
+		var center := Vector2(270, 46)
+		var food_center: Vector2 = center + Vector2(0, 16)
+		_ellipse(Vector2(270, 148), Vector2(73, 5), Color(0.3, 0.23, 0.2, 0.13))
 		# Lv.4는 열기만, Lv.5는 뒤로 작은 불길. 그릇과 얼굴을 가리지 않는다.
 		if level == 5:
 			for index: int in 7:
@@ -379,37 +397,47 @@ class RamenBowl:
 				var height: float = 24.0 + sin(_time * 6.0 + index * 1.7) * 7.0
 				draw_colored_polygon(FlameIcon.silhouette(base, 22, height), Color("f59a3a"))
 				draw_colored_polygon(FlameIcon.silhouette(base, 10, height * 0.6), Color("ffd36b"))
-		# 얕은 도자기 그릇. 가장자리 안쪽은 국물 없이 면의 덩어리로 채운다.
-		var body := PackedVector2Array([center + Vector2(-120, 0), center + Vector2(120, 0)])
-		for index: int in 33:
-			var angle: float = float(index) / 32.0 * PI
-			body.append(center + Vector2(cos(angle) * 120, sin(angle) * 44))
-		draw_colored_polygon(body, OUTLINE)
-		var inner := PackedVector2Array([center + Vector2(-116, 1), center + Vector2(116, 1)])
-		for index: int in 33:
-			var angle: float = float(index) / 32.0 * PI
-			inner.append(center + Vector2(cos(angle) * 116, 1 + sin(angle) * 39))
-		draw_colored_polygon(inner, BOWL)
-		var stripe := PackedVector2Array()
-		for index: int in 27:
-			var angle: float = PI * 0.12 + PI * 0.76 * float(index) / 26.0
-			stripe.append(center + Vector2(cos(angle) * 109, 4 + sin(angle) * 23))
-		draw_polyline(stripe, Color("d87560"), 4.0, true)
-		_ellipse(center + Vector2(0, 42), Vector2(35, 4), OUTLINE)
-		_ellipse(center, Vector2(120, 20), Color("f9ecd2"))
-		_ellipse(center + Vector2(0, -2), Vector2(112, 16), _shown_sauce.darkened(0.35))
-		_ellipse(center + Vector2(0, -7), Vector2(99, 23), _shown_sauce.darkened(0.15))
-		_draw_noodles(center + Vector2(0, -5))
-		for index: int in 9:
-			var at := center + Vector2(sin(index * 2.1) * 78.0, -9.0 + cos(index * 3.5) * 14.0)
-			draw_line(at, at + Vector2(2.5, -1.5), Color("fff0bd"), 1.8, true)
-		for index: int in 4:
-			var at := center + Vector2(sin(index * 2.3 + 0.3) * 71.0, -9 + cos(index * 1.6) * 12.0)
-			draw_line(at, at + Vector2(6, -3), Color("648348"), 3.0, true)
-		_draw_steam(center)
+		# 뒤 테두리 → 안쪽 벽의 그림자 → 낮게 담긴 면 → 앞쪽 외벽·테두리 순서.
+		_ellipse(center, Vector2(115, 31), OUTLINE)
+		_ellipse(center, Vector2(112, 28), Color("f1dbb1"))
+		_ellipse(center + Vector2(0, 1), Vector2(104, 23), Color("25222a"))
+		_ellipse(center + Vector2(0, 8), Vector2(98, 18), _shown_sauce.darkened(0.58))
+		_ellipse(food_center, Vector2(94, 18), _shown_sauce.darkened(0.28))
+		_draw_noodles(food_center)
+		# 불닭볶음면의 김·깨 토핑. 국물이나 접시 위 소스 웅덩이는 그리지 않는다.
+		for index: int in 14:
+			var at := food_center + Vector2(sin(index * 2.1) * 70.0, cos(index * 3.5) * 12.0)
+			draw_line(at, at + Vector2(2.0, -1.0), Color("ffe1a4"), 1.3, true)
+		for index: int in 8:
+			var at := food_center + Vector2(sin(index * 2.3 + 0.3) * 64.0, cos(index * 1.6) * 10.0)
+			draw_line(at, at + Vector2(4.0, -1.5), Color("29372a"), 2.1, true)
 		if pour > 0.01:
-			_draw_pour(center)
+			_draw_pour(food_center + Vector2(0, 9))
+		_draw_front_wall(center)
+		_draw_steam(food_center + Vector2(0, 14))
 		draw_set_transform(Vector2.ZERO)
+
+	func _draw_front_wall(center: Vector2) -> void:
+		var face := PackedVector2Array()
+		for point: Vector2 in _front_wall:
+			face.append(center + point)
+		draw_colored_polygon(face, BOWL)
+		var outline: PackedVector2Array = face.duplicate()
+		outline.append(face[0])
+		draw_polyline(outline, Color("28232a"), 2.5, true)
+		# 붉은 띠가 깊은 검은 용기를 감싼다. 테두리 위로 면이 올라오지 않게 가린다.
+		var stripe := PackedVector2Array()
+		for index: int in 41:
+			var angle: float = float(index) / 40.0 * PI
+			stripe.append(center + Vector2(cos(angle) * 90.0, 38.0 + sin(angle) * 22.0))
+		draw_polyline(stripe, Color("cd4534"), 9.0, true)
+		var lip := PackedVector2Array()
+		for point: Vector2 in _front_lip:
+			lip.append(center + point)
+		draw_polyline(lip, Color("f1dbb1"), 5.5, true)
+		draw_polyline(lip, Color("fff3d5"), 2.0, true)
+		_ellipse(center + Vector2(0, 93), Vector2(47, 4), Color("28232a"))
+		draw_colored_polygon(FlameIcon.silhouette(center + Vector2(0, 66), 13, 19), Color("ffe2a0"))
 
 	func _draw_noodles(center: Vector2) -> void:
 		for strand: int in _noodles.size():
@@ -418,13 +446,13 @@ class RamenBowl:
 			for point: Vector2 in _noodles[strand]:
 				line.append(center + point)
 				sheen.append(center + point + Vector2(0, -0.7))
-			var noodle: Color = _shown_sauce.lightened(0.12 + (strand % 3) * 0.035)
-			draw_polyline(line, _shown_sauce.darkened(0.33), 7.4, true)
-			draw_polyline(line, noodle, 5.4, true)
-			draw_polyline(sheen, noodle.lightened(0.18), 1.5, true)
+			var noodle: Color = _shown_sauce.lightened(0.07 + (strand % 3) * 0.025)
+			draw_polyline(line, _shown_sauce.darkened(0.36), 4.0, true)
+			draw_polyline(line, noodle, 2.8, true)
+			draw_polyline(sheen, noodle.lightened(0.16), 0.7, true)
 			# 끝마저 둥글게 닫아 잘린 사각 조각처럼 보이지 않게 한다.
 			for endpoint: Vector2 in [line[0], line[-1]]:
-				draw_circle(endpoint, 2.7, noodle, true, -1.0, true)
+				draw_circle(endpoint, 1.4, noodle, true, -1.0, true)
 
 	func _draw_steam(center: Vector2) -> void:
 		for index: int in (2 if level <= 2 else 3):
