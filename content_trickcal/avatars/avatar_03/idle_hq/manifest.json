@@ -1,0 +1,644 @@
+{
+  "character": "엘레나",
+  "name": "Elena",
+  "id": "avatar_03",
+  "source_url": "https://viewer.dclnslde.com/",
+  "source_archive": "C:\\Users\\john9\\Documents\\Codex\\2026-10-16\\new-chat\\outputs\\avatars-hq-20261025\\Elena-Idle_1.zip",
+  "method": "Native viewer: base apostle, Normal skin, Idle_1, 1536px camera, interaction off, GIF mode / ZIP / all PNG frames / fit-to-spine off, 16 fps",
+  "source_pixels_modified": false,
+  "source_size": [
+    1536,
+    1536
+  ],
+  "import_size": [
+    1024,
+    1024
+  ],
+  "compression": "Godot Lossless",
+  "mipmaps": true,
+  "fps": 16,
+  "frame_count": 43,
+  "union_bbox": [
+    351,
+    131,
+    1178,
+    1381
+  ],
+  "source_region": [
+    319,
+    119,
+    891,
+    1274
+  ],
+  "atlas_region": [
+    212.66666666666666,
+    79.33333333333333,
+    594.0,
+    849.3333333333334
+  ],
+  "files": [
+    {
+      "index": 0,
+      "time_seconds": 0.0,
+      "file": "idle_00.png",
+      "zip_entry": "Elena-Idle_1/frame_000001.png",
+      "bbox": [
+        359,
+        154,
+        1176,
+        1381
+      ],
+      "sha256": "8756a227cb414fc76e9eb18fc26bd6beac3f2ac0530f9eecc3ee18241a9133bd",
+      "bytes": 645786
+    },
+    {
+      "index": 1,
+      "time_seconds": 0.0625,
+      "file": "idle_01.png",
+      "zip_entry": "Elena-Idle_1/frame_000002.png",
+      "bbox": [
+        355,
+        149,
+        1178,
+        1381
+      ],
+      "sha256": "6a2e5786c29431e8bf7d0d3ce3e9b0f82eca2e704e12e557266f274c4a020b87",
+      "bytes": 648276
+    },
+    {
+      "index": 2,
+      "time_seconds": 0.125,
+      "file": "idle_02.png",
+      "zip_entry": "Elena-Idle_1/frame_000003.png",
+      "bbox": [
+        352,
+        145,
+        1176,
+        1381
+      ],
+      "sha256": "53fdde95e0515175230d0e3156ee5b73fb01b48499e348a41fc60c5e5c983b73",
+      "bytes": 648483
+    },
+    {
+      "index": 3,
+      "time_seconds": 0.1875,
+      "file": "idle_03.png",
+      "zip_entry": "Elena-Idle_1/frame_000004.png",
+      "bbox": [
+        351,
+        141,
+        1171,
+        1381
+      ],
+      "sha256": "35e2917a975c9ddc12d57a42d46436baaab4947388d1daa117b7988c36554276",
+      "bytes": 647503
+    },
+    {
+      "index": 4,
+      "time_seconds": 0.25,
+      "file": "idle_04.png",
+      "zip_entry": "Elena-Idle_1/frame_000005.png",
+      "bbox": [
+        352,
+        137,
+        1164,
+        1381
+      ],
+      "sha256": "4396d1948448a099e45715117a631d8e3eb8390e5737f901a7689d70cceab8d8",
+      "bytes": 646423
+    },
+    {
+      "index": 5,
+      "time_seconds": 0.3125,
+      "file": "idle_05.png",
+      "zip_entry": "Elena-Idle_1/frame_000006.png",
+      "bbox": [
+        354,
+        134,
+        1155,
+        1381
+      ],
+      "sha256": "2cc7c40593ceaf423932ae5461811dc7bb3ba955ebb4977f5d4df92b88759b79",
+      "bytes": 643377
+    },
+    {
+      "index": 6,
+      "time_seconds": 0.375,
+      "file": "idle_06.png",
+      "zip_entry": "Elena-Idle_1/frame_000007.png",
+      "bbox": [
+        357,
+        132,
+        1146,
+        1381
+      ],
+      "sha256": "95a5f39ad092a98a0d377204f3fc2f3fc0e3f8c299778863d9c67cc21d130678",
+      "bytes": 641223
+    },
+    {
+      "index": 7,
+      "time_seconds": 0.4375,
+      "file": "idle_07.png",
+      "zip_entry": "Elena-Idle_1/frame_000008.png",
+      "bbox": [
+        362,
+        131,
+        1137,
+        1381
+      ],
+      "sha256": "07c4a384ea33a3f8c76f11873fae34d5dd042980eb60ccf3ef4d24f30587c7b8",
+      "bytes": 640160
+    },
+    {
+      "index": 8,
+      "time_seconds": 0.5,
+      "file": "idle_08.png",
+      "zip_entry": "Elena-Idle_1/frame_000009.png",
+      "bbox": [
+        368,
+        131,
+        1128,
+        1381
+      ],
+      "sha256": "dd44509203e0f4e379ac67448e29092d9663d6275b0ce57081bc1828120bb2d1",
+      "bytes": 640045
+    },
+    {
+      "index": 9,
+      "time_seconds": 0.5625,
+      "file": "idle_09.png",
+      "zip_entry": "Elena-Idle_1/frame_000010.png",
+      "bbox": [
+        375,
+        132,
+        1120,
+        1381
+      ],
+      "sha256": "c7250e77f000d47ca3b1649e179b5ec13902011fdaad5cca3d25171cf672a7bf",
+      "bytes": 640296
+    },
+    {
+      "index": 10,
+      "time_seconds": 0.625,
+      "file": "idle_10.png",
+      "zip_entry": "Elena-Idle_1/frame_000011.png",
+      "bbox": [
+        382,
+        135,
+        1115,
+        1381
+      ],
+      "sha256": "fc3609b4927c7062216ae44b0fcec1f8575a2b5cbef81c7c5bd983a0ad0f278b",
+      "bytes": 641455
+    },
+    {
+      "index": 11,
+      "time_seconds": 0.6875,
+      "file": "idle_11.png",
+      "zip_entry": "Elena-Idle_1/frame_000012.png",
+      "bbox": [
+        389,
+        138,
+        1111,
+        1381
+      ],
+      "sha256": "0cabf9f08ceb11f3857724ccb9d7caa5f118147f8f52b60447d9d3eee73f2e66",
+      "bytes": 641745
+    },
+    {
+      "index": 12,
+      "time_seconds": 0.75,
+      "file": "idle_12.png",
+      "zip_entry": "Elena-Idle_1/frame_000013.png",
+      "bbox": [
+        395,
+        142,
+        1109,
+        1381
+      ],
+      "sha256": "e66cd5093d5cdf3df21c17e7e92f3fb27e9d19c8b0cca7143ef0732cef24491d",
+      "bytes": 642018
+    },
+    {
+      "index": 13,
+      "time_seconds": 0.8125,
+      "file": "idle_13.png",
+      "zip_entry": "Elena-Idle_1/frame_000014.png",
+      "bbox": [
+        399,
+        147,
+        1112,
+        1381
+      ],
+      "sha256": "9a6752211a5ca8b4d1829e79be06288e818aab9d8a85553d2bd3349634381957",
+      "bytes": 640856
+    },
+    {
+      "index": 14,
+      "time_seconds": 0.875,
+      "file": "idle_14.png",
+      "zip_entry": "Elena-Idle_1/frame_000015.png",
+      "bbox": [
+        401,
+        151,
+        1116,
+        1381
+      ],
+      "sha256": "ee87c78439a187e966e9cb544ce88164b2b55708ef4d906ad2f1caca611c2937",
+      "bytes": 640754
+    },
+    {
+      "index": 15,
+      "time_seconds": 0.9375,
+      "file": "idle_15.png",
+      "zip_entry": "Elena-Idle_1/frame_000016.png",
+      "bbox": [
+        401,
+        155,
+        1124,
+        1381
+      ],
+      "sha256": "064ed75310d52640b5e8c1ca9e2055626aacc5246c48881d0709fbab9b829332",
+      "bytes": 639665
+    },
+    {
+      "index": 16,
+      "time_seconds": 1.0,
+      "file": "idle_16.png",
+      "zip_entry": "Elena-Idle_1/frame_000017.png",
+      "bbox": [
+        398,
+        159,
+        1133,
+        1381
+      ],
+      "sha256": "8236ac97403caf37bff2b085d5c98bcb11f0df24b28a7f62b3d3ef946b72f215",
+      "bytes": 638904
+    },
+    {
+      "index": 17,
+      "time_seconds": 1.0625,
+      "file": "idle_17.png",
+      "zip_entry": "Elena-Idle_1/frame_000018.png",
+      "bbox": [
+        393,
+        161,
+        1143,
+        1381
+      ],
+      "sha256": "89bc01e5e39a735b756d6bc9a5853ac5aa1153fefdb9af8d09b6fa7d36fe1221",
+      "bytes": 639692
+    },
+    {
+      "index": 18,
+      "time_seconds": 1.125,
+      "file": "idle_18.png",
+      "zip_entry": "Elena-Idle_1/frame_000019.png",
+      "bbox": [
+        387,
+        162,
+        1153,
+        1381
+      ],
+      "sha256": "ab3738bb6d6d098681ab57a4df182a01c8f249d6114b05212d0aeb6375a6bfe2",
+      "bytes": 641757
+    },
+    {
+      "index": 19,
+      "time_seconds": 1.1875,
+      "file": "idle_19.png",
+      "zip_entry": "Elena-Idle_1/frame_000020.png",
+      "bbox": [
+        380,
+        162,
+        1162,
+        1381
+      ],
+      "sha256": "edf5439b9df8b71bb90afcdf27de3b85e6ff0613a57e4d8d434ca1c0807fdfa5",
+      "bytes": 645711
+    },
+    {
+      "index": 20,
+      "time_seconds": 1.25,
+      "file": "idle_20.png",
+      "zip_entry": "Elena-Idle_1/frame_000021.png",
+      "bbox": [
+        371,
+        160,
+        1170,
+        1381
+      ],
+      "sha256": "0607b523c062163dcaf76c7915bb91913ddaf0eab7a849c608f363cb4dba1c40",
+      "bytes": 647711
+    },
+    {
+      "index": 21,
+      "time_seconds": 1.3125,
+      "file": "idle_21.png",
+      "zip_entry": "Elena-Idle_1/frame_000022.png",
+      "bbox": [
+        362,
+        156,
+        1175,
+        1381
+      ],
+      "sha256": "7bae912fe1648dfed36f2aeb3c1ca7b5360d86b83092118574ea2ff5f18b8b2d",
+      "bytes": 647064
+    },
+    {
+      "index": 22,
+      "time_seconds": 1.375,
+      "file": "idle_22.png",
+      "zip_entry": "Elena-Idle_1/frame_000023.png",
+      "bbox": [
+        356,
+        151,
+        1177,
+        1381
+      ],
+      "sha256": "a450171f5aaa6f42bc0252606a1d5d182285ee9dbf152322ad499d4ac384b8c3",
+      "bytes": 648883
+    },
+    {
+      "index": 23,
+      "time_seconds": 1.4375,
+      "file": "idle_23.png",
+      "zip_entry": "Elena-Idle_1/frame_000024.png",
+      "bbox": [
+        353,
+        146,
+        1177,
+        1381
+      ],
+      "sha256": "23856ecad2f07f43ed42911f04602fa2375c7685dbf822cfde2ef88c6ef46f41",
+      "bytes": 638762
+    },
+    {
+      "index": 24,
+      "time_seconds": 1.5,
+      "file": "idle_24.png",
+      "zip_entry": "Elena-Idle_1/frame_000025.png",
+      "bbox": [
+        351,
+        142,
+        1173,
+        1381
+      ],
+      "sha256": "792ddaebbb0d0f20715597e32e7f71c0581f035c470a03699b4233a366075c6b",
+      "bytes": 640819
+    },
+    {
+      "index": 25,
+      "time_seconds": 1.5625,
+      "file": "idle_25.png",
+      "zip_entry": "Elena-Idle_1/frame_000026.png",
+      "bbox": [
+        352,
+        138,
+        1167,
+        1381
+      ],
+      "sha256": "25466d7fd2e45e9c4d607503acad32320c888f75496690979529103896ce3bb7",
+      "bytes": 645266
+    },
+    {
+      "index": 26,
+      "time_seconds": 1.625,
+      "file": "idle_26.png",
+      "zip_entry": "Elena-Idle_1/frame_000027.png",
+      "bbox": [
+        353,
+        135,
+        1158,
+        1381
+      ],
+      "sha256": "b1f462087e66da641023df197e172e26325e35ee92575029dbe766cb44aab3e0",
+      "bytes": 643786
+    },
+    {
+      "index": 27,
+      "time_seconds": 1.6875,
+      "file": "idle_27.png",
+      "zip_entry": "Elena-Idle_1/frame_000028.png",
+      "bbox": [
+        356,
+        133,
+        1149,
+        1381
+      ],
+      "sha256": "394e6dde563bc396c63975e7a14b9e89c9ccfa551df8bdaaf2ac3c3e0c5d178e",
+      "bytes": 642122
+    },
+    {
+      "index": 28,
+      "time_seconds": 1.75,
+      "file": "idle_28.png",
+      "zip_entry": "Elena-Idle_1/frame_000029.png",
+      "bbox": [
+        360,
+        131,
+        1140,
+        1381
+      ],
+      "sha256": "5aeb4470dc1fd3a8f2a53b54d0c6177c66e572bdb987d5678d5b46106eaea82e",
+      "bytes": 641254
+    },
+    {
+      "index": 29,
+      "time_seconds": 1.8125,
+      "file": "idle_29.png",
+      "zip_entry": "Elena-Idle_1/frame_000030.png",
+      "bbox": [
+        366,
+        131,
+        1131,
+        1381
+      ],
+      "sha256": "d859ff0810b168f5bf64f3630c33d53f4e8d5312ebb753f2c9d0e24df2c65285",
+      "bytes": 640744
+    },
+    {
+      "index": 30,
+      "time_seconds": 1.875,
+      "file": "idle_30.png",
+      "zip_entry": "Elena-Idle_1/frame_000031.png",
+      "bbox": [
+        372,
+        132,
+        1123,
+        1381
+      ],
+      "sha256": "74b64fc3a495769feafba6835825c3deb0481f63da351f40cb64c8cbe5287776",
+      "bytes": 640385
+    },
+    {
+      "index": 31,
+      "time_seconds": 1.9375,
+      "file": "idle_31.png",
+      "zip_entry": "Elena-Idle_1/frame_000032.png",
+      "bbox": [
+        380,
+        134,
+        1116,
+        1381
+      ],
+      "sha256": "177cb38741cd45308ce68d0a80e119a2851d74a0dbb5b484a7119e96d23e910f",
+      "bytes": 640804
+    },
+    {
+      "index": 32,
+      "time_seconds": 2.0,
+      "file": "idle_32.png",
+      "zip_entry": "Elena-Idle_1/frame_000033.png",
+      "bbox": [
+        387,
+        137,
+        1111,
+        1381
+      ],
+      "sha256": "2c9e8f0943585d56767b5d44a9e149391d1e5581ab15a4e24257d55fe891f991",
+      "bytes": 641094
+    },
+    {
+      "index": 33,
+      "time_seconds": 2.0625,
+      "file": "idle_33.png",
+      "zip_entry": "Elena-Idle_1/frame_000034.png",
+      "bbox": [
+        394,
+        141,
+        1109,
+        1381
+      ],
+      "sha256": "fe1ba9b8cc2e833d25e8eb3f9401239a0826eaf4802754b24b85b7906235b03c",
+      "bytes": 642055
+    },
+    {
+      "index": 34,
+      "time_seconds": 2.125,
+      "file": "idle_34.png",
+      "zip_entry": "Elena-Idle_1/frame_000035.png",
+      "bbox": [
+        398,
+        145,
+        1111,
+        1381
+      ],
+      "sha256": "c33e2ed1c93a3737c6fde448db9fa4b8697d84f96f39a49ddaa6fd9ea29eee40",
+      "bytes": 641810
+    },
+    {
+      "index": 35,
+      "time_seconds": 2.1875,
+      "file": "idle_35.png",
+      "zip_entry": "Elena-Idle_1/frame_000036.png",
+      "bbox": [
+        401,
+        150,
+        1115,
+        1381
+      ],
+      "sha256": "d4ca47f05a6bf94045c4e2386911ca23646505b57a0aed0e8f7f345b889a4e03",
+      "bytes": 640644
+    },
+    {
+      "index": 36,
+      "time_seconds": 2.25,
+      "file": "idle_36.png",
+      "zip_entry": "Elena-Idle_1/frame_000037.png",
+      "bbox": [
+        401,
+        154,
+        1121,
+        1381
+      ],
+      "sha256": "6860df61365101d23abf350a9ae4bab5965f4d8a76d03ecfef2bdd3b9ed16e6d",
+      "bytes": 640281
+    },
+    {
+      "index": 37,
+      "time_seconds": 2.3125,
+      "file": "idle_37.png",
+      "zip_entry": "Elena-Idle_1/frame_000038.png",
+      "bbox": [
+        399,
+        158,
+        1130,
+        1381
+      ],
+      "sha256": "a00b6b7ecd3c987d2ca2da4a661d17f3c191c46a9c6eb6d43378268032e6d93f",
+      "bytes": 639402
+    },
+    {
+      "index": 38,
+      "time_seconds": 2.375,
+      "file": "idle_38.png",
+      "zip_entry": "Elena-Idle_1/frame_000039.png",
+      "bbox": [
+        395,
+        160,
+        1140,
+        1381
+      ],
+      "sha256": "00eb35c4a36625b2cdc8bbc52ec8011d8638ebb076846b9b3724a3ec363837c3",
+      "bytes": 639824
+    },
+    {
+      "index": 39,
+      "time_seconds": 2.4375,
+      "file": "idle_39.png",
+      "zip_entry": "Elena-Idle_1/frame_000040.png",
+      "bbox": [
+        389,
+        162,
+        1150,
+        1381
+      ],
+      "sha256": "afc8be4128e1311112efcef52369b9aad9f96558863f1112ac8d2c05c9a502f8",
+      "bytes": 640552
+    },
+    {
+      "index": 40,
+      "time_seconds": 2.5,
+      "file": "idle_40.png",
+      "zip_entry": "Elena-Idle_1/frame_000041.png",
+      "bbox": [
+        382,
+        162,
+        1159,
+        1381
+      ],
+      "sha256": "100ef5ef9357a9a504febaf4ee9d57427fca8c41b49c6acf89440ba988d3fe90",
+      "bytes": 644870
+    },
+    {
+      "index": 41,
+      "time_seconds": 2.5625,
+      "file": "idle_41.png",
+      "zip_entry": "Elena-Idle_1/frame_000042.png",
+      "bbox": [
+        374,
+        161,
+        1167,
+        1381
+      ],
+      "sha256": "49b5569ff7fa7ca927221310d809ae85d8f40e16401652150275f293e4620962",
+      "bytes": 647038
+    },
+    {
+      "index": 42,
+      "time_seconds": 2.625,
+      "file": "idle_42.png",
+      "zip_entry": "Elena-Idle_1/frame_000043.png",
+      "bbox": [
+        365,
+        157,
+        1173,
+        1381
+      ],
+      "sha256": "2cdfa85d0619806f4388f1a5b2dc31662d2530e75ac6350c1d49638d9b7cf577",
+      "bytes": 647478
+    }
+  ],
+  "raw_spine_source_folder": "C:\\Users\\john9\\Documents\\Codex\\2026-10-16\\new-chat\\outputs\\avatars-hq-20261025\\source\\Elena"
+}

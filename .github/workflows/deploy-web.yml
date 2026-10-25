@@ -27,6 +27,7 @@ on:
           - profile-stamps
           - warning-icon
           - rulebook-art
+          - avatar-hq
           - castling
           - bakery
           - sniper
@@ -59,7 +60,9 @@ jobs:
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
           REQUESTED_SCOPE: ${{ inputs.validation }}
         run: |
-          if [[ "${REQUESTED_SCOPE}" == "rulebook-art" || "${COMMIT_MESSAGE}" == *"[check:rulebook-art]"* ]]; then
+          if [[ "${REQUESTED_SCOPE}" == "avatar-hq" || "${COMMIT_MESSAGE}" == *"[check:avatar-hq]"* ]]; then
+            echo "scope=avatar-hq" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "rulebook-art" || "${COMMIT_MESSAGE}" == *"[check:rulebook-art]"* ]]; then
             echo "scope=rulebook-art" >> "${GITHUB_OUTPUT}"
           elif [[ "${REQUESTED_SCOPE}" == "warning-icon" || "${COMMIT_MESSAGE}" == *"[check:warning-icon]"* ]]; then
             echo "scope=warning-icon" >> "${GITHUB_OUTPUT}"
@@ -115,6 +118,14 @@ jobs:
         run: |
           godot --headless --path . --import || true
           godot --headless --path . --import
+
+      - name: Check native high resolution avatar loops
+        if: steps.validation.outputs.scope == 'avatar-hq'
+        run: |
+          set -o pipefail
+          godot --headless --path . -s res://tests/ui_avatar_hq_test.gd 2>&1 | tee /tmp/avatar_hq.log
+          grep -q 'AVATAR_HQ_OK' /tmp/avatar_hq.log
+          if grep -q 'SCRIPT ERROR' /tmp/avatar_hq.log; then exit 1; fi
 
       - name: Check rulebook presentation scripts
         if: steps.validation.outputs.scope == 'rulebook-art'
@@ -376,7 +387,7 @@ jobs:
           python3 tools/export_avatar_packs.py godot build/web/avatars
           # 본체에는 정지 그림만 있고, 묶음을 붙이면 애니메이션이 실제로 읽히는지 내보낸 파일로 검사한다
           # 묶음 그림의 UID를 등록하지 못하면 [invalid UID ... using text path instead] 경고가 수백 줄 찍혀 웹 로딩이 끊기므로, 경고가 한 줄이라도 있으면 막는다.
-          if [[ "${VALIDATION_SCOPE}" == "full" ]]; then
+          if [[ "${VALIDATION_SCOPE}" == "full" || "${VALIDATION_SCOPE}" == "avatar-hq" ]]; then
             (cd build/web && godot --headless --main-pack index.pck -s "$GITHUB_WORKSPACE/tests/avatar_pack_smoke.gd") 2>&1 | tee /tmp/avatar_pack_smoke.log
             test "${PIPESTATUS[0]}" -eq 0
             if grep -q "invalid UID" /tmp/avatar_pack_smoke.log; then echo "avatar pack: invalid UID warnings remain"; grep -c "invalid UID" /tmp/avatar_pack_smoke.log; exit 1; fi

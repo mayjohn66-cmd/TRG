@@ -1,0 +1,644 @@
+{
+  "character": "셰이디",
+  "name": "Shady",
+  "id": "avatar_05",
+  "source_url": "https://viewer.dclnslde.com/",
+  "source_archive": "C:\\Users\\john9\\Documents\\Codex\\2026-10-16\\new-chat\\outputs\\avatars-hq-20261025\\Shady-Idle_1.zip",
+  "method": "Native viewer: base apostle, Normal skin, Idle_1, 1536px camera, interaction off, GIF mode / ZIP / all PNG frames / fit-to-spine off, 16 fps",
+  "source_pixels_modified": false,
+  "source_size": [
+    1536,
+    1536
+  ],
+  "import_size": [
+    1024,
+    1024
+  ],
+  "compression": "Godot Lossless",
+  "mipmaps": true,
+  "fps": 16,
+  "frame_count": 43,
+  "union_bbox": [
+    216,
+    142,
+    1312,
+    1382
+  ],
+  "source_region": [
+    188,
+    130,
+    1151,
+    1264
+  ],
+  "atlas_region": [
+    125.33333333333333,
+    86.66666666666667,
+    767.3333333333334,
+    842.6666666666666
+  ],
+  "files": [
+    {
+      "index": 0,
+      "time_seconds": 0.0,
+      "file": "idle_00.png",
+      "zip_entry": "Shady-Idle_1/frame_000001.png",
+      "bbox": [
+        225,
+        155,
+        1311,
+        1381
+      ],
+      "sha256": "9e0dddee8b088f00cff415e58de4d90b7bd3e5e637b6dcfbc08972d315f05e69",
+      "bytes": 1143138
+    },
+    {
+      "index": 1,
+      "time_seconds": 0.0625,
+      "file": "idle_01.png",
+      "zip_entry": "Shady-Idle_1/frame_000002.png",
+      "bbox": [
+        234,
+        151,
+        1312,
+        1382
+      ],
+      "sha256": "02f4877f380f3ab56c1d9420a0dc38e73561ff1d60ff1cefacb4eff8b3054daf",
+      "bytes": 1143608
+    },
+    {
+      "index": 2,
+      "time_seconds": 0.125,
+      "file": "idle_02.png",
+      "zip_entry": "Shady-Idle_1/frame_000003.png",
+      "bbox": [
+        245,
+        148,
+        1311,
+        1382
+      ],
+      "sha256": "98fa4fcbd6835af4eb85382822948bf5f53442d79d4ddccee905d0465a7c3b3c",
+      "bytes": 1143430
+    },
+    {
+      "index": 3,
+      "time_seconds": 0.1875,
+      "file": "idle_03.png",
+      "zip_entry": "Shady-Idle_1/frame_000004.png",
+      "bbox": [
+        256,
+        145,
+        1310,
+        1382
+      ],
+      "sha256": "c32fce60bcd96db5e45f94dd514c1d9abaef53e3afc7e8e3b9bd13d42c145594",
+      "bytes": 1142147
+    },
+    {
+      "index": 4,
+      "time_seconds": 0.25,
+      "file": "idle_04.png",
+      "zip_entry": "Shady-Idle_1/frame_000005.png",
+      "bbox": [
+        268,
+        143,
+        1307,
+        1382
+      ],
+      "sha256": "efeae2dd3871945cc7adf186fef20e6531168d53a70b47f209a4036c6f937d9e",
+      "bytes": 1140430
+    },
+    {
+      "index": 5,
+      "time_seconds": 0.3125,
+      "file": "idle_05.png",
+      "zip_entry": "Shady-Idle_1/frame_000006.png",
+      "bbox": [
+        279,
+        142,
+        1304,
+        1382
+      ],
+      "sha256": "6f66519a8d238af2c99768eb31de9b4eea96b8723deffba44970cef4e26500f7",
+      "bytes": 1139273
+    },
+    {
+      "index": 6,
+      "time_seconds": 0.375,
+      "file": "idle_06.png",
+      "zip_entry": "Shady-Idle_1/frame_000007.png",
+      "bbox": [
+        288,
+        142,
+        1300,
+        1382
+      ],
+      "sha256": "b8aa2e5ed66314a0afb4728dad6fd8ebb868e7e245e1491dd2177d4f016bb4ad",
+      "bytes": 1136252
+    },
+    {
+      "index": 7,
+      "time_seconds": 0.4375,
+      "file": "idle_07.png",
+      "zip_entry": "Shady-Idle_1/frame_000008.png",
+      "bbox": [
+        294,
+        143,
+        1296,
+        1382
+      ],
+      "sha256": "6adeecdd0d0ae60f4897c6db0dd3d1b65da69b9c2de2ff33a42bd325a7abe2f3",
+      "bytes": 1133485
+    },
+    {
+      "index": 8,
+      "time_seconds": 0.5,
+      "file": "idle_08.png",
+      "zip_entry": "Shady-Idle_1/frame_000009.png",
+      "bbox": [
+        296,
+        144,
+        1293,
+        1382
+      ],
+      "sha256": "5a015e3e4deb4bc69fd4e642c776baffcd9dd45e1c19c6306de497a6cc2f9fcd",
+      "bytes": 1131090
+    },
+    {
+      "index": 9,
+      "time_seconds": 0.5625,
+      "file": "idle_09.png",
+      "zip_entry": "Shady-Idle_1/frame_000010.png",
+      "bbox": [
+        295,
+        147,
+        1290,
+        1382
+      ],
+      "sha256": "52d3904ad247ffa4bc9ce91f9e356f85d6fd9b3a5e42f9ae703d207c0aef7648",
+      "bytes": 1128314
+    },
+    {
+      "index": 10,
+      "time_seconds": 0.625,
+      "file": "idle_10.png",
+      "zip_entry": "Shady-Idle_1/frame_000011.png",
+      "bbox": [
+        290,
+        150,
+        1288,
+        1381
+      ],
+      "sha256": "54616e809a797ab603e6d04f081e9f575357adddfd11575f365604fab09fd1d8",
+      "bytes": 1125132
+    },
+    {
+      "index": 11,
+      "time_seconds": 0.6875,
+      "file": "idle_11.png",
+      "zip_entry": "Shady-Idle_1/frame_000012.png",
+      "bbox": [
+        284,
+        153,
+        1288,
+        1381
+      ],
+      "sha256": "2587db1217f90431b37b3a20049d588398a7c469f6faa20bc8126fea9b535dfa",
+      "bytes": 1123102
+    },
+    {
+      "index": 12,
+      "time_seconds": 0.75,
+      "file": "idle_12.png",
+      "zip_entry": "Shady-Idle_1/frame_000013.png",
+      "bbox": [
+        275,
+        156,
+        1288,
+        1381
+      ],
+      "sha256": "4a5ec953416262125a1d17490b15fff8196ffcaf98fd8b6262217ac48fb282e2",
+      "bytes": 1122124
+    },
+    {
+      "index": 13,
+      "time_seconds": 0.8125,
+      "file": "idle_13.png",
+      "zip_entry": "Shady-Idle_1/frame_000014.png",
+      "bbox": [
+        264,
+        159,
+        1288,
+        1381
+      ],
+      "sha256": "0c00e9879017d2b6b9e6fe5e749390e65dc42216c477875fdccc22cff67211e9",
+      "bytes": 1118999
+    },
+    {
+      "index": 14,
+      "time_seconds": 0.875,
+      "file": "idle_14.png",
+      "zip_entry": "Shady-Idle_1/frame_000015.png",
+      "bbox": [
+        253,
+        162,
+        1289,
+        1381
+      ],
+      "sha256": "fb52a5f4e9dbc65e33c3b333c9668294319d3fa641dcce0bdf7de8e39939eac4",
+      "bytes": 1119273
+    },
+    {
+      "index": 15,
+      "time_seconds": 0.9375,
+      "file": "idle_15.png",
+      "zip_entry": "Shady-Idle_1/frame_000016.png",
+      "bbox": [
+        241,
+        163,
+        1292,
+        1381
+      ],
+      "sha256": "80fec57fd215aa3105b1596633cd11abd975e3490ad7566a50e0f647fd4a05db",
+      "bytes": 1120521
+    },
+    {
+      "index": 16,
+      "time_seconds": 1.0,
+      "file": "idle_16.png",
+      "zip_entry": "Shady-Idle_1/frame_000017.png",
+      "bbox": [
+        230,
+        164,
+        1295,
+        1381
+      ],
+      "sha256": "427f6bea0e3dea89fe221d73fd0891b3b9cc4fef34aaf3559564f7bb6b0ee92c",
+      "bytes": 1123948
+    },
+    {
+      "index": 17,
+      "time_seconds": 1.0625,
+      "file": "idle_17.png",
+      "zip_entry": "Shady-Idle_1/frame_000018.png",
+      "bbox": [
+        222,
+        164,
+        1299,
+        1381
+      ],
+      "sha256": "67c469cfa08143d60f975369d887fc4f1e9fafa9d175b905f71c6aca956e8bcd",
+      "bytes": 1127082
+    },
+    {
+      "index": 18,
+      "time_seconds": 1.125,
+      "file": "idle_18.png",
+      "zip_entry": "Shady-Idle_1/frame_000019.png",
+      "bbox": [
+        217,
+        163,
+        1302,
+        1381
+      ],
+      "sha256": "5f79110494d58ae987df94c38c54cd8a18f2b60fc349d171f1a7568320107c1e",
+      "bytes": 1131635
+    },
+    {
+      "index": 19,
+      "time_seconds": 1.1875,
+      "file": "idle_19.png",
+      "zip_entry": "Shady-Idle_1/frame_000020.png",
+      "bbox": [
+        216,
+        162,
+        1306,
+        1381
+      ],
+      "sha256": "18c11a844a5f2b194e7104ac95c25e2409c3acc3a1a6d804a6fe05c463fc844f",
+      "bytes": 1136666
+    },
+    {
+      "index": 20,
+      "time_seconds": 1.25,
+      "file": "idle_20.png",
+      "zip_entry": "Shady-Idle_1/frame_000021.png",
+      "bbox": [
+        218,
+        159,
+        1308,
+        1381
+      ],
+      "sha256": "3bda47a8b636183d515e8a66182b11c703fb9ec08ce3567f9926834b1c3f1773",
+      "bytes": 1140111
+    },
+    {
+      "index": 21,
+      "time_seconds": 1.3125,
+      "file": "idle_21.png",
+      "zip_entry": "Shady-Idle_1/frame_000022.png",
+      "bbox": [
+        223,
+        156,
+        1311,
+        1381
+      ],
+      "sha256": "b5b1f1476c25c514e2965205e4d3b6b7fe01ceaca10507a89f283a66b5ade244",
+      "bytes": 1141761
+    },
+    {
+      "index": 22,
+      "time_seconds": 1.375,
+      "file": "idle_22.png",
+      "zip_entry": "Shady-Idle_1/frame_000023.png",
+      "bbox": [
+        231,
+        152,
+        1312,
+        1381
+      ],
+      "sha256": "b66102fd5c6e3736fd36c6082e9597165d59f0f56290d38610d95ed554142d7a",
+      "bytes": 1142022
+    },
+    {
+      "index": 23,
+      "time_seconds": 1.4375,
+      "file": "idle_23.png",
+      "zip_entry": "Shady-Idle_1/frame_000024.png",
+      "bbox": [
+        241,
+        149,
+        1312,
+        1382
+      ],
+      "sha256": "9657e79a1ff2f2cb896b09fb0c5a36f13054a57bbff3f7af15927e873795713d",
+      "bytes": 1130418
+    },
+    {
+      "index": 24,
+      "time_seconds": 1.5,
+      "file": "idle_24.png",
+      "zip_entry": "Shady-Idle_1/frame_000025.png",
+      "bbox": [
+        252,
+        146,
+        1310,
+        1382
+      ],
+      "sha256": "619c553a5c59a3d4d92c7d38c10095e1a145d194373c2aba836d7264ea36b9e9",
+      "bytes": 1123534
+    },
+    {
+      "index": 25,
+      "time_seconds": 1.5625,
+      "file": "idle_25.png",
+      "zip_entry": "Shady-Idle_1/frame_000026.png",
+      "bbox": [
+        264,
+        144,
+        1308,
+        1382
+      ],
+      "sha256": "75a0abe8ba5cd74a713b1a51b304aa846afb405eaf9ecf756691ead1e51dfe51",
+      "bytes": 1123789
+    },
+    {
+      "index": 26,
+      "time_seconds": 1.625,
+      "file": "idle_26.png",
+      "zip_entry": "Shady-Idle_1/frame_000027.png",
+      "bbox": [
+        276,
+        143,
+        1305,
+        1382
+      ],
+      "sha256": "60d8141ddab25fb8be1e59e52752363a2586cb6e77060e826d07d5eec8391ca8",
+      "bytes": 1133229
+    },
+    {
+      "index": 27,
+      "time_seconds": 1.6875,
+      "file": "idle_27.png",
+      "zip_entry": "Shady-Idle_1/frame_000028.png",
+      "bbox": [
+        286,
+        142,
+        1301,
+        1382
+      ],
+      "sha256": "dcdc997a50f8169cd2135cc303c4ed628e346705a3583b3ebb34157573ec8872",
+      "bytes": 1137457
+    },
+    {
+      "index": 28,
+      "time_seconds": 1.75,
+      "file": "idle_28.png",
+      "zip_entry": "Shady-Idle_1/frame_000029.png",
+      "bbox": [
+        293,
+        143,
+        1297,
+        1382
+      ],
+      "sha256": "af851295b330f1fe23fb1e0975127eee74d56f80b987df94453289dc270d8254",
+      "bytes": 1135344
+    },
+    {
+      "index": 29,
+      "time_seconds": 1.8125,
+      "file": "idle_29.png",
+      "zip_entry": "Shady-Idle_1/frame_000030.png",
+      "bbox": [
+        296,
+        144,
+        1294,
+        1382
+      ],
+      "sha256": "a8954bb3eb0ff9706eb6df910e575d151f7f45b79c7dbddd176332a62a3213eb",
+      "bytes": 1133902
+    },
+    {
+      "index": 30,
+      "time_seconds": 1.875,
+      "file": "idle_30.png",
+      "zip_entry": "Shady-Idle_1/frame_000031.png",
+      "bbox": [
+        296,
+        146,
+        1291,
+        1382
+      ],
+      "sha256": "92e7abf594ed13a9ad09bedeed930971f5c580b8958e50a7e41c6d21cf09ba82",
+      "bytes": 1129961
+    },
+    {
+      "index": 31,
+      "time_seconds": 1.9375,
+      "file": "idle_31.png",
+      "zip_entry": "Shady-Idle_1/frame_000032.png",
+      "bbox": [
+        292,
+        149,
+        1289,
+        1382
+      ],
+      "sha256": "e1d3e1d3e413bfd1d7c378ba7a73c32fc0559abb7fd66cae93ed2a9b30baa6ca",
+      "bytes": 1128153
+    },
+    {
+      "index": 32,
+      "time_seconds": 2.0,
+      "file": "idle_32.png",
+      "zip_entry": "Shady-Idle_1/frame_000033.png",
+      "bbox": [
+        287,
+        152,
+        1288,
+        1381
+      ],
+      "sha256": "59a6887e13cd3321319f735ce8c510e3a7697318066946aae9dd73f61c387ee8",
+      "bytes": 1122843
+    },
+    {
+      "index": 33,
+      "time_seconds": 2.0625,
+      "file": "idle_33.png",
+      "zip_entry": "Shady-Idle_1/frame_000034.png",
+      "bbox": [
+        278,
+        155,
+        1288,
+        1381
+      ],
+      "sha256": "c60efa1369134f72be54567649b13f882b7714b6ed3adb4fc620c7c4bc50262a",
+      "bytes": 1121790
+    },
+    {
+      "index": 34,
+      "time_seconds": 2.125,
+      "file": "idle_34.png",
+      "zip_entry": "Shady-Idle_1/frame_000035.png",
+      "bbox": [
+        268,
+        158,
+        1288,
+        1381
+      ],
+      "sha256": "ff2eb421dad832f7005566ca0567cc092412221c3f16ad581ea28c38cfabdae2",
+      "bytes": 1120535
+    },
+    {
+      "index": 35,
+      "time_seconds": 2.1875,
+      "file": "idle_35.png",
+      "zip_entry": "Shady-Idle_1/frame_000036.png",
+      "bbox": [
+        256,
+        161,
+        1289,
+        1381
+      ],
+      "sha256": "e6f8fcb320c2ad0dee041921ec4919bc95a3080098cba6876103c6b85043a31c",
+      "bytes": 1119451
+    },
+    {
+      "index": 36,
+      "time_seconds": 2.25,
+      "file": "idle_36.png",
+      "zip_entry": "Shady-Idle_1/frame_000037.png",
+      "bbox": [
+        244,
+        163,
+        1291,
+        1381
+      ],
+      "sha256": "8fe5aeaad35b89d916b10526b081d1850bb31e91d5e375b14de8b0bc9e262849",
+      "bytes": 1119561
+    },
+    {
+      "index": 37,
+      "time_seconds": 2.3125,
+      "file": "idle_37.png",
+      "zip_entry": "Shady-Idle_1/frame_000038.png",
+      "bbox": [
+        234,
+        164,
+        1294,
+        1381
+      ],
+      "sha256": "2858739bc192d9577e4554d5872a2f608373972e86e40ea007a9195312da0fb7",
+      "bytes": 1122621
+    },
+    {
+      "index": 38,
+      "time_seconds": 2.375,
+      "file": "idle_38.png",
+      "zip_entry": "Shady-Idle_1/frame_000039.png",
+      "bbox": [
+        225,
+        164,
+        1298,
+        1381
+      ],
+      "sha256": "840b037171351c436c53fb54850bc834f758b2bc1d263bb0c47e9d2f5b4acb53",
+      "bytes": 1126634
+    },
+    {
+      "index": 39,
+      "time_seconds": 2.4375,
+      "file": "idle_39.png",
+      "zip_entry": "Shady-Idle_1/frame_000040.png",
+      "bbox": [
+        219,
+        164,
+        1301,
+        1381
+      ],
+      "sha256": "7c6406a4d5772970d6d684e638ea40d745bdf4543647e27d1f912bed47358a51",
+      "bytes": 1129651
+    },
+    {
+      "index": 40,
+      "time_seconds": 2.5,
+      "file": "idle_40.png",
+      "zip_entry": "Shady-Idle_1/frame_000041.png",
+      "bbox": [
+        216,
+        162,
+        1305,
+        1381
+      ],
+      "sha256": "9776fb89688f3f8940a0d6fc9560c98addfa9d066d85e3b609fe0e314032bb70",
+      "bytes": 1135144
+    },
+    {
+      "index": 41,
+      "time_seconds": 2.5625,
+      "file": "idle_41.png",
+      "zip_entry": "Shady-Idle_1/frame_000042.png",
+      "bbox": [
+        217,
+        160,
+        1307,
+        1381
+      ],
+      "sha256": "187482f89134aa173a3f2f64d43b53aec6834cb1a2ff748ae7230dc3914e55a1",
+      "bytes": 1138701
+    },
+    {
+      "index": 42,
+      "time_seconds": 2.625,
+      "file": "idle_42.png",
+      "zip_entry": "Shady-Idle_1/frame_000043.png",
+      "bbox": [
+        221,
+        157,
+        1310,
+        1381
+      ],
+      "sha256": "2aecc59eb9d062f8d37436e9ef7fe1a54e492b45a2799bba4b9050bb6cea6012",
+      "bytes": 1141970
+    }
+  ],
+  "raw_spine_source_folder": "C:\\Users\\john9\\Documents\\Codex\\2026-10-16\\new-chat\\outputs\\avatars-hq-20261025\\source\\Shady"
+}

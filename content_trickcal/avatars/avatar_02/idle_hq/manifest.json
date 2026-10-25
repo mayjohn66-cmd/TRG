@@ -1,0 +1,644 @@
+{
+  "character": "버터",
+  "name": "Butter",
+  "id": "avatar_02",
+  "source_url": "https://viewer.dclnslde.com/",
+  "source_archive": "C:\\Users\\john9\\Documents\\Codex\\2026-10-16\\new-chat\\outputs\\avatars-hq-20261025\\Butter-Idle_1.zip",
+  "method": "Native viewer: base apostle, Normal skin, Idle_1, 1536px camera, interaction off, GIF mode / ZIP / all PNG frames / fit-to-spine off, 16 fps",
+  "source_pixels_modified": false,
+  "source_size": [
+    1536,
+    1536
+  ],
+  "import_size": [
+    1024,
+    1024
+  ],
+  "compression": "Godot Lossless",
+  "mipmaps": true,
+  "fps": 16,
+  "frame_count": 43,
+  "union_bbox": [
+    272,
+    143,
+    1265,
+    1376
+  ],
+  "source_region": [
+    257,
+    131,
+    1022,
+    1257
+  ],
+  "atlas_region": [
+    171.33333333333334,
+    87.33333333333333,
+    681.3333333333334,
+    838.0
+  ],
+  "files": [
+    {
+      "index": 0,
+      "time_seconds": 0.0,
+      "file": "idle_00.png",
+      "zip_entry": "Butter-Idle_1/frame_000001.png",
+      "bbox": [
+        274,
+        155,
+        1264,
+        1376
+      ],
+      "sha256": "580f2a9fca23943dcb4f02dc61018a6b5bcfc3f4425e8b33ec57f39a7cfa7d1b",
+      "bytes": 1037728
+    },
+    {
+      "index": 1,
+      "time_seconds": 0.0625,
+      "file": "idle_01.png",
+      "zip_entry": "Butter-Idle_1/frame_000002.png",
+      "bbox": [
+        280,
+        150,
+        1265,
+        1376
+      ],
+      "sha256": "008fb9d2bc9eaceaccf0a77f59c71248ef3669c9b88c0ad50efbace5216943e8",
+      "bytes": 1037616
+    },
+    {
+      "index": 2,
+      "time_seconds": 0.125,
+      "file": "idle_02.png",
+      "zip_entry": "Butter-Idle_1/frame_000003.png",
+      "bbox": [
+        289,
+        147,
+        1263,
+        1376
+      ],
+      "sha256": "98a645485a5840130efff55b5797e04aba5f9665125045438f0d4ceaca940801",
+      "bytes": 1037168
+    },
+    {
+      "index": 3,
+      "time_seconds": 0.1875,
+      "file": "idle_03.png",
+      "zip_entry": "Butter-Idle_1/frame_000004.png",
+      "bbox": [
+        300,
+        145,
+        1260,
+        1376
+      ],
+      "sha256": "86357ada658591390f59ad774eb7e7257cd7ce298fad5682555ce4cfff9a19fe",
+      "bytes": 1039095
+    },
+    {
+      "index": 4,
+      "time_seconds": 0.25,
+      "file": "idle_04.png",
+      "zip_entry": "Butter-Idle_1/frame_000005.png",
+      "bbox": [
+        306,
+        143,
+        1254,
+        1376
+      ],
+      "sha256": "5105aaa955514c232b476a08e4842371db02566e5bf3288ea07e8b8eafc3d5e1",
+      "bytes": 1039448
+    },
+    {
+      "index": 5,
+      "time_seconds": 0.3125,
+      "file": "idle_05.png",
+      "zip_entry": "Butter-Idle_1/frame_000006.png",
+      "bbox": [
+        313,
+        144,
+        1246,
+        1376
+      ],
+      "sha256": "0af63dad1303e483e4852432780bd8e44045f6b1c8d992bd6062334d84884d64",
+      "bytes": 1037592
+    },
+    {
+      "index": 6,
+      "time_seconds": 0.375,
+      "file": "idle_06.png",
+      "zip_entry": "Butter-Idle_1/frame_000007.png",
+      "bbox": [
+        322,
+        145,
+        1238,
+        1376
+      ],
+      "sha256": "5c97ecdabb9dfcf0d42d4f5c5bf49a0dc2e11b89a383b14d2ae0d7705696c867",
+      "bytes": 1035526
+    },
+    {
+      "index": 7,
+      "time_seconds": 0.4375,
+      "file": "idle_07.png",
+      "zip_entry": "Butter-Idle_1/frame_000008.png",
+      "bbox": [
+        332,
+        147,
+        1229,
+        1376
+      ],
+      "sha256": "95f5feb7e7af41771f1440fc25e682705835d65bba61d02c1923bd55799bfc0a",
+      "bytes": 1033917
+    },
+    {
+      "index": 8,
+      "time_seconds": 0.5,
+      "file": "idle_08.png",
+      "zip_entry": "Butter-Idle_1/frame_000009.png",
+      "bbox": [
+        342,
+        150,
+        1220,
+        1376
+      ],
+      "sha256": "e4655f9b6af9805982f45ed0cf65ea66e24d55f2a6e6decd6a47e99beae5dccf",
+      "bytes": 1032641
+    },
+    {
+      "index": 9,
+      "time_seconds": 0.5625,
+      "file": "idle_09.png",
+      "zip_entry": "Butter-Idle_1/frame_000010.png",
+      "bbox": [
+        350,
+        153,
+        1213,
+        1376
+      ],
+      "sha256": "04403ea1fef3d936e69951de8924bcea4d889874c61234608f2d5cecf0f4427f",
+      "bytes": 1031536
+    },
+    {
+      "index": 10,
+      "time_seconds": 0.625,
+      "file": "idle_10.png",
+      "zip_entry": "Butter-Idle_1/frame_000011.png",
+      "bbox": [
+        355,
+        157,
+        1208,
+        1376
+      ],
+      "sha256": "e22d6a821aff283a1976e77af143ec9ead4e9b7b78ade6992f2c09b7df2c336b",
+      "bytes": 1030741
+    },
+    {
+      "index": 11,
+      "time_seconds": 0.6875,
+      "file": "idle_11.png",
+      "zip_entry": "Butter-Idle_1/frame_000012.png",
+      "bbox": [
+        352,
+        161,
+        1208,
+        1376
+      ],
+      "sha256": "8004cacf4e1643541befe69257df62e8941b8f17ac6e69b19933ed70519c0a9b",
+      "bytes": 1030630
+    },
+    {
+      "index": 12,
+      "time_seconds": 0.75,
+      "file": "idle_12.png",
+      "zip_entry": "Butter-Idle_1/frame_000013.png",
+      "bbox": [
+        345,
+        164,
+        1209,
+        1376
+      ],
+      "sha256": "dd1ced7a5593d32d831512425a7705ab2ac9e4382d46a0b1499712eb8f3b4d14",
+      "bytes": 1034741
+    },
+    {
+      "index": 13,
+      "time_seconds": 0.8125,
+      "file": "idle_13.png",
+      "zip_entry": "Butter-Idle_1/frame_000014.png",
+      "bbox": [
+        336,
+        168,
+        1210,
+        1376
+      ],
+      "sha256": "ade34b39293579008880cff27438bfeaf56095590b725a804aeffbaabe507997",
+      "bytes": 1038060
+    },
+    {
+      "index": 14,
+      "time_seconds": 0.875,
+      "file": "idle_14.png",
+      "zip_entry": "Butter-Idle_1/frame_000015.png",
+      "bbox": [
+        325,
+        170,
+        1213,
+        1376
+      ],
+      "sha256": "b842a8dfc67c31558e689f5d4029a03a776064f906489751d5e17c36ff9dec62",
+      "bytes": 1040528
+    },
+    {
+      "index": 15,
+      "time_seconds": 0.9375,
+      "file": "idle_15.png",
+      "zip_entry": "Butter-Idle_1/frame_000016.png",
+      "bbox": [
+        313,
+        171,
+        1220,
+        1376
+      ],
+      "sha256": "fda4f9f695fba44ba4ffc35653ed11480b054f64d92ce89476ad16b9d24f3566",
+      "bytes": 1041623
+    },
+    {
+      "index": 16,
+      "time_seconds": 1.0,
+      "file": "idle_16.png",
+      "zip_entry": "Butter-Idle_1/frame_000017.png",
+      "bbox": [
+        301,
+        171,
+        1228,
+        1376
+      ],
+      "sha256": "082768e584a1d00e08c51bb58b3e478796fc61ae72edf9739fbf990aca44050c",
+      "bytes": 1043923
+    },
+    {
+      "index": 17,
+      "time_seconds": 1.0625,
+      "file": "idle_17.png",
+      "zip_entry": "Butter-Idle_1/frame_000018.png",
+      "bbox": [
+        290,
+        169,
+        1236,
+        1376
+      ],
+      "sha256": "ce81b348a21b35e79936b685a1c020b867d7d20c824e38a84c8d976427c1858e",
+      "bytes": 1048006
+    },
+    {
+      "index": 18,
+      "time_seconds": 1.125,
+      "file": "idle_18.png",
+      "zip_entry": "Butter-Idle_1/frame_000019.png",
+      "bbox": [
+        281,
+        167,
+        1244,
+        1376
+      ],
+      "sha256": "a70eaea12def0bea1ee88e864bb33827e658006a3ed358fab7df4fb58bd4a7b6",
+      "bytes": 1048455
+    },
+    {
+      "index": 19,
+      "time_seconds": 1.1875,
+      "file": "idle_19.png",
+      "zip_entry": "Butter-Idle_1/frame_000020.png",
+      "bbox": [
+        275,
+        164,
+        1252,
+        1376
+      ],
+      "sha256": "53a289ad000eac79791956f77e7bf016abfd305ecb8339dc6aab54b7da04955e",
+      "bytes": 1048486
+    },
+    {
+      "index": 20,
+      "time_seconds": 1.25,
+      "file": "idle_20.png",
+      "zip_entry": "Butter-Idle_1/frame_000021.png",
+      "bbox": [
+        273,
+        161,
+        1259,
+        1376
+      ],
+      "sha256": "57382ee24dfc13f90620428efb6275f1a4dea1a17242c1329d4ab9bcfc852bdf",
+      "bytes": 1044210
+    },
+    {
+      "index": 21,
+      "time_seconds": 1.3125,
+      "file": "idle_21.png",
+      "zip_entry": "Butter-Idle_1/frame_000022.png",
+      "bbox": [
+        273,
+        156,
+        1263,
+        1376
+      ],
+      "sha256": "185bed74ba24b22f4e61721b441eaea171f20d9578d52dc72f7e49b604f77c43",
+      "bytes": 1038619
+    },
+    {
+      "index": 22,
+      "time_seconds": 1.375,
+      "file": "idle_22.png",
+      "zip_entry": "Butter-Idle_1/frame_000023.png",
+      "bbox": [
+        277,
+        152,
+        1265,
+        1376
+      ],
+      "sha256": "27c715ddcce1449ff63036b3b102f156ecb7f096d4a70a65b84c4c5832d93092",
+      "bytes": 1032949
+    },
+    {
+      "index": 23,
+      "time_seconds": 1.4375,
+      "file": "idle_23.png",
+      "zip_entry": "Butter-Idle_1/frame_000024.png",
+      "bbox": [
+        285,
+        148,
+        1264,
+        1376
+      ],
+      "sha256": "52146fecc436589b342a8845c35e86b80417641c56212056ba87de2318dc7125",
+      "bytes": 1016800
+    },
+    {
+      "index": 24,
+      "time_seconds": 1.5,
+      "file": "idle_24.png",
+      "zip_entry": "Butter-Idle_1/frame_000025.png",
+      "bbox": [
+        296,
+        145,
+        1261,
+        1376
+      ],
+      "sha256": "0865453456caa046cd767f6321f9f1d25ab360f300e473afb9ad9f8b09dbf1cb",
+      "bytes": 1017923
+    },
+    {
+      "index": 25,
+      "time_seconds": 1.5625,
+      "file": "idle_25.png",
+      "zip_entry": "Butter-Idle_1/frame_000026.png",
+      "bbox": [
+        305,
+        144,
+        1256,
+        1376
+      ],
+      "sha256": "485622a7a1f6079336ee8d81efa743ef123a74a33c8f104ec211f426ad89a61d",
+      "bytes": 1025384
+    },
+    {
+      "index": 26,
+      "time_seconds": 1.625,
+      "file": "idle_26.png",
+      "zip_entry": "Butter-Idle_1/frame_000027.png",
+      "bbox": [
+        311,
+        143,
+        1249,
+        1376
+      ],
+      "sha256": "fe3653c5fea27b931dfbfae3b5f84fa3e6c6bc832de376455b27e5b1b8ee1238",
+      "bytes": 1039145
+    },
+    {
+      "index": 27,
+      "time_seconds": 1.6875,
+      "file": "idle_27.png",
+      "zip_entry": "Butter-Idle_1/frame_000028.png",
+      "bbox": [
+        319,
+        144,
+        1241,
+        1376
+      ],
+      "sha256": "a21c585cbe5ae7ec14207000b26dc469f347913cf10a769ad80e14218fda9742",
+      "bytes": 1027481
+    },
+    {
+      "index": 28,
+      "time_seconds": 1.75,
+      "file": "idle_28.png",
+      "zip_entry": "Butter-Idle_1/frame_000029.png",
+      "bbox": [
+        329,
+        146,
+        1232,
+        1376
+      ],
+      "sha256": "b8d953ba72c1bda4d5aec59623cacd007f1c18a7d5ff9d985092f8b200d4ee64",
+      "bytes": 1014395
+    },
+    {
+      "index": 29,
+      "time_seconds": 1.8125,
+      "file": "idle_29.png",
+      "zip_entry": "Butter-Idle_1/frame_000030.png",
+      "bbox": [
+        339,
+        149,
+        1223,
+        1376
+      ],
+      "sha256": "40345cd9cfcb4010e0d423243742666e0b751095a8cf57dbd2b9c0b88a60ea65",
+      "bytes": 1013429
+    },
+    {
+      "index": 30,
+      "time_seconds": 1.875,
+      "file": "idle_30.png",
+      "zip_entry": "Butter-Idle_1/frame_000031.png",
+      "bbox": [
+        348,
+        152,
+        1216,
+        1376
+      ],
+      "sha256": "ef74ac5676c6de76561d2cb8f394e3bbca088e447bafec8fe1fd47c52d95110e",
+      "bytes": 1019246
+    },
+    {
+      "index": 31,
+      "time_seconds": 1.9375,
+      "file": "idle_31.png",
+      "zip_entry": "Butter-Idle_1/frame_000032.png",
+      "bbox": [
+        354,
+        155,
+        1210,
+        1376
+      ],
+      "sha256": "6068dba3a88b674b8f48ad872167b516c303d78588639b3bf723669ec6a5156e",
+      "bytes": 1030900
+    },
+    {
+      "index": 32,
+      "time_seconds": 2.0,
+      "file": "idle_32.png",
+      "zip_entry": "Butter-Idle_1/frame_000033.png",
+      "bbox": [
+        353,
+        159,
+        1208,
+        1376
+      ],
+      "sha256": "98e46abaa320febe4b6b904b54aeb9f3222cbd86d2e851fc7b6bb63c821f3119",
+      "bytes": 1030095
+    },
+    {
+      "index": 33,
+      "time_seconds": 2.0625,
+      "file": "idle_33.png",
+      "zip_entry": "Butter-Idle_1/frame_000034.png",
+      "bbox": [
+        348,
+        163,
+        1208,
+        1376
+      ],
+      "sha256": "758ad504e1a2581a43cf90ed81c254ada3737e98b1494a70a6fab600bd711bf1",
+      "bytes": 1033286
+    },
+    {
+      "index": 34,
+      "time_seconds": 2.125,
+      "file": "idle_34.png",
+      "zip_entry": "Butter-Idle_1/frame_000035.png",
+      "bbox": [
+        340,
+        167,
+        1209,
+        1376
+      ],
+      "sha256": "e40d1450af1170d7e7a95a669a46ad3ca1260ca5caeacf2a256e2346134c93df",
+      "bytes": 1038043
+    },
+    {
+      "index": 35,
+      "time_seconds": 2.1875,
+      "file": "idle_35.png",
+      "zip_entry": "Butter-Idle_1/frame_000036.png",
+      "bbox": [
+        329,
+        169,
+        1211,
+        1376
+      ],
+      "sha256": "83b63dbbea948d5d9b734c362e2262bb3f497c53703fe40bf006be442088190a",
+      "bytes": 1040210
+    },
+    {
+      "index": 36,
+      "time_seconds": 2.25,
+      "file": "idle_36.png",
+      "zip_entry": "Butter-Idle_1/frame_000037.png",
+      "bbox": [
+        317,
+        170,
+        1217,
+        1376
+      ],
+      "sha256": "c2e2cc8f4a04c0ddb65c1319f8a9ffe649c917acebc3ef604d5138dcf50617c7",
+      "bytes": 1040966
+    },
+    {
+      "index": 37,
+      "time_seconds": 2.3125,
+      "file": "idle_37.png",
+      "zip_entry": "Butter-Idle_1/frame_000038.png",
+      "bbox": [
+        305,
+        171,
+        1225,
+        1376
+      ],
+      "sha256": "17972630684a508d0284c4f362b4911162ff12715168d81d9c2a2baa2991a46c",
+      "bytes": 1042957
+    },
+    {
+      "index": 38,
+      "time_seconds": 2.375,
+      "file": "idle_38.png",
+      "zip_entry": "Butter-Idle_1/frame_000039.png",
+      "bbox": [
+        293,
+        170,
+        1233,
+        1376
+      ],
+      "sha256": "723f23771e0be12ab6caa53f4c101afe8d285ea1529b1c929c5418983b3289bd",
+      "bytes": 1046209
+    },
+    {
+      "index": 39,
+      "time_seconds": 2.4375,
+      "file": "idle_39.png",
+      "zip_entry": "Butter-Idle_1/frame_000040.png",
+      "bbox": [
+        284,
+        168,
+        1242,
+        1376
+      ],
+      "sha256": "f322eaa706ac6814165fb938535b94522dfca4ac99aab4451de041f92a6360b1",
+      "bytes": 1049068
+    },
+    {
+      "index": 40,
+      "time_seconds": 2.5,
+      "file": "idle_40.png",
+      "zip_entry": "Butter-Idle_1/frame_000041.png",
+      "bbox": [
+        277,
+        165,
+        1250,
+        1376
+      ],
+      "sha256": "e8e1283c431bbe0cddf0d55dd584f96f0c203dbdc6b1e6ddce554893e434c8ff",
+      "bytes": 1048314
+    },
+    {
+      "index": 41,
+      "time_seconds": 2.5625,
+      "file": "idle_41.png",
+      "zip_entry": "Butter-Idle_1/frame_000042.png",
+      "bbox": [
+        273,
+        162,
+        1257,
+        1376
+      ],
+      "sha256": "b89397bfe70230978b11ea162c1067b0619de6742aaa06b94ca486420c144fc0",
+      "bytes": 1044879
+    },
+    {
+      "index": 42,
+      "time_seconds": 2.625,
+      "file": "idle_42.png",
+      "zip_entry": "Butter-Idle_1/frame_000043.png",
+      "bbox": [
+        272,
+        158,
+        1262,
+        1376
+      ],
+      "sha256": "abd1298c7318013c82ff75e99041260a1777ac58eee7408fe5021a577dd758fb",
+      "bytes": 1039084
+    }
+  ],
+  "raw_spine_source_folder": "C:\\Users\\john9\\Documents\\Codex\\2026-10-16\\new-chat\\outputs\\avatars-hq-20261025\\source\\Butter"
+}
