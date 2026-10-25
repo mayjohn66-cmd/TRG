@@ -3581,10 +3581,12 @@ func _refresh_status_stamps(player_id: int) -> void:
 				host.remove_child(stamp)  # 같은 프레임에 다시 걸려도 이름이 겹치지 않게 바로 뗀다
 			continue
 		if stamp != null:
+			stamp.combined = wanted[&"skip"] and wanted[&"ban"]
 			continue
 		stamp = StatusStamp.new()
 		stamp.name = node_name
 		stamp.kind = kind
+		stamp.combined = wanted[&"skip"] and wanted[&"ban"]
 		stamp.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		stamp.set_anchors_preset(Control.PRESET_FULL_RECT)
 		host.add_child(stamp)
@@ -10749,14 +10751,25 @@ class BoardStructure extends Node2D:
 			draw_polyline(points, edge, 1.2, true)
 
 
-## 프로필 위에 찍히는 상태 도장 (코드로 그린다): 밴은 붉은 [BANNED] 직인, 스킵은 붉은 금지 표시.
+## 프로필 위에 찍히는 붓결·잉크 질감의 투명 상태 도장.
 class StatusStamp extends Control:
 	var kind: StringName = &"ban"
-	const RED: Color = Color("e0262c")
+	var combined := false:
+		set(value):
+			if combined==value:
+				return
+			combined = value
+			queue_redraw()
+	const SKIP = preload("res://content_trickcal/illustrations/effects/profile_stamps/skip_painted.png")
+	const BAN = preload("res://content_trickcal/illustrations/effects/profile_stamps/ban_painted.png")
+	const SKIP_REGION := Rect2(84.0/1254,89.0/1254,1092.0/1254,1076.0/1254)
+	const BAN_REGION := Rect2(112.0/2172,105.0/724,1950.0/2172,507.0/724)
 
 	func _ready() -> void:
 		z_index = 3
-		resized.connect(func() -> void: pivot_offset = size / 2.0)
+		resized.connect(func() -> void:
+			pivot_offset = size / 2.0
+			queue_redraw())
 		pivot_offset = size / 2.0
 
 	## 위에서 크게 떨어져 쾅 찍힌다 (효과음과 짧은 화면 흔들림).
@@ -10775,30 +10788,19 @@ class StatusStamp extends Control:
 		if w <= 0.0:
 			return
 		var center: Vector2 = size / 2.0
-		if kind == &"skip":
-			var radius: float = w * 0.40
-			var thick: float = maxf(w * 0.11, 3.0)
-			draw_arc(center + Vector2(1.5, 2.5), radius, 0.0, TAU, 40, Color(0, 0, 0, 0.35), thick)  # 그림자
-			draw_arc(center, radius, 0.0, TAU, 40, RED, thick)
-			var d: float = radius * 0.7071
-			draw_line(center + Vector2(-d, -d) + Vector2(1.5, 2.5), center + Vector2(d, d) + Vector2(1.5, 2.5), Color(0, 0, 0, 0.35), thick)
-			draw_line(center + Vector2(-d, -d), center + Vector2(d, d), RED, thick)
-			return
-		# 밴: 기울어진 붉은 직인 (이중 테두리 + 흰 글씨 + 긁힌 자국)
-		draw_set_transform(center, -0.32, Vector2.ONE)
-		var half := Vector2(w * 0.5, w * 0.2) * 0.98
-		var rect := Rect2(-half, half * 2.0)
-		draw_rect(Rect2(rect.position + Vector2(1.5, 2.5), rect.size), Color(0, 0, 0, 0.35))
-		draw_rect(rect, Color(RED, 0.94))
-		draw_rect(rect.grow(-w * 0.025), Color(1, 1, 1, 0.9), false, maxf(w * 0.018, 1.2))
-		var font: Font = ThemeDB.fallback_font
-		var font_size: int = int(w * 0.25)
-		var text: String = "BANNED"
-		var text_size: Vector2 = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
-		draw_string(font, Vector2(-text_size.x / 2.0, text_size.y * 0.32), text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color(1, 1, 1, 0.96))
-		for index: int in 14:  # 긁힌 흰 자국 (모양은 늘 같다)
-			var u: float = fposmod(sin(index * 12.9898) * 43758.5453, 1.0)
-			var v: float = fposmod(sin(index * 78.233) * 12345.678, 1.0)
-			var at := Vector2(lerpf(rect.position.x, rect.end.x, u), lerpf(rect.position.y, rect.end.y, v))
-			draw_line(at, at + Vector2(w * 0.05 * (1.0 + v), w * 0.012), Color(1, 1, 1, 0.55), maxf(w * 0.012, 1.0))
+		var skip: bool = kind==&"skip"
+		var texture: Texture2D = SKIP if skip else BAN
+		var normalized: Rect2 = SKIP_REGION if skip else BAN_REGION
+		var region := Rect2(normalized.position*texture.get_size(),normalized.size*texture.get_size())
+		var width := w*(0.83 if skip else 0.96)
+		if combined:
+			center.y = size.y*(0.33 if skip else 0.76)
+			width = w*(0.58 if skip else 0.96)
+		var drawn := Vector2(width,width*region.size.y/region.size.x)
+		var rect := Rect2(-drawn/2,drawn)
+		var angle := 0.035 if skip else -0.20
+		draw_set_transform(center+Vector2(1.0,1.5),angle)
+		draw_texture_rect_region(texture,rect,region,Color(0.12,0.02,0.03,0.35))
+		draw_set_transform(center,angle)
+		draw_texture_rect_region(texture,rect,region,Color(1,1,1,0.94))
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)

@@ -1,0 +1,38 @@
+{
+  "generation": "built-in image_gen",
+  "transparent_background": true,
+  "files": [
+    {
+      "file": "skip_painted.png",
+      "original": "exec-8e054138-f9f3-4ef0-9264-d779dc32b781.png",
+      "source_size": [
+        1254,
+        1254
+      ],
+      "source_region": [
+        84,
+        89,
+        1092,
+        1076
+      ],
+      "import_limit": 256,
+      "sha256": "5744bf97cd073b3041fa56ff1b6c09883249ecb92bbea90b80301dcc466d3929"
+    },
+    {
+      "file": "ban_painted.png",
+      "original": "exec-5b01190a-e872-4f92-be8b-a53c1f533ffd.png",
+      "source_size": [
+        2172,
+        724
+      ],
+      "source_region": [
+        112,
+        105,
+        1950,
+        507
+      ],
+      "import_limit": 512,
+      "sha256": "efea7f037024cbb3de7731290db061baaf5e853e0c0a09493f7abd1f4f026012"
+    }
+  ]
+}

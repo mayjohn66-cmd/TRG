@@ -24,6 +24,7 @@ on:
           - raid
           - gambler
           - profile-aura
+          - profile-stamps
           - castling
           - bakery
           - sniper
@@ -56,7 +57,9 @@ jobs:
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
           REQUESTED_SCOPE: ${{ inputs.validation }}
         run: |
-          if [[ "${REQUESTED_SCOPE}" == "bond" || "${COMMIT_MESSAGE}" == *"[check:bond]"* ]]; then
+          if [[ "${REQUESTED_SCOPE}" == "profile-stamps" || "${COMMIT_MESSAGE}" == *"[check:profile-stamps]"* ]]; then
+            echo "scope=profile-stamps" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "bond" || "${COMMIT_MESSAGE}" == *"[check:bond]"* ]]; then
             echo "scope=bond" >> "${GITHUB_OUTPUT}"
           elif [[ "${REQUESTED_SCOPE}" == "nitro" || "${COMMIT_MESSAGE}" == *"[check:nitro]"* ]]; then
             echo "scope=nitro" >> "${GITHUB_OUTPUT}"
@@ -106,6 +109,13 @@ jobs:
         run: |
           godot --headless --path . --import || true
           godot --headless --path . --import
+
+      - name: Check profile status stamp presentation script
+        if: steps.validation.outputs.scope == 'profile-stamps'
+        run: |
+          set -o pipefail
+          godot --headless --path . --check-only -s res://scenes/main_board.gd 2>&1 | tee /tmp/profile_stamps.log
+          if grep -q 'SCRIPT ERROR' /tmp/profile_stamps.log; then exit 1; fi
 
       - name: Run focused bond presentation check
         if: steps.validation.outputs.scope == 'bond'
