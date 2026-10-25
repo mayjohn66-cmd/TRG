@@ -25,6 +25,7 @@ on:
           - gambler
           - profile-aura
           - profile-stamps
+          - warning-icon
           - castling
           - bakery
           - sniper
@@ -57,7 +58,9 @@ jobs:
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
           REQUESTED_SCOPE: ${{ inputs.validation }}
         run: |
-          if [[ "${REQUESTED_SCOPE}" == "profile-stamps" || "${COMMIT_MESSAGE}" == *"[check:profile-stamps]"* ]]; then
+          if [[ "${REQUESTED_SCOPE}" == "warning-icon" || "${COMMIT_MESSAGE}" == *"[check:warning-icon]"* ]]; then
+            echo "scope=warning-icon" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "profile-stamps" || "${COMMIT_MESSAGE}" == *"[check:profile-stamps]"* ]]; then
             echo "scope=profile-stamps" >> "${GITHUB_OUTPUT}"
           elif [[ "${REQUESTED_SCOPE}" == "bond" || "${COMMIT_MESSAGE}" == *"[check:bond]"* ]]; then
             echo "scope=bond" >> "${GITHUB_OUTPUT}"
@@ -109,6 +112,13 @@ jobs:
         run: |
           godot --headless --path . --import || true
           godot --headless --path . --import
+
+      - name: Check shared warning icon presentation script
+        if: steps.validation.outputs.scope == 'warning-icon'
+        run: |
+          set -o pipefail
+          godot --headless --path . --check-only -s res://scenes/card_skin.gd 2>&1 | tee /tmp/warning_icon.log
+          if grep -q 'SCRIPT ERROR' /tmp/warning_icon.log; then exit 1; fi
 
       - name: Check profile status stamp presentation script
         if: steps.validation.outputs.scope == 'profile-stamps'

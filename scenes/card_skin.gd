@@ -30,22 +30,24 @@ const SELF_RISK: Dictionary = {
 }
 
 
-## 빨간 삼각 경고 아이콘 (흰 안쪽 테두리 + 느낌표). 그림 파일 없이 크기에 맞춰 그린다.
+## 카드·초증강·상세 설명이 공유하는 작은 빨간 삼각 경고 그림.
 class WarningIcon extends Control:
+	const ART = preload("res://content_trickcal/illustrations/ui/warnings/self_risk_warning.png")
+	const REGION := Rect2(50.0/1312,76.0/1199,1204.0/1312,1029.0/1199)
+
 	func _init() -> void:
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 
+	func _ready() -> void:
+		resized.connect(queue_redraw)
+
 	func _draw() -> void:
 		var s: float = minf(size.x, size.y)
-		var o: Vector2 = (size - Vector2(s, s)) / 2.0
-		var outer := PackedVector2Array([o + Vector2(s * 0.5, s * 0.04), o + Vector2(s * 0.98, s * 0.92), o + Vector2(s * 0.02, s * 0.92)])
-		draw_colored_polygon(outer, WARNING_RED)
-		var ring := PackedVector2Array([o + Vector2(s * 0.5, s * 0.04), o + Vector2(s * 0.98, s * 0.92), o + Vector2(s * 0.02, s * 0.92), o + Vector2(s * 0.5, s * 0.04)])
-		draw_polyline(ring, Color("a51111"), maxf(1.0, s * 0.06), true)
-		var inner := PackedVector2Array([o + Vector2(s * 0.5, s * 0.2), o + Vector2(s * 0.84, s * 0.83), o + Vector2(s * 0.16, s * 0.83), o + Vector2(s * 0.5, s * 0.2)])
-		draw_polyline(inner, Color.WHITE, maxf(1.0, s * 0.045), true)
-		draw_line(o + Vector2(s * 0.5, s * 0.36), o + Vector2(s * 0.5, s * 0.62), Color.WHITE, maxf(1.5, s * 0.1), true)
-		draw_circle(o + Vector2(s * 0.5, s * 0.73), maxf(1.0, s * 0.06), Color.WHITE)
+		if s<=0.0:
+			return
+		var region := Rect2(REGION.position*ART.get_size(),REGION.size*ART.get_size())
+		var drawn := Vector2(s,s*region.size.y/region.size.x)
+		draw_texture_rect_region(ART,Rect2((size-drawn)/2.0,drawn),region)
 
 
 static func style(fill: Color, edge: Color, width: int, radius: int) -> StyleBoxFlat:
