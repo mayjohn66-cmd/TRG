@@ -27,6 +27,23 @@
   "generated_art": {
     "mode": "built-in image_gen",
     "storefront": "exec-415d1dcf-cef0-4fb2-ad5c-2d9d849e9507.png",
-    "flour": "exec-b52f4ede-9930-46fd-a8c3-a7840aa9e9de.png"
+    "flour": "exec-b52f4ede-9930-46fd-a8c3-a7840aa9e9de.png",
+    "bread_haul": "exec-b8b0cbea-eed1-4b8d-a51d-34ff2af8dac9.png"
+  },
+  "bread_haul": {
+    "file": "bread_haul_three.png",
+    "pieces": 3,
+    "source_size": [
+      1536,
+      1024
+    ],
+    "region": [
+      103,
+      109,
+      1331,
+      804
+    ],
+    "carry_width": 54,
+    "motion": "Follows original Move frame vertical displacement"
   }
 }

@@ -4,9 +4,15 @@
 
 `erpin_move.png` is the 14-frame Move animation from the viewer's dedicated `minimi/minimierpin` model, packed at 50% size with transparent gutters. `erpin_idle.png` is its original first Idle frame. Source: https://viewer.dclnslde.com/ → 미니미 → 에르핀. `source.json` records frame layout and provenance. The artwork was not redrawn.
 
-The stage shows approach → entry into the central dark doorway → four interior impacts with flour and bread → escape with loaves. Card delivery starts after the escape and continues to use the real reserved reward jobs.
+`bread_haul_three.png` is one painted prop containing exactly three breads (country loaf, round roll, croissant), created with built-in `image_gen` and genuine transparent alpha. Erpin carries the whole pile in sync with the original Move animation's vertical motion. The former board-icon loaves are no longer used in this stage.
+
+The stage shows approach → entry into the central dark doorway → four interior impacts with flour → escape carrying the three breads. A 78% dark backdrop is rendered above the relocating pawn, while the storefront and Erpin remain in front. Card delivery starts after the escape and continues to use the real reserved reward jobs.
 
 ## Final image prompts
+
+Three-bread carry prop (built-in image_gen; transparent_background=true):
+
+Use case: illustration-story. Asset type: one transparent carried-loot prop sprite for a cute chibi bakery game animation. Primary request: exactly THREE freshly baked breads held together in a small compact stack, with no hands or character: one chunky oblong golden country loaf with three pale score marks, one plump round bread roll with a cross-shaped score, and one buttery curved croissant. The two loaves sit side by side at the bottom, the croissant rests lightly across their upper edges. All three individual silhouettes must be clearly distinguishable and countable. Full colored hand-painted cartoon illustration, warm golden crust, soft cream highlights, restrained brown outlines, soft volume and appetizing baked texture, same cozy fantasy bakery aesthetic as a chibi game. Front three-quarter view, compact horizontal composition suitable for a small character carrying this pile in front of their chest. Richly shaped bread objects rather than flat UI icon glyphs. Keep the forms simple enough to read at 50 pixels wide. One isolated prop only. True transparent background and generous transparent padding on every side. No basket, bag, plate, table, floor, character, hands, badge, circular backing, letters, numbers, text, sparkles or watermark. Exactly three bread pieces and no additional crumbs shaped like bread.
 
 Storefront (built-in image_gen; transparent_background=true):
 

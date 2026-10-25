@@ -5,9 +5,15 @@ const SHOP = preload("res://content_trickcal/illustrations/effects/bakery/bakery
 const FLOUR = preload("res://content_trickcal/illustrations/effects/bakery/flour_puff.png")
 const MOVE = preload("res://content_trickcal/illustrations/effects/bakery/erpin_move.png")
 const IDLE = preload("res://content_trickcal/illustrations/effects/bakery/erpin_idle.png")
+const BREAD_HAUL = preload("res://content_trickcal/illustrations/effects/bakery/bread_haul_three.png")
 const MOVE_CELL := Vector2(212,308)
 const MOVE_SIZE := Vector2(208,304)
 const MOVE_ORIGIN := Vector2(91.5,275)
+const MOVE_BOB := [4.0,-51.0,-94.0,-125.0,-145.0,-152.0,-152.0,-149.0,-140.0,-126.0,-106.0,-76.0,-36.0,4.0]
+const BREAD_REGION := Rect2(103.0/1536,109.0/1024,1331.0/1536,804.0/1024)
+
+static func move_bob(clock: float, height: float) -> float:
+	return float(MOVE_BOB[int(maxf(0,clock)*30.0)%14])*height/380.0
 
 static func erpin(canvas: Node2D, foot: Vector2, clock: float, height: float, alpha: float, running: bool, facing: float, lean: float = 0.0) -> void:
 	var texture: Texture2D = MOVE if running else IDLE

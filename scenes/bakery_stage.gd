@@ -11,6 +11,7 @@ const HAUL_END := 4.00
 const FINISH_TIME := 0.32
 const IMPACTS := [0.10,0.34,0.65,0.97]
 const GOLD := Color("ffd267")
+const BACKGROUND_DIM := 0.78
 var phase: StringName = &"spot"
 var elapsed := 0.0
 var phase_time := 0.0
@@ -40,11 +41,11 @@ var _shop_angle := 0.0
 var _saved: Dictionary = {}
 var _restored := false
 var _current := -1
-var _breads: Array[Sprite2D] = []
+var _bread_haul: Sprite2D
 
 func play(board: MainBoard, owner: int, changes: Array, speed: float) -> void:
 	name = "BakeryStage"
-	z_index = 24
+	z_index = 35  # The pawn's relocation stays behind the cutaway's dimming layer.
 	_board_ref = weakref(board)
 	_generation = board._fx_generation
 	player_id = owner
@@ -68,22 +69,12 @@ func play(board: MainBoard, owner: int, changes: Array, speed: float) -> void:
 		_saved = {"scale":view.scale,"rotation":view.rotation,"z":view.z_index,"tint":view.modulate}
 		view.position = _from
 		view.hide()
-	var texture: Texture2D = BoardSkin.DECALS.bakery
-	var ratio := texture.get_width()/1254.0
-	var region := Rect2(Vector2(196,409)*ratio,Vector2(862,482)*ratio)
-	var material := ShaderMaterial.new()
-	material.shader = BoardSkin.FLAT_INK
-	material.set_shader_parameter("ink",Color("d99b45"))
-	for index: int in 4:
-		var bread := Sprite2D.new()
-		bread.texture = texture
-		bread.region_enabled = true
-		bread.region_rect = region
-		bread.material = material
-		bread.scale = Vector2.ONE*(25.0/region.size.x)
-		bread.hide()
-		add_child(bread)
-		_breads.append(bread)
+	_bread_haul = Sprite2D.new()
+	_bread_haul.texture = ART.BREAD_HAUL
+	_bread_haul.region_enabled = true
+	_bread_haul.region_rect = Rect2(ART.BREAD_REGION.position*ART.BREAD_HAUL.get_size(),ART.BREAD_REGION.size*ART.BREAD_HAUL.get_size())
+	_bread_haul.hide()
+	add_child(_bread_haul)
 	board._refresh_hands()
 	Sfx.play(&"charge",-9.0)
 
@@ -154,7 +145,8 @@ func _update_pose() -> void:
 	var jump := smoothstep(SPOT_TIME,DASH_END,elapsed)
 	var view: Node2D = _view_ref.get_ref() if _view_ref!=null else null
 	if view!=null and not _restored:
-		view.visible = elapsed>=SPOT_TIME
+		# The cutaway owns the action; don't show a second pawn leaping behind it.
+		view.visible = false
 		view.z_index = 27
 		view.position = _from.lerp(_to,jump)+Vector2(0,-115*sin(jump*PI))
 		view.rotation = sin(jump*PI)*0.18
@@ -186,21 +178,13 @@ func _update_pose() -> void:
 		_actor_at = _door.lerp(_shop_at+Vector2(240,32),flee)
 		_actor_height = lerpf(65,88,emerge)
 		_actor_alpha = emerge*(1-smoothstep(0.85,1,escape))
-	for index: int in _breads.size():
-		var bread := _breads[index]
-		bread.visible = phase==&"escape" and _actor_alpha>0.01
-		bread.position = _actor_at+Vector2(18+(index%2)*13,-37-(index/2)*12)
-		bread.position.y -= abs(sin(elapsed*14))*3
-		bread.rotation = -0.18+(index%2)*0.3
-		bread.modulate.a = _actor_alpha
-		if phase==&"rummage":
-			var age := elapsed-ENTER_END-float(IMPACTS[index])
-			var u := clampf(age/0.48,0,1)
-			var side := -1.0 if index%2==0 else 1.0
-			bread.visible = age>0 and age<0.48
-			bread.position = _door+Vector2(side*u*74,-24-65*sin(u*PI))
-			bread.rotation = u*side*2
-			bread.modulate.a = sin(u*PI)
+	_bread_haul.visible = phase==&"escape" and _actor_alpha>0.01
+	var carry_scale := _actor_height/88.0
+	var bob := ART.move_bob(elapsed-DASH_END,_actor_height)
+	_bread_haul.position = _actor_at+Vector2(18*carry_scale,-31*carry_scale+bob)
+	_bread_haul.scale = Vector2.ONE*(54.0*carry_scale/_bread_haul.region_rect.size.x)
+	_bread_haul.rotation = 0.06
+	_bread_haul.modulate.a = _actor_alpha
 
 func _ellipse(at: Vector2, radius: Vector2, tint: Color, width: float) -> void:
 	var points := PackedVector2Array()
@@ -216,7 +200,7 @@ func _draw() -> void:
 	var reveal := smoothstep(0,SPOT_TIME,elapsed)
 	var story := reveal*(1-smoothstep(HAUL_END-0.14,HAUL_END+0.22,elapsed))
 	if story>0.001:
-		draw_rect(get_viewport_rect(),Color(0.07,0.05,0.08,0.22*story))
+		draw_rect(get_viewport_rect(),Color(0.025,0.022,0.035,BACKGROUND_DIM*story))
 		ART.storefront(self,_shop_at+_shop_offset,280,story,_shop_angle)
 	if elapsed<HAUL_END:
 		_ellipse(_at,Vector2(35,17),Color(GOLD,0.65*reveal),2)
