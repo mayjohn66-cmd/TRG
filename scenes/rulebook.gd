@@ -237,7 +237,7 @@ func _build_save_tools() -> void:
 	badge_icon.position = Vector2(12,10)
 	_law_badge.add_child(badge_icon)
 	for state: String in ["normal","hover","pressed","focus"]:
-		var badge_skin := VISUALS.panel(Color("fff4d6") if state!="hover" else Color("fffbea"),23)
+		var badge_skin := VISUALS.panel(Color("fff4d6") if state!="hover" else Color("fffbea"),18)
 		badge_skin.content_margin_left = 46
 		badge_skin.content_margin_right = 16
 		_law_badge.add_theme_stylebox_override(state,badge_skin)
@@ -466,7 +466,7 @@ func show_spread(index: int, entry_index: int = -1) -> void:
 		teal_hover.modulate_color = Color.WHITE if selected else TEAL.lightened(0.12)
 		button.add_theme_stylebox_override("hover", teal_hover)
 		button.add_theme_stylebox_override("pressed", teal_back)
-		disc.add_theme_stylebox_override("panel", _box(Color("fffdf0"), Color("3f9a2b") if selected else TEAL_DARK, 4, 26, 3))
+		disc.add_theme_stylebox_override("panel", VISUALS.disc(Color("fffdf0")))
 		plate.add_theme_color_override("font_color", Color("2f6f66") if selected else Color.WHITE)
 		plate.add_theme_color_override("font_outline_color", Color(0.1, 0.35, 0.3, 0.9))
 		plate.add_theme_constant_override("outline_size", 0 if selected else 5)
@@ -554,7 +554,7 @@ func _tile(data: Dictionary) -> Button:
 	disc.custom_minimum_size = Vector2(54, 54)
 	disc.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	disc.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	disc.add_theme_stylebox_override("panel", _box(Color.WHITE, tone, 3, 27))
+	disc.add_theme_stylebox_override("panel", VISUALS.disc(Color.WHITE))
 	column.add_child(disc)
 	var picture: Control = _picture(data, Vector2(42, 42))
 	picture.position = Vector2(6, 6)
@@ -796,7 +796,7 @@ func _chip(text: String, tone: Color) -> Control:
 	chip.text = text
 	chip.add_theme_font_size_override("font_size", 15)
 	chip.add_theme_color_override("font_color", Color.WHITE)
-	chip.add_theme_stylebox_override("normal", _box(tone.darkened(0.12), tone.darkened(0.3), 0, 12, 0, 0))
+	chip.add_theme_stylebox_override("normal", _box(tone.darkened(0.12), tone.darkened(0.3), 0, 9, 0, 0))
 	chip.get_theme_stylebox("normal").content_margin_left = 10
 	chip.get_theme_stylebox("normal").content_margin_right = 10
 	chip.get_theme_stylebox("normal").content_margin_top = 2
@@ -879,7 +879,7 @@ func _points(points: Array, tone: Color) -> Control:
 		var dot := Panel.new()
 		dot.custom_minimum_size = Vector2(14, 14)
 		dot.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-		dot.add_theme_stylebox_override("panel", _box(tone, tone.darkened(0.25), 2, 7))
+		dot.add_theme_stylebox_override("panel", VISUALS.disc(tone))
 		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		line.add_child(dot)
 		var text: RichTextLabel = _rich(str(point), 17)

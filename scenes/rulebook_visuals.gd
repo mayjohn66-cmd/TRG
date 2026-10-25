@@ -2,6 +2,7 @@
 extends RefCounted
 
 const SOURCES := {
+	&"disc": preload("res://assets/ui/trickcal/rulebook/v03/disc_round.png"),
 	&"finish": preload("res://assets/ui/trickcal/rulebook/v02/finish.png"),
 	&"play_card": preload("res://assets/ui/trickcal/rulebook/v02/play_card.png"),
 	&"roll": preload("res://assets/ui/trickcal/rulebook/v02/roll.png"),
@@ -16,7 +17,7 @@ const SOURCES := {
 	&"lawbook": preload("res://assets/ui/trickcal/rulebook/v02/lawbook.png"),
 	&"supply": preload("res://assets/ui/trickcal/rulebook/v02/supply.png"),
 	&"super": preload("res://assets/ui/trickcal/rulebook/v02/super.png"),
-	&"panel": preload("res://assets/ui/trickcal/rulebook/v02/panel.png"),
+	&"panel": preload("res://assets/ui/trickcal/rulebook/v03/panel_round.png"),
 	&"paper": preload("res://assets/ui/trickcal/rulebook/v02/paper.png"),
 	&"ribbon": preload("res://assets/ui/trickcal/rulebook/v02/ribbon.png"),
 	&"corner": preload("res://assets/board/decals/BOARD_CORNER.png"),
@@ -27,6 +28,7 @@ const SOURCES := {
 	&"pawn_basics": preload("res://content_trickcal/illustrations/pawns/PAWN_DEFAULT.png"),
 }
 const REGIONS := {
+	&"disc": Rect2(113.0/1254,126.0/1254,1026.0/1254,1029.0/1254),
 	&"finish": Rect2(162.0/1254,170.0/1254,931.0/1254,920.0/1254),
 	&"play_card": Rect2(167.0/1254,170.0/1254,920.0/1254,930.0/1254),
 	&"roll": Rect2(164.0/1254,159.0/1254,939.0/1254,984.0/1254),
@@ -41,7 +43,7 @@ const REGIONS := {
 	&"lawbook": Rect2(166.0/1254,134.0/1254,939.0/1254,1007.0/1254),
 	&"supply": Rect2(141.0/1254,250.0/1254,972.0/1254,737.0/1254),
 	&"super": Rect2(177.0/1254,85.0/1254,938.0/1254,1075.0/1254),
-	&"panel": Rect2(64.0/1254,81.0/1254,1126.0/1254,1100.0/1254),
+	&"panel": Rect2(81.0/1254,99.0/1254,1092.0/1254,1057.0/1254),
 	&"paper": Rect2(123.0/1254,141.0/1254,1008.0/1254,988.0/1254),
 	&"ribbon": Rect2(31.0/1942,218.0/809,1879.0/1942,344.0/809),
 	&"corner": Rect2(96.0/1254,304.0/1254,1103.0/1254,670.0/1254),
@@ -69,7 +71,9 @@ static func texture(role: StringName) -> Texture2D:
 
 ## Nine-slice display preparation preserves the selected source image unchanged.
 static func panel(tint: Color, radius: int = 16, margin: int = 0) -> StyleBoxTexture:
-	var height := clampi(radius*2+8,24,112)
+	# Source corner arcs occupy about 24% of its cropped width. Match their displayed radius,
+	# and preserve the complete quarter arcs inside the nine-slice margins.
+	var height := clampi(roundi(float(radius) / 0.24), 12, 192)
 	if not _panels.has(height):
 		var source: AtlasTexture = texture(&"panel") as AtlasTexture
 		var pixels := source.atlas.get_image()
@@ -80,7 +84,16 @@ static func panel(tint: Color, radius: int = 16, margin: int = 0) -> StyleBoxTex
 		_panels[height] = ImageTexture.create_from_image(pixels)
 	var skin := StyleBoxTexture.new()
 	skin.texture = _panels[height]
-	skin.set_texture_margin_all(height*0.23)
+	skin.set_texture_margin_all(roundf(height * 0.24))
 	skin.set_content_margin_all(margin)
+	skin.modulate_color = tint
+	return skin
+
+
+## Circular pedestals use their own uncut image, avoiding collapsed nine-slice seams.
+static func disc(tint: Color) -> StyleBoxTexture:
+	var skin := StyleBoxTexture.new()
+	skin.texture = texture(&"disc")
+	skin.set_content_margin_all(0)
 	skin.modulate_color = tint
 	return skin
