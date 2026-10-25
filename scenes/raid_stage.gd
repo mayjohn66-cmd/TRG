@@ -1,13 +1,14 @@
 ## SUPER_05: cue the actual reward stream, never grant or fabricate cards.
 extends Node2D
 
-const INTRO_TIME := 0.32
+const CUTIN = preload("res://scenes/raid_cutin.gd")
+const INTRO_TIME := 0.14
 const SNATCH_TIME := 0.22
 const END_TIME := 0.30
 var elapsed := 0.0
 var phase_time := 0.0
 var pace := 1.0
-var phase: StringName = &"arrive"
+var phase: StringName = &"cutin"
 var player_id := -1
 var jobs: Array[Dictionary] = []
 var launched: Array[Dictionary] = []
@@ -19,6 +20,10 @@ var _complete := false
 var _board_ref: WeakRef
 var _generation := 0
 var _index := -1
+var _cutin: Control
+var _cutin_layer: CanvasLayer
+var _impact_played := false
+var _exit_played := false
 
 func play(board: MainBoard, owner: int, rewards: Array[Dictionary], speed: float) -> void:
 	name = "RaidStage"
@@ -33,7 +38,13 @@ func play(board: MainBoard, owner: int, rewards: Array[Dictionary], speed: float
 		if int(job.source)>=0 and int(job.source)!=player_id and not victims.has(int(job.source)):
 			victims.append(int(job.source))
 	board._refresh_hands()
-	Sfx.play(&"attack_alert",-7.0)
+	_cutin_layer = CanvasLayer.new()
+	_cutin_layer.name = "RaidCutinPresentation"
+	_cutin_layer.layer = 55
+	add_child(_cutin_layer)
+	_cutin = CUTIN.new()
+	_cutin_layer.add_child(_cutin)
+	Sfx.play(&"dash",-7.0)
 
 func _process(delta: float) -> void:
 	if _board_ref==null:
@@ -45,6 +56,19 @@ func _process(delta: float) -> void:
 	elapsed += delta/pace
 	phase_time += delta/pace
 	match phase:
+		&"cutin":
+			_cutin.seek(phase_time)
+			if phase_time>=CUTIN.IMPACT_AT and not _impact_played:
+				_impact_played = true
+				Sfx.play(&"card_impact",-4.0)
+				Sfx.play(&"promote",-9.0)
+			if phase_time>=CUTIN.EXIT_AT and not _exit_played:
+				_exit_played = true
+				Sfx.play(&"card_throw",-6.0)
+			if phase_time>=CUTIN.DURATION:
+				_cutin_layer.queue_free()
+				_cutin = null
+				_set_phase(&"arrive")
 		&"arrive":
 			if phase_time>=INTRO_TIME:
 				_next()
@@ -111,6 +135,8 @@ func _draw() -> void:
 		return
 	var board: MainBoard = _board_ref.get_ref()
 	if board==null:
+		return
+	if phase==&"cutin":
 		return
 	var receiver := _profile_rect(board,player_id)
 	if phase==&"arrive" or phase==&"finish":

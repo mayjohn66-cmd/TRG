@@ -17,6 +17,7 @@ var saw_local_face := false
 var saw_remote_back := false
 var checked_sources: Array[int] = []
 var visits: Array[int] = []
+var cutin_finished := false
 
 func _run() -> void:
 	GameSession.mode = GameSession.MODE_AI
@@ -26,11 +27,12 @@ func _run() -> void:
 	_expect(visits==[2,4],"Only actual successful victims are raided; an empty hand is skipped")
 	_expect(saw_local_face,"Local stolen cards use the real reveal and hand delivery")
 	_expect(delivered==3,"Support and stolen cards each arrive once")
-	_expect(seen.has(&"arrive") and seen.has(&"snatch") and seen.has(&"finish"),"Arrival, snatch and escape stages are visible")
+	_expect(seen.has(&"cutin") and seen.has(&"arrive") and seen.has(&"snatch") and seen.has(&"finish"),"Cut-in, arrival, snatch and escape stages are visible")
 	await _edge_case(2,false,false)
 	_expect(saw_remote_back,"A remote receiver's cards remain face down")
 	await _edge_case(2,true,false)
 	await _edge_case(1,false,true)
+	await _edge_case(1,false,true,true)
 	if _failures.is_empty():
 		print("UI_RAID_OK")
 		quit(0)
@@ -77,9 +79,20 @@ func _process(_delta: float) -> bool:
 				_expect(int(_board._draw_fx.pending.get(1,0))==0,"Restored local victim cards do not retain fake arrival reservations")
 		if not seen.has(stage.phase):
 			seen.append(stage.phase)
+		if stage.phase==&"cutin":
+			_expect(stage.launched.is_empty() and not _board._draw_fx.busy(),"The cut-in clears before any reward or theft launches")
+			_expect(is_instance_valid(stage._cutin) and stage._cutin.visible,"The raid owns a visible cut-in during its opening")
+			if stage.phase_time>0.30 and stage.phase_time<0.80:
+				capture("cutin_impact")
+			if stage.phase_time>0.94:
+				capture("cutin_exit")
+		else:
+			cutin_finished = true
+			_expect(not is_instance_valid(stage._cutin),"No cut-in remains over the theft or delivery")
 		_expect(_board.state.rng.state==rng_before,"Presentation consumes no simulation RNG")
 		_expect(_board.state.hands==hands_before_visual,"Presentation changes no hand contents")
 		if stage.phase==&"snatch" and not stage.current.is_empty():
+			_expect(cutin_finished,"Theft follows the finished cut-in")
 			var source := int(stage.current.source)
 			if not visits.has(source):
 				visits.append(source)
@@ -112,7 +125,7 @@ func _process(_delta: float) -> bool:
 		_expect(not _board._draw_fx.busy() and int(_board._draw_fx.pending.get(thief,0))==0,"No card delivery or reservation remains after the raid")
 	return false
 
-func _edge_case(receiver: int, is_full: bool, cancel: bool) -> void:
+func _edge_case(receiver: int, is_full: bool, cancel: bool, cancel_cutin: bool = false) -> void:
 	thief = receiver
 	full_hand = is_full
 	started = false
@@ -122,6 +135,7 @@ func _edge_case(receiver: int, is_full: bool, cancel: bool) -> void:
 	visits.clear()
 	checked_sources.clear()
 	delivered = 0
+	cutin_finished = false
 	_board = (load("res://scenes/main_board.tscn") as PackedScene).instantiate()
 	root.add_child(_board)
 	var guard := 0
@@ -146,7 +160,9 @@ func _edge_case(receiver: int, is_full: bool, cancel: bool) -> void:
 	var t0 := Time.get_ticks_msec()
 	while _board._presentation_active() and Time.get_ticks_msec()-t0<12000:
 		await process_frame
-		if cancel and _board._draw_fx.busy():
+		var live_stage := _board.get_node_or_null("RaidStage")
+		var in_cutin: bool = live_stage!=null and live_stage.phase==&"cutin" and live_stage.phase_time>0.30
+		if cancel and (in_cutin if cancel_cutin else _board._draw_fx.busy()):
 			var snapshot := _board.state.hands.duplicate(true)
 			observing = false
 			_board._reset_presentation()
