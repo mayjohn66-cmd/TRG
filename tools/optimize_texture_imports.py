@@ -3,7 +3,7 @@
 
 - 무손실(compress/mode=0) 텍스처는 손실 WebP(품질 0.85)로 바꾼다. 128px 이하 작은 그림은 그대로 둔다.
 - 화면에 작게(150px 이하) 그려지는 아이콘(기물·도구·증강·교칙 그림)은 최대 256px로 임포트한다.
-- 모든 아바타의 고화질 대기 프레임(avatar_*/idle_hq)은 건드리지 않는다: 1024px 무손실 + 밉맵 그대로 (화질 100% 유지 결정, 2026-10-21).
+- 아바타 대기 프레임(avatar_*/idle_hq)은 개별 설정을 유지한다: 에르핀은 1024px 무손실·밉맵, 나머지 7명은 640px WebP 0.85·밉맵 없음 (2026-10-25).
 - 다른 사도의 로비 대기 프레임(avatar_*/idle, 512px)은 거의 원래 크기로만 그려지므로 밉맵을 끈다 (밉맵은 용량을 약 1/3 늘린다).
 - 카드 그림(assets/cards)은 최대 640px로 임포트한다: 화면에서는 가장 크게 그려도 약 300px(카드 공개·도감)이라 1024px는 장당 4MB를 메모리에 올렸다 (2026-10-24, 장당 약 1.6MB).
 - 제한이 없는 큰 그림은 최대 1280px(배경·컷인 크기)로 묶는다. 처치 컷인 포즈(attack/hit)는 1024px 이상을 유지한다.
@@ -74,7 +74,7 @@ def main() -> int:
         biggest = max(width, height)
         folder = os.path.dirname(source)
         if fnmatch.fnmatch(folder, IDLE_HQ_DIR) or source in KEEP_AS_IS:
-            continue  # 아바타 고화질 프레임은 무손실·원래 해상도 그대로
+            continue  # 아바타별 대기 프레임 설정과 AtlasTexture 좌표는 함께 관리한다
         new_mode, new_quality, new_limit = mode, quality, limit
         if mode not in (0, 1):
             continue  # VRAM 압축 등은 그대로

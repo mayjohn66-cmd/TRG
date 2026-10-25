@@ -11,11 +11,11 @@
     1536
   ],
   "import_size": [
-    1024,
-    1024
+    640,
+    640
   ],
-  "compression": "Godot Lossless",
-  "mipmaps": true,
+  "compression": "Godot Lossy WebP quality 0.85",
+  "mipmaps": false,
   "fps": 16,
   "frame_count": 43,
   "union_bbox": [
@@ -31,10 +31,10 @@
     1264
   ],
   "atlas_region": [
-    125.33333333333333,
-    86.66666666666667,
-    767.3333333333334,
-    842.6666666666666
+    78.33333333333333,
+    54.166666666666664,
+    479.5833333333333,
+    526.6666666666666
   ],
   "files": [
     {
@@ -640,5 +640,14 @@
       "bytes": 1141970
     }
   ],
-  "raw_spine_source_folder": "C:\\Users\\john9\\Documents\\Codex\\2026-10-16\\new-chat\\outputs\\avatars-hq-20261025\\source\\Shady"
+  "raw_spine_source_folder": "C:\\Users\\john9\\Documents\\Codex\\2026-10-16\\new-chat\\outputs\\avatars-hq-20261025\\source\\Shady",
+  "previous_runtime_import": {
+    "import_size": [
+      1024,
+      1024
+    ],
+    "compression": "Godot Lossless",
+    "mipmaps": true
+  },
+  "optimization_reference": "fd0053d9be7182712977ce98248c077ca0c9b66a: original Erpin idle_hq diet; source PNGs unchanged"
 }

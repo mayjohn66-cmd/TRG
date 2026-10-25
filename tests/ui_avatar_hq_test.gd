@@ -25,19 +25,20 @@ func _run() -> void:
 		check(count>=32,str(id)+" full animation frame count")
 		check(is_equal_approx(frames.get_animation_speed(&"idle"),HubKit.IdleLoop.FPS),str(id)+" runtime playback cadence")
 		var common := Rect2()
+		var import_size := 1024 if id==&"avatar_01" else 640
 		for index: int in count:
 			var frame := frames.get_frame_texture(&"idle",index) as AtlasTexture
 			check(frame!=null,str(id)+" atlas texture")
 			if frame==null:continue
-			check(frame.atlas.get_size()==Vector2(1024,1024),str(id)+" HQ imported resolution")
+			check(frame.atlas.get_size()==Vector2(import_size,import_size),str(id)+" configured imported resolution")
 			if index==0:common=frame.region
 			check(frame.region==common,str(id)+" stable common crop")
 			check(Rect2(Vector2.ZERO,frame.atlas.get_size()).encloses(frame.region),str(id)+" crop stays inside source")
-		var actor := HubKit.avatar_full(id,AvatarCatalog.color_of(id),620)
+		var actor := HubKit.avatar_full(id,AvatarCatalog.color_of(id),StartMenu.HUB_AVATAR_HEIGHT)
 		actor.position=Vector2(683-actor.custom_minimum_size.x/2.0,80)
 		host.add_child(actor)
 		var title := Label.new()
-		title.text=AvatarCatalog.name_of(id)+"  ·  HQ 1024 / 16 FPS"
+		title.text=AvatarCatalog.name_of(id)+"  ·  %dpx / 16 FPS" % import_size
 		title.add_theme_font_size_override("font_size",28)
 		title.position=Vector2(400,24);host.add_child(title)
 		var loop: HubKit.IdleLoop = null
