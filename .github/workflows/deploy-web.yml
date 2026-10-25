@@ -199,7 +199,11 @@ jobs:
 
       - name: Run focused redistribution presentation check
         if: steps.validation.outputs.scope == 'redistribution'
-        run: godot --headless --path . -s res://tests/ui_redistribution_test.gd
+        run: |
+          set -o pipefail
+          godot --headless --path . -s res://tests/ui_redistribution_test.gd 2>&1 | tee /tmp/ui_redistribution_test.log
+          grep -q 'UI_REDISTRIBUTION_OK' /tmp/ui_redistribution_test.log
+          if grep -q 'SCRIPT ERROR' /tmp/ui_redistribution_test.log; then exit 1; fi
 
       - name: Run focused board flip presentation check
         if: steps.validation.outputs.scope == 'flip'

@@ -71,7 +71,7 @@ func _check(effect: StringName) -> void:
 	_board.state.card_drawn.disconnect(count_card)
 	var budget: float = 6.0 + 1.0 * float(local_cards[0])
 	if effect == &"SUPER_02":
-		budget += (load("res://scenes/redistribution_stage.gd") as GDScript).get_constant_map()["TOTAL_TIME"]  # 손패 회수 → 진도 정렬 → 섞기 → 덱 복귀 무대만큼 더
+		budget += (load("res://scenes/redistribution_stage.gd") as GDScript).get_script_constant_map()["TOTAL_TIME"]  # 손패 회수 → 진도 정렬 → 섞기 → 덱 복귀 무대만큼 더
 	_expect(elapsed >= 0.6 and elapsed <= budget, "%s: 연출 시간 %.2f초 (예산 %.1f초, 내 카드 %d장)" % [effect, elapsed, budget, local_cards[0]])
 	match effect:
 		&"SUPER_03":

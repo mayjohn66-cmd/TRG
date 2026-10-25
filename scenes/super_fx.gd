@@ -9,6 +9,8 @@ class_name SuperFX
 extends RefCounted
 
 const REDISTRIBUTION_STAGE = preload("res://scenes/redistribution_stage.gd")
+const REDISTRIBUTION_ART = preload("res://scenes/redistribution_art.gd")
+const REDISTRIBUTION_SIREN = preload("res://assets/fx/redistribution_siren.gdshader")
 const DEVIL_STAGE = preload("res://scenes/devil_contract_stage.gd")
 const MINEFIELD_STAGE = preload("res://scenes/minefield_stage.gd")
 const RAID_STAGE = preload("res://scenes/raid_stage.gd")
@@ -143,7 +145,7 @@ func _redistribute(_player_id: int, changes: Array) -> void:
 	siren.modulate.a = 0.0
 	Sfx.play(&"attack_alert")
 	await _wait(0.18)
-	_stamp("재분배", RED,Vector2(0,-70))
+	_redistribution_stamp(Vector2(0,-70))
 	await _wait(0.22)
 	if not _alive():
 		return
@@ -513,36 +515,28 @@ class Siren extends Control:
 	func _init() -> void:
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-	func _draw() -> void:
-		var steps: int = 10
-		for i: int in steps:
-			var inset: float = i * 9.0
-			var alpha: float = 0.45 * (1.0 - float(i) / steps)
-			var box := StyleBoxFlat.new()
-			box.draw_center = false
-			box.border_color = Color(1.0, 0.1, 0.1, alpha)
-			box.set_border_width_all(10)
-			draw_style_box(box, Rect2(Vector2.ONE * inset, size - Vector2.ONE * inset * 2.0))
+	func _ready() -> void:
+		var veil := ColorRect.new()
+		veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		veil.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		var ink := ShaderMaterial.new()
+		ink.shader = REDISTRIBUTION_SIREN
+		veil.material = ink
+		add_child(veil)
 
 
 ## 큰 도장: 크게 떨어지며 쾅 찍히고 잠깐 남는다.
-func _stamp(text: String, color: Color, offset: Vector2 = Vector2.ZERO) -> void:
-	var stamp := PanelContainer.new()
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(1.0, 0.95, 0.9, 0.12)
-	style.border_color = color
-	style.set_border_width_all(7)
-	style.set_corner_radius_all(14)
-	style.set_content_margin_all(10)
-	stamp.add_theme_stylebox_override("panel", style)
+func _redistribution_stamp(offset: Vector2 = Vector2.ZERO) -> void:
+	var stamp := TextureRect.new()
+	var texture := AtlasTexture.new()
+	texture.atlas = REDISTRIBUTION_ART.STAMP
+	texture.region = REDISTRIBUTION_ART.region(REDISTRIBUTION_ART.STAMP,REDISTRIBUTION_ART.STAMP_REGION)
+	stamp.texture = texture
+	stamp.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	stamp.size = Vector2(270,270*texture.region.size.y/texture.region.size.x)
 	stamp.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var label: Label = _label(text, 64, color)
-	label.add_theme_constant_override("outline_size", 10)
-	label.add_theme_color_override("font_outline_color", Color("3d0000"))
-	stamp.add_child(label)
 	stamp.z_index = 72
 	board.add_child(stamp)
-	stamp.reset_size()
 	stamp.pivot_offset = stamp.size / 2.0
 	stamp.position = board._board_center()+offset-stamp.size/2.0
 	stamp.rotation = -0.32

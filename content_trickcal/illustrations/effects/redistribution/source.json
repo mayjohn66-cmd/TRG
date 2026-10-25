@@ -1,0 +1,54 @@
+{
+  "mode": "built-in image_gen",
+  "transparent_background": true,
+  "files": [
+    {
+      "file": "stamp.png",
+      "original": "exec-f67e6cb3-b3a9-49dd-bbbb-fda1b3852ed8.png",
+      "size": [
+        1983,
+        793
+      ],
+      "region": [
+        73,
+        74,
+        1836,
+        646
+      ],
+      "limit": 512,
+      "sha256": "81d53fe46c3b372855dad138250f4195a69a9c54b7d6c0894dffb7046b9f7641"
+    },
+    {
+      "file": "card_back.png",
+      "original": "exec-a161e3b1-17a7-4f47-9f14-94da9b275f3e.png",
+      "size": [
+        1058,
+        1487
+      ],
+      "region": [
+        92,
+        83,
+        873,
+        1289
+      ],
+      "limit": 256,
+      "sha256": "2fcb7ea7ba11b2ee65f0fbda90f02c195eb4f943b26c74a2e8fcf9492b122fb3"
+    },
+    {
+      "file": "exchange.png",
+      "original": "exec-38acce64-bc4b-45b9-a8f6-9a8d72ef5aab.png",
+      "size": [
+        1278,
+        1230
+      ],
+      "region": [
+        110,
+        84,
+        1067,
+        1061
+      ],
+      "limit": 256,
+      "sha256": "8cbd809dd161fc54b94f560cdf1cedba6a6ad6f201dd4d4fad4d2c5185f04474"
+    }
+  ]
+}

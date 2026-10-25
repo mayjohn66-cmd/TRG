@@ -3,6 +3,7 @@ extends Node2D
 
 signal finished
 
+const ART = preload("res://scenes/redistribution_art.gd")
 const GATHER_END := 0.55
 const MOVE_START := 0.62
 const MOVE_END := 1.22
@@ -24,6 +25,7 @@ var _generation := 0
 var _sound_phase := -1
 var _complete := false
 var _local_sources: Dictionary = {}
+var _floor: FloorInk
 
 func play(board: MainBoard, changes: Array, speed: float) -> void:
 	name = "RedistributionStage"
@@ -60,11 +62,16 @@ func play(board: MainBoard, changes: Array, speed: float) -> void:
 			_add_card(owner,index,_local_sources.get(index,Vector2(INF,INF)) if owner==local_owner else Vector2(INF,INF))
 	# Replace collected old faces with the already-reserved, hidden new hand.
 	board._refresh_hands()
+	_floor = FloorInk.new()
+	_floor.name = "RedistributionFloorInk"
+	_floor.stage_ref = weakref(self)
+	board._board_layer.add_child(_floor)
+	_floor.transform = board._board_layer.get_global_transform().affine_inverse()*get_global_transform()
 	_update_pose(board)
 
 func _add_card(owner: int, ordinal: int, source: Vector2 = Vector2(INF,INF)) -> void:
 	var shell := Node2D.new()
-	var back := CardDrawFX.CardBack.new()
+	var back := PaintedBack.new()
 	back.size = CardDrawFX.CARD_SIZE
 	shell.add_child(back)
 	shell.z_index = cards.size()
@@ -85,7 +92,8 @@ func _process(delta: float) -> void:
 	if sound_phase!=_sound_phase:
 		_sound_phase = sound_phase
 		Sfx.play(&"warp" if sound_phase==1 else &"toy_click",-7.0)
-	queue_redraw()
+	_floor.transform = board._board_layer.get_global_transform().affine_inverse()*get_global_transform()
+	_floor.queue_redraw()
 	if elapsed>=TOTAL_TIME:
 		_complete = true
 		set_process(false)
@@ -146,22 +154,48 @@ func _upright_pose(center: Vector2, scale_factor: float, angle: float) -> Transf
 	basis.origin = center-basis.basis_xform(CardDrawFX.CARD_SIZE/2.0)
 	return basis
 
-func _draw() -> void:
+func draw_floor(ink: Node2D) -> void:
 	if _board_ref==null:
 		return
 	var board: MainBoard = _board_ref.get_ref()
 	if board==null:
 		return
 	var alpha := smoothstep(0.25,MOVE_START,elapsed)*(1.0-smoothstep(SHUFFLE_START,RETURN_START,elapsed))
+	var seal_region := ART.region(ART.EXCHANGE,ART.EXCHANGE_REGION)
+	var gather_alpha := smoothstep(0.0,0.18,elapsed)*(1.0-smoothstep(RETURN_START,RETURN_END,elapsed))
+	# A painted exchange seal sits on the same floor plane as the collected deck.
+	ink.draw_set_transform(board._board_center()+Vector2(0,35),0.0,Vector2(1,0.50))
+	ink.draw_texture_rect_region(ART.EXCHANGE,Rect2(-88,-88,176,176),seal_region,Color(1,1,1,gather_alpha*0.82))
+	ink.draw_set_transform_matrix(Transform2D.IDENTITY)
 	for tile: int in target_tiles:
-		var footprint: Vector2 = BoardSkin.definition(tile).footprint
-		var norm := BoardSkin.track(BoardLayout.tile_norm(tile))
-		var points := PackedVector2Array()
-		for corner: Vector2 in [Vector2(-0.5,-0.5),Vector2(0.5,-0.5),Vector2(0.5,0.5),Vector2(-0.5,0.5),Vector2(-0.5,-0.5)]:
-			points.append(board._surface_project(norm+corner*footprint)+board._pawn_layer.position)
-		draw_polyline(points,Color(1.0,0.76,0.42,alpha*0.85),3.0,true)
+		var tile_view: BoardSkin.Tile = board._tile_views.get(tile)
+		if tile_view==null:
+			continue
+		var footprint: Vector2 = tile_view.data.footprint
+		var frame := get_global_transform().affine_inverse()*tile_view.get_global_transform()
+		frame *= BoardSkin.decal_frame(tile_view.plane,minf(footprint.x,footprint.y)*0.72,BoardSkin.symbol_axis(tile))
+		ink.draw_set_transform_matrix(frame)
+		ink.draw_texture_rect_region(ART.EXCHANGE,Rect2(-32,-32,64,64),seal_region,Color(1,1,1,alpha*0.82))
+	ink.draw_set_transform_matrix(Transform2D.IDENTITY)
+
+class FloorInk extends Node2D:
+	var stage_ref: WeakRef
+	func _draw() -> void:
+		var stage: Node2D = stage_ref.get_ref() if stage_ref!=null else null
+		if stage!=null:
+			stage.draw_floor(self)
+
+## Local to this effect: the rest of the game's card presentation stays as it was.
+class PaintedBack extends Control:
+	func _init() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _draw() -> void:
+		draw_texture_rect_region(ART.CARD_BACK,Rect2(Vector2.ZERO,size),ART.region(ART.CARD_BACK,ART.CARD_BACK_REGION))
 
 func _exit_tree() -> void:
+	if is_instance_valid(_floor):
+		_floor.queue_free()
 	var board: MainBoard = _board_ref.get_ref() if _board_ref!=null else null
 	for info: Dictionary in pawns:
 		var view: Node2D = (info.view as WeakRef).get_ref()
