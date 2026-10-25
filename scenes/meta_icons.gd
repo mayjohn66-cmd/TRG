@@ -12,6 +12,21 @@ const LOCK_EDGE: Color = Color("5e5c70")
 const STAMP_RED: Color = Color("d6336c")
 
 var kind: StringName = &"crown"
+static var _law_texture: Texture2D = null
+
+
+## 허브와 도감의 수집 버튼이 같은 법전 이미지·크롭을 공유한다.
+static func law_icon() -> Texture2D:
+	if _law_texture == null:
+		var source: Texture2D = TextureCache.fetch("res://assets/ui/trickcal/rulebook/v02/lawbook.png")
+		var pixels: Image = source.get_image()
+		if pixels.is_compressed():
+			pixels.decompress()
+		var crop := Rect2(Vector2(166, 134) / 1254.0, Vector2(939, 1007) / 1254.0)
+		pixels = pixels.get_region(Rect2i(crop.position * source.get_size(), crop.size * source.get_size()))
+		pixels.resize(24, 26, Image.INTERPOLATE_LANCZOS)
+		_law_texture = ImageTexture.create_from_image(pixels)
+	return _law_texture
 
 
 static func create(icon_kind: StringName, icon_size: Vector2) -> MetaIcon:
@@ -59,7 +74,7 @@ func _draw() -> void:
 			draw_polyline(cup, GOLD_EDGE, maxf(1.5, w * 0.06), true)
 
 
-## [트로피 + 글] 알약 버튼 (법전 수집 N/8).
+## [법전 + 글] 알약 버튼 (법전 수집 N/8).
 static func pill(node_name: String, text: String, on_press: Callable, font_px: int = 17) -> Button:
 	var button := Button.new()
 	button.name = node_name
@@ -74,8 +89,19 @@ static func pill(node_name: String, text: String, on_press: Callable, font_px: i
 	button.add_theme_font_size_override("font_size", font_px)
 	button.add_theme_color_override("font_color", Color("6b3d05"))
 	button.add_theme_color_override("font_hover_color", Color("6b3d05"))
-	var icon: MetaIcon = create(&"trophy", Vector2(26, 26))
-	icon.position = Vector2(12, 10)
+	var icon := TextureRect.new()
+	icon.name = "LawCollectionIcon"
+	icon.texture = law_icon()
+	icon.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	icon.anchor_top = 0.5
+	icon.anchor_bottom = 0.5
+	icon.offset_left = 12
+	icon.offset_right = 38
+	icon.offset_top = -13
+	icon.offset_bottom = 13
 	button.add_child(icon)
 	if on_press.is_valid():
 		button.pressed.connect(on_press)

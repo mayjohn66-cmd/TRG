@@ -165,13 +165,15 @@ func _build_mode_page() -> void:
 	buttons.add_theme_constant_override("separation", 10)
 	buttons.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	top.add_child(buttons)
-	# [트로피 법전 수집 N/8]: 특수 승리 법전으로 졸업해 본 종류 수 (영구 기록). 누르면 도감의 법전 장을 연다.
+	# [법전 수집 N/8]: 특수 승리 법전으로 졸업해 본 종류 수 (영구 기록). 누르면 도감의 법전 장을 연다.
 	var laws: Button = MetaIcon.pill("LawCollection", "법전 수집 %d/8" % PlayerSave.law_count(), func() -> void: _open_rulebook(Rulebook.LAW_SPREAD))
-	laws.custom_minimum_size = Vector2(0, 56)
+	_style_hub_utility(laws, true)
 	buttons.add_child(laws)
 	var language := LobbyTheme.language_toggle()  # [🌐 KR / EN]: 규칙·설정 버튼 옆
-	language.custom_minimum_size = Vector2(140, 56)
-	language.add_theme_font_size_override("font_size", 17)
+	_style_hub_utility(language, false)
+	language.icon = LanguageToggle.translation_icon(24)
+	language.trailing_caret = true
+	language.add_theme_constant_override("h_separation", 10)
 	buttons.add_child(language)
 	buttons.add_child(HubKit.round_button("HubRules", &"book", _show_rules, 56.0))
 	buttons.add_child(HubKit.round_button("HubSettings", &"gear", _show_settings, 56.0))
@@ -261,6 +263,29 @@ func _build_mode_page() -> void:
 	logo.offset_bottom = -LobbyTheme.BAR_HEIGHT - 30.0
 	_mode_page.add_child(logo)
 	_refresh_hub()
+
+
+## 허브의 작은 보조 버튼은 같은 높이·모서리·선 굵기를 쓴다.
+func _style_hub_utility(button: Button, collection: bool) -> void:
+	button.custom_minimum_size = Vector2(0 if collection else 140, 56)
+	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	button.add_theme_font_size_override("font_size", 17)
+	var ink := Color("78501f") if collection else Color("586044")
+	var edge := Color("bd9147") if collection else Color("9aa76c")
+	for state: String in ["normal", "hover", "pressed", "focus"]:
+		var fill := Color("fff4d6")
+		if state == "hover":
+			fill = Color("fffbea")
+		elif state == "pressed":
+			fill = Color("f0dfb7")
+		var box: StyleBoxFlat = LobbyTheme.style(fill, edge, 2, 22)
+		box.content_margin_left = 48 if collection else 16
+		box.content_margin_right = 16 if collection else 32
+		box.content_margin_top = 8
+		box.content_margin_bottom = 8
+		button.add_theme_stylebox_override(state, box)
+	for state: String in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color", "icon_normal_color", "icon_hover_color", "icon_pressed_color", "icon_focus_color"]:
+		button.add_theme_color_override(state, ink)
 
 
 ## 허브의 이름·아바타를 현재 값으로 맞춘다.

@@ -1,7 +1,7 @@
 # File: res://scenes/language_toggle.gd
 # Class: class_name LanguageToggle
-# Role: 상단 띠의 [🌐 한국어 ▾] 언어 버튼. 누르면 한국어 / ENGLISH / 日本語 목록이 열리고, 고른 언어로 모든 화면 글자가 그 자리에서 다시 번역되며 설정에 저장된다.
-#       버튼과 목록의 언어 이름은 늘 그 언어 글자 그대로 적는다 (어느 화면에서도 자기 언어를 찾을 수 있게). 지구본·펼침 화살표는 글꼴에 없어 직접 그린다.
+# Role: A / 文 번역 말풍선이 붙은 언어 선택 버튼. 한국어 / ENGLISH / 日本語 목록에서 고르면 바로 번역하고 저장한다.
+#       언어 이름은 항상 원어로 표시하고, 모든 위치에서 같은 번역 아이콘을 쓴다.
 class_name LanguageToggle
 extends Button
 
@@ -11,9 +11,13 @@ const CARET_WIDTH: float = 14.0
 
 static var _picker_font: FontVariation = null
 
-static var _globe: Texture2D = null
+static var _translation_icons: Dictionary = {}
 
 var _menu: PopupMenu = null
+## 넉넉한 허브 버튼에서는 화살표를 오른쪽 여백 중앙에 고정한다.
+var trailing_caret: bool = false
+## 컬러 일러스트 아이콘은 글자색을 곱하지 않는다.
+var colored_icon: bool = true
 
 
 ## 버튼 하나를 만든다. font_size·색은 놓일 띠에 맞춘다.
@@ -22,7 +26,7 @@ static func create(font_size: int = 14, ink: Color = Color.WHITE) -> LanguageTog
 	button.name = "LanguageToggle"
 	button.text = L10n.language_name()
 	button.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED  # 언어 이름은 번역하지 않는다
-	button.icon = globe_icon()
+	button.icon = translation_icon()
 	button.expand_icon = false
 	button.focus_mode = Control.FOCUS_NONE
 	button.add_theme_font_size_override("font_size", font_size)
@@ -39,7 +43,7 @@ static func create(font_size: int = 14, ink: Color = Color.WHITE) -> LanguageTog
 func _ready() -> void:
 	var ink: Color = get_theme_color("font_color")  # 버튼 스킨이 정한 글자색에 지구본도 맞춘다
 	for state: String in ["icon_normal_color", "icon_hover_color", "icon_pressed_color", "icon_focus_color"]:
-		add_theme_color_override(state, ink)
+		add_theme_color_override(state, Color.WHITE if colored_icon else ink)
 	auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 	_menu = PopupMenu.new()
 	_menu.name = "LanguageMenu"
@@ -101,10 +105,12 @@ func _draw() -> void:
 	var icon_width: float = float(ICON_SIZE + get_theme_constant("h_separation"))
 	var end_x: float = (size.x + full + icon_width) / 2.0
 	var x: float = minf(end_x + 6.0, size.x - CARET_WIDTH * 0.5)
+	if trailing_caret:
+		x = size.x - 18.0
 	var y: float = size.y / 2.0
 	var half: float = font_size * 0.28
 	var ink: Color = get_theme_color("font_color")
-	draw_colored_polygon(PackedVector2Array([Vector2(x - half, y - half * 0.55), Vector2(x + half, y - half * 0.55), Vector2(x, y + half * 0.65)]), ACCENT if L10n.current_lang != L10n.DEFAULT_LANG else ink)
+	draw_colored_polygon(PackedVector2Array([Vector2(x - half, y - half * 0.55), Vector2(x + half, y - half * 0.55), Vector2(x, y + half * 0.65)]), ACCENT if not trailing_caret and L10n.current_lang != L10n.DEFAULT_LANG else ink)
 
 
 ## 언어 이름 목록용 글꼴: Mochiy Pop One(가나·한자) + 게임 글꼴(한글).
@@ -118,30 +124,10 @@ static func picker_font() -> Font:
 	return _picker_font
 
 
-## 지구본 아이콘 (흰 선, 버튼 글자색으로 물든다).
-static func globe_icon() -> Texture2D:
-	if _globe != null:
-		return _globe
-	var scale: int = 4  # 크게 그린 뒤 줄여 부드러운 선을 얻는다
-	var side: int = ICON_SIZE * scale
-	var image := Image.create(side, side, false, Image.FORMAT_RGBA8)
-	var center := Vector2(side, side) / 2.0
-	var radius: float = side * 0.44
-	var stroke: float = side * 0.075
-	for y: int in side:
-		for x: int in side:
-			var p := Vector2(x + 0.5, y + 0.5) - center
-			var d: float = p.length()
-			var ink: float = 0.0
-			ink = maxf(ink, 1.0 - absf(d - radius) / stroke)  # 바깥 원
-			if d < radius:
-				ink = maxf(ink, 1.0 - absf(p.y) / (stroke * 0.8))  # 적도
-				ink = maxf(ink, 1.0 - absf(p.x) / (stroke * 0.8))  # 가운데 경선
-				for lat: float in [-0.5, 0.5]:  # 위·아래 위선
-					ink = maxf(ink, 1.0 - absf(p.y - radius * lat) / (stroke * 0.7))
-				var half_width: float = radius * 0.5 * sqrt(maxf(0.0, 1.0 - pow(p.y / radius, 2.0)))
-				ink = maxf(ink, 1.0 - absf(absf(p.x) - half_width) / (stroke * 0.8))  # 양쪽 경선 (타원)
-			image.set_pixel(x, y, Color(1, 1, 1, clampf(ink, 0.0, 1.0)))
-	image.resize(ICON_SIZE, ICON_SIZE, Image.INTERPOLATE_LANCZOS)
-	_globe = ImageTexture.create_from_image(image)
-	return _globe
+## 모든 언어 버튼은 동일한 A / 文 번역 말풍선 이미지를 쓴다.
+static func translation_icon(side: int = ICON_SIZE) -> Texture2D:
+	if not _translation_icons.has(side):
+		var pixels: Image = TextureCache.fetch("res://assets/ui/trickcal/hub/UI_HUB_TRANSLATION_V01.png").get_image()
+		pixels.resize(side, side, Image.INTERPOLATE_LANCZOS)
+		_translation_icons[side] = ImageTexture.create_from_image(pixels)
+	return _translation_icons[side] as Texture2D

@@ -229,13 +229,6 @@ func _build_header() -> void:
 ## 링크를 눌러 접속하기만 하면 기록이 이어진다 (PlayerSave.apply_url_params). 코드 입력은 보조 수단.
 func _build_save_tools() -> void:
 	_law_badge = MetaIcon.pill("LawCollection", "", func() -> void: show_spread(LAW_SPREAD), 16)
-	for child: Node in _law_badge.get_children():
-		if child is MetaIcon:
-			_law_badge.remove_child(child)
-			child.queue_free()
-	var badge_icon := _art(&"lawbook",Vector2(26,26))
-	badge_icon.position = Vector2(12,10)
-	_law_badge.add_child(badge_icon)
 	for state: String in ["normal","hover","pressed","focus"]:
 		var badge_skin := VISUALS.panel(Color("fff4d6") if state!="hover" else Color("fffbea"),18)
 		badge_skin.content_margin_left = 46
