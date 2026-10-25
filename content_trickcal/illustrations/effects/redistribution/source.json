@@ -49,6 +49,42 @@
       ],
       "limit": 256,
       "sha256": "8cbd809dd161fc54b94f560cdf1cedba6a6ad6f201dd4d4fad4d2c5185f04474"
+    },
+    {
+      "file": "stamp_en.png",
+      "original": "exec-91e974ca-2f30-4341-a0d1-6ca5880afec2.png",
+      "language": "en",
+      "edit_target": "stamp.png",
+      "size": [
+        1983,
+        793
+      ],
+      "region": [
+        22,
+        116,
+        1950,
+        567
+      ],
+      "limit": 512,
+      "sha256": "619d406dec47e20b3eb2b416679912d27737069e0eb835712a2b7fbf7ee35477"
+    },
+    {
+      "file": "stamp_ja.png",
+      "original": "exec-05f8b499-9ae7-4fa9-8030-bd2ff0896719.png",
+      "language": "ja",
+      "edit_target": "stamp.png",
+      "size": [
+        1983,
+        793
+      ],
+      "region": [
+        71,
+        72,
+        1840,
+        649
+      ],
+      "limit": 512,
+      "sha256": "bdbbc57807cca7c945256f2514fd5c9d7a07dd1425739e93213c5b0470e473c2"
     }
   ]
 }

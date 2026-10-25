@@ -528,12 +528,14 @@ class Siren extends Control:
 ## 큰 도장: 크게 떨어지며 쾅 찍히고 잠깐 남는다.
 func _redistribution_stamp(offset: Vector2 = Vector2.ZERO) -> void:
 	var stamp := TextureRect.new()
+	stamp.name = "RedistributionStamp"
+	var localized := REDISTRIBUTION_ART.stamp_for_language()
 	var texture := AtlasTexture.new()
-	texture.atlas = REDISTRIBUTION_ART.STAMP
-	texture.region = REDISTRIBUTION_ART.region(REDISTRIBUTION_ART.STAMP,REDISTRIBUTION_ART.STAMP_REGION)
+	texture.atlas = localized.texture
+	texture.region = REDISTRIBUTION_ART.region(localized.texture,localized.region)
 	stamp.texture = texture
 	stamp.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	stamp.size = Vector2(270,270*texture.region.size.y/texture.region.size.x)
+	stamp.size = Vector2(localized.width,localized.width*texture.region.size.y/texture.region.size.x)
 	stamp.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stamp.z_index = 72
 	board.add_child(stamp)
