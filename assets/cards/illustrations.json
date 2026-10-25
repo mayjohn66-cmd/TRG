@@ -98,10 +98,14 @@
   {
     "card_id": "TRP_05",
     "file": "TRP_05.png",
-    "source_version": "v0.1",
+    "source_version": "domino-beni-v6",
     "width": 1448,
     "height": 1086,
-    "sha256": "3ef2574d0138846d72c2c2f297e1e9cdf14cea20e9a4d0bfb5d8ac493af84981"
+    "sha256": "cd8bec8a88be37e9ee7dbd9f202324952a71791df4b16792a1fb716841d14da4",
+    "character": "베니",
+    "scene": "커다란 도미노가 덮치기 직전 뒤를 보며 달아나는 장면",
+    "background": "simple-background",
+    "reference_source": "https://gamewith.jp/trickcal/517602"
   },
   {
     "card_id": "SUM_01",
