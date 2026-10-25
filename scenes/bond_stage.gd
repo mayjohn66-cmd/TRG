@@ -1,6 +1,7 @@
 ## SUPER_12: two real pawns, separate growing chains, one clasp, shared fate pulse.
 extends Node2D
 
+const ART = preload("res://scenes/bond_art.gd")
 const FOCUS = preload("res://assets/fx/bond_focus.gdshader")
 const REACH_AT := 0.22
 const LOCK_AT := 0.82
@@ -25,7 +26,6 @@ var _to := Vector2.ZERO
 var _veil: ColorRect
 var _light: ShaderMaterial
 var _restored := false
-var _lock_box: StyleBoxFlat
 
 func play(board: MainBoard, pair: Dictionary, speed: float) -> void:
 	name = "BondStage"
@@ -54,9 +54,6 @@ func play(board: MainBoard, pair: Dictionary, speed: float) -> void:
 	_light.shader = FOCUS
 	_veil.material = _light
 	add_child(_veil)
-	_lock_box = StyleBoxFlat.new()
-	_lock_box.set_border_width_all(2)
-	_lock_box.set_corner_radius_all(3)
 	_update_veil()
 	Sfx.play(&"charge" if mode==&"bind" else &"toy_click",-10.0)
 
@@ -125,8 +122,7 @@ func _draw() -> void:
 			var travel := clampf(age/0.40,0,1)
 			for u: float in [0.5-travel*0.5,0.5+travel*0.5]:
 				var at := _point(u,sag)
-				draw_circle(at,5,Color(GOLD,alpha*0.35))
-				draw_circle(at,2.0,Color(GOLD,alpha))
+				ART.light(self,at,9,Color(GOLD,alpha))
 			if age>0.30:
 				for at: Vector2 in [_from,_to]:
 					_echo(at,tint,alpha,age-0.30)
@@ -134,60 +130,33 @@ func _draw() -> void:
 		var travel := smoothstep(0.06,0.50,elapsed)
 		for offset: int in 5:
 			var trail := _point(maxf(0,travel-offset*0.025),0)
-			draw_circle(trail,5-offset*0.6,Color(GOLD,alpha*(0.8-offset*0.13)))
-		draw_circle(_point(travel,0),2.0,Color(1,0.98,0.9,alpha))
+			ART.light(self,trail,9-offset,Color(GOLD,alpha*(0.8-offset*0.13)))
+		ART.light(self,_point(travel,0),5,Color(1,0.98,0.9,alpha))
 		if elapsed>=0.50:
 			_echo(_to,tint,alpha,elapsed-0.50)
 
-func _link(at: Vector2, forward: Vector2, open: bool, tint: Color, alpha: float) -> void:
-	var side := forward.orthogonal()
-	var link := PackedVector2Array()
-	for index: int in 21:
-		var angle := index*TAU/20.0
-		link.append(at+forward*cos(angle)*7+side*sin(angle)*(3.6 if open else 1.4))
-	draw_polyline(link,Color(DARK,alpha),4.2,true)
-	draw_polyline(link,Color(tint,alpha),2.3,true)
-	var highlight := PackedVector2Array()
-	for index: int in 9:
-		var angle := PI+index*PI/10.0
-		highlight.append(at+forward*cos(angle)*7+side*sin(angle)*(3.6 if open else 1.4))
-	draw_polyline(highlight,Color(GOLD,alpha*0.7),0.9,true)
+func _link(at: Vector2, forward: Vector2, face_on: bool, _tint: Color, alpha: float) -> void:
+	ART.link(self,at,forward,face_on,alpha,mode==&"finish")
 
-func _cuff(at: Vector2, tint: Color, alpha: float, tension: float) -> void:
-	var ring := PackedVector2Array()
-	var radius := 22-tension*4
-	for index: int in 41:
-		var angle := index*TAU/40.0
-		ring.append(at+Vector2(cos(angle)*radius,sin(angle)*radius*0.36))
-	draw_polyline(ring,Color(DARK,alpha),6,true)
-	draw_polyline(ring,Color(tint,alpha),3,true)
-	for sign: int in [-1,1]:
-		draw_circle(at+Vector2(radius*sign,0),2,Color(GOLD,alpha))
+func _cuff(at: Vector2, _tint: Color, alpha: float, tension: float) -> void:
+	var width := 44-tension*8
+	ART.cuff(self,at+Vector2(0,-1),Vector2(width,width*0.46),alpha,mode==&"finish")
 
 func _clasp(at: Vector2, alpha: float, age: float) -> void:
-	var size := Vector2(17,16)*(1+sin(clampf(age/0.18,0,1)*PI)*0.18)
-	var shackle := PackedVector2Array()
-	for index: int in 17:
-		var angle := PI+index*PI/16.0
-		shackle.append(at+Vector2(cos(angle)*6,sin(angle)*7-4))
-	draw_polyline(shackle,Color(GOLD,alpha),3,true)
-	_lock_box.bg_color = Color(Color("c65355"),alpha)
-	_lock_box.border_color = Color(GOLD,alpha)
-	draw_style_box(_lock_box,Rect2(at-size*0.5,size))
-	draw_circle(at,2,Color(DARK,alpha))
-	draw_line(at,at+Vector2(0,4),Color(DARK,alpha),2,true)
+	var size := Vector2(25,34)*(1+sin(clampf(age/0.18,0,1)*PI)*0.16)
+	ART.lock(self,at+Vector2(0,-3),size,alpha)
 	var flash := 1-smoothstep(0,0.16,age)
-	for index: int in 6:
-		var ray := Vector2.from_angle(index*TAU/6)
-		draw_line(at+ray*15,at+ray*25,Color(GOLD,alpha*flash),2,true)
+	ART.light(self,at+Vector2(-6,-12),15,Color(GOLD,alpha*flash*0.8))
 
 func _echo(at: Vector2, tint: Color, alpha: float, age: float) -> void:
-	var ring := PackedVector2Array()
 	var fade := 1-smoothstep(0,0.36,age)
-	for index: int in 41:
-		var angle := index*TAU/40.0
-		ring.append(at+Vector2(cos(angle),sin(angle)*0.45)*(22+age*65))
-	draw_polyline(ring,Color(tint,alpha*fade),2,true)
+	# A few travelling metal glints replace the uniform expanding circle.
+	for index: int in 7:
+		var angle := index*2.39996
+		var direction := Vector2(cos(angle),sin(angle)*0.5)
+		var position := at+direction*(17+age*55)+Vector2(0,-age*18)
+		ART.light(self,position,3.5,Color(tint,alpha*fade*0.7))
+	ART.light(self,at+Vector2(0,-4),24,Color(GOLD,alpha*fade*0.22))
 
 func _restore() -> void:
 	if _restored:
