@@ -28,6 +28,7 @@ on:
           - warning-icon
           - rulebook-art
           - avatar-hq
+          - title-logo
           - castling
           - bakery
           - sniper
@@ -60,7 +61,9 @@ jobs:
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
           REQUESTED_SCOPE: ${{ inputs.validation }}
         run: |
-          if [[ "${REQUESTED_SCOPE}" == "avatar-hq" || "${COMMIT_MESSAGE}" == *"[check:avatar-hq]"* ]]; then
+          if [[ "${REQUESTED_SCOPE}" == "title-logo" || "${COMMIT_MESSAGE}" == *"[check:title-logo]"* ]]; then
+            echo "scope=title-logo" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "avatar-hq" || "${COMMIT_MESSAGE}" == *"[check:avatar-hq]"* ]]; then
             echo "scope=avatar-hq" >> "${GITHUB_OUTPUT}"
           elif [[ "${REQUESTED_SCOPE}" == "rulebook-art" || "${COMMIT_MESSAGE}" == *"[check:rulebook-art]"* ]]; then
             echo "scope=rulebook-art" >> "${GITHUB_OUTPUT}"
@@ -118,6 +121,14 @@ jobs:
         run: |
           godot --headless --path . --import || true
           godot --headless --path . --import
+
+      - name: Check localized title presentation
+        if: steps.validation.outputs.scope == 'title-logo'
+        run: |
+          set -o pipefail
+          godot --headless --path . --check-only -s res://scenes/localized_title_logo.gd 2>&1 | tee /tmp/title_logo.log
+          godot --headless --path . --check-only -s res://scenes/hub_kit.gd 2>&1 | tee -a /tmp/title_logo.log
+          if grep -q 'SCRIPT ERROR' /tmp/title_logo.log; then exit 1; fi
 
       - name: Check native high resolution avatar loops
         if: steps.validation.outputs.scope == 'avatar-hq'
@@ -418,6 +429,8 @@ jobs:
           cp web/og-image.png build/web/og-image.png
           cp web/icon.png build/web/icon.png
           cp web/title-logo.png build/web/title-logo.png
+          cp web/title-logo-en.png build/web/title-logo-en.png
+          cp web/title-logo-ja.png build/web/title-logo-ja.png
           cp web/loading-petit-speaki.webp build/web/loading-petit-speaki.webp
           # GitHub rejects individual files above 100 MiB. Fail before upload
           # with an actionable message if future asset additions reach it.

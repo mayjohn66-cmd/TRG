@@ -291,6 +291,28 @@
 			이 게임은 JavaScript가 필요합니다.
 		</div>
 	</noscript>
+	<script id="trg-title-locale">
+		(function (root) {
+			var titles = { ko: "초증강 엘리아스 마블", en: "Hyper Augment Elias Marble", ja: "超増強エリアスマーブル" };
+			var files = { ko: "title-logo.png", en: "title-logo-en.png", ja: "title-logo-ja.png" };
+			root.trgSetTitleLanguage = function (language) {
+				var lang = Object.prototype.hasOwnProperty.call(titles, language) ? language : "en";
+				var logo = document.querySelector("#splash .title-logo");
+				if (logo) {
+					logo.src = files[lang] + "?v=__TRG_BUILD_ID__";
+					logo.alt = titles[lang];
+				}
+				document.title = titles[lang];
+				document.documentElement.lang = lang;
+			};
+			var language = (root.navigator.language || "en").toLowerCase().split(/[-_]/)[0];
+			try {
+				var saved = JSON.parse(root.localStorage.getItem("trg_player_save_v1") || "{}");
+				if (saved && Object.prototype.hasOwnProperty.call(titles, saved.lang)) { language = saved.lang; }
+			} catch (error) { /* 저장을 읽을 수 없어도 기기 언어의 타이틀로 부팅한다. */ }
+			root.trgSetTitleLanguage(language);
+		})(window);
+	</script>
 	<!--
 		TRG_CACHE_GUARD: 배포마다 최신 빌드를 받고 옛 캐시를 치운다.
 		- 배포 스크립트(.github/workflows/deploy-web.yml)가 __TRG_BUILD_ID__(커밋 7자리)·__TRG_VERSION__(0.9.0+커밋)을 채운다. 로컬 내보내기는 그대로 남아 아무것도 하지 않는다.

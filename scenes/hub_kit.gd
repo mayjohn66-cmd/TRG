@@ -517,15 +517,14 @@ static func tip_bar(first_text: String, on_next: Callable) -> Dictionary:
 	return {"root": root, "label": text, "next": next}
 
 
-## 승인된 투명 타이틀 원본을 비율 유지로 표시한다. 시작 화면 520px, 허브 380px.
+## 언어별 투명 타이틀을 같은 영역에 비율 유지로 표시한다. 언어를 바꾸면 즉시 갱신한다.
 static func logo(small_text: String, big_text: String, sub_text: String, width: float = 520.0) -> VBoxContainer:
 	var column := VBoxContainer.new()
 	column.name = "HubLogo"
 	column.add_theme_constant_override("separation", 0)
 	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var art := TextureRect.new()
+	var art: TextureRect = preload("res://scenes/localized_title_logo.gd").new()
 	art.name = "Logo"
-	art.texture = preload("res://web/title-logo.png")
 	art.custom_minimum_size = Vector2(width, width / 2.0)
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
