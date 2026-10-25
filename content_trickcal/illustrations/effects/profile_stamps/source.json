@@ -33,6 +33,23 @@
       ],
       "import_limit": 512,
       "sha256": "efea7f037024cbb3de7731290db061baaf5e853e0c0a09493f7abd1f4f026012"
+    },
+    {
+      "file": "skip_ring_painted.png",
+      "original": "exec-1a939720-e14b-4f2d-8a41-9242c86ae6b8.png",
+      "edit_target": "skip_painted.png",
+      "source_size": [
+        1254,
+        1254
+      ],
+      "source_region": [
+        84,
+        89,
+        1092,
+        1076
+      ],
+      "import_limit": 256,
+      "sha256": "dbf697b6e09cf2a4663a971a4a99159317cff286a3eb316daf843d6fac07167f"
     }
   ]
 }

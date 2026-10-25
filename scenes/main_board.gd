@@ -10761,6 +10761,7 @@ class StatusStamp extends Control:
 			combined = value
 			queue_redraw()
 	const SKIP = preload("res://content_trickcal/illustrations/effects/profile_stamps/skip_painted.png")
+	const SKIP_RING = preload("res://content_trickcal/illustrations/effects/profile_stamps/skip_ring_painted.png")
 	const BAN = preload("res://content_trickcal/illustrations/effects/profile_stamps/ban_painted.png")
 	const SKIP_REGION := Rect2(84.0/1254,89.0/1254,1092.0/1254,1076.0/1254)
 	const BAN_REGION := Rect2(112.0/2172,105.0/724,1950.0/2172,507.0/724)
@@ -10791,14 +10792,15 @@ class StatusStamp extends Control:
 		var skip: bool = kind==&"skip"
 		var texture: Texture2D = SKIP if skip else BAN
 		var normalized: Rect2 = SKIP_REGION if skip else BAN_REGION
+		if combined and skip:
+			texture = SKIP_RING
 		var region := Rect2(normalized.position*texture.get_size(),normalized.size*texture.get_size())
 		var width := w*(0.83 if skip else 0.96)
-		if combined:
-			center.y = size.y*(0.33 if skip else 0.76)
-			width = w*(0.58 if skip else 0.96)
 		var drawn := Vector2(width,width*region.size.y/region.size.x)
 		var rect := Rect2(-drawn/2,drawn)
 		var angle := 0.035 if skip else -0.20
+		if combined and not skip:
+			angle = PI / 4.0
 		draw_set_transform(center+Vector2(1.0,1.5),angle)
 		draw_texture_rect_region(texture,rect,region,Color(0.12,0.02,0.03,0.35))
 		draw_set_transform(center,angle)
