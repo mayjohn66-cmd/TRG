@@ -8,7 +8,7 @@ const PATHS: Dictionary = {
 }
 const TITLES: Dictionary = {
 	"ko": "초증강 엘리아스 마블",
-	"en": "Hyper Augment Elias Marble",
+	"en": "Hyper Elias Marble",
 	"ja": "超増強エリアスマーブル",
 }
 

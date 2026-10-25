@@ -1,12 +1,12 @@
 # 언어별 타이틀 로고
 
 - 한국어: 기존 `web/title-logo.png`를 그대로 유지한다.
-- 영어: `web/title-logo-en.png`, HYPER AUGMENT / ELIAS MARBLE.
+- 영어: `web/title-logo-en.png`, HYPER / ELIAS MARBLE. 사용자 피드백에 따라 AUGMENT를 제거하고 두 줄로 정리했다. 영문 부제·탭 제목·공유 메타데이터에도 같은 축약 이름을 쓴다.
 - 일본어: `web/title-logo-ja.png`, 超増強 / エリアスマーブル.
 - 신규 두 원본은 1774 × 887 RGBA PNG. 기존 로고를 참조한 native `image_gen.imagegen` 결과이며, 투명 배경·2:1 비율·색상·주사위 장식을 유지했다.
-- 영문 SHA-256: `993657c36d602451f8a31c895df6931c75bbff41ddd7c05412e0c7a2c5a4705f`.
+- 영문 SHA-256: `bebec6d120275cd84c406bebbe68d2bb2d0baa71ad831651ff0bf14e55162e63`.
 - 일문 SHA-256: `876ef6d0c8ab7d36a5d56c3b0a85db5506f6f476107dea2619f1481b6db9d12c`.
-- 두 신규 그림의 런타임 임포트 합계는 424,370 bytes. 기존과 같은 1280px, WebP 0.85, 밉맵 설정을 사용한다.
+- 두 신규 그림의 런타임 임포트 합계는 404,696 bytes. 기존과 같은 1280px, WebP 0.85, 밉맵 설정을 사용한다.
 
 `scenes/localized_title_logo.gd`가 L10n 변경을 구독해 이름 입력 화면과 허브 로고를 즉시 교체한다. 화면 영역은 각각 520 × 260, 230 × 115이며, 언어 변경으로 크기가 변하지 않는다.
 

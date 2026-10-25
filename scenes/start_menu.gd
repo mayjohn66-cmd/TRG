@@ -120,7 +120,7 @@ func _build_name_page(parent: VBoxContainer) -> void:
 	_name_page.custom_minimum_size = Vector2(520, 0)
 	_name_page.add_theme_constant_override("separation", 10)
 	parent.add_child(_name_page)
-	_name_page.add_child(HubKit.logo("초증강", "엘리아스 마블", "HYPER AUGMENT ELIAS MARBLE"))
+	_name_page.add_child(HubKit.logo("초증강", "엘리아스 마블", "HYPER ELIAS MARBLE"))
 	var gap := Control.new()
 	gap.custom_minimum_size = Vector2(0, 26)
 	_name_page.add_child(gap)
