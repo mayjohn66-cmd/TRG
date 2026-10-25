@@ -4,7 +4,7 @@
 
 `erpin_move.png` is the 14-frame Move animation from the viewer's dedicated `minimi/minimierpin` model, packed at 50% size with transparent gutters. `erpin_idle.png` is its original first Idle frame. Source: https://viewer.dclnslde.com/ → 미니미 → 에르핀. `source.json` records frame layout and provenance. The artwork was not redrawn.
 
-`bread_haul_three.png` is one painted prop containing exactly three breads (country loaf, round roll, croissant), created with built-in `image_gen` and genuine transparent alpha. Erpin carries the whole pile in sync with the original Move animation's vertical motion. The former board-icon loaves are no longer used in this stage.
+`bread_haul_three.png` is one painted prop containing exactly three breads (country loaf, round roll, croissant), created with built-in `image_gen` and genuine transparent alpha. Erpin carries the whole pile in sync with the original Move animation's vertical motion. The former board-icon loaves are no longer used in this stage. The original is retained at 1536×1024; its imported game texture is limited to 512 pixels for the 54-pixel-wide prop and the web first-load budget. Normalized source coordinates preserve its placement at either size.
 
 The stage shows approach → entry into the central dark doorway → four interior impacts with flour → escape carrying the three breads. A 78% dark backdrop is rendered above the relocating pawn, while the storefront and Erpin remain in front. Card delivery starts after the escape and continues to use the real reserved reward jobs.
 

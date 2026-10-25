@@ -44,6 +44,7 @@
       804
     ],
     "carry_width": 54,
-    "motion": "Follows original Move frame vertical displacement"
+    "motion": "Follows original Move frame vertical displacement",
+    "game_texture_size_limit": 512
   }
 }
