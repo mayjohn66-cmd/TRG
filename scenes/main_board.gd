@@ -1180,6 +1180,10 @@ func _bind_state() -> void:
 		_note_super({"kind": "bond", "a": a, "b": b})
 		_log_line("[강제 연대책임] %s ↔ %s 일심동체!" % [_pawn_name(a), _pawn_name(b)], Color("ffa94d")))
 	state.bond_resolved.connect(func(kind: StringName, pawn_id: int, partner_id: int) -> void:
+		if _fx_on() and _pawn_views.has(pawn_id) and _pawn_views.has(partner_id):
+			var inverse := get_global_transform().affine_inverse()
+			var pulse := {"a":pawn_id,"b":partner_id,"mode":kind,"from":inverse*_pawn_views[pawn_id].global_position,"to":inverse*_pawn_views[partner_id].global_position}
+			_enqueue_late(_play_bond_stage.bind(pulse),partner_id)
 		var pawn: PlayerPawn = state.get_pawn(pawn_id)
 		var verb: String = "함께 골인!" if kind == &"finish" else "함께 출발선으로!"
 		_log_line("[강제 연대책임] %s의 짝 %s도 %s" % [_pawn_name(pawn_id), _pawn_name(partner_id), verb], Color("ffa94d"))
@@ -2919,6 +2923,16 @@ func _play_nitro_stage(dash: Dictionary) -> void:
 	var stage := SuperFX.NITRO_STAGE.new()
 	add_child(stage)
 	stage.play(self,dash,_motion_pace())
+	while is_instance_valid(stage) and not stage._complete:
+		await get_tree().process_frame
+	if is_instance_valid(stage):
+		stage.queue_free()
+
+
+func _play_bond_stage(pair: Dictionary) -> void:
+	var stage := SuperFX.BOND_STAGE.new()
+	add_child(stage)
+	stage.play(self,pair,_motion_pace())
 	while is_instance_valid(stage) and not stage._complete:
 		await get_tree().process_frame
 	if is_instance_valid(stage):
@@ -6441,6 +6455,9 @@ func _enqueue_batch(entries: Array[Dictionary]) -> void:
 
 ## 연출 큐를 비우고 재생 중인 러너를 멈춘다 (판 초기화·되감기·테스트 정리용). 이미 시작된 트윈은 건드리지 않는다.
 func _reset_presentation() -> void:
+	var bond_stage: Node2D = get_node_or_null("BondStage")
+	if bond_stage!=null:
+		bond_stage.cancel()
 	var nitro_stage: Node2D = get_node_or_null("NitroStage")
 	if nitro_stage!=null:
 		nitro_stage.cancel()

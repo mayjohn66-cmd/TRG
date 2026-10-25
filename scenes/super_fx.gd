@@ -17,6 +17,8 @@ const PROFILE_AURA = preload("res://scenes/profile_super_aura.gd")
 const CASTLING_STAGE = preload("res://scenes/castling_stage.gd")
 const BAKERY_STAGE = preload("res://scenes/bakery_stage.gd")
 const SNIPER_STAGE = preload("res://scenes/sniper_stage.gd")
+const BOND_STAGE = preload("res://scenes/bond_stage.gd")
+const BOND_CUFF = preload("res://scenes/bond_cuff.gd")
 const NITRO_STAGE = preload("res://scenes/nitro_stage.gd")
 const FATE_COIN = preload("res://scenes/fate_coin_3d.gd")
 const STAGE_SPOTLIGHT = preload("res://scenes/pawn_stage_spotlight.gd")
@@ -326,84 +328,7 @@ func ghost(view: Node2D, color: Color) -> void:
 # ---------------------------------------------------------------------------
 
 func _guarantee(changes: Array) -> void:
-	var bond: Dictionary = _first(changes, "bond")
-	var a: Node2D = _view(int(bond.get("a", -1)))
-	var b: Node2D = _view(int(bond.get("b", -1)))
-	if a == null or b == null:
-		return
-	var from: Vector2 = a.position
-	var to: Vector2 = b.position
-	var chain := Line2D.new()
-	chain.width = 6.0
-	chain.default_color = CHAIN
-	chain.z_index = 16
-	chain.begin_cap_mode = Line2D.LINE_CAP_ROUND
-	chain.end_cap_mode = Line2D.LINE_CAP_ROUND
-	_layer().add_child(chain)
-	var links: Array[Line2D] = []
-	var count: int = clampi(int(from.distance_to(to) / 22.0), 4, 40)
-	for i: int in count:
-		var link := Line2D.new()
-		link.points = _circle(5.0, 10)
-		link.closed = true
-		link.width = 2.5
-		link.default_color = CHAIN.lightened(0.3)
-		link.z_index = 17
-		link.visible = false
-		_layer().add_child(link)
-		links.append(link)
-	Sfx.play(&"charge")
-	# 양쪽에서 사슬이 뻗어 가운데서 만난다 (느슨하게 처진 곡선)
-	var reach: Tween = board.create_tween()
-	reach.tween_method(func(t: float) -> void:
-		_chain_shape(chain, links, from, to, t, 40.0), 0.0, 1.0, 0.32).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	await _wait(0.32)
-	if not _alive():
-		chain.queue_free()
-		for link: Line2D in links:
-			link.queue_free()
-		return
-	# 철컥! 팽팽하게 당겨진다
-	Sfx.play(&"slam")
-	board.screen_shake(6.0, 0.15)
-	_flash((from + to) / 2.0, Color(1.0, 0.7, 0.7), 40.0)
-	board._floating_badge(_screen((from + to) / 2.0) + Vector2(0, -30), "철컥!", CHAIN, 32)
-	var taut: Tween = board.create_tween()
-	taut.tween_method(func(sag: float) -> void:
-		_chain_shape(chain, links, from, to, 1.0, sag), 40.0, 0.0, 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	for view: Node2D in [a, b]:
-		_ring(view.position, CHAIN, 34.0, 4.0, 0.3)
-	board._refresh_super_marks()
-	await _wait(0.45)
-	var hum: Tween = chain.create_tween()
-	hum.tween_property(chain, "width", 9.0, 0.08)
-	hum.tween_property(chain, "width", 6.0, 0.08)
-	await _wait(0.2)
-	_fade_out(chain, 0.0, 0.3)
-	for link: Line2D in links:
-		_fade_out(link, 0.0, 0.3)
-
-
-func _chain_shape(chain: Line2D, links: Array[Line2D], from: Vector2, to: Vector2, reach: float, sag: float) -> void:
-	if not is_instance_valid(chain):
-		return
-	var points := PackedVector2Array()
-	var steps: int = 24
-	for i: int in steps + 1:
-		var u: float = float(i) / steps
-		points.append(from.lerp(to, u) + Vector2(0.0, sag * sin(u * PI)))
-	# 양 끝에서 reach만큼 자란다
-	var half: int = int(ceil(steps * 0.5 * reach))
-	var shown := PackedVector2Array()
-	for i: int in points.size():
-		if i <= half or i >= points.size() - 1 - half:
-			shown.append(points[i])
-	chain.points = shown if reach < 1.0 else points
-	for index: int in links.size():
-		var u: float = (index + 0.5) / links.size()
-		var visible: bool = reach >= 1.0 or u <= reach * 0.5 or u >= 1.0 - reach * 0.5
-		links[index].visible = visible
-		links[index].position = from.lerp(to, u) + Vector2(0.0, sag * sin(u * PI))
+	await board._play_bond_stage(_first(changes,"bond"))
 
 
 # ---------------------------------------------------------------------------
@@ -476,31 +401,20 @@ static func set_flame(host: Control, flame_name: String, colors: Array[Color], p
 	flame.colors = colors
 
 
-## 연대책임 발밑 고리: 묶인 말 아래 붉은 타원 고리가 숨 쉬듯 깜빡인다.
+## 연대책임 지속 표시: 금속 족쇄와 맞물린 두 고리가 함께 맥동한다.
 static func set_bond_ring(view: Node2D, bonded: bool) -> void:
-	var ring: Line2D = view.get_node_or_null("BondRing") as Line2D
+	var ring: Node2D = view.get_node_or_null("BondRing") as Node2D
 	if not bonded:
-		if ring != null:
+		if ring!=null:
 			ring.queue_free()
 		return
-	if ring != null:
+	if ring!=null:
 		return
-	ring = Line2D.new()
+	ring = BOND_CUFF.new()
 	ring.name = "BondRing"
-	var points := PackedVector2Array()
-	for i: int in 28:
-		var angle: float = TAU * i / 28
-		points.append(Vector2(cos(angle) * 17.0, sin(angle) * 7.0 + 4.0))
-	ring.points = points
-	ring.closed = true
-	ring.width = 3.0
-	ring.default_color = Color("ff4d4d")
 	ring.z_index = -1
 	view.add_child(ring)
-	view.move_child(ring, 0)
-	var pulse: Tween = ring.create_tween().set_loops()
-	pulse.tween_property(ring, "modulate:a", 0.35, 0.5).set_trans(Tween.TRANS_SINE)
-	pulse.tween_property(ring, "modulate:a", 1.0, 0.5).set_trans(Tween.TRANS_SINE)
+	view.move_child(ring,0)
 
 
 # ---------------------------------------------------------------------------
