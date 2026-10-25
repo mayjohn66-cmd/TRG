@@ -14,4 +14,4 @@ Make the background VERY SIMPLE: one flat scarlet field, one large near-black sl
 
 ## Runtime
 
-The approved concept is unchanged. Imported at 1024px with mipmaps and lossy compression. RaidCutin opens a jagged diagonal aperture, settles with a short overshoot, flashes the eyes, then shears its upper and lower slices while sweeping away. The art stays opaque until masked away. Duration 1.20 seconds at normal pace; reward delivery starts only after the overlay clears. Reset frees the overlay with its owning RaidStage.
+The approved source bitmap is unchanged. Imported at 1024px with mipmaps and lossy compression. RaidCutin samples only the masked eyes through a long, narrow diagonal ribbon, with red tips and a rough white torn edge. A white brush tear precedes the eyes. On exit, white ink consumes the eyes from right to left while the ribbon pinches shut, leaving brief white flecks. The board stays readable with only 24% dimming outside the ribbon. Duration 1.05 seconds at normal pace; reward delivery starts only after the overlay clears. Reset frees the overlay with its owning RaidStage. The old full-image panel and opposing-slice exit have been replaced.
