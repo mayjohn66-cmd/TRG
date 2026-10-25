@@ -1,10 +1,15 @@
-## SUPER_08: actual pawn launch, Erpin's haul, then actual reserved rewards.
+## SUPER_08: Erpin enters, causes a commotion, escapes with bread, then delivers real rewards.
 extends Node2D
 
-const SPOT_TIME := 0.32
-const DASH_END := 0.94
-const HAUL_END := 1.40
+const ART = preload("res://scenes/bakery_art.gd")
+const SPOT_TIME := 0.28
+const DASH_END := 0.84
+const APPROACH_END := 1.44
+const ENTER_END := 1.80
+const RUMMAGE_END := 3.02
+const HAUL_END := 4.00
 const FINISH_TIME := 0.32
+const IMPACTS := [0.10,0.34,0.65,0.97]
 const GOLD := Color("ffd267")
 var phase: StringName = &"spot"
 var elapsed := 0.0
@@ -17,6 +22,7 @@ var jobs: Array[Dictionary] = []
 var launched: Array[Dictionary] = []
 var completed := 0
 var artwork: Dictionary = {}
+var commotions := 0
 var _complete := false
 var _board_ref: WeakRef
 var _view_ref: WeakRef
@@ -24,6 +30,13 @@ var _generation := 0
 var _at := Vector2.ZERO
 var _from := Vector2.ZERO
 var _to := Vector2.ZERO
+var _shop_at := Vector2.ZERO
+var _door := Vector2.ZERO
+var _actor_at := Vector2.ZERO
+var _actor_alpha := 0.0
+var _actor_height := 88.0
+var _shop_offset := Vector2.ZERO
+var _shop_angle := 0.0
 var _saved: Dictionary = {}
 var _restored := false
 var _current := -1
@@ -36,7 +49,7 @@ func play(board: MainBoard, owner: int, changes: Array, speed: float) -> void:
 	_generation = board._fx_generation
 	player_id = owner
 	pace = clampf(speed,0.35,2.0)
-	artwork = PawnArt.load_sprite(["res://content_trickcal/avatars/avatar_01/fullbody.png"])
+	artwork = {"texture":ART.MOVE,"model":"Minimi_Erpin"}
 	for change: Dictionary in changes:
 		if change.get("kind")=="bakery_scene":
 			tile = int(change.tile)
@@ -45,6 +58,9 @@ func play(board: MainBoard, owner: int, changes: Array, speed: float) -> void:
 			jobs.assign(change.jobs)
 	_at = board._tile_center(tile) if tile>=0 else board._board_center()
 	_from = board._tile_center(GameEnums.GOAL_TILE)
+	_shop_at = board._board_center()+Vector2(-12,100)
+	# Measured against the painted doorway's dark opening and doorstep.
+	_door = _shop_at+Vector2(30,-34)
 	var view: Node2D = board._pawn_views.get(pawn_id)
 	if view!=null:
 		board._kill_fx(view)
@@ -64,7 +80,7 @@ func play(board: MainBoard, owner: int, changes: Array, speed: float) -> void:
 		bread.region_enabled = true
 		bread.region_rect = region
 		bread.material = material
-		bread.scale = Vector2.ONE*(28.0/region.size.x)
+		bread.scale = Vector2.ONE*(25.0/region.size.x)
 		bread.hide()
 		add_child(bread)
 		_breads.append(bread)
@@ -87,10 +103,24 @@ func _process(delta: float) -> void:
 				Sfx.play(&"hop",-4.0)
 		&"dash":
 			if elapsed>=DASH_END:
-				_set_phase(&"haul")
-				Sfx.play(&"thud",-6.0)
+				_set_phase(&"approach")
 				_restore(false)
-		&"haul":
+		&"approach":
+			if elapsed>=APPROACH_END:
+				_set_phase(&"enter")
+		&"enter":
+			if elapsed>=ENTER_END:
+				_set_phase(&"rummage")
+		&"rummage":
+			while commotions<IMPACTS.size() and elapsed-ENTER_END>=float(IMPACTS[commotions]):
+				Sfx.play(&"yut_clack" if commotions%2==0 else &"thud",-7.0)
+				commotions += 1
+				if commotions==IMPACTS.size():
+					board.screen_shake(2.5,0.10*pace)
+			if elapsed>=RUMMAGE_END:
+				_set_phase(&"escape")
+				Sfx.play(&"dash",-8.0)
+		&"escape":
 			if elapsed>=HAUL_END:
 				_next_reward(board)
 		&"deliver":
@@ -129,13 +159,48 @@ func _update_pose() -> void:
 		view.position = _from.lerp(_to,jump)+Vector2(0,-115*sin(jump*PI))
 		view.rotation = sin(jump*PI)*0.18
 		view.scale = (_saved.scale as Vector2)*(1.0+0.12*sin(jump*PI))
+	_actor_alpha = 0.0
+	_actor_height = 88.0
+	_shop_offset = Vector2.ZERO
+	_shop_angle = 0.0
+	if phase in [&"spot",&"dash",&"approach"]:
+		var run := smoothstep(DASH_END,APPROACH_END,elapsed)
+		_actor_at = (_shop_at+Vector2(-210,12)).lerp(_door+Vector2(0,25),run)
+		_actor_alpha = smoothstep(SPOT_TIME,DASH_END,elapsed)
+	elif phase==&"enter":
+		var enter := smoothstep(APPROACH_END,ENTER_END,elapsed)
+		_actor_at = (_door+Vector2(0,25)).lerp(_door+Vector2(0,-9),enter)
+		_actor_height = lerpf(88,65,enter)
+		_actor_alpha = 1-smoothstep(0.55,0.98,enter)
+	elif phase==&"rummage":
+		for impact: float in IMPACTS:
+			var age := elapsed-ENTER_END-impact
+			if age>=0 and age<0.24:
+				var kick := pow(1-age/0.24,2)
+				_shop_offset += Vector2(sin(age*90)*4,-sin(age*55)*2)*kick
+				_shop_angle += sin(age*65)*0.018*kick
+	elif phase==&"escape":
+		var escape := clampf((elapsed-RUMMAGE_END)/(HAUL_END-RUMMAGE_END),0,1)
+		var emerge := smoothstep(0,0.23,escape)
+		var flee := pow(clampf((escape-0.16)/0.84,0,1),1.35)
+		_actor_at = _door.lerp(_shop_at+Vector2(240,32),flee)
+		_actor_height = lerpf(65,88,emerge)
+		_actor_alpha = emerge*(1-smoothstep(0.85,1,escape))
 	for index: int in _breads.size():
 		var bread := _breads[index]
-		var u := clampf((elapsed-DASH_END-index*0.045)/0.32,0,1)
-		bread.visible = u>0 and u<1
-		bread.position = _at.lerp(_at+Vector2(-56,-42),u)+Vector2((index-1.5)*18*sin(u*PI),-18-34*sin(u*PI))
-		bread.rotation = (index-1.5)*0.4*u
-		bread.modulate.a = sin(u*PI)
+		bread.visible = phase==&"escape" and _actor_alpha>0.01
+		bread.position = _actor_at+Vector2(18+(index%2)*13,-37-(index/2)*12)
+		bread.position.y -= abs(sin(elapsed*14))*3
+		bread.rotation = -0.18+(index%2)*0.3
+		bread.modulate.a = _actor_alpha
+		if phase==&"rummage":
+			var age := elapsed-ENTER_END-float(IMPACTS[index])
+			var u := clampf(age/0.48,0,1)
+			var side := -1.0 if index%2==0 else 1.0
+			bread.visible = age>0 and age<0.48
+			bread.position = _door+Vector2(side*u*74,-24-65*sin(u*PI))
+			bread.rotation = u*side*2
+			bread.modulate.a = sin(u*PI)
 
 func _ellipse(at: Vector2, radius: Vector2, tint: Color, width: float) -> void:
 	var points := PackedVector2Array()
@@ -148,24 +213,36 @@ func _draw() -> void:
 	if tile<0:
 		return
 	var fade := 1.0-smoothstep(0,FINISH_TIME,phase_time) if phase==&"finish" else 1.0
-	var reveal := smoothstep(0,SPOT_TIME,elapsed)*fade
-	_ellipse(_at,Vector2(35,17)*(1.0+sin(elapsed*4)*0.05),Color(GOLD,0.8*reveal),3)
-	if elapsed<DASH_END:
-		var u := clampf(elapsed/DASH_END,0,1)
-		_ellipse(_at,Vector2(38,19)*(1.0+u*0.8),Color(GOLD,(1-u)*0.5),2)
-	# Existing full-body Erpin cutout: a small, lively accomplice beside the tile.
-	if not artwork.is_empty():
-		var enter := smoothstep(SPOT_TIME,DASH_END,elapsed)
-		var at := _at+Vector2(-66+12*(1-enter),-10-4*abs(sin(elapsed*7))*enter)
-		var region: Rect2 = artwork.region
-		var size := region.size*(92.0/region.size.y)
-		draw_texture_rect_region(artwork.texture,Rect2(at+Vector2(-size.x/2,-size.y),size),region,Color(1,1,1,enter*fade))
-		_ellipse(at+Vector2(0,3),Vector2(18,6),Color(0.35,0.22,0.08,enter*fade*0.25),2)
-	if phase==&"haul":
-		for index: int in 6:
-			var angle := index*TAU/6.0
-			var at := _at+Vector2(cos(angle)*42,sin(angle)*24-22)
-			draw_line(at,at+Vector2(cos(angle),sin(angle))*9,Color(GOLD,sin(clampf(phase_time/0.46,0,1)*PI)*0.8),2,true)
+	var reveal := smoothstep(0,SPOT_TIME,elapsed)
+	var story := reveal*(1-smoothstep(HAUL_END-0.14,HAUL_END+0.22,elapsed))
+	if story>0.001:
+		draw_rect(get_viewport_rect(),Color(0.07,0.05,0.08,0.22*story))
+		ART.storefront(self,_shop_at+_shop_offset,280,story,_shop_angle)
+	if elapsed<HAUL_END:
+		_ellipse(_at,Vector2(35,17),Color(GOLD,0.65*reveal),2)
+	# The character is absent inside, then emerges from the same doorway.
+	if _actor_alpha>0.001:
+		var running := phase in [&"approach",&"enter",&"escape"]
+		ART.erpin(self,_actor_at,elapsed-DASH_END,_actor_height,_actor_alpha*story,running,1,0.06 if phase==&"escape" else 0.0)
+	if phase==&"rummage":
+		for index: int in IMPACTS.size():
+			var age := elapsed-ENTER_END-float(IMPACTS[index])
+			if age>=0 and age<0.48:
+				var u := age/0.48
+				var side := -1.0 if index%2==0 else 1.0
+				var at := _door+Vector2(side*(10+u*42),-17-u*23)
+				ART.flour(self,at,lerpf(10,38,u),sin(u*PI)*0.8*story,side*u*0.5)
+	if phase==&"escape":
+		var age := elapsed-RUMMAGE_END
+		if age<0.50:
+			var u := age/0.50
+			ART.flour(self,_door+Vector2(-8-u*20,-8),18+u*39,(1-u)*0.6*story,-u*0.2)
+		for index: int in 3:
+			var u := clampf((age-0.25-index*0.09)/0.34,0,1)
+			if u>0 and u<1:
+				ART.flour(self,_actor_at+Vector2(-27-index*12,2),7+u*12,sin(u*PI)*0.4*story,-0.3)
+	if phase==&"finish":
+		_ellipse(_at,Vector2(35,17),Color(GOLD,fade*0.35),2)
 
 func _restore(cancelled: bool) -> void:
 	if _restored and not cancelled:

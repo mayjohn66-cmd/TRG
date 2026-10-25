@@ -1,0 +1,32 @@
+{
+  "character": "Erpin",
+  "viewer_id": "minimi/minimierpin",
+  "source": "https://viewer.dclnslde.com/",
+  "animation": "Move",
+  "fps": 30,
+  "frames": 14,
+  "columns": 7,
+  "cell": [
+    212,
+    308
+  ],
+  "padding": 2,
+  "region": [
+    208,
+    304
+  ],
+  "source_origin": [
+    183,
+    550
+  ],
+  "atlas_origin": [
+    91.5,
+    275
+  ],
+  "processing": "Original Spine rendered frames, uniform 50% resize and atlas packing; no redraw",
+  "generated_art": {
+    "mode": "built-in image_gen",
+    "storefront": "exec-415d1dcf-cef0-4fb2-ad5c-2d9d849e9507.png",
+    "flour": "exec-b52f4ede-9930-46fd-a8c3-a7840aa9e9de.png"
+  }
+}

@@ -22,7 +22,7 @@ func _run() -> void:
 	GameSession.pace_scale = 1.0
 	await _check(SuperAugments.BAKERY)
 	_expect(started and ended and delivered==4 and grants.size()==4,"Three rewards and the bakery arrival reward each land once")
-	_expect(saw_face and seen==[&"spot",&"dash",&"haul",&"deliver",&"finish"],"Local rewards follow spotlight, leap and haul")
+	_expect(saw_face and seen==[&"spot",&"dash",&"approach",&"enter",&"rummage",&"escape",&"deliver",&"finish"],"Local rewards follow entry, the indoor commotion and escape")
 	await _edge(2,true,false,false)
 	_expect(saw_back and delivered==3,"No waiting pawn: only three real remote rewards, face down")
 	await _edge(1,false,true,false)
@@ -68,14 +68,20 @@ func _process(_delta: float) -> bool:
 			rng_before = _board.state.rng.state
 			hand_snapshot = _board.state.hands.duplicate(true)
 			planned.assign(stage.jobs)
-			_expect(not stage.artwork.is_empty(),"The existing Erpin cutout loads without an avatar animation pack")
+			_expect(stage.artwork.get("model")=="Minimi_Erpin","The extracted original minimi replaces the static avatar cutout")
 			_expect((stage.pawn_id==-1)==no_waiting,"A launch exists only for an actual waiting pawn")
 			_expect(stage.jobs.size()==grants.size(),"Only successfully granted cards are reserved")
 		if not seen.has(stage.phase):
 			seen.append(stage.phase)
 		_expect(_board.state.rng.state==rng_before and _board.state.hands==hand_snapshot,"Presentation changes neither RNG nor granted hands")
 		if stage.elapsed<stage.HAUL_END:
-			_expect(stage.launched.is_empty(),"Rewards wait for the haul")
+			_expect(stage.launched.is_empty(),"Rewards wait until Erpin has escaped")
+		if stage.phase==&"rummage":
+			_expect(stage._actor_alpha==0.0,"Erpin is completely inside during the commotion")
+		if stage.phase==&"escape":
+			_expect(stage.commotions==4,"All four indoor impacts happen before the escape")
+			if stage.phase_time>0.48:
+				capture("escape_mid")
 		if stage.phase_time>0.14 and receiver==1 and not full_hand:
 			capture(String(stage.phase))
 		var draw: Dictionary = _board._draw_fx._current
