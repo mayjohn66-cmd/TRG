@@ -22,11 +22,11 @@ const FRAME: Color = Color("bfe9d8")
 const FRAME_EDGE: Color = Color("5fc9a0")
 const TEAL: Color = Color("7cc4b4")
 const TEAL_DARK: Color = Color("4a9a8a")
+const VISUALS = preload("res://scenes/rulebook_visuals.gd")
 ## 법전 장 (도감 묶음의 법전 탭): 허브의 [법전 수집 N/8]이 바로 연다.
 const LAW_SPREAD: int = 7
 const TAB_NAMES: Array[String] = ["시작하기", "한 턴", "보드", "잡기", "도구", "말", "카드", "법전", "범용", "초증강"]
-const TAB_ICONS: Array[StringName] = [&"face", &"hourglass", &"grid", &"sword", &"dice", &"crown", &"book", &"gear", &"key", &"star"]
-const TAB_ART: Array[StringName] = [&"start", &"turn", &"board", &"capture"]
+const TAB_ART: Array[StringName] = [&"start", &"turn", &"board", &"capture", &"roll", &"pawn_ability", &"play_card", &"lawbook", &"supply", &"super"]
 ## 왼쪽 노트의 큰 그림 크기와 모서리 둥글기.
 const HERO_ART: Vector2 = Vector2(132, 132)
 const HERO_RADIUS: int = 24
@@ -148,7 +148,10 @@ func spread_count() -> int:
 # 틀: 책 테두리, 머리글, 왼쪽 항목 줄, 노트, 카드 칸, 화살표, 리본
 # ---------------------------------------------------------------------------
 
-static func _box(bg: Color, border: Color, border_width: int, radius: int, shadow: int = 0, margin: int = 0, shadow_color: Color = Color(0, 0, 0, 0.25)) -> StyleBoxFlat:
+static func _box(bg: Color, border: Color, border_width: int, radius: int, shadow: int = 0, margin: int = 0, shadow_color: Color = Color(0, 0, 0, 0.25)) -> StyleBox:
+	if bg.a>0.01:
+		return VISUALS.panel(bg,radius,margin)
+	# Transparent selection/clip outlines stay exact to their live content bounds.
 	var box := StyleBoxFlat.new()
 	box.bg_color = bg
 	box.border_color = border
@@ -174,7 +177,7 @@ static func _art(role: StringName, extent: Vector2) -> TextureRect:
 	image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	image.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	image.texture = ART[role] as Texture2D
+	image.texture = VISUALS.texture(role) if VISUALS.has(role) else ART[role] as Texture2D
 	image.custom_minimum_size = extent
 	image.size = extent
 	image.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -226,6 +229,18 @@ func _build_header() -> void:
 ## 링크를 눌러 접속하기만 하면 기록이 이어진다 (PlayerSave.apply_url_params). 코드 입력은 보조 수단.
 func _build_save_tools() -> void:
 	_law_badge = MetaIcon.pill("LawCollection", "", func() -> void: show_spread(LAW_SPREAD), 16)
+	for child: Node in _law_badge.get_children():
+		if child is MetaIcon:
+			_law_badge.remove_child(child)
+			child.queue_free()
+	var badge_icon := _art(&"lawbook",Vector2(26,26))
+	badge_icon.position = Vector2(12,10)
+	_law_badge.add_child(badge_icon)
+	for state: String in ["normal","hover","pressed","focus"]:
+		var badge_skin := VISUALS.panel(Color("fff4d6") if state!="hover" else Color("fffbea"),23)
+		badge_skin.content_margin_left = 46
+		badge_skin.content_margin_right = 16
+		_law_badge.add_theme_stylebox_override(state,badge_skin)
 	_place(_law_badge, Vector2(846, 18), Vector2(196, 44))
 	var link: Button = LobbyTheme.small_button("내 기록 전용 링크 복사", _copy_share_link, &"teal", 17)
 	link.name = "CopyShareLink"
@@ -298,14 +313,8 @@ func _build_list() -> void:
 		disc.position = Vector2(2, -4)
 		disc.size = Vector2(52, 52)
 		button.add_child(disc)
-		var icon: Control
-		if index < TAB_ART.size():
-			icon = _art(TAB_ART[index], Vector2(40, 40))
-			icon.position = Vector2(6, 6)
-		else:
-			icon = HubKit.Icon.new(TAB_ICONS[index], Color("2f6f66"), Color("ffe48a"))
-			icon.position = Vector2(8, 8)
-			icon.size = Vector2(36, 36)
+		var icon := _art(TAB_ART[index], Vector2(40, 40))
+		icon.position = Vector2(6, 6)
 		disc.add_child(icon)
 		var plate := Label.new()
 		plate.name = "Plate"
@@ -439,9 +448,7 @@ func show_spread(index: int, entry_index: int = -1) -> void:
 		tab.add_theme_color_override("font_color", Color("6b4a2a") if active else Color("8a7a58"))
 		tab.add_theme_color_override("font_hover_color", Color("6b4a2a"))
 		for state: String in ["normal", "hover", "pressed"]:
-			var style: StyleBoxFlat = _box(Color("fbf4df") if active else Color("c9b98e"), Color("e6d6a8") if active else Color("a8975f"), 3, 16, 0, 4)
-			style.corner_radius_bottom_left = 0
-			style.corner_radius_bottom_right = 0
+			var style := VISUALS.panel(Color("fbf4df") if active else Color("c9b98e"),16,4)
 			tab.add_theme_stylebox_override(state, style)
 		tab.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 		tab.size = Vector2(160, 52 if active else 44)
@@ -453,10 +460,10 @@ func show_spread(index: int, entry_index: int = -1) -> void:
 		var selected: bool = index3 == spread
 		var disc: Panel = button.get_node("Disc")
 		var plate: Label = button.get_node("Plate")
-		var teal_back: StyleBoxFlat = _box(Color("f4fffa") if selected else TEAL, Color("3f9a2b") if selected else TEAL_DARK, 4, 22, 5, 0, Color(0, 0, 0, 0.25))
+		var teal_back := VISUALS.panel(Color("f4fffa") if selected else TEAL,22)
 		button.add_theme_stylebox_override("normal", teal_back)
-		var teal_hover: StyleBoxFlat = teal_back.duplicate()
-		teal_hover.bg_color = Color.WHITE if selected else TEAL.lightened(0.12)
+		var teal_hover: StyleBoxTexture = teal_back.duplicate()
+		teal_hover.modulate_color = Color.WHITE if selected else TEAL.lightened(0.12)
 		button.add_theme_stylebox_override("hover", teal_hover)
 		button.add_theme_stylebox_override("pressed", teal_back)
 		disc.add_theme_stylebox_override("panel", _box(Color("fffdf0"), Color("3f9a2b") if selected else TEAL_DARK, 4, 26, 3))
@@ -596,6 +603,7 @@ func _picture_tile(data: Dictionary, on_pick: Callable) -> Control:
 	# 특수 승리 법전으로 졸업해 본 교칙: [달성 완료 ★] 도장 (영구 기록)
 	if data.has("law_id") and PlayerSave.has_law(str(data["law_id"])):
 		var stamp: PanelContainer = MetaIcon.stamp("달성 완료 ★", 18)
+		stamp.add_theme_stylebox_override("panel",VISUALS.panel(Color("fff4d6"),12,8))
 		stamp.position = Vector2(card_size.x * 0.5 - 64.0, card_size.y * 0.30)
 		stamp.z_index = 7
 		holder.add_child(stamp)
@@ -620,10 +628,10 @@ func _paint_tile(tile: Control, selected: bool) -> void:
 		return
 	var button: Button = tile as Button
 	var tone: Color = button.get_meta("tone")
-	var normal: StyleBoxFlat = _box(Color.WHITE if selected else tone.lightened(0.62), tone.darkened(0.15) if selected else tone, 5 if selected else 3, 20, 4 if selected else 2, 0, Color(0, 0, 0, 0.18))
+	var normal := VISUALS.panel(Color.WHITE if selected else tone.lightened(0.62),20)
 	button.add_theme_stylebox_override("normal", normal)
-	var hover: StyleBoxFlat = normal.duplicate()
-	hover.bg_color = Color.WHITE
+	var hover: StyleBoxTexture = normal.duplicate()
+	hover.modulate_color = Color.WHITE
 	button.add_theme_stylebox_override("hover", hover)
 	button.add_theme_stylebox_override("pressed", hover)
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
@@ -645,7 +653,9 @@ static func _rounded_art(picture: Control, extent: Vector2, radius: int, tone: C
 	holder.add_child(shadow)
 	var mask := Panel.new()
 	mask.name = "Mask"
-	var mask_style: StyleBoxFlat = _box(Color.WHITE, Color(0, 0, 0, 0), 0, radius)
+	var mask_style := StyleBoxFlat.new()
+	mask_style.bg_color = Color.WHITE
+	mask_style.set_corner_radius_all(radius)
 	mask_style.anti_aliasing = true
 	mask.add_theme_stylebox_override("panel", mask_style)
 	mask.clip_children = CanvasItem.CLIP_CHILDREN_ONLY  # 둥근 판 모양대로만 그림이 보인다
@@ -704,7 +714,7 @@ func _picture(data: Dictionary, extent: Vector2) -> Control:
 		image.size = extent
 		image.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		return image
-	if ART.has(data.get("art", &"")):
+	if ART.has(data.get("art", &"")) or VISUALS.has(data.get("art", &"")):
 		return _art(data["art"], extent)
 	if int(data.get("number", 0)) > 0:
 		var digit := Label.new()
@@ -718,6 +728,7 @@ func _picture(data: Dictionary, extent: Vector2) -> Control:
 		digit.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		return digit
 	var glyph := HubKit.Icon.new(data.get("icon", &"face"), tone.darkened(0.35), Color("ffe48a"))
+	glyph.set_meta("legacy_rulebook_glyph",true)
 	glyph.custom_minimum_size = extent
 	glyph.size = extent
 	glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -736,7 +747,7 @@ func _detail(data: Dictionary) -> Array[Control]:
 	hero.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if data.has("card"):
 		hero.add_child(_card_face(data["card"]))
-	elif data.get("texture", null) != null or ART.has(data.get("art", &"")):
+	elif data.get("texture", null) != null or ART.has(data.get("art", &"")) or VISUALS.has(data.get("art", &"")):
 		hero.add_child(_rounded_art(_picture(data, HERO_ART), HERO_ART, HERO_RADIUS, tone))
 	else:
 		var frame := PanelContainer.new()
@@ -786,10 +797,10 @@ func _chip(text: String, tone: Color) -> Control:
 	chip.add_theme_font_size_override("font_size", 15)
 	chip.add_theme_color_override("font_color", Color.WHITE)
 	chip.add_theme_stylebox_override("normal", _box(tone.darkened(0.12), tone.darkened(0.3), 0, 12, 0, 0))
-	(chip.get_theme_stylebox("normal") as StyleBoxFlat).content_margin_left = 10
-	(chip.get_theme_stylebox("normal") as StyleBoxFlat).content_margin_right = 10
-	(chip.get_theme_stylebox("normal") as StyleBoxFlat).content_margin_top = 2
-	(chip.get_theme_stylebox("normal") as StyleBoxFlat).content_margin_bottom = 2
+	chip.get_theme_stylebox("normal").content_margin_left = 10
+	chip.get_theme_stylebox("normal").content_margin_right = 10
+	chip.get_theme_stylebox("normal").content_margin_top = 2
+	chip.get_theme_stylebox("normal").content_margin_bottom = 2
 	chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return chip
 
@@ -950,7 +961,7 @@ func _ch_start() -> Dictionary:
 			"summary": "말 [b]4개를 모두[/b] 결승선(0번)에 먼저 넣는 레이스예요.",
 			"rows": [["이기는 법", "말 4개 완주 → 먼저 해낸 순서로 1·2·3위"], ["특수 승리", "법전의 조건을 라운드 끝까지 채우면 졸업"], ["손패", "생떼 카드 최대 7장"], ["출발", "말 4개 모두 출발선(0번)에서"]],
 			"tip": "처음이라면 [b]놀이터[/b]에서 컴퓨터와 한 판 해 보세요."},
-		{"title": "완주와 순위", "icon": &"crown", "tone": Color("86d94f"),
+		{"title": "완주와 순위", "art": &"finish", "tone": Color("86d94f"),
 			"summary": "말이 0번에 닿으면 완주. 4개 모두 완주하면 [b]순위 확정[/b]!",
 			"rows": [["1·2·3위", "먼저 해낸 순서대로"], ["4위", "마지막 남은 한 명"], ["특수 승리", "법전 조건을 채운 채 차례가 끝나면 바로 졸업"]]},
 		{"title": "말마다 능력", "art": &"pawn_ability", "tone": Color("f08aa8"), "chips": ["증강", "필살기 1회"],
@@ -972,25 +983,25 @@ func _ch_turn() -> Dictionary:
 			"summary": "한 턴은 [b]카드 → 굴리기 → 말 고르기 → 정산[/b] 순서예요.",
 			"rows": [["① 카드", "굴리기 전에 한 장 (안 써도 돼요)"], ["② 굴리기", "도구를 굴려 칸 수 결정"], ["③ 말 고르기", "그 칸 수만큼 움직일 말 선택"], ["④ 정산", "도착한 칸의 효과가 터져요"]],
 			"tip": "카드는 [b]굴리기 전에만[/b] 낼 수 있어요. 눈금을 보고 고민하려면 아껴 두세요."},
-		{"title": "카드 한 장", "number": 1, "tone": Color("f0c14e"), "chips": ["굴리기 전", "턴당 1장"],
+		{"title": "카드 한 장", "art": &"play_card", "number": 1, "tone": Color("f0c14e"), "chips": ["굴리기 전", "턴당 1장"],
 			"summary": "카드를 [b]보드판 위로 끌어다 놓으면[/b] 발동해요.",
 			"points": ["함정·소환은 놓은 뒤 칸을 골라요", "방어 카드는 끌어 쓰지 않아요 (공격받을 때 팝업)"]},
-		{"title": "굴리기", "number": 2, "tone": Color("86d94f"), "chips": ["R / 스페이스"],
+		{"title": "굴리기", "art": &"roll", "number": 2, "tone": Color("86d94f"), "chips": ["R / 스페이스"],
 			"summary": "[b]굴리기[/b] 버튼을 꾹 눌러 파워를 모으고 손을 떼요.",
 			"points": ["룰렛은 원판을 잡아 돌리고, 리볼버는 방아쇠를 당겨요"]},
-		{"title": "말 고르기", "number": 3, "tone": Color("5fc1e8"),
+		{"title": "말 고르기", "art": &"choose_pawn", "number": 3, "tone": Color("5fc1e8"),
 			"summary": "아래 말 카드나 보드 위의 말을 누르면 그 말이 움직여요.",
 			"points": ["카드에 도착 결과가 미리 보여요 (잡기·빵집·워프…)"]},
-		{"title": "정산", "number": 4, "tone": Color("f08aa8"),
+		{"title": "정산", "art": &"resolve", "number": 4, "tone": Color("f08aa8"),
 			"summary": "도착한 칸의 효과가 터져요. 공격받으면 방어 카드로 받아칠지 물어봐요.",
 			"points": ["빵집이면 카드 1장, 옷장이면 순간이동", "적 말 위에 멈추면 잡기!"]},
-		{"title": "보너스 이동", "icon": &"play", "tone": Color("63e6be"), "chips": ["후퇴 없음"],
+		{"title": "보너스 이동", "art": &"bonus", "tone": Color("63e6be"), "chips": ["후퇴 없음"],
 			"summary": "말은 절대 뒤로 가지 않아요. 대신 여러 보너스로 앞으로 튀어 나가요.",
 			"rows": [["복수 부스터", "출발선으로 날아간 말이 다시 나올 때 +4칸"], ["부스터 발판", "%s번에 딱 멈추면 +3칸" % dash], ["재굴림", "윷말은 적을 잡으면 한 번 더"]]},
-		{"title": "증강 라운드", "icon": &"crown", "tone": Color("ffa94d"), "chips": ["3라운드마다"],
+		{"title": "증강 라운드", "art": &"augment_round", "tone": Color("ffa94d"), "chips": ["3라운드마다"],
 			"summary": "1·4·7라운드처럼 [b]3라운드마다[/b] 모두가 3장 중 하나를 골라요.",
 			"points": ["1라운드는 기물 진화, 4라운드는 판정 도구·카드·기물 진화", "7라운드부터 법전·초증강도 등장", "카드마다 한 번 다시 뽑기", "자세한 건 [b]도감 → 법전[/b]"]},
-		{"title": "템포 업", "icon": &"hourglass", "tone": Color("ff6b6b"), "chips": ["8·15·22라운드"],
+		{"title": "템포 업", "art": &"tempo", "tone": Color("ff6b6b"), "chips": ["8·15·22라운드"],
 			"summary": "판이 길어지면 [b]게임이 점점 빨라져요[/b]. 단계가 오르는 라운드 시작 전에 크게 경고해요.",
 			"rows": [["8라운드 · 과열", "최종 이동 +1칸 · 리벤지 +6칸 · 법전·초증강 확률 상승"], ["15라운드 · 광기", "최종 이동 +2칸 · 리벤지 +8칸 · 법전에 무작위 특수 승리 1개 등록"], ["22라운드 · 대붕괴", "전원 이동 +3칸 · 결승선이 라운드마다 2칸씩 당겨짐"]],
 			"points": ["당겨진 결승선은 체크무늬 칸으로 보여요", "그 칸에 들어서거나 서 있으면 바로 완주!"]},
@@ -1007,17 +1018,17 @@ func _ch_board() -> Dictionary:
 		{"title": "한눈에 보기", "art": &"board", "tone": Color("86d94f"), "chips": ["%d칸" % BoardSpec.tile_count, "반시계"],
 			"summary": "우하단 0번에서 출발해 반시계로 한 바퀴. 다시 0번이 [b]결승선[/b]이에요.", "extra": make_board,
 			"points": ["옷장과 부스터 발판은 [b]딱 멈출 때만[/b] 작동해요", "오른쪽 칸 이름을 누르면 자세히 볼 수 있어요"]},
-		{"title": "코너", "icon": &"grid", "tone": Color("2f8f4e"), "chips": [_join_tiles(BoardSpec.corner_tiles.slice(1)) + "번"],
+		{"title": "코너", "art": &"corner", "tone": Color("2f8f4e"), "chips": [_join_tiles(BoardSpec.corner_tiles.slice(1)) + "번"],
 			"summary": "딱 멈추면 [b]다음 굴림 결과 +1[/b]! 단, 이 칸에 함정이 있으면 버프 대신 함정이 발동해요.",
 			"points": ["[b]코너 전용 함정[/b]만 설치할 수 있는 칸이에요", "무인도·우이의 소원빌기", "지나가는 상인·물의 세례를 받아라"]},
-		{"title": "반환점", "icon": &"crown", "tone": Color("c98a14"), "chips": ["%d번" % BoardSpec.halfway_tile],
+		{"title": "반환점", "art": &"halfway", "tone": Color("c98a14"), "chips": ["%d번" % BoardSpec.halfway_tile],
 			"summary": "여기를 지나면 체스 폰은 [b]퀸[/b]으로, 쇼기 말은 [b]승급[/b]해요."},
-		{"title": "빵집", "icon": &"book", "tone": Color("d9822b"), "chips": [_join_tiles(BoardSpec.bakery_tiles) + "번"],
+		{"title": "빵집", "art": &"bread", "tone": Color("d9822b"), "chips": [_join_tiles(BoardSpec.bakery_tiles) + "번"],
 			"summary": "딱 멈추면 [b]생떼 카드 1장[/b]! 어떤 카드인지는 본인만 알아요."},
-		{"title": "옷장", "icon": &"key", "tone": Color("2f9aa3"), "chips": [_join_tiles(BoardSpec.portal_tiles) + "번"],
+		{"title": "옷장", "art": &"wardrobe", "tone": Color("2f9aa3"), "chips": [_join_tiles(BoardSpec.portal_tiles) + "번"],
 			"summary": "딱 멈추면 [b]순간이동[/b]! 두 옷장은 [b]왕복[/b]이라 밟은 쪽의 반대편으로 가요. 지나가기만 하면 아무 일도 없어요.",
 			"rows": _warp_rows()},
-		{"title": "부스터 발판", "icon": &"play", "tone": Color("2fb59a"), "chips": [_join_tiles(BoardSpec.dash_tiles) + "번"],
+		{"title": "부스터 발판", "art": &"boost", "tone": Color("2fb59a"), "chips": [_join_tiles(BoardSpec.dash_tiles) + "번"],
 			"summary": "딱 멈추면 [b]+3칸[/b] 더 날아가요."},
 		{"title": "함정 칸", "texture": TextureCache.fetch("res://assets/board/traps/HIDDEN.png"), "tone": Color("7a5cd6"), "chips": ["한 칸에 하나"],
 			"summary": "함정이 깔린 칸은 [b]보라색[/b]으로 바뀌고 그 함정 그림이 보여요.",
@@ -1038,19 +1049,19 @@ func _ch_capture() -> Dictionary:
 			"summary": "적 말이 있는 칸에 [b]멈추면[/b] 그 말은 출발선으로 날아가요.",
 			"rows": [["잡기", "멈춘 쪽이 잡아요 (스치기만 하면 안 잡혀요)"], ["출발선(0번)", "안전 지대: 잡을 수 없어요"], ["내 말끼리", "잡지 않아요"]],
 			"tip": "완주 직전에 잡히면 억울해요. 선두 말은 적 앞을 조심!"},
-		{"title": "말의 기본", "icon": &"play", "tone": Color("5fc1e8"), "chips": ["말 4개", "굴린 만큼 전진"],
+		{"title": "말의 기본", "art": &"pawn_basics", "tone": Color("5fc1e8"), "chips": ["말 4개", "굴린 만큼 전진"],
 			"summary": "내 말은 모두 [b]4개[/b]. 처음엔 전부 출발선(0번)에서 기다려요.",
 			"rows": [["출발", "굴림 눈금만큼 한 말을 골라 내보내요"], ["이동", "눈금만큼 반시계로 한 칸씩 전진해요"], ["잡기", "적 말 위에 멈추면 그 말은 출발선으로"], ["잡히면", "출발선으로 돌아가 다시 출발해요 (리벤지 부스터 획득)"], ["완주", "0번에 닿으면 끝. 4개 모두 완주하면 순위 확정"]],
 			"points": ["말마다 능력과 필살기가 달라요 ([b]도감 → 말[/b])", "보드 위 말에 마우스를 올리면 상태가 보여요"]},
-		{"title": "공격 카드", "icon": &"sword", "tone": Color("ff6b6b"), "chips": ["%d종" % MainBoard.ATTACK_CARDS.size(), "발동 경보"],
+		{"title": "공격 카드", "art": &"attack", "tone": Color("ff6b6b"), "chips": ["%d종" % MainBoard.ATTACK_CARDS.size(), "발동 경보"],
 			"summary": "상대 말과 차례를 흔드는 카드예요. 쓰면 먼저 [b]공격 카드 발동![/b] 경보가 뜨고 어떤 카드인지 공개돼요.",
 			"rows": _card_rows(MainBoard.ATTACK_CARDS),
 			"tip": "공격은 상대가 [b]방어 카드[/b]로 막을 수 있어요."},
-		{"title": "방어 카드", "icon": &"sword", "tone": Color("74c0fc"), "chips": ["피격 시", "%d종" % _cards_of(GameEnums.CardCategory.COUNTER).size()],
+		{"title": "방어 카드", "art": &"defense", "tone": Color("74c0fc"), "chips": ["피격 시", "%d종" % _cards_of(GameEnums.CardCategory.COUNTER).size()],
 			"summary": "내가 공격받으면 [b]방어 카드를 쓸지[/b] 팝업으로 물어봐요.",
 			"rows": _card_rows(_cards_of(GameEnums.CardCategory.COUNTER)),
 			"points": ["잡기·공격 카드·함정이 공격이에요", "그냥 맞기를 고르면 그 공격엔 다시 못 써요"]},
-		{"title": "함정 카드", "art": &"hidden_trap", "tone": Color("b197fc"), "chips": ["칸에 깔기", "한 칸에 하나"],
+		{"title": "함정 카드", "art": &"trap_card", "tone": Color("b197fc"), "chips": ["칸에 깔기", "한 칸에 하나"],
 			"summary": "칸을 골라 몰래 깔아 두는 카드예요. 누가 깔았는지만 알려지고 [b]어떤 카드인지는 비밀[/b]!",
 			"rows": _card_rows(_cards_of(GameEnums.CardCategory.TRAP)),
 			"points": ["일반 함정은 코너·빵집·옷장·부스터 발판을 뺀 칸에 깔아요", "코너 전용 함정은 코너에만 깔고, 누구에게나 공개돼요"]},
@@ -1181,7 +1192,7 @@ static func _pawn_texture(sub: Variant, kind: GameEnums.PawnKind) -> Texture2D:
 
 func _ch_cards() -> Dictionary:
 	var entries: Array = [
-		{"title": "카드 쓰는 법", "art": &"card_law", "tone": Color("f0c14e"), "chips": ["손패 최대 7장"],
+		{"title": "카드 쓰는 법", "art": &"play_card", "tone": Color("f0c14e"), "chips": ["손패 최대 7장"],
 			"summary": "빵집·증강에서 얻은 카드를 [b]보드판으로 끌어다 놓아[/b] 써요.",
 			"rows": [["방어 (파랑)", "공격받으면 팝업에서 발동 여부를 물어봐요"], ["즉발 (노랑)", "굴리기 전에 바로 효과"], ["함정 (보라)", "칸을 골라 숨겨 깔기, 코너 전용 4종"], ["소환 (분홍)", "상단 코너에 1마리, 말을 잡을 때까지 계속 전진해요"]],
 			"tip": "일기토 데스매치는 [b]상대 프로필이나 말 위에[/b] 놓으면 그 상대와 붙어요. 종목은 6종 중 무작위!"},
@@ -1220,7 +1231,7 @@ func _ch_cards() -> Dictionary:
 
 func _ch_laws() -> Dictionary:
 	var entries: Array = [
-		{"title": "증강과 법전", "art": &"card_law", "tone": Color("ffa94d"), "chips": ["3라운드마다", "법전 4칸"],
+		{"title": "증강과 법전", "art": &"lawbook", "tone": Color("ffa94d"), "chips": ["3라운드마다", "법전 4칸"],
 			"summary": "1·4·7라운드처럼 [b]3라운드마다[/b] 모두가 증강 3장 중 하나를 골라요. 법전의 교칙은 모두 [b]특수 승리 조건[/b]이에요.",
 			"rows": [["기물 지급", "말 하나를 새 기물로 진화 (도감 → 말)"], ["도구 교체", "굴리는 도구 바꾸기 (도감 → 도구)"], ["특수 승리", "법전에 새 승리 조건 (3라운드부터)"], ["카드 패키지", "생떼 카드 여러 장 (도감 → 범용)"], ["범용 보급", "기물 변이 · 전군 돌연변이 · 필살기 리필 (도감 → 범용)"], ["초증강", "하이리스크 하이리턴 (도감 → 초증강)"]],
 			"points": ["차례가 끝날 때 교칙을 달성해 있으면 [b]바로 다음 순위로 졸업[/b], 그 교칙은 사라져요 (같은 교칙을 여럿이 채우면 레이스에서 앞선 한 명만)", "새 교칙이 들어오면 가장 오래된 교칙이 밀려나요", "증강 카드마다 한 번 다시 뽑기"],
@@ -1240,7 +1251,7 @@ func _ch_laws() -> Dictionary:
 ## 범용: 생떼 카드 패키지와 범용 보급 (법전 장에서 따로 뺐다).
 func _ch_general() -> Dictionary:
 	var entries: Array = [
-		{"title": "카드 패키지와 범용 보급", "art": &"card_law", "tone": Color("74c0fc"), "chips": ["증강 라운드", "누구나"],
+		{"title": "카드 패키지와 범용 보급", "art": &"supply", "tone": Color("74c0fc"), "chips": ["증강 라운드", "누구나"],
 			"summary": "판을 뒤집지는 않지만 [b]손패와 기물을 든든하게[/b] 채워 주는 증강이에요.",
 			"rows": [["카드 패키지", "생떼 카드 여러 장 (방어·함정만 주는 보급도)"], ["범용 보급", "기물 변이 · 전군 돌연변이 · 필살기 리필"]],
 			"points": ["필살기를 이미 쓴 기물이 있으면 리필이 이득이에요", "손패는 최대 장수를 넘으면 더 받지 못해요"]},
@@ -1263,7 +1274,7 @@ static func _augment_entry(definition: AugmentDef, icon: StringName) -> Dictiona
 ## 초증강: 하이리스크 하이리턴. 판을 한 번에 뒤집을 수 있지만 내게도 화살이 돌아올 수 있는 증강들.
 func _ch_super() -> Dictionary:
 	var entries: Array = [
-		{"title": "하이리스크 하이리턴", "art": &"card_law", "tone": Color("ffd43b"), "chips": ["초증강", "%d종" % SuperAugments.ALL_IDS.size()],
+		{"title": "하이리스크 하이리턴", "art": &"super", "tone": Color("ffd43b"), "chips": ["초증강", "%d종" % SuperAugments.ALL_IDS.size()],
 			"summary": "초증강은 [b]판을 한 번에 뒤집는[/b] 증강이에요. 크게 얻는 대신 [b]내 말도 다칠 수 있어요[/b].",
 			"rows": [["한 방", "판 뒤집기 · 저격수의 표적"], ["도박", "주사위 도박사 · 악마의 계약"], ["강탈", "도적단 대습격 · 빵집 털이 · 공산주의 재분배"], ["난장판", "폭주 기관차 · 강제 캐슬링 · 광란의 지뢰밭 · 강제 연대책임"], ["질주", "아우토반 니트로: 선두 말이 코너까지 직진, 길을 막은 칸은 전부 장외 사출"]],
 			"points": ["폭주 기관차는 내 말도 가리지 않아요", "강제 연대책임은 선두와 꼴찌 말의 운명을 묶어요", "조건이 안 맞는 초증강은 드래프트에 나오지 않아요"],
@@ -1284,16 +1295,7 @@ func _ch_super() -> Dictionary:
 ## 크림색 종이에 옅은 가로줄이 그어진 노트 쪽.
 class LinedPaper extends Control:
 	func _draw() -> void:
-		var base := StyleBoxFlat.new()
-		base.bg_color = Color("fbf4df")
-		base.set_corner_radius_all(12)
-		draw_style_box(base, Rect2(Vector2.ZERO, size))
-		var y: float = 78.0
-		while y < size.y - 16.0:
-			draw_line(Vector2(18, y), Vector2(size.x - 18, y), Color(0.72, 0.6, 0.4, 0.22), 2.0)
-			y += 30.0
-		# 종이 모서리의 접힌 느낌
-		draw_colored_polygon(PackedVector2Array([Vector2(size.x - 40, size.y), Vector2(size.x, size.y - 40), Vector2(size.x, size.y)]), Color("e8dcb8"))
+		draw_texture_rect(VISUALS.texture(&"paper"),Rect2(Vector2.ZERO,size),false)
 
 
 ## 타일 번호 목록을 `4·10·14` 꼴로 이어 붙인다.
@@ -1307,14 +1309,7 @@ static func _join_tiles(tiles: Array) -> String:
 ## 책 아래쪽에 걸친 주황 리본 (쪽 번호가 올라간다).
 class Ribbon extends Control:
 	func _draw() -> void:
-		var w: float = size.x
-		var h: float = size.y
-		var body := PackedVector2Array([Vector2(24, 8), Vector2(w - 24, 8), Vector2(w - 24, h - 14), Vector2(24, h - 14)])
-		draw_colored_polygon(PackedVector2Array([Vector2(0, 14), Vector2(24, 14), Vector2(24, h - 6), Vector2(0, h - 6), Vector2(12, h / 2.0 + 4)]), Color("c4612a"))
-		draw_colored_polygon(PackedVector2Array([Vector2(w, 14), Vector2(w - 24, 14), Vector2(w - 24, h - 6), Vector2(w, h - 6), Vector2(w - 12, h / 2.0 + 4)]), Color("c4612a"))
-		draw_colored_polygon(body, Color("f08a3c"))
-		draw_line(Vector2(24, 12), Vector2(w - 24, 12), Color("ffc98a"), 3.0)
-		draw_line(Vector2(24, h - 18), Vector2(w - 24, h - 18), Color("c4612a"), 3.0)
+		draw_texture_rect(VISUALS.texture(&"ribbon"),Rect2(Vector2.ZERO,size),false)
 
 
 # ---------------------------------------------------------------------------
@@ -1344,11 +1339,7 @@ class MiniBoard extends Control:
 		return Vector2(pad, pad) + BoardLayout.tile_norm(index) * span
 
 	func _draw() -> void:
-		var paper := StyleBoxFlat.new()
-		paper.bg_color = Color("e8f5c8")
-		paper.border_color = Color("b9d48a")
-		paper.set_border_width_all(3)
-		paper.set_corner_radius_all(22)
+		var paper := VISUALS.panel(Color("e8f5c8"),22)
 		draw_style_box(paper, Rect2(Vector2.ZERO, size))
 		var font: Font = get_theme_default_font()
 		# 이동선 (타일 아래)
@@ -1380,11 +1371,7 @@ class MiniBoard extends Control:
 			elif corner:
 				fill = Color("b6ea8c")
 				edge = Color("2f8f4e")
-			var box := StyleBoxFlat.new()
-			box.bg_color = fill
-			box.border_color = edge
-			box.set_border_width_all(3)
-			box.set_corner_radius_all(9 if not corner else 12)
+			var box := VISUALS.panel(fill,9 if not corner else 12)
 			draw_style_box(box, Rect2(center - Vector2(side, side) / 2.0, Vector2(side, side)))
 			var label: String = str(index)
 			if index == 0:
@@ -1398,11 +1385,7 @@ class MiniBoard extends Control:
 		var origin := Vector2(92, 118)
 		for index: int in legend.size():
 			var spot: Vector2 = origin + Vector2(0, index * 30.0)
-			var swatch := StyleBoxFlat.new()
-			swatch.bg_color = legend[index][0]
-			swatch.border_color = Color("8a7a45")
-			swatch.set_border_width_all(2)
-			swatch.set_corner_radius_all(5)
+			var swatch := VISUALS.panel(legend[index][0],5)
 			draw_style_box(swatch, Rect2(spot, Vector2(20, 20)))
 			draw_string(font, spot + Vector2(28, 16), L10n.t(legend[index][1]), HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("3a2f1f"))
 

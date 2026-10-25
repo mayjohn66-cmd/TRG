@@ -26,6 +26,7 @@ on:
           - profile-aura
           - profile-stamps
           - warning-icon
+          - rulebook-art
           - castling
           - bakery
           - sniper
@@ -58,7 +59,9 @@ jobs:
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
           REQUESTED_SCOPE: ${{ inputs.validation }}
         run: |
-          if [[ "${REQUESTED_SCOPE}" == "warning-icon" || "${COMMIT_MESSAGE}" == *"[check:warning-icon]"* ]]; then
+          if [[ "${REQUESTED_SCOPE}" == "rulebook-art" || "${COMMIT_MESSAGE}" == *"[check:rulebook-art]"* ]]; then
+            echo "scope=rulebook-art" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "warning-icon" || "${COMMIT_MESSAGE}" == *"[check:warning-icon]"* ]]; then
             echo "scope=warning-icon" >> "${GITHUB_OUTPUT}"
           elif [[ "${REQUESTED_SCOPE}" == "profile-stamps" || "${COMMIT_MESSAGE}" == *"[check:profile-stamps]"* ]]; then
             echo "scope=profile-stamps" >> "${GITHUB_OUTPUT}"
@@ -112,6 +115,13 @@ jobs:
         run: |
           godot --headless --path . --import || true
           godot --headless --path . --import
+
+      - name: Check rulebook presentation scripts
+        if: steps.validation.outputs.scope == 'rulebook-art'
+        run: |
+          set -o pipefail
+          godot --headless --path . --check-only -s res://scenes/rulebook.gd 2>&1 | tee /tmp/rulebook_art.log
+          if grep -q 'SCRIPT ERROR' /tmp/rulebook_art.log; then exit 1; fi
 
       - name: Check shared warning icon presentation script
         if: steps.validation.outputs.scope == 'warning-icon'
