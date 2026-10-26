@@ -22,8 +22,15 @@ static func _walk(node: Node, found: Dictionary) -> void:
 		return
 	for text: String in displayed_texts(node):
 		if L10n.has_hangul(text) and not ALLOWED.has(text.strip_edges()):
-			var short: String = text.replace("\n", "⏎")
-			found["%s | %s" % [_path(node), short.substr(0, 160)]] = true
+			# 여러 줄(액션 로그 등)은 한글이 남은 줄만 보여 준다 (어느 문구가 번역되지 않았는지 바로 보이게)
+			var leaked: PackedStringArray = []
+			for line: String in text.split("\n"):
+				if L10n.has_hangul(line) and not ALLOWED.has(line.strip_edges()) and L10n.has_hangul(L10n.t(line)):
+					leaked.append(line)  # 줄 단위로도 번역되지 않는 줄 (한 줄이라도 막히면 여러 줄 글 전체가 원문으로 남는다)
+			if leaked.is_empty():
+				leaked.append(text.get_slice("\n", 0))
+			var short: String = "⏎".join(leaked.slice(0, 3)) if text.contains("\n") else text
+			found["%s | %s" % [_path(node), short.substr(0, 240)]] = true
 	for child: Node in node.get_children():
 		_walk(child, found)
 
