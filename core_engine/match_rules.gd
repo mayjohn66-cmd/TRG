@@ -22,7 +22,7 @@ const FAST_FINISH: int = 3
 const EASY_LAWS: Array[String] = ["LAW_01", "LAW_02"]
 ## 라스트 스퍼트(1위가 나온 뒤): 남은 사람의 이동 보너스와 라운드마다 당겨지는 결승선 칸 수.
 const SPURT_MOVE_BONUS: int = 3
-const SPURT_GOAL_SHRINK: int = 2
+const SPURT_GOAL_SHRINK: int = 4
 ## 친선전 원클릭 프리셋: [키, 이름, 설명, 규칙 값]. 고르면 세 값을 한 번에 맞춘다 (속도·봇 난이도는 그대로).
 const PRESET_CLASSIC: StringName = &"classic"
 const PRESET_STANDARD: StringName = &"standard"
