@@ -378,6 +378,7 @@ func send_to_start(pawn: PlayerPawn, by_player: int) -> void:
 		var was_out: bool = member.has_left_start and not member.is_finished
 		member.reset_to_start()
 		member.revenge_boost = member.revenge_boost or was_out
+		member.comeback_run = member.comeback_run or was_out
 		if member.sub_type() == GameEnums.PawnSubType.BADUK_WHITE and not member.shield:
 			member.shield_broken_hit = true  # 방어막이 깨진 채로 잡혔다: 다음 증강 라운드에 재충전되지 않는다
 		if was_out:
@@ -848,7 +849,7 @@ func pawn_state(pawn: PlayerPawn) -> Dictionary:
 	for carried_pawn: PlayerPawn in pawn.carried:
 		carried_ids.append(carried_pawn.entity_id)
 	return {"tile": pawn.current_tile_idx, "history": pawn.step_history.duplicate(), "started": pawn.has_left_start,
-		"finished": pawn.is_finished, "revenge": pawn.revenge_boost, "restrained": pawn.restrained_turns,
+		"finished": pawn.is_finished, "revenge": pawn.revenge_boost, "comeback": pawn.comeback_run, "restrained": pawn.restrained_turns,
 		"imprisoned": pawn.is_imprisoned, "shield": pawn.shield, "carrier": pawn.carrier.entity_id if pawn.carrier != null else -1, "carried": carried_ids}
 
 
@@ -868,6 +869,7 @@ func undo_attack(entry: Dictionary) -> void:
 		pawn.has_left_start = bool(data["started"])
 		pawn.is_finished = bool(data["finished"])
 		pawn.revenge_boost = bool(data["revenge"])
+		pawn.comeback_run = bool(data.get("comeback", false))
 		pawn.restrained_turns = int(data["restrained"])
 		pawn.is_imprisoned = bool(data["imprisoned"])
 		pawn.shield = bool(data["shield"])

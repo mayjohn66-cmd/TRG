@@ -403,7 +403,7 @@ func _handle_roll(actor: int, params: Dictionary = {}) -> void:
 	# 야추 다이스: 다시 굴릴 때 고정할 주사위(keep: 5개 bool)를 굴림 행동에 실어 보낸다.
 	if params.has("keep") and tool is ToolYacht:
 		(tool as ToolYacht).set_keep(params["keep"] as Array if params["keep"] is Array else [])
-	_apply_roll_result(tool.roll(state.rng))
+	_apply_roll_result(PacingDirector.adjust(state, actor, tool, tool.roll(state.rng)))
 
 
 func _handle_stop(actor: int) -> void:
@@ -1123,7 +1123,7 @@ func _on_timeout() -> void:
 			if tool.has_pending_state():
 				_apply_roll_result(tool.cash_out())
 			else:
-				_apply_roll_result(tool.roll(state.rng))
+				_apply_roll_result(PacingDirector.adjust(state, current_player_id(), tool, tool.roll(state.rng)))
 		State.PHASE_INTERRUPT_ROLL:
 			_close_interrupt_window()
 		State.PHASE_SELECT_PAWN:
@@ -1180,6 +1180,15 @@ func _enter_round_start() -> void:
 ## 완주로 게임이 끝났으면 true.
 func _apply_tempo_up() -> bool:
 	var round_number: int = state.round_number
+	# 히든 페이싱: 20라운드가 끝나도 남은 사람은 진행 순위로 확정하고 판을 끝낸다 (싱글 불닭 난이도만, 맨 뒤 한 명은 꼴찌).
+	if PacingDirector.enabled(state) and round_number > PacingDirector.HARD_CAP_ROUND and not is_game_over:
+		var order: Array = VictoryChecker.sort_by_race(state, state.active_players(player_order))
+		if not order.is_empty():
+			_emit_event(&"race_ranked", {"players": order, "round_cap": true})
+			for index: int in order.size():
+				_graduate(order[index], VictoryChecker.LAST_PLACE if index == order.size() - 1 else VictoryChecker.RACE_ORDER)
+			_end_game()
+			return true
 	if TempoUp.is_stage_round(round_number):
 		var stage: int = TempoUp.level(round_number)
 		var lines: Array[String] = TempoUp.effect_lines(stage)

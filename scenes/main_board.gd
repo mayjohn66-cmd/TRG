@@ -9798,6 +9798,9 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 				achieved.append([from, achieved_law.law_name, achieved_law.description, PLAYER_COLORS.get(int(achievers[index]), Color("ffd43b"))])
 			for entry: Array in achieved:
 				_enqueue_late(func() -> void: _fx_law_achieved(entry[0], entry[1], entry[2], entry[3]))
+		&"race_ranked":
+			if bool(data.get("round_cap", false)):
+				_log_line("[%d라운드 종료] 남은 플레이어는 진행 순위로 순위가 확정됩니다" % PacingDirector.HARD_CAP_ROUND, Color("ffd43b"))
 		&"tempo_law":
 			var tempo_law: LawResource = LawRegistry.create(String(data["law_id"]))
 			_log_line("[템포 업] 법전에 특수 승리 [%s] 자동 등록" % tempo_law.law_name, Color("ffd43b"))

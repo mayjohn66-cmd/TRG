@@ -321,6 +321,8 @@ static func _plan_one_turn_card(state: GameState, player_id: int, card: BaseCard
 		_:
 			if rng.randf() >= TRAP_USE_CHANCE:
 				return {}
+			if card.needs_tile() and PacingDirector.install_would_win_law(state, player_id):
+				return {}  # 히든 법전 브레이크: 11라운드 전에는 부동산 재벌을 끝내는 설치를 아낀다
 			if card.needs_tile():
 				var tile: int = choose_card_tile(state, player_id, card, rng)
 				if tile != -1:
