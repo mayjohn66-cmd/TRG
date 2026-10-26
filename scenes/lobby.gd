@@ -288,6 +288,10 @@ func start_hosting() -> void:
 	_start_button.name = "StartGame"
 	_start_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	footer.add_child(_start_button)
+	var rules_button := LobbyTheme.small_button("방 규칙 설정", func() -> void: RoomRulesPanel.open(self, true), &"blue", 16)
+	rules_button.name = "OpenRoomRules"
+	rules_button.custom_minimum_size = Vector2(150, 0)
+	footer.add_child(rules_button)
 	footer.add_child(_button("방 닫고 나가기", leave_room, 14, Color("7a2a2a")))
 	_rebuild()
 

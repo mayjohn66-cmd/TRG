@@ -130,7 +130,7 @@ static func generate_offers(state: GameState, player_id: int, count: int = GameE
 	var by_category: Dictionary = {}
 	var focus: Array = draft_focus(state.round_number)
 	for def: AugmentDef in all():
-		if def.is_available(state, player_id) and def.weight > 0 and (focus.is_empty() or focus.has(def.category)):
+		if def.is_available(state, player_id) and def.weight > 0 and effective_weight(def, state, player_id) > 0.0 and (focus.is_empty() or focus.has(def.category)):
 			if not by_category.has(def.category):
 				by_category[def.category] = [] as Array[AugmentDef]
 			(by_category[def.category] as Array).append(def)
@@ -158,7 +158,7 @@ static func generate_offers(state: GameState, player_id: int, count: int = GameE
 		var rest: Array[AugmentDef] = []
 		var others: Array[AugmentDef] = []
 		for def: AugmentDef in all():
-			if def.weight > 0 and def.is_available(state, player_id) and not offers.has(def.augment_id):
+			if def.weight > 0 and effective_weight(def, state, player_id) > 0.0 and def.is_available(state, player_id) and not offers.has(def.augment_id):
 				if focus.is_empty() or focus.has(def.category):
 					rest.append(def)
 				else:
@@ -180,7 +180,7 @@ const OWNED_TOOL_SWAP_FACTOR: float = 0.2
 ## 드래프트에 쓰는 가중치: 표의 weight × 템포 업 배수 (템포 업 1단계 8라운드부터 법전·초증강 ×3).
 ## player_id를 주면 그 사람이 이미 특수 판정 도구를 가졌을 때 판정 도구 교체 증강을 OWNED_TOOL_SWAP_FACTOR배로 줄인다.
 static func effective_weight(def: AugmentDef, state: GameState, player_id: int = -1) -> float:
-	var weight: float = float(def.weight * TempoUp.weight_multiplier(state.round_number, def.category))
+	var weight: float = float(def.weight * TempoUp.weight_multiplier(state.round_number, def.category)) * MatchRules.weight_factor(state, def)
 	if def.category == GameEnums.AugmentCategory.TOOL_SWAP and has_special_tool(state, player_id):
 		weight *= OWNED_TOOL_SWAP_FACTOR
 	return weight
@@ -216,7 +216,7 @@ static func reroll_candidate(state: GameState, player_id: int, current: Array) -
 	var outside: Array[StringName] = []
 	var focus: Array = draft_focus(state.round_number)
 	for def: AugmentDef in all():
-		if def.weight > 0 and def.is_available(state, player_id) and not current.has(def.augment_id):
+		if def.weight > 0 and effective_weight(def, state, player_id) > 0.0 and def.is_available(state, player_id) and not current.has(def.augment_id):
 			if focus.is_empty() or focus.has(def.category):
 				pool.append(def.augment_id)
 			else:

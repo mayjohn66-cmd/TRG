@@ -133,6 +133,8 @@ static var net_names: Dictionary = {}
 ## 온라인 대전의 좌석별 아바타 id.
 static var net_avatars: Dictionary = {}
 static var net_seed: int = 0
+## 온라인 대전의 방 규칙 (방장이 config["rules"]로 보낸 값, MatchRules).
+static var net_rules: Dictionary = {}
 ## 테스트용: 내 자리를 봇 두뇌가 대신 플레이한다 (자동 플레이).
 static var net_autoplay: bool = false
 
@@ -147,6 +149,7 @@ static func set_net(is_host: bool, local_seat: int, config: Dictionary) -> void:
 	net_names = (config["names"] as Dictionary).duplicate()
 	net_avatars = (config.get("avatars", {}) as Dictionary).duplicate()
 	net_seed = int(config["seed"])
+	net_rules = MatchRules.sanitize(config.get("rules", {}))
 	mode = MODE_MULTIPLAYER
 
 
@@ -159,6 +162,7 @@ static func clear_net() -> void:
 	net_names = {}
 	net_avatars = {}
 	net_seed = 0
+	net_rules = {}
 
 
 ## 닉네임 검사: 앞뒤 공백을 뺀 뒤 1~10자여야 한다. 문제가 없으면 빈 문자열, 있으면 안내 문구를 돌려준다.
@@ -182,6 +186,66 @@ static func set_nickname(raw: String) -> bool:
 	nickname = raw.strip_edges()
 	save()
 	return true
+
+
+## [방 규칙 설정]에서 바꾼 항목만 담는다 (trap_reveal·super_freq·laws·speed). 바꾸지 않은 항목은 난이도 기본값을 따른다.
+## 싱글 커스텀과 친선전 방장이 함께 쓰고, 브라우저 프로필에 남는다.
+const RULE_KEYS: Array[String] = ["trap_reveal", "super_freq", "laws", "speed"]
+static var _rule_overrides: Variant = null
+
+
+static func rule_overrides() -> Dictionary:
+	if _rule_overrides == null:
+		var config := ConfigFile.new()
+		config.load(PROFILE_PATH)
+		var stored: Variant = config.get_value("profile", "room_rules", {})
+		_rule_overrides = {}
+		if stored is Dictionary:
+			for key: String in RULE_KEYS:
+				if (stored as Dictionary).has(key):
+					_rule_overrides[key] = (stored as Dictionary)[key]
+	return _rule_overrides
+
+
+## 규칙 하나를 바꾼다 (고른 값은 [기본값으로]를 누를 때까지 난이도 기본값보다 앞선다). 프로필에 바로 저장한다.
+static func set_rule(key: String, value: Variant) -> void:
+	if not RULE_KEYS.has(key):
+		return
+	rule_overrides()[key] = MatchRules.sanitize({key: value}).get(key)
+	_save_rule_overrides()
+
+
+static func reset_rules() -> void:
+	rule_overrides().clear()
+	_save_rule_overrides()
+
+
+static func _save_rule_overrides() -> void:
+	var config := ConfigFile.new()
+	config.load(PROFILE_PATH)
+	config.set_value("profile", "room_rules", rule_overrides().duplicate())
+	config.save(PROFILE_PATH)
+
+
+## 바꾸기 전 기본 규칙: 놀이터는 불닭 난이도 기본값(Lv.1~3 함정 공개 등), 그 밖에는 MatchRules 기본값.
+static func base_rules() -> Dictionary:
+	return MatchRules.for_difficulty(bot_difficulty()) if mode == MODE_AI and not net_active else MatchRules.defaults()
+
+
+## 이번 판에 쓸 규칙. 온라인은 방장이 보낸 규칙 그대로 (모두 같아야 한다).
+static func match_rules() -> Dictionary:
+	if net_active:
+		return MatchRules.sanitize(net_rules)
+	var rules: Dictionary = base_rules()
+	rules.merge(rule_overrides(), true)
+	return MatchRules.sanitize(rules)
+
+
+## 친선전 방장이 시작할 때 보내는 방 규칙 (난이도와 무관한 기본값 + 방장 설정).
+static func room_rules() -> Dictionary:
+	var rules: Dictionary = MatchRules.defaults()
+	rules.merge(rule_overrides(), true)
+	return MatchRules.sanitize(rules)
 
 
 ## 놀이터(컴퓨터 대전) 난이도: 불닭 Fire Level 1~5 (BotTemper.LEVELS, 기본 Lv.2 로제). 브라우저 프로필에 남는다.

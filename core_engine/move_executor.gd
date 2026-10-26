@@ -23,6 +23,7 @@ static func execute(state: GameState, mover: PlayerPawn, ctx: RuleContext) -> Mo
 	if report.canceled:
 		return report
 	var path: Array[int] = plan_path(state, mover, ctx, report)
+	announce_passives(state, mover, report)
 	var outcome: StepOutcome = StepOutcome.CONTINUE
 	for index: int in path.size():
 		outcome = apply_step(state, mover, ctx, path[index], index == path.size() - 1, index == 0, report)
@@ -72,22 +73,28 @@ static func plan_path(state: GameState, mover: PlayerPawn, ctx: RuleContext, rep
 		steps += revenge
 		report.revenge_bonus = revenge
 		report.ability_notes.append("복수 부스터 +%d칸" % revenge)
+		if mover.sub_type() == GameEnums.PawnSubType.LUDO_AVENGER:
+			report.passives.append(&"ludo_revenge")
 	var sub: GameEnums.PawnSubType = mover.sub_type()
 	# 스타 카트: 발판·돌진 같은 추가 이동은 모두 +2칸.
 	if sub == GameEnums.PawnSubType.KART_STAR and ctx.charge_depth > 0:
 		steps += KART_FOLLOW_UP_BONUS
 		report.ability_notes.append("스타 카트 추가 이동 +%d칸" % KART_FOLLOW_UP_BONUS)
+		report.passives.append(&"kart_follow")
 	if sub == GameEnums.PawnSubType.CHESS_QUEEN:
 		steps += 2 * sign_dir
 		report.ability_notes.append("퀸 +2칸")
+		report.passives.append(&"queen_bonus")
 	# 흑돌: 홀수 눈금으로 전진하면 +1칸 (추가 이동에는 붙지 않는다).
 	if sub == GameEnums.PawnSubType.BADUK_BLACK and ctx.charge_depth == 0 and posmod(ctx.dice_value, 2) == 1:
 		steps += sign_dir
 		report.ability_notes.append("흑돌 홀수 +1칸")
+		report.passives.append(&"black_odd")
 	# 나리 승급한 쇼기 기물은 이동할 때마다 +1칸.
 	if mover.kind == GameEnums.PawnKind.SHOGI and mover.promoted:
 		steps += sign_dir
 		report.ability_notes.append("나리 승급 +1칸")
+		report.passives.append(&"nari_bonus")
 	var path: Array[int] = state.board.calculate_path(mover, steps, ctx)
 	# 이동 1단계(리벤지 부스터 선행 전진) 칸은 판정하지 않는다: 경로를 보는 기물 능력·점프 부스트는 2단계(눈금 이동) 구간만 본다.
 	var lead: int = report.revenge_bonus
@@ -96,33 +103,39 @@ static func plan_path(state: GameState, mover: PlayerPawn, ctx: RuleContext, rep
 		steps += 2 * sign_dir
 		path = state.board.calculate_path(mover, steps, ctx)
 		report.ability_notes.append(("용왕" if mover.promoted else "비차" if sub == GameEnums.PawnSubType.SHOGI_HISHA else "룩") + " 직진 +2칸")
+		report.passives.append(&"straight_ryuo" if mover.promoted else &"straight_hisha" if sub == GameEnums.PawnSubType.SHOGI_HISHA else &"straight_rook")
 	# 각행: 출발선 외 코너를 스쳐 지나가거나 멈추면 +2칸 (용마는 +3칸).
 	if mover.gets_corner_bonus() and _path_touches_bonus_corner(dice_segment(path, lead)):
 		var corner_bonus: int = 3 if mover.promoted else 2
 		steps += corner_bonus * sign_dir
 		path = state.board.calculate_path(mover, steps, ctx)
 		report.ability_notes.append("코너 보너스 +%d칸" % corner_bonus)
+		report.passives.append(&"corner_ryuma" if mover.promoted else &"corner_kaku")
 	# 비숍: 코너 바로 앞 칸에 멈추게 되면 +1칸 더 가서 코너에 들어간다.
 	if sub == GameEnums.PawnSubType.CHESS_BISHOP and not path.is_empty() and BoardSpec.bonus_corner_tiles.has(posmod(path.back() + 1, BoardSpec.tile_count)):
 		steps += sign_dir
 		path = state.board.calculate_path(mover, steps, ctx)
 		report.ability_notes.append("비숍 코너 진입 +1칸")
+		report.passives.append(&"bishop_corner")
 	match sub:
 		GameEnums.PawnSubType.JANGGI_PO:
 			if _path_jumps_over_pawn(state, mover, dice_segment(path, lead)):
 				path = state.board.calculate_path(mover, steps + 3 * sign_dir, ctx)
 				report.cannon_bonus = true
 				report.ability_notes.append("포 넘기 +3칸")
+				report.passives.append(&"po_jump")
 		GameEnums.PawnSubType.JANGGI_MA:
 			var first: Array[int] = dice_segment(path, lead)
 			if not first.is_empty() and not _tile_has_other_pawn(state, mover, first[0]):
 				path = state.board.calculate_path(mover, steps + 2 * sign_dir, ctx)
 				report.ability_notes.append("마 +2칸")
+				report.passives.append(&"ma_leap")
 		GameEnums.PawnSubType.JANGGI_SANG:
 			var first: Array[int] = dice_segment(path, lead)
 			if not first.is_empty() and not _tile_has_other_pawn(state, mover, first[0]):
 				path = state.board.calculate_path(mover, steps + 2 * sign_dir, ctx)
 				report.ability_notes.append("상 도약 +2칸")
+				report.passives.append(&"sang_leap")
 	# 말 밟고 점프하기: 경로 중간에 서 있는 말(아군·적군 무관)마다 +1칸 (최대 3칸). 경로를 무시하는 기물은 제외.
 	# 경로에 합치지 않는다: 눈금 이동으로 도착한 칸에서 처치를 먼저 판정한 뒤, 그 자리에서 추가 이동으로 이어 간다 (finalize).
 	if ctx.charge_depth == 0:
@@ -133,6 +146,21 @@ static func plan_path(state: GameState, mover: PlayerPawn, ctx: RuleContext, rep
 	if report.revenge_bonus > 0:
 		report.revenge_total = path.size()
 	return path
+
+
+## 경로 계산에서 발동한 기물 능력을 보드 뱃지용으로 알린다 (실제 이동이 시작될 때 한 번).
+static func announce_passives(state: GameState, mover: PlayerPawn, report: MoveReport) -> void:
+	for passive: StringName in report.passives:
+		state.passive_triggered.emit(mover.entity_id, passive)
+	report.passives.clear()
+
+
+## 이 칸에 상대가 설치한 함정이 있는가 (나이트·계마가 뛰어넘을 때 [함정 관통!]을 알린다).
+static func _has_hostile_trap(state: GameState, mover: PlayerPawn, tile_index: int) -> bool:
+	for attachment: TileAttachment in state.board.get_tile(tile_index).attachments:
+		if attachment.attachment_id.begins_with("TRP") and attachment.owner_id != mover.owner_id:
+			return true
+	return false
 
 
 ## 이동 2단계(눈금 이동) 구간: 경로에서 리벤지 부스터 선행 전진 칸(lead)을 뺀 나머지.
@@ -190,6 +218,8 @@ static func revenge_bonus_of(mover: PlayerPawn, state: GameState = null) -> int:
 	var tempo: int = TempoUp.revenge_bonus(state.round_number) if state != null else 0
 	var base: int = GameData.revenge_bonus()
 	var bonus: int = maxi(base, tempo) if base > 0 else 0
+	if bonus > 0 and state != null and MatchRules.is_speed(state):
+		bonus += MatchRules.SPEED_REVENGE_EXTRA  # 스피드전: 초반부터 리벤지 부스터가 크다
 	if bonus > 0 and mover.sub_type() == GameEnums.PawnSubType.LUDO_AVENGER:
 		bonus += GameData.param("augments", "EVO_7_2", 1, 4)
 	return bonus
@@ -290,6 +320,7 @@ static func apply_step(
 			var sniffed: StringName = state.draw_card(mover.owner_id)
 			if sniffed != &"":
 				report.dog_cards += 1
+				state.passive_triggered.emit(mover.entity_id, &"dog_bakery")
 				if report.drawn_card == &"":
 					report.drawn_card = sniffed
 
@@ -297,12 +328,15 @@ static func apply_step(
 	if mover.sub_type() == GameEnums.PawnSubType.MONO_SHIP and not bool(ctx.metadata.get("ship_used", false)):
 		if _sink_hostile_attachments(state, mover, destination, report):
 			ctx.metadata["ship_used"] = true
+			state.passive_triggered.emit(mover.entity_id, &"ship_sink")
 
 	# 나이트 점프: 중간 칸의 설치물은 무시하고 도착 칸의 설치물만 판정한다.
 	var skip_attachments: bool = not is_last and mover.jumps_over_attachments()
 	# 계마: 이동 경로의 첫 2칸에 있는 함정은 뛰어넘어 무시한다 (도착 칸이면 그대로 판정).
 	if not is_last and mover.sub_type() == GameEnums.PawnSubType.SHOGI_KEIMA and report.path.size() <= 2:
 		skip_attachments = true
+	if skip_attachments and _has_hostile_trap(state, mover, destination):
+		state.passive_triggered.emit(mover.entity_id, &"keima_pass" if mover.sub_type() == GameEnums.PawnSubType.SHOGI_KEIMA else &"queen_pass" if mover.sub_type() == GameEnums.PawnSubType.CHESS_QUEEN else &"knight_pass")
 	if not skip_attachments and _trigger_attachments(state, mover, ctx, destination, is_last, report):
 		if not mover.has_left_start:
 			# 함정이 말을 출발선으로 돌려보냈다 (send_to_start가 출발 상태를 초기화한다).
@@ -349,6 +383,7 @@ static func _checkers_jump_at(state: GameState, mover: PlayerPawn, tile: int, re
 			continue
 		for member: PlayerPawn in enemy.stack_members():
 			report.captured_pawn_ids.append(member.entity_id)
+		state.passive_triggered.emit(mover.entity_id, &"checker_slide")
 		state.pawn_captured.emit(mover.entity_id, enemy.entity_id)
 		state.send_to_start(enemy, mover.owner_id)
 
@@ -407,6 +442,7 @@ static func _pay_salary(state: GameState, mover: PlayerPawn, report: MoveReport)
 		return
 	if state.draw_card(mover.owner_id) != &"":
 		report.salary_cards += 1
+		state.passive_triggered.emit(mover.entity_id, &"car_salary")
 
 
 static func _finish(state: GameState, mover: PlayerPawn, report: MoveReport) -> void:
@@ -436,6 +472,8 @@ static func _trigger_attachments(
 				state.trap_defused.emit(tile_index, attachment.attachment_id, mover.entity_id)
 				if state.draw_card(mover.owner_id) != &"":
 					report.defused_cards += 1
+			elif attachment.owner_id != mover.owner_id:
+				state.passive_triggered.emit(mover.entity_id, &"kart_immune")
 			continue
 		if is_trap and attachment.owner_id != mover.owner_id and state.break_shield(mover):
 			tile.remove_attachment(attachment)  # 백돌 방어막이 함정을 막고 함께 부서진다
@@ -515,6 +553,7 @@ static func _resolve_landing(state: GameState, mover: PlayerPawn, ctx: RuleConte
 			warp_target = BoardSpec.portal_warp_targets[mover.current_tile_idx]
 			if mover.sub_type() == GameEnums.PawnSubType.MONO_PLANE:
 				warp_target = BoardSpec.plane_warp_targets[mover.current_tile_idx]
+				state.passive_triggered.emit(mover.entity_id, &"plane_warp")
 		if warp_target != -1:
 			if not _warp_to(state, mover, ctx, report, warp_target):
 				return
@@ -665,6 +704,8 @@ static func _resolve_captures(state: GameState, mover: PlayerPawn, ctx: RuleCont
 	state.end_attack()
 	if ctx.capture_extra_turn:
 		report.extra_turn = true
+		if mover.kind == GameEnums.PawnKind.YUT:
+			state.passive_triggered.emit(mover.entity_id, &"yut_reroll")
 	if ctx.capture_charge_steps > 0 and _primary_move(ctx):
 		state.capture_charge_started.emit(mover.entity_id, ctx.capture_charge_steps)
 		var charge_ctx: RuleContext = ctx.make_follow_up(ctx.capture_charge_steps)

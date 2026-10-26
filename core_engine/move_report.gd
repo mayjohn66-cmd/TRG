@@ -34,6 +34,8 @@ var law_notes: Array[String] = []
 var stack_offer: Dictionary = {}
 ## 세부 기물 능력 보고: 보너스/제약 문구, 승진한 폰, 들이받힌 말, 증기선이 파괴한 설치물, 강아지가 스쳐서 얻은 카드 수.
 var ability_notes: Array[String] = []
+## 경로 계산에서 발동한 기물 능력 (PassiveCallout 키). 실제 이동이 시작될 때 passive_triggered로 한 번 알린다 (미리보기는 알리지 않는다).
+var passives: Array[StringName] = []
 var promoted_pawn_ids: Array[int] = []
 var destroyed_attachments: Array[Dictionary] = []
 var dog_cards: int = 0
@@ -83,6 +85,7 @@ func merge(other: MoveReport) -> void:
 	if stack_offer.is_empty():
 		stack_offer = other.stack_offer
 	ability_notes.append_array(other.ability_notes)
+	passives.append_array(other.passives)
 	promoted_pawn_ids.append_array(other.promoted_pawn_ids)
 	destroyed_attachments.append_array(other.destroyed_attachments)
 	dog_cards += other.dog_cards

@@ -8,6 +8,8 @@ extends Resource
 @export var owner_id: int = -1
 ## true면 상대 화면에는 뒷면 카드로만 표시된다 (View 계층이 참조).
 @export var is_hidden_trap: bool = true
+## true면 함정 비공개 규칙에서도 모두가 정체를 안다 (광란의 지뢰밭 지뢰처럼 공개적으로 깔린 함정). 칸 위 모형은 세우지 않는다.
+@export var always_revealed: bool = false
 ## 남은 유지 턴 수. -1이면 영구 유지, 0이면 만료(소모)되어 이동 실행기가 타일에서 제거한다.
 @export var duration_turns: int = -1
 
@@ -42,6 +44,7 @@ func serialize() -> Dictionary:
 		"owner": owner_id,
 		"hidden": is_hidden_trap,
 		"duration": duration_turns,
+		"revealed": always_revealed,
 	}
 
 
@@ -49,3 +52,4 @@ func deserialize(data: Dictionary) -> void:
 	owner_id = int(data.get("owner", -1))
 	is_hidden_trap = bool(data.get("hidden", true))
 	duration_turns = int(data.get("duration", -1))
+	always_revealed = bool(data.get("revealed", false))

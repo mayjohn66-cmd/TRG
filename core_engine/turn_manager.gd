@@ -84,6 +84,8 @@ var duel_game_override: int = -1
 var _counter_offer: Dictionary = {}
 ## 폭풍 전진 가속 기믹(발판·점프·복수) 사용 여부. start_game 전에만 바꿀 수 있다.
 var boost_gimmicks: bool = true
+## 판 규칙 설정 (MatchRules). start_game이 GameState에 넣는다. 온라인은 모든 참가자가 방장이 보낸 같은 값을 쓴다.
+var match_rules: Dictionary = MatchRules.defaults()
 ## 도박사의 영혼이 눈금 1 이하로 과열된 플레이어 (이동이 끝나면 움직인 말이 출발선으로 사출된다). 없으면 -1.
 ## 플레이어 ID -> 지금까지 고른 증강 ID 목록.
 var augments: Dictionary = {}
@@ -150,6 +152,7 @@ func start_game(player_ids: Array[int], seed_value: int = 0, loadouts: Dictionar
 		return
 	state = GameState.new()
 	state.boost_gimmicks = boost_gimmicks
+	state.match_rules = MatchRules.sanitize(match_rules)
 	state.setup(player_ids, seed_value, loadouts)
 	state.turn_order_reverse_requested.connect(reverse_turn_order)
 	state.bang_resolved.connect(_on_bang_resolved)
@@ -1179,7 +1182,10 @@ func _apply_tempo_up() -> bool:
 	var round_number: int = state.round_number
 	if TempoUp.is_stage_round(round_number):
 		var stage: int = TempoUp.level(round_number)
-		_emit_event(&"tempo_up", {"round": round_number, "level": stage, "lines": TempoUp.effect_lines(stage)})
+		var lines: Array[String] = TempoUp.effect_lines(stage)
+		if not bool(state.match_rules.get("laws", true)):
+			lines = lines.filter(func(line: String) -> bool: return not line.contains("법전"))  # 법전 끄기: 법전 관련 효과는 없다
+		_emit_event(&"tempo_up", {"round": round_number, "level": stage, "lines": lines})
 		if stage == 2:
 			_enact_random_law()
 	var zone_start: int = TempoUp.goal_zone_start(round_number)
@@ -1201,6 +1207,8 @@ func _apply_tempo_up() -> bool:
 
 ## 템포 업 2단계: 법전에 아직 없는 특수 승리 교칙 하나를 무작위로 올린다 (슬롯이 가득 차면 가장 오래된 교칙이 밀려난다).
 func _enact_random_law() -> void:
+	if not bool(state.match_rules.get("laws", true)):
+		return  # 방 규칙 [특수 승리 법전 끄기]: 말 4개 완주로만 승부
 	var candidates: Array[String] = []
 	for definition: AugmentDef in AugmentRegistry.all():
 		if definition.category == GameEnums.AugmentCategory.LAW_ENACT and definition.enabled and not state.rulebook.has_law(String(definition.payload)) and not candidates.has(String(definition.payload)):
@@ -1461,6 +1469,7 @@ func _execute_move(pawn: PlayerPawn, forced_path: Array[int] = []) -> void:
 		if not forced:
 			_note_altering_laws(pawn, ctx, path, _move_report)
 			_announce_move_bonus(pawn, _move_report)
+			MoveExecutor.announce_passives(state, pawn, _move_report)
 		await execute_step_by_step_move(pawn, path, ctx)
 	# 도착 정산(처치·발판·법전·승리 판정)도 한 묶음으로 처리한다 (걸음 await 뒤라 행동 처리 묶음 밖이다).
 	processing_started.emit()

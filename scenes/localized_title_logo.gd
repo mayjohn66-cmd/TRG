@@ -6,11 +6,8 @@ const PATHS: Dictionary = {
 	"en": "res://web/title-logo-en.png",
 	"ja": "res://web/title-logo-ja.png",
 }
-const TITLES: Dictionary = {
-	"ko": "초증강 엘리아스 마블",
-	"en": "Hyper Elias Marble",
-	"ja": "超増強エリアスマーブル",
-}
+## 영어·일본어 제목은 translations.csv에 둔다 (일본어 한자가 게임 글꼴 검사에 걸리지 않게 코드에는 한국어 원문만).
+const TITLE: String = "초증강 엘리아스 마블"
 
 
 func _ready() -> void:
@@ -22,6 +19,6 @@ func _ready() -> void:
 func _refresh() -> void:
 	var lang: String = L10n.current_lang if PATHS.has(L10n.current_lang) else "ko"
 	texture = TextureCache.fetch(PATHS[lang])
-	tooltip_text = TITLES[lang]
+	tooltip_text = L10n.translate_text(TITLE, lang) if lang != "ko" else TITLE
 	if OS.has_feature("web"):
 		JavaScriptBridge.eval("window.trgSetTitleLanguage && window.trgSetTitleLanguage(%s)" % JSON.stringify(lang), true)

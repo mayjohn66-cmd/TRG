@@ -94,6 +94,7 @@ func _run() -> void:
 	await _test_presentation_queue()
 	await _test_oneshot_fx_sweep()
 	await _test_queue_ignores_deferred_draft()
+	_test_trap_reveal_rule()
 	await _test_board_teardown()  # 보드를 지운다: 반드시 마지막
 	if _failures.is_empty():
 		print("UI_FX_OK")
@@ -2189,6 +2190,8 @@ func _test_trap_tile_marking() -> void:
 	var state: GameState = _board.manager.state
 	_board.instant_roll_for_test = false
 	_board._announcer.cancel()
+	var saved_reveal: bool = MatchRules.trap_reveal(state)
+	state.match_rules["trap_reveal"] = false  # 심리전(비공개) 규칙에서 모르는 함정은 물음표로 보인다 (공개 규칙은 _test_trap_reveal_rule)
 	state.board.get_tile(14).attachments.clear()  # 앞선 검사(무작위 판)가 14번에 함정을 남겼을 수 있다
 	_board._refresh_all()
 	var tile: BoardSkin.Tile = _board._tile_views[14]
@@ -2216,7 +2219,7 @@ func _test_trap_tile_marking() -> void:
 	_board._tip_end()
 	_board._hover_attachment_tip(spot)
 	_board._update_tip(0.0)
-	_expect(_board._tip_panel.visible and _board._tip_title.text.contains("설치자: P2"), "설치물 위에 올리면 바로 툴팁 (%s)" % _board._tip_title.text)
+	_expect(_board._tip_panel.visible and _board._tip_title.text.contains("설치: %s" % _board._player_name(2)), "설치물 위에 올리면 바로 툴팁 (%s)" % _board._tip_title.text)
 	var known: bool = _board._trap_known(state.board.get_tile(14).attachments[0])
 	_expect(_board._tip_title.text.contains("나락") == known, "모르는 뒷면 함정은 이름을 숨긴다")
 	_expect(_board._tip_skill.text.contains("유지"), "남은 유지 표시")
@@ -2238,6 +2241,7 @@ func _test_trap_tile_marking() -> void:
 	state.board.get_tile(14).attachments.clear()
 	_board._refresh_tiles()
 	_expect(not tile.trap_on and not _board._trap_tiles.has(14), "함정이 사라지면 표시도 사라진다")
+	state.match_rules["trap_reveal"] = saved_reveal
 	_board.instant_roll_for_test = true
 
 
@@ -2783,7 +2787,13 @@ func _test_presentation_queue() -> void:
 	for pawn_done: PlayerPawn in state.pawns_of(2):
 		pawn_done.is_finished = true
 	state.winner = 2
+	_board._decisive_rank = {"player": 2, "rank": 1, "reason": &"LAW_01"}
 	_board._show_result_overlay()
+	var end_reason: Label = _board._result_overlay.find_child("MatchEndReasonText", true, false)
+	_expect(end_reason != null and end_reason.text.contains("투기장의 지배자") and end_reason.text.contains("1위로 졸업"), "결과 화면 위에 매치 종료 사유 (%s)" % (end_reason.text if end_reason != null else "없음"))
+	_board._decisive_rank = {"player": 3, "rank": 2, "reason": VictoryChecker.ALL_HOME}
+	_expect(_board.match_end_reason().contains("말 4개를 모두 완주") and _board.match_end_reason().contains("2위"), "완주 졸업 사유: %s" % _board.match_end_reason())
+	_board._decisive_rank = {}
 	var ranking: Node = _board._result_overlay.find_child("RankingList", true, false)
 	_expect(ranking != null and ranking.get_child_count() == _board._player_ids.size(), "순위 줄이 참가자 수만큼 있다")
 	var podium: Node = _board._result_overlay.find_child("Podium", true, false)
@@ -2876,6 +2886,32 @@ func _test_nitro_dash() -> void:
 
 
 ## 이동 4단계: (1) 리벤지 부스터 로켓 -> 잠깐 멈춤 -> (2) 눈금 이동 -> (3) 도착 칸 처치 연출 -> (4) 점프 부스트 추가 이동.
+## 함정 공개 규칙: 공개면 상대 함정도 이름·효과가 보이고, 비공개면 AI 대전에서 상대 함정은 [? 수상한 함정]으로만 보인다 (내 함정은 보인다).
+func _test_trap_reveal_rule() -> void:
+	var state: GameState = _board.state
+	var saved_rules: Dictionary = state.match_rules.duplicate()
+	var saved_ai: bool = _board.ai_mode
+	_board.ai_mode = true
+	var rival := TileAttachment.new()
+	rival.attachment_id = "TRP_01"
+	rival.owner_id = 2
+	var mine := TileAttachment.new()
+	mine.attachment_id = "TRP_01"
+	mine.owner_id = _board.local_player_id
+	state.match_rules["trap_reveal"] = true
+	_expect(_board._trap_known(rival) and _board._attachment_tip_lines(rival)[0].contains(_board._attachment_name("TRP_01")), "공개 규칙: 상대 함정의 이름이 보인다 (%s)" % _board._attachment_tip_lines(rival)[0])
+	state.match_rules["trap_reveal"] = false
+	_expect(not _board._trap_known(rival) and _board._attachment_tip_lines(rival)[0].contains("수상한 함정") and _board._attachment_tip_lines(rival)[1].contains("정체를 알 수 없습니다"), "비공개 규칙: 상대 함정은 [? 수상한 함정] (%s)" % _board._attachment_tip_lines(rival)[0])
+	_expect(_board._trap_known(mine), "비공개 규칙에서도 내 함정은 보인다")
+	rival.always_revealed = true
+	_expect(_board._trap_known(rival), "공개적으로 깔린 함정(지뢰밭 지뢰)은 비공개 규칙에서도 보인다")
+	rival.always_revealed = false
+	rival.is_hidden_trap = false
+	_expect(_board._trap_known(rival), "공개 설치물(호텔·코너 함정)은 비공개 규칙에서도 보인다")
+	state.match_rules = saved_rules
+	_board.ai_mode = saved_ai
+
+
 ## 거북이 이동 회귀 2: 드래프트 뒤로 미뤄 둔 연출(_draft_deferred)이 남아 있어도 이미 큐에 든 걸음은 바로 이어 뛴다.
 ## 예전에는 큐가 미뤄 둔 연출을 '보드가 가려짐'으로 보고 걸음마다 720프레임(웹 60fps면 12초) 상한까지 기다렸다:
 ## 라운드 마지막 턴에 받은 카드(비행기가 옷장 워프로 빵집에 내릴 때 등)가 드래프트 쪽으로 밀리면 남은 걸음이 한 칸씩 기어갔다.
