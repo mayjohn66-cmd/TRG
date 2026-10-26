@@ -2190,15 +2190,5 @@ v%s · 비공식 팬게임 (원작사와 무관한 비영리 무료 배포물),v
 [ %d / %d 처치 ],[ %d / %d KOs ],[ %d / %d 撃破 ]
 킬,KOs,撃破
 구역,zones,区域
-입문 추천! 특수 승리 없이 말 3개만 완주하면 졸업,"Recommended for beginners! No special wins, finish 3 pawns to graduate",入門におすすめ！特殊勝利なし、駒3つ完走で卒業
-%s님이 말 %d개를 완주하여 %d위로 졸업했습니다!,%s brought %d pawns home and graduated at rank #%d!,%sさんが駒%dつを完走させ、%d位で卒業しました！
-%d번 칸부터 결승선%s,Finish line from tile %d%s,%d番マスからゴール%s
-결승선이 %d칸 당겨진다,Finish line moves %d spaces closer,ゴールが%dマス近づく
-리벤지 부스터 +10칸,Revenge Booster +10 spaces,リベンジブースター +10マス
-6·11·16라운드,Rounds 6·11·16,6·11·16ラウンド
-6라운드 · 과열,Round 6 · Overheat,6ラウンド · オーバーヒート
-11라운드 · 광기,Round 11 · Frenzy,11ラウンド · 狂気
-16라운드 · 대붕괴,Round 16 · Meltdown,16ラウンド · 大崩壊
-최종 이동 +2칸 · 리벤지 +10칸 · 법전에 무작위 특수 승리 1개 등록,Final move +2 · Revenge +10 · a random special win is added to the Codex,最終移動 +2マス · リベンジ +10マス · 法典にランダムな特殊勝利を1つ登録
-전원 이동 +3칸 · 결승선이 4칸 당겨짐,Everyone +3 · finish line moves 4 spaces closer,全員の移動 +3マス · ゴールが4マス近づく
 [%d라운드 종료] 남은 플레이어는 진행 순위로 순위가 확정됩니다,[Round %d over] Remaining players are ranked by race standing,[%dラウンド終了] 残りのプレイヤーは進行順位で順位が確定します
+"입문 추천! 특수 승리는 쉬운 2종(처치·손패)만 나와요","Recommended for beginners! Only 2 easy special wins (KOs, hand)",入門におすすめ！特殊勝利は簡単な2種（撃破・手札）だけ

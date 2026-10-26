@@ -96,16 +96,11 @@ static func player_reason(state: GameState, player_id: int, include_special: boo
 	return SpecialVictory.achieved_by(state, player_id) if include_special else &""
 
 
-## 완주 졸업: 완주한 말이 규칙의 목표 수(기본 4 = 모두, Lv.1 크림 3) 이상.
 static func _all_home(state: GameState, player_id: int) -> bool:
-	var pawns: Array = state.pawns_of(player_id)
-	if pawns.is_empty():
-		return false
-	var finished: int = 0
-	for pawn: PlayerPawn in pawns:
-		if pawn.is_finished:
-			finished += 1
-	return finished >= mini(MatchRules.finish_target(state), pawns.size())
+	for pawn: PlayerPawn in state.pawns_of(player_id):
+		if not pawn.is_finished:
+			return false
+	return true
 
 
 ## 1~N등. 이미 확정된 순위(state.rankings)가 먼저이고, 아직 순위가 없는 사람은 완주한 말 수가 많은 순 → 결승까지 남은 거리 합이 작은 순 →

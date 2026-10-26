@@ -51,9 +51,58 @@ func test_off_leaves_the_roll_alone_and_results_stay_real_tool_rolls() -> void:
 		check(steps >= 1 and steps <= 6, "보정해도 주사위가 실제로 굴린 1~6만 나온다 (%d)" % steps)
 
 
-func test_cream_rerolls_low_rolls() -> void:
-	var low: float = _share(_histogram(_state(1), ToolDiceD6.new()), func(s: int) -> bool: return s <= 2)
-	check(low < 0.15, "Lv.1: 1~2칸은 75%%가 다시 굴려져 드물다 (%.2f)" % low)
+func test_cream_helps_only_the_human_and_more_with_finished_pawns() -> void:
+	var state: GameState = _state(1)
+	var bot_high: float = _share(_histogram(state, ToolDiceD6.new()), func(s: int) -> bool: return s >= 4)
+	check(bot_high > 0.43 and bot_high < 0.57, "크림: 컴퓨터는 보정 없음 (%.2f)" % bot_high)
+	state.pacing_humans = [1] as Array[int]
+	var base_high: float = _share(_histogram(state, ToolDiceD6.new()), func(s: int) -> bool: return s >= 4)
+	check(base_high > 0.62 and base_high < 0.78, "크림: 사람은 4칸 이상이 더 자주 (%.2f)" % base_high)
+	var pawns: Array = state.pawns_of(1)
+	(pawns[0] as PlayerPawn).is_finished = true
+	(pawns[1] as PlayerPawn).is_finished = true
+	check(PacingDirector.cream_high_chance(state, 1) > PacingDirector.CREAM_HIGH_BASE + 2 * PacingDirector.CREAM_HIGH_PER_FINISH, "완주 2개 + 컴퓨터보다 먼저 완주: 확률이 더 오른다")
+	var later_high: float = _share(_histogram(state, ToolDiceD6.new()), func(s: int) -> bool: return s >= 4)
+	check(later_high > base_high + 0.1, "완주할수록 고눈금이 더 자주 (%.2f → %.2f)" % [base_high, later_high])
+
+
+func test_cream_dodges_turn_ends_more_after_each_hit() -> void:
+	var state: GameState = _state(1)
+	state.pacing_humans = [1] as Array[int]
+	var yut := ToolYut.new()
+	var ends: int = 0
+	var first_hits: int = -1
+	for i: int in 4000:
+		var result: RollResult = PacingDirector.adjust(state, 1, yut, yut.roll(state.rng))
+		if result.ends_turn:
+			ends += 1
+	var off: GameState = _state(0)
+	var off_ends: int = 0
+	for i: int in 4000:
+		if yut.roll(off.rng).ends_turn:
+			off_ends += 1
+	check(off_ends > 0 and ends * 2 < off_ends, "크림: 턴 종료(낙)가 크게 줄어든다 (%d → %d)" % [off_ends, ends])
+	check(int(state.pacing_turn_ends.get(1, 0)) == ends, "당한 턴 종료를 센다")
+	var fresh: GameState = _state(1)
+	fresh.pacing_humans = [1] as Array[int]
+	fresh.pacing_turn_ends[1] = 3
+	first_hits = 0
+	for i: int in 4000:
+		if PacingDirector.adjust(fresh, 1, yut, yut.roll(fresh.rng)).ends_turn:
+			first_hits += 1
+	check(first_hits < ends, "턴 종료를 당할수록 다음 턴 종료는 더 잘 피한다 (%d < %d)" % [first_hits, ends])
+
+
+func test_cream_boosts_a_law_that_would_win_right_away() -> void:
+	var state: GameState = _state(1, 7)
+	state.pacing_humans = [1] as Array[int]
+	var arena: AugmentDef = AugmentRegistry.get_def(&"AUG_LAW_01")
+	var before: float = AugmentRegistry.effective_weight(arena, state, 1)
+	check(before > 0.0, "크림에서도 투기장의 지배자는 나온다")
+	check(AugmentRegistry.effective_weight(AugmentRegistry.get_def(&"AUG_LAW_03"), state, 1) == 0.0, "크림: 다른 법전은 안 나온다")
+	state.law_stats[1] = {VictoryLaw.KILLS: (LawRegistry.create("LAW_01") as VictoryLaw).goal()}
+	check_eq(AugmentRegistry.effective_weight(arena, state, 1), before * PacingDirector.CREAM_WINNING_LAW_FACTOR, "고르면 바로 이기는 법전은 가중치 대폭 상승")
+	check_eq(AugmentRegistry.effective_weight(arena, state, 2), before, "컴퓨터 자리는 그대로")
 
 
 func test_mid_levels_ramp_up_after_round_eleven() -> void:

@@ -114,6 +114,8 @@ var _move_report: MoveReport = null
 var _move_tempo_bonus: int = 0
 ## AI 대전의 사람 자리: 이 사람들이 모두 졸업하면 남은 컴퓨터는 레이스 진행 순서로 순위를 매기고 판을 바로 끝낸다 (비어 있으면 끝까지 진행, 온라인·4인 수동).
 var end_when_graduated: Array[int] = []
+## 히든 페이싱 디렉터가 사람으로 보는 자리 (AI 대전의 내 자리). 굴림·드래프트 직전에 state.pacing_humans로 넘긴다.
+var pacing_humans: Array[int] = []
 var _move_outcome: MoveExecutor.StepOutcome = MoveExecutor.StepOutcome.CONTINUE
 
 
@@ -403,6 +405,7 @@ func _handle_roll(actor: int, params: Dictionary = {}) -> void:
 	# 야추 다이스: 다시 굴릴 때 고정할 주사위(keep: 5개 bool)를 굴림 행동에 실어 보낸다.
 	if params.has("keep") and tool is ToolYacht:
 		(tool as ToolYacht).set_keep(params["keep"] as Array if params["keep"] is Array else [])
+	state.pacing_humans = pacing_humans
 	_apply_roll_result(PacingDirector.adjust(state, actor, tool, tool.roll(state.rng)))
 
 
@@ -1123,6 +1126,7 @@ func _on_timeout() -> void:
 			if tool.has_pending_state():
 				_apply_roll_result(tool.cash_out())
 			else:
+				state.pacing_humans = pacing_humans
 				_apply_roll_result(PacingDirector.adjust(state, current_player_id(), tool, tool.roll(state.rng)))
 		State.PHASE_INTERRUPT_ROLL:
 			_close_interrupt_window()
@@ -1169,14 +1173,15 @@ func _enter_round_start() -> void:
 	if draft_enabled and GameEnums.is_draft_round(state.round_number):
 		for player_id: int in player_order:
 			if not state.is_graduated(player_id):  # 졸업한 플레이어는 드래프트에서 빠진다
+				state.pacing_humans = pacing_humans
 				_draft_offers[player_id] = AugmentRegistry.generate_offers(state, player_id)
 		_emit_event(&"augment_offers", {"round": state.round_number, "offers": _draft_offers.duplicate(true)})
 	else:
 		_begin_turn()
 
 
-## 템포 업: 단계가 오르는 라운드(TempoUp.STAGE_ROUNDS, 6·11·16)는 라운드를 선언하기 전에 경고 이벤트를 먼저 보낸다.
-## 2단계(11R)는 법전에 무작위 특수 승리를 하나 올리고, 3단계(16R)는 결승선을 한 번 4칸 당겨 그 안에 선 말이 바로 완주한다.
+## 템포 업: 단계가 오르는 라운드(TempoUp.STAGE_ROUNDS, 8·15·22)는 라운드를 선언하기 전에 경고 이벤트를 먼저 보낸다.
+## 2단계(15R)는 법전에 무작위 특수 승리를 하나 올리고, 3단계부터는 라운드마다 결승선이 당겨져 그 안에 선 말이 바로 완주한다.
 ## 완주로 게임이 끝났으면 true.
 func _apply_tempo_up() -> bool:
 	var round_number: int = state.round_number
@@ -1206,8 +1211,7 @@ func _apply_tempo_up() -> bool:
 			for member: PlayerPawn in pawn.stack_members():
 				finished.append(member.entity_id)
 			state.finish_stack(pawn)
-	if TempoUp.is_stage_round(round_number) or not finished.is_empty():
-		_emit_event(&"goal_shrunk", {"round": round_number, "zone_start": zone_start, "shrink": TempoUp.goal_shrink(round_number), "finished": finished})
+	_emit_event(&"goal_shrunk", {"round": round_number, "zone_start": zone_start, "shrink": TempoUp.goal_shrink(round_number), "finished": finished})
 	if finished.is_empty():
 		return false
 	for entry: Dictionary in VictoryChecker.newly_qualified(state, player_order, current_player_id(), false):
@@ -1221,7 +1225,8 @@ func _enact_random_law() -> void:
 		return  # 방 규칙 [특수 승리 법전 끄기]: 말 4개 완주로만 승부
 	var candidates: Array[String] = []
 	for definition: AugmentDef in AugmentRegistry.all():
-		if definition.category == GameEnums.AugmentCategory.LAW_ENACT and definition.enabled and not state.rulebook.has_law(String(definition.payload)) and not candidates.has(String(definition.payload)):
+		if definition.category == GameEnums.AugmentCategory.LAW_ENACT and definition.enabled and not state.rulebook.has_law(String(definition.payload)) and not candidates.has(String(definition.payload)) \
+				and MatchRules.law_allowed(state, String(definition.payload)):
 			candidates.append(String(definition.payload))
 	if candidates.is_empty():
 		return
@@ -1384,7 +1389,7 @@ func _apply_roll_result(result: RollResult) -> void:
 		if int(state.gambler_round.get(roller, -1)) == state.round_number:
 			_emit_event(&"gambler_doubled", {"player_id": roller, "from": boosted, "to": boosted * SuperAugments.gambler_multiplier()})
 			boosted *= SuperAugments.gambler_multiplier()
-		# 템포 업: 최종 이동 칸에 단계별 보너스 (6R +1 / 11R +2 / 16R +3)
+		# 템포 업: 최종 이동 칸에 단계별 보너스 (8R +1 / 15R +2 / 22R +3)
 		var tempo: int = TempoUp.move_bonus(state.round_number)
 		if tempo > 0:
 			_emit_event(&"tempo_boosted", {"player_id": roller, "from": boosted, "to": boosted + tempo, "level": TempoUp.level(state.round_number)})

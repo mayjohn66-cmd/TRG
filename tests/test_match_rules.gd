@@ -53,14 +53,14 @@ func test_easy_draft_lowers_complex_supers_only_for_level_one() -> void:
 	check(AugmentRegistry.effective_weight(sniper, easy) < AugmentRegistry.effective_weight(sniper, normal), "Lv.1: 다른 초증강도 조금 줄어든다")
 	var evolution: AugmentDef = AugmentRegistry.get_def(&"EVO_2_2")
 	check(AugmentRegistry.effective_weight(evolution, easy) > AugmentRegistry.effective_weight(evolution, normal), "Lv.1: 기물 진화는 더 자주")
-	# Lv.1 크림은 특수 승리 법전 없이 완주 승부만, Lv.2부터 법전
-	check(not MatchRules.for_difficulty(1)["laws"] and MatchRules.for_difficulty(2)["laws"], "법전은 Lv.2부터")
-	var law_def: AugmentDef = null
+	# Lv.1 크림은 쉬운 법전 2종(투기장의 지배자·봉인된 에르핀의 식권)만, Lv.2부터 모든 법전
+	check(MatchRules.for_difficulty(1)["laws"] and MatchRules.for_difficulty(2)["laws"], "법전은 Lv.1부터 켜져 있다")
 	for def: AugmentDef in AugmentRegistry.all():
-		if def.category == GameEnums.AugmentCategory.LAW_ENACT:
-			law_def = def
-			break
-	check(law_def != null and MatchRules.weight_factor(easy, law_def) == 0.0 and MatchRules.weight_factor(normal, law_def) > 0.0, "Lv.1 드래프트에는 법전이 안 나온다")
+		if def.category != GameEnums.AugmentCategory.LAW_ENACT:
+			continue
+		var easy_law: bool = MatchRules.EASY_LAWS.has(String(def.payload))
+		check((MatchRules.weight_factor(easy, def) > 0.0) == easy_law, "Lv.1 법전 %s: %s" % [def.payload, "나온다" if easy_law else "안 나온다"])
+		check(MatchRules.weight_factor(normal, def) > 0.0, "Lv.2 법전 %s는 나온다" % def.payload)
 
 
 func test_speed_match_moves_tempo_up_and_boosts_revenge() -> void:
@@ -115,16 +115,3 @@ func test_presets_match_and_label_friendly_rooms() -> void:
 	var state := GameState.new()
 	state.match_rules = mind
 	check_eq(MatchRules.weight_factor(state, AugmentRegistry.get_def(&"SUPER_09")), 2.0, "축제: 초증강 가중치 2배")
-
-
-func test_level_one_graduates_with_three_finished_pawns() -> void:
-	check_eq(MatchRules.for_difficulty(1)["finish_target"], MatchRules.FAST_FINISH, "Lv.1은 말 3개 완주로 졸업")
-	check_eq(MatchRules.for_difficulty(2)["finish_target"], MatchRules.FULL_FINISH, "Lv.2부터 말 4개")
-	check_eq(MatchRules.sanitize({"finish_target": 1})["finish_target"], MatchRules.FAST_FINISH, "밖에서 온 값은 3~4로 고친다")
-	var normal: GameState = _state(MatchRules.defaults())
-	var easy: GameState = _state(MatchRules.for_difficulty(1))
-	for state: GameState in [normal, easy]:
-		for i: int in 3:
-			(state.pawns_of(1)[i] as PlayerPawn).is_finished = true
-	check(VictoryChecker.player_reason(normal, 1, false) == &"", "기본 규칙: 3개 완주로는 졸업하지 않는다")
-	check_eq(VictoryChecker.player_reason(easy, 1, false), VictoryChecker.ALL_HOME, "Lv.1: 말 3개 완주로 졸업")

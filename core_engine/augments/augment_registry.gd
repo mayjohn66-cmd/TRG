@@ -183,7 +183,7 @@ static func effective_weight(def: AugmentDef, state: GameState, player_id: int =
 	var weight: float = float(def.weight * TempoUp.weight_multiplier(state.round_number, def.category)) * MatchRules.weight_factor(state, def)
 	if def.category == GameEnums.AugmentCategory.TOOL_SWAP and has_special_tool(state, player_id):
 		weight *= OWNED_TOOL_SWAP_FACTOR
-	return weight
+	return weight * PacingDirector.law_offer_factor(state, player_id, def)
 
 
 ## 기본 주사위(D6)가 아닌 판정 도구를 쓰고 있는가.

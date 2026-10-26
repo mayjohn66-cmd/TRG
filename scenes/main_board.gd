@@ -9535,7 +9535,7 @@ func _on_game_over(winner_id: int, reason: StringName) -> void:
 	_refresh_all()
 
 
-## 판을 끝낸 결정적 사유 한 줄: "에르핀님이 '투기장의 지배자(적 말을 7회 처치)' 법전을 달성하여 1위로 졸업했습니다!"
+## 판을 끝낸 결정적 사유 한 줄: "에르핀님이 '투기장의 지배자(적 말을 6회 처치)' 법전을 달성하여 1위로 졸업했습니다!"
 ## 남은 컴퓨터를 레이스 순으로 매기거나 마지막 한 명을 꼴찌로 매긴 것은 사유가 아니다: 그 직전의 졸업을 쓴다.
 func match_end_reason() -> String:
 	var entry: Dictionary = _decisive_rank
@@ -9549,8 +9549,6 @@ func match_end_reason() -> String:
 	if LawRegistry.ALL_IDS.has(String(reason)):
 		var law: LawResource = LawRegistry.create(String(reason))
 		return "%s님이 '%s(%s)' 법전을 달성하여 %d위로 졸업했습니다!" % [who, law.law_name, law.description, int(entry["rank"])]
-	if MatchRules.finish_target(state) < MatchRules.FULL_FINISH:
-		return "%s님이 말 %d개를 완주하여 %d위로 졸업했습니다!" % [who, MatchRules.finish_target(state), int(entry["rank"])]
 	return "%s님이 말 4개를 모두 완주하여 %d위로 졸업했습니다!" % [who, int(entry["rank"])]
 
 
@@ -9811,7 +9809,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_log_line("[템포 업] 결승선이 %d칸 당겨졌습니다 (%d번 칸부터 결승)%s" % [data["shrink"], data["zone_start"], ", 완주 %d" % finished_ids.size() if not finished_ids.is_empty() else ""], Color("ffd43b"))
 			_record(-1, "결승선 %d칸 당겨짐 (%d번부터 결승)%s" % [int(data["shrink"]), int(data["zone_start"]), " - 말 %d개 즉시 완주!" % finished_ids.size() if not finished_ids.is_empty() else ""])
 			if TempoUp.is_stage_round(int(data["round"])) or not finished_ids.is_empty():
-				_announce("템포 업", "결승선이 당겨진다!", "%d번 칸부터 결승선%s" % [data["zone_start"], "\n말 %d개가 그 자리에서 완주!" % finished_ids.size() if not finished_ids.is_empty() else ""], Color("ffd43b"), null, 2.0)
+				_announce("템포 업", "결승선이 당겨진다!", "%d번 칸부터 결승선 - 라운드마다 %d칸씩 더 당겨집니다%s" % [data["zone_start"], TempoUp.GOAL_SHRINK_PER_ROUND, "\n말 %d개가 그 자리에서 완주!" % finished_ids.size() if not finished_ids.is_empty() else ""], Color("ffd43b"), null, 2.0)
 		&"tempo_boosted":
 			_roll_total[int(data["player_id"])] = int(data["to"])
 			_add_roll_reason(int(data["player_id"]), "템포 업 +%d" % (int(data["to"]) - int(data["from"])))
@@ -11019,8 +11017,10 @@ func _sync_race_end() -> void:
 	if manager == null:
 		return
 	manager.end_when_graduated.clear()
+	manager.pacing_humans.clear()
 	if net == null and ai_mode and not GameSession.net_active:
 		manager.end_when_graduated.append(local_player_id)
+		manager.pacing_humans.append(local_player_id)
 
 
 func _on_mode_toggle_pressed() -> void:
