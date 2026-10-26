@@ -37,7 +37,7 @@ const STEP_DELAY: float = 0.22
 ## 2026-10-26: "타다다닥"이 아니라 "탁 탁 탁"으로 한 칸씩 세며 보이게 0.12 -> 0.28초 (점프 0.2초 + 착지 쉼).
 const MOVE_STEP_SECONDS: float = 0.28
 ## 굴림 결과 칸수 배지가 뜬 뒤 말이 출발하기까지의 틈 (예전 0.3초 x 연출 속도 1.7 + 잠금 0.5초 -> 0.12초, 배지는 이동과 함께 떠 있다).
-const ROLL_SUMMARY_LEAD: float = 0.25  ## 2026-10 여운 패치: 0.12 -> 0.25 ("N칸 전진!"을 읽을 틈)
+const ROLL_SUMMARY_LEAD: float = 0.4  ## 2026-10 여운 패치: 0.12 -> 0.25 ("N칸 전진!"을 읽을 틈)
 ## 리벤지 부스터 배너가 뜬 뒤 말이 날아가기까지의 틈.
 const REVENGE_LAUNCH_LEAD: float = 0.15
 ## 카드·함정·필살기 발동 카드(뒤이어 효과가 이어지는 [문] 알림)의 최대 길이(초, 연출 속도 배율 전).
@@ -84,17 +84,17 @@ const HAND_FAN_DEGREES: float = 5.0
 ## 피해 되돌리기 팝업이 자동으로 넘어가기까지의 시간(초).
 const REACTION_SECONDS: float = 6.0
 ## 행동 사이의 호흡(초): 이동이 끝난 뒤 멈춤 / [P2 차례] 알림 길이.
-const DRAFT_OPEN_BEAT: float = 0.3  ## 증강 창이 열리기 전 여운 (0.12 -> 0.3)
-const BEAT_AFTER_MOVE: float = 0.3  ## 이동 뒤 여운 (0.8 -> 0.12 -> 2026-10 여운 패치 0.3: 도착 결과를 잠깐 보여 준 뒤 다음 턴·증강 창으로)
+const DRAFT_OPEN_BEAT: float = 0.45  ## 증강 창이 열리기 전 여운 (0.12 -> 0.3)
+const BEAT_AFTER_MOVE: float = 0.5  ## 이동 뒤 여운 (0.8 -> 0.12 -> 2026-10 여운 패치 0.3: 도착 결과를 잠깐 보여 준 뒤 다음 턴·증강 창으로)
 ## 차례 배너는 짧게 막는다: 누구 차례인지 보여 준 뒤에야 카드 선언·굴리기가 열린다 (봇도 배너가 끝난 뒤 움직인다).
 const TURN_BANNER_SECONDS: float = 0.85
 ## 터보 AI 턴: AI 차례의 연출 시간 배율 (보통 속도 대비 50% 단축, 2026-10 여운 패치 전에는 65%). 사람 말을 잡거나 특수 승리·법전이 움직인 턴은 보통 속도로 보여 준다.
-const TURBO_PACE_SCALE: float = 0.5
+const TURBO_PACE_SCALE: float = 0.8  ## 2026-10-26: 0.5(2배속) -> 0.8 (컴퓨터 차례도 눈으로 따라갈 수 있게)
 ## AI 차례 배너는 더 짧게 (사람 차례 배너는 그대로).
 const TURBO_TURN_BANNER_SECONDS: float = 0.45
 ## 연출 여운: 화면에 무언가를 보여 준 연출 단계(움직임·컷인·배너·여운이 있던 단계)가 끝난 뒤 다음 단계로 넘어가기 전에 결과를 보여 주는 시간(초).
 ## 기록 줄처럼 그 자리에서 끝나는 단계에는 붙지 않는다. AI 터보 턴에는 절반.
-const STEP_LINGER_SECONDS: float = 0.35
+const STEP_LINGER_SECONDS: float = 0.55  ## 2026-10-26: 0.35 -> 0.55 (연출 단계 사이 인터벌)
 ## 이보다 오래 걸린 단계를 '보여 준 단계'로 본다 (밀리초).
 const STEP_LINGER_MIN_MSEC: int = 60
 ## 처치 확정 대기의 최대 시간(초): 방어 결정이 이보다 오래 걸리면(연결 끊김 등) 연출을 계속한다.
@@ -6989,9 +6989,9 @@ func _process_presentation_queue() -> void:
 		_refresh_all()  # 큐가 비면 연출이 건드리지 않은 나머지 변화를 화면에 맞춘다
 
 
-## 연출 여운: 보여 준 단계가 끝난 뒤 STEP_LINGER_SECONDS(AI 터보 턴은 절반)만큼 결과를 보여 준다.
+## 연출 여운: 보여 준 단계가 끝난 뒤 STEP_LINGER_SECONDS(AI 터보 턴은 3/4)만큼 결과를 보여 준다.
 func _presentation_linger(generation: int) -> void:
-	var seconds: float = STEP_LINGER_SECONDS * (0.5 if _turbo_turn() else 1.0)
+	var seconds: float = STEP_LINGER_SECONDS * (0.75 if _turbo_turn() else 1.0)
 	if seconds <= 0.0 or not pacing_enabled or instant_roll_for_test:
 		return
 	var until: int = Time.get_ticks_msec() + int(seconds * 1000.0)
