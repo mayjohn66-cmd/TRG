@@ -188,9 +188,9 @@ static func set_nickname(raw: String) -> bool:
 	return true
 
 
-## [방 규칙 설정]에서 바꾼 항목만 담는다 (trap_reveal·super_freq·laws·speed). 바꾸지 않은 항목은 난이도 기본값을 따른다.
-## 싱글 커스텀과 친선전 방장이 함께 쓰고, 브라우저 프로필에 남는다.
-const RULE_KEYS: Array[String] = ["trap_reveal", "super_freq", "laws", "speed"]
+## [방 규칙 설정]에서 바꾼 항목만 담는다 (trap_reveal·super_freq·laws·speed·bot_level). 바꾸지 않은 항목은 난이도 기본값을 따른다.
+## 싱글 커스텀과 친선전 방장이 함께 쓰고, 브라우저 프로필에 남는다. bot_level은 친선전 빈자리 컴퓨터에만 쓴다.
+const RULE_KEYS: Array[String] = ["trap_reveal", "super_freq", "laws", "speed", "bot_level"]
 static var _rule_overrides: Variant = null
 
 
@@ -212,6 +212,14 @@ static func set_rule(key: String, value: Variant) -> void:
 	if not RULE_KEYS.has(key):
 		return
 	rule_overrides()[key] = MatchRules.sanitize({key: value}).get(key)
+	_save_rule_overrides()
+
+
+## 친선전 원클릭 프리셋: 법전·함정·초증강 세 값을 한 번에 바꾼다.
+static func apply_preset(key: StringName) -> void:
+	var values: Dictionary = MatchRules.preset_values(key)
+	for rule: String in values.keys():
+		rule_overrides()[rule] = MatchRules.sanitize({rule: values[rule]}).get(rule)
 	_save_rule_overrides()
 
 

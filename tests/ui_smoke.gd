@@ -456,7 +456,7 @@ func _check_fog_of_war() -> void:
 				continue
 			_fog_checks += 1
 			var mark_text: String = _board._trap_tooltip(attachment)  # 타일 위 글자 배지는 없애고 툴팁으로만 알린다
-			if attachment.owner_id == MainBoard.HUMAN_ID or MatchRules.trap_reveal(_board.state):
+			if attachment.owner_id == MainBoard.HUMAN_ID or MatchRules.trap_reveal(_board.state) or attachment.always_revealed:  # 광란의 지뢰밭 지뢰는 비공개 규칙에서도 보인다
 				_assert(not mark_text.contains("수상한 함정") and mark_text.contains(_board._attachment_name(attachment.attachment_id)), "내 함정·공개 규칙의 함정은 이름이 보여야 한다 (%s)" % mark_text)
 			else:
 				_assert(mark_text.contains("? 수상한 함정") and not mark_text.contains(_board._attachment_name(attachment.attachment_id)), "비공개 규칙: 봇의 함정은 [? 수상한 함정]으로만 보여야 한다 (%s)" % mark_text)

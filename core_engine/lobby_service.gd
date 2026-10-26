@@ -33,6 +33,8 @@ const JOIN_TIMEOUT_MESSAGE: String = "방 연결에 실패했습니다. (방장�
 
 var model: LobbyModel = LobbyModel.new()
 var is_host: bool = false
+## 참가자: 방장이 보낸 방 규칙 (대기실에 보여 준다).
+var guest_rules: Dictionary = {}
 var nickname: String = ""
 
 ## true면 실제 WebRTC 피어 없이 방장 상태만 만든다 (헤드리스 화면 테스트용).
@@ -601,6 +603,25 @@ func _broadcast_roster() -> void:
 	roster_changed.emit()
 	if _in_room and is_host and multiplayer.has_multiplayer_peer():
 		_roster.rpc(model.to_array())
+		_rules.rpc(GameSession.room_rules())
+
+
+## 방장이 [방 규칙 설정]을 바꿨다: 참가자 대기 화면에도 바로 보이게 다시 보낸다 (실제 판 규칙은 시작할 때 config["rules"]로 간다).
+func broadcast_rules() -> void:
+	_broadcast_roster()
+
+
+## 대기실에 보여 줄 방 규칙: 방장은 내 설정, 참가자는 방장이 보낸 설정.
+func shown_rules() -> Dictionary:
+	return GameSession.room_rules() if is_host else MatchRules.sanitize(guest_rules)
+
+
+## 방장 -> 참가자: 방 규칙 (대기실 표시용).
+@rpc("authority", "call_remote", "reliable")
+func _rules(data: Dictionary) -> void:
+	if not is_host:
+		guest_rules = MatchRules.sanitize(data)
+		roster_changed.emit()
 
 
 ## 참가자 -> 방장: 닉네임과 고른 아바타를 알린다.

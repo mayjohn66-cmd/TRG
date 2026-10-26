@@ -204,7 +204,7 @@ ko,en,ja
 11칸 + 한 번 더!,11 spaces + roll again!,11マス + もう1回！
 12칸 + 한 번 더!,12 spaces + roll again!,12マス + もう1回！
 13종,13 types,13種
-15초 자동 매칭 · 모르는 상대와 바로 대결,15s auto-match · battle strangers instantly,15秒自動マッチング · 知らない相手とすぐ対決
+15초 자동 매칭 · 모르는 상대와 바로 대결,15s Auto-Match · Quick Play,15秒自動マッチ・すぐ対戦
 15칸,15 spaces,15マス
 1P vs 3AI 봇: P2~P4를 AI가 조작합니다.,1P vs 3 AI Bots: AI controls P2~P4.,1P vs 3AIボット: P2~P4はAIが操作します。
 1~3 / 4~6 / 7~9끗,1~3 / 4~6 / 7~9 Kkeut,1~3 / 4~6 / 7~9点
@@ -1117,7 +1117,7 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 방 연결에 실패했습니다. (방장이 게임 중이거나 네트워크가 원활하지 않습니다),Couldn't connect to the room. (Host is in a game or the network is unstable),部屋への接続に失敗しました。(ホストがゲーム中か、ネットワークが不安定です)
 방 코드,Room code,ルームコード
 방 코드 %s 를 복사했습니다. 친구에게 붙여 넣어 보내 주세요.,Copied room code %s. Paste it to your friends.,ルームコード %s をコピーしました。友達に貼り付けて送ってください。
-방 코드 5자리 · 친구와 친선 대결,5-character room code · friendly match with friends,5桁のルームコード · 友達と親善対戦
+방 코드 5자리 · 친구와 친선 대결,5-Digit Code · Play with Friends,5桁コード・友達と対戦
 방 코드는 영문 대문자와 숫자 %d자리입니다.,Room codes are %d uppercase letters and digits.,ルームコードは英大文字と数字の%d桁です。
 방법,How,方法
 방아쇠 1회,1 trigger pull,引き金1回
@@ -1783,7 +1783,7 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 커쯔,Koutsu,刻子
 커쯔 (같은 패 3개),Koutsu (triplet),刻子 (同じ牌3枚)
 컴퓨터 %d,CPU %d,コンピューター %d
-컴퓨터 1~3명 · 혼자서 연습,1~3 CPUs · solo practice,コンピューター1~3人 · 1人で練習
+컴퓨터 1~3명 · 혼자서 연습,1~3 CPUs · Solo Practice,CPU 1〜3人・ソロ練習
 컴퓨터끼리 결투 중...,CPUs are dueling...,コンピューター同士で決闘中...
 컴퓨터와 겨룹니다. 제한 시간 없이 천천히 연습하세요.,Play against the computer. Practice at your pace with no time limit.,コンピューターと対戦します。制限時間なしでゆっくり練習しましょう。
 코끼리 지진,Elephant Quake,象の地震
@@ -2006,7 +2006,7 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 7라운드부터 법전·초증강도 등장,Special Wins and Hyper Augments appear from Round 7,7ラウンドから法典・超増強も登場
 [타로] P%d의 운명의 수레바퀴: %s 장외 사출 → %s이(가) 그 자리로,[Tarot] P%d's Wheel of Fortune: %s knocked off → %s takes its spot,[タロット] P%d の運命の輪: %s 場外射出 → %s がその場所へ
 %s이(가) 출발선으로 날아가고 %s이(가) 그 자리를 차지합니다,%s flies back to Start and %s takes its spot,%s がスタートへ飛ばされ、%s がその場所を奪います
-내 꼴찌 말 ↔ 1등 적 선두 말 위치 교환 (내 말이 보드에 없으면 선두 사출 + 대기 말이 그 자리로),"Swap your last pawn with the top rival's lead pawn. (None on the board? The leader is knocked off and your waiting pawn takes its spot.)",自分の最下位駒 ↔ 1位の敵の先頭駒を入れ替え (自分の駒がボードになければ先頭駒を射出し、待機駒がその場所へ)
+내 꼴찌 말 ↔ 1등 적 선두 말 위치 교환 (내 말이 보드에 없으면 선두 사출 + 대기 말이 그 자리로),Swap your last pawn with the top rival's lead pawn. (None on the board? The leader is knocked off and your waiting pawn takes its spot.),自分の最下位駒 ↔ 1位の敵の先頭駒を入れ替え (自分の駒がボードになければ先頭駒を射出し、待機駒がその場所へ)
 레이스 진행 순위로 확정,Ranked by race progress,レース進行順で確定
 진행 순위로 확정,Ranked by progress,進行順で確定
 [%s] %s  (설치자: P%d),[%s] %s  (Placed by P%d),[%s] %s  (設置者: P%d)
@@ -2040,7 +2040,7 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 기물,Pawns,駒
 기록 코드 복사,Copy Save Code,記録コードをコピー
 기록 코드 입력,Enter Save Code,記録コードを入力
-법전 수집 %d/8,Laws Collected %d/8,法典コレクション %d/8
+법전 수집 %d/8,Laws Collected %d/8,法典収集 %d/8
 기록 코드를 복사했어요 (#%s),Save code copied (#%s),記録コードをコピーしました (#%s)
 기록 코드를 붙여 넣어 주세요,Paste your save code,記録コードを貼り付けてください
 기록 코드를 확인해 주세요,Please check the save code,記録コードを確認してください
@@ -2067,7 +2067,7 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 함정 면역,Trap-immune,罠無効
 밟은 적 함정 해체 +카드 1장,Defuses enemy traps stepped on +1 card,踏んだ敵の罠を解除 +カード1枚
 계약 성립,Contract Sealed,契約成立
-주의: 본인의 말이 사출될 수 있음,"Caution: Your own pawns can be ejected",注意：自分の駒が射出される可能性あり
+주의: 본인의 말이 사출될 수 있음,Caution: Your own pawns can be ejected,注意：自分の駒が射出される可能性あり
 본인의 말이 사출될 수 있음,Your own pawns can be ejected,自分の駒が射出される可能性あり
 경로 말·함정 관통,Passes through pawns & traps,経路上の駒・罠を貫通
 잡기·함정 1회 방어,Blocks 1 capture/trap,捕獲・罠を1回防御
@@ -2112,17 +2112,17 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 초증강 엘리아스 마블,Hyper Elias Marble,超増強エリアスマーブル
 매치 종료,Match Over,試合終了
 [매치 종료!],[Match Over!],[試合終了！]
-%s님이 '%s(%s)' 법전을 달성하여 %d위로 졸업했습니다!,"%s fulfilled the '%s (%s)' law and graduated at rank #%d!",%sさんが『%s(%s)』の法典を達成し、%d位で卒業しました！
+%s님이 '%s(%s)' 법전을 달성하여 %d위로 졸업했습니다!,%s fulfilled the '%s (%s)' law and graduated at rank #%d!,%sさんが『%s(%s)』の法典を達成し、%d位で卒業しました！
 %s님이 말 4개를 모두 완주하여 %d위로 졸업했습니다!,%s brought all 4 pawns home and graduated at rank #%d!,%sさんが駒4つをすべて完走させ、%d位で卒業しました！
 매치 종료 사유: %s,Why the match ended: %s,試合終了の理由: %s
 방 규칙 설정,Room Rules,ルーム設定
 함정 카드 정체,Trap Identity,罠カードの正体
-"공개: 누가 설치한 함정이든 아이콘과 효과가 보입니다. 비공개: 상대가 설치한 함정은 밟거나 해체하기 전까지 [? 수상한 함정]으로만 보입니다.","Revealed: every trap shows its icon and effect, no matter who set it. Hidden: traps set by rivals show only as [? Suspicious Trap] until someone steps on or defuses them.",公開: 誰が設置した罠でもアイコンと効果が見えます。非公開: 相手が設置した罠は、踏むか解除するまで [? 怪しい罠] としか表示されません。
+공개: 누가 설치한 함정이든 아이콘과 효과가 보입니다. 비공개: 상대가 설치한 함정은 밟거나 해체하기 전까지 [? 수상한 함정]으로만 보입니다.,"Revealed: every trap shows its icon and effect, no matter who set it. Hidden: traps set by rivals show only as [? Suspicious Trap] until someone steps on or defuses them.",公開: 誰が設置した罠でもアイコンと効果が見えます。非公開: 相手が設置した罠は、踏むか解除するまで [? 怪しい罠] としか表示されません。
 공개 [기본],Revealed [Default],公開 [基本]
 비공개 [심리전],Hidden [Mind Games],非公開 [心理戦]
 초증강 등장 빈도,Hyper Augment Frequency,超増強の出現頻度
 증강 드래프트에 초증강이 나오는 확률입니다.,How often Hyper Augments appear in augment drafts.,増強ドラフトに超増強が出る確率です。
-대축제 (확률 3배),Festival (x3 chance),大祭り (確率3倍)
+대축제 (확률 3배),Mega Festival (3x),大祭り (確率3倍)
 끄기,Off,オフ
 특수 승리 법전,Special Victory Laws,特殊勝利の法典
 "끄면 드래프트에 법전이 나오지 않고, 말 4개 완주로만 순위를 가립니다.","When off, no laws appear in drafts and ranks are decided only by bringing all 4 pawns home.",オフにするとドラフトに法典が出ず、駒4つの完走だけで順位を決めます。
@@ -2145,3 +2145,34 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 법전 끄기,Laws off,法典オフ
 입문 드래프트,Beginner draft,入門ドラフト
 [방 규칙] %s,[Room Rules] %s,[ルーム設定] %s
+%s (수집: %d/8),%s (Collected: %d/8),%s（収集: %d/8）
+[말] 증강의 [기물 지급]으로 기본 말을 진화시켜요. 말마다 상시 능력과 1회 필살기가 있어요.,[Pieces] Evolve basic pawns with the [Piece Grant] augment. Each piece has a passive and a one-time ultimate.,[駒] 増強の[駒支給]で基本の駒を進化させます。駒ごとに常時能力と1回限りの必殺技があります。
+[범용 보급] 카드 패키지와 기물 변이·필살기 리필 같은 보급 증강이에요.,"[Utility Supply] Supply augments such as card packs, piece mutation and ultimate refills.",[汎用補給] カードパック・駒変異・必殺技リフィルなどの補給増強です。
+[초증강] 판을 한 번에 뒤집는 하이리스크 하이리턴. 경고 표시는 내 말도 사출될 수 있다는 뜻이에요.,"[Hyper Augments] High risk, high return game-changers. A warning mark means your own pawns can be ejected too.",[超増強] 盤面を一気にひっくり返すハイリスク・ハイリターン。警告マークは自分の駒も射出されうるという意味です。
+[카드] 빵집·증강에서 얻은 카드를 보드로 끌어다 놓아 써요. 손패는 최대 7장이에요.,[Cards] Drag cards from the bakery or augments onto the board to use them. Max hand size is 7.,[カード] パン屋や増強で得たカードを盤面にドラッグして使います。手札は最大7枚です。
+"[특수 승리 법전] 3라운드마다 등장하며, 조건 달성 후 내 턴이 끝나면 즉시 다음 순위로 레이스를 졸업합니다!",[Special Victory Laws] One appears every 3 rounds. Meet its condition and end your turn to graduate to the next rank!,[特殊勝利の法典] 3ラウンドごとに登場し、条件達成後に自分のターンが終わると即座に次の順位でレースを卒業します！
+[판정 도구] 도구마다 족보가 달라요. 증강의 [도구 교체]로 바꿔 굴려요.,[Judgment Tools] Each tool has its own result table. Swap tools with the [Judgment Tool Swap] augment.,[判定ツール] ツールごとに役表が違います。増強の[判定ツール交換]で持ち替えて振ります。
+기록 백업/복구,Backup / Restore,記録バックアップ/復元
+내 전용 링크 복사,Copy My Link,専用リンクをコピー
+법전 %d/8,Codex %d/8,法典 %d/8
+코드 입력,Enter Code,コード入力
+v%s · 비공식 팬게임 (원작사와 무관한 비영리 무료 배포물),v%s · Unofficial non-profit fan game (Not affiliated with the original dev),v%s · 非公式・非営利ファンゲーム（原作会社とは無関係です）
+축제 (확률 2배),Festival (2x),祭り (確率2倍)
+빈자리 컴퓨터 난이도,Empty-Seat CPU Level,空席CPUの難易度
+방장이 빈자리에 넣은 컴퓨터의 불닭 난이도입니다 (Lv.1 크림 ~ Lv.5 핵불닭).,Fire level of the CPUs the host adds to empty seats (Lv.1 Cream ~ Lv.5 2x Nuclear).,ホストが空席に入れたCPUの激辛レベルです (Lv.1 クリーム 〜 Lv.5 獄激辛・核)。
+빠른 설정,Quick Presets,クイック設定
+입문/클래식 완주전,Starter / Classic Race,入門/クラシック完走戦
+법전 끄기 · 함정 공개 · 초증강 끄기,Laws Off · Traps Revealed · Hyper Off,法典オフ · 罠公開 · 超増強オフ
+오리지널 표준,Original Standard,オリジナル標準
+법전 켜기 · 함정 공개 · 초증강 기본,Laws On · Traps Revealed · Hyper Normal,法典オン · 罠公開 · 超増強ふつう
+우정파괴 심리전,Friendship Breaker,友情破壊の心理戦
+법전 켜기 · 함정 비공개 · 초증강 축제 (확률 2배),Laws On · Traps Hidden · Hyper Festival (2x),法典オン · 罠非公開 · 超増強祭り (確率2倍)
+초증강 축제,Hyper Festival,超増強祭り
+함정 공개,Traps Revealed,罠公開
+법전 켜기,Laws On,法典オン
+빈자리 컴퓨터 %s,Empty-seat CPU %s,空席CPU %s
+사용자 설정,Custom,カスタム
+초증강 기본,Hyper Normal,超増強ふつう
+[기본],[Default],[基本]
+[달성 임박!],[So close!],[達成間近！]
+[특수 승리 조건 달성!],[Special Victory Achieved!],[特殊勝利条件達成！]

@@ -43,7 +43,7 @@ func _init() -> void:
 	column.add_child(header)
 	_title = Label.new()
 	_title.text = L10n.tr_ui("log.title")
-	_title.add_theme_font_size_override("font_size", 13)
+	_title.add_theme_font_size_override("font_size", MobileSupport.text_px(13))
 	_title.add_theme_color_override("font_color", Color("ffd43b"))
 	_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(_title)
@@ -51,7 +51,7 @@ func _init() -> void:
 	_toggle.text = L10n.tr_ui("log.expand")
 	_toggle.tooltip_text = L10n.tr_ui("log.expand_tip")
 	_toggle.focus_mode = Control.FOCUS_NONE
-	_toggle.add_theme_font_size_override("font_size", 12)
+	_toggle.add_theme_font_size_override("font_size", MobileSupport.text_px(12))
 	_toggle.pressed.connect(toggle)
 	header.add_child(_toggle)
 	_scroll = ScrollContainer.new()
@@ -65,8 +65,8 @@ func _init() -> void:
 	_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_text.mouse_filter = Control.MOUSE_FILTER_PASS
-	_text.add_theme_font_size_override("normal_font_size", 13)
-	_text.add_theme_font_size_override("bold_font_size", 13)
+	_text.add_theme_font_size_override("normal_font_size", MobileSupport.text_px(13))
+	_text.add_theme_font_size_override("bold_font_size", MobileSupport.text_px(13))
 	# 로그처럼 작은 글자가 빽빽한 곳은 또렷한 고딕으로 쓴다 (ONE Mobile POP은 작으면 뭉개진다)
 	_text.add_theme_font_override("normal_font", SMALL_FONT)
 	_text.add_theme_font_override("bold_font", SMALL_FONT)

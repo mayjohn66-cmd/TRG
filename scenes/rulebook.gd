@@ -69,6 +69,17 @@ var _next: Button = null
 var _prev_name: Label = null
 var _next_name: Label = null
 var _list_box: VBoxContainer = null
+## 왼쪽 노트(항목 설명) 묶음. 기본 규칙 탭에서는 왼쪽에 늘 보이고, 도감 탭에서는 카드를 누를 때만 가운데 팝업으로 뜬다.
+var _notebook_root: Control = null
+var _popup_dim: ColorRect = null
+var _popup_close: Button = null
+## 도감 탭 위쪽 한 줄 요약 배너.
+var _summary_banner: PanelContainer = null
+var _summary_label: Label = null
+var _medal: Control = null
+var _ribbon: Control = null
+## [기록 백업/복구] 미니 팝업.
+var _save_popup: PanelContainer = null
 ## 지금 장의 내용 ({"title", "entries"})과 고른 항목 번호.
 var _content: Dictionary = {}
 var entry: int = 0
@@ -81,6 +92,20 @@ const AUGMENT_TILE_SCALE: float = 0.8
 const CARD_TILE: Vector2 = Vector2(200, 280)
 ## 지금 보고 있는 그림 타일의 외곽선 색 (눈에 띄는 형광 분홍).
 const SELECTED_OUTLINE: Color = Color("ff2d95")
+## 도감 탭: 4열 격자 영역과 카드 배율 (법전 8종이 4×2로 스크롤 없이 한 화면에 들어간다).
+const GRID_POS: Vector2 = Vector2(256, 188)
+const GRID_SIZE: Vector2 = Vector2(1046, 526)
+const GRID_COLUMNS: int = 4
+const COMPACT_TILE_SCALE: float = 0.9
+## 도감 탭 장(도구~초증강)마다 위쪽 한 줄 요약 (법전은 수집 수가 붙는다).
+const BANNERS: Dictionary = {
+	4: "[판정 도구] 도구마다 족보가 달라요. 증강의 [도구 교체]로 바꿔 굴려요.",
+	5: "[말] 증강의 [기물 지급]으로 기본 말을 진화시켜요. 말마다 상시 능력과 1회 필살기가 있어요.",
+	6: "[카드] 빵집·증강에서 얻은 카드를 보드로 끌어다 놓아 써요. 손패는 최대 7장이에요.",
+	7: "[특수 승리 법전] 3라운드마다 등장하며, 조건 달성 후 내 턴이 끝나면 즉시 다음 순위로 레이스를 졸업합니다!",
+	8: "[범용 보급] 카드 패키지와 기물 변이·필살기 리필 같은 보급 증강이에요.",
+	9: "[초증강] 판을 한 번에 뒤집는 하이리스크 하이리턴. 경고 표시는 내 말도 사출될 수 있다는 뜻이에요.",
+}
 
 
 ## 부모 위에 규칙 도감을 연다. 반환: 도감 노드 (이름은 Popup이라 설정 팝업과 같은 방식으로 찾는다).
@@ -99,8 +124,11 @@ func _init() -> void:
 
 
 func _ready() -> void:
+	# 뒤쪽 로비(팁 띠·버튼)가 비치지 않게: 흐리게 번진 화면 위에 어두운 막(0.75)
 	var dim := ColorRect.new()
-	dim.color = Color(0.13, 0.12, 0.2, 0.86)
+	dim.name = "BookDim"
+	dim.color = Color(0, 0, 0, 0.75)
+	dim.material = _blur_material()
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	dim.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(dim)
@@ -120,6 +148,26 @@ func _ready() -> void:
 	_build_arrows()
 	_build_ribbon()
 	_build_save_tools()
+
+
+## 뒤 화면을 흐리게 번지게 하고 어둡게 덮는 셰이더 (색의 알파가 어두운 정도).
+static func _blur_material() -> ShaderMaterial:
+	var shader := Shader.new()
+	shader.code = """shader_type canvas_item;
+uniform sampler2D screen_texture : hint_screen_texture, filter_linear;
+void fragment() {
+	vec2 px = SCREEN_PIXEL_SIZE * 3.0;
+	vec3 sum = vec3(0.0);
+	for (int x = -2; x <= 2; x++) {
+		for (int y = -2; y <= 2; y++) {
+			sum += texture(screen_texture, SCREEN_UV + vec2(float(x), float(y)) * px).rgb;
+		}
+	}
+	COLOR = vec4(mix(sum / 25.0, vec3(0.0), COLOR.a), 1.0);
+}"""
+	var material := ShaderMaterial.new()
+	material.shader = shader
+	return material
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -161,6 +209,13 @@ static func _box(bg: Color, border: Color, border_width: int, radius: int, shado
 	box.shadow_size = shadow
 	box.set_content_margin_all(margin)
 	return box
+
+
+## 노트 부품은 노트 묶음(_notebook_root) 안에 둔다 (도감 탭에서 통째로 가운데 팝업으로 옮긴다).
+func _place_note(node: Control, pos: Vector2, node_size: Vector2) -> void:
+	node.position = pos
+	node.size = node_size
+	_notebook_root.add_child(node)
 
 
 func _place(node: Control, pos: Vector2, node_size: Vector2) -> void:
@@ -225,7 +280,7 @@ func _build_header() -> void:
 		_group_tabs.append(tab)
 
 
-## 위 오른쪽: [트로피 법전 수집 N/8] + 큼직한 [내 기록 전용 링크 복사] / 아래 줄에 짧은 코드(4BGC-A51F) 입력 칸 + [입력].
+## 위 오른쪽은 딱 두 개: [트로피 법전 N/8] 뱃지 + [기록 백업/복구]. 링크 복사·코드 입력은 [기록 백업/복구]를 눌렀을 때만 작은 팝업으로 뜬다.
 ## 링크를 눌러 접속하기만 하면 기록이 이어진다 (PlayerSave.apply_url_params). 코드 입력은 보조 수단.
 func _build_save_tools() -> void:
 	_law_badge = MetaIcon.pill("LawCollection", "", func() -> void: show_spread(LAW_SPREAD), 16)
@@ -234,38 +289,75 @@ func _build_save_tools() -> void:
 		badge_skin.content_margin_left = 46
 		badge_skin.content_margin_right = 16
 		_law_badge.add_theme_stylebox_override(state,badge_skin)
-	_place(_law_badge, Vector2(846, 18), Vector2(196, 44))
-	var link: Button = LobbyTheme.small_button("내 기록 전용 링크 복사", _copy_share_link, &"teal", 17)
+	_law_badge.clip_text = true
+	_place(_law_badge, Vector2(910, 28), Vector2(210, 46))
+	var backup: Button = LobbyTheme.small_button("기록 백업/복구", _toggle_save_popup, &"teal", 17)
+	backup.name = "SaveBackup"
+	backup.clip_text = true
+	_place(backup, Vector2(1130, 28), Vector2(206, 46))
+	_save_popup = PanelContainer.new()
+	_save_popup.name = "SavePopup"
+	_save_popup.z_index = 20
+	_save_popup.add_theme_stylebox_override("panel", LobbyTheme.style(LobbyTheme.MINT, LobbyTheme.TEAL, 3, 18, 8, 12))
+	_save_popup.visible = false
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 8)
+	_save_popup.add_child(column)
+	var link: Button = LobbyTheme.small_button("내 전용 링크 복사", _copy_share_link, &"teal", 17)
 	link.name = "CopyShareLink"
 	link.clip_text = true
-	_place(link, Vector2(1050, 18), Vector2(290, 44))
+	link.custom_minimum_size = Vector2(380, 44)
+	column.add_child(link)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	column.add_child(row)
 	_code_field = LineEdit.new()
 	_code_field.name = "ShortCodeField"
 	_code_field.placeholder_text = "4BGC-A51F"
 	_code_field.max_length = 40
+	_code_field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_code_field.custom_minimum_size = Vector2(0, 40)
 	_code_field.add_theme_font_size_override("font_size", 16)
 	_code_field.text_submitted.connect(func(text: String) -> void: apply_save_code(text))
-	_place(_code_field, Vector2(846, 66), Vector2(150, 40))
-	var apply: Button = LobbyTheme.small_button("입력", func() -> void: apply_save_code(_code_field.text), &"blue", 15)
+	row.add_child(_code_field)
+	var apply: Button = LobbyTheme.small_button("코드 입력", func() -> void: apply_save_code(_code_field.text), &"blue", 15)
 	apply.name = "ApplyShortCode"
-	_place(apply, Vector2(1000, 66), Vector2(64, 40))
-	_save_notice = HubKit.outlined("", 14, Color.WHITE, Color("3a3250"), 4)
+	apply.custom_minimum_size = Vector2(110, 40)
+	row.add_child(apply)
+	_save_notice = Label.new()
 	_save_notice.name = "SaveNotice"
+	_save_notice.add_theme_font_size_override("font_size", 14)
+	_save_notice.add_theme_color_override("font_color", LobbyTheme.INK)
 	_save_notice.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_save_notice.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_place(_save_notice, Vector2(1070, 62), Vector2(272, 48))
+	_save_notice.custom_minimum_size = Vector2(380, 0)
+	_save_notice.visible = false
+	column.add_child(_save_notice)
+	_place(_save_popup, Vector2(930, 80), Vector2(406, 0))
 	_refresh_law_badge()
+
+
+func _toggle_save_popup() -> void:
+	_save_popup.visible = not _save_popup.visible
+	if _save_popup.visible:
+		_save_popup.reset_size()
+
+
+## 팝업 안내 줄: 비어 있으면 숨겨 팝업 밑이 비지 않게 한다.
+func _set_notice(text: String) -> void:
+	_save_notice.text = text
+	_save_notice.visible = text != ""
+	_save_popup.reset_size()
 
 
 func _refresh_law_badge() -> void:
 	if _law_badge != null:
-		_law_badge.text = "법전 수집 %d/8" % PlayerSave.law_count()
+		_law_badge.text = "법전 %d/8" % PlayerSave.law_count()
 
 
 ## [내 기록 전용 링크 복사]: ?s=짧은코드&n=닉네임 링크를 클립보드에 넣는다 (카톡 나에게 보내기·메모에 두었다가 누르면 이어진다).
 func _copy_share_link() -> void:
 	MetaIcon.copy_to_clipboard(PlayerSave.share_url())
-	_save_notice.text = "링크를 복사했어요! 누르기만 하면 이어져요 (%s)" % PlayerSave.short_code()
+	_set_notice("링크를 복사했어요! 누르기만 하면 이어져요 (%s)" % PlayerSave.short_code())
 
 
 ## 짧은 코드(4BGC-A51F, 닉네임#4BGC-A51F)나 예전 긴 코드를 불러온다: 성공하면 #태그·닉네임·도장이 바로 바뀐다. 성공하면 true.
@@ -273,10 +365,10 @@ func apply_save_code(code: String) -> bool:
 	if code.strip_edges().is_empty():
 		return false
 	if not PlayerSave.import_any(code):
-		_save_notice.text = "코드를 확인해 주세요 (예: 4BGC-A51F)"
+		_set_notice("코드를 확인해 주세요 (예: 4BGC-A51F)")
 		return false
 	GameSession.reload_from_save()
-	_save_notice.text = "기록을 불러왔어요 (#%s)" % GameSession.player_tag()
+	_set_notice("기록을 불러왔어요 (#%s)" % GameSession.player_tag())
 	if _code_field != null:
 		_code_field.text = ""
 	_refresh_law_badge()
@@ -324,16 +416,30 @@ func _build_list() -> void:
 
 
 func _build_notebook() -> void:
+	_notebook_root = Control.new()
+	_notebook_root.name = "NotebookRoot"
+	_notebook_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_notebook_root.size = STAGE
+	_stage.add_child(_notebook_root)
+	_popup_dim = ColorRect.new()
+	_popup_dim.name = "NotebookPopupDim"
+	_popup_dim.color = Color(0.1, 0.08, 0.05, 0.55)
+	_popup_dim.mouse_filter = Control.MOUSE_FILTER_STOP
+	_popup_dim.gui_input.connect(func(event: InputEvent) -> void:
+		if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
+			show_entry(-1))
+	_popup_dim.visible = false
+	_notebook_root.add_child(_popup_dim)
 	var leather := Panel.new()
 	leather.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	leather.add_theme_stylebox_override("panel", _box(LEATHER, LEATHER_DARK, 4, 22, 8, 0, Color(0, 0, 0, 0.35)))
-	_place(leather, Vector2(256, 140), Vector2(552, 574))
+	_place_note(leather, Vector2(256, 140), Vector2(552, 574))
 	var paper := LinedPaper.new()
-	_place(paper, Vector2(272, 156), Vector2(520, 542))
+	_place_note(paper, Vector2(272, 156), Vector2(520, 542))
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 6)
 	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_place(column, Vector2(290, 168), Vector2(484, 520))
+	_place_note(column, Vector2(290, 168), Vector2(484, 520))
 	_chapter_label = Label.new()
 	_chapter_label.name = "ChapterLabel"
 	_chapter_label.add_theme_font_size_override("font_size", 15)
@@ -362,10 +468,32 @@ func _build_notebook() -> void:
 	scroll.add_child(_left_holder)
 	var medal := _art(&"badge", Vector2(80, 96))
 	medal.name = "RulebookBadge"
-	_place(medal, Vector2(740, 112), Vector2(80, 96))
+	_place_note(medal, Vector2(740, 112), Vector2(80, 96))
+	_medal = medal
+	_popup_close = LobbyTheme.small_button("닫기", func() -> void: show_entry(-1), &"gray", 16)
+	_popup_close.name = "CloseEntry"
+	_popup_close.visible = false
+	_place_note(_popup_close, Vector2(708, 668), Vector2(84, 36))
 
 
 func _build_cards_area() -> void:
+	# 도감 탭 위쪽 한 줄 요약 배너 (왼쪽 긴 설명 대신)
+	_summary_banner = PanelContainer.new()
+	_summary_banner.name = "SummaryBanner"
+	_summary_banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_summary_banner.add_theme_stylebox_override("panel", _box(Color("fff4d6"), GOLD, 2, 14, 0, 6))
+	_summary_label = Label.new()
+	_summary_label.name = "SummaryText"
+	_summary_label.add_theme_font_size_override("font_size", 17)
+	_summary_label.add_theme_color_override("font_color", Color("6b4a2a"))
+	_summary_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_summary_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_summary_label.clip_text = true
+	_summary_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	_summary_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_summary_banner.add_child(_summary_label)
+	_place(_summary_banner, Vector2(GRID_POS.x, 140), Vector2(GRID_SIZE.x, 40))
+	_summary_banner.visible = false
 	_right_scroll = ScrollContainer.new()
 	_right_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_place(_right_scroll, Vector2(834, 142), Vector2(468, 570))
@@ -414,6 +542,7 @@ func _arrow_label() -> Label:
 
 func _build_ribbon() -> void:
 	var ribbon := Ribbon.new()
+	_ribbon = ribbon
 	_place(ribbon, Vector2(560, 706), Vector2(246, 56))
 	_page_label = HubKit.outlined("", 20, Color.WHITE, Color("8a3a0a"), 5)
 	_page_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -463,6 +592,7 @@ func show_spread(index: int, entry_index: int = -1) -> void:
 		plate.add_theme_color_override("font_color", Color("2f6f66") if selected else Color.WHITE)
 		plate.add_theme_color_override("font_outline_color", Color(0.1, 0.35, 0.3, 0.9))
 		plate.add_theme_constant_override("outline_size", 0 if selected else 5)
+	_apply_group_layout(group)
 	_page_label.text = "%d / %d" % [spread + 1, spread_count()]
 	_prev.disabled = spread == 0
 	_next.disabled = spread == spread_count() - 1
@@ -470,6 +600,53 @@ func show_spread(index: int, entry_index: int = -1) -> void:
 	_next.modulate.a = 0.35 if _next.disabled else 1.0
 	_prev_name.text = TAB_NAMES[spread - 1] if spread > 0 else ""
 	_next_name.text = TAB_NAMES[spread + 1] if spread < spread_count() - 1 else ""
+
+
+## 한 줄 요약이 길면 (영어·일본어) 글자를 17→12px까지 줄여 한 줄에 맞춘다. 그래도 넘치면 말줄임.
+func _fit_summary(text: String) -> void:
+	var font: Font = _summary_label.get_theme_font("font")
+	var width: float = _summary_banner.size.x - 24.0
+	var px: int = 17
+	while px > 12 and font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x > width:
+		px -= 1
+	_summary_label.add_theme_font_size_override("font_size", px)
+
+
+## 묶음마다 배치: 기본 규칙은 왼쪽 노트 + 오른쪽 좁은 칸 + 좌우 화살표·쪽 표시,
+## 도감은 위쪽 한 줄 요약 + 책 전체를 쓰는 4열 격자 (노트는 카드를 누를 때만 팝업, 화살표·쪽 표시는 왼쪽 큰 탭과 겹쳐 숨긴다).
+func _apply_group_layout(group: int) -> void:
+	var catalog: bool = group == 1
+	_summary_banner.visible = catalog
+	if catalog:
+		var text: String = L10n.t(str(BANNERS.get(spread, "")))
+		if spread == LAW_SPREAD:
+			text = L10n.tf("%s (수집: %d/8)", [text, PlayerSave.law_count()])
+		_summary_label.text = text
+		_fit_summary(text)
+		_right_scroll.position = GRID_POS
+		_right_scroll.size = GRID_SIZE
+	else:
+		_right_scroll.position = Vector2(834, 142)
+		_right_scroll.size = Vector2(468, 570)
+	for node: Control in [_prev, _next, _prev_name, _next_name, _ribbon]:
+		node.visible = not catalog
+	_layout_notebook()
+
+
+## 노트 묶음: 기본 규칙이면 왼쪽 제자리, 도감이면 항목을 골랐을 때만 책 가운데 팝업 (뒤를 어둡게, 바깥을 누르거나 [닫기]로 닫는다).
+func _layout_notebook() -> void:
+	if _notebook_root == null:
+		return
+	var catalog: bool = group_of(spread) == 1
+	var popup: bool = catalog and entry >= 0
+	_notebook_root.visible = not catalog or popup
+	_notebook_root.position = Vector2(232, 0) if popup else Vector2.ZERO
+	_popup_dim.visible = popup
+	_popup_dim.position = Vector2(204, 126) - _notebook_root.position
+	_popup_dim.size = Vector2(1120, 598)
+	_popup_close.visible = popup
+	if popup:
+		_notebook_root.get_parent().move_child(_notebook_root, -1)  # 격자 위에 뜬다
 
 
 ## 장 번호가 속한 위쪽 탭(묶음).
@@ -500,6 +677,7 @@ func show_entry(index: int) -> void:
 		_left_holder.add_child(node)
 	for tile_index: int in _tiles.size():
 		_paint_tile(_tiles[tile_index], tile_index == entry)
+	_layout_notebook()
 
 
 func _rebuild_tiles() -> void:
@@ -508,15 +686,17 @@ func _rebuild_tiles() -> void:
 		child.queue_free()
 	_tiles.clear()
 	var wide: bool = bool(_content.get("wide", false))
+	var catalog: bool = group_of(spread) == 1
 	var grid := GridContainer.new()
-	grid.columns = 2 if wide else 3
+	grid.name = "EntryGrid"
+	grid.columns = GRID_COLUMNS if catalog else (2 if wide else 3)
 	grid.add_theme_constant_override("h_separation", 10)
 	grid.add_theme_constant_override("v_separation", 10)
 	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var entries: Array = _content.get("entries", [])
 	for index: int in entries.size():
 		var data: Dictionary = entries[index]
-		var tile: Control = _picture_tile(data, show_entry.bind(index)) if wide else _tile(data)
+		var tile: Control = _picture_tile(data, show_entry.bind(index), catalog) if wide else _tile(data)
 		if not wide:
 			(tile as Button).pressed.connect(show_entry.bind(index))
 		grid.add_child(tile)
@@ -566,7 +746,8 @@ func _tile(data: Dictionary) -> Button:
 
 
 ## 도감 그림 타일: 증강 선택 화면의 증강 카드(또는 손패 카드 앞면)를 줄여 두 칸씩 늘어놓는다.
-func _picture_tile(data: Dictionary, on_pick: Callable) -> Control:
+## compact: 도감 탭 4열 격자용 낮은 카드 (그림·제목·조건만, 아래 빈 공간 없이).
+func _picture_tile(data: Dictionary, on_pick: Callable, compact: bool = false) -> Control:
 	var holder := Control.new()
 	holder.name = "Entry_" + str(data["title"])
 	holder.mouse_filter = Control.MOUSE_FILTER_PASS
@@ -574,10 +755,12 @@ func _picture_tile(data: Dictionary, on_pick: Callable) -> Control:
 	var card_radius: int = 12
 	if data.has("augment"):
 		var definition: AugmentDef = AugmentRegistry.get_def(data["augment"])
-		card_size = MainBoard.AUGMENT_CARD_SIZE * AUGMENT_TILE_SCALE
-		card_radius = int(round(16.0 * AUGMENT_TILE_SCALE))  # 증강 카드 모서리(16)를 줄인 배율 그대로
-		var card: Button = MainBoard.make_augment_card(MainBoard.augment_card_info(definition, null, 1), on_pick, AUGMENT_TILE_SCALE, true)
-		card.position = -MainBoard.AUGMENT_CARD_SIZE * (1.0 - AUGMENT_TILE_SCALE) / 2.0  # 가운데 기준으로 줄였으니 왼쪽 위를 맞춘다
+		var tile_scale: float = COMPACT_TILE_SCALE if compact else AUGMENT_TILE_SCALE
+		var full: Vector2 = Vector2(MainBoard.AUGMENT_CARD_SIZE.x, MainBoard.AUGMENT_COMPACT_HEIGHT) if compact else MainBoard.AUGMENT_CARD_SIZE
+		card_size = full * tile_scale
+		card_radius = int(round(16.0 * tile_scale))  # 증강 카드 모서리(16)를 줄인 배율 그대로
+		var card: Button = MainBoard.make_augment_card(MainBoard.augment_card_info(definition, null, 1), on_pick, tile_scale, true, compact)
+		card.position = -full * (1.0 - tile_scale) / 2.0  # 가운데 기준으로 줄였으니 왼쪽 위를 맞춘다
 		holder.add_child(card)
 	else:
 		card_size = CARD_TILE

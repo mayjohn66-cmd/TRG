@@ -59,7 +59,7 @@ func _run() -> void:
 	var stamps: Array[Node] = book.find_children("ClearedStamp", "", true, false)
 	_expect(stamps.size() == 1, "달성한 법전 1개에만 [달성 완료 ★] 도장 (%d)" % stamps.size())
 	var badge: Button = book.find_child("LawCollection", true, false)
-	_expect(badge != null and badge.text == "법전 수집 1/8", "도감 [법전 수집 1/8]")
+	_expect(badge != null and badge.text == "법전 1/8", "도감 [법전 1/8]")
 	_expect(book.find_child("CopyShareLink", true, false) != null and book.find_child("ShortCodeField", true, false) != null, "큼직한 [내 기록 전용 링크 복사] + 짧은 코드 입력 칸")
 	book._copy_share_link()
 	var link: String = PlayerSave.share_url()
@@ -70,7 +70,7 @@ func _run() -> void:
 	for i: int in 2:
 		await process_frame
 	_expect(GameSession.player_tag() == "ZX97" and GameSession.nickname == "모바일교주", "불러온 #태그·닉네임 (%s %s)" % [GameSession.player_tag(), GameSession.nickname])
-	_expect(badge.text == "법전 수집 3/8", "합친 법전 3/8 (%s)" % badge.text)
+	_expect(badge.text == "법전 3/8", "합친 법전 3/8 (%s)" % badge.text)
 	_expect(book.find_children("ClearedStamp", "", true, false).size() == 3, "도장 3개로 다시 그린다")
 	_expect(tag.text == "#ZX97" and pill.text == "법전 수집 3/8", "허브도 바로 바뀐다 (%s, %s)" % [tag.text, pill.text])
 	book.close()

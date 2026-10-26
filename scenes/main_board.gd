@@ -102,6 +102,8 @@ const HAND_RAISED_Y: float = -92.0
 ## 우측 하단 기물 독에서 기물 슬롯이 놓이는 기준 y (필살기 버튼 줄 아래).
 const SLOT_BASE_Y: float = 50.0
 const AUGMENT_CARD_SIZE: Vector2 = Vector2(260, 390)
+## 도감용 낮은 증강 카드 높이 (390의 72%: 아래 빈 공간 없이 그림·제목·조건만).
+const AUGMENT_COMPACT_HEIGHT: float = 280.0
 const AUGMENT_HOVER_SCALE: float = 1.06
 ## 증강 카드를 고른 뒤 다음 단계로 넘어가기 전에 선택 연출을 보여 주는 시간(초).
 const AUGMENT_PICK_SECONDS: float = 0.9
@@ -322,6 +324,17 @@ var _law_descs: Array[Label] = []
 var _law_badges: Array[PanelContainer] = []
 var _law_badge_labels: Array[Label] = []
 var _law_dashes: Array[Control] = []
+## 법전 슬롯 오른쪽 위 [달성 임박!] 배지와 그 깜빡임 (누군가 1칸/1회 남았을 때).
+var _law_near: Array[Label] = []
+var _law_near_tweens: Array[Tween] = []
+## 특수 승리 달성 하이라이트(법전 카드가 가운데로 날아와 도장이 찍힘)가 화면을 붙잡는 시간(초). 그 뒤에 순위 배너가 뜬다.
+const LAW_ACHIEVED_SECONDS: float = 1.6
+## 승리 장면 소리 간격: 순위 확정 배너(졸업 팡파르)를 보여 주는 시간과 그 뒤 쉼, 결과 창 시상대 팡파르 뒤 첫 순위 공개까지의 뜸.
+const RANK_BANNER_SECONDS: float = 2.0
+const RANK_BEAT_SECONDS: float = 1.8
+const PODIUM_INTRO_SECONDS: float = 1.2
+const RANK_ROW_SECONDS: float = 0.8
+const FIRST_PLACE_DRUMROLL_SECONDS: float = 1.4
 var _roll_button: Button = null
 var _stop_button: Button = null
 var _gun_row: HBoxContainer = null  ## 러시안 룰렛 전용 [발사][정지] 두 버튼 줄
@@ -883,6 +896,10 @@ func _telemetry_mode() -> String:
 	var label: String = MatchTelemetry.mode_label(net != null, ai_mode, GameSession.lobby_intent == &"quick")
 	if net == null and ai_mode:
 		label += " %s" % BotTemper.tag(_bot.difficulty if _bot != null else GameSession.bot_difficulty())  # 놀이터 [Lv.2 로제] (디스코드 통계는 한국어)
+	elif net != null and GameSession.lobby_intent != &"quick":
+		# 친선 [클래식 완주전] / 친선 [법전OFF/함정비공개/봇Lv.3]: 방장이 고른 규칙 (디스코드 통계는 한국어)
+		var rules: Dictionary = state.match_rules if state != null and not state.match_rules.is_empty() else GameSession.match_rules()
+		label += " [%s]" % MatchTelemetry.rules_label(rules, not GameSession.net_bots.is_empty())
 	return label
 
 
@@ -1433,7 +1450,7 @@ func _layout_card_deck() -> void:
 
 ## 상단 리본은 없앴다: 현재 턴은 프로필의 밝기·강조선, 라운드는 중앙 알림이 알려 준다. 로그 문구만 받는 숨김 라벨만 남긴다.
 func _build_toast_label() -> void:
-	_toast_label = _make_label("", 11, Color("ffe8a3"))
+	_toast_label = _make_label("", MobileSupport.text_px(11), Color("ffe8a3"))
 	_toast_label.visible = false
 	add_child(_toast_label)
 
@@ -1672,14 +1689,33 @@ func _build_law_board() -> void:
 		text_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		text_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		inner.add_child(text_box)
-		var name_label := _make_label("", 14, UiSkin.INK)
+		var name_label := _make_label("", MobileSupport.text_px(14), UiSkin.INK)
 		name_label.clip_text = true
 		text_box.add_child(name_label)
-		var desc_label := _make_label("", 12, UiSkin.SOFT)
+		var desc_label := _make_label("", MobileSupport.text_px(12), UiSkin.SOFT)
 		desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		desc_label.max_lines_visible = 2
 		desc_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		text_box.add_child(desc_label)
+		# [달성 임박!]: 슬롯 오른쪽 위 (PanelContainer가 크기 플래그대로 모서리에 붙인다)
+		var near := _make_label("[달성 임박!]", MobileSupport.text_px(13), Color.WHITE)
+		near.name = "LawNearBadge"
+		near.size_flags_horizontal = Control.SIZE_SHRINK_END
+		near.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+		var near_box := StyleBoxFlat.new()
+		near_box.bg_color = Color("e03131")
+		near_box.set_corner_radius_all(8)
+		near_box.set_content_margin_all(3)
+		near_box.content_margin_left = 6
+		near_box.content_margin_right = 6
+		near.add_theme_stylebox_override("normal", near_box)
+		near.add_theme_color_override("font_outline_color", Color("5c0a0a"))
+		near.add_theme_constant_override("outline_size", 3)
+		near.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		near.visible = false
+		slot_panel.add_child(near)
+		_law_near.append(near)
+		_law_near_tweens.append(null)
 		_bind_tip(slot_panel, _fill_law_tip.bind(_law_slots.size()))
 		_law_slots.append(slot_panel)
 		_law_labels.append(name_label)
@@ -1730,12 +1766,12 @@ func _build_tool_board() -> void:
 	center.add_theme_constant_override("separation", 8)
 	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(center)
-	_tool_main = _make_label("", 14, UiSkin.INK)
+	_tool_main = _make_label("", MobileSupport.text_px(14), UiSkin.INK)
 	_tool_main.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_tool_main.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_tool_main.custom_minimum_size = Vector2(184, 0)
 	center.add_child(_tool_main)
-	_tool_sub = _make_label("", 12, UiSkin.GREEN)
+	_tool_sub = _make_label("", MobileSupport.text_px(12), UiSkin.GREEN)
 	_tool_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_tool_sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_tool_sub.custom_minimum_size = Vector2(184, 0)
@@ -1744,7 +1780,7 @@ func _build_tool_board() -> void:
 	_tool_rules.add_theme_constant_override("separation", 2)
 	_tool_rules.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	center.add_child(_tool_rules)
-	_tool_note = _make_label("", 12, UiSkin.SOFT)
+	_tool_note = _make_label("", MobileSupport.text_px(12), UiSkin.SOFT)
 	_tool_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_tool_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_tool_note.custom_minimum_size = Vector2(184, 0)
@@ -1789,15 +1825,15 @@ func _build_status_strip() -> void:
 	_status_strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_status_strip.visible = false  # 긴 안내문은 화면에서 걷어냈다 (문구는 내부에서만 갱신)
 	add_child(_status_strip)
-	_phase_label = _make_label("", 13, COLOR_GOLD)
+	_phase_label = _make_label("", MobileSupport.text_px(13), COLOR_GOLD)
 	_status_strip.add_child(_phase_label)
-	_hint_label = _make_label("", 12, Color("a5d8ff"))
+	_hint_label = _make_label("", MobileSupport.text_px(12), Color("a5d8ff"))
 	_hint_label.clip_text = true
 	_hint_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_status_strip.add_child(_hint_label)
 	_queue_label = _make_label("", 11, Color("adb5bd"))
 	_status_strip.add_child(_queue_label)
-	_pick_banner = _make_label("", 13, Color("63e6be"))
+	_pick_banner = _make_label("", MobileSupport.text_px(13), Color("63e6be"))
 	_pick_banner.position = Vector2(423, 74)
 	_pick_banner.size = Vector2(400, 26)
 	_pick_banner.clip_text = true
@@ -3737,16 +3773,113 @@ func _refresh_laws() -> void:
 			_law_badge_labels[slot].text = law.law_id.trim_prefix("LAW_")
 			# 누군가 달성 직전이면 이름 앞에 경고 표시 (자세한 진행도는 마우스를 올리면 나온다).
 			var danger: bool = law is VictoryLaw and SpecialVictory.progress_rows(state, law as VictoryLaw).any(func(row: Dictionary) -> bool: return bool(row["danger"]) and not bool(row["done"]))
-			_law_labels[slot].text = ("! " if danger else "") + law.law_name
+			_law_labels[slot].text = law.law_name
 			_law_labels[slot].add_theme_color_override("font_color", Color("c92a2a") if danger else UiSkin.INK)
 			_law_descs[slot].text = law.description
 			_law_slots[slot].tooltip_text = ""
+			_set_law_near(slot, danger)
 		else:
+			_set_law_near(slot, false)
 			_law_slots[slot].add_theme_stylebox_override("panel", UiSkin.panel("inset", 8.0))
 			_law_labels[slot].text = ""
 			_law_labels[slot].add_theme_color_override("font_color", UiSkin.SOFT)
 			_law_descs[slot].text = ""
 			_law_slots[slot].tooltip_text = ""
+
+
+## 법전 슬롯 [달성 임박!]: 누군가 한 걸음 남았으면 배지를 띄우고 슬롯을 노랑↔빨강으로 깜빡인다.
+func _set_law_near(slot: int, near: bool) -> void:
+	if slot >= _law_near.size():
+		return
+	var badge: Label = _law_near[slot]
+	var panel: Control = _law_slots[slot]
+	if badge.visible == near:
+		return
+	badge.visible = near
+	var old: Tween = _law_near_tweens[slot]
+	if old != null and old.is_valid():
+		old.kill()
+	_law_near_tweens[slot] = null
+	panel.self_modulate = Color.WHITE
+	badge.modulate = Color.WHITE
+	if not near or not _fx_on():
+		return
+	var pulse: Tween = panel.create_tween().set_loops()
+	pulse.tween_property(panel, "self_modulate", Color(1.25, 1.15, 0.55), 0.45).set_trans(Tween.TRANS_SINE)
+	pulse.parallel().tween_property(badge, "modulate", Color(1.0, 0.9, 0.3), 0.45)
+	pulse.tween_property(panel, "self_modulate", Color(1.3, 0.7, 0.7), 0.45).set_trans(Tween.TRANS_SINE)
+	pulse.parallel().tween_property(badge, "modulate", Color.WHITE, 0.45)
+	_law_near_tweens[slot] = pulse
+
+
+## 특수 승리 달성 하이라이트: 그 법전 카드가 슬롯에서 화면 가운데로 날아와 커지고 [특수 승리 조건 달성!] 도장이 찍힌다.
+## LAW_ACHIEVED_SECONDS 동안 연출 큐를 붙잡아, 순위 배너는 이 장면이 끝난 뒤에 뜬다.
+func _fx_law_achieved(from: Rect2, law_name: String, law_desc: String, color: Color) -> void:
+	if not _fx_on():
+		return
+	_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(LAW_ACHIEVED_SECONDS * _motion_pace() * 1000.0))
+	# 보드·패널보다 위 (처치 컷인과 같은 높이의 화면 레이어)
+	var canvas := CanvasLayer.new()
+	canvas.name = "LawAchievedFX"
+	canvas.layer = 60
+	add_child(canvas)
+	var layer := Control.new()
+	layer.size = get_viewport_rect().size
+	layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(layer)
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.0)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(dim)
+	var card := PanelContainer.new()
+	card.name = "LawAchievedCard"
+	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	card.add_theme_stylebox_override("panel", _style(COLOR_GOLD, Color("fff3bf"), 3, 12, 0, 10))
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 2)
+	card.add_child(column)
+	var title := _make_label(law_name, 16, Color("2b2100"))
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(title)
+	var desc := _make_label(law_desc, 12, Color("5c4a00"))
+	desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(desc)
+	card.custom_minimum_size = Vector2(maxf(from.size.x, 280.0), maxf(from.size.y, 66.0))
+	layer.add_child(card)
+	card.reset_size()
+	card.pivot_offset = card.size / 2.0
+	card.position = from.position
+	var view: Vector2 = get_viewport_rect().size
+	var target: Vector2 = view / 2.0 - card.size / 2.0 + Vector2(0, -30)
+	var stamp := _make_label("[특수 승리 조건 달성!]", 30, color.lightened(0.15))
+	stamp.name = "LawAchievedStamp"
+	stamp.add_theme_color_override("font_outline_color", Color("3b0a0a"))
+	stamp.add_theme_constant_override("outline_size", 8)
+	stamp.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	stamp.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(stamp)
+	stamp.size = Vector2(view.x, 48)
+	stamp.position = Vector2(0, view.y / 2.0 + 70.0)
+	stamp.pivot_offset = stamp.size / 2.0
+	stamp.rotation = -0.08
+	stamp.scale = Vector2.ONE * 2.6
+	stamp.modulate.a = 0.0
+	var pace: float = _motion_pace()
+	var tween: Tween = layer.create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(dim, "color:a", 0.45, 0.25 * pace)
+	tween.tween_property(card, "position", target, 0.35 * pace).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(card, "scale", Vector2.ONE * 1.9, 0.35 * pace).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.set_parallel(false)  # 여기부터는 차례대로: 도장 → 잠깐 멈춤 → 사라짐
+	tween.tween_callback(func() -> void:
+		Sfx.play_stinger(&"law")
+		screen_shake(8.0, 0.2))
+	tween.tween_property(stamp, "scale", Vector2.ONE, 0.18 * pace).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.parallel().tween_property(stamp, "modulate:a", 1.0, 0.12 * pace)
+	tween.tween_interval(0.85 * pace)
+	tween.tween_property(layer, "modulate:a", 0.0, 0.22 * pace)
+	tween.tween_callback(canvas.queue_free)
 
 
 func _refresh_hands() -> void:
@@ -4321,7 +4454,7 @@ func _open_zoom(player_id: int, card_id: StringName) -> void:
 	var how: String = "보드에 드래그 → 타일 선택" if card.needs_tile() else "보드에 드래그"
 	if card.category == GameEnums.CardCategory.COUNTER:
 		how = "피격 시 발동 여부를 묻는 팝업에서 [발동]"
-	var timing := _make_label("발동: %s\n방법: %s" % [_card_timing_text(card), how], 14, UiSkin.INK)
+	var timing := _make_label("발동: %s\n방법: %s" % [_card_timing_text(card), how], MobileSupport.text_px(14), UiSkin.INK)
 	timing.name = "CardTiming"
 	timing.custom_minimum_size = Vector2(card_size.x - 24.0, 0)
 	timing.size = Vector2(card_size.x - 24.0, 40)
@@ -4337,7 +4470,7 @@ func _open_zoom(player_id: int, card_id: StringName) -> void:
 		var caution_icon := CardSkin.WarningIcon.new()
 		caution_icon.custom_minimum_size = Vector2(22, 22)
 		caution.add_child(caution_icon)
-		var caution_text := _make_label("주의: %s" % CardSkin.SELF_RISK[card_id], 14, CardSkin.WARNING_RED)
+		var caution_text := _make_label("주의: %s" % CardSkin.SELF_RISK[card_id], MobileSupport.text_px(14), CardSkin.WARNING_RED)
 		caution_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		caution_text.custom_minimum_size = Vector2(card_size.x - 24.0 - 28.0, 0)
 		caution_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -4348,7 +4481,7 @@ func _open_zoom(player_id: int, card_id: StringName) -> void:
 	if card.category == GameEnums.CardCategory.COUNTER:
 		usable = _counter_offered_to(player_id, card.card_id)
 		status_text = "지금 방어 가능 (팝업에서 발동)" if usable else "내가 공격받을 때만 사용 가능"
-	var status := _make_label(status_text, 14, Color("416c2b") if usable else Color("747c64"))
+	var status := _make_label(status_text, MobileSupport.text_px(14), Color("416c2b") if usable else Color("747c64"))
 	status.name = "CardStatus"
 	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	status.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -8001,12 +8134,15 @@ func _make_augment_card(info: Dictionary, on_pick: Callable) -> Button:
 
 ## 판 밖(규칙 도감)에서도 쓰는 증강 카드. base_scale로 줄여 보여 줄 수 있다 (호버 확대도 그 배율 기준).
 ## static_frame: 도감처럼 보기만 하는 곳에서는 테두리 후광(번짐)과 마우스를 올렸을 때 커지는 효과를 끈다.
-static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: float = 1.0, static_frame: bool = false) -> Button:
+static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: float = 1.0, static_frame: bool = false, compact: bool = false) -> Button:
 	var color: Color = info["color"]
+	# compact: 도감용 낮은 카드 (높이 AUGMENT_COMPACT_HEIGHT). 세로 위치는 모두 같은 비율로 줄인다 (배경 그림도 그 비율로 늘어난다).
+	var card_size: Vector2 = Vector2(AUGMENT_CARD_SIZE.x, AUGMENT_COMPACT_HEIGHT) if compact else AUGMENT_CARD_SIZE
+	var k: float = card_size.y / AUGMENT_CARD_SIZE.y
 	var card := Button.new()
-	card.custom_minimum_size = AUGMENT_CARD_SIZE
-	card.size = AUGMENT_CARD_SIZE
-	card.pivot_offset = AUGMENT_CARD_SIZE / 2.0
+	card.custom_minimum_size = card_size
+	card.size = card_size
+	card.pivot_offset = card_size / 2.0
 	card.scale = Vector2.ONE * base_scale
 	card.focus_mode = Control.FOCUS_NONE
 	card.clip_contents = false
@@ -8043,9 +8179,10 @@ static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: f
 			var from: Color = HOLO_GLOW[index]
 			var to: Color = HOLO_GLOW[(index + 1) % HOLO_GLOW.size()]
 			shimmer.tween_method(func(t: float) -> void: box.shadow_color = from.lerp(to, t), 0.0, 1.0, 0.9)
-	card.add_child(AugmentCardSkin.make_background(color, AUGMENT_CARD_SIZE, box))
+	card.add_child(AugmentCardSkin.make_background(color, card_size, box))
 	var emblem: Control = _make_emblem(str(info["glyph"]), color, info.get("art") as Texture2D)
-	emblem.position = Vector2((AUGMENT_CARD_SIZE.x - 150.0) / 2.0, 14)
+	emblem.scale = Vector2.ONE * k
+	emblem.position = Vector2((card_size.x - 150.0 * k) / 2.0, 14.0 * k)
 	card.add_child(emblem)
 	if bool(info.get("self_risk", false)):
 		# 내 말도 휘말려 사출될 수 있는 초증강: 카드 왼쪽 위 경고 아이콘 (카드와 같은 그림), 커서를 대면 주의 문구
@@ -8057,17 +8194,17 @@ static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: f
 		risk.mouse_default_cursor_shape = Control.CURSOR_HELP
 		risk.tooltip_text = SuperAugments.SELF_RISK_NOTE
 		card.add_child(risk)
-	var title_width: float = AUGMENT_CARD_SIZE.x - 36.0
+	var title_width: float = card_size.x - 36.0
 	var shown_title: String = L10n.t(str(info["title"]))
 	# 제목이 두 줄 칸(54px)에 다 들어가는 크기로: 띄어쓰기 없는 긴 이름(일본어 등)은 글자 단위로 나눈다
-	var title_px: int = CardSkin.fit_px(shown_title, title_width, 54.0, 20, 12)
+	var title_px: int = CardSkin.fit_px(shown_title, title_width, 54.0 * k, 20, 12)
 	var measured_width: float = CardSkin.FONT.get_string_size(shown_title, HORIZONTAL_ALIGNMENT_LEFT, -1, title_px).x
 	# Nearly one-line names should not leave just one or two syllables on a second line.
 	if measured_width > title_width and measured_width <= title_width * 1.2:
 		title_px = maxi(12, mini(title_px, floori(title_px * title_width / measured_width)))
 	var title := _make_label("", title_px, Color("ffffff"))
-	title.position = Vector2(18, 170)
-	title.size = Vector2(title_width, 54)
+	title.position = Vector2(18, 170.0 * k)
+	title.size = Vector2(title_width, 54.0 * k)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -8078,15 +8215,15 @@ static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: f
 	title.text = str(info["title"])
 	card.add_child(title)
 	# 설명 칸 (카드 아래 끝까지). 판정 도구는 [핵심 한 줄] [최소~최대 요약] ─ [작은 족보표] 순서로 나눠 쓴다.
-	var text_top: float = 240.0
-	var text_bottom: float = AUGMENT_CARD_SIZE.y - 12.0
+	var text_top: float = 240.0 * k
+	var text_bottom: float = card_size.y - 12.0
 	var detail_text: String = str(info.get("detail", ""))
 	var summary_text: String = str(info.get("summary", ""))
 	var detail_h: float = 0.0
 	if detail_text != "":
 		# 족보표는 아래쪽 보조 칸 (작은 글자, 구분선 위)
-		detail_h = 62.0
-		var detail_box := Vector2(AUGMENT_CARD_SIZE.x - 28.0, detail_h)
+		detail_h = maxf(62.0 * k, 52.0)  # 낮은 카드에서도 족보표 세 줄은 남긴다
+		var detail_box := Vector2(card_size.x - 28.0, detail_h)
 		var detail := _make_label("", 12, Color("98a1ad"))
 		detail.name = "AugmentDetail"
 		detail.position = Vector2(14, text_bottom - detail_h)
@@ -8104,15 +8241,15 @@ static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: f
 		rule.name = "AugmentDetailRule"
 		rule.color = Color(color.r, color.g, color.b, 0.55)
 		rule.position = Vector2(40, text_bottom - detail_h - 6.0)
-		rule.size = Vector2(AUGMENT_CARD_SIZE.x - 80.0, 2)
+		rule.size = Vector2(card_size.x - 80.0, 2)
 		rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		card.add_child(rule)
 		text_bottom -= detail_h + 10.0
 	var skill_text: String = str(info.get("skill", ""))
 	if skill_text != "":
 		# 기물 필살기: 구분선 아래 칸 (패시브보다 조금 작게, 필살기 색)
-		var skill_h: float = 62.0  # 위 패시브 칸(두 줄)과 반씩 나눈다
-		var skill_box := Vector2(AUGMENT_CARD_SIZE.x - 28.0, skill_h)
+		var skill_h: float = 62.0 * k  # 위 패시브 칸(두 줄)과 반씩 나눈다
+		var skill_box := Vector2(card_size.x - 28.0, skill_h)
 		var skill := _make_label("", 16, Color("ffc078"))
 		skill.name = "AugmentSkill"
 		skill.position = Vector2(14, text_bottom - skill_h)
@@ -8130,7 +8267,7 @@ static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: f
 		skill_rule.name = "AugmentSkillRule"
 		skill_rule.color = Color(color.r, color.g, color.b, 0.55)
 		skill_rule.position = Vector2(40, text_bottom - skill_h - 6.0)
-		skill_rule.size = Vector2(AUGMENT_CARD_SIZE.x - 80.0, 2)
+		skill_rule.size = Vector2(card_size.x - 80.0, 2)
 		skill_rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		card.add_child(skill_rule)
 		text_bottom -= skill_h + 10.0
@@ -8141,12 +8278,12 @@ static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: f
 		var summary := _make_label("", 20, Color("ffe066"))
 		summary.name = "AugmentSummary"
 		summary.position = Vector2(14, text_bottom - summary_h)
-		summary.size = Vector2(AUGMENT_CARD_SIZE.x - 28.0, summary_h)
+		summary.size = Vector2(card_size.x - 28.0, summary_h)
 		summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		summary.clip_text = true
 		summary.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		summary.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		summary.add_theme_font_size_override("font_size", CardSkin.fit_px(L10n.t(summary_text), AUGMENT_CARD_SIZE.x - 28.0, summary_h, 24 if only else 20, 13))
+		summary.add_theme_font_size_override("font_size", CardSkin.fit_px(L10n.t(summary_text), card_size.x - 28.0, summary_h, 24 if only else 20, 13))
 		summary.add_theme_color_override("font_outline_color", Color.BLACK)
 		summary.add_theme_constant_override("outline_size", 4)
 		summary.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -8157,7 +8294,7 @@ static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: f
 	desc.name = "AugmentDesc"
 	desc.position = Vector2(14, text_top)
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	var desc_box := Vector2(AUGMENT_CARD_SIZE.x - 28.0, text_bottom - text_top)
+	var desc_box := Vector2(card_size.x - 28.0, text_bottom - text_top)
 	desc.custom_minimum_size = Vector2(desc_box.x, 0)
 	desc.size = desc_box
 	desc.clip_text = true
@@ -8466,7 +8603,7 @@ func _show_result_overlay() -> void:
 	var title: Label = _make_label("게임 종료!", 34, Color("ffd43b"))
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(title)
-	Sfx.play(&"podium")
+	Sfx.play_stinger(&"podium")
 	var announcer: Label = _make_label("최종 순위를 발표합니다!", 20, Color("f1f3f5"))
 	announcer.name = "RankingAnnouncer"
 	announcer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -8741,6 +8878,9 @@ func _reveal_ranking(rows: Array[Control], announcer: Label) -> void:
 	while _presentation_active() and frames < 600:  # 마지막 이동·처치 연출이 끝난 뒤에 발표한다
 		frames += 1
 		await get_tree().process_frame
+	await get_tree().create_timer(PODIUM_INTRO_SECONDS).timeout  # 시상대 팡파르의 머리를 들려준 뒤 발표를 시작한다
+	if overlay != _result_overlay:
+		return
 	for index: int in range(rows.size() - 1, -1, -1):
 		if overlay != _result_overlay or not is_instance_valid(rows[index]):
 			return
@@ -8748,11 +8888,11 @@ func _reveal_ranking(rows: Array[Control], announcer: Label) -> void:
 		var first: bool = int(row.get_meta("rank")) == 1
 		if first:
 			announcer.text = "그리고 대망의 1등은...!"
-			await get_tree().create_timer(1.0).timeout
+			await get_tree().create_timer(FIRST_PLACE_DRUMROLL_SECONDS).timeout
 			if overlay != _result_overlay or not is_instance_valid(row):
 				return
 		else:
-			await get_tree().create_timer(0.55).timeout
+			await get_tree().create_timer(RANK_ROW_SECONDS).timeout
 			if overlay != _result_overlay or not is_instance_valid(row):
 				return
 		row.pivot_offset = row.size / 2.0
@@ -8768,7 +8908,7 @@ func _reveal_ranking(rows: Array[Control], announcer: Label) -> void:
 			tween.tween_property(column, "modulate:a", 1.0, 0.18)
 			tween.tween_property(column, "scale", Vector2.ONE, 0.36).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		if first:
-			Sfx.play(&"win")
+			Sfx.play_stinger(&"win")  # 시상대 팡파르를 부드럽게 끊고 우승 팡파르
 			announcer.text = "★ %s 우승! ★" % _player_name(int(row.get_meta("player")))
 			screen_shake(6.0, 0.25)
 		else:
@@ -8779,7 +8919,7 @@ var _last_reason: StringName = &""
 ## 판을 끝낸 결정적 순위 확정 (마지막 자동 순위·남은 컴퓨터 레이스 순위가 아닌 것): {player, rank, reason}.
 var _decisive_rank: Dictionary = {}
 ## 결과 화면을 띄우기 전 [매치 종료] 브리핑 시간(초).
-const END_BRIEF_SECONDS: float = 1.5
+const END_BRIEF_SECONDS: float = 2.0
 
 
 func _winner_reason_text() -> String:
@@ -9220,7 +9360,8 @@ func _on_turn_order_reversed(new_direction: int) -> void:
 
 func _on_game_over(winner_id: int, reason: StringName) -> void:
 	_last_reason = reason
-	Sfx.play(&"win")
+	if not _fx_on():
+		Sfx.play(&"win")  # 연출을 켠 판은 결과 창의 1등 공개 때 우승 팡파르를 낸다 (지금 내면 졸업 팡파르와 겹친다)
 	for player_id: int in _player_ids:
 		_avatar_react(player_id, AvatarSlot.Emotion.CHEER if player_id == winner_id else AvatarSlot.Emotion.SAD, 0.0)
 	_log_line("[승리] P%d 승리! - %s" % [winner_id, VictoryChecker.reason_text(reason)], PLAYER_COLORS[winner_id])
@@ -9491,9 +9632,24 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_mark_spotlight()
 			var achievers: Array = data["players"]
 			_log_line("[%d라운드 특수 승리] 달성: %s" % [int(data["round"]), ", ".join(PackedStringArray(achievers.map(func(id: int) -> String: return _player_name(id))))], Color("ffd43b"))
-			var judged_round: int = int(data["round"])
-			_enqueue_late(func() -> void:
-				_announce("특수 승리", "[특수 승리 달성!]", "법전 조건을 채웠습니다 - 바로 다음 순위로 졸업합니다 (%d라운드)" % judged_round, Color("ffd43b"), null, 1.2))
+			# 달성한 법전 카드 (판정 직후 법전에서 지워지므로 지금 슬롯 자리·이름을 잡아 둔다): 가운데로 날아와 도장이 찍힌 뒤 순위 배너
+			var achieved: Array = []
+			var law_ids: Array = data.get("laws", [])
+			for index: int in mini(achievers.size(), law_ids.size()):
+				var slot_index: int = -1
+				var achieved_law: LawResource = null
+				for i: int in state.rulebook.active_laws_queue.size():
+					if state.rulebook.active_laws_queue[i].law_id == str(law_ids[index]):
+						slot_index = i
+						achieved_law = state.rulebook.active_laws_queue[i]
+				if achieved_law == null:
+					achieved_law = LawRegistry.create(str(law_ids[index]))
+				if achieved_law == null:
+					continue
+				var from: Rect2 = _law_slots[slot_index].get_global_rect() if slot_index >= 0 and slot_index < _law_slots.size() else Rect2(Vector2(40, 200), Vector2(280, 66))
+				achieved.append([from, achieved_law.law_name, achieved_law.description, PLAYER_COLORS.get(int(achievers[index]), Color("ffd43b"))])
+			for entry: Array in achieved:
+				_enqueue_late(func() -> void: _fx_law_achieved(entry[0], entry[1], entry[2], entry[3]))
 		&"tempo_law":
 			var tempo_law: LawResource = LawRegistry.create(String(data["law_id"]))
 			_log_line("[템포 업] 법전에 특수 승리 [%s] 자동 등록" % tempo_law.law_name, Color("ffd43b"))
@@ -9633,12 +9789,12 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			var rank_reason: StringName = data["reason"]
 			_record(ranked, "★ %d위 확정! (%s)" % [rank_no, _bb(reason_text)], "", true)
 			_enqueue_late(func() -> void:
-				if _fx_on():
-					Sfx.play(&"graduate")
-				if rank_no < _player_ids.size() - 1:  # 3위(마지막 졸업)부터는 결과 화면이 바로 이어진다
-					_announce(tr_ui("rank.tag"), tr_ui("rank.banner", ["★ " if rank_no == 1 else "", _player_name(ranked), rank_no]), tr_ui("rank.body", [VictoryChecker.reason_text(rank_reason)]), PLAYER_COLORS[ranked], null, 1.4)
+				if rank_no < _player_ids.size() - 1:  # 3위(마지막 졸업)부터는 결과 화면이 바로 이어진다 (팡파르도 시상대에 맡긴다)
+					if _fx_on():
+						Sfx.play_stinger(&"graduate")
+					_announce(tr_ui("rank.tag"), tr_ui("rank.banner", ["★ " if rank_no == 1 else "", _player_name(ranked), rank_no]), tr_ui("rank.body", [VictoryChecker.reason_text(rank_reason)]), PLAYER_COLORS[ranked], null, RANK_BANNER_SECONDS)
 					_profile_react(ranked, true, "%d위" % rank_no)
-					_start_beat(1.0))
+					_start_beat(RANK_BEAT_SECONDS))
 		&"counter_offer":
 			_log_line("[방어 대기] %s: %s - 방어 카드 %d장" % [_player_name(int(data["victim"])), _attack_text(data), (data["cards"] as Array).size()], Color("bac8ff"))
 		&"counter_passed":
@@ -10608,6 +10764,8 @@ func _setup_net() -> void:
 		_bot.bot_players.append(local_player_id)
 		_bot.wait_for_human_windows = false
 	_bot.draft_waits_for_humans = false
+	if GameSession.lobby_intent != &"quick":
+		_bot.difficulty = int(GameSession.match_rules().get("bot_level", BotTemper.DEFAULT_LEVEL))  # 친선 방장이 고른 빈자리 컴퓨터 난이도
 	_bot.enabled = _bot_active()
 	net.started.connect(_on_net_started)
 	net.seat_taken_over.connect(_on_net_seat_taken_over)
