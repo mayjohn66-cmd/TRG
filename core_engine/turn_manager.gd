@@ -51,10 +51,10 @@ var is_game_over: bool = false
 ## 한 칸 이동 사이의 연출 대기 시간(초). 0이면 await 없이 즉시 끝까지 이동한다 (헤드리스/테스트). 뷰 연결 시 올린다.
 @export var step_delay_sec: float = 0.0
 ## 한 번의 이동 연출 총시간 상한(초): 칸이 많을수록 칸당 시간을 줄여 몇 칸을 가든 이 시간을 넘지 않는다 (칸당 = min(step_delay_sec, 상한 / 칸 수)).
-const MOVE_TIME_CAP: float = 0.75
+const MOVE_TIME_CAP: float = 2.4  ## 2026-10-26: 0.75 -> 2.4 (칸마다 탁 탁 끊어 보이게)
 ## 이 칸 수 이상의 장거리 이동(리벤지 부스터 + 고눈금 등)은 칸당 시간을 LONG_MOVE_STEP_SECONDS로 줄여 타다닥 지나간다.
-const LONG_MOVE_TILES: int = 5
-const LONG_MOVE_STEP_SECONDS: float = 0.06
+const LONG_MOVE_TILES: int = 10
+const LONG_MOVE_STEP_SECONDS: float = 0.16
 ## 지금 이동의 칸당 시간 (화면의 한 칸 점프 길이를 엔진 걸음과 맞춘다).
 var current_step_seconds: float = 0.0
 

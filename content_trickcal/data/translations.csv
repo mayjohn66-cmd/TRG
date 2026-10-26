@@ -2176,3 +2176,17 @@ v%s · 비공식 팬게임 (원작사와 무관한 비영리 무료 배포물),v
 [기본],[Default],[基本]
 [달성 임박!],[So close!],[達成間近！]
 [특수 승리 조건 달성!],[Special Victory Achieved!],[特殊勝利条件達成！]
+입문 추천! 특수 승리 없이 말 4개 완주로만 승부합니다,"Recommended for beginners! No special victories, just race all 4 pawns home",入門におすすめ！特殊勝利なし、駒4つの完走だけで勝負します
+"팁: 보드 위의 말, 함정, 좌측 법전에 마우스를 올리면(모바일은 탭) 상세 효과를 언제든 볼 수 있어요!","Tip: Hover over pawns, traps, or the Codex on the left (tap on mobile) to see their effects anytime!",ヒント：盤上の駒・罠・左の法典にマウスを乗せると（モバイルはタップ）いつでも詳しい効果が見られます！
+[★ 턴 종료 시 달성!],[★ Wins at turn end!],[★ ターン終了時に達成！]
+ 포위망, Siege, 包囲網
+[ %d / %d 킬 ],[ %d / %d KOs ],[ %d / %d 撃破 ]
+[ %d / %d 장 ],[ %d / %d cards ],[ %d / %d 枚 ]
+[ %d / %d 개 ],[ %d / %d placed ],[ %d / %d 個 ]
+[ %d / %d 칸 ],[ %d / %d tiles ],[ %d / %d マス ]
+[ %d / %d 회 ],[ %d / %d times ],[ %d / %d 回 ]
+[ %d / %d 연속 ],[ %d / %d in a row ],[ %d / %d 連続 ]
+[ %d / %d 구역 ],[ %d / %d zones ],[ %d / %d 区域 ]
+[ %d / %d 처치 ],[ %d / %d KOs ],[ %d / %d 撃破 ]
+킬,KOs,撃破
+구역,zones,区域

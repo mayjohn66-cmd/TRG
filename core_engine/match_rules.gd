@@ -40,11 +40,13 @@ static func defaults() -> Dictionary:
 	return {"trap_reveal": true, "super_freq": 1, "laws": true, "speed": SPEED_NORMAL, "draft_easy": false, "bot_level": BotTemper.DEFAULT_LEVEL}
 
 
-## 싱글 불닭 난이도의 기본 규칙: Lv.1~3 함정 공개, Lv.4~5 비공개. Lv.1은 입문 드래프트.
+## 싱글 불닭 난이도의 기본 규칙: Lv.1~3 함정 공개, Lv.4~5 비공개. Lv.1은 입문 드래프트 + 특수 승리 법전 없음(말 4개 완주 승부만):
+## 첫 판에 영문도 모른 채 특수 승리로 끝나 당황하지 않게, 기본 레이스·기물·주사위부터 익힌다 (2026-10-26). Lv.2부터 법전이 나온다.
 static func for_difficulty(level: int) -> Dictionary:
 	var rules: Dictionary = defaults()
 	rules["trap_reveal"] = level <= 3
 	rules["draft_easy"] = level == 1
+	rules["laws"] = level >= 2
 	return rules
 
 

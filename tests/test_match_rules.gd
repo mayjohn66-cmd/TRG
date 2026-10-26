@@ -53,6 +53,14 @@ func test_easy_draft_lowers_complex_supers_only_for_level_one() -> void:
 	check(AugmentRegistry.effective_weight(sniper, easy) < AugmentRegistry.effective_weight(sniper, normal), "Lv.1: 다른 초증강도 조금 줄어든다")
 	var evolution: AugmentDef = AugmentRegistry.get_def(&"EVO_2_2")
 	check(AugmentRegistry.effective_weight(evolution, easy) > AugmentRegistry.effective_weight(evolution, normal), "Lv.1: 기물 진화는 더 자주")
+	# Lv.1 크림은 특수 승리 법전 없이 완주 승부만, Lv.2부터 법전
+	check(not MatchRules.for_difficulty(1)["laws"] and MatchRules.for_difficulty(2)["laws"], "법전은 Lv.2부터")
+	var law_def: AugmentDef = null
+	for def: AugmentDef in AugmentRegistry.all():
+		if def.category == GameEnums.AugmentCategory.LAW_ENACT:
+			law_def = def
+			break
+	check(law_def != null and MatchRules.weight_factor(easy, law_def) == 0.0 and MatchRules.weight_factor(normal, law_def) > 0.0, "Lv.1 드래프트에는 법전이 안 나온다")
 
 
 func test_speed_match_moves_tempo_up_and_boosts_revenge() -> void:
