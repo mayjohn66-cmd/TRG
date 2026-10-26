@@ -64,10 +64,6 @@ var _law_badge: Button = null
 var _save_notice: Label = null
 var _code_field: LineEdit = null
 var _page_label: Label = null
-var _prev: Button = null
-var _next: Button = null
-var _prev_name: Label = null
-var _next_name: Label = null
 var _list_box: VBoxContainer = null
 ## 왼쪽 노트(항목 설명) 묶음. 기본 규칙 탭에서는 왼쪽에 늘 보이고, 도감 탭에서는 카드를 누를 때만 가운데 팝업으로 뜬다.
 var _notebook_root: Control = null
@@ -146,7 +142,6 @@ func _ready() -> void:
 	_build_list()
 	_build_notebook()
 	_build_cards_area()
-	_build_arrows()
 	_build_ribbon()
 	_build_save_tools()
 
@@ -509,43 +504,6 @@ func _build_cards_area() -> void:
 	_right_scroll.add_child(_right_holder)
 
 
-func _build_arrows() -> void:
-	_prev = _arrow_button(false)
-	_prev.name = "PrevPage"
-	_prev.pressed.connect(func() -> void: show_spread(spread - 1))
-	_place(_prev, Vector2(210, 396), Vector2(50, 76))
-	_prev_name = _arrow_label()
-	_place(_prev_name, Vector2(196, 474), Vector2(78, 24))
-	_next = _arrow_button(true)
-	_next.name = "NextPage"
-	_next.pressed.connect(func() -> void: show_spread(spread + 1))
-	_place(_next, Vector2(1304, 396), Vector2(50, 76))
-	_next_name = _arrow_label()
-	_place(_next_name, Vector2(1290, 474), Vector2(78, 24))
-
-
-func _arrow_button(forward: bool) -> Button:
-	var button := Button.new()
-	button.focus_mode = Control.FOCUS_NONE
-	for state: String in ["normal", "hover", "pressed", "focus", "disabled"]:
-		button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
-	# 좌우는 같은 이미지의 수평 반전만 사용해 굵기와 비율을 맞춘다.
-	var icon := HubArt.icon(&"next")
-	icon.flip_h = not forward
-	icon.set_anchors_preset(Control.PRESET_FULL_RECT)
-	button.add_child(icon)
-	button.mouse_entered.connect(func() -> void: if not button.disabled: HubKit._bounce(button, 1.15))
-	button.mouse_exited.connect(func() -> void: HubKit._bounce(button, 1.0))
-	button.pivot_offset = Vector2(25, 38)
-	return button
-
-
-func _arrow_label() -> Label:
-	var label := HubKit.outlined("", 17, Color.WHITE, Color("3a3250"), 5)
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	return label
-
-
 func _build_ribbon() -> void:
 	var ribbon := Ribbon.new()
 	_ribbon = ribbon
@@ -600,12 +558,6 @@ func show_spread(index: int, entry_index: int = -1) -> void:
 		plate.add_theme_constant_override("outline_size", 0 if selected else 5)
 	_apply_group_layout(group)
 	_page_label.text = "%d / %d" % [spread + 1, spread_count()]
-	_prev.disabled = spread == 0
-	_next.disabled = spread == spread_count() - 1
-	_prev.modulate.a = 0.35 if _prev.disabled else 1.0
-	_next.modulate.a = 0.35 if _next.disabled else 1.0
-	_prev_name.text = TAB_NAMES[spread - 1] if spread > 0 else ""
-	_next_name.text = TAB_NAMES[spread + 1] if spread < spread_count() - 1 else ""
 
 
 ## 한 줄 요약이 길면 (영어·일본어) 글자를 17→12px까지 줄여 한 줄에 맞춘다. 그래도 넘치면 말줄임.
@@ -618,8 +570,8 @@ func _fit_summary(text: String) -> void:
 	_summary_label.add_theme_font_size_override("font_size", px)
 
 
-## 묶음마다 배치: 기본 규칙은 왼쪽 노트 + 오른쪽 좁은 칸 + 좌우 화살표·쪽 표시,
-## 도감은 위쪽 한 줄 요약 + 책 전체를 쓰는 4열 격자 (노트는 카드를 누를 때만 팝업, 화살표·쪽 표시는 왼쪽 큰 탭과 겹쳐 숨긴다).
+## 기본 규칙은 왼쪽 노트 + 오른쪽 좁은 칸 + 쪽 표시,
+## 도감은 위쪽 한 줄 요약 + 4열 격자 (노트는 항목을 누를 때만 팝업).
 func _apply_group_layout(group: int) -> void:
 	var catalog: bool = group == 1
 	_summary_banner.visible = catalog
@@ -634,8 +586,7 @@ func _apply_group_layout(group: int) -> void:
 	else:
 		_right_scroll.position = Vector2(834, 142)
 		_right_scroll.size = Vector2(468, 570)
-	for node: Control in [_prev, _next, _prev_name, _next_name, _ribbon]:
-		node.visible = not catalog
+	_ribbon.visible = not catalog
 	_layout_notebook()
 
 

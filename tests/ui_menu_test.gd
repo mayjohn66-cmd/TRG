@@ -223,13 +223,14 @@ func _run() -> void:
 	menu._top["right"].pressed.emit()
 	_expect(menu.find_child("Popup", true, false) != null, "규칙 팝업이 뜬다")
 	var book: Rulebook = menu.find_child("Popup", true, false) as Rulebook
-	_expect(book != null and book.spread == 0 and book.spread_count() == 10 and book._prev.disabled and not book._next.disabled, "규칙은 10장짜리 규칙 도감의 첫 장으로 열린다")
-	book._next.pressed.emit()
-	_expect(book.spread == 1 and not book._prev.disabled, "다음 쪽으로 넘어간다")
+	_expect(book != null and book.spread == 0 and book.spread_count() == 10, "규칙은 10장짜리 규칙 도감의 첫 장으로 열린다")
+	_expect(book.find_child("PrevPage", true, false) == null and book.find_child("NextPage", true, false) == null, "도감에 이전·다음 화살표가 없다")
+	book._list_buttons[1].pressed.emit()
+	_expect(book.spread == 1, "왼쪽 탭으로 장을 선택한다")
 	for tab_index: int in 10:
 		book.show_spread(tab_index)
 		_expect(book._left_holder.get_child_count() >= 3 and book._right_holder.get_child_count() >= 1, "펼침면 %d에 내용이 있다" % tab_index)
-	_expect(book._next.disabled and book._page_label.text == "10 / 10", "마지막 장에서는 다음 쪽이 잠긴다")
+	_expect(book._page_label.text == "10 / 10", "마지막 장의 쪽 번호가 맞다")
 	var all_text: String = ""
 	book.show_spread(6)
 	for node: Node in book.find_children("*", "Label", true, false):
