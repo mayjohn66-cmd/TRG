@@ -144,6 +144,12 @@ static var _bgm: AudioStreamPlayer = null
 static var _bgm_name: StringName = &""
 ## 캐릭터 대사 전용 재생기 (효과음 버스). 새 대사가 나오면 앞 대사는 끊는다.
 static var _voice: AudioStreamPlayer = null
+## 승리 장면의 긴 팡파르(법전 달성·졸업·시상대·우승) 전용 재생기 두 개. 한 번에 하나만 들리게,
+## 새 팡파르가 나오면 앞 것은 STINGER_FADE초에 걸쳐 줄이고 멈춘다 (겹쳐서 웅성거리지 않게).
+static var _stingers: Array[AudioStreamPlayer] = []
+static var _stinger_index: int = 0
+static var _stinger_fades: Array = [null, null]
+const STINGER_FADE: float = 0.25
 
 
 ## 소리를 낼 수 있는 환경인가 (헤드리스 테스트에서는 항상 꺼져 있다).
@@ -181,6 +187,34 @@ static func play(event: StringName, volume_db: float = 0.0, pitch_variance: floa
 
 
 ## 캐릭터 대사 한 줄을 낸다 (아바타 선택 대사 등). 앞 대사가 아직 나오는 중이면 끊고 새 대사를 낸다.
+## 승리 장면 팡파르: 앞 팡파르를 부드럽게 끊고 새 것을 낸다 (play와 같은 이벤트 이름·별칭을 쓴다).
+static func play_stinger(event: StringName, volume_db: float = 0.0) -> void:
+	if not enabled() or GameSession.audio_muted:
+		return
+	event = ALIASES.get(event, event)
+	var stream: AudioStream = _stream_for(event)
+	if stream == null or not _ensure_ready() or _stingers.size() < 2:
+		return
+	var old: AudioStreamPlayer = _stingers[_stinger_index]
+	if old.playing:
+		var fade: Tween = old.create_tween()
+		fade.tween_property(old, "volume_db", -40.0, STINGER_FADE)
+		fade.tween_callback(old.stop)
+		_stinger_fades[_stinger_index] = fade
+	_stinger_index = (_stinger_index + 1) % _stingers.size()
+	var player: AudioStreamPlayer = _stingers[_stinger_index]
+	var pending: Tween = _stinger_fades[_stinger_index]
+	if pending != null and pending.is_valid():
+		pending.kill()  # 이 재생기에 남은 페이드가 새 소리를 줄이거나 멈추지 않게
+	_stinger_fades[_stinger_index] = null
+	player.stop()
+	player.stream = stream
+	player.volume_db = volume_db
+	player.pitch_scale = 1.0
+	player.play()
+	_last_play_ms[event] = Time.get_ticks_msec()
+
+
 static func play_voice(path: String, volume_db: float = 0.0) -> void:
 	if path == "" or not enabled() or GameSession.audio_muted:
 		return
@@ -298,6 +332,13 @@ static func _ensure_ready() -> bool:
 		_voice.name = "Voice"
 		_voice.bus = BUS_SFX
 		_host.add_child(_voice)
+		_stingers.clear()
+		for i: int in 2:
+			var stinger := AudioStreamPlayer.new()
+			stinger.name = "Stinger%d" % i
+			stinger.bus = BUS_SFX
+			_host.add_child(stinger)
+			_stingers.append(stinger)
 		tree.root.add_child.call_deferred(_host)
 		apply_settings()
 	return _host.is_inside_tree()

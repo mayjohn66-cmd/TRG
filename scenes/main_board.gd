@@ -328,7 +328,13 @@ var _law_dashes: Array[Control] = []
 var _law_near: Array[Label] = []
 var _law_near_tweens: Array[Tween] = []
 ## 특수 승리 달성 하이라이트(법전 카드가 가운데로 날아와 도장이 찍힘)가 화면을 붙잡는 시간(초). 그 뒤에 순위 배너가 뜬다.
-const LAW_ACHIEVED_SECONDS: float = 1.2
+const LAW_ACHIEVED_SECONDS: float = 1.6
+## 승리 장면 소리 간격: 순위 확정 배너(졸업 팡파르)를 보여 주는 시간과 그 뒤 쉼, 결과 창 시상대 팡파르 뒤 첫 순위 공개까지의 뜸.
+const RANK_BANNER_SECONDS: float = 2.0
+const RANK_BEAT_SECONDS: float = 1.8
+const PODIUM_INTRO_SECONDS: float = 1.2
+const RANK_ROW_SECONDS: float = 0.8
+const FIRST_PLACE_DRUMROLL_SECONDS: float = 1.4
 var _roll_button: Button = null
 var _stop_button: Button = null
 var _gun_row: HBoxContainer = null  ## 러시안 룰렛 전용 [발사][정지] 두 버튼 줄
@@ -3867,12 +3873,12 @@ func _fx_law_achieved(from: Rect2, law_name: String, law_desc: String, color: Co
 	tween.tween_property(card, "scale", Vector2.ONE * 1.9, 0.35 * pace).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tween.set_parallel(false)  # 여기부터는 차례대로: 도장 → 잠깐 멈춤 → 사라짐
 	tween.tween_callback(func() -> void:
-		Sfx.play(&"law")
+		Sfx.play_stinger(&"law")
 		screen_shake(8.0, 0.2))
 	tween.tween_property(stamp, "scale", Vector2.ONE, 0.18 * pace).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tween.parallel().tween_property(stamp, "modulate:a", 1.0, 0.12 * pace)
-	tween.tween_interval(0.5 * pace)
-	tween.tween_property(layer, "modulate:a", 0.0, 0.17 * pace)
+	tween.tween_interval(0.85 * pace)
+	tween.tween_property(layer, "modulate:a", 0.0, 0.22 * pace)
 	tween.tween_callback(canvas.queue_free)
 
 
@@ -8597,7 +8603,7 @@ func _show_result_overlay() -> void:
 	var title: Label = _make_label("게임 종료!", 34, Color("ffd43b"))
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(title)
-	Sfx.play(&"podium")
+	Sfx.play_stinger(&"podium")
 	var announcer: Label = _make_label("최종 순위를 발표합니다!", 20, Color("f1f3f5"))
 	announcer.name = "RankingAnnouncer"
 	announcer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -8872,6 +8878,9 @@ func _reveal_ranking(rows: Array[Control], announcer: Label) -> void:
 	while _presentation_active() and frames < 600:  # 마지막 이동·처치 연출이 끝난 뒤에 발표한다
 		frames += 1
 		await get_tree().process_frame
+	await get_tree().create_timer(PODIUM_INTRO_SECONDS).timeout  # 시상대 팡파르의 머리를 들려준 뒤 발표를 시작한다
+	if overlay != _result_overlay:
+		return
 	for index: int in range(rows.size() - 1, -1, -1):
 		if overlay != _result_overlay or not is_instance_valid(rows[index]):
 			return
@@ -8879,11 +8888,11 @@ func _reveal_ranking(rows: Array[Control], announcer: Label) -> void:
 		var first: bool = int(row.get_meta("rank")) == 1
 		if first:
 			announcer.text = "그리고 대망의 1등은...!"
-			await get_tree().create_timer(1.0).timeout
+			await get_tree().create_timer(FIRST_PLACE_DRUMROLL_SECONDS).timeout
 			if overlay != _result_overlay or not is_instance_valid(row):
 				return
 		else:
-			await get_tree().create_timer(0.55).timeout
+			await get_tree().create_timer(RANK_ROW_SECONDS).timeout
 			if overlay != _result_overlay or not is_instance_valid(row):
 				return
 		row.pivot_offset = row.size / 2.0
@@ -8899,7 +8908,7 @@ func _reveal_ranking(rows: Array[Control], announcer: Label) -> void:
 			tween.tween_property(column, "modulate:a", 1.0, 0.18)
 			tween.tween_property(column, "scale", Vector2.ONE, 0.36).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		if first:
-			Sfx.play(&"win")
+			Sfx.play_stinger(&"win")  # 시상대 팡파르를 부드럽게 끊고 우승 팡파르
 			announcer.text = "★ %s 우승! ★" % _player_name(int(row.get_meta("player")))
 			screen_shake(6.0, 0.25)
 		else:
@@ -8910,7 +8919,7 @@ var _last_reason: StringName = &""
 ## 판을 끝낸 결정적 순위 확정 (마지막 자동 순위·남은 컴퓨터 레이스 순위가 아닌 것): {player, rank, reason}.
 var _decisive_rank: Dictionary = {}
 ## 결과 화면을 띄우기 전 [매치 종료] 브리핑 시간(초).
-const END_BRIEF_SECONDS: float = 1.5
+const END_BRIEF_SECONDS: float = 2.0
 
 
 func _winner_reason_text() -> String:
@@ -9351,7 +9360,8 @@ func _on_turn_order_reversed(new_direction: int) -> void:
 
 func _on_game_over(winner_id: int, reason: StringName) -> void:
 	_last_reason = reason
-	Sfx.play(&"win")
+	if not _fx_on():
+		Sfx.play(&"win")  # 연출을 켠 판은 결과 창의 1등 공개 때 우승 팡파르를 낸다 (지금 내면 졸업 팡파르와 겹친다)
 	for player_id: int in _player_ids:
 		_avatar_react(player_id, AvatarSlot.Emotion.CHEER if player_id == winner_id else AvatarSlot.Emotion.SAD, 0.0)
 	_log_line("[승리] P%d 승리! - %s" % [winner_id, VictoryChecker.reason_text(reason)], PLAYER_COLORS[winner_id])
@@ -9779,12 +9789,12 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			var rank_reason: StringName = data["reason"]
 			_record(ranked, "★ %d위 확정! (%s)" % [rank_no, _bb(reason_text)], "", true)
 			_enqueue_late(func() -> void:
-				if _fx_on():
-					Sfx.play(&"graduate")
-				if rank_no < _player_ids.size() - 1:  # 3위(마지막 졸업)부터는 결과 화면이 바로 이어진다
-					_announce(tr_ui("rank.tag"), tr_ui("rank.banner", ["★ " if rank_no == 1 else "", _player_name(ranked), rank_no]), tr_ui("rank.body", [VictoryChecker.reason_text(rank_reason)]), PLAYER_COLORS[ranked], null, 1.4)
+				if rank_no < _player_ids.size() - 1:  # 3위(마지막 졸업)부터는 결과 화면이 바로 이어진다 (팡파르도 시상대에 맡긴다)
+					if _fx_on():
+						Sfx.play_stinger(&"graduate")
+					_announce(tr_ui("rank.tag"), tr_ui("rank.banner", ["★ " if rank_no == 1 else "", _player_name(ranked), rank_no]), tr_ui("rank.body", [VictoryChecker.reason_text(rank_reason)]), PLAYER_COLORS[ranked], null, RANK_BANNER_SECONDS)
 					_profile_react(ranked, true, "%d위" % rank_no)
-					_start_beat(1.0))
+					_start_beat(RANK_BEAT_SECONDS))
 		&"counter_offer":
 			_log_line("[방어 대기] %s: %s - 방어 카드 %d장" % [_player_name(int(data["victim"])), _attack_text(data), (data["cards"] as Array).size()], Color("bac8ff"))
 		&"counter_passed":
