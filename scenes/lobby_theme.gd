@@ -87,6 +87,9 @@ static func add_top_bar(parent: Control, title_text: String, on_back: Callable, 
 	right.custom_minimum_size = Vector2(180, 0)
 	right.name = "RulesButton"
 	row.add_child(right)
+	if MobileSupport.touch_mode():
+		for button: BaseButton in [back, language, right]:
+			button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS  # 화면 끝 버튼: 손가락이 닿는 순간 누른다
 	return {"bar": bar, "back": back, "title": title, "right": right, "language": language}
 
 
@@ -130,6 +133,8 @@ static func add_bottom_bar(parent: Control, name_text: String, center_text: Stri
 	var spacer := Control.new()
 	spacer.custom_minimum_size = Vector2(300, 0)
 	row.add_child(spacer)
+	if MobileSupport.touch_mode():
+		center.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 	return {"bar": bar, "name": name_label, "center": center}
 
 

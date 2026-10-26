@@ -98,6 +98,10 @@ func _input(event: InputEvent) -> void:
 ## 누른 자리가 이미 버튼(또는 입력 칸) 위면 그대로 두고, 그 자리를 덮은 창(대화 상자·딤)이 있으면 그 창 안의 버튼만 고른다.
 ## 누름을 옮겼으면 뗄 때도 같은 버튼 안으로 옮겨 클릭이 성립하게 한다.
 const TOUCH_SLOP: float = 26.0
+## 화면 위·아래 끝에 붙은 버튼(상단 띠의 뒤로·언어·규칙, 보드의 피드백·배속·메뉴, 하단 [설정])은 손가락이 화면 끝에 걸려
+## 버튼 밖(안쪽)을 누르기 쉬우므로 더 넓게 잡는다.
+const EDGE_SLOP: float = 48.0
+const EDGE_BAND: float = 16.0
 var _redirecting: bool = false
 var _snap_offset: Vector2 = Vector2.ZERO
 var _snapping: bool = false
@@ -149,8 +153,9 @@ static func nearby_button_point(root: Node, point: Vector2, slop: float = TOUCH_
 	if blocker != null and _is_pressable_area(blocker):
 		return null  # 이미 버튼·입력 칸을 눌렀다
 	var best: BaseButton = null
-	var best_distance: float = slop
+	var best_distance: float = INF
 	var best_rect: Rect2 = Rect2()
+	var screen: Rect2 = (root as Viewport).get_visible_rect() if root is Viewport else Rect2(Vector2.ZERO, Vector2(1366, 768))
 	for entry: Array in ordered:
 		var button: BaseButton = entry[2] as BaseButton
 		if button == null or button.disabled or button.mouse_filter == Control.MOUSE_FILTER_IGNORE:
@@ -161,7 +166,8 @@ static func nearby_button_point(root: Node, point: Vector2, slop: float = TOUCH_
 		if rect.size.x < 2.0 or rect.size.y < 2.0:
 			continue
 		var distance: float = _distance_to_rect(rect, point)
-		if distance < best_distance:
+		var reach: float = EDGE_SLOP if (rect.position.y <= screen.position.y + EDGE_BAND or rect.end.y >= screen.end.y - EDGE_BAND) else slop
+		if distance < reach and distance < best_distance:
 			best_distance = distance
 			best = button
 			best_rect = rect
