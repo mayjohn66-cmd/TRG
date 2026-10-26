@@ -266,8 +266,17 @@ func _build_mode_page() -> void:
 	right.add_theme_constant_override("separation", 16)
 	right.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_mode_page.add_child(right)
+	# Japanese has taller font metrics. Keep the heading's layout slot fixed;
+	# its line can grow around the center without pushing the mode cards down.
+	var heading_slot := Control.new()
+	heading_slot.name = "ModeHeadingSlot"
+	heading_slot.custom_minimum_size.y = 31.0
+	heading_slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	right.add_child(heading_slot)
 	var heading := HubKit.outlined("어디로 대결하러 갈까요?", 28, Color.WHITE, Color("2c7a1f"), 8)
-	right.add_child(heading)
+	heading_slot.add_child(heading)
+	heading.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	heading.grow_vertical = Control.GROW_DIRECTION_BOTH
 	_ai_button = HubKit.mode_card("TrainingCard", &"sword", "놀이터", "컴퓨터 1~3명 · 혼자서 연습", open_training, &"green")
 	right.add_child(_ai_button)
 	_multi_button = HubKit.mode_card("SecretCard", &"key", "친선 줘팸터", "방 코드 5자리 · 친구와 친선 대결", open_lobby, &"blue")
