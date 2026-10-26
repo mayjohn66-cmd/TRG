@@ -8393,6 +8393,8 @@ func _build_draft_overlay(player_id: int, remaining: int) -> void:
 		box.add_child(footer)
 		footer.add_child(_make_button("무작위로 자동 선택", _on_draft_auto_pressed, 13))
 	add_child(_draft_overlay)
+	if MobileSupport.touch_mode():
+		_fit_touch_draft.call_deferred(center, box)
 	if _draft_entrance and _fx_on():
 		_draft_entrance = false
 		_draft_overlay.position = Vector2(0, 110)
@@ -8400,6 +8402,20 @@ func _build_draft_overlay(player_id: int, remaining: int) -> void:
 		var rise: Tween = _draft_overlay.create_tween().set_parallel(true)
 		rise.tween_property(_draft_overlay, "position:y", 0.0, 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		rise.tween_property(_draft_overlay, "modulate:a", 1.0, 0.3)
+
+
+## 터치 기기(폰 가로 화면은 기준 해상도의 약 0.5배로 보인다): 증강 선택 창(제목·카드 3장·리롤)을 화면에 들어가는 만큼 키운다 (최대 DRAFT_TOUCH_SCALE배).
+const DRAFT_TOUCH_SCALE: float = 1.22
+
+
+## 컨테이너는 자식의 scale을 되돌리므로, 창 전체를 가운데에 놓는 CenterContainer(컨테이너 밖)를 화면 가운데 기준으로 키운다.
+func _fit_touch_draft(center: Control, box: Control) -> void:
+	if not is_instance_valid(center) or not is_instance_valid(box) or box.size.y <= 0.0:
+		return
+	var view: Vector2 = get_viewport_rect().size
+	var fit: float = minf(DRAFT_TOUCH_SCALE, minf(view.y * 0.97 / box.size.y, view.x * 0.96 / box.size.x))
+	center.pivot_offset = center.size / 2.0
+	center.scale = Vector2.ONE * maxf(fit, 1.0)
 
 
 ## 증강 카드를 눌렀을 때: 바로 적용하지 않고 [선택한 카드가 커지며 반짝 / 나머지는 어두워짐] 연출을 잠깐 보여 준 뒤 다음 단계(말 고르기 또는 적용)로 넘어간다.
