@@ -254,7 +254,8 @@ func _run() -> void:
 	_expect(book.entry == -1 and book._notebook_title.text == "굴리는 도구" and book._tiles.size() == book.entry_count() and book.entry_count() == swappable, "도구 장: 처음엔 전체 설명, 오른쪽엔 증강 카드 %d장 (전체 설명 타일 없음)" % swappable)
 	_expect(book._tiles[0].get_child(0) is Button and book._tiles[0].custom_minimum_size.x < MainBoard.AUGMENT_CARD_SIZE.x, "도감 타일은 증강 선택 카드를 줄인 그림")
 	(book._tiles[2].get_child(0) as Button).pressed.emit()
-	_expect(book.entry == 2 and book._tiles[2].get_meta("marker").visible, "증강 카드를 누르면 왼쪽에 그 도구가 크게 나온다 (%s)" % book._notebook_title.text)
+	# 도감 묶음은 상세를 팝업으로 띄우므로 뒤 격자에는 선택 외곽선을 그리지 않는다
+	_expect(book.entry == 2 and not book._tiles[2].get_meta("marker").visible, "증강 카드를 누르면 그 도구 상세가 팝업으로 나온다 (%s)" % book._notebook_title.text)
 	_expect(book._left_holder.get_child_count() >= 2, "항목 화면: 그림·요약 + 규칙표")
 	var rounded: Control = book._left_holder.find_child("RoundedArt", true, false)
 	var mask: Panel = rounded.get_node("Mask") if rounded != null else null

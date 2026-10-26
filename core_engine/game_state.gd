@@ -130,6 +130,9 @@ var extra_turns: Dictionary = {}
 ## 🏆 특수 승리 교칙 진행도: 플레이어 ID -> {kills, ejected, underdog, best_move, best_chain, turn_hand}.
 ## 누적 기록(kills·ejected·underdog)은 게임 시작부터 세고, 순간 기록(best_*·turn_hand)은 해당 교칙이 법전에 있는 동안만 센다.
 var law_stats: Dictionary = {}
+## 히든 페이싱: 사람 자리(AI 대전의 내 자리, TurnManager.pacing_humans에서 받는다)와 사람별 턴 종료를 당한 횟수 (크림 보정). 화면에는 보이지 않는다.
+var pacing_humans: Array[int] = []
+var pacing_turn_ends: Dictionary = {}
 
 ## 이번 턴 시작 시점 스냅샷 (ACT_05 롤백 대상).
 var turn_snapshot: TurnSnapshot = null
@@ -378,6 +381,7 @@ func send_to_start(pawn: PlayerPawn, by_player: int) -> void:
 		var was_out: bool = member.has_left_start and not member.is_finished
 		member.reset_to_start()
 		member.revenge_boost = member.revenge_boost or was_out
+		member.comeback_run = member.comeback_run or was_out
 		if member.sub_type() == GameEnums.PawnSubType.BADUK_WHITE and not member.shield:
 			member.shield_broken_hit = true  # 방어막이 깨진 채로 잡혔다: 다음 증강 라운드에 재충전되지 않는다
 		if was_out:
@@ -848,7 +852,7 @@ func pawn_state(pawn: PlayerPawn) -> Dictionary:
 	for carried_pawn: PlayerPawn in pawn.carried:
 		carried_ids.append(carried_pawn.entity_id)
 	return {"tile": pawn.current_tile_idx, "history": pawn.step_history.duplicate(), "started": pawn.has_left_start,
-		"finished": pawn.is_finished, "revenge": pawn.revenge_boost, "restrained": pawn.restrained_turns,
+		"finished": pawn.is_finished, "revenge": pawn.revenge_boost, "comeback": pawn.comeback_run, "restrained": pawn.restrained_turns,
 		"imprisoned": pawn.is_imprisoned, "shield": pawn.shield, "carrier": pawn.carrier.entity_id if pawn.carrier != null else -1, "carried": carried_ids}
 
 
@@ -868,6 +872,7 @@ func undo_attack(entry: Dictionary) -> void:
 		pawn.has_left_start = bool(data["started"])
 		pawn.is_finished = bool(data["finished"])
 		pawn.revenge_boost = bool(data["revenge"])
+		pawn.comeback_run = bool(data.get("comeback", false))
 		pawn.restrained_turns = int(data["restrained"])
 		pawn.is_imprisoned = bool(data["imprisoned"])
 		pawn.shield = bool(data["shield"])

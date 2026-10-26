@@ -53,6 +53,14 @@ func test_easy_draft_lowers_complex_supers_only_for_level_one() -> void:
 	check(AugmentRegistry.effective_weight(sniper, easy) < AugmentRegistry.effective_weight(sniper, normal), "Lv.1: 다른 초증강도 조금 줄어든다")
 	var evolution: AugmentDef = AugmentRegistry.get_def(&"EVO_2_2")
 	check(AugmentRegistry.effective_weight(evolution, easy) > AugmentRegistry.effective_weight(evolution, normal), "Lv.1: 기물 진화는 더 자주")
+	# Lv.1 크림은 쉬운 법전 2종(투기장의 지배자·봉인된 에르핀의 식권)만, Lv.2부터 모든 법전
+	check(MatchRules.for_difficulty(1)["laws"] and MatchRules.for_difficulty(2)["laws"], "법전은 Lv.1부터 켜져 있다")
+	for def: AugmentDef in AugmentRegistry.all():
+		if def.category != GameEnums.AugmentCategory.LAW_ENACT:
+			continue
+		var easy_law: bool = MatchRules.EASY_LAWS.has(String(def.payload))
+		check((MatchRules.weight_factor(easy, def) > 0.0) == easy_law, "Lv.1 법전 %s: %s" % [def.payload, "나온다" if easy_law else "안 나온다"])
+		check(MatchRules.weight_factor(normal, def) > 0.0, "Lv.2 법전 %s는 나온다" % def.payload)
 
 
 func test_speed_match_moves_tempo_up_and_boosts_revenge() -> void:

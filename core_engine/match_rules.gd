@@ -5,6 +5,8 @@
 #       - trap_reveal: 함정 정체 공개(초보) / 비공개(심리전: 상대가 설치한 함정은 ❓로만 보인다)
 #       - super_freq: 초증강 등장 배수 0(끄기) / 1(기본) / 2(축제) / 3(대축제)
 #       - laws: 특수 승리 법전 켜기 / 끄기(말 4개 완주로만 승부)
+#       - law_pool: 드래프트·템포 업에 나오는 법전을 이 목록으로 제한 (빈 배열 = 모두, Lv.1 크림 = 처치·손패 2종)
+#       - pacing: 히든 페이싱 디렉터 단계 (0 끄기 = 친선전·커스텀 기본, 1~5 = 싱글 불닭 난이도, PacingDirector)
 #       - speed: normal / speed (스피드전: 템포 업이 빨리 오르고 초반 리벤지 부스터가 커져 10~12라운드에 결판)
 #       - draft_easy: 입문(Lv.1 크림) 드래프트 완화 - 글이 길고 복잡한 초증강은 덜, 기물 진화·판정 도구는 더 나온다
 #       - bot_level: 친선전 빈자리 컴퓨터의 불닭 난이도 Lv.1~5 (놀이터는 따로 고른 불닭 난이도를 쓴다)
@@ -34,17 +36,23 @@ const EASY_HARD_SUPER_FACTOR: float = 0.15
 const EASY_SUPER_FACTOR: float = 0.6
 const EASY_LAW_FACTOR: float = 0.6
 const EASY_FRIENDLY_FACTOR: float = 1.6
+## Lv.1 크림에 나오는 법전 (투기장의 지배자·봉인된 에르핀의 식권).
+const EASY_LAWS: Array[String] = ["LAW_01", "LAW_02"]
 
 
 static func defaults() -> Dictionary:
-	return {"trap_reveal": true, "super_freq": 1, "laws": true, "speed": SPEED_NORMAL, "draft_easy": false, "bot_level": BotTemper.DEFAULT_LEVEL}
+	return {"trap_reveal": true, "super_freq": 1, "laws": true, "speed": SPEED_NORMAL, "draft_easy": false, "law_pool": [], "pacing": 0, "bot_level": BotTemper.DEFAULT_LEVEL}
 
 
-## 싱글 불닭 난이도의 기본 규칙: Lv.1~3 함정 공개, Lv.4~5 비공개. Lv.1은 입문 드래프트.
+## 싱글 불닭 난이도의 기본 규칙: Lv.1~3 함정 공개, Lv.4~5 비공개. Lv.1은 입문 드래프트 + 쉬운 법전 2종(투기장의 지배자·봉인된 에르핀의 식권)만.
+## 난이도마다 히든 페이싱 디렉터(PacingDirector)가 켜진다.
 static func for_difficulty(level: int) -> Dictionary:
 	var rules: Dictionary = defaults()
 	rules["trap_reveal"] = level <= 3
 	rules["draft_easy"] = level == 1
+	if level == 1:
+		rules["law_pool"] = EASY_LAWS.duplicate()
+	rules["pacing"] = clampi(level, 1, 5)
 	return rules
 
 
@@ -60,6 +68,13 @@ static func sanitize(value: Variant) -> Dictionary:
 	rules["laws"] = bool(raw.get("laws", true))
 	rules["speed"] = SPEED_FAST if str(raw.get("speed", "")) == String(SPEED_FAST) else SPEED_NORMAL
 	rules["draft_easy"] = bool(raw.get("draft_easy", false))
+	rules["law_pool"] = []
+	var raw_pool: Variant = raw.get("law_pool", [])
+	if raw_pool is Array:
+		for law_id: Variant in raw_pool:
+			if VictoryLaw.is_victory_id(str(law_id)) and not (rules["law_pool"] as Array).has(str(law_id)):
+				(rules["law_pool"] as Array).append(str(law_id))
+	rules["pacing"] = clampi(int(raw.get("pacing", 0)), 0, 5)
 	rules["bot_level"] = BotTemper.sanitize(raw.get("bot_level", BotTemper.DEFAULT_LEVEL))
 	return rules
 
@@ -98,6 +113,12 @@ static func of(state: GameState) -> Dictionary:
 	return state.match_rules if state != null else defaults()
 
 
+## 이 법전이 이번 판에 나올 수 있는가 (law_pool이 비어 있으면 모두).
+static func law_allowed(state: GameState, law_id: String) -> bool:
+	var pool: Array = of(state).get("law_pool", [])
+	return pool.is_empty() or pool.has(law_id)
+
+
 static func trap_reveal(state: GameState) -> bool:
 	return bool(of(state).get("trap_reveal", true))
 
@@ -116,7 +137,7 @@ static func weight_factor(state: GameState, def: AugmentDef) -> float:
 			if bool(rules.get("draft_easy", false)):
 				factor *= EASY_HARD_SUPER_FACTOR if EASY_HARD_SUPERS.has(StringName(str(def.payload))) else EASY_SUPER_FACTOR
 		GameEnums.AugmentCategory.LAW_ENACT:
-			if not bool(rules.get("laws", true)):
+			if not bool(rules.get("laws", true)) or not law_allowed(state, String(def.payload)):
 				return 0.0
 			if bool(rules.get("draft_easy", false)):
 				factor *= EASY_LAW_FACTOR

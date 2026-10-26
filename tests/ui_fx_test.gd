@@ -2475,14 +2475,14 @@ func _test_event_order() -> void:
 	# 1) 소환: 사료스탕스는 소환 즉시 움직이지 않는다. 라운드 끝 NPC 페이즈에 달리고, 달리는 동안 잡힐 말은 아직 보드에 있다가 그 뒤에 사출된다
 	var victim: PlayerPawn = state.get_pawn(21)
 	victim.has_left_start = true
-	victim.current_tile_idx = BoardSpec.side + 2
+	victim.current_tile_idx = BoardSpec.halfway_tile + 2
 	_board._refresh_pawns()
 	await process_frame
 	var history_before: int = _board._announcer.history.size()
-	var command := SweepCommand.new(1, BoardSpec.side, &"SUM_01")
+	var command := SweepCommand.new(1, BoardSpec.halfway_tile, &"SUM_01")
 	command.state = state
 	command.execute()
-	_expect(victim.has_left_start and state.npcs.size() == 1 and state.npcs[0].current_tile_idx == BoardSpec.side, "소환 즉시는 움직이지도 잡지도 않는다")
+	_expect(victim.has_left_start and state.npcs.size() == 1 and state.npcs[0].current_tile_idx == BoardSpec.halfway_tile, "소환 즉시는 움직이지도 잡지도 않는다")
 	var summoned: NeutralNPC = state.npcs[0]
 	var npc_report: Dictionary = summoned.run_ai(state)  # 라운드 끝 NPC 페이즈 (TurnManager._enter_neutral_npc_phase와 같은 순서)
 	npc_report["display_id"] = summoned.display_id
@@ -3090,8 +3090,8 @@ func _test_move_four_steps() -> void:
 	_expect(banners.any(func(text: String) -> bool: return text.contains("리벤지 부스터") and text.contains("+%d칸 선행 전진" % bonus)), "1단계 배너: [리벤지 부스터] +N칸 선행 전진! (%s)" % str(banners))
 	_expect(rest_ms >= 120 and rest_ms < 400, "부스터 도착 칸에서 0.15초 멈춘다 (%dms)" % rest_ms)
 	_expect(boosted.current_tile_idx == bonus + 7, "엔진: 부스터 %d칸 + 눈금 7칸" % bonus)
-	# 거북이 이동 회귀: 걸음마다 여운(0.35초)이 붙으면 부스터 + 눈금 7칸이 4~5초 걸렸다. 걸음은 이어서 뛰어 1.5초 안에 끝난다.
-	_expect(launched_ms > 0 and arrived_ms > 0 and arrived_ms - launched_ms < 1500, "리벤지 부스터 + 눈금 7칸이 1.5초 안에 끝난다 (%dms)" % (arrived_ms - launched_ms))
+	# 거북이 이동 회귀: 걸음마다 여운(0.35초)이 붙으면 부스터 + 눈금 7칸이 4~5초 걸렸다. 걸음은 칸당 0.28초(탁 탁 탁)로 이어서 뛰어 3초 안에 끝난다.
+	_expect(launched_ms > 0 and arrived_ms > 0 and arrived_ms - launched_ms < 3000, "리벤지 부스터 + 눈금 7칸이 3초 안에 끝난다 (%dms)" % (arrived_ms - launched_ms))
 	state.boost_gimmicks = saved_boost
 	_board._reset_presentation()
 	_board.instant_roll_for_test = true

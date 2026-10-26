@@ -15,6 +15,8 @@ var is_finished: bool = false
 var retreated_run: bool = false
 ## 리벤지 부스터: 보드 위에서 출발선으로 사출된 말이 다음에 출발할 때 눈금에 +4칸이 붙는다 (1회 출발 시 소모).
 var revenge_boost: bool = false
+## 히든 페이싱(Lv.4~5): 잡혀서 다시 출발한 뒤 아직 반환점에 닿지 않은 말 (PacingDirector가 눈금을 몰래 보정한다). 화면에는 보이지 않는다.
+var comeback_run: bool = false
 ## 업기: 나를 업고 있는 말(없으면 null) / 내가 업고 있는 말들.
 var carrier: PlayerPawn = null
 var carried: Array[PlayerPawn] = []

@@ -1,6 +1,6 @@
 # File: res://core_engine/cards/card_ghost.gd
 # Class: class_name CardGhost
-# Role: SUM_02 와구와구 유령 - 상단 코너(오른쪽 위·반환점) 한 곳에 소환하면 보드에 남아 역방향으로 3~6칸씩(소환 직후·라운드 종료마다) 전진하고, 말을 만나면 그 칸의 말을 모두 사출하고 사라진다. 중립 기물은 한 번에 하나만
+# Role: SUM_02 와구와구 유령 - 상단 코너(맨 위 꼭짓점·반환점)에 소환하면 보드에 남아 역방향으로 3~6칸씩(소환 직후·라운드 종료마다) 전진하고, 말을 만나면 그 칸의 말을 모두 사출하고 사라진다. 중립 기물은 한 번에 하나만
 class_name CardGhost
 extends BaseCard
 
@@ -16,7 +16,7 @@ func needs_tile() -> bool:
 	return true
 
 
-## params: {"tile": 상단 코너}
+## params: {"tile": 상단 코너(반환점)}
 func can_play(state: GameState, _player_id: int, params: Dictionary) -> bool:
 	return SweepCommand.can_summon(state) and SweepCommand.spawn_tiles().has(int(params.get("tile", -1)))
 

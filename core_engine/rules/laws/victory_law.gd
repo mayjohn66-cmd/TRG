@@ -91,18 +91,23 @@ func is_danger(state: GameState, player_id: int) -> bool:
 
 ## 사도 포위망: 트랙 위(출발선·결승 제외)에 따로 서 있는 내 말 중 서로 SPREAD_GAP칸 이상 떨어진 말의 최대 수 (앞에서부터 욕심껏 센다).
 static func spread_count(state: GameState, player_id: int) -> int:
-	var tiles: Array[int] = []
+	return spread_pawn_ids(state, player_id).size()
+
+
+## 사도 포위망에 지금 세어지는 내 말들 (화면에서 그 말에 표시를 붙인다).
+static func spread_pawn_ids(state: GameState, player_id: int) -> Array[int]:
+	var placed: Array[PlayerPawn] = []
 	for pawn: PlayerPawn in state.pawns_of(player_id):
 		if pawn.is_finished or not pawn.has_left_start or pawn.current_tile_idx == GameEnums.GOAL_TILE:
 			continue
 		if pawn.carrier != null or not pawn.carried.is_empty():
 			continue  # 업힌 말은 한 칸에 겹쳐 있으니 포위망이 아니다
-		tiles.append(pawn.current_tile_idx)
-	tiles.sort()
-	var count: int = 0
+		placed.append(pawn)
+	placed.sort_custom(func(a: PlayerPawn, b: PlayerPawn) -> bool: return a.current_tile_idx < b.current_tile_idx)
+	var ids: Array[int] = []
 	var last: int = -SPREAD_GAP
-	for tile: int in tiles:
-		if tile - last >= SPREAD_GAP:
-			count += 1
-			last = tile
-	return count
+	for pawn: PlayerPawn in placed:
+		if pawn.current_tile_idx - last >= SPREAD_GAP:
+			ids.append(pawn.entity_id)
+			last = pawn.current_tile_idx
+	return ids

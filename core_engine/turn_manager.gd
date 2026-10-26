@@ -51,10 +51,10 @@ var is_game_over: bool = false
 ## 한 칸 이동 사이의 연출 대기 시간(초). 0이면 await 없이 즉시 끝까지 이동한다 (헤드리스/테스트). 뷰 연결 시 올린다.
 @export var step_delay_sec: float = 0.0
 ## 한 번의 이동 연출 총시간 상한(초): 칸이 많을수록 칸당 시간을 줄여 몇 칸을 가든 이 시간을 넘지 않는다 (칸당 = min(step_delay_sec, 상한 / 칸 수)).
-const MOVE_TIME_CAP: float = 0.75
+const MOVE_TIME_CAP: float = 2.4  ## 2026-10-26: 0.75 -> 2.4 (칸마다 탁 탁 끊어 보이게)
 ## 이 칸 수 이상의 장거리 이동(리벤지 부스터 + 고눈금 등)은 칸당 시간을 LONG_MOVE_STEP_SECONDS로 줄여 타다닥 지나간다.
-const LONG_MOVE_TILES: int = 5
-const LONG_MOVE_STEP_SECONDS: float = 0.06
+const LONG_MOVE_TILES: int = 10
+const LONG_MOVE_STEP_SECONDS: float = 0.16
 ## 지금 이동의 칸당 시간 (화면의 한 칸 점프 길이를 엔진 걸음과 맞춘다).
 var current_step_seconds: float = 0.0
 
@@ -114,6 +114,8 @@ var _move_report: MoveReport = null
 var _move_tempo_bonus: int = 0
 ## AI 대전의 사람 자리: 이 사람들이 모두 졸업하면 남은 컴퓨터는 레이스 진행 순서로 순위를 매기고 판을 바로 끝낸다 (비어 있으면 끝까지 진행, 온라인·4인 수동).
 var end_when_graduated: Array[int] = []
+## 히든 페이싱 디렉터가 사람으로 보는 자리 (AI 대전의 내 자리). 굴림·드래프트 직전에 state.pacing_humans로 넘긴다.
+var pacing_humans: Array[int] = []
 var _move_outcome: MoveExecutor.StepOutcome = MoveExecutor.StepOutcome.CONTINUE
 
 
@@ -403,7 +405,8 @@ func _handle_roll(actor: int, params: Dictionary = {}) -> void:
 	# 야추 다이스: 다시 굴릴 때 고정할 주사위(keep: 5개 bool)를 굴림 행동에 실어 보낸다.
 	if params.has("keep") and tool is ToolYacht:
 		(tool as ToolYacht).set_keep(params["keep"] as Array if params["keep"] is Array else [])
-	_apply_roll_result(tool.roll(state.rng))
+	state.pacing_humans = pacing_humans
+	_apply_roll_result(PacingDirector.adjust(state, actor, tool, tool.roll(state.rng)))
 
 
 func _handle_stop(actor: int) -> void:
@@ -1123,7 +1126,8 @@ func _on_timeout() -> void:
 			if tool.has_pending_state():
 				_apply_roll_result(tool.cash_out())
 			else:
-				_apply_roll_result(tool.roll(state.rng))
+				state.pacing_humans = pacing_humans
+				_apply_roll_result(PacingDirector.adjust(state, current_player_id(), tool, tool.roll(state.rng)))
 		State.PHASE_INTERRUPT_ROLL:
 			_close_interrupt_window()
 		State.PHASE_SELECT_PAWN:
@@ -1169,6 +1173,7 @@ func _enter_round_start() -> void:
 	if draft_enabled and GameEnums.is_draft_round(state.round_number):
 		for player_id: int in player_order:
 			if not state.is_graduated(player_id):  # 졸업한 플레이어는 드래프트에서 빠진다
+				state.pacing_humans = pacing_humans
 				_draft_offers[player_id] = AugmentRegistry.generate_offers(state, player_id)
 		_emit_event(&"augment_offers", {"round": state.round_number, "offers": _draft_offers.duplicate(true)})
 	else:
@@ -1180,6 +1185,15 @@ func _enter_round_start() -> void:
 ## 완주로 게임이 끝났으면 true.
 func _apply_tempo_up() -> bool:
 	var round_number: int = state.round_number
+	# 히든 페이싱: 20라운드가 끝나도 남은 사람은 진행 순위로 확정하고 판을 끝낸다 (싱글 불닭 난이도만, 맨 뒤 한 명은 꼴찌).
+	if PacingDirector.enabled(state) and round_number > PacingDirector.HARD_CAP_ROUND and not is_game_over:
+		var order: Array = VictoryChecker.sort_by_race(state, state.active_players(player_order))
+		if not order.is_empty():
+			_emit_event(&"race_ranked", {"players": order, "round_cap": true})
+			for index: int in order.size():
+				_graduate(order[index], VictoryChecker.LAST_PLACE if index == order.size() - 1 else VictoryChecker.RACE_ORDER)
+			_end_game()
+			return true
 	if TempoUp.is_stage_round(round_number):
 		var stage: int = TempoUp.level(round_number)
 		var lines: Array[String] = TempoUp.effect_lines(stage)
@@ -1211,7 +1225,8 @@ func _enact_random_law() -> void:
 		return  # 방 규칙 [특수 승리 법전 끄기]: 말 4개 완주로만 승부
 	var candidates: Array[String] = []
 	for definition: AugmentDef in AugmentRegistry.all():
-		if definition.category == GameEnums.AugmentCategory.LAW_ENACT and definition.enabled and not state.rulebook.has_law(String(definition.payload)) and not candidates.has(String(definition.payload)):
+		if definition.category == GameEnums.AugmentCategory.LAW_ENACT and definition.enabled and not state.rulebook.has_law(String(definition.payload)) and not candidates.has(String(definition.payload)) \
+				and MatchRules.law_allowed(state, String(definition.payload)):
 			candidates.append(String(definition.payload))
 	if candidates.is_empty():
 		return

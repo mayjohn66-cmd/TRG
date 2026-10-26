@@ -33,10 +33,11 @@ const TILT_ZOOM: float = 1.05          ## 세로를 눌러 남는 공간만큼 �
 const TILE_SIZE: float = 48.0
 const PAWN_RADIUS: float = 10.0
 const STEP_DELAY: float = 0.22
-## 엔진이 한 칸 걸을 때마다 기다리는 시간 (연출 속도 배율을 곱하지 않는다). 장거리면 TurnManager.MOVE_TIME_CAP(0.75초)이 칸당 시간을 더 줄인다.
-const MOVE_STEP_SECONDS: float = 0.12
+## 엔진이 한 칸 걸을 때마다 기다리는 시간 (연출 속도 배율을 곱하지 않는다). 장거리면 TurnManager.MOVE_TIME_CAP이 칸당 시간을 더 줄인다.
+## 2026-10-26: "타다다닥"이 아니라 "탁 탁 탁"으로 한 칸씩 세며 보이게 0.12 -> 0.28초 (점프 0.2초 + 착지 쉼).
+const MOVE_STEP_SECONDS: float = 0.28
 ## 굴림 결과 칸수 배지가 뜬 뒤 말이 출발하기까지의 틈 (예전 0.3초 x 연출 속도 1.7 + 잠금 0.5초 -> 0.12초, 배지는 이동과 함께 떠 있다).
-const ROLL_SUMMARY_LEAD: float = 0.25  ## 2026-10 여운 패치: 0.12 -> 0.25 ("N칸 전진!"을 읽을 틈)
+const ROLL_SUMMARY_LEAD: float = 0.4  ## 2026-10 여운 패치: 0.12 -> 0.25 ("N칸 전진!"을 읽을 틈)
 ## 리벤지 부스터 배너가 뜬 뒤 말이 날아가기까지의 틈.
 const REVENGE_LAUNCH_LEAD: float = 0.15
 ## 카드·함정·필살기 발동 카드(뒤이어 효과가 이어지는 [문] 알림)의 최대 길이(초, 연출 속도 배율 전).
@@ -46,7 +47,10 @@ const ONE_CLICK_POWER: float = 0.75  ## 원클릭 굴림의 연출 세기 (파�
 const NPC_ANNOUNCE_BODY: String = "사료스탕스는 정방향, 와구와구 유령은 역방향으로 가장 가까운 적 말을 덮치고 사라집니다"
 const NPC_TIP_ROBBER: String = "소환된 자리에서 기다리다가 라운드가 끝나면 정방향으로 가장 가까운 적 말까지 달려가 그 말 하나를 출발선으로 날려버리고 사라집니다"
 const NPC_TIP_GHOST: String = "소환된 자리에서 기다리다가 라운드가 끝나면 역방향으로 가장 가까운 적 말까지 달려가 그 말 하나를 출발선으로 날려버리고 사라집니다"
-const HOP_SECONDS: float = 0.10
+const HOP_SECONDS: float = 0.20
+## 한 칸 점프 뒤 다음 점프까지 착지해 멈춰 있는 틈 (칸 시간의 이 비율, 상한 HOP_REST_MAX초).
+const HOP_REST_RATIO: float = 0.3
+const HOP_REST_MAX: float = 0.09
 const HOP_HEIGHT: float = 20.0
 const SLAM_HEIGHT: float = 45.0
 const CELL_OFFSETS: Array[Vector2] = [Vector2(-11, -8), Vector2(11, -8), Vector2(-11, 8), Vector2(11, 8)]
@@ -80,17 +84,17 @@ const HAND_FAN_DEGREES: float = 5.0
 ## 피해 되돌리기 팝업이 자동으로 넘어가기까지의 시간(초).
 const REACTION_SECONDS: float = 6.0
 ## 행동 사이의 호흡(초): 이동이 끝난 뒤 멈춤 / [P2 차례] 알림 길이.
-const DRAFT_OPEN_BEAT: float = 0.3  ## 증강 창이 열리기 전 여운 (0.12 -> 0.3)
-const BEAT_AFTER_MOVE: float = 0.3  ## 이동 뒤 여운 (0.8 -> 0.12 -> 2026-10 여운 패치 0.3: 도착 결과를 잠깐 보여 준 뒤 다음 턴·증강 창으로)
+const DRAFT_OPEN_BEAT: float = 0.45  ## 증강 창이 열리기 전 여운 (0.12 -> 0.3)
+const BEAT_AFTER_MOVE: float = 0.5  ## 이동 뒤 여운 (0.8 -> 0.12 -> 2026-10 여운 패치 0.3: 도착 결과를 잠깐 보여 준 뒤 다음 턴·증강 창으로)
 ## 차례 배너는 짧게 막는다: 누구 차례인지 보여 준 뒤에야 카드 선언·굴리기가 열린다 (봇도 배너가 끝난 뒤 움직인다).
 const TURN_BANNER_SECONDS: float = 0.85
 ## 터보 AI 턴: AI 차례의 연출 시간 배율 (보통 속도 대비 50% 단축, 2026-10 여운 패치 전에는 65%). 사람 말을 잡거나 특수 승리·법전이 움직인 턴은 보통 속도로 보여 준다.
-const TURBO_PACE_SCALE: float = 0.5
+const TURBO_PACE_SCALE: float = 0.8  ## 2026-10-26: 0.5(2배속) -> 0.8 (컴퓨터 차례도 눈으로 따라갈 수 있게)
 ## AI 차례 배너는 더 짧게 (사람 차례 배너는 그대로).
 const TURBO_TURN_BANNER_SECONDS: float = 0.45
 ## 연출 여운: 화면에 무언가를 보여 준 연출 단계(움직임·컷인·배너·여운이 있던 단계)가 끝난 뒤 다음 단계로 넘어가기 전에 결과를 보여 주는 시간(초).
 ## 기록 줄처럼 그 자리에서 끝나는 단계에는 붙지 않는다. AI 터보 턴에는 절반.
-const STEP_LINGER_SECONDS: float = 0.35
+const STEP_LINGER_SECONDS: float = 0.55  ## 2026-10-26: 0.35 -> 0.55 (연출 단계 사이 인터벌)
 ## 이보다 오래 걸린 단계를 '보여 준 단계'로 본다 (밀리초).
 const STEP_LINGER_MIN_MSEC: int = 60
 ## 처치 확정 대기의 최대 시간(초): 방어 결정이 이보다 오래 걸리면(연결 끊김 등) 연출을 계속한다.
@@ -327,6 +331,12 @@ var _law_dashes: Array[Control] = []
 ## 법전 슬롯 오른쪽 위 [달성 임박!] 배지와 그 깜빡임 (누군가 1칸/1회 남았을 때).
 var _law_near: Array[Label] = []
 var _law_near_tweens: Array[Tween] = []
+## 법전 슬롯 오른쪽의 내 달성도 배지 [ 4 / 6 킬 ] (실시간).
+var _law_progress: Array[Label] = []
+## 슬롯 배지 상태: 0 없음 / 1 누군가 달성 임박 / 2 내가 조건 충족 (이번 턴이 끝나면 졸업)
+var _law_badge_state: Array[int] = []
+## 법전 진행도 배지의 단위 (VictoryLaw 단위와 다르게 보여 줄 것만).
+const LAW_PROGRESS_UNITS: Dictionary = {"LAW_01": "킬", "LAW_08": "킬", "LAW_05": "구역"}
 ## 특수 승리 달성 하이라이트(법전 카드가 가운데로 날아와 도장이 찍힘)가 화면을 붙잡는 시간(초). 그 뒤에 순위 배너가 뜬다.
 const LAW_ACHIEVED_SECONDS: float = 1.6
 ## 승리 장면 소리 간격: 순위 확정 배너(졸업 팡파르)를 보여 주는 시간과 그 뒤 쉼, 결과 창 시상대 팡파르 뒤 첫 순위 공개까지의 뜸.
@@ -909,6 +919,58 @@ func _telemetry_seat() -> int:
 
 
 ## 보드판에 들어와 새 판이 시작됐다: [매치 시작]을 알리고 걸린 시간·고른 증강을 모으기 시작한다.
+## 생애 첫 판(누적 판 수 1 이하)에만: 화면 위쪽에 "어디를 보면 효과를 알 수 있는지" 한 줄 팁을 몇 초 띄운다.
+const FIRST_MATCH_TIP: String = "팁: 보드 위의 말, 함정, 좌측 법전에 마우스를 올리면(모바일은 탭) 상세 효과를 언제든 볼 수 있어요!"
+const FIRST_MATCH_TIP_SECONDS: float = 7.0
+
+
+func _show_first_match_tip() -> void:
+	if not _fx_on() or not is_inside_tree():
+		return
+	var old: Node = get_node_or_null("FirstMatchTip")
+	if old != null:
+		old.queue_free()
+	var canvas := CanvasLayer.new()
+	canvas.name = "FirstMatchTip"
+	canvas.layer = 55
+	add_child(canvas)
+	var panel := PanelContainer.new()
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color(0.06, 0.09, 0.16, 0.92)
+	box.border_color = Color("ffd43b")
+	box.set_border_width_all(2)
+	box.set_corner_radius_all(18)
+	box.content_margin_left = 16
+	box.content_margin_right = 20
+	box.content_margin_top = 8
+	box.content_margin_bottom = 8
+	panel.add_theme_stylebox_override("panel", box)
+	canvas.add_child(panel)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(row)
+	var bulb: TextureRect = HubArt.icon(&"tip")
+	bulb.custom_minimum_size = Vector2(28, 28)
+	bulb.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(bulb)
+	var text := _make_label(FIRST_MATCH_TIP, MobileSupport.text_px(16), Color("fff3bf"))
+	text.name = "FirstMatchTipText"
+	text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	row.add_child(text)
+	var view: Vector2 = get_viewport_rect().size
+	panel.reset_size()
+	panel.position = Vector2((view.x - panel.size.x) / 2.0, 56.0)
+	panel.modulate.a = 0.0
+	var tween: Tween = panel.create_tween()
+	tween.tween_property(panel, "modulate:a", 1.0, 0.4)
+	tween.parallel().tween_property(panel, "position:y", 62.0, 0.4).from(40.0).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_interval(FIRST_MATCH_TIP_SECONDS)
+	tween.tween_property(panel, "modulate:a", 0.0, 0.6)
+	tween.tween_callback(canvas.queue_free)
+
+
 func _report_match_start() -> void:
 	_match_started_msec = Time.get_ticks_msec()
 	_my_augments.clear()
@@ -1036,6 +1098,8 @@ func _new_game() -> void:
 	manager.start_game(_player_ids, _game_seed)
 	state = manager.state
 	_report_match_start()
+	if GameSession.match_count() <= 1 and (ai_mode or net != null):
+		_show_first_match_tip()
 	var rule_summary: String = MatchRules.summary(state.match_rules)
 	if rule_summary != "":
 		_log_line("[방 규칙] %s" % rule_summary, Color("63e6be"))
@@ -1716,6 +1780,25 @@ func _build_law_board() -> void:
 		slot_panel.add_child(near)
 		_law_near.append(near)
 		_law_near_tweens.append(null)
+		# 내 달성도 [ 4 / 6 킬 ]: 슬롯 오른쪽에 큼직하게
+		var progress := _make_label("", MobileSupport.text_px(15), Color("fff3bf"))
+		progress.name = "LawProgress"
+		progress.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		progress.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		progress.custom_minimum_size = Vector2(86, 30)
+		progress.size_flags_vertical = Control.SIZE_SHRINK_END  # 위쪽 모서리는 [달성 임박!] 배지 자리
+		var progress_box := StyleBoxFlat.new()
+		progress_box.bg_color = Color("2b3a55")
+		progress_box.set_corner_radius_all(10)
+		progress_box.set_content_margin_all(4)
+		progress.add_theme_stylebox_override("normal", progress_box)
+		progress.add_theme_color_override("font_outline_color", Color("101626"))
+		progress.add_theme_constant_override("outline_size", 3)
+		progress.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		progress.visible = false
+		inner.add_child(progress)
+		_law_progress.append(progress)
+		_law_badge_state.append(0)
 		_bind_tip(slot_panel, _fill_law_tip.bind(_law_slots.size()))
 		_law_slots.append(slot_panel)
 		_law_labels.append(name_label)
@@ -2465,6 +2548,11 @@ func _pawn_position_at(pawn: PlayerPawn, tile: int) -> Vector2:
 
 
 func _refresh_pawns() -> void:
+	# 사도 포위망이 법전에 있으면 내 말 중 지금 포위망에 세어지는 말에 [포위망] 표시
+	var spread_ids: Array[int] = []
+	var viewer: int = _law_view_player()
+	if viewer != -1 and state.rulebook.has_law("LAW_05"):
+		spread_ids = VictoryLaw.spread_pawn_ids(state, viewer)
 	for pawn: PlayerPawn in state.pawns:
 		var view: Node2D = _pawn_views.get(pawn.entity_id)
 		if view == null:
@@ -2478,6 +2566,8 @@ func _refresh_pawns() -> void:
 			badge_text += " 감옥"
 		if state.bonds.has(pawn.entity_id):
 			badge_text += " 연대"  # 강제 연대책임: 일심동체로 묶인 말
+		if spread_ids.has(pawn.entity_id):
+			badge_text += " 포위망"  # 사도 포위망에 세어지는 말
 		(view.get_node("Bounce/Badge") as Label).text = badge_text
 	for npc: NeutralNPC in state.npcs:
 		if not _npc_views.has(npc.entity_id):
@@ -2757,10 +2847,15 @@ func _play_hop(pawn_id: int, to_pos: Vector2, to_scale: float, tile: int) -> voi
 	var hop: float = manager.current_step_seconds if manager != null and manager.current_step_seconds > 0.0 else HOP_SECONDS
 	if _move_chain_len >= TurnManager.LONG_MOVE_TILES:
 		hop = minf(hop, TurnManager.LONG_MOVE_STEP_SECONDS)  # 장거리 이동: 큐에 이어진 걸음이 많으면 타다닥
-	_glide(view, to_pos, to_scale, {"dur": minf(hop, HOP_SECONDS * minf(_pace(), 1.5)), "arc": HOP_HEIGHT, "pace_cap": 1.0, "land_tile": tile})
+	# 칸 시간 = 점프 + 착지 쉼: 점프는 칸 시간의 70%, 나머지는 제자리에서 멈춰 한 칸씩 끊어 보이게 한다
+	var jump: float = minf(hop * (1.0 - HOP_REST_RATIO), HOP_SECONDS * minf(_pace(), 1.5))
+	_glide(view, to_pos, to_scale, {"dur": jump, "arc": HOP_HEIGHT, "pace_cap": 1.0, "land_tile": tile})
 	var generation: int = _fx_generation
 	while generation == _fx_generation and is_instance_valid(view) and _fx_running(view):
 		await get_tree().process_frame
+	var rest: float = minf(hop * HOP_REST_RATIO, HOP_REST_MAX)
+	if rest > 0.0 and generation == _fx_generation and _fx_on():
+		await get_tree().create_timer(rest).timeout
 
 
 ## 점프 코너나 옷장 포탈에서 시작한 워프인가: 발판에 먼저 멈춰 발동 연출을 보여 준 뒤 날아가야 한다.
@@ -3777,9 +3872,23 @@ func _refresh_laws() -> void:
 			_law_labels[slot].add_theme_color_override("font_color", Color("c92a2a") if danger else UiSkin.INK)
 			_law_descs[slot].text = law.description
 			_law_slots[slot].tooltip_text = ""
-			_set_law_near(slot, danger)
+			# 내 달성도 배지: 조건을 다 채웠으면 [★ 턴 종료 시 달성!] (차례가 끝나면 바로 졸업)
+			var mine_done: bool = false
+			if law is VictoryLaw and slot < _law_progress.size():
+				var victory: VictoryLaw = law as VictoryLaw
+				var viewer: int = _law_view_player()
+				var value: int = victory.progress(state, viewer)
+				var unit: String = str(LAW_PROGRESS_UNITS.get(law.law_id, victory.unit()))
+				# 단위까지 한 문구로 번역한다 ("개"만 따로 번역하면 윷의 "개"가 된다)
+				_law_progress[slot].text = L10n.tf("[ %d / %d " + unit + " ]", [mini(value, victory.goal()), victory.goal()])
+				_law_progress[slot].visible = viewer != -1
+				mine_done = viewer != -1 and value >= victory.goal() and not state.is_graduated(viewer)
+				_law_progress[slot].add_theme_color_override("font_color", Color("ffd43b") if mine_done else Color("fff3bf"))
+			_set_law_near(slot, 2 if mine_done else (1 if danger else 0))
 		else:
-			_set_law_near(slot, false)
+			if slot < _law_progress.size():
+				_law_progress[slot].visible = false
+			_set_law_near(slot, 0)
 			_law_slots[slot].add_theme_stylebox_override("panel", UiSkin.panel("inset", 8.0))
 			_law_labels[slot].text = ""
 			_law_labels[slot].add_theme_color_override("font_color", UiSkin.SOFT)
@@ -3787,28 +3896,49 @@ func _refresh_laws() -> void:
 			_law_slots[slot].tooltip_text = ""
 
 
-## 법전 슬롯 [달성 임박!]: 누군가 한 걸음 남았으면 배지를 띄우고 슬롯을 노랑↔빨강으로 깜빡인다.
-func _set_law_near(slot: int, near: bool) -> void:
+## 법전 진행도 배지를 보여 줄 사람: 컴퓨터 대전·온라인은 나, 한 화면 여럿이 하는 판은 지금 차례인 사람.
+func _law_view_player() -> int:
+	if state == null or manager == null:
+		return -1
+	if ai_mode or net != null:
+		return local_player_id
+	return manager.current_player_id()
+
+
+## 법전 슬롯 배지: 1 = 누군가 한 걸음 남음 → 빨간 [달성 임박!] + 노랑↔빨강 깜빡임,
+## 2 = 내가 조건을 다 채움 → 금색 [★ 턴 종료 시 달성!] + 슬롯 전체가 황금빛으로 반짝임. 0 = 없음.
+func _set_law_near(slot: int, mode: int) -> void:
 	if slot >= _law_near.size():
 		return
 	var badge: Label = _law_near[slot]
 	var panel: Control = _law_slots[slot]
-	if badge.visible == near:
+	if _law_badge_state[slot] == mode:
 		return
-	badge.visible = near
+	_law_badge_state[slot] = mode
+	badge.visible = mode != 0
+	badge.text = "[★ 턴 종료 시 달성!]" if mode == 2 else "[달성 임박!]"
+	var box: StyleBoxFlat = badge.get_theme_stylebox("normal") as StyleBoxFlat
+	if box != null:
+		box.bg_color = Color("e8a400") if mode == 2 else Color("e03131")
 	var old: Tween = _law_near_tweens[slot]
 	if old != null and old.is_valid():
 		old.kill()
 	_law_near_tweens[slot] = null
 	panel.self_modulate = Color.WHITE
 	badge.modulate = Color.WHITE
-	if not near or not _fx_on():
+	if mode == 0 or not _fx_on():
 		return
 	var pulse: Tween = panel.create_tween().set_loops()
-	pulse.tween_property(panel, "self_modulate", Color(1.25, 1.15, 0.55), 0.45).set_trans(Tween.TRANS_SINE)
-	pulse.parallel().tween_property(badge, "modulate", Color(1.0, 0.9, 0.3), 0.45)
-	pulse.tween_property(panel, "self_modulate", Color(1.3, 0.7, 0.7), 0.45).set_trans(Tween.TRANS_SINE)
-	pulse.parallel().tween_property(badge, "modulate", Color.WHITE, 0.45)
+	if mode == 2:
+		pulse.tween_property(panel, "self_modulate", Color(1.45, 1.3, 0.55), 0.35).set_trans(Tween.TRANS_SINE)
+		pulse.parallel().tween_property(badge, "modulate", Color(1.3, 1.2, 0.8), 0.35)
+		pulse.tween_property(panel, "self_modulate", Color(1.1, 1.05, 0.85), 0.35).set_trans(Tween.TRANS_SINE)
+		pulse.parallel().tween_property(badge, "modulate", Color.WHITE, 0.35)
+	else:
+		pulse.tween_property(panel, "self_modulate", Color(1.25, 1.15, 0.55), 0.45).set_trans(Tween.TRANS_SINE)
+		pulse.parallel().tween_property(badge, "modulate", Color(1.0, 0.9, 0.3), 0.45)
+		pulse.tween_property(panel, "self_modulate", Color(1.3, 0.7, 0.7), 0.45).set_trans(Tween.TRANS_SINE)
+		pulse.parallel().tween_property(badge, "modulate", Color.WHITE, 0.45)
 	_law_near_tweens[slot] = pulse
 
 
@@ -6859,9 +6989,9 @@ func _process_presentation_queue() -> void:
 		_refresh_all()  # 큐가 비면 연출이 건드리지 않은 나머지 변화를 화면에 맞춘다
 
 
-## 연출 여운: 보여 준 단계가 끝난 뒤 STEP_LINGER_SECONDS(AI 터보 턴은 절반)만큼 결과를 보여 준다.
+## 연출 여운: 보여 준 단계가 끝난 뒤 STEP_LINGER_SECONDS(AI 터보 턴은 3/4)만큼 결과를 보여 준다.
 func _presentation_linger(generation: int) -> void:
-	var seconds: float = STEP_LINGER_SECONDS * (0.5 if _turbo_turn() else 1.0)
+	var seconds: float = STEP_LINGER_SECONDS * (0.75 if _turbo_turn() else 1.0)
 	if seconds <= 0.0 or not pacing_enabled or instant_roll_for_test:
 		return
 	var until: int = Time.get_ticks_msec() + int(seconds * 1000.0)
@@ -8393,6 +8523,8 @@ func _build_draft_overlay(player_id: int, remaining: int) -> void:
 		box.add_child(footer)
 		footer.add_child(_make_button("무작위로 자동 선택", _on_draft_auto_pressed, 13))
 	add_child(_draft_overlay)
+	if MobileSupport.touch_mode():
+		_fit_touch_draft.call_deferred(center, box)
 	if _draft_entrance and _fx_on():
 		_draft_entrance = false
 		_draft_overlay.position = Vector2(0, 110)
@@ -8400,6 +8532,20 @@ func _build_draft_overlay(player_id: int, remaining: int) -> void:
 		var rise: Tween = _draft_overlay.create_tween().set_parallel(true)
 		rise.tween_property(_draft_overlay, "position:y", 0.0, 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		rise.tween_property(_draft_overlay, "modulate:a", 1.0, 0.3)
+
+
+## 터치 기기(폰 가로 화면은 기준 해상도의 약 0.5배로 보인다): 증강 선택 창(제목·카드 3장·리롤)을 화면에 들어가는 만큼 키운다 (최대 DRAFT_TOUCH_SCALE배).
+const DRAFT_TOUCH_SCALE: float = 1.22
+
+
+## 컨테이너는 자식의 scale을 되돌리므로, 창 전체를 가운데에 놓는 CenterContainer(컨테이너 밖)를 화면 가운데 기준으로 키운다.
+func _fit_touch_draft(center: Control, box: Control) -> void:
+	if not is_instance_valid(center) or not is_instance_valid(box) or box.size.y <= 0.0:
+		return
+	var view: Vector2 = get_viewport_rect().size
+	var fit: float = minf(DRAFT_TOUCH_SCALE, minf(view.y * 0.97 / box.size.y, view.x * 0.96 / box.size.x))
+	center.pivot_offset = center.size / 2.0
+	center.scale = Vector2.ONE * maxf(fit, 1.0)
 
 
 ## 증강 카드를 눌렀을 때: 바로 적용하지 않고 [선택한 카드가 커지며 반짝 / 나머지는 어두워짐] 연출을 잠깐 보여 준 뒤 다음 단계(말 고르기 또는 적용)로 넘어간다.
@@ -9650,6 +9796,9 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 				achieved.append([from, achieved_law.law_name, achieved_law.description, PLAYER_COLORS.get(int(achievers[index]), Color("ffd43b"))])
 			for entry: Array in achieved:
 				_enqueue_late(func() -> void: _fx_law_achieved(entry[0], entry[1], entry[2], entry[3]))
+		&"race_ranked":
+			if bool(data.get("round_cap", false)):
+				_log_line("[%d라운드 종료] 남은 플레이어는 진행 순위로 순위가 확정됩니다" % PacingDirector.HARD_CAP_ROUND, Color("ffd43b"))
 		&"tempo_law":
 			var tempo_law: LawResource = LawRegistry.create(String(data["law_id"]))
 			_log_line("[템포 업] 법전에 특수 승리 [%s] 자동 등록" % tempo_law.law_name, Color("ffd43b"))
@@ -10868,8 +11017,10 @@ func _sync_race_end() -> void:
 	if manager == null:
 		return
 	manager.end_when_graduated.clear()
+	manager.pacing_humans.clear()
 	if net == null and ai_mode and not GameSession.net_active:
 		manager.end_when_graduated.append(local_player_id)
+		manager.pacing_humans.append(local_player_id)
 
 
 func _on_mode_toggle_pressed() -> void:

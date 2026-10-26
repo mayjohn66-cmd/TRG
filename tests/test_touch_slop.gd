@@ -54,3 +54,19 @@ func test_touch_near_a_button_snaps_inside_it() -> void:
 	modal.free()
 	left.free()
 	stage.free()
+
+
+func test_buttons_on_the_screen_edge_reach_further() -> void:
+	var stage := Control.new()
+	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stage.size = Vector2(1366, 768)
+	tree.root.add_child(stage)
+	var screen: Rect2 = tree.root.get_visible_rect()
+	var top := _button(stage, Rect2(Vector2(200, screen.position.y), Vector2(120, 34)))
+	var middle := _button(stage, Rect2(Vector2(600, screen.position.y + 300), Vector2(120, 34)))
+	var below_top: Variant = MobileSupport.nearby_button_point(tree.root, Vector2(260, screen.position.y + 34 + 40))
+	check(below_top != null and Rect2(Vector2(200, screen.position.y), Vector2(120, 34)).has_point(below_top), "화면 맨 위 버튼은 아래로 40px 떨어진 누름도 받는다 (%s)" % str(below_top))
+	check(MobileSupport.nearby_button_point(tree.root, Vector2(660, screen.position.y + 334 + 40)) == null, "화면 가운데 버튼은 26px까지만")
+	top.free()
+	middle.free()
+	stage.free()

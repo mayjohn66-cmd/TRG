@@ -15,6 +15,8 @@ const RAW: int = 0
 const LEVEL_MIN: int = 1
 const LEVEL_MAX: int = 5
 const DEFAULT_LEVEL: int = 2
+## 히든 법전 브레이크 감점 (PacingDirector.capture_would_win_law): 다른 말을 움직일 수 있으면 그쪽을 고른다.
+const LAW_BRAKE_PENALTY: float = 400.0
 const ALL: Array[int] = [1, 2, 3, 4, 5]
 
 ## 단계 이름 (원문 한국어, 화면에서 번역).
@@ -152,6 +154,10 @@ static func choose_pawn(state: GameState, player_id: int, dice_value: int, level
 		var path: Array[int] = MoveExecutor.preview_path(state, pawn, dice_value)
 		if not path.is_empty() and BotBrain.has_capturable_enemy(state, pawn, path.back()):
 			score += float(table["kill_bonus"])
+			for victim: PlayerPawn in state.leaders_at(path.back()):
+				if victim.owner_id != player_id and PacingDirector.capture_would_win_law(state, player_id, victim.owner_id):
+					score -= LAW_BRAKE_PENALTY  # 히든 법전 브레이크: 11라운드 전에는 처치형 법전을 끝내는 잡기를 피한다
+					break
 			if leader != -1:
 				for other: PlayerPawn in state.leaders_at(path.back()):
 					if other.owner_id == leader:
