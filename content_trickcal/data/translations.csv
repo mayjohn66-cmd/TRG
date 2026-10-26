@@ -2145,3 +2145,14 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 법전 끄기,Laws off,法典オフ
 입문 드래프트,Beginner draft,入門ドラフト
 [방 규칙] %s,[Room Rules] %s,[ルーム設定] %s
+%s (수집: %d/8),%s (Collected: %d/8),%s（収集: %d/8）
+[말] 증강의 [기물 지급]으로 기본 말을 진화시켜요. 말마다 상시 능력과 1회 필살기가 있어요.,[Pieces] Evolve basic pawns with the [Piece Grant] augment. Each piece has a passive and a one-time ultimate.,[駒] 増強の[駒支給]で基本の駒を進化させます。駒ごとに常時能力と1回限りの必殺技があります。
+[범용 보급] 카드 패키지와 기물 변이·필살기 리필 같은 보급 증강이에요.,"[Utility Supply] Supply augments such as card packs, piece mutation and ultimate refills.",[汎用補給] カードパック・駒変異・必殺技リフィルなどの補給増強です。
+[초증강] 판을 한 번에 뒤집는 하이리스크 하이리턴. 경고 표시는 내 말도 사출될 수 있다는 뜻이에요.,"[Hyper Augments] High risk, high return game-changers. A warning mark means your own pawns can be ejected too.",[超増強] 盤面を一気にひっくり返すハイリスク・ハイリターン。警告マークは自分の駒も射出されうるという意味です。
+[카드] 빵집·증강에서 얻은 카드를 보드로 끌어다 놓아 써요. 손패는 최대 7장이에요.,[Cards] Drag cards from the bakery or augments onto the board to use them. Max hand size is 7.,[カード] パン屋や増強で得たカードを盤面にドラッグして使います。手札は最大7枚です。
+"[특수 승리 법전] 3라운드마다 등장하며, 조건 달성 후 내 턴이 끝나면 즉시 다음 순위로 레이스를 졸업합니다!",[Special Victory Laws] One appears every 3 rounds. Meet its condition and end your turn to graduate to the next rank!,[特殊勝利の法典] 3ラウンドごとに登場し、条件達成後に自分のターンが終わると即座に次の順位でレースを卒業します！
+[판정 도구] 도구마다 족보가 달라요. 증강의 [도구 교체]로 바꿔 굴려요.,[Judgment Tools] Each tool has its own result table. Swap tools with the [Judgment Tool Swap] augment.,[判定ツール] ツールごとに役表が違います。増強の[判定ツール交換]で持ち替えて振ります。
+기록 백업/복구,Backup / Restore,記録バックアップ/復元
+내 전용 링크 복사,Copy My Link,専用リンクをコピー
+법전 %d/8,Codex %d/8,法典 %d/8
+코드 입력,Enter Code,コード入力

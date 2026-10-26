@@ -102,6 +102,8 @@ const HAND_RAISED_Y: float = -92.0
 ## 우측 하단 기물 독에서 기물 슬롯이 놓이는 기준 y (필살기 버튼 줄 아래).
 const SLOT_BASE_Y: float = 50.0
 const AUGMENT_CARD_SIZE: Vector2 = Vector2(260, 390)
+## 도감용 낮은 증강 카드 높이 (390의 72%: 아래 빈 공간 없이 그림·제목·조건만).
+const AUGMENT_COMPACT_HEIGHT: float = 280.0
 const AUGMENT_HOVER_SCALE: float = 1.06
 ## 증강 카드를 고른 뒤 다음 단계로 넘어가기 전에 선택 연출을 보여 주는 시간(초).
 const AUGMENT_PICK_SECONDS: float = 0.9
@@ -8001,12 +8003,15 @@ func _make_augment_card(info: Dictionary, on_pick: Callable) -> Button:
 
 ## 판 밖(규칙 도감)에서도 쓰는 증강 카드. base_scale로 줄여 보여 줄 수 있다 (호버 확대도 그 배율 기준).
 ## static_frame: 도감처럼 보기만 하는 곳에서는 테두리 후광(번짐)과 마우스를 올렸을 때 커지는 효과를 끈다.
-static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: float = 1.0, static_frame: bool = false) -> Button:
+static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: float = 1.0, static_frame: bool = false, compact: bool = false) -> Button:
 	var color: Color = info["color"]
+	# compact: 도감용 낮은 카드 (높이 AUGMENT_COMPACT_HEIGHT). 세로 위치는 모두 같은 비율로 줄인다 (배경 그림도 그 비율로 늘어난다).
+	var card_size: Vector2 = Vector2(AUGMENT_CARD_SIZE.x, AUGMENT_COMPACT_HEIGHT) if compact else AUGMENT_CARD_SIZE
+	var k: float = card_size.y / AUGMENT_CARD_SIZE.y
 	var card := Button.new()
-	card.custom_minimum_size = AUGMENT_CARD_SIZE
-	card.size = AUGMENT_CARD_SIZE
-	card.pivot_offset = AUGMENT_CARD_SIZE / 2.0
+	card.custom_minimum_size = card_size
+	card.size = card_size
+	card.pivot_offset = card_size / 2.0
 	card.scale = Vector2.ONE * base_scale
 	card.focus_mode = Control.FOCUS_NONE
 	card.clip_contents = false
@@ -8043,9 +8048,10 @@ static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: f
 			var from: Color = HOLO_GLOW[index]
 			var to: Color = HOLO_GLOW[(index + 1) % HOLO_GLOW.size()]
 			shimmer.tween_method(func(t: float) -> void: box.shadow_color = from.lerp(to, t), 0.0, 1.0, 0.9)
-	card.add_child(AugmentCardSkin.make_background(color, AUGMENT_CARD_SIZE, box))
+	card.add_child(AugmentCardSkin.make_background(color, card_size, box))
 	var emblem: Control = _make_emblem(str(info["glyph"]), color, info.get("art") as Texture2D)
-	emblem.position = Vector2((AUGMENT_CARD_SIZE.x - 150.0) / 2.0, 14)
+	emblem.scale = Vector2.ONE * k
+	emblem.position = Vector2((card_size.x - 150.0 * k) / 2.0, 14.0 * k)
 	card.add_child(emblem)
 	if bool(info.get("self_risk", false)):
 		# 내 말도 휘말려 사출될 수 있는 초증강: 카드 왼쪽 위 경고 아이콘 (카드와 같은 그림), 커서를 대면 주의 문구
@@ -8057,17 +8063,17 @@ static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: f
 		risk.mouse_default_cursor_shape = Control.CURSOR_HELP
 		risk.tooltip_text = SuperAugments.SELF_RISK_NOTE
 		card.add_child(risk)
-	var title_width: float = AUGMENT_CARD_SIZE.x - 36.0
+	var title_width: float = card_size.x - 36.0
 	var shown_title: String = L10n.t(str(info["title"]))
 	# 제목이 두 줄 칸(54px)에 다 들어가는 크기로: 띄어쓰기 없는 긴 이름(일본어 등)은 글자 단위로 나눈다
-	var title_px: int = CardSkin.fit_px(shown_title, title_width, 54.0, 20, 12)
+	var title_px: int = CardSkin.fit_px(shown_title, title_width, 54.0 * k, 20, 12)
 	var measured_width: float = CardSkin.FONT.get_string_size(shown_title, HORIZONTAL_ALIGNMENT_LEFT, -1, title_px).x
 	# Nearly one-line names should not leave just one or two syllables on a second line.
 	if measured_width > title_width and measured_width <= title_width * 1.2:
 		title_px = maxi(12, mini(title_px, floori(title_px * title_width / measured_width)))
 	var title := _make_label("", title_px, Color("ffffff"))
-	title.position = Vector2(18, 170)
-	title.size = Vector2(title_width, 54)
+	title.position = Vector2(18, 170.0 * k)
+	title.size = Vector2(title_width, 54.0 * k)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -8078,15 +8084,15 @@ static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: f
 	title.text = str(info["title"])
 	card.add_child(title)
 	# 설명 칸 (카드 아래 끝까지). 판정 도구는 [핵심 한 줄] [최소~최대 요약] ─ [작은 족보표] 순서로 나눠 쓴다.
-	var text_top: float = 240.0
-	var text_bottom: float = AUGMENT_CARD_SIZE.y - 12.0
+	var text_top: float = 240.0 * k
+	var text_bottom: float = card_size.y - 12.0
 	var detail_text: String = str(info.get("detail", ""))
 	var summary_text: String = str(info.get("summary", ""))
 	var detail_h: float = 0.0
 	if detail_text != "":
 		# 족보표는 아래쪽 보조 칸 (작은 글자, 구분선 위)
-		detail_h = 62.0
-		var detail_box := Vector2(AUGMENT_CARD_SIZE.x - 28.0, detail_h)
+		detail_h = maxf(62.0 * k, 52.0)  # 낮은 카드에서도 족보표 세 줄은 남긴다
+		var detail_box := Vector2(card_size.x - 28.0, detail_h)
 		var detail := _make_label("", 12, Color("98a1ad"))
 		detail.name = "AugmentDetail"
 		detail.position = Vector2(14, text_bottom - detail_h)
@@ -8104,15 +8110,15 @@ static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: f
 		rule.name = "AugmentDetailRule"
 		rule.color = Color(color.r, color.g, color.b, 0.55)
 		rule.position = Vector2(40, text_bottom - detail_h - 6.0)
-		rule.size = Vector2(AUGMENT_CARD_SIZE.x - 80.0, 2)
+		rule.size = Vector2(card_size.x - 80.0, 2)
 		rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		card.add_child(rule)
 		text_bottom -= detail_h + 10.0
 	var skill_text: String = str(info.get("skill", ""))
 	if skill_text != "":
 		# 기물 필살기: 구분선 아래 칸 (패시브보다 조금 작게, 필살기 색)
-		var skill_h: float = 62.0  # 위 패시브 칸(두 줄)과 반씩 나눈다
-		var skill_box := Vector2(AUGMENT_CARD_SIZE.x - 28.0, skill_h)
+		var skill_h: float = 62.0 * k  # 위 패시브 칸(두 줄)과 반씩 나눈다
+		var skill_box := Vector2(card_size.x - 28.0, skill_h)
 		var skill := _make_label("", 16, Color("ffc078"))
 		skill.name = "AugmentSkill"
 		skill.position = Vector2(14, text_bottom - skill_h)
@@ -8130,7 +8136,7 @@ static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: f
 		skill_rule.name = "AugmentSkillRule"
 		skill_rule.color = Color(color.r, color.g, color.b, 0.55)
 		skill_rule.position = Vector2(40, text_bottom - skill_h - 6.0)
-		skill_rule.size = Vector2(AUGMENT_CARD_SIZE.x - 80.0, 2)
+		skill_rule.size = Vector2(card_size.x - 80.0, 2)
 		skill_rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		card.add_child(skill_rule)
 		text_bottom -= skill_h + 10.0
@@ -8141,12 +8147,12 @@ static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: f
 		var summary := _make_label("", 20, Color("ffe066"))
 		summary.name = "AugmentSummary"
 		summary.position = Vector2(14, text_bottom - summary_h)
-		summary.size = Vector2(AUGMENT_CARD_SIZE.x - 28.0, summary_h)
+		summary.size = Vector2(card_size.x - 28.0, summary_h)
 		summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		summary.clip_text = true
 		summary.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		summary.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		summary.add_theme_font_size_override("font_size", CardSkin.fit_px(L10n.t(summary_text), AUGMENT_CARD_SIZE.x - 28.0, summary_h, 24 if only else 20, 13))
+		summary.add_theme_font_size_override("font_size", CardSkin.fit_px(L10n.t(summary_text), card_size.x - 28.0, summary_h, 24 if only else 20, 13))
 		summary.add_theme_color_override("font_outline_color", Color.BLACK)
 		summary.add_theme_constant_override("outline_size", 4)
 		summary.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -8157,7 +8163,7 @@ static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: f
 	desc.name = "AugmentDesc"
 	desc.position = Vector2(14, text_top)
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	var desc_box := Vector2(AUGMENT_CARD_SIZE.x - 28.0, text_bottom - text_top)
+	var desc_box := Vector2(card_size.x - 28.0, text_bottom - text_top)
 	desc.custom_minimum_size = Vector2(desc_box.x, 0)
 	desc.size = desc_box
 	desc.clip_text = true
