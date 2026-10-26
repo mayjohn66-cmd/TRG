@@ -640,7 +640,7 @@ func _finish() -> bool:
 	_board.state.rulebook.set_laws_from_ids(["LAW_01"])
 	_board._fill_law_tip(0)
 	_assert(_board._tip_title.text.contains("투기장의 지배자"), "법전 툴팁 제목")
-	_assert(_board._tip_skill.visible and _board._tip_skill.text.split("\n").size() == _board._player_ids.size() and _board._tip_skill.text.contains("/6 처치"), "법전 툴팁에 플레이어마다 진행도 줄: " + _board._tip_skill.text)
+	_assert(_board._tip_skill.visible and _board._tip_skill.text.split("\n").size() == _board._player_ids.size() and _board._tip_skill.text.contains("/10 처치"), "법전 툴팁에 플레이어마다 진행도 줄: " + _board._tip_skill.text)
 	# 액션 로그: 모든 [Rn ...] 줄은 ──── n라운드 ──── 구분선 아래에 있다 (증강 기록이 구분선 위로 새지 않는다)
 	var divider_round: int = 0
 	var log_regex: RegEx = RegEx.create_from_string("^\\[color=#868e96\\]\\[lb\\]R(\\d+)")

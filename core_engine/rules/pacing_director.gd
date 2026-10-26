@@ -95,7 +95,7 @@ static func cream_high_chance(state: GameState, player_id: int) -> float:
 	return minf(chance, CREAM_HIGH_MAX)
 
 
-## 크림 드래프트: 사람이 지금 고르면 바로 이기는 법전(처치 수·손패 수를 이미 채웠다)은 등장 가중치를 크게 올린다.
+## 크림 드래프트: 사람이 지금 고르면 바로 이기는 법전(처치 수·빵집 방문 수를 이미 채웠다)은 등장 가중치를 크게 올린다.
 static func law_offer_factor(state: GameState, player_id: int, def: AugmentDef) -> float:
 	if level(state) != 1 or def.category != GameEnums.AugmentCategory.LAW_ENACT or not is_human(state, player_id):
 		return 1.0

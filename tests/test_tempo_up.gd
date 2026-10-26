@@ -49,10 +49,12 @@ func test_augment_weights_and_tempo_multiplier() -> void:
 	check_eq(AugmentRegistry.get_def(&"TOOL_YUT").weight, 50, "도구 50")
 	var state := make_state()
 	state.round_number = 6
-	check_eq(AugmentRegistry.effective_weight(AugmentRegistry.get_def(&"AUG_LAW_01"), state), 5.0, "6라운드 법전 그대로")
+	check_eq(AugmentRegistry.effective_weight(AugmentRegistry.get_def(&"SUPER_01"), state), 10.0, "6라운드 초증강 그대로")
 	state.round_number = 7
-	check_eq(AugmentRegistry.effective_weight(AugmentRegistry.get_def(&"AUG_LAW_01"), state), 15.0, "7라운드부터 법전 확률 상승")
-	check_eq(AugmentRegistry.effective_weight(AugmentRegistry.get_def(&"SUPER_01"), state), 30.0, "초증강 확률 상승")
+	check_eq(AugmentRegistry.effective_weight(AugmentRegistry.get_def(&"SUPER_01"), state), 30.0, "과열(7R): 초증강 확률 상승")
+	check_eq(AugmentRegistry.effective_weight(AugmentRegistry.get_def(&"AUG_LAW_01"), state), 5.0, "과열: 법전은 그대로")
+	state.round_number = 14
+	check_eq(AugmentRegistry.effective_weight(AugmentRegistry.get_def(&"AUG_LAW_01"), state), 15.0, "광기(14R): 법전 확률 상승")
 	check_eq(AugmentRegistry.effective_weight(AugmentRegistry.get_def(&"EVO_1_1"), state), 50.0, "말은 그대로")
 
 
@@ -84,11 +86,11 @@ func test_stage_round_warns_before_the_round_is_declared() -> void:
 	_dispose(manager)
 
 
-func test_round_14_enacts_a_random_special_victory() -> void:
+func test_round_20_enacts_a_random_special_victory() -> void:
 	var manager := _new_manager()
 	var events: Array = _events(manager)
 	check(manager.state.rulebook.law_ids().is_empty(), "처음엔 법전이 비어 있다")
-	manager.state.round_number = 14
+	manager.state.round_number = 20
 	manager._enter_round_start()
 	check_eq(manager.state.rulebook.law_ids().size(), 1, "특수 승리 1개 등록")
 	check(_kinds(events).find(&"tempo_up") < _kinds(events).find(&"tempo_law"), "경고가 먼저, 등록이 뒤")

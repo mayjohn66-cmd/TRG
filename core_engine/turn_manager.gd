@@ -1181,7 +1181,7 @@ func _enter_round_start() -> void:
 
 
 ## 템포 업: 단계가 오르는 라운드(TempoUp.STAGE_ROUNDS, 7·14·20)는 라운드를 선언하기 전에 경고 이벤트를 먼저 보낸다.
-## 2단계(15R)는 법전에 무작위 특수 승리를 하나 올리고, 3단계부터는 라운드마다 결승선이 당겨져 그 안에 선 말이 바로 완주한다.
+## 3단계(20R)는 법전에 무작위 특수 승리를 하나 올리고, 3단계부터는 라운드마다 결승선이 당겨져 그 안에 선 말이 바로 완주한다.
 ## 완주로 게임이 끝났으면 true.
 func _apply_tempo_up() -> bool:
 	var round_number: int = state.round_number
@@ -1200,7 +1200,7 @@ func _apply_tempo_up() -> bool:
 		if not bool(state.match_rules.get("laws", true)):
 			lines = lines.filter(func(line: String) -> bool: return not line.contains("법전"))  # 법전 끄기: 법전 관련 효과는 없다
 		_emit_event(&"tempo_up", {"round": round_number, "level": stage, "lines": lines})
-		if stage == 2:
+		if stage == 3:
 			_enact_random_law()
 	var zone_start: int = TempoUp.goal_zone_start(round_number)
 	if zone_start < 0:
@@ -1219,7 +1219,7 @@ func _apply_tempo_up() -> bool:
 	return _end_if_decided()
 
 
-## 템포 업 2단계: 법전에 아직 없는 특수 승리 교칙 하나를 무작위로 올린다 (슬롯이 가득 차면 가장 오래된 교칙이 밀려난다).
+## 템포 업 3단계: 법전에 아직 없는 특수 승리 교칙 하나를 무작위로 올린다 (슬롯이 가득 차면 가장 오래된 교칙이 밀려난다).
 func _enact_random_law() -> void:
 	if not bool(state.match_rules.get("laws", true)):
 		return  # 방 규칙 [특수 승리 법전 끄기]: 말 4개 완주로만 승부
@@ -1317,8 +1317,7 @@ func _begin_turn(new_turn: bool = true) -> void:
 		return
 	if new_turn:
 		_tick_restraints(current_player_id())
-		# 봉인된 에르핀의 식권: 내 턴이 시작될 때의 손패를 기록한다. 특수 승리 판정은 라운드 끝에, 여기서는 말 4개 완주만 본다.
-		SpecialVictory.note_session(state, current_player_id(), VictoryLaw.HAND, (state.hands[current_player_id()] as Array).size())
+		# 특수 승리 판정은 라운드 끝에, 여기서는 말 4개 완주만 본다.
 		if _check_victory(null):
 			return
 	_tick_owned_attachments(current_player_id())

@@ -559,6 +559,7 @@ static func _resolve_landing(state: GameState, mover: PlayerPawn, ctx: RuleConte
 				return
 			tile = state.board.get_tile(mover.current_tile_idx)
 	if tile.tile_type == TileNode.TileType.BAKERY and _primary_move(ctx):
+		state.add_stat(mover.owner_id, VictoryLaw.BAKERY)  # 봉인된 에르핀의 식권: 빵집 방문 횟수
 		var card_id: StringName = state.draw_card(mover.owner_id)
 		if card_id != &"":
 			report.drawn_card = card_id

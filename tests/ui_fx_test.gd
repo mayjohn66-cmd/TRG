@@ -2925,9 +2925,9 @@ func _test_law_near_badge() -> void:
 	state.rulebook.enqueue_law(LawRegistry.create("LAW_01"))
 	_board._refresh_laws()
 	_expect(not _board._law_near[0].visible, "아무도 가깝지 않으면 [달성 임박!] 없음")
-	state.add_stat(2, &"kills", 5)
+	state.add_stat(2, &"kills", 9)
 	_board._refresh_laws()
-	_expect(_board._law_near[0].visible and _board._law_near[0].text == "[달성 임박!]", "6회 처치 중 5회면 [달성 임박!] 배지")
+	_expect(_board._law_near[0].visible and _board._law_near[0].text == "[달성 임박!]", "10회 처치 중 9회면 [달성 임박!] 배지")
 	for player_id: int in state.player_ids:
 		state.add_stat(player_id, &"kills", int(saved_kills[player_id]) - state.stat(player_id, &"kills"))
 	state.rulebook.active_laws_queue.clear()
@@ -2937,7 +2937,7 @@ func _test_law_near_badge() -> void:
 	_expect(not _board._law_near[0].visible or not saved_laws.is_empty(), "법전을 되돌리면 배지도 정리")
 	var saved_instant: bool = _board.instant_roll_for_test
 	_board.instant_roll_for_test = false  # 연출을 켠 판에서만 뜬다
-	_board._fx_law_achieved(Rect2(Vector2(40, 200), Vector2(280, 66)), "투기장의 지배자", "적 말을 6회 처치", Color("ff6b6b"))
+	_board._fx_law_achieved(Rect2(Vector2(40, 200), Vector2(280, 66)), "투기장의 지배자", "적 말을 10회 처치", Color("ff6b6b"))
 	_board.instant_roll_for_test = saved_instant
 	var fx: Node = _board.get_node_or_null("LawAchievedFX")
 	_expect(fx != null and fx.find_child("LawAchievedStamp", true, false) != null, "달성 하이라이트: 법전 카드 + [특수 승리 조건 달성!] 도장")

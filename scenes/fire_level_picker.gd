@@ -16,7 +16,7 @@ const CELL: Dictionary = {1: Color("ffd36b"), 2: Color("ffa04a"), 3: Color("f255
 const CELL_EMPTY: Color = Color("dcdbe8")
 ## 단계 설명: 이름·수치 없이 어떤 느낌인지만 (수치는 BotTemper.LEVELS).
 const NOTES: Dictionary = {
-	1: "입문 추천! 특수 승리는 쉬운 2종(처치·손패)만 나와요",
+	1: "입문 추천! 특수 승리는 쉬운 2종(처치·빵집)만 나와요",
 	2: "가볍게 즐기기 좋아요. 내가 앞서 나갈 때만 견제해요",
 	3: "봐주기 없는 정정당당한 승부! 1등을 먼저 노려요",
 	4: "컴퓨터가 카드·함정·필살기를 아낌없이 써요",

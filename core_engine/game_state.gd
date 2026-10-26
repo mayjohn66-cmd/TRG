@@ -127,8 +127,8 @@ var banned_turns: Dictionary = {}
 var forced_roll: Dictionary = {}
 ## ACT_12 더 월드: 이번 턴이 끝나면 한 턴을 더 하는 플레이어들.
 var extra_turns: Dictionary = {}
-## 🏆 특수 승리 교칙 진행도: 플레이어 ID -> {kills, ejected, underdog, best_move, best_chain, turn_hand}.
-## 누적 기록(kills·ejected·underdog)은 게임 시작부터 세고, 순간 기록(best_*·turn_hand)은 해당 교칙이 법전에 있는 동안만 센다.
+## 🏆 특수 승리 교칙 진행도: 플레이어 ID -> {kills, bakery, ejected, underdog, best_move, best_chain}.
+## 누적 기록(kills·bakery·ejected·underdog)은 게임 시작부터 세고, 순간 기록(best_*)은 해당 교칙이 법전에 있는 동안만 센다.
 var law_stats: Dictionary = {}
 ## 히든 페이싱: 사람 자리(AI 대전의 내 자리, TurnManager.pacing_humans에서 받는다)와 사람별 턴 종료를 당한 횟수 (크림 보정). 화면에는 보이지 않는다.
 var pacing_humans: Array[int] = []

@@ -357,7 +357,7 @@ func test_counter_offer_waits_for_a_human_victim() -> void:
 func test_turn_card_bot_uses_objection_on_the_closest_rival_and_skips_the_leader() -> void:
 	var state := make_state(3, 1)
 	state.rulebook.enqueue_law(LawRegistry.create("LAW_01"))
-	state.law_stats[3] = {VictoryLaw.KILLS: 5}
+	state.law_stats[3] = {VictoryLaw.KILLS: 9}
 	state.law_stats[1] = {VictoryLaw.KILLS: 1}
 	state.hands[2] = [&"ACT_06"] as Array[StringName]
 	var plan: Dictionary = BotBrain.plan_turn_card(state, 2, {}, _seeded(1))
