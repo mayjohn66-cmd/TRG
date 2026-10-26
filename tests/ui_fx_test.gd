@@ -3090,8 +3090,8 @@ func _test_move_four_steps() -> void:
 	_expect(banners.any(func(text: String) -> bool: return text.contains("리벤지 부스터") and text.contains("+%d칸 선행 전진" % bonus)), "1단계 배너: [리벤지 부스터] +N칸 선행 전진! (%s)" % str(banners))
 	_expect(rest_ms >= 120 and rest_ms < 400, "부스터 도착 칸에서 0.15초 멈춘다 (%dms)" % rest_ms)
 	_expect(boosted.current_tile_idx == bonus + 7, "엔진: 부스터 %d칸 + 눈금 7칸" % bonus)
-	# 거북이 이동 회귀: 걸음마다 여운(0.35초)이 붙으면 부스터 + 눈금 7칸이 4~5초 걸렸다. 걸음은 이어서 뛰어 1.5초 안에 끝난다.
-	_expect(launched_ms > 0 and arrived_ms > 0 and arrived_ms - launched_ms < 1500, "리벤지 부스터 + 눈금 7칸이 1.5초 안에 끝난다 (%dms)" % (arrived_ms - launched_ms))
+	# 거북이 이동 회귀: 걸음마다 여운(0.35초)이 붙으면 부스터 + 눈금 7칸이 4~5초 걸렸다. 걸음은 칸당 0.28초(탁 탁 탁)로 이어서 뛰어 3초 안에 끝난다.
+	_expect(launched_ms > 0 and arrived_ms > 0 and arrived_ms - launched_ms < 3000, "리벤지 부스터 + 눈금 7칸이 3초 안에 끝난다 (%dms)" % (arrived_ms - launched_ms))
 	state.boost_gimmicks = saved_boost
 	_board._reset_presentation()
 	_board.instant_roll_for_test = true
