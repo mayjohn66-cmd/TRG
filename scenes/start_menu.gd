@@ -22,6 +22,8 @@ var _mode_page: Control = null
 var _hub_profile: Dictionary = {}
 var _hub_tip: Dictionary = {}
 var _tip_index: int = 0
+## 맨 아래 한 줄 면책 문구 (허브에서는 아래 띠가 숨으므로 화면 맨 아래로 내린다).
+var _fan_notice: Label = null
 var _train_page: VBoxContainer = null
 var _avatar_page: VBoxContainer = null
 var _avatar_button: Button = null
@@ -29,6 +31,13 @@ var _avatar_preview: AvatarSlot = null
 var _avatar_name: Label = null
 var _avatar_tiles: Dictionary = {}
 const HUB_AVATAR_HEIGHT: float = 520.0
+## 허브 위쪽 줄·프로필 버튼의 고정 크기 (언어를 바꿔도 자리가 그대로다).
+const HUB_LAW_BADGE_WIDTH: float = 236.0
+const HUB_LANGUAGE_WIDTH: float = 160.0
+const HUB_AVATAR_BUTTON: Vector2 = Vector2(210, 50)
+const HUB_RENAME_BUTTON: Vector2 = Vector2(112, 40)
+## 허브 아래 가운데 타이틀 로고 너비 (230px의 120%).
+const HUB_LOGO_WIDTH: float = 276.0
 var _name_edit: LineEdit = null
 var _error_label: Label = null
 var _confirm_button: Button = null
@@ -56,10 +65,12 @@ func _ready() -> void:
 	_bottom = LobbyTheme.add_bottom_bar(self, "", "설정", _show_settings)
 	_hello_label = _bottom["name"]
 	var fan_notice := Label.new()
+	_fan_notice = fan_notice
 	fan_notice.name = "FanNotice"
-	fan_notice.text = "v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 무료 배포물입니다" % GameSession.version()
-	fan_notice.add_theme_font_size_override("font_size", 13)
+	fan_notice.text = "v%s · 비공식 팬게임 (원작사와 무관한 비영리 무료 배포물)" % GameSession.version()
+	fan_notice.add_theme_font_size_override("font_size", 12)
 	fan_notice.add_theme_color_override("font_color", Color(0.17, 0.35, 0.12, 0.85))
+	fan_notice.modulate.a = 0.75  # 한 줄 면책 문구: 작고 옅게
 	fan_notice.add_theme_color_override("font_outline_color", Color("fff6df"))
 	fan_notice.add_theme_constant_override("outline_size", 3)
 	fan_notice.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -160,7 +171,13 @@ func _build_mode_page() -> void:
 	top.add_child(fill)
 	_hub_tip = HubKit.tip_bar(GameTips.TIPS[0], _next_tip)
 	(_hub_tip["root"] as Control).size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	(_hub_tip["label"] as MarqueeLabel).shrink_to_fit(14)  # 긴 번역은 글자를 조금 줄이고, 그래도 길면 흐른다 (띠 크기는 그대로)
 	top.add_child(_hub_tip["root"])
+	# 팁 띠와 오른쪽 버튼 사이 여백 (간격 12 + 22 + 12 = 46px): 언어가 바뀌어도 서로 붙지 않는다
+	var tip_gap := Control.new()
+	tip_gap.custom_minimum_size = Vector2(22, 0)
+	tip_gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	top.add_child(tip_gap)
 	var buttons := HBoxContainer.new()
 	buttons.add_theme_constant_override("separation", 10)
 	buttons.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
@@ -182,7 +199,7 @@ func _build_mode_page() -> void:
 	left.name = "ProfileCapsule"
 	left.set_anchors_preset(Control.PRESET_TOP_LEFT)
 	left.offset_left = 40
-	left.offset_top = 74
+	left.offset_top = 64
 	left.offset_right = 600
 	left.add_theme_constant_override("separation", 8)
 	left.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -197,13 +214,14 @@ func _build_mode_page() -> void:
 	var plate_row := CenterContainer.new()
 	left.add_child(plate_row)
 	var plate := PanelContainer.new()
-	plate.custom_minimum_size = Vector2(300, 0)
+	plate.custom_minimum_size = Vector2(300, 56)  # 높이 고정: 글꼴이 다른 언어에서도 아래 버튼이 흔들리지 않는다
 	plate.add_theme_stylebox_override("panel", HubArt.skin(&"mode_green", 42, 4.0))
 	plate_row.add_child(plate)
 	var name_label := HubKit.outlined(GameSession.display_nickname(), 28, Color.WHITE, Color("17591f"), 6)
 	name_label.name = "ProfileName"
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.clip_text = true
+	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	plate.add_child(name_label)
 	var buttons_row := HBoxContainer.new()
 	buttons_row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -211,17 +229,23 @@ func _build_mode_page() -> void:
 	left.add_child(buttons_row)
 	_avatar_button = LobbyTheme.cream_button("아바타 설정", open_avatar, 22)
 	_avatar_button.name = "AvatarButton"
-	_avatar_button.custom_minimum_size = Vector2(200, 50)
+	_avatar_button.custom_minimum_size = HUB_AVATAR_BUTTON
+	_avatar_button.add_theme_font_size_override("font_size", 20)
+	_fix_hub_button(_avatar_button)
 	buttons_row.add_child(_avatar_button)
 	var rename := LobbyTheme.small_button("이름 바꾸기", func() -> void: _on_back_pressed(), &"teal", 14)
 	rename.name = "RenameButton"
+	rename.custom_minimum_size = HUB_RENAME_BUTTON
 	rename.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_fix_hub_button(rename)
 	buttons_row.add_child(rename)
 	# 이 브라우저의 고유 #태그 (영구 기록: 다음 접속에도 같다)
 	var tag_label := HubKit.outlined("#%s" % GameSession.player_tag(), 18, Color("fff6df"), Color("17591f"), 5)
 	tag_label.name = "ProfileTag"
 	tag_label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 	tag_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tag_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	tag_label.custom_minimum_size = Vector2(0, 30)
 	left.add_child(tag_label)
 	left.move_child(tag_label, plate_row.get_index() + 1)
 	_hub_profile = {"name": name_label, "avatar": avatar, "holder": avatar_holder, "tag": tag_label, "laws": laws}
@@ -251,23 +275,33 @@ func _build_mode_page() -> void:
 	_quick_button = HubKit.mode_card("QuickCard", &"dice", "익명 줘팸터", "15초 자동 매칭 · 모르는 상대와 바로 대결", open_quick_match, &"pink")
 	right.add_child(_quick_button)
 	# 타이틀은 하단 중앙에 작게 두고, 영문 부제 자리에는 비영리 무료 배포물이라고 적는다 (안내 문구 바로 위)
-	var logo := HubKit.logo("초증강", "엘리아스 마블", "비영리 무료 배포물", 230.0)
+	# 비영리 문구는 맨 아래 한 줄 면책 문구로 합쳐서 로고 밑 부제는 비운다 (로고는 예전 230px보다 20% 크게)
+	var logo := HubKit.logo("초증강", "엘리아스 마블", "", HUB_LOGO_WIDTH)
 	logo.name = "HubLogoCorner"
-	(logo.get_node("LogoSubtitle") as Label).add_theme_font_size_override("font_size", 15)
+	(logo.get_node("LogoSubtitle") as Label).visible = false
 	logo.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	logo.anchor_left = 0.5
 	logo.anchor_right = 0.5
-	logo.offset_left = -115.0
-	logo.offset_right = 115.0
-	logo.offset_top = -LobbyTheme.BAR_HEIGHT - 30.0 - 134.0
-	logo.offset_bottom = -LobbyTheme.BAR_HEIGHT - 30.0
+	logo.offset_left = -HUB_LOGO_WIDTH / 2.0
+	logo.offset_right = HUB_LOGO_WIDTH / 2.0
+	logo.offset_top = -LobbyTheme.BAR_HEIGHT - 24.0 - HUB_LOGO_WIDTH / 2.0
+	logo.offset_bottom = -LobbyTheme.BAR_HEIGHT - 24.0
 	_mode_page.add_child(logo)
 	_refresh_hub()
 
 
-## 허브의 작은 보조 버튼은 같은 높이·모서리·선 굵기를 쓴다.
+## 크기가 고정된 허브 버튼: 언어를 바꿔도 버튼 크기·위치가 그대로다 (긴 번역은 말줄임).
+func _fix_hub_button(button: Button) -> void:
+	button.clip_text = true
+	button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+
+
+## 허브의 작은 보조 버튼은 같은 높이·모서리·선 굵기를 쓴다. 너비는 고정이라 언어를 바꿔도 위쪽 줄이 흔들리지 않는다.
 func _style_hub_utility(button: Button, collection: bool) -> void:
-	button.custom_minimum_size = Vector2(0 if collection else 140, 56)
+	button.custom_minimum_size = Vector2(HUB_LAW_BADGE_WIDTH if collection else HUB_LANGUAGE_WIDTH, 56)
+	button.clip_text = true
+	button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	button.add_theme_font_size_override("font_size", 17)
 	var ink := Color("78501f") if collection else Color("586044")
@@ -367,6 +401,9 @@ func _show_step(value: int) -> void:
 	# 허브(2단계)는 자기 화면에 규칙·설정 버튼이 있어 청록 띠를 숨긴다 (뒤로가기·규칙·설정 버튼 자체는 그대로 살아 있다).
 	(_top["bar"] as Control).visible = value != 2
 	(_bottom["bar"] as Control).visible = value != 2
+	var bar_gap: float = 0.0 if value == 2 else LobbyTheme.BAR_HEIGHT
+	_fan_notice.offset_top = -bar_gap - 22.0
+	_fan_notice.offset_bottom = -bar_gap - 4.0
 	if value == 2:
 		_refresh_hub()
 	_train_page.visible = value == 3
