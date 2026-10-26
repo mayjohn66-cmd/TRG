@@ -640,6 +640,9 @@ func _layout_notebook() -> void:
 	var catalog: bool = group_of(spread) == 1
 	var popup: bool = catalog and entry >= 0
 	_notebook_root.visible = not catalog or popup
+	# Grid selection outlines (z=6) and collection stamps (z=7) must stay
+	# behind both the modal dim and the notebook, regardless of sibling order.
+	_notebook_root.z_index = 10 if popup else 0
 	_notebook_root.position = Vector2(232, 0) if popup else Vector2.ZERO
 	_popup_dim.visible = popup
 	_popup_dim.position = Vector2(204, 126) - _notebook_root.position
