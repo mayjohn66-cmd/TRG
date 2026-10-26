@@ -324,6 +324,11 @@ var _law_descs: Array[Label] = []
 var _law_badges: Array[PanelContainer] = []
 var _law_badge_labels: Array[Label] = []
 var _law_dashes: Array[Control] = []
+## 법전 슬롯 오른쪽 위 [달성 임박!] 배지와 그 깜빡임 (누군가 1칸/1회 남았을 때).
+var _law_near: Array[Label] = []
+var _law_near_tweens: Array[Tween] = []
+## 특수 승리 달성 하이라이트(법전 카드가 가운데로 날아와 도장이 찍힘)가 화면을 붙잡는 시간(초). 그 뒤에 순위 배너가 뜬다.
+const LAW_ACHIEVED_SECONDS: float = 1.2
 var _roll_button: Button = null
 var _stop_button: Button = null
 var _gun_row: HBoxContainer = null  ## 러시안 룰렛 전용 [발사][정지] 두 버튼 줄
@@ -1439,7 +1444,7 @@ func _layout_card_deck() -> void:
 
 ## 상단 리본은 없앴다: 현재 턴은 프로필의 밝기·강조선, 라운드는 중앙 알림이 알려 준다. 로그 문구만 받는 숨김 라벨만 남긴다.
 func _build_toast_label() -> void:
-	_toast_label = _make_label("", 11, Color("ffe8a3"))
+	_toast_label = _make_label("", MobileSupport.text_px(11), Color("ffe8a3"))
 	_toast_label.visible = false
 	add_child(_toast_label)
 
@@ -1678,14 +1683,33 @@ func _build_law_board() -> void:
 		text_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		text_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		inner.add_child(text_box)
-		var name_label := _make_label("", 14, UiSkin.INK)
+		var name_label := _make_label("", MobileSupport.text_px(14), UiSkin.INK)
 		name_label.clip_text = true
 		text_box.add_child(name_label)
-		var desc_label := _make_label("", 12, UiSkin.SOFT)
+		var desc_label := _make_label("", MobileSupport.text_px(12), UiSkin.SOFT)
 		desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		desc_label.max_lines_visible = 2
 		desc_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		text_box.add_child(desc_label)
+		# [달성 임박!]: 슬롯 오른쪽 위 (PanelContainer가 크기 플래그대로 모서리에 붙인다)
+		var near := _make_label("[달성 임박!]", MobileSupport.text_px(13), Color.WHITE)
+		near.name = "LawNearBadge"
+		near.size_flags_horizontal = Control.SIZE_SHRINK_END
+		near.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+		var near_box := StyleBoxFlat.new()
+		near_box.bg_color = Color("e03131")
+		near_box.set_corner_radius_all(8)
+		near_box.set_content_margin_all(3)
+		near_box.content_margin_left = 6
+		near_box.content_margin_right = 6
+		near.add_theme_stylebox_override("normal", near_box)
+		near.add_theme_color_override("font_outline_color", Color("5c0a0a"))
+		near.add_theme_constant_override("outline_size", 3)
+		near.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		near.visible = false
+		slot_panel.add_child(near)
+		_law_near.append(near)
+		_law_near_tweens.append(null)
 		_bind_tip(slot_panel, _fill_law_tip.bind(_law_slots.size()))
 		_law_slots.append(slot_panel)
 		_law_labels.append(name_label)
@@ -1736,12 +1760,12 @@ func _build_tool_board() -> void:
 	center.add_theme_constant_override("separation", 8)
 	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(center)
-	_tool_main = _make_label("", 14, UiSkin.INK)
+	_tool_main = _make_label("", MobileSupport.text_px(14), UiSkin.INK)
 	_tool_main.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_tool_main.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_tool_main.custom_minimum_size = Vector2(184, 0)
 	center.add_child(_tool_main)
-	_tool_sub = _make_label("", 12, UiSkin.GREEN)
+	_tool_sub = _make_label("", MobileSupport.text_px(12), UiSkin.GREEN)
 	_tool_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_tool_sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_tool_sub.custom_minimum_size = Vector2(184, 0)
@@ -1750,7 +1774,7 @@ func _build_tool_board() -> void:
 	_tool_rules.add_theme_constant_override("separation", 2)
 	_tool_rules.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	center.add_child(_tool_rules)
-	_tool_note = _make_label("", 12, UiSkin.SOFT)
+	_tool_note = _make_label("", MobileSupport.text_px(12), UiSkin.SOFT)
 	_tool_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_tool_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_tool_note.custom_minimum_size = Vector2(184, 0)
@@ -1795,15 +1819,15 @@ func _build_status_strip() -> void:
 	_status_strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_status_strip.visible = false  # 긴 안내문은 화면에서 걷어냈다 (문구는 내부에서만 갱신)
 	add_child(_status_strip)
-	_phase_label = _make_label("", 13, COLOR_GOLD)
+	_phase_label = _make_label("", MobileSupport.text_px(13), COLOR_GOLD)
 	_status_strip.add_child(_phase_label)
-	_hint_label = _make_label("", 12, Color("a5d8ff"))
+	_hint_label = _make_label("", MobileSupport.text_px(12), Color("a5d8ff"))
 	_hint_label.clip_text = true
 	_hint_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_status_strip.add_child(_hint_label)
 	_queue_label = _make_label("", 11, Color("adb5bd"))
 	_status_strip.add_child(_queue_label)
-	_pick_banner = _make_label("", 13, Color("63e6be"))
+	_pick_banner = _make_label("", MobileSupport.text_px(13), Color("63e6be"))
 	_pick_banner.position = Vector2(423, 74)
 	_pick_banner.size = Vector2(400, 26)
 	_pick_banner.clip_text = true
@@ -3743,16 +3767,113 @@ func _refresh_laws() -> void:
 			_law_badge_labels[slot].text = law.law_id.trim_prefix("LAW_")
 			# 누군가 달성 직전이면 이름 앞에 경고 표시 (자세한 진행도는 마우스를 올리면 나온다).
 			var danger: bool = law is VictoryLaw and SpecialVictory.progress_rows(state, law as VictoryLaw).any(func(row: Dictionary) -> bool: return bool(row["danger"]) and not bool(row["done"]))
-			_law_labels[slot].text = ("! " if danger else "") + law.law_name
+			_law_labels[slot].text = law.law_name
 			_law_labels[slot].add_theme_color_override("font_color", Color("c92a2a") if danger else UiSkin.INK)
 			_law_descs[slot].text = law.description
 			_law_slots[slot].tooltip_text = ""
+			_set_law_near(slot, danger)
 		else:
+			_set_law_near(slot, false)
 			_law_slots[slot].add_theme_stylebox_override("panel", UiSkin.panel("inset", 8.0))
 			_law_labels[slot].text = ""
 			_law_labels[slot].add_theme_color_override("font_color", UiSkin.SOFT)
 			_law_descs[slot].text = ""
 			_law_slots[slot].tooltip_text = ""
+
+
+## 법전 슬롯 [달성 임박!]: 누군가 한 걸음 남았으면 배지를 띄우고 슬롯을 노랑↔빨강으로 깜빡인다.
+func _set_law_near(slot: int, near: bool) -> void:
+	if slot >= _law_near.size():
+		return
+	var badge: Label = _law_near[slot]
+	var panel: Control = _law_slots[slot]
+	if badge.visible == near:
+		return
+	badge.visible = near
+	var old: Tween = _law_near_tweens[slot]
+	if old != null and old.is_valid():
+		old.kill()
+	_law_near_tweens[slot] = null
+	panel.self_modulate = Color.WHITE
+	badge.modulate = Color.WHITE
+	if not near or not _fx_on():
+		return
+	var pulse: Tween = panel.create_tween().set_loops()
+	pulse.tween_property(panel, "self_modulate", Color(1.25, 1.15, 0.55), 0.45).set_trans(Tween.TRANS_SINE)
+	pulse.parallel().tween_property(badge, "modulate", Color(1.0, 0.9, 0.3), 0.45)
+	pulse.tween_property(panel, "self_modulate", Color(1.3, 0.7, 0.7), 0.45).set_trans(Tween.TRANS_SINE)
+	pulse.parallel().tween_property(badge, "modulate", Color.WHITE, 0.45)
+	_law_near_tweens[slot] = pulse
+
+
+## 특수 승리 달성 하이라이트: 그 법전 카드가 슬롯에서 화면 가운데로 날아와 커지고 [특수 승리 조건 달성!] 도장이 찍힌다.
+## LAW_ACHIEVED_SECONDS 동안 연출 큐를 붙잡아, 순위 배너는 이 장면이 끝난 뒤에 뜬다.
+func _fx_law_achieved(from: Rect2, law_name: String, law_desc: String, color: Color) -> void:
+	if not _fx_on():
+		return
+	_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(LAW_ACHIEVED_SECONDS * _motion_pace() * 1000.0))
+	# 보드·패널보다 위 (처치 컷인과 같은 높이의 화면 레이어)
+	var canvas := CanvasLayer.new()
+	canvas.name = "LawAchievedFX"
+	canvas.layer = 60
+	add_child(canvas)
+	var layer := Control.new()
+	layer.size = get_viewport_rect().size
+	layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(layer)
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.0)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(dim)
+	var card := PanelContainer.new()
+	card.name = "LawAchievedCard"
+	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	card.add_theme_stylebox_override("panel", _style(COLOR_GOLD, Color("fff3bf"), 3, 12, 0, 10))
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 2)
+	card.add_child(column)
+	var title := _make_label(law_name, 16, Color("2b2100"))
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(title)
+	var desc := _make_label(law_desc, 12, Color("5c4a00"))
+	desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(desc)
+	card.custom_minimum_size = Vector2(maxf(from.size.x, 280.0), maxf(from.size.y, 66.0))
+	layer.add_child(card)
+	card.reset_size()
+	card.pivot_offset = card.size / 2.0
+	card.position = from.position
+	var view: Vector2 = get_viewport_rect().size
+	var target: Vector2 = view / 2.0 - card.size / 2.0 + Vector2(0, -30)
+	var stamp := _make_label("[특수 승리 조건 달성!]", 30, color.lightened(0.15))
+	stamp.name = "LawAchievedStamp"
+	stamp.add_theme_color_override("font_outline_color", Color("3b0a0a"))
+	stamp.add_theme_constant_override("outline_size", 8)
+	stamp.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	stamp.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(stamp)
+	stamp.size = Vector2(view.x, 48)
+	stamp.position = Vector2(0, view.y / 2.0 + 70.0)
+	stamp.pivot_offset = stamp.size / 2.0
+	stamp.rotation = -0.08
+	stamp.scale = Vector2.ONE * 2.6
+	stamp.modulate.a = 0.0
+	var pace: float = _motion_pace()
+	var tween: Tween = layer.create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(dim, "color:a", 0.45, 0.25 * pace)
+	tween.tween_property(card, "position", target, 0.35 * pace).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(card, "scale", Vector2.ONE * 1.9, 0.35 * pace).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.set_parallel(false)  # 여기부터는 차례대로: 도장 → 잠깐 멈춤 → 사라짐
+	tween.tween_callback(func() -> void:
+		Sfx.play(&"law")
+		screen_shake(8.0, 0.2))
+	tween.tween_property(stamp, "scale", Vector2.ONE, 0.18 * pace).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.parallel().tween_property(stamp, "modulate:a", 1.0, 0.12 * pace)
+	tween.tween_interval(0.5 * pace)
+	tween.tween_property(layer, "modulate:a", 0.0, 0.17 * pace)
+	tween.tween_callback(canvas.queue_free)
 
 
 func _refresh_hands() -> void:
@@ -4327,7 +4448,7 @@ func _open_zoom(player_id: int, card_id: StringName) -> void:
 	var how: String = "보드에 드래그 → 타일 선택" if card.needs_tile() else "보드에 드래그"
 	if card.category == GameEnums.CardCategory.COUNTER:
 		how = "피격 시 발동 여부를 묻는 팝업에서 [발동]"
-	var timing := _make_label("발동: %s\n방법: %s" % [_card_timing_text(card), how], 14, UiSkin.INK)
+	var timing := _make_label("발동: %s\n방법: %s" % [_card_timing_text(card), how], MobileSupport.text_px(14), UiSkin.INK)
 	timing.name = "CardTiming"
 	timing.custom_minimum_size = Vector2(card_size.x - 24.0, 0)
 	timing.size = Vector2(card_size.x - 24.0, 40)
@@ -4343,7 +4464,7 @@ func _open_zoom(player_id: int, card_id: StringName) -> void:
 		var caution_icon := CardSkin.WarningIcon.new()
 		caution_icon.custom_minimum_size = Vector2(22, 22)
 		caution.add_child(caution_icon)
-		var caution_text := _make_label("주의: %s" % CardSkin.SELF_RISK[card_id], 14, CardSkin.WARNING_RED)
+		var caution_text := _make_label("주의: %s" % CardSkin.SELF_RISK[card_id], MobileSupport.text_px(14), CardSkin.WARNING_RED)
 		caution_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		caution_text.custom_minimum_size = Vector2(card_size.x - 24.0 - 28.0, 0)
 		caution_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -4354,7 +4475,7 @@ func _open_zoom(player_id: int, card_id: StringName) -> void:
 	if card.category == GameEnums.CardCategory.COUNTER:
 		usable = _counter_offered_to(player_id, card.card_id)
 		status_text = "지금 방어 가능 (팝업에서 발동)" if usable else "내가 공격받을 때만 사용 가능"
-	var status := _make_label(status_text, 14, Color("416c2b") if usable else Color("747c64"))
+	var status := _make_label(status_text, MobileSupport.text_px(14), Color("416c2b") if usable else Color("747c64"))
 	status.name = "CardStatus"
 	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	status.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -9501,9 +9622,24 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_mark_spotlight()
 			var achievers: Array = data["players"]
 			_log_line("[%d라운드 특수 승리] 달성: %s" % [int(data["round"]), ", ".join(PackedStringArray(achievers.map(func(id: int) -> String: return _player_name(id))))], Color("ffd43b"))
-			var judged_round: int = int(data["round"])
-			_enqueue_late(func() -> void:
-				_announce("특수 승리", "[특수 승리 달성!]", "법전 조건을 채웠습니다 - 바로 다음 순위로 졸업합니다 (%d라운드)" % judged_round, Color("ffd43b"), null, 1.2))
+			# 달성한 법전 카드 (판정 직후 법전에서 지워지므로 지금 슬롯 자리·이름을 잡아 둔다): 가운데로 날아와 도장이 찍힌 뒤 순위 배너
+			var achieved: Array = []
+			var law_ids: Array = data.get("laws", [])
+			for index: int in mini(achievers.size(), law_ids.size()):
+				var slot_index: int = -1
+				var achieved_law: LawResource = null
+				for i: int in state.rulebook.active_laws_queue.size():
+					if state.rulebook.active_laws_queue[i].law_id == str(law_ids[index]):
+						slot_index = i
+						achieved_law = state.rulebook.active_laws_queue[i]
+				if achieved_law == null:
+					achieved_law = LawRegistry.create(str(law_ids[index]))
+				if achieved_law == null:
+					continue
+				var from: Rect2 = _law_slots[slot_index].get_global_rect() if slot_index >= 0 and slot_index < _law_slots.size() else Rect2(Vector2(40, 200), Vector2(280, 66))
+				achieved.append([from, achieved_law.law_name, achieved_law.description, PLAYER_COLORS.get(int(achievers[index]), Color("ffd43b"))])
+			for entry: Array in achieved:
+				_enqueue_late(func() -> void: _fx_law_achieved(entry[0], entry[1], entry[2], entry[3]))
 		&"tempo_law":
 			var tempo_law: LawResource = LawRegistry.create(String(data["law_id"]))
 			_log_line("[템포 업] 법전에 특수 승리 [%s] 자동 등록" % tempo_law.law_name, Color("ffd43b"))

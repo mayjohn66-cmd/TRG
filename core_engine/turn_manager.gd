@@ -1620,7 +1620,8 @@ func _judge_special_victory() -> bool:
 		if int(pa["finished"]) != int(pb["finished"]):
 			return int(pa["finished"]) > int(pb["finished"])
 		return int(pa["remaining"]) < int(pb["remaining"]))
-	_emit_event(&"special_victory_judgement", {"round": state.round_number, "players": qualified.map(func(e: Dictionary) -> int: return int(e["player"]))})
+	_emit_event(&"special_victory_judgement", {"round": state.round_number, "players": qualified.map(func(e: Dictionary) -> int: return int(e["player"])),
+		"laws": qualified.map(func(e: Dictionary) -> String: return String(e["reason"]))})
 	for entry: Dictionary in qualified:
 		if state.is_graduated(int(entry["player"])):
 			continue  # 이미 순위가 확정된 사람은 다시 판정하지 않는다
