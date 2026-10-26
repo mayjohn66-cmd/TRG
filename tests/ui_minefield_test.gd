@@ -60,7 +60,7 @@ func _process(_delta: float) -> bool:
 		for tile: int in targets:
 			var attachments: Array = _board.state.board.get_tile(tile).attachments
 			_expect(attachments.size()==1 and attachments[0] is TrapMine and attachments[0].owner_id==1,"No duplicate mine is created by the visuals")
-			_expect(attachments[0].is_hidden_trap,"The presentation preserves hidden-trap rules")
+			_expect(attachments[0].is_hidden_trap and attachments[0].always_revealed,"Minefield mines stay buried traps but are revealed even under hidden-trap rules")
 			var view: BoardSkin.Tile = _board._tile_views[tile]
 			if not stage.armed.has(tile):
 				_expect(_board._trap_pending.has(tile) and not view.trap_on,"Pending mines remain hidden until armed, including across UI refresh")

@@ -258,8 +258,8 @@ static func _plan_one_turn_card(state: GameState, player_id: int, card: BaseCard
 				var gain: int = 0
 				for tile: int in TowerCommand.side_tiles(side):
 					for attachment: TileAttachment in state.board.get_tile(tile).attachments:
-						if attachment.owner_id != player_id and attachment.is_hidden_trap:
-							continue  # 남이 숨긴 함정은 사람처럼 봇도 모른다
+						if attachment.owner_id != player_id and not visible_trap(state, attachment):
+							continue  # 남이 숨긴 함정은 사람처럼 봇도 모른다 (함정 공개 규칙이면 안다)
 						gain += 1 if attachment.owner_id != player_id else -1
 				if gain > best_gain:
 					best_gain = gain
@@ -505,7 +505,7 @@ static func skill_option(state: GameState, pawn: PlayerPawn) -> Dictionary:
 				for attachment: TileAttachment in state.board.get_tile(tile).attachments:
 					if attachment.owner_id == pawn.owner_id:
 						mine += 1
-					elif not attachment.is_hidden_trap:
+					elif visible_trap(state, attachment):
 						hostile += 1
 			return {"params": {}, "value": SKILL_USE_THRESHOLD + 4.0 * float(hostile - mine)} if hostile > mine else {}
 		&"hotel":
@@ -612,3 +612,8 @@ static func _threat_at(state: GameState, pawn: PlayerPawn) -> float:
 		if gap >= 1 and gap <= 6:
 			chasers += 1
 	return float(chasers) * (2.0 + pawn_progress(state, pawn) * 0.3)
+
+
+## 남이 깐 설치물의 정체를 아는가: 공개 설치물, 공개적으로 깔린 함정(지뢰밭 지뢰), 또는 함정 공개 규칙. 사람 화면과 같은 기준이다.
+static func visible_trap(state: GameState, attachment: TileAttachment) -> bool:
+	return not attachment.is_hidden_trap or attachment.always_revealed or MatchRules.trap_reveal(state)

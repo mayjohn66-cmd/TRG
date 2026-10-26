@@ -70,6 +70,8 @@ signal nitro_dashed(pawn_id: int, path: Array[int], blocked: int)
 signal leapfrog_boosted(pawn_id: int, waypoint: int, bonus: int)
 ## 8번 공: 처치한 자리에서 steps칸 더 굴러간다 (추가 이동 시작).
 signal capture_charge_started(pawn_id: int, steps: int)
+## 기물 고유 능력이 발동했다 (보드 위 원인 뱃지용 표시 이벤트). passive는 PassiveCallout.TEXTS의 키.
+signal passive_triggered(pawn_id: int, passive: StringName)
 
 var board: BoardGraph = BoardGraph.new()
 ## Node 기반 법전. 씬 트리에 붙이지 않고 GameState가 수명을 관리한다.
@@ -88,6 +90,8 @@ var card_deck: Array[StringName] = []
 
 ## 폭풍 전진 가속 기믹(부스터 발판 · 말 밟고 점프 · 리벤지 부스터)을 켠다. 규칙 판정용 스위치라 단위 테스트가 기본 이동 규칙만 따로 검증할 때 끈다.
 var boost_gimmicks: bool = true
+## 이 판의 규칙 설정 (MatchRules: 함정 공개·초증강 빈도·법전·속도·입문 드래프트). setup 전에 넣는다.
+var match_rules: Dictionary = MatchRules.defaults()
 var current_player: int = -1
 var round_number: int = 1
 ## 남은 '전체 역주행' 라운드 수 (ACT_01).
@@ -174,6 +178,8 @@ func clear_npcs() -> void:
 ## 생략하면 모두 진화하지 않은 기본 말이다.
 func setup(ids: Array[int], seed_value: int = 0, loadouts: Dictionary = {}) -> void:
 	player_ids = ids.duplicate()
+	match_rules = MatchRules.sanitize(match_rules)
+	TempoUp.stage_rounds = MatchRules.stage_rounds(match_rules)  # 템포 업은 라운드 번호만 보는 순수 함수라 판마다 규칙의 라운드를 넣어 둔다
 	if seed_value != 0:
 		rng.seed = seed_value
 	else:

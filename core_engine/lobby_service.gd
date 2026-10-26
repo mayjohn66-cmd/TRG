@@ -222,7 +222,7 @@ func begin_online_game() -> bool:
 				bot_seats.append(seat)
 	if players.size() < 2:
 		return false
-	var config: Dictionary = {"players": players, "bots": bot_seats, "names": names, "avatars": avatars, "seed": rng.randi_range(1, 2000000000)}
+	var config: Dictionary = {"players": players, "bots": bot_seats, "names": names, "avatars": avatars, "seed": rng.randi_range(1, 2000000000), "rules": GameSession.room_rules()}
 	# 시작 뒤에는 새 접속을 받지 않는다 (공개 방 비콘/초대도 닫는다).
 	for seat: int in _offer_nonce.keys():
 		_forget_offer(seat)

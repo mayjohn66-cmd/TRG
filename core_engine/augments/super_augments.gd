@@ -292,7 +292,9 @@ static func _apply_minefield(state: GameState, player_id: int) -> Dictionary:
 		var pick: int = state.rng.randi_range(0, empty.size() - 1)
 		var tile: int = empty[pick]
 		empty.remove_at(pick)
-		state.place_attachment(tile, TrapMine.new(player_id))
+		var mine := TrapMine.new(player_id)
+		mine.always_revealed = true  # 광란의 지뢰밭은 공개적으로 깔린다: 함정 비공개 규칙에서도 모두가 정체를 안다
+		state.place_attachment(tile, mine)
 		placed.append(tile)
 	placed.sort()
 	var traps: Array[StringName] = []

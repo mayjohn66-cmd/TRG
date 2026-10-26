@@ -16,6 +16,8 @@ const STAGE_NAMES: Array[String] = ["", "과열", "광기", "대붕괴"]
 const MOVE_BONUS: Array[int] = [0, 1, 2, 3]
 ## 단계별 리벤지 부스터 칸 수 (0이면 기본값 그대로).
 const REVENGE_BONUS: Array[int] = [0, 6, 8, 8]
+## 이번 판의 템포 업 라운드 (규칙 설정: 기본 STAGE_ROUNDS / 스피드전 MatchRules.SPEED_STAGE_ROUNDS). GameState.setup이 넣는다.
+static var stage_rounds: Array[int] = [8, 15, 22]
 ## 1단계부터 법전(특수 승리)·초증강 가중치에 곱하는 배수.
 const RARE_WEIGHT_MULTIPLIER: int = 3
 ## 3단계부터 라운드마다 결승선이 당겨지는 칸 수.
@@ -25,7 +27,7 @@ const GOAL_SHRINK_PER_ROUND: int = 2
 ## 이 라운드의 템포 업 단계 (0~3).
 static func level(round_number: int) -> int:
 	var result: int = 0
-	for stage_round: int in STAGE_ROUNDS:
+	for stage_round: int in stage_rounds:
 		if round_number >= stage_round:
 			result += 1
 	return result
@@ -33,7 +35,7 @@ static func level(round_number: int) -> int:
 
 ## 단계가 새로 오르는 라운드인가 (경고 연출 시점).
 static func is_stage_round(round_number: int) -> bool:
-	return STAGE_ROUNDS.has(round_number)
+	return stage_rounds.has(round_number)
 
 
 ## 모든 굴림의 최종 이동 칸에 더하는 값.
@@ -58,7 +60,7 @@ static func goal_shrink(round_number: int) -> int:
 	if level(round_number) < 3:
 		return 0
 	var limit: int = maxi(BoardSpec.tile_count - BoardSpec.halfway_tile - 4, 0)
-	return mini((round_number - STAGE_ROUNDS[2] + 1) * GOAL_SHRINK_PER_ROUND, limit)
+	return mini((round_number - stage_rounds[2] + 1) * GOAL_SHRINK_PER_ROUND, limit)
 
 
 ## 결승선으로 치는 첫 칸 (당겨지지 않았으면 -1). 이 칸부터 마지막 칸까지 들어서면 완주한다.

@@ -2082,3 +2082,66 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 [상단 코너] 소환 · 라운드가 끝나면 역방향으로 가장 가까운 적 말 하나를 처치하고 사라짐,"[Top corner] Summon · at round end, KOs the nearest enemy pawn going backward, then vanishes",[上コーナー] 召喚 · ラウンド終了時、逆方向で最も近い敵の駒1つを撃破して消える
 내 설치물 {p1}개를 보드에 동시 유지,Keep {p1} of my objects on the board at once,自分の設置物をボード上に同時{p1}個維持
 ※ 특수 승리: 차례가 끝날 때 달성해 있으면 바로 다음 순위로 졸업,"※ Special Win: if met at the end of your turn, you graduate in the next rank",※ 特殊勝利: ターン終了時に達成していれば次の順位で即卒業
+[퀸] 이동 +2칸!,[Queen] Move +2!,[クイーン] 移動 +2マス！
+[흑돌] 홀수 눈금 +1칸!,[Black Stone] Odd roll +1!,[黒石] 奇数の出目 +1マス！
+[나리 승급] 이동 +1칸!,[Promoted] Move +1!,[成り] 移動 +1マス！
+[룩] 직진 +2칸!,[Rook] Straight line +2!,[ルーク] 直進 +2マス！
+[비차] 직진 +2칸!,[Hisha] Straight line +2!,[飛車] 直進 +2マス！
+[용왕] 직진 +2칸!,[Dragon King] Straight line +2!,[竜王] 直進 +2マス！
+[각행] 코너 스침 +2칸!,[Kaku] Corner graze +2!,[角行] コーナー通過 +2マス！
+[용마] 코너 스침 +3칸!,[Dragon Horse] Corner graze +3!,[竜馬] コーナー通過 +3マス！
+[비숍] 코너 진입 +1칸!,[Bishop] Into the corner +1!,[ビショップ] コーナー進入 +1マス！
+[장기:포] 뛰어넘기 +3칸!,[Cannon] Leapfrog +3!,[包] 飛び越え +3マス！
+[장기:마] 빈칸 도약 +2칸!,[Horse] Open-tile leap +2!,[馬] 空きマス跳躍 +2マス！
+[장기:상] 빈칸 도약 +2칸!,[Elephant] Open-tile leap +2!,[象] 空きマス跳躍 +2マス！
+[스타 카트] 추가 이동 +2칸!,[Star Kart] Bonus move +2!,[スターカート] 追加移動 +2マス！
+[루도 복수자] 복수 질주 +4칸!,[Ludo Avenger] Revenge dash +4!,[ルドー復讐者] 復讐ダッシュ +4マス！
+[나이트] 함정 관통!,[Knight] Leaps the trap!,[ナイト] 罠を貫通！
+[퀸] 함정 관통!,[Queen] Leaps the trap!,[クイーン] 罠を貫通！
+[계마] 함정 관통!,[Keima] Leaps the trap!,[桂馬] 罠を貫通！
+[스타 카트] 함정 면역!,[Star Kart] Trap immune!,[スターカート] 罠無効！
+[지뢰찾기 공병] 함정 해체 카드+1!,[Sapper] Trap defused! Card +1,[地雷工兵] 罠解除 カード+1！
+[킹 체커] 스침 처치!,[King Checker] KO in passing!,[キングチェッカー] 通過撃破！
+[백돌] 보호막 방어!,[White Stone] Shield block!,[白石] シールド防御！
+[강아지] 빵집 스침 카드+1!,[Puppy] Bakery sniff! Card +1,[子犬] パン屋通過 カード+1！
+[증기선] 설치물 파괴!,[Steamboat] Object destroyed!,[蒸気船] 設置物を破壊！
+[미니카] 반환점 카드+1!,[Mini Car] Halfway salary! Card +1,[ミニカー] 折り返し地点 カード+1！
+[비행기] 옷장 장거리 워프!,[Airplane] Long-range wardrobe warp!,[飛行機] クローゼット長距離ワープ！
+[윷말] 처치 재굴림 +1!,[Yut Token] KO reroll +1!,[ユッ駒] 撃破で振り直し +1！
+[8번 공] 처치 돌진 +%d칸!,[8-Ball] KO dash +%d!,[8番ボール] 撃破ダッシュ +%dマス！
+초증강 엘리아스 마블,Hyper Elias Marble,超増強エリアスマーブル
+매치 종료,Match Over,試合終了
+[매치 종료!],[Match Over!],[試合終了！]
+%s님이 '%s(%s)' 법전을 달성하여 %d위로 졸업했습니다!,"%s fulfilled the '%s (%s)' law and graduated at rank #%d!",%sさんが『%s(%s)』の法典を達成し、%d位で卒業しました！
+%s님이 말 4개를 모두 완주하여 %d위로 졸업했습니다!,%s brought all 4 pawns home and graduated at rank #%d!,%sさんが駒4つをすべて完走させ、%d位で卒業しました！
+매치 종료 사유: %s,Why the match ended: %s,試合終了の理由: %s
+방 규칙 설정,Room Rules,ルーム設定
+함정 카드 정체,Trap Identity,罠カードの正体
+"공개: 누가 설치한 함정이든 아이콘과 효과가 보입니다. 비공개: 상대가 설치한 함정은 밟거나 해체하기 전까지 [? 수상한 함정]으로만 보입니다.","Revealed: every trap shows its icon and effect, no matter who set it. Hidden: traps set by rivals show only as [? Suspicious Trap] until someone steps on or defuses them.",公開: 誰が設置した罠でもアイコンと効果が見えます。非公開: 相手が設置した罠は、踏むか解除するまで [? 怪しい罠] としか表示されません。
+공개 [기본],Revealed [Default],公開 [基本]
+비공개 [심리전],Hidden [Mind Games],非公開 [心理戦]
+초증강 등장 빈도,Hyper Augment Frequency,超増強の出現頻度
+증강 드래프트에 초증강이 나오는 확률입니다.,How often Hyper Augments appear in augment drafts.,増強ドラフトに超増強が出る確率です。
+대축제 (확률 3배),Festival (x3 chance),大祭り (確率3倍)
+끄기,Off,オフ
+특수 승리 법전,Special Victory Laws,特殊勝利の法典
+"끄면 드래프트에 법전이 나오지 않고, 말 4개 완주로만 순위를 가립니다.","When off, no laws appear in drafts and ranks are decided only by bringing all 4 pawns home.",オフにするとドラフトに法典が出ず、駒4つの完走だけで順位を決めます。
+켜기 [기본],On [Default],オン [基本]
+끄기 [완주 승부만],Off [Race only],オフ [完走勝負のみ]
+게임 속도,Game Speed,ゲーム速度
+스피드전: 템포 업이 4·8·12라운드에 오르고 리벤지 부스터가 +2칸 커져 10~12라운드 안에 결판이 납니다.,"Speed Match: Tempo Up rises at rounds 4, 8 and 12 and the Revenge Booster gets +2, so games end within 10-12 rounds.",スピード戦: テンポアップが4・8・12ラウンドで上がり、リベンジブースターが+2マス大きくなり、10〜12ラウンドで決着します。
+기본 템포,Normal Tempo,基本テンポ
+스피드전,Speed Match,スピード戦
+기본값으로,Reset to Default,初期値に戻す
+[함정] %s (설치: %s),[Trap] %s (set by %s),[罠] %s (設置: %s)
+[? 수상한 함정] (설치: %s),[? Suspicious Trap] (set by %s),[? 怪しい罠] (設置: %s)
+[? 수상한 함정],[? Suspicious Trap],[? 怪しい罠]
+[%s] %s  (설치: %s),[%s] %s  (set by %s),[%s] %s  (設置: %s)
+[? 수상한 함정]  (설치: %s),[? Suspicious Trap]  (set by %s),[? 怪しい罠]  (設置: %s)
+직접 밟거나 해체하기 전까지 정체를 알 수 없습니다!,You can't tell what it is until someone steps on it or defuses it!,踏むか解除するまで正体はわかりません！
+함정 비공개,Hidden traps,罠非公開
+초증강 끄기,Hyper Augments off,超増強オフ
+초증강 대축제,Hyper Augment festival,超増強の大祭り
+법전 끄기,Laws off,法典オフ
+입문 드래프트,Beginner draft,入門ドラフト
+[방 규칙] %s,[Room Rules] %s,[ルーム設定] %s
