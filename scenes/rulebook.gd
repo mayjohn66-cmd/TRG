@@ -71,7 +71,8 @@ var _next_name: Label = null
 var _list_box: VBoxContainer = null
 ## 왼쪽 노트(항목 설명) 묶음. 기본 규칙 탭에서는 왼쪽에 늘 보이고, 도감 탭에서는 카드를 누를 때만 가운데 팝업으로 뜬다.
 var _notebook_root: Control = null
-var _popup_dim: ColorRect = null
+var _book_inset: Panel = null
+var _popup_dim: Panel = null
 var _popup_close: Button = null
 ## 도감 탭 위쪽 한 줄 요약 배너.
 var _summary_banner: PanelContainer = null
@@ -246,6 +247,7 @@ func _build_book() -> void:
 	outer.add_theme_stylebox_override("panel", _box(Color("e9f7ee"), FRAME, 12, 40, 18, 0, Color(0, 0, 0, 0.45)))
 	_place(outer, Vector2(186, 108), Vector2(1156, 634))
 	var edge := Panel.new()
+	_book_inset = edge
 	edge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	edge.add_theme_stylebox_override("panel", _box(Color("f3ecd2"), FRAME_EDGE, 4, 30))
 	_place(edge, Vector2(204, 126), Vector2(1120, 598))
@@ -421,9 +423,13 @@ func _build_notebook() -> void:
 	_notebook_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_notebook_root.size = STAGE
 	_stage.add_child(_notebook_root)
-	_popup_dim = ColorRect.new()
+	_popup_dim = Panel.new()
 	_popup_dim.name = "NotebookPopupDim"
-	_popup_dim.color = Color(0.1, 0.08, 0.05, 0.55)
+	# Reuse the inset's painted alpha contour and nine-slice corners, so the
+	# dim follows the book edge instead of covering it with a square rectangle.
+	var dim_skin: StyleBoxTexture = _book_inset.get_theme_stylebox("panel").duplicate()
+	dim_skin.modulate_color = Color(0, 0, 0, 0.55)
+	_popup_dim.add_theme_stylebox_override("panel", dim_skin)
 	_popup_dim.mouse_filter = Control.MOUSE_FILTER_STOP
 	_popup_dim.gui_input.connect(func(event: InputEvent) -> void:
 		if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
@@ -645,11 +651,15 @@ func _layout_notebook() -> void:
 	_notebook_root.z_index = 10 if popup else 0
 	_notebook_root.position = Vector2(232, 0) if popup else Vector2.ZERO
 	_popup_dim.visible = popup
-	_popup_dim.position = Vector2(204, 126) - _notebook_root.position
-	_popup_dim.size = Vector2(1120, 598)
+	_popup_dim.position = _book_inset.position - _notebook_root.position
+	_popup_dim.size = _book_inset.size
 	_popup_close.visible = popup
+	# Chapter tabs overlap the book's left edge; keep their painted faces and
+	# input targets above the dim instead of darkening the right-hand strip.
+	_list_box.z_index = _notebook_root.z_index + 1 if popup else 0
 	if popup:
 		_notebook_root.get_parent().move_child(_notebook_root, -1)  # 격자 위에 뜬다
+		_list_box.get_parent().move_child(_list_box, -1)
 
 
 ## 장 번호가 속한 위쪽 탭(묶음).
