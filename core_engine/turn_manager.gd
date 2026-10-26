@@ -406,7 +406,7 @@ func _handle_roll(actor: int, params: Dictionary = {}) -> void:
 	if params.has("keep") and tool is ToolYacht:
 		(tool as ToolYacht).set_keep(params["keep"] as Array if params["keep"] is Array else [])
 	state.pacing_humans = pacing_humans
-	_apply_roll_result(PacingDirector.adjust(state, actor, tool, tool.roll(state.rng)))
+	_apply_roll_result(PacingDirector.damp_chain(state, tool, PacingDirector.adjust(state, actor, tool, tool.roll(state.rng)), _roll_chain))
 
 
 func _handle_stop(actor: int) -> void:
@@ -1127,7 +1127,7 @@ func _on_timeout() -> void:
 				_apply_roll_result(tool.cash_out())
 			else:
 				state.pacing_humans = pacing_humans
-				_apply_roll_result(PacingDirector.adjust(state, current_player_id(), tool, tool.roll(state.rng)))
+				_apply_roll_result(PacingDirector.damp_chain(state, tool, PacingDirector.adjust(state, current_player_id(), tool, tool.roll(state.rng)), _roll_chain))
 		State.PHASE_INTERRUPT_ROLL:
 			_close_interrupt_window()
 		State.PHASE_SELECT_PAWN:

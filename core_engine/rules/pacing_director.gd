@@ -183,3 +183,21 @@ static func install_would_win_law(state: GameState, player_id: int) -> bool:
 		if law is VictoryLaw and (law as VictoryLaw).stat_key == VictoryLaw.ESTATE and (law as VictoryLaw).progress(state, player_id) + 1 >= (law as VictoryLaw).goal():
 			return true
 	return false
+
+
+## 연속 굴림 감쇠 (모든 판, 초전도체 무한 동력 밸런스): 이번 턴에 이미 추가 굴림을 얻은 횟수(chain)만큼 또 추가 굴림이 나올 확률을 줄인다.
+## 추가 굴림 결과는 CHAIN_KEEP^chain 확률로만 그대로 두고, 아니면 추가 굴림이 아닌 결과가 나올 때까지 같은 도구로 다시 굴린다.
+const CHAIN_KEEP: float = 0.6
+
+
+static func damp_chain(state: GameState, tool: BaseJudgmentTool, result: RollResult, chain: int) -> RollResult:
+	if chain <= 0 or result == null or not result.reroll or result.can_continue or not REROLL_TOOLS.has(tool.tool_id):
+		return result
+	if state.rng.randf() < pow(CHAIN_KEEP, float(chain)):
+		return result
+	for _try: int in MAX_TRIES:
+		var next: RollResult = tool.roll(state.rng)
+		if not next.reroll:
+			return next
+	return result
+

@@ -42,9 +42,9 @@ func test_registry_makes_eight_victory_laws_with_table_goals() -> void:
 		var law: VictoryLaw = _law(id)
 		check(law != null and law.trigger_timing == "", "%s는 판을 변조하지 않는 특수 승리 교칙" % id)
 		goals.append(law.goal())
-	check_eq(goals, int_array([10, 10, 5, 18, 4, 20, 4, 3]), "표의 목표 수치")
+	check_eq(goals, int_array([10, 6, 5, 16, 3, 12, 3, 3]), "표의 목표 수치")
 	check_eq(_law("LAW_01").law_name, "투기장의 지배자", "이름")
-	check_eq(_law("LAW_05").condition_text(), "말 4개 모두 트랙 위에서 서로 3칸 이상 간격", "조건 문구")
+	check_eq(_law("LAW_05").condition_text(), "말 3개가 트랙 위에서 서로 4칸 이상 간격", "조건 문구")
 
 
 func test_kills_and_ejections_are_counted_from_captures() -> void:
@@ -93,13 +93,13 @@ func test_bakery_law_counts_bakery_stops_and_graduates_at_round_end() -> void:
 	check_eq(state.stat(2, VictoryLaw.BAKERY), 1, "빵집에 멈추면 방문 1회")
 	move(state, 21, 1)
 	check_eq(state.stat(2, VictoryLaw.BAKERY), 1, "빵집이 아닌 칸은 세지 않는다")
-	state.law_stats[2] = {VictoryLaw.BAKERY: 10}
+	state.law_stats[2] = {VictoryLaw.BAKERY: 6}
 	manager.state.tools[1] = ScriptedTool.new([1])
 	manager.act(&"proceed", {"player_id": 1})
 	manager.act(&"roll", {"player_id": 1})
 	manager.act(&"select_pawn", {"player_id": 1, "pawn_id": 11})
 	_finish_round(manager)
-	check(state.rankings.has(2), "빵집 10회 방문을 채운 P2가 졸업")
+	check(state.rankings.has(2), "빵집 6회 방문을 채운 P2가 졸업")
 	_dispose(manager)
 
 
@@ -165,13 +165,15 @@ func test_same_law_achievers_at_round_end_only_the_leader_graduates() -> void:
 	_dispose(manager)
 
 
-func test_siege_needs_four_separate_pawns_three_tiles_apart() -> void:
+func test_siege_needs_three_separate_pawns_four_tiles_apart() -> void:
 	var state := make_state()
-	for entry: Array in [[11, 2], [12, 5], [13, 8], [14, 10]]:
+	for entry: Array in [[11, 2], [12, 5], [13, 9]]:
 		place(state, entry[0], entry[1], [entry[1] - 1])
-	check_eq(VictoryLaw.spread_count(state, 1), 3, "10번은 8번과 2칸 차이")
-	place(state, 14, 11, [10])
-	check_eq(VictoryLaw.spread_count(state, 1), 4, "모두 3칸 이상")
+	check_eq(VictoryLaw.spread_count(state, 1), 2, "5번은 2번과 3칸 차이라 세지 않는다")
+	place(state, 12, 6, [5])
+	check_eq(VictoryLaw.spread_count(state, 1), 2, "2·6에 9는 6과 3칸 차이라 세지 않는다")
+	place(state, 13, 10, [9])
+	check_eq(VictoryLaw.spread_count(state, 1), 3, "2·6·10: 서로 4칸 이상인 말 3개")
 	add_law(state, "LAW_05")
 	check_eq(SpecialVictory.achieved_by(state, 1), &"LAW_05", "사도 포위망 달성")
 
@@ -195,15 +197,15 @@ func test_underdog_counts_kills_on_the_leader_only_with_no_finished_pawns() -> v
 func test_progress_rows_flag_danger_and_survive_snapshots() -> void:
 	var state := make_state(2)
 	add_law(state, "LAW_06")
-	state.law_stats[2] = {VictoryLaw.EJECTED: 19}
+	state.law_stats[2] = {VictoryLaw.EJECTED: 11}
 	var rows: Array[Dictionary] = SpecialVictory.progress_rows(state, state.rulebook.active_laws_queue[0] as VictoryLaw)
 	check_eq(rows.size(), 2, "플레이어마다 한 줄")
-	check_eq([int(rows[1]["value"]), int(rows[1]["goal"]), bool(rows[1]["danger"])], [19, 20, true], "19/20 위험!")
-	check(not bool(rows[0]["danger"]), "0/20은 안전")
+	check_eq([int(rows[1]["value"]), int(rows[1]["goal"]), bool(rows[1]["danger"])], [11, 12, true], "11/12 위험!")
+	check(not bool(rows[0]["danger"]), "0/12은 안전")
 	var snapshot: TurnSnapshot = TurnSnapshot.capture(state)
 	state.law_stats.clear()
 	snapshot.restore(state)
-	check_eq(state.stat(2, VictoryLaw.EJECTED), 19, "되감기·동기화로 기록 복원")
+	check_eq(state.stat(2, VictoryLaw.EJECTED), 11, "되감기·동기화로 기록 복원")
 
 
 ## 처치로 조건을 채우면 이동·처치가 다 끝나고 그 차례가 넘어가는 순간에 판정한다 (이동 도중에 끼어들지 않고, 라운드 끝까지 기다리지도 않는다).

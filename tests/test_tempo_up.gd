@@ -169,9 +169,9 @@ func test_first_draft_falls_back_when_no_pawn_evolution_is_possible() -> void:
 		check(AugmentRegistry.get_def(offer).category != GameEnums.AugmentCategory.PAWN_EVOLUTION, "받을 수 없는 기물 진화는 없다")
 
 
-## 카이지의 한방 역전법은 리벤지 부스터 칸과 템포 업 보너스를 빼고 센다 (요구 18칸).
+## 카이지의 한방 역전법은 리벤지 부스터 칸과 템포 업 보너스를 빼고 센다 (요구 16칸).
 func test_kaiji_counts_without_revenge_and_tempo_bonus() -> void:
-	check_eq((LawRegistry.create("LAW_04") as VictoryLaw).goal(), 18, "한방 18칸")
+	check_eq((LawRegistry.create("LAW_04") as VictoryLaw).goal(), 16, "한방 16칸")
 	var manager := _new_manager()
 	var report := MoveReport.new()
 	report.path.assign(range(1, 19))  # 18칸 이동
