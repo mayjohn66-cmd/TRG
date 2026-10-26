@@ -113,8 +113,6 @@ func _check_round_order(manager: TurnManager, seed_value: int) -> void:
 		if entry["kind"] == &"special_victory_judgement":
 			judged = true
 			check(entry["phase"] != State.PHASE_MOVING_STEP and entry["phase"] != State.PHASE_SELECT_PAWN, "시드 %d R%d: 특수 승리 판정이 이동 도중에 끼어들었다" % [seed_value, int(entry["round"])])
-		elif entry["kind"] == &"race_ranked":
-			judged = true  # 라스트 스퍼트 마감: 레이스 진행 순위 확정이 판정 역할을 한다
 		elif entry["kind"] == &"player_ranked":
 			var reason: StringName = entry["data"]["reason"]
 			if reason != VictoryChecker.ALL_HOME and reason != VictoryChecker.LAST_PLACE:

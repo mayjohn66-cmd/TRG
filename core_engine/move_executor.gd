@@ -213,7 +213,7 @@ const EIGHT_BALL_CHARGE: int = 3
 
 
 ## 이 말의 리벤지 부스터 칸 수. 루도 복수자는 발동할 때 augments_table.csv EVO_7_2 param_1(기본 4)칸을 더 간다.
-## 템포 업이 오르면 리벤지 부스터가 커진다 (8R 6칸, 15R 8칸). 규칙이 꺼져 있으면 그대로 0.
+## 템포 업이 오르면 리벤지 부스터가 커진다 (6R 6칸, 11R부터 10칸). 규칙이 꺼져 있으면 그대로 0.
 static func revenge_bonus_of(mover: PlayerPawn, state: GameState = null) -> int:
 	var tempo: int = TempoUp.revenge_bonus(state.round_number) if state != null else 0
 	var base: int = GameData.revenge_bonus()
@@ -349,7 +349,7 @@ static func apply_step(
 			return StepOutcome.FINISHED
 		return StepOutcome.HALTED
 
-	if is_forward and (destination == GameEnums.GOAL_TILE or TempoUp.in_zone(state, destination)) and mover.can_finish(state):
+	if is_forward and (destination == GameEnums.GOAL_TILE or TempoUp.in_goal_zone(state.round_number, destination)) and mover.can_finish(state):
 		if not is_last and ctx.exact_goal_required:
 			report.bounced = true
 			return StepOutcome.CONTINUE

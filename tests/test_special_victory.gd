@@ -42,7 +42,7 @@ func test_registry_makes_eight_victory_laws_with_table_goals() -> void:
 		var law: VictoryLaw = _law(id)
 		check(law != null and law.trigger_timing == "", "%s는 판을 변조하지 않는 특수 승리 교칙" % id)
 		goals.append(law.goal())
-	check_eq(goals, int_array([6, 5, 5, 18, 4, 8, 4, 3]), "표의 목표 수치")
+	check_eq(goals, int_array([7, 6, 5, 18, 4, 8, 4, 3]), "표의 목표 수치")
 	check_eq(_law("LAW_01").law_name, "투기장의 지배자", "이름")
 	check_eq(_law("LAW_05").condition_text(), "말 4개 모두 트랙 위에서 서로 3칸 이상 간격", "조건 문구")
 
@@ -66,15 +66,15 @@ func test_arena_master_graduates_the_killer_and_removes_the_law() -> void:
 	var state: GameState = manager.state
 	add_law(state, "LAW_01")
 	add_law(state, "LAW_06")
-	state.law_stats[1] = {VictoryLaw.KILLS: 5}
+	state.law_stats[1] = {VictoryLaw.KILLS: 6}
 	place(state, 11, 2, [1])
 	place(state, 21, 4, [3])
 	manager.state.tools[1] = ScriptedTool.new([2])
 	manager.act(&"proceed", {"player_id": 1})
 	manager.act(&"roll", {"player_id": 1})
 	manager.act(&"select_pawn", {"player_id": 1, "pawn_id": 11})
-	check_eq(state.stat(1, VictoryLaw.KILLS), 6, "6번째 처치")
-	check_eq(state.rankings, int_array([1]), "처치한 차례가 끝나는 순간 6처치 확인 -> 1위 졸업 (라운드 끝까지 기다리지 않는다)")
+	check_eq(state.stat(1, VictoryLaw.KILLS), 7, "7번째 처치")
+	check_eq(state.rankings, int_array([1]), "처치한 차례가 끝나는 순간 7처치 확인 -> 1위 졸업 (라운드 끝까지 기다리지 않는다)")
 	check_eq(state.rank_reasons[1], &"LAW_01", "사유는 교칙 ID")
 	check(not state.rulebook.has_law("LAW_01"), "달성된 교칙은 법전에서 삭제")
 	check(state.rulebook.has_law("LAW_06"), "다른 교칙은 남는다")
@@ -87,14 +87,14 @@ func test_hand_law_is_checked_when_my_turn_starts() -> void:
 	var manager: TurnManager = _new_manager(3)
 	var state: GameState = manager.state
 	add_law(state, "LAW_02")
-	for i: int in 5:
+	for i: int in 6:
 		state.give_card(2, &"ACT_04")
 	check(not state.is_graduated(2), "남의 턴에 카드가 쌓여도 아직")
 	manager.state.tools[1] = ScriptedTool.new([1])
 	manager.act(&"proceed", {"player_id": 1})
 	manager.act(&"roll", {"player_id": 1})
 	manager.act(&"select_pawn", {"player_id": 1, "pawn_id": 11})
-	check(state.rankings.is_empty() and state.current_player == 2, "P2 턴 시작에 손패 5장이 기록되지만 아직 졸업하지 않는다")
+	check(state.rankings.is_empty() and state.current_player == 2, "P2 턴 시작에 손패 6장이 기록되지만 아직 졸업하지 않는다")
 	_finish_round(manager)
 	check_eq(state.rankings, int_array([2]), "라운드 끝 판정에서 P2 졸업")
 	_dispose(manager)
@@ -148,8 +148,8 @@ func test_same_law_achievers_at_round_end_only_the_leader_graduates() -> void:
 	var manager: TurnManager = _new_manager(3)
 	var state: GameState = manager.state
 	add_law(state, "LAW_01")
-	state.law_stats[1] = {VictoryLaw.KILLS: 6}
-	state.law_stats[3] = {VictoryLaw.KILLS: 6}
+	state.law_stats[1] = {VictoryLaw.KILLS: 7}
+	state.law_stats[3] = {VictoryLaw.KILLS: 7}
 	place(state, 31, 20, [19])
 	place(state, 11, 4, [3])
 	_finish_round(manager)
@@ -208,7 +208,7 @@ func test_capture_graduates_right_after_the_acting_turn_not_mid_move() -> void:
 	var manager: TurnManager = _new_manager(4)
 	var state: GameState = manager.state
 	add_law(state, "LAW_01")
-	state.law_stats[1] = {VictoryLaw.KILLS: 5}
+	state.law_stats[1] = {VictoryLaw.KILLS: 6}
 	var order: Array[StringName] = []
 	manager.event_received.connect(func(kind: StringName, _data: Dictionary) -> void:
 		if kind in [&"move_resolved", &"special_victory_judgement", &"player_ranked"]:
@@ -220,7 +220,7 @@ func test_capture_graduates_right_after_the_acting_turn_not_mid_move() -> void:
 	manager.act(&"roll", {"player_id": 1})
 	check(state.rankings.is_empty(), "굴리고 아직 움직이지 않았을 때는 판정이 없다")
 	manager.act(&"select_pawn", {"player_id": 1, "pawn_id": 11})
-	check_eq(state.stat(1, VictoryLaw.KILLS), 6, "처치로 진행도가 오른다")
+	check_eq(state.stat(1, VictoryLaw.KILLS), 7, "처치로 진행도가 오른다")
 	check_eq(order, [&"move_resolved", &"special_victory_judgement", &"player_ranked"] as Array[StringName], "이동·처치가 끝난 뒤 판정, 그 뒤 순위 확정")
 	check_eq(state.rankings, int_array([1]), "라운드 끝을 기다리지 않고 바로 1위 졸업")
 	check(state.round_number == 1, "아직 1라운드")
@@ -233,7 +233,7 @@ func test_graduate_and_destroyed_law_are_never_checked_again_in_later_rounds() -
 	var manager: TurnManager = _new_manager(4)
 	var state: GameState = manager.state
 	add_law(state, "LAW_01")
-	state.law_stats[1] = {VictoryLaw.KILLS: 6}
+	state.law_stats[1] = {VictoryLaw.KILLS: 7}
 	var ranked: Array[int] = []
 	manager.event_received.connect(func(kind: StringName, data: Dictionary) -> void:
 		if kind == &"player_ranked":
@@ -244,7 +244,7 @@ func test_graduate_and_destroyed_law_are_never_checked_again_in_later_rounds() -
 	# 남은 사람이 같은 교칙을 다시 제정해도 졸업한 P1의 옛 기록 때문에 P1이 다시 걸리지 않는다.
 	state.law_stats[1] = {VictoryLaw.KILLS: 99}
 	add_law(state, "LAW_01")
-	state.law_stats[3] = {VictoryLaw.KILLS: 6}
+	state.law_stats[3] = {VictoryLaw.KILLS: 7}
 	_finish_round(manager)
 	check_eq(ranked.count(1), 1, "P1은 한 번만 순위를 받는다")
 	check_eq(state.rankings, int_array([1, 3]), "다음 라운드에는 새로 달성한 P3만 졸업한다")

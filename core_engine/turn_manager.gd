@@ -1175,21 +1175,11 @@ func _enter_round_start() -> void:
 		_begin_turn()
 
 
-## 템포 업: 단계가 오르는 라운드(TempoUp.STAGE_ROUNDS, 8·15·22)는 라운드를 선언하기 전에 경고 이벤트를 먼저 보낸다.
-## 2단계(15R)는 법전에 무작위 특수 승리를 하나 올리고, 3단계부터는 라운드마다 결승선이 당겨져 그 안에 선 말이 바로 완주한다.
+## 템포 업: 단계가 오르는 라운드(TempoUp.STAGE_ROUNDS, 6·11·16)는 라운드를 선언하기 전에 경고 이벤트를 먼저 보낸다.
+## 2단계(11R)는 법전에 무작위 특수 승리를 하나 올리고, 3단계(16R)는 결승선을 한 번 4칸 당겨 그 안에 선 말이 바로 완주한다.
 ## 완주로 게임이 끝났으면 true.
 func _apply_tempo_up() -> bool:
 	var round_number: int = state.round_number
-	# 라스트 스퍼트 마감: 첫 졸업 뒤 SPURT_ROUNDS 라운드가 지나도 남은 사람은 레이스 진행도 순으로 순위를 확정하고 끝낸다
-	if state.spurt_round >= 0 and round_number > state.spurt_round + MatchRules.SPURT_ROUNDS and not is_game_over:
-		var active: Array[int] = state.active_players(player_order)
-		if active.size() >= 1:
-			var order: Array = VictoryChecker.sort_by_race(state, active)
-			_emit_event(&"race_ranked", {"players": order, "spurt_deadline": true})
-			for index: int in order.size():
-				_graduate(order[index], VictoryChecker.LAST_PLACE if index == order.size() - 1 else VictoryChecker.RACE_ORDER)
-			_end_game()
-			return true
 	if TempoUp.is_stage_round(round_number):
 		var stage: int = TempoUp.level(round_number)
 		var lines: Array[String] = TempoUp.effect_lines(stage)
@@ -1198,16 +1188,17 @@ func _apply_tempo_up() -> bool:
 		_emit_event(&"tempo_up", {"round": round_number, "level": stage, "lines": lines})
 		if stage == 2:
 			_enact_random_law()
-	var zone_start: int = TempoUp.zone_start(state)
+	var zone_start: int = TempoUp.goal_zone_start(round_number)
 	if zone_start < 0:
 		return false
 	var finished: Array[int] = []
 	for pawn: PlayerPawn in state.get_active_pawns():
-		if pawn.carrier == null and pawn.has_left_start and not pawn.is_finished and pawn.can_finish(state) and TempoUp.in_zone(state, pawn.current_tile_idx):
+		if pawn.carrier == null and pawn.has_left_start and not pawn.is_finished and pawn.can_finish(state) and TempoUp.in_goal_zone(round_number, pawn.current_tile_idx):
 			for member: PlayerPawn in pawn.stack_members():
 				finished.append(member.entity_id)
 			state.finish_stack(pawn)
-	_emit_event(&"goal_shrunk", {"round": round_number, "zone_start": zone_start, "shrink": TempoUp.goal_shrink_for(state), "finished": finished, "spurt": state.spurt_round >= 0})
+	if TempoUp.is_stage_round(round_number) or not finished.is_empty():
+		_emit_event(&"goal_shrunk", {"round": round_number, "zone_start": zone_start, "shrink": TempoUp.goal_shrink(round_number), "finished": finished})
 	if finished.is_empty():
 		return false
 	for entry: Dictionary in VictoryChecker.newly_qualified(state, player_order, current_player_id(), false):
@@ -1223,7 +1214,6 @@ func _enact_random_law() -> void:
 	for definition: AugmentDef in AugmentRegistry.all():
 		if definition.category == GameEnums.AugmentCategory.LAW_ENACT and definition.enabled and not state.rulebook.has_law(String(definition.payload)) and not candidates.has(String(definition.payload)):
 			candidates.append(String(definition.payload))
-	candidates = candidates.filter(func(law_id: String) -> bool: return MatchRules.law_allowed(state, law_id))  # Lv.1 크림: 쉬운 법전 2종만
 	if candidates.is_empty():
 		return
 	var law: LawResource = LawRegistry.create(candidates[state.rng.randi_range(0, candidates.size() - 1)])
@@ -1385,20 +1375,11 @@ func _apply_roll_result(result: RollResult) -> void:
 		if int(state.gambler_round.get(roller, -1)) == state.round_number:
 			_emit_event(&"gambler_doubled", {"player_id": roller, "from": boosted, "to": boosted * SuperAugments.gambler_multiplier()})
 			boosted *= SuperAugments.gambler_multiplier()
-		# 템포 업: 최종 이동 칸에 단계별 보너스 (8R +1 / 15R +2 / 22R +3)
+		# 템포 업: 최종 이동 칸에 단계별 보너스 (6R +1 / 11R +2 / 16R +3)
 		var tempo: int = TempoUp.move_bonus(state.round_number)
 		if tempo > 0:
 			_emit_event(&"tempo_boosted", {"player_id": roller, "from": boosted, "to": boosted + tempo, "level": TempoUp.level(state.round_number)})
 			boosted += tempo
-		# 완주 탄력: 완주한 내 말 수만큼 +칸 / 라스트 스퍼트: 1위가 나온 뒤 +3칸
-		var momentum: int = MatchRules.momentum_bonus(state, roller)
-		if momentum > 0:
-			_emit_event(&"momentum_boosted", {"player_id": roller, "from": boosted, "to": boosted + momentum})
-			boosted += momentum
-		var spurt: int = MatchRules.spurt_bonus(state)
-		if spurt > 0:
-			_emit_event(&"spurt_boosted", {"player_id": roller, "from": boosted, "to": boosted + spurt})
-			boosted += spurt
 		move_queue.append(boosted)
 	_roll_chain += 1
 	SpecialVictory.note_session(state, current_player_id(), VictoryLaw.BEST_CHAIN, _roll_chain)  # 🏆 초전도체 무한 동력
@@ -1471,7 +1452,7 @@ func _execute_move(pawn: PlayerPawn, forced_path: Array[int] = []) -> void:
 	var forced: bool = not forced_path.is_empty()
 	ctx.dice_value = forced_path.size() if forced else move_queue.pop_front()
 	# 대기열의 눈금은 모두 굴림에서 왔고 템포 업 보너스가 이미 더해져 있다 (같은 라운드). 필살기 직선 이동에는 없다.
-	_move_tempo_bonus = 0 if forced else TempoUp.move_bonus(state.round_number) + MatchRules.momentum_bonus(state, current_player_id()) + MatchRules.spurt_bonus(state)
+	_move_tempo_bonus = 0 if forced else TempoUp.move_bonus(state.round_number)
 	ctx.raw_roll = ctx.dice_value
 	ctx.direction = state.movement_direction()
 	ctx.defer_stack_choice = stack_choice_enabled
@@ -1684,10 +1665,6 @@ func _graduate(player_id: int, reason: StringName) -> void:
 	var rank: int = state.graduate(player_id, reason)
 	SpecialVictory.on_graduated(state, player_id, reason)
 	_emit_event(&"player_ranked", {"player_id": player_id, "rank": rank, "reason": reason})
-	# 라스트 스퍼트: 첫 졸업이 나오면 남은 사람은 이동 +3칸, 다음 라운드부터 결승선이 라운드마다 2칸씩 당겨져 3~4라운드 안에 끝난다
-	if state.spurt_round < 0 and bool(state.match_rules.get("spurt", true)) and not is_game_over:
-		state.spurt_round = state.round_number
-		_emit_event(&"last_spurt", {"round": state.round_number, "move_bonus": MatchRules.SPURT_MOVE_BONUS, "goal_shrink": MatchRules.SPURT_GOAL_SHRINK})
 
 
 func _end_game() -> void:

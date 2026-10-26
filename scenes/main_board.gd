@@ -2618,7 +2618,7 @@ func _refresh_tiles() -> void:
 				tips.append(_trap_tooltip(attachment))
 			elif attachment.attachment_id == "HOTEL":
 				tips.append("호텔 (P%d) - 다른 플레이어가 멈추면 통행료" % attachment.owner_id)  # 칸 위 글자 대신 호텔 건물 모형이 선다 (_refresh_structures)
-		var in_goal: bool = TempoUp.in_zone(state, index)
+		var in_goal: bool = TempoUp.in_goal_zone(state.round_number, index)
 		(_tile_views[index] as BoardSkin.Tile).set_goal(in_goal)
 		if in_goal:
 			tips.append("당겨진 결승선 (템포 업): 여기 들어서면 완주")
@@ -9535,7 +9535,7 @@ func _on_game_over(winner_id: int, reason: StringName) -> void:
 	_refresh_all()
 
 
-## 판을 끝낸 결정적 사유 한 줄: "에르핀님이 '투기장의 지배자(적 말을 6회 처치)' 법전을 달성하여 1위로 졸업했습니다!"
+## 판을 끝낸 결정적 사유 한 줄: "에르핀님이 '투기장의 지배자(적 말을 7회 처치)' 법전을 달성하여 1위로 졸업했습니다!"
 ## 남은 컴퓨터를 레이스 순으로 매기거나 마지막 한 명을 꼴찌로 매긴 것은 사유가 아니다: 그 직전의 졸업을 쓴다.
 func match_end_reason() -> String:
 	var entry: Dictionary = _decisive_rank
@@ -9549,6 +9549,8 @@ func match_end_reason() -> String:
 	if LawRegistry.ALL_IDS.has(String(reason)):
 		var law: LawResource = LawRegistry.create(String(reason))
 		return "%s님이 '%s(%s)' 법전을 달성하여 %d위로 졸업했습니다!" % [who, law.law_name, law.description, int(entry["rank"])]
+	if MatchRules.finish_target(state) < MatchRules.FULL_FINISH:
+		return "%s님이 말 %d개를 완주하여 %d위로 졸업했습니다!" % [who, MatchRules.finish_target(state), int(entry["rank"])]
 	return "%s님이 말 4개를 모두 완주하여 %d위로 졸업했습니다!" % [who, int(entry["rank"])]
 
 
@@ -9805,25 +9807,8 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_refresh_tiles()
 			_log_line("[템포 업] 결승선이 %d칸 당겨졌습니다 (%d번 칸부터 결승)%s" % [data["shrink"], data["zone_start"], ", 완주 %d" % finished_ids.size() if not finished_ids.is_empty() else ""], Color("ffd43b"))
 			_record(-1, "결승선 %d칸 당겨짐 (%d번부터 결승)%s" % [int(data["shrink"]), int(data["zone_start"]), " - 말 %d개 즉시 완주!" % finished_ids.size() if not finished_ids.is_empty() else ""])
-			var first_spurt_shrink: bool = bool(data.get("spurt", false)) and state.spurt_round >= 0 and int(data["round"]) == state.spurt_round + 1
-			if TempoUp.is_stage_round(int(data["round"])) or not finished_ids.is_empty() or first_spurt_shrink:
-				_announce("템포 업", "결승선이 당겨진다!", "%d번 칸부터 결승선 - 라운드마다 %d칸씩 더 당겨집니다%s" % [data["zone_start"], TempoUp.GOAL_SHRINK_PER_ROUND, "\n말 %d개가 그 자리에서 완주!" % finished_ids.size() if not finished_ids.is_empty() else ""], Color("ffd43b"), null, 2.0)
-		&"momentum_boosted":
-			_roll_total[int(data["player_id"])] = int(data["to"])
-			_add_roll_reason(int(data["player_id"]), "완주 탄력 +%d" % (int(data["to"]) - int(data["from"])))
-		&"spurt_boosted":
-			_roll_total[int(data["player_id"])] = int(data["to"])
-			_add_roll_reason(int(data["player_id"]), "라스트 스퍼트 +%d" % (int(data["to"]) - int(data["from"])))
-		&"last_spurt":
-			_log_line("[라스트 스퍼트] 첫 졸업! 남은 플레이어 이동 +%d칸, 다음 라운드부터 결승선이 라운드마다 %d칸씩 당겨집니다" % [int(data["move_bonus"]), int(data["goal_shrink"])], Color("ff922b"))
-			var spurt_move: int = int(data["move_bonus"])
-			var spurt_goal: int = int(data["goal_shrink"])
-			_enqueue_late(func() -> void:
-				_record(-1, "[color=#ff922b][b]라스트 스퍼트![/b] 남은 플레이어 이동 +%d칸 · 결승선 라운드마다 %d칸씩 당겨짐[/color]" % [spurt_move, spurt_goal], "", false, true)
-				_announce_now("라스트 스퍼트", "[라스트 스퍼트!]", "남은 플레이어 모든 이동 +%d칸\n다음 라운드부터 결승선이 라운드마다 %d칸씩 당겨집니다\n%d라운드 뒤에는 진행 순위로 경기가 끝납니다" % [spurt_move, spurt_goal, MatchRules.SPURT_ROUNDS], Color("ff922b"), null, 2.6))
-		&"race_ranked":
-			if bool(data.get("spurt_deadline", false)):
-				_log_line("[라스트 스퍼트 마감] 남은 플레이어는 진행 순위로 순위가 확정됩니다", Color("ff922b"))
+			if TempoUp.is_stage_round(int(data["round"])) or not finished_ids.is_empty():
+				_announce("템포 업", "결승선이 당겨진다!", "%d번 칸부터 결승선%s" % [data["zone_start"], "\n말 %d개가 그 자리에서 완주!" % finished_ids.size() if not finished_ids.is_empty() else ""], Color("ffd43b"), null, 2.0)
 		&"tempo_boosted":
 			_roll_total[int(data["player_id"])] = int(data["to"])
 			_add_roll_reason(int(data["player_id"]), "템포 업 +%d" % (int(data["to"]) - int(data["from"])))
