@@ -2190,3 +2190,14 @@ v%s · 비공식 팬게임 (원작사와 무관한 비영리 무료 배포물),v
 [ %d / %d 처치 ],[ %d / %d KOs ],[ %d / %d 撃破 ]
 킬,KOs,撃破
 구역,zones,区域
+"입문 추천! 말 3개만 완주하면 졸업, 법전은 쉬운 2종만","Beginner pick! Finish with just 3 pawns, only 2 easy Laws",入門におすすめ！駒3つ完走で卒業、法典はやさしい2種だけ
+완주 탄력 +%d,Finish Momentum +%d,完走の弾み +%d
+라스트 스퍼트 +%d,Last Spurt +%d,ラストスパート +%d
+라스트 스퍼트,Last Spurt,ラストスパート
+[라스트 스퍼트!],[Last Spurt!],[ラストスパート！]
+"남은 플레이어 모든 이동 +%d칸
+다음 라운드부터 결승선이 라운드마다 %d칸씩 당겨집니다","All remaining players move +%d
+From next round the finish line pulls in %d tiles each round","残りのプレイヤーは全移動 +%dマス
+次のラウンドからゴールが毎ラウンド%dマスずつ近づきます"
+[color=#ff922b][b]라스트 스퍼트![/b] 남은 플레이어 이동 +%d칸 · 결승선 라운드마다 %d칸씩 당겨짐[/color],[color=#ff922b][b]Last Spurt![/b] Remaining players move +%d · finish line pulls in %d tiles per round[/color],[color=#ff922b][b]ラストスパート！[/b] 残りのプレイヤー移動 +%dマス · ゴールが毎ラウンド%dマス近づく[/color]
+"[라스트 스퍼트] 첫 졸업! 남은 플레이어 이동 +%d칸, 다음 라운드부터 결승선이 라운드마다 %d칸씩 당겨집니다",[Last Spurt] First graduate! Remaining players move +%d; from next round the finish line pulls in %d tiles each round,[ラストスパート] 初卒業！残りのプレイヤー移動 +%dマス、次のラウンドからゴールが毎ラウンド%dマスずつ近づきます

@@ -349,7 +349,7 @@ static func apply_step(
 			return StepOutcome.FINISHED
 		return StepOutcome.HALTED
 
-	if is_forward and (destination == GameEnums.GOAL_TILE or TempoUp.in_goal_zone(state.round_number, destination)) and mover.can_finish(state):
+	if is_forward and (destination == GameEnums.GOAL_TILE or TempoUp.in_zone(state, destination)) and mover.can_finish(state):
 		if not is_last and ctx.exact_goal_required:
 			report.bounced = true
 			return StepOutcome.CONTINUE

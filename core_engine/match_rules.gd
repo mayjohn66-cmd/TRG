@@ -15,6 +15,14 @@ extends RefCounted
 const SPEED_NORMAL: StringName = &"normal"
 const SPEED_FAST: StringName = &"speed"
 const SUPER_FREQS: Array[int] = [0, 1, 2, 3]
+## 졸업에 필요한 완주 말 수: 기본 4개, Lv.1 크림 쾌속 완주 3개.
+const FULL_FINISH: int = 4
+const FAST_FINISH: int = 3
+## Lv.1 크림에 나오는 쉬운 법전: 투기장의 지배자(처치) · 봉인된 에르핀의 식권(손패).
+const EASY_LAWS: Array[String] = ["LAW_01", "LAW_02"]
+## 라스트 스퍼트(1위가 나온 뒤): 남은 사람의 이동 보너스와 라운드마다 당겨지는 결승선 칸 수.
+const SPURT_MOVE_BONUS: int = 3
+const SPURT_GOAL_SHRINK: int = 2
 ## 친선전 원클릭 프리셋: [키, 이름, 설명, 규칙 값]. 고르면 세 값을 한 번에 맞춘다 (속도·봇 난이도는 그대로).
 const PRESET_CLASSIC: StringName = &"classic"
 const PRESET_STANDARD: StringName = &"standard"
@@ -37,16 +45,19 @@ const EASY_FRIENDLY_FACTOR: float = 1.6
 
 
 static func defaults() -> Dictionary:
-	return {"trap_reveal": true, "super_freq": 1, "laws": true, "speed": SPEED_NORMAL, "draft_easy": false, "bot_level": BotTemper.DEFAULT_LEVEL}
+	return {"trap_reveal": true, "super_freq": 1, "laws": true, "speed": SPEED_NORMAL, "draft_easy": false, "bot_level": BotTemper.DEFAULT_LEVEL,
+		"finish_target": FULL_FINISH, "law_pool": [], "momentum": true, "spurt": true}
 
 
-## 싱글 불닭 난이도의 기본 규칙: Lv.1~3 함정 공개, Lv.4~5 비공개. Lv.1은 입문 드래프트 + 특수 승리 법전 없음(말 4개 완주 승부만):
-## 첫 판에 영문도 모른 채 특수 승리로 끝나 당황하지 않게, 기본 레이스·기물·주사위부터 익힌다 (2026-10-26). Lv.2부터 법전이 나온다.
+## 싱글 불닭 난이도의 기본 규칙: Lv.1~3 함정 공개, Lv.4~5 비공개. Lv.1은 입문 드래프트 + 쾌속 완주:
+## 말 3개만 완주하면 졸업(FAST_FINISH)하고, 법전은 이해하기 쉬운 처치·손패 2종(EASY_LAWS)만 나온다 (2026-10-26 시뮬레이션: 법전을 아예 빼면 첫 졸업이 27.7라운드로 가장 길었다).
 static func for_difficulty(level: int) -> Dictionary:
 	var rules: Dictionary = defaults()
 	rules["trap_reveal"] = level <= 3
 	rules["draft_easy"] = level == 1
-	rules["laws"] = level >= 2
+	if level == 1:
+		rules["finish_target"] = FAST_FINISH
+		rules["law_pool"] = EASY_LAWS.duplicate()
 	return rules
 
 
@@ -63,7 +74,45 @@ static func sanitize(value: Variant) -> Dictionary:
 	rules["speed"] = SPEED_FAST if str(raw.get("speed", "")) == String(SPEED_FAST) else SPEED_NORMAL
 	rules["draft_easy"] = bool(raw.get("draft_easy", false))
 	rules["bot_level"] = BotTemper.sanitize(raw.get("bot_level", BotTemper.DEFAULT_LEVEL))
+	rules["finish_target"] = clampi(int(raw.get("finish_target", FULL_FINISH)), FAST_FINISH, FULL_FINISH)
+	var pool: Array = []
+	if raw.get("law_pool", []) is Array:
+		for law_id: Variant in raw.get("law_pool", []):
+			if LawRegistry.ALL_IDS.has(str(law_id)) and not pool.has(str(law_id)):
+				pool.append(str(law_id))
+	rules["law_pool"] = pool
+	rules["momentum"] = bool(raw.get("momentum", true))
+	rules["spurt"] = bool(raw.get("spurt", true))
 	return rules
+
+
+## 졸업에 필요한 완주 말 수 (기본 4, Lv.1 크림 3).
+static func finish_target(state: GameState) -> int:
+	return int(of(state).get("finish_target", FULL_FINISH))
+
+
+## 이 법전이 이번 판에 나올 수 있는가 (law_pool이 비어 있으면 모두).
+static func law_allowed(state: GameState, law_id: String) -> bool:
+	var pool: Array = of(state).get("law_pool", [])
+	return pool.is_empty() or pool.has(law_id)
+
+
+## 완주 탄력: 말을 하나 완주할 때마다 남은 내 말의 이동 +1칸 (완주한 말 수만큼).
+static func momentum_bonus(state: GameState, player_id: int) -> int:
+	if state == null or not bool(of(state).get("momentum", true)):
+		return 0
+	var finished: int = 0
+	for pawn: PlayerPawn in state.pawns_of(player_id):
+		if pawn.is_finished:
+			finished += 1
+	return finished
+
+
+## 라스트 스퍼트: 누군가 1위로 졸업한 뒤 남은 사람의 모든 이동 +SPURT_MOVE_BONUS칸.
+static func spurt_bonus(state: GameState) -> int:
+	if state == null or state.spurt_round < 0:
+		return 0
+	return SPURT_MOVE_BONUS
 
 
 ## 규칙이 꼭 맞는 프리셋 키 (없으면 &"").
@@ -120,6 +169,8 @@ static func weight_factor(state: GameState, def: AugmentDef) -> float:
 		GameEnums.AugmentCategory.LAW_ENACT:
 			if not bool(rules.get("laws", true)):
 				return 0.0
+			if not law_allowed(state, String(def.payload)):
+				return 0.0  # Lv.1 크림: 쉬운 법전 2종만
 			if bool(rules.get("draft_easy", false)):
 				factor *= EASY_LAW_FACTOR
 		GameEnums.AugmentCategory.PAWN_EVOLUTION, GameEnums.AugmentCategory.TOOL_SWAP:

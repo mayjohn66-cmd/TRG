@@ -94,6 +94,8 @@ var boost_gimmicks: bool = true
 var match_rules: Dictionary = MatchRules.defaults()
 var current_player: int = -1
 var round_number: int = 1
+## 라스트 스퍼트가 시작된 라운드 (누군가 처음 졸업한 라운드, 없으면 -1): 남은 사람 이동 +3칸, 다음 라운드부터 결승선이 2칸씩 당겨진다.
+var spurt_round: int = -1
 ## 남은 '전체 역주행' 라운드 수 (ACT_01).
 var reverse_move_rounds_left: int = 0
 ## 이번 턴 첫 굴림 결과에 더할 값 (ACT_04 긴급 로켓 부스터). 굴림에 쓰이거나 턴이 시작되면 0으로 돌아간다.
@@ -178,6 +180,7 @@ func clear_npcs() -> void:
 ## 생략하면 모두 진화하지 않은 기본 말이다.
 func setup(ids: Array[int], seed_value: int = 0, loadouts: Dictionary = {}) -> void:
 	player_ids = ids.duplicate()
+	spurt_round = -1
 	match_rules = MatchRules.sanitize(match_rules)
 	TempoUp.stage_rounds = MatchRules.stage_rounds(match_rules)  # 템포 업은 라운드 번호만 보는 순수 함수라 판마다 규칙의 라운드를 넣어 둔다
 	if seed_value != 0:
