@@ -26,7 +26,7 @@ const PRESETS: Array = [
 	[PRESET_STANDARD, "오리지널 표준", "법전 켜기 · 함정 공개 · 초증강 기본", {"laws": true, "trap_reveal": true, "super_freq": 1}],
 	[PRESET_MIND, "우정파괴 심리전", "법전 켜기 · 함정 비공개 · 초증강 축제 (확률 2배)", {"laws": true, "trap_reveal": false, "super_freq": 2}],
 ]
-## 스피드전 템포 업 라운드 (기본 8·15·22).
+## 스피드전 템포 업 라운드 (기본 7·14·20).
 const SPEED_STAGE_ROUNDS: Array[int] = [4, 8, 12]
 ## 스피드전 리벤지 부스터 추가 칸.
 const SPEED_REVENGE_EXTRA: int = 2

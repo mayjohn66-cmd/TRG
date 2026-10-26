@@ -1,23 +1,23 @@
 # File: res://core_engine/rules/tempo_up.gd
 # Class: class_name TempoUp
-# Role: 판이 길어지면 라운드 단위로 게임을 가속한다 (템포 업). 8·15·22라운드에 단계가 오르고 (2026-10: 10·20·30에서 당겨 15~20라운드 안에 결판이 나게), 단계가 오르는 라운드가 시작될 때 크게 경고한다.
-#       1단계(8R, 과열): 최종 이동 +1칸 · 리벤지 부스터 +6칸 · 법전·초증강 등장 확률 상승
-#       2단계(15R, 광기): 최종 이동 +2칸 · 리벤지 부스터 +8칸 · 법전 빈자리에 무작위 특수 승리 1개 등록
-#       3단계(22R, 대붕괴): 전원 이동 +3칸 · 결승선이 라운드마다 2칸씩 당겨진다
+# Role: 판이 길어지면 라운드 단위로 게임을 가속한다 (템포 업). 7·14·20라운드에 단계가 오르고 (2026-10: 8·15·22에서 당겨 20라운드 안에 결판이 나게), 단계가 오르는 라운드가 시작될 때 크게 경고한다.
+#       1단계(7R, 과열): 최종 이동 +2칸 · 리벤지 부스터 +6칸 · 법전·초증강 등장 확률 상승
+#       2단계(14R, 광기): 최종 이동 +4칸 · 리벤지 부스터 +8칸 · 법전 빈자리에 무작위 특수 승리 1개 등록
+#       3단계(20R, 대붕괴): 전원 이동 +6칸 · 결승선이 라운드마다 2칸씩 당겨진다
 #       라운드 번호만으로 정해지는 순수 함수라 스냅샷·네트워크 동기화가 따로 필요 없다.
 class_name TempoUp
 extends RefCounted
 
 ## 단계가 오르는 라운드 (1단계, 2단계, 3단계).
-const STAGE_ROUNDS: Array[int] = [8, 15, 22]
+const STAGE_ROUNDS: Array[int] = [7, 14, 20]
 ## 단계별 부제 (경고 배너에 붙는다): 1단계 과열 · 2단계 광기 · 3단계 대붕괴.
 const STAGE_NAMES: Array[String] = ["", "과열", "광기", "대붕괴"]
 ## 단계별 최종 이동 보너스 (0단계 = 없음).
-const MOVE_BONUS: Array[int] = [0, 1, 2, 3]
+const MOVE_BONUS: Array[int] = [0, 2, 4, 6]
 ## 단계별 리벤지 부스터 칸 수 (0이면 기본값 그대로).
 const REVENGE_BONUS: Array[int] = [0, 6, 8, 8]
 ## 이번 판의 템포 업 라운드 (규칙 설정: 기본 STAGE_ROUNDS / 스피드전 MatchRules.SPEED_STAGE_ROUNDS). GameState.setup이 넣는다.
-static var stage_rounds: Array[int] = [8, 15, 22]
+static var stage_rounds: Array[int] = [7, 14, 20]
 ## 1단계부터 법전(특수 승리)·초증강 가중치에 곱하는 배수.
 const RARE_WEIGHT_MULTIPLIER: int = 3
 ## 3단계부터 라운드마다 결승선이 당겨지는 칸 수.
@@ -83,7 +83,7 @@ static func stage_name(stage: int) -> String:
 ## 경고 화면에 보여 줄 단계별 효과 문구.
 static func effect_lines(stage: int) -> Array[String]:
 	match stage:
-		1: return ["모든 굴림 최종 이동 +1칸", "리벤지 부스터 +6칸", "법전·초증강 증강 등장 확률 상승"] as Array[String]
-		2: return ["모든 굴림 최종 이동 +2칸", "리벤지 부스터 +8칸", "법전에 무작위 특수 승리 1개 등록"] as Array[String]
-		3: return ["전원 이동 +3칸", "결승선이 라운드마다 %d칸씩 당겨진다" % GOAL_SHRINK_PER_ROUND] as Array[String]
+		1: return ["모든 굴림 최종 이동 +%d칸" % MOVE_BONUS[1], "리벤지 부스터 +6칸", "법전·초증강 증강 등장 확률 상승"] as Array[String]
+		2: return ["모든 굴림 최종 이동 +%d칸" % MOVE_BONUS[2], "리벤지 부스터 +8칸", "법전에 무작위 특수 승리 1개 등록"] as Array[String]
+		3: return ["전원 이동 +%d칸" % MOVE_BONUS[3], "결승선이 라운드마다 %d칸씩 당겨진다" % GOAL_SHRINK_PER_ROUND] as Array[String]
 	return [] as Array[String]

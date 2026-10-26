@@ -2192,3 +2192,12 @@ v%s · 비공식 팬게임 (원작사와 무관한 비영리 무료 배포물),v
 구역,zones,区域
 [%d라운드 종료] 남은 플레이어는 진행 순위로 순위가 확정됩니다,[Round %d over] Remaining players are ranked by race standing,[%dラウンド終了] 残りのプレイヤーは進行順位で順位が確定します
 "입문 추천! 특수 승리는 쉬운 2종(처치·손패)만 나와요","Recommended for beginners! Only 2 easy special wins (KOs, hand)",入門におすすめ！特殊勝利は簡単な2種（撃破・手札）だけ
+7·14·20라운드,Rounds 7·14·20,7·14·20ラウンド
+7라운드 · 과열,Round 7 · Overheat,7ラウンド · オーバーヒート
+14라운드 · 광기,Round 14 · Frenzy,14ラウンド · 狂気
+20라운드 · 대붕괴,Round 20 · Meltdown,20ラウンド · 大崩壊
+최종 이동 +2칸 · 리벤지 +6칸 · 법전·초증강 확률 상승,Final move +2 · Revenge +6 · Codex & Hyper odds up,最終移動 +2マス · リベンジ +6マス · 法典・超増強の確率アップ
+최종 이동 +4칸 · 리벤지 +8칸 · 법전에 무작위 특수 승리 1개 등록,Final move +4 · Revenge +8 · 1 random Special Victory added to the Codex,最終移動 +4マス · リベンジ +8マス · 法典にランダムな特殊勝利を1つ登録
+전원 이동 +6칸 · 결승선이 라운드마다 2칸씩 당겨짐,Everyone +6 · finish line moves 2 spaces closer each round,全員の移動 +6マス · ゴールがラウンドごとに2マスずつ近づく
+모든 굴림 최종 이동 +%d칸,+%d spaces to every final move,すべての出目の最終移動 +%dマス
+전원 이동 +%d칸,Everyone +%d spaces,全員の移動 +%dマス

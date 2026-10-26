@@ -1180,7 +1180,7 @@ func _enter_round_start() -> void:
 		_begin_turn()
 
 
-## 템포 업: 단계가 오르는 라운드(TempoUp.STAGE_ROUNDS, 8·15·22)는 라운드를 선언하기 전에 경고 이벤트를 먼저 보낸다.
+## 템포 업: 단계가 오르는 라운드(TempoUp.STAGE_ROUNDS, 7·14·20)는 라운드를 선언하기 전에 경고 이벤트를 먼저 보낸다.
 ## 2단계(15R)는 법전에 무작위 특수 승리를 하나 올리고, 3단계부터는 라운드마다 결승선이 당겨져 그 안에 선 말이 바로 완주한다.
 ## 완주로 게임이 끝났으면 true.
 func _apply_tempo_up() -> bool:
@@ -1389,7 +1389,7 @@ func _apply_roll_result(result: RollResult) -> void:
 		if int(state.gambler_round.get(roller, -1)) == state.round_number:
 			_emit_event(&"gambler_doubled", {"player_id": roller, "from": boosted, "to": boosted * SuperAugments.gambler_multiplier()})
 			boosted *= SuperAugments.gambler_multiplier()
-		# 템포 업: 최종 이동 칸에 단계별 보너스 (8R +1 / 15R +2 / 22R +3)
+		# 템포 업: 최종 이동 칸에 단계별 보너스 (7R +2 / 14R +4 / 20R +6)
 		var tempo: int = TempoUp.move_bonus(state.round_number)
 		if tempo > 0:
 			_emit_event(&"tempo_boosted", {"player_id": roller, "from": boosted, "to": boosted + tempo, "level": TempoUp.level(state.round_number)})
