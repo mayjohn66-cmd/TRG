@@ -19,6 +19,15 @@ const POOL_SIZE: int = 12
 
 ## 이벤트 -> (설명, 파일 이름에 들어 있으면 쓰는 키워드들). 파일 이름이 이벤트 이름으로 시작하면(예: hop_01.ogg) 그것이 우선이고, 없으면 키워드(Kenney 팩 이름 등)로 찾는다.
 const EVENTS: Dictionary = {
+	&"rail_lay": ["기관차 레일 금속 연결", ["rail-lay"]],
+	&"train_chug": ["기관차 가속 구동음", ["train-chug"]],
+	&"train_whistle": ["기관차 출발 기적", ["train-whistle"]],
+	&"chain_pull": ["연대책임 사슬 당기기", ["chain-pull"]],
+	&"chain_lock": ["연대책임 자물쇠 결속", ["chain-lock"]],
+	&"bakery_door": ["빵집 문 열기", ["bakery-door"]],
+	&"bakery_rummage": ["빵집 안 우당탕 소동", ["bakery-rummage"]],
+	&"cutin_slash": ["도적단 컷인 날카로운 베기", ["cutin-slash"]],
+	&"pinball_hit": ["핀볼 쇠구슬 금속 범퍼 충돌", ["pinball-hit"]],
 	&"ui_click": ["버튼 클릭", ["click", "button", "select", "tap"]],
 	&"hop": ["말 점프 착지 (톡)", ["chip-lay", "chips-stack", "card-place", "place"]],
 	&"slam": ["내리찍기 (잡을 때 쾅)", ["impact", "thud", "slam", "chips-collide"]],
@@ -156,6 +165,14 @@ static func play(event: StringName, volume_db: float = 0.0, pitch_variance: floa
 		return
 	_last_play_ms[event] = now
 	var player: AudioStreamPlayer = _pool[_next % _pool.size()]
+	# Reuse idle voices before stealing one: rail/chug ticks must not truncate
+	# the locomotive whistle merely because the round-robin index wraps.
+	for offset: int in _pool.size():
+		var candidate: AudioStreamPlayer = _pool[(_next+offset) % _pool.size()]
+		if not candidate.playing:
+			player = candidate
+			_next += offset
+			break
 	_next += 1
 	player.stream = stream
 	player.volume_db = volume_db

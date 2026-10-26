@@ -33,3 +33,22 @@ Halli Galli adds `halli_bell_01.ogg`, a 0.72-second derivative of Kenney's
 `impactBell_heavy_000.ogg` (Impact Sounds, CC0). It is pitched up, shortened,
 faded and normalized for a small game bell. Rebuild this clip separately with
 `tools/audio/add_halli_bell.py`; processing and hashes are in the manifest.
+
+## Presentation effects (2026-10-26)
+
+12 additional mono Vorbis clips (24 kHz, approximately 68 KiB) cover nine events:
+rail placement, locomotive chug/whistle, chain pull/clasp, bakery door/commotion,
+raid cut-in slash and pinball metal contact. These replace unrelated generic
+sound cues at their existing animation/contact hooks.
+
+| Creator | Source | Recordings |
+| --- | --- | --- |
+| rubberduck | [80 CC0 RPG SFX](https://opengameart.org/content/80-cc0-rpg-sfx) | chain_01/02, lock_03, blade_03, metal_01/03, wood_03 |
+| Brian MacIntosh (BMacZero) | [Mechanical Sounds](https://opengameart.org/content/mechanical-sounds) | clank1, rattle1, squeakyclick1 |
+| Joseph Sardin / Axeline T. | [Train whistle, foley #6](https://bigsoundbank.com/train-whistle-foley-6-s3320.html) | locomotive-style whistle, recording 3320 |
+
+All three sources explicitly release these recordings under CC0. Notices are
+retained in `licenses/Presentation-CC0.txt`. Rebuild only these additions with
+`tools/audio/add_presentation_sfx.py`; the manifest records original and output
+hashes, trims, pitch changes, filtering, fades and level targets. Uncompressed
+downloads remain outside the game export.

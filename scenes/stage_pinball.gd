@@ -163,7 +163,7 @@ func _process(delta: float) -> void:
 		_last_bounce += 1
 		bounced = true
 	if bounced and _elapsed < _arrival:
-		Sfx.play(&"hop", -11.0, 0.0, 1.5 + 0.04 * (_last_bounce % 4))
+		Sfx.play(&"pinball_hit", -5.0, 0.0, 1.0 + 0.04 * (_last_bounce % 4))
 	if _elapsed >= _arrival and not _result_played:
 		_result_played = true
 		Sfx.play(&"good", -6.0, 0.0)

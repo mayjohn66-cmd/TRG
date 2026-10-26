@@ -29,6 +29,7 @@ on:
           - rulebook-art
           - avatar-hq
           - title-logo
+          - presentation-sfx
           - castling
           - bakery
           - sniper
@@ -61,7 +62,9 @@ jobs:
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
           REQUESTED_SCOPE: ${{ inputs.validation }}
         run: |
-          if [[ "${REQUESTED_SCOPE}" == "title-logo" || "${COMMIT_MESSAGE}" == *"[check:title-logo]"* ]]; then
+          if [[ "${REQUESTED_SCOPE}" == "presentation-sfx" || "${COMMIT_MESSAGE}" == *"[check:presentation-sfx]"* ]]; then
+            echo "scope=presentation-sfx" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "title-logo" || "${COMMIT_MESSAGE}" == *"[check:title-logo]"* ]]; then
             echo "scope=title-logo" >> "${GITHUB_OUTPUT}"
           elif [[ "${REQUESTED_SCOPE}" == "avatar-hq" || "${COMMIT_MESSAGE}" == *"[check:avatar-hq]"* ]]; then
             echo "scope=avatar-hq" >> "${GITHUB_OUTPUT}"
@@ -160,7 +163,7 @@ jobs:
           if grep -q 'SCRIPT ERROR' /tmp/profile_stamps.log; then exit 1; fi
 
       - name: Run focused bond presentation check
-        if: steps.validation.outputs.scope == 'bond'
+        if: steps.validation.outputs.scope == 'bond' || steps.validation.outputs.scope == 'presentation-sfx'
         run: |
           set -o pipefail
           godot --headless --path . -s res://tests/ui_bond_test.gd 2>&1 | tee /tmp/ui_bond_test.log
@@ -184,7 +187,7 @@ jobs:
           if grep -q 'SCRIPT ERROR' /tmp/ui_sniper_test.log; then exit 1; fi
 
       - name: Run focused bakery presentation check
-        if: steps.validation.outputs.scope == 'bakery'
+        if: steps.validation.outputs.scope == 'bakery' || steps.validation.outputs.scope == 'presentation-sfx'
         run: |
           set -o pipefail
           godot --headless --path . -s res://tests/ui_bakery_test.gd 2>&1 | tee /tmp/ui_bakery_test.log
@@ -216,7 +219,7 @@ jobs:
           if grep -q 'SCRIPT ERROR' /tmp/ui_gambler_test.log; then exit 1; fi
 
       - name: Run focused raid presentation check
-        if: steps.validation.outputs.scope == 'raid'
+        if: steps.validation.outputs.scope == 'raid' || steps.validation.outputs.scope == 'presentation-sfx'
         run: |
           set -o pipefail
           godot --headless --path . -s res://tests/ui_raid_test.gd 2>&1 | tee /tmp/ui_raid_test.log
@@ -260,8 +263,15 @@ jobs:
         run: godot --headless --path . -s res://tests/run_tests.gd
 
       - name: Validate curated sound assets and override priority
-        if: steps.validation.outputs.scope == 'full'
+        if: steps.validation.outputs.scope == 'full' || steps.validation.outputs.scope == 'presentation-sfx'
         run: godot --headless --path . -s res://tests/sfx_assets_test.gd
+
+      - name: Check pinball audio contact hook
+        if: steps.validation.outputs.scope == 'presentation-sfx'
+        run: |
+          set -o pipefail
+          godot --headless --path . --check-only -s res://scenes/stage_pinball.gd 2>&1 | tee /tmp/pinball_audio.log
+          if grep -q 'SCRIPT ERROR' /tmp/pinball_audio.log; then exit 1; fi
 
       - name: Run UI smoke test (full game without cheats)
         if: steps.validation.outputs.scope == 'full'
@@ -324,7 +334,7 @@ jobs:
         run: godot --headless --path . -s res://tests/ui_alkkagi_test.gd
 
       - name: Run track laying and runaway train presentation test
-        if: steps.validation.outputs.scope == 'full' || steps.validation.outputs.scope == 'train'
+        if: steps.validation.outputs.scope == 'full' || steps.validation.outputs.scope == 'train' || steps.validation.outputs.scope == 'presentation-sfx'
         run: godot --headless --path . -s res://tests/ui_train_test.gd
 
       - name: Run duel game selection slot and introduction test
@@ -393,6 +403,9 @@ jobs:
           # 내보낸 묶음을 직접 읽어 웹에서만 깨지는 데이터(문구 표·밸런스 CSV)를 검사한다
           if [[ "${VALIDATION_SCOPE}" == "full" ]]; then
             (cd build/web && godot --headless --main-pack index.pck -s "$GITHUB_WORKSPACE/tests/export_smoke.gd")
+          fi
+          if [[ "${VALIDATION_SCOPE}" == "presentation-sfx" ]]; then
+            (cd build/web && godot --headless --main-pack index.pck -s "$GITHUB_WORKSPACE/tests/sfx_assets_test.gd")
           fi
           # 아바타 애니메이션은 본체에서 빼고 아바타별 묶음(avatars/<id>.pck)으로 따로 내보낸다: 게임이 필요한 것부터 뒤에서 받는다 (scenes/avatar_packs.gd)
           python3 tools/export_avatar_packs.py godot build/web/avatars

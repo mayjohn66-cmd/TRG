@@ -99,12 +99,13 @@ func _process(delta: float) -> void:
 		&"approach":
 			if elapsed>=APPROACH_END:
 				_set_phase(&"enter")
+				Sfx.play(&"bakery_door",-5.0,0.02)
 		&"enter":
 			if elapsed>=ENTER_END:
 				_set_phase(&"rummage")
 		&"rummage":
 			while commotions<IMPACTS.size() and elapsed-ENTER_END>=float(IMPACTS[commotions]):
-				Sfx.play(&"yut_clack" if commotions%2==0 else &"thud",-7.0)
+				Sfx.play(&"bakery_rummage",-4.0,0.05)
 				commotions += 1
 				if commotions==IMPACTS.size():
 					board.screen_shake(2.5,0.10*pace)

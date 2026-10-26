@@ -61,7 +61,7 @@ func _process(delta: float) -> void:
 			if phase_time>=CUTIN.IMPACT_AT and not _impact_played:
 				_impact_played = true
 				Sfx.play(&"card_impact",-4.0)
-				Sfx.play(&"promote",-9.0)
+				Sfx.play(&"cutin_slash",-3.0,0.0)
 			if phase_time>=CUTIN.EXIT_AT and not _exit_played:
 				_exit_played = true
 				Sfx.play(&"card_throw",-6.0)

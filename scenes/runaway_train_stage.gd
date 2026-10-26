@@ -203,7 +203,7 @@ func advance(delta: float) -> void:
 		segments[index].position.y = (0.045*(1.0-phase*phase)) if phase<1.0 else absf(sin((age-DROP_TIME)*PI/0.10))*0.004*(1.0-clampf((age-DROP_TIME)/0.10,0,1))
 		if age>=DROP_TIME and laid_count<=index:
 			laid_count = index+1
-			Sfx.play(&"yut_clack",-12.0,0.015,1.05+index*0.015)
+			Sfx.play(&"rail_lay",-6.0,0.015,1.0+index*0.012)
 	if elapsed<lay_end:
 		mode = &"lay"
 	elif elapsed<run_start:
@@ -211,8 +211,7 @@ func advance(delta: float) -> void:
 	elif elapsed<run_start+RUN_TIME:
 		if mode!=&"run":
 			train.show()
-			Sfx.play(&"rocket",-7.0,0.0,0.78)
-			Sfx.play(&"launch",-5.0,0.0,0.85)
+			Sfx.play(&"train_whistle",-3.0,0.0)
 		mode = &"run"
 		var p := clampf((elapsed-run_start)/RUN_TIME,0,1)
 		front_distance = lerpf(-0.38,distance+0.78,p*0.35+p*p*0.65)
@@ -220,7 +219,7 @@ func advance(delta: float) -> void:
 		_smoke_clock += dt
 		if _chug_clock>lerpf(0.16,0.065,p):
 			_chug_clock = 0.0
-			Sfx.play(&"yut_clack",-17.0,0.01,0.65+p*0.2)
+			Sfx.play(&"train_chug",-12.0,0.01,0.95+p*0.2)
 		if _smoke_clock>0.085:
 			_smoke_clock = 0.0
 			_spawn_smoke()

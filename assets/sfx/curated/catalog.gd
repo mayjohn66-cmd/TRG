@@ -54,4 +54,13 @@ const FILES: Dictionary = {
 	&"trap_hidden": ["res://assets/sfx/curated/trap_hidden_01.ogg"],
 	&"turn_start": ["res://assets/sfx/curated/turn_start_01.ogg"],
 	&"round_start": ["res://assets/sfx/curated/round_start_01.ogg"],
+	&"rail_lay": ["res://assets/sfx/curated/rail_lay_01.ogg", "res://assets/sfx/curated/rail_lay_02.ogg"],
+	&"train_chug": ["res://assets/sfx/curated/train_chug_01.ogg"],
+	&"train_whistle": ["res://assets/sfx/curated/train_whistle_01.ogg"],
+	&"chain_pull": ["res://assets/sfx/curated/chain_pull_01.ogg", "res://assets/sfx/curated/chain_pull_02.ogg"],
+	&"chain_lock": ["res://assets/sfx/curated/chain_lock_01.ogg"],
+	&"bakery_door": ["res://assets/sfx/curated/bakery_door_01.ogg"],
+	&"bakery_rummage": ["res://assets/sfx/curated/bakery_rummage_01.ogg", "res://assets/sfx/curated/bakery_rummage_02.ogg"],
+	&"cutin_slash": ["res://assets/sfx/curated/cutin_slash_01.ogg"],
+	&"pinball_hit": ["res://assets/sfx/curated/pinball_hit_01.ogg"],
 }
