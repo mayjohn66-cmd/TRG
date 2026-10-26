@@ -1,6 +1,6 @@
 """Build only presentation SFX from downloaded CC0 originals.
 
-Usage: python add_presentation_sfx.py <source directory> <ffmpeg>
+Usage: python add_presentation_sfx.py <source directory> <ffmpeg> [event ...]
 Download rpg.zip from https://opengameart.org/content/80-cc0-rpg-sfx,
 clank1.wav/rattle1.wav/squeakyclick1.wav from
 https://opengameart.org/content/mechanical-sounds and whistle.wav from
@@ -34,11 +34,18 @@ SPECS = [
     ('chain_pull', 2, 'chain_02.ogg', .001, .46, 1., -26, RPG),
     ('chain_lock', 1, 'lock_03.ogg', .002, .33, .95, -23, RPG),
     ('bakery_door', 1, 'squeakyclick1.wav', .020, .38, .92, -26, MECH),
-    ('bakery_rummage', 1, 'clank1.wav', .018, .46, .83, -25, MECH),
+    # The bright metal variant measures 4.4 dB louder than wood at equal RMS.
+    ('bakery_rummage', 1, 'clank1.wav', .018, .46, .83, -29.4, MECH),
     ('bakery_rummage', 2, 'wood_03.ogg', 0., .43, .86, -25, RPG),
     ('cutin_slash', 1, 'blade_03.ogg', .002, .36, .9, -23, RPG),
     ('pinball_hit', 1, 'metal_01.ogg', .028, .31, 1.45, -27, RPG),
 ]
+
+if len(sys.argv) > 3:
+    requested = set(sys.argv[3:])
+    if requested - {spec[0] for spec in SPECS}:
+        raise SystemExit('Unknown presentation event')
+    SPECS = [spec for spec in SPECS if spec[0] in requested]
 
 with zipfile.ZipFile(SOURCE / 'rpg.zip') as archive:
     for name in {s[2] for s in SPECS if s[7] == RPG}:
@@ -46,11 +53,11 @@ with zipfile.ZipFile(SOURCE / 'rpg.zip') as archive:
 
 manifest_path = DEST / 'manifest.json'
 manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+manifest_order = {row['file']: i for i, row in enumerate(manifest)}
 events = {s[0] for s in SPECS}
 manifest = [row for row in manifest if row['event'] not in events]
 catalog_path = DEST / 'catalog.gd'
 catalog = catalog_path.read_text(encoding='utf-8')
-catalog = '\n'.join(line for line in catalog.splitlines() if not any(f'&"{event}"' in line for event in events))
 files = {}
 report = []
 for event, variant, original, start, seconds, speed, target, credit in SPECS:
@@ -83,7 +90,16 @@ for event, variant, original, start, seconds, speed, target, credit in SPECS:
     manifest.append(row)
     report.append({'file': output.name, 'bytes': output.stat().st_size, 'seconds': round(row['seconds'], 3)})
 
-entries = ''.join('\t&"%s": [%s],\n' % (event, ', '.join(json.dumps(p) for p in paths)) for event, paths in files.items())
-catalog_path.write_text(catalog.rstrip().removesuffix('}') + entries + '}\n', encoding='utf-8', newline='\n')
+for event, paths in files.items():
+    entry = '\t&"%s": [%s],' % (event, ', '.join(json.dumps(p) for p in paths))
+    lines = catalog.splitlines()
+    index = next((i for i, line in enumerate(lines) if f'&"{event}"' in line), None)
+    if index is None:
+        lines.insert(len(lines)-1, entry)
+    else:
+        lines[index] = entry
+    catalog = '\n'.join(lines)+'\n'
+manifest.sort(key=lambda row: manifest_order.get(row['file'], len(manifest_order)))
+catalog_path.write_text(catalog, encoding='utf-8', newline='\n')
 manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2)+'\n', encoding='utf-8', newline='\n')
 print(json.dumps({'clips': report, 'total_bytes': sum(r['bytes'] for r in report)}, indent=2))

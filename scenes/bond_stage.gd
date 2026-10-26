@@ -70,10 +70,10 @@ func _process(delta: float) -> void:
 		phase = &"mark" if elapsed<REACH_AT else (&"reach" if elapsed<LOCK_AT else (&"lock" if elapsed<1.05 else &"pulse"))
 		if elapsed>=REACH_AT and not _chain_started:
 			_chain_started = true
-			Sfx.play(&"chain_pull",-4.0,0.02)
+			Sfx.play(&"chain_pull",-13.0,0.02)
 		if elapsed>=LOCK_AT and not locked:
 			locked = true
-			Sfx.play(&"chain_lock",-3.0,0.01)
+			Sfx.play(&"chain_lock",-4.0,0.01)
 			board.screen_shake(3.0,0.12*pace)
 			board._refresh_super_marks()
 	else:

@@ -22,12 +22,18 @@ func _run() -> void:
 	capture = AudioEffectCapture.new()
 	capture.buffer_length = 1.0
 	AudioServer.add_bus_effect(0, capture)
+	# Optional audited scene gains, exported directly from the production calls.
+	var gains: Dictionary = {}
+	var gain_file := OS.get_environment("SFX_MIX_GAINS")
+	if not gain_file.is_empty():
+		gains = JSON.parse_string(FileAccess.get_file_as_string(gain_file))
 	for event: StringName in EVENTS:
 		for player: AudioStreamPlayer in Sfx._pool:
 			player.stop()
 		await create_timer(0.12).timeout
 		capture.clear_buffer()
-		Sfx.play(event, -3.0, 0.0)
+		var gain_db := float(gains.get(String(event), -3.0))
+		Sfx.play(event, gain_db, 0.0)
 		await create_timer(0.45).timeout
 		var pcm := capture.get_buffer(capture.get_frames_available())
 		var peak := 0.0
@@ -35,7 +41,7 @@ func _run() -> void:
 			peak = maxf(peak, maxf(absf(sample.x), absf(sample.y)))
 		if peak < 0.001 or peak >= 0.99:
 			failures.append("Silent or clipped mixer output: %s (%f)" % [event, peak])
-		print("SFX_PCM %s peak=%.4f frames=%d" % [event, peak, pcm.size()])
+		print("SFX_PCM %s gain=%.1f peak=%.4f frames=%d" % [event, gain_db, peak, pcm.size()])
 	# Many short wheel beats must not steal a still-playing whistle voice.
 	for player: AudioStreamPlayer in Sfx._pool:
 		player.stop()
