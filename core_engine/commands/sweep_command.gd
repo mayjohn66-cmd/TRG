@@ -1,6 +1,6 @@
 # File: res://core_engine/commands/sweep_command.gd
 # Class: class_name SweepCommand
-# Role: 소환 카드 실행 - 고른 상단 코너(오른쪽 위·반환점)에 도적떼(정방향)나 팩맨(역방향)을 소환만 한다 (소환 즉시 움직이지 않는다). 라운드가 끝날 때 가장 가까운 적 말 하나를 처치하고 사라진다 (NeutralNPC.run_ai -> NpcSweep.strike)
+# Role: 소환 카드 실행 - 보드 맨 위 꼭짓점(반환점)에 도적떼(정방향)나 팩맨(역방향)을 소환만 한다 (소환 즉시 움직이지 않는다). 라운드가 끝날 때 가장 가까운 적 말 하나를 처치하고 사라진다 (NeutralNPC.run_ai -> NpcSweep.strike)
 class_name SweepCommand
 extends GameCommand
 
@@ -18,9 +18,10 @@ func _init(acting_player: int = -1, start_tile: int = -1, id: StringName = &"SUM
 	command_name = "Sweep"
 
 
-## 소환할 수 있는 칸: 상단 코너 두 곳 (오른쪽 위 코너, 반환점).
+## 소환할 수 있는 칸: 보드 맨 위 꼭짓점(반환점) 한 곳. 화면이 마름모라 8번 코너는 오른쪽 꼭짓점으로 보여
+## "상단 코너"와 다른 곳에 소환된 것처럼 보였다 (2026-10-26: 반환점 한 곳으로 고정).
 static func spawn_tiles() -> Array[int]:
-	return [BoardSpec.side, BoardSpec.halfway_tile] as Array[int]
+	return [BoardSpec.halfway_tile] as Array[int]
 
 
 ## 중립 기물은 보드에 하나만 있을 수 있다.

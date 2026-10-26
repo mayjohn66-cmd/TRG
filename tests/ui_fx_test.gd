@@ -2475,14 +2475,14 @@ func _test_event_order() -> void:
 	# 1) 소환: 사료스탕스는 소환 즉시 움직이지 않는다. 라운드 끝 NPC 페이즈에 달리고, 달리는 동안 잡힐 말은 아직 보드에 있다가 그 뒤에 사출된다
 	var victim: PlayerPawn = state.get_pawn(21)
 	victim.has_left_start = true
-	victim.current_tile_idx = BoardSpec.side + 2
+	victim.current_tile_idx = BoardSpec.halfway_tile + 2
 	_board._refresh_pawns()
 	await process_frame
 	var history_before: int = _board._announcer.history.size()
-	var command := SweepCommand.new(1, BoardSpec.side, &"SUM_01")
+	var command := SweepCommand.new(1, BoardSpec.halfway_tile, &"SUM_01")
 	command.state = state
 	command.execute()
-	_expect(victim.has_left_start and state.npcs.size() == 1 and state.npcs[0].current_tile_idx == BoardSpec.side, "소환 즉시는 움직이지도 잡지도 않는다")
+	_expect(victim.has_left_start and state.npcs.size() == 1 and state.npcs[0].current_tile_idx == BoardSpec.halfway_tile, "소환 즉시는 움직이지도 잡지도 않는다")
 	var summoned: NeutralNPC = state.npcs[0]
 	var npc_report: Dictionary = summoned.run_ai(state)  # 라운드 끝 NPC 페이즈 (TurnManager._enter_neutral_npc_phase와 같은 순서)
 	npc_report["display_id"] = summoned.display_id
