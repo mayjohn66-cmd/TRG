@@ -14,6 +14,9 @@ signal pack_ready(id: StringName)
 
 ## 웹 페이지 기준으로 묶음이 있는 폴더 (build/web/avatars/<id>.pck).
 const PACK_FOLDER: String = "avatars"
+## 대기방 전용 그림도 기존 다운로드 큐로 받는다. 첫 로딩 본체에는 넣지 않는다.
+const UI_LOBBY: StringName = &"ui_lobby"
+const UI_LOBBY_DIR: String = "res://assets/ui/trickcal/lobby"
 ## 받은 묶음을 써 두는 곳. 웹의 /tmp는 메모리 파일 시스템이라 브라우저 저장소(IndexedDB)에 수십 MB를 남기지 않는다.
 const CACHE_DIRS: Array[String] = ["/tmp/avatar_packs", "user://avatar_packs"]
 ## 묶음을 받다가 실패하면 다시 시도하는 횟수 (그 뒤로는 정지 그림으로 계속한다).
@@ -29,6 +32,8 @@ var _request: HTTPRequest = null
 
 ## 이 아바타의 애니메이션을 지금 쓸 수 있는가 (본체에 들어 있거나 묶음을 이미 붙였다).
 static func is_ready(id: StringName) -> bool:
+	if id == UI_LOBBY:
+		return ResourceLoader.exists(UI_LOBBY_DIR + "/UI_LOBBY_WAIT.png") and ResourceLoader.exists(UI_LOBBY_DIR + "/UI_LOBBY_CROWN.png")
 	return ResourceLoader.exists(AvatarSlot.character_path(id) + "/emotion_happy.tres")
 
 
@@ -39,7 +44,7 @@ static func downloads_enabled() -> bool:
 
 ## 이 아바타의 묶음을 받아 달라고 줄을 세운다. urgent면 맨 앞에 선다 (내 아바타·지금 판의 아바타).
 static func request(id: StringName, urgent: bool = false) -> void:
-	if not AvatarCatalog.is_valid(id) or is_ready(id) or not downloads_enabled():
+	if (id != UI_LOBBY and not AvatarCatalog.is_valid(id)) or is_ready(id) or not downloads_enabled():
 		return
 	var node: AvatarPacks = instance()
 	if node != null:
@@ -77,6 +82,8 @@ static func when_ready(owner: Node, callback: Callable) -> void:
 ## 읽을 때마다 [invalid UID ... using text path instead] 경고가 수십~수백 줄 찍혔다 (웹 콘솔 출력이 느려 로딩이 끊겼다). 그림의 .import 파일에 적힌 UID를 먼저 등록하면 경고 없이 읽힌다.
 ## 묶음을 붙인 직후, 그 묶음의 .tres를 처음 읽기 전에 부른다. 새로 등록한 UID 수를 돌려준다.
 static func register_uids(id: StringName) -> int:
+	if id == UI_LOBBY:
+		return 0  # 두 텍스처는 UID 참조가 아닌 파일 경로로 직접 읽는다.
 	var added: int = 0
 	var folder: String = AvatarSlot.character_path(id)
 	for sub: String in ["frames", "idle", "idle_hq"]:

@@ -44,30 +44,11 @@ class Icon extends Control:
 	var ink: Color = Color("2c7a1f")
 	var accent: Color = Color("ffd34e")
 
-	var pulse: bool = false
-	var _clock: float = 0.0
-
 	func _init(icon_kind: StringName = &"star", ink_color: Color = Color("2c7a1f"), accent_color: Color = Color("ffd34e")) -> void:
 		kind = icon_kind
 		ink = ink_color
 		accent = accent_color
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
-
-	func _ready() -> void:
-		# _process가 있는 스크립트는 자동으로 매 프레임 돌므로, 깜빡이도록 지정한 아이콘만 켜 둔다.
-		set_process(pulse)
-
-	## 켜면 숨 쉬듯 깜빡인다 (대기 중 표시 전용).
-	func start_pulse() -> void:
-		pulse = true
-		set_process(true)
-
-	func _process(delta: float) -> void:
-		if not pulse:
-			set_process(false)
-			return
-		_clock += delta
-		modulate.a = 0.65 + 0.35 * sin(_clock * 2.6)
 
 	func _line(points: PackedVector2Array, width: float, color: Color) -> void:
 		draw_polyline(points, color, width, true)
@@ -119,9 +100,6 @@ class Icon extends Control:
 					_line(PackedVector2Array([Vector2(cos(angle), sin(angle)) * 14.0, Vector2(cos(angle), sin(angle)) * 22.0]), 8.0, ink)
 				draw_circle(Vector2.ZERO, 17.0, ink)
 				draw_circle(Vector2.ZERO, 7.0, accent)
-			&"crown":
-				draw_colored_polygon(PackedVector2Array([Vector2(-18, 12), Vector2(-20, -10), Vector2(-9, 0), Vector2(0, -16), Vector2(9, 0), Vector2(20, -10), Vector2(18, 12)]), accent)
-				draw_polyline(PackedVector2Array([Vector2(-18, 12), Vector2(-20, -10), Vector2(-9, 0), Vector2(0, -16), Vector2(9, 0), Vector2(20, -10), Vector2(18, 12), Vector2(-18, 12)]), ink, 3.0, true)
 			&"play":
 				draw_colored_polygon(PackedVector2Array([Vector2(-12, -18), Vector2(20, 0), Vector2(-12, 18)]), accent)
 				draw_polyline(PackedVector2Array([Vector2(-12, -18), Vector2(20, 0), Vector2(-12, 18), Vector2(-12, -18)]), ink, 3.5, true)
@@ -141,10 +119,6 @@ class Icon extends Control:
 						var cell := Rect2(Vector2(-21 + gx * 15, -21 + gy * 15), Vector2(12, 12))
 						draw_rect(cell, accent if (gx + gy) % 2 == 0 else Color.WHITE)
 						draw_rect(cell, ink, false, 2.5)
-			&"hourglass":
-				draw_colored_polygon(PackedVector2Array([Vector2(-14, -18), Vector2(14, -18), Vector2(0, 0)]), accent)
-				draw_colored_polygon(PackedVector2Array([Vector2(0, 0), Vector2(14, 18), Vector2(-14, 18)]), accent.darkened(0.15))
-				draw_polyline(PackedVector2Array([Vector2(-16, -20), Vector2(16, -20), Vector2(0, 0), Vector2(16, 20), Vector2(-16, 20), Vector2(0, 0), Vector2(-16, -20)]), ink, 3.5, true)
 			_:
 				draw_circle(Vector2.ZERO, 14.0, accent)
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
@@ -153,82 +127,6 @@ class Icon extends Control:
 # ---------------------------------------------------------------------------
 # 부품
 # ---------------------------------------------------------------------------
-
-## 아래쪽 메뉴 버튼 한 개: 위로 솟은 동그란 아이콘 + 아래 초록 알약 + 글자. 올리면 통통 커지고 누르면 눌린다.
-static func nav_button(node_name: String, icon_kind: StringName, text: String, callback: Callable, tone: StringName = &"green") -> Button:
-	var palette: Array = {
-		&"green": [GREEN, GREEN_EDGE, GREEN_DARK],
-		&"blue": [Color("7cc7f0"), Color("2f7fb8"), Color("1d5a8a")],
-		&"pink": [Color("f5a0c0"), Color("c2457a"), Color("8f2d58")],
-		&"gold": [Color("ffd66b"), Color("c98a14"), Color("8a5a0a")],
-	}.get(tone, [GREEN, GREEN_EDGE, GREEN_DARK]) as Array
-	var fill: Color = palette[0]
-	var edge: Color = palette[1]
-	var dark: Color = palette[2]
-	var button := Button.new()
-	button.name = node_name
-	button.custom_minimum_size = NAV_SIZE
-	button.focus_mode = Control.FOCUS_NONE
-	button.flat = true
-	button.pivot_offset = NAV_SIZE / 2.0
-	for state: String in ["normal", "hover", "pressed", "focus", "disabled"]:
-		button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
-	var body := Panel.new()
-	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	body.position = Vector2(0, 62)
-	body.size = Vector2(NAV_SIZE.x, NAV_SIZE.y - 62.0)
-	var body_style := StyleBoxFlat.new()
-	body_style.bg_color = fill
-	body_style.border_color = edge
-	body_style.set_border_width_all(4)
-	body_style.border_width_bottom = 8
-	body_style.set_corner_radius_all(30)
-	body_style.shadow_color = Color(0, 0, 0, 0.25)
-	body_style.shadow_size = 6
-	body_style.shadow_offset = Vector2(0, 4)
-	body.add_theme_stylebox_override("panel", body_style)
-	button.add_child(body)
-	var shine := Panel.new()
-	shine.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	shine.position = Vector2(14, 70)
-	shine.size = Vector2(NAV_SIZE.x - 28.0, 12)
-	var shine_style := StyleBoxFlat.new()
-	shine_style.bg_color = Color(1, 1, 1, 0.35)
-	shine_style.set_corner_radius_all(6)
-	shine.add_theme_stylebox_override("panel", shine_style)
-	button.add_child(shine)
-	var disc := Panel.new()
-	disc.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	disc.position = Vector2((NAV_SIZE.x - 84.0) / 2.0, 2)
-	disc.size = Vector2(84, 84)
-	var disc_style := StyleBoxFlat.new()
-	disc_style.bg_color = CREAM
-	disc_style.border_color = edge
-	disc_style.set_border_width_all(5)
-	disc_style.set_corner_radius_all(42)
-	disc_style.shadow_color = Color(0, 0, 0, 0.2)
-	disc_style.shadow_size = 4
-	disc.add_theme_stylebox_override("panel", disc_style)
-	button.add_child(disc)
-	var icon := Icon.new(icon_kind, dark, GOLD)
-	icon.position = Vector2(14, 14)
-	icon.size = Vector2(56, 56)
-	disc.add_child(icon)
-	var title := outlined(text, 24, Color.WHITE, dark, 7)
-	title.name = "CardTitle"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	title.position = Vector2(0, 92)
-	title.size = Vector2(NAV_SIZE.x, 40)
-	button.add_child(title)
-	button.mouse_entered.connect(func() -> void: _bounce(button, 1.07))
-	button.mouse_exited.connect(func() -> void: _bounce(button, 1.0))
-	button.button_down.connect(func() -> void: _bounce(button, 0.94, 0.06))
-	button.button_up.connect(func() -> void: _bounce(button, 1.07 if button.is_hovered() else 1.0, 0.1))
-	if callback.is_valid():
-		button.pressed.connect(callback)
-	return button
-
 
 static func _bounce(node: Control, target: float, seconds: float = 0.12) -> void:
 	if not node.is_inside_tree():
@@ -555,6 +453,20 @@ class FestivalDecor extends Control:
 
 ## 대기방의 캐릭터 자리 카드 한 장(원본의 파티 편성 칸처럼 세로로 길다): 위 왕관, 큰 동그란 캐릭터, 이름표, 상태 줄, 아래 버튼 칸.
 ## 반환: {"root", "avatar", "name", "state", "actions"(버튼을 담는 VBox), "crown"}
+static func _seat_icon(kind: StringName, color: Color) -> Control:
+	var holder := Control.new()
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var paint := func(id: StringName) -> void:
+		if id != AvatarPacks.UI_LOBBY or holder.get_child_count() > 0: return
+		var art: Control = load(AvatarPacks.UI_LOBBY_DIR + "/seat_icon.gd").new(kind, color)
+		holder.add_child(art)
+		art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	if AvatarPacks.is_ready(AvatarPacks.UI_LOBBY): paint.call(AvatarPacks.UI_LOBBY)
+	else:
+		AvatarPacks.when_ready(holder, paint)
+		AvatarPacks.request(AvatarPacks.UI_LOBBY, true)
+	return holder
+
 static func seat_card(seat: int, color: Color, empty: bool, avatar_id: StringName = &"default") -> Dictionary:
 	var root := PanelContainer.new()
 	root.custom_minimum_size = Vector2(172, 250)
@@ -577,7 +489,7 @@ static func seat_card(seat: int, color: Color, empty: bool, avatar_id: StringNam
 	var badge := outlined("P%d" % seat, 17, Color.WHITE, color.darkened(0.35), 5)
 	badge.position = Vector2(2, -2)
 	crown_row.add_child(badge)
-	var crown := Icon.new(&"crown", Color("8a5a0a"), GOLD)
+	var crown := _seat_icon(&"crown", color)
 	crown.position = Vector2(118, -4)
 	crown.size = Vector2(30, 26)
 	crown.visible = false
@@ -586,18 +498,10 @@ static func seat_card(seat: int, color: Color, empty: bool, avatar_id: StringNam
 	column.add_child(avatar_holder)
 	var avatar: Control
 	if empty:
-		avatar = Panel.new()
+		avatar = Control.new()
 		avatar.custom_minimum_size = Vector2(108, 108)
-		var hollow := StyleBoxFlat.new()
-		hollow.bg_color = Color(color, 0.10)
-		hollow.border_color = Color(color, 0.5)
-		hollow.set_border_width_all(4)
-		hollow.set_corner_radius_all(54)
-		avatar.add_theme_stylebox_override("panel", hollow)
-		var wait := Icon.new(&"hourglass", Color(color, 0.7), Color(color, 0.35))
-		wait.position = Vector2(30, 28)
-		wait.size = Vector2(48, 52)
-		wait.start_pulse()
+		var wait := _seat_icon(&"hourglass", color)
+		wait.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		avatar.add_child(wait)
 	else:
 		avatar = avatar_disc(avatar_id, color, 108.0, color, 5, true)

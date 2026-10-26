@@ -30,6 +30,7 @@ on:
           - avatar-hq
           - title-logo
           - presentation-sfx
+          - lobby-art
           - castling
           - bakery
           - sniper
@@ -62,7 +63,9 @@ jobs:
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
           REQUESTED_SCOPE: ${{ inputs.validation }}
         run: |
-          if [[ "${REQUESTED_SCOPE}" == "presentation-sfx" || "${COMMIT_MESSAGE}" == *"[check:presentation-sfx]"* ]]; then
+          if [[ "${REQUESTED_SCOPE}" == "lobby-art" || "${COMMIT_MESSAGE}" == *"[check:lobby-art]"* ]]; then
+            echo "scope=lobby-art" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "presentation-sfx" || "${COMMIT_MESSAGE}" == *"[check:presentation-sfx]"* ]]; then
             echo "scope=presentation-sfx" >> "${GITHUB_OUTPUT}"
           elif [[ "${REQUESTED_SCOPE}" == "title-logo" || "${COMMIT_MESSAGE}" == *"[check:title-logo]"* ]]; then
             echo "scope=title-logo" >> "${GITHUB_OUTPUT}"
@@ -374,8 +377,12 @@ jobs:
         run: godot --headless --path . -s res://tests/ui_feedback_test.gd
 
       - name: Run lobby UI test (WebRTC lobby screens, no network)
-        if: steps.validation.outputs.scope == 'full'
+        if: steps.validation.outputs.scope == 'full' || steps.validation.outputs.scope == 'lobby-art'
         run: godot --headless --path . -s res://tests/ui_lobby_test.gd
+
+      - name: Check painted lobby seat icons
+        if: steps.validation.outputs.scope == 'lobby-art'
+        run: godot --headless --path . -s res://tests/lobby_art_pack_smoke.gd
 
       - name: Run online lockstep test (2 players, no bots)
         if: steps.validation.outputs.scope == 'full'
@@ -409,6 +416,9 @@ jobs:
           fi
           # 아바타 애니메이션은 본체에서 빼고 아바타별 묶음(avatars/<id>.pck)으로 따로 내보낸다: 게임이 필요한 것부터 뒤에서 받는다 (scenes/avatar_packs.gd)
           python3 tools/export_avatar_packs.py godot build/web/avatars
+          if [[ "${VALIDATION_SCOPE}" == "lobby-art" ]]; then
+            (cd build/web && LOBBY_ART_PACK="$GITHUB_WORKSPACE/build/web/avatars/ui_lobby.pck" godot --headless --main-pack index.pck -s "$GITHUB_WORKSPACE/tests/lobby_art_pack_smoke.gd")
+          fi
           # 본체에는 정지 그림만 있고, 묶음을 붙이면 애니메이션이 실제로 읽히는지 내보낸 파일로 검사한다
           # 묶음 그림의 UID를 등록하지 못하면 [invalid UID ... using text path instead] 경고가 수백 줄 찍혀 웹 로딩이 끊기므로, 경고가 한 줄이라도 있으면 막는다.
           if [[ "${VALIDATION_SCOPE}" == "full" || "${VALIDATION_SCOPE}" == "avatar-hq" ]]; then

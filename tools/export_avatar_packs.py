@@ -70,6 +70,12 @@ def main() -> None:
             target = out_dir / f"{avatar.name}.pck"
             subprocess.run([godot, "--headless", "--path", str(ROOT), "--export-pack", "AvatarPack", str(target.resolve())], check=True)
             print(f"{target} = {target.stat().st_size / 1048576:.2f} MiB ({len(files)} files)")
+        # Only the online lobby needs these images; share the existing pack queue.
+        files = ["res://assets/ui/trickcal/lobby/" + name for name in ["UI_LOBBY_WAIT.png", "UI_LOBBY_CROWN.png", "wait_palette.gdshader", "seat_icon.gd"]]
+        PRESETS.write_text(original + preset_block(original, index, files), encoding="utf-8")
+        target = out_dir / "ui_lobby.pck"
+        subprocess.run([godot, "--headless", "--path", str(ROOT), "--export-pack", "AvatarPack", str(target.resolve())], check=True)
+        print(f"{target} = {target.stat().st_size / 1024:.1f} KiB (lobby icons)")
     finally:
         PRESETS.write_text(original, encoding="utf-8")
 
