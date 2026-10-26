@@ -23,7 +23,7 @@ const FRAME_EDGE: Color = Color("5fc9a0")
 const TEAL: Color = Color("7cc4b4")
 const TEAL_DARK: Color = Color("4a9a8a")
 const VISUALS = preload("res://scenes/rulebook_visuals.gd")
-## 법전 장 (도감 묶음의 법전 탭): 허브의 [법전 수집 N/8]이 바로 연다.
+## 법전 장 (도감 묶음의 법전 탭).
 const LAW_SPREAD: int = 7
 const TAB_NAMES: Array[String] = ["시작하기", "한 턴", "보드", "잡기", "도구", "말", "카드", "법전", "범용", "초증강"]
 const TAB_ART: Array[StringName] = [&"start", &"turn", &"board", &"capture", &"roll", &"pawn_ability", &"play_card", &"lawbook", &"supply", &"super"]
@@ -60,7 +60,6 @@ var _right_scroll: ScrollContainer = null
 var _notebook_title: Label = null
 var _list_buttons: Array[Button] = []
 var _group_tabs: Array[Button] = []
-var _law_badge: Button = null
 var _save_notice: Label = null
 var _code_field: LineEdit = null
 var _page_label: Label = null
@@ -277,21 +276,17 @@ func _build_header() -> void:
 		_group_tabs.append(tab)
 
 
-## 위 오른쪽은 딱 두 개: [트로피 법전 N/8] 뱃지 + [기록 백업/복구]. 링크 복사·코드 입력은 [기록 백업/복구]를 눌렀을 때만 작은 팝업으로 뜬다.
+## 위 오른쪽의 법전 아이콘 + [기록 백업/복구]. 누르면 링크 복사·코드 입력 팝업을 연다.
 ## 링크를 눌러 접속하기만 하면 기록이 이어진다 (PlayerSave.apply_url_params). 코드 입력은 보조 수단.
 func _build_save_tools() -> void:
-	_law_badge = MetaIcon.pill("LawCollection", "", func() -> void: show_spread(LAW_SPREAD), 16)
-	for state: String in ["normal","hover","pressed","focus"]:
-		var badge_skin := VISUALS.panel(Color("fff4d6") if state!="hover" else Color("fffbea"),18)
-		badge_skin.content_margin_left = 46
-		badge_skin.content_margin_right = 16
-		_law_badge.add_theme_stylebox_override(state,badge_skin)
-	_law_badge.clip_text = true
-	_place(_law_badge, Vector2(910, 28), Vector2(210, 46))
 	var backup: Button = LobbyTheme.small_button("기록 백업/복구", _toggle_save_popup, &"teal", 17)
 	backup.name = "SaveBackup"
 	backup.clip_text = true
-	_place(backup, Vector2(1130, 28), Vector2(206, 46))
+	backup.icon = MetaIcon.law_icon()
+	backup.add_theme_constant_override("h_separation", 10)
+	for state: String in ["icon_normal_color", "icon_hover_color", "icon_pressed_color", "icon_focus_color"]:
+		backup.add_theme_color_override(state, Color.WHITE)
+	_place(backup, Vector2(1056, 28), Vector2(280, 46))
 	_save_popup = PanelContainer.new()
 	_save_popup.name = "SavePopup"
 	_save_popup.z_index = 20
@@ -330,7 +325,6 @@ func _build_save_tools() -> void:
 	_save_notice.visible = false
 	column.add_child(_save_notice)
 	_place(_save_popup, Vector2(930, 80), Vector2(406, 0))
-	_refresh_law_badge()
 
 
 func _toggle_save_popup() -> void:
@@ -344,11 +338,6 @@ func _set_notice(text: String) -> void:
 	_save_notice.text = text
 	_save_notice.visible = text != ""
 	_save_popup.reset_size()
-
-
-func _refresh_law_badge() -> void:
-	if _law_badge != null:
-		_law_badge.text = "법전 %d/8" % PlayerSave.law_count()
 
 
 ## [내 기록 전용 링크 복사]: ?s=짧은코드&n=닉네임 링크를 클립보드에 넣는다 (카톡 나에게 보내기·메모에 두었다가 누르면 이어진다).
@@ -368,7 +357,6 @@ func apply_save_code(code: String) -> bool:
 	_set_notice("기록을 불러왔어요 (#%s)" % GameSession.player_tag())
 	if _code_field != null:
 		_code_field.text = ""
-	_refresh_law_badge()
 	if _content.get("entries", []) is Array and not (_content.get("entries", []) as Array).is_empty():
 		_rebuild_tiles()
 	records_imported.emit()

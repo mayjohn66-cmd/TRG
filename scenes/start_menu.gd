@@ -32,7 +32,6 @@ var _avatar_name: Label = null
 var _avatar_tiles: Dictionary = {}
 const HUB_AVATAR_HEIGHT: float = 520.0
 ## 허브 위쪽 줄·프로필 버튼의 고정 크기 (언어를 바꿔도 자리가 그대로다).
-const HUB_LAW_BADGE_WIDTH: float = 236.0
 const HUB_LANGUAGE_WIDTH: float = 160.0
 const HUB_AVATAR_BUTTON: Vector2 = Vector2(210, 50)
 const HUB_RENAME_BUTTON: Vector2 = Vector2(112, 40)
@@ -182,12 +181,8 @@ func _build_mode_page() -> void:
 	buttons.add_theme_constant_override("separation", 10)
 	buttons.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	top.add_child(buttons)
-	# [법전 수집 N/8]: 특수 승리 법전으로 졸업해 본 종류 수 (영구 기록). 누르면 도감의 법전 장을 연다.
-	var laws: Button = MetaIcon.pill("LawCollection", "법전 수집 %d/8" % PlayerSave.law_count(), func() -> void: _open_rulebook(Rulebook.LAW_SPREAD))
-	_style_hub_utility(laws, true)
-	buttons.add_child(laws)
 	var language := LobbyTheme.language_toggle()  # [🌐 KR / EN]: 규칙·설정 버튼 옆
-	_style_hub_utility(language, false)
+	_style_hub_utility(language)
 	language.icon = LanguageToggle.translation_icon(24)
 	language.trailing_caret = true
 	language.add_theme_constant_override("h_separation", 10)
@@ -248,7 +243,7 @@ func _build_mode_page() -> void:
 	tag_label.custom_minimum_size = Vector2(0, 30)
 	left.add_child(tag_label)
 	left.move_child(tag_label, plate_row.get_index() + 1)
-	_hub_profile = {"name": name_label, "avatar": avatar, "holder": avatar_holder, "tag": tag_label, "laws": laws}
+	_hub_profile = {"name": name_label, "avatar": avatar, "holder": avatar_holder, "tag": tag_label}
 	# 웹: 내 아바타의 대기 애니메이션 묶음을 먼저 받고, 도착하면 허브의 전신 아바타를 움직이는 그림으로 바꾼다
 	AvatarPacks.request(id, true)
 	AvatarPacks.when_ready(self, func(ready_id: StringName) -> void:
@@ -307,14 +302,14 @@ func _fix_hub_button(button: Button) -> void:
 
 
 ## 허브의 작은 보조 버튼은 같은 높이·모서리·선 굵기를 쓴다. 너비는 고정이라 언어를 바꿔도 위쪽 줄이 흔들리지 않는다.
-func _style_hub_utility(button: Button, collection: bool) -> void:
-	button.custom_minimum_size = Vector2(HUB_LAW_BADGE_WIDTH if collection else HUB_LANGUAGE_WIDTH, 56)
+func _style_hub_utility(button: Button) -> void:
+	button.custom_minimum_size = Vector2(HUB_LANGUAGE_WIDTH, 56)
 	button.clip_text = true
 	button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	button.add_theme_font_size_override("font_size", 17)
-	var ink := Color("78501f") if collection else Color("586044")
-	var edge := Color("bd9147") if collection else Color("9aa76c")
+	var ink := Color("586044")
+	var edge := Color("9aa76c")
 	for state: String in ["normal", "hover", "pressed", "focus"]:
 		var fill := Color("fff4d6")
 		if state == "hover":
@@ -322,8 +317,8 @@ func _style_hub_utility(button: Button, collection: bool) -> void:
 		elif state == "pressed":
 			fill = Color("f0dfb7")
 		var box: StyleBoxFlat = LobbyTheme.style(fill, edge, 2, 22)
-		box.content_margin_left = 48 if collection else 16
-		box.content_margin_right = 16 if collection else 32
+		box.content_margin_left = 16
+		box.content_margin_right = 32
 		box.content_margin_top = 8
 		box.content_margin_bottom = 8
 		button.add_theme_stylebox_override(state, box)
@@ -337,7 +332,6 @@ func _refresh_hub() -> void:
 		return
 	(_hub_profile["name"] as Label).text = GameSession.display_nickname()
 	(_hub_profile["tag"] as Label).text = "#%s" % GameSession.player_tag()
-	(_hub_profile["laws"] as Button).text = "법전 수집 %d/8" % PlayerSave.law_count()
 	var id: StringName = AvatarCatalog.sanitize(GameSession.avatar_id)
 	var holder: Control = _hub_profile["holder"]
 	(_hub_profile["avatar"] as Control).queue_free()
@@ -431,7 +425,7 @@ func _show_rules() -> void:
 	_open_rulebook(0)
 
 
-## 규칙 도감을 연다: 도감에서 기록 코드를 불러오면 허브의 #태그·닉네임·법전 수를 다시 그린다.
+## 규칙 도감을 연다: 기록 코드를 불러오면 허브의 #태그·닉네임을 다시 그린다.
 func _open_rulebook(spread: int) -> Rulebook:
 	var book: Rulebook = Rulebook.open(self, spread)
 	book.records_imported.connect(_on_records_imported)

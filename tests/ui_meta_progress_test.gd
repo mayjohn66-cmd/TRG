@@ -1,6 +1,6 @@
 # File: res://tests/ui_meta_progress_test.gd
 # Class: (SceneTree 스크립트, class_name 없음)
-# Role: 영구 기록 표시 검사 - 놀이터 난이도 왕관·전적, 허브 [법전 수집 N/8]·#태그, 도감 [달성 완료 ★] 도장·기록 코드 불러오기,
+# Role: 영구 기록 표시 검사 - 놀이터 난이도 왕관·전적, 허브 #태그, 도감 [달성 완료 ★] 도장·기록 코드 불러오기,
 #       결과 화면 [내 우승 기록 복사하기] 글 (한국어·영어). 실행: godot --headless --path . -s res://tests/ui_meta_progress_test.gd
 extends SceneTree
 
@@ -34,14 +34,13 @@ func _run() -> void:
 	PlayerSave.mark_law("LAW_04")
 	PlayerSave.record_buldak(4, 18)
 	GameSession.reload_from_save()
-	# 1) 시작 메뉴: 허브의 #태그·법전 수집, 놀이터 난이도 왕관
+	# 1) 시작 메뉴: 허브의 #태그, 놀이터 난이도 왕관
 	var menu: StartMenu = load("res://scenes/start_menu.tscn").instantiate()
 	menu.change_scene_enabled = false
 	root.add_child(menu)
 	for i: int in 3:
 		await process_frame
-	var pill: Button = menu.find_child("LawCollection", true, false)
-	_expect(pill != null and pill.text == "법전 수집 1/8", "허브 [법전 수집 1/8] (%s)" % (pill.text if pill != null else "없음"))
+	_expect(menu.find_child("LawCollection", true, false) == null, "허브에는 중복 법전 수집 표시가 없다")
 	var tag: Label = menu.find_child("ProfileTag", true, false)
 	_expect(tag != null and tag.text == "#MP23", "허브에 저장된 #태그 (%s)" % (tag.text if tag != null else "없음"))
 	var picker: FireLevelPicker = menu._fire_picker
@@ -58,8 +57,8 @@ func _run() -> void:
 		await process_frame
 	var stamps: Array[Node] = book.find_children("ClearedStamp", "", true, false)
 	_expect(stamps.size() == 1, "달성한 법전 1개에만 [달성 완료 ★] 도장 (%d)" % stamps.size())
-	var badge: Button = book.find_child("LawCollection", true, false)
-	_expect(badge != null and badge.text == "법전 1/8", "도감 [법전 1/8]")
+	_expect(book.find_child("LawCollection", true, false) == null, "도감 상단에는 중복 법전 수집 표시가 없다")
+	_expect((book.find_child("SaveBackup", true, false) as Button).icon == MetaIcon.law_icon(), "기록 백업/복구 버튼에 법전 아이콘이 있다")
 	_expect(book.find_child("CopyShareLink", true, false) != null and book.find_child("ShortCodeField", true, false) != null, "큼직한 [내 기록 전용 링크 복사] + 짧은 코드 입력 칸")
 	book._copy_share_link()
 	var link: String = PlayerSave.share_url()
@@ -70,9 +69,9 @@ func _run() -> void:
 	for i: int in 2:
 		await process_frame
 	_expect(GameSession.player_tag() == "ZX97" and GameSession.nickname == "모바일교주", "불러온 #태그·닉네임 (%s %s)" % [GameSession.player_tag(), GameSession.nickname])
-	_expect(badge.text == "법전 3/8", "합친 법전 3/8 (%s)" % badge.text)
+	_expect(PlayerSave.law_count() == 3, "합친 법전 기록은 3개다")
 	_expect(book.find_children("ClearedStamp", "", true, false).size() == 3, "도장 3개로 다시 그린다")
-	_expect(tag.text == "#ZX97" and pill.text == "법전 수집 3/8", "허브도 바로 바뀐다 (%s, %s)" % [tag.text, pill.text])
+	_expect(tag.text == "#ZX97", "허브 태그도 바로 바뀐다 (%s)" % tag.text)
 	book.close()
 	menu.queue_free()
 	await process_frame
