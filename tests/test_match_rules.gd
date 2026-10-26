@@ -89,3 +89,21 @@ func test_laws_off_skips_the_tempo_law_and_minefield_mines_are_public() -> void:
 func test_summary_lists_only_changed_rules() -> void:
 	check_eq(MatchRules.summary(MatchRules.defaults()), "", "모두 기본이면 알릴 것이 없다")
 	check_eq(MatchRules.summary({"trap_reveal": false, "super_freq": 3, "laws": false, "speed": "speed"}), "함정 비공개 · 초증강 대축제 · 법전 끄기 · 스피드전", "바뀐 규칙만 순서대로")
+
+
+func test_presets_match_and_label_friendly_rooms() -> void:
+	var classic: Dictionary = MatchRules.sanitize(MatchRules.preset_values(MatchRules.PRESET_CLASSIC))
+	check(not classic["laws"] and classic["trap_reveal"] and classic["super_freq"] == 0, "클래식 완주전: 법전 끔 · 함정 공개 · 초증강 끔")
+	check_eq(MatchRules.preset_of(classic), MatchRules.PRESET_CLASSIC, "클래식 값이면 클래식 프리셋")
+	check_eq(MatchRules.preset_of(MatchRules.defaults()), MatchRules.PRESET_STANDARD, "기본값은 오리지널 표준")
+	var mind: Dictionary = MatchRules.sanitize(MatchRules.preset_values(MatchRules.PRESET_MIND))
+	check(mind["laws"] and not mind["trap_reveal"] and mind["super_freq"] == 2, "심리전: 함정 비공개 · 초증강 2배")
+	check_eq(MatchRules.preset_of(MatchRules.sanitize({"trap_reveal": false})), &"", "어느 프리셋과도 다르면 빈 키")
+	check_eq(MatchRules.sanitize({"bot_level": 4})["bot_level"], 4, "빈자리 컴퓨터 Lv.4")
+	check_eq(MatchRules.sanitize({"bot_level": 9})["bot_level"], BotTemper.DEFAULT_LEVEL, "모르는 난이도는 기본")
+	check_eq(MatchTelemetry.rules_label(classic), "클래식 완주전", "통계: 친선 [클래식 완주전]")
+	check_eq(MatchTelemetry.rules_label(MatchRules.sanitize({"laws": false, "trap_reveal": false})), "법전OFF/함정비공개", "통계: 친선 [법전OFF/함정비공개]")
+	check_eq(MatchTelemetry.rules_label(MatchRules.sanitize({"bot_level": 3}), true), "오리지널 표준/봇Lv.3", "빈자리 컴퓨터가 있으면 난이도")
+	var state := GameState.new()
+	state.match_rules = mind
+	check_eq(MatchRules.weight_factor(state, AugmentRegistry.get_def(&"SUPER_09")), 2.0, "축제: 초증강 가중치 2배")

@@ -885,6 +885,10 @@ func _telemetry_mode() -> String:
 	var label: String = MatchTelemetry.mode_label(net != null, ai_mode, GameSession.lobby_intent == &"quick")
 	if net == null and ai_mode:
 		label += " %s" % BotTemper.tag(_bot.difficulty if _bot != null else GameSession.bot_difficulty())  # 놀이터 [Lv.2 로제] (디스코드 통계는 한국어)
+	elif net != null and GameSession.lobby_intent != &"quick":
+		# 친선 [클래식 완주전] / 친선 [법전OFF/함정비공개/봇Lv.3]: 방장이 고른 규칙 (디스코드 통계는 한국어)
+		var rules: Dictionary = state.match_rules if state != null and not state.match_rules.is_empty() else GameSession.match_rules()
+		label += " [%s]" % MatchTelemetry.rules_label(rules, not GameSession.net_bots.is_empty())
 	return label
 
 
@@ -10614,6 +10618,8 @@ func _setup_net() -> void:
 		_bot.bot_players.append(local_player_id)
 		_bot.wait_for_human_windows = false
 	_bot.draft_waits_for_humans = false
+	if GameSession.lobby_intent != &"quick":
+		_bot.difficulty = int(GameSession.match_rules().get("bot_level", BotTemper.DEFAULT_LEVEL))  # 친선 방장이 고른 빈자리 컴퓨터 난이도
 	_bot.enabled = _bot_active()
 	net.started.connect(_on_net_started)
 	net.seat_taken_over.connect(_on_net_seat_taken_over)

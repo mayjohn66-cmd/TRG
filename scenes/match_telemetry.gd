@@ -81,6 +81,33 @@ static func mode_label(online: bool, vs_computer: bool, quick_match: bool = fals
 	return "놀이터" if vs_computer else "4인 수동"
 
 
+## 친선전 프리셋의 통계 표기 (한국어).
+const PRESET_TAGS: Dictionary = {&"classic": "클래식 완주전", &"standard": "오리지널 표준", &"mind_games": "우정파괴 심리전"}
+
+
+## 디스코드 통계용 친선전 옵션 표기 (한국어): 프리셋과 꼭 맞으면 그 이름, 아니면 기본과 다른 값을 짧게.
+## 예: "클래식 완주전" / "법전OFF/함정비공개" / "오리지널 표준/스피드전". 빈자리 컴퓨터가 있으면 "봇Lv.3"을 붙인다.
+static func rules_label(rules: Dictionary, has_bots: bool = false) -> String:
+	var parts: PackedStringArray = []
+	var preset: StringName = MatchRules.preset_of(rules)
+	if preset != &"":
+		parts.append(str(PRESET_TAGS.get(preset, "")))
+	else:
+		if not bool(rules.get("laws", true)):
+			parts.append("법전OFF")
+		if not bool(rules.get("trap_reveal", true)):
+			parts.append("함정비공개")
+		match int(rules.get("super_freq", 1)):
+			0: parts.append("초증강OFF")
+			2: parts.append("초증강2배")
+			3: parts.append("초증강3배")
+	if StringName(rules.get("speed", MatchRules.SPEED_NORMAL)) == MatchRules.SPEED_FAST:
+		parts.append("스피드전")
+	if has_bots:
+		parts.append("봇Lv.%d" % BotTemper.sanitize(rules.get("bot_level", BotTemper.DEFAULT_LEVEL)))
+	return "/".join(parts)
+
+
 ## 1위의 우승 방식: 말 4개 완주면 [일반], 중앙 법전의 특수 승리면 [특수승리(교칙 이름)].
 static func win_label(reason: StringName) -> String:
 	if String(reason) == "" or not VictoryLaw.is_victory_id(String(reason)):

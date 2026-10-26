@@ -23,6 +23,8 @@ var _panel_box: VBoxContainer = null
 var _top: Dictionary = {}
 var _bottom: Dictionary = {}
 var _status: Label = null
+## 대기실의 방 규칙 한 줄 (방장·참가자).
+var _rules_line: Label = null
 var _seat_box: BoxContainer = null
 var _start_button: Button = null
 var _guest_box: VBoxContainer = null
@@ -288,7 +290,10 @@ func start_hosting() -> void:
 	_start_button.name = "StartGame"
 	_start_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	footer.add_child(_start_button)
-	var rules_button := LobbyTheme.small_button("방 규칙 설정", func() -> void: RoomRulesPanel.open(self, true), &"blue", 16)
+	_rules_line = _rules_label()
+	_panel_box.add_child(_rules_line)
+	_panel_box.move_child(_rules_line, footer.get_index())
+	var rules_button := LobbyTheme.small_button("방 규칙 설정", _open_room_rules, &"blue", 16)
 	rules_button.name = "OpenRoomRules"
 	rules_button.custom_minimum_size = Vector2(150, 0)
 	footer.add_child(rules_button)
@@ -326,9 +331,34 @@ func _rebuild() -> void:
 		Mode.QUICK: _refresh_quick()
 
 
+## 방장: [방 규칙 설정]을 열고, 닫으면 참가자에게 바뀐 규칙을 보낸다.
+func _open_room_rules() -> void:
+	var panel: RoomRulesPanel = RoomRulesPanel.open(self, true)
+	panel.closed.connect(func() -> void:
+		service.broadcast_rules()
+		_refresh_rules_line())
+
+
+## 대기실의 방 규칙 한 줄 (방장·참가자 모두 같은 규칙을 본다).
+func _rules_label() -> Label:
+	var line := _label("", 14, Color("1c5d8a"))
+	line.name = "RoomRulesLine"
+	line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	line.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	line.custom_minimum_size = Vector2(700, 0)
+	line.text = MatchRules.describe(service.shown_rules())
+	return line
+
+
+func _refresh_rules_line() -> void:
+	if _rules_line != null and is_instance_valid(_rules_line):
+		_rules_line.text = MatchRules.describe(service.shown_rules())
+
+
 func _rebuild_host() -> void:
 	if _seat_box == null:
 		return
+	_refresh_rules_line()
 	for child: Node in _seat_box.get_children():
 		_seat_box.remove_child(child)
 		child.queue_free()
@@ -423,6 +453,8 @@ func _rebuild_guest() -> void:
 	_join_button = null
 	if _guest_connected:
 		_guest_box.add_child(_label("입장 완료! 방장이 게임을 시작하기를 기다리는 중...", 18, Color("2b8a3e")))
+		_rules_line = _rules_label()
+		_guest_box.add_child(_rules_line)
 		var cards := _new_seat_box()
 		_guest_box.add_child(cards)
 		for seat: int in range(1, LobbyModel.SEAT_COUNT + 1):

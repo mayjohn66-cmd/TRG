@@ -2122,7 +2122,7 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 비공개 [심리전],Hidden [Mind Games],非公開 [心理戦]
 초증강 등장 빈도,Hyper Augment Frequency,超増強の出現頻度
 증강 드래프트에 초증강이 나오는 확률입니다.,How often Hyper Augments appear in augment drafts.,増強ドラフトに超増強が出る確率です。
-대축제 (확률 3배),Festival (x3 chance),大祭り (確率3倍)
+대축제 (확률 3배),Mega Festival (3x),大祭り (確率3倍)
 끄기,Off,オフ
 특수 승리 법전,Special Victory Laws,特殊勝利の法典
 "끄면 드래프트에 법전이 나오지 않고, 말 4개 완주로만 순위를 가립니다.","When off, no laws appear in drafts and ranks are decided only by bringing all 4 pawns home.",オフにするとドラフトに法典が出ず、駒4つの完走だけで順位を決めます。
@@ -2157,3 +2157,20 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 법전 %d/8,Codex %d/8,法典 %d/8
 코드 입력,Enter Code,コード入力
 v%s · 비공식 팬게임 (원작사와 무관한 비영리 무료 배포물),v%s · Unofficial non-profit fan game (Not affiliated with the original dev),v%s · 非公式・非営利ファンゲーム（原作会社とは無関係です）
+축제 (확률 2배),Festival (2x),祭り (確率2倍)
+빈자리 컴퓨터 난이도,Empty-Seat CPU Level,空席CPUの難易度
+방장이 빈자리에 넣은 컴퓨터의 불닭 난이도입니다 (Lv.1 크림 ~ Lv.5 핵불닭).,Fire level of the CPUs the host adds to empty seats (Lv.1 Cream ~ Lv.5 2x Nuclear).,ホストが空席に入れたCPUの激辛レベルです (Lv.1 クリーム 〜 Lv.5 獄激辛・核)。
+빠른 설정,Quick Presets,クイック設定
+입문/클래식 완주전,Starter / Classic Race,入門/クラシック完走戦
+법전 끄기 · 함정 공개 · 초증강 끄기,Laws Off · Traps Revealed · Hyper Off,法典オフ · 罠公開 · 超増強オフ
+오리지널 표준,Original Standard,オリジナル標準
+법전 켜기 · 함정 공개 · 초증강 기본,Laws On · Traps Revealed · Hyper Normal,法典オン · 罠公開 · 超増強ふつう
+우정파괴 심리전,Friendship Breaker,友情破壊の心理戦
+법전 켜기 · 함정 비공개 · 초증강 축제 (확률 2배),Laws On · Traps Hidden · Hyper Festival (2x),法典オン · 罠非公開 · 超増強祭り (確率2倍)
+초증강 축제,Hyper Festival,超増強祭り
+함정 공개,Traps Revealed,罠公開
+법전 켜기,Laws On,法典オン
+빈자리 컴퓨터 %s,Empty-seat CPU %s,空席CPU %s
+사용자 설정,Custom,カスタム
+초증강 기본,Hyper Normal,超増強ふつう
+[기본],[Default],[基本]
