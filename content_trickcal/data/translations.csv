@@ -2201,3 +2201,11 @@ From next round the finish line pulls in %d tiles each round","残りのプレ�
 次のラウンドからゴールが毎ラウンド%dマスずつ近づきます"
 [color=#ff922b][b]라스트 스퍼트![/b] 남은 플레이어 이동 +%d칸 · 결승선 라운드마다 %d칸씩 당겨짐[/color],[color=#ff922b][b]Last Spurt![/b] Remaining players move +%d · finish line pulls in %d tiles per round[/color],[color=#ff922b][b]ラストスパート！[/b] 残りのプレイヤー移動 +%dマス · ゴールが毎ラウンド%dマス近づく[/color]
 "[라스트 스퍼트] 첫 졸업! 남은 플레이어 이동 +%d칸, 다음 라운드부터 결승선이 라운드마다 %d칸씩 당겨집니다",[Last Spurt] First graduate! Remaining players move +%d; from next round the finish line pulls in %d tiles each round,[ラストスパート] 初卒業！残りのプレイヤー移動 +%dマス、次のラウンドからゴールが毎ラウンド%dマスずつ近づきます
+"남은 플레이어 모든 이동 +%d칸
+다음 라운드부터 결승선이 라운드마다 %d칸씩 당겨집니다
+%d라운드 뒤에는 진행 순위로 경기가 끝납니다","All remaining players move +%d
+From next round the finish line pulls in %d tiles each round
+After %d rounds the match ends by race standing","残りのプレイヤーの移動 +%dマス
+次のラウンドからゴールが毎ラウンド%dマスずつ近づきます
+%dラウンド後は進行順位で試合終了"
+[라스트 스퍼트 마감] 남은 플레이어는 진행 순위로 순위가 확정됩니다,[Last Spurt over] Remaining players are ranked by race standing,[ラストスパート終了] 残りのプレイヤーは進行順位で順位が確定します

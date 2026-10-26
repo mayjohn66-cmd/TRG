@@ -1180,6 +1180,16 @@ func _enter_round_start() -> void:
 ## 완주로 게임이 끝났으면 true.
 func _apply_tempo_up() -> bool:
 	var round_number: int = state.round_number
+	# 라스트 스퍼트 마감: 첫 졸업 뒤 SPURT_ROUNDS 라운드가 지나도 남은 사람은 레이스 진행도 순으로 순위를 확정하고 끝낸다
+	if state.spurt_round >= 0 and round_number > state.spurt_round + MatchRules.SPURT_ROUNDS and not is_game_over:
+		var active: Array[int] = state.active_players(player_order)
+		if active.size() >= 1:
+			var order: Array = VictoryChecker.sort_by_race(state, active)
+			_emit_event(&"race_ranked", {"players": order, "spurt_deadline": true})
+			for index: int in order.size():
+				_graduate(order[index], VictoryChecker.LAST_PLACE if index == order.size() - 1 else VictoryChecker.RACE_ORDER)
+			_end_game()
+			return true
 	if TempoUp.is_stage_round(round_number):
 		var stage: int = TempoUp.level(round_number)
 		var lines: Array[String] = TempoUp.effect_lines(stage)

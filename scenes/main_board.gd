@@ -9820,7 +9820,10 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			var spurt_goal: int = int(data["goal_shrink"])
 			_enqueue_late(func() -> void:
 				_record(-1, "[color=#ff922b][b]라스트 스퍼트![/b] 남은 플레이어 이동 +%d칸 · 결승선 라운드마다 %d칸씩 당겨짐[/color]" % [spurt_move, spurt_goal], "", false, true)
-				_announce_now("라스트 스퍼트", "[라스트 스퍼트!]", "남은 플레이어 모든 이동 +%d칸\n다음 라운드부터 결승선이 라운드마다 %d칸씩 당겨집니다" % [spurt_move, spurt_goal], Color("ff922b"), null, 2.2))
+				_announce_now("라스트 스퍼트", "[라스트 스퍼트!]", "남은 플레이어 모든 이동 +%d칸\n다음 라운드부터 결승선이 라운드마다 %d칸씩 당겨집니다\n%d라운드 뒤에는 진행 순위로 경기가 끝납니다" % [spurt_move, spurt_goal, MatchRules.SPURT_ROUNDS], Color("ff922b"), null, 2.6))
+		&"race_ranked":
+			if bool(data.get("spurt_deadline", false)):
+				_log_line("[라스트 스퍼트 마감] 남은 플레이어는 진행 순위로 순위가 확정됩니다", Color("ff922b"))
 		&"tempo_boosted":
 			_roll_total[int(data["player_id"])] = int(data["to"])
 			_add_roll_reason(int(data["player_id"]), "템포 업 +%d" % (int(data["to"]) - int(data["from"])))
