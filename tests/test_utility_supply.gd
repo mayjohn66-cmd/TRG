@@ -150,22 +150,30 @@ func test_shorten_goal_pulls_everyones_finish_line() -> void:
 	check(report.finished, "당겨진 결승선에 들어서면 완주")
 
 
-func test_all_fiction_redraws_the_draft_once_per_round() -> void:
+func test_all_fiction_makes_everyone_pick_again_after_all_picks() -> void:
 	var manager := _manager(true)
 	var state: GameState = manager.state
 	state.round_number = 7
 	manager._enter_round_start()
 	(manager._draft_offers[1] as Array)[0] = UtilityAugments.REROLL_ALL_AUG
+	(manager._draft_offers[2] as Array)[0] = &"CARD_PACKAGE"
+	var hand_before: int = (state.hands[2] as Array).size()
 	manager.act(&"pick_augment", {"player_id": 1, "index": 0})
-	check(manager.draft_pending_players().has(1), "올 픽션을 고른 사람은 새 선택지로 한 번 더 고른다")
+	manager.act(&"pick_augment", {"player_id": 2, "index": 0})
+	check_eq((state.hands[2] as Array).size(), hand_before, "모두 고르기 전에는 발동하지 않는다")
+	manager.act(&"pick_augment", {"player_id": 3, "index": 0})
+	manager.act(&"pick_augment", {"player_id": 4, "index": 0})
+	check_eq(manager.current_state, TurnManager.State.PHASE_ROUND_START, "올 픽션: 드래프트가 끝나지 않고")
+	check_eq(manager.draft_pending_players(), int_array([1, 2, 3, 4]), "모두 다시 고른다")
+	check_eq((state.hands[2] as Array).size(), hand_before, "버린 선택(카드 패키지)은 적용되지 않는다")
 	check_eq(state.reshuffle_round, 7, "이번 라운드에 썼다")
-	check(not manager.draft_offers_for(1).has(UtilityAugments.REROLL_ALL_AUG), "새 선택지에 올 픽션은 없다")
-	check(not AugmentRegistry.get_def(UtilityAugments.REROLL_ALL_AUG).is_available(state, 2), "라운드당 1회")
-	check(manager.draft_pending_players().has(2) and manager.draft_offers_for(2).size() == GameEnums.DRAFT_OFFER_COUNT, "아직 고르지 않은 사람도 새 선택지 3장")
 	for player_id: int in [1, 2, 3, 4]:
-		if manager.draft_pending_players().has(player_id):
-			manager.auto_pick_draft_now(player_id)
-	check(manager.draft_pending_players().is_empty(), "드래프트가 끝까지 진행된다")
+		check(not manager.draft_offers_for(player_id).has(UtilityAugments.REROLL_ALL_AUG), "새 선택지에 올 픽션은 없다 (P%d)" % player_id)
+	for player_id: int in [1, 2, 3, 4]:
+		manager.auto_pick_draft_now(player_id)
+	check(manager.current_state != TurnManager.State.PHASE_ROUND_START, "두 번째 선택이 끝나면 드래프트가 끝난다")
+	for player_id: int in [1, 2, 3, 4]:
+		check(not (manager.augments[player_id] as Array).is_empty(), "P%d 증강 적용" % player_id)
 	_dispose(manager)
 
 

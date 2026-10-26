@@ -222,10 +222,11 @@ func test_draft_pick_applies_effect_and_finishes_when_everyone_picked() -> void:
 	manager._draft_offers[1] = [&"EVO_2_1", &"TOOL_HOLDEM", &"AUG_LAW_03"] as Array[StringName]
 	manager._draft_offers[2] = [&"CARD_PACKAGE", &"AUG_LAW_04", &"TOOL_YUT"] as Array[StringName]
 	_do(manager, 1, &"pick_augment", {"index": 0, "pawn_id": 13})
-	check(manager.state.get_pawn(13).kind == GameEnums.PawnKind.CHESS and manager.state.get_pawn(13).unit_no in [1, 2, 3, 4], "P1이 고른 기본 말이 체스 기물 중 하나로 진화")
+	check(manager.state.get_pawn(13).kind == GameEnums.PawnKind.BASIC, "모두 고르기 전에는 아직 발동하지 않는다")
 	check_eq(manager.draft_pending_players(), int_array([2]), "P2만 남음")
 	check_eq(manager.current_state, Phase.PHASE_ROUND_START, "아직 드래프트 중")
 	_do(manager, 2, &"pick_augment", {"index": 1})
+	check(manager.state.get_pawn(13).kind == GameEnums.PawnKind.CHESS and manager.state.get_pawn(13).unit_no in [1, 2, 3, 4], "모두 고르면 P1이 고른 기본 말이 체스 기물 중 하나로 진화")
 	check(manager.state.rulebook.has_law("LAW_04"), "P2의 교칙이 등록됨")
 	check_eq(manager.current_state, Phase.PHASE_TURN_BEGIN, "모두 고르면 첫 턴")
 	check_eq(manager.augments[1], [&"EVO_2_1"] as Array, "선택 기록")

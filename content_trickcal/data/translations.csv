@@ -2247,3 +2247,6 @@ v%s · 비공식 팬게임 (원작사와 무관한 비영리 무료 배포물),v
 %d번 칸의 상대 함정 1개 철거,Removed 1 enemy trap on tile %d,%d番マスの相手の罠を1つ撤去
 옮길 말이 없습니다,No pawn to move,移動できる駒がありません
 말 %d번이 선두 바로 뒤 %d번 칸으로 이동,Pawn %d moved right behind the leader to tile %d,駒%d番が先頭のすぐ後ろの%d番マスへ移動
+[올 픽션] 모두가 고른 증강을 버리고 새 3장 중에서 다시 고릅니다,[All Fiction] Everyone discards their pick and chooses again from 3 new augments,[オールフィクション] 全員が選んだ増強を捨て、新しい3枚から選び直します
+모두가 증강을 다시 고릅니다,Everyone picks their augment again,全員が増強を選び直します
+◆ 모두가 고른 뒤 발동: 모든 플레이어가 고른 증강을 버리고 새 3장 중에서 다시 고른다 (라운드당 1회),◆ Triggers after everyone picks: all players discard their pick and choose again from 3 new augments (once per round),◆ 全員が選んだ後に発動: 全プレイヤーが選んだ増強を捨て、新しい3枚から選び直す（1ラウンド1回）

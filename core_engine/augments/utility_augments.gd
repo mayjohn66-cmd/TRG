@@ -65,7 +65,7 @@ const INFO: Dictionary = {
 	TRAP_CLEAR1: ["[즉발 보급] 간의영역", "◆ 상대 함정 1개를 무작위로 철거\n◆ 철거할 함정이 없으면 카드 1장"],
 	CATCH_UP: ["[즉발 보급] 순보", "◆ 가장 뒤처진 내 말을 보드 전체 선두 말의 바로 뒤 칸으로 이동"],
 	SHORTEN_GOAL: ["[즉발 보급] 슬슬 지루한데...", "◆ 모든 플레이어의 결승선이 2칸 당겨진다 (영구)"],
-	REROLL_ALL_AUG: ["[랜덤 보급] 올 픽션", "◆ 아직 고르지 않은 모두와 나의 증강 선택지를 새 3장으로 다시 뽑는다 (라운드당 1회)"],
+	REROLL_ALL_AUG: ["[랜덤 보급] 올 픽션", "◆ 모두가 고른 뒤 발동: 모든 플레이어가 고른 증강을 버리고 새 3장 중에서 다시 고른다 (라운드당 1회)"],
 }
 
 
@@ -154,8 +154,7 @@ static func apply(effect: StringName, state: GameState, player_id: int) -> Dicti
 			state.goal_shrink_bonus = mini(state.goal_shrink_bonus + SHORTEN_STEPS, SHORTEN_MAX)
 			return {"ok": true, "text": "모든 플레이어의 결승선이 %d칸 당겨졌습니다 (%d번 칸부터 결승)" % [SHORTEN_STEPS, TempoUp.zone_start_for(state)]}
 		REROLL_ALL_AUG:
-			state.reshuffle_round = state.round_number  # 실제 재추첨은 TurnManager가 한다 (드래프트 상태를 가진 쪽)
-			return {"ok": true, "text": "이번 드래프트를 다시 뽑습니다"}
+			return {"ok": true, "text": "이번 드래프트를 다시 뽑습니다"}  # 실제 재추첨은 모두 고른 뒤 TurnManager가 한다
 	return {"ok": false, "text": "알 수 없는 범용 증강입니다"}
 
 

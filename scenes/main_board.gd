@@ -9941,8 +9941,13 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_draft_open = true
 			_log_line("[증강] 라운드 %d 증강 드래프트가 열렸습니다." % data["round"], Color("ffa94d"))
 		&"augment_reshuffled":
-			_log_line("[올 픽션] P%d: 아직 고르지 않은 사람의 증강 선택지를 다시 뽑습니다" % int(data["player_id"]), Color("4dabf7"))
-			_record(int(data["player_id"]), "[올 픽션] 전원 증강 재추첨!")
+			var fiction_players: Array = data.get("players", [])
+			_log_line("[올 픽션] 모두가 고른 증강을 버리고 새 3장 중에서 다시 고릅니다", Color("4dabf7"))
+			for fiction_player: Variant in fiction_players:
+				_record(int(fiction_player), "[올 픽션] 전원 증강 재추첨!")
+			if _fx_on():
+				_floating_badge(_board_center(), str(UtilityAugments.CALLOUTS[UtilityAugments.REROLL_ALL_AUG]), UTILITY_COLOR, 30)
+			_refresh_draft_overlay()
 		&"revive_triggered":
 			var revived: int = int(data["player_id"])
 			_log_line("[다이스: 리바이브] P%d: 턴이 끝나도 한 턴 더 합니다" % revived, Color("4dabf7"))

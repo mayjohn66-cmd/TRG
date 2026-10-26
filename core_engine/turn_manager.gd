@@ -104,6 +104,8 @@ var _extra_turn_pending: bool = false
 var _bonus_roll_pending: bool = false
 var _draft_offers: Dictionary = {}
 var _draft_picks: Dictionary = {}
+## 드래프트에서 고른 증강의 추가 정보 (진화·보호막을 받을 말 pawn_id, 자동 선택 여부). 모두 고른 뒤 한꺼번에 적용한다.
+var _draft_pick_params: Dictionary = {}
 ## 이번 턴에 이미 굴리기 전 카드를 한 장 냈는가. 카드는 굴리기 전 턴당 1장만 쓸 수 있다 (피해를 되돌리는 ACT_05만 예외).
 var _card_played_this_turn: bool = false
 ## 이번 드래프트에서 플레이어별로 이미 리롤한 슬롯 인덱스 (슬롯당 1회).
@@ -1088,35 +1090,80 @@ func draft_offers_for(player_id: int) -> Array[StringName]:
 	return offers
 
 
-## 선택한 증강을 즉시 적용하고 기록한다. 적용에 실패하면 false.
+## 선택을 기록만 한다 (효과는 모두가 고른 뒤 _resolve_draft가 한꺼번에 적용한다). 지금 받을 수 없는 증강·잘못된 말이면 false.
 func _pick_augment(player_id: int, index: int, params: Dictionary, automatic: bool) -> bool:
 	var augment_id: StringName = (_draft_offers[player_id] as Array)[index]
 	var definition: AugmentDef = AugmentRegistry.get_def(augment_id)
-	var result: Dictionary = definition.apply(state, player_id, params)
-	if not bool(result["ok"]):
+	if definition == null:
 		return false
+	if params.has("pawn_id"):
+		var pawn: PlayerPawn = state.get_pawn(int(params["pawn_id"]))
+		if pawn == null or pawn.owner_id != player_id:
+			return false
+		if definition.category == GameEnums.AugmentCategory.PAWN_EVOLUTION and pawn.kind != GameEnums.PawnKind.BASIC:
+			return false  # 기물 진화는 기본 말만 (적용할 때와 같은 규칙)
+		if definition.category == GameEnums.AugmentCategory.UTILITY and not definition.can_pick_pawn(state, player_id, pawn):
+			return false
 	_draft_picks[player_id] = index
-	(augments[player_id] as Array).append(augment_id)
-	_emit_event(&"augment_picked", {"player_id": player_id, "augment_id": augment_id, "text": result["text"], "auto": automatic})
-	if augment_id == UtilityAugments.REROLL_ALL_AUG:
-		_reshuffle_draft(player_id)
+	_draft_pick_params[player_id] = {"params": params.duplicate(), "auto": automatic}
+	_emit_event(&"augment_locked", {"player_id": player_id, "auto": automatic})
 	_broadcast_state()
 	return true
 
 
-## [범용] 올 픽션: 아직 고르지 않은 사람과 고른 본인의 선택지를 새 3장으로 다시 뽑는다 (본인은 한 번 더 고른다). 라운드당 1회.
-## 이미 고른 다른 사람의 증강은 적용이 끝났으므로 그대로 둔다.
-func _reshuffle_draft(picker: int) -> void:
-	_draft_picks.erase(picker)
-	var reshuffled: Array[int] = []
+## 모두 고른 뒤: 누군가 올 픽션을 골랐으면(라운드당 1회) 모두의 선택을 버리고 새 3장으로 다시 고르게 하고 true.
+## 아니면 고른 증강을 플레이 순서대로 적용한다 (먼저 적용된 증강 때문에 적용할 수 없게 되면 그 사람의 다른 선택지를 차례로 시도한다).
+func _resolve_draft() -> bool:
+	var reshufflers: Array[int] = []
+	for player_id: int in player_order:
+		if _draft_picks.has(player_id) and (_draft_offers[player_id] as Array)[int(_draft_picks[player_id])] == UtilityAugments.REROLL_ALL_AUG:
+			reshufflers.append(player_id)
+	if not reshufflers.is_empty() and state.reshuffle_round != state.round_number:
+		_reshuffle_draft(reshufflers)
+		return true
+	for player_id: int in player_order:
+		if not _draft_picks.has(player_id):
+			continue
+		var offers: Array = _draft_offers[player_id]
+		var picked: int = int(_draft_picks[player_id])
+		var entry: Dictionary = _draft_pick_params.get(player_id, {})
+		var order: Array[int] = [picked]
+		for index: int in offers.size():
+			if index != picked:
+				order.append(index)
+		for index: int in order:
+			var definition: AugmentDef = AugmentRegistry.get_def(offers[index])
+			if definition == null or offers[index] == UtilityAugments.REROLL_ALL_AUG:
+				continue
+			if definition.category == GameEnums.AugmentCategory.LAW_ENACT and (MatchRules.laws_full(state) or state.rulebook.has_law(String(definition.payload))):
+				continue  # 앞사람이 법전을 채웠다
+			var params: Dictionary = (entry.get("params", {}) as Dictionary) if index == picked else {}
+			var result: Dictionary = definition.apply(state, player_id, params)
+			if not bool(result["ok"]):
+				continue
+			(augments[player_id] as Array).append(offers[index])
+			_emit_event(&"augment_picked", {"player_id": player_id, "augment_id": offers[index], "text": result["text"], "auto": bool(entry.get("auto", false)) or index != picked})
+			break
+	return false
+
+
+## [범용] 올 픽션: 모두의 선택을 버리고 새 3장으로 다시 고르게 한다 (라운드당 1회, 새 선택지에는 올 픽션이 없다).
+func _reshuffle_draft(pickers: Array[int]) -> void:
+	state.reshuffle_round = state.round_number
+	for picker: int in pickers:
+		(augments[picker] as Array).append(UtilityAugments.REROLL_ALL_AUG)
+		_emit_event(&"augment_picked", {"player_id": picker, "augment_id": UtilityAugments.REROLL_ALL_AUG, "text": "모두가 증강을 다시 고릅니다", "auto": false})
+	_draft_picks.clear()
+	_draft_pick_params.clear()
+	_draft_rerolls.clear()
 	state.pacing_humans = pacing_humans
 	for player_id: int in player_order:
-		if not _draft_offers.has(player_id) or _draft_picks.has(player_id):
-			continue
-		_draft_offers[player_id] = AugmentRegistry.generate_offers(state, player_id)
-		_draft_rerolls.erase(player_id)
-		reshuffled.append(player_id)
-	_emit_event(&"augment_reshuffled", {"player_id": picker, "players": reshuffled, "offers": _draft_offers.duplicate(true)})
+		if _draft_offers.has(player_id):
+			_draft_offers[player_id] = AugmentRegistry.generate_offers(state, player_id)
+	phase_serial += 1
+	phase_time_left = GameEnums.PHASE_TIME_DRAFT * timer_scale
+	_emit_event(&"augment_reshuffled", {"players": pickers, "offers": _draft_offers.duplicate(true)})
+	_broadcast_state()
 
 
 # ---------------------------------------------------------------------------
@@ -1181,6 +1228,7 @@ func _make_ctx(actor: int) -> RuleContext:
 func _enter_round_start() -> void:
 	_draft_offers.clear()
 	_draft_picks.clear()
+	_draft_pick_params.clear()
 	_draft_rerolls.clear()
 	change_state(State.PHASE_ROUND_START)
 	if _apply_tempo_up():
@@ -1256,18 +1304,20 @@ func _enact_random_law() -> void:
 
 ## 시간 초과 등으로 드래프트를 마감한다. 아직 고르지 않은 플레이어는 첫 번째 선택지로 자동 선택된다.
 func _finish_draft() -> void:
-	for _pass: int in 2:  # 올 픽션이 자동 선택되면 선택이 풀린 사람이 다시 생긴다 (재추첨된 선택지에는 올 픽션이 없다)
-		for player_id: int in player_order:
-			if _draft_offers.has(player_id) and not _draft_picks.has(player_id):
-				for index: int in (_draft_offers[player_id] as Array).size():
-					if _pick_augment(player_id, index, {}, true):
-						break
+	for player_id: int in player_order:
+		if _draft_offers.has(player_id) and not _draft_picks.has(player_id):
+			for index: int in (_draft_offers[player_id] as Array).size():
+				if _pick_augment(player_id, index, {}, true):
+					break
+	if _resolve_draft():
+		return  # 올 픽션: 모두 다시 고른다
 	var participants: Array[int] = []
 	for player_id: int in player_order:
 		if _draft_offers.has(player_id):
 			participants.append(player_id)
 	_draft_offers.clear()
 	_draft_picks.clear()
+	_draft_pick_params.clear()
 	_draft_rerolls.clear()
 	if review_enabled and not participants.is_empty():
 		_start_review(participants)
