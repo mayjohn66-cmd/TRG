@@ -187,17 +187,19 @@ func test_allies_arriving_on_a_yut_pawn_also_stack() -> void:
 	check_eq(state.get_pawn(11).carrier, state.get_pawn(12), "아군이 윷놀이 기물이 있는 칸에 도착해도 업힘")
 
 
-func test_non_yut_pawns_never_stack_and_coexist_on_one_tile() -> void:
+func test_every_pawn_kind_can_stack_with_its_own_team() -> void:
 	for kind: GameEnums.PawnKind in [GameEnums.PawnKind.BASIC, GameEnums.PawnKind.CHESS, GameEnums.PawnKind.JANGGI, GameEnums.PawnKind.MONOPOLY, GameEnums.PawnKind.GO]:
 		var loadout: Array = [0, 0, 0, 0] if kind == GameEnums.PawnKind.BASIC else [Vector2i(kind, 1), Vector2i(kind, 2), 0, 0]
 		var state := make_state(2, 1, {1: loadout})
 		place(state, 11, 4, [3])
 		place(state, 12, 2, [1])
 		var report: MoveReport = move(state, 12, 2)
-		check(report.stacked_pawn_ids.is_empty() and report.stack_offer.is_empty(), "%d: 업기 없음" % kind)
-		check(state.get_pawn(11).carrier == null and state.get_pawn(12).carrier == null, "%d: 각각 별개 기물" % kind)
-		check_eq(state.get_pawn(11).current_tile_idx, state.get_pawn(12).current_tile_idx, "%d: 같은 타일에 나란히 공존" % kind)
-		check_eq(state.leaders_at(4).size(), 2, "%d: 대표 말이 둘" % kind)
+		check(state.get_pawn(11).carrier == state.get_pawn(12) and report.stacked_pawn_ids.has(11), "%d: 아군 말 위에 도착하면 합류" % kind)
+		check_eq(state.leaders_at(4).size(), 1, "%d: 하나로 합쳐 움직인다" % kind)
+	var enemies := make_state(2, 1)
+	place(enemies, 21, 4, [3])
+	place(enemies, 11, 2, [1])
+	check(not enemies.get_pawn(11).can_stack_with(enemies.get_pawn(21)), "적 말과는 업을 수 없다")
 
 func test_defer_stack_choice_reports_an_offer_instead_of_stacking() -> void:
 	var state := make_state(2, 1, {1: _yut_loadout()})
@@ -210,12 +212,11 @@ func test_defer_stack_choice_reports_an_offer_instead_of_stacking() -> void:
 	check(state.get_pawn(11).carrier == null, "선택 전에는 합치지 않음")
 
 
-func test_non_yut_pawns_only_stack_when_a_yut_pawn_is_involved() -> void:
+func test_any_two_own_pawns_can_stack_regardless_of_kind() -> void:
 	var state := make_state(2, 1, {1: [Vector2i(GameEnums.PawnKind.CHESS, 2), Vector2i(GameEnums.PawnKind.GO, 1), Vector2i(GameEnums.PawnKind.YUT, 1), Vector2i(GameEnums.PawnKind.CHESS, 1)]})
-	check(not state.get_pawn(11).can_stack_with(state.get_pawn(12)), "나이트 + 바둑돌 불가")
-	check(state.get_pawn(11).can_stack_with(state.get_pawn(13)), "윷말은 다른 종류와도 업기 가능")
-	check(not state.get_pawn(11).can_stack_with(state.get_pawn(14)), "같은 종류여도 윷이 아니면 불가")
-	check(state.get_pawn(13).can_stack_with(state.get_pawn(11)), "방향과 무관하게 윷이 끼면 가능")
+	check(state.get_pawn(11).can_stack_with(state.get_pawn(12)), "나이트 + 바둑돌 가능")
+	check(state.get_pawn(11).can_stack_with(state.get_pawn(13)), "윷말과도 가능")
+	check(state.get_pawn(11).can_stack_with(state.get_pawn(14)), "같은 종류도 가능")
 
 
 func test_mirror_force_trap_stops_and_expels_enemy_but_not_owner() -> void:

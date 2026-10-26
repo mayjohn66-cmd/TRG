@@ -101,15 +101,11 @@ func is_selectable() -> bool:
 	return not is_finished and carrier == null and not blocked_this_turn
 
 
-## 윷놀이 기물(YUT)의 고유 능력 [선택적 업기]: 업기는 두 말 중 하나가 내 윷놀이 기물일 때만 가능하다
-## (상대가 다른 종류의 기물이어도 된다). 일반 기물끼리는 같은 타일에 각각 따로 공존한다.
-## 법전(LAW_02)은 이 판정보다 우선하며 MoveExecutor가 따로 검사한다.
+## 업기 (2026-10, 모든 기물): 내 말이 아군 말이 선 칸에 도착하면 합류할지 고르고, 합류하면 윷놀이처럼 하나로 합쳐 함께 움직인다.
 func can_stack_with(other: PlayerPawn) -> bool:
 	if other == self or other.is_finished or is_finished:
 		return false
-	if other.owner_id != owner_id:
-		return false
-	return kind == GameEnums.PawnKind.YUT or other.kind == GameEnums.PawnKind.YUT
+	return other.owner_id == owner_id
 
 
 ## 나(업은 말)와 내가 업은 모든 말.

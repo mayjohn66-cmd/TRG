@@ -84,9 +84,9 @@ func test_chess_unit_three_is_the_bishop_and_unit_four_the_straight_rook() -> vo
 
 func test_stacking_rules_with_sets() -> void:
 	var state := make_state(2, 1, {1: [Vector2i(Kind.CHESS, 1), Vector2i(Kind.GO, 1), Vector2i(Kind.YUT, 1), 0]})
-	check(not state.get_pawn(11).can_stack_with(state.get_pawn(12)), "체스 + 바둑은 불가")
+	check(state.get_pawn(11).can_stack_with(state.get_pawn(12)), "체스 + 바둑도 가능 (모든 아군 업기)")
 	check(state.get_pawn(11).can_stack_with(state.get_pawn(13)), "윷은 모든 세트와 가능")
-	check(not state.get_pawn(11).can_stack_with(state.get_pawn(14)), "체스 + 기본은 불가")
+	check(state.get_pawn(11).can_stack_with(state.get_pawn(14)), "체스 + 기본도 가능")
 	check(state.get_pawn(14).can_stack_with(state.get_pawn(13)), "기본 + 윷 가능")
 
 

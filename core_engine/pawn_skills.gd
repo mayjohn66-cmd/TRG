@@ -22,6 +22,8 @@ static func has_skill(pawn: PlayerPawn) -> bool:
 ## 이 기물이 지금 필살기를 쓸 수 있는 상태인가 (필살기 보유·미사용·보드 위에 출발해 있음·구속/감옥/업힘 아님, 용왕·용마 필살기는 승급 후).
 static func is_ready(pawn: PlayerPawn) -> bool:
 	var skill: StringName = PawnCatalog.skill_of(pawn.sub_type())
+	if skill == &"extra_roll":  # 윷말 한 번 더!: 출발선에서 기다려도 쓸 수 있다
+		return not pawn.skill_used and not pawn.is_finished and pawn.carrier == null
 	if PawnCatalog.PROMOTED_SKILLS.has(skill) and not pawn.promoted:
 		return false
 	return has_skill(pawn) and not pawn.skill_used and pawn.has_left_start and not pawn.is_finished \

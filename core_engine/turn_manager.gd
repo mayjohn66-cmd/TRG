@@ -571,6 +571,15 @@ func _handle_use_skill(actor: int, params: Dictionary) -> void:
 			_skill_effect(actor, pawn, skill)
 		&"hotel":
 			_skill_effect(actor, pawn, skill)
+		&"extra_roll":
+			# 윷말 한 번 더!: 이번 차례의 이동이 끝나면 같은 사람이 한 번 더 굴린다 (추가 굴림과 같은 흐름)
+			if _bonus_roll_pending:
+				action_rejected.emit(actor, &"use_skill", &"invalid_skill")
+				return
+			pawn.skill_used = true
+			_bonus_roll_pending = true
+			_emit_skill_event(actor, pawn, skill, {"from": pawn.current_tile_idx})
+			_broadcast_state()
 		&"quake", &"slash", &"horse":
 			_skill_effect(actor, pawn, skill)
 		_:
@@ -1246,7 +1255,7 @@ func _enter_round_start() -> void:
 
 
 ## 템포 업: 단계가 오르는 라운드(TempoUp.STAGE_ROUNDS, 7·14·20)는 라운드를 선언하기 전에 경고 이벤트를 먼저 보낸다.
-## 3단계(20R)는 법전에 무작위 특수 승리를 하나 올리고, 3단계부터는 라운드마다 결승선이 당겨져 그 안에 선 말이 바로 완주한다.
+## 3단계(20R)부터는 라운드마다 결승선이 당겨져 그 안에 선 말이 바로 완주한다 (법전 자동 등록은 없다, 2026-10-26).
 ## 완주로 게임이 끝났으면 true.
 func _apply_tempo_up() -> bool:
 	var round_number: int = state.round_number
@@ -1265,8 +1274,7 @@ func _apply_tempo_up() -> bool:
 		if not bool(state.match_rules.get("laws", true)):
 			lines = lines.filter(func(line: String) -> bool: return not line.contains("법전"))  # 법전 끄기: 법전 관련 효과는 없다
 		_emit_event(&"tempo_up", {"round": round_number, "level": stage, "lines": lines})
-		if stage == 3:
-			_enact_random_law()
+
 	var zone_start: int = TempoUp.zone_start_for(state)
 	if zone_start < 0:
 		return false
@@ -1283,23 +1291,6 @@ func _apply_tempo_up() -> bool:
 	for entry: Dictionary in VictoryChecker.newly_qualified(state, player_order, current_player_id(), false):
 		_graduate(int(entry["player"]), entry["reason"])
 	return _end_if_decided()
-
-
-## 템포 업 3단계: 법전에 아직 없는 특수 승리 교칙 하나를 무작위로 올린다 (슬롯이 가득 차면 가장 오래된 교칙이 밀려난다).
-func _enact_random_law() -> void:
-	if not bool(state.match_rules.get("laws", true)) or MatchRules.laws_full(state):
-		return  # 방 규칙 [특수 승리 법전 끄기] 또는 법전이 이미 최대 개수 (MatchRules.max_laws)
-	var candidates: Array[String] = []
-	for definition: AugmentDef in AugmentRegistry.all():
-		if definition.category == GameEnums.AugmentCategory.LAW_ENACT and definition.enabled and not state.rulebook.has_law(String(definition.payload)) and not candidates.has(String(definition.payload)) \
-				and MatchRules.law_allowed(state, String(definition.payload)):
-			candidates.append(String(definition.payload))
-	if candidates.is_empty():
-		return
-	var law: LawResource = LawRegistry.create(candidates[state.rng.randi_range(0, candidates.size() - 1)])
-	SpecialVictory.on_law_enacted(state, law)
-	state.rulebook.enqueue_law(law)
-	_emit_event(&"tempo_law", {"round": state.round_number, "law_id": law.law_id})
 
 
 ## 시간 초과 등으로 드래프트를 마감한다. 아직 고르지 않은 플레이어는 첫 번째 선택지로 자동 선택된다.

@@ -548,6 +548,8 @@ static func skill_option(state: GameState, pawn: PlayerPawn) -> Dictionary:
 			return {"params": {}, "value": SKILL_USE_THRESHOLD + 1.0} if not own_hotel else {}
 		&"plant_mine":
 			return {"params": {}, "value": SKILL_USE_THRESHOLD + 1.0} if not state.board.get_tile(pawn.current_tile_idx).has_trap() else {}
+		&"extra_roll":
+			return {"params": {}, "value": SKILL_USE_THRESHOLD + 2.0}  # 한 번 더!: 굴리기 전에 바로 쓴다
 	return {}
 
 

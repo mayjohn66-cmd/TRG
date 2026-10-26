@@ -276,7 +276,7 @@ func test_bots_choose_stacking_for_yut_pawns() -> void:
 	place(manager.state, 21, 2, [1])
 	for pawn_id: int in [22, 23, 24]:
 		manager.state.get_pawn(pawn_id).blocked_this_turn = true  # 윷 말 하나만 움직일 수 있게 한다
-	manager.state.tools[2] = ScriptedTool.new([2])
+	manager.state.tools[2] = ScriptedTool.new([2, 1, 1])  # 윷말은 필살기 [한 번 더!]로 한 번 더 굴린다
 	var controller: BotController = _controller(manager, [2], true)
 	var guard: int = 0
 	while manager.current_player_id() == 2 and guard < 30:

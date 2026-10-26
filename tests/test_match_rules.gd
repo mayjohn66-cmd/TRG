@@ -74,14 +74,12 @@ func test_speed_match_moves_tempo_up_and_boosts_revenge() -> void:
 	check_eq(fast_bonus, MoveExecutor.revenge_bonus_of(normal.get_pawn(11), normal) + MatchRules.SPEED_REVENGE_EXTRA + (TempoUp.REVENGE_BONUS[1] - GameData.revenge_bonus()), "스피드전 리벤지 부스터 = 1단계 값 + 2칸")
 
 
-func test_laws_off_skips_the_tempo_law_and_minefield_mines_are_public() -> void:
+func test_minefield_mines_are_public() -> void:
 	var manager := TurnManager.new()
 	manager.match_rules = {"laws": false}
 	manager.draft_enabled = false
 	tree.root.add_child(manager)
 	manager.start_game([1, 2] as Array[int], 5)
-	manager._enact_random_law()
-	check(manager.state.rulebook.law_ids().is_empty(), "법전 끄기: 템포 업 2단계도 법전을 올리지 않는다")
 	SuperAugments.apply(SuperAugments.MINEFIELD, manager.state, 1)
 	var mines: int = 0
 	for index: int in BoardSpec.tile_count:

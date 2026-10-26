@@ -676,7 +676,7 @@ func _ready() -> void:
 	manager.hotseat_mode = true
 	manager.step_delay_sec = MOVE_STEP_SECONDS
 	manager.review_enabled = not instant_roll_for_test  # 드래프트 뒤 [선택한 증강] 확인 단계 (모두 확인하면 라운드 시작)
-	manager.stack_choice_enabled = false  # 윷말끼리 만나면 선택창 없이 자동으로 업는다 (선택 UI는 코어에 남아 있다)
+	manager.stack_choice_enabled = true  # 아군 말에 도착하면 합류(업기)할지 고른다 (모든 기물)
 	_bot = BotController.new()
 	_bot.name = "BotController"
 	_bot.manager = manager
@@ -5972,7 +5972,7 @@ func _hint_text(current_phase: TurnManager.State, tool: BaseJudgmentTool) -> Str
 	if (current_phase == TurnManager.State.PHASE_INTERRUPT_ROLL or current_phase == TurnManager.State.PHASE_RESOLUTION) and not manager.stack_offer_pending():
 		return "정산 중입니다..."
 	if manager.stack_offer_pending():
-		return "윷놀이 기물 업기: [업기 (하나로 합체)] 또는 [그냥 두기 (개별 유지)]를 고르세요. (시간이 지나면 자동으로 업기)"
+		return "아군 말 업기: [업기 (하나로 합체)] 또는 [그냥 두기 (개별 유지)]를 고르세요. (시간이 지나면 자동으로 업기)"
 	if _tile_pick_active:
 		return "타일 선택 모드: 보드판에서 사용할 타일(초록 테두리)을 클릭하세요. 취소는 ESC 또는 오른쪽 클릭."
 	match current_phase:
@@ -9850,10 +9850,6 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 		&"race_ranked":
 			if bool(data.get("round_cap", false)):
 				_log_line("[%d라운드 종료] 남은 플레이어는 진행 순위로 순위가 확정됩니다" % PacingDirector.HARD_CAP_ROUND, Color("ffd43b"))
-		&"tempo_law":
-			var tempo_law: LawResource = LawRegistry.create(String(data["law_id"]))
-			_log_line("[템포 업] 법전에 특수 승리 [%s] 자동 등록" % tempo_law.law_name, Color("ffd43b"))
-			_record(-1, "템포 업: 법전에 %s 자동 등록" % _bq(tempo_law.law_name))
 		&"goal_shrunk":
 			var finished_ids: Array = data["finished"]
 			_refresh_tiles()
@@ -10644,7 +10640,7 @@ func _refresh_stack_overlay() -> void:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 10)
 	panel.add_child(box)
-	var title := _make_label("윷놀이 기물 - 선택적 업기", 20, COLOR_GOLD)
+	var title := _make_label("아군 말 합류 - 업기", 20, COLOR_GOLD)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(title)
 	var body := _make_label("%s이(가) 아군 [%s]와(과) 같은 타일에 도착했습니다.\n하나로 합체할까요?" % [mover.display_label(), ", ".join(names)], 14, Color("dee2e6"))

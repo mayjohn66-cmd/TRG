@@ -90,7 +90,7 @@ const SUB_LETTERS_JA: Dictionary = {
 const LETTERS_BY_LANG: Dictionary = {"en": [SUB_LETTERS_EN, PROMOTED_LETTERS_EN], "ja": [SUB_LETTERS_JA, PROMOTED_LETTERS_JA]}
 const BASIC_LETTERS: Dictionary = {"ko": "말", "en": "P", "ja": "駒"}
 const SUB_ABILITIES: Dictionary = {
-	SubType.YUT_MAL: "처치 시 재굴림 +1 · 자동 업기",
+	SubType.YUT_MAL: "처치 시 재굴림 +1",
 	SubType.CHESS_PAWN: "반환점 이상 도달 시 퀸 승급",
 	SubType.CHESS_KNIGHT: "경로 말·함정 관통",
 	SubType.CHESS_BISHOP: "코너 바로 앞에 멈추면 +1칸 코너 진입",
@@ -130,6 +130,7 @@ const SKILL_IDS: Dictionary = {
 	SubType.POOL_8BALL: &"bank_shot",
 	SubType.MINESWEEPER_FLAG: &"plant_mine",
 	SubType.MONO_CAR: &"hotel",
+	SubType.YUT_MAL: &"extra_roll",
 }
 ## 나리 승급해야 쓸 수 있는 필살기 (용왕·용마).
 const PROMOTED_SKILLS: Array[StringName] = [&"slash", &"horse"]
@@ -146,6 +147,7 @@ const SKILL_NAMES: Dictionary = {
 	&"bank_shot": "뱅크샷",
 	&"plant_mine": "지뢰 매설",
 	&"hotel": "호텔 건설",
+	&"extra_roll": "한 번 더!",
 }
 const SKILL_TEXTS: Dictionary = {
 	&"shoot": "조준 발사 → 적 전원 출발선, 근처 안착",
@@ -160,6 +162,7 @@ const SKILL_TEXTS: Dictionary = {
 	&"bank_shot": "앞쪽 가장 가까운 적에게 돌진",
 	&"plant_mine": "지금 칸에 지뢰 설치",
 	&"hotel": "지금 칸에 내 호텔 설치",
+	&"extra_roll": "이번 차례에 주사위를 한 번 더 굴린다",
 }
 
 

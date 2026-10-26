@@ -2250,3 +2250,9 @@ v%s · 비공식 팬게임 (원작사와 무관한 비영리 무료 배포물),v
 [올 픽션] 모두가 고른 증강을 버리고 새 3장 중에서 다시 고릅니다,[All Fiction] Everyone discards their pick and chooses again from 3 new augments,[オールフィクション] 全員が選んだ増強を捨て、新しい3枚から選び直します
 모두가 증강을 다시 고릅니다,Everyone picks their augment again,全員が増強を選び直します
 ◆ 모두가 고른 뒤 발동: 모든 플레이어가 고른 증강을 버리고 새 3장 중에서 다시 고른다 (라운드당 1회),◆ Triggers after everyone picks: all players discard their pick and choose again from 3 new augments (once per round),◆ 全員が選んだ後に発動: 全プレイヤーが選んだ増強を捨て、新しい3枚から選び直す（1ラウンド1回）
+아군 말 업기: [업기 (하나로 합체)] 또는 [그냥 두기 (개별 유지)]를 고르세요. (시간이 지나면 자동으로 업기),Stacking with your pawn: pick [Stack (merge into one)] or [Keep separate]. (Time out = auto-stack),味方の駒とおんぶ: [おんぶ (1つに合体)] か [そのまま (個別のまま)] を選んでください。(時間切れで自動的におんぶ)
+아군 말 합류 - 업기,Join Your Pawn - Stack,味方の駒と合流 - おんぶ
+처치 시 재굴림 +1,Reroll +1 on KO,撃破時リロール +1
+한 번 더!,One More!,もう1回！
+이번 차례에 주사위를 한 번 더 굴린다,Roll the dice once more this turn,このターンにダイスをもう1回振る
+◆ 패시브: 처치 시 재굴림 +1\n◆ [1회] 한 번 더!: 이번 차례에 주사위를 한 번 더 굴린다\n※ 이미 가진 기물은 받을 수 없습니다,◆ Passive: Reroll +1 on KO\n◆ [Once] One More!: roll the dice once more this turn\n※ You can't get a piece you already own,◆ パッシブ: 撃破時、振り直し+1\n◆ [1回] もう1回！: このターンにダイスをもう1回振る\n※ 既に所持している駒は獲得できません

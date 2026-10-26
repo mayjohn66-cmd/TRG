@@ -747,7 +747,7 @@ static func is_capture_immune(_state: GameState, pawn: PlayerPawn) -> bool:
 	return pawn.ward or (pawn.shield and pawn.sub_type() == GameEnums.PawnSubType.BADUK_WHITE)
 
 
-## 업기: 윷놀이 기물의 고유 능력이다 (법전 allow_stacking이 우선). 출발선(0번)에서는 업지 않는다.
+## 업기: 모든 아군 말끼리 합칠 수 있다 (법전 allow_stacking이 우선). 출발선(0번)에서는 업지 않는다.
 ## ctx.defer_stack_choice가 켜져 있으면 즉시 합치지 않고 report.stack_offer로 플레이어의 선택을 요청한다.
 static func _resolve_stacking(state: GameState, mover: PlayerPawn, ctx: RuleContext, report: MoveReport) -> void:
 	if not ctx.allow_stacking or mover.current_tile_idx == GameEnums.GOAL_TILE:

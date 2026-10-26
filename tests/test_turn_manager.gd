@@ -291,7 +291,7 @@ func test_yut_stack_choice_defaults_to_stacking_on_timeout_and_rejects_wrong_act
 	_dispose(manager)
 
 
-func test_stack_choice_is_skipped_for_non_yut_pawns_and_headless_default() -> void:
+func test_stack_choice_is_asked_for_every_pawn_and_skipped_by_headless_default() -> void:
 	var plain: TurnManager = _new_manager()
 	plain.stack_choice_enabled = true
 	place(plain.state, 12, 4, [3])
@@ -300,7 +300,7 @@ func test_stack_choice_is_skipped_for_non_yut_pawns_and_headless_default() -> vo
 	_do(plain, 1, &"proceed")
 	_do(plain, 1, &"roll")
 	_do(plain, 1, &"select_pawn", {"pawn_id": 11})
-	check(not plain.stack_offer_pending(), "일반 기물은 선택을 묻지 않음")
+	check(plain.stack_offer_pending(), "일반 기물도 아군 말에 도착하면 업기를 묻는다")
 	_dispose(plain)
 	var auto: TurnManager = _new_manager(2, true, {1: [Vector2i(GameEnums.PawnKind.YUT, 1), 0, 0, 0]})
 	place(auto.state, 12, 4, [3])

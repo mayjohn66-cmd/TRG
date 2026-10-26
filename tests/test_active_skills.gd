@@ -98,14 +98,15 @@ func test_only_the_mini_car_has_the_hotel_skill() -> void:
 
 # --- 필살기 ----------------------------------------------------------------
 
-func test_skill_catalog_has_twelve_one_shot_skills() -> void:
+func test_skill_catalog_has_thirteen_one_shot_skills() -> void:
 	var found: Dictionary = {}
 	for kind: GameEnums.PawnKind in PawnCatalog.EVOLVABLE_SETS:
 		for unit: int in range(1, PawnCatalog.unit_count(kind) + 1):
 			var skill: StringName = PawnCatalog.skill_of(PawnCatalog.sub_type_of(kind, unit))
 			if skill != &"":
 				found[skill] = PawnCatalog.unit_label(kind, unit)
-	check_eq(found.size(), 12, "필살기 12종")
+	check_eq(found.size(), 13, "필살기 13종")
+	check_eq(found[&"extra_roll"], "윷말", "한 번 더!는 윷말")
 	check_eq(found[&"hotel"], "모노:미니카", "호텔 건설은 미니카")
 	check_eq(found[&"shoot"], "바둑:흑돌", "알까기 슈팅은 흑돌")
 	check_eq(found[&"castle"], "체스:룩", "단독 캐슬링은 룩")
