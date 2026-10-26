@@ -17,6 +17,8 @@ const LEVEL_MAX: int = 5
 const DEFAULT_LEVEL: int = 2
 ## 히든 법전 브레이크 감점 (PacingDirector.capture_would_win_law): 다른 말을 움직일 수 있으면 그쪽을 고른다.
 const LAW_BRAKE_PENALTY: float = 400.0
+## 드래프트에서 가장 좋은 선택지가 법전일 때 그대로 고르는 확률 (나머지는 법전이 아닌 가장 좋은 증강).
+const LAW_PICK_CHANCE: float = 0.25
 const ALL: Array[int] = [1, 2, 3, 4, 5]
 
 ## 단계 이름 (원문 한국어, 화면에서 번역).
@@ -309,10 +311,13 @@ static func plan_skill(state: GameState, player_id: int, level: int) -> Dictiona
 ## 드래프트: avoid_law 단계는 특수 승리(법전) 증강을 앞세우지 않는다 (다른 선택지가 있으면 그중에서 고른다).
 static func choose_augment(state: GameState, player_id: int, offers: Array[StringName], level: int, rng: RandomNumberGenerator) -> int:
 	var index: int = BotBrain.choose_augment(state, player_id, offers, rng)
-	if not bool(params(level)["avoid_law"]) or offers.is_empty():
+	if offers.is_empty():
 		return index
 	var chosen: AugmentDef = AugmentRegistry.get_def(offers[index])
 	if chosen == null or chosen.category != GameEnums.AugmentCategory.LAW_ENACT:
+		return index
+	# 법전은 가끔만: avoid_law 단계는 안 고르고, 나머지도 LAW_PICK_CHANCE 확률로만 고른다 (기물 진화·도구 교체가 먼저)
+	if not bool(params(level)["avoid_law"]) and rng.randf() < LAW_PICK_CHANCE:
 		return index
 	var best: int = -1
 	var best_score: float = -INF

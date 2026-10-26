@@ -36,6 +36,11 @@ const EASY_HARD_SUPER_FACTOR: float = 0.15
 const EASY_SUPER_FACTOR: float = 0.6
 const EASY_LAW_FACTOR: float = 0.6
 const EASY_FRIENDLY_FACTOR: float = 1.6
+## 드래프트에서 법전(LAW) 계열 가중치에 곱하는 배수: 법전은 가끔 보이는 히든카드 (2026-10-26, 법전 1위 72/100판 → 1/3).
+const LAW_DRAFT_FACTOR: float = 0.33
+## 한 판에 법전에 동시에 올라 있을 수 있는 특수 승리 수: 기본 2개, 싱글 Lv.1~2는 1개. 가득 차면 드래프트·템포 업에 법전이 나오지 않는다.
+const MAX_LAWS: int = 2
+const MAX_LAWS_EASY: int = 1
 ## Lv.1 크림에 나오는 법전 (투기장의 지배자·봉인된 에르핀의 식권).
 const EASY_LAWS: Array[String] = ["LAW_01", "LAW_02"]
 
@@ -113,6 +118,23 @@ static func of(state: GameState) -> Dictionary:
 	return state.match_rules if state != null else defaults()
 
 
+## 이 판에 법전에 동시에 올라 있을 수 있는 특수 승리 수 (싱글 Lv.1~2 = 1, 그 밖 = 2).
+static func max_laws(state: GameState) -> int:
+	var pacing: int = int(of(state).get("pacing", 0))
+	return MAX_LAWS_EASY if pacing == 1 or pacing == 2 else MAX_LAWS
+
+
+## 법전 자리가 가득 찼는가 (특수 승리 교칙만 센다).
+static func laws_full(state: GameState) -> bool:
+	if state == null or state.rulebook == null:
+		return false
+	var count: int = 0
+	for law: LawResource in state.rulebook.active_laws_queue:
+		if law is VictoryLaw:
+			count += 1
+	return count >= max_laws(state)
+
+
 ## 이 법전이 이번 판에 나올 수 있는가 (law_pool이 비어 있으면 모두).
 static func law_allowed(state: GameState, law_id: String) -> bool:
 	var pool: Array = of(state).get("law_pool", [])
@@ -137,8 +159,9 @@ static func weight_factor(state: GameState, def: AugmentDef) -> float:
 			if bool(rules.get("draft_easy", false)):
 				factor *= EASY_HARD_SUPER_FACTOR if EASY_HARD_SUPERS.has(StringName(str(def.payload))) else EASY_SUPER_FACTOR
 		GameEnums.AugmentCategory.LAW_ENACT:
-			if not bool(rules.get("laws", true)) or not law_allowed(state, String(def.payload)):
+			if not bool(rules.get("laws", true)) or not law_allowed(state, String(def.payload)) or laws_full(state):
 				return 0.0
+			factor *= LAW_DRAFT_FACTOR
 			if bool(rules.get("draft_easy", false)):
 				factor *= EASY_LAW_FACTOR
 		GameEnums.AugmentCategory.PAWN_EVOLUTION, GameEnums.AugmentCategory.TOOL_SWAP:

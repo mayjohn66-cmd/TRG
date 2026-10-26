@@ -115,3 +115,29 @@ func test_presets_match_and_label_friendly_rooms() -> void:
 	var state := GameState.new()
 	state.match_rules = mind
 	check_eq(MatchRules.weight_factor(state, AugmentRegistry.get_def(&"SUPER_09")), 2.0, "축제: 초증강 가중치 2배")
+
+
+func test_law_slots_are_capped_per_difficulty() -> void:
+	var law_def: AugmentDef = AugmentRegistry.get_def(&"AUG_LAW_03")
+	var standard: GameState = _state(MatchRules.for_difficulty(3))
+	check_eq(MatchRules.max_laws(standard), 2, "Lv.3: 법전 최대 2개")
+	check_eq(MatchRules.max_laws(_state(MatchRules.for_difficulty(2))), 1, "Lv.2: 법전 최대 1개")
+	check_eq(MatchRules.max_laws(_state(MatchRules.defaults())), 2, "친선전 기본: 최대 2개")
+	check(MatchRules.weight_factor(standard, law_def) > 0.0, "빈자리가 있으면 법전이 나온다")
+	standard.rulebook.enqueue_law(LawRegistry.create("LAW_01"))
+	standard.rulebook.enqueue_law(LawRegistry.create("LAW_02"))
+	check(MatchRules.laws_full(standard), "2개가 깔리면 가득")
+	check_eq(MatchRules.weight_factor(standard, law_def), 0.0, "가득 차면 드래프트에 법전이 나오지 않는다")
+
+
+func test_bots_pick_laws_only_sometimes() -> void:
+	var state: GameState = _state(MatchRules.for_difficulty(3))
+	var offers: Array[StringName] = [&"AUG_LAW_03", &"CARD_02", &"CARD_03"]  # 점수로는 법전이 가장 좋은 선택지
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 5
+	var law_picks: int = 0
+	for i: int in 400:
+		if offers[BotTemper.choose_augment(state, 2, offers, 3, rng)] == &"AUG_LAW_03":
+			law_picks += 1
+	check(law_picks > 40 and law_picks < 160, "봇은 법전을 20~30%%만 고른다 (%d/400)" % law_picks)
+

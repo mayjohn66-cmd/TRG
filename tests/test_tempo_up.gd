@@ -52,9 +52,9 @@ func test_augment_weights_and_tempo_multiplier() -> void:
 	check_eq(AugmentRegistry.effective_weight(AugmentRegistry.get_def(&"SUPER_01"), state), 10.0, "6라운드 초증강 그대로")
 	state.round_number = 7
 	check_eq(AugmentRegistry.effective_weight(AugmentRegistry.get_def(&"SUPER_01"), state), 30.0, "과열(7R): 초증강 확률 상승")
-	check_eq(AugmentRegistry.effective_weight(AugmentRegistry.get_def(&"AUG_LAW_01"), state), 5.0, "과열: 법전은 그대로")
+	check(is_equal_approx(AugmentRegistry.effective_weight(AugmentRegistry.get_def(&"AUG_LAW_01"), state), 5.0 * MatchRules.LAW_DRAFT_FACTOR), "과열: 법전은 그대로 (법전 기본 배수만)")
 	state.round_number = 14
-	check_eq(AugmentRegistry.effective_weight(AugmentRegistry.get_def(&"AUG_LAW_01"), state), 15.0, "광기(14R): 법전 확률 상승")
+	check(is_equal_approx(AugmentRegistry.effective_weight(AugmentRegistry.get_def(&"AUG_LAW_01"), state), 15.0 * MatchRules.LAW_DRAFT_FACTOR), "광기(14R): 법전 확률 3배")
 	check_eq(AugmentRegistry.effective_weight(AugmentRegistry.get_def(&"EVO_1_1"), state), 50.0, "말은 그대로")
 
 

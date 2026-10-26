@@ -109,17 +109,21 @@ func _check_round_order(manager: TurnManager, seed_value: int) -> void:
 	check(manager.state.rank_reasons.values().has(VictoryChecker.LAST_PLACE) or manager.state.rankings.size() < 4, "시드 %d: 마지막 한 명은 꼴찌로 남는다 (%s)" % [seed_value, str(manager.state.rank_reasons)])
 	# 특수 승리 졸업은 행동이 다 끝난 뒤(차례가 넘어가는 순간 또는 라운드 끝 NPC 페이즈 뒤)에만: 이동 도중·말 선택 도중에는 없다
 	var judged: bool = false
+	var actor_graduated: bool = false  # 차례인 사람이 이동 중 완주로 졸업하면 그 순간 차례가 끝나 판정한다 (이동 단계 표시 그대로)
 	for entry: Dictionary in _log:
 		if entry["kind"] == &"special_victory_judgement":
 			judged = true
-			check(entry["phase"] != State.PHASE_MOVING_STEP and entry["phase"] != State.PHASE_SELECT_PAWN, "시드 %d R%d: 특수 승리 판정이 이동 도중에 끼어들었다" % [seed_value, int(entry["round"])])
+			check(actor_graduated or (entry["phase"] != State.PHASE_MOVING_STEP and entry["phase"] != State.PHASE_SELECT_PAWN), "시드 %d R%d: 특수 승리 판정이 이동 도중에 끼어들었다" % [seed_value, int(entry["round"])])
 		elif entry["kind"] == &"player_ranked":
 			var reason: StringName = entry["data"]["reason"]
 			if reason != VictoryChecker.ALL_HOME and reason != VictoryChecker.LAST_PLACE:
 				check(judged, "시드 %d R%d: 특수 승리(%s) 졸업 앞에 판정 이벤트가 있다" % [seed_value, int(entry["round"]), reason])
-				check(entry["phase"] != State.PHASE_MOVING_STEP and entry["phase"] != State.PHASE_SELECT_PAWN, "시드 %d R%d: 특수 승리(%s)는 행동이 끝난 뒤에 졸업" % [seed_value, int(entry["round"]), reason])
+				check(actor_graduated or (entry["phase"] != State.PHASE_MOVING_STEP and entry["phase"] != State.PHASE_SELECT_PAWN), "시드 %d R%d: 특수 승리(%s)는 행동이 끝난 뒤에 졸업" % [seed_value, int(entry["round"]), reason])
+			elif entry["phase"] == State.PHASE_MOVING_STEP:
+				actor_graduated = true
 		elif entry["kind"] == &"__turn":
 			judged = false
+			actor_graduated = false
 
 
 func test_round_pipeline_holds_over_whole_bot_games() -> void:

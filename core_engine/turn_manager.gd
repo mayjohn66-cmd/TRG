@@ -1221,8 +1221,8 @@ func _apply_tempo_up() -> bool:
 
 ## 템포 업 3단계: 법전에 아직 없는 특수 승리 교칙 하나를 무작위로 올린다 (슬롯이 가득 차면 가장 오래된 교칙이 밀려난다).
 func _enact_random_law() -> void:
-	if not bool(state.match_rules.get("laws", true)):
-		return  # 방 규칙 [특수 승리 법전 끄기]: 말 4개 완주로만 승부
+	if not bool(state.match_rules.get("laws", true)) or MatchRules.laws_full(state):
+		return  # 방 규칙 [특수 승리 법전 끄기] 또는 법전이 이미 최대 개수 (MatchRules.max_laws)
 	var candidates: Array[String] = []
 	for definition: AugmentDef in AugmentRegistry.all():
 		if definition.category == GameEnums.AugmentCategory.LAW_ENACT and definition.enabled and not state.rulebook.has_law(String(definition.payload)) and not candidates.has(String(definition.payload)) \
