@@ -803,7 +803,9 @@ func _picture_tile(data: Dictionary, on_pick: Callable, compact: bool = false) -
 
 func _paint_tile(tile: Control, selected: bool) -> void:
 	if tile.has_meta("marker"):
-		(tile.get_meta("marker") as Control).visible = selected  # 그림 타일: 지금 보는 항목의 외곽선
+		# Catalog entries are shown in a modal. Its background grid needs no
+		# selection rectangle, which could otherwise overlap the detail artwork.
+		(tile.get_meta("marker") as Control).visible = selected and group_of(spread) == 0
 		return
 	var button: Button = tile as Button
 	var tone: Color = button.get_meta("tone")
