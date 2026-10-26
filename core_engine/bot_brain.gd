@@ -121,9 +121,42 @@ static func score_augment(state: GameState, player_id: int, definition: AugmentD
 		GameEnums.AugmentCategory.SUPER_GAMBLE:
 			return super_augment_score(definition.payload)
 		GameEnums.AugmentCategory.UTILITY:
+			if UtilityAugments.NEW_IDS.has(definition.payload):
+				return utility_score(state, player_id, definition.payload)
 			# 필살기를 이미 쓴 기물이 있으면 리필·변이가 이득이다
 			var spent: bool = state.pawns_of(player_id).any(func(pawn: PlayerPawn) -> bool: return pawn.skill_used and not pawn.is_finished)
 			return 65.0 if spent else 45.0
+	return 30.0
+
+
+## 봇의 [범용] 10종 선호: 완주를 앞당기는 것(순보·이동 +1·굴림 운)이 먼저, 판을 뒤섞는 올 픽션은 가장 나중.
+static func utility_score(state: GameState, player_id: int, effect: StringName) -> float:
+	match effect:
+		UtilityAugments.CATCH_UP:
+			var plan: Array = UtilityAugments.catch_up_plan(state, player_id)
+			if plan.size() != 2:
+				return 0.0
+			var gain: int = state.pawn_progress_distance(plan[0] as PlayerPawn) - state.board.distance_to_goal(int(plan[1]), true)
+			return 80.0 if gain >= 8 else 50.0
+		UtilityAugments.MOVE_PLUS:
+			return 72.0
+		UtilityAugments.LUCKY_DICE:
+			return 62.0
+		UtilityAugments.SELECT_SHIELD:
+			return 55.0
+		UtilityAugments.TRAP_CLEAR1:
+			return 55.0 if not UtilityAugments.enemy_traps(state, player_id).is_empty() else 35.0
+		UtilityAugments.SHORTEN_GOAL:
+			# 내가 레이스에서 앞서 있을 때만 결승선을 당긴다
+			return 60.0 if state.race_leader(-1) == player_id else 30.0
+		UtilityAugments.HAND_EXPAND:
+			return 48.0
+		UtilityAugments.EXTRA_TURN:
+			return 46.0
+		UtilityAugments.CARD_PACK2:
+			return 44.0
+		UtilityAugments.REROLL_ALL_AUG:
+			return 15.0
 	return 30.0
 
 

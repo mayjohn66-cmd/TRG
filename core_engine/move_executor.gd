@@ -349,7 +349,7 @@ static func apply_step(
 			return StepOutcome.FINISHED
 		return StepOutcome.HALTED
 
-	if is_forward and (destination == GameEnums.GOAL_TILE or TempoUp.in_goal_zone(state.round_number, destination)) and mover.can_finish(state):
+	if is_forward and (destination == GameEnums.GOAL_TILE or TempoUp.in_zone_for(state, destination)) and mover.can_finish(state):
 		if not is_last and ctx.exact_goal_required:
 			report.bounced = true
 			return StepOutcome.CONTINUE
@@ -742,9 +742,9 @@ static func pick_capture_victims(enemies: Array[PlayerPawn]) -> Array[PlayerPawn
 	return result
 
 
-## 잡기 면역(미리보기·AI용): 방어막이 남아 있는 바둑 백돌. 실제 잡기에서는 방어막이 깨지며 한 번 막는다 (GameState.break_shield).
+## 잡기 면역(미리보기·AI용): 방어막이 남아 있는 바둑 백돌 또는 관심사도 지정 보호막. 실제 잡기에서는 방어막이 깨지며 한 번 막는다 (GameState.break_shield).
 static func is_capture_immune(_state: GameState, pawn: PlayerPawn) -> bool:
-	return pawn.shield and pawn.sub_type() == GameEnums.PawnSubType.BADUK_WHITE
+	return pawn.ward or (pawn.shield and pawn.sub_type() == GameEnums.PawnSubType.BADUK_WHITE)
 
 
 ## 업기: 윷놀이 기물의 고유 능력이다 (법전 allow_stacking이 우선). 출발선(0번)에서는 업지 않는다.

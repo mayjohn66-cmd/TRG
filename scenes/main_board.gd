@@ -1246,7 +1246,11 @@ func _bind_state() -> void:
 	state.passive_triggered.connect(_on_passive_triggered)
 	state.shield_broken.connect(func(pawn_id: int, tile: int) -> void:
 		_on_passive_triggered(pawn_id, &"shield_block")
-		_log_line("[백돌 방어막] %s이(가) %d번 타일에서 공격을 막고 방어막이 깨졌습니다" % [_pawn_name(pawn_id), tile], Color("b197fc"))
+		var shield_pawn: PlayerPawn = state.get_pawn(pawn_id)
+		if shield_pawn != null and shield_pawn.sub_type() != GameEnums.PawnSubType.BADUK_WHITE:
+			_log_line("[보호막] %s이(가) %d번 타일에서 공격을 막고 보호막이 깨졌습니다" % [_pawn_name(pawn_id), tile], Color("4dabf7"))
+		else:
+			_log_line("[백돌 방어막] %s이(가) %d번 타일에서 공격을 막고 방어막이 깨졌습니다" % [_pawn_name(pawn_id), tile], Color("b197fc"))
 		if _fx_on():
 			_fx_when_announced(func() -> void:
 				_impact_ring(_tile_center(tile) + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO), Color("e5dbff"), 30.0)
@@ -1574,7 +1578,7 @@ func _build_profiles() -> void:
 		hand_pips.alignment = BoxContainer.ALIGNMENT_END
 		hand_pips.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		hand_pips.mouse_filter = Control.MOUSE_FILTER_PASS
-		for _i: int in GameEnums.MAX_HAND_SIZE:
+		for _i: int in GameEnums.MAX_HAND_SIZE + UtilityAugments.HAND_EXPAND_MAX:  # 에심당 뽈사탕으로 늘어난 상한까지
 			var pip := Panel.new()
 			pip.custom_minimum_size = Vector2(8, 12) if not big else Vector2(10, 14)
 			pip.pivot_offset = pip.custom_minimum_size / 2.0
@@ -2618,7 +2622,7 @@ func _refresh_tiles() -> void:
 				tips.append(_trap_tooltip(attachment))
 			elif attachment.attachment_id == "HOTEL":
 				tips.append("호텔 (P%d) - 다른 플레이어가 멈추면 통행료" % attachment.owner_id)  # 칸 위 글자 대신 호텔 건물 모형이 선다 (_refresh_structures)
-		var in_goal: bool = TempoUp.in_goal_zone(state.round_number, index)
+		var in_goal: bool = TempoUp.in_zone_for(state, index)
 		(_tile_views[index] as BoardSkin.Tile).set_goal(in_goal)
 		if in_goal:
 			tips.append("당겨진 결승선 (템포 업): 여기 들어서면 완주")
@@ -3154,7 +3158,7 @@ func _bakery_feedback(data: Dictionary) -> void:
 	var owner_id: int = pawn.owner_id
 	var tile: int = pawn.current_tile_idx
 	var drawn: StringName = data.get("drawn_card", &"")
-	var full: bool = drawn == &"" and (state.hands[owner_id] as Array).size() >= GameEnums.MAX_HAND_SIZE
+	var full: bool = drawn == &"" and (state.hands[owner_id] as Array).size() >= state.hand_limit(owner_id)
 	if drawn == &"" and not full:
 		return
 	var at: Vector2 = (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + _tile_center(tile) + Vector2(0, -46)
@@ -3708,10 +3712,33 @@ func _refresh_players() -> void:
 		_refresh_status_stamps(player_id)
 
 
+## [범용] 증강을 고른 순간 보드 위에 무슨 일이 일어났는지 짧은 콜아웃으로 알린다 (함정 철거·보호막·순보·결승선 단축·재추첨 등).
+func _on_utility_picked(player_id: int, augment_id: StringName) -> void:
+	if not UtilityAugments.NEW_IDS.has(augment_id) or state == null:
+		return
+	var text: String = str(UtilityAugments.CALLOUTS.get(augment_id, ""))
+	var layer: Vector2 = _pawn_layer.position if _pawn_layer != null else Vector2.ZERO
+	var at: Vector2 = _board_center()
+	var fx_list: Array[Dictionary] = state.utility_fx.filter(func(entry: Dictionary) -> bool: return int(entry.get("player_id", -1)) == player_id)
+	state.utility_fx = state.utility_fx.filter(func(entry: Dictionary) -> bool: return int(entry.get("player_id", -1)) != player_id)
+	for entry: Dictionary in fx_list:
+		if entry.has("tile"):
+			at = layer + _tile_center(int(entry["tile"])) + Vector2(0, -40)
+		elif entry.has("pawn_id"):
+			var pawn: PlayerPawn = state.get_pawn(int(entry["pawn_id"]))
+			if pawn != null and pawn.has_left_start:
+				at = layer + _tile_center(pawn.current_tile_idx) + Vector2(0, -40)
+	_refresh_tiles()
+	_refresh_status_stamps(player_id)
+	if text != "" and _fx_on():
+		_floating_badge(at, text, UTILITY_COLOR, 26)
+
+
 ## 알고리즘 밴·UDO 스킵을 맞은 플레이어는 자기가 당했는지 알 수 있도록 프로필 그림 위에 도장이 찍힌다.
 ## 밴은 [BANNED] 붉은 도장(밴이 풀릴 때까지), 스킵은 [금지] 표시(건너뛰는 차례가 올 때까지). 새로 걸리는 순간 쾅 찍히는 연출이 나온다.
 func _refresh_status_stamps(player_id: int) -> void:
 	var host: Control = _profiles[player_id]["avatar"]
+	_refresh_revive_mark(host, player_id)
 	var wanted: Dictionary = {&"skip": bool(state.rest_next_turn.get(player_id, false)) and not state.is_graduated(player_id), &"ban": state.is_banned(player_id) and not state.is_graduated(player_id)}
 	for kind: StringName in [&"skip", &"ban"]:
 		var node_name: String = "Stamp_%s" % kind
@@ -3733,6 +3760,29 @@ func _refresh_status_stamps(player_id: int) -> void:
 		host.add_child(stamp)
 		if _fx_on() and not instant_roll_for_test:
 			stamp.slam_in(self)
+
+
+## [범용] 다이스: 리바이브가 장전돼 있으면 프로필 그림 아래에 [리바이브] 표시 (쓰면 사라진다).
+func _refresh_revive_mark(host: Control, player_id: int) -> void:
+	var mark: Label = host.get_node_or_null("ReviveMark") as Label
+	var armed: bool = int(state.revive_charges.get(player_id, 0)) > 0 and not state.is_graduated(player_id)
+	if not armed:
+		if mark != null:
+			mark.queue_free()
+			host.remove_child(mark)
+		return
+	if mark != null:
+		return
+	mark = _make_label("[리바이브]", 12, Color("0d1018"))
+	mark.name = "ReviveMark"
+	mark.tooltip_text = "다이스: 리바이브 - 0칸·턴 종료 굴림이 나오면 한 턴 더 (1회)"
+	mark.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	mark.add_theme_stylebox_override("normal", _style(UTILITY_COLOR, Color.WHITE, 1, 8, 0, 1))
+	mark.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	mark.position = Vector2(host.size.x / 2.0 - 34, host.size.y - 18)
+	mark.size = Vector2(68, 18)
+	mark.mouse_filter = Control.MOUSE_FILTER_PASS
+	host.add_child(mark)
 
 
 func _refresh_pawn_slots(player_id: int) -> void:
@@ -8633,7 +8683,8 @@ func _show_pawn_choice(player_id: int, definition: AugmentDef, on_pick: Callable
 	box.add_theme_constant_override("separation", 10)
 	center.add_child(box)
 	var info: Dictionary = _augment_card_info(definition, player_id)
-	var title := _make_label("어느 말을 [%s]로 진화시킬까요?" % str(info["title"]).split("] ")[-1], 24, Color("ffe066"))
+	var shield_pick: bool = definition.category == GameEnums.AugmentCategory.UTILITY
+	var title := _make_label("어느 말에 보호막을 씌울까요?" if shield_pick else "어느 말을 [%s]로 진화시킬까요?" % str(info["title"]).split("] ")[-1], 24, Color("ffe066"))
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_color_override("font_outline_color", Color("5c4300"))
 	title.add_theme_constant_override("outline_size", 6)
@@ -8646,7 +8697,7 @@ func _show_pawn_choice(player_id: int, definition: AugmentDef, on_pick: Callable
 	var evo_color: Color = info["color"]
 	for slot: int in GameEnums.PAWNS_PER_PLAYER:
 		var pawn: PlayerPawn = state.get_pawn(player_id * 10 + slot + 1)
-		var can_pick: bool = pawn.kind == GameEnums.PawnKind.BASIC and not pawn.is_finished
+		var can_pick: bool = definition.can_pick_pawn(state, player_id, pawn)
 		var card := Button.new()
 		card.custom_minimum_size = Vector2(150, 200)
 		card.size = Vector2(150, 200)
@@ -8682,7 +8733,7 @@ func _show_pawn_choice(player_id: int, definition: AugmentDef, on_pick: Callable
 		card.add_child(sub)
 		if not can_pick:
 			# 고를 수 있는 카드에는 [→ 차 진화!] 같은 문구를 붙이지 않는다 (제목이 이미 무엇으로 진화하는지 말해 준다)
-			var action := _make_label("진화 불가", 15, Color("868e96"))
+			var action := _make_label("선택 불가" if shield_pick else "진화 불가", 15, Color("868e96"))
 			action.position = Vector2(0, 166)
 			action.size = Vector2(150, 24)
 			action.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -9889,6 +9940,16 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_super_changes.clear()
 			_draft_open = true
 			_log_line("[증강] 라운드 %d 증강 드래프트가 열렸습니다." % data["round"], Color("ffa94d"))
+		&"augment_reshuffled":
+			_log_line("[올 픽션] P%d: 아직 고르지 않은 사람의 증강 선택지를 다시 뽑습니다" % int(data["player_id"]), Color("4dabf7"))
+			_record(int(data["player_id"]), "[올 픽션] 전원 증강 재추첨!")
+		&"revive_triggered":
+			var revived: int = int(data["player_id"])
+			_log_line("[다이스: 리바이브] P%d: 턴이 끝나도 한 턴 더 합니다" % revived, Color("4dabf7"))
+			_record(revived, "[다이스: 리바이브] 발동 - 한 턴 더!")
+			if _fx_on():
+				_floating_badge(_board_center() + Vector2(0, -60), "[리바이브!] 한 턴 더!", UTILITY_COLOR, 30)
+			_refresh_status_stamps(revived)
 		&"augment_review":
 			_show_augment_review(data["players"])
 		&"augment_review_done":
@@ -9902,6 +9963,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 				var picked_def: AugmentDef = AugmentRegistry.get_def(data.get("augment_id", &""))
 				_my_augments.append(picked_def.display_name if picked_def != null else str(data.get("augment_id", "")))
 			_on_super_picked(int(data["player_id"]), data.get("augment_id", &""))
+			_on_utility_picked(int(data["player_id"]), data.get("augment_id", &""))
 			_pick_serial += 1
 			_super_changes.clear()
 		&"bang_resolved":

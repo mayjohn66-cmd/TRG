@@ -31,6 +31,7 @@ static func capture(state: GameState) -> TurnSnapshot:
 			"skill_used": pawn.skill_used,
 			"promoted": pawn.promoted,
 			"shield": pawn.shield,
+			"ward": pawn.ward,
 			"shield_hit": pawn.shield_broken_hit,
 			"carrier": pawn.carrier.entity_id if pawn.carrier != null else -1,
 			"carried": carried_ids,
@@ -61,6 +62,8 @@ static func capture(state: GameState) -> TurnSnapshot:
 		"bonds": state.bonds.duplicate(),
 		"forced_roll": state.forced_roll.duplicate(),
 		"extra_turns": state.extra_turns.duplicate(),
+		"utility": {"hand_bonus": state.hand_bonus.duplicate(), "lucky": state.lucky_dice.duplicate(), "revive": state.revive_charges.duplicate(),
+			"move_plus": state.utility_move_plus.duplicate(), "permanent_roll": state.permanent_roll_bonus.duplicate(), "goal_shrink": state.goal_shrink_bonus, "reshuffle": state.reshuffle_round},
 		"rankings": state.rankings.duplicate(),
 		"rank_reasons": state.rank_reasons.duplicate(),
 		"rank_stats": state.rank_stats.duplicate(true),
@@ -107,6 +110,7 @@ func restore(state: GameState, restore_meta: bool = false) -> void:
 		pawn.skill_used = bool(entry.get("skill_used", false))
 		pawn.promoted = bool(entry.get("promoted", false))
 		pawn.shield = bool(entry.get("shield", false))
+		pawn.ward = bool(entry.get("ward", false))
 		pawn.shield_broken_hit = bool(entry.get("shield_hit", false))
 		pawn.carrier = null
 		pawn.carried.clear()
@@ -149,6 +153,15 @@ func restore(state: GameState, restore_meta: bool = false) -> void:
 	state.bonds = (data.get("bonds", {}) as Dictionary).duplicate()
 	state.forced_roll = (data.get("forced_roll", {}) as Dictionary).duplicate()
 	state.extra_turns = (data.get("extra_turns", {}) as Dictionary).duplicate()
+	if data.has("utility"):
+		var utility: Dictionary = data["utility"]
+		state.hand_bonus = (utility.get("hand_bonus", {}) as Dictionary).duplicate()
+		state.lucky_dice = (utility.get("lucky", {}) as Dictionary).duplicate()
+		state.revive_charges = (utility.get("revive", {}) as Dictionary).duplicate()
+		state.utility_move_plus = (utility.get("move_plus", {}) as Dictionary).duplicate()
+		state.permanent_roll_bonus = (utility.get("permanent_roll", {}) as Dictionary).duplicate()
+		state.goal_shrink_bonus = int(utility.get("goal_shrink", 0))
+		state.reshuffle_round = int(utility.get("reshuffle", -1))
 	if data.has("rankings"):
 		state.rankings.assign(data["rankings"])
 		state.rank_reasons = (data.get("rank_reasons", {}) as Dictionary).duplicate()

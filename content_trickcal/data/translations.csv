@@ -2209,3 +2209,41 @@ v%s · 비공식 팬게임 (원작사와 무관한 비영리 무료 배포물),v
 최종 이동 +4칸 · 리벤지 +8칸 · 법전 확률 상승,Final move +4 · Revenge +8 · Codex odds up,最終移動 +4マス · リベンジ +8マス · 法典の確率アップ
 전원 이동 +6칸 · 법전에 무작위 특수 승리 1개 등록 · 결승선이 라운드마다 2칸씩 당겨짐,Everyone +6 · 1 random Special Victory added to the Codex · finish line moves 2 spaces closer each round,全員の移動 +6マス · 法典にランダムな特殊勝利を1つ登録 · ゴールがラウンドごとに2マスずつ近づく
 말 {p1}개가 트랙 위에서 서로 4칸 이상 간격,{p1} of your pawns on the track spaced 4+ apart,自分の駒{p1}個がトラック上で互いに4マス以上離れている
+[보호막] %s이(가) %d번 타일에서 공격을 막고 보호막이 깨졌습니다,[Shield] %s blocked an attack on tile %d and the shield broke,[バリア] %sが%d番マスで攻撃を防ぎ、バリアが壊れました
+[리바이브],[Revive],[リバイブ]
+다이스: 리바이브 - 0칸·턴 종료 굴림이 나오면 한 턴 더 (1회),Dice: Revive - take one more turn if a roll gives 0 spaces or ends your turn (once),ダイス：リバイブ - 0マス・ターン終了の出目ならもう1ターン（1回）
+어느 말에 보호막을 씌울까요?,Which pawn gets the shield?,どの駒にバリアを張りますか？
+선택 불가,Unavailable,選択不可
+[올 픽션] P%d: 아직 고르지 않은 사람의 증강 선택지를 다시 뽑습니다,[All Fiction] P%d: redrawing augment offers for everyone who hasn't picked yet,[オールフィクション] P%d: まだ選んでいない人の増強の選択肢を引き直します
+[올 픽션] 전원 증강 재추첨!,[All Fiction] Augments redrawn for everyone!,[オールフィクション] 全員の増強を再抽選！
+[다이스: 리바이브] P%d: 턴이 끝나도 한 턴 더 합니다,[Dice: Revive] P%d takes one more turn,[ダイス：リバイブ] P%d: ターンが終わってももう1ターン
+[다이스: 리바이브] 발동 - 한 턴 더!,[Dice: Revive] triggered - one more turn!,[ダイス：リバイブ] 発動 - もう1ターン！
+[리바이브!] 한 턴 더!,[Revive!] One more turn!,[リバイブ！] もう1ターン！
+상시 보급,Standing Supply,常時補給
+이동 +1칸 · 손패 상한 +1 · 굴림 운 · 리바이브 (판 내내),Move +1 · Hand limit +1 · Lucky rolls · Revive (whole match),移動 +1マス · 手札上限 +1 · 出目運 · リバイブ（試合中ずっと）
+즉발 보급,Instant Supply,即発補給
+즉발 카드 · 보호막 · 함정 철거 · 순보 · 결승선 단축 · 올 픽션,Instant cards · Shield · Trap removal · Flash Step · Shorter finish · All Fiction,即発カード · バリア · 罠撤去 · 瞬歩 · ゴール短縮 · オールフィクション
+[이동 +1칸 영구!],[Move +1 for good!],[移動 +1マス永続！]
+[손패 상한 +1!],[Hand limit +1!],[手札上限 +1！]
+[굴림 운 상승!],[Luckier rolls!],[出目運アップ！]
+[리바이브 장전!],[Revive loaded!],[リバイブ装填！]
+[즉발 카드 2장!],[2 Instant cards!],[即発カード2枚！]
+[보호막!],[Shield!],[バリア！]
+[함정 1개 철거!],[1 trap removed!],[罠を1つ撤去！]
+[선두 바로 뒤로!],[Right behind the leader!],[先頭のすぐ後ろへ！]
+[결승선 2칸 단축!],[Finish line 2 closer!],[ゴール2マス短縮！]
+[전원 증강 재추첨!],[Augments redrawn for all!],[全員の増強を再抽選！]
+이번 판 동안 모든 굴림 이동 +1칸 (영구),+1 space to every roll for the rest of the match (permanent),この試合の間、全ての出目の移動 +1マス（永続）
+최대 손패 +1장 (%d장)%s,Max hand +1 (%d cards)%s,手札上限 +1枚（%d枚）%s
+ · 카드 획득: %s, · Card gained: %s, · カード獲得: %s
+이번 판 동안 굴림이 높게 나올 확률 상승,Rolls come up high more often for the rest of the match,この試合の間、出目が高く出やすくなる
+리바이브 장전: 0칸·턴 종료 굴림이 나오면 한 턴 더,Revive loaded: one more turn if a roll gives 0 spaces or ends your turn,リバイブ装填: 0マス・ターン終了の出目ならもう1ターン
+즉발 카드 획득: %s,Instant cards gained: %s,即発カード獲得: %s
+모든 플레이어의 결승선이 %d칸 당겨졌습니다 (%d번 칸부터 결승),Everyone's finish line moved %d spaces closer (finish from tile %d),全プレイヤーのゴールが%dマス近づきました（%d番マスからゴール）
+이번 드래프트를 다시 뽑습니다,Redrawing this draft,このドラフトを引き直します
+보호막을 씌울 말이 없습니다,No pawn can take a shield,バリアを張れる駒がありません
+말 %d번 [%s]에 보호막,Pawn %d [%s] is shielded,駒%d番 [%s]にバリア
+철거할 상대 함정이 없어 카드 획득: %s,"No enemy trap to remove, card gained: %s",撤去できる相手の罠がないためカード獲得: %s
+%d번 칸의 상대 함정 1개 철거,Removed 1 enemy trap on tile %d,%d番マスの相手の罠を1つ撤去
+옮길 말이 없습니다,No pawn to move,移動できる駒がありません
+말 %d번이 선두 바로 뒤 %d번 칸으로 이동,Pawn %d moved right behind the leader to tile %d,駒%d番が先頭のすぐ後ろの%d番マスへ移動

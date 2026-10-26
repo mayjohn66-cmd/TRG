@@ -102,6 +102,17 @@ var roll_bonus: int = 0
 var corner_buff: Dictionary = {}
 ## [초증강] 악마의 계약: 플레이어별 영구 굴림 보너스 칸수.
 var permanent_roll_bonus: Dictionary = {}
+## [범용] 증강의 영구 기록: 손패 상한 추가(에심당 뽈사탕) · 굴림 운(손은 눈보다 빨라) · 리바이브 장전 수 · 이동 +1을 받은 횟수(슈파볼트).
+var hand_bonus: Dictionary = {}
+var lucky_dice: Dictionary = {}
+var revive_charges: Dictionary = {}
+var utility_move_plus: Dictionary = {}
+## [범용] 슬슬 지루한데...: 모두의 결승선이 영구로 당겨진 칸 수 (템포 업 당기기와 더한다).
+var goal_shrink_bonus: int = 0
+## [범용] 올 픽션을 이미 쓴 라운드 (라운드당 1회).
+var reshuffle_round: int = -1
+## [범용] 즉발 증강의 보드 콜아웃 대기열 (화면이 읽고 비운다, 저장하지 않는다).
+var utility_fx: Array[Dictionary] = []
 ## [초증강] 주사위 도박사의 영혼: 플레이어 -> 효과가 켜진 라운드 번호 (그 라운드 동안만 이동 2배).
 var gambler_round: Dictionary = {}
 ## UDO 스킵(ACT_15)으로 다음 내 턴을 쉬어야 하는 플레이어들 (강제 턴 패스).
@@ -514,9 +525,14 @@ func place_attachment(tile: int, attachment: TileAttachment) -> void:
 	attachment_placed.emit(tile, attachment.attachment_id, attachment.owner_id)
 
 
+## 이 사람의 손패 상한 (기본 7장 + 에심당 뽈사탕).
+func hand_limit(player_id: int) -> int:
+	return GameEnums.MAX_HAND_SIZE + int(hand_bonus.get(player_id, 0))
+
+
 func give_card(player_id: int, card_id: StringName) -> bool:
 	var hand: Array = hands[player_id]
-	if hand.size() >= GameEnums.MAX_HAND_SIZE:
+	if hand.size() >= hand_limit(player_id):
 		return false
 	hand.append(card_id)
 	card_drawn.emit(player_id, card_id)
@@ -747,8 +763,12 @@ func owned_attachment_count(player_id: int) -> int:
 	return count
 
 
-## 바둑 백돌 방어막이 있으면 깨뜨리고 true (잡기·함정을 막았다).
+## 바둑 백돌 방어막(또는 [범용] 관심사도 지정 보호막)이 있으면 깨뜨리고 true (잡기·함정을 막았다).
 func break_shield(pawn: PlayerPawn) -> bool:
+	if pawn != null and pawn.ward:
+		pawn.ward = false
+		shield_broken.emit(pawn.entity_id, pawn.current_tile_idx)
+		return true
 	if pawn == null or not pawn.shield or pawn.sub_type() != GameEnums.PawnSubType.BADUK_WHITE:
 		return false
 	pawn.shield = false
@@ -853,7 +873,7 @@ func pawn_state(pawn: PlayerPawn) -> Dictionary:
 		carried_ids.append(carried_pawn.entity_id)
 	return {"tile": pawn.current_tile_idx, "history": pawn.step_history.duplicate(), "started": pawn.has_left_start,
 		"finished": pawn.is_finished, "revenge": pawn.revenge_boost, "comeback": pawn.comeback_run, "restrained": pawn.restrained_turns,
-		"imprisoned": pawn.is_imprisoned, "shield": pawn.shield, "carrier": pawn.carrier.entity_id if pawn.carrier != null else -1, "carried": carried_ids}
+		"imprisoned": pawn.is_imprisoned, "shield": pawn.shield, "ward": pawn.ward, "carrier": pawn.carrier.entity_id if pawn.carrier != null else -1, "carried": carried_ids}
 
 
 ## 방어으로 피해를 되돌린다: 저장한 말 상태·휴식·밴·기록을 복원하고, 공격으로 오른 특수 승리 기록을 되돌린다.
@@ -876,6 +896,7 @@ func undo_attack(entry: Dictionary) -> void:
 		pawn.restrained_turns = int(data["restrained"])
 		pawn.is_imprisoned = bool(data["imprisoned"])
 		pawn.shield = bool(data["shield"])
+		pawn.ward = bool(data.get("ward", false))
 		if from_tile != pawn.current_tile_idx:
 			pawn_teleported.emit(pawn.entity_id, pawn.current_tile_idx)
 	for pawn_id: Variant in saved.keys():

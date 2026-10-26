@@ -78,7 +78,7 @@ func is_available(state: GameState, player_id: int) -> bool:
 			return UtilityAugments.is_available(payload, state, player_id)
 		GameEnums.AugmentCategory.CARD_PACKAGE:
 			# 손패가 가득 차 있으면 받을 수 없어 선택해도 적용되지 않는다 (드래프트가 멈추는 것을 막는다).
-			if (state.hands[player_id] as Array).size() >= GameEnums.MAX_HAND_SIZE:
+			if (state.hands[player_id] as Array).size() >= state.hand_limit(player_id):
 				return false
 			for pool: Array[StringName] in card_pools():
 				if pool.is_empty():
@@ -89,7 +89,16 @@ func is_available(state: GameState, player_id: int) -> bool:
 
 ## 적용 전에 플레이어가 기본 말 중 하나를 직접 골라야 하는가 (기본 말이 둘 이상일 때의 기물 진화).
 func needs_pawn_choice(state: GameState, player_id: int) -> bool:
+	if category == GameEnums.AugmentCategory.UTILITY:
+		return UtilityAugments.needs_pawn_choice(payload, state, player_id)  # 관심사도 지정: 보호막을 씌울 말
 	return category == GameEnums.AugmentCategory.PAWN_EVOLUTION and state.basic_pawns_of(player_id).size() > 1
+
+
+## 말 고르기 화면에서 이 말을 고를 수 있는가.
+func can_pick_pawn(state: GameState, player_id: int, pawn: PlayerPawn) -> bool:
+	if category == GameEnums.AugmentCategory.UTILITY:
+		return UtilityAugments.shield_candidates(state, player_id).has(pawn)
+	return pawn.kind == GameEnums.PawnKind.BASIC and not pawn.is_finished
 
 
 ## 선택지에 보여 줄 설명 (플레이어 상태를 반영한다).
@@ -188,7 +197,10 @@ func apply(state: GameState, player_id: int, params: Dictionary = {}) -> Diction
 		GameEnums.AugmentCategory.TOOL_SWAP: return _apply_tool(state, player_id)
 		GameEnums.AugmentCategory.LAW_ENACT: return _apply_law(state)
 		GameEnums.AugmentCategory.SUPER_GAMBLE: return SuperAugments.apply(payload, state, player_id)
-		GameEnums.AugmentCategory.UTILITY: return UtilityAugments.apply(payload, state, player_id)
+		GameEnums.AugmentCategory.UTILITY:
+			if payload == UtilityAugments.SELECT_SHIELD and params.has("pawn_id"):
+				return UtilityAugments.apply_shield_to(state, player_id, int(params["pawn_id"]))
+			return UtilityAugments.apply(payload, state, player_id)
 	return _apply_cards(state, player_id)
 
 

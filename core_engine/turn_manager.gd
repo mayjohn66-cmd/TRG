@@ -406,7 +406,7 @@ func _handle_roll(actor: int, params: Dictionary = {}) -> void:
 	if params.has("keep") and tool is ToolYacht:
 		(tool as ToolYacht).set_keep(params["keep"] as Array if params["keep"] is Array else [])
 	state.pacing_humans = pacing_humans
-	_apply_roll_result(PacingDirector.damp_chain(state, tool, PacingDirector.adjust(state, actor, tool, tool.roll(state.rng)), _roll_chain))
+	_apply_roll_result(_roll_with_modifiers(actor, tool))
 
 
 func _handle_stop(actor: int) -> void:
@@ -1098,8 +1098,25 @@ func _pick_augment(player_id: int, index: int, params: Dictionary, automatic: bo
 	_draft_picks[player_id] = index
 	(augments[player_id] as Array).append(augment_id)
 	_emit_event(&"augment_picked", {"player_id": player_id, "augment_id": augment_id, "text": result["text"], "auto": automatic})
+	if augment_id == UtilityAugments.REROLL_ALL_AUG:
+		_reshuffle_draft(player_id)
 	_broadcast_state()
 	return true
+
+
+## [범용] 올 픽션: 아직 고르지 않은 사람과 고른 본인의 선택지를 새 3장으로 다시 뽑는다 (본인은 한 번 더 고른다). 라운드당 1회.
+## 이미 고른 다른 사람의 증강은 적용이 끝났으므로 그대로 둔다.
+func _reshuffle_draft(picker: int) -> void:
+	_draft_picks.erase(picker)
+	var reshuffled: Array[int] = []
+	state.pacing_humans = pacing_humans
+	for player_id: int in player_order:
+		if not _draft_offers.has(player_id) or _draft_picks.has(player_id):
+			continue
+		_draft_offers[player_id] = AugmentRegistry.generate_offers(state, player_id)
+		_draft_rerolls.erase(player_id)
+		reshuffled.append(player_id)
+	_emit_event(&"augment_reshuffled", {"player_id": picker, "players": reshuffled, "offers": _draft_offers.duplicate(true)})
 
 
 # ---------------------------------------------------------------------------
@@ -1127,7 +1144,7 @@ func _on_timeout() -> void:
 				_apply_roll_result(tool.cash_out())
 			else:
 				state.pacing_humans = pacing_humans
-				_apply_roll_result(PacingDirector.damp_chain(state, tool, PacingDirector.adjust(state, current_player_id(), tool, tool.roll(state.rng)), _roll_chain))
+				_apply_roll_result(_roll_with_modifiers(current_player_id(), tool))
 		State.PHASE_INTERRUPT_ROLL:
 			_close_interrupt_window()
 		State.PHASE_SELECT_PAWN:
@@ -1202,16 +1219,17 @@ func _apply_tempo_up() -> bool:
 		_emit_event(&"tempo_up", {"round": round_number, "level": stage, "lines": lines})
 		if stage == 3:
 			_enact_random_law()
-	var zone_start: int = TempoUp.goal_zone_start(round_number)
+	var zone_start: int = TempoUp.zone_start_for(state)
 	if zone_start < 0:
 		return false
 	var finished: Array[int] = []
 	for pawn: PlayerPawn in state.get_active_pawns():
-		if pawn.carrier == null and pawn.has_left_start and not pawn.is_finished and pawn.can_finish(state) and TempoUp.in_goal_zone(round_number, pawn.current_tile_idx):
+		if pawn.carrier == null and pawn.has_left_start and not pawn.is_finished and pawn.can_finish(state) and TempoUp.in_zone_for(state, pawn.current_tile_idx):
 			for member: PlayerPawn in pawn.stack_members():
 				finished.append(member.entity_id)
 			state.finish_stack(pawn)
-	_emit_event(&"goal_shrunk", {"round": round_number, "zone_start": zone_start, "shrink": TempoUp.goal_shrink(round_number), "finished": finished})
+	if TempoUp.goal_shrink(round_number) > 0 or not finished.is_empty():  # 범용 단축만 있을 때는 라운드마다 알리지 않는다
+		_emit_event(&"goal_shrunk", {"round": round_number, "zone_start": zone_start, "shrink": TempoUp.shrink_for(state), "finished": finished})
 	if finished.is_empty():
 		return false
 	for entry: Dictionary in VictoryChecker.newly_qualified(state, player_order, current_player_id(), false):
@@ -1238,9 +1256,12 @@ func _enact_random_law() -> void:
 
 ## 시간 초과 등으로 드래프트를 마감한다. 아직 고르지 않은 플레이어는 첫 번째 선택지로 자동 선택된다.
 func _finish_draft() -> void:
-	for player_id: int in player_order:
-		if _draft_offers.has(player_id) and not _draft_picks.has(player_id):
-			_pick_augment(player_id, 0, {}, true)
+	for _pass: int in 2:  # 올 픽션이 자동 선택되면 선택이 풀린 사람이 다시 생긴다 (재추첨된 선택지에는 올 픽션이 없다)
+		for player_id: int in player_order:
+			if _draft_offers.has(player_id) and not _draft_picks.has(player_id):
+				for index: int in (_draft_offers[player_id] as Array).size():
+					if _pick_augment(player_id, index, {}, true):
+						break
 	var participants: Array[int] = []
 	for player_id: int in player_order:
 		if _draft_offers.has(player_id):
@@ -1345,6 +1366,22 @@ func _enter_roll_wait() -> void:
 	change_state(State.PHASE_ROLL_WAIT)
 
 
+## 도구를 굴리고 굴림 보정을 차례로 입힌다: 히든 페이싱(난이도) → [범용] 손은 눈보다 빨라 → 연속 굴림 감쇠.
+func _roll_with_modifiers(roller: int, tool: BaseJudgmentTool) -> RollResult:
+	var result: RollResult = PacingDirector.adjust(state, roller, tool, tool.roll(state.rng))
+	result = UtilityAugments.lucky_roll(state, roller, tool, result)
+	return PacingDirector.damp_chain(state, tool, result, _roll_chain)
+
+
+## [범용] 다이스: 리바이브: 굴림이 0칸이거나 턴 종료면 장전된 리바이브를 써서 이번 차례가 끝난 뒤 같은 사람이 한 턴 더 한다.
+func _try_revive(roller: int) -> void:
+	if int(state.revive_charges.get(roller, 0)) <= 0 or bool(state.extra_turns.get(roller, false)):
+		return
+	state.revive_charges[roller] = int(state.revive_charges[roller]) - 1
+	state.extra_turns[roller] = true
+	_emit_event(&"revive_triggered", {"player_id": roller})
+
+
 func _apply_roll_result(result: RollResult) -> void:
 	ToolRegistry.adjust_result(result)  # dice_table.csv의 min/max/jackpot 칸 수
 	var roller_id: int = current_player_id()
@@ -1357,6 +1394,8 @@ func _apply_roll_result(result: RollResult) -> void:
 	if state.is_banned(roller_id):
 		result.reroll = false  # 알고리즘 밴: 리롤 금지
 	_emit_event(&"roll_resolved", {"player_id": current_player_id(), "result": result.to_dict()})
+	if result.ends_turn or (result.steps <= 0 and not result.can_continue and not result.reroll):
+		_try_revive(roller_id)
 	if result.ends_turn:
 		move_queue.clear()
 		advance_to_next_player()
@@ -1375,6 +1414,7 @@ func _apply_roll_result(result: RollResult) -> void:
 		# [초증강] 주사위 도박사의 영혼: 이번 라운드 이동 거리 2배! 단 눈금이 1 이하면 과열: 이동 없이(0칸) 이번 차례가 바로 끝난다.
 		if int(state.gambler_round.get(roller, -1)) == state.round_number and ctx.dice_value <= SuperAugments.gambler_overheat_at():
 			_emit_event(&"gambler_busted", {"player_id": roller, "roll": ctx.dice_value})
+			_try_revive(roller)
 			move_queue.clear()
 			advance_to_next_player()
 			return

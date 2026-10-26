@@ -27,7 +27,7 @@ func test_all_draft_icons_resolve_to_the_described_target() -> void:
 			GameEnums.AugmentCategory.SUPER_GAMBLE:
 				relative = "augments/%s.png" % definition.augment_id
 			_:
-				relative = "augments/%s.png" % definition.augment_id  # 카드 패키지 3종·범용 보급 3종
+				relative = "augments/%s.png" % definition.augment_id  # 카드 패키지 3종·범용 보급 13종
 		var texture: Texture2D = AugmentArt.load_first(AugmentArt.candidates(definition))
 		check(texture != null, str(definition.augment_id) + " has illustration")
 		if texture == null:
@@ -35,6 +35,6 @@ func test_all_draft_icons_resolve_to_the_described_target() -> void:
 		check_eq(texture.resource_path, AugmentArt.ROOT + relative, str(definition.augment_id) + " target image, not an unrelated category fallback")
 		check(not paths.has(texture.resource_path), str(definition.augment_id) + " distinct icon")
 		paths[texture.resource_path] = true
-	check_eq(AugmentRegistry.all().size(), 62, "24 pawns + 12 tools + 8 laws + 3 card packages + 12 super + 3 utility")
-	check_eq(paths.size(), 62, "every draft effect has its own icon")
-	print("AUGMENT_ART_COVERAGE ", paths.size(), "/62")
+	check_eq(AugmentRegistry.all().size(), 72, "24 pawns + 12 tools + 8 laws + 3 card packages + 12 super + 13 utility")
+	check_eq(paths.size(), 72, "every draft effect has its own icon")
+	print("AUGMENT_ART_COVERAGE ", paths.size(), "/72")

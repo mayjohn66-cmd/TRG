@@ -64,6 +64,25 @@ static func goal_shrink(round_number: int) -> int:
 	return mini((round_number - stage_rounds[2] + 1) * GOAL_SHRINK_PER_ROUND, limit)
 
 
+## 이 판에 결승선이 당겨진 칸 수: 템포 업 당기기 + [범용] 슬슬 지루한데...(GameState.goal_shrink_bonus). 반환점 뒤쪽 절반을 넘지 않는다.
+static func shrink_for(state: GameState) -> int:
+	if state == null:
+		return 0
+	return mini(goal_shrink(state.round_number) + state.goal_shrink_bonus, maxi(BoardSpec.tile_count - BoardSpec.halfway_tile - 4, 0))
+
+
+## 이 판의 결승선 첫 칸 (당겨지지 않았으면 -1).
+static func zone_start_for(state: GameState) -> int:
+	var shrink: int = shrink_for(state)
+	return BoardSpec.tile_count - shrink if shrink > 0 else -1
+
+
+## 이 칸이 이 판의 당겨진 결승선 안인가 (0번 결승선 자체는 포함하지 않는다).
+static func in_zone_for(state: GameState, tile: int) -> bool:
+	var start: int = zone_start_for(state)
+	return start > 0 and tile >= start and tile < BoardSpec.tile_count
+
+
 ## 결승선으로 치는 첫 칸 (당겨지지 않았으면 -1). 이 칸부터 마지막 칸까지 들어서면 완주한다.
 static func goal_zone_start(round_number: int) -> int:
 	var shrink: int = goal_shrink(round_number)

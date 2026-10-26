@@ -33,6 +33,8 @@ var skill_used: bool = false
 var shield: bool = false
 ## 방어막이 깨진 뒤 출발선으로 잡혀 간 적이 있는가 (그러면 다음 증강 라운드에 재충전되지 않는다).
 var shield_broken_hit: bool = false
+## [범용] 관심사도 지정 보호막: 잡기·함정을 한 번 막고 사라진다 (기물 종류와 상관없고, 진화해도 남는다).
+var ward: bool = false
 
 
 ## 이 말의 세부 기물 (호기에서 정해지며, 승진한 체스 퀸은 5번째 호기다).
