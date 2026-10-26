@@ -48,8 +48,21 @@ func _ready() -> void:
 	_menu = PopupMenu.new()
 	_menu.name = "LanguageMenu"
 	_menu.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	_menu.shrink_width = false  # Keep the requested button width when popup() opens.
 	_menu.add_theme_font_size_override("font_size", maxi(get_theme_font_size("font_size"), 16))
 	_menu.add_theme_font_override("font", picker_font())
+	var panel := LobbyTheme.style(Color("fff4d6"), Color("9aa76c"), 2, 16, 5, 8, Color(0.12, 0.21, 0.12, 0.18))
+	panel.shadow_offset = Vector2(0, 3)
+	_menu.add_theme_stylebox_override("panel", panel)
+	_menu.add_theme_stylebox_override("hover", LobbyTheme.style(Color("dcecc1"), Color("b6cd91"), 1, 9))
+	_menu.add_theme_color_override("font_color", Color("586044"))
+	_menu.add_theme_color_override("font_hover_color", Color("31572d"))
+	_menu.add_theme_color_override("font_outline_color", Color.TRANSPARENT)
+	_menu.add_theme_constant_override("outline_size", 0)
+	_menu.add_theme_constant_override("v_separation", 12)
+	_menu.add_theme_constant_override("h_separation", 8)
+	_menu.add_theme_constant_override("item_start_padding", 6)
+	_menu.add_theme_constant_override("item_end_padding", 6)
 	for index: int in L10n.LANGUAGES.size():
 		_menu.add_radio_check_item(L10n.language_name(L10n.LANGUAGES[index]), index)
 	_menu.id_pressed.connect(_on_language_picked)
@@ -66,9 +79,10 @@ func _on_pressed() -> void:
 	# MenuButton과 같은 방식: 버튼 화면 위치 바로 아래, 버튼 폭 이상
 	var scale_y: float = get_global_transform().get_scale().y
 	_menu.reset_size()
-	_menu.position = Vector2i(get_screen_position() + Vector2(0.0, size.y * scale_y))
+	_menu.position = Vector2i(get_screen_position() + Vector2(0.0, (size.y + 6.0) * scale_y))
 	_menu.size = Vector2i(maxi(roundi(size.x * get_global_transform().get_scale().x), _menu.size.x), 0)
 	_menu.popup()
+	_menu.set_focused_item(L10n.LANGUAGES.find(L10n.current_lang))
 
 
 ## 목록에서 언어를 골랐다: 바꾸고 저장한다 (모든 화면 글자가 그 자리에서 다시 번역된다).
