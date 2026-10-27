@@ -10073,7 +10073,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 					if state.rulebook.active_laws_queue[i].law_id == str(law_ids[index]):
 						slot_index = i
 						achieved_law = state.rulebook.active_laws_queue[i]
-				if achieved_law == null:
+				if achieved_law == null and LawRegistry.ALL_IDS.has(str(law_ids[index])):  # 같은 판정에서 완주(all_home)로 졸업한 사람은 법전 카드가 없다
 					achieved_law = LawRegistry.create(str(law_ids[index]))
 				if achieved_law == null:
 					continue
