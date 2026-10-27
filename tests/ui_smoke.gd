@@ -345,9 +345,12 @@ func _play_draft(manager: TurnManager) -> void:
 	var before_basic: int = _board.state.basic_pawns_of(player_id).size()
 	_board._on_augment_chosen(player_id, index, definition)
 	if _board._choice_overlay != null:
-		# 기물 진화: 기물 선택창이 떴다. 뒤의 증강 카드 화면은 숨겨져 겹쳐 보이지 않아야 한다. 첫 번째 말을 고른다.
+		# 말 고르기 창(기물 진화·관심사도 지정 보호막): 뒤의 증강 카드 화면은 숨겨져 겹쳐 보이지 않아야 한다. 고를 수 있는 첫 번째 말을 고른다.
 		_assert(_board._draft_overlay == null or not _board._draft_overlay.visible, "말 고르기 중에는 증강 카드 화면이 숨겨진다")
-		_board._pick_augment_with_pawn(_board.state.basic_pawns_of(player_id)[0].entity_id, player_id, index)
+		var choices: Array = _board.state.pawns_of(player_id).filter(func(pawn: PlayerPawn) -> bool: return definition.can_pick_pawn(_board.state, player_id, pawn))
+		_assert(not choices.is_empty(), "말 고르기 창에는 고를 수 있는 말이 있어야 한다 (%s)" % definition.augment_id)
+		if not choices.is_empty():
+			_board._pick_augment_with_pawn((choices[0] as PlayerPawn).entity_id, player_id, index)
 		_board._close_choice()
 	if _board.state.basic_pawns_of(player_id).size() < before_basic:
 		_evolutions += 1
