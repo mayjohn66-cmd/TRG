@@ -543,7 +543,7 @@ func _build_notebook() -> void:
 	var dim_skin: StyleBoxTexture = _book_inset.get_theme_stylebox("panel").duplicate()
 	dim_skin.modulate_color = Color(0, 0, 0, 0.55)
 	_popup_dim.add_theme_stylebox_override("panel", dim_skin)
-	_popup_dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_popup_dim.mouse_filter = Control.MOUSE_FILTER_STOP
 	_popup_dim.visible = false
 	_notebook_root.add_child(_popup_dim)
 	_notebook_page = Control.new()

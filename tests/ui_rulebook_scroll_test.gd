@@ -124,7 +124,15 @@ func run() -> void:
 		check(book._notebook_page.size.x>=book._stage.size.x*0.85 and book._notebook_page.size.y>=700,"Detail fills most of the landscape screen")
 		check(root.get_visible_rect().encloses(book._notebook_page.get_global_rect()),"Large detail stays inside the viewport")
 		await capture("detail_%d" % resolution.x)
-		var outside := book._stage.get_global_transform_with_canvas()*Vector2(20,200)
+		var wheel := InputEventMouseButton.new()
+		wheel.position = book._stage.get_global_transform_with_canvas()*Vector2(book._stage.size.x-56,300)
+		wheel.global_position = wheel.position
+		wheel.button_index = MOUSE_BUTTON_WHEEL_DOWN
+		wheel.pressed = true
+		root.push_input(wheel,true)
+		await frames()
+		check(book.entry==0 and scroll.scroll_vertical==0,"Wheel outside the page cannot move the background catalog")
+		var outside := book._stage.get_global_transform_with_canvas()*Vector2(40,280)
 		await mouse(outside,true)
 		await mouse(outside,false)
 		check(book.entry==-1 and book.spread==4 and is_instance_valid(book),"Outside click returns to the same catalog instead of closing the book or changing chapter")
