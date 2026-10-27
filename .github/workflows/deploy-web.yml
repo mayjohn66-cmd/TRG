@@ -29,6 +29,7 @@ on:
           - bang
           - capture-fx
           - common-fx
+          - priority-fx
           - warning-icon
           - rulebook-art
           - avatar-hq
@@ -67,7 +68,9 @@ jobs:
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
           REQUESTED_SCOPE: ${{ inputs.validation }}
         run: |
-          if [[ "${REQUESTED_SCOPE}" == "common-fx" || "${COMMIT_MESSAGE}" == *"[check:common-fx]"* ]]; then
+          if [[ "${REQUESTED_SCOPE}" == "priority-fx" || "${COMMIT_MESSAGE}" == *"[check:priority-fx]"* ]]; then
+            echo "scope=priority-fx" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "common-fx" || "${COMMIT_MESSAGE}" == *"[check:common-fx]"* ]]; then
             echo "scope=common-fx" >> "${GITHUB_OUTPUT}"
           elif [[ "${REQUESTED_SCOPE}" == "capture-fx" || "${COMMIT_MESSAGE}" == *"[check:capture-fx]"* ]]; then
             echo "scope=capture-fx" >> "${GITHUB_OUTPUT}"
@@ -177,6 +180,19 @@ jobs:
           godot --headless --path . -s res://tests/ui_bang_test.gd 2>&1 | tee /tmp/bang.log
           grep -q 'UI_BANG_OK' /tmp/bang.log
           if grep -q 'SCRIPT ERROR' /tmp/bang.log; then exit 1; fi
+
+      - name: Check priority painted presentations
+        if: steps.validation.outputs.scope == 'priority-fx'
+        run: |
+          set -o pipefail
+          for target in priority_paint nitro sniper flip; do
+            godot --headless --path . -s "res://tests/ui_${target}_test.gd" 2>&1 | tee "/tmp/priority_${target}.log"
+          done
+          grep -q 'UI_PRIORITY_PAINT_OK' /tmp/priority_priority_paint.log
+          grep -q 'UI_NITRO_OK' /tmp/priority_nitro.log
+          grep -q 'UI_SNIPER_OK' /tmp/priority_sniper.log
+          grep -q 'UI_FLIP_OK' /tmp/priority_flip.log
+          if grep -Eq 'SCRIPT ERROR|SHADER ERROR|Lambda capture' /tmp/priority_*.log; then exit 1; fi
 
       - name: Check shared painted impact and pawn trails
         if: steps.validation.outputs.scope == 'common-fx'

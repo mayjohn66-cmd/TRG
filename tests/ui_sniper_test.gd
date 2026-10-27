@@ -61,6 +61,10 @@ func _process(_delta: float) -> bool:
 		_expect(_board._pawn_views[21].position.distance_to(original_target)<0.1,"The actual target stays at its source through the hit hold")
 		_expect(_board._pawn_views[11].position.distance_to(original_booster)<0.1,"My advance waits until the sniper sequence ends")
 		_expect(stage._veil.mouse_filter==Control.MOUSE_FILTER_IGNORE,"The vignette does not intercept controls")
+		_expect(stage._tracer.mouse_filter==Control.MOUSE_FILTER_IGNORE and stage._tracer_material.shader==stage.TRACER_SHADER,"The sniper uses a nonblocking tapered tracer")
+		_expect(stage.to_global(stage._at).distance_to(_board._pawn_layer.to_global(original_target+Vector2(0,-20)))<0.1,"Reticle and painted impact align with the actual target layer")
+		if stage.elapsed>stage.HIT_AT+0.045:
+			_expect(not stage._tracer.visible,"The tracer disappears after the bullet reaches its target")
 		if stage.phase==&"acquire" and stage.elapsed>0.25:
 			capture("acquire")
 		if stage.phase==&"locked" and stage.elapsed>0.70:

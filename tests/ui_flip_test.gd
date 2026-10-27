@@ -46,6 +46,15 @@ func _stage(effect: StringName) -> void:
 func _process(_delta: float) -> bool:
 	if _board==null or not is_instance_valid(_board):
 		return false
+	var bolt: Sprite2D = _board._pawn_layer.get_node_or_null("PaintedLightning") as Sprite2D
+	if bolt!=null:
+		_expect(bolt.texture==PaintedFx.LIGHTNING,"Failure uses a branched painted lightning strike")
+		capture("lightning")
+	if desired_success and not shots.has("launch"):
+		for node: Node in get_nodes_in_group(MainBoard.ONESHOT_FX_GROUP):
+			if node.get_meta(FxPool.KIND_META,&"")==&"rocket_flame":
+				capture("launch")
+				break
 	var coin: Node2D = _board._pawn_layer.get_node_or_null("FateCoin3D")
 	if coin==null:
 		return false

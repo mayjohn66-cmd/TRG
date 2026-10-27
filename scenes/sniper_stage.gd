@@ -9,6 +9,7 @@ const TOTAL_TIME := 1.23
 const RED := Color("ff655c")
 const GOLD := Color("ffe4a2")
 const FOCUS_SHADER := preload("res://assets/fx/sniper_focus.gdshader")
+const TRACER_SHADER := preload("res://assets/fx/bang_tracer.gdshader")
 var phase: StringName = &"acquire"
 var elapsed := 0.0
 var pace := 1.0
@@ -26,12 +27,15 @@ var _restored := false
 var _lock_played := false
 var _veil: ColorRect
 var _light: ShaderMaterial
+var _tracer: ColorRect
+var _tracer_material: ShaderMaterial
 
 func play(board: MainBoard, player_id: int, target: int, speed: float, pose: Dictionary) -> void:
 	name = "SniperStage"
 	z_index = 35
 	_board_ref = weakref(board)
 	_generation = board._fx_generation
+	transform = board._pawn_layer.transform
 	pace = clampf(speed,0.35,2.0)
 	target_id = target
 	var view: Node2D = board._pawn_views.get(target_id)
@@ -45,7 +49,7 @@ func play(board: MainBoard, player_id: int, target: int, speed: float, pose: Dic
 	view.position = _at+Vector2(0,20)
 	view.z_index = 36
 	var origin := board._profile_center(player_id)
-	var local_origin := board.get_global_transform().affine_inverse()*origin if origin.is_finite() else _at+Vector2(-240,100)
+	var local_origin := to_local(origin) if origin.is_finite() else _at+Vector2(-240,100)
 	_source = _at+_at.direction_to(local_origin)*220.0
 	_veil = ColorRect.new()
 	_veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -54,6 +58,14 @@ func play(board: MainBoard, player_id: int, target: int, speed: float, pose: Dic
 	_light.shader = FOCUS_SHADER
 	_veil.material = _light
 	add_child(_veil)
+	_tracer = ColorRect.new()
+	_tracer.name = "SniperTracer"
+	_tracer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tracer.visible = false
+	_tracer_material = ShaderMaterial.new()
+	_tracer_material.shader = TRACER_SHADER
+	_tracer.material = _tracer_material
+	add_child(_tracer)
 	_update_veil(board)
 	Sfx.play(&"charge",-10.0)
 
@@ -64,6 +76,7 @@ func _process(delta: float) -> void:
 	if board==null or board._fx_generation!=_generation:
 		cancel()
 		return
+	transform = board._pawn_layer.transform
 	elapsed += delta/pace
 	phase = &"acquire" if elapsed<LOCK_START else (&"locked" if elapsed<SHOT_AT else &"impact")
 	if elapsed>=LOCK_START and not _lock_played:
@@ -82,6 +95,7 @@ func _process(delta: float) -> void:
 		view.scale = (_saved.scale as Vector2)*Vector2(1+0.13*recoil,1-0.10*recoil)
 		view.modulate = (_saved.tint as Color).lerp(Color(1.8,1.5,1.15),recoil*0.65)
 	_update_veil(board)
+	_update_tracer()
 	queue_redraw()
 	if elapsed>=TOTAL_TIME:
 		_restore(false)
@@ -89,11 +103,24 @@ func _process(delta: float) -> void:
 		set_process(false)
 
 func _update_veil(board: MainBoard) -> void:
-	_veil.size = get_viewport_rect().size
+	var frame := get_viewport_rect().size
+	_veil.position = to_local(Vector2.ZERO)
+	_veil.size = frame / global_transform.get_scale().abs()
 	var focus := get_global_transform()*_at
-	_light.set_shader_parameter("frame_size",_veil.size)
+	_light.set_shader_parameter("frame_size",frame)
 	_light.set_shader_parameter("focus",focus)
 	_light.set_shader_parameter("strength",smoothstep(0,0.22,elapsed)*(1-smoothstep(HIT_AT,TOTAL_TIME,elapsed)))
+
+func _update_tracer() -> void:
+	var angle := _source.angle_to_point(_at)
+	var length := _source.distance_to(_at)
+	_tracer.position = _source-Vector2(0,12).rotated(angle)
+	_tracer.rotation = angle
+	_tracer.size = Vector2(maxf(length,1),24)
+	_tracer.visible = fired and elapsed < HIT_AT+0.045
+	_tracer_material.set_shader_parameter("age",maxf(0,elapsed-SHOT_AT))
+	_tracer_material.set_shader_parameter("travel_time",HIT_AT-SHOT_AT)
+	_tracer_material.set_shader_parameter("distance_px",maxf(length,1))
 
 func _draw() -> void:
 	if _view_ref==null:
@@ -114,19 +141,10 @@ func _draw() -> void:
 	if phase==&"locked":
 		var u := clampf((elapsed-LOCK_START)/(SHOT_AT-LOCK_START),0,1)
 		draw_arc(center,radius+5,-PI/2,-PI/2+TAU*u,40,Color(GOLD,fade*0.55),1.5,true)
-	if fired:
-		var u := clampf((elapsed-SHOT_AT)/0.10,0,1)
-		var head := _source.lerp(_at,minf(1.0,u*2.0))
-		var tail := _source.lerp(_at,clampf(u*2.0-0.7,0,1))
-		var alpha := 1-smoothstep(0.05,0.16,elapsed-SHOT_AT)
-		draw_line(tail,head,Color(GOLD,alpha*0.3),7,true)
-		draw_line(tail,head,Color(1,0.97,0.88,alpha),2.2,true)
 	if hit_started:
 		var u := clampf((elapsed-HIT_AT)/0.14,0,1)
 		var alpha := 1-smoothstep(0.03,0.16,elapsed-HIT_AT)
-		for index: int in 7:
-			var direction := Vector2.from_angle(index*TAU/7.0+0.2)
-			draw_line(_at+direction*(3+u*9),_at+direction*(13+u*16),Color(GOLD,alpha*0.9),2,true)
+		PaintedFx.stamp(self,PaintedFx.IMPACT,_at,Vector2.ONE*(34+u*42),Color(GOLD,alpha*0.9),_source.angle_to_point(_at))
 
 func _restore(cancelled: bool) -> void:
 	if _restored:

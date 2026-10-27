@@ -112,12 +112,13 @@ func _flip(player_id: int, changes: Array) -> void:
 		Sfx.play(&"rocket")
 		var goal: Vector2 = board._pawn_position(pawn) if pawn != null else board._tile_center(GameEnums.GOAL_TILE)
 		await _rocket(view, goal, 0.42, GOLD)
+		if not _alive(): return
 		_ring(goal, GOLD, 60.0, 5.0, 0.3)
 		board._floating_badge(_screen(goal) + Vector2(0, -40), "완주!", GOLD, 34)
 		await _wait(0.15)
 	else:
 		# 붉은 낙뢰가 내리꽂히고 출발선으로 튕겨 난다
-		_bolt(at + Vector2(randf_range(-30, 30), -280.0), at, RED)
+		_bolt(at + Vector2(-16, -280.0), at, RED)
 		_flash(at, Color(1.0, 0.85, 0.85), 60.0)
 		view.modulate = Color(2.0, 0.6, 0.6)
 		view.create_tween().tween_property(view, "modulate", Color.WHITE, 0.3)
@@ -313,16 +314,9 @@ func _nitro(changes: Array) -> void:
 func ghost(view: Node2D, color: Color) -> void:
 	if view == null or not is_instance_valid(view):
 		return
-	var shade := Polygon2D.new()
-	shade.polygon = _circle(15.0, 16)
-	shade.color = Color(color.lightened(0.25), 0.55)
-	shade.position = view.position + Vector2(0.0, -14.0)
-	shade.z_index = 2
-	_layer().add_child(shade)
-	var fade: Tween = shade.create_tween().set_parallel(true)
-	fade.tween_property(shade, "modulate:a", 0.0, 0.3)
-	fade.tween_property(shade, "scale", Vector2(1.4, 0.8), 0.3)
-	fade.chain().tween_callback(shade.queue_free)
+	var token: PawnToken = view.get_node_or_null("Bounce/Token") as PawnToken
+	if token != null and not token.artwork.is_empty():
+		board._pawn_trail_sample(token, color.lightened(0.25))
 
 
 # ---------------------------------------------------------------------------
@@ -437,74 +431,72 @@ func _spotlight(view: Node2D, color: Color, hold_time: float = 0.6) -> void:
 	light.illuminate(board,view,color,hold_time)
 
 
-## 커지며 사라지는 원 테두리.
-func _ring(at: Vector2, color: Color, radius: float, width: float, duration: float) -> void:
-	var ring := Line2D.new()
-	ring.points = _circle(1.0, 32)
-	ring.closed = true
-	ring.width = width / 8.0
-	ring.default_color = color
+## 가운데가 빈 붓결 압력파.
+func _ring(at: Vector2, color: Color, radius: float, _width: float, duration: float) -> void:
+	var ring := PaintedFx.sprite(PaintedFx.RIPPLE)
+	ring.name = "PaintedPressure"
 	ring.position = at
-	ring.scale = Vector2.ONE * 8.0
-	ring.z_index = 30
+	var shape := Vector2(1,0.65) * 2.0 / ring.region_rect.size.x
+	ring.scale = shape * 8.0
+	ring.modulate = color
+	ring.z_index = 0
 	_layer().add_child(ring)
+	_layer().move_child(ring,0)
+	board._mark_oneshot(ring,duration)
 	var grow: Tween = ring.create_tween().set_parallel(true)
-	grow.tween_property(ring, "scale", Vector2.ONE * radius, duration).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	grow.tween_property(ring, "width", width / radius, duration)
+	grow.tween_property(ring, "scale", shape * radius, duration).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	grow.tween_property(ring, "modulate:a", 0.0, duration).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	grow.chain().tween_callback(ring.queue_free)
 
 
-## 순간 섬광 (채운 원이 번쩍 커지며 사라진다).
+## 작은 섬광 중심과 비정형 빛결이 짧게 퍼진다.
 func _flash(at: Vector2, color: Color, radius: float) -> void:
-	var burst := Polygon2D.new()
-	burst.polygon = _circle(radius, 28)
-	burst.color = color
+	var burst := PaintedFx.sprite(PaintedFx.IMPACT)
+	burst.name = "PaintedFlipContact"
+	burst.modulate = color
 	burst.position = at
-	burst.scale = Vector2.ONE * 0.3
+	var extent := Vector2.ONE * radius * 2 / burst.region_rect.size
+	burst.scale = extent * 0.3
 	burst.z_index = 31
 	_layer().add_child(burst)
+	board._mark_oneshot(burst,0.22)
 	var pop: Tween = burst.create_tween().set_parallel(true)
-	pop.tween_property(burst, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	pop.tween_property(burst, "scale", extent, 0.16).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	pop.tween_property(burst, "modulate:a", 0.0, 0.22)
 	pop.chain().tween_callback(burst.queue_free)
 
 
-## 지그재그 번개.
+## 가지가 갈라지는 실제 번개 그림. 밝은 중심선의 양 끝을 발사점·착지점에 맞춘다.
 func _bolt(from: Vector2, to: Vector2, color: Color) -> void:
-	var points := PackedVector2Array([from])
-	var segments: int = 7
-	var side: Vector2 = from.direction_to(to).orthogonal()
-	for i: int in range(1, segments):
-		var u: float = float(i) / segments
-		points.append(from.lerp(to, u) + side * randf_range(-22.0, 22.0))
-	points.append(to)
-	for layer: int in 2:
-		var bolt := Line2D.new()
-		bolt.points = points
-		bolt.width = 14.0 if layer == 0 else 5.0
-		bolt.default_color = Color(color, 0.45) if layer == 0 else Color(1.0, 0.92, 0.9)
-		bolt.joint_mode = Line2D.LINE_JOINT_SHARP
-		bolt.z_index = 32
-		_layer().add_child(bolt)
-		var strike: Tween = bolt.create_tween()
-		strike.tween_property(bolt, "modulate:a", 0.2, 0.05)
-		strike.tween_property(bolt, "modulate:a", 1.0, 0.05)
-		strike.tween_property(bolt, "modulate:a", 0.0, 0.25)
-		strike.tween_callback(bolt.queue_free)
+	var bolt := PaintedFx.lightning(from,to,color)
+	bolt.name = "PaintedLightning"
+	bolt.z_index = 32
+	_layer().add_child(bolt)
+	board._mark_oneshot(bolt,0.35)
+	var strike: Tween = bolt.create_tween()
+	strike.tween_property(bolt, "modulate:a", 0.2, 0.05)
+	strike.tween_property(bolt, "modulate:a", 1.0, 0.05)
+	strike.tween_property(bolt, "modulate:a", 0.0, 0.25)
+	strike.tween_callback(bolt.queue_free)
 
 
 ## 로켓 비행: 잔불을 남기며 날아간다.
 func _rocket(view: Node2D, to: Vector2, duration: float, color: Color) -> void:
 	board._kill_fx(view)
 	var from: Vector2 = view.position
+	var source: WeakRef = weakref(view)
+	var sample := {"position":from, "step":-1}
+	board._fx_trail(view,duration,color)
 	var travel: Callable = func(t: float) -> void:
-		if not is_instance_valid(view):
+		var pawn_view: Node2D = source.get_ref()
+		if not _alive() or not is_instance_valid(pawn_view):
 			return
-		view.position = from.lerp(to, t) + Vector2(0.0, -60.0 * sin(t * PI))
-		if int(t * 30.0) % 2 == 0:
-			board._rocket_puff(view.position)
-			ghost(view, color)
+		pawn_view.position = from.lerp(to, t) + Vector2(0.0, -60.0 * sin(t * PI))
+		var step := int(t * 15.0)
+		if step != sample.step:
+			board._rocket_puff(pawn_view.position,pawn_view.position.direction_to(sample.position),color)
+			sample.step = step
+		sample.position = pawn_view.position
 	var flight: Tween = view.create_tween()
 	flight.tween_method(travel, 0.0, 1.0, duration).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
 	await _wait(duration)

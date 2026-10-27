@@ -69,6 +69,7 @@ func _process(_delta: float) -> bool:
 			rng_before = _board.state.rng.state
 			arrival = stage.points[-1]
 			_expect(stage.pawn_id==11 and not stage.artwork.is_empty(),"The front pawn and its real artwork are used")
+			_expect(PaintedFx.FLAME.get_width()<=256 and PaintedFx.IMPACT.get_width()<=256,"Painted nitro textures stay within their runtime budget")
 			_expect(stage.path.back()==(5 if case_name=="collision" else 0 if case_name=="finish" else BoardSpec.side),"The route stops at the actual first blocker, corner or finish")
 		if not seen.has(stage.phase):
 			seen.append(stage.phase)

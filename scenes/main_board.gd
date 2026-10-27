@@ -3120,9 +3120,11 @@ func _play_rocket(pawn_id: int, to_pos: Vector2, to_scale: float, tile: int) -> 
 	_glide(view, to_pos, to_scale, {"from_pos": start, "dur": 0.28, "arc": 14.0, "pace_cap": 1.0, "land_tile": tile, "land_big": true})
 	var generation: int = _fx_generation
 	var frame: int = 0
+	var previous: Vector2 = start
 	while generation == _fx_generation and is_instance_valid(view) and _fx_running(view):
 		if frame % 2 == 0:
-			_rocket_puff(view.position)
+			_rocket_puff(view.position, view.position.direction_to(previous))
+		previous = view.position
 		frame += 1
 		await get_tree().process_frame
 	if generation != _fx_generation or not is_instance_valid(view):
@@ -3140,21 +3142,30 @@ func _play_rocket(pawn_id: int, to_pos: Vector2, to_scale: float, tile: int) -> 
 		_floating_badge(view.position + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + Vector2(0, -42), ("눈금 %d칸" % dice_part) + (" (%s)" % " · ".join(PackedStringArray(bonus_notes)) if not bonus_notes.is_empty() else ""), Color("f8f9fa"), 30)
 
 
-## 로켓 화염 잔상 한 점: 주황 원이 커지며 사라진다.
-func _rocket_puff(at: Vector2) -> void:
-	if _pawn_layer == null:
+## 이동 반대쪽으로 말려 올라오는 실제 화염 그림. 짧게 흐려지고 풀로 돌아간다.
+func _rocket_puff(at: Vector2, direction: Vector2 = Vector2.UP, color: Color = Color("ff922b")) -> void:
+	if not _fx_on() or _pawn_layer == null or not is_inside_tree():
 		return
-	var puff := Polygon2D.new()
-	puff.polygon = _circle_points(7.0, 12)
-	puff.color = Color(1.0, 0.45 + randf() * 0.25, 0.1, 0.85)
-	puff.position = at + Vector2(randf_range(-3, 3), randf_range(-3, 3))
-	puff.z_index = 3
-	_pawn_layer.add_child(puff)
-	_mark_oneshot(puff, 0.35)
+	var puff: Sprite2D = _fx_pool.take(&"rocket_flame")
+	if puff == null:
+		puff = _fx_pool.adopt(&"rocket_flame", PaintedFx.sprite(PaintedFx.FLAME))
+		puff.offset.y = -puff.region_rect.size.y * 0.5
+		puff.z_index = 0
+		_pawn_layer.add_child(puff)
+	_pawn_layer.move_child(puff,0)
+	var heading := direction.normalized() if not direction.is_zero_approx() else Vector2.UP
+	puff.position = at + Vector2(0, -2)
+	puff.rotation = heading.angle() + PI * 0.5
+	puff.scale = Vector2(16, 27) / puff.region_rect.size
+	puff.modulate = Color(color, color.a * 0.74)
+	puff.visible = true
+	_mark_oneshot(puff, 0.32)
 	var tween: Tween = puff.create_tween().set_parallel(true)
-	tween.tween_property(puff, "scale", Vector2.ONE * 2.2, 0.35)
-	tween.tween_property(puff, "modulate:a", 0.0, 0.35)
-	tween.chain().tween_callback(puff.queue_free)
+	puff.set_meta(FxPool.TWEEN_META, tween)
+	tween.tween_property(puff, "position", puff.position + heading * 14, 0.32).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(puff, "scale", puff.scale * Vector2(0.65, 1.4), 0.32)
+	tween.tween_property(puff, "modulate:a", 0.0, 0.32)
+	tween.chain().tween_callback(_fx_pool.give_back.bind(puff))
 
 
 ## 빵집에 멈추면 얻은 것을 분명히 보여 준다: 카드를 받으면 [빵집! 카드 획득] 금빛 알림과 환호, 손패가 가득 차 못 받으면 그 이유를 알려 준다.
@@ -11245,7 +11256,7 @@ func _bot_should_wait() -> bool:
 	return _ui_busy() or (net == null and _menu_is_open()) or (_duel_arena != null and _duel_arena.animating)
 
 
-## 리벤지 부스터 칸의 불꽃: 칸 아래쪽과 양옆에서 혀 모양 불꽃이 제각각 넘실댄다 (코드로 그린다, 칸 크기에 맞춰 늘어난다).
+## 리벤지 부스터 표시: 아래쪽과 양옆에서 질감 있는 화염 그림이 제각각 일렁인다.
 class RevengeFire extends Control:
 	const TONGUES: int = 7
 
@@ -11271,15 +11282,7 @@ class RevengeFire extends Control:
 			_tongue(Vector2(edge_x, h), 5.0, flick, 3.0 * sin(t * 6.0 + side), Color(1.0, 0.45, 0.08, 0.6))
 
 	func _tongue(base: Vector2, half: float, height: float, sway: float, color: Color) -> void:
-		var tip := Vector2(base.x + sway, base.y - height)
-		var points := PackedVector2Array([
-			base + Vector2(-half, 0),
-			base + Vector2(-half * 0.7 + sway * 0.3, -height * 0.45),
-			tip,
-			base + Vector2(half * 0.7 + sway * 0.3, -height * 0.45),
-			base + Vector2(half, 0),
-		])
-		draw_colored_polygon(points, color)
+		PaintedFx.flame(self,base,Vector2(sway,-maxf(height,0.1)).normalized(),height,half,color,base.x*0.13+Time.get_ticks_msec()*0.006)
 
 
 ## 설치형 기물: 투명 호텔·지뢰 그림과 주인 색 받침. 코드 모형은 파일 누락 시에만 사용한다.

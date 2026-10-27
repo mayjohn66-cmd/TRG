@@ -254,36 +254,31 @@ func _draw() -> void:
 	var heading := _heading(distance)
 	var foot := _sample(distance)
 	var ignition := smoothstep(0,0.18,elapsed)*(1-smoothstep(end,end+0.18,elapsed))
-	# Uneven tongues and rising embers read as fire rather than a fixed crown.
-	for index: int in 9:
-		var x := (index-4)*4.5
+	# Independently moving painted flames stay behind the real pawn.
+	for index: int in 7:
+		var x := (index-3)*6.0
 		var height := (25+sin(elapsed*24+index*2.1)*8+cos(elapsed*17-index)*5)*ignition
 		var base := foot+Vector2(x,2+absf(x)*0.08)
 		_flame(base,Vector2.UP+Vector2(sin(elapsed*8+index)*0.14,0),height,5.2,ignition,elapsed*23+index)
 	for index: int in 11:
 		var rise := fposmod(elapsed*0.85+index*0.137,1.0)
 		var at := foot+Vector2(sin(index*2.3+rise*4)*21,-7-rise*48)
-		draw_line(at+Vector2(0,3+rise*3),at,Color(CYAN,sin(rise*PI)*0.8*ignition),1.5,true)
+		PaintedFx.stamp(self,PaintedFx.FLECK,at,Vector2(2.4,4+rise*3),Color(CYAN,sin(rise*PI)*0.8*ignition),index*0.7)
 	# A tapered, flowing wake retains the floor grid without resembling rails.
 	if distance>1:
-		var trail := _partial(distance)
-		draw_polyline(trail,Color(BLUE,0.16*fade),25,true)
-		for d: int in range(0,int(distance),10):
+		for d: int in range(0,int(distance),18):
 			var at := _sample(d)
 			var forward := _heading(d)
 			var side := forward.orthogonal()
 			var heat := 0.30+0.70*pow(clampf(float(d)/maxf(distance,1),0,1),0.7)
-			if d%20==0:
-				draw_line(at-side*9,at+side*9,Color(CYAN,0.25*fade*heat),1.2,true)
+			var next := _sample(minf(d+25,distance))
+			PaintedFx.streak(self,at,next,18,Color(BLUE,0.24*fade*heat))
+			if d%36==0:
+				PaintedFx.streak(self,at-side*9,at+side*9,2.8,Color(CYAN,0.4*fade*heat))
 			for sign: int in [-1,1]:
 				var base := at+side*(8+sin(d*0.12-elapsed*15)*1.5)*sign
 				_flame(base,Vector2.UP-forward*0.65,(13+sin(elapsed*29+d)*6)*heat,4.8,fade*heat,elapsed*28+d)
-		for sign: int in [-1,1]:
-			var ribbon := PackedVector2Array()
-			for d: int in range(0,int(distance)+1,5):
-				ribbon.append(_sample(d)+_heading(d).orthogonal()*sign*(7+sin(d*0.08-elapsed*24)*2))
-			if ribbon.size()>1:
-				draw_polyline(ribbon,Color(CYAN,0.6*fade),1.8,true)
+				PaintedFx.streak(self,base,next+_heading(minf(d+25,distance)).orthogonal()*sign*8,3.0,Color(CYAN,0.5*fade*heat))
 	if phase==&"dash":
 		for offset: int in 4:
 			var behind := distance-(offset+1)*19.0
@@ -296,14 +291,10 @@ func _draw() -> void:
 		var age := _impact_visual_age()
 		var u := clampf(age/0.58,0,1) if blocked>=0 else clampf((elapsed-end)/END_TIME,0,1)
 		var at := points[-1]
-		# Two expanding ground-pressure arcs spread out when the held hit releases.
+		# Hollow textured pressure waves hold with the contact, then spread.
 		for index: int in 2:
-			var ring := PackedVector2Array()
 			var radius := 19+u*(82+index*24)
-			for step: int in 65:
-				var angle := step*TAU/64.0
-				ring.append(at+Vector2(cos(angle),sin(angle)*0.48)*radius)
-			draw_polyline(ring,Color(CYAN,(1-u)*(0.65-index*0.2)),2.5-index,true)
+			PaintedFx.stamp(self,PaintedFx.RIPPLE,at,Vector2(radius*2,radius*0.96),Color(CYAN,(1-u)*(0.60-index*0.18)),index*0.18)
 
 func _impact_visual_age() -> float:
 	var age := maxf(0,elapsed-DASH_START-dash_time)
@@ -318,9 +309,8 @@ func _draw_glow(canvas: Node2D) -> void:
 	_soft_light(canvas,foot,34,Color(BLUE,0.35*ignition))
 	_soft_light(canvas,foot+Vector2(0,8),19,Color(CYAN,0.35*ignition))
 	if phase==&"dash":
-		var trail := _partial(distance)
-		canvas.draw_polyline(trail,Color(BLUE,0.18),36,true)
-		canvas.draw_polyline(trail,Color(CYAN,0.24),13,true)
+		for d: int in range(0,int(distance),30):
+			PaintedFx.streak(canvas,_sample(d),_sample(minf(d+40,distance)),28,Color(BLUE,0.18))
 	if arrived and blocked>=0:
 		var age := _impact_visual_age()
 		var fade := 1-smoothstep(0.02,0.45,age)
@@ -341,33 +331,25 @@ func _draw_foreground(canvas: Node2D) -> void:
 		for index: int in 8:
 			var shift := fposmod(elapsed*230+index*17,66.0)
 			var at := foot-heading*shift+side*(19+(index%4)*4)*(1 if index%2==0 else -1)+Vector2(0,-13)
-			var streak := PackedVector2Array([at,at-heading*(10+speed*30)-side*1.1,at-heading*(8+speed*24)+side*1.1])
-			canvas.draw_colored_polygon(streak,Color(CYAN,0.45*speed))
+			PaintedFx.streak(canvas,at-heading*(10+speed*30),at,2.8,Color(CYAN,0.5*speed))
 	if not arrived or blocked<0:
 		return
 	var age := _impact_visual_age()
 	var fade := 1-smoothstep(0.06,0.52,age)
 	var hit := points[-1]+Vector2(0,-17)
-	# A directional white-hot star holds during slow motion, then opens into shards.
-	var star := PackedVector2Array()
-	for index: int in 24:
-		var angle := heading.angle()+index*TAU/24.0
-		var radius := (26+sin(index*2.3)*7+age*55) if index%2==0 else 7.0+age*8
-		star.append(hit+Vector2.from_angle(angle)*radius)
-	canvas.draw_colored_polygon(star,Color(BLUE,0.45*fade))
+	# An airy painted contact opens into textured chips on the shared impact clock.
+	PaintedFx.stamp(canvas,PaintedFx.IMPACT,hit,Vector2(58+age*100,50+age*85),Color(CYAN,0.85*fade),heading.angle())
 	var flash := 1-smoothstep(0.0,0.065,age)
-	canvas.draw_line(hit-heading*(23+age*90),hit+heading*(35+age*90),Color(0.9,1,1,0.8*flash),4,true)
-	canvas.draw_line(hit-Vector2(0,24),hit+Vector2(0,21),Color(0.9,1,1,0.7*flash),3,true)
+	PaintedFx.stamp(canvas,PaintedFx.IMPACT,hit,Vector2.ONE*(30+age*100),Color(0.9,1,1,0.8*flash),heading.angle()+0.5)
 	for index: int in 22:
 		var angle := heading.angle()+index*2.39996
 		var ray := Vector2.from_angle(angle)
 		var speed := 95+fposmod(index*37.0,120)
 		var at := hit+ray*(11+age*speed)+heading*age*55+Vector2(0,age*age*70)
 		var shard_length := 4+fposmod(index*11.0,9)*(1-age)
-		var shard := PackedVector2Array([at+ray*shard_length,at+ray.orthogonal()*1.8,at-ray*3,at-ray.orthogonal()*1.8])
-		canvas.draw_colored_polygon(shard,Color(Color("ddffff") if index%3==0 else CYAN,fade*0.9))
+		PaintedFx.stamp(canvas,PaintedFx.FLECK,at,Vector2(shard_length*1.8,3.4),Color(Color("ddffff") if index%3==0 else CYAN,fade*0.9),angle+age*(2 if index%2==0 else -3))
 		if index%3==0:
-			canvas.draw_line(at-ray*(7+age*30),at,Color(CYAN,fade*0.4),1.3,true)
+			PaintedFx.streak(canvas,at-ray*(7+age*30),at,2.4,Color(CYAN,fade*0.4))
 	# The shared launch has one pressure burst, and every flying piece gets a wake.
 	if launch_age>=0 and launch_age<0.32:
 		var board: MainBoard = _board_ref.get_ref()
@@ -380,27 +362,11 @@ func _draw_foreground(canvas: Node2D) -> void:
 				continue
 			var direction: Vector2 = (view.position-(victims[id].position as Vector2)).normalized()
 			var tip := view.position+Vector2(0,-12)
-			canvas.draw_line(tip-direction*25,tip-direction*8,Color(CYAN,wake_alpha*0.7),2,true)
+			PaintedFx.streak(canvas,tip-direction*25,tip-direction*8,3.2,Color(CYAN,wake_alpha*0.7))
 
 func _flame(base: Vector2, direction: Vector2, height: float, width: float, alpha: float, flicker: float) -> void:
-	if height<0.3 or alpha<0.01:
-		return
-	var side := direction.orthogonal()
-	var shape := PackedVector2Array()
-	for index: int in 9:
-		var u := index/8.0
-		var sway := sin(flicker+u*4.5)*width*u*0.75
-		shape.append(base+direction*height*u+side*(sway-width*(1-u)*sqrt(1-u)))
-	for index: int in range(7,-1,-1):
-		var u := index/8.0
-		var sway := sin(flicker+u*4.5)*width*u*0.75
-		shape.append(base+direction*height*u+side*(sway+width*(1-u)*sqrt(1-u)))
-	draw_colored_polygon(shape,Color(BLUE,alpha*0.72))
-	var core := PackedVector2Array()
-	for index: int in 7:
-		var u := index/8.0
-		core.append(base+direction*height*u+side*sin(flicker+u*4.5)*width*u*0.75)
-	draw_polyline(core,Color(CYAN,alpha*0.9),width*0.6,true)
+	PaintedFx.flame(self,base,direction,height,width,Color(BLUE.lightened(0.12),alpha*0.8),flicker)
+	PaintedFx.flame(self,base,direction,height*0.63,width*0.40,Color(Color("b8fbff"),alpha*0.7),flicker+0.4)
 
 func _restore(cancelled: bool) -> void:
 	if _restored:
