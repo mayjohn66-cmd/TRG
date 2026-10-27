@@ -1,0 +1,58 @@
+{
+  "date": "2026-10-27",
+  "tool": "built-in image_gen.imagegen",
+  "agent": "Codex",
+  "image_model": "not exposed by tool",
+  "source_policy": "Copied byte-for-byte; alpha not edited.",
+  "runtime": {
+    "size_limit": 512,
+    "mipmaps": true,
+    "lossy_quality": 0.9
+  },
+  "assets": [
+    {
+      "key": "muzzle",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-1ef6a499-e4d8-4737-b3dd-5e36f8a8f28d.png",
+      "target": "assets\\fx\\bang\\muzzle_flash_v01.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "alpha_bbox": [
+        0,
+        19,
+        1236,
+        1254
+      ],
+      "transparent_pixels": 1170784,
+      "prompt": "Use case: stylized-concept. Asset type: production game VFX sprite, one isolated muzzle flash for a small silver revolver in a colorful cute board game. Create a single organically irregular flame jet, viewed side-on, issuing from a small bright origin at 23 percent of canvas width and 50 percent canvas height, extending toward SCREEN RIGHT. White-hot small core with flowing pale yellow and amber flame tongues, soft luminous falloff, wispy feathered irregular edges and a few tiny bright embers. Hand-painted polished game VFX texture with fluid airbrushed light, subtle internal hot gas texture, not a flat symbol. Compact horizontal silhouette, well padded on every side, all fire fully inside frame. Square canvas, truly transparent RGBA background including around soft glow. NO gun, objects, background, words, numbers, outline, star polygon, symmetric starburst, straight beams, badge, border, frame or checkerboard pattern. Only one firing flash sprite; not a sprite sheet.",
+      "attempts": 1,
+      "qa": "Inspected actual image: organic luminous texture, no text or background, alpha preserved; native rendering checked separately.",
+      "source_sha256": "269bde639329195c64e9eb67687cc5cd34171efd928a9b200d04c8fa4697527e",
+      "target_sha256": "269bde639329195c64e9eb67687cc5cd34171efd928a9b200d04c8fa4697527e"
+    },
+    {
+      "key": "impact",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-2948f694-4e1f-4e0e-b2f6-8546324ea887.png",
+      "target": "assets\\fx\\bang\\hit_spark_v01.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "alpha_bbox": [
+        23,
+        21,
+        1254,
+        1254
+      ],
+      "transparent_pixels": 1216460,
+      "prompt": "Use case: stylized-concept. Asset type: production game VFX sprite for a bullet impact on a toy game pawn. A single compact organic burst of golden sparks and hot white-gold light, centered on a square transparent RGBA canvas. Hand-painted polished game VFX, luminous flowing irregular flame wisps and a few curved ember streaks with soft tapering tails, fine airy smoky edges. Irregular asymmetrical radial spread, small hot center, generous clear empty gaps between sparks so a character behind the effect stays legible. Subtle warm amber edge shading, airy pale cream highlights. Feathery light falloff with real transparency all around. Leave at least 15 percent transparent padding on each edge. NOT a geometric sun/star icon, not a uniform radial array, no circle outline or ring, no comic text, no explosion cloud, no objects, no gun, no scenery, no background color or checkerboard, no frame. One small readable impact sprite, not a sprite sheet.",
+      "attempts": 1,
+      "qa": "Inspected actual image: organic luminous texture, no text or background, alpha preserved; native rendering checked separately.",
+      "source_sha256": "45469638184428e0435c568bb91cf427923133ca8ebf7b5b6a9f93aeb4d9a4de",
+      "target_sha256": "45469638184428e0435c568bb91cf427923133ca8ebf7b5b6a9f93aeb4d9a4de"
+    }
+  ]
+}

@@ -9,6 +9,9 @@ const TOTAL_TIME := 1.12
 const GOLD := Color("ffe3a1")
 const FOCUS := preload("res://assets/fx/sniper_focus.gdshader")
 const SMOKE := preload("res://assets/fx/bang_smoke.gdshader")
+const TRACER := preload("res://assets/fx/bang_tracer.gdshader")
+const MUZZLE_FLASH := preload("res://assets/fx/bang/muzzle_flash_v01.png")
+const HIT_SPARK := preload("res://assets/fx/bang/hit_spark_v01.png")
 var elapsed := 0.0
 var pace := 1.0
 var target_id := -1
@@ -32,6 +35,8 @@ var _veil: ColorRect
 var _light: ShaderMaterial
 var _smoke: ColorRect
 var _smoke_material: ShaderMaterial
+var _tracer: ColorRect
+var _tracer_material: ShaderMaterial
 
 func play(board: MainBoard, shooter: int, target: int, speed: float) -> void:
 	name = "BangStage"
@@ -86,6 +91,12 @@ func play(board: MainBoard, shooter: int, target: int, speed: float) -> void:
 	_smoke_material.shader = SMOKE
 	_smoke.material = _smoke_material
 	add_child(_smoke)
+	_tracer = ColorRect.new()
+	_tracer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tracer_material = ShaderMaterial.new()
+	_tracer_material.shader = TRACER
+	_tracer.material = _tracer_material
+	add_child(_tracer)
 	Sfx.play(&"toy_click", -8.0, 0.0)
 	_update_pose()
 
@@ -143,6 +154,15 @@ func _update_pose() -> void:
 	_smoke.rotation = _angle
 	_smoke.visible = fired
 	_smoke_material.set_shader_parameter("age", maxf(elapsed - SHOT_AT, 0))
+	var distance := _muzzle.distance_to(_at)
+	var shot_angle := _muzzle.angle_to_point(_at)
+	_tracer.position = _muzzle - Vector2(0, 12).rotated(shot_angle)
+	_tracer.rotation = shot_angle
+	_tracer.size = Vector2(maxf(distance, 1), 24)
+	_tracer.visible = fired and elapsed < HIT_AT + 0.045
+	_tracer_material.set_shader_parameter("age", maxf(elapsed - SHOT_AT, 0))
+	_tracer_material.set_shader_parameter("travel_time", HIT_AT - SHOT_AT)
+	_tracer_material.set_shader_parameter("distance_px", maxf(distance, 1))
 
 func _draw() -> void:
 	if _view_ref == null: return
@@ -156,27 +176,17 @@ func _draw() -> void:
 		draw_line(corner, corner - Vector2(0, direction.y * 9), Color(GOLD, fade), 2, true)
 	if fired:
 		var age := elapsed - SHOT_AT
-		var flash := 1 - smoothstep(0.015, 0.10, age)
-		var points := PackedVector2Array()
-		for i: int in 12:
-			var angle := i * TAU / 12
-			var length := (28.0 if i % 2 == 0 else 10.0) * (1 - minf(age * 4, 0.5))
-			points.append(_muzzle + Vector2(cos(angle) * 1.35, sin(angle)).rotated(_angle) * length)
-		draw_colored_polygon(points, Color("ffbb57", flash * 0.8))
-		draw_circle(_muzzle, 9 * flash, Color(1, 0.97, 0.79, flash))
-		var flight := clampf(age / (HIT_AT - SHOT_AT), 0, 1)
-		var head := _muzzle.lerp(_at, flight)
-		var tail := _muzzle.lerp(_at, maxf(flight - 0.33, 0))
-		var alpha := 1 - smoothstep(HIT_AT, HIT_AT + 0.045, elapsed)
-		draw_line(tail, head, Color(1, 0.65, 0.2, alpha * 0.20), 9, true)
-		draw_line(tail, head, Color(GOLD, alpha), 2.5, true)
+		var flash := 1 - smoothstep(0.008, 0.11, age)
+		var extent := Vector2(104, 90) * lerpf(0.82, 1.15, smoothstep(0, 0.08, age))
+		draw_set_transform(_muzzle, _angle)
+		draw_texture_rect(MUZZLE_FLASH, Rect2(-extent * Vector2(0.17, 0.52), extent), false, Color(1, 1, 1, flash))
 	if hit_started:
 		var age := elapsed - HIT_AT
-		var alpha := 1 - smoothstep(0.025, 0.20, age)
-		for i: int in 9:
-			var direction := Vector2.from_angle(i * TAU / 9 + 0.2)
-			var spread := 5 + age * 120
-			draw_line(_at + direction * spread, _at + direction * (spread + 10 + (i % 3) * 5), Color(GOLD, alpha), 2, true)
+		var alpha := 1 - smoothstep(0.015, 0.22, age)
+		var extent := Vector2.ONE * lerpf(48, 100, smoothstep(0, 0.20, age))
+		draw_set_transform(_at, _angle * 0.15)
+		draw_texture_rect(HIT_SPARK, Rect2(-extent * Vector2(0.535, 0.506), extent), false, Color(1, 1, 1, alpha * 0.9))
+	draw_set_transform(Vector2.ZERO)
 
 func _restore(cancelled: bool) -> void:
 	if _restored and not cancelled: return

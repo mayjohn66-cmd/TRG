@@ -2974,8 +2974,9 @@ func _play_eject_settle(pawn_id: int) -> void:
 
 
 ## 큐의 한 단계: 잡힌 말이 회전하며 장외로 날아가 출발선(0번)에 떨어지고, 주인들이 반응한다.
-func _play_capture_eject(pawn_id: int, by_player: int, owner_id: int, cutin_capture: bool) -> void:
-	_fx_impact_at_pawn(pawn_id, 0.0)
+func _play_capture_eject(pawn_id: int, by_player: int, owner_id: int, cutin_capture: bool, impact_feedback: bool = true) -> void:
+	if impact_feedback:
+		_fx_impact_at_pawn(pawn_id, 0.0)
 	# 처치·사출은 어떤 경우든(잡기·필살기·함정·카드) 보드 밖으로 날아가는 장외 홈런으로 보여 준다 (출발선으로 걸어 돌아가지 않는다).
 	_set_hint(pawn_id, {"homerun": true, "arc": 110.0, "spin": 2.0 * TAU, "dur": 0.45, "land_thud": true})
 	get_tree().create_timer(0.2 * _motion_pace()).timeout.connect(func() -> void:
@@ -7351,7 +7352,7 @@ func _play_bang(shooter: int, target_pawn_id: int) -> void:
 		return
 	_record_ejection(target_pawn_id, shooter, true)
 	# Release on the hit beat, without another queue linger between bullet and launch.
-	await _play_capture_eject(target_pawn_id, shooter, pawn.owner_id, false)
+	await _play_capture_eject(target_pawn_id, shooter, pawn.owner_id, false, false)
 	while generation == _fx_generation and is_instance_valid(stage) and not stage.complete:
 		await get_tree().process_frame
 	if is_instance_valid(stage): stage.queue_free()

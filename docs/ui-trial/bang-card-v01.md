@@ -29,3 +29,16 @@ ejection order, defense gate, snapshot restoration, reset during aim and flight,
 opposite directions, presentation speeds, repeated viewport cleanup, effects-off
 mode and unchanged game RNG. `BANG_CAPTURE_DIR` optionally saves native frames.
 CI commit marker `[check:bang]` selects this check instead of the full game suite.
+
+## Painted firing effects
+
+The original polygon flash and evenly spaced hit spokes are replaced by two
+transparent painted textures in `assets/fx/bang/`. Sources are kept byte-for-byte;
+Godot imports them at 512 pixels with mipmaps. Prompts, source locations and
+matching SHA-256 hashes are recorded in `assets/fx/bang/source.json`.
+
+The tracer is now a moving, tapering hot core with diffuse uneven falloff rather
+than two constant-width lines. The muzzle smoke has advected noise and soft edge
+falloff. BANG suppresses the generic circular ejection ring so only its own
+painted hit appears. The revolver, aim corners, timing, volume and game rules
+retain the existing behavior.

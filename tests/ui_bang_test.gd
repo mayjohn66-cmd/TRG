@@ -36,6 +36,10 @@ func _process(_delta: float) -> bool:
 	_expect(stage.target_id == 22, "The chosen player's actual leading pawn is targeted")
 	_expect(stage.gun.flag_root.visible == false, "BANG uses the revolver without a roulette flag")
 	_expect(stage.gun.mouse_filter == Control.MOUSE_FILTER_IGNORE and stage._veil.mouse_filter == Control.MOUSE_FILTER_IGNORE, "Effects do not intercept pointer input")
+	_expect(stage._tracer.mouse_filter == Control.MOUSE_FILTER_IGNORE, "The textured tracer passes pointer input through")
+	_expect(stage.MUZZLE_FLASH.get_width() == 512 and stage.HIT_SPARK.get_width() == 512, "Painted effects use the bounded runtime texture size")
+	if stage.elapsed > stage.HIT_AT + 0.045:
+		_expect(not stage._tracer.visible, "The tracer fades after impact instead of remaining as a beam")
 	var view: Node2D = _board._pawn_views[22]
 	if not stage.released:
 		_expect(view.position.distance_to(_origin) < 0.1, "The victim stays at its real tile until impact hold ends")
