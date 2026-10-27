@@ -2,6 +2,8 @@
 
 Focused presentation audit at landscape 844×390 and 740×360, including a width change while each effect remains active. Uses the shipping 1366×768 canvas-items/expand stretch; 844×390 produces a 1662×768 logical viewport and a 148px horizontal board offset. No simulation, input, outcome, RNG or global time-scale changes.
 
+The audit enables `MobileSupport.force_touch` before creating the production board, so the merged touch-device text/button layout is included even on a desktop test runner.
+
 | Corrected presentation | Original error in physical screen pixels | Correction |
 | --- | --- | --- |
 | Castling source marks and orbit | 75.16 | Stage and pawn poses share the pawn-layer transform; orbit centre is converted into that frame. |

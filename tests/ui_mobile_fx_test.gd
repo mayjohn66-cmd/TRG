@@ -78,6 +78,7 @@ func drop(effect: Node) -> void:
 
 func run() -> void:
 	create_timer(100).timeout.connect(func() -> void: printerr("MOBILE_FX_FAIL timeout"); quit(1))
+	MobileSupport.force_touch = true
 	root.content_scale_size = Vector2i(1366,768)
 	root.content_scale_mode = Window.CONTENT_SCALE_MODE_CANVAS_ITEMS
 	root.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_EXPAND
