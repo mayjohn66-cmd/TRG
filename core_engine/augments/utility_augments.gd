@@ -1,6 +1,6 @@
 # File: res://core_engine/augments/utility_augments.gd
 # Class: class_name UtilityAugments
-# Role: [범용 보급] 증강 - 기물 변이·전군 돌연변이·필살기 리필 + 2026-10 범용 10종(영구 패시브 4·즉발 6). 드래프트 선택지의 유연성을 높이는 증강의 조건·효과.
+# Role: 범용 증강 - 기물 변이·전군 돌연변이·필살기 리필 + 2026-10 신규 10종(표시 분류: 패시브 5·즉발 4·카드 보급 1). 드래프트 선택지의 조건·효과.
 #       모든 난수는 호스트 RNG(state.rng)를 쓴다. 영구 효과의 기록은 GameState(utility_*)에 있고 TurnSnapshot에 실린다.
 class_name UtilityAugments
 extends RefCounted
@@ -10,16 +10,16 @@ const MUTATE_ALL: StringName = &"UTIL_02"   # [기물 대개조] 전군 돌연�
 const SKILL_REFILL: StringName = &"UTIL_03" # [전술 재장전] 필살기 리필 주사
 
 ## 2026-10 범용 10종 (법전 비중을 줄인 자리를 채운다).
-const MOVE_PLUS: StringName = &"AUG_UTIL_MOVE_PLUS"           # [상시 보급] 슈파볼트 탑승: 모든 굴림 영구 +1칸
-const HAND_EXPAND: StringName = &"AUG_UTIL_HAND_EXPAND"       # [상시 보급] 에심당 뽈사탕: 카드 1장 + 손패 상한 +1
-const LUCKY_DICE: StringName = &"AUG_UTIL_LUCKY_DICE"         # [상시 보급] 손은 눈보다 빨라: 굴림이 높게 나올 확률 상승
-const EXTRA_TURN: StringName = &"AUG_UTIL_EXTRA_TURN"         # [1회용 보급] 다이스 리바이브: 0칸·턴 종료 굴림이면 한 턴 더
+const MOVE_PLUS: StringName = &"AUG_UTIL_MOVE_PLUS"           # [패시브] 슈파볼트 탑승: 모든 굴림 영구 +1칸
+const HAND_EXPAND: StringName = &"AUG_UTIL_HAND_EXPAND"       # [패시브] 에심당 뽈사탕: 카드 1장 + 손패 상한 +1
+const LUCKY_DICE: StringName = &"AUG_UTIL_LUCKY_DICE"         # [패시브] 손은 눈보다 빨라: 굴림이 높게 나올 확률 상승
+const EXTRA_TURN: StringName = &"AUG_UTIL_EXTRA_TURN"         # [패시브] 다이스 리바이브: 0칸·턴 종료 굴림이면 한 턴 더
 const CARD_PACK2: StringName = &"AUG_UTIL_CARD_PACK2"         # [카드 보급] 즉발 카드 2장
-const SELECT_SHIELD: StringName = &"AUG_UTIL_SELECT_SHIELD"   # [기물 보급] 관심사도 지정: 내 말 1개에 보호막
-const TRAP_CLEAR1: StringName = &"AUG_UTIL_TRAP_CLEAR1"       # [즉발 보급] 간의영역: 상대 함정 1개 철거 (없으면 카드 1장)
-const CATCH_UP: StringName = &"AUG_UTIL_CATCH_UP"             # [즉발 보급] 순보: 가장 뒤처진 내 말을 선두 바로 뒤로
-const SHORTEN_GOAL: StringName = &"AUG_UTIL_SHORTEN_GOAL"     # [즉발 보급] 슬슬 지루한데...: 모두의 결승선 2칸 영구 단축
-const REROLL_ALL_AUG: StringName = &"AUG_UTIL_REROLL_ALL_AUG" # [랜덤 보급] 올 픽션: 이번 드래프트를 모두 다시 뽑는다 (라운드당 1회)
+const SELECT_SHIELD: StringName = &"AUG_UTIL_SELECT_SHIELD"   # [패시브] 관심사도 지정: 내 말 1개에 보호막
+const TRAP_CLEAR1: StringName = &"AUG_UTIL_TRAP_CLEAR1"       # [즉발 발동] 간의영역: 상대 함정 1개 철거 (없으면 카드 1장)
+const CATCH_UP: StringName = &"AUG_UTIL_CATCH_UP"             # [즉발 발동] 순보: 가장 뒤처진 내 말을 선두 바로 뒤로
+const SHORTEN_GOAL: StringName = &"AUG_UTIL_SHORTEN_GOAL"     # [즉발 발동] 슬슬 지루한데...: 모두의 결승선 2칸 영구 단축
+const REROLL_ALL_AUG: StringName = &"AUG_UTIL_REROLL_ALL_AUG" # [즉발 발동] 올 픽션: 이번 드래프트를 모두 다시 뽑는다 (라운드당 1회)
 
 const ALL_IDS: Array[StringName] = [MUTATE_ONE, MUTATE_ALL, SKILL_REFILL, MOVE_PLUS, HAND_EXPAND, LUCKY_DICE, EXTRA_TURN, CARD_PACK2, SELECT_SHIELD, TRAP_CLEAR1, CATCH_UP, SHORTEN_GOAL, REROLL_ALL_AUG]
 ## 2026-10 범용 10종 (도감·테스트용).
@@ -56,16 +56,16 @@ const INFO: Dictionary = {
 	MUTATE_ONE: ["[기물 재연성] 랜덤 변이 물약", "◆ 진화한 내 기물 1개를 다른 진화 기물로 바꾸고 +%d칸 전진\n◆ 새 기물의 필살기는 바로 사용 가능"],
 	MUTATE_ALL: ["[기물 대개조] 전군 돌연변이", "◆ 내 말 4개를 모두 서로 다른 진화 기물로 변경\n◆ 필살기 재충전"],
 	SKILL_REFILL: ["[전술 재장전] 필살기 리필 주사", "◆ 사용한 필살기 모두 재충전 + 생떼 카드 %d장"],
-	MOVE_PLUS: ["[상시 보급] 슈파볼트 탑승", "◆ 이번 판 동안 내 모든 굴림 이동 +1칸 (영구)"],
-	HAND_EXPAND: ["[상시 보급] 에심당 뽈사탕", "◆ 무작위 카드 1장 획득\n◆ 최대 손패 +1장 (영구)"],
-	LUCKY_DICE: ["[상시 보급] 손은 눈보다 빨라", "◆ 이번 판 동안 내 굴림이 높게 나올 확률 상승 (영구)"],
-	EXTRA_TURN: ["[1회용 보급] 다이스: 리바이브", "◆ 굴림이 0칸·턴 종료면 내 턴을 한 번 더 (1회)"],
+	MOVE_PLUS: ["[패시브] 슈파볼트 탑승", "◆ 이번 판 동안 내 모든 굴림 이동 +1칸 (영구)"],
+	HAND_EXPAND: ["[패시브] 에심당 뽈사탕", "◆ 무작위 카드 1장 획득\n◆ 최대 손패 +1장 (영구)"],
+	LUCKY_DICE: ["[패시브] 손은 눈보다 빨라", "◆ 이번 판 동안 내 굴림이 높게 나올 확률 상승 (영구)"],
+	EXTRA_TURN: ["[패시브] 다이스: 리바이브", "◆ 굴림이 0칸·턴 종료면 내 턴을 한 번 더 (1회)"],
 	CARD_PACK2: ["[카드 보급] 즉발 카드 패키지", "◆ 무작위 즉발 카드 2장 획득"],
-	SELECT_SHIELD: ["[기물 보급] 관심사도 지정", "◆ 내 말 1개에 보호막 (잡기·함정 1회 방어)"],
-	TRAP_CLEAR1: ["[즉발 보급] 간의영역", "◆ 상대 함정 1개를 무작위로 철거\n◆ 철거할 함정이 없으면 카드 1장"],
-	CATCH_UP: ["[즉발 보급] 순보", "◆ 가장 뒤처진 내 말을 보드 전체 선두 말의 바로 뒤 칸으로 이동"],
-	SHORTEN_GOAL: ["[즉발 보급] 슬슬 지루한데...", "◆ 모든 플레이어의 결승선이 2칸 당겨진다 (영구)"],
-	REROLL_ALL_AUG: ["[랜덤 보급] 올 픽션", "◆ 모두가 고른 뒤 발동: 모든 플레이어가 고른 증강을 버리고 새 3장 중에서 다시 고른다 (라운드당 1회)"],
+	SELECT_SHIELD: ["[패시브] 관심사도 지정", "◆ 내 말 1개에 보호막 (잡기·함정 1회 방어)"],
+	TRAP_CLEAR1: ["[즉발 발동] 간의영역", "◆ 상대 함정 1개를 무작위로 철거\n◆ 철거할 함정이 없으면 카드 1장"],
+	CATCH_UP: ["[즉발 발동] 순보", "◆ 가장 뒤처진 내 말을 보드 전체 선두 말의 바로 뒤 칸으로 이동"],
+	SHORTEN_GOAL: ["[즉발 발동] 슬슬 지루한데...", "◆ 모든 플레이어의 결승선이 2칸 당겨진다 (영구)"],
+	REROLL_ALL_AUG: ["[즉발 발동] 올 픽션", "◆ 모두가 고른 뒤 발동: 모든 플레이어가 고른 증강을 버리고 새 3장 중에서 다시 고른다 (라운드당 1회)"],
 }
 
 

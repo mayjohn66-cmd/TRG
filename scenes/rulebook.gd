@@ -99,7 +99,7 @@ const BANNERS: Dictionary = {
 	5: "[말] 증강의 [기물 지급]으로 기본 말을 진화시켜요. 말마다 상시 능력과 1회 필살기가 있어요.",
 	6: "[카드] 빵집·증강에서 얻은 카드를 보드로 끌어다 놓아 써요. 손패는 최대 7장이에요.",
 	7: "[특수 승리 법전] 3라운드마다 등장하며, 조건 달성 후 내 턴이 끝나면 즉시 다음 순위로 레이스를 졸업합니다!",
-	8: "[범용 보급] 카드 패키지와 기물 변이·필살기 리필 같은 보급 증강이에요.",
+	8: "[보급 증강] 패시브·즉발 발동·범용 보급·카드 보급을 색상과 분류 이름으로 구분해요.",
 	9: "[초증강] 판을 한 번에 뒤집는 하이리스크 하이리턴. 경고 표시는 내 말도 사출될 수 있다는 뜻이에요.",
 }
 
@@ -1381,15 +1381,17 @@ func _ch_laws() -> Dictionary:
 ## 범용: 생떼 카드 패키지와 범용 보급 (법전 장에서 따로 뺐다).
 func _ch_general() -> Dictionary:
 	var entries: Array = [
-		{"title": "카드 패키지와 범용 보급", "art": &"supply", "tone": Color("74c0fc"), "chips": ["증강 라운드", "누구나"],
-			"summary": "판을 뒤집지는 않지만 [b]손패와 기물을 든든하게[/b] 채워 주는 증강이에요.",
-			"rows": [["카드 패키지", "생떼 카드 여러 장 (방어·함정만 주는 보급도)"], ["범용 보급", "기물 변이 · 전군 돌연변이 · 필살기 리필"], ["상시 보급", "이동 +1칸 · 손패 상한 +1 · 굴림 운 · 리바이브 (판 내내)"], ["즉발 보급", "즉발 카드 · 보호막 · 함정 철거 · 순보 · 결승선 단축 · 올 픽션"]],
+		{"title": "보급 증강 분류", "art": &"supply", "tone": Color("74c0fc"), "chips": ["증강 라운드", "누구나"],
+			"summary": "[b]색상과 분류 이름[/b]으로 효과를 구분해요.",
+			"rows": [["패시브", "획득 후 유지되거나 조건에 따라 자동 발동"], ["즉발 발동", "증강 선택이 끝나면 보드·선택지에 바로 적용"], ["범용 보급", "기물 변이 · 전군 개조 · 필살기 재충전"], ["카드 보급", "생떼 카드를 손패에 추가"]],
 			"points": ["필살기를 이미 쓴 기물이 있으면 리필이 이득이에요", "손패는 최대 장수를 넘으면 더 받지 못해요"]},
 	]
-	for definition: AugmentDef in _augments(GameEnums.AugmentCategory.CARD_PACKAGE):
-		entries.append(_augment_entry(definition, &"gear"))
-	for definition: AugmentDef in _augments(GameEnums.AugmentCategory.UTILITY):
-		entries.append(_augment_entry(definition, &"gear"))
+	var supplies: Array[AugmentDef] = _augments(GameEnums.AugmentCategory.CARD_PACKAGE)
+	supplies.append_array(_augments(GameEnums.AugmentCategory.UTILITY))
+	for group: StringName in AugmentDef.SUPPLY_GROUPS:
+		for definition: AugmentDef in supplies:
+			if definition.display_group() == group:
+				entries.append(_augment_entry(definition, &"gear"))
 	return {"title": "범용", "entries": entries, "wide": true}
 
 

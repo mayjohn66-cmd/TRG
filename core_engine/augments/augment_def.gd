@@ -50,6 +50,47 @@ static func category_name(value: GameEnums.AugmentCategory) -> String:
 	return "생떼 카드 패키지"
 
 
+## 표시 분류는 실제 효과 처리·드래프트 가중치용 category와 별개다.
+## 카드를 주는 범용 증강도 카드 보급으로, 획득 후 자동 발동하는 방어·리바이브도 패시브로 표시한다.
+const DISPLAY_COLORS: Dictionary = {
+	&"pawn": Color("20c997"), &"tool": Color("9775fa"),
+	&"law": Color("66e3f5"), &"super": Color("cc5de8"),
+	&"passive": Color("8acb5a"), &"instant": Color("ffa94d"),
+	&"utility": Color("4dabf7"), &"card": Color("ff6b8a"),
+}
+const SUPPLY_GROUPS: Array[StringName] = [&"passive", &"instant", &"utility", &"card"]
+const SUPPLY_NAMES: Dictionary = {&"passive": "패시브", &"instant": "즉발 발동", &"utility": "범용 보급", &"card": "카드 보급"}
+
+
+func display_group() -> StringName:
+	match category:
+		GameEnums.AugmentCategory.PAWN_EVOLUTION: return &"pawn"
+		GameEnums.AugmentCategory.TOOL_SWAP: return &"tool"
+		GameEnums.AugmentCategory.LAW_ENACT: return &"law"
+		GameEnums.AugmentCategory.SUPER_GAMBLE: return &"super"
+		GameEnums.AugmentCategory.CARD_PACKAGE: return &"card"
+		GameEnums.AugmentCategory.UTILITY:
+			match StringName(str(payload)):
+				UtilityAugments.MOVE_PLUS, UtilityAugments.HAND_EXPAND, UtilityAugments.LUCKY_DICE, UtilityAugments.EXTRA_TURN, UtilityAugments.SELECT_SHIELD:
+					return &"passive"
+				UtilityAugments.TRAP_CLEAR1, UtilityAugments.CATCH_UP, UtilityAugments.SHORTEN_GOAL, UtilityAugments.REROLL_ALL_AUG:
+					return &"instant"
+				UtilityAugments.CARD_PACK2:
+					return &"card"
+	return &"utility"
+
+
+func display_category() -> String:
+	var group: StringName = display_group()
+	if SUPPLY_NAMES.has(group):
+		return str(SUPPLY_NAMES[group])
+	return subtitle if subtitle != "" else category_name(category)
+
+
+func display_color() -> Color:
+	return DISPLAY_COLORS[display_group()]
+
+
 ## 이 선택지가 줄 수 있는, 아직 받지 않은 호기 번호들.
 func _free_units_for(state: GameState, player_id: int) -> Array[int]:
 	var free: Array[int] = state.free_units(player_id, payload)

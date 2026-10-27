@@ -2256,3 +2256,12 @@ v%s · 비공식 팬게임 (원작사와 무관한 비영리 무료 배포물),v
 한 번 더!,One More!,もう1回！
 이번 차례에 주사위를 한 번 더 굴린다,Roll the dice once more this turn,このターンにダイスをもう1回振る
 ◆ 패시브: 처치 시 재굴림 +1\n◆ [1회] 한 번 더!: 이번 차례에 주사위를 한 번 더 굴린다\n※ 이미 가진 기물은 받을 수 없습니다,◆ Passive: Reroll +1 on KO\n◆ [Once] One More!: roll the dice once more this turn\n※ You can't get a piece you already own,◆ パッシブ: 撃破時、振り直し+1\n◆ [1回] もう1回！: このターンにダイスをもう1回振る\n※ 既に所持している駒は獲得できません
+즉발 발동,Instant Effect,即時発動
+카드 보급,Card Supply,カード補給
+보급 증강 분류,Supply Augment Types,補給増強の分類
+[b]색상과 분류 이름[/b]으로 효과를 구분해요.,Identify effects by [b]color and type name[/b].,[b]色と分類名[/b]で効果を見分けます。
+획득 후 유지되거나 조건에 따라 자동 발동,Stays active after acquisition or triggers automatically,獲得後に持続、または条件に応じて自動発動
+증강 선택이 끝나면 보드·선택지에 바로 적용,Affects the board or offers when augment selection ends,増強選択の終了時に盤面・選択肢へ即時適用
+기물 변이 · 전군 개조 · 필살기 재충전,Pawn mutation · troop remodel · skill recharge,駒の変異・全軍改造・必殺技の再チャージ
+생떼 카드를 손패에 추가,Adds Tantrum cards to your hand,駄々カードを手札に追加
+[보급 증강] 패시브·즉발 발동·범용 보급·카드 보급을 색상과 분류 이름으로 구분해요.,"[Supply Augments] Colors and type names distinguish Passive, Instant Effect, Utility Supply and Card Supply.",[補給増強] パッシブ・即時発動・汎用補給・カード補給を色と分類名で見分けます。

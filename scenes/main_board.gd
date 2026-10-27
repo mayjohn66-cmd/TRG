@@ -262,16 +262,7 @@ const SMALL_FONT: Font = preload("res://assets/fonts/game_small_font.tres")
 const SMALL_TEXT_MAX: int = 13
 const LAW_COLOR: Color = Color("66e3f5")
 const SUPER_COLOR: Color = Color("cc5de8")
-const UTILITY_COLOR: Color = Color("4dabf7")
 const HOLO_GLOW: Array[Color] = [Color(0.4, 0.89, 0.96, 0.9), Color(0.93, 0.45, 0.95, 0.9), Color(1.0, 0.85, 0.35, 0.9)]
-const CATEGORY_COLORS: Dictionary = {
-	GameEnums.AugmentCategory.PAWN_EVOLUTION: Color("ffa94d"),
-	GameEnums.AugmentCategory.TOOL_SWAP: Color("74c0fc"),
-	GameEnums.AugmentCategory.LAW_ENACT: Color("66e3f5"),
-	GameEnums.AugmentCategory.CARD_PACKAGE: Color("da77f2"),
-	GameEnums.AugmentCategory.SUPER_GAMBLE: Color("cc5de8"),
-	GameEnums.AugmentCategory.UTILITY: UTILITY_COLOR,
-}
 
 ## 이 화면을 보는 플레이어. 이 플레이어의 프로필·기물 독이 우측 하단에 놓인다 (멀티플레이에서 P2~P4로 접속해도 본인이 우측 하단).
 var local_player_id: int = 1
@@ -3731,7 +3722,7 @@ func _on_utility_picked(player_id: int, augment_id: StringName) -> void:
 	_refresh_tiles()
 	_refresh_status_stamps(player_id)
 	if text != "" and _fx_on():
-		_floating_badge(at, text, UTILITY_COLOR, 26)
+		_floating_badge(at, text, AugmentRegistry.get_def(augment_id).display_color(), 26)
 
 
 ## 알고리즘 밴·UDO 스킵을 맞은 플레이어는 자기가 당했는지 알 수 있도록 프로필 그림 위에 도장이 찍힌다.
@@ -3777,7 +3768,7 @@ func _refresh_revive_mark(host: Control, player_id: int) -> void:
 	mark.name = "ReviveMark"
 	mark.tooltip_text = "다이스: 리바이브 - 0칸·턴 종료 굴림이 나오면 한 턴 더 (1회)"
 	mark.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	mark.add_theme_stylebox_override("normal", _style(UTILITY_COLOR, Color.WHITE, 1, 8, 0, 1))
+	mark.add_theme_stylebox_override("normal", _style(AugmentDef.DISPLAY_COLORS[&"passive"], Color.WHITE, 1, 8, 0, 1))
 	mark.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	mark.position = Vector2(host.size.x / 2.0 - 34, host.size.y - 18)
 	mark.size = Vector2(68, 18)
@@ -8186,36 +8177,30 @@ func _augment_card_info(definition: AugmentDef, player_id: int) -> Dictionary:
 ## 판 밖(규칙 도감)에서도 쓰는 증강 카드 정보. game_state가 null이어도 된다.
 static func augment_card_info(definition: AugmentDef, game_state: GameState, player_id: int) -> Dictionary:
 	var glyph: String = "?"
-	var color: Color = Color("20c997")
+	var color: Color = definition.display_color()
 	var title: String = definition.display_name
 	match definition.category:
 		GameEnums.AugmentCategory.PAWN_EVOLUTION:
 			var kind: GameEnums.PawnKind = definition.payload
 			var unit_no: int = definition.units[0]
 			glyph = PawnCatalog.unit_letter(kind, unit_no)
-			color = Color("20c997")
 			title = "[기물 진화] %s: %s" % [PawnCatalog.display_set_name(kind), PawnCatalog.unit_label(kind, unit_no).split(":")[-1]]
 		GameEnums.AugmentCategory.TOOL_SWAP:
 			var tool: BaseJudgmentTool = ToolRegistry.create(definition.payload)
 			glyph = str((TOOL_CARDS.get(tool.tool_id, ["?"]) as Array)[0])
-			color = Color("9775fa")
 			title = "[판정 도구] %s" % tool.display_name
 		GameEnums.AugmentCategory.LAW_ENACT:
 			var law: LawResource = LawRegistry.create(definition.payload)
 			glyph = "법"
-			color = LAW_COLOR
 			title = "[교칙 제정] %s" % law.law_name
 		GameEnums.AugmentCategory.SUPER_GAMBLE:
 			glyph = "초"
-			color = SUPER_COLOR
 			title = definition.display_name
 		GameEnums.AugmentCategory.UTILITY:
 			glyph = "보"
-			color = UTILITY_COLOR
 			title = definition.display_name
 		_:
 			glyph = "J"
-			color = Color("ff6b6b")
 			title = "[카드 패키지] 생떼 카드 %d장" % definition.card_count()
 	# 텍스트 다이어트: 카드마다 되풀이되는 공통 문구(이미 가진 기물·법전 졸업 안내)는 본문에서 빼고 드래프트 아래 공통 안내 바에 한 번만 둔다
 	var lines: PackedStringArray = []
@@ -8254,8 +8239,9 @@ static func augment_card_info(definition: AugmentDef, game_state: GameState, pla
 	if definition.title != "":
 		title = definition.title  # augments_table.csv의 title
 	title = AugmentDef.strip_title_tag(title)  # 제목 앞 [기물 진화]·[판정 도구]·[특수 승리] 같은 계열 머리표는 뗀다
-	var tag_text: String = definition.subtitle if definition.subtitle != "" else AugmentDef.category_name(definition.category)
+	var tag_text: String = definition.display_category()
 	return {"glyph": glyph, "color": color, "title": title, "desc": "\n".join(lines), "summary": summary, "detail": detail, "skill": skill_text, "category": tag_text, "art": AugmentArt.load_first(AugmentArt.candidates(definition)), "super": definition.category == GameEnums.AugmentCategory.SUPER_GAMBLE, "tier": definition.tier,
+		"display_group": definition.display_group(),
 		"self_risk": definition.category == GameEnums.AugmentCategory.SUPER_GAMBLE and SuperAugments.SELF_RISK.has(StringName(str(definition.payload)))}
 
 
@@ -8316,6 +8302,7 @@ func _make_augment_card(info: Dictionary, on_pick: Callable) -> Button:
 ## static_frame: 도감처럼 보기만 하는 곳에서는 테두리 후광(번짐)과 마우스를 올렸을 때 커지는 효과를 끈다.
 static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: float = 1.0, static_frame: bool = false, compact: bool = false) -> Button:
 	var color: Color = info["color"]
+	var supply_card: bool = AugmentDef.SUPPLY_GROUPS.has(StringName(str(info.get("display_group", ""))))
 	# compact: 도감용 낮은 카드 (높이 AUGMENT_COMPACT_HEIGHT). 세로 위치는 모두 같은 비율로 줄인다 (배경 그림도 그 비율로 늘어난다).
 	var card_size: Vector2 = Vector2(AUGMENT_CARD_SIZE.x, AUGMENT_COMPACT_HEIGHT) if compact else AUGMENT_CARD_SIZE
 	var k: float = card_size.y / AUGMENT_CARD_SIZE.y
@@ -8348,6 +8335,10 @@ static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: f
 		box.shadow_color = Color(1.0, 0.83, 0.23, 0.6)
 		box.shadow_size = 16
 		box.shadow_offset = Vector2.ZERO
+	if supply_card:
+		# 보급의 희귀도보다 효과 분류 색을 우선한다 (전군 돌연변이 PRISMA도 파랑).
+		box.border_color = color
+		box.shadow_color = Color(color.r, color.g, color.b, 0.35)
 	if static_frame:
 		box.shadow_size = 0
 	for style_name: String in ["normal", "hover", "pressed", "focus", "disabled"]:
@@ -8394,8 +8385,23 @@ static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: f
 	title.add_theme_constant_override("outline_size", 4)
 	title.text = str(info["title"])
 	card.add_child(title)
+	var category_bottom: float = 0.0
+	if supply_card:
+		# 색만으로 구분하지 않도록 제목과 설명 사이에 실제 분류 이름을 표시한다.
+		var category_text: String = str(info["category"])
+		var badge := _make_label(category_text, 14, Color("17211f"))
+		badge.name = "AugmentCategory"
+		badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var badge_width: float = minf(card_size.x - 32.0, badge.get_theme_font("font").get_string_size(L10n.t(category_text), HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x + 22.0)
+		badge.position = Vector2((card_size.x - badge_width) / 2.0, 225.0 * k)
+		badge.size = Vector2(badge_width, maxf(20.0, 22.0 * k))
+		badge.add_theme_stylebox_override("normal", _style(color, color.lightened(0.25), 1, 9, 0, 0))
+		card.add_child(badge)
+		category_bottom = badge.position.y + badge.size.y + 6.0
 	# 설명 칸 (카드 아래 끝까지). 판정 도구는 [핵심 한 줄] [최소~최대 요약] ─ [작은 족보표] 순서로 나눠 쓴다.
-	var text_top: float = 240.0 * k
+	var text_top: float = maxf(240.0 * k, category_bottom)
 	var text_bottom: float = card_size.y - 12.0
 	var detail_text: String = str(info.get("detail", ""))
 	var summary_text: String = str(info.get("summary", ""))
@@ -8488,6 +8494,7 @@ static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: f
 	if on_pick.is_valid():
 		card.pressed.connect(on_pick)
 	card.set_meta("frame_box", box)
+	card.set_meta("display_group", info.get("display_group", &""))
 	if not static_frame:
 		card.mouse_entered.connect(func() -> void: _hover_augment_card(card, box, color, true, base_scale))
 		card.mouse_exited.connect(func() -> void: _hover_augment_card(card, box, color, false, base_scale))
@@ -8495,11 +8502,12 @@ static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: f
 
 
 static func _hover_augment_card(card: Button, box: StyleBoxFlat, color: Color, entered: bool, base_scale: float = 1.0) -> void:
+	var hover_color: Color = color.lightened(0.25) if AugmentDef.SUPPLY_GROUPS.has(StringName(str(card.get_meta("display_group", &"")))) else Color("ffe066")
 	var tween: Tween = card.create_tween().set_parallel(true).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween.tween_property(card, "scale", Vector2.ONE * base_scale * (AUGMENT_HOVER_SCALE if entered else 1.0), 0.14)
 	tween.tween_property(box, "shadow_size", 34 if entered else 8, 0.14)
-	tween.tween_property(box, "shadow_color", Color(1.0, 0.82, 0.25, 0.95) if entered else Color(color.r, color.g, color.b, 0.35), 0.14)
-	tween.tween_property(box, "border_color", Color("ffe066") if entered else color, 0.14)
+	tween.tween_property(box, "shadow_color", Color(hover_color.r, hover_color.g, hover_color.b, 0.95) if entered else Color(color.r, color.g, color.b, 0.35), 0.14)
+	tween.tween_property(box, "border_color", hover_color if entered else color, 0.14)
 	card.z_index = 5 if entered else 0
 
 
@@ -9942,14 +9950,14 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			for fiction_player: Variant in fiction_players:
 				_record(int(fiction_player), "[올 픽션] 전원 증강 재추첨!")
 			if _fx_on():
-				_floating_badge(_board_center(), str(UtilityAugments.CALLOUTS[UtilityAugments.REROLL_ALL_AUG]), UTILITY_COLOR, 30)
+				_floating_badge(_board_center(), str(UtilityAugments.CALLOUTS[UtilityAugments.REROLL_ALL_AUG]), AugmentDef.DISPLAY_COLORS[&"instant"], 30)
 			_refresh_draft_overlay()
 		&"revive_triggered":
 			var revived: int = int(data["player_id"])
 			_log_line("[다이스: 리바이브] P%d: 턴이 끝나도 한 턴 더 합니다" % revived, Color("4dabf7"))
 			_record(revived, "[다이스: 리바이브] 발동 - 한 턴 더!")
 			if _fx_on():
-				_floating_badge(_board_center() + Vector2(0, -60), "[리바이브!] 한 턴 더!", UTILITY_COLOR, 30)
+				_floating_badge(_board_center() + Vector2(0, -60), "[리바이브!] 한 턴 더!", AugmentDef.DISPLAY_COLORS[&"passive"], 30)
 			_refresh_status_stamps(revived)
 		&"augment_review":
 			_show_augment_review(data["players"])
