@@ -5954,6 +5954,8 @@ func _roll_view_allowed() -> bool:
 		return false
 	if _draft_overlay != null or (_review_overlay != null and is_instance_valid(_review_overlay)):
 		return false
+	if _duel_arena != null and is_instance_valid(_duel_arena) and _duel_arena.visible:
+		return false  # 굴리기 전 카드로 시작된 결투장 위에 야추·블랙잭 판이 겹쳐 뜨지 않게
 	return true
 
 
