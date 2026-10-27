@@ -254,7 +254,7 @@ func _run() -> void:
 	(book._tiles[2].get_child(0) as Button).pressed.emit()
 	# 도감 묶음은 상세를 팝업으로 띄우므로 뒤 격자에는 선택 외곽선을 그리지 않는다
 	_expect(book.entry == 2 and not book._tiles[2].get_meta("marker").visible, "증강 카드를 누르면 그 도구 상세가 팝업으로 나온다 (%s)" % book._notebook_title.text)
-	_expect(book._left_holder.get_child_count() >= 2, "항목 화면: 그림·요약 + 규칙표")
+	_expect(book._left_holder.find_children("*", "RichTextLabel", true, false).size() >= 2, "항목 화면: 그림·요약 + 규칙표")
 	var rounded: Control = book._left_holder.find_child("RoundedArt", true, false)
 	var mask: Panel = rounded.get_node("Mask") if rounded != null else null
 	_expect(mask != null and mask.clip_children == CanvasItem.CLIP_CHILDREN_ONLY and mask.get_child(0) is TextureRect and rounded.get_node("Outline") != null, "도감 큰 그림은 둥근 네모로 잘리고 같은 둥글기의 외곽선이 그림에 맞춰 붙는다")

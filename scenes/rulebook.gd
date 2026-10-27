@@ -74,6 +74,11 @@ var _page_label: Label = null
 var _list_box: VBoxContainer = null
 ## 왼쪽 노트(항목 설명) 묶음. 기본 규칙 탭에서는 왼쪽에 늘 보이고, 도감 탭에서는 카드를 누를 때만 가운데 팝업으로 뜬다.
 var _notebook_root: Control = null
+var _notebook_page: Control = null
+var _note_leather: Panel = null
+var _note_paper: Control = null
+var _note_column: VBoxContainer = null
+var _dismiss_finger := -2
 var _book_inset: Panel = null
 var _popup_dim: Panel = null
 var _popup_close: Button = null
@@ -219,6 +224,19 @@ func _input(event: InputEvent) -> void:
 		point = event.position
 		motion = true
 	else: return
+	# Own an outside tap through release so it cannot click behind the modal.
+	if _dismiss_finger != -2:
+		if finger==_dismiss_finger and released:
+			var dismiss := not _inside(_notebook_page,point)
+			if event is InputEventScreenTouch and event.canceled: dismiss = false
+			_dismiss_finger = -2
+			if dismiss: show_entry(-1)
+		get_viewport().set_input_as_handled()
+		return
+	if group_of(spread)==1 and entry>=0 and not _inside(_notebook_page,point) and _drag_scroll==null:
+		if pressed: _dismiss_finger = finger
+		get_viewport().set_input_as_handled()
+		return
 	if _drag_scroll != null and finger != _drag_finger:
 		get_viewport().set_input_as_handled()
 		return
@@ -242,7 +260,8 @@ func _input(event: InputEvent) -> void:
 			var screen_distance := get_viewport().get_screen_transform().basis_xform(distance)
 			if screen_distance.length()>8.0: _drag_moved = true
 			if _drag_moved:
-				_drag_scroll.scroll_vertical = _drag_top-roundi(distance.y)
+				var local_distance := _drag_scroll.get_global_transform_with_canvas().affine_inverse().basis_xform(distance)
+				_drag_scroll.scroll_vertical = _drag_top-roundi(local_distance.y)
 		elif released:
 			var pick := _drag_entry
 			var tap := not _drag_moved and pick>=0 and _inside(_tiles[pick],point)
@@ -282,7 +301,9 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		KEY_LEFT: show_spread(spread - 1)
 		KEY_DOWN: show_entry(entry + 1)
 		KEY_UP: show_entry(entry - 1)
-		KEY_ESCAPE: close()
+		KEY_ESCAPE:
+			if group_of(spread)==1 and entry>=0: show_entry(-1)
+			else: close()
 		_: return
 	get_viewport().set_input_as_handled()
 
@@ -318,7 +339,7 @@ static func _box(bg: Color, border: Color, border_width: int, radius: int, shado
 func _place_note(node: Control, pos: Vector2, node_size: Vector2) -> void:
 	node.position = pos
 	node.size = node_size
-	_notebook_root.add_child(node)
+	_notebook_page.add_child(node)
 
 
 func _place(node: Control, pos: Vector2, node_size: Vector2) -> void:
@@ -523,18 +544,23 @@ func _build_notebook() -> void:
 	dim_skin.modulate_color = Color(0, 0, 0, 0.55)
 	_popup_dim.add_theme_stylebox_override("panel", dim_skin)
 	_popup_dim.mouse_filter = Control.MOUSE_FILTER_STOP
-	_popup_dim.gui_input.connect(func(event: InputEvent) -> void:
-		if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
-			show_entry(-1))
 	_popup_dim.visible = false
 	_notebook_root.add_child(_popup_dim)
+	_notebook_page = Control.new()
+	_notebook_page.name = "NotebookPage"
+	_notebook_page.size = STAGE
+	_notebook_page.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_notebook_root.add_child(_notebook_page)
 	var leather := Panel.new()
+	_note_leather = leather
 	leather.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	leather.add_theme_stylebox_override("panel", _box(LEATHER, LEATHER_DARK, 4, 22, 8, 0, Color(0, 0, 0, 0.35)))
 	_place_note(leather, Vector2(256, 140), Vector2(552, 574))
 	var paper := LinedPaper.new()
+	_note_paper = paper
 	_place_note(paper, Vector2(272, 156), Vector2(520, 542))
 	var column := VBoxContainer.new()
+	_note_column = column
 	column.add_theme_constant_override("separation", 6)
 	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_place_note(column, Vector2(290, 168), Vector2(484, 520))
@@ -622,6 +648,7 @@ func _build_ribbon() -> void:
 
 ## 장을 연다. 처음에는 왼쪽에 그 장의 전체 설명(overview)이 나오고, 오른쪽 타일을 누르면 그 항목으로 바뀐다.
 func show_spread(index: int, entry_index: int = -1) -> void:
+	_dismiss_finger = -2
 	_clear_scroll_drag()
 	spread = clampi(index, 0, spread_count() - 1)
 	_content = _chapter(spread)
@@ -701,17 +728,50 @@ func _layout_notebook() -> void:
 	# Grid selection outlines (z=6) and collection stamps (z=7) must stay
 	# behind both the modal dim and the notebook, regardless of sibling order.
 	_notebook_root.z_index = 10 if popup else 0
-	_notebook_root.position = Vector2(_book_inset.position.x+_book_inset.size.x*0.5-532.0,0) if popup else Vector2.ZERO
+	_notebook_root.position = Vector2.ZERO
+	_notebook_root.size = Vector2(_book_outer.size.x+210.0,STAGE.y)
 	_popup_dim.visible = popup
-	_popup_dim.position = _book_inset.position - _notebook_root.position
+	_popup_dim.position = _book_inset.position
 	_popup_dim.size = _book_inset.size
 	_popup_close.visible = popup
-	# Chapter tabs overlap the book's left edge; keep their painted faces and
-	# input targets above the dim instead of darkening the right-hand strip.
-	_list_box.z_index = _notebook_root.z_index + 1 if popup else 0
+	_list_box.z_index = 0
+	if popup:
+		var frame := Vector2(_book_outer.size.x+210.0,STAGE.y)
+		var extent := Vector2(frame.x*0.88,frame.y-48.0)
+		_notebook_page.position = (frame-extent)*0.5
+		_notebook_page.size = extent
+		_notebook_page.mouse_filter = Control.MOUSE_FILTER_STOP
+		_note_leather.position = Vector2.ZERO
+		_note_leather.size = extent
+		_note_paper.position = Vector2(16,16)
+		_note_paper.size = extent-Vector2(32,32)
+		_note_column.position = Vector2(36,26)
+		_note_column.scale = Vector2.ONE*1.4
+		_note_column.size = (extent-Vector2(72,118))/1.4
+		_medal.position = Vector2(extent.x-104,-16)
+		_popup_close.position = extent-Vector2(184,80)
+		_popup_close.size = Vector2(160,64)
+	else:
+		_notebook_page.position = Vector2.ZERO
+		_notebook_page.size = STAGE
+		_notebook_page.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_note_leather.position = Vector2(256,140)
+		_note_leather.size = Vector2(552,574)
+		_note_paper.position = Vector2(272,156)
+		_note_paper.size = Vector2(520,542)
+		_note_column.position = Vector2(290,168)
+		_note_column.scale = Vector2.ONE
+		_note_column.size = Vector2(484,520)
+		_medal.position = Vector2(740,112)
+		_popup_close.position = Vector2(708,668)
+		_popup_close.size = Vector2(84,36)
+	_notebook_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART if popup else TextServer.AUTOWRAP_OFF
+	_notebook_title.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_notebook_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_notebook_title.custom_minimum_size.x = minf(720.0,_note_column.size.x-104.0) if popup else 0.0
+	_popup_close.add_theme_font_size_override("font_size",22 if popup else 16)
 	if popup:
 		_notebook_root.get_parent().move_child(_notebook_root, -1)  # 격자 위에 뜬다
-		_list_box.get_parent().move_child(_list_box, -1)
 
 
 ## 장 번호가 속한 위쪽 탭(묶음).
@@ -730,6 +790,7 @@ func entry_count() -> int:
 
 ## 오른쪽 타일 중 하나를 골라 왼쪽 노트에 자세히 보여 준다. -1이면 장의 전체 설명.
 func show_entry(index: int) -> void:
+	_dismiss_finger = -2
 	_clear_scroll_drag()
 	var entries: Array = _content.get("entries", [])
 	entry = clampi(index, -1, entries.size() - 1)
@@ -1007,14 +1068,16 @@ func _picture(data: Dictionary, extent: Vector2) -> Control:
 
 func _detail(data: Dictionary) -> Array[Control]:
 	var nodes: Array[Control] = []
+	var enlarged := group_of(spread)==1 and entry>=0
+	var hero_size := Vector2(220,220) if enlarged else HERO_ART
 	var tone: Color = data.get("tone", Color("5fc1e8"))
 	var hero := HBoxContainer.new()
 	hero.add_theme_constant_override("separation", 14)
 	hero.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if data.has("card"):
-		hero.add_child(_card_face(data["card"]))
+		hero.add_child(_card_face(data["card"],Vector2(240,336) if enlarged else CARD_FACE))
 	elif data.get("texture", null) != null or ART.has(data.get("art", &"")) or VISUALS.has(data.get("art", &"")):
-		hero.add_child(_rounded_art(_picture(data, HERO_ART), HERO_ART, HERO_RADIUS, tone))
+		hero.add_child(_rounded_art(_picture(data,hero_size),hero_size,HERO_RADIUS,tone))
 	else:
 		var frame := PanelContainer.new()
 		frame.custom_minimum_size = Vector2(132, 132)
@@ -1053,6 +1116,9 @@ func _detail(data: Dictionary) -> Array[Control]:
 		nodes.append(_rich("[color=#8a7a58]%s[/color]" % str(data["note"]), 15))
 	if data.has("tip"):
 		nodes.append(_tip(str(data["tip"])))
+	if enlarged:
+		for index: int in range(1,nodes.size()): side.add_child(nodes[index])
+		return [hero]
 	return nodes
 
 
@@ -1157,14 +1223,14 @@ func _points(points: Array, tone: Color) -> Control:
 
 
 ## 카드 항목의 큰 그림: 게임 손패와 같은 카드 앞면.
-func _card_face(card_id: StringName) -> Control:
+func _card_face(card_id: StringName, extent: Vector2 = CARD_FACE) -> Control:
 	var card: BaseCard = CardRegistry.get_card(card_id)
 	var face := PanelContainer.new()
-	face.custom_minimum_size = CARD_FACE
+	face.custom_minimum_size = extent
 	face.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	face.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	face.add_theme_stylebox_override("panel", CardSkin.frame(card.category, false, 14))
-	face.add_child(CardSkin.body(card, CARD_FACE, MainBoard.card_summary(card_id), MainBoard.CARD_CATEGORY_NAMES[card.category], true))
+	face.add_child(CardSkin.body(card,extent,MainBoard.card_summary(card_id),MainBoard.CARD_CATEGORY_NAMES[card.category],true))
 	return face
 
 
