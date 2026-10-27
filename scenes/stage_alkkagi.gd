@@ -313,15 +313,13 @@ func _draw() -> void:
 		draw_style_box(CardSkin.style(Color("36464e"),Color("a4bac0"),2,10),cancel_rect)
 		draw_string(CardSkin.FONT,cancel_rect.position+Vector2(14,24)*sc,L10n.t("취소 ESC"),HORIZONTAL_ALIGNMENT_LEFT,-1,int(16*sc),Color.WHITE)
 	for index: int in range(1,_trail.size()):
-		draw_line(to_screen(_trail[index-1]),to_screen(_trail[index]),Color(1,0.9,0.55,(1.0-float(index)/10.0)*0.5),(10.0-index*0.7)*sc,true)
+		PaintedFx.streak(self,to_screen(_trail[index]),to_screen(_trail[index-1]),(10.0-index*0.7)*sc,Color(1,0.9,0.55,(1.0-float(index)/10.0)*0.5))
 	for spark: Dictionary in _sparks:
 		var age: float = spark.age
 		if age>0.26:
 			continue
 		var at := to_screen(spark.pos)
-		for ray: int in 8:
-			var dir := Vector2.from_angle(ray*TAU/8.0)
-			draw_line(at+dir*(10.0+age*35.0)*sc,at+dir*(24.0+age*100.0)*sc,Color(1,0.96,0.75,1.0-age/0.26),3.5*sc,true)
+		PaintedFx.stamp(self,PaintedFx.IMPACT,at,Vector2.ONE*(36+age*100)*sc,Color(1,0.96,0.75,1.0-age/0.26),age*0.7)
 
 func _draw_aim() -> void:
 	var sc := layout_scale()

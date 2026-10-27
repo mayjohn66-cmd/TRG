@@ -360,9 +360,8 @@ class FlameBorder extends Control:
 			var u: float = fposmod(float(i) / tongues + _time * 0.12, 1.0)
 			var base: Vector2 = _perimeter(rect, u)
 			var height: float = 8.0 + 7.0 * (0.5 + 0.5 * sin(_time * 9.0 + i * 1.7))
-			var tip: Vector2 = base + Vector2(0.0, -height)
 			var color: Color = colors[i % colors.size()].lightened(0.2)
-			draw_colored_polygon(PackedVector2Array([base + Vector2(-4, 0), tip, base + Vector2(4, 0)]), Color(color, 0.85))
+			PaintedFx.flame(self,base,Vector2.UP,height,4.0,Color(color,0.85),_time*8+i*1.7)
 
 	func _perimeter(rect: Rect2, u: float) -> Vector2:
 		var w: float = rect.size.x

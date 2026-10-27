@@ -29,6 +29,7 @@ var popped := false
 var result_text := ""
 var _pop_sound := false
 var _angry: Texture2D = null
+var _fragments: Array[Dictionary] = []
 
 func _ready() -> void:
 	_angry = load(ANGRY_PATH)
@@ -200,18 +201,50 @@ func _draw() -> void:
 func _draw_burst(center: Vector2, t: float) -> void:
 	if t > 1.1: return
 	var fade := 1.0 - clampf(t / 1.1, 0, 1)
-	# Radial wedges carry the original pumpkin artwork rather than unrelated debris.
-	var corners: Array[Vector2] = [Vector2(-1,-1), Vector2(0,-1), Vector2(1,-1), Vector2(1,0), Vector2(1,1), Vector2(0,1), Vector2(-1,1), Vector2(-1,0), Vector2(-1,-1)]
-	for index: int in 8:
-		var direction := (corners[index] + corners[index + 1]).normalized()
-		var offset := direction * (t * 190.0) + Vector2(0, t * t * 220)
-		var vertices := PackedVector2Array([Vector2.ZERO, corners[index] * Vector2(126,115), corners[index + 1] * Vector2(126,115)])
-		var uv := PackedVector2Array([Vector2(0.5,0.5), (corners[index] + Vector2.ONE)/2, (corners[index + 1] + Vector2.ONE)/2])
-		draw_set_transform(center + offset, direction.x * t * 1.8)
-		draw_polygon(vertices, PackedColorArray([Color(1,1,1,fade)]), uv, PUMPKIN)
+	if _fragments.is_empty(): _build_fragments()
+	# Original art breaks along shared jagged seams; each chunk rotates about itself.
+	for fragment: Dictionary in _fragments:
+		var offset: Vector2 = fragment.direction*(t*float(fragment.speed))+Vector2(0,t*t*220)
+		draw_set_transform(center+(fragment.center as Vector2)+offset,float(fragment.spin)*t)
+		draw_polygon(fragment.vertices,PackedColorArray([Color(1,1,1,fade)]),fragment.uv,PUMPKIN)
 	draw_set_transform(Vector2.ZERO)
 	for index: int in 10:
 		var direction := Vector2.from_angle(float(index) * TAU / 10.0)
 		var point := center + direction * (35 + t * 170)
-		draw_circle(point, (12 + index % 3 * 4) * fade, Color(1,0.96,0.78,fade * 0.8))
-	if t < 0.11: draw_circle(center, 110 + t * 250, Color(1,0.94,0.65,(1-t/0.11)*0.8))
+		PaintedFx.stamp(self,PaintedFx.SMOKE,point,Vector2(29+index%3*9,24+index%3*6)*(0.7+t*1.7),Color(1,0.96,0.78,fade*0.65),direction.angle()*0.12+t*0.2)
+	if t < 0.11:
+		PaintedFx.stamp(self,PaintedFx.IMPACT,center,Vector2.ONE*(200+t*400),Color(1,0.94,0.65,(1-t/0.11)*0.8))
+
+func _build_fragments() -> void:
+	# Uneven cells avoid the regular sunburst left by radial triangle slices.
+	var grid := PackedVector2Array([
+		Vector2(-126,-115),Vector2(-43,-115),Vector2(42,-115),Vector2(126,-115),
+		Vector2(-126,-35),Vector2(-42,-28),Vector2(39,-38),Vector2(126,-35),
+		Vector2(-126,43),Vector2(-40,54),Vector2(47,45),Vector2(126,43),
+		Vector2(-126,115),Vector2(-40,115),Vector2(45,115),Vector2(126,115)])
+	for row: int in 3:
+		for column: int in 3:
+			var first := row*4+column
+			var corners: Array[int] = [first,first+1,first+5,first+4]
+			var polygon := PackedVector2Array()
+			var pivot := Vector2.ZERO
+			for corner: int in corners: pivot += grid[corner]*0.25
+			for edge: int in 4:
+				var a := corners[edge]
+				var b := corners[(edge+1)%4]
+				var low := mini(a,b)
+				var high := maxi(a,b)
+				var start := grid[low]
+				var end := grid[high]
+				var outside := (is_equal_approx(start.x,end.x) and absf(start.x)==126) or (is_equal_approx(start.y,end.y) and absf(start.y)==115)
+				var kink := Vector2.ZERO if outside else start.direction_to(end).orthogonal()*6.0*sin(low*2.17+high*0.71)
+				var points := PackedVector2Array([start,start.lerp(end,0.34)+kink,start.lerp(end,0.68)-kink*0.7,end])
+				if a>b: points.reverse()
+				for index: int in 3: polygon.append(points[index])
+			var uv := PackedVector2Array()
+			for index: int in polygon.size():
+				uv.append((polygon[index]+Vector2(126,115))/Vector2(252,230))
+				polygon[index] -= pivot
+			var direction := pivot.normalized() if pivot.length()>20 else Vector2(0.15,-1).normalized()
+			_fragments.append({"vertices":polygon,"uv":uv,"center":pivot,"direction":direction,
+				"speed":155.0+row*13+column*9,"spin":(column-1)*1.4+(row-1)*0.45})

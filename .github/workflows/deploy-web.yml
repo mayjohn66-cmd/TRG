@@ -30,6 +30,7 @@ on:
           - capture-fx
           - common-fx
           - priority-fx
+          - medium-fx
           - warning-icon
           - rulebook-art
           - avatar-hq
@@ -68,7 +69,9 @@ jobs:
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
           REQUESTED_SCOPE: ${{ inputs.validation }}
         run: |
-          if [[ "${REQUESTED_SCOPE}" == "priority-fx" || "${COMMIT_MESSAGE}" == *"[check:priority-fx]"* ]]; then
+          if [[ "${REQUESTED_SCOPE}" == "medium-fx" || "${COMMIT_MESSAGE}" == *"[check:medium-fx]"* ]]; then
+            echo "scope=medium-fx" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "priority-fx" || "${COMMIT_MESSAGE}" == *"[check:priority-fx]"* ]]; then
             echo "scope=priority-fx" >> "${GITHUB_OUTPUT}"
           elif [[ "${REQUESTED_SCOPE}" == "common-fx" || "${COMMIT_MESSAGE}" == *"[check:common-fx]"* ]]; then
             echo "scope=common-fx" >> "${GITHUB_OUTPUT}"
@@ -180,6 +183,23 @@ jobs:
           godot --headless --path . -s res://tests/ui_bang_test.gd 2>&1 | tee /tmp/bang.log
           grep -q 'UI_BANG_OK' /tmp/bang.log
           if grep -q 'SCRIPT ERROR' /tmp/bang.log; then exit 1; fi
+
+      - name: Check medium priority painted presentations
+        if: steps.validation.outputs.scope == 'medium-fx'
+        run: |
+          set -euo pipefail
+          for target in devil gambler profile_aura train minefield alkkagi curling pumpkin; do
+            godot --headless --path . -s "res://tests/ui_${target}_test.gd" 2>&1 | tee "/tmp/medium_${target}.log"
+          done
+          grep -q 'UI_DEVIL_OK' /tmp/medium_devil.log
+          grep -q 'UI_GAMBLER_OK' /tmp/medium_gambler.log
+          grep -q 'UI_PROFILE_AURA_OK' /tmp/medium_profile_aura.log
+          grep -q 'TRAIN_UI_OK' /tmp/medium_train.log
+          grep -q 'UI_MINEFIELD_OK' /tmp/medium_minefield.log
+          grep -q 'ALKKAGI_OK' /tmp/medium_alkkagi.log
+          grep -q 'CURLING_UI_OK' /tmp/medium_curling.log
+          grep -q 'PUMPKIN_UI_OK' /tmp/medium_pumpkin.log
+          if grep -Eq 'SCRIPT ERROR|SHADER ERROR|Lambda capture' /tmp/medium_*.log; then exit 1; fi
 
       - name: Check priority painted presentations
         if: steps.validation.outputs.scope == 'priority-fx'

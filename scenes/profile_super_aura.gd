@@ -60,7 +60,8 @@ func _draw() -> void:
 		var u := fposmod(_time*0.075+trail*0.5,1.0)
 		for step: int in 11:
 			points.append(_perimeter(rect,fposmod(u-step*0.003,1.0)))
-		draw_polyline(points,Color(_palette(u).lightened(0.4),0.65*appear),2.0,true)
+		for index: int in range(1,points.size()):
+			PaintedFx.streak(self,points[index],points[index-1],3.2,Color(_palette(u).lightened(0.4),(1-index/12.0)*0.65*appear))
 	# A few curved tongues climb from the upper edge and upper sides. The face,
 	# name and pawn counters remain clear; there are no interior particles.
 	for index: int in 10:
@@ -79,21 +80,12 @@ func _draw() -> void:
 	for index: int in 6:
 		var u := fposmod(_time*0.34+index*0.167,1.0)
 		var at := Vector2(lerpf(18.0,size.x-18.0,index/5.0)+sin(u*4.0+index)*3.0,-5.0-u*18.0)
-		draw_circle(at,1.1,Color(_palette(index/6.0).lightened(0.4),sin(u*PI)*0.55*appear))
+		PaintedFx.stamp(self,PaintedFx.FLECK,at,Vector2(1.8,3.5),Color(_palette(index/6.0).lightened(0.4),sin(u*PI)*0.55*appear),index*0.7)
 
 func _tongue(base: Vector2, width: float, height: float, sway: float, tint: Color) -> void:
 	if width<0.1 or height<0.1:
 		return
-	var points := PackedVector2Array()
-	for step: int in 9:
-		var u := step/8.0
-		var center := base+Vector2(sway*u*u,-height*u)
-		points.append(center-Vector2(width*(1-u)*(1+0.5*sin(u*PI)),0))
-	for step: int in range(7,-1,-1):
-		var u := step/8.0
-		var center := base+Vector2(sway*u*u,-height*u)
-		points.append(center+Vector2(width*(1-u)*(1+0.5*sin(u*PI)),0))
-	draw_colored_polygon(points,tint)
+	PaintedFx.flame(self,base,Vector2(sway,-height).normalized(),height,width,tint,_time*6+base.x*0.17)
 
 func _perimeter(rect: Rect2, u: float) -> Vector2:
 	# Four straight sections and quarter circles, with constant travel speed.

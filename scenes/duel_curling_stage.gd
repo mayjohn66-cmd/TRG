@@ -262,7 +262,7 @@ func _draw() -> void:
 		var trail: Array = _trails[index]
 		if mode == &"slide" and world.moving():
 			for j: int in range(1, trail.size()):
-				draw_line(origin + (trail[j - 1] as Vector2) * sc, origin + (trail[j] as Vector2) * sc, Color(tint, 0.18 * (1.0 - float(j) / 12.0)), 10 * sc, true)
+				PaintedFx.streak(self,origin + (trail[j] as Vector2) * sc,origin + (trail[j - 1] as Vector2) * sc,10 * sc,Color(tint, 0.25 * (1.0 - float(j) / 12.0)))
 		if bool(world.caps[index].active):
 			var body: Dictionary = world.caps[index]
 			var point := Vector2(body.pos) / BottleCapPhysics.SCALE
@@ -288,9 +288,7 @@ func _draw() -> void:
 		if age >= 0.25:
 			continue
 		var at := origin + (spark.pos as Vector2) * sc
-		for ray: int in 8:
-			var dir := Vector2.from_angle(float(ray) * TAU / 8.0)
-			draw_line(at + dir * (8 + age * 40) * sc, at + dir * (18 + age * 85) * sc, Color(1, 0.95, 0.7, 1.0 - age / 0.25), 2.5 * sc, true)
+		PaintedFx.stamp(self,PaintedFx.IMPACT,at,Vector2.ONE*(32+age*90)*sc,Color(1,0.95,0.7,1.0-age/0.25),age)
 
 func _cap(point: Vector2, angle: float, tint: Color, sc: float, alpha: float) -> void:
 	if alpha <= 0.0:

@@ -264,22 +264,18 @@ func _update_pose() -> void:
 	_previous_front = front_distance
 
 func _spawn_smoke() -> void:
-	var mesh := SphereMesh.new()
-	mesh.radius = 0.012
-	mesh.height = 0.024
-	mesh.radial_segments = 12
-	mesh.rings = 6
-	var puff := MeshInstance3D.new()
-	puff.mesh = mesh
-	var material := StandardMaterial3D.new()
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	material.albedo_color = Color(1,0.97,0.88,0.7)
-	puff.material_override = material
+	var puff := Sprite3D.new()
+	puff.texture = PaintedFx.SMOKE
+	puff.pixel_size = 0.00014
+	puff.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	puff.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	puff.shaded = false
+	puff.modulate = Color(1,0.97,0.88,0.78)
+	puff.flip_h = int(elapsed*100)%2==0
 	models.add_child(puff)
 	var at := train.transform*(Vector3(-8.46,3.42,0))
 	puff.position = at
-	smoke.append({"node":puff,"age":0.0,"origin":at})
+	smoke.append({"node":puff,"age":0.0,"origin":at,"phase":elapsed*17})
 
 func _update_smoke(delta: float) -> void:
 	for index: int in range(smoke.size()-1,-1,-1):
@@ -290,10 +286,11 @@ func _update_smoke(delta: float) -> void:
 			(puff.node as Node3D).queue_free()
 			smoke.remove_at(index)
 			continue
-		var node := puff.node as MeshInstance3D
-		node.position = (puff.origin as Vector3)+Vector3(-direction.x*age*0.09,age*0.11,-direction.y*age*0.09)
+		var node := puff.node as Sprite3D
+		var drift := sin(age*8+float(puff.phase))*age*0.015
+		node.position = (puff.origin as Vector3)+Vector3(-direction.x*age*0.09+drift,age*0.11,-direction.y*age*0.09-drift)
 		node.scale = Vector3.ONE*(0.8+age*2.5)
-		(node.material_override as StandardMaterial3D).albedo_color.a = (1.0-age/0.65)*0.7
+		node.modulate.a = (1.0-age/0.65)*0.78
 
 func _find_wheels(node: Node) -> Array[Node3D]:
 	var result: Array[Node3D] = []

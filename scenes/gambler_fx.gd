@@ -121,12 +121,8 @@ func _spirit(at: Vector2, extent: float, alpha: float) -> void:
 	var size := region.size*extent/maxf(region.size.x,region.size.y)
 	draw_texture_rect_region(_art.texture,Rect2(at-size/2.0,size),region,Color(1,1,1,alpha))
 
-func _ring(at: Vector2, radius: Vector2, color: Color, width: float) -> void:
-	var points := PackedVector2Array()
-	for index: int in 49:
-		var angle := index*TAU/48.0
-		points.append(at+Vector2(cos(angle),sin(angle))*radius)
-	draw_polyline(points,color,width,true)
+func _ring(at: Vector2, radius: Vector2, color: Color, _width: float) -> void:
+	PaintedFx.stamp(self,PaintedFx.RIPPLE,at,radius*2,color)
 
 func _draw() -> void:
 	if _board_ref==null:
@@ -155,12 +151,12 @@ func _draw() -> void:
 		for index: int in 9:
 			var t := fposmod(elapsed*1.2+index/9.0,1.0)
 			var at := _anchor+Vector2((index%2*2-1)*(40+t*24),22-t*65)
-			draw_line(at,at+Vector2(8,-9),Color(GOLD,sin(t*PI)*fade*0.7),2.0,true)
+			PaintedFx.stamp(self,PaintedFx.FLECK,at,Vector2(3,9),Color(GOLD,sin(t*PI)*fade*0.8),-0.55+t)
 	else:
 		for index: int in 6:
 			var u := clampf((elapsed-0.20-index*0.035)/0.74,0,1)
-			var at := _anchor+Vector2(sin(index*2.5+u*2.0)*(16+u*22),-u*54)
-			draw_circle(at,6+u*12,Color(0.23,0.22,0.21,sin(u*PI)*0.25*fade))
+			var at := _anchor+Vector2(sin(index*2.5+u*2.0)*(16+u*22),-36-u*58)
+			PaintedFx.stamp(self,PaintedFx.SMOKE,at,Vector2(19+u*28,15+u*31),Color(0.32,0.30,0.28,sin(u*PI)*0.55*fade),sin(index*1.7+u)*0.2)
 
 func _owns_tint(target: Control) -> bool:
 	var owner: Variant = target.get_meta("gambler_tint_owner",null)

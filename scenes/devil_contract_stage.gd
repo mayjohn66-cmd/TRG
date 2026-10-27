@@ -117,13 +117,6 @@ func _update_pose(board: MainBoard) -> void:
 	_bonus.position = _target+Vector2(0,-94)-_bonus.size/2.0
 	_bonus.modulate.a = smoothstep(ARRIVAL,ARRIVAL+0.13,elapsed)*fade
 
-func _ellipse(at: Vector2, radius: Vector2, color: Color, width: float = 2.0, angle: float = 0.0) -> void:
-	var points := PackedVector2Array()
-	for index: int in 65:
-		var a := float(index)/64.0*TAU+angle
-		points.append(at+Vector2(cos(a),sin(a))*radius)
-	draw_polyline(points,color,width,true)
-
 func _draw() -> void:
 	if _board_ref==null:
 		return
@@ -133,12 +126,9 @@ func _draw() -> void:
 	var fade := 1.0-smoothstep(ARRIVAL,TOTAL_TIME,elapsed)
 	var open := smoothstep(0.0,0.32,elapsed)*fade
 	draw_rect(Rect2(Vector2.ZERO,board.size),Color(0.06,0.01,0.09,0.46*open))
-	# An ellipse anchors the seal to the board surface instead of a flat UI circle.
-	for index: int in range(6,0,-1):
-		_ellipse(_origin,Vector2(67+index*3,26+index),Color(0.68,0.12,0.34,0.035*open),float(index*3))
-	draw_set_transform(_origin,0,Vector2(1,0.4))
-	draw_circle(Vector2.ZERO,67,Color(0.10,0.025,0.13,0.93*open))
-	draw_set_transform(Vector2.ZERO)
+	# Wispy ground haze and a broken painted rim anchor the original sigil.
+	PaintedFx.stamp(self,PaintedFx.SMOKE,_origin,Vector2(164,56),Color(0.10,0.025,0.13,0.7*open))
+	PaintedFx.stamp(self,PaintedFx.RIPPLE,_origin,Vector2(172,65),Color(CRIMSON,0.34*open))
 	# The native circular sprite is flattened onto the same board footprint.
 	draw_set_transform(_origin,0,Vector2(1,0.4))
 	draw_texture_rect(SIGIL_ART,Rect2(-81,-81,162,162),false,Color(1,1,1,open*0.86))
@@ -148,22 +138,26 @@ func _draw() -> void:
 		var t := fposmod(elapsed*0.75+index/12.0,1.0)
 		var angle := index*2.4+elapsed*1.4
 		var point := _origin+Vector2(cos(angle)*60*(1-t),-t*100+sin(angle)*16*(1-t))
-		draw_circle(point,1.3+1.3*sin(t*PI),Color(VIOLET.lerp(CRIMSON,t),sin(t*PI)*open))
+		PaintedFx.stamp(self,PaintedFx.FLECK,point,Vector2(2.4,4.0+2*sin(t*PI)),Color(VIOLET.lerp(CRIMSON,t),sin(t*PI)*open),angle)
 	var scroll_alpha := smoothstep(0.36,OFFER_END,elapsed)*fade
 	_draw_contract(_origin+Vector2(91,-61),scroll_alpha)
 	if elapsed>=CONSUME_END and elapsed<ARRIVAL:
-		for index: int in 22:
-			var u := clampf((elapsed-CONSUME_END)/(ARRIVAL-CONSUME_END)-index*0.012,0.0,1.0)
-			var at := _energy_position(smoothstep(0.0,1.0,u))
-			var alpha := (1.0-index/22.0)*smoothstep(0.0,0.12,u)
-			draw_circle(at,9.0*(1.0-index/25.0),Color(CRIMSON.lerp(VIOLET,index/22.0),alpha*0.65))
-			draw_circle(at,2.7,Color(1,0.87,0.72,alpha))
+		var travel := clampf((elapsed-CONSUME_END)/(ARRIVAL-CONSUME_END),0,1)
+		for index: int in 18:
+			var head := clampf(travel-index*0.014,0,1)
+			var tail := maxf(head-0.025,0)
+			var alpha := (1.0-index/18.0)*smoothstep(0.0,0.12,head)
+			PaintedFx.streak(self,_energy_position(smoothstep(0,1,tail)),_energy_position(smoothstep(0,1,head)),10-index*0.35,Color(CRIMSON.lerp(VIOLET,index/18.0),alpha*0.8))
+		var tip := _energy_position(smoothstep(0,1,travel))
+		var heading := _energy_position(smoothstep(0,1,minf(travel+0.025,1)))-_energy_position(smoothstep(0,1,maxf(travel-0.025,0)))
+		PaintedFx.flame(self,tip,-heading.normalized(),22,6,Color(VIOLET,0.85),elapsed*16)
+		PaintedFx.stamp(self,PaintedFx.IMPACT,tip,Vector2.ONE*13,Color(1,0.87,0.72,0.9))
 	if ignited:
 		var u := clampf((elapsed-ARRIVAL)/0.48,0,1)
-		_ellipse(_target,Vector2(42,28).lerp(Vector2(143,95),u),Color(CRIMSON,(1-u)*0.9),3*(1-u)+1)
+		PaintedFx.stamp(self,PaintedFx.RIPPLE,_target,Vector2(84,56).lerp(Vector2(286,190),u),Color(CRIMSON,(1-u)*0.75))
 		for index: int in 9:
 			var direction := Vector2.from_angle(index*TAU/9.0-PI/2)
-			draw_line(_target+direction*(28+u*52),_target+direction*(40+u*70),Color(VIOLET,(1-u)*0.8),3.0,true)
+			PaintedFx.stamp(self,PaintedFx.FLECK,_target+direction*(34+u*65),Vector2(3,9),Color(VIOLET,(1-u)*0.8),direction.angle()+u)
 
 func _energy_position(u: float) -> Vector2:
 	var source := _origin+Vector2(0,-18)

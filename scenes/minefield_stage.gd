@@ -113,9 +113,7 @@ func draw_floor(ink: Node2D) -> void:
 		var foot := _target(board,tiles[index])
 		var near := smoothstep(WARNING_END+index*STAGGER,impact,elapsed)
 		if elapsed<arm_time(index):
-			ink.draw_set_transform(foot,0,Vector2(1,0.37))
-			ink.draw_circle(Vector2.ZERO,lerpf(7,18,near),Color(0.13,0.08,0.05,0.32*near))
-			ink.draw_set_transform_matrix(Transform2D.IDENTITY)
+			PaintedFx.stamp(ink,PaintedFx.SMOKE,foot,Vector2(14,5).lerp(Vector2(36,13),near),Color(0.13,0.08,0.05,0.4*near))
 		if armed.has(tiles[index]):
 			var u := clampf((elapsed-arm_time(index))/0.42,0.0,1.0)
 			ink.draw_polyline(edge,Color(1,0.86,0.49,(1-u)*0.9),5.0*(1-u)+1,true)
@@ -149,10 +147,11 @@ func _draw() -> void:
 			draw_texture_rect_region(artwork.texture,rect,cropped,Color(1,1,1,smoothstep(0.0,0.1,fall)))
 		if elapsed>=impact and elapsed<impact+0.32:
 			var dust := clampf((elapsed-impact)/0.32,0,1)
-			for piece: int in 7:
+			PaintedFx.stamp(self,PaintedFx.DUST,target+Vector2(0,-sin(dust*PI)*3),Vector2(28+dust*45,12+dust*11)*depth,Color(0.70,0.51,0.32,(1-dust)*0.8))
+			for piece: int in 5:
 				var angle := piece*TAU/7.0
 				var at := target+Vector2(cos(angle)*dust*33,sin(angle)*dust*12-13*sin(dust*PI))
-				draw_circle(at,2.4*(1-dust),Color(0.53,0.37,0.23,(1-dust)*0.75))
+				PaintedFx.stamp(self,PaintedFx.FLECK,at,Vector2(2,4)*(1-dust),Color(0.53,0.37,0.23,(1-dust)*0.75),angle+dust*2)
 
 func _release_tile(board: MainBoard, tile: int) -> void:
 	var owner: Variant = board._trap_pending.get(tile)

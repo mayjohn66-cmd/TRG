@@ -95,6 +95,7 @@ func run() -> void:
 		var saw_all_wagons := false
 		var saw_zoom := false
 		var saw_forward_flight := false
+		var saw_steam := false
 		var last_motion := -1.0
 		var motion_index := 0
 		for tick: int in 1800:
@@ -116,6 +117,11 @@ func run() -> void:
 					root.size = Vector2i(1366,768)
 					await frames(2)
 			if stage.mode==&"run":
+				if not saw_steam and not stage.smoke.is_empty():
+					var steam: Node3D = stage.smoke[0].node
+					saw_steam = true
+					check(steam is Sprite3D and steam.texture==PaintedFx.SMOKE,"Chimney steam is a transparent painted billboard rather than sphere geometry")
+					check(steam.billboard==BaseMaterial3D.BILLBOARD_ENABLED and not steam.shaded and steam.modulate.a<=0.78,"Steam faces the camera and fades without scene-light shading")
 				if not saw_zoom:
 					saw_zoom = true
 					check(is_equal_approx(board._pawn_layer.scale.x,1.12) and board._pawn_layer.scale==board._board_layer.scale,"Entry zoom reaches 12 percent and board/pawns share the camera")
@@ -155,6 +161,7 @@ func run() -> void:
 			await process_frame
 		check(saw_lay and saw_pause and saw_train and saw_impact,"Track laying, pause, moving train and timed impacts all appear")
 		check(saw_all_wagons and stage.wheels.size()==22,"Approved locomotive, all four wagons and rotating wheels are retained")
+		check(saw_steam and stage.smoke.is_empty(),"Painted chimney steam appears and clears when the train finishes")
 		check(stage.passed==(report.path as Array[int]),"Every route tile is contacted once and in the correct direction")
 		check(victim_moved,"Actual victim sprites are physically thrown off the track")
 		check(saw_zoom and saw_forward_flight,"Entry camera and forward collision flight both play")

@@ -1,10 +1,12 @@
-## Texture-only accents shared by the priority presentation stages.
+## Texture-only accents shared by board, profile and duel presentations.
 class_name PaintedFx
 extends RefCounted
 
 const FLAME: Texture2D = preload("res://assets/fx/priority/flame_plume_v01.png")
 const LIGHTNING: Texture2D = preload("res://assets/fx/priority/lightning_v01.png")
 const IMPACT: Texture2D = preload("res://assets/fx/priority/impact_wisp_v01.png")
+const SMOKE: Texture2D = preload("res://assets/fx/atmosphere/steam_puff_v01.png")
+const DUST: Texture2D = preload("res://assets/fx/atmosphere/ground_dust_v01.png")
 const WAKE: Texture2D = preload("res://assets/fx/capture/pierce_trail_v01.png")
 const RIPPLE: Texture2D = preload("res://assets/fx/common/shockwave_v01.png")
 const FLECK: Texture2D = preload("res://assets/fx/common/spark_fleck_v01.png")
