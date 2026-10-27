@@ -57,6 +57,14 @@ var _stage: Control = null
 var _left_holder: VBoxContainer = null
 var _right_holder: Container = null
 var _right_scroll: ScrollContainer = null
+var _left_scroll: ScrollContainer = null
+var _book_outer: Panel = null
+var _drag_scroll: ScrollContainer = null
+var _drag_start := Vector2.ZERO
+var _drag_top := 0
+var _drag_entry := -1
+var _drag_finger := -1
+var _drag_moved := false
 var _notebook_title: Label = null
 var _list_buttons: Array[Button] = []
 var _group_tabs: Array[Button] = []
@@ -88,7 +96,7 @@ const AUGMENT_TILE_SCALE: float = 0.8
 const CARD_TILE: Vector2 = Vector2(200, 280)
 ## 지금 보고 있는 그림 타일의 외곽선 색 (눈에 띄는 형광 분홍).
 const SELECTED_OUTLINE: Color = Color("ff2d95")
-## 도감 탭: 4열 격자 영역과 카드 배율 (법전 8종이 4×2로 스크롤 없이 한 화면에 들어간다).
+## 도감 기본 격자 영역. 실제 너비는 화면에 맞추며 터치에서는 증강을 3열로 키운다.
 const GRID_POS: Vector2 = Vector2(256, 188)
 const GRID_SIZE: Vector2 = Vector2(1046, 526)
 const GRID_COLUMNS: int = 4
@@ -143,6 +151,106 @@ func _ready() -> void:
 	_build_cards_area()
 	_build_ribbon()
 	_build_save_tools()
+	resized.connect(_fit_book)
+	_fit_book()
+
+
+## Use the available landscape width, including the extra canvas on phones.
+func _fit_book() -> void:
+	if _stage == null or _book_inset == null:
+		return
+	var width := maxf(STAGE.x, size.x)
+	_stage.custom_minimum_size.x = width
+	_book_outer.size.x = width - 210.0
+	_book_inset.size.x = width - 246.0
+	var backup := _stage.get_node_or_null("SaveBackup") as Control
+	if backup != null: backup.position.x = width - 310.0
+	for index: int in _group_tabs.size():
+		_group_tabs[index].position.x = width*0.5-183.0+index*170.0
+	_summary_banner.size.x = width - 320.0
+	if not _content.is_empty(): _apply_group_layout(group_of(spread))
+
+
+func _inside(control: Control, point: Vector2) -> bool:
+	return control.is_visible_in_tree() and Rect2(Vector2.ZERO,control.size).has_point(control.get_global_transform_with_canvas().affine_inverse()*point)
+
+
+func _scroll_at(point: Vector2) -> ScrollContainer:
+	if _save_popup != null and _save_popup.visible: return null
+	for scroll: ScrollContainer in [_left_scroll,_right_scroll]:
+		if scroll == _right_scroll and group_of(spread)==1 and entry>=0: continue
+		if not _inside(scroll,point): continue
+		# Keep the actual scrollbar available for mouse/keyboard users.
+		if _inside(scroll.get_v_scroll_bar(),point): return null
+		return scroll
+	return null
+
+
+func _clear_scroll_drag() -> void:
+	_drag_scroll = null
+	_drag_entry = -1
+	_drag_finger = -1
+	_drag_moved = false
+
+
+## Own only presses inside the book's scroll panes. Child buttons cannot
+## activate on release after a swipe, and native/emulated touch never scroll twice.
+func _input(event: InputEvent) -> void:
+	var point: Vector2
+	var pressed := false
+	var released := false
+	var motion := false
+	var finger := -1
+	if event is InputEventScreenTouch:
+		point = event.position
+		finger = event.index
+		pressed = event.pressed
+		released = not event.pressed
+	elif event is InputEventScreenDrag:
+		point = event.position
+		finger = event.index
+		motion = true
+	elif event is InputEventMouseButton:
+		if event.button_index != MOUSE_BUTTON_LEFT: return
+		point = event.position
+		pressed = event.pressed
+		released = not event.pressed
+	elif event is InputEventMouseMotion:
+		point = event.position
+		motion = true
+	else: return
+	if _drag_scroll != null and finger != _drag_finger:
+		get_viewport().set_input_as_handled()
+		return
+	if pressed:
+		var scroll := _scroll_at(point)
+		if scroll == null: return
+		_drag_scroll = scroll
+		_drag_finger = finger
+		_drag_start = point
+		_drag_top = scroll.scroll_vertical
+		_drag_entry = -1
+		_drag_moved = false
+		if scroll == _right_scroll:
+			for index: int in _tiles.size():
+				if _inside(_tiles[index],point):
+					_drag_entry = index
+					break
+	elif _drag_scroll != null:
+		if motion:
+			var distance := point-_drag_start
+			var screen_distance := get_viewport().get_screen_transform().basis_xform(distance)
+			if screen_distance.length()>8.0: _drag_moved = true
+			if _drag_moved:
+				_drag_scroll.scroll_vertical = _drag_top-roundi(distance.y)
+		elif released:
+			var pick := _drag_entry
+			var tap := not _drag_moved and pick>=0 and _inside(_tiles[pick],point)
+			if event is InputEventScreenTouch and event.canceled: tap = false
+			_clear_scroll_drag()
+			if tap: show_entry(pick)
+	else: return
+	get_viewport().set_input_as_handled()
 
 
 ## 뒤 화면을 흐리게 번지게 하고 어둡게 덮는 셰이더 (색의 알파가 어두운 정도).
@@ -237,6 +345,7 @@ static func _art(role: StringName, extent: Vector2) -> TextureRect:
 ## 연한 청록 테두리의 큰 책 틀 두 겹과 그 안의 크림색 바탕.
 func _build_book() -> void:
 	var outer := Panel.new()
+	_book_outer = outer
 	outer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	outer.add_theme_stylebox_override("panel", _box(Color("e9f7ee"), FRAME, 12, 40, 18, 0, Color(0, 0, 0, 0.45)))
 	_place(outer, Vector2(186, 108), Vector2(1156, 634))
@@ -448,6 +557,8 @@ func _build_notebook() -> void:
 	mirrored.flip_h = true
 	title_row.add_child(mirrored)
 	var scroll := ScrollContainer.new()
+	_left_scroll = scroll
+	scroll.name = "EntryDetailScroll"
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(scroll)
@@ -484,6 +595,7 @@ func _build_cards_area() -> void:
 	_place(_summary_banner, Vector2(GRID_POS.x, 140), Vector2(GRID_SIZE.x, 40))
 	_summary_banner.visible = false
 	_right_scroll = ScrollContainer.new()
+	_right_scroll.name = "CatalogScroll"
 	_right_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_place(_right_scroll, Vector2(834, 142), Vector2(468, 570))
 	_right_holder = VBoxContainer.new()
@@ -510,6 +622,7 @@ func _build_ribbon() -> void:
 
 ## 장을 연다. 처음에는 왼쪽에 그 장의 전체 설명(overview)이 나오고, 오른쪽 타일을 누르면 그 항목으로 바뀐다.
 func show_spread(index: int, entry_index: int = -1) -> void:
+	_clear_scroll_drag()
 	spread = clampi(index, 0, spread_count() - 1)
 	_content = _chapter(spread)
 	_rebuild_tiles()
@@ -559,7 +672,7 @@ func _fit_summary(text: String) -> void:
 
 
 ## 기본 규칙은 왼쪽 노트 + 오른쪽 좁은 칸 + 쪽 표시,
-## 도감은 위쪽 한 줄 요약 + 4열 격자 (노트는 항목을 누를 때만 팝업).
+## 도감은 위쪽 한 줄 요약 + 화면에 맞춘 격자 (노트는 항목을 누를 때만 팝업).
 func _apply_group_layout(group: int) -> void:
 	var catalog: bool = group == 1
 	_summary_banner.visible = catalog
@@ -570,10 +683,10 @@ func _apply_group_layout(group: int) -> void:
 		_summary_label.text = text
 		_fit_summary(text)
 		_right_scroll.position = GRID_POS
-		_right_scroll.size = GRID_SIZE
+		_right_scroll.size = Vector2(_book_inset.size.x-74.0,GRID_SIZE.y)
 	else:
 		_right_scroll.position = Vector2(834, 142)
-		_right_scroll.size = Vector2(468, 570)
+		_right_scroll.size = Vector2(_book_inset.size.x-652.0,570)
 	_ribbon.visible = not catalog
 	_layout_notebook()
 
@@ -588,7 +701,7 @@ func _layout_notebook() -> void:
 	# Grid selection outlines (z=6) and collection stamps (z=7) must stay
 	# behind both the modal dim and the notebook, regardless of sibling order.
 	_notebook_root.z_index = 10 if popup else 0
-	_notebook_root.position = Vector2(232, 0) if popup else Vector2.ZERO
+	_notebook_root.position = Vector2(_book_inset.position.x+_book_inset.size.x*0.5-532.0,0) if popup else Vector2.ZERO
 	_popup_dim.visible = popup
 	_popup_dim.position = _book_inset.position - _notebook_root.position
 	_popup_dim.size = _book_inset.size
@@ -617,6 +730,7 @@ func entry_count() -> int:
 
 ## 오른쪽 타일 중 하나를 골라 왼쪽 노트에 자세히 보여 준다. -1이면 장의 전체 설명.
 func show_entry(index: int) -> void:
+	_clear_scroll_drag()
 	var entries: Array = _content.get("entries", [])
 	entry = clampi(index, -1, entries.size() - 1)
 	for child: Node in _left_holder.get_children():
@@ -627,6 +741,7 @@ func show_entry(index: int) -> void:
 	_chapter_label.text = "%s  ·  전체 설명" % _content["title"] if entry == -1 else "%s  ·  %d / %d" % [_content["title"], entry + 1, entries.size()]
 	for node: Control in _detail(data):
 		_left_holder.add_child(node)
+	_left_scroll.scroll_vertical = 0
 	for tile_index: int in _tiles.size():
 		_paint_tile(_tiles[tile_index], tile_index == entry)
 	_layout_notebook()
@@ -641,7 +756,7 @@ func _rebuild_tiles() -> void:
 	var catalog: bool = group_of(spread) == 1
 	var grid := GridContainer.new()
 	grid.name = "EntryGrid"
-	grid.columns = GRID_COLUMNS if catalog else (2 if wide else 3)
+	grid.columns = (3 if MobileSupport.touch_mode() and spread!=6 else GRID_COLUMNS) if catalog else (2 if wide else 3)
 	grid.add_theme_constant_override("h_separation", 10)
 	grid.add_theme_constant_override("v_separation", 10)
 	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -662,6 +777,7 @@ func _tile(data: Dictionary) -> Button:
 	var button := Button.new()
 	button.name = "Entry_" + str(data["title"])
 	button.focus_mode = Control.FOCUS_NONE
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.custom_minimum_size = Vector2(142, 112)
 	button.set_meta("tone", tone)
 	button.tooltip_text = str(data.get("summary", "")).replace("[b]", "").replace("[/b]", "")
@@ -697,12 +813,13 @@ func _tile(data: Dictionary) -> Button:
 	return button
 
 
-## 도감 그림 타일: 증강 선택 화면의 증강 카드(또는 손패 카드 앞면)를 줄여 두 칸씩 늘어놓는다.
-## compact: 도감 탭 4열 격자용 낮은 카드 (그림·제목·조건만, 아래 빈 공간 없이).
+## 도감 그림 타일: 기존 카드 전체를 격자 칸 너비에 비례해 맞춘다.
+## compact: 낮은 카드 (그림·제목·조건만, 아래 빈 공간 없이).
 func _picture_tile(data: Dictionary, on_pick: Callable, compact: bool = false) -> Control:
 	var holder := Control.new()
 	holder.name = "Entry_" + str(data["title"])
 	holder.mouse_filter = Control.MOUSE_FILTER_PASS
+	holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var card_size: Vector2
 	var card_radius: int = 12
 	if data.has("augment"):
@@ -728,12 +845,17 @@ func _picture_tile(data: Dictionary, on_pick: Callable, compact: bool = false) -
 		face.pressed.connect(on_pick)
 		holder.add_child(face)
 	holder.custom_minimum_size = card_size
+	if compact:
+		var visual := holder.get_child(0) as Button
+		visual.pivot_offset = visual.size*0.5
+		holder.resized.connect(_fit_picture_tile.bind(holder,visual,visual.size))
 	# 특수 승리 법전으로 졸업해 본 교칙: [달성 완료 ★] 도장 (영구 기록)
 	if data.has("law_id") and PlayerSave.has_law(str(data["law_id"])):
 		var stamp: PanelContainer = MetaIcon.stamp("달성 완료 ★", 18)
 		stamp.add_theme_stylebox_override("panel",VISUALS.panel(Color("fff4d6"),12,8))
 		stamp.position = Vector2(card_size.x * 0.5 - 64.0, card_size.y * 0.30)
 		stamp.z_index = 7
+		stamp.name = "CollectionStamp"
 		holder.add_child(stamp)
 	# 지금 보고 있는 항목: 꼬리표 대신 눈에 띄는 색의 굵은 외곽선
 	var marker := Panel.new()
@@ -748,6 +870,20 @@ func _picture_tile(data: Dictionary, on_pick: Callable, compact: bool = false) -
 	holder.add_child(marker)
 	holder.set_meta("marker", marker)
 	return holder
+
+
+## Scale the whole original face uniformly into its actual grid column.
+## The minimum height follows that scale so rows and their hit areas match.
+func _fit_picture_tile(holder: Control, visual: Button, full: Vector2) -> void:
+	var factor := holder.size.x/full.x
+	var extent := full*factor
+	visual.scale = Vector2.ONE*factor
+	visual.position = -full*(1.0-factor)*0.5
+	holder.custom_minimum_size.y = extent.y
+	var marker := holder.get_node_or_null("SelectedOutline") as Control
+	if marker != null: marker.size = extent+Vector2.ONE*2.0
+	var stamp := holder.get_node_or_null("CollectionStamp") as Control
+	if stamp != null: stamp.position = Vector2(extent.x*0.5-64.0,extent.y*0.3)
 
 
 func _paint_tile(tile: Control, selected: bool) -> void:

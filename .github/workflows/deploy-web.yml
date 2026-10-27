@@ -34,6 +34,7 @@ on:
           - remaining-fx
           - difficulty-icons
           - mobile-fx
+          - rulebook-scroll
           - warning-icon
           - rulebook-art
           - avatar-hq
@@ -72,7 +73,9 @@ jobs:
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
           REQUESTED_SCOPE: ${{ inputs.validation }}
         run: |
-          if [[ "${REQUESTED_SCOPE}" == "mobile-fx" || "${COMMIT_MESSAGE}" == *"[check:mobile-fx]"* ]]; then
+          if [[ "${REQUESTED_SCOPE}" == "rulebook-scroll" || "${COMMIT_MESSAGE}" == *"[check:rulebook-scroll]"* ]]; then
+            echo "scope=rulebook-scroll" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "mobile-fx" || "${COMMIT_MESSAGE}" == *"[check:mobile-fx]"* ]]; then
             echo "scope=mobile-fx" >> "${GITHUB_OUTPUT}"
           elif [[ "${REQUESTED_SCOPE}" == "difficulty-icons" || "${COMMIT_MESSAGE}" == *"[check:difficulty-icons]"* ]]; then
             echo "scope=difficulty-icons" >> "${GITHUB_OUTPUT}"
@@ -170,6 +173,14 @@ jobs:
           godot --headless --path . -s res://tests/ui_avatar_hq_test.gd 2>&1 | tee /tmp/avatar_hq.log
           grep -q 'AVATAR_HQ_OK' /tmp/avatar_hq.log
           if grep -q 'SCRIPT ERROR' /tmp/avatar_hq.log; then exit 1; fi
+
+      - name: Check rulebook drag and card layout
+        if: steps.validation.outputs.scope == 'rulebook-scroll'
+        run: |
+          set -euo pipefail
+          godot --headless --audio-driver Dummy --path . -s res://tests/ui_rulebook_scroll_test.gd 2>&1 | tee /tmp/rulebook_scroll.log
+          grep -q 'UI_RULEBOOK_SCROLL_OK' /tmp/rulebook_scroll.log
+          if grep -Eq 'SCRIPT ERROR|SHADER ERROR' /tmp/rulebook_scroll.log; then exit 1; fi
 
       - name: Check rulebook presentation scripts
         if: steps.validation.outputs.scope == 'rulebook-art'
