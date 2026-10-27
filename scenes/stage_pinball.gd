@@ -202,6 +202,13 @@ func reset() -> void:
 	request_frame()
 
 
+## 굴리기 전 안내 문구: 내 차례면 [발사] 버튼 안내, 컴퓨터·다른 사람 차례면 누구 차례인지 (발사 버튼을 누르라고 하지 않는다).
+func set_waiting_caption(other_turn: bool, who: String) -> void:
+	if _caption == null or active or last_hole != -1:
+		return
+	_caption.text = ("클래식 구슬 핀볼 · %s 차례" % who) if other_turn else "클래식 구슬 핀볼 · 발사 버튼을 누르세요"
+
+
 func play(result: Dictionary, power: float = 0.5) -> void:
 	cancel()
 	var details: Dictionary = result["details"]

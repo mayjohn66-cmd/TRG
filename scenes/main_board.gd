@@ -633,6 +633,8 @@ var _draft_title_label: Label = null
 var _draft_cards: Array[Button] = []
 var _draft_reroll_buttons: Array[Button] = []
 var _result_overlay: Control = null
+## 판이 끝난 뒤 남은 정리 연출(졸업·말 철수·순위 확정·[매치 종료] 브리핑)이 끝날 때까지 결과 창을 미룬다.
+var _result_hold: bool = false
 var _auto_draft_enabled: bool = false
 
 var _tile_pick_active: bool = false
@@ -1716,7 +1718,7 @@ func _avatar_react(player_id: int, new_emotion: AvatarSlot.Emotion, seconds: flo
 	(card["avatar"] as AvatarSlot).react(new_emotion, seconds)
 
 
-## 좌측 중앙 '엘리아스 중앙 법전' 위젯: 4개의 둥근 카드형 슬롯 (빈 슬롯은 점선 테두리, 활성 교칙은 명패).
+## 좌측 중앙 '엘리아스 중앙 법전' 위젯: 둥근 카드형 슬롯 4개를 만들고, 이 판에 걸 수 있는 법전 수만큼만 보인다 (빈 슬롯은 점선 테두리, 활성 교칙은 명패).
 func _build_law_board() -> void:
 	var panel := PanelContainer.new()
 	_law_panel = panel
@@ -3933,6 +3935,17 @@ func _fit_profile_token(host: Control) -> void:
 
 
 func _refresh_laws() -> void:
+	# 슬롯은 이 판에 동시에 걸 수 있는 법전 수만큼만 보인다 (기본 2개, 싱글 Lv.1~2는 1개). 법전을 끈 판은 안내 한 줄만.
+	var laws_on: bool = bool(MatchRules.of(state).get("laws", true))
+	var shown: int = maxi(MatchRules.max_laws(state) if laws_on else 0, state.rulebook.active_laws_queue.size())
+	var resized: bool = false
+	for slot: int in _law_slots.size():
+		var want: bool = slot < maxi(shown, 1)
+		if _law_slots[slot].visible != want:
+			_law_slots[slot].visible = want
+			resized = true
+	if resized and _law_panel != null:
+		_law_panel.reset_size()
 	for slot: int in _law_labels.size():
 		var active: bool = slot < state.rulebook.active_laws_queue.size()
 		_law_dashes[slot].visible = not active
@@ -3966,7 +3979,7 @@ func _refresh_laws() -> void:
 				_law_progress[slot].visible = false
 			_set_law_near(slot, 0)
 			_law_slots[slot].add_theme_stylebox_override("panel", UiSkin.panel("inset", 8.0))
-			_law_labels[slot].text = ""
+			_law_labels[slot].text = "이번 판은 특수 승리 법전이 없어요" if shown == 0 and slot == 0 else ""
 			_law_labels[slot].add_theme_color_override("font_color", UiSkin.SOFT)
 			_law_descs[slot].text = ""
 			_law_slots[slot].tooltip_text = ""
@@ -5888,6 +5901,8 @@ func _roll_view_allowed() -> bool:
 		return false
 	if _presentation_active() or (_capture_cutin != null and _capture_cutin.busy()) or _stage_warps > 0:
 		return false
+	if _presenter_showing():
+		return false  # 앞 사람의 굴림 연출(리볼버·룰렛·주사위 등)이 아직 보이는 동안 다음 사람의 굴리기 화면을 겹쳐 띄우지 않는다
 	if _tile_pick_active or _aim_pawn != -1 or _drag_active:
 		return false
 	if _draft_overlay != null or (_review_overlay != null and is_instance_valid(_review_overlay)):
@@ -8235,7 +8250,7 @@ func _close_choice() -> void:
 func _refresh_overlays() -> void:
 	_refresh_draft_overlay()
 	_refresh_stack_overlay()
-	if manager.is_game_over and _result_overlay == null:
+	if manager.is_game_over and _result_overlay == null and not _result_hold:
 		_show_result_overlay()
 
 
@@ -8916,6 +8931,7 @@ func _pick_augment_with_pawn(pawn_id: int, player_id: int, index: int) -> void:
 
 
 func _show_result_overlay() -> void:
+	_result_hold = false
 	_report_match_once()
 	_close_result_overlay()
 	_result_overlay = _new_overlay()
@@ -9704,6 +9720,8 @@ func _on_game_over(winner_id: int, reason: StringName) -> void:
 		_refresh_all()
 		return
 	# 갑자기 결과 창으로 넘어가지 않게: 남은 연출이 끝난 뒤 [매치 종료] 사유를 1.5초 브리핑하고 결과 창을 띄운다.
+	# 그 전까지는 화면 갱신(_refresh_overlays)이 결과 창을 먼저 띄우지 않는다.
+	_result_hold = true
 	var reason_line: String = match_end_reason()
 	var tint: Color = PLAYER_COLORS.get(int(_decisive_rank.get("player", winner_id)), Color("ffd43b"))
 	_enqueue_late(func() -> void:
@@ -9712,12 +9730,26 @@ func _on_game_over(winner_id: int, reason: StringName) -> void:
 		if manager != null and manager.is_game_over and _result_overlay == null:
 			_show_result_overlay()
 			_refresh_all())
-	# 안전장치: 남은 연출이 어떤 이유로든 멈춰도 결과 창은 반드시 뜬다
-	get_tree().create_timer(END_BRIEF_SECONDS + 6.0).timeout.connect(func() -> void:
-		if is_inside_tree() and manager != null and manager.is_game_over and _result_overlay == null:
-			_show_result_overlay()
-			_refresh_all())
+	# 안전장치: 남은 연출이 어떤 이유로든 멈춰도 결과 창은 반드시 뜬다 (연출이 끝난 채 조용하거나 RESULT_WATCHDOG_SECONDS가 지나면)
+	_result_watchdog(Time.get_ticks_msec(), 0)
 	_refresh_all()
+
+
+## 결과 창 안전장치: 1초마다 확인한다. 연출·알림이 3초 연속 조용하거나 RESULT_WATCHDOG_SECONDS가 지나면 결과 창을 띄운다.
+const RESULT_WATCHDOG_SECONDS: float = 30.0
+
+
+func _result_watchdog(started_msec: int, quiet_seconds: int) -> void:
+	get_tree().create_timer(1.0).timeout.connect(func() -> void:
+		if not is_inside_tree() or manager == null or not manager.is_game_over or _result_overlay != null:
+			return
+		var busy: bool = _presentation_active() or _ui_busy() or (_announcer != null and _announcer.holding())
+		var quiet: int = 0 if busy else quiet_seconds + 1
+		if quiet >= 3 or Time.get_ticks_msec() - started_msec >= int(RESULT_WATCHDOG_SECONDS * 1000.0):
+			_show_result_overlay()
+			_refresh_all()
+		else:
+			_result_watchdog(started_msec, quiet))
 
 
 ## 판을 끝낸 결정적 사유 한 줄: "에르핀님이 '투기장의 지배자(적 말을 6회 처치)' 법전을 달성하여 1위로 졸업했습니다!"
@@ -10524,6 +10556,11 @@ func _build_tool_stages() -> void:
 	add_child(_stage_pinball)
 
 
+## 굴림 결과 연출기(리볼버·룰렛·주사위 투척 등)가 아직 화면에 남아 있는가.
+func _presenter_showing() -> bool:
+	return _presenter != null and _presenter.visible
+
+
 ## 이 도구의 중앙 스테이지 (야추·블랙잭·핀볼이 아니면 null).
 func _stage_for(tool_id: StringName) -> Control:
 	match tool_id:
@@ -10553,10 +10590,13 @@ func _refresh_tool_stage() -> void:
 		stage.call("reset")
 	# 굴리기 화면은 앞선 연출이 다 끝난 뒤에만 뜬다. 이미 굴리는 중(연출·야추 중간 상태)이면 그대로 둔다.
 	var in_roll: bool = _roll_view_allowed()
-	var mid_roll: bool = _fx_busy or bool(stage.get("active")) or (tool.has_pending_state() and not (_announcer != null and _announcer.holding()))
+	# 굴림 연출(_fx_busy)이 다른 도구의 연출기(_presenter)라면 앞 사람의 굴림이다: 이 스테이지를 그 위에 겹쳐 띄우지 않는다.
+	var mid_roll: bool = (_fx_busy and not _presenter_showing()) or bool(stage.get("active")) or (tool.has_pending_state() and not (_announcer != null and _announcer.holding()))
 	stage.set("instant", instant_roll_for_test)
 	stage.visible = in_roll or mid_roll
 	var acting: bool = not _roll_button.disabled
+	if stage == _stage_pinball:
+		_stage_pinball.set_waiting_caption(_is_bot_turn() or (net != null and current != local_player_id), _player_name(current))
 	if stage == _stage_yacht:
 		_stage_yacht.sync(tool as ToolYacht, acting)
 	elif stage == _stage_blackjack:
