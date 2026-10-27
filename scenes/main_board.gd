@@ -760,6 +760,11 @@ func _process(delta: float) -> void:
 	_bot.instant = instant_roll_for_test
 	_update_time_pressure(delta)
 	# 굴리기 화면은 앞선 연출·카드 끌기·필살기 겨누기가 끝나는 순간 켜지고, 시작되는 순간 꺼진다 (어떤 경로로 바뀌든 프레임마다 맞춘다)
+	# 이어서 당기려고 남겨 둔 리볼버: 그 사람의 굴림 대기가 끝나면(차례가 넘어가거나 멈추기) 내린다
+	if _presenter != null and _presenter.holding and not _fx_busy:
+		var holder_tool: BaseJudgmentTool = state.tools.get(manager.current_player_id())
+		if manager.current_player_id() != _presenter.hold_owner or manager.current_state != TurnManager.State.PHASE_ROLL_WAIT or holder_tool == null or not holder_tool.has_pending_state():
+			_presenter.cancel()
 	var roll_view: bool = _roll_view_allowed()
 	if roll_view != _last_roll_view:
 		_last_roll_view = roll_view
@@ -5816,8 +5821,13 @@ func _refresh_controls() -> void:
 		_set_gun_buttons(true)
 		_stop_button.visible = not over
 		_stop_button.text = "정지"
-		_fire_button.disabled = _roll_button.disabled or _roll_pad.active
-		_stop_button.disabled = not can_stop or _tile_pick_active or _is_bot_turn() or _ui_busy() or _roll_pad.active
+		# 이어서 당기는 중(내 리볼버가 생존 결과로 짧게 철컥하는 동안): 버튼을 회색으로 바꿨다 되돌리면 당길 때마다 깜빡인다.
+		# 모양은 그대로 두고 그동안 클릭만 무시한다 (키 입력은 _roll_button.disabled가 막는다).
+		var mid_pull: bool = _fx_busy and _roll_pad.kind == RollPad.Kind.REVOLVER and _roll_pad.active and not _roll_pad.preparing and can_stop and not _is_bot_turn() and manager.current_player_id() == _dock_owner()
+		_fire_button.disabled = (_roll_button.disabled or _roll_pad.active) and not mid_pull
+		_stop_button.disabled = (not can_stop or _tile_pick_active or _is_bot_turn() or _ui_busy() or _roll_pad.active) and not mid_pull
+		for gun_button: Button in [_fire_button, _stop_button]:
+			gun_button.mouse_filter = Control.MOUSE_FILTER_IGNORE if mid_pull else Control.MOUSE_FILTER_STOP
 		_stop_button.modulate = Color(0.55, 1.0, 0.62) if can_stop else Color.WHITE
 	else:
 		_set_gun_buttons(false)
@@ -5825,6 +5835,7 @@ func _refresh_controls() -> void:
 		_stop_button.visible = can_stop and not _is_stage_tool(tool.tool_id)  # 야추·블랙잭은 스테이지에 자기 확정 버튼이 있다
 		_stop_button.text = "멈추고 이동 확정"
 		_stop_button.disabled = false
+		_stop_button.mouse_filter = Control.MOUSE_FILTER_STOP
 		_stop_button.modulate = Color.WHITE
 	_refresh_tool_board(state.tools[_dock_owner()], _dock_owner())
 	# 개입 창은 이제 피해를 되돌리는 카드(ACT_05) 하나뿐이라 가운데 팝업(_update_reaction_popup)이 맡는다. 예전 [개입 패스] 버튼은 쓰지 않는다.
@@ -5935,7 +5946,8 @@ func _refresh_roll_pad() -> void:
 	# 중앙 알림(라운드 시작·차례 알림 등)·오프닝이 떠 있는 동안에는 숨겼다가, 알림이 끝나면(drained -> _refresh_all) 다시 나온다.
 	var roll_phase: bool = _roll_view_allowed() and not _is_bot_turn()
 	# 연출 중에 남겨 두는 것은 '내 도구'가 굴러가는 연출일 때뿐이다 (다른 사람이 굴리는 동안 내 리볼버·룰렛이 밑에 비치지 않게).
-	var own_fx: bool = _fx_busy and manager.current_player_id() == _dock_owner()
+	# 앞 사람의 굴림 연출기(_presenter)가 아직 보이면 그 _fx_busy는 내 도구의 연출이 아니다 (차례가 막 넘어온 순간 내 리볼버가 먼저 떴다 숨는 깜빡임 방지).
+	var own_fx: bool = _fx_busy and manager.current_player_id() == _dock_owner() and not _presenter_showing()
 	_roll_button.visible = wanted == RollPad.Kind.NONE and roll_phase and mode != &"stage"
 	if wanted != RollPad.Kind.NONE:
 		_roll_pad.visible = roll_phase or own_fx or _roll_pad.active
@@ -6056,8 +6068,8 @@ func _act(action: StringName, params: Dictionary = {}) -> void:
 func _on_roll_pressed() -> void:
 	# 원클릭: 누르고 있을 필요 없이 한 번 누르면 바로 굴러간다. 연출 세기는 도구마다 경쾌한 고정값을 쓴다.
 	_pending_power = ONE_CLICK_POWER
-	if manager.is_game_over or _roll_button.disabled or _ui_busy() or _is_bot_turn():
-		return
+	if manager.is_game_over or _roll_button.disabled or _ui_busy() or _is_bot_turn() or _roll_pad.preparing:
+		return  # 리볼버 장전 연출 중에 쏘면 3D 화면에 장전 자세가 한두 프레임 다시 비친다 (발사 버튼과 같은 조건)
 	var tool: BaseJudgmentTool = state.tools[_dock_owner()]
 	# Yut, Mahjong, cards, roulette, slots and the toy gun emit their own
 	# material sounds at animation cues. Only dice need the generic clatter.
@@ -6079,8 +6091,8 @@ func _roll_by_key() -> void:
 
 
 func _on_stop_pressed() -> void:
-	if _stop_button.disabled:
-		return
+	if _stop_button.disabled or _roll_pad.active:
+		return  # 리볼버가 철컥하는 연출 중(버튼 모양은 그대로 둔다)에는 정지를 받지 않는다
 	_act(&"stop")
 
 
@@ -10686,6 +10698,7 @@ func _handle_roll_event(data: Dictionary) -> void:
 	var serial: int = _fx_serial
 	_fx_busy = true
 	_refresh_controls()
+	_presenter.hold_owner = int(data["player_id"])
 	await _presenter.play(tool_id, result, _pending_power)
 	if generation != _fx_generation or serial != _fx_serial:
 		return

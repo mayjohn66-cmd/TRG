@@ -50,6 +50,11 @@ var instant: bool = false
 ## 연출이 끝난 뒤 화면에 남은 최종 표시 문자열 (테스트가 엔진 결과와 대조한다).
 var last_display: String = ""
 var active: bool = false
+## 러시안 룰렛을 이어서 당길 수 있는 결과(생존)면 연출이 끝나도 리볼버를 화면에 남겨 둔다 (다음 당기기 사이에 깜빡이지 않게).
+## MainBoard가 차례가 바뀌거나 멈추기로 확정되면 cancel()로 내린다. hold_owner는 그 리볼버를 쥔 사람.
+var holding: bool = false
+var hold_owner: int = -1
+var _hold_after: bool = false
 ## 연출 패널이 가운데 정렬될 화면 좌표 (창 비율에 따라 MainBoard가 갱신한다).
 var center: Vector2 = Vector2(683.0, 308.0)
 ## 투척 출발점: 굴린 사람 프로필의 화면 좌표 (MainBoard가 굴림마다 넣는다). 모르면 화면 아래쪽에서 던진다.
@@ -184,6 +189,7 @@ func play(tool_id: StringName, result: Dictionary, power: float = 0.5) -> void:
 		return
 	_power = clampf(power, 0.0, 1.0)
 	_result = result
+	_hold_after = tool_id == &"REVOLVER" and bool(result.get("can_continue", false))
 	if tool_id in [&"HOLDEM", &"DICE_HWATU", &"DICE_TAROT", &"DICE_MAHJONG", &"YUT", &"LIFE_ROULETTE", &"SLOT_777", &"REVOLVER"]:
 		last_display = ""
 	_mode = tool_id
@@ -202,6 +208,7 @@ func play(tool_id: StringName, result: Dictionary, power: float = 0.5) -> void:
 
 ## 진행 중인 연출을 즉시 끝내고 숨긴다 (새 게임 등).
 func cancel() -> void:
+	holding = false
 	_augment_hold = 0.0
 	if has_meta("gambler_tint_owner"):
 		remove_meta("gambler_tint_owner")
@@ -474,6 +481,8 @@ func _process(delta: float) -> void:
 		if tossing:
 			_linger = 0.0
 			_update_linger(0.0)
+		elif _hold_after:
+			holding = true  # 이어서 당길 리볼버: 다음 당기기(play)나 차례 끝(cancel)까지 그대로 둔다
 		else:
 			visible = false
 		if _dice_3d != null:
