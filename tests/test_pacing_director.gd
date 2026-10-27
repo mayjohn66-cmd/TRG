@@ -56,16 +56,16 @@ func test_cream_helps_only_the_human_and_more_with_finished_pawns() -> void:
 	var bot_high: float = _share(_histogram(state, ToolDiceD6.new()), func(s: int) -> bool: return s >= 4)
 	check(bot_high > 0.43 and bot_high < 0.57, "크림: 컴퓨터는 보정 없음 (%.2f)" % bot_high)
 	state.pacing_humans = [1] as Array[int]
-	var base_high: float = _share(_histogram(state, ToolDiceD6.new()), func(s: int) -> bool: return s >= 4)
-	var expected: float = 0.5 + 0.5 * PacingDirector.CREAM_HIGH_BASE
-	check(base_high > expected - 0.05 and base_high < expected + 0.05, "크림: 사람은 4칸 이상이 더 자주 (%.2f)" % base_high)
+	var base_high: float = _share(_histogram(state, ToolDiceD6.new()), func(s: int) -> bool: return s >= 5)
+	var expected: float = 1.0 / 3.0 + 2.0 / 3.0 * PacingDirector.CREAM_HIGH_BASE
+	check(base_high > expected - 0.05 and base_high < expected + 0.05, "크림: 사람은 5칸 이상이 더 자주 (%.2f)" % base_high)
 	var before: float = PacingDirector.cream_high_chance(state, 1)
 	var pawns: Array = state.pawns_of(1)
 	(pawns[0] as PlayerPawn).is_finished = true
 	(pawns[1] as PlayerPawn).is_finished = true
 	check(PacingDirector.cream_high_chance(state, 1) > before and PacingDirector.cream_high_chance(state, 1) <= PacingDirector.CREAM_HIGH_MAX, "완주 2개 + 컴퓨터보다 먼저 완주: 확률이 더 오른다 (상한까지)")
-	var later_high: float = _share(_histogram(state, ToolDiceD6.new()), func(s: int) -> bool: return s >= 4)
-	check(later_high > base_high + 0.03, "완주할수록 고눈금이 더 자주 (%.2f → %.2f)" % [base_high, later_high])
+	var later_high: float = _share(_histogram(state, ToolDiceD6.new()), func(s: int) -> bool: return s >= 5)
+	check(later_high > base_high + 0.015, "완주할수록 고눈금이 더 자주 (%.2f → %.2f)" % [base_high, later_high])
 
 func test_cream_dodges_turn_ends_more_after_each_hit() -> void:
 	var state: GameState = _state(1)

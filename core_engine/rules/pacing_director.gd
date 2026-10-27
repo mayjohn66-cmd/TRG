@@ -3,7 +3,7 @@
 # Role: 🕵️ 난이도별 히든 페이싱 디렉터. 화면에 보너스를 띄우지 않고, 판정 도구의 굴림을 몰래 다시 굴려 판 길이를 12~16라운드로 맞춘다.
 #       결과는 언제나 그 도구가 실제로 굴린 결과(주사위 눈·카드·릴 그대로)라 화면과 이동이 어긋나지 않는다. 호스트 RNG만 써서 락스텝·재현이 같다.
 #       MatchRules.pacing (0 = 끄기: 친선전·커스텀 기본, 1~5 = 싱글 불닭 난이도)이 정한다.
-#       - Lv.1 크림 (사람 자리만, GameState.pacing_humans): 3칸 이하가 나오면 확률로 4칸 이상 재굴림. 완주한 말이 많을수록, 컴퓨터보다 먼저 완주했으면
+#       - Lv.1 크림 (사람 자리만, GameState.pacing_humans): 4칸 이하가 나오면 확률(기본 90%)로 5칸 이상 재굴림. 완주한 말이 많을수록, 컴퓨터보다 먼저 완주했으면
 #         확률이 더 오른다. 턴이 끝나는 결과(낙·삐끗 등)는 확률로 다시 굴리고, 턴 종료를 당할수록 다음 턴 종료는 더 잘 피한다.
 #         법전은 나오지 않는다 (MatchRules.for_difficulty, 2026-10-27). 커스텀으로 법전을 켜면 고르면 바로 이기는 법전의 등장 가중치를 크게 올린다.
 #       - Lv.2~3: 11라운드부터 라운드마다 15%p씩(최대 90%) 3칸 이하를 4칸 이상으로 재굴림 (Lv.2는 사람 자리만)
@@ -19,12 +19,12 @@ const MAX_TRIES: int = 10
 const HIGH_STEPS: int = 4
 const COMEBACK_STEPS: int = 5
 ## 크림 고눈금: 기본 확률 + 완주한 말마다 + 컴퓨터보다 먼저 완주했으면 더 (최대 CREAM_HIGH_MAX).
-const CREAM_HIGH_BASE: float = 0.8
+const CREAM_HIGH_BASE: float = 0.9
 const CREAM_HIGH_PER_FINISH: float = 0.15
 const CREAM_HIGH_LEAD: float = 0.15
 const CREAM_HIGH_MAX: float = 0.95
 ## 크림 턴 종료 회피: 기본 확률 + 이미 당한 턴 종료마다 (최대 CREAM_DODGE_MAX).
-const CREAM_DODGE_BASE: float = 0.5
+const CREAM_DODGE_BASE: float = 0.7
 const CREAM_DODGE_PER_HIT: float = 0.15
 const CREAM_DODGE_MAX: float = 0.95
 ## 크림 드래프트: 고르면 바로 이기는 법전의 등장 가중치 배수.
@@ -120,8 +120,9 @@ static func _target_steps(state: GameState, player_id: int, lv: int, result: Rol
 		return HIGH_STEPS
 	match lv:
 		1:
-			if steps < HIGH_STEPS and state.rng.randf() < cream_high_chance(state, player_id):
-				target = HIGH_STEPS
+			# 크림 (2026-10-27): 4칸 이하가 나오면 확률로 5칸 이상을 노린다 (예전 3칸 이하 → 4칸 이상)
+			if steps < COMEBACK_STEPS and state.rng.randf() < cream_high_chance(state, player_id):
+				target = COMEBACK_STEPS
 		2, 3:
 			if round_number >= LATE_FROM_ROUND and steps < HIGH_STEPS:
 				var chance: float = minf(LATE_STEP_CHANCE * float(round_number - LATE_FROM_ROUND + 1), LATE_MAX_CHANCE)
