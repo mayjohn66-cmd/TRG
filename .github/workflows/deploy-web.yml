@@ -26,6 +26,7 @@ on:
           - profile-aura
           - profile-stamps
           - shield
+          - bang
           - warning-icon
           - rulebook-art
           - avatar-hq
@@ -64,7 +65,9 @@ jobs:
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
           REQUESTED_SCOPE: ${{ inputs.validation }}
         run: |
-          if [[ "${REQUESTED_SCOPE}" == "shield" || "${COMMIT_MESSAGE}" == *"[check:shield]"* ]]; then
+          if [[ "${REQUESTED_SCOPE}" == "bang" || "${COMMIT_MESSAGE}" == *"[check:bang]"* ]]; then
+            echo "scope=bang" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "shield" || "${COMMIT_MESSAGE}" == *"[check:shield]"* ]]; then
             echo "scope=shield" >> "${GITHUB_OUTPUT}"
           elif [[ "${REQUESTED_SCOPE}" == "lobby-art" || "${COMMIT_MESSAGE}" == *"[check:lobby-art]"* ]]; then
             echo "scope=lobby-art" >> "${GITHUB_OUTPUT}"
@@ -160,6 +163,14 @@ jobs:
           set -o pipefail
           godot --headless --path . --check-only -s res://scenes/card_skin.gd 2>&1 | tee /tmp/warning_icon.log
           if grep -q 'SCRIPT ERROR' /tmp/warning_icon.log; then exit 1; fi
+
+      - name: Check BANG card presentation
+        if: steps.validation.outputs.scope == 'bang'
+        run: |
+          set -o pipefail
+          godot --headless --path . -s res://tests/ui_bang_test.gd 2>&1 | tee /tmp/bang.log
+          grep -q 'UI_BANG_OK' /tmp/bang.log
+          if grep -q 'SCRIPT ERROR' /tmp/bang.log; then exit 1; fi
 
       - name: Check pawn protection shells
         if: steps.validation.outputs.scope == 'shield'

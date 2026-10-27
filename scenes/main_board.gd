@@ -6792,6 +6792,9 @@ func _enqueue_batch(entries: Array[Dictionary]) -> void:
 
 ## 연출 큐를 비우고 재생 중인 러너를 멈춘다 (판 초기화·되감기·테스트 정리용). 이미 시작된 트윈은 건드리지 않는다.
 func _reset_presentation() -> void:
+	var bang_stage: Node2D = get_node_or_null("BangStage")
+	if bang_stage != null:
+		bang_stage.cancel()
 	var bond_stage: Node2D = get_node_or_null("BondStage")
 	if bond_stage!=null:
 		bond_stage.cancel()
@@ -7316,8 +7319,46 @@ func _settle_pawn_view(view: Node2D, pawn: PlayerPawn, force: bool = false) -> v
 	view.visible = want_visible
 
 
-## 뱅! 저격 연출: 쏜 사람의 프로필에서 총알이 날아가 맞는 말에 충격 링이 번쩍이고, 그 말이 출발선으로 장외 사출된다 (카드가 끝난 뒤).
+## Replace only this shot's pending ejection, preserving the counter gate and stack order.
 func _fx_bang(shooter: int, target_pawn_id: int) -> void:
+	if not _fx_on():
+		return
+	var action: Callable = _play_bang.bind(shooter, target_pawn_id)
+	for entry: Dictionary in _late_steps:
+		if int(entry["pawn"]) == target_pawn_id:
+			entry["step"] = action
+			return
+	# Replayed event without an engine signal still uses the same guarded presentation.
+	_enqueue_late(action, target_pawn_id)
+
+
+func _play_bang(shooter: int, target_pawn_id: int) -> void:
+	if not _ejection_confirmed(target_pawn_id):
+		_show_defended(target_pawn_id)
+		return
+	var view: Node2D = _pawn_views.get(target_pawn_id)
+	var pawn: PlayerPawn = state.get_pawn(target_pawn_id)
+	if not is_instance_valid(view) or pawn == null:
+		return
+	var generation: int = _fx_generation
+	var stage: Node2D = preload("res://scenes/bang_stage.gd").new()
+	add_child(stage)
+	stage.play(self, shooter, target_pawn_id, _motion_pace())
+	while generation == _fx_generation and is_instance_valid(stage) and not stage.released and not stage.complete:
+		await get_tree().process_frame
+	if generation != _fx_generation or not is_instance_valid(stage) or not stage.released:
+		if is_instance_valid(stage): stage.cancel()
+		return
+	_record_ejection(target_pawn_id, shooter, true)
+	# Release on the hit beat, without another queue linger between bullet and launch.
+	await _play_capture_eject(target_pawn_id, shooter, pawn.owner_id, false)
+	while generation == _fx_generation and is_instance_valid(stage) and not stage.complete:
+		await get_tree().process_frame
+	if is_instance_valid(stage): stage.queue_free()
+
+
+## Keep the UDO +4 card's existing feedback independent of the BANG! cutscene.
+func _fx_simple_shot(shooter: int, target_pawn_id: int) -> void:
 	if not _fx_on():
 		return
 	Sfx.play(&"shot")
@@ -10001,9 +10042,8 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_super_changes.clear()
 		&"bang_resolved":
 			var target_name: String = _pawn_name(int(data["target"]))
-			_log_line("[BANG!] P%d가 %s을(를) 저격! %d번 → %d번 타일로 2칸 밀려납니다." % [data["shooter"], target_name, data["from"], data["to"]], Color("ff6b6b"))
+			_log_line("[BANG!] P%d가 %s을(를) 저격! 출발선으로 장외 사출!" % [data["shooter"], target_name], Color("ff6b6b"))
 			_fx_bang(int(data["shooter"]), int(data["target"]))
-			_react_hit_pawn(int(data["target"]))
 		&"duel_started", &"duel_pick_in", &"duel_revealed", &"duel_resolved":
 			if kind == &"duel_started":
 				_record(int(data["challenger"]), "%s에게 일기토 데스매치 신청!" % _log_who(int(data["defender"])))
@@ -10019,7 +10059,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_log_line("[백돌 방어막] 백돌에 막혀 %s이(가) %d번 → %d번으로 밀려났습니다" % [_pawn_name(int(data["pawn_id"])), data["from"], data["to"]], Color("b197fc"))
 		&"bomb_applied":
 			_log_line("[UDO +4] P%d의 %s이(가) 출발선으로 장외 사출! 내 이번 이동 +%d칸" % [data["victim"], _pawn_name(int(data["pawn_id"])), PenaltyBombCommand.advance_steps()], Color("ffd43b"))
-			_fx_bang(int(data["shooter"]), int(data["pawn_id"]))
+			_fx_simple_shot(int(data["shooter"]), int(data["pawn_id"]))
 			_react_hit_pawn(int(data["pawn_id"]))
 		&"player_ranked":
 			var ranked: int = int(data["player_id"])
