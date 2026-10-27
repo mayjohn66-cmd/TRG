@@ -28,6 +28,7 @@ on:
           - shield
           - bang
           - capture-fx
+          - common-fx
           - warning-icon
           - rulebook-art
           - avatar-hq
@@ -66,7 +67,9 @@ jobs:
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
           REQUESTED_SCOPE: ${{ inputs.validation }}
         run: |
-          if [[ "${REQUESTED_SCOPE}" == "capture-fx" || "${COMMIT_MESSAGE}" == *"[check:capture-fx]"* ]]; then
+          if [[ "${REQUESTED_SCOPE}" == "common-fx" || "${COMMIT_MESSAGE}" == *"[check:common-fx]"* ]]; then
+            echo "scope=common-fx" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "capture-fx" || "${COMMIT_MESSAGE}" == *"[check:capture-fx]"* ]]; then
             echo "scope=capture-fx" >> "${GITHUB_OUTPUT}"
           elif [[ "${REQUESTED_SCOPE}" == "bang" || "${COMMIT_MESSAGE}" == *"[check:bang]"* ]]; then
             echo "scope=bang" >> "${GITHUB_OUTPUT}"
@@ -174,6 +177,14 @@ jobs:
           godot --headless --path . -s res://tests/ui_bang_test.gd 2>&1 | tee /tmp/bang.log
           grep -q 'UI_BANG_OK' /tmp/bang.log
           if grep -q 'SCRIPT ERROR' /tmp/bang.log; then exit 1; fi
+
+      - name: Check shared painted impact and pawn trails
+        if: steps.validation.outputs.scope == 'common-fx'
+        run: |
+          set -o pipefail
+          godot --headless --path . -s res://tests/ui_common_fx_test.gd 2>&1 | tee /tmp/common_fx.log
+          grep -q 'UI_COMMON_FX_OK' /tmp/common_fx.log
+          if grep -Eq 'SCRIPT ERROR|SHADER ERROR|Lambda capture' /tmp/common_fx.log; then exit 1; fi
 
       - name: Check painted capture effects
         if: steps.validation.outputs.scope == 'capture-fx'

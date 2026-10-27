@@ -5,6 +5,9 @@ class_name MainBoard
 extends Control
 
 const MATCH_BACKGROUND_SCRIPT: Script = preload("res://scenes/match_background.gd")
+const COMMON_SHOCKWAVE: Texture2D = preload("res://assets/fx/common/shockwave_v01.png")
+const COMMON_FLECK: Texture2D = preload("res://assets/fx/common/spark_fleck_v01.png")
+const PAWN_SILHOUETTE: Shader = preload("res://assets/fx/common/pawn_silhouette.gdshader")
 
 const PLAYER_IDS: Array[int] = [1, 2, 3, 4]
 const PLAYER_COLORS: Dictionary = {
@@ -536,6 +539,7 @@ const ONESHOT_FX_GROUP: StringName = &"trg_oneshot_fx"
 var record_meta_progress: bool = not OS.has_feature("editor")
 ## 자주 생겼다 사라지는 연출 노드(플로팅 글자·파편·충격 링)를 지우지 않고 다시 쓴다.
 var _fx_pool: FxPool = FxPool.new()
+var _common_ring_region := Rect2()
 const ONESHOT_GRACE_SECONDS: float = 2.0
 ## 이동 단계 사이(부스터 도착·점프 부스트 직전)의 짧은 멈춤(초). 연출 속도 배율을 곱하지 않는 고정값.
 const WAYPOINT_PAUSE: float = 0.15
@@ -7472,12 +7476,17 @@ func _burst_shards(at: Vector2, color: Color, amount: int = 12) -> void:
 		particles = _fx_pool.adopt(&"shards", CPUParticles2D.new())
 		particles.z_index = 18
 		particles.one_shot = true
+		particles.texture = COMMON_FLECK
+		var fade := Gradient.new()
+		fade.offsets = PackedFloat32Array([0.0, 0.08, 0.55, 1.0])
+		fade.colors = PackedColorArray([Color(1, 1, 1, 0.0), Color.WHITE, Color(1, 1, 1, 0.8), Color(1, 1, 1, 0.0)])
+		particles.color_ramp = fade
 		# 다 터지면 지우지 않고 풀로 돌려놓는다 (노드의 신호에 연결: 노드가 지워지면 연결도 풀린다)
 		particles.finished.connect(_fx_pool.give_back.bind(particles))
 		_pawn_layer.add_child(particles)
 	particles.position = at
 	particles.visible = true
-	particles.amount = mini(amount, MAX_BURST_PARTICLES)
+	particles.amount = clampi(amount, 1, MAX_BURST_PARTICLES)
 	particles.lifetime = 0.55
 	particles.explosiveness = 1.0
 	particles.direction = Vector2.UP
@@ -7485,34 +7494,69 @@ func _burst_shards(at: Vector2, color: Color, amount: int = 12) -> void:
 	particles.initial_velocity_min = 110.0
 	particles.initial_velocity_max = 240.0
 	particles.gravity = Vector2(0.0, 320.0)
-	particles.scale_amount_min = 2.5
-	particles.scale_amount_max = 5.0
+	# The painted chip has transparent padding; keep its visible body a few pixels wide.
+	particles.scale_amount_min = 7.0 / COMMON_FLECK.get_width()
+	particles.scale_amount_max = 16.0 / COMMON_FLECK.get_width()
+	particles.angle_min = -180.0
+	particles.angle_max = 180.0
+	particles.angular_velocity_min = -260.0
+	particles.angular_velocity_max = 260.0
+	particles.damping_min = 50.0
+	particles.damping_max = 90.0
 	particles.color = color
 	particles.restart()  # 풀에서 꺼낸 노드도 처음부터 다시 터진다
 	_mark_oneshot(particles, 0.8)
 
 
-## 말이 지나간 자리에 남는 잔상: seconds 동안 짧은 간격으로 흐려지는 원을 남긴다.
+## 실제 말 그림의 윤곽을 남긴다. 점프·회전한 순간의 자세를 고정하고 짧게 흐려진다.
 func _fx_trail(view: Node2D, seconds: float, color: Color) -> void:
-	if not _fx_on():
+	if not _fx_on() or not is_inside_tree() or not is_instance_valid(view):
 		return
-	var loops: int = maxi(int(seconds / 0.03), 1)
+	var generation: int = _fx_generation
+	var tracked_view: WeakRef = weakref(view)
+	var loops: int = maxi(int(seconds / 0.045), 1)
 	var tween: Tween = create_tween().set_loops(loops)
+	var sample := {"position": Vector2.INF}
 	tween.tween_callback(func() -> void:
-		if not is_instance_valid(view):
+		var source: Node2D = tracked_view.get_ref() as Node2D
+		if generation != _fx_generation or not _fx_on() or not is_instance_valid(source) or source.is_queued_for_deletion() or not source.is_visible_in_tree():
+			tween.kill()
 			return
-		var ghost := Polygon2D.new()
-		ghost.polygon = _circle_points(PAWN_RADIUS, 14)
-		ghost.color = Color(color.r, color.g, color.b, 0.55)
-		ghost.position = view.position
-		ghost.scale = view.scale
-		ghost.z_index = 3
+		var token: PawnToken = source.get_node_or_null("Bounce/Token") as PawnToken
+		if token == null or not token.use_art or token.artwork.is_empty():
+			return
+		if token.global_position.distance_to(sample.position) < 2.0:
+			return
+		sample.position = token.global_position
+		_pawn_trail_sample(token, color))
+	tween.tween_interval(0.045)
+
+
+func _pawn_trail_sample(token: PawnToken, color: Color) -> void:
+	var ghost: Sprite2D = _fx_pool.take(&"trail")
+	if ghost == null:
+		ghost = _fx_pool.adopt(&"trail", Sprite2D.new())
+		ghost.region_enabled = true
+		ghost.region_filter_clip_enabled = true
+		var silhouette := ShaderMaterial.new()
+		silhouette.shader = PAWN_SILHOUETTE
+		ghost.material = silhouette
 		_pawn_layer.add_child(ghost)
-		var fade: Tween = ghost.create_tween().set_parallel(true)
-		fade.tween_property(ghost, "modulate:a", 0.0, 0.28)
-		fade.tween_property(ghost, "scale", view.scale * 0.4, 0.28)
-		fade.chain().tween_callback(ghost.queue_free))
-	tween.tween_interval(0.03)
+	var region: Rect2 = token.artwork.region
+	var factor: float = minf(PawnToken.BODY_BOX.size.x / region.size.x, PawnToken.BODY_BOX.size.y / region.size.y)
+	var source: Node2D = token.get_parent().get_parent() as Node2D
+	ghost.z_index = mini(source.z_index, 3)
+	_pawn_layer.move_child(ghost, 0)  # Behind the pawn, above the board even at z=0.
+	ghost.texture = token.artwork.texture
+	ghost.region_rect = region
+	ghost.transform = _pawn_layer.global_transform.affine_inverse() * token.global_transform * Transform2D(0.0, Vector2.ONE * factor, 0.0, Vector2(0, -region.size.y * factor * 0.5))
+	ghost.modulate = Color(color.r, color.g, color.b, color.a * 0.32)
+	ghost.visible = true
+	_mark_oneshot(ghost, 0.24)
+	var fade: Tween = ghost.create_tween()
+	ghost.set_meta(FxPool.TWEEN_META, fade)
+	fade.tween_property(ghost, "modulate:a", 0.0, 0.24).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	fade.tween_callback(_fx_pool.give_back.bind(ghost))
 
 
 ## 모서리 프로필의 즉각 반응: 좋은 일이면 경쾌하게 점프 + 축하 파편 + 칭찬 배지, 나쁜 일이면 붉게 점멸 + 좌우로 격하게 흔들림 + 억울 배지.
@@ -7699,28 +7743,33 @@ func _fx_impact_at_pawn(pawn_id: int, delay: float) -> void:
 	get_tree().create_timer(delay * _motion_pace()).timeout.connect(func() -> void: _impact_ring(at, color, 24.0))
 
 
-## 번쩍 커지며 사라지는 원 (충돌·벼락 표시).
+## 기물 아래로 퍼지는 붓결 충격파. 가운데를 비워 기물과 숫자를 가리지 않는다.
 func _impact_ring(at: Vector2, color: Color, radius: float) -> void:
-	if not is_inside_tree():
+	if not _fx_on() or not is_inside_tree():
 		return
-	var ring: Line2D = _fx_pool.take(&"ring")
+	var ring: Sprite2D = _fx_pool.take(&"ring")
 	if ring == null:
-		ring = _fx_pool.adopt(&"ring", Line2D.new())
-		ring.width = 3.0
-		ring.closed = true
-		for point: Vector2 in _circle_points(1.0, 24):
-			ring.add_point(point)
-		ring.z_index = 17
+		ring = _fx_pool.adopt(&"ring", Sprite2D.new())
+		ring.texture = COMMON_SHOCKWAVE
+		ring.region_enabled = true
+		if _common_ring_region.size.x <= 0:
+			_common_ring_region = PawnArt.visible_region(COMMON_SHOCKWAVE.get_image())
+		ring.region_rect = _common_ring_region
+		ring.region_filter_clip_enabled = true
+		ring.z_index = 0
 		_pawn_layer.add_child(ring)
-	ring.default_color = color.lightened(0.4)
+	_pawn_layer.move_child(ring, 0)
 	ring.position = at
-	ring.scale = Vector2.ONE * (PAWN_RADIUS * 0.6)
-	ring.modulate = Color.WHITE
+	var diameter_scale: float = 2.0 / ring.region_rect.size.x
+	var shape := Vector2(1.0, 0.65)
+	ring.scale = shape * (PAWN_RADIUS * 0.6 * diameter_scale)
+	ring.modulate = color.lightened(0.4)
+	ring.modulate.a = color.a * 0.82
 	ring.visible = true
 	_mark_oneshot(ring, 0.3 * _motion_pace())
 	var tween: Tween = ring.create_tween().set_parallel(true)
 	ring.set_meta(FxPool.TWEEN_META, tween)
-	tween.tween_property(ring, "scale", Vector2.ONE * radius, 0.3 * _motion_pace()).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(ring, "scale", shape * (maxf(radius, 1.0) * diameter_scale), 0.3 * _motion_pace()).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween.tween_property(ring, "modulate:a", 0.0, 0.3 * _motion_pace())
 	tween.chain().tween_callback(_fx_pool.give_back.bind(ring))
 

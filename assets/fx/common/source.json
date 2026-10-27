@@ -1,0 +1,61 @@
+{
+  "date": "2026-10-27",
+  "tool": "built-in image_gen.imagegen",
+  "agent": "Codex",
+  "image_model": "not exposed by tool",
+  "source_policy": "Native generated PNGs copied byte-for-byte, alpha not edited.",
+  "assets": [
+    {
+      "key": "shockwave",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-93305cc3-0352-429a-826b-39f16f319cd2.png",
+      "target": "assets\\fx\\common\\shockwave_v01.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        253
+      ],
+      "alpha_bbox": [
+        17,
+        19,
+        1248,
+        1254
+      ],
+      "prompt": "Use case: stylized-concept. Asset type: one transparent grayscale shared impact shockwave sprite for a cute toy board game. A restrained, thin, broken, organically hand-painted circular pressure ripple, front view, neutral ivory-white and pale gray. Large empty completely transparent center occupying at least 70 percent of ring diameter so the game pawn remains fully readable. Around it an irregular narrow band of soft compressed air, fine fibrous dry-brush streaks, wispy feathered edge, a few tiny paint flecks and very subtle soft light. Uneven intensity, several small open gaps and gently frayed contours. No thick explosion, no solid filled disk, no perfect geometric outline, no radial triangle spikes, no uniform spokes or starburst, no dark ink contour, no text, objects, scene or background. Single effect centered on square RGBA canvas, at least 13 percent clear padding around the complete effect. Truly transparent background with soft alpha falloff; only pale white/silver effect, designed for runtime color tinting. One sprite, not a sheet.",
+      "attempts": 1,
+      "runtime_size_limit": 512,
+      "qa": "Visually inspected: organic fibrous paint, transparent empty background, no text. Shockwave center stays clear; fleck is one organic chip.",
+      "source_sha256": "16841eaaab7bf317c229d2cdd8cf6518448e7a4a89a334df8757925e26fc90de",
+      "target_sha256": "16841eaaab7bf317c229d2cdd8cf6518448e7a4a89a334df8757925e26fc90de"
+    },
+    {
+      "key": "spark_fleck",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-72283b1b-10b1-4d6c-957b-3d3e869b3847.png",
+      "target": "assets\\fx\\common\\spark_fleck_v01.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        254
+      ],
+      "alpha_bbox": [
+        39,
+        69,
+        1240,
+        1198
+      ],
+      "prompt": "Use case: stylized-concept. Asset type: one small neutral white particle sprite for a shared game impact burst. A single isolated irregular luminous paint chip or ember, shaped like a slightly curved tapered teardrop shard, tilted diagonally, with a tiny bright ivory core, fibrous brush texture, uneven torn smoky edges and a short soft wispy tail. Asymmetrical, organic and compact, readable at 5 to 10 pixels in a colorful toy board game. Monochrome ivory-white / pale gray so the engine can tint it to any color. Truly transparent RGBA square canvas with generous clear padding on all sides. No geometric diamonds or triangles, no circle dot, no four-point star, no long beam, no multiple separate sprites, no objects, scenery, text, outline, frame, logo or checkerboard. One finished softly luminous particle, not a spritesheet.",
+      "attempts": 1,
+      "runtime_size_limit": 128,
+      "qa": "Visually inspected: organic fibrous paint, transparent empty background, no text. Shockwave center stays clear; fleck is one organic chip.",
+      "source_sha256": "5fe62b0476f02568864e3414bdd52e1e18eb7201249c866466026c7725907ae0",
+      "target_sha256": "5fe62b0476f02568864e3414bdd52e1e18eb7201249c866466026c7725907ae0"
+    }
+  ]
+}
