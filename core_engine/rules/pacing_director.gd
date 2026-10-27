@@ -8,7 +8,7 @@
 #         법전은 투기장의 지배자·봉인된 에르핀의 식권 2종만 (MatchRules.law_pool). 드래프트에서 고르면 바로 이기는 법전은 등장 가중치를 크게 올린다.
 #       - Lv.2~3: 11라운드부터 라운드마다 15%p씩(최대 90%) 3칸 이하를 4칸 이상으로 재굴림
 #       - Lv.4~5: 잡혀서 다시 출발한 말이 반환점에 닿기 전이면, 4칸 이하가 나올 때 60%로 5칸 이상 재굴림
-#       - 공통 서든데스: 15라운드부터 3칸 이하는 4칸 이상으로 재굴림(최소 4칸 보장 수준), 20라운드가 끝나면 남은 사람은 진행 순위로 확정 (TurnManager)
+#       - 공통 서든데스: 15라운드부터 3칸 이하는 4칸 이상으로 재굴림(최소 4칸 보장 수준), 22라운드가 끝나면 남은 사람은 진행 순위로 확정 (TurnManager)
 class_name PacingDirector
 extends RefCounted
 
@@ -35,7 +35,7 @@ const LATE_MAX_CHANCE: float = 0.9
 const COMEBACK_CHANCE: float = 0.6
 ## 서든데스: 이 라운드부터 모두 최소 4칸 수준. HARD_CAP_ROUND가 끝나면 남은 사람은 진행 순위로 확정한다.
 const SUDDEN_DEATH_ROUND: int = 15
-const HARD_CAP_ROUND: int = 20
+const HARD_CAP_ROUND: int = 22
 ## 법전 브레이크: 이 라운드 전에는 컴퓨터가 법전 달성 직전의 수를 피한다 (BotTemper).
 const LAW_BRAKE_BEFORE_ROUND: int = 11
 
