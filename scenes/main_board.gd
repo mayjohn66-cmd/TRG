@@ -1237,6 +1237,7 @@ func _bind_state() -> void:
 			_set_hint(pawn_id, {"arc": 0.0, "dur": 0.5}))
 	state.passive_triggered.connect(_on_passive_triggered)
 	state.shield_broken.connect(func(pawn_id: int, tile: int) -> void:
+		_refresh_pawn_protection(pawn_id, true)
 		_on_passive_triggered(pawn_id, &"shield_block")
 		var shield_pawn: PlayerPawn = state.get_pawn(pawn_id)
 		if shield_pawn != null and shield_pawn.sub_type() != GameEnums.PawnSubType.BADUK_WHITE:
@@ -1274,7 +1275,9 @@ func _bind_state() -> void:
 			_record(pawn.owner_id, "연대책임: %s 짝 말도 %s" % [_bq("%d번 말" % pawn.slot), verb], "", true))
 	state.npc_sweep_started.connect(_on_train_sweep_started)
 	state.npc_swept.connect(_on_npc_swept)
-	state.shield_recharged.connect(func(pawn_id: int) -> void: _log_line("[백돌 방어막] %s의 방어막이 다시 차올랐습니다" % _pawn_name(pawn_id), Color("b197fc")))
+	state.shield_recharged.connect(func(pawn_id: int) -> void:
+		_refresh_pawn_protection(pawn_id)
+		_log_line("[백돌 방어막] %s의 방어막이 다시 차올랐습니다" % _pawn_name(pawn_id), Color("b197fc")))
 	state.trap_defused.connect(func(tile: int, id: String, pawn_id: int) -> void:
 		_on_passive_triggered(pawn_id, &"sweeper_defuse")
 		_log_line("[지뢰찾기] %s이(가) %d번 타일의 %s을(를) 해체하고 카드 1장!" % [_pawn_name(pawn_id), tile, _attachment_name(id)], Color("63e6be"))
@@ -2506,6 +2509,7 @@ func _build_pawn_views() -> void:
 		var token := PawnToken.new()
 		token.name = "Token"
 		token.ground_shadow = false
+		token.shield_motion = _fx_on()
 		token.configure(pawn, PLAYER_COLORS[pawn.owner_id])
 		bounce.add_child(token)
 		var badge := _make_label("", 9, Color.WHITE)
@@ -2541,6 +2545,18 @@ func _pawn_position_at(pawn: PlayerPawn, tile: int) -> Vector2:
 	if pawn.is_finished:
 		position_in_tile = _tile_center(GameEnums.GOAL_TILE) + Vector2(-22 + owner_index * 14 + (pawn.slot - 1) * 3.0, 38)
 	return position_in_tile
+
+
+## Shield events update the token in place, so a shield never survives on a stale sprite.
+func _refresh_pawn_protection(pawn_id: int, blocked: bool = false) -> void:
+	var pawn: PlayerPawn = state.get_pawn(pawn_id) if state != null else null
+	var view: Node2D = _pawn_views.get(pawn_id)
+	if pawn == null or view == null:
+		return
+	var token := view.get_node("Bounce/Token") as PawnToken
+	token.configure(pawn, PLAYER_COLORS[pawn.owner_id])
+	if blocked:
+		token.shield_hit()
 
 
 func _refresh_pawns() -> void:
@@ -3714,6 +3730,8 @@ func _on_utility_picked(player_id: int, augment_id: StringName) -> void:
 	var fx_list: Array[Dictionary] = state.utility_fx.filter(func(entry: Dictionary) -> bool: return int(entry.get("player_id", -1)) == player_id)
 	state.utility_fx = state.utility_fx.filter(func(entry: Dictionary) -> bool: return int(entry.get("player_id", -1)) != player_id)
 	for entry: Dictionary in fx_list:
+		if entry.get("kind", "") == "shield":
+			_refresh_pawn_protection(int(entry["pawn_id"]))
 		if entry.has("tile"):
 			at = layer + _tile_center(int(entry["tile"])) + Vector2(0, -40)
 		elif entry.has("pawn_id"):
@@ -4754,7 +4772,9 @@ func _fill_pawn_tip(pawn_id: int) -> void:
 		status += "  ★나리 승급(+1칸)"
 	if pawn.revenge_boost and not pawn.has_left_start:
 		status += "\n리벤지 부스터 활성화: 이번 출격 시 이동 거리 +%d칸!" % _revenge_steps(pawn)
-	if pawn.sub_type() == GameEnums.PawnSubType.BADUK_WHITE:
+	if pawn.ward:
+		status += "  보호막 있음"
+	elif pawn.sub_type() == GameEnums.PawnSubType.BADUK_WHITE:
 		status += "  방어막 있음" if pawn.shield else "  (방어막 깨짐)"
 	_tip_title.text = "%s  - P%d%s" % [PawnCatalog.full_name(pawn.kind, pawn.unit_no), pawn.owner_id, status]
 	# 판정 도구 카드처럼 구분선 위에 패시브(둘이면 줄 나눔), 아래에 필살기. [패시브]·[필살기] 머리말은 쓰지 않는다.
