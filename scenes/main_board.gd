@@ -765,6 +765,8 @@ func _process(delta: float) -> void:
 		var holder_tool: BaseJudgmentTool = state.tools.get(manager.current_player_id())
 		if manager.current_player_id() != _presenter.hold_owner or manager.current_state != TurnManager.State.PHASE_ROLL_WAIT or holder_tool == null or not holder_tool.has_pending_state():
 			_presenter.cancel()
+	if _stack_overlay == null and manager.stack_offer_pending():
+		_refresh_stack_overlay()  # 알림이 끝나는 순간 업기 선택 창을 띄운다
 	var roll_view: bool = _roll_view_allowed()
 	if roll_view != _last_roll_view:
 		_last_roll_view = roll_view
@@ -1580,13 +1582,13 @@ func _build_profiles() -> void:
 		_bind_tip(info_button, _fill_profile_tip.bind(player_id))
 		top.add_child(info_button)
 		var hand_pips := HBoxContainer.new()  # 손패 수는 글자(x3) 대신 카드 뒷면 칩 개수로 보여 준다
-		hand_pips.add_theme_constant_override("separation", 2)
+		hand_pips.add_theme_constant_override("separation", 1)  # 손패 상한이 8장까지 늘어도 이름 칸을 밀어내지 않게 촘촘히
 		hand_pips.alignment = BoxContainer.ALIGNMENT_END
 		hand_pips.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		hand_pips.mouse_filter = Control.MOUSE_FILTER_PASS
 		for _i: int in GameEnums.MAX_HAND_SIZE + UtilityAugments.HAND_EXPAND_MAX:  # 에심당 뽈사탕으로 늘어난 상한까지
 			var pip := Panel.new()
-			pip.custom_minimum_size = Vector2(8, 12) if not big else Vector2(10, 14)
+			pip.custom_minimum_size = Vector2(6, 12) if not big else Vector2(8, 14)
 			pip.pivot_offset = pip.custom_minimum_size / 2.0
 			pip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			pip.add_theme_stylebox_override("panel", _style(Color("ffd43b"), Color("fff3bf"), 1, 2, 0, 0))
@@ -4133,11 +4135,38 @@ func _refresh_hands() -> void:
 		_dock.add_child(card_view)
 
 
+## 손패를 펼칠 수 있는 가로 구간 (독 안 x 좌표 [왼쪽, 오른쪽]): 독과 같은 높이에 있는 아래쪽 프로필 카드를 덮지 않게 그 사이로 줄인다.
+## 손패가 많으면(최대 8장) 카드끼리 더 겹쳐 펼쳐진다. 부채꼴 기울기만큼 여유(DOCK_PROFILE_GAP)를 둔다.
+const DOCK_PROFILE_GAP: float = 56.0
+
+
+func _dock_span() -> Vector2:
+	var lo: float = 0.0
+	var hi: float = _dock.size.x
+	var dock_rect := Rect2(_dock.global_position, _dock.size)
+	var mid: float = dock_rect.get_center().x
+	for player_id: Variant in _profiles.keys():
+		var panel: Control = _profiles[player_id].get("panel")
+		if panel == null or not panel.is_visible_in_tree():
+			continue
+		var r: Rect2 = panel.get_global_rect()
+		if r.end.y < dock_rect.position.y or r.position.y > dock_rect.end.y + HAND_CARD_SIZE.y:
+			continue  # 독과 다른 높이(위쪽) 프로필은 상관없다
+		if r.get_center().x > mid:
+			hi = minf(hi, r.position.x - dock_rect.position.x - DOCK_PROFILE_GAP)
+		else:
+			lo = maxf(lo, r.end.x - dock_rect.position.x + DOCK_PROFILE_GAP)
+	if hi - lo < HAND_CARD_SIZE.x * 2.0:
+		return Vector2(0.0, _dock.size.x)  # 화면이 아주 좁으면 원래 폭을 쓴다
+	return Vector2(lo, hi)
+
+
 ## 손패 독에서 index번째 카드의 자리 (독 안 좌표, 카드 왼쪽 위). count장이 부채꼴로 펼쳐진다.
 func _dock_slot(index: int, count: int) -> Vector2:
-	var step: float = minf(HAND_CARD_SIZE.x - 14.0, (_dock.size.x - HAND_CARD_SIZE.x) / maxf(count - 1, 1))
+	var span: Vector2 = _dock_span()
+	var step: float = minf(HAND_CARD_SIZE.x - 14.0, (span.y - span.x - HAND_CARD_SIZE.x) / maxf(count - 1, 1))
 	var total: float = HAND_CARD_SIZE.x + step * (count - 1)
-	var start_x: float = (_dock.size.x - total) / 2.0
+	var start_x: float = span.x + (span.y - span.x - total) / 2.0
 	var offset: float = float(index) - float(count - 1) / 2.0
 	return Vector2(start_x + step * index, DOCK_CARD_Y + minf(offset * offset * 2.0, 16.0))
 
@@ -5912,7 +5941,7 @@ func _roll_view_allowed() -> bool:
 		return false
 	if _presentation_active() or (_capture_cutin != null and _capture_cutin.busy()) or _stage_warps > 0:
 		return false
-	if _presenter_showing():
+	if _foreign_roll_fx():
 		return false  # 앞 사람의 굴림 연출(리볼버·룰렛·주사위 등)이 아직 보이는 동안 다음 사람의 굴리기 화면을 겹쳐 띄우지 않는다
 	if _tile_pick_active or _aim_pawn != -1 or _drag_active:
 		return false
@@ -9739,6 +9768,11 @@ func _on_game_over(winner_id: int, reason: StringName) -> void:
 	_enqueue_late(func() -> void:
 		_announce_now("매치 종료", "[매치 종료!]", reason_line, tint, null, END_BRIEF_SECONDS)
 		await get_tree().create_timer(END_BRIEF_SECONDS).timeout
+		# 브리핑 카드의 퇴장 연출까지 끝난 뒤에 결과 창을 띄운다 (카드가 결과 창 위에 겹쳐 남지 않게, 최대 3초)
+		var waited: float = 0.0
+		while is_inside_tree() and _announcer != null and _announcer.holding() and waited < 3.0:
+			await get_tree().process_frame
+			waited += get_process_delta_time()
 		if manager != null and manager.is_game_over and _result_overlay == null:
 			_show_result_overlay()
 			_refresh_all())
@@ -10573,6 +10607,11 @@ func _presenter_showing() -> bool:
 	return _presenter != null and _presenter.visible
 
 
+## 지금 차례가 아닌 사람의 굴림 연출이 아직 화면에 있는가: 결과 연출기, 또는 내 차례가 끝난 뒤에도 마저 도는 내 리볼버·룰렛 패드.
+func _foreign_roll_fx() -> bool:
+	return _presenter_showing() or (_roll_pad != null and _roll_pad.active and manager.current_player_id() != _dock_owner())
+
+
 ## 이 도구의 중앙 스테이지 (야추·블랙잭·핀볼이 아니면 null).
 func _stage_for(tool_id: StringName) -> Control:
 	match tool_id:
@@ -10603,7 +10642,7 @@ func _refresh_tool_stage() -> void:
 	# 굴리기 화면은 앞선 연출이 다 끝난 뒤에만 뜬다. 이미 굴리는 중(연출·야추 중간 상태)이면 그대로 둔다.
 	var in_roll: bool = _roll_view_allowed()
 	# 굴림 연출(_fx_busy)이 다른 도구의 연출기(_presenter)라면 앞 사람의 굴림이다: 이 스테이지를 그 위에 겹쳐 띄우지 않는다.
-	var mid_roll: bool = (_fx_busy and not _presenter_showing()) or bool(stage.get("active")) or (tool.has_pending_state() and not (_announcer != null and _announcer.holding()))
+	var mid_roll: bool = (_fx_busy and not _foreign_roll_fx()) or bool(stage.get("active")) or (tool.has_pending_state() and not (_announcer != null and _announcer.holding()))
 	stage.set("instant", instant_roll_for_test)
 	stage.visible = in_roll or mid_roll
 	var acting: bool = not _roll_button.disabled
@@ -10805,11 +10844,16 @@ func _profile_center(player_id: int) -> Vector2:
 
 ## 윷놀이 기물의 [선택적 업기] 팝업: 화면 중앙에 [업기 (하나로 합체)] / [그냥 두기 (개별 유지)] 두 버튼을 띄운다.
 func _refresh_stack_overlay() -> void:
-	var pending: bool = manager.stack_offer_pending() and not manager.is_game_over
+	# 고르는 사람의 화면에만 띄운다 (컴퓨터는 봇이 정하고, 온라인은 그 사람 화면에만).
+	var mine: bool = not _is_bot_turn() and (net == null or manager.current_player_id() == local_player_id)
+	var pending: bool = manager.stack_offer_pending() and not manager.is_game_over and mine
 	if not pending:
 		_close_stack_overlay()
 		return
 	if _stack_overlay != null:
+		return
+	# 함정 발동 같은 알림 카드·연출이 끝난 뒤에 띄운다 (알림이 선택 창 제목을 가리지 않게). _process가 프레임마다 다시 확인한다.
+	if (_announcer != null and _announcer.holding()) or _presentation_active() or _fx_busy:
 		return
 	var offer: Dictionary = manager.pending_stack_offer()
 	var mover: PlayerPawn = state.get_pawn(int(offer["mover"]))
