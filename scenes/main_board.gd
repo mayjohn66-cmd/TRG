@@ -260,6 +260,7 @@ const REJECT_REASONS: Dictionary = {
 ## 13px 이하 작은 글자에 쓰는 또렷한 고딕 (ONE Mobile POP은 작게 쓰면 획이 뭉개져 흐릿하고 찌그러져 보인다).
 const SMALL_FONT: Font = preload("res://assets/fonts/game_small_font.tres")
 const SMALL_TEXT_MAX: int = 13
+const PAWN_SKILL_COLOR: Color = Color("ffc078")
 const LAW_COLOR: Color = Color("66e3f5")
 const SUPER_COLOR: Color = Color("cc5de8")
 const HOLO_GLOW: Array[Color] = [Color(0.4, 0.89, 0.96, 0.9), Color(0.93, 0.45, 0.95, 0.9), Color(1.0, 0.85, 0.35, 0.9)]
@@ -8227,6 +8228,7 @@ static func augment_card_info(definition: AugmentDef, game_state: GameState, pla
 			summary = "최소 %d칸 ~ 최대 %d칸" % [span[0], span[1]]
 	# 기물 진화: 판정 도구처럼 구분선 위에 패시브(둘이면 줄 나눔), 아래에 필살기. [패시브]·[필살기] 머리말은 쓰지 않는다.
 	var skill_text: String = ""
+	var skill_only: bool = false
 	if definition.category == GameEnums.AugmentCategory.PAWN_EVOLUTION:
 		var evo_kind: GameEnums.PawnKind = definition.payload
 		var evo_unit: int = definition.units[0]
@@ -8234,6 +8236,7 @@ static func augment_card_info(definition: AugmentDef, game_state: GameState, pla
 		lines = PackedStringArray([passive]) if passive != "" else PackedStringArray()
 		skill_text = PawnCatalog.skill_line(PawnCatalog.skill_of(PawnCatalog.sub_type_of(evo_kind, evo_unit)))
 		if lines.is_empty() and skill_text != "":
+			skill_only = true
 			lines = PackedStringArray([skill_text])  # 패시브가 없으면 필살기만 (구분선 없이)
 			skill_text = ""
 	if definition.title != "":
@@ -8242,6 +8245,7 @@ static func augment_card_info(definition: AugmentDef, game_state: GameState, pla
 	var tag_text: String = definition.display_category()
 	return {"glyph": glyph, "color": color, "title": title, "desc": "\n".join(lines), "summary": summary, "detail": detail, "skill": skill_text, "category": tag_text, "art": AugmentArt.load_first(AugmentArt.candidates(definition)), "super": definition.category == GameEnums.AugmentCategory.SUPER_GAMBLE, "tier": definition.tier,
 		"display_group": definition.display_group(),
+		"skill_only": skill_only,
 		"self_risk": definition.category == GameEnums.AugmentCategory.SUPER_GAMBLE and SuperAugments.SELF_RISK.has(StringName(str(definition.payload)))}
 
 
@@ -8436,7 +8440,7 @@ static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: f
 		# 기물 필살기: 구분선 아래 칸 (패시브보다 조금 작게, 필살기 색)
 		var skill_h: float = 62.0 * k  # 위 패시브 칸(두 줄)과 반씩 나눈다
 		var skill_box := Vector2(card_size.x - 28.0, skill_h)
-		var skill := _make_label("", 16, Color("ffc078"))
+		var skill := _make_label("", 16, PAWN_SKILL_COLOR)
 		skill.name = "AugmentSkill"
 		skill.position = Vector2(14, text_bottom - skill_h)
 		skill.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -8476,7 +8480,7 @@ static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: f
 		summary.text = summary_text
 		card.add_child(summary)
 		text_bottom -= summary_h + 2.0
-	var desc := _make_label("", 19, Color("eef1f4"))
+	var desc := _make_label("", 19, PAWN_SKILL_COLOR if bool(info.get("skill_only", false)) else Color("eef1f4"))
 	desc.name = "AugmentDesc"
 	desc.position = Vector2(14, text_top)
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

@@ -51,7 +51,7 @@ static func category_name(value: GameEnums.AugmentCategory) -> String:
 
 
 ## 표시 분류는 실제 효과 처리·드래프트 가중치용 category와 별개다.
-## 카드를 주는 범용 증강도 카드 보급으로, 획득 후 자동 발동하는 방어·리바이브도 패시브로 표시한다.
+## 카드를 주는 범용 증강은 카드 보급, 조건에 따라 자동 발동하는 리바이브는 패시브로 표시한다.
 const DISPLAY_COLORS: Dictionary = {
 	&"pawn": Color("20c997"), &"tool": Color("9775fa"),
 	&"law": Color("66e3f5"), &"super": Color("cc5de8"),
@@ -71,7 +71,7 @@ func display_group() -> StringName:
 		GameEnums.AugmentCategory.CARD_PACKAGE: return &"card"
 		GameEnums.AugmentCategory.UTILITY:
 			match StringName(str(payload)):
-				UtilityAugments.MOVE_PLUS, UtilityAugments.HAND_EXPAND, UtilityAugments.LUCKY_DICE, UtilityAugments.EXTRA_TURN, UtilityAugments.SELECT_SHIELD:
+				UtilityAugments.MOVE_PLUS, UtilityAugments.HAND_EXPAND, UtilityAugments.LUCKY_DICE, UtilityAugments.EXTRA_TURN:
 					return &"passive"
 				UtilityAugments.TRAP_CLEAR1, UtilityAugments.CATCH_UP, UtilityAugments.SHORTEN_GOAL, UtilityAugments.REROLL_ALL_AUG:
 					return &"instant"
