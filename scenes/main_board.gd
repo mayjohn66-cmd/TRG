@@ -9786,11 +9786,20 @@ func _on_game_over(winner_id: int, reason: StringName) -> void:
 		while is_inside_tree() and _announcer != null and _announcer.holding() and waited < 3.0:
 			await get_tree().process_frame
 			waited += get_process_delta_time()
-		if manager != null and manager.is_game_over and _result_overlay == null:
-			_show_result_overlay()
-			_refresh_all())
+		_show_result_after_queue())
 	# 안전장치: 남은 연출이 어떤 이유로든 멈춰도 결과 창은 반드시 뜬다 (연출이 끝난 채 조용하거나 RESULT_WATCHDOG_SECONDS가 지나면)
 	_result_watchdog(Time.get_ticks_msec(), 0)
+	_refresh_all()
+
+
+## 결과 창을 띄운다. 브리핑 뒤에 들어온 연출(졸업 배너 등)이 큐에 남아 있으면 그 뒤로 한 번 더 미룬다 (결과 창이 정리 연출을 덮지 않게).
+func _show_result_after_queue() -> void:
+	if manager == null or not manager.is_game_over or _result_overlay != null:
+		return
+	if not _presentation_queue.is_empty():
+		enqueue_step(_show_result_after_queue, -1, false)
+		return
+	_show_result_overlay()
 	_refresh_all()
 
 
