@@ -19,6 +19,7 @@ var _target_ref: WeakRef
 var _saved_tint := Color.WHITE
 var _restored := false
 var _anchor := Vector2.ZERO
+var _anchor_in_target := Vector2.ZERO
 var _title: Label
 var _formula: Label
 var _art: Dictionary = {}
@@ -47,6 +48,7 @@ func play(board: MainBoard, kind: StringName, owner: int, data: Dictionary, anch
 		_formula = _label(formula,26,Color("fff0cc") if mode==&"boost" else Color("d2d0cd"))
 		if target!=null:
 			_target_ref = weakref(target)
+			_anchor_in_target = target.get_global_transform().affine_inverse()*anchor
 			_saved_tint = target.modulate
 			target.set_meta("gambler_tint_owner",get_instance_id())
 		Sfx.play(&"charge",-9.0)
@@ -104,6 +106,10 @@ func _process(delta: float) -> void:
 			queue_free()
 
 func _update_labels(board: MainBoard) -> void:
+	if mode!=&"activate" and _target_ref!=null:
+		var target: Control = _target_ref.get_ref()
+		if target!=null:
+			_anchor = board.get_global_transform().affine_inverse()*(target.get_global_transform()*_anchor_in_target)
 	var center := board._board_center() if mode==&"activate" else _anchor
 	var total := ACTIVATE_TIME if mode==&"activate" else RESULT_TIME
 	var alpha := smoothstep(0.0,0.12,elapsed)*(1.0-smoothstep(total-0.20,total,elapsed))

@@ -33,6 +33,7 @@ on:
           - medium-fx
           - remaining-fx
           - difficulty-icons
+          - mobile-fx
           - warning-icon
           - rulebook-art
           - avatar-hq
@@ -71,7 +72,9 @@ jobs:
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
           REQUESTED_SCOPE: ${{ inputs.validation }}
         run: |
-          if [[ "${REQUESTED_SCOPE}" == "difficulty-icons" || "${COMMIT_MESSAGE}" == *"[check:difficulty-icons]"* ]]; then
+          if [[ "${REQUESTED_SCOPE}" == "mobile-fx" || "${COMMIT_MESSAGE}" == *"[check:mobile-fx]"* ]]; then
+            echo "scope=mobile-fx" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "difficulty-icons" || "${COMMIT_MESSAGE}" == *"[check:difficulty-icons]"* ]]; then
             echo "scope=difficulty-icons" >> "${GITHUB_OUTPUT}"
           elif [[ "${REQUESTED_SCOPE}" == "remaining-fx" || "${COMMIT_MESSAGE}" == *"[check:remaining-fx]"* ]]; then
             echo "scope=remaining-fx" >> "${GITHUB_OUTPUT}"
@@ -189,6 +192,22 @@ jobs:
           godot --headless --path . -s res://tests/ui_bang_test.gd 2>&1 | tee /tmp/bang.log
           grep -q 'UI_BANG_OK' /tmp/bang.log
           if grep -q 'SCRIPT ERROR' /tmp/bang.log; then exit 1; fi
+
+      - name: Check mobile effect coordinates
+        if: steps.validation.outputs.scope == 'mobile-fx'
+        run: |
+          set -euo pipefail
+          for target in mobile_fx castling bakery bond bang gambler raid; do
+            godot --headless --path . -s "res://tests/ui_${target}_test.gd" 2>&1 | tee "/tmp/mobile_${target}.log"
+          done
+          grep -q 'MOBILE_FX_OK' /tmp/mobile_mobile_fx.log
+          grep -q 'UI_CASTLING_OK' /tmp/mobile_castling.log
+          grep -q 'UI_BAKERY_OK' /tmp/mobile_bakery.log
+          grep -q 'UI_BOND_OK' /tmp/mobile_bond.log
+          grep -q 'UI_BANG_OK' /tmp/mobile_bang.log
+          grep -q 'UI_GAMBLER_OK' /tmp/mobile_gambler.log
+          grep -q 'UI_RAID_OK' /tmp/mobile_raid.log
+          if grep -Eq 'SCRIPT ERROR|SHADER ERROR|Lambda capture' /tmp/mobile_*.log; then exit 1; fi
 
       - name: Check difficulty icon presentation
         if: steps.validation.outputs.scope == 'difficulty-icons'

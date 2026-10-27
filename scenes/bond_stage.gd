@@ -24,6 +24,8 @@ var _generation := 0
 var _saved: Dictionary = {}
 var _from := Vector2.ZERO
 var _to := Vector2.ZERO
+var _local_from := Vector2.ZERO
+var _local_to := Vector2.ZERO
 var _veil: ColorRect
 var _light: ShaderMaterial
 var _restored := false
@@ -48,6 +50,8 @@ func play(board: MainBoard, pair: Dictionary, speed: float) -> void:
 		view.z_index = 36
 	_from = pair.get("from",inverse*board._pawn_views[a_id].global_position)+Vector2(0,3)
 	_to = pair.get("to",inverse*board._pawn_views[b_id].global_position)+Vector2(0,3)
+	_local_from = board._pawn_layer.transform.affine_inverse()*_from
+	_local_to = board._pawn_layer.transform.affine_inverse()*_to
 	_veil = ColorRect.new()
 	_veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_veil.z_index = -1
@@ -89,6 +93,10 @@ func _process(delta: float) -> void:
 		set_process(false)
 
 func _update_veil() -> void:
+	var board: MainBoard = _board_ref.get_ref() if _board_ref!=null else null
+	if board!=null:
+		_from = board._pawn_layer.transform*_local_from
+		_to = board._pawn_layer.transform*_local_to
 	_veil.size = get_viewport_rect().size
 	_light.set_shader_parameter("frame_size",_veil.size)
 	_light.set_shader_parameter("first",_from+Vector2(0,-16))

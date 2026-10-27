@@ -139,7 +139,7 @@ func set_deck_visible(shown: bool) -> void:
 
 ## target_provider resolves the current fan slot as new cards enter the hand.
 ## origin preserves the existing theft animation: stolen cards leave a profile.
-func draw_card(player_id: int, card_id: StringName, local: bool, target: Vector2, on_arrive: Callable = Callable(), reserved: bool = false, origin: Vector2 = Vector2(INF,INF), target_provider: Callable = Callable(), grouped: bool = false) -> void:
+func draw_card(player_id: int, card_id: StringName, local: bool, target: Vector2, on_arrive: Callable = Callable(), reserved: bool = false, origin: Vector2 = Vector2(INF,INF), target_provider: Callable = Callable(), grouped: bool = false, origin_provider: Callable = Callable()) -> void:
 	if local and not reserved:
 		reserve(player_id)
 	in_flight += 1
@@ -147,7 +147,7 @@ func draw_card(player_id: int, card_id: StringName, local: bool, target: Vector2
 	var batch: bool = grouped or not _current.is_empty() or not _queue.is_empty()
 	if batch and not _current.is_empty():
 		_current["batch"] = true
-	_queue.append({"player":player_id,"id":card_id,"local":local,"target":target,"arrive":on_arrive,"origin":origin,"provider":target_provider,"batch":batch})
+	_queue.append({"player":player_id,"id":card_id,"local":local,"target":target,"arrive":on_arrive,"origin":origin,"provider":target_provider,"origin_provider":origin_provider,"batch":batch})
 	_start_next()
 
 
@@ -257,9 +257,16 @@ func _curve(from: Vector2, bend: Vector2, to: Vector2, u: float) -> Vector2:
 
 func _apply_card(t: float) -> void:
 	var card: Control = _current.card
-	var start: Vector2 = _current.start
-	var lifted: Vector2 = _current.lifted
-	var reveal: Vector2 = _current.reveal
+	var start: Vector2 = deck_position if bool(_current.from_deck) else _current.start
+	var origin_provider: Callable = _current.get("origin_provider",Callable())
+	if origin_provider.is_valid():
+		var current_origin: Vector2 = origin_provider.call()
+		if current_origin.is_finite(): start = current_origin
+	var lifted := start+Vector2(-12.0,-POP_RISE)
+	var reveal := reveal_position
+	_current.start = start
+	_current.lifted = lifted
+	_current.reveal = reveal
 	var upright: float = _ease((t-POP_TIME)/(TAKE_TIME if bool(_current.local) else OTHER_FLY_TIME))
 	var surface: Node2D = _current.back
 	var frame: Transform2D = deck_transform() if bool(_current.from_deck) else Transform2D.IDENTITY
@@ -277,6 +284,10 @@ func _apply_card(t: float) -> void:
 		card.set_meta("phase",&"deliver_back")
 		var u: float = _ease((t-POP_TIME)/OTHER_FLY_TIME)
 		var to: Vector2 = _current.target
+		var provider: Callable = _current.provider
+		if provider.is_valid():
+			var destination: Dictionary = provider.call()
+			if (destination.position as Vector2).is_finite(): to = destination.position
 		_pose(card,_curve(lifted,lifted.lerp(to,0.5)+Vector2(0,-80),to,u),Vector2.ONE*lerpf(1.0,OTHER_END_SCALE,u),lerpf(-0.12,0.0,u))
 		return
 	if t < POP_TIME+TAKE_TIME:

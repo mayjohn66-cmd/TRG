@@ -73,6 +73,9 @@ func _land_time(index: int) -> float:
 	return LAND_START+index*0.20/maxi(1,pawns.size()-1)
 
 func _update_pose(board: MainBoard) -> void:
+	# Poses and actual pawn views share the pawn layer's local coordinate system.
+	transform = board._pawn_layer.transform
+	_center = transform.affine_inverse()*(board._board_center()+Vector2(0,-16))
 	var lift := smoothstep(LIFT_START,SPIN_START,elapsed)
 	var spin := clampf((elapsed-SPIN_START)/(LAND_START-SPIN_START),0,1)
 	_angle = TAU*2.0*(1.0-pow(1.0-spin,3.0))
