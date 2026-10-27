@@ -2,8 +2,9 @@
 # Class: class_name TempoUp
 # Role: 판이 길어지면 라운드 단위로 게임을 가속한다 (템포 업). 7·14·20라운드에 단계가 오르고 (2026-10: 8·15·22에서 당겨 20라운드 안에 결판이 나게), 단계가 오르는 라운드가 시작될 때 크게 경고한다.
 #       1단계(7R, 과열): 최종 이동 +2칸 · 리벤지 부스터 +6칸 · 초증강 등장 확률 상승
-#       2단계(14R, 광기): 최종 이동 +4칸 · 리벤지 부스터 +8칸 · 법전 등장 확률 상승
-#       3단계(20R, 대붕괴): 전원 이동 +6칸 · 결승선이 라운드마다 2칸씩 당겨진다
+#       2단계(14R, 광기): 최종 이동 +4칸 · 리벤지 부스터 +8칸 · 법전 등장 확률 상승 · 결승선이 라운드마다 3칸씩 당겨진다 (반환점 앞까지)
+#       3단계(20R, 대붕괴): 전원 이동 +6칸 · 결승선이 출발선 4칸 앞까지 라운드마다 3칸씩 계속 당겨진다
+#       (2026-10-27) 싱글 라운드 상한(PacingDirector.HARD_CAP_ROUND)은 30라운드 안전장치일 뿐, 판은 결승선 당기기로 자연스럽게 끝난다.
 #       라운드 번호만으로 정해지는 순수 함수라 스냅샷·네트워크 동기화가 따로 필요 없다.
 class_name TempoUp
 extends RefCounted
@@ -20,8 +21,8 @@ const REVENGE_BONUS: Array[int] = [0, 6, 8, 8]
 static var stage_rounds: Array[int] = [7, 14, 20]
 ## 초증강(1단계부터)·법전(2단계부터) 가중치에 곱하는 배수.
 const RARE_WEIGHT_MULTIPLIER: int = 3
-## 3단계부터 라운드마다 결승선이 당겨지는 칸 수.
-const GOAL_SHRINK_PER_ROUND: int = 2
+## 2단계부터 라운드마다 결승선이 당겨지는 칸 수 (2026-10-27: 3단계 2칸 → 2단계부터 3칸).
+const GOAL_SHRINK_PER_ROUND: int = 3
 
 
 ## 이 라운드의 템포 업 단계 (0~3).
@@ -56,19 +57,33 @@ static func weight_multiplier(round_number: int, category: GameEnums.AugmentCate
 	return 1
 
 
-## 결승선이 당겨진 칸 수 (22라운드 2칸, 23라운드 4칸 …). 반환점 뒤쪽 절반을 넘지 않게 막는다.
+## 결승선이 당겨진 칸 수: 2단계(광기)부터 라운드마다 GOAL_SHRINK_PER_ROUND칸씩, 반환점 뒤쪽 절반(half_shrink_limit)까지.
+## 3단계(대붕괴)부터는 그 제한을 풀고 라운드마다 같은 칸씩 더 당겨 출발선 4칸 앞(max_shrink)까지 간다.
 static func goal_shrink(round_number: int) -> int:
-	if level(round_number) < 3:
+	var stage: int = level(round_number)
+	if stage < 2:
 		return 0
-	var limit: int = maxi(BoardSpec.tile_count - BoardSpec.halfway_tile - 4, 0)
-	return mini((round_number - stage_rounds[2] + 1) * GOAL_SHRINK_PER_ROUND, limit)
+	var shrink: int = mini((round_number - stage_rounds[1] + 1) * GOAL_SHRINK_PER_ROUND, half_shrink_limit())
+	if stage >= 3:
+		shrink = mini(half_shrink_limit() + (round_number - stage_rounds[2] + 1) * GOAL_SHRINK_PER_ROUND, max_shrink(round_number))
+	return shrink
 
 
-## 이 판에 결승선이 당겨진 칸 수: 템포 업 당기기 + [범용] 슬슬 지루한데...(GameState.goal_shrink_bonus). 반환점 뒤쪽 절반을 넘지 않는다.
+## 반환점 뒤쪽 절반까지의 당기기 한도 (2단계).
+static func half_shrink_limit() -> int:
+	return maxi(BoardSpec.tile_count - BoardSpec.halfway_tile - 4, 0)
+
+
+## 이 라운드에 결승선을 당길 수 있는 최대 칸 수: 3단계부터는 출발선 4칸 앞까지.
+static func max_shrink(round_number: int) -> int:
+	return maxi(BoardSpec.tile_count - 4, 0) if level(round_number) >= 3 else half_shrink_limit()
+
+
+## 이 판에 결승선이 당겨진 칸 수: 템포 업 당기기 + [범용] 슬슬 지루한데...(GameState.goal_shrink_bonus). 이 라운드의 한도(max_shrink)를 넘지 않는다.
 static func shrink_for(state: GameState) -> int:
 	if state == null:
 		return 0
-	return mini(goal_shrink(state.round_number) + state.goal_shrink_bonus, maxi(BoardSpec.tile_count - BoardSpec.halfway_tile - 4, 0))
+	return mini(goal_shrink(state.round_number) + state.goal_shrink_bonus, max_shrink(state.round_number))
 
 
 ## 이 판의 결승선 첫 칸 (당겨지지 않았으면 -1).
@@ -104,6 +119,6 @@ static func stage_name(stage: int) -> String:
 static func effect_lines(stage: int) -> Array[String]:
 	match stage:
 		1: return ["모든 굴림 최종 이동 +%d칸" % MOVE_BONUS[1], "리벤지 부스터 +6칸", "초증강 등장 확률 상승"] as Array[String]
-		2: return ["모든 굴림 최종 이동 +%d칸" % MOVE_BONUS[2], "리벤지 부스터 +8칸", "법전 증강 등장 확률 상승"] as Array[String]
-		3: return ["전원 이동 +%d칸" % MOVE_BONUS[3], "결승선이 라운드마다 %d칸씩 당겨진다" % GOAL_SHRINK_PER_ROUND] as Array[String]
+		2: return ["모든 굴림 최종 이동 +%d칸" % MOVE_BONUS[2], "리벤지 부스터 +8칸", "법전 증강 등장 확률 상승", "결승선이 라운드마다 %d칸씩 당겨진다" % GOAL_SHRINK_PER_ROUND] as Array[String]
+		3: return ["전원 이동 +%d칸" % MOVE_BONUS[3], "결승선이 출발선 앞까지 계속 당겨진다"] as Array[String]
 	return [] as Array[String]

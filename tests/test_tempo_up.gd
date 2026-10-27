@@ -36,10 +36,14 @@ func test_stages_rise_at_rounds_7_14_20() -> void:
 	check_eq([TempoUp.stage_name(1), TempoUp.stage_name(2), TempoUp.stage_name(3)], ["과열", "광기", "대붕괴"], "단계 이름")
 	check_eq([TempoUp.revenge_bonus(5), TempoUp.revenge_bonus(7), TempoUp.revenge_bonus(14)], [0, 6, 8], "리벤지 부스터")
 	check(TempoUp.is_stage_round(7) and TempoUp.is_stage_round(14) and TempoUp.is_stage_round(20) and not TempoUp.is_stage_round(8) and not TempoUp.is_stage_round(15) and not TempoUp.is_stage_round(22), "경고는 단계가 오르는 라운드에만")
-	check_eq([TempoUp.goal_shrink(19), TempoUp.goal_shrink(20), TempoUp.goal_shrink(21), TempoUp.goal_shrink(22)], [0, 2, 4, 6], "결승선은 20라운드부터 라운드마다 2칸씩")
-	check(TempoUp.goal_shrink(99) <= BoardSpec.tile_count - BoardSpec.halfway_tile - 4, "반환점 뒤 절반을 넘게 당겨지지 않는다")
-	check(TempoUp.in_goal_zone(20, BoardSpec.tile_count - 1) and TempoUp.in_goal_zone(20, BoardSpec.tile_count - 2) and not TempoUp.in_goal_zone(20, BoardSpec.tile_count - 3), "20라운드: 마지막 2칸이 결승선")
-	check(not TempoUp.in_goal_zone(19, BoardSpec.tile_count - 1), "19라운드까지는 그대로")
+	# 결승선: 광기(14R)부터 라운드마다 3칸씩 반환점 뒤 절반까지, 대붕괴(20R)부터는 그 한도를 넘어 출발선 4칸 앞까지 계속 당겨진다
+	var half: int = BoardSpec.tile_count - BoardSpec.halfway_tile - 4
+	check_eq([TempoUp.goal_shrink(13), TempoUp.goal_shrink(14), TempoUp.goal_shrink(15)], [0, 3, 6], "결승선은 14라운드부터 라운드마다 3칸씩")
+	check_eq(TempoUp.goal_shrink(19), half, "대붕괴 전에는 반환점 뒤 절반까지만")
+	check_eq([TempoUp.goal_shrink(20), TempoUp.goal_shrink(21)], [half + 3, half + 6], "대붕괴부터 한도를 넘어 라운드마다 3칸씩 더")
+	check_eq(TempoUp.goal_shrink(99), BoardSpec.tile_count - 4, "끝까지 가도 출발선 4칸 앞에서 멈춘다")
+	check(TempoUp.in_goal_zone(14, BoardSpec.tile_count - 3) and not TempoUp.in_goal_zone(14, BoardSpec.tile_count - 4), "14라운드: 마지막 3칸이 결승선")
+	check(not TempoUp.in_goal_zone(13, BoardSpec.tile_count - 1), "13라운드까지는 그대로")
 
 
 func test_augment_weights_and_tempo_multiplier() -> void:

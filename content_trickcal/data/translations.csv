@@ -2270,3 +2270,6 @@ v%s · 비공식 팬게임 (원작사와 무관한 비영리 무료 배포물),v
 "잡으면 재굴림, 필살기는 주사위 한 번 더.","Reroll on a KO; special: roll once more.",撃破で振り直し、必殺技はもう一度ダイス。
 보호막 있음,Shield active,バリアあり
 ★나리 승급(+1칸),★Promoted (+1 space),★成り昇格(+1マス)
+결승선이 출발선 앞까지 계속 당겨진다,The finish line keeps closing in toward the start,ゴールがスタート手前までどんどん近づく
+최종 이동 +4칸 · 리벤지 +8칸 · 법전 확률 상승 · 결승선이 라운드마다 3칸씩 당겨짐,Final move +4 · Revenge +8 · Codex odds up · finish line moves 3 spaces closer each round,最終移動 +4マス · リベンジ +8マス · 法典の確率アップ · ゴールがラウンドごとに3マスずつ近づく
+전원 이동 +6칸 · 결승선이 출발선 앞까지 계속 당겨짐,Everyone +6 · finish line keeps closing in toward the start,全員の移動 +6マス · ゴールがスタート手前までどんどん近づく

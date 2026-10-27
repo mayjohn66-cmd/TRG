@@ -94,7 +94,7 @@ func _finish() -> bool:
 		_expect(board.manager.state_hash() == first.manager.state_hash(), "모든 화면의 최종 상태 지문이 같다")
 		_expect(board._result_overlay != null, "결과 창이 떴다")
 	_expect(_desyncs.is_empty(), "동기화 오류 없음: %s" % str(_desyncs))
-	_expect(first.net.applied_count > 100, "충분한 행동이 오갔다 (%d)" % first.net.applied_count)
+	_expect(first.net.applied_count > 50, "충분한 행동이 오갔다 (%d)" % first.net.applied_count)  # 2026-10-27: 결승선 당기기가 14라운드부터라 판이 16~20라운드에 끝난다 (100 -> 50)
 	if _failures.is_empty():
 		print("UI_NET_OK seats=%s round=%d winner=%d actions=%d" % [str(_seats), first.state.round_number, first.state.winner, first.net.applied_count])
 		quit(0)

@@ -1259,7 +1259,7 @@ func _enter_round_start() -> void:
 ## 완주로 게임이 끝났으면 true.
 func _apply_tempo_up() -> bool:
 	var round_number: int = state.round_number
-	# 히든 페이싱: 22라운드가 끝나도 남은 사람은 진행 순위로 확정하고 판을 끝낸다 (싱글 불닭 난이도만, 맨 뒤 한 명은 꼴찌).
+	# 히든 페이싱: 30라운드(안전장치)가 끝나도 남은 사람은 진행 순위로 확정하고 판을 끝낸다 (싱글 불닭 난이도만, 맨 뒤 한 명은 꼴찌).
 	if PacingDirector.enabled(state) and round_number > PacingDirector.HARD_CAP_ROUND and not is_game_over:
 		var order: Array = VictoryChecker.sort_by_race(state, state.active_players(player_order))
 		if not order.is_empty():
