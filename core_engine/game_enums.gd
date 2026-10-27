@@ -64,7 +64,7 @@ const DRAFT_OFFER_COUNT: int = 3
 ## 페이즈별 제한 시간(초). 0이면 타이머 없음(즉시 진행).
 const PHASE_TIME_DRAFT: float = 15.0
 ## 드래프트가 끝난 뒤 모두가 고른 증강을 확인하는 시간 (모두 [확인]을 누르면 바로 넘어간다).
-const PHASE_TIME_REVIEW: float = 20.0
+const PHASE_TIME_REVIEW: float = 8.0  # 2026-10-27: 20 -> 8 (플레이 시간 단축)
 const PHASE_TIME_TURN_BEGIN: float = 10.0
 const PHASE_TIME_ROLL: float = 10.0
 const PHASE_TIME_INTERRUPT: float = 3.5
