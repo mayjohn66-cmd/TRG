@@ -187,12 +187,8 @@ func _update_pose() -> void:
 	_bread_haul.rotation = 0.06
 	_bread_haul.modulate.a = _actor_alpha
 
-func _ellipse(at: Vector2, radius: Vector2, tint: Color, width: float) -> void:
-	var points := PackedVector2Array()
-	for index: int in 49:
-		var angle := index*TAU/48.0
-		points.append(at+Vector2(cos(angle),sin(angle))*radius)
-	draw_polyline(points,tint,width,true)
+func _floor_glint(at: Vector2, tint: Color) -> void:
+	PaintedFx.stamp(self,PaintedFx.RIPPLE,at,Vector2(76,37),tint)
 
 func _draw() -> void:
 	if tile<0:
@@ -204,7 +200,7 @@ func _draw() -> void:
 		draw_rect(get_viewport_rect(),Color(0.025,0.022,0.035,BACKGROUND_DIM*story))
 		ART.storefront(self,_shop_at+_shop_offset,280,story,_shop_angle)
 	if elapsed<HAUL_END:
-		_ellipse(_at,Vector2(35,17),Color(GOLD,0.65*reveal),2)
+		_floor_glint(_at,Color(GOLD,0.55*reveal))
 	# The character is absent inside, then emerges from the same doorway.
 	if _actor_alpha>0.001:
 		var running := phase in [&"approach",&"enter",&"escape"]
@@ -227,7 +223,7 @@ func _draw() -> void:
 			if u>0 and u<1:
 				ART.flour(self,_actor_at+Vector2(-27-index*12,2),7+u*12,sin(u*PI)*0.4*story,-0.3)
 	if phase==&"finish":
-		_ellipse(_at,Vector2(35,17),Color(GOLD,fade*0.35),2)
+		_floor_glint(_at,Color(GOLD,fade*0.35))
 
 func _restore(cancelled: bool) -> void:
 	if _restored and not cancelled:

@@ -206,14 +206,16 @@ func _draw() -> void:
 			status = "종을 쳤다!"
 		_text(status, Vector2(x, 280), 20, status_color)
 	var bell_center := Vector2(size.x / 2.0, 156)
-	draw_circle(bell_center + Vector2(0, 38), 60, Color(0, 0, 0, 0.23))
+	PaintedFx.stamp(self,PaintedFx.SMOKE,bell_center+Vector2(0,49),Vector2(126,23),Color(0.13,0.10,0.08,0.40))
 	var press := sin(clampf(ring_age / 0.13, 0.0, 1.0) * PI)
 	var wiggle := sin(ring_age * 48.0) * exp(-ring_age * 6.0) * 0.20
 	if ring_age < 0.7:
 		var tint: Color = MainBoard.PLAYER_COLORS.get(ring_seat, GOLD)
 		for pulse: int in 2:
 			var progress := clampf((ring_age - float(pulse) * 0.10) / 0.5, 0.0, 1.0)
-			draw_arc(bell_center, 53 + progress * 40, 0, TAU, 64, Color(tint.lightened(0.3), (1.0 - progress) * 0.8), 3, true)
+			if progress>0 and progress<1:
+				var diameter := 106+progress*80
+				PaintedFx.stamp(self,PaintedFx.RIPPLE,bell_center,Vector2.ONE*diameter,Color(tint.lightened(0.3),sin(progress*PI)*(1-progress)*0.85),pulse*0.6)
 	draw_set_transform(bell_center + Vector2(0, press * 7), wiggle, Vector2(1.0 + press * 0.12, 1.0 - press * 0.15))
 	draw_texture_rect(BELL, Rect2(-72, -79, 144, 158), false)
 	draw_set_transform(Vector2.ZERO)

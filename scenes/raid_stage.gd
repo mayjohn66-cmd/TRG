@@ -162,11 +162,13 @@ func _draw() -> void:
 			# A brief curved gold swipe follows the card leaving this exact profile.
 			if phase==&"deliver":
 				var u := clampf(phase_time/0.32,0.0,1.0)
-				var points := PackedVector2Array()
-				for index: int in 12:
+				var previous := victim.get_center()+Vector2(inside*u*25,-u*25)
+				for index: int in range(1,12):
 					var t := index/11.0
-					points.append(victim.get_center()+Vector2(inside*(t*72+u*25),-sin(t*PI)*18-u*25))
-				draw_polyline(points,Color(1,0.78,0.33,(1-u)*0.75),3*(1-u)+1,true)
+					var at := victim.get_center()+Vector2(inside*(t*72+u*25),-sin(t*PI)*18-u*25)
+					PaintedFx.streak(self,previous,at,4.5*(1-t)+1.2,Color(1,0.78,0.33,(1-u)*0.70))
+					previous = at
+				PaintedFx.stamp(self,PaintedFx.FLECK,previous,Vector2(9,5)*(1-u),Color(1,0.92,0.69,(1-u)*0.8),-inside*0.4)
 	if phase==&"deliver":
 		var draw: Dictionary = board._draw_fx._current
 		if not draw.is_empty():

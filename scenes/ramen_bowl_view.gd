@@ -168,17 +168,12 @@ func _draw() -> void:
 	var origin := Vector2((size.x - extent.x) * 0.5, 0)
 	# A quiet contact shadow; the bowl, its cavity and food are real depth-tested meshes.
 	var ground: Vector2 = camera.unproject_position(Vector3(0, 0.02, 0)) * 0.5 * scale_factor + origin
-	var shadow := PackedVector2Array()
-	for index: int in 48:
-		var angle: float = TAU * float(index) / 48.0
-		shadow.append(ground + Vector2(cos(angle) * 68, sin(angle) * 4) * scale_factor)
-	draw_colored_polygon(shadow, Color(0.2, 0.15, 0.12, 0.12))
+	PaintedFx.stamp(self,PaintedFx.SMOKE,ground,Vector2(144,12)*scale_factor,Color(0.2,0.15,0.12,0.22))
 	draw_texture_rect(render_view.get_texture(), Rect2(origin, extent), false)
 	for index: int in 3:
 		var phase: float = fmod(_time * (0.32 + level * 0.04) + index * 0.34, 1.0)
-		var base: Vector2 = camera.unproject_position(Vector3((index - 1) * 0.52, 1.30, 0.0)) * 0.5
-		var line := PackedVector2Array()
-		for step: int in 13:
-			var t: float = float(step) / 12.0
-			line.append(origin + (base + Vector2(sin(t * TAU + _time * 1.5 + index) * 2.5, -phase * 10.0 - t * (12.0 + level * 2.0))) * scale_factor)
-		draw_polyline(line, Color(0.65, 0.53, 0.43, sin(phase * PI) * 0.25), 2.0 * scale_factor, true)
+		var base: Vector2 = camera.unproject_position(Vector3((index - 1) * 0.52, 1.42, 0.0)) * 0.5
+		var drift := Vector2(sin(phase*2.6+index)*4,-phase*(26+level*3.0))
+		var puff_extent := Vector2(14+phase*15,20+phase*(21+level))*scale_factor
+		var at := origin+(base+drift)*scale_factor-Vector2(0,puff_extent.y*0.3)
+		PaintedFx.stamp(self,PaintedFx.SMOKE,at,puff_extent,Color(1,0.97,0.89,sin(phase*PI)*0.38),sin(index*2.1+phase)*0.12)

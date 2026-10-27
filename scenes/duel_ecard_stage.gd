@@ -173,7 +173,9 @@ func _draw() -> void:
 			width *= maxf(absf((elapsed - FACE_AT) / 0.20), 0.025)
 		if active or ready_seats.has(seat) or face:
 			if face and int(result["winner"]) == seat:
-				draw_circle(center, 76, Color("fff3b0", 0.5))
+				var reveal_age := maxf(0,elapsed-FACE_AT)
+				var settle := 1-smoothstep(0.12,0.75,reveal_age)
+				PaintedFx.stamp(self,PaintedFx.IMPACT,center,Vector2(170,183),Color("fff3b0",0.3+settle*0.4),-0.12)
 			_card(Rect2(center - Vector2(width / 2, CARD_SIZE.y / 2), Vector2(width, CARD_SIZE.y)), seat, value, face, alpha)
 		else:
 			draw_rect(Rect2(center - CARD_SIZE / 2, CARD_SIZE), Color("b8a78c", 0.4), false, 2)

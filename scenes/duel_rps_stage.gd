@@ -128,13 +128,16 @@ func _draw() -> void:
 		var color: Color = MainBoard.PLAYER_COLORS.get(seat, Color.WHITE)
 		var won := thrown and winner == seat
 		var lost := thrown and winner != -1 and winner != seat
-		draw_circle(center + Vector2(0, 6), 72, Color(0, 0, 0, 0.24))
-		draw_circle(center, 72, Color(color, 0.13 if not lost else 0.05))
+		PaintedFx.stamp(self,PaintedFx.SMOKE,center+Vector2(0,42),Vector2(140,38),Color(0.10,0.08,0.13,0.35))
+		PaintedFx.stamp(self,PaintedFx.IMPACT,center,Vector2(153,146),Color(color,0.16 if not lost else 0.05))
 		draw_arc(center, 72, 0, TAU, 64, GOLD if won else Color(color, 0.65), 4 if won else 2, true)
 		if won:
-			for ray: int in 10:
-				var angle := float(ray) * TAU / 10.0
-				draw_line(center + Vector2.from_angle(angle) * 79, center + Vector2.from_angle(angle) * 87, Color(GOLD, 0.75), 3, true)
+			var shine := 1-smoothstep(0.15,0.85,reveal_age)
+			PaintedFx.stamp(self,PaintedFx.IMPACT,center,Vector2.ONE*(164+reveal_age*18),Color(GOLD,shine*0.75),0.14)
+			for ray: int in 6:
+				var angle := float(ray)*2.39996+0.3
+				var at := center+Vector2.from_angle(angle)*(78+reveal_age*16)
+				PaintedFx.stamp(self,PaintedFx.FLECK,at,Vector2(10,5)*(0.8+0.2*sin(ray*3.1)),Color(GOLD,shine*0.8),angle)
 		var hand := int(revealed.get(seat, DuelRules.Hand.ROCK)) if thrown else DuelRules.Hand.ROCK
 		var bob := -sin(fmod(elapsed, 0.30) / 0.30 * PI) * 14.0 if mode == &"windup" else 0.0
 		var tilt := (-0.08 if left else 0.08) * (0.7 if thrown else 1.0)

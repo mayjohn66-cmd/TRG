@@ -31,6 +31,7 @@ on:
           - common-fx
           - priority-fx
           - medium-fx
+          - remaining-fx
           - warning-icon
           - rulebook-art
           - avatar-hq
@@ -69,7 +70,9 @@ jobs:
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
           REQUESTED_SCOPE: ${{ inputs.validation }}
         run: |
-          if [[ "${REQUESTED_SCOPE}" == "medium-fx" || "${COMMIT_MESSAGE}" == *"[check:medium-fx]"* ]]; then
+          if [[ "${REQUESTED_SCOPE}" == "remaining-fx" || "${COMMIT_MESSAGE}" == *"[check:remaining-fx]"* ]]; then
+            echo "scope=remaining-fx" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "medium-fx" || "${COMMIT_MESSAGE}" == *"[check:medium-fx]"* ]]; then
             echo "scope=medium-fx" >> "${GITHUB_OUTPUT}"
           elif [[ "${REQUESTED_SCOPE}" == "priority-fx" || "${COMMIT_MESSAGE}" == *"[check:priority-fx]"* ]]; then
             echo "scope=priority-fx" >> "${GITHUB_OUTPUT}"
@@ -183,6 +186,23 @@ jobs:
           godot --headless --path . -s res://tests/ui_bang_test.gd 2>&1 | tee /tmp/bang.log
           grep -q 'UI_BANG_OK' /tmp/bang.log
           if grep -q 'SCRIPT ERROR' /tmp/bang.log; then exit 1; fi
+
+      - name: Check remaining painted presentations
+        if: steps.validation.outputs.scope == 'remaining-fx'
+        run: |
+          set -euo pipefail
+          for target in castling raid bakery remaining_fx rps halli ecard ramen_bowl; do
+            godot --headless --path . -s "res://tests/ui_${target}_test.gd" 2>&1 | tee "/tmp/remaining_${target}.log"
+          done
+          grep -q 'UI_CASTLING_OK' /tmp/remaining_castling.log
+          grep -q 'UI_RAID_OK' /tmp/remaining_raid.log
+          grep -q 'UI_BAKERY_OK' /tmp/remaining_bakery.log
+          grep -q 'UI_REMAINING_FX_OK' /tmp/remaining_remaining_fx.log
+          grep -q 'RPS_UI_OK' /tmp/remaining_rps.log
+          grep -q 'HALLI_UI_OK' /tmp/remaining_halli.log
+          grep -q 'ECARD_UI_OK' /tmp/remaining_ecard.log
+          grep -q 'UI_RAMEN_BOWL_OK' /tmp/remaining_ramen_bowl.log
+          if grep -Eq 'SCRIPT ERROR|SHADER ERROR|Lambda capture' /tmp/remaining_*.log; then exit 1; fi
 
       - name: Check medium priority painted presentations
         if: steps.validation.outputs.scope == 'medium-fx'

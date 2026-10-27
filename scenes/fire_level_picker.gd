@@ -265,7 +265,9 @@ class FireFace:
 				for side: float in [-1.0, 1.0]:
 					var breath: float = fmod(_time * 0.8 + (0.5 if side < 0 else 0.0), 1.0)
 					var puff := Vector2(side * (23.0 + breath * 5.0), 7.0 - breath * 3.0)
-					draw_circle(puff, 2.8 + breath * 1.5, Color(0.72, 0.75, 0.77, (1.0 - breath) * 0.7))
+					var puff_size := Vector2(6+breath*5,5+breath*6)
+					# Keep the face's bob, scale and rotation for both nostrils.
+					draw_texture_rect_region(PaintedFx.SMOKE,Rect2(puff-puff_size*0.5,puff_size),PaintedFx.region(PaintedFx.SMOKE),Color(0.85,0.87,0.88,sin(breath*PI)*0.55))
 			4:
 				_squeezed_eye(left, 1.0)
 				_squeezed_eye(right, -1.0)

@@ -21,6 +21,25 @@ func run() -> void:
 	root.add_child(picker)
 	await process_frame
 	var bowl: FireLevelPicker.RamenBowl = picker._bowl
+	var capture_dir := OS.get_environment("RAMEN_BOWL_CAPTURE_DIR")
+	if not capture_dir.is_empty():
+		picker.position = Vector2(360,210)
+		picker.size = Vector2(620,340)
+		await process_frame
+		await process_frame
+		bowl._time = 0.72
+		bowl.queue_redraw()
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png(capture_dir.path_join("steam.png"))
+		picker.set_level(3)
+		await process_frame
+		bowl._time = 0.72
+		picker._face._time = 0.72
+		bowl.queue_redraw()
+		picker._face.queue_redraw()
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png(capture_dir.path_join("steam_hot.png"))
+		picker.set_level(2,false)
 	expect(bowl.model_root != null and bowl.camera != null, "3D bowl and camera exist")
 	var ceramic: MeshInstance3D = bowl.model_root.get_node("CeramicBody")
 	var noodles: MeshInstance3D = bowl.model_root.get_node("Noodles")

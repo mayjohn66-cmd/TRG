@@ -124,14 +124,14 @@ func _draw() -> void:
 		var player: PlayerPawn = board.state.get_pawn(int(item.id))
 		var tint: Color = MainBoard.PLAYER_COLORS.get(player.owner_id,GOLD) if player!=null else GOLD
 		var mark := (1.0-smoothstep(LIFT_START,SPIN_START,elapsed))*appear
-		_ellipse(item.from,Vector2(21,9),Color(tint,mark*0.85),2)
+		PaintedFx.stamp(self,PaintedFx.RIPPLE,item.from,Vector2(48,21),Color(tint,mark*0.75),0.05*sin(index*2.4))
 		var t := clampf((elapsed-_land_time(index))/0.48,0,1)
 		if elapsed>=LAND_START:
 			var alpha := (1.0-smoothstep(TOTAL_TIME-0.22,TOTAL_TIME,elapsed))
-			_ellipse(item.to,Vector2(24,11)*(1.0+0.25*sin(t*PI)),Color(tint,alpha*0.8),2.5)
+			PaintedFx.stamp(self,PaintedFx.RIPPLE,item.to,Vector2(55,25)*(1.0+0.25*sin(t*PI)),Color(tint,alpha*0.7))
 			if bool(item.landed):
 				var u := clampf((elapsed-_land_time(index)-0.48)/0.28,0,1)
-				_ellipse(item.to,Vector2(24,11)*(1.0+u*0.8),Color(GOLD,(1-u)*0.6),2)
+				PaintedFx.stamp(self,PaintedFx.DUST,item.to+Vector2(0,2),Vector2(44+u*35,10+u*7),Color(GOLD,sin(u*PI)*0.55))
 
 func _restore(cancelled: bool) -> void:
 	var board: MainBoard = _board_ref.get_ref() if _board_ref!=null else null

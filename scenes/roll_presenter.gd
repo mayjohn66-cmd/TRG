@@ -112,9 +112,7 @@ class GroundShadow extends Control:
 		top_level = true
 
 	func _draw() -> void:
-		draw_set_transform(size / 2.0, 0.0, Vector2(1.0, size.y / maxf(size.x, 1.0)))
-		for layer: int in 6:
-			draw_circle(Vector2.ZERO, size.x * (0.50 - layer * 0.055), Color(0.13, 0.18, 0.09, 0.045))
+		PaintedFx.stamp(self,PaintedFx.SMOKE,size/2.0,size,Color(0.13,0.18,0.09,0.20))
 
 
 ## 접지한 자리에만 짧은 파문과 먼지를 남긴다. 물체와 함께 움직이지 않고 보드 바닥에 그린다.
@@ -134,14 +132,13 @@ class ContactFX extends Control:
 			var at: Vector2 = mark["at"]
 			var radius: float = lerpf(12.0, 45.0, 1.0 - pow(1.0 - progress, 2.0)) * strength
 			var ink := Color(1.0, 0.96, 0.77, (1.0 - progress) * 0.6)
-			draw_set_transform(at, 0.0, Vector2(1.0, 0.32))
-			draw_arc(Vector2.ZERO, radius, 0.0, TAU, 40, ink, 1.5, true)
-			draw_set_transform(Vector2.ZERO)
+			PaintedFx.stamp(self,PaintedFx.RIPPLE,at,Vector2(radius*2,radius*0.64),ink)
+			PaintedFx.stamp(self,PaintedFx.DUST,at+Vector2(0,-progress*4),Vector2(radius*2.1,radius*0.48),Color(0.90,0.84,0.65,sin(progress*PI)*0.32*strength))
 			for index: int in 4:
 				var angle: float = PI * (0.15 + index * 0.57)
 				var drift := Vector2(cos(angle), sin(angle) * 0.28) * radius
 				drift.y -= sin(progress * PI) * 7.0 * strength
-				draw_circle(at + drift, (1.0 - progress) * 2.8 * strength, ink, true, -1.0, true)
+				PaintedFx.stamp(self,PaintedFx.FLECK,at+drift,Vector2(5,3)*(1-progress)*strength,ink,angle)
 
 
 func _init() -> void:
