@@ -76,7 +76,8 @@ func _process(delta: float) -> void:
 			if phase_time>=(SNATCH_TIME if phase==&"snatch" else 0.10):
 				var source := int(current.source)
 				var origin := board._profile_center(source) if source>=0 and source!=player_id else Vector2(INF,INF)
-				board._launch_drawn_card(int(current.player),current.id,bool(current.local),int(current.index),origin,jobs.size()>1)
+				var source_provider := board._profile_center.bind(source) if origin.is_finite() else Callable()
+				board._launch_drawn_card(int(current.player),current.id,bool(current.local),int(current.index),origin,jobs.size()>1,source_provider)
 				launched.append(current.duplicate(true))
 				if phase==&"snatch":
 					Sfx.play(&"toy_click",-4.0)

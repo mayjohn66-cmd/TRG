@@ -4211,7 +4211,7 @@ func _queue_drawn_after_effects(launch: Callable, generation: int) -> void:
 		enqueue_step(launch, -1, false)
 
 
-func _launch_drawn_card(player_id: int, card_id: StringName, local: bool, index: int, origin: Vector2, grouped: bool = false) -> void:
+func _launch_drawn_card(player_id: int, card_id: StringName, local: bool, index: int, origin: Vector2, grouped: bool = false, origin_provider: Callable = Callable()) -> void:
 	var target: Vector2 = Vector2(INF, INF)
 	if local:
 		target = _drawn_card_destination(player_id,index).position
@@ -4223,8 +4223,15 @@ func _launch_drawn_card(player_id: int, card_id: StringName, local: bool, index:
 			_refresh_hands()
 		Sfx.play(&"card_get")
 		return
-	_draw_fx.draw_card(player_id, card_id, local, target, Callable() if local else _profile_nudge.bind(player_id), local, origin, _drawn_card_destination.bind(player_id,index) if local else Callable(), grouped)
+	_draw_fx.draw_card(player_id, card_id, local, target, Callable() if local else _profile_nudge.bind(player_id), local, origin, _drawn_card_destination.bind(player_id,index) if local else _remote_card_destination.bind(player_id), grouped, origin_provider)
 	_refresh_controls()
+
+
+func _remote_card_destination(player_id: int) -> Dictionary:
+	return {"position":_profile_center(player_id),"rotation":0.0}
+
+func _tile_card_origin(tile: int) -> Vector2:
+	return _pawn_layer.get_global_transform()*_tile_center(tile)
 
 
 ## Match the visual centre and angle of the live fan, whose pivot is its foot.

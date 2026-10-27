@@ -29,6 +29,9 @@ var _origin := Vector2.ZERO
 var _muzzle := Vector2.ZERO
 var _direction := Vector2.RIGHT
 var _angle := 0.0
+var _shooter := -1
+var _hit_in_pawns := Vector2.ZERO
+var _muzzle_offset := Vector2.ZERO
 var _saved: Dictionary = {}
 var _restored := false
 var _veil: ColorRect
@@ -45,6 +48,7 @@ func play(board: MainBoard, shooter: int, target: int, speed: float) -> void:
 	_generation = board._fx_generation
 	pace = clampf(speed, 0.35, 2.0)
 	target_id = target
+	_shooter = shooter
 	var view: Node2D = board._pawn_views.get(target)
 	if not is_instance_valid(view):
 		complete = true
@@ -53,20 +57,10 @@ func play(board: MainBoard, shooter: int, target: int, speed: float) -> void:
 	_view_ref = weakref(view)
 	_saved = {"scale": view.scale, "rotation": view.rotation, "tint": view.modulate, "z": view.z_index}
 	# Convert both endpoints to board-local coordinates, including the pawn layer.
-	_at = to_local(view.to_global(Vector2(0, -18)))
-	var source := board._profile_center(shooter)
-	_origin = to_local(source) if source.is_finite() else _at + Vector2(-260, 100)
-	_direction = _origin.direction_to(_at)
-	if _direction.is_zero_approx(): _direction = Vector2.RIGHT
-	_origin += _direction * 86.0
-	var frame := get_viewport_rect().size
-	_origin = _origin.clamp(Vector2(130, 90), frame - Vector2(130, 90))
-	if _origin.distance_to(_at) < 170:
-		_origin = (_at - _direction * 230).clamp(Vector2(130, 90), frame - Vector2(130, 90))
-	_direction = _origin.direction_to(_at)
-	_angle = _direction.angle()
+	_hit_in_pawns = board._pawn_layer.to_local(view.to_global(Vector2(0,-18)))
+	_sync_anchors(board)
 	_veil = ColorRect.new()
-	_veil.size = frame
+	_veil.size = get_viewport_rect().size
 	_veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_veil.z_index = -2
 	_light = ShaderMaterial.new()
@@ -132,7 +126,25 @@ func _process(delta: float) -> void:
 		set_process(false)
 		hide()
 
+func _sync_anchors(board: MainBoard) -> void:
+	_at = to_local(board._pawn_layer.to_global(_hit_in_pawns))
+	var source := board._profile_center(_shooter)
+	_origin = to_local(source) if source.is_finite() else _at+Vector2(-260,100)
+	_direction = _origin.direction_to(_at)
+	if _direction.is_zero_approx(): _direction = Vector2.RIGHT
+	_origin += _direction*86.0
+	var frame := get_viewport_rect().size
+	_origin = _origin.clamp(Vector2(130,90),frame-Vector2(130,90))
+	if _origin.distance_to(_at)<170:
+		_origin = (_at-_direction*230).clamp(Vector2(130,90),frame-Vector2(130,90))
+	_direction = _origin.direction_to(_at)
+	_angle = _direction.angle()
+	if is_instance_valid(gun): gun.flip_h = _direction.x>=0
+	if is_instance_valid(_veil): _veil.size = frame
+
 func _update_pose() -> void:
+	var board: MainBoard = _board_ref.get_ref() if _board_ref!=null else null
+	if board!=null: _sync_anchors(board)
 	var enter := smoothstep(0, 0.22, elapsed)
 	var exit := 1 - smoothstep(0.82, TOTAL_TIME, elapsed)
 	var recoil := exp(-maxf(elapsed - SHOT_AT, 0) * 20) if fired else 0.0
@@ -146,7 +158,11 @@ func _update_pose() -> void:
 	var pixel := gun._camera.unproject_position(gun._assembly.to_global(ToyFlagGun3D.MUZZLE))
 	pixel *= gun.size / Vector2(gun.render_view.size)
 	if gun.flip_h: pixel.x = gun.size.x - pixel.x
-	if not fired: _muzzle = to_local(gun.get_global_transform() * pixel)
+	if not fired:
+		_muzzle = to_local(gun.get_global_transform()*pixel)
+		_muzzle_offset = (_muzzle-_origin).rotated(-_angle)
+	else:
+		_muzzle = _origin+_muzzle_offset.rotated(_angle)
 	_light.set_shader_parameter("frame_size", _veil.size)
 	_light.set_shader_parameter("focus", get_global_transform() * _at)
 	_light.set_shader_parameter("strength", enter * exit * 0.65)

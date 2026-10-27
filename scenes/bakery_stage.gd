@@ -57,11 +57,8 @@ func play(board: MainBoard, owner: int, changes: Array, speed: float) -> void:
 			pawn_id = int(change.pawn)
 			_to = change.position
 			jobs.assign(change.jobs)
-	_at = board._tile_center(tile) if tile>=0 else board._board_center()
+	_sync_anchors(board)
 	_from = board._tile_center(GameEnums.GOAL_TILE)
-	_shop_at = board._board_center()+Vector2(-12,100)
-	# Measured against the painted doorway's dark opening and doorstep.
-	_door = _shop_at+Vector2(30,-34)
 	var view: Node2D = board._pawn_views.get(pawn_id)
 	if view!=null:
 		board._kill_fx(view)
@@ -131,6 +128,7 @@ func _set_phase(next_phase: StringName) -> void:
 	phase_time = 0.0
 
 func _next_reward(board: MainBoard) -> void:
+	_sync_anchors(board)
 	_current += 1
 	if _current>=jobs.size():
 		_set_phase(&"finish")
@@ -138,11 +136,19 @@ func _next_reward(board: MainBoard) -> void:
 		return
 	var job: Dictionary = jobs[_current]
 	var origin := board.get_global_transform()*_at if tile>=0 else Vector2(INF,INF)
-	board._launch_drawn_card(int(job.player),job.id,bool(job.local),int(job.index),origin,jobs.size()>1)
+	board._launch_drawn_card(int(job.player),job.id,bool(job.local),int(job.index),origin,jobs.size()>1,board._tile_card_origin.bind(tile) if tile>=0 else Callable())
 	launched.append(job.duplicate(true))
 	_set_phase(&"deliver")
 
+func _sync_anchors(board: MainBoard) -> void:
+	# Tile centres are pawn-layer local; this cutaway draws in board-root space.
+	_at = board._pawn_layer.transform*board._tile_center(tile) if tile>=0 else board._board_center()
+	_shop_at = board._board_center()+Vector2(-12,100)
+	_door = _shop_at+Vector2(30,-34)
+
 func _update_pose() -> void:
+	var board: MainBoard = _board_ref.get_ref() if _board_ref!=null else null
+	if board!=null: _sync_anchors(board)
 	var jump := smoothstep(SPOT_TIME,DASH_END,elapsed)
 	var view: Node2D = _view_ref.get_ref() if _view_ref!=null else null
 	if view!=null and not _restored:
