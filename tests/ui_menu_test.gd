@@ -246,7 +246,7 @@ func _run() -> void:
 	_expect(not (book._content["entries"] as Array).any(func(data: Dictionary) -> bool: return data.has("augment") and package_kinds.has(AugmentRegistry.get_def(StringName(data["augment"])).category)), "카드 패키지·범용 보급은 법전 장에서 빠졌다")
 	book.show_spread(8)
 	var general_count: int = AugmentRegistry.all().filter(func(d: AugmentDef) -> bool: return package_kinds.has(d.category)).size()
-	_expect(book._notebook_title.text == "카드 패키지와 범용 보급" and book.entry_count() == general_count and general_count > 0 and book._list_buttons[8].visible, "범용 장: 카드 패키지·범용 보급 %d종" % general_count)
+	_expect(book._notebook_title.text == "보급 증강 분류" and book.entry_count() == general_count and general_count > 0 and book._list_buttons[8].visible, "범용 장: 카드 패키지·범용 보급 %d종" % general_count)
 	book.show_spread(9)
 	_expect(book._notebook_title.text == "하이리스크 하이리턴" and book.entry_count() == SuperAugments.ALL_IDS.size() and book._list_buttons[9].visible and book._list_buttons[4].visible, "초증강 장: 하이리스크 하이리턴 설명 + 초증강 %d종 (도감 묶음)" % SuperAugments.ALL_IDS.size())
 	book.show_spread(4)
