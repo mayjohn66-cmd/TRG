@@ -13,6 +13,9 @@ const MAX_PAIRS: int = 3
 const INK_PATH: String = "res://assets/fx/capture/ink_impact.png"
 const SLASH_PATH: String = "res://assets/fx/capture/scythe_slash.png"
 const STRIKE_PATH: String = "res://assets/fx/capture/singular_strike.png"
+const MOTION_PATH: String = "res://assets/fx/capture/motion_brush_v01.png"
+const PIERCE_PATH: String = "res://assets/fx/capture/pierce_trail_v01.png"
+const MAGIC_PATH: String = "res://assets/fx/capture/magic_contact_v01.png"
 
 var active: bool = false
 var attacker_avatar: StringName = &""
@@ -25,6 +28,9 @@ var _hit: Texture2D = null
 var _ink: Texture2D = null
 var _slash: Texture2D = null
 var _strike: Texture2D = null
+var _motion_brush: Texture2D = null
+var _pierce: Texture2D = null
+var _magic: Texture2D = null
 var _strike_region := Rect2()
 var _queue: Array[Dictionary] = []
 var _keys: Dictionary = {}
@@ -38,6 +44,9 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_ink = TextureCache.fetch(INK_PATH)
 	_slash = TextureCache.fetch(SLASH_PATH)
+	_motion_brush = TextureCache.fetch(MOTION_PATH)
+	_pierce = TextureCache.fetch(PIERCE_PATH)
+	_magic = TextureCache.fetch(MAGIC_PATH)
 	var strike_art: Dictionary = PawnArt.load_sprite([STRIKE_PATH])
 	if not strike_art.is_empty():
 		_strike = strike_art.texture
@@ -222,19 +231,13 @@ func _draw_backdrop(target: Vector2, side: float, color: Color, fade: float) -> 
 	var bar: float = size.y * 0.045 * fade
 	draw_rect(Rect2(Vector2.ZERO, Vector2(size.x, bar)), Color(0, 0, 0, 0.95 * fade))
 	draw_rect(Rect2(Vector2(0, size.y - bar), Vector2(size.x, bar)), Color(0, 0, 0, 0.95 * fade))
-	# A restrained diagonal dark red ink field, behind both characters.
-	draw_colored_polygon(PackedVector2Array([Vector2(0, size.y * 0.72), Vector2(size.x, size.y * 0.12), Vector2(size.x, size.y * 0.42), Vector2(0, size.y * 0.94)]), Color(0.12, 0.025, 0.045, 0.45 * fade))
-	var ink_time: float = minf(elapsed, IMPACT_AT) + maxf(0.0, minf(elapsed, RECOIL_UNTIL) - HOLD_UNTIL) * 0.14
-	var intensity: float = (0.16 + 0.12 * ramp(elapsed, SWING_AT, IMPACT_AT)) * fade
-	for index: int in 22:
-		var angle: float = index * TAU / 22.0 + sin(index * 3.7) * 0.055
-		var direction := Vector2.from_angle(angle)
-		var normal := direction.orthogonal()
-		var inner: float = side * (0.58 + 0.10 * sin(index * 4.3 + ink_time * 8.0))
-		var outer: float = maxf(size.x, size.y) * 1.1
-		var width: float = 1.5 + float(index % 4) * 0.8
-		var ray_color := Color(color.r, color.g, color.b, intensity * (0.7 if index % 3 == 0 else 0.35))
-		draw_colored_polygon(PackedVector2Array([target + direction * inner, target + direction * outer + normal * width, target + direction * outer - normal * width]), ray_color)
+	if _motion_brush != null:
+		# Loose fibrous motion paint at the edges; the middle stays empty for faces.
+		var time := trail_time(elapsed)
+		var drift := Vector2(-size.x, size.y) * time * 0.035
+		var rect := Rect2(Vector2.ZERO + drift, size).grow(side * 0.03)
+		draw_texture_rect(_motion_brush, rect.grow(side * 0.01), false, Color(0.4, 0.07, 0.12, fade * 0.24))
+		draw_texture_rect(_motion_brush, rect, false, Color(color, fade * 0.22))
 
 
 func _draw_ink(target: Vector2, side: float, color: Color, fade: float) -> void:
@@ -247,13 +250,7 @@ func _draw_ink(target: Vector2, side: float, color: Color, fade: float) -> void:
 	var rect := Rect2(center - Vector2.ONE * extent * 0.5, Vector2.ONE * extent)
 	draw_texture_rect(_ink, rect.grow(side * 0.025), false, Color(0.10, 0.01, 0.035, opacity * 0.9))
 	draw_texture_rect(_ink, rect, false, Color(color.r, color.g, color.b, opacity * 0.78))
-	# Separate small fragments drift at the same slow visual pace; no RNG calls.
-	var drift: float = ramp(elapsed, IMPACT_AT, HOLD_UNTIL) * 0.025 + ramp(elapsed, HOLD_UNTIL, RECOIL_UNTIL) * 0.08
-	for index: int in 9:
-		var angle: float = -1.25 + index * 0.30
-		var at := target + Vector2.from_angle(angle) * side * (0.14 + drift + float(index % 3) * 0.035)
-		var radius: float = side * (0.004 + float(index % 3) * 0.002)
-		draw_colored_polygon(PackedVector2Array([at + Vector2(-radius * 1.5, 0), at + Vector2(0, -radius), at + Vector2(radius * 2.0, radius * 0.4)]), Color(color.r, color.g, color.b, opacity * 0.75))
+	# The original painting already contains torn flecks; no triangular confetti.
 
 
 func _draw_weapon_trail(target: Vector2, side: float, color: Color, fade: float) -> void:
@@ -275,16 +272,13 @@ func _draw_weapon_trail(target: Vector2, side: float, color: Color, fade: float)
 		var source := Rect2(Vector2.ZERO, Vector2(_slash.get_width(), _slash.get_height() * reveal))
 		draw_texture_rect_region(_slash, rect, source, Color(color.r, color.g, color.b, opacity * strike * 0.92))
 	else:
-		# Arrows, slingshot shots and Daya's thrust follow a narrow rightward line.
-		var direction := Vector2(1.0, -0.025).normalized()
-		var normal := direction.orthogonal()
-		var tip := target + direction * side * lerpf(-0.24, 0.24, strike)
-		for index: int in 3:
-			var offset: float = float(index - 1) * side * 0.013
-			var tail := tip - direction * side * (0.45 - absf(float(index - 1)) * 0.12) + normal * offset
-			var width: float = side * (0.005 if index == 1 else 0.0018)
-			var tint := Color(color.r, color.g, color.b, opacity * strike * (0.9 if index == 1 else 0.45))
-			draw_colored_polygon(PackedVector2Array([tail, tip - direction * side * 0.08 + normal * (offset + width), tip, tip - direction * side * 0.08 + normal * (offset - width)]), tint)
+		if _pierce == null:
+			return
+		var tip := target + Vector2(side * lerpf(-0.24, 0.24, strike), -side * 0.006)
+		var extent := Vector2(side * 0.60, side * 0.40)
+		draw_set_transform(tip, -0.025)
+		draw_texture_rect(_pierce, Rect2(-extent * Vector2(0.86, 0.5), extent), false, Color(color, opacity * strike * 0.88))
+		draw_set_transform(Vector2.ZERO)
 
 
 func _draw_contact(target: Vector2, side: float, color: Color, fade: float) -> void:
@@ -292,22 +286,25 @@ func _draw_contact(target: Vector2, side: float, color: Color, fade: float) -> v
 		return
 	var age: float = elapsed - IMPACT_AT
 	var opacity: float = (1.0 - ramp(elapsed, HOLD_UNTIL + 0.06, RECOIL_UNTIL)) * fade
-	var radius: float = side * (0.055 + 0.04 * ramp(age, 0.0, 0.12) + 0.018 * ramp(elapsed, HOLD_UNTIL, RECOIL_UNTIL))
-	var light := Color(color.r, color.g, color.b, opacity * 0.8)
+	var slow := ramp(elapsed, HOLD_UNTIL, RECOIL_UNTIL)
 	match impact_kind(attacker_avatar):
 		&"slash":
 			pass # The painted blade sweep supplies the contact accent too.
 		&"pierce":
-			var tip := target + Vector2(radius * 1.4, -radius * 0.5)
-			draw_colored_polygon(PackedVector2Array([target - Vector2(radius, -radius * 0.4), target + Vector2(-radius * 0.15, -radius * 0.15), tip, target + Vector2(0, radius * 0.15)]), light)
+			if _pierce != null:
+				var extent := Vector2(side * 0.27, side * 0.22) * (1 + slow * 0.2)
+				draw_set_transform(target, -0.12)
+				draw_texture_rect(_pierce, Rect2(-extent * Vector2(0.7, 0.5), extent), false, Color(color, opacity * 0.7))
 		&"magic":
-			for index: int in 4:
-				var at := target + Vector2.from_angle(index * PI * 0.5 + 0.3) * radius
-				var r: float = side * 0.012
-				draw_colored_polygon(PackedVector2Array([at + Vector2(0, -r * 1.7), at + Vector2(r, 0), at + Vector2(0, r * 1.7), at - Vector2(r, 0)]), light)
+			if _magic != null:
+				var extent := Vector2.ONE * side * (0.36 + slow * 0.08)
+				draw_set_transform(target, slow * 0.16)
+				draw_texture_rect(_magic, Rect2(-extent / 2, extent), false, Color(color, opacity * 0.82))
 		_:
-			draw_arc(target, radius, -2.0, 2.0, 28, light, 3.5, true)
-			draw_arc(target - Vector2(side * 0.018, 0), radius * 0.72, -1.6, 1.6, 24, Color(1, 1, 1, opacity * 0.7), 1.5, true)
+			if _ink != null:
+				var extent := Vector2.ONE * side * (0.22 + slow * 0.06)
+				draw_texture_rect(_ink, Rect2(target - extent / 2, extent), false, Color(color, opacity * 0.78))
+	draw_set_transform(Vector2.ZERO)
 	var flash: float = (1.0 - ramp(age, 0.0, 0.035)) * 0.12
 	if flash > 0.0:
 		draw_rect(Rect2(Vector2.ZERO, size), Color(1.0, 0.94, 0.82, flash))

@@ -27,6 +27,7 @@ on:
           - profile-stamps
           - shield
           - bang
+          - capture-fx
           - warning-icon
           - rulebook-art
           - avatar-hq
@@ -65,7 +66,9 @@ jobs:
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
           REQUESTED_SCOPE: ${{ inputs.validation }}
         run: |
-          if [[ "${REQUESTED_SCOPE}" == "bang" || "${COMMIT_MESSAGE}" == *"[check:bang]"* ]]; then
+          if [[ "${REQUESTED_SCOPE}" == "capture-fx" || "${COMMIT_MESSAGE}" == *"[check:capture-fx]"* ]]; then
+            echo "scope=capture-fx" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "bang" || "${COMMIT_MESSAGE}" == *"[check:bang]"* ]]; then
             echo "scope=bang" >> "${GITHUB_OUTPUT}"
           elif [[ "${REQUESTED_SCOPE}" == "shield" || "${COMMIT_MESSAGE}" == *"[check:shield]"* ]]; then
             echo "scope=shield" >> "${GITHUB_OUTPUT}"
@@ -171,6 +174,15 @@ jobs:
           godot --headless --path . -s res://tests/ui_bang_test.gd 2>&1 | tee /tmp/bang.log
           grep -q 'UI_BANG_OK' /tmp/bang.log
           if grep -q 'SCRIPT ERROR' /tmp/bang.log; then exit 1; fi
+
+      - name: Check painted capture effects
+        if: steps.validation.outputs.scope == 'capture-fx'
+        run: |
+          set -o pipefail
+          TEST_ONLY=test_capture_cutin godot --headless --path . -s res://tests/run_tests.gd 2>&1 | tee /tmp/capture_unit.log
+          godot --headless --path . -s res://tests/ui_capture_fx_test.gd 2>&1 | tee /tmp/capture_fx.log
+          grep -q 'UI_CAPTURE_FX_OK' /tmp/capture_fx.log
+          if grep -q 'SCRIPT ERROR' /tmp/capture_unit.log /tmp/capture_fx.log; then exit 1; fi
 
       - name: Check pawn protection shells
         if: steps.validation.outputs.scope == 'shield'
@@ -335,7 +347,7 @@ jobs:
           if grep -q "Lambda capture" /tmp/ui_fx_test.log; then echo "freed lambda captures remain"; grep -c "Lambda capture" /tmp/ui_fx_test.log; exit 1; fi
 
       - name: Run avatar capture presentation test
-        if: steps.validation.outputs.scope == 'full'
+        if: steps.validation.outputs.scope == 'full' || steps.validation.outputs.scope == 'capture-fx'
         run: godot --headless --path . -s res://tests/ui_capture_test.gd
 
       - name: Run counter-before-kill presentation sequence test (dodge, mirror, no counter)
