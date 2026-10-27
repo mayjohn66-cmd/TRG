@@ -16,6 +16,13 @@ var ground_shadow: bool = true
 var npc_behavior: int = -1
 var _signature: String = ""
 var _pulse: float = 1.0
+var _shield_shell: ShieldShell
+## Persistent protection remains visible; this switch only skips gain/break motion.
+var shield_motion: bool = true
+
+
+func _ready() -> void:
+	set_process(skill_ready())
 
 
 func configure(value: PlayerPawn, color: Color, images: bool = true) -> void:
@@ -23,13 +30,120 @@ func configure(value: PlayerPawn, color: Color, images: bool = true) -> void:
 	owner_color = color
 	use_art = images
 	var art: Dictionary = PawnArt.sprite(pawn) if images else {}
-	var key: String = "%s:%s:%s:%s:%s:%s:%s:%s:%s:%s" % [pawn.kind, pawn.unit_no, pawn.slot, pawn.promoted, pawn.carried.size(), pawn.skill_used, pawn.is_finished, color, pawn.revenge_boost, (art.get("texture") as Texture2D).resource_path if not art.is_empty() else "shape"]
+	var key: String = "%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s" % [pawn.kind, pawn.unit_no, pawn.slot, pawn.promoted, pawn.carried.size(), pawn.skill_used, pawn.is_finished, color, pawn.revenge_boost, (art.get("texture") as Texture2D).resource_path if not art.is_empty() else "shape", pawn.shield, pawn.ward]
 	if key == _signature:
 		return
+	var animate_shield: bool = shield_motion and is_inside_tree() and _signature != ""
 	_signature = key
 	artwork = art
+	_sync_shield(animate_shield)
 	set_process(skill_ready())
 	queue_redraw()
+
+
+func has_protection() -> bool:
+	return pawn != null and not pawn.is_finished and (pawn.ward or (pawn.shield and pawn.sub_type() == GameEnums.PawnSubType.BADUK_WHITE))
+
+
+func _sync_shield(animate: bool) -> void:
+	if _shield_shell == null and not has_protection():
+		return
+	if _shield_shell == null:
+		_shield_shell = ShieldShell.new()
+		_shield_shell.name = "ProtectionShell"
+		add_child(_shield_shell)
+	var height: float = BODY_BOX.size.y
+	if not artwork.is_empty():
+		var region: Rect2 = artwork.region
+		height = region.size.y * minf(BODY_BOX.size.x / region.size.x, BODY_BOX.size.y / region.size.y)
+	elif pawn.kind == GameEnums.PawnKind.GO or pawn.kind == GameEnums.PawnKind.YUT or pawn.kind == GameEnums.PawnKind.JANGGI:
+		height = 20.0
+	_shield_shell.fit_body(height, mini(pawn.carried.size(), 3), float(pawn.entity_id))
+	_shield_shell.set_active(has_protection(), animate and not pawn.is_finished)
+
+
+## When a white stone has two protections, consuming one flashes the surviving shell.
+func shield_hit() -> void:
+	if _shield_shell != null and has_protection() and shield_motion:
+		_shield_shell.flash_hit()
+
+
+## The back glass sits behind the pawn; the clear front and reflections sit above it.
+## No per-frame CPU drawing or gameplay timers are needed for an idle shield.
+class ShieldShell extends Node2D:
+	const GLASS: Shader = preload("res://assets/fx/pawn_shield.gdshader")
+	var active: bool = false
+	var _layers: Array[ColorRect] = []
+	var _materials: Array[ShaderMaterial] = []
+	var _transition: Tween
+	var _flash: Tween
+
+	func _init() -> void:
+		for front: bool in [false, true]:
+			var layer := ColorRect.new()
+			layer.name = "GlassFront" if front else "GlassBack"
+			layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			layer.z_index = 1 if front else -1
+			var glass := ShaderMaterial.new()
+			glass.shader = GLASS
+			glass.set_shader_parameter("front_layer", 1.0 if front else 0.0)
+			glass.set_shader_parameter("strength", 0.0)
+			layer.material = glass
+			add_child(layer)
+			_layers.append(layer)
+			_materials.append(glass)
+		visible = false
+
+	func fit_body(height: float, stack_count: int, seed_value: float) -> void:
+		var top: float = -height - 6.0
+		var bottom: float = 9.0 + stack_count * 4.0
+		var radius := Vector2(21.0, (bottom - top) * 0.5)
+		for layer: ColorRect in _layers:
+			layer.position = Vector2(0.0, (top + bottom) * 0.5) - radius * 1.14
+			layer.size = radius * 2.28
+		for glass: ShaderMaterial in _materials:
+			glass.set_shader_parameter("phase", seed_value * 0.71)
+
+	func _parameter(key: StringName, value: float) -> void:
+		for glass: ShaderMaterial in _materials:
+			glass.set_shader_parameter(key, value)
+
+	func _animate_parameter(value: float, key: StringName) -> void:
+		_parameter(key, value)
+
+	func set_active(value: bool, animate: bool) -> void:
+		if active == value:
+			return
+		active = value
+		if _transition != null: _transition.kill()
+		if _flash != null: _flash.kill()
+		_parameter(&"hit_flash", 0.0)
+		_parameter(&"fracture", 0.0)
+		if not animate:
+			visible = value
+			scale = Vector2.ONE
+			_parameter(&"strength", 1.0 if value else 0.0)
+			return
+		visible = true
+		_transition = create_tween().set_parallel(true)
+		if value:
+			scale = Vector2.ONE * 0.82
+			_parameter(&"strength", 0.0)
+			_transition.tween_property(self, "scale", Vector2.ONE, 0.32).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+			_transition.tween_method(_animate_parameter.bind(&"strength"), 0.0, 1.0, 0.24)
+		else:
+			scale = Vector2.ONE
+			_parameter(&"strength", 1.0)
+			_transition.tween_property(self, "scale", Vector2.ONE * 1.12, 0.32).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+			_transition.tween_method(_animate_parameter.bind(&"fracture"), 0.0, 1.0, 0.32)
+			_transition.tween_method(_animate_parameter.bind(&"strength"), 1.0, 0.0, 0.32)
+			_transition.chain().tween_callback(hide)
+
+	func flash_hit() -> void:
+		if _flash != null: _flash.kill()
+		_parameter(&"hit_flash", 1.0)
+		_flash = create_tween()
+		_flash.tween_method(_animate_parameter.bind(&"hit_flash"), 1.0, 0.0, 0.25)
 
 
 func skill_ready() -> bool:

@@ -1237,6 +1237,7 @@ func _bind_state() -> void:
 			_set_hint(pawn_id, {"arc": 0.0, "dur": 0.5}))
 	state.passive_triggered.connect(_on_passive_triggered)
 	state.shield_broken.connect(func(pawn_id: int, tile: int) -> void:
+		_refresh_pawn_protection(pawn_id, true)
 		_on_passive_triggered(pawn_id, &"shield_block")
 		var shield_pawn: PlayerPawn = state.get_pawn(pawn_id)
 		if shield_pawn != null and shield_pawn.sub_type() != GameEnums.PawnSubType.BADUK_WHITE:
@@ -1274,7 +1275,9 @@ func _bind_state() -> void:
 			_record(pawn.owner_id, "연대책임: %s 짝 말도 %s" % [_bq("%d번 말" % pawn.slot), verb], "", true))
 	state.npc_sweep_started.connect(_on_train_sweep_started)
 	state.npc_swept.connect(_on_npc_swept)
-	state.shield_recharged.connect(func(pawn_id: int) -> void: _log_line("[백돌 방어막] %s의 방어막이 다시 차올랐습니다" % _pawn_name(pawn_id), Color("b197fc")))
+	state.shield_recharged.connect(func(pawn_id: int) -> void:
+		_refresh_pawn_protection(pawn_id)
+		_log_line("[백돌 방어막] %s의 방어막이 다시 차올랐습니다" % _pawn_name(pawn_id), Color("b197fc")))
 	state.trap_defused.connect(func(tile: int, id: String, pawn_id: int) -> void:
 		_on_passive_triggered(pawn_id, &"sweeper_defuse")
 		_log_line("[지뢰찾기] %s이(가) %d번 타일의 %s을(를) 해체하고 카드 1장!" % [_pawn_name(pawn_id), tile, _attachment_name(id)], Color("63e6be"))
@@ -2506,6 +2509,7 @@ func _build_pawn_views() -> void:
 		var token := PawnToken.new()
 		token.name = "Token"
 		token.ground_shadow = false
+		token.shield_motion = _fx_on()
 		token.configure(pawn, PLAYER_COLORS[pawn.owner_id])
 		bounce.add_child(token)
 		var badge := _make_label("", 9, Color.WHITE)
@@ -2541,6 +2545,18 @@ func _pawn_position_at(pawn: PlayerPawn, tile: int) -> Vector2:
 	if pawn.is_finished:
 		position_in_tile = _tile_center(GameEnums.GOAL_TILE) + Vector2(-22 + owner_index * 14 + (pawn.slot - 1) * 3.0, 38)
 	return position_in_tile
+
+
+## Shield events update the token in place, so a shield never survives on a stale sprite.
+func _refresh_pawn_protection(pawn_id: int, blocked: bool = false) -> void:
+	var pawn: PlayerPawn = state.get_pawn(pawn_id) if state != null else null
+	var view: Node2D = _pawn_views.get(pawn_id)
+	if pawn == null or view == null:
+		return
+	var token := view.get_node("Bounce/Token") as PawnToken
+	token.configure(pawn, PLAYER_COLORS[pawn.owner_id])
+	if blocked:
+		token.shield_hit()
 
 
 func _refresh_pawns() -> void:
@@ -3714,6 +3730,8 @@ func _on_utility_picked(player_id: int, augment_id: StringName) -> void:
 	var fx_list: Array[Dictionary] = state.utility_fx.filter(func(entry: Dictionary) -> bool: return int(entry.get("player_id", -1)) == player_id)
 	state.utility_fx = state.utility_fx.filter(func(entry: Dictionary) -> bool: return int(entry.get("player_id", -1)) != player_id)
 	for entry: Dictionary in fx_list:
+		if entry.get("kind", "") == "shield":
+			_refresh_pawn_protection(int(entry["pawn_id"]))
 		if entry.has("tile"):
 			at = layer + _tile_center(int(entry["tile"])) + Vector2(0, -40)
 		elif entry.has("pawn_id"):
@@ -4754,7 +4772,9 @@ func _fill_pawn_tip(pawn_id: int) -> void:
 		status += "  ★나리 승급(+1칸)"
 	if pawn.revenge_boost and not pawn.has_left_start:
 		status += "\n리벤지 부스터 활성화: 이번 출격 시 이동 거리 +%d칸!" % _revenge_steps(pawn)
-	if pawn.sub_type() == GameEnums.PawnSubType.BADUK_WHITE:
+	if pawn.ward:
+		status += "  보호막 있음"
+	elif pawn.sub_type() == GameEnums.PawnSubType.BADUK_WHITE:
 		status += "  방어막 있음" if pawn.shield else "  (방어막 깨짐)"
 	_tip_title.text = "%s  - P%d%s" % [PawnCatalog.full_name(pawn.kind, pawn.unit_no), pawn.owner_id, status]
 	# 판정 도구 카드처럼 구분선 위에 패시브(둘이면 줄 나눔), 아래에 필살기. [패시브]·[필살기] 머리말은 쓰지 않는다.
@@ -6772,6 +6792,9 @@ func _enqueue_batch(entries: Array[Dictionary]) -> void:
 
 ## 연출 큐를 비우고 재생 중인 러너를 멈춘다 (판 초기화·되감기·테스트 정리용). 이미 시작된 트윈은 건드리지 않는다.
 func _reset_presentation() -> void:
+	var bang_stage: Node2D = get_node_or_null("BangStage")
+	if bang_stage != null:
+		bang_stage.cancel()
 	var bond_stage: Node2D = get_node_or_null("BondStage")
 	if bond_stage!=null:
 		bond_stage.cancel()
@@ -7296,8 +7319,46 @@ func _settle_pawn_view(view: Node2D, pawn: PlayerPawn, force: bool = false) -> v
 	view.visible = want_visible
 
 
-## 뱅! 저격 연출: 쏜 사람의 프로필에서 총알이 날아가 맞는 말에 충격 링이 번쩍이고, 그 말이 출발선으로 장외 사출된다 (카드가 끝난 뒤).
+## Replace only this shot's pending ejection, preserving the counter gate and stack order.
 func _fx_bang(shooter: int, target_pawn_id: int) -> void:
+	if not _fx_on():
+		return
+	var action: Callable = _play_bang.bind(shooter, target_pawn_id)
+	for entry: Dictionary in _late_steps:
+		if int(entry["pawn"]) == target_pawn_id:
+			entry["step"] = action
+			return
+	# Replayed event without an engine signal still uses the same guarded presentation.
+	_enqueue_late(action, target_pawn_id)
+
+
+func _play_bang(shooter: int, target_pawn_id: int) -> void:
+	if not _ejection_confirmed(target_pawn_id):
+		_show_defended(target_pawn_id)
+		return
+	var view: Node2D = _pawn_views.get(target_pawn_id)
+	var pawn: PlayerPawn = state.get_pawn(target_pawn_id)
+	if not is_instance_valid(view) or pawn == null:
+		return
+	var generation: int = _fx_generation
+	var stage: Node2D = preload("res://scenes/bang_stage.gd").new()
+	add_child(stage)
+	stage.play(self, shooter, target_pawn_id, _motion_pace())
+	while generation == _fx_generation and is_instance_valid(stage) and not stage.released and not stage.complete:
+		await get_tree().process_frame
+	if generation != _fx_generation or not is_instance_valid(stage) or not stage.released:
+		if is_instance_valid(stage): stage.cancel()
+		return
+	_record_ejection(target_pawn_id, shooter, true)
+	# Release on the hit beat, without another queue linger between bullet and launch.
+	await _play_capture_eject(target_pawn_id, shooter, pawn.owner_id, false)
+	while generation == _fx_generation and is_instance_valid(stage) and not stage.complete:
+		await get_tree().process_frame
+	if is_instance_valid(stage): stage.queue_free()
+
+
+## Keep the UDO +4 card's existing feedback independent of the BANG! cutscene.
+func _fx_simple_shot(shooter: int, target_pawn_id: int) -> void:
 	if not _fx_on():
 		return
 	Sfx.play(&"shot")
@@ -9981,9 +10042,8 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_super_changes.clear()
 		&"bang_resolved":
 			var target_name: String = _pawn_name(int(data["target"]))
-			_log_line("[BANG!] P%d가 %s을(를) 저격! %d번 → %d번 타일로 2칸 밀려납니다." % [data["shooter"], target_name, data["from"], data["to"]], Color("ff6b6b"))
+			_log_line("[BANG!] P%d가 %s을(를) 저격! 출발선으로 장외 사출!" % [data["shooter"], target_name], Color("ff6b6b"))
 			_fx_bang(int(data["shooter"]), int(data["target"]))
-			_react_hit_pawn(int(data["target"]))
 		&"duel_started", &"duel_pick_in", &"duel_revealed", &"duel_resolved":
 			if kind == &"duel_started":
 				_record(int(data["challenger"]), "%s에게 일기토 데스매치 신청!" % _log_who(int(data["defender"])))
@@ -9999,7 +10059,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_log_line("[백돌 방어막] 백돌에 막혀 %s이(가) %d번 → %d번으로 밀려났습니다" % [_pawn_name(int(data["pawn_id"])), data["from"], data["to"]], Color("b197fc"))
 		&"bomb_applied":
 			_log_line("[UDO +4] P%d의 %s이(가) 출발선으로 장외 사출! 내 이번 이동 +%d칸" % [data["victim"], _pawn_name(int(data["pawn_id"])), PenaltyBombCommand.advance_steps()], Color("ffd43b"))
-			_fx_bang(int(data["shooter"]), int(data["pawn_id"]))
+			_fx_simple_shot(int(data["shooter"]), int(data["pawn_id"]))
 			_react_hit_pawn(int(data["pawn_id"]))
 		&"player_ranked":
 			var ranked: int = int(data["player_id"])

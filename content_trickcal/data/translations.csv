@@ -333,7 +333,7 @@ X\n수레바퀴,X\nWheel,X\n運命の輪
 [8번 공 돌진] %s 처치 후 +%d칸 더 굴러갑니다,[8-Ball Charge] %s KO'd and rolls +%d more tiles,[8ボール突進] %s を撃破してさらに +%dマス転がります
 [? 함정],[? Trap],[? 罠]
 [? 함정] P%d가 설치한 뒷면 함정,[? Trap] Face-down trap set by P%d,[? 罠] P%d が設置した裏向きの罠
-[BANG!] P%d가 %s을(를) 저격! %d번 → %d번 타일로 2칸 밀려납니다.,"[BANG!] P%d sniped %s! Pushed back 2 spaces, %d → %d.",[BANG!] P%d が %s を狙撃！ %d番 → %d番マスへ2マス押し戻されます。
+[BANG!] P%d가 %s을(를) 저격! 출발선으로 장외 사출!,[BANG!] P%d sniped %s! Launched back to the start!,[BANG!] P%d が %s を狙撃！ 盤外へ吹き飛ばされてスタートへ！
 [BANG!] 쏠 상대의 프로필을 눌러 주세요,[BANG!] Tap the profile of the rival to shoot,[BANG!] 撃つ相手のプロフィールを押してください
 [BUST! (21 초과 - 0칸 이동 실패)],"[BUST! (over 21 - 0 spaces, move failed)]",[BUST! (21超え - 0マス移動失敗)]
 [P%d 발동!] %s,[P%d activates!] %s,[P%d 発動！] %s
@@ -2268,3 +2268,4 @@ v%s · 비공식 팬게임 (원작사와 무관한 비영리 무료 배포물),v
 "[업기] 옆 칸 아군과 합류!","[Stack] Merged with the ally next door!","[おんぶ] 隣のマスの味方と合流！"
 내 말이 아군 말 칸이나 바로 앞뒤 칸에 멈추면 업혀서 한 번에 이동해요.,"Stop on or right next to an ally and your pawns stack, moving together as one.",自分の駒が味方のマスかその前後のマスに止まると、おんぶして一緒に動きます。
 "잡으면 재굴림, 필살기는 주사위 한 번 더.","Reroll on a KO; special: roll once more.",撃破で振り直し、必殺技はもう一度ダイス。
+보호막 있음,Shield active,バリアあり
