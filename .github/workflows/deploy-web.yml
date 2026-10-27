@@ -185,13 +185,15 @@ jobs:
           godot --headless --path . --check-only -s res://scenes/card_skin.gd 2>&1 | tee /tmp/warning_icon.log
           if grep -q 'SCRIPT ERROR' /tmp/warning_icon.log; then exit 1; fi
 
-      - name: Check BANG card presentation
+      - name: Check BANG and sniper aiming presentation
         if: steps.validation.outputs.scope == 'bang'
         run: |
           set -o pipefail
-          godot --headless --path . -s res://tests/ui_bang_test.gd 2>&1 | tee /tmp/bang.log
+          godot --headless --audio-driver Dummy --path . -s res://tests/ui_bang_test.gd 2>&1 | tee /tmp/bang.log
+          godot --headless --audio-driver Dummy --path . -s res://tests/ui_sniper_test.gd 2>&1 | tee /tmp/sniper_aim.log
           grep -q 'UI_BANG_OK' /tmp/bang.log
-          if grep -q 'SCRIPT ERROR' /tmp/bang.log; then exit 1; fi
+          grep -q 'UI_SNIPER_OK' /tmp/sniper_aim.log
+          if grep -Eq 'SCRIPT ERROR|SHADER ERROR' /tmp/bang.log /tmp/sniper_aim.log; then exit 1; fi
 
       - name: Check mobile effect coordinates
         if: steps.validation.outputs.scope == 'mobile-fx'

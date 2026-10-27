@@ -6,7 +6,8 @@ const SHOT_AT := 0.58
 const HIT_AT := 0.65
 const RELEASE_AT := 0.74
 const TOTAL_TIME := 1.12
-const GOLD := Color("ffe3a1")
+const AIM := Color("ff365c")
+const AIM_EDGE := Color("35152b")
 const FOCUS := preload("res://assets/fx/sniper_focus.gdshader")
 const SMOKE := preload("res://assets/fx/bang_smoke.gdshader")
 const TRACER := preload("res://assets/fx/bang_tracer.gdshader")
@@ -188,8 +189,10 @@ func _draw() -> void:
 	for i: int in 4:
 		var direction := Vector2.from_angle(PI / 4 + i * PI / 2)
 		var corner := _at + direction * radius
-		draw_line(corner, corner - Vector2(direction.x * 9, 0), Color(GOLD, fade), 2, true)
-		draw_line(corner, corner - Vector2(0, direction.y * 9), Color(GOLD, fade), 2, true)
+		draw_line(corner, corner - Vector2(direction.x * 9, 0), Color(AIM_EDGE, fade), 6, true)
+		draw_line(corner, corner - Vector2(0, direction.y * 9), Color(AIM_EDGE, fade), 6, true)
+		draw_line(corner, corner - Vector2(direction.x * 9, 0), Color(AIM, fade), 3, true)
+		draw_line(corner, corner - Vector2(0, direction.y * 9), Color(AIM, fade), 3, true)
 	if fired:
 		var age := elapsed - SHOT_AT
 		var flash := 1 - smoothstep(0.008, 0.11, age)
