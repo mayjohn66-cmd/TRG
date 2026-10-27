@@ -75,13 +75,13 @@ func _ready() -> void:
 	fan_notice.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	fan_notice.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	fan_notice.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	fan_notice.offset_top = -LobbyTheme.BAR_HEIGHT - 26.0
-	fan_notice.offset_bottom = -LobbyTheme.BAR_HEIGHT - 4.0
+	fan_notice.offset_top = -LobbyTheme.bar_height() - 26.0
+	fan_notice.offset_bottom = -LobbyTheme.bar_height() - 4.0
 	add_child(fan_notice)
 	var area := CenterContainer.new()
 	area.set_anchors_preset(Control.PRESET_FULL_RECT)
-	area.offset_top = LobbyTheme.BAR_HEIGHT
-	area.offset_bottom = -LobbyTheme.BAR_HEIGHT
+	area.offset_top = LobbyTheme.bar_height()
+	area.offset_bottom = -LobbyTheme.bar_height()
 	add_child(area)
 	var stack := VBoxContainer.new()
 	area.add_child(stack)
@@ -288,8 +288,8 @@ func _build_mode_page() -> void:
 	logo.anchor_right = 0.5
 	logo.offset_left = -HUB_LOGO_WIDTH / 2.0
 	logo.offset_right = HUB_LOGO_WIDTH / 2.0
-	logo.offset_top = -LobbyTheme.BAR_HEIGHT - 24.0 - HUB_LOGO_WIDTH / 2.0
-	logo.offset_bottom = -LobbyTheme.BAR_HEIGHT - 24.0
+	logo.offset_top = -LobbyTheme.bar_height() - 24.0 - HUB_LOGO_WIDTH / 2.0
+	logo.offset_bottom = -LobbyTheme.bar_height() - 24.0
 	_mode_page.add_child(logo)
 	_refresh_hub()
 
@@ -404,7 +404,7 @@ func _show_step(value: int) -> void:
 	# 허브(2단계)는 자기 화면에 규칙·설정 버튼이 있어 청록 띠를 숨긴다 (뒤로가기·규칙·설정 버튼 자체는 그대로 살아 있다).
 	(_top["bar"] as Control).visible = value != 2
 	(_bottom["bar"] as Control).visible = value != 2
-	var bar_gap: float = 0.0 if value == 2 else LobbyTheme.BAR_HEIGHT
+	var bar_gap: float = 0.0 if value == 2 else LobbyTheme.bar_height()
 	_fan_notice.offset_top = -bar_gap - 22.0
 	_fan_notice.offset_bottom = -bar_gap - 4.0
 	if value == 2:

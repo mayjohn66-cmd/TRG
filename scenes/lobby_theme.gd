@@ -20,6 +20,8 @@ const CREAM_EDGE: Color = Color("d9b97a")
 const INK: Color = Color("1b4d3e")
 const INK_SOFT: Color = Color("3d6b5c")
 const BAR_HEIGHT: float = 34.0
+## 폰(터치)에서는 띠가 기준 해상도의 약 0.5배로 보여 34px 띠가 손가락보다 얇다 -> 띠와 글씨를 키운다.
+const TOUCH_BAR_HEIGHT: float = 52.0
 const RULES_TEXT: String = """목표: 내 말 4개를 먼저 완주시키면 승리합니다.
 턴 진행: 카드/함정 사용 -> 판정 도구 굴리기 -> 이동할 말 고르기 -> 정산(개입 카드).
 판정 도구: 주사위·룰렛·홀덤·화투·마작·타로 등 도구마다 규칙이 다르고, 카드에 규칙표가 나옵니다.
@@ -58,17 +60,27 @@ static func add_background(parent: Control, _greener: bool = false) -> void:
 	parent.add_child(background)
 
 
+## 위/아래 청록 띠 높이 (터치 기기에서는 더 두껍게).
+static func bar_height() -> float:
+	return TOUCH_BAR_HEIGHT if MobileSupport.touch_mode() else BAR_HEIGHT
+
+
+## 띠 위 글씨 크기: 터치 기기에서는 폰에서도 읽히도록 키운다.
+static func bar_px(px: int) -> int:
+	return px + 6 if MobileSupport.touch_mode() else px
+
+
 ## 위쪽 청록 띠: [뒤로가기] 제목 ............ [규칙]. 반환: {"bar", "back", "title", "right"}
 static func add_top_bar(parent: Control, title_text: String, on_back: Callable, right_text: String, on_right: Callable) -> Dictionary:
 	var bar := PanelContainer.new()
 	bar.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	bar.custom_minimum_size = Vector2(0, BAR_HEIGHT)
+	bar.custom_minimum_size = Vector2(0, bar_height())
 	bar.add_theme_stylebox_override("panel", style(TEAL, TEAL_DARK, 0, 0, 0, 3))
 	parent.add_child(bar)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 14)
 	bar.add_child(row)
-	var back := pale_button("", on_back, 14)
+	var back := pale_button("", on_back, bar_px(14))
 	back.custom_minimum_size = Vector2(100, 0)
 	back.name = "BackButton"
 	var arrow := ArrowIcon.new()
@@ -76,14 +88,14 @@ static func add_top_bar(parent: Control, title_text: String, on_back: Callable, 
 	arrow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	back.add_child(arrow)
 	row.add_child(back)
-	var title := label(title_text, 17, Color.WHITE)
+	var title := label(title_text, bar_px(17), Color.WHITE)
 	title.name = "BarTitle"
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	row.add_child(title)
 	var language := language_toggle()
 	row.add_child(language)
-	var right := pale_button(right_text, on_right, 14)
+	var right := pale_button(right_text, on_right, bar_px(14))
 	right.custom_minimum_size = Vector2(180, 0)
 	right.name = "RulesButton"
 	row.add_child(right)
@@ -95,7 +107,7 @@ static func add_top_bar(parent: Control, title_text: String, on_back: Callable, 
 
 ## [🌐 한국어 ▾] 언어 버튼 (상단 띠의 [규칙] 왼쪽). 한국어 / ENGLISH / 日本語 중 고르면 바로 바뀐다.
 static func language_toggle() -> LanguageToggle:
-	var button := LanguageToggle.create(14, TEAL)
+	var button := LanguageToggle.create(bar_px(14), TEAL)
 	UiSkin.button(button, false, 2.0, 2.0)
 	button.custom_minimum_size = Vector2(130, 0)
 	return button
@@ -108,14 +120,14 @@ static func add_bottom_bar(parent: Control, name_text: String, center_text: Stri
 	bar.anchor_right = 1.0
 	bar.anchor_top = 1.0
 	bar.anchor_bottom = 1.0
-	bar.offset_top = -BAR_HEIGHT
+	bar.offset_top = -bar_height()
 	bar.offset_bottom = 0.0
-	bar.custom_minimum_size = Vector2(0, BAR_HEIGHT)
+	bar.custom_minimum_size = Vector2(0, bar_height())
 	bar.add_theme_stylebox_override("panel", style(TEAL, TEAL_DARK, 0, 0, 0, 3))
 	parent.add_child(bar)
 	var row := HBoxContainer.new()
 	bar.add_child(row)
-	var name_label := label(name_text, 16, Color.WHITE)
+	var name_label := label(name_text, bar_px(16), Color.WHITE)
 	name_label.name = "PlayerName"
 	name_label.custom_minimum_size = Vector2(300, 0)
 	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -123,7 +135,7 @@ static func add_bottom_bar(parent: Control, name_text: String, center_text: Stri
 	var left_fill := Control.new()
 	left_fill.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(left_fill)
-	var center := pale_button(center_text, on_center, 14)
+	var center := pale_button(center_text, on_center, bar_px(14))
 	center.custom_minimum_size = Vector2(180, 0)
 	center.name = "SettingsButton"
 	row.add_child(center)
@@ -318,7 +330,23 @@ static func popup(parent: Control, width: float = 480.0) -> Dictionary:
 	box.add_theme_constant_override("separation", 12)
 	panel.add_child(box)
 	parent.add_child(overlay)
+	if MobileSupport.touch_mode():
+		panel.resized.connect(func() -> void: _fit_touch_popup(panel))
 	return {"overlay": overlay, "box": box}
+
+
+## 폰 가로 화면은 기준 해상도의 약 0.5배로 보여 팝업 글씨가 작다 -> 화면 높이 안에서 최대 1.3배까지 키운다.
+const TOUCH_POPUP_SCALE: float = 1.3
+
+
+static func _fit_touch_popup(panel: Control) -> void:
+	var view: Vector2 = panel.get_viewport_rect().size
+	if panel.size.x <= 0.0 or panel.size.y <= 0.0:
+		return
+	var fit: float = minf((view.y - 16.0) / panel.size.y, (view.x - 16.0) / panel.size.x)
+	var factor: float = clampf(minf(TOUCH_POPUP_SCALE, fit), 1.0, TOUCH_POPUP_SCALE)
+	panel.pivot_offset = panel.size / 2.0
+	panel.scale = Vector2(factor, factor)
 
 
 ## 규칙 안내 팝업.

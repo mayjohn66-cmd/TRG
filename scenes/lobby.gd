@@ -70,8 +70,8 @@ func _ready() -> void:
 	_bottom = LobbyTheme.add_bottom_bar(self, "%s 교주님" % GameSession.display_nickname(), "설정", func() -> void: LobbyTheme.show_settings(self))
 	var scroll := ScrollContainer.new()
 	scroll.set_anchors_preset(Control.PRESET_FULL_RECT)
-	scroll.offset_top = LobbyTheme.BAR_HEIGHT
-	scroll.offset_bottom = -LobbyTheme.BAR_HEIGHT
+	scroll.offset_top = LobbyTheme.bar_height()
+	scroll.offset_bottom = -LobbyTheme.bar_height()
 	add_child(scroll)
 	var center := CenterContainer.new()
 	center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
