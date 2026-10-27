@@ -205,9 +205,7 @@ func _run() -> void:
 	var before_face: float = face._time
 	await create_timer(0.08).timeout
 	_expect(face._time > before_face, "낮은 난이도 표정도 대기 모션이 진행된다")
-	for flame_size: Vector2 in [Vector2(5, 8), Vector2(12, 26), Vector2(22, 31)]:
-		var silhouette: PackedVector2Array = FireLevelPicker.FlameIcon.silhouette(Vector2.ZERO, flame_size.x, flame_size.y)
-		_expect(not Geometry2D.triangulate_polygon(silhouette).is_empty(), "불꽃 심볼을 작은 크기에서도 정상적으로 채운다: %s" % str(flame_size))
+	# Painted flame/face frame bounds and input states are checked in ui_difficulty_icons_test.
 	menu._show_step(2)
 	var paused_face: float = face._time
 	var paused_bowl: float = bowl._time

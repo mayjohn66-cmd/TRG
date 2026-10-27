@@ -1,6 +1,6 @@
 # File: res://scenes/meta_icons.gd
 # Class: class_name MetaIcon
-# Role: 영구 기록(수집·정복) 표시용 작은 아이콘: 황금 왕관(정복) / 회색 자물쇠(미정복) / 트로피(법전 수집). 게임 글꼴에 이모지가 없어 직접 그린다.
+# Role: 영구 기록(수집·정복) 표시용 작은 아이콘. 황금 왕관(정복)과 회색 자물쇠(미정복)는 승인된 PNG를 공유하고, 트로피는 기존 경로를 유지한다.
 #       법전 수집 알약 버튼(pill)과 [달성 완료 ★] 도장(stamp)도 만든다.
 class_name MetaIcon
 extends Control
@@ -49,20 +49,9 @@ func _draw() -> void:
 	var h: float = size.y
 	match kind:
 		&"crown":
-			var points := PackedVector2Array([
-				Vector2(w * 0.08, h * 0.30), Vector2(w * 0.30, h * 0.55), Vector2(w * 0.50, h * 0.12),
-				Vector2(w * 0.70, h * 0.55), Vector2(w * 0.92, h * 0.30), Vector2(w * 0.84, h * 0.86), Vector2(w * 0.16, h * 0.86)])
-			draw_colored_polygon(points, GOLD)
-			points.append(points[0])
-			draw_polyline(points, GOLD_EDGE, maxf(1.5, w * 0.07), true)
-			for x: float in [0.08, 0.50, 0.92]:
-				draw_circle(Vector2(w * x, h * (0.12 if x == 0.50 else 0.30)), w * 0.07, GOLD_EDGE)
+			DifficultyArt.icon(self,DifficultyArt.CROWN,Rect2(Vector2.ZERO,size))
 		&"lock":
-			draw_arc(Vector2(w * 0.5, h * 0.42), w * 0.24, PI, TAU, 16, LOCK_EDGE, maxf(1.5, w * 0.10), true)
-			var body := Rect2(Vector2(w * 0.16, h * 0.42), Vector2(w * 0.68, h * 0.50))
-			draw_rect(body, LOCK)
-			draw_rect(body, LOCK_EDGE, false, maxf(1.0, w * 0.06))
-			draw_circle(Vector2(w * 0.5, h * 0.64), w * 0.07, LOCK_EDGE)
+			DifficultyArt.icon(self,DifficultyArt.LOCK,Rect2(Vector2.ZERO,size))
 		&"trophy":
 			var cup := PackedVector2Array([Vector2(w * 0.18, h * 0.08), Vector2(w * 0.82, h * 0.08), Vector2(w * 0.70, h * 0.50), Vector2(w * 0.30, h * 0.50)])
 			draw_colored_polygon(cup, GOLD)

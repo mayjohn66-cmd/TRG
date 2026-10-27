@@ -32,6 +32,7 @@ on:
           - priority-fx
           - medium-fx
           - remaining-fx
+          - difficulty-icons
           - warning-icon
           - rulebook-art
           - avatar-hq
@@ -70,7 +71,9 @@ jobs:
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
           REQUESTED_SCOPE: ${{ inputs.validation }}
         run: |
-          if [[ "${REQUESTED_SCOPE}" == "remaining-fx" || "${COMMIT_MESSAGE}" == *"[check:remaining-fx]"* ]]; then
+          if [[ "${REQUESTED_SCOPE}" == "difficulty-icons" || "${COMMIT_MESSAGE}" == *"[check:difficulty-icons]"* ]]; then
+            echo "scope=difficulty-icons" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "remaining-fx" || "${COMMIT_MESSAGE}" == *"[check:remaining-fx]"* ]]; then
             echo "scope=remaining-fx" >> "${GITHUB_OUTPUT}"
           elif [[ "${REQUESTED_SCOPE}" == "medium-fx" || "${COMMIT_MESSAGE}" == *"[check:medium-fx]"* ]]; then
             echo "scope=medium-fx" >> "${GITHUB_OUTPUT}"
@@ -186,6 +189,18 @@ jobs:
           godot --headless --path . -s res://tests/ui_bang_test.gd 2>&1 | tee /tmp/bang.log
           grep -q 'UI_BANG_OK' /tmp/bang.log
           if grep -q 'SCRIPT ERROR' /tmp/bang.log; then exit 1; fi
+
+      - name: Check difficulty icon presentation
+        if: steps.validation.outputs.scope == 'difficulty-icons'
+        run: |
+          set -euo pipefail
+          for target in difficulty_icons ramen_bowl; do
+            godot --headless --path . -s "res://tests/ui_${target}_test.gd" 2>&1 | tee "/tmp/difficulty_${target}.log"
+          done
+          grep -q 'UI_DIFFICULTY_ICONS_OK' /tmp/difficulty_difficulty_icons.log
+          grep -q 'UI_RAMEN_BOWL_OK' /tmp/difficulty_ramen_bowl.log
+          godot --headless --path . --check-only -s res://tests/ui_menu_test.gd 2>&1 | tee /tmp/difficulty_menu_parse.log
+          if grep -Eq 'SCRIPT ERROR|SHADER ERROR' /tmp/difficulty_*.log; then exit 1; fi
 
       - name: Check remaining painted presentations
         if: steps.validation.outputs.scope == 'remaining-fx'
