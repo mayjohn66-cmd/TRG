@@ -1566,7 +1566,7 @@ func _build_profiles() -> void:
 		var top := HBoxContainer.new()
 		top.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		right.add_child(top)
-		var name_label := _make_label("플레이어 %d" % player_id, 18 if big else 15, color.lightened(0.3))
+		var name_label := _make_label("플레이어 %d" % player_id, MobileSupport.text_px(18 if big else 15, 20), color.lightened(0.3))
 		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		name_label.clip_text = true
 		name_label.add_theme_color_override("font_outline_color", Color("0d1018"))
@@ -1737,7 +1737,7 @@ func _build_law_board() -> void:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)
 	panel.add_child(box)
-	var law_title := _make_label(tr_ui("law.board_title"), 16, Color.WHITE)
+	var law_title := _make_label(tr_ui("law.board_title"), MobileSupport.text_px(16, 20), Color.WHITE)
 	UiSkin.title(law_title)
 	box.add_child(law_title)
 	for slot: int in GameEnums.MAX_LAWS:
@@ -9610,6 +9610,9 @@ var _review_button: Button = null
 var _review_bar: ColorRect = null
 
 
+const TOUCH_REVIEW_SCALE: float = 1.4
+
+
 func _show_augment_review(players: Array) -> void:
 	_close_augment_review()
 	if _draft_summary.is_empty():
@@ -9624,6 +9627,7 @@ func _show_augment_review(players: Array) -> void:
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", _style(Color("101626"), Color("ffa94d"), 4, 18, 24, 18))
 	center.add_child(panel)
+	MobileSupport.fit_touch_scale(panel, TOUCH_REVIEW_SCALE)  # 폰: 증강 카드 글씨가 읽히게 화면 안에서 키운다
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 14)
 	box.alignment = BoxContainer.ALIGNMENT_CENTER

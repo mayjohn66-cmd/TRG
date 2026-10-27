@@ -330,23 +330,12 @@ static func popup(parent: Control, width: float = 480.0) -> Dictionary:
 	box.add_theme_constant_override("separation", 12)
 	panel.add_child(box)
 	parent.add_child(overlay)
-	if MobileSupport.touch_mode():
-		panel.resized.connect(func() -> void: _fit_touch_popup(panel))
+	MobileSupport.fit_touch_scale(panel, TOUCH_POPUP_SCALE)
 	return {"overlay": overlay, "box": box}
 
 
 ## 폰 가로 화면은 기준 해상도의 약 0.5배로 보여 팝업 글씨가 작다 -> 화면 높이 안에서 최대 1.3배까지 키운다.
 const TOUCH_POPUP_SCALE: float = 1.3
-
-
-static func _fit_touch_popup(panel: Control) -> void:
-	var view: Vector2 = panel.get_viewport_rect().size
-	if panel.size.x <= 0.0 or panel.size.y <= 0.0:
-		return
-	var fit: float = minf((view.y - 16.0) / panel.size.y, (view.x - 16.0) / panel.size.x)
-	var factor: float = clampf(minf(TOUCH_POPUP_SCALE, fit), 1.0, TOUCH_POPUP_SCALE)
-	panel.pivot_offset = panel.size / 2.0
-	panel.scale = Vector2(factor, factor)
 
 
 ## 규칙 안내 팝업.

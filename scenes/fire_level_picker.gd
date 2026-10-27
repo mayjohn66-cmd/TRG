@@ -87,10 +87,10 @@ func _build() -> void:
 		number.text = "Lv.%d" % step
 		number.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 		number.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		number.add_theme_font_size_override("font_size", 15)
+		number.add_theme_font_size_override("font_size", MobileSupport.text_px(15))
 		number.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		stack.add_child(number)
-		var title: MarqueeLabel = MarqueeLabel.create(str(BotTemper.NAMES[step]), 14, Color.WHITE, Vector2(CELL_SIZE.x - 8, 22), HORIZONTAL_ALIGNMENT_CENTER, "LevelName")
+		var title: MarqueeLabel = MarqueeLabel.create(str(BotTemper.NAMES[step]), MobileSupport.text_px(14), Color.WHITE, Vector2(CELL_SIZE.x - 8, 22), HORIZONTAL_ALIGNMENT_CENTER, "LevelName")
 		title.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		stack.add_child(title)
 		gauge.add_child(cell)

@@ -30,10 +30,34 @@ static func touch_mode() -> bool:
 const TOUCH_TEXT_SCALE: float = 1.2
 
 
-static func text_px(px: int) -> int:
-	if not touch_mode() or px >= 18:
+static func text_px(px: int, cap: int = 18) -> int:
+	if not touch_mode() or px >= cap:
 		return px
-	return mini(18, roundi(px * TOUCH_TEXT_SCALE))
+	return mini(cap, roundi(px * TOUCH_TEXT_SCALE))
+
+
+## 터치 기기에서 화면 가운데 뜨는 창을 화면 높이·너비 안에서 최대 max_scale배로 키운다 (창 크기가 바뀔 때마다 다시 맞춘다).
+## 폰 가로 화면은 기준 해상도의 약 0.5배로 보여 창 글씨가 작다. 가운데 정렬된 창에만 쓴다 (가운데를 기준으로 커진다). 부모 컨테이너에 넣은 뒤 부른다.
+static func fit_touch_scale(panel: Control, max_scale: float) -> void:
+	if not touch_mode():
+		return
+	# 부모 컨테이너가 자식을 배치할 때마다 scale을 1로 되돌리므로, 배치가 끝난 직후(sort_children)에 다시 키운다.
+	var holder: Container = panel.get_parent() as Container
+	if holder != null:
+		holder.sort_children.connect(func() -> void: _fit_scale(panel, max_scale))
+	var refit := func() -> void: _fit_scale.call_deferred(panel, max_scale)
+	panel.resized.connect(refit)
+	panel.tree_entered.connect(refit)
+
+
+static func _fit_scale(panel: Control, max_scale: float) -> void:
+	if not is_instance_valid(panel) or panel.size.x <= 0.0 or panel.size.y <= 0.0 or not panel.is_inside_tree():
+		return
+	var view: Vector2 = panel.get_viewport_rect().size
+	var fit: float = minf((view.y - 16.0) / panel.size.y, (view.x - 16.0) / panel.size.x)
+	var factor: float = clampf(minf(max_scale, fit), 1.0, max_scale)
+	panel.pivot_offset = panel.size / 2.0
+	panel.scale = Vector2(factor, factor)
 
 
 ## 터치용으로 버튼을 다듬는다: 손가락이 살짝 미끄러져도 눌리도록 누르는 순간 반응하고(ACTION_MODE_BUTTON_PRESS), 최소 높이를 키운다.

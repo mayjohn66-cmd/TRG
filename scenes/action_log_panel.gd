@@ -65,8 +65,8 @@ func _init() -> void:
 	_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_text.mouse_filter = Control.MOUSE_FILTER_PASS
-	_text.add_theme_font_size_override("normal_font_size", MobileSupport.text_px(13))
-	_text.add_theme_font_size_override("bold_font_size", MobileSupport.text_px(13))
+	_text.add_theme_font_size_override("normal_font_size", 18 if MobileSupport.touch_mode() else 13)
+	_text.add_theme_font_size_override("bold_font_size", 18 if MobileSupport.touch_mode() else 13)
 	# 로그처럼 작은 글자가 빽빽한 곳은 또렷한 고딕으로 쓴다 (ONE Mobile POP은 작으면 뭉개진다)
 	_text.add_theme_font_override("normal_font", SMALL_FONT)
 	_text.add_theme_font_override("bold_font", SMALL_FONT)
