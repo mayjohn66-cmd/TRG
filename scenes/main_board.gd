@@ -11372,7 +11372,9 @@ func _human_can_intervene() -> bool:
 ## 봇은 화면의 굴림 연출이 끝날 때까지 기다린다.
 func _bot_should_wait() -> bool:
 	# 혼자 하는 판은 메뉴를 여는 동안 봇도 쉰다 (온라인은 다른 사람이 기다리므로 멈추지 않는다).
-	return _ui_busy() or (net == null and _menu_is_open()) or (_duel_arena != null and _duel_arena.animating)
+	if _duel_arena != null and is_instance_valid(_duel_arena) and (_duel_arena.animating or not manager.duel_pending()):
+		return true  # 결투가 끝나 결과를 보여 주는 동안에는 다음 사람이 굴리지 않는다 (굴림 연출이 결투장 뒤에 가려지지 않게)
+	return _ui_busy() or (net == null and _menu_is_open())
 
 
 ## 리벤지 부스터 표시: 아래쪽과 양옆에서 질감 있는 화염 그림이 제각각 일렁인다.
