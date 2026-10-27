@@ -6,7 +6,9 @@ const LOCK_START := 0.56
 const SHOT_AT := 1.02
 const HIT_AT := 1.07
 const TOTAL_TIME := 1.23
-const RED := Color("ff655c")
+const AIM := Color("ff365c")
+const AIM_EDGE := Color("35152b")
+const AIM_CORE := Color("fff5e4")
 const GOLD := Color("ffe4a2")
 const FOCUS_SHADER := preload("res://assets/fx/sniper_focus.gdshader")
 const TRACER_SHADER := preload("res://assets/fx/bang_tracer.gdshader")
@@ -130,17 +132,20 @@ func _draw() -> void:
 	var fade := smoothstep(0,0.12,elapsed)*(1-smoothstep(HIT_AT,HIT_AT+0.12,elapsed))
 	var drift := Vector2(sin(elapsed*5)*7,cos(elapsed*6)*5)*(1-close)
 	var center := _at+drift
-	var tint := RED.lerp(GOLD,smoothstep(LOCK_START,SHOT_AT,elapsed)*0.4)
 	# A quiet opening between each reticle quadrant keeps the pawn readable.
 	for quadrant: int in 4:
 		var angle := quadrant*PI/2+PI/12
-		draw_arc(center,radius,angle,angle+PI/3,16,Color(tint,fade),2.2,true)
+		draw_arc(center,radius,angle,angle+PI/3,16,Color(AIM_EDGE,fade),6,true)
+		draw_arc(center,radius,angle,angle+PI/3,16,Color(AIM,fade),3,true)
 		var direction := Vector2.from_angle(quadrant*PI/2)
-		draw_line(center+direction*(radius+4),center+direction*(radius+14),Color(tint,fade),2,true)
-		draw_line(center+direction*9,center+direction*17,Color(GOLD,fade*0.8),1.5,true)
+		draw_line(center+direction*(radius+4),center+direction*(radius+14),Color(AIM_EDGE,fade),6,true)
+		draw_line(center+direction*(radius+4),center+direction*(radius+14),Color(AIM,fade),3,true)
+		draw_line(center+direction*9,center+direction*17,Color(AIM_EDGE,fade),5,true)
+		draw_line(center+direction*9,center+direction*17,Color(AIM_CORE,fade),2.4,true)
 	if phase==&"locked":
 		var u := clampf((elapsed-LOCK_START)/(SHOT_AT-LOCK_START),0,1)
-		draw_arc(center,radius+5,-PI/2,-PI/2+TAU*u,40,Color(GOLD,fade*0.55),1.5,true)
+		draw_arc(center,radius+5,-PI/2,-PI/2+TAU*u,40,Color(AIM_EDGE,fade*0.9),5,true)
+		draw_arc(center,radius+5,-PI/2,-PI/2+TAU*u,40,Color(AIM_CORE,fade*0.9),2.2,true)
 	if hit_started:
 		var u := clampf((elapsed-HIT_AT)/0.14,0,1)
 		var alpha := 1-smoothstep(0.03,0.16,elapsed-HIT_AT)
