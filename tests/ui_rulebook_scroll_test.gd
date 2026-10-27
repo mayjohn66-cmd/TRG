@@ -120,8 +120,24 @@ func run() -> void:
 		await drag(point(book._tiles[0]),point(book._tiles[0])+Vector2(1,1))
 		check(book.entry==0 and book._notebook_root.visible,"A short tap still opens exactly that card")
 		check(book._popup_dim.get_global_rect().is_equal_approx(book._book_inset.get_global_rect()),"Detail dim follows the expanded rounded book bounds")
-		check(book._list_box.z_index>book._notebook_root.z_index,"Left tabs remain above the modal dim")
+		check(book._notebook_root.z_index>book._list_box.z_index,"Large detail stays above the background tabs")
+		check(book._notebook_page.size.x>=book._stage.size.x*0.85 and book._notebook_page.size.y>=700,"Detail fills most of the landscape screen")
+		check(root.get_visible_rect().encloses(book._notebook_page.get_global_rect()),"Large detail stays inside the viewport")
 		await capture("detail_%d" % resolution.x)
+		var outside := book._stage.get_global_transform_with_canvas()*Vector2(20,200)
+		await mouse(outside,true)
+		await mouse(outside,false)
+		check(book.entry==-1 and book.spread==4 and is_instance_valid(book),"Outside click returns to the same catalog instead of closing the book or changing chapter")
+		book.show_entry(0)
+		await frames()
+		var inside_blank := book._notebook_page.get_global_transform_with_canvas()*Vector2(30,book._notebook_page.size.y-60)
+		await mouse(inside_blank,true)
+		await mouse(inside_blank,false)
+		check(book.entry==0,"A tap inside the detail frame does not dismiss it")
+		await drag(outside,outside+Vector2.ONE,true)
+		check(book.entry==-1 and book.spread==4,"Native touch outside returns without activating the chapter behind it")
+		book.show_entry(0)
+		await frames()
 		var old := scroll.scroll_vertical
 		await drag(point(book._popup_dim)+Vector2(300,0),point(book._popup_dim)+Vector2(300,-100))
 		check(scroll.scroll_vertical==old,"An open detail does not drag the background grid")
@@ -130,6 +146,9 @@ func run() -> void:
 		await drag(point(book._tiles[0]),point(book._tiles[0])+Vector2(1,1),true)
 		check(book.entry==0,"Native touch tap opens the same card without a mouse click")
 		book.show_spread(6)
+		book.show_entry(4)
+		await frames()
+		await capture("card_detail_%d" % resolution.x)
 		var long_index := 0
 		var rows := 0
 		for index: int in book.entry_count():
@@ -141,8 +160,11 @@ func run() -> void:
 		await frames(10)
 		var detail := book._left_scroll
 		check(detail.get_v_scroll_bar().max_value>detail.size.y,"Long real card rules need vertical scrolling")
+		var content_before := book._left_holder.global_position
+		var available := detail.get_v_scroll_bar().max_value-detail.get_v_scroll_bar().page
 		await drag(point(detail),point(detail)-Vector2(0,150),true)
 		check(detail.scroll_vertical>0,"Long entry detail supports finger dragging")
+		check(absf((content_before-book._left_holder.global_position).y-minf(150.0,available*detail.get_global_transform().get_scale().y))<2.0,"Magnified content follows the drag distance without speeding up")
 		book.show_entry(-1)
 		await frames()
 		var bar := scroll.get_v_scroll_bar()
