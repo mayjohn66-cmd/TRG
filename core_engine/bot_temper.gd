@@ -17,8 +17,8 @@ const LEVEL_MAX: int = 5
 const DEFAULT_LEVEL: int = 2
 ## 히든 법전 브레이크 감점 (PacingDirector.capture_would_win_law): 다른 말을 움직일 수 있으면 그쪽을 고른다.
 const LAW_BRAKE_PENALTY: float = 400.0
-## 드래프트에서 가장 좋은 선택지가 법전일 때 그대로 고르는 확률 (나머지는 법전이 아닌 가장 좋은 증강).
-const LAW_PICK_CHANCE: float = 0.25
+## 드래프트에서 가장 좋은 선택지가 법전일 때 그대로 고르는 확률 (나머지는 법전이 아닌 가장 좋은 증강). 2026-10-27: 0.25 → 1.5배.
+const LAW_PICK_CHANCE: float = 0.375
 const ALL: Array[int] = [1, 2, 3, 4, 5]
 
 ## 단계 이름 (원문 한국어, 화면에서 번역).

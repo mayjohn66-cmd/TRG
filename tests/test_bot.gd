@@ -48,26 +48,27 @@ func _seeded(seed_value: int) -> RandomNumberGenerator:
 func test_pawn_choice_follows_goal_then_capture_then_stop_spot_then_advance() -> void:
 	var state := make_state(2, 1)
 	place(state, 11, 22, [21])           # 눈금 2: 23, 0 -> 결승 완주
-	place(state, 12, 3, [2])             # 4, 5 -> 5번의 적을 잡음
+	place(state, 12, 14, [13])           # 15, 16 -> 16번의 적을 잡음
 	place(state, 13, 4, [3])             # 5, 6 -> 코너(6번)에 정확히 멈춤
-	place(state, 14, 0, [], false)       # 출발선 대기 말 꺼내기
-	place(state, 21, 5, [4])
+	place(state, 14, 0, [], false)       # 출발선 대기 말 꺼내기 (2번)
+	place(state, 21, 16, [15])
+	# 서로 업힐 수 없는 자리 (같은 칸·앞뒤 1칸에 내 말이 없다)
 	var goal: float = BotBrain.score_move(state, state.get_pawn(11), 2)
 	var capture: float = BotBrain.score_move(state, state.get_pawn(12), 2)
 	var corner: float = BotBrain.score_move(state, state.get_pawn(13), 2)
 	var fresh: float = BotBrain.score_move(state, state.get_pawn(14), 2)
 	check(goal > capture and capture > corner and corner > fresh, "완주 > 잡기 > 코너 > 새 말 (%.1f %.1f %.1f %.1f)" % [goal, capture, corner, fresh])
 	check_eq(BotBrain.choose_pawn(state, 1, 2), 11, "완주 가능한 말이 1순위")
-	place(state, 11, 15, [14])           # 완주 후보를 없앤다 (눈금 2로는 16, 17)
+	place(state, 11, 19, [18])           # 완주 후보를 없앤다 (눈금 2로는 20, 21)
 	state.get_pawn(11).has_left_start = true
 	check_eq(BotBrain.choose_pawn(state, 1, 2), 12, "다음은 적을 잡을 수 있는 말")
-	place(state, 21, 9, [8])
+	place(state, 21, 23, [22])
 	check_eq(BotBrain.choose_pawn(state, 1, 2), 13, "다음은 코너에 멈출 수 있는 말")
 
 
 func test_bakery_stop_and_scoring_does_not_change_the_game_state() -> void:
 	var state := make_state(2, 1)
-	place(state, 11, 2, [1])   # 눈금 2: 3, 4 -> 빵집(4번)
+	place(state, 11, 8, [7])   # 눈금 2: 9, 10 -> 빵집(10번)
 	place(state, 13, 0, [], false)
 	state.rulebook.enqueue_law(LawRegistry.create("LAW_06"))
 	var events: Array = []

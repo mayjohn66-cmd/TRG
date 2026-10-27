@@ -219,6 +219,51 @@ func test_any_two_own_pawns_can_stack_regardless_of_kind() -> void:
 	check(state.get_pawn(11).can_stack_with(state.get_pawn(14)), "같은 종류도 가능")
 
 
+func test_stack_magnet_pulls_onto_an_ally_one_tile_ahead_or_behind() -> void:
+	var state := make_state(2, 1)
+	place(state, 11, 8, [7])
+	place(state, 12, 5, [4])
+	var report: MoveReport = move(state, 12, 2)  # 7번에 멈추면 바로 앞(8번)의 아군에게 합류
+	check(state.get_pawn(11).carrier == state.get_pawn(12) and state.get_pawn(12).current_tile_idx == 8, "앞 1칸 아군에게 당겨 붙어 업힌다")
+	check(report.stacked_pawn_ids.has(11) and report.path.back() == 8, "보고서에 합류 칸과 업기 기록")
+	var behind := make_state(2, 1)
+	place(behind, 11, 6, [5])
+	place(behind, 12, 3, [2])
+	move(behind, 12, 4)  # 7번에 멈추면 바로 뒤(6번)의 아군에게 합류
+	check(behind.get_pawn(11).carrier == behind.get_pawn(12) and behind.get_pawn(12).current_tile_idx == 6, "뒤 1칸 아군에게도 합류")
+	var far := make_state(2, 1)
+	place(far, 11, 9, [8])
+	place(far, 12, 5, [4])
+	move(far, 12, 2)
+	check(far.get_pawn(11).carrier == null and far.get_pawn(12).current_tile_idx == 7, "2칸 떨어진 아군은 당기지 않는다")
+
+
+func test_stack_magnet_skips_enemy_traps_and_is_automatic_even_with_choice() -> void:
+	var state := make_state(2, 1)
+	place(state, 11, 8, [7])
+	place(state, 12, 5, [4])
+	var trap: TileAttachment = AttachmentRegistry.create("TRP_02")
+	trap.owner_id = 2
+	state.board.get_tile(8).add_attachment(trap)
+	move(state, 12, 2)
+	check(state.get_pawn(11).carrier == null and state.get_pawn(12).current_tile_idx == 7, "상대 설치물이 있는 칸으로는 당기지 않는다")
+	var choice := make_state(2, 1)
+	place(choice, 11, 8, [7])
+	place(choice, 12, 5, [4])
+	var ctx: RuleContext = make_ctx(choice, 2)
+	ctx.defer_stack_choice = true
+	var report: MoveReport = MoveExecutor.execute(choice, choice.get_pawn(12), ctx)
+	check(report.stack_offer.is_empty() and choice.get_pawn(11).carrier == choice.get_pawn(12), "업기 자석은 선택 없이 자동 합류")
+
+
+func test_bot_puts_stacking_first() -> void:
+	var state := make_state(2, 1)
+	place(state, 11, 22, [21])  # 눈금 2: 결승 완주
+	place(state, 12, 5, [4])    # 눈금 2: 7번 -> 앞 8번의 아군에게 합류
+	place(state, 13, 8, [7])
+	check(BotBrain.would_stack(state, state.get_pawn(12), 7), "합류 수를 알아본다")
+	check_eq(BotBrain.choose_pawn(state, 1, 2), 12, "합류할 수 있는 말을 무엇보다 먼저 고른다")
+
 func test_mirror_force_trap_stops_and_expels_enemy_but_not_owner() -> void:
 	var state := make_state()
 	var trap := TrapMirrorForce.new(2)

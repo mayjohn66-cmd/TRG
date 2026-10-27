@@ -5,7 +5,7 @@
 #       - trap_reveal: 함정 정체 공개(초보) / 비공개(심리전: 상대가 설치한 함정은 ❓로만 보인다)
 #       - super_freq: 초증강 등장 배수 0(끄기) / 1(기본) / 2(축제) / 3(대축제)
 #       - laws: 특수 승리 법전 켜기 / 끄기(말 4개 완주로만 승부)
-#       - law_pool: 드래프트·템포 업에 나오는 법전을 이 목록으로 제한 (빈 배열 = 모두, Lv.1 크림 = 처치·손패 2종)
+#       - law_pool: 드래프트·템포 업에 나오는 법전을 이 목록으로 제한 (빈 배열 = 모두. Lv.1 크림은 laws 끄기)
 #       - pacing: 히든 페이싱 디렉터 단계 (0 끄기 = 친선전·커스텀 기본, 1~5 = 싱글 불닭 난이도, PacingDirector)
 #       - speed: normal / speed (스피드전: 템포 업이 빨리 오르고 초반 리벤지 부스터가 커져 10~12라운드에 결판)
 #       - draft_easy: 입문(Lv.1 크림) 드래프트 완화 - 글이 길고 복잡한 초증강은 덜, 기물 진화·판정 도구는 더 나온다
@@ -36,12 +36,12 @@ const EASY_HARD_SUPER_FACTOR: float = 0.15
 const EASY_SUPER_FACTOR: float = 0.6
 const EASY_LAW_FACTOR: float = 0.6
 const EASY_FRIENDLY_FACTOR: float = 1.6
-## 드래프트에서 법전(LAW) 계열 가중치에 곱하는 배수: 법전은 가끔 보이는 히든카드 (2026-10-26, 법전 1위 72/100판 → 1/3).
-const LAW_DRAFT_FACTOR: float = 0.33
+## 드래프트에서 법전(LAW) 계열 가중치에 곱하는 배수: 법전은 가끔 보이는 히든카드 (2026-10-26 법전 1위 72/100판 → 1/3, 2026-10-27 법전 14/100판 → 1.5배인 1/2).
+const LAW_DRAFT_FACTOR: float = 0.5
 ## 한 판에 법전에 동시에 올라 있을 수 있는 특수 승리 수: 기본 2개, 싱글 Lv.1~2는 1개. 가득 차면 드래프트·템포 업에 법전이 나오지 않는다.
 const MAX_LAWS: int = 2
 const MAX_LAWS_EASY: int = 1
-## Lv.1 크림에 나오는 법전 (투기장의 지배자·봉인된 에르핀의 식권).
+## 쉬운 법전 2종 (투기장의 지배자·봉인된 에르핀의 식권). Lv.1 크림은 2026-10-27부터 법전을 아예 끈다.
 const EASY_LAWS: Array[String] = ["LAW_01", "LAW_02"]
 
 
@@ -49,14 +49,14 @@ static func defaults() -> Dictionary:
 	return {"trap_reveal": true, "super_freq": 1, "laws": true, "speed": SPEED_NORMAL, "draft_easy": false, "law_pool": [], "pacing": 0, "bot_level": BotTemper.DEFAULT_LEVEL}
 
 
-## 싱글 불닭 난이도의 기본 규칙: Lv.1~3 함정 공개, Lv.4~5 비공개. Lv.1은 입문 드래프트 + 쉬운 법전 2종(투기장의 지배자·봉인된 에르핀의 식권)만.
+## 싱글 불닭 난이도의 기본 규칙: Lv.1~3 함정 공개, Lv.4~5 비공개. Lv.1은 입문 드래프트 + 법전 끄기 (말 4개 완주로만 승부).
 ## 난이도마다 히든 페이싱 디렉터(PacingDirector)가 켜진다.
 static func for_difficulty(level: int) -> Dictionary:
 	var rules: Dictionary = defaults()
 	rules["trap_reveal"] = level <= 3
 	rules["draft_easy"] = level == 1
 	if level == 1:
-		rules["law_pool"] = EASY_LAWS.duplicate()
+		rules["laws"] = false  # Lv.1 크림: 특수 승리(법전)는 나오지 않는다 (2026-10-27)
 	rules["pacing"] = clampi(level, 1, 5)
 	return rules
 

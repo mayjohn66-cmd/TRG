@@ -747,18 +747,67 @@ static func is_capture_immune(_state: GameState, pawn: PlayerPawn) -> bool:
 	return pawn.ward or (pawn.shield and pawn.sub_type() == GameEnums.PawnSubType.BADUK_WHITE)
 
 
+## 업기 자석 범위: 굴림 이동이 끝난 칸의 바로 앞/뒤 이 칸 수 안에 내 말이 있으면 당겨 붙어 합류한다 (2026-10-27).
+const STACK_MAGNET_RANGE: int = 1
+
+
+static func _stack_partners(state: GameState, mover: PlayerPawn, tile: int) -> Array[PlayerPawn]:
+	var partners: Array[PlayerPawn] = []
+	for other: PlayerPawn in state.leaders_at(tile):
+		if other != mover and mover.can_stack_with(other):
+			partners.append(other)
+	return partners
+
+
+## 업기 자석이 당겨 붙을 칸 (-1 = 없음). 앞칸을 먼저 본다. 출발선·결승 칸과 상대 설치물이 있는 칸은 고르지 않는다.
+static func magnet_target(state: GameState, mover: PlayerPawn) -> int:
+	if mover.is_imprisoned or mover.is_finished or not mover.has_left_start:
+		return -1
+	return magnet_target_from(state, mover, mover.current_tile_idx)
+
+
+## from_tile에 멈췄다고 볼 때 업기 자석이 당겨 붙을 칸 (AI 미리보기에도 쓴다).
+static func magnet_target_from(state: GameState, mover: PlayerPawn, from_tile: int) -> int:
+	for offset: int in [STACK_MAGNET_RANGE, -STACK_MAGNET_RANGE]:
+		var tile_idx: int = from_tile + offset
+		if tile_idx <= GameEnums.GOAL_TILE or tile_idx >= BoardSpec.tile_count or TempoUp.in_zone_for(state, tile_idx):
+			continue
+		if _stack_partners(state, mover, tile_idx).is_empty():
+			continue
+		var safe: bool = true
+		for attachment: TileAttachment in state.board.get_tile(tile_idx).attachments:
+			if attachment.owner_id != mover.owner_id:
+				safe = false
+				break
+		if safe:
+			return tile_idx
+	return -1
+
+
 ## 업기: 모든 아군 말끼리 합칠 수 있다 (법전 allow_stacking이 우선). 출발선(0번)에서는 업지 않는다.
-## ctx.defer_stack_choice가 켜져 있으면 즉시 합치지 않고 report.stack_offer로 플레이어의 선택을 요청한다.
+## ctx.defer_stack_choice가 켜져 있으면 정확히 같은 칸에 도착했을 때는 즉시 합치지 않고 report.stack_offer로 플레이어의 선택을 요청한다.
+## 같은 칸에 아군이 없으면 업기 자석(magnet_target)으로 앞/뒤 1칸의 아군에게 당겨 붙어 자동으로 합류한다.
 static func _resolve_stacking(state: GameState, mover: PlayerPawn, ctx: RuleContext, report: MoveReport) -> void:
 	if not ctx.allow_stacking or mover.current_tile_idx == GameEnums.GOAL_TILE:
 		return
-	var partners: Array[PlayerPawn] = []
-	for other: PlayerPawn in state.leaders_at(mover.current_tile_idx):
-		if other != mover and mover.can_stack_with(other):
-			partners.append(other)
+	var partners: Array[PlayerPawn] = _stack_partners(state, mover, mover.current_tile_idx)
+	var magnet: bool = false
 	if partners.is_empty():
-		return
-	if ctx.defer_stack_choice:
+		var target: int = magnet_target(state, mover) if _primary_move(ctx) and not bool(ctx.metadata.get("no_warp_chain", false)) else -1  # 굴림 이동만 (필살기·순간이동 착지는 아님)
+		if target == -1:
+			return
+		# 업기 자석: 바로 앞/뒤 1칸의 내 말에게 한 칸 당겨 자동으로 합류한다 (선택 없이)
+		var from_tile: int = mover.current_tile_idx
+		mover.current_tile_idx = target
+		mover.push_step(target)
+		state.sync_stack_position(mover)
+		report.path.append(target)
+		ctx.path_nodes.append(target)
+		state.pawn_stepped.emit(mover.entity_id, from_tile, target)
+		state.passive_triggered.emit(mover.entity_id, &"stack_magnet")
+		partners = _stack_partners(state, mover, target)
+		magnet = true
+	if ctx.defer_stack_choice and not magnet:
 		var ids: Array[int] = []
 		for partner: PlayerPawn in partners:
 			ids.append(partner.entity_id)

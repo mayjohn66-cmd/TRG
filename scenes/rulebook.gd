@@ -1293,7 +1293,7 @@ func _family_rows() -> Array:
 
 ## 계열 한 줄 소개.
 const PAWN_LINES: Dictionary = {
-	GameEnums.PawnKind.YUT: "잡으면 재굴림, 만나면 자동으로 업혀요.",
+	GameEnums.PawnKind.YUT: "잡으면 재굴림, 필살기는 주사위 한 번 더.",
 	GameEnums.PawnKind.CHESS: "폰은 반환점에서 퀸으로 승급. 기물마다 움직임 보너스가 달라요.",
 	GameEnums.PawnKind.JANGGI: "말을 넘고, 돌진하고, 땅을 흔드는 장기 기물.",
 	GameEnums.PawnKind.MONOPOLY: "필살기 호텔·워프·카드로 판을 굴리는 모노폴리 말.",

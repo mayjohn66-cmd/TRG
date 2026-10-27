@@ -33,13 +33,14 @@ const TEXTS: Dictionary = {
 	&"car_salary": "[미니카] 반환점 카드+1!",
 	&"plane_warp": "[비행기] 옷장 장거리 워프!",
 	&"yut_reroll": "[윷말] 처치 재굴림 +1!",
+	&"stack_magnet": "[업기] 옆 칸 아군과 합류!",
 }
 ## 뱃지 테두리 색: 이동 보너스(노랑) / 방어·면역(하늘) / 처치(빨강) / 카드(초록) / 승급·워프(보라).
 const COLORS: Dictionary = {
 	&"checker_slide": Color("ff6b6b"),
 	&"shield_block": Color("74c0fc"), &"kart_immune": Color("74c0fc"), &"knight_pass": Color("74c0fc"), &"queen_pass": Color("74c0fc"), &"keima_pass": Color("74c0fc"), &"ship_sink": Color("74c0fc"),
 	&"dog_bakery": Color("8ce99a"), &"car_salary": Color("8ce99a"), &"sweeper_defuse": Color("8ce99a"), &"yut_reroll": Color("8ce99a"),
-	&"plane_warp": Color("b197fc"),
+	&"plane_warp": Color("b197fc"), &"stack_magnet": Color("b197fc"),
 }
 
 

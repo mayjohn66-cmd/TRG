@@ -11,6 +11,8 @@ const SCORE_STOP_SPOT: float = 40.0
 const SCORE_ADVANCE: float = 20.0
 ## 부스터 발판에 멈추면 3칸 더 날아간다.
 const SCORE_DASH_PAD: float = 30.0
+## 업기: 도착 칸(또는 업기 자석 범위 앞/뒤 1칸)의 내 말과 합류하는 수는 무엇보다 먼저 고른다 (완주 +100·선두 전진을 합친 것보다 크다).
+const SCORE_STACK: float = 150.0
 ## 점프 코너와 반환점 (정확히 멈추면 유리한 칸).
 ## 턴 시작에 함정·소환 카드를 쓸 확률.
 const TRAP_USE_CHANCE: float = 0.6
@@ -53,6 +55,8 @@ static func score_move(state: GameState, pawn: PlayerPawn, dice_value: int) -> f
 			score += SCORE_STOP_SPOT
 	if state.boost_gimmicks and BoardSpec.dash_tiles.has(destination):
 		score += SCORE_DASH_PAD
+	if would_stack(state, pawn, destination):
+		score += SCORE_STACK
 	if not pawn.has_left_start or is_front_most(state, pawn):
 		score += SCORE_ADVANCE
 	var before: int = state.pawn_progress_distance(pawn)
@@ -65,6 +69,16 @@ static func score_move(state: GameState, pawn: PlayerPawn, dice_value: int) -> f
 			if attachment.attachment_id == "HOTEL" and attachment.owner_id != pawn.owner_id:
 				score -= 15.0
 	return score
+
+
+## 이 말이 destination에 멈추면 내 다른 말과 업히는가 (같은 칸, 또는 업기 자석 범위의 앞/뒤 칸). 결승·출발선은 아니다.
+static func would_stack(state: GameState, pawn: PlayerPawn, destination: int) -> bool:
+	if destination == GameEnums.GOAL_TILE or TempoUp.in_zone_for(state, destination) or pawn.is_imprisoned:
+		return false
+	for other: PlayerPawn in state.leaders_at(destination):
+		if pawn.can_stack_with(other):
+			return true
+	return MoveExecutor.magnet_target_from(state, pawn, destination) != -1
 
 
 ## 그 타일에 이 말이 잡을 수 있는 적 대표 말이 있는가 (출발선 제외, 잡기 면역 제외).

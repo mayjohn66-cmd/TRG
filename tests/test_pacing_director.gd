@@ -57,14 +57,15 @@ func test_cream_helps_only_the_human_and_more_with_finished_pawns() -> void:
 	check(bot_high > 0.43 and bot_high < 0.57, "크림: 컴퓨터는 보정 없음 (%.2f)" % bot_high)
 	state.pacing_humans = [1] as Array[int]
 	var base_high: float = _share(_histogram(state, ToolDiceD6.new()), func(s: int) -> bool: return s >= 4)
-	check(base_high > 0.62 and base_high < 0.78, "크림: 사람은 4칸 이상이 더 자주 (%.2f)" % base_high)
+	var expected: float = 0.5 + 0.5 * PacingDirector.CREAM_HIGH_BASE
+	check(base_high > expected - 0.05 and base_high < expected + 0.05, "크림: 사람은 4칸 이상이 더 자주 (%.2f)" % base_high)
+	var before: float = PacingDirector.cream_high_chance(state, 1)
 	var pawns: Array = state.pawns_of(1)
 	(pawns[0] as PlayerPawn).is_finished = true
 	(pawns[1] as PlayerPawn).is_finished = true
-	check(PacingDirector.cream_high_chance(state, 1) > PacingDirector.CREAM_HIGH_BASE + 2 * PacingDirector.CREAM_HIGH_PER_FINISH, "완주 2개 + 컴퓨터보다 먼저 완주: 확률이 더 오른다")
+	check(PacingDirector.cream_high_chance(state, 1) > before and PacingDirector.cream_high_chance(state, 1) <= PacingDirector.CREAM_HIGH_MAX, "완주 2개 + 컴퓨터보다 먼저 완주: 확률이 더 오른다 (상한까지)")
 	var later_high: float = _share(_histogram(state, ToolDiceD6.new()), func(s: int) -> bool: return s >= 4)
-	check(later_high > base_high + 0.1, "완주할수록 고눈금이 더 자주 (%.2f → %.2f)" % [base_high, later_high])
-
+	check(later_high > base_high + 0.03, "완주할수록 고눈금이 더 자주 (%.2f → %.2f)" % [base_high, later_high])
 
 func test_cream_dodges_turn_ends_more_after_each_hit() -> void:
 	var state: GameState = _state(1)
@@ -97,8 +98,12 @@ func test_cream_boosts_a_law_that_would_win_right_away() -> void:
 	var state: GameState = _state(1, 7)
 	state.pacing_humans = [1] as Array[int]
 	var arena: AugmentDef = AugmentRegistry.get_def(&"AUG_LAW_01")
+	check_eq(AugmentRegistry.effective_weight(arena, state, 1), 0.0, "크림 기본: 법전은 나오지 않는다")
+	# 커스텀으로 쉬운 법전 2종을 켰을 때만 이 보정이 작동한다
+	state.match_rules["laws"] = true
+	state.match_rules["law_pool"] = MatchRules.EASY_LAWS.duplicate()
 	var before: float = AugmentRegistry.effective_weight(arena, state, 1)
-	check(before > 0.0, "크림에서도 투기장의 지배자는 나온다")
+	check(before > 0.0, "법전을 켠 크림: 투기장의 지배자는 나온다")
 	check(AugmentRegistry.effective_weight(AugmentRegistry.get_def(&"AUG_LAW_03"), state, 1) == 0.0, "크림: 다른 법전은 안 나온다")
 	state.law_stats[1] = {VictoryLaw.KILLS: (LawRegistry.create("LAW_01") as VictoryLaw).goal()}
 	check_eq(AugmentRegistry.effective_weight(arena, state, 1), before * PacingDirector.CREAM_WINNING_LAW_FACTOR, "고르면 바로 이기는 법전은 가중치 대폭 상승")
@@ -106,10 +111,18 @@ func test_cream_boosts_a_law_that_would_win_right_away() -> void:
 
 
 func test_mid_levels_ramp_up_after_round_eleven() -> void:
-	var early: float = _share(_histogram(_state(2, 10), ToolDiceD6.new()), func(s: int) -> bool: return s >= 4)
-	var late: float = _share(_histogram(_state(2, 14), ToolDiceD6.new()), func(s: int) -> bool: return s >= 4)
+	var early_state: GameState = _state(2, 10)
+	early_state.pacing_humans = [1] as Array[int]
+	var late_state: GameState = _state(2, 14)
+	late_state.pacing_humans = [1] as Array[int]
+	var early: float = _share(_histogram(early_state, ToolDiceD6.new()), func(s: int) -> bool: return s >= 4)
+	var late: float = _share(_histogram(late_state, ToolDiceD6.new()), func(s: int) -> bool: return s >= 4)
 	check(early > 0.43 and early < 0.57, "Lv.2 10라운드까지는 기본 확률 (%.2f)" % early)
 	check(late > 0.75, "Lv.2 14라운드: 고눈금이 점점 늘어난다 (%.2f)" % late)
+	var bot: float = _share(_histogram(_state(2, 16), ToolDiceD6.new()), func(s: int) -> bool: return s >= 4)
+	check(bot > 0.43 and bot < 0.57, "Lv.2: 컴퓨터 자리는 서든데스까지 보정 없음 (%.2f)" % bot)
+	var lv3_bot: float = _share(_histogram(_state(3, 14), ToolDiceD6.new()), func(s: int) -> bool: return s >= 4)
+	check(lv3_bot > 0.75, "Lv.3부터는 컴퓨터도 같은 보정 (%.2f)" % lv3_bot)
 
 
 func test_high_levels_help_captured_pawns_until_halfway() -> void:

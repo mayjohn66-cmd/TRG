@@ -5,10 +5,10 @@
 #       MatchRules.pacing (0 = 끄기: 친선전·커스텀 기본, 1~5 = 싱글 불닭 난이도)이 정한다.
 #       - Lv.1 크림 (사람 자리만, GameState.pacing_humans): 3칸 이하가 나오면 확률로 4칸 이상 재굴림. 완주한 말이 많을수록, 컴퓨터보다 먼저 완주했으면
 #         확률이 더 오른다. 턴이 끝나는 결과(낙·삐끗 등)는 확률로 다시 굴리고, 턴 종료를 당할수록 다음 턴 종료는 더 잘 피한다.
-#         법전은 투기장의 지배자·봉인된 에르핀의 식권 2종만 (MatchRules.law_pool). 드래프트에서 고르면 바로 이기는 법전은 등장 가중치를 크게 올린다.
-#       - Lv.2~3: 11라운드부터 라운드마다 15%p씩(최대 90%) 3칸 이하를 4칸 이상으로 재굴림
+#         법전은 나오지 않는다 (MatchRules.for_difficulty, 2026-10-27). 커스텀으로 법전을 켜면 고르면 바로 이기는 법전의 등장 가중치를 크게 올린다.
+#       - Lv.2~3: 11라운드부터 라운드마다 15%p씩(최대 90%) 3칸 이하를 4칸 이상으로 재굴림 (Lv.2는 사람 자리만)
 #       - Lv.4~5: 잡혀서 다시 출발한 말이 반환점에 닿기 전이면, 4칸 이하가 나올 때 60%로 5칸 이상 재굴림
-#       - 공통 서든데스: 15라운드부터 3칸 이하는 4칸 이상으로 재굴림(최소 4칸 보장 수준), 22라운드가 끝나면 남은 사람은 진행 순위로 확정 (TurnManager)
+#       - 공통 서든데스 (Lv.1~2는 사람 자리만): 15라운드부터 3칸 이하는 4칸 이상으로 재굴림(최소 4칸 보장 수준), 22라운드가 끝나면 남은 사람은 진행 순위로 확정 (TurnManager)
 class_name PacingDirector
 extends RefCounted
 
@@ -19,7 +19,7 @@ const MAX_TRIES: int = 10
 const HIGH_STEPS: int = 4
 const COMEBACK_STEPS: int = 5
 ## 크림 고눈금: 기본 확률 + 완주한 말마다 + 컴퓨터보다 먼저 완주했으면 더 (최대 CREAM_HIGH_MAX).
-const CREAM_HIGH_BASE: float = 0.4
+const CREAM_HIGH_BASE: float = 0.8
 const CREAM_HIGH_PER_FINISH: float = 0.15
 const CREAM_HIGH_LEAD: float = 0.15
 const CREAM_HIGH_MAX: float = 0.95
@@ -29,6 +29,8 @@ const CREAM_DODGE_PER_HIT: float = 0.15
 const CREAM_DODGE_MAX: float = 0.95
 ## 크림 드래프트: 고르면 바로 이기는 법전의 등장 가중치 배수.
 const CREAM_WINNING_LAW_FACTOR: float = 25.0
+## 이 난이도 이하(Lv.1 크림·Lv.2 로제)는 고눈금 보정을 사람 자리에만 준다 (2026-10-27).
+const HUMAN_ONLY_MAX_LEVEL: int = 2
 const LATE_FROM_ROUND: int = 11
 const LATE_STEP_CHANCE: float = 0.15
 const LATE_MAX_CHANCE: float = 0.9
@@ -111,11 +113,14 @@ static func _target_steps(state: GameState, player_id: int, lv: int, result: Rol
 	var steps: int = _steps_of(result)
 	var round_number: int = state.round_number
 	var target: int = 0
+	# Lv.1 크림·Lv.2 로제의 고눈금 보정(서든데스 포함)은 사람 자리에만 준다 (컴퓨터는 제 눈금 그대로).
+	if lv <= HUMAN_ONLY_MAX_LEVEL and not is_human(state, player_id):
+		return 0
 	if round_number >= SUDDEN_DEATH_ROUND and steps < HIGH_STEPS:
 		return HIGH_STEPS
 	match lv:
 		1:
-			if is_human(state, player_id) and steps < HIGH_STEPS and state.rng.randf() < cream_high_chance(state, player_id):
+			if steps < HIGH_STEPS and state.rng.randf() < cream_high_chance(state, player_id):
 				target = HIGH_STEPS
 		2, 3:
 			if round_number >= LATE_FROM_ROUND and steps < HIGH_STEPS:

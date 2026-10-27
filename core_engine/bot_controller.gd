@@ -62,12 +62,13 @@ func set_enabled(value: bool) -> void:
 
 
 ## 봇이 아닌 자리 (사람). 억까 방지 보정이 이 사람들을 봐준다.
+## 히든 페이싱이 사람으로 보는 자리(TurnManager.pacing_humans)도 사람으로 친다 (AI 대전에서는 같은 자리, 자동 진행 시뮬레이션도 같은 보정을 받는다).
 func humans() -> Array[int]:
 	var result: Array[int] = []
 	if manager == null:
 		return result
 	for player_id: int in manager.player_order:
-		if not is_bot(player_id):
+		if not is_bot(player_id) or manager.pacing_humans.has(player_id):
 			result.append(player_id)
 	return result
 
