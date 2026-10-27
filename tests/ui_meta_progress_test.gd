@@ -55,7 +55,7 @@ func _run() -> void:
 	var book: Rulebook = menu._open_rulebook(Rulebook.LAW_SPREAD)
 	for i: int in 3:
 		await process_frame
-	var stamps: Array[Node] = book.find_children("ClearedStamp", "", true, false)
+	var stamps: Array[Node] = book.find_children("CollectionStamp", "", true, false)
 	_expect(stamps.size() == 1, "달성한 법전 1개에만 [달성 완료 ★] 도장 (%d)" % stamps.size())
 	_expect(book.find_child("LawCollection", true, false) == null, "도감 상단에는 중복 법전 수집 표시가 없다")
 	_expect((book.find_child("SaveBackup", true, false) as Button).icon == MetaIcon.law_icon(), "기록 백업/복구 버튼에 법전 아이콘이 있다")
@@ -70,7 +70,7 @@ func _run() -> void:
 		await process_frame
 	_expect(GameSession.player_tag() == "ZX97" and GameSession.nickname == "모바일교주", "불러온 #태그·닉네임 (%s %s)" % [GameSession.player_tag(), GameSession.nickname])
 	_expect(PlayerSave.law_count() == 3, "합친 법전 기록은 3개다")
-	_expect(book.find_children("ClearedStamp", "", true, false).size() == 3, "도장 3개로 다시 그린다")
+	_expect(book.find_children("CollectionStamp", "", true, false).size() == 3, "도장 3개로 다시 그린다")
 	_expect(tag.text == "#ZX97", "허브 태그도 바로 바뀐다 (%s)" % tag.text)
 	book.close()
 	menu.queue_free()
