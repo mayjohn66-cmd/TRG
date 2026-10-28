@@ -10861,7 +10861,7 @@ func _play_stage(stage: Control, tool_id: StringName, result: Dictionary) -> voi
 ## 블랙잭 버스트: 이동 없이 턴이 끝난다. 결과 카드를 0.9초 보여 주고 프로필이 피격 반응을 한다.
 func _announce_bust(player_id: int, total: int) -> void:
 	_profile_react(player_id, false)
-	_announce("블랙잭", "[BUST! (21 초과 - 0칸 이동 실패)]", "카드 합계 %d" % total, Color("ff6b6b"), null, 0.9)
+	_announce("블랙잭", "[BUST!]", L10n.tf("합계 %d",[total])+" · "+L10n.t("턴 종료"), Color("ff6b6b"), null, 0.9)
 	_start_beat(0.9)
 
 
@@ -10892,6 +10892,13 @@ func _reveal_roll(data: Dictionary) -> void:
 			return
 		if bool(details.get("bust", false)):
 			_announce_bust(roller, int(details["total"]))
+			return
+		if roll_tool==&"DICE_BLACKJACK":
+			var heading: String = "BLACKJACK!" if bool(details.get("blackjack",false)) else L10n.tf("합계 %d",[int(details["total"])])
+			var summary: String = L10n.tf("%d칸 확정",[roll_steps])
+			if bool((data["result"] as Dictionary).get("reroll",false)):
+				summary = L10n.tf("%d칸 전진",[roll_steps])+" · "+L10n.t("한 번 더")
+			_show_center_banner("P%d  %s\n%s" % [roller,heading,summary],Color("fff3bf"))
 			return
 		_show_center_banner("P%d  %s" % [data["player_id"], roll_text.strip_edges()], Color("ffd43b") if bool((data["result"] as Dictionary).get("reroll", false)) else Color("fff3bf"))
 		return

@@ -36,6 +36,7 @@ on:
           - mobile-fx
           - rulebook-scroll
           - roll-history
+          - blackjack-compact
           - warning-icon
           - rulebook-art
           - avatar-hq
@@ -74,7 +75,9 @@ jobs:
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
           REQUESTED_SCOPE: ${{ inputs.validation }}
         run: |
-          if [[ "${REQUESTED_SCOPE}" == "roll-history" || "${COMMIT_MESSAGE}" == *"[check:roll-history]"* ]]; then
+          if [[ "${REQUESTED_SCOPE}" == "blackjack-compact" || "${COMMIT_MESSAGE}" == *"[check:blackjack-compact]"* ]]; then
+            echo "scope=blackjack-compact" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "roll-history" || "${COMMIT_MESSAGE}" == *"[check:roll-history]"* ]]; then
             echo "scope=roll-history" >> "${GITHUB_OUTPUT}"
           elif [[ "${REQUESTED_SCOPE}" == "rulebook-scroll" || "${COMMIT_MESSAGE}" == *"[check:rulebook-scroll]"* ]]; then
             echo "scope=rulebook-scroll" >> "${GITHUB_OUTPUT}"
@@ -176,6 +179,14 @@ jobs:
           godot --headless --path . -s res://tests/ui_avatar_hq_test.gd 2>&1 | tee /tmp/avatar_hq.log
           grep -q 'AVATAR_HQ_OK' /tmp/avatar_hq.log
           if grep -q 'SCRIPT ERROR' /tmp/avatar_hq.log; then exit 1; fi
+
+      - name: Check compact Blackjack hand and batch deal
+        if: steps.validation.outputs.scope == 'blackjack-compact'
+        run: |
+          set -euo pipefail
+          godot --headless --audio-driver Dummy --path . -s res://tests/ui_blackjack_compact_test.gd 2>&1 | tee /tmp/blackjack_compact.log
+          grep -q 'BLACKJACK_COMPACT_OK' /tmp/blackjack_compact.log
+          if grep -Eq 'SCRIPT ERROR|SHADER ERROR' /tmp/blackjack_compact.log; then exit 1; fi
 
       - name: Check revealed roll history beside tools
         if: steps.validation.outputs.scope == 'roll-history'

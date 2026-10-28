@@ -2325,3 +2325,8 @@ v%s · 비공식 팬게임 (원작사와 무관한 비영리 무료 배포물),v
 포격으로 %d개의 말을 출발선으로!,Bombard sends %d pawn(s) to the start!,砲撃で%d個の駒をスタートへ！
 이번 차례 동안 잡기·함정 사출을 막습니다,Blocks KOs and trap knockouts this turn,このターン中、撃破・罠による射出を防ぎます
 %d번 타일로 도약!,Leaps to tile %d!,%d番マスへ跳躍！
+히트,Hit,ヒット
+스탠드,Stand,スタンド
+스탠드 · %d칸,Stand · %d spaces,スタンド · %dマス
+카드 받는 중,Dealing cards,カード配布中
+카드를 받아 시작하세요,Draw cards to start,カードを引いて開始

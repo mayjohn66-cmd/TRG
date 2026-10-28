@@ -122,6 +122,10 @@ func reveal(turn: int, player: int, result: Dictionary) -> void:
 	if appended:
 		entries.append({"text":_outcome(result),"tone":BAD if bool(result.get("ends_turn",false)) else (AGAIN if bool(result.get("reroll",false)) else GOOD),"success":tool_id==&"REVOLVER" and not bool(details.get("fired",false))})
 	last_result = result.duplicate(true)
+	# Blackjack already shows current hand, count and total in its fixed-size stage.
+	if tool_id==&"DICE_BLACKJACK":
+		hide()
+		return
 	_refresh(appended)
 	show()
 
