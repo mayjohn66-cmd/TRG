@@ -84,12 +84,23 @@ func _run() -> void:
 	var victim_view: Node2D = board._pawn_views[21]
 	var start_spot: Vector2 = board._pawn_position(state.get_pawn(21))
 	var flashed_at_start: bool = false
+	var victim_panel: Control = board._profiles[2]["panel"]
+	var hit_mid_flight: bool = false
+	var hit_after_landing: bool = false
 	var until: int = Time.get_ticks_msec() + 4000
 	while Time.get_ticks_msec() < until and (board._presentation_active() or board._fx_running(victim_view)):
 		if victim_view.visible and victim_view.position.distance_to(start_spot) < 4.0:
 			flashed_at_start = true
+		if victim_panel.has_meta("react_tween"):
+			if board._fx_running(victim_view):
+				hit_mid_flight = true
+			else:
+				hit_after_landing = true
 		await process_frame
 	await _wait_for_queue()
+	hit_after_landing = hit_after_landing or victim_panel.has_meta("react_tween")
+	expect(not hit_mid_flight, "hit sound and profile hit reaction wait until the ejected pawn has landed")
+	expect(hit_after_landing, "the victim's profile reacts once the ejection has finished")
 	for i: int in 3:
 		await process_frame
 	expect(not flashed_at_start and not victim_view.visible, "ejected pawn never pops up on the start line")

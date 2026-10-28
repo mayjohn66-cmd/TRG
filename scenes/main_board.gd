@@ -1365,6 +1365,7 @@ func _bind_state() -> void:
 		var trapped: PlayerPawn = state.get_pawn(pawn_id)
 		if trapped != null:
 			var trapped_owner: int = trapped.owner_id
+			var trap_ejected: bool = not trapped.has_left_start  # 출발선으로 날린 함정은 사출 연출이 끝난 뒤에 반응한다 (_play_capture_eject)
 			var trap_pos: Vector2 = _tile_center(tile)
 			# 순서: 함정이 터진다(충격) -> 잠깐 뒤 프로필 반응 -> 그 뒤 말이 날아간다 (_fx_hint_bonus)
 			_fx_hint_bonus = maxf(_fx_hint_bonus, 0.4)
@@ -1373,8 +1374,9 @@ func _bind_state() -> void:
 				screen_shake(8.0, 0.25)
 				_impact_ring(trap_pos, Color("ff6b6b"), 56.0)
 				_burst_shards(trap_pos, Color("ff8787"), 14)
-				get_tree().create_timer(0.25).timeout.connect(func() -> void:
-					_profile_react(trapped_owner, false)))
+				if not trap_ejected:
+					get_tree().create_timer(0.25).timeout.connect(func() -> void:
+						_profile_react(trapped_owner, false)))
 		_log_line("[설치물] %d번 타일 %s 발동! (%s)" % [tile, _attachment_name(id), _pawn_name(pawn_id)], Color("ff6b6b"))
 		if trapped != null:
 			_record(trapped.owner_id, "%s 밟음! (%d번 타일, %s)" % [_bq(_attachment_name(id)), tile, _bq("%d번 말" % trapped.slot)])
@@ -3049,18 +3051,18 @@ func _play_eject_settle(pawn_id: int) -> void:
 		await get_tree().process_frame
 
 
-## 큐의 한 단계: 잡힌 말이 회전하며 장외로 날아가 출발선(0번)에 떨어지고, 주인들이 반응한다.
+## 큐의 한 단계: 잡힌 말이 회전하며 장외로 날아가 출발선(0번)에 떨어지고, 떨어진 뒤에 주인들이 반응한다 (피격음·프로필 피격).
 func _play_capture_eject(pawn_id: int, by_player: int, owner_id: int, cutin_capture: bool, impact_feedback: bool = true) -> void:
 	if impact_feedback:
 		_fx_impact_at_pawn(pawn_id, 0.0)
 	# 처치·사출은 어떤 경우든(잡기·필살기·함정·카드) 보드 밖으로 날아가는 장외 홈런으로 보여 준다 (출발선으로 걸어 돌아가지 않는다).
 	_set_hint(pawn_id, {"homerun": true, "arc": 110.0, "spin": 2.0 * TAU, "dur": 0.45, "land_thud": true})
-	get_tree().create_timer(0.2 * _motion_pace()).timeout.connect(func() -> void:
-		_profile_react(owner_id, false)
-		if by_player != owner_id:
-			_profile_react(by_player, true))
 	await _play_eject_settle(pawn_id)
 	var ejected: PlayerPawn = state.get_pawn(pawn_id) if state != null else null
+	# 피격음·프로필 피격 반응은 사출이 완전히 끝난 뒤(출발선에 떨어진 뒤) 한 번만: 날아가는 도중이나 방어 결정 전에는 내지 않는다.
+	_profile_react(owner_id, false)
+	if by_player != owner_id:
+		_profile_react(by_player, true)
 	if ejected != null and ejected.revenge_boost and not ejected.has_left_start:
 		_revenge_charged_popup(ejected.owner_id, ejected)
 
@@ -4436,7 +4438,7 @@ func _build_reaction_popup(holder: int, key: String) -> void:
 	_reaction_popup.pivot_offset = _reaction_popup.size / 2.0
 	_reaction_popup.scale = Vector2(0.85, 0.85)
 	_reaction_popup.create_tween().tween_property(_reaction_popup, "scale", Vector2.ONE, 0.15).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	Sfx.play(&"bad")
+	Sfx.play(&"attack_alert")  # 아직 맞은 게 아니다 (방어할지 고르는 중): 피격음은 사출이 확정·완료된 뒤에
 
 
 func _close_reaction_popup() -> void:
@@ -6717,18 +6719,6 @@ func _fx_promote(pawn_id: int, color: Color) -> void:
 	_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(1.1 * pace * 1000.0))
 
 
-## 맞은 말의 주인 프로필이 억울해한다.
-func _react_hit_pawn(pawn_id: int) -> void:
-	var pawn: PlayerPawn = state.get_pawn(pawn_id)
-	if pawn == null:
-		return
-	var owner_id: int = pawn.owner_id
-	# 총알이 날아가(0.35초) 맞은 뒤에 반응한다
-	_fx_when_announced(func() -> void:
-		get_tree().create_timer(0.35 * _motion_pace() + 0.1).timeout.connect(func() -> void:
-			_profile_react(owner_id, false)))
-
-
 ## 차 저격 연출을 미리 만든다: 뒤로 살짝 당김(차징) -> 섬광 -> 초고속 직선 돌진으로 들이받음(내리찍기). 잡힌 말은 부딪힌 뒤에 날아간다.
 func _prepare_charge_fx(data: Dictionary) -> void:
 	if not _fx_on():
@@ -8185,9 +8175,7 @@ func _on_duel_resolved(data: Dictionary) -> void:
 		screen_shake(9.0, 0.25)
 		_impact_ring(hit_pos, Color("ff6b6b"), 54.0)
 		_impact_ring(hit_pos, Color.WHITE, 30.0)
-		_burst_shards(hit_pos, Color("ff8787"), 12)
-		_profile_react(loser, false)
-		_profile_react(winner, true), pawn_id)
+		_burst_shards(hit_pos, Color("ff8787"), 12), pawn_id)  # 피격·환호 반응은 사출이 끝난 뒤 (_play_capture_eject)
 
 
 ## 즉시 모드(테스트·ui_smoke): 결투장 없이 내 자리의 값을 바로 낸다 (봇과 같은 규칙으로 무작위).
@@ -10403,8 +10391,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_log_line("[백돌 방어막] 백돌에 막혀 %s이(가) %d번 → %d번으로 밀려났습니다" % [_pawn_name(int(data["pawn_id"])), data["from"], data["to"]], Color("b197fc"))
 		&"bomb_applied":
 			_log_line("[UDO +4] P%d의 %s이(가) 출발선으로 장외 사출! 내 이번 이동 +%d칸" % [data["victim"], _pawn_name(int(data["pawn_id"])), PenaltyBombCommand.advance_steps()], Color("ffd43b"))
-			_fx_simple_shot(int(data["shooter"]), int(data["pawn_id"]))
-			_react_hit_pawn(int(data["pawn_id"]))
+			_fx_simple_shot(int(data["shooter"]), int(data["pawn_id"]))  # 피격 반응은 사출이 끝난 뒤 (_play_capture_eject)
 		&"player_ranked":
 			var ranked: int = int(data["player_id"])
 			var rank_no: int = int(data["rank"])
