@@ -208,3 +208,25 @@ func test_yut_reroll_chain_caps_at_three() -> void:
 		check(result.steps >= 1 and result.steps <= 3 and not result.reroll and not result.ends_turn, "재굴림 3번 뒤 던지기는 도·개·걸 중 하나")
 	tree.root.remove_child(manager)
 	manager.free()
+
+
+func test_yut_bonus_throw_raises_the_nak_weight() -> void:
+	var tool := ToolYut.new()
+	var rng: RandomNumberGenerator = _rng()
+	var naks := 0
+	var seen: Dictionary = {}
+	tool.bonus_throw = true
+	for i: int in 4000:
+		var result: RollResult = tool.roll(rng)
+		seen[int(result.details["face"])] = true
+		if bool(result.details["nak"]):
+			naks += 1
+	var share: float = float(naks) / 4000.0
+	check(share > 0.33 and share < 0.42, "추가 던지기의 낙은 약 3/8 (%.2f)" % share)
+	check_eq(seen.size(), 6, "다른 면도 모두 나온다")
+	tool.bonus_throw = false
+	naks = 0
+	for i: int in 4000:
+		if bool(tool.roll(rng).details["nak"]):
+			naks += 1
+	check(float(naks) / 4000.0 < 0.2, "첫 던지기의 낙은 그대로 약 1/6")

@@ -1435,6 +1435,8 @@ func _enter_roll_wait() -> void:
 
 ## 도구를 굴리고 굴림 보정을 차례로 입힌다: 히든 페이싱(난이도) → [범용] 손은 눈보다 빨라 → 연속 굴림 감쇠.
 func _roll_with_modifiers(roller: int, tool: BaseJudgmentTool) -> RollResult:
+	if tool is ToolYut:
+		(tool as ToolYut).bonus_throw = _roll_chain > 0  # 윷·모로 얻은 추가 던지기는 낙이 잘 나온다 (히든 보정)
 	var result: RollResult = PacingDirector.adjust(state, roller, tool, tool.roll(state.rng))
 	result = UtilityAugments.lucky_roll(state, roller, tool, result)
 	result = PacingDirector.damp_chain(state, tool, result, _roll_chain)
