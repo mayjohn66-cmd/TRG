@@ -1,8 +1,8 @@
 # File: res://core_engine/rules/tempo_up.gd
 # Class: class_name TempoUp
 # Role: 판이 길어지면 라운드 단위로 게임을 가속한다 (템포 업). 7·14·20라운드에 단계가 오르고 (2026-10: 8·15·22에서 당겨 20라운드 안에 결판이 나게), 단계가 오르는 라운드가 시작될 때 크게 경고한다.
-#       1단계(7R, 과열): 최종 이동 +2칸 · 리벤지 부스터 +6칸 · 초증강 등장 확률 상승
-#       2단계(14R, 광기): 최종 이동 +4칸 · 리벤지 부스터 +8칸 · 법전 등장 확률 상승 · 결승선이 라운드마다 3칸씩 당겨진다 (반환점 앞까지)
+#       1단계(7R, 과열): 차례 첫 이동 +2칸 · 리벤지 부스터 +6칸 · 초증강 등장 확률 상승
+#       2단계(14R, 광기): 차례 첫 이동 +4칸 · 리벤지 부스터 +8칸 · 법전 등장 확률 상승 · 결승선이 라운드마다 3칸씩 당겨진다 (반환점 앞까지)
 #       3단계(20R, 대붕괴): 전원 이동 +6칸 · 결승선이 출발선 4칸 앞까지 라운드마다 3칸씩 계속 당겨진다
 #       (2026-10-27) 싱글 라운드 상한(PacingDirector.HARD_CAP_ROUND)은 30라운드 안전장치일 뿐, 판은 결승선 당기기로 자연스럽게 끝난다.
 #       라운드 번호만으로 정해지는 순수 함수라 스냅샷·네트워크 동기화가 따로 필요 없다.
@@ -39,7 +39,7 @@ static func is_stage_round(round_number: int) -> bool:
 	return stage_rounds.has(round_number)
 
 
-## 모든 굴림의 최종 이동 칸에 더하는 값.
+## 차례의 첫 이동 칸에 더하는 값 (추가 굴림에는 붙지 않는다).
 static func move_bonus(round_number: int) -> int:
 	return MOVE_BONUS[level(round_number)]
 
@@ -118,7 +118,7 @@ static func stage_name(stage: int) -> String:
 ## 경고 화면에 보여 줄 단계별 효과 문구.
 static func effect_lines(stage: int) -> Array[String]:
 	match stage:
-		1: return ["모든 굴림 최종 이동 +%d칸" % MOVE_BONUS[1], "리벤지 부스터 +6칸", "초증강 등장 확률 상승"] as Array[String]
-		2: return ["모든 굴림 최종 이동 +%d칸" % MOVE_BONUS[2], "리벤지 부스터 +8칸", "법전 증강 등장 확률 상승", "결승선이 라운드마다 %d칸씩 당겨진다" % GOAL_SHRINK_PER_ROUND] as Array[String]
-		3: return ["전원 이동 +%d칸" % MOVE_BONUS[3], "결승선이 출발선 앞까지 계속 당겨진다"] as Array[String]
+		1: return ["차례 첫 이동 +%d칸" % MOVE_BONUS[1], "리벤지 부스터 +6칸", "초증강 등장 확률 상승"] as Array[String]
+		2: return ["차례 첫 이동 +%d칸" % MOVE_BONUS[2], "리벤지 부스터 +8칸", "법전 증강 등장 확률 상승", "결승선이 라운드마다 %d칸씩 당겨진다" % GOAL_SHRINK_PER_ROUND] as Array[String]
+		3: return ["전원 차례 첫 이동 +%d칸" % MOVE_BONUS[3], "결승선이 출발선 앞까지 계속 당겨진다"] as Array[String]
 	return [] as Array[String]

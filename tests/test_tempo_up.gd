@@ -115,6 +115,19 @@ func test_tempo_bonus_is_added_to_the_final_move() -> void:
 	_dispose(manager)
 
 
+func test_tempo_bonus_skips_bonus_rolls_in_the_same_turn() -> void:
+	var manager := _new_manager()
+	manager.state.round_number = 15
+	var first: RollResult = RollResult.make(&"YUT", 4, {})
+	first.reroll = true
+	manager._apply_roll_result(first)
+	check_eq(manager._queued_dice(), 8, "첫 이동: 눈금 4 + 광기 4")
+	manager.move_queue.clear()
+	manager._apply_roll_result(RollResult.make(&"YUT", 3, {}))
+	check_eq(manager._queued_dice(), 3, "같은 차례 추가 굴림에는 템포 업 보너스가 없다")
+	_dispose(manager)
+
+
 func test_pulled_in_goal_line_finishes_pawns_on_the_move_and_at_round_start() -> void:
 	var state := make_state()
 	state.round_number = 22

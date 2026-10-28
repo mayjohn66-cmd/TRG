@@ -2275,3 +2275,9 @@ v%s · 비공식 팬게임 (원작사와 무관한 비영리 무료 배포물),v
 전원 이동 +6칸 · 결승선이 출발선 앞까지 계속 당겨짐,Everyone +6 · finish line keeps closing in toward the start,全員の移動 +6マス · ゴールがスタート手前までどんどん近づく
 클래식 구슬 핀볼 · %s 차례,Classic Marble Pinball · %s's turn,クラシック玉ピンボール · %sの番
 이번 판은 특수 승리 법전이 없어요,No special-victory codex this match,この試合は特殊勝利の法典なし
+차례 첫 이동 +%d칸,+%d to the first move of each turn,各ターン最初の移動 +%dマス
+전원 차례 첫 이동 +%d칸,Everyone: +%d to the first move of each turn,全員: 各ターン最初の移動 +%dマス
+\n템포 업 Lv.%d %s · 차례 첫 이동 +%d칸,\nTempo Up Lv.%d %s · first move +%d,\nテンポアップ Lv.%d %s · 最初の移動 +%dマス
+차례 첫 이동 +2칸 · 리벤지 +6칸 · 초증강 확률 상승,First move +2 · Revenge +6 · Hyper odds up,最初の移動 +2マス · リベンジ +6マス · 超増強の確率アップ
+차례 첫 이동 +4칸 · 리벤지 +8칸 · 법전 확률 상승 · 결승선이 라운드마다 3칸씩 당겨짐,First move +4 · Revenge +8 · Codex odds up · finish line moves 3 spaces closer each round,最初の移動 +4マス · リベンジ +8マス · 法典の確率アップ · ゴールがラウンドごとに3マスずつ近づく
+전원 차례 첫 이동 +6칸 · 결승선이 출발선 앞까지 계속 당겨짐,Everyone's first move +6 · finish line keeps closing in toward the start,全員の最初の移動 +6マス · ゴールがスタート手前までどんどん近づく

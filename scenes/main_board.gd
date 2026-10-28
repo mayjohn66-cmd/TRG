@@ -3665,7 +3665,7 @@ func _check_round_banner() -> void:
 	# 라운드 첫 차례는 이 배너가 차례 배너를 겸한다: 누구 차례인지 함께 알리고, 끝날 때까지 굴리기를 막는다
 	var first: int = manager.current_player_id()
 	var whose: String = tr_ui("turn.mine") if ai_mode and first == local_player_id else tr_ui("turn.other", [_player_name(first)])
-	var body: String = whose + ("\n템포 업 Lv.%d %s · 최종 이동 +%d칸" % [tempo, TempoUp.stage_name(tempo), TempoUp.move_bonus(state.round_number)] if tempo > 0 else "")
+	var body: String = whose + ("\n템포 업 Lv.%d %s · 차례 첫 이동 +%d칸" % [tempo, TempoUp.stage_name(tempo), TempoUp.move_bonus(state.round_number)] if tempo > 0 else "")
 	if _fx_on():
 		Sfx.play(&"round_start")
 	_announce("라운드", "%d라운드 시작!" % state.round_number, body, COLOR_GOLD, null, 1.0)

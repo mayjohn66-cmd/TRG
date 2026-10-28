@@ -1472,8 +1472,9 @@ func _apply_roll_result(result: RollResult) -> void:
 		if int(state.gambler_round.get(roller, -1)) == state.round_number:
 			_emit_event(&"gambler_doubled", {"player_id": roller, "from": boosted, "to": boosted * SuperAugments.gambler_multiplier()})
 			boosted *= SuperAugments.gambler_multiplier()
-		# 템포 업: 최종 이동 칸에 단계별 보너스 (7R +2 / 14R +4 / 20R +6)
-		var tempo: int = TempoUp.move_bonus(state.round_number)
+		# 템포 업: 차례의 첫 이동에만 단계별 보너스 (7R +2 / 14R +4 / 20R +6).
+		# 추가 굴림(윷·모, 야추, 블랙잭 등)마다 붙이면 여러 번 굴리는 도구가 보너스를 몇 배로 받는다 (2026-10 QA: 윷 1위율 74%).
+		var tempo: int = TempoUp.move_bonus(state.round_number) if _roll_chain == 0 else 0
 		if tempo > 0:
 			_emit_event(&"tempo_boosted", {"player_id": roller, "from": boosted, "to": boosted + tempo, "level": TempoUp.level(state.round_number)})
 			boosted += tempo
