@@ -625,6 +625,8 @@ jobs:
           cp web/title-logo-en.png build/web/title-logo-en.png
           cp web/title-logo-ja.png build/web/title-logo-ja.png
           cp web/loading-petit-speaki.webp build/web/loading-petit-speaki.webp
+          # 16:9 화면 바깥 칸 패턴 (있을 때만): 없으면 shell.html이 연두색 단색으로 둔다.
+          if [ -f web/letterbox-pattern.png ]; then cp web/letterbox-pattern.png build/web/letterbox-pattern.png; fi
           # GitHub rejects individual files above 100 MiB. Fail before upload
           # with an actionable message if future asset additions reach it.
           python3 - <<'PY'

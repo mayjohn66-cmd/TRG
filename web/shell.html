@@ -53,13 +53,18 @@
 		}
 		body {
 			color: #e9ecef;
-			background-color: #141824;
+			/* 게임 화면은 16:9로 가운데에 두고, 남는 칸은 연두색 (web/letterbox-pattern.png가 있으면 그 그림을 바둑판으로 깐다) */
+			background-color: #b5e48c;
+			background-repeat: repeat;
 			overflow: hidden;
 			touch-action: none;
 			font-family: "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
 		}
 		#canvas {
 			display: block;
+			position: absolute;
+			left: 0;
+			top: 0;
 		}
 		#canvas:focus {
 			outline: none;
@@ -399,6 +404,31 @@
 	<script>
 		const GODOT_CONFIG = $GODOT_CONFIG;
 		const GODOT_THREADS_ENABLED = $GODOT_THREADS_ENABLED;
+		// 16:9 고정: 캔버스를 창 안에 들어가는 가장 큰 16:9(기준 1366x768)로 가운데에 두고, 남는 칸은 body 배경(연두색·패턴)이 보이게 한다.
+		// 엔진이 캔버스를 창 크기로 늘리지 않도록 크기 조절은 이 스크립트가 맡는다 (canvasResizePolicy 0).
+		GODOT_CONFIG.canvasResizePolicy = 0;
+		(function () {
+			var canvas = document.getElementById('canvas');
+			function fit() {
+				var W = window.innerWidth, H = window.innerHeight;
+				var w = W, h = Math.round(W * 768 / 1366);
+				if (h > H) { h = H; w = Math.round(H * 1366 / 768); }
+				var d = window.devicePixelRatio || 1;
+				canvas.style.width = w + 'px';
+				canvas.style.height = h + 'px';
+				canvas.style.left = Math.floor((W - w) / 2) + 'px';
+				canvas.style.top = Math.floor((H - h) / 2) + 'px';
+				canvas.width = Math.round(w * d);
+				canvas.height = Math.round(h * d);
+			}
+			fit();
+			window.addEventListener('resize', fit);
+			document.addEventListener('fullscreenchange', fit);
+			window.trgFit16x9 = fit;
+			var pattern = new Image();
+			pattern.onload = function () { document.body.style.backgroundImage = "url('letterbox-pattern.png?v=__TRG_BUILD_ID__')"; };
+			pattern.src = 'letterbox-pattern.png?v=__TRG_BUILD_ID__';
+		})();
 		const engine = new Engine(GODOT_CONFIG);
 
 		(function () {

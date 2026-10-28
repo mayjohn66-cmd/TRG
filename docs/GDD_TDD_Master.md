@@ -1695,7 +1695,8 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 - 70판 검증: 알림 겹침 판 비율 약 30% → 1판(1프레임). 멈춤·오류 0.
 - 판이 라운드 시작(증강 확인) 중에 끝나면 game_over에서 증강 확인·드래프트 창을 닫고, `_show_result_overlay`가 남은 알림을 치운다. 3차 70판 검증: 스테이지·방어 팝업 겹침 0, 남은 것은 1프레임짜리와 내 리볼버 발사 연출(의도)뿐.
 
-### 7.14 화면 비율 설정 (2026-10-28)
-- `GameSession.fixed_aspect` (settings.cfg `fixed_aspect`, 기본 false): true면 `root.content_scale_aspect = KEEP`(16:9 고정, 남는 곳 검은 띠), false면 `EXPAND`(꽉 채우기, project.godot 기본). `apply_screen_fit()`이 load_settings·reset_settings·스위치에서 바로 건다.
-- 설정 화면(시작 화면·게임 중 메뉴 공통 `LobbyTheme.add_settings_controls`)의 `AspectSwitch` "16:9 화면 비율 고정 (남는 곳은 검은 띠)". 검사: ui_menu_test.
-- 해상도 `GameSession.resolution`(settings.cfg `resolution`, 0 창에 맞춤 / `RESOLUTIONS` 1280×720·1600×900·1920×1080): 고르면 KEEP(16:9). 웹은 `_apply_web_resolution`이 캔버스에 CSS `scale(s)`를 건다 (s = min(1, 목표 폭 / 창 안 16:9 맞춤 폭), resize 때 다시 계산; 브라우저가 줄인 크기대로 입력 좌표를 맞춘다 — Chromium으로 클릭 확인). PC 창 모드는 `window_set_size` + 가운데. 설정 `ResolutionOption`, 검사: ui_menu_test.
+### 7.14 화면 16:9 고정 + 연두색 바깥 칸 (2026-10-28)
+- 화면은 늘 16:9(기준 1366x768, `window/stretch/aspect="keep"`)로 고정한다. 설정의 화면 비율 스위치·해상도 선택은 넣었다가 없앴다 (웹에서 의미가 애매).
+- 웹: Godot 띠(black bars)는 웹 렌더러에서 색을 바꿀 수 없어, `web/shell.html`이 캔버스를 창 안 가장 큰 16:9로 가운데에 두고(`canvasResizePolicy 0`, resize·fullscreenchange마다 `fit`) 남는 칸은 body 배경 연두색 `#b5e48c`가 보이게 한다. `web/letterbox-pattern.png`가 있으면 배포에 실리고 바둑판으로 깔린다 (없으면 단색). export_presets head_include의 html/body 배경도 같은 색.
+- 웹 전체화면은 `MobileSupport.toggle_fullscreen`이 페이지(document.documentElement)째 전환한다 (캔버스만 전체화면이면 엔진이 검은 띠를 그린다). `is_fullscreen()`이 웹은 document.fullscreenElement를 본다.
+- Chromium 검증: 2560x1080 → 캔버스 1920x1080 가운데, 1200x1000 → 1200x675 가운데, 창 크기 변경 시 다시 맞춤, 클릭 위치 정상.

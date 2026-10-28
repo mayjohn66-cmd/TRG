@@ -44,11 +44,7 @@ static var screen_shake: bool = true
 ## 배터리 절약: 화면을 초당 30장까지만 그린다 (휴대폰 발열·배터리용).
 static var battery_saver: bool = false
 const BATTERY_SAVER_FPS: int = 30
-## 화면 비율: false 꽉 채우기(기본, 1366x768 기준 화면을 창 비율에 맞춰 넓힘) / true 16:9 고정(남는 곳은 검은 띠, 배치가 늘 같다).
-static var fixed_aspect: bool = false
-## 해상도: 0 창에 맞춤(기본) / 그 밖은 RESOLUTIONS의 16:9 크기. 고르면 16:9로 고정되고, 웹은 게임 화면을 그 크기로 가운데에 줄여 그린다 (브라우저 창 크기는 게임이 못 바꾼다), PC 창은 창 크기를 바꾼다.
-static var resolution: int = 0
-const RESOLUTIONS: Array[Vector2i] = [Vector2i.ZERO, Vector2i(1280, 720), Vector2i(1600, 900), Vector2i(1920, 1080)]
+## 화면은 늘 16:9(기준 1366x768)로 고정한다. 웹은 shell.html이 캔버스를 16:9로 가운데에 두고 남는 칸을 연두색(web/letterbox-pattern.png가 있으면 그 패턴)으로 칠한다.
 ## 화면 언어 (L10n.LANGUAGES). 처음 실행하면 기기 언어를 따른다 (한국어 기기 KR, 그 밖 EN). 번역이 없는 문구는 한국어로 나온다.
 static var language: String = L10n.DEFAULT_LANG
 ## 진행 배속 (1·2·3): 혼자 하는 판에서 Engine.time_scale로 모든 트윈·타이머·봇 대기를 함께 빠르게 한다. 온라인 대전은 늘 1배.
@@ -67,8 +63,6 @@ static func save_settings() -> void:
 	config.set_value("game", "language", language)
 	config.set_value("game", "game_speed", game_speed)
 	config.set_value("game", "battery_saver", battery_saver)
-	config.set_value("game", "fixed_aspect", fixed_aspect)
-	config.set_value("game", "resolution", resolution)
 	config.set_value("game", "view_mode", view_mode)
 	config.set_value("game", "sfx_volume", sfx_volume)
 	config.set_value("game", "bgm_volume", bgm_volume)
@@ -87,8 +81,6 @@ static func load_settings() -> void:
 		master_volume = clampf(float(config.get_value("game", "master_volume", 1.0)), 0.0, 1.0)
 		screen_shake = bool(config.get_value("game", "screen_shake", true))
 		battery_saver = bool(config.get_value("game", "battery_saver", false))
-		fixed_aspect = bool(config.get_value("game", "fixed_aspect", false))
-		resolution = clampi(int(config.get_value("game", "resolution", 0)), 0, RESOLUTIONS.size() - 1)
 		game_speed = int(config.get_value("game", "game_speed", 1))
 		if not GAME_SPEEDS.has(game_speed):
 			game_speed = 1
@@ -124,10 +116,7 @@ static func reset_settings() -> void:
 	bgm_muted = false
 	screen_shake = true
 	battery_saver = false
-	fixed_aspect = false
-	resolution = 0
 	apply_frame_limit()
-	apply_screen_fit()
 	save_settings()
 
 
@@ -136,37 +125,12 @@ static func apply_frame_limit() -> void:
 	Engine.max_fps = BATTERY_SAVER_FPS if battery_saver else 0
 
 
-## 화면 비율을 창에 건다: 16:9 고정이면 KEEP(검은 띠), 꽉 채우기면 EXPAND (project.godot 기본).
+## 화면을 16:9로 고정한다 (KEEP: 기준 화면 배치가 늘 같다).
 static func apply_screen_fit() -> void:
 	var tree: SceneTree = Engine.get_main_loop() as SceneTree
 	if tree == null or tree.root == null:
 		return
-	var target: Vector2i = RESOLUTIONS[clampi(resolution, 0, RESOLUTIONS.size() - 1)]
-	tree.root.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_KEEP if fixed_aspect or target != Vector2i.ZERO else Window.CONTENT_SCALE_ASPECT_EXPAND
-	if OS.has_feature("web"):
-		_apply_web_resolution(target)
-	elif target != Vector2i.ZERO and DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_WINDOWED:
-		var screen: Rect2i = DisplayServer.screen_get_usable_rect(DisplayServer.window_get_current_screen())
-		DisplayServer.window_set_size(target)
-		DisplayServer.window_set_position(screen.position + (screen.size - target) / 2)
-
-
-## 웹: 캔버스를 CSS로 줄여 16:9 게임 화면이 고른 크기가 되게 한다 (창 크기가 바뀌면 다시 맞춘다). 마우스·터치 좌표는 브라우저가 줄인 크기대로 맞춰 준다.
-static func _apply_web_resolution(target: Vector2i) -> void:
-	JavaScriptBridge.eval("""(function(){
-		window.__trgRes = %s;
-		window.__trgApplyRes = function(){
-			var c = document.getElementById('canvas'); if (!c) return;
-			var r = window.__trgRes;
-			if (!r) { c.style.transform = ''; return; }
-			var fitW = Math.min(window.innerWidth, window.innerHeight * 1366 / 768);
-			var s = Math.min(1, r[0] / fitW);
-			c.style.transformOrigin = '50%% 50%%';
-			c.style.transform = s < 1 ? 'scale(' + s + ')' : '';
-		};
-		if (!window.__trgResHook) { window.__trgResHook = true; window.addEventListener('resize', function(){ window.__trgApplyRes(); }); }
-		window.__trgApplyRes();
-	})();""" % ("null" if target == Vector2i.ZERO else "[%d,%d]" % [target.x, target.y]))
+	tree.root.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_KEEP
 
 
 ## 온라인 대전 설정: 로비가 시작 때 채우고 메인 보드가 읽는다 (net_active가 false면 기존 컴퓨터 대전/핫시트).

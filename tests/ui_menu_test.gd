@@ -262,22 +262,9 @@ func _run() -> void:
 	menu._bottom["center"].pressed.emit()
 	var popup: Node = menu.find_child("Popup", true, false)
 	_expect(popup != null and popup.find_child("PacingCheck", true, false) == null and popup.find_child("FullscreenSwitch", true, false) != null and popup.find_child("BatterySwitch", true, false) != null and popup.find_child("MasterMute", true, false) != null and popup.find_child("LanguageOption", true, false) != null and popup.find_child("ViewMode", true, false) == null and popup.find_child("PaceOption", true, false) == null and popup.find_child("SfxMute", true, false) != null and popup.find_child("BgmMute", true, false) != null, "설정 팝업: 화면 스위치·전체/효과음/배경음 음소거·언어 (연출 멈춤·속도·시점은 없음)")
-	var aspect_switch: CheckButton = popup.find_child("AspectSwitch", true, false)
-	_expect(aspect_switch != null and not aspect_switch.button_pressed, "설정 팝업: 16:9 화면 비율 고정 스위치 (기본은 꽉 채우기)")
-	if aspect_switch != null:
-		aspect_switch.button_pressed = true
-		_expect(GameSession.fixed_aspect and root.content_scale_aspect == Window.CONTENT_SCALE_ASPECT_KEEP, "16:9 고정을 켜면 바로 검은 띠 방식(KEEP)")
-		aspect_switch.button_pressed = false
-		_expect(not GameSession.fixed_aspect and root.content_scale_aspect == Window.CONTENT_SCALE_ASPECT_EXPAND, "끄면 다시 꽉 채우기(EXPAND)")
-	var res_option: OptionButton = popup.find_child("ResolutionOption", true, false)
-	_expect(res_option != null and res_option.item_count == GameSession.RESOLUTIONS.size() and res_option.selected == 0, "설정 팝업: 해상도 (창에 맞춤 + 16:9 크기)")
-	if res_option != null:
-		res_option.select(1)
-		res_option.item_selected.emit(1)
-		_expect(GameSession.resolution == 1 and root.content_scale_aspect == Window.CONTENT_SCALE_ASPECT_KEEP, "해상도를 고르면 16:9로 고정")
-		res_option.select(0)
-		res_option.item_selected.emit(0)
-		_expect(GameSession.resolution == 0 and root.content_scale_aspect == Window.CONTENT_SCALE_ASPECT_EXPAND, "창에 맞춤으로 돌리면 꽉 채우기")
+	_expect(popup.find_child("AspectSwitch", true, false) == null and popup.find_child("ResolutionOption", true, false) == null, "화면 비율·해상도 설정은 없다 (늘 16:9 고정)")
+	GameSession.apply_screen_fit()
+	_expect(root.content_scale_aspect == Window.CONTENT_SCALE_ASPECT_KEEP, "화면은 16:9 고정 (남는 칸은 연두색 띠)")
 	popup.free()
 	_expect(MobileSupport.is_portrait(Vector2i(390, 844)) and not MobileSupport.is_portrait(Vector2i(844, 390)), "세로/가로 판정")
 	menu._mobile.refresh(Vector2i(390, 844))

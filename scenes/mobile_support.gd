@@ -269,7 +269,18 @@ func refresh(window_size: Vector2i) -> void:
 
 
 ## 전체화면을 켜고 끈다. 웹에서는 가로 화면 고정도 시도한다 (브라우저가 막으면 조용히 무시).
+## 지금 전체화면인가 (웹은 페이지 전체화면 document.fullscreenElement).
+static func is_fullscreen() -> bool:
+	if OS.has_feature("web"):
+		return bool(JavaScriptBridge.eval("!!document.fullscreenElement"))
+	return DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
+
+
 static func toggle_fullscreen() -> void:
+	if OS.has_feature("web"):
+		# 웹은 페이지 전체를 전체화면으로: 16:9 캔버스와 바깥 연두색 칸이 그대로 유지된다 (캔버스만 전체화면이면 엔진이 검은 띠를 그린다).
+		JavaScriptBridge.eval("try { if (document.fullscreenElement) { document.exitFullscreen(); } else { document.documentElement.requestFullscreen().then(function(){ try { screen.orientation.lock('landscape').catch(function(){}); } catch (e) {} }).catch(function(){}); } } catch (e) {}")
+		return
 	var is_full: bool = DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
 	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED if is_full else DisplayServer.WINDOW_MODE_FULLSCREEN)
 	if OS.has_feature("web") and not is_full:
