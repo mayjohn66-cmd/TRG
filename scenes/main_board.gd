@@ -5972,6 +5972,7 @@ func _place_roll_history() -> void:
 	if stage!=null:
 		_roll_history.set_width(stage.size.x)
 		at = stage.position-Vector2(0,_roll_history.size.y+12)
+		if at.y<12: at = stage.position+Vector2(0,stage.size.y+12)
 	else:
 		_roll_history.set_width(RollHistory.WIDTH)
 		var half := 205.0 if _roll_history.tool_id in [&"REVOLVER",&"LIFE_ROULETTE"] else 170.0

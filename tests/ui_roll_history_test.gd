@@ -127,6 +127,18 @@ func run() -> void:
 	board._place_roll_history()
 	check(not history.get_rect().intersects(board._stage_blackjack.get_rect()),"stage history does not cover cards")
 	await capture("blackjack")
+	var long_draw := dealt.to_dict()
+	for index: int in 5: history.reveal(board._roll_turn_serial,1,long_draw)
+	for size: Vector2i in [Vector2i(844,390),Vector2i(740,360),Vector2i(1366,768)]:
+		root.size = size
+		await frames()
+		board.layout_for(root.get_visible_rect().size)
+		board._place_roll_history()
+		await frames()
+		board._place_roll_history()
+		check(not history.get_rect().intersects(board._stage_blackjack.get_rect()),"six stage results do not cover cards "+str(size))
+		check(root.get_visible_rect().encloses(history.get_rect()),"six stage results fit "+str(size))
+		await capture("blackjack_six_%d" % size.x)
 	var yacht := ToolYacht.new()
 	await show_result(yacht.roll(rng))
 	await show_result(yacht.cash_out())
