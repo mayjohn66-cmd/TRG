@@ -262,6 +262,13 @@ func _run() -> void:
 	menu._bottom["center"].pressed.emit()
 	var popup: Node = menu.find_child("Popup", true, false)
 	_expect(popup != null and popup.find_child("PacingCheck", true, false) == null and popup.find_child("FullscreenSwitch", true, false) != null and popup.find_child("BatterySwitch", true, false) != null and popup.find_child("MasterMute", true, false) != null and popup.find_child("LanguageOption", true, false) != null and popup.find_child("ViewMode", true, false) == null and popup.find_child("PaceOption", true, false) == null and popup.find_child("SfxMute", true, false) != null and popup.find_child("BgmMute", true, false) != null, "설정 팝업: 화면 스위치·전체/효과음/배경음 음소거·언어 (연출 멈춤·속도·시점은 없음)")
+	var aspect_switch: CheckButton = popup.find_child("AspectSwitch", true, false)
+	_expect(aspect_switch != null and not aspect_switch.button_pressed, "설정 팝업: 16:9 화면 비율 고정 스위치 (기본은 꽉 채우기)")
+	if aspect_switch != null:
+		aspect_switch.button_pressed = true
+		_expect(GameSession.fixed_aspect and root.content_scale_aspect == Window.CONTENT_SCALE_ASPECT_KEEP, "16:9 고정을 켜면 바로 검은 띠 방식(KEEP)")
+		aspect_switch.button_pressed = false
+		_expect(not GameSession.fixed_aspect and root.content_scale_aspect == Window.CONTENT_SCALE_ASPECT_EXPAND, "끄면 다시 꽉 채우기(EXPAND)")
 	popup.free()
 	_expect(MobileSupport.is_portrait(Vector2i(390, 844)) and not MobileSupport.is_portrait(Vector2i(844, 390)), "세로/가로 판정")
 	menu._mobile.refresh(Vector2i(390, 844))

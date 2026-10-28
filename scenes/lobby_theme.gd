@@ -371,6 +371,10 @@ static func add_settings_controls(box: Container, ink: Color) -> void:
 	_add_switch(box, ink, "FullscreenSwitch", "전체화면", DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN, func(on: bool) -> void:
 		if on != (DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN):
 			MobileSupport.toggle_fullscreen())
+	_add_switch(box, ink, "AspectSwitch", "16:9 화면 비율 고정 (남는 곳은 검은 띠)", GameSession.fixed_aspect, func(on: bool) -> void:
+		GameSession.fixed_aspect = on
+		GameSession.apply_screen_fit()
+		GameSession.save_settings())
 	_add_switch(box, ink, "ShakeSwitch", "화면 흔들림", GameSession.screen_shake, func(on: bool) -> void:
 		GameSession.screen_shake = on
 		GameSession.save_settings())

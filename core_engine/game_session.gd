@@ -44,6 +44,8 @@ static var screen_shake: bool = true
 ## 배터리 절약: 화면을 초당 30장까지만 그린다 (휴대폰 발열·배터리용).
 static var battery_saver: bool = false
 const BATTERY_SAVER_FPS: int = 30
+## 화면 비율: false 꽉 채우기(기본, 1366x768 기준 화면을 창 비율에 맞춰 넓힘) / true 16:9 고정(남는 곳은 검은 띠, 배치가 늘 같다).
+static var fixed_aspect: bool = false
 ## 화면 언어 (L10n.LANGUAGES). 처음 실행하면 기기 언어를 따른다 (한국어 기기 KR, 그 밖 EN). 번역이 없는 문구는 한국어로 나온다.
 static var language: String = L10n.DEFAULT_LANG
 ## 진행 배속 (1·2·3): 혼자 하는 판에서 Engine.time_scale로 모든 트윈·타이머·봇 대기를 함께 빠르게 한다. 온라인 대전은 늘 1배.
@@ -62,6 +64,7 @@ static func save_settings() -> void:
 	config.set_value("game", "language", language)
 	config.set_value("game", "game_speed", game_speed)
 	config.set_value("game", "battery_saver", battery_saver)
+	config.set_value("game", "fixed_aspect", fixed_aspect)
 	config.set_value("game", "view_mode", view_mode)
 	config.set_value("game", "sfx_volume", sfx_volume)
 	config.set_value("game", "bgm_volume", bgm_volume)
@@ -80,6 +83,7 @@ static func load_settings() -> void:
 		master_volume = clampf(float(config.get_value("game", "master_volume", 1.0)), 0.0, 1.0)
 		screen_shake = bool(config.get_value("game", "screen_shake", true))
 		battery_saver = bool(config.get_value("game", "battery_saver", false))
+		fixed_aspect = bool(config.get_value("game", "fixed_aspect", false))
 		game_speed = int(config.get_value("game", "game_speed", 1))
 		if not GAME_SPEEDS.has(game_speed):
 			game_speed = 1
@@ -102,6 +106,7 @@ static func load_settings() -> void:
 		L10n.set_language(language)
 	L10n.install()
 	apply_frame_limit()
+	apply_screen_fit()
 
 
 ## 설정 화면의 [기본값으로]: 소리·화면 설정을 처음 값으로 되돌린다 (아바타는 그대로).
@@ -114,13 +119,23 @@ static func reset_settings() -> void:
 	bgm_muted = false
 	screen_shake = true
 	battery_saver = false
+	fixed_aspect = false
 	apply_frame_limit()
+	apply_screen_fit()
 	save_settings()
 
 
 ## 배터리 절약이면 초당 그리는 장수를 묶고, 아니면 제한을 푼다.
 static func apply_frame_limit() -> void:
 	Engine.max_fps = BATTERY_SAVER_FPS if battery_saver else 0
+
+
+## 화면 비율을 창에 건다: 16:9 고정이면 KEEP(검은 띠), 꽉 채우기면 EXPAND (project.godot 기본).
+static func apply_screen_fit() -> void:
+	var tree: SceneTree = Engine.get_main_loop() as SceneTree
+	if tree == null or tree.root == null:
+		return
+	tree.root.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_KEEP if fixed_aspect else Window.CONTENT_SCALE_ASPECT_EXPAND
 
 
 ## 온라인 대전 설정: 로비가 시작 때 채우고 메인 보드가 읽는다 (net_active가 false면 기존 컴퓨터 대전/핫시트).

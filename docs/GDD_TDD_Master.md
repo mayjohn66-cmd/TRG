@@ -1694,3 +1694,7 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 - `_refresh_tool_stage`: 방어 팝업이 떠 있거나 다른 스테이지가 아직 굴러가는 중(active)이면 이번 스테이지를 띄우지 않는다. 팝업이 열리고 닫힐 때 스테이지를 다시 맞춘다.
 - 70판 검증: 알림 겹침 판 비율 약 30% → 1판(1프레임). 멈춤·오류 0.
 - 판이 라운드 시작(증강 확인) 중에 끝나면 game_over에서 증강 확인·드래프트 창을 닫고, `_show_result_overlay`가 남은 알림을 치운다. 3차 70판 검증: 스테이지·방어 팝업 겹침 0, 남은 것은 1프레임짜리와 내 리볼버 발사 연출(의도)뿐.
+
+### 7.14 화면 비율 설정 (2026-10-28)
+- `GameSession.fixed_aspect` (settings.cfg `fixed_aspect`, 기본 false): true면 `root.content_scale_aspect = KEEP`(16:9 고정, 남는 곳 검은 띠), false면 `EXPAND`(꽉 채우기, project.godot 기본). `apply_screen_fit()`이 load_settings·reset_settings·스위치에서 바로 건다.
+- 설정 화면(시작 화면·게임 중 메뉴 공통 `LobbyTheme.add_settings_controls`)의 `AspectSwitch` "16:9 화면 비율 고정 (남는 곳은 검은 띠)". 검사: ui_menu_test.
