@@ -27,6 +27,24 @@ func _process(_delta: float) -> bool:
 	return false
 
 
+## 제보(2026-10-28): 윷말 필살기 [한 번 더!] 버튼을 눌러도 아무 일도 없었다 (_start_skill에 extra_roll 분기가 없었다).
+func _test_yut_extra_roll_button() -> void:
+	var manager: TurnManager = _board.manager
+	var state: GameState = manager.state
+	_board._announcer.cancel()
+	var guard: int = 0
+	while manager.current_state != TurnManager.State.PHASE_TURN_BEGIN and guard < 40:
+		manager.force_timeout()
+		guard += 1
+	var player: int = manager.current_player_id()
+	var yut: PlayerPawn = state.get_pawn(player * 10 + 1)
+	yut.evolve(GameEnums.PawnKind.YUT, 1)
+	yut.skill_used = false
+	_expect(manager.can_use_skill(player, yut.entity_id), "윷말은 출발선에서도 [한 번 더!]를 쓸 수 있다")
+	_board._start_skill(yut)
+	_expect(yut.skill_used and manager._bonus_roll_pending, "필살기 버튼을 누르면 윷말 [한 번 더!]가 실제로 발동한다")
+
+
 func _expect(condition: bool, message: String) -> void:
 	if not condition:
 		_failures.append(message)
@@ -96,6 +114,7 @@ func _run() -> void:
 	await _test_queue_ignores_deferred_draft()
 	_test_trap_reveal_rule()
 	_test_law_near_badge()
+	_test_yut_extra_roll_button()
 	await _test_board_teardown()  # 보드를 지운다: 반드시 마지막
 	if _failures.is_empty():
 		print("UI_FX_OK")

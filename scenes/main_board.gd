@@ -6402,7 +6402,9 @@ func _start_skill(pawn: PlayerPawn) -> void:
 				_log_line("[뱅크샷] 앞쪽에 들이받을 적이 없습니다.", Color("868e96"))
 				return
 			_act(&"use_skill", {"pawn_id": pawn.entity_id})
-		&"quake", &"slash", &"horse", &"back_kick", &"plant_mine", &"hotel", &"knight_guard":
+		_:
+			# 따로 고를 것이 없는 필살기(윷말 한 번 더!·지진·베기·뒷발차기·지뢰·호텔·기사의 맹세 등)는 바로 쓴다.
+			# 위에 없는 새 필살기도 여기로 와서 버튼을 눌렀는데 아무 일도 없는 일이 생기지 않는다.
 			_act(&"use_skill", {"pawn_id": pawn.entity_id})
 
 
