@@ -70,10 +70,10 @@ func _run() -> void:
 	var white: PlayerPawn = _state.get_pawn(11)
 	white.evolve(GameEnums.PawnKind.GO, 2)
 	var ward: PlayerPawn = _state.get_pawn(21)
-	ward.evolve(GameEnums.PawnKind.CHESS, 2)
+	ward.evolve(GameEnums.PawnKind.CHESS, 1)  # 필살기 없는 폰 (나이트는 기사의 맹세가 생겨 필살기 반짝임이 돈다)
 	ward.ward = true
 	var plain: PlayerPawn = _state.get_pawn(22)
-	plain.evolve(GameEnums.PawnKind.CHESS, 2)
+	plain.evolve(GameEnums.PawnKind.CHESS, 1)
 	var doubled: PlayerPawn = _state.get_pawn(12)
 	doubled.evolve(GameEnums.PawnKind.GO, 2)
 	doubled.ward = true
