@@ -10,8 +10,19 @@ const COLOR_GOLD: Color = Color("ffd43b")
 var overlay: ColorRect = null
 
 
+static var _touch_cache: int = -1
+
+
+## 손가락이 주 입력인 기기(폰·태블릿)인가. 웹에서는 터치 화면 노트북·데스크톱 크롬처럼 터치를 '지원만' 하는 PC를 빼려고
+## 주 포인터가 굵은지(pointer: coarse)를 본다: PC는 큰 터치 배치(전체 확대로 글씨가 흐려진다) 대신 원래 크기로 선명하게 그린다.
 static func is_touch_device() -> bool:
-	return DisplayServer.is_touchscreen_available() or OS.has_feature("web_android") or OS.has_feature("web_ios")
+	if OS.has_feature("web_android") or OS.has_feature("web_ios"):
+		return true
+	if OS.has_feature("web"):
+		if _touch_cache == -1:
+			_touch_cache = 1 if bool(JavaScriptBridge.eval("!!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches)")) else 0
+		return _touch_cache == 1
+	return DisplayServer.is_touchscreen_available()
 
 
 ## true면 터치 기기처럼 큰 버튼 배치를 쓴다 (헤드리스 화면 테스트용).

@@ -1700,3 +1700,4 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 - 웹: Godot 띠(black bars)는 웹 렌더러에서 색을 바꿀 수 없어, `web/shell.html`이 캔버스를 창 안 가장 큰 16:9로 가운데에 두고(`canvasResizePolicy 0`, resize·fullscreenchange마다 `fit`) 남는 칸은 body 배경 연두색 `#b5e48c`가 보이게 한다. `web/letterbox-pattern.png`가 있으면 배포에 실리고 바둑판으로 깔린다 (없으면 단색). export_presets head_include의 html/body 배경도 같은 색.
 - 웹 전체화면은 `MobileSupport.toggle_fullscreen`이 페이지(document.documentElement)째 전환한다 (캔버스만 전체화면이면 엔진이 검은 띠를 그린다). `is_fullscreen()`이 웹은 document.fullscreenElement를 본다.
 - Chromium 검증: 2560x1080 → 캔버스 1920x1080 가운데, 1200x1000 → 1200x675 가운데, 창 크기 변경 시 다시 맞춤, 클릭 위치 정상.
+- PC 화질: `MobileSupport.is_touch_device`는 웹에서 `matchMedia('(pointer: coarse)')`로 판정 (터치를 지원만 하는 PC는 PC). 터치 배치의 Control.scale 확대는 글꼴 오버샘플링을 못 받아 흐려지므로 PC에서는 쓰지 않는다. 캔버스 픽셀 = CSS 크기 × devicePixelRatio (Chromium dpr 1.5, 1707x960 창 → 2561x1440 캔버스, 글씨 선명 확인).
