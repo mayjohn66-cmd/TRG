@@ -251,9 +251,12 @@ static func base_rules() -> Dictionary:
 
 
 ## 이번 판에 쓸 규칙. 온라인은 방장이 보낸 규칙 그대로 (모두 같아야 한다).
+## AI 대전은 난이도 기본값만 쓴다 (예전에 저장된 방 규칙이 몰래 덮이지 않게).
 static func match_rules() -> Dictionary:
 	if net_active:
 		return MatchRules.sanitize(net_rules)
+	if mode == MODE_AI:
+		return MatchRules.sanitize(base_rules())
 	var rules: Dictionary = base_rules()
 	rules.merge(rule_overrides(), true)
 	return MatchRules.sanitize(rules)

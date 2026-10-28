@@ -379,7 +379,7 @@ func _build_train_page(parent: VBoxContainer) -> void:
 	fire_panel.add_theme_stylebox_override("panel", LobbyTheme.style(Color(1, 1, 1, 0.82), LobbyTheme.BLUE, 3, 26, 0, 10))
 	fire_panel.add_child(_fire_picker)
 	_train_page.add_child(fire_panel)
-	# [게임 시작] 옆 [방 규칙 설정]: 함정 공개·초증강 빈도·법전·속도를 싱글에서도 커스텀한다 (난이도 기본값 위에 덮인다)
+	# AI 대전은 난이도(불꽃)가 규칙을 정한다 — 방 규칙 설정은 친선전 방장 전용
 	var start_row := HBoxContainer.new()
 	start_row.add_theme_constant_override("separation", 12)
 	_train_page.add_child(start_row)
@@ -389,11 +389,6 @@ func _build_train_page(parent: VBoxContainer) -> void:
 	_train_start.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_train_start.custom_minimum_size = Vector2(0, 78)  # 글꼴(언어)에 따라 줄 높이가 달라도 버튼 높이는 그대로
 	start_row.add_child(_train_start)
-	var rules_button := LobbyTheme.small_button("방 규칙 설정", func() -> void: RoomRulesPanel.open(self), &"blue", 18)
-	rules_button.name = "OpenRules"
-	rules_button.clip_text = true
-	rules_button.custom_minimum_size = Vector2(170, 78)
-	start_row.add_child(rules_button)
 	_refresh_train_label()
 
 

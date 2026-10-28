@@ -70,6 +70,13 @@ func _run() -> void:
 	menu._ai_button.pressed.emit()
 	_expect(menu.step == 3 and menu._train_page.visible and menu._train_label.text == "AI 상대 3명", "훈련 화면: 기본 AI 3명")
 	_expect((menu._train_page.find_child("AiPlus", true, false) as Button).disabled, "3명이 최대라 + 버튼은 잠긴다")
+	_expect(menu._train_page.find_child("OpenRules", true, false) == null, "AI 대전 화면에는 방 규칙 설정 버튼이 없다 (난이도가 규칙을 정한다)")
+	GameSession.mode = GameSession.MODE_AI
+	var saved_rules: Dictionary = GameSession.rule_overrides().duplicate()
+	GameSession.rule_overrides()["laws"] = false
+	_expect(GameSession.match_rules() == MatchRules.sanitize(GameSession.base_rules()), "AI 대전은 저장된 방 규칙을 무시하고 난이도 기본값만 쓴다")
+	GameSession.rule_overrides().clear()
+	GameSession.rule_overrides().merge(saved_rules)
 	menu.change_ai_count(-1)
 	menu.change_ai_count(-5)
 	_expect(menu.ai_count == 1 and (menu._train_page.find_child("AiMinus", true, false) as Button).disabled, "AI는 1명까지")
