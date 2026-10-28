@@ -1698,3 +1698,4 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 ### 7.14 화면 비율 설정 (2026-10-28)
 - `GameSession.fixed_aspect` (settings.cfg `fixed_aspect`, 기본 false): true면 `root.content_scale_aspect = KEEP`(16:9 고정, 남는 곳 검은 띠), false면 `EXPAND`(꽉 채우기, project.godot 기본). `apply_screen_fit()`이 load_settings·reset_settings·스위치에서 바로 건다.
 - 설정 화면(시작 화면·게임 중 메뉴 공통 `LobbyTheme.add_settings_controls`)의 `AspectSwitch` "16:9 화면 비율 고정 (남는 곳은 검은 띠)". 검사: ui_menu_test.
+- 해상도 `GameSession.resolution`(settings.cfg `resolution`, 0 창에 맞춤 / `RESOLUTIONS` 1280×720·1600×900·1920×1080): 고르면 KEEP(16:9). 웹은 `_apply_web_resolution`이 캔버스에 CSS `scale(s)`를 건다 (s = min(1, 목표 폭 / 창 안 16:9 맞춤 폭), resize 때 다시 계산; 브라우저가 줄인 크기대로 입력 좌표를 맞춘다 — Chromium으로 클릭 확인). PC 창 모드는 `window_set_size` + 가운데. 설정 `ResolutionOption`, 검사: ui_menu_test.

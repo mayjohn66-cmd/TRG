@@ -375,6 +375,7 @@ static func add_settings_controls(box: Container, ink: Color) -> void:
 		GameSession.fixed_aspect = on
 		GameSession.apply_screen_fit()
 		GameSession.save_settings())
+	_add_resolution_row(box, ink)
 	_add_switch(box, ink, "ShakeSwitch", "화면 흔들림", GameSession.screen_shake, func(on: bool) -> void:
 		GameSession.screen_shake = on
 		GameSession.save_settings())
@@ -386,6 +387,29 @@ static func add_settings_controls(box: Container, ink: Color) -> void:
 	add_audio_controls(box, ink)
 	box.add_child(_section_label("언어", ink))
 	_add_language_row(box, ink)
+
+
+## 해상도 고르기: [창에 맞춤] 또는 16:9 크기. 고르면 바로 적용·저장된다 (16:9로 고정).
+static func _add_resolution_row(box: Container, ink: Color) -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	box.add_child(row)
+	var title: Label = label("해상도", 16, ink)
+	title.custom_minimum_size = Vector2(112.0, 0.0)
+	row.add_child(title)
+	var option := OptionButton.new()
+	option.name = "ResolutionOption"
+	option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	option.add_theme_font_size_override("font_size", 15)
+	for index: int in GameSession.RESOLUTIONS.size():
+		var size: Vector2i = GameSession.RESOLUTIONS[index]
+		option.add_item("창에 맞춤" if size == Vector2i.ZERO else "%d × %d (16:9)" % [size.x, size.y], index)
+	option.select(clampi(GameSession.resolution, 0, GameSession.RESOLUTIONS.size() - 1))
+	option.item_selected.connect(func(index: int) -> void:
+		GameSession.resolution = index
+		GameSession.apply_screen_fit()
+		GameSession.save_settings())
+	row.add_child(option)
 
 
 ## 언어 고르기: 바로 저장하고 모든 화면 글자가 그 자리에서 다시 번역된다 (번역이 빈 문구는 한국어). 언어 이름은 늘 그 언어 글자 그대로.
