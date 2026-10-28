@@ -68,7 +68,9 @@ func _ready() -> void:
 static func _plaque_style(tint: Color) -> StyleBoxTexture:
 	if _plaque_texture==null:
 		var source: Texture2D = load(PLAQUE_PATH)
-		var pixels := source.get_image().get_region(Rect2i(9,167,2080,412))
+		var source_scale := source.get_size()/Vector2(2100,749)
+		var crop := Rect2i((Vector2(9,167)*source_scale).floor(),(Vector2(2080,412)*source_scale).ceil())
+		var pixels := source.get_image().get_region(crop)
 		pixels.resize(323,64,Image.INTERPOLATE_LANCZOS)
 		_plaque_texture = ImageTexture.create_from_image(pixels)
 	var box := StyleBoxTexture.new()
