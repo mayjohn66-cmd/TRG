@@ -38,7 +38,7 @@ func _run() -> void:
 				for attachment: TileAttachment in node.attachments.duplicate():
 					destroyed.append({"tile": tile, "attachment_id": attachment.attachment_id})
 					node.remove_attachment(attachment)
-		&"slash", &"horse":
+		&"slash", &"horse", &"back_kick", &"cannon":
 			for tile: int in tiles:
 				for enemy: PlayerPawn in state.leaders_at(tile):
 					if enemy.owner_id == pawn.owner_id or not enemy.has_left_start:

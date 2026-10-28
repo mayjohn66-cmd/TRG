@@ -1207,8 +1207,8 @@ func _bind_state() -> void:
 	state.pawn_promoted.connect(func(pawn_id: int) -> void:
 		var promoted_pawn: PlayerPawn = state.get_pawn(pawn_id)
 		if promoted_pawn != null and promoted_pawn.kind == GameEnums.PawnKind.SHOGI:
-			_log_line("[나리] %s 승급! 이동할 때마다 +1칸" % _pawn_name(pawn_id), Color("ff6b6b"))
-			_announce_gate("기물 능력", "[나리(成り)!] %s 승급" % promoted_pawn.display_label().split(":")[-1], "%s 승급 ◆ 이동할 때마다 +1칸" % _pawn_name(pawn_id), Color("ff6b6b"), null, 1.2)
+			_log_line("[나리] %s 승급! 이동할 때마다 +2칸" % _pawn_name(pawn_id), Color("ff6b6b"))
+			_announce_gate("기물 능력", "[나리(成り)!] %s 승급" % promoted_pawn.display_label().split(":")[-1], "%s 승급 ◆ 이동할 때마다 +2칸" % _pawn_name(pawn_id), Color("ff6b6b"), null, 1.2)
 			_fx_when_announced(func() -> void: _fx_promote(pawn_id, Color("ff4d4d")))
 			_refresh_pawns()
 			return
@@ -1254,6 +1254,9 @@ func _bind_state() -> void:
 		if not _fx_hints.has(pawn_id):
 			_set_hint(pawn_id, {"arc": 0.0, "dur": 0.5}))
 	state.passive_triggered.connect(_on_passive_triggered)
+	state.guard_blocked.connect(func(pawn_id: int, tile: int) -> void:
+		_on_passive_triggered(pawn_id, &"knight_guard")
+		_log_line("[기사의 맹세] %s이(가) %d번 타일에서 사출을 막았습니다" % [_pawn_name(pawn_id), tile], Color("4dabf7")))
 	state.shield_broken.connect(func(pawn_id: int, tile: int) -> void:
 		_refresh_pawn_protection(pawn_id, true)
 		_on_passive_triggered(pawn_id, &"shield_block")
@@ -5124,7 +5127,7 @@ func _pawn_info_text(pawn_id: int) -> String:
 		return ""
 	var lines: Array[String] = [PawnCatalog.full_name(pawn.kind, pawn.unit_no), "패시브: %s" % PawnCatalog.ability_text(pawn.kind, pawn.unit_no)]
 	if pawn.is_promoted_shogi():
-		lines.append("나리(成り) 승급 상태: %s - 이동할 때마다 +1칸" % pawn.display_label())
+		lines.append("나리(成り) 승급 상태: %s - +2칸" % pawn.display_label())
 	var skill: StringName = PawnCatalog.skill_of(pawn.sub_type())
 	if skill != &"":
 		lines.append("[1회] %s: %s%s" % [PawnCatalog.skill_name(skill), PawnCatalog.skill_text(skill), " (사용됨)" if pawn.skill_used else ""])
@@ -6303,7 +6306,21 @@ func _start_skill(pawn: PlayerPawn) -> void:
 				_log_line("[직선 전차 저격] 돌진할 길이 없습니다.", Color("868e96"))
 				return
 			_act(&"use_skill", {"pawn_id": pawn.entity_id})
-		&"warp": _begin_skill_tile_pick(pawn)
+		&"warp":
+			if PawnSkills.plane_targets(pawn).is_empty():
+				_log_line("[직항 워프] 이미 반환점을 지나 직항할 곳이 없습니다.", Color("868e96"))
+				return
+			_act(&"use_skill", {"pawn_id": pawn.entity_id, "tile": BoardSpec.halfway_tile})
+		&"cannon":
+			if PawnSkills.cannon_tile(state, pawn) == -1:
+				_log_line("[포격] 처치할 수 있는 적의 말이 보드 위에 없습니다.", Color("868e96"))
+				return
+			_act(&"use_skill", {"pawn_id": pawn.entity_id})
+		&"keima_jump":
+			if PawnSkills.keima_path(state, pawn).is_empty():
+				_log_line("[계마 도약] 앞으로 갈 칸이 없습니다.", Color("868e96"))
+				return
+			_act(&"use_skill", {"pawn_id": pawn.entity_id})
 		&"shoot": _begin_aim(pawn)
 		&"drop":
 			var waiting: Array[PlayerPawn] = PawnSkills.drop_partners(state, pawn)
@@ -6327,7 +6344,7 @@ func _start_skill(pawn: PlayerPawn) -> void:
 				_log_line("[뱅크샷] 앞쪽에 들이받을 적이 없습니다.", Color("868e96"))
 				return
 			_act(&"use_skill", {"pawn_id": pawn.entity_id})
-		&"quake", &"slash", &"horse", &"plant_mine", &"hotel":
+		&"quake", &"slash", &"horse", &"back_kick", &"plant_mine", &"hotel", &"knight_guard":
 			_act(&"use_skill", {"pawn_id": pawn.entity_id})
 
 
@@ -6451,6 +6468,15 @@ func _on_skill_used(data: Dictionary) -> void:
 			screen_shake(10.0, 0.35)
 		&"slash", &"horse":
 			body = "%d개의 말을 베어 출발선으로!" % (data["victims"] as Array).size()
+		&"back_kick":
+			body = "뒷발차기로 %d개의 말을 출발선으로!" % (data["victims"] as Array).size()
+		&"cannon":
+			body = "포격으로 %d개의 말을 출발선으로!" % (data["victims"] as Array).size()
+			screen_shake(8.0, 0.3)
+		&"knight_guard":
+			body = "이번 차례 동안 잡기·함정 사출을 막습니다"
+		&"keima_jump":
+			body = "%d번 타일로 도약!" % int((data["path"] as Array).back())
 		&"plant_mine":
 			body = "%d번 타일에 지뢰 매설" % int(data["from"])
 		&"hotel":

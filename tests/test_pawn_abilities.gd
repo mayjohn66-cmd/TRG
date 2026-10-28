@@ -42,31 +42,31 @@ func _do(manager: TurnManager, player_id: int, action: StringName, params: Dicti
 
 # --- 체스 -------------------------------------------------------------------
 
-func test_knight_jump_ignores_intermediate_traps_but_not_the_landing_trap() -> void:
+func test_knight_gets_two_extra_tiles_when_stopping_right_before_a_corner() -> void:
+	var state := make_state(2, 1, {1: _loadout(Kind.CHESS)})
+	place(state, 12, 1)  # 2호기 나이트
+	var report: MoveReport = move(state, 12, 4)  # 5번 = 6번 코너 바로 앞
+	check_eq(state.get_pawn(12).current_tile_idx, 7, "코너 바로 앞에 멈추면 +2칸 (5 → 7)")
+	check(report.ability_notes.has("나이트 코너 도약 +2칸"), "능력 보고")
+	place(state, 12, 1)
+	move(state, 12, 2)
+	check_eq(state.get_pawn(12).current_tile_idx, 3, "그 밖에는 눈금대로")
+	state.place_attachment(3, TrapPit.new(2))
+	place(state, 12, 1)
+	check(move(state, 12, 4).trapped, "나이트는 더 이상 중간 함정을 뛰어넘지 않는다")
+
+
+func test_knight_guard_blocks_traps_and_captures_until_the_turn_ends() -> void:
 	var state := make_state(2, 1, {1: _loadout(Kind.CHESS)})
 	state.place_attachment(3, TrapPit.new(2))
-	place(state, 12, 1)  # 2호기 나이트
-	var jumped: MoveReport = move(state, 12, 4)
-	check(not jumped.stopped_early, "중간 칸 함정 무시")
-	check_eq(state.get_pawn(12).current_tile_idx, 5, "5번까지 도약")
-	check(state.board.get_tile(3).has_attachment("TRP_02"), "무시한 함정은 그대로 남음")
-	place(state, 11, 1)  # 1호기 폰은 걸린다
-	var pawn_hit: MoveReport = move(state, 11, 4)
-	check(pawn_hit.trapped and not state.get_pawn(11).has_left_start, "다른 기물은 중간 함정(나락)에 걸려 사출")
-	var landing := make_state(2, 1, {1: _loadout(Kind.CHESS)})
-	landing.place_attachment(5, TrapPit.new(2))
-	place(landing, 12, 1)
-	var landed: MoveReport = move(landing, 12, 4)
-	check(landed.trapped, "도착 칸 함정은 발동")
-
-
-func test_knight_jump_ignores_hotels_on_the_way() -> void:
-	var state := make_state(2, 1, {1: _loadout(Kind.CHESS)})
-	state.place_attachment(3, Hotel.new(2))
 	place(state, 12, 1)
-	var report: MoveReport = move(state, 12, 4)
-	check(not report.stopped_early, "중간 호텔 무시")
-	check(state.board.get_tile(3).has_attachment("HOTEL"), "호텔은 소모되지 않음")
+	state.get_pawn(12).turn_guard = true
+	var report: MoveReport = move(state, 12, 2)
+	check(not report.trapped and state.get_pawn(12).has_left_start, "맹세 중에는 함정 사출을 막는다")
+	check(state.get_pawn(12).turn_guard, "막아도 맹세는 남는다")
+	place(state, 21, 1)
+	move(state, 21, 2)
+	check(state.get_pawn(12).has_left_start, "맹세 중에는 잡히지 않는다")
 
 
 # --- 장기 -------------------------------------------------------------------

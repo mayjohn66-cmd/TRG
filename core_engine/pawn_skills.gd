@@ -4,11 +4,9 @@
 class_name PawnSkills
 extends RefCounted
 
-## 비행기 직항 워프 목적지: 빵집 4곳과 출발선을 뺀 코너 3곳.
+## 비행기 직항 워프 목적지: 반환점 (2026-10-28).
 static func plane_landing_tiles() -> Array[int]:
-	var result: Array[int] = BoardSpec.bakery_tiles.duplicate()
-	result.append_array(BoardSpec.bonus_corner_tiles)
-	return result
+	return [BoardSpec.halfway_tile] as Array[int]
 ## 알까기 슈팅: 파워 0~1이 날아가는 거리(보드 한 변 = 1)를 정하고, 지나가는 직선에서 충돌 반경 안의 적은 모두 탈락한다.
 const SHOT_MIN_DISTANCE: float = 0.25
 const SHOT_MAX_DISTANCE: float = 1.1
@@ -55,9 +53,12 @@ static func quake_tiles(pawn: PlayerPawn) -> Array[int]:
 	return _ring_tiles(pawn.current_tile_idx, [-2, -1, 1, 2])
 
 
-## 용왕 베기(앞 2칸) / 용마 십자 베기(앞뒤 1칸)가 베는 칸.
+## 용왕 베기(앞 2칸) / 용마 십자 베기(앞뒤 1칸) / 마 뒷발차기(뒤 2칸)가 베는 칸.
 static func strike_tiles(pawn: PlayerPawn, skill: StringName) -> Array[int]:
-	return _ring_tiles(pawn.current_tile_idx, [1, 2] if skill == &"slash" else [-1, 1])
+	match skill:
+		&"slash": return _ring_tiles(pawn.current_tile_idx, [1, 2])
+		&"back_kick": return _ring_tiles(pawn.current_tile_idx, [-1, -2])
+	return _ring_tiles(pawn.current_tile_idx, [-1, 1])
 
 
 static func _ring_tiles(center: int, offsets: Array) -> Array[int]:
@@ -128,13 +129,40 @@ static func drop_tile(state: GameState, fu: PlayerPawn) -> int:
 	return -1
 
 
-## 비행기가 날아갈 수 있는 타일 (지금 서 있는 타일 제외).
+## 비행기가 날아갈 수 있는 타일: 아직 반환점 앞에 있을 때만 반환점 (지나온 반환점으로 되돌아가지는 않는다).
 static func plane_targets(pawn: PlayerPawn) -> Array[int]:
 	var result: Array[int] = []
-	for tile: int in plane_landing_tiles():
-		if tile != pawn.current_tile_idx:
-			result.append(tile)
+	if pawn.current_tile_idx != GameEnums.GOAL_TILE and pawn.current_tile_idx < BoardSpec.halfway_tile:
+		result.append(BoardSpec.halfway_tile)
 	return result
+
+
+## 장기 포 [포격]의 표적 칸: 보드 위 잡을 수 있는 적 말 중 결승에 가장 가까운 말이 선 칸. 없으면 -1.
+static func cannon_tile(state: GameState, pawn: PlayerPawn) -> int:
+	var best: PlayerPawn = null
+	for enemy: PlayerPawn in state.pawns:
+		if enemy.owner_id == pawn.owner_id or enemy.is_finished or not enemy.has_left_start or enemy.carrier != null:
+			continue
+		if enemy.current_tile_idx == GameEnums.GOAL_TILE or MoveExecutor.is_capture_immune(state, enemy):
+			continue
+		if best == null or state.pawn_progress_distance(enemy) < state.pawn_progress_distance(best):
+			best = enemy
+	return best.current_tile_idx if best != null else -1
+
+
+## 쇼기 계마 [계마 도약] 경로: 앞으로 2칸 (결승선은 넘지 않는다).
+static func keima_path(state: GameState, pawn: PlayerPawn) -> Array[int]:
+	var route: Array[int] = []
+	for tile: int in state.board.calculate_path(pawn, KEIMA_JUMP_STEPS, RuleContext.new()):
+		route.append(tile)
+		if tile == GameEnums.GOAL_TILE:
+			break
+	return route
+
+
+const KEIMA_JUMP_STEPS: int = 2
+## 계마 도약으로 적을 처치하면 더 가는 칸수.
+const KEIMA_CAPTURE_STEPS: int = 1
 
 
 ## 차의 직선 돌진 경로: 전방 경로(결승선 제외)를 따라 가장 앞의 잡을 수 있는 적이 선 타일까지, 적이 없으면 다음 코너 타일까지.

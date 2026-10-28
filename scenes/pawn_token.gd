@@ -30,7 +30,7 @@ func configure(value: PlayerPawn, color: Color, images: bool = true) -> void:
 	owner_color = color
 	use_art = images
 	var art: Dictionary = PawnArt.sprite(pawn) if images else {}
-	var key: String = "%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s" % [pawn.kind, pawn.unit_no, pawn.slot, pawn.promoted, pawn.carried.size(), pawn.skill_used, pawn.is_finished, color, pawn.revenge_boost, (art.get("texture") as Texture2D).resource_path if not art.is_empty() else "shape", pawn.shield, pawn.ward]
+	var key: String = "%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s" % [pawn.kind, pawn.unit_no, pawn.slot, pawn.promoted, pawn.carried.size(), pawn.skill_used, pawn.is_finished, color, pawn.revenge_boost, (art.get("texture") as Texture2D).resource_path if not art.is_empty() else "shape", pawn.shield, pawn.ward, pawn.turn_guard]
 	if key == _signature:
 		return
 	var animate_shield: bool = shield_motion and is_inside_tree() and _signature != ""
@@ -42,7 +42,7 @@ func configure(value: PlayerPawn, color: Color, images: bool = true) -> void:
 
 
 func has_protection() -> bool:
-	return pawn != null and not pawn.is_finished and (pawn.ward or (pawn.shield and pawn.sub_type() == GameEnums.PawnSubType.BADUK_WHITE))
+	return pawn != null and not pawn.is_finished and (pawn.ward or pawn.turn_guard or (pawn.shield and pawn.sub_type() == GameEnums.PawnSubType.BADUK_WHITE))
 
 
 func _sync_shield(animate: bool) -> void:

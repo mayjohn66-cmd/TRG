@@ -190,6 +190,8 @@ func test_allies_arriving_on_a_yut_pawn_also_stack() -> void:
 func test_every_pawn_kind_can_stack_with_its_own_team() -> void:
 	for kind: GameEnums.PawnKind in [GameEnums.PawnKind.BASIC, GameEnums.PawnKind.CHESS, GameEnums.PawnKind.JANGGI, GameEnums.PawnKind.MONOPOLY, GameEnums.PawnKind.GO]:
 		var loadout: Array = [0, 0, 0, 0] if kind == GameEnums.PawnKind.BASIC else [Vector2i(kind, 1), Vector2i(kind, 2), 0, 0]
+		if kind == GameEnums.PawnKind.JANGGI:
+			loadout = [Vector2i(kind, 2), Vector2i(kind, 1), 0, 0]  # 움직이는 쪽은 포 (차는 직진 +2칸이라 지나친다)
 		var state := make_state(2, 1, {1: loadout})
 		place(state, 11, 4, [3])
 		place(state, 12, 2, [1])

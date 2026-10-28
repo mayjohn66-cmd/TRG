@@ -2291,3 +2291,37 @@ v%s · 비공식 팬게임 (원작사와 무관한 비영리 무료 배포물),v
 %d칸 누적,Saved: %d spaces,累積%dマス
 %d칸 확정,Move %d spaces,%dマス確定
 합계 %d,Total %d,合計%d
+나리 승급 +%d칸,Promotion +%d,成り +%dマス
+나이트 코너 도약 +2칸,Knight corner leap +2,ナイト コーナー跳躍 +2マス
+코너 바로 앞에 멈추면 +2칸,Stop right before a corner: +2 spaces,コーナーの直前に止まると+2マス
+경로에 내 말이 있으면 +3칸,+3 spaces if one of your pawns is on the path,経路上に自分の駒がいれば+3マス
+옷장 사용 시 카드 +1,+1 card when using a Wardrobe,タンスを使うとカード+1
+반환점 통과 시 승급,Promotes upon passing the midpoint,折り返し地点を通過すると成る
+기사의 맹세,Knight's Oath,騎士の誓い
+포격,Bombard,砲撃
+뒷발차기,Back Kick,後ろ蹴り
+계마 도약,Keima Leap,桂馬跳び
+반환점으로 직항,Fly straight to the midpoint,折り返し地点へ直行
+이번 차례 동안 사출 면역,Immune to being knocked out this turn,このターン中、射出無効
+가장 앞에 있는 적의 말 처치,KO the enemy pawn furthest ahead,最も先頭にいる敵の駒を撃破
+뒤 2칸의 적 처치,KO enemies within 2 spaces behind,後ろ2マスの敵を撃破
++2칸 전진 · 처치하면 +1칸 더,Advance 2 spaces · +1 more on a KO,2マス前進・撃破すればさらに+1マス
++2칸,+2 spaces,+2マス
+차 직진 +2칸,Chariot straight +2,車 直進 +2マス
+룩 직진 +2칸,Rook straight +2,ルーク 直進 +2マス
+[나리 승급] 이동 +2칸!,[Promotion] Move +2!,[成り] 移動+2マス！
+[장기:차] 직진 +2칸!,[Chariot] Straight +2!,[車] 直進+2マス！
+[나이트] 코너 도약 +2칸!,[Knight] Corner leap +2!,[ナイト] コーナー跳躍+2マス！
+[비행기] 옷장 카드+1!,[Airplane] Wardrobe card +1!,[飛行機] タンスでカード+1！
+[나이트] 맹세 방어!,[Knight] Oath guard!,[ナイト] 誓いの防御！
+[나리] %s 승급! 이동할 때마다 +2칸,[Promotion] %s promoted! +2 on every move,[成り] %s 成った！移動ごとに+2マス
+%s 승급 ◆ 이동할 때마다 +2칸,%s promoted ◆ +2 on every move,%s 成り ◆ 移動ごとに+2マス
+나리(成り) 승급 상태: %s - +2칸,Promoted (Nari): %s - +2 spaces,成り状態: %s - +2マス
+[기사의 맹세] %s이(가) %d번 타일에서 사출을 막았습니다,[Knight's Oath] %s blocked a knockout on tile %d,[騎士の誓い] %sが%d番マスで射出を防ぎました
+[직항 워프] 이미 반환점을 지나 직항할 곳이 없습니다.,[Direct Flight] Already past the midpoint - nowhere to fly.,[直行ワープ] すでに折り返し地点を過ぎたため直行先がありません。
+[포격] 처치할 수 있는 적의 말이 보드 위에 없습니다.,[Bombard] No enemy pawn on the board can be KO'd.,[砲撃] 撃破できる敵の駒が盤上にいません。
+[계마 도약] 앞으로 갈 칸이 없습니다.,[Keima Leap] No space ahead to leap to.,[桂馬跳び] 前に進めるマスがありません。
+뒷발차기로 %d개의 말을 출발선으로!,Back Kick sends %d pawn(s) to the start!,後ろ蹴りで%d個の駒をスタートへ！
+포격으로 %d개의 말을 출발선으로!,Bombard sends %d pawn(s) to the start!,砲撃で%d個の駒をスタートへ！
+이번 차례 동안 잡기·함정 사출을 막습니다,Blocks KOs and trap knockouts this turn,このターン中、撃破・罠による射出を防ぎます
+%d번 타일로 도약!,Leaps to tile %d!,%d番マスへ跳躍！

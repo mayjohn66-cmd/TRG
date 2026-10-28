@@ -57,14 +57,15 @@ func test_queen_always_moves_two_extra_tiles_and_ignores_traps() -> void:
 	check_eq(report.path.size(), 5, "눈금 3 + 퀸 보너스 2 = 5칸")
 	check(not report.stopped_early, "중간 칸 함정은 뛰어넘어 무시")
 
-func test_cannon_adds_three_tiles_when_any_pawn_is_in_the_middle_of_the_path() -> void:
+func test_cannon_adds_three_tiles_only_when_my_own_pawn_is_in_the_middle_of_the_path() -> void:
 	var state := make_state(2, 1, {1: _units(Kind.JANGGI, [1])})
 	place(state, 11, 1, [0])
-	place(state, 21, 3, [2])
-	check_eq(move(state, 11, 4).path.size(), 7, "경로 중간에 말이 있으면 +3칸")
-	var clear := make_state(2, 1, {1: _units(Kind.JANGGI, [1])})
-	place(clear, 11, 1, [0])
-	check_eq(move(clear, 11, 4).path.size(), 4, "말이 없으면 기본 눈금")
+	place(state, 12, 3, [2])
+	check_eq(move(state, 11, 4).path.size(), 7, "경로 중간에 내 말이 있으면 +3칸")
+	var enemy := make_state(2, 1, {1: _units(Kind.JANGGI, [1])})
+	place(enemy, 11, 1, [0])
+	place(enemy, 21, 3, [2])
+	check_eq(move(enemy, 11, 4).path.size(), 4, "적 말만 있으면 기본 눈금")
 
 
 func test_horse_and_elephant_get_bonus_tiles_only_when_the_tile_ahead_is_clear() -> void:
@@ -98,14 +99,14 @@ func test_only_the_mini_car_has_the_hotel_skill() -> void:
 
 # --- 필살기 ----------------------------------------------------------------
 
-func test_skill_catalog_has_thirteen_one_shot_skills() -> void:
+func test_skill_catalog_has_seventeen_one_shot_skills() -> void:
 	var found: Dictionary = {}
 	for kind: GameEnums.PawnKind in PawnCatalog.EVOLVABLE_SETS:
 		for unit: int in range(1, PawnCatalog.unit_count(kind) + 1):
 			var skill: StringName = PawnCatalog.skill_of(PawnCatalog.sub_type_of(kind, unit))
 			if skill != &"":
 				found[skill] = PawnCatalog.unit_label(kind, unit)
-	check_eq(found.size(), 13, "필살기 13종")
+	check_eq(found.size(), 17, "필살기 17종")
 	check_eq(found[&"extra_roll"], "윷말", "한 번 더!는 윷말")
 	check_eq(found[&"hotel"], "모노:미니카", "호텔 건설은 미니카")
 	check_eq(found[&"shoot"], "바둑:흑돌", "알까기 슈팅은 흑돌")
@@ -114,6 +115,10 @@ func test_skill_catalog_has_thirteen_one_shot_skills() -> void:
 	check_eq(found[&"quake"], "장기:상", "코끼리 지진은 상")
 	check_eq(found[&"bank_shot"], "아케이드:8번 공", "뱅크샷은 8번 공")
 	check_eq(found[&"plant_mine"], "아케이드:지뢰찾기 공병", "지뢰 매설은 공병")
+	check_eq(found[&"knight_guard"], "체스:나이트", "기사의 맹세는 나이트")
+	check_eq(found[&"cannon"], "장기:포", "포격은 포")
+	check_eq(found[&"back_kick"], "장기:마", "뒷발차기는 마")
+	check_eq(found[&"keima_jump"], "쇼기:계마", "계마 도약은 계마")
 
 
 func test_rook_castle_swaps_with_an_ally_once_and_keeps_the_roll() -> void:
@@ -157,17 +162,76 @@ func test_chariot_without_enemies_runs_to_the_end_corner() -> void:
 	_dispose(manager)
 
 
-func test_plane_warps_to_a_bakery_or_corner_in_place_of_rolling() -> void:
+func test_plane_flies_straight_to_the_midpoint_in_place_of_rolling() -> void:
 	var manager: TurnManager = _manager({1: _units(Kind.MONOPOLY, [2])})
 	place(manager.state, 11, 1, [0])
 	var rejected: Array = _rejections(manager)
-	_do(manager, 1, &"use_skill", {"pawn_id": 11, "tile": 5})
-	check_eq(rejected.size(), 1, "빵집·코너가 아닌 타일은 거부")
 	_do(manager, 1, &"use_skill", {"pawn_id": 11, "tile": 14})
-	check_eq(manager.state.get_pawn(11).current_tile_idx, 14, "빵집으로 직항")
-	check_eq((manager.state.hands[1] as Array).size(), 1, "도착한 빵집에서 카드 획득")
+	check_eq(rejected.size(), 1, "반환점이 아닌 타일은 거부")
+	_do(manager, 1, &"use_skill", {"pawn_id": 11, "tile": BoardSpec.halfway_tile})
+	check_eq(manager.state.get_pawn(11).current_tile_idx, BoardSpec.halfway_tile, "반환점으로 직항")
 	check(manager.state.get_pawn(11).skill_used, "사용 완료")
 	check_eq(manager.current_player_id(), 2, "턴 종료")
+	_dispose(manager)
+
+
+func test_plane_cannot_fly_back_once_past_the_midpoint() -> void:
+	var manager: TurnManager = _manager({1: _units(Kind.MONOPOLY, [2])})
+	place(manager.state, 11, BoardSpec.halfway_tile + 2, [BoardSpec.halfway_tile + 1])
+	check(PawnSkills.plane_targets(manager.state.get_pawn(11)).is_empty(), "반환점을 지났으면 직항할 곳이 없다")
+	_dispose(manager)
+
+
+func test_cannon_skill_captures_the_enemy_furthest_ahead_and_keeps_the_roll() -> void:
+	var manager: TurnManager = _manager({1: _units(Kind.JANGGI, [1])})
+	place(manager.state, 11, 2, [1])
+	place(manager.state, 21, 5, [4])
+	place(manager.state, 22, 15, [14])
+	_do(manager, 1, &"use_skill", {"pawn_id": 11})
+	check(not manager.state.get_pawn(22).has_left_start, "결승에 가장 가까운 적을 처치")
+	check(manager.state.get_pawn(21).has_left_start, "뒤쪽 적은 그대로")
+	check_eq(manager.state.get_pawn(11).current_tile_idx, 2, "포는 움직이지 않는다")
+	check(manager.state.get_pawn(11).skill_used, "사용 완료")
+	check_eq(manager.current_player_id(), 1, "굴림은 그대로 남는다")
+	_dispose(manager)
+
+
+func test_horse_back_kick_hits_two_tiles_behind() -> void:
+	var manager: TurnManager = _manager({1: _units(Kind.JANGGI, [3])})
+	place(manager.state, 11, 8, [7])
+	place(manager.state, 21, 6, [5])
+	place(manager.state, 22, 9, [8])
+	_do(manager, 1, &"use_skill", {"pawn_id": 11})
+	check(not manager.state.get_pawn(21).has_left_start, "뒤 2칸의 적 처치")
+	check(manager.state.get_pawn(22).has_left_start, "앞의 적은 그대로")
+	_dispose(manager)
+
+
+func test_keima_leap_moves_two_and_one_more_after_a_capture() -> void:
+	var manager: TurnManager = _manager({1: _units(Kind.SHOGI, [4])})
+	place(manager.state, 11, 2, [1])
+	place(manager.state, 21, 4, [3])
+	_do(manager, 1, &"use_skill", {"pawn_id": 11})
+	check(not manager.state.get_pawn(21).has_left_start, "2칸 앞의 적 처치")
+	check_eq(manager.state.get_pawn(11).current_tile_idx, 5, "처치하면 한 칸 더 (2 → 4 → 5)")
+	check(manager.state.get_pawn(11).skill_used, "사용 완료")
+	var calm: TurnManager = _manager({1: _units(Kind.SHOGI, [4])})
+	place(calm.state, 11, 2, [1])
+	_do(calm, 1, &"use_skill", {"pawn_id": 11})
+	check_eq(calm.state.get_pawn(11).current_tile_idx, 4, "처치가 없으면 2칸")
+	_dispose(manager)
+	_dispose(calm)
+
+
+func test_knight_guard_skill_lasts_only_for_this_turn() -> void:
+	var manager: TurnManager = _manager({1: _units(Kind.CHESS, [2])})
+	place(manager.state, 11, 3, [2])
+	_do(manager, 1, &"use_skill", {"pawn_id": 11})
+	check(manager.state.get_pawn(11).turn_guard, "기사의 맹세 발동")
+	check(manager.state.get_pawn(11).skill_used, "사용 완료")
+	check_eq(manager.current_state, Phase.PHASE_TURN_BEGIN, "굴림은 그대로")
+	manager.advance_to_next_player()
+	check(not manager.state.get_pawn(11).turn_guard, "차례가 끝나면 사라진다")
 	_dispose(manager)
 
 

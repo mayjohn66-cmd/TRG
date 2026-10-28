@@ -9,7 +9,11 @@ extends RefCounted
 const TEXTS: Dictionary = {
 	&"queen_bonus": "[퀸] 이동 +2칸!",
 	&"black_odd": "[흑돌] 홀수 눈금 +1칸!",
-	&"nari_bonus": "[나리 승급] 이동 +1칸!",
+	&"nari_bonus": "[나리 승급] 이동 +2칸!",
+	&"straight_cha": "[장기:차] 직진 +2칸!",
+	&"knight_corner": "[나이트] 코너 도약 +2칸!",
+	&"plane_card": "[비행기] 옷장 카드+1!",
+	&"knight_guard": "[나이트] 맹세 방어!",
 	&"straight_rook": "[룩] 직진 +2칸!",
 	&"straight_hisha": "[비차] 직진 +2칸!",
 	&"straight_ryuo": "[용왕] 직진 +2칸!",
@@ -40,7 +44,7 @@ const COLORS: Dictionary = {
 	&"checker_slide": Color("ff6b6b"),
 	&"shield_block": Color("74c0fc"), &"kart_immune": Color("74c0fc"), &"knight_pass": Color("74c0fc"), &"queen_pass": Color("74c0fc"), &"keima_pass": Color("74c0fc"), &"ship_sink": Color("74c0fc"),
 	&"dog_bakery": Color("8ce99a"), &"car_salary": Color("8ce99a"), &"sweeper_defuse": Color("8ce99a"), &"yut_reroll": Color("8ce99a"),
-	&"plane_warp": Color("b197fc"), &"stack_magnet": Color("b197fc"),
+	&"plane_warp": Color("b197fc"), &"plane_card": Color("8ce99a"), &"knight_guard": Color("74c0fc"), &"stack_magnet": Color("b197fc"),
 }
 
 

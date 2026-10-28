@@ -41,8 +41,8 @@ func _skill(manager: TurnManager, pawn_id: int, params: Dictionary = {}) -> void
 
 # --- 리뉴얼 패시브 --------------------------------------------------------------
 
-func test_rook_and_hisha_get_plus_two_only_on_a_straight_line() -> void:
-	for loadout: Array in [_units(Kind.CHESS, [4]), _units(Kind.SHOGI, [2])]:
+func test_rook_and_chariot_get_plus_two_only_on_a_straight_line() -> void:
+	for loadout: Array in [_units(Kind.CHESS, [4]), _units(Kind.JANGGI, [2])]:
 		var state := make_state(2, 1, {1: loadout})
 		place(state, 11, 1, [0])
 		check_eq(move(state, 11, 3).path, int_array([2, 3, 4, 5, 6]), "코너를 꺾지 않는 직진 +2")
@@ -51,14 +51,14 @@ func test_rook_and_hisha_get_plus_two_only_on_a_straight_line() -> void:
 		check_eq(move(turn, 11, 3).path, int_array([5, 6, 7]), "코너를 지나 꺾으면 보너스 없음")
 
 
-func test_kaku_gets_two_at_a_corner_and_three_as_dragon_horse() -> void:
+func test_kaku_has_no_corner_bonus_and_dragon_horse_gets_the_promotion_bonus() -> void:
 	var state := make_state(2, 1, {1: _units(Kind.SHOGI, [3])})
 	place(state, 11, 4, [3])
-	check_eq(move(state, 11, 2).path.size(), 4, "코너를 밟으면 +2")
+	check_eq(move(state, 11, 2).path.size(), 2, "각행도 코너 보너스 없음")
 	var horse := make_state(2, 1, {1: _units(Kind.SHOGI, [3])})
 	place(horse, 11, 4, [3])
 	horse.get_pawn(11).promoted = true
-	check_eq(move(horse, 11, 2).path.size(), 2 + 1 + 3, "용마: 나리 +1 + 코너 +3")
+	check_eq(move(horse, 11, 2).path.size(), 2 + 2, "용마: 승급 +2")
 
 
 # --- 아케이드 패시브 ------------------------------------------------------------
@@ -214,8 +214,8 @@ func test_minesweeper_plants_a_mine_on_its_tile() -> void:
 # --- 설명 문구: 판정 도구처럼 구분선 위 패시브 / 아래 필살기 ----------------------
 
 func test_pawn_text_splits_passives_and_drops_labels() -> void:
-	check_eq(PawnCatalog.passive_lines(Kind.SHOGI, 2), "직진 +2칸\n반환점에서 용왕 승급", "패시브 둘은 줄을 나눈다")
-	check_eq(PawnCatalog.passive_lines(Kind.JANGGI, 2), "", "패시브가 없으면 빈 글 (차)")
+	check_eq(PawnCatalog.passive_lines(Kind.ARCADE, 4), "모든 추가 이동 +2칸\n이동 중 함정 면역", "패시브 둘은 줄을 나눈다")
+	check_eq(PawnCatalog.passive_lines(Kind.SHOGI, 2), "반환점 통과 시 승급", "쇼기 패시브는 승급 하나")
 	var line: String = PawnCatalog.skill_line(&"castle")
 	check(line.begins_with(PawnCatalog.skill_name(&"castle")) and not line.contains("필살기") and not line.contains("[1회]"), "필살기 줄에 머리말이 없다 (%s)" % line)
 	for kind: GameEnums.PawnKind in PawnCatalog.EVOLVABLE_SETS:

@@ -251,6 +251,9 @@ func advance_to_next_player() -> void:
 	_bonus_roll_pending = false
 	_counter_offer = {}
 	var leaving: int = current_player_id()
+	if state != null:
+		for guarded: PlayerPawn in state.pawns_of(leaving):
+			guarded.turn_guard = false  # 나이트 [기사의 맹세]는 이번 차례까지만
 	# 특수 승리: 한 차례의 행동(이동·처치·카드·방어)이 다 끝나 차례가 넘어가는 순간 판정한다 (행동 도중에는 기록만 오른다).
 	if _judge_special_victory():
 		return
@@ -580,8 +583,26 @@ func _handle_use_skill(actor: int, params: Dictionary) -> void:
 			_bonus_roll_pending = true
 			_emit_skill_event(actor, pawn, skill, {"from": pawn.current_tile_idx})
 			_broadcast_state()
-		&"quake", &"slash", &"horse":
+		&"quake", &"slash", &"horse", &"back_kick":
 			_skill_effect(actor, pawn, skill)
+		&"cannon":
+			if PawnSkills.cannon_tile(state, pawn) == -1:
+				action_rejected.emit(actor, &"use_skill", &"invalid_skill")
+				return
+			_skill_effect(actor, pawn, skill)
+		&"knight_guard":
+			# 나이트 기사의 맹세: 이번 차례가 끝날 때까지 잡기·함정 사출을 막는다 (굴림은 그대로)
+			pawn.skill_used = true
+			pawn.turn_guard = true
+			_emit_skill_event(actor, pawn, skill, {"from": pawn.current_tile_idx})
+			_broadcast_state()
+		&"keima_jump":
+			var jump: Array[int] = PawnSkills.keima_path(state, pawn)
+			if jump.is_empty():
+				action_rejected.emit(actor, &"use_skill", &"invalid_skill")
+				return
+			_emit_skill_event(actor, pawn, skill, {"path": jump})
+			_execute_move(pawn, jump, skill)
 		_:
 			action_rejected.emit(actor, &"use_skill", &"invalid_skill")
 
@@ -616,7 +637,8 @@ func _skill_effect(actor: int, pawn: PlayerPawn, skill: StringName) -> void:
 	var tiles: Array[int] = []
 	match skill:
 		&"quake": tiles = PawnSkills.quake_tiles(pawn)
-		&"slash", &"horse": tiles = PawnSkills.strike_tiles(pawn, skill)
+		&"slash", &"horse", &"back_kick": tiles = PawnSkills.strike_tiles(pawn, skill)
+		&"cannon": tiles = [PawnSkills.cannon_tile(state, pawn)] as Array[int]
 		&"plant_mine", &"hotel": tiles = [pawn.current_tile_idx] as Array[int]
 	var from_tile: int = pawn.current_tile_idx
 	var command := SkillEffectCommand.new(actor, pawn.entity_id, skill, tiles)
@@ -1288,8 +1310,12 @@ func _apply_tempo_up() -> bool:
 		_emit_event(&"goal_shrunk", {"round": round_number, "zone_start": zone_start, "shrink": TempoUp.shrink_for(state), "finished": finished})
 	if finished.is_empty():
 		return false
-	for entry: Dictionary in VictoryChecker.newly_qualified(state, player_order, current_player_id(), false):
-		_graduate(int(entry["player"]), entry["reason"])
+	var qualified: Array[Dictionary] = VictoryChecker.newly_qualified(state, player_order, current_player_id(), false)
+	# 당겨진 결승선이 남은 사람 전원을 한꺼번에 완주시키면 맨 뒤 한 명은 꼴찌다 (다른 끝내기와 같은 규칙).
+	var everyone: bool = qualified.size() >= 2 and qualified.size() == state.active_players(player_order).size()
+	for index: int in qualified.size():
+		var reason: StringName = VictoryChecker.LAST_PLACE if everyone and index == qualified.size() - 1 else qualified[index]["reason"]
+		_graduate(int(qualified[index]["player"]), reason)
 	return _end_if_decided()
 
 
@@ -1544,9 +1570,12 @@ func _auto_select_pawn() -> void:
 
 ## PHASE_MOVING_STEP: 법전(ON_MOVE_CALC)을 통과시켜 경로를 확정하고, 한 칸씩 이동한 뒤 도착 처리를 한다.
 ## 이동 직전 상태를 MoveCommand로 이번 턴 이력에 등록하므로 ACT_05가 이 이동도 되감는다.
-func _execute_move(pawn: PlayerPawn, forced_path: Array[int] = []) -> void:
+## skill: 필살기 이동이면 그 ID (계마 도약은 처치하면 한 칸 더 간다).
+func _execute_move(pawn: PlayerPawn, forced_path: Array[int] = [], skill: StringName = &"") -> void:
 	change_state(State.PHASE_MOVING_STEP)
 	var ctx: RuleContext = _make_ctx(current_player_id())
+	if skill != &"":
+		ctx.metadata["skill"] = skill
 	var forced: bool = not forced_path.is_empty()
 	ctx.dice_value = forced_path.size() if forced else move_queue.pop_front()
 	# 대기열의 눈금은 모두 굴림에서 왔고 템포 업 보너스가 이미 더해져 있다 (같은 라운드). 필살기 직선 이동에는 없다.

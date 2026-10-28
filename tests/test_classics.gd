@@ -51,7 +51,7 @@ func test_shogi_catalog_names_letters_and_skill() -> void:
 	check_eq(PawnCatalog.skill_of(Sub.SHOGI_FU), &"drop", "보병 필살기(모치고마 낙하)")
 	check_eq(PawnCatalog.skill_of(Sub.SHOGI_HISHA), &"slash", "비차는 용왕 베기 (승급 후)")
 	check_eq(PawnCatalog.skill_of(Sub.SHOGI_KAKU), &"horse", "각행은 용마 십자 베기 (승급 후)")
-	check_eq(PawnCatalog.skill_of(Sub.SHOGI_KEIMA), &"", "계마는 필살기 없음")
+	check_eq(PawnCatalog.skill_of(Sub.SHOGI_KEIMA), &"keima_jump", "계마는 계마 도약")
 	check(PawnCatalog.name_of_pawn(Kind.CHESS, 1, true) == "체스:폰", "쇼기가 아니면 승급 이름이 없다")
 
 
@@ -79,8 +79,8 @@ func test_shogi_promotes_when_passing_the_halfway_corner() -> void:
 	check_eq(state.get_pawn(11).letter(), "토", "보병은 토금")
 	check_eq(state.get_pawn(11).display_label(), "쇼기:토금", "승급 이름")
 	var again: MoveReport = move(state, 11, 3)
-	check_eq(again.path.size(), 4, "승급 뒤에는 이동할 때마다 +1칸")
-	check(again.ability_notes.has("나리 승급 +1칸"), "능력 보고")
+	check_eq(again.path.size(), 5, "승급 뒤에는 이동할 때마다 +2칸")
+	check(again.ability_notes.has("나리 승급 +2칸"), "능력 보고")
 
 
 func test_shogi_promotes_at_the_halfway_corner_and_ignores_other_kinds() -> void:
@@ -125,56 +125,35 @@ func test_shogi_stacked_members_promote_together() -> void:
 
 # --- 쇼기: 병종별 능력 ---------------------------------------------------------
 
-func test_shogi_hisha_always_gets_two_extra_tiles_and_promoted_adds_one_more() -> void:
-	var state: GameState = _shogi_state()
-	place(state, 12, 7, [6])
-	check_eq(move(state, 12, 2).path.size(), 4, "비차는 항상 +2칸")
+func test_shogi_units_have_no_passive_but_promotion() -> void:
+	for unit: int in range(1, 5):
+		var state: GameState = _shogi_state()
+		var id: int = 10 + unit
+		place(state, id, 1, [0])
+		check_eq(move(state, id, 2).path.size(), 2, "%d호기: 승급 전에는 눈금대로" % unit)
+		check_eq(PawnCatalog.ability_text(Kind.SHOGI, unit), "반환점 통과 시 승급", "%d호기 패시브는 승급 하나" % unit)
 	var promoted: GameState = _shogi_state()
-	place(promoted, 12, 12, [11])
+	place(promoted, 12, 1, [0])
 	promoted.get_pawn(12).promoted = true
-	check_eq(move(promoted, 12, 2).path.size(), 5, "나리 승급(용왕)하면 +2칸에 승급 +1칸")
+	var promoted_report: MoveReport = move(promoted, 12, 2)
+	check_eq(promoted_report.path.size(), 4, "승급하면 +2칸 (비차도 직진 보너스 없음) %s" % str(promoted_report.ability_notes))
 
 
-func test_shogi_kaku_gets_corner_bonus_and_promoted_strikes_ahead() -> void:
-	var state: GameState = _shogi_state()
-	place(state, 13, 3, [2])
-	var report: MoveReport = move(state, 13, 3)
-	check_eq(report.path, int_array([4, 5, 6, 7, 8]), "코너(6번)를 밟으면 +2칸")
+func test_shogi_kaku_no_longer_strikes_ahead_after_promotion() -> void:
 	var strike: GameState = _shogi_state()
 	place(strike, 13, 1, [0])
 	strike.get_pawn(13).promoted = true
-	place(strike, 21, 5, [4])
-	var strike_report: MoveReport = move(strike, 13, 2)  # 2 + 1(승급) = 3칸: 2, 3, 4번
-	check_eq(strike.get_pawn(13).current_tile_idx, 4, "4번에 멈춤")
-	check(not strike.get_pawn(21).has_left_start, "바로 앞 1칸(5번)의 적 말도 처치")
-	check(strike_report.ability_notes.has("용마 앞 1칸 추가 처치"), "능력 보고")
-	var plain: GameState = _shogi_state()
-	place(plain, 13, 1, [0])
-	place(plain, 21, 5, [4])
-	move(plain, 13, 2)
-	check(plain.get_pawn(21).has_left_start, "승급 전 각행은 앞 칸을 치지 못한다")
+	place(strike, 21, 6, [5])
+	move(strike, 13, 2)  # 2 + 2(승급) = 4칸: 2~5번
+	check_eq(strike.get_pawn(13).current_tile_idx, 5, "5번에 멈춤")
+	check(strike.get_pawn(21).has_left_start, "용마도 앞 칸을 치지 않는다")
 
 
-func test_shogi_keima_ignores_traps_on_first_two_tiles_only() -> void:
+func test_shogi_keima_no_longer_skips_traps() -> void:
 	var state: GameState = _shogi_state()
 	state.place_attachment(2, TrapMirrorForce.new(2))
-	state.place_attachment(3, TrapMirrorForce.new(2))
 	place(state, 14, 1, [0])
-	var report: MoveReport = move(state, 14, 4)  # 2, 3, 4, 5
-	check(not report.trapped and state.get_pawn(14).current_tile_idx == 5, "첫 2칸의 함정은 뛰어넘는다")
-	var third: GameState = _shogi_state()
-	third.place_attachment(4, TrapMirrorForce.new(2))
-	place(third, 14, 1, [0])
-	var third_report: MoveReport = move(third, 14, 4)
-	check(third_report.trapped, "셋째 칸의 함정은 걸린다")
-	var landing: GameState = _shogi_state()
-	landing.place_attachment(3, TrapMirrorForce.new(2))
-	place(landing, 14, 1, [0])
-	check(move(landing, 14, 2).trapped, "도착 칸이면 첫 2칸 안이어도 판정한다")
-	var basic: GameState = make_state(2, 1)
-	basic.place_attachment(2, TrapMirrorForce.new(2))
-	place(basic, 11, 1, [0])
-	check(move(basic, 11, 3).trapped, "계마가 아닌 말은 둘째 칸 함정에 걸린다")
+	check(move(state, 14, 3).trapped, "계마도 경로의 함정에 걸린다")
 
 
 # --- 쇼기: 모치고마 낙하 -------------------------------------------------------

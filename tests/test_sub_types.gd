@@ -108,18 +108,17 @@ func test_promotion_survives_snapshot_restore() -> void:
 # --- 모노폴리 ---------------------------------------------------------------------
 
 
-func test_plane_warps_farther_than_the_normal_portal() -> void:
+func test_plane_draws_a_card_when_using_a_wardrobe() -> void:
 	var state := make_state(2, 1, {1: _units(Kind.MONOPOLY, [1, 2])})
 	place(state, 12, 8, [7])
 	var report: MoveReport = move(state, 12, 1)  # 9번 옷장
-	check_eq(state.get_pawn(12).current_tile_idx, 18, "9번 옷장 -> 18번 코너")
+	check_eq(state.get_pawn(12).current_tile_idx, 16, "비행기도 옷장은 보통 워프 (9 → 16)")
 	check(report.warped, "워프 보고")
-	place(state, 12, 15, [14])
-	move(state, 12, 1)  # 16번 옷장
-	check_eq(state.get_pawn(12).current_tile_idx, 22, "16번 옷장 -> 결승 직전 22번")
+	check_eq((state.hands[1] as Array).size(), 1, "옷장을 쓰면 카드 +1")
 	place(state, 11, 8, [7])
 	move(state, 11, 1)
 	check_eq(state.get_pawn(11).current_tile_idx, 16, "미니카는 평소처럼 16번으로")
+	check_eq((state.hands[1] as Array).size(), 1, "미니카는 옷장 카드 없음")
 
 
 func test_steamship_destroys_only_the_first_hostile_attachment_without_triggering_it() -> void:

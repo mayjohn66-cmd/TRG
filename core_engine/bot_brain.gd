@@ -540,7 +540,33 @@ static func skill_option(state: GameState, pawn: PlayerPawn) -> Dictionary:
 				if leader.owner_id != pawn.owner_id and not MoveExecutor.is_capture_immune(state, leader):
 					target += pawn_progress(state, leader)
 			return {"params": {}, "value": target + float(route.size())} if target > 0.0 else {}
-		&"slash", &"horse":
+		&"cannon":
+			var target: int = PawnSkills.cannon_tile(state, pawn)
+			if target == -1:
+				return {}
+			var shot: float = 0.0
+			for leader: PlayerPawn in state.leaders_at(target):
+				if leader.owner_id != pawn.owner_id and leader.has_left_start and not MoveExecutor.is_capture_immune(state, leader):
+					shot += pawn_progress(state, leader)
+			return {"params": {}, "value": shot} if shot > 0.0 else {}
+		&"keima_jump":
+			var jump: Array[int] = PawnSkills.keima_path(state, pawn)
+			if jump.is_empty():
+				return {}
+			var prey: float = 0.0
+			for leader: PlayerPawn in state.leaders_at(jump.back()):
+				if leader.owner_id != pawn.owner_id and leader.has_left_start and not MoveExecutor.is_capture_immune(state, leader):
+					prey += pawn_progress(state, leader)
+			return {"params": {}, "value": prey + float(jump.size())} if prey > 0.0 else {}
+		&"knight_guard":
+			# 이번 차례에 지나갈 앞쪽 6칸에 보이는 남의 함정이 있으면 쓴다
+			var traps: int = 0
+			for tile: int in state.board.calculate_path(pawn, 6, RuleContext.new()):
+				for attachment: TileAttachment in state.board.get_tile(tile).attachments:
+					if attachment.owner_id != pawn.owner_id and visible_trap(state, attachment):
+						traps += 1
+			return {"params": {}, "value": SKILL_USE_THRESHOLD + 2.0 * float(traps)} if traps > 0 else {}
+		&"slash", &"horse", &"back_kick":
 			var hits: float = 0.0
 			for tile: int in PawnSkills.strike_tiles(pawn, PawnCatalog.skill_of(pawn.sub_type())):
 				for leader: PlayerPawn in state.leaders_at(tile):

@@ -25,7 +25,7 @@ var restrained_turns: int = 0
 var blocked_this_turn: bool = false
 ## TRP_04 무인도: 짝수 눈금이 나올 때까지 갇혀 움직이지 못한다.
 var is_imprisoned: bool = false
-## 쇼기 나리(成り) 승급 상태: 반환점(BoardSpec.halfway_tile) 이상을 밟으면 영구히 켜진다 (잡혀서 출발선으로 가도 유지된다). 이동할 때마다 +1칸.
+## 쇼기 나리(成り) 승급 상태: 반환점(BoardSpec.halfway_tile) 이상을 밟으면 영구히 켜진다 (잡혀서 출발선으로 가도 유지된다). 이동할 때마다 +2칸.
 var promoted: bool = false
 ## 1회용 고유 필살기를 이미 썼는가 (게임당 기물별 1회, 잡혀서 출발선으로 가도 되살아나지 않는다).
 var skill_used: bool = false
@@ -35,6 +35,8 @@ var shield: bool = false
 var shield_broken_hit: bool = false
 ## [범용] 관심사도 지정 보호막: 잡기·함정을 한 번 막고 사라진다 (기물 종류와 상관없고, 진화해도 남는다).
 var ward: bool = false
+## 체스 나이트 [기사의 맹세]: 이번 차례가 끝날 때까지 잡기·함정 사출을 막는다 (막아도 사라지지 않는다).
+var turn_guard: bool = false
 
 
 ## 이 말의 세부 기물 (호기에서 정해지며, 승진한 체스 퀸은 5번째 호기다).
@@ -42,15 +44,10 @@ func sub_type() -> GameEnums.PawnSubType:
 	return PawnCatalog.sub_type_of(kind, unit_no)
 
 
-## 쇼기 각행의 고유 능력: 출발선 외 코너(BoardSpec.bonus_corner_tiles)를 스치거나 멈추면 이동 거리 +2칸 (용마는 +3칸).
-func gets_corner_bonus() -> bool:
-	return sub_type() == GameEnums.PawnSubType.SHOGI_KAKU
-
-
-## 체스 룩·쇼기 비차의 고유 능력: 코너를 꺾지 않는 직진이면 +2칸.
+## 체스 룩·장기 차의 고유 능력: 코너를 꺾지 않는 직진이면 +2칸.
 func gets_straight_bonus() -> bool:
 	var sub: GameEnums.PawnSubType = sub_type()
-	return sub == GameEnums.PawnSubType.CHESS_ROOK or sub == GameEnums.PawnSubType.SHOGI_HISHA
+	return sub == GameEnums.PawnSubType.CHESS_ROOK or sub == GameEnums.PawnSubType.JANGGI_CHA
 
 
 ## 함정에 걸리지 않는 기물: 지뢰찾기 공병(항상), 스타 카트(이동 중 항상).
@@ -61,8 +58,7 @@ func is_trap_immune() -> bool:
 
 ## 체스 나이트(와 퀸)의 고유 능력: 중간 칸의 설치물(함정·호텔)을 무시하고 도착 칸만 판정한다 (나이트 점프).
 func jumps_over_attachments() -> bool:
-	var sub: GameEnums.PawnSubType = sub_type()
-	return sub == GameEnums.PawnSubType.CHESS_KNIGHT or sub == GameEnums.PawnSubType.CHESS_QUEEN
+	return sub_type() == GameEnums.PawnSubType.CHESS_QUEEN
 
 
 ## 기본 말이 세트의 다음 호기로 영구 진화한다.

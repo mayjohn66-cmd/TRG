@@ -34,24 +34,21 @@ func test_every_engine_key_has_callout_text() -> void:
 func test_cannon_jump_is_announced_once_on_the_real_move_only() -> void:
 	var state := make_state(2, 1, {1: _units(Kind.JANGGI, 1)})
 	place(state, 11, 2, [1])
-	place(state, 21, 3, [2])
+	place(state, 12, 3, [2])
 	var heard: Array[StringName] = _heard(state)
 	MoveExecutor.preview_path(state, state.get_pawn(11), 2)
 	check(heard.is_empty(), "미리보기는 알리지 않는다")
 	move(state, 11, 2)
-	check_eq(heard.count(&"po_jump"), 1, "포가 말을 넘으면 [장기:포] 뛰어넘기 한 번")
+	check_eq(heard.count(&"po_jump"), 1, "포가 내 말을 넘으면 [장기:포] 뛰어넘기 한 번")
 
 
-func test_knight_passing_an_enemy_trap_is_announced() -> void:
+func test_knight_corner_leap_is_announced() -> void:
 	var state := make_state(2, 1, {1: _units(Kind.CHESS, 2)})
 	place(state, 11, 2, [1])
-	var trap: TileAttachment = AttachmentRegistry.create("TRP_01")
-	trap.owner_id = 2
-	state.place_attachment(3, trap)
 	var heard: Array[StringName] = _heard(state)
-	move(state, 11, 3)
-	check(heard.has(&"knight_pass"), "나이트가 적 함정을 뛰어넘으면 [나이트] 함정 관통 (%s)" % str(heard))
-	check(state.get_pawn(11).has_left_start, "함정에 걸리지 않았다")
+	move(state, 11, 3)  # 5번 = 6번 코너 바로 앞
+	check(heard.has(&"knight_corner"), "나이트가 코너 앞에 멈추면 [나이트] 코너 도약 (%s)" % str(heard))
+	check_eq(state.get_pawn(11).current_tile_idx, 7, "+2칸")
 
 
 func test_checker_king_kills_in_passing_and_dog_sniffs_a_bakery() -> void:

@@ -41,6 +41,8 @@ signal revenge_boost_fired(pawn_id: int, base_steps: int, bonus: int, total: int
 signal pawn_pushed_back(pawn_id: int, from_tile: int, to_tile: int)
 ## 바둑 백돌 방어막이 잡기·함정을 막고 깨졌다 / 다시 차올랐다.
 signal shield_broken(pawn_id: int, tile: int)
+## 나이트 [기사의 맹세]가 이번 차례의 잡기·함정 사출을 막았다 (방어는 남는다).
+signal guard_blocked(pawn_id: int, tile: int)
 signal shield_recharged(pawn_id: int)
 ## 지뢰찾기 공병이 적 함정을 해체했다.
 signal trap_defused(tile: int, attachment_id: String, pawn_id: int)
@@ -765,6 +767,9 @@ func owned_attachment_count(player_id: int) -> int:
 
 ## 바둑 백돌 방어막(또는 [범용] 관심사도 지정 보호막)이 있으면 깨뜨리고 true (잡기·함정을 막았다).
 func break_shield(pawn: PlayerPawn) -> bool:
+	if pawn != null and pawn.turn_guard:
+		guard_blocked.emit(pawn.entity_id, pawn.current_tile_idx)  # 나이트 [기사의 맹세]: 이번 차례 동안은 막아도 사라지지 않는다
+		return true
 	if pawn != null and pawn.ward:
 		pawn.ward = false
 		shield_broken.emit(pawn.entity_id, pawn.current_tile_idx)
@@ -873,7 +878,7 @@ func pawn_state(pawn: PlayerPawn) -> Dictionary:
 		carried_ids.append(carried_pawn.entity_id)
 	return {"tile": pawn.current_tile_idx, "history": pawn.step_history.duplicate(), "started": pawn.has_left_start,
 		"finished": pawn.is_finished, "revenge": pawn.revenge_boost, "comeback": pawn.comeback_run, "restrained": pawn.restrained_turns,
-		"imprisoned": pawn.is_imprisoned, "shield": pawn.shield, "ward": pawn.ward, "carrier": pawn.carrier.entity_id if pawn.carrier != null else -1, "carried": carried_ids}
+		"imprisoned": pawn.is_imprisoned, "shield": pawn.shield, "ward": pawn.ward, "turn_guard": pawn.turn_guard, "carrier": pawn.carrier.entity_id if pawn.carrier != null else -1, "carried": carried_ids}
 
 
 ## 방어으로 피해를 되돌린다: 저장한 말 상태·휴식·밴·기록을 복원하고, 공격으로 오른 특수 승리 기록을 되돌린다.
@@ -897,6 +902,7 @@ func undo_attack(entry: Dictionary) -> void:
 		pawn.is_imprisoned = bool(data["imprisoned"])
 		pawn.shield = bool(data["shield"])
 		pawn.ward = bool(data.get("ward", false))
+		pawn.turn_guard = bool(data.get("turn_guard", false))
 		if from_tile != pawn.current_tile_idx:
 			pawn_teleported.emit(pawn.entity_id, pawn.current_tile_idx)
 	for pawn_id: Variant in saved.keys():
