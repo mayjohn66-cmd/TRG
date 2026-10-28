@@ -1676,3 +1676,12 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 - 같은 사출을 미리 알리던 중복 반응 제거: 결투 피격 단계, UDO +4 폭탄(`_react_hit_pawn` 삭제), 말을 출발선으로 날린 함정(함정 터짐 0.25초 뒤 반응은 사출하지 않은 함정만).
 - 방어 카드 선택 팝업은 아직 맞은 게 아니므로 피격음 대신 경보음(`attack_alert`).
 - 검사: `ui_capture_test` — 말이 날아가는 동안엔 프로필 반응이 없고, 떨어진 뒤에 있다.
+
+### 7.12 도장 알림 압축 — 종류별 한 마디 (2026-10-28)
+- 항목마다 다른 글(카드명!·함정명! 등)은 헷갈리고 그림도 하나하나 만들어야 해서, **종류별 고정 문구 + 고정 그림 키**로 줄였다. 무엇인지는 함께 뜨는 카드 그림·기물 컷씬이 알려 준다.
+- 카드: 공격 카드 `공격!`(attack) / 방어 카드 `방어 발동!`(defense) / 그 밖 `카드 발동!`(card) — 모두 카드 그림 + 쓴 사람. 공격 카드는 경보 + 카드 두 장이 아니라 한 장.
+- `함정 설치!`(trap_set) / `함정 발동!`(trap, 함정 카드 그림 + 밟은 말) / 도미노 `함정 연쇄!`(trap_chain)
+- `필살기 발동!`(skill, 기물 컷씬 + sub 필살기 이름) / `법전 발동!`(law) / `법전 개정!`(law_added) / `타로 발동!`(tarot) / `중립 기물 출동!`(npc) / 폭주 기관차 `초증강 발동!`(super)
+- BUST·삐끗·과열은 `이동 실패!`(move_failed) 하나로 (sub: BUST! / 삐끗! / 과열!). 되감기는 방어 카드 효과라 따로 띄우지 않는다 (기록에만).
+- **방어 흐름**: 공격 카드 그림 → 맞은 봇이 방어 카드를 들고 있으면 0.9초 고민(`BotController.DELAY_COUNTER`, 예전 0.25초) → 쓰면 `방어 발동!` + 방어 카드 그림. 사람은 방어 팝업(경보음)에서 고른다.
+- 그림 키 (assets/fx/stamp/<key>.png): turn_mine, turn_other, round, skill, attack, defense, card, trap_set, trap, trap_chain, move_failed, rest, extra_turn, goal_shrunk, rank_1~3, promote, queen, law, law_added, tarot, npc, super.
