@@ -87,9 +87,11 @@ func test_end_line_carries_the_difficulty_figures() -> void:
 func test_vote_line_and_choices() -> void:
 	check_eq(MatchTelemetry.vote_tag(), "[%s%s 유저 미니투표]" % [String.chr(0x1F5F3), String.chr(0xFE0F)], "🗳️")
 	var choices: Array = MatchTelemetry.vote_choices()
-	check_eq(choices.size(), 5, "버튼 5개")
-	check(str(choices[0][1]).ends_with("템포·역전 각 딱 재밌어요!") and str(choices[3][2]) == "말이 자꾸 죽어서 완주가 답답해요", "디스코드 글·화면 글")
-	for choice: Array in choices:
+	check_eq(choices.size(), 2, "첫 화면 버튼 2개 (재밌었어요 / 잘 모르겠어요)")
+	var details: Array = MatchTelemetry.vote_details()
+	check_eq(details.size(), 4, "잘 모르겠어요 세부 4개")
+	check(str(choices[0][1]).ends_with("재밌었어요!") and str(details[2][2]) == "말이 자꾸 죽어서 완주가 답답해요", "디스코드 글·화면 글")
+	for choice: Array in choices + details:
 		check(not L10n.has_hangul(L10n.translate_text(str(choice[2]), "en")) and not L10n.has_hangul(L10n.translate_text(str(choice[2]), "ja")), "투표 버튼 번역 (%s)" % choice[2])
 	var line: String = MatchTelemetry.vote_line("교주(#A7B2)", str(choices[1][1]), "  빵집 털이 사기\n진짜로  ", 3, 14)
 	check_eq(line, "%s 교주(#A7B2) | %s | 빵집 털이 사기 진짜로 | (3위 · 14라운드)" % [MatchTelemetry.vote_tag(), choices[1][1]], "투표 한 줄 (줄바꿈·앞뒤 공백 정리)")

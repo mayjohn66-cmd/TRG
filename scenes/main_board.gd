@@ -9233,27 +9233,56 @@ func _build_vote_bar() -> Control:
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 6)
 	bar.add_child(column)
-	var question: Label = _make_label("이번 판 어떠셨나요? 가장 가까운 하나를 눌러 주세요 (개발자에게 바로 전달!)", 16, COLOR_GOLD)
+	var question: Label = _make_label("이번 판 어떠셨나요? (누르면 개발자에게 바로 전달!)", 16, COLOR_GOLD)
 	question.name = "VoteQuestion"
 	question.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(question)
-	var row := GridContainer.new()  # 5종: 3 + 2줄
+	var row := HBoxContainer.new()
 	row.name = "VoteButtons"
-	row.columns = 3
-	row.add_theme_constant_override("h_separation", 8)
-	row.add_theme_constant_override("v_separation", 6)
+	row.add_theme_constant_override("separation", 10)
 	column.add_child(row)
-	var tints: Array[Color] = [Color("e8590c"), Color("1971c2"), Color("c2255c"), Color("5f3dc4"), Color("2b8a3e")]
+	var tints: Array[Color] = [Color("e8590c"), Color("5f3dc4")]
 	var choices: Array = MatchTelemetry.vote_choices()
 	for index: int in choices.size():
 		var choice: Array = choices[index]
-		var button: Button = _make_button(str(choice[2]), Callable(), 14, tints[index % tints.size()])
+		var button: Button = _make_button(str(choice[2]), Callable(), 16, tints[index % tints.size()])
 		button.name = "Vote_%s" % choice[0]
-		button.custom_minimum_size = Vector2(0, 32)
+		button.custom_minimum_size = Vector2(0, 38)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.pressed.connect(_on_vote_pressed.bind(bar, str(choice[1]), index != 0))
+		if choice[0] == &"unsure":
+			button.pressed.connect(_open_vote_details.bind(bar, str(choice[1])))
+		else:
+			button.pressed.connect(_on_vote_pressed.bind(bar, str(choice[1]), false))
 		row.add_child(button)
 	return bar
+
+
+## [잘 모르겠어요]: 같은 자리에 '어떤 부분이 아쉬웠나요?' 탭을 펼쳐 아쉬웠던 부분을 하나 더 고르게 한다 (고르면 함께 보낸다).
+func _open_vote_details(bar: Control, unsure_text: String) -> void:
+	if not is_instance_valid(bar) or bool(bar.get_meta("voted", false)):
+		return
+	var column: Node = bar.get_child(0)
+	var old_row: Node = column.find_child("VoteButtons", false, false)
+	if old_row != null:
+		old_row.queue_free()
+	(column.find_child("VoteQuestion", false, false) as Label).text = "어떤 부분이 아쉬웠나요? (하나만 골라 주세요)"
+	var grid := GridContainer.new()  # 4종: 2 x 2
+	grid.name = "VoteDetails"
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 8)
+	grid.add_theme_constant_override("v_separation", 6)
+	column.add_child(grid)
+	var tints: Array[Color] = [Color("1971c2"), Color("c2255c"), Color("5f3dc4"), Color("2b8a3e")]
+	var details: Array = MatchTelemetry.vote_details()
+	for index: int in details.size():
+		var detail: Array = details[index]
+		var button: Button = _make_button(str(detail[2]), Callable(), 14, tints[index % tints.size()])
+		button.name = "Vote_%s" % detail[0]
+		button.custom_minimum_size = Vector2(0, 32)
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.pressed.connect(_on_vote_pressed.bind(bar, "%s → %s" % [unsure_text, str(detail[1])], false))
+		grid.add_child(button)
+	Sfx.play(&"ui_click")
 
 
 func _on_vote_pressed(bar: Control, choice: String, ask_more: bool) -> void:

@@ -2338,3 +2338,7 @@ v%s · 비공식 팬게임 (원작사와 무관한 비영리 무료 배포물),v
 고른 증강/기물 효과를 잘 못 느꼈어요,Couldn't feel my augments/pawns' effects,選んだ増強・駒の効果を感じられなかった
 [즐긴 재미] %s,[Enjoyed] %s,[楽しんだ要素] %s
 [막힌 곳] %s,[Stuck at] %s,[詰まった所] %s
+이번 판 어떠셨나요? (누르면 개발자에게 바로 전달!),How was this match? (goes straight to the dev!),今回のゲームはいかがでしたか？（開発者に直接届きます！）
+재밌었어요!,It was fun!,楽しかった！
+잘 모르겠어요,Not sure,よく分からなかった
+어떤 부분이 아쉬웠나요? (하나만 골라 주세요),What felt lacking? (pick one),どこが物足りなかったですか？（1つ選んでください）

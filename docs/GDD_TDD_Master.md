@@ -1656,4 +1656,4 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 - **결과 화면 미니 투표 5종** (`MatchTelemetry.vote_choices`, 3+2 격자): fun(템포·역전 재밌음, 의도대로) / why(승패 이유 모름: 법전·초증강 인지 실패) / no_comeback(역전 불가: 추격·리벤지 체감 부족) / stuck(말이 자꾸 죽어 답답: 업기 미사용·후반 정체) / build(증강·기물 효과 못 느낌: 시너지·필살기 활용 실패). fun이 아니면 후기 창을 연다. 화면 글자는 이모지 없이(게임 글꼴에 없음), 디스코드 글에만 이모지.
 - **후기 창** (`FeedbackModal.open(..., as_survey=true)`): 질문 1 즐긴 재미 6칩, 질문 2 막힌 곳 5칩(여러 개 선택, `fun_chips`/`block_chips`), 질문 3 한 줄 주관식(안내문 `survey.q3_hint`). 체크만 해도 보낼 수 있다. 리포트·디스코드 본문·구글 폼에 `[즐긴 재미] …` `[막힌 곳] …` 줄.
 - **행동 분석** (`MainBoard._track_behavior` → `behavior_report`, `MatchTelemetry.behavior_line`): `[행동 분석] 아군 업기 성사 N회 | 기물 필살기 사용 N회 | 생떼 카드 사용 N장 | 달성/보유 법전 진행도 최대 N% | 배속 Nx`. 업기는 move_resolved의 stacked + stack_resolved, 법전 진행도는 이벤트마다 법전 진행/목표의 최대치(법전으로 졸업하면 100%). '나'가 있는 판(컴퓨터 대전·온라인)만 붙고 4인 수동은 생략.
-
+- **투표 2단계 (2026-10-28 수정)**: 첫 화면은 `vote_choices` 2종(fun / unsure). unsure를 누르면 `_open_vote_details`가 같은 자리에 `vote_details` 4종(why / no_comeback / stuck / build)을 2x2로 펼치고, 고르면 "🤔 잘 모르겠어요 → 세부"로 한 번 보낸다. 후기 창은 아래 [이번 판 후기] 버튼으로만 연다.
