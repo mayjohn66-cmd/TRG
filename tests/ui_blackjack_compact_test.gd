@@ -108,6 +108,10 @@ func run() -> void:
 	tool._started = true
 	await show_result(tool.cash_out())
 	check(stage._total_label.text==L10n.tf("합계 %d",[18]) and stage._move_label.text==L10n.tf("%d칸 확정",[8]),"stand confirms correct movement")
+	for language: String in ["en","ja","ko"]:
+		L10n.set_language(language)
+		stage._refresh()
+		check(stage._total_label.text==L10n.tf("합계 %d",[18]) and stage._move_label.text==L10n.tf("%d칸 확정",[8]),"confirmed result follows language changes "+language)
 	# A standalone stage verifies actual buttons without dispatching unrelated match actions.
 	var input_stage := BlackjackStage.new()
 	root.add_child(input_stage)

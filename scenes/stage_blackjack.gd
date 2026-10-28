@@ -187,15 +187,15 @@ func play(result: Dictionary) -> void:
 func _apply_result_text(confirmed: bool, bust: bool, blackjack: bool, steps: int, total: int) -> void:
 	if bust:
 		_result_text = "BUST!"
-		_result_summary = L10n.tf("합계 %d",[total])+" · "+L10n.t("턴 종료")
+		_result_summary = "합계 %d · 턴 종료" % total
 		_result_color = Color("bf4941")
 	elif blackjack:
 		_result_text = "BLACKJACK!"
-		_result_summary = L10n.tf("%d칸 전진",[steps])+"\n"+L10n.t("한 번 더")
+		_result_summary = "%d칸 전진\n한 번 더" % steps
 		_result_color = UiSkin.GREEN
 	elif confirmed:
-		_result_text = L10n.tf("합계 %d",[total])
-		_result_summary = L10n.tf("%d칸 확정",[steps])
+		_result_text = "합계 %d" % total
+		_result_summary = "%d칸 확정" % steps
 		_result_color = UiSkin.INK
 	else:
 		_result_text = ""
@@ -240,8 +240,8 @@ func _refresh() -> void:
 		_move_label.text = L10n.tf("%d칸 전진",[total-ToolBlackjack.STEPS_OFFSET])
 		_total_label.add_theme_color_override("font_color", UiSkin.INK)
 	elif _result_text != "":
-		_total_label.text = _result_text
-		_move_label.text = _result_summary
+		_total_label.text = L10n.t(_result_text)
+		_move_label.text = L10n.t(_result_summary)
 		_total_label.add_theme_color_override("font_color", _result_color)
 	else:
 		_total_label.text = "21"
