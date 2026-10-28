@@ -174,3 +174,37 @@ func test_oops_roll_leaves_the_pawn_where_it_stands() -> void:
 	check_eq(state.get_pawn(11).current_tile_idx, 10, "삐끗은 0칸이라 제자리")
 	check(report.path.is_empty(), "걸음 없음")
 
+
+
+func test_yut_capped_throw_is_do_gae_geol_only() -> void:
+	var tool := ToolYut.new()
+	var rng: RandomNumberGenerator = _rng()
+	var seen: Dictionary = {}
+	for i: int in 300:
+		var result: RollResult = tool.roll_capped(rng)
+		seen[result.steps] = true
+		check(result.steps >= 1 and result.steps <= 3 and not result.reroll and not result.ends_turn, "상한 뒤 던지기는 도·개·걸 (재굴림·낙 없음)")
+	check_eq(seen.size(), 3, "도·개·걸 모두 등장")
+
+
+func test_yut_reroll_chain_caps_at_three() -> void:
+	var manager := TurnManager.new()
+	manager.boost_gimmicks = false
+	manager.hotseat_mode = true
+	manager.draft_enabled = false
+	tree.root.add_child(manager)
+	manager.start_game([1, 2, 3, 4] as Array[int], 7)
+	var tool := ToolYut.new()
+	var rerolls := 0
+	for chain: int in [0, 1, 2]:
+		manager._roll_chain = chain
+		for i: int in 200:
+			if manager._roll_with_modifiers(1, tool).reroll:
+				rerolls += 1
+	check(rerolls > 0, "재굴림 3번까지는 윷·모가 나온다")
+	manager._roll_chain = ToolYut.MAX_REROLLS
+	for i: int in 200:
+		var result: RollResult = manager._roll_with_modifiers(1, tool)
+		check(result.steps >= 1 and result.steps <= 3 and not result.reroll and not result.ends_turn, "재굴림 3번 뒤 던지기는 도·개·걸 중 하나")
+	tree.root.remove_child(manager)
+	manager.free()

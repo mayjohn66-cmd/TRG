@@ -5694,7 +5694,7 @@ const TOOL_RULE_WIDTH: float = 180.0
 
 const TOOL_CARDS: Dictionary = {
 	&"D6": ["6", Color("c92a2a"), "굴려서 전진한다", ""],
-	&"YUT": ["윷", Color("8a5a2b"), "윷을 던져 나온 만큼 전진한다", "윷·모 재굴림 +1"],
+	&"YUT": ["윷", Color("8a5a2b"), "윷을 던져 나온 만큼 전진한다", "윷·모 재굴림 (최대 3번)"],
 	&"LIFE_ROULETTE": ["룰", Color("1971c2"), "룰렛을 돌려 전진한다", "7 당첨 재굴림 +1"],
 	&"HOLDEM": ["♠", Color("343a40"), "카드 족보만큼 전진한다", ""],
 	&"CHINCHIRO": ["친", Color("0b7285"), "주사위를 굴려 전진한다", ""],

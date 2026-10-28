@@ -1411,7 +1411,10 @@ func _enter_roll_wait() -> void:
 func _roll_with_modifiers(roller: int, tool: BaseJudgmentTool) -> RollResult:
 	var result: RollResult = PacingDirector.adjust(state, roller, tool, tool.roll(state.rng))
 	result = UtilityAugments.lucky_roll(state, roller, tool, result)
-	return PacingDirector.damp_chain(state, tool, result, _roll_chain)
+	result = PacingDirector.damp_chain(state, tool, result, _roll_chain)
+	if tool is ToolYut and _roll_chain >= ToolYut.MAX_REROLLS:
+		result = (tool as ToolYut).roll_capped(state.rng)  # 윷: 재굴림 3번 뒤 던지기는 도·개·걸 중 하나
+	return result
 
 
 ## [범용] 다이스: 리바이브: 굴림이 0칸이거나 턴 종료면 장전된 리바이브를 써서 이번 차례가 끝난 뒤 같은 사람이 한 턴 더 한다.
