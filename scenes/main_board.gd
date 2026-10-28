@@ -4364,6 +4364,8 @@ func _update_reaction_popup(delta: float) -> void:
 		return
 	var key: String = "%d:%d" % [holder, int(manager.pending_counter()["attack"])]
 	if _reaction_popup == null or _reaction_key != key:
+		if _announcer != null and _announcer.visible and not _announcer.instant:
+			return  # 공격 카드 도장이 끝난 뒤에 방어 팝업을 띄운다 (도장 위에 팝업이 겹치지 않게)
 		_build_reaction_popup(holder, key)
 	if _reaction_bar == null:
 		return
@@ -10293,7 +10295,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_record(rested, "강제 턴 패스")
 			if _fx_on():
 				Sfx.play(&"timeout")
-			_announce_soft("휴식", "휴식…", "", Color("adb5bd"), null, 0.9, {"key": "rest", "sub": _player_name(rested)})  # 쉬는 턴은 기다리지 않고 바로 다음 차례로
+			_announce("휴식", "휴식…", "", Color("adb5bd"), null, 0.8, true, {"key": "rest", "sub": _player_name(rested)})  # 쉬는 턴은 기다리지 않고 바로 다음 차례로
 		&"stack_resolved":
 			var stack_names: Array[String] = []
 			for member_id: Variant in data["members"]:
@@ -10430,7 +10432,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_record(int(data["player_id"]), "이번 턴이 통째로 되감겼습니다")
 			# 되감기는 방어 카드의 효과다: [방어 발동!]이 이미 떴으니 따로 띄우지 않는다 (기록에만).
 		&"extra_turn":
-			_announce_soft("XI. The World!!", "한 번 더!", "", PLAYER_COLORS[int(data["player_id"])], null, 1.1, {"key": "extra_turn", "sub": _player_name(int(data["player_id"]))})
+			_announce("XI. The World!!", "한 번 더!", "", PLAYER_COLORS[int(data["player_id"])], null, 0.9, true, {"key": "extra_turn", "sub": _player_name(int(data["player_id"]))})  # 막는 알림: 다음 굴림 판(야추·블랙잭·핀볼)이 이 도장 위에 겹쳐 뜨지 않게
 		&"game_over":
 			_last_reason = data["reason"]
 	_refresh_all()
@@ -10762,6 +10764,7 @@ func _build_roll_fx() -> void:
 	_layout_card_deck()
 	_super_fx = SuperFX.new(self)
 	_announcer = EventAnnouncer.new()
+	_announcer.center_busy = _center_busy_level
 	add_child(_announcer)
 	_announcer.drained.connect(func() -> void:
 		if state != null:
@@ -10806,6 +10809,24 @@ func _build_tool_stages() -> void:
 
 
 ## 굴림 결과 연출기(리볼버·룰렛·주사위 투척 등)가 아직 화면에 남아 있는가.
+## 화면 가운데를 다른 연출이 쓰고 있는가 (EventAnnouncer.center_busy): 다음 중앙 알림은 이것들이 비킬 때까지 기다린다.
+## 2 = 사람이 고르는 방어 팝업 (닫힐 때까지), 1 = 잠깐 쓰는 연출 (최대 3초), 0 = 비었음.
+func _center_busy_level() -> int:
+	if _reaction_popup != null and is_instance_valid(_reaction_popup) and _reaction_popup.visible:
+		return 2
+	if _capture_cutin != null and _capture_cutin.busy():
+		return 1
+	if _presenter_showing():
+		return 1
+	if _duel_arena != null and is_instance_valid(_duel_arena) and _duel_arena.visible:
+		return 1
+	if _review_overlay != null and is_instance_valid(_review_overlay):
+		return 1
+	if _stack_overlay != null and is_instance_valid(_stack_overlay):
+		return 1
+	return 0
+
+
 func _presenter_showing() -> bool:
 	return _presenter != null and _presenter.visible
 

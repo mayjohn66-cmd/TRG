@@ -37,6 +37,13 @@ var active: bool = false
 ## 지금까지 띄운 알림 헤드라인 (테스트 확인용).
 var history: Array[String] = []
 
+## 화면 가운데가 다른 연출에 쓰이고 있는가 (보드가 넣어 준다): 0 비었음, 1 잠깐 쓰는 중(처치 컷인·주사위 결과·결투장·증강 확인 등, 최대 CENTER_WAIT_CAP초 기다림), 2 사람이 고르는 창(방어 팝업: 닫힐 때까지 기다림).
+## 다음 알림은 가운데가 빌 때까지 기다렸다가 뜬다 (알림이 다른 연출 위에 겹쳐 뜨지 않게).
+var center_busy: Callable = Callable()
+const CENTER_WAIT_CAP: float = 3.0
+var _center_wait: bool = false
+var _center_waited: float = 0.0
+
 ## 이 시각(msec)이 지나기 전에는 다음 알림을 띄우지 않는다 (앞선 알림 뒤에 이어진 말 움직임 연출이 끝나기를 기다림).
 var hold_until_msec: int = 0
 
@@ -118,6 +125,8 @@ func cancel() -> void:
 	_queue.clear()
 	_current = {}
 	_waiting = false
+	_center_wait = false
+	_center_waited = 0.0
 	_clear()
 	visible = false
 	var was_active: bool = active
@@ -138,8 +147,16 @@ func _start_next() -> void:
 		_current = {}
 		visible = false
 		active = false
+		_center_wait = false
 		drained.emit()
 		return
+	if _center_blocked():
+		_current = {}
+		visible = false
+		_center_wait = true
+		return
+	_center_wait = false
+	_center_waited = 0.0
 	_current = _queue.pop_front()
 	_t = 0.0
 	entry_started.emit(int(_current.get("serial", -1)))
@@ -332,8 +349,20 @@ func _clear() -> void:
 		_timer_bar = null
 
 
+func _center_blocked() -> bool:
+	if instant or not center_busy.is_valid():
+		return false
+	var level: int = int(center_busy.call())
+	return level >= 2 or (level == 1 and _center_waited < CENTER_WAIT_CAP)
+
+
 func _process(delta: float) -> void:
 	if _current.is_empty():
+		if _center_wait:
+			_center_waited += delta
+			if not _center_blocked():
+				_start_next()
+			return
 		if _waiting and Time.get_ticks_msec() >= hold_until_msec:
 			_waiting = false
 			_start_next()

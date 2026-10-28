@@ -1685,3 +1685,9 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 - BUST·삐끗·과열은 `이동 실패!`(move_failed) 하나로 (sub: BUST! / 삐끗! / 과열!). 되감기는 방어 카드 효과라 따로 띄우지 않는다 (기록에만).
 - **방어 흐름**: 공격 카드 그림 → 맞은 봇이 방어 카드를 들고 있으면 0.9초 고민(`BotController.DELAY_COUNTER`, 예전 0.25초) → 쓰면 `방어 발동!` + 방어 카드 그림. 사람은 방어 팝업(경보음)에서 고른다.
 - 그림 키 (assets/fx/stamp/<key>.png): turn_mine, turn_other, round, skill, attack, defense, card, trap_set, trap, trap_chain, move_failed, rest, extra_turn, goal_shrunk, rank_1~3, promote, queen, law, law_added, tarot, npc, super.
+
+### 7.13 출시 전 겹침 정리 (2026-10-28, 70판 QA 후속)
+- `EventAnnouncer.center_busy`(보드의 `_center_busy_level`): 다음 알림은 화면 가운데가 빌 때까지 기다린다. 1 = 처치 컷인·주사위 결과(_presenter)·결투장·증강 확인·업기 창 (최대 `CENTER_WAIT_CAP` 3초), 2 = 방어 팝업 (닫힐 때까지). 기다리는 동안 active/holding은 그대로라 봇·굴리기도 함께 기다린다.
+- 방어 팝업은 알림(공격 카드 도장)이 화면에 있는 동안 열리지 않는다.
+- `휴식…`·`한 번 더!`는 막는 알림 (예전엔 띄워만 둬서 다음 굴림 판이 그 위에 떴다).
+- 리볼버 준비 중(preparing)에는 막는 알림 동안 총 패드를 숨긴다.
