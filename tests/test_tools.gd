@@ -222,11 +222,16 @@ func test_yut_bonus_throw_raises_the_nak_weight() -> void:
 		if bool(result.details["nak"]):
 			naks += 1
 	var share: float = float(naks) / 4000.0
-	check(share > 0.33 and share < 0.42, "추가 던지기의 낙은 약 3/8 (%.2f)" % share)
+	check(share > 0.37 and share < 0.46, "추가 던지기의 낙은 약 6/14 (%.2f)" % share)
 	check_eq(seen.size(), 6, "다른 면도 모두 나온다")
 	tool.bonus_throw = false
 	naks = 0
 	for i: int in 4000:
 		if bool(tool.roll(rng).details["nak"]):
 			naks += 1
-	check(float(naks) / 4000.0 < 0.2, "첫 던지기의 낙은 그대로 약 1/6")
+	check(float(naks) / 4000.0 < 0.24, "첫 던지기의 낙은 약 1/5")
+	var rerolls := 0
+	for i: int in 4000:
+		if tool.roll(rng).reroll:
+			rerolls += 1
+	check(float(rerolls) / 4000.0 > 0.16 and float(rerolls) / 4000.0 < 0.24, "윷·모는 약 1/5 (%.2f)" % (float(rerolls) / 4000.0))

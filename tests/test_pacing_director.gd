@@ -192,7 +192,7 @@ func test_chain_rolls_get_rarer_after_each_extra_roll() -> void:
 			if PacingDirector.damp_chain(state, yut, yut.roll(state.rng), chain).reroll:
 				extra += 1
 		shares.append(float(extra) / 4000.0)
-	check(shares[0] > 0.25, "첫 굴림의 윷·모(추가 굴림)는 그대로 (%.2f)" % shares[0])
+	check(shares[0] > 0.15, "첫 굴림의 윷·모(추가 굴림)는 감쇠 없이 그대로 (윷·모 가중 1/5, %.2f)" % shares[0])
 	check(shares[1] < shares[0] * 0.75 and shares[2] < shares[1] * 0.75, "추가 굴림을 얻을수록 또 얻을 확률이 줄어든다 (%s)" % str(shares))
 
 
