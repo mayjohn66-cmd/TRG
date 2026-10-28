@@ -195,3 +195,19 @@ func test_chain_rolls_get_rarer_after_each_extra_roll() -> void:
 	check(shares[0] > 0.25, "첫 굴림의 윷·모(추가 굴림)는 그대로 (%.2f)" % shares[0])
 	check(shares[1] < shares[0] * 0.75 and shares[2] < shares[1] * 0.75, "추가 굴림을 얻을수록 또 얻을 확률이 줄어든다 (%s)" % str(shares))
 
+
+
+func test_yut_chain_damp_is_stronger_than_other_tools() -> void:
+	var state: GameState = _state(0)
+	var yut := ToolYut.new()
+	var kept := 0
+	var tries := 0
+	for i: int in 3000:
+		var result: RollResult = yut.roll(state.rng)
+		if not result.reroll:
+			continue
+		tries += 1
+		if PacingDirector.damp_chain(state, yut, result, 1).reroll:
+			kept += 1
+	var share: float = float(kept) / float(maxi(tries, 1))
+	check(share > 0.2 and share < 0.42, "윷·모 다음 던지기의 윷·모는 약 30%%만 남는다 (%.2f)" % share)

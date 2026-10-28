@@ -194,12 +194,15 @@ static func install_would_win_law(state: GameState, player_id: int) -> bool:
 ## 연속 굴림 감쇠 (모든 판, 초전도체 무한 동력 밸런스): 이번 턴에 이미 추가 굴림을 얻은 횟수(chain)만큼 또 추가 굴림이 나올 확률을 줄인다.
 ## 추가 굴림 결과는 CHAIN_KEEP^chain 확률로만 그대로 두고, 아니면 추가 굴림이 아닌 결과가 나올 때까지 같은 도구로 다시 굴린다.
 const CHAIN_KEEP: float = 0.6
+## 윷은 윷·모가 한 번 나오면 다음 던지기의 윷·모를 더 세게 줄인다 (2026-10 QA: 윷 1위율 과강). 첫 던지기는 그대로다.
+const YUT_CHAIN_KEEP: float = 0.3
 
 
 static func damp_chain(state: GameState, tool: BaseJudgmentTool, result: RollResult, chain: int) -> RollResult:
 	if chain <= 0 or result == null or not result.reroll or result.can_continue or not REROLL_TOOLS.has(tool.tool_id):
 		return result
-	if state.rng.randf() < pow(CHAIN_KEEP, float(chain)):
+	var keep: float = YUT_CHAIN_KEEP if tool.tool_id == &"YUT" else CHAIN_KEEP
+	if state.rng.randf() < pow(keep, float(chain)):
 		return result
 	for _try: int in MAX_TRIES:
 		var next: RollResult = tool.roll(state.rng)
