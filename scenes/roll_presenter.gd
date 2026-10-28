@@ -426,8 +426,9 @@ func _update_linger(t: float) -> void:
 		_ground_shadow.position = landed + Vector2(0.0, SHADOW_DROP) - _ground_shadow.size / 2.0
 		_ground_shadow.modulate.a = 1.0
 	if _die_label != null:
-		var pop: float = clampf(t / 0.14, 0.0, 1.0)
-		_die_label.scale = Vector2.ONE * Tween.interpolate_value(0.6, 0.4, pop, 1.0, Tween.TRANS_BACK, Tween.EASE_OUT)
+		# 도장처럼 크게 떠서 쾅 내려찍고 살짝 튕긴다 (2배 → 1배).
+		var pop: float = clampf(t / 0.18, 0.0, 1.0)
+		_die_label.scale = Vector2.ONE * Tween.interpolate_value(2.0, -1.0, pop, 1.0, Tween.TRANS_BACK, Tween.EASE_OUT)
 		_die_label.modulate.a = 1.0
 	_place_toss_label(landed)
 	if _mode != &"CHINCHIRO":
@@ -445,6 +446,10 @@ func _end_linger() -> void:
 	modulate.a = 1.0
 	if not active:
 		visible = false
+
+
+## 보드 위로 던진 도구의 "N칸 전진!" 글자 크기 (도장 알림과 같은 결).
+const RESULT_STAMP_PX: int = 52
 
 
 func _outline(label: Label, width: int) -> void:
@@ -610,8 +615,8 @@ func _build(tool_id: StringName) -> void:
 			_dice_3d.show()
 			_final_face = int((_result.get("details", {}) as Dictionary).get("face", _result.get("steps", 1)))
 			_dice_3d.begin(_final_face, _power, tool_id)
-			_die_label = _label("", 34, Color("fff3bf"))
-			_outline(_die_label, 10)
+			_die_label = _label("", RESULT_STAMP_PX, Color("ffe066"))
+			_outline(_die_label, 16)
 			_root.add_child(_die_label)
 		&"YUT":
 			_title.text = "전통 박달나무 윷"
@@ -781,9 +786,9 @@ func _card_move_text() -> String:
 
 func _make_card_result(caption: String) -> void:
 	_card_result_caption = caption
-	var px: int = 30 if TOSS_TOOLS.has(_mode) else 22
-	_die_label = _label("", px, Color("fff3bf"))
-	_outline(_die_label, 10)
+	var px: int = RESULT_STAMP_PX - 8 if TOSS_TOOLS.has(_mode) else 22
+	_die_label = _label("", px, Color("ffe066") if TOSS_TOOLS.has(_mode) else Color("fff3bf"))
+	_outline(_die_label, 16 if TOSS_TOOLS.has(_mode) else 10)
 	_root.add_child(_die_label)
 	var font: Font = _die_label.get_theme_font("font")
 	_die_label.custom_minimum_size = Vector2(font.get_string_size(L10n.t(caption), HORIZONTAL_ALIGNMENT_LEFT, -1, px).x + 24.0, px + 14.0)

@@ -31,6 +31,8 @@ phase.resolution,정산 / 개입 타이밍 B - 카드 사용 가능,Resolution /
 phase.npc,중립 NPC 페이즈,Neutral NPC Phase,中立NPCフェーズ
 turn.mine,내 차례!,Your Turn!,自分の番！
 turn.other,%s 차례,%s's Turn,%sの番
+turn.stamp_mine,플레이어 턴!,YOUR TURN!,あなたのターン！
+turn.stamp_other,%s 턴!,%s's TURN!,%sのターン！
 turn.extra,[%s 한 턴 더!],[%s Extra Turn!],[%s もう1ターン！]
 draft.reveal_tag,증강 공개,Augment Reveal,増強公開
 draft.reveal,선택한 증강,Selected Augments,選択した増強

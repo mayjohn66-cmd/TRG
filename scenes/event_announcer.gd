@@ -20,6 +20,12 @@ const BIG_TAG: String = "라운드"
 const ATTACK_TAG: String = "공격"
 ## 이 태그는 템포 업 경고: 헤드라인을 크게 그리고 붉은 경고 띠를 위아래에 두른다.
 const WARNING_TAG: String = "템포 업"
+## 도장 알림: 문장 대신 큰 글자(또는 assets/fx/stamp/<key>.png 그림) 하나가 쾅 찍혔다 사라진다.
+const STAMP_DIR: String = "res://assets/fx/stamp/"
+const STAMP_FONT_PX: int = 84
+const STAMP_SLAM: float = 0.16  ## 크게 떠 있다가 내려찍히는 시간 (초)
+const STAMP_SETTLE: float = 0.12  ## 내려찍힌 뒤 살짝 튕겨 제자리로 오는 시간 (초)
+const STAMP_TILT_DEG: float = -4.0
 
 ## true면 알림을 모두 건너뛴다 (헤드리스 테스트·ui_smoke 자동 진행).
 var instant: bool = false
@@ -54,7 +60,8 @@ func _init() -> void:
 ## 알림 번호를 돌려준다 (건너뛰면 -1).
 ## blocking=false는 띄워만 두는 알림(차례·라운드 안내 등)이다: holding()이 참이 되지 않아 굴림·이동·봇이 기다리지 않는다.
 ## 뒤에 기다려야 하는 알림이 들어오면 지금 떠 있는 띄워만 두는 알림은 바로 사라지기 시작한다.
-func announce(tag: String, headline: String, body: String, color: Color, extra: Control = null, duration: float = 1.5, blocking: bool = true) -> int:
+## stamp가 비어 있지 않으면 도장 알림이다: {"key": 그림 파일 이름(없으면 글자), "sub": 도장 아래 작은 한 줄}. body는 쓰지 않는다.
+func announce(tag: String, headline: String, body: String, color: Color, extra: Control = null, duration: float = 1.5, blocking: bool = true, stamp: Dictionary = {}) -> int:
 	history.append(headline)
 	if instant:
 		if extra != null:
@@ -65,7 +72,7 @@ func announce(tag: String, headline: String, body: String, color: Color, extra: 
 		if dropped["extra"] != null:
 			(dropped["extra"] as Control).free()
 	_serial += 1
-	_queue.append({"tag": tag, "headline": headline, "body": body, "color": color, "extra": extra, "duration": duration, "serial": _serial, "blocking": blocking})
+	_queue.append({"tag": tag, "headline": headline, "body": body, "color": color, "extra": extra, "duration": duration, "serial": _serial, "blocking": blocking, "stamp": stamp})
 	_park(extra)
 	active = true
 	if blocking and not _current.is_empty() and not bool(_current.get("blocking", true)):
@@ -136,6 +143,9 @@ func _start_next() -> void:
 	_t = 0.0
 	entry_started.emit(int(_current.get("serial", -1)))
 	var color: Color = _current["color"]
+	if not (_current.get("stamp", {}) as Dictionary).is_empty():
+		_build_stamp(color)
+		return
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color("101626")
 	style.border_color = color
@@ -191,6 +201,85 @@ func _start_next() -> void:
 	call_deferred("_place")
 
 
+## 도장 알림: 패널 없이 큰 외곽선 글자(또는 그림)와 작은 한 줄만. extra(기물 컷씬 그림 등)는 도장 위에 놓는다.
+func _build_stamp(color: Color) -> void:
+	add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	_root = VBoxContainer.new()
+	_root.add_theme_constant_override("separation", 0)
+	_root.alignment = BoxContainer.ALIGNMENT_CENTER
+	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_root)
+	var options: Dictionary = _current["stamp"]
+	if _current["extra"] != null:
+		var shown: Control = _current["extra"]
+		if shown.get_parent() != null:
+			shown.get_parent().remove_child(shown)
+		shown.show()
+		shown.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		_root.add_child(shown)
+	var picture: Texture2D = stamp_texture(str(options.get("key", "")))
+	if picture != null:
+		var art := TextureRect.new()
+		art.texture = picture
+		art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		art.custom_minimum_size = Vector2(picture.get_width() * 170.0 / maxf(picture.get_height(), 1.0), 170.0)
+		art.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_root.add_child(art)
+	else:
+		_root.add_child(stamp_label(str(_current["headline"]), STAMP_FONT_PX, color))
+	if str(options.get("sub", "")) != "":
+		_root.add_child(stamp_label(str(options["sub"]), 26, color, 8))
+	modulate = Color(1, 1, 1, 0)
+	visible = true
+	reset_size()
+	_place()
+	call_deferred("_place")
+
+
+## 도장 그림이 있으면 그 그림 (assets/fx/stamp/<key>.png), 없으면 null (글자 도장으로 대신한다).
+static func stamp_texture(key: String) -> Texture2D:
+	if key == "":
+		return null
+	var path: String = STAMP_DIR + key + ".png"
+	return load(path) as Texture2D if ResourceLoader.exists(path) else null
+
+
+## 도장 글자: 밝은 글자 + 진한 외곽선 + 아래로 떨어진 그림자.
+static func stamp_label(text: String, size_px: int, color: Color, outline: int = 18) -> Label:
+	var label := Label.new()
+	label.text = text
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.add_theme_font_size_override("font_size", size_px)
+	label.add_theme_color_override("font_color", color.lightened(0.45))
+	label.add_theme_color_override("font_outline_color", color.darkened(0.72))
+	label.add_theme_constant_override("outline_size", outline)
+	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.55))
+	label.add_theme_constant_override("shadow_offset_x", 0)
+	label.add_theme_constant_override("shadow_offset_y", maxi(size_px / 14, 3))
+	label.add_theme_constant_override("shadow_outline_size", outline)
+	return label
+
+
+## 도장 알림의 크기·기울기·투명도: 크게 떠서 쾅 내려찍고(살짝 튕김) 머물다가 부풀며 사라진다.
+static func stamp_pose(t: float, duration: float) -> Dictionary:
+	var k: float = 1.0
+	if t < STAMP_SLAM:
+		var p: float = t / STAMP_SLAM
+		k = lerpf(2.3, 0.9, p * p)
+	elif t < STAMP_SLAM + STAMP_SETTLE:
+		var q: float = (t - STAMP_SLAM) / STAMP_SETTLE
+		k = lerpf(0.9, 1.0, 1.0 - pow(1.0 - q, 2.0))
+	var alpha: float = clampf(t / (STAMP_SLAM * 0.6), 0.0, 1.0)
+	if t > duration - FADE_OUT:
+		var r: float = clampf((duration - t) / FADE_OUT, 0.0, 1.0)
+		alpha = minf(alpha, r)
+		k *= lerpf(1.12, 1.0, r)
+	return {"scale": k, "alpha": alpha, "tilt": deg_to_rad(STAMP_TILT_DEG) * clampf(t / STAMP_SLAM, 0.0, 1.0)}
+
+
 ## 줄 서 있는 알림의 미리보기(카드 프레임 등)는 숨긴 채 보관해 둔다: 트리에 붙어 있어야 고아 노드로 남지 않는다.
 func _park(extra: Control) -> void:
 	if extra == null:
@@ -237,6 +326,14 @@ func _process(delta: float) -> void:
 		return
 	_t += delta
 	var duration: float = float(_current["duration"])
+	if not (_current.get("stamp", {}) as Dictionary).is_empty():
+		var pose: Dictionary = stamp_pose(_t, duration)
+		modulate = Color(1, 1, 1, float(pose["alpha"]))
+		scale = Vector2.ONE * float(pose["scale"])
+		rotation = float(pose["tilt"])
+		if _t >= duration:
+			_finish_current()
+		return
 	var alpha: float = 1.0
 	if _t < FADE_IN:
 		alpha = _t / FADE_IN
@@ -257,6 +354,7 @@ func _process(delta: float) -> void:
 ## 지금 알림을 마치고 (보드가 연출을 붙일 틈을 준 뒤) 다음 알림으로 넘어간다.
 func _finish_current() -> void:
 	var finished_serial: int = int(_current.get("serial", -1))
+	rotation = 0.0
 	_clear()
 	_current = {}
 	visible = false

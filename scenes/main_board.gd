@@ -1263,12 +1263,12 @@ func _bind_state() -> void:
 		var promoted_pawn: PlayerPawn = state.get_pawn(pawn_id)
 		if promoted_pawn != null and promoted_pawn.kind == GameEnums.PawnKind.SHOGI:
 			_log_line("[나리] %s 승급! 이동할 때마다 +2칸" % _pawn_name(pawn_id), Color("ff6b6b"))
-			_announce_gate("기물 능력", "[나리(成り)!] %s 승급" % promoted_pawn.display_label().split(":")[-1], "%s 승급 ◆ 이동할 때마다 +2칸" % _pawn_name(pawn_id), Color("ff6b6b"), null, 1.2)
+			_announce_gate("기물 능력", "승급! +2칸", "", Color("ff6b6b"), null, 1.0, {"key": "promote", "sub": _pawn_name(pawn_id)})
 			_fx_when_announced(func() -> void: _fx_promote(pawn_id, Color("ff4d4d")))
 			_refresh_pawns()
 			return
 		_log_line("[승진] %s → 체스:퀸! (반환점 통과 승급)" % _pawn_name(pawn_id), Color("ffd43b"))
-		_announce_gate("기물 능력", "[발동!] 체스 퀸 승진", "%s 퀸 승진 ◆ 이동 +2칸 · 말·함정 관통" % _pawn_name(pawn_id), Color("ffd43b"), null, 1.2)
+		_announce_gate("기물 능력", "퀸 승진!", "", Color("ffd43b"), null, 1.0, {"key": "queen", "sub": _pawn_name(pawn_id)})
 		_fx_when_announced(func() -> void: _fx_promote(pawn_id, Color("ffd43b"))))
 	state.domino_collapsed.connect(func(pawn_id: int, _passed: Array[int], chain: Array[int]) -> void:
 		_log_line("[도미노 연쇄] %s이(가) 도미노를 밟아 함정 %d개가 연쇄 발동!" % [_pawn_name(pawn_id), chain.size()], Color("63e6be"))
@@ -3727,11 +3727,11 @@ func _check_round_banner() -> void:
 	var tempo: int = TempoUp.level(state.round_number)
 	# 라운드 첫 차례는 이 배너가 차례 배너를 겸한다: 누구 차례인지 함께 알리고, 끝날 때까지 굴리기를 막는다
 	var first: int = manager.current_player_id()
-	var whose: String = tr_ui("turn.mine") if ai_mode and first == local_player_id else tr_ui("turn.other", [_player_name(first)])
-	var body: String = whose + ("\n템포 업 Lv.%d %s · 차례 첫 이동 +%d칸" % [tempo, TempoUp.stage_name(tempo), TempoUp.move_bonus(state.round_number)] if tempo > 0 else "")
+	var whose: String = tr_ui("turn.stamp_mine") if ai_mode and first == local_player_id else tr_ui("turn.stamp_other", [_player_name(first)])
+	var sub: String = whose + ("  ·  " + "템포 업 Lv.%d · 첫 이동 +%d칸" % [tempo, TempoUp.move_bonus(state.round_number)] if tempo > 0 else "")
 	if _fx_on():
 		Sfx.play(&"round_start")
-	_announce("라운드", "%d라운드 시작!" % state.round_number, body, COLOR_GOLD, null, 1.0)
+	_announce("라운드", "ROUND %d" % state.round_number, "", COLOR_GOLD, null, 1.0, true, {"key": "round", "sub": sub})
 
 
 ## 새 차례인데 아직 [OO 차례] 배너를 띄우지 못했다 (앞 연출이 끝나기를 기다리는 중): 그동안 봇·굴리기 버튼은 움직이지 않는다.
@@ -3754,10 +3754,11 @@ func _check_turn_banner() -> void:
 		return
 	_announced_turn_key = key
 	var player_id: int = manager.current_player_id()
-	var who: String = tr_ui("turn.mine") if (not ai_mode or player_id == local_player_id) and ai_mode else tr_ui("turn.other", [_player_name(player_id)])
+	var mine: bool = ai_mode and player_id == local_player_id
+	var who: String = tr_ui("turn.stamp_mine") if mine else tr_ui("turn.stamp_other", [_player_name(player_id)])
 	if _fx_on():
 		Sfx.play(&"turn_start")
-	_announce("턴", who, "", PLAYER_COLORS[player_id], null, TURBO_TURN_BANNER_SECONDS if _turbo_turn() else TURN_BANNER_SECONDS)
+	_announce("턴", who, "", PLAYER_COLORS[player_id], null, TURBO_TURN_BANNER_SECONDS if _turbo_turn() else TURN_BANNER_SECONDS, true, {"key": "turn_mine" if mine else "turn_other"})
 
 
 ## 프로필에 보여 줄 이름: AI 대전에서는 내 닉네임과 "컴퓨터 n", 4P 수동 조작에서는 "플레이어 n".
@@ -6538,7 +6539,50 @@ func _on_skill_used(data: Dictionary) -> void:
 			body = "%d번 타일에 호텔 건설 (밟은 적은 멈춤)" % int(data["from"])
 	_log_line("[필살기] %s: %s - %s" % [who, PawnCatalog.skill_name(skill), body.replace("\n", " ")], Color("ffa94d"))
 	if skill != &"shoot":
-		_announce_gate(tr_ui("skill.tag"), "[P%d 발동!] %s" % [player_id, PawnCatalog.skill_name(skill)], body, PLAYER_COLORS[player_id], null, 1.3)
+		_announce_gate(tr_ui("skill.tag"), "%s!" % PawnCatalog.skill_name(skill), "", PLAYER_COLORS[player_id], _skill_cutin(pawn, PLAYER_COLORS[player_id]), 1.3, {"key": "skill_" + String(skill), "sub": who})
+
+
+## 필살기 컷씬: 기물 그림이 옆에서 미끄러져 들어와 도장(필살기 이름) 위에 선다. 그림이 없으면 null (도장만).
+func _skill_cutin(pawn: PlayerPawn, color: Color) -> Control:
+	if pawn == null:
+		return null
+	var art: Dictionary = PawnArt.sprite(pawn)
+	if art.is_empty():
+		return null
+	var atlas := AtlasTexture.new()
+	atlas.atlas = art["texture"]
+	atlas.region = art["region"]
+	var frame := Control.new()
+	frame.name = "SkillCutin"
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.custom_minimum_size = Vector2(320, 170)
+	var band := ColorRect.new()
+	band.color = Color(color.darkened(0.55), 0.85)
+	band.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	band.position = Vector2(-40, 58)
+	band.size = Vector2(400, 70)
+	band.rotation = deg_to_rad(-6.0)
+	frame.add_child(band)
+	var sprite := TextureRect.new()
+	sprite.texture = atlas
+	sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	sprite.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	sprite.size = Vector2(170, 170)
+	sprite.position = Vector2(75, 0)
+	frame.add_child(sprite)
+	# 알림 카드에 실려 화면에 나올 때 미끄러져 들어온다 (줄 서 있는 동안에는 숨어 있다).
+	frame.visibility_changed.connect(func() -> void:
+		if not frame.is_visible_in_tree() or instant_roll_for_test:
+			return
+		sprite.position.x = -260.0
+		sprite.modulate.a = 0.0
+		band.scale = Vector2(0.2, 1.0)
+		var slide: Tween = frame.create_tween().set_parallel(true)
+		slide.tween_property(sprite, "position:x", 75.0, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		slide.tween_property(sprite, "modulate:a", 1.0, 0.12)
+		slide.tween_property(band, "scale:x", 1.0, 0.16).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT))
+	return frame
 
 
 ## 실제 잡기만 공격자/피격자 아바타 포즈로 강조한다 (함정·자기 복귀 제외).
@@ -9998,7 +10042,8 @@ func _start_beat(seconds: float) -> void:
 
 
 ## blocking=false: 띄워만 두는 안내(차례·라운드·휴식 등). 굴림·이동·봇은 이 알림을 기다리지 않고 바로 이어진다 (_announce_soft).
-func _announce(tag: String, headline: String, body: String, color: Color, extra: Control = null, duration: float = 1.5, blocking: bool = true) -> int:
+## stamp를 주면 도장 알림 (EventAnnouncer.announce): 문장 대신 headline 한 마디가 크게 찍힌다.
+func _announce(tag: String, headline: String, body: String, color: Color, extra: Control = null, duration: float = 1.5, blocking: bool = true, stamp: Dictionary = {}) -> int:
 	if _announcer == null:
 		if extra != null:
 			extra.free()
@@ -10017,9 +10062,9 @@ func _announce(tag: String, headline: String, body: String, color: Color, extra:
 			if is_instance_valid(extra):
 				_announcement_extras.remove_child(extra)
 				extra.show()
-			_announce_now(tag, headline, body, color, extra, duration, blocking))
+			_announce_now(tag, headline, body, color, extra, duration, blocking, stamp))
 		return -1
-	return _announce_now(tag, headline, body, color, extra, duration, blocking)
+	return _announce_now(tag, headline, body, color, extra, duration, blocking, stamp)
 
 
 ## 차례 배너가 늦었는가: 굴림 연출 중이거나, 굴리기 전 단계(턴 시작·굴리기 대기)를 이미 지났다.
@@ -10030,11 +10075,11 @@ func _turn_banner_stale() -> bool:
 
 
 ## 띄워만 두는 안내 (Fire-and-Forget): 처치 컷인·결투·방어 선택 같은 중요한 장면이 아닌 일반 안내 배너.
-func _announce_soft(tag: String, headline: String, body: String, color: Color, extra: Control = null, duration: float = 1.5) -> int:
-	return _announce(tag, headline, body, color, extra, duration, false)
+func _announce_soft(tag: String, headline: String, body: String, color: Color, extra: Control = null, duration: float = 1.5, stamp: Dictionary = {}) -> int:
+	return _announce(tag, headline, body, color, extra, duration, false, stamp)
 
 
-func _announce_now(tag: String, headline: String, body: String, color: Color, extra: Control = null, duration: float = 1.5, blocking: bool = true) -> int:
+func _announce_now(tag: String, headline: String, body: String, color: Color, extra: Control = null, duration: float = 1.5, blocking: bool = true, stamp: Dictionary = {}) -> int:
 	if _announcer == null:
 		return -1
 	if tag == "턴" and _turn_banner_stale():
@@ -10042,15 +10087,15 @@ func _announce_now(tag: String, headline: String, body: String, color: Color, ex
 			extra.free()
 		return -1  # 연출 큐에서 차례가 늦게 돌아왔다: 이미 굴렸거나 다음 단계로 넘어갔으면 차례 배너는 띄우지 않는다
 	_announcer.instant = instant_roll_for_test
-	var serial: int = _announcer.announce(tag, headline, body, color, extra, duration * _pace(), blocking)
+	var serial: int = _announcer.announce(tag, headline, body, color, extra, duration * _pace(), blocking, stamp)
 	if _announcer.active:
 		_refresh_controls()
 	return serial
 
 
 ## 알림 카드가 끝난 직후 말 움직임 연출이 이어지도록 이 카드를 [문]으로 등록한다 (카드가 보드를 가리는 동안에는 말이 먼저 움직이지 않는다).
-func _announce_gate(tag: String, headline: String, body: String, color: Color, extra: Control = null, duration: float = 1.5) -> void:
-	var serial: int = _announce(tag, headline, body, color, extra, minf(duration, GATE_MAX_SECONDS))
+func _announce_gate(tag: String, headline: String, body: String, color: Color, extra: Control = null, duration: float = 1.5, stamp: Dictionary = {}) -> void:
+	var serial: int = _announce(tag, headline, body, color, extra, minf(duration, GATE_MAX_SECONDS), true, stamp)
 	if serial >= 0 and _fx_on():
 		_fx_gates.append(serial)
 		_fx_gate_open = false
@@ -10228,7 +10273,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_log_line("[템포 업] 결승선이 %d칸 당겨졌습니다 (%d번 칸부터 결승)%s" % [data["shrink"], data["zone_start"], ", 완주 %d" % finished_ids.size() if not finished_ids.is_empty() else ""], Color("ffd43b"))
 			_record(-1, "결승선 %d칸 당겨짐 (%d번부터 결승)%s" % [int(data["shrink"]), int(data["zone_start"]), " - 말 %d개 즉시 완주!" % finished_ids.size() if not finished_ids.is_empty() else ""])
 			if TempoUp.is_stage_round(int(data["round"])) or not finished_ids.is_empty():
-				_announce("템포 업", "결승선이 당겨진다!", "%d번 칸부터 결승선 - 라운드마다 %d칸씩 더 당겨집니다%s" % [data["zone_start"], TempoUp.GOAL_SHRINK_PER_ROUND, "\n말 %d개가 그 자리에서 완주!" % finished_ids.size() if not finished_ids.is_empty() else ""], Color("ffd43b"), null, 2.0)
+				_announce("템포 업", "결승선 당김!", "", Color("ffd43b"), null, 1.6, true, {"key": "goal_shrunk", "sub": "%d번 칸부터 결승" % int(data["zone_start"]) + ("  ·  " + "말 %d개 완주!" % finished_ids.size() if not finished_ids.is_empty() else "")})
 		&"tempo_boosted":
 			_roll_total[int(data["player_id"])] = int(data["to"])
 			_add_roll_reason(int(data["player_id"]), "템포 업 +%d" % (int(data["to"]) - int(data["from"])))
@@ -10256,7 +10301,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_record(rested, "강제 턴 패스")
 			if _fx_on():
 				Sfx.play(&"timeout")
-			_announce_soft("휴식", "강제 턴 패스!", "%s 이번 차례 쉬기" % _player_name(rested), Color("adb5bd"), null, 0.9)  # 쉬는 턴은 기다리지 않고 바로 다음 차례로
+			_announce_soft("휴식", "휴식…", "", Color("adb5bd"), null, 0.9, {"key": "rest", "sub": _player_name(rested)})  # 쉬는 턴은 기다리지 않고 바로 다음 차례로
 		&"stack_resolved":
 			var stack_names: Array[String] = []
 			for member_id: Variant in data["members"]:
@@ -10289,7 +10334,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 				_log_line("[카드] P%d [%s] 사용%s" % [player, card.display_name, " (개입 대기열 - 나중에 낸 카드부터 실행)" if data["queued"] else ""], Color("74c0fc"))
 				if ATTACK_CARDS.has(StringName(data["card_id"])):
 					# 공격 카드: 먼저 [공격 카드 발동!] 경보를 크게 띄우고, 그다음에 어떤 카드인지 공개한다
-					_announce(ATTACK_TAG, "공격 카드 발동!", "%s의 공격!" % _player_name(player), Color("ff4d4d"), null, 0.6)
+					_announce(ATTACK_TAG, "공격!", "", Color("ff4d4d"), null, 0.7, true, {"key": "attack", "sub": _player_name(player)})
 				_announce_gate("카드 발동", "[P%d 발동!] %s" % [player, card.display_name], ("개입 대기열 등록 (후입선출)\n" if data["queued"] else "") + card_summary(data["card_id"]), PLAYER_COLORS[player], _make_card_preview(data["card_id"]), 1.2)
 		&"npc_phase_resolved":
 			if not (data["reports"] as Array).is_empty():
@@ -10375,7 +10420,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 				if rank_no < _player_ids.size() - 1:  # 3위(마지막 졸업)부터는 결과 화면이 바로 이어진다 (팡파르도 시상대에 맡긴다)
 					if _fx_on():
 						Sfx.play_stinger(&"graduate")
-					_announce(tr_ui("rank.tag"), tr_ui("rank.banner", ["★ " if rank_no == 1 else "", _player_name(ranked), rank_no]), tr_ui("rank.body", [VictoryChecker.reason_text(rank_reason)]), PLAYER_COLORS[ranked], null, RANK_BANNER_SECONDS)
+					_announce(tr_ui("rank.tag"), "%d위 골인!" % rank_no, "", PLAYER_COLORS[ranked], null, RANK_BANNER_SECONDS, true, {"key": "rank_%d" % rank_no, "sub": "%s  ·  %s" % [_player_name(ranked), VictoryChecker.reason_text(rank_reason)]})
 					_profile_react(ranked, true, "%d위" % rank_no)
 					_start_beat(RANK_BEAT_SECONDS))
 		&"counter_offer":
@@ -10390,7 +10435,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_record(int(data["player_id"]), "이번 턴이 통째로 되감겼습니다")
 			_announce("방어", "[바이츠 더 더스트!]", "%s의 턴이 통째로 되감기고 끝났습니다" % _player_name(int(data["player_id"])), Color("4c6ef5"), null, 1.3)
 		&"extra_turn":
-			_announce_soft("XI. The World!!", tr_ui("turn.extra", [_player_name(int(data["player_id"]))]), "시간이 멈춘 사이 한 번 더 움직입니다", PLAYER_COLORS[int(data["player_id"])], null, 1.1)
+			_announce_soft("XI. The World!!", "한 번 더!", "", PLAYER_COLORS[int(data["player_id"])], null, 1.1, {"key": "extra_turn", "sub": _player_name(int(data["player_id"]))})
 		&"game_over":
 			_last_reason = data["reason"]
 	_refresh_all()
@@ -10957,7 +11002,7 @@ func _announce_bust(player_id: int, total: int) -> void:
 ## 이동 실패 알림: 결과 카드를 0.9초 보여 주고 프로필이 피격 반응을 한다. 알림이 떠 있는 동안 입력과 봇 행동은 멈춰 있어 다음 차례가 먼저 시작되지 않는다.
 func _announce_move_failed(headline: String, player_id: int, body: String = "") -> void:
 	_profile_react(player_id, false)
-	_announce("이동 실패", "[%s 이번 턴 이동 실패!]" % headline, body, Color("ff6b6b"), null, 0.9)
+	_announce("이동 실패", "이동 실패!", body, Color("ff6b6b"), null, 0.9, true, {"key": "move_failed", "sub": headline})
 	_start_beat(0.9)
 
 
