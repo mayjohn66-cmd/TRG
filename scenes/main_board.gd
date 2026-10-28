@@ -4367,6 +4367,7 @@ func _update_reaction_popup(delta: float) -> void:
 		if _announcer != null and _announcer.visible and not _announcer.instant:
 			return  # 공격 카드 도장이 끝난 뒤에 방어 팝업을 띄운다 (도장 위에 팝업이 겹치지 않게)
 		_build_reaction_popup(holder, key)
+		_refresh_tool_stage()  # 팝업이 떠 있는 동안 굴림 스테이지(야추·블랙잭·핀볼)는 숨긴다
 	if _reaction_bar == null:
 		return
 	_reaction_left -= delta
@@ -4451,6 +4452,8 @@ func _close_reaction_popup() -> void:
 		_reaction_use_button = null
 		_reaction_pass_button = null
 		_reaction_bar = null
+		if state != null:
+			_refresh_tool_stage()  # 팝업 때문에 숨겼던 굴림 스테이지를 되살린다
 	_reaction_key = ""
 
 
@@ -6072,7 +6075,7 @@ func _refresh_roll_pad() -> void:
 	var own_fx: bool = _fx_busy and manager.current_player_id() == _dock_owner() and not _presenter_showing()
 	_roll_button.visible = wanted == RollPad.Kind.NONE and roll_phase and mode != &"stage"
 	# 리볼버가 '준비' 중이라 active여도, 막는 중앙 알림(카드·공격·방어 도장)이 떠 있는 동안에는 숨긴다 (도장 밑에 총이 비치지 않게). 쏘는 중에는 그대로.
-	var pad_busy: bool = _roll_pad.active and not (_roll_pad.preparing and _announcer != null and _announcer.holding())
+	var pad_busy: bool = _roll_pad.active and not (_roll_pad.preparing and ((_announcer != null and _announcer.holding()) or _presentation_active()))
 	if wanted != RollPad.Kind.NONE:
 		_roll_pad.visible = roll_phase or own_fx or pad_busy
 	_gun_row.visible = wanted == RollPad.Kind.REVOLVER and (roll_phase or own_fx or pad_busy)
@@ -10864,9 +10867,15 @@ func _refresh_tool_stage() -> void:
 		_stage_turn_key = turn_key
 		stage.call("reset")
 	# 굴리기 화면은 앞선 연출이 다 끝난 뒤에만 뜬다. 이미 굴리는 중(연출·야추 중간 상태)이면 그대로 둔다.
-	var in_roll: bool = _roll_view_allowed()
+	# 앞 사람의 다른 스테이지가 아직 굴러가는 중이거나, 방어 팝업이 떠 있으면 이 스테이지를 겹쳐 띄우지 않는다.
+	var other_rolling: bool = false
+	for other: Control in [_stage_yacht, _stage_blackjack, _stage_pinball]:
+		if other != null and other != stage and other.visible and bool(other.get("active")):
+			other_rolling = true
+	var popup_open: bool = _reaction_popup != null and is_instance_valid(_reaction_popup)
+	var in_roll: bool = _roll_view_allowed() and not other_rolling and not popup_open
 	# 굴림 연출(_fx_busy)이 다른 도구의 연출기(_presenter)라면 앞 사람의 굴림이다: 이 스테이지를 그 위에 겹쳐 띄우지 않는다.
-	var mid_roll: bool = (_fx_busy and not _foreign_roll_fx()) or bool(stage.get("active")) or (tool.has_pending_state() and not (_announcer != null and _announcer.holding()))
+	var mid_roll: bool = bool(stage.get("active")) or (not popup_open and not other_rolling and ((_fx_busy and not _foreign_roll_fx()) or (tool.has_pending_state() and not (_announcer != null and _announcer.holding()))))
 	stage.set("instant", instant_roll_for_test)
 	stage.visible = in_roll or mid_roll
 	var acting: bool = not _roll_button.disabled
