@@ -601,6 +601,8 @@ var _match_background: TextureRect = null
 var _track_lines: Array[Line2D] = []
 var _action_row: HFlowContainer = null
 var _roll_pad: RollPad = null
+var _roll_history: RollHistory = null
+var _roll_turn_serial := 0
 var _roll_geometry: StringName = &""
 
 var _choice_overlay: Control = null
@@ -768,6 +770,9 @@ func _process(delta: float) -> void:
 	if _stack_overlay == null and manager.stack_offer_pending():
 		_refresh_stack_overlay()  # 알림이 끝나는 순간 업기 선택 창을 띄운다
 	var roll_view: bool = _roll_view_allowed()
+	if _roll_history != null:
+		if roll_view and not _fx_busy and _roll_history.turn_id!=_roll_turn_serial: _roll_history.clear()
+		_place_roll_history()
 	if roll_view != _last_roll_view:
 		_last_roll_view = roll_view
 		_refresh_controls()
@@ -5959,6 +5964,21 @@ func _roll_view_allowed() -> bool:
 	return true
 
 
+## Keep the history beside the tool, independent of throw motion and banners.
+func _place_roll_history() -> void:
+	if _roll_history==null or not _roll_history.visible: return
+	var stage := _stage_for(_roll_history.tool_id)
+	var at: Vector2
+	if stage!=null:
+		_roll_history.set_width(stage.size.x)
+		at = stage.position-Vector2(0,_roll_history.size.y+12)
+	else:
+		_roll_history.set_width(RollHistory.WIDTH)
+		var half := 205.0 if _roll_history.tool_id in [&"REVOLVER",&"LIFE_ROULETTE"] else 170.0
+		at = _board_center()+Vector2(-half-RollHistory.WIDTH-14,10-_roll_history.size.y*0.5)
+	_roll_history.position = at.clamp(Vector2(12,12),get_viewport_rect().size-_roll_history.size-Vector2(12,12))
+
+
 func _refresh_roll_pad() -> void:
 	# A fired outcome advances the engine turn immediately. Keep the current
 	# visual until its local timeline finishes, even if the next tool differs.
@@ -6873,6 +6893,7 @@ func _enqueue_batch(entries: Array[Dictionary]) -> void:
 
 ## 연출 큐를 비우고 재생 중인 러너를 멈춘다 (판 초기화·되감기·테스트 정리용). 이미 시작된 트윈은 건드리지 않는다.
 func _reset_presentation() -> void:
+	if _roll_history != null: _roll_history.clear()
 	var bang_stage: Node2D = get_node_or_null("BangStage")
 	if bang_stage != null:
 		bang_stage.cancel()
@@ -9360,6 +9381,7 @@ func _clear_highlight() -> void:
 # ---------------------------------------------------------------------------
 
 func _on_phase_changed(new_state: TurnManager.State, _player_id: int, _limit: float) -> void:
+	if new_state==TurnManager.State.PHASE_TURN_BEGIN: _roll_turn_serial += 1
 	if new_state == TurnManager.State.PHASE_TURN_BEGIN or new_state == TurnManager.State.PHASE_ROUND_START:
 		_spotlight_turn = false  # 주목 구간은 한 턴 동안만
 		sweep_oneshot_fx()  # 턴·라운드 경계: 수명이 지났는데 남은 일회성 연출 노드를 치운다
@@ -10248,6 +10270,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_log_line("[방어 성공] %s의 [%s]!" % [_player_name(int(data["victim"])), _card_name(data["card_id"])], Color("74c0fc"))
 			_profile_react(int(data["victim"]), true)
 		&"turn_rewound":
+			_roll_history.clear()
 			_record(int(data["player_id"]), "이번 턴이 통째로 되감겼습니다")
 			_announce("방어", "[바이츠 더 더스트!]", "%s의 턴이 통째로 되감기고 끝났습니다" % _player_name(int(data["player_id"])), Color("4c6ef5"), null, 1.3)
 		&"extra_turn":
@@ -10571,6 +10594,8 @@ func _build_roll_fx() -> void:
 	add_child(_danger_label)
 	_presenter = RollPresenter.new()
 	add_child(_presenter)
+	_roll_history = RollHistory.new()
+	add_child(_roll_history)
 	_draw_fx = CardDrawFX.new()
 	_draw_fx.name = "CardDrawFX"
 	_draw_fx.z_index = 30
@@ -10703,8 +10728,11 @@ func _on_stage_stand() -> void:
 
 ## 엔진이 확정한 굴림 결과를 연출한 뒤 로그·중앙 배너로 공개한다. 연출 중에는 입력을 잠가 결과가 먼저 새지 않게 한다.
 func _handle_roll_event(data: Dictionary) -> void:
+	data = data.duplicate()
+	data["_history_turn"] = _roll_turn_serial
 	var result: Dictionary = data["result"]
 	var tool_id: StringName = result["tool_id"]
+	_roll_history.arm(_roll_turn_serial,int(data["player_id"]),tool_id)
 	if _announcer != null:
 		_announcer.dismiss_soft()  # 굴림이 시작되면 남아 있는 차례·라운드 안내 배너는 걷는다 (주사위와 겹치지 않게)
 	_presenter.instant = instant_roll_for_test
@@ -10818,6 +10846,8 @@ func _announce_move_failed(headline: String, player_id: int, body: String = "") 
 
 
 func _reveal_roll(data: Dictionary) -> void:
+	_roll_history.reveal(int(data.get("_history_turn",_roll_turn_serial)),int(data["player_id"]),data["result"])
+	_place_roll_history()
 	_show_gambler_flash(int(data["player_id"]),(data["result"] as Dictionary).get("tool_id",&""))
 	var roll_text: String = _log_roll(data)
 	var details: Dictionary = (data["result"] as Dictionary)["details"]

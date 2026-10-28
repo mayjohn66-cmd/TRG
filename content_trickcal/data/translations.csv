@@ -2281,3 +2281,13 @@ v%s · 비공식 팬게임 (원작사와 무관한 비영리 무료 배포물),v
 차례 첫 이동 +2칸 · 리벤지 +6칸 · 초증강 확률 상승,First move +2 · Revenge +6 · Hyper odds up,最初の移動 +2マス · リベンジ +6マス · 超増強の確率アップ
 차례 첫 이동 +4칸 · 리벤지 +8칸 · 법전 확률 상승 · 결승선이 라운드마다 3칸씩 당겨짐,First move +4 · Revenge +8 · Codex odds up · finish line moves 3 spaces closer each round,最初の移動 +4マス · リベンジ +8マス · 法典の確率アップ · ゴールがラウンドごとに3マスずつ近づく
 전원 차례 첫 이동 +6칸 · 결승선이 출발선 앞까지 계속 당겨짐,Everyone's first move +6 · finish line keeps closing in toward the start,全員の最初の移動 +6マス · ゴールがスタート手前までどんどん近づく
+성공,Success,成功
+실패,Failure,失敗
+턴 종료,Turn ends,ターン終了
+한 번 더,Roll again,もう一度
+계속 도전 가능,Keep going,続けて挑戦可能
+%d회 굴림,%d rolls,%d回ロール
+%d회 성공,%d successes,成功%d回
+%d칸 누적,Saved: %d spaces,累積%dマス
+%d칸 확정,Move %d spaces,%dマス確定
+합계 %d,Total %d,合計%d
