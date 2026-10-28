@@ -3354,7 +3354,7 @@ func _refresh_now() -> void:
 	_refresh_overlays()
 	_refresh_super_marks()
 	if _draw_fx != null:
-		_draw_fx.set_deck_visible(not _draft_in_progress() and not _intro_blocks() and not manager.is_game_over)
+		_draw_fx.set_deck_visible(not _draft_in_progress() and not _intro_blocks() and not manager.is_game_over and _result_overlay == null)
 	_check_round_banner()
 	_check_turn_banner()
 
@@ -9087,6 +9087,8 @@ func _show_result_overlay() -> void:
 	_result_hold = false
 	_report_match_once()
 	_close_result_overlay()
+	if _draw_fx != null:
+		_draw_fx.set_deck_visible(false)  # 결과 화면에는 카드 더미를 띄우지 않는다
 	_result_overlay = _new_overlay()
 	var center := CenterContainer.new()
 	center.set_anchors_preset(Control.PRESET_FULL_RECT)
