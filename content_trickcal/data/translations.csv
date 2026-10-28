@@ -2385,3 +2385,12 @@ X · 출발선으로!,X · Back to Start!,X · スタートへ！
 %s 턴 취소,%s's turn undone,%sのターン取り消し
 BUST!,BUST!,BUST！
 접시 밖 · 0칸,Off the bowl · 0 spaces,皿の外 · 0マス
+카드 발동!,CARD!,カード発動！
+방어 발동!,DEFENSE!,防御発動！
+함정 발동!,TRAP!,罠発動！
+함정 연쇄!,TRAP CHAIN!,罠連鎖！
+필살기 발동!,SKILL!,必殺技発動！
+법전 발동!,LAW!,法典発動！
+타로 발동!,TAROT!,タロット発動！
+중립 기물 출동!,"NEUTRAL PIECE, GO!",中立駒出動！
+초증강 발동!,SUPER AUGMENT!,超増強発動！

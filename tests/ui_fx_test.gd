@@ -2504,7 +2504,7 @@ func _test_event_order() -> void:
 	_expect(saw_runner, "소환 기물이 길을 따라 달리는 모습이 보인다")
 	_expect(victim_seen_while_running, "기물이 달리는 동안 잡힐 말은 아직 보드 위에 있다 (사출은 그 뒤)")
 	var headlines: Array = _board._announcer.history.slice(history_before)
-	_expect(headlines.has("사료스탕스 출동!"), "[사료스탕스 출동!] 도장 알림 (%s)" % str(headlines))
+	_expect(headlines.has("중립 기물 출동!"), "[중립 기물 출동!] 도장 알림 (%s)" % str(headlines))
 	var npc_cards: Array = headlines.filter(func(h: String) -> bool: return h.contains("출동") or h.contains("중립 기물") or h.contains("NPC") or h.contains("사라졌") or h.contains("말을 잡았습니다"))
 	_expect(npc_cards.size() == 1, "중립 기물 알림은 [출동!] 한 장뿐 (사라짐·잡음 카드는 띄우지 않는다: %s)" % str(npc_cards))
 	_expect(_board._pawn_layer.find_child("NpcRunner", false, false) == null, "달리기 연출 노드는 끝나면 사라진다")
@@ -2535,13 +2535,13 @@ func _test_event_order() -> void:
 		await create_timer(0.05).timeout
 		waited += 0.05
 	headlines = _board._announcer.history.slice(history_before)
-	var domino_at: int = headlines.find("도미노 연쇄!")
+	var domino_at: int = headlines.find("함정 연쇄!")
 	var pit_at: int = -1
 	for index: int in headlines.size():
-		if str(headlines[index]) == _board._attachment_name("TRP_02") + "!":
+		if str(headlines[index]) == "함정 발동!":
 			pit_at = index
 	_expect(domino_at != -1 and (pit_at == -1 or domino_at < pit_at), "[도미노 연쇄!]가 연쇄 함정보다 먼저 (%s)" % str(headlines))
-	_expect(headlines.count("도미노 연쇄!") == 1, "도미노 자신의 발동 알림은 [도미노 연쇄!] 뒤에 다시 뜨지 않는다 (%s)" % str(headlines))
+	_expect(headlines.count("함정 연쇄!") == 1, "도미노 자신의 발동 알림은 [함정 연쇄!] 뒤에 다시 뜨지 않는다 (%s)" % str(headlines))
 	# 3) 처치는 말이 도착하자마자: 같은 이동의 빵집·점프 배지보다 컷인·사출이 먼저 나온다
 	for pawn: PlayerPawn in state.pawns:
 		pawn.reset_to_start()
