@@ -87,13 +87,17 @@ func test_end_line_carries_the_difficulty_figures() -> void:
 func test_vote_line_and_choices() -> void:
 	check_eq(MatchTelemetry.vote_tag(), "[%s%s 유저 미니투표]" % [String.chr(0x1F5F3), String.chr(0xFE0F)], "🗳️")
 	var choices: Array = MatchTelemetry.vote_choices()
-	check_eq(choices.size(), 4, "버튼 4개")
-	check(str(choices[0][1]).ends_with("딱 재밌어요!") and str(choices[3][2]) == "한 판이 너무 길어요", "디스코드 글·화면 글")
+	check_eq(choices.size(), 5, "버튼 5개")
+	check(str(choices[0][1]).ends_with("템포·역전 각 딱 재밌어요!") and str(choices[3][2]) == "말이 자꾸 죽어서 완주가 답답해요", "디스코드 글·화면 글")
+	for choice: Array in choices:
+		check(not L10n.has_hangul(L10n.translate_text(str(choice[2]), "en")) and not L10n.has_hangul(L10n.translate_text(str(choice[2]), "ja")), "투표 버튼 번역 (%s)" % choice[2])
 	var line: String = MatchTelemetry.vote_line("교주(#A7B2)", str(choices[1][1]), "  빵집 털이 사기\n진짜로  ", 3, 14)
 	check_eq(line, "%s 교주(#A7B2) | %s | 빵집 털이 사기 진짜로 | (3위 · 14라운드)" % [MatchTelemetry.vote_tag(), choices[1][1]], "투표 한 줄 (줄바꿈·앞뒤 공백 정리)")
 	check(MatchTelemetry.vote_line("A(#B2C3)", "x", "", 0, 5).ends_with("| x | - | (순위 - · 5라운드)"), "한줄평이 없으면 -")
 	check(MatchTelemetry.vote_line("A", "x", "가".repeat(300), 1, 1).length() < 200, "한줄평은 잘린다")
 	check_eq(MatchTelemetry.vote_line("A", "x", "", 2, 9, "놀이터 %s" % BotTemper.tag(5)), "%s A | 놀이터 [Lv.5 핵불닭] | x | - | (2위 · 9라운드)" % MatchTelemetry.vote_tag(), "투표에 놀이터 난이도 태그")
+	var detail: String = MatchTelemetry.vote_line("A", "x", "", 1, 3, "", {"stacks": 4, "skills": 1, "cards": 6, "law_pct": 75, "speed": 2})
+	check(detail.ends_with("\n[행동 분석] 아군 업기 성사: 4회 | 기물 필살기 사용: 1회 | 생떼 카드 사용: 6장 | 달성/보유 법전 진행도: 최대 75% | 배속 설정: 2x"), "투표에 행동 분석 줄 (%s)" % detail)
 	for level: int in BotTemper.ALL:
 		check(BotTemper.tag(level).begins_with("[Lv.%d " % level), "난이도 태그 %d" % level)
 

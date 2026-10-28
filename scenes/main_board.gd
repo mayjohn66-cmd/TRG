@@ -407,6 +407,8 @@ var _dock_player: int = -1
 var _debug_toggle: Button = null
 ## 이 판의 [매치 완료]를 이미 보냈다 (판마다 한 번).
 var _match_complete_sent: bool = false
+## 플레이어 의도 수행 지표(투표·피드백 웹후크용): 플레이어 ID -> {"stacks", "skills", "cards", "law_pct"}. 판마다 새로 센다.
+var _behavior: Dictionary = {}
 ## 통계: 이 판이 이 사람의 몇 번째 판인지, 언제 시작했는지, 내가 고른 증강 이름들.
 var _match_number: int = 0
 var _match_started_msec: int = 0
@@ -1038,6 +1040,58 @@ func _send_match_complete_webhook(my_rank: int) -> bool:
 	return MatchTelemetry.report_match_end(self, nth, _telemetry_mode(), int(state.round_number), seconds, maxi(my_rank, 0), reason, augments, _difficulty_report(my_rank, first))
 
 
+## 플레이어 의도 수행 지표를 센다: 업기 성사 / 필살기 사용 / 카드 사용 / 법전 진행도 최대치 (판마다).
+func _track_behavior(kind: StringName, data: Dictionary) -> void:
+	if state == null:
+		return
+	match kind:
+		&"move_resolved":
+			if not (data.get("stacked", []) as Array).is_empty():
+				var mover: PlayerPawn = state.get_pawn(int(data.get("pawn_id", -1)))
+				if mover != null:
+					_bump_behavior(mover.owner_id, "stacks")
+		&"stack_resolved":
+			if bool(data.get("stacked", false)):
+				_bump_behavior(int(data.get("player_id", -1)), "stacks")
+		&"skill_used":
+			_bump_behavior(int(data.get("player_id", -1)), "skills")
+		&"card_played":
+			_bump_behavior(int(data.get("player_id", -1)), "cards")
+	# 법전 진행도: 법전은 달성되면 지워지므로 이벤트마다 최대치를 기억한다 (특수 승리로 졸업하면 100%).
+	for law: LawResource in state.rulebook.active_laws_queue:
+		var victory: VictoryLaw = law as VictoryLaw
+		if victory == null or victory.goal() <= 0:
+			continue
+		for player_id: int in state.player_ids:
+			var pct: int = mini(roundi(100.0 * float(victory.progress(state, player_id)) / float(victory.goal())), 100)
+			var entry: Dictionary = _behavior_of(player_id)
+			entry["law_pct"] = maxi(int(entry["law_pct"]), pct)
+	if kind == &"player_ranked" and LawRegistry.ALL_IDS.has(str(data.get("reason", ""))):
+		_behavior_of(int(data.get("player_id", -1)))["law_pct"] = 100
+
+
+func _behavior_of(player_id: int) -> Dictionary:
+	if not _behavior.has(player_id):
+		_behavior[player_id] = {"stacks": 0, "skills": 0, "cards": 0, "law_pct": 0}
+	return _behavior[player_id]
+
+
+func _bump_behavior(player_id: int, key: String) -> void:
+	if player_id >= 1:
+		var entry: Dictionary = _behavior_of(player_id)
+		entry[key] = int(entry[key]) + 1
+
+
+## 투표·피드백에 붙일 '나'의 행동 지표 (나가 없는 4인 수동은 빈 값). 배속은 지금 설정.
+func behavior_report() -> Dictionary:
+	var seat: int = _telemetry_seat()
+	if seat == -1 or state == null:
+		return {}
+	var report: Dictionary = _behavior_of(seat).duplicate()
+	report["speed"] = 1 if net != null else GameSession.game_speed
+	return report
+
+
 ## 체감 난이도 지표: 1위 이름, 내 킬/데스, 누적 [N판 중 1위 M회] ('나'가 없는 4인 수동은 1위 이름만). 누적 기록은 이때 한 판 늘린다.
 func _difficulty_report(my_rank: int, first: int) -> Dictionary:
 	var report: Dictionary = {"winner": _player_name(first) if first != -1 else ""}
@@ -1053,6 +1107,7 @@ func _difficulty_report(my_rank: int, first: int) -> Dictionary:
 
 func _new_game() -> void:
 	_match_complete_sent = false
+	_behavior.clear()
 	sweep_oneshot_fx(true)  # 다시 하기: 앞 판의 일회성 연출은 수명과 상관없이 모두 치운다
 	# Initial scene entry has already selected a backdrop; an actual rematch repicks.
 	if state != null and _match_background != null:
@@ -9136,7 +9191,7 @@ func _show_result_overlay() -> void:
 			brag.text = "복사했어요! 붙여 넣어 자랑하세요")
 		buttons.add_child(brag)
 	# 한 판이 끝난 순간이 가장 할 말이 많을 때다: 결과 창 아래에 후기·밸런스 피드백 버튼을 크게 둔다.
-	var review: Button = _make_button(tr_ui("result.feedback"), _open_feedback.bind("결과 화면", FeedbackModal.Kind.BALANCE), 18, Color("c2255c"))
+	var review: Button = _make_button(tr_ui("result.feedback"), _open_feedback.bind("결과 화면", FeedbackModal.Kind.BALANCE, true), 18, Color("c2255c"))
 	review.name = "ReviewFeedbackButton"
 	review.custom_minimum_size = Vector2(0, 50)
 	box.add_child(review)
@@ -9176,21 +9231,23 @@ func _build_vote_bar() -> Control:
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 6)
 	bar.add_child(column)
-	var question: Label = _make_label("이번 판 난이도와 템포는 어떠셨나요? (클릭 시 개발자에게 바로 전달됩니다!)", 16, COLOR_GOLD)
+	var question: Label = _make_label("이번 판 어떠셨나요? 가장 가까운 하나를 눌러 주세요 (개발자에게 바로 전달!)", 16, COLOR_GOLD)
 	question.name = "VoteQuestion"
 	question.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(question)
-	var row := HBoxContainer.new()
+	var row := GridContainer.new()  # 5종: 3 + 2줄
 	row.name = "VoteButtons"
-	row.add_theme_constant_override("separation", 8)
+	row.columns = 3
+	row.add_theme_constant_override("h_separation", 8)
+	row.add_theme_constant_override("v_separation", 6)
 	column.add_child(row)
-	var tints: Array[Color] = [Color("e8590c"), Color("c2255c"), Color("5f3dc4"), Color("2b8a3e")]
+	var tints: Array[Color] = [Color("e8590c"), Color("1971c2"), Color("c2255c"), Color("5f3dc4"), Color("2b8a3e")]
 	var choices: Array = MatchTelemetry.vote_choices()
 	for index: int in choices.size():
 		var choice: Array = choices[index]
-		var button: Button = _make_button(str(choice[2]), Callable(), 15, tints[index % tints.size()])
+		var button: Button = _make_button(str(choice[2]), Callable(), 14, tints[index % tints.size()])
 		button.name = "Vote_%s" % choice[0]
-		button.custom_minimum_size = Vector2(0, 40)
+		button.custom_minimum_size = Vector2(0, 32)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.pressed.connect(_on_vote_pressed.bind(bar, str(choice[1]), index != 0))
 		row.add_child(button)
@@ -9203,9 +9260,9 @@ func _on_vote_pressed(bar: Control, choice: String, ask_more: bool) -> void:
 	bar.set_meta("voted", true)
 	var seat: int = _telemetry_seat()
 	var my_rank: int = state.rankings.find(seat) + 1 if seat != -1 and state != null else 0
-	MatchTelemetry.report_vote(self, choice, "", my_rank, state.round_number if state != null else 0, _telemetry_mode())
+	MatchTelemetry.report_vote(self, choice, "", my_rank, state.round_number if state != null else 0, _telemetry_mode(), behavior_report())
 	if ask_more:
-		_open_feedback("결과 화면 투표: %s" % choice, FeedbackModal.Kind.BALANCE)
+		_open_feedback("결과 화면 투표: %s" % choice, FeedbackModal.Kind.BALANCE, true)
 	for child: Node in bar.get_children():
 		child.queue_free()
 	var thanks: Label = _make_label("소중한 의견 감사합니다!", 18, Color("69db7c"))
@@ -10085,6 +10142,7 @@ func _on_law_applied(law: LawResource, timing: String, dice_before: int, dice_af
 
 
 func _on_event(kind: StringName, data: Dictionary) -> void:
+	_track_behavior(kind, data)
 	match kind:
 		&"roll_resolved":
 			_handle_roll_event(data)
@@ -11171,11 +11229,12 @@ func _refresh_speed_button() -> void:
 
 
 ## 피드백 창을 연다 (상단 버튼 / 결과 화면). 이미 열려 있으면 그 창을 둔다.
-func _open_feedback(from: String = "", initial_kind: FeedbackModal.Kind = FeedbackModal.Kind.BUG) -> FeedbackModal:
+## survey: 결과 화면에서 연 후기 창이면 체크리스트(즐긴 재미·막힌 곳) + 한 줄 질문으로 연다.
+func _open_feedback(from: String = "", initial_kind: FeedbackModal.Kind = FeedbackModal.Kind.BUG, survey: bool = false) -> FeedbackModal:
 	var existing: Node = find_child("FeedbackModal", false, false)
 	if existing != null and not existing.is_queued_for_deletion():
 		return existing as FeedbackModal
-	return FeedbackModal.open(self, _build_diagnostic_snapshot, from, initial_kind)
+	return FeedbackModal.open(self, _build_diagnostic_snapshot, from, initial_kind, survey, MatchTelemetry.behavior_line(behavior_report()))
 
 
 const SNAPSHOT_LOG_LINES: int = 15

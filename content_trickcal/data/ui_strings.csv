@@ -72,3 +72,17 @@ feedback.copied,클립보드에 피드백과 게임 로그가 복사되었습니
 btn.speed,배속 %dx,Speed %dx,倍速 %dx
 btn.speed_tip,진행 속도 (1x -> 2x -> 3x): 말 이동·연출·컴퓨터 생각 시간이 모두 빨라집니다,"Game Speed (1x -> 2x -> 3x): Speeds up pawn movement, cutscenes, and AI thinking.",進行速度 (1x -> 2x -> 3x): 駒の移動・演出・AIの思考時間がすべて速くなります
 btn.speed_online_tip,온라인 대전은 모두가 같은 속도로 보도록 1x로 고정됩니다,Locked to 1x in Online matches so everyone stays synced.,オンライン対戦では全員が同じ速度で見るため1xに固定されます
+survey.q1,이번 판에서 가장 유용했거나 재밌었던 요소는 무엇인가요? (여러 개 선택),What was most useful or fun this match? (pick any),今回いちばん役立った・楽しかった要素は？（複数選択可）
+survey.q2,플레이 중 헷갈리거나 막혔던 부분이 있었나요? (여러 개 선택),Was anything confusing or did you get stuck? (pick any),プレイ中に迷ったり詰まったところはありましたか？（複数選択可）
+survey.q3_hint,"어떤 순간에 막혔는지, 혹은 너무 사기거나 아쉬웠던 증강/기물이 있다면 편하게 적어주세요!","Tell us where you got stuck, or any augment/pawn that felt broken or disappointing!",どこで詰まったか、強すぎ・物足りない増強や駒があれば気軽に書いてください！
+survey.fun_stack,말 업기(합체) 돌파,Stacking pawns to break through,駒のおんぶ（合体）で突破
+survey.fun_skill,기물 진화·필살기,Pawn evolution & skills,駒の進化・必殺技
+survey.fun_tool,주사위 도구 교체,Swapping dice tools,ダイス道具の交換
+survey.fun_law,법전 특수 승리,Codex special victory,法典の特殊勝利
+survey.fun_card,생떼 카드·초증강,Cards & hyper augments,カード・超増強
+survey.fun_none,기능을 잘 모르고 굴리기만 했어요,I just rolled without knowing the features,機能がよく分からず振っていただけ
+survey.block_clear,막힌 곳 없이 술술 이해됐어요,Everything was clear,詰まらずスラスラ理解できた
+survey.block_text,증강/기물 설명이 눈에 안 들어왔어요,Augment/pawn texts were hard to read,増強・駒の説明が頭に入らなかった
+survey.block_fast,상대 턴이나 연출이 너무 빨라 상황 파악을 놓쳤어요,Opponent turns/effects were too fast to follow,相手のターンや演出が速すぎて状況を見失った
+survey.block_why,내 말이 왜 죽었는지 / 왜 갑자기 많이 이동했는지 몰랐어요,Didn't know why my pawn died or suddenly moved far,なぜ駒がやられたのか・急に大きく動いたのか分からなかった
+survey.block_howto,기물 필살기나 카드를 언제 어떻게 쓰는지 몰랐어요,Didn't know when/how to use skills or cards,必殺技やカードをいつどう使うか分からなかった

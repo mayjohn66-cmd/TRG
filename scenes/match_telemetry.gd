@@ -53,13 +53,24 @@ static func vote_tag() -> String:
 
 
 ## 결과 화면의 원클릭 소감 투표: [id, 디스코드에 보낼 글(이모지 포함), 화면에 쓸 글]. 게임 글꼴에는 이모지가 없어 화면 글자에서는 뺀다.
+## 2026-10-28: 개발자가 의도한 핵심 시스템 중 어디서 막혔는지 짚는 5종 (첫 번째만 '의도대로 재밌음').
 static func vote_choices() -> Array:
 	return [
-		[&"fun", "%s 딱 재밌어요!" % String.chr(0x1F525), "딱 재밌어요!"],  # 🔥
-		[&"spicy", "%s AI/억까가 너무 매워요" % String.chr(0x1F608), "AI/억까가 너무 매워요"],  # 😈
-		[&"confusing", "%s 룰·효과 파악이 어려워요" % String.chr(0x1F92F), "룰·효과 파악이 어려워요"],  # 🤯
-		[&"long", "%s 한 판이 너무 길어요" % String.chr(0x1F422), "한 판이 너무 길어요"],  # 🐢
+		[&"fun", "%s 템포·역전 각 딱 재밌어요!" % String.chr(0x1F525), "템포·역전 각 딱 재밌어요!"],  # 🔥 의도대로 작동
+		[&"why", "%s 왜 이겼는지/졌는지 모르겠어요" % String.chr(0x2753), "왜 이겼는지/졌는지 모르겠어요"],  # ❓ 법전·초증강·승패 요인 인지 실패
+		[&"no_comeback", "%s 한 번 밀리니 역전이 안 돼요" % String.chr(0x1F4A5), "한 번 밀리니 역전이 안 돼요"],  # 💥 추격 기믹·리벤지 부스터 체감 부족
+		[&"stuck", "%s 말이 자꾸 죽어서 완주가 답답해요" % String.chr(0x1F422), "말이 자꾸 죽어서 완주가 답답해요"],  # 🐢 업기 미사용·후반 정체
+		[&"build", "%s 고른 증강/기물 효과를 잘 못 느꼈어요" % String.chr(0x1F3B2), "고른 증강/기물 효과를 잘 못 느꼈어요"],  # 🎲 빌드 시너지·필살기 활용 실패
 	]
+
+
+## 플레이어 의도 수행 지표 한 줄: 방금 판에서 핵심 시스템을 실제로 몇 번 썼는지 (투표·피드백에 붙여 '막혔다는 말'과 실제 행동을 대조한다).
+## behavior: {"stacks": 업기 성사, "skills": 필살기 사용, "cards": 카드 사용, "law_pct": 법전 진행도 최대 %, "speed": 배속}.
+static func behavior_line(behavior: Dictionary) -> String:
+	if behavior.is_empty():
+		return ""
+	return "[행동 분석] 아군 업기 성사: %d회 | 기물 필살기 사용: %d회 | 생떼 카드 사용: %d장 | 달성/보유 법전 진행도: 최대 %d%% | 배속 설정: %dx" % [
+		int(behavior.get("stacks", 0)), int(behavior.get("skills", 0)), int(behavior.get("cards", 0)), int(behavior.get("law_pct", 0)), int(behavior.get("speed", 1))]
 
 
 ## 한줄평 길이 제한과 정리 (줄바꿈 제거).
@@ -67,11 +78,13 @@ const VOTE_COMMENT_LIMIT: int = 120
 
 
 ## mode(선택): 이 판의 모드 이름 (놀이터면 난이도 태그 포함, 예: "놀이터 [Lv.5 핵불닭]"). 있으면 이름 뒤에 붙는다.
-static func vote_line(who: String, choice: String, comment: String, my_rank: int, rounds: int, mode: String = "") -> String:
+static func vote_line(who: String, choice: String, comment: String, my_rank: int, rounds: int, mode: String = "", behavior: Dictionary = {}) -> String:
 	var note: String = comment.replace("\n", " ").replace("\r", " ").strip_edges()
 	if note.length() > VOTE_COMMENT_LIMIT:
 		note = note.substr(0, VOTE_COMMENT_LIMIT) + "…"
-	return "%s %s | %s | %s | (%s · %d라운드)" % [vote_tag(), who + (" | " + mode if mode != "" else ""), choice, note if note != "" else "-", "%d위" % my_rank if my_rank > 0 else "순위 -", rounds]
+	var line: String = "%s %s | %s | %s | (%s · %d라운드)" % [vote_tag(), who + (" | " + mode if mode != "" else ""), choice, note if note != "" else "-", "%d위" % my_rank if my_rank > 0 else "순위 -", rounds]
+	var detail: String = behavior_line(behavior)
+	return line + ("\n" + detail if detail != "" else "")
 
 
 ## 모드 이름: 놀이터(컴퓨터와 대전) / 친선(방 코드로 만든 방) / 익명(빠른 매칭) / 4인 수동(한 화면 핫시트).
@@ -188,11 +201,11 @@ static func report_match_end(host: Node, nth: int, mode: String, rounds: int, se
 
 
 ## 결과 화면의 원클릭 소감 투표를 보낸다.
-static func report_vote(host: Node, choice: String, comment: String, my_rank: int, rounds: int, mode: String = "") -> bool:
+static func report_vote(host: Node, choice: String, comment: String, my_rank: int, rounds: int, mode: String = "", behavior: Dictionary = {}) -> bool:
 	if not is_active():
 		return false
 	_notify_page("match_vote", {"choice": choice, "rank": my_rank, "mode": mode})
-	return send_line(host, vote_line(GameSession.tagged_name(), choice, comment, my_rank, rounds, mode))
+	return send_line(host, vote_line(GameSession.tagged_name(), choice, comment, my_rank, rounds, mode, behavior))
 
 
 ## 한 줄을 웹후크로 보낸다. host는 요청 노드를 붙일 곳(트리 안의 아무 노드).

@@ -169,6 +169,37 @@ func _run() -> void:
 		option.item_selected.emit(0)
 		expect(L10n.current_lang == "ko", "다시 한국어")
 	board._close_menu()
+	# 결과 화면 후기: 체크리스트 2묶음 + 한 줄 질문, 체크만 해도 보낼 수 있고 [행동 분석]이 붙는다
+	var old_modal: Node = board.find_child("FeedbackModal", false, false)
+	if old_modal != null:
+		board.remove_child(old_modal)
+		old_modal.free()
+	board.ai_mode = true  # 행동 분석은 '나'가 있는 판(컴퓨터 대전·온라인)에서만 붙는다
+	board._behavior.clear()
+	board._track_behavior(&"skill_used", {"player_id": 1})
+	board._track_behavior(&"card_played", {"player_id": 1})
+	board._track_behavior(&"card_played", {"player_id": 1})
+	board._track_behavior(&"stack_resolved", {"player_id": 1, "stacked": true})
+	var survey: FeedbackModal = board._open_feedback("결과 화면", FeedbackModal.Kind.BALANCE, true)
+	expect(survey.survey and survey.find_child("SurveyFun", true, false) != null and survey.find_child("SurveyBlock", true, false) != null, "후기 창: 체크리스트 2묶음")
+	expect((survey.find_child("SurveyFun", true, false) as Node).get_child_count() == 6 and (survey.find_child("SurveyBlock", true, false) as Node).get_child_count() == 5, "칩 6개 + 5개")
+	expect((survey.find_child("BodyEdit", true, false) as TextEdit).placeholder_text == L10n.tr_ui("survey.q3_hint"), "한 줄 질문 안내문")
+	(survey.find_child("Chip_stack", true, false) as Button).button_pressed = true
+	(survey.find_child("Chip_law", true, false) as Button).button_pressed = true
+	(survey.find_child("Chip_fast", true, false) as Button).button_pressed = true
+	(survey.find_child("Chip_law", true, false) as Button).button_pressed = false
+	expect(survey.picked_fun.size() == 1 and survey.picked_fun[0] == &"stack" and survey.picked_block.size() == 1 and survey.picked_block[0] == &"fast", "칩은 여러 개 켜고 끈다")
+	var survey_report: String = survey.build_report()
+	expect(survey_report.contains("[즐긴 재미] %s 말 업기(합체) 돌파" % String.chr(0x1F91D)) and survey_report.contains("[막힌 곳] %s 상대 턴이나 연출이" % String.chr(0x26A1)), "리포트에 체크 답 (이모지 포함)")
+	expect(survey_report.contains("[행동 분석] 아군 업기 성사: 1회 | 기물 필살기 사용: 1회 | 생떼 카드 사용: 2장"), "리포트에 행동 분석 (%s)" % survey_report.left(300))
+	expect(str(survey.build_webhook_payload()["content"]).contains("[행동 분석]"), "디스코드 본문에 행동 분석")
+	survey.webhook_url = ""
+	survey.form_action_url = ""
+	survey.form_view_url = ""
+	expect(survey.send() != &"too_short", "후기 창은 글 없이 체크만 해도 보낸다")
+	survey.close_modal()
+	board.ai_mode = false
+	FeedbackModal.reset_cooldown()
 	L10n.set_language(saved_lang)
 	GameSession.language = saved_lang
 	GameSession.save_settings()

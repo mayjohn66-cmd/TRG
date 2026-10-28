@@ -39,6 +39,30 @@ const KIND_KEYS: Array[String] = ["feedback.kind_bug", "feedback.kind_balance", 
 const KIND_COLORS: Array[Color] = [Color("e03131"), Color("f08c00"), Color("2f9e44")]
 const INK: Color = Color("1b4d3e")
 
+## 후기 체크리스트 (결과 화면에서 열 때): [id, 디스코드용 글(이모지), 화면 글 키]. 게임 글꼴에 이모지가 없어 화면에서는 뺀다.
+## 질문 1 - 이번 판에서 즐긴 핵심 재미 (여러 개).
+static func fun_chips() -> Array:
+	return [
+		[&"stack", String.chr(0x1F91D) + " 말 업기(합체) 돌파", "survey.fun_stack"],
+		[&"skill", String.chr(0x265F) + String.chr(0xFE0F) + " 기물 진화·필살기", "survey.fun_skill"],
+		[&"tool", String.chr(0x1F3B0) + " 주사위 도구 교체", "survey.fun_tool"],
+		[&"law", String.chr(0x1F4DC) + " 법전 특수 승리", "survey.fun_law"],
+		[&"card", String.chr(0x1F0CF) + " 생떼 카드·초증강", "survey.fun_card"],
+		[&"none", String.chr(0x1F605) + " 기능을 잘 모르고 굴리기만 했어요", "survey.fun_none"],
+	]
+
+
+## 질문 2 - 막혔던 병목 지점 (여러 개).
+static func block_chips() -> Array:
+	return [
+		[&"clear", String.chr(0x1F44D) + " 막힌 곳 없이 술술 이해됐어요", "survey.block_clear"],
+		[&"text", String.chr(0x1F4D6) + " 증강/기물 설명이 눈에 안 들어왔어요", "survey.block_text"],
+		[&"fast", String.chr(0x26A1) + " 상대 턴이나 연출이 너무 빨라 상황 파악을 놓쳤어요", "survey.block_fast"],
+		[&"why", String.chr(0x1F914) + " 내 말이 왜 죽었는지 / 왜 갑자기 많이 이동했는지 몰랐어요", "survey.block_why"],
+		[&"howto", String.chr(0x1F518) + " 기물 필살기나 카드를 언제 어떻게 쓰는지 몰랐어요", "survey.block_howto"],
+	]
+
+
 ## 마지막으로 보낸 시각 (Time.get_ticks_msec). 모든 창이 같이 쓴다.
 static var _last_sent_msec: int = -1
 
@@ -47,6 +71,13 @@ var kind: Kind = Kind.BUG
 var snapshot_source: Callable = Callable()
 ## 어디서 열었는지 (상단 버튼 / 결과 화면) - 리포트 머리말에 붙는다.
 var context: String = ""
+## 결과 화면 후기: 체크리스트 2묶음 + 한 줄 질문으로 연다 (체크만 해도 보낼 수 있다).
+var survey: bool = false
+## 방금 판의 [행동 분석] 한 줄 (MatchTelemetry.behavior_line). 리포트·웹후크에 붙는다.
+var behavior_text: String = ""
+## 고른 체크리스트 칩 id.
+var picked_fun: Array[StringName] = []
+var picked_block: Array[StringName] = []
 ## 테스트가 바꿔 끼우는 주소 (기본은 위 상수).
 var webhook_url: String = DISCORD_WEBHOOK_URL
 var form_action_url: String = GOOGLE_FORM_ACTION_URL
@@ -66,11 +97,13 @@ var _copy_button: Button = null
 
 
 ## parent 위에 창을 연다. 반환한 창은 닫으면 queue_free된다.
-static func open(parent: Node, source: Callable = Callable(), from: String = "", initial_kind: Kind = Kind.BUG) -> FeedbackModal:
+static func open(parent: Node, source: Callable = Callable(), from: String = "", initial_kind: Kind = Kind.BUG, as_survey: bool = false, behavior: String = "") -> FeedbackModal:
 	var modal := FeedbackModal.new()
 	modal.snapshot_source = source
 	modal.context = from
 	modal.kind = initial_kind
+	modal.survey = as_survey
+	modal.behavior_text = behavior
 	parent.add_child(modal)
 	return modal
 
@@ -129,10 +162,13 @@ func _ready() -> void:
 	_name_edit.text = GameSession.display_nickname() if GameSession.nickname != "" else ""
 	_style_input(_name_edit)
 	name_row.add_child(_name_edit)
+	if survey:
+		_add_chip_group(box, "SurveyFun", L10n.tr_ui("survey.q1"), fun_chips(), picked_fun)
+		_add_chip_group(box, "SurveyBlock", L10n.tr_ui("survey.q2"), block_chips(), picked_block)
 	_body_edit = TextEdit.new()
 	_body_edit.name = "BodyEdit"
-	_body_edit.placeholder_text = L10n.tr_ui("feedback.body_hint")
-	_body_edit.custom_minimum_size = Vector2(0, 150)
+	_body_edit.placeholder_text = L10n.tr_ui("survey.q3_hint" if survey else "feedback.body_hint")
+	_body_edit.custom_minimum_size = Vector2(0, 80 if survey else 150)
 	_body_edit.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
 	_body_edit.text_changed.connect(_on_body_changed)
 	_style_input(_body_edit)
@@ -170,6 +206,66 @@ func _ready() -> void:
 	close.name = "CloseButton"
 	buttons.add_child(close)
 	_on_body_changed()
+
+
+## 체크리스트 한 묶음: 질문 + 여러 개 고를 수 있는 칩 버튼 (누를 때마다 켜고 끈다).
+func _add_chip_group(box: Container, group_name: String, question: String, chips: Array, picked: Array[StringName]) -> void:
+	box.add_child(_label(question, 15, Color("0b7285")))
+	var flow := HFlowContainer.new()
+	flow.name = group_name
+	flow.add_theme_constant_override("h_separation", 6)
+	flow.add_theme_constant_override("v_separation", 6)
+	flow.custom_minimum_size = Vector2(580, 0)
+	box.add_child(flow)
+	for chip: Array in chips:
+		var button := Button.new()
+		button.name = "Chip_%s" % chip[0]
+		button.toggle_mode = true
+		button.text = L10n.tr_ui(str(chip[2]))
+		button.focus_mode = Control.FOCUS_NONE
+		button.add_theme_font_size_override("font_size", 14)
+		button.custom_minimum_size = Vector2(0, 34)
+		_paint_chip(button, false)
+		button.toggled.connect(func(on: bool) -> void:
+			var id: StringName = chip[0]
+			if on and not picked.has(id):
+				picked.append(id)
+			elif not on:
+				picked.erase(id)
+			_paint_chip(button, on))
+		flow.add_child(button)
+
+
+func _paint_chip(button: Button, on: bool) -> void:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color("0b7285") if on else Color("f1f3f5")
+	style.border_color = Color("0b7285")
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(16)
+	style.content_margin_left = 10
+	style.content_margin_right = 10
+	for state_name: String in ["normal", "hover", "pressed", "hover_pressed", "focus"]:
+		button.add_theme_stylebox_override(state_name, style)
+	for key: String in ["font_color", "font_hover_color", "font_pressed_color", "font_hover_pressed_color", "font_focus_color"]:
+		button.add_theme_color_override(key, Color.WHITE if on else INK)
+
+
+## 고른 칩을 디스코드용 글(이모지 포함)로: "🤝 말 업기(합체) 돌파, 📜 법전 특수 승리" (없으면 "-").
+static func chip_text(chips: Array, picked: Array[StringName]) -> String:
+	var parts: PackedStringArray = []
+	for chip: Array in chips:
+		if picked.has(chip[0]):
+			parts.append(str(chip[1]))
+	return ", ".join(parts) if not parts.is_empty() else "-"
+
+
+## 체크리스트 답 두 줄 (후기 창이 아니면 빈 글).
+func survey_lines() -> PackedStringArray:
+	var lines: PackedStringArray = []
+	if survey:
+		lines.append("[즐긴 재미] %s" % chip_text(fun_chips(), picked_fun))
+		lines.append("[막힌 곳] %s" % chip_text(block_chips(), picked_block))
+	return lines
 
 
 ## 밝은 창에 맞춘 입력칸: 흰 바탕 + 진한 글자 + 회색 안내문.
@@ -256,6 +352,9 @@ func build_report() -> String:
 	lines.append("작성자: %s" % author())
 	if context != "":
 		lines.append("보낸 곳: %s" % context)
+	lines.append_array(survey_lines())
+	if behavior_text != "":
+		lines.append(behavior_text)
 	lines.append("")
 	lines.append(message())
 	var snap: String = snapshot()
@@ -271,7 +370,7 @@ func build_webhook_payload() -> Dictionary:
 	var preview: String = body if body.length() <= PREVIEW_LIMIT else body.substr(0, PREVIEW_LIMIT) + "\n... (전체 %d자는 첨부 파일 feedback.txt)" % body.length()
 	var payload: Dictionary = {
 		"username": "TRG 피드백",
-		"content": "**[%s]** %s\n%s" % [L10n.tr_ui(KIND_KEYS[int(kind)]), author(), preview],
+		"content": "**[%s]** %s\n%s%s" % [L10n.tr_ui(KIND_KEYS[int(kind)]), author(), _summary_head(), preview],
 		"attachments": [{"id": 0, "filename": "feedback.txt", "description": "피드백 전문 + 게임 스냅샷"}],
 	}
 	var snap: String = snapshot()
@@ -282,6 +381,14 @@ func build_webhook_payload() -> Dictionary:
 			"color": KIND_COLORS[int(kind)].to_rgba32() >> 8,
 		}]
 	return payload
+
+
+## 디스코드 본문 앞머리: 체크리스트 답 + [행동 분석] (각 줄 끝에 줄바꿈). 없으면 빈 글.
+func _summary_head() -> String:
+	var lines: PackedStringArray = survey_lines()
+	if behavior_text != "":
+		lines.append(behavior_text)
+	return "\n".join(lines) + "\n" if not lines.is_empty() else ""
 
 
 ## 첨부 파일 feedback.txt: 잘리지 않은 전체 리포트 (UTF-8).
@@ -309,7 +416,10 @@ static func form_kind_options() -> Array[String]:
 
 ## 폼 [내용] 칸에 넣을 글: 본문 + 닉네임 + 보낸 곳 (+ 자동 게임 로그). with_log=false면 미리 채우기용으로 로그를 뺀다.
 func form_message(with_log: bool = true) -> String:
-	var lines: PackedStringArray = [message(), "", "- 닉네임: %s" % author()]
+	var lines: PackedStringArray = survey_lines()
+	if behavior_text != "":
+		lines.append(behavior_text)
+	lines.append_array([message(), "", "- 닉네임: %s" % author()])
 	if context != "":
 		lines.append("- 보낸 곳: %s" % context)
 	var log_text: String = snapshot() if with_log else ""
@@ -360,7 +470,8 @@ static func reset_cooldown() -> void:
 ## [개발자에게 바로 전송]: 디스코드(실시간 알림)와 구글 폼(장문 보관) 중 설정된 곳 모두에 동시에 보낸다.
 ## 반환: &"too_short" / &"cooldown" / &"busy" / &"sent"(요청 시작) / &"form_link"(미리 채운 폼 열기) / &"no_target"(복사만).
 func send() -> StringName:
-	if message().length() < MIN_LENGTH:
+	var checked: bool = survey and (not picked_fun.is_empty() or not picked_block.is_empty())
+	if message().length() < MIN_LENGTH and not checked:  # 후기 창은 체크만 해도 보낼 수 있다
 		_set_status(L10n.tr_ui("feedback.too_short", [MIN_LENGTH]), false)
 		return &"too_short"
 	if _pending_requests > 0:

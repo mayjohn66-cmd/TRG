@@ -2191,7 +2191,7 @@ v%s · 비공식 팬게임 (원작사와 무관한 비영리 무료 배포물),v
 킬,KOs,撃破
 구역,zones,区域
 [%d라운드 종료] 남은 플레이어는 진행 순위로 순위가 확정됩니다,[Round %d over] Remaining players are ranked by race standing,[%dラウンド終了] 残りのプレイヤーは進行順位で順位が確定します
-"입문 추천! 특수 승리는 쉬운 2종(처치·손패)만 나와요","Recommended for beginners! Only 2 easy special wins (KOs, hand)",入門におすすめ！特殊勝利は簡単な2種（撃破・手札）だけ
+입문 추천! 특수 승리는 쉬운 2종(처치·손패)만 나와요,"Recommended for beginners! Only 2 easy special wins (KOs, hand)",入門におすすめ！特殊勝利は簡単な2種（撃破・手札）だけ
 7·14·20라운드,Rounds 7·14·20,7·14·20ラウンド
 7라운드 · 과열,Round 7 · Overheat,7ラウンド · オーバーヒート
 14라운드 · 광기,Round 14 · Frenzy,14ラウンド · 狂気
@@ -2204,7 +2204,7 @@ v%s · 비공식 팬게임 (원작사와 무관한 비영리 무료 배포물),v
 초증강 등장 확률 상승,Hyper Augments appear more often,超増強の出現確率アップ
 법전 증강 등장 확률 상승,Codex augments appear more often,法典増強の出現確率アップ
 빵집에 {p1}회 방문,Visit a bakery {p1} times,パン屋に{p1}回訪問
-"입문 추천! 특수 승리는 쉬운 2종(처치·빵집)만 나와요","Recommended for beginners! Only 2 easy special wins (KOs, bakery)",入門におすすめ！特殊勝利は簡単な2種（撃破・パン屋）だけ
+입문 추천! 특수 승리는 쉬운 2종(처치·빵집)만 나와요,"Recommended for beginners! Only 2 easy special wins (KOs, bakery)",入門におすすめ！特殊勝利は簡単な2種（撃破・パン屋）だけ
 최종 이동 +2칸 · 리벤지 +6칸 · 초증강 확률 상승,Final move +2 · Revenge +6 · Hyper odds up,最終移動 +2マス · リベンジ +6マス · 超増強の確率アップ
 최종 이동 +4칸 · 리벤지 +8칸 · 법전 확률 상승,Final move +4 · Revenge +8 · Codex odds up,最終移動 +4マス · リベンジ +8マス · 法典の確率アップ
 전원 이동 +6칸 · 법전에 무작위 특수 승리 1개 등록 · 결승선이 라운드마다 2칸씩 당겨짐,Everyone +6 · 1 random Special Victory added to the Codex · finish line moves 2 spaces closer each round,全員の移動 +6マス · 法典にランダムな特殊勝利を1つ登録 · ゴールがラウンドごとに2マスずつ近づく
@@ -2265,9 +2265,9 @@ v%s · 비공식 팬게임 (원작사와 무관한 비영리 무료 배포물),v
 기물 변이 · 전군 개조 · 필살기 재충전,Pawn mutation · troop remodel · skill recharge,駒の変異・全軍改造・必殺技の再チャージ
 생떼 카드를 손패에 추가,Adds Tantrum cards to your hand,駄々カードを手札に追加
 [보급 증강] 패시브·즉발 발동·범용 보급·카드 보급을 색상과 분류 이름으로 구분해요.,"[Supply Augments] Colors and type names distinguish Passive, Instant Effect, Utility Supply and Card Supply.",[補給増強] パッシブ・即時発動・汎用補給・カード補給を色と分類名で見分けます。
-"[업기] 옆 칸 아군과 합류!","[Stack] Merged with the ally next door!","[おんぶ] 隣のマスの味方と合流！"
+[업기] 옆 칸 아군과 합류!,[Stack] Merged with the ally next door!,[おんぶ] 隣のマスの味方と合流！
 내 말이 아군 말 칸이나 바로 앞뒤 칸에 멈추면 업혀서 한 번에 이동해요.,"Stop on or right next to an ally and your pawns stack, moving together as one.",自分の駒が味方のマスかその前後のマスに止まると、おんぶして一緒に動きます。
-"잡으면 재굴림, 필살기는 주사위 한 번 더.","Reroll on a KO; special: roll once more.",撃破で振り直し、必殺技はもう一度ダイス。
+"잡으면 재굴림, 필살기는 주사위 한 번 더.",Reroll on a KO; special: roll once more.,撃破で振り直し、必殺技はもう一度ダイス。
 보호막 있음,Shield active,バリアあり
 ★나리 승급(+1칸),★Promoted (+1 space),★成り昇格(+1マス)
 결승선이 출발선 앞까지 계속 당겨진다,The finish line keeps closing in toward the start,ゴールがスタート手前までどんどん近づく
@@ -2330,3 +2330,11 @@ v%s · 비공식 팬게임 (원작사와 무관한 비영리 무료 배포물),v
 스탠드 · %d칸,Stand · %d spaces,スタンド · %dマス
 카드 받는 중,Dealing cards,カード配布中
 카드를 받아 시작하세요,Draw cards to start,カードを引いて開始
+이번 판 어떠셨나요? 가장 가까운 하나를 눌러 주세요 (개발자에게 바로 전달!),How was this match? Pick the closest one (goes straight to the dev!),今回のゲームはいかがでしたか？ 一番近いものを押してください（開発者に直接届きます！）
+템포·역전 각 딱 재밌어요!,Great pace & comeback chances!,テンポも逆転チャンスも最高！
+왜 이겼는지/졌는지 모르겠어요,I don't know why I won/lost,なぜ勝った・負けたのか分からない
+한 번 밀리니 역전이 안 돼요,"Once behind, no way to come back",一度遅れると逆転できない
+말이 자꾸 죽어서 완주가 답답해요,My pawns keep dying - finishing is frustrating,駒がすぐやられてゴールできずもどかしい
+고른 증강/기물 효과를 잘 못 느꼈어요,Couldn't feel my augments/pawns' effects,選んだ増強・駒の効果を感じられなかった
+[즐긴 재미] %s,[Enjoyed] %s,[楽しんだ要素] %s
+[막힌 곳] %s,[Stuck at] %s,[詰まった所] %s
