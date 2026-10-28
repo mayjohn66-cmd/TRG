@@ -50,6 +50,8 @@ const GROUP_NAMES: Array[String] = ["기본 규칙", "도감"]
 ## 위쪽 탭(묶음)마다 첫 장의 번호: 기본 규칙 0~3, 도감 4~8.
 const GROUP_STARTS: Array[int] = [0, 4]
 const STAGE: Vector2 = Vector2(1366.0, 768.0)
+## Leave breathing room beyond the painted frame and shadow, without resizing entries.
+const BOOK_SHIFT_X := -24.0
 
 ## 현재 장 번호(0부터).
 var spread: int = 0
@@ -102,7 +104,7 @@ const CARD_TILE: Vector2 = Vector2(200, 280)
 ## 지금 보고 있는 그림 타일의 외곽선 색 (눈에 띄는 형광 분홍).
 const SELECTED_OUTLINE: Color = Color("ff2d95")
 ## 도감 기본 격자 영역. 실제 너비는 화면에 맞추며 터치에서는 증강을 3열로 키운다.
-const GRID_POS: Vector2 = Vector2(256, 188)
+const GRID_POS: Vector2 = Vector2(256+BOOK_SHIFT_X, 188)
 const GRID_SIZE: Vector2 = Vector2(1046, 526)
 const GRID_COLUMNS: int = 4
 const COMPACT_TILE_SCALE: float = 0.9
@@ -169,9 +171,10 @@ func _fit_book() -> void:
 	_book_outer.size.x = width - 210.0
 	_book_inset.size.x = width - 246.0
 	var backup := _stage.get_node_or_null("SaveBackup") as Control
-	if backup != null: backup.position.x = width - 310.0
+	if backup != null: backup.position.x = width - 310.0+BOOK_SHIFT_X
+	var book_center := _book_outer.position.x+_book_outer.size.x*0.5
 	for index: int in _group_tabs.size():
-		_group_tabs[index].position.x = width*0.5-183.0+index*170.0
+		_group_tabs[index].position.x = book_center-165.0+index*170.0
 	_summary_banner.size.x = width - 320.0
 	if not _content.is_empty(): _apply_group_layout(group_of(spread))
 
@@ -369,12 +372,12 @@ func _build_book() -> void:
 	_book_outer = outer
 	outer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	outer.add_theme_stylebox_override("panel", _box(Color("e9f7ee"), FRAME, 12, 40, 18, 0, Color(0, 0, 0, 0.45)))
-	_place(outer, Vector2(186, 108), Vector2(1156, 634))
+	_place(outer, Vector2(186+BOOK_SHIFT_X, 108), Vector2(1156, 634))
 	var edge := Panel.new()
 	_book_inset = edge
 	edge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	edge.add_theme_stylebox_override("panel", _box(Color("f3ecd2"), FRAME_EDGE, 4, 30))
-	_place(edge, Vector2(204, 126), Vector2(1120, 598))
+	_place(edge, Vector2(204+BOOK_SHIFT_X, 126), Vector2(1120, 598))
 
 
 func _build_header() -> void:
@@ -623,7 +626,7 @@ func _build_cards_area() -> void:
 	_right_scroll = ScrollContainer.new()
 	_right_scroll.name = "CatalogScroll"
 	_right_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	_place(_right_scroll, Vector2(834, 142), Vector2(468, 570))
+	_place(_right_scroll, Vector2(834+BOOK_SHIFT_X, 142), Vector2(468, 570))
 	_right_holder = VBoxContainer.new()
 	_right_holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_right_holder.add_theme_constant_override("separation", 12)
@@ -633,7 +636,7 @@ func _build_cards_area() -> void:
 func _build_ribbon() -> void:
 	var ribbon := Ribbon.new()
 	_ribbon = ribbon
-	_place(ribbon, Vector2(560, 706), Vector2(246, 56))
+	_place(ribbon, Vector2(560+BOOK_SHIFT_X, 706), Vector2(246, 56))
 	_page_label = HubKit.outlined("", 20, Color.WHITE, Color("8a3a0a"), 5)
 	_page_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_page_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -712,7 +715,7 @@ func _apply_group_layout(group: int) -> void:
 		_right_scroll.position = GRID_POS
 		_right_scroll.size = Vector2(_book_inset.size.x-74.0,GRID_SIZE.y)
 	else:
-		_right_scroll.position = Vector2(834, 142)
+		_right_scroll.position = Vector2(834+BOOK_SHIFT_X, 142)
 		_right_scroll.size = Vector2(_book_inset.size.x-652.0,570)
 	_ribbon.visible = not catalog
 	_layout_notebook()
@@ -755,15 +758,15 @@ func _layout_notebook() -> void:
 		_notebook_page.position = Vector2.ZERO
 		_notebook_page.size = STAGE
 		_notebook_page.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_note_leather.position = Vector2(256,140)
+		_note_leather.position = Vector2(256+BOOK_SHIFT_X,140)
 		_note_leather.size = Vector2(552,574)
-		_note_paper.position = Vector2(272,156)
+		_note_paper.position = Vector2(272+BOOK_SHIFT_X,156)
 		_note_paper.size = Vector2(520,542)
-		_note_column.position = Vector2(290,168)
+		_note_column.position = Vector2(290+BOOK_SHIFT_X,168)
 		_note_column.scale = Vector2.ONE
 		_note_column.size = Vector2(484,520)
-		_medal.position = Vector2(740,112)
-		_popup_close.position = Vector2(708,668)
+		_medal.position = Vector2(740+BOOK_SHIFT_X,112)
+		_popup_close.position = Vector2(708+BOOK_SHIFT_X,668)
 		_popup_close.size = Vector2(84,36)
 	_notebook_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART if popup else TextServer.AUTOWRAP_OFF
 	_notebook_title.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
