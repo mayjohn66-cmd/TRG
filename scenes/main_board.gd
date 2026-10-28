@@ -9128,6 +9128,9 @@ func _show_result_overlay() -> void:
 	_result_hold = false
 	_report_match_once()
 	_close_result_overlay()
+	_close_augment_review()
+	if _announcer != null:
+		_announcer.cancel()  # 결과 화면이 마지막 화면이다: 남은 중앙 알림이 그 위에 겹치지 않게
 	if _draw_fx != null:
 		_draw_fx.set_deck_visible(false)  # 결과 화면에는 카드 더미를 띄우지 않는다
 	_result_overlay = _new_overlay()
@@ -10438,6 +10441,9 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_announce("XI. The World!!", "한 번 더!", "", PLAYER_COLORS[int(data["player_id"])], null, 0.9, true, {"key": "extra_turn", "sub": _player_name(int(data["player_id"]))})  # 막는 알림: 다음 굴림 판(야추·블랙잭·핀볼)이 이 도장 위에 겹쳐 뜨지 않게
 		&"game_over":
 			_last_reason = data["reason"]
+			# 라운드 시작(증강 확인·드래프트) 중에 판이 끝났으면 그 창을 닫는다: [매치 종료!]·결과 화면이 그 위에 겹치지 않게.
+			_close_augment_review()
+			_close_draft_overlay()
 	_refresh_all()
 
 
