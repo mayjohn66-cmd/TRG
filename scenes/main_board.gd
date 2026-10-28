@@ -5979,7 +5979,7 @@ func _place_roll_history() -> void:
 	else:
 		_roll_history.set_width(RollHistory.WIDTH)
 		var half := 205.0 if _roll_history.tool_id in [&"REVOLVER",&"LIFE_ROULETTE"] else 170.0
-		at = _board_center()+Vector2(-half-RollHistory.WIDTH-14,10-_roll_history.size.y*0.5)
+		at = _board_center()+Vector2(-half-RollHistory.WIDTH-14,-10-_roll_history.size.y*0.5)
 	_roll_history.position = at.clamp(Vector2(12,12),get_viewport_rect().size-_roll_history.size-Vector2(12,12))
 
 

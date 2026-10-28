@@ -18,8 +18,14 @@ func check(ok: bool, message: String) -> void:
 func capture(label: String) -> void:
 	var folder := OS.get_environment("ROLL_HISTORY_CAPTURE_DIR")
 	if folder.is_empty(): return
+	await create_timer(0.23).timeout
 	await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png(folder.path_join(label+".png"))
+	if label=="revolver_fail":
+		var pixels := root.get_texture().get_image()
+		var zoom := float(pixels.get_width())/root.get_visible_rect().size.x
+		var area := board._roll_history.get_global_rect().grow(10)
+		pixels.get_region(Rect2i(area.position*zoom,area.size*zoom)).save_png(folder.path_join("result_stack_preview.png"))
 
 func show_result(result: RollResult) -> void:
 	board._handle_roll_event({"player_id":1,"result":result.to_dict()})
@@ -68,6 +74,13 @@ func run() -> void:
 	await show_result(yut(4))
 	check(history.entries.map(func(item: Dictionary) -> String: return item.text)==["윷","모","윷"],"Yut face sequence is retained in order")
 	check(history._footer.text==L10n.t("한 번 더"),"reroll is marked")
+	var oldest: Label = history._rows.get_child(0)
+	var newest: Label = history._rows.get_child(2)
+	check(oldest.scale==Vector2.ONE and is_equal_approx(oldest.modulate.a,1.0),"old results do not replay their arrival animation")
+	check(newest.is_inside_tree() and newest.get_theme_stylebox("normal") is StyleBoxTexture,"new result uses painted plaque art")
+	check((newest.get_theme_stylebox("normal") as StyleBoxTexture).texture.get_size()==Vector2(323,64),"plaque is cached at UI size")
+	await create_timer(0.24).timeout
+	check(newest.scale.is_equal_approx(Vector2.ONE) and is_equal_approx(newest.modulate.a,1.0),"result settles without persistent pulsing")
 	for size: Vector2i in [Vector2i(844,390),Vector2i(740,360),Vector2i(1366,768)]:
 		root.size = size
 		await frames()
