@@ -1,6 +1,6 @@
 # File: res://core_engine/npc_sweep.gd
 # Class: class_name NpcSweep
-# Role: 중립 기물 이동 규칙 - run: 한 번 쓸고 사라지는 질주(초증강 폭주 기관차). strike: 소환 기물(도적떼·팩맨)이 라운드가 끝날 때 정해진 방향으로 가장 가까운 적 말까지 달려가 그 말 하나(업힌 말 포함)를 처치하고 사라진다. advance: 정해진 칸수만큼 전진하다 처음 만난 칸의 말을 모두 사출 (예전 규칙, 테스트용으로 남김)
+# Role: 중립 기물 이동 규칙 - run: 한 번 쓸고 사라지는 질주(초증강 폭주 기관차). wander: 소환 기물(도적떼·팩맨)이 라운드가 끝날 때마다 정해진 방향으로 1~3칸 걷다가 적 말을 만나면 그 말 하나(업힌 말 포함)를 처치하고 사라진다. advance: 정해진 칸수만큼 전진하다 처음 만난 칸의 말을 모두 사출 (예전 규칙, 테스트용으로 남김)
 class_name NpcSweep
 extends RefCounted
 
@@ -61,39 +61,55 @@ static func nearest_target(state: GameState, npc: NeutralNPC) -> Dictionary:
 	var tile: int = npc.current_tile_idx
 	for _distance: int in range(1, BoardSpec.tile_count):
 		tile = posmod(tile + direction, BoardSpec.tile_count)
-		var best: PlayerPawn = null
-		for victim: PlayerPawn in catchable_at(state, tile):
-			if victim.owner_id == npc.owner_id:
-				continue
-			if best == null or victim.entity_id < best.entity_id:
-				best = victim
+		var best: PlayerPawn = enemy_at(state, npc, tile)
 		if best != null:
 			return {"tile": tile, "pawn": best}
 	return {}
 
 
-## 라운드 끝: 진행 방향으로 가장 가까운 적 말까지 한 칸씩 달려가 그 말 하나(업힌 말 포함)를 출발선으로 보내고 사라진다.
-## 적 말이 보드에 없으면 움직이지 않고 그대로 사라진다. 난수를 쓰지 않는다.
-## 반환: {"npc_id", "display_id", "path": [칸], "ejected": [말 ID], "vanished": true}
-static func strike(state: GameState, npc: NeutralNPC) -> Dictionary:
-	var result: Dictionary = {"npc_id": npc.entity_id, "display_id": npc.display_id, "path": [npc.current_tile_idx] as Array[int], "ejected": [] as Array[int], "destroyed": 0, "vanished": true}
-	var target: Dictionary = nearest_target(state, npc)
-	if target.is_empty():
-		return result
-	var goal: int = int(target["tile"])
+## 소환 기물이 라운드 끝마다 움직이는 칸 수 (WANDER_MIN~WANDER_MAX 중 무작위).
+const WANDER_MIN: int = 1
+const WANDER_MAX: int = 3
+
+
+## 라운드 끝: 진행 방향으로 steps칸(1~3칸 무작위) 한 칸씩 걷는다. 지나는 칸에서 (지금 서 있는 칸은 보지 않는다) 적 말(소환한 사람의 말이 아닌 보드 위 대표 말)을
+## 처음 만나면 그 말 하나(업힌 말 포함)를 출발선으로 보내고 그 자리에서 사라진다. 아무도 못 만나면 보드에 남아 다음 라운드에 또 걷는다.
+## 출발선(결승) 칸은 지나가기만 한다. 반환: {"npc_id", "display_id", "path": [칸], "ejected": [말 ID], "vanished": bool}
+static func wander(state: GameState, npc: NeutralNPC, steps: int) -> Dictionary:
+	var result: Dictionary = {"npc_id": npc.entity_id, "display_id": npc.display_id, "path": [npc.current_tile_idx] as Array[int], "ejected": [] as Array[int], "destroyed": 0, "vanished": false}
 	var direction: int = npc.direction()
-	while npc.current_tile_idx != goal:
+	for _i: int in steps:
 		var from_tile: int = npc.current_tile_idx
 		var tile: int = posmod(from_tile + direction, BoardSpec.tile_count)
 		npc.current_tile_idx = tile
 		npc.push_step(tile)
 		(result["path"] as Array[int]).append(tile)
 		state.npc_stepped.emit(npc.entity_id, from_tile, tile)
-	var victim: PlayerPawn = target["pawn"]
+		if _catch_enemy(state, npc, result):
+			break
+	return result
+
+
+## 그 칸에서 기물이 덮칠 적 말 (같은 칸에 여럿이면 말 ID가 작은 쪽). 없으면 null.
+static func enemy_at(state: GameState, npc: NeutralNPC, tile: int) -> PlayerPawn:
+	var best: PlayerPawn = null
+	for victim: PlayerPawn in catchable_at(state, tile):
+		if victim.owner_id == npc.owner_id:
+			continue
+		if best == null or victim.entity_id < best.entity_id:
+			best = victim
+	return best
+
+
+static func _catch_enemy(state: GameState, npc: NeutralNPC, result: Dictionary) -> bool:
+	var victim: PlayerPawn = enemy_at(state, npc, npc.current_tile_idx)
+	if victim == null:
+		return false
 	for member: PlayerPawn in victim.stack_members():
 		(result["ejected"] as Array[int]).append(member.entity_id)
 	state.send_to_start(victim, npc.owner_id)
-	return result
+	result["vanished"] = true
+	return true
 
 
 ## 보드에 남아 있는 소환 기물을 direction 방향으로 steps칸 전진시킨다. 말이 서 있는 칸을 처음 만나면 그 칸의 말(스택 포함)을 모두 출발선으로 보내고 멈춘 뒤 사라진다(vanished).

@@ -51,9 +51,12 @@ func test_corner_jump_pad_helps_its_owner_and_ejects_enemies() -> void:
 	place(state, 11, 4, [3])
 	move(state, 11, 2)
 	check_eq(state.get_pawn(11).current_tile_idx, 6 + 5, "내 말은 +5칸")
+	check(not state.board.get_tile(6).has_attachment("TRP_C02"), "한 번 발동하면 사라진다")
+	state.place_attachment(6, TrapJumpPad.new(1))
 	place(state, 21, 4, [3])
 	move(state, 21, 2)
 	check(not state.get_pawn(21).has_left_start, "적 말은 사출")
+	check(not state.board.get_tile(6).has_attachment("TRP_C02"), "적에게 발동해도 사라진다")
 
 
 func test_tollgate_takes_a_card_or_blocks() -> void:
@@ -63,6 +66,8 @@ func test_tollgate_takes_a_card_or_blocks() -> void:
 	place(state, 11, 4, [3])
 	check_eq(move(state, 11, 4).path.size(), 4, "카드를 바치면 지나간다")
 	check((state.hands[2] as Array).has(&"ACT_04"), "설치자가 받았다")
+	check(not state.board.get_tile(6).has_attachment("TRP_C03"), "한 번 받으면 상인은 떠난다")
+	state.place_attachment(6, TrapToll.new(2))
 	place(state, 12, 4, [3])
 	check_eq(move(state, 12, 4).path, int_array([5, 6]), "낼 카드가 없으면 코너에 정지")
 
@@ -77,6 +82,7 @@ func test_tar_pulls_nearby_enemies_into_the_corner() -> void:
 	check_eq(state.get_pawn(21).current_tile_idx, 12, "밟은 적은 코너에 붙는다")
 	check_eq(state.get_pawn(22).current_tile_idx, 12, "2칸 안의 적도 끌려온다")
 	check_eq(state.get_pawn(12).current_tile_idx, 11, "설치자의 말은 그대로")
+	check(not state.board.get_tile(12).has_attachment("TRP_C04"), "한 번 발동하면 사라진다")
 
 
 func test_crowbar_clears_three_tiles_ahead() -> void:

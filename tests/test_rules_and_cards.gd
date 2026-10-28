@@ -266,15 +266,15 @@ func test_act_06_objection_resets_one_victory_record() -> void:
 	exec(state, card.create_command(state, 1, {"target_player": 2, "law_id": "LAW_01"}))
 	check_eq(state.stat(2, VictoryLaw.KILLS), 0, "0으로 초기화")
 
-func test_neutral_npc_bandit_runs_to_the_nearest_enemy_and_ejects_only_that_one() -> void:
+func test_neutral_npc_bandit_walks_until_the_first_enemy_and_ejects_only_that_one() -> void:
 	var state := make_state()
 	place(state, 21, 3, [2])
 	place(state, 22, 5, [4])
 	place(state, 11, 2, [1])  # 소환한 사람(P1)의 말은 적이 아니라 지나친다
 	state.give_card(2, &"ACT_06")
 	var npc: NeutralNPC = state.spawn_npc(1, GameEnums.NpcBehavior.CHASE_NEAREST, 1, &"SUM_01")
-	var report: Dictionary = npc.run_ai(state)
-	check_eq(report["path"], int_array([2, 3]), "정방향으로 가장 가까운 적이 선 칸까지 달린다")
+	var report: Dictionary = npc.run_ai(state, 3)
+	check_eq(report["path"], int_array([2, 3]), "정방향으로 걷다가 처음 만난 적이 선 칸에서 멈춘다")
 	check(not state.get_pawn(21).has_left_start, "그 적 말 하나를 출발선으로")
 	check(state.get_pawn(22).has_left_start and state.get_pawn(11).has_left_start, "다른 적·소환한 사람의 말은 무사")
 	check(bool(report["vanished"]), "처치하고 사라진다")
@@ -285,7 +285,7 @@ func test_neutral_npc_passes_over_the_start_line_to_reach_the_nearest_enemy() ->
 	var state := make_state()
 	var ghost: NeutralNPC = state.spawn_npc(2, GameEnums.NpcBehavior.PATROL_REVERSE, 1, &"SUM_02")
 	place(state, 21, BoardSpec.tile_count - 1, [BoardSpec.tile_count - 2])
-	var report: Dictionary = ghost.run_ai(state)
+	var report: Dictionary = ghost.run_ai(state, 3)
 	check_eq(report["path"], int_array([1, 0, BoardSpec.tile_count - 1]), "출발선을 그냥 지나 역방향으로 계속")
 	check(bool(report["vanished"]) and not state.get_pawn(21).has_left_start, "건너편 말을 잡는다")
 
@@ -350,7 +350,7 @@ func test_neutral_npc_vanishes_after_first_catch() -> void:
 	var bandit: NeutralNPC = state.spawn_npc(3, GameEnums.NpcBehavior.CHASE_NEAREST, 1, &"SUM_01")
 	var vanished_ids: Array = []
 	state.npc_vanished.connect(func(npc_id: int, _tile: int) -> void: vanished_ids.append(npc_id))
-	var report: Dictionary = bandit.run_ai(state)
+	var report: Dictionary = bandit.run_ai(state, 1)
 	check_eq(report["vanished"], true, "잡은 NPC는 소멸 표시")
 	var npc_id: int = bandit.entity_id
 	state.remove_npc(bandit)
@@ -358,7 +358,12 @@ func test_neutral_npc_vanishes_after_first_catch() -> void:
 	check_eq(vanished_ids, [npc_id], "npc_vanished 시그널")
 	var ghost: NeutralNPC = state.spawn_npc(BoardSpec.halfway_tile, GameEnums.NpcBehavior.PATROL_REVERSE, 1, &"SUM_02")
 	var idle: Dictionary = ghost.run_ai(state)
-	check_eq(idle["vanished"], true, "아무도 못 잡아도 라운드 끝에 사라진다")
+	check_eq(idle["vanished"], false, "아무도 못 잡으면 보드에 남아 다음 라운드에 또 걷는다")
+	place(state, 22, ghost.current_tile_idx, [ghost.current_tile_idx + 1])
+	place(state, 23, ghost.current_tile_idx - 1, [ghost.current_tile_idx])
+	var caught: Dictionary = ghost.run_ai(state, 3)
+	check(bool(caught["vanished"]) and caught["path"].size() == 1 and caught["caught"] == [23], "기물 칸에 선 적은 건너뛰고, 걷다 처음 만난 적을 잡는다")
+	check(state.get_pawn(22).has_left_start, "기물과 같은 칸에 서 있던 말은 무사")
 
 
 func test_game_session_validates_nicknames() -> void:

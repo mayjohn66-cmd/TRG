@@ -361,10 +361,19 @@ func test_island_imprisons_on_landing_until_even_roll() -> void:
 	check(even.path.size() == 2, "탈출과 동시에 눈금만큼 이동")
 	place(state, 12, 10, [9])
 	move(state, 12, 2)
+	check(not state.board.get_tile(12).has_attachment("TRP_C01"), "한 번 가두면 무인도는 사라진다")
+	check(not state.get_pawn(12).is_imprisoned and state.get_pawn(12).current_tile_idx == 12, "다음 말은 갇히지 않는다")
+	state.get_pawn(12).is_imprisoned = true
 	state.give_card(1, &"ACT_04")
 	var hand_before: int = (state.hands[1] as Array).size()
 	var bail: MoveReport = move(state, 12, 3)
 	check(bail.released and bail.paid_bail and (state.hands[1] as Array).size() == hand_before - 1, "홀수여도 카드 1장을 내면 탈출")
+
+
+func test_corner_traps_last_three_owner_turns() -> void:
+	for trap: TileAttachment in [TrapIsland.new(1), TrapJumpPad.new(1), TrapToll.new(1), TrapTar.new(1)]:
+		check_eq(trap.duration_turns, 3, "%s: 설치자의 턴 3번(3라운드) 유지" % trap.attachment_id)
+		check(not trap.tick_turn() and not trap.tick_turn() and trap.tick_turn(), "%s: 세 번째 턴에 만료" % trap.attachment_id)
 
 
 func test_island_does_not_imprison_its_owner_or_passers() -> void:
@@ -593,10 +602,10 @@ func test_summon_cards_stay_on_the_board_and_vanish_after_their_first_catch() ->
 	var npc: NeutralNPC = state.npcs[0]
 	check_eq(npc.current_tile_idx, BoardSpec.halfway_tile, "소환 즉시 움직이지 않는다")
 	check(not bandit.can_play(state, 1, {"tile": BoardSpec.halfway_tile}) and not ghost.can_play(state, 1, {"tile": BoardSpec.halfway_tile}), "중립 기물은 한 번에 하나만")
-	# 라운드 끝: 정방향으로 가장 가까운 적 말 하나까지 달려가 처치하고 사라진다
+	# 라운드 끝: 정방향으로 1~3칸 걷다가 처음 만난 적 말 하나를 처치하고 사라진다
 	place(state, 21, npc.current_tile_idx + 2, [npc.current_tile_idx + 1])
 	place(state, 22, npc.current_tile_idx + 3, [npc.current_tile_idx + 2])
-	var report: Dictionary = npc.run_ai(state)
+	var report: Dictionary = npc.run_ai(state, 3)
 	check(bool(report["vanished"]), "라운드 끝에 처치하고 사라진다")
 	check_eq(report["caught"], [21], "가장 가까운 적 하나만 잡는다")
 	check(state.get_pawn(22).has_left_start, "그 뒤의 말은 안전")
@@ -606,9 +615,13 @@ func test_summon_cards_stay_on_the_board_and_vanish_after_their_first_catch() ->
 	check(state.get_pawn(23).has_left_start and state.npcs.size() == 1, "소환 칸의 말은 소환만으로는 잡히지 않는다")
 
 
-func test_neutral_npc_vanishes_at_round_end_even_without_a_target() -> void:
+func test_neutral_npc_stays_and_keeps_walking_without_a_target() -> void:
 	var state := make_state()
 	var ghost: NeutralNPC = state.spawn_npc(BoardSpec.halfway_tile, GameEnums.NpcBehavior.PATROL_REVERSE, 1, &"SUM_02")
-	var report: Dictionary = ghost.run_ai(state)
-	check(bool(report["vanished"]), "적이 없어도 라운드 끝에 사라진다")
-	check((report["path"] as Array).is_empty() and (report["caught"] as Array).is_empty(), "움직이지도 잡지도 않는다")
+	var report: Dictionary = ghost.run_ai(state, 2)
+	check(not bool(report["vanished"]), "아무도 못 잡으면 보드에 남는다")
+	check_eq(report["path"], [BoardSpec.halfway_tile - 1, BoardSpec.halfway_tile - 2] as Array[int], "역방향으로 2칸 걷는다")
+	check((report["caught"] as Array).is_empty(), "잡은 말 없음")
+	for i: int in 20:
+		var steps: int = ghost.run_ai(state)["path"].size()
+		check(steps >= NpcSweep.WANDER_MIN and steps <= NpcSweep.WANDER_MAX, "걸음 수는 1~3칸 (%d)" % steps)

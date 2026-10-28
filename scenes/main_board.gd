@@ -47,9 +47,9 @@ const REVENGE_LAUNCH_LEAD: float = 0.15
 const GATE_MAX_SECONDS: float = 1.1  ## 2026-10 여운 패치: 0.8 -> 1.1
 ## 한 칸 점프: 걸리는 시간(초)과 솟구치는 높이(px). 도착 직후 납작하게 찌그러졌다가 탱글하게 돌아온다.
 const ONE_CLICK_POWER: float = 0.75  ## 원클릭 굴림의 연출 세기 (파워 게이지를 없앴다)
-const NPC_ANNOUNCE_BODY: String = "사료스탕스는 정방향, 와구와구 유령은 역방향으로 가장 가까운 적 말을 덮치고 사라집니다"
-const NPC_TIP_ROBBER: String = "소환된 자리에서 기다리다가 라운드가 끝나면 정방향으로 가장 가까운 적 말까지 달려가 그 말 하나를 출발선으로 날려버리고 사라집니다"
-const NPC_TIP_GHOST: String = "소환된 자리에서 기다리다가 라운드가 끝나면 역방향으로 가장 가까운 적 말까지 달려가 그 말 하나를 출발선으로 날려버리고 사라집니다"
+const NPC_ANNOUNCE_BODY: String = "사료스탕스는 정방향, 와구와구 유령은 역방향으로 1~3칸 이동 · 적을 잡으면 퇴장"
+const NPC_TIP_ROBBER: String = "라운드가 끝날 때마다 정방향으로 1~3칸 이동 · 적 말을 만나면 출발선으로 날리고 퇴장"
+const NPC_TIP_GHOST: String = "라운드가 끝날 때마다 역방향으로 1~3칸 이동 · 적 말을 만나면 출발선으로 날리고 퇴장"
 const HOP_SECONDS: float = 0.20
 ## 한 칸 점프 뒤 다음 점프까지 착지해 멈춰 있는 틈 (칸 시간의 이 비율, 상한 HOP_REST_MAX초).
 const HOP_REST_RATIO: float = 0.3
@@ -195,12 +195,12 @@ const CARD_SUMMARIES: Dictionary = {
 	&"TRP_06": "밟은 적 말 +3칸 미끄러짐 + 카드 1장 강탈",
 	&"TRP_07": "지나가던 적 말 그 칸에 강제 정지",
 	&"TRP_08": "밟은 적 말 ↔ 보드 꼴찌 말 위치 교환",
-	&"TRP_C01": "[코너] 멈춘 적 말 감금",
-	&"TRP_C02": "[코너] 내 말 +5칸 점프 / 적 말 출발선 사출",
-	&"TRP_C03": "[코너] 지나가는 적은 카드 1장 상납, 없으면 강제 정지",
-	&"TRP_C04": "[코너] 밟은 적 정지 + 코너 2칸 안의 적 말 끌어오기",
-	&"SUM_01": "[상단 코너] 소환 · 라운드가 끝나면 정방향으로 가장 가까운 적 말 하나를 처치하고 사라짐",
-	&"SUM_02": "[상단 코너] 소환 · 라운드가 끝나면 역방향으로 가장 가까운 적 말 하나를 처치하고 사라짐",
+	&"TRP_C01": "[코너·3R·1회] 멈춘 적 말 감금",
+	&"TRP_C02": "[코너·3R·1회] 내 말 +5칸 점프 / 적 말 출발선 사출",
+	&"TRP_C03": "[코너·3R·1회] 지나가는 적은 카드 1장 상납, 없으면 강제 정지",
+	&"TRP_C04": "[코너·3R·1회] 밟은 적 정지 + 코너 2칸 안의 적 말 끌어오기",
+	&"SUM_01": "[상단 코너] 소환 · 라운드마다 정방향 1~3칸, 적을 잡으면 처치하고 퇴장",
+	&"SUM_02": "[상단 코너] 소환 · 라운드마다 역방향 1~3칸, 적을 잡으면 처치하고 퇴장",
 }
 
 
@@ -1408,7 +1408,7 @@ func _bind_state() -> void:
 		_steal_from = player_id  # 바로 뒤의 카드 획득은 이 사람 프로필에서 날아온다
 		_log_line("P%d의 카드 [%s]를 도적이 빼앗았습니다" % [player_id, _card_name(card_id)], Color("ff6b6b")))
 	state.npc_spawned.connect(func(_npc_id: int, tile: int) -> void:
-		_log_line("중립 기물이 %d번 타일에 소환되었습니다. 라운드가 끝나면 가장 가까운 적 말 하나를 처치하고 사라집니다." % tile, Color("fa5252"))
+		_log_line("중립 기물이 %d번 타일에 소환되었습니다. 라운드마다 1~3칸 이동하고, 적 말을 잡으면 처치하고 퇴장합니다." % tile, Color("fa5252"))
 		_refresh_all())
 	state.rulebook.law_added.connect(_on_law_added)
 	state.rulebook.law_removed.connect(func(law: LawResource) -> void:
@@ -2777,7 +2777,7 @@ func _update_dash_pulse() -> void:
 func _danger_warning_needed() -> bool:
 	if _npc_danger.is_empty() or state == null:
 		return false
-	# 이동 미리보기: 기물이 덮칠 칸이거나, 그 앞길(내가 서면 가장 가까운 적이 된다)이면 위험. 내가 소환한 기물은 내 말을 덮치지 않는다.
+	# 이동 미리보기: 기물이 덮칠 칸이거나, 앞으로 1~3칸 안이면 위험. 내가 소환한 기물은 내 말을 덮치지 않는다.
 	if _hover_danger_tile != -1 and int((_npc_danger.get(_hover_danger_tile, {}) as Dictionary).get("level", 0)) >= 1:
 		for npc: NeutralNPC in state.npcs:
 			if npc.owner_id != _dock_owner():
@@ -10299,7 +10299,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 				var npc_name: String = _npc_runner_name(report["display_id"])
 				var caught: Array = report["caught"]
 				var run_path: Array = report["path"]
-				var result_text: String = ("%s %d칸 질주 - 말 %d개를 잡고 사라졌습니다!" % [npc_name, run_path.size(), caught.size()]) if not caught.is_empty() else "%s - 처치할 적이 없어 그대로 사라졌습니다" % npc_name
+				var result_text: String = ("%s %d칸 이동 - 말 %d개를 잡고 퇴장!" % [npc_name, run_path.size(), caught.size()]) if not caught.is_empty() else "%s %d칸 이동" % [npc_name, run_path.size()]
 				_play_npc_run(report["display_id"], int(report.get("behavior", GameEnums.NpcBehavior.CHASE_NEAREST)), int(report.get("from", -1)), run_path, int(report["npc_id"]), func() -> void:
 					_log_line("[중립 기물] %s" % result_text, Color("fa5252"))
 					if not caught.is_empty():

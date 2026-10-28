@@ -1,6 +1,6 @@
 # File: res://core_engine/board/trap_island.gd
 # Class: class_name TrapIsland
-# Role: TRP_C01 무인도 감옥 (코너 전용) - 코너에 멈춘 상대 말을 가둔다. 짝수 눈금이 나오거나 카드 1장을 내면 탈출한다. 설치자의 턴 3번 동안 유지
+# Role: TRP_C01 무인도 감옥 (코너 전용) - 코너에 멈춘 상대 말을 가둔다. 짝수 눈금이 나오거나 카드 1장을 내면 탈출한다. 설치자의 턴 3번(3라운드) 동안 유지, 한 번 가두면 사라진다
 class_name TrapIsland
 extends TileAttachment
 
@@ -22,6 +22,7 @@ func on_step_trigger(victim: BoardEntity, ctx: RuleContext) -> bool:
 	if pawn.is_imprisoned or ctx.state == null:
 		return false
 	pawn.is_imprisoned = true
+	duration_turns = 0  # 1회용: 가두면 사라진다 (갇힌 말은 그대로 갇혀 있다)
 	var tile_index: int = ctx.state.board.tile_of_attachment(self)
 	ctx.state.attachment_triggered.emit(tile_index, attachment_id, pawn.entity_id, &"island_prison")
 	return false

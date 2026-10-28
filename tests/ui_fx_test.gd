@@ -2393,7 +2393,7 @@ func _test_npc_danger_preview() -> void:
 			other.reset_to_start()  # 앞선 테스트가 남긴 말이 NPC를 멈춰 세우지 않게 한다
 	_board._refresh_all()
 	_expect(_board._npc_danger.is_empty() and not _board._danger_label.visible, "NPC가 없으면 위험 예고도 경고도 없다")
-	# 소환한 사람이 아닌 쪽에서 보는 위험 예고: 팩맨(역방향)은 가장 가까운 적 말까지 달려가 그 말을 덮친다
+	# 소환한 사람이 아닌 쪽에서 보는 위험 예고: 팩맨(역방향)은 1~3칸 안에서 처음 만나는 적 말을 덮친다
 	var summoner: int = 1 if mine.owner_id != 1 else 2
 	var bystander: PlayerPawn = null
 	for other: PlayerPawn in state.pawns:
@@ -2401,16 +2401,16 @@ func _test_npc_danger_preview() -> void:
 			bystander = other
 			break
 	bystander.has_left_start = true
-	bystander.current_tile_idx = 8
+	bystander.current_tile_idx = 9
 	state.spawn_npc(12, GameEnums.NpcBehavior.PATROL_REVERSE, summoner, &"SUM_02")
 	_board._refresh_all()
-	_expect(_board._npc_danger.has(11) and _board._npc_danger.has(10) and _board._npc_danger.has(9) and _board._npc_danger.has(8), "팩맨이 가장 가까운 적(8번)까지 지나갈 칸이 위험 구간으로 표시된다")
-	_expect(not _board._npc_danger.has(7), "덮칠 칸 뒤로는 표시하지 않는다")
-	_expect(int(_board._npc_danger[8]["level"]) == 2 and int(_board._npc_danger[10]["level"]) == 1, "덮칠 칸만 경고(level 2)")
+	_expect(_board._npc_danger.has(11) and _board._npc_danger.has(10) and _board._npc_danger.has(9), "팩맨이 3칸 안의 적(9번)까지 지나갈 칸이 위험 구간으로 표시된다")
+	_expect(not _board._npc_danger.has(8), "덮칠 칸 뒤로는 표시하지 않는다")
+	_expect(int(_board._npc_danger[9]["level"]) == 2 and int(_board._npc_danger[10]["level"]) == 1, "덮칠 칸만 경고(level 2)")
 	var danger_tile: BoardSkin.Tile = _board._tile_views[10]
 	_expect(danger_tile.danger_level >= 1 and danger_tile.danger_dir != Vector2.ZERO, "위험 타일은 진행 방향을 가진다")
 	_expect(danger_tile.warning_flow.visible and not danger_tile.warning_mark.visible, "기물이 지나갈 칸에는 진행 화살표만")
-	var strike_tile: BoardSkin.Tile = _board._tile_views[8]
+	var strike_tile: BoardSkin.Tile = _board._tile_views[9]
 	_expect(strike_tile.warning_mark.visible, "덮칠 칸에는 경고 그림")
 	_expect(danger_tile.warning_mark.z_index == 0 and danger_tile.warning_flow.z_index == 0, "보드 경고가 상위 UI 팝업을 뚫고 표시되지 않는다")
 	_expect(danger_tile.warning_flow.transform.x.normalized().dot(danger_tile.danger_dir.normalized()) > 0.999, "화살표가 타일 평면에서 실제 NPC 진행 방향을 가리킨다")
@@ -2423,7 +2423,7 @@ func _test_npc_danger_preview() -> void:
 	_board._refresh_all()
 	_expect(not _board._danger_label.visible, "벗어나면 경고가 사라진다")
 	# 이동 미리보기(호버)가 기물의 앞길에 닿으면 내가 가장 가까운 적이 된다
-	_board._hover_danger_tile = 9
+	_board._hover_danger_tile = 11
 	_board._refresh_danger_label()
 	_expect(_board._danger_label.visible, "미리보기 도착 타일이 기물의 앞길이면 경고")
 	_board._hover_danger_tile = 3
@@ -2443,7 +2443,7 @@ func _test_npc_danger_preview() -> void:
 	_expect(not _board._npc_danger.has(24), "말을 만난 칸에서 멈추므로 그 뒤는 표시하지 않는다")
 	# NPC 툴팁과 라벨
 	_board._fill_npc_tip(robber.entity_id)
-	_expect(_board._tip_title.text.contains("사료스탕스") and _board._tip_title.text.contains("▶") and _board._tip_ability.text.contains("가장 가까운 적") and _board._tip_ability.text.contains("사라집니다"), "도적 툴팁: 방향과 설명 (%s)" % _board._tip_title.text)
+	_expect(_board._tip_title.text.contains("사료스탕스") and _board._tip_title.text.contains("▶") and _board._tip_ability.text.contains("1~3칸") and _board._tip_ability.text.contains("퇴장"), "도적 툴팁: 방향과 설명 (%s)" % _board._tip_title.text)
 	_expect(_board._tip_ability.text == _board.NPC_TIP_ROBBER and _board.NPC_TIP_GHOST.contains("역방향") and not _board.NPC_TIP_GHOST.contains("3~6"), "팩맨 설명: 역방향, 3~6칸 규칙 없음")
 	_expect(not _board._announce_gate_text_for_tests().contains("3~6"), "NPC 이동 안내 문구가 실제 규칙을 말한다")
 	state.clear_npcs()
@@ -2485,12 +2485,12 @@ func _test_event_order() -> void:
 	command.execute()
 	_expect(victim.has_left_start and state.npcs.size() == 1 and state.npcs[0].current_tile_idx == BoardSpec.halfway_tile, "소환 즉시는 움직이지도 잡지도 않는다")
 	var summoned: NeutralNPC = state.npcs[0]
-	var npc_report: Dictionary = summoned.run_ai(state)  # 라운드 끝 NPC 페이즈 (TurnManager._enter_neutral_npc_phase와 같은 순서)
+	var npc_report: Dictionary = summoned.run_ai(state, 3)  # 라운드 끝 NPC 페이즈 (TurnManager._enter_neutral_npc_phase와 같은 순서)
 	npc_report["display_id"] = summoned.display_id
 	npc_report["tile"] = summoned.current_tile_idx
 	state.remove_npc(summoned)
 	_board._on_event(&"npc_phase_resolved", {"reports": [npc_report]})
-	_expect(not victim.has_left_start and state.npcs.is_empty(), "라운드 끝에 가장 가까운 적을 잡고 사라진다")
+	_expect(not victim.has_left_start and state.npcs.is_empty(), "라운드 끝에 걷다가 만난 적을 잡고 사라진다")
 	var saw_runner: bool = false
 	var victim_seen_while_running: bool = false
 	var waited: float = 0.0

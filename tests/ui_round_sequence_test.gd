@@ -166,7 +166,7 @@ func _tempo_after_capture(via_npc: bool) -> void:
 		var npc: NeutralNPC = state.spawn_npc(BoardSpec.tile_count - 2, GameEnums.NpcBehavior.CHASE_NEAREST, 2, &"SUM_01")
 		board._refresh_all()
 		await process_frame
-		var report: Dictionary = npc.run_ai(state)
+		var report: Dictionary = npc.run_ai(state, 3)
 		report["display_id"] = npc.display_id
 		report["tile"] = npc.current_tile_idx
 		state.remove_npc(npc)

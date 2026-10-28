@@ -1,6 +1,6 @@
 # File: res://core_engine/commands/sweep_command.gd
 # Class: class_name SweepCommand
-# Role: 소환 카드 실행 - 보드 맨 위 꼭짓점(반환점)에 도적떼(정방향)나 팩맨(역방향)을 소환만 한다 (소환 즉시 움직이지 않는다). 라운드가 끝날 때 가장 가까운 적 말 하나를 처치하고 사라진다 (NeutralNPC.run_ai -> NpcSweep.strike)
+# Role: 소환 카드 실행 - 보드 맨 위 꼭짓점(반환점)에 도적떼(정방향)나 팩맨(역방향)을 소환만 한다 (소환 즉시 움직이지 않는다). 라운드가 끝날 때마다 1~3칸 이동하다 적 말을 만나면 처치하고 사라진다 (NeutralNPC.run_ai -> NpcSweep.wander)
 class_name SweepCommand
 extends GameCommand
 
