@@ -1276,10 +1276,10 @@ func _bind_state() -> void:
 		_fx_when_announced(func() -> void:
 			screen_shake(7.0, 0.25)
 			_impact_ring(cannon_pos, Color("63e6be"), 40.0))
-		_announce_gate("함정 발동", "도미노 연쇄!", "%s이(가) 도미노를 밟고 멈췄습니다\n반경 %d칸의 함정 %d개가 줄줄이 터집니다" % [_pawn_name(pawn_id), TrapDomino.chain_radius(), chain.size()], Color("63e6be"), null, 1.4))
+		_announce_gate("함정 발동", "도미노 연쇄!", "", Color("63e6be"), null, 1.2, {"key": "domino", "sub": "함정 %d개 연쇄" % chain.size()}))
 	state.tower_struck.connect(func(tile: int, scattered: Array[Dictionary]) -> void:
 		_log_line("[타로] 무너지는 탑이 %d번 타일에 벼락! 말 %d개가 흩어졌습니다" % [tile, scattered.size()], Color("ffa94d"))
-		_announce_gate("타로", "XVI. 무너지는 탑!", "%d번 타일에 벼락이 내리쳐 말 %d개가 뿔뿔이 흩어졌습니다" % [tile, scattered.size()], Color("ffa94d"), null, 1.5)
+		_announce_gate("타로", "무너지는 탑!", "", Color("ffa94d"), null, 1.2, {"key": "tarot_tower", "sub": "XVI · 말 %d개 흩어짐" % scattered.size()})
 		var struck_pos: Vector2 = _tile_center(tile)
 		for entry: Dictionary in scattered:
 			_set_hint(int(entry["pawn_id"]), {"arc": 52.0, "peak": 1.3, "dur": 0.6, "delay": 0.35})
@@ -1288,14 +1288,14 @@ func _bind_state() -> void:
 	state.wheel_turned.connect(func(player_id: int, mine_id: int, enemy_id: int, outcome: StringName) -> void:
 		if outcome == &"swap":
 			_log_line("[타로] P%d의 운명의 수레바퀴: %s ↔ %s 위치 교환" % [player_id, _pawn_name(mine_id), _pawn_name(enemy_id)], Color("ffa94d"))
-			_announce_gate("타로", "X. 운명의 수레바퀴!", "%s과(와) %s의 위치가 뒤바뀝니다" % [_pawn_name(mine_id), _pawn_name(enemy_id)], Color("ffa94d"), null, 1.5)
+			_announce_gate("타로", "운명의 수레바퀴!", "", Color("ffa94d"), null, 1.2, {"key": "tarot_wheel", "sub": "X · 자리 맞바꿈"})
 		elif outcome == &"eject_place":
 			_log_line("[타로] P%d의 운명의 수레바퀴: %s 장외 사출 → %s이(가) 그 자리로" % [player_id, _pawn_name(enemy_id), _pawn_name(mine_id)], Color("ffa94d"))
-			_announce_gate("타로", "X. 운명의 수레바퀴!", "%s이(가) 출발선으로 날아가고 %s이(가) 그 자리를 차지합니다" % [_pawn_name(enemy_id), _pawn_name(mine_id)], Color("ffa94d"), null, 1.5)
+			_announce_gate("타로", "운명의 수레바퀴!", "", Color("ffa94d"), null, 1.2, {"key": "tarot_wheel", "sub": "X · 자리 빼앗기"})
 			_set_hint(mine_id, {"arc": 52.0, "peak": 1.3, "dur": 0.6, "delay": 0.35})
 		else:
 			_log_line("[타로] 운명의 수레바퀴: %s 장외 사출" % _pawn_name(enemy_id), Color("ffa94d"))
-			_announce_gate("타로", "X. 운명의 수레바퀴!", "%s이(가) 출발선으로 날아갑니다" % _pawn_name(enemy_id), Color("ffa94d"), null, 1.5)
+			_announce_gate("타로", "운명의 수레바퀴!", "", Color("ffa94d"), null, 1.2, {"key": "tarot_wheel", "sub": "X · 출발선으로!"})
 		_refresh_pawns())
 	state.pawn_evolved.connect(func(pawn_id: int, kind: int, unit_no: int) -> void: _log_line("[진화] %s → %s" % [_pawn_name(pawn_id), PawnCatalog.unit_label(kind, unit_no)], Color("ffa94d")))
 	state.pawns_stacked.connect(func(leader_id: int, member_ids: Array[int]) -> void: _log_line("%s 업기 (%d마리)" % [_pawn_name(leader_id), member_ids.size()], Color("ffd43b")))
@@ -1381,7 +1381,7 @@ func _bind_state() -> void:
 		if trapped != null:
 			_record(trapped.owner_id, "%s 밟음! (%d번 타일, %s)" % [_bq(_attachment_name(id)), tile, _bq("%d번 말" % trapped.slot)])
 		if id != "TRP_05":  # 도미노는 [도미노 연쇄!] 알림(domino_collapsed)이 먼저 나왔다: 같은 알림을 연쇄 뒤에 또 띄우지 않는다
-			_announce_gate("함정 발동", "[발동!] %s" % _attachment_name(id), "%s\n%d번 타일에서 %s에게 발동" % [card_summary(StringName(id)), tile, _pawn_name(pawn_id)], Color("ff6b6b"), null, 1.2))
+			_announce_gate("함정 발동", "%s!" % _attachment_name(id), "", Color("ff6b6b"), null, 1.1, {"key": "trap_" + id, "sub": "함정 발동 · %d번 칸" % tile}))
 	# 중립 기물이 사라질 때는 알림 카드를 띄우지 않는다: 엔진이 즉시 내는 신호라 진행 중인 다른 연출(처치·이동) 사이에 끼어들었다.
 	# 결과는 [중립 기물 이동] 카드·달리기·처치 컷인과 기록(로그)으로 이미 보인다.
 	state.npc_vanished.connect(func(_npc_id: int, tile: int) -> void:
@@ -3501,7 +3501,7 @@ func _on_npc_swept(display_id: StringName, path: Array[int], ejected: Array[int]
 		outcome += "아무도 못 잡아 보드에 남아 계속 전진합니다"
 	else:
 		outcome += "말 %d개를 잡고 사라졌습니다" % ejected.size()
-	_announce("초증강" if display_id == &"TRAIN" else "소환", "[%s 출동!]" % runner, "%d번에서 출발합니다" % path[0], Color("fa5252"), null, 0.8)
+	_announce("초증강" if display_id == &"TRAIN" else "소환", "%s 출동!" % runner, "", Color("fa5252"), null, 0.8, true, {"key": "run_" + String(display_id)})
 	var npc_id: int = -1
 	var behavior: int = GameEnums.NpcBehavior.PATROL_REVERSE if display_id == &"SUM_02" else GameEnums.NpcBehavior.CHASE_NEAREST
 	for npc: NeutralNPC in state.npcs:
@@ -10109,7 +10109,7 @@ func _announce_law_added(new_law: LawResource, removed_law: LawResource) -> void
 	var body: String = new_law.description
 	if removed_law != null:
 		body += "\n(가장 오래된 [%s] %s이(가) 밀려났습니다)" % [removed_law.law_id, removed_law.law_name]
-	_announce("법전 개정", "새 특수 승리 교칙: %s" % new_law.law_name, body, COLOR_GOLD, board, 2.6)
+	_announce("법전 개정", "법전 개정!", body, COLOR_GOLD, board, 2.6, true, {"key": "law_added", "sub": new_law.law_name, "extra_below": true})
 
 
 ## 카드 사용 알림에 붙일 카드 앞면 (손패 카드와 같은 모양, 클릭 불가).
@@ -10196,7 +10196,7 @@ func _on_law_applied(law: LawResource, timing: String, dice_before: int, dice_af
 		if dice_before != dice_after:
 			detail = "  눈금 %d → %d" % [dice_before, dice_after]
 		_log_line("[법전] [%s] %s 작동 (%s)%s" % [law.law_id, law.law_name, timing, detail], Color("ffe066"))
-		_announce_soft("법전 발동", "[%s] %s" % [law.law_id, law.law_name], (law.description + detail.strip_edges().insert(0, "\n") if detail != "" else law.description), Color("ffe066"), null, 1.1)
+		_announce_soft("법전 발동", "%s!" % law.law_name, "", Color("ffe066"), null, 1.0, {"key": "law_" + law.law_id, "sub": "법전 발동"})
 	_flash_law_ids[law.law_id] = true
 	_refresh_laws()
 	get_tree().create_timer(1.0).timeout.connect(func() -> void:
@@ -10282,7 +10282,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_record(busted, "도박사의 영혼 과열! (눈금 %d, 이동 없이 차례 끝)" % int(data["roll"]))
 			# Reveal the failure with the settled roll, instead of spoiling it mid-toss.
 			if not _fx_on():
-				_announce("도박사의 영혼", "[과열!]", "눈금 %d - 이번 차례는 이동 없이 바로 끝납니다" % data["roll"], Color("ff6b6b"), null, 1.1)
+				_announce("도박사의 영혼", "과열!", "", Color("ff6b6b"), null, 1.0, true, {"key": "overheat", "sub": "눈금 %d · 0칸" % int(data["roll"])})
 		&"turn_rested":
 			var rested: int = int(data["player_id"])
 			_log_line("[강제 턴 패스] P%d가 이번 차례를 쉽니다 (UDO 스킵)" % rested, Color("adb5bd"))
@@ -10317,17 +10317,17 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 				# 은신 함정: 무슨 카드인지는 숨기고 "누가 함정을 깔았다"만 알린다 (내 함정이면 로그에만 이름을 남긴다)
 				var mine: bool = (ai_mode or net != null) and player == local_player_id
 				_log_line("[카드] P%d 함정 카드 설치%s" % [player, " [%s]" % card.display_name if mine else ""], Color("74c0fc"))
-				_announce_gate("함정 설치", "%s의 함정 카드 설치!" % _player_name(player), "어딘가에 함정이 숨겨졌습니다. 조심하세요!", PLAYER_COLORS[player], null, 1.0)
+				_announce_gate("함정 설치", "함정 설치!", "", PLAYER_COLORS[player], null, 0.9, {"key": "trap_set", "sub": _player_name(player)})
 			else:
 				_log_line("[카드] P%d [%s] 사용%s" % [player, card.display_name, " (개입 대기열 - 나중에 낸 카드부터 실행)" if data["queued"] else ""], Color("74c0fc"))
 				if ATTACK_CARDS.has(StringName(data["card_id"])):
 					# 공격 카드: 먼저 [공격 카드 발동!] 경보를 크게 띄우고, 그다음에 어떤 카드인지 공개한다
 					_announce(ATTACK_TAG, "공격!", "", Color("ff4d4d"), null, 0.7, true, {"key": "attack", "sub": _player_name(player)})
-				_announce_gate("카드 발동", "[P%d 발동!] %s" % [player, card.display_name], ("개입 대기열 등록 (후입선출)\n" if data["queued"] else "") + card_summary(data["card_id"]), PLAYER_COLORS[player], _make_card_preview(data["card_id"]), 1.2)
+				_announce_gate("카드 발동", "%s!" % card.display_name, "", PLAYER_COLORS[player], _make_card_preview(data["card_id"]), 1.2, {"key": "card_" + String(data["card_id"]), "sub": _player_name(player)})
 		&"npc_phase_resolved":
 			if not (data["reports"] as Array).is_empty():
 				# 중립 기물 이동: 안내 카드가 먼저 뜨고, 기물이 한 칸씩 달린 뒤, 말을 잡았으면 그다음에 처치 알림과 사출이 이어진다.
-				_announce_gate("중립 기물", "[중립 기물 이동]", NPC_ANNOUNCE_BODY, Color("fa5252"), null, 0.6)
+				_announce_gate("중립 기물", "%s 출동!" % _npc_runner_name((data["reports"] as Array)[0]["display_id"]), "", Color("fa5252"), null, 0.7, {"key": "npc_move", "sub": "중립 기물 이동"})
 			for report: Dictionary in data["reports"]:
 				var npc_name: String = _npc_runner_name(report["display_id"])
 				var caught: Array = report["caught"]
@@ -10420,7 +10420,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 		&"turn_rewound":
 			_roll_history.clear()
 			_record(int(data["player_id"]), "이번 턴이 통째로 되감겼습니다")
-			_announce("방어", "[바이츠 더 더스트!]", "%s의 턴이 통째로 되감기고 끝났습니다" % _player_name(int(data["player_id"])), Color("4c6ef5"), null, 1.3)
+			_announce("방어", "되감기!", "", Color("4c6ef5"), null, 1.1, true, {"key": "rewind", "sub": "%s 턴 취소" % _player_name(int(data["player_id"]))})
 		&"extra_turn":
 			_announce_soft("XI. The World!!", "한 번 더!", "", PLAYER_COLORS[int(data["player_id"])], null, 1.1, {"key": "extra_turn", "sub": _player_name(int(data["player_id"]))})
 		&"game_over":
@@ -10982,7 +10982,7 @@ func _play_stage(stage: Control, tool_id: StringName, result: Dictionary) -> voi
 ## 블랙잭 버스트: 이동 없이 턴이 끝난다. 결과 카드를 0.9초 보여 주고 프로필이 피격 반응을 한다.
 func _announce_bust(player_id: int, total: int) -> void:
 	_profile_react(player_id, false)
-	_announce("블랙잭", "[BUST!]", L10n.tf("합계 %d",[total])+" · "+L10n.t("턴 종료"), Color("ff6b6b"), null, 0.9)
+	_announce("블랙잭", "BUST!", "", Color("ff6b6b"), null, 0.9, true, {"key": "bust", "sub": L10n.tf("합계 %d",[total])+" · "+L10n.t("턴 종료")})
 	_start_beat(0.9)
 
 
@@ -11026,7 +11026,7 @@ func _reveal_roll(data: Dictionary) -> void:
 	if bool((data["result"] as Dictionary).get("can_continue", false)):
 		return  # 이어지는 굴림(러시안 룰렛 생존 등)은 패드가 누적을 보여 준다: 이동 칸수는 최종 결과가 나온 뒤 한 번만 띄운다
 	if bool(details.get("oops", false)):
-		_announce("지하노역장 친치로", "[친치로 삐끗!]", "주사위가 접시 밖으로 나갔습니다! (이번 이동 0칸)", Color("ff6b6b"), null, 1.3)
+		_announce("지하노역장 친치로", "삐끗!", "", Color("ff6b6b"), null, 1.0, true, {"key": "chinchiro_oops", "sub": "접시 밖 · 0칸"})
 		return
 	if bool((data["result"] as Dictionary).get("ends_turn", false)):
 		# 이동 없이 턴이 끝나는 굴림(러시안 룰렛 실탄·화투 망통): 결과 알림과 피격 반응을 충분히 보여 준 뒤에야 다음 차례로 넘어간다.

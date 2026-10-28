@@ -26,6 +26,7 @@ const STAMP_FONT_PX: int = 84
 const STAMP_SLAM: float = 0.16  ## 크게 떠 있다가 내려찍히는 시간 (초)
 const STAMP_SETTLE: float = 0.12  ## 내려찍힌 뒤 살짝 튕겨 제자리로 오는 시간 (초)
 const STAMP_TILT_DEG: float = -4.0
+const STAMP_MAX_WIDTH: float = 640.0  ## 도장 글자가 이보다 넓으면 글자 크기를 줄인다 (긴 카드·함정 이름)
 
 ## true면 알림을 모두 건너뛴다 (헤드리스 테스트·ui_smoke 자동 진행).
 var instant: bool = false
@@ -210,13 +211,9 @@ func _build_stamp(color: Color) -> void:
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_root)
 	var options: Dictionary = _current["stamp"]
-	if _current["extra"] != null:
-		var shown: Control = _current["extra"]
-		if shown.get_parent() != null:
-			shown.get_parent().remove_child(shown)
-		shown.show()
-		shown.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		_root.add_child(shown)
+	var below: bool = bool(options.get("extra_below", false))  # 법전 표처럼 큰 그림은 도장 아래에
+	if _current["extra"] != null and not below:
+		_add_stamp_extra()
 	var picture: Texture2D = stamp_texture(str(options.get("key", "")))
 	if picture != null:
 		var art := TextureRect.new()
@@ -231,11 +228,22 @@ func _build_stamp(color: Color) -> void:
 		_root.add_child(stamp_label(str(_current["headline"]), STAMP_FONT_PX, color))
 	if str(options.get("sub", "")) != "":
 		_root.add_child(stamp_label(str(options["sub"]), 26, color, 8))
+	if _current["extra"] != null and below:
+		_add_stamp_extra()
 	modulate = Color(1, 1, 1, 0)
 	visible = true
 	reset_size()
 	_place()
 	call_deferred("_place")
+
+
+func _add_stamp_extra() -> void:
+	var shown: Control = _current["extra"]
+	if shown.get_parent() != null:
+		shown.get_parent().remove_child(shown)
+	shown.show()
+	shown.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_root.add_child(shown)
 
 
 ## 도장 그림이 있으면 그 그림 (assets/fx/stamp/<key>.png), 없으면 null (글자 도장으로 대신한다).
@@ -260,6 +268,12 @@ static func stamp_label(text: String, size_px: int, color: Color, outline: int =
 	label.add_theme_constant_override("shadow_offset_x", 0)
 	label.add_theme_constant_override("shadow_offset_y", maxi(size_px / 14, 3))
 	label.add_theme_constant_override("shadow_outline_size", outline)
+	# 긴 글자(카드·함정 이름)는 한 줄에 들어가게 글자 크기를 줄인다 (번역된 글자 기준).
+	var font: Font = label.get_theme_font("font")
+	if font != null:
+		var width: float = font.get_string_size(L10n.t(text), HORIZONTAL_ALIGNMENT_LEFT, -1, size_px).x + outline * 2.0
+		if width > STAMP_MAX_WIDTH:
+			label.add_theme_font_size_override("font_size", maxi(int(size_px * STAMP_MAX_WIDTH / width), 30))
 	return label
 
 
