@@ -6069,9 +6069,11 @@ func _refresh_roll_pad() -> void:
 	# 앞 사람의 굴림 연출기(_presenter)가 아직 보이면 그 _fx_busy는 내 도구의 연출이 아니다 (차례가 막 넘어온 순간 내 리볼버가 먼저 떴다 숨는 깜빡임 방지).
 	var own_fx: bool = _fx_busy and manager.current_player_id() == _dock_owner() and not _presenter_showing()
 	_roll_button.visible = wanted == RollPad.Kind.NONE and roll_phase and mode != &"stage"
+	# 리볼버가 '준비' 중이라 active여도, 막는 중앙 알림(카드·공격·방어 도장)이 떠 있는 동안에는 숨긴다 (도장 밑에 총이 비치지 않게). 쏘는 중에는 그대로.
+	var pad_busy: bool = _roll_pad.active and not (_roll_pad.preparing and _announcer != null and _announcer.holding())
 	if wanted != RollPad.Kind.NONE:
-		_roll_pad.visible = roll_phase or own_fx or _roll_pad.active
-	_gun_row.visible = wanted == RollPad.Kind.REVOLVER and (roll_phase or own_fx or _roll_pad.active)
+		_roll_pad.visible = roll_phase or own_fx or pad_busy
+	_gun_row.visible = wanted == RollPad.Kind.REVOLVER and (roll_phase or own_fx or pad_busy)
 	if mode == &"big" or mode == &"charge" or mode == &"pinball":
 		_roll_button.text = _roll_button_label(owner_tool)
 	_roll_pad.set_enabled(not _roll_button.disabled)
