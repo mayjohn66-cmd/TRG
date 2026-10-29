@@ -6,9 +6,11 @@
 #       - Lv.1 크림 (사람 자리만, GameState.pacing_humans): 4칸 이하가 나오면 확률(기본 90%)로 5칸 이상 재굴림. 완주한 말이 많을수록, 컴퓨터보다 먼저 완주했으면
 #         확률이 더 오른다. 턴이 끝나는 결과(낙·삐끗 등)는 확률로 다시 굴리고, 턴 종료를 당할수록 다음 턴 종료는 더 잘 피한다.
 #         법전은 나오지 않는다 (MatchRules.for_difficulty, 2026-10-27). 커스텀으로 법전을 켜면 고르면 바로 이기는 법전의 등장 가중치를 크게 올린다.
-#       - Lv.2~3: 11라운드부터 라운드마다 15%p씩(최대 90%) 3칸 이하를 4칸 이상으로 재굴림 (Lv.2는 사람 자리만)
-#       - Lv.4~5: 잡혀서 다시 출발한 말이 반환점에 닿기 전이면, 4칸 이하가 나올 때 60%로 5칸 이상 재굴림
-#       - 공통 서든데스 (Lv.1~2는 사람 자리만): 15라운드부터 3칸 이하는 4칸 이상으로 재굴림(최소 4칸 보장 수준), 30라운드(안전장치)가 끝나면 남은 사람은 진행 순위로 확정 (TurnManager)
+#       (2026-10-29 목표 플레이타임 12~15분) Lv.2 이상의 강제 고눈금 보정을 절반 이하로 줄였다. 완주는 업기·필살기·범용 증강으로 직접 만든다.
+#       - Lv.2~3: 11라운드부터 라운드마다 7.5%p씩(최대 45%) 3칸 이하를 4칸 이상으로 재굴림 (Lv.2는 사람 자리만)
+#       - Lv.4~5: 잡혀서 다시 출발한 말이 반환점에 닿기 전이면, 4칸 이하가 나올 때 30%로 5칸 이상 재굴림
+#       - 서든데스 (Lv.1~2는 사람 자리만): 15라운드부터 3칸 이하는 4칸 이상으로 재굴림 - Lv.1 크림은 그대로(항상), Lv.2 이상은 50%
+#       - 라운드 상한: 25라운드가 끝나면 남은 사람은 진행 순위로 확정 (TurnManager, 모든 모드)
 class_name PacingDirector
 extends RefCounted
 
@@ -32,12 +34,14 @@ const CREAM_WINNING_LAW_FACTOR: float = 25.0
 ## 이 난이도 이하(Lv.1 크림·Lv.2 로제)는 고눈금 보정을 사람 자리에만 준다 (2026-10-27).
 const HUMAN_ONLY_MAX_LEVEL: int = 2
 const LATE_FROM_ROUND: int = 11
-const LATE_STEP_CHANCE: float = 0.15
-const LATE_MAX_CHANCE: float = 0.9
-const COMEBACK_CHANCE: float = 0.6
-## 서든데스: 이 라운드부터 모두 최소 4칸 수준. HARD_CAP_ROUND가 끝나면 남은 사람은 진행 순위로 확정한다.
+const LATE_STEP_CHANCE: float = 0.075
+const LATE_MAX_CHANCE: float = 0.45
+const COMEBACK_CHANCE: float = 0.3
+## 서든데스: 이 라운드부터 3칸 이하를 4칸 이상으로 다시 굴린다 (크림은 항상, Lv.2 이상은 SUDDEN_DEATH_CHANCE 확률).
+## HARD_CAP_ROUND가 끝나면 남은 사람은 진행 순위로 확정한다 (2026-10-29: 30 → 25, 모든 모드).
 const SUDDEN_DEATH_ROUND: int = 15
-const HARD_CAP_ROUND: int = 30
+const SUDDEN_DEATH_CHANCE: float = 0.5
+const HARD_CAP_ROUND: int = 25
 ## 법전 브레이크: 이 라운드 전에는 컴퓨터가 법전 달성 직전의 수를 피한다 (BotTemper).
 const LAW_BRAKE_BEFORE_ROUND: int = 11
 
@@ -116,7 +120,7 @@ static func _target_steps(state: GameState, player_id: int, lv: int, result: Rol
 	# Lv.1 크림·Lv.2 로제의 고눈금 보정(서든데스 포함)은 사람 자리에만 준다 (컴퓨터는 제 눈금 그대로).
 	if lv <= HUMAN_ONLY_MAX_LEVEL and not is_human(state, player_id):
 		return 0
-	if round_number >= SUDDEN_DEATH_ROUND and steps < HIGH_STEPS:
+	if round_number >= SUDDEN_DEATH_ROUND and steps < HIGH_STEPS and (lv == 1 or state.rng.randf() < SUDDEN_DEATH_CHANCE):
 		return HIGH_STEPS
 	match lv:
 		1:

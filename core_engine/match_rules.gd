@@ -26,7 +26,7 @@ const PRESETS: Array = [
 	[PRESET_STANDARD, "오리지널 표준", "법전 켜기 · 함정 공개 · 초증강 기본", {"laws": true, "trap_reveal": true, "super_freq": 1}],
 	[PRESET_MIND, "우정파괴 심리전", "법전 켜기 · 함정 비공개 · 초증강 축제 (확률 2배)", {"laws": true, "trap_reveal": false, "super_freq": 2}],
 ]
-## 스피드전 템포 업 라운드 (기본 7·14·20).
+## 스피드전 템포 업 라운드 (기본 8·14·20).
 const SPEED_STAGE_ROUNDS: Array[int] = [4, 8, 12]
 ## 스피드전 리벤지 부스터 추가 칸.
 const SPEED_REVENGE_EXTRA: int = 2
@@ -37,9 +37,9 @@ const EASY_SUPER_FACTOR: float = 0.6
 const EASY_LAW_FACTOR: float = 0.6
 const EASY_FRIENDLY_FACTOR: float = 1.6
 ## 드래프트에서 법전(LAW) 계열 가중치에 곱하는 배수 (2026-10-26 법전 1위 72/100판 → 1/3, 2026-10-27 법전 14/100판 → 1/2,
-## 2026-10-29 코어 유저 "여러 판 해도 법전을 한 번도 못 봤다" → 2.5배 상향 복구 1.25).
-const LAW_DRAFT_FACTOR: float = 1.25
-## 중반 법전 보장: 이 난이도(불닭 Lv.) 이상 싱글과 친선·핫시트(페이싱 없음)에서, 1단계 템포 업 라운드(기본 7R = 6라운드 동안)까지
+## 2026-10-29 코어 유저 "여러 판 해도 법전을 한 번도 못 봤다" → 너프 전(1.0)의 75%로 정상화 0.75).
+const LAW_DRAFT_FACTOR: float = 0.75
+## 중반 법전 보장: 이 난이도(불닭 Lv.) 이상 싱글과 친선·핫시트(페이싱 없음)에서, 1단계 템포 업 라운드(기본 8R)까지
 ## 법전이 하나도 없으면 무작위 특수 승리 법전 1개를 자동 제정한다 (법전 켜기일 때만, 최대 개수 max_laws는 그대로).
 const AUTO_LAW_MIN_LEVEL: int = 2
 ## 한 판에 법전에 동시에 올라 있을 수 있는 특수 승리 수: 기본 2개, 싱글 Lv.1~2는 1개. 가득 차면 드래프트·템포 업에 법전이 나오지 않는다.

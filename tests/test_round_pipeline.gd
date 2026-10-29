@@ -116,7 +116,7 @@ func _check_round_order(manager: TurnManager, seed_value: int) -> void:
 			check(actor_graduated or (entry["phase"] != State.PHASE_MOVING_STEP and entry["phase"] != State.PHASE_SELECT_PAWN), "시드 %d R%d: 특수 승리 판정이 이동 도중에 끼어들었다" % [seed_value, int(entry["round"])])
 		elif entry["kind"] == &"player_ranked":
 			var reason: StringName = entry["data"]["reason"]
-			if reason != VictoryChecker.ALL_HOME and reason != VictoryChecker.LAST_PLACE:
+			if reason != VictoryChecker.ALL_HOME and reason != VictoryChecker.LAST_PLACE and reason != VictoryChecker.RACE_ORDER:  # 라운드 상한의 진행 순위 확정은 특수 승리가 아니다
 				check(judged, "시드 %d R%d: 특수 승리(%s) 졸업 앞에 판정 이벤트가 있다" % [seed_value, int(entry["round"]), reason])
 				check(actor_graduated or (entry["phase"] != State.PHASE_MOVING_STEP and entry["phase"] != State.PHASE_SELECT_PAWN), "시드 %d R%d: 특수 승리(%s)는 행동이 끝난 뒤에 졸업" % [seed_value, int(entry["round"]), reason])
 			elif entry["phase"] == State.PHASE_MOVING_STEP:

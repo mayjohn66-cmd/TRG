@@ -30,21 +30,23 @@ func _kinds(events: Array) -> Array:
 	return events.map(func(event: Dictionary) -> StringName: return event["kind"])
 
 
-func test_stages_rise_at_rounds_7_14_20() -> void:
-	check_eq([TempoUp.level(1), TempoUp.level(6), TempoUp.level(7), TempoUp.level(13), TempoUp.level(14), TempoUp.level(20), TempoUp.level(40)], [0, 0, 1, 1, 2, 3, 3], "단계")
-	check_eq([TempoUp.move_bonus(5), TempoUp.move_bonus(7), TempoUp.move_bonus(14), TempoUp.move_bonus(20)], [0, 2, 4, 6], "최종 이동 보너스 +2/+4/+6")
+func test_stages_rise_at_rounds_8_14_20() -> void:
+	check_eq([TempoUp.level(1), TempoUp.level(7), TempoUp.level(8), TempoUp.level(13), TempoUp.level(14), TempoUp.level(20), TempoUp.level(40)], [0, 0, 1, 1, 2, 3, 3], "단계")
+	check_eq([TempoUp.move_bonus(7), TempoUp.move_bonus(8), TempoUp.move_bonus(14), TempoUp.move_bonus(20)], [0, 1, 2, 3], "최종 이동 보너스 +1/+2/+3")
 	check_eq([TempoUp.stage_name(1), TempoUp.stage_name(2), TempoUp.stage_name(3)], ["과열", "광기", "대붕괴"], "단계 이름")
-	check_eq([TempoUp.revenge_bonus(5), TempoUp.revenge_bonus(7), TempoUp.revenge_bonus(14)], [0, 6, 8], "리벤지 부스터")
-	check(TempoUp.is_stage_round(7) and TempoUp.is_stage_round(14) and TempoUp.is_stage_round(20) and not TempoUp.is_stage_round(8) and not TempoUp.is_stage_round(15) and not TempoUp.is_stage_round(22), "경고는 단계가 오르는 라운드에만")
-	# 결승선 (2026-10-29): 템포 업 단계와 무관하게 16라운드까지는 그대로, 서든데스(17R)부터 라운드마다 1칸씩 출발선 4칸 앞까지
-	check_eq(TempoUp.sudden_death_round(), 16, "서든데스 직전 라운드는 16")
-	check_eq([TempoUp.goal_shrink(7), TempoUp.goal_shrink(14), TempoUp.goal_shrink(16)], [0, 0, 0], "16라운드까지 시스템은 결승선을 당기지 않는다")
-	check_eq([TempoUp.goal_shrink(17), TempoUp.goal_shrink(18), TempoUp.goal_shrink(20)], [1, 2, 4], "17라운드부터 라운드마다 1칸씩")
-	check_eq(TempoUp.goal_shrink(99), BoardSpec.tile_count - 4, "끝까지 가도 출발선 4칸 앞에서 멈춘다")
-	check(TempoUp.is_sudden_death_start(17) and not TempoUp.is_sudden_death_start(16) and not TempoUp.is_sudden_death_start(18), "서든데스 시작 라운드는 17")
-	check(TempoUp.in_goal_zone(17, BoardSpec.tile_count - 1) and not TempoUp.in_goal_zone(17, BoardSpec.tile_count - 2), "17라운드: 마지막 1칸이 결승선")
-	check(not TempoUp.in_goal_zone(16, BoardSpec.tile_count - 1), "16라운드까지는 그대로")
-	check_eq(TempoUp.max_shrink(10), BoardSpec.tile_count - BoardSpec.halfway_tile - 4, "서든데스 전 [범용] 결승선 당기기 한도는 반환점 뒤 절반")
+	check_eq([TempoUp.revenge_bonus(7), TempoUp.revenge_bonus(8), TempoUp.revenge_bonus(14)], [0, 6, 8], "리벤지 부스터")
+	check(TempoUp.is_stage_round(8) and TempoUp.is_stage_round(14) and TempoUp.is_stage_round(20) and not TempoUp.is_stage_round(7) and not TempoUp.is_stage_round(15) and not TempoUp.is_stage_round(22), "경고는 단계가 오르는 라운드에만")
+	# 결승선 (2026-10-29 목표 12~15분): 시스템은 결승선을 당기지 않는다. [범용] 결승선 당기기(goal_shrink_bonus)로만 당겨진다.
+	for round_number: int in [1, 8, 14, 17, 20, 25, 99]:
+		check_eq(TempoUp.goal_shrink(round_number), 0, "%d라운드: 시스템 결승선 단축 없음" % round_number)
+	check(not TempoUp.in_goal_zone(30, BoardSpec.tile_count - 1), "라운드가 길어져도 결승선은 그대로")
+	var state := make_state()
+	state.round_number = 20
+	check_eq(TempoUp.zone_start_for(state), -1, "증강이 없으면 당겨진 결승선도 없다")
+	state.goal_shrink_bonus = 3
+	check_eq(TempoUp.zone_start_for(state), BoardSpec.tile_count - 3, "[범용] 결승선 당기기만큼 당겨진다")
+	state.goal_shrink_bonus = 999
+	check_eq(TempoUp.shrink_for(state), BoardSpec.tile_count - BoardSpec.halfway_tile - 4, "[범용] 결승선 당기기 한도는 반환점 뒤 절반")
 
 
 func test_augment_weights_and_tempo_multiplier() -> void:
@@ -53,10 +55,10 @@ func test_augment_weights_and_tempo_multiplier() -> void:
 	check_eq(AugmentRegistry.get_def(&"EVO_1_1").weight, 50, "말 50")
 	check_eq(AugmentRegistry.get_def(&"TOOL_YUT").weight, 50, "도구 50")
 	var state := make_state()
-	state.round_number = 6
-	check_eq(AugmentRegistry.effective_weight(AugmentRegistry.get_def(&"SUPER_01"), state), 10.0, "6라운드 초증강 그대로")
 	state.round_number = 7
-	check_eq(AugmentRegistry.effective_weight(AugmentRegistry.get_def(&"SUPER_01"), state), 30.0, "과열(7R): 초증강 확률 상승")
+	check_eq(AugmentRegistry.effective_weight(AugmentRegistry.get_def(&"SUPER_01"), state), 10.0, "7라운드 초증강 그대로")
+	state.round_number = 8
+	check_eq(AugmentRegistry.effective_weight(AugmentRegistry.get_def(&"SUPER_01"), state), 30.0, "과열(8R): 초증강 확률 상승")
 	check(is_equal_approx(AugmentRegistry.effective_weight(AugmentRegistry.get_def(&"AUG_LAW_01"), state), 5.0 * MatchRules.LAW_DRAFT_FACTOR), "과열: 법전은 그대로 (법전 기본 배수만)")
 	state.round_number = 14
 	check(is_equal_approx(AugmentRegistry.effective_weight(AugmentRegistry.get_def(&"AUG_LAW_01"), state), 15.0 * MatchRules.LAW_DRAFT_FACTOR), "광기(14R): 법전 확률 3배")
@@ -66,10 +68,10 @@ func test_augment_weights_and_tempo_multiplier() -> void:
 func test_revenge_boost_grows_with_tempo() -> void:
 	var state := make_state()
 	var pawn: PlayerPawn = state.get_pawn(11)
-	state.round_number = 5
-	check_eq(MoveExecutor.revenge_bonus_of(pawn, state), GameData.revenge_bonus(), "기본 리벤지 부스터")
 	state.round_number = 7
-	check_eq(MoveExecutor.revenge_bonus_of(pawn, state), 6, "7라운드 +6칸")
+	check_eq(MoveExecutor.revenge_bonus_of(pawn, state), GameData.revenge_bonus(), "기본 리벤지 부스터")
+	state.round_number = 8
+	check_eq(MoveExecutor.revenge_bonus_of(pawn, state), 6, "8라운드 +6칸")
 	state.round_number = 14
 	check_eq(MoveExecutor.revenge_bonus_of(pawn, state), 8, "14라운드 +8칸")
 
@@ -77,29 +79,29 @@ func test_revenge_boost_grows_with_tempo() -> void:
 func test_stage_round_warns_before_the_round_is_declared() -> void:
 	var manager := _new_manager()
 	var events: Array = _events(manager)
-	manager.state.round_number = 7
+	manager.state.round_number = 8
 	manager._enter_round_start()
 	var kinds: Array = _kinds(events)
-	check(kinds.has(&"tempo_up"), "7라운드 시작에 템포 업 경고")
+	check(kinds.has(&"tempo_up"), "8라운드 시작에 템포 업 경고")
 	var warning: Dictionary = events[kinds.find(&"tempo_up")]["data"]
 	check_eq(int(warning["level"]), 1, "1단계")
 	check_eq((warning["lines"] as Array).size(), 4, "효과 문구 3줄 + 법전이 비어 있어 자동 제정 안내 1줄")
 	check(str(warning["lines"][3]).contains("자동 제정"), "법전 자동 제정 안내")
 	events.clear()
-	manager.state.round_number = 8
+	manager.state.round_number = 9
 	manager._enter_round_start()
 	check(not _kinds(events).has(&"tempo_up"), "단계가 오르지 않는 라운드는 경고하지 않는다")
 	_dispose(manager)
 
 
-## 중반 법전 보장 (2026-10-29): 1단계(7R)까지 법전이 비어 있으면 무작위 특수 승리 법전 1개를 자동 제정한다. 14·20라운드에는 다시 하지 않는다.
+## 중반 법전 보장 (2026-10-29): 1단계(8R)까지 법전이 비어 있으면 무작위 특수 승리 법전 1개를 자동 제정한다. 14·20라운드에는 다시 하지 않는다.
 func test_tempo_stage1_enacts_one_law_when_the_codex_is_empty() -> void:
 	var manager := _new_manager()
 	var events: Array = _events(manager)
-	manager.state.round_number = 7
+	manager.state.round_number = 8
 	manager._enter_round_start()
 	var ids: Array = manager.state.rulebook.law_ids()
-	check_eq(ids.size(), 1, "7라운드: 법전이 비어 있으면 1개 자동 제정")
+	check_eq(ids.size(), 1, "8라운드: 법전이 비어 있으면 1개 자동 제정")
 	check(VictoryLaw.is_victory_id(String(ids[0])), "특수 승리 법전")
 	var auto: Array = events.filter(func(event: Dictionary) -> bool: return event["kind"] == &"law_auto_enacted")
 	check(auto.size() == 1 and String(auto[0]["data"]["law_id"]) == String(ids[0]), "자동 제정 이벤트")
@@ -113,7 +115,7 @@ func test_tempo_stage1_enacts_one_law_when_the_codex_is_empty() -> void:
 func test_auto_law_skips_when_a_law_exists_or_laws_are_off_or_cream() -> void:
 	var manager := _new_manager()
 	manager.state.rulebook.enqueue_law(LawRegistry.create("LAW_01"))
-	manager.state.round_number = 7
+	manager.state.round_number = 8
 	manager._enter_round_start()
 	check_eq(manager.state.rulebook.law_ids(), ["LAW_01"], "누가 이미 법전을 뽑았으면 자동 제정하지 않는다")
 	_dispose(manager)
@@ -125,7 +127,7 @@ func test_auto_law_skips_when_a_law_exists_or_laws_are_off_or_cream() -> void:
 		off.match_rules = rules
 		tree.root.add_child(off)
 		off.start_game([1, 2] as Array[int], 4242)
-		off.state.round_number = 7
+		off.state.round_number = 8
 		off._enter_round_start()
 		check(off.state.rulebook.law_ids().is_empty(), "법전 끄기·Lv.1 크림은 자동 제정 없음 (%s)" % str(rules.get("pacing", 0)))
 		_dispose(off)
@@ -137,9 +139,9 @@ func test_auto_law_skips_when_a_law_exists_or_laws_are_off_or_cream() -> void:
 		single.match_rules = MatchRules.for_difficulty(level)
 		tree.root.add_child(single)
 		single.start_game([1, 2] as Array[int], 4242 + level)
-		single.state.round_number = 7
+		single.state.round_number = 8
 		single._enter_round_start()
-		check_eq(single.state.rulebook.law_ids().size(), 1, "Lv.%d: 7라운드에 법전 1개 자동 제정" % level)
+		check_eq(single.state.rulebook.law_ids().size(), 1, "Lv.%d: 8라운드에 법전 1개 자동 제정" % level)
 		check(MatchRules.victory_law_count(single.state) <= MatchRules.max_laws(single.state), "최대 법전 개수를 넘지 않는다")
 		_dispose(single)
 
@@ -153,8 +155,8 @@ func test_tempo_bonus_is_added_to_the_final_move() -> void:
 	manager.act(&"roll", {"player_id": 1})
 	var boosted: Array = events.filter(func(event: Dictionary) -> bool: return event["kind"] == &"tempo_boosted")
 	check_eq(boosted.size(), 1, "템포 업 보너스 이벤트")
-	check_eq([int(boosted[0]["data"]["from"]), int(boosted[0]["data"]["to"])], [2, 6], "눈금 2 → 최종 6칸 (광기 +4)")
-	check_eq(manager._queued_dice(), 6, "이동 대기열에 반영")
+	check_eq([int(boosted[0]["data"]["from"]), int(boosted[0]["data"]["to"])], [2, 4], "눈금 2 → 최종 4칸 (광기 +2)")
+	check_eq(manager._queued_dice(), 4, "이동 대기열에 반영")
 	_dispose(manager)
 
 
@@ -164,7 +166,7 @@ func test_tempo_bonus_skips_bonus_rolls_in_the_same_turn() -> void:
 	var first: RollResult = RollResult.make(&"YUT", 4, {})
 	first.reroll = true
 	manager._apply_roll_result(first)
-	check_eq(manager._queued_dice(), 8, "첫 이동: 눈금 4 + 광기 4")
+	check_eq(manager._queued_dice(), 6, "첫 이동: 눈금 4 + 광기 2")
 	manager.move_queue.clear()
 	manager._apply_roll_result(RollResult.make(&"YUT", 3, {}))
 	check_eq(manager._queued_dice(), 3, "같은 차례 추가 굴림에는 템포 업 보너스가 없다")
@@ -174,7 +176,8 @@ func test_tempo_bonus_skips_bonus_rolls_in_the_same_turn() -> void:
 func test_pulled_in_goal_line_finishes_pawns_on_the_move_and_at_round_start() -> void:
 	var state := make_state()
 	state.round_number = 22
-	var zone: int = TempoUp.goal_zone_start(22)
+	state.goal_shrink_bonus = 6
+	var zone: int = TempoUp.zone_start_for(state)
 	place(state, 11, zone - 3, [zone - 4])
 	var report: MoveReport = move(state, 11, 6)
 	check(report.finished and state.get_pawn(11).is_finished, "당겨진 결승선에 들어서면 완주")
@@ -186,9 +189,8 @@ func test_pulled_in_goal_line_finishes_pawns_on_the_move_and_at_round_start() ->
 	standing.current_tile_idx = BoardSpec.tile_count - 1
 	manager.state.round_number = 22
 	manager._enter_round_start()
-	check(standing.is_finished, "결승선이 당겨져 그 안에 서 있던 말은 바로 완주")
-	var shrunk: Array = events.filter(func(event: Dictionary) -> bool: return event["kind"] == &"goal_shrunk")
-	check(shrunk.size() == 1 and (shrunk[0]["data"]["finished"] as Array).has(21), "결승선 이벤트에 완주한 말")
+	check(not standing.is_finished, "증강이 없으면 라운드가 길어져도 결승선은 그대로")
+	check(not _kinds(events).has(&"goal_shrunk"), "시스템 결승선 단축 이벤트 없음")
 	_dispose(manager)
 
 
@@ -241,7 +243,7 @@ func test_kaiji_counts_without_revenge_and_tempo_bonus() -> void:
 	report.revenge_bonus = 0
 	manager._move_tempo_bonus = 0
 	check_eq(manager.kaiji_steps(report), 18, "보너스가 없으면 그대로")
-	# 실제 굴림: 15라운드(템포 +4)에 눈금 2를 굴려 6칸 이동해도 카이지는 2칸으로 센다
+	# 실제 굴림: 15라운드(템포 +2)에 눈금 2를 굴려 4칸 이동해도 카이지는 2칸으로 센다
 	var events: Array = _events(manager)
 	manager.state.rulebook.enqueue_law(LawRegistry.create("LAW_04"))
 	manager.state.round_number = 15
@@ -251,7 +253,7 @@ func test_kaiji_counts_without_revenge_and_tempo_bonus() -> void:
 	if manager.current_state == TurnManager.State.PHASE_SELECT_PAWN:
 		manager.act(&"select_pawn", {"player_id": 1, "pawn_id": manager.state.selectable_pawns(1, 4)[0].entity_id})
 	check(events.any(func(event: Dictionary) -> bool: return event["kind"] == &"move_resolved"), "이동했다")
-	check_eq(manager.state.stat(1, VictoryLaw.BEST_MOVE), 2, "템포 업 +4를 뺀 2칸만 기록")
+	check_eq(manager.state.stat(1, VictoryLaw.BEST_MOVE), 2, "템포 업 +2를 뺀 2칸만 기록")
 	_dispose(manager)
 
 

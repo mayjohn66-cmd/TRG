@@ -1297,14 +1297,15 @@ func _auto_enact_law() -> void:
 	_emit_event(&"law_auto_enacted", {"round": state.round_number, "law_id": law.law_id})
 
 
-## 템포 업: 단계가 오르는 라운드(TempoUp.STAGE_ROUNDS, 7·14·20)는 라운드를 선언하기 전에 경고 이벤트를 먼저 보낸다.
+## 템포 업: 단계가 오르는 라운드(TempoUp.STAGE_ROUNDS, 8·14·20)는 라운드를 선언하기 전에 경고 이벤트를 먼저 보낸다.
 ## 서든데스(기본 17R)부터는 라운드마다 결승선이 1칸씩 당겨져 그 안에 선 말이 바로 완주한다.
 ## 1단계(7R)에는 중반 법전 보장을 본다 (2026-10-29: 6라운드 동안 아무도 법전을 뽑지 않았으면 무작위 법전 1개 자동 제정).
 ## 완주로 게임이 끝났으면 true.
 func _apply_tempo_up() -> bool:
 	var round_number: int = state.round_number
-	# 히든 페이싱: 30라운드(안전장치)가 끝나도 남은 사람은 진행 순위로 확정하고 판을 끝낸다 (싱글 불닭 난이도만, 맨 뒤 한 명은 꼴찌).
-	if PacingDirector.enabled(state) and round_number > PacingDirector.HARD_CAP_ROUND and not is_game_over:
+	# 라운드 상한: 25라운드가 끝나면 남은 사람은 진행 순위로 확정하고 판을 끝낸다 (모든 모드, 맨 뒤 한 명은 꼴찌).
+	# 2026-10-29 결승선 자동 단축을 없애 판을 끝내는 장치는 이 상한뿐이다 (목표 플레이타임 12~15분).
+	if round_number > PacingDirector.HARD_CAP_ROUND and not is_game_over:
 		var order: Array = VictoryChecker.sort_by_race(state, state.active_players(player_order))
 		if not order.is_empty():
 			_emit_event(&"race_ranked", {"players": order, "round_cap": true})

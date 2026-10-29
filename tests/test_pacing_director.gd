@@ -118,11 +118,11 @@ func test_mid_levels_ramp_up_after_round_eleven() -> void:
 	var early: float = _share(_histogram(early_state, ToolDiceD6.new()), func(s: int) -> bool: return s >= 4)
 	var late: float = _share(_histogram(late_state, ToolDiceD6.new()), func(s: int) -> bool: return s >= 4)
 	check(early > 0.43 and early < 0.57, "Lv.2 10라운드까지는 기본 확률 (%.2f)" % early)
-	check(late > 0.75, "Lv.2 14라운드: 고눈금이 점점 늘어난다 (%.2f)" % late)
+	check(late > 0.58 and late < 0.75, "Lv.2 14라운드: 고눈금이 완만하게 늘어난다 (절반으로 줄인 보정, %.2f)" % late)
 	var bot: float = _share(_histogram(_state(2, 16), ToolDiceD6.new()), func(s: int) -> bool: return s >= 4)
 	check(bot > 0.43 and bot < 0.57, "Lv.2: 컴퓨터 자리는 서든데스까지 보정 없음 (%.2f)" % bot)
 	var lv3_bot: float = _share(_histogram(_state(3, 14), ToolDiceD6.new()), func(s: int) -> bool: return s >= 4)
-	check(lv3_bot > 0.75, "Lv.3부터는 컴퓨터도 같은 보정 (%.2f)" % lv3_bot)
+	check(lv3_bot > 0.58 and lv3_bot < 0.75, "Lv.3부터는 컴퓨터도 같은 보정 (%.2f)" % lv3_bot)
 
 
 func test_high_levels_help_captured_pawns_until_halfway() -> void:
@@ -134,14 +134,18 @@ func test_high_levels_help_captured_pawns_until_halfway() -> void:
 	state.send_to_start(pawn, 2)
 	check(pawn.comeback_run, "잡혀서 출발선으로 간 말은 추격 표시")
 	var boosted: float = _share(_histogram(state, ToolDiceD6.new()), func(s: int) -> bool: return s >= 5)
-	check(boosted > 0.6, "Lv.4: 다시 출발한 말이 있으면 5~6칸이 크게 늘어난다 (%.2f)" % boosted)
+	check(boosted > 0.48 and boosted < 0.65, "Lv.4: 다시 출발한 말이 있으면 5~6칸이 늘어난다 (절반으로 줄인 보정, %.2f)" % boosted)
 	place(state, 11, BoardSpec.halfway_tile)
 	check(not PacingDirector.has_comeback(state, 1) and not pawn.comeback_run, "반환점에 닿으면 추격 표시가 지워진다")
 
 
 func test_sudden_death_from_round_fifteen() -> void:
 	var low: float = _share(_histogram(_state(3, 15), ToolDiceD6.new()), func(s: int) -> bool: return s < 4)
-	check(low < 0.01, "15라운드부터 모두 4칸 이상 수준 (%.3f)" % low)
+	check(low > 0.08 and low < 0.25, "Lv.3 15라운드: 3칸 이하가 절반 넘게 줄지만 남는다 (%.3f)" % low)
+	var cream_state: GameState = _state(1, 15)
+	cream_state.pacing_humans = [1] as Array[int]
+	var cream_low: float = _share(_histogram(cream_state, ToolDiceD6.new()), func(s: int) -> bool: return s < 4)
+	check(cream_low < 0.01, "Lv.1 크림 사람 자리는 15라운드부터 모두 4칸 이상 그대로 (%.3f)" % cream_low)
 
 
 func test_stateful_tools_are_never_rerolled() -> void:
@@ -161,7 +165,7 @@ func test_round_cap_ends_the_game_by_race_order() -> void:
 	manager.start_game([1, 2, 3, 4] as Array[int], 99)
 	manager.state.round_number = PacingDirector.HARD_CAP_ROUND + 1
 	manager._enter_round_start()
-	check(manager.is_game_over, "20라운드가 끝나면 판이 끝난다")
+	check(manager.is_game_over, "25라운드가 끝나면 판이 끝난다")
 	check_eq(manager.state.rankings.size(), 4, "남은 사람 모두 진행 순위로 확정")
 	check_eq(manager.state.rank_reasons[manager.state.rankings[3]], VictoryChecker.LAST_PLACE, "맨 뒤 한 명은 꼴찌")
 	tree.root.remove_child(manager)

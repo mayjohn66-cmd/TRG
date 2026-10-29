@@ -10266,7 +10266,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_refresh_tiles()
 			_log_line("[템포 업] 결승선이 %d칸 당겨졌습니다 (%d번 칸부터 결승)%s" % [data["shrink"], data["zone_start"], ", 완주 %d" % finished_ids.size() if not finished_ids.is_empty() else ""], Color("ffd43b"))
 			_record(-1, "결승선 %d칸 당겨짐 (%d번부터 결승)%s" % [int(data["shrink"]), int(data["zone_start"]), " - 말 %d개 즉시 완주!" % finished_ids.size() if not finished_ids.is_empty() else ""])
-			if TempoUp.is_stage_round(int(data["round"])) or TempoUp.is_sudden_death_start(int(data["round"])) or not finished_ids.is_empty():
+			if TempoUp.is_stage_round(int(data["round"])) or not finished_ids.is_empty():
 				_announce("템포 업", "결승선 당김!", "", Color("ffd43b"), null, 1.6, true, {"key": "goal_shrunk", "sub": "%d번 칸부터 결승" % int(data["zone_start"]) + ("  ·  " + "말 %d개 완주!" % finished_ids.size() if not finished_ids.is_empty() else "")})
 		&"tempo_boosted":
 			_roll_total[int(data["player_id"])] = int(data["to"])
