@@ -1536,6 +1536,8 @@ func _apply_roll_result(result: RollResult) -> void:
 		move_queue.append(boosted)
 	_roll_chain += 1
 	SpecialVictory.note_session(state, current_player_id(), VictoryLaw.BEST_CHAIN, _roll_chain)  # 🏆 초전도체 무한 동력
+	if _roll_chain >= 2 and state.rulebook.has_law("LAW_07"):
+		_emit_event(&"law_chain_combo", {"player_id": current_player_id(), "chain": _roll_chain, "goal": SpecialVictory.goal_of(state, "LAW_07")})  # 1.01 콤보 배너
 	# 추가 굴림(윷·모, 야추, 역만, 블랙잭, 타로, 룰렛 대박): 이번 눈금으로 먼저 움직이고, 이동이 끝난 뒤 다시 굴린다.
 	# 카드는 턴당 1장 그대로다 (추가 굴림 앞에 카드 단계가 다시 오지만, 이미 냈으면 더 낼 수 없다).
 	if result.reroll and _roll_chain < GameEnums.MAX_REROLL_CHAIN:
@@ -1738,6 +1740,10 @@ func _enter_neutral_npc_phase() -> void:
 ## 서바이벌 순위 판정 (VictoryChecker): 승리 조건을 달성한 사람을 다음 순위로 졸업시킨다.
 ## 남은 사람이 1명이면 그 사람이 꼴찌로 확정되고 게임이 끝난다. 게임이 끝났거나 지금 차례인 사람이 졸업해 턴이 넘어갔으면 true (호출한 쪽은 진행을 멈춘다).
 ## 카이지의 한방 역전법이 세는 이번 이동 칸 수: 실제로 간 칸 - 리벤지 부스터 칸 - 템포 업 보너스(굴림으로 한 이동만).
+## 이 칸 수 이상 한 번에 움직이면 카이지 폭주 미터를 띄운다 (1.01, 법전에 카이지가 있을 때).
+const KAIJI_SHOW_STEPS: int = 8
+
+
 func kaiji_steps(report: MoveReport) -> int:
 	return maxi(report.path.size() - report.revenge_bonus - _move_tempo_bonus, 0)
 
@@ -1750,6 +1756,9 @@ func _check_victory(report: MoveReport) -> bool:
 		# 🏆 카이지의 한방 역전법: 출발선 리벤지 부스터 칸과 라운드 템포 업 고정 보너스는 빼고 센다
 		# (순수 판정 도구 눈금 + 기물 패시브 + 카드 효과로 크게 움직였을 때만 달성되게)
 		SpecialVictory.note_session(state, current, VictoryLaw.BEST_MOVE, kaiji_steps(report))
+		if kaiji_steps(report) >= KAIJI_SHOW_STEPS and state.rulebook.has_law("LAW_04"):
+			_emit_event(&"law_kaiji_move", {"player_id": current, "pawn_id": report.pawn_id, "steps": kaiji_steps(report),
+				"goal": SpecialVictory.goal_of(state, "LAW_04"), "path": report.path.duplicate()})  # 1.01 폭주 미터·불꽃 궤적
 	var current_graduated: bool = false
 	# 특수 승리는 차례가 끝날 때(_judge_special_victory) 판정한다. 행동 도중인 여기서는 말 4개 완주만 본다.
 	for entry: Dictionary in VictoryChecker.newly_qualified(state, player_order, current, false):

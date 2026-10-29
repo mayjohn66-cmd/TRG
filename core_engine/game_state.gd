@@ -8,6 +8,8 @@ extends RefCounted
 signal pawn_stepped(pawn_id: int, from_tile: int, to_tile: int)
 signal pawn_warped(pawn_id: int, from_tile: int, to_tile: int)
 signal pawn_sent_to_start(pawn_id: int, by_player: int)
+## 🏆 법전에 걸린 특수 승리 기록이 올랐다 (1.01 진행도 연출): 기록 키, 올라간 뒤 값, 일이 일어난 칸(-1이면 모름).
+signal law_stat_gained(player_id: int, key: StringName, value: int, tile: int)
 ## A real player-pawn capture, once per victim stack, before reset signals.
 ## Traps, self-recalls and NPC attacks deliberately do not emit this.
 signal pawn_captured(attacker_pawn_id: int, victim_pawn_id: int)
@@ -147,6 +149,8 @@ var law_stats: Dictionary = {}
 var siege_armed: Dictionary = {}
 ## 이번 판정에서 포위망 졸업 자격을 얻은 사람 (판정이 끝나면 비운다).
 var siege_ready: Dictionary = {}
+## law_stat_gained에 실을 칸 (기록이 오르는 순간의 위치: 처치·사출된 자리, 빵집 칸). 쓰고 나면 -1로 돌린다.
+var stat_tile: int = -1
 ## 히든 페이싱: 사람 자리(AI 대전의 내 자리, TurnManager.pacing_humans에서 받는다)와 사람별 턴 종료를 당한 횟수 (크림 보정). 화면에는 보이지 않는다.
 var pacing_humans: Array[int] = []
 var pacing_turn_ends: Dictionary = {}
@@ -393,9 +397,11 @@ func send_to_start(pawn: PlayerPawn, by_player: int) -> void:
 	var enemy_kill: bool = by_player >= 1 and by_player != pawn.owner_id
 	var underdog: bool = enemy_kill and finished_count(by_player) == 0 and race_leader(by_player) == pawn.owner_id
 	var entry: Dictionary = record_hit(pawn) if enemy_kill else {}
+	var hit_tile: int = pawn.current_tile_idx if pawn.has_left_start else -1
 	for member: PlayerPawn in members:
 		# 보드 위에 나와 있던 말만 복수심을 얻는다 (이미 출발선에 있던 말은 해당 없음).
 		var was_out: bool = member.has_left_start and not member.is_finished
+		stat_tile = hit_tile
 		member.reset_to_start()
 		member.revenge_boost = member.revenge_boost or was_out
 		member.comeback_run = member.comeback_run or was_out
@@ -417,6 +423,7 @@ func send_to_start(pawn: PlayerPawn, by_player: int) -> void:
 			if underdog:
 				add_stat(by_player, &"underdog")
 				_note_entry_stat(entry, &"underdog")
+	stat_tile = -1
 	if not hurt_players.has(pawn.owner_id):
 		hurt_players.append(pawn.owner_id)
 	for member: PlayerPawn in members:
@@ -718,6 +725,18 @@ func add_stat(player_id: int, key: StringName, amount: int = 1) -> void:
 	if not law_stats.has(player_id):
 		law_stats[player_id] = {}
 	law_stats[player_id][key] = stat(player_id, key) + amount
+	if amount > 0 and not VictoryLaw.SESSION_KEYS.has(key) and _law_watches(key):
+		law_stat_gained.emit(player_id, key, stat(player_id, key), stat_tile)
+
+
+## 법전에 이 기록을 세는 특수 승리 교칙이 걸려 있는가.
+func _law_watches(key: StringName) -> bool:
+	if rulebook == null:
+		return false
+	for law: LawResource in rulebook.active_laws_queue:
+		if law is VictoryLaw and (law as VictoryLaw).stat_key == key:
+			return true
+	return false
 
 
 ## 최고 기록을 갱신한다 (더 클 때만).

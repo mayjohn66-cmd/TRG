@@ -292,6 +292,12 @@ var state: GameState = null
 
 var _board_layer: Control = null
 var _pawn_layer: Node2D = null
+## 1.01 특수 승리 시각 피드백 (구슬·카운트 배너·타겟 마커·사이렌).
+var _law_fx: LawFeedback = null
+## 법전 졸업 컷신에 쓰는 원인 칸: "플레이어:법전ID" -> 마지막으로 기록이 오른 칸들.
+var _law_cause_tiles: Dictionary = {}
+## 특수 승리 판정 순간의 진행도·원인 칸 (졸업하면 말이 철수하고 법전이 지워지므로 미리 잡아 둔다): 플레이어 -> {value, tiles}
+var _law_win_detail: Dictionary = {}
 var _tile_views: Dictionary = {}
 var _highlights: Dictionary = {}
 var _pick_marks: Dictionary = {}
@@ -1196,6 +1202,12 @@ func _new_game() -> void:
 
 func _bind_state() -> void:
 	_game_started_msec = Time.get_ticks_msec()
+	state.law_stat_gained.connect(func(player_id: int, key: StringName, value: int, tile: int) -> void:
+		var law_id: String = str(LawFeedback.GAIN_STYLE.get(key, ["", "", ""])[2])
+		if tile >= 0 and law_id != "":
+			_law_cause_tiles["%d:%s" % [player_id, law_id]] = [tile]
+		# 사출·처치 연출(이 신호 뒤에 늦은 단계로 들어온다)이 끝난 다음에 구슬이 날아가게 한 프레임 미뤄 큐에 넣는다
+		_queue_law_gain.call_deferred(player_id, key, value, tile))
 	state.pawn_stepped.connect(_on_pawn_stepped)
 	state.pawn_warped.connect(_on_pawn_warped)
 	state.pawn_warped.connect(func(pawn_id: int, _from_tile: int, to_tile: int) -> void: _note_super({"kind": "teleport", "pawn": pawn_id, "tile": to_tile}))
@@ -1474,6 +1486,14 @@ func _build_ui() -> void:
 	_board_layer.add_child(_board_edge)
 	_pawn_layer = Node2D.new()
 	add_child(_pawn_layer)
+	# 1.01 특수 승리 시각 피드백: 보드 위 마커(말보다 위) + 화면 위 구슬·배너 레이어
+	var law_fx_screen := CanvasLayer.new()
+	law_fx_screen.name = "LawFeedbackScreen"
+	law_fx_screen.layer = 58
+	add_child(law_fx_screen)
+	_law_fx = LawFeedback.new()
+	_law_fx.setup(self, law_fx_screen)
+	add_child(_law_fx)
 
 	_build_toast_label()
 	_build_profiles()
@@ -4066,7 +4086,8 @@ func _refresh_laws() -> void:
 				_law_progress[slot].visible = viewer != -1
 				mine_done = viewer != -1 and value >= victory.goal() and not state.is_graduated(viewer)
 				_law_progress[slot].add_theme_color_override("font_color", Color("ffd43b") if mine_done else Color("fff3bf"))
-			_set_law_near(slot, 2 if mine_done else (1 if danger else 0))
+			var reach: bool = law is VictoryLaw and state.player_ids.any(func(player_id: int) -> bool: return SpecialVictory.is_reach(state, law as VictoryLaw, player_id))
+			_set_law_near(slot, 2 if mine_done else (3 if reach else (1 if danger else 0)))
 		else:
 			if slot < _law_progress.size():
 				_law_progress[slot].visible = false
@@ -4076,6 +4097,32 @@ func _refresh_laws() -> void:
 			_law_labels[slot].add_theme_color_override("font_color", UiSkin.SOFT)
 			_law_descs[slot].text = ""
 			_law_slots[slot].tooltip_text = ""
+	# 1.01 리치 사이렌: 누군가 딱 한 걸음 남으면 화면 위쪽에 비상 배너 (같은 상태로는 다시 울리지 않는다)
+	if _law_fx != null and manager != null and not manager.is_game_over:
+		for reach: Array in _law_fx.new_reaches():
+			var reach_law: LawResource = reach[0]
+			var reach_player: int = int(reach[1])
+			var siren_text: String = "[비상!] %s님의 [%s] 달성까지 딱 1걸음 남았습니다!" % [_player_name(reach_player), reach_law.law_name]
+			_log_line(siren_text, Color("ff6b6b"))
+			if _fx_on():
+				_enqueue_late(func() -> void:
+					Sfx.play(&"tempo_warning")
+					_law_fx.show_siren(siren_text))
+
+
+## 법전 기록이 오른 장면(구슬 + 머리 위 배너)을 늦은 단계로 세운다 (_bind_state에서 한 프레임 미뤄 부른다).
+func _queue_law_gain(player_id: int, key: StringName, value: int, tile: int) -> void:
+	if _law_fx == null or not _fx_on():
+		return
+	_enqueue_late(func() -> void: _law_fx.show_gain(player_id, key, value, tile))
+
+
+## 이 법전이 걸린 슬롯 (없으면 null): 진행도 구슬이 꽂히는 자리.
+func law_slot_for(law_id: String) -> Control:
+	for slot: int in mini(state.rulebook.active_laws_queue.size(), _law_slots.size()):
+		if state.rulebook.active_laws_queue[slot].law_id == law_id:
+			return _law_slots[slot]
+	return null
 
 
 ## 법전 진행도 배지를 보여 줄 사람: 컴퓨터 대전·온라인은 나, 한 화면 여럿이 하는 판은 지금 차례인 사람.
@@ -4098,7 +4145,7 @@ func _set_law_near(slot: int, mode: int) -> void:
 		return
 	_law_badge_state[slot] = mode
 	badge.visible = mode != 0
-	badge.text = "[★ 턴 종료 시 달성!]" if mode == 2 else "[달성 임박!]"
+	badge.text = "[★ 턴 종료 시 달성!]" if mode == 2 else ("[비상! 1걸음]" if mode == 3 else "[달성 임박!]")
 	var box: StyleBoxFlat = badge.get_theme_stylebox("normal") as StyleBoxFlat
 	if box != null:
 		box.bg_color = Color("e8a400") if mode == 2 else Color("e03131")
@@ -4107,11 +4154,21 @@ func _set_law_near(slot: int, mode: int) -> void:
 		old.kill()
 	_law_near_tweens[slot] = null
 	panel.self_modulate = Color.WHITE
+	panel.scale = Vector2.ONE
 	badge.modulate = Color.WHITE
 	if mode == 0 or not _fx_on():
 		return
 	var pulse: Tween = panel.create_tween().set_loops()
-	if mode == 2:
+	if mode == 3:
+		# 리치 사이렌: 적색↔황금 빠른 점멸 + 슬롯이 살짝 커졌다 작아진다
+		panel.pivot_offset = panel.size * 0.5
+		pulse.tween_property(panel, "self_modulate", Color(1.7, 0.45, 0.45), 0.16)
+		pulse.parallel().tween_property(badge, "modulate", Color(1.4, 1.2, 0.4), 0.16)
+		pulse.parallel().tween_property(panel, "scale", Vector2.ONE * 1.04, 0.16)
+		pulse.tween_property(panel, "self_modulate", Color(1.6, 1.35, 0.4), 0.16)
+		pulse.parallel().tween_property(badge, "modulate", Color.WHITE, 0.16)
+		pulse.parallel().tween_property(panel, "scale", Vector2.ONE, 0.16)
+	elif mode == 2:
 		pulse.tween_property(panel, "self_modulate", Color(1.45, 1.3, 0.55), 0.35).set_trans(Tween.TRANS_SINE)
 		pulse.parallel().tween_property(badge, "modulate", Color(1.3, 1.2, 0.8), 0.35)
 		pulse.tween_property(panel, "self_modulate", Color(1.1, 1.05, 0.85), 0.35).set_trans(Tween.TRANS_SINE)
@@ -4194,6 +4251,50 @@ func _fx_law_achieved(from: Rect2, law_name: String, law_desc: String, color: Co
 	tween.tween_callback(canvas.queue_free)
 
 
+## 특수 승리 판정 순간의 진행도와 원인 칸을 잡아 둔다 (졸업하면 말이 철수하고 법전이 지워진다).
+func _note_law_win_detail(player_id: int, law_id: String) -> void:
+	var law: VictoryLaw = null
+	for entry: LawResource in state.rulebook.active_laws_queue:
+		if entry is VictoryLaw and entry.law_id == law_id:
+			law = entry
+	if law == null:
+		return
+	var tiles: Array = _law_cause_tiles.get("%d:%s" % [player_id, law_id], []).duplicate()
+	match law.stat_key:
+		VictoryLaw.SPREAD:
+			tiles.clear()
+			for pawn_id: int in VictoryLaw.spread_pawn_ids(state, player_id):
+				tiles.append(state.get_pawn(pawn_id).current_tile_idx)
+		VictoryLaw.ESTATE:
+			tiles.clear()
+			for index: int in BoardSpec.tile_count:
+				for attachment: TileAttachment in state.board.get_tile(index).attachments:
+					if attachment.owner_id == player_id and not tiles.has(index):
+						tiles.append(index)
+	if tiles.is_empty():
+		var lead: PlayerPawn = null
+		for pawn: PlayerPawn in state.pawns_of(player_id):
+			if pawn.has_left_start and not pawn.is_finished and (lead == null or state.pawn_progress_distance(pawn) < state.pawn_progress_distance(lead)):
+				lead = pawn
+		if lead != null:
+			tiles.append(lead.current_tile_idx)
+	_law_win_detail[player_id] = {"law": law_id, "value": law.progress(state, player_id), "tiles": tiles}
+
+
+## 법전별 달성 사유 한 줄 (컷신·로그).
+static func law_win_reason(law_id: String, value: int) -> String:
+	match law_id:
+		"LAW_01": return "경기 중 총 %d회 적 기물 처치 완료!" % value
+		"LAW_02": return "빵집 %d회 방문 · 식권 스탬프 완성!" % value
+		"LAW_03": return "설치물 %d개 동시 유지 · 부동산 제국 완성!" % value
+		"LAW_04": return "한 턴에 %d칸 폭발 전진 성공!" % value
+		"LAW_05": return "말 %d개 포위망을 한 바퀴 동안 지켜 냈다!" % value
+		"LAW_06": return "%d번 사출당한 분노가 폭발했다!" % value
+		"LAW_07": return "한 턴에 %d연속 굴림 · 무한 동력 가동!" % value
+		"LAW_08": return "완주 0개로 선두의 말을 %d회 처치!" % value
+	return ""
+
+
 ## 졸업 컷신(1.01)을 쓰는 졸업 사유: 특수 승리(법전)와 완주(말 4개 모두 골인). 진행 순위·꼴찌는 기존 배너.
 func _uses_victory_cutscene(reason: StringName) -> bool:
 	return _fx_on() and (reason == VictoryChecker.ALL_HOME or LawRegistry.ALL_IDS.has(String(reason)))
@@ -4211,9 +4312,19 @@ func _play_victory_cutscene(player_id: int, rank_no: int, reason: StringName) ->
 	canvas.add_child(cut)
 	var actor: Texture2D = AvatarCombatArt.texture(_avatar_for(player_id), &"attack")
 	if is_law:
+		# 법전 성립 컷신: 원인 자리 스포트라이트(0.8초) → 두루마리 + [중앙 법전 성립 · 특수 승리!] → 우승자 — [법전] 완수! → 달성 사유
 		var law: LawResource = LawRegistry.create(String(reason))
+		var law_name: String = law.law_name if law != null else ""
 		var art: Texture2D = TextureCache.fetch("res://content_trickcal/illustrations/laws/%s.png" % String(reason))
-		cut.setup(VictoryCutscene.MODE_LAW, color, actor, art, "특수 승리!", law.law_name if law != null else "", "%d위 졸업!" % rank_no, _player_name(player_id))
+		var detail: Dictionary = _law_win_detail.get(player_id, {})
+		var why: String = law_win_reason(String(reason), int(detail.get("value", 0))) if str(detail.get("law", "")) == String(reason) else ""
+		cut.setup(VictoryCutscene.MODE_LAW, color, actor, art, "[중앙 법전 성립 · 특수 승리!]", "%s · [%s] 완수!" % [_player_name(player_id), law_name],
+			"\"달성 사유: %s\"" % why if why != "" else law.description if law != null else "", "%d위 졸업!" % rank_no, 44)
+		cut.set_head_icon(LawFeedback.icon("scroll"))
+		var spots: Array[Vector2] = []
+		for tile: Variant in detail.get("tiles", []):
+			spots.append(get_global_transform_with_canvas() * _tile_center(int(tile)))
+		cut.set_spots(spots)
 	else:
 		cut.setup(VictoryCutscene.MODE_FINISH, color, actor, null, "FINISH!", "%d위 골인!" % rank_no, "말 4개 모두 완주", _player_name(player_id))
 	cut.impact.connect(func() -> void:
@@ -9227,6 +9338,24 @@ func _show_result_overlay() -> void:
 	box.custom_minimum_size = Vector2(1000, 0)
 	panel.add_child(box)
 	var winner_id: int = state.winner
+	# 1.01: 법전으로 이겼으면 맨 위에 승리 요인 박스를 고정한다
+	var win_reason: StringName = state.rank_reasons.get(winner_id, &"")
+	if LawRegistry.ALL_IDS.has(String(win_reason)):
+		var factor := PanelContainer.new()
+		factor.name = "VictoryFactor"
+		factor.add_theme_stylebox_override("panel", _style(Color(0.16, 0.1, 0.0, 0.97), Color("ffd43b"), 3, 12, 10, 10))
+		var factor_row := HBoxContainer.new()
+		factor_row.alignment = BoxContainer.ALIGNMENT_CENTER
+		factor_row.add_theme_constant_override("separation", 12)
+		factor.add_child(factor_row)
+		factor_row.add_child(MetaIcon.create(&"trophy", Vector2(34, 34)))
+		var factor_law: LawResource = LawRegistry.create(String(win_reason))
+		var factor_label: Label = _make_label("승리 요인: %s의 [%s] 특수 승리 달성!" % [_player_name(winner_id), factor_law.law_name if factor_law != null else ""], 24, Color("ffe066"))
+		factor_label.name = "VictoryFactorText"
+		factor_label.add_theme_color_override("font_outline_color", Color("3b2500"))
+		factor_label.add_theme_constant_override("outline_size", 5)
+		factor_row.add_child(factor_label)
+		box.add_child(factor)
 	var title: Label = _make_label("게임 종료!", 34, Color("ffd43b"))
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(title)
@@ -10335,6 +10464,19 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 				_enqueue_late(func() -> void:
 					_record(-1, "[color=#ffe066][b]중반 법전 자동 제정![/b] %s[/color]" % _bb(auto_name), "", false, true)
 					_announce_law_added(auto_law, null))
+		&"law_chain_combo":
+			var chain_player: int = int(data["player_id"])
+			_enqueue_late(func() -> void:
+				if _law_fx != null and _fx_on():
+					_law_fx.show_chain(chain_player, int(data["chain"]), int(data["goal"])))
+		&"law_kaiji_move":
+			var kaiji_player: int = int(data["player_id"])
+			var kaiji_path: Array = data["path"]
+			if not kaiji_path.is_empty():
+				_law_cause_tiles["%d:LAW_04" % kaiji_player] = [int(kaiji_path.back())]
+			_enqueue_late(func() -> void:
+				if _law_fx != null and _fx_on():
+					_law_fx.show_kaiji(kaiji_player, int(data["steps"]), int(data["goal"]), kaiji_path))
 		&"siege_armed":
 			# 사도 포위망 경보 (1.01): 처음 완성하면 바로 졸업하지 않고, 다음 자기 차례가 끝날 때까지 버텨야 한다. 모두에게 크게 알려 견제할 기회를 준다.
 			var sieger: int = int(data["player_id"])
@@ -10354,6 +10496,9 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 		&"special_victory_judgement":
 			_mark_spotlight()
 			var achievers: Array = data["players"]
+			var judged_laws: Array = data.get("laws", [])
+			for index: int in mini(achievers.size(), judged_laws.size()):
+				_note_law_win_detail(int(achievers[index]), str(judged_laws[index]))
 			_log_line("[%d라운드 특수 승리] 달성: %s" % [int(data["round"]), ", ".join(PackedStringArray(achievers.map(func(id: int) -> String: return _player_name(id))))], Color("ffd43b"))
 			# 달성 장면은 졸업 컷신(1.01, player_ranked → _play_victory_cutscene)이 법전 그림·순위와 함께 보여 준다.
 		&"race_ranked":

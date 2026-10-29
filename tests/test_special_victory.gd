@@ -302,3 +302,39 @@ func test_graduate_and_destroyed_law_are_never_checked_again_in_later_rounds() -
 	check_eq(state.rankings, int_array([1, 3]), "교칙이 없는 라운드들에는 아무도 졸업하지 않는다 (옛 기록이 남아 있어도)")
 	check(state.round_number > third_round or manager.is_game_over, "라운드는 계속 진행된다")
 	_dispose(manager)
+
+
+## 1.01 진행도 연출: 법전에 걸린 기록이 오르면 일이 일어난 칸과 함께 알린다 (법전에 없는 기록은 조용히).
+func test_law_stat_gained_reports_the_tile_only_for_watched_laws() -> void:
+	var state := make_state()
+	var heard: Array = []
+	state.law_stat_gained.connect(func(player_id: int, key: StringName, value: int, tile: int) -> void: heard.append([player_id, key, value, tile]))
+	place(state, 21, 9, [8])
+	state.send_to_start(state.get_pawn(21), 1)
+	check(heard.is_empty(), "법전에 없는 기록은 알리지 않는다")
+	add_law(state, "LAW_01")
+	add_law(state, "LAW_06")
+	place(state, 22, 12, [11])
+	state.send_to_start(state.get_pawn(22), 1)
+	check(heard.has([1, VictoryLaw.KILLS, 2, 12]), "투기장: 처치한 사람·값·처치된 칸 (%s)" % str(heard))
+	check(heard.has([2, VictoryLaw.EJECTED, 2, 12]), "동네북: 사출된 사람·값·칸")
+	check_eq(state.stat_tile, -1, "칸 꼬리표는 쓰고 나면 비운다")
+
+
+## 1.01 리치 사이렌: 세는 기록이 딱 1 남았을 때만. 카이지(한 번의 최고 기록)는 제외.
+func test_reach_means_exactly_one_step_left() -> void:
+	var state := make_state()
+	add_law(state, "LAW_01")
+	add_law(state, "LAW_04")
+	var arena: VictoryLaw = state.rulebook.active_laws_queue[0] as VictoryLaw
+	var kaiji: VictoryLaw = state.rulebook.active_laws_queue[1] as VictoryLaw
+	state.add_stat(1, VictoryLaw.KILLS, arena.goal() - 2)
+	check(not SpecialVictory.is_reach(state, arena, 1), "두 걸음 남으면 아직")
+	state.add_stat(1, VictoryLaw.KILLS)
+	check(SpecialVictory.is_reach(state, arena, 1), "한 걸음 남으면 리치")
+	state.add_stat(1, VictoryLaw.KILLS)
+	check(not SpecialVictory.is_reach(state, arena, 1), "달성하면 리치가 아니다")
+	state.max_stat(1, VictoryLaw.BEST_MOVE, kaiji.goal() - 1)
+	check(not SpecialVictory.is_reach(state, kaiji, 1), "카이지는 리치 사이렌 대상이 아니다")
+	check_eq(SpecialVictory.goal_of(state, "LAW_01"), arena.goal(), "법전의 목표 수치")
+

@@ -1,6 +1,7 @@
 ## 졸업 컷신 (1.01): 특수 승리(법전) 달성과 완주 피니시를 화면 전체 컷신으로 보여 준다.
 ## 시네마 띠 → 플레이어 색 사선 띠 → 사도 전신 그림(왼쪽) + 법전 그림 또는 체크무늬 깃발(오른쪽) → 큰 도장(특수 승리! / FINISH!) → 이름·순위.
 ## 시계 하나(set_time)로 모든 요소가 움직여 배속·건너뛰기에서도 어긋나지 않는다. 시뮬레이션·RNG는 건드리지 않는다.
+## 원인 칸(set_spots)을 주면 컷신 앞에 SPOT_SECONDS 동안 그 자리에 스포트라이트를 비춘다 (마지막 처치·빵집 도착·포위망의 말들).
 class_name VictoryCutscene
 extends Control
 
@@ -14,6 +15,7 @@ const DURATION: float = 3.2
 const IMPACT_AT: float = 0.62
 const LEAVE_AT: float = 2.75
 const BAR_RATIO: float = 0.12
+const SPOT_SECONDS: float = 0.8
 
 var mode: StringName = MODE_LAW
 var accent: Color = Color("ffd43b")
@@ -29,6 +31,12 @@ var _subtitle: Label = null
 var _name_label: Label = null
 ## set_time이 마지막으로 그린 시각 (_draw가 같은 시각을 쓴다).
 var _time_view: float = 0.0
+## 스포트라이트를 비출 화면 좌표와 그 단계의 길이(초, 배율 전). _spot_view는 지금 스포트라이트 단계 시각(-1이면 끝).
+var _spots: Array[Vector2] = []
+var _spot_len: float = 0.0
+var _spot_view: float = -1.0
+var _pace: float = 1.0
+var _head_icon: TextureRect = null
 
 
 func _init() -> void:
@@ -44,14 +52,14 @@ func _ready() -> void:
 
 ## mode: MODE_LAW / MODE_FINISH. actor: 사도 전신 그림(없으면 생략). art: 법전 그림(완주는 null → 체크무늬 깃발).
 ## headline: 큰 도장 글자. title: 법전 이름 또는 순위. subtitle: 조건 또는 완주 설명. player_name: 이름 띠.
-func setup(cut_mode: StringName, color: Color, actor: Texture2D, art: Texture2D, headline: String, title: String, subtitle: String, player_name: String) -> void:
+func setup(cut_mode: StringName, color: Color, actor: Texture2D, art: Texture2D, headline: String, title: String, subtitle: String, player_name: String, headline_px: int = 64) -> void:
 	mode = cut_mode
 	accent = color
 	if actor != null:
 		_actor = _make_picture("CutsceneActor", actor)
 	if art != null:
 		_art = _make_picture("CutsceneArt", art)
-	_headline = _make_text("CutsceneHeadline", headline, 64, Color.WHITE, 12)
+	_headline = _make_text("CutsceneHeadline", headline, headline_px, Color.WHITE, 12)
 	_name_label = _make_text("CutscenePlayer", player_name, 30, color.lightened(0.35), 6)
 	_title = _make_text("CutsceneTitle", title, 40, Color("fff3bf"), 8)
 	_subtitle = _make_text("CutsceneSubtitle", subtitle, 22, Color("f1f3f5"), 5)
@@ -59,10 +67,27 @@ func setup(cut_mode: StringName, color: Color, actor: Texture2D, art: Texture2D,
 	set_time(0.0)
 
 
+## 컷신 앞에 비출 원인 자리 (화면 좌표). 비어 있으면 바로 본 장면.
+func set_spots(points: Array[Vector2]) -> void:
+	_spots = points
+	_spot_len = SPOT_SECONDS if not points.is_empty() else 0.0
+
+
+## 도장 위에 띄울 아이콘 (법전 성립의 두루마리 등).
+func set_head_icon(texture: Texture2D) -> void:
+	if texture == null:
+		return
+	_head_icon = _make_picture("CutsceneHeadIcon", texture)
+	_layout()
+	set_time(0.0)
+
+
 ## 재생을 시작한다. pace: 연출 시간 배율 (1.0 = DURATION초).
 func play(pace: float = 1.0) -> void:
-	_length = DURATION * maxf(pace, 0.1)
+	_pace = maxf(pace, 0.1)
+	_length = DURATION * _pace
 	_time = 0.0
+	_spot_view = 0.0 if _spot_len > 0.0 else -1.0
 	_impact_fired = false
 	active = true
 	visible = true
@@ -79,14 +104,24 @@ func skip() -> void:
 
 
 func _gui_input(event: InputEvent) -> void:
-	if active and event is InputEventMouseButton and (event as InputEventMouseButton).pressed and _time / _length > IMPACT_AT / DURATION:
+	if active and event is InputEventMouseButton and (event as InputEventMouseButton).pressed and _main_time() > IMPACT_AT:
 		accept_event()
 		skip()
 
 
+## 본 장면 시각 (스포트라이트 단계를 뺀 배율 전 초).
+func _main_time() -> float:
+	return _time / _pace - _spot_len
+
+
 func _process(delta: float) -> void:
 	_time += delta
-	var t: float = _time / _length * DURATION
+	var t: float = _main_time()
+	if t < 0.0:
+		_spot_view = _time / _pace
+		set_time(0.0)
+		return
+	_spot_view = -1.0
 	if not _impact_fired and t >= IMPACT_AT:
 		_impact_fired = true
 		impact.emit()
@@ -146,6 +181,9 @@ func _layout() -> void:
 	if _art != null:
 		_art.size = Vector2(side * 0.72, side * 0.72)
 		_art.pivot_offset = _art.size * 0.5
+	if _head_icon != null:
+		_head_icon.size = Vector2(72, 72)
+		_head_icon.pivot_offset = _head_icon.size * 0.5
 	for label: Label in [_headline, _name_label, _title, _subtitle]:
 		label.size = Vector2(view.x * 0.62, 0.0)
 		label.reset_size()
@@ -176,6 +214,10 @@ func set_time(t: float) -> void:
 	_headline.scale = Vector2.ONE * lerpf(2.6, 1.0, _ease_out(slam))
 	_headline.rotation = -0.07
 	_headline.modulate.a = clampf(slam * 3.0, 0.0, 1.0) * (1.0 - leave)
+	if _head_icon != null:
+		_head_icon.position = Vector2(center.x - 36.0, _headline.position.y - 70.0)
+		_head_icon.scale = _headline.scale
+		_head_icon.modulate.a = _headline.modulate.a
 	var info: float = _ease_out(_ramp(t, IMPACT_AT + 0.12, IMPACT_AT + 0.45))
 	var drop: float = (1.0 - info) * 24.0
 	_name_label.position = Vector2(center.x - _name_label.size.x * 0.5, center.y - view.y * 0.06 + drop)
@@ -187,6 +229,9 @@ func set_time(t: float) -> void:
 
 
 func _draw() -> void:
+	if _spot_view >= 0.0:
+		_draw_spotlight(_spot_view)
+		return
 	var t: float = _time_view
 	var view: Vector2 = _view()
 	var leave: float = _ease_in(_ramp(t, LEAVE_AT, DURATION))
@@ -235,6 +280,24 @@ func _draw() -> void:
 			var tip: Vector2 = hub + Vector2.from_angle(angle) * view.x * 0.5
 			var wing: Vector2 = Vector2.from_angle(angle + PI * 0.5) * 18.0
 			draw_colored_polygon(PackedVector2Array([hub, tip + wing, tip - wing]), Color(Color("fff3bf"), 0.07 * rays))
+
+
+## 스포트라이트 단계: 화면을 어둡게 하고 원인 자리마다 위에서 빛기둥 + 금빛 고리를 비춘다.
+func _draw_spotlight(t: float) -> void:
+	var view: Vector2 = _view()
+	var k: float = _ramp(t, 0.0, 0.2) * (1.0 - _ramp(t, _spot_len - 0.12, _spot_len))
+	draw_rect(Rect2(Vector2.ZERO, view), Color(0.0, 0.0, 0.02, 0.6 * k))
+	var ring: float = _ease_out(_ramp(t, 0.05, 0.4))
+	for point: Vector2 in _spots:
+		var beam := PackedVector2Array([point + Vector2(-18, -view.y), point + Vector2(18, -view.y), point + Vector2(70, 10), point + Vector2(-70, 10)])
+		draw_colored_polygon(beam, Color(1.0, 0.95, 0.7, 0.16 * k))
+		draw_circle(point, 64.0, Color(1.0, 0.92, 0.6, 0.22 * k))
+		draw_arc(point, lerpf(140.0, 54.0, ring), 0.0, TAU, 48, Color(Color("ffd43b"), 0.95 * k), 5.0, true)
+		draw_arc(point, lerpf(160.0, 66.0, ring), 0.0, TAU, 48, Color(Color("fff3bf"), 0.5 * k), 2.0, true)
+	if _spots.size() >= 2:
+		var loop := PackedVector2Array(_spots)
+		loop.append(_spots[0])
+		draw_polyline(loop, Color(Color("fff3bf"), 0.7 * k * ring), 4.0, true)
 
 
 ## 완주 피니시: 오른쪽에서 펄럭이는 체크무늬 깃발.

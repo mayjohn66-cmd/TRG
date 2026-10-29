@@ -2967,7 +2967,7 @@ func _test_law_near_badge() -> void:
 	_expect(not _board._law_near[0].visible, "아무도 가깝지 않으면 [달성 임박!] 없음")
 	state.add_stat(2, &"kills", 9)
 	_board._refresh_laws()
-	_expect(_board._law_near[0].visible and _board._law_near[0].text == "[달성 임박!]", "10회 처치 중 9회면 [달성 임박!] 배지")
+	_expect(_board._law_near[0].visible and _board._law_near[0].text == "[비상! 1걸음]", "10회 처치 중 9회면 딱 한 걸음: [비상! 1걸음] 사이렌 배지 (1.01)")
 	for player_id: int in state.player_ids:
 		state.add_stat(player_id, &"kills", int(saved_kills[player_id]) - state.stat(player_id, &"kills"))
 	state.rulebook.active_laws_queue.clear()
@@ -3002,7 +3002,7 @@ func _test_law_near_badge() -> void:
 			continue
 		cut.impact.connect(func() -> void: impacts[0] = int(impacts[0]) + 1)
 		var headline: Label = cut.find_child("CutsceneHeadline", true, false) as Label
-		_expect(headline != null and headline.text == ("특수 승리!" if reason == &"LAW_05" else "FINISH!"), "%s: 도장 글자" % reason)
+		_expect(headline != null and headline.text == ("[중앙 법전 성립 · 특수 승리!]" if reason == &"LAW_05" else "FINISH!"), "%s: 도장 글자" % reason)
 		_expect((cut.find_child("CutsceneArt", true, false) != null) == (reason == &"LAW_05"), "%s: 법전 그림은 특수 승리만" % reason)
 		_expect(cut.find_child("CutsceneActor", true, false) != null, "%s: 사도 전신 그림" % reason)
 		cut.skip()
@@ -3013,6 +3013,32 @@ func _test_law_near_badge() -> void:
 		await process_frame
 		_expect(_board.get_node_or_null("VictoryCutsceneLayer") == null, "%s: 컷신 레이어 정리" % reason)
 	_board.instant_roll_for_test = saved_instant
+	# 1.01 법전 시각 피드백: 기록이 오르면 머리 위 배너 + 법전 슬롯으로 날아가는 구슬, 리치면 비상 배너, 결과창 승리 요인
+	var law_fx: LawFeedback = _board._law_fx
+	_expect(law_fx != null, "법전 피드백 레이어가 있다")
+	if law_fx != null:
+		_board.instant_roll_for_test = false
+		var screen: CanvasLayer = law_fx.screen
+		var before: int = screen.get_child_count()
+		state.rulebook.enqueue_law(LawRegistry.create("LAW_01"))
+		var gain_banner: Control = law_fx.show_gain(1, &"kills", 3, 12)
+		var gain_text: String = (gain_banner.find_child("LawGainText", true, false) as Label).text if gain_banner != null else "<없음>"
+		_expect(gain_text == "투기장 처치 +1! (3/10)", "투기장 처치 배너 (현재/목표): %s" % gain_text)
+		_expect(screen.get_child_count() >= before + 2, "배너와 함께 황금 구슬이 날아간다")
+		_expect(_board.law_slot_for("LAW_01") != null, "구슬이 꽂힐 법전 슬롯")
+		law_fx.show_chain(1, 2, 3)
+		_expect(screen.find_child("LawChainBanner", true, false) != null, "초전도체 콤보 배너")
+		var siren: Control = law_fx.show_siren("[비상!] 컴퓨터 2님의 [투기장의 지배자] 달성까지 딱 1걸음 남았습니다!")
+		_expect(siren != null and siren.name == "LawSirenBanner", "리치 비상 배너")
+		state.add_stat(2, &"kills", 9 - state.stat(2, &"kills"))
+		var reaches: Array[Array] = law_fx.new_reaches()
+		_expect(reaches.any(func(r: Array) -> bool: return int(r[1]) == 2), "9/10이면 컴퓨터 2가 리치")
+		_expect(law_fx.new_reaches().is_empty(), "같은 상태로는 사이렌을 다시 울리지 않는다")
+		for child: Node in screen.get_children():
+			child.free()
+		state.add_stat(2, &"kills", -state.stat(2, &"kills"))
+		state.rulebook.remove_law_by_id("LAW_01")
+		_board.instant_roll_for_test = saved_instant
 
 
 ## 거북이 이동 회귀 2: 드래프트 뒤로 미뤄 둔 연출(_draft_deferred)이 남아 있어도 이미 큐에 든 걸음은 바로 이어 뛴다.

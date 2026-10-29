@@ -2424,3 +2424,25 @@ FINISH!,FINISH!,FINISH!
 [color=#74c0fc]포위망이 깨졌다![/color],[color=#74c0fc]The siege was broken![/color],[color=#74c0fc]包囲網が崩れた！[/color]
 포위망이 깨졌다!,The siege was broken!,包囲網が崩れた！
 ◆ 승리 조건: %s\n◆ 차례 끝에 완성하면 [포위망 경보] → 다음 내 차례 끝까지 유지하면 졸업,◆ Win condition: %s\n◆ Completing it at turn end raises a [Siege Alert] → graduate if it still holds at the end of your next turn,◆ 勝利条件: %s\n◆ ターン終了時に完成すると[包囲網警報] → 次の自分のターン終了まで維持すれば卒業
+투기장 처치 +1! (%d/%d),Arena Kill +1! (%d/%d),闘技場キル+1！(%d/%d)
+식권 스탬프 획득! (%d/%d),Meal Ticket Stamp! (%d/%d),食券スタンプ獲得！(%d/%d)
+동네북 분노 충전! (%d/%d),Punching Bag Rage Charged! (%d/%d),サンドバッグの怒りチャージ！(%d/%d)
+하극상 처치 +1! (%d/%d),Underdog Takedown +1! (%d/%d),下剋上キル+1！(%d/%d)
+초전도체 %d연속 가속 중!,Superconductor x%d Chain Boost!,超伝導 %d連続加速中！
+한 턴 %d칸 폭주! (목표: %d칸),%d Spaces in One Turn! (Goal: %d),1ターンで%dマス爆走！(目標: %dマス)
+[비상!] %s님의 [%s] 달성까지 딱 1걸음 남았습니다!,[ALERT!] %s is just 1 step away from [%s]!,[緊急！] %sさんの[%s]達成まであと1歩です！
+[비상! 1걸음],[ALERT! 1 step],[緊急！あと1歩]
+[중앙 법전 성립 · 특수 승리!],[Codex Fulfilled · Special Victory!],[中央法典成立・特殊勝利！]
+%s · [%s] 완수!,%s · [%s] Complete!,%s・[%s] 達成！
+"""달성 사유: %s""","""Reason: %s""",「達成理由: %s」
+경기 중 총 %d회 적 기물 처치 완료!,%d enemy pieces taken down this match!,試合中に敵の駒を合計%d回撃破！
+빵집 %d회 방문 · 식권 스탬프 완성!,Visited the bakery %d times · ticket card complete!,パン屋に%d回訪問・食券スタンプ完成！
+설치물 %d개 동시 유지 · 부동산 제국 완성!,%d structures held at once · real estate empire built!,設置物%d個を同時維持・不動産帝国完成！
+한 턴에 %d칸 폭발 전진 성공!,An explosive %d-space dash in one turn!,1ターンで%dマスの爆発前進に成功！
+말 %d개 포위망을 한 바퀴 동안 지켜 냈다!,Held a %d-pawn siege net for a full lap!,駒%d個の包囲網を一周守り抜いた！
+%d번 사출당한 분노가 폭발했다!,The rage of being ejected %d times exploded!,%d回吹き飛ばされた怒りが爆発した！
+한 턴에 %d연속 굴림 · 무한 동력 가동!,%d rolls in a row in one turn · infinite power online!,1ターンで%d連続ロール・無限動力起動！
+완주 0개로 선두의 말을 %d회 처치!,Took down the leader's pieces %d times with zero finishes!,完走0のまま先頭の駒を%d回撃破！
+승리 요인: %s의 [%s] 특수 승리 달성!,Victory Factor: %s achieved the [%s] Special Victory!,勝利要因: %sの[%s]特殊勝利達成！
+[1위 타겟],[1st Place Target],[1位ターゲット]
+[식권 목표],[Ticket Goal],[食券目標]

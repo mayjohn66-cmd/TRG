@@ -18,6 +18,22 @@ static func achieved_by(state: GameState, player_id: int) -> StringName:
 	return &""
 
 
+## 법전에 걸린 이 교칙의 목표 수치 (없으면 교칙 기본값).
+static func goal_of(state: GameState, law_id: String) -> int:
+	for law: LawResource in state.rulebook.active_laws_queue:
+		if law is VictoryLaw and law.law_id == law_id:
+			return (law as VictoryLaw).goal()
+	var fresh: LawResource = LawRegistry.create(law_id)
+	return (fresh as VictoryLaw).goal() if fresh is VictoryLaw else 0
+
+
+## 달성까지 딱 한 걸음 남았나 (1.01 리치 사이렌): 세는 기록은 1 남음. 카이지(한 번의 이동 최고 기록)는 쌓이는 기록이 아니라 제외.
+static func is_reach(state: GameState, law: VictoryLaw, player_id: int) -> bool:
+	if law.stat_key == VictoryLaw.BEST_MOVE or state.is_graduated(player_id):
+		return false
+	return law.goal() - law.progress(state, player_id) == 1
+
+
 ## 사도 포위망 경보를 갱신한다 (특수 승리 판정 직전). 기습 승리를 막기 위해 포위망은 두 번에 걸쳐 판정한다:
 ## 1) 자기 차례 끝에 처음 완성하면 경보(armed)만 울린다. 2) 다음 자기 차례가 끝날 때도 유지하고 있으면 졸업 자격(ready).
 ## 그 사이 누구의 판정에서든 포위망이 깨지면(처치·사출·업기 등) 경보가 풀린다. turn_player가 -1이면(라운드 끝 판정) 깨짐만 본다.

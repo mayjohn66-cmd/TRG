@@ -7,8 +7,10 @@ All glyphs come from Noto Color Emoji (SIL Open Font License 1.1).
 - assets/cards/<CARD>.png: 4:3 card illustrations (1448 x 1086, like the painted cards) for the v4.0 cards without a painting,
   on a soft backdrop tinted by the card type.
 - assets/board/traps/<TRAP>.png: transparent 128 px tile stickers drawn on a purple trap tile (HIDDEN = an opponent's face-down trap).
+- assets/fx/law_fx/<name>.png: transparent 96 px stickers for the special-victory feedback banners (1.01). The web build has no
+  emoji font, so banners show these images next to the translated text instead of emoji characters.
 
-Pass group names (laws pawns cards traps) to write only those groups.
+Pass group names (laws pawns cards traps fx) to write only those groups.
 """
 import sys
 from pathlib import Path
@@ -139,7 +141,41 @@ def sticker(text):
     return image
 
 
-GROUPS = set(sys.argv[1:]) or {'laws', 'pawns', 'cards', 'traps'}
+# 법전 피드백 배너 아이콘 (1.01): 이름 -> 글리프
+FX_ROOT = Path(__file__).resolve().parents[1] / 'assets/fx/law_fx'
+FX_SIZE = 96
+FX_ICONS = {
+    'sword': '\u2694\ufe0f',    # 투기장 처치
+    'croissant': '\U0001F950',   # 식권 스탬프
+    'anger': '\U0001F4A2',       # 동네북 분노
+    'bolt': '\u26a1',            # 초전도체 가속
+    'rocket': '\U0001F680',      # 카이지 폭주
+    'target': '\U0001F3AF',      # 1위 타겟
+    'siren': '\U0001F6A8',       # 비상 사이렌
+    'scroll': '\U0001F4DC',      # 법전 성립
+    'crown': '\U0001F451',       # 완수
+    'trophy': '\U0001F3C6',      # 승리 요인
+    'hotel': '\U0001F3E8',       # 부동산
+    'horse': '\U0001F40E',       # 하극상
+    'web': '\U0001F578\ufe0f',  # 포위망
+}
+
+
+def fx_icon(text):
+    art = glyph(text, 76)
+    if max(art.size) > 76:
+        ratio = 76 / max(art.size)
+        art = art.resize((round(art.width * ratio), round(art.height * ratio)), Image.LANCZOS)
+    image = Image.new('RGBA', (FX_SIZE, FX_SIZE), (0, 0, 0, 0))
+    x, y = (FX_SIZE - art.width) // 2, (FX_SIZE - art.height) // 2
+    outline = Image.new('RGBA', (FX_SIZE, FX_SIZE), (0, 0, 0, 0))
+    outline.paste((255, 255, 255, 255), (x, y), art.split()[3].point(lambda a: 255 if a > 40 else 0))
+    image = Image.alpha_composite(image, outline.filter(ImageFilter.MaxFilter(7)))
+    image.alpha_composite(art, (x, y))
+    return image
+
+
+GROUPS = set(sys.argv[1:]) or {'laws', 'pawns', 'cards', 'traps', 'fx'}
 
 for law_id, text in (ICONS.items() if 'laws' in GROUPS else []):
     image = backdrop()
@@ -166,3 +202,9 @@ if 'traps' in GROUPS:
     for trap_id, text in TRAPS.items():
         sticker(text).save(TRAP_ROOT / f'{trap_id}.png', optimize=True)
         print('wrote', trap_id)
+
+if 'fx' in GROUPS:
+    FX_ROOT.mkdir(parents=True, exist_ok=True)
+    for name, text in FX_ICONS.items():
+        fx_icon(text).save(FX_ROOT / f'{name}.png', optimize=True)
+        print('wrote', name)
