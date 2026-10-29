@@ -4,13 +4,56 @@
 class_name SpecialVictory
 extends RefCounted
 
+## 사도 포위망: 경보 뒤 한 바퀴를 버텨야 하는 교칙 (update_siege).
+const SIEGE_LAW: String = "LAW_05"
+
 
 ## 이 플레이어가 지금 법전의 특수 승리 조건 하나를 달성했다면 그 교칙 ID(법전 순서로 첫 번째), 아니면 빈 값.
 static func achieved_by(state: GameState, player_id: int) -> StringName:
 	for law: LawResource in state.rulebook.active_laws_queue:
 		if law is VictoryLaw and (law as VictoryLaw).achieved(state, player_id):
+			if law.law_id == SIEGE_LAW and not state.siege_ready.has(player_id):
+				continue  # 사도 포위망은 경보 뒤 한 바퀴를 버텨야 졸업한다
 			return StringName(law.law_id)
 	return &""
+
+
+## 사도 포위망 경보를 갱신한다 (특수 승리 판정 직전). 기습 승리를 막기 위해 포위망은 두 번에 걸쳐 판정한다:
+## 1) 자기 차례 끝에 처음 완성하면 경보(armed)만 울린다. 2) 다음 자기 차례가 끝날 때도 유지하고 있으면 졸업 자격(ready).
+## 그 사이 누구의 판정에서든 포위망이 깨지면(처치·사출·업기 등) 경보가 풀린다. turn_player가 -1이면(라운드 끝 판정) 깨짐만 본다.
+## {"armed": [새로 경보가 울린 사람], "broken": [경보가 풀린 사람]}
+static func update_siege(state: GameState, turn_player: int) -> Dictionary:
+	var result: Dictionary = {"armed": [], "broken": []}
+	state.siege_ready.clear()
+	var law: VictoryLaw = null
+	for entry: LawResource in state.rulebook.active_laws_queue:
+		if entry is VictoryLaw and entry.law_id == SIEGE_LAW:
+			law = entry
+	if law == null:
+		state.siege_armed.clear()
+		return result
+	for player_id: int in state.player_ids:
+		if state.is_graduated(player_id):
+			state.siege_armed.erase(player_id)
+			continue
+		if not law.achieved(state, player_id):
+			if state.siege_armed.has(player_id):
+				state.siege_armed.erase(player_id)
+				(result["broken"] as Array).append(player_id)
+			continue
+		if player_id != turn_player:
+			continue
+		if state.siege_armed.has(player_id):
+			state.siege_ready[player_id] = true
+		else:
+			state.siege_armed[player_id] = state.round_number
+			(result["armed"] as Array).append(player_id)
+	return result
+
+
+## 사도 포위망 경보가 울린 상태인가 (화면 표시·봇 견제용).
+static func siege_armed(state: GameState, player_id: int) -> bool:
+	return state.siege_armed.has(player_id)
 
 
 ## 누군가 졸업했다: 특수 승리로 졸업했으면 그 교칙을 법전에서 지운다.

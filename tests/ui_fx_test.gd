@@ -113,7 +113,7 @@ func _run() -> void:
 	await _test_oneshot_fx_sweep()
 	await _test_queue_ignores_deferred_draft()
 	_test_trap_reveal_rule()
-	_test_law_near_badge()
+	await _test_law_near_badge()
 	_test_yut_extra_roll_button()
 	await _test_board_teardown()  # 보드를 지운다: 반드시 마지막
 	if _failures.is_empty():
@@ -2984,6 +2984,35 @@ func _test_law_near_badge() -> void:
 	_expect(_board._presentation_step_busy(), "하이라이트 동안 연출 큐를 붙잡아 순위 배너가 뒤에 뜬다")
 	if fx != null:
 		fx.free()
+	# 1.01 졸업 컷신: 특수 승리는 법전 그림 + [특수 승리!], 완주는 체크무늬 깃발 + [FINISH!]. 끝나면 스스로 사라진다.
+	_board.instant_roll_for_test = false
+	_expect(_board._uses_victory_cutscene(&"LAW_01") and _board._uses_victory_cutscene(VictoryChecker.ALL_HOME), "특수 승리·완주는 졸업 컷신")
+	_expect(not _board._uses_victory_cutscene(VictoryChecker.RACE_ORDER) and not _board._uses_victory_cutscene(VictoryChecker.LAST_PLACE), "진행 순위·꼴찌는 기존 배너")
+	for reason: StringName in [&"LAW_05", VictoryChecker.ALL_HOME]:
+		var impacts: Array = [0]
+		var playing: Array = [true]
+		var call_done: Callable = func() -> void:
+			await _board._play_victory_cutscene(1, 1, reason)
+			playing[0] = false
+		call_done.call()
+		var layer: Node = _board.get_node_or_null("VictoryCutsceneLayer")
+		var cut: VictoryCutscene = layer.get_child(0) as VictoryCutscene if layer != null else null
+		_expect(cut != null and cut.active, "%s: 컷신 재생" % reason)
+		if cut == null:
+			continue
+		cut.impact.connect(func() -> void: impacts[0] = int(impacts[0]) + 1)
+		var headline: Label = cut.find_child("CutsceneHeadline", true, false) as Label
+		_expect(headline != null and headline.text == ("특수 승리!" if reason == &"LAW_05" else "FINISH!"), "%s: 도장 글자" % reason)
+		_expect((cut.find_child("CutsceneArt", true, false) != null) == (reason == &"LAW_05"), "%s: 법전 그림은 특수 승리만" % reason)
+		_expect(cut.find_child("CutsceneActor", true, false) != null, "%s: 사도 전신 그림" % reason)
+		cut.skip()
+		_expect(int(impacts[0]) == 1 and not cut.active, "%s: 건너뛰면 충돌 한 번 + 종료" % reason)
+		await process_frame
+		await process_frame
+		_expect(not bool(playing[0]), "%s: 연출 단계가 끝난다 (await)" % reason)
+		await process_frame
+		_expect(_board.get_node_or_null("VictoryCutsceneLayer") == null, "%s: 컷신 레이어 정리" % reason)
+	_board.instant_roll_for_test = saved_instant
 
 
 ## 거북이 이동 회귀 2: 드래프트 뒤로 미뤄 둔 연출(_draft_deferred)이 남아 있어도 이미 큐에 든 걸음은 바로 이어 뛴다.

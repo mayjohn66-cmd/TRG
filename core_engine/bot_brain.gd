@@ -25,6 +25,9 @@ const HIGH_ROLL: int = 5
 # ---------------------------------------------------------------------------
 
 ## 이동할 말 ID. 선택 가능한 말이 없으면 -1. 점수가 같으면 ID가 낮은 말.
+## 사도 포위망 경보가 울린 사람의 말을 잡을 때 더하는 점수.
+const SIEGE_BREAK_BONUS: float = 40.0
+
 static func choose_pawn(state: GameState, player_id: int, dice_value: int) -> int:
 	var best_id: int = -1
 	var best_score: float = -INF
@@ -48,7 +51,7 @@ static func score_move(state: GameState, pawn: PlayerPawn, dice_value: int) -> f
 	if destination == GameEnums.GOAL_TILE and pawn.can_finish(state):
 		score += SCORE_GOAL
 	elif has_capturable_enemy(state, pawn, destination):
-		score += SCORE_CAPTURE
+		score += SCORE_CAPTURE + siege_break_bonus(state, pawn.owner_id, destination)
 	if destination != GameEnums.GOAL_TILE or not pawn.can_finish(state):
 		var tile: TileNode = state.board.get_tile(destination)
 		if BoardSpec.bonus_corner_tiles.has(destination) or tile.tile_type == TileNode.TileType.BAKERY:
@@ -497,11 +500,22 @@ const SHOT_POWERS: Array[float] = [0.35, 0.65, 1.0]
 
 
 ## 이 기물이 결승까지 온 거리(클수록 앞선 말). 업힌 말은 함께 센다.
+## 사도 포위망 경보가 울린 사람의 말은 잡으면 포위망을 깰 수 있어 값을 크게 올린다 (필살기 표적도 같은 값을 쓴다).
 static func pawn_progress(state: GameState, pawn: PlayerPawn) -> float:
 	var total: float = 0.0
 	for member: PlayerPawn in pawn.stack_members():
 		total += maxf(0.0, float(BoardSpec.tile_count - state.pawn_progress_distance(member)))
+	if SpecialVictory.siege_armed(state, pawn.owner_id):
+		total += SIEGE_BREAK_BONUS
 	return total
+
+
+## 이 칸의 적 말을 잡으면 사도 포위망 경보를 깰 수 있으면 보너스 (1.01: 경보 뒤 한 바퀴 동안 견제할 기회).
+static func siege_break_bonus(state: GameState, player_id: int, tile: int) -> float:
+	for other: PlayerPawn in state.leaders_at(tile):
+		if other.owner_id != player_id and SpecialVictory.siege_armed(state, other.owner_id):
+			return SIEGE_BREAK_BONUS
+	return 0.0
 
 
 ## 내 필살기 중 지금 쓸 만한 것 하나: {"pawn_id": int, "params": Dictionary, "value": float}. 없으면 빈 Dictionary.

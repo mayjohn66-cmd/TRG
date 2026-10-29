@@ -143,6 +143,10 @@ var extra_turns: Dictionary = {}
 ## 🏆 특수 승리 교칙 진행도: 플레이어 ID -> {kills, bakery, ejected, underdog, best_move, best_chain}.
 ## 누적 기록(kills·bakery·ejected·underdog)은 게임 시작부터 세고, 순간 기록(best_*)은 해당 교칙이 법전에 있는 동안만 센다.
 var law_stats: Dictionary = {}
+## 🏆 사도 포위망 경보 (1.01): 자기 차례 끝에 포위망을 처음 완성한 사람 -> 완성한 라운드. 다음 자기 차례가 끝날 때까지 유지해야 졸업한다 (SpecialVictory.update_siege).
+var siege_armed: Dictionary = {}
+## 이번 판정에서 포위망 졸업 자격을 얻은 사람 (판정이 끝나면 비운다).
+var siege_ready: Dictionary = {}
 ## 히든 페이싱: 사람 자리(AI 대전의 내 자리, TurnManager.pacing_humans에서 받는다)와 사람별 턴 종료를 당한 횟수 (크림 보정). 화면에는 보이지 않는다.
 var pacing_humans: Array[int] = []
 var pacing_turn_ends: Dictionary = {}

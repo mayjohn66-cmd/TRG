@@ -175,7 +175,49 @@ func test_siege_needs_three_separate_pawns_four_tiles_apart() -> void:
 	place(state, 13, 10, [9])
 	check_eq(VictoryLaw.spread_count(state, 1), 3, "2·6·10: 서로 4칸 이상인 말 3개")
 	add_law(state, "LAW_05")
-	check_eq(SpecialVictory.achieved_by(state, 1), &"LAW_05", "사도 포위망 달성")
+	check(VictoryLaw.spread_count(state, 1) >= 3, "사도 포위망 조건 충족")
+	check_eq(SpecialVictory.achieved_by(state, 1), &"", "경보 전에는 포위망으로 졸업하지 않는다 (1.01)")
+	SpecialVictory.update_siege(state, 1)
+	check(SpecialVictory.siege_armed(state, 1), "차례 끝에 처음 완성하면 경보")
+	check_eq(SpecialVictory.achieved_by(state, 1), &"", "경보만으로는 아직")
+	SpecialVictory.update_siege(state, 1)
+	check_eq(SpecialVictory.achieved_by(state, 1), &"LAW_05", "다음 자기 차례 끝까지 유지하면 사도 포위망 달성")
+
+
+## 사도 포위망 기습 승리 방지 (1.01): 경보 → 다른 사람의 차례 → 다시 내 차례 끝까지 유지해야 졸업한다. 그 사이 깨지면 경보가 풀린다.
+func test_siege_needs_to_survive_one_lap_after_the_warning() -> void:
+	var manager := _new_manager()
+	var events: Array = []
+	manager.event_received.connect(func(kind: StringName, data: Dictionary) -> void: events.append({"kind": kind, "data": data}))
+	var state: GameState = manager.state
+	state.rulebook.enqueue_law(LawRegistry.create("LAW_05"))
+	for entry: Array in [[11, 2], [12, 6], [13, 10]]:
+		place(state, entry[0], entry[1], [entry[1] - 1])
+	check(not manager._judge_special_victory(1), "첫 판정: 졸업하지 않는다")
+	check(not state.is_graduated(1) and SpecialVictory.siege_armed(state, 1), "경보만 울린다")
+	check(events.any(func(e: Dictionary) -> bool: return e["kind"] == &"siege_armed" and int(e["data"]["player_id"]) == 1), "경보 이벤트")
+	manager._judge_special_victory(2)
+	manager._judge_special_victory(-1)
+	check(not state.is_graduated(1), "남의 차례·라운드 끝 판정으로는 졸업하지 않는다")
+	manager._judge_special_victory(1)
+	check(state.is_graduated(1) and state.rank_reasons[1] == &"LAW_05", "다음 자기 차례 끝까지 유지하면 졸업")
+	_dispose(manager)
+	# 깨지면 경보가 풀리고 처음부터
+	var broken := _new_manager()
+	var bstate: GameState = broken.state
+	var bevents: Array = []
+	broken.event_received.connect(func(kind: StringName, data: Dictionary) -> void: bevents.append(kind))
+	bstate.rulebook.enqueue_law(LawRegistry.create("LAW_05"))
+	for entry: Array in [[11, 2], [12, 6], [13, 10]]:
+		place(bstate, entry[0], entry[1], [entry[1] - 1])
+	broken._judge_special_victory(1)
+	bstate.send_to_start(bstate.get_pawn(12), 2)
+	broken._judge_special_victory(2)
+	check(not SpecialVictory.siege_armed(bstate, 1) and bevents.has(&"siege_broken"), "다른 사람이 말을 잡아 포위망을 깨면 경보 해제")
+	place(bstate, 12, 6, [5])
+	broken._judge_special_victory(1)
+	check(not bstate.is_graduated(1) and SpecialVictory.siege_armed(bstate, 1), "다시 완성하면 경보부터 다시")
+	_dispose(broken)
 
 
 func test_underdog_counts_kills_on_the_leader_only_with_no_finished_pawns() -> void:

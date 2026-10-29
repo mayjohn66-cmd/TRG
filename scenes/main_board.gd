@@ -352,6 +352,10 @@ var _pawn_buttons: Array[Button] = []
 var _pawn_slot_parts: Array[Dictionary] = []
 ## 필살기 버튼: 내 프로필(큰 카드)의 칸 아래 버튼들. 수동 4인 모드에서는 기물 독의 버튼(_dock_skill_buttons)이 대신한다.
 var _skill_buttons: Array[Button] = []
+## 필살기 버튼 상태 (_skin_skill_button).
+const SKILL_BUTTON_READY: int = 0
+const SKILL_BUTTON_WAIT: int = 1
+const SKILL_BUTTON_USED: int = 2
 var _dock_skill_buttons: Array[Button] = []
 var _tile_pick_skill_pawn: int = -1
 var _aim_pawn: int = -1
@@ -1712,8 +1716,8 @@ func _build_profiles() -> void:
 			icon.gui_input.connect(_on_pawn_icon_input.bind(icon, player_id * 10 + slot))
 			cell.add_child(icon)
 			if big:
-				var skill_button: Button = _make_button(tr_ui("btn.skill"), _on_skill_pressed.bind(slot - 1), 11, Color("c77d0a"), 6)
-				skill_button.custom_minimum_size = Vector2(slot_size, 26)
+				var skill_button: Button = _make_button(tr_ui("btn.skill"), _on_skill_pressed.bind(slot - 1), 13, Color("c77d0a"), 6)
+				skill_button.custom_minimum_size = Vector2(slot_size, 30)
 				skill_button.focus_mode = Control.FOCUS_NONE
 				skill_button.add_theme_color_override("font_color", Color("fff9db"))
 				skill_button.add_theme_color_override("font_outline_color", Color("5c3a00"))
@@ -2652,6 +2656,10 @@ func _refresh_pawns() -> void:
 	var viewer: int = _law_view_player()
 	if viewer != -1 and state.rulebook.has_law("LAW_05"):
 		spread_ids = VictoryLaw.spread_pawn_ids(state, viewer)
+	# 포위망 경보(1.01)가 울린 사람의 말은 모두에게 [포위망!]으로 보인다: 잡아서 깨야 할 말
+	var armed_ids: Array[int] = []
+	for armed_player: int in state.siege_armed.keys():
+		armed_ids.append_array(VictoryLaw.spread_pawn_ids(state, armed_player))
 	for pawn: PlayerPawn in state.pawns:
 		var view: Node2D = _pawn_views.get(pawn.entity_id)
 		if view == null:
@@ -2665,7 +2673,9 @@ func _refresh_pawns() -> void:
 			badge_text += " 감옥"
 		if state.bonds.has(pawn.entity_id):
 			badge_text += " 연대"  # 강제 연대책임: 일심동체로 묶인 말
-		if spread_ids.has(pawn.entity_id):
+		if armed_ids.has(pawn.entity_id):
+			badge_text += " 포위망!"  # 경보가 울린 포위망의 말 (잡으면 포위망이 깨진다)
+		elif spread_ids.has(pawn.entity_id):
 			badge_text += " 포위망"  # 사도 포위망에 세어지는 말
 		(view.get_node("Bounce/Badge") as Label).text = badge_text
 	for npc: NeutralNPC in state.npcs:
@@ -2763,6 +2773,7 @@ func _refresh_npc_danger() -> void:
 
 func _update_danger_pulse(delta: float) -> void:
 	_update_dash_pulse()
+	_update_skill_pulse()
 	if _npc_danger.is_empty():
 		return
 	_danger_clock += delta
@@ -4183,6 +4194,37 @@ func _fx_law_achieved(from: Rect2, law_name: String, law_desc: String, color: Co
 	tween.tween_callback(canvas.queue_free)
 
 
+## 졸업 컷신(1.01)을 쓰는 졸업 사유: 특수 승리(법전)와 완주(말 4개 모두 골인). 진행 순위·꼴찌는 기존 배너.
+func _uses_victory_cutscene(reason: StringName) -> bool:
+	return _fx_on() and (reason == VictoryChecker.ALL_HOME or LawRegistry.ALL_IDS.has(String(reason)))
+
+
+## 졸업 컷신: 특수 승리는 법전 그림, 완주는 체크무늬 깃발. 끝날 때까지 기다린다 (연출 큐 한 단계).
+func _play_victory_cutscene(player_id: int, rank_no: int, reason: StringName) -> void:
+	var is_law: bool = LawRegistry.ALL_IDS.has(String(reason))
+	var color: Color = PLAYER_COLORS.get(player_id, Color("ffd43b"))
+	var canvas := CanvasLayer.new()
+	canvas.name = "VictoryCutsceneLayer"
+	canvas.layer = 61  # 처치 컷인(60) 위
+	add_child(canvas)
+	var cut := VictoryCutscene.new()
+	canvas.add_child(cut)
+	var actor: Texture2D = AvatarCombatArt.texture(_avatar_for(player_id), &"attack")
+	if is_law:
+		var law: LawResource = LawRegistry.create(String(reason))
+		var art: Texture2D = TextureCache.fetch("res://content_trickcal/illustrations/laws/%s.png" % String(reason))
+		cut.setup(VictoryCutscene.MODE_LAW, color, actor, art, "특수 승리!", law.law_name if law != null else "", "%d위 졸업!" % rank_no, _player_name(player_id))
+	else:
+		cut.setup(VictoryCutscene.MODE_FINISH, color, actor, null, "FINISH!", "%d위 골인!" % rank_no, "말 4개 모두 완주", _player_name(player_id))
+	cut.impact.connect(func() -> void:
+		screen_shake(12.0, 0.35)
+		Sfx.play_stinger(&"law" if is_law else &"graduate")
+		_profile_react(player_id, true, "%d위" % rank_no))
+	cut.play(_motion_pace())
+	await cut.completed
+	canvas.queue_free()
+
+
 func _refresh_hands() -> void:
 	for child: Node in _dock.get_children():
 		child.queue_free()
@@ -5219,7 +5261,7 @@ func _build_pawn_dock() -> void:
 	add_child(_pawn_bar)
 	var step: float = SLOT_SIZE.x + 5.0
 	for slot: int in GameEnums.PAWNS_PER_PLAYER:
-		var skill_button: Button = _make_button("필살기\n발동!", _on_skill_pressed.bind(slot), 13, Color("c77d0a"), 8)
+		var skill_button: Button = _make_button("필살기\n발동!", _on_skill_pressed.bind(slot), 15, Color("c77d0a"), 8)
 		skill_button.position = Vector2(6 + slot * step, 6)
 		skill_button.size = Vector2(SLOT_SIZE.x, 38)
 		skill_button.custom_minimum_size = Vector2(SLOT_SIZE.x, 38)
@@ -5410,6 +5452,61 @@ func _dock_owner() -> int:
 	return local_player_id if ai_mode else manager.current_player_id()
 
 
+## 필살기 버튼 상태별 모습 (1.01 시인성). READY는 _update_skill_pulse가 두근거리게 한다.
+func _skin_skill_button(button: Button, mode: int) -> void:
+	if int(button.get_meta("skill_mode", -1)) == mode:
+		return
+	button.set_meta("skill_mode", mode)
+	var bg: Color
+	var border: Color
+	var text: Color
+	var outline: Color
+	match mode:
+		SKILL_BUTTON_READY:
+			bg = Color("ffb703")
+			border = Color("fff3bf")
+			text = Color("3b1d00")
+			outline = Color("fff3bf")
+		SKILL_BUTTON_WAIT:
+			bg = Color("2b2f45")
+			border = Color("c99a2e")
+			text = Color("ffd66b")
+			outline = Color("1a1405")
+		_:
+			bg = Color("3a3d47")
+			border = Color("595d6b")
+			text = Color("9aa0ad")
+			outline = Color("1d1f26")
+	var box: StyleBoxFlat = _style(bg, border, 2, 8, 0, 2)
+	if mode == SKILL_BUTTON_READY:
+		box.shadow_color = Color(1.0, 0.8, 0.2, 0.75)
+		box.shadow_size = 7
+		box.shadow_offset = Vector2.ZERO
+	var hover: StyleBoxFlat = box.duplicate()
+	hover.bg_color = bg.lightened(0.15)
+	for style_name: String in ["normal", "pressed", "disabled", "focus"]:
+		button.add_theme_stylebox_override(style_name, box)
+	button.add_theme_stylebox_override("hover", hover)
+	for color_name: String in ["font_color", "font_hover_color", "font_pressed_color", "font_disabled_color", "font_focus_color"]:
+		button.add_theme_color_override(color_name, text)
+	button.add_theme_color_override("font_outline_color", outline)
+	button.add_theme_constant_override("outline_size", 3 if mode == SKILL_BUTTON_READY else 2)
+	if mode != SKILL_BUTTON_READY:
+		button.scale = Vector2.ONE
+		button.self_modulate = Color.WHITE
+
+
+## 쓸 수 있는 필살기 버튼을 두근거리게 한다 (크기·밝기). 보이는 버튼만.
+func _update_skill_pulse() -> void:
+	var pulse: float = 0.5 + 0.5 * sin(float(Time.get_ticks_msec()) / 1000.0 * TAU * 1.2)
+	for button: Button in active_skill_buttons():
+		if not button.is_visible_in_tree() or int(button.get_meta("skill_mode", -1)) != SKILL_BUTTON_READY:
+			continue
+		button.pivot_offset = button.size * 0.5
+		button.scale = Vector2.ONE * (1.0 + 0.07 * pulse)
+		button.self_modulate = Color(1.0 + 0.25 * pulse, 1.0 + 0.2 * pulse, 1.0 + 0.05 * pulse)
+
+
 ## 지금 모드에서 실제로 쓰는 필살기 버튼들 (슬롯 순서): AI·온라인은 내 프로필 카드, 수동 4인은 기물 독.
 func active_skill_buttons() -> Array[Button]:
 	return _skill_buttons if ai_mode else _dock_skill_buttons
@@ -5480,10 +5577,12 @@ func _refresh_pawn_dock() -> void:
 		var dock_button: Button = _dock_skill_buttons[index]
 		profile_button.visible = has_skill and ai_mode
 		dock_button.visible = has_skill and not ai_mode
+		# 1.01 시인성: 쓸 수 있음(금색·빛·두근) / 아직 못 씀(어두운 판에 금테) / 사용됨(회색)을 한눈에 구분한다
+		var skill_mode: int = SKILL_BUTTON_USED if pawn.skill_used else (SKILL_BUTTON_READY if usable else SKILL_BUTTON_WAIT)
 		for skill_button: Button in [profile_button, dock_button]:
 			skill_button.disabled = not usable
-			skill_button.modulate = Color(1.15, 1.0, 0.7) if usable else Color.WHITE
-		profile_button.text = tr_ui("btn.skill_used") if pawn.skill_used else tr_ui("btn.skill")
+			_skin_skill_button(skill_button, skill_mode)
+		profile_button.text = tr_ui("btn.skill_used") if pawn.skill_used else (tr_ui("btn.skill_ready") if usable else tr_ui("btn.skill"))
 		dock_button.text = "사용 완료" if pawn.skill_used else "필살기\n발동!"
 
 
@@ -10236,28 +10335,27 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 				_enqueue_late(func() -> void:
 					_record(-1, "[color=#ffe066][b]중반 법전 자동 제정![/b] %s[/color]" % _bb(auto_name), "", false, true)
 					_announce_law_added(auto_law, null))
+		&"siege_armed":
+			# 사도 포위망 경보 (1.01): 처음 완성하면 바로 졸업하지 않고, 다음 자기 차례가 끝날 때까지 버텨야 한다. 모두에게 크게 알려 견제할 기회를 준다.
+			var sieger: int = int(data["player_id"])
+			_log_line("[포위망 경보] %s의 사도 포위망 완성! 다음 차례가 끝날 때까지 유지하면 특수 승리" % _player_name(sieger), Color("ff8787"))
+			_enqueue_late(func() -> void:
+				_record(sieger, "[color=#ff8787][b]포위망 경보![/b] 다음 차례 끝까지 버티면 특수 승리[/color]", "", false, true)
+				if _fx_on():
+					screen_shake(9.0, 0.35)
+					Sfx.play(&"tempo_warning")
+				_announce("사도 포위망", "포위망 경보!", "", Color("ff6b6b"), null, 2.2, true, {"key": "siege_armed", "sub": "%s  ·  %s" % [_player_name(sieger), "말을 잡아 포위망을 깨세요!"]}))
+		&"siege_broken":
+			var freed: int = int(data["player_id"])
+			_log_line("[포위망 붕괴] %s의 사도 포위망이 깨졌습니다" % _player_name(freed), Color("74c0fc"))
+			_enqueue_late(func() -> void:
+				_record(freed, "[color=#74c0fc]포위망이 깨졌다![/color]", "", false, true)
+				_announce("사도 포위망", "포위망 붕괴!", "", Color("74c0fc"), null, 1.3, true, {"key": "siege_broken", "sub": _player_name(freed)}))
 		&"special_victory_judgement":
 			_mark_spotlight()
 			var achievers: Array = data["players"]
 			_log_line("[%d라운드 특수 승리] 달성: %s" % [int(data["round"]), ", ".join(PackedStringArray(achievers.map(func(id: int) -> String: return _player_name(id))))], Color("ffd43b"))
-			# 달성한 법전 카드 (판정 직후 법전에서 지워지므로 지금 슬롯 자리·이름을 잡아 둔다): 가운데로 날아와 도장이 찍힌 뒤 순위 배너
-			var achieved: Array = []
-			var law_ids: Array = data.get("laws", [])
-			for index: int in mini(achievers.size(), law_ids.size()):
-				var slot_index: int = -1
-				var achieved_law: LawResource = null
-				for i: int in state.rulebook.active_laws_queue.size():
-					if state.rulebook.active_laws_queue[i].law_id == str(law_ids[index]):
-						slot_index = i
-						achieved_law = state.rulebook.active_laws_queue[i]
-				if achieved_law == null and LawRegistry.ALL_IDS.has(str(law_ids[index])):  # 같은 판정에서 완주(all_home)로 졸업한 사람은 법전 카드가 없다
-					achieved_law = LawRegistry.create(str(law_ids[index]))
-				if achieved_law == null:
-					continue
-				var from: Rect2 = _law_slots[slot_index].get_global_rect() if slot_index >= 0 and slot_index < _law_slots.size() else Rect2(Vector2(40, 200), Vector2(280, 66))
-				achieved.append([from, achieved_law.law_name, achieved_law.description, PLAYER_COLORS.get(int(achievers[index]), Color("ffd43b"))])
-			for entry: Array in achieved:
-				_enqueue_late(func() -> void: _fx_law_achieved(entry[0], entry[1], entry[2], entry[3]))
+			# 달성 장면은 졸업 컷신(1.01, player_ranked → _play_victory_cutscene)이 법전 그림·순위와 함께 보여 준다.
 		&"race_ranked":
 			if bool(data.get("round_cap", false)):
 				_log_line("[%d라운드 종료] 남은 플레이어는 진행 순위로 순위가 확정됩니다" % PacingDirector.HARD_CAP_ROUND, Color("ffd43b"))
@@ -10414,6 +10512,9 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			var rank_reason: StringName = data["reason"]
 			_record(ranked, "★ %d위 확정! (%s)" % [rank_no, _bb(reason_text)], "", true)
 			_enqueue_late(func() -> void:
+				if _uses_victory_cutscene(rank_reason):
+					await _play_victory_cutscene(ranked, rank_no, rank_reason)  # 1.01: 특수 승리·완주 피니시는 컷신이 순위까지 보여 준다
+					return
 				if rank_no < _player_ids.size() - 1:  # 3위(마지막 졸업)부터는 결과 화면이 바로 이어진다 (팡파르도 시상대에 맡긴다)
 					if _fx_on():
 						Sfx.play_stinger(&"graduate")

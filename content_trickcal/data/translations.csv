@@ -2410,3 +2410,17 @@ BUST!,BUST!,BUST！
 전원 차례 첫 이동 +3칸,Everyone's first move +3,全員の最初の移動 +3マス
 결승선은 [범용] 결승선 당기기를 쓸 때만 당겨져요 (체크무늬 칸),The finish line only moves closer when someone uses the [Utility] pull augment (checkered spaces),ゴールは[汎用]ゴール引き寄せを使ったときだけ近づきます (チェック柄のマス)
 25라운드가 끝나면 남은 사람은 진행 순위로 순위 확정,"After round 25, remaining players are ranked by race progress",25ラウンド終了後、残りのプレイヤーは進行順で順位確定
+특수 승리!,Special Victory!,特殊勝利！
+FINISH!,FINISH!,FINISH!
+%d위 졸업!,#%d Graduated!,%d位で卒業！
+포위망 경보!,Siege Alert!,包囲網警報！
+포위망 붕괴!,Siege Broken!,包囲網崩壊！
+말을 잡아 포위망을 깨세요!,Capture a pawn to break the siege!,駒を倒して包囲網を崩そう！
+ 포위망!, Siege!, 包囲網！
+포위망 경보,Siege Alert,包囲網警報
+[포위망 경보] %s의 사도 포위망 완성! 다음 차례가 끝날 때까지 유지하면 특수 승리,[Siege Alert] %s completed the Apostle Siege Net! Holding it until the end of their next turn wins,[包囲網警報] %s の使徒包囲網が完成！次のターン終了まで維持すれば特殊勝利
+[color=#ff8787][b]포위망 경보![/b] 다음 차례 끝까지 버티면 특수 승리[/color],[color=#ff8787][b]Siege Alert![/b] Hold until the end of the next turn for a Special Victory[/color],[color=#ff8787][b]包囲網警報！[/b] 次のターン終了まで耐えれば特殊勝利[/color]
+[포위망 붕괴] %s의 사도 포위망이 깨졌습니다,[Siege Broken] %s's Apostle Siege Net was broken,[包囲網崩壊] %s の使徒包囲網が崩れました
+[color=#74c0fc]포위망이 깨졌다![/color],[color=#74c0fc]The siege was broken![/color],[color=#74c0fc]包囲網が崩れた！[/color]
+포위망이 깨졌다!,The siege was broken!,包囲網が崩れた！
+◆ 승리 조건: %s\n◆ 차례 끝에 완성하면 [포위망 경보] → 다음 내 차례 끝까지 유지하면 졸업,◆ Win condition: %s\n◆ Completing it at turn end raises a [Siege Alert] → graduate if it still holds at the end of your next turn,◆ 勝利条件: %s\n◆ ターン終了時に完成すると[包囲網警報] → 次の自分のターン終了まで維持すれば卒業

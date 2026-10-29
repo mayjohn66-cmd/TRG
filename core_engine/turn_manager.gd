@@ -255,7 +255,7 @@ func advance_to_next_player() -> void:
 		for guarded: PlayerPawn in state.pawns_of(leaving):
 			guarded.turn_guard = false  # 나이트 [기사의 맹세]는 이번 차례까지만
 	# 특수 승리: 한 차례의 행동(이동·처치·카드·방어)이 다 끝나 차례가 넘어가는 순간 판정한다 (행동 도중에는 기록만 오른다).
-	if _judge_special_victory():
+	if _judge_special_victory(leaving):
 		return
 	if state != null and int(state.banned_turns.get(leaving, 0)) > 0:
 		state.banned_turns[leaving] = int(state.banned_turns[leaving]) - 1  # 알고리즘 밴: 밴 당한 사람의 턴이 끝날 때마다 하나씩 줄어든다
@@ -1725,8 +1725,8 @@ func _enter_neutral_npc_phase() -> void:
 		if bool(report["vanished"]):
 			state.remove_npc(npc)
 	_emit_event(&"npc_phase_resolved", {"reports": reports})
-	# 라운드의 마지막 단계: 중립 기물이 움직인 뒤 한 번 더 판정한다 (NPC의 처치·사출로 채워진 조건).
-	if _judge_special_victory():
+	# 라운드의 마지막 단계: 중립 기물이 움직인 뒤 한 번 더 판정한다 (NPC의 처치·사출로 채워진 조건). 포위망 경보는 차례 끝에만 울린다.
+	if _judge_special_victory(-1):
 		return
 	if state.reverse_move_rounds_left > 0:
 		state.reverse_move_rounds_left -= 1
@@ -1765,9 +1765,15 @@ func _check_victory(report: MoveReport) -> bool:
 
 ## 차례가 끝날 때(그리고 라운드 끝 NPC 단계 뒤): 법전의 특수 승리를 판정한다. 조건을 채운 사람은 바로 졸업하고,
 ## 여럿이면 레이스에서 앞선 사람(완주 수 많고 남은 거리 짧은 순)이 먼저 순위를 받는다. 이미 졸업한 사람·지워진 교칙은 보지 않는다. 게임이 끝났으면 true.
-func _judge_special_victory() -> bool:
+## turn_player: 차례를 끝낸 사람 (라운드 끝 판정은 -1). 사도 포위망 경보는 이 사람에게만 울린다 (SpecialVictory.update_siege).
+func _judge_special_victory(turn_player: int = -1) -> bool:
 	if is_game_over or state == null:
 		return is_game_over
+	var siege: Dictionary = SpecialVictory.update_siege(state, turn_player)
+	for broken: int in siege["broken"]:
+		_emit_event(&"siege_broken", {"player_id": broken})
+	for armed: int in siege["armed"]:
+		_emit_event(&"siege_armed", {"player_id": armed, "round": state.round_number})
 	var qualified: Array[Dictionary] = VictoryChecker.newly_qualified(state, player_order, current_player_id(), true)
 	if qualified.is_empty():
 		return false

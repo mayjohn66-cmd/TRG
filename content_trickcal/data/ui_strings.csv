@@ -2,6 +2,7 @@ key,ko,en,ja
 btn.roll,굴리기,Roll,振る
 btn.skill,필살기,Skill,必殺技
 btn.skill_used,사용됨,Used,使用済
+btn.skill_ready,필살기!,SKILL!,必殺技！
 btn.menu,메뉴,Menu,メニュー
 btn.menu_tip,메뉴 (ESC),Menu (ESC),メニュー (ESC)
 btn.cancel,취소,Cancel,キャンセル
