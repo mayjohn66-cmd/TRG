@@ -41,6 +41,7 @@ on:
           - rulebook-art
           - avatar-hq
           - title-logo
+          - letterbox-pattern
           - presentation-sfx
           - lobby-art
           - castling
@@ -75,7 +76,9 @@ jobs:
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
           REQUESTED_SCOPE: ${{ inputs.validation }}
         run: |
-          if [[ "${REQUESTED_SCOPE}" == "blackjack-compact" || "${COMMIT_MESSAGE}" == *"[check:blackjack-compact]"* ]]; then
+          if [[ "${REQUESTED_SCOPE}" == "letterbox-pattern" || "${COMMIT_MESSAGE}" == *"[check:letterbox-pattern]"* ]]; then
+            echo "scope=letterbox-pattern" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "blackjack-compact" || "${COMMIT_MESSAGE}" == *"[check:blackjack-compact]"* ]]; then
             echo "scope=blackjack-compact" >> "${GITHUB_OUTPUT}"
           elif [[ "${REQUESTED_SCOPE}" == "roll-history" || "${COMMIT_MESSAGE}" == *"[check:roll-history]"* ]]; then
             echo "scope=roll-history" >> "${GITHUB_OUTPUT}"
@@ -163,6 +166,10 @@ jobs:
         run: |
           godot --headless --path . --import || true
           godot --headless --path . --import
+
+      - name: Check required web letterbox pattern
+        if: steps.validation.outputs.scope == 'letterbox-pattern'
+        run: python3 tools/check_letterbox_pattern.py
 
       - name: Check localized title presentation
         if: steps.validation.outputs.scope == 'title-logo'
@@ -625,8 +632,8 @@ jobs:
           cp web/title-logo-en.png build/web/title-logo-en.png
           cp web/title-logo-ja.png build/web/title-logo-ja.png
           cp web/loading-petit-speaki.webp build/web/loading-petit-speaki.webp
-          # 16:9 화면 바깥 칸 패턴 (있을 때만): 없으면 shell.html이 연두색 단색으로 둔다.
-          if [ -f web/letterbox-pattern.png ]; then cp web/letterbox-pattern.png build/web/letterbox-pattern.png; fi
+          # Required standalone asset: a Godot PCK import is not a public web URL.
+          cp web/letterbox-pattern.png build/web/letterbox-pattern.png
           # GitHub rejects individual files above 100 MiB. Fail before upload
           # with an actionable message if future asset additions reach it.
           python3 - <<'PY'
@@ -673,3 +680,4 @@ jobs:
           fi
           cd build/web
           npx --yes vercel@latest deploy --prod --yes --token "${VERCEL_TOKEN}"
+

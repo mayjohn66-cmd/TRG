@@ -56,6 +56,7 @@
 			/* 게임 화면은 16:9로 가운데에 두고, 남는 칸은 연두색 (web/letterbox-pattern.png가 있으면 그 그림을 바둑판으로 깐다) */
 			background-color: #b5e48c;
 			background-repeat: repeat;
+			background-size: 768px 768px;
 			overflow: hidden;
 			touch-action: none;
 			font-family: "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
@@ -427,6 +428,7 @@
 			window.trgFit16x9 = fit;
 			var pattern = new Image();
 			pattern.onload = function () { document.body.style.backgroundImage = "url('letterbox-pattern.png?v=__TRG_BUILD_ID__')"; };
+			pattern.onerror = function () { console.warn('Letterbox pattern asset could not be loaded.'); };
 			pattern.src = 'letterbox-pattern.png?v=__TRG_BUILD_ID__';
 		})();
 		const engine = new Engine(GODOT_CONFIG);
@@ -538,3 +540,4 @@
 	<script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>
+
