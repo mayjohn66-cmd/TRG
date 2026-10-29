@@ -2398,3 +2398,14 @@ BUST!,BUST!,BUST！
 해상도,Resolution,解像度
 창에 맞춤,Fit to window,ウィンドウに合わせる
 %d × %d (16:9),%d × %d (16:9),%d × %d (16:9)
+[중반 법전] 아무도 법전을 고르지 않아 [%s] %s이(가) 자동 제정되었습니다,"[Midgame Codex] Nobody picked a Codex law, so [%s] %s was enacted automatically",[中盤法典] 誰も法典を選ばなかったため [%s] %s が自動制定されました
+[color=#ffe066][b]중반 법전 자동 제정![/b] %s[/color],[color=#ffe066][b]Midgame Codex auto-enacted![/b] %s[/color],[color=#ffe066][b]中盤法典 自動制定！[/b] %s[/color]
+중반 법전 자동 제정!,Midgame Codex auto-enacted!,中盤法典 自動制定！
+법전이 비어 있어 무작위 특수 승리 법전 1개 자동 제정,The Codex is empty: 1 random Special Victory law is enacted,法典が空のため、ランダムな特殊勝利法典を1つ自動制定
+%d라운드부터 서든데스: 결승선이 라운드마다 1칸씩 당겨진다,Sudden death from round %d: the finish line moves 1 space closer each round,%dラウンドからサドンデス: ゴールがラウンドごとに1マスずつ近づく
+서든데스: 결승선이 라운드마다 1칸씩 계속 당겨진다,Sudden death: the finish line keeps moving 1 space closer each round,サドンデス: ゴールがラウンドごとに1マスずつ近づき続ける
+차례 첫 이동 +2칸 · 리벤지 +6칸 · 초증강 확률 상승 · 법전이 비어 있으면 1개 자동 제정,First move +2 · Revenge +6 · Super augment odds up · 1 law auto-enacted if the Codex is empty,最初の移動 +2マス · リベンジ +6マス · 超増強の確率アップ · 法典が空なら1つ自動制定
+차례 첫 이동 +4칸 · 리벤지 +8칸 · 법전 확률 상승,First move +4 · Revenge +8 · Codex odds up,最初の移動 +4マス · リベンジ +8マス · 法典の確率アップ
+17라운드 · 서든데스,Round 17 · Sudden Death,17ラウンド · サドンデス
+결승선이 라운드마다 1칸씩 당겨짐 (출발선 4칸 앞까지),The finish line moves 1 space closer each round (up to 4 spaces before the start),ゴールがラウンドごとに1マスずつ近づく (スタートの4マス手前まで)
+전원 차례 첫 이동 +6칸,Everyone's first move +6,全員の最初の移動 +6マス

@@ -2,9 +2,12 @@
 # Class: class_name TempoUp
 # Role: 판이 길어지면 라운드 단위로 게임을 가속한다 (템포 업). 7·14·20라운드에 단계가 오르고 (2026-10: 8·15·22에서 당겨 20라운드 안에 결판이 나게), 단계가 오르는 라운드가 시작될 때 크게 경고한다.
 #       1단계(7R, 과열): 차례 첫 이동 +2칸 · 리벤지 부스터 +6칸 · 초증강 등장 확률 상승
-#       2단계(14R, 광기): 차례 첫 이동 +4칸 · 리벤지 부스터 +8칸 · 법전 등장 확률 상승 · 결승선이 라운드마다 3칸씩 당겨진다 (반환점 앞까지)
-#       3단계(20R, 대붕괴): 전원 이동 +6칸 · 결승선이 출발선 4칸 앞까지 라운드마다 3칸씩 계속 당겨진다
-#       (2026-10-27) 싱글 라운드 상한(PacingDirector.HARD_CAP_ROUND)은 30라운드 안전장치일 뿐, 판은 결승선 당기기로 자연스럽게 끝난다.
+#       2단계(14R, 광기): 차례 첫 이동 +4칸 · 리벤지 부스터 +8칸 · 법전 등장 확률 상승
+#       3단계(20R, 대붕괴): 전원 이동 +6칸
+#       서든데스(2단계 라운드 + 2 = 16R 이후, 17R부터): 결승선이 라운드마다 1칸씩 완만하게 당겨진다 (출발선 4칸 앞까지).
+#       (2026-10-29 코어 유저 피드백) 예전 "2단계부터 라운드마다 3칸" 자동 단축은 트랙을 너무 빨리 줄여 기물·함정·역전 빌드업을
+#       써 보기도 전에 판이 끝났다. 이제 결승선은 플레이어가 [범용] 슬슬 지루한데...(goal_shrink_bonus)를 쓸 때와 서든데스에서만 당겨진다.
+#       싱글 라운드 상한(PacingDirector.HARD_CAP_ROUND)은 30라운드 안전장치다.
 #       라운드 번호만으로 정해지는 순수 함수라 스냅샷·네트워크 동기화가 따로 필요 없다.
 class_name TempoUp
 extends RefCounted
@@ -21,8 +24,10 @@ const REVENGE_BONUS: Array[int] = [0, 6, 8, 8]
 static var stage_rounds: Array[int] = [7, 14, 20]
 ## 초증강(1단계부터)·법전(2단계부터) 가중치에 곱하는 배수.
 const RARE_WEIGHT_MULTIPLIER: int = 3
-## 2단계부터 라운드마다 결승선이 당겨지는 칸 수 (2026-10-27: 3단계 2칸 → 2단계부터 3칸).
-const GOAL_SHRINK_PER_ROUND: int = 3
+## 서든데스(sudden_death_round() 이후)에 라운드마다 결승선이 당겨지는 칸 수 (2026-10-29: 2단계부터 3칸 → 16R 이후 1칸).
+const GOAL_SHRINK_PER_ROUND: int = 1
+## 서든데스가 시작되기 전 마지막 라운드 = 2단계 라운드 + 이 값 (기본 14 + 2 = 16, 스피드전 8 + 2 = 10).
+const SUDDEN_DEATH_AFTER_STAGE2: int = 2
 
 
 ## 이 라운드의 템포 업 단계 (0~3).
@@ -57,16 +62,21 @@ static func weight_multiplier(round_number: int, category: GameEnums.AugmentCate
 	return 1
 
 
-## 결승선이 당겨진 칸 수: 2단계(광기)부터 라운드마다 GOAL_SHRINK_PER_ROUND칸씩, 반환점 뒤쪽 절반(half_shrink_limit)까지.
-## 3단계(대붕괴)부터는 그 제한을 풀고 라운드마다 같은 칸씩 더 당겨 출발선 4칸 앞(max_shrink)까지 간다.
+## 서든데스 직전 라운드 (기본 16). 이 라운드까지는 시스템이 결승선을 당기지 않는다.
+static func sudden_death_round() -> int:
+	return stage_rounds[1] + SUDDEN_DEATH_AFTER_STAGE2
+
+
+## 서든데스가 시작되는 라운드인가 (결승선이 처음 당겨지는 라운드: 기본 17R).
+static func is_sudden_death_start(round_number: int) -> bool:
+	return round_number == sudden_death_round() + 1
+
+
+## 시스템이 당긴 결승선 칸 수: 서든데스(sudden_death_round() 다음 라운드)부터 라운드마다 GOAL_SHRINK_PER_ROUND칸, 출발선 4칸 앞(max_shrink)까지.
 static func goal_shrink(round_number: int) -> int:
-	var stage: int = level(round_number)
-	if stage < 2:
+	if round_number <= sudden_death_round():
 		return 0
-	var shrink: int = mini((round_number - stage_rounds[1] + 1) * GOAL_SHRINK_PER_ROUND, half_shrink_limit())
-	if stage >= 3:
-		shrink = mini(half_shrink_limit() + (round_number - stage_rounds[2] + 1) * GOAL_SHRINK_PER_ROUND, max_shrink(round_number))
-	return shrink
+	return mini((round_number - sudden_death_round()) * GOAL_SHRINK_PER_ROUND, max_shrink(round_number))
 
 
 ## 반환점 뒤쪽 절반까지의 당기기 한도 (2단계).
@@ -74,9 +84,9 @@ static func half_shrink_limit() -> int:
 	return maxi(BoardSpec.tile_count - BoardSpec.halfway_tile - 4, 0)
 
 
-## 이 라운드에 결승선을 당길 수 있는 최대 칸 수: 3단계부터는 출발선 4칸 앞까지.
+## 이 라운드에 결승선을 당길 수 있는 최대 칸 수: 서든데스부터는 출발선 4칸 앞까지, 그 전(범용 증강으로만 당길 때)은 반환점 뒤 절반까지.
 static func max_shrink(round_number: int) -> int:
-	return maxi(BoardSpec.tile_count - 4, 0) if level(round_number) >= 3 else half_shrink_limit()
+	return maxi(BoardSpec.tile_count - 4, 0) if round_number > sudden_death_round() else half_shrink_limit()
 
 
 ## 이 판에 결승선이 당겨진 칸 수: 템포 업 당기기 + [범용] 슬슬 지루한데...(GameState.goal_shrink_bonus). 이 라운드의 한도(max_shrink)를 넘지 않는다.
@@ -119,6 +129,6 @@ static func stage_name(stage: int) -> String:
 static func effect_lines(stage: int) -> Array[String]:
 	match stage:
 		1: return ["차례 첫 이동 +%d칸" % MOVE_BONUS[1], "리벤지 부스터 +6칸", "초증강 등장 확률 상승"] as Array[String]
-		2: return ["차례 첫 이동 +%d칸" % MOVE_BONUS[2], "리벤지 부스터 +8칸", "법전 증강 등장 확률 상승", "결승선이 라운드마다 %d칸씩 당겨진다" % GOAL_SHRINK_PER_ROUND] as Array[String]
-		3: return ["전원 차례 첫 이동 +%d칸" % MOVE_BONUS[3], "결승선이 출발선 앞까지 계속 당겨진다"] as Array[String]
+		2: return ["차례 첫 이동 +%d칸" % MOVE_BONUS[2], "리벤지 부스터 +8칸", "법전 증강 등장 확률 상승", "%d라운드부터 서든데스: 결승선이 라운드마다 1칸씩 당겨진다" % (sudden_death_round() + 1)] as Array[String]
+		3: return ["전원 차례 첫 이동 +%d칸" % MOVE_BONUS[3], "서든데스: 결승선이 라운드마다 1칸씩 계속 당겨진다"] as Array[String]
 	return [] as Array[String]

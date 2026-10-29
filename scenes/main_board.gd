@@ -10224,6 +10224,18 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 					screen_shake(12.0, 0.5)
 					Sfx.play(&"tempo_warning")
 				_announce_now("템포 업", "템포 업 Lv.%d · %s" % [stage, TempoUp.stage_name(stage)], "%d라운드부터 게임이 빨라집니다!\n◆ %s" % [tempo_round, "\n◆ ".join(PackedStringArray(lines))], Color("ff4d4d"), null, 3.2))
+		&"law_auto_enacted":
+			# 중반 법전 보장: 6라운드 동안 아무도 법전을 고르지 않아 무작위 특수 승리 법전이 자동 제정됐다 (템포 업 경고 뒤에 공개).
+			var auto_law: LawResource = null
+			for law: LawResource in state.rulebook.active_laws_queue:
+				if law.law_id == String(data["law_id"]):
+					auto_law = law
+			if auto_law != null:
+				var auto_name: String = auto_law.law_name
+				_log_line("[중반 법전] 아무도 법전을 고르지 않아 [%s] %s이(가) 자동 제정되었습니다" % [auto_law.law_id, auto_name], Color("ffe066"))
+				_enqueue_late(func() -> void:
+					_record(-1, "[color=#ffe066][b]중반 법전 자동 제정![/b] %s[/color]" % _bb(auto_name), "", false, true)
+					_announce_law_added(auto_law, null))
 		&"special_victory_judgement":
 			_mark_spotlight()
 			var achievers: Array = data["players"]
@@ -10254,7 +10266,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_refresh_tiles()
 			_log_line("[템포 업] 결승선이 %d칸 당겨졌습니다 (%d번 칸부터 결승)%s" % [data["shrink"], data["zone_start"], ", 완주 %d" % finished_ids.size() if not finished_ids.is_empty() else ""], Color("ffd43b"))
 			_record(-1, "결승선 %d칸 당겨짐 (%d번부터 결승)%s" % [int(data["shrink"]), int(data["zone_start"]), " - 말 %d개 즉시 완주!" % finished_ids.size() if not finished_ids.is_empty() else ""])
-			if TempoUp.is_stage_round(int(data["round"])) or not finished_ids.is_empty():
+			if TempoUp.is_stage_round(int(data["round"])) or TempoUp.is_sudden_death_start(int(data["round"])) or not finished_ids.is_empty():
 				_announce("템포 업", "결승선 당김!", "", Color("ffd43b"), null, 1.6, true, {"key": "goal_shrunk", "sub": "%d번 칸부터 결승" % int(data["zone_start"]) + ("  ·  " + "말 %d개 완주!" % finished_ids.size() if not finished_ids.is_empty() else "")})
 		&"tempo_boosted":
 			_roll_total[int(data["player_id"])] = int(data["to"])

@@ -1276,8 +1276,30 @@ func _enter_round_start() -> void:
 		_begin_turn()
 
 
+func _auto_law_due() -> bool:
+	return MatchRules.auto_law_enabled(state) and MatchRules.victory_law_count(state) == 0 and not MatchRules.laws_full(state)
+
+
+## 중반 법전 보장 (MatchRules.auto_law_enabled): 법전에 특수 승리가 하나도 없으면 무작위 법전 1개를 자동 제정한다.
+## 규칙의 법전 풀(law_pool)과 최대 개수(max_laws)를 따르고, 호스트 RNG로 고른다. 제정했으면 law_auto_enacted 이벤트.
+func _auto_enact_law() -> void:
+	if not _auto_law_due():
+		return
+	var candidates: Array[String] = []
+	for law_id: String in LawRegistry.ALL_IDS:
+		if VictoryLaw.is_victory_id(law_id) and MatchRules.law_allowed(state, law_id) and not state.rulebook.has_law(law_id):
+			candidates.append(law_id)
+	if candidates.is_empty():
+		return
+	var law: LawResource = LawRegistry.create(candidates[state.rng.randi_range(0, candidates.size() - 1)])
+	SpecialVictory.on_law_enacted(state, law)
+	state.rulebook.enqueue_law(law)
+	_emit_event(&"law_auto_enacted", {"round": state.round_number, "law_id": law.law_id})
+
+
 ## 템포 업: 단계가 오르는 라운드(TempoUp.STAGE_ROUNDS, 7·14·20)는 라운드를 선언하기 전에 경고 이벤트를 먼저 보낸다.
-## 3단계(20R)부터는 라운드마다 결승선이 당겨져 그 안에 선 말이 바로 완주한다 (법전 자동 등록은 없다, 2026-10-26).
+## 서든데스(기본 17R)부터는 라운드마다 결승선이 1칸씩 당겨져 그 안에 선 말이 바로 완주한다.
+## 1단계(7R)에는 중반 법전 보장을 본다 (2026-10-29: 6라운드 동안 아무도 법전을 뽑지 않았으면 무작위 법전 1개 자동 제정).
 ## 완주로 게임이 끝났으면 true.
 func _apply_tempo_up() -> bool:
 	var round_number: int = state.round_number
@@ -1295,7 +1317,11 @@ func _apply_tempo_up() -> bool:
 		var lines: Array[String] = TempoUp.effect_lines(stage)
 		if not bool(state.match_rules.get("laws", true)):
 			lines = lines.filter(func(line: String) -> bool: return not line.contains("법전"))  # 법전 끄기: 법전 관련 효과는 없다
+		if stage == 1 and _auto_law_due():
+			lines.append("법전이 비어 있어 무작위 특수 승리 법전 1개 자동 제정")
 		_emit_event(&"tempo_up", {"round": round_number, "level": stage, "lines": lines})
+		if stage == 1:
+			_auto_enact_law()
 
 	var zone_start: int = TempoUp.zone_start_for(state)
 	if zone_start < 0:

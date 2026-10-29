@@ -36,14 +36,15 @@ func test_stages_rise_at_rounds_7_14_20() -> void:
 	check_eq([TempoUp.stage_name(1), TempoUp.stage_name(2), TempoUp.stage_name(3)], ["과열", "광기", "대붕괴"], "단계 이름")
 	check_eq([TempoUp.revenge_bonus(5), TempoUp.revenge_bonus(7), TempoUp.revenge_bonus(14)], [0, 6, 8], "리벤지 부스터")
 	check(TempoUp.is_stage_round(7) and TempoUp.is_stage_round(14) and TempoUp.is_stage_round(20) and not TempoUp.is_stage_round(8) and not TempoUp.is_stage_round(15) and not TempoUp.is_stage_round(22), "경고는 단계가 오르는 라운드에만")
-	# 결승선: 광기(14R)부터 라운드마다 3칸씩 반환점 뒤 절반까지, 대붕괴(20R)부터는 그 한도를 넘어 출발선 4칸 앞까지 계속 당겨진다
-	var half: int = BoardSpec.tile_count - BoardSpec.halfway_tile - 4
-	check_eq([TempoUp.goal_shrink(13), TempoUp.goal_shrink(14), TempoUp.goal_shrink(15)], [0, 3, 6], "결승선은 14라운드부터 라운드마다 3칸씩")
-	check_eq(TempoUp.goal_shrink(19), half, "대붕괴 전에는 반환점 뒤 절반까지만")
-	check_eq([TempoUp.goal_shrink(20), TempoUp.goal_shrink(21)], [half + 3, half + 6], "대붕괴부터 한도를 넘어 라운드마다 3칸씩 더")
+	# 결승선 (2026-10-29): 템포 업 단계와 무관하게 16라운드까지는 그대로, 서든데스(17R)부터 라운드마다 1칸씩 출발선 4칸 앞까지
+	check_eq(TempoUp.sudden_death_round(), 16, "서든데스 직전 라운드는 16")
+	check_eq([TempoUp.goal_shrink(7), TempoUp.goal_shrink(14), TempoUp.goal_shrink(16)], [0, 0, 0], "16라운드까지 시스템은 결승선을 당기지 않는다")
+	check_eq([TempoUp.goal_shrink(17), TempoUp.goal_shrink(18), TempoUp.goal_shrink(20)], [1, 2, 4], "17라운드부터 라운드마다 1칸씩")
 	check_eq(TempoUp.goal_shrink(99), BoardSpec.tile_count - 4, "끝까지 가도 출발선 4칸 앞에서 멈춘다")
-	check(TempoUp.in_goal_zone(14, BoardSpec.tile_count - 3) and not TempoUp.in_goal_zone(14, BoardSpec.tile_count - 4), "14라운드: 마지막 3칸이 결승선")
-	check(not TempoUp.in_goal_zone(13, BoardSpec.tile_count - 1), "13라운드까지는 그대로")
+	check(TempoUp.is_sudden_death_start(17) and not TempoUp.is_sudden_death_start(16) and not TempoUp.is_sudden_death_start(18), "서든데스 시작 라운드는 17")
+	check(TempoUp.in_goal_zone(17, BoardSpec.tile_count - 1) and not TempoUp.in_goal_zone(17, BoardSpec.tile_count - 2), "17라운드: 마지막 1칸이 결승선")
+	check(not TempoUp.in_goal_zone(16, BoardSpec.tile_count - 1), "16라운드까지는 그대로")
+	check_eq(TempoUp.max_shrink(10), BoardSpec.tile_count - BoardSpec.halfway_tile - 4, "서든데스 전 [범용] 결승선 당기기 한도는 반환점 뒤 절반")
 
 
 func test_augment_weights_and_tempo_multiplier() -> void:
@@ -82,7 +83,8 @@ func test_stage_round_warns_before_the_round_is_declared() -> void:
 	check(kinds.has(&"tempo_up"), "7라운드 시작에 템포 업 경고")
 	var warning: Dictionary = events[kinds.find(&"tempo_up")]["data"]
 	check_eq(int(warning["level"]), 1, "1단계")
-	check_eq((warning["lines"] as Array).size(), 3, "효과 문구 3줄")
+	check_eq((warning["lines"] as Array).size(), 4, "효과 문구 3줄 + 법전이 비어 있어 자동 제정 안내 1줄")
+	check(str(warning["lines"][3]).contains("자동 제정"), "법전 자동 제정 안내")
 	events.clear()
 	manager.state.round_number = 8
 	manager._enter_round_start()
@@ -90,15 +92,56 @@ func test_stage_round_warns_before_the_round_is_declared() -> void:
 	_dispose(manager)
 
 
-func test_tempo_up_never_enacts_a_special_victory() -> void:
+## 중반 법전 보장 (2026-10-29): 1단계(7R)까지 법전이 비어 있으면 무작위 특수 승리 법전 1개를 자동 제정한다. 14·20라운드에는 다시 하지 않는다.
+func test_tempo_stage1_enacts_one_law_when_the_codex_is_empty() -> void:
 	var manager := _new_manager()
 	var events: Array = _events(manager)
-	for round_number: int in [7, 14, 20]:
+	manager.state.round_number = 7
+	manager._enter_round_start()
+	var ids: Array = manager.state.rulebook.law_ids()
+	check_eq(ids.size(), 1, "7라운드: 법전이 비어 있으면 1개 자동 제정")
+	check(VictoryLaw.is_victory_id(String(ids[0])), "특수 승리 법전")
+	var auto: Array = events.filter(func(event: Dictionary) -> bool: return event["kind"] == &"law_auto_enacted")
+	check(auto.size() == 1 and String(auto[0]["data"]["law_id"]) == String(ids[0]), "자동 제정 이벤트")
+	for round_number: int in [14, 20]:
 		manager.state.round_number = round_number
 		manager._enter_round_start()
-	check(manager.state.rulebook.law_ids().is_empty(), "템포 업은 법전을 자동으로 올리지 않는다")
-	check(not _kinds(events).has(&"tempo_law"), "자동 등록 이벤트 없음")
+	check_eq(manager.state.rulebook.law_ids().size(), 1, "14·20라운드에는 더 올리지 않는다")
 	_dispose(manager)
+
+
+func test_auto_law_skips_when_a_law_exists_or_laws_are_off_or_cream() -> void:
+	var manager := _new_manager()
+	manager.state.rulebook.enqueue_law(LawRegistry.create("LAW_01"))
+	manager.state.round_number = 7
+	manager._enter_round_start()
+	check_eq(manager.state.rulebook.law_ids(), ["LAW_01"], "누가 이미 법전을 뽑았으면 자동 제정하지 않는다")
+	_dispose(manager)
+	for rules: Dictionary in [{"laws": false}, MatchRules.for_difficulty(1)]:
+		var off := TurnManager.new()
+		off.boost_gimmicks = false
+		off.hotseat_mode = true
+		off.draft_enabled = false
+		off.match_rules = rules
+		tree.root.add_child(off)
+		off.start_game([1, 2] as Array[int], 4242)
+		off.state.round_number = 7
+		off._enter_round_start()
+		check(off.state.rulebook.law_ids().is_empty(), "법전 끄기·Lv.1 크림은 자동 제정 없음 (%s)" % str(rules.get("pacing", 0)))
+		_dispose(off)
+	for level: int in [2, 3, 5]:
+		var single := TurnManager.new()
+		single.boost_gimmicks = false
+		single.hotseat_mode = true
+		single.draft_enabled = false
+		single.match_rules = MatchRules.for_difficulty(level)
+		tree.root.add_child(single)
+		single.start_game([1, 2] as Array[int], 4242 + level)
+		single.state.round_number = 7
+		single._enter_round_start()
+		check_eq(single.state.rulebook.law_ids().size(), 1, "Lv.%d: 7라운드에 법전 1개 자동 제정" % level)
+		check(MatchRules.victory_law_count(single.state) <= MatchRules.max_laws(single.state), "최대 법전 개수를 넘지 않는다")
+		_dispose(single)
 
 
 func test_tempo_bonus_is_added_to_the_final_move() -> void:
