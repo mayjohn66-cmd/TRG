@@ -6550,7 +6550,7 @@ func _on_skill_used(data: Dictionary) -> void:
 			body = "%d번 타일에 호텔 건설 (밟은 적은 멈춤)" % int(data["from"])
 	_log_line("[필살기] %s: %s - %s" % [who, PawnCatalog.skill_name(skill), body.replace("\n", " ")], Color("ffa94d"))
 	if skill != &"shoot":
-		_announce_gate(tr_ui("skill.tag"), "필살기 발동!", "", PLAYER_COLORS[player_id], _skill_cutin(pawn, PLAYER_COLORS[player_id]), 1.3, {"key": "skill", "sub": PawnCatalog.skill_name(skill)})
+		_announce_gate(tr_ui("skill.tag"), "필살기 발동!", "", PLAYER_COLORS[player_id], _skill_cutin(pawn, PLAYER_COLORS[player_id]), 1.3, {"key": "skill", "sub": PawnCatalog.skill_name(skill), "cinematic": true})
 
 
 ## 필살기 컷씬: 기물 그림이 옆에서 미끄러져 들어와 도장(필살기 이름) 위에 선다. 그림이 없으면 null (도장만).
@@ -6560,39 +6560,8 @@ func _skill_cutin(pawn: PlayerPawn, color: Color) -> Control:
 	var art: Dictionary = PawnArt.sprite(pawn)
 	if art.is_empty():
 		return null
-	var atlas := AtlasTexture.new()
-	atlas.atlas = art["texture"]
-	atlas.region = art["region"]
-	var frame := Control.new()
-	frame.name = "SkillCutin"
-	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.custom_minimum_size = Vector2(320, 170)
-	var band := ColorRect.new()
-	band.color = Color(color.darkened(0.55), 0.85)
-	band.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	band.position = Vector2(-40, 58)
-	band.size = Vector2(400, 70)
-	band.rotation = deg_to_rad(-6.0)
-	frame.add_child(band)
-	var sprite := TextureRect.new()
-	sprite.texture = atlas
-	sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	sprite.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	sprite.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	sprite.size = Vector2(170, 170)
-	sprite.position = Vector2(75, 0)
-	frame.add_child(sprite)
-	# 알림 카드에 실려 화면에 나올 때 미끄러져 들어온다 (줄 서 있는 동안에는 숨어 있다).
-	frame.visibility_changed.connect(func() -> void:
-		if not frame.is_visible_in_tree() or instant_roll_for_test:
-			return
-		sprite.position.x = -260.0
-		sprite.modulate.a = 0.0
-		band.scale = Vector2(0.2, 1.0)
-		var slide: Tween = frame.create_tween().set_parallel(true)
-		slide.tween_property(sprite, "position:x", 75.0, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-		slide.tween_property(sprite, "modulate:a", 1.0, 0.12)
-		slide.tween_property(band, "scale:x", 1.0, 0.16).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT))
+	var frame := preload("res://scenes/pawn_skill_cutin.gd").new()
+	frame.setup(art, color)
 	return frame
 
 

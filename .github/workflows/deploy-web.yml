@@ -41,6 +41,7 @@ on:
           - rulebook-art
           - avatar-hq
           - title-logo
+          - skill-cutin
           - letterbox-pattern
           - presentation-sfx
           - lobby-art
@@ -76,7 +77,9 @@ jobs:
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
           REQUESTED_SCOPE: ${{ inputs.validation }}
         run: |
-          if [[ "${REQUESTED_SCOPE}" == "letterbox-pattern" || "${COMMIT_MESSAGE}" == *"[check:letterbox-pattern]"* ]]; then
+          if [[ "${REQUESTED_SCOPE}" == "skill-cutin" || "${COMMIT_MESSAGE}" == *"[check:skill-cutin]"* ]]; then
+            echo "scope=skill-cutin" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "letterbox-pattern" || "${COMMIT_MESSAGE}" == *"[check:letterbox-pattern]"* ]]; then
             echo "scope=letterbox-pattern" >> "${GITHUB_OUTPUT}"
           elif [[ "${REQUESTED_SCOPE}" == "blackjack-compact" || "${COMMIT_MESSAGE}" == *"[check:blackjack-compact]"* ]]; then
             echo "scope=blackjack-compact" >> "${GITHUB_OUTPUT}"
@@ -166,6 +169,15 @@ jobs:
         run: |
           godot --headless --path . --import || true
           godot --headless --path . --import
+
+      - name: Check pawn skill cutin presentation script
+        if: steps.validation.outputs.scope == 'skill-cutin'
+        run: |
+          set -euo pipefail
+          godot --headless --audio-driver Dummy --path . --check-only -s res://scenes/main_board.gd 2>&1 | tee /tmp/skill_cutin.log
+          godot --headless --audio-driver Dummy --path . -s res://tests/ui_skill_cutin_test.gd 2>&1 | tee -a /tmp/skill_cutin.log
+          grep -q 'SKILL_CUTIN_OK' /tmp/skill_cutin.log
+          if grep -Eq 'SCRIPT ERROR|SHADER ERROR' /tmp/skill_cutin.log; then exit 1; fi
 
       - name: Check required web letterbox pattern
         if: steps.validation.outputs.scope == 'letterbox-pattern'

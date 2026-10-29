@@ -311,6 +311,15 @@ static func stamp_pose(t: float, duration: float) -> Dictionary:
 	return {"scale": k, "alpha": alpha, "tilt": deg_to_rad(STAMP_TILT_DEG) * clampf(t / STAMP_SLAM, 0.0, 1.0)}
 
 
+## Skill strip: quick entrance, still hold, directional exit; no whole-panel slam.
+static func skill_cutin_pose(t: float, duration: float) -> Dictionary:
+	t = t * 1.3 / maxf(duration, 0.001)
+	duration = 1.3
+	var intro := clampf((t - 0.035) / 0.065, 0.0, 1.0)
+	var outro := clampf((duration - t) / 0.18, 0.0, 1.0)
+	return {"scale": 1.0, "alpha": minf(intro, outro), "tilt": deg_to_rad(-2.0)}
+
+
 ## 줄 서 있는 알림의 미리보기(카드 프레임 등)는 숨긴 채 보관해 둔다: 트리에 붙어 있어야 고아 노드로 남지 않는다.
 func _park(extra: Control) -> void:
 	if extra == null:
@@ -370,7 +379,11 @@ func _process(delta: float) -> void:
 	_t += delta
 	var duration: float = float(_current["duration"])
 	if not (_current.get("stamp", {}) as Dictionary).is_empty():
-		var pose: Dictionary = stamp_pose(_t, duration)
+		var cinematic := bool((_current["stamp"] as Dictionary).get("cinematic", false))
+		var extra: Control = _current.get("extra")
+		if cinematic and is_instance_valid(extra) and extra.has_method("set_presentation_time"):
+			extra.call("set_presentation_time", _t, duration)
+		var pose: Dictionary = skill_cutin_pose(_t, duration) if cinematic else stamp_pose(_t, duration)
 		modulate = Color(1, 1, 1, float(pose["alpha"]))
 		scale = Vector2.ONE * float(pose["scale"])
 		rotation = float(pose["tilt"])
