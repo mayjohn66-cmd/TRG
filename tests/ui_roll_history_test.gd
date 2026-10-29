@@ -67,19 +67,19 @@ func run() -> void:
 	board.set_process(false)
 	board.layout_for(root.get_visible_rect().size)
 	var before := board.state.rng.state
-	var history := board._roll_history
+	var history: RollSuccessHistory = board._roll_history as RollSuccessHistory
 	check(not history.visible,"no history before the first reveal")
 	await show_result(yut(4))
 	await show_result(yut(5))
 	await show_result(yut(4))
 	check(history.entries.map(func(item: Dictionary) -> String: return item.text)==["윷","모","윷"],"Yut face sequence is retained in order")
-	check(history._footer.text==L10n.t("한 번 더"),"reroll is marked")
+	check(not history._footer.visible and history._footer.text.is_empty(),"extra roll has no redundant caption")
 	var oldest: Label = history._rows.get_child(0)
 	var newest: Label = history._rows.get_child(2)
 	check(oldest.scale==Vector2.ONE and is_equal_approx(oldest.modulate.a,1.0),"old results do not replay their arrival animation")
-	check(newest.is_inside_tree() and newest.get_theme_stylebox("normal") is StyleBoxTexture,"new result uses painted plaque art")
-	check((newest.get_theme_stylebox("normal") as StyleBoxTexture).texture.get_size()==Vector2(323,64),"plaque is cached at UI size")
-	await create_timer(0.24).timeout
+	check(newest.is_inside_tree() and newest.get_theme_stylebox("normal") is StyleBoxEmpty and newest.material is ShaderMaterial,"Yut uses ink stamp instead of plaque")
+	check(newest.text==L10n.t("윷") and (history._rows.get_child(1) as Label).text==L10n.t("모"),"Yut Mo are stamped in original order")
+	await create_timer(0.28).timeout
 	check(newest.scale.is_equal_approx(Vector2.ONE) and is_equal_approx(newest.modulate.a,1.0),"result settles without persistent pulsing")
 	for size: Vector2i in [Vector2i(844,390),Vector2i(740,360),Vector2i(1366,768)]:
 		root.size = size
@@ -110,7 +110,7 @@ func run() -> void:
 	await show_result(gun.roll(rng))
 	await show_result(gun.roll(rng))
 	check(history.entries.map(func(item: Dictionary) -> String: return item.text)==["성공","성공","실패"],"safe shots followed by failure")
-	check(history._header.text.contains(L10n.tf("%d회 성공",[2])),"failure does not increase success count")
+	check(history.success_count==2 and history._success._score.text=="+0","failure resets displayed bonus to zero without another success")
 	await capture("revolver_fail")
 	board._on_phase_changed(TurnManager.State.PHASE_TURN_BEGIN,1,30)
 	gun.load_chamber(5)
@@ -167,9 +167,34 @@ func run() -> void:
 	var seven := RollResult.make(&"LIFE_ROULETTE",7,{"face":7})
 	seven.reroll = true
 	for index: int in 8: history.reveal(board._roll_turn_serial,1,seven.to_dict())
-	check(history.entries.size()==8 and history._rows.get_child_count()==6,"long chains retain total and show recent six")
-	check((history._rows.get_child(0) as Label).text.begins_with("3  "),"recent rows retain original roll numbers")
+	check(history.entries.size()==8 and history.success_count==8 and history._success._stamps.size()==6,"long chains retain total and show six success stamps")
+	check(history._header.text.contains(L10n.tf("%d회 성공",[8])),"success heading retains full total")
 	check(history.mouse_filter==Control.MOUSE_FILTER_IGNORE,"history does not intercept roll input")
+	# Trophy trays stay beside all six tools, including the three card stages.
+	var trophy_tools: Dictionary = {
+		&"REVOLVER":ToolRussianRoulette.new(), &"LIFE_ROULETTE":ToolLifeRoulette.new(),
+		&"DICE_MAHJONG":ToolMahjong.new(), &"DICE_TAROT":ToolTarot.new(),
+		&"DICE_YACHT":ToolYacht.new(), &"DICE_BLACKJACK":ToolBlackjack.new()
+	}
+	for trophy_id: StringName in trophy_tools:
+		board.state.tools[1] = trophy_tools[trophy_id]
+		board._refresh_all()
+		history.arm(board._roll_turn_serial,1,trophy_id)
+		var award := RollResult.make(trophy_id,7,{"fired":false,"face":7})
+		award.reroll = true
+		for i: int in 3: history.reveal(board._roll_turn_serial,1,award.to_dict())
+		for viewport_size: Vector2i in [Vector2i(844,390),Vector2i(740,360),Vector2i(1366,768)]:
+			root.size = viewport_size
+			await frames()
+			board.layout_for(root.get_visible_rect().size)
+			board._place_roll_history()
+			await frames()
+			board._place_roll_history()
+			check(root.get_visible_rect().encloses(history.get_rect()),"trophies fit "+str(trophy_id)+" "+str(viewport_size))
+			var stage := board._stage_for(trophy_id)
+			if stage!=null:
+				check(not stage.get_rect().intersects(history.get_rect()),"trophies do not cover stage "+str(trophy_id)+" "+str(viewport_size))
+			await capture("trophies_%s_%d" % [trophy_id,viewport_size.x])
 	check(board.state.rng.state==before,"presentation leaves match RNG unchanged")
 	board._reset_presentation()
 	check(history.entries.is_empty() and not history.visible,"reset clears current history")

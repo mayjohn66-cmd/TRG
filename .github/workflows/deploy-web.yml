@@ -213,6 +213,8 @@ jobs:
           set -euo pipefail
           godot --headless --audio-driver Dummy --path . -s res://tests/ui_roll_history_test.gd 2>&1 | tee /tmp/roll_history.log
           grep -q 'ROLL_HISTORY_OK' /tmp/roll_history.log
+          godot --headless --audio-driver Dummy --path . -s res://tests/ui_roll_success_test.gd 2>&1 | tee -a /tmp/roll_history.log
+          grep -q 'ROLL_SUCCESS_OK' /tmp/roll_history.log
           if grep -Eq 'SCRIPT ERROR|SHADER ERROR' /tmp/roll_history.log; then exit 1; fi
 
       - name: Check rulebook drag and card layout
