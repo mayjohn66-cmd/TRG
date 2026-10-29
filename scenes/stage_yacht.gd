@@ -145,8 +145,7 @@ func _process(delta: float) -> void:
 		dice.assign(_dice_3d.values)
 		for view: DieView in dice_views:
 			view.rolling = false
-		kept = [false, false, false, false, false]
-		active = false
+		active = false  # 고정한 주사위는 다시 굴린 뒤에도 그대로 고정 (플레이어가 직접 눌러야 풀린다)
 		set_process(false)
 		_refresh()
 		roll_finished.emit()
@@ -213,6 +212,15 @@ func _on_reroll() -> void:
 	reroll_pressed.emit(kept.duplicate())
 
 
+## 스페이스 키: 처음이면 [주사위 5개 굴리기], 굴린 뒤면 고정하지 않은 주사위만 [다시 굴리기].
+func roll_by_key() -> void:
+	if not started:
+		if can_act and not active:
+			start_pressed.emit()
+	else:
+		_on_reroll()
+
+
 ## 엔진의 야추 상태에 화면을 맞춘다. tool이 null이면 초기 화면. acting은 지금 내가 조작할 차례인가.
 func sync(tool: ToolYacht, acting: bool) -> void:
 	can_act = acting
@@ -262,7 +270,6 @@ func play(result: Dictionary) -> void:
 	wanted.assign(values)
 	if instant or not is_inside_tree():
 		dice = wanted
-		kept = [false, false, false, false, false]
 		_refresh()
 		return
 	active = true

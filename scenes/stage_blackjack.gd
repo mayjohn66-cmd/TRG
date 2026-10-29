@@ -92,6 +92,12 @@ func _ready() -> void:
 	_refresh()
 
 
+## 스페이스 키: 처음 [카드 받기]만 누른다 (히트·스탠드는 실수로 눌리지 않게 버튼으로만).
+func roll_by_key() -> void:
+	if can_act and not started and not active:
+		start_pressed.emit()
+
+
 func _label(text: String, size_px: int, color: Color) -> Label:
 	var label := Label.new()
 	label.text = text

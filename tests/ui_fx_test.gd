@@ -1220,14 +1220,19 @@ func _test_instant_flag() -> void:
 	manager.state.tools[manager.current_player_id()] = ToolRegistry.create(&"D6")
 	_board._refresh_all()
 	await _settle_turn_start()  # 증강 확인·앞 차례 배너가 끝나야 굴릴 수 있다
+	var r_key := InputEventKey.new()
+	r_key.keycode = KEY_R
+	r_key.pressed = true
+	_board._unhandled_key_input(r_key)
+	_expect(resolved.is_empty(), "굴리기는 스페이스바 고정: R 키로는 굴러가지 않는다")
 	var key := InputEventKey.new()
-	key.keycode = KEY_R
+	key.keycode = KEY_SPACE
 	key.pressed = true
 	_board._unhandled_key_input(key)
-	_expect(not _board._fx_busy, "instant 모드는 연출 대기 없이 즉시 결과를 공개한다 (R 키 한 번 = 바로 굴림)")
+	_expect(not _board._fx_busy, "instant 모드는 연출 대기 없이 즉시 결과를 공개한다 (스페이스 한 번 = 바로 굴림)")
 	# With no selectable pawn, a valid instant roll can already reach the next
 	# player's TURN_BEGIN. Assert the actual result event instead of that phase.
-	_expect(resolved.size() == 1, "R 키를 한 번 누르면 굴림 결과가 정확히 한 번 확정된다 (떼는 입력은 무시)")
+	_expect(resolved.size() == 1, "스페이스를 한 번 누르면 굴림 결과가 정확히 한 번 확정된다 (떼는 입력은 무시)")
 
 
 ## 기본 모드는 [1P vs 3AI 봇]이고, 토글로 언제든 [4P 수동 조작]으로 바꿀 수 있다.
@@ -2313,7 +2318,10 @@ func _test_new_tool_stages() -> void:
 	_board._refresh_all()
 	_expect(_board._stage_yacht.visible and not _board._stage_blackjack.visible and not _board._stage_pinball.visible, "야추: 중앙에 야추 스테이지만 보인다")
 	_expect(not _board._roll_button.visible, "야추: 둥근 굴림 버튼 대신 스테이지의 [주사위 5개 굴리기]")
-	_board._stage_yacht.start_pressed.emit()
+	var space := InputEventKey.new()
+	space.keycode = KEY_SPACE
+	space.pressed = true
+	_board._unhandled_key_input(space)  # 야추도 스페이스로 [주사위 5개 굴리기]
 	var yacht: ToolYacht = manager.state.tools[player]
 	_expect(yacht.has_pending_state() and manager.current_state == TurnManager.State.PHASE_ROLL_WAIT, "야추: 첫 굴림 뒤 확정 전")
 	_board._refresh_all()
@@ -2321,9 +2329,12 @@ func _test_new_tool_stages() -> void:
 	_board._stage_yacht._on_die_toggled(1)
 	_expect(_board._stage_yacht.kept[1], "야추: 주사위를 클릭하면 고정")
 	var kept_value: int = yacht.dice[1]
-	_board._stage_yacht._on_reroll()
-	_expect(yacht.dice[1] == kept_value and yacht.rerolls_left == 1, "야추: 고정한 주사위만 빼고 다시 굴린다 (남은 횟수 1)")
+	_board._unhandled_key_input(space)  # 스페이스 = 고정 안 한 주사위만 다시 굴리기
+	_expect(yacht.dice[1] == kept_value and yacht.rerolls_left == 1, "야추: 고정한 주사위만 빼고 다시 굴린다 (남은 횟수 1, 스페이스)")
 	_board._refresh_all()
+	_expect(_board._stage_yacht.kept[1], "야추: 다시 굴린 뒤에도 고정은 그대로 남는다 (직접 눌러야 풀린다)")
+	_board._stage_yacht._on_die_toggled(1)
+	_expect(not _board._stage_yacht.kept[1], "야추: 고정한 주사위를 다시 누르면 풀린다")
 	_board._stage_yacht.confirm_pressed.emit()
 	_expect(not yacht.has_pending_state() and manager.current_state != TurnManager.State.PHASE_ROLL_WAIT, "야추: [현재 족보로 이동 확정]")
 	# --- 블랙잭 ---

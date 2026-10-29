@@ -883,7 +883,7 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	# Ctrl/Alt/Meta/Shift 조합은 브라우저·OS 단축키(예: Ctrl+Shift+R 강력 새로고침)이므로 게임 단축키로 쓰지 않는다.
 	if key_event.ctrl_pressed or key_event.alt_pressed or key_event.meta_pressed or key_event.shift_pressed:
 		return
-	var roll_key: bool = key_event.keycode == KEY_R or key_event.keycode == KEY_SPACE
+	var roll_key: bool = key_event.keycode == KEY_SPACE  # 굴리기는 스페이스바 하나로 고정
 	if not key_event.pressed:
 		return
 	if key_event.keycode == KEY_ESCAPE:
@@ -2061,7 +2061,7 @@ func _build_action_bar() -> void:
 	_roll_button.size = Vector2(120, 120)
 	_roll_button.custom_minimum_size = Vector2(120, 120)
 	_apply_round_button_style(_roll_button, Color("2b8a3e"))
-	_roll_button.tooltip_text = "꾹 눌러 파워 게이지를 채우고 손을 떼면 굴러갑니다 (R / Space 키도 동일)"
+	_roll_button.tooltip_text = "꾹 눌러 파워 게이지를 채우고 손을 떼면 굴러갑니다 (스페이스 키도 동일)"
 	add_child(_roll_button)
 	# 룰렛(원판을 잡고 돌리기)과 러시안 룰렛(방아쇠 당기기)은 굴리기 버튼 대신 같은 자리의 직접 조작 패드를 쓴다.
 	_roll_pad = RollPad.new()
@@ -6159,7 +6159,7 @@ func _hint_text(current_phase: TurnManager.State, tool: BaseJudgmentTool) -> Str
 		return "타일 선택 모드: 보드판에서 사용할 타일(초록 테두리)을 클릭하세요. 취소는 ESC 또는 오른쪽 클릭."
 	match current_phase:
 		TurnManager.State.PHASE_TURN_BEGIN:
-			return "카드(▣ 표시는 타일을 클릭해 설치/소환)를 쓰거나 [굴리기] 버튼(또는 R/Space)을 한 번 누르세요. (판정 도구: %s)" % tool.display_name
+			return "카드(▣ 표시는 타일을 클릭해 설치/소환)를 쓰거나 [굴리기] 버튼(또는 스페이스)을 한 번 누르세요. (판정 도구: %s)" % tool.display_name
 		TurnManager.State.PHASE_ROLL_WAIT:
 			if tool.has_pending_state() and tool is ToolYacht:
 				return "고정할 주사위를 클릭하고 [나머지 다시 굴리기], 마음에 들면 [현재 족보로 이동 확정]을 누르세요."
@@ -6167,7 +6167,7 @@ func _hint_text(current_phase: TurnManager.State, tool: BaseJudgmentTool) -> Str
 				return "[히트]로 카드를 더 뽑거나 [스탠드]로 (합계-10)칸 이동을 확정하세요. 22 이상이면 버스트!"
 			if tool.has_pending_state():
 				return "계속 당기거나, 멈추고 누적 칸수만큼 이동하세요. 깃발이 나오면 누적이 사라져요!"
-			return "다시 굴려야 합니다 (재굴림)." if not manager.move_queue.is_empty() else "굴리기 버튼(또는 R/Space)을 한 번 누르세요."
+			return "다시 굴려야 합니다 (재굴림)." if not manager.move_queue.is_empty() else "굴리기 버튼(또는 스페이스)을 한 번 누르세요."
 		TurnManager.State.PHASE_INTERRUPT_ROLL:
 			return "[개입 기회! 카드를 사용하거나 '패스'를 누르세요]  눈금이 정해졌습니다. 개입 카드를 가진 플레이어는 지금 카드를 누르세요."
 		TurnManager.State.PHASE_SELECT_PAWN:
@@ -6208,12 +6208,16 @@ func _on_roll_pressed() -> void:
 		_act(&"roll")
 
 
-## R / Space 키 한 번으로 굴린다 (굴림 버튼을 한 번 누른 것과 같다).
+## 스페이스 키 한 번으로 굴린다 (굴림 버튼을 한 번 누른 것과 같다).
+## 야추는 처음 굴리기·다시 굴리기, 블랙잭은 첫 [카드 받기]까지 스페이스로 된다 (핀볼은 발사 버튼으로만).
 func _roll_by_key() -> void:
 	if _roll_button.disabled or _ui_busy() or manager.is_game_over or _stack_overlay != null or _is_bot_turn() or _tile_pick_active:
 		return
 	if state != null and _is_stage_tool(state.tools[manager.current_player_id()].tool_id):
-		return  # 야추·블랙잭은 스테이지의 버튼으로만 조작한다
+		match state.tools[manager.current_player_id()].tool_id:
+			&"DICE_YACHT": _stage_yacht.roll_by_key()
+			&"DICE_BLACKJACK": _stage_blackjack.roll_by_key()
+		return
 	_on_roll_pressed()
 
 

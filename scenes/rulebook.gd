@@ -1321,7 +1321,7 @@ func _ch_turn() -> Dictionary:
 		{"title": "카드 한 장", "art": &"play_card", "number": 1, "tone": Color("f0c14e"), "chips": ["굴리기 전", "턴당 1장"],
 			"summary": "카드를 [b]보드판 위로 끌어다 놓으면[/b] 발동해요.",
 			"points": ["함정·소환은 놓은 뒤 칸을 골라요", "방어 카드는 끌어 쓰지 않아요 (공격받을 때 팝업)"]},
-		{"title": "굴리기", "art": &"roll", "number": 2, "tone": Color("86d94f"), "chips": ["R / 스페이스"],
+		{"title": "굴리기", "art": &"roll", "number": 2, "tone": Color("86d94f"), "chips": ["스페이스"],
 			"summary": "[b]굴리기[/b] 버튼을 꾹 눌러 파워를 모으고 손을 떼요.",
 			"points": ["룰렛은 원판을 잡아 돌리고, 리볼버는 방아쇠를 당겨요"]},
 		{"title": "말 고르기", "art": &"choose_pawn", "number": 3, "tone": Color("5fc1e8"),

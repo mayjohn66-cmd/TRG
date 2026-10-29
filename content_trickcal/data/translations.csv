@@ -286,7 +286,7 @@ P%d-말%d,P%d-#%d,P%d-駒%d
 P%d가 %d번 타일에 [%s]을(를) 설치했습니다,P%d placed a card on tile %d: [%s],P%d が %d番マスに [%s] を設置しました
 P%d의 카드 [%s]를 도적이 빼앗았습니다,Bandits stole P%d's card [%s],P%d のカード [%s] を盗賊が奪いました
 P%d의 판정 도구를 [%s](으)로 바꿨습니다.,Changed P%d's Judgment Tool to [%s].,P%d の判定ツールを [%s] に変更しました。
-R / 스페이스,R / Space,R / スペース
+스페이스,Space,スペース
 TRG 피드백,TRG Feedback,TRG フィードバック
 UDO 리버스,UDO Reverse,UDO リバース
 UDO 리버스 카드,UDO Reverse Card,UDO リバースカード
@@ -775,7 +775,7 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 굴러가는 중...,Rolling...,転がっています...
 굴려서 전진한다,Roll and move,振って前進する
 굴리기,Roll,振る
-굴리기 버튼(또는 R/Space)을 한 번 누르세요.,Press the Roll button (or R/Space) once.,振るボタン(またはR/Space)を1回押してください。
+굴리기 버튼(또는 스페이스)을 한 번 누르세요.,Press the Roll button (or Space) once.,振るボタン(またはスペース)を1回押してください。
 굴리기 전,Before rolling,振る前
 굴리기 전 (내 턴 시작),Before rolling (start of my turn),振る前 (自分のターン開始時)
 굴리기 전 사용! 이번 굴림 +4칸,Use before rolling! This roll +4 spaces,振る前に使用！今回の出目 +4マス
@@ -818,7 +818,7 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 기본값으로,Reset,初期値に戻す
 꼴찌 ↔ 선두 교환,Last ↔ Leader swap,最下位 ↔ 先頭 交換
 꼴찌와 자리 교환,Swap with last place,最下位と場所交換
-꾹 눌러 파워 게이지를 채우고 손을 떼면 굴러갑니다 (R / Space 키도 동일),"Hold to fill the power gauge, release to roll (R / Space too)",長押しでパワーゲージを溜め、離すと転がります (R / Space キーも同じ)
+꾹 눌러 파워 게이지를 채우고 손을 떼면 굴러갑니다 (스페이스 키도 동일),"Hold to fill the power gauge, release to roll (Space too)",長押しでパワーゲージを溜め、離すと転がります (スペースキーも同じ)
 꿀팁,Tip,お役立ち
 나,Me,自分
 나가기,Leave,終了する
@@ -1761,7 +1761,7 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 카드 한 장,One Card,カード1枚
 카드 합계 %d,Card total %d,カード合計 %d
 카드 합계(11~21)에서 -10 한 만큼 전진!,Move your card total (11~21) minus 10!,カード合計(11〜21)から-10した数だけ前進！
-카드(▣ 표시는 타일을 클릭해 설치/소환)를 쓰거나 [굴리기] 버튼(또는 R/Space)을 한 번 누르세요. (판정 도구: %s),Play a card (▣ cards: click a tile to place/summon) or press [Roll] (or R/Space) once. (Judgment Tool: %s),カード(▣ 表示はマスをクリックして設置/召喚)を使うか、[振る]ボタン(またはR/Space)を1回押してください。(判定ツール: %s)
+카드(▣ 표시는 타일을 클릭해 설치/소환)를 쓰거나 [굴리기] 버튼(또는 스페이스)을 한 번 누르세요. (판정 도구: %s),Play a card (▣ cards: click a tile to place/summon) or press [Roll] (or Space) once. (Judgment Tool: %s),カード(▣ 表示はマスをクリックして設置/召喚)を使うか、[振る]ボタン(またはスペース)を1回押してください。(判定ツール: %s)
 카드는 [b]굴리기 전에만[/b] 낼 수 있어요. 눈금을 보고 고민하려면 아껴 두세요.,You can play cards [b]only before rolling[/b]. Save them if you want to see the roll first.,カードは[b]振る前だけ[/b]出せます。出目を見てから考えたいなら取っておきましょう。
 카드는 굴리기 전에 턴당 1장만 쓸 수 있습니다,"You can play only 1 card per turn, before rolling",カードは振る前に1ターンに1枚だけ使えます
 카드는 내 턴 굴리기 전에 턴당 1장만 낼 수 있어요.,"You can play only 1 card per turn, before rolling.",カードは自分のターンの振る前に、1ターンに1枚だけ出せます。
@@ -2348,8 +2348,8 @@ v%s · 비공식 팬게임 (원작사와 무관한 비영리 무료 배포물),v
 "[코너·3R·1회] 지나가는 적은 카드 1장 상납, 없으면 강제 정지","[Corner·3R·Once] Passing enemies pay 1 card, or are forced to stop",[コーナー·3R·1回] 通過する敵はカード1枚を上納、なければ強制停止
 [코너·3R·1회] 밟은 적 정지 + 코너 2칸 안의 적 말 끌어오기,[Corner·3R·Once] Stop enemies who land + pull enemy pawns within 2 spaces,[コーナー·3R·1回] 踏んだ敵を停止 + コーナーから2マス以内の敵の駒を引き寄せる
 [코너·3R·1회] 밟은 적 정지 + 코너 {p1}칸 안의 적 말 끌어오기,[Corner·3R·Once] Stop enemies who land + pull enemy pawns within {p1} spaces,[コーナー·3R·1回] 踏んだ敵を停止＋コーナーから{p1}マス以内の敵の駒を引き寄せる
-"[상단 코너] 소환 · 라운드마다 정방향 1~3칸 · 적을 잡으면 처치하고 퇴장",[Top Corner] Summon · Walks 1-3 forward each round; KOs the first enemy and leaves.,[上コーナー] 召喚・毎ラウンド順方向に1~3マス、敵を捕まえたら撃破して退場
-"[상단 코너] 소환 · 라운드마다 역방향 1~3칸 · 적을 잡으면 처치하고 퇴장",[Top Corner] Summon · Walks 1-3 backward each round; KOs the first enemy and leaves.,[上コーナー] 召喚・毎ラウンド逆方向に1~3マス、敵を捕まえたら撃破して退場
+[상단 코너] 소환 · 라운드마다 정방향 1~3칸 · 적을 잡으면 처치하고 퇴장,[Top Corner] Summon · Walks 1-3 forward each round; KOs the first enemy and leaves.,[上コーナー] 召喚・毎ラウンド順方向に1~3マス、敵を捕まえたら撃破して退場
+[상단 코너] 소환 · 라운드마다 역방향 1~3칸 · 적을 잡으면 처치하고 퇴장,[Top Corner] Summon · Walks 1-3 backward each round; KOs the first enemy and leaves.,[上コーナー] 召喚・毎ラウンド逆方向に1~3マス、敵を捕まえたら撃破して退場
 "사료스탕스는 정방향, 와구와구 유령은 역방향으로 1~3칸 이동 · 적을 잡으면 퇴장","Feed-stance moves forward and the Chomp-Chomp Ghost backward, 1-3 spaces · leaves after a KO",サリョスタンスは順方向、パクパク幽霊は逆方向に1~3マス移動・敵を捕まえたら退場
 라운드가 끝날 때마다 정방향으로 1~3칸 이동 · 적 말을 만나면 출발선으로 날리고 퇴장,"Moves 1-3 spaces forward at every round end · sends the first enemy pawn it meets to Start, then leaves",ラウンド終了ごとに順方向へ1~3マス移動・敵の駒に出会ったらスタートへ飛ばして退場
 라운드가 끝날 때마다 역방향으로 1~3칸 이동 · 적 말을 만나면 출발선으로 날리고 퇴장,"Moves 1-3 spaces backward at every round end · sends the first enemy pawn it meets to Start, then leaves",ラウンド終了ごとに逆方向へ1~3マス移動・敵の駒に出会ったらスタートへ飛ばして退場
