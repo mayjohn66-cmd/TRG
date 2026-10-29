@@ -2354,6 +2354,15 @@ func _test_new_tool_stages() -> void:
 		_expect(ToolBlackjack.total_of(blackjack.cards) >= 11, "블랙잭: 시작 합계는 11 이상")
 		_board._refresh_all()
 		_expect(_board._stage_blackjack.cards == blackjack.cards, "블랙잭: 스테이지가 엔진 카드를 보여 준다")
+		# 2026-10-29 제보 회귀: 히트/스탠드 대기 중 시간으로 풀리는 잠금(연출 박자)이 끝나면 버튼이 다시 살아나야 한다.
+		_board._beat_until_msec = Time.get_ticks_msec() + 150
+		_board._refresh_controls()
+		_expect(not _board._stage_blackjack.can_act, "블랙잭: 연출 박자 동안에는 히트/스탠드가 잠긴다")
+		var unlock_wait: int = 0
+		while (Time.get_ticks_msec() < _board._beat_until_msec or not _board._stage_blackjack.can_act) and unlock_wait < 60:
+			unlock_wait += 1
+			await process_frame
+		_expect(_board._stage_blackjack.can_act and not _board._roll_button.disabled, "블랙잭: 잠금이 시간으로 풀리면 히트/스탠드가 다시 눌린다 (멈춤 회귀)")
 		var hits: int = 0
 		while blackjack.has_pending_state() and hits < 12:
 			hits += 1

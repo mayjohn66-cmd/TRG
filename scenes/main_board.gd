@@ -490,6 +490,8 @@ var _last_reroll_index: int = -1
 var _last_reroll_player: int = -1
 ## 지난 프레임에 굴리기 화면을 띄울 수 있었는가 (바뀌는 순간에만 화면을 다시 맞춘다).
 var _last_roll_view: bool = false
+## 직전 프레임의 _ui_busy(). 시간으로 풀리는 잠금(연출 박자·도박사 x2 결과 등)이 끝나는 순간에도 버튼을 다시 맞추려고 둔다.
+var _last_ui_busy: bool = false
 ## 드래프트 창이 열렸다 (augment_offers 이후). 이때부터 생긴 연출만 [선택한 증강] 공개 뒤로 미룬다.
 var _draft_open: bool = false
 ## 게임 필: 화면 흔들림, 말 id -> 이동 연출을 필살기 스크립트가 맡는 중(걸음 무시), 차 돌진 중 잡힌 말이 나는 시점을 늦추는 값(초).
@@ -778,6 +780,13 @@ func _process(delta: float) -> void:
 	if roll_view != _last_roll_view:
 		_last_roll_view = roll_view
 		_refresh_controls()
+	# 잠금이 시간 경과로 저절로 풀리면(연출 박자·도박사 x2 결과 등) 아무도 버튼을 다시 맞추지 않아
+	# 블랙잭 히트/스탠드·굴리기가 계속 잠겨 있던 멈춤이 있었다 (2026-10-29 제보: 블랙잭 + 주사위 도박사의 영혼, 배속 2x).
+	var busy_now: bool = _ui_busy()
+	if busy_now != _last_ui_busy:
+		_last_ui_busy = busy_now
+		if not busy_now:
+			_refresh_controls()
 	if _review_bar != null and is_instance_valid(_review_bar):
 		var track: Control = _review_bar.get_parent()
 		var full: float = GameEnums.PHASE_TIME_REVIEW * maxf(manager.timer_scale, 0.001)
