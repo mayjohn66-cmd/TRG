@@ -126,6 +126,8 @@ var rankings: Array[int] = []
 var rank_reasons: Dictionary = {}
 ## 순위가 확정된 순간의 레이스 진행 (말을 철수하기 전): 플레이어 ID -> {"finished", "remaining", "progress"}. 결과 화면이 쓴다.
 var rank_stats: Dictionary = {}
+## Immutable, serializable board/law facts before ranking retires any pieces.
+var diagnostic_before_graduation: Dictionary = {}
 ## 방어 카드의 되갚기(거울의 힘 공격자 사출·우노 리버스 선두 사출) 중인가: 이때의 사출은 처치·사출 법전 기록에 넣지 않는다.
 ## 방어는 처치를 막은 것이지 처치를 한 것이 아니다 (2026-10-30 제보: 방어하자마자 투기장의 지배자 달성).
 var counter_retaliation: bool = false
@@ -387,6 +389,8 @@ func last_place_pawn(excluding_owner: int) -> PlayerPawn:
 # ---------------------------------------------------------------------------
 
 func send_to_start(pawn: PlayerPawn, by_player: int) -> void:
+	if pawn==null:return
+	if by_player!=pawn.owner_id and break_shield(pawn):return
 	var members: Array[PlayerPawn] = pawn.stack_members()
 	# 특수 승리 기록: 다크호스 판정은 사출 전에 선두를 정한다.
 	var enemy_kill: bool = by_player >= 1 and by_player != pawn.owner_id
@@ -401,21 +405,16 @@ func send_to_start(pawn: PlayerPawn, by_player: int) -> void:
 		if member.sub_type() == GameEnums.PawnSubType.BADUK_WHITE and not member.shield:
 			member.shield_broken_hit = true  # 방어막이 깨진 채로 잡혔다: 다음 증강 라운드에 재충전되지 않는다
 		if was_out and not counter_retaliation:
-			add_stat(pawn.owner_id, &"ejected")
-			_note_entry_stat(entry, &"ejected")
+			_note_entry_stat(entry, &"ejected",pawn.owner_id)
 			# 통계 알림용 킬/데스 (교칙 기록과 달리 [이의 있음!]으로 지워지지 않는다). 데스는 어떤 이유로든 보드에서 출발선으로 날아간 횟수
-			add_stat(pawn.owner_id, TALLY_DEATHS)
-			_note_entry_stat(entry, TALLY_DEATHS)
-			if enemy_kill:
+			_note_entry_stat(entry, TALLY_DEATHS,pawn.owner_id)
+			if enemy_kill and (entry.is_empty() or bool(entry.get("stats_committed",true))):
 				law_stats[pawn.owner_id][LAST_HIT_ROUND] = round_number  # 봇의 연속 처치 자비(BotTemper)가 본다
 			if enemy_kill:
-				add_stat(by_player, &"kills")
-				_note_entry_stat(entry, &"kills")
-				add_stat(by_player, TALLY_KILLS)
-				_note_entry_stat(entry, TALLY_KILLS)
+				_note_entry_stat(entry, &"kills",by_player)
+				_note_entry_stat(entry, TALLY_KILLS,by_player)
 			if underdog:
-				add_stat(by_player, &"underdog")
-				_note_entry_stat(entry, &"underdog")
+				_note_entry_stat(entry, &"underdog",by_player)
 	if not hurt_players.has(pawn.owner_id):
 		hurt_players.append(pawn.owner_id)
 	for member: PlayerPawn in members:
@@ -664,6 +663,8 @@ func is_graduated(player_id: int) -> bool:
 func graduate(player_id: int, reason: StringName) -> int:
 	if rankings.has(player_id):
 		return rankings.find(player_id) + 1
+	if reason==VictoryChecker.ALL_HOME or VictoryLaw.is_victory_id(String(reason)):
+		capture_diagnostic_board()
 	rankings.append(player_id)
 	rank_reasons[player_id] = reason
 	# 졸업하면 말을 보드에서 철수시키므로(아래), 졸업 직전의 실제 보드 상태와 달성한 법전 수치를 함께 남긴다 (결과·스냅샷용).
@@ -674,7 +675,7 @@ func graduate(player_id: int, reason: StringName) -> int:
 	record["pawns"] = pawn_records
 	for law: LawResource in rulebook.active_laws_queue:
 		if law is VictoryLaw and law.law_id == String(reason):
-			record["law"] = {"id": law.law_id, "value": (law as VictoryLaw).progress(self, player_id), "goal": (law as VictoryLaw).goal()}
+			record["law"] = {"id": law.law_id, "name":law.law_name, "value": (law as VictoryLaw).progress(self, player_id), "goal": (law as VictoryLaw).goal()}
 	rank_stats[player_id] = record
 	# 레이스에서 빠진다: 내 설치물(호텔·함정)은 보드에서 치우고(내 턴이 다시 오지 않아 남은 턴이 줄지 않는다), 강제 연대책임 묶음도 푼다.
 	for tile: TileNode in board.tiles:
@@ -696,6 +697,19 @@ func graduate(player_id: int, reason: StringName) -> int:
 		pawn.revenge_boost = false
 		pawn.current_tile_idx = GameEnums.GOAL_TILE
 	return rankings.size()
+
+func capture_diagnostic_board() -> void:
+	var pieces: Dictionary={};var finished: Dictionary={};var laws: Array=[]
+	for player: int in player_ids:
+		pieces[player]=[];finished[player]=finished_count(player)
+		for pawn: PlayerPawn in pawns_of(player):
+			pieces[player].append({"slot":pawn.slot,"tile":pawn.current_tile_idx,"started":pawn.has_left_start,"finished":pawn.is_finished,"skill_used":pawn.skill_used})
+	for law: LawResource in rulebook.active_laws_queue:
+		var values: Dictionary={}
+		if law is VictoryLaw:
+			for player: int in player_ids:values[player]=(law as VictoryLaw).progress(self,player)
+		laws.append({"id":law.law_id,"name":law.law_name,"values":values,"goal":(law as VictoryLaw).goal() if law is VictoryLaw else 0})
+	diagnostic_before_graduation={"pawns":pieces,"finished":finished,"laws":laws,"round":round_number}
 
 
 ## 아직 레이스 중인 플레이어 (주어진 순서 그대로).
@@ -856,15 +870,31 @@ func _entry_for(victim: int) -> Dictionary:
 	entry["effects"] = {}
 	entry["offered"] = false
 	entry["countered"] = false
+	entry["stats_committed"] = true
+	if not is_banned(victim):
+		for counter: StringName in hands.get(victim,[]):
+			if CardCounter.answers(self,counter,entry):entry["stats_committed"]=false;break
 	attack_log.append(entry)
 	return entry
 
 
-func _note_entry_stat(entry: Dictionary, key: StringName) -> void:
+func _note_entry_stat(entry: Dictionary, key: StringName, owner: int) -> void:
+	if entry.is_empty() or bool(entry.get("stats_committed",true)):add_stat(owner,key)
 	if entry.is_empty():
 		return
 	var stats: Dictionary = entry["stats"]
 	stats[key] = int(stats.get(key, 0)) + 1
+
+## Confirm counters only after the victim declines/has no usable defence.
+func commit_attack(entry: Dictionary) -> void:
+	if entry.is_empty() or bool(entry["countered"]) or bool(entry.get("stats_committed",true)):return
+	entry["stats_committed"]=true
+	var victim:=int(entry["victim"]);var attacker:=int(entry.get("attacker",-1))
+	for key: StringName in entry["stats"]:
+		var owner:=victim if key in [&"ejected",TALLY_DEATHS] else attacker
+		if owner>=1:add_stat(owner,key,int(entry["stats"][key]))
+	if int(entry["stats"].get(&"kills",0))>0:
+		law_stats[victim][LAST_HIT_ROUND]=round_number
 
 
 ## 아무 피해도 남지 않은 기록(발동하지 않은 함정 등)을 지운다.
@@ -927,12 +957,13 @@ func undo_attack(entry: Dictionary) -> void:
 	var victim: int = int(entry["victim"])
 	var attacker: int = int(entry.get("attacker", -1))
 	var stats: Dictionary = entry["stats"]
-	add_stat(victim, &"ejected", -int(stats.get(&"ejected", 0)))
-	add_stat(victim, TALLY_DEATHS, -int(stats.get(TALLY_DEATHS, 0)))
-	if attacker >= 1:
-		add_stat(attacker, &"kills", -int(stats.get(&"kills", 0)))
-		add_stat(attacker, TALLY_KILLS, -int(stats.get(TALLY_KILLS, 0)))
-		add_stat(attacker, &"underdog", -int(stats.get(&"underdog", 0)))
+	if bool(entry.get("stats_committed",true)):
+		add_stat(victim, &"ejected", -int(stats.get(&"ejected", 0)))
+		add_stat(victim, TALLY_DEATHS, -int(stats.get(TALLY_DEATHS, 0)))
+		if attacker >= 1:
+			add_stat(attacker, &"kills", -int(stats.get(&"kills", 0)))
+			add_stat(attacker, TALLY_KILLS, -int(stats.get(TALLY_KILLS, 0)))
+			add_stat(attacker, &"underdog", -int(stats.get(&"underdog", 0)))
 	var effects: Dictionary = entry["effects"]
 	if effects.has("rest"):
 		rest_next_turn[victim] = bool(effects["rest"])

@@ -15,6 +15,7 @@ on:
         default: full
         options:
           - full
+          - live-hotfix
           - ramen
           - train
           - flip
@@ -77,7 +78,9 @@ jobs:
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
           REQUESTED_SCOPE: ${{ inputs.validation }}
         run: |
-          if [[ "${REQUESTED_SCOPE}" == "skill-cutin" || "${COMMIT_MESSAGE}" == *"[check:skill-cutin]"* ]]; then
+          if [[ "${REQUESTED_SCOPE}" == "live-hotfix" || "${COMMIT_MESSAGE}" == *"[check:live-hotfix]"* ]]; then
+            echo "scope=live-hotfix" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "skill-cutin" || "${COMMIT_MESSAGE}" == *"[check:skill-cutin]"* ]]; then
             echo "scope=skill-cutin" >> "${GITHUB_OUTPUT}"
           elif [[ "${REQUESTED_SCOPE}" == "letterbox-pattern" || "${COMMIT_MESSAGE}" == *"[check:letterbox-pattern]"* ]]; then
             echo "scope=letterbox-pattern" >> "${GITHUB_OUTPUT}"
@@ -451,6 +454,16 @@ jobs:
       - name: Run focused ramen bowl check
         if: steps.validation.outputs.scope == 'full' || steps.validation.outputs.scope == 'ramen'
         run: godot --headless --path . -s res://tests/ui_ramen_bowl_test.gd
+
+      - name: Check the six live hotfix regressions
+        if: steps.validation.outputs.scope == 'full' || steps.validation.outputs.scope == 'live-hotfix'
+        run: |
+          set -euo pipefail
+          godot --headless --audio-driver Dummy --path . -s res://tests/run_live_hotfix.gd 2>&1 | tee /tmp/live_hotfix_core.log
+          godot --headless --audio-driver Dummy --path . -s res://tests/ui_live_hotfix_test.gd 2>&1 | tee /tmp/live_hotfix_ui.log
+          grep -Eq 'HOTFIX_CORE [0-9]+ assertions; 0 failures' /tmp/live_hotfix_core.log
+          grep -Eq 'HOTFIX_UI [0-9]+ assertions; 0 failures' /tmp/live_hotfix_ui.log
+          if grep -Eq 'SCRIPT ERROR|SHADER ERROR' /tmp/live_hotfix_{core,ui}.log; then exit 1; fi
 
       - name: Run unit tests
         if: steps.validation.outputs.scope == 'full'

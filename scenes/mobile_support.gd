@@ -27,6 +27,15 @@ static func is_touch_device() -> bool:
 
 ## true면 터치 기기처럼 큰 버튼 배치를 쓴다 (헤드리스 화면 테스트용).
 static var force_touch: bool = false
+
+## Global game shortcuts must leave focused native/web text editors alone.
+static func text_input_active(context: Node) -> bool:
+	var focus:=context.get_viewport().gui_get_focus_owner()
+	if focus is LineEdit and (focus as LineEdit).editable:return true
+	if focus is TextEdit and (focus as TextEdit).editable:return true
+	if OS.has_feature("web"):
+		return bool(JavaScriptBridge.eval("(()=>{const e=document.activeElement;const tag=e?.tagName?.toLowerCase();return tag==='input'||tag==='textarea'||!!e?.isContentEditable;})()"))
+	return false
 ## 터치 배치에서 버튼의 최소 높이 (기준 해상도 1366x768 픽셀). 폰 가로 화면에서는 약 0.5배로 줄어 보이므로 손가락 크기(약 44pt)에 맞춰 크게 잡는다.
 const TOUCH_BUTTON_HEIGHT: float = 48.0
 

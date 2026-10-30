@@ -395,6 +395,7 @@ var _tip_clock: float = 0.0
 var _tip_pinned: bool = false
 var _tip_anchor: Vector2 = Vector2.ZERO
 var _zoom_view: PanelContainer = null
+var _pinball_ready_key: String = ""
 var _hold_card: PanelContainer = null  ## 포인터가 영역 안에 있어 올라온 채 유지 중인 손패 카드
 var _zoom_key: String = ""
 var _drag_press: Dictionary = {}
@@ -812,6 +813,7 @@ func _process(delta: float) -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if event is InputEventKey and MobileSupport.text_input_active(self):return
 	if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
 		Sfx.unlock()  # 웹 브라우저가 소리를 막아 두므로 첫 클릭에서 오디오를 깨운다
 	if _track_cheat_sequence(event):
@@ -828,6 +830,7 @@ func _input(event: InputEvent) -> void:
 		return
 	if _handle_card_pointer(event):
 		return
+	if _zoom_view!=null:return # Reading/Use controls must not click the board underneath.
 	var press: InputEventMouseButton = event as InputEventMouseButton
 	if press != null and press.pressed and press.button_index == MOUSE_BUTTON_LEFT and _pawn_click_target(press.position) == -1:
 		_on_board_tip_click(press.position)  # 이동으로 쓰이지 않는 클릭은 말·설치물 설명을 열고 닫는다
@@ -886,6 +889,10 @@ func _pawn_at(mouse: Vector2) -> int:
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
+	if MobileSupport.text_input_active(self):return
+	if _zoom_view!=null:
+		if event.is_action_pressed("ui_cancel"):_close_zoom()
+		return
 	var key_event: InputEventKey = event as InputEventKey
 	if key_event == null or key_event.echo:
 		return
@@ -4449,6 +4456,7 @@ func _build_reaction_popup(holder: int, key: String) -> void:
 	_reaction_pass_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	box.add_child(_reaction_pass_button)
 	add_child(_reaction_popup)
+	_priority_modal(_reaction_popup)
 	_reaction_popup.reset_size()
 	_reaction_popup.position = _board_center() - _reaction_popup.size / 2.0
 	_reaction_popup.pivot_offset = _reaction_popup.size / 2.0
@@ -4611,8 +4619,10 @@ func _handle_card_pointer(event: InputEvent) -> bool:
 		return false
 	if button.pressed:
 		# 확대 카드 밖(손패 독 제외)을 누르면 확대가 닫힌다.
-		if _zoom_view != null and _zoom_view.visible and _drag_press.is_empty() and not Rect2(_dock.global_position, _dock.size).has_point(button.position):
+		if _zoom_view != null and _zoom_view.visible and _drag_press.is_empty() and not _zoom_view.get_global_rect().has_point(button.position) and not Rect2(_dock.global_position, _dock.size).has_point(button.position):
 			_close_zoom()
+			if MobileSupport.touch_mode():
+				get_viewport().set_input_as_handled();return true
 		return false
 	if _drag_press.is_empty():
 		return false
@@ -4621,6 +4631,7 @@ func _handle_card_pointer(event: InputEvent) -> bool:
 
 
 func _card_move(pointer: Vector2) -> void:
+	if MobileSupport.touch_mode():return # Touch cards always require preview -> explicit Use.
 	if _drag_press.is_empty():
 		return
 	if not _drag_active and pointer.distance_to(_drag_press["origin"]) > 10.0:
@@ -4764,6 +4775,14 @@ func _toggle_zoom(player_id: int, card_id: StringName) -> void:
 func _open_zoom(player_id: int, card_id: StringName) -> void:
 	_close_zoom()
 	var card: BaseCard = CardRegistry.get_card(card_id)
+	if MobileSupport.touch_mode():
+		_zoom_key="%d:%s" % [player_id,card_id]
+		var size_hint:=get_viewport_rect().size
+		var confirm:=func() -> void:
+			_close_zoom();_on_card_pressed(player_id,card_id)
+		_zoom_view=preload("res://scenes/mobile_card_detail.gd").make(card,_build_card_body(card_id,Vector2(238,333),true),card_summary(card_id),_card_timing_text(card),size_hint,_card_usable_now(player_id,card) or _counter_offered_to(player_id,card_id),confirm,_close_zoom)
+		add_child(_zoom_view);_priority_modal(_zoom_view);_refresh_controls()
+		return
 	var card_size: Vector2 = HAND_CARD_SIZE * 2.5
 	_zoom_key = "%d:%s" % [player_id, card_id]
 	_zoom_view = PanelContainer.new()
@@ -5991,6 +6010,7 @@ func _is_dice_family(tool: BaseJudgmentTool) -> bool:
 
 ## 굴림 버튼에 쓰는 글자: 도구마다 다르다.
 func _roll_button_label(tool: BaseJudgmentTool) -> String:
+	if tool is ToolPinball:return "핀볼 발사 준비"
 	if tool is ToolHwatu:
 		return "패\n뒤집기"
 	if tool is ToolHoldem:
@@ -6026,6 +6046,7 @@ func _roll_mode_for(tool: BaseJudgmentTool) -> StringName:
 ## 앞선 연출이 하나라도 남아 있으면(라운드·차례 배너, 연출 큐, 처치 컷인, 오프닝·드래프트·확인 창) 띄우지 않는다.
 ## 카드를 끌거나 칸을 고르는 중, 필살기를 겨누는 중에도 화면을 끄고 그 연출을 보여 준다 (끝나면 다시 뜬다).
 func _roll_view_allowed() -> bool:
+	if _choice_overlay!=null or _result_overlay!=null or _zoom_view!=null:return false
 	if manager.is_game_over or not (manager.current_state == TurnManager.State.PHASE_TURN_BEGIN or manager.current_state == TurnManager.State.PHASE_ROLL_WAIT):
 		return false
 	if _intro_blocks() or _turn_banner_pending() or (_announcer != null and _announcer.holding()):
@@ -6147,6 +6168,7 @@ func _roll_with_power(power: float) -> void:
 	if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN:
 		_act(&"proceed")
 	if manager.current_state == TurnManager.State.PHASE_ROLL_WAIT:
+		_pinball_ready_key = ""
 		_act(&"roll")
 
 
@@ -6212,6 +6234,11 @@ func _on_roll_pressed() -> void:
 		return  # 리볼버 장전 연출 중에 쏘면 3D 화면에 장전 자세가 한두 프레임 다시 비친다 (발사 버튼과 같은 조건)
 	var tool: BaseJudgmentTool = state.tools[_dock_owner()]
 	# Yut, Mahjong, cards, roulette, slots and the toy gun emit their own
+	if tool is ToolPinball and _pinball_ready_key!=_pinball_key():
+		if manager.current_state==TurnManager.State.PHASE_TURN_BEGIN:_act(&"proceed")
+		_pinball_ready_key=_pinball_key()
+		_refresh_all()
+		return
 	# material sounds at animation cues. Only dice need the generic clatter.
 	if _is_dice_family(tool) and tool.tool_id != &"YUT":
 		Sfx.play(&"dice_roll")
@@ -8436,6 +8463,8 @@ func _show_choice(title: String, options: Array[Dictionary], on_pick: Callable, 
 		grid.add_child(button)
 	box.add_child(_make_button("취소", _close_choice, 13))
 	add_child(_choice_overlay)
+	_priority_modal(_choice_overlay)
+	_refresh_tool_stage()
 
 
 func _on_choice_picked(value: Variant, on_pick: Callable) -> void:
@@ -8829,7 +8858,10 @@ static func make_augment_card(info: Dictionary, on_pick: Callable, base_scale: f
 	desc.size = desc_box
 	desc.clip_text = true
 	# 핵심 효과는 예전(17/14px)보다 2~3px 크게 시작해 칸에 맞춘다 (공통 문구가 빠져 자리가 남는다)
-	desc.add_theme_font_size_override("font_size", CardSkin.fit_px(L10n.t(str(info["desc"])), desc_box.x, desc_box.y, 20 if str(info["desc"]).length() <= 70 else 17, 10))
+	var touch:=MobileSupport.touch_mode()
+	var desc_spacing: int=2 if touch else int(CardSkin.default_line_spacing())
+	desc.add_theme_constant_override("line_spacing",desc_spacing)
+	desc.add_theme_font_size_override("font_size", CardSkin.fit_px(L10n.t(str(info["desc"])), desc_box.x, desc_box.y, (24 if touch else 20) if str(info["desc"]).length() <= 70 else (21 if touch else 17),12 if touch else 10,desc_spacing))
 	desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	desc.vertical_alignment = VERTICAL_ALIGNMENT_CENTER if summary_text != "" or skill_text != "" else VERTICAL_ALIGNMENT_TOP
 	desc.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -9100,6 +9132,8 @@ func _show_pawn_choice(player_id: int, definition: AugmentDef, on_pick: Callable
 	box.add_child(cancel)
 	_pawn_choice_cards = row.get_children().filter(func(node: Node) -> bool: return node is Button)
 	add_child(_choice_overlay)
+	_priority_modal(_choice_overlay)
+	_refresh_tool_stage()
 
 
 ## 말 고르기를 취소하면 증강 카드 3장 화면으로 돌아간다.
@@ -9951,6 +9985,9 @@ func _on_turn_order_reversed(new_direction: int) -> void:
 
 func _on_game_over(winner_id: int, reason: StringName) -> void:
 	_last_reason = reason
+	_close_choice()
+	_close_zoom()
+	_close_reaction_popup()
 	if not _fx_on():
 		Sfx.play(&"win")  # 연출을 켠 판은 결과 창의 1등 공개 때 우승 팡파르를 낸다 (지금 내면 졸업 팡파르와 겹친다)
 	for player_id: int in _player_ids:
@@ -10883,6 +10920,9 @@ func _is_stage_tool(tool_id: StringName) -> bool:
 
 ## 지금 굴리는 사람의 도구에 맞는 스테이지만 보여 주고 엔진 상태에 맞춘다 (남의 차례에도 굴리는 모습이 보인다).
 func _refresh_tool_stage() -> void:
+	if manager.is_game_over:
+		for other: Control in [_stage_yacht, _stage_blackjack, _stage_pinball]:other.hide()
+		return
 	var current: int = manager.current_player_id()
 	var tool: BaseJudgmentTool = state.tools[current]
 	var stage: Control = _stage_for(tool.tool_id)
@@ -10903,10 +10943,12 @@ func _refresh_tool_stage() -> void:
 			other_rolling = true
 	var popup_open: bool = _reaction_popup != null and is_instance_valid(_reaction_popup)
 	var in_roll: bool = _roll_view_allowed() and not other_rolling and not popup_open
+	if tool is ToolPinball and (_pinball_ready_key!=_pinball_key() or manager.current_state!=TurnManager.State.PHASE_ROLL_WAIT):in_roll=false
 	# 굴림 연출(_fx_busy)이 다른 도구의 연출기(_presenter)라면 앞 사람의 굴림이다: 이 스테이지를 그 위에 겹쳐 띄우지 않는다.
 	var mid_roll: bool = bool(stage.get("active")) or (not popup_open and not other_rolling and ((_fx_busy and not _foreign_roll_fx()) or (tool.has_pending_state() and not (_announcer != null and _announcer.holding()))))
 	stage.set("instant", instant_roll_for_test)
 	stage.visible = in_roll or mid_roll
+	if _choice_overlay!=null or _zoom_view!=null or popup_open:stage.visible=false
 	var acting: bool = not _roll_button.disabled
 	if stage == _stage_pinball:
 		_stage_pinball.set_waiting_caption(_is_bot_turn() or (net != null and current != local_player_id), _player_name(current))
@@ -10918,6 +10960,18 @@ func _refresh_tool_stage() -> void:
 
 func _on_stage_start() -> void:
 	_roll_with_power(0.5)
+
+func _pinball_key() -> String:
+	# The host can acknowledge proceed later. Do not invalidate the local request
+	# when phase_serial changes; an actual roll consumes readiness instead.
+	return "%d:%d:%d:%d" % [state.get_instance_id(),state.round_number,manager.current_player_id(),state.tools[manager.current_player_id()].get_instance_id()]
+
+## Godot caps CanvasItem z_index at 4096; use an independent high-priority canvas.
+func _priority_modal(control: Control) -> void:
+	var host:=CanvasLayer.new();host.name="PriorityModal";host.layer=10000
+	add_child(host);control.reparent(host)
+	control.tree_exited.connect(func() -> void:
+		if is_instance_valid(host) and not host.is_queued_for_deletion():host.queue_free())
 
 
 func _on_yacht_reroll(keep: Array) -> void:
@@ -11389,6 +11443,11 @@ func _build_diagnostic_snapshot() -> String:
 		# 졸업한 사람은 말이 보드에서 철수해 모두 '완주'로 바뀌어 있다: 졸업 직전에 남겨 둔 실제 위치·완주 수로 적는다
 		var graduated_record: Dictionary = state.rank_stats.get(player_id, {}) if state.rankings.has(player_id) else {}
 		var pawn_records: Array = graduated_record.get("pawns", [])
+		if manager.is_game_over and not state.diagnostic_before_graduation.is_empty():
+			var archived_count:=int(state.diagnostic_before_graduation["finished"].get(player_id,0))
+			# Earlier special graduates keep their own real departure record, too.
+			if archived_count<4 or int(graduated_record.get("finished",4))==4:
+				pawn_records=state.diagnostic_before_graduation["pawns"].get(player_id,pawn_records)
 		var pawn_texts: PackedStringArray = []
 		for pawn: PlayerPawn in state.pawns_of(player_id):
 			var finished: bool = pawn.is_finished
@@ -11420,20 +11479,29 @@ func _build_diagnostic_snapshot() -> String:
 		if law_record.is_empty():
 			continue
 		var achieved_law: LawResource = LawRegistry.create(str(law_record["id"]))
-		achieved_lines.append("%s %s (달성 완료!): P%d %d/%d · %d위 졸업" % [law_record["id"], achieved_law.law_name if achieved_law != null else "", ranked,
+		achieved_lines.append("%s %s (달성 완료!): P%d %d/%d · %d위 졸업" % [law_record["id"], str(law_record.get("name",achieved_law.law_name if achieved_law != null else "")), ranked,
 			int(law_record["value"]), int(law_record["goal"]), state.rankings.find(ranked) + 1])
 	lines.append_array(achieved_lines)
 	if state.rulebook.active_laws_queue.is_empty() and achieved_lines.is_empty():
 		lines.append("(비어 있음)")
-	for law: LawResource in state.rulebook.active_laws_queue:
-		var victory: VictoryLaw = law as VictoryLaw
-		if victory == null:
-			lines.append("%s %s" % [law.law_id, law.law_name])
-			continue
-		var counts: PackedStringArray = []
-		for player_id: int in _player_ids:
-			counts.append("P%d %d/%d" % [player_id, victory.progress(state, player_id), victory.goal()])
-		lines.append("%s %s: %s" % [law.law_id, law.law_name, " · ".join(counts)])
+	var archived_laws: Array=state.diagnostic_before_graduation.get("laws",[]) if manager.is_game_over else []
+	if not archived_laws.is_empty():
+		for law: Dictionary in archived_laws:
+			if state.rank_reasons.values().has(StringName(law["id"])):continue
+			var counts: PackedStringArray=[]
+			for player_id: int in _player_ids:
+				if int(law["goal"])>0:counts.append("P%d %d/%d" % [player_id,int(law["values"].get(player_id,0)),int(law["goal"])])
+			lines.append("%s %s: %s" % [law["id"],law["name"]," · ".join(counts)])
+	else:
+		for law: LawResource in state.rulebook.active_laws_queue:
+			var victory: VictoryLaw = law as VictoryLaw
+			if victory == null:
+				lines.append("%s %s" % [law.law_id, law.law_name])
+				continue
+			var counts: PackedStringArray = []
+			for player_id: int in _player_ids:
+				counts.append("P%d %d/%d" % [player_id, victory.progress(state, player_id), victory.goal()])
+			lines.append("%s %s: %s" % [law.law_id, law.law_name, " · ".join(counts)])
 	lines.append("-- 최근 액션 로그 (%d줄) --" % SNAPSHOT_LOG_LINES)
 	var recent: Array[String] = _action_log.lines() if _action_log != null else [] as Array[String]
 	for entry: String in recent.slice(maxi(recent.size() - SNAPSHOT_LOG_LINES, 0)):

@@ -400,6 +400,7 @@ func _on_local_timeout() -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if event is InputEventKey and MobileSupport.text_input_active(self):return
 	if game == DuelRules.Game.CURLING and _opened and not _closing and _step == &"play" and _pick_seat != -1:
 		if _curling_stage.handle_input(event):
 			get_viewport().set_input_as_handled()

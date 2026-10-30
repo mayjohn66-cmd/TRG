@@ -204,6 +204,7 @@ func _clear_scroll_drag() -> void:
 ## Own only presses inside the book's scroll panes. Child buttons cannot
 ## activate on release after a swipe, and native/emulated touch never scroll twice.
 func _input(event: InputEvent) -> void:
+	if event is InputEventKey and MobileSupport.text_input_active(self):return
 	var point: Vector2
 	var pressed := false
 	var released := false
@@ -296,6 +297,7 @@ void fragment() {
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
+	if MobileSupport.text_input_active(self):return
 	var key: InputEventKey = event as InputEventKey
 	if key == null or not key.pressed or key.echo:
 		return

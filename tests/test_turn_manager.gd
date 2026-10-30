@@ -341,53 +341,19 @@ func test_all_pawns_home_declares_winner_and_stops_game() -> void:
 	_dispose(manager)
 
 
-func test_survival_ranking_continues_until_third_place_then_last_is_fourth() -> void:
+func test_first_normal_finisher_ends_and_ranks_the_remaining_race() -> void:
 	var manager: TurnManager = _new_manager(4)
 	var state: GameState = manager.state
 	var events: Array = _collect_events(manager)
-	for player_id: int in [1, 3, 2]:
-		for slot: int in [2, 3, 4]:
-			state.finish_stack(state.get_pawn(player_id * 10 + slot))
-	# P1 완주 -> 1위, 게임은 계속된다
-	place(state, 11, 22, [21])
-	_set_tool(manager, 1, ScriptedTool.new([2]))
-	_do(manager, 1, &"proceed")
-	_do(manager, 1, &"roll")
-	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
-	check(not manager.is_game_over, "1위가 나와도 게임은 계속")
-	check_eq(state.rankings, int_array([1]), "P1 1위")
-	check_eq(state.current_player, 2, "다음 차례")
-	# P2 평범한 이동
-	_set_tool(manager, 2, ScriptedTool.new([1]))
-	_do(manager, 2, &"proceed")
-	_do(manager, 2, &"roll")
-	_do(manager, 2, &"select_pawn", {"pawn_id": 21})
-	# P3 완주 -> 2위
-	place(state, 31, 22, [21])
-	_set_tool(manager, 3, ScriptedTool.new([2]))
-	_do(manager, 3, &"proceed")
-	_do(manager, 3, &"roll")
-	_do(manager, 3, &"select_pawn", {"pawn_id": 31})
-	check_eq(state.rankings, int_array([1, 3]), "P3 2위")
-	check_eq(state.current_player, 4, "P3 다음은 P4")
-	_set_tool(manager, 4, ScriptedTool.new([1]))
-	_do(manager, 4, &"proceed")
-	_do(manager, 4, &"roll")
-	_do(manager, 4, &"select_pawn", {"pawn_id": 41})
-	check_eq(state.current_player, 2, "졸업한 P1은 건너뛴다")
-	# P2 완주 -> 3위, 남은 P4가 4위로 확정되며 종료
-	place(state, 21, 22, [21])
-	_set_tool(manager, 2, ScriptedTool.new([2]))
-	_do(manager, 2, &"proceed")
-	_do(manager, 2, &"roll")
-	_do(manager, 2, &"select_pawn", {"pawn_id": 21})
-	check(manager.is_game_over, "3위 확정 순간 종료")
-	check_eq(state.rankings, int_array([1, 3, 2, 4]), "최종 순위")
-	check_eq(state.rank_reasons[4], VictoryChecker.LAST_PLACE, "꼴찌 사유")
-	var ranked: Array = events.filter(func(e: Dictionary) -> bool: return e["kind"] == &"player_ranked")
-	check_eq(ranked.size(), 4, "순위 확정 이벤트 4번")
-	var standings: Array[Dictionary] = VictoryChecker.standings(state, manager.player_order, state.winner)
-	check_eq(standings.map(func(e: Dictionary) -> int: return int(e["player"])), [1, 3, 2, 4], "결과 화면 순서")
+	for slot: int in [2,3,4]:state.finish_stack(state.get_pawn(10+slot))
+	place(state,21,6,[5]);place(state,31,12,[11]);place(state,41,9,[8])
+	var remaining:=VictoryChecker.sort_by_race(state,[2,3,4])
+	place(state,11,22,[21]);_set_tool(manager,1,ScriptedTool.new([2]))
+	_do(manager,1,&"proceed");_do(manager,1,&"roll");_do(manager,1,&"select_pawn",{"pawn_id":11})
+	check(manager.is_game_over,"first all-home winner immediately ends the match")
+	var expected: Array[int]=[1];expected.append_array(remaining)
+	check_eq(state.rankings,expected,"remaining players retain the pre-cleanup race order")
+	check_eq(events.filter(func(e: Dictionary)->bool:return e["kind"]==&"game_over").size(),1,"one final result event")
 	_dispose(manager)
 
 
@@ -746,7 +712,7 @@ func test_graduation_keeps_the_real_board_and_the_achieved_law() -> void:
 	check_eq(int(record["finished"]), 0, "졸업 직전 실제 완주 수 (철수 뒤 '완주 4/4'가 아니다)")
 	var first: Dictionary = (record["pawns"] as Array)[0]
 	check(int(first["tile"]) == 5 and bool(first["started"]) and not bool(first["finished"]), "졸업 직전 말 위치")
-	check_eq(record["law"], {"id": "LAW_01", "value": 10, "goal": 10}, "달성한 법전과 수치")
+	check_eq(record["law"], {"id": "LAW_01", "name":"투기장의 지배자", "value": 10, "goal": 10}, "달성한 법전과 수치")
 	check(state.get_pawn(11).is_finished, "보드에서는 철수(완주 처리)")
 	_dispose(manager)
 

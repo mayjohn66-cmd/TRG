@@ -39,6 +39,7 @@ static func on_law_enacted(state: GameState, law: LawResource) -> void:
 static func undecided_stat(state: GameState, player_id: int, key: StringName, pending_attack: int = -1) -> int:
 	var total: int = 0
 	for entry: Dictionary in state.attack_log:
+		if not bool(entry.get("stats_committed",true)):continue # Already excluded from authoritative counters.
 		if bool(entry["countered"]) or (bool(entry["offered"]) and int(entry["id"]) != pending_attack):
 			continue
 		var owner: int = int(entry["victim"]) if key == VictoryLaw.EJECTED else int(entry.get("attacker", -1))

@@ -771,6 +771,7 @@ func _open_counter_offer(resume: StringName) -> bool:
 			continue
 		var cards: Array[StringName] = counter_cards_for(victim, int(entry["id"]))
 		if cards.is_empty():
+			state.commit_attack(entry)
 			continue
 		_counter_offer = {"victim": victim, "attack": int(entry["id"]), "resume": resume, "cards": cards}
 		phase_time_left = GameEnums.PHASE_TIME_SELECT * timer_scale
@@ -824,6 +825,8 @@ func _play_counter(actor: int, card: BaseCard, params: Dictionary) -> void:
 ## 방어 대기를 닫고 멈췄던 흐름을 잇는다. 바이츠 더 더스트로 되감았다면 공격한 사람의 턴이 바로 끝난다.
 func _finish_counter_offer() -> void:
 	var resume: StringName = _counter_offer.get("resume", &"resolution")
+	if not state.rollback_requested:
+		state.commit_attack(state.get_attack(int(_counter_offer.get("attack",-1))))
 	_counter_offer = {}
 	if state.rollback_requested:
 		state.rollback_requested = false
@@ -1793,12 +1796,17 @@ func _judge_special_victory() -> bool:
 
 
 ## 순위가 다 정해졌으면 남은 사람을 마저 매기고 판을 끝낸다 (끝냈으면 true).
+## - 실제 말 4개 완주가 확정되면 AI/관전 자리와 관계없이 즉시 끝낸다.
 ## - 남은 사람이 1명 이하: 그 사람이 꼴찌.
 ## - end_when_graduated(AI 대전의 사람 자리)가 모두 졸업: 남은 컴퓨터는 그 순간의 레이스 진행 순서로 순위를 매기고 바로 끝낸다 (구경만 하는 시간을 없앤다).
 func _end_if_decided() -> bool:
 	if is_game_over:
 		return true
 	var active: Array[int] = state.active_players(player_order)
+	if state.rank_reasons.values().has(VictoryChecker.ALL_HOME):
+		for rest: int in VictoryChecker.sort_by_race(state,active):_graduate(rest,VictoryChecker.RACE_ORDER)
+		_end_game()
+		return true
 	if active.size() <= 1:
 		for last: int in active:
 			_graduate(last, VictoryChecker.LAST_PLACE)
