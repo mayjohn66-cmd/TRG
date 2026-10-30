@@ -1320,7 +1320,8 @@ func _bind_state() -> void:
 	state.passive_triggered.connect(_on_passive_triggered)
 	state.guard_blocked.connect(func(pawn_id: int, tile: int) -> void:
 		_on_passive_triggered(pawn_id, &"knight_guard")
-		_log_line("[기사의 맹세] %s이(가) %d번 타일에서 사출을 막았습니다" % [_pawn_name(pawn_id), tile], Color("4dabf7")))
+		_log_line("[기사의 맹세] %s이(가) %d번 타일에서 사출을 막았습니다" % [_pawn_name(pawn_id), tile], Color("4dabf7"))
+		_note_defense_success([pawn_id]))
 	state.shield_broken.connect(func(pawn_id: int, tile: int) -> void:
 		_refresh_pawn_protection(pawn_id, true)
 		_on_passive_triggered(pawn_id, &"shield_block")
@@ -1329,6 +1330,7 @@ func _bind_state() -> void:
 			_log_line("[보호막] %s이(가) %d번 타일에서 공격을 막고 보호막이 깨졌습니다" % [_pawn_name(pawn_id), tile], Color("4dabf7"))
 		else:
 			_log_line("[백돌 방어막] %s이(가) %d번 타일에서 공격을 막고 방어막이 깨졌습니다" % [_pawn_name(pawn_id), tile], Color("b197fc"))
+		_note_defense_success([pawn_id])
 		if _fx_on():
 			_fx_when_announced(func() -> void:
 				_impact_ring(_tile_center(tile) + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO), Color("e5dbff"), 30.0)
@@ -4048,7 +4050,9 @@ func _refresh_laws() -> void:
 			if law is VictoryLaw and slot < _law_progress.size():
 				var victory: VictoryLaw = law as VictoryLaw
 				var viewer: int = _law_view_player()
-				var value: int = victory.progress(state, viewer)
+				# 방어 대기 중인 처치는 아직 확정이 아니다: 그 기록은 빼고 보여 준다
+				var pending_attack: int = int(manager.pending_counter().get("attack", -1)) if manager.counter_pending() else -1
+				var value: int = SpecialVictory.shown_progress(state, victory, viewer, pending_attack)
 				var unit: String = str(LAW_PROGRESS_UNITS.get(law.law_id, victory.unit()))
 				# 단위까지 한 문구로 번역한다 ("개"만 따로 번역하면 윷의 "개"가 된다)
 				_law_progress[slot].text = L10n.tf("[ %d / %d " + unit + " ]", [mini(value, victory.goal()), victory.goal()])
@@ -7874,6 +7878,29 @@ func sweep_oneshot_fx(force: bool = false) -> int:
 	return swept
 
 
+## 방어(방어 카드·보호막·백돌 방어막·기사의 맹세)로 처치를 막았다: 처치·사출 기록이 오르지 않았음을 로그와 말 머리 위에 분명히 적는다.
+func _note_defense_success(pawn_ids: Array) -> void:
+	var text: String = "방어 성공! (처치 무효 · 투기장/킬 카운트 미적용)"
+	_log_line("[방어 성공] 처치 무효 · 투기장/킬 카운트 미적용", Color("74c0fc"))
+	var owner: int = -1
+	for pawn_id: Variant in pawn_ids:
+		var pawn: PlayerPawn = state.get_pawn(int(pawn_id))
+		if pawn != null:
+			owner = pawn.owner_id
+			break
+	_record(owner, "[color=#74c0fc][b]방어 성공![/b] 처치 무효 · 투기장/킬 카운트 미적용[/color]", "", true)
+	if not _fx_on():
+		return
+	for pawn_id: Variant in pawn_ids:
+		var id: int = int(pawn_id)
+		_enqueue_late(func() -> void:
+			var view: Node2D = _pawn_views.get(id)
+			var pawn: PlayerPawn = state.get_pawn(id)
+			if view == null or pawn == null or not pawn.has_left_start or pawn.is_finished:
+				return
+			_floating_badge(view.position + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + Vector2(0, -46), text, Color("74c0fc"), 22), id)
+
+
 ## 위로 솟아올랐다 사라지는 플로팅 텍스트 배지.
 func _floating_badge(at: Vector2, text: String, color: Color, font_size: int = 24) -> void:
 	var label: Label = _fx_pool.take(&"badge")
@@ -10427,6 +10454,8 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 		&"counter_resolved":
 			_log_line("[방어 성공] %s의 [%s]!" % [_player_name(int(data["victim"])), _card_name(data["card_id"])], Color("74c0fc"))
 			_profile_react(int(data["victim"]), true)
+			var saved_pawns: Array = (state.get_attack(int(data["attack"])).get("pawns", {}) as Dictionary).keys()
+			_note_defense_success(saved_pawns)
 		&"turn_rewound":
 			_roll_history.clear()
 			_record(int(data["player_id"]), "이번 턴이 통째로 되감겼습니다")
@@ -11357,20 +11386,44 @@ func _build_diagnostic_snapshot() -> String:
 		var rank_text: String = ""
 		if state.rankings.has(player_id):
 			rank_text = " [%d위 · %s]" % [state.rankings.find(player_id) + 1, VictoryChecker.short_reason(state.rank_reasons.get(player_id, &""))]
+		# 졸업한 사람은 말이 보드에서 철수해 모두 '완주'로 바뀌어 있다: 졸업 직전에 남겨 둔 실제 위치·완주 수로 적는다
+		var graduated_record: Dictionary = state.rank_stats.get(player_id, {}) if state.rankings.has(player_id) else {}
+		var pawn_records: Array = graduated_record.get("pawns", [])
 		var pawn_texts: PackedStringArray = []
 		for pawn: PlayerPawn in state.pawns_of(player_id):
-			var where: String = "완주" if pawn.is_finished else ("대기" if not pawn.has_left_start else "%d번" % pawn.current_tile_idx)
-			pawn_texts.append("%d:%s(%s%s)" % [pawn.slot, pawn.display_label(), where, ",필살기 씀" if pawn.skill_used else ""])
+			var finished: bool = pawn.is_finished
+			var started: bool = pawn.has_left_start
+			var tile: int = pawn.current_tile_idx
+			var skill_used: bool = pawn.skill_used
+			for saved: Dictionary in pawn_records:
+				if int(saved["slot"]) == pawn.slot:
+					finished = bool(saved["finished"])
+					started = bool(saved["started"])
+					tile = int(saved["tile"])
+					skill_used = bool(saved["skill_used"])
+			var where: String = "완주" if finished else ("대기" if not started else "%d번" % tile)
+			pawn_texts.append("%d:%s(%s%s)" % [pawn.slot, pawn.display_label(), where, ",필살기 씀" if skill_used else ""])
+		var finished_count: int = int(graduated_record.get("finished", state.finished_count(player_id)))
 		var tool: BaseJudgmentTool = state.tools.get(player_id)
 		var picked: PackedStringArray = []
 		for augment_id: Variant in manager.augments.get(player_id, []):
 			var definition: AugmentDef = AugmentRegistry.get_def(augment_id)
 			picked.append(definition.display_name if definition != null else str(augment_id))
-		lines.append("P%d %s%s · 완주 %d/%d · 도구 %s · 손패 %d장" % [player_id, _player_name(player_id), rank_text, state.finished_count(player_id), GameEnums.PAWNS_PER_PLAYER, tool.display_name if tool != null else "-", (state.hands.get(player_id, []) as Array).size()])
-		lines.append("   기물: %s" % ", ".join(pawn_texts))
+		lines.append("P%d %s%s · 완주 %d/%d · 도구 %s · 손패 %d장" % [player_id, _player_name(player_id), rank_text, finished_count, GameEnums.PAWNS_PER_PLAYER, tool.display_name if tool != null else "-", (state.hands.get(player_id, []) as Array).size()])
+		lines.append("   기물%s: %s" % [" (졸업 직전)" if not pawn_records.is_empty() else "", ", ".join(pawn_texts)])
 		lines.append("   증강: %s" % (", ".join(picked) if not picked.is_empty() else "없음"))
 	lines.append("-- 중앙 법전 --")
-	if state.rulebook.active_laws_queue.is_empty():
+	# 달성되어 법전에서 지워진 교칙도 남긴다 (법전으로 판이 끝나면 슬롯이 비어 '비어 있음'만 보이던 문제)
+	var achieved_lines: PackedStringArray = []
+	for ranked: int in state.rankings:
+		var law_record: Dictionary = (state.rank_stats.get(ranked, {}) as Dictionary).get("law", {})
+		if law_record.is_empty():
+			continue
+		var achieved_law: LawResource = LawRegistry.create(str(law_record["id"]))
+		achieved_lines.append("%s %s (달성 완료!): P%d %d/%d · %d위 졸업" % [law_record["id"], achieved_law.law_name if achieved_law != null else "", ranked,
+			int(law_record["value"]), int(law_record["goal"]), state.rankings.find(ranked) + 1])
+	lines.append_array(achieved_lines)
+	if state.rulebook.active_laws_queue.is_empty() and achieved_lines.is_empty():
 		lines.append("(비어 있음)")
 	for law: LawResource in state.rulebook.active_laws_queue:
 		var victory: VictoryLaw = law as VictoryLaw

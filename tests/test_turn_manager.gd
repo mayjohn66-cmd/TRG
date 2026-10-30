@@ -696,6 +696,61 @@ func test_capture_opens_a_counter_offer_and_mirror_force_ejects_the_attacker() -
 	_dispose(manager)
 
 
+## 2026-10-30 제보: 방어하자마자 투기장의 지배자 달성. 방어 카드의 되갚기 사출(거울의 힘·우노 리버스)은 처치가 아니다:
+## 방어한 사람의 처치·하극상, 되갚기로 쫓겨난 공격자의 사출(동네북) 기록이 오르지 않는다. 막힌 공격의 기록도 모두 되돌린다.
+func test_defending_never_counts_as_a_kill_for_special_victory() -> void:
+	for card_id: StringName in [&"CNT_02"]:
+		var manager: TurnManager = _new_manager()
+		var state: GameState = manager.state
+		state.rulebook.enqueue_law(LawRegistry.create("LAW_01"))
+		state.rulebook.enqueue_law(LawRegistry.create("LAW_06"))
+		var goal: int = (LawRegistry.create("LAW_01") as VictoryLaw).goal()
+		state.add_stat(2, VictoryLaw.KILLS, goal - 1)  # 방어하는 P2가 한 번만 더 잡으면 투기장 달성
+		_capture_setup(manager, card_id)
+		check(manager.counter_pending(), "%s: 방어 대기" % card_id)
+		check_eq(SpecialVictory.shown_progress(state, state.rulebook.active_laws_queue[0] as VictoryLaw, 1, int(manager.pending_counter()["attack"])), 0,
+			"%s: 방어 대기 중인 처치는 화면 진행도에 넣지 않는다" % card_id)
+		_do(manager, 2, &"play_card", {"card_id": card_id})
+		check_eq(state.stat(1, VictoryLaw.KILLS), 0, "%s: 막힌 공격의 처치는 되돌린다" % card_id)
+		check_eq(state.stat(2, VictoryLaw.EJECTED), 0, "%s: 막힌 공격의 사출도 되돌린다" % card_id)
+		check_eq(state.stat(2, VictoryLaw.KILLS), goal - 1, "%s: 방어의 되갚기 사출은 방어한 사람의 처치가 아니다" % card_id)
+		check_eq(state.stat(1, VictoryLaw.EJECTED), 0, "%s: 되갚기로 쫓겨난 공격자도 동네북 기록이 오르지 않는다" % card_id)
+		check(not state.is_graduated(2), "%s: 방어했다고 투기장의 지배자를 달성하지 않는다" % card_id)
+		check(not state.counter_retaliation, "%s: 되갚기 표시는 끝나면 내린다" % card_id)
+		_dispose(manager)
+
+
+## 우노 리버스가 공격자의 선두 말을 쫓아내도 방어한 사람의 처치·공격자의 사출 기록은 오르지 않는다.
+func test_uno_reverse_ejection_is_not_a_kill() -> void:
+	var state := make_state()
+	state.rulebook.enqueue_law(LawRegistry.create("LAW_01"))
+	state.rulebook.enqueue_law(LawRegistry.create("LAW_06"))
+	place(state, 11, 9, [8])
+	CounterCommand.reflect(state, {"attacker": 1, "card_id": &"ACT_01", "effects": {}}, 2)
+	check(not state.get_pawn(11).has_left_start, "공격자의 선두 말은 출발선으로")
+	check_eq(state.stat(2, VictoryLaw.KILLS), 0, "되갚기는 처치가 아니다")
+	check_eq(state.stat(1, VictoryLaw.EJECTED), 0, "동네북 기록도 오르지 않는다")
+
+
+## 법전으로 졸업해도 결과·스냅샷에는 졸업 직전의 실제 보드 상태와 달성한 법전 수치가 남는다 (말 철수·법전 삭제 전에 기록).
+func test_graduation_keeps_the_real_board_and_the_achieved_law() -> void:
+	var manager: TurnManager = _new_manager()
+	var state: GameState = manager.state
+	state.rulebook.enqueue_law(LawRegistry.create("LAW_01"))
+	place(state, 11, 5, [4])
+	state.add_stat(1, VictoryLaw.KILLS, (LawRegistry.create("LAW_01") as VictoryLaw).goal())
+	manager._judge_special_victory()
+	check(state.is_graduated(1) and state.rank_reasons[1] == &"LAW_01", "투기장으로 졸업")
+	check(state.rulebook.active_laws_queue.is_empty(), "달성한 법전은 지워진다")
+	var record: Dictionary = state.rank_stats[1]
+	check_eq(int(record["finished"]), 0, "졸업 직전 실제 완주 수 (철수 뒤 '완주 4/4'가 아니다)")
+	var first: Dictionary = (record["pawns"] as Array)[0]
+	check(int(first["tile"]) == 5 and bool(first["started"]) and not bool(first["finished"]), "졸업 직전 말 위치")
+	check_eq(record["law"], {"id": "LAW_01", "value": 10, "goal": 10}, "달성한 법전과 수치")
+	check(state.get_pawn(11).is_finished, "보드에서는 철수(완주 처리)")
+	_dispose(manager)
+
+
 func test_bites_the_dust_rewinds_the_attackers_turn_and_ends_it() -> void:
 	var manager: TurnManager = _new_manager()
 	_capture_setup(manager, &"CNT_01")

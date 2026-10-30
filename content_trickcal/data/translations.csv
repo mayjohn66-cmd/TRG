@@ -2410,3 +2410,11 @@ BUST!,BUST!,BUST！
 전원 차례 첫 이동 +3칸,Everyone's first move +3,全員の最初の移動 +3マス
 결승선은 [범용] 결승선 당기기를 쓸 때만 당겨져요 (체크무늬 칸),The finish line only moves closer when someone uses the [Utility] pull augment (checkered spaces),ゴールは[汎用]ゴール引き寄せを使ったときだけ近づきます (チェック柄のマス)
 25라운드가 끝나면 남은 사람은 진행 순위로 순위 확정,"After round 25, remaining players are ranked by race progress",25ラウンド終了後、残りのプレイヤーは進行順で順位確定
+방어 성공! (처치 무효 · 투기장/킬 카운트 미적용),Defended! (Kill voided · no Arena/kill count),防御成功！(撃破無効・闘技場/キル数は加算なし)
+[방어 성공] 처치 무효 · 투기장/킬 카운트 미적용,[Defended] Kill voided · no Arena/kill count,[防御成功] 撃破無効・闘技場/キル数は加算なし
+[color=#74c0fc][b]방어 성공![/b] 처치 무효 · 투기장/킬 카운트 미적용[/color],[color=#74c0fc][b]Defended![/b] Kill voided · no Arena/kill count[/color],[color=#74c0fc][b]防御成功！[/b] 撃破無効・闘技場/キル数は加算なし[/color]
+방어 성공!,Defended!,防御成功！
+처치 무효 · 투기장/킬 카운트 미적용,Kill voided · no Arena/kill count,撃破無効・闘技場/キル数は加算なし
+   기물%s: %s,   Pieces%s: %s,   駒%s: %s
+ (졸업 직전), (just before graduating), (卒業直前)
+%s %s (달성 완료!): P%d %d/%d · %d위 졸업,%s %s (Achieved!): P%d %d/%d · graduated #%d,%s %s (達成完了！): P%d %d/%d・%d位で卒業

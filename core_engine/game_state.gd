@@ -126,6 +126,9 @@ var rankings: Array[int] = []
 var rank_reasons: Dictionary = {}
 ## 순위가 확정된 순간의 레이스 진행 (말을 철수하기 전): 플레이어 ID -> {"finished", "remaining", "progress"}. 결과 화면이 쓴다.
 var rank_stats: Dictionary = {}
+## 방어 카드의 되갚기(거울의 힘 공격자 사출·우노 리버스 선두 사출) 중인가: 이때의 사출은 처치·사출 법전 기록에 넣지 않는다.
+## 방어는 처치를 막은 것이지 처치를 한 것이 아니다 (2026-10-30 제보: 방어하자마자 투기장의 지배자 달성).
+var counter_retaliation: bool = false
 ## 이번 턴의 공격 기록 (방어 카드 대상). 턴이 시작될 때 비운다. 원소: {id, kind(capture/card/trap), victim, attacker, attacker_pawn,
 ## card_id, trap_id, trap_tile, trap_owner, trap_data, pawns: {말 ID: 피해 직전 상태}, stats: {kills, ejected, underdog}, effects: {}, offered, countered}
 var attack_log: Array[Dictionary] = []
@@ -397,7 +400,7 @@ func send_to_start(pawn: PlayerPawn, by_player: int) -> void:
 		member.comeback_run = member.comeback_run or was_out
 		if member.sub_type() == GameEnums.PawnSubType.BADUK_WHITE and not member.shield:
 			member.shield_broken_hit = true  # 방어막이 깨진 채로 잡혔다: 다음 증강 라운드에 재충전되지 않는다
-		if was_out:
+		if was_out and not counter_retaliation:
 			add_stat(pawn.owner_id, &"ejected")
 			_note_entry_stat(entry, &"ejected")
 			# 통계 알림용 킬/데스 (교칙 기록과 달리 [이의 있음!]으로 지워지지 않는다). 데스는 어떤 이유로든 보드에서 출발선으로 날아간 횟수
@@ -663,7 +666,16 @@ func graduate(player_id: int, reason: StringName) -> int:
 		return rankings.find(player_id) + 1
 	rankings.append(player_id)
 	rank_reasons[player_id] = reason
-	rank_stats[player_id] = VictoryChecker.progress_of(self, player_id)
+	# 졸업하면 말을 보드에서 철수시키므로(아래), 졸업 직전의 실제 보드 상태와 달성한 법전 수치를 함께 남긴다 (결과·스냅샷용).
+	var record: Dictionary = VictoryChecker.progress_of(self, player_id)
+	var pawn_records: Array = []
+	for pawn: PlayerPawn in pawns_of(player_id):
+		pawn_records.append({"slot": pawn.slot, "tile": pawn.current_tile_idx, "started": pawn.has_left_start, "finished": pawn.is_finished, "skill_used": pawn.skill_used})
+	record["pawns"] = pawn_records
+	for law: LawResource in rulebook.active_laws_queue:
+		if law is VictoryLaw and law.law_id == String(reason):
+			record["law"] = {"id": law.law_id, "value": (law as VictoryLaw).progress(self, player_id), "goal": (law as VictoryLaw).goal()}
+	rank_stats[player_id] = record
 	# 레이스에서 빠진다: 내 설치물(호텔·함정)은 보드에서 치우고(내 턴이 다시 오지 않아 남은 턴이 줄지 않는다), 강제 연대책임 묶음도 푼다.
 	for tile: TileNode in board.tiles:
 		for attachment: TileAttachment in tile.attachments.duplicate():
