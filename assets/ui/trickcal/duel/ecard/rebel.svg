@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="blade" x1="0" y1="0" x2="1" y2="0">
+      <stop stop-color="#f1f8f4"/><stop offset=".5" stop-color="#dcebed"/><stop offset=".51" stop-color="#a4c4d5"/><stop offset="1" stop-color="#8faabe"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#ffdf91"/><stop offset="1" stop-color="#dba54f"/>
+    </linearGradient>
+    <linearGradient id="grip" x1="0" y1="0" x2="1" y2="0">
+      <stop stop-color="#e5a0a0"/><stop offset="1" stop-color="#ad657e"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(101 169) rotate(40)" stroke="#595269" stroke-width="5.5" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M-18-9-14-145 0-181 14-145 18-9Z" fill="url(#blade)"/>
+    <path d="M0-166V-17" stroke="#f8fcf5" stroke-width="3"/>
+    <path d="m-10-137-3 109" stroke="#fffdf3" stroke-width="2.5"/>
+    <rect x="-12" y="12" width="24" height="59" rx="7" fill="url(#grip)"/>
+    <path d="m-9 27 18 9m-18 7 18 9m-18 7 18 9" fill="none" stroke="#8a5975" stroke-width="3.5"/>
+    <path d="M-40-9q17 7 40 7t40-7l4 16q-21 8-44 8t-44-8Z" fill="url(#gold)"/>
+    <path d="M-34 0q34 10 68 0" fill="none" stroke="#fff0bb" stroke-width="3"/>
+    <rect x="-13" y="67" width="26" height="17" rx="7" fill="url(#gold)"/>
+    <path d="M-7 72H7" stroke="#fff0bb" stroke-width="3"/>
+  </g>
+</svg>

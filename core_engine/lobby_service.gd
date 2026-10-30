@@ -1,0 +1,656 @@
+# File: res://core_engine/lobby_service.gd
+# Class: class_name LobbyService
+# Role: 멀티플레이 방의 네트워크 계층. WebRTCMultiplayerPeer로 방장(피어 1) - 참가자(피어 = 좌석 번호 2~4) 메시 없는 스타 연결을 만들고, 초대/응답 코드 교환(RtcLink)과 좌석 명단 동기화(LobbyModel)를 맡는다. 화면을 모른다
+class_name LobbyService
+extends Node
+
+## 방장: 좌석 seat의 초대 코드가 준비되었다.
+signal invite_ready(seat: int, code: String)
+## 방장: 좌석 seat의 연결 시도가 실패했다 (코드 오류 등). 참가자 쪽에서는 seat = 0.
+signal link_failed(seat: int, message: String)
+## 참가자: 응답 코드가 준비되었다 (방장에게 보내 줄 코드).
+signal answer_ready(code: String)
+## 참가자: 방장과 연결되어 명단을 받기 시작했다.
+signal joined()
+## 참가자: 방에서 나가게 되었다 (연결 끊김·내보내짐).
+signal left_room(reason: String)
+## 좌석 명단이 바뀌었다 (방장·참가자 모두).
+signal roster_changed()
+## 방장이 게임을 시작했다 (방장·참가자 모두). config: {"players": [좌석], "bots": [좌석], "names": {좌석: 이름}, "seed": int}
+signal game_starting(config: Dictionary)
+## 방장: 방 코드가 정해졌다 (친구에게 알려 줄 5자리).
+signal room_ready(code: String)
+## 방장: 공개 릴레이와의 통신 상태가 바뀌었다 (false면 자동 연결이 막힌 것).
+signal relay_status_changed(ok: bool)
+## 참가자: 방 코드 입장 진행 안내 ("방을 찾는 중..." 등).
+signal join_progress(message: String)
+## 참가자: 방 코드 입장에 실패했다.
+signal join_failed(message: String)
+
+const HOST_PEER_ID: int = 1
+## 접속 감시 타임아웃 때 띄우는 안내.
+const JOIN_TIMEOUT_MESSAGE: String = "방 연결에 실패했습니다. (방장이 게임 중이거나 네트워크가 원활하지 않습니다)"
+
+var model: LobbyModel = LobbyModel.new()
+var is_host: bool = false
+## 참가자: 방장이 보낸 방 규칙 (대기실에 보여 준다).
+var guest_rules: Dictionary = {}
+var nickname: String = ""
+
+## true면 실제 WebRTC 피어 없이 방장 상태만 만든다 (헤드리스 화면 테스트용).
+var offline_for_test: bool = false
+
+## 방장이 자리마다 초대를 자동으로 올리고 응답을 수거할지 (오프라인 테스트에서는 끈다).
+var auto_signaling: bool = true
+var broker: SignalBroker = null
+var room_code: String = ""
+## 방장 응답 수거 주기 / 참가자 선점 확인 대기 / 한 자리에 연결을 기다리는 시간 / 응답을 받고도 연결이 안 된 자리를 새 초대로 바꾸는 시간(초).
+var poll_seconds: float = 2.0
+var slow_poll_seconds: float = 5.0
+var claim_check_seconds: float = 1.2
+var connect_timeout_seconds: float = 12.0
+## 방 찾기~선점 확인(시그널링) 단계가 이 시간(초) 안에 끝나지 않으면 입장 실패로 돌려보낸다 (후보 자리마다 새로 잰다).
+var signaling_timeout_seconds: float = 15.0
+var recycle_seconds: float = 25.0
+var rng := RandomNumberGenerator.new()
+
+var _mp: WebRTCMultiplayerPeer = null
+var _links: Dictionary = {}  # 좌석 -> RtcLink
+var _in_room: bool = false
+var _signaling: RoomSignaling = null
+var _offer_nonce: Dictionary = {}    # 좌석 -> 지금 올려 둔 초대의 표식
+var _answer_seen: Dictionary = {}    # 좌석 -> 응답함에서 이미 읽은 개수
+var _answered_at: Dictionary = {}    # 좌석 -> 응답을 적용한 시각(ms)
+var _poll_left: float = 0.0
+var _room_changed_at: int = 0
+var _polling_busy: Dictionary = {}
+var _ensuring: bool = false
+var _relay_ok: bool = true
+# 참가자 자동 입장 상태
+var _joining: bool = false
+var _join_serial: int = 0
+var _join_nickname: String = ""
+var _join_candidates: Array = []
+var _join_nonce: String = ""
+var _join_seat: int = 0
+var _join_answer: String = ""
+## 접속 감시: 이 시각(ms)을 넘기면 입장 실패 (0이면 감시 안 함) / 지금 기다리는 단계 이름 (로그용).
+var _join_deadline_msec: int = 0
+var _join_phase: String = ""
+
+
+func _init() -> void:
+	rng.randomize()
+
+
+func _ready() -> void:
+	if broker == null:
+		var ntfy := NtfyBroker.new()
+		ntfy.name = "Broker"
+		add_child(ntfy)
+		broker = ntfy
+	elif broker.get_parent() == null:
+		add_child(broker)
+	multiplayer.peer_connected.connect(_on_peer_connected)
+	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
+	multiplayer.connected_to_server.connect(_on_connected_to_server)
+	multiplayer.server_disconnected.connect(_on_server_disconnected)
+	model.changed.connect(func() -> void:
+		_room_changed_at = Time.get_ticks_msec()
+		roster_changed.emit())
+
+
+func in_room() -> bool:
+	return _in_room
+
+
+## 내 좌석 번호 (방장 1, 참가자는 연결할 때 받은 피어 ID).
+func my_seat() -> int:
+	if not _in_room:
+		return 0
+	return HOST_PEER_ID if is_host else multiplayer.get_unique_id()
+
+
+# ---------------------------------------------------------------------------
+# 방장
+# ---------------------------------------------------------------------------
+
+func host_room(host_nickname: String) -> bool:
+	leave()
+	if not offline_for_test:
+		_mp = WebRTCMultiplayerPeer.new()
+		var error: int = _mp.create_server()
+		if error != OK:
+			link_failed.emit(0, "방을 만들지 못했습니다 (오류 %d)." % error)
+			_mp = null
+			return false
+		multiplayer.multiplayer_peer = _mp
+	is_host = true
+	_in_room = true
+	nickname = host_nickname
+	model.setup_host(host_nickname, String(GameSession.avatar_id))
+	room_code = RoomCode.generate(rng)
+	_signaling = RoomSignaling.new(broker, room_code)
+	room_ready.emit(room_code)
+	if auto_signaling and not offline_for_test:
+		_ensure_invites()
+	return true
+
+
+## 열린 좌석에 초대 코드를 만든다. 코드는 invite_ready로 온다.
+func create_invite(seat: int) -> bool:
+	if not is_host or not model.invite(seat):
+		return false
+	var link := RtcLink.new()
+	if not link.setup():
+		model.cancel_invite(seat)
+		return false
+	var error: int = _mp.add_peer(link.connection, seat)
+	if error != OK:
+		model.cancel_invite(seat)
+		link_failed.emit(seat, "연결을 준비하지 못했습니다 (오류 %d)." % error)
+		return false
+	link.code_ready.connect(func(code: String) -> void:
+		invite_ready.emit(seat, code)
+		if _links.get(seat) == link:
+			_publish_offer(seat, code))
+	link.failed.connect(func(message: String) -> void: link_failed.emit(seat, message))
+	_links[seat] = link
+	link.start_offer(seat)
+	return true
+
+
+## 릴레이에서 수거한 참가자의 응답 코드를 적용한다. 연결이 실제로 성립하면 좌석이 사람으로 바뀐다.
+func submit_answer(seat: int, code: String) -> bool:
+	if not is_host or not _links.has(seat):
+		return false
+	NetTrace.step("host.answer_received", "seat=%d len=%d" % [seat, code.length()])
+	return (_links[seat] as RtcLink).accept_answer(code)
+
+
+func cancel_invite(seat: int) -> void:
+	if not is_host:
+		return
+	_drop_link(seat)
+	model.cancel_invite(seat)
+	_broadcast_roster()
+	_ensure_invites()
+
+
+## 참가자를 내보낸다.
+func kick(seat: int) -> void:
+	if not is_host or model.state_of(seat) != LobbyModel.SeatState.HUMAN:
+		return
+	_kicked.rpc_id(seat)
+	_mp.disconnect_peer(seat)
+	_drop_link(seat)
+	model.guest_left(seat)
+	_broadcast_roster()
+	_ensure_invites()
+
+
+func set_bot(seat: int, enabled: bool) -> void:
+	if not is_host:
+		return
+	# 자동 초대가 걸려 있는 자리는 초대를 닫은 뒤 봇으로 채운다.
+	if enabled and model.state_of(seat) == LobbyModel.SeatState.INVITED:
+		_drop_link(seat)
+		model.cancel_invite(seat)
+	if model.set_bot(seat, enabled):
+		_broadcast_roster()
+	_ensure_invites()
+
+
+## 방장: 지금 명단 그대로 온라인 게임을 시작한다 (사람 + 방장이 채운 봇만 참여하고 비어 있는 자리는 빠진다: 2인 대전 가능). 시작할 수 없으면 false.
+func begin_online_game() -> bool:
+	if not is_host or not _in_room:
+		return false
+	for seat: int in range(2, LobbyModel.SEAT_COUNT + 1):
+		if model.state_of(seat) == LobbyModel.SeatState.INVITED:
+			_drop_link(seat)
+			model.cancel_invite(seat)
+	var players: Array = []
+	var bot_seats: Array = []
+	var names: Dictionary = {}
+	var avatars: Dictionary = {}
+	for seat: int in range(1, LobbyModel.SEAT_COUNT + 1):
+		var seat_state: LobbyModel.SeatState = model.state_of(seat)
+		if seat_state == LobbyModel.SeatState.HUMAN or seat_state == LobbyModel.SeatState.BOT:
+			players.append(seat)
+			names[seat] = model.name_of(seat)
+			if model.avatar_of(seat) != "":
+				avatars[seat] = model.avatar_of(seat)
+			if seat_state == LobbyModel.SeatState.BOT:
+				bot_seats.append(seat)
+	if players.size() < 2:
+		return false
+	var config: Dictionary = {"players": players, "bots": bot_seats, "names": names, "avatars": avatars, "seed": rng.randi_range(1, 2000000000), "rules": GameSession.room_rules()}
+	# 시작 뒤에는 새 접속을 받지 않는다 (공개 방 비콘/초대도 닫는다).
+	for seat: int in _offer_nonce.keys():
+		_forget_offer(seat)
+	auto_signaling = false
+	if multiplayer.has_multiplayer_peer() and not offline_for_test:
+		_rpc_begin_game.rpc(config)
+	game_starting.emit(config)
+	return true
+
+
+@rpc("authority", "call_remote", "reliable")
+func _rpc_begin_game(config: Dictionary) -> void:
+	if not is_host:
+		game_starting.emit(config)
+
+
+## 응답을 받아 연결을 맺는 중인 참가자가 있는가 (시작을 잠깐 미뤄 주기 위해).
+func is_connecting_guest() -> bool:
+	for seat: int in _answered_at.keys():
+		if model.state_of(seat) == LobbyModel.SeatState.INVITED:
+			return true
+	return false
+
+
+## 사람이 아닌 모든 열린/초대 중 자리를 AI 봇으로 채운다 (게임 시작 직전).
+func fill_with_bots() -> void:
+	if not is_host:
+		return
+	for seat: int in range(2, LobbyModel.SEAT_COUNT + 1):
+		var seat_state: LobbyModel.SeatState = model.state_of(seat)
+		if seat_state == LobbyModel.SeatState.OPEN or seat_state == LobbyModel.SeatState.INVITED:
+			set_bot(seat, true)
+
+
+# ---------------------------------------------------------------------------
+# 방장: 방 코드 자동 시그널링 (공개 릴레이에 초대를 올리고 응답을 수거)
+# ---------------------------------------------------------------------------
+
+## 열린 좌석마다 초대를 자동으로 만든다 (사람이 나가거나 봇을 비우면 다시 열려서 새 초대가 된다).
+func _ensure_invites() -> void:
+	if not is_host or not _in_room or not auto_signaling or offline_for_test or _ensuring:
+		return
+	_ensuring = true
+	for seat: int in range(2, LobbyModel.SEAT_COUNT + 1):
+		if model.state_of(seat) == LobbyModel.SeatState.OPEN:
+			create_invite(seat)
+	_ensuring = false
+
+
+func _publish_offer(seat: int, offer_code: String) -> void:
+	if _signaling == null or not auto_signaling:
+		return
+	var nonce: String = RoomCode.new_nonce(rng)
+	_offer_nonce[seat] = nonce
+	_answer_seen[seat] = 0
+	_answered_at.erase(seat)
+	_signaling.post_offer(seat, nonce, offer_code, func(ok: bool) -> void: _set_relay_ok(ok))
+
+
+func _set_relay_ok(ok: bool) -> void:
+	if ok != _relay_ok:
+		_relay_ok = ok
+		relay_status_changed.emit(ok)
+
+
+func _forget_offer(seat: int) -> void:
+	if _offer_nonce.has(seat) and _signaling != null:
+		_signaling.close_offer(seat)
+	_offer_nonce.erase(seat)
+	_answer_seen.erase(seat)
+	_answered_at.erase(seat)
+	_polling_busy.erase(seat)
+
+
+func _process(delta: float) -> void:
+	_poll_links()
+	check_join_watchdog(Time.get_ticks_msec())
+	if not is_host or not _in_room or _signaling == null or _offer_nonce.is_empty():
+		return
+	_poll_left -= delta
+	if _poll_left > 0.0:
+		return
+	# 공개 릴레이의 요청 횟수 제한(처음 한꺼번에 60회, 이후 5초에 1회)을 넘지 않도록 방이 오래 열려 있으면 간격을 늘린다.
+	_poll_left = poll_seconds if Time.get_ticks_msec() - _room_changed_at < 20000 else maxf(poll_seconds, slow_poll_seconds)
+	poll_answers_now()
+
+
+## 올라온 응답을 한 번 수거한다 (주기적으로 불리며, 테스트가 직접 부를 수 있다). 모든 좌석을 요청 한 번으로 읽는다.
+func poll_answers_now() -> void:
+	if _polling_busy.has(0) or _signaling == null:
+		return
+	var watch: Dictionary = {}
+	for seat: int in _offer_nonce.keys():
+		if model.state_of(seat) != LobbyModel.SeatState.INVITED:
+			continue
+		if _answered_at.has(seat):
+			# 응답을 적용했는데도 오래 연결되지 않으면 새 초대로 바꾼다.
+			if Time.get_ticks_msec() - int(_answered_at[seat]) > int(recycle_seconds * 1000.0):
+				_drop_link(seat)
+				model.cancel_invite(seat)
+				_broadcast_roster()
+				_ensure_invites()
+			continue
+		watch[seat] = {"nonce": str(_offer_nonce[seat]), "seen": int(_answer_seen.get(seat, 0))}
+	if watch.is_empty():
+		return
+	_polling_busy[0] = true
+	_signaling.collect_answers(watch, func(ok: bool, found: Dictionary) -> void:
+		_polling_busy.erase(0)
+		_set_relay_ok(ok)
+		if not ok:
+			return
+		for seat: int in found.keys():
+			if str(_offer_nonce.get(seat, "")) != str((watch[seat] as Dictionary)["nonce"]):
+				continue
+			_answer_seen[seat] = int((found[seat] as Dictionary)["total"])
+			for body: Variant in (found[seat] as Dictionary)["bodies"]:
+				if submit_answer(seat, str(body)):
+					_answered_at[seat] = Time.get_ticks_msec()
+					break)
+
+
+# ---------------------------------------------------------------------------
+# 참가자
+# ---------------------------------------------------------------------------
+
+## 접속 감시를 다시 건다: 지금부터 seconds초 안에 다음 단계로 넘어가지 못하면 입장 실패.
+func _arm_join_watchdog(phase: String, seconds: float, now_msec: int = Time.get_ticks_msec()) -> void:
+	_join_phase = phase
+	_join_deadline_msec = now_msec + int(seconds * 1000.0)
+	NetTrace.step("join.watchdog", "phase=%s limit=%.1fs" % [phase, seconds])
+
+
+## 입장 중인데 감시 시각을 넘겼으면 연결을 끊고 실패 안내를 보낸다 (매 프레임 불리며, 테스트가 시각을 넣어 직접 부를 수 있다). 시간 초과로 끝냈으면 true.
+func check_join_watchdog(now_msec: int) -> bool:
+	if not _joining or _join_deadline_msec <= 0 or now_msec < _join_deadline_msec:
+		return false
+	NetTrace.step("join.timeout", "phase=%s seat=%d" % [_join_phase, _join_seat])
+	_fail_join(JOIN_TIMEOUT_MESSAGE)
+	return true
+
+
+## 연결마다 WebRTC 상태 변화를 로그로 남기고, 참가자 연결이 실패 상태가 되면 기다리지 않고 바로 돌려보낸다.
+func _poll_links() -> void:
+	for seat: Variant in _links.keys():
+		var link: RtcLink = _links[seat]
+		var state: int = link.poll_state()
+		if _joining and int(seat) == HOST_PEER_ID and state == WebRTCPeerConnection.STATE_FAILED:
+			NetTrace.step("join.ice_failed", "seat=%d" % _join_seat)
+			_fail_join(JOIN_TIMEOUT_MESSAGE)
+			return
+
+## 방 코드로 찾은 초대 코드로 실제 연결을 시작한다 (응답 코드는 자동으로 릴레이에 올라간다).
+func _connect_with_offer(guest_nickname: String, invite_code: String) -> bool:
+	var decoded: Dictionary = LobbyCode.decode(invite_code)
+	if not bool(decoded["ok"]):
+		link_failed.emit(0, str(decoded["error"]))
+		return false
+	if decoded["kind"] != LobbyCode.KIND_OFFER:
+		link_failed.emit(0, "이 코드는 응답 코드입니다. 방장에게 받은 초대 코드를 붙여 넣어 주세요.")
+		return false
+	var seat: int = int(decoded["peer_id"])
+	NetTrace.step("join.connect_with_offer", "seat=%d" % seat)
+	var link := RtcLink.new()
+	if not link.setup():
+		return false
+	_mp = WebRTCMultiplayerPeer.new()
+	var error: int = _mp.create_client(seat)
+	if error != OK:
+		link_failed.emit(0, "접속을 준비하지 못했습니다 (오류 %d)." % error)
+		_mp = null
+		return false
+	multiplayer.multiplayer_peer = _mp
+	error = _mp.add_peer(link.connection, HOST_PEER_ID)
+	if error != OK:
+		link_failed.emit(0, "연결을 준비하지 못했습니다 (오류 %d)." % error)
+		_disconnect_all()
+		return false
+	is_host = false
+	_in_room = true
+	nickname = guest_nickname
+	link.code_ready.connect(func(code: String) -> void:
+		answer_ready.emit(code)
+		if _joining and _links.get(HOST_PEER_ID) == link:
+			_post_join_answer(code))
+	link.failed.connect(func(message: String) -> void:
+		link_failed.emit(0, message)
+		if _joining and _links.get(HOST_PEER_ID) == link:
+			_try_next_candidate("연결 정보를 처리하지 못했습니다."))
+	_links[HOST_PEER_ID] = link
+	link.accept_offer(invite_code)
+	return true
+
+
+# ---------------------------------------------------------------------------
+# 참가자: 방 코드만으로 자동 입장
+# ---------------------------------------------------------------------------
+
+## 5자리 방 코드로 입장한다. 릴레이에서 방장의 초대를 찾아 응답을 올리고 연결을 기다린다 (진행은 join_progress, 실패는 join_failed, 성공은 joined).
+func join_by_room_code(guest_nickname: String, text: String) -> bool:
+	leave()
+	var code: String = RoomCode.normalize(text)
+	if not RoomCode.is_valid(code):
+		join_failed.emit("방 코드는 영문 대문자와 숫자 %d자리입니다." % RoomCode.LENGTH)
+		return false
+	_joining = true
+	_join_nickname = guest_nickname
+	_signaling = RoomSignaling.new(broker, code)
+	var serial: int = _join_serial
+	NetTrace.step("join.start", "room=%s" % code)
+	_arm_join_watchdog("find_offers", signaling_timeout_seconds)
+	join_progress.emit("방을 찾는 중...")
+	_signaling.find_offers(func(result: Dictionary) -> void:
+		if serial != _join_serial or not _joining:
+			return
+		NetTrace.step("join.offers", "ok=%s saw_room=%s candidates=%d" % [result["ok"], result["saw_room"], (result["candidates"] as Array).size()])
+		if not bool(result["ok"]):
+			_fail_join("중계 서버에 연결하지 못했습니다. 인터넷 연결을 확인하고 다시 시도해 주세요.")
+		elif (result["candidates"] as Array).is_empty():
+			_fail_join("빈 자리가 있는 방을 찾지 못했습니다. 방 코드를 확인하거나 잠시 후 다시 시도해 주세요." if not bool(result["saw_room"]) else "방이 가득 찼거나 닫혔습니다.")
+		else:
+			_join_candidates = result["candidates"]
+			_try_next_candidate(""))
+	return true
+
+
+func _fail_join(message: String) -> void:
+	NetTrace.step("join.failed", message)
+	_cancel_join()
+	_disconnect_all()
+	join_failed.emit(message)
+
+
+## 후보 자리 하나에 연결을 시도한다. 후보가 없으면 입장 실패.
+func _try_next_candidate(reason: String) -> void:
+	var code: String = _signaling.code if _signaling != null else ""
+	_disconnect_all_keep_join()
+	if _join_candidates.is_empty() or code == "":
+		_fail_join(reason if reason != "" else "방에 입장하지 못했습니다. 다시 시도해 주세요.")
+		return
+	var candidate: Dictionary = _join_candidates.pop_front()
+	_join_seat = int(candidate["seat"])
+	_join_nonce = str(candidate["nonce"])
+	_signaling = RoomSignaling.new(broker, code)
+	NetTrace.step("join.try_seat", "seat=%d nonce=%s left=%d reason=%s" % [_join_seat, _join_nonce, _join_candidates.size(), reason])
+	_arm_join_watchdog("signaling", signaling_timeout_seconds)
+	join_progress.emit("방에 연결하는 중...")
+	if not _connect_with_offer(_join_nickname, str(candidate["offer"])):
+		_try_next_candidate("연결을 준비하지 못했습니다.")
+
+
+## 방 코드를 지키며 연결만 정리한다.
+func _disconnect_all_keep_join() -> void:
+	var keep: RoomSignaling = _signaling
+	_disconnect_all()
+	_signaling = keep
+
+
+func _post_join_answer(answer_code: String) -> void:
+	_join_answer = answer_code
+	var serial: int = _join_serial
+	_signaling.post_answer(_join_seat, _join_nonce, answer_code, func(ok: bool) -> void:
+		if serial != _join_serial or not _joining:
+			return
+		if not ok:
+			_fail_join("중계 서버에 응답을 보내지 못했습니다. 인터넷 연결을 확인하고 다시 시도해 주세요.")
+			return
+		get_tree().create_timer(claim_check_seconds).timeout.connect(func() -> void: _check_claim(serial)))
+
+
+func _check_claim(serial: int) -> void:
+	if serial != _join_serial or not _joining:
+		return
+	_signaling.claim_won(_join_seat, _join_nonce, _join_answer, func(won: bool) -> void:
+		if serial != _join_serial or not _joining:
+			return
+		if not won:
+			_try_next_candidate("다른 사람이 먼저 그 자리에 들어갔습니다.")
+			return
+		join_progress.emit("방장과 연결하는 중...")
+		# 방장과 데이터 채널이 열릴 때까지(connected_to_server) connect_timeout_seconds초만 기다린다. 넘기면 감시가 실패 안내를 띄우고 로비로 돌려보낸다.
+		_arm_join_watchdog("webrtc_connect", connect_timeout_seconds))
+
+
+# ---------------------------------------------------------------------------
+# 공통
+# ---------------------------------------------------------------------------
+
+func leave() -> void:
+	_cancel_join()
+	_disconnect_all()
+
+
+func _cancel_join() -> void:
+	_joining = false
+	_join_deadline_msec = 0
+	_join_phase = ""
+	_join_serial += 1
+	_join_candidates.clear()
+
+
+## 연결만 정리한다 (방 코드 입장 재시도 사이에도 쓴다).
+func _disconnect_all() -> void:
+	if _signaling != null and is_host:
+		for seat: int in _offer_nonce.keys():
+			_signaling.close_offer(seat)
+	_offer_nonce.clear()
+	_answer_seen.clear()
+	_answered_at.clear()
+	_polling_busy.clear()
+	_signaling = null
+	room_code = ""
+	for link: RtcLink in _links.values():
+		link.close()
+	_links.clear()
+	if _mp != null:
+		_mp.close()
+		_mp = null
+	# 피어를 null로 두면 이후 게임 화면의 multiplayer.get_unique_id()가 오류를 내므로 기본값(오프라인 피어)으로 되돌린다.
+	if multiplayer.has_multiplayer_peer() and not (multiplayer.multiplayer_peer is OfflineMultiplayerPeer):
+		multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
+	is_host = false
+	_in_room = false
+	model.reset()
+
+
+func _drop_link(seat: int) -> void:
+	_forget_offer(seat)
+	if _links.has(seat):
+		(_links[seat] as RtcLink).close()
+		_links.erase(seat)
+	if _mp != null and _mp.has_peer(seat):
+		_mp.remove_peer(seat)
+
+
+func _on_peer_connected(peer_id: int) -> void:
+	NetTrace.step("mp.peer_connected", "peer=%d host=%s" % [peer_id, is_host])
+	if not is_host:
+		return
+	if model.state_of(peer_id) == LobbyModel.SeatState.INVITED:
+		model.guest_joined(peer_id, "플레이어 %d" % peer_id)
+		_broadcast_roster()
+
+
+func _on_peer_disconnected(peer_id: int) -> void:
+	NetTrace.step("mp.peer_disconnected", "peer=%d host=%s" % [peer_id, is_host])
+	if not is_host or peer_id < 2:
+		return
+	_drop_link(peer_id)
+	if model.state_of(peer_id) == LobbyModel.SeatState.HUMAN:
+		model.guest_left(peer_id)
+	elif model.state_of(peer_id) == LobbyModel.SeatState.INVITED:
+		model.cancel_invite(peer_id)
+	_broadcast_roster()
+	_ensure_invites()
+
+
+func _on_connected_to_server() -> void:
+	NetTrace.step("join.connected", "seat=%d" % multiplayer.get_unique_id())
+	_joining = false
+	_join_deadline_msec = 0
+	_join_serial += 1  # 대기 중인 입장 타이머를 모두 무효로 만든다
+	_hello.rpc_id(HOST_PEER_ID, nickname, String(GameSession.avatar_id))
+	joined.emit()
+
+
+func _on_server_disconnected() -> void:
+	NetTrace.step("mp.server_disconnected")
+	var was_in: bool = _in_room
+	leave()
+	if was_in:
+		left_room.emit("방장과의 연결이 끊어졌습니다.")
+
+
+func _broadcast_roster() -> void:
+	roster_changed.emit()
+	if _in_room and is_host and multiplayer.has_multiplayer_peer():
+		_roster.rpc(model.to_array())
+		_rules.rpc(GameSession.room_rules())
+
+
+## 방장이 [방 규칙 설정]을 바꿨다: 참가자 대기 화면에도 바로 보이게 다시 보낸다 (실제 판 규칙은 시작할 때 config["rules"]로 간다).
+func broadcast_rules() -> void:
+	_broadcast_roster()
+
+
+## 대기실에 보여 줄 방 규칙: 방장은 내 설정, 참가자는 방장이 보낸 설정.
+func shown_rules() -> Dictionary:
+	return GameSession.room_rules() if is_host else MatchRules.sanitize(guest_rules)
+
+
+## 방장 -> 참가자: 방 규칙 (대기실 표시용).
+@rpc("authority", "call_remote", "reliable")
+func _rules(data: Dictionary) -> void:
+	if not is_host:
+		guest_rules = MatchRules.sanitize(data)
+		roster_changed.emit()
+
+
+## 참가자 -> 방장: 닉네임과 고른 아바타를 알린다.
+@rpc("any_peer", "call_remote", "reliable")
+func _hello(guest_nickname: String, avatar_id: String = "") -> void:
+	if not is_host:
+		return
+	var seat: int = multiplayer.get_remote_sender_id()
+	var clean: String = guest_nickname.strip_edges().substr(0, GameSession.MAX_NICKNAME_LENGTH)
+	if clean.is_empty():
+		clean = "플레이어 %d" % seat
+	var clean_avatar: String = avatar_id.strip_edges().substr(0, 24)
+	if model.state_of(seat) == LobbyModel.SeatState.HUMAN:
+		model.rename_guest(seat, clean)
+		model.set_avatar(seat, clean_avatar)
+	elif model.state_of(seat) == LobbyModel.SeatState.INVITED:
+		model.guest_joined(seat, clean, clean_avatar)
+	_broadcast_roster()
+
+
+## 방장 -> 참가자: 좌석 명단.
+@rpc("authority", "call_remote", "reliable")
+func _roster(data: Array) -> void:
+	if not is_host:
+		model.from_array(data)
+
+
+@rpc("authority", "call_remote", "reliable")
+func _kicked() -> void:
+	if not is_host:
+		leave()
+		left_room.emit("방장이 내보냈습니다.")

@@ -1,0 +1,409 @@
+# File: res://core_engine/game_session.gd
+# Class: class_name GameSession
+# Role: 시작 메뉴에서 정한 값(닉네임·게임 모드)을 게임 화면으로 넘기는 정적 세션 데이터. 닉네임은 user://profile.cfg에 저장해 다음 접속 때 미리 채운다
+class_name GameSession
+extends RefCounted
+
+const PROFILE_PATH: String = "user://profile.cfg"
+
+
+## 게임 버전 (시맨틱 버저닝 MAJOR.MINOR.PATCH, project.godot의 config/version). 배포 빌드는 CI가 뒤에 +커밋을 붙인다 (예: 0.9.0+abc1234).
+static func version() -> String:
+	return str(ProjectSettings.get_setting("application/config/version", "0.0.0-dev"))
+const MAX_NICKNAME_LENGTH: int = 10
+const MODE_AI: StringName = &"ai"
+const MODE_MULTIPLAYER: StringName = &"multiplayer"
+const DEFAULT_NICKNAME: String = "플레이어 1"
+
+static var nickname: String = ""
+static var mode: StringName = MODE_AI
+## 훈련(컴퓨터 대전)에서 고른 AI 상대 수 (1~3).
+static var ai_opponents: int = 3
+## 시작 메뉴에서 로비로 넘어갈 때의 목적: &"secret"(비밀 결투: 방 코드 입력/방 만들기) / &"quick"(진지 승부: 빠른 매칭).
+static var lobby_intent: StringName = &"secret"
+
+## 게임 설정(메뉴 > 게임 설정): user://settings.cfg에 저장된다.
+const SETTINGS_PATH: String = "user://settings.cfg"
+## 행동 사이 연출 멈춤(턴 알림·이동 뒤 호흡). 설정 화면에서 선택을 없앴다: 항상 켜져 있다 (테스트만 끈다).
+static var pacing_enabled: bool = true
+## 소리 설정: 전체·효과음·배경음 음량(0~1)과 전체 음소거. 전체 음량은 Master 버스에 걸린다.
+static var master_volume: float = 1.0
+static var sfx_volume: float = 0.8
+static var bgm_volume: float = 0.6
+static var audio_muted: bool = false
+## 효과음·배경음악을 따로 음소거한다 (설정 화면의 이름 옆 버튼). audio_muted는 위쪽 [소리] 버튼의 전체 음소거다.
+static var sfx_muted: bool = false
+static var bgm_muted: bool = false
+## 연출 속도 배율(1.0 빠름 / 1.7 보통 / 2.5 느림): 이동 걸음·턴 알림 길이·행동 뒤 호흡·봇 대기가 이 배수로 길어진다 (pacing_enabled가 켜져 있을 때).
+const PACE_FAST: float = 1.0
+const PACE_NORMAL: float = 1.7
+const PACE_SLOW: float = 2.5
+static var pace_scale: float = PACE_NORMAL
+## 화면 흔들림(말 잡기·내리찍기 등의 진동 연출). 끄면 흔들리지 않는다.
+static var screen_shake: bool = true
+## 배터리 절약: 화면을 초당 30장까지만 그린다 (휴대폰 발열·배터리용).
+static var battery_saver: bool = false
+const BATTERY_SAVER_FPS: int = 30
+## 화면은 늘 16:9(기준 1366x768)로 고정한다. 웹은 shell.html이 캔버스를 16:9로 가운데에 두고 남는 칸을 연두색(web/letterbox-pattern.png가 있으면 그 패턴)으로 칠한다.
+## 화면 언어 (L10n.LANGUAGES). 처음 실행하면 기기 언어를 따른다 (한국어 기기 KR, 그 밖 EN). 번역이 없는 문구는 한국어로 나온다.
+static var language: String = L10n.DEFAULT_LANG
+## 진행 배속 (1·2·3): 혼자 하는 판에서 Engine.time_scale로 모든 트윈·타이머·봇 대기를 함께 빠르게 한다. 온라인 대전은 늘 1배.
+static var game_speed: int = 1
+const GAME_SPEEDS: Array[int] = [1, 2, 3]
+## 보드 시점: 0 탑뷰 / 1 기울인 탑뷰 (MainBoard.ViewMode)
+static var view_mode: int = 0
+## 내가 고른 아바타 id (AvatarCatalog). 시작 화면의 아바타 설정에서 정한다.
+static var avatar_id: StringName = &"avatar_01"
+
+
+static func save_settings() -> void:
+	var config := ConfigFile.new()
+	config.set_value("game", "master_volume", master_volume)
+	config.set_value("game", "screen_shake", screen_shake)
+	config.set_value("game", "language", language)
+	config.set_value("game", "game_speed", game_speed)
+	config.set_value("game", "battery_saver", battery_saver)
+	config.set_value("game", "view_mode", view_mode)
+	config.set_value("game", "sfx_volume", sfx_volume)
+	config.set_value("game", "bgm_volume", bgm_volume)
+	config.set_value("game", "audio_muted", audio_muted)
+	config.set_value("game", "sfx_muted", sfx_muted)
+	config.set_value("game", "bgm_muted", bgm_muted)
+	config.set_value("game", "pace_scale", pace_scale)
+	config.set_value("game", "avatar", String(avatar_id))
+	config.save(SETTINGS_PATH)
+	PlayerSave.set_value("lang", language)  # 영구 기록에도 (설정 파일이 사라져도 언어를 되살린다)
+
+
+static func load_settings() -> void:
+	var config := ConfigFile.new()
+	if config.load(SETTINGS_PATH) == OK:
+		master_volume = clampf(float(config.get_value("game", "master_volume", 1.0)), 0.0, 1.0)
+		screen_shake = bool(config.get_value("game", "screen_shake", true))
+		battery_saver = bool(config.get_value("game", "battery_saver", false))
+		game_speed = int(config.get_value("game", "game_speed", 1))
+		if not GAME_SPEEDS.has(game_speed):
+			game_speed = 1
+		# 저장된 언어가 없으면(처음 실행) 기기 언어를 따른다: 한국어 기기면 KR, 그 밖은 EN
+		language = str(config.get_value("game", "language", L10n.detect_os_language()))
+		view_mode = 0  # 설정 화면에서 시점 선택을 없앴다: 저장값과 무관하게 탑뷰
+		sfx_volume = clampf(float(config.get_value("game", "sfx_volume", 0.8)), 0.0, 1.0)
+		bgm_volume = clampf(float(config.get_value("game", "bgm_volume", 0.6)), 0.0, 1.0)
+		audio_muted = bool(config.get_value("game", "audio_muted", false))
+		sfx_muted = bool(config.get_value("game", "sfx_muted", false))
+		bgm_muted = bool(config.get_value("game", "bgm_muted", false))
+		pace_scale = PACE_NORMAL  # 연출 속도 선택을 없앴다: 저장값과 무관하게 보통
+		avatar_id = StringName(str(config.get_value("game", "avatar", "avatar_01")))
+	else:
+		# 설정 파일이 없으면 영구 기록의 언어, 그것도 없으면 기기 언어
+		var saved_lang: String = str(PlayerSave.get_value("lang", ""))
+		language = saved_lang if L10n.LANGUAGES.has(saved_lang) else L10n.detect_os_language()
+	if not L10n.set_language(language):
+		language = L10n.DEFAULT_LANG
+		L10n.set_language(language)
+	L10n.install()
+	apply_frame_limit()
+	apply_screen_fit()
+
+
+## 설정 화면의 [기본값으로]: 소리·화면 설정을 처음 값으로 되돌린다 (아바타는 그대로).
+static func reset_settings() -> void:
+	master_volume = 1.0
+	sfx_volume = 0.8
+	bgm_volume = 0.6
+	audio_muted = false
+	sfx_muted = false
+	bgm_muted = false
+	screen_shake = true
+	battery_saver = false
+	apply_frame_limit()
+	save_settings()
+
+
+## 배터리 절약이면 초당 그리는 장수를 묶고, 아니면 제한을 푼다.
+static func apply_frame_limit() -> void:
+	Engine.max_fps = BATTERY_SAVER_FPS if battery_saver else 0
+
+
+## 화면을 16:9로 고정한다 (KEEP: 기준 화면 배치가 늘 같다).
+static func apply_screen_fit() -> void:
+	var tree: SceneTree = Engine.get_main_loop() as SceneTree
+	if tree == null or tree.root == null:
+		return
+	tree.root.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_KEEP
+
+
+## 온라인 대전 설정: 로비가 시작 때 채우고 메인 보드가 읽는다 (net_active가 false면 기존 컴퓨터 대전/핫시트).
+static var net_active: bool = false
+static var net_is_host: bool = false
+static var net_local_seat: int = 1
+static var net_players: Array[int] = []
+static var net_bots: Array[int] = []
+static var net_names: Dictionary = {}
+## 온라인 대전의 좌석별 아바타 id.
+static var net_avatars: Dictionary = {}
+static var net_seed: int = 0
+## 온라인 대전의 방 규칙 (방장이 config["rules"]로 보낸 값, MatchRules).
+static var net_rules: Dictionary = {}
+## 테스트용: 내 자리를 봇 두뇌가 대신 플레이한다 (자동 플레이).
+static var net_autoplay: bool = false
+
+
+## 로비가 보낸 시작 설정(config)을 채운다. config: {"players": [좌석], "bots": [좌석], "names": {좌석: 이름}, "seed": int}
+static func set_net(is_host: bool, local_seat: int, config: Dictionary) -> void:
+	net_active = true
+	net_is_host = is_host
+	net_local_seat = local_seat
+	net_players.assign(config["players"])
+	net_bots.assign(config["bots"])
+	net_names = (config["names"] as Dictionary).duplicate()
+	net_avatars = (config.get("avatars", {}) as Dictionary).duplicate()
+	net_seed = int(config["seed"])
+	net_rules = MatchRules.sanitize(config.get("rules", {}))
+	mode = MODE_MULTIPLAYER
+
+
+static func clear_net() -> void:
+	net_active = false
+	net_is_host = false
+	net_local_seat = 1
+	net_players = []
+	net_bots = []
+	net_names = {}
+	net_avatars = {}
+	net_seed = 0
+	net_rules = {}
+
+
+## 닉네임 검사: 앞뒤 공백을 뺀 뒤 1~10자여야 한다. 문제가 없으면 빈 문자열, 있으면 안내 문구를 돌려준다.
+static func validate_nickname(raw: String) -> String:
+	var text: String = raw.strip_edges()
+	if text.is_empty():
+		return "닉네임을 입력해 주세요."
+	if text.length() > MAX_NICKNAME_LENGTH:
+		return "닉네임은 %d자 이하로 입력해 주세요." % MAX_NICKNAME_LENGTH
+	return ""
+
+
+## 화면에 쓸 내 이름 (아직 정하지 않았으면 기본값).
+static func display_nickname() -> String:
+	return nickname if nickname != "" else DEFAULT_NICKNAME
+
+
+static func set_nickname(raw: String) -> bool:
+	if validate_nickname(raw) != "":
+		return false
+	nickname = raw.strip_edges()
+	save()
+	return true
+
+
+## [방 규칙 설정]에서 바꾼 항목만 담는다 (trap_reveal·super_freq·laws·speed·bot_level). 바꾸지 않은 항목은 난이도 기본값을 따른다.
+## 싱글 커스텀과 친선전 방장이 함께 쓰고, 브라우저 프로필에 남는다. bot_level은 친선전 빈자리 컴퓨터에만 쓴다.
+const RULE_KEYS: Array[String] = ["trap_reveal", "super_freq", "laws", "speed", "bot_level"]
+static var _rule_overrides: Variant = null
+
+
+static func rule_overrides() -> Dictionary:
+	if _rule_overrides == null:
+		var config := ConfigFile.new()
+		config.load(PROFILE_PATH)
+		var stored: Variant = config.get_value("profile", "room_rules", {})
+		_rule_overrides = {}
+		if stored is Dictionary:
+			for key: String in RULE_KEYS:
+				if (stored as Dictionary).has(key):
+					_rule_overrides[key] = (stored as Dictionary)[key]
+	return _rule_overrides
+
+
+## 규칙 하나를 바꾼다 (고른 값은 [기본값으로]를 누를 때까지 난이도 기본값보다 앞선다). 프로필에 바로 저장한다.
+static func set_rule(key: String, value: Variant) -> void:
+	if not RULE_KEYS.has(key):
+		return
+	rule_overrides()[key] = MatchRules.sanitize({key: value}).get(key)
+	_save_rule_overrides()
+
+
+## 친선전 원클릭 프리셋: 법전·함정·초증강 세 값을 한 번에 바꾼다.
+static func apply_preset(key: StringName) -> void:
+	var values: Dictionary = MatchRules.preset_values(key)
+	for rule: String in values.keys():
+		rule_overrides()[rule] = MatchRules.sanitize({rule: values[rule]}).get(rule)
+	_save_rule_overrides()
+
+
+static func reset_rules() -> void:
+	rule_overrides().clear()
+	_save_rule_overrides()
+
+
+static func _save_rule_overrides() -> void:
+	var config := ConfigFile.new()
+	config.load(PROFILE_PATH)
+	config.set_value("profile", "room_rules", rule_overrides().duplicate())
+	config.save(PROFILE_PATH)
+
+
+## 바꾸기 전 기본 규칙: 놀이터는 불닭 난이도 기본값(Lv.1~3 함정 공개 등), 그 밖에는 MatchRules 기본값.
+static func base_rules() -> Dictionary:
+	return MatchRules.for_difficulty(bot_difficulty()) if mode == MODE_AI and not net_active else MatchRules.defaults()
+
+
+## 이번 판에 쓸 규칙. 온라인은 방장이 보낸 규칙 그대로 (모두 같아야 한다).
+## AI 대전은 난이도 기본값만 쓴다 (예전에 저장된 방 규칙이 몰래 덮이지 않게).
+static func match_rules() -> Dictionary:
+	if net_active:
+		return MatchRules.sanitize(net_rules)
+	if mode == MODE_AI:
+		return MatchRules.sanitize(base_rules())
+	var rules: Dictionary = base_rules()
+	rules.merge(rule_overrides(), true)
+	return MatchRules.sanitize(rules)
+
+
+## 친선전 방장이 시작할 때 보내는 방 규칙 (난이도와 무관한 기본값 + 방장 설정).
+static func room_rules() -> Dictionary:
+	var rules: Dictionary = MatchRules.defaults()
+	rules.merge(rule_overrides(), true)
+	return MatchRules.sanitize(rules)
+
+
+## 놀이터(컴퓨터 대전) 난이도: 불닭 Fire Level 1~5 (BotTemper.LEVELS, 기본 Lv.2 로제). 브라우저 프로필에 남는다.
+## 옛 저장값(mild/normal/spicy)은 Lv.1/2/4로 읽는다.
+static var _bot_difficulty: int = -1
+
+
+static func bot_difficulty() -> int:
+	if _bot_difficulty == -1:
+		var config := ConfigFile.new()
+		config.load(PROFILE_PATH)
+		_bot_difficulty = BotTemper.sanitize(config.get_value("profile", "bot_difficulty", BotTemper.DEFAULT_LEVEL))
+	return _bot_difficulty
+
+
+static func set_bot_difficulty(value: int) -> void:
+	_bot_difficulty = BotTemper.sanitize(value)
+	var config := ConfigFile.new()
+	config.load(PROFILE_PATH)
+	config.set_value("profile", "bot_difficulty", _bot_difficulty)
+	config.save(PROFILE_PATH)
+
+
+static func save() -> void:
+	var config := ConfigFile.new()
+	config.load(PROFILE_PATH)  # 익명 태그·판 수(stats)는 그대로 두고 닉네임만 바꾼다
+	config.set_value("profile", "nickname", nickname)
+	config.save(PROFILE_PATH)
+	PlayerSave.set_value("nickname", nickname)
+
+
+# --- 익명 통계 태그 ------------------------------------------------------------------------------
+## 통계 알림에서 사람을 구분하는 4자리 익명 태그와 누적 판 수. 브라우저 저장소(user://profile.cfg의 stats)에 남아 다음 접속에도 같다.
+## 닉네임을 기본값으로 둔 사람끼리도 [플레이어 1(#A7B2)]처럼 서로 다른 사람인지, 한 사람이 여러 판 했는지 알 수 있다.
+const TAG_LENGTH: int = 4
+## 헷갈리는 글자(0·O·1·I)는 뺀다.
+const TAG_ALPHABET: String = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+static var _player_tag: String = ""
+static var _match_count: int = -1
+## 끝까지 마친 판 수(내 순위가 확정된 판)와 그중 1위 횟수 (통계 알림의 [누적 N판 중 1위 M회]).
+static var _finished_count: int = 0
+static var _win_count: int = 0
+
+
+## 이 브라우저의 익명 태그 (없으면 처음 부를 때 만들어 저장한다).
+static func player_tag() -> String:
+	_load_stats()
+	return _player_tag
+
+
+## 통계에 쓰는 이름: [닉네임(#태그)].
+static func tagged_name() -> String:
+	return "%s(#%s)" % [display_nickname(), player_tag()]
+
+
+## 지금까지 시작한 판 수.
+static func match_count() -> int:
+	_load_stats()
+	return _match_count
+
+
+## 새 판을 시작한다: 판 수를 하나 올려 저장하고 이번 판이 몇 번째인지 돌려준다.
+static func begin_match() -> int:
+	_load_stats()
+	_match_count += 1
+	_save_stats()
+	return _match_count
+
+
+## 한 판을 끝까지 마쳤다 (내 순위 확정). 반환: {"played": 끝까지 마친 판 수, "wins": 그중 1위 횟수}.
+static func record_match_result(rank: int) -> Dictionary:
+	_load_stats()
+	_finished_count += 1
+	if rank == 1:
+		_win_count += 1
+	_save_stats()
+	return {"played": _finished_count, "wins": _win_count}
+
+
+static func finished_matches() -> int:
+	_load_stats()
+	return _finished_count
+
+
+static func win_count() -> int:
+	_load_stats()
+	return _win_count
+
+
+static func is_valid_tag(tag: String) -> bool:
+	if tag.length() != TAG_LENGTH:
+		return false
+	for character: String in tag:
+		if not TAG_ALPHABET.contains(character):
+			return false
+	return true
+
+
+## 태그·판 수는 영구 기록(PlayerSave: user:// + 브라우저 localStorage)에서 읽는다. 이미 있는 태그는 절대 새로 뽑지 않는다.
+static func _load_stats() -> void:
+	if _player_tag != "" and _match_count >= 0:
+		return
+	var saved: String = str(PlayerSave.get_value("player_tag", ""))
+	_match_count = maxi(int(PlayerSave.get_value("match_count", 0)), 0)
+	_finished_count = maxi(int(PlayerSave.get_value("finished_count", 0)), 0)
+	_win_count = maxi(int(PlayerSave.get_value("win_count", 0)), 0)
+	if is_valid_tag(saved):
+		_player_tag = saved
+		return
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	_player_tag = ""
+	for i: int in TAG_LENGTH:
+		_player_tag += TAG_ALPHABET[rng.randi_range(0, TAG_ALPHABET.length() - 1)]
+	_save_stats()
+
+
+static func _save_stats() -> void:
+	var record: Dictionary = PlayerSave.data()
+	record["player_tag"] = _player_tag
+	record["match_count"] = _match_count
+	record["finished_count"] = _finished_count
+	record["win_count"] = _win_count
+	PlayerSave.save()
+
+
+## 기록 코드를 불러온 뒤: 태그·판 수·닉네임을 영구 기록에서 다시 읽는다.
+static func reload_from_save() -> void:
+	_player_tag = ""
+	_match_count = -1
+	_load_stats()
+	var saved: String = str(PlayerSave.get_value("nickname", ""))
+	if validate_nickname(saved) == "":
+		nickname = saved
+
+
+## 저장된 닉네임을 불러온다 (없으면 빈 문자열).
+static func load_saved() -> String:
+	var saved: String = str(PlayerSave.get_value("nickname", ""))
+	return saved if validate_nickname(saved) == "" else ""

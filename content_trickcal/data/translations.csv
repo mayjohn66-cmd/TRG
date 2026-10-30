@@ -1,0 +1,2423 @@
+ko,en,ja
+   개입 대기 카드: %d장 (나중에 낸 카드부터 실행),   Pending interrupt cards: %d (last played resolves first),   介入待ちカード: %d枚 (後に出したカードから実行)
+   기물: %s,   Pieces: %s,   駒: %s
+   증강: %s,   Augments: %s,   増強: %s
+  (%.1f초),  (%.1fs),  (%.1f秒)
+  (%d위 졸업),  (graduated #%d),  (%d位で卒業)
+  (%s 밀려남),  (%s pushed out),  (%s 押し出し)
+  (+한 번 더!),  (+roll again!),  (+もう1回！)
+  (가장 오래된 [%s] %s이(가) 밀려났습니다),  (oldest [%s] %s was pushed out),  (最も古い [%s] %s が押し出されました)
+  (감옥),  (jailed),  (監獄)
+  (구속),  (bound),  (拘束)
+  (매달린 남자의 축복 +%d칸 포함),  (incl. Hanged Man blessing +%d),  (吊られた男の祝福 +%d マス含む)
+  (방어막 깨짐),  (shield broken),  (バリア破損)
+  (사기 윷: 추가 굴림),  (rigged Yut: extra roll),  (イカサマユッ: 追加で振る)
+  (사용됨),  (used),  (使用済)
+  (승급 후),  (after promotion),  (昇格後)
+  (완주),  (finished),  (完走)
+  (추가 턴),  (extra turn),  (追加ターン)
+  [강아지] 지나친 빵집에서 카드 %d장,  [Puppy] %d cards from Bakeries passed,  [子犬] 通過したパン屋でカード %d枚
+  [능력] %s,  [Ability] %s,  [能力] %s
+  [미니카] 반환점 통과: 카드 %d장,  [Mini Car] halfway passed: %d cards,  [ミニカー] 折り返し地点通過: カード %d枚
+  [백돌 방어막] 잡을 수 없어 함께 섭니다,"  [White Stone shield] Can't capture, sharing the tile",  [白石バリア] 捕獲できないので同じマスに並びます
+  [법전] 이동 변조: %s,  [Codex] Move changed: %s,  [法典] 移動変化: %s
+  [복수 부스터 획득: 다음 출발 +%d칸],  [Revenge Booster gained: next start +%d spaces],  [リベンジブースター獲得: 次の出発 +%dマス]
+  [빵집] 카드 획득,  [Bakery] Card gained,  [パン屋] カード獲得
+  [위험!],  [Danger!],  [危険！]
+  [잡기] %s,  [Capture] %s,  [捕獲] %s
+  [증기선] 상대 설치물 파괴 %d개,  [Steamboat] %d enemy objects destroyed,  [蒸気船] 相手の設置物を %d個破壊
+  [지뢰찾기] 함정 해체 카드 %d장,"  [Minesweeper] Trap defused, %d cards",  [マインスイーパー] 罠解除、カード %d枚
+  ★ 재굴림!,  ★ Reroll!,  ★ もう1回！
+  ★나리 승급(+1칸),  ★Promoted (+1 space),  ★成り昇格(+1マス)
+  결승선에서 튕겨 나옴,  Bounced off the finish line,  ゴールで跳ね返った
+  교칙 효과 %s,  Rule effect %s,  校則効果 %s
+  눈금 %d → %d,  Roll %d → %d,  出目 %d → %d
+  다음 굴림에 +%d칸 축복 예약!,  +%d blessing booked for the next roll!,  次の出目に +%dマスの祝福を予約！
+  무인도 탈출!,  Escaped the island!,  無人島から脱出！
+  방어막 있음,  Shielded,  バリアあり
+  승자의 %s +%d칸 전진 (%d번 → %d번),  Winner's %s advances +%d (tile %d → %d),  勝者の %s +%dマス前進 (%d番 → %d番)
+  이동 중단,  Move stopped,  移動中断
+  점프·옷장 워프,  Jump·Wardrobe warp,  ジャンプ・クローゼットワープ
+  호텔 건설,  Hotel built,  ホテル建設
+ (%d번 타일), (tile %d), (%d番マス)
+ (개입 대기열 - 나중에 낸 카드부터 실행), (interrupt queue - last played resolves first), (介入待ち - 後に出したカードから実行)
+ (교칙), (Rule), (校則)
+" (둘 다 추락, 신청자 판정승)"," (both fell, challenger wins)", (両方落下、挑戦者の判定勝ち)
+ (무인도에 갇혀 있음: 짝수 눈금이 필요), (stuck on the island: needs an even roll), (無人島に監禁中: 偶数の出目が必要)
+ (사용됨), (used), (使用済)
+ (상대 반칙!), (opponent foul!), (相手の反則！)
+ (상대 추락!), (opponent fell!), (相手が落下！)
+ (아무도 못 눌러 신청자 판정승)," (no one pressed, challenger wins)", (誰も押さず挑戦者の判定勝ち)
+ (자동), (auto), (自動)
+ + AI %d명, + %d AI, + AI %d人
+ + 말 %d번을 %d번 빵집으로 출격, + Pawn %d launched to Bakery %d, + 駒 %d番を %d番パン屋へ出撃
+ - 말 %d개 즉시 완주!, - %d pawns finish instantly!, - 駒 %d個が即完走！
+ [%d위 · %s], [#%d · %s], [%d位 · %s]
+ · +%d칸 전진, · +%d spaces, · +%dマス前進
+ · 다음 굴림 +%d, · next roll +%d, · 次の出目 +%d
+ · 생떼 카드 획득: %s, · Tantrum Cards gained: %s, · 駄々っ子カード獲得: %s
+ · 한 번 더, · roll again, · もう1回
+ · 한 번 더!, · roll again!, · もう1回！
+ 감옥, Jail, 監獄
+ 경로 %s, path %s, 経路 %s
+ 구속, Bound, 拘束
+ 밸런스, Balance, バランス
+ 버그/오류, Bug/Error, バグ/不具合
+ 승리!, wins!, 勝利！
+ 연대, Linked, 連帯
+ 이동 취소됨, move canceled, 移動キャンセル
+ 직진 +2칸, straight +2 spaces, 直進 +2マス
+ 추가 건의, Suggestion, 追加の要望
+ 추락, fell, 落下
+ 하극상!, Upset!, 下剋上！
+%.2f초,%.2fs,%.2f秒
+%d / %d자,%d / %d chars,%d / %d文字
+%d개의 말을 베어 출발선으로!,Slashed %d pawns back to Start!,%d個の駒を斬ってスタートへ！
+%d개의 말이 출발선으로 탈락!,%d pawns knocked back to Start!,%d個の駒がスタートへ脱落！
+%d끗,%d Kkeut,%d点
+%d등  %s,#%d  %s,%d位  %s
+%d땡,%d Ttaeng,%dアラシ
+%d라운드 시작!,Round %d Start!,第%dラウンド開始！
+%d라운드부터 게임이 빨라집니다!\n◆ %s,The game speeds up from Round %d!\n◆ %s,第%dラウンドからゲームが速くなります！\n◆ %s
+%d만,%d Man,%d萬
+%d번,#%d,%d番
+%d번 [%s]→[%s],#%d [%s]→[%s],%d番 [%s]→[%s]
+%d번 → %d번 대각선 코너로!,"Tile %d → %d, diagonal corner!",%d番 → %d番 対角線のコーナーへ！
+%d번 → %d번 질주! ,Tile %d → %d dash!,%d番 → %d番 疾走！ 
+%d번 → %d번 타일로 직항,Direct flight: tile %d → %d,%d番 → %d番マスへ直行
+%d번 말,Pawn %d,駒 %d番
+%d번 버튼 [%d],Button %d [%d],%d番ボタン [%d]
+%d번 변 (%d~%d번 칸),Side %d (tiles %d~%d),%d番の辺 (%d~%d番マス)
+%d번 옷장,Wardrobe %d,%d番クローゼット
+%d번 칸 들이받기!,Rams tile %d!,%d番マスに体当たり！
+%d번 칸부터 결승선 - 라운드마다 %d칸씩 더 당겨집니다%s,Finish from tile %d - %d spaces closer every round%s,%d番マスからゴール - ラウンドごとに %dマスずつ近づきます%s
+%d번 칸의 말을 들이받고 멈춤!,Rammed the pawns on tile %d and stopped!,%d番マスの駒に体当たりして停止！
+%d번 타일까지 직선 돌진,Straight charge to tile %d,%d番マスまで直線突進
+%d번 타일로는 날아갈 수 없습니다. 빵집이나 코너를 고르세요.,Can't fly to tile %d. Pick a Bakery or corner.,%d番マスには飛べません。パン屋かコーナーを選んでください。
+%d번 타일에 벼락이 내리쳐 말 %d개가 뿔뿔이 흩어졌습니다,"Lightning strikes tile %d, scattering %d pawns",%d番マスに雷が落ち、駒 %d個が散り散りになりました
+%d번 타일에 지뢰 매설,Mine planted on tile %d,%d番マスに地雷を埋設
+%d번 타일에 호텔 건설 (밟은 적은 멈춤),Hotel built on tile %d (enemies who land stop),%d番マスにホテル建設 (踏んだ敵は停止)
+%d번 타일에는 [%s]를 쓸 수 없습니다. 다른 타일을 고르세요.,Tile %d can't take [%s]. Pick another tile.,%d番マスには [%s] を使えません。別のマスを選んでください。
+%d번 타일의 %s 해체! (카드 1장),Tile %d: %s defused! (1 card),%d番マスの %s を解除！ (カード1枚)
+%d번 타일의 적에게 돌진!,Charging the enemy on tile %d!,%d番マスの敵へ突進！
+%d번까지 질주!,Dashed to tile %d!,%d番まで疾走！
+%d번에서 출발합니다,Departing from tile %d,%d番から出発します
+%d번째 승부,Round %d,第%d戦
+%d삭,%d Sou,%d索
+%d월,Month %d,%d月
+%d월 %s,Month %d %s,%d月 %s
+%d위,#%d,%d位
+%d장,%d cards,%d枚
+%d종,%d types,%d種
+%d초 뒤에 빈자리를 AI가 채우고 시작합니다  (현재 %d/%d명),AI fills empty seats in %ds  (now %d/%d),%d秒後に空席をAIが埋めて開始します  (現在 %d/%d人)
+%d칸,%d spaces,%dマス
+%d칸 이동 확정,Moving %d spaces,%dマス移動確定
+%d칸 전진,Move %d spaces,%dマス前進
+%d칸 전진!,Move %d!,%dマス前進！
+%d칸 전진%s,Move %d spaces%s,%dマス前進%s
+%d칸!,%d spaces!,%dマス！
+%d통,%d Pin,%d筒
+%s  ·  전체 설명,%s  ·  Full guide,%s  ·  全体説明
+%s  →  %s 승리!%s,%s  →  %s wins!%s,%s  →  %s の勝利！%s
+%s %d장,%s x%d,%s ×%d
+%s %d칸 질주 - 말 %d개를 잡고 사라졌습니다!,%s dashed %d spaces - captured %d pawns and vanished!,%s %dマス疾走 - 駒 %d個を捕まえて消えました！
+%s (%d번 타일),%s (tile %d),%s (%d番マス)
+%s (%d칸),%s (%d spaces),%s (%dマス)
+%s - 처치할 적이 없어 그대로 사라졌습니다,"%s - no enemy to KO, vanished",%s - 撃破する敵がおらずそのまま消えました
+%s → %d칸,%s → %d spaces,%s → %dマス
+%s → %d칸 이동!,%s → move %d spaces!,%s → %dマス移動！
+%s → %s %d칸,%s → %s %d spaces,%s → %s %dマス
+"%s → 0칸, 턴 종료","%s → 0 spaces, turn ends",%s → 0マス、ターン終了
+%s ↔ %s 위치 교환,%s ↔ %s swapped,%s ↔ %s 位置交換
+%s 교주님,Master %s,%s 教主様
+%s 굴림 → %s,%s roll → %s,%s を振る → %s
+%s 나리 승급!,%s promoted!,%s 成り昇格！
+%s 님의 차례입니다. 기다려 주세요...,It's %s's turn. Please wait...,%s さんの番です。お待ちください...
+"%s 밟음! (%d번 타일, %s)","Stepped on %s! (tile %d, %s)",%s を踏んだ！ (%d番マス、%s)
+%s 방어하시겠습니까?,"%s, defend?",%s、防御しますか？
+%s 사용!%s,Used %s!%s,%s 使用！%s
+%s 선두 말 장외 사출! %s +%d칸,%s's lead pawn knocked off! %s +%d spaces,%s の先頭駒を場外射出！ %s +%dマス
+%s 선택!,Picked %s!,%s を選択！
+%s 승급 ◆ 이동할 때마다 +1칸,%s promoted ◆ +1 space on every move,%s 昇格 ◆ 移動するたびに +1マス
+%s 승리,%s wins,%s の勝利
+%s 승리!,%s wins!,%s の勝利！
+%s 업기 (%d마리),%s stacked (%d),%s おんぶ (%d体)
+%s 이번 차례 쉬기,%s skips this turn,%s は今回お休み
+%s 입력 완료!,%s is ready!,%s 入力完了！
+%s 차례,%s's turn,%s の番
+%s 출발선으로 복귀%s,%s back to Start%s,%s スタートへ帰還%s
+%s 퀸 승진 ◆ 이동 +2칸 · 말·함정 관통,%s becomes a Queen ◆ Move +2 · passes pawns & traps,%s クイーンに昇格 ◆ 移動 +2マス · 駒・罠を貫通
+%s 투구,%s throws,%s の投球
+%s 패배!,%s loses!,%s の敗北！
+%s 포켓 골인 · %d칸 전진,%s pocket · move %d spaces,%s ポケットにゴール · %dマス前進
+%s 필살기 사용!,%s Skill!,%s 必殺技使用！
+%s 화면이 멈춘 것 같습니다 (다른 창·탭·앱으로 이동했거나 연결이 느림). 돌아오면 자동으로 이어집니다.,%s's screen seems frozen (switched window/tab/app or slow connection). It resumes when they return.,%s の画面が止まっているようです (別のウィンドウ・タブ・アプリへ移動したか接続が遅い)。戻れば自動で再開します。
+%s%d위 · %s,%s#%d · %s,%s%d位 · %s
+%s\n%d번 타일에서 %s에게 발동,%s\nTile %d: triggered on %s,%s\n%d番マスで %s に発動
+%s\n남은 말은 보드에서 철수하고 레이스를 졸업합니다,%s\nRemaining pawns leave the board; graduated from the race,%s\n残りの駒はボードから撤収し、レースを卒業します
+%s\n반환점(%d번) 이상을 밟는 순간 영구 승급 (잡혀도 퀸 유지),%s\nPromotes for good once it reaches the halfway corner (%d) (stays Queen even if captured),%s\n折り返し地点(%d番)以上を踏んだ瞬間に永久昇格 (捕まってもクイーンのまま)
+%s과(와) %s의 위치가 뒤바뀝니다,%s and %s swap places,%s と %s の位置が入れ替わります
+%s는 보드 위에 나온 말이 없어 결투할 수 없습니다.,%s has no pawn on the board and can't duel.,%s はボード上に駒がないため決闘できません。
+%s번,Tiles %s,%s番
+%s번에 딱 멈추면 +3칸,Stop exactly on %s for +3 spaces,%s番にぴったり止まると +3マス
+%s에게 일기토 데스매치 신청!,Challenged %s to a 1v1 Deathmatch!,%s に一騎討ちデスマッチを申し込み！
+%s와(과) 위치를 맞바꿉니다,Swap places with %s,%s と位置を入れ替えます
+%s의 %s 처치!,KO'd %s's %s!,%s の %s を撃破！
+%s의 [%s] 공격,%s's [%s] attack,%s の [%s] 攻撃
+%s의 [%s] 함정,%s's [%s] trap,%s の [%s] 罠
+%s의 공격!,%s attacks!,%s の攻撃！
+%s의 말에게 잡힘,Captured by %s's pawn,%s の駒に捕まった
+%s의 턴이 통째로 되감기고 끝났습니다,%s's whole turn was rewound and ended,%s のターンが丸ごと巻き戻されて終了しました
+%s의 함정 카드 설치!,%s set a Trap card!,%s が罠カードを設置！
+%s이(가) %d번 타일에 낙하!,%s dropped onto tile %d!,%s が %d番マスに着地！
+%s이(가) 도미노를 밟고 멈췄습니다\n반경 %d칸의 함정 %d개가 줄줄이 터집니다,%s stepped on a domino and stopped\n%d-tile radius: %d traps go off in a chain,%s がドミノを踏んで停止しました\n半径 %dマスの罠 %d個が次々と炸裂します
+%s이(가) 방어할지 고르는 중입니다...,%s is deciding whether to defend...,%s が防御するか選んでいます...
+%s이(가) 아군 [%s]와(과) 같은 타일에 도착했습니다.\n하나로 합체할까요?,%s landed on the same tile as ally [%s].\nMerge into one?,%s が味方 [%s] と同じマスに到着しました。\n1つに合体しますか？
+%s이(가) 출발선으로 날아갑니다,%s flies back to Start,%s がスタートへ飛ばされます
+%s이(가) 출발선으로 사출,%s knocked back to Start,%s がスタートへ射出
+(%d번째 버튼에서 호박 폭발),(Pumpkin blew on button #%d),(%d番目のボタンでカボチャ爆発)
+(★21 달성: 11칸+한번더 / 22↑ 초과 시 0칸 폭발!),"(★21: 11 spaces + roll again / over 22: 0 spaces, bust!)",(★21達成: 11マス+もう1回 / 22以上で 0マス爆発！)
+(게임 상태 없음),(no game state),(ゲーム状態なし)
+(비어 있음),(empty),(空き)
+(트리플 5칸 / 풀하·4연속 7칸 / ★야추 12칸+한번더),(Trips 5 / Full House·4-run 7 / ★Yacht 12 + roll again),(スリー 5マス / フルハウス·4連続 7マス / ★ヨット 12マス+もう1回)
+(합 - 10)칸,(total - 10) tiles,(合計 - 10)マス
++3칸 누적,+3 spaces stacked,+3マス累積
+", AI 없음",", no AI",、AIなし
+", 완주 %d",", finished %d",、完走 %d
+",필살기 씀",",Ult used",",必殺技使用"
+- 닉네임: %s,- Nickname: %s,- ニックネーム: %s
+- 보낸 곳: %s,- Sent from: %s,- 送信元: %s
+-- 중앙 법전 --,-- Codex --,-- 中央法典 --
+-- 최근 액션 로그 (%d줄) --,-- Recent action log (%d lines) --,-- 最近のアクションログ (%d行) --
+-- 플레이어 --,-- Players --,-- プレイヤー --
+0. 광대,0. The Fool,0. 愚者
+0. 광대 (The Fool),0. The Fool,0. 愚者 (The Fool)
+0\n광대,0\nFool,0\n愚者
+0번에 닿으면 끝. 4개 모두 완주하면 순위 확정,Done at tile 0. Finish all 4 to lock your rank,0番に着けば完走。4個すべて完走すると順位確定
+"0칸, 턴 종료","0 spaces, turn ends",0マス、ターン終了
+1 ~ 10 균등 · 원판 돌리기,1 ~ 10 even · spin the wheel,1 ~ 10 均等 · ルーレットを回す
+1 ~ 6 눈금,Roll 1 ~ 6,出目 1 ~ 6
+8·15·22라운드,Rounds 8·15·22,8·15·22ラウンド
+8라운드 · 과열,Round 8 · Overheat,8ラウンド · オーバーヒート
+10칸,10 spaces,10マス
+11 ~ 20 스탠드,Stand at 11 ~ 20,11 ~ 20 でスタンド
+11칸 + 한 번 더!,11 spaces + roll again!,11マス + もう1回！
+12칸 + 한 번 더!,12 spaces + roll again!,12マス + もう1回！
+13종,13 types,13種
+15초 자동 매칭 · 모르는 상대와 바로 대결,15s Auto-Match · Quick Play,15秒自動マッチ・すぐ対戦
+15칸,15 spaces,15マス
+1P vs 3AI 봇: P2~P4를 AI가 조작합니다.,1P vs 3 AI Bots: AI controls P2~P4.,1P vs 3AIボット: P2~P4はAIが操作します。
+1~3 / 4~6 / 7~9끗,1~3 / 4~6 / 7~9 Kkeut,1~3 / 4~6 / 7~9点
+1~6 / 7~9땡,1~6 / 7~9 Ttaeng,1~6 / 7~9アラシ
+1·2·3위,#1·2·3,1·2·3位
+1·4·7라운드처럼 [b]3라운드마다[/b] 모두가 3장 중 하나를 골라요.,"Every [b]3 rounds[/b] (Rounds 1·4·7…), everyone picks 1 of 3.",1·4·7ラウンドのように [b]3ラウンドごと[/b] に全員が3枚から1枚を選びます。
+1·4·7라운드처럼 [b]3라운드마다[/b] 모두가 증강 3장 중 하나를 골라요. 법전의 교칙은 모두 [b]특수 승리 조건[/b]이에요.,"Every [b]3 rounds[/b] (Rounds 1·4·7…), everyone picks 1 of 3 Augments. Every Codex Rule is a [b]Special Victory condition[/b].",1·4·7ラウンドのように [b]3ラウンドごと[/b] に全員が増強3枚から1枚を選びます。法典の校則はすべて [b]特殊勝利条件[/b] です。
+1칸,1 space,1マス
+"1칸, 다음 굴림 +8칸","1 space, next roll +8",1マス、次の出目 +8マス
+1회용 필살기,One-shot Skill,1回限定必殺技
+2 / 3 / 4칸,2 / 3 / 4 spaces,2 / 3 / 4マス
+15라운드 · 광기,Round 15 · Frenzy,15ラウンド · 狂気
+20칸,20 spaces,20マス
+22 이상 (버스트),22+ (bust),22以上 (バースト)
+2~4인,2~4 players,2~4人
+2개 일치,2 match,2個揃い
+2개 일치!,2 match!,2個揃い！
+2칸,2 spaces,2マス
+2턴 카드·스킬 금지,No cards/skills for 2 turns,2ターン カード・スキル禁止
+22라운드 · 대붕괴,Round 22 · Meltdown,22ラウンド · 大崩壊
+3개 모두 다름,All 3 different,3個すべて違う
+3개 일치,3 match,3個揃い
+3개 일치!,3 match!,3個揃い！
+3라운드마다,Every 3 rounds,3ラウンドごと
+3라운드마다 증강을 골라 기물·판정 도구·교칙을 바꿔요.,"Every 3 rounds, pick an Augment to change pieces, Judgment Tools and Rules.",3ラウンドごとに増強を選んで駒・判定ツール・校則を変えます。
+3초 안에 가위·바위·보! 같은 손이면 다시 골라 승부를 낸다,"Rock, paper, scissors in 3 seconds! Tie means pick again",3秒以内にじゃんけん！あいこなら選び直して決着
+3초 안에 바위 · 가위 · 보 중 하나를 고르세요.,"Pick rock, paper or scissors within 3 seconds.",3秒以内にグー・チョキ・パーから1つ選んでください。
+3칸,3 spaces,3マス
+4 눈금,Roll 4,出目 4
+4P 수동 조작: 모든 플레이어를 직접 조작합니다.,4P Hotseat: you control every player.,4P手動操作: すべてのプレイヤーを自分で操作します。
+4단계,4 steps,4段階
+4연속 / 풀하우스,4-run / Full House,4連続 / フルハウス
+4위,#4,4位
+4칸,4 spaces,4マス
+4칸 (2/6),4 spaces (2/6),4マス (2/6)
+4칸 + 한 번 더!,4 spaces + roll again!,4マス + もう1回！
+5 눈금,Roll 5,出目 5
+5장 드로우 · 플러시 이상 15칸,Draw 5 · Flush or better 15 spaces,5枚ドロー · フラッシュ以上 15マス
+5장 중 1장 · 축복은 다음 굴림,Pick 1 of 5 · blessing applies to next roll,5枚から1枚 · 祝福は次の出目に
+5칸,5 spaces,5マス
+5칸 (2/6),5 spaces (2/6),5マス (2/6)
+5칸 + 한 번 더!,5 spaces + roll again!,5マス + もう1回！
+6 / 7칸,6 / 7 spaces,6 / 7マス
+6 눈금,Roll 6,出目 6
+6가지 각 1/6,"6 outcomes, 1/6 each",6種類 各1/6
+6칸,6 spaces,6マス
+6칸 (1/6),6 spaces (1/6),6マス (1/6)
+6칸 중 1칸은 폭죽 · 깃발이 나오면 누적 소멸,1 in 6 chambers is a bang · a flag wipes the stack,6発中1発は暴発 · 旗が出ると累積消滅
+7 7 7 잭팟,7 7 7 Jackpot,7 7 7 ジャックポット
+7 당첨,7 Jackpot,7当たり
+7 당첨 재굴림 +1,7 jackpot reroll +1,7当たり 振り直し +1
+777 슬롯머신,777 Slot Machine,777スロットマシン
+777 잭팟 20칸,777 jackpot 20 spaces,777ジャックポット 20マス
+777 잭팟!,777 Jackpot!,777ジャックポット！
+7계열,7 sets,7系列
+7칸,7 spaces,7マス
+7칸 + 한 번 더!,7 spaces + roll again!,7マス + もう1回！
+8번 공,8-Ball,8ボール
+8번 공 돌진 +%d,8-Ball charge +%d,8ボール突進 +%d
+8칸,8 spaces,8マス
+9칸,9 spaces,9マス
+AI 대전,vs AI,AI対戦
+AI 대전: 내 자리만 직접 조작하고 나머지는 봇이 플레이합니다. 4P 수동 조작: 한 화면에서 모두 직접 조작합니다.,"vs AI: you control your seat, bots play the rest. 4P Hotseat: control everyone on one screen.",AI対戦: 自分の席だけ操作し、残りはボットがプレイします。4P手動操作: 1画面で全員を操作します。
+AI 봇,AI Bot,AIボット
+AI 봇으로 채우기,Fill with AI Bot,AIボットで埋める
+AI 상대 %d명,%d AI opponents,AI相手 %d人
+AI/억까가 너무 매워요,AI / bad luck is too spicy,AI/理不尽が辛すぎる
+A는 11 (넘으면 1) · 히트로 더 뽑거나 스탠드로 확정,"A = 11 (or 1 if over) · Hit to draw, Stand to lock in",Aは11 (超えたら1) · ヒットで引くかスタンドで確定
+BANG! 카드는 상대 프로필을 눌러 선두 말을 출발선으로 날려 버려요.,BANG! card: tap a rival's profile to blast their lead pawn back to Start.,BANG! カードは相手のプロフィールを押して先頭駒をスタートへ吹き飛ばします。
+BLACKJACK! 21 → %d칸 + 한 번 더!,BLACKJACK! 21 → %d spaces + roll again!,BLACKJACK! 21 → %dマス + もう1回！
+BUST! (21 초과 - 0칸 이동 실패)  합계 %d,"BUST! (over 21 - 0 spaces, move failed)  Total %d",BUST! (21超え - 0マス移動失敗)  合計 %d
+GAME START! - 초증강 엘리아스 마블 개막!,GAME START! - Hyper Augment Elias Marble begins!,GAME START! - 超増強エリアスマーブル開幕！
+NPC 소환,NPC Summon,NPC召喚
+P%d %s 거부: %s,P%d %s rejected: %s,P%d %s 拒否: %s
+P%d %s%s · 완주 %d/%d · 도구 %s · 손패 %d장,P%d %s%s · Finished %d/%d · Tool %s · Hand %d,P%d %s%s · 完走 %d/%d · ツール %s · 手札 %d枚
+P%d (AI 봇)가 생각하는 중입니다...,P%d (AI Bot) is thinking...,P%d (AIボット) が考え中です...
+P%d 증강 자동 선택 완료,P%d auto-picked an Augment,P%d 増強を自動選択
+P%d-말%d,P%d-#%d,P%d-駒%d
+P%d가 %d번 타일에 [%s]을(를) 설치했습니다,P%d placed a card on tile %d: [%s],P%d が %d番マスに [%s] を設置しました
+P%d의 카드 [%s]를 도적이 빼앗았습니다,Bandits stole P%d's card [%s],P%d のカード [%s] を盗賊が奪いました
+P%d의 판정 도구를 [%s](으)로 바꿨습니다.,Changed P%d's Judgment Tool to [%s].,P%d の判定ツールを [%s] に変更しました。
+스페이스,Space,スペース
+TRG 피드백,TRG Feedback,TRG フィードバック
+UDO 리버스,UDO Reverse,UDO リバース
+UDO 리버스 카드,UDO Reverse Card,UDO リバースカード
+UDO 스킵,UDO Skip,UDO スキップ
+VII. 전차,VII. The Chariot,VII. 戦車
+VII. 전차 (The Chariot),VII. The Chariot,VII. 戦車 (The Chariot)
+VII\n전차,VII\nChariot,VII\n戦車
+X. 운명의 수레바퀴,X. Wheel of Fortune,X. 運命の輪
+X. 운명의 수레바퀴!,X. Wheel of Fortune!,X. 運命の輪！
+XII. 매달린 남자,XII. The Hanged Man,XII. 吊られた男
+XII. 매달린 남자 (The Hanged Man),XII. The Hanged Man,XII. 吊られた男 (The Hanged Man)
+XII\n매달린 남자,XII\nHanged Man,XII\n吊られた男
+XVI. 무너지는 탑,XVI. The Tower,XVI. 崩壊する塔
+XVI. 무너지는 탑!,XVI. The Tower!,XVI. 崩壊する塔！
+XXI. 세계,XXI. The World,XXI. 世界
+XXI. 세계 (The World),XXI. The World,XXI. 世界 (The World)
+XXI\n세계,XXI\nWorld,XXI\n世界
+X\n수레바퀴,X\nWheel,X\n運命の輪
+[ 리롤 (1회) ],[ Reroll (1) ],[ リロール (1回) ]
+[ 방 코드: %s ],[ Room code: %s ],[ ルームコード: %s ]
+[%d라운드 특수 승리] 달성: %s,[Round %d Special Victory] achieved: %s,[第%dラウンド特殊勝利] 達成: %s
+[%s %d호기 - %s],[%s Unit %d - %s],[%s %d号機 - %s]
+[%s 이번 턴 이동 실패!],[%s failed to move this turn!],[%s 今回の移動失敗！]
+[%s 출동!],"[%s, go!]",[%s 出動！]
+[%s 한 턴 더!],[%s: one more turn!],[%s もう1ターン！]
+[%s%s %d위 확정!],[%s%s #%d locked in!],[%s%s %d位確定！]
+[%s] %s (예상 %d칸) 남은 다시 굴리기 %d회,[%s] %s (est. %d spaces) rerolls left: %d,[%s] %s (予想 %dマス) 残り振り直し %d回
+[%s] %s → %d칸,[%s] %s → %d spaces,[%s] %s → %dマス
+[%s] %s → %d칸 이동 확정,[%s] %s → moving %d spaces,[%s] %s → %dマス移動確定
+[%s] %s\n%s\n(작동 시점: %s),[%s] %s\n%s\n(Triggers: %s),[%s] %s\n%s\n(発動タイミング: %s)
+[%s] P%d - %s 타일을 고르세요 (초록 테두리),[%s] P%d - pick a %s tile (green border),[%s] P%d - %s マスを選んでください (緑の枠)
+[%s] 남은 게임 내내: %s,[%s] For the rest of the game: %s,[%s] 残りの試合中ずっと: %s
+[%s] 대상을 고르세요,[%s] Pick a target,[%s] 対象を選んでください
+"[%s] 망통! 0칸, 턴 종료","[%s] Mangtong! 0 spaces, turn ends",[%s] ブタ！ 0マス、ターン終了
+[%s] 방어 카드는 공격을 받았을 때 뜨는 방어 팝업에서 씁니다.,[%s] Defense cards are used from the popup when you're attacked.,[%s] 防御カードは攻撃を受けた時の防御ポップアップで使います。
+[%s] 보드 위에 나와 있는 상대 말이 없습니다.,[%s] No rival pawns on the board.,[%s] ボード上に相手の駒がいません。
+[%s] 스탠드: 합계 %d → %d칸 이동 확정,[%s] Stand: total %d → moving %d spaces,[%s] スタンド: 合計 %d → %dマス移動確定
+[%s] 지금은 대상이 없어 쓸 수 없습니다,[%s] No target right now,[%s] 今は対象がいないので使えません
+[%s] 합계 %d (스탠드하면 %d칸),[%s] Total %d (stand for %d spaces),[%s] 合計 %d (スタンドなら %dマス)
+"[%s] 합계 %d - BUST! 0칸, 턴 종료","[%s] Total %d - BUST! 0 spaces, turn ends",[%s] 合計 %d - BUST! 0マス、ターン終了
+[%s] 합계 21 BLACKJACK! → %d칸,[%s] 21 BLACKJACK! → %d spaces,[%s] 合計21 BLACKJACK! → %dマス
+[%s]는 이미 법전에 있습니다.,[%s] is already in the Codex.,[%s] はすでに法典にあります。
+[%s]를 놓을 수 있는 타일이 없습니다.,No tile to place [%s].,[%s] を置けるマスがありません。
+[8번 공 돌진] %s 처치 후 +%d칸 더 굴러갑니다,[8-Ball Charge] %s KO'd and rolls +%d more tiles,[8ボール突進] %s を撃破してさらに +%dマス転がります
+[? 함정],[? Trap],[? 罠]
+[? 함정] P%d가 설치한 뒷면 함정,[? Trap] Face-down trap set by P%d,[? 罠] P%d が設置した裏向きの罠
+[BANG!] P%d가 %s을(를) 저격! 출발선으로 장외 사출!,[BANG!] P%d sniped %s! Launched back to the start!,[BANG!] P%d が %s を狙撃！ 盤外へ吹き飛ばされてスタートへ！
+[BANG!] 쏠 상대의 프로필을 눌러 주세요,[BANG!] Tap the profile of the rival to shoot,[BANG!] 撃つ相手のプロフィールを押してください
+[BUST! (21 초과 - 0칸 이동 실패)],"[BUST! (over 21 - 0 spaces, move failed)]",[BUST! (21超え - 0マス移動失敗)]
+[P%d 발동!] %s,[P%d activates!] %s,[P%d 発動！] %s
+[TRG 피드백] %s,[TRG Feedback] %s,[TRG フィードバック] %s
+[UDO +4] P%d의 %s이(가) 출발선으로 장외 사출! 내 이번 이동 +%d칸,[UDO +4] P%d's %s knocked back to Start! My move this turn +%d,[UDO +4] P%d の %s がスタートへ場外射出！ 自分の今回の移動 +%dマス
+[UDO +4] 다음 차례인 %s의 말이 보드 위에 없어 쓸 수 없습니다,"[UDO +4] Next player %s has no pawn on the board, can't use",[UDO +4] 次の番の %s の駒がボード上にいないので使えません
+[UDO +4] 폭탄을 넘길 다음 사람이 없습니다,[UDO +4] No one to pass the bomb to,[UDO +4] 爆弾を渡す次の人がいません
+[b]굴리기[/b] 버튼을 꾹 눌러 파워를 모으고 손을 떼요.,"Hold the [b]Roll[/b] button to charge, then release.",[b]振る[/b] ボタンを長押ししてパワーを溜め、指を離します。
+[b]꿀팁[/b]  ,[b]Tip[/b],[b]お役立ち[/b]  
+[b]코너 전용 함정[/b]만 설치할 수 있는 칸이에요,Only [b]corner-only traps[/b] can be placed here,[b]コーナー専用罠[/b] だけ設置できるマスです
+[color=#ced4da]중립[/color],[color=#ced4da]Neutral[/color],[color=#ced4da]中立[/color]
+[color=#ff6b6b][b]!! 템포 업 Lv.%d[/b] - %s[/color],[color=#ff6b6b][b]!! Tempo Up Lv.%d[/b] - %s[/color],[color=#ff6b6b][b]!! テンポアップ Lv.%d[/b] - %s[/color]
+[color=#ff8787][lb]법전] %s 파기[/color],[color=#ff8787][lb]Codex] %s repealed[/color],[color=#ff8787][lb]法典] %s 廃止[/color]
+[color=#ffd43b]──── %d라운드 ────[/color],[color=#ffd43b]──── Round %d ────[/color],[color=#ffd43b]──── 第%dラウンド ────[/color]
+[color=#ffe066][lb]법전] %s 등록![/color]%s,[color=#ffe066][lb]Codex] %s enacted![/color]%s,[color=#ffe066][lb]法典] %s 登録！[/color]%s
+[가속 보너스] P%d: 눈금 %d → %d!,[Speed Bonus] P%d: roll %d → %d!,[加速ボーナス] P%d: 出目 %d → %d！
+[강제 연대책임] %s ↔ %s 일심동체!,[Shared Fate] %s ↔ %s are one!,[強制連帯責任] %s ↔ %s 一蓮托生！
+[강제 연대책임] %s의 짝 %s도 %s,[Shared Fate] %s's partner %s also %s,[強制連帯責任] %s の相方 %s も %s
+[강제 턴 패스] P%d가 이번 차례를 쉽니다 (UDO 스킵),[Forced Pass] P%d skips this turn (UDO Skip),[強制ターンパス] P%d は今回お休み (UDO スキップ)
+[개입 기회! 카드를 사용하거나 '패스'를 누르세요]  눈금이 정해졌습니다. 개입 카드를 가진 플레이어는 지금 카드를 누르세요.,"[Interrupt chance! Play a card or press 'Pass']  The roll is set. Players with interrupt cards, tap them now.",[介入チャンス！カードを使うか「パス」を押してください]  出目が決まりました。介入カードを持つプレイヤーは今カードを押してください。
+[개입 기회! 카드를 사용하거나 '패스'를 누르세요]  잡힌 플레이어는 [바이츠 더 더스트]로 되감을 수 있습니다.,[Interrupt chance! Play a card or press 'Pass']  The captured player can rewind with [Bites the Dust].,[介入チャンス！カードを使うか「パス」を押してください]  捕まったプレイヤーは [バイツ・ザ・ダスト] で巻き戻せます。
+[게임 스냅샷] 버전 %s · %s · 시드 %d · 언어 %s,[Game Snapshot] Version %s · %s · Seed %d · Language %s,[ゲームスナップショット] バージョン %s · %s · シード %d · 言語 %s
+[결투 종목] %s,[Duel event] %s,[決闘種目] %s
+[결투] %s vs %s : %s %s → %s 승리!,[Duel] %s vs %s : %s %s → %s wins!,[決闘] %s vs %s : %s %s → %s の勝利！
+[결투] %s vs %s : [%s] %s → %s,[Duel] %s vs %s : [%s] %s → %s,[決闘] %s vs %s : [%s] %s → %s
+[결투] %s가 %s에게 일기토 데스매치를 신청했습니다!,[Duel] %s challenged %s to a 1v1 Deathmatch!,[決闘] %s が %s に一騎討ちデスマッチを申し込みました！
+[결투] %s이(가) %s의 선두 %s(%d번)을(를) 출발선으로 사출시켰습니다!%s,[Duel] %s knocked %s's lead %s (tile %d) back to Start!%s,[決闘] %s が %s の先頭 %s(%d番) をスタートへ射出しました！%s
+[공병 보급] 요충지 매설 패키지,[Sapper Supply] Chokepoint Mine Pack,[工兵補給] 要衝地埋設パック
+[과열!],[Overheat!],[オーバーヒート！]
+[교칙 제정] %s,[Enact Rule] %s,[校則制定] %s
+[굴림] P%d [%s] ,[Roll] P%d [%s],[振る] P%d [%s] 
+[그냥 두기 (개별 유지)],[Keep separate],[そのまま (個別のまま)]
+[기물 대개조] 전군 돌연변이,[Mass Remodel] All-Troop Mutation,[駒大改造] 全軍突然変異
+[기물 재연성] 랜덤 변이 물약,[Pawn Reforge] Random Mutation Potion,[駒再錬成] ランダム変異ポーション
+[기물 진화] %s: %s,[Pawn Evolution] %s: %s,[駒進化] %s: %s
+[기물 진화] 모노폴리: 강아지,[Pawn Evo] Monopoly: Dog,[駒進化] モノポリー: 子犬
+[기물 진화] 모노폴리: 미니카,[Pawn Evo] Monopoly: Mini Car,[駒進化] モノポリー: ミニカー
+[기물 진화] 모노폴리: 비행기,[Pawn Evo] Monopoly: Airplane,[駒進化] モノポリー: 飛行機
+[기물 진화] 모노폴리: 증기선,[Pawn Evo] Monopoly: Steamboat,[駒進化] モノポリー: 蒸気船
+[기물 진화] 바둑: 백돌,[Pawn Evo] Baduk: White Stone,[駒進化] 囲碁: 白石
+[기물 진화] 바둑: 흑돌,[Pawn Evo] Baduk: Black Stone,[駒進化] 囲碁: 黒石
+[기물 진화] 쇼기: 각행,[Pawn Evo] Shogi: Kaku,[駒進化] 将棋: 角行
+[기물 진화] 쇼기: 계마,[Pawn Evo] Shogi: Keima,[駒進化] 将棋: 桂馬
+[기물 진화] 쇼기: 보병,[Pawn Evo] Shogi: Fuhyo,[駒進化] 将棋: 歩兵
+[기물 진화] 쇼기: 비차,[Pawn Evo] Shogi: Hisha,[駒進化] 将棋: 飛車
+[기물 진화] 아케이드: 8번 공,[Pawn Evo] Arcade: 8-Ball,[駒進化] アーケード: 8ボール
+[기물 진화] 아케이드: 루도 복수자,[Pawn Evo] Arcade: Ludo Avenger,[駒進化] アーケード: ルドー復讐者
+[기물 진화] 아케이드: 스타 카트,[Pawn Evo] Arcade: Star Kart,[駒進化] アーケード: スターカート
+[기물 진화] 아케이드: 지뢰찾기 공병,[Pawn Evo] Arcade: Minesweeper Sapper,[駒進化] アーケード: マインスイーパー工兵
+[기물 진화] 아케이드: 킹 체커,[Pawn Evo] Arcade: King Checker,[駒進化] アーケード: キングチェッカー
+[기물 진화] 윷: 윷말,[Pawn Evo] Yut: Yut Token,[駒進化] ユッ: ユッ駒
+[기물 진화] 장기: 마,[Pawn Evo] Janggi: Horse,[駒進化] チャンギ: 馬
+[기물 진화] 장기: 상,[Pawn Evo] Janggi: Elephant,[駒進化] チャンギ: 象
+[기물 진화] 장기: 차,[Pawn Evo] Janggi: Chariot,[駒進化] チャンギ: 車
+[기물 진화] 장기: 포,[Pawn Evo] Janggi: Cannon,[駒進化] チャンギ: 包
+[기물 진화] 체스: 나이트,[Pawn Evo] Chess: Knight,[駒進化] チェス: ナイト
+[기물 진화] 체스: 룩,[Pawn Evo] Chess: Rook,[駒進化] チェス: ルーク
+[기물 진화] 체스: 비숍,[Pawn Evo] Chess: Bishop,[駒進化] チェス: ビショップ
+[기물 진화] 체스: 폰,[Pawn Evo] Chess: Pawn,[駒進化] チェス: ポーン
+[기본 말],[Basic pawn],[基本駒]
+[나리(成り)!] %s 승급,[Nari (成り)!] %s promoted,[成り！] %s 昇格
+[나리] %s 승급! 이동할 때마다 +1칸,[Nari] %s promoted! +1 space on every move,[成り] %s 昇格！ 移動するたびに +1マス
+[내 앞을 막지마!] %s이(가) %s번 칸을 휘둘렀습니다,[Out of My Way!] %s swung at tile %s,[私の前を塞ぐな！] %s が %s番マスを薙ぎ払いました
+[내 함정] %s,[My Trap] %s,[自分の罠] %s
+[단독 캐슬링] 위치를 맞바꿀 아군 기물이 보드 위에 없습니다.,[Solo Castling] No allied piece on the board to swap with.,[単独キャスリング] 位置を入れ替える味方の駒がボード上にいません。
+[도미노 연쇄] %s이(가) 도미노를 밟아 함정 %d개가 연쇄 발동!,"[Domino Chain] %s stepped on a domino, %d traps chain-triggered!",[ドミノ連鎖] %s がドミノを踏み、罠 %d個が連鎖発動！
+[도박사의 영혼] P%d: 눈금 %d - 과열! 이동 없이 차례 끝,[Gambler's Soul] P%d: rolled %d - overheat! Turn ends with no move,[ギャンブラーの魂] P%d: 出目 %d - オーバーヒート！ 移動なしでターン終了
+[도박사의 영혼] P%d: 이동 %d → %d (x2)!,[Gambler's Soul] P%d: move %d → %d (x2)!,[ギャンブラーの魂] P%d: 移動 %d → %d (x2)！
+[동기화 오류] %s,[Sync error] %s,[同期エラー] %s
+[리버스] UDO 리버스! 턴 방향이 %s이 되었습니다.,[Reverse] UDO Reverse! Turn order is now %s.,[リバース] UDO リバース！ ターンの向きが %s になりました。
+[리벤지 부스터] %s +%d칸 선행 전진! 이어서 눈금 %d칸,[Revenge Booster] %s +%d tile head start! Then %d spaces from the roll,[リベンジブースター] %s +%dマス先行前進！ 続けて出目 %dマス
+[리벤지 부스터] +%d칸 선행 전진!\n도착하면 이어서 눈금 %d칸,[Revenge Booster] +%d tile head start!\nThen %d spaces from the roll,[リベンジブースター] +%dマス先行前進！\n着いたら続けて出目 %dマス
+[모드: 1P vs 3AI 봇],[Mode: 1P vs 3 AI],[モード: 1P vs 3AIボット]
+[모드: 4P 수동 조작],[Mode: 4P Hotseat],[モード: 4P手動操作]
+[모드] %s,[Mode] %s,[モード] %s
+[모치고마 낙하] 출발선에서 대기 중인 내 말이 없거나 낙하할 자리가 없습니다.,[Mochigoma Drop] No waiting pawn at Start or no space to drop.,[持ち駒打ち] スタートで待機中の駒がいないか、打てる場所がありません。
+[무너지는 탑] %d번 변(%d~%d번 칸)의 설치물 %d개가 무너졌습니다,[Tower] %d objects collapsed on side %d (tiles %d~%d),[崩壊する塔] %d番の辺(%d~%d番マス)の設置物 %d個が崩れました
+[바이츠 더 더스트!],[Bites the Dust!],[バイツ・ザ・ダスト！]
+[발동!] %s,[Triggered!] %s,[発動！] %s
+[발동!] 체스 퀸 승진,[Triggered!] Chess Queen promotion,[発動！] チェス クイーン昇格
+[방어 대기] %s: %s - 방어 카드 %d장,[Defense pending] %s: %s - %d defense cards,[防御待ち] %s: %s - 防御カード %d枚
+[방어 보급] 절대 방어 패키지,[Defense Supply] Absolute Defense Pack,[防御補給] 絶対防御パック
+[방어 성공] %s의 [%s]!,[Defended] %s's [%s]!,[防御成功] %s の [%s]！
+[방어 카드는 공격받을 때 팝업에서 발동합니다],[Defense cards trigger from the popup when attacked],[防御カードは攻撃を受けた時ポップアップで発動します]
+[방어] ,[Defense],[防御] 
+[방어] %s이(가) 그냥 맞기로 했습니다,[Defense] %s chose to take the hit,[防御] %s はそのまま受けることにしました
+[방어] 걸린 함정 무효 + 설치자 카드 1장 강탈,[Defense] Cancel the trap + steal 1 card from its owner,[防御] 踏んだ罠を無効化 + 設置者からカード1枚強奪
+[방어] 걸린 함정을 발동하지 않고 그 함정 카드를 내 패로,[Defense] Don't trigger the trap; take that trap card into my hand,[防御] 踏んだ罠を発動させず、その罠カードを自分の手札へ
+[방어] 걸린 함정을 부수고 +3칸 전진,[Defense] Smash the trap and +3 spaces,[防御] 踏んだ罠を壊して +3マス前進
+[방어] 걸린 함정을 부수고 +{p1}칸 전진,[Defense] Smash the trap and +{p1} spaces,[防御] 踏んだ罠を壊して +{p1}マス前進
+[방어] 공격 카드를 막고 반사: 밴·스킵·이의 있음은 공격자에게 그대로 · 그 밖의 카드는 공격자 선두 말 사출,[Defense] Block & reflect an attack card: Ban/Skip/Objection go back to the attacker · others knock off the attacker's lead pawn,[防御] 攻撃カードを防いで反射: BAN・スキップ・異議ありは攻撃者にそのまま · その他は攻撃者の先頭駒を射出
+[방어] 공격당하면 이번 턴을 통째로 되감고 공격자의 턴 종료,"[Defense] When attacked, rewind this whole turn and end the attacker's turn",[防御] 攻撃されたらこのターンを丸ごと巻き戻し、攻撃者のターンを終了
+[방어] 잡기·공격 카드 1회 회피,[Defense] Dodge 1 capture or attack card,[防御] 捕獲・攻撃カードを1回回避
+[방어] 잡기를 막고 공격한 말을 출발선으로 사출,[Defense] Block a capture and knock the attacker back to Start,[防御] 捕獲を防ぎ、攻撃してきた駒をスタートへ射出
+[백돌 방어막] %s의 방어막이 다시 차올랐습니다,[White Stone shield] %s's shield recharged,[白石バリア] %s のバリアが再チャージされました
+[백돌 방어막] %s이(가) %d번 타일에서 공격을 막고 방어막이 깨졌습니다,[White Stone shield] %s blocked an attack on tile %d; shield broken,[白石バリア] %s が %d番マスで攻撃を防ぎ、バリアが壊れました
+[백돌 방어막] 백돌에 막혀 %s이(가) %d번 → %d번으로 밀려났습니다,"[White Stone shield] Blocked by White Stone, %s pushed from tile %d → %d",[白石バリア] 白石に阻まれ %s が %d番 → %d番へ押し戻されました
+[뱅크샷] 앞쪽에 들이받을 적이 없습니다.,[Bank Shot] No enemy ahead to ram.,[バンクショット] 前方に体当たりできる敵がいません。
+[법전] [%s] %s 작동 (%s)%s,[Codex] [%s] %s triggered (%s)%s,[法典] [%s] %s 作動 (%s)%s
+[법전] 교칙 제정: [%s] %s,[Codex] Rule enacted: [%s] %s,[法典] 校則制定: [%s] %s
+[법전] 교칙 파기: [%s] %s,[Codex] Rule repealed: [%s] %s,[法典] 校則廃止: [%s] %s
+[보드판에 놓으면 설치할 타일을 고릅니다],[Drop on the board to pick a tile to place],[ボードに置くと設置するマスを選びます]
+[부스터 발판] %s %d번 발판! +%d칸 추가 전진,[Booster Pad] %s on pad %d! +%d bonus tiles,[ブースター足場] %s %d番の足場！ +%dマス追加前進
+[뽑아라!] 신호가 뜨면 [발사!]를 누르세요.\n진짜 신호에 더 빨리 반응하면 승리합니다.,"When [Draw!] appears, press [Fire!].\nReact faster to the real signal to win.",[抜け！] の合図が出たら [発射！] を押してください。\n本物の合図に早く反応した方が勝ちです。
+[상단 코너] 소환 · 라운드가 끝나면 역방향으로 가장 가까운 적 말 하나를 처치하고 사라짐 (1마리만),"[Top corner] Summon · at round end, KOs the nearest enemy pawn going backward, then vanishes (1 only)",[上コーナー] 召喚 · ラウンド終了時、逆方向で最も近い敵の駒1つを撃破して消える (1体のみ)
+[상단 코너] 소환 · 라운드가 끝나면 정방향으로 가장 가까운 적 말 하나를 처치하고 사라짐 (1마리만),"[Top corner] Summon · at round end, KOs the nearest enemy pawn going forward, then vanishes (1 only)",[上コーナー] 召喚 · ラウンド終了時、順方向で最も近い敵の駒1つを撃破して消える (1体のみ)
+[상대 프로필이나 말 위에 놓으면 결투 신청! (보드판에 놓으면 가장 앞선 상대)],[Drop on a rival's profile or pawn to duel! (on the board = leading rival)],[相手のプロフィールか駒の上に置くと決闘申し込み！ (ボードに置くと先頭の相手)]
+[설치물] %d번 타일 %s 발동! (%s),[Object] Tile %d: %s triggered! (%s),[設置物] %d番マス %s 発動！ (%s)
+[순위 확정] %s %d위 - %s,[Rank locked] %s #%d - %s,[順位確定] %s %d位 - %s
+[승리] P%d 승리! - %s,[Victory] P%d wins! - %s,[勝利] P%d の勝利！ - %s
+[승진] %s → 체스:퀸! (반환점 통과 승급),[Promotion] %s → Chess: Queen! (passed halfway),[昇格] %s → チェス:クイーン！ (折り返し地点通過で昇格)
+[아우토반 니트로!]\n%s,[Autobahn Nitro!]\n%s,[アウトバーン・ニトロ！]\n%s
+[아우토반 니트로] %s %s,[Autobahn Nitro] %s %s,[アウトバーン・ニトロ] %s %s
+[어느 말을 %d칸 이동시킬까요?],[Which pawn moves %d spaces?],[どの駒を %dマス動かしますか？]
+[업기 (하나로 합체)],[Stack (merge into one)],[おんぶ (1つに合体)]
+[업기] P%d: %s 하나로 합체!,[Stack] P%d: %s merged into one!,[おんぶ] P%d: %s 1つに合体！
+[업기] P%d: 그냥 두기 - 개별 유지,[Stack] P%d: kept separate,[おんぶ] P%d: そのまま - 個別のまま
+[여기에 놓아 카드 발동!],[Drop here to play the card!],[ここに置いてカード発動！]
+[완주] %s 완주!,[Finish] %s finished!,[完走] %s 完走！
+[용마] 앞뒤 1칸의 적 처치,[Dragon Horse] KO enemies 1 space ahead/behind,[竜馬] 前後1マスの敵を撃破
+[용왕] 앞 2칸의 적 처치,[Dragon King] KO enemies 2 spaces ahead,[竜王] 前方2マスの敵を撃破
+[이동] %s,[Move] %s,[移動] %s
+[전술 재장전] 필살기 리필 주사,[Tactical Reload] Skill Refill Syringe,[戦術再装填] 必殺技リフィル注射
+[점프 부스트] %s %d번 칸에서 +%d칸 추가 이동!,[Jump Boost] %s +%d bonus tiles from tile %d!,[ジャンプブースト] %s %d番マスから +%dマス追加移動！
+[접속 끊김] %s 님이 나가 컴퓨터가 이어받습니다.,[Disconnected] %s left; a CPU takes over.,[接続切れ] %s さんが退出し、コンピューターが引き継ぎます。
+[중립 기물 이동],[Neutral NPC moves],[中立駒の移動]
+[중립 기물] %d번 타일에서 사라졌습니다,[Neutral NPC] vanished from tile %d,[中立駒] %d番マスから消えました
+[중립 기물] %s,[Neutral NPC] %s,[中立駒] %s
+[증강] P%d%s: %s - %s,[Augment] P%d%s: %s - %s,[増強] P%d%s: %s - %s
+[증강] 라운드 %d 증강 드래프트가 열렸습니다.,[Augment] Round %d Augment draft opened.,[増強] 第%dラウンドの増強ドラフトが開きました。
+[지금은 쓸 수 없는 카드입니다],[This card can't be used now],[今は使えないカードです]
+[지뢰찾기] %s이(가) %d번 타일의 %s을(를) 해체하고 카드 1장!,[Minesweeper] %s defused tile %d's %s and got 1 card!,[マインスイーパー] %s が %d番マスの %s を解除してカード1枚！
+[직선 전차 저격] 돌진할 길이 없습니다.,[Straight Chariot Snipe] No path to charge.,[直線戦車狙撃] 突進できる道がありません。
+[직항 워프] 날아갈 빵집·코너 고르기,[Direct Warp] Pick a Bakery or corner to fly to,[直行便ワープ] 飛ぶパン屋・コーナーを選ぶ
+[진화] %s → %s,[Pawn Evo] %s → %s,[進化] %s → %s
+[초증강] %s,[Hyper Augment] %s,[超増強] %s
+[초증강] 강제 연대책임,[Hyper Augment] Shared Fate,[超増強] 強制連帯責任
+[초증강] 강제 캐슬링 룰렛,[Hyper Augment] Forced Castling Roulette,[超増強] 強制キャスリング・ルーレット
+[초증강] 공산주의 재분배,[Hyper Augment] Communist Redistribution,[超増強] 共産主義再分配
+[초증강] 광란의 지뢰밭,[Hyper Augment] Frantic Minefield,[超増強] 狂乱の地雷原
+[초증강] 도적단 대습격,[Hyper Augment] Bandit Grand Raid,[超増強] 盗賊団大襲撃
+[초증강] 아우토반 니트로,[Hyper Augment] Autobahn Nitro,[超増強] アウトバーン・ニトロ
+[초증강] 악마의 계약 (영구 가속),[Hyper Augment] Devil's Contract (Perma-Haste),[超増強] 悪魔の契約 (永久加速)
+[초증강] 에르핀의 빵집 털이,[Hyper Augment] Erpin's Bakery Heist,[超増強] エルフィンのパン屋襲撃
+[초증강] 저격수의 표적,[Hyper Augment] Sniper's Mark,[超増強] スナイパーの標的
+[초증강] 주사위 도박사의 영혼,[Hyper Augment] Dice Gambler's Soul,[超増強] ダイスギャンブラーの魂
+[초증강] 판 뒤집기 (모 아니면 도),[Hyper Augment] Flip the Table (All or Nothing),[超増強] ちゃぶ台返し (イチかバチか)
+[초증강] 폭주 기관차,[Hyper Augment] Runaway Locomotive,[超増強] 暴走機関車
+[추가 전진] %s: %s,[Bonus move] %s: %s,[追加前進] %s: %s
+[친치로 삐끗!],[Chinchiro slip!],[チンチロ ションベン！]
+[카드 패키지] 생떼 카드 %d장,[Card Pack] %d Tantrum Cards,[カードパック] 駄々っ子カード %d枚
+[카드 패키지] 생떼 카드 {p1}장,[Card Pack] {p1} Tantrum Cards,[カードパック] 駄々っ子カード{p1}枚
+[카드] P%d [%s] 사용%s,[Card] P%d used [%s]%s,[カード] P%d [%s] 使用%s
+[카드] P%d 생떼 카드 1장 획득,[Card] P%d got 1 Tantrum Card,[カード] P%d 駄々っ子カード1枚獲得
+[카드] P%d 함정 카드 설치%s,[Card] P%d set a Trap card%s,[カード] P%d 罠カード設置%s
+[코너 도착] P%d: 다음 굴림 +%d!,[Corner] P%d: next roll +%d!,[コーナー到着] P%d: 次の出目 +%d！
+[코너] 내 말 +5칸 점프 / 적 말 출발선 사출,[Corner] My pawn jumps +5 / enemy pawn to Start,[コーナー] 自分の駒 +5マスジャンプ / 敵の駒はスタートへ射出
+[코너] 내 말 +{p1}칸 점프 / 적 말 출발선 사출,[Corner] My pawn jumps +{p1} / enemy pawn to Start,[コーナー] 自分の駒は+{p1}マスジャンプ / 敵の駒はスタート地点へ射出
+"[코너] 멈춘 적 말 감금 (카드 1장 or 짝수 눈금에 탈출, 3턴 유지)","[Corner] Jail enemy pawns that stop (escape with 1 card or an even roll, lasts 3 turns)",[コーナー] 止まった敵の駒を監禁 (カード1枚か偶数の出目で脱出、3ターン維持)
+"[코너] 멈춘 적 말 감금 (카드 1장 or 짝수 눈금에 탈출, {p1}턴 유지)","[Corner] Jail enemy pawns that stop (escape with 1 card or an even roll, lasts {p1} turns)",[コーナー] 止まった敵の駒を監禁 (カード1枚または偶数出目で脱出、{p1}ターン維持)
+[코너] 밟은 적 정지 + 코너 2칸 안의 적 말 끌어오기,[Corner] Stop enemies who land + pull enemy pawns within 2 spaces,[コーナー] 踏んだ敵を停止 + コーナーから2マス以内の敵の駒を引き寄せる
+[코너] 밟은 적 정지 + 코너 {p1}칸 안의 적 말 끌어오기,[Corner] Stop enemies who land + pull enemy pawns within {p1} spaces,[コーナー] 踏んだ敵を停止＋コーナーから{p1}マス以内の敵の駒を引き寄せる
+"[코너] 지나가는 적은 카드 1장 상납, 없으면 강제 정지 (5턴 유지)","[Corner] Passing enemies pay 1 card, or are forced to stop (lasts 5 turns)",[コーナー] 通過する敵はカード1枚を上納、なければ強制停止 (5ターン維持)
+"[코너] 지나가는 적은 카드 1장 상납, 없으면 강제 정지 ({p1}턴 유지)","[Corner] Passing enemies pay 1 card, or are forced to stop (lasts {p1} turns)",[コーナー] 通過する敵はカード1枚を上納、なければ強制停止 ({p1}ターン維持)
+[타로] P%d의 운명의 수레바퀴: %s ↔ %s 위치 교환,[Tarot] P%d's Wheel of Fortune: %s ↔ %s swapped,[タロット] P%d の運命の輪: %s ↔ %s 位置交換
+[타로] 무너지는 탑이 %d번 타일에 벼락! 말 %d개가 흩어졌습니다,[Tarot] The Tower strikes tile %d! %d pawns scattered,[タロット] 崩壊する塔が %d番マスに落雷！ 駒 %d個が散らばりました
+[타로] 운명의 수레바퀴: %s 장외 사출,[Tarot] Wheel of Fortune: %s knocked off,[タロット] 運命の輪: %s 場外射出
+[템포 업 Lv.%d] %d라운드부터: %s,[Tempo Up Lv.%d] From Round %d: %s,[テンポアップ Lv.%d] 第%dラウンドから: %s
+[템포 업] P%d: 이동 %d → %d,[Tempo Up] P%d: move %d → %d,[テンポアップ] P%d: 移動 %d → %d
+[템포 업] 결승선이 %d칸 당겨졌습니다 (%d번 칸부터 결승)%s,[Tempo Up] Finish line moved %d spaces closer (finish from tile %d)%s,[テンポアップ] ゴールが %dマス近づきました (%d番マスからゴール)%s
+[템포 업] 법전에 특수 승리 [%s] 자동 등록,[Tempo Up] Special Victory [%s] auto-added to the Codex,[テンポアップ] 法典に特殊勝利 [%s] を自動登録
+[특수 승리 달성!],[Special Victory!],[特殊勝利達成！]
+[특수 승리] 다크호스의 하극상,[Special Victory] Dark Horse Uprising,[特殊勝利] ダークホースの下剋上
+[특수 승리] 봉인된 에르핀의 식권,[Special Victory] Sealed Meal Ticket of Erpin,[特殊勝利] 封印されしエルフィンの食券
+[특수 승리] 사도 포위망,[Special Victory] Apostle Siege Net,[特殊勝利] 使徒包囲網
+[특수 승리] 엘리아스 부동산 재벌,[Special Victory] Elias Real Estate Tycoon,[特殊勝利] エリアス不動産財閥
+[특수 승리] 초전도체 무한 동력,[Special Victory] Superconductor Perpetual Motion,[特殊勝利] 超伝導体永久機関
+[특수 승리] 카이지의 한방 역전법,[Special Victory] Kaiji's One-Shot Reversal,[特殊勝利] カイジの一発逆転法
+[특수 승리] 투기장의 지배자,[Special Victory] Ruler of the Colosseum,[特殊勝利] 闘技場の支配者
+[특수 승리] 해탈한 동네북의 역습,[Special Victory] Enlightened Punching Bag,[特殊勝利] 解脱したサンドバッグの逆襲
+[판정 도구] %s,[Judgment Tool] %s,[判定ツール] %s
+[판정 도구] 777 슬롯머신,[Judgment Tool] 777 Slot Machine,[判定ツール] 777スロットマシン
+[판정 도구] 러시안 룰렛 리볼버,[Judgment Tool] Russian Roulette Revolver,[判定ツール] ロシアンルーレット・リボルバー
+[판정 도구] 리치 마작 만리장성,[Judgment Tool] Riichi Mahjong Wall,[判定ツール] リーチ麻雀・万里の長城
+[판정 도구] 블랙잭 21 딜러,[Judgment Tool] Blackjack 21 Dealer,[判定ツール] ブラックジャック21ディーラー
+[판정 도구] 야추 다이스,[Judgment Tool] Yacht Dice,[判定ツール] ヨットダイス
+[판정 도구] 인생게임 회전 룰렛,[Judgment Tool] Game of Life Roulette,[判定ツール] 人生ゲーム回転ルーレット
+[판정 도구] 전통 박달나무 윷,[Judgment Tool] Birchwood Yut Sticks,[判定ツール] 伝統シラカバのユッ
+[판정 도구] 점성술사의 타로 덱,[Judgment Tool] Astrologer's Tarot Deck,[判定ツール] 占星術師のタロットデッキ
+[판정 도구] 지하노역장 친치로,[Judgment Tool] Underground Chinchiro,[判定ツール] 地下強制労働所チンチロ
+[판정 도구] 클래식 구슬 핀볼,[Judgment Tool] Classic Marble Pinball,[判定ツール] クラシック玉ピンボール
+[판정 도구] 텍사스 홀덤 딜러,[Judgment Tool] Texas Hold'em Dealer,[判定ツール] テキサスホールデム・ディーラー
+[판정 도구] 화투 패,[Judgment Tool] Hwatu Flower Cards,[判定ツール] 花札 (ソッタ)
+[폭주 기관차] %d번 → %d번 질주! 말 %d개 사출 · 경로의 함정 파괴,[Runaway Locomotive] Tile %d → %d dash! %d pawns knocked off · traps on the path destroyed,[暴走機関車] %d番 → %d番 疾走！ 駒 %d個射出 · 経路の罠を破壊
+[피앙케토] 대각선 코너가 결승선 너머라 쓸 수 없습니다.,[Fianchetto] The diagonal corner is past the finish line.,[フィアンケット] 対角線のコーナーがゴールより先なので使えません。
+[필살기] %s: %s - %s,[Skill] %s: %s - %s,[必殺技] %s: %s - %s
+[함정] %s (P%d),[Trap] %s (P%d),[罠] %s (P%d)
+[히트]로 카드를 더 뽑거나 [스탠드]로 (합계-10)칸 이동을 확정하세요. 22 이상이면 버스트!,[Hit] to draw more or [Stand] to lock in (total-10) tiles. 22 or more = bust!,[ヒット]でさらに引くか、[スタンド]で(合計-10)マスの移動を確定してください。22以上ならバースト！
+\n(가장 오래된 [%s] %s이(가) 밀려났습니다),\n(oldest [%s] %s was pushed out),\n(最も古い [%s] %s が押し出されました)
+\n... (전체 %d자는 첨부 파일 feedback.txt),\n... (full %d chars in attachment feedback.txt),\n... (全 %d文字は添付ファイル feedback.txt)
+\n※ 이미 가진 기물은 받을 수 없습니다,\n※ You can't get a piece you already own,\n※ 既に所持している駒は獲得できません
+\n◆ [1회] %s: %s,\n◆ [Once] %s: %s,\n◆ [1回] %s: %s
+\n리벤지 부스터 활성화: 이번 출격 시 이동 거리 +%d칸!,\nRevenge Booster active: +%d spaces on this launch!,\nリベンジブースター発動中: 今回の出撃で移動距離 +%dマス！
+\n말 %d개가 그 자리에서 완주!,\n%d pawns finish on the spot!,\n駒 %d個がその場で完走！
+\n템포 업 Lv.%d %s · 최종 이동 +%d칸,\nTempo Up Lv.%d %s · final move +%d,\nテンポアップ Lv.%d %s · 最終移動 +%dマス
+\n흑돌은 %d번 타일에 안착,\nBlack Stone lands on tile %d,\n黒石は %d番マスに着地
+v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 무료 배포물입니다,"v%s · Unofficial fan game · Non-profit free release, not affiliated with the original developer",v%s · 非公式ファンメイドゲーム · 原作の制作会社とは無関係の非営利無料配布物です
+• 구멍표: [2][4][6][★10][5][3][1] 골인한 숫자만큼 (1~10칸),• Holes: [2][4][6][★10][5][3][1] move the number you land in (1~10),• ホール表: [2][4][6][★10][5][3][1] 入った穴の数字だけ前進 (1~10マス)
+• 누적표: 방아쇠 1회 +3칸(최대 15) / 폭죽(6분의 1) 0칸·턴 종료 / 멈추면 누적 칸만큼,"• Stack: +3 per trigger pull (max 15) / bang (1 in 6) 0 spaces, turn ends / stop to move the total",• 累積表: 1回ごとに+3マス(最大15) / 暴発(1/6) 0マス・番終了 / 止めれば累積マス分前進
+• 눈금표: 1~10 균등 (나온 숫자만큼) / ★7 당첨(7칸+한번더),• Table: 1~10 even (move the number) / ★7 jackpot (7 spaces + roll again),• 出目表: 1~10均等 (出た数だけ前進) / ★7当たり(7マス+もう1回)
+• 눈금표: 4(2/6) / 5(2/6) / 6(1/6) / 삐끗(1/6) 이번 이동 0칸,• Table: 4(2/6) / 5(2/6) / 6(1/6) / slip(1/6) 0 spaces this move,• 出目表: 4(2/6) / 5(2/6) / 6(1/6) / ションベン(1/6) 今回移動0マス
+• 눈금표: 낙(0칸+턴 종료) / 도(1) / 개(2) / 걸(3) / 윷(4칸+한번더) / 모(5칸+한번더),• Table: Nak (0 + turn ends) / Do(1) / Gae(2) / Geol(3) / Yut(4 + roll again) / Mo(5 + roll again),• 出目表: 落(0マス+番終了) / ド(1) / ゲ(2) / ゴル(3) / ユッ(4+もう1回) / モ(5+もう1回)
+• 족보표: 11~20 스탠드 시 (합계-10)칸 / ★21 달성(11칸+한번더) / 22↑ 버스트(0칸),• Table: stand at 11~20 for (total-10) tiles / ★21 (11 spaces + roll again) / 22+ bust (0),• 配当表: 11~20スタンド時(合計-10)マス / ★21達成(11マス+もう1回) / 22↑バースト(0マス)
+• 족보표: 광대(0칸+턴 종료) / 전차(6) / 수레바퀴(4+한번더) / 매달린 남자(1+다음 +8) / 세계(9칸),• Table: Fool (0 + turn ends) / Chariot(6) / Wheel(4 + roll again) / Hanged Man(1 + next +8) / World(9),• カード表: 愚者(0+番終了) / 戦車(6) / 運命の輪(4+もう1回) / 吊られた男(1+次回+8) / 世界(9マス)
+• 족보표: 꽝(1) / 2일치(4) / 3일치(8) / ★777 잭팟(20칸!),• Table: miss(1) / 2 match(4) / 3 match(8) / ★777 jackpot (20 spaces!),• 配当表: ハズレ(1) / 2揃い(4) / 3揃い(8) / ★777ジャックポット(20マス！)
+• 족보표: 노페어(1) / 원페어(3) / 투페어(5) / 트리플(7) / 스트레이트(10) / 플러시+(15칸),• Table: No Pair(1) / One Pair(3) / Two Pair(5) / Trips(7) / Straight(10) / Flush+(15),• 役表: ノーペア(1) / ワンペア(3) / ツーペア(5) / スリーカード(7) / ストレート(10) / フラッシュ+(15マス)
+• 족보표: 망통(0칸·턴 종료) / 1~3끗(2) / 4~6끗(3) / 7~9끗(4) / 1~6땡(6) / 7~9땡(7) / 장땡·광땡(8칸),"• Table: Mangtong (0, turn ends) / 1~3 Kkeut(2) / 4~6 Kkeut(3) / 7~9 Kkeut(4) / 1~6 Ttaeng(6) / 7~9 Ttaeng(7) / Jang·Gwang Ttaeng(8)",• 役表: ブタ(0マス・番終了) / 1~3点(2) / 4~6点(3) / 7~9点(4) / 1~6アラシ(6) / 7~9アラシ(7) / 10・光アラシ(8マス)
+• 족보표: 찬스(1~3) / 트리플(5) / 풀하·4연속(7) / 포카드·5연속(9) / ★야추(12칸+한번더),• Table: Chance(1~3) / Trips(5) / Full House·4-run(7) / Four of a Kind·5-run(9) / ★Yacht (12 + roll again),• 役表: チャンス(1~3) / スリー(5) / フルハウス・4連続(7) / フォー・5連続(9) / ★ヨット(12マス+もう1回)
+• 족보표: 핑후(2) / 또이츠(3) / 슌쯔(5) / 커쯔(8) / ★역만(12칸+한번더),• Table: Pinfu(2) / Toitsu(3) / Shuntsu(5) / Koutsu(8) / ★Yakuman (12 + roll again),• 役表: 平和(2) / 対子(3) / 順子(5) / 刻子(8) / ★役満(12マス+もう1回)
+→ %d번으로,→ to %d,→ %d番へ
+① 카드,① Card,① カード
+② 굴리기,② Roll,② 振る
+③ 말 고르기,③ Pick a pawn,③ 駒を選ぶ
+④ 정산,④ Resolve,④ 精算
+▲ 위험! 라운드 종료 시 NPC에게 잡힙니다!,▲ Danger! An NPC catches you at round end!,▲ 危険！ラウンド終了時にNPCに捕まります！
+▲ 접기,▲ Collapse,▲ たたむ
+▲출발,▲Start,▲スタート
+▼ 상세 족보,▼ Full table,▼ 詳細な役表
+▼역순,▼Reverse,▼逆順
+◆ [1회] %s%s%s\n   %s,◆ [Once] %s%s%s\n   %s,◆ [1回] %s%s%s\n   %s
+◆ [1회] %s: %s%s,◆ [Once] %s: %s%s,◆ [1回] %s: %s%s
+◆ [코너 전용 함정] {p1}장 + [일반 함정] {p2}장을 즉시 손패에 획득!,◆ Get {p1} [Corner-only Traps] + {p2} [Normal Traps] straight into your hand!,◆ [コーナー専用罠]{p1}枚＋[通常罠]{p2}枚を即座に手札へ獲得！
+◆ 가장 앞선 적 말 1개를 즉시 0번 출발선으로 장외 사출\n◆ 내 말 1개 +4칸 전진,◆ Instantly knock the leading enemy pawn back to Start (tile 0)\n◆ One of my pawns +4 spaces,◆ 最も進んでいる敵の駒1個を即座にスタート地点へ場外射出\n◆ 自分の駒1個が+4マス前進
+◆ 가장 앞선 적 말 1개를 즉시 0번 출발선으로 장외 사출\n◆ 내 말 1개 +{p1}칸 전진,◆ Instantly knock the leading enemy pawn back to Start (tile 0)\n◆ One of my pawns +{p1} spaces,◆ 最も進んでいる敵の駒1個を即座にスタート地点へ場外射出\n◆ 自分の駒1個が+{p1}マス前進
+◆ 기본 말 1개 → [%s] %s\n◆ 패시브: %s,◆ 1 Basic pawn → [%s] %s\n◆ Passive: %s,◆ 基本駒1個 → [%s] %s\n◆ パッシブ: %s
+◆ 기본 말 1개 → [모노폴리] 강아지,◆ 1 Basic pawn → [Monopoly] Dog,◆ 基本駒1個 → [モノポリー] 子犬
+◆ 기본 말 1개 → [모노폴리] 미니카,◆ 1 Basic pawn → [Monopoly] Mini Car,◆ 基本駒1個 → [モノポリー] ミニカー
+◆ 기본 말 1개 → [모노폴리] 비행기,◆ 1 Basic pawn → [Monopoly] Airplane,◆ 基本駒1個 → [モノポリー] 飛行機
+◆ 기본 말 1개 → [모노폴리] 증기선,◆ 1 Basic pawn → [Monopoly] Steamboat,◆ 基本駒1個 → [モノポリー] 蒸気船
+◆ 기본 말 1개 → [바둑] 백돌,◆ 1 Basic pawn → [Go] White Stone,◆ 基本駒1個 → [囲碁] 白石
+◆ 기본 말 1개 → [바둑] 흑돌,◆ 1 Basic pawn → [Go] Black Stone,◆ 基本駒1個 → [囲碁] 黒石
+◆ 기본 말 1개 → [쇼기] 각행,◆ 1 Basic pawn → [Shogi] Kaku,◆ 基本駒1個 → [将棋] 角行
+◆ 기본 말 1개 → [쇼기] 계마,◆ 1 Basic pawn → [Shogi] Keima,◆ 基本駒1個 → [将棋] 桂馬
+◆ 기본 말 1개 → [쇼기] 보병,◆ 1 Basic pawn → [Shogi] Fuhyo,◆ 基本駒1個 → [将棋] 歩兵
+◆ 기본 말 1개 → [쇼기] 비차,◆ 1 Basic pawn → [Shogi] Hisha,◆ 基本駒1個 → [将棋] 飛車
+◆ 기본 말 1개 → [아케이드] 8번 공,◆ 1 Basic pawn → [Arcade] 8-Ball,◆ 基本駒1個 → [アーケード] 8ボール
+◆ 기본 말 1개 → [아케이드] 루도 복수자,◆ 1 Basic pawn → [Arcade] Ludo Avenger,◆ 基本駒1個 → [アーケード] ルドー復讐者
+◆ 기본 말 1개 → [아케이드] 스타 카트,◆ 1 Basic pawn → [Arcade] Star Kart,◆ 基本駒1個 → [アーケード] スターカート
+◆ 기본 말 1개 → [아케이드] 지뢰찾기 공병,◆ 1 Basic pawn → [Arcade] Minesweeper Sapper,◆ 基本駒1個 → [アーケード] マインスイーパー工兵
+◆ 기본 말 1개 → [아케이드] 킹 체커,◆ 1 Basic pawn → [Arcade] King Checker,◆ 基本駒1個 → [アーケード] キングチェッカー
+◆ 기본 말 1개 → [윷] 윷말,◆ 1 Basic pawn → [Yut] Yut Token,◆ 基本駒1個 → [ユッ] ユッ駒
+◆ 기본 말 1개 → [장기] 마,◆ 1 Basic pawn → [Janggi] Horse,◆ 基本駒1個 → [チャンギ] 馬
+◆ 기본 말 1개 → [장기] 상,◆ 1 Basic pawn → [Janggi] Elephant,◆ 基本駒1個 → [チャンギ] 象
+◆ 기본 말 1개 → [장기] 차,◆ 1 Basic pawn → [Janggi] Chariot,◆ 基本駒1個 → [チャンギ] 車
+◆ 기본 말 1개 → [장기] 포,◆ 1 Basic pawn → [Janggi] Cannon,◆ 基本駒1個 → [チャンギ] 包
+◆ 기본 말 1개 → [체스] 나이트,◆ 1 Basic pawn → [Chess] Knight,◆ 基本駒1個 → [チェス] ナイト
+◆ 기본 말 1개 → [체스] 룩,◆ 1 Basic pawn → [Chess] Rook,◆ 基本駒1個 → [チェス] ルーク
+◆ 기본 말 1개 → [체스] 비숍,◆ 1 Basic pawn → [Chess] Bishop,◆ 基本駒1個 → [チェス] ビショップ
+◆ 기본 말 1개 → [체스] 폰,◆ 1 Basic pawn → [Chess] Pawn,◆ 基本駒1個 → [チェス] ポーン
+◆ 내 모든 말(4개 전원)을 각각 서로 다른 무작위 진화 기물로 일제히 변경!,◆ Turn all 4 of my pawns into different random evolved pieces at once!,◆ 自分のすべての駒(4個全員)をそれぞれ異なるランダムな進化駒へ一斉変更！
+◆ 내 모든 말(4개 전원)을 각각 서로 다른 무작위 진화 기물로 일제히 변경!\n◆ 대기석·보드 위 모든 내 기물이 새 진화 기물로 바뀌며 필살기가 재충전됩니다.,"◆ Turn all 4 of my pawns into different random evolved pieces at once!\n◆ Every piece of mine, waiting or on board, changes and its Skill is recharged.",◆ 自分のすべての駒(4個全員)をそれぞれ異なるランダムな進化駒へ一斉変更！\n◆ 待機席・ボード上のすべての自分の駒が新しい進化駒に変わり、必殺技も再チャージされます。
+◆ 내 선두 말과 가장 뒤 말이 일심동체\n◆ 하나가 골인하면 둘 다 골인 · 탈락하면 둘 다 탈락,"◆ My lead and last pawns become one\n◆ One finishes, both finish · One falls, both fall",◆ 自分の先頭駒と最下位駒が一蓮托生になる\n◆ 片方がゴールすれば両方ゴール・脱落すれば両方脱落
+◆ 내 선두 말이 다음 코너까지 일직선으로 질주!\n◆ 길에 말이 있으면 그 칸에서 멈추고 그 칸의 말을 전부 장외 사출,"◆ My lead pawn dashes straight to the next corner!\n◆ If a pawn is in the way, stop there and knock off every pawn on that tile",◆ 自分の先頭駒が次のコーナーまで一直線に疾走！\n◆ 途中に駒があればそのマスで止まり、そのマスの駒をすべて場外射出
+◆ 내 판정 도구 즉시 교체,◆ Swap my Judgment Tool now,◆ 自分の判定ツールを即時交換
+◆ 내 판정 도구 즉시 교체\n%s,◆ Swap my Judgment Tool now\n%s,◆ 自分の判定ツールを即時交換\n%s
+◆ 대기석·보드 위 모든 내 기물이 새 진화 기물로 바뀌며 필살기가 재충전됩니다.,"◆ Every piece of mine, waiting or on board, changes and its Skill is recharged.",◆ 待機席・ボード上のすべての自分の駒が新しい進化駒に変わり、必殺技も再チャージされます。
+◆ 모두의 진도를 꼴찌와 똑같이 맞춘다\n◆ 모든 손패를 회수해 섞은 뒤 2장씩 다시 나눠 준다,"◆ Everyone's progress drops to match last place\n◆ Collect all hands, shuffle, deal 2 to each",◆ 全員の進行度を最下位と同じに揃える\n◆ 全員の手札を回収してシャッフルし、2枚ずつ配り直す
+◆ 모두의 진도를 꼴찌와 똑같이 맞춘다\n◆ 모든 손패를 회수해 섞은 뒤 {p1}장씩 다시 나눠 준다,"◆ Everyone's progress drops to match last place\n◆ Collect all hands, shuffle, deal {p1} to each",◆ 全員の進行度を最下位と同じに揃える\n◆ 全員の手札を回収してシャッフルし、{p1}枚ずつ配り直す
+◆ 무작위 반격·방어 카드(COUNTER) {p1}장을 즉시 손패에 획득!,◆ Get {p1} random Defense cards (COUNTER) straight into your hand!,◆ ランダムな反撃・防御カード(COUNTER)を{p1}枚即座に手札へ獲得！
+◆ 무작위 생떼 카드 %d장 획득,◆ Get %d random Tantrum Cards,◆ ランダムな駄々っ子カードを%d枚獲得
+◆ 무작위 생떼 카드 3장 획득\n◆ 대기 중인 내 말 1개를 첫 빵집으로 출격,◆ Get 3 random Tantrum Cards\n◆ Launch one waiting pawn to the first Bakery,◆ ランダムな駄々っ子カードを3枚獲得\n◆ 待機中の自分の駒1個を最初のパン屋へ直接出撃させる
+◆ 무작위 생떼 카드 {p1}장 획득,◆ Get {p1} random Tantrum Cards,◆ ランダムな駄々っ子カードを{p1}枚獲得
+◆ 무작위 생떼 카드 {p1}장 획득\n◆ 대기 중인 내 말 1개를 첫 빵집으로 출격,◆ Get {p1} random Tantrum Cards\n◆ Launch one waiting pawn to the first Bakery,◆ ランダムな駄々っ子カードを{p1}枚獲得\n◆ 待機中の自分の駒1個を最初のパン屋へ直接出撃させる
+◆ 무작위 한 변을 기관차가 질주!\n◆ 그 변의 모든 말(내 말 포함) 출발선으로 · 함정 카드 전부 파괴,◆ A train charges down a random side!\n◆ Every pawn on it (mine too) goes to Start · All traps destroyed,◆ ランダムな一辺を機関車が暴走！\n◆ その辺のすべての駒(自分の駒を含む)をスタートへ射出し、罠もすべて破壊
+◆ 바이츠 더 더스트·거울의 힘·UDO 리버스 카드·감나빗!·싸이크론·교단의 칙령·도굴꾼 중 {p1}장 확정 보급,◆ {p1} guaranteed from Bites the Dust · Mirror Force · UDO Reverse Card · Missed Me! · Mystical Space Typhoon · Order Decree · Grave Robber,◆ バイツ・ザ・ダスト、ミラーフォース、UDOリバース、あたらなーい！、サイクロン、教団の勅令、墓荒らしの中から{p1}枚確定補給
+◆ 변경된 새 기물의 [1회용 필살기]도 즉시 사용 가능 상태로 충전됩니다.,◆ The new piece's [one-shot Skill] is ready right away.,◆ 変更された新しい駒の[1回限定必殺技]も即座に使用可能状態でチャージされます。
+◆ 보드 위 내 말 1개를 무작위로 골라\n◆ 50% 즉시 결승선 완주!\n◆ 실패하면 출발선 추방,◆ Pick one of my pawns on the board at random\n◆ 50%: it finishes instantly!\n◆ Fail: it's sent back to Start,◆ ボード上の自分の駒1個をランダムに選び\n◆ 50%の確率で即座にゴール完走！\n◆ 失敗するとスタート地点へ追放
+◆ 보드 위 내 말 1개를 무작위로 골라\n◆ {p1}% 즉시 결승선 완주!\n◆ 실패하면 출발선 추방,◆ Pick one of my pawns on the board at random\n◆ {p1}%: it finishes instantly!\n◆ Fail: it's sent back to Start,◆ ボード上の自分の駒1個をランダムに選び\n◆ {p1}%の確率で即座にゴール完走！\n◆ 失敗するとスタート地点へ追放
+◆ 보드 위 모든 플레이어 말의 위치를 무작위로 전부 섞는다,◆ Shuffle the positions of every player pawn on the board,◆ ボード上にいる全プレイヤーの駒の位置をランダムにシャッフルする
+◆ 빈 일반 타일 2곳에 지뢰 매설\n◆ 함정 카드 1장 획득,◆ Plant mines on 2 empty normal tiles\n◆ Get 1 Trap card,◆ 空いている通常マス2箇所に地雷を埋設\n◆ 罠カードを1枚獲得
+◆ 빈 일반 타일 {p1}곳에 지뢰 매설\n◆ 함정 카드 {p2}장 획득,◆ Plant mines on {p1} empty normal tiles\n◆ Get {p2} Trap cards,◆ 空いている通常マス{p1}箇所に地雷を埋設\n◆ 罠カードを{p2}枚獲得
+◆ 승리 조건: %s\n◆ 차례가 끝날 때 달성해 있으면 바로 다음 순위로 졸업 (달성되면 법전에서 삭제),"◆ Win condition: %s\n◆ If met at the end of your turn, you graduate to the next rank (then it leaves the Codex)",◆ 勝利条件: %s\n◆ ターン終了時に達成していれば次の順位で即卒業 (達成されると法典から消滅)
+◆ 승리 조건: 내 말이 {p1}회 장외 사출당함\n◆ 차례가 끝날 때 달성해 있으면 바로 다음 순위로 졸업 (달성되면 법전에서 삭제),"◆ Win condition: My pawns knocked off {p1} times\n◆ If met at the end of your turn, you graduate to the next rank (then it leaves the Codex)",◆ 勝利条件: 自分の駒が{p1}回場外射出される\n◆ ターン終了時に達成していれば次の順位で即卒業 (達成されると法典から消滅)
+◆ 승리 조건: 내 설치물(호텔·함정) {p1}개를 보드에 동시 유지\n◆ 차례가 끝날 때 달성해 있으면 바로 다음 순위로 졸업 (달성되면 법전에서 삭제),"◆ Win condition: Keep {p1} of my objects (Hotels/Traps) on the board at once\n◆ If met at the end of your turn, you graduate to the next rank (then it leaves the Codex)",◆ 勝利条件: 自分の設置物(ホテル・罠)をボード上に同時{p1}個維持\n◆ ターン終了時に達成していれば次の順位で即卒業 (達成されると法典から消滅)
+◆ 승리 조건: 내 턴 시작 시 손패 {p1}장 이상\n◆ 차례가 끝날 때 달성해 있으면 바로 다음 순위로 졸업 (달성되면 법전에서 삭제),"◆ Win condition: {p1}+ cards in hand at the start of my turn\n◆ If met at the end of your turn, you graduate to the next rank (then it leaves the Codex)",◆ 勝利条件: 自分のターン開始時に手札が{p1}枚以上\n◆ ターン終了時に達成していれば次の順位で即卒業 (達成されると法典から消滅)
+◆ 승리 조건: 말 {p1}개 모두 트랙 위에서 서로 3칸 이상 간격\n◆ 차례가 끝날 때 달성해 있으면 바로 다음 순위로 졸업 (달성되면 법전에서 삭제),"◆ Win condition: All {p1} pawns on the track, 3+ tiles apart\n◆ If met at the end of your turn, you graduate to the next rank (then it leaves the Codex)",◆ 勝利条件: 自分の駒{p1}個すべてがトラック上にあり、互いに3マス以上離れている\n◆ ターン終了時に達成していれば次の順位で即卒業 (達成されると法典から消滅)
+◆ 승리 조건: 완주 0개인 채로 선두의 말을 {p1}회 처치\n◆ 차례가 끝날 때 달성해 있으면 바로 다음 순위로 졸업 (달성되면 법전에서 삭제),"◆ Win condition: KO the leader's pawns {p1} times with 0 finished\n◆ If met at the end of your turn, you graduate to the next rank (then it leaves the Codex)",◆ 勝利条件: 完走駒0個の状態でトップの駒を{p1}回撃破する\n◆ ターン終了時に達成していれば次の順位で即卒業 (達成されると法典から消滅)
+◆ 승리 조건: 적 말을 {p1}회 처치\n◆ 차례가 끝날 때 달성해 있으면 바로 다음 순위로 졸업 (달성되면 법전에서 삭제),"◆ Win condition: KO enemy pawns {p1} times\n◆ If met at the end of your turn, you graduate to the next rank (then it leaves the Codex)",◆ 勝利条件: 敵の駒を{p1}回撃破する\n◆ ターン終了時に達成していれば次の順位で即卒業 (達成されると法典から消滅)
+◆ 승리 조건: 한 번의 이동으로 {p1}칸 이상 전진\n◆ 차례가 끝날 때 달성해 있으면 바로 다음 순위로 졸업 (달성되면 법전에서 삭제),"◆ Win condition: Move {p1}+ tiles in a single move\n◆ If met at the end of your turn, you graduate to the next rank (then it leaves the Codex)",◆ 勝利条件: 1回の移動で{p1}マス以上前進する\n◆ ターン終了時に達成していれば次の順位で即卒業 (達成されると法典から消滅)
+◆ 승리 조건: 한 턴에 주사위 {p1}연속 굴림\n◆ 차례가 끝날 때 달성해 있으면 바로 다음 순위로 졸업 (달성되면 법전에서 삭제),"◆ Win condition: Roll {p1} times in a row in one turn\n◆ If met at the end of your turn, you graduate to the next rank (then it leaves the Codex)",◆ 勝利条件: 1ターン中に{p1}連続で振る\n◆ ターン終了時に達成していれば次の順位で即卒業 (達成されると法典から消滅)
+◆ 알까기·직선 저격·피앙케토 등 소모한 기물 액티브 스킬을 다시 쏠 수 있습니다.,"◆ Alkkagi, Straight Snipe, Fianchetto and other used skills can fire again.",◆ おはじき・直線狙撃・フィアンケットなど、消費した駒の必殺技をもう一度撃てます。
+◆ 완주한 내 말 1개를 출발선으로 되돌리고\n◆ 남은 게임 내내 내 모든 굴림 결과에 +3칸,◆ Send one of my finished pawns back to Start\n◆ +3 spaces to all my rolls for the rest of the game,◆ 完走した自分の駒1個をスタート地点へ戻し\n◆ 残り試合中ずっと、自分のすべての出目結果に+3マス
+◆ 완주한 내 말 1개를 출발선으로 되돌리고\n◆ 남은 게임 내내 내 모든 굴림 결과에 +{p1}칸,◆ Send one of my finished pawns back to Start\n◆ +{p1} spaces to all my rolls for the rest of the game,◆ 完走した自分の駒1個をスタート地点へ戻し\n◆ 残り試合中ずっと、自分のすべての出目結果に+{p1}マス
+◆ 이미 사용한 내 모든 기물의 [1회용 필살기]를 100% 재충전 + 생떼 카드 {p1}장 획득!,◆ Recharge 100% of my used [one-shot Skills] + get {p1} Tantrum Cards!,◆ 使用済みの自分の全駒の[1回限定必殺技]を100%再チャージ＋駄々っ子カード{p1}枚獲得！
+◆ 이미 사용한 내 모든 기물의 [1회용 필살기]를 100%% 재충전 + 생떼 카드 %d장 획득!\n◆ 알까기·직선 저격·피앙케토 등 소모한 기물 액티브 스킬을 다시 쏠 수 있습니다.,"◆ Recharge 100%% of my used [one-shot Skills] + get %d Tantrum Cards!\n◆ Alkkagi, Straight Snipe, Fianchetto and other used skills can fire again.",◆ 使用済みの自分の全駒の[1回限定必殺技]を100%%再チャージ＋駄々っ子カード%d枚獲得！\n◆ おはじき・直線狙撃・フィアンケットなど、消費した駒の必殺技をもう一度撃てます。
+◆ 이미 진화한 내 기물 1개를 무작위 다른 진화 기물로 변경하고 +%d칸 전진!\n◆ 변경된 새 기물의 [1회용 필살기]도 즉시 사용 가능 상태로 충전됩니다.,◆ Turn one evolved piece into another random evolved piece and +%d spaces!\n◆ The new piece's [one-shot Skill] is ready right away.,◆ 進化済みの自分の駒1個をランダムな別の進化駒に変更し、+%dマス前進！\n◆ 変更された新しい駒の[1回限定必殺技]も即座に使用可能状態でチャージされます。
+◆ 이미 진화한 내 기물 1개를 무작위 다른 진화 기물로 변경하고 +{p1}칸 전진!,◆ Turn one evolved piece into another random evolved piece and +{p1} spaces!,◆ 進化済みの自分の駒1個をランダムな別の進化駒に変更し、+{p1}マス前進！
+◆ 이번 라운드 이동 거리 2배(x2) 증폭!\n◆ 단 눈금 1 이하면 과열: 이동 없이(0칸) 이번 차례가 바로 끝남,"◆ Double (x2) move distance this round!\n◆ But roll 1 or less = overheat: no move (0 spaces), turn ends",◆ このラウンドの移動距離が2倍(x2)に増幅！\n◆ ただし出目1以下でオーバーヒート: 移動なし(0マス)で即ターン終了
+◆ 이번 라운드 이동 거리 {p1}배(x{p1}) 증폭!\n◆ 단 눈금 {p2} 이하면 과열: 이동 없이(0칸) 이번 차례가 바로 끝남,"◆ Move distance x{p1} this round!\n◆ But roll {p2} or less = overheat: no move (0 spaces), turn ends",◆ このラウンドの移動距離が{p1}倍(x{p1})に増幅！\n◆ ただし出目{p2}以下でオーバーヒート: 移動なし(0マス)で即ターン終了
+"◆ 조건: %s\n◆ 차례가 끝날 때마다 판정: 달성해 있으면 바로 다음 순위로 졸업하고, 이 교칙은 법전에서 사라집니다","◆ Condition: %s\n◆ Checked at the end of every turn: if met, you graduate to the next rank and this Rule leaves the Codex",◆ 条件: %s\n◆ ターン終了ごとに判定: 達成していれば次の順位で即卒業し、この校則は法典から消えます
+◆ 중립 기물(소환) 카드 1장 획득\n◆ 나를 뺀 모든 플레이어의 카드 1장씩을 내 패로,◆ Get 1 Neutral NPC (Summon) card\n◆ Steal 1 card from every other player,◆ 中立召喚カードを1枚獲得\n◆ 自分以外の全プレイヤーからカードを1枚ずつ奪う
+◆ 중립 기물(소환) 카드 {p1}장 획득\n◆ 나를 뺀 모든 플레이어의 카드 {p2}장씩을 내 패로,◆ Get {p1} Neutral NPC (Summon) cards\n◆ Steal {p2} cards from every other player,◆ 中立召喚カードを{p1}枚獲得\n◆ 自分以外の全プレイヤーからカードを{p2}枚ずつ奪う
+◆ 코너 거점 장악용 대형 함정 {p1}장과 일반 트랙 함정 {p2}장을 확정 보급받습니다.,◆ Guaranteed: {p1} big traps to hold corners and {p2} normal track traps.,◆ コーナー拠点制圧用の大型罠{p1}枚と通常トラック罠{p2}枚が確定で支給されます。
+◆ 패시브: %s,◆ Passive: %s,◆ パッシブ: %s
+◆ 패시브: 경로 말·함정 관통 (도착 칸만 판정)\n※ 이미 가진 기물은 받을 수 없습니다,◆ Passive: Passes through pawns & traps (only the landing tile counts)\n※ You can't get a piece you already own,◆ パッシブ: 経路上の駒・罠を貫通 (着地マスのみ判定)\n※ 既に所持している駒は獲得できません
+◆ 패시브: 경로에 말 있으면 넘어서 +3칸\n※ 이미 가진 기물은 받을 수 없습니다,"◆ Passive: If a pawn is in the path, jump over it +3 spaces\n※ You can't get a piece you already own",◆ パッシブ: 経路上に駒があれば飛び越えて+3マス\n※ 既に所持している駒は獲得できません
+◆ 패시브: 리벤지 부스터 발동 시 +4칸 전진\n※ 이미 가진 기물은 받을 수 없습니다,◆ Passive: +4 spaces when Revenge Booster fires\n※ You can't get a piece you already own,◆ パッシブ: リベンジブースター発動時、さらに+4マス前進\n※ 既に所持している駒は獲得できません
+◆ 패시브: 모든 추가 이동 +2칸 · 이동 중 함정 면역\n※ 이미 가진 기물은 받을 수 없습니다,◆ Passive: All bonus moves +2 spaces · Trap-immune while moving\n※ You can't get a piece you already own,◆ パッシブ: すべての追加移動+2マス・移動中は罠無効\n※ 既に所持している駒は獲得できません
+◆ 패시브: 반환점 이상 도달 시 퀸 승급\n※ 이미 가진 기물은 받을 수 없습니다,◆ Passive: Promotes to Queen past the halfway corner\n※ You can't get a piece you already own,◆ パッシブ: 折り返し地点以上に到達するとクイーンに昇格\n※ 既に所持している駒は獲得できません
+◆ 패시브: 반환점 이상 통과 시 토금 승급 (+1칸)\n◆ [1회] 모치고마 낙하: 대기 말 1개를 보병 옆에 즉시 낙하\n※ 이미 가진 기물은 받을 수 없습니다,◆ Passive: Promotes to Tokin past the halfway corner (+1 space)\n◆ [Once] Mochigoma Drop: Drop a waiting pawn next to the Fuhyo\n※ You can't get a piece you already own,◆ パッシブ: 折り返し地点以上通過で「と金」に成る (+1マス)\n◆ [1回] 持ち駒打ち: 待機中の駒1個を歩兵の隣に即時配置\n※ 既に所持している駒は獲得できません
+"◆ 패시브: 반환점 통과 시 카드 +1\n◆ [1회] 호텔 건설: 지금 칸에 내 호텔 설치 (5턴, 밟은 적은 멈춤)\n※ 이미 가진 기물은 받을 수 없습니다","◆ Passive: +1 card when passing the halfway corner\n◆ [Once] Build Hotel: Build my Hotel here (5 turns, enemies who land stop)\n※ You can't get a piece you already own",◆ パッシブ: 折り返し地点通過時、カード+1枚\n◆ [1回] ホテル建設: 現在のマスにホテル設置 (5ターン、踏んだ敵は停止)\n※ 既に所持している駒は獲得できません
+◆ 패시브: 빵집 스침만 해도 카드 +1\n※ 이미 가진 기물은 받을 수 없습니다,◆ Passive: +1 card just for passing a Bakery\n※ You can't get a piece you already own,◆ パッシブ: パン屋を通過するだけでもカード+1枚\n※ 既に所持している駒は獲得できません
+◆ 패시브: 앞 칸 비면 +2칸\n※ 이미 가진 기물은 받을 수 없습니다,◆ Passive: +2 spaces if the tile ahead is empty\n※ You can't get a piece you already own,◆ パッシブ: 1マス前が空いていれば+2マス\n※ 既に所持している駒は獲得できません
+◆ 패시브: 앞 칸 비면 +2칸\n◆ [1회] 코끼리 지진: 앞뒤 2칸의 설치물 모두 파괴\n※ 이미 가진 기물은 받을 수 없습니다,◆ Passive: +2 spaces if the tile ahead is empty\n◆ [Once] Elephant Quake: Destroy all placed objects within 2 spaces\n※ You can't get a piece you already own,◆ パッシブ: 1マス前が空いていれば+2マス\n◆ [1回] ゾウ地震: 前後2マスの設置物をすべて破壊\n※ 既に所持している駒は獲得できません
+◆ 패시브: 없음\n◆ [1회] 직선 전차 저격: 직선 돌진 → 선두 적 처치 (없으면 다음 코너)\n※ 이미 가진 기물은 받을 수 없습니다,◆ Passive: None\n◆ [Once] Straight Chariot Snipe: Straight charge → KO the leading enemy (else next corner)\n※ You can't get a piece you already own,◆ パッシブ: なし\n◆ [1回] 直線戦車狙撃: 直線突進 → 先頭の敵を撃破 (いなければ次のコーナーへ)\n※ 既に所持している駒は獲得できません
+◆ 패시브: 옷장 → 더 먼 곳으로 워프\n◆ [1회] 직항 워프: 빵집·코너 중 1곳으로 직항\n※ 이미 가진 기물은 받을 수 없습니다,◆ Passive: Wardrobe → warp to the farther one\n◆ [Once] Direct Warp: Fly direct to a Bakery or corner\n※ You can't get a piece you already own,◆ パッシブ: クローゼット → より遠い場所へワープ\n◆ [1回] 直行便ワープ: パン屋・コーナーのうち1箇所へ直行\n※ 既に所持している駒は獲得できません
+◆ 패시브: 잡기·함정 1회 방어 (증강 라운드까지 안 잡히면 재충전)\n※ 이미 가진 기물은 받을 수 없습니다,◆ Passive: Blocks 1 capture/trap (recharges if not caught until the Augment round)\n※ You can't get a piece you already own,◆ パッシブ: 捕獲・罠を1回防御 (増強ラウンドまで無事なら再チャージ)\n※ 既に所持している駒は獲得できません
+◆ 패시브: 지나가는 칸의 적 처치\n※ 이미 가진 기물은 받을 수 없습니다,◆ Passive: KO enemies on tiles you pass\n※ You can't get a piece you already own,◆ パッシブ: 通過するマスにいる敵を撃破する\n※ 既に所持している駒は獲得できません
+◆ 패시브: 직진 +2칸 · 반환점에서 용왕 승급\n◆ [1회] 용왕 베기: [용왕] 앞 2칸의 적 처치\n※ 이미 가진 기물은 받을 수 없습니다,◆ Passive: Straight +2 spaces · promotes to Dragon King at halfway\n◆ [Once] Dragon King Slash: [Dragon King] KO enemies 2 spaces ahead\n※ You can't get a piece you already own,◆ パッシブ: 直進+2マス・折り返し地点で「竜王」に成る\n◆ [1回] 竜王斬り: [竜王] 前方2マスの敵を撃破\n※ 既に所持している駒は獲得できません
+◆ 패시브: 처치 시 재굴림 +1 · 자동 업기\n※ 이미 가진 기물은 받을 수 없습니다,◆ Passive: Reroll +1 on KO · auto-stacks\n※ You can't get a piece you already own,◆ パッシブ: 撃破時、振り直し+1・自動おんぶ(重ね移動)\n※ 既に所持している駒は獲得できません
+◆ 패시브: 처치하면 +3칸\n◆ [1회] 뱅크샷: 앞쪽 가장 가까운 적에게 돌진\n※ 이미 가진 기물은 받을 수 없습니다,◆ Passive: +3 spaces on KO\n◆ [Once] Bank Shot: Charge the nearest enemy ahead\n※ You can't get a piece you already own,◆ パッシブ: 敵を撃破すると+3マス\n◆ [1回] バンクショット: 前方の最も近い敵へ突進\n※ 既に所持している駒は獲得できません
+◆ 패시브: 첫 2칸 함정·말 관통 · 승급 시 +1칸\n※ 이미 가진 기물은 받을 수 없습니다,◆ Passive: Passes traps & pawns for first 2 spaces · +1 space on promotion\n※ You can't get a piece you already own,◆ パッシブ: 最初の2マスの罠・駒を貫通・成ると+1マス\n※ 既に所持している駒は獲得できません
+◆ 패시브: 첫 적 설치물 무시·파괴\n※ 이미 가진 기물은 받을 수 없습니다,◆ Passive: Ignore & destroy the first enemy object\n※ You can't get a piece you already own,◆ パッシブ: 最初の敵設置物を無視して破壊する\n※ 既に所持している駒は獲得できません
+◆ 패시브: 코너 바로 앞에 멈추면 +1칸 코너 진입\n◆ [1회] 피앙케토: 대각선 코너로 즉시 이동\n※ 이미 가진 기물은 받을 수 없습니다,◆ Passive: +1 space into the corner if stopping right before it\n◆ [Once] Fianchetto: Warp to the diagonal corner\n※ You can't get a piece you already own,◆ パッシブ: コーナー直前に止まると+1マス進みコーナー進入\n◆ [1回] フィアンケット: 対角線のコーナーへ即時移動\n※ 既に所持している駒は獲得できません
+◆ 패시브: 코너 스치면 +2칸 (용마 +1칸 더)\n◆ [1회] 용마 십자 베기: [용마] 앞뒤 1칸의 적 처치\n※ 이미 가진 기물은 받을 수 없습니다,◆ Passive: +2 spaces when grazing a corner (Dragon Horse +1 more)\n◆ [Once] Dragon Horse Cross Slash: [Dragon Horse] KO enemies 1 space ahead/behind\n※ You can't get a piece you already own,◆ パッシブ: コーナー通過時+2マス (竜馬ならさらに+1マス)\n◆ [1回] 竜馬十字斬り: [竜馬] 前後1マスの敵を撃破\n※ 既に所持している駒は獲得できません
+◆ 패시브: 코너를 꺾지 않는 직진 +2칸\n◆ [1회] 단독 캐슬링: 굴리기 전 아군 1개와 위치 교환\n※ 이미 가진 기물은 받을 수 없습니다,◆ Passive: +2 spaces going straight without turning a corner\n◆ [Once] Solo Castling: Swap places with an ally before rolling\n※ You can't get a piece you already own,◆ パッシブ: コーナーを曲がらない直進時+2マス\n◆ [1回] 単独キャスリング: 振る前に味方1個と位置交換\n※ 既に所持している駒は獲得できません
+◆ 패시브: 함정 면역 · 밟은 적 함정 해체 +카드 1장\n◆ [1회] 지뢰 매설: 지금 칸에 지뢰 설치\n※ 이미 가진 기물은 받을 수 없습니다,◆ Passive: Trap-immune · defuses enemy traps stepped on +1 card\n◆ [Once] Plant Mine: Plant a mine on this tile\n※ You can't get a piece you already own,◆ パッシブ: 罠無効・踏んだ敵の罠を解体＋カード1枚獲得\n◆ [1回] 地雷埋設: 現在のマスに地雷を設置\n※ 既に所持している駒は獲得できません
+"◆ 패시브: 홀수 눈금으로 전진하면 +1칸\n◆ [1회] 진짜 알까기 슈팅: 조준 발사 → 적 전원 출발선, 근처 안착\n※ 이미 가진 기물은 받을 수 없습니다","◆ Passive: +1 space on odd rolls\n◆ [Once] True Alkkagi Shot: Aim & fire → all enemies to Start, land nearby\n※ You can't get a piece you already own",◆ パッシブ: 奇数の出目で前進すると+1マス\n◆ [1回] 本気おはじきショット: 狙って発射 → 敵全員をスタートへ弾き飛ばし付近に着地\n※ 既に所持している駒は獲得できません
+◆ 희귀 · ,◆ Rare ·,◆ レア · 
+★ %d위 확정! (%s),★ #%d locked in! (%s),★ %d位確定！ (%s)
+★ %s 우승! ★,★ %s wins! ★,★ %s 優勝！ ★
+★ [특수 승리] %s,★ [Special Victory] %s,★ [特殊勝利] %s
+★ 게임 종료! (%s),★ Game over! (%s),★ ゲーム終了！ (%s)
+★ 야추 (5개 동일),★ Yacht (5 of a kind),★ ヨット (5個同じ)
+★ 야추!,★ Yacht!,★ ヨット！
+★ 정확히 21,★ Exactly 21,★ ちょうど21
+★ 최종 순위 ★,★ Final Ranking ★,★ 最終順位 ★
+★10 구멍,★10 hole,★10 の穴
+★완주,★Finished,★完走
+★완주 완료,★Finished,★完走済
+가속 보너스 +%d,Speed bonus +%d,加速ボーナス +%d
+가속 보너스 → %d칸 → 총 %d칸 전진!,Speed bonus → %d spaces → %d total!,加速ボーナス → %dマス → 合計 %dマス前進！
+가위,Scissors,チョキ
+가장 드문 대박,Rarest jackpot,最も珍しい大当たり
+가즈아!,Let's gooo!,行っけー！
+각 눈금 1/6,Each roll 1/6,各出目 1/6
+"각자 특수 1장·시민 4장! 여왕 > 시민 > 반란군 > 여왕. 시민끼리는 버리고 재대결, 반란군이 여왕을 잡으면 +5칸",Each gets 1 special + 4 Citizens! Queen > Citizen > Rebel > Queen. Citizen ties are discarded and replayed; Rebel beats Queen for +5 spaces,各自 特殊1枚・市民4枚！ 女王 > 市民 > 反乱軍 > 女王。市民同士は捨てて再勝負、反乱軍が女王を倒せば +5マス
+각행,Kaku,角行
+감나빗!,Missed Me!,あたらなーい！
+감옥,Jail,監獄
+감정 표현,Emote,スタンプ
+강아지,Dog,子犬
+강제 연대책임,Shared Fate,強制連帯責任
+강제 연대책임은 선두와 꼴찌 말의 운명을 묶어요,Shared Fate ties the fate of your lead and last pawns,強制連帯責任は先頭と最下位の駒の運命を結びます
+강제 캐슬링 룰렛,Forced Castling Roulette,強制キャスリング・ルーレット
+강제 턴 패스,Forced Pass,強制ターンパス
+강제 턴 패스!,Forced Pass!,強制ターンパス！
+강제 환승 포탈,Forced Transfer Portal,強制乗換ポータル
+강탈,Steal,強奪
+같은 설정으로 바로 재시작,Restart with same settings,同じ設定ですぐ再スタート
+같은 손이면 무승부! 다시 골라 승부를 냅니다.,Same hand is a tie! Pick again.,同じ手ならあいこ！選び直して勝負します。
+개,Gae,ゲ
+개 (2),Gae (2),ゲ (2)
+개발자에게 바로 전송,Send to developer,開発者に直接送信
+개발자에게 의견이나 버그를 보냅니다 (게임 상태를 함께 첨부할 수 있어요),Send feedback or bugs to the developer (you can attach the game state),開発者に意見やバグを送ります (ゲーム状態を添付可能)
+개입 대기열 등록 (후입선출)\n,"Added to interrupt queue (last in, first out)\n",介入待ちに登録 (後入れ先出し)\n
+개입 타이밍 A - 카드 사용 가능,Interrupt A - cards usable,介入タイミングA - カード使用可能
+개입 패스,Pass,介入パス
+거기 정지! 과속 위반입니다! -칸나,Halt! You're speeding! -Kanna,そこ止まりなさい！スピード違反です！ -カンナ
+거울의 힘,Mirror Force,聖なるバリア -ミラーフォース-
+걸,Geol,ゴル
+걸 (3),Geol (3),ゴル (3)
+게임 나가기,Exit Game,ゲーム終了
+게임 내내 쌓여요,It counts all game,ゲーム中ずっと貯まります
+게임 설정,Settings,ゲーム設定
+게임 스냅샷,Game Snapshot,ゲームスナップショット
+게임 시작,Start Game,ゲーム開始
+게임 시작  (AI 3명과 대결),Start  (vs 3 AI),ゲーム開始  (AI 3人と対決)
+게임 시작  (빈자리는 AI),Start  (AI fills empty seats),ゲーム開始  (空席はAI)
+게임 시작  (사람 %d명%s),Start  (%d humans%s),ゲーム開始  (人 %d人%s)
+게임 종료,Game over,ゲーム終了
+게임 종료!,Game Over!,ゲーム終了！
+게임 종료. [새 게임]으로 다시 시작하세요.,Game over. Press [New Game] to play again.,ゲーム終了。[新しいゲーム]で再開してください。
+게임 중 말이 잡히거나 완주하면 이렇게 반응합니다.,Your avatar reacts like this when pawns are captured or finish.,ゲーム中に駒が捕まったり完走するとこう反応します。
+게임 중 오른쪽 카드에 규칙표가 나와요,A rules table shows on the right card in-game,ゲーム中は右のカードにルール表が出ます
+게임을 나갈까요?,Leave the game?,ゲームを終了しますか？
+게임을 시작할 수 없습니다. 방을 다시 만들어 주세요.,Can't start the game. Please create the room again.,ゲームを開始できません。ルームを作り直してください。
+게임을 시작합니다...,Starting the game...,ゲームを開始します...
+게임이 끝났습니다,The game is over,ゲームが終わりました
+결과 화면,Results screen,結果画面
+결과 화면 투표: %s,Results vote: %s,結果画面の投票: %s
+결승선 %d칸 당겨짐 (%d번부터 결승)%s,Finish line %d spaces closer (finish from tile %d)%s,ゴールが %dマス近づいた (%d番からゴール)%s
+결승선이 당겨진다!,The finish line moves in!,ゴールが近づく！
+결승선이 라운드마다 %d칸씩 당겨진다,Finish line moves %d spaces closer each round,ゴールがラウンドごとに %dマスずつ近づく
+"결투 승리! 상대 선두 말 장외 사출, 내 말 +%d칸!","Duel won! Enemy lead pawn knocked off, my pawn +%d spaces!",決闘勝利！相手の先頭駒を場外射出、自分の駒 +%dマス！
+결투 패배! 내 선두 말이 출발선으로 날아갑니다!,Duel lost! My lead pawn flies back to Start!,決闘敗北！自分の先頭駒がスタートへ飛ばされます！
+"결투할 상대의 말이나 프로필, 또는 보드판 위에 놓으세요.","Drop it on a rival's pawn or profile, or on the board.",決闘する相手の駒かプロフィール、またはボードの上に置いてください。
+경로 말·함정 관통 (도착 칸만 판정),Passes through pawns & traps (only the landing tile counts),経路上の駒・罠を貫通 (着地マスのみ判定)
+"경로 중간의 말 하나마다 +{p1}칸, 한 번에 최대 +{p2}칸 (enabled=FALSE면 꺼짐)","+{p1} per pawn passed on the path, up to +{p2} per move (off if enabled=FALSE)",経路途中の駒1つにつき+{p1}マス、最大+{p2}マスまで (enabled=FALSEで無効)
+경로에 말 있으면 넘어서 +3칸,"If a pawn is in the path, jump over it +3 spaces",経路上に駒があれば飛び越えて +3マス
+계마,Keima,桂馬
+"계속 당기거나, 멈추고 누적 칸수만큼 이동하세요. 깃발이 나오면 누적이 사라져요!","Keep pulling, or stop and move the stacked tiles. A flag wipes the stack!",引き続けるか、止めて累積マス分移動してください。旗が出ると累積が消えます！
+계속하기,Continue,続ける
+고른 한 변의 설치물 전부 붕괴,Collapse all objects on one chosen side,選んだ一辺の設置物をすべて崩壊させる
+고정,Keep,固定
+고정(Keep)하고 나머지를 최대 2번 다시 굴림,Keep dice and reroll the rest up to 2 times,固定(Keep)して残りを最大2回振り直す
+"고정할 주사위를 클릭하고 [나머지 다시 굴리기], 마음에 들면 [현재 족보로 이동 확정]을 누르세요.","Click dice to keep, then [Reroll the rest]; when happy, press [Lock in this hand].",固定するサイコロをクリックして [残りを振り直す]、気に入ったら [今の役で移動確定] を押してください。
+고출력 로켓 부스터,High-Output Rocket Booster,高出力ロケットブースター
+골인한 구멍,Hole landed in,入った穴
+공격,Attack,攻撃
+공격 1회 회피,Dodge 1 attack,攻撃を1回回避
+공격 카드,Attack Cards,攻撃カード
+공격 카드 반사,Reflect attack card,攻撃カード反射
+공격 카드 발동!,Attack card!,攻撃カード発動！
+공격당했습니다! 가운데 방어 팝업에서 방어 카드를 고르거나 [그냥 맞기]를 누르세요. 시간이 지나면 그냥 맞습니다.,You're under attack! Pick a defense card in the popup or press [Take the hit]. Time out = take the hit.,攻撃されました！中央の防御ポップアップで防御カードを選ぶか [そのまま受ける] を押してください。時間切れでそのまま受けます。
+공격받으면 팝업에서 발동 여부를 물어봐요,"When attacked, a popup asks whether to activate",攻撃されるとポップアップで発動するか聞かれます
+공격은 상대가 [b]방어 카드[/b]로 막을 수 있어요.,Rivals can block attacks with [b]Defense cards[/b].,攻撃は相手が [b]防御カード[/b] で防げます。
+공격한 말 사출,Knock off the attacker,攻撃してきた駒を射出
+공산주의 재분배,Communist Redistribution,共産主義再分配
+과열,Overheat,オーバーヒート
+광,Gwang,光
+광기,Frenzy,狂気
+광대,The Fool,愚者
+광대!,The Fool!,愚者！
+광땡,Gwang Ttaeng,光アラシ
+광란의 지뢰밭,Frantic Minefield,狂乱の地雷原
+교단의 칙령,Order Decree,教団の勅令
+교주의 이름,Master's Name,教主の名前
+교칙 제정,Enact Rule,校則制定
+교칙 추가(테스트):,Add Rule (test):,校則追加(テスト):
+교환할 체스 기물 두 개를 골라야 합니다,Pick two chess pieces to swap,交換するチェスの駒を2つ選ぶ必要があります
+구멍표: [2][4][6][★10][5][3][1] 골인한 숫자만큼 (1~10칸),Holes: [2][4][6][★10][5][3][1] move the number you land in (1~10),ホール表: [2][4][6][★10][5][3][1] 入った穴の数字だけ前進 (1~10マス)
+구속,Bound,拘束
+구속 중,Bound,拘束中
+구속 중이거나 선택할 수 있는 말이 없습니다,"Bound, or no pawn to choose",拘束中か、選べる駒がありません
+구슬이 [%s] 구멍에 골인 → %d칸,Marble landed in [%s] → %d spaces,玉が [%s] の穴にゴール → %dマス
+구슬이 골인한 칸의 숫자(1 ~ 10칸)만큼 전진,Move the number of the hole the marble lands in (1 ~ 10 spaces),玉が入った穴の数字(1 ~ 10マス)だけ前進
+국사무쌍,Thirteen Orphans,国士無双
+굴러가는 중...,Rolling...,転がっています...
+굴려서 전진한다,Roll and move,振って前進する
+굴리기,Roll,振る
+굴리기 버튼(또는 스페이스)을 한 번 누르세요.,Press the Roll button (or Space) once.,振るボタン(またはスペース)を1回押してください。
+굴리기 전,Before rolling,振る前
+굴리기 전 (내 턴 시작),Before rolling (start of my turn),振る前 (自分のターン開始時)
+굴리기 전 사용! 이번 굴림 +4칸,Use before rolling! This roll +4 spaces,振る前に使用！今回の出目 +4マス
+굴리기 전 사용! 이번 굴림 +{p1}칸,Use before rolling! This roll +{p1} spaces,振る前に使用！今回の出目+{p1}マス
+굴리기 전 아군 1개와 위치 교환,Swap places with an ally before rolling,振る前に味方1個と位置交換
+굴리기 전에 바로 효과,Takes effect right before rolling,振る前にすぐ効果
+굴리기 전에 한 장 (안 써도 돼요),One card before rolling (optional),振る前に1枚 (使わなくてもOK)
+굴리는 도구,Judgment Tools,判定ツール
+굴리는 도구 바꾸기 (도감 → 도구),Swap Judgment Tool (Catalog → Tools),判定ツールの交換 (図鑑 → ツール)
+굴리는 중…,Rolling…,振っています…
+굴린 만큼 전진,Move what you roll,出た分だけ前進
+굴림 결과 지정,Set the roll,出目を指定
+굴림 눈금만큼 한 말을 골라 내보내요,Pick a pawn and send it out by the roll,出目の数だけ駒を1つ選んで出します
+규칙,Rules,ルール
+규칙 도감,Rulebook,ルール図鑑
+규칙 수치,Rule value,ルール数値
+규칙 책자,Rulebook,ルールブック
+그 숫자만큼 (1~10칸),That number (1~10 spaces),その数字だけ (1~10マス)
+그 승리에 대해서 이의 있다!,I object to that victory!,その勝利に対して異議あり！
+그 칸 수만큼 움직일 말 선택,Pick a pawn to move that many tiles,そのマス数だけ動かす駒を選択
+그 칸에 들어서거나 서 있으면 바로 완주!,Step on or stand on that tile to finish instantly!,そのマスに入るか止まっていれば即完走！
+그게 최선?,That's your best?,それが精一杯？
+그냥 맞기,Take the hit,そのまま受ける
+그냥 맞기를 고르면 그 공격엔 다시 못 써요,Choose Take the hit and you can't use one on that attack,そのまま受けるを選ぶと、その攻撃にはもう使えません
+그리고 대망의 1등은...!,And the grand champion is...!,そして栄光の1位は...！
+기록,Record,記録
+기록을 0으로 되돌릴 수 %s,Records can be reset to 0: %s,記録を0に戻せる: %s
+기물 능력,Piece Ability,駒の能力
+기물 변이 · 전군 돌연변이 · 필살기 리필,Mutation · All-Troop Mutation · Skill Refill,駒変異 · 全軍突然変異 · 必殺技リフィル
+기물 변이 · 전군 돌연변이 · 필살기 리필 (도감 → 범용),Mutation · All-Troop Mutation · Skill Refill (Catalog → Utility),駒変異 · 全軍突然変異 · 必殺技リフィル (図鑑 → 汎用)
+기물 지급,Piece Grant,駒支給
+기물 지급: %s,Piece granted: %s,駒支給: %s
+기물 진화,Pawn Evolution,駒進化
+기본,Basic,基本
+기본 규칙,Basic Rules,基本ルール
+기본 말,Basic pawn,基本駒
+기본 주사위,Standard Dice,基本サイコロ
+기본 주사위로 시작해 증강으로 [b]윷·룰렛·홀덤·슬롯…[/b]으로 바꿔요.,"Start with the Standard Dice and swap to [b]Yut, Roulette, Hold'em, Slots…[/b] via Augments.",基本サイコロで始まり、増強で [b]ユッ・ルーレット・ホールデム・スロット…[/b] に変えられます。
+"기본: 컴퓨터가 1등을 먼저 견제하고, 방금 잡힌 사람은 잠깐 봐줘요",Normal: the computer targets the leader first and goes easy on whoever was just captured,普通: コンピューターは1位を優先して狙い、捕まったばかりの人は少し見逃します
+기본값으로,Reset,初期値に戻す
+꼴찌 ↔ 선두 교환,Last ↔ Leader swap,最下位 ↔ 先頭 交換
+꼴찌와 자리 교환,Swap with last place,最下位と場所交換
+꾹 눌러 파워 게이지를 채우고 손을 떼면 굴러갑니다 (스페이스 키도 동일),"Hold to fill the power gauge, release to roll (Space too)",長押しでパワーゲージを溜め、離すと転がります (スペースキーも同じ)
+꿀팁,Tip,お役立ち
+나,Me,自分
+나가기,Leave,終了する
+나가면 시작 화면으로 돌아갑니다. 진행 중인 판은 저장되지 않습니다.,Leaving returns to the title screen. This game won't be saved.,抜けるとタイトル画面に戻ります。進行中の試合は保存されません。
+"나가면 시작 화면으로 돌아갑니다. 진행 중인 판은 저장되지 않으며, 온라인 대전이면 내 자리는 컴퓨터가 이어받습니다.",Leaving returns to the title screen. This game won't be saved; in online games a CPU takes your seat.,抜けるとタイトル画面に戻ります。進行中の試合は保存されず、オンライン対戦なら自分の席はコンピューターが引き継ぎます。
+나락,Abyss,奈落
+나리 승급 +1칸,Promotion +1 space,成り昇格 +1マス
+나리!,Nari!,成り！
+나리(成り) 승급 상태: %s - 이동할 때마다 +1칸,Promoted (Nari): %s - +1 space on every move,成り昇格状態: %s - 移動するたびに +1マス
+나머지 다시 굴리기,Reroll the rest,残りを振り直す
+나머지 다시 굴리기 (남은 횟수: %d),Reroll the rest (%d left),残りを振り直す (残り %d回)
+나온 눈금만큼,Move the roll,出た目の数だけ
+나온 숫자만큼,Move the number,出た数だけ
+나이스!,Nice!,ナイス！
+나이트,Knight,ナイト
+낙,Nak,落
+낙 (판 밖으로),Nak (off the board),落 (盤外へ)
+낙!,Nak!,落！
+"낙! 윷가락이 판 밖으로 - 0칸, 턴 종료","Nak! The sticks flew off the board - 0 spaces, turn ends",落！ユッが盤の外へ - 0マス、ターン終了
+낙담,Gloomy,しょんぼり
+낙하시킬 대기 말,Waiting pawn to drop,打つ待機駒
+난장판,Chaos,大混乱
+날려 버릴 말이 없어 결투가 끝났습니다,"No pawn to knock off, the duel is over",飛ばす駒がなく決闘は終わりました
+남은 이동 대기열: %s,Move queue left: %s,残りの移動待ち: %s
+남은 패 %d장 · 버린 시민 %d장,Hand %d · Citizens discarded %d,残り手札 %d枚 · 捨てた市民 %d枚
+내 꼴찌 말 ↔ 1등 적 선두 말 위치 교환,Swap my last pawn ↔ the leading enemy pawn,自分の最下位駒 ↔ 1位の敵の先頭駒の位置を入れ替える
+내 눈금이 짝수이거나 %d 이상이면 +%d칸,"If my roll is even or %d+, +%d spaces",自分の出目が偶数か %d以上なら +%dマス
+내 말끼리,My own pawns,自分の駒同士
+내 말은 모두 [b]4개[/b]. 처음엔 전부 출발선(0번)에서 기다려요.,You have [b]4 pawns[/b]. They all start waiting at the Start line (tile 0).,自分の駒は全部で [b]4個[/b]。最初は全員スタート(0番)で待機します。
+내 말이 {p1}회 장외 사출당함,My pawns knocked off {p1} times,自分の駒が{p1}回場外射出される
+"내 말이 밟아도 멈추고, 연쇄로 터진 지뢰에 내 말도 휘말립니다","My pawns stop on it too, and chained mines can catch my pawns",自分の駒が踏んでも止まり、連鎖した地雷に自分の駒も巻き込まれます
+"내 병뚜껑을 누르고 뒤로 당긴 뒤 놓으세요.\n번갈아 한 번씩, 절벽 가까이에 멈추면 승리합니다.","Press your bottle cap, pull back and release.\nTake turns; stop closest to the cliff to win.",自分の王冠を押して後ろに引き、離してください。\n交互に1回ずつ、崖の近くで止まった方が勝ちです。
+내 선두 말 앞 3칸의 적 사출 + 설치물 파괴,Knock off enemies 3 spaces ahead of my lead + destroy objects,自分の先頭駒の前方3マス以内の敵を射出 + 設置物を破壊
+내 선두 말 앞 {p1}칸의 적 사출 + 설치물 파괴,Knock off enemies {p1} spaces ahead of my lead + destroy objects,自分の先頭駒の前方{p1}マス以内の敵を射出＋設置物を破壊
+내 선두 말을 반환점까지의 빈 칸 중 고른 칸으로 순간이동,Teleport my lead pawn to an empty tile up to the halfway corner,自分の先頭駒を折り返し地点までの空きマスの中から選んだマスへ瞬間移動
+내 설치물(호텔·함정) {p1}개를 보드에 동시 유지,Keep {p1} of my objects (Hotels/Traps) on the board at once,自分の設置物(ホテル・罠)をボード上に同時{p1}個維持
+내 앞길을! 막지 마라! -헤일리,Out of my way! Don't block me! -Hailey,私の行く手を！塞ぐな！ -ヘイリー
+내 앞을 막지마!,Out of My Way!,私の前を塞ぐな！
+내 차례!,Your turn!,自分の番！
+내 턴 시작 시 손패 {p1}장 이상,{p1}+ cards in hand at the start of my turn,自分のターン開始時に手札が{p1}枚以上
+내 턴이 아닙니다,It's not your turn,自分のターンではありません
+내 편 점프·적 사출,Ally jump · enemy knockoff,味方ジャンプ · 敵射出
+내 함정은 내 화면에서 그림이 보여요,Your own traps show their art on your screen,自分の罠は自分の画面で絵が見えます
+내가 공격받으면 [b]방어 카드를 쓸지[/b] 팝업으로 물어봐요.,"When you're attacked, a popup asks whether to [b]use a Defense card[/b].",攻撃されると [b]防御カードを使うか[/b] ポップアップで聞かれます。
+내가 공격받을 때만 사용 가능,Only when you're attacked,攻撃された時だけ使用可能
+내가 빼돌렸다고? 증거있어? -셰이디,I dealt from the bottom? Got proof? -Shady,私がすり替えたって？証拠でもあるの？ -シェイディ
+내보내기,Kick,追い出す
+내용을 %d자 이상 적어 주세요,Please write at least %d characters,%d文字以上入力してください
+너무 빨랐다!,Too early!,早すぎた！
+너의 운명 내가 점쳐주지 -앨리스,Let me read your fortune -Alice,あなたの運命、私が占ってあげる -アリス
+노페어,No Pair,ノーペア
+노페어 (찬스),No Pair (Chance),ノーペア (チャンス)
+놀람,Surprised,びっくり
+놀이터,Playground,遊び場
+누구나,Anyone,誰でも
+누구야! 쓰레기 버리고 간 녀석이! -미끄러진 시온,"Who left their trash here?! -Sion, slipping",誰だ！ゴミを捨てていった奴は！ -滑ったシオン
+누군가,Someone,誰か
+"누적 0칸, 턴 종료","Stack 0 spaces, turn ends",累積0マス、ターン終了
+누적표: 방아쇠 1회 +3칸(최대 15) / 폭죽(6분의 1) 0칸·턴 종료 / 멈추면 누적 칸만큼,"Stack: +3 per trigger pull (max 15) / bang (1 in 6) 0 spaces, turn ends / stop to move the total",累積表: 1回ごとに+3マス(最大15) / 暴発(1/6) 0マス・番終了 / 止めれば累積マス分前進
+누적한 칸만큼 이동,Move the stacked tiles,累積したマス分移動
+눈금 %d - 이번 차례는 이동 없이 바로 끝납니다,Rolled %d - this turn ends with no move,出目 %d - 今回は移動なしでそのまま終了します
+눈금 %d칸,Roll %d spaces,出目 %dマス
+눈금 4+ 로 지나가는 적 말 출발선 사출,Enemies passing with a roll of 4+ go back to Start,出目4以上で通過する敵の駒をスタートへ射出
+눈금 4+ 적 사출,Roll 4+ enemy knockoff,出目4以上で敵を射出
+눈금 {p1}+ 로 지나가는 적 말 출발선 사출,Enemies passing with a roll of {p1}+ go back to Start,出目{p1}以上で通過する敵の駒をスタート地点へ射出する
+눈금만큼 반시계로 한 칸씩 전진해요,Move counterclockwise one tile per pip,出目の数だけ反時計回りに1マスずつ前進します
+눈금표: 1~10 균등 (나온 숫자만큼) / ★7 당첨(7칸+한번더),Table: 1~10 even (move the number) / ★7 jackpot (7 spaces + roll again),出目表: 1~10均等 (出た数だけ前進) / ★7当たり(7マス+もう1回)
+눈금표: 1~6 (나온 눈금만큼 전진),Table: 1~6 (move the roll),出目表: 1~6 (出た目の数だけ前進)
+눈금표: 4(2/6) / 5(2/6) / 6(1/6) / 삐끗(1/6) 이번 이동 0칸,Table: 4(2/6) / 5(2/6) / 6(1/6) / slip(1/6) 0 spaces this move,出目表: 4(2/6) / 5(2/6) / 6(1/6) / ションベン(1/6) 今回移動0マス
+눈금표: 나온 눈금만큼 전진,Table: move the number rolled,出目表: 出た目の数だけ前進
+눈금표: 낙(0칸+턴 종료) / 도(1) / 개(2) / 걸(3) / 윷(4칸+한번더) / 모(5칸+한번더),Table: Nak (0 + turn ends) / Do(1) / Gae(2) / Geol(3) / Yut(4 + roll again) / Mo(5 + roll again),出目表: 落(0マス+番終了) / ド(1) / ゲ(2) / ゴル(3) / ユッ(4+もう1回) / モ(5+もう1回)
+능력 없음,No ability,能力なし
+닉네임 (최대 %d자),Nickname (max %d),ニックネーム (最大 %d文字)
+닉네임 / 연락처 (선택),Nickname / Contact (optional),ニックネーム / 連絡先 (任意)
+닉네임은 %d자 이하로 입력해 주세요.,Nickname must be %d characters or fewer.,ニックネームは %d文字以下で入力してください。
+닉네임을 입력해 주세요.,Please enter a nickname.,ニックネームを入力してください。
+다른 말을 밟고 지나가면 +1칸 (최대 +3),+1 per pawn you pass over (max +3),他の駒を踏み越えると +1マス (最大 +3)
+다른 사람이 먼저 그 자리에 들어갔습니다.,Someone took that seat first.,他の人が先にその席に入りました。
+다른 좌석의 응답 코드입니다 (좌석 %d 코드가 필요합니다).,Reply code for another seat (need the seat %d code).,別の席の応答コードです (席 %d のコードが必要です)。
+다른 플레이어를 기다리는 중,Waiting for other players,他のプレイヤーを待っています
+다시 굴려야 합니다 (재굴림).,Must roll again (reroll).,もう一度振る必要があります (振り直し)。
+다시!,Again!,もう1回！
+다야,Daya,ダヤ
+다음 굴림 +%d,Next roll +%d,次の出目 +%d
+다음 굴림 결과를 1~6칸 중 직접 지정,Set your next roll to 1~6 yourself,次の出目結果を1~6マスの中から直接指定する
+다음 유저에게 폭탄 패스: 선두 말 사출 + 내 이동 +4칸,Pass the bomb to the next player: knock off their lead pawn + my move +4,次のプレイヤーに爆弾パス: 先頭駒を射出 + 自分の移動 +4マス
+다음 유저에게 폭탄 패스: 선두 말 사출 + 내 이동 +{p1}칸,Pass the bomb to the next player: knock off their lead pawn + my move +{p1},次のプレイヤーに爆弾パス: 先頭駒を射出＋自分の移動+{p1}マス
+다이너마이트는 흑색설탕으로 만든다구요 -마요,"Dynamite is made of brown sugar, you know -Mayo",ダイナマイトは黒砂糖で作るんですよ -マヨ
+다이아,Diamond,ダイヤ
+다크호스의 하극상,Dark Horse Uprising,ダークホースの下剋上
+단 한 번의 일격! (A SINGULAR STRIKE!),One single strike! (A SINGULAR STRIKE!),たった一撃！ (A SINGULAR STRIKE!)
+단독 캐슬링,Solo Castling,単独キャスリング
+닫기,Close,閉じる
+당겨진 결승선 (템포 업): 여기 들어서면 완주,Moved-in finish line (Tempo Up): enter here to finish,近づいたゴール (テンポアップ): ここに入ると完走
+당겨진 결승선은 체크무늬 칸으로 보여요,A moved-in finish line shows as checkered tiles,近づいたゴールはチェック柄のマスで表示されます
+대각선 코너로 즉시 이동,Warp to the diagonal corner,対角線のコーナーへ即時移動
+대결 보기,Watch Duel,対決を見る
+대결 시작,Start Duel,対決開始
+대결 종목 추첨,Drawing the event,対決種目の抽選
+대기,Waiting,待機
+대기 말 1개를 보병 옆에 즉시 낙하,Drop a waiting pawn next to the Fuhyo,待機中の駒1個を歩兵の隣に即時配置
+대기 중...,Waiting...,待機中...
+대붕괴,Meltdown,大崩壊
+대삼원,Big Three Dragons,大三元
+대상이 올바르지 않거나 조건을 만족하지 않습니다,Invalid target or conditions not met,対象が正しくないか、条件を満たしていません
+데스매치에서 지면 내 선두 말이 출발선으로 날아갑니다,Lose the Deathmatch and my lead pawn flies back to Start,デスマッチで負けると自分の先頭駒がスタートへ飛ばされます
+데스벨 치기!,Ring the bell!,デスベルを鳴らせ！
+데스벨 치기! [Space],Ring the bell! [Space],デスベルを鳴らせ！ [Space]
+도,Do,ド
+도 (1),Do (1),ド (1)
+도감,Catalog,図鑑
+도구,Tools,ツール
+도구 교체,Swap Tool,ツール交換
+도구를 굴려 칸 수 결정,Roll the tool to set the tile count,ツールを振ってマス数を決定
+도구마다 족보와 칸 수가 달라요,Each tool has its own hands and tile counts,ツールごとに役とマス数が違います
+도굴꾼,Grave Robber,墓荒らし
+도미노 연쇄,Domino Chain,ドミノ連鎖
+도미노 연쇄!,Domino Chain!,ドミノ連鎖！
+도박,Gamble,ギャンブル
+도박사의 영혼,Gambler's Soul,ギャンブラーの魂
+도박사의 영혼 x2,Gambler's Soul x2,ギャンブラーの魂 x2
+도박사의 영혼 x2 → %d칸 → 총 %d칸 전진!,Gambler's Soul x2 → %d spaces → %d total!,ギャンブラーの魂 x2 → %dマス → 合計 %dマス前進！
+"도박사의 영혼 과열! (눈금 %d, 이동 없이 차례 끝)","Gambler's Soul overheat! (rolled %d, turn ends with no move)",ギャンブラーの魂 オーバーヒート！ (出目 %d、移動なしでターン終了)
+도적 소환(%d번),Summon Bandit (%d),盗賊召喚(%d番)
+도적단 대습격,Bandit Grand Raid,盗賊団大襲撃
+도적단 대습격 · 빵집 털이 · 공산주의 재분배,Bandit Grand Raid · Bakery Heist · Communist Redistribution,盗賊団大襲撃 · パン屋襲撃 · 共産主義再分配
+도착한 칸의 효과가 터져요,The landing tile's effect fires,着いたマスの効果が発動します
+도착한 칸의 효과가 터져요. 공격받으면 방어 카드로 받아칠지 물어봐요.,"The landing tile's effect fires. If attacked, you're asked whether to counter with a Defense card.",着いたマスの効果が発動します。攻撃されたら防御カードで返すか聞かれます。
+돌려...줄...게... -가비아,I'll... give... it... back... -Gabia,返し…て…あげる… -ガビア
+되감고 턴 종료,Rewind & end turn,巻き戻してターン終了
+되돌릴 완주 말이 없습니다,No finished pawn to send back,戻せる完走駒がありません
+두 더미 맨 위 카드의 그림 합이 정확히 5개일 때 먼저 종을 쳐라! (아닐 때 치면 반칙패),Ring the bell first when the top cards show exactly 5 fruits! (Ring otherwise = foul loss),2つの山の一番上のカードの絵の合計がちょうど5個の時に先にベルを鳴らせ！ (違う時に鳴らすと反則負け)
+"두 카드의 그림을 더해 5개가 되는 순간,\n[데스벨 치기!]를 누르세요.","When the fruits on both cards add up to 5,\npress [Ring the bell!].",2枚のカードの絵を足して5個になった瞬間、\n[デスベルを鳴らせ！] を押してください。
+둘 다 추락! 신청자 판정승,Both fell! Challenger wins,両方落下！挑戦者の判定勝ち
+뒤로,Back,戻る
+뒤로 당겨 조준 · 놓으면 발사,Pull back to aim · release to fire,後ろに引いて狙う · 離すと発射
+뒷면 카드,Face-down card,裏向きカード
+드래그해서 다른 각도 보기,Drag to view other angles,ドラッグで別の角度を見る
+딩!,Ding!,チーン！
+딱 멈추면 [b]+3칸[/b] 더 날아가요.,Stop exactly to fly [b]+3 spaces[/b] more.,ぴったり止まると [b]+3マス[/b] さらに飛びます。
+"딱 멈추면 [b]다음 굴림 결과 +1[/b]! 단, 이 칸에 함정이 있으면 버프 대신 함정이 발동해요.","Stop exactly for [b]next roll +1[/b]! But if a trap is here, the trap fires instead of the buff.",ぴったり止まると [b]次の出目 +1[/b]！ ただし、このマスに罠があればバフの代わりに罠が発動します。
+딱 멈추면 [b]생떼 카드 1장[/b]! 어떤 카드인지는 본인만 알아요.,Stop exactly for [b]1 Tantrum Card[/b]! Only you know which card.,ぴったり止まると [b]駄々っ子カード1枚[/b]！ どのカードかは本人だけが知っています。
+딱 멈추면 [b]순간이동[/b]! 두 옷장은 [b]왕복[/b]이라 밟은 쪽의 반대편으로 가요. 지나가기만 하면 아무 일도 없어요.,"Stop exactly to [b]teleport[/b]! The two Wardrobes are [b]linked[/b], so you go to the other one. Passing by does nothing.",ぴったり止まると [b]瞬間移動[/b]！ 2つのクローゼットは [b]往復[/b] なので踏んだ方の反対側へ行きます。通り過ぎるだけなら何も起きません。
+딱 재밌어요!,So fun!,めっちゃ楽しい！
+또이츠,Toitsu,対子
+또이츠 (같은 패 2개),Toitsu (pair),対子 (同じ牌2つ)
+띠,Ribbon,短冊
+라운드,Round,ラウンド
+라운드 %d (%s) · 템포 업 %d단계 · 현재 턴: %s · 플레이 타임 %02d:%02d,Round %d (%s) · Tempo Up stage %d · Turn: %s · Play time %02d:%02d,ラウンド %d (%s) · テンポアップ %d段階 · 現在のターン: %s · プレイ時間 %02d:%02d
+라운드 %d - P%d 차례 (%d/%d),Round %d - P%d's turn (%d/%d),ラウンド %d - P%d の番 (%d/%d)
+라운드 시작 - 증강 드래프트,Round start - Augment draft,ラウンド開始 - 増強ドラフト
+라운드 시작 증강 드래프트 중입니다.,Round-start Augment draft in progress.,ラウンド開始の増強ドラフト中です。
+라지 스트레이트,Large Straight,ラージストレート
+러시안 룰렛 · 블랙잭,Russian Roulette · Blackjack,ロシアンルーレット · ブラックジャック
+러시안 룰렛 · 폭죽 리볼버,Russian Roulette · Bang Revolver,ロシアンルーレット · 暴発リボルバー
+러시안 룰렛 리볼버,Russian Roulette Revolver,ロシアンルーレット・リボルバー
+러시안 룰렛은 [b]멈추기[/b] 버튼이 생명이에요.,"In Russian Roulette, the [b]Stop[/b] button is your lifeline.",ロシアンルーレットは [b]止める[/b] ボタンが命です。
+레몬,Lemon,レモン
+레버 당기기,Pull the lever,レバーを引く
+레이스 시작!,Race Start!,レーススタート！
+로그 접기,Collapse log,ログを閉じる
+로그 펼치기,Expand log,ログを開く
+로비로 나가기,Back to Lobby,ロビーに戻る
+루도 복수자,Ludo Avenger,ルドー復讐者
+룩,Rook,ルーク
+룩과 위치를 맞바꿀 아군 기물,Ally piece to swap with the Rook,ルークと位置を入れ替える味方の駒
+룰·효과 파악이 어려워요,Rules & effects are confusing,ルール・効果がわかりにくい
+"룰렛은 원판을 잡아 돌리고, 리볼버는 방아쇠를 당겨요",Spin the Roulette wheel by grabbing it; pull the Revolver's trigger,ルーレットは円盤をつかんで回し、リボルバーは引き金を引きます
+룰렛을 돌려 전진한다,Spin the wheel and move,ルーレットを回して前進する
+리롤 완료,Rerolled,リロール済
+리벤지 부스터,Revenge Booster,リベンジブースター
+리벤지 부스터 +%d,Revenge Booster +%d,リベンジブースター +%d
+리벤지 부스터 +%d칸 선행 전진 → 이어서 눈금 %d칸 전진,Revenge Booster +%d head start → then %d spaces from the roll,リベンジブースター +%dマス先行前進 → 続けて出目 %dマス前進
+리벤지 부스터 +6칸,Revenge Booster +6 spaces,リベンジブースター +6マス
+리벤지 부스터 +8칸,Revenge Booster +8 spaces,リベンジブースター +8マス
+리벤지 부스터 발동 시 +4칸 전진,+4 spaces when Revenge Booster fires,リベンジブースター発動時 +4マス前進
+리치 마작 만리장성,Riichi Mahjong Wall,リーチ麻雀・万里の長城
+리포트+로그 복사하기,Copy report + log,レポート＋ログをコピー
+릴 3개 · 그림 6종,3 reels · 6 symbols,リール3つ · 絵柄6種
+마 +2칸,Horse +2 spaces,馬 +2マス
+마라맛,Spicy,激辛
+마작패 족보만큼 전진한다,Move by your Mahjong hand,麻雀の役に応じて前進する
+마지막 남은 한 명,The last one standing,最後の1人
+마지막까지 남음,Last one standing,最後まで生き残る
+만,Man,萬
+"말 %d개 사출, 함정 파괴","%d pawns knocked off, traps destroyed",駒%d個を射出、罠を破壊
+말 %d개를 잡고 사라졌습니다,Captured %d pawns and vanished,駒を%d個捕まえて消えました
+말 %d번 (출발 대기),Pawn %d (waiting),駒%d番 (スタート待機)
+말 %d번 [%s] → [%s] 변이 (필살기 충전),Pawn %d [%s] → [%s] mutated (Skill charged),駒%d番 [%s] → [%s] 変異 (必殺技チャージ)
+"말 %d번(선두)과 말 %d번(후방)이 일심동체! 하나가 골인하면 둘 다 골인, 탈락하면 둘 다 탈락","Pawn %d (lead) and Pawn %d (rear) are one! One finishes, both finish; one falls, both fall",駒%d番(先頭)と駒%d番(後方)が一心同体！ 片方がゴールすれば両方ゴール、脱落すれば両方脱落
+말 %d번이 [%s] 기물로 바뀌었습니다,Pawn %d became a [%s],駒%d番が [%s] の駒に変わりました
+말 4개,4 pawns,駒4個
+말 4개 모두 완주,All 4 pawns finished,駒4個すべて完走
+말 4개 모두 출발선(0번)에서,All 4 pawns at the Start line (0),駒4個すべてスタートライン(0番)に
+말 4개 완주 → 먼저 해낸 순서로 1·2·3위,Finish all 4 pawns → #1·2·3 in finishing order,駒4個完走 → 先に達成した順に1・2・3位
+말 [b]4개를 모두[/b] 결승선(0번)에 먼저 넣는 레이스예요.,A race to get [b]all 4[/b] pawns to the finish line (tile 0) first.,駒[b]4個すべて[/b]を先にゴール(0番)に入れるレースです。
+말 {p1}개 모두 트랙 위에서 서로 3칸 이상 간격,"All {p1} pawns on the track, 3+ tiles apart",駒{p1}個すべてがトラック上で互いに3マス以上離れている
+말 고르기,Pick a Pawn,駒を選ぶ
+말 밟고 점프,Leapfrog Jump,駒飛び越えジャンプ
+말 하나를 새 기물로 진화 (도감 → 말),Evolve a pawn into a new piece (Catalog → Pieces),駒1個を新しい駒に進化 (図鑑 → 駒)
+말#%d,Pawn#%d,駒#%d
+말도 안 돼!,No way!,ありえない！
+말마다 능력,Abilities per pawn,駒ごとの能力
+말마다 능력과 필살기가 달라요 ([b]도감 → 말[/b]),Each pawn has its own ability and Skill ([b]Catalog → Pieces[/b]),駒ごとに能力と必殺技が違います ([b]図鑑 → 駒[/b])
+말은 절대 뒤로 가지 않아요. 대신 여러 보너스로 앞으로 튀어 나가요.,"Pawns never move backward. Instead, bonuses fling them forward.",駒は絶対に後ろへ戻りません。代わりに様々なボーナスで前へ飛び出します。
+"말을 넘고, 돌진하고, 땅을 흔드는 장기 기물.","Janggi pieces that jump pawns, charge and shake the ground.",駒を飛び越え、突進し、地面を揺らすチャンギの駒。
+말의 기본,Pawn Basics,駒の基本
+말이 0번에 닿으면 완주. 4개 모두 완주하면 [b]순위 확정[/b]!,A pawn that reaches tile 0 finishes. Finish all 4 to [b]lock your rank[/b]!,駒が0番に着けば完走。4個すべて完走すると[b]順位確定[/b]！
+말이 한 칸씩 이동합니다...,Pawns move one tile at a time...,駒が1マスずつ移動します...
+말풍선으로 감정 표현 (상대에게도 보입니다),Emote with a speech bubble (rivals see it too),吹き出しで感情表現 (相手にも見えます)
+망통,Mangtong,ブタ
+망통!,Mangtong!,ブタ！
+매달린 남자,The Hanged Man,吊るされた男
+매달린 남자: 다음 +8칸,Hanged Man: next +8,吊るされた男: 次回 +8マス
+매칭 완료! 방장이 곧 게임을 시작합니다.,Match found! The host will start soon.,マッチング完了！ホストがまもなくゲームを開始します。
+매칭 중... 다른 교주님을 찾고 있습니다 (경과 시간: %d초),Matching... looking for other Masters (%ds elapsed),マッチング中... 他の教主様を探しています (経過時間: %d秒)
+매칭 취소,Cancel Matching,マッチングをキャンセル
+먼저 해낸 순서대로,In finishing order,先に達成した順に
+멈추고 이동 확정,Stop & lock in,止めて移動確定
+멈추기,Stop,止める
+멈춘 쪽이 잡아요 (스치기만 하면 안 잡혀요),The one who stops captures (passing by doesn't),止まった側が捕まえます (すれ違うだけでは捕まりません)
+메뉴,Menu,メニュー
+메뉴 (ESC),Menu (ESC),メニュー (ESC)
+메뉴로 돌아가기,Back to Menu,メニューに戻る
+모,Mo,モ
+모 (5),Mo (5),モ (5)
+모노:강아지,Mono: Puppy,モノポリー:子犬
+모노:미니카,Mono: Mini Car,モノポリー:ミニカー
+모노:비행기,Mono: Airplane,モノポリー:飛行機
+모노:증기선,Mono: Steamboat,モノポリー:蒸気船
+모노폴리,Monopoly,モノポリー
+"모두의 진도를 P%d(꼴찌)와 똑같이 맞추고, 손패 %d장을 회수해 %d장씩 다시 나눴습니다",Everyone matched P%d (last place); collected %d cards and dealt %d each,全員の進行度をP%d(最下位)と同じに揃え、手札%d枚を回収して%d枚ずつ配り直しました
+모든 굴림 최종 이동 +1칸,+1 space to every final move,すべての出目の最終移動 +1マス
+모든 굴림 최종 이동 +2칸,+2 spaces to every final move,すべての出目の最終移動 +2マス
+모든 추가 이동 +2칸 · 이동 중 함정 면역,All bonus moves +2 spaces · Trap-immune while moving,すべての追加移動 +2マス · 移動中は罠無効
+모치고마 낙하,Mochigoma Drop,持ち駒打ち
+목표 %d%s,Goal %d%s,目標 %d%s
+못 누름,No press,押せない
+무너뜨릴 설치물이 보드에 없습니다.,No objects on the board to collapse.,崩す設置物がボード上にありません。
+무너지는 탑! 설치물을 무너뜨릴 변을 고르세요,Tower! Pick a side to collapse,崩壊する塔！設置物を崩す辺を選んでください
+무승부 %s! 재대결!,Tie %s! Rematch!,引き分け %s！再戦！
+무승부!,Tie!,引き分け！
+"무승부, 재대결!","Tie, rematch!",引き分け、再戦！
+무인도,Desert Island,無人島
+무인도 감옥,Desert Island Prison,無人島監獄
+무인도 탈출 실패!,Island escape failed!,無人島脱出失敗！
+무인도·우이의 소원빌기,Desert Island · Ui's Wish,無人島・ウイのお願い
+무작위로 자동 선택,Auto-pick at random,ランダムで自動選択
+묵찌빠 단두대,Rock-Paper Guillotine,あっち向いてギロチン
+물의 세례를 받아라,Baptism of Water,水の洗礼を受けよ
+뭔지 모르겠지만 가져가세요! -버터,"No idea what it is, but take it! -Butter",よくわかんないけど、これあげる！ -バター
+미끄러짐+카드 강탈,Slip + card steal,スリップ+カード強奪
+미니카,Mini Car,ミニカー
+바꿀 말이 없습니다,No pawn to change,変更できる駒がありません
+바꿀 수 있는 다른 기물이 없습니다,No other piece to change into,変更できる他の駒がありません
+바꿀 수 있는 다른 증강이 없습니다,No other Augment to swap to,交換できる他の増強がありません
+바꿀 증강이 없음,No Augment to swap,交換する増強なし
+바나나 껍질,Banana Peel,バナナの皮
+바둑,Baduk,囲碁
+바둑:백돌,Baduk: White Stone,囲碁:白石
+바둑:흑돌,Baduk: Black Stone,囲碁:黒石
+바람의 정령인데 바람에 날라간다는 소문이 있다,Rumor says this wind spirit gets blown away by the wind,風の精霊なのに風で飛ばされるという噂がある
+바위,Rock,グー
+바이츠 더 더스트,Bites the Dust,バイツ・ザ・ダスト
+반경 2칸 폭파,2-tile blast,半径2マス爆破
+반경 함정 연쇄,Chain traps in radius,半径内の罠を連鎖
+반란군,Rebel,反乱軍
+반시계,Counterclockwise,反時計回り
+반칙,Foul,反則
+반환점,Halfway,折り返し地点
+반환점 (승급 기준),Halfway (promotion line),折り返し地点 (昇格基準)
+반환점 이상 도달 시 퀸 승급,Promotes to Queen past the halfway corner,折り返し地点以上に到達するとクイーンに昇格
+반환점 이상 통과 시 토금 승급 (+1칸),Promotes to Tokin past the halfway corner (+1 space),折り返し地点以上通過で「と金」に成る (+1マス)
+반환점 통과 시 카드 +1,+1 card when passing the halfway corner,折り返し地点通過時にカード +1
+반환점까지 순간이동,Teleport up to halfway,折り返し地点までテレポート
+반환점을 지나면 승급(나리)해 더 강해져요.,Promote (Nari) past the halfway corner to get stronger.,折り返し地点を過ぎると成って(昇格)強くなります。
+받을 수 있는 생떼 카드가 없습니다,No Tantrum Cards to receive,受け取れる駄々っ子カードがありません
+발,Green,發
+발동 경보,Alert on use,発動警報
+발동 여부를 묻는 팝업에서 [발동],[Activate] in the popup,発動するか尋ねるポップアップで [発動]
+발동!,Activate!,発動！
+발동: %s\n방법: %s,Trigger: %s\nHow: %s,発動: %s\n方法: %s
+발사,Fire,発射
+발사 버튼을 꾹 눌렀다 놓으면 발사,Hold and release the Fire button to launch,発射ボタンを長押しして離すと発射
+발사!,Fire!,発射！
+발사대를 당겨 쇠구슬 발사!,Pull the plunger and launch the marble!,プランジャーを引いて鉄球を発射！
+발판 칸에 멈추면 앞으로 {p1}칸 추가 전진 (enabled=FALSE면 꺼짐),Stop on a pad to move {p1} more tiles (off if enabled=FALSE),足場マスに止まると前へ{p1}マス追加前進 (enabled=FALSEならOFF)
+밟으면 반경 2칸 내 모든 말 폭파,Step on it: every pawn within 2 spaces is blasted,踏むと半径2マス以内のすべての駒を爆破
+밟으면 반경 {p1}칸 내 모든 말 폭파,Step on it: every pawn within {p1} spaces is blasted,踏むと半径{p1}マス以内のすべての駒を爆破
+밟은 말은 멈추고 · 반경 {p1}칸 안의 함정이 전부 연쇄 발동,The pawn that steps on it stops · every trap within {p1} spaces chain-triggers,踏んだ駒は停止 · 半径{p1}マス内の罠がすべて連鎖発動
+"밟은 말은 멈추고, 반경 2칸 안의 함정이 전부 연쇄 발동","The pawn that steps on it stops, and every trap within 2 spaces chain-triggers",踏んだ駒は停止し、半径2マス内の罠がすべて連鎖発動
+밟은 적 말 +3칸 미끄러짐 + 카드 1장 강탈,Enemy who steps on it slides +3 spaces + 1 card stolen,踏んだ敵の駒を+3マス滑らせ、カードを1枚強奪
+밟은 적 말 +{p1}칸 미끄러짐 + 카드 1장 강탈,Enemy who steps on it slides +{p1} spaces + 1 card stolen,踏んだ敵の駒を+{p1}マス滑らせ、カードを1枚強奪
+밟은 적 말 ↔ 보드 꼴찌 말 위치 교환,Enemy who steps on it ↔ last pawn on the board swap,踏んだ敵の駒 ↔ ボード上の最下位駒の位置を入れ替え
+방 닫고 나가기,Close Room & Leave,部屋を閉じて退出
+방 연결에 실패했습니다. (방장이 게임 중이거나 네트워크가 원활하지 않습니다),Couldn't connect to the room. (Host is in a game or the network is unstable),部屋への接続に失敗しました。(ホストがゲーム中か、ネットワークが不安定です)
+방 코드,Room code,ルームコード
+방 코드 %s 를 복사했습니다. 친구에게 붙여 넣어 보내 주세요.,Copied room code %s. Paste it to your friends.,ルームコード %s をコピーしました。友達に貼り付けて送ってください。
+방 코드 5자리 · 친구와 친선 대결,5-Digit Code · Play with Friends,5桁コード・友達と対戦
+방 코드는 영문 대문자와 숫자 %d자리입니다.,Room codes are %d uppercase letters and digits.,ルームコードは英大文字と数字の%d桁です。
+방법,How,方法
+방아쇠 1회,1 trigger pull,引き金1回
+방아쇠\n당기기,Pull the\ntrigger,引き金を\n引く
+방아쇠를 당긴 만큼 전진한다,Move as far as you pull the trigger,引き金を引いた分だけ前進する
+방어,Defense,防御
+방어 %s 발동! → %s을(를) 받아침,Defense %s activated! → countered %s,防御 %s 発動！ → %s を返り討ち
+방어 (파랑),Defense (blue),防御 (青)
+방어 카드,Defense Cards,防御カード
+방어 카드 [%s]는 내가 공격받을 때 뜨는 팝업에서 발동합니다.,Defense card [%s] triggers from the popup when you're attacked.,防御カード [%s] は自分が攻撃されたときに出るポップアップで発動します。
+방어 카드는 끌어 쓰지 않아요 (공격받을 때 팝업),Defense cards aren't dragged (popup when attacked),防御カードはドラッグして使いません (攻撃されたときにポップアップ)
+방어!,Blocked!,防御！
+방에 연결하는 중...,Connecting to room...,部屋に接続中...
+방에 입장하지 못했습니다. 다시 시도해 주세요.,Couldn't enter the room. Please try again.,部屋に入れませんでした。もう一度お試しください。
+방을 만들 수 없습니다. 웹 브라우저(Chrome·Edge·Safari 등)에서 열어 주세요.,"Can't create a room. Please open in a web browser (Chrome, Edge, Safari, etc).",部屋を作れません。Webブラウザ(Chrome・Edge・Safariなど)で開いてください。
+방을 만들 수 없습니다. 웹 브라우저에서 열어 주세요.,Can't create a room. Please open it in a web browser.,部屋を作れません。Webブラウザで開いてください。
+방을 만들지 못했습니다 (오류 %d).,Couldn't create room (error %d).,部屋を作れませんでした (エラー %d)。
+방을 찾는 중...,Finding a room...,部屋を探しています...
+방을 찾았습니다! 입장하는 중... (경과 시간: %d초),Room found! Entering... (%ds elapsed),部屋が見つかりました！入室中... (経過時間: %d秒)
+방이 가득 찼거나 닫혔습니다.,Room is full or closed.,部屋が満員か、閉じられています。
+방이 없다면,No room?,部屋がなければ
+방장,Host,ホスト
+방장  %s,Host  %s,ホスト  %s
+방장과 연결하는 중...,Connecting to host...,ホストと接続中...
+방장과의 연결이 끊어졌습니다.,Lost connection to the host.,ホストとの接続が切れました。
+방장은 받아들였지만 내 판에서는 거부됨: %s,Host accepted but my board rejected it: %s,ホストは受け入れましたが、自分の盤面では拒否されました: %s
+방장이 내보냈습니다.,The host kicked you.,ホストに退出させられました。
+배경음악 크기,Music volume,BGM音量
+배속 %dx,Speed %dx,倍速 %dx
+배터리 절약 (초당 30프레임),Battery saver (30 FPS),バッテリー節約 (30FPS)
+백,White,白
+백돌,White Stone,白石
+밸런스·기획 의견,Balance / Design idea,バランス・企画意見
+뱅크샷,Bank Shot,バンクショット
+버그·오류 제보,Bug / Error report,バグ・不具合報告
+버리고 다시!,Discard and redo!,捨ててやり直し！
+버터,Butter,バター
+번,#,番
+번역이 아직 없는 문구는 한국어로 나옵니다,Untranslated text appears in Korean,未翻訳の文言は韓国語で表示されます
+범용,Utility,汎用
+범용 보급,Utility Supply,汎用補給
+법전,Codex,法典
+법전 4칸,Codex: 4 slots,法典 4枠
+법전 개정,Codex Revised,法典改正
+법전 발동,Codex Triggered,法典発動
+법전 슬롯에 마우스를 올리면 모두의 진행도가 보여요. [color=#d6336c][b][위험!][/b][/color] 표시를 견제하세요!,Hover a Codex slot to see everyone's progress. Watch out for the [color=#d6336c][b][Danger!][/b][/color] mark!,法典スロットにマウスを乗せると全員の進行度が見えます。[color=#d6336c][b][危険！][/b][/color] 表示を警戒しましょう！
+법전 조건은 차례가 끝날 때마다 판정해요,Codex conditions are checked at the end of every turn,法典の条件はターンが終わるたびに判定されます
+법전 조건을 채운 채 차례가 끝나면 바로 졸업,End your turn with a Codex condition met to graduate instantly,法典の条件を満たしたままターンが終わると即卒業
+법전 조건을 채웠습니다 - 바로 다음 순위로 졸업합니다 (%d라운드),Codex condition met - you graduate to the next rank (Round %d),法典の条件を満たしました - 次の順位ですぐ卒業します (第%dラウンド)
+법전] %s 등록!,Codex] %s enacted!,法典] %s 登録！
+법전] %s 파기,Codex] %s repealed,法典] %s 破棄
+법전·초증강 증강 등장 확률 상승,Codex & Hyper Augments appear more often,法典・超増強の増強出現率アップ
+법전에 무작위 특수 승리 1개 등록,1 random Special Victory added to the Codex,法典にランダムな特殊勝利を1つ登録
+법전에 새 승리 조건 (3라운드부터),New win condition in the Codex (from Round 3),法典に新しい勝利条件 (第3ラウンドから)
+법전에 있는 동안만 세요,Counts only while in the Codex,法典にある間だけカウント
+법전의 조건을 라운드 끝까지 채우면 졸업,Meet a Codex condition through round end to graduate,法典の条件をラウンド終了まで満たせば卒業
+벨리타,Velita,ベリタ
+병뚜껑 절벽 컬링,Bottle Cap Cliff Curling,ボトルキャップ崖っぷちカーリング
+"병뚜껑을 뒤로 당겨 튕겨라! 번갈아 한 번씩, 상대를 밀어내고 절벽 가까이에 멈추면 승리",Pull back and flick your bottle cap! Take turns; push the rival and stop closest to the cliff to win,ボトルキャップを後ろに引いて弾け！ 交互に1回ずつ、相手を押し出して崖に一番近く止まれば勝利
+보!,Paper!,パー！
+보내는 중...,Sending...,送信中...
+보낸 곳: %s,Sent from: %s,送信元: %s
+보냈습니다! 소중한 의견 감사합니다,Sent! Thanks for your feedback,送信完了！貴重なご意見ありがとうございます
+보너스 이동,Bonus Moves,ボーナス移動
+보드,Board,ボード
+보드 위 말 %d개의 위치를 전부 섞었습니다!,Shuffled the positions of %d pawns on the board!,ボード上の駒%d個の位置をすべてシャッフルしました！
+보드 위 말에 마우스를 올리면 능력이 보여요,Hover a pawn on the board to see its ability,ボード上の駒にマウスを乗せると能力が見えます
+보드 위 말에 마우스를 올리면 상태가 보여요,Hover a pawn on the board to see its status,ボード上の駒にマウスを乗せると状態が見えます
+보드 위 말에는 한 글자 라벨이 붙어요,Pawns on the board get a one-letter label,ボード上の駒には1文字のラベルが付きます
+보드 위에 내 말이 둘 이상 있어야 합니다,Need 2+ of my pawns on the board,ボード上に自分の駒が2個以上必要です
+보드 위에 내 말이 없습니다,None of my pawns on the board,ボード上に自分の駒がありません
+보드에 끌어 놓고 %s 고르기,Drop on the board and pick a %s,ボードにドラッグして%sを選ぶ
+보드에 끌어 놓기,Drag onto the board,ボードにドラッグ
+보드에 드래그,Drag to the board,ボードにドラッグ
+보드에 드래그 → 타일 선택,Drag to the board → pick a tile,ボードにドラッグ → タイルを選択
+보병,Fuhyo,歩兵
+보통맛,Normal,普通
+복수 부스터,Revenge Booster,リベンジブースター
+복수 부스터 +%d칸,Revenge Booster +%d spaces,リベンジブースター +%dマス
+봉인된 에르핀의 식권,Sealed Meal Ticket of Erpin,封印されしエルフィンの食券
+부스터 발판,Booster Pad,ブースター足場
+"부스터 발판 (%s번, 딱 멈추면 +%d칸)","Booster Pad (%s, stop exactly for +%d)",ブースター足場 (%s番、ぴったり止まると+%dマス)
+부스터 발판 (멈추면 +%d칸),Booster Pad (stop for +%d),ブースター足場 (止まると+%dマス)
+부스터 발판 +%d,Booster Pad +%d,ブースター足場 +%d
+부정출발!,False start!,フライング！
+분노,Angry,怒り
+블랙잭,Blackjack,ブラックジャック
+블랙잭 21 딜러,Blackjack 21 Dealer,ブラックジャック21ディーラー
+블랙잭 21 딜러 - 히트 또는 스탠드,Blackjack 21 Dealer - Hit or Stand,ブラックジャック21ディーラー - ヒットまたはスタンド
+비숍,Bishop,ビショップ
+비숍 코너 진입 +1칸,Bishop corner entry +1 space,ビショップのコーナー進入 +1マス
+비영리 무료 배포물,Non-profit free release,非営利の無料配布物
+비우기,Clear,空にする
+비워 두면 익명 교주,Anonymous Master if left blank,空欄なら匿名教主
+비차,Hisha,飛車
+비행기,Airplane,飛行機
+빈 법전 슬롯,Empty Codex slot,空き法典スロット
+빈 자리,Empty seat,空席
+빈 자리가 있는 방을 찾지 못했습니다. 방 코드를 확인하거나 잠시 후 다시 시도해 주세요.,No room with a free seat. Check the room code or try again later.,空席のある部屋が見つかりませんでした。ルームコードを確認するか、しばらくしてからもう一度お試しください。
+빈 타일 %d곳(%s)에 지뢰 매설 + 함정 카드 %s,Mines planted on %d empty tiles (%s) + Trap card %s,空きマス%dか所(%s)に地雷を埋設 + 罠カード %s
+빙글빙글…,Spinning…,ぐるぐる…
+빠아아아아앙! -에르핀,Paaaaaang! -Erpin,パァァァァン！！ -エルフィン
+빵집,Bakery,パン屋
+빵집 (카드 1장),Bakery (1 card),パン屋 (カード1枚)
+빵집 스침만 해도 카드 +1,+1 card just for passing a Bakery,パン屋を通過するだけでカード +1
+빵집 털이! 생떼 카드 %d장(%s),Bakery heist! %d Tantrum Cards (%s),パン屋襲撃！ 駄々っ子カード%d枚(%s)
+빵집!,Bakery!,パン屋！
+빵집·증강에서 얻은 카드를 [b]보드판으로 끌어다 놓아[/b] 써요.,Use cards from Bakeries and Augments by [b]dragging them onto the board[/b].,パン屋・増強で得たカードは[b]ボードへドラッグして[/b]使います。
+빵집·코너 중 1곳으로 직항,Fly direct to a Bakery or corner,パン屋・コーナーのどれか1か所へ直行
+"빵집이면 카드 1장, 옷장이면 순간이동",Bakery: 1 card · Wardrobe: teleport,パン屋ならカード1枚、クローゼットならテレポート
+뽑아라!,Draw!,引け！
+뿅!,Pop!,ポン！
+"뿅! 깃발 발사 · 누적 %d칸 사라짐, 턴 종료","Pop! Flag shot · %d stacked tiles lost, turn ends",ポン！ 旗発射 · 累積%dマス消滅、ターン終了
+뿅! 누적 %d칸 사라짐 · 턴 종료,Pop! %d stacked tiles lost · turn ends,ポン！ 累積%dマス消滅 · ターン終了
+삐끗!,Slip!,ツルッ！
+삐끗! 이번 이동 0칸,Slip! 0 spaces this move,ツルッ！ 今回の移動 0マス
+삐끗! 주사위가 접시 밖으로 (이번 이동 0칸),Slip! The dice left the bowl (0 spaces this move),ツルッ！ サイコロが器の外へ (今回の移動 0マス)
+사도 포위망,Apostle Siege Net,使徒包囲網
+사료스탕스,Feed-stance,サリョスタンス
+사료스탕스  ▶ 정방향 전진,Feed-stance  ▶ moves forward,サリョスタンス  ▶ 順方向に前進
+사료스탕스 출동,Feed-stance Roll Out,サリョスタンス出動
+사료스탕스(▶3~6칸),Feed (▶3~6),サリョスタンス(▶3~6マス)
+"사료스탕스는 정방향, 와구와구 유령은 역방향으로 가장 가까운 적 말을 덮치고 사라집니다","Feed-stance runs forward and the Chomp-Chomp Ghost runs backward, each hitting the nearest enemy pawn then vanishing",サリョスタンスは順方向、パクパク幽霊は逆方向に一番近い敵の駒を襲って消えます
+사용 완료,Used,使用完了
+사용됨,Used,使用済
+삭,Sou,索
+상 도약 +2칸,Elephant leap +2 spaces,象の跳躍 +2マス
+상단 버튼,Top button,上部ボタン
+"상단 코너에 1마리, 말을 잡을 때까지 계속 전진해요",1 at a top corner; keeps moving until it captures a pawn,上のコーナーに1匹、駒を捕まえるまで前進し続けます
+상대 1명 2턴 동안 카드·필살기·주사위 리롤 금지,"Ban 1 rival's cards, Skills and dice rerolls for 2 turns",相手1人の2ターンの間カード・必殺技・サイコロのリロール禁止
+상대 1명 {p1}턴 동안 카드·필살기·주사위 리롤 금지,"Ban 1 rival's cards, Skills and dice rerolls for {p1} turns",相手1人の{p1}ターンの間カード・必殺技・サイコロのリロール禁止
+상대 1명의 다음 턴 건너뛰기,Skip 1 rival's next turn,相手1人の次のターンをスキップ
+상대 말과 차례를 흔드는 카드예요. 쓰면 먼저 [b]공격 카드 발동![/b] 경보가 뜨고 어떤 카드인지 공개돼요.,"Cards that shake up rival pawns and turns. When played, an [b]Attack card![/b] alert shows first and the card is revealed.",相手の駒とターンを揺さぶるカードです。使うとまず[b]攻撃カード発動！[/b]の警報が出て、どのカードか公開されます。
+상대 병뚜껑을 밀어낼 수 있어요! 끝선을 넘으면 추락!,You can push the rival's cap! Cross the edge and it falls!,相手のボトルキャップを押し出せます！端を越えたら転落！
+상대 선두 말을 출발선으로 장외 사출 (프로필 선택),Knock a rival's lead pawn back to Start (pick a profile),相手の先頭駒をスタート地点へ場外射出 (プロフィール選択)
+상대 선두 사출,Knock off rival leader,相手の先頭を射出
+상대 턴 건너뛰기,Skip rival's turn,相手のターンをスキップ
+상대가 깐 함정은 [b]물음표[/b]로만 보여요. 밟아 보기 전엔 몰라요.,Rival traps show only as [b]question marks[/b]. You won't know until you step on one.,相手が仕掛けた罠は[b]ハテナ[/b]でしか見えません。踏むまでわかりません。
+상대가 숨긴 함정은 물음표로 보여요,Rivals' hidden traps show as question marks,相手の隠した罠はハテナで表示されます
+상대를 기다리는 중...,Waiting for opponent...,相手を待っています...
+상대를 기다리는 중입니다...,Waiting for the opponent...,相手を待っています...
+상대의 손을 이겨라!,Beat their hand!,相手の手に勝て！
+상세 로그 (개발용),Detailed log (dev),詳細ログ (開発用)
+"상태 지문 불일치 (항목 %d, %s)","State fingerprint mismatch (entry %d, %s)",状態フィンガープリント不一致 (項目 %d、%s)
+새 게임,New Game,新しいゲーム
+새 게임을 시작했습니다. 4인 핫시트: 버튼을 눌러 모든 플레이어를 번갈아 조작하세요.,New game started. 4P hotseat: press the buttons to control every player in turn.,新しいゲームを開始しました。4人ホットシート: ボタンを押してすべてのプレイヤーを交互に操作してください。
+새 교칙이 들어오면 가장 오래된 교칙이 밀려나요,A new Rule pushes out the oldest one,新しい校則が入ると一番古い校則が押し出されます
+새 방 만들기,Create Room,新しい部屋を作る
+새 특수 승리 교칙: %s,New Special Victory Rule: %s,新しい特殊勝利校則: %s
+생떼 카드,Tantrum Cards,駄々っ子カード
+생떼 카드 여러 장 (도감 → 범용),Several Tantrum Cards (Catalog → Utility),駄々っ子カード複数枚 (図鑑 → 汎用)
+생떼 카드 여러 장 (방어·함정만 주는 보급도),Several Tantrum Cards (some packs give only Defense/Trap),駄々っ子カード複数枚 (防御・罠だけをくれる補給も)
+생떼 카드 최대 7장,Up to 7 Tantrum Cards,駄々っ子カード最大7枚
+생떼 카드 패키지,Tantrum Card Pack,駄々っ子カードパック
+생떼 카드 획득: %s,Tantrum Cards gained: %s,駄々っ子カード獲得: %s
+서버 생성 실패: %s,Server creation failed: %s,サーバー作成失敗: %s
+석양의 무법자,Sunset Outlaw,夕陽のガンマン
+섞을 말이 부족합니다,Not enough pawns to shuffle,シャッフルする駒が足りません
+선두 말 %d번 타일,Lead pawn on tile %d,先頭駒 %d番マス
+선두 적 말을 출발선으로 사출하고 내 말 +%d칸!,"Leading enemy sent to Start, my pawn +%d spaces!",先頭の敵の駒をスタート地点へ射出し、自分の駒 +%dマス！
+선택 완료,Chosen,選択完了
+선택 완료!,Picked!,選択完了！
+선택 중,Choosing,選択中
+선택한 증강,Chosen Augments,選択した増強
+선택할 수 없는 말입니다,Can't select this pawn,選択できない駒です
+설문 창을 열었어요. 리포트가 클립보드에 복사되어 있으니 붙여넣어 주세요,Opened the survey. The report is in your clipboard; please paste it,アンケート画面を開きました。レポートがクリップボードにコピーされているので貼り付けてください
+설정,Settings,設定
+성계,Narikei,成桂
+세계,The World,世界
+세계수의 이름으로 그 함정은 무효야! -네르,"In the name of the World Tree, that trap is void! -Ner",世界樹の名において、その罠は無効です！ -ネル
+셰이디,Shady,シェイディ
+소리,Sound,音
+소리 꺼짐,Sound off,音 OFF
+소리 켜기/끄기 (크기는 메뉴 > 게임 설정),Sound on/off (volume: Menu > Settings),音のON/OFF (音量はメニュー > ゲーム設定)
+소리 켜짐,Sound on,音 ON
+소중한 의견 감사합니다!,Thanks for your feedback!,貴重なご意見ありがとうございます！
+소환,Summon,召喚
+소환 (분홍),Summon (pink),召喚 (ピンク)
+소환된 자리에서 기다리다가 라운드가 끝나면 역방향으로 가장 가까운 적 말까지 달려가 그 말 하나를 출발선으로 날려버리고 사라집니다,"Waits where summoned; at round end, runs backward to the nearest enemy pawn, blasts it back to Start and vanishes",召喚された場所で待機し、ラウンドが終わると逆方向に一番近い敵の駒まで走って、その駒1個をスタート地点へ吹き飛ばして消えます
+소환된 자리에서 기다리다가 라운드가 끝나면 정방향으로 가장 가까운 적 말까지 달려가 그 말 하나를 출발선으로 날려버리고 사라집니다,"Waits where summoned; at round end, runs forward to the nearest enemy pawn, blasts it back to Start and vanishes",召喚された場所で待機し、ラウンドが終わると順方向に一番近い敵の駒まで走って、その駒1個をスタート地点へ吹き飛ばして消えます
+소환할,summon,召喚する
+손패,Hand,手札
+손패 %d장,Hand: %d cards,手札 %d枚
+손패 최대 7장,Hand: max 7,手札最大7枚
+손패가 가득 찼습니다.,Your hand is full.,手札がいっぱいです。
+손패는 최대 장수를 넘으면 더 받지 못해요,You can't get more cards once your hand is full,手札が最大枚数を超えると、それ以上受け取れません
+손패에 없는 카드입니다,That card isn't in your hand,手札にないカードです
+쇼기,Shogi,将棋
+쇼기:각행,Shogi: Kaku,将棋:角行
+쇼기:계마,Shogi: Keima,将棋:桂馬
+쇼기:보병,Shogi: Fuhyo,将棋:歩兵
+쇼기:비차,Shogi: Hisha,将棋:飛車
+쇼기:성계,Shogi: Narikei,将棋:成桂
+쇼기:용마,Shogi: Dragon Horse,将棋:竜馬
+쇼기:용왕,Shogi: Dragon King,将棋:竜王
+쇼기:토금,Shogi: Tokin,将棋:と金
+순간이동할,teleport to,テレポートする
+"순서 불일치: 항목 %s (serial %d, 내 serial %d)","Order mismatch: entry %s (serial %d, mine %d)",順序不一致: 項目 %s (serial %d、自分の serial %d)
+순위 확정,Rank Locked,順位確定
+순한맛,Mild,甘口
+숨은 함정,Hidden Traps,隠し罠
+슈팡 특급 배송,Shupang Express Delivery,シュパン特急配送
+슌쯔,Shuntsu,順子
+슌쯔 (연속 숫자),Shuntsu (run),順子 (連続した数字)
+스몰 스트레이트,Small Straight,スモールストレート
+스타 카트,Star Kart,スターカート
+스타 카트 추가 이동 +%d칸,Star Kart bonus move +%d spaces,スターカート追加移動 +%dマス
+스탠드 (현재 %d칸 이동 확정),Stand (lock in %d spaces),スタンド (現在 %dマス移動確定)
+스탠드 (현재 0칸 이동 확정),Stand (lock in 0 spaces),スタンド (現在 0マス移動確定)
+스탠드: 합계 %d → %d칸 이동!,Stand: total %d → move %d spaces!,スタンド: 合計 %d → %dマス移動！
+스트레이트,Straight,ストレート
+스트레이트 플러시,Straight Flush,ストレートフラッシュ
+스파이크,Spike Strip,スパイク
+스프링을 당겼다가… 발사!,Pull the spring… Fire!,バネを引いて… 発射！
+스피키 룰렛,Speaki Roulette,スピキ・ルーレット
+슬롯을 돌려 전진한다,Spin the slots and move,スロットを回して前進する
+승리 (말 4개 모두 완주),Victory (all 4 pawns finished),勝利 (駒4個すべて完走)
+승리 기록 초기화,Reset victory records,勝利記録をリセット
+승리 요인: %s,Won by: %s,勝因: %s
+승리!,Win!,勝利！
+승리!  ,Win!,勝利！  
+승부!,Showdown!,勝負！
+승자 +3칸·패자 사출,Winner +3 · loser knocked off,勝者 +3マス・敗者射出
+시간 끝!,Time's up!,時間切れ！
+시간 끝! 판정 중...,Time's up! Judging...,時間切れ！ 判定中...
+시간 초과!,Time out!,時間切れ！
+시간을 멈춰서라도 널 막아보겠어! -리뉴아,I'll stop you even if I have to stop time! -Renewa,時間を止めてでもあなたを止めてみせる！ -リニュア
+시간이 멈춘 사이 한 번 더 움직입니다,One more move while time stands still,時間が止まっている間にもう一度動きます
+시민,Citizen,市民
+시민 무승부,Citizen tie,市民同士で引き分け
+시작,Start,スタート
+시작하기,Start,はじめる
+신호가 뜨면 먼저 쏴라!,Shoot first at the signal!,合図が出たら先に撃て！
+실라,Sylla,シラ
+실린더 회전!,Spinning the cylinder!,シリンダー回転！
+싸늘한 밑장빼기,Cold Bottom Deal,冷徹な底抜きイカサマ
+싸늘한 밑장빼기! 다음 굴림 결과를 고르세요,Cold Bottom Deal! Pick your next roll,冷徹な底抜きイカサマ！ 次の出目を選んでください
+싸이크론,Mystical Space Typhoon,サイクロン
+아래 말 카드나 보드 위의 말을 누르면 그 말이 움직여요.,Tap a pawn card below or a pawn on the board to move it.,下の駒カードかボード上の駒を押すと、その駒が動きます。
+아무도 못 잡아 보드에 남아 계속 전진합니다,Caught no one; stays on the board and keeps moving,誰も捕まえられずボードに残って前進し続けます
+아바타,Avatar,アバター
+아바타 ,Avatar,アバター 
+아바타 설정,Avatar Settings,アバター設定
+아우토반 니트로,Autobahn Nitro,アウトバーン・ニトロ
+아우토반 니트로! %d번 칸에서 말 %d개를 장외 사출했습니다,Autobahn Nitro! Knocked %d pawns off at tile %d,アウトバーン・ニトロ！ %d番マスで駒%d個を場外射出しました
+아우토반 니트로! 말 %d번이 %d번 코너까지 질주했습니다,Autobahn Nitro! Pawn %d dashed to corner %d,アウトバーン・ニトロ！ 駒%d番が%d番コーナーまで疾走しました
+아우토반 니트로! 말 %d번이 결승선까지 질주해 완주했습니다,Autobahn Nitro! Pawn %d dashed to the finish,アウトバーン・ニトロ！ 駒%d番がゴールまで疾走して完走しました
+"아우토반 니트로: 선두 말이 코너까지 직진, 길을 막은 칸은 전부 장외 사출",Autobahn Nitro: lead pawn dashes to the corner; every pawn blocking the way is knocked off,アウトバーン・ニトロ: 先頭駒がコーナーまで直進、道を塞いだマスはすべて場外射出
+아직 기록이 없습니다,No records yet,まだ記録がありません
+아직 전송 주소가 없어요. [리포트+로그 복사하기]로 복사해 댓글이나 채팅창에 붙여넣어 주세요,No destination yet. Copy with [Copy report + log] and paste it in a comment or chat,まだ送信先がありません。[レポート＋ログをコピー]でコピーして、コメントやチャットに貼り付けてください
+아케이드,Arcade,アーケード
+아케이드:8번 공,Arcade: 8-Ball,アーケード:8ボール
+아케이드:루도 복수자,Arcade: Ludo Avenger,アーケード:ルドー復讐者
+아케이드:스타 카트,Arcade: Star Kart,アーケード:スターカート
+아케이드:지뢰찾기 공병,Arcade: Minesweeper Sapper,アーケード:マインスイーパー工兵
+아케이드:킹 체커,Arcade: King Checker,アーケード:キングチェッカー
+악마의 계약 (영구 가속),Devil's Contract (Perma-Haste),悪魔の契約 (永久加速)
+안전 지대: 잡을 수 없어요,Safe zone: no captures,安全地帯: 捕まえられません
+안정,Steady,安定
+알 수 없는 범용 증강입니다,Unknown utility Augment,不明な汎用増強です
+알 수 없는 초증강입니다,Unknown Hyper Augment,不明な超増強です
+알고리즘 밴,Algorithm Ban,アルゴリズムBAN
+알고리즘 밴! %d턴 동안 카드를 쓸 수 없습니다,Algorithm Ban! No cards for %d turns,アルゴリズムBAN！ %dターンの間カードを使えません
+앞 3칸 적 사출,Knock off 3 spaces ahead,前方3マスの敵を射出
+앞 칸 비면 +2칸,+2 spaces if the tile ahead is empty,前のマスが空いていれば +2マス
+앞뒤 2칸의 설치물 모두 파괴,Destroy all placed objects within 2 spaces,前後2マスの設置物をすべて破壊
+앞쪽 가장 가까운 적에게 돌진,Charge the nearest enemy ahead,前方の一番近い敵へ突進
+액션 로그 (최근 %d줄),Action log (last %d lines),アクションログ (最新%d行)
+야 허접! 승부다! -티그,"Hey, scrub! Fight me! -Tig",おい雑魚！勝負しろ！ -ティグ
+야추 다이스,Yacht Dice,ヨットダイス
+야추 다이스 - 고정할 주사위를 클릭하세요,Yacht Dice - click dice to keep,ヨットダイス - キープするサイコロをクリックしてください
+"양쪽은 특수 카드 1장과 시민 4장으로 시작합니다.\n한 장씩 내고, 시민끼리 만나면 버린 뒤 다시 고르세요.","Each side starts with 1 special card and 4 Citizens.\nPlay one at a time; when Citizens meet, discard and pick again.",両者は特殊カード1枚と市民4枚で始めます。\n1枚ずつ出し、市民同士が出会ったら捨てて選び直してください。
+어느 말을 [%s]로 진화시킬까요?,Evolve which pawn into [%s]?,どの駒を [%s] に進化させますか？
+어디로 대결하러 갈까요?,Where do you want to battle?,どこへ対決しに行きますか？
+어딘가에 함정이 숨겨졌습니다. 조심하세요!,A trap is hidden somewhere. Watch out!,どこかに罠が隠されました。気をつけて！
+"어떤 상황이었는지, 혹은 개선 아이디어를 편하게 적어주세요!","Tell us what happened, or share your ideas freely!",どんな状況だったか、または改善のアイデアを気軽に書いてください！
+어째선지 돈까스만 먹으려 하면 스킵당한다고 한다.,Rumor says you get skipped whenever you try to eat a pork cutlet.,なぜかトンカツを食べようとするとスキップされるらしい。
+언어,Language,言語
+언어 바꾸기 (번역이 없는 문구는 한국어로 표시됩니다),Change language (untranslated text shows in Korean),言語を変更 (未翻訳の文言は韓国語で表示されます)
+언어: 한국어 ↔ English,Language: Korean ↔ English,言語: 韓国語 / English / 日本語
+언제,When,いつ
+없어요,No,なし
+없음,None,なし
+없음 (손패 가득),None (hand full),なし (手札がいっぱい)
+에르핀,Erpin,エルフィン
+에르핀의 빵집 털이,Erpin's Bakery Heist,エルフィンのパン屋襲撃
+엘레나,Elena,エレナ
+엘레나 시장을 위해 당신은 밴입니다. -아멜리아,"For Mayor Elena's sake, you're banned. -Amelia",エレナ市長のため、あなたはBANです。 -アメリア
+엘리아스 E카드,Elias E-Card,エリアスEカード
+엘리아스 마블,Elias Marble,エリアスマーブル
+엘리아스 부동산 재벌,Elias Real Estate Tycoon,エリアス不動産財閥
+엘리아스 중앙 법전,Elias Codex,エリアス中央法典
+"여기를 지나면 체스 폰은 [b]퀸[/b]으로, 쇼기 말은 [b]승급[/b]해요.","Past here, Chess Pawns become [b]Queens[/b] and Shogi pieces [b]promote[/b].",ここを過ぎるとチェスのポーンは[b]クイーン[/b]に、将棋の駒は[b]成り[/b]ます。
+여왕,Queen,女王
+여왕 > 시민 > 반란군 > 여왕 · 사용한 카드는 다시 쓸 수 없어요!,Queen > Citizen > Rebel > Queen · Used cards can't be reused!,女王 > 市民 > 反乱軍 > 女王 · 使ったカードは再使用できません！
+역만,Yakuman,役満
+역만 (8%),Yakuman (8%),役満 (8%)
+역만 = 국사무쌍·대삼원,Yakuman = Thirteen Orphans · Big Three Dragons,役満 = 国士無双・大三元
+역만 재굴림 +1,Yakuman reroll +1,役満でリロール +1
+역방향,reverse,逆方向
+역방향 질주 사출,Backward dash knockoff,逆走射出
+연결 서버에 닿지 못했습니다. 인터넷 연결을 확인해 주세요 (친구가 방에 들어오지 못할 수 있습니다).,Couldn't reach the connection server. Check your internet (friends may not be able to join).,接続サーバーに届きませんでした。インターネット接続を確認してください (友達が部屋に入れない可能性があります)。
+연결 정보가 올바르지 않습니다.,Invalid connection info.,接続情報が正しくありません。
+연결 정보를 처리하지 못했습니다.,Couldn't process connection info.,接続情報を処理できませんでした。
+연결 중...,Connecting...,接続中...
+연결 후보를 찾지 못했습니다. 네트워크 연결을 확인해 주세요.,No connection candidates found. Check your network.,接続候補が見つかりませんでした。ネットワーク接続を確認してください。
+연결을 준비하지 못했습니다 (오류 %d).,Couldn't prepare connection (error %d).,接続を準備できませんでした (エラー %d)。
+연결을 준비하지 못했습니다.,Couldn't prepare connection.,接続を準備できませんでした。
+연대책임: %s 짝 말도 %s,Shared Fate: %s's partner also %s,連帯責任: %s のペアの駒も %s
+연속, chain,連続
+열끗,Animal,タネ
+오늘의 대결!,Today's Duel!,今日の対決！
+오른쪽 카드를 누르면 족보와 칸 수 표가 나와요,Tap the right card to see the hands and tile table,右のカードを押すと役とマス数の表が表示されます
+오른쪽 칸 이름을 누르면 자세히 볼 수 있어요,Tap a tile name on the right for details,右のマス名を押すと詳しく見られます
+온라인,Online,オンライン
+온라인 대전은 모두가 같은 속도로 보도록 1x로 고정됩니다,Online games are locked to 1x so everyone sees the same speed,オンライン対戦は全員が同じ速度で見られるよう1xに固定されます
+온라인 대전은 제한 시간이 항상 켜져 있습니다 (3배 길게).,Online games always use the time limit (3x longer).,オンライン対戦は制限時間が常にONです (3倍長め)。
+온라인 대전을 시작했습니다 (%d명). 내 차례에 직접 조작하세요.,Online game started (%d players). Play on your turn.,オンライン対戦を開始しました (%d人)。自分の番に直接操作してください。
+올바르지 않은 선택입니다,Invalid choice,正しくない選択です
+올바른 코드가 아닙니다. 복사한 코드 전체를 붙여 넣어 주세요.,Invalid code. Paste the entire copied code.,正しいコードではありません。コピーしたコード全体を貼り付けてください。
+옷장,Wardrobe,クローゼット
+옷장 (%s),Wardrobe (%s),クローゼット (%s)
+옷장 → 더 먼 곳으로 워프,Wardrobe → warp to the farther one,クローゼット → より遠い方へワープ
+옷장과 부스터 발판은 [b]딱 멈출 때만[/b] 작동해요,Wardrobes and Boost Pads work [b]only when you stop exactly[/b],クローゼットとブースター足場は[b]ぴったり止まったときだけ[/b]作動します
+와구와구 유령,Chomp-Chomp Ghost,パクパク幽霊
+와구와구 유령  ◀ 역방향 전진,Chomp-Chomp Ghost  ◀ moves backward,パクパク幽霊  ◀ 逆方向に前進
+와구와구 유령 소환(%d번),Summon Chomp-Chomp Ghost (%d),パクパク幽霊召喚(%d番)
+와구와구(◀3~6칸),Chomp (◀3~6),パクパク(◀3~6マス)
+완벽한 억까의 순간! (DECIMATED!),Perfectly rigged moment! (DECIMATED!),完璧な理不尽の瞬間！ (DECIMATED!)
+완주,Finished,完走
+완주 %d/%d,Finished %d/%d,完走 %d/%d
+완주 %d/%d · 진행도 %d%%,Finished %d/%d · Progress %d%%,完走 %d/%d · 進行度 %d%%
+완주 0개인 채로 선두의 말을 {p1}회 처치,KO the leader's pawns {p1} times with 0 finished,完走0個のまま先頭の駒を{p1}回撃破
+완주 완료,Finished,完走済
+완주 직전에 잡히면 억울해요. 선두 말은 적 앞을 조심!,Getting captured right before finishing hurts. Keep your lead pawn away from enemies!,ゴール直前に捕まると悔しいです。先頭の駒は敵の前に注意！
+완주!,Finish!,ゴール！
+완주와 순위,Finish & Ranking,完走と順位
+완주한 말 %d번을 제물로 되돌리고 영구 +%d칸 가속 계약!,Sacrificed finished Pawn %d for a permanent +%d tile contract!,完走した駒%d番を生贄に戻し、永久 +%dマス加速の契約！
+왕궁이 터질때 이 카드를 내면 반사 된다고 했어! -에르핀,They said playing this card when the palace blows up reflects it! -Erpin,王宮が爆発するときにこのカードを出すと反射するって言ってた！ -エルフィン
+용마,Dragon Horse,竜馬
+용마 십자 베기,Dragon Horse Cross Slash,竜馬十字斬り
+용마 앞 1칸 추가 처치,Dragon Horse extra KO 1 space ahead,竜馬の前1マスを追加撃破
+용왕,Dragon King,竜王
+용왕 베기,Dragon King Slash,竜王斬り
+우와악! 이거 누구짓이야! -에스피,Waaagh! Who did this?! -Espi,うわああっ！これ誰の仕業！？ -エスピ
+우이가 행복하게 해줄게 -우이,Ui will make you happy -Ui,ウイが幸せにしてあげるね -ウイ
+우이의 소원빌기,Ui's Wish,ウイのお願い
+우하단 0번에서 출발해 반시계로 한 바퀴. 다시 0번이 [b]결승선[/b]이에요.,Start at tile 0 (bottom right) and go once around counterclockwise. Tile 0 is also the [b]finish line[/b].,右下の0番から出発して反時計回りに1周。また0番が[b]ゴール[/b]です。
+운명\n뽑기,Draw\nFate,運命を\n引く
+운명의 수레바퀴,Wheel of Fortune,運命の輪
+움직일 수 있는 말이 없어,No movable pawn,動かせる駒がありません
+움직일 수 있는 말이 없어 이동 실패,"No movable pawn, move failed",動かせる駒がなく移動失敗
+웃음,Laugh,笑い
+워프!,Warp!,ワープ！
+원판을 잡고 빙글 돌려 놓으세요,Grab the wheel and give it a spin,円盤をつかんでくるっと回してください
+원페어,One Pair,ワンペア
+월 합 끝자리 (망통 = 끝자리 0),Last digit of the month sum (Mangtong = 0),月の合計の下一桁 (ブタ = 下一桁0)
+웹 빌드는 직접 호스트할 수 없습니다. WebRTC 피어를 use_peer()로 주입하세요.,Web builds can't host directly. Inject a WebRTC peer with use_peer().,Webビルドでは直接ホストできません。WebRTCピアを use_peer() で注入してください。
+윷,Yut,ユッ
+윷 (4),Yut (4),ユッ (4)
+윷 · 야추,Yut · Yacht,ユッ · ヨット
+윷·모 재굴림 (최대 3번),Yut·Mo reroll (max 3),ユッ・モでリロール（最大3回）
+윷놀이 기물 - 선택적 업기,Yut Pieces - Optional Stacking,ユンノリの駒 - 任意のおんぶ
+윷놀이 기물 업기: [업기 (하나로 합체)] 또는 [그냥 두기 (개별 유지)]를 고르세요. (시간이 지나면 자동으로 업기),Yut stacking: pick [Stack (merge into one)] or [Keep separate]. (Time out = auto-stack),ユンノリの駒のおんぶ: [おんぶ (1つに合体)] か [そのまま (個別のまま)] を選んでください。(時間切れで自動的におんぶ)
+윷말,Yut Token,ユッ駒
+윷말끼리 만나면 자동으로 업혀 한 번에 이동해요.,Yut pawns that meet stack up and move together.,ユッ駒同士が出会うと自動でおんぶして一度に移動します。
+윷말은 적을 잡으면 한 번 더,Yut pawns roll again on a capture,ユッ駒は敵を捕まえるともう1回
+윷을 던져 나온 만큼 전진한다,Throw the Yut sticks and move,ユッを投げて出た分だけ前進する
+으흐흐... 버려진건 내꺼임... -마요,Heh heh... finders keepers... -Mayo,ウフフ…捨てられたものはボクのモノ… -マヨ
+은신 함정 설치!,Hidden trap set!,隠し罠設置！
+음소거,Mute,ミュート
+응답 코드를 적용하지 못했습니다 (오류 %d).,Couldn't apply reply code (error %d).,応答コードを適用できませんでした (エラー %d)。
+이 게임은 가로 화면에 맞춰져 있습니다.,This game is made for landscape.,このゲームは横画面に最適化されています。
+이 사료들은 내것이다! -루포,This kibble is mine! -Rupo,このカリカリは全部アタシのものだ！ -ルポ
+이 코드는 응답 코드입니다. 방장에게 받은 초대 코드를 붙여 넣어 주세요.,This is a reply code. Paste the invite code from the host.,このコードは応答コードです。ホストからもらった招待コードを貼り付けてください。
+이 코드는 초대 코드입니다. 참가자가 만든 응답 코드를 붙여 넣어 주세요.,This is an invite code. Paste the reply code from the guest.,このコードは招待コードです。参加者が作った応答コードを貼り付けてください。
+이 환경에서는 WebRTC를 쓸 수 없습니다 (오류 %s). 웹 브라우저 빌드로 실행해 주세요.,WebRTC isn't available here (error %s). Please run the web browser build.,この環境ではWebRTCを使えません (エラー %s)。Webブラウザ版で実行してください。
+이거 왜 급발진 하는ㄱ -엘레나,Why is it accelerating on its ow -Elena,なんでこれ急発進するのよぉーっ -エレナ
+이게 억까지!,So rigged!,これぞ理不尽！
+이기는 법,How to Win,勝ち方
+이동,Move,移動
+이동 +2칸 · 말·함정 관통,Move +2 spaces · passes pawns & traps,移動 +2マス · 駒・罠を貫通
+이동 실패,Move Failed,移動失敗
+이동 없음,No move,移動なし
+이동 중...,Moving...,移動中...
+이동할 말 선택,Pick a pawn to move,動かす駒を選択
+이동할 말을 고르세요 (버튼에 마우스를 올리면 도착 경로가 노란 테두리로 보입니다).,Pick a pawn to move (hover a button to see its path in yellow).,動かす駒を選んでください (ボタンにマウスを乗せると到着ルートが黄色い枠で表示されます)。
+이름 바꾸기,Rename,名前を変更
+이미 가지고 있는 기물이라 받을 수 없습니다,You already own this piece,すでに所持している駒なので獲得できません
+이미 가진 패시브입니다,You already have this passive,すでに持っているパッシブです
+이미 리롤한 카드입니다,Already rerolled this card,すでにリロールしたカードです
+이번 굴림 +4,This roll +4,今回の出目 +4
+이번 라운드 이동 거리 %d배! (눈금 %d 이하면 과열: 이동 없이 차례가 바로 끝남),"Move x%d this round! (Roll %d or less = overheat: no move, turn ends)",今ラウンドの移動距離 %d倍！ (出目 %d 以下でオーバーヒート: 移動せずに番がすぐ終了)
+이번 이동 0칸 (1/6),0 spaces this move (1/6),今回の移動 0マス (1/6)
+이번 턴이 끝나면 한 턴 더,One more turn after this one,このターンが終わると、もう1ターン
+이번 턴이 통째로 되감겼습니다,This whole turn was rewound,このターンが丸ごと巻き戻されました
+이번 판 난이도와 템포는 어떠셨나요? (클릭 시 개발자에게 바로 전달됩니다!),How were this game's difficulty and pace? (Clicking sends it straight to the developer!),今回の難易度とテンポはいかがでしたか？ (クリックすると開発者に直接届きます！)
+이번 판 후기 / 밸런스 피드백 남기기,Leave a review / balance feedback,今回の感想・バランス意見を送る
+이의 있음!,Objection!,異議あり！
+이의 있음! 누구의 어떤 기록을 0으로 되돌릴까요?,Objection! Whose record should be reset to 0?,異議あり！ 誰のどの記録を0に戻しますか？
+익명 교주,Anonymous Master,匿名教主
+익명 줘팸터,Random Brawl,匿名バトル
+인생게임 회전 룰렛,Game of Life Roulette,人生ゲーム回転ルーレット
+인술! 통나무 바꿔치기! -모모,Ninja art! Log substitution! -Momo,忍術！変わり身の術！ -モモ
+일기토 데스매치,1v1 Deathmatch,一騎討ちデスマッチ
+일기토 데스매치는 [b]상대 프로필이나 말 위에[/b] 놓으면 그 상대와 붙어요. 종목은 6종 중 무작위!,Drop the 1v1 Deathmatch [b]on a rival's profile or pawn[/b] to fight them. The event is 1 of 6 at random!,一騎討ちデスマッチは[b]相手のプロフィールか駒の上に[/b]置くと、その相手と対決します。種目は6種からランダム！
+일반 함정은 코너·빵집·옷장·부스터 발판을 뺀 칸에 깔아요,"Normal traps go anywhere except corners, Bakeries, Wardrobes and Boost Pads",通常の罠はコーナー・パン屋・クローゼット・ブースター足場以外のマスに仕掛けます
+일치 없음,No match,一致なし
+"입문·힐링: 컴퓨터가 내 말을 자주 봐주고, 나를 노리는 공격 카드도 덜 써요",Beginner/Chill: the computer often goes easy on you and uses fewer attack cards on you,入門・癒し: コンピューターが自分の駒をよく見逃してくれ、自分を狙う攻撃カードも控えめです
+입장 대기 중...,Waiting to join...,入室待機中...
+입장 실패,Join failed,入室失敗
+입장 완료!  %s,Joined!  %s,入室完了！  %s
+입장 완료! 방장이 게임을 시작하기를 기다리는 중...,Joined! Waiting for the host to start...,入室完了！ ホストがゲームを開始するのを待っています...
+입장하기,Enter,入室する
+있어요,Yes,あります
+자비 없는 장외 추방! (OBLITERATED!),Merciless ejection! (OBLITERATED!),容赦なき場外追放！ (OBLITERATED!)
+자세한 건 [b]도감 → 도구[/b],More in [b]Catalog → Tools[/b],詳しくは[b]図鑑 → ツール[/b]
+자세한 건 [b]도감 → 말[/b],More in [b]Catalog → Pieces[/b],詳しくは[b]図鑑 → 駒[/b]
+자세한 건 [b]도감 → 법전[/b],More in [b]Catalog → Codex[/b],詳しくは[b]図鑑 → 法典[/b]
+작성자: %s,Author: %s,作成者: %s
+잘 부탁해요!,Nice to meet you!,よろしくお願いします！
+잠시 뒤에 다시 보낼 수 있어요 (%d초),You can send again shortly (%ds),少し待ってから再送信できます (%d秒)
+잡기,Captures,捕獲
+잡기·공격 카드·함정이 공격이에요,"Captures, attack cards and traps count as attacks",捕獲・攻撃カード・罠が攻撃です
+잡기·함정 1회 방어 (증강 라운드까지 안 잡히면 재충전),Blocks 1 capture/trap (recharges if not caught until the Augment round),捕獲・罠を1回防御 (増強ラウンドまで捕まらなければ再チャージ)
+"잡으면 재굴림, 만나면 자동으로 업혀요.",Reroll on capture; auto-stack when meeting.,捕まえるともう一度振れ、出会うと自動でおんぶします。
+잡지 않아요,No capture,捕まえない
+잡혀서 출발선으로 가도 필살기는 되살아나지 않아요,Skills don't come back even if captured and sent to Start,捕まってスタート地点に戻っても必殺技は復活しません
+잡히면,If captured,捕まると
+장, cards,枚
+장기,Janggi,チャンギ
+장기:마,Janggi: Horse,チャンギ:馬
+장기:상,Janggi: Elephant,チャンギ:象
+장기:차,Janggi: Chariot,チャンギ:車
+장기:포,Janggi: Cannon,チャンギ:包
+장땡,Jang Ttaeng,十アラシ
+장땡·광땡,Jang·Gwang Ttaeng,十・光アラシ
+장외,Off board,場外
+장전 중...,Loading...,装填中...
+재굴림,Reroll,リロール
+재미있던 점·기타,Fun stuff / Other,面白かった点・その他
+저격!,Snipe!,狙撃！
+저격수의 표적,Sniper's Mark,スナイパーの標的
+저격할 적 말이 없습니다,No enemy pawn to snipe,狙撃する敵の駒がありません
+저리비켜! 나 바쁜몸이라고! -슈팡,Move it! I'm a busy girl! -Shupang,どいてどいて！アタシは忙しい身なんだから！ -シュパン
+"적 1명과 6종 랜덤 미니게임 데스매치! 승자 말 +3칸, 패자 선두 말 사출","Deathmatch vs 1 rival in 1 of 6 random minigames! Winner +3 spaces, loser's lead pawn knocked off",敵1人と6種のランダムミニゲームでデスマッチ！ 勝者の駒 +3マス、敗者の先頭駒を射出
+"적 1명과 6종 랜덤 미니게임 데스매치! 승자 말 +{p1}칸, 패자 선두 말 사출","Deathmatch vs 1 rival in 1 of 6 random minigames! Winner +{p1} spaces, loser's lead pawn knocked off",敵1人と6種のランダムミニゲームでデスマッチ！ 勝者の駒 +{p1}マス、敗者の先頭駒を射出
+적 말 위에 멈추면 그 말은 출발선으로,Stop on an enemy pawn to send it to Start,敵の駒の上に止まると、その駒はスタート地点へ
+적 말 위에 멈추면 잡기!,Stop on an enemy pawn to capture it!,敵の駒の上に止まると捕獲！
+적 말을 {p1}회 처치,KO enemy pawns {p1} times,敵の駒を{p1}回撃破
+적 말이 있는 칸에 [b]멈추면[/b] 그 말은 출발선으로 날아가요.,[b]Stop[/b] on a tile with an enemy pawn to send it flying back to Start.,敵の駒がいるマスに[b]止まると[/b]、その駒はスタート地点へ飛ばされます。
+전군 돌연변이: %s (필살기 충전),All-Troop Mutation: %s (Skill charged),全軍突然変異: %s (必殺技チャージ)
+전송에 실패했습니다. [리포트+로그 복사하기]로 복사해 댓글이나 채팅창에 붙여넣어 주세요,Sending failed. Copy with [Copy report + log] and paste it in a comment or chat,送信に失敗しました。[レポート＋ログをコピー]でコピーして、コメントやチャットに貼り付けてください
+전원 이동 +3칸,Everyone +3 spaces,全員の移動 +3マス
+전원 이동 +3칸 · 결승선이 라운드마다 2칸씩 당겨짐,Everyone +3 · finish line moves 2 spaces closer each round,全員の移動 +3マス · ゴールがラウンドごとに2マスずつ近づく
+전차,The Chariot,戦車
+전체 음량,Master volume,全体音量
+전체화면,Fullscreen,フルスクリーン
+전통 박달나무 윷,Birchwood Yut Sticks,伝統シラカバのユッ
+절벽,Cliff,崖
+절벽 직전에서 멈춰라!,Stop right at the cliff!,崖の直前で止まれ！
+절벽까지 %.1fcm,%.1fcm to the cliff,崖まで %.1fcm
+점성술사의 타로 덱,Astrologer's Tarot Deck,占星術師のタロットデッキ
+점프 부스트,Jump Boost,ジャンプブースト
+점프 부스트 +%d,Jump Boost +%d,ジャンプブースト +%d
+점프 부스트! (+%d칸),Jump Boost! (+%d spaces),ジャンプブースト！ (+%dマス)
+점프 코너 → %d번,Jump corner → %d,ジャンプコーナー → %d番
+점프 코너에 정확히 멈추면 앞으로 껑충 뛰어요. 부스터 발판에 멈추면 +3칸!,Stop exactly on a jump corner to leap ahead. Stop on a Booster Pad for +3 spaces!,ジャンプコーナーにぴったり止まると前へピョンと跳びます。ブースター足場に止まると+3マス！
+점프!,Jump!,ジャンプ！
+접속 실패: %s,Connection failed: %s,接続失敗: %s
+접속을 준비하지 못했습니다 (오류 %d).,Couldn't prepare to join (error %d).,接続を準備できませんでした (エラー %d)。
+접시 밖 이탈 = 삐끗 (후퇴는 없음),Out of the bowl = slip (no backing up),器の外に出る = ツルッ (後退はなし)
+정방향,forward,順方向
+정방향 질주 사출,Forward dash knockoff,順走射出
+정산,Resolve,精算
+정산 / 개입 타이밍 B - 카드 사용 가능,Resolve / Interrupt B - cards usable,精算 / 介入タイミングB - カード使用可能
+정산 중입니다...,Settling up...,精算中です...
+정적 뒤 [뽑아라!] 신호에 먼저 쏴라! 신호 전에 쏘면 부정출발 패배,"After the silence, shoot first at the [Draw!] signal! Shoot early = false start loss",静寂の後、[引け！]の合図で先に撃て！ 合図の前に撃つとフライングで敗北
+정지,Stop,停止
+정확한 확인을 위해 현재 게임 상태(라운드/보유 증강/최근 액션 로그 15줄)를 함께 첨부합니다,"For accuracy, the current game state (round / Augments held / last 15 log lines) is attached",正確な確認のため、現在のゲーム状態(ラウンド/所持増強/直近のアクションログ15行)を添付します
+제한 시간 (시간이 지나면 자동 진행),Time limit (auto-advance when time runs out),制限時間 (時間が過ぎると自動進行)
+제한 시간 사용,Use time limit,制限時間を使う
+조건이 안 맞는 초증강은 드래프트에 나오지 않아요,Hyper Augments whose conditions aren't met don't appear in the draft,条件を満たさない超増強はドラフトに出ません
+"조준 발사 → 적 전원 출발선, 근처 안착","Aim & fire → all enemies to Start, land nearby",照準発射 → 敵全員をスタート地点へ、近くに着地
+족보,Hand,役
+족보표: 11~20 스탠드 시 (합계-10)칸 / ★21 달성(11칸+한번더) / 22↑ 버스트(0칸),Table: stand at 11~20 for (total-10) tiles / ★21 (11 spaces + roll again) / 22+ bust (0),役表: 11~20でスタンドすると(合計-10)マス / ★21達成(11マス+もう1回) / 22以上はバースト(0マス)
+족보표: 광대(0칸+턴 종료) / 전차(6) / 수레바퀴(4+한번더) / 매달린 남자(1+다음 +8) / 세계(9칸),Table: Fool (0 + turn ends) / Chariot(6) / Wheel(4 + roll again) / Hanged Man(1 + next +8) / World(9),役表: 愚者(0マス+ターン終了) / 戦車(6) / 運命の輪(4+もう1回) / 吊るされた男(1+次回+8) / 世界(9マス)
+족보표: 꽝(1) / 2일치(4) / 3일치(8) / ★777 잭팟(20칸!),Table: miss(1) / 2 match(4) / 3 match(8) / ★777 jackpot (20 spaces!),役表: ハズレ(1) / 2つ揃い(4) / 3つ揃い(8) / ★777ジャックポット(20マス！)
+족보표: 노페어(1) / 원페어(3) / 투페어(5) / 트리플(7) / 스트레이트(10) / 플러시+(15칸),Table: No Pair(1) / One Pair(3) / Two Pair(5) / Trips(7) / Straight(10) / Flush+(15),役表: ノーペア(1) / ワンペア(3) / ツーペア(5) / スリーカード(7) / ストレート(10) / フラッシュ以上(15マス)
+족보표: 망통(0칸·턴 종료) / 1~3끗(2) / 4~6끗(3) / 7~9끗(4) / 1~6땡(6) / 7~9땡(7) / 장땡·광땡(8칸),"Table: Mangtong (0, turn ends) / 1~3 Kkeut(2) / 4~6 Kkeut(3) / 7~9 Kkeut(4) / 1~6 Ttaeng(6) / 7~9 Ttaeng(7) / Jang·Gwang Ttaeng(8)",役表: ブタ(0マス・番終了) / 1~3点(2) / 4~6点(3) / 7~9点(4) / 1~6アラシ(6) / 7~9アラシ(7) / 十・光アラシ(8マス)
+족보표: 찬스(1~3) / 트리플(5) / 풀하·4연속(7) / 포카드·5연속(9) / ★야추(12칸+한번더),Table: Chance(1~3) / Trips(5) / Full House·4-run(7) / Four of a Kind·5-run(9) / ★Yacht (12 + roll again),役表: チャンス(1~3) / スリーカード(5) / フルハウス・4連続(7) / フォーカード・5連続(9) / ★ヨット(12マス+もう1回)
+족보표: 핑후(2) / 또이츠(3) / 슌쯔(5) / 커쯔(8) / ★역만(12칸+한번더),Table: Pinfu(2) / Toitsu(3) / Shuntsu(5) / Koutsu(8) / ★Yakuman (12 + roll again),役表: 平和(2) / 対子(3) / 順子(5) / 刻子(8) / ★役満(12マス+もう1回)
+종,Bell,ベル
+종목 추첨 중...,Drawing the event...,種目を抽選中...
+종을 쳤다!,Rang the bell!,ベルを鳴らした！
+죠안,Joan,ジョアン
+주변 설치물 %d개 파괴!,%d nearby objects destroyed!,周囲の設置物を%d個破壊！
+주변 적 끌어오기,Pull nearby enemies,周囲の敵を引き寄せる
+주사위 5개 고정·리롤(2회)로 족보 완성!,Keep and reroll 5 dice (2 times) to build a hand!,サイコロ5個を固定・振り直し(2回)で役を作れ！
+주사위 5개 굴리기,Roll 5 dice,サイコロを5個振る
+주사위 5개를 굴려 족보를 만드세요 (유지할 주사위는 클릭해 고정),Roll 5 dice to make a hand (click dice to keep),サイコロを5個振って役を作ってください (残すサイコロはクリックで固定)
+주사위 굴리는 중…,Rolling dice…,サイコロを振っています…
+주사위 도박사 · 악마의 계약,Dice Gambler · Devil's Contract,ダイスギャンブラー · 悪魔の契約
+주사위 도박사의 영혼,Dice Gambler's Soul,ダイスギャンブラーの魂
+주사위가 접시 밖으로 나갔습니다! (이번 이동 0칸),The dice flew out of the bowl! (0 spaces this move),サイコロが器の外に出ました！ (今回の移動 0マス)
+주사위를 굴려 전진한다,Roll the dice and move,サイコロを振って前進する
+주의,Caution,注意
+주의: %s,Caution: %s,注意: %s
+준비,Ready,準備
+준비 완료,Ready,準備完了
+중,Red,中
+중계 서버에 연결하지 못했습니다. 인터넷 연결을 확인하고 다시 시도해 주세요.,Couldn't reach the relay server. Check your internet and try again.,中継サーバーに接続できませんでした。インターネット接続を確認して、もう一度お試しください。
+중계 서버에 응답을 보내지 못했습니다. 인터넷 연결을 확인하고 다시 시도해 주세요.,Couldn't reply to the relay server. Check your internet and try again.,中継サーバーに応答を送れませんでした。インターネット接続を確認して、もう一度お試しください。
+중립 NPC 소환형,Neutral NPC Summon,中立NPC召喚型
+중립 NPC 페이즈,Neutral NPC phase,中立NPCフェーズ
+중립 기물,Neutral NPC,中立駒
+"중립 기물 카드 %d장 획득, 다른 플레이어에게서 카드 %d장을 빼앗았습니다","Got %d Neutral NPC cards, stole %d cards from others",中立駒カードを%d枚獲得し、他のプレイヤーからカードを%d枚奪いました
+중립 기물이 %d번 타일에 소환되었습니다. 라운드가 끝나면 가장 가까운 적 말 하나를 처치하고 사라집니다.,A Neutral NPC was summoned on tile %d. At round end it KOs the nearest enemy pawn and vanishes.,中立駒が%d番マスに召喚されました。ラウンドが終わると一番近い敵の駒を1個撃破して消えます。
+중앙 법전은 4칸! 새 교칙이 들어오면 가장 오래된 교칙이 밀려나요.,The Codex holds 4! A new Rule pushes out the oldest one.,中央法典は4枠！ 新しい校則が入ると一番古い校則が押し出されます。
+즉발,Instant,即発
+즉발 (노랑),Instant (yellow),即発 (黄)
+즉발·개입형,Instant · Interrupt,即発・介入型
+즉시 효과,Instant,即時効果
+증강,Augment,増強
+증강 공개,Augments Revealed,増強公開
+증강 라운드,Augment Rounds,増強ラウンド
+증강 선택,Choose an Augment,増強選択
+증강 카드마다 한 번 다시 뽑기,Reroll each Augment card once,増強カードごとに1回引き直し
+증강과 법전,Augments & Codex,増強と法典
+증강으로 교체,Swap via Augments,増強で交換
+증강으로 말을 [b]체스·장기·쇼기…[/b]로 진화시켜요. 말마다 상시 능력과 한 판에 한 번 쓰는 필살기가 있어요.,"Evolve pawns into [b]Chess, Janggi, Shogi…[/b] pieces via Augments. Each has a passive and a once-per-game Skill.",増強で駒を[b]チェス・チャンギ・将棋…[/b]に進化させます。駒ごとに常時能力と1ゲームに1回使える必殺技があります。
+증강의 [b]기물 지급[/b]으로 기본 말 하나를 오른쪽 기물로 진화시켜요.,Use the Augment [b]Piece Grant[/b] to evolve a Basic pawn into a piece on the right.,増強の[b]駒支給[/b]で基本駒1個を右の駒に進化させます。
+증기선,Steamboat,蒸気船
+지금 단계에서는 쓸 수 없는 카드입니다,This card can't be used at this stage,今の段階では使えないカードです
+지금 바로 시작  (빈자리 AI 채우기),Start Now  (AI fills seats),今すぐ開始  (空席はAIで埋める)
+지금 방어 가능 (팝업에서 발동),Can defend now (from the popup),今防御可能 (ポップアップで発動)
+지금 사용 가능,Usable now,今使用可能
+"지금 칸에 내 호텔 설치 (5턴, 밟은 적은 멈춤)","Build my Hotel here (5 turns, enemies who land stop)",今のマスに自分のホテルを設置 (5ターン、踏んだ敵は停止)
+지금 칸에 지뢰 설치,Plant a mine on this tile,今のマスに地雷を設置
+지금까지의 전체 기록을 펼쳐 봅니다 (단축키 L),Expand the full log so far (shortcut L),これまでの全記録を表示します (ショートカット: L)
+지금은 [%s]를 쓸 수 없습니다 (내 턴 시작 구간에서만).,Can't use [%s] now (only at the start of your turn).,今は [%s] を使えません (自分のターン開始時のみ)。
+지금은 [%s]를 쓸 수 없습니다.,Can't use [%s] now.,今は [%s] を使えません。
+지금은 리롤할 수 없음,Can't reroll now,今はリロールできません
+지금은 사용 불가,Not usable now,今は使用不可
+"지금은 필살기를 쓸 수 없습니다 (내 턴 시작, 굴리기 전에만 가능).","Can't use an Skill now (only at your turn start, before rolling).",今は必殺技を使えません (自分のターン開始時、振る前のみ可能)。
+지금은 할 수 없는 행동입니다,You can't do that now,今はできない行動です
+지나가는 상인,Traveling Merchant,通りすがりの商人
+지나가는 상인·물의 세례를 받아라,Traveling Merchant · Baptism of Water,通りすがりの商人・水の洗礼を受けよ
+지나가는 칸의 적 처치,KO enemies on tiles you pass,通過するマスの敵を撃破
+지나가던 적 말 그 칸에 강제 정지,Force passing enemy pawns to stop on that tile,通過しようとした敵の駒をそのマスで強制停止
+지나가면 정지,Stop on pass,通過すると停止
+지뢰,Mine,地雷
+지뢰 (P%d) - 밟으면 폭발,Mine (P%d) - explodes when stepped on,地雷 (P%d) - 踏むと爆発
+지뢰 매설,Plant Mine,地雷埋設
+지뢰찾기,Minesweeper,マインスイーパー
+지뢰찾기 공병,Minesweeper Sapper,マインスイーパー工兵
+지하노역장 친치로,Underground Chinchiro,地下強制労働所チンチロ
+직선 돌진 → 선두 적 처치 (없으면 다음 코너),Straight charge → KO the leading enemy (else next corner),直線突進 → 先頭の敵を撃破 (いなければ次のコーナー)
+직선 전차 저격,Straight Chariot Snipe,直線戦車狙撃
+직진 +2칸 · 반환점에서 용왕 승급,Straight +2 spaces · promotes to Dragon King at halfway,直進 +2マス · 折り返し地点で竜王に昇格
+직항 워프,Direct Warp,直行ワープ
+진짜 알까기 슈팅,True Alkkagi Shot,本格おはじきシュート
+진행 속도 (1x -> 2x -> 3x): 말 이동·연출·컴퓨터 생각 시간이 모두 빨라집니다,"Speed (1x -> 2x -> 3x): pawn moves, effects and CPU thinking all speed up",進行速度 (1x -> 2x -> 3x): 駒の移動・演出・コンピューターの思考時間がすべて速くなります
+진행도 %d%%,Progress %d%%,進行度 %d%%
+진화 불가,Can't evolve,進化不可
+진화시킬 기본 말이 없습니다,No Basic pawn to evolve,進化させる基本駒がありません
+진화시킬 수 없는 말입니다,This pawn can't evolve,進化できない駒です
+진화와 필살기,Evolution & Skills,進化と必殺技
+질 것 같을 때가 초증강을 고를 때예요. [b]역전은 한 번이면 충분[/b]하니까요!,"When you're losing, that's the time to pick a Hyper Augment. [b]One comeback is all you need[/b]!",負けそうなときこそ超増強を選ぶときです。[b]逆転は一度で十分[/b]ですから！
+질주,Dash,疾走
+짜릿함,Thrill,スリル
+짝수 눈금이 나와야 탈출할 수 있습니다,Need an even roll to escape,偶数の出目が出ないと脱出できません
+쪼아요! 쪼아요! -스피키,Peck peck! Peck peck! -Speaki,チョアヨ！チョアヨ！ -スピキ
+쯔모!,Tsumo!,ツモ！
+"차례가 끝날 때 교칙을 달성해 있으면 [b]바로 다음 순위로 졸업[/b], 그 교칙은 사라져요 (같은 교칙을 여럿이 채우면 레이스에서 앞선 한 명만)","End your turn with a Rule met and you [b]graduate to the next rank[/b]; that Rule disappears (if several meet it, only the race leader)",番が終わるときに校則を達成していれば[b]すぐ次の順位で卒業[/b]し、その校則は消えます (同じ校則を複数人が満たしたらレースで先行している1人だけ)
+"차례가 끝날 때마다, 달성했으면 바로 졸업하고 교칙은 사라져요","Checked at the end of every turn; if met, you graduate and the Rule disappears",番が終わるたびに判定し、達成していればすぐ卒業して校則は消えます
+찬스 (족보 없음),Chance (no hand),チャンス (役なし)
+찰칵,Click,カシャッ
+찰칵! 누적 %d칸,Click! Stack %d spaces,カシャッ！ 累積 %dマス
+참가자,Player,参加者
+처음엔 [b]기본 주사위[/b](1~6칸). 증강의 [b]판정 도구 교체[/b]로 오른쪽 도구 중 하나로 바꿀 수 있어요.,You start with the [b]Standard Dice[/b] (1~6). Augment [b]Swap Judgment Tool[/b] changes it to one of the tools on the right.,最初は[b]基本サイコロ[/b](1~6マス)。増強の[b]判定ツール交換[/b]で右のツールのどれかに変えられます。
+처음이라면 [b]놀이터[/b]에서 컴퓨터와 한 판 해 보세요.,New here? Play a game against the computer in the [b]Playground[/b].,初めてなら[b]遊び場[/b]でコンピューターと1ゲーム遊んでみましょう。
+처치, KOs,撃破
+처치 시 재굴림 +1 · 자동 업기,Reroll +1 on KO · auto-stacks,撃破時リロール +1 · 自動おんぶ
+처치!,KO!,撃破！
+처치하면 +3칸,+3 spaces on KO,撃破すると +3マス
+첫 2칸 함정·말 관통 · 승급 시 +1칸,Passes traps & pawns for first 2 spaces · +1 space on promotion,最初の2マスは罠・駒を貫通 · 昇格時 +1マス
+첫 적 설치물 무시·파괴,Ignore & destroy the first enemy object,最初の敵の設置物を無視・破壊
+체리,Cherry,チェリー
+체스,Chess,チェス
+체스:나이트,Chess: Knight,チェス:ナイト
+체스:룩,Chess: Rook,チェス:ルーク
+체스:비숍,Chess: Bishop,チェス:ビショップ
+체스:퀸,Chess: Queen,チェス:クイーン
+체스:폰,Chess: Pawn,チェス:ポーン
+초기화할 특수 승리 기록이 없습니다.,No Special Victory records to reset.,初期化する特殊勝利の記録がありません。
+초대 코드를 만들지 못했습니다 (오류 %d).,Couldn't create invite code (error %d).,招待コードを作れませんでした (エラー %d)。
+초대 코드를 적용하지 못했습니다 (오류 %d).,Couldn't apply invite code (error %d).,招待コードを適用できませんでした (エラー %d)。
+초전도체 무한 동력,Superconductor Perpetual Motion,超伝導体永久機関
+초증강,Hyper Augment,超増強
+초증강 : 즉시 질주,Hyper Augment: Instant Dash,超増強 : 即時疾走
+초증강 : 하이리스크 하이리턴,"Hyper Augment: High Risk, High Return",超増強 : ハイリスク・ハイリターン
+초증강은 [b]판을 한 번에 뒤집는[/b] 증강이에요. 크게 얻는 대신 [b]내 말도 다칠 수 있어요[/b].,"Hyper Augments [b]flip the game at once[/b]. Big gains, but [b]your own pawns can get hurt[/b].",超増強は[b]盤面を一気にひっくり返す[/b]増強です。大きく得る代わりに[b]自分の駒も傷つくことがあります[/b]。
+최고 눈÷2 올림 (1~3칸),"Highest die ÷2, rounded up (1~3 spaces)",最大の出目÷2 切り上げ (1~3マス)
+최근 기록,Recent log,最近の記録
+최대 누적,Max stack,最大累積
+최종 순위를 발표합니다!,Announcing the final ranking!,最終順位を発表します！
+최종 이동 +1칸 · 리벤지 +6칸 · 법전·초증강 확률 상승,Final move +1 · Revenge +6 · Codex & Hyper odds up,最終移動 +1マス · リベンジ +6マス · 法典・超増強の確率アップ
+최종 이동 +2칸 · 리벤지 +8칸 · 법전에 무작위 특수 승리 1개 등록,Final move +2 · Revenge +8 · 1 random Special Victory added to the Codex,最終移動 +2マス · リベンジ +8マス · 法典にランダムな特殊勝利を1つ登録
+출격 +%d (리벤지 부스터),Launch +%d (Revenge Booster),出撃 +%d (リベンジブースター)
+출발,Start,スタート
+출발 · 결승,Start · Finish,スタート · ゴール
+출발 대기,Waiting to start,スタート待機
+출발선(0번),Start line (0),スタートライン(0番)
+출발선으로 날아간 말이 다시 나올 때 +4칸,+4 spaces when a pawn sent to Start comes back out,スタート地点に飛ばされた駒が再び出るとき +4マス
+출발선으로 돌아가 다시 출발해요 (리벤지 부스터 획득),Back to Start to set out again (gain a Revenge Booster),スタート地点に戻って再出発します (リベンジブースター獲得)
+출발선으로 사출된 말이 다음 출발 때 이동 거리 +{p1}칸 (enabled=FALSE면 꺼짐),A pawn knocked back to Start moves +{p1} spaces on its next start (off if enabled=FALSE),スタート地点に射出された駒が次の出発時に移動距離 +{p1}マス (enabled=FALSEならOFF)
+출전,On board,出場
+출전 중 (%d번),On board (tile %d),出場中 (%d番)
+취소,Cancel,キャンセル
+취소 ESC,Cancel ESC,キャンセル ESC
+치명적인 볼따구 강타! (ANNIHILATED!),Critical cheek smash! (ANNIHILATED!),致命的なほっぺた強打！ (ANNIHILATED!)
+치트 / 디버그,Cheat / Debug,チート / デバッグ
+치트/디버그 꺼짐,Cheat/Debug off,チート/デバッグ OFF
+치트/디버그 켜짐 (메뉴에서도 열 수 있어요),Cheat/Debug on (also in the menu),チート/デバッグ ON (メニューからも開けます)
+친구에게 받은 5자리 코드를 입력하면 바로 합류합니다.,Enter the 5-character code from a friend to join.,友達からもらった5桁のコードを入力するとすぐ合流します。
+"친구에게 이 방 코드를 알려 주세요. 친구가 코드를 입력하면 자동으로 연결됩니다. 혼자면 AI 3명과, 친구가 있으면 사람끼리(2~4인) 시작하며 비워 둔 자리는 빠지고 AI는 [AI 봇으로 채우기]를 누른 자리만 참여합니다.","Share this room code with friends; they connect once they enter it. Alone, you play 3 AI; with friends, humans play together (2~4). Empty seats are dropped, and AI only joins seats where you pressed [Fill with AI Bot].",友達にこのルームコードを教えてください。友達がコードを入力すると自動で接続されます。1人ならAI 3人と、友達がいれば人同士(2~4人)で始まり、空けた席は抜けて、AIは[AIボットで埋める]を押した席だけ参加します。
+친구의 입장을 기다리는 중입니다. 방 코드를 알려 주세요.,Waiting for friends to join. Share the room code.,友達の入室を待っています。ルームコードを教えてください。
+친선 줘팸터,Friendly Brawl,親善バトル
+친치로 · 777 슬롯,Chinchiro · 777 Slots,チンチロ · 777スロット
+카드,Cards,カード
+카드 받기,Deal,カードを受け取る
+카드 발동,Card Played,カード発動
+카드 뽑기,Draw a card,カードを引く
+카드 상납 or 정지,Pay a card or stop,カード献上 or 停止
+카드 쓰는 법,How to Use Cards,カードの使い方
+카드 족보만큼 전진한다,Move by your poker hand,ポーカーの役に応じて前進する
+카드 지급:,Give card:,カード支給:
+카드 패키지,Card Pack,カードパック
+카드 패키지와 범용 보급,Card Packs & Utility Supply,カードパックと汎用補給
+카드 한 장,One Card,カード1枚
+카드 합계 %d,Card total %d,カード合計 %d
+카드 합계(11~21)에서 -10 한 만큼 전진!,Move your card total (11~21) minus 10!,カード合計(11〜21)から-10した数だけ前進！
+카드(▣ 표시는 타일을 클릭해 설치/소환)를 쓰거나 [굴리기] 버튼(또는 스페이스)을 한 번 누르세요. (판정 도구: %s),Play a card (▣ cards: click a tile to place/summon) or press [Roll] (or Space) once. (Judgment Tool: %s),カード(▣ 表示はマスをクリックして設置/召喚)を使うか、[振る]ボタン(またはスペース)を1回押してください。(判定ツール: %s)
+카드는 [b]굴리기 전에만[/b] 낼 수 있어요. 눈금을 보고 고민하려면 아껴 두세요.,You can play cards [b]only before rolling[/b]. Save them if you want to see the roll first.,カードは[b]振る前だけ[/b]出せます。出目を見てから考えたいなら取っておきましょう。
+카드는 굴리기 전에 턴당 1장만 쓸 수 있습니다,"You can play only 1 card per turn, before rolling",カードは振る前に1ターンに1枚だけ使えます
+카드는 내 턴 굴리기 전에 턴당 1장만 낼 수 있어요.,"You can play only 1 card per turn, before rolling.",カードは自分のターンの振る前に、1ターンに1枚だけ出せます。
+카드는 빵집·증강에서 얻어요,Get cards from Bakeries and Augments,カードはパン屋・増強で手に入ります
+카드를 [b]보드판 위로 끌어다 놓으면[/b] 발동해요.,[b]Drag a card onto the board[/b] to play it.,カードを[b]ボードの上へドラッグして置くと[/b]発動します。
+카드를 받아 합계 11~21을 만드세요 (합계 -10칸 전진),Draw cards to make 11~21 (move total -10),カードを受け取って合計11~21を作ってください (合計 -10マス前進)
+카드를 보드판 위로 드래그해서 놓으면 발동해요.,Drag a card onto the board and drop it to play.,カードをボードの上へドラッグして置くと発動します。
+카드를 보드판 위에 놓아야 발동합니다.,Drop the card on the board to play it.,カードをボードの上に置くと発動します。
+카드를 쓸 수 없습니다: %s,Can't play the card: %s,カードを使えません: %s
+카드마다 한 번 다시 뽑기,Reroll each card once,カードごとに1回引き直し
+카드에 도착 결과가 미리 보여요 (잡기·빵집·워프…),"Cards preview the landing result (capture, Bakery, warp…)",カードに到着結果がプレビューされます (捕獲・パン屋・ワープ…)
+카드와 법전,Cards & Codex,カードと法典
+카드탑이 갑자기 무너지다니... -벨리타,The card tower suddenly collapsed... -Velita,カードの塔が急に崩れるなんて… -ベリタ
+카이지의 한방 역전법,Kaiji's One-Shot Reversal,カイジの一発逆転法
+칸,tile,マス
+칸에 깔기,Place on a tile,マスに仕掛ける
+칸을 골라 몰래 깔아 두는 카드예요. 누가 깔았는지만 알려지고 [b]어떤 카드인지는 비밀[/b]!,Cards you secretly place on a tile. Only who placed it is known; [b]what it is stays secret[/b]!,マスを選んでこっそり仕掛けるカードです。誰が仕掛けたかだけがわかり、[b]どのカードかは秘密[/b]！
+"칸을 골라 숨겨 깔기, 코너 전용 4종",Hide on a chosen tile; 4 corner-only types,マスを選んで隠して仕掛ける、コーナー専用4種
+커쯔,Koutsu,刻子
+커쯔 (같은 패 3개),Koutsu (triplet),刻子 (同じ牌3枚)
+컴퓨터 %d,CPU %d,コンピューター %d
+컴퓨터 1~3명 · 혼자서 연습,1~3 CPUs · Solo Practice,CPU 1〜3人・ソロ練習
+컴퓨터끼리 결투 중...,CPUs are dueling...,コンピューター同士で決闘中...
+컴퓨터와 겨룹니다. 제한 시간 없이 천천히 연습하세요.,Play against the computer. Practice at your pace with no time limit.,コンピューターと対戦します。制限時間なしでゆっくり練習しましょう。
+코끼리 지진,Elephant Quake,象の地震
+코너,Corners,コーナー
+코너 (코너 전용 함정),Corner (corner-only traps),コーナー (コーナー専用の罠)
+코너 감옥화,Corner jail,コーナー監獄化
+코너 바로 앞에 멈추면 +1칸 코너 진입,+1 space into the corner if stopping right before it,コーナーの直前に止まると +1マスでコーナー進入
+코너 보너스 +%d칸,Corner bonus +%d spaces,コーナーボーナス +%dマス
+코너 스치면 +2칸 (용마 +1칸 더),+2 spaces when grazing a corner (Dragon Horse +1 more),コーナー通過時 +2マス (竜馬ならさらに +1マス)
+"코너 전용 함정은 코너에만 깔고, 누구에게나 공개돼요",Corner-only traps go only on corners and are visible to everyone,コーナー専用の罠はコーナーにだけ仕掛けられ、全員に公開されます
+코너 함정 %s 설치! (%d번 코너),Corner trap %s set! (corner %d),コーナーの罠 %s 設置！ (%d番コーナー)
+코너 함정은 누구에게나 공개,Corner traps are visible to all,コーナーの罠は全員に公開
+코너·빵집·옷장·부스터 발판에는 일반 함정을 깔 수 없어요,"Normal traps can't go on corners, Bakeries, Wardrobes or Boost Pads",コーナー・パン屋・クローゼット・ブースター足場には通常の罠を仕掛けられません
+코너를 꺾지 않는 직진 +2칸,+2 spaces going straight without turning a corner,コーナーを曲がらない直進 +2マス
+코드 복사,Copy Code,コードをコピー
+코드 종류를 알 수 없습니다.,Unknown code type.,コードの種類がわかりません。
+코드가 너무 짧습니다. 끝까지 복사했는지 확인해 주세요.,Code too short. Check you copied all of it.,コードが短すぎます。最後までコピーしたか確認してください。
+코드가 손상되었습니다.,Code is corrupted.,コードが破損しています。
+코드가 손상되었습니다. 다시 복사해 주세요.,Code is corrupted. Please copy it again.,コードが破損しています。もう一度コピーしてください。
+코드를 읽을 수 없습니다.,Can't read the code.,コードを読み取れません。
+코드의 좌석 번호가 올바르지 않습니다.,Invalid seat number in code.,コードの座席番号が正しくありません。
+쾅!,BAM!,ドカン！
+퀸 +2칸,Queen +2 spaces,クイーン +2マス
+퀸 승급,Queen promotion,クイーン昇格
+퀸 승급 후,After Queen promotion,クイーン昇格後
+클래식 구슬 핀볼,Classic Marble Pinball,クラシック玉ピンボール
+클래식 구슬 핀볼 · 발사 버튼을 누르세요,Classic Marble Pinball · press Fire,クラシック玉ピンボール · 発射ボタンを押してください
+클릭하면 건너뜁니다,Click to skip,クリックでスキップ
+클립보드에 피드백과 게임 로그가 복사되었습니다! 댓글이나 채팅창에 붙여넣어 주세요!,Feedback and game log copied to the clipboard! Paste it in a comment or chat!,クリップボードに意見とゲームログがコピーされました！ コメントやチャットに貼り付けてください！
+킹 체커,King Checker,キングチェッカー
+킹 체커·루도·8번 공·스타 카트·지뢰찾기 공병.,King Checker · Ludo · 8-Ball · Star Kart · Minesweeper Sapper.,キングチェッカー・ルドー・8ボール・スターカート・マインスイーパー工兵。
+타로,Tarot,タロット
+타로를 뽑아 전진한다,Draw a Tarot card and move,タロットを引いて前進する
+타일 선택 모드: 보드판에서 사용할 타일(초록 테두리)을 클릭하세요. 취소는 ESC 또는 오른쪽 클릭.,Tile select mode: click a tile (green border) on the board. ESC or right-click to cancel.,タイル選択モード: ボード上で使うタイル(緑の枠)をクリックしてください。キャンセルはESCまたは右クリック。
+타일 설치,Place on Tile,タイル設置
+타일 설치형 (사용 후 보드판의 타일을 클릭),"Tile placement (after playing, click a tile on the board)",タイル設置型 (使用後にボード上のタイルをクリック)
+턴,Turn,ターン
+턴 시작 - 카드·함정·소환 사용 가능,"Turn start - cards, traps, summons usable",ターン開始 - カード・罠・召喚使用可能
+턴당 1장,1 per turn,1ターンに1枚
+테이블이 돌면 턴테이블...큭큭 -림,"When the table spins, it's a turntable... heh heh -Rim",テーブルが回ればターンテーブル…ククッ -リム
+텍사스 홀덤 딜러,Texas Hold'em Dealer,テキサスホールデム・ディーラー
+템포 업,Tempo Up,テンポアップ
+템포 업 +%d,Tempo Up +%d,テンポアップ +%d
+템포 업 +%d → 총 %d칸 전진!,Tempo Up +%d → %d total!,テンポアップ +%d → 合計 %dマス前進！
+템포 업 Lv.%d · %s,Tempo Up Lv.%d · %s,テンポアップ Lv.%d · %s
+템포 업: 법전에 %s 자동 등록,Tempo Up: %s auto-added to the Codex,テンポアップ: 法典に %s を自動登録
+토금,Tokin,と金
+통,Pin,筒
+통행세 지불하셔야죠 고객님? -시스트,"You'll be paying the toll, dear customer? -Sist",通行料をお支払いいただかないと、お客様？ -シスト
+투기장의 지배자,Ruler of the Colosseum,闘技場の支配者
+투페어,Two Pair,ツーペア
+튕기기 [Space],Flick [Space],弾く [Space]
+트리플,Three of a Kind,スリーカード
+트리플 (3개 동일),Trips (3 of a kind),スリーカード (3つ同じ)
+트림!,Burp!,ゲップ！
+트림은 가짜 신호! 신호보다 먼저 쏘면 반칙패!,Burps are fake signals! Shoot early = foul loss!,ゲップは偽の合図！ 合図より先に撃つと反則負け！
+특수 승리,Special Victory,特殊勝利
+특수 승리 (%s),Special Victory (%s),特殊勝利 (%s)
+특수 승리 교칙,Special Victory Rule,特殊勝利校則
+특수 승리 교칙 [%s] 제정: %s,Special Victory Rule [%s] enacted: %s,特殊勝利校則 [%s] 制定: %s
+특수 승리 교칙이 제정되면 여기에 올라옵니다 (3라운드부터 드래프트),Special Victory Rules appear here once enacted (draft from Round 3),特殊勝利校則が制定されるとここに表示されます (第3ラウンドからドラフト)
+특수 승리 기록 1개를 0으로 초기화,Reset 1 Special Victory record to 0,特殊勝利の記録1つを0に初期化
+특수 승리: %s,Special Victory: %s,特殊勝利: %s
+"파워 게이지는 연출일 뿐, 결과는 공정해요",The power gauge is just for show; results are fair,パワーゲージは演出にすぎず、結果は公平です
+판 뒤집기 (모 아니면 도),Flip the Table (All or Nothing),ちゃぶ台返し (イチかバチか)
+판 뒤집기 · 저격수의 표적,Flip the Table · Sniper's Mark,ちゃぶ台返し · スナイパーの標的
+판 뒤집기 성공! 말 %d번이 즉시 결승선에 완주했습니다,Flip the Table success! Pawn %d finished instantly,ちゃぶ台返し成功！ 駒%d番が即座にゴールして完走しました
+판 뒤집기 실패... 말 %d번이 출발선으로 추방되었습니다,Flip the Table failed... Pawn %d banished to Start,ちゃぶ台返し失敗... 駒%d番がスタート地点へ追放されました
+판을 뒤집지는 않지만 [b]손패와 기물을 든든하게[/b] 채워 주는 증강이에요.,Augments that don't flip the game but [b]stock up your hand and pieces[/b].,盤面はひっくり返さないけれど[b]手札と駒をしっかり[/b]補充してくれる増強です。
+판이 길어지면 [b]게임이 점점 빨라져요[/b]. 단계가 오르는 라운드 시작 전에 크게 경고해요.,"As the game drags on, [b]it keeps speeding up[/b]. A big warning shows before the round a stage rises.",ゲームが長引くと[b]だんだん速くなります[/b]。段階が上がるラウンドの開始前に大きく警告します。
+판정,Check,判定
+판정 도구 교체,Swap Judgment Tool,判定ツール交換
+판정 도구 교체: %s,Swap Judgment Tool: %s,判定ツール交換: %s
+판정 도구 굴리기,Roll the Judgment Tool,判定ツールを振る
+판정 도구가 [%s](으)로 바뀌었습니다,Judgment Tool changed to [%s],判定ツールが [%s] に変わりました
+패\n뒤집기,Flip\ntile,札を\nめくる
+패시브,Passive,パッシブ
+펑!,Pop!,パン！
+포 넘기 +3칸,Cannon jump +3 spaces,包の飛び越え +3マス
+포카드,Four of a Kind,フォーカード
+포카드 / 5연속,Four of a Kind / 5-run,フォーカード / 5連続
+폭발 반경 안에 있으면 내 말도 출발선으로 날아갑니다,My pawns in the blast radius fly back to Start too,爆発範囲内にいると自分の駒もスタート地点へ飛ばされます
+폭주 기관차,Runaway Locomotive,暴走機関車
+폭주 기관차 · 강제 캐슬링 · 광란의 지뢰밭 · 강제 연대책임,Runaway Locomotive · Forced Castling · Frantic Minefield · Shared Fate,暴走機関車 · 強制キャスリング · 狂乱の地雷原 · 強制連帯責任
+폭주 기관차 · 말 %d개 사출,Runaway Locomotive · %d pawns knocked off,暴走機関車 · 駒%d個を射出
+"폭주 기관차가 %d번 → %d번 변을 질주! 말 %d개 사출, 함정 %d개 파괴","Runaway train charges tiles %d → %d! %d pawns knocked off, %d traps destroyed",暴走機関車が%d番 → %d番の辺を疾走！ 駒%d個を射出、罠%d個を破壊
+폭주 기관차는 내 말도 가리지 않아요,"The Runaway Locomotive spares no one, not even your pawns",暴走機関車は自分の駒も容赦しません
+폭죽 (6칸 중 1칸),Bang (1 in 6 chambers),爆竹 (6発中1発)
+폭죽 깃발!,Bang flag!,爆竹の旗！
+폭죽 발사 → 0칸·턴 종료,Bang → 0 spaces · turn ends,爆竹発射 → 0マス・ターン終了
+폭탄 패스 & +4칸,Bomb pass & +4,爆弾パス & +4マス
+폰은 반환점에서 퀸으로 승급. 기물마다 움직임 보너스가 달라요.,Pawns promote to Queen at halfway. Each piece has its own move bonus.,ポーンは折り返し地点でクイーンに昇格。駒ごとに移動ボーナスが違います。
+푸하하!,Pfft haha!,ぷはは！
+풀하우스,Full House,フルハウス
+퓨퓨! 일루와!,Pyu pyu! Come here!,ピュピュッ！こっちおいで！
+플러시,Flush,フラッシュ
+플러시 이상,Flush or better,フラッシュ以上
+플레이어 %d,Player %d,プレイヤー %d
+플레이어 1,Player 1,プレイヤー1
+플레이한 라운드: %d라운드,Rounds played: %d,プレイしたラウンド: %dラウンド
+피,Junk,カス
+피격 시,When hit,被弾時
+피격 시 (내 말이 잡히거나 공격 카드·함정에 당했을 때),When hit (my pawn is captured or hit by an attack card/trap),被弾時 (自分の駒が捕まるか、攻撃カード・罠を受けたとき)
+피격 시 (내가 공격받았을 때),When hit (when I'm attacked),被弾時 (自分が攻撃されたとき)
+피격 시 발동,Triggers when hit,被弾時に発動
+피격 시 발동 여부를 묻는 팝업에서 [발동],[Activate] in the popup when you're hit,被弾時に発動するか尋ねるポップアップで [発動]
+피드백 / 버그 제보,Feedback / Bug report,意見・バグ報告
+피드백 전문 + 게임 스냅샷,Full feedback + game snapshot,意見全文 + ゲームスナップショット
+피앙케토,Fianchetto,フィアンケット
+핀에 튕기며 굴러가는 중…,Bouncing off the pins…,ピンに弾かれながら転がっています…
+필살기,Skill,必殺技
+필살기 %s,Skill %s,必殺技 %s
+필살기 1회,1 Skill,必殺技1回
+필살기 재충전: %s,Skills recharged: %s,必殺技再チャージ: %s
+필살기 호텔·워프·카드로 판을 굴리는 모노폴리 말.,"Monopoly pieces that run the board with Hotel, Warp and card Skills.",ホテル・ワープ・カードの必殺技で盤面を回すモノポリーの駒。
+필살기\n발동!,Skill\nGo!,必殺技\n発動！
+"필살기는 기물마다 게임당 1회, 내 프로필 카드에서 눌러요.",Each piece's Skill works once per game; tap it on your profile card.,必殺技は駒ごとに1ゲーム1回、自分のプロフィールカードで押します。
+필살기는 내 프로필 카드에서 굴리기 전에 눌러요,Tap Skills on your profile card before rolling,必殺技は振る前に自分のプロフィールカードで押します
+필살기를 이미 쓴 기물이 있으면 리필이 이득이에요,Refill pays off if a piece already used its Skill,必殺技を使い終えた駒があるならリフィルがお得です
+핑후,Pinfu,平和
+핑후 (불일치),Pinfu (no match),平和 (不一致)
+하극상!,Upset!,下剋上！
+하단 구멍 7칸,7 bottom holes,下部の穴 7か所
+하드코어: 봐주기 없이 최적의 킬각·카드·특수 승리를 노려요,"Hardcore: no mercy, goes for the best KOs, cards and Special Victories",ハードコア: 手加減なしで最適なキル・カード・特殊勝利を狙います
+하이리스크 하이리턴,"High Risk, High Return",ハイリスク・ハイリターン
+하이리스크 하이리턴 (도감 → 초증강),"High Risk, High Return (Catalog → Hyper)",ハイリスク・ハイリターン (図鑑 → 超増強)
+한 바퀴 레이스,One-lap race,1周レース
+한 방,One-shot,一発
+한 번의 이동으로 {p1}칸 이상 전진,Move {p1}+ tiles in a single move,1回の移動で{p1}マス以上前進
+한 변 설치물 붕괴,Collapse one side,一辺の設置物崩壊
+한 장으로 승부를 뒤집어라!,Flip the match with one card!,1枚で勝負をひっくり返せ！
+한 칸에 하나,One per tile,1マスに1つ
+한 턴,A Turn,1ターン
+한 턴 더,One more turn,もう1ターン
+한 턴에 주사위 {p1}연속 굴림,Roll {p1} times in a row in one turn,1ターンにサイコロを{p1}回連続で振る
+한 턴은 [b]카드 → 굴리기 → 말 고르기 → 정산[/b] 순서예요.,A turn goes [b]Card → Roll → Pick a pawn → Resolve[/b].,1ターンは[b]カード → 振る → 駒を選ぶ → 精算[/b]の順番です。
+한 판이 너무 길어요,Games run too long,1ゲームが長すぎる
+한눈에 보기,Overview,ひと目で確認
+할리갈리 디럭스,Halli Galli Deluxe,ハリガリ・デラックス
+함께 골인!,Finish together!,一緒にゴール！
+함께 출발선으로!,Back to Start together!,一緒にスタート地点へ！
+함정,Trap,罠
+함정 (보라),Trap (purple),罠 (紫)
+함정 면역 · 밟은 적 함정 해체 +카드 1장,Trap-immune · defuses enemy traps stepped on +1 card,罠無効 · 踏んだ敵の罠を解除 +カード1枚
+함정 무효+강탈,Trap cancel + steal,罠無効+強奪
+함정 발동,Trap Triggered,罠発動
+함정 설치,Trap Set,罠設置
+함정 속으로,Into the Trap,落とし穴の中へ
+함정 속으로 (나락),Into the Trap (Abyss),落とし穴の中へ (奈落)
+함정 카드,Trap Cards,罠カード
+함정 카드 획득,Get the trap card,罠カード獲得
+함정 칸,Trap Tiles,罠マス
+함정 파괴 +3칸,Smash trap +3,罠破壊 +3マス
+함정·소환은 놓은 뒤 칸을 골라요,Traps and Summons: pick a tile after dropping,罠・召喚は置いた後にマスを選びます
+"함정을 깔고, 상대 말을 날리고, 법전의 특수 승리를 노려 판을 뒤집어요.","Set traps, blast rival pawns and chase Codex Special Victories to flip the game.",罠を仕掛け、相手の駒を吹き飛ばし、法典の特殊勝利を狙って盤面をひっくり返しましょう。
+함정을 설치할,place a trap on,罠を仕掛ける
+함정이 깔린 칸은 [b]보라색[/b]으로 바뀌고 그 함정 그림이 보여요.,Tiles with a trap turn [b]purple[/b] and show the trap's art.,罠が仕掛けられたマスは[b]紫色[/b]に変わり、その罠の絵が表示されます。
+합 11 이상까지 받음,Draw until total 11+,合計11以上まで引く
+합계 %d  →  %d칸 전진,Total %d  →  move %d spaces,合計 %d  →  %dマス前進
+합류,Join,合流
+합이 5개가 아닐 때 누르면 반칙패!,Ring when the total isn't 5 = foul loss!,合計が5個でないときに押すと反則負け！
+합이 5개일 때 종을 쳐라!,Ring the bell when the total is 5!,合計が5個のときにベルを鳴らせ！
+핫시트,Hotseat,ホットシート
+해탈한 동네북의 역습,Enlightened Punching Bag,解脱したサンドバッグの逆襲
+현재 족보: %s → %d칸%s,Hand: %s → %d spaces%s,現在の役: %s → %dマス%s
+현재 족보로 이동 확정!,Lock in this hand!,現在の役で移動確定！
+현재 플레이어 판정 도구:,Current player's Judgment Tool:,現在のプレイヤーの判定ツール:
+현재 플레이어에게,To current player,現在のプレイヤーへ
+호박에 연결된 버튼 5개를 번갈아 누른다! 딱 하나의 버튼이 호박을 터뜨리며 누른 사람이 패배,"Take turns pressing 5 buttons wired to a pumpkin! One button pops it, and whoever presses it loses",カボチャにつながった5つのボタンを交互に押せ！ たった1つのボタンがカボチャを破裂させ、押した人の負け
+호박에 연결된 버튼 다섯 개를 번갈아 누르세요.\n딱 하나의 버튼이 호박을 터뜨립니다!,Take turns pressing the five buttons wired to the pumpkin.\nExactly one of them pops it!,カボチャにつながった5つのボタンを交互に押してください。\nたった1つのボタンがカボチャを破裂させます！
+호박을 터뜨리면 패배!,Pop the pumpkin and you lose!,カボチャを破裂させたら負け！
+호박을 터뜨린 사람이 패배! 누른 버튼은 다시 쓸 수 없어요.,Whoever pops the pumpkin loses! Pressed buttons can't be reused.,カボチャを破裂させた人の負け！ 押したボタンは再使用できません。
+호텔,Hotel,ホテル
+호텔 (P%d) - 다른 플레이어가 멈추면 통행료,Hotel (P%d) - others who stop pay a toll,ホテル (P%d) - 他のプレイヤーが止まると通行料
+호텔 건설,Build Hotel,ホテル建設
+혼자 테스트하려면 브라우저 창을 두 개 나란히 띄우세요 (탭 전환은 안 됩니다: 가려진 탭은 브라우저가 멈춥니다).,"To test alone, open two browser windows side by side (not tabs: hidden tabs get paused).",1人でテストするにはブラウザのウィンドウを2つ並べて開いてください (タブ切り替えは不可: 隠れたタブはブラウザが停止します)。
+홀수 눈금으로 전진하면 +1칸,+1 space on odd rolls,奇数の出目で前進すると +1マス
+화면,Display,画面
+화면 언어,Language,表示言語
+화면 흔들림,Screen shake,画面の揺れ
+화면을 가로로 돌려 주세요,Please rotate your screen,画面を横向きにしてください
+화투 패,Hwatu Flower Cards,花札 (ソッタ)
+화투패 족보만큼 전진한다,Move by your Hwatu hand,花札の役に応じて前進する
+확인,OK,OK
+확정할 누적치가 없습니다,Nothing stacked to cash out,確定する累積値がありません
+환호,Cheer,歓声
+회, times,回
+회전,Spin,回転
+효과음 크기,SFX volume,効果音の音量
+후퇴 없음,No backing up,後退なし
+휴식,Rest,休憩
+흑돌,Black Stone,黒石
+흑돌 홀수 +1칸,Black Stone odd +1 space,黒石 奇数 +1マス
+"흑돌은 홀수 눈금 +1칸, 백돌은 방어막.","Black Stone +1 on odd rolls, White Stone has a shield.",黒石は奇数の出目で+1マス、白石はバリア。
+흑돌을 누르고 뒤로 당기세요 · 놓으면 발사,Press the Black Stone and pull back · release to fire,黒石を押して後ろに引いてください · 離すと発射
+흑흑…,Sob sob…,ぐすん…
+흥! 지나갈 수 없을거다. -프리클,Hmph! You shall not pass. -Prickle,フン！ここは通さないわよ。 -プリクル
+히트 (카드 1장 더 뽑기),Hit (draw 1 more),ヒット (カードをもう1枚引く)
+힝 배고파... 여기 어디야... -에르핀,"Waah, I'm hungry... where am I... -Erpin",うぅ、お腹すいた…ここどこぉ… -エルフィン
+재분배,Redistributed,再分配
+영구 가속 +%d,Permanent boost +%d,永久加速 +%d
+이동 x%d!,Move x%d!,移動 x%d！
+과열!,Overheat!,オーバーヒート！
+철컥!,Clank!,ガチャン！
+크림,Cream,クリーム
+로제,Rose,ロゼ
+오리지널,Original,オリジナル
+마라,Mala Spice,マーラー
+핵불닭,2x Nuclear,獄激辛・核
+입문자 추천 난이도. 컴퓨터가 공격을 잘 안 해요,Recommended for beginners. The computers rarely attack,初心者におすすめ。コンピューターはあまり攻撃してきません
+가볍게 즐기기 좋아요. 내가 앞서 나갈 때만 견제해요,Good for a relaxed game. They only target you when you pull ahead,気軽に遊ぶならこれ。自分が先頭に立ったときだけ狙ってきます
+봐주기 없는 정정당당한 승부! 1등을 먼저 노려요,A fair fight with no mercy! The leader gets targeted first,手加減なしの真剣勝負! 1位が真っ先に狙われます
+컴퓨터가 카드·함정·필살기를 아낌없이 써요,"The computers use cards, traps and skills without holding back",コンピューターがカード・罠・必殺技を惜しみなく使います
+공식 억까 모드! 컴퓨터들이 나만 집요하게 노려요,The official unfair mode! The computers relentlessly hunt only you,公式理不尽モード! コンピューターたちが自分だけをしつこく狙います
+※ 이미 가진 기물은 받을 수 없어요,※ You can't get a pawn type you already own,※ 既に持っている駒は獲得できません
+※ 특수 승리: 차례가 끝날 때 달성해 있으면 바로 다음 순위로 졸업 (달성되면 법전에서 삭제),"※ Special Win: if met at the end of your turn, you graduate in the next rank (removed from the Codex once claimed)",※ 特殊勝利: ターン終了時に達成していれば次の順位で即卒業 (達成されると法典から消滅)
+최소 %d칸 ~ 최대 %d칸,Min %d ~ Max %d spaces,最小%dマス ~ 最大%dマス
+※ 판정 도구는 고르는 즉시 내 것과 바뀌어요,※ Picking a Judgment Tool swaps yours immediately,※ 判定ツールは選んだ瞬間に自分のものと入れ替わります
+"1라운드는 기물 진화, 4라운드는 판정 도구·카드·기물 진화","Round 1: Pawn Evolutions; Round 4: Tools, Cards and Pawn Evolutions",1ラウンドは駒進化、4ラウンドは判定ツール・カード・駒進化
+7라운드부터 법전·초증강도 등장,Special Wins and Hyper Augments appear from Round 7,7ラウンドから法典・超増強も登場
+[타로] P%d의 운명의 수레바퀴: %s 장외 사출 → %s이(가) 그 자리로,[Tarot] P%d's Wheel of Fortune: %s knocked off → %s takes its spot,[タロット] P%d の運命の輪: %s 場外射出 → %s がその場所へ
+%s이(가) 출발선으로 날아가고 %s이(가) 그 자리를 차지합니다,%s flies back to Start and %s takes its spot,%s がスタートへ飛ばされ、%s がその場所を奪います
+내 꼴찌 말 ↔ 1등 적 선두 말 위치 교환 (내 말이 보드에 없으면 선두 사출 + 대기 말이 그 자리로),Swap your last pawn with the top rival's lead pawn. (None on the board? The leader is knocked off and your waiting pawn takes its spot.),自分の最下位駒 ↔ 1位の敵の先頭駒を入れ替え (自分の駒がボードになければ先頭駒を射出し、待機駒がその場所へ)
+레이스 진행 순위로 확정,Ranked by race progress,レース進行順で確定
+진행 순위로 확정,Ranked by progress,進行順で確定
+[%s] %s  (설치자: P%d),[%s] %s  (Placed by P%d),[%s] %s  (設置者: P%d)
+남은 유지: %d턴,Turns left: %d,残り: %dターン
+유지: 발동할 때까지,Lasts until triggered,発動するまで持続
+뒷면 함정: 밟으면 정체가 드러나요,Face-down trap: revealed when someone steps on it,伏せ罠: 踏むと正体が明らかに
+다른 플레이어가 멈추면 통행료,Others pay a toll when they stop here,他のプレイヤーが止まると通行料
+코너 함정,Corner Trap,コーナー罠
+소환: P%d · 라운드가 끝나면 움직이고 사라짐,Summoned by P%d · moves and vanishes at round end,召喚: P%d · ラウンド終了時に動いて消える
+%s · 보유 증강 %d개,%s · Augments owned: %d,%s · 所持増強 %d個
+아직 고른 증강이 없어요,No augments picked yet,まだ増強を選んでいません
+%d번 말: %s,Pawn %d: %s,%d番の駒: %s
+%d번 말: %s  (완주),Pawn %d: %s  (Finished),%d番の駒: %s  (完走)
+판정 도구: %s,Judgment Tool: %s,判定ツール: %s
+%s ×%d,%s ×%d,%s ×%d
+즉시 발동,Instant Trigger,即時発動
+조건 발동,Conditional,条件発動
+착지 발동,On Landing,着地発動
+◆ 기본 말 1개 →,◆ 1 Basic Pawn →,◆ 基本駒1個 →
+클리어! 최고: %d라운드,Cleared! Best: Round %d,クリア！ 最速: %dラウンド
+미정복,Unconquered,未制覇
+· 정복 %d/5,· Conquered %d/5,· 制覇 %d/5
+[법전 수집] 새 도장: %s (%d/8),[Law Collection] New stamp: %s (%d/8),[法典コレクション] 新スタンプ: %s (%d/8)
+[불닭 정복] %s 최고 기록: %d라운드,[Buldak Conquest] %s best record: Round %d,[ブルダック制覇] %s 最速記録: %dラウンド
+내 우승 기록 복사하기,Copy My Victory Record,優勝記録をコピー
+내 기록 복사하기,Copy My Record,自分の記録をコピー
+복사했어요! 붙여 넣어 자랑하세요,Copied! Paste it to show off,コピーしました！ 貼り付けて自慢しよう
+온라인 대전,Online Match,オンライン対戦
+친선 대결,Friendly Match,フレンドリーマッチ
+%d위 졸업,Graduated #%d,%d位で卒業
+기물,Pawns,駒
+기록 코드 복사,Copy Save Code,記録コードをコピー
+기록 코드 입력,Enter Save Code,記録コードを入力
+법전 수집 %d/8,Laws Collected %d/8,法典収集 %d/8
+기록 코드를 복사했어요 (#%s),Save code copied (#%s),記録コードをコピーしました (#%s)
+기록 코드를 붙여 넣어 주세요,Paste your save code,記録コードを貼り付けてください
+기록 코드를 확인해 주세요,Please check the save code,記録コードを確認してください
+기록을 불러왔어요 (#%s),Records loaded (#%s),記録を読み込みました (#%s)
+불러오기,Load,読み込む
+달성 완료 ★,Achieved ★,達成済み ★
+%d라운드 만에,in %d rounds,%dラウンドで
+내 기록 전용 링크 복사,Copy My Record Link,自分専用の記録リンクをコピー
+입력,Enter,入力
+링크를 복사했어요! 누르기만 하면 이어져요 (%s),Link copied! Just open it to continue (%s),リンクをコピーしました！ 開くだけで続きから遊べます (%s)
+코드를 확인해 주세요 (예: 4BGC-A51F),Please check the code (e.g. 4BGC-A51F),コードを確認してください (例: 4BGC-A51F)
+클리어!,Cleared!,クリア！
+출발선 추방,Back to Start,スタートへ追放
+처치 시 재굴림 +1,Reroll +1 on KO,撃破時リロール +1
+자동 업기,Auto-stacks,自動おんぶ
+이동 +2칸,Move +2 spaces,移動 +2マス
+말·함정 관통,Passes pawns & traps,駒・罠を貫通
+직진 +2칸,Straight +2 spaces,直進 +2マス
+반환점에서 용왕 승급,Promotes to Dragon King at halfway,折り返し地点で竜王に昇格
+첫 2칸 함정·말 관통,Passes traps & pawns for first 2 spaces,最初の2マスは罠・駒を貫通
+승급 시 +1칸,+1 space on promotion,昇格時 +1マス
+모든 추가 이동 +2칸,All bonus moves +2 spaces,すべての追加移動 +2マス
+이동 중 함정 면역,Trap-immune while moving,移動中は罠無効
+함정 면역,Trap-immune,罠無効
+밟은 적 함정 해체 +카드 1장,Defuses enemy traps stepped on +1 card,踏んだ敵の罠を解除 +カード1枚
+계약 성립,Contract Sealed,契約成立
+주의: 본인의 말이 사출될 수 있음,Caution: Your own pawns can be ejected,注意：自分の駒が射出される可能性あり
+본인의 말이 사출될 수 있음,Your own pawns can be ejected,自分の駒が射出される可能性あり
+경로 말·함정 관통,Passes through pawns & traps,経路上の駒・罠を貫通
+잡기·함정 1회 방어,Blocks 1 capture/trap,捕獲・罠を1回防御
+반환점 이상 통과 시 토금 승급,Promotes to Tokin past the halfway corner,折り返し地点以上通過で「と金」に成る
+코너 스치면 +2칸,+2 spaces when grazing a corner,コーナー通過時 +2マス
+직선 돌진 → 선두 적 처치,Straight charge → KO the leading enemy,直線突進 → 先頭の敵を撃破
+지금 칸에 내 호텔 설치,Build my Hotel here,今のマスに自分のホテルを設置
+상대 선두 말을 출발선으로 장외 사출,Knock a rival's lead pawn back to Start,相手の先頭駒をスタート地点へ場外射出
+[코너] 멈춘 적 말 감금,[Corner] Jail enemy pawns that stop,[コーナー] 止まった敵の駒を監禁
+"[코너] 지나가는 적은 카드 1장 상납, 없으면 강제 정지","[Corner] Passing enemies pay 1 card, or are forced to stop",[コーナー] 通過する敵はカード1枚を上納、なければ強制停止
+[상단 코너] 소환 · 라운드가 끝나면 정방향으로 가장 가까운 적 말 하나를 처치하고 사라짐,"[Top corner] Summon · at round end, KOs the nearest enemy pawn going forward, then vanishes",[上コーナー] 召喚 · ラウンド終了時、順方向で最も近い敵の駒1つを撃破して消える
+[상단 코너] 소환 · 라운드가 끝나면 역방향으로 가장 가까운 적 말 하나를 처치하고 사라짐,"[Top corner] Summon · at round end, KOs the nearest enemy pawn going backward, then vanishes",[上コーナー] 召喚 · ラウンド終了時、逆方向で最も近い敵の駒1つを撃破して消える
+내 설치물 {p1}개를 보드에 동시 유지,Keep {p1} of my objects on the board at once,自分の設置物をボード上に同時{p1}個維持
+※ 특수 승리: 차례가 끝날 때 달성해 있으면 바로 다음 순위로 졸업,"※ Special Win: if met at the end of your turn, you graduate in the next rank",※ 特殊勝利: ターン終了時に達成していれば次の順位で即卒業
+[퀸] 이동 +2칸!,[Queen] Move +2!,[クイーン] 移動 +2マス！
+[흑돌] 홀수 눈금 +1칸!,[Black Stone] Odd roll +1!,[黒石] 奇数の出目 +1マス！
+[나리 승급] 이동 +1칸!,[Promoted] Move +1!,[成り] 移動 +1マス！
+[룩] 직진 +2칸!,[Rook] Straight line +2!,[ルーク] 直進 +2マス！
+[비차] 직진 +2칸!,[Hisha] Straight line +2!,[飛車] 直進 +2マス！
+[용왕] 직진 +2칸!,[Dragon King] Straight line +2!,[竜王] 直進 +2マス！
+[각행] 코너 스침 +2칸!,[Kaku] Corner graze +2!,[角行] コーナー通過 +2マス！
+[용마] 코너 스침 +3칸!,[Dragon Horse] Corner graze +3!,[竜馬] コーナー通過 +3マス！
+[비숍] 코너 진입 +1칸!,[Bishop] Into the corner +1!,[ビショップ] コーナー進入 +1マス！
+[장기:포] 뛰어넘기 +3칸!,[Cannon] Leapfrog +3!,[包] 飛び越え +3マス！
+[장기:마] 빈칸 도약 +2칸!,[Horse] Open-tile leap +2!,[馬] 空きマス跳躍 +2マス！
+[장기:상] 빈칸 도약 +2칸!,[Elephant] Open-tile leap +2!,[象] 空きマス跳躍 +2マス！
+[스타 카트] 추가 이동 +2칸!,[Star Kart] Bonus move +2!,[スターカート] 追加移動 +2マス！
+[루도 복수자] 복수 질주 +4칸!,[Ludo Avenger] Revenge dash +4!,[ルドー復讐者] 復讐ダッシュ +4マス！
+[나이트] 함정 관통!,[Knight] Leaps the trap!,[ナイト] 罠を貫通！
+[퀸] 함정 관통!,[Queen] Leaps the trap!,[クイーン] 罠を貫通！
+[계마] 함정 관통!,[Keima] Leaps the trap!,[桂馬] 罠を貫通！
+[스타 카트] 함정 면역!,[Star Kart] Trap immune!,[スターカート] 罠無効！
+[지뢰찾기 공병] 함정 해체 카드+1!,[Sapper] Trap defused! Card +1,[地雷工兵] 罠解除 カード+1！
+[킹 체커] 스침 처치!,[King Checker] KO in passing!,[キングチェッカー] 通過撃破！
+[백돌] 보호막 방어!,[White Stone] Shield block!,[白石] シールド防御！
+[강아지] 빵집 스침 카드+1!,[Puppy] Bakery sniff! Card +1,[子犬] パン屋通過 カード+1！
+[증기선] 설치물 파괴!,[Steamboat] Object destroyed!,[蒸気船] 設置物を破壊！
+[미니카] 반환점 카드+1!,[Mini Car] Halfway salary! Card +1,[ミニカー] 折り返し地点 カード+1！
+[비행기] 옷장 장거리 워프!,[Airplane] Long-range wardrobe warp!,[飛行機] クローゼット長距離ワープ！
+[윷말] 처치 재굴림 +1!,[Yut Token] KO reroll +1!,[ユッ駒] 撃破で振り直し +1！
+[8번 공] 처치 돌진 +%d칸!,[8-Ball] KO dash +%d!,[8番ボール] 撃破ダッシュ +%dマス！
+초증강 엘리아스 마블,Hyper Elias Marble,超増強エリアスマーブル
+매치 종료,Match Over,試合終了
+[매치 종료!],[Match Over!],[試合終了！]
+%s님이 '%s(%s)' 법전을 달성하여 %d위로 졸업했습니다!,%s fulfilled the '%s (%s)' law and graduated at rank #%d!,%sさんが『%s(%s)』の法典を達成し、%d位で卒業しました！
+%s님이 말 4개를 모두 완주하여 %d위로 졸업했습니다!,%s brought all 4 pawns home and graduated at rank #%d!,%sさんが駒4つをすべて完走させ、%d位で卒業しました！
+매치 종료 사유: %s,Why the match ended: %s,試合終了の理由: %s
+방 규칙 설정,Room Rules,ルーム設定
+함정 카드 정체,Trap Identity,罠カードの正体
+공개: 누가 설치한 함정이든 아이콘과 효과가 보입니다. 비공개: 상대가 설치한 함정은 밟거나 해체하기 전까지 [? 수상한 함정]으로만 보입니다.,"Revealed: every trap shows its icon and effect, no matter who set it. Hidden: traps set by rivals show only as [? Suspicious Trap] until someone steps on or defuses them.",公開: 誰が設置した罠でもアイコンと効果が見えます。非公開: 相手が設置した罠は、踏むか解除するまで [? 怪しい罠] としか表示されません。
+공개 [기본],Revealed [Default],公開 [基本]
+비공개 [심리전],Hidden [Mind Games],非公開 [心理戦]
+초증강 등장 빈도,Hyper Augment Frequency,超増強の出現頻度
+증강 드래프트에 초증강이 나오는 확률입니다.,How often Hyper Augments appear in augment drafts.,増強ドラフトに超増強が出る確率です。
+대축제 (확률 3배),Mega Festival (3x),大祭り (確率3倍)
+끄기,Off,オフ
+특수 승리 법전,Special Victory Laws,特殊勝利の法典
+"끄면 드래프트에 법전이 나오지 않고, 말 4개 완주로만 순위를 가립니다.","When off, no laws appear in drafts and ranks are decided only by bringing all 4 pawns home.",オフにするとドラフトに法典が出ず、駒4つの完走だけで順位を決めます。
+켜기 [기본],On [Default],オン [基本]
+끄기 [완주 승부만],Off [Race only],オフ [完走勝負のみ]
+게임 속도,Game Speed,ゲーム速度
+스피드전: 템포 업이 4·8·12라운드에 오르고 리벤지 부스터가 +2칸 커져 10~12라운드 안에 결판이 납니다.,"Speed Match: Tempo Up rises at rounds 4, 8 and 12 and the Revenge Booster gets +2, so games end within 10-12 rounds.",スピード戦: テンポアップが4・8・12ラウンドで上がり、リベンジブースターが+2マス大きくなり、10〜12ラウンドで決着します。
+기본 템포,Normal Tempo,基本テンポ
+스피드전,Speed Match,スピード戦
+기본값으로,Reset to Default,初期値に戻す
+[함정] %s (설치: %s),[Trap] %s (set by %s),[罠] %s (設置: %s)
+[? 수상한 함정] (설치: %s),[? Suspicious Trap] (set by %s),[? 怪しい罠] (設置: %s)
+[? 수상한 함정],[? Suspicious Trap],[? 怪しい罠]
+[%s] %s  (설치: %s),[%s] %s  (set by %s),[%s] %s  (設置: %s)
+[? 수상한 함정]  (설치: %s),[? Suspicious Trap]  (set by %s),[? 怪しい罠]  (設置: %s)
+직접 밟거나 해체하기 전까지 정체를 알 수 없습니다!,You can't tell what it is until someone steps on it or defuses it!,踏むか解除するまで正体はわかりません！
+함정 비공개,Hidden traps,罠非公開
+초증강 끄기,Hyper Augments off,超増強オフ
+초증강 대축제,Hyper Augment festival,超増強の大祭り
+법전 끄기,Laws off,法典オフ
+입문 드래프트,Beginner draft,入門ドラフト
+[방 규칙] %s,[Room Rules] %s,[ルーム設定] %s
+%s (수집: %d/8),%s (Collected: %d/8),%s（収集: %d/8）
+[말] 증강의 [기물 지급]으로 기본 말을 진화시켜요. 말마다 상시 능력과 1회 필살기가 있어요.,[Pieces] Evolve basic pawns with the [Piece Grant] augment. Each piece has a passive and a one-time ultimate.,[駒] 増強の[駒支給]で基本の駒を進化させます。駒ごとに常時能力と1回限りの必殺技があります。
+[범용 보급] 카드 패키지와 기물 변이·필살기 리필 같은 보급 증강이에요.,"[Utility Supply] Supply augments such as card packs, piece mutation and ultimate refills.",[汎用補給] カードパック・駒変異・必殺技リフィルなどの補給増強です。
+[초증강] 판을 한 번에 뒤집는 하이리스크 하이리턴. 경고 표시는 내 말도 사출될 수 있다는 뜻이에요.,"[Hyper Augments] High risk, high return game-changers. A warning mark means your own pawns can be ejected too.",[超増強] 盤面を一気にひっくり返すハイリスク・ハイリターン。警告マークは自分の駒も射出されうるという意味です。
+[카드] 빵집·증강에서 얻은 카드를 보드로 끌어다 놓아 써요. 손패는 최대 7장이에요.,[Cards] Drag cards from the bakery or augments onto the board to use them. Max hand size is 7.,[カード] パン屋や増強で得たカードを盤面にドラッグして使います。手札は最大7枚です。
+"[특수 승리 법전] 3라운드마다 등장하며, 조건 달성 후 내 턴이 끝나면 즉시 다음 순위로 레이스를 졸업합니다!",[Special Victory Laws] One appears every 3 rounds. Meet its condition and end your turn to graduate to the next rank!,[特殊勝利の法典] 3ラウンドごとに登場し、条件達成後に自分のターンが終わると即座に次の順位でレースを卒業します！
+[판정 도구] 도구마다 족보가 달라요. 증강의 [도구 교체]로 바꿔 굴려요.,[Judgment Tools] Each tool has its own result table. Swap tools with the [Judgment Tool Swap] augment.,[判定ツール] ツールごとに役表が違います。増強の[判定ツール交換]で持ち替えて振ります。
+기록 백업/복구,Backup / Restore,記録バックアップ/復元
+내 전용 링크 복사,Copy My Link,専用リンクをコピー
+법전 %d/8,Codex %d/8,法典 %d/8
+코드 입력,Enter Code,コード入力
+v%s · 비공식 팬게임 (원작사와 무관한 비영리 무료 배포물),v%s · Unofficial non-profit fan game (Not affiliated with the original dev),v%s · 非公式・非営利ファンゲーム（原作会社とは無関係です）
+축제 (확률 2배),Festival (2x),祭り (確率2倍)
+빈자리 컴퓨터 난이도,Empty-Seat CPU Level,空席CPUの難易度
+방장이 빈자리에 넣은 컴퓨터의 불닭 난이도입니다 (Lv.1 크림 ~ Lv.5 핵불닭).,Fire level of the CPUs the host adds to empty seats (Lv.1 Cream ~ Lv.5 2x Nuclear).,ホストが空席に入れたCPUの激辛レベルです (Lv.1 クリーム 〜 Lv.5 獄激辛・核)。
+빠른 설정,Quick Presets,クイック設定
+입문/클래식 완주전,Starter / Classic Race,入門/クラシック完走戦
+법전 끄기 · 함정 공개 · 초증강 끄기,Laws Off · Traps Revealed · Hyper Off,法典オフ · 罠公開 · 超増強オフ
+오리지널 표준,Original Standard,オリジナル標準
+법전 켜기 · 함정 공개 · 초증강 기본,Laws On · Traps Revealed · Hyper Normal,法典オン · 罠公開 · 超増強ふつう
+우정파괴 심리전,Friendship Breaker,友情破壊の心理戦
+법전 켜기 · 함정 비공개 · 초증강 축제 (확률 2배),Laws On · Traps Hidden · Hyper Festival (2x),法典オン · 罠非公開 · 超増強祭り (確率2倍)
+초증강 축제,Hyper Festival,超増強祭り
+함정 공개,Traps Revealed,罠公開
+법전 켜기,Laws On,法典オン
+빈자리 컴퓨터 %s,Empty-seat CPU %s,空席CPU %s
+사용자 설정,Custom,カスタム
+초증강 기본,Hyper Normal,超増強ふつう
+[기본],[Default],[基本]
+[달성 임박!],[So close!],[達成間近！]
+[특수 승리 조건 달성!],[Special Victory Achieved!],[特殊勝利条件達成！]
+입문 추천! 특수 승리 없이 말 4개 완주로만 승부합니다,"Recommended for beginners! No special victories, just race all 4 pawns home",入門におすすめ！特殊勝利なし、駒4つの完走だけで勝負します
+"팁: 보드 위의 말, 함정, 좌측 법전에 마우스를 올리면(모바일은 탭) 상세 효과를 언제든 볼 수 있어요!","Tip: Hover over pawns, traps, or the Codex on the left (tap on mobile) to see their effects anytime!",ヒント：盤上の駒・罠・左の法典にマウスを乗せると（モバイルはタップ）いつでも詳しい効果が見られます！
+[★ 턴 종료 시 달성!],[★ Wins at turn end!],[★ ターン終了時に達成！]
+ 포위망, Siege, 包囲網
+[ %d / %d 킬 ],[ %d / %d KOs ],[ %d / %d 撃破 ]
+[ %d / %d 장 ],[ %d / %d cards ],[ %d / %d 枚 ]
+[ %d / %d 개 ],[ %d / %d placed ],[ %d / %d 個 ]
+[ %d / %d 칸 ],[ %d / %d tiles ],[ %d / %d マス ]
+[ %d / %d 회 ],[ %d / %d times ],[ %d / %d 回 ]
+[ %d / %d 연속 ],[ %d / %d in a row ],[ %d / %d 連続 ]
+[ %d / %d 구역 ],[ %d / %d zones ],[ %d / %d 区域 ]
+[ %d / %d 처치 ],[ %d / %d KOs ],[ %d / %d 撃破 ]
+킬,KOs,撃破
+구역,zones,区域
+[%d라운드 종료] 남은 플레이어는 진행 순위로 순위가 확정됩니다,[Round %d over] Remaining players are ranked by race standing,[%dラウンド終了] 残りのプレイヤーは進行順位で順位が確定します
+입문 추천! 특수 승리는 쉬운 2종(처치·손패)만 나와요,"Recommended for beginners! Only 2 easy special wins (KOs, hand)",入門におすすめ！特殊勝利は簡単な2種（撃破・手札）だけ
+7·14·20라운드,Rounds 7·14·20,7·14·20ラウンド
+7라운드 · 과열,Round 7 · Overheat,7ラウンド · オーバーヒート
+14라운드 · 광기,Round 14 · Frenzy,14ラウンド · 狂気
+20라운드 · 대붕괴,Round 20 · Meltdown,20ラウンド · 大崩壊
+최종 이동 +2칸 · 리벤지 +6칸 · 법전·초증강 확률 상승,Final move +2 · Revenge +6 · Codex & Hyper odds up,最終移動 +2マス · リベンジ +6マス · 法典・超増強の確率アップ
+최종 이동 +4칸 · 리벤지 +8칸 · 법전에 무작위 특수 승리 1개 등록,Final move +4 · Revenge +8 · 1 random Special Victory added to the Codex,最終移動 +4マス · リベンジ +8マス · 法典にランダムな特殊勝利を1つ登録
+전원 이동 +6칸 · 결승선이 라운드마다 2칸씩 당겨짐,Everyone +6 · finish line moves 2 spaces closer each round,全員の移動 +6マス · ゴールがラウンドごとに2マスずつ近づく
+모든 굴림 최종 이동 +%d칸,+%d spaces to every final move,すべての出目の最終移動 +%dマス
+전원 이동 +%d칸,Everyone +%d spaces,全員の移動 +%dマス
+초증강 등장 확률 상승,Hyper Augments appear more often,超増強の出現確率アップ
+법전 증강 등장 확률 상승,Codex augments appear more often,法典増強の出現確率アップ
+빵집에 {p1}회 방문,Visit a bakery {p1} times,パン屋に{p1}回訪問
+입문 추천! 특수 승리는 쉬운 2종(처치·빵집)만 나와요,"Recommended for beginners! Only 2 easy special wins (KOs, bakery)",入門におすすめ！特殊勝利は簡単な2種（撃破・パン屋）だけ
+최종 이동 +2칸 · 리벤지 +6칸 · 초증강 확률 상승,Final move +2 · Revenge +6 · Hyper odds up,最終移動 +2マス · リベンジ +6マス · 超増強の確率アップ
+최종 이동 +4칸 · 리벤지 +8칸 · 법전 확률 상승,Final move +4 · Revenge +8 · Codex odds up,最終移動 +4マス · リベンジ +8マス · 法典の確率アップ
+전원 이동 +6칸 · 법전에 무작위 특수 승리 1개 등록 · 결승선이 라운드마다 2칸씩 당겨짐,Everyone +6 · 1 random Special Victory added to the Codex · finish line moves 2 spaces closer each round,全員の移動 +6マス · 法典にランダムな特殊勝利を1つ登録 · ゴールがラウンドごとに2マスずつ近づく
+말 {p1}개가 트랙 위에서 서로 4칸 이상 간격,{p1} of your pawns on the track spaced 4+ apart,自分の駒{p1}個がトラック上で互いに4マス以上離れている
+[보호막] %s이(가) %d번 타일에서 공격을 막고 보호막이 깨졌습니다,[Shield] %s blocked an attack on tile %d and the shield broke,[バリア] %sが%d番マスで攻撃を防ぎ、バリアが壊れました
+[리바이브],[Revive],[リバイブ]
+다이스: 리바이브 - 0칸·턴 종료 굴림이 나오면 한 턴 더 (1회),Dice: Revive - take one more turn if a roll gives 0 spaces or ends your turn (once),ダイス：リバイブ - 0マス・ターン終了の出目ならもう1ターン（1回）
+어느 말에 보호막을 씌울까요?,Which pawn gets the shield?,どの駒にバリアを張りますか？
+선택 불가,Unavailable,選択不可
+[올 픽션] P%d: 아직 고르지 않은 사람의 증강 선택지를 다시 뽑습니다,[All Fiction] P%d: redrawing augment offers for everyone who hasn't picked yet,[オールフィクション] P%d: まだ選んでいない人の増強の選択肢を引き直します
+[올 픽션] 전원 증강 재추첨!,[All Fiction] Augments redrawn for everyone!,[オールフィクション] 全員の増強を再抽選！
+[다이스: 리바이브] P%d: 턴이 끝나도 한 턴 더 합니다,[Dice: Revive] P%d takes one more turn,[ダイス：リバイブ] P%d: ターンが終わってももう1ターン
+[다이스: 리바이브] 발동 - 한 턴 더!,[Dice: Revive] triggered - one more turn!,[ダイス：リバイブ] 発動 - もう1ターン！
+[리바이브!] 한 턴 더!,[Revive!] One more turn!,[リバイブ！] もう1ターン！
+상시 보급,Standing Supply,常時補給
+이동 +1칸 · 손패 상한 +1 · 굴림 운 · 리바이브 (판 내내),Move +1 · Hand limit +1 · Lucky rolls · Revive (whole match),移動 +1マス · 手札上限 +1 · 出目運 · リバイブ（試合中ずっと）
+즉발 보급,Instant Supply,即発補給
+즉발 카드 · 보호막 · 함정 철거 · 순보 · 결승선 단축 · 올 픽션,Instant cards · Shield · Trap removal · Flash Step · Shorter finish · All Fiction,即発カード · バリア · 罠撤去 · 瞬歩 · ゴール短縮 · オールフィクション
+[이동 +1칸 영구!],[Move +1 for good!],[移動 +1マス永続！]
+[손패 상한 +1!],[Hand limit +1!],[手札上限 +1！]
+[굴림 운 상승!],[Luckier rolls!],[出目運アップ！]
+[리바이브 장전!],[Revive loaded!],[リバイブ装填！]
+[즉발 카드 2장!],[2 Instant cards!],[即発カード2枚！]
+[보호막!],[Shield!],[バリア！]
+[함정 1개 철거!],[1 trap removed!],[罠を1つ撤去！]
+[선두 바로 뒤로!],[Right behind the leader!],[先頭のすぐ後ろへ！]
+[결승선 2칸 단축!],[Finish line 2 closer!],[ゴール2マス短縮！]
+[전원 증강 재추첨!],[Augments redrawn for all!],[全員の増強を再抽選！]
+이번 판 동안 모든 굴림 이동 +1칸 (영구),+1 space to every roll for the rest of the match (permanent),この試合の間、全ての出目の移動 +1マス（永続）
+최대 손패 +1장 (%d장)%s,Max hand +1 (%d cards)%s,手札上限 +1枚（%d枚）%s
+ · 카드 획득: %s, · Card gained: %s, · カード獲得: %s
+이번 판 동안 굴림이 높게 나올 확률 상승,Rolls come up high more often for the rest of the match,この試合の間、出目が高く出やすくなる
+리바이브 장전: 0칸·턴 종료 굴림이 나오면 한 턴 더,Revive loaded: one more turn if a roll gives 0 spaces or ends your turn,リバイブ装填: 0マス・ターン終了の出目ならもう1ターン
+즉발 카드 획득: %s,Instant cards gained: %s,即発カード獲得: %s
+모든 플레이어의 결승선이 %d칸 당겨졌습니다 (%d번 칸부터 결승),Everyone's finish line moved %d spaces closer (finish from tile %d),全プレイヤーのゴールが%dマス近づきました（%d番マスからゴール）
+이번 드래프트를 다시 뽑습니다,Redrawing this draft,このドラフトを引き直します
+보호막을 씌울 말이 없습니다,No pawn can take a shield,バリアを張れる駒がありません
+말 %d번 [%s]에 보호막,Pawn %d [%s] is shielded,駒%d番 [%s]にバリア
+철거할 상대 함정이 없어 카드 획득: %s,"No enemy trap to remove, card gained: %s",撤去できる相手の罠がないためカード獲得: %s
+%d번 칸의 상대 함정 1개 철거,Removed 1 enemy trap on tile %d,%d番マスの相手の罠を1つ撤去
+옮길 말이 없습니다,No pawn to move,移動できる駒がありません
+말 %d번이 선두 바로 뒤 %d번 칸으로 이동,Pawn %d moved right behind the leader to tile %d,駒%d番が先頭のすぐ後ろの%d番マスへ移動
+[올 픽션] 모두가 고른 증강을 버리고 새 3장 중에서 다시 고릅니다,[All Fiction] Everyone discards their pick and chooses again from 3 new augments,[オールフィクション] 全員が選んだ増強を捨て、新しい3枚から選び直します
+모두가 증강을 다시 고릅니다,Everyone picks their augment again,全員が増強を選び直します
+◆ 모두가 고른 뒤 발동: 모든 플레이어가 고른 증강을 버리고 새 3장 중에서 다시 고른다 (라운드당 1회),◆ Triggers after everyone picks: all players discard their pick and choose again from 3 new augments (once per round),◆ 全員が選んだ後に発動: 全プレイヤーが選んだ増強を捨て、新しい3枚から選び直す（1ラウンド1回）
+아군 말 업기: [업기 (하나로 합체)] 또는 [그냥 두기 (개별 유지)]를 고르세요. (시간이 지나면 자동으로 업기),Stacking with your pawn: pick [Stack (merge into one)] or [Keep separate]. (Time out = auto-stack),味方の駒とおんぶ: [おんぶ (1つに合体)] か [そのまま (個別のまま)] を選んでください。(時間切れで自動的におんぶ)
+아군 말 합류 - 업기,Join Your Pawn - Stack,味方の駒と合流 - おんぶ
+처치 시 재굴림 +1,Reroll +1 on KO,撃破時リロール +1
+한 번 더!,One More!,もう1回！
+이번 차례에 주사위를 한 번 더 굴린다,Roll the dice once more this turn,このターンにダイスをもう1回振る
+◆ 패시브: 처치 시 재굴림 +1\n◆ [1회] 한 번 더!: 이번 차례에 주사위를 한 번 더 굴린다\n※ 이미 가진 기물은 받을 수 없습니다,◆ Passive: Reroll +1 on KO\n◆ [Once] One More!: roll the dice once more this turn\n※ You can't get a piece you already own,◆ パッシブ: 撃破時、振り直し+1\n◆ [1回] もう1回！: このターンにダイスをもう1回振る\n※ 既に所持している駒は獲得できません
+즉발 발동,Instant Effect,即時発動
+카드 보급,Card Supply,カード補給
+보급 증강 분류,Supply Augment Types,補給増強の分類
+[b]색상과 분류 이름[/b]으로 효과를 구분해요.,Identify effects by [b]color and type name[/b].,[b]色と分類名[/b]で効果を見分けます。
+획득 후 유지되거나 조건에 따라 자동 발동,Stays active after acquisition or triggers automatically,獲得後に持続、または条件に応じて自動発動
+증강 선택이 끝나면 보드·선택지에 바로 적용,Affects the board or offers when augment selection ends,増強選択の終了時に盤面・選択肢へ即時適用
+기물 변이 · 전군 개조 · 필살기 재충전,Pawn mutation · troop remodel · skill recharge,駒の変異・全軍改造・必殺技の再チャージ
+생떼 카드를 손패에 추가,Adds Tantrum cards to your hand,駄々カードを手札に追加
+[보급 증강] 패시브·즉발 발동·범용 보급·카드 보급을 색상과 분류 이름으로 구분해요.,"[Supply Augments] Colors and type names distinguish Passive, Instant Effect, Utility Supply and Card Supply.",[補給増強] パッシブ・即時発動・汎用補給・カード補給を色と分類名で見分けます。
+[업기] 옆 칸 아군과 합류!,[Stack] Merged with the ally next door!,[おんぶ] 隣のマスの味方と合流！
+내 말이 아군 말 칸이나 바로 앞뒤 칸에 멈추면 업혀서 한 번에 이동해요.,"Stop on or right next to an ally and your pawns stack, moving together as one.",自分の駒が味方のマスかその前後のマスに止まると、おんぶして一緒に動きます。
+"잡으면 재굴림, 필살기는 주사위 한 번 더.",Reroll on a KO; special: roll once more.,撃破で振り直し、必殺技はもう一度ダイス。
+보호막 있음,Shield active,バリアあり
+★나리 승급(+1칸),★Promoted (+1 space),★成り昇格(+1マス)
+결승선이 출발선 앞까지 계속 당겨진다,The finish line keeps closing in toward the start,ゴールがスタート手前までどんどん近づく
+최종 이동 +4칸 · 리벤지 +8칸 · 법전 확률 상승 · 결승선이 라운드마다 3칸씩 당겨짐,Final move +4 · Revenge +8 · Codex odds up · finish line moves 3 spaces closer each round,最終移動 +4マス · リベンジ +8マス · 法典の確率アップ · ゴールがラウンドごとに3マスずつ近づく
+전원 이동 +6칸 · 결승선이 출발선 앞까지 계속 당겨짐,Everyone +6 · finish line keeps closing in toward the start,全員の移動 +6マス · ゴールがスタート手前までどんどん近づく
+클래식 구슬 핀볼 · %s 차례,Classic Marble Pinball · %s's turn,クラシック玉ピンボール · %sの番
+이번 판은 특수 승리 법전이 없어요,No special-victory codex this match,この試合は特殊勝利の法典なし
+차례 첫 이동 +%d칸,+%d to the first move of each turn,各ターン最初の移動 +%dマス
+전원 차례 첫 이동 +%d칸,Everyone: +%d to the first move of each turn,全員: 各ターン最初の移動 +%dマス
+\n템포 업 Lv.%d %s · 차례 첫 이동 +%d칸,\nTempo Up Lv.%d %s · first move +%d,\nテンポアップ Lv.%d %s · 最初の移動 +%dマス
+차례 첫 이동 +2칸 · 리벤지 +6칸 · 초증강 확률 상승,First move +2 · Revenge +6 · Hyper odds up,最初の移動 +2マス · リベンジ +6マス · 超増強の確率アップ
+차례 첫 이동 +4칸 · 리벤지 +8칸 · 법전 확률 상승 · 결승선이 라운드마다 3칸씩 당겨짐,First move +4 · Revenge +8 · Codex odds up · finish line moves 3 spaces closer each round,最初の移動 +4マス · リベンジ +8マス · 法典の確率アップ · ゴールがラウンドごとに3マスずつ近づく
+전원 차례 첫 이동 +6칸 · 결승선이 출발선 앞까지 계속 당겨짐,Everyone's first move +6 · finish line keeps closing in toward the start,全員の最初の移動 +6マス · ゴールがスタート手前までどんどん近づく
+성공,Success,成功
+실패,Failure,失敗
+턴 종료,Turn ends,ターン終了
+한 번 더,Roll again,もう一度
+계속 도전 가능,Keep going,続けて挑戦可能
+%d회 굴림,%d rolls,%d回ロール
+%d회 성공,%d successes,成功%d回
+%d칸 누적,Saved: %d spaces,累積%dマス
+%d칸 확정,Move %d spaces,%dマス確定
+합계 %d,Total %d,合計%d
+나리 승급 +%d칸,Promotion +%d,成り +%dマス
+나이트 코너 도약 +2칸,Knight corner leap +2,ナイト コーナー跳躍 +2マス
+코너 바로 앞에 멈추면 +2칸,Stop right before a corner: +2 spaces,コーナーの直前に止まると+2マス
+경로에 내 말이 있으면 +3칸,+3 spaces if one of your pawns is on the path,経路上に自分の駒がいれば+3マス
+옷장 사용 시 카드 +1,+1 card when using a Wardrobe,タンスを使うとカード+1
+반환점 통과 시 승급,Promotes upon passing the midpoint,折り返し地点を通過すると成る
+기사의 맹세,Knight's Oath,騎士の誓い
+포격,Bombard,砲撃
+뒷발차기,Back Kick,後ろ蹴り
+계마 도약,Keima Leap,桂馬跳び
+반환점으로 직항,Fly straight to the midpoint,折り返し地点へ直行
+이번 차례 동안 사출 면역,Immune to being knocked out this turn,このターン中、射出無効
+가장 앞에 있는 적의 말 처치,KO the enemy pawn furthest ahead,最も先頭にいる敵の駒を撃破
+뒤 2칸의 적 처치,KO enemies within 2 spaces behind,後ろ2マスの敵を撃破
++2칸 전진 · 처치하면 +1칸 더,Advance 2 spaces · +1 more on a KO,2マス前進・撃破すればさらに+1マス
++2칸,+2 spaces,+2マス
+차 직진 +2칸,Chariot straight +2,車 直進 +2マス
+룩 직진 +2칸,Rook straight +2,ルーク 直進 +2マス
+[나리 승급] 이동 +2칸!,[Promotion] Move +2!,[成り] 移動+2マス！
+[장기:차] 직진 +2칸!,[Chariot] Straight +2!,[車] 直進+2マス！
+[나이트] 코너 도약 +2칸!,[Knight] Corner leap +2!,[ナイト] コーナー跳躍+2マス！
+[비행기] 옷장 카드+1!,[Airplane] Wardrobe card +1!,[飛行機] タンスでカード+1！
+[나이트] 맹세 방어!,[Knight] Oath guard!,[ナイト] 誓いの防御！
+[나리] %s 승급! 이동할 때마다 +2칸,[Promotion] %s promoted! +2 on every move,[成り] %s 成った！移動ごとに+2マス
+%s 승급 ◆ 이동할 때마다 +2칸,%s promoted ◆ +2 on every move,%s 成り ◆ 移動ごとに+2マス
+나리(成り) 승급 상태: %s - +2칸,Promoted (Nari): %s - +2 spaces,成り状態: %s - +2マス
+[기사의 맹세] %s이(가) %d번 타일에서 사출을 막았습니다,[Knight's Oath] %s blocked a knockout on tile %d,[騎士の誓い] %sが%d番マスで射出を防ぎました
+[직항 워프] 이미 반환점을 지나 직항할 곳이 없습니다.,[Direct Flight] Already past the midpoint - nowhere to fly.,[直行ワープ] すでに折り返し地点を過ぎたため直行先がありません。
+[포격] 처치할 수 있는 적의 말이 보드 위에 없습니다.,[Bombard] No enemy pawn on the board can be KO'd.,[砲撃] 撃破できる敵の駒が盤上にいません。
+[계마 도약] 앞으로 갈 칸이 없습니다.,[Keima Leap] No space ahead to leap to.,[桂馬跳び] 前に進めるマスがありません。
+뒷발차기로 %d개의 말을 출발선으로!,Back Kick sends %d pawn(s) to the start!,後ろ蹴りで%d個の駒をスタートへ！
+포격으로 %d개의 말을 출발선으로!,Bombard sends %d pawn(s) to the start!,砲撃で%d個の駒をスタートへ！
+이번 차례 동안 잡기·함정 사출을 막습니다,Blocks KOs and trap knockouts this turn,このターン中、撃破・罠による射出を防ぎます
+%d번 타일로 도약!,Leaps to tile %d!,%d番マスへ跳躍！
+히트,Hit,ヒット
+스탠드,Stand,スタンド
+스탠드 · %d칸,Stand · %d spaces,スタンド · %dマス
+카드 받는 중,Dealing cards,カード配布中
+카드를 받아 시작하세요,Draw cards to start,カードを引いて開始
+이번 판 어떠셨나요? 가장 가까운 하나를 눌러 주세요 (개발자에게 바로 전달!),How was this match? Pick the closest one (goes straight to the dev!),今回のゲームはいかがでしたか？ 一番近いものを押してください（開発者に直接届きます！）
+템포·역전 각 딱 재밌어요!,Great pace & comeback chances!,テンポも逆転チャンスも最高！
+왜 이겼는지/졌는지 모르겠어요,I don't know why I won/lost,なぜ勝った・負けたのか分からない
+한 번 밀리니 역전이 안 돼요,"Once behind, no way to come back",一度遅れると逆転できない
+말이 자꾸 죽어서 완주가 답답해요,My pawns keep dying - finishing is frustrating,駒がすぐやられてゴールできずもどかしい
+고른 증강/기물 효과를 잘 못 느꼈어요,Couldn't feel my augments/pawns' effects,選んだ増強・駒の効果を感じられなかった
+[즐긴 재미] %s,[Enjoyed] %s,[楽しんだ要素] %s
+[막힌 곳] %s,[Stuck at] %s,[詰まった所] %s
+이번 판 어떠셨나요? (누르면 개발자에게 바로 전달!),How was this match? (goes straight to the dev!),今回のゲームはいかがでしたか？（開発者に直接届きます！）
+재밌었어요!,It was fun!,楽しかった！
+잘 모르겠어요,Not sure,よく分からなかった
+어떤 부분이 아쉬웠나요? (하나만 골라 주세요),What felt lacking? (pick one),どこが物足りなかったですか？（1つ選んでください）
+[코너·3R·1회] 멈춘 적 말 감금,[Corner·3R·Once] Jail enemy pawns that stop,[コーナー·3R·1回] 止まった敵の駒を監禁
+[코너·3R·1회] 내 말 +5칸 점프 / 적 말 출발선 사출,[Corner·3R·Once] My pawn jumps +5 / enemy pawn to Start,[コーナー·3R·1回] 自分の駒 +5マスジャンプ / 敵の駒はスタートへ射出
+[코너·3R·1회] 내 말 +{p1}칸 점프 / 적 말 출발선 사출,[Corner·3R·Once] My pawn jumps +{p1} / enemy pawn to Start,[コーナー·3R·1回] 自分の駒は+{p1}マスジャンプ / 敵の駒はスタート地点へ射出
+"[코너·3R·1회] 지나가는 적은 카드 1장 상납, 없으면 강제 정지","[Corner·3R·Once] Passing enemies pay 1 card, or are forced to stop",[コーナー·3R·1回] 通過する敵はカード1枚を上納、なければ強制停止
+[코너·3R·1회] 밟은 적 정지 + 코너 2칸 안의 적 말 끌어오기,[Corner·3R·Once] Stop enemies who land + pull enemy pawns within 2 spaces,[コーナー·3R·1回] 踏んだ敵を停止 + コーナーから2マス以内の敵の駒を引き寄せる
+[코너·3R·1회] 밟은 적 정지 + 코너 {p1}칸 안의 적 말 끌어오기,[Corner·3R·Once] Stop enemies who land + pull enemy pawns within {p1} spaces,[コーナー·3R·1回] 踏んだ敵を停止＋コーナーから{p1}マス以内の敵の駒を引き寄せる
+[상단 코너] 소환 · 라운드마다 정방향 1~3칸 · 적을 잡으면 처치하고 퇴장,[Top Corner] Summon · Walks 1-3 forward each round; KOs the first enemy and leaves.,[上コーナー] 召喚・毎ラウンド順方向に1~3マス、敵を捕まえたら撃破して退場
+[상단 코너] 소환 · 라운드마다 역방향 1~3칸 · 적을 잡으면 처치하고 퇴장,[Top Corner] Summon · Walks 1-3 backward each round; KOs the first enemy and leaves.,[上コーナー] 召喚・毎ラウンド逆方向に1~3マス、敵を捕まえたら撃破して退場
+"사료스탕스는 정방향, 와구와구 유령은 역방향으로 1~3칸 이동 · 적을 잡으면 퇴장","Feed-stance moves forward and the Chomp-Chomp Ghost backward, 1-3 spaces · leaves after a KO",サリョスタンスは順方向、パクパク幽霊は逆方向に1~3マス移動・敵を捕まえたら退場
+라운드가 끝날 때마다 정방향으로 1~3칸 이동 · 적 말을 만나면 출발선으로 날리고 퇴장,"Moves 1-3 spaces forward at every round end · sends the first enemy pawn it meets to Start, then leaves",ラウンド終了ごとに順方向へ1~3マス移動・敵の駒に出会ったらスタートへ飛ばして退場
+라운드가 끝날 때마다 역방향으로 1~3칸 이동 · 적 말을 만나면 출발선으로 날리고 퇴장,"Moves 1-3 spaces backward at every round end · sends the first enemy pawn it meets to Start, then leaves",ラウンド終了ごとに逆方向へ1~3マス移動・敵の駒に出会ったらスタートへ飛ばして退場
+"중립 기물이 %d번 타일에 소환되었습니다. 라운드마다 1~3칸 이동하고, 적 말을 잡으면 처치하고 퇴장합니다.",A Neutral NPC was summoned on tile %d. It moves 1-3 spaces each round and leaves after KO-ing an enemy pawn.,中立駒が%d番マスに召喚されました。毎ラウンド1~3マス移動し、敵の駒を捕まえたら撃破して退場します。
+%s %d칸 이동 - 말 %d개를 잡고 퇴장!,%s moved %d spaces - caught %d pawn(s) and left!,%s %dマス移動 - 駒%d個を捕まえて退場！
+%s %d칸 이동,%s moved %d spaces,%s %dマス移動
+"상단 코너에 1마리, 라운드마다 1~3칸 · 적을 잡으면 퇴장","One on the top corner, moves 1-3 spaces each round · leaves after a KO",上コーナーに1体、毎ラウンド1~3マス・敵を捕まえたら退場
+코너 함정은 누구에게나 공개 · 3라운드 · 1회용,Corner traps are public to everyone · 3 rounds · single use,コーナー罠は全員に公開・3ラウンド・1回きり
+공격!,ATTACK!,攻撃！
+이동 실패!,MOVE FAILED!,移動失敗！
+휴식…,REST…,休み…
+결승선 당김!,FINISH PULLED IN!,ゴール前進！
+%d번 칸부터 결승,Finish from space %d,%d番マスからゴール
+말 %d개 완주!,%d pawn(s) finished!,駒%d個ゴール！
+%d위 골인!,#%d FINISH!,%d位ゴール！
+승급! +2칸,PROMOTED! +2,成り！ +2マス
+퀸 승진!,QUEEN!,クイーン昇格！
+템포 업 Lv.%d · 첫 이동 +%d칸,Tempo Up Lv.%d · first move +%d,テンポアップ Lv.%d · 最初の移動 +%dマス
+함정 %d개 연쇄,%d traps chained,罠%d個連鎖
+무너지는 탑!,THE TOWER!,崩れる塔！
+XVI · 말 %d개 흩어짐,XVI · %d pawn(s) scattered,XVI · 駒%d個が散らばる
+운명의 수레바퀴!,WHEEL OF FORTUNE!,運命の輪！
+X · 자리 맞바꿈,X · Swap places,X · 位置交換
+X · 자리 빼앗기,X · Steal the spot,X · 位置を奪う
+X · 출발선으로!,X · Back to Start!,X · スタートへ！
+함정 발동 · %d번 칸,Trap triggered · space %d,罠発動 · %d番マス
+%s 출동!,"%s, GO!",%s出動！
+법전 개정!,LAW REVISED!,法典改正！
+눈금 %d · 0칸,Roll %d · 0 spaces,出目%d · 0マス
+함정 설치!,TRAP SET!,罠設置！
+중립 기물 이동,Neutral piece moves,中立駒の移動
+되감기!,REWIND!,巻き戻し！
+%s 턴 취소,%s's turn undone,%sのターン取り消し
+BUST!,BUST!,BUST！
+접시 밖 · 0칸,Off the bowl · 0 spaces,皿の外 · 0マス
+카드 발동!,CARD!,カード発動！
+방어 발동!,DEFENSE!,防御発動！
+함정 발동!,TRAP!,罠発動！
+함정 연쇄!,TRAP CHAIN!,罠連鎖！
+필살기 발동!,SKILL!,必殺技発動！
+법전 발동!,LAW!,法典発動！
+타로 발동!,TAROT!,タロット発動！
+중립 기물 출동!,"NEUTRAL PIECE, GO!",中立駒出動！
+초증강 발동!,SUPER AUGMENT!,超増強発動！
+16:9 화면 비율 고정 (남는 곳은 검은 띠),Lock 16:9 aspect ratio (black bars on the sides),16:9画面比率を固定（余白は黒帯）
+해상도,Resolution,解像度
+창에 맞춤,Fit to window,ウィンドウに合わせる
+%d × %d (16:9),%d × %d (16:9),%d × %d (16:9)
+[중반 법전] 아무도 법전을 고르지 않아 [%s] %s이(가) 자동 제정되었습니다,"[Midgame Codex] Nobody picked a Codex law, so [%s] %s was enacted automatically",[中盤法典] 誰も法典を選ばなかったため [%s] %s が自動制定されました
+[color=#ffe066][b]중반 법전 자동 제정![/b] %s[/color],[color=#ffe066][b]Midgame Codex auto-enacted![/b] %s[/color],[color=#ffe066][b]中盤法典 自動制定！[/b] %s[/color]
+중반 법전 자동 제정!,Midgame Codex auto-enacted!,中盤法典 自動制定！
+법전이 비어 있어 무작위 특수 승리 법전 1개 자동 제정,The Codex is empty: 1 random Special Victory law is enacted,法典が空のため、ランダムな特殊勝利法典を1つ自動制定
+차례 첫 이동 +4칸 · 리벤지 +8칸 · 법전 확률 상승,First move +4 · Revenge +8 · Codex odds up,最初の移動 +4マス · リベンジ +8マス · 法典の確率アップ
+전원 차례 첫 이동 +6칸,Everyone's first move +6,全員の最初の移動 +6マス
+8·14·20라운드,Rounds 8·14·20,8·14·20ラウンド
+차례 첫 이동 +1칸 · 리벤지 +6칸 · 초증강 확률 상승 · 법전이 비어 있으면 1개 자동 제정,First move +1 · Revenge +6 · Super augment odds up · 1 law auto-enacted if the Codex is empty,最初の移動 +1マス · リベンジ +6マス · 超増強の確率アップ · 法典が空なら1つ自動制定
+차례 첫 이동 +2칸 · 리벤지 +8칸 · 법전 확률 상승,First move +2 · Revenge +8 · Codex odds up,最初の移動 +2マス · リベンジ +8マス · 法典の確率アップ
+전원 차례 첫 이동 +3칸,Everyone's first move +3,全員の最初の移動 +3マス
+결승선은 [범용] 결승선 당기기를 쓸 때만 당겨져요 (체크무늬 칸),The finish line only moves closer when someone uses the [Utility] pull augment (checkered spaces),ゴールは[汎用]ゴール引き寄せを使ったときだけ近づきます (チェック柄のマス)
+25라운드가 끝나면 남은 사람은 진행 순위로 순위 확정,"After round 25, remaining players are ranked by race progress",25ラウンド終了後、残りのプレイヤーは進行順で順位確定
+방어 성공! (처치 무효 · 투기장/킬 카운트 미적용),Defended! (Kill voided · no Arena/kill count),防御成功！(撃破無効・闘技場/キル数は加算なし)
+[방어 성공] 처치 무효 · 투기장/킬 카운트 미적용,[Defended] Kill voided · no Arena/kill count,[防御成功] 撃破無効・闘技場/キル数は加算なし
+[color=#74c0fc][b]방어 성공![/b] 처치 무효 · 투기장/킬 카운트 미적용[/color],[color=#74c0fc][b]Defended![/b] Kill voided · no Arena/kill count[/color],[color=#74c0fc][b]防御成功！[/b] 撃破無効・闘技場/キル数は加算なし[/color]
+방어 성공!,Defended!,防御成功！
+처치 무효 · 투기장/킬 카운트 미적용,Kill voided · no Arena/kill count,撃破無効・闘技場/キル数は加算なし
+   기물%s: %s,   Pieces%s: %s,   駒%s: %s
+ (졸업 직전), (just before graduating), (卒業直前)
+%s %s (달성 완료!): P%d %d/%d · %d위 졸업,%s %s (Achieved!): P%d %d/%d · graduated #%d,%s %s (達成完了！): P%d %d/%d・%d位で卒業
+
+사용하기,Use,使用する
+핀볼 발사 준비,Prepare pinball launch,ピンボール発射準備

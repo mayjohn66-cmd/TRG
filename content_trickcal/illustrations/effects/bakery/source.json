@@ -1,0 +1,50 @@
+{
+  "character": "Erpin",
+  "viewer_id": "minimi/minimierpin",
+  "source": "https://viewer.dclnslde.com/",
+  "animation": "Move",
+  "fps": 30,
+  "frames": 14,
+  "columns": 7,
+  "cell": [
+    212,
+    308
+  ],
+  "padding": 2,
+  "region": [
+    208,
+    304
+  ],
+  "source_origin": [
+    183,
+    550
+  ],
+  "atlas_origin": [
+    91.5,
+    275
+  ],
+  "processing": "Original Spine rendered frames, uniform 50% resize and atlas packing; no redraw",
+  "generated_art": {
+    "mode": "built-in image_gen",
+    "storefront": "exec-415d1dcf-cef0-4fb2-ad5c-2d9d849e9507.png",
+    "flour": "exec-b52f4ede-9930-46fd-a8c3-a7840aa9e9de.png",
+    "bread_haul": "exec-b8b0cbea-eed1-4b8d-a51d-34ff2af8dac9.png"
+  },
+  "bread_haul": {
+    "file": "bread_haul_three.png",
+    "pieces": 3,
+    "source_size": [
+      1536,
+      1024
+    ],
+    "region": [
+      103,
+      109,
+      1331,
+      804
+    ],
+    "carry_width": 54,
+    "motion": "Follows original Move frame vertical displacement",
+    "game_texture_size_limit": 512
+  }
+}

@@ -1,0 +1,254 @@
+{
+  "tool": "built-in image_gen",
+  "image_model": "not exposed by native tool",
+  "mode": "built-in; existing approved icons reused, face atlas generated for this update",
+  "assets": [
+    {
+      "key": "flame",
+      "prompt": "Use case: stylized-concept. Asset type: production raster game UI icon for a small difficulty selector. Generate ONE isolated upright flame icon on a genuinely transparent background. Cute chunky hand-painted Korean casual board-game UI style, very restrained and readable at 28 pixels tall. A compact plump flame silhouette with one softly curling pointed tip and two short rounded side tongues, deep burnt-orange outline, tangerine orange main shape, a single pale golden yellow inner flame. Simple two-tone shading, just one subtle highlight, smooth clean silhouette and thick rounded contour. Centered and filling about 84% of a square canvas with even transparent padding. Front view, crisp edges. No face, no eyes, no text, no letters, no numbers, no UI tile, no round medallion, no frame, no smoke, no glow halo, no sparks, no flying particles, no extra objects, no detailed textures, no photorealism. The tiny silhouette must remain unmistakably a flame.",
+      "source": "C:\\Users\\john9\\Documents\\Codex\\2026-10-16\\new-chat\\work\\difficulty-art-20261027\\UI_DIFFICULTY_FLAME_V01.png",
+      "file": "C:\\Users\\john9\\Documents\\Codex\\2026-10-16\\new-chat\\work\\trg-ui-trial\\assets\\ui\\trickcal\\difficulty\\flame_v01.png",
+      "original_generated_source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-f10e1338-a7f0-4d94-9b6d-c6bfa5b6ae38.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "format": "RGBA PNG",
+      "sha256": "2ca66cacdc56a2a1d794e3aa3c7df6665fd78406d79086ed2d401f1d0b61bb2e",
+      "alpha_range": [
+        0,
+        255
+      ],
+      "runtime_size_limit": 128
+    },
+    {
+      "key": "crown",
+      "prompt": "Use case: stylized-concept. Asset type: production raster game UI completion badge for a small difficulty selector. Generate ONE isolated small golden crown on a genuinely transparent background. Cute chunky hand-painted Korean casual board-game UI style, restrained and readable at only 20 pixels wide. A squat broad front-facing crown with exactly three plump rounded triangular points, each ending in a tiny round gold tip, a thick softly curved gold lower band. Deep warm brown rounded outline, honey gold fill and one pale buttery highlight, simple two-tone shading, a tiny single orange accent on the band at most. Strong compact silhouette, no delicate detail. Centered and filling about 84% of a square canvas, even transparent padding. No pedestal, no cushion, no shield, no text, no letters, no numbers, no face, no stars, no sparkles, no glow, no decorative filigree, no detailed gemstones, no frame or UI tile, no background, no photorealism. Match a soft cream-and-pastel game interface.",
+      "source": "C:\\Users\\john9\\Documents\\Codex\\2026-10-16\\new-chat\\work\\difficulty-art-20261027\\UI_DIFFICULTY_CROWN_V01.png",
+      "file": "C:\\Users\\john9\\Documents\\Codex\\2026-10-16\\new-chat\\work\\trg-ui-trial\\assets\\ui\\trickcal\\difficulty\\crown_v01.png",
+      "original_generated_source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-b9f7742a-d45a-4251-aad9-208157dd44a8.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "format": "RGBA PNG",
+      "sha256": "67a5e71cc2981c6105487e229f7da872046b81d61cc09cd890585dc5d866da92",
+      "alpha_range": [
+        0,
+        255
+      ],
+      "runtime_size_limit": 128
+    },
+    {
+      "key": "lock",
+      "prompt": "Use case: stylized-concept. Asset type: production raster game UI locked/completion-status badge for a small difficulty selector. Generate ONE isolated closed padlock on a genuinely transparent background. Cute chunky hand-painted Korean casual board-game UI style, restrained and readable at only 20 pixels tall. Straight-on front view: a short thick rounded U-shaped shackle in soft slate gray, a squat rounded rectangular padlock body in pale gray-lavender, and one simple dark keyhole made from a round opening and short stem. Thick dark desaturated slate-purple rounded outline, two-tone shading and one modest pale highlight. Gentle toy-like volume, strong uncomplicated silhouette, no tiny mechanical details. Centered and filling about 84% of a square canvas with even transparent padding. No key, no chain, no text, no letters, no numbers, no face, no stars, no sparkles, no glow, no medallion, no frame or UI tile, no background, no photorealistic metal. Match a soft cream-and-pastel game interface.",
+      "source": "C:\\Users\\john9\\Documents\\Codex\\2026-10-16\\new-chat\\work\\difficulty-art-20261027\\UI_DIFFICULTY_LOCK_V01.png",
+      "file": "C:\\Users\\john9\\Documents\\Codex\\2026-10-16\\new-chat\\work\\trg-ui-trial\\assets\\ui\\trickcal\\difficulty\\lock_v01.png",
+      "original_generated_source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-467144d1-8673-4c0d-a4ba-12df54ebfc67.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "format": "RGBA PNG",
+      "sha256": "a97726ade576a6e128c929e06f556c9732133236a384fcfd4da29660472813c4",
+      "alpha_range": [
+        0,
+        255
+      ],
+      "runtime_size_limit": 128
+    },
+    {
+      "source": "C:/Users/john9/.codex/generated_images/01a142bd-ab11-7f42-8e21-7a03de077bd3/exec-20052976-a858-404d-a258-014c8f0e1340.png",
+      "prompt": "Use case: stylized-concept. Asset type: ONE production transparent game-UI facial-expression SPRITE ATLAS, exactly FIVE columns by TWO rows of ten equal SQUARE cells, landscape ratio 5:2. The full sheet is a single asset, no gutters; in each cell put one centered round emoji badge with identical diameter and identical center. Every badge fits within the middle 78 percent of its cell, clear transparent padding, no clipping or touching another cell. Style: cute restrained hand-painted casual board-game icon, smooth rounded dark cocoa contour, softly shaded warm yellow to coral cheeks, tiny soft blush, simple readable eyes/mouth, slight tactile paint shading, not plastic 3D and not harsh flat primitive shapes. No character body, hair, ears or accessories. SAME badge proportions, face placement and lighting throughout. Columns left to right are five escalating spicy-noodle difficulty expressions: 1 pale buttery yellow happy face with two small rounded pink HEART-shaped eyes and a sweet closed smile; 2 warm peach face with two happy crescent closed eyes and a small contented smile; 3 apricot-orange determined spicy face, inward angled eyebrows, dot eyes, small straight determined mouth; 4 orange-coral overwhelmed spicy face with squeezed > < eyes and small round open mouth, one short painted blue sweat droplet at upper right; 5 tomato-coral extremely spicy dizzy face with X eyes and wider open mouth with a pink tongue, one blue sweat droplet. TOP ROW: those exact five normal expressions. BOTTOM ROW: alternate animation frames of the SAME five badges, with silhouettes, colors, pose, size and center perfectly registered: column1 briefly blinks with small curved closed eyes replacing hearts; column2 same contented face with smile slightly wider; column3 briefly blinks with small closed eyes and same eyebrows; column4 same squeezed eyes with a slightly narrower gasp and same sweat; column5 same X eyes and a slightly narrower gasp. Alternate frames must never move or resize the badge. Badges only: no separate hearts, no flames, no crowns, no floating symbols, no extra props, no glow, no shadow outside badges, no grid lines, no borders between cells, no labels, no letters, no numbers, no words, no checkerboard, no backgrounds. TRUE transparent RGBA between and around the badges. Prioritize consistency and legibility when each badge is displayed at 52 pixels.",
+      "tool": "built-in image_gen",
+      "attempts": 1,
+      "role": "new registered expression atlas",
+      "file": "C:\\Users\\john9\\Documents\\Codex\\2026-10-16\\new-chat\\work\\trg-ui-trial\\assets\\ui\\trickcal\\difficulty\\faces_v01.png",
+      "key": "faces",
+      "dimensions": [
+        1983,
+        793
+      ],
+      "format": "RGBA PNG",
+      "sha256": "a2baf03123dde2a3a89309283e431a190f422a98e699615c38f21dc9e85f069d",
+      "alpha_range": [
+        0,
+        255
+      ],
+      "runtime_size_limit": 1024
+    }
+  ],
+  "qa": {
+    "face_atlas_attempts": 1,
+    "original_bytes_preserved": true,
+    "source_frame_checks": [
+      {
+        "level": 1,
+        "alternate": false,
+        "cell": [
+          0,
+          0,
+          397,
+          396
+        ],
+        "visible_bounds": [
+          53,
+          51,
+          395,
+          380
+        ]
+      },
+      {
+        "level": 2,
+        "alternate": false,
+        "cell": [
+          397,
+          0,
+          793,
+          396
+        ],
+        "visible_bounds": [
+          36,
+          50,
+          377,
+          380
+        ]
+      },
+      {
+        "level": 3,
+        "alternate": false,
+        "cell": [
+          793,
+          0,
+          1190,
+          396
+        ],
+        "visible_bounds": [
+          26,
+          50,
+          369,
+          380
+        ]
+      },
+      {
+        "level": 4,
+        "alternate": false,
+        "cell": [
+          1190,
+          0,
+          1586,
+          396
+        ],
+        "visible_bounds": [
+          14,
+          49,
+          358,
+          380
+        ]
+      },
+      {
+        "level": 5,
+        "alternate": false,
+        "cell": [
+          1586,
+          0,
+          1983,
+          396
+        ],
+        "visible_bounds": [
+          2,
+          49,
+          345,
+          380
+        ]
+      },
+      {
+        "level": 1,
+        "alternate": true,
+        "cell": [
+          0,
+          396,
+          397,
+          793
+        ],
+        "visible_bounds": [
+          52,
+          18,
+          392,
+          347
+        ]
+      },
+      {
+        "level": 2,
+        "alternate": true,
+        "cell": [
+          397,
+          396,
+          793,
+          793
+        ],
+        "visible_bounds": [
+          34,
+          18,
+          376,
+          346
+        ]
+      },
+      {
+        "level": 3,
+        "alternate": true,
+        "cell": [
+          793,
+          396,
+          1190,
+          793
+        ],
+        "visible_bounds": [
+          25,
+          18,
+          368,
+          347
+        ]
+      },
+      {
+        "level": 4,
+        "alternate": true,
+        "cell": [
+          1190,
+          396,
+          1586,
+          793
+        ],
+        "visible_bounds": [
+          13,
+          17,
+          356,
+          346
+        ]
+      },
+      {
+        "level": 5,
+        "alternate": true,
+        "cell": [
+          1586,
+          396,
+          1983,
+          793
+        ],
+        "visible_bounds": [
+          2,
+          18,
+          345,
+          347
+        ]
+      }
+    ],
+    "registration": "Per-cell visible alpha bounds are cached at runtime, then rendered at a fixed 52px square. Source PNG is not edited.",
+    "padding_exception": "Some source cells have only 2px of transparent gutter at the silhouette threshold. Every frame stays inside its cell; frame-local bounds prevent adjacent-frame bleed. Actual-size normal and alternate frames were visually inspected.",
+    "native_validation": [
+      "UI_DIFFICULTY_ICONS_OK",
+      "UI_RAMEN_BOWL_OK"
+    ],
+    "native_inspection": "All five expressions, alternate blink/gasp frames, flame colour/muting, crown/lock records, actual training-menu input, hidden-animation stop and resume."
+  }
+}

@@ -1,0 +1,710 @@
+name: Deploy web build
+
+# 이 저장소에 푸시할 때마다 테스트를 돌리고, 통과하면 Godot 웹(HTML5) 빌드를 gh-pages 브랜치에 올려
+# https://<계정>.github.io/<저장소>/ 에서 항상 최신 버전을 바로 플레이할 수 있게 한다.
+on:
+  push:
+    branches:
+      - main
+      - "claude/**"
+  workflow_dispatch:
+    inputs:
+      validation:
+        description: Validation scope
+        type: choice
+        default: full
+        options:
+          - full
+          - live-hotfix
+          - ramen
+          - train
+          - flip
+          - redistribution
+          - devil
+          - minefield
+          - raid
+          - gambler
+          - profile-aura
+          - profile-stamps
+          - shield
+          - bang
+          - capture-fx
+          - common-fx
+          - priority-fx
+          - medium-fx
+          - remaining-fx
+          - difficulty-icons
+          - mobile-fx
+          - rulebook-scroll
+          - roll-history
+          - blackjack-compact
+          - warning-icon
+          - rulebook-art
+          - avatar-hq
+          - title-logo
+          - skill-cutin
+          - letterbox-pattern
+          - presentation-sfx
+          - lobby-art
+          - castling
+          - bakery
+          - sniper
+          - nitro
+          - bond
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deploy-web
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "4.7.1"
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # UI iteration can explicitly select only the requested component check.
+      # Commit markers select focused checks. Manual runs offer the same scopes.
+      - name: Choose validation scope
+        id: validation
+        env:
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          REQUESTED_SCOPE: ${{ inputs.validation }}
+        run: |
+          if [[ "${REQUESTED_SCOPE}" == "live-hotfix" || "${COMMIT_MESSAGE}" == *"[check:live-hotfix]"* ]]; then
+            echo "scope=live-hotfix" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "skill-cutin" || "${COMMIT_MESSAGE}" == *"[check:skill-cutin]"* ]]; then
+            echo "scope=skill-cutin" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "letterbox-pattern" || "${COMMIT_MESSAGE}" == *"[check:letterbox-pattern]"* ]]; then
+            echo "scope=letterbox-pattern" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "blackjack-compact" || "${COMMIT_MESSAGE}" == *"[check:blackjack-compact]"* ]]; then
+            echo "scope=blackjack-compact" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "roll-history" || "${COMMIT_MESSAGE}" == *"[check:roll-history]"* ]]; then
+            echo "scope=roll-history" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "rulebook-scroll" || "${COMMIT_MESSAGE}" == *"[check:rulebook-scroll]"* ]]; then
+            echo "scope=rulebook-scroll" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "mobile-fx" || "${COMMIT_MESSAGE}" == *"[check:mobile-fx]"* ]]; then
+            echo "scope=mobile-fx" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "difficulty-icons" || "${COMMIT_MESSAGE}" == *"[check:difficulty-icons]"* ]]; then
+            echo "scope=difficulty-icons" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "remaining-fx" || "${COMMIT_MESSAGE}" == *"[check:remaining-fx]"* ]]; then
+            echo "scope=remaining-fx" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "medium-fx" || "${COMMIT_MESSAGE}" == *"[check:medium-fx]"* ]]; then
+            echo "scope=medium-fx" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "priority-fx" || "${COMMIT_MESSAGE}" == *"[check:priority-fx]"* ]]; then
+            echo "scope=priority-fx" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "common-fx" || "${COMMIT_MESSAGE}" == *"[check:common-fx]"* ]]; then
+            echo "scope=common-fx" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "capture-fx" || "${COMMIT_MESSAGE}" == *"[check:capture-fx]"* ]]; then
+            echo "scope=capture-fx" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "bang" || "${COMMIT_MESSAGE}" == *"[check:bang]"* ]]; then
+            echo "scope=bang" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "shield" || "${COMMIT_MESSAGE}" == *"[check:shield]"* ]]; then
+            echo "scope=shield" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "lobby-art" || "${COMMIT_MESSAGE}" == *"[check:lobby-art]"* ]]; then
+            echo "scope=lobby-art" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "presentation-sfx" || "${COMMIT_MESSAGE}" == *"[check:presentation-sfx]"* ]]; then
+            echo "scope=presentation-sfx" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "title-logo" || "${COMMIT_MESSAGE}" == *"[check:title-logo]"* ]]; then
+            echo "scope=title-logo" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "avatar-hq" || "${COMMIT_MESSAGE}" == *"[check:avatar-hq]"* ]]; then
+            echo "scope=avatar-hq" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "rulebook-art" || "${COMMIT_MESSAGE}" == *"[check:rulebook-art]"* ]]; then
+            echo "scope=rulebook-art" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "warning-icon" || "${COMMIT_MESSAGE}" == *"[check:warning-icon]"* ]]; then
+            echo "scope=warning-icon" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "profile-stamps" || "${COMMIT_MESSAGE}" == *"[check:profile-stamps]"* ]]; then
+            echo "scope=profile-stamps" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "bond" || "${COMMIT_MESSAGE}" == *"[check:bond]"* ]]; then
+            echo "scope=bond" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "nitro" || "${COMMIT_MESSAGE}" == *"[check:nitro]"* ]]; then
+            echo "scope=nitro" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "sniper" || "${COMMIT_MESSAGE}" == *"[check:sniper]"* ]]; then
+            echo "scope=sniper" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "bakery" || "${COMMIT_MESSAGE}" == *"[check:bakery]"* ]]; then
+            echo "scope=bakery" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "castling" || "${COMMIT_MESSAGE}" == *"[check:castling]"* ]]; then
+            echo "scope=castling" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "profile-aura" || "${COMMIT_MESSAGE}" == *"[check:profile-aura]"* ]]; then
+            echo "scope=profile-aura" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "gambler" || "${COMMIT_MESSAGE}" == *"[check:gambler]"* ]]; then
+            echo "scope=gambler" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "raid" || "${COMMIT_MESSAGE}" == *"[check:raid]"* ]]; then
+            echo "scope=raid" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "minefield" || "${COMMIT_MESSAGE}" == *"[check:minefield]"* ]]; then
+            echo "scope=minefield" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "devil" || "${COMMIT_MESSAGE}" == *"[check:devil]"* ]]; then
+            echo "scope=devil" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "redistribution" || "${COMMIT_MESSAGE}" == *"[check:redistribution]"* ]]; then
+            echo "scope=redistribution" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "flip" || "${COMMIT_MESSAGE}" == *"[check:flip]"* ]]; then
+            echo "scope=flip" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "train" || "${COMMIT_MESSAGE}" == *"[check:train]"* ]]; then
+            echo "scope=train" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "ramen" || "${COMMIT_MESSAGE}" == *"[check:ramen]"* ]]; then
+            echo "scope=ramen" >> "${GITHUB_OUTPUT}"
+          else
+            echo "scope=full" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Install Godot and web export templates
+        run: |
+          set -euo pipefail
+          BASE="https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable"
+          curl -fsSL -o godot.zip "${BASE}/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip
+          sudo mv "Godot_v${GODOT_VERSION}-stable_linux.x86_64" /usr/local/bin/godot
+          curl -fsSL -o templates.tpz "${BASE}/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          mkdir -p "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          unzip -q templates.tpz -d tpl
+          mv tpl/templates/* "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable/"
+          rm -rf godot.zip templates.tpz tpl
+          godot --version
+
+      - name: Import project
+        run: |
+          godot --headless --path . --import || true
+          godot --headless --path . --import
+
+      - name: Check pawn skill cutin presentation script
+        if: steps.validation.outputs.scope == 'skill-cutin'
+        run: |
+          set -euo pipefail
+          godot --headless --audio-driver Dummy --path . --check-only -s res://scenes/main_board.gd 2>&1 | tee /tmp/skill_cutin.log
+          godot --headless --audio-driver Dummy --path . -s res://tests/ui_skill_cutin_test.gd 2>&1 | tee -a /tmp/skill_cutin.log
+          grep -q 'SKILL_CUTIN_OK' /tmp/skill_cutin.log
+          if grep -Eq 'SCRIPT ERROR|SHADER ERROR' /tmp/skill_cutin.log; then exit 1; fi
+
+      - name: Check required web letterbox pattern
+        if: steps.validation.outputs.scope == 'letterbox-pattern'
+        run: python3 tools/check_letterbox_pattern.py
+
+      - name: Check localized title presentation
+        if: steps.validation.outputs.scope == 'title-logo'
+        run: |
+          set -o pipefail
+          godot --headless --path . --check-only -s res://scenes/localized_title_logo.gd 2>&1 | tee /tmp/title_logo.log
+          godot --headless --path . --check-only -s res://scenes/hub_kit.gd 2>&1 | tee -a /tmp/title_logo.log
+          if grep -q 'SCRIPT ERROR' /tmp/title_logo.log; then exit 1; fi
+
+      - name: Check native high resolution avatar loops
+        if: steps.validation.outputs.scope == 'avatar-hq'
+        run: |
+          set -o pipefail
+          godot --headless --path . -s res://tests/ui_avatar_hq_test.gd 2>&1 | tee /tmp/avatar_hq.log
+          grep -q 'AVATAR_HQ_OK' /tmp/avatar_hq.log
+          if grep -q 'SCRIPT ERROR' /tmp/avatar_hq.log; then exit 1; fi
+
+      - name: Check compact Blackjack hand and batch deal
+        if: steps.validation.outputs.scope == 'blackjack-compact'
+        run: |
+          set -euo pipefail
+          godot --headless --audio-driver Dummy --path . -s res://tests/ui_blackjack_compact_test.gd 2>&1 | tee /tmp/blackjack_compact.log
+          grep -q 'BLACKJACK_COMPACT_OK' /tmp/blackjack_compact.log
+          if grep -Eq 'SCRIPT ERROR|SHADER ERROR' /tmp/blackjack_compact.log; then exit 1; fi
+
+      - name: Check revealed roll history beside tools
+        if: steps.validation.outputs.scope == 'roll-history'
+        run: |
+          set -euo pipefail
+          godot --headless --audio-driver Dummy --path . -s res://tests/ui_roll_history_test.gd 2>&1 | tee /tmp/roll_history.log
+          grep -q 'ROLL_HISTORY_OK' /tmp/roll_history.log
+          godot --headless --audio-driver Dummy --path . -s res://tests/ui_roll_success_test.gd 2>&1 | tee -a /tmp/roll_history.log
+          grep -q 'ROLL_SUCCESS_OK' /tmp/roll_history.log
+          if grep -Eq 'SCRIPT ERROR|SHADER ERROR' /tmp/roll_history.log; then exit 1; fi
+
+      - name: Check rulebook drag and card layout
+        if: steps.validation.outputs.scope == 'rulebook-scroll'
+        run: |
+          set -euo pipefail
+          godot --headless --audio-driver Dummy --path . -s res://tests/ui_rulebook_scroll_test.gd 2>&1 | tee /tmp/rulebook_scroll.log
+          grep -q 'UI_RULEBOOK_SCROLL_OK' /tmp/rulebook_scroll.log
+          if grep -Eq 'SCRIPT ERROR|SHADER ERROR' /tmp/rulebook_scroll.log; then exit 1; fi
+
+      - name: Check rulebook presentation scripts
+        if: steps.validation.outputs.scope == 'rulebook-art'
+        run: |
+          set -o pipefail
+          godot --headless --path . --check-only -s res://scenes/rulebook.gd 2>&1 | tee /tmp/rulebook_art.log
+          if grep -q 'SCRIPT ERROR' /tmp/rulebook_art.log; then exit 1; fi
+
+      - name: Check shared warning icon presentation script
+        if: steps.validation.outputs.scope == 'warning-icon'
+        run: |
+          set -o pipefail
+          godot --headless --path . --check-only -s res://scenes/card_skin.gd 2>&1 | tee /tmp/warning_icon.log
+          if grep -q 'SCRIPT ERROR' /tmp/warning_icon.log; then exit 1; fi
+
+      - name: Check BANG and sniper aiming presentation
+        if: steps.validation.outputs.scope == 'bang'
+        run: |
+          set -o pipefail
+          godot --headless --audio-driver Dummy --path . -s res://tests/ui_bang_test.gd 2>&1 | tee /tmp/bang.log
+          godot --headless --audio-driver Dummy --path . -s res://tests/ui_sniper_test.gd 2>&1 | tee /tmp/sniper_aim.log
+          grep -q 'UI_BANG_OK' /tmp/bang.log
+          grep -q 'UI_SNIPER_OK' /tmp/sniper_aim.log
+          if grep -Eq 'SCRIPT ERROR|SHADER ERROR' /tmp/bang.log /tmp/sniper_aim.log; then exit 1; fi
+
+      - name: Check mobile effect coordinates
+        if: steps.validation.outputs.scope == 'mobile-fx'
+        run: |
+          set -euo pipefail
+          for target in mobile_fx castling bakery bond bang gambler raid; do
+            godot --headless --path . -s "res://tests/ui_${target}_test.gd" 2>&1 | tee "/tmp/mobile_${target}.log"
+          done
+          grep -q 'MOBILE_FX_OK' /tmp/mobile_mobile_fx.log
+          grep -q 'UI_CASTLING_OK' /tmp/mobile_castling.log
+          grep -q 'UI_BAKERY_OK' /tmp/mobile_bakery.log
+          grep -q 'UI_BOND_OK' /tmp/mobile_bond.log
+          grep -q 'UI_BANG_OK' /tmp/mobile_bang.log
+          grep -q 'UI_GAMBLER_OK' /tmp/mobile_gambler.log
+          grep -q 'UI_RAID_OK' /tmp/mobile_raid.log
+          if grep -Eq 'SCRIPT ERROR|SHADER ERROR|Lambda capture' /tmp/mobile_*.log; then exit 1; fi
+
+      - name: Check difficulty icon presentation
+        if: steps.validation.outputs.scope == 'difficulty-icons'
+        run: |
+          set -euo pipefail
+          for target in difficulty_icons ramen_bowl; do
+            godot --headless --path . -s "res://tests/ui_${target}_test.gd" 2>&1 | tee "/tmp/difficulty_${target}.log"
+          done
+          grep -q 'UI_DIFFICULTY_ICONS_OK' /tmp/difficulty_difficulty_icons.log
+          grep -q 'UI_RAMEN_BOWL_OK' /tmp/difficulty_ramen_bowl.log
+          godot --headless --path . --check-only -s res://tests/ui_menu_test.gd 2>&1 | tee /tmp/difficulty_menu_parse.log
+          if grep -Eq 'SCRIPT ERROR|SHADER ERROR' /tmp/difficulty_*.log; then exit 1; fi
+
+      - name: Check remaining painted presentations
+        if: steps.validation.outputs.scope == 'remaining-fx'
+        run: |
+          set -euo pipefail
+          for target in castling raid bakery remaining_fx rps halli ecard ramen_bowl; do
+            godot --headless --path . -s "res://tests/ui_${target}_test.gd" 2>&1 | tee "/tmp/remaining_${target}.log"
+          done
+          grep -q 'UI_CASTLING_OK' /tmp/remaining_castling.log
+          grep -q 'UI_RAID_OK' /tmp/remaining_raid.log
+          grep -q 'UI_BAKERY_OK' /tmp/remaining_bakery.log
+          grep -q 'UI_REMAINING_FX_OK' /tmp/remaining_remaining_fx.log
+          grep -q 'RPS_UI_OK' /tmp/remaining_rps.log
+          grep -q 'HALLI_UI_OK' /tmp/remaining_halli.log
+          grep -q 'ECARD_UI_OK' /tmp/remaining_ecard.log
+          grep -q 'UI_RAMEN_BOWL_OK' /tmp/remaining_ramen_bowl.log
+          if grep -Eq 'SCRIPT ERROR|SHADER ERROR|Lambda capture' /tmp/remaining_*.log; then exit 1; fi
+
+      - name: Check medium priority painted presentations
+        if: steps.validation.outputs.scope == 'medium-fx'
+        run: |
+          set -euo pipefail
+          for target in devil gambler profile_aura train minefield alkkagi curling pumpkin; do
+            godot --headless --path . -s "res://tests/ui_${target}_test.gd" 2>&1 | tee "/tmp/medium_${target}.log"
+          done
+          grep -q 'UI_DEVIL_OK' /tmp/medium_devil.log
+          grep -q 'UI_GAMBLER_OK' /tmp/medium_gambler.log
+          grep -q 'UI_PROFILE_AURA_OK' /tmp/medium_profile_aura.log
+          grep -q 'TRAIN_UI_OK' /tmp/medium_train.log
+          grep -q 'UI_MINEFIELD_OK' /tmp/medium_minefield.log
+          grep -q 'ALKKAGI_OK' /tmp/medium_alkkagi.log
+          grep -q 'CURLING_UI_OK' /tmp/medium_curling.log
+          grep -q 'PUMPKIN_UI_OK' /tmp/medium_pumpkin.log
+          if grep -Eq 'SCRIPT ERROR|SHADER ERROR|Lambda capture' /tmp/medium_*.log; then exit 1; fi
+
+      - name: Check priority painted presentations
+        if: steps.validation.outputs.scope == 'priority-fx'
+        run: |
+          set -o pipefail
+          for target in priority_paint nitro sniper flip; do
+            godot --headless --path . -s "res://tests/ui_${target}_test.gd" 2>&1 | tee "/tmp/priority_${target}.log"
+          done
+          grep -q 'UI_PRIORITY_PAINT_OK' /tmp/priority_priority_paint.log
+          grep -q 'UI_NITRO_OK' /tmp/priority_nitro.log
+          grep -q 'UI_SNIPER_OK' /tmp/priority_sniper.log
+          grep -q 'UI_FLIP_OK' /tmp/priority_flip.log
+          if grep -Eq 'SCRIPT ERROR|SHADER ERROR|Lambda capture' /tmp/priority_*.log; then exit 1; fi
+
+      - name: Check shared painted impact and pawn trails
+        if: steps.validation.outputs.scope == 'common-fx'
+        run: |
+          set -o pipefail
+          godot --headless --path . -s res://tests/ui_common_fx_test.gd 2>&1 | tee /tmp/common_fx.log
+          grep -q 'UI_COMMON_FX_OK' /tmp/common_fx.log
+          if grep -Eq 'SCRIPT ERROR|SHADER ERROR|Lambda capture' /tmp/common_fx.log; then exit 1; fi
+
+      - name: Check painted capture effects
+        if: steps.validation.outputs.scope == 'capture-fx'
+        run: |
+          set -o pipefail
+          TEST_ONLY=test_capture_cutin godot --headless --path . -s res://tests/run_tests.gd 2>&1 | tee /tmp/capture_unit.log
+          godot --headless --path . -s res://tests/ui_capture_fx_test.gd 2>&1 | tee /tmp/capture_fx.log
+          grep -q 'UI_CAPTURE_FX_OK' /tmp/capture_fx.log
+          if grep -q 'SCRIPT ERROR' /tmp/capture_unit.log /tmp/capture_fx.log; then exit 1; fi
+
+      - name: Check pawn protection shells
+        if: steps.validation.outputs.scope == 'shield'
+        run: |
+          set -o pipefail
+          godot --headless --path . -s res://tests/ui_shield_test.gd 2>&1 | tee /tmp/pawn_shield.log
+          grep -q 'PAWN_SHIELD_OK' /tmp/pawn_shield.log
+          if grep -q 'SCRIPT ERROR' /tmp/pawn_shield.log; then exit 1; fi
+
+      - name: Check profile status stamp presentation script
+        if: steps.validation.outputs.scope == 'profile-stamps'
+        run: |
+          set -o pipefail
+          godot --headless --path . --check-only -s res://scenes/main_board.gd 2>&1 | tee /tmp/profile_stamps.log
+          if grep -q 'SCRIPT ERROR' /tmp/profile_stamps.log; then exit 1; fi
+
+      - name: Run focused bond presentation check
+        if: steps.validation.outputs.scope == 'bond' || steps.validation.outputs.scope == 'presentation-sfx'
+        run: |
+          set -o pipefail
+          godot --headless --path . -s res://tests/ui_bond_test.gd 2>&1 | tee /tmp/ui_bond_test.log
+          grep -q 'UI_BOND_OK' /tmp/ui_bond_test.log
+          if grep -q 'SCRIPT ERROR' /tmp/ui_bond_test.log; then exit 1; fi
+
+      - name: Run focused nitro presentation check
+        if: steps.validation.outputs.scope == 'nitro'
+        run: |
+          set -o pipefail
+          godot --headless --path . -s res://tests/ui_nitro_test.gd 2>&1 | tee /tmp/ui_nitro_test.log
+          grep -q 'UI_NITRO_OK' /tmp/ui_nitro_test.log
+          if grep -q 'SCRIPT ERROR' /tmp/ui_nitro_test.log; then exit 1; fi
+
+      - name: Run focused sniper presentation check
+        if: steps.validation.outputs.scope == 'sniper'
+        run: |
+          set -o pipefail
+          godot --headless --path . -s res://tests/ui_sniper_test.gd 2>&1 | tee /tmp/ui_sniper_test.log
+          grep -q 'UI_SNIPER_OK' /tmp/ui_sniper_test.log
+          if grep -q 'SCRIPT ERROR' /tmp/ui_sniper_test.log; then exit 1; fi
+
+      - name: Run focused bakery presentation check
+        if: steps.validation.outputs.scope == 'bakery' || steps.validation.outputs.scope == 'presentation-sfx'
+        run: |
+          set -o pipefail
+          godot --headless --path . -s res://tests/ui_bakery_test.gd 2>&1 | tee /tmp/ui_bakery_test.log
+          grep -q 'UI_BAKERY_OK' /tmp/ui_bakery_test.log
+          if grep -q 'SCRIPT ERROR' /tmp/ui_bakery_test.log; then exit 1; fi
+
+      - name: Run focused castling presentation check
+        if: steps.validation.outputs.scope == 'castling'
+        run: |
+          set -o pipefail
+          godot --headless --path . -s res://tests/ui_castling_test.gd 2>&1 | tee /tmp/ui_castling_test.log
+          grep -q 'UI_CASTLING_OK' /tmp/ui_castling_test.log
+          if grep -q 'SCRIPT ERROR' /tmp/ui_castling_test.log; then exit 1; fi
+
+      - name: Run focused profile aura check
+        if: steps.validation.outputs.scope == 'profile-aura'
+        run: |
+          set -o pipefail
+          godot --headless --path . -s res://tests/ui_profile_aura_test.gd 2>&1 | tee /tmp/ui_profile_aura_test.log
+          grep -q 'UI_PROFILE_AURA_OK' /tmp/ui_profile_aura_test.log
+          if grep -q 'SCRIPT ERROR' /tmp/ui_profile_aura_test.log; then exit 1; fi
+
+      - name: Run focused gambler presentation check
+        if: steps.validation.outputs.scope == 'gambler'
+        run: |
+          set -o pipefail
+          godot --headless --path . -s res://tests/ui_gambler_test.gd 2>&1 | tee /tmp/ui_gambler_test.log
+          grep -q 'UI_GAMBLER_OK' /tmp/ui_gambler_test.log
+          if grep -q 'SCRIPT ERROR' /tmp/ui_gambler_test.log; then exit 1; fi
+
+      - name: Run focused raid presentation check
+        if: steps.validation.outputs.scope == 'raid' || steps.validation.outputs.scope == 'presentation-sfx'
+        run: |
+          set -o pipefail
+          godot --headless --path . -s res://tests/ui_raid_test.gd 2>&1 | tee /tmp/ui_raid_test.log
+          grep -q 'UI_RAID_OK' /tmp/ui_raid_test.log
+          if grep -q 'SCRIPT ERROR' /tmp/ui_raid_test.log; then exit 1; fi
+
+      - name: Run focused minefield presentation check
+        if: steps.validation.outputs.scope == 'minefield'
+        run: |
+          set -o pipefail
+          godot --headless --path . -s res://tests/ui_minefield_test.gd 2>&1 | tee /tmp/ui_minefield_test.log
+          grep -q 'UI_MINEFIELD_OK' /tmp/ui_minefield_test.log
+          if grep -q 'SCRIPT ERROR' /tmp/ui_minefield_test.log; then exit 1; fi
+
+      - name: Run focused devil contract presentation check
+        if: steps.validation.outputs.scope == 'devil'
+        run: |
+          set -o pipefail
+          godot --headless --path . -s res://tests/ui_devil_test.gd 2>&1 | tee /tmp/ui_devil_test.log
+          grep -q 'UI_DEVIL_OK' /tmp/ui_devil_test.log
+          if grep -q 'SCRIPT ERROR' /tmp/ui_devil_test.log; then exit 1; fi
+
+      - name: Run focused redistribution presentation check
+        if: steps.validation.outputs.scope == 'redistribution'
+        run: |
+          set -o pipefail
+          godot --headless --path . -s res://tests/ui_redistribution_test.gd 2>&1 | tee /tmp/ui_redistribution_test.log
+          grep -q 'UI_REDISTRIBUTION_OK' /tmp/ui_redistribution_test.log
+          if grep -q 'SCRIPT ERROR' /tmp/ui_redistribution_test.log; then exit 1; fi
+
+      - name: Run focused board flip presentation check
+        if: steps.validation.outputs.scope == 'flip'
+        run: godot --headless --path . -s res://tests/ui_flip_test.gd
+
+      - name: Run focused ramen bowl check
+        if: steps.validation.outputs.scope == 'full' || steps.validation.outputs.scope == 'ramen'
+        run: godot --headless --path . -s res://tests/ui_ramen_bowl_test.gd
+
+      - name: Check the six live hotfix regressions
+        if: steps.validation.outputs.scope == 'full' || steps.validation.outputs.scope == 'live-hotfix'
+        run: |
+          set -euo pipefail
+          godot --headless --audio-driver Dummy --path . -s res://tests/run_live_hotfix.gd 2>&1 | tee /tmp/live_hotfix_core.log
+          godot --headless --audio-driver Dummy --path . -s res://tests/ui_live_hotfix_test.gd 2>&1 | tee /tmp/live_hotfix_ui.log
+          grep -Eq 'HOTFIX_CORE [0-9]+ assertions; 0 failures' /tmp/live_hotfix_core.log
+          grep -Eq 'HOTFIX_UI [0-9]+ assertions; 0 failures' /tmp/live_hotfix_ui.log
+          if grep -Eq 'SCRIPT ERROR|SHADER ERROR' /tmp/live_hotfix_{core,ui}.log; then exit 1; fi
+
+      - name: Run unit tests
+        if: steps.validation.outputs.scope == 'full'
+        run: godot --headless --path . -s res://tests/run_tests.gd
+
+      - name: Validate curated sound assets and override priority
+        if: steps.validation.outputs.scope == 'full' || steps.validation.outputs.scope == 'presentation-sfx'
+        run: godot --headless --path . -s res://tests/sfx_assets_test.gd
+
+      - name: Check pinball audio contact hook
+        if: steps.validation.outputs.scope == 'presentation-sfx'
+        run: |
+          set -o pipefail
+          godot --headless --path . --check-only -s res://scenes/stage_pinball.gd 2>&1 | tee /tmp/pinball_audio.log
+          if grep -q 'SCRIPT ERROR' /tmp/pinball_audio.log; then exit 1; fi
+
+      - name: Run UI smoke test (full game without cheats)
+        if: steps.validation.outputs.scope == 'full'
+        run: godot --headless --path . -s res://tests/ui_smoke.gd
+
+      - name: Run UI smoke test in AI mode (1P vs 3AI bots)
+        if: steps.validation.outputs.scope == 'full'
+        run: SMOKE_AI=1 godot --headless --path . -s res://tests/ui_smoke.gd
+
+      - name: Run English / Japanese UI checks (no Hangul left on screen, language picker)
+        if: steps.validation.outputs.scope == 'full'
+        run: |
+          godot --headless --path . -s res://tests/ui_menu_test.gd
+          godot --headless --path . -s res://tests/ui_english_test.gd
+          UI_LANG=ja godot --headless --path . -s res://tests/ui_english_test.gd
+          SMOKE_LANG=en SMOKE_AI=1 godot --headless --path . -s res://tests/ui_smoke.gd
+          SMOKE_LANG=ja SMOKE_AI=1 godot --headless --path . -s res://tests/ui_smoke.gd
+
+      - name: Run text fit scan (cards / augments / rulebook in ko, en, ja)
+        if: steps.validation.outputs.scope == 'full'
+        run: godot --headless --path . -s res://tests/ui_text_fit_test.gd
+
+      - name: Run super augment board effect test (SUPER_01~10, 12)
+        if: steps.validation.outputs.scope == 'full'
+        run: |
+          godot --headless --path . -s res://tests/ui_super_fx_test.gd 2>&1 | tee /tmp/ui_super_fx_test.log
+          test "${PIPESTATUS[0]}" -eq 0
+          if grep -q "Lambda capture" /tmp/ui_super_fx_test.log; then echo "freed lambda captures remain"; exit 1; fi
+
+      - name: Run roll effect test (gauge, spin, reels, card flips)
+        if: steps.validation.outputs.scope == 'full'
+        run: |
+          # 연출 큐·타이머가 이미 지워진 노드를 잡은 람다를 부르면 [Lambda capture ... was freed] 오류가 찍힌다: 한 줄이라도 있으면 막는다
+          godot --headless --path . -s res://tests/ui_fx_test.gd 2>&1 | tee /tmp/ui_fx_test.log
+          test "${PIPESTATUS[0]}" -eq 0
+          if grep -q "Lambda capture" /tmp/ui_fx_test.log; then echo "freed lambda captures remain"; grep -c "Lambda capture" /tmp/ui_fx_test.log; exit 1; fi
+
+      - name: Run avatar capture presentation test
+        if: steps.validation.outputs.scope == 'full' || steps.validation.outputs.scope == 'capture-fx'
+        run: godot --headless --path . -s res://tests/ui_capture_test.gd
+
+      - name: Run counter-before-kill presentation sequence test (dodge, mirror, no counter)
+        if: steps.validation.outputs.scope == 'full'
+        run: |
+          # 연출 큐·타이머가 이미 지워진 노드를 잡은 람다를 부르면 [Lambda capture ... was freed] 오류가 찍힌다: 한 줄이라도 있으면 막는다
+          godot --headless --path . -s res://tests/ui_counter_sequence_test.gd 2>&1 | tee /tmp/ui_counter_sequence_test.log
+          test "${PIPESTATUS[0]}" -eq 0
+          if grep -q "Lambda capture" /tmp/ui_counter_sequence_test.log; then echo "freed lambda captures remain"; grep -c "Lambda capture" /tmp/ui_counter_sequence_test.log; exit 1; fi
+
+      - name: Run augment round to round start sequence test
+        if: steps.validation.outputs.scope == 'full'
+        run: |
+          # 연출 큐·타이머가 이미 지워진 노드를 잡은 람다를 부르면 [Lambda capture ... was freed] 오류가 찍힌다: 한 줄이라도 있으면 막는다
+          godot --headless --path . -s res://tests/ui_round_sequence_test.gd 2>&1 | tee /tmp/ui_round_sequence_test.log
+          test "${PIPESTATUS[0]}" -eq 0
+          if grep -q "Lambda capture" /tmp/ui_round_sequence_test.log; then echo "freed lambda captures remain"; grep -c "Lambda capture" /tmp/ui_round_sequence_test.log; exit 1; fi
+
+      - name: Run alkkagi aiming and contact presentation test
+        if: steps.validation.outputs.scope == 'full'
+        run: godot --headless --path . -s res://tests/ui_alkkagi_test.gd
+
+      - name: Run track laying and runaway train presentation test
+        if: steps.validation.outputs.scope == 'full' || steps.validation.outputs.scope == 'train' || steps.validation.outputs.scope == 'presentation-sfx'
+        run: godot --headless --path . -s res://tests/ui_train_test.gd
+
+      - name: Run duel game selection slot and introduction test
+        if: steps.validation.outputs.scope == 'full'
+        run: godot --headless --path . -s res://tests/ui_duel_slot_test.gd
+
+      - name: Run illustrated rock paper scissors reveal and rematch test
+        if: steps.validation.outputs.scope == 'full'
+        run: godot --headless --path . -s res://tests/ui_rps_test.gd
+
+      - name: Run Halli Galli card boundaries, bell reaction and foul test
+        if: steps.validation.outputs.scope == 'full'
+        run: godot --headless --path . -s res://tests/ui_halli_test.gd
+
+      - name: Run bottle cap curling gestures, physical collisions and deterministic replay test
+        if: steps.validation.outputs.scope == 'full'
+        run: godot --headless --path . -s res://tests/ui_curling_test.gd
+
+      - name: Run paired revolver preparation, quickdraw timing and flag effects test
+        if: steps.validation.outputs.scope == 'full'
+        run: godot --headless --path . -s res://tests/ui_quickdraw_test.gd
+
+      - name: Run E-card remaining hands, citizen discards and deciding reveal test
+        if: steps.validation.outputs.scope == 'full'
+        run: godot --headless --path . -s res://tests/ui_ecard_test.gd
+
+      - name: Run pumpkin switches, explosion and native Angry1_1 test
+        if: steps.validation.outputs.scope == 'full'
+        run: godot --headless --path . -s res://tests/ui_pumpkin_test.gd
+
+      - name: Run persistent record display test (buldak crowns, law stamps, save code, record copy)
+        if: steps.validation.outputs.scope == 'full'
+        run: godot --headless --path . -s res://tests/ui_meta_progress_test.gd
+
+      - name: Run in-game feedback test (modal, snapshot, local webhook, cleanup)
+        if: steps.validation.outputs.scope == 'full'
+        run: godot --headless --path . -s res://tests/ui_feedback_test.gd
+
+      - name: Run lobby UI test (WebRTC lobby screens, no network)
+        if: steps.validation.outputs.scope == 'full' || steps.validation.outputs.scope == 'lobby-art'
+        run: godot --headless --path . -s res://tests/ui_lobby_test.gd
+
+      - name: Check painted lobby seat icons
+        if: steps.validation.outputs.scope == 'lobby-art'
+        run: godot --headless --path . -s res://tests/lobby_art_pack_smoke.gd
+
+      - name: Run online lockstep test (2 players, no bots)
+        if: steps.validation.outputs.scope == 'full'
+        run: godot --headless --path . -s res://tests/ui_net_test.gd
+
+      - name: Run online lockstep test (2 humans + 2 bots)
+        if: steps.validation.outputs.scope == 'full'
+        run: SEATS=4 BOTS=3,4 godot --headless --path . -s res://tests/ui_net_test.gd
+
+      - name: Run web cache guard test (cache busting + old cache cleanup in web/shell.html)
+        if: steps.validation.outputs.scope == 'full'
+        run: node tests/web/cache_guard_test.mjs
+
+      - name: Export web build
+        env:
+          VALIDATION_SCOPE: ${{ steps.validation.outputs.scope }}
+        run: |
+          mkdir -p build/web
+          # 시맨틱 버전 뒤에 빌드 메타데이터(+커밋 7자리)를 붙여, 피드백 제보가 어느 빌드에서 왔는지 알 수 있게 한다 (예: 0.9.0+abc1234)
+          sed -i -E "s/^config\/version=\"([^\"+]*)[^\"]*\"/config\/version=\"\1+${GITHUB_SHA::7}\"/" project.godot
+          grep '^config/version=' project.godot
+          godot --headless --path . --export-release "Web" build/web/index.html
+          # 캐시 버스팅: index.html에 커밋(?v=)과 버전(옛 캐시 청소 기준)을 새긴다 (web/shell.html trg-cache-guard)
+          python3 tools/stamp_web_build.py build/web "${GITHUB_SHA::7}"
+          # 내보낸 묶음을 직접 읽어 웹에서만 깨지는 데이터(문구 표·밸런스 CSV)를 검사한다
+          if [[ "${VALIDATION_SCOPE}" == "full" ]]; then
+            (cd build/web && godot --headless --main-pack index.pck -s "$GITHUB_WORKSPACE/tests/export_smoke.gd")
+          fi
+          if [[ "${VALIDATION_SCOPE}" == "presentation-sfx" ]]; then
+            (cd build/web && godot --headless --main-pack index.pck -s "$GITHUB_WORKSPACE/tests/sfx_assets_test.gd")
+          fi
+          # 아바타 애니메이션은 본체에서 빼고 아바타별 묶음(avatars/<id>.pck)으로 따로 내보낸다: 게임이 필요한 것부터 뒤에서 받는다 (scenes/avatar_packs.gd)
+          python3 tools/export_avatar_packs.py godot build/web/avatars
+          if [[ "${VALIDATION_SCOPE}" == "lobby-art" ]]; then
+            (cd build/web && LOBBY_ART_PACK="$GITHUB_WORKSPACE/build/web/avatars/ui_lobby.pck" godot --headless --main-pack index.pck -s "$GITHUB_WORKSPACE/tests/lobby_art_pack_smoke.gd")
+          fi
+          # 본체에는 정지 그림만 있고, 묶음을 붙이면 애니메이션이 실제로 읽히는지 내보낸 파일로 검사한다
+          # 묶음 그림의 UID를 등록하지 못하면 [invalid UID ... using text path instead] 경고가 수백 줄 찍혀 웹 로딩이 끊기므로, 경고가 한 줄이라도 있으면 막는다.
+          if [[ "${VALIDATION_SCOPE}" == "full" || "${VALIDATION_SCOPE}" == "avatar-hq" ]]; then
+            (cd build/web && godot --headless --main-pack index.pck -s "$GITHUB_WORKSPACE/tests/avatar_pack_smoke.gd") 2>&1 | tee /tmp/avatar_pack_smoke.log
+            test "${PIPESTATUS[0]}" -eq 0
+            if grep -q "invalid UID" /tmp/avatar_pack_smoke.log; then echo "avatar pack: invalid UID warnings remain"; grep -c "invalid UID" /tmp/avatar_pack_smoke.log; exit 1; fi
+          fi
+          # Vercel Web Analytics: 내보낸 index.html의 </body> 바로 앞에 스크립트가 반드시 있게 고정한다 (쉘에 이미 있으면 그대로, 없으면 여기서 넣고, 그래도 없으면 배포를 멈춘다).
+          python3 - <<'PY'
+          from pathlib import Path
+          page = Path('build/web/index.html')
+          html = page.read_text(encoding='utf-8')
+          marker = '/_vercel/insights/script.js'
+          if marker not in html:
+              snippet = ('<script>\n  window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };\n</script>\n'
+                         '<script defer src="/_vercel/insights/script.js"></script>\n')
+              if '</body>' not in html:
+                  raise SystemExit('index.html에 </body>가 없어 Vercel Analytics를 넣을 수 없다')
+              html = html.replace('</body>', snippet + '</body>')
+              page.write_text(html, encoding='utf-8')
+              print('Vercel Analytics 스크립트를 후처리로 넣었다')
+          html = page.read_text(encoding='utf-8')
+          assert marker in html and html.rfind(marker) < html.rfind('</body>'), 'Vercel Analytics 스크립트가 </body> 앞에 없다'
+          assert 'window.va = window.va' in html, 'Vercel Analytics 초기화 줄이 없다'
+          print('Vercel Analytics 스크립트 확인')
+          PY
+          touch build/web/.nojekyll
+          # Vercel이 gh-pages 브랜치(또는 이 폴더)를 빌드 없이 그대로 호스팅하도록 설정 파일을 함께 싣는다.
+          cp vercel.json build/web/vercel.json
+          # 링크 미리보기(Open Graph)용 이미지와 홈 화면 아이콘: shell.html이 index.html 기준 상대/절대 주소로 참조한다.
+          cp web/og-image.png build/web/og-image.png
+          cp web/icon.png build/web/icon.png
+          cp web/title-logo.png build/web/title-logo.png
+          cp web/title-logo-en.png build/web/title-logo-en.png
+          cp web/title-logo-ja.png build/web/title-logo-ja.png
+          cp web/loading-petit-speaki.webp build/web/loading-petit-speaki.webp
+          # Required standalone asset: a Godot PCK import is not a public web URL.
+          cp web/letterbox-pattern.png build/web/letterbox-pattern.png
+          # GitHub rejects individual files above 100 MiB. Fail before upload
+          # with an actionable message if future asset additions reach it.
+          python3 - <<'PY'
+          from pathlib import Path
+          for asset in Path('build/web').rglob('*'):
+              if asset.is_file() and asset.stat().st_size >= 100 * 1024 * 1024:
+                  raise SystemExit(f'{asset} exceeds GitHub 100 MiB: exclude unused source assets or split the pack')
+          # 용량 예산: 첫 로딩에 받는 본체는 40 MiB 안에서 관리한다 (2026-10: 아바타 애니메이션 분리 후 약 25 MiB).
+          # 아바타 애니메이션은 avatars/*.pck로 따로 받으므로 본체 예산에 들지 않는다 (에르핀 고화질 무손실 묶음 약 32 MiB).
+          # 넘으면 tools/optimize_texture_imports.py로 새 그림의 임포트 설정을 맞추거나, 늦게 받아도 되는 에셋을 묶음으로 뺀다.
+          pck = Path('build/web/index.pck')
+          print(f'index.pck = {pck.stat().st_size / 1048576:.2f} MiB')
+          for pack in sorted(Path('build/web/avatars').glob('*.pck')):
+              print(f'{pack} = {pack.stat().st_size / 1048576:.2f} MiB')
+          if pck.stat().st_size >= 40 * 1024 * 1024:
+              raise SystemExit(f'{pck} is over the 40 MiB first-load budget: move late assets into packs or run tools/optimize_texture_imports.py')
+          PY
+          ls -la build/web
+
+      - name: Publish to gh-pages
+        run: |
+          set -euo pipefail
+          cd build/web
+          git init -q
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -q -b gh-pages
+          git add -A
+          git commit -q -m "Deploy web build from ${GITHUB_SHA}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" gh-pages
+
+      # 선택: 저장소 시크릿 VERCEL_TOKEN / VERCEL_ORG_ID / VERCEL_PROJECT_ID가 있으면 같은 빌드를 Vercel에도 바로 배포한다.
+      # (없으면 건너뜀. 시크릿 없이도 Vercel 프로젝트의 Production Branch를 gh-pages로 두면 자동 배포된다 - README 참고)
+      - name: Deploy to Vercel (optional)
+        if: ${{ github.ref_name == 'main' || startsWith(github.ref_name, 'claude/') }}
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          if [ -z "${VERCEL_TOKEN}" ] || [ -z "${VERCEL_ORG_ID}" ] || [ -z "${VERCEL_PROJECT_ID}" ]; then
+            echo "Vercel 시크릿이 없어 건너뜁니다."
+            exit 0
+          fi
+          cd build/web
+          npx --yes vercel@latest deploy --prod --yes --token "${VERCEL_TOKEN}"
+

@@ -1,0 +1,29 @@
+shader_type canvas_item;
+render_mode unshaded;
+uniform float age = 0.0;
+float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float noise(vec2 p) {
+	vec2 i = floor(p);
+	vec2 f = fract(p);
+	f = f * f * (3.0 - 2.0 * f);
+	return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x),
+		mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
+}
+void fragment() {
+	vec2 p = UV;
+	vec2 drift = vec2(age * 1.8, age * 0.8);
+	p += (vec2(noise(UV * 7.0 - drift), noise(UV * 8.0 + drift + 13.0)) - 0.5) * age * 0.30;
+	float density = 0.0;
+	for (int i = 0; i < 5; i++) {
+		float n = float(i);
+		vec2 center = vec2(0.13 + age * (0.42 + n * 0.08), 0.50 - age * (0.14 + n * 0.12));
+		center += vec2(sin(n * 2.4 + age * 5.0), cos(n * 3.7 + age * 4.0)) * age * 0.07;
+		float radius = 0.035 + age * (0.15 + n * 0.022);
+		density += exp(-dot((p - center) / vec2(1.0, 1.4), (p - center) / vec2(1.0, 1.4)) / (radius * radius)) * 0.18;
+	}
+	float fade = smoothstep(0.0, 0.045, age) * (1.0 - smoothstep(0.16, 0.54, age));
+	float billow = 0.40 + 0.60 * noise(p * 13.0 - drift * 2.0);
+	float edge = smoothstep(0.0, 0.10, UV.x) * (1.0 - smoothstep(0.85, 1.0, UV.x));
+	edge *= smoothstep(0.0, 0.12, UV.y) * (1.0 - smoothstep(0.88, 1.0, UV.y));
+	COLOR = vec4(mix(vec3(0.89, 0.86, 0.77), vec3(1.0, 0.96, 0.83), UV.y), min(density * billow, 0.45) * fade * edge);
+}
