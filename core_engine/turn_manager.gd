@@ -52,7 +52,7 @@ var is_game_over: bool = false
 @export var step_delay_sec: float = 0.0
 ## 한 번의 이동 연출 총시간 상한(초): 칸이 많을수록 칸당 시간을 줄여 몇 칸을 가든 이 시간을 넘지 않는다 (칸당 = min(step_delay_sec, 상한 / 칸 수)).
 const MOVE_TIME_CAP: float = 1.2  ## 2026-10-26: 0.75 -> 2.4, 2026-10-27: 플레이 시간 단축으로 1.2 (짧은 이동은 칸당 step_delay 그대로 탁 탁)
-## 이 칸 수 이상의 장거리 이동(리벤지 부스터 + 고눈금 등)은 칸당 시간을 LONG_MOVE_STEP_SECONDS로 줄여 타다닥 지나간다.
+## 이 칸 수 이상의 장거리 이동(고눈금 등, 리벤지 부스터 칸은 빼고 센다)은 칸당 시간을 LONG_MOVE_STEP_SECONDS로 줄여 타다닥 지나간다.
 const LONG_MOVE_TILES: int = 10
 const LONG_MOVE_STEP_SECONDS: float = 0.16
 ## 지금 이동의 칸당 시간 (화면의 한 칸 점프 길이를 엔진 걸음과 맞춘다).
@@ -352,6 +352,16 @@ func apply_replicated(action: StringName, params: Dictionary) -> void:
 
 
 ## PHASE_MOVING_STEP 본체: path(BoardGraph.calculate_path 결과)를 한 칸씩 밟는다.
+## 이동 한 번의 칸당 시간(초). 리벤지 부스터 칸(rocket)은 화면에서 한 번에 날아가므로 걷는 칸 수에서 뺀다.
+## 장거리 이동(후반 가속 등)도 한 번에 MOVE_TIME_CAP초 안에 끝나도록 칸당 시간을 칸 수로 나눠 줄인다.
+static func step_seconds_for(step_delay: float, path_len: int, rocket: int = 0) -> float:
+	var walk: int = maxi(path_len - clampi(rocket, 0, path_len), 1)
+	var seconds: float = minf(step_delay, MOVE_TIME_CAP / float(walk))
+	if walk >= LONG_MOVE_TILES:
+		seconds = minf(seconds, LONG_MOVE_STEP_SECONDS)
+	return seconds
+
+
 ## 한 칸 이동할 때마다 그 TileNode의 TileAttachment(은신 함정) 발동 여부를 검사하고, 함정이 이동을 중단시키면
 ## 남은 경로를 버리고 즉시 멈춘다. 칸 사이에 step_delay_sec만큼 await 하므로 뷰가 걸음마다 연출할 수 있다.
 ## 결과 보고서와 마지막 걸음 결과는 _move_report / _move_outcome에 남는다.
@@ -365,10 +375,9 @@ func execute_step_by_step_move(entity: BoardEntity, path: Array[int], ctx: RuleC
 		_move_report.pawn_id = pawn.entity_id
 	_move_outcome = MoveExecutor.StepOutcome.CONTINUE
 	ctx.pawn = pawn
-	# 장거리 이동(부스터·후반 가속)도 한 번에 MOVE_TIME_CAP초 안에 끝난다: 칸당 시간을 칸 수로 나눠 줄인다.
-	current_step_seconds = minf(step_delay_sec, MOVE_TIME_CAP / float(maxi(path.size(), 1)))
-	if path.size() >= LONG_MOVE_TILES:
-		current_step_seconds = minf(current_step_seconds, LONG_MOVE_STEP_SECONDS)
+	# 리벤지 부스터 칸은 화면에서 로켓 한 번에 날아가므로 걸음 시간 계산에서 뺀다 (부스터 > 쉬고 > 눈금 이동이 보통 걸음으로 이어진다).
+	var rocket: int = clampi(_move_report.revenge_bonus, 0, path.size()) if not pawn.has_left_start else 0
+	current_step_seconds = step_seconds_for(step_delay_sec, path.size(), rocket)
 	for index: int in path.size():
 		var is_last: bool = index == path.size() - 1
 		processing_started.emit()  # 걸음마다 화면 갱신을 한 번으로 묶는다 (걸음은 await 사이에 따로 일어난다)
@@ -376,7 +385,7 @@ func execute_step_by_step_move(entity: BoardEntity, path: Array[int], ctx: RuleC
 		processing_finished.emit()
 		if _move_outcome != MoveExecutor.StepOutcome.CONTINUE:
 			break
-		if not is_last and current_step_seconds > 0.0 and is_inside_tree():
+		if not is_last and index >= rocket - 1 and current_step_seconds > 0.0 and is_inside_tree():
 			await get_tree().create_timer(current_step_seconds).timeout
 
 
