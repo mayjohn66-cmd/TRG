@@ -86,6 +86,8 @@ func _ready() -> void:
 	panel.add_child(_panel_box)
 	if GameSession.lobby_intent == &"quick":
 		start_quick_match()
+	elif GameSession.lobby_intent == &"invite" and RoomCode.pending_invite != "":
+		join_invite(RoomCode.take_invite())
 	else:
 		_show_choose()
 	add_child(MobileSupport.new())
@@ -145,6 +147,17 @@ func _show_choose() -> void:
 	_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_panel_box.add_child(_status)
 	_rebuild()
+
+
+## 초대 링크(?room=코드)로 들어왔다: 코드를 채우고 바로 입장한다 (방 코드를 칠 필요가 없다).
+func join_invite(code: String) -> void:
+	GameSession.lobby_intent = &"secret"
+	_show_choose()
+	_on_room_input_changed(code)
+	if _join_input != null:
+		_join_input.text = _guest_room_text
+	_set_status("초대 링크의 방 %s에 입장합니다..." % code, false)
+	join_with_room_code()
 
 
 func start_guest() -> void:
@@ -317,6 +330,11 @@ func _make_code_badge() -> Control:
 	copy.name = "CopyRoomCode"
 	copy.custom_minimum_size = Vector2(130, 56)
 	row.add_child(copy)
+	# 모바일 친구는 코드를 치기 어렵다: 누르면 바로 이 방에 들어오는 초대 링크를 복사한다
+	var invite := _button("초대 링크 복사", copy_invite_link, 16, Color("2b8a3e"))
+	invite.name = "CopyInviteLink"
+	invite.custom_minimum_size = Vector2(170, 56)
+	row.add_child(invite)
 	return center
 
 
@@ -472,6 +490,7 @@ func _rebuild_guest() -> void:
 	_join_input.custom_minimum_size = Vector2(0, 70)
 	_join_input.text = _guest_room_text
 	_join_input.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	MobileSupport.attach_native_text_input(_join_input, "방 코드 5자리")
 	_join_input.editable = not _guest_busy
 	_join_input.text_changed.connect(_on_room_input_changed)
 	_join_input.text_submitted.connect(func(_text: String) -> void: join_with_room_code())
@@ -499,6 +518,16 @@ func copy_room_code() -> void:
 	DisplayServer.clipboard_set(service.room_code)
 	if _status != null:
 		_status.text = "방 코드 %s 를 복사했습니다. 친구에게 붙여 넣어 보내 주세요." % service.room_code
+
+
+## [초대 링크 복사]: 게임 주소 + ?room=방코드. 친구가 열면 닉네임을 정한 뒤 이 방에 바로 입장한다.
+func copy_invite_link() -> void:
+	if service.room_code == "":
+		return
+	var link: String = RoomCode.invite_url(service.room_code)
+	MetaIcon.copy_to_clipboard(link)
+	if _status != null:
+		_status.text = "초대 링크를 복사했습니다. 친구에게 보내면 누르기만 해도 이 방에 들어옵니다."
 
 
 func _on_room_input_changed(text: String) -> void:

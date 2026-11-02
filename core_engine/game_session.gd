@@ -177,12 +177,35 @@ static func clear_net() -> void:
 
 ## 닉네임 검사: 앞뒤 공백을 뺀 뒤 1~10자여야 한다. 문제가 없으면 빈 문자열, 있으면 안내 문구를 돌려준다.
 static func validate_nickname(raw: String) -> String:
-	var text: String = raw.strip_edges()
+	var text: String = clean_nickname(raw)
 	if text.is_empty():
 		return "닉네임을 입력해 주세요."
 	if text.length() > MAX_NICKNAME_LENGTH:
 		return "닉네임은 %d자 이하로 입력해 주세요." % MAX_NICKNAME_LENGTH
 	return ""
+
+
+## 입력값을 닉네임으로 다듬는다: 앞뒤 공백 제거, 브라우저·저장소가 넘긴 "null"·"undefined" 같은 빈 값 표시는 빈 문자열로.
+static func clean_nickname(raw: Variant) -> String:
+	if raw == null:
+		return ""
+	var text: String = str(raw).strip_edges()
+	if ["null", "undefined", "nan", "<null>"].has(text.to_lower()):
+		return ""
+	return text
+
+
+## 랜덤 닉네임 (빈칸으로 입장하거나 [랜덤 닉네임]을 눌렀을 때): '형용사 + 교주/사도…' 또는 '익명교주' + 네 자리 숫자, 최대 MAX_NICKNAME_LENGTH자.
+static func random_nickname(rng: RandomNumberGenerator = null) -> String:
+	if rng == null:
+		rng = RandomNumberGenerator.new()
+		rng.randomize()
+	var heads: Array[String] = ["졸린", "배고픈", "용감한", "수상한", "반짝이는", "느긋한", "엉뚱한", "행복한"]
+	var tails: Array[String] = ["교주", "사도", "주사위", "빵돌이", "말판왕"]
+	var name_text: String = heads[rng.randi_range(0, heads.size() - 1)] + tails[rng.randi_range(0, tails.size() - 1)]
+	if rng.randf() < 0.35 or name_text.length() > MAX_NICKNAME_LENGTH:
+		name_text = "익명교주%04d" % rng.randi_range(0, 9999)
+	return name_text.substr(0, MAX_NICKNAME_LENGTH)
 
 
 ## 화면에 쓸 내 이름 (아직 정하지 않았으면 기본값).
@@ -193,7 +216,7 @@ static func display_nickname() -> String:
 static func set_nickname(raw: String) -> bool:
 	if validate_nickname(raw) != "":
 		return false
-	nickname = raw.strip_edges()
+	nickname = clean_nickname(raw)
 	save()
 	return true
 

@@ -27,6 +27,66 @@ static func is_touch_device() -> bool:
 
 ## true면 터치 기기처럼 큰 버튼 배치를 쓴다 (헤드리스 화면 테스트용).
 static var force_touch: bool = false
+
+## Global game shortcuts must leave focused native/web text editors alone.
+static func text_input_active(context: Node) -> bool:
+	var focus:=context.get_viewport().gui_get_focus_owner()
+	if focus is LineEdit and (focus as LineEdit).editable:return true
+	if focus is TextEdit and (focus as TextEdit).editable:return true
+	if OS.has_feature("web"):
+		return bool(JavaScriptBridge.eval("(()=>{const e=document.activeElement;const tag=e?.tagName?.toLowerCase();return tag==='input'||tag==='textarea'||!!e?.isContentEditable;})()"))
+	return false
+## 웹 터치 기기(아이패드·폰)의 글 입력 (2026-11 제보: 아이패드에서 닉네임 칸을 눌러도 키패드가 안 올라와 입장 불가).
+## iOS는 손가락이 닿은 그 순간(사용자 제스처 안)에 HTML 입력칸이 포커스되어야만 키패드를 올리는데, 게임 화면(캔버스)은 터치를 먹고
+## 입력을 다음 프레임에 처리해 그 조건을 맞출 수 없다. 그래서 터치 웹에서는 칸을 누르면 브라우저 기본 입력 창(prompt)을 띄운다:
+## 어느 기기에서나 키패드가 바로 올라온다. 취소하면 아무것도 바꾸지 않는다 (문자열 "null"이 들어가지 않게).
+static func native_text_input_enabled() -> bool:
+	return OS.has_feature("web") and is_touch_device()
+
+
+## LineEdit·TextEdit에 붙인다: 터치 웹에서 칸을 누르면 기본 입력 창으로 글을 받는다 (PC·앱에서는 아무것도 하지 않는다).
+static func attach_native_text_input(edit: Control, title: String) -> void:
+	edit.gui_input.connect(func(event: InputEvent) -> void:
+		if not native_text_input_enabled() or not edit.is_visible_in_tree():
+			return
+		var touch: InputEventScreenTouch = event as InputEventScreenTouch
+		var click: InputEventMouseButton = event as InputEventMouseButton
+		var touched: bool = (touch != null and touch.pressed) or (click != null and click.pressed and click.button_index == MOUSE_BUTTON_LEFT)
+		if not touched:
+			return
+		edit.accept_event()
+		var current: String = (edit as LineEdit).text if edit is LineEdit else (edit as TextEdit).text
+		var answer: Variant = prompt_text(L10n.t(title), current)
+		if answer == null:
+			return
+		apply_text(edit, str(answer)))
+
+
+## 입력 창에서 받은 글을 칸에 넣고 바뀜 신호를 낸다 (LineEdit은 최대 글자 수를 지킨다).
+static func apply_text(edit: Control, text: String) -> void:
+	if edit is LineEdit:
+		var line := edit as LineEdit
+		if line.max_length > 0:
+			text = text.substr(0, line.max_length)
+		line.text = text
+		line.caret_column = text.length()
+		line.text_changed.emit(text)
+	elif edit is TextEdit:
+		(edit as TextEdit).text = text
+		(edit as TextEdit).text_changed.emit()
+
+
+## 브라우저 기본 입력 창. 취소하면 null (JS의 null을 문자열 "null"로 바꾸지 않는다).
+static func prompt_text(title: String, current: String) -> Variant:
+	if not OS.has_feature("web"):
+		return null
+	var script: String = "(()=>{const v=window.prompt(%s,%s);return (v===null||v===undefined)?'__TRG_CANCEL__':String(v);})()" % [JSON.stringify(title), JSON.stringify(current)]
+	var result: Variant = JavaScriptBridge.eval(script, true)
+	if result == null or str(result) == "__TRG_CANCEL__":
+		return null
+	return str(result)
+
+
 ## 터치 배치에서 버튼의 최소 높이 (기준 해상도 1366x768 픽셀). 폰 가로 화면에서는 약 0.5배로 줄어 보이므로 손가락 크기(약 44pt)에 맞춰 크게 잡는다.
 const TOUCH_BUTTON_HEIGHT: float = 48.0
 

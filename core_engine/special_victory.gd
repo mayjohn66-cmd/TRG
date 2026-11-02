@@ -27,7 +27,7 @@ static func goal_of(state: GameState, law_id: String) -> int:
 	return (fresh as VictoryLaw).goal() if fresh is VictoryLaw else 0
 
 
-## 달성까지 딱 한 걸음 남았나 (1.01 리치 사이렌): 세는 기록은 1 남음. 카이지(한 번의 이동 최고 기록)는 쌓이는 기록이 아니라 제외.
+## 달성까지 딱 한 걸음 남았나 (1.01 리치 사이렌): 세는 기록은 1 남음. 카이지(한 차례 누적 칸 수 최고 기록)는 쌓이는 기록이 아니라 제외.
 static func is_reach(state: GameState, law: VictoryLaw, player_id: int) -> bool:
 	if law.stat_key == VictoryLaw.BEST_MOVE or state.is_graduated(player_id):
 		return false
@@ -91,6 +91,25 @@ static func on_law_enacted(state: GameState, law: LawResource) -> void:
 	if law is VictoryLaw and VictoryLaw.SESSION_KEYS.has((law as VictoryLaw).stat_key):
 		for player_id: int in state.player_ids:
 			state.reset_stat(player_id, (law as VictoryLaw).stat_key)
+
+
+## 아직 방어 여부가 정해지지 않은 공격(방어 대기 중이거나 아직 묻지 않은 공격)이 올린 이 사람의 기록. 화면은 이만큼 빼고 보여 준다:
+## 방어하면 되돌아갈 처치를 미리 '달성'으로 보이지 않게 (판정은 방어 대기가 끝난 뒤 차례 끝에만 한다).
+static func undecided_stat(state: GameState, player_id: int, key: StringName, pending_attack: int = -1) -> int:
+	var total: int = 0
+	for entry: Dictionary in state.attack_log:
+		if not bool(entry.get("stats_committed",true)):continue # Already excluded from authoritative counters.
+		if bool(entry["countered"]) or (bool(entry["offered"]) and int(entry["id"]) != pending_attack):
+			continue
+		var owner: int = int(entry["victim"]) if key == VictoryLaw.EJECTED else int(entry.get("attacker", -1))
+		if owner == player_id:
+			total += int((entry["stats"] as Dictionary).get(key, 0))
+	return total
+
+
+## 화면에 보여 줄 진행도: 방어 여부가 정해지지 않은 공격의 기록은 뺀다.
+static func shown_progress(state: GameState, law: VictoryLaw, player_id: int, pending_attack: int = -1) -> int:
+	return law.progress(state, player_id) - undecided_stat(state, player_id, law.stat_key, pending_attack)
 
 
 ## 툴팁용 진행도: [{player, value, goal, danger, done}]

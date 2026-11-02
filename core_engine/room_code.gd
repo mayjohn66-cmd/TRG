@@ -24,6 +24,37 @@ static func normalize(text: String) -> String:
 	return text.strip_edges().to_upper().replace(" ", "").replace("-", "").replace("\n", "").replace("\r", "")
 
 
+## 초대 링크로 들어온 방 코드 (웹 주소의 ?room=코드). 닉네임을 정하면 친선 줘팸터로 바로 들어가 이 방에 입장한다. 한 번 쓰면 비운다.
+static var pending_invite: String = ""
+static var _invite_checked: bool = false
+
+
+## 웹 주소에서 ?room=코드를 한 번 읽는다 (PlayerSave가 주소창을 이어하기 링크로 바꾸기 전에 불러야 한다).
+static func capture_invite_from_url() -> void:
+	if _invite_checked or not OS.has_feature("web"):
+		return
+	_invite_checked = true
+	var raw: Variant = JavaScriptBridge.eval("(function(){try{return new URLSearchParams(window.location.search).get('room')||'';}catch(e){return '';}})()", true)
+	var code: String = normalize(str(raw)) if raw != null else ""
+	if is_valid(code):
+		pending_invite = code
+
+
+## 초대 링크: 지금 게임 주소(기록 이어하기 값은 빼고) + ?room=코드. 웹이 아니면 코드만.
+static func invite_url(code: String) -> String:
+	if not OS.has_feature("web"):
+		return "?room=%s" % code
+	var here: Variant = JavaScriptBridge.eval("window.location.origin + window.location.pathname", true)
+	return "%s?room=%s" % [str(here) if here != null else "", code]
+
+
+## 대기 중인 초대 코드를 꺼낸다 (꺼내면 비운다).
+static func take_invite() -> String:
+	var code: String = pending_invite
+	pending_invite = ""
+	return code
+
+
 static func is_valid(code: String) -> bool:
 	if code.length() != LENGTH:
 		return false

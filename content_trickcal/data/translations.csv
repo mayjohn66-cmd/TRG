@@ -2446,3 +2446,43 @@ FINISH!,FINISH!,FINISH!
 승리 요인: %s의 [%s] 특수 승리 달성!,Victory Factor: %s achieved the [%s] Special Victory!,勝利要因: %sの[%s]特殊勝利達成！
 [1위 타겟],[1st Place Target],[1位ターゲット]
 [식권 목표],[Ticket Goal],[食券目標]
+방어 성공! (처치 무효 · 투기장/킬 카운트 미적용),Defended! (Kill voided · no Arena/kill count),防御成功！(撃破無効・闘技場/キル数は加算なし)
+[방어 성공] 처치 무효 · 투기장/킬 카운트 미적용,[Defended] Kill voided · no Arena/kill count,[防御成功] 撃破無効・闘技場/キル数は加算なし
+[color=#74c0fc][b]방어 성공![/b] 처치 무효 · 투기장/킬 카운트 미적용[/color],[color=#74c0fc][b]Defended![/b] Kill voided · no Arena/kill count[/color],[color=#74c0fc][b]防御成功！[/b] 撃破無効・闘技場/キル数は加算なし[/color]
+방어 성공!,Defended!,防御成功！
+처치 무효 · 투기장/킬 카운트 미적용,Kill voided · no Arena/kill count,撃破無効・闘技場/キル数は加算なし
+   기물%s: %s,   Pieces%s: %s,   駒%s: %s
+ (졸업 직전), (just before graduating), (卒業直前)
+%s %s (달성 완료!): P%d %d/%d · %d위 졸업,%s %s (Achieved!): P%d %d/%d · graduated #%d,%s %s (達成完了！): P%d %d/%d・%d位で卒業
+사용하기,Use,使用する
+핀볼 발사 준비,Prepare pinball launch,ピンボール発射準備
+랜덤 닉네임,Random Name,ランダム名
+교주의 이름 (최대 %d자),Leader name (max %d chars),教主の名前 (最大%d文字)
+내용을 적어 주세요,Please write your message,内容を入力してください
+방 코드 5자리,5-letter room code,ルームコード5文字
+기록 코드,Record code,記録コード
+닉네임,Nickname,ニックネーム
+한 차례에 말 하나로 {p1}칸 이상 전진,Advance one pawn {p1}+ tiles in a single turn,1ターンに1つの駒で{p1}マス以上前進
+◆ 승리 조건: 한 차례에 말 하나로 {p1}칸 이상 전진\n◆ 차례가 끝날 때 달성해 있으면 바로 다음 순위로 졸업,◆ Win Condition: Advance one pawn {p1}+ spaces in a single turn\n◆ Graduate in the next rank if met at turn end,◆ 勝利条件: 1ターンに1つの駒で{p1}マス以上前進する\n◆ ターン終了時に達成していれば次の順位で即卒業
+졸린,Sleepy,眠い
+배고픈,Hungry,腹ペコ
+용감한,Brave,勇敢な
+수상한,Shady,怪しい
+반짝이는,Shiny,キラキラ
+느긋한,Laid-back,のんびり
+엉뚱한,Quirky,とぼけた
+행복한,Happy,幸せな
+교주,Leader,教主
+사도,Apostle,使徒
+주사위,Dice,サイコロ
+빵돌이,Breadboy,パン好き
+말판왕,Board King,ボード王
+익명교주%04d,AnonLeader%04d,匿名教主%04d
+[내 차례 시작에 사용] 특수 승리 기록 1개를 0으로 초기화 (공격에 반응하는 방어 카드는 아님),[Use at the start of your turn] Reset 1 Special Victory progress counter to 0 (not a defense card).,[自分のターン開始時に使用] 特殊勝利の記録1つを0に初期化する (防御カードではない)
+필살기 사용 가능!,Skill ready!,必殺技使用可能！
+%s!,%s!,%s！
+초대 링크의 방 %s에 입장합니다...,Joining room %s from the invite link...,招待リンクのルーム%sに入室します...
+초대 링크 복사,Copy invite link,招待リンクをコピー
+초대 링크를 복사했습니다. 친구에게 보내면 누르기만 해도 이 방에 들어옵니다.,Invite link copied. Friends who open it join this room right away.,招待リンクをコピーしました。友達が開くだけでこのルームに入れます。
+[다시 연결] %s 님이 돌아와 직접 둡니다.,[Reconnected] %s is back and playing again.,[再接続] %sさんが戻って自分で指します。
+%s (자동),%s (auto),%s (自動)

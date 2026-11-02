@@ -2380,7 +2380,18 @@ func _test_new_tool_stages() -> void:
 	player = manager.current_player_id()
 	manager.state.tools[player] = ToolPinball.new()
 	_board._refresh_all()
-	_expect(_board._stage_pinball.visible and _board._roll_button.visible and _board._roll_button.text == "발사!", "핀볼: 핀볼 머신과 발사 버튼이 보인다")
+	# 2026-10-30 핫픽스: 핀볼은 차례 시작에 보드를 가리지 않고, [굴리기]로 준비해야 머신이 뜬다
+	_expect(not _board._stage_pinball.visible, "핀볼: 차례 시작에는 보드를 가리지 않는다")
+	for _i: int in 240:
+		if _board._stage_pinball.visible:
+			break
+		if not _board._ui_busy():
+			_board._refresh_controls()
+			_board._on_roll_pressed()
+		await process_frame
+	_board._refresh_all()
+	_board._refresh_tool_stage()
+	_expect(_board._stage_pinball.visible and _board._roll_button.visible, "핀볼: 준비하면 핀볼 머신과 발사 버튼이 보인다 (버튼 글자는 2026-10-30 핫픽스부터 '핀볼 발사 준비')")
 	var holes: Array = []
 	manager.event_received.connect(func(kind: StringName, data: Dictionary) -> void:
 		if kind == &"roll_resolved" and (data["result"] as Dictionary)["tool_id"] == &"DICE_PINBALL":

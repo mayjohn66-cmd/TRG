@@ -97,6 +97,12 @@ var _copy_button: Button = null
 
 
 ## parent 위에 창을 연다. 반환한 창은 닫으면 queue_free된다.
+## 피드백 창의 캔버스 층: 증강 선택·방어 팝업 등 우선 창(10000)보다 위.
+const TOP_LAYER: int = 20000
+## 창의 실제 내용을 담는 전용 층 위의 컨트롤.
+var _host: Control = null
+
+
 static func open(parent: Node, source: Callable = Callable(), from: String = "", initial_kind: Kind = Kind.BUG, as_survey: bool = false, behavior: String = "") -> FeedbackModal:
 	var modal := FeedbackModal.new()
 	modal.snapshot_source = source
@@ -112,15 +118,26 @@ func _ready() -> void:
 	name = "FeedbackModal"
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	z_index = 260
-	mouse_filter = Control.MOUSE_FILTER_STOP
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# 2026-11 제보: 피드백 창을 연 채 라운드가 넘어가 증강 선택 창(높은 캔버스 층)이 뜨면 그 아래에 깔려 [닫기]가 눌리지 않았다.
+	# 창의 그림·입력은 모든 게임 창보다 위의 전용 캔버스 층에 그린다 (노드 자체는 보드 바로 아래에 남아 찾기·닫기는 그대로).
+	var layer := CanvasLayer.new()
+	layer.name = "FeedbackLayer"
+	layer.layer = TOP_LAYER
+	add_child(layer)
+	_host = Control.new()
+	_host.name = "FeedbackHost"
+	_host.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_host.mouse_filter = Control.MOUSE_FILTER_STOP
+	layer.add_child(_host)
 	var dim := ColorRect.new()
 	dim.color = Color(0, 0.08, 0.06, 0.66)
 	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	add_child(dim)
+	_host.add_child(dim)
 	var center := CenterContainer.new()
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(center)
+	_host.add_child(center)
 	var panel := PanelContainer.new()
 	panel.custom_minimum_size = Vector2(620, 0)
 	panel.add_theme_stylebox_override("panel", UiSkin.panel("panel", 22.0))
@@ -161,6 +178,7 @@ func _ready() -> void:
 	_name_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_name_edit.text = GameSession.display_nickname() if GameSession.nickname != "" else ""
 	_style_input(_name_edit)
+	MobileSupport.attach_native_text_input(_name_edit, "닉네임")  # 아이패드·폰: 기본 입력 창으로 받는다
 	name_row.add_child(_name_edit)
 	if survey:
 		_add_chip_group(box, "SurveyFun", L10n.tr_ui("survey.q1"), fun_chips(), picked_fun)
@@ -172,6 +190,7 @@ func _ready() -> void:
 	_body_edit.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
 	_body_edit.text_changed.connect(_on_body_changed)
 	_style_input(_body_edit)
+	MobileSupport.attach_native_text_input(_body_edit, "내용을 적어 주세요")
 	box.add_child(_body_edit)
 	_count_label = _label("", 13, Color("6c757d"))
 	_count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -583,7 +602,7 @@ func _toast(text: String) -> void:
 	style.set_content_margin_all(12)
 	toast.add_theme_stylebox_override("normal", style)
 	toast.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(toast)
+	(_host if _host != null else self).add_child(toast)
 	toast.reset_size()
 	var view: Vector2 = get_viewport_rect().size if is_inside_tree() else Vector2(1366, 768)
 	toast.position = Vector2((view.x - toast.size.x) / 2.0, view.y - toast.size.y - 40.0)

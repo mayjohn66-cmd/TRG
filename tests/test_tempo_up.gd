@@ -231,19 +231,26 @@ func test_first_draft_falls_back_when_no_pawn_evolution_is_possible() -> void:
 		check(AugmentRegistry.get_def(offer).category != GameEnums.AugmentCategory.PAWN_EVOLUTION, "받을 수 없는 기물 진화는 없다")
 
 
-## 카이지의 한방 역전법은 리벤지 부스터 칸과 템포 업 보너스를 빼고 센다 (요구 16칸).
-func test_kaiji_counts_without_revenge_and_tempo_bonus() -> void:
+## 카이지의 한방 역전법 (2026-11 제보 수정): 한 차례 동안 말 하나가 전진한 칸 수를 모두 더한다 (리벤지 부스터·템포 업·추가 굴림 포함, 요구 16칸).
+func test_kaiji_counts_the_whole_turn_for_one_pawn() -> void:
 	check_eq((LawRegistry.create("LAW_04") as VictoryLaw).goal(), 16, "한방 16칸")
 	var manager := _new_manager()
-	var report := MoveReport.new()
-	report.path.assign(range(1, 19))  # 18칸 이동
-	report.revenge_bonus = 8
-	manager._move_tempo_bonus = 3
-	check_eq(manager.kaiji_steps(report), 7, "18칸 - 리벤지 8 - 템포 3 = 7칸")
-	report.revenge_bonus = 0
-	manager._move_tempo_bonus = 0
-	check_eq(manager.kaiji_steps(report), 18, "보너스가 없으면 그대로")
-	# 실제 굴림: 15라운드(템포 +2)에 눈금 2를 굴려 4칸 이동해도 카이지는 2칸으로 센다
+	var booster := MoveReport.new()
+	booster.pawn_id = 11
+	booster.path.assign(range(1, 9))  # 리벤지 부스터 선행 전진 8칸
+	booster.revenge_bonus = 8
+	check_eq(manager.kaiji_steps(booster), 8, "부스터 8칸도 센다")
+	var dice := MoveReport.new()
+	dice.pawn_id = 11
+	dice.path.assign(range(9, 20))  # 이어서 주사위 11칸
+	check_eq(manager.kaiji_steps(dice), 19, "같은 차례 같은 말: 8 + 11 = 19칸 (예전에는 따로 세어 9/16)")
+	var other := MoveReport.new()
+	other.pawn_id = 12
+	other.path.assign(range(1, 4))
+	check_eq(manager.kaiji_steps(other), 3, "다른 말은 따로 센다")
+	manager._begin_turn()
+	check_eq(manager.kaiji_steps(other), 6 if manager.state.is_graduated(manager.current_player_id()) else 3, "새 차례에는 0부터 다시")
+	# 실제 굴림: 15라운드(템포 +2)에 눈금 2를 굴리면 4칸 전진으로 센다
 	var events: Array = _events(manager)
 	manager.state.rulebook.enqueue_law(LawRegistry.create("LAW_04"))
 	manager.state.round_number = 15
@@ -253,7 +260,7 @@ func test_kaiji_counts_without_revenge_and_tempo_bonus() -> void:
 	if manager.current_state == TurnManager.State.PHASE_SELECT_PAWN:
 		manager.act(&"select_pawn", {"player_id": 1, "pawn_id": manager.state.selectable_pawns(1, 4)[0].entity_id})
 	check(events.any(func(event: Dictionary) -> bool: return event["kind"] == &"move_resolved"), "이동했다")
-	check_eq(manager.state.stat(1, VictoryLaw.BEST_MOVE), 2, "템포 업 +2를 뺀 2칸만 기록")
+	check_eq(manager.state.stat(1, VictoryLaw.BEST_MOVE), 4, "템포 업 +2까지 더한 4칸")
 	_dispose(manager)
 
 
@@ -306,8 +313,9 @@ func test_single_player_game_ends_when_the_human_graduates() -> void:
 	check_eq(state.rank_reasons.get(4), VictoryChecker.RACE_ORDER, "남은 컴퓨터는 진행 순위로 확정")
 	check(_kinds(events).has(&"game_over"), "결과 화면으로")
 	_dispose(manager)
-	# 온라인·4인 수동(end_when_graduated 비어 있음)은 끝까지 진행한다
+	# 2026-10-30 핫픽스: 실제 말 4개 완주는 온라인·4인 수동(사람 자리 지정 없음)에서도 그 자리에서 판을 끝낸다. 맨 뒤 한 명은 꼴찌.
 	var full := _new_manager([1, 2, 3, 4] as Array[int])
 	full._graduate(1, VictoryChecker.ALL_HOME)
-	check(not full._end_if_decided() and not full.is_game_over, "사람 자리 지정이 없으면 계속")
+	check(full._end_if_decided() and full.is_game_over, "말 4개 완주는 사람 자리 지정이 없어도 바로 끝난다")
+	check_eq(full.state.rank_reasons[full.state.rankings[3]], VictoryChecker.LAST_PLACE, "맨 뒤 한 명은 꼴찌")
 	_dispose(full)

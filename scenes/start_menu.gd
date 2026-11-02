@@ -90,6 +90,7 @@ func _ready() -> void:
 	_build_train_page(stack)
 	_build_avatar_page(stack)
 	GameSession.load_settings()
+	RoomCode.capture_invite_from_url()  # 친선 초대 링크(?room=코드): 아래에서 주소창을 이어하기 링크로 바꾸기 전에 읽는다
 	# 웹: 이어하기 링크(?s=코드&n=닉네임)로 들어왔으면 그 기록을 이 브라우저에 합치고 바로 그 계정으로 시작한다 (한 번만)
 	if not _url_checked:
 		_url_checked = true
@@ -106,6 +107,7 @@ func _ready() -> void:
 		_name_edit.text = GameSession.nickname
 		_hello_label.text = "%s 교주님" % GameSession.nickname
 		_show_step(2)
+		_follow_invite.call_deferred()
 	else:
 		_show_step(1)  # 모바일에서 키보드가 불쑥 뜨지 않도록 입력칸은 눌러야 입력된다
 	_mobile = MobileSupport.new()
@@ -139,7 +141,19 @@ func _build_name_page(parent: VBoxContainer) -> void:
 	_name_edit.custom_minimum_size = Vector2(0, 52)
 	_name_edit.text_submitted.connect(func(_text: String) -> void: confirm_nickname())
 	_name_edit.text_changed.connect(func(_text: String) -> void: _error_label.text = "")
-	_name_page.add_child(_name_edit)
+	_name_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	# 아이패드·폰: 칸을 누르면 기본 입력 창으로 받는다 (캔버스 위에서는 키패드가 안 올라오는 기기가 있다)
+	MobileSupport.attach_native_text_input(_name_edit, "교주의 이름 (최대 %d자)" % GameSession.MAX_NICKNAME_LENGTH)
+	var name_row := HBoxContainer.new()
+	name_row.add_theme_constant_override("separation", 8)
+	name_row.add_child(_name_edit)
+	# 키패드가 안 뜨거나 입력을 건너뛰고 싶으면 [랜덤 닉네임] 한 번으로 바로 입장할 수 있다
+	var random_button: Button = LobbyTheme.big_button("랜덤 닉네임", func() -> void:
+		MobileSupport.apply_text(_name_edit, GameSession.random_nickname()), 22)
+	random_button.name = "RandomNicknameButton"
+	random_button.custom_minimum_size = Vector2(150, 52)
+	name_row.add_child(random_button)
+	_name_page.add_child(name_row)
 	_error_label = LobbyTheme.label("", 15, Color("d6336c"))
 	_error_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_name_page.add_child(_error_label)
@@ -440,6 +454,9 @@ func _show_settings() -> void:
 
 ## 닉네임을 검사해 저장하고 모드 선택 화면으로 넘어간다. 통과했으면 true.
 func confirm_nickname() -> bool:
+	# 빈칸(또는 "null")으로 입장하면 랜덤 닉네임을 붙여 바로 들어간다 (키패드가 안 뜨는 기기에서도 막히지 않게)
+	if GameSession.clean_nickname(_name_edit.text).is_empty():
+		MobileSupport.apply_text(_name_edit, GameSession.random_nickname())
 	var problem: String = GameSession.validate_nickname(_name_edit.text)
 	if problem != "":
 		_error_label.text = problem
@@ -448,7 +465,18 @@ func confirm_nickname() -> bool:
 	_hello_label.text = "%s 교주님" % GameSession.nickname
 	_show_step(2)
 	MatchTelemetry.report_lobby_entry(self)  # 통계: 게임을 켜서 실제로 들어온 사람 (이번 접속에 한 번)
+	_follow_invite()
 	return true
+
+
+## 초대 링크로 들어왔으면(닉네임을 정한 뒤) 친선 줘팸터로 가서 그 방에 바로 입장한다.
+func _follow_invite() -> void:
+	if RoomCode.pending_invite == "":
+		return
+	GameSession.mode = GameSession.MODE_MULTIPLAYER
+	GameSession.lobby_intent = &"invite"
+	if change_scene_enabled:
+		get_tree().change_scene_to_file(LOBBY_SCENE)
 
 
 ## 아바타 설정 화면: 큰 미리보기 + 고를 수 있는 아바타 격자.

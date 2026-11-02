@@ -204,6 +204,7 @@ func _clear_scroll_drag() -> void:
 ## Own only presses inside the book's scroll panes. Child buttons cannot
 ## activate on release after a swipe, and native/emulated touch never scroll twice.
 func _input(event: InputEvent) -> void:
+	if event is InputEventKey and MobileSupport.text_input_active(self):return
 	var point: Vector2
 	var pressed := false
 	var released := false
@@ -296,6 +297,7 @@ void fragment() {
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
+	if MobileSupport.text_input_active(self):return
 	var key: InputEventKey = event as InputEventKey
 	if key == null or not key.pressed or key.echo:
 		return
@@ -442,6 +444,7 @@ func _build_save_tools() -> void:
 	_code_field.max_length = 40
 	_code_field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_code_field.custom_minimum_size = Vector2(0, 40)
+	MobileSupport.attach_native_text_input(_code_field, "기록 코드")
 	_code_field.add_theme_font_size_override("font_size", 16)
 	_code_field.text_submitted.connect(func(text: String) -> void: apply_save_code(text))
 	row.add_child(_code_field)

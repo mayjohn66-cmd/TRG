@@ -173,7 +173,8 @@ static func body(card: BaseCard, card_size: Vector2, summary_text: String, categ
 	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# Hand uses a larger title area and a short summary, not shrunken detail text.
 	var k: float = card_size.x / (280.0 if detailed else 140.0)
-	var margin: float = (20.0 if detailed else 10.0) * k
+	var touch:=MobileSupport.touch_mode()
+	var margin: float = (20.0 if detailed else (8.0 if touch else 10.0)) * k
 	var width: float = card_size.x - margin * 2.0
 	var title_px: int = roundi((20.0 if detailed else 12.0) * k)
 	var title_h: float = (36.0 if detailed else 30.0) * k
@@ -249,9 +250,9 @@ static func body(card: BaseCard, card_size: Vector2, summary_text: String, categ
 		label(detail, "EffectKind", tag, Rect2(padding * 2 + badge_size.x, padding, width - badge_size.x - padding * 3, badge_size.y), roundi(14 * k))
 	var summary_y: float = maxf((36.0 if detailed else 21.0) * k, padding + badge_size.y + 2.0 * k)
 	var summary_box := Rect2(padding, summary_y, width - padding * 2, detail.size.y - summary_y - padding)
-	var summary_spacing: float = default_line_spacing() if detailed else -roundi(3 * k)
+	var summary_spacing: float = default_line_spacing() if detailed else (0 if touch else -roundi(3*k))
 	# 효과 설명이 칸에 끝까지 들어가도록 글자를 줄인다 (긴 번역도 잘리지 않게)
-	var summary_px: int = fit_px(L10n.t(summary_text), summary_box.size.x, summary_box.size.y, roundi((16.0 if detailed else 11.0) * k), roundi((10.0 if detailed else 7.0) * k), summary_spacing)
+	var summary_px: int = fit_px(L10n.t(summary_text), summary_box.size.x, summary_box.size.y, roundi((16.0 if detailed else (13.0 if touch else 11.0)) * k), roundi((10.0 if detailed else (10.0 if touch else 7.0)) * k), summary_spacing)
 	var summary: Label = label(detail, "CardSummary", summary_text, summary_box, summary_px, INK, false, true)
 	if not detailed:
 		summary.add_theme_constant_override("line_spacing", roundi(summary_spacing))

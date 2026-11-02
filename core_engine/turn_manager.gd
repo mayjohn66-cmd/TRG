@@ -114,6 +114,8 @@ var _draft_rerolls: Dictionary = {}
 var _move_report: MoveReport = null
 ## 이번 이동의 눈금에 들어 있는 템포 업 보너스 (카이지의 한방 역전법 판정에서 뺀다).
 var _move_tempo_bonus: int = 0
+## 🏆 카이지의 한방 역전법: 이번 차례에 말마다 전진한 칸 수 합계 (리벤지 부스터·눈금·템포 업·추가 굴림 모두 더한다). 새 차례마다 비운다.
+var _turn_pawn_steps: Dictionary = {}
 ## AI 대전의 사람 자리: 이 사람들이 모두 졸업하면 남은 컴퓨터는 레이스 진행 순서로 순위를 매기고 판을 바로 끝낸다 (비어 있으면 끝까지 진행, 온라인·4인 수동).
 var end_when_graduated: Array[int] = []
 ## 히든 페이싱 디렉터가 사람으로 보는 자리 (AI 대전의 내 자리). 굴림·드래프트 직전에 state.pacing_humans로 넘긴다.
@@ -771,6 +773,7 @@ func _open_counter_offer(resume: StringName) -> bool:
 			continue
 		var cards: Array[StringName] = counter_cards_for(victim, int(entry["id"]))
 		if cards.is_empty():
+			state.commit_attack(entry)
 			continue
 		_counter_offer = {"victim": victim, "attack": int(entry["id"]), "resume": resume, "cards": cards}
 		phase_time_left = GameEnums.PHASE_TIME_SELECT * timer_scale
@@ -824,6 +827,8 @@ func _play_counter(actor: int, card: BaseCard, params: Dictionary) -> void:
 ## 방어 대기를 닫고 멈췄던 흐름을 잇는다. 바이츠 더 더스트로 되감았다면 공격한 사람의 턴이 바로 끝난다.
 func _finish_counter_offer() -> void:
 	var resume: StringName = _counter_offer.get("resume", &"resolution")
+	if not state.rollback_requested:
+		state.commit_attack(state.get_attack(int(_counter_offer.get("attack",-1))))
 	_counter_offer = {}
 	if state.rollback_requested:
 		state.rollback_requested = false
@@ -1418,6 +1423,7 @@ func _begin_turn(new_turn: bool = true) -> void:
 	_move_report = null
 	if new_turn:
 		state.attack_log.clear()
+		_turn_pawn_steps.clear()
 	_sync_current_player()
 	# 이미 순위가 확정되어 졸업한 플레이어는 턴을 건너뛴다.
 	if state.is_graduated(current_player_id()) and not is_game_over:
@@ -1739,13 +1745,17 @@ func _enter_neutral_npc_phase() -> void:
 
 ## 서바이벌 순위 판정 (VictoryChecker): 승리 조건을 달성한 사람을 다음 순위로 졸업시킨다.
 ## 남은 사람이 1명이면 그 사람이 꼴찌로 확정되고 게임이 끝난다. 게임이 끝났거나 지금 차례인 사람이 졸업해 턴이 넘어갔으면 true (호출한 쪽은 진행을 멈춘다).
-## 카이지의 한방 역전법이 세는 이번 이동 칸 수: 실제로 간 칸 - 리벤지 부스터 칸 - 템포 업 보너스(굴림으로 한 이동만).
-## 이 칸 수 이상 한 번에 움직이면 카이지 폭주 미터를 띄운다 (1.01, 법전에 카이지가 있을 때).
+## 한 차례 누적이 이 칸 수 이상이면 카이지 폭주 미터를 띄운다 (1.01, 법전에 카이지가 있을 때).
 const KAIJI_SHOW_STEPS: int = 8
 
 
+## 카이지의 한방 역전법이 세는 칸 수: 이번 차례에 이 말이 전진한 칸 수의 합계.
+## (2026-11 제보: 리벤지 부스터 +8칸 뒤 주사위 11칸, 한 차례 19칸을 갔는데도 따로 세어 9/16에 머물렀다)
+## 이제는 한 차례 동안 말 하나가 전진한 칸 수를 모두 더한다: 리벤지 부스터 + 눈금 + 템포 업 + 가속·추가 굴림. 이번 이동까지의 합계를 돌려준다.
 func kaiji_steps(report: MoveReport) -> int:
-	return maxi(report.path.size() - report.revenge_bonus - _move_tempo_bonus, 0)
+	var total: int = int(_turn_pawn_steps.get(report.pawn_id, 0)) + report.path.size()
+	_turn_pawn_steps[report.pawn_id] = total
+	return total
 
 
 func _check_victory(report: MoveReport) -> bool:
@@ -1753,11 +1763,11 @@ func _check_victory(report: MoveReport) -> bool:
 		return true
 	var current: int = current_player_id()
 	if report != null:
-		# 🏆 카이지의 한방 역전법: 출발선 리벤지 부스터 칸과 라운드 템포 업 고정 보너스는 빼고 센다
-		# (순수 판정 도구 눈금 + 기물 패시브 + 카드 효과로 크게 움직였을 때만 달성되게)
-		SpecialVictory.note_session(state, current, VictoryLaw.BEST_MOVE, kaiji_steps(report))
-		if kaiji_steps(report) >= KAIJI_SHOW_STEPS and state.rulebook.has_law("LAW_04"):
-			_emit_event(&"law_kaiji_move", {"player_id": current, "pawn_id": report.pawn_id, "steps": kaiji_steps(report),
+		# 🏆 카이지의 한방 역전법: 이번 차례에 이 말이 전진한 칸 수 합계 (부스터·템포 업·추가 굴림 포함)
+		var steps: int = kaiji_steps(report)  # 누적하므로 이동마다 한 번만 부른다
+		SpecialVictory.note_session(state, current, VictoryLaw.BEST_MOVE, steps)
+		if steps >= KAIJI_SHOW_STEPS and state.rulebook.has_law("LAW_04"):
+			_emit_event(&"law_kaiji_move", {"player_id": current, "pawn_id": report.pawn_id, "steps": steps,
 				"goal": SpecialVictory.goal_of(state, "LAW_04"), "path": report.path.duplicate()})  # 1.01 폭주 미터·불꽃 궤적
 	var current_graduated: bool = false
 	# 특수 승리는 차례가 끝날 때(_judge_special_victory) 판정한다. 행동 도중인 여기서는 말 4개 완주만 본다.
@@ -1808,12 +1818,20 @@ func _judge_special_victory(turn_player: int = -1) -> bool:
 
 
 ## 순위가 다 정해졌으면 남은 사람을 마저 매기고 판을 끝낸다 (끝냈으면 true).
+## - 실제 말 4개 완주가 확정되면 AI/관전 자리와 관계없이 즉시 끝낸다.
 ## - 남은 사람이 1명 이하: 그 사람이 꼴찌.
 ## - end_when_graduated(AI 대전의 사람 자리)가 모두 졸업: 남은 컴퓨터는 그 순간의 레이스 진행 순서로 순위를 매기고 바로 끝낸다 (구경만 하는 시간을 없앤다).
 func _end_if_decided() -> bool:
 	if is_game_over:
 		return true
 	var active: Array[int] = state.active_players(player_order)
+	if state.rank_reasons.values().has(VictoryChecker.ALL_HOME):
+		# 남은 사람은 레이스 진행 순서로, 맨 뒤 한 명은 꼴찌로 (라운드 상한 확정과 같은 규칙)
+		var order: Array[int] = VictoryChecker.sort_by_race(state, active)
+		for index: int in order.size():
+			_graduate(order[index], VictoryChecker.LAST_PLACE if index == order.size() - 1 else VictoryChecker.RACE_ORDER)
+		_end_game()
+		return true
 	if active.size() <= 1:
 		for last: int in active:
 			_graduate(last, VictoryChecker.LAST_PLACE)

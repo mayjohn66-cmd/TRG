@@ -30,7 +30,9 @@ func _run() -> void:
 		&"CNT_02":
 			var striker: PlayerPawn = state.get_pawn(int(entry["attacker_pawn"]))
 			if striker != null and striker.has_left_start and not striker.is_finished:
+				state.counter_retaliation = true  # 되갚기 사출은 처치·사출 법전 기록에 넣지 않는다
 				state.send_to_start(striker, sender_id)
+				state.counter_retaliation = false
 		&"CNT_03":
 			reflect(state, entry, sender_id)
 		&"CNT_05":
@@ -66,7 +68,9 @@ static func reflect(game: GameState, entry: Dictionary, reflector: int) -> void:
 		_:
 			var front: PlayerPawn = game.front_pawn_of(attacker)
 			if front != null:
+				game.counter_retaliation = true  # 되갚기 사출은 처치·사출 법전 기록에 넣지 않는다
 				game.send_to_start(front, reflector)
+				game.counter_retaliation = false
 
 
 func _victim_leader(entry: Dictionary) -> PlayerPawn:
