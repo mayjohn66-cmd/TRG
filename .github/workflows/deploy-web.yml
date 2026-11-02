@@ -481,6 +481,14 @@ jobs:
           grep -Eq 'RESULT_COMIC [0-9]+ assertions; 0 failures' /tmp/result_comic.log
           if grep -Eq 'SCRIPT ERROR|SHADER ERROR' /tmp/result_comic.log; then exit 1; fi
 
+      - name: Check the readability pass (event caption, reading time, pacing)
+        if: steps.validation.outputs.scope == 'full'
+        run: |
+          set -euo pipefail
+          godot --headless --audio-driver Dummy --path . -s res://tests/ui_readability_test.gd 2>&1 | tee /tmp/readability.log
+          grep -Eq 'READABILITY [0-9]+ assertions; 0 failures' /tmp/readability.log
+          if grep -Eq 'SCRIPT ERROR|SHADER ERROR' /tmp/readability.log; then exit 1; fi
+
       - name: Run unit tests
         if: steps.validation.outputs.scope == 'full'
         run: godot --headless --path . -s res://tests/run_tests.gd

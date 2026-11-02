@@ -88,16 +88,16 @@ const HAND_FAN_DEGREES: float = 5.0
 const REACTION_SECONDS: float = 6.0
 ## 행동 사이의 호흡(초): 이동이 끝난 뒤 멈춤 / [P2 차례] 알림 길이.
 const DRAFT_OPEN_BEAT: float = 0.45  ## 증강 창이 열리기 전 여운 (0.12 -> 0.3)
-const BEAT_AFTER_MOVE: float = 0.3  ## 이동 뒤 여운 (0.8 -> 0.12 -> 0.3 -> 0.5 -> 2026-10-27 플레이 시간 단축 0.3: 도착 결과를 잠깐 보여 준 뒤 다음 턴·증강 창으로)
+const BEAT_AFTER_MOVE: float = 0.45  ## 2026-11 납득 보강 0.3 -> 0.45. 이동 뒤 여운 (0.8 -> 0.12 -> 0.3 -> 0.5 -> 2026-10-27 플레이 시간 단축 0.3: 도착 결과를 잠깐 보여 준 뒤 다음 턴·증강 창으로)
 ## 차례 배너는 짧게 막는다: 누구 차례인지 보여 준 뒤에야 카드 선언·굴리기가 열린다 (봇도 배너가 끝난 뒤 움직인다).
 const TURN_BANNER_SECONDS: float = 0.85
 ## 터보 AI 턴: AI 차례의 연출 시간 배율 (보통 속도 대비 50% 단축, 2026-10 여운 패치 전에는 65%). 사람 말을 잡거나 특수 승리·법전이 움직인 턴은 보통 속도로 보여 준다.
-const TURBO_PACE_SCALE: float = 0.5  ## 2026-10-26: 0.5(2배속) -> 0.8, 2026-10-27: 평균 플레이 10분 목표로 다시 0.5 (라운드당 -27%, 6.99)
+const TURBO_PACE_SCALE: float = 0.75  ## 2026-11 납득 보강: 0.5 -> 0.75 ("뭘 본 거지?" 제보). 이전: 2026-10-26: 0.5(2배속) -> 0.8, 2026-10-27: 평균 플레이 10분 목표로 다시 0.5 (라운드당 -27%, 6.99)
 ## AI 차례 배너는 더 짧게 (사람 차례 배너는 그대로).
 const TURBO_TURN_BANNER_SECONDS: float = 0.45
 ## 연출 여운: 화면에 무언가를 보여 준 연출 단계(움직임·컷인·배너·여운이 있던 단계)가 끝난 뒤 다음 단계로 넘어가기 전에 결과를 보여 주는 시간(초).
 ## 기록 줄처럼 그 자리에서 끝나는 단계에는 붙지 않는다. AI 터보 턴에는 절반.
-const STEP_LINGER_SECONDS: float = 0.35  ## 2026-10-26: 0.35 -> 0.55, 2026-10-27: 플레이 시간 단축으로 다시 0.35 (연출 단계 사이 인터벌)
+const STEP_LINGER_SECONDS: float = 0.5  ## 2026-11 납득 보강 0.35 -> 0.5. 2026-10-26: 0.35 -> 0.55, 2026-10-27: 플레이 시간 단축으로 다시 0.35 (연출 단계 사이 인터벌)
 ## 이보다 오래 걸린 단계를 '보여 준 단계'로 본다 (밀리초).
 const STEP_LINGER_MIN_MSEC: int = 60
 ## 처치 확정 대기의 최대 시간(초): 방어 결정이 이보다 오래 걸리면(연결 끊김 등) 연출을 계속한다.
@@ -316,6 +316,12 @@ var _npc_views: Dictionary = {}
 var _flash_law_ids: Dictionary = {}
 
 var _toast_label: Label = null
+## 사건 자막 (2026-11 납득 보강): 연출이 지나가도 최근 사건 두 줄을 위쪽 가운데에 크게 남긴다.
+var _caption: EventCaption = null
+## 중요한 사건 줄이 나온 뒤 다음 연출 전에 읽을 틈(초, 배율 전).
+const IMPORTANT_BEAT_SECONDS: float = 0.45
+## 사건 자막에서 강조(금테 + 읽을 틈)하는 사건의 낱말.
+const IMPORTANT_WORDS: Array[String] = ["처치", "사출", "밟음", "방어", "발동", "사용!", "필살기", "법전", "확정", "포위망", "결투", "과열", "되감", "게임 종료", "연대책임"]
 var _phase_label: Label = null
 var _queue_label: Label = null
 var _pick_banner: Label = null
@@ -1161,6 +1167,8 @@ func _new_game() -> void:
 		_action_log.clear_entries()
 	_divider_round = 0
 	_toast_label.text = ""
+	if _caption != null:
+		_caption.clear()
 	_dock_player = -1
 	_announced_round = 0
 	_announced_turn_key = ""
@@ -1421,6 +1429,8 @@ func _bind_state() -> void:
 						_profile_react(trapped_owner, false)))
 		_log_line("[설치물] %d번 타일 %s 발동! (%s)" % [tile, _attachment_name(id), _pawn_name(pawn_id)], Color("ff6b6b"))
 		if trapped != null:
+			if _is_human_seat(trapped.owner_id):
+				_mark_spotlight()  # 사람 말이 함정을 밟은 턴은 보통 속도
 			_record(trapped.owner_id, "%s 밟음! (%d번 타일, %s)" % [_bq(_attachment_name(id)), tile, _bq("%d번 말" % trapped.slot)])
 		if id != "TRP_05":  # 도미노는 [도미노 연쇄!] 알림(domino_collapsed)이 먼저 나왔다: 같은 알림을 연쇄 뒤에 또 띄우지 않는다
 			_announce_gate("함정 발동", "함정 발동!", "", Color("ff6b6b"), _make_card_preview(StringName(id)) if CardRegistry.DECK_COMPOSITION.has(StringName(id)) else null, 1.1, {"key": "trap", "sub": _pawn_name(pawn_id)}))
@@ -1644,6 +1654,10 @@ func _build_toast_label() -> void:
 	_toast_label = _make_label("", MobileSupport.text_px(11), Color("ffe8a3"))
 	_toast_label.visible = false
 	add_child(_toast_label)
+	_caption = EventCaption.new()
+	_caption.position = Vector2((1366.0 - EventCaption.WIDTH) * 0.5, 6.0)
+	_caption.z_index = 40
+	add_child(_caption)
 
 
 ## 화면 네 모서리의 미니멀 프로필 카드: 좌측 84x84 아바타 액자, 우측 상단 닉네임(+카드 수), 우측 하단 2x2 기물 상태 슬롯.
@@ -7446,7 +7460,7 @@ func _on_passive_triggered(pawn_id: int, passive: StringName) -> void:
 	enqueue_step(_play_callout.bind(pawn_id, passive), pawn_id)
 
 
-const CALLOUT_SECONDS: float = 0.8
+const CALLOUT_SECONDS: float = 1.3  ## 2026-11 납득 보강: 0.8 -> 1.3 (원인 문구를 읽을 시간)
 
 
 ## 원인 뱃지: 말 머리 위에 [기물 글자 칩 + 원인 문구]를 0.8초 크게 띄운다. 말의 자식이라 말이 움직여도 따라간다.
@@ -10557,10 +10571,20 @@ func _announce_now(tag: String, headline: String, body: String, color: Color, ex
 			extra.free()
 		return -1  # 연출 큐에서 차례가 늦게 돌아왔다: 이미 굴렸거나 다음 단계로 넘어갔으면 차례 배너는 띄우지 않는다
 	_announcer.instant = instant_roll_for_test
-	var serial: int = _announcer.announce(tag, headline, body, color, extra, duration * _pace(), blocking, stamp)
+	var hold: float = duration * _pace()
+	if tag != "턴" and pacing_enabled and not instant_roll_for_test:
+		hold = maxf(hold, announce_reading_seconds(headline, body, stamp))  # 2026-11 납득 보강: 적어도 읽을 시간만큼은 띄운다
+	var serial: int = _announcer.announce(tag, headline, body, color, extra, hold, blocking, stamp)
 	if _announcer.active:
 		_refresh_controls()
 	return serial
+
+
+## 알림을 읽는 데 필요한 최소 시간(초): 큰 글(또는 도장 한 마디 + 부제) + 본문. 상한 ANNOUNCE_READ_MAX.
+const ANNOUNCE_READ_MAX: float = 2.6
+static func announce_reading_seconds(headline: String, body: String, stamp: Dictionary = {}) -> float:
+	var text: String = headline + " " + body + " " + str(stamp.get("sub", ""))
+	return minf(EventCaption.reading_seconds(text), ANNOUNCE_READ_MAX)
 
 
 ## 알림 카드가 끝난 직후 말 움직임 연출이 이어지도록 이 카드를 [문]으로 등록한다 (카드가 보드를 가리는 동안에는 말이 먼저 움직이지 않는다).
@@ -11112,6 +11136,26 @@ func _bq(text: String) -> String:
 
 
 ## 🟦 컴퓨터 2 (플레이어 색).
+## 사건 자막에 올릴 줄인가: 매 차례 나오는 굴림 결과는 자막에서 뺀다 (로그에는 남는다).
+static func caption_worthy(text: String) -> bool:
+	return not text.contains("굴림 →")
+
+
+## 강조할 중요한 사건인가 (처치·사출·함정 밟음·방어·카드 발동·필살기·법전·순위 등).
+static func is_important_record(text: String) -> bool:
+	for word: String in IMPORTANT_WORDS:
+		if text.contains(word):
+			return true
+	return false
+
+
+## 지금 사람이 앉은 자리인가 (싱글의 컴퓨터·온라인의 봇 자리가 아님).
+func _is_human_seat(player_id: int) -> bool:
+	if net != null:
+		return not net.is_bot(player_id)
+	return not (ai_mode and _bot != null and _bot.is_bot(player_id))
+
+
 func _log_who(player_id: int) -> String:
 	if not PLAYER_COLORS.has(player_id):
 		return "[color=#ced4da]중립[/color]"
@@ -11138,12 +11182,27 @@ func _record(player_id: int, text: String, tag: String = "", late: bool = false,
 	var line: String = "%s %s : %s" % [round_tag, _log_who(player_id), text] if player_id >= 1 else "%s %s" % [round_tag, text]
 	var log_panel: ActionLogPanel = _action_log
 	var round_number: int = state.round_number
+	var caption_line: String = "%s  %s" % [_log_who(player_id), text] if player_id >= 1 else text
+	var shown: bool = caption_worthy(text)
+	var important: bool = shown and is_important_record(text)
+	var caption: EventCaption = _caption
 	var add: Callable = func() -> void:
 		if is_instance_valid(log_panel):
 			_log_round_divider(round_number)  # 그 라운드의 첫 줄보다 구분선이 먼저 (증강 공개는 라운드 알림보다 늦게 적힌다)
 			log_panel.add_entry(line)
+		if shown and is_instance_valid(caption):
+			caption.push(caption_line, important)
 	if not _fx_on() or now:
 		add.call()
+	elif important and pacing_enabled:
+		# 중요한 사건: 자막을 띄운 뒤 다음 연출 전에 읽을 틈을 둔다 ("방금 뭐였지?" 방지)
+		var read_then: Callable = func() -> void:
+			add.call()
+			await get_tree().create_timer(IMPORTANT_BEAT_SECONDS * minf(_pace(), 1.7)).timeout
+		if late:
+			_enqueue_late(read_then)
+		else:
+			enqueue_step(read_then)
 	elif late:
 		_enqueue_late(add)
 	else:
@@ -11175,6 +11234,8 @@ func _record_card(data: Dictionary) -> void:
 	var detail: String = ""
 	if params.has("target_player"):
 		detail = " → %s" % _log_who(int(params["target_player"]))
+		if _is_human_seat(int(params["target_player"])):
+			_mark_spotlight()  # AI가 사람을 겨눈 카드: 그 턴은 보통 속도로 보여 준다
 	elif params.has("tile"):
 		detail = " (%d번 타일)" % int(params["tile"])
 	_record(player_id, "%s 사용!%s" % [_bq(card.display_name), detail])
