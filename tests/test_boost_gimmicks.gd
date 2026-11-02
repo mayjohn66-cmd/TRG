@@ -263,3 +263,14 @@ func test_revenge_boost_announces_base_bonus_and_total_once_on_the_first_step() 
 	check(not pawn.revenge_boost, "부스터는 출발과 함께 사라진다")
 	MoveExecutor.forced_advance(state, pawn, 2)
 	check_eq(fired.size(), 1, "이미 출발한 말의 다음 이동에서는 발동하지 않는다")
+
+
+## 제보(2026-11-02): 리벤지 부스터 이동이 우다다다 달렸다. 부스터 칸까지 걷는 칸으로 세어 장거리(10칸↑) 빨리 감기가 걸렸다.
+## 부스터 칸은 로켓 한 번이라 빼고, 눈금 칸만으로 칸당 시간을 정한다.
+func test_revenge_boost_tiles_do_not_speed_up_the_dice_walk() -> void:
+	var delay: float = 0.3
+	var boosted: float = TurnManager.step_seconds_for(delay, 4 + 7, 4)
+	var plain: float = TurnManager.step_seconds_for(delay, 7)
+	check_eq(boosted, plain, "부스터 4칸 + 눈금 7칸 = 눈금 7칸만 걸을 때와 같은 칸당 시간")
+	check(boosted > TurnManager.LONG_MOVE_STEP_SECONDS, "장거리 빨리 감기(%.2f초)가 걸리지 않는다 (%.3f초)" % [TurnManager.LONG_MOVE_STEP_SECONDS, boosted])
+	check(TurnManager.step_seconds_for(delay, 12) <= TurnManager.LONG_MOVE_STEP_SECONDS, "부스터 없는 12칸 이동은 그대로 빨리 감기")

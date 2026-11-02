@@ -42,7 +42,9 @@ const MOVE_STEP_SECONDS: float = 0.28
 ## 굴림 결과 칸수 배지가 뜬 뒤 말이 출발하기까지의 틈 (예전 0.3초 x 연출 속도 1.7 + 잠금 0.5초 -> 0.12초, 배지는 이동과 함께 떠 있다).
 const ROLL_SUMMARY_LEAD: float = 0.4  ## 2026-10 여운 패치: 0.12 -> 0.25 ("N칸 전진!"을 읽을 틈)
 ## 리벤지 부스터 배너가 뜬 뒤 말이 날아가기까지의 틈.
-const REVENGE_LAUNCH_LEAD: float = 0.15
+const REVENGE_LAUNCH_LEAD: float = 0.4
+## 리벤지 부스터 착지 뒤 눈금 이동 전에 쉬는 시간(초): [눈금 N칸] 배지를 읽고 나서 걷기 시작한다.
+const REVENGE_REST: float = 0.6
 ## 카드·함정·필살기 발동 카드(뒤이어 효과가 이어지는 [문] 알림)의 최대 길이(초, 연출 속도 배율 전).
 const GATE_MAX_SECONDS: float = 1.1  ## 2026-10 여운 패치: 0.8 -> 1.1
 ## 한 칸 점프: 걸리는 시간(초)과 솟구치는 높이(px). 도착 직후 납작하게 찌그러졌다가 탱글하게 돌아온다.
@@ -3211,7 +3213,7 @@ func _on_revenge_boost_fired(pawn_id: int, base_steps: int, bonus: int, total: i
 	enqueue_step(_play_revenge_launch.bind(pawn_id, base_steps, bonus, total), pawn_id)
 
 
-## 큐의 한 단계: [리벤지 부스터 발동! 수식] 배너를 띄우고(발사음·화염 링) 0.15초 뒤 바로 출발한다.
+## 큐의 한 단계: [리벤지 부스터 발동! 수식] 배너를 띄우고(발사음·화염 링) 0.4초 뒤 출발한다 (부스터 > 쉬고 > 전진의 첫 박자).
 ## 배너는 혼자 떠 있다 사라진다 (예전: 기본 눈금 0.25초 + 수식 0.45초를 연출 속도 1.7배로 붙잡아 약 1.2초 멈췄다).
 func _play_revenge_launch(pawn_id: int, base_steps: int, bonus: int, total: int) -> void:
 	Sfx.play(&"rocket")
@@ -3323,14 +3325,14 @@ func _play_rocket(pawn_id: int, to_pos: Vector2, to_scale: float, tile: int) -> 
 	screen_shake(7.0, 0.22)
 	_impact_ring(view.position, Color("ff6b00"), 50.0)
 	_floating_badge(view.position + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + Vector2(0, -42), "리벤지 부스터 +%d" % _revenge_steps(state.get_pawn(pawn_id) if state != null else null), Color("ff922b"), 34)
-	# 1단계(부스터)와 2단계(눈금 이동) 사이의 짧은 호흡: 경유지라 아직 판정하지 않는다
+	# 1단계(부스터) > 쉬고 > 2단계(눈금 이동): 착지하자마자 [눈금 N칸]을 띄우고 REVENGE_REST초 쉰 뒤 한 칸씩 걷는다. 경유지라 아직 판정하지 않는다
 	var dice_part: int = int(_rocket_followup.get(pawn_id, 0))
 	_rocket_followup.erase(pawn_id)
-	await get_tree().create_timer(WAYPOINT_PAUSE).timeout
-	if dice_part > 0 and is_instance_valid(view):
+	if dice_part > 0:
 		var bonus_notes: Array = _move_bonus_notes.get(pawn_id, [])
 		_move_bonus_notes.erase(pawn_id)
-		_floating_badge(view.position + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + Vector2(0, -42), ("눈금 %d칸" % dice_part) + (" (%s)" % " · ".join(PackedStringArray(bonus_notes)) if not bonus_notes.is_empty() else ""), Color("f8f9fa"), 30)
+		_floating_badge(view.position + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + Vector2(0, -78), ("눈금 %d칸" % dice_part) + (" (%s)" % " · ".join(PackedStringArray(bonus_notes)) if not bonus_notes.is_empty() else ""), Color("f8f9fa"), 30)
+	await get_tree().create_timer(REVENGE_REST if dice_part > 0 else WAYPOINT_PAUSE).timeout
 
 
 ## 이동 반대쪽으로 말려 올라오는 실제 화염 그림. 짧게 흐려지고 풀로 돌아간다.

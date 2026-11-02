@@ -2,7 +2,9 @@
 class_name RollHistory
 extends PanelContainer
 
-const TRACKED: Array[StringName] = [&"YUT",&"REVOLVER",&"LIFE_ROULETTE",&"DICE_HWATU",&"DICE_MAHJONG",&"DICE_TAROT",&"DICE_YACHT",&"DICE_BLACKJACK"]
+const TRACKED: Array[StringName] = [&"YUT",&"REVOLVER",&"LIFE_ROULETTE",&"DICE_MAHJONG",&"DICE_TAROT",&"DICE_YACHT",&"DICE_BLACKJACK"]
+## 한 번 뒤집고 끝나는 도구 (한 번 더가 없다): "1회 굴림" 기록판이 다시 굴리는 것처럼 보여 띄우지 않는다.
+const SINGLE_SHOT: Array[StringName] = [&"DICE_HWATU"]
 const WIDTH := 194.0
 const MAX_VISIBLE := 6
 const GOOD := Color("326d42")
@@ -113,6 +115,7 @@ func arm(turn: int, player: int, tool: StringName) -> void:
 
 func reveal(turn: int, player: int, result: Dictionary) -> void:
 	if turn!=turn_id or player!=player_id or result.get("tool_id",&"")!=tool_id: return
+	if SINGLE_SHOT.has(tool_id): return  # 한 번에 끝나는 도구는 연속 굴림 기록판을 띄우지 않는다 (결과는 굴림 연출이 보여 준다)
 	if not TRACKED.has(tool_id) and entries.is_empty() and not bool(result.get("reroll",false)) and not bool(result.get("ends_turn",false)) and not bool(result.get("can_continue",false)): return
 	var details: Dictionary = result.get("details",{})
 	var confirm := bool(details.get("voluntary",false))

@@ -162,6 +162,15 @@ func run() -> void:
 	count = history.entries.size()
 	await show_result(yacht.roll(rng))
 	check(history.entries.size()==count,"automatic Yacht confirmation is not another roll")
+	# 화투 패는 한 번에 끝나는 도구: "1회 굴림" 기록판이 다시 굴리는 것처럼 보이면 안 된다 (망통 턴 종료 포함).
+	board._reset_presentation()
+	history.arm(board._roll_turn_serial,1,&"DICE_HWATU")
+	var hwatu_hand := RollResult.make(&"DICE_HWATU",4,{"cards":[0,32],"hand":&"kkut","label":"9끗"})
+	history.reveal(board._roll_turn_serial,1,hwatu_hand.to_dict())
+	var mangtong := RollResult.make(&"DICE_HWATU",0,{"cards":[4,28],"hand":&"mangtong","label":"망통"})
+	mangtong.ends_turn = true
+	history.reveal(board._roll_turn_serial,1,mangtong.to_dict())
+	check(history.entries.is_empty() and not history.visible,"Hwatu single draw shows no roll-count history")
 	board._reset_presentation()
 	history.arm(board._roll_turn_serial,1,&"LIFE_ROULETTE")
 	var seven := RollResult.make(&"LIFE_ROULETTE",7,{"face":7})
