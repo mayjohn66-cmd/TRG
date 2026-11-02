@@ -2792,7 +2792,7 @@ func _refresh_pawns() -> void:
 		elif not npc_view.has_meta("fx") or not _fx_node_running(npc_view):
 			npc_view.position = npc_target
 	for npc_id: int in _npc_views.keys():
-		if state.get_npc(npc_id) == null:
+		if state.get_npc(npc_id) == null and not (_npc_views[npc_id] as Node).has_meta("npc_run"):  # 달리는 중이면 달리기가 끝난 뒤에 치운다
 			(_npc_views[npc_id] as Node).queue_free()
 			_npc_views.erase(npc_id)
 
@@ -3784,11 +3784,15 @@ func _play_npc_run(display_id: StringName, behavior: int, from_tile: int, path: 
 	if not _fx_on() or path.is_empty():
 		after.call()
 		return
-	var hidden: Node2D = _npc_views.get(npc_id)
-	if hidden != null:
-		hidden.visible = false
-		hidden.set_meta("npc_run", true)
+	# 제보(2026-11-02): 중립 기물이 움직이기 전에 깜빡였다. 달리기 표시(npc_run)만 먼저 걸어 새로고침이 기물을 옮기지 못하게 하고,
+	# 그림은 [중립 기물 출동!] 알림이 도는 동안 제자리에 그대로 둔다. 달리는 그림이 생기는 바로 그 순간에 맞바꾼다 (알림 동안 사라졌다 다시 나타나지 않게).
+	var waiting: Node2D = _npc_views.get(npc_id)
+	if waiting != null:
+		waiting.set_meta("npc_run", true)
 	enqueue_step(func() -> void:
+		var hidden: Node2D = _npc_views.get(npc_id)
+		if hidden != null and is_instance_valid(hidden):
+			hidden.visible = false
 		var token := PawnToken.new()
 		token.configure_npc(behavior)
 		var runner: Node2D = token
@@ -3819,7 +3823,11 @@ func _play_npc_run(display_id: StringName, behavior: int, from_tile: int, path: 
 			if still != null:
 				real.position = _tile_center(still.current_tile_idx)
 				real.scale = Vector2.ONE * _depth_scale(tile_norm(still.current_tile_idx).y)
-			real.visible = true
+				real.visible = true
+			else:
+				# 말을 잡고 사라진 기물: 달리는 동안 그림을 남겨 두었다가 다 달린 뒤에 치운다
+				real.queue_free()
+				_npc_views.erase(npc_id)
 		after.call())
 
 
