@@ -2835,7 +2835,7 @@ func _test_presentation_queue() -> void:
 		await process_frame
 	_expect(not saw_drop, "홈런 뒤 낙하·착지 연출이 없다")
 	_expect(victim_view.position.distance_to(_board._pawn_position(victim)) < 4.0, "홈런이 끝나면 말은 출발선 자리에 있다")
-	# 9) 최종 순위 발표: 줄이 처음엔 숨어 있다가 꼴찌부터 차례로 나타나고, 1등이 마지막이다
+	# 9) 최종 순위 발표
 	for pawn_done: PlayerPawn in state.pawns_of(2):
 		pawn_done.is_finished = true
 	state.winner = 2
@@ -2858,19 +2858,20 @@ func _test_presentation_queue() -> void:
 		var first_block: Control = podium.get_child(1).find_child("Block", true, false)
 		var fourth_block: Control = podium.get_child(3).find_child("Block", true, false)
 		_expect(first_block.custom_minimum_size.y > fourth_block.custom_minimum_size.y, "1위 단상이 가장 높다")
-	var reveal_order: Array[int] = []
+	# 1.01: 연출이 켜져 있으면 먼저 1~4위 만화 컷(1쪽), [Next Page]로 이 순위표(2쪽)를 펼친다 (자세한 검사는 ui_result_comic_test)
+	var comic: ResultComicPage = _board._result_overlay.find_child("ResultComicPage", true, false) as ResultComicPage
+	_expect(comic != null and not (ranking as Control).is_visible_in_tree(), "순위표보다 만화 컷이 먼저")
 	guard = 0
-	while reveal_order.size() < ranking.get_child_count() and guard < 900:
+	while comic != null and (not comic.visible or comic.active) and guard < 900:
 		guard += 1
-		for row: Node in ranking.get_children():
-			var rank_no: int = int(row.get_meta("rank"))
-			if (row as Control).modulate.a > 0.5 and not reveal_order.has(rank_no):
-				reveal_order.append(rank_no)
 		await process_frame
-	var expected_order: Array[int] = []
-	for rank_no: int in range(ranking.get_child_count(), 0, -1):
-		expected_order.append(rank_no)
-	_expect(reveal_order == expected_order, "꼴찌부터 1등까지 차례로 공개된다 (%s)" % str(reveal_order))
+	if comic != null:
+		comic.next_button.pressed.emit()
+	await create_timer(_board.RESULT_PAGE_IN + 0.2).timeout
+	var all_shown: bool = (ranking as Control).is_visible_in_tree()
+	for row: Node in ranking.get_children():
+		all_shown = all_shown and (row as Control).modulate.a > 0.99
+	_expect(all_shown, "[Next Page] 뒤 순위표의 모든 줄이 보인다")
 	_board._close_result_overlay()
 	for pawn_done: PlayerPawn in state.pawns_of(2):
 		pawn_done.is_finished = false

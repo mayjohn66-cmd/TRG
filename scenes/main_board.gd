@@ -9619,7 +9619,97 @@ func _show_result_overlay() -> void:
 	review.custom_minimum_size = Vector2(0, 50)
 	box.add_child(review)
 	add_child(_result_overlay)
+	if _fx_on():
+		# 1.01: 먼저 1~4위 만화 컷(1쪽)을 보여 주고, [Next Page]로 이 상세 결과표(2쪽)를 넘겨 펼친다
+		center.visible = false
+		var comic: ResultComicPage = _build_result_comic(standings, winner_id)
+		_result_overlay.add_child(comic)
+		_play_result_comic(comic, center, rows, announcer)
+		return
 	_reveal_ranking(rows, announcer)
+
+
+## 결과 1쪽의 승리 이름과 (승리 조건): 법전 = 법전 이름 (달성 사유), 완주 = 완주 피니시 (말 4개 모두 완주), 그 밖 = 짧은 사유.
+func result_comic_texts(winner_id: int) -> Array[String]:
+	var reason: StringName = state.rank_reasons.get(winner_id, _last_reason)
+	if LawRegistry.ALL_IDS.has(String(reason)):
+		var law: LawResource = LawRegistry.create(String(reason))
+		var detail: Dictionary = _law_win_detail.get(winner_id, {})
+		var why: String = law_win_reason(String(reason), int(detail.get("value", 0))) if str(detail.get("law", "")) == String(reason) else ""
+		return [law.law_name if law != null else String(reason), why if why != "" else "특수 승리"]
+	if reason == VictoryChecker.ALL_HOME:
+		return ["완주 피니시", "말 4개 모두 완주"]
+	if reason == VictoryChecker.RACE_ORDER:
+		return ["레이스 1위", "진행 순위로 확정"]
+	return [VictoryChecker.short_reason(reason), ""]
+
+
+func _build_result_comic(standings: Array[Dictionary], winner_id: int) -> ResultComicPage:
+	var entries: Array[Dictionary] = []
+	for entry: Dictionary in standings:
+		var player_id: int = int(entry["player"])
+		var avatar := AvatarSlot.new()
+		avatar.icon_border = false
+		avatar.static_only = true
+		avatar.setup(player_id, PLAYER_COLORS.get(player_id, Color.WHITE), Vector2(96, 96))
+		avatar.set_character(_avatar_for(player_id))
+		avatar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var first: bool = entries.is_empty()
+		entries.append({"rank": int(entry["rank"]), "name": _player_name(player_id), "color": PLAYER_COLORS.get(player_id, Color("ffd43b")),
+			"avatar": avatar, "art": AvatarCombatArt.texture(_avatar_for(player_id), &"attack") if first else null})
+	var texts: Array[String] = result_comic_texts(winner_id)
+	var comic := ResultComicPage.new()
+	comic.setup(entries, texts[0], texts[1])
+	comic.visible = false  # 마지막 이동·처치 연출이 끝난 뒤에 등장한다
+	return comic
+
+
+## 결과 1쪽 등장: 사선 분할선 → 1위 칸 → Result·2nd·3rd·4th 탁!탁!탁! → 1st 도장 쾅 (화면 흔들림 0.15초).
+func _play_result_comic(comic: ResultComicPage, detail: Control, rows: Array[Control], announcer: Label) -> void:
+	var overlay: Control = _result_overlay
+	var frames: int = 0
+	while _presentation_active() and frames < 600:
+		frames += 1
+		await get_tree().process_frame
+	if overlay != _result_overlay or not is_instance_valid(comic):
+		return
+	comic.panel_landed.connect(func(index: int) -> void:
+		Sfx.play(&"card_impact", -4.0 - float(index)))
+	comic.impact.connect(func() -> void:
+		screen_shake(10.0, 0.15)
+		Sfx.play_stinger(&"win"))
+	comic.next_pressed.connect(_turn_result_page.bind(comic, detail, rows, announcer), CONNECT_ONE_SHOT)
+	comic.play(minf(_motion_pace(), 1.5))
+
+
+## [Next Page]: 만화 컷이 왼쪽으로 넘어가며(살짝 작아지고 어두워짐) 사라지고, 상세 결과표가 오른쪽에서 다음 장처럼 치고 들어온다.
+const RESULT_PAGE_OUT: float = 0.28
+const RESULT_PAGE_IN: float = 0.38
+func _turn_result_page(comic: ResultComicPage, detail: Control, rows: Array[Control], announcer: Label) -> void:
+	if not is_instance_valid(comic) or not is_instance_valid(detail):
+		return
+	var view: Vector2 = comic.size
+	comic.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	comic.next_button.disabled = true
+	for row: Control in rows:
+		if is_instance_valid(row):
+			row.modulate.a = 1.0
+	announcer.text = "★ 최종 순위 ★"
+	detail.visible = true
+	detail.pivot_offset = Vector2(0.0, view.y * 0.5)  # 왼쪽 가장자리를 축으로 펼쳐진다
+	detail.position.x = view.x
+	detail.rotation = 0.05
+	comic.pivot_offset = view * 0.5
+	Sfx.play(&"dash", -4.0)
+	var tween: Tween = create_tween().set_parallel(true)
+	tween.tween_property(comic, "position:x", -view.x * 0.45, RESULT_PAGE_OUT).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	tween.tween_property(comic, "scale", Vector2(0.9, 0.9), RESULT_PAGE_OUT).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	tween.tween_property(comic, "modulate", Color(0.3, 0.3, 0.3, 0.0), RESULT_PAGE_OUT).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tween.tween_property(detail, "position:x", 0.0, RESULT_PAGE_IN).set_delay(0.06).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(detail, "rotation", 0.0, RESULT_PAGE_IN).set_delay(0.06).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.chain().tween_callback(func() -> void:
+		if is_instance_valid(comic):
+			comic.queue_free())
 
 
 ## 결과 화면 [내 기록 복사하기]의 글 (지금 언어): 1줄 게임·난이도·순위·라운드·졸업 방식, 2줄 판정 도구·기물 4개.
