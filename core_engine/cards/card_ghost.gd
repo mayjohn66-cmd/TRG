@@ -16,6 +16,11 @@ func needs_tile() -> bool:
 	return true
 
 
+## 중립 기물이 이미 판 위에 있으면 낼 수 없다 (손패에서도 흐리게 보이고 이유가 뜬다).
+func could_play(state: GameState, _player_id: int) -> bool:
+	return SweepCommand.can_summon(state)
+
+
 ## params: {"tile": 상단 코너(반환점)}
 func can_play(state: GameState, _player_id: int, params: Dictionary) -> bool:
 	return SweepCommand.can_summon(state) and SweepCommand.spawn_tiles().has(int(params.get("tile", -1)))
