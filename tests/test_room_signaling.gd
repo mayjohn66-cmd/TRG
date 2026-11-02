@@ -41,6 +41,15 @@ func test_normalize_and_validate_user_input() -> void:
 		check(not RoomCode.is_valid(bad), "잘못된 코드 거부: '%s'" % bad)
 
 
+func test_invite_link_carries_the_room_code_and_is_taken_once() -> void:
+	check(RoomCode.invite_url("7K9M2").ends_with("?room=7K9M2"), "초대 링크는 ?room=코드로 끝난다")
+	RoomCode.pending_invite = "7K9M2"
+	check_eq(RoomCode.take_invite(), "7K9M2", "초대 코드를 꺼낸다")
+	check_eq(RoomCode.take_invite(), "", "한 번 꺼내면 비운다 (다시 로비에 가도 또 입장하지 않음)")
+	RoomCode.capture_invite_from_url()
+	check_eq(RoomCode.pending_invite, "", "웹이 아니면 주소를 읽지 않는다")
+
+
 func test_signaling_normalizes_room_code_so_host_and_guest_share_topics() -> void:
 	MemoryBroker.reset_all()
 	var broker := MemoryBroker.new()

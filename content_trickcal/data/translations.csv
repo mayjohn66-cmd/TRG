@@ -2446,3 +2446,8 @@ BUST!,BUST!,BUST！
 [내 차례 시작에 사용] 특수 승리 기록 1개를 0으로 초기화 (공격에 반응하는 방어 카드는 아님),[Use at the start of your turn] Reset 1 Special Victory progress counter to 0 (not a defense card).,[自分のターン開始時に使用] 特殊勝利の記録1つを0に初期化する (防御カードではない)
 필살기 사용 가능!,Skill ready!,必殺技使用可能！
 %s!,%s!,%s！
+초대 링크의 방 %s에 입장합니다...,Joining room %s from the invite link...,招待リンクのルーム%sに入室します...
+초대 링크 복사,Copy invite link,招待リンクをコピー
+초대 링크를 복사했습니다. 친구에게 보내면 누르기만 해도 이 방에 들어옵니다.,Invite link copied. Friends who open it join this room right away.,招待リンクをコピーしました。友達が開くだけでこのルームに入れます。
+[다시 연결] %s 님이 돌아와 직접 둡니다.,[Reconnected] %s is back and playing again.,[再接続] %sさんが戻って自分で指します。
+%s (자동),%s (auto),%s (自動)

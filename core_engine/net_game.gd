@@ -8,6 +8,8 @@ extends Node
 signal started(seed_value: int, players: Array, bots: Array)
 ## 사람 한 명이 나가 봇이 이어받는다 (방장이 정한 뒤 모두에게 알려진다).
 signal seat_taken_over(seat: int)
+## 컴퓨터가 대신 두던 자리를 사람에게 돌려줬다.
+signal seat_restored(seat: int)
 ## 방장 판과 내 판이 어긋났다 (상태 지문 불일치 / 순서 이상).
 signal desynced(detail: String)
 ## 방장과의 연결이 끊겼다.
@@ -19,12 +21,16 @@ signal peer_silent(seat: int, silent: bool)
 signal emote_received(seat: int, emotion: int)
 
 const ACTION_TAKEOVER: StringName = &"__takeover"
+## 컴퓨터가 대신 두던 사람 자리를 그 사람에게 돌려준다 (늦게 준비를 마쳤거나 다시 소식이 들린 사람).
+const ACTION_RESTORE: StringName = &"__restore"
 ## 감정 표현 번호 범위(EmoteCatalog.EMOTES의 순번 0~7)와, 같은 좌석의 최소 간격(초)을 방장이 지킨다.
 const EMOTE_MIN: int = 0
 const EMOTE_MAX: int = 7
 const EMOTE_COOLDOWN_MSEC: int = 600
 ## 모두가 준비되기를 기다리는 최대 시간(초). 넘으면 준비 안 된 사람은 봇으로 넘긴다.
-const READY_TIMEOUT: float = 15.0
+## 2026-11 제보: 폰은 보드 화면을 불러오는 데 15초가 넘게 걸려, 시작하자마자 컴퓨터로 넘겨져 증강 선택 창도 못 보고(컴퓨터가 대신 고름)
+## 이름도 '컴퓨터 2'로 바뀌었다. 기다리는 시간을 늘리고, 늦게 들어온 사람에게는 자리를 돌려준다 (ACTION_RESTORE).
+const READY_TIMEOUT: float = 45.0
 ## 제한 시간(자동 굴리기·자동 선택 등)을 사람 속도에 맞게 늘리는 배율.
 const TIMER_SCALE: float = 3.0
 ## 살아 있다는 신호(핑)를 보내는 간격 / 이만큼(초) 소식이 없으면 멈춘 것으로 본다.
@@ -54,6 +60,10 @@ var _applying_rejection: Array = []
 var _launched: bool = false
 var _ping_left: float = 0.0
 var _heard: Dictionary = {}    # 좌석 -> 마지막으로 소식을 들은 시각(ms)
+## 방에 사람으로 앉아 있던 자리 (나중에 컴퓨터로 넘겨져도 그 사람의 자리로 기억한다: 이름 표시·자리 돌려주기).
+var lobby_humans: Array[int] = []
+## 돌려주기를 이미 요청한 자리 (핑마다 다시 요청하지 않게). 적용되면 지운다.
+var _restore_requested: Dictionary = {}
 var _silent: Dictionary = {}   # 좌석 -> 지금 멈춘 것으로 표시 중인가
 var _last_emote_msec: Dictionary = {}  # 좌석 -> 마지막 감정 표현 시각(ms)
 
@@ -69,6 +79,7 @@ func setup(target: TurnManager, host: bool, seat: int, seats: Array[int], bot_se
 	for player_id: int in players:
 		if not bots.has(player_id):
 			humans.append(player_id)
+	lobby_humans.assign(humans)
 	names = seat_names.duplicate()
 	seed_value = seed_for_game
 	manager.lockstep = true
@@ -90,9 +101,17 @@ func is_bot(seat: int) -> bool:
 
 
 func display_name(seat: int) -> String:
+	# 사람 자리를 컴퓨터가 대신 두는 중이면 이름은 그대로 두고 (자동)을 붙인다: 로그·결과·스냅샷의 이름이 한 사람 안에서 어긋나지 않게
+	if bots.has(seat) and lobby_humans.has(seat):
+		return "%s (자동)" % str(names.get(seat, "플레이어 %d" % seat))
 	if bots.has(seat):
 		return "컴퓨터 %d" % seat
 	return str(names.get(seat, "플레이어 %d" % seat))
+
+
+## 컴퓨터가 대신 두는 사람 자리인가.
+func is_taken_over(seat: int) -> bool:
+	return bots.has(seat) and lobby_humans.has(seat)
 
 
 ## 화면이 다 만들어졌다: 방장은 모두의 준비를 기다렸다가 시작하고, 참가자는 준비됐다고 방장에게 알린다.
@@ -153,6 +172,7 @@ func _watched_seats() -> Array[int]:
 
 func _on_ping(seat: int) -> void:
 	_heard[seat] = Time.get_ticks_msec()
+	_maybe_restore(seat)
 
 
 func _send_ping() -> void:
@@ -315,6 +335,8 @@ func _apply_as_host(action: StringName, params: Dictionary, sender: int) -> void
 	_applying_rejection = []
 	if action == ACTION_TAKEOVER:
 		_apply_takeover(int(params.get("seat", -1)))
+	elif action == ACTION_RESTORE:
+		_apply_restore(int(params.get("seat", -1)))
 	else:
 		manager.apply_replicated(action, params)
 	if not _applying_rejection.is_empty():
@@ -340,11 +362,29 @@ func _reject(sender: int, player_id: int, action: StringName, reason: StringName
 		_send_reject(sender, player_id, action, reason)
 
 
+func _apply_restore(seat: int) -> void:
+	_restore_requested.erase(seat)
+	if not is_taken_over(seat):
+		return
+	bots.erase(seat)
+	humans.append(seat)
+	_heard[seat] = Time.get_ticks_msec()
+	seat_restored.emit(seat)
+
+
+## 방장: 컴퓨터가 대신 두던 사람에게서 소식이 오면(늦은 준비·핑) 자리를 돌려준다. 모두의 판에 같은 순서로 적용된다.
+func _maybe_restore(seat: int) -> void:
+	if is_host and running and seat != local_seat and is_taken_over(seat) and not _restore_requested.has(seat):
+		_restore_requested[seat] = true
+		submit_from(local_seat, ACTION_RESTORE, {"seat": seat})
+
+
 func _apply_takeover(seat: int) -> void:
 	if seat < 1 or bots.has(seat) or not players.has(seat):
 		return
 	humans.erase(seat)
 	bots.append(seat)
+	_restore_requested.erase(seat)
 	seat_taken_over.emit(seat)
 
 
@@ -381,6 +421,8 @@ func _drain_queue() -> void:
 		var action: StringName = entry["action"]
 		if action == ACTION_TAKEOVER:
 			_apply_takeover(int((entry["params"] as Dictionary).get("seat", -1)))
+		elif action == ACTION_RESTORE:
+			_apply_restore(int((entry["params"] as Dictionary).get("seat", -1)))
 		else:
 			manager.apply_replicated(action, entry["params"])
 		applied_count += 1
@@ -453,6 +495,8 @@ func _on_ready(seat: int) -> void:
 		_ready_seats[seat] = true
 		if not _launched:
 			_try_launch()
+		else:
+			_maybe_restore(seat)  # 시작 시간이 지나 컴퓨터로 넘겨졌던 사람이 이제 준비됐다
 
 
 func _on_start(seed_to_send: int, seats: Array, bot_seats: Array) -> void:

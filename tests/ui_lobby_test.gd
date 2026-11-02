@@ -43,6 +43,9 @@ func _run() -> void:
 	var badge: Label = _lobby.find_child("RoomCode", true, false)
 	_expect(badge != null and badge.text == "[ 방 코드: %s ]" % service.room_code, "상단에 방 코드 배지")
 	_expect(_lobby.find_child("CopyRoomCode", true, false) != null, "코드 복사 버튼")
+	var invite: Button = _lobby.find_child("CopyInviteLink", true, false) as Button
+	_expect(invite != null and invite.text == "초대 링크 복사", "초대 링크 복사 버튼")
+	_expect(RoomCode.invite_url(service.room_code).ends_with("?room=" + service.room_code), "초대 링크에 이 방 코드")
 	_expect(_lobby._seat_box.get_child_count() == 4, "좌석 행 4개")
 	var rules_line: Label = _lobby.find_child("RoomRulesLine", true, false)
 	_expect(rules_line != null and rules_line.text.begins_with("[방 규칙]") and rules_line.text.contains("빈자리 컴퓨터"), "대기실에 방 규칙 한 줄 (%s)" % (rules_line.text if rules_line != null else "없음"))
@@ -157,6 +160,10 @@ func _run() -> void:
 	_lobby.join_with_room_code()
 	await process_frame
 	_expect(_lobby._status.text.contains("찾지 못했습니다") and not _lobby._guest_busy, "없는 방: 안내 후 다시 입력 가능")
+	# 초대 링크(?room=코드)로 들어오면 코드를 채우고 바로 입장을 시도한다
+	_lobby.join_invite("7K9M2")
+	await process_frame
+	_expect((_lobby._guest_box.find_child("RoomCodeInput", true, false) as LineEdit).text == "7K9M2" and _lobby._status.text.contains("찾지 못했습니다"), "초대 링크: 코드 입력 없이 바로 입장 시도 (%s)" % _lobby._status.text)
 	# 릴레이 불통
 	broker.offline = true
 	input = _lobby._guest_box.find_child("RoomCodeInput", true, false)

@@ -90,6 +90,7 @@ func _ready() -> void:
 	_build_train_page(stack)
 	_build_avatar_page(stack)
 	GameSession.load_settings()
+	RoomCode.capture_invite_from_url()  # 친선 초대 링크(?room=코드): 아래에서 주소창을 이어하기 링크로 바꾸기 전에 읽는다
 	# 웹: 이어하기 링크(?s=코드&n=닉네임)로 들어왔으면 그 기록을 이 브라우저에 합치고 바로 그 계정으로 시작한다 (한 번만)
 	if not _url_checked:
 		_url_checked = true
@@ -106,6 +107,7 @@ func _ready() -> void:
 		_name_edit.text = GameSession.nickname
 		_hello_label.text = "%s 교주님" % GameSession.nickname
 		_show_step(2)
+		_follow_invite.call_deferred()
 	else:
 		_show_step(1)  # 모바일에서 키보드가 불쑥 뜨지 않도록 입력칸은 눌러야 입력된다
 	_mobile = MobileSupport.new()
@@ -463,7 +465,18 @@ func confirm_nickname() -> bool:
 	_hello_label.text = "%s 교주님" % GameSession.nickname
 	_show_step(2)
 	MatchTelemetry.report_lobby_entry(self)  # 통계: 게임을 켜서 실제로 들어온 사람 (이번 접속에 한 번)
+	_follow_invite()
 	return true
+
+
+## 초대 링크로 들어왔으면(닉네임을 정한 뒤) 친선 줘팸터로 가서 그 방에 바로 입장한다.
+func _follow_invite() -> void:
+	if RoomCode.pending_invite == "":
+		return
+	GameSession.mode = GameSession.MODE_MULTIPLAYER
+	GameSession.lobby_intent = &"invite"
+	if change_scene_enabled:
+		get_tree().change_scene_to_file(LOBBY_SCENE)
 
 
 ## 아바타 설정 화면: 큰 미리보기 + 고를 수 있는 아바타 격자.

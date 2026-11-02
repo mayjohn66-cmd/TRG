@@ -198,7 +198,9 @@ func test_leaving_player_is_taken_over_by_a_bot() -> void:
 	host._on_peer_disconnected(2)
 	check_eq(taken, [2, 2], "방장과 남은 참가자 모두에게 인계가 알려진다")
 	check(host.is_bot(2) and guest.is_bot(2) and not host.humans.has(2), "2번 자리는 봇이 된다")
-	check_eq(host.display_name(2), "컴퓨터 2", "이름도 컴퓨터로")
+	check_eq(host.display_name(2), "친구 (자동)", "이름은 그대로 두고 (자동)을 붙인다 (2026-11: 요약은 '컴퓨터 2', 로그는 이름으로 어긋나던 것)")
+	check(host.is_taken_over(2) and not host.is_taken_over(3), "방에 사람으로 앉았던 자리만 '대신 두는 중'이다")
+	check_eq(host.display_name(3), "컴퓨터 3", "원래 컴퓨터 자리는 그대로")
 	host._on_peer_disconnected(2)
 	check_eq(taken.size(), 2, "이미 인계된 자리는 다시 처리하지 않는다")
 
@@ -219,6 +221,30 @@ func test_host_waits_for_everyone_then_starts_and_drops_absent_players() -> void
 	check(host.bots.has(3) and not host.humans.has(3), "오지 않은 사람은 봇이 된다")
 	check((games[2] as NetGame).bots.has(3), "참가자에게도 같은 구성이 전달된다")
 	check((games[2] as NetGame).running, "참가자도 시작했다")
+
+
+## 2026-11 제보: 폰은 보드를 불러오는 데 오래 걸려 시작하자마자 컴퓨터로 넘겨졌고, 그 뒤로는 증강 선택 창도 못 보고 컴퓨터가 대신 골랐다.
+## 늦게라도 준비를 마치면 방장이 자리를 돌려준다 (모두의 판에 같은 순서로 적용).
+func test_late_player_gets_the_seat_back_from_the_bot() -> void:
+	check(NetGame.READY_TIMEOUT >= 40.0, "폰 로딩을 기다리는 시간")
+	var parts: Dictionary = _build([1, 2] as Array[int], [] as Array[int], false)
+	var games: Dictionary = parts["games"]
+	var host: NetGame = games[1]
+	var guest: NetGame = games[2]
+	var restored: Array = []
+	host.seat_restored.connect(func(seat: int) -> void: restored.append(["host", seat]))
+	guest.seat_restored.connect(func(seat: int) -> void: restored.append(["guest", seat]))
+	host.begin()
+	host._process(NetGame.READY_TIMEOUT + 1.0)
+	check(host.is_bot(2) and guest.is_bot(2), "준비가 늦은 사람은 일단 컴퓨터가 대신 둔다")
+	check_eq(host.display_name(2), "친구 (자동)", "대신 두는 동안에도 이름은 그대로")
+	guest.begin()  # 이제야 보드를 다 불러왔다
+	check(not host.is_bot(2) and not guest.is_bot(2) and host.humans.has(2) and guest.humans.has(2), "늦게 준비를 마치면 자리를 돌려받는다 (양쪽 판 모두)")
+	check_eq(restored, [["host", 2], ["guest", 2]], "돌려받음이 모두에게 한 번씩 알려진다")
+	check_eq(host.display_name(2), "친구", "이름의 (자동)도 사라진다")
+	guest._ping_left = 0.0
+	guest._process(0.1)
+	check_eq(restored.size(), 2, "이미 돌려받은 자리는 다시 처리하지 않는다")
 
 
 func test_silent_peer_is_reported_and_recovers() -> void:

@@ -11684,6 +11684,7 @@ func _setup_net() -> void:
 	_bot.enabled = _bot_active()
 	net.started.connect(_on_net_started)
 	net.seat_taken_over.connect(_on_net_seat_taken_over)
+	net.seat_restored.connect(_on_net_seat_restored)
 	net.desynced.connect(_on_net_desynced)
 	net.connection_lost.connect(_on_net_connection_lost)
 	net.peer_silent.connect(_on_net_peer_silent)
@@ -11710,6 +11711,15 @@ func _on_net_seat_taken_over(seat: int) -> void:
 	_log_line("[접속 끊김] %s 님이 나가 컴퓨터가 이어받습니다." % str(GameSession.net_names.get(seat, "P%d" % seat)), Color("ffa94d"))
 	if net.is_host:
 		_bot.bot_players.append(seat)
+	if state != null:
+		_refresh_all()
+
+
+## 컴퓨터가 대신 두던 자리를 그 사람에게 돌려줬다: 방장의 봇은 그 자리에서 손을 떼고, 그 사람 화면은 다시 직접 조작(증강 선택 창 포함)한다.
+func _on_net_seat_restored(seat: int) -> void:
+	_log_line("[다시 연결] %s 님이 돌아와 직접 둡니다." % str(GameSession.net_names.get(seat, "P%d" % seat)), Color("8ce99a"))
+	if net.is_host:
+		_bot.bot_players.erase(seat)
 	if state != null:
 		_refresh_all()
 
