@@ -678,7 +678,6 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 가속 보너스 → %d칸 → 총 %d칸 전진!,Speed bonus → %d spaces → %d total!,加速ボーナス → %dマス → 合計 %dマス前進！
 가위,Scissors,チョキ
 가장 드문 대박,Rarest jackpot,最も珍しい大当たり
-가즈아!,Let's gooo!,行っけー！
 각 눈금 1/6,Each roll 1/6,各出目 1/6
 "각자 특수 1장·시민 4장! 여왕 > 시민 > 반란군 > 여왕. 시민끼리는 버리고 재대결, 반란군이 여왕을 잡으면 +5칸",Each gets 1 special + 4 Citizens! Queen > Citizen > Rebel > Queen. Citizen ties are discarded and replayed; Rebel beats Queen for +5 spaces,各自 特殊1枚・市民4枚！ 女王 > 市民 > 反乱軍 > 女王。市民同士は捨てて再勝負、反乱軍が女王を倒せば +5マス
 각행,Kaku,角行
@@ -797,7 +796,6 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 그 승리에 대해서 이의 있다!,I object to that victory!,その勝利に対して異議あり！
 그 칸 수만큼 움직일 말 선택,Pick a pawn to move that many tiles,そのマス数だけ動かす駒を選択
 그 칸에 들어서거나 서 있으면 바로 완주!,Step on or stand on that tile to finish instantly!,そのマスに入るか止まっていれば即完走！
-그게 최선?,That's your best?,それが精一杯？
 그냥 맞기,Take the hit,そのまま受ける
 그냥 맞기를 고르면 그 공격엔 다시 못 써요,Choose Take the hit and you can't use one on that attack,そのまま受けるを選ぶと、その攻撃にはもう使えません
 그리고 대망의 1등은...!,And the grand champion is...!,そして栄光の1位は...！
@@ -832,7 +830,6 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 나머지 다시 굴리기 (남은 횟수: %d),Reroll the rest (%d left),残りを振り直す (残り %d回)
 나온 눈금만큼,Move the roll,出た目の数だけ
 나온 숫자만큼,Move the number,出た数だけ
-나이스!,Nice!,ナイス！
 나이트,Knight,ナイト
 낙,Nak,落
 낙 (판 밖으로),Nak (off the board),落 (盤外へ)
@@ -1020,7 +1017,6 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 말 밟고 점프,Leapfrog Jump,駒飛び越えジャンプ
 말 하나를 새 기물로 진화 (도감 → 말),Evolve a pawn into a new piece (Catalog → Pieces),駒1個を新しい駒に進化 (図鑑 → 駒)
 말#%d,Pawn#%d,駒#%d
-말도 안 돼!,No way!,ありえない！
 말마다 능력,Abilities per pawn,駒ごとの能力
 말마다 능력과 필살기가 달라요 ([b]도감 → 말[/b]),Each pawn has its own ability and Skill ([b]Catalog → Pieces[/b]),駒ごとに能力と必殺技が違います ([b]図鑑 → 駒[/b])
 말은 절대 뒤로 가지 않아요. 대신 여러 보너스로 앞으로 튀어 나가요.,"Pawns never move backward. Instead, bonuses fling them forward.",駒は絶対に後ろへ戻りません。代わりに様々なボーナスで前へ飛び出します。
@@ -1496,7 +1492,6 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 이 코드는 초대 코드입니다. 참가자가 만든 응답 코드를 붙여 넣어 주세요.,This is an invite code. Paste the reply code from the guest.,このコードは招待コードです。参加者が作った応答コードを貼り付けてください。
 이 환경에서는 WebRTC를 쓸 수 없습니다 (오류 %s). 웹 브라우저 빌드로 실행해 주세요.,WebRTC isn't available here (error %s). Please run the web browser build.,この環境ではWebRTCを使えません (エラー %s)。Webブラウザ版で実行してください。
 이거 왜 급발진 하는ㄱ -엘레나,Why is it accelerating on its ow -Elena,なんでこれ急発進するのよぉーっ -エレナ
-이게 억까지!,So rigged!,これぞ理不尽！
 이기는 법,How to Win,勝ち方
 이동,Move,移動
 이동 +2칸 · 말·함정 관통,Move +2 spaces · passes pawns & traps,移動 +2マス · 駒・罠を貫通
@@ -1538,7 +1533,6 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 자세한 건 [b]도감 → 말[/b],More in [b]Catalog → Pieces[/b],詳しくは[b]図鑑 → 駒[/b]
 자세한 건 [b]도감 → 법전[/b],More in [b]Catalog → Codex[/b],詳しくは[b]図鑑 → 法典[/b]
 작성자: %s,Author: %s,作成者: %s
-잘 부탁해요!,Nice to meet you!,よろしくお願いします！
 잠시 뒤에 다시 보낼 수 있어요 (%d초),You can send again shortly (%ds),少し待ってから再送信できます (%d秒)
 잡기,Captures,捕獲
 잡기·공격 카드·함정이 공격이에요,"Captures, attack cards and traps count as attacks",捕獲・攻撃カード・罠が攻撃です
@@ -1876,7 +1870,6 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 폭죽 발사 → 0칸·턴 종료,Bang → 0 spaces · turn ends,爆竹発射 → 0マス・ターン終了
 폭탄 패스 & +4칸,Bomb pass & +4,爆弾パス & +4マス
 폰은 반환점에서 퀸으로 승급. 기물마다 움직임 보너스가 달라요.,Pawns promote to Queen at halfway. Each piece has its own move bonus.,ポーンは折り返し地点でクイーンに昇格。駒ごとに移動ボーナスが違います。
-푸하하!,Pfft haha!,ぷはは！
 풀하우스,Full House,フルハウス
 퓨퓨! 일루와!,Pyu pyu! Come here!,ピュピュッ！こっちおいで！
 플러시,Flush,フラッシュ
@@ -2586,3 +2579,8 @@ P%d의 %d번 말 수배! 잡으면 +%d칸,P%d's pawn %d is WANTED! Capture it fo
 주,St,株
 모브 큐이,Mob Kyui,モブ・キューイ
 괴상한 멜론,Weird Melon,ヘンなメロン
+기쁨,Joy,うれしい
+당황,Flustered,あせり
+슬픔,Sad,かなしい
+야호!,Yay!,やったー！
+어라라?!,Uh-oh?!,あれれ？！

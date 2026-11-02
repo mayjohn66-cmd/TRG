@@ -12,15 +12,11 @@ const SURPRISED: int = 3
 const SAD: int = 4
 const CHEER: int = 5
 
+## 3종: 버튼에는 감정 이름(label), 말풍선에는 한마디(text).
 const EMOTES: Array[Dictionary] = [
-	{"face": &"nice", "text": "나이스!", "emotion": HAPPY, "color": Color("2f9e44")},
-	{"face": &"laugh", "text": "푸하하!", "emotion": CHEER, "color": Color("f08c00")},
-	{"face": &"angry", "text": "이게 억까지!", "emotion": ANGRY, "color": Color("e03131")},
-	{"face": &"shock", "text": "말도 안 돼!", "emotion": SURPRISED, "color": Color("1971c2")},
-	{"face": &"cry", "text": "흑흑…", "emotion": SAD, "color": Color("5f6b7a")},
-	{"face": &"please", "text": "잘 부탁해요!", "emotion": HAPPY, "color": Color("7048e8")},
-	{"face": &"fire", "text": "가즈아!", "emotion": CHEER, "color": Color("e8590c")},
-	{"face": &"cool", "text": "그게 최선?", "emotion": HAPPY, "color": Color("0c8599")},
+	{"face": &"joy", "label": "기쁨", "text": "야호!", "emotion": CHEER, "color": Color("2f9e44")},
+	{"face": &"flustered", "label": "당황", "text": "어라라?!", "emotion": SURPRISED, "color": Color("1971c2")},
+	{"face": &"sad", "label": "슬픔", "text": "흑흑…", "emotion": SAD, "color": Color("5f6b7a")},
 ]
 
 

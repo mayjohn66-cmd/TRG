@@ -5547,19 +5547,19 @@ func _build_emote_row() -> void:
 	_emote_picker.add_theme_stylebox_override("panel", _style(Color(0.07, 0.09, 0.15, 0.96), Color("ffd43b"), 3, 16, 12, 10))
 	add_child(_emote_picker)
 	var grid := GridContainer.new()
-	grid.columns = 4
+	grid.columns = EmoteCatalog.count()
 	grid.add_theme_constant_override("h_separation", 6)
 	grid.add_theme_constant_override("v_separation", 6)
 	_emote_picker.add_child(grid)
 	for emote_id: int in EmoteCatalog.count():
 		var entry: Dictionary = EmoteCatalog.entry(emote_id)
-		var button: Button = _make_button("\n" + str(entry["text"]), _on_emote_pressed.bind(emote_id), 13, entry["color"], 12)
+		var button: Button = _make_button("\n" + str(entry["label"]), _on_emote_pressed.bind(emote_id), 13, entry["color"], 12)
 		button.name = "Emote%d" % emote_id
-		button.custom_minimum_size = Vector2(88, 74)
+		button.custom_minimum_size = Vector2(96, 82)
 		button.focus_mode = Control.FOCUS_NONE
-		# 얼굴은 코드로 그린다 (게임 글꼴에 이모지가 없다): 위쪽에 얼굴, 아래쪽에 문구
-		var face := EmoteFace.new(entry["face"], 34.0)
-		face.position = Vector2((88.0 - 34.0) / 2.0, 4.0)
+		# 얼굴은 코드로 그린다 (게임 글꼴에 이모지가 없다): 위쪽에 얼굴, 아래쪽에 감정 이름
+		var face := EmoteFace.new(entry["face"], 40.0)
+		face.position = Vector2((96.0 - 40.0) / 2.0, 4.0)
 		button.add_child(face)
 		grid.add_child(button)
 

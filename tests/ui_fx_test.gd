@@ -1447,20 +1447,21 @@ func _test_game_menu() -> void:
 	_board._emote_ready_msec = 0
 	_board._emote_button.pressed.emit()
 	_expect(_board._emote_picker.visible and _board._emote_picker.find_children("Emote*", "Button", true, false).size() == EmoteCatalog.count(), "버튼을 누르면 이모트 %d종이 펼쳐진다" % EmoteCatalog.count())
-	(_board._emote_picker.find_child("Emote2", true, false) as Button).pressed.emit()
+	_expect(EmoteCatalog.count() == 3 and (_board._emote_picker.find_child("Emote0", true, false) as Button).text.contains("기쁨") and (_board._emote_picker.find_child("Emote1", true, false) as Button).text.contains("당황") and (_board._emote_picker.find_child("Emote2", true, false) as Button).text.contains("슬픔"), "이모트는 기쁨 / 당황 / 슬픔 3종")
+	(_board._emote_picker.find_child("Emote1", true, false) as Button).pressed.emit()
 	var bubble: EmoteBubble = _board._emote_bubbles.get(_board.local_player_id)
-	_expect(not _board._emote_picker.visible and bubble != null and is_instance_valid(bubble) and bubble.emote_id == 2, "이모트를 고르면 판이 닫히고 내 프로필에 말풍선이 뜬다")
-	_expect((_board._profiles[_board.local_player_id]["avatar"] as AvatarSlot).emotion == AvatarSlot.Emotion.ANGRY, "말풍선과 함께 아바타 표정이 바뀐다 (억까 → 분노)")
+	_expect(not _board._emote_picker.visible and bubble != null and is_instance_valid(bubble) and bubble.emote_id == 1, "이모트를 고르면 판이 닫히고 내 프로필에 말풍선이 뜬다")
+	_expect((_board._profiles[_board.local_player_id]["avatar"] as AvatarSlot).emotion == AvatarSlot.Emotion.SURPRISED, "말풍선과 함께 아바타 표정이 바뀐다 (당황 → 놀람)")
 	if bubble != null:
 		var avatar_rect: Rect2 = _board.get_global_transform().affine_inverse() * (_board._profiles[_board.local_player_id]["avatar"] as Control).get_global_rect()
 		_expect(bubble.position.y + bubble.size.y <= avatar_rect.position.y + 4.0, "아래쪽 내 프로필의 말풍선은 아바타 위로 뜬다 (%.0f <= %.0f)" % [bubble.position.y + bubble.size.y, avatar_rect.position.y])
 	_board._emote_button.pressed.emit()
-	(_board._emote_picker.find_child("Emote4", true, false) as Button).pressed.emit()
-	_expect(_board._emote_bubbles.get(_board.local_player_id) == bubble and (_board._profiles[_board.local_player_id]["avatar"] as AvatarSlot).emotion == AvatarSlot.Emotion.ANGRY, "연타는 대기 시간 동안 무시된다")
+	(_board._emote_picker.find_child("Emote2", true, false) as Button).pressed.emit()
+	_expect(_board._emote_bubbles.get(_board.local_player_id) == bubble and (_board._profiles[_board.local_player_id]["avatar"] as AvatarSlot).emotion == AvatarSlot.Emotion.SURPRISED, "연타는 대기 시간 동안 무시된다")
 	var other: int = 2 if _board.local_player_id != 2 else 1
-	_board._on_net_emote(other, 6)
+	_board._on_net_emote(other, 2)
 	var their: EmoteBubble = _board._emote_bubbles.get(other)
-	_expect(their != null and is_instance_valid(their) and their.emote_id == 6, "온라인 상대의 이모트도 그 사람 프로필에 말풍선으로 뜬다")
+	_expect(their != null and is_instance_valid(their) and their.emote_id == 2, "온라인 상대의 이모트도 그 사람 프로필에 말풍선으로 뜬다")
 	if their != null:
 		var their_rect: Rect2 = _board.get_global_transform().affine_inverse() * (_board._profiles[other]["avatar"] as Control).get_global_rect()
 		var below: bool = their_rect.get_center().y < _board._board_center().y

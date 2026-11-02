@@ -23,9 +23,9 @@ signal emote_received(seat: int, emotion: int)
 const ACTION_TAKEOVER: StringName = &"__takeover"
 ## 컴퓨터가 대신 두던 사람 자리를 그 사람에게 돌려준다 (늦게 준비를 마쳤거나 다시 소식이 들린 사람).
 const ACTION_RESTORE: StringName = &"__restore"
-## 감정 표현 번호 범위(EmoteCatalog.EMOTES의 순번 0~7)와, 같은 좌석의 최소 간격(초)을 방장이 지킨다.
+## 감정 표현 번호 범위(EmoteCatalog.EMOTES의 순번 0~2)와, 같은 좌석의 최소 간격(초)을 방장이 지킨다.
 const EMOTE_MIN: int = 0
-const EMOTE_MAX: int = 7
+const EMOTE_MAX: int = 2
 const EMOTE_COOLDOWN_MSEC: int = 600
 ## 모두가 준비되기를 기다리는 최대 시간(초). 넘으면 준비 안 된 사람은 봇으로 넘긴다.
 ## 2026-11 제보: 폰은 보드 화면을 불러오는 데 15초가 넘게 걸려, 시작하자마자 컴퓨터로 넘겨져 증강 선택 창도 못 보고(컴퓨터가 대신 고름)
