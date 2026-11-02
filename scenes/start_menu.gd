@@ -139,7 +139,19 @@ func _build_name_page(parent: VBoxContainer) -> void:
 	_name_edit.custom_minimum_size = Vector2(0, 52)
 	_name_edit.text_submitted.connect(func(_text: String) -> void: confirm_nickname())
 	_name_edit.text_changed.connect(func(_text: String) -> void: _error_label.text = "")
-	_name_page.add_child(_name_edit)
+	_name_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	# 아이패드·폰: 칸을 누르면 기본 입력 창으로 받는다 (캔버스 위에서는 키패드가 안 올라오는 기기가 있다)
+	MobileSupport.attach_native_text_input(_name_edit, "교주의 이름 (최대 %d자)" % GameSession.MAX_NICKNAME_LENGTH)
+	var name_row := HBoxContainer.new()
+	name_row.add_theme_constant_override("separation", 8)
+	name_row.add_child(_name_edit)
+	# 키패드가 안 뜨거나 입력을 건너뛰고 싶으면 [랜덤 닉네임] 한 번으로 바로 입장할 수 있다
+	var random_button: Button = LobbyTheme.big_button("랜덤 닉네임", func() -> void:
+		MobileSupport.apply_text(_name_edit, GameSession.random_nickname()), 22)
+	random_button.name = "RandomNicknameButton"
+	random_button.custom_minimum_size = Vector2(150, 52)
+	name_row.add_child(random_button)
+	_name_page.add_child(name_row)
 	_error_label = LobbyTheme.label("", 15, Color("d6336c"))
 	_error_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_name_page.add_child(_error_label)
@@ -440,6 +452,9 @@ func _show_settings() -> void:
 
 ## 닉네임을 검사해 저장하고 모드 선택 화면으로 넘어간다. 통과했으면 true.
 func confirm_nickname() -> bool:
+	# 빈칸(또는 "null")으로 입장하면 랜덤 닉네임을 붙여 바로 들어간다 (키패드가 안 뜨는 기기에서도 막히지 않게)
+	if GameSession.clean_nickname(_name_edit.text).is_empty():
+		MobileSupport.apply_text(_name_edit, GameSession.random_nickname())
 	var problem: String = GameSession.validate_nickname(_name_edit.text)
 	if problem != "":
 		_error_label.text = problem

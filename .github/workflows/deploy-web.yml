@@ -465,6 +465,14 @@ jobs:
           grep -Eq 'HOTFIX_UI [0-9]+ assertions; 0 failures' /tmp/live_hotfix_ui.log
           if grep -Eq 'SCRIPT ERROR|SHADER ERROR' /tmp/live_hotfix_{core,ui}.log; then exit 1; fi
 
+      - name: Check the weekend hotfix 2 regressions
+        if: steps.validation.outputs.scope == 'full'
+        run: |
+          set -euo pipefail
+          godot --headless --audio-driver Dummy --path . -s res://tests/ui_hotfix2_test.gd 2>&1 | tee /tmp/hotfix2_ui.log
+          grep -Eq 'HOTFIX2_UI [0-9]+ assertions; 0 failures' /tmp/hotfix2_ui.log
+          if grep -Eq 'SCRIPT ERROR|SHADER ERROR' /tmp/hotfix2_ui.log; then exit 1; fi
+
       - name: Run unit tests
         if: steps.validation.outputs.scope == 'full'
         run: godot --headless --path . -s res://tests/run_tests.gd

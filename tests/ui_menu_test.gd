@@ -26,8 +26,16 @@ func _run() -> void:
 	menu.change_scene_enabled = false
 	root.add_child(menu)
 	_expect(menu.step == 1 and menu._name_page.visible and not menu._mode_page.visible and not menu._back_button.visible, "처음에는 타이틀(교주의 이름) 화면")
+	# 2026-11 핫픽스: 빈칸(공백·"null")으로 입장하면 랜덤 닉네임이 붙어 바로 들어간다 (키패드가 안 뜨는 아이패드에서도 막히지 않게)
+	for blank: String in ["   ", "null"]:
+		menu._name_edit.text = blank
+		_expect(menu.confirm_nickname() and menu.step == 2, "빈칸 '%s'도 랜덤 닉네임으로 입장" % blank)
+		_expect(GameSession.nickname != "" and GameSession.nickname.to_lower() != "null" and GameSession.nickname.length() <= GameSession.MAX_NICKNAME_LENGTH, "랜덤 닉네임: %s" % GameSession.nickname)
+		menu._show_step(1)
+	_expect(menu._name_page.find_child("RandomNicknameButton", true, false) != null, "[랜덤 닉네임] 버튼")
+	(menu._name_page.find_child("RandomNicknameButton", true, false) as Button).pressed.emit()
+	_expect(GameSession.validate_nickname(menu._name_edit.text) == "", "[랜덤 닉네임]은 바로 쓸 수 있는 이름을 넣는다: %s" % menu._name_edit.text)
 	menu._name_edit.text = "   "
-	_expect(not menu.confirm_nickname() and menu._error_label.text != "" and menu.step == 1, "공백만 있으면 통과 못 한다")
 	menu._name_edit.text = "열한글자닉네임이에요요"
 	_expect(menu._name_edit.text.length() <= GameSession.MAX_NICKNAME_LENGTH, "입력창은 10자까지만 받는다")
 	menu._name_edit.text = "  에르핀  "

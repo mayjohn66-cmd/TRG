@@ -444,6 +444,7 @@ func _build_save_tools() -> void:
 	_code_field.max_length = 40
 	_code_field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_code_field.custom_minimum_size = Vector2(0, 40)
+	MobileSupport.attach_native_text_input(_code_field, "기록 코드")
 	_code_field.add_theme_font_size_override("font_size", 16)
 	_code_field.text_submitted.connect(func(text: String) -> void: apply_save_code(text))
 	row.add_child(_code_field)

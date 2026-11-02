@@ -472,6 +472,7 @@ func _rebuild_guest() -> void:
 	_join_input.custom_minimum_size = Vector2(0, 70)
 	_join_input.text = _guest_room_text
 	_join_input.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	MobileSupport.attach_native_text_input(_join_input, "방 코드 5자리")
 	_join_input.editable = not _guest_busy
 	_join_input.text_changed.connect(_on_room_input_changed)
 	_join_input.text_submitted.connect(func(_text: String) -> void: join_with_room_code())

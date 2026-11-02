@@ -179,7 +179,7 @@ const CARD_SUMMARIES: Dictionary = {
 	&"ACT_02": "상대 선두 말을 출발선으로 장외 사출",
 	&"ACT_03": "다음 유저에게 폭탄 패스: 선두 말 사출 + 내 이동 +4칸",
 	&"ACT_04": "굴리기 전 사용! 이번 굴림 +4칸",
-	&"ACT_06": "특수 승리 기록 1개를 0으로 초기화",
+	&"ACT_06": "[내 차례 시작에 사용] 특수 승리 기록 1개를 0으로 초기화 (공격에 반응하는 방어 카드는 아님)",
 	&"ACT_07": "고른 한 변의 설치물 전부 붕괴",
 	&"ACT_08": "내 꼴찌 말 ↔ 1등 적 선두 말 위치 교환",
 	&"ACT_09": "적 1명과 6종 랜덤 미니게임 데스매치! 승자 말 +3칸, 패자 선두 말 사출",
@@ -341,6 +341,11 @@ const PODIUM_INTRO_SECONDS: float = 1.2
 const RANK_ROW_SECONDS: float = 0.8
 const FIRST_PLACE_DRUMROLL_SECONDS: float = 1.4
 var _roll_button: Button = null
+## 굴리기 버튼 아래의 필살기 안내 (쓸 수 있는 필살기가 있을 때만): [필살기명!] 버튼 + 한 줄 효과.
+var _skill_hint: PanelContainer = null
+var _skill_hint_key: String = ""
+## 안내에 한 번에 보여 줄 필살기 수.
+const SKILL_HINT_MAX: int = 2
 var _stop_button: Button = null
 var _gun_row: HBoxContainer = null  ## 러시안 룰렛 전용 [발사][정지] 두 버튼 줄
 var _fire_button: Button = null
@@ -764,6 +769,9 @@ func _process(delta: float) -> void:
 		return
 	if not manager.is_game_over:
 		_phase_label.text = _phase_text()
+	_drop_stale_target_pick()
+	if _skill_hint != null and _skill_hint.visible:
+		_refresh_skill_hint()
 	_bot.instant = instant_roll_for_test
 	_update_time_pressure(delta)
 	# 굴리기 화면은 앞선 연출·카드 끌기·필살기 겨누기가 끝나는 순간 켜지고, 시작되는 순간 꺼진다 (어떤 경로로 바뀌든 프레임마다 맞춘다)
@@ -2081,6 +2089,17 @@ func _build_action_bar() -> void:
 	_apply_round_button_style(_roll_button, Color("2b8a3e"))
 	_roll_button.tooltip_text = "꾹 눌러 파워 게이지를 채우고 손을 떼면 굴러갑니다 (스페이스 키도 동일)"
 	add_child(_roll_button)
+	# 2026-11 개선: 내 차례에 쓸 수 있는 필살기가 있으면 굴리기 버튼 바로 아래에 [필살기 버튼 + 한 줄 효과]를 띄운다 (몰라서 못 쓰는 일이 없게).
+	_skill_hint = PanelContainer.new()
+	_skill_hint.name = "SkillHint"
+	_skill_hint.add_theme_stylebox_override("panel", _style(Color(0.1, 0.07, 0.0, 0.92), Color("ffd43b"), 3, 12, 10, 8))
+	_skill_hint.visible = false
+	_skill_hint.z_index = 6
+	var hint_box := VBoxContainer.new()
+	hint_box.name = "SkillHintRows"
+	hint_box.add_theme_constant_override("separation", 4)
+	_skill_hint.add_child(hint_box)
+	add_child(_skill_hint)
 	# 룰렛(원판을 잡고 돌리기)과 러시안 룰렛(방아쇠 당기기)은 굴리기 버튼 대신 같은 자리의 직접 조작 패드를 쓴다.
 	_roll_pad = RollPad.new()
 	_roll_pad.position = Vector2(583, 250)  # 마름모 보드 한가운데 (패드 중심 = (683, 335)); 크게 보이도록 켤 때 1.9배로 키운다
@@ -5460,7 +5479,61 @@ func _on_pawn_icon_input(event: InputEvent, icon: Control, pawn_id: int) -> void
 		icon.accept_event()
 
 
+## 굴리기 버튼 아래 필살기 안내를 맞춘다: 내 차례(턴 시작·굴리기 전)에 쓸 수 있는 필살기가 있으면 버튼과 한 줄 효과를 띄운다.
+func _refresh_skill_hint() -> void:
+	if _skill_hint == null:
+		return
+	var owner_id: int = _dock_owner()
+	var phase: TurnManager.State = manager.current_state
+	var ready: Array[PlayerPawn] = []
+	if not manager.is_game_over and manager.current_player_id() == owner_id and not _is_bot_turn() and not _ui_busy() and not _tile_pick_active \
+			and (phase == TurnManager.State.PHASE_TURN_BEGIN or phase == TurnManager.State.PHASE_ROLL_WAIT) and _roll_button.visible:
+		for pawn: PlayerPawn in state.pawns_of(owner_id):
+			if PawnSkills.has_skill(pawn) and not pawn.is_finished and manager.can_use_skill(owner_id, pawn.entity_id):
+				ready.append(pawn)
+	_skill_hint.visible = not ready.is_empty()
+	if ready.is_empty():
+		_skill_hint_key = ""
+		return
+	var key: String = ",".join(PackedStringArray(ready.map(func(pawn: PlayerPawn) -> String: return str(pawn.entity_id))))
+	var rows: VBoxContainer = _skill_hint.get_node("SkillHintRows")
+	if key != _skill_hint_key:
+		_skill_hint_key = key
+		for child: Node in rows.get_children():
+			child.queue_free()
+		var header: Label = _make_label("필살기 사용 가능!", 14, Color("ffd43b"))
+		header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		rows.add_child(header)
+		for pawn: PlayerPawn in ready.slice(0, SKILL_HINT_MAX):
+			var skill: StringName = PawnCatalog.skill_of(pawn.sub_type())
+			var row := HBoxContainer.new()
+			row.add_theme_constant_override("separation", 8)
+			var slot: int = pawn.slot - 1
+			var button: Button = _make_button("%s!" % PawnCatalog.skill_name(skill), _on_skill_pressed.bind(slot), 14, Color("c77d0a"), 8)
+			button.name = "SkillHintButton"
+			button.custom_minimum_size = Vector2(120, 34)
+			button.focus_mode = Control.FOCUS_NONE
+			button.add_theme_color_override("font_color", Color("3b1d00"))
+			MobileSupport.touch_button(button)
+			button.add_theme_stylebox_override("normal", _style(Color("ffb703"), Color("fff3bf"), 2, 8, 0, 4))
+			button.add_theme_stylebox_override("hover", _style(Color("ffc933"), Color.WHITE, 2, 8, 0, 4))
+			row.add_child(button)
+			var effect: Label = _make_label(PawnCatalog.skill_text(skill), 12, Color("fff3bf"))
+			effect.name = "SkillHintEffect"
+			effect.custom_minimum_size = Vector2(230, 0)
+			effect.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			effect.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			row.add_child(effect)
+			rows.add_child(row)
+		_skill_hint.reset_size()
+	var center_x: float = _roll_button.position.x + _roll_button.size.x * 0.5
+	_skill_hint.position = Vector2(center_x - _skill_hint.size.x * 0.5, _roll_button.position.y + _roll_button.size.y + 10.0)
+	var pulse: float = 0.5 + 0.5 * sin(float(Time.get_ticks_msec()) / 1000.0 * TAU * 0.9)
+	_skill_hint.self_modulate = Color(1.0 + 0.25 * pulse, 1.0 + 0.2 * pulse, 1.0)
+
+
 func _refresh_pawn_dock() -> void:
+	_refresh_skill_hint()
 	_refresh_emote_row()
 	# AI·온라인에서는 내 프로필 카드가 말 칸과 필살기를 맡으므로 기물 독은 4인 수동 조작에서만 보인다.
 	_pawn_bar.visible = not ai_mode
@@ -8369,6 +8442,19 @@ func _on_pick_cancel_pressed() -> void:
 	_cancel_tile_pick()
 
 
+## 2026-11 제보: BANG! 대상(프로필 표식)·타일 고르기 중에 차례가 넘어가면(시간 초과·온라인 진행) 표식과 안내 띠가 그대로 남았다.
+## 고르던 사람의 차례가 아니거나 그 카드를 지금 단계에서 낼 수 없게 되면 고르기를 닫는다.
+func _drop_stale_target_pick() -> void:
+	if not _tile_pick_active and not _snipe_pick:
+		return
+	var stale: bool = manager.is_game_over or manager.current_player_id() != _tile_pick_player
+	if not stale and _tile_pick_card != &"":
+		var card: BaseCard = CardRegistry.get_card(_tile_pick_card)
+		stale = card != null and not card.is_playable_in(manager.current_state)
+	if stale:
+		_cancel_tile_pick()
+
+
 func _cancel_tile_pick() -> void:
 	if not _tile_pick_active and _pick_banner != null and not _pick_banner.visible:
 		return
@@ -8440,30 +8526,50 @@ func _new_overlay(alpha: float = 0.7) -> Control:
 	return overlay
 
 
+## 슬림 선택 바의 y (위쪽 메뉴 줄 바로 아래).
+const CHOICE_BAR_TOP: float = 52.0
+
+
 func _show_choice(title: String, options: Array[Dictionary], on_pick: Callable, columns: int = 1) -> void:
 	_close_choice()
-	_choice_overlay = _new_overlay()
-	var center := CenterContainer.new()
-	center.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_choice_overlay.add_child(center)
+	# 2026-11 개선: 보드 전체를 어둡게 덮는 창 대신 화면 위쪽의 슬림한 선택 바 (보드 시야를 가리지 않는다).
+	# 바깥은 눌러도 지나간다 (취소는 [취소] 버튼). columns는 옛 격자 배치의 열 수: 바에서는 한 줄에 넘치면 다음 줄로 흐른다.
+	_choice_overlay = Control.new()
+	_choice_overlay.name = "ChoiceBar"
+	_choice_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_choice_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var view: Vector2 = get_viewport_rect().size
 	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", _panel_style())
-	UiSkin.bind_light_text(panel)
-	center.add_child(panel)
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 8)
-	panel.add_child(box)
-	box.add_child(_make_label(title, 16, Color("f1f3f5")))
-	var grid := GridContainer.new()
-	grid.columns = columns
-	box.add_child(grid)
+	panel.name = "ChoiceBarPanel"
+	panel.add_theme_stylebox_override("panel", _style(Color(0.07, 0.09, 0.15, 0.94), COLOR_GOLD, 2, 14, 10, 10))
+	panel.custom_minimum_size = Vector2(minf(view.x * 0.62, 860.0), 0)
+	_choice_overlay.add_child(panel)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	panel.add_child(row)
+	var title_label: Label = _make_label(title, 15, Color("ffe066"))
+	title_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	title_label.custom_minimum_size = Vector2(180, 0)
+	title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	row.add_child(title_label)
+	var flow := HFlowContainer.new()
+	flow.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	flow.add_theme_constant_override("h_separation", 6)
+	flow.add_theme_constant_override("v_separation", 6)
+	row.add_child(flow)
 	for option: Dictionary in options:
 		var button: Button = _make_button(str(option["label"]), _on_choice_picked.bind(option["value"], on_pick), 14)
-		button.custom_minimum_size = Vector2(60, 32)
-		grid.add_child(button)
-	box.add_child(_make_button("취소", _close_choice, 13))
+		button.custom_minimum_size = Vector2(60 if columns > 1 else 0, 34)
+		MobileSupport.touch_button(button)
+		flow.add_child(button)
+	var cancel: Button = _make_button("취소", _close_choice, 13)
+	cancel.custom_minimum_size = Vector2(64, 34)
+	MobileSupport.touch_button(cancel)
+	row.add_child(cancel)
 	add_child(_choice_overlay)
 	_priority_modal(_choice_overlay)
+	panel.reset_size()
+	panel.position = Vector2((view.x - panel.size.x) * 0.5, CHOICE_BAR_TOP)
 	_refresh_tool_stage()
 
 
