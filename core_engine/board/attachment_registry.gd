@@ -19,6 +19,7 @@ static func create(attachment_id: String) -> TileAttachment:
 		"TRP_C03": return TrapToll.new()
 		"TRP_C04": return TrapTar.new()
 		"HOTEL": return Hotel.new()
+		"TRP_CUKE": return TrapCucumber.new()
 	push_error("AttachmentRegistry: 알 수 없는 설치물 ID '%s'" % attachment_id)
 	return null
 

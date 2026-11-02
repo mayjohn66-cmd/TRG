@@ -489,6 +489,14 @@ jobs:
           grep -Eq 'READABILITY [0-9]+ assertions; 0 failures' /tmp/readability.log
           if grep -Eq 'SCRIPT ERROR|SHADER ERROR' /tmp/readability.log; then exit 1; fi
 
+      - name: Check the v1.1 content screens (darts aim, stock chart, hammer, bounty, melon)
+        if: steps.validation.outputs.scope == 'full'
+        run: |
+          set -euo pipefail
+          godot --headless --audio-driver Dummy --path . -s res://tests/ui_v11_test.gd 2>&1 | tee /tmp/v11_ui.log
+          grep -Eq 'V11_UI [0-9]+ assertions; 0 failures' /tmp/v11_ui.log
+          if grep -Eq 'SCRIPT ERROR|SHADER ERROR' /tmp/v11_ui.log; then exit 1; fi
+
       - name: Run unit tests
         if: steps.validation.outputs.scope == 'full'
         run: godot --headless --path . -s res://tests/run_tests.gd

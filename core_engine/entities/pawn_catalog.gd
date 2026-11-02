@@ -32,7 +32,7 @@ const SUB_TYPES: Dictionary = {
 	GameEnums.PawnKind.MONOPOLY: [SubType.MONO_CAR, SubType.MONO_PLANE, SubType.MONO_SHIP, SubType.MONO_DOG],
 	GameEnums.PawnKind.GO: [SubType.BADUK_BLACK, SubType.BADUK_WHITE, SubType.BADUK_BLACK, SubType.BADUK_WHITE],
 	GameEnums.PawnKind.SHOGI: [SubType.SHOGI_FU, SubType.SHOGI_HISHA, SubType.SHOGI_KAKU, SubType.SHOGI_KEIMA],
-	GameEnums.PawnKind.ARCADE: [SubType.CHECKERS_KING, SubType.LUDO_AVENGER, SubType.POOL_8BALL, SubType.KART_STAR, SubType.MINESWEEPER_FLAG],
+	GameEnums.PawnKind.ARCADE: [SubType.CHECKERS_KING, SubType.LUDO_AVENGER, SubType.POOL_8BALL, SubType.KART_STAR, SubType.MINESWEEPER_FLAG, SubType.MOB_KYUI, SubType.ODD_MELON],
 }
 ## 세부 기물 이름 / 보드 위 한 글자 라벨 / 한 줄 능력 설명.
 const SUB_NAMES: Dictionary = {
@@ -43,6 +43,7 @@ const SUB_NAMES: Dictionary = {
 	SubType.BADUK_BLACK: "바둑:흑돌", SubType.BADUK_WHITE: "바둑:백돌",
 	SubType.SHOGI_FU: "쇼기:보병", SubType.SHOGI_HISHA: "쇼기:비차", SubType.SHOGI_KAKU: "쇼기:각행", SubType.SHOGI_KEIMA: "쇼기:계마",
 	SubType.CHECKERS_KING: "아케이드:킹 체커", SubType.LUDO_AVENGER: "아케이드:루도 복수자", SubType.POOL_8BALL: "아케이드:8번 공", SubType.KART_STAR: "아케이드:스타 카트", SubType.MINESWEEPER_FLAG: "아케이드:지뢰찾기 공병",
+	SubType.MOB_KYUI: "아케이드:모브 큐이", SubType.ODD_MELON: "아케이드:괴상한 멜론",
 }
 ## 나리(成り) 승급 뒤 이름 / 한 글자 라벨 (보병 -> 토금, 비차 -> 용왕, 각행 -> 용마, 계마 -> 성계).
 const PROMOTED_NAMES: Dictionary = {
@@ -59,6 +60,7 @@ const SUB_LETTERS: Dictionary = {
 	SubType.BADUK_BLACK: "흑", SubType.BADUK_WHITE: "백",
 	SubType.SHOGI_FU: "보", SubType.SHOGI_HISHA: "비", SubType.SHOGI_KAKU: "각", SubType.SHOGI_KEIMA: "계",
 	SubType.CHECKERS_KING: "킹", SubType.LUDO_AVENGER: "루", SubType.POOL_8BALL: "8", SubType.KART_STAR: "★", SubType.MINESWEEPER_FLAG: "깃",
+	SubType.MOB_KYUI: "큐", SubType.ODD_MELON: "멜",
 }
 ## 영어 화면의 보드판 라벨 (한두 글자).
 const PROMOTED_LETTERS_EN: Dictionary = {
@@ -72,6 +74,7 @@ const SUB_LETTERS_EN: Dictionary = {
 	SubType.BADUK_BLACK: "Bk", SubType.BADUK_WHITE: "Wt",
 	SubType.SHOGI_FU: "Fu", SubType.SHOGI_HISHA: "Hi", SubType.SHOGI_KAKU: "Ka", SubType.SHOGI_KEIMA: "Ke",
 	SubType.CHECKERS_KING: "K", SubType.LUDO_AVENGER: "Lu", SubType.POOL_8BALL: "8", SubType.KART_STAR: "★", SubType.MINESWEEPER_FLAG: "Ms",
+	SubType.MOB_KYUI: "Ky", SubType.ODD_MELON: "Me",
 }
 ## 일본어 화면의 보드판 라벨 (한 글자, 한자·가나).
 const PROMOTED_LETTERS_JA: Dictionary = {
@@ -85,6 +88,7 @@ const SUB_LETTERS_JA: Dictionary = {
 	SubType.BADUK_BLACK: "黒", SubType.BADUK_WHITE: "白",
 	SubType.SHOGI_FU: "歩", SubType.SHOGI_HISHA: "飛", SubType.SHOGI_KAKU: "角", SubType.SHOGI_KEIMA: "桂",
 	SubType.CHECKERS_KING: "キ", SubType.LUDO_AVENGER: "ド", SubType.POOL_8BALL: "8", SubType.KART_STAR: "★", SubType.MINESWEEPER_FLAG: "旗",
+	SubType.MOB_KYUI: "瓜", SubType.ODD_MELON: "メ",
 }
 ## 언어별 보드판 라벨 표 (한국어는 SUB_LETTERS·PROMOTED_LETTERS).
 const LETTERS_BY_LANG: Dictionary = {"en": [SUB_LETTERS_EN, PROMOTED_LETTERS_EN], "ja": [SUB_LETTERS_JA, PROMOTED_LETTERS_JA]}
@@ -115,6 +119,8 @@ const SUB_ABILITIES: Dictionary = {
 	SubType.POOL_8BALL: "처치하면 +3칸",
 	SubType.KART_STAR: "모든 추가 이동 +2칸 · 이동 중 함정 면역",
 	SubType.MINESWEEPER_FLAG: "함정 면역 · 밟은 적 함정 해체 +카드 1장",
+	SubType.MOB_KYUI: "함정 카드 획득·설치 시 필살기 충전 (35%)",
+	SubType.ODD_MELON: "함정을 먹고 커진다 (3단계: 함정 면역 + 스친 적 처치)",
 }
 ## 1회용 필살기: 세부 기물 -> 스킬 ID / 이름 / 설명. 필살기가 없으면 스킬 ID가 빈 값이다.
 const SKILL_IDS: Dictionary = {
@@ -135,6 +141,7 @@ const SKILL_IDS: Dictionary = {
 	SubType.JANGGI_PO: &"cannon",
 	SubType.JANGGI_MA: &"back_kick",
 	SubType.SHOGI_KEIMA: &"keima_jump",
+	SubType.MOB_KYUI: &"cucumber",
 }
 ## 나리 승급해야 쓸 수 있는 필살기 (용왕·용마).
 const PROMOTED_SKILLS: Array[StringName] = [&"slash", &"horse"]
@@ -156,6 +163,7 @@ const SKILL_NAMES: Dictionary = {
 	&"cannon": "포격",
 	&"back_kick": "뒷발차기",
 	&"keima_jump": "계마 도약",
+	&"cucumber": "오이 설치",
 }
 const SKILL_TEXTS: Dictionary = {
 	&"shoot": "조준 발사 → 적 전원 출발선, 근처 안착",
@@ -175,6 +183,7 @@ const SKILL_TEXTS: Dictionary = {
 	&"cannon": "가장 앞에 있는 적의 말 처치",
 	&"back_kick": "뒤 2칸의 적 처치",
 	&"keima_jump": "+2칸 전진 · 처치하면 +1칸 더",
+	&"cucumber": "지금 칸에 오이 · 밟은 적에게 먹통 [오이 카드]",
 }
 
 

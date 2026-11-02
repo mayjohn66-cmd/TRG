@@ -627,6 +627,9 @@ var _match_background: TextureRect = null
 var _track_lines: Array[Line2D] = []
 var _action_row: HFlowContainer = null
 var _roll_pad: RollPad = null
+var _dart_aim: DartBoardView = null
+## 강화 망치 (v1.1) 선택 판: [더 강화!] / [멈추기].
+var _hammer_panel: PanelContainer = null
 var _roll_history: RollHistory = null
 var _roll_turn_serial := 0
 var _roll_geometry: StringName = &""
@@ -1357,6 +1360,18 @@ func _bind_state() -> void:
 		if not _fx_hints.has(pawn_id):
 			_set_hint(pawn_id, {"arc": 0.0, "dur": 0.5}))
 	state.passive_triggered.connect(_on_passive_triggered)
+	# v1.1: 기억상실빔이 사출을 막았다 / 모브 큐이의 오이를 밟았다
+	state.amnesia_blocked.connect(func(pawn_id: int, tile: int) -> void:
+		_on_passive_triggered(pawn_id, &"amnesia_block")
+		_log_line("[기억상실빔] %s이(가) %d번 타일에서 사출되지 않았습니다" % [_pawn_name(pawn_id), tile], Color("b197fc"))
+		_note_defense_success([pawn_id]))
+	state.bounty_claimed.connect(func(hunter: int, pawn_id: int, steps: int) -> void:
+		_log_line("[현상금] P%d이(가) 수배된 %s을(를) 잡았습니다! +%d칸" % [hunter, _pawn_name(pawn_id), steps], Color("ffd43b"))
+		_record(hunter, "%s 현상금 획득! 수배범 처치 → +%d칸" % [_bq("현상금 수배서"), steps], "", true)
+		_refresh_bounty_marks())
+	state.cucumber_given.connect(func(player_id: int, tile: int) -> void:
+		_log_line("[오이] P%d이(가) %d번 타일의 오이를 밟아 [오이 카드]를 받았습니다" % [player_id, tile], Color("8ce99a"))
+		_record(player_id, "오이를 밟았다! 먹통 %s 획득" % _bq("오이 카드"), "", true))
 	state.guard_blocked.connect(func(pawn_id: int, tile: int) -> void:
 		_on_passive_triggered(pawn_id, &"knight_guard")
 		_log_line("[기사의 맹세] %s이(가) %d번 타일에서 사출을 막았습니다" % [_pawn_name(pawn_id), tile], Color("4dabf7"))
@@ -2145,6 +2160,13 @@ func _build_action_bar() -> void:
 	_roll_pad.trigger_pulled.connect(_on_pad_trigger_pulled)
 	_roll_pad.preparation_finished.connect(_refresh_controls)
 	add_child(_roll_pad)
+	# 불스아이 다트 (v1.1): 내 차례에 보드 한가운데 돌아가는 과녁 + 조준점. [던지기] 순간의 조준을 굴림에 싣는다.
+	_dart_aim = DartBoardView.new()
+	_dart_aim.name = "DartAim"
+	_dart_aim.position = Vector2(683.0, 335.0) - DartBoardView.SIZE * 0.5
+	_dart_aim.visible = false
+	add_child(_dart_aim)
+	_build_hammer_panel()
 	# 러시안 룰렛은 [발사]와 [정지] 두 버튼만 쓴다 (정지 버튼은 룰렛을 쓸 때만 이 줄로 옮겨 온다).
 	_gun_row = HBoxContainer.new()
 	_gun_row.position = Vector2(683.0 - 170.0, 470.0)
@@ -6106,6 +6128,8 @@ const TOOL_CARDS: Dictionary = {
 	&"DICE_YACHT": ["야", Color("e03131"), "주사위 5개 고정·리롤(2회)로 족보 완성!", "(트리플 5칸 / 풀하·4연속 7칸 / ★야추 12칸+한번더)"],
 	&"DICE_BLACKJACK": ["21", Color("2b8a3e"), "카드 합계(11~21)에서 -10 한 만큼 전진!", "(★21 달성: 11칸+한번더 / 22↑ 초과 시 0칸 폭발!)"],
 	&"DICE_PINBALL": ["핀", Color("1971c2"), "발사대를 당겨 쇠구슬 발사!", "구슬이 골인한 칸의 숫자(1 ~ 10칸)만큼 전진"],
+	&"DICE_STOCK": ["주", Color("2f9e44"), "주가만큼 전진! 오를까 내릴까?", "★상한가 20칸 · 상장폐지는 선두 말 사출"],
+	&"DICE_DARTS": ["◎", Color("c92a2a"), "돌아가는 과녁에 타이밍 맞춰 던져라!", "숫자 × 싱글·더블·트리플 · ★불스아이 10칸+한 번 더"],
 }
 
 
@@ -6124,6 +6148,8 @@ const TOOL_RULES: Dictionary = {
 	&"DICE_YACHT": {"rows": [["찬스 (족보 없음)", "최고 눈÷2 올림 (1~3칸)"], ["트리플 (3개 동일)", "5칸"], ["4연속 / 풀하우스", "7칸"], ["포카드 / 5연속", "9칸"], ["★ 야추 (5개 동일)", "12칸 + 한 번 더!"]], "note": "고정(Keep)하고 나머지를 최대 2번 다시 굴림"},
 	&"DICE_BLACKJACK": {"rows": [["시작", "합 11 이상까지 받음"], ["11 ~ 20 스탠드", "(합 - 10)칸"], ["★ 정확히 21", "11칸 + 한 번 더!"], ["22 이상 (버스트)", "0칸, 턴 종료"]], "note": "A는 11 (넘으면 1) · 히트로 더 뽑거나 스탠드로 확정"},
 	&"DICE_PINBALL": {"rows": [["하단 구멍 7칸", "2·4·6·★10·5·3·1"], ["골인한 구멍", "그 숫자만큼 (1~10칸)"], ["★10 구멍", "가장 드문 대박"]], "note": "발사 버튼을 꾹 눌렀다 놓으면 발사"},
+	&"DICE_STOCK": {"rows": [["보통 (88%)", "주가만큼 (1~12칸, 매번 ±3)"], ["★상한가 (6%)", "20칸"], ["상장폐지 (6%)", "0칸 · 선두 말 사출 · 턴 종료"]], "note": "주가는 6에서 시작해 이어진다 · 상한가·상장폐지 뒤 6으로"},
+	&"DICE_DARTS": {"rows": [["싱글", "숫자(1~6)만큼"], ["더블 (바깥 고리)", "숫자 × 2"], ["트리플 (안쪽 고리)", "숫자 × 3"], ["★불스아이 (정중앙)", "10칸 + 한 번 더!"]], "note": "조준점이 가운데로 올 때 던지기 · 손떨림 약간"},
 }
 
 
@@ -6246,9 +6272,12 @@ func _refresh_controls() -> void:
 	var tool: BaseJudgmentTool = state.tools[player_id]
 	var over: bool = manager.is_game_over
 	var can_roll: bool = not over and (current_phase == TurnManager.State.PHASE_TURN_BEGIN or current_phase == TurnManager.State.PHASE_ROLL_WAIT)
-	_roll_button.disabled = not can_roll or _tile_pick_active or _ui_busy() or manager.stack_offer_pending() or manager.duel_pending() or _is_bot_turn()
+	_roll_button.disabled = not can_roll or _tile_pick_active or _ui_busy() or manager.stack_offer_pending() or manager.duel_pending() or _is_bot_turn() or manager.hammer_pending(player_id)
 	_refresh_roll_pad()
 	_refresh_tool_stage()
+	_refresh_dart_aim(tool)
+	_refresh_hammer_panel()
+	_refresh_bounty_marks()
 	var can_stop: bool = not over and tool.has_pending_state() and current_phase == TurnManager.State.PHASE_ROLL_WAIT
 	if tool is ToolRussianRoulette:
 		# 러시안 룰렛: [방아쇠 당기기]와 [멈추고 N칸 이동 확정]을 한 세트로 상시 노출한다. 1발도 못 당겼으면 멈추기는 비활성(회색)이고,
@@ -6286,6 +6315,110 @@ func _refresh_controls() -> void:
 		_tool_option.select(tool_index)
 
 
+## 현상금 수배서: 수배된 말 머리 위에 붉은 [WANTED] 표식 (사냥꾼이 잡거나 판이 끝날 때까지).
+func _refresh_bounty_marks() -> void:
+	if state == null:
+		return
+	var wanted: Dictionary = {}
+	for hunter: Variant in state.bounties.keys():
+		wanted[int(state.bounties[hunter])] = true
+	for pawn_id: Variant in _pawn_views.keys():
+		var view: Node2D = _pawn_views[pawn_id]
+		if not is_instance_valid(view):
+			continue
+		var mark: Label = view.get_node_or_null("WantedMark") as Label
+		var show: bool = wanted.has(int(pawn_id))
+		if show and mark == null:
+			mark = _make_label("WANTED", 13, Color("fff5f5"))
+			mark.name = "WantedMark"
+			mark.add_theme_stylebox_override("normal", _style(Color("c92a2a"), Color("ffe066"), 2, 6, 6, 1))
+			mark.position = Vector2(-30, -66)
+			mark.z_index = 60
+			mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			view.add_child(mark)
+		elif not show and mark != null:
+			mark.queue_free()
+
+
+## 강화 망치 선택 판: 보드 한가운데 [+N] · 다음 강화 확률 · [더 강화!] [멈추기].
+func _build_hammer_panel() -> void:
+	_hammer_panel = PanelContainer.new()
+	_hammer_panel.name = "HammerPanel"
+	_hammer_panel.add_theme_stylebox_override("panel", _style(Color(0.08, 0.07, 0.12, 0.95), Color("ffd43b"), 3, 16, 14, 8))
+	_hammer_panel.visible = false
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 8)
+	_hammer_panel.add_child(column)
+	var title: Label = _make_label("", 30, Color("ffd43b"))
+	title.name = "HammerLevel"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_constant_override("outline_size", 6)
+	title.add_theme_color_override("font_outline_color", Color("1a1206"))
+	column.add_child(title)
+	var odds: Label = _make_label("", 16, Color("f1f3f5"))
+	odds.name = "HammerOdds"
+	odds.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(odds)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	column.add_child(row)
+	var up: Button = _make_button("", func() -> void: _act(&"hammer_up"), 18, Color("e8590c"))
+	up.name = "HammerUp"
+	up.custom_minimum_size = Vector2(170, 52)
+	row.add_child(up)
+	var stop: Button = _make_button("", func() -> void: _act(&"hammer_stop"), 18, Color("2b8a3e"))
+	stop.name = "HammerStop"
+	stop.custom_minimum_size = Vector2(170, 52)
+	row.add_child(stop)
+	add_child(_hammer_panel)
+
+
+func _refresh_hammer_panel() -> void:
+	if _hammer_panel == null or manager == null or state == null:
+		return
+	var player_id: int = manager.current_player_id()
+	var show: bool = manager.hammer_pending(player_id) and player_id == _dock_owner() and not _is_bot_turn() and not manager.is_game_over
+	_hammer_panel.visible = show
+	if not show:
+		return
+	var level: int = manager.hammer_level(player_id)
+	var chance: int = TurnManager.hammer_chance(level)
+	(_hammer_panel.find_child("HammerLevel", true, false) as Label).text = "강화 망치 +%d" % level
+	var maxed: bool = level >= TurnManager.HAMMER_MAX
+	(_hammer_panel.find_child("HammerOdds", true, false) as Label).text = "최대 강화!" if maxed else "다음 강화 성공 %d%% · 실패하면 주사위가 부서져 턴 종료" % chance
+	var up: Button = _hammer_panel.find_child("HammerUp", true, false) as Button
+	up.text = "더 강화! (%d%%)" % chance
+	up.disabled = maxed or _ui_busy()
+	var stop: Button = _hammer_panel.find_child("HammerStop", true, false) as Button
+	stop.text = "멈추기 (+%d 확정)" % level
+	stop.disabled = _ui_busy()
+	_hammer_panel.reset_size()
+	_hammer_panel.position = Vector2(683.0, 335.0) - _hammer_panel.size * 0.5
+
+
+## 강화 실패: 주사위가 산산이 부서지는 파편 + 흔들림.
+func _shatter_dice_fx() -> void:
+	if not _fx_on():
+		return
+	var at: Vector2 = _board_center()
+	_burst_shards(at, Color("f8f9fa"), 18)
+	_burst_shards(at, Color("ff8787"), 10)
+	_impact_ring(at, Color("ff6b6b"), 70.0)
+	screen_shake(10.0, 0.3)
+	Sfx.play(&"bad")
+
+
+## 다트 조준판: 내가 직접 굴리는 다트 차례(굴리기 전)에만 돌아간다.
+func _refresh_dart_aim(tool: BaseJudgmentTool) -> void:
+	if _dart_aim == null:
+		return
+	var show: bool = tool is ToolDarts and not _roll_button.disabled and not _fx_busy and manager.current_player_id() == _dock_owner() and _fx_on()
+	if show != _dart_aim.visible:
+		_dart_aim.visible = show
+		_dart_aim.set_aiming(show)
+
+
 ## 러시안 룰렛이면 정지 버튼을 [발사] 옆 큰 버튼으로 옮기고, 다른 도구면 원래 자리(우측 버튼 줄)로 돌려보낸다.
 func _set_gun_buttons(gun: bool) -> void:
 	var wanted_parent: Node = _gun_row if gun else _action_row
@@ -6320,6 +6453,10 @@ func _roll_button_label(tool: BaseJudgmentTool) -> String:
 		return "운명\n뽑기"
 	if tool is ToolPinball:
 		return "발사!"
+	if tool is ToolDarts:
+		return "다트\n던지기"
+	if tool is ToolStockChart:
+		return "매수!"
 	return tr_ui("btn.roll")
 
 
@@ -6539,10 +6676,15 @@ func _on_roll_pressed() -> void:
 	# material sounds at animation cues. Only dice need the generic clatter.
 	if _is_dice_family(tool) and tool.tool_id != &"YUT":
 		Sfx.play(&"dice_roll")
+	var params: Dictionary = {}
+	if tool is ToolDarts and _dart_aim != null and _dart_aim.aiming:
+		params["aim"] = _dart_aim.current_aim()  # 던진 순간의 조준 (타이밍)
+		_dart_aim.set_aiming(false)
+		_dart_aim.visible = false
 	if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN:
 		_act(&"proceed")
 	if manager.current_state == TurnManager.State.PHASE_ROLL_WAIT:
-		_act(&"roll")
+		_act(&"roll", params)
 
 
 ## 스페이스 키 한 번으로 굴린다 (굴림 버튼을 한 번 누른 것과 같다).
@@ -10788,6 +10930,10 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 		&"race_ranked":
 			if bool(data.get("round_cap", false)):
 				_log_line("[%d라운드 종료] 남은 플레이어는 진행 순위로 순위가 확정됩니다" % PacingDirector.HARD_CAP_ROUND, Color("ffd43b"))
+		&"stock_delisted":
+			var delisted: PlayerPawn = state.get_pawn(int(data["pawn_id"]))
+			_log_line("[상장폐지] P%d의 %s 대기실로 사출" % [data["player_id"], _pawn_name(int(data["pawn_id"]))], Color("ff6b6b"))
+			_record(int(data["player_id"]), "%s 상장폐지! %s 대기실로 사출" % [_bq("주식 차트"), _bq("%d번 말" % delisted.slot) if delisted != null else "선두 말"], "", true)
 		&"goal_shrunk":
 			var finished_ids: Array = data["finished"]
 			_refresh_tiles()
@@ -10886,6 +11032,26 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			if _fx_on():
 				_floating_badge(_board_center(), str(UtilityAugments.CALLOUTS[UtilityAugments.REROLL_ALL_AUG]), AugmentDef.DISPLAY_COLORS[&"instant"], 30)
 			_refresh_draft_overlay()
+		&"hammer_result":
+			var hammer_player: int = int(data["player_id"])
+			if bool(data["success"]):
+				_log_line("[강화 망치] P%d 강화 성공! +%d (확률 %d%%)" % [hammer_player, int(data["level"]), int(data["chance"])], Color("ffd43b"))
+				_record(hammer_player, "%s 강화 성공! +%d" % [_bq("강화 망치"), int(data["level"])])
+				_announce_soft("강화 망치", "강화 성공!", "", Color("ffd43b"), null, 0.9, {"key": "hammer_up", "sub": "+%d" % int(data["level"])})
+				Sfx.play(&"promote")
+			else:
+				_log_line("[강화 망치] P%d 강화 실패! 주사위가 부서졌습니다 (턴 종료)" % hammer_player, Color("ff6b6b"))
+				_record(hammer_player, "%s 강화 실패! 주사위가 부서져 턴 종료" % _bq("강화 망치"))
+				_announce("강화 망치", "강화 실패!", "", Color("ff6b6b"), null, 1.4, true, {"key": "hammer_broken", "sub": "주사위가 부서졌다 · 턴 종료"})
+				_shatter_dice_fx()
+			_refresh_hammer_panel()
+		&"hammer_banked":
+			_log_line("[강화 망치] P%d +%d에서 멈춤 → 다음 굴림 +%d" % [data["player_id"], data["level"], data["level"]], Color("ffd43b"))
+			_record(int(data["player_id"]), "%s +%d 확정! 다음 굴림 +%d칸" % [_bq("강화 망치"), int(data["level"]), int(data["level"])])
+			_refresh_hammer_panel()
+		&"hammer_applied":
+			_roll_total[int(data["player_id"])] = int(data["to"])
+			_add_roll_reason(int(data["player_id"]), "강화 +%d" % int(data["level"]))
 		&"revive_triggered":
 			var revived: int = int(data["player_id"])
 			_log_line("[다이스: 리바이브] P%d: 턴이 끝나도 한 턴 더 합니다" % revived, Color("4dabf7"))
@@ -11035,6 +11201,10 @@ func _roll_text(data: Dictionary) -> String:
 				text += "[%s] 스탠드: 합계 %d → %d칸 이동 확정" % [card_text, int(details["total"]), result["steps"]]
 		&"DICE_PINBALL":
 			text += "구슬이 [%s] 구멍에 골인 → %d칸" % ["★10" if int(details["value"]) == 10 else str(details["value"]), result["steps"]]
+		&"DICE_STOCK":
+			text += StockChartView.caption(details, int(result["steps"]))
+		&"DICE_DARTS":
+			text += ToolDarts.hit_text(details, int(result["steps"]))
 		&"REVOLVER":
 			if details["fired"]:
 				text += "뿅! 깃발 발사 · 누적 %d칸 사라짐, 턴 종료" % details["lost"]

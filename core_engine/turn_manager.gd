@@ -235,6 +235,8 @@ func _handle_action(action: StringName, params: Dictionary) -> void:
 		&"stack_choice": _handle_stack_choice(actor, params)
 		&"duel_pick": _handle_duel_pick(actor, params)
 		&"counter_pass": _handle_counter_pass(actor)
+		&"hammer_up": _handle_hammer(actor, true)
+		&"hammer_stop": _handle_hammer(actor, false)
 		_: action_rejected.emit(actor, action, &"unknown_action")
 
 
@@ -397,7 +399,61 @@ func _resolve_actor(claimed_player: int) -> int:
 	return int(peer_to_player.get(sender, -1))
 
 
+## 강화 망치 (v1.1): 강화 단계별 다음 강화 성공 확률(%). 첫 강화(+1)는 카드를 내는 순간 무조건 성공한다. 최대 +HAMMER_MAX.
+const HAMMER_CHANCES: Dictionary = {1: 70, 2: 55, 3: 40, 4: 25}
+const HAMMER_MAX: int = 5
+
+
+## 강화를 고르는 중인가 (그동안은 굴릴 수 없다).
+func hammer_pending(player_id: int) -> bool:
+	return state != null and state.hammer_pending.has(player_id)
+
+
+func hammer_level(player_id: int) -> int:
+	return int(state.hammer_pending.get(player_id, 0)) if state != null else 0
+
+
+static func hammer_chance(level: int) -> int:
+	return int(HAMMER_CHANCES.get(level, 0))
+
+
+## [더 강화!] / [멈추기]: 성공하면 +1, 실패하면 주사위가 부서져 이번 차례가 바로 끝난다. 멈추면 지금 +N이 다음 굴림에 붙는다.
+func _handle_hammer(actor: int, more: bool) -> void:
+	if not hammer_pending(actor) or actor != current_player_id() or current_state != State.PHASE_TURN_BEGIN:
+		action_rejected.emit(actor, &"hammer_up" if more else &"hammer_stop", &"wrong_phase")
+		return
+	var level: int = hammer_level(actor)
+	if not more or level >= HAMMER_MAX:
+		_bank_hammer(actor, level)
+		return
+	var chance: int = hammer_chance(level)
+	var success: bool = state.rng.randi_range(0, 99) < chance
+	if success:
+		level += 1
+		state.hammer_pending[actor] = level
+		_emit_event(&"hammer_result", {"player_id": actor, "success": true, "level": level, "chance": chance})
+		if level >= HAMMER_MAX:
+			_bank_hammer(actor, level)
+			return
+		_broadcast_state()
+		return
+	state.hammer_pending.erase(actor)
+	_emit_event(&"hammer_result", {"player_id": actor, "success": false, "level": level, "chance": chance})
+	move_queue.clear()
+	advance_to_next_player()  # 주사위가 부서졌다: 이번 차례는 여기서 끝
+
+
+func _bank_hammer(actor: int, level: int) -> void:
+	state.hammer_pending.erase(actor)
+	state.hammer_bonus[actor] = level
+	_emit_event(&"hammer_banked", {"player_id": actor, "level": level})
+	_broadcast_state()
+
+
 func _handle_proceed(actor: int) -> void:
+	if hammer_pending(actor):
+		action_rejected.emit(actor, &"proceed", &"hammer_pending")
+		return
 	if current_state == State.PHASE_TURN_BEGIN and actor == current_player_id():
 		_enter_roll_wait()
 	else:
@@ -412,6 +468,9 @@ func _handle_roll(actor: int, params: Dictionary = {}) -> void:
 	# 야추 다이스: 다시 굴릴 때 고정할 주사위(keep: 5개 bool)를 굴림 행동에 실어 보낸다.
 	if params.has("keep") and tool is ToolYacht:
 		(tool as ToolYacht).set_keep(params["keep"] as Array if params["keep"] is Array else [])
+	# 불스아이 다트: 사람의 던지기 타이밍(조준 [거리, 각도])을 굴림 행동에 실어 보낸다.
+	if params.has("aim") and tool is ToolDarts:
+		(tool as ToolDarts).set_aim(params["aim"])
 	state.pacing_humans = pacing_humans
 	_apply_roll_result(_roll_with_modifiers(actor, tool))
 
@@ -478,6 +537,8 @@ func _handle_play_card(actor: int, params: Dictionary) -> void:
 			return
 		state.consume_card(actor, card_id)
 		_card_played_this_turn = true
+		if card.category == GameEnums.CardCategory.TRAP:
+			state.note_trap_card(actor)  # 모브 큐이: 함정을 설치해도 필살기 충전 기회
 		if _check_victory(null):
 			return
 		if _open_counter_offer(&"turn_begin"):
@@ -492,6 +553,8 @@ func _handle_play_card(actor: int, params: Dictionary) -> void:
 		action_rejected.emit(actor, &"play_card", &"invalid_target")
 		return
 	state.consume_card(actor, card_id)
+	if card.category == GameEnums.CardCategory.TRAP:
+		state.note_trap_card(actor)  # 모브 큐이: 함정을 설치해도 필살기 충전 기회
 	if not queued:
 		_card_played_this_turn = true
 	_emit_event(&"card_played", {"player_id": actor, "card_id": card_id, "params": params, "queued": queued})
@@ -513,7 +576,7 @@ func can_use_skill(player_id: int, pawn_id: int) -> bool:
 	var pawn: PlayerPawn = state.get_pawn(pawn_id)
 	if pawn == null or pawn.owner_id != player_id or not PawnSkills.is_ready(pawn):
 		return false
-	if PawnCatalog.skill_of(pawn.sub_type()) == &"plant_mine" and state.board.get_tile(pawn.current_tile_idx).has_trap():
+	if (PawnCatalog.skill_of(pawn.sub_type()) == &"plant_mine" or PawnCatalog.skill_of(pawn.sub_type()) == &"cucumber") and state.board.get_tile(pawn.current_tile_idx).has_trap():
 		return false  # 한 칸에 함정은 하나만
 	return true
 
@@ -569,7 +632,7 @@ func _handle_use_skill(actor: int, params: Dictionary) -> void:
 				return
 			_emit_skill_event(actor, pawn, skill, {"path": shot_path})
 			_execute_move(pawn, shot_path)
-		&"plant_mine":
+		&"plant_mine", &"cucumber":
 			if state.board.get_tile(pawn.current_tile_idx).has_trap():
 				action_rejected.emit(actor, &"use_skill", &"invalid_skill")  # 한 칸에 함정은 하나만
 				return
@@ -641,7 +704,7 @@ func _skill_effect(actor: int, pawn: PlayerPawn, skill: StringName) -> void:
 		&"quake": tiles = PawnSkills.quake_tiles(pawn)
 		&"slash", &"horse", &"back_kick": tiles = PawnSkills.strike_tiles(pawn, skill)
 		&"cannon": tiles = [PawnSkills.cannon_tile(state, pawn)] as Array[int]
-		&"plant_mine", &"hotel": tiles = [pawn.current_tile_idx] as Array[int]
+		&"plant_mine", &"hotel", &"cucumber": tiles = [pawn.current_tile_idx] as Array[int]
 	var from_tile: int = pawn.current_tile_idx
 	var command := SkillEffectCommand.new(actor, pawn.entity_id, skill, tiles)
 	state.begin_attack({"kind": &"capture", "attacker": actor, "attacker_pawn": pawn.entity_id})
@@ -1220,6 +1283,8 @@ func _on_timeout() -> void:
 			else:
 				_finish_draft()
 		State.PHASE_TURN_BEGIN:
+			if hammer_pending(current_player_id()):
+				_bank_hammer(current_player_id(), hammer_level(current_player_id()))  # 시간이 다 되면 지금 강화에서 멈춘다
 			_enter_roll_wait()
 		State.PHASE_ROLL_WAIT:
 			var tool: BaseJudgmentTool = state.tools[current_player_id()]
@@ -1478,6 +1543,20 @@ func _roll_with_modifiers(roller: int, tool: BaseJudgmentTool) -> RollResult:
 	return result
 
 
+## 엘리아스 주식 차트 상장폐지: 보드 위 내 말 중 가장 앞선 말을 대기실(출발선)로 사출한다. 보드에 말이 없으면 아무 일도 없다.
+func _delist_eject(roller: int) -> void:
+	var leader: PlayerPawn = null
+	for pawn: PlayerPawn in state.pawns_of(roller):
+		if not pawn.has_left_start or pawn.is_finished or pawn.carrier != null:
+			continue
+		if leader == null or state.board.distance_to_goal(pawn.current_tile_idx, true) < state.board.distance_to_goal(leader.current_tile_idx, true):
+			leader = pawn
+	if leader == null:
+		return
+	_emit_event(&"stock_delisted", {"player_id": roller, "pawn_id": leader.entity_id, "tile": leader.current_tile_idx})
+	state.send_to_start(leader, roller)
+
+
 ## [범용] 다이스: 리바이브: 굴림이 0칸이거나 턴 종료면 장전된 리바이브를 써서 이번 차례가 끝난 뒤 같은 사람이 한 턴 더 한다.
 func _try_revive(roller: int) -> void:
 	if int(state.revive_charges.get(roller, 0)) <= 0 or bool(state.extra_turns.get(roller, false)):
@@ -1499,6 +1578,8 @@ func _apply_roll_result(result: RollResult) -> void:
 	if state.is_banned(roller_id):
 		result.reroll = false  # 알고리즘 밴: 리롤 금지
 	_emit_event(&"roll_resolved", {"player_id": current_player_id(), "result": result.to_dict()})
+	if bool(result.details.get("eject_leader", false)):
+		_delist_eject(roller_id)  # 주식 차트 상장폐지: 내 선두 말이 대기실로
 	if result.ends_turn or (result.steps <= 0 and not result.can_continue and not result.reroll):
 		_try_revive(roller_id)
 	if result.ends_turn:
@@ -1523,6 +1604,11 @@ func _apply_roll_result(result: RollResult) -> void:
 			move_queue.clear()
 			advance_to_next_player()
 			return
+		var hammer: int = int(state.hammer_bonus.get(roller, 0))
+		if hammer > 0:
+			state.hammer_bonus.erase(roller)
+			_emit_event(&"hammer_applied", {"player_id": roller, "from": ctx.dice_value, "to": ctx.dice_value + hammer, "level": hammer})
+			ctx.dice_value += hammer  # 강화 망치: 강화한 만큼 이번 굴림 결과 +N
 		var permanent: int = int(state.permanent_roll_bonus.get(roller, 0))
 		var corner: int = int(state.corner_buff.get(roller, 0))
 		state.corner_buff.erase(roller)

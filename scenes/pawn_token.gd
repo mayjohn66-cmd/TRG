@@ -9,6 +9,8 @@ const WOOD := Color("e9b875")
 const BODY_BOX := Rect2(-13, -31, 26, 31)
 const HIT_BOX := Rect2(-18, -34, 36, 42)
 var pawn: PlayerPawn
+## 괴상한 멜론 한 단계마다 커지는 비율.
+const MELON_GROWTH: float = 0.2
 var owner_color: Color = Color("e5484d")
 var artwork: Dictionary = {}
 var use_art: bool = true
@@ -30,9 +32,11 @@ func configure(value: PlayerPawn, color: Color, images: bool = true) -> void:
 	owner_color = color
 	use_art = images
 	var art: Dictionary = PawnArt.sprite(pawn) if images else {}
-	var key: String = "%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s" % [pawn.kind, pawn.unit_no, pawn.slot, pawn.promoted, pawn.carried.size(), pawn.skill_used, pawn.is_finished, color, pawn.revenge_boost, (art.get("texture") as Texture2D).resource_path if not art.is_empty() else "shape", pawn.shield, pawn.ward, pawn.turn_guard]
+	var key: String = "%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s" % [pawn.kind, pawn.unit_no, pawn.slot, pawn.promoted, pawn.carried.size(), pawn.skill_used, pawn.is_finished, color, pawn.revenge_boost, (art.get("texture") as Texture2D).resource_path if not art.is_empty() else "shape", pawn.shield, pawn.ward, pawn.turn_guard, pawn.melon_size]
 	if key == _signature:
 		return
+	# 괴상한 멜론 (v1.1): 함정을 먹을 때마다 한 단계씩 커진다 (최대 3단계 = 1.6배)
+	scale = Vector2.ONE * (1.0 + MELON_GROWTH * pawn.melon_size)
 	var animate_shield: bool = shield_motion and is_inside_tree() and _signature != ""
 	_signature = key
 	artwork = art

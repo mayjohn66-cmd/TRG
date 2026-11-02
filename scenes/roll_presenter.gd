@@ -9,7 +9,7 @@ extends PanelContainer
 ## 연출이 끝났다 (취소 포함). play()는 이 시그널을 await 한다.
 signal finished
 
-const SUPPORTED: Array[StringName] = [&"D6", &"CHINCHIRO", &"YUT", &"LIFE_ROULETTE", &"SLOT_777", &"HOLDEM", &"DICE_HWATU", &"DICE_MAHJONG", &"DICE_TAROT", &"REVOLVER"]
+const SUPPORTED: Array[StringName] = [&"D6", &"CHINCHIRO", &"YUT", &"LIFE_ROULETTE", &"SLOT_777", &"HOLDEM", &"DICE_HWATU", &"DICE_MAHJONG", &"DICE_TAROT", &"REVOLVER", &"DICE_STOCK", &"DICE_DARTS"]
 const YUT_NAMES: Dictionary = {0: "낙", 1: "도", 2: "개", 3: "걸", 4: "윷", 5: "모"}
 const SLOT_SYMBOLS: Array[String] = ["체리", "레몬", "종", "BAR", "다이아", "7"]
 const SUITS: Array[String] = ["♣", "◆", "♥", "♠"]
@@ -96,6 +96,9 @@ var _mahjong_names: Array[Label] = []
 var _yut_3d: YutThrow3D = null
 var _slot_3d: SlotMachine3D = null
 var _toy_gun: ToyFlagGun3D = null
+## v1.1 판정 도구의 2D 결과 그림 (주식 차트·다트판).
+var _stock_view: StockChartView = null
+var _dart_view: DartBoardView = null
 var _gun_intro: float = 0.0
 var _gun_pull_started: bool = false
 ## 3D 시간 배속 (투척 도구는 압축한다).
@@ -685,6 +688,20 @@ func _build(tool_id: StringName) -> void:
 		&"DICE_HWATU": _build_hwatu()
 		&"DICE_MAHJONG": _build_mahjong()
 		&"DICE_TAROT": _build_tarot()
+		&"DICE_STOCK":
+			_title.text = "엘리아스 주식 차트"
+			_total = StockChartView.TOTAL_TIME
+			_stock_view = StockChartView.new()  # 화면 구성(_clear)이 지난 그림을 치우므로 매번 새로 만든다
+			_stage.add_child(_stock_view)
+			_stock_view.begin(_result.get("details", {}))
+			_make_card_result(StockChartView.caption(_result.get("details", {}), int(_result.get("steps", 0))))
+		&"DICE_DARTS":
+			_title.text = "불스아이 다트 보드"
+			_total = DartBoardView.TOTAL_TIME
+			_dart_view = DartBoardView.new()
+			_stage.add_child(_dart_view)
+			_dart_view.begin(_result.get("details", {}))
+			_make_card_result(DartBoardView.caption(_result.get("details", {}), int(_result.get("steps", 0))))
 	pivot_offset = Vector2.ZERO
 
 
@@ -886,6 +903,19 @@ func _update(t: float) -> void:
 				last_display = _final_text(_mode,_result)
 		&"HOLDEM", &"DICE_HWATU", &"DICE_TAROT": _update_illustrated_cards(t)
 		&"DICE_MAHJONG": _update_mahjong(t)
+		&"DICE_STOCK": _update_2d(_stock_view, t)
+		&"DICE_DARTS": _update_2d(_dart_view, t)
+
+
+## v1.1 2D 결과 그림: 같은 시계로 그리고, 결과가 정해지면 아래 글을 띄운다.
+func _update_2d(view: Control, t: float) -> void:
+	if view == null:
+		return
+	view.call("apply_time", t)
+	if bool(view.get("settled")):
+		_die_label.text = _card_result_caption
+		_die_label.modulate.a = 1.0
+		last_display = _final_text(_mode, _result)
 
 
 func _update_3d_die(t: float) -> void:
@@ -1051,4 +1081,6 @@ func _final_text(tool_id: StringName, result: Dictionary) -> String:
 				tile_names.append(ToolMahjong.tile_name(int(tile)))
 			return " ".join(PackedStringArray(tile_names))
 		&"DICE_TAROT": return str(details.get("name", ""))
+		&"DICE_STOCK": return StockChartView.caption(details, int(result.get("steps", 0)))
+		&"DICE_DARTS": return ToolDarts.hit_text(details, int(result.get("steps", 0)))
 	return ""

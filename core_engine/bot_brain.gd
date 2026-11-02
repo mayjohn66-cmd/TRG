@@ -157,6 +157,10 @@ static func utility_score(state: GameState, player_id: int, effect: StringName) 
 			return 80.0 if gain >= 8 else 50.0
 		UtilityAugments.MOVE_PLUS:
 			return 72.0
+		UtilityAugments.DRIFT:
+			return 66.0
+		UtilityAugments.BOUNTY:
+			return 58.0
 		UtilityAugments.LUCKY_DICE:
 			return 62.0
 		UtilityAugments.SELECT_SHIELD:
@@ -350,6 +354,12 @@ static func _plan_one_turn_card(state: GameState, player_id: int, card: BaseCard
 				return {"card_id": card.card_id, "params": {"steps": CardStatus.MAX_STEPS}}
 		&"ACT_12":  # 더 월드: 바로 쓴다
 			if card.could_play(state, player_id):
+				return {"card_id": card.card_id, "params": {}}
+		&"ACT_16":  # 기억상실빔: 내 보드 위 말 바로 뒤(6칸 안)에 적 말이 있으면
+			if card.could_play(state, player_id) and _enemy_close_behind(state, player_id, 6) and rng.randf() < 0.6:
+				return {"card_id": card.card_id, "params": {}}
+		&"ACT_17":  # 강화 망치: 반쯤은 바로 쓴다
+			if card.could_play(state, player_id) and rng.randf() < 0.5:
 				return {"card_id": card.card_id, "params": {}}
 		&"ACT_13":  # 슈팡 특급 배송: 반환점까지의 빈 칸 중 가장 앞선 칸으로 (지금보다 앞일 때만)
 			var traveler: PlayerPawn = DoorCommand.traveler(state, player_id)
@@ -600,11 +610,26 @@ static func skill_option(state: GameState, pawn: PlayerPawn) -> Dictionary:
 		&"hotel":
 			var own_hotel: bool = state.board.get_tile(pawn.current_tile_idx).attachments.any(func(a: TileAttachment) -> bool: return a.attachment_id == "HOTEL" and a.owner_id == pawn.owner_id)
 			return {"params": {}, "value": SKILL_USE_THRESHOLD + 1.0} if not own_hotel else {}
-		&"plant_mine":
+		&"plant_mine", &"cucumber":
 			return {"params": {}, "value": SKILL_USE_THRESHOLD + 1.0} if not state.board.get_tile(pawn.current_tile_idx).has_trap() else {}
 		&"extra_roll":
 			return {"params": {}, "value": SKILL_USE_THRESHOLD + 2.0}  # 한 번 더!: 굴리기 전에 바로 쓴다
 	return {}
+
+
+## 내 보드 위 말의 뒤 within칸 안에 적 말이 있는가 (기억상실빔을 쓸 만한가).
+static func _enemy_close_behind(state: GameState, player_id: int, within: int) -> bool:
+	for mine: PlayerPawn in state.pawns_of(player_id):
+		if not mine.has_left_start or mine.is_finished:
+			continue
+		var my_distance: int = state.pawn_progress_distance(mine)
+		for other: PlayerPawn in state.pawns:
+			if other.owner_id == player_id or not other.has_left_start or other.is_finished:
+				continue
+			var gap: int = state.pawn_progress_distance(other) - my_distance
+			if gap > 0 and gap <= within:
+				return true
+	return false
 
 
 static func _charge_option(state: GameState, pawn: PlayerPawn) -> Dictionary:

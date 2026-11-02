@@ -9,6 +9,8 @@ const NAMES: Dictionary = {
 	&"ACT_12": "XI. The World!!",
 	&"ACT_14": "알고리즘 밴",
 	&"ACT_15": "UDO 스킵",
+	&"ACT_16": "기억상실빔",
+	&"ACT_17": "강화 망치",
 }
 ## 밑장빼기로 고를 수 있는 칸 수.
 const MIN_STEPS: int = 1
@@ -31,6 +33,10 @@ func could_play(state: GameState, player_id: int) -> bool:
 		return not StatusCardCommand.targets(state, player_id).is_empty()
 	if card_id == &"ACT_11":
 		return not state.forced_roll.has(player_id)
+	if card_id == &"ACT_16":
+		return not state.amnesia_active()  # 기억상실빔: 이번 라운드에 이미 켜져 있으면 낼 필요가 없다
+	if card_id == &"ACT_17":
+		return not state.hammer_pending.has(player_id) and int(state.hammer_bonus.get(player_id, 0)) <= 0
 	return not bool(state.extra_turns.get(player_id, false))
 
 

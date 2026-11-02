@@ -46,3 +46,7 @@ func _run() -> void:
 		&"ACT_15":
 			state.record_effect(target_player, "rest", bool(state.rest_next_turn.get(target_player, false)))
 			state.rest_next_turn[target_player] = true
+		&"ACT_16":
+			state.amnesia_round = state.round_number  # 기억상실빔: 이번 라운드 동안 모든 말 사출 면역
+		&"ACT_17":
+			state.hammer_pending[sender_id] = 1  # 강화 망치: 첫 강화는 무조건 성공 (+1). 이어서 더 강화할지 멈출지 고른다

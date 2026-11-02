@@ -249,9 +249,9 @@ func test_card_registry_has_thirty_two_cards_and_the_default_deck() -> void:
 		check(card != null and card.card_id == card_id, "카드 %s 등록" % card_id)
 		var key: String = "corner" if card.corner_only else str(card.category)
 		counts[key] = int(counts.get(key, 0)) + 1
-	check_eq(CardRegistry.DECK_COMPOSITION.size(), 32, "카드 32종")
-	check_eq([counts.get(str(GameEnums.CardCategory.COUNTER)), counts.get(str(GameEnums.CardCategory.INSTANT)), counts.get(str(GameEnums.CardCategory.TRAP)), counts.get("corner"), counts.get(str(GameEnums.CardCategory.SUMMON))], [7, 13, 6, 4, 2], "방어 7 · 즉발 13 · 함정 6 · 코너 함정 4 · 소환 2")
-	check_eq(CardRegistry.default_deck().size(), 50, "기본 덱 50장 (cards_table.csv param_2)")
+	check_eq(CardRegistry.DECK_COMPOSITION.size(), 34, "카드 34종 (v1.1 기억상실빔·강화 망치)")
+	check_eq([counts.get(str(GameEnums.CardCategory.COUNTER)), counts.get(str(GameEnums.CardCategory.INSTANT)), counts.get(str(GameEnums.CardCategory.TRAP)), counts.get("corner"), counts.get(str(GameEnums.CardCategory.SUMMON))], [7, 15, 6, 4, 2], "방어 7 · 즉발 15 · 함정 6 · 코너 함정 4 · 소환 2")
+	check_eq(CardRegistry.default_deck().size(), 53, "기본 덱 53장 (cards_table.csv param_2, v1.1 +3)")
 
 
 func test_act_06_objection_resets_one_victory_record() -> void:

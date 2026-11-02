@@ -252,6 +252,11 @@ func _step_turn_begin() -> void:
 		_act(player_id, &"play_card", params)
 		_delay(DELAY_TURN_START)
 		return
+	# 강화 망치 (v1.1): +1에서 한 번 더 강화해 보고(70%), +2 이상이면 멈춘다. 호스트 RNG를 쓰지 않는 고정 규칙이다.
+	if manager.hammer_pending(player_id):
+		_act(player_id, &"hammer_up" if manager.hammer_level(player_id) < 2 else &"hammer_stop")
+		_delay(DELAY_TURN_START)
+		return
 	# 1회용 필살기: 유리한 각이 나오면 주사위 대신(룩은 굴리기 전에) 쓴다.
 	var skill: Dictionary = BotTemper.plan_skill(manager.state, player_id, difficulty)
 	if not skill.is_empty() and not _tried_skills.has(skill["pawn_id"]) and manager.can_use_skill(player_id, int(skill["pawn_id"])):

@@ -137,6 +137,19 @@ static func plan_path(state: GameState, mover: PlayerPawn, ctx: RuleContext, rep
 				path = state.board.calculate_path(mover, steps + 2 * sign_dir, ctx)
 				report.ability_notes.append("상 도약 +2칸")
 				report.passives.append(&"sang_leap")
+	# [범용] 관성 드리프트 (v1.1): 굴림 이동이 코너를 지나갈(도착 칸 제외) 때마다 +2칸. 늘어난 길이 또 코너를 지나면 그것도 센다.
+	if ctx.charge_depth == 0 and bool(state.drift_players.get(mover.owner_id, false)):
+		var counted: int = 0
+		for i: int in 3:
+			var corners: int = drift_corners(path)
+			if corners <= counted:
+				break
+			steps += (corners - counted) * UtilityAugments.DRIFT_STEPS
+			counted = corners
+			path = state.board.calculate_path(mover, steps, ctx)
+		if counted > 0:
+			report.ability_notes.append("관성 드리프트 +%d칸" % (counted * UtilityAugments.DRIFT_STEPS))
+			report.passives.append(&"drift")
 	# 말 밟고 점프하기: 경로 중간에 서 있는 말(아군·적군 무관)마다 +1칸 (최대 3칸). 경로를 무시하는 기물은 제외.
 	# 경로에 합치지 않는다: 눈금 이동으로 도착한 칸에서 처치를 먼저 판정한 뒤, 그 자리에서 추가 이동으로 이어 간다 (finalize).
 	if ctx.charge_depth == 0:
@@ -162,6 +175,15 @@ static func _has_hostile_trap(state: GameState, mover: PlayerPawn, tile_index: i
 		if attachment.attachment_id.begins_with("TRP") and attachment.owner_id != mover.owner_id:
 			return true
 	return false
+
+
+## 관성 드리프트: 경로에서 지나간(마지막 칸 제외) 코너 수.
+static func drift_corners(path: Array[int]) -> int:
+	var count: int = 0
+	for index: int in range(0, path.size() - 1):
+		if BoardSpec.bonus_corner_tiles.has(path[index]):
+			count += 1
+	return count
 
 
 ## 이동 2단계(눈금 이동) 구간: 경로에서 리벤지 부스터 선행 전진 칸(lead)을 뺀 나머지.
@@ -318,8 +340,8 @@ static func apply_step(
 	ctx.path_nodes.append(destination)
 	state.pawn_stepped.emit(mover.entity_id, from_tile, destination)
 	_promote_pawns(state, mover, report)
-	if not is_last and mover.sub_type() == GameEnums.PawnSubType.CHECKERS_KING:
-		_checkers_jump(state, mover, destination, report)
+	if not is_last and (mover.sub_type() == GameEnums.PawnSubType.CHECKERS_KING or mover.is_giant_melon()):
+		_checkers_jump(state, mover, destination, report)  # 다 자란 괴상한 멜론도 굴러가며 스친 적을 처치한다
 	if not is_last:
 		# 강아지: 빵집을 멈추지 않고 지나가기만 해도 카드 1장 (도착한 빵집은 _resolve_landing이 처리한다)
 		if mover.sub_type() == GameEnums.PawnSubType.MONO_DOG and state.board.get_tile(destination).tile_type == TileNode.TileType.BAKERY:
@@ -386,7 +408,7 @@ static func _checkers_jump_at(state: GameState, mover: PlayerPawn, tile: int, re
 			continue
 		for member: PlayerPawn in enemy.stack_members():
 			report.captured_pawn_ids.append(member.entity_id)
-		state.passive_triggered.emit(mover.entity_id, &"checker_slide")
+		state.passive_triggered.emit(mover.entity_id, &"melon_roll" if mover.is_giant_melon() else &"checker_slide")
 		state.pawn_captured.emit(mover.entity_id, enemy.entity_id)
 		state.send_to_start(enemy, mover.owner_id)
 
@@ -476,7 +498,14 @@ static func _trigger_attachments(
 				if state.draw_card(mover.owner_id) != &"":
 					report.defused_cards += 1
 			elif attachment.owner_id != mover.owner_id:
-				state.passive_triggered.emit(mover.entity_id, &"kart_immune")
+				state.passive_triggered.emit(mover.entity_id, &"melon_immune" if mover.is_giant_melon() else &"kart_immune")
+			continue
+		# 괴상한 멜론: 적 함정을 밟으면 죽지 않고 함정을 먹어 치우며 한 단계 커진다 (3단계면 위의 면역)
+		if is_trap and attachment.owner_id != mover.owner_id and mover.sub_type() == GameEnums.PawnSubType.ODD_MELON:
+			tile.remove_attachment(attachment)
+			mover.melon_size = mini(mover.melon_size + 1, PlayerPawn.MELON_MAX)
+			state.trap_defused.emit(tile_index, attachment.attachment_id, mover.entity_id)
+			state.passive_triggered.emit(mover.entity_id, &"melon_grow")
 			continue
 		if is_trap and attachment.owner_id != mover.owner_id and state.break_shield(mover):
 			tile.remove_attachment(attachment)  # 백돌 방어막이 함정을 막고 함께 부서진다
@@ -686,6 +715,7 @@ static func _resolve_captures(state: GameState, mover: PlayerPawn, ctx: RuleCont
 	ctx.capture_charge_steps = EIGHT_BALL_CHARGE if mover.sub_type() == GameEnums.PawnSubType.POOL_8BALL else 0
 	if ctx.metadata.get("skill", &"") == &"keima_jump":
 		ctx.capture_charge_steps = PawnSkills.KEIMA_CAPTURE_STEPS  # 계마 도약: 처치하면 한 칸 더
+	var bounty_pawn: int = int(state.bounties.get(mover.owner_id, -1))
 	ctx.trigger_timing = RuleContext.ON_CAPTURE
 	ctx = state.rulebook.process_context(ctx)
 	if ctx.is_canceled:
@@ -694,6 +724,13 @@ static func _resolve_captures(state: GameState, mover: PlayerPawn, ctx: RuleCont
 	state.begin_attack({"kind": &"capture", "attacker": mover.owner_id, "attacker_pawn": mover.entity_id, "tile": mover.current_tile_idx})
 	_apply_capture_effects(state, mover, victims, report)
 	state.end_attack()
+	# [범용] 현상금 수배서 (v1.1): 수배된 말을 잡으면 그 자리에서 +10칸 더 간다 (8번 공 돌진과 같은 추가 이동)
+	if bounty_pawn != -1 and _primary_move(ctx) and victims.any(func(victim: PlayerPawn) -> bool: return victim.stack_members().any(func(member: PlayerPawn) -> bool: return member.entity_id == bounty_pawn)):
+		var bounty_victim: PlayerPawn = state.get_pawn(bounty_pawn)
+		if bounty_victim != null and not bounty_victim.has_left_start:
+			state.bounties.erase(mover.owner_id)
+			ctx.capture_charge_steps += UtilityAugments.BOUNTY_STEPS
+			state.bounty_claimed.emit(mover.owner_id, bounty_pawn, UtilityAugments.BOUNTY_STEPS)
 	if ctx.capture_extra_turn:
 		report.extra_turn = true
 		if mover.kind == GameEnums.PawnKind.YUT:
@@ -735,7 +772,7 @@ static func pick_capture_victims(enemies: Array[PlayerPawn]) -> Array[PlayerPawn
 
 ## 잡기 면역(미리보기·AI용): 방어막이 남아 있는 바둑 백돌 또는 관심사도 지정 보호막. 실제 잡기에서는 방어막이 깨지며 한 번 막는다 (GameState.break_shield).
 static func is_capture_immune(_state: GameState, pawn: PlayerPawn) -> bool:
-	return pawn.ward or pawn.turn_guard or (pawn.shield and pawn.sub_type() == GameEnums.PawnSubType.BADUK_WHITE)
+	return (_state != null and _state.amnesia_active()) or pawn.ward or pawn.turn_guard or (pawn.shield and pawn.sub_type() == GameEnums.PawnSubType.BADUK_WHITE)
 
 
 ## 업기 자석 범위: 굴림 이동이 끝난 칸의 바로 앞/뒤 이 칸 수 안에 내 말이 있으면 당겨 붙어 합류한다 (2026-10-27).

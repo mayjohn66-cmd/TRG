@@ -5,8 +5,8 @@
 | 파일 | 내용 |
 |---|---|
 | `augments_table.csv` | 모든 증강 + 규칙 수치(`RULE_*`) |
-| `dice_table.csv` | 판정 도구 13종 |
-| `cards_table.csv` | 생떼 카드 32종 |
+| `dice_table.csv` | 판정 도구 15종 (v1.1 주식 차트·다트 포함) |
+| `cards_table.csv` | 생떼 카드 34종 + 먹통 [오이 카드] 1종 (덱에 없음, 모브 큐이의 오이로만 받는다) |
 | `ui_strings.csv` | 화면 문구 (key, ko, en, ja) - 다국어 대비 |
 | `translations.csv` | 코드에 있는 한국어 문구의 영어·일본어 (ko, en, ja) - 영어·일본어 화면이 그릴 때 번역 |
 

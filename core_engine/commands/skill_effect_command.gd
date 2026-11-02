@@ -53,6 +53,11 @@ func _run() -> void:
 			var mine := TrapMine.new(pawn.owner_id)
 			mine.is_hidden_trap = false  # 필살기 지뢰는 모두가 보는 앞에서 묻는다: 칸 위에 지뢰 모형으로 보인다 (카드 지뢰는 숨은 함정)
 			state.place_attachment(pawn.current_tile_idx, mine)
+		&"cucumber":
+			# 모브 큐이 [오이 설치]: 모두가 보는 오이. 밟은 적은 먹통 [오이 카드]를 받는다
+			var cucumber := TrapCucumber.new(pawn.owner_id)
+			cucumber.is_hidden_trap = false
+			state.place_attachment(pawn.current_tile_idx, cucumber)
 		&"hotel":
 			# 미니카 [호텔 건설]: 같은 칸의 내 호텔은 새것으로 바꾼다
 			var node: TileNode = state.board.get_tile(pawn.current_tile_idx)

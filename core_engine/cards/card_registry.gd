@@ -10,7 +10,7 @@ static var _cache: Dictionary = {}
 const DECK_COMPOSITION: Dictionary = {
 	&"CNT_01": 1, &"CNT_02": 2, &"CNT_03": 2, &"CNT_04": 2, &"CNT_05": 1, &"CNT_06": 1, &"CNT_07": 1,
 	&"ACT_02": 2, &"ACT_03": 2, &"ACT_04": 2, &"ACT_06": 2, &"ACT_07": 2, &"ACT_08": 2, &"ACT_09": 2,
-	&"ACT_10": 2, &"ACT_11": 1, &"ACT_12": 1, &"ACT_13": 2, &"ACT_14": 1, &"ACT_15": 2,
+	&"ACT_10": 2, &"ACT_11": 1, &"ACT_12": 1, &"ACT_13": 2, &"ACT_14": 1, &"ACT_15": 2, &"ACT_16": 1, &"ACT_17": 2,
 	&"TRP_02": 2, &"TRP_03": 2, &"TRP_05": 2, &"TRP_06": 2, &"TRP_07": 2, &"TRP_08": 1,
 	&"TRP_C01": 1, &"TRP_C02": 1, &"TRP_C03": 1, &"TRP_C04": 1,
 	&"SUM_01": 1, &"SUM_02": 1,
@@ -33,7 +33,7 @@ static func get_card(card_id: StringName) -> BaseCard:
 		&"ACT_08": card = CardWheelOfFortune.new()
 		&"ACT_09": card = CardDuel.new()
 		&"ACT_10": card = CardCrowbar.new()
-		&"ACT_11", &"ACT_12", &"ACT_14", &"ACT_15": card = CardStatus.new(card_id)
+		&"ACT_11", &"ACT_12", &"ACT_14", &"ACT_15", &"ACT_16", &"ACT_17": card = CardStatus.new(card_id)
 		&"ACT_13": card = CardDoor.new()
 		&"TRP_02": card = CardTrapPit.new()
 		&"TRP_03": card = CardMine.new()
@@ -42,6 +42,7 @@ static func get_card(card_id: StringName) -> BaseCard:
 		&"TRP_C01": card = CardIsland.new()
 		&"SUM_01": card = CardBandit.new()
 		&"SUM_02": card = CardGhost.new()
+		&"JNK_CUKE": card = CardCucumber.new()  # 모브 큐이의 먹통 카드 (덱에는 없다)
 	if card == null:
 		push_error("CardRegistry: 알 수 없는 카드 ID '%s'" % card_id)
 		return null

@@ -20,10 +20,16 @@ const TRAP_CLEAR1: StringName = &"AUG_UTIL_TRAP_CLEAR1"       # [즉발 발동] 
 const CATCH_UP: StringName = &"AUG_UTIL_CATCH_UP"             # [즉발 발동] 순보: 가장 뒤처진 내 말을 선두 바로 뒤로
 const SHORTEN_GOAL: StringName = &"AUG_UTIL_SHORTEN_GOAL"     # [즉발 발동] 슬슬 지루한데...: 모두의 결승선 2칸 영구 단축
 const REROLL_ALL_AUG: StringName = &"AUG_UTIL_REROLL_ALL_AUG" # [즉발 발동] 올 픽션: 이번 드래프트를 모두 다시 뽑는다 (라운드당 1회)
+## v1.1 범용 2종.
+const DRIFT: StringName = &"AUG_UTIL_DRIFT"                   # [패시브] 관성 드리프트: 코너를 지나갈 때마다 +2칸
+const BOUNTY: StringName = &"AUG_UTIL_BOUNTY"                 # [범용 보급] 현상금 수배서: 1등 적 말에 수배 마크, 잡으면 +10칸
+## 관성 드리프트: 코너 하나를 지날 때 더 가는 칸 / 현상금: 수배 말을 잡으면 더 가는 칸.
+const DRIFT_STEPS: int = 2
+const BOUNTY_STEPS: int = 10
 
-const ALL_IDS: Array[StringName] = [MUTATE_ONE, MUTATE_ALL, SKILL_REFILL, MOVE_PLUS, HAND_EXPAND, LUCKY_DICE, EXTRA_TURN, CARD_PACK2, SELECT_SHIELD, TRAP_CLEAR1, CATCH_UP, SHORTEN_GOAL, REROLL_ALL_AUG]
+const ALL_IDS: Array[StringName] = [MUTATE_ONE, MUTATE_ALL, SKILL_REFILL, MOVE_PLUS, HAND_EXPAND, LUCKY_DICE, EXTRA_TURN, CARD_PACK2, SELECT_SHIELD, TRAP_CLEAR1, CATCH_UP, SHORTEN_GOAL, REROLL_ALL_AUG, DRIFT, BOUNTY]
 ## 2026-10 범용 10종 (도감·테스트용).
-const NEW_IDS: Array[StringName] = [MOVE_PLUS, HAND_EXPAND, LUCKY_DICE, EXTRA_TURN, CARD_PACK2, SELECT_SHIELD, TRAP_CLEAR1, CATCH_UP, SHORTEN_GOAL, REROLL_ALL_AUG]
+const NEW_IDS: Array[StringName] = [MOVE_PLUS, HAND_EXPAND, LUCKY_DICE, EXTRA_TURN, CARD_PACK2, SELECT_SHIELD, TRAP_CLEAR1, CATCH_UP, SHORTEN_GOAL, REROLL_ALL_AUG, DRIFT, BOUNTY]
 ## 영구 패시브: 한 사람이 같은 증강을 겹쳐 받을 수 있는 최대 횟수 (손패 상한·행운은 한 번만, 이동 +1은 두 번까지).
 const MOVE_PLUS_MAX: int = 2
 const HAND_EXPAND_MAX: int = 1
@@ -45,6 +51,8 @@ const CALLOUTS: Dictionary = {
 	CATCH_UP: "[선두 바로 뒤로!]",
 	SHORTEN_GOAL: "[결승선 2칸 단축!]",
 	REROLL_ALL_AUG: "[전원 증강 재추첨!]",
+	DRIFT: "[코너 드리프트 +2칸!]",
+	BOUNTY: "[현상금 수배!]",
 }
 
 ## 수치 기본값 (augments_table.csv param_1이 비어 있을 때만 쓴다).
@@ -66,6 +74,8 @@ const INFO: Dictionary = {
 	CATCH_UP: ["[즉발 발동] 순보", "◆ 가장 뒤처진 내 말을 보드 전체 선두 말의 바로 뒤 칸으로 이동"],
 	SHORTEN_GOAL: ["[즉발 발동] 슬슬 지루한데...", "◆ 모든 플레이어의 결승선이 2칸 당겨진다 (영구)"],
 	REROLL_ALL_AUG: ["[즉발 발동] 올 픽션", "◆ 모두가 고른 뒤 발동: 모든 플레이어가 고른 증강을 버리고 새 3장 중에서 다시 고른다 (라운드당 1회)"],
+	DRIFT: ["[패시브] 관성 드리프트", "◆ 내 말이 코너를 지나갈 때마다 +2칸 (영구)"],
+	BOUNTY: ["[범용 보급] 현상금 수배서", "◆ 1등 적 말에 수배 마크\n◆ 그 말을 잡으면 즉시 +10칸"],
 }
 
 
@@ -122,6 +132,10 @@ static func is_available(effect: StringName, state: GameState, player_id: int) -
 			return state.goal_shrink_bonus + SHORTEN_STEPS <= SHORTEN_MAX
 		REROLL_ALL_AUG:
 			return state.reshuffle_round != state.round_number
+		DRIFT:
+			return not bool(state.drift_players.get(player_id, false))
+		BOUNTY:
+			return not state.bounties.has(player_id) and bounty_target(state, player_id) != null
 	return false
 
 
@@ -155,7 +169,38 @@ static func apply(effect: StringName, state: GameState, player_id: int) -> Dicti
 			return {"ok": true, "text": "모든 플레이어의 결승선이 %d칸 당겨졌습니다 (%d번 칸부터 결승)" % [SHORTEN_STEPS, TempoUp.zone_start_for(state)]}
 		REROLL_ALL_AUG:
 			return {"ok": true, "text": "이번 드래프트를 다시 뽑습니다"}  # 실제 재추첨은 모두 고른 뒤 TurnManager가 한다
+		DRIFT:
+			state.drift_players[player_id] = true
+			return {"ok": true, "text": "이번 판 동안 코너를 지날 때마다 +%d칸" % DRIFT_STEPS}
+		BOUNTY:
+			var wanted: PlayerPawn = bounty_target(state, player_id)
+			if wanted == null:
+				return {"ok": false, "text": "수배할 적 말이 없습니다"}
+			state.bounties[player_id] = wanted.entity_id
+			state.utility_fx.append({"kind": "bounty", "pawn_id": wanted.entity_id, "player_id": player_id})
+			return {"ok": true, "text": "P%d의 %d번 말 수배! 잡으면 +%d칸" % [wanted.owner_id, wanted.slot, BOUNTY_STEPS]}
 	return {"ok": false, "text": "알 수 없는 범용 증강입니다"}
+
+
+## 현상금 수배서의 대상: 보드 위 적 말 중 결승에 가장 가까운 말 (같으면 ID가 앞선 말). 없으면 null.
+static func bounty_target(state: GameState, player_id: int) -> PlayerPawn:
+	var best: PlayerPawn = null
+	for pawn: PlayerPawn in state.pawns:
+		if pawn.owner_id == player_id or not pawn.has_left_start or pawn.is_finished or pawn.carrier != null or state.is_graduated(pawn.owner_id):
+			continue
+		if best == null or state.pawn_progress_distance(pawn) < state.pawn_progress_distance(best) \
+				or (state.pawn_progress_distance(pawn) == state.pawn_progress_distance(best) and pawn.entity_id < best.entity_id):
+			best = pawn
+	return best
+
+
+## 이 말에 걸린 현상금의 사냥꾼들 (그 말을 잡으면 +10칸을 받는 사람).
+static func hunters_of(state: GameState, pawn_id: int) -> Array[int]:
+	var hunters: Array[int] = []
+	for hunter: Variant in state.bounties.keys():
+		if int(state.bounties[hunter]) == pawn_id:
+			hunters.append(int(hunter))
+	return hunters
 
 
 ## 고르는 순간 대상 말을 직접 고를 수 있는 범용 증강인가 (관심사도 지정: 보드 위 내 말이 둘 이상).
