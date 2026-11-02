@@ -2584,3 +2584,7 @@ P%d의 %d번 말 수배! 잡으면 +%d칸,P%d's pawn %d is WANTED! Capture it fo
 슬픔,Sad,かなしい
 야호!,Yay!,やったー！
 어라라?!,Uh-oh?!,あれれ？！
+"중립 기물(%s)이 이미 판 위에 있습니다. 소환 카드는 중립 기물이 사라진 뒤에 쓸 수 있어요","A neutral piece (%s) is already on the board. Summon cards can be used after it disappears","中立の駒(%s)がすでに盤上にあります。召喚カードはその駒が消えてから使えます"
+%s %d번 칸,%s at tile %d,%s %d番マス
+중립 기물,Neutral piece,中立の駒
+-- 중립 기물: %s --,-- Neutral pieces: %s --,-- 中立の駒: %s --

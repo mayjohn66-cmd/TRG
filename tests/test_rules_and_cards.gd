@@ -290,6 +290,23 @@ func test_neutral_npc_passes_over_the_start_line_to_reach_the_nearest_enemy() ->
 	check(bool(report["vanished"]) and not state.get_pawn(21).has_left_start, "건너편 말을 잡는다")
 
 
+## 제보(2026-11-02): 와구와구 유령이 안 써졌다. 중립 기물이 이미 판 위에 있으면 소환 카드는 못 쓰는데,
+## 손패에서는 쓸 수 있는 것처럼 보이다가 눌러도 아무 말이 없었다 (could_play가 항상 true였다).
+func test_summon_cards_are_unplayable_while_a_neutral_piece_is_on_the_board() -> void:
+	var state := make_state()
+	for card_id: StringName in [&"SUM_01", &"SUM_02"]:
+		var card: BaseCard = CardRegistry.get_card(card_id)
+		check(card.could_play(state, 1), "%s: 중립 기물이 없으면 낼 수 있다" % card_id)
+		check(card.is_legal(state, 1, {"tile": BoardSpec.halfway_tile}), "%s: 반환점에 소환 가능" % card_id)
+	state.spawn_npc(BoardSpec.halfway_tile, GameEnums.NpcBehavior.PATROL_REVERSE, 2, &"SUM_02")
+	for card_id: StringName in [&"SUM_01", &"SUM_02"]:
+		var card: BaseCard = CardRegistry.get_card(card_id)
+		check(not card.could_play(state, 1), "%s: 중립 기물이 있으면 손패에서도 못 낸다" % card_id)
+		check(not card.is_legal(state, 1, {"tile": BoardSpec.halfway_tile}), "%s: 소환 거절" % card_id)
+	state.clear_npcs()
+	check(CardRegistry.get_card(&"SUM_02").could_play(state, 1), "사라지면 다시 낼 수 있다")
+
+
 # --- Dry-Run(미리보기)와 법전 변조 추적 ------------------------------------------
 
 func test_preview_context_computes_values_without_emitting_law_signals() -> void:

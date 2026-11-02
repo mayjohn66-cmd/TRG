@@ -6278,7 +6278,15 @@ func _card_block_reason(player_id: int, card: BaseCard) -> String:
 			if victim == -1:
 				return "[UDO +4] 폭탄을 넘길 다음 사람이 없습니다"
 			return "[UDO +4] 다음 차례인 %s의 말이 보드 위에 없어 쓸 수 없습니다" % _player_name(victim)
+	if card.category == GameEnums.CardCategory.SUMMON and not state.npcs.is_empty():
+		return "중립 기물(%s)이 이미 판 위에 있습니다. 소환 카드는 중립 기물이 사라진 뒤에 쓸 수 있어요" % _npc_label(state.npcs[0])
 	return "[%s] 지금은 대상이 없어 쓸 수 없습니다" % card.display_name
+
+
+## 판 위 중립 기물 이름 (사료스탕스 / 와구와구 유령)과 위치.
+func _npc_label(npc: NeutralNPC) -> String:
+	var card: BaseCard = CardRegistry.get_card(npc.display_id)
+	return "%s %d번 칸" % [card.display_name if card != null else "중립 기물", npc.current_tile_idx]
 
 
 func _refresh_controls() -> void:
@@ -8808,7 +8816,9 @@ func _begin_tile_pick(player_id: int, card_id: StringName) -> void:
 		if valid:
 			valid_count += 1
 	if valid_count == 0:
-		_log_line("[%s]를 놓을 수 있는 타일이 없습니다." % card.display_name, Color("868e96"))
+		var no_tile: String = "[%s]를 놓을 수 있는 타일이 없습니다." % card.display_name
+		_log_line(no_tile, Color("868e96"))
+		_show_center_banner(no_tile, Color("ff8787"))  # 로그만 남기면 눌러도 아무 일도 없는 것처럼 보인다
 		_cancel_tile_pick()
 		return
 	var purpose: String = "함정을 설치할" if card.category == GameEnums.CardCategory.TRAP else ("순간이동할" if card_id == &"ACT_13" else "소환할")
@@ -12159,6 +12169,11 @@ func _build_diagnostic_snapshot() -> String:
 		lines.append("P%d %s%s · 완주 %d/%d · 도구 %s · 손패 %d장" % [player_id, _player_name(player_id), rank_text, finished_count, GameEnums.PAWNS_PER_PLAYER, tool.display_name if tool != null else "-", (state.hands.get(player_id, []) as Array).size()])
 		lines.append("   기물%s: %s" % [" (졸업 직전)" if not pawn_records.is_empty() else "", ", ".join(pawn_texts)])
 		lines.append("   증강: %s" % (", ".join(picked) if not picked.is_empty() else "없음"))
+	if not state.npcs.is_empty():
+		var npc_texts: PackedStringArray = []
+		for npc: NeutralNPC in state.npcs:
+			npc_texts.append(_npc_label(npc))
+		lines.append("-- 중립 기물: %s --" % ", ".join(npc_texts))
 	lines.append("-- 중앙 법전 --")
 	# 달성되어 법전에서 지워진 교칙도 남긴다 (법전으로 판이 끝나면 슬롯이 비어 '비어 있음'만 보이던 문제)
 	var achieved_lines: PackedStringArray = []
