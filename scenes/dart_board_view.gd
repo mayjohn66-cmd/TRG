@@ -35,6 +35,10 @@ func _init() -> void:
 	set_process(false)
 
 
+func _ready() -> void:
+	set_process(aiming)  # 엔진이 _ready에서 _process를 다시 켜므로, 조준 중이 아니면 매 프레임 그리지 않게 끈다
+
+
 ## 조준 화면을 켜고 끈다.
 func set_aiming(on: bool) -> void:
 	aiming = on

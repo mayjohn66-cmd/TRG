@@ -25,6 +25,10 @@ func _init() -> void:
 	custom_minimum_size = Vector2(WIDTH, 0)
 
 
+func _ready() -> void:
+	set_process(get_child_count() > 0)  # 줄이 없으면 매 프레임 돌지 않는다 (push가 다시 켠다)
+
+
 ## 글(bbcode 태그는 뺀다)을 읽는 데 걸리는 시간(초).
 static func reading_seconds(text: String) -> float:
 	var plain: String = RegEx.create_from_string("\\[/?(color|b|i|u|font_size|outline_size|lb|rb)[^\\]]*\\]").sub(text, "", true)
