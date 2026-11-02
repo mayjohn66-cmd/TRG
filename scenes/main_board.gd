@@ -628,6 +628,8 @@ var _track_lines: Array[Line2D] = []
 var _action_row: HFlowContainer = null
 var _roll_pad: RollPad = null
 var _dart_aim: DartBoardView = null
+## 칸 바닥 한꺼번에 그리기 (그리기 호출 줄이기).
+var _tile_batch: BoardSkin.TileBatch = null
 ## 강화 망치 (v1.1) 선택 판: [더 강화!] / [멈추기].
 var _hammer_panel: PanelContainer = null
 var _roll_history: RollHistory = null
@@ -2546,6 +2548,8 @@ func _apply_view_mode(refresh_pawns: bool = true) -> void:
 		return
 	for index: int in BoardSpec.tile_count:
 		_place_tile(index)
+	if _tile_batch != null:
+		_tile_batch.rebuild()
 	for line: Line2D in _track_lines:
 		line.queue_free()
 	_track_lines.clear()
@@ -2558,10 +2562,16 @@ func _build_tiles_once() -> void:
 	if not _tile_views.is_empty():
 		return
 	_add_track_lines()
+	# 칸 바닥은 한 번에 그린다 (트랙 선 위, 칸들 아래)
+	_tile_batch = BoardSkin.TileBatch.new()
+	_tile_batch.name = "TileBatch"
+	_board_layer.add_child(_tile_batch)
 	for index: int in BoardSpec.tile_count:
 		var node: TileNode = state.board.get_tile(index)
 		var tile := BoardSkin.Tile.new()
 		tile.initialize(index)
+		tile.batched = true
+		_tile_batch.tiles.append(tile)
 		tile.gui_input.connect(_on_tile_gui_input.bind(index))
 		_board_layer.add_child(tile)
 		_tile_views[index] = tile
@@ -2605,6 +2615,7 @@ func _build_tiles_once() -> void:
 		tile.add_child(pick_mark)
 		_pick_marks[index] = pick_mark
 		_place_tile(index)
+	_tile_batch.rebuild()
 
 
 func _add_track_lines() -> void:
@@ -2794,6 +2805,8 @@ func _refresh_tiles() -> void:
 		if BoardSpec.jump_corner_targets.has(index):
 			if (_tile_views[index] as BoardSkin.Tile).arrow_target != _jump_arrow_target(index):
 				_place_tile(index)
+				if _tile_batch != null:
+					_tile_batch.rebuild()  # 드문 일: 칸을 다시 놓았으면 바닥도 다시 만든다
 		var tips: Array[String] = []
 		var kind_label: String = _tile_tag(index, state.board.get_tile(index).tile_type)
 		if not kind_label.is_empty():

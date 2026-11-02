@@ -238,6 +238,48 @@ class Ring extends Control:
 		closed.append(closed[0])
 		draw_polyline(closed,border_color,border_width,true)
 
+## 칸 32개의 바닥을 삼각형 배열 하나로 그린다 (2026-11 최적화: 칸마다 다각형 5~6개 = 웹 그리기 호출 약 200번 → 1번).
+## 칸 모양은 배치가 바뀔 때만 다시 만든다 (rebuild). 칸의 클릭·툴팁·덧그림·자식 그림은 각 Tile이 그대로 맡는다.
+class TileBatch extends Node2D:
+	var tiles: Array = []
+	var _points := PackedVector2Array()
+	var _colors := PackedColorArray()
+	var _indices := PackedInt32Array()
+
+	func rebuild() -> void:
+		_points.clear()
+		_colors.clear()
+		_indices.clear()
+		for tile: Variant in tiles:
+			if not is_instance_valid(tile) or not (tile as Tile).visible or (tile as Tile).layers.is_empty():
+				continue
+			var frame: Transform2D = (tile as Tile).get_transform()
+			for entry: Array in (tile as Tile).base_polygons():
+				_append(frame, entry[0], entry[1])
+		queue_redraw()
+
+	func _append(frame: Transform2D, polygon: PackedVector2Array, color: Color) -> void:
+		if polygon.size() < 3:
+			return
+		var triangles: PackedInt32Array = Geometry2D.triangulate_polygon(polygon)
+		if triangles.is_empty():
+			return
+		var base: int = _points.size()
+		for point: Vector2 in polygon:
+			_points.append(frame * point)
+			_colors.append(color)
+		for corner: int in triangles:
+			_indices.append(base + corner)
+
+	func triangle_count() -> int:
+		return _indices.size() / 3
+
+	func _draw() -> void:
+		if _indices.is_empty():
+			return
+		RenderingServer.canvas_item_add_triangle_array(get_canvas_item(), _indices, _points, _colors)
+
+
 class Tile extends Control:
 	var index: int = 0
 	var data: Dictionary = {}
@@ -267,6 +309,8 @@ class Tile extends Control:
 	var dash_phase: float = 0.0
 	## 템포 업으로 당겨진 결승선 안의 칸: 체크무늬 결승 깃발 무늬가 덮인다.
 	var goal_on: bool = false
+	## true면 바닥(그림자·옆면·면)은 TileBatch가 그리고, 이 칸은 함정·부스터·경고·결승 덧그림만 그린다.
+	var batched: bool = false
 
 	func initialize(tile_index: int) -> void:
 		index = tile_index
@@ -486,15 +530,22 @@ class Tile extends Control:
 		draw_polyline(closed, Color(0.85, 0.05, 0.05, 0.55 + 0.45 * danger_pulse), 5.0 if strong else 3.0, true)
 
 	func _draw_tile() -> void:
+		if batched:
+			return  # 바닥은 TileBatch가 모든 칸을 한 번에 그린다
+		for entry: Array in base_polygons():
+			draw_colored_polygon(entry[0], entry[1])
+
+	## 칸 바닥 (그림자 → 옆면 → 테두리·흰 띠·바닥 → 안쪽 띠) 다각형과 색. 그리는 순서 그대로.
+	func base_polygons() -> Array:
 		var edge: Color = data.edge
 		var fill: Color = data.fill
-		draw_colored_polygon(shadow,Color(0.22,0.35,0.13,0.12))
-		draw_colored_polygon(side,edge.darkened(0.16))
+		var result: Array = [[shadow, Color(0.22,0.35,0.13,0.12)], [side, edge.darkened(0.16)]]
 		var colors: Array[Color] = [edge,Color("fffdf5"),fill]
 		for i: int in layers.size():
-			draw_colored_polygon(layers[i],colors[i])
+			result.append([layers[i], colors[i]])
 		if band.size() >= 3:
-			draw_colored_polygon(band,data.band)
+			result.append([band, data.band])
+		return result
 
 	func _has_point(point: Vector2) -> bool:
 		return Geometry2D.is_point_in_polygon(point,outline_points)
