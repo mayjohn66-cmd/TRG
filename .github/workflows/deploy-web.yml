@@ -663,9 +663,10 @@ jobs:
           # 링크 미리보기(Open Graph)용 이미지와 홈 화면 아이콘: shell.html이 index.html 기준 상대/절대 주소로 참조한다.
           cp web/og-image.png build/web/og-image.png
           cp web/icon.png build/web/icon.png
-          cp web/title-logo.png build/web/title-logo.png
-          cp web/title-logo-en.png build/web/title-logo-en.png
-          cp web/title-logo-ja.png build/web/title-logo-ja.png
+          # 시작 화면 제목 그림은 손실 WebP(약 180KB)를 쓴다 (원본 PNG는 장당 약 1.2MB, 게임 안 제목은 res://web/title-logo*.png 임포트본)
+          cp web/title-logo.webp build/web/title-logo.webp
+          cp web/title-logo-en.webp build/web/title-logo-en.webp
+          cp web/title-logo-ja.webp build/web/title-logo-ja.webp
           cp web/loading-petit-speaki.webp build/web/loading-petit-speaki.webp
           # Required standalone asset: a Godot PCK import is not a public web URL.
           cp web/letterbox-pattern.png build/web/letterbox-pattern.png

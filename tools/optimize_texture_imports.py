@@ -30,7 +30,8 @@ ICON_DIRS = [
 ]
 IDLE_HQ_DIR = "content_trickcal/avatars/avatar_*/idle_hq"
 CARD_DIR = "assets/cards"
-## 픽셀 좌표로 칸을 잘라 쓰는 스프라이트 시트: 크기·압축을 바꾸면 프레임이 어긋난다.
+## 픽셀 좌표로 칸을 잘라 쓰는 스프라이트 시트: 크기를 바꾸면 프레임이 어긋난다 (그대로 둔다).
+## 쁘띠 스핔이 시트는 256px 칸이 WebP 16px 블록에 맞아 손실 WebP 0.9로만 줄였다 (2026-11, 6MB → 약 1MB, 크기는 2560x2048 그대로).
 KEEP_AS_IS = {
     "assets/ui/trickcal/duel/pumpkin/petit-speaki-angry.webp",
 }
