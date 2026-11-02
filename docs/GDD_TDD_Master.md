@@ -1861,3 +1861,11 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 - 결과: 같은 장면 그리기 호출 513 → 331 (-35%), 화면은 그대로 (전후 스크린샷 비교).
 - 남은 큰 덩어리: 프로필 카드(장당 약 60번). 같은 방식으로 고정 부분을 묶을 수 있다.
 
+### 7.29 웹 용량 다이어트 (2026-11-02)
+- 배경: 웹 본체 index.pck가 39.59 MiB로 한도(40 MiB)까지 0.41 MiB밖에 남지 않았다.
+- 쁘띠 스핔이 화남 시트(`assets/ui/trickcal/duel/pumpkin/petit-speaki-angry.webp`, 2560x2048·73프레임): 무손실 6.0MB → 손실 WebP 0.9 약 2.1MB. 크기는 그대로라 256px 칸 좌표가 어긋나지 않는다 (칸이 WebP 16px 블록에 맞아 이웃 프레임이 번지지 않음). `tools/optimize_texture_imports.py`의 KEEP_AS_IS 설명도 고쳤다.
+- 빵집 에르핀 연출(`effects/bakery/erpin_move.png`·`erpin_idle.png`): 무손실 → 손실 WebP 0.85 (0.68MB → 0.21MB).
+- 결과: index.pck 약 4.4MB 감소 (예상 약 35.2 MiB).
+- 시작 화면 제목 그림: HTML 껍데기가 내려받는 원본 PNG(장당 약 1.2MB)를 손실 WebP(장당 약 180KB, `web/title-logo*.webp`)로 바꿨다. 게임 안 제목은 그대로 `res://web/title-logo*.png` 임포트본을 쓰고, WebP 사본은 본체 묶음에서 뺀다(export exclude_filter).
+- 그대로 둔 것: 에르핀 로비 고화질 대기 프레임(avatar_01/idle_hq, 아바타 묶음 31.6MB)은 6.36의 화질 결정대로 1024px 무손실 유지.
+

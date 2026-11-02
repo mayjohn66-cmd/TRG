@@ -22,7 +22,7 @@ const server = http.createServer(async (req,res)=>{
  const name = new URL(req.url,'http://localhost').pathname;
  if (name === '/') {res.setHeader('Content-Type','text/html; charset=utf-8');res.end(shell);return;}
  if (name === '/engine-stub.js') {res.setHeader('Content-Type','text/javascript');res.end(stub);return;}
- if (!['/title-logo.png','/loading-petit-speaki.webp','/icon.png'].includes(name)){res.writeHead(404);res.end();return;}
+ if (!['/title-logo.webp','/title-logo-en.webp','/title-logo-ja.webp','/loading-petit-speaki.webp','/icon.png'].includes(name)){res.writeHead(404);res.end();return;}
  try {res.setHeader('Content-Type',name.endsWith('.webp')?'image/webp':'image/png');res.end(await fs.readFile(path.join(web,name.slice(1))));}
  catch {res.writeHead(404);res.end();}
 });
