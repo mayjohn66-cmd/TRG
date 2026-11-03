@@ -65,7 +65,7 @@ Time-up buzzer for a board game: short cartoon 'bwomp' horn with a descending to
 ```
 **`tempo_warning_01.ogg`** — 1.2s
 ```
-Tempo-up warning: a short two-tone 'bee-yoo' beep repeated three times getting slightly faster, with a soft drum tap on each, soft low-mid tone around 350-650 Hz, quiet, short gaps between beeps, no sustained wail. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 1.2 seconds.
+Tempo-up warning: two-tone 'bee-yoo' beep three times, getting faster, soft drum tap on each, soft low-mid tone around 350-650 Hz, quiet, short gaps between beeps, no sustained wail. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 1.2 seconds.
 ```
 **`good_01.ogg`** — 0.5s
 ```
@@ -642,7 +642,7 @@ Danger warning: two-tone 'bee-yoo' beep like a toy emergency vehicle, four quick
 ```
 **★ `reach_siren_01.ogg`** — 2s
 ```
-Tense warning: a short two-tone 'bee-yoo' beep repeated four times at a slightly slower pace, a faint low pulse underneath, soft low-mid tone around 350-650 Hz, quiet, short gaps between beeps, no sustained wail. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 2 seconds.
+Tense warning: two-tone 'bee-yoo' beep four times, slower pace, faint low pulse underneath, soft low-mid tone around 350-650 Hz, quiet, short gaps between beeps, no sustained wail. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 2 seconds.
 ```
 **`kaiji_meter_01.ogg`** — 1.2s
 ```

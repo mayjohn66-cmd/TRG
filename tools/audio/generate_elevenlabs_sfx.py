@@ -34,6 +34,7 @@ from pathlib import Path
 API_URL = "https://api.elevenlabs.io/v1/sound-generation"
 ENV_NAME = "ELEVENLABS_API_KEY"
 API_MIN_SECONDS = 0.5   # the API does not accept shorter clips; ffmpeg trims them back down
+API_MAX_TEXT = 450      # the API rejects longer prompts (validation_error text_too_long)
 API_MAX_SECONDS = 22.0  # longer clips (the 2 BGM rows) cannot be generated here
 DEFAULT_CSV = Path(__file__).with_name("sfx_prompts_en.csv")
 DEFAULT_OUT = Path(__file__).resolve().parents[2] / "content_trickcal" / "audio" / "sfx"
@@ -94,9 +95,19 @@ def variation_name(file_name: str, index: int) -> str:
     return f"{stem}_{index:02d}{path.suffix}"
 
 
+def fit_text(text: str) -> str:
+    """Keep the prompt within the API limit: drop the shared 'Style:' sentence first, then cut at a word."""
+    if len(text) <= API_MAX_TEXT:
+        return text
+    head = text.split(" Style:")[0]
+    duration = text[text.rfind(" Duration:"):] if " Duration:" in text else ""
+    text = (head + duration) if len(head + duration) <= API_MAX_TEXT else head
+    return text if len(text) <= API_MAX_TEXT else text[:API_MAX_TEXT].rsplit(" ", 1)[0]
+
+
 def request_sound(key: str, text: str, seconds: float, loop: bool, influence: float, fmt: str) -> bytes:
     """One API call with retry on rate limits / server errors. Raises RuntimeError with a readable reason."""
-    body = {"text": text, "duration_seconds": round(max(seconds, API_MIN_SECONDS), 2), "prompt_influence": influence}
+    body = {"text": fit_text(text), "duration_seconds": round(max(seconds, API_MIN_SECONDS), 2), "prompt_influence": influence}
     if loop:
         body["loop"] = True
     for attempt in range(1, 5):
