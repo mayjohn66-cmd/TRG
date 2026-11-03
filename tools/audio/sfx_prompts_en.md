@@ -8,9 +8,9 @@ Sound effects go in `content_trickcal/audio/sfx/`, background music (section 1-7
 
 > Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence.
 
-**Delivery spec (not part of the prompt):** OGG or WAV, mono for SFX (stereo is fine for BGM), 44.1 kHz, peak −1 dBFS, natural fade-out tail.
+**Delivery spec (not part of the prompt):** OGG or WAV, mono for SFX (stereo is fine for BGM), 44.1 kHz, peak -1 dBFS, natural fade-out tail.
 
-Total: 228 prompts — replacements for existing sounds 64 (62 SFX + 2 BGM), new sounds 164. ★ = high priority (14).
+Total: 228 prompts - replacements for existing sounds 64 (62 SFX + 2 BGM), new sounds 164. ★ = high priority (14).
 
 
 ## 1-1 Existing · UI & flow
@@ -63,9 +63,9 @@ Single tense clock tick, dry wooden metronome click, slightly urgent. Style: cut
 ```
 Time-up buzzer for a board game: short cartoon 'bwomp' horn with a descending tone, playful not harsh. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 0.7 seconds.
 ```
-**`tempo_warning_01.ogg`** — 1.2s
+**`tempo_warning_01.ogg`** — 1.8s
 ```
-Tempo-up warning: two rising alarm beeps layered with a quick taiko drum hit, pace is speeding up. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 1.2 seconds.
+Tempo-up warning: two slow rising siren swells with a deep taiko drum hit on each, pace is speeding up, mid-pitched, warm and rounded tone in roughly the 300 to 800 Hz range, soft edges, not shrill, no piercing high frequencies, no thin whine like a mosquito or insect, moderate loudness. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 1.8 seconds.
 ```
 **`good_01.ogg`** — 0.5s
 ```
@@ -149,9 +149,9 @@ Drawing a card into the hand: paper slide followed by a soft bright 'ting'. Styl
 ```
 Card effect activates: card slapped onto the table with a magical punchy pop. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 0.4 seconds.
 ```
-**`attack_alert_01.ogg`** — 0.8s
+**`attack_alert_01.ogg`** — 1s
 ```
-Attack card alert: urgent two-tone cartoon alarm with a sharp stinger hit. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 0.8 seconds.
+Attack card alert: a short urgent siren blip pair, two quick falling tones with a dull punchy hit, mid-pitched, warm and rounded tone in roughly the 300 to 800 Hz range, soft edges, not shrill, no piercing high frequencies, no thin whine like a mosquito or insect, moderate loudness. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 1 seconds.
 ```
 **`trap_01.ogg`** — 0.6s
 ```
@@ -306,7 +306,7 @@ Coin pickup jingle with a happy chime. Style: cute 2D anime board game, playful 
 ```
 **★ `capture_hit_01.ogg`** — 0.4s
 ```
-Cartoon 'POW!' punch impact with a short low boom, a pawn getting knocked out. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 0.4 seconds.
+Punch impact when a pawn is hit: a meaty fist-like thwack with a solid low thump underneath and a short dry crack on top, tight and heavy, like hitting a padded target, no comedy sparkle, no voice, no ringing tail. Style: tabletop board game, solid physical impact, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 0.4 seconds.
 ```
 **`heavy_impact_01.ogg`** — 0.6s
 ```
@@ -553,9 +553,9 @@ Riffle shuffling a deck of cards. Style: cute 2D anime board game, playful toy a
 
 ## 2-4 New · neutral summons
 
-**`npc_alert_01.ogg`** — 0.8s
+**`npc_alert_01.ogg`** — 1.5s
 ```
-Short cartoon siren alarm warning that a neutral monster is moving. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 0.8 seconds.
+Neutral monster on the move: a slow rolling cartoon siren wail rising and falling once or twice, mid-pitched, warm and rounded tone in roughly the 300 to 800 Hz range, soft edges, not shrill, no piercing high frequencies, no thin whine like a mosquito or insect, moderate loudness. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 1.5 seconds.
 ```
 **`feedstance_appear_01.ogg`** — 0.5s
 ```
@@ -636,13 +636,13 @@ Power-up pickup: rising arpeggio blip. Style: cute 2D anime board game, playful 
 ```
 Springboard launch: comical 'boing' and whoosh. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 0.5 seconds.
 ```
-**★ `danger_warning_01.ogg`** — 0.6s
+**★ `danger_warning_01.ogg`** — 2s
 ```
-Low warning beep twice, ominous but not loud. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 0.6 seconds.
+Danger warning siren: a smooth two-tone wailing siren rising and falling between a low-mid note and a slightly higher note, repeated twice, mid-pitched, warm and rounded tone in roughly the 300 to 800 Hz range, soft edges, not shrill, no piercing high frequencies, no thin whine like a mosquito or insect, moderate loudness. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 2 seconds.
 ```
-**★ `reach_siren_01.ogg`** — 1.5s
+**★ `reach_siren_01.ogg`** — 2.5s
 ```
-Victory is near: tense rising siren with a pulsing heartbeat. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 1.5 seconds.
+Victory is near, tense warning siren: a slow rising and falling wail with a pulsing low heartbeat underneath, building tension, mid-pitched, warm and rounded tone in roughly the 300 to 800 Hz range, soft edges, not shrill, no piercing high frequencies, no thin whine like a mosquito or insect, moderate loudness. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 2.5 seconds.
 ```
 **`kaiji_meter_01.ogg`** — 1.2s
 ```
