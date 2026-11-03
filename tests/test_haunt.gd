@@ -300,3 +300,37 @@ func test_auto_enact_never_picks_the_hurricane_law() -> void:
 		var ids: Array = manager.state.rulebook.law_ids()
 		check(not ids.has("LAW_09"), "시드 %d: 자동 제정에 LAW_09가 없다 (%s)" % [seed_value, str(ids)])
 		_dispose(manager)
+
+
+## 히든 보정: 방해령 3종이 우연히 손패에 모이면 방해령 허리케인 포스!! 증강이 그 사람의 드래프트에 훨씬 자주 나온다.
+func test_collecting_all_three_by_chance_boosts_the_hurricane_offer() -> void:
+	var manager := _new_manager()
+	var state: GameState = manager.state
+	state.round_number = 7  # 법전 증강은 7라운드부터
+	var def: AugmentDef = AugmentRegistry.get_def(&"AUG_LAW_09")
+	state.hands[1] = []
+	var base: float = AugmentRegistry.effective_weight(def, state, 1)
+	state.hands[1] = [&"ACT_18", &"ACT_19"]
+	check_eq(AugmentRegistry.effective_weight(def, state, 1), base, "2종만으로는 보정이 없다")
+	_hand_all(state, 1)
+	check_eq(AugmentRegistry.effective_weight(def, state, 1), base * AugmentRegistry.HAUNT_COLLECTED_OFFER_FACTOR, "3종이 모이면 가중치 x%d" % int(AugmentRegistry.HAUNT_COLLECTED_OFFER_FACTOR))
+	check_eq(AugmentRegistry.effective_weight(def, state, 2), base, "다른 사람은 그대로 (손패 기준)")
+	var other: AugmentDef = AugmentRegistry.get_def(&"AUG_LAW_01")
+	state.hands[1] = []
+	var plain_other: float = AugmentRegistry.effective_weight(other, state, 1)
+	_hand_all(state, 1)
+	check_eq(AugmentRegistry.effective_weight(other, state, 1), plain_other, "다른 법전 증강은 영향이 없다")
+	# 실제 드래프트: 보정이 붙은 사람이 이 증강을 훨씬 자주 본다
+	var seen_plain: int = 0
+	var seen_boosted: int = 0
+	for trial: int in 300:
+		state.hands[2] = []
+		if AugmentRegistry.generate_offers(state, 2).has(&"AUG_LAW_09"):
+			seen_plain += 1
+		if AugmentRegistry.generate_offers(state, 1).has(&"AUG_LAW_09"):
+			seen_boosted += 1
+	check(seen_boosted > 2 * seen_plain and seen_boosted > 20, "손패에 3종이 있는 사람이 훨씬 자주 본다 (%d vs %d / 300)" % [seen_boosted, seen_plain])
+	# 이미 법전에 있으면 더는 나오지 않는다
+	state.rulebook.enqueue_law(LawRegistry.create("LAW_09"))
+	check(not AugmentRegistry.generate_offers(state, 1).has(&"AUG_LAW_09"), "법전에 이미 있으면 제시하지 않는다")
+	_dispose(manager)
