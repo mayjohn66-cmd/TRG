@@ -88,16 +88,23 @@ func _run() -> void:
 		pawn.skill_used = false
 	_board._refresh_all()
 	await settle()
-	_expect(_board._skill_hint.visible, "내 차례에 쓸 수 있는 필살기가 있으면 굴리기 아래에 안내가 뜬다")
-	var hint_button: Button = _board._skill_hint.find_child("SkillHintButton", true, false) as Button
-	var hint_effect: Label = _board._skill_hint.find_child("SkillHintEffect", true, false) as Label
-	_expect(hint_button != null and hint_effect != null and hint_effect.text != "", "필살기 버튼과 한 줄 효과")
-	_expect(_board._skill_hint.position.y > _board._roll_button.position.y, "굴리기 버튼 바로 아래")
+	_expect(_board._skill_hint.visible, "내 차례에 쓸 수 있는 필살기가 있으면 화면 위쪽에 알림이 뜬다")
+	var notice: Label = _board._skill_hint.find_child("ReadyNoticeText", true, false) as Label
+	_expect(notice != null and notice.text.contains("필살기"), "알림 글에 필살기가 들어 있다")
+	_expect(_board._skill_hint.position.y < 100.0 and _board._skill_hint.position.y < _board._roll_button.position.y, "굴리기 버튼 아래가 아니라 화면 위쪽")
+	_expect(_board._skill_hint.find_child("SkillHintButton", true, false) == null, "알림에는 누르는 버튼이 없다 (필살기 버튼은 프로필·기물 독)")
+	_expect(_board._skill_hint.mouse_filter == Control.MOUSE_FILTER_IGNORE, "알림이 클릭을 가로채지 않는다")
 	for pawn: PlayerPawn in state.pawns_of(player):
 		pawn.skill_used = true
+	state.hands[player] = [] as Array[StringName]
 	_board._refresh_all()
 	await settle()
-	_expect(not _board._skill_hint.visible, "쓸 필살기가 없으면 안내를 숨긴다")
+	_expect(not _board._skill_hint.visible, "쓸 필살기·카드가 없으면 알림을 숨긴다")
+	state.hands[player] = [&"ACT_04"] as Array[StringName]  # 로켓 부스터: 굴리기 전에 쓰는 카드
+	_board._refresh_all()
+	await settle()
+	_expect(_board._skill_hint.visible and (_board._skill_hint.find_child("ReadyNoticeText", true, false) as Label).text.contains("카드"), "쓸 수 있는 카드가 있으면 카드 알림이 뜬다")
+	state.hands[player] = [] as Array[StringName]
 
 	_board._reset_presentation()
 	_board._close_choice()

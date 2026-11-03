@@ -371,7 +371,8 @@ var _roll_button: Button = null
 var _skill_hint: PanelContainer = null
 var _skill_hint_key: String = ""
 ## 안내에 한 번에 보여 줄 필살기 수.
-const SKILL_HINT_MAX: int = 2
+## 위쪽 [필살기·카드 사용 가능] 알림의 세로 위치 (사건 자막 두 줄 바로 아래, 위험 경고 위).
+const READY_NOTICE_Y: float = 72.0
 var _stop_button: Button = null
 var _gun_row: HBoxContainer = null  ## 러시안 룰렛 전용 [발사][정지] 두 버튼 줄
 var _fire_button: Button = null
@@ -2183,16 +2184,21 @@ func _build_action_bar() -> void:
 	_apply_round_button_style(_roll_button, Color("2b8a3e"))
 	_roll_button.tooltip_text = "꾹 눌러 파워 게이지를 채우고 손을 떼면 굴러갑니다 (스페이스 키도 동일)"
 	add_child(_roll_button)
-	# 2026-11 개선: 내 차례에 쓸 수 있는 필살기가 있으면 굴리기 버튼 바로 아래에 [필살기 버튼 + 한 줄 효과]를 띄운다 (몰라서 못 쓰는 일이 없게).
+	# 2026-11-03 개선: 내 차례에 쓸 수 있는 필살기·카드가 있으면 화면 위쪽에 한 줄로 알린다 (굴리기 버튼 아래의 큰 안내 상자는 없앴다).
+	# 필살기 버튼은 내 프로필·기물 독에서 금색으로 두근거리므로 여기서는 알려만 주고 누르는 버튼은 두지 않는다.
 	_skill_hint = PanelContainer.new()
-	_skill_hint.name = "SkillHint"
-	_skill_hint.add_theme_stylebox_override("panel", _style(Color(0.1, 0.07, 0.0, 0.92), Color("ffd43b"), 3, 12, 10, 8))
+	_skill_hint.name = "ReadyNotice"
+	_skill_hint.add_theme_stylebox_override("panel", _style(Color(0.1, 0.07, 0.0, 0.88), Color("ffd43b"), 2, 14, 6, 4))
 	_skill_hint.visible = false
-	_skill_hint.z_index = 6
-	var hint_box := VBoxContainer.new()
-	hint_box.name = "SkillHintRows"
-	hint_box.add_theme_constant_override("separation", 4)
-	_skill_hint.add_child(hint_box)
+	_skill_hint.z_index = 30
+	_skill_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var notice_label: Label = _make_label("", 16, Color("ffe066"))
+	notice_label.name = "ReadyNoticeText"
+	notice_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	notice_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	notice_label.add_theme_constant_override("outline_size", 4)
+	notice_label.add_theme_color_override("font_outline_color", Color("3d2a00"))
+	_skill_hint.add_child(notice_label)
 	add_child(_skill_hint)
 	# 룰렛(원판을 잡고 돌리기)과 러시안 룰렛(방아쇠 당기기)은 굴리기 버튼 대신 같은 자리의 직접 조작 패드를 쓴다.
 	_roll_pad = RollPad.new()
@@ -6136,57 +6142,39 @@ func _on_pawn_icon_input(event: InputEvent, icon: Control, pawn_id: int) -> void
 		icon.accept_event()
 
 
-## 굴리기 버튼 아래 필살기 안내를 맞춘다: 내 차례(턴 시작·굴리기 전)에 쓸 수 있는 필살기가 있으면 버튼과 한 줄 효과를 띄운다.
+## 화면 위쪽 [필살기·카드 사용 가능] 알림을 맞춘다: 내 차례에 굴리기 전이고 쓸 수 있는 필살기나 카드가 있으면 한 줄로 알린다.
 func _refresh_skill_hint() -> void:
 	if _skill_hint == null:
 		return
 	var owner_id: int = _dock_owner()
 	var phase: TurnManager.State = manager.current_state
-	var ready: Array[PlayerPawn] = []
+	var skills: int = 0
+	var cards: int = 0
 	if not manager.is_game_over and manager.current_player_id() == owner_id and not _is_bot_turn() and not _ui_busy() and not _tile_pick_active \
 			and (phase == TurnManager.State.PHASE_TURN_BEGIN or phase == TurnManager.State.PHASE_ROLL_WAIT) and _roll_button.visible:
 		for pawn: PlayerPawn in state.pawns_of(owner_id):
 			if PawnSkills.has_skill(pawn) and not pawn.is_finished and manager.can_use_skill(owner_id, pawn.entity_id):
-				ready.append(pawn)
-	_skill_hint.visible = not ready.is_empty()
-	if ready.is_empty():
+				skills += 1
+		for card_id: StringName in state.hands[owner_id]:
+			if _card_usable_now(owner_id, CardRegistry.get_card(card_id)):
+				cards += 1
+	_skill_hint.visible = skills > 0 or cards > 0
+	if not _skill_hint.visible:
 		_skill_hint_key = ""
 		return
-	var key: String = ",".join(PackedStringArray(ready.map(func(pawn: PlayerPawn) -> String: return str(pawn.entity_id))))
-	var rows: VBoxContainer = _skill_hint.get_node("SkillHintRows")
+	var key: String = "%d,%d" % [skills, cards]
 	if key != _skill_hint_key:
 		_skill_hint_key = key
-		for child: Node in rows.get_children():
-			child.queue_free()
-		var header: Label = _make_label("필살기 사용 가능!", 14, Color("ffd43b"))
-		header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		rows.add_child(header)
-		for pawn: PlayerPawn in ready.slice(0, SKILL_HINT_MAX):
-			var skill: StringName = PawnCatalog.skill_of(pawn.sub_type())
-			var row := HBoxContainer.new()
-			row.add_theme_constant_override("separation", 8)
-			var slot: int = pawn.slot - 1
-			var button: Button = _make_button("%s!" % PawnCatalog.skill_name(skill), _on_skill_pressed.bind(slot), 14, Color("c77d0a"), 8)
-			button.name = "SkillHintButton"
-			button.custom_minimum_size = Vector2(120, 34)
-			button.focus_mode = Control.FOCUS_NONE
-			button.add_theme_color_override("font_color", Color("3b1d00"))
-			MobileSupport.touch_button(button)
-			button.add_theme_stylebox_override("normal", _style(Color("ffb703"), Color("fff3bf"), 2, 8, 0, 4))
-			button.add_theme_stylebox_override("hover", _style(Color("ffc933"), Color.WHITE, 2, 8, 0, 4))
-			row.add_child(button)
-			var effect: Label = _make_label(PawnCatalog.skill_text(skill), 12, Color("fff3bf"))
-			effect.name = "SkillHintEffect"
-			effect.custom_minimum_size = Vector2(230, 0)
-			effect.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			effect.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-			row.add_child(effect)
-			rows.add_child(row)
+		var parts: Array[String] = []
+		if skills > 0:
+			parts.append(L10n.t("필살기 사용 가능!"))
+		if cards > 0:
+			parts.append(L10n.t("카드 %d장 사용 가능!") % cards)
+		(_skill_hint.get_node("ReadyNoticeText") as Label).text = "★ " + "  ·  ".join(PackedStringArray(parts))
 		_skill_hint.reset_size()
-	var center_x: float = _roll_button.position.x + _roll_button.size.x * 0.5
-	_skill_hint.position = Vector2(center_x - _skill_hint.size.x * 0.5, _roll_button.position.y + _roll_button.size.y + 10.0)
+	_skill_hint.position = Vector2((1366.0 - _skill_hint.size.x) * 0.5, READY_NOTICE_Y)
 	var pulse: float = 0.5 + 0.5 * sin(float(Time.get_ticks_msec()) / 1000.0 * TAU * 0.9)
-	_skill_hint.self_modulate = Color(1.0 + 0.25 * pulse, 1.0 + 0.2 * pulse, 1.0)
+	_skill_hint.self_modulate = Color(1.0 + 0.2 * pulse, 1.0 + 0.15 * pulse, 1.0)
 
 
 func _refresh_pawn_dock() -> void:
@@ -11975,7 +11963,7 @@ func _build_roll_fx() -> void:
 	_build_tool_stages()
 	_danger_label = _make_label("▲ 위험! 라운드 종료 시 NPC에게 잡힙니다!", 22, Color("ff3b30"))
 	_danger_label.name = "DangerWarning"
-	_danger_label.position = Vector2(283.0, 78.0)
+	_danger_label.position = Vector2(283.0, 104.0)
 	_danger_label.size = Vector2(800.0, 34.0)
 	_danger_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_danger_label.add_theme_constant_override("outline_size", 8)
