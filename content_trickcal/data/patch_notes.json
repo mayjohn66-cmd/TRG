@@ -37,6 +37,11 @@
        "ja": "召喚カード: ローリング陽子ビーム - 光の柱が3ラウンドの間ランダムに滑り、通ったマスの駒と罠をすべて焼く"
       },
       {
+       "ko": "방어 카드: 이쪽을 봐라! - 잡기를 1회 회피해요",
+       "en": "Defense card: Look Over Here! - evades 1 capture",
+       "ja": "防御カード：こっちを見ろ！ - 捕獲を1回回避します"
+      },
+      {
        "ko": "특수 승리: 방해령 허리케인 포스!! (방해령 3종을 손에 모으면 달성)",
        "en": "Special victory: Meddling Spirit Hurricane Force!! (hold all three spirit cards)",
        "ja": "特殊勝利: お邪魔霊ハリケーンフォース!!(お邪魔霊3種を手札に揃える)"
@@ -74,6 +79,11 @@
        "ko": "템포 업 경고음이 4번 울려요",
        "en": "The tempo-up warning sound now plays four times",
        "ja": "テンポアップの警告音が4回鳴ります"
+      },
+      {
+       "ko": "로비 오른쪽 위에 언어 · 공지사항 · 도감 · 설정 버튼을 모았어요 (팁 띠는 없앴어요)",
+       "en": "The lobby's top-right now holds Language, Notices, Rulebook and Settings (the tips bar is gone)",
+       "ja": "ロビー右上に言語・お知らせ・図鑑・設定をまとめました（ヒントバーはなくなりました）"
       }
      ]
     },
@@ -98,6 +108,16 @@
        "ko": "다른 사람이 카드를 뽑을 때 노란 카드가 프로필로 날아가는 연출을 없앴어요",
        "en": "Removed the yellow card flying to other players' profiles when they draw",
        "ja": "他のプレイヤーがカードを引く時に黄色いカードがプロフィールへ飛ぶ演出を削除"
+      },
+      {
+       "ko": "방어 카드를 [잡기 방어] · [공격 방어] · [함정 방어]로 나눠 카드에 표시해요 (바이츠 더 더스트는 [만능 방어])",
+       "en": "Defense cards are now labeled Capture Guard / Attack Guard / Trap Guard (Bites the Dust is All-round Guard)",
+       "ja": "防御カードを［捕獲ガード］［攻撃ガード］［罠ガード］に分けて表示します（バイツ・ザ・ダストは［オールガード］）"
+      },
+      {
+       "ko": "감나빗!은 이제 공격 카드만 막아요 (잡기는 못 막아요)",
+       "en": "Missed Me! now only evades attack cards (it can't stop a capture)",
+       "ja": "あたらなーい！は攻撃カードだけ回避します（捕獲は防げません）"
       }
      ]
     }
