@@ -4878,6 +4878,10 @@ func _fly_drawn_card(player_id: int, card_id: StringName) -> void:
 	if local:
 		_draw_fx.reserve(player_id)
 	var launch: Callable = _launch_drawn_card.bind(player_id, card_id, local, index, origin)
+	# 다른 사람이 덱에서 카드를 뽑을 때는 뒷면(노란 테두리) 카드가 그 사람 프로필로 날아가지 않는다 (2026-11-03): 소리와 프로필 살짝 흔들림만.
+	# 내 손패로 오는 카드(앞면 공개)와 빼앗기(출발지가 있는 카드)는 그대로 날아간다. 도적단·빵집 연출은 아래 draw_job으로 자기 카드를 따로 날린다.
+	if not local and not origin.is_finite():
+		launch = _remote_draw_without_flight.bind(player_id)
 	if _draft_in_progress():
 		_draft_deferred.append({"step": launch, "pawn": -1, "pick": _pick_serial,
 			"draw_job":{"player":player_id,"id":card_id,"local":local,"index":index,"source":source_player}})
@@ -4898,6 +4902,12 @@ func _queue_drawn_after_effects(launch: Callable, generation: int) -> void:
 		_late_steps.append({"step": launch, "pawn": -1, "defer": false, "pick": _pick_serial})
 	else:
 		enqueue_step(launch, -1, false)
+
+
+## 다른 사람이 덱에서 카드를 얻었다: 날아가는 카드 없이 소리와 프로필 흔들림만 (연출 큐 순서는 그대로 지킨다).
+func _remote_draw_without_flight(player_id: int) -> void:
+	Sfx.play(&"card_get", -6.0)
+	_profile_nudge(player_id)
 
 
 func _launch_drawn_card(player_id: int, card_id: StringName, local: bool, index: int, origin: Vector2, grouped: bool = false, origin_provider: Callable = Callable()) -> void:

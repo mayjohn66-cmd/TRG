@@ -521,6 +521,14 @@ jobs:
           grep -Eq 'PROTON_BEAM [0-9]+ assertions; 0 failures' /tmp/proton_beam_ui.log
           if grep -Eq 'SCRIPT ERROR|SHADER ERROR' /tmp/proton_beam_ui.log; then exit 1; fi
 
+      - name: Check other players' deck draws no longer fly to their profile
+        if: steps.validation.outputs.scope == 'full'
+        run: |
+          set -euo pipefail
+          godot --headless --audio-driver Dummy --path . -s res://tests/ui_remote_draw_test.gd 2>&1 | tee /tmp/remote_draw_ui.log
+          grep -Eq 'REMOTE_DRAW [0-9]+ assertions; 0 failures' /tmp/remote_draw_ui.log
+          if grep -Eq 'SCRIPT ERROR|SHADER ERROR' /tmp/remote_draw_ui.log; then exit 1; fi
+
       - name: Check stamp announcements hold at least 1.8s at 1x
         if: steps.validation.outputs.scope == 'full'
         run: |
