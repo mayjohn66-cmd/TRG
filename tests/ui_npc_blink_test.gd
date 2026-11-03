@@ -88,7 +88,7 @@ func _run() -> void:
 	quiet()
 	var victim: PlayerPawn = state.pawns_of(2 if me != 2 else 3)[0]
 	victim.has_left_start = true
-	victim.current_tile_idx = BoardSpec.halfway_tile - 2
+	victim.current_tile_idx = BoardSpec.halfway_tile - 1  # 1~3칸 무작위 이동이라 바로 옆 칸이어야 매번 잡힌다
 	var catcher: NeutralNPC = state.spawn_npc(BoardSpec.halfway_tile, GameEnums.NpcBehavior.PATROL_REVERSE, me, &"SUM_02")
 	_board._refresh_all()
 	await settle()

@@ -8722,6 +8722,30 @@ func _start_opening() -> void:
 	_opening.setup(self)
 	_opening.finished.connect(_on_opening_finished)
 	_opening.start()
+	_prewarm_roll_views.call_deferred()
+
+
+## 오프닝(약 4초)이 화면을 덮는 동안, 첫 굴림 때 한 번 만들어지는 3D 굴림 연출(주사위·윷 등)을 미리 만들어 둔다.
+## 안 하면 첫 굴림 프레임이 통째로 멈칫한다 (측정: 일반 프레임 약 70ms인데 그 한 프레임이 약 320ms, 느린 기기일수록 크다). 보이지 않게 만들고 바로 취소한다.
+func _prewarm_roll_views() -> void:
+	if _presenter == null or state == null or not _fx_on():
+		return
+	await get_tree().create_timer(0.6).timeout  # 오프닝 첫 장면이 먼저 자리 잡은 뒤에
+	var warmed: Dictionary = {}
+	for player_id: int in _player_ids:
+		if _opening == null or not is_instance_valid(_presenter):
+			break
+		var tool: BaseJudgmentTool = state.tools.get(player_id) as BaseJudgmentTool
+		if tool == null or warmed.has(tool.tool_id) or not RollPresenter.supports(tool.tool_id):
+			continue
+		warmed[tool.tool_id] = true
+		var was_instant: bool = _presenter.instant
+		_presenter.instant = false
+		_presenter.play(tool.tool_id, {"steps": 3, "details": {"face": 3}}, 0.5)
+		await get_tree().process_frame
+		_presenter.cancel()
+		_presenter.instant = was_instant
+		await get_tree().process_frame
 
 
 func _on_opening_finished() -> void:
@@ -9723,6 +9747,8 @@ func _close_draft_overlay() -> void:
 ## 증강 선택 창이 떠 있는 동안에는 뒤의 보드·말 그림을 보내지 않는다. 창이 화면을 78% 어둡게 덮어 거의 안 보이는데, 보드가 그리기 호출 약 150번(프레임 시간 약 20ms)을 먹었다.
 ## 제보(2026-11): 초당 30프레임(배터리 절약)에서 증강 창이 뜰 때 크게 버벅였다. 창이 닫히면 그대로 돌아온다.
 func _set_draft_backdrop_hidden(hidden: bool) -> void:
+	# 증강 공개 확인 창(_review_overlay)이 떠 있으면 증강 선택 창이 닫혀도 숨김을 유지한다
+	hidden = hidden or (_review_overlay != null and is_instance_valid(_review_overlay))
 	for layer: CanvasItem in [_board_layer, _pawn_layer]:
 		if layer != null and is_instance_valid(layer):
 			layer.visible = not hidden
@@ -10656,7 +10682,7 @@ func _show_augment_review(players: Array) -> void:
 	if _draft_summary.is_empty():
 		return
 	Sfx.play(&"review_open")
-	_review_overlay = _new_overlay(0.55)
+	_review_overlay = _new_overlay(0.78)
 	_review_overlay.name = "AugmentReview"
 	_review_overlay.z_index = 45
 	var center := CenterContainer.new()
@@ -10707,6 +10733,7 @@ func _show_augment_review(players: Array) -> void:
 	_review_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	box.add_child(_review_button)
 	add_child(_review_overlay)
+	_set_draft_backdrop_hidden(true)  # 공개 창이 뜨면 프레임이 약 55ms 늘었다: 뒤의 보드는 그리지 않는다
 	_refresh_review_button()
 
 
@@ -10756,6 +10783,7 @@ func _close_augment_review() -> void:
 	_review_button = null
 	_review_bar = null
 	_review_chips.clear()
+	_set_draft_backdrop_hidden(false)
 
 
 func _on_action_rejected(player_id: int, action: StringName, reason: StringName) -> void:
