@@ -54,8 +54,11 @@ func _run() -> void:
 	_expect(not (menu._top["bar"] as Control).visible and not (menu._bottom["bar"] as Control).visible, "허브에서는 청록 띠를 숨긴다")
 	var tip_label: Label = menu.find_child("TipText", true, false)
 	var first_tip: String = tip_label.text
-	(menu.find_child("TipNext", true, false) as Button).pressed.emit()
-	_expect(tip_label.text != first_tip and GameTips.TIPS.has(tip_label.text), "팁 띠의 [>>]로 다음 팁")
+	_expect(menu.find_child("TipNext", true, false) == null, "팁 넘기기 [>>] 버튼은 없다")
+	menu._next_tip()
+	_expect(tip_label.text != first_tip and GameTips.TIPS.has(tip_label.text), "팁은 시간마다 저절로 바뀐다 (타이머가 부르는 _next_tip)")
+	var tip_timer: Timer = menu.find_child("TipTimer", true, false) as Timer
+	_expect(tip_timer != null and not tip_timer.is_stopped() and is_equal_approx(tip_timer.wait_time, StartMenu.TIP_SECONDS), "팁 타이머가 돈다")
 	menu.find_child("HubSettings", true, false).pressed.emit()
 	_expect(menu.find_child("Popup", true, false) != null, "둥근 설정 버튼이 설정 팝업을 연다")
 	menu.find_child("Popup", true, false).free()

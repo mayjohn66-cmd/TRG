@@ -374,7 +374,7 @@ static func profile_capsule(player_name: String, title_text: String, avatar_id: 
 
 
 ## 말풍선 띠(원본의 퀘스트 안내 줄처럼): 둥근 아바타 점 + 팁 글자 + 다음 팁 버튼. 반환: {"root", "label", "next"}
-static func tip_bar(first_text: String, on_next: Callable) -> Dictionary:
+static func tip_bar(first_text: String) -> Dictionary:
 	var root := PanelContainer.new()
 	root.name = "TipBar"
 	root.custom_minimum_size = Vector2(560, 56)
@@ -401,22 +401,8 @@ static func tip_bar(first_text: String, on_next: Callable) -> Dictionary:
 	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	text.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(text)
-	var next := Button.new()
-	next.name = "TipNext"
-	next.custom_minimum_size = Vector2(54, 38)
-	next.focus_mode = Control.FOCUS_NONE
-	HubArt.button(next, &"mode_green", 38)
-	var next_icon: TextureRect = HubArt.icon(&"next")
-	next_icon.set_anchors_preset(Control.PRESET_FULL_RECT)
-	next_icon.offset_left = 12
-	next_icon.offset_top = 7
-	next_icon.offset_right = -12
-	next_icon.offset_bottom = -7
-	next.add_child(next_icon)
-	if on_next.is_valid():
-		next.pressed.connect(on_next)
-	row.add_child(next)
-	return {"root": root, "label": text, "next": next}
+	# 2026-11-03: 팁 넘기기 [>>] 버튼은 없앴다 (위쪽 버튼들이 오른쪽에 몰려 보여서). 팁은 start_menu가 시간마다 바꾼다.
+	return {"root": root, "label": text}
 
 
 ## 언어별 투명 타이틀을 같은 영역에 비율 유지로 표시한다. 언어를 바꾸면 즉시 갱신한다.

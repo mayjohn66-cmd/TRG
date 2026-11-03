@@ -21,6 +21,9 @@ var _name_page: VBoxContainer = null
 var _mode_page: Control = null
 var _hub_profile: Dictionary = {}
 var _hub_tip: Dictionary = {}
+## 허브 팁이 저절로 바뀌는 간격(초)과 오른쪽 위 버튼 사이 간격(px).
+const TIP_SECONDS: float = 9.0
+const HUB_BUTTON_GAP: int = 22
 var _tip_index: int = 0
 ## 맨 아래 한 줄 면책 문구 (허브에서는 아래 띠가 숨으므로 화면 맨 아래로 내린다).
 var _fan_notice: Label = null
@@ -182,17 +185,23 @@ func _build_mode_page() -> void:
 	fill.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	top.add_child(fill)
-	_hub_tip = HubKit.tip_bar(GameTips.TIPS[0], _next_tip)
+	_hub_tip = HubKit.tip_bar(GameTips.TIPS[0])
 	(_hub_tip["root"] as Control).size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	(_hub_tip["label"] as MarqueeLabel).shrink_to_fit(14)  # 긴 번역은 글자를 조금 줄이고, 그래도 길면 흐른다 (띠 크기는 그대로)
 	top.add_child(_hub_tip["root"])
+	var tip_timer := Timer.new()  # 넘기기 버튼 대신 팁이 TIP_SECONDS마다 저절로 바뀐다
+	tip_timer.name = "TipTimer"
+	tip_timer.wait_time = TIP_SECONDS
+	tip_timer.autostart = true
+	tip_timer.timeout.connect(_next_tip)
+	add_child(tip_timer)
 	# 팁 띠와 오른쪽 버튼 사이 여백 (간격 12 + 22 + 12 = 46px): 언어가 바뀌어도 서로 붙지 않는다
 	var tip_gap := Control.new()
 	tip_gap.custom_minimum_size = Vector2(22, 0)
 	tip_gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	top.add_child(tip_gap)
 	var buttons := HBoxContainer.new()
-	buttons.add_theme_constant_override("separation", 10)
+	buttons.add_theme_constant_override("separation", HUB_BUTTON_GAP)  # 오른쪽 위 버튼들은 몰아넣지 않고 간격을 띄운다
 	buttons.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	top.add_child(buttons)
 	var language := LobbyTheme.language_toggle()  # [🌐 KR / EN]: 규칙·설정 버튼 옆
@@ -366,8 +375,10 @@ func _refresh_hub() -> void:
 	_hub_profile["avatar"] = fresh
 
 
-## 팁 띠의 [>>]: 다음 게임 팁으로 넘긴다.
+## 다음 게임 팁으로 넘긴다 (TIP_SECONDS마다 저절로, 허브가 보일 때만).
 func _next_tip() -> void:
+	if not _mode_page.visible:
+		return
 	_tip_index = (_tip_index + 1) % GameTips.TIPS.size()
 	(_hub_tip["label"] as MarqueeLabel).text = GameTips.TIPS[_tip_index]
 
