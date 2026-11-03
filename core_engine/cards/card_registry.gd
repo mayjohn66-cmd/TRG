@@ -10,7 +10,7 @@ static var _cache: Dictionary = {}
 const DECK_COMPOSITION: Dictionary = {
 	&"CNT_01": 1, &"CNT_02": 2, &"CNT_03": 2, &"CNT_04": 2, &"CNT_05": 1, &"CNT_06": 1, &"CNT_07": 1,
 	&"ACT_02": 2, &"ACT_03": 2, &"ACT_04": 2, &"ACT_06": 2, &"ACT_07": 2, &"ACT_08": 2, &"ACT_09": 2,
-	&"ACT_10": 2, &"ACT_11": 1, &"ACT_12": 1, &"ACT_13": 2, &"ACT_14": 1, &"ACT_15": 2, &"ACT_16": 1, &"ACT_17": 2,
+	&"ACT_10": 2, &"ACT_11": 1, &"ACT_12": 1, &"ACT_13": 2, &"ACT_14": 1, &"ACT_15": 2, &"ACT_16": 1, &"ACT_17": 2, &"ACT_18": 2, &"ACT_19": 2, &"ACT_20": 2,
 	&"TRP_02": 2, &"TRP_03": 2, &"TRP_05": 2, &"TRP_06": 2, &"TRP_07": 2, &"TRP_08": 1,
 	&"TRP_C01": 1, &"TRP_C02": 1, &"TRP_C03": 1, &"TRP_C04": 1,
 	&"SUM_01": 1, &"SUM_02": 1,
@@ -35,6 +35,7 @@ static func get_card(card_id: StringName) -> BaseCard:
 		&"ACT_10": card = CardCrowbar.new()
 		&"ACT_11", &"ACT_12", &"ACT_14", &"ACT_15", &"ACT_16", &"ACT_17": card = CardStatus.new(card_id)
 		&"ACT_13": card = CardDoor.new()
+		&"ACT_18", &"ACT_19", &"ACT_20": card = CardHaunt.new(card_id)
 		&"TRP_02": card = CardTrapPit.new()
 		&"TRP_03": card = CardMine.new()
 		&"TRP_05": card = CardDomino.new()

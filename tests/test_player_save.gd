@@ -131,7 +131,8 @@ func test_short_code_is_ten_characters_and_round_trips() -> void:
 	check_eq(PlayerSave.share_query(), "?s=4BGC-A51F&n=%s" % "에르핀".uri_encode(), "이어하기 링크 쿼리")
 	check_eq(PlayerSave.parse_short(" 에르핀#4bgc-a51f "), {"player_tag": "4BGC", "laws": 0xA5, "buldak": 0x1F, "nickname": "에르핀"}, "닉네임#코드, 소문자도 읽는다")
 	check(PlayerSave.parse_short("4BG0-A51F").is_empty(), "태그에 없는 글자(0)는 거절")
-	check(PlayerSave.parse_short("4BGC-A520").is_empty(), "불닭 비트가 5단계를 넘으면 거절")
+	check(PlayerSave.parse_short("4BGC-A540").is_empty(), "없는 10번째 법전 비트는 거절")
+	check_eq(PlayerSave.parse_short("4BGC-A520"), {"player_tag": "4BGC", "laws": 0x1A5, "buldak": 0, "nickname": ""}, "불닭 바이트 상위 비트 = 9번째 법전 (LAW_09)")
 	check(PlayerSave.parse_short("4BGC-A5").is_empty(), "길이가 다르면 거절")
 	# 다른 기기: 기록이 적은 브라우저에서 짧은 코드를 넣는다 -> 더 높은 기록으로 합쳐진다
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(PATH))
@@ -149,3 +150,19 @@ func test_short_code_is_ten_characters_and_round_trips() -> void:
 	check(PlayerSave.import_any("4BGC-0000"), "import_any는 짧은 코드도 받는다")
 	check_eq(PlayerSave.law_count(), 5, "더 낮은 코드를 넣어도 기록이 줄지 않는다")
 	cleanup()
+
+
+## 법전이 9종이 되며 법전 비트가 8개를 넘었다: 9번째(LAW_09)는 불닭 바이트의 남는 상위 비트에 담아 예전 코드와 그대로 호환된다.
+func test_ninth_law_rides_in_the_spare_bits_of_the_buldak_byte() -> void:
+	setup()
+	PlayerSave.set_value("player_tag", "4BGC")
+	for law: String in ["LAW_01", "LAW_03", "LAW_06", "LAW_08"]:
+		PlayerSave.mark_law(law)
+	for level: int in [1, 2, 3, 4, 5]:
+		PlayerSave.record_buldak(level, 20)
+	check_eq(PlayerSave.short_code(), "4BGC-A51F", "9번째 법전이 없으면 예전 코드와 똑같다")
+	check(PlayerSave.mark_law("LAW_09"), "방해령 허리케인 포스!! 도장")
+	check_eq(PlayerSave.laws_mask(), 0x1A5, "법전 비트 9개")
+	check_eq(PlayerSave.short_code(), "4BGC-A53F", "LAW_09는 불닭 바이트 상위 비트 (0x1F | 0x20)")
+	check_eq(int(PlayerSave.parse_short("4BGC-A53F")["laws"]), 0x1A5, "읽을 때 다시 9비트로 합친다")
+	check_eq(int(PlayerSave.parse_short("4BGC-A53F")["buldak"]), 0x1F, "불닭 비트는 하위 5비트")

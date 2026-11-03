@@ -156,6 +156,9 @@ const CARD_SHORT: Dictionary = {
 	&"ACT_13": "반환점까지 순간이동",
 	&"ACT_14": "2턴 카드·스킬 금지",
 	&"ACT_15": "상대 턴 건너뛰기",
+	&"ACT_18": "적 말 뒤로 1칸",
+	&"ACT_19": "내 말 앞으로 1칸",
+	&"ACT_20": "적 다음 눈금 -1",
 	&"TRP_02": "눈금 4+ 적 사출",
 	&"TRP_03": "반경 2칸 폭파",
 	&"TRP_05": "반경 함정 연쇄",
@@ -191,6 +194,9 @@ const CARD_SUMMARIES: Dictionary = {
 	&"ACT_13": "내 선두 말을 반환점까지의 빈 칸 중 고른 칸으로 순간이동",
 	&"ACT_14": "상대 1명 2턴 동안 카드·필살기·주사위 리롤 금지",
 	&"ACT_15": "상대 1명의 다음 턴 건너뛰기",
+	&"ACT_18": "적 말 1개를 뒤로 1칸 (도착 칸이 비어 있을 때)",
+	&"ACT_19": "내 말 1개를 앞으로 1칸 (도착 칸이 비어 있을 때)",
+	&"ACT_20": "적 1명의 다음 이동 눈금 -1 (최소 1칸)",
 	&"TRP_02": "눈금 4+ 로 지나가는 적 말 출발선 사출",
 	&"TRP_03": "밟으면 반경 2칸 내 모든 말 폭파",
 	&"TRP_05": "밟은 말은 멈추고, 반경 2칸 안의 함정이 전부 연쇄 발동",
@@ -345,7 +351,11 @@ var _law_progress: Array[Label] = []
 ## 슬롯 배지 상태: 0 없음 / 1 누군가 달성 임박 / 2 내가 조건 충족 (이번 턴이 끝나면 졸업)
 var _law_badge_state: Array[int] = []
 ## 법전 진행도 배지의 단위 (VictoryLaw 단위와 다르게 보여 줄 것만).
-const LAW_PROGRESS_UNITS: Dictionary = {"LAW_01": "킬", "LAW_08": "킬", "LAW_05": "구역"}
+const LAW_PROGRESS_UNITS: Dictionary = {"LAW_01": "킬", "LAW_08": "킬", "LAW_05": "구역", "LAW_09": "종"}
+## 결과 1쪽 좌상단에 찍는 법전별 팝아트 타이틀 (영문 두 줄, 모든 언어 공통).
+const POPART_TITLES: Dictionary = {"LAW_09": "HURRICANE\nFORCE!!"}
+## 방해령 삼총사 카드 확대 보기 하단의 작은 힌트.
+const HAUNT_HINT: String = "(베루·사리·메죵을 모두 손패에 모으면 무언가 일어날지도...?)"
 ## 특수 승리 달성 하이라이트(법전 카드가 가운데로 날아와 도장이 찍힘)가 화면을 붙잡는 시간(초). 그 뒤에 순위 배너가 뜬다.
 const LAW_ACHIEVED_SECONDS: float = 1.6
 ## 승리 장면 소리 간격: 순위 확정 배너(졸업 팡파르)를 보여 주는 시간과 그 뒤 쉼, 결과 창 시상대 팡파르 뒤 첫 순위 공개까지의 뜸.
@@ -1063,7 +1073,7 @@ func _record_meta_progress(player_id: int, rank: int) -> void:
 		return
 	var reason: String = str(state.rank_reasons.get(player_id, ""))
 	if LawRegistry.ALL_IDS.has(reason) and PlayerSave.mark_law(reason):
-		_log_line("[법전 수집] 새 도장: %s (%d/8)" % [VictoryChecker.short_reason(StringName(reason)), PlayerSave.law_count()], Color("ffd43b"))
+		_log_line("[법전 수집] 새 도장: %s (%d/%d)" % [VictoryChecker.short_reason(StringName(reason)), PlayerSave.law_count(), LawRegistry.ALL_IDS.size()], Color("ffd43b"))
 	if rank == 1 and net == null and ai_mode:
 		var level: int = _bot.difficulty if _bot != null else GameSession.bot_difficulty()
 		if PlayerSave.record_buldak(level, int(state.round_number)):
@@ -1369,6 +1379,22 @@ func _bind_state() -> void:
 		_on_passive_triggered(pawn_id, &"amnesia_block")
 		_log_line("[기억상실빔] %s이(가) %d번 타일에서 사출되지 않았습니다" % [_pawn_name(pawn_id), tile], Color("b197fc"))
 		_note_defense_success([pawn_id]))
+	state.haunt_shifted.connect(_on_haunt_shifted)
+	state.card_drawn.connect(func(player_id: int, card_id: StringName) -> void:
+		# 방해령 허리케인 포스!!가 법전에 있을 때 새 종류의 방해령을 손에 넣으면 프로필 위에 모인 종류 수가 튀어 오른다 (법전 진행도와 같은 값)
+		if not _fx_on() or not HauntCommand.is_haunt(card_id) or not state.rulebook.has_law(SpecialVictory.HURRICANE_LAW) or not _profiles.has(player_id):
+			return
+		if (state.hands[player_id] as Array).count(card_id) != 1:
+			return
+		var kinds: int = HauntCommand.held_kinds(state, player_id)
+		_number_pop(_profile_center(player_id), "방해령 %d/%d!" % [kinds, HauntCommand.IDS.size()], Color("b197fc") if kinds < HauntCommand.IDS.size() else Color("ffd43b")))
+	state.roll_penalty_set.connect(func(player_id: int, amount: int) -> void:
+		_log_line("[방해령 메죵] P%d의 다음 이동 눈금 -%d" % [player_id, amount], Color("74c0fc"))
+		_record(player_id, "%s 다음 이동 눈금 -%d" % [_bq("방해령 메죵"), amount], "", true)
+		if _fx_on() and _profiles.has(player_id):
+			_number_pop(_profile_center(player_id), "눈금 -%d!" % amount, Color("74c0fc")))
+	state.haunt_boost_set.connect(func(player_id: int) -> void:
+		_log_line("[방해령 허리케인 포스!!] P%d: 방해령 카드가 더 잘 나옵니다" % player_id, Color("b197fc")))
 	state.bounty_claimed.connect(func(hunter: int, pawn_id: int, steps: int) -> void:
 		_log_line("[현상금] P%d이(가) 수배된 %s을(를) 잡았습니다! +%d칸" % [hunter, _pawn_name(pawn_id), steps], Color("ffd43b"))
 		_record(hunter, "%s 현상금 획득! 수배범 처치 → +%d칸" % [_bq("현상금 수배서"), steps], "", true)
@@ -3044,6 +3070,23 @@ func _on_pawn_stepped(pawn_id: int, _from_tile: int, _to_tile: int) -> void:
 		enqueue_step(hop, pawn_id)
 
 
+## 방해령 베루(뒤로)·사리(앞으로): 말 머리 위에 [뒤로 1칸!]/[앞으로 1칸!]을 띄우고, 한 칸 짧은 점프로 옮겨 간다 (워프용 큰 호는 쓰지 않는다).
+func _on_haunt_shifted(pawn_id: int, direction: int) -> void:
+	var pawn: PlayerPawn = state.get_pawn(pawn_id)
+	_log_line(("[방해령] %s이(가) 뒤로 1칸 밀려났습니다" if direction < 0 else "[방해령] %s이(가) 앞으로 1칸 당겨졌습니다") % _pawn_name(pawn_id), Color("b197fc"))
+	if pawn != null:
+		_record(pawn.owner_id, ("%s 뒤로 1칸 밀림" if direction < 0 else "%s 앞으로 1칸 당겨짐") % _bq(_pawn_name(pawn_id)), "", true)
+	if not _fx_on():
+		return
+	_fx_hints[pawn_id] = {"arc": 18.0, "peak": 1.12, "dur": 0.38}
+	enqueue_step(func() -> void:
+		var view: Node2D = _pawn_views.get(pawn_id)
+		if view != null and is_instance_valid(view):
+			_floating_badge(view.position + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + Vector2(0, -46), "뒤로 1칸!" if direction < 0 else "앞으로 1칸!", Color("ff8787") if direction < 0 else Color("8ce99a"), 30)
+			Sfx.play(&"card_impact", -6.0)
+		await get_tree().create_timer(0.3 * _motion_pace()).timeout, pawn_id)
+
+
 ## 큐의 한 단계: 말이 한 칸을 통통 뛰고 착지할 때까지 기다린다.
 func _play_hop(pawn_id: int, to_pos: Vector2, to_scale: float, tile: int) -> void:
 	var view: Node2D = _pawn_views.get(pawn_id)
@@ -4381,7 +4424,126 @@ static func law_win_reason(law_id: String, value: int) -> String:
 		"LAW_06": return "%d번 사출당한 분노가 폭발했다!" % value
 		"LAW_07": return "한 턴에 %d연속 굴림 · 무한 동력 가동!" % value
 		"LAW_08": return "완주 0개로 선두의 말을 %d회 처치!" % value
+		"LAW_09": return "베루·사리·메죵 3종 손패 집결 · 대폭풍으로 보드 초토화!"
 	return ""
+
+
+## 방해령 허리케인 포스!! 승리 연출: 보드 중앙에 거대한 허리케인이 몰아치고, 보드 위 모든 기물(말·중립 기물)이 소용돌이를 타고 날아간 뒤,
+## 폭풍이 걷히면 제자리에 쿵쿵 내려앉는다 (규칙상 기물은 그대로다: 졸업하는 사람의 말 철수는 따로 처리된다). 클릭하면 건너뛴다.
+const HURRICANE_FLING_START: float = 0.55
+const HURRICANE_FLING_SECONDS: float = 0.7
+func _play_hurricane_force(player_id: int) -> void:
+	if not _fx_on() or _pawn_layer == null:
+		return
+	var pace: float = _motion_pace()
+	var canvas := CanvasLayer.new()
+	canvas.name = "HurricaneLayer"
+	canvas.layer = 58  # 처치 컷인(60)·졸업 컷신(61) 아래, 보드·기물 위
+	add_child(canvas)
+	var storm := HurricaneStorm.new()
+	storm.center = get_global_transform_with_canvas() * _board_center()
+	canvas.add_child(storm)
+	# 날려 보낼 그림: 지금 보이는 말과 중립 기물. 돌아올 자리는 그림이 지금 어디 있든 규칙 상태(말·중립 기물의 칸)로 정한다 (움직이던 중이어도 어긋나지 않게).
+	var views: Array[Node2D] = []
+	var homes: Array[Dictionary] = []
+	var layer_center: Vector2 = _board_center() - _pawn_layer.position
+	for pawn_id: Variant in _pawn_views.keys():
+		var pawn: PlayerPawn = state.get_pawn(int(pawn_id))
+		var view: Node2D = _pawn_views[pawn_id] as Node2D
+		if pawn == null or view == null or not is_instance_valid(view) or not view.visible:
+			continue
+		views.append(view)
+		homes.append({"pos": _pawn_position(pawn), "scale": Vector2.ONE * _depth_scale(tile_norm(pawn.current_tile_idx).y), "rot": 0.0, "alpha": 1.0,
+			"visible": pawn.carrier == null and not pawn.is_finished and pawn.has_left_start})
+	for npc_id: Variant in _npc_views.keys():
+		var npc: NeutralNPC = state.get_npc(int(npc_id))
+		var npc_view: Node2D = _npc_views[npc_id] as Node2D
+		if npc == null or npc_view == null or not is_instance_valid(npc_view) or not npc_view.visible:
+			continue
+		views.append(npc_view)
+		homes.append({"pos": _tile_center(npc.current_tile_idx), "scale": Vector2.ONE * _depth_scale(tile_norm(npc.current_tile_idx).y), "rot": 0.0, "alpha": 1.0, "visible": true})
+	var winner_color: Color = PLAYER_COLORS.get(player_id, Color("ffd43b"))
+	storm.beat.connect(_on_hurricane_beat.bind(views, homes, layer_center, pace, winner_color))
+	storm.play(pace)
+	await storm.completed
+	canvas.queue_free()
+	_hurricane_restore(views, homes)
+	_refresh_all()
+
+
+## 폭풍의 박자마다: 바람 → 번개 → 절정(기물이 날아간다) → 걷힘(기물이 돌아온다).
+func _on_hurricane_beat(kind: StringName, views: Array[Node2D], homes: Array[Dictionary], layer_center: Vector2, pace: float, color: Color) -> void:
+	match kind:
+		&"wind":
+			Sfx.play(&"launch", -2.0)
+			screen_shake(4.0, 0.5 * pace)
+		&"bolt":
+			Sfx.play(&"slam", -3.0)
+			screen_shake(7.0, 0.2)
+		&"climax":
+			Sfx.play(&"law_drop")
+			Sfx.play_stinger(&"law")
+			screen_shake(16.0, 0.45)
+			_impact_ring(_board_center(), color, 120.0)
+			_hurricane_fling(views, homes, layer_center, pace)
+		&"cleared":
+			_hurricane_land(views, homes)
+
+
+## 절정의 섬광과 함께 모든 기물이 소용돌이를 타고 회전하며 화면 밖으로 날아간다 (번호로 정한 방향·회전이라 모든 화면에서 같다).
+func _hurricane_fling(views: Array[Node2D], homes: Array[Dictionary], layer_center: Vector2, pace: float) -> void:
+	for index: int in views.size():
+		var view: Node2D = views[index]
+		if not is_instance_valid(view):
+			continue
+		var away: Vector2 = view.position - layer_center
+		if away.length() < 6.0:
+			away = Vector2.from_angle(float(index) * 2.4)
+		var out: Vector2 = layer_center + away.normalized().rotated(0.7 + 0.12 * float(index % 5)) * (820.0 + 70.0 * float(index % 4))
+		var spin: float = TAU * (2.5 + 0.4 * float(index % 3)) * (1.0 if index % 2 == 0 else -1.0)
+		_kill_fx(view)
+		var tween: Tween = view.create_tween().set_parallel(true)
+		view.set_meta("fx", tween)  # 날아가는 동안 다른 이동 연출이 이 말을 건드리지 않는다 (_kill_fx가 정리한다)
+		var seconds: float = HURRICANE_FLING_SECONDS * pace
+		tween.tween_property(view, "position", out, seconds).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+		tween.tween_property(view, "rotation", float((homes[index] as Dictionary)["rot"]) + spin, seconds)
+		tween.tween_property(view, "scale", ((homes[index] as Dictionary)["scale"] as Vector2) * 0.3, seconds)
+		tween.tween_property(view, "modulate:a", 0.0, seconds * 0.3).set_delay(seconds * 0.7)
+
+
+## 폭풍이 걷히면 기물이 하늘에서 제자리로 쿵 내려앉는다 (살짝 튕김).
+func _hurricane_land(views: Array[Node2D], homes: Array[Dictionary]) -> void:
+	for index: int in views.size():
+		var view: Node2D = views[index]
+		if not is_instance_valid(view):
+			continue
+		var home: Dictionary = homes[index]
+		_kill_fx(view)
+		view.position = (home["pos"] as Vector2) + Vector2(0.0, -150.0)
+		view.scale = (home["scale"] as Vector2) * 1.25
+		view.rotation = float(home["rot"])
+		view.modulate.a = 0.0
+		var tween: Tween = view.create_tween().set_parallel(true)
+		view.set_meta("fx", tween)
+		var delay: float = 0.03 * float(index % 8)
+		tween.tween_property(view, "position", home["pos"], 0.4).set_delay(delay).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+		tween.tween_property(view, "scale", home["scale"], 0.4).set_delay(delay)
+		tween.tween_property(view, "modulate:a", float(home["alpha"]), 0.18).set_delay(delay)
+
+
+## 어떤 경로로 끝나든(건너뛰기 포함) 그림을 원래 모습으로 정확히 돌려놓는다.
+func _hurricane_restore(views: Array[Node2D], homes: Array[Dictionary]) -> void:
+	for index: int in views.size():
+		var view: Node2D = views[index]
+		if not is_instance_valid(view):
+			continue
+		var home: Dictionary = homes[index]
+		_kill_fx(view)
+		view.position = home["pos"]
+		view.scale = home["scale"]
+		view.rotation = float(home["rot"])
+		view.modulate.a = float(home["alpha"])
+		view.visible = bool(home["visible"])
 
 
 ## 졸업 컷신(1.01)을 쓰는 졸업 사유: 특수 승리(법전)와 완주(말 4개 모두 골인). 진행 순위·꼴찌는 기존 배너.
@@ -4391,6 +4553,8 @@ func _uses_victory_cutscene(reason: StringName) -> bool:
 
 ## 졸업 컷신: 특수 승리는 법전 그림, 완주는 체크무늬 깃발. 끝날 때까지 기다린다 (연출 큐 한 단계).
 func _play_victory_cutscene(player_id: int, rank_no: int, reason: StringName) -> void:
+	if String(reason) == SpecialVictory.HURRICANE_LAW:
+		await _play_hurricane_force(player_id)  # 방해령 허리케인 포스!!: 컷신 앞에 대폭풍이 보드를 휩쓴다
 	var is_law: bool = LawRegistry.ALL_IDS.has(String(reason))
 	var color: Color = PLAYER_COLORS.get(player_id, Color("ffd43b"))
 	var canvas := CanvasLayer.new()
@@ -5070,6 +5234,14 @@ func _open_zoom(player_id: int, card_id: StringName) -> void:
 		caution_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		caution.add_child(caution_text)
 		guide_box.add_child(caution)
+	if HauntCommand.is_haunt(card_id):
+		var hint := _make_label(HAUNT_HINT, MobileSupport.text_px(11), Color("7a6a9a"))  # 방해령 삼총사: 작게 곁들이는 힌트
+		hint.name = "CardHint"
+		hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		hint.custom_minimum_size = Vector2(card_size.x - 24.0, 0)
+		hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		guide_box.add_child(hint)
 	var usable: bool = _card_usable_now(player_id, card)
 	var status_text: String = "지금 사용 가능" if usable else "지금은 사용 불가"
 	if card.category == GameEnums.CardCategory.COUNTER:
@@ -6830,7 +7002,15 @@ func _on_card_pressed(player_id: int, card_id: StringName) -> void:
 			for steps: int in range(CardStatus.MIN_STEPS, CardStatus.MAX_STEPS + 1):
 				faces.append({"label": "%d칸" % steps, "value": steps})
 			_show_choice("싸늘한 밑장빼기! 다음 굴림 결과를 고르세요", faces, _play_card_with.bind(player_id, card_id, "steps"), 3)
-		&"ACT_14", &"ACT_15":
+		&"ACT_18", &"ACT_19":  # 방해령 베루·사리: 옮길 말을 고른다 (적 말 / 내 말)
+			var pawn_options: Array[Dictionary] = []
+			var candidates: Array[PlayerPawn] = HauntCommand.shove_targets(state, player_id) if card_id == &"ACT_18" else HauntCommand.pull_targets(state, player_id)
+			for pawn: PlayerPawn in candidates:
+				pawn_options.append({"label": "%s · %d번 말 (%d번 칸)" % [_player_name(pawn.owner_id), pawn.slot, pawn.current_tile_idx], "value": pawn.entity_id})
+			if pawn_options.is_empty():
+				return
+			_show_choice(("[%s] 뒤로 밀 적 말을 고르세요" if card_id == &"ACT_18" else "[%s] 앞으로 당길 내 말을 고르세요") % card.display_name, pawn_options, _play_card_with.bind(player_id, card_id, "pawn_id"))
+		&"ACT_14", &"ACT_15", &"ACT_20":
 			var targets: Array[Dictionary] = []
 			for target: int in StatusCardCommand.targets(state, player_id):
 				targets.append({"label": _player_name(target), "value": target})
@@ -9825,6 +10005,8 @@ func result_comic_texts(winner_id: int) -> Array[String]:
 		var law: LawResource = LawRegistry.create(String(reason))
 		var detail: Dictionary = _law_win_detail.get(winner_id, {})
 		var why: String = law_win_reason(String(reason), int(detail.get("value", 0))) if str(detail.get("law", "")) == String(reason) else ""
+		if why != "" and POPART_TITLES.has(String(reason)):
+			why = "\"달성 사유: %s\"" % why  # 팝아트 법전은 하단 배너에 따옴표 달성 사유 (괄호 대신)
 		return [law.law_name if law != null else String(reason), why if why != "" else "특수 승리"]
 	if reason == VictoryChecker.ALL_HOME:
 		return ["완주 피니시", "말 4개 모두 완주"]
@@ -9848,7 +10030,7 @@ func _build_result_comic(standings: Array[Dictionary], winner_id: int) -> Result
 			"avatar": avatar, "art": AvatarCombatArt.texture(_avatar_for(player_id), &"attack") if first else null})
 	var texts: Array[String] = result_comic_texts(winner_id)
 	var comic := ResultComicPage.new()
-	comic.setup(entries, texts[0], texts[1])
+	comic.setup(entries, texts[0], texts[1], str(POPART_TITLES.get(str(state.rank_reasons.get(winner_id, _last_reason)), "")))
 	comic.visible = false  # 마지막 이동·처치 연출이 끝난 뒤에 등장한다
 	return comic
 
@@ -11082,6 +11264,9 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_log_line("[강화 망치] P%d +%d에서 멈춤 → 다음 굴림 +%d" % [data["player_id"], data["level"], data["level"]], Color("ffd43b"))
 			_record(int(data["player_id"]), "%s +%d 확정! 다음 굴림 +%d칸" % [_bq("강화 망치"), int(data["level"]), int(data["level"])])
 			_refresh_hammer_panel()
+		&"roll_penalized":
+			_roll_total[int(data["player_id"])] = int(data["to"])
+			_add_roll_reason(int(data["player_id"]), "방해령 메죵 -%d" % int(data["amount"]))
 		&"hammer_applied":
 			_roll_total[int(data["player_id"])] = int(data["to"])
 			_add_roll_reason(int(data["player_id"]), "강화 +%d" % int(data["level"]))

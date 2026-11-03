@@ -41,7 +41,24 @@ func _process(delta: float) -> void:
 	_clock += delta
 	if not _flames.is_empty():
 		_flames = _flames.filter(func(flame: Dictionary) -> bool: return _clock - float(flame["born"]) < FLAME_SECONDS)
-	queue_redraw()
+	# 그릴 것이 있을 때만 다시 그린다 (예전: 법전·불꽃이 없어도 매 프레임). 그릴 것이 사라진 순간에는 한 번 더 그려 잔상을 지운다.
+	var animating: bool = _is_animating()
+	if animating or _was_animating:
+		queue_redraw()
+	_was_animating = animating
+
+
+var _was_animating: bool = false
+
+
+## 보드 위 법전 표시(빵집 테두리·포위망 점멸·하극상 과녁)나 카이지 불꽃이 움직이고 있는가.
+func _is_animating() -> bool:
+	if not _flames.is_empty():
+		return true
+	var state: GameState = _state()
+	if state == null or board == null or board.manager == null or board.manager.is_game_over:
+		return false
+	return state.rulebook.has_law("LAW_02") or state.rulebook.has_law("LAW_05") or state.rulebook.has_law("LAW_08")
 
 
 static func icon(icon_name: String) -> Texture2D:

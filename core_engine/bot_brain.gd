@@ -372,6 +372,20 @@ static func _plan_one_turn_card(state: GameState, player_id: int, card: BaseCard
 						best_tile = tile
 				if best_tile != -1:
 					return {"card_id": card.card_id, "params": {"tile": best_tile}}
+		&"ACT_18", &"ACT_19", &"ACT_20":  # 방해령 삼총사: 방해령 허리케인 포스!!가 법전에 걸려 있으면 승리 재료라 모아 둔다. 아니면 반쯤은 써서 방해한다
+			if state.rulebook.has_law(SpecialVictory.HURRICANE_LAW) or not card.could_play(state, player_id) or rng.randf() >= 0.5:
+				return {}
+			if card.card_id == &"ACT_18":  # 베루: 가장 앞선 적 말
+				var shove: Array[PlayerPawn] = HauntCommand.shove_targets(state, player_id)
+				shove.sort_custom(func(a: PlayerPawn, b: PlayerPawn) -> bool: return state.pawn_progress_distance(a) < state.pawn_progress_distance(b))
+				return {"card_id": card.card_id, "params": {"pawn_id": shove[0].entity_id}}
+			if card.card_id == &"ACT_19":  # 사리: 가장 앞선 내 말 (한 칸 더 앞으로)
+				var pull: Array[PlayerPawn] = HauntCommand.pull_targets(state, player_id)
+				pull.sort_custom(func(a: PlayerPawn, b: PlayerPawn) -> bool: return state.pawn_progress_distance(a) < state.pawn_progress_distance(b))
+				return {"card_id": card.card_id, "params": {"pawn_id": pull[0].entity_id}}
+			var foe: int = state.race_leader(player_id)  # 메죵: 선두 상대
+			if foe != -1 and HauntCommand.penalty_targets(state, player_id).has(foe):
+				return {"card_id": card.card_id, "params": {"target_player": foe}}
 		&"ACT_14", &"ACT_15":  # 밴·스킵: 선두 상대에게
 			var leader_player: int = state.race_leader(player_id)
 			if leader_player != -1 and card.is_legal(state, player_id, {"target_player": leader_player}) and rng.randf() < 0.6:

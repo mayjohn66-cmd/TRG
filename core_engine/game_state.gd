@@ -80,6 +80,9 @@ signal passive_triggered(pawn_id: int, passive: StringName)
 signal cucumber_given(player_id: int, tile: int)
 ## v1.1 기억상실빔이 사출을 막았다.
 signal amnesia_blocked(pawn_id: int, tile: int)
+signal roll_penalty_set(player_id: int, amount: int)  ## 방해령 메죵: 그 사람의 다음 눈금에서 깎을 칸 수가 정해졌다
+signal haunt_shifted(pawn_id: int, direction: int)  ## 방해령 베루(-1)·사리(+1)가 말을 1칸 옮기기 직전 (화면이 짧은 작은 점프로 보여 준다)
+signal haunt_boost_set(player_id: int)  ## 방해령 허리케인 포스 제정: 이 사람의 카드 드로우에 방해령 가중치가 붙었다
 ## v1.1 현상금 수배서: 수배된 말을 잡아 현상금을 받았다.
 signal bounty_claimed(hunter: int, pawn_id: int, steps: int)
 
@@ -132,6 +135,12 @@ var hammer_pending: Dictionary = {}
 var hammer_bonus: Dictionary = {}
 ## v1.1 관성 드리프트를 가진 사람 / 현상금 수배서: 사냥꾼 -> 수배된 말 ID.
 var drift_players: Dictionary = {}
+## v1.1 방해령 메죵: 플레이어 -> 다음 이동 눈금에서 깎을 칸 수 (그 사람의 다음 굴림에 한 번 적용되고 사라진다).
+var roll_penalty: Dictionary = {}
+## v1.1 방해령 허리케인 포스(LAW_09)를 제정한 사람: 카드 드로우에서 손패에 없는 방해령 종류가 더 잘 나온다.
+var haunt_boost: Dictionary = {}
+## 특수 승리 판정 중인 차례 플레이어 (-1이면 차례 끝 판정이 아님). 내 차례 끝에만 달성되는 법전(방해령 허리케인 포스!!)이 본다.
+var judge_turn_player: int = -1
 var bounties: Dictionary = {}
 
 
@@ -588,14 +597,38 @@ func note_trap_card(player_id: int) -> void:
 			passive_triggered.emit(pawn.entity_id, &"kyui_charge")
 
 
+## 방해령 허리케인 포스를 제정한 사람의 드로우: 손패에 없는 방해령 종류는 다른 카드보다 이만큼 더 잘 뽑힌다 (이미 가진 종류는 보통 확률).
+const HAUNT_DRAW_WEIGHT: float = 6.0
+
+
 func draw_card(player_id: int) -> StringName:
 	if card_deck.is_empty():
 		return &""
-	var card_id: StringName = card_deck.pop_back()
+	var card_id: StringName = _pick_boosted_card(player_id) if haunt_boost.has(player_id) else card_deck.pop_back()
 	if not give_card(player_id, card_id):
 		card_deck.push_front(card_id)
 		return &""
 	return card_id
+
+
+## 가중치 드로우: 덱에서 손패에 없는 방해령(HAUNT_DRAW_WEIGHT배)과 나머지(1배) 중 하나를 고른다. 같은 시드·같은 행동이면 모든 화면이 같은 카드를 뽑는다.
+## 덱을 한 번 훑으며 뽑힌 자리를 빼므로 덱 순서는 그대로 두고, 뽑을 카드가 없으면(방해령이 덱에 없으면) 맨 위 카드를 뽑는다.
+func _pick_boosted_card(player_id: int) -> StringName:
+	var missing: Array[StringName] = HauntCommand.missing_kinds(self, player_id)
+	var total: float = 0.0
+	var weights: Array[float] = []
+	for card_id: StringName in card_deck:
+		var weight: float = HAUNT_DRAW_WEIGHT if missing.has(card_id) else 1.0
+		weights.append(weight)
+		total += weight
+	var roll: float = rng.randf() * total
+	for index: int in weights.size():
+		roll -= weights[index]
+		if roll < 0.0:
+			var picked: StringName = card_deck[index]
+			card_deck.remove_at(index)
+			return picked
+	return card_deck.pop_back()
 
 
 func has_card(player_id: int, card_id: StringName) -> bool:

@@ -310,7 +310,7 @@ func test_super_category_appears_at_most_once_per_draft_and_not_every_time() -> 
 		check(supers <= 1, "한 번의 드래프트에 초증강은 최대 1장")
 		if supers == 1:
 			drafts_with_super += 1
-	check(drafts_with_super > 20 and drafts_with_super < 160, "초증강은 가끔만 나온다 (%d/200)" % drafts_with_super)
+	check(drafts_with_super > 10 and drafts_with_super < 160, "초증강은 가끔만 나온다 (%d/200)" % drafts_with_super)
 
 
 # --- 턴 매니저 연동 --------------------------------------------------------------

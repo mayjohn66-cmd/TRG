@@ -497,6 +497,14 @@ jobs:
           grep -Eq 'V11_UI [0-9]+ assertions; 0 failures' /tmp/v11_ui.log
           if grep -Eq 'SCRIPT ERROR|SHADER ERROR' /tmp/v11_ui.log; then exit 1; fi
 
+      - name: Check the Meddling Spirits cards, hurricane victory and pop-art title
+        if: steps.validation.outputs.scope == 'full'
+        run: |
+          set -euo pipefail
+          godot --headless --audio-driver Dummy --path . -s res://tests/ui_haunt_test.gd 2>&1 | tee /tmp/haunt_ui.log
+          grep -Eq 'HAUNT_UI [0-9]+ assertions; 0 failures' /tmp/haunt_ui.log
+          if grep -Eq 'SCRIPT ERROR|SHADER ERROR' /tmp/haunt_ui.log; then exit 1; fi
+
       - name: Check the neutral piece does not blink before it moves
         if: steps.validation.outputs.scope == 'full'
         run: |

@@ -80,6 +80,8 @@ static func capture(state: GameState) -> TurnSnapshot:
 			"amnesia_round": state.amnesia_round,
 			"hammer_pending": state.hammer_pending.duplicate(),
 			"hammer_bonus": state.hammer_bonus.duplicate(),
+			"roll_penalty": state.roll_penalty.duplicate(),
+			"haunt_boost": state.haunt_boost.duplicate(),
 		},
 	}
 	return snapshot
@@ -189,4 +191,6 @@ func restore(state: GameState, restore_meta: bool = false) -> void:
 		state.amnesia_round = int(meta.get("amnesia_round", -1))
 		state.hammer_pending = (meta.get("hammer_pending", {}) as Dictionary).duplicate()
 		state.hammer_bonus = (meta.get("hammer_bonus", {}) as Dictionary).duplicate()
+		state.roll_penalty = (meta.get("roll_penalty", {}) as Dictionary).duplicate()
+		state.haunt_boost = (meta.get("haunt_boost", {}) as Dictionary).duplicate()
 	state.snapshot_restored.emit()

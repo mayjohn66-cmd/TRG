@@ -1366,7 +1366,8 @@ func _auto_enact_law() -> void:
 		return
 	var candidates: Array[String] = []
 	for law_id: String in LawRegistry.ALL_IDS:
-		if VictoryLaw.is_victory_id(law_id) and MatchRules.law_allowed(state, law_id) and not state.rulebook.has_law(law_id):
+		# 방해령 허리케인 포스!!는 증강으로 제정할 때 주는 카드 지급·드로우 보정이 있어야 달성할 수 있어 자동 제정에서는 뺀다
+		if VictoryLaw.is_victory_id(law_id) and law_id != SpecialVictory.HURRICANE_LAW and MatchRules.law_allowed(state, law_id) and not state.rulebook.has_law(law_id):
 			candidates.append(law_id)
 	if candidates.is_empty():
 		return
@@ -1618,6 +1619,12 @@ func _apply_roll_result(result: RollResult) -> void:
 			state.hammer_bonus.erase(roller)
 			_emit_event(&"hammer_applied", {"player_id": roller, "from": ctx.dice_value, "to": ctx.dice_value + hammer, "level": hammer})
 			ctx.dice_value += hammer  # 강화 망치: 강화한 만큼 이번 굴림 결과 +N
+		var penalty: int = int(state.roll_penalty.get(roller, 0))
+		if penalty > 0 and ctx.dice_value > 0:
+			state.roll_penalty.erase(roller)
+			var reduced: int = maxi(ctx.dice_value - penalty, 1)  # 방해령 메죵: 다음 눈금 -1 (눈금이 1이면 그대로 1칸: 0칸으로 만들지는 못한다)
+			_emit_event(&"roll_penalized", {"player_id": roller, "from": ctx.dice_value, "to": reduced, "amount": penalty})
+			ctx.dice_value = reduced
 		var permanent: int = int(state.permanent_roll_bonus.get(roller, 0))
 		var corner: int = int(state.corner_buff.get(roller, 0))
 		state.corner_buff.erase(roller)
@@ -1881,6 +1888,15 @@ func _check_victory(report: MoveReport) -> bool:
 ## 여럿이면 레이스에서 앞선 사람(완주 수 많고 남은 거리 짧은 순)이 먼저 순위를 받는다. 이미 졸업한 사람·지워진 교칙은 보지 않는다. 게임이 끝났으면 true.
 ## turn_player: 차례를 끝낸 사람 (라운드 끝 판정은 -1). 사도 포위망 경보는 이 사람에게만 울린다 (SpecialVictory.update_siege).
 func _judge_special_victory(turn_player: int = -1) -> bool:
+	if state != null:
+		state.judge_turn_player = turn_player  # 내 차례 끝에만 달성되는 법전(방해령 허리케인 포스!!)이 누구의 차례 끝인지 본다
+	var decided: bool = _judge_special_victory_inner(turn_player)
+	if state != null:
+		state.judge_turn_player = -1
+	return decided
+
+
+func _judge_special_victory_inner(turn_player: int) -> bool:
 	if is_game_over or state == null:
 		return is_game_over
 	var siege: Dictionary = SpecialVictory.update_siege(state, turn_player)

@@ -6,6 +6,8 @@ extends RefCounted
 
 ## 사도 포위망: 경보 뒤 한 바퀴를 버텨야 하는 교칙 (update_siege).
 const SIEGE_LAW: String = "LAW_05"
+## 방해령 허리케인 포스!!: 방해령 3종을 손패에 모은 채로 '내 차례를 끝낼 때'만 달성된다 (남의 차례 끝·라운드 끝 판정에서는 세지 않는다).
+const HURRICANE_LAW: String = "LAW_09"
 
 
 ## 이 플레이어가 지금 법전의 특수 승리 조건 하나를 달성했다면 그 교칙 ID(법전 순서로 첫 번째), 아니면 빈 값.
@@ -14,6 +16,8 @@ static func achieved_by(state: GameState, player_id: int) -> StringName:
 		if law is VictoryLaw and (law as VictoryLaw).achieved(state, player_id):
 			if law.law_id == SIEGE_LAW and not state.siege_ready.has(player_id):
 				continue  # 사도 포위망은 경보 뒤 한 바퀴를 버텨야 졸업한다
+			if law.law_id == HURRICANE_LAW and state.judge_turn_player != player_id:
+				continue  # 방해령 허리케인 포스!!는 내 차례를 끝내는 순간에만 판정한다
 			return StringName(law.law_id)
 	return &""
 

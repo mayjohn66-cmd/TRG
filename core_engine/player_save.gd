@@ -134,10 +134,11 @@ static func record_buldak(level: int, round_number: int) -> bool:
 
 
 # --- 짧은 기록 코드 · 이어하기 링크 ------------------------------------------------------------
-# 짧은 코드: 태그 4자 + '-' + 법전 8종 비트(16진 2자) + 불닭 5단계 비트(16진 2자). 예: 4BGC-A51F (닉네임까지면 에르핀#4BGC-A51F).
+# 짧은 코드: 태그 4자 + '-' + 법전 앞 8종 비트(16진 2자) + [9번째 이후 법전 비트(상위 3비트) + 불닭 5단계 비트(하위 5비트)](16진 2자). 예: 4BGC-A51F (닉네임까지면 에르핀#4BGC-A51F).
+# LAW_09(방해령 허리케인 포스!!)부터는 법전 비트가 8개를 넘어서, 불닭 비트 바이트의 남는 상위 비트에 넣는다 (9번째 법전이 없으면 예전 코드와 똑같다).
 # 담는 것은 태그와 클리어 여부뿐이다 (최단 라운드·판 수는 이 브라우저의 기록에만 남는다).
 
-## 법전 8종 달성 비트 (LawRegistry.ALL_IDS 순서, LAW_01이 1비트).
+## 법전 달성 비트 (LawRegistry.ALL_IDS 순서, LAW_01이 1비트). 8번째 비트(LAW_09)부터는 코드에서 불닭 바이트 상위 비트로 옮겨 담는다.
 static func laws_mask() -> int:
 	var mask: int = 0
 	for index: int in LawRegistry.ALL_IDS.size():
@@ -157,7 +158,8 @@ static func buldak_mask() -> int:
 
 ## 지금 기록의 짧은 코드 (예: 4BGC-A51F).
 static func short_code() -> String:
-	return "%s-%02X%02X" % [str(get_value("player_tag", "")), laws_mask(), buldak_mask()]
+	var laws: int = laws_mask()
+	return "%s-%02X%02X" % [str(get_value("player_tag", "")), laws & 0xFF, buldak_mask() | ((laws >> 8) << 5)]
 
 
 ## 짧은 코드를 읽는다: "4BGC-A51F" 또는 "닉네임#4BGC-A51F" (대소문자·앞뒤 공백 무시). 잘못되면 빈 사전.
@@ -174,8 +176,10 @@ static func parse_short(text: String) -> Dictionary:
 		return {}
 	var tag: String = found.get_string(1).to_upper()
 	var laws: int = found.get_string(2).hex_to_int()
-	var buldak: int = found.get_string(3).hex_to_int()
-	if not GameSession.is_valid_tag(tag) or buldak > 31:
+	var packed: int = found.get_string(3).hex_to_int()
+	var buldak: int = packed & 31
+	laws |= (packed >> 5) << 8  # 9번째 이후 법전 비트
+	if not GameSession.is_valid_tag(tag) or (laws >> LawRegistry.ALL_IDS.size()) != 0:
 		return {}
 	return {"player_tag": tag, "laws": laws, "buldak": buldak, "nickname": nickname}
 

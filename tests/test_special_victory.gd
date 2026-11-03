@@ -36,13 +36,13 @@ func _dispose(manager: TurnManager) -> void:
 	manager.free()
 
 
-func test_registry_makes_eight_victory_laws_with_table_goals() -> void:
+func test_registry_makes_nine_victory_laws_with_table_goals() -> void:
 	var goals: Array[int] = []
 	for id: String in LawRegistry.ALL_IDS:
 		var law: VictoryLaw = _law(id)
 		check(law != null and law.trigger_timing == "", "%s는 판을 변조하지 않는 특수 승리 교칙" % id)
 		goals.append(law.goal())
-	check_eq(goals, int_array([10, 6, 5, 16, 3, 12, 3, 3]), "표의 목표 수치")
+	check_eq(goals, int_array([10, 6, 5, 16, 3, 12, 3, 3, 3]), "표의 목표 수치")
 	check_eq(_law("LAW_01").law_name, "투기장의 지배자", "이름")
 	check_eq(_law("LAW_05").condition_text(), "말 3개가 트랙 위에서 서로 4칸 이상 간격", "조건 문구")
 

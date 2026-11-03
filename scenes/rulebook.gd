@@ -712,7 +712,7 @@ func _apply_group_layout(group: int) -> void:
 	if catalog:
 		var text: String = L10n.t(str(BANNERS.get(spread, "")))
 		if spread == LAW_SPREAD:
-			text = L10n.tf("%s (수집: %d/8)", [text, PlayerSave.law_count()])
+			text = L10n.tf("%s (수집: %d/%d)", [text, PlayerSave.law_count(), LawRegistry.ALL_IDS.size()])
 		_summary_label.text = text
 		_fit_summary(text)
 		_right_scroll.position = GRID_POS

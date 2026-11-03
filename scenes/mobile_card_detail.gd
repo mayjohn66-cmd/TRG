@@ -25,6 +25,10 @@ static func make(card: BaseCard, face: Control, description: String, timing: Str
 	var hint:=Label.new();hint.text=L10n.tf("발동: %s",[timing]);hint.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 	hint.add_theme_font_size_override("font_size",maxi(16,roundi(20*unit)));hint.add_theme_color_override("font_color",UiSkin.SOFT)
 	body.add_child(hint)
+	if HauntCommand.is_haunt(card.card_id):  # 방해령 삼총사: 작은 힌트 한 줄 (데스크톱 확대 보기와 같은 문구)
+		var whisper:=Label.new();whisper.name="CardHint";whisper.text=L10n.t(MainBoard.HAUNT_HINT);whisper.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+		whisper.add_theme_font_size_override("font_size",maxi(12,roundi(15*unit)));whisper.add_theme_color_override("font_color",Color("7a6a9a"))
+		body.add_child(whisper)
 	var buttons:=HBoxContainer.new();body.add_child(buttons)
 	for action: String in ["사용하기","닫기"]:
 		var button:=Button.new();button.text=L10n.t(action);button.name="UseCard" if action=="사용하기" else "CloseCard"

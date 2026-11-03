@@ -2022,7 +2022,7 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 클리어! 최고: %d라운드,Cleared! Best: Round %d,クリア！ 最速: %dラウンド
 미정복,Unconquered,未制覇
 · 정복 %d/5,· Conquered %d/5,· 制覇 %d/5
-[법전 수집] 새 도장: %s (%d/8),[Law Collection] New stamp: %s (%d/8),[法典コレクション] 新スタンプ: %s (%d/8)
+[법전 수집] 새 도장: %s (%d/%d),[Law Collection] New stamp: %s (%d/%d),[法典コレクション] 新スタンプ: %s (%d/%d)
 [불닭 정복] %s 최고 기록: %d라운드,[Buldak Conquest] %s best record: Round %d,[ブルダック制覇] %s 最速記録: %dラウンド
 내 우승 기록 복사하기,Copy My Victory Record,優勝記録をコピー
 내 기록 복사하기,Copy My Record,自分の記録をコピー
@@ -2033,7 +2033,7 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 기물,Pawns,駒
 기록 코드 복사,Copy Save Code,記録コードをコピー
 기록 코드 입력,Enter Save Code,記録コードを入力
-법전 수집 %d/8,Laws Collected %d/8,法典収集 %d/8
+법전 수집 %d/%d,Laws Collected %d/%d,法典収集 %d/%d
 기록 코드를 복사했어요 (#%s),Save code copied (#%s),記録コードをコピーしました (#%s)
 기록 코드를 붙여 넣어 주세요,Paste your save code,記録コードを貼り付けてください
 기록 코드를 확인해 주세요,Please check the save code,記録コードを確認してください
@@ -2138,7 +2138,7 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 법전 끄기,Laws off,法典オフ
 입문 드래프트,Beginner draft,入門ドラフト
 [방 규칙] %s,[Room Rules] %s,[ルーム設定] %s
-%s (수집: %d/8),%s (Collected: %d/8),%s（収集: %d/8）
+%s (수집: %d/%d),%s (Collected: %d/%d),%s（収集: %d/%d）
 [말] 증강의 [기물 지급]으로 기본 말을 진화시켜요. 말마다 상시 능력과 1회 필살기가 있어요.,[Pieces] Evolve basic pawns with the [Piece Grant] augment. Each piece has a passive and a one-time ultimate.,[駒] 増強の[駒支給]で基本の駒を進化させます。駒ごとに常時能力と1回限りの必殺技があります。
 [범용 보급] 카드 패키지와 기물 변이·필살기 리필 같은 보급 증강이에요.,"[Utility Supply] Supply augments such as card packs, piece mutation and ultimate refills.",[汎用補給] カードパック・駒変異・必殺技リフィルなどの補給増強です。
 [초증강] 판을 한 번에 뒤집는 하이리스크 하이리턴. 경고 표시는 내 말도 사출될 수 있다는 뜻이에요.,"[Hyper Augments] High risk, high return game-changers. A warning mark means your own pawns can be ejected too.",[超増強] 盤面を一気にひっくり返すハイリスク・ハイリターン。警告マークは自分の駒も射出されうるという意味です。
@@ -2147,7 +2147,7 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 [판정 도구] 도구마다 족보가 달라요. 증강의 [도구 교체]로 바꿔 굴려요.,[Judgment Tools] Each tool has its own result table. Swap tools with the [Judgment Tool Swap] augment.,[判定ツール] ツールごとに役表が違います。増強の[判定ツール交換]で持ち替えて振ります。
 기록 백업/복구,Backup / Restore,記録バックアップ/復元
 내 전용 링크 복사,Copy My Link,専用リンクをコピー
-법전 %d/8,Codex %d/8,法典 %d/8
+법전 %d/%d,Codex %d/%d,法典 %d/%d
 코드 입력,Enter Code,コード入力
 v%s · 비공식 팬게임 (원작사와 무관한 비영리 무료 배포물),v%s · Unofficial non-profit fan game (Not affiliated with the original dev),v%s · 非公式・非営利ファンゲーム（原作会社とは無関係です）
 축제 (확률 2배),Festival (2x),祭り (確率2倍)
@@ -2584,7 +2584,34 @@ P%d의 %d번 말 수배! 잡으면 +%d칸,P%d's pawn %d is WANTED! Capture it fo
 슬픔,Sad,かなしい
 야호!,Yay!,やったー！
 어라라?!,Uh-oh?!,あれれ？！
-"중립 기물(%s)이 이미 판 위에 있습니다. 소환 카드는 중립 기물이 사라진 뒤에 쓸 수 있어요","A neutral piece (%s) is already on the board. Summon cards can be used after it disappears","中立の駒(%s)がすでに盤上にあります。召喚カードはその駒が消えてから使えます"
+중립 기물(%s)이 이미 판 위에 있습니다. 소환 카드는 중립 기물이 사라진 뒤에 쓸 수 있어요,A neutral piece (%s) is already on the board. Summon cards can be used after it disappears,中立の駒(%s)がすでに盤上にあります。召喚カードはその駒が消えてから使えます
 %s %d번 칸,%s at tile %d,%s %d番マス
 중립 기물,Neutral piece,中立の駒
 -- 중립 기물: %s --,-- Neutral pieces: %s --,-- 中立の駒: %s --
+(베루·사리·메죵을 모두 손패에 모으면 무언가 일어날지도...?),"(Gather Beru, Sari and Mejong in your hand together and something might happen...?)",(ベル・サリ・メジョンを全員手札に集めると、何かが起こるかも…？)
+[방해령 메죵] P%d의 다음 이동 눈금 -%d,[Meddling Spirit Mejong] P%d's next roll -%d,[妨害霊メジョン] P%dの次の移動目盛り-%d
+%s 다음 이동 눈금 -%d,%s Next roll -%d,%s 次の移動目盛り-%d
+눈금 -%d!,Roll -%d!,目盛り-%d！
+[방해령 허리케인 포스!!] P%d: 방해령 카드가 더 잘 나옵니다,[Meddling Spirits' Hurricane Force!!] P%d: Meddling Spirit cards show up more often,[妨害霊ハリケーンフォース！！] P%d: 妨害霊カードが出やすくなります
+앞으로 1칸!,1 space forward!,1マス前へ！
+뒤로 1칸!,1 space back!,1マス後ろへ！
+베루·사리·메죵 3종 손패 집결 · 대폭풍으로 보드 초토화!,"All three — Beru, Sari and Mejong — gathered in hand · the great storm wrecked the board!",ベル・サリ・メジョン3種が手札に集結・大嵐で盤面が壊滅！
+%s · %d번 말 (%d번 칸),%s · Pawn %d (tile %d),%s · %d番の駒 (%d番マス)
+" · 방해령 [%s] 1장 지급, 이제 방해령 카드가 더 잘 나옵니다", · Got 1 Meddling Spirit [%s]; they show up more often now, · 妨害霊[%s]を1枚獲得、以降は妨害霊が出やすくなります
+ · 이제 방해령 카드가 더 잘 나옵니다 (손패가 가득 차 지급은 못 했어요)," · Meddling Spirit cards show up more often now (hand full, so no card was given)", · 妨害霊カードが出やすくなります（手札がいっぱいで付与できませんでした）
+방해령 {p1}종(베루·사리·메죵)을 모두 손패에 모은 채 내 차례 종료,"End your turn holding all {p1} Meddling Spirits (Beru, Sari, Mejong) in hand",妨害霊{p1}種(ベル・サリ・メジョン)をすべて手札に集めたまま自分のターンを終える
+방해령 허리케인 포스!!,Meddling Spirits' Hurricane Force!!,妨害霊ハリケーンフォース！！
+적 말 뒤로 1칸,Push enemy back 1,敵を1マス後ろへ
+내 말 앞으로 1칸,Pull yours forward 1,自駒を1マス前へ
+적 다음 눈금 -1,Enemy's next roll -1,敵の次の目盛り-1
+적 말 1개를 뒤로 1칸 (도착 칸이 비어 있을 때),Push 1 enemy pawn back 1 space (the space behind must be empty),敵の駒1個を1マス後ろへ（後ろのマスが空いているとき）
+내 말 1개를 앞으로 1칸 (도착 칸이 비어 있을 때),Move 1 of your pawns forward 1 space (the space ahead must be empty),自分の駒1個を1マス前へ（前のマスが空いているとき）
+적 1명의 다음 이동 눈금 -1 (최소 1칸),Reduce 1 enemy's next roll by 1 (minimum 1 space),敵1人の次の移動目盛り-1（最小1マス）
+눈금 %d칸 → %d칸,Roll %d → %d,目盛り %d → %d
+[방해령] %s이(가) 뒤로 1칸 밀려났습니다,[Meddling Spirit] %s was pushed back 1 space,[妨害霊] %sが1マス後ろへ押されました
+[방해령] %s이(가) 앞으로 1칸 당겨졌습니다,[Meddling Spirit] %s was pulled forward 1 space,[妨害霊] %sが1マス前へ引かれました
+%s 뒤로 1칸 밀림,%s pushed back 1 space,%s 1マス後ろへ押された
+%s 앞으로 1칸 당겨짐,%s pulled forward 1 space,%s 1マス前へ引かれた
+[%s] 뒤로 밀 적 말을 고르세요,[%s] Choose the enemy pawn to push back,[%s] 後ろへ押す敵の駒を選んでください
+[%s] 앞으로 당길 내 말을 고르세요,[%s] Choose your pawn to pull forward,[%s] 前へ引く自分の駒を選んでください
+방해령 %d/%d!,Spirits %d/%d!,妨害霊 %d/%d！

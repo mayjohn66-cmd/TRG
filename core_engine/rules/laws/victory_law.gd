@@ -1,6 +1,6 @@
 # File: res://core_engine/rules/laws/victory_law.gd
 # Class: class_name VictoryLaw
-# Role: 🏆 중앙 법전의 특수 승리 교칙 8종 (LAW_01~08). 판을 변조하지 않고, 조건을 먼저 달성한 사람이 다음 순위로 졸업한다 (SpecialVictory)
+# Role: 🏆 중앙 법전의 특수 승리 교칙 9종 (LAW_01~09). 판을 변조하지 않고, 조건을 먼저 달성한 사람이 다음 순위로 졸업한다 (SpecialVictory)
 class_name VictoryLaw
 extends LawResource
 
@@ -12,6 +12,7 @@ const SPREAD: StringName = &"spread"
 const EJECTED: StringName = &"ejected"
 const BEST_CHAIN: StringName = &"best_chain"
 const UNDERDOG: StringName = &"underdog"
+const HAUNT: StringName = &"haunt"
 ## 사도 포위망: 말 사이에 필요한 최소 간격.
 const SPREAD_GAP: int = 4
 
@@ -25,6 +26,7 @@ const DEFS: Dictionary = {
 	"LAW_06": ["해탈한 동네북의 역습", "내 말이 {p1}회 장외 사출당함", 12, EJECTED, "회"],
 	"LAW_07": ["초전도체 무한 동력", "한 턴에 주사위 {p1}연속 굴림", 3, BEST_CHAIN, "연속"],
 	"LAW_08": ["다크호스의 하극상", "완주 0개인 채로 선두의 말을 {p1}회 처치", 3, UNDERDOG, "처치"],
+	"LAW_09": ["방해령 허리케인 포스!!", "방해령 {p1}종(베루·사리·메죵)을 모두 손패에 모은 채 내 차례 종료", 3, HAUNT, "종"],
 }
 ## 법전에 있는 동안만 세는 순간 기록 (교칙이 제정되면 모두 0부터 다시 센다).
 const SESSION_KEYS: Array[StringName] = [BEST_MOVE, BEST_CHAIN]
@@ -71,6 +73,8 @@ func progress(state: GameState, player_id: int) -> int:
 			return state.owned_attachment_count(player_id)
 		SPREAD:
 			return spread_count(state, player_id)
+		HAUNT:
+			return HauntCommand.held_kinds(state, player_id)  # 지금 손패에 있는 방해령 종류 수 (실시간)
 	return state.stat(player_id, stat_key)
 
 

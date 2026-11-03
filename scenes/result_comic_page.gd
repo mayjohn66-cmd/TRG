@@ -49,6 +49,8 @@ var stamp: Label = null
 var winner_label: Label = null
 var victory_label: Label = null
 var condition_label: Label = null
+## 법전별 팝아트 타이틀 (좌상단, 예: "HURRICANE\nFORCE!!"). 없으면 null.
+var popart_label: Label = null
 var next_button: Button = null
 var _art: TextureRect = null
 
@@ -73,7 +75,8 @@ func _relayout() -> void:
 
 ## entries: 순위 순서의 [{rank, name, color, avatar: Control(정사각 초상), art: Texture2D(1위 전신, 없어도 됨)}].
 ## victory: 승리 이름, condition: (승리 조건).
-func setup(entries: Array[Dictionary], victory: String, condition: String) -> void:
+## popart_title: 좌상단에 크게 찍는 팝아트 타이틀 (줄바꿈 \n으로 두 줄). 비워 두면 없다. condition이 따옴표로 시작하면 괄호로 다시 감싸지 않는다.
+func setup(entries: Array[Dictionary], victory: String, condition: String, popart_title: String = "") -> void:
 	var first: Dictionary = entries[0] if not entries.is_empty() else {}
 	_accent = first.get("color", Color("ffd43b"))
 	_left = ComicPanel.new()
@@ -115,12 +118,22 @@ func setup(entries: Array[Dictionary], victory: String, condition: String) -> vo
 		name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		panel.add_child(name_label)
 		panel.add_child(_make_text("Tag", RANK_TAGS[mini(int(entry.get("rank", index + 1)), 4) - 1], 30, 9))
-	condition_label = _make_text("VictoryCondition", "(%s)" % condition if condition != "" else "", 20, 6)
+	var quoted: bool = condition.begins_with("\"") or condition.begins_with("(")
+	condition_label = _make_text("VictoryCondition", (condition if quoted else "(%s)" % condition) if condition != "" else "", 20, 6)
 	victory_label = _make_text("VictoryName", victory, 50, 12)
 	winner_label = _make_text("WinnerName", str(first.get("name", "")), 64, 14, Color.WHITE, _accent.darkened(0.6))
 	stamp = _make_text("FirstStamp", "1st", 88, 16)
 	for label: Label in [condition_label, victory_label, winner_label, stamp]:
 		add_child(label)
+	if popart_title != "":
+		# 팝아트 타이틀: 굵은 노랑 글자 + 두꺼운 잉크 테두리, 살짝 기울여 1st 도장 아래에 쾅 찍힌다
+		popart_label = _make_text("PopArtTitle", popart_title, 54, 14, Color("ffe14d"), INK)
+		popart_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		popart_label.add_theme_constant_override("line_spacing", -8)
+		popart_label.add_theme_color_override("font_shadow_color", Color("e03131"))
+		popart_label.add_theme_constant_override("shadow_offset_x", 5)
+		popart_label.add_theme_constant_override("shadow_offset_y", 5)
+		add_child(popart_label)
 	next_button = Button.new()
 	next_button.name = "NextPageButton"
 	next_button.text = "Next Page  "
@@ -276,8 +289,9 @@ func _layout() -> void:
 	if _left == null:
 		return
 	var view: Vector2 = _view()
-	for label: Label in [stamp, victory_label, condition_label]:
-		label.size = label.get_combined_minimum_size()
+	for label: Label in [stamp, victory_label, condition_label, popart_label]:
+		if label != null:
+			label.size = label.get_combined_minimum_size()
 	_left.size = view
 	_left.polygon = _scaled(first_polygon(), view)
 	_left.pivot_offset = Vector2(view.x * 0.3, view.y * 0.4)
@@ -328,6 +342,10 @@ func _layout() -> void:
 	stamp.position = Vector2(view.x * 0.02, view.y * 0.01)
 	stamp.pivot_offset = stamp.size * 0.5
 	stamp.rotation = -0.1
+	if popart_label != null:
+		popart_label.position = Vector2(view.x * 0.022, view.y * 0.01 + stamp.size.y * 0.82)
+		popart_label.pivot_offset = Vector2(0.0, popart_label.size.y * 0.5)
+		popart_label.rotation = -0.07
 	winner_label.size = Vector2(view.x * 0.44, 0.0)
 	winner_label.reset_size()
 	winner_label.size.x = view.x * 0.44
@@ -377,6 +395,11 @@ func set_time(t: float) -> void:
 		label.scale = Vector2.ONE * maxf(lerpf(1.7, 1.0, name_pop), 0.01) if name_pop > 0.0 else Vector2.ONE * 1.7
 		label.modulate.a = clampf(_ramp(t, STAMP_AT - 0.04, STAMP_AT + 0.02), 0.0, 1.0)
 	condition_label.modulate.a = _ramp(t, STAMP_AT, STAMP_AT + 0.1)
+	if popart_label != null:
+		# 팝아트 타이틀은 1st 도장 바로 뒤에 더 크게 떨어져 쾅 (도장과 같은 박자에 이어서)
+		var title_pop: float = _ease_back(_ramp(t, STAMP_AT + 0.02, STAMP_AT + 0.2))
+		popart_label.scale = Vector2.ONE * (maxf(lerpf(2.2, 1.0, title_pop), 0.01) if title_pop > 0.0 else 2.2)
+		popart_label.modulate.a = clampf(_ramp(t, STAMP_AT + 0.02, STAMP_AT + 0.08), 0.0, 1.0)
 	var next_in: float = _ease_back(_ramp(t, NEXT_START, DURATION))
 	next_button.modulate.a = clampf(next_in * 2.0, 0.0, 1.0)
 	next_button.position.x = view.x - next_button.size.x - 14.0 + (1.0 - next_in) * 260.0
