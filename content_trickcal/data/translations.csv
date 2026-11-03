@@ -6,7 +6,7 @@ ko,en,ja
   (%d위 졸업),  (graduated #%d),  (%d位で卒業)
   (%s 밀려남),  (%s pushed out),  (%s 押し出し)
   (+한 번 더!),  (+roll again!),  (+もう1回！)
-  (가장 오래된 [%s] %s이(가) 밀려났습니다),  (oldest [%s] %s was pushed out),  (最も古い [%s] %s が押し出されました)
+  (가장 오래된 %s이(가) 밀려났습니다),  (oldest %s was pushed out),  (最も古い %s が押し出されました)
   (감옥),  (jailed),  (監獄)
   (구속),  (bound),  (拘束)
   (매달린 남자의 축복 +%d칸 포함),  (incl. Hanged Man blessing +%d),  (吊られた男の祝福 +%d マス含む)
@@ -432,9 +432,9 @@ X\n수레바퀴,X\nWheel,X\n運命の輪
 [백돌 방어막] %s이(가) %d번 타일에서 공격을 막고 방어막이 깨졌습니다,[White Stone shield] %s blocked an attack on tile %d; shield broken,[白石バリア] %s が %d番マスで攻撃を防ぎ、バリアが壊れました
 [백돌 방어막] 백돌에 막혀 %s이(가) %d번 → %d번으로 밀려났습니다,"[White Stone shield] Blocked by White Stone, %s pushed from tile %d → %d",[白石バリア] 白石に阻まれ %s が %d番 → %d番へ押し戻されました
 [뱅크샷] 앞쪽에 들이받을 적이 없습니다.,[Bank Shot] No enemy ahead to ram.,[バンクショット] 前方に体当たりできる敵がいません。
-[법전] [%s] %s 작동 (%s)%s,[Codex] [%s] %s triggered (%s)%s,[法典] [%s] %s 作動 (%s)%s
-[법전] 교칙 제정: [%s] %s,[Codex] Rule enacted: [%s] %s,[法典] 校則制定: [%s] %s
-[법전] 교칙 파기: [%s] %s,[Codex] Rule repealed: [%s] %s,[法典] 校則廃止: [%s] %s
+[법전] %s 작동 (%s)%s,[Codex] %s triggered (%s)%s,[法典] %s 作動 (%s)%s
+[법전] 교칙 제정: %s,[Codex] Rule enacted: %s,[法典] 校則制定: %s
+[법전] 교칙 파기: %s,[Codex] Rule repealed: %s,[法典] 校則廃止: %s
 [보드판에 놓으면 설치할 타일을 고릅니다],[Drop on the board to pick a tile to place],[ボードに置くと設置するマスを選びます]
 [부스터 발판] %s %d번 발판! +%d칸 추가 전진,[Booster Pad] %s on pad %d! +%d bonus tiles,[ブースター足場] %s %d番の足場！ +%dマス追加前進
 [뽑아라!] 신호가 뜨면 [발사!]를 누르세요.\n진짜 신호에 더 빨리 반응하면 승리합니다.,"When [Draw!] appears, press [Fire!].\nReact faster to the real signal to win.",[抜け！] の合図が出たら [発射！] を押してください。\n本物の合図に早く反応した方が勝ちです。
@@ -532,7 +532,7 @@ X\n수레바퀴,X\nWheel,X\n運命の輪
 [필살기] %s: %s - %s,[Skill] %s: %s - %s,[必殺技] %s: %s - %s
 [함정] %s (P%d),[Trap] %s (P%d),[罠] %s (P%d)
 [히트]로 카드를 더 뽑거나 [스탠드]로 (합계-10)칸 이동을 확정하세요. 22 이상이면 버스트!,[Hit] to draw more or [Stand] to lock in (total-10) tiles. 22 or more = bust!,[ヒット]でさらに引くか、[スタンド]で(合計-10)マスの移動を確定してください。22以上ならバースト！
-\n(가장 오래된 [%s] %s이(가) 밀려났습니다),\n(oldest [%s] %s was pushed out),\n(最も古い [%s] %s が押し出されました)
+\n(가장 오래된 %s이(가) 밀려났습니다),\n(oldest %s was pushed out),\n(最も古い %s が押し出されました)
 \n... (전체 %d자는 첨부 파일 feedback.txt),\n... (full %d chars in attachment feedback.txt),\n... (全 %d文字は添付ファイル feedback.txt)
 \n※ 이미 가진 기물은 받을 수 없습니다,\n※ You can't get a piece you already own,\n※ 既に所持している駒は獲得できません
 \n◆ [1회] %s: %s,\n◆ [Once] %s: %s,\n◆ [1回] %s: %s
@@ -2396,7 +2396,7 @@ BUST!,BUST!,BUST！
 해상도,Resolution,解像度
 창에 맞춤,Fit to window,ウィンドウに合わせる
 %d × %d (16:9),%d × %d (16:9),%d × %d (16:9)
-[중반 법전] 아무도 법전을 고르지 않아 [%s] %s이(가) 자동 제정되었습니다,"[Midgame Codex] Nobody picked a Codex law, so [%s] %s was enacted automatically",[中盤法典] 誰も法典を選ばなかったため [%s] %s が自動制定されました
+[중반 법전] 아무도 법전을 고르지 않아 %s이(가) 자동 제정되었습니다,"[Midgame Codex] Nobody picked a Codex law, so %s was enacted automatically",[中盤法典] 誰も法典を選ばなかったため %s が自動制定されました
 [color=#ffe066][b]중반 법전 자동 제정![/b] %s[/color],[color=#ffe066][b]Midgame Codex auto-enacted![/b] %s[/color],[color=#ffe066][b]中盤法典 自動制定！[/b] %s[/color]
 중반 법전 자동 제정!,Midgame Codex auto-enacted!,中盤法典 自動制定！
 법전이 비어 있어 무작위 특수 승리 법전 1개 자동 제정,The Codex is empty: 1 random Special Victory law is enacted,法典が空のため、ランダムな特殊勝利法典を1つ自動制定
