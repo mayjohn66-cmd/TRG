@@ -1,7 +1,7 @@
 extends SceneTree
 # File: tests/ui_counter_sequence_test.gd
 # Role: 처치 확정형 연출 순서 검증 - 잡기 뒤 방어 카드가 개입할 때 [대치 -> 방어 결정 -> 확정된 결과 한 번만] 순서를 지키는지 실제 판(봇 방어)으로 본다.
-#       방어 성공(감나빗!): 처치 컷인·장외 사출 없이 말이 제자리, 처치 기록 없음.
+#       방어 성공(이쪽을 봐라!): 처치 컷인·장외 사출 없이 말이 제자리, 처치 기록 없음.
 #       반사(거울의 힘): 공격한 말이 역으로 컷인을 맞고 날아간다, 맞은 말은 제자리.
 #       방어 없음: 그때 비로소 처치 컷인과 사출, 처치 기록.
 
@@ -24,7 +24,7 @@ func expect(value: bool, message: String) -> void:
 
 
 func _run() -> void:
-	await _scenario(&"CNT_04")
+	await _scenario(&"CNT_08")
 	await _scenario(&"CNT_02")
 	await _scenario(&"")
 	if failures.is_empty():
@@ -122,11 +122,11 @@ func _scenario(counter_card: StringName) -> void:
 	var log_text: String = "\n".join(PackedStringArray(board._action_log.lines()))
 	expect(not cutin_while_pending and not moved_while_pending, "%s: 방어 결정 전에는 처치 컷인도 사출도 없다 (대치만)" % label)
 	match counter_card:
-		&"CNT_04":
-			expect(events.has(&"counter_offer") and events.has(&"counter_resolved"), "감나빗: 방어 대기 -> 방어 발동 %s" % str(events))
-			expect(not victim_cutin and not enemy_flew, "감나빗: 처치 컷인·장외 사출 없이 제자리 (컷인 %s, 날아감 %s)" % [victim_cutin, enemy_flew])
-			expect(state.get_pawn(21).has_left_start and state.get_pawn(21).current_tile_idx == 2, "감나빗: 맞을 뻔한 말은 2번 칸에 그대로")
-			expect(not log_text.contains("처치!"), "감나빗: 처치 기록이 없다")
+		&"CNT_08":
+			expect(events.has(&"counter_offer") and events.has(&"counter_resolved"), "이쪽을 봐라: 방어 대기 -> 방어 발동 %s" % str(events))
+			expect(not victim_cutin and not enemy_flew, "이쪽을 봐라: 처치 컷인·장외 사출 없이 제자리 (컷인 %s, 날아감 %s)" % [victim_cutin, enemy_flew])
+			expect(state.get_pawn(21).has_left_start and state.get_pawn(21).current_tile_idx == 2, "이쪽을 봐라: 맞을 뻔한 말은 2번 칸에 그대로")
+			expect(not log_text.contains("처치!"), "이쪽을 봐라: 처치 기록이 없다")
 		&"CNT_02":
 			expect(events.has(&"counter_resolved"), "거울의 힘 발동")
 			expect(not victim_cutin and not enemy_flew, "거울의 힘: 맞은 말에게는 처치 장면이 없다")

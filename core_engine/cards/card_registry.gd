@@ -8,7 +8,7 @@ static var _cache: Dictionary = {}
 
 ## v4.0 카드 32종: 방어 7 · 즉발 13 · 함정 6 · 코너 함정 4 · 소환 2. 값은 기본 덱 장수 (cards_table.csv param_2가 우선).
 const DECK_COMPOSITION: Dictionary = {
-	&"CNT_01": 1, &"CNT_02": 2, &"CNT_03": 2, &"CNT_04": 2, &"CNT_05": 1, &"CNT_06": 1, &"CNT_07": 1,
+	&"CNT_01": 1, &"CNT_02": 2, &"CNT_03": 2, &"CNT_04": 2, &"CNT_05": 1, &"CNT_06": 1, &"CNT_07": 1, &"CNT_08": 1,
 	&"ACT_02": 2, &"ACT_03": 2, &"ACT_04": 2, &"ACT_06": 2, &"ACT_07": 2, &"ACT_08": 2, &"ACT_09": 2,
 	&"ACT_10": 2, &"ACT_11": 1, &"ACT_12": 1, &"ACT_13": 2, &"ACT_14": 1, &"ACT_15": 2, &"ACT_16": 1, &"ACT_17": 2, &"ACT_18": 2, &"ACT_19": 2, &"ACT_20": 2,
 	&"TRP_02": 2, &"TRP_03": 2, &"TRP_05": 2, &"TRP_06": 2, &"TRP_07": 2, &"TRP_08": 1,
@@ -24,7 +24,7 @@ static func get_card(card_id: StringName) -> BaseCard:
 		return cached
 	var card: BaseCard = null
 	match card_id:
-		&"CNT_01", &"CNT_02", &"CNT_03", &"CNT_04", &"CNT_05", &"CNT_06", &"CNT_07": card = CardCounter.new(card_id)
+		&"CNT_01", &"CNT_02", &"CNT_03", &"CNT_04", &"CNT_05", &"CNT_06", &"CNT_07", &"CNT_08": card = CardCounter.new(card_id)
 		&"ACT_02": card = CardBang.new()
 		&"ACT_03": card = CardUnoPlusFour.new()
 		&"ACT_04": card = CardRocketBooster.new()

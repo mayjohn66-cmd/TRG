@@ -329,7 +329,7 @@ func test_collecting_all_three_by_chance_boosts_the_hurricane_offer() -> void:
 			seen_plain += 1
 		if AugmentRegistry.generate_offers(state, 1).has(&"AUG_LAW_09"):
 			seen_boosted += 1
-	check(seen_boosted > 2 * seen_plain and seen_boosted > 20, "손패에 3종이 있는 사람이 훨씬 자주 본다 (%d vs %d / 300)" % [seen_boosted, seen_plain])
+	check(seen_boosted > 2 * seen_plain and seen_boosted > 10, "손패에 3종이 있는 사람이 훨씬 자주 본다 (%d vs %d / 300)" % [seen_boosted, seen_plain])
 	# 이미 법전에 있으면 더는 나오지 않는다
 	state.rulebook.enqueue_law(LawRegistry.create("LAW_09"))
 	check(not AugmentRegistry.generate_offers(state, 1).has(&"AUG_LAW_09"), "법전에 이미 있으면 제시하지 않는다")

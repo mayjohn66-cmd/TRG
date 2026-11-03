@@ -134,12 +134,20 @@ const CARD_CATEGORY_NAMES: Dictionary = {
 	GameEnums.CardCategory.SUMMON: "소환",
 	GameEnums.CardCategory.COUNTER: "방어",
 }
+## 카드 모서리 분류 이름: 방어 카드는 [잡기 방어]·[공격 방어]·[함정 방어]로 세분한다.
+static func category_label(card: BaseCard) -> String:
+	if card is CardCounter:
+		return CardCounter.kind_label(card.card_id)
+	return str(CARD_CATEGORY_NAMES[card.category])
+
+
 ## 작은 손패 카드에 보여 주는 1줄 핵심 요약 (15자 이내). 자세한 규칙은 클릭해서 확대할 때 CARD_SUMMARIES로 본다.
 const CARD_SHORT: Dictionary = {
 	&"CNT_01": "되감고 턴 종료",
 	&"CNT_02": "공격한 말 사출",
 	&"CNT_03": "공격 카드 반사",
-	&"CNT_04": "공격 1회 회피",
+	&"CNT_04": "공격 카드 1회 회피",
+	&"CNT_08": "잡기 1회 회피",
 	&"CNT_05": "함정 파괴 +3칸",
 	&"CNT_06": "함정 무효+강탈",
 	&"CNT_07": "함정 카드 획득",
@@ -178,10 +186,11 @@ const CARD_SUMMARIES: Dictionary = {
 	&"CNT_01": "[방어] 공격당하면 이번 턴을 통째로 되감고 공격자의 턴 종료",
 	&"CNT_02": "[방어] 잡기를 막고 공격한 말을 출발선으로 사출",
 	&"CNT_03": "[방어] 공격 카드를 막고 반사: 밴·스킵·이의 있음은 공격자에게 그대로 · 그 밖의 카드는 공격자 선두 말 사출",
-	&"CNT_04": "[방어] 잡기·공격 카드 1회 회피",
+	&"CNT_04": "[방어] 공격 카드 1회 회피 (잡기는 못 막음)",
 	&"CNT_05": "[방어] 걸린 함정을 부수고 +3칸 전진",
 	&"CNT_06": "[방어] 걸린 함정 무효 + 설치자 카드 1장 강탈",
 	&"CNT_07": "[방어] 걸린 함정을 발동하지 않고 그 함정 카드를 내 패로",
+	&"CNT_08": "[방어] 잡기 1회 회피",
 	&"ACT_02": "상대 선두 말을 출발선으로 장외 사출",
 	&"ACT_03": "다음 유저에게 폭탄 패스: 선두 말 사출 + 내 이동 +4칸",
 	&"ACT_04": "굴리기 전 사용! 이번 굴림 +4칸",
@@ -5139,7 +5148,7 @@ func _card_frame_style(category: GameEnums.CardCategory, glow: bool, radius: int
 func _build_card_body(card_id: StringName, card_size: Vector2, detail_mode: bool = false) -> Control:
 	var card: BaseCard = CardRegistry.get_card(card_id)
 	var summary: String = card_summary(card_id) if detail_mode else str(CARD_SHORT.get(card_id, ""))
-	return CardSkin.body(card, card_size, summary, CARD_CATEGORY_NAMES[card.category], detail_mode)
+	return CardSkin.body(card, card_size, summary, category_label(card), detail_mode)
 
 
 ## 한 장짜리 전체 카드 (140x196). 손패에서는 아래 절반이 화면 밖에 가려져 이름과 일러스트가 보이고, 호버하면 올라와 전체가 보인다.

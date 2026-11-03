@@ -164,3 +164,29 @@ func test_counters_need_a_matching_attack_of_mine() -> void:
 	check(CardRegistry.get_card(&"CNT_02").could_play(state, 2), "잡힌 사람은 거울의 힘")
 	check(not CardRegistry.get_card(&"CNT_02").could_play(state, 1), "잡은 사람은 못 쓴다")
 	check(not CardRegistry.get_card(&"CNT_05").could_play(state, 2), "잡기에는 함정 방어을 못 쓴다")
+
+
+func test_counter_kinds_and_labels() -> void:
+	var labels: Dictionary = {&"CNT_01": "만능 방어", &"CNT_02": "잡기 방어", &"CNT_03": "공격 방어", &"CNT_04": "공격 방어", &"CNT_05": "함정 방어", &"CNT_06": "함정 방어", &"CNT_07": "함정 방어", &"CNT_08": "잡기 방어"}
+	for card_id: StringName in labels.keys():
+		check_eq(MainBoard.category_label(CardRegistry.get_card(card_id)), labels[card_id], "%s 분류 이름" % card_id)
+	check_eq(MainBoard.category_label(CardRegistry.get_card(&"ACT_02")), "즉발", "방어가 아닌 카드는 그대로")
+
+
+func test_missed_me_stops_only_attack_cards_and_look_here_only_captures() -> void:
+	var state := make_state()
+	place(state, 11, 2, [1])
+	place(state, 21, 4, [3])
+	move(state, 11, 2)  # 잡기
+	check(not CardRegistry.get_card(&"CNT_04").could_play(state, 2), "감나빗!은 잡기를 막지 못한다")
+	check(CardRegistry.get_card(&"CNT_08").could_play(state, 2), "이쪽을 봐라!는 잡기를 막는다")
+	var capture: Dictionary = state.attack_log[0]
+	check(not CardRegistry.get_card(&"CNT_08").could_play(state, 1), "잡은 사람은 못 쓴다")
+	exec(state, CardRegistry.get_card(&"CNT_08").create_command(state, 2, {"attack": int(capture["id"])}))
+	check_eq(state.get_pawn(21).current_tile_idx, 4, "잡기를 피해 말이 제자리 (되갚기 없음)")
+	check(state.get_pawn(11).has_left_start, "공격한 말도 그대로 (거울의 힘과 달리 사출 없음)")
+	var other := make_state()
+	other.place_attachment(3, TrapPit.new(2))
+	place(other, 11, 1, [0])
+	move(other, 11, 4)
+	check(not CardRegistry.get_card(&"CNT_08").could_play(other, 1), "함정에는 이쪽을 봐라!를 못 쓴다")

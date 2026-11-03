@@ -390,7 +390,7 @@ static func _plan_one_turn_card(state: GameState, player_id: int, card: BaseCard
 			var leader_player: int = state.race_leader(player_id)
 			if leader_player != -1 and card.is_legal(state, player_id, {"target_player": leader_player}) and rng.randf() < 0.6:
 				return {"card_id": card.card_id, "params": {"target_player": leader_player}}
-		&"CNT_01", &"CNT_02", &"CNT_03", &"CNT_04", &"CNT_05", &"CNT_06", &"CNT_07":
+		&"CNT_01", &"CNT_02", &"CNT_03", &"CNT_04", &"CNT_05", &"CNT_06", &"CNT_07", &"CNT_08":
 			return {}  # 방어 카드는 공격당했을 때만
 		_:
 			if rng.randf() >= TRAP_USE_CHANCE:
@@ -426,7 +426,7 @@ static func plan_window_card(state: GameState, player_id: int, phase: int, roll_
 
 ## 방어 대기에서 봇이 낼 방어 카드: 되갚는 카드를 먼저 고르고(거울의 힘 > 우노 리버스 > 도굴꾼 > 싸이크론 > 포고령 > 빗나감),
 ## 바이츠 더 더스트는 앞서 나간 말을 잃었을 때만 쓴다. 쓰지 않으면 빈 값.
-const COUNTER_PREFERENCE: Array[StringName] = [&"CNT_02", &"CNT_03", &"CNT_07", &"CNT_05", &"CNT_06", &"CNT_04", &"CNT_01"]
+const COUNTER_PREFERENCE: Array[StringName] = [&"CNT_02", &"CNT_03", &"CNT_07", &"CNT_05", &"CNT_06", &"CNT_08", &"CNT_04", &"CNT_01"]
 
 
 static func choose_counter(state: GameState, _player_id: int, cards: Array, entry: Dictionary, _rng: RandomNumberGenerator) -> StringName:

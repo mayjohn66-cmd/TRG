@@ -263,7 +263,7 @@ func _hurt_setup(manager: TurnManager, victim: int, mover: int) -> void:
 	place(manager.state, mover_pawn, 2, [1])
 	place(manager.state, victim_pawn, 4, [3])
 	manager.state.tools[mover] = ScriptedTool.new([2])
-	manager.state.give_card(victim, &"CNT_04")
+	manager.state.give_card(victim, &"CNT_08")
 	manager._begin_turn()
 	manager.act(&"proceed", {"player_id": mover})
 	manager.act(&"roll", {"player_id": mover})

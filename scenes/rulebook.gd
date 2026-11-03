@@ -906,7 +906,7 @@ func _picture_tile(data: Dictionary, on_pick: Callable, compact: bool = false) -
 		var card_data: BaseCard = CardRegistry.get_card(data["card"])
 		for state: String in ["normal", "hover", "pressed", "focus"]:
 			face.add_theme_stylebox_override(state, CardSkin.frame(card_data.category, false, 12))  # 도감은 마우스를 올려도 그대로
-		var body: Control = CardSkin.body(card_data, CARD_TILE, MainBoard.card_summary(data["card"]), MainBoard.CARD_CATEGORY_NAMES[card_data.category], true)
+		var body: Control = CardSkin.body(card_data, CARD_TILE, MainBoard.card_summary(data["card"]), MainBoard.category_label(card_data), true)
 		body.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		face.add_child(body)
 		face.pressed.connect(on_pick)
@@ -1236,7 +1236,7 @@ func _card_face(card_id: StringName, extent: Vector2 = CARD_FACE) -> Control:
 	face.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	face.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	face.add_theme_stylebox_override("panel", CardSkin.frame(card.category, false, 14))
-	face.add_child(CardSkin.body(card,extent,MainBoard.card_summary(card_id),MainBoard.CARD_CATEGORY_NAMES[card.category],true))
+	face.add_child(CardSkin.body(card,extent,MainBoard.card_summary(card_id),MainBoard.category_label(card),true))
 	return face
 
 
@@ -1552,7 +1552,7 @@ func _ch_cards() -> Dictionary:
 				tone = Color("f08aa8")
 		var quote: String = GameData.text("cards", card_id, "parody_quote")
 		var data: Dictionary = {"title": card.display_name, "card": card_id, "texture": TextureCache.fetch("res://assets/cards/%s.png" % card_id), "icon": &"book", "tone": tone,
-			"chips": [MainBoard.CARD_CATEGORY_NAMES[card.category], "%d장" % int(CardRegistry.DECK_COMPOSITION[card_id])],
+			"chips": [MainBoard.category_label(card), "%d장" % int(CardRegistry.DECK_COMPOSITION[card_id])],
 			"summary": MainBoard.card_summary(card_id).replace("\n", " "),
 			"rows": [["언제", when], ["방법", how]]}
 		if quote != "":

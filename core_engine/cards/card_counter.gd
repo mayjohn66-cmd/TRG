@@ -1,6 +1,6 @@
 # File: res://core_engine/cards/card_counter.gd
 # Class: class_name CardCounter
-# Role: 방어 카드 7종(CNT_01~07). 내가 공격(잡기·공격 카드·함정)을 당했을 때 방어 팝업에서 낸다. 이번 턴의 공격 기록(GameState.attack_log) 하나를 골라 되돌리거나 되갚는다
+# Role: 방어 카드 8종(CNT_01~08). 내가 공격(잡기·공격 카드·함정)을 당했을 때 방어 팝업에서 낸다. 이번 턴의 공격 기록(GameState.attack_log) 하나를 골라 되돌리거나 되갚는다
 class_name CardCounter
 extends BaseCard
 
@@ -12,10 +12,11 @@ const DEFS: Dictionary = {
 	&"CNT_01": ["바이츠 더 더스트", [CAPTURE, CARD, TRAP]],
 	&"CNT_02": ["거울의 힘", [CAPTURE]],
 	&"CNT_03": ["UDO 리버스 카드", [CARD]],
-	&"CNT_04": ["감나빗!", [CAPTURE, CARD]],
+	&"CNT_04": ["감나빗!", [CARD]],  # 공격 방어: 공격 카드만 1회 회피 (잡기는 막지 못한다)
 	&"CNT_05": ["싸이크론", [TRAP]],
 	&"CNT_06": ["교단의 칙령", [TRAP]],
 	&"CNT_07": ["도굴꾼", [TRAP]],
+	&"CNT_08": ["이쪽을 봐라!", [CAPTURE]],  # 잡기 방어: 잡기 1회 회피 (되갚기 없음)
 }
 ## 싸이크론으로 함정을 부순 뒤 전진하는 칸 수 (cards_table.csv CNT_05 param_1).
 const CYCLONE_STEPS: int = 3
@@ -26,6 +27,20 @@ func _init(id: StringName = &"CNT_01") -> void:
 	display_name = str(DEFS[id][0])
 	category = GameEnums.CardCategory.COUNTER
 	playable_phases = []  # 단계로 쓰는 카드가 아니다: 피격 팝업(방어 대기)에서만 낸다 (TurnManager._play_counter)
+
+
+## 방어 카드의 분류 이름: 막는 공격이 한 종류면 [잡기 방어]·[공격 방어]·[함정 방어], 여러 종류면 [만능 방어].
+static func kind_label(id: StringName) -> String:
+	var kinds: Array = DEFS[id][1] if DEFS.has(id) else []
+	if kinds.size() != 1:
+		return "만능 방어"
+	match kinds[0]:
+		CAPTURE:
+			return "잡기 방어"
+		CARD:
+			return "공격 방어"
+		_:
+			return "함정 방어"
 
 
 static func is_counter(id: StringName) -> bool:

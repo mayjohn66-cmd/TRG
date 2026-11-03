@@ -20,7 +20,7 @@ func test_all_home_ai_winner_ends_before_next_turn() -> void:
 	check_eq(m.phase_time_left,0.0,"no running match timer")
 
 func test_pending_defence_never_increments_any_kill_or_death_law() -> void:
-	for counter: StringName in [&"CNT_02",&"CNT_04"]:
+	for counter: StringName in [&"CNT_02",&"CNT_08"]:
 		var s:=make_state();place(s,11,3);place(s,21,5);s.hands[2]=[counter]
 		add_law(s,"LAW_01");add_law(s,"LAW_06");add_law(s,"LAW_08")
 		s.begin_attack({"kind":&"capture","attacker":1,"attacker_pawn":11});s.send_to_start(s.get_pawn(21),1);s.end_attack()
@@ -43,7 +43,7 @@ func test_normal_finish_still_ends_after_an_earlier_special_graduate() -> void:
 	check_eq(s.rankings[0],2,"earlier earned special rank remains valid")
 
 func test_accepting_damage_commits_exactly_once() -> void:
-	var s:=make_state();place(s,11,3);place(s,21,5);s.hands[2]=[&"CNT_04"]
+	var s:=make_state();place(s,11,3);place(s,21,5);s.hands[2]=[&"CNT_08"]
 	s.begin_attack({"kind":&"capture","attacker":1,"attacker_pawn":11});s.send_to_start(s.get_pawn(21),1);s.end_attack()
 	var entry: Dictionary=s.attack_log.back();s.commit_attack(entry);s.commit_attack(entry)
 	check_eq(s.stat(1,&"kills"),1,"confirmed KO counted once")

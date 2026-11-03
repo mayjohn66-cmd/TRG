@@ -426,7 +426,7 @@ X\n수레바퀴,X\nWheel,X\n運命の輪
 [방어] 걸린 함정을 부수고 +{p1}칸 전진,[Defense] Smash the trap and +{p1} spaces,[防御] 踏んだ罠を壊して +{p1}マス前進
 [방어] 공격 카드를 막고 반사: 밴·스킵·이의 있음은 공격자에게 그대로 · 그 밖의 카드는 공격자 선두 말 사출,[Defense] Block & reflect an attack card: Ban/Skip/Objection go back to the attacker · others knock off the attacker's lead pawn,[防御] 攻撃カードを防いで反射: BAN・スキップ・異議ありは攻撃者にそのまま · その他は攻撃者の先頭駒を射出
 [방어] 공격당하면 이번 턴을 통째로 되감고 공격자의 턴 종료,"[Defense] When attacked, rewind this whole turn and end the attacker's turn",[防御] 攻撃されたらこのターンを丸ごと巻き戻し、攻撃者のターンを終了
-[방어] 잡기·공격 카드 1회 회피,[Defense] Dodge 1 capture or attack card,[防御] 捕獲・攻撃カードを1回回避
+[방어] 공격 카드 1회 회피 (잡기는 못 막음),[Defense] Dodge 1 attack card (cannot stop a capture),[防御] 攻撃カードを1回回避（捕獲は防げない）
 [방어] 잡기를 막고 공격한 말을 출발선으로 사출,[Defense] Block a capture and knock the attacker back to Start,[防御] 捕獲を防ぎ、攻撃してきた駒をスタートへ射出
 [백돌 방어막] %s의 방어막이 다시 차올랐습니다,[White Stone shield] %s's shield recharged,[白石バリア] %s のバリアが再チャージされました
 [백돌 방어막] %s이(가) %d번 타일에서 공격을 막고 방어막이 깨졌습니다,[White Stone shield] %s blocked an attack on tile %d; shield broken,[白石バリア] %s が %d番マスで攻撃を防ぎ、バリアが壊れました
@@ -743,7 +743,7 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 고출력 로켓 부스터,High-Output Rocket Booster,高出力ロケットブースター
 골인한 구멍,Hole landed in,入った穴
 공격,Attack,攻撃
-공격 1회 회피,Dodge 1 attack,攻撃を1回回避
+공격 카드 1회 회피,Dodge 1 attack card,攻撃カードを1回回避
 공격 카드,Attack Cards,攻撃カード
 공격 카드 반사,Reflect attack card,攻撃カード反射
 공격 카드 발동!,Attack card!,攻撃カード発動！
@@ -2624,3 +2624,9 @@ P%d의 %d번 말 수배! 잡으면 +%d칸,P%d's pawn %d is WANTED! Capture it fo
 양성자빔 · %dR,Proton Beam · %dR,陽子ビーム · %dR
 카드 %d장 사용 가능!,%d card(s) ready to play!,カード%d枚使用可能！
 공지사항,Notices,お知らせ
+[방어] 잡기 1회 회피,[Defense] Evade 1 capture,[防御] 捕獲を1回回避
+잡기 1회 회피,Dodge 1 capture,捕獲を1回回避
+잡기 방어,Capture Guard,捕獲ガード
+공격 방어,Attack Guard,攻撃ガード
+함정 방어,Trap Guard,罠ガード
+만능 방어,All-round Guard,オールガード
