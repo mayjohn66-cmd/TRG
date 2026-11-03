@@ -36,6 +36,16 @@ func _run() -> void:
 	_board._close_draft_overlay()
 	await settle()
 	_expect(_board._board_layer.visible and _board._pawn_layer.visible, "창이 닫히면 보드·말이 그대로 돌아온다")
+	# 증강 확인 창(라운드 시작 요약)도 같다: 떠 있는 동안 숨기고, 닫으면 돌아온다
+	var ids: Array = [AugmentRegistry.all()[0].augment_id]
+	_board._draft_summary.clear()
+	_board._draft_summary.append({"player": 1, "augment": ids[0], "text": ""})
+	_board._show_augment_review([1, 2])
+	await settle()
+	_expect(_board._review_overlay != null and not _board._board_layer.visible, "증강 확인 창이 떠 있으면 보드는 그리지 않는다")
+	_board._close_augment_review()
+	await settle()
+	_expect(_board._board_layer.visible and _board._pawn_layer.visible, "증강 확인 창이 닫히면 보드가 돌아온다")
 	# 이미 닫힌 상태에서 또 닫아도 안전
 	_board._close_draft_overlay()
 	_expect(_board._board_layer.visible and _board._pawn_layer.visible, "중복 닫기도 안전")
