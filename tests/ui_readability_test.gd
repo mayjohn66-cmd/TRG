@@ -22,6 +22,25 @@ func _run() -> void:
 	_expect(is_equal_approx(EventCaption.reading_seconds("[color=#ff0000][b]처치![/b][/color]"), EventCaption.reading_seconds("처치!")), "bbcode 태그는 글자 수에 넣지 않는다")
 	_expect(MainBoard.announce_reading_seconds("가".repeat(200), "") <= MainBoard.ANNOUNCE_READ_MAX, "알림 읽기 시간 상한")
 	_expect(MainBoard.announce_reading_seconds("함정 발동!", "", {"sub": "P2-말1"}) > EventCaption.READ_MIN_SECONDS, "도장 알림은 부제까지 읽을 시간")
+	# 1배속 최소 표시 시간: 카드 발동!·공격! 같은 도장 알림은 1.8초 아래로 줄지 않는다 (배속은 게임 시간을 줄인다)
+	_expect(MainBoard.stamp_min_hold({"key": "card", "sub": "P1"}) == MainBoard.STAMP_MIN_SECONDS and MainBoard.STAMP_MIN_SECONDS >= 1.7, "카드 발동! 도장은 1배속 최소 시간이 있다")
+	for key: String in ["attack", "defense", "trap", "trap_set", "skill", "tarot", "npc", "extra_turn"]:
+		_expect(MainBoard.stamp_min_hold({"key": key}) == MainBoard.STAMP_MIN_SECONDS, "%s 도장도 최소 시간" % key)
+	_expect(MainBoard.stamp_min_hold({"key": "round"}) == 0.0 and MainBoard.stamp_min_hold({}) == 0.0, "라운드 표지·도장이 아닌 알림은 대상이 아니다")
+	# 실제 알림: 1배속(터보 포함)에서도 카드 발동!은 1.8초 이상 띄우고, 라운드 표지는 그대로
+	_board.pacing_enabled = true
+	_board.instant_roll_for_test = false
+	_board._announcer.cancel()
+	_board._announce_now("카드 발동", "카드 발동!", "", Color.WHITE, null, 1.1, true, {"key": "card", "sub": "P1"})
+	var queued: Array = ([_board._announcer._current] if not _board._announcer._current.is_empty() else []) + _board._announcer._queue
+	_expect(not queued.is_empty() and float((queued[0] as Dictionary)["duration"]) >= MainBoard.STAMP_MIN_SECONDS, "카드 발동! 알림은 1배속에서 %.1f초 이상 (%s)" % [MainBoard.STAMP_MIN_SECONDS, str(queued[0]["duration"]) if not queued.is_empty() else "-"])
+	_board._announcer.cancel()
+	_board._announce_now("라운드", "ROUND 3", "", Color.WHITE, null, 1.0, true, {"key": "round"})
+	queued = ([_board._announcer._current] if not _board._announcer._current.is_empty() else []) + _board._announcer._queue
+	_expect(not queued.is_empty() and float((queued[0] as Dictionary)["duration"]) < MainBoard.STAMP_MIN_SECONDS, "라운드 표지는 짧게 그대로")
+	_board._announcer.cancel()
+	_board.pacing_enabled = false
+	_board.instant_roll_for_test = true
 	# 2) 속도: AI 터보가 덜 빠르고, 여운이 길어졌다
 	_expect(MainBoard.TURBO_PACE_SCALE >= 0.75 and MainBoard.STEP_LINGER_SECONDS >= 0.5 and MainBoard.CALLOUT_SECONDS >= 1.2 and MainBoard.BEAT_AFTER_MOVE >= 0.45, "속도 보강 상수")
 	# 3) 자막 분류

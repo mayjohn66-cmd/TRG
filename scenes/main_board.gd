@@ -10931,10 +10931,21 @@ func _announce_now(tag: String, headline: String, body: String, color: Color, ex
 	var hold: float = duration * _pace()
 	if tag != "턴" and pacing_enabled and not instant_roll_for_test:
 		hold = maxf(hold, announce_reading_seconds(headline, body, stamp))  # 2026-11 납득 보강: 적어도 읽을 시간만큼은 띄운다
+		hold = maxf(hold, stamp_min_hold(stamp))  # 1배속 최소 시간: 카드 발동! 같은 도장 알림은 컴퓨터 차례(터보)에도 줄지 않는다. 배속은 Engine.time_scale이 줄인다
 	var serial: int = _announcer.announce(tag, headline, body, color, extra, hold, blocking, stamp)
 	if _announcer.active:
 		_refresh_controls()
 	return serial
+
+
+## 도장 알림(카드 발동!·공격!·함정 발동!·필살기 발동! 등)의 1배속 최소 표시 시간(초, 게임 시간). 2026-11 제보: "너무 빨리 지나가 인지가 안 된다".
+## 게임 시간이라 [배속 2x·3x]를 걸면 그만큼 짧아져 평소처럼 넘길 수 있다. 짧게 스치는 알림(라운드 표지·강화 성공)과 읽는 시간이 따로 정해진 알림은 제외.
+const STAMP_MIN_SECONDS: float = 1.8
+const STAMP_QUICK_KEYS: Array[String] = ["round", "hammer_up", "law_added", "siege_armed", "siege_broken"]
+static func stamp_min_hold(stamp: Dictionary) -> float:
+	if not stamp.has("key") or STAMP_QUICK_KEYS.has(str(stamp["key"])):
+		return 0.0
+	return STAMP_MIN_SECONDS
 
 
 ## 알림을 읽는 데 필요한 최소 시간(초): 큰 글(또는 도장 한 마디 + 부제) + 본문. 상한 ANNOUNCE_READ_MAX.
