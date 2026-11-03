@@ -13,6 +13,8 @@ func _init() -> void:
 		failures.append("밸런스 CSV의 id 열을 읽지 못했다")
 	if AugmentRegistry.get_def(&"CARD_02") == null:
 		failures.append("표에만 있는 증강(CARD_02)이 없다")
+	if UpdateNotes.entries().is_empty() or UpdateNotes.latest_id() == "":
+		failures.append("patch_notes.json이 내보낸 묶음에 없다 (export_presets.cfg include_filter 확인): 업데이트 소식이 비어 보인다")
 	if failures.is_empty():
 		print("EXPORT_SMOKE_OK")
 	else:

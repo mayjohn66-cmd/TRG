@@ -313,8 +313,12 @@ static func round_button(node_name: String, icon_kind: StringName, callback: Cal
 	button.pivot_offset = Vector2(diameter, diameter) / 2.0
 	button.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	HubArt.button(button, &"round_button", int(diameter))
-	var role: StringName = &"rules" if icon_kind == &"book" else &"settings"
-	var icon: TextureRect = HubArt.icon(role)
+	var icon: Control
+	if icon_kind == &"notes":
+		icon = NotesIcon.new()  # 업데이트 소식: 별 달린 소식지 (그림 파일 없이 코드로 그린다)
+	else:
+		var role: StringName = &"rules" if icon_kind == &"book" else &"settings"
+		icon = HubArt.icon(role)
 	icon.set_anchors_preset(Control.PRESET_FULL_RECT)
 	icon.offset_left = 11
 	icon.offset_top = 11
@@ -531,3 +535,36 @@ static func seat_card(seat: int, color: Color, empty: bool, avatar_id: StringNam
 	actions.alignment = BoxContainer.ALIGNMENT_END
 	column.add_child(actions)
 	return {"root": root, "avatar": avatar, "name": name_label, "state": state_label, "actions": actions, "crown": crown}
+
+
+## 둥근 [업데이트 소식] 버튼 안의 그림: 접힌 모서리가 있는 소식지와 노란 별. 한 번만 그리고 다시 그리지 않는다.
+class NotesIcon extends Control:
+	func _init() -> void:
+		name = "HubArt_notes"
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _draw() -> void:
+		var unit: float = minf(size.x, size.y)
+		var origin := Vector2((size.x - unit) * 0.5, (size.y - unit) * 0.5)
+		var ink := Color("1f5f2a")
+		var paper := Color("fff8e1")
+		var left: float = origin.x + unit * 0.16
+		var right: float = origin.x + unit * 0.80
+		var top: float = origin.y + unit * 0.08
+		var bottom: float = origin.y + unit * 0.92
+		var fold: float = unit * 0.22
+		var sheet := PackedVector2Array([Vector2(left, top), Vector2(right - fold, top), Vector2(right, top + fold), Vector2(right, bottom), Vector2(left, bottom)])
+		draw_colored_polygon(sheet, paper)
+		draw_polyline(PackedVector2Array([sheet[0], sheet[1], sheet[2], sheet[3], sheet[4], sheet[0]]), ink, maxf(unit * 0.05, 1.5), true)
+		draw_polyline(PackedVector2Array([Vector2(right - fold, top), Vector2(right - fold, top + fold), Vector2(right, top + fold)]), ink, maxf(unit * 0.04, 1.2), true)
+		for row: int in 3:
+			var y: float = top + unit * (0.40 + 0.17 * row)
+			draw_line(Vector2(left + unit * 0.10, y), Vector2(right - unit * (0.10 if row < 2 else 0.28), y), Color("5aa469"), maxf(unit * 0.05, 1.5), true)
+		var star_center := Vector2(origin.x + unit * 0.72, origin.y + unit * 0.24)
+		var points := PackedVector2Array()
+		for index: int in 10:
+			var radius: float = unit * (0.20 if index % 2 == 0 else 0.09)
+			var angle: float = -PI / 2.0 + TAU * float(index) / 10.0
+			points.append(star_center + Vector2(cos(angle), sin(angle)) * radius)
+		draw_colored_polygon(points, Color("ffd43b"))
+		draw_polyline(PackedVector2Array(points + PackedVector2Array([points[0]])), Color("b8860b"), maxf(unit * 0.03, 1.0), true)

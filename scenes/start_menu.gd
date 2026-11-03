@@ -201,7 +201,10 @@ func _build_mode_page() -> void:
 	language.trailing_caret = true
 	language.add_theme_constant_override("h_separation", 10)
 	buttons.add_child(language)
-	buttons.add_child(HubKit.round_button("HubRules", &"book", _show_rules, 56.0))
+	var notes_button: Button = HubKit.round_button("HubUpdates", &"notes", _show_updates, 56.0)
+	notes_button.tooltip_text = "업데이트 소식"
+	_add_new_badge(notes_button)
+	buttons.add_child(notes_button)
 	buttons.add_child(HubKit.round_button("HubSettings", &"gear", _show_settings, 56.0))
 	# 왼쪽: 큼직한 전신 아바타 + 닉네임 + 아바타 설정 (타이틀은 오른쪽 아래)
 	var left := VBoxContainer.new()
@@ -432,6 +435,36 @@ func _on_back_pressed() -> void:
 
 func _show_rules() -> void:
 	_open_rulebook(0)
+
+
+## 둥근 [업데이트 소식] 버튼: 아직 열어 보지 않은 새 소식이 있으면 모서리에 빨간 [N] 표시가 뜬다.
+func _show_updates() -> void:
+	UpdateNotes.open(self, _show_rules)  # 연 순간 본 것으로 저장된다
+	_refresh_new_badge()
+
+
+func _add_new_badge(button: Button) -> void:
+	var badge := Label.new()
+	badge.name = "NewBadge"
+	badge.text = "N"
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	badge.add_theme_font_size_override("font_size", 13)
+	badge.add_theme_color_override("font_color", Color.WHITE)
+	badge.add_theme_color_override("font_outline_color", Color("7a0000"))
+	badge.add_theme_constant_override("outline_size", 3)
+	badge.add_theme_stylebox_override("normal", LobbyTheme.style(Color("e03131"), Color.WHITE, 2, 11, 0, 0))
+	badge.size = Vector2(22, 22)
+	badge.position = Vector2(34, -4)  # 버튼(56px) 오른쪽 위 모서리
+	badge.visible = UpdateNotes.has_unseen()
+	button.add_child(badge)
+
+
+func _refresh_new_badge() -> void:
+	var badge: Node = find_child("NewBadge", true, false)
+	if badge != null:
+		(badge as Control).visible = UpdateNotes.has_unseen()
 
 
 ## 규칙 도감을 연다: 기록 코드를 불러오면 허브의 #태그·닉네임을 다시 그린다.

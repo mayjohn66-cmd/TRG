@@ -1,0 +1,107 @@
+{
+ "entries": [
+  {
+   "id": "1.01",
+   "date": "",
+   "title": {
+    "ko": "1.01 업데이트",
+    "en": "Update 1.01",
+    "ja": "1.01アップデート"
+   },
+   "sections": [
+    {
+     "head": {
+      "ko": "새로 생긴 것",
+      "en": "What's new",
+      "ja": "新要素"
+     },
+     "items": [
+      {
+       "ko": "판정 도구 2종: 엘리아스 주식 차트(상한가 20칸·상장폐지!), 불스아이 다트 보드(조준해서 던지기)",
+       "en": "2 new judgment tools: Elias Stock Chart (limit-up = 20 spaces, delisting!) and Bullseye Dartboard (aim and throw)",
+       "ja": "判定ツール2種: エリアス株チャート(ストップ高20マス・上場廃止!)、ブルズアイダーツ(狙って投げる)"
+      },
+      {
+       "ko": "기물 2종: 모브 큐이(오이 설치), 괴상한 멜론(함정을 먹고 커진다)",
+       "en": "2 new pieces: Mob Kyui (plants cucumbers) and the Odd Melon (eats traps and grows)",
+       "ja": "駒2種: モブ・キュイ(きゅうり設置)、奇妙なメロン(罠を食べて大きくなる)"
+      },
+      {
+       "ko": "생떼 카드: 기억상실빔, 강화 망치, 방해령 삼총사(베루·사리·메죵)",
+       "en": "New cards: Amnesia Beam, Enhance Hammer and the Meddling Spirit trio (Beru, Sari, Mejong)",
+       "ja": "新カード: 記憶喪失ビーム、強化ハンマー、お邪魔霊三銃士(ベル・サリ・メジョン)"
+      },
+      {
+       "ko": "소환 카드: 롤링 양성자빔 - 빛 기둥이 3라운드 동안 무작위로 미끄러지며 지나는 칸의 말과 함정을 전부 태운다",
+       "en": "Summon card: Rolling Proton Beam - a pillar of light that slides in random directions for 3 rounds, burning every pawn and trap it passes",
+       "ja": "召喚カード: ローリング陽子ビーム - 光の柱が3ラウンドの間ランダムに滑り、通ったマスの駒と罠をすべて焼く"
+      },
+      {
+       "ko": "특수 승리: 방해령 허리케인 포스!! (방해령 3종을 손에 모으면 달성)",
+       "en": "Special victory: Meddling Spirit Hurricane Force!! (hold all three spirit cards)",
+       "ja": "特殊勝利: お邪魔霊ハリケーンフォース!!(お邪魔霊3種を手札に揃える)"
+      },
+      {
+       "ko": "범용 증강 2종: 관성 드리프트, 현상금 수배서",
+       "en": "2 new utility augments: Inertia Drift and Bounty Poster",
+       "ja": "汎用オーグメント2種: 慣性ドリフト、懸賞金手配書"
+      }
+     ]
+    },
+    {
+     "head": {
+      "ko": "연출이 좋아졌어요",
+      "en": "Nicer presentation",
+      "ja": "演出が良くなりました"
+     },
+     "items": [
+      {
+       "ko": "특수 승리 컷신, 완주 피니시 컷신, 결과창 만화 컷 페이지",
+       "en": "Special-victory cutscenes, a finish-line cutscene and a manga-style result page",
+       "ja": "特殊勝利カットシーン、完走フィニッシュ、結果画面のマンガ風ページ"
+      },
+      {
+       "ko": "특수 승리 진행도가 차오르는 연출과 목표 칸 표시(하극상·식권·포위망)",
+       "en": "Special-victory progress now fills up on screen, with target markers (Upset, Meal Ticket, Siege)",
+       "ja": "特殊勝利の進行度が溜まる演出と目標マス表示(下剋上・食券・包囲網)"
+      },
+      {
+       "ko": "내 차례에 쓸 수 있는 필살기·카드가 있으면 화면 위쪽에 알려 줘요",
+       "en": "A notice at the top of the screen tells you when a skill or card is ready on your turn",
+       "ja": "自分の番に使える必殺技・カードがあると画面上部でお知らせします"
+      },
+      {
+       "ko": "템포 업 경고음이 4번 울려요",
+       "en": "The tempo-up warning sound now plays four times",
+       "ja": "テンポアップの警告音が4回鳴ります"
+      }
+     ]
+    },
+    {
+     "head": {
+      "ko": "바뀐 것",
+      "en": "Changes",
+      "ja": "変更点"
+     },
+     "items": [
+      {
+       "ko": "감정 표현이 기쁨·당황·슬픔 3종으로 줄었어요",
+       "en": "Emotes are down to three: happy, panic and sad",
+       "ja": "エモートは喜び・慌て・悲しみの3種になりました"
+      },
+      {
+       "ko": "사도 포위망: 경보가 울린 뒤 다음 자기 차례까지 유지해야 승리해요",
+       "en": "Siege: after the alarm you must hold it until your next turn to win",
+       "ja": "使徒包囲網: 警報の後、次の自分の番まで維持して初めて勝利"
+      },
+      {
+       "ko": "다른 사람이 카드를 뽑을 때 노란 카드가 프로필로 날아가는 연출을 없앴어요",
+       "en": "Removed the yellow card flying to other players' profiles when they draw",
+       "ja": "他のプレイヤーがカードを引く時に黄色いカードがプロフィールへ飛ぶ演出を削除"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

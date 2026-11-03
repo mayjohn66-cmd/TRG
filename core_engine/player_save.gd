@@ -38,6 +38,7 @@ static func blank() -> Dictionary:
 		"win_count": 0,
 		"cleared_laws": [],
 		"cleared_buldak": {},
+		"notes_seen": "",
 		"saved_at": 0,
 	}
 
@@ -306,7 +307,7 @@ static func import_code(code: String) -> bool:
 ## 두 기록을 합친다: 태그·닉네임·언어는 a를 우선(비어 있으면 b), 판 수는 큰 쪽, 법전은 합집합, 불닭은 클리어 횟수 큰 쪽·최단 라운드 작은 쪽.
 static func merge(a: Dictionary, b: Dictionary) -> Dictionary:
 	var result: Dictionary = blank()
-	for key: String in ["player_tag", "nickname", "lang"]:
+	for key: String in ["player_tag", "nickname", "lang", "notes_seen"]:
 		var first: String = str(a.get(key, ""))
 		result[key] = first if first != "" else str(b.get(key, ""))
 	for key: String in ["match_count", "finished_count", "win_count"]:
