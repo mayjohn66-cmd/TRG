@@ -1523,7 +1523,7 @@ func _bind_state() -> void:
 		_refresh_all())
 	state.rulebook.law_added.connect(_on_law_added)
 	state.rulebook.law_removed.connect(func(law: LawResource) -> void:
-		_log_line("[법전] 교칙 파기: [%s] %s" % [law.law_id, law.law_name], Color("ff8787"))
+		_log_line("[법전] 교칙 파기: %s" % law.law_name, Color("ff8787"))
 		_record(-1, "[color=#ff8787][lb]법전] %s 파기[/color]" % _bb(law.law_name), "", true)  # 그 라운드 마지막 처치 기록보다 먼저 찍히지 않게
 		_refresh_laws())
 	state.rulebook.law_applied.connect(_on_law_applied)
@@ -11223,7 +11223,7 @@ func _announce_law_added(new_law: LawResource, removed_law: LawResource) -> void
 		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.custom_minimum_size = Vector2(420, 0)
 		row.add_theme_stylebox_override("panel", _style(Color("4a3d12") if is_new else Color("1b2030"), COLOR_GOLD if is_new else Color("3b4252"), 3 if is_new else 1, 8, 6, 5))
-		var text: String = "%s[%s] %s - %s" % ["NEW  " if is_new else "", law.law_id, law.law_name, law.description]
+		var text: String = "%s%s - %s" % ["NEW  " if is_new else "", law.law_name, law.description]
 		var label := _make_label(text, 13, Color("fff3bf") if is_new else Color("adb5bd"))
 		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -11231,7 +11231,7 @@ func _announce_law_added(new_law: LawResource, removed_law: LawResource) -> void
 		board.add_child(row)
 	var body: String = new_law.description
 	if removed_law != null:
-		body += "\n(가장 오래된 [%s] %s이(가) 밀려났습니다)" % [removed_law.law_id, removed_law.law_name]
+		body += "\n(가장 오래된 %s이(가) 밀려났습니다)" % removed_law.law_name
 	_announce("법전 개정", "법전 개정!", body, COLOR_GOLD, board, 2.6, true, {"key": "law_added", "extra_below": true})
 
 
@@ -11257,9 +11257,9 @@ func _make_card_face(card_id: StringName) -> PanelContainer:
 
 func _on_law_added(new_law: LawResource, removed_law: LawResource) -> void:
 	_mark_spotlight()  # 법전(특수 승리 교칙)이 바뀐 턴은 보통 속도
-	var text: String = "[법전] 교칙 제정: [%s] %s" % [new_law.law_id, new_law.law_name]
+	var text: String = "[법전] 교칙 제정: %s" % new_law.law_name
 	if removed_law != null:
-		text += "  (가장 오래된 [%s] %s이(가) 밀려났습니다)" % [removed_law.law_id, removed_law.law_name]
+		text += "  (가장 오래된 %s이(가) 밀려났습니다)" % removed_law.law_name
 	_log_line(text, Color("ffe066"))
 	_record(-1, "[color=#ffe066][lb]법전] %s 등록![/color]%s" % [_bb(new_law.law_name), "  (%s 밀려남)" % _bq(removed_law.law_name) if removed_law != null else ""])
 	_fx_law_drop_oldest(removed_law)
@@ -11318,7 +11318,7 @@ func _on_law_applied(law: LawResource, timing: String, dice_before: int, dice_af
 		var detail: String = ""
 		if dice_before != dice_after:
 			detail = "  눈금 %d → %d" % [dice_before, dice_after]
-		_log_line("[법전] [%s] %s 작동 (%s)%s" % [law.law_id, law.law_name, timing, detail], Color("ffe066"))
+		_log_line("[법전] %s 작동 (%s)%s" % [law.law_name, timing, detail], Color("ffe066"))
 		_announce_soft("법전 발동", "법전 발동!", "", Color("ffe066"), null, 1.0, {"key": "law", "sub": law.law_name})
 	_flash_law_ids[law.law_id] = true
 	_refresh_laws()
@@ -11361,7 +11361,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 					auto_law = law
 			if auto_law != null:
 				var auto_name: String = auto_law.law_name
-				_log_line("[중반 법전] 아무도 법전을 고르지 않아 [%s] %s이(가) 자동 제정되었습니다" % [auto_law.law_id, auto_name], Color("ffe066"))
+				_log_line("[중반 법전] 아무도 법전을 고르지 않아 %s이(가) 자동 제정되었습니다" % auto_name, Color("ffe066"))
 				_enqueue_late(func() -> void:
 					_record(-1, "[color=#ffe066][b]중반 법전 자동 제정![/b] %s[/color]" % _bb(auto_name), "", false, true)
 					_announce_law_added(auto_law, null))
