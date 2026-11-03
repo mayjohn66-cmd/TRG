@@ -12,7 +12,7 @@
 | UI_HUB_SETTINGS | 설정 / 둥근 톱니바퀴 | 34 × 34 |
 | UI_HUB_NEXT | 선택 화살표 (팁 띠의 [>>] 넘기기 버튼은 없앴다) | 44 × 44 |
 | UI_HUB_MODE_GREEN / BLUE / PINK | 모드 선택 메뉴 바탕 | 640 × 124 이상 |
-| UI_HUB_TIP_PLATE | 팁 안내 띠 바탕 | 560 × 56 이상 |
+| UI_HUB_TIP_PLATE | (미사용: 팁 띠는 로비에서 없앴다) | - |
 | UI_HUB_ICON_DISC | 모드·팁 아이콘 원형 받침 | 82 × 82 / 38 × 38 |
 | UI_HUB_ROUND_BUTTON | 도감·설정 원형 버튼 바탕 | 56 × 56 |
 

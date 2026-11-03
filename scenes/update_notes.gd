@@ -48,14 +48,14 @@ static func pick(node: Variant) -> String:
 	return str(node)
 
 
-## 팝업을 연다. on_rules를 주면 아래에 [규칙 책자 보기] 버튼이 붙는다 (둥근 규칙 버튼을 이 버튼이 대신하므로 규칙 책자로 가는 길을 남긴다).
-static func open(parent: Control, on_rules: Callable = Callable()) -> Control:
+## 팝업을 연다.
+static func open(parent: Control) -> Control:
 	mark_seen()
 	var parts: Dictionary = LobbyTheme.popup(parent, 600.0)
 	var overlay: Control = parts["overlay"]
 	overlay.name = "UpdateNotesPopup"
 	var box: VBoxContainer = parts["box"]
-	box.add_child(LobbyTheme.label(L10n.t("업데이트 소식"), 26, LobbyTheme.TEAL))
+	box.add_child(LobbyTheme.label(L10n.t("공지사항"), 26, LobbyTheme.TEAL))
 	var scroll := ScrollContainer.new()
 	scroll.name = "NotesScroll"
 	scroll.custom_minimum_size = Vector2(0, 360)
@@ -88,13 +88,6 @@ static func open(parent: Control, on_rules: Callable = Callable()) -> Control:
 	var buttons := HBoxContainer.new()
 	buttons.add_theme_constant_override("separation", 10)
 	box.add_child(buttons)
-	if on_rules.is_valid():
-		var rules := LobbyTheme.big_button(L10n.t("규칙 책자 보기"), func() -> void:
-			overlay.queue_free()
-			on_rules.call(), 18, Color("6c757d"))
-		rules.name = "NotesOpenRules"
-		rules.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		buttons.add_child(rules)
 	var close := LobbyTheme.big_button(L10n.t("닫기"), overlay.queue_free, 20)
 	close.name = "NotesClose"
 	close.size_flags_horizontal = Control.SIZE_EXPAND_FILL

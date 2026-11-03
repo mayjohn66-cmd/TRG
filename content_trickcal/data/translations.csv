@@ -2623,5 +2623,4 @@ P%d의 %d번 말 수배! 잡으면 +%d칸,P%d's pawn %d is WANTED! Capture it fo
 [상단 코너] 빛 기둥 소환 · 라운드마다 무작위 방향 3~5칸 · 지나는 칸의 말·함정 전부 소각 · 3라운드 뒤 소멸,[Top Corner] Summon a pillar of light · Slides 3-5 in a random direction each round · Burns every pawn and trap it passes · Fades after 3 rounds,[上コーナー] 光の柱を召喚 · ラウンドごとにランダム方向へ3~5マス · 通ったマスの駒と罠をすべて焼却 · 3ラウンド後に消滅
 양성자빔 · %dR,Proton Beam · %dR,陽子ビーム · %dR
 카드 %d장 사용 가능!,%d card(s) ready to play!,カード%d枚使用可能！
-업데이트 소식,Update News,アップデート情報
-규칙 책자 보기,Open Rulebook,ルールブックを見る
+공지사항,Notices,お知らせ

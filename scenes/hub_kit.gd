@@ -373,38 +373,6 @@ static func profile_capsule(player_name: String, title_text: String, avatar_id: 
 	return {"root": root, "name": name_label, "title": title, "avatar": avatar}
 
 
-## 말풍선 띠(원본의 퀘스트 안내 줄처럼): 둥근 아바타 점 + 팁 글자 + 다음 팁 버튼. 반환: {"root", "label", "next"}
-static func tip_bar(first_text: String) -> Dictionary:
-	var root := PanelContainer.new()
-	root.name = "TipBar"
-	root.custom_minimum_size = Vector2(560, 56)
-	root.add_theme_stylebox_override("panel", HubArt.skin(&"tip_plate", 56, 8.0))
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 10)
-	root.add_child(row)
-	var dot := Panel.new()
-	dot.custom_minimum_size = Vector2(38, 38)
-	dot.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
-	var dot_art: TextureRect = HubArt.icon(&"icon_disc")
-	dot_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	dot.add_child(dot_art)
-	var dot_icon: TextureRect = HubArt.icon(&"tip")
-	dot_icon.set_anchors_preset(Control.PRESET_FULL_RECT)
-	dot_icon.offset_left = 6
-	dot_icon.offset_top = 6
-	dot_icon.offset_right = -6
-	dot_icon.offset_bottom = -6
-	dot.add_child(dot_icon)
-	row.add_child(dot)
-	# 팁은 한 줄 고정: 상자보다 긴 팁(번역이 긴 언어 등)은 천천히 흘러가며 읽힌다 (띠의 크기·글자 크기는 그대로)
-	var text: MarqueeLabel = MarqueeLabel.create(first_text, 17, Color("2f4a2a"), Vector2(430, 38), HORIZONTAL_ALIGNMENT_LEFT, "TipText")
-	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	text.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	row.add_child(text)
-	# 2026-11-03: 팁 넘기기 [>>] 버튼은 없앴다 (위쪽 버튼들이 오른쪽에 몰려 보여서). 팁은 start_menu가 시간마다 바꾼다.
-	return {"root": root, "label": text}
-
-
 ## 언어별 투명 타이틀을 같은 영역에 비율 유지로 표시한다. 언어를 바꾸면 즉시 갱신한다.
 static func logo(small_text: String, big_text: String, sub_text: String, width: float = 520.0) -> VBoxContainer:
 	var column := VBoxContainer.new()

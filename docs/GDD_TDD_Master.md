@@ -2001,7 +2001,7 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 - 내보내기: `export_presets.cfg`의 include_filter에 `content_trickcal/data/patch_notes.json`을 넣었다 (csv 말고는 기본으로 안 실린다). CI의 `tests/export_smoke.gd`가 내보낸 index.pck에서 소식을 읽을 수 있는지 확인한다.
 - 보강(같은 날): 규칙 책자 둥근 버튼(`HubRules`)은 **오른쪽 아래**로 옮겼고, 위쪽 줄의 원래 자리는 [업데이트 소식](`HubUpdates`)이 쓴다. 소식 팝업의 [규칙 책자 보기]는 그대로 둔다.
 
-### 7.48 로비 팁 띠의 [>>] 버튼 삭제 + 오른쪽 위 버튼 간격 (로컬, 웹 미배포) (2026-11-03)
-- 팁 띠 끝의 [>>](`TipNext`) 버튼을 없앴다 (`HubKit.tip_bar`는 더 이상 버튼·콜백을 받지 않는다). 팁은 `StartMenu`의 `TipTimer`가 `TIP_SECONDS`(9초)마다 저절로 바꾼다 (허브가 보일 때만).
-- 오른쪽 위 버튼들(언어 · 업데이트 소식 · 설정)의 간격을 10 → `HUB_BUTTON_GAP`(22px)으로 넓혀 몰려 보이지 않게 했다.
-- 테스트: tests/ui_menu_test.gd (`TipNext` 없음, 팁 바뀜, 타이머 동작).
+### 7.48 로비 팁 띠 삭제 + 오른쪽 위 버튼 4개 (로컬, 웹 미배포) (2026-11-03)
+- 로비 허브의 팁 띠를 통째로 없앴다 (`HubKit.tip_bar`, `TipTimer`, `scenes/game_tips.gd` 삭제). 오른쪽 위 줄은 왼쪽부터 **언어 변경 · 공지사항(`HubUpdates`) · 도감/규칙 책자(`HubRules`) · 설정(`HubSettings`)**, 간격 `HUB_BUTTON_GAP`(22px). 오른쪽 아래 규칙 버튼은 없앴다.
+- 7.47의 둥근 소식 버튼 이름은 [공지사항]이다 (팝업 제목·툴팁). 팝업의 [규칙 책자 보기] 버튼은 규칙 버튼이 위쪽 줄에 있으므로 없앴다.
+- 테스트: tests/ui_menu_test.gd (팁 요소 없음, 위쪽 줄 순서 공지사항 → 도감 → 설정, 규칙 버튼이 책자 팝업을 연다).

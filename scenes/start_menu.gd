@@ -20,11 +20,8 @@ var _bottom: Dictionary = {}
 var _name_page: VBoxContainer = null
 var _mode_page: Control = null
 var _hub_profile: Dictionary = {}
-var _hub_tip: Dictionary = {}
-## 허브 팁이 저절로 바뀌는 간격(초)과 오른쪽 위 버튼 사이 간격(px).
-const TIP_SECONDS: float = 9.0
+## 오른쪽 위 버튼 사이 간격(px).
 const HUB_BUTTON_GAP: int = 22
-var _tip_index: int = 0
 ## 맨 아래 한 줄 면책 문구 (허브에서는 아래 띠가 숨으므로 화면 맨 아래로 내린다).
 var _fan_notice: Label = null
 var _train_page: VBoxContainer = null
@@ -172,7 +169,7 @@ func _build_mode_page() -> void:
 	_mode_page.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_mode_page.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_mode_page)
-	# 위쪽 줄: 팁 띠 + 둥근 규칙/설정 버튼
+	# 위쪽 줄(오른쪽): 언어 변경 · 공지사항 · 도감(규칙 책자) · 설정 (팁 띠는 없앴다)
 	var top := HBoxContainer.new()
 	top.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	top.offset_left = 18
@@ -185,21 +182,6 @@ func _build_mode_page() -> void:
 	fill.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	top.add_child(fill)
-	_hub_tip = HubKit.tip_bar(GameTips.TIPS[0])
-	(_hub_tip["root"] as Control).size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	(_hub_tip["label"] as MarqueeLabel).shrink_to_fit(14)  # 긴 번역은 글자를 조금 줄이고, 그래도 길면 흐른다 (띠 크기는 그대로)
-	top.add_child(_hub_tip["root"])
-	var tip_timer := Timer.new()  # 넘기기 버튼 대신 팁이 TIP_SECONDS마다 저절로 바뀐다
-	tip_timer.name = "TipTimer"
-	tip_timer.wait_time = TIP_SECONDS
-	tip_timer.autostart = true
-	tip_timer.timeout.connect(_next_tip)
-	add_child(tip_timer)
-	# 팁 띠와 오른쪽 버튼 사이 여백 (간격 12 + 22 + 12 = 46px): 언어가 바뀌어도 서로 붙지 않는다
-	var tip_gap := Control.new()
-	tip_gap.custom_minimum_size = Vector2(22, 0)
-	tip_gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	top.add_child(tip_gap)
 	var buttons := HBoxContainer.new()
 	buttons.add_theme_constant_override("separation", HUB_BUTTON_GAP)  # 오른쪽 위 버튼들은 몰아넣지 않고 간격을 띄운다
 	buttons.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
@@ -211,9 +193,12 @@ func _build_mode_page() -> void:
 	language.add_theme_constant_override("h_separation", 10)
 	buttons.add_child(language)
 	var notes_button: Button = HubKit.round_button("HubUpdates", &"notes", _show_updates, 56.0)
-	notes_button.tooltip_text = "업데이트 소식"
+	notes_button.tooltip_text = "공지사항"
 	_add_new_badge(notes_button)
 	buttons.add_child(notes_button)
+	var rules_button: Button = HubKit.round_button("HubRules", &"book", _show_rules, 56.0)
+	rules_button.tooltip_text = "규칙 책자"
+	buttons.add_child(rules_button)
 	buttons.add_child(HubKit.round_button("HubSettings", &"gear", _show_settings, 56.0))
 	# 왼쪽: 큼직한 전신 아바타 + 닉네임 + 아바타 설정 (타이틀은 오른쪽 아래)
 	var left := VBoxContainer.new()
@@ -317,15 +302,6 @@ func _build_mode_page() -> void:
 	logo.offset_top = -LobbyTheme.bar_height() - 24.0 - HUB_LOGO_WIDTH / 2.0
 	logo.offset_bottom = -LobbyTheme.bar_height() - 24.0
 	_mode_page.add_child(logo)
-	# 규칙 책자 버튼: 위쪽 둥근 버튼 자리는 [업데이트 소식]이 쓰고, 규칙 책자는 오른쪽 아래로 옮겼다.
-	var rules_button: Button = HubKit.round_button("HubRules", &"book", _show_rules, 56.0)
-	rules_button.tooltip_text = "규칙 책자"
-	rules_button.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	rules_button.offset_left = -84.0
-	rules_button.offset_right = -28.0
-	rules_button.offset_top = -84.0
-	rules_button.offset_bottom = -28.0
-	_mode_page.add_child(rules_button)
 	_refresh_hub()
 
 
@@ -373,14 +349,6 @@ func _refresh_hub() -> void:
 	var fresh: Control = HubKit.avatar_full(id, AvatarCatalog.color_of(id), HUB_AVATAR_HEIGHT)
 	holder.add_child(fresh)
 	_hub_profile["avatar"] = fresh
-
-
-## 다음 게임 팁으로 넘긴다 (TIP_SECONDS마다 저절로, 허브가 보일 때만).
-func _next_tip() -> void:
-	if not _mode_page.visible:
-		return
-	_tip_index = (_tip_index + 1) % GameTips.TIPS.size()
-	(_hub_tip["label"] as MarqueeLabel).text = GameTips.TIPS[_tip_index]
 
 
 func _build_train_page(parent: VBoxContainer) -> void:
@@ -459,7 +427,7 @@ func _show_rules() -> void:
 
 ## 둥근 [업데이트 소식] 버튼: 아직 열어 보지 않은 새 소식이 있으면 모서리에 빨간 [N] 표시가 뜬다.
 func _show_updates() -> void:
-	UpdateNotes.open(self, _show_rules)  # 연 순간 본 것으로 저장된다
+	UpdateNotes.open(self)  # 연 순간 본 것으로 저장된다
 	_refresh_new_badge()
 
 
