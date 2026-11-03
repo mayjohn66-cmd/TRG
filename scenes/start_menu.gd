@@ -308,6 +308,15 @@ func _build_mode_page() -> void:
 	logo.offset_top = -LobbyTheme.bar_height() - 24.0 - HUB_LOGO_WIDTH / 2.0
 	logo.offset_bottom = -LobbyTheme.bar_height() - 24.0
 	_mode_page.add_child(logo)
+	# 규칙 책자 버튼: 위쪽 둥근 버튼 자리는 [업데이트 소식]이 쓰고, 규칙 책자는 오른쪽 아래로 옮겼다.
+	var rules_button: Button = HubKit.round_button("HubRules", &"book", _show_rules, 56.0)
+	rules_button.tooltip_text = "규칙 책자"
+	rules_button.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	rules_button.offset_left = -84.0
+	rules_button.offset_right = -28.0
+	rules_button.offset_top = -84.0
+	rules_button.offset_bottom = -28.0
+	_mode_page.add_child(rules_button)
 	_refresh_hub()
 
 

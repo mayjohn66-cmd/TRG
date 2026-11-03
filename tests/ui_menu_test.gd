@@ -48,7 +48,7 @@ func _run() -> void:
 		_expect(card.custom_minimum_size.y >= 110 and card.custom_minimum_size.x >= 500, "모드 카드는 큼직하다")
 	_expect(str(titles) == str(["놀이터", "친선 줘팸터", "익명 줘팸터"]), "모드 카드 세 장: %s" % str(titles))
 	# 마을 허브(원본 로비 느낌): 프로필 띠 · 팁 띠 · 둥근 규칙/설정 버튼 · 캐릭터들
-	for node_name: String in ["ProfileCapsule", "TipBar", "HubUpdates", "HubSettings", "RenameButton", "AvatarButton", "ModeColumn"]:
+	for node_name: String in ["ProfileCapsule", "TipBar", "HubUpdates", "HubRules", "HubSettings", "RenameButton", "AvatarButton", "ModeColumn"]:
 		_expect(menu.find_child(node_name, true, false) != null, "허브 요소: %s" % node_name)
 	_expect((menu.find_child("ProfileName", true, false) as Label).text == "에르핀", "왼쪽에 아바타 아래 내 닉네임")
 	_expect(not (menu._top["bar"] as Control).visible and not (menu._bottom["bar"] as Control).visible, "허브에서는 청록 띠를 숨긴다")
@@ -64,7 +64,13 @@ func _run() -> void:
 	menu.find_child("NotesOpenRules", true, false).pressed.emit()
 	_expect(menu.find_child("UpdateNotesPopup", true, false) == null or menu.find_child("UpdateNotesPopup", true, false).is_queued_for_deletion(), "소식 팝업의 [규칙 책자 보기]가 소식 팝업을 닫고 규칙 책자를 연다")
 	await process_frame
-	_expect(menu.find_child("Popup", true, false) != null, "규칙 책자는 소식 팝업 안의 버튼으로 계속 열 수 있다")
+	_expect(menu.find_child("Popup", true, false) != null, "규칙 책자는 소식 팝업 안의 버튼으로도 열 수 있다")
+	menu.find_child("Popup", true, false).free()
+	var rules_button: Button = menu.find_child("HubRules", true, false) as Button
+	var updates_button: Button = menu.find_child("HubUpdates", true, false) as Button
+	_expect(rules_button != null and updates_button != null and rules_button.get_global_rect().position.x > updates_button.get_global_rect().position.x - 1.0 and rules_button.get_global_rect().position.y > 500.0, "규칙 책자 버튼은 오른쪽 아래, 업데이트 소식 버튼은 위쪽 줄")
+	rules_button.pressed.emit()
+	_expect(menu.find_child("Popup", true, false) != null, "오른쪽 아래 둥근 규칙 버튼이 규칙 책자를 연다")
 	menu.find_child("Popup", true, false).free()
 	var blinking: int = 0
 	for node: Node in menu.find_children("*", "Control", true, false):

@@ -1999,3 +1999,4 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 - 언어: 현재 언어 글을 보이고, 그 언어 글이 비면 한국어. UI 문구 `업데이트 소식`·`규칙 책자 보기`는 translations.csv에 있다.
 - 테스트: tests/test_update_notes.gd (모든 글 ko/en/ja 채움·id 중복 없음·[N] 켜짐/꺼짐/새 id에 다시 켜짐·언어 폴백), tests/ui_menu_test.gd (버튼·팝업·[규칙 책자 보기]).
 - 내보내기: `export_presets.cfg`의 include_filter에 `content_trickcal/data/patch_notes.json`을 넣었다 (csv 말고는 기본으로 안 실린다). CI의 `tests/export_smoke.gd`가 내보낸 index.pck에서 소식을 읽을 수 있는지 확인한다.
+- 보강(같은 날): 규칙 책자 둥근 버튼(`HubRules`)은 **오른쪽 아래**로 옮겼고, 위쪽 줄의 원래 자리는 [업데이트 소식](`HubUpdates`)이 쓴다. 소식 팝업의 [규칙 책자 보기]는 그대로 둔다.
