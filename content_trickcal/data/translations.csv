@@ -1239,7 +1239,6 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 사료스탕스,Feed-stance,サリョスタンス
 사료스탕스  ▶ 정방향 전진,Feed-stance  ▶ moves forward,サリョスタンス  ▶ 順方向に前進
 사료스탕스 출동,Feed-stance Roll Out,サリョスタンス出動
-사료스탕스(▶3~6칸),Feed (▶3~6),サリョスタンス(▶3~6マス)
 "사료스탕스는 정방향, 와구와구 유령은 역방향으로 가장 가까운 적 말을 덮치고 사라집니다","Feed-stance runs forward and the Chomp-Chomp Ghost runs backward, each hitting the nearest enemy pawn then vanishing",サリョスタンスは順方向、パクパク幽霊は逆方向に一番近い敵の駒を襲って消えます
 사용 완료,Used,使用完了
 사용됨,Used,使用済
@@ -1445,7 +1444,6 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 와구와구 유령,Chomp-Chomp Ghost,パクパク幽霊
 와구와구 유령  ◀ 역방향 전진,Chomp-Chomp Ghost  ◀ moves backward,パクパク幽霊  ◀ 逆方向に前進
 와구와구 유령 소환(%d번),Summon Chomp-Chomp Ghost (%d),パクパク幽霊召喚(%d番)
-와구와구(◀3~6칸),Chomp (◀3~6),パクパク(◀3~6マス)
 완벽한 억까의 순간! (DECIMATED!),Perfectly rigged moment! (DECIMATED!),完璧な理不尽の瞬間！ (DECIMATED!)
 완주,Finished,完走
 완주 %d/%d,Finished %d/%d,完走 %d/%d
