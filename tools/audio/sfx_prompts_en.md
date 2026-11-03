@@ -65,7 +65,7 @@ Time-up buzzer for a board game: short cartoon 'bwomp' horn with a descending to
 ```
 **`tempo_warning_01.ogg`** — 1.2s
 ```
-Tempo-up warning: a short two-tone 'bee-yoo' beep repeated three times getting slightly faster, with a soft drum tap on each, soft rounded tone, low-mid pitch around 350-650 Hz, never rising higher, quiet and gentle volume, short silent gaps between beeps, no sustained wail, no reverb. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 1.2 seconds.
+Tempo-up warning: a short two-tone 'bee-yoo' beep repeated three times getting slightly faster, with a soft drum tap on each, soft low-mid tone around 350-650 Hz, quiet, short gaps between beeps, no sustained wail. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 1.2 seconds.
 ```
 **`good_01.ogg`** — 0.5s
 ```
@@ -151,7 +151,7 @@ Card effect activates: card slapped onto the table with a magical punchy pop. St
 ```
 **`attack_alert_01.ogg`** — 0.7s
 ```
-Attack alert: a short two-tone 'bee-yoo' beep repeated twice quickly, soft rounded tone, low-mid pitch around 350-650 Hz, never rising higher, quiet and gentle volume, short silent gaps between beeps, no sustained wail, no reverb. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 0.7 seconds.
+Attack alert: a short two-tone 'bee-yoo' beep repeated twice quickly, soft low-mid tone around 350-650 Hz, quiet, short gaps between beeps, no sustained wail. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 0.7 seconds.
 ```
 **`trap_01.ogg`** — 0.6s
 ```
@@ -555,7 +555,7 @@ Riffle shuffling a deck of cards. Style: cute 2D anime board game, playful toy a
 
 **`npc_alert_01.ogg`** — 1s
 ```
-Neutral monster alert: a gentle two-tone 'bee-yoo' beep repeated twice, cute and playful, soft rounded tone, low-mid pitch around 350-650 Hz, never rising higher, quiet and gentle volume, short silent gaps between beeps, no sustained wail, no reverb. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 1 seconds.
+Neutral monster alert: a gentle two-tone 'bee-yoo' beep repeated twice, cute and playful, soft low-mid tone around 350-650 Hz, quiet, short gaps between beeps, no sustained wail. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 1 seconds.
 ```
 **`feedstance_appear_01.ogg`** — 0.5s
 ```
@@ -638,11 +638,11 @@ Springboard launch: comical 'boing' and whoosh. Style: cute 2D anime board game,
 ```
 **★ `danger_warning_01.ogg`** — 1.6s
 ```
-Danger warning: a short two-tone 'bee-yoo, bee-yoo, bee-yoo, bee-yoo' beep pattern like a small toy emergency vehicle, exactly four quick repeats, soft rounded tone, low-mid pitch around 350-650 Hz, never rising higher, quiet and gentle volume, short silent gaps between beeps, no sustained wail, no reverb. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 1.6 seconds.
+Danger warning: two-tone 'bee-yoo' beep like a toy emergency vehicle, four quick repeats, soft low-mid tone around 350-650 Hz, quiet, short gaps between beeps, no sustained wail. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 1.6 seconds.
 ```
 **★ `reach_siren_01.ogg`** — 2s
 ```
-Tense warning: a short two-tone 'bee-yoo' beep repeated four times at a slightly slower pace, a faint low pulse underneath, soft rounded tone, low-mid pitch around 350-650 Hz, never rising higher, quiet and gentle volume, short silent gaps between beeps, no sustained wail, no reverb. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 2 seconds.
+Tense warning: a short two-tone 'bee-yoo' beep repeated four times at a slightly slower pace, a faint low pulse underneath, soft low-mid tone around 350-650 Hz, quiet, short gaps between beeps, no sustained wail. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 2 seconds.
 ```
 **`kaiji_meter_01.ogg`** — 1.2s
 ```
