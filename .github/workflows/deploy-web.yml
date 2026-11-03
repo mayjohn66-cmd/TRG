@@ -513,6 +513,14 @@ jobs:
           grep -Eq 'NPC_BLINK [0-9]+ assertions; 0 failures' /tmp/npc_blink_ui.log
           if grep -Eq 'SCRIPT ERROR|SHADER ERROR' /tmp/npc_blink_ui.log; then exit 1; fi
 
+      - name: Check the rolling proton beam lands, glides and burns
+        if: steps.validation.outputs.scope == 'full'
+        run: |
+          set -euo pipefail
+          godot --headless --audio-driver Dummy --path . -s res://tests/ui_proton_beam_test.gd 2>&1 | tee /tmp/proton_beam_ui.log
+          grep -Eq 'PROTON_BEAM [0-9]+ assertions; 0 failures' /tmp/proton_beam_ui.log
+          if grep -Eq 'SCRIPT ERROR|SHADER ERROR' /tmp/proton_beam_ui.log; then exit 1; fi
+
       - name: Check stamp announcements hold at least 1.8s at 1x
         if: steps.validation.outputs.scope == 'full'
         run: |

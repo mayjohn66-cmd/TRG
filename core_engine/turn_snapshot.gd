@@ -47,6 +47,7 @@ static func capture(state: GameState) -> TurnSnapshot:
 			"history": npc.step_history.duplicate(),
 			"behavior": npc.behavior,
 			"display_id": npc.display_id,
+			"rounds_left": npc.rounds_left,
 		})
 	var attachment_data: Dictionary = {}
 	for tile: TileNode in state.board.tiles:
@@ -144,6 +145,7 @@ func restore(state: GameState, restore_meta: bool = false) -> void:
 		npc.step_history.assign(entry["history"])
 		npc.behavior = entry["behavior"]
 		npc.display_id = entry["display_id"]
+		npc.rounds_left = int(entry.get("rounds_left", 0))
 		state.npcs.append(npc)
 
 	for tile: TileNode in state.board.tiles:

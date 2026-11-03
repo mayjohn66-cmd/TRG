@@ -171,6 +171,7 @@ const CARD_SHORT: Dictionary = {
 	&"TRP_C04": "주변 적 끌어오기",
 	&"SUM_01": "정방향 질주 사출",
 	&"SUM_02": "역방향 질주 사출",
+	&"SUM_03": "빛 기둥 소각 질주",
 }
 ## 카드 확대 보기에서 읽는 개조식 요약 (키워드 + 명사형 종결). cards_table.csv의 desc가 있으면 그것이 우선이다.
 const CARD_SUMMARIES: Dictionary = {
@@ -209,6 +210,7 @@ const CARD_SUMMARIES: Dictionary = {
 	&"TRP_C04": "[코너·3R·1회] 밟은 적 정지 + 코너 2칸 안의 적 말 끌어오기",
 	&"SUM_01": "[상단 코너] 소환 · 라운드마다 정방향 1~3칸 · 적을 잡으면 처치하고 퇴장",
 	&"SUM_02": "[상단 코너] 소환 · 라운드마다 역방향 1~3칸 · 적을 잡으면 처치하고 퇴장",
+	&"SUM_03": "[상단 코너] 빛 기둥 소환 · 라운드마다 무작위 방향 3~5칸 · 지나는 칸의 말·함정 전부 소각 · 3라운드 뒤 소멸",
 }
 
 
@@ -535,6 +537,8 @@ var _shake_active: bool = false
 var _fx_skip_steps: Dictionary = {}
 var _nitro_skips: Dictionary = {}
 var _nitro_victims: Dictionary = {}
+## 롤링 양성자빔이 태울 말: 빔이 그 칸에 닿을 때까지 제자리에 붙잡아 두었다가 불타며 날아간다. {말 ID: {"tile", "position", "visible"}}
+var _beam_victims: Dictionary = {}
 var _fx_hint_bonus: float = 0.0
 var _fx_generation: int = 0
 ## 단일 연출 큐(FIFO): 말 걸음·발판 팝업·처치 컷인·배너·워프·출발선 사출이 이 줄에서 한 번에 하나씩만 재생된다.
@@ -1269,7 +1273,7 @@ func _bind_state() -> void:
 			return
 		if not _fx_on():
 			_record_ejection(pawn_id, by_player)
-		if _alkkagi_controlled.has(pawn_id) or _train_controlled.has(pawn_id) or _nitro_victims.has(pawn_id):
+		if _alkkagi_controlled.has(pawn_id) or _train_controlled.has(pawn_id) or _nitro_victims.has(pawn_id) or _beam_victims.has(pawn_id):
 			if _fx_on():
 				_record_ejection(pawn_id, by_player)
 			return
@@ -1506,8 +1510,12 @@ func _bind_state() -> void:
 	state.card_stolen.connect(func(player_id: int, card_id: StringName) -> void:
 		_steal_from = player_id  # 바로 뒤의 카드 획득은 이 사람 프로필에서 날아온다
 		_log_line("P%d의 카드 [%s]를 도적이 빼앗았습니다" % [player_id, _card_name(card_id)], Color("ff6b6b")))
-	state.npc_spawned.connect(func(_npc_id: int, tile: int) -> void:
-		_log_line("중립 기물이 %d번 타일에 소환되었습니다. 라운드마다 1~3칸 이동하고, 적 말을 잡으면 처치하고 퇴장합니다." % tile, Color("fa5252"))
+	state.npc_spawned.connect(func(npc_id: int, tile: int) -> void:
+		var spawned: NeutralNPC = state.get_npc(npc_id)
+		if spawned != null and spawned.is_beam():
+			_log_line("롤링 양성자빔이 %d번 타일에 내려앉았습니다. 3라운드 동안 라운드가 끝날 때마다 무작위 방향으로 3~5칸 미끄러지며 지나는 칸의 말과 함정을 전부 태웁니다." % tile, Color("da77f2"))
+		else:
+			_log_line("중립 기물이 %d번 타일에 소환되었습니다. 라운드마다 1~3칸 이동하고, 적 말을 잡으면 처치하고 퇴장합니다." % tile, Color("fa5252"))
 		_refresh_all())
 	state.rulebook.law_added.connect(_on_law_added)
 	state.rulebook.law_removed.connect(func(law: LawResource) -> void:
@@ -2803,11 +2811,10 @@ func _refresh_pawns() -> void:
 		(view.get_node("Bounce/Badge") as Label).text = badge_text
 	for npc: NeutralNPC in state.npcs:
 		if not _npc_views.has(npc.entity_id):
-			var marker := PawnToken.new()
-			marker.configure_npc(npc.behavior)
-			_pawn_layer.add_child(marker)
-			_npc_views[npc.entity_id] = marker
+			_npc_views[npc.entity_id] = _make_npc_view(npc)
 		var npc_view: Node2D = _npc_views[npc.entity_id]
+		if npc_view is ProtonBeamView:
+			(npc_view as ProtonBeamView).configure(npc.rounds_left)
 		if npc_view.has_meta("npc_run"):
 			continue  # 달리는 연출이 끝나면 도착 칸에 다시 보인다
 		var npc_target: Vector2 = _tile_center(npc.current_tile_idx)
@@ -2884,6 +2891,8 @@ func _refresh_npc_danger() -> void:
 				var next_tile: int = int(tiles[i + 1]) if i + 1 < tiles.size() else -1
 				# 화살표: 다음 타일이 있으면 그쪽, 마지막 타일이면 NPC가 계속 가는 방향
 				var heading: Vector2 = (_tile_center(next_tile) - _tile_center(tile)) if next_tile != -1 else (_tile_center(tile) - _tile_center(from_tile))
+				if int(preview.get("direction", 1)) == 0:
+					heading = Vector2.ZERO  # 양성자빔: 방향을 모르니 화살표 없이 붉은 테두리만
 				var level: int = 2 if catch_tiles.has(tile) else 1
 				var existing: Dictionary = _npc_danger.get(tile, {})
 				if int(existing.get("level", 0)) < level:
@@ -3647,6 +3656,8 @@ func _shown_turn_player() -> int:
 func _npc_runner_name(display_id: StringName) -> String:
 	if display_id == &"TRAIN":
 		return "폭주 기관차"
+	if display_id == NpcSweep.BEAM_ID:
+		return "롤링 양성자빔"
 	return "사료스탕스" if display_id == &"SUM_01" else "와구와구 유령"
 
 
@@ -3703,6 +3714,9 @@ func _train_camera_step() -> void:
 	_pawn_layer.position = offset
 
 func _on_train_sweep_started(display_id: StringName, path: Array[int]) -> void:
+	if display_id == NpcSweep.BEAM_ID:
+		_beam_prepare(path)
+		return
 	if display_id!=&"TRAIN" or not _fx_on():
 		return
 	for tile: int in path:
@@ -3825,7 +3839,12 @@ func _train_release() -> void:
 ## 잡힌 말의 사출은 이 연출 뒤에 연출 큐가 이어서 보여 준다 (말이 먼저 날아가지 않게). 끝나면 after를 부른다.
 func _play_npc_run(display_id: StringName, behavior: int, from_tile: int, path: Array, npc_id: int, after: Callable) -> void:
 	if not _fx_on() or path.is_empty():
+		if display_id == NpcSweep.BEAM_ID:
+			_release_beam_victims()
 		after.call()
+		return
+	if display_id == NpcSweep.BEAM_ID:
+		_play_beam_run(from_tile, path, npc_id, after)
 		return
 	# 제보(2026-11-02): 중립 기물이 움직이기 전에 깜빡였다. 달리기 표시(npc_run)만 먼저 걸어 새로고침이 기물을 옮기지 못하게 하고,
 	# 그림은 [중립 기물 출동!] 알림이 도는 동안 제자리에 그대로 둔다. 달리는 그림이 생기는 바로 그 순간에 맞바꾼다 (알림 동안 사라졌다 다시 나타나지 않게).
@@ -3872,6 +3891,192 @@ func _play_npc_run(display_id: StringName, behavior: int, from_tile: int, path: 
 				real.queue_free()
 				_npc_views.erase(npc_id)
 		after.call())
+
+
+## 판 위 중립 기물 그림: 롤링 양성자빔은 빛 기둥(ProtonBeamView, 연출이 켜져 있으면 알림 뒤에 하늘에서 내리꽂힌다), 나머지는 말 토큰.
+func _make_npc_view(npc: NeutralNPC) -> Node2D:
+	if not npc.is_beam():
+		var marker := PawnToken.new()
+		marker.configure_npc(npc.behavior)
+		_pawn_layer.add_child(marker)
+		return marker
+	var beam := ProtonBeamView.new()
+	beam.name = "ProtonBeam"
+	beam.rounds_left = npc.rounds_left
+	beam.z_index = 5
+	_pawn_layer.add_child(beam)
+	if _fx_on():
+		beam.visible = false  # [소환] 카드 알림이 지나간 뒤에 내려앉는다
+		var npc_id: int = npc.entity_id
+		_fx_when_announced(func() -> void:
+			var view: ProtonBeamView = _npc_views.get(npc_id) as ProtonBeamView
+			if view == null or not is_instance_valid(view):
+				return
+			Sfx.play(&"skill_ult")
+			await view.descend(0.42 * _motion_pace()).finished
+			if not is_instance_valid(view):
+				return
+			Sfx.play(&"slam", -2.0)
+			_impact_ring(view.position + _pawn_layer.position, Color("da77f2"), 46.0)
+			_burst_shards(view.position, Color("e5dbff"), 10)
+			screen_shake(4.0, 0.16))
+	return beam
+
+
+## 양성자빔이 지나갈 길(엔진이 태우기 전에 알린다): 그 길의 함정 그림과 말을 빔이 닿을 때까지 제자리에 붙잡아 둔다.
+func _beam_prepare(path: Array[int]) -> void:
+	if not _fx_on():
+		return
+	for tile: int in path.slice(1):
+		if tile == GameEnums.GOAL_TILE:
+			continue
+		if not state.board.get_tile(tile).attachments.is_empty():
+			_train_trap_hold[tile] = true
+		for pawn: PlayerPawn in NpcSweep.catchable_at(state, tile):
+			for member: PlayerPawn in pawn.stack_members():
+				var view: Node2D = _pawn_views.get(member.entity_id)
+				if view != null and not _beam_victims.has(member.entity_id):
+					_kill_fx(view)
+					_beam_victims[member.entity_id] = {"tile": tile, "position": view.position, "visible": view.visible}
+
+
+## 빛 기둥이 멈추지 않고 스르륵 미끄러진다 (칸마다 통통 튀는 말 이동과 달리 한 줄로 이어지는 등속 이동). 닿는 칸마다 태운 자국을 남기고,
+## 붙잡아 둔 말은 불타며 날아가고 함정은 부서진다. 수명이 다했으면 끝에 위로 걷히며 사라진다.
+func _play_beam_run(from_tile: int, path: Array, npc_id: int, after: Callable) -> void:
+	var waiting: Node2D = _npc_views.get(npc_id)
+	if waiting != null:
+		waiting.set_meta("npc_run", true)
+	enqueue_step(func() -> void:
+		var view: Node2D = _npc_views.get(npc_id)
+		var generation: int = _fx_generation
+		var start: int = from_tile if from_tile >= 0 else int(path[0])
+		if view != null and is_instance_valid(view):
+			view.visible = true
+			view.position = _tile_center(start)
+			Sfx.play(&"charge")
+			var segment: float = 0.3 * _motion_pace()
+			for tile: Variant in path:
+				var glide: Tween = view.create_tween().set_parallel(true)
+				glide.tween_property(view, "position", _tile_center(int(tile)), segment)  # 등속(LINEAR): 칸 사이에서 멈추지 않는다
+				glide.tween_property(view, "scale", Vector2.ONE * _depth_scale(tile_norm(int(tile)).y), segment)
+				await glide.finished
+				if not is_instance_valid(view) or generation != _fx_generation:
+					break
+				_beam_contact(int(tile))
+		_release_beam_victims()
+		var real: Node2D = _npc_views.get(npc_id)
+		if real != null and is_instance_valid(real):
+			real.remove_meta("npc_run")
+			var still: NeutralNPC = state.get_npc(npc_id)
+			if still != null:
+				real.position = _tile_center(still.current_tile_idx)
+				if real is ProtonBeamView:
+					(real as ProtonBeamView).configure(still.rounds_left)
+			else:
+				_npc_views.erase(npc_id)
+				if real is ProtonBeamView:
+					Sfx.play(&"warp")
+					(real as ProtonBeamView).fade_out(0.7 * _motion_pace())
+				else:
+					real.queue_free()
+		after.call())
+
+
+## 빛 기둥이 한 칸에 닿았다: 태운 자국, 함정 파괴, 그 칸에 붙잡아 둔 말을 불태워 날려 보낸다.
+func _beam_contact(tile: int) -> void:
+	if tile == GameEnums.GOAL_TILE:
+		return
+	var at: Vector2 = _tile_center(tile)
+	_beam_scorch(at)
+	var hit: bool = false
+	if _train_trap_hold.has(tile):
+		_train_trap_hold.erase(tile)
+		_refresh_tiles()
+		_refresh_structures()
+		_burst_shards(at, Color("b995eb"), 10)
+		hit = true
+	for pawn_id: int in _beam_victims.keys():
+		var info: Dictionary = _beam_victims[pawn_id]
+		if int(info["tile"]) != tile:
+			continue
+		_beam_victims.erase(pawn_id)
+		hit = true
+		var view: Node2D = _pawn_views.get(pawn_id)
+		var pawn: PlayerPawn = state.get_pawn(pawn_id)
+		if view == null or pawn == null:
+			continue
+		if pawn.has_left_start and pawn.current_tile_idx == tile:
+			_settle_pawn_view(view, pawn, true)  # 방어막·기억상실빔으로 버텼다: 날아가지 않고 제자리
+			continue
+		view.z_index = 12
+		var burn: Tween = view.create_tween().set_parallel(true)
+		burn.tween_property(view, "position", view.position + Vector2(0, -150), 0.55 * _motion_pace()).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		burn.tween_property(view, "modulate", Color(1.6, 0.9, 1.6, 0.0), 0.55 * _motion_pace())
+		burn.chain().tween_callback(func() -> void:
+			if is_instance_valid(view):
+				view.z_index = 0
+				view.visible = false  # 불타 날아간 말: 보드에서 사라진 채로 출발선 자리에 맞춘다 (다시 보드로 미끄러져 오지 않게)
+				view.modulate = Color.WHITE
+				var now: PlayerPawn = state.get_pawn(pawn_id)
+				if now != null:
+					_settle_pawn_view(view, now, true))
+	if hit:
+		Sfx.play(&"revenge_ignite", -3.0)
+		screen_shake(3.0, 0.1)
+		_impact_ring(at + _pawn_layer.position, Color("f783ac"), 30.0)
+
+
+## 칸에 남는 태운 자국: 주황·보라 빛 웅덩이가 잠깐 남았다가 식는다.
+func _beam_scorch(at: Vector2) -> void:
+	var mark := Polygon2D.new()
+	var points := PackedVector2Array()
+	for i: int in 20:
+		var angle: float = TAU * float(i) / 20.0
+		points.append(Vector2(cos(angle) * 22.0, sin(angle) * 9.0))
+	mark.polygon = points
+	mark.color = Color(1.0, 0.55, 0.85, 0.7)
+	mark.position = at + Vector2(0, 4)
+	mark.z_index = 1
+	_pawn_layer.add_child(mark)
+	var cool: Tween = mark.create_tween()
+	cool.tween_property(mark, "color", Color(0.35, 0.1, 0.3, 0.45), 0.35 * _motion_pace())
+	cool.tween_property(mark, "modulate:a", 0.0, 0.9 * _motion_pace())
+	cool.tween_callback(mark.queue_free)
+
+
+## 붙잡아 둔 말을 모두 놓아준다 (연출이 꺼졌거나 중간에 끊겼을 때): 엔진 상태 그대로의 자리로 돌린다.
+func _release_beam_victims() -> void:
+	var ids: Array = _beam_victims.keys()
+	_beam_victims.clear()
+	if state == null:
+		return
+	for pawn_id: Variant in ids:
+		var view: Node2D = _pawn_views.get(int(pawn_id))
+		var pawn: PlayerPawn = state.get_pawn(int(pawn_id))
+		if view != null and pawn != null:
+			view.modulate = Color.WHITE
+			view.z_index = 0
+			_settle_pawn_view(view, pawn, true)
+	if not _train_trap_hold.is_empty() and _train_controlled.is_empty():
+		_train_trap_hold.clear()
+		_refresh_tiles()
+		_refresh_structures()
+
+
+## 양성자빔 라운드 끝 결과 문구: 몇 칸 태웠는지, 태운 말·설치물 수, 남은 수명.
+func _beam_result_text(report: Dictionary) -> String:
+	var steps: int = (report["path"] as Array).size()
+	var caught: int = (report["caught"] as Array).size()
+	var destroyed: int = int(report.get("destroyed", 0))
+	var gone: bool = bool(report["vanished"])
+	var left: int = int(report.get("rounds_left", 0))
+	if caught > 0 or destroyed > 0:
+		if gone:
+			return "롤링 양성자빔 %d칸 소각 - 말 %d개 · 설치물 %d개를 태우고 수명이 다해 소멸" % [steps, caught, destroyed]
+		return "롤링 양성자빔 %d칸 소각 - 말 %d개 · 설치물 %d개를 태웠다 (남은 %d라운드)" % [steps, caught, destroyed, left]
+	if gone:
+		return "롤링 양성자빔 %d칸 소각 · 수명이 다해 소멸" % steps
+	return "롤링 양성자빔 %d칸 소각 (남은 %d라운드)" % [steps, left]
 
 
 ## 지금 라운드의 리벤지 부스터 칸 수 (템포 업이 오르면 커진다).
@@ -7695,6 +7900,11 @@ func _reset_presentation() -> void:
 		_fx_skip_steps.erase(pawn_id)
 	_nitro_skips.clear()
 	_release_nitro_victims(_nitro_victims.keys())
+	_release_beam_victims()
+	for npc_view: Variant in _npc_views.values():
+		if npc_view is ProtonBeamView and is_instance_valid(npc_view):
+			(npc_view as ProtonBeamView).visible = true  # 강림 단계가 큐에서 지워져도 기둥이 숨은 채로 남지 않게
+			(npc_view as ProtonBeamView).drop = 1.0
 	var sniper_stage: Node2D = get_node_or_null("SniperStage")
 	if sniper_stage!=null:
 		sniper_stage.cancel()
@@ -8172,7 +8382,7 @@ func _glide_node(node: Node2D, to_pos: Vector2, seconds: float) -> void:
 
 ## 상태가 바뀐 뒤 말의 화면 자리를 맞춘다: 자리가 달라졌으면 순간이동 대신 포물선으로 움직이고(힌트가 있으면 그 모양으로), 끝나면 보이기/숨기기를 정한다.
 func _settle_pawn_view(view: Node2D, pawn: PlayerPawn, force: bool = false) -> void:
-	if _alkkagi_controlled.has(pawn.entity_id) or _train_controlled.has(pawn.entity_id) or _nitro_victims.has(pawn.entity_id):
+	if _alkkagi_controlled.has(pawn.entity_id) or _train_controlled.has(pawn.entity_id) or _nitro_victims.has(pawn.entity_id) or _beam_victims.has(pawn.entity_id):
 		return
 	var target_pos: Vector2 = _pawn_position(pawn)
 	var target_scale: float = _depth_scale(tile_norm(pawn.current_tile_idx).y)
@@ -11280,6 +11490,8 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 				var caught: Array = report["caught"]
 				var run_path: Array = report["path"]
 				var result_text: String = ("%s %d칸 이동 - 말 %d개를 잡고 퇴장!" % [npc_name, run_path.size(), caught.size()]) if not caught.is_empty() else "%s %d칸 이동" % [npc_name, run_path.size()]
+				if report["display_id"] == NpcSweep.BEAM_ID:
+					result_text = _beam_result_text(report)
 				_play_npc_run(report["display_id"], int(report.get("behavior", GameEnums.NpcBehavior.CHASE_NEAREST)), int(report.get("from", -1)), run_path, int(report["npc_id"]), func() -> void:
 					_log_line("[중립 기물] %s" % result_text, Color("fa5252"))
 					if not caught.is_empty():

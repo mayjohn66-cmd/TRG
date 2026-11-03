@@ -2615,3 +2615,12 @@ P%d의 %d번 말 수배! 잡으면 +%d칸,P%d's pawn %d is WANTED! Capture it fo
 [%s] 뒤로 밀 적 말을 고르세요,[%s] Choose the enemy pawn to push back,[%s] 後ろへ押す敵の駒を選んでください
 [%s] 앞으로 당길 내 말을 고르세요,[%s] Choose your pawn to pull forward,[%s] 前へ引く自分の駒を選んでください
 방해령 %d/%d!,Spirits %d/%d!,妨害霊 %d/%d！
+롤링 양성자빔이 %d번 타일에 내려앉았습니다. 3라운드 동안 라운드가 끝날 때마다 무작위 방향으로 3~5칸 미끄러지며 지나는 칸의 말과 함정을 전부 태웁니다.,"The Rolling Proton Beam landed on tile %d. For 3 rounds, at each round's end it slides 3-5 spaces in a random direction, burning every pawn and trap it passes.",ローリング陽子ビームが%d番マスに降り立ちました。3ラウンドの間、ラウンド終了ごとにランダムな方向へ3~5マス滑り、通ったマスの駒と罠をすべて焼き尽くします。
+롤링 양성자빔,Rolling Proton Beam,ローリング陽子ビーム
+롤링 양성자빔 %d칸 소각 - 말 %d개 · 설치물 %d개를 태우고 수명이 다해 소멸,"Rolling Proton Beam burned %d spaces - %d pawn(s) and %d installation(s) burned, then it faded out",ローリング陽子ビームが%dマスを焼却 - 駒%d個・設置物%d個を焼き、寿命が尽きて消滅
+롤링 양성자빔 %d칸 소각 - 말 %d개 · 설치물 %d개를 태웠다 (남은 %d라운드),Rolling Proton Beam burned %d spaces - %d pawn(s) and %d installation(s) burned (%d rounds left),ローリング陽子ビームが%dマスを焼却 - 駒%d個・設置物%d個を焼いた (残り%dラウンド)
+롤링 양성자빔 %d칸 소각 · 수명이 다해 소멸,Rolling Proton Beam burned %d spaces · faded out,ローリング陽子ビームが%dマスを焼却 · 寿命が尽きて消滅
+롤링 양성자빔 %d칸 소각 (남은 %d라운드),Rolling Proton Beam burned %d spaces (%d rounds left),ローリング陽子ビームが%dマスを焼却 (残り%dラウンド)
+빛 기둥 소각 질주,Light-pillar burn run,光の柱の焼却疾走
+[상단 코너] 빛 기둥 소환 · 라운드마다 무작위 방향 3~5칸 · 지나는 칸의 말·함정 전부 소각 · 3라운드 뒤 소멸,[Top Corner] Summon a pillar of light · Slides 3-5 in a random direction each round · Burns every pawn and trap it passes · Fades after 3 rounds,[上コーナー] 光の柱を召喚 · ラウンドごとにランダム方向へ3~5マス · 通ったマスの駒と罠をすべて焼却 · 3ラウンド後に消滅
+양성자빔 · %dR,Proton Beam · %dR,陽子ビーム · %dR

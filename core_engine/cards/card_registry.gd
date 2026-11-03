@@ -13,7 +13,7 @@ const DECK_COMPOSITION: Dictionary = {
 	&"ACT_10": 2, &"ACT_11": 1, &"ACT_12": 1, &"ACT_13": 2, &"ACT_14": 1, &"ACT_15": 2, &"ACT_16": 1, &"ACT_17": 2, &"ACT_18": 2, &"ACT_19": 2, &"ACT_20": 2,
 	&"TRP_02": 2, &"TRP_03": 2, &"TRP_05": 2, &"TRP_06": 2, &"TRP_07": 2, &"TRP_08": 1,
 	&"TRP_C01": 1, &"TRP_C02": 1, &"TRP_C03": 1, &"TRP_C04": 1,
-	&"SUM_01": 1, &"SUM_02": 1,
+	&"SUM_01": 1, &"SUM_02": 1, &"SUM_03": 1,
 }
 
 
@@ -43,6 +43,7 @@ static func get_card(card_id: StringName) -> BaseCard:
 		&"TRP_C01": card = CardIsland.new()
 		&"SUM_01": card = CardBandit.new()
 		&"SUM_02": card = CardGhost.new()
+		&"SUM_03": card = CardProtonBeam.new()
 		&"JNK_CUKE": card = CardCucumber.new()  # 모브 큐이의 먹통 카드 (덱에는 없다)
 	if card == null:
 		push_error("CardRegistry: 알 수 없는 카드 ID '%s'" % card_id)
