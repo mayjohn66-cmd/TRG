@@ -395,6 +395,9 @@ var _aim_power: float = 0.0
 var _alkkagi: AlkkagiStage = null
 var _train_stage: RunawayTrainStage
 var _train_controlled: Dictionary = {}
+## 템포 업 경고음 반복 횟수와 간격(초). 경고음 한 번이 약 0.53초라 0.6초 간격이면 소리가 겹치지 않고 이어진다.
+const TEMPO_WARNING_REPEATS: int = 4
+const TEMPO_WARNING_GAP: float = 0.6
 var _train_trap_hold: Dictionary = {}
 var _train_camera_weight := 0.0
 var _alkkagi_camera := 0.0
@@ -11350,7 +11353,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 				_record(-1, "[color=#ff6b6b][b]!! 템포 업 Lv.%d[/b] - %s[/color]" % [stage, _bb(" · ".join(PackedStringArray(lines)))], "", false, true)
 				if _fx_on():
 					screen_shake(12.0, 0.5)
-					Sfx.play(&"tempo_warning")
+					Sfx.play_repeated(&"tempo_warning", TEMPO_WARNING_REPEATS, TEMPO_WARNING_GAP, 0.0, 0.03)  # 기존 경고음을 4번 되풀이한다 (점점 급해지는 느낌)
 				_announce_now("템포 업", "템포 업 Lv.%d · %s" % [stage, TempoUp.stage_name(stage)], "%d라운드부터 게임이 빨라집니다!\n◆ %s" % [tempo_round, "\n◆ ".join(PackedStringArray(lines))], Color("ff4d4d"), null, 3.2))
 		&"law_auto_enacted":
 			# 중반 법전 보장: 6라운드 동안 아무도 법전을 고르지 않아 무작위 특수 승리 법전이 자동 제정됐다 (템포 업 경고 뒤에 공개).

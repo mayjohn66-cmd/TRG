@@ -29,3 +29,12 @@ func test_headless_play_is_silent_and_safe() -> void:
 	Sfx.play(&"hop")
 	Sfx.play(&"pawn_capture", 0.0, 0.0, 1.2)
 	check(not Sfx.enabled(), "헤드리스에서는 오디오가 꺼져 있다")
+
+
+func test_repeated_play_spaces_the_sounds_and_stays_safe_without_audio() -> void:
+	# 템포 업 경고음: 기존 소리를 4번 되풀이 (헤드리스에서는 재생을 건너뛰지만 간격만큼은 기다린다)
+	check_eq(MainBoard.TEMPO_WARNING_REPEATS, 4, "템포 업 경고음은 4번")
+	check(MainBoard.TEMPO_WARNING_GAP >= 0.55, "한 번이 약 0.53초라 간격이 그보다 길어 겹치지 않는다")
+	Sfx.play_repeated(&"tempo_warning", 0, 0.1)  # 0번은 1번으로 본다: 터지지 않는다
+	Sfx.play_repeated(&"tempo_warning", 3, 0.05, 0.0, 0.03)
+	check(not Sfx.enabled(), "헤드리스에서는 조용히 지나간다")

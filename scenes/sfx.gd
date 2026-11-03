@@ -186,6 +186,18 @@ static func play(event: StringName, volume_db: float = 0.0, pitch_variance: floa
 	player.play()
 
 
+## 같은 소리를 interval초 간격으로 count번 되풀이한다 (템포 업 경고처럼 "삐용 삐용" 반복되는 경고음). 첫 번째는 바로 난다.
+## pitch_step만큼 번호마다 음높이를 조금씩 올려 점점 급해지는 느낌을 준다. 호출한 쪽은 기다리지 않아도 된다.
+static func play_repeated(event: StringName, count: int, interval: float, volume_db: float = 0.0, pitch_step: float = 0.0) -> void:
+	var tree: SceneTree = Engine.get_main_loop() as SceneTree
+	for index: int in maxi(count, 1):
+		if index > 0:
+			if tree == null:
+				return
+			await tree.create_timer(interval).timeout
+		play(event, volume_db, 0.0, 1.0 + pitch_step * index)
+
+
 ## 캐릭터 대사 한 줄을 낸다 (아바타 선택 대사 등). 앞 대사가 아직 나오는 중이면 끊고 새 대사를 낸다.
 ## 승리 장면 팡파르: 앞 팡파르를 부드럽게 끊고 새 것을 낸다 (play와 같은 이벤트 이름·별칭을 쓴다).
 static func play_stinger(event: StringName, volume_db: float = 0.0) -> void:

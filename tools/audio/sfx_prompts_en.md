@@ -10,7 +10,7 @@ Sound effects go in `content_trickcal/audio/sfx/`, background music (section 1-7
 
 **Delivery spec (not part of the prompt):** OGG or WAV, mono for SFX (stereo is fine for BGM), 44.1 kHz, peak -1 dBFS, natural fade-out tail.
 
-Total: 228 prompts - replacements for existing sounds 64 (62 SFX + 2 BGM), new sounds 164. ★ = high priority (14).
+Total: 227 prompts - replacements for existing sounds 63 (61 SFX + 2 BGM), new sounds 164. ★ = high priority (14).
 
 
 ## 1-1 Existing · UI & flow
@@ -62,10 +62,6 @@ Single tense clock tick, dry wooden metronome click, slightly urgent. Style: cut
 **`timeout_01.ogg`** — 0.7s
 ```
 Time-up buzzer for a board game: short cartoon 'bwomp' horn with a descending tone, playful not harsh. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 0.7 seconds.
-```
-**`tempo_warning_01.ogg`** — 2.5s
-```
-Ominous incoming-danger alarm: slow deep horn klaxon blasts, each long and droning, with a heavy low bass rumble and dull deep pulse underneath, like a distant air-raid warning building dread, low pitch around 150-400 Hz, no beeps, no high whine, no morse-code rhythm. Style: tabletop board game, solid physical impact, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 2.5 seconds.
 ```
 **`good_01.ogg`** — 0.5s
 ```

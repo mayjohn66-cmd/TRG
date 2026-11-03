@@ -1,0 +1,19 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://cjdhewxl8q1rh"
+
+[deps]
+
+files=["res://tools/audio/sfx_prompts_en.section.translation", "res://tools/audio/sfx_prompts_en.priority.translation", "res://tools/audio/sfx_prompts_en.duration.translation", "res://tools/audio/sfx_prompts_en.loop.translation", "res://tools/audio/sfx_prompts_en.prompt.translation"]
+
+source_file="res://tools/audio/sfx_prompts_en.csv"
+dest_files=["res://tools/audio/sfx_prompts_en.section.translation", "res://tools/audio/sfx_prompts_en.priority.translation", "res://tools/audio/sfx_prompts_en.duration.translation", "res://tools/audio/sfx_prompts_en.loop.translation", "res://tools/audio/sfx_prompts_en.prompt.translation"]
+
+[params]
+
+compress=1
+delimiter=0
+unescape_keys=false
+unescape_translations=true
