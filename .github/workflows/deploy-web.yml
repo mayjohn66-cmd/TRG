@@ -521,6 +521,14 @@ jobs:
           grep -Eq 'STAMP_HOLD [0-9]+ assertions; 0 failures' /tmp/stamp_hold_ui.log
           if grep -Eq 'SCRIPT ERROR|SHADER ERROR' /tmp/stamp_hold_ui.log; then exit 1; fi
 
+      - name: Check the board is not drawn behind the augment draft window
+        if: steps.validation.outputs.scope == 'full'
+        run: |
+          set -euo pipefail
+          godot --headless --audio-driver Dummy --path . -s res://tests/ui_draft_backdrop_test.gd 2>&1 | tee /tmp/draft_backdrop_ui.log
+          grep -Eq 'DRAFT_BACKDROP [0-9]+ assertions; 0 failures' /tmp/draft_backdrop_ui.log
+          if grep -Eq 'SCRIPT ERROR|SHADER ERROR' /tmp/draft_backdrop_ui.log; then exit 1; fi
+
       - name: Run unit tests
         if: steps.validation.outputs.scope == 'full'
         run: godot --headless --path . -s res://tests/run_tests.gd

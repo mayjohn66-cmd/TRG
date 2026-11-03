@@ -9642,6 +9642,7 @@ func _build_draft_overlay(player_id: int, remaining: int) -> void:
 		box.add_child(footer)
 		footer.add_child(_make_button("무작위로 자동 선택", _on_draft_auto_pressed, 13))
 	add_child(_draft_overlay)
+	_set_draft_backdrop_hidden(true)
 	if MobileSupport.touch_mode():
 		_fit_touch_draft.call_deferred(center, box)
 	if _draft_entrance and _fx_on():
@@ -9716,6 +9717,15 @@ func _close_draft_overlay() -> void:
 		_draft_overlay.queue_free()
 		_draft_overlay = null
 	_draft_player = -1
+	_set_draft_backdrop_hidden(false)
+
+
+## 증강 선택 창이 떠 있는 동안에는 뒤의 보드·말 그림을 보내지 않는다. 창이 화면을 78% 어둡게 덮어 거의 안 보이는데, 보드가 그리기 호출 약 150번(프레임 시간 약 20ms)을 먹었다.
+## 제보(2026-11): 초당 30프레임(배터리 절약)에서 증강 창이 뜰 때 크게 버벅였다. 창이 닫히면 그대로 돌아온다.
+func _set_draft_backdrop_hidden(hidden: bool) -> void:
+	for layer: CanvasItem in [_board_layer, _pawn_layer]:
+		if layer != null and is_instance_valid(layer):
+			layer.visible = not hidden
 
 
 func _on_auto_draft_toggled(enabled: bool) -> void:
