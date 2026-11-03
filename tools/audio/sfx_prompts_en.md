@@ -63,9 +63,9 @@ Single tense clock tick, dry wooden metronome click, slightly urgent. Style: cut
 ```
 Time-up buzzer for a board game: short cartoon 'bwomp' horn with a descending tone, playful not harsh. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 0.7 seconds.
 ```
-**`tempo_warning_01.ogg`** — 1.2s
+**`tempo_warning_01.ogg`** — 2.5s
 ```
-Tempo-up warning: two-tone 'bee-yoo' beep three times, getting faster, soft drum tap on each, soft low-mid tone around 350-650 Hz, quiet, short gaps between beeps, no sustained wail. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 1.2 seconds.
+Ominous incoming-danger alarm: slow deep horn klaxon blasts, each long and droning, with a heavy low bass rumble and dull deep pulse underneath, like a distant air-raid warning building dread, low pitch around 150-400 Hz, no beeps, no high whine, no morse-code rhythm. Style: tabletop board game, solid physical impact, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 2.5 seconds.
 ```
 **`good_01.ogg`** — 0.5s
 ```
