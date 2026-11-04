@@ -155,9 +155,9 @@
      },
      "items": [
       {
-       "ko": "화면 가운데 알림이 긴 문장이라 읽기 힘들던 것을, 큰 한 마디(공격! · 방어 발동! · 카드 발동! · 함정 발동! 등)가 쾅 찍히는 방식으로 바꾸고 최소 1.8초는 보이게 개선",
-       "en": "Center notices were long sentences; they are now a big stamped word (Attack!, Defense!, Card!, Trap!...) that stays at least 1.8 s",
-       "ja": "画面中央の通知が長文で読みにくかったため、大きな一言（攻撃！・防御発動！・カード発動！・罠発動！など）をドンと表示し、最低1.8秒は見えるように改善"
+       "ko": "화면 가운데 알림이 긴 문장이라 읽기 힘들던 것을, 큰 한 마디(공격! · 방어 발동! 등)로 찍히고 충분히 읽을 시간 동안 보이게 개선",
+       "en": "Center notices were long sentences; they are now a big stamped word (Attack!, Defense!...) that stays long enough to read",
+       "ja": "画面中央の通知が長文で読みにくかったため、大きな一言（攻撃！・防御発動！など）をドンと表示し、読める長さだけ見えるように改善"
       },
       {
        "ko": "알림·방어 팝업·주사위·결투장·증강 확인 창이 서로 겹치던 것을, 앞의 연출이 끝난 뒤에 다음 알림이 뜨도록 순서를 정리",
@@ -180,9 +180,9 @@
        "ja": "カード対象選択の大きな案内が盤面を隠していたため、上部のスリムなバーに変更"
       },
       {
-       "ko": "템포 업 경고음이 한 번만 울리던 것을, 급박하게 4번 되풀이해 울리도록 개선",
-       "en": "The Tempo Up warning played once; it now repeats 4 times, rising slightly in pitch",
-       "ja": "テンポアップの警告音が1回だけだったため、切迫感が出るよう4回繰り返すように改善"
+       "ko": "템포 업 경고음이 한 번만 울려 놓치기 쉽던 것을, 여러 번 되풀이해 울려 알아차리기 쉽게 개선",
+       "en": "The Tempo Up warning played once and was easy to miss; it now repeats so it's hard to miss",
+       "ja": "テンポアップの警告音が1回だけで聞き逃しやすかったため、繰り返し鳴らして気づきやすく改善"
       },
       {
        "ko": "리벤지 부스터에서 말이 우다다 달리던 것을, [부스터 로켓] → 잠깐 쉬고 [눈금 N칸] → 한 칸씩 전진하는 순서로 개선",
@@ -210,14 +210,14 @@
        "ja": "中立の駒が［出動！］通知中に点滅していたため、その場に表示されたままになるよう改善"
       },
       {
-       "ko": "증강 선택 창이 뜰 때 버벅이던 것을, 창이 떠 있는 동안 뒤의 보드·말을 그리지 않게 해 부드럽게 개선 (30프레임 기기 포함)",
-       "en": "Lag when the augment window opened; the board behind is no longer drawn while it is up (smoother on 30 fps devices too)",
-       "ja": "オーグメント選択画面が出る時のカクつきを、画面表示中は背後の盤面・駒を描画しないことで改善（30fps端末も含む）"
+       "ko": "증강 선택 창이 뜰 때 버벅이던 것을, 창이 떠 있는 동안 뒤의 보드를 그리지 않게 해 부드럽게 개선",
+       "en": "Lag when the augment window opened; the board behind is no longer drawn while it is up",
+       "ja": "オーグメント選択画面が出る時のカクつきを、画面表示中は背後の盤面を描画しないことで改善"
       },
       {
-       "ko": "웹 용량이 컸던 것을 이미지 압축으로 게임 본체 약 4.4MB, 시작 화면 제목 그림은 장당 1.2MB → 180KB로 줄여 더 빨리 뜨도록 개선",
-       "en": "Web download trimmed: game body about 4.4 MB lighter and the title art from 1.2 MB to 180 KB per image",
-       "ja": "Web容量が大きかったため、画像圧縮でゲーム本体を約4.4MB、タイトル画像を1枚1.2MB→180KBに軽量化し、表示を高速化"
+       "ko": "웹 용량이 커서 생기던 문제(로딩이 느리고 화면이 늦게 뜨던 것)를 이미지 용량을 줄여 개선",
+       "en": "Slow loading and late-appearing screens caused by a heavy web download were improved by shrinking image sizes",
+       "ja": "Web容量が大きいために起きていた問題（読み込みが遅い・画面の表示が遅い）を、画像容量の削減で改善"
       },
       {
        "ko": "아이패드·폰에서 닉네임 칸을 눌러도 키패드가 안 뜨던 것을, 기본 입력 창으로 바로 열리게 하고 [랜덤 닉네임] 버튼과 빈칸 입장 시 자동 닉네임을 넣어 개선",
@@ -230,9 +230,9 @@
        "ja": "オンラインでコンピューターが代行する席の名前が「コンピューター2」になり混乱したため、「名前（自動）」と表示するよう改善"
       },
       {
-       "ko": "결과 화면 투표를 [재밌었어요 / 잘 모르겠어요] 두 개로 줄이고, 잘 모르겠어요를 누르면 아쉬운 점 4가지 중에서 고르게 개선",
-       "en": "Result-screen voting simplified to [Fun / Not sure]; Not sure opens 4 follow-up reasons",
-       "ja": "結果画面の投票を［面白かった／よく分からない］の2つに絞り、よく分からないを押すと残念な点4種から選べるよう改善"
+       "ko": "결과 화면 투표를 [재밌었어요 / 잘 모르겠어요] 두 개로 줄이고, 잘 모르겠어요를 누르면 아쉬운 점을 골라 알려 줄 수 있게 개선",
+       "en": "Result-screen voting simplified to [Fun / Not sure]; Not sure lets you pick what felt off",
+       "ja": "結果画面の投票を［面白かった／よく分からない］の2つに絞り、よく分からないを押すと残念な点を選べるよう改善"
       },
       {
        "ko": "이의 있음! 카드가 방어 카드로 오해되던 것을 설명에 '내 차례 시작에 사용 · 방어 카드 아님'을 적어 개선",
