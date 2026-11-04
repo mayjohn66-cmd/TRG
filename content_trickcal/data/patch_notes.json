@@ -317,6 +317,11 @@
        "ko": "친선전에서 자리가 비어 있는데 '방이 가득 찼거나 닫혔습니다'로 입장하지 못하던 문제 개선: 앞 사람이 접속하는 동안은 포기하지 않고 기다리고, 접속이 막힌 자리는 더 빨리 다시 열려요",
        "en": "Friendly matches: joining no longer fails with 'room is full or closed' while a seat is still free - guests now wait while someone else is connecting, and stuck seats reopen faster",
        "ja": "フレンド戦で空き席があるのに「満員か閉じられています」と表示され入室できない問題を改善：他の人が接続中は待機し、接続が止まった席はより早く再開放されます"
+      },
+      {
+       "ko": "모바일에서 방해령 카드를 눌렀을 때 [사용하기] 버튼이 화면 밖으로 밀려 가려지던 문제",
+       "en": "On mobile, the [Use] button was pushed off-screen when tapping a Meddling Spirit card",
+       "ja": "モバイルで妨害霊カードをタップすると［使用する］ボタンが画面外に押し出されて隠れる問題"
       }
      ]
     }

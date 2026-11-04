@@ -110,6 +110,19 @@ func _run() -> void:
 			_expect((sample.find_child("MobileCardDescription",true,false) as RichTextLabel).scroll_active,"long detail scrolls "+language)
 			_expect((sample.find_child("UseCard",true,false) as Button).disabled,"unusable counter cannot fire from preview")
 			sample.queue_free();await settle()
+		# 2026-11-04 제보: 모바일에서 방해령 사리의 [사용하기]가 가려짐. 줄바꿈 글자 칸의 폭이 정해지지 않아 패널이 세로로 늘어나 버튼이 화면 밖으로 밀렸다.
+		# 진짜 보드의 확대 보기로 모든 언어에서 [사용하기]·[닫기]가 패널 안, 화면 안에 있는지 본다.
+		for card_id: StringName in [&"ACT_04", &"ACT_18", &"ACT_19", &"ACT_20", &"SUM_03"]:
+			_board._open_zoom(player,card_id);await settle()
+			var shown:=_board._zoom_view
+			_expect(shown!=null,"touch detail opens for %s %s"%[card_id,language])
+			if shown!=null:
+				var screen:=_board.get_viewport_rect()
+				for button_name: String in ["UseCard","CloseCard"]:
+					var action:=shown.find_child(button_name,true,false) as Button
+					_expect(action!=null and screen.encloses(action.get_global_rect()) and shown.get_global_rect().encloses(action.get_global_rect().grow(-1.0)),"%s stays inside the detail and the screen: %s %s"%[button_name,card_id,language])
+				_expect(shown.get_global_rect().size.y<=screen.size.y,"detail panel does not grow past the screen: %s %s (%d)"%[card_id,language,int(shown.get_global_rect().size.y)])
+			_board._close_zoom();await settle()
 	L10n.set_language(old_language)
 	MobileSupport.force_touch=false
 	# Result diagnostics must use departure facts, never synthetic retirement finishes.
