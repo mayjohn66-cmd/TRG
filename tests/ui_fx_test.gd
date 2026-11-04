@@ -302,7 +302,8 @@ func _test_augment_art() -> void:
 		_expect(paths[0].contains("/pawns/") and paths[-1].contains("/PAWN_"), "pawn detail precedes family for %s" % kind)
 	for tool_id: StringName in AugmentRegistry.SWAPPABLE_TOOLS:
 		var paths: Array[String] = AugmentArt.tool_candidates(tool_id)
-		_expect(paths[0] == AugmentArt.ROOT + "dice/%s.png" % tool_id, "tool detail uses runtime ID %s" % tool_id)
+		var expected_file: String = "%s_V02.png" % tool_id if tool_id in [&"DICE_STOCK", &"DICE_DARTS"] else "%s.png" % tool_id
+		_expect(paths[0] == AugmentArt.ROOT + "dice/" + expected_file, "tool detail uses reviewed art for runtime ID %s" % tool_id)
 		_expect(paths[-1].get_file().begins_with("DICE_"), "all nine tools map to requested DICE filename")
 		_board._refresh_tool_board(ToolRegistry.create(tool_id), 1)
 		await process_frame
@@ -333,7 +334,9 @@ func _test_card_art_layout() -> void:
 			_expect(summary.position.x + summary.size.x <= effect.size.x + 0.5, "%s effect stays within its panel width, detailed=%s" % [card_id, detailed])
 			var art: TextureRect = body.find_child("CardArt", true, false)
 			if card_id != &"ACT_09":
-				_expect(art != null and art.texture.resource_path == "res://assets/cards/%s.png" % card_id, "%s uses its own reviewed illustration" % card_id)
+				var reviewed_files: Dictionary = {&"ACT_16":"ACT_16_LETHE_MIB_V04.png", &"ACT_17":"ACT_17_BANA_V01.png", &"ACT_18":"ACT_18_BERU_V01.png", &"ACT_19":"ACT_19_SARI_V01.png", &"ACT_20":"ACT_20_MEJONG_V01.png"}
+				var expected_file: String = reviewed_files.get(card_id, "%s.png" % card_id)
+				_expect(art != null and art.texture != null and art.texture.resource_path == "res://assets/cards/" + expected_file, "%s uses its own reviewed illustration" % card_id)
 				if art != null:
 					# Native PNGs can differ by a few pixels; retain their actual aspect without stretching.
 					var source_aspect: float = float(art.texture.get_width()) / float(art.texture.get_height())
@@ -1157,7 +1160,7 @@ func _test_match_report_is_sent_once() -> void:
 	sent.clear()
 	var bar: Control = _board._build_vote_bar()
 	_board.add_child(bar)
-	_expect((bar.find_child("VoteQuestion", true, false) as Label).text == "이번 판 어떠셨나요? (누르면 개발자에게 바로 전달!)", "투표 질문 문구")
+	_expect((bar.find_child("VoteQuestion", true, false) as Label).text.replace("\n", " ") == "이번 판 어땠나요?", "투표 질문 문구")
 	var buttons: Node = bar.find_child("VoteButtons", true, false)
 	_expect(buttons != null and buttons.get_child_count() == 2, "투표 버튼 2개 (재밌었어요 / 잘 모르겠어요)")
 	_expect(bar.find_child("VoteComment", true, false) == null, "한줄 입력칸은 없다")
@@ -2850,25 +2853,17 @@ func _test_presentation_queue() -> void:
 	_board._decisive_rank = {"player": 2, "rank": 1, "reason": &"LAW_01"}
 	_board._show_result_overlay()
 	var end_reason: Label = _board._result_overlay.find_child("MatchEndReasonText", true, false)
-	_expect(end_reason != null and end_reason.text.contains("기물 슬레이어") and end_reason.text.contains("1위로 졸업"), "결과 화면 위에 매치 종료 사유 (%s)" % (end_reason.text if end_reason != null else "없음"))
+	var texts := _board.result_comic_texts(state.winner)
+	_expect(end_reason != null and end_reason.text == (texts[1] if texts[1] != "" else _board.match_end_reason()), "만화 리포트에 실제 승리 달성 사유 (%s)" % (end_reason.text if end_reason != null else "없음"))
 	_board._decisive_rank = {"player": 3, "rank": 2, "reason": VictoryChecker.ALL_HOME}
 	_expect(_board.match_end_reason().contains("말 4개를 모두 완주") and _board.match_end_reason().contains("2위"), "완주 졸업 사유: %s" % _board.match_end_reason())
 	_board._decisive_rank = {}
-	var ranking: Node = _board._result_overlay.find_child("RankingList", true, false)
-	_expect(ranking != null and ranking.get_child_count() == _board._player_ids.size(), "순위 줄이 참가자 수만큼 있다")
-	var podium: Node = _board._result_overlay.find_child("Podium", true, false)
-	var podium_ranks: Array[int] = []
-	if podium != null:
-		for column: Node in podium.get_children():
-			podium_ranks.append(int(column.get_meta("rank")))
-	_expect(str(podium_ranks) == str([2, 1, 3, 4]), "시상대는 2위·1위·3위·4위 순으로 선다 (%s)" % str(podium_ranks))
-	if podium != null and podium.get_child_count() == 4:
-		var first_block: Control = podium.get_child(1).find_child("Block", true, false)
-		var fourth_block: Control = podium.get_child(3).find_child("Block", true, false)
-		_expect(first_block.custom_minimum_size.y > fourth_block.custom_minimum_size.y, "1위 단상이 가장 높다")
+	var report := _board._result_overlay.find_child("ResultComicReport", true, false) as ResultComicReport
+	_expect(report != null and report.ranking_labels.size() == _board._player_ids.size(), "만화 리포트의 순위 컷이 참가자 수만큼 있다")
+	_expect(_board._result_overlay.find_child("Podium", true, false) == null, "이전 시상대는 새 만화 결과 리포트로 대체됐다")
 	# 1.01: 연출이 켜져 있으면 먼저 1~4위 만화 컷(1쪽), [Next Page]로 이 순위표(2쪽)를 펼친다 (자세한 검사는 ui_result_comic_test)
 	var comic: ResultComicPage = _board._result_overlay.find_child("ResultComicPage", true, false) as ResultComicPage
-	_expect(comic != null and not (ranking as Control).is_visible_in_tree(), "순위표보다 만화 컷이 먼저")
+	_expect(comic != null and report != null and not report.is_visible_in_tree(), "리포트보다 순위 만화 컷이 먼저")
 	guard = 0
 	while comic != null and (not comic.visible or comic.active) and guard < 900:
 		guard += 1
@@ -2876,10 +2871,10 @@ func _test_presentation_queue() -> void:
 	if comic != null:
 		comic.next_button.pressed.emit()
 	await create_timer(_board.RESULT_PAGE_IN + 0.2).timeout
-	var all_shown: bool = (ranking as Control).is_visible_in_tree()
-	for row: Node in ranking.get_children():
-		all_shown = all_shown and (row as Control).modulate.a > 0.99
-	_expect(all_shown, "[Next Page] 뒤 순위표의 모든 줄이 보인다")
+	var all_shown: bool = report != null and report.is_visible_in_tree()
+	if report != null:
+		for label: Label in report.ranking_labels:all_shown = all_shown and label.is_visible_in_tree()
+	_expect(all_shown, "[Next Page] 뒤 만화 리포트의 모든 순위가 보인다")
 	_board._close_result_overlay()
 	for pawn_done: PlayerPawn in state.pawns_of(2):
 		pawn_done.is_finished = false
@@ -3004,7 +2999,7 @@ func _test_law_near_badge() -> void:
 	_expect(_board._presentation_step_busy(), "하이라이트 동안 연출 큐를 붙잡아 순위 배너가 뒤에 뜬다")
 	if fx != null:
 		fx.free()
-	# 1.01 졸업 컷신: 특수 승리는 법전 그림 + [특수 승리!], 완주는 체크무늬 깃발 + [FINISH!]. 끝나면 스스로 사라진다.
+	# 법전별 무대와 전용 타이틀, 완주의 RACE OVER 컷신을 실제 진입 경로에서 확인한다.
 	_board.instant_roll_for_test = false
 	_expect(_board._uses_victory_cutscene(&"LAW_01") and _board._uses_victory_cutscene(VictoryChecker.ALL_HOME), "특수 승리·완주는 졸업 컷신")
 	_expect(not _board._uses_victory_cutscene(VictoryChecker.RACE_ORDER) and not _board._uses_victory_cutscene(VictoryChecker.LAST_PLACE), "진행 순위·꼴찌는 기존 배너")
@@ -3021,9 +3016,9 @@ func _test_law_near_badge() -> void:
 		if cut == null:
 			continue
 		cut.impact.connect(func() -> void: impacts[0] = int(impacts[0]) + 1)
-		var headline: Label = cut.find_child("CutsceneHeadline", true, false) as Label
-		_expect(headline != null and headline.text == ("[중앙 법전 성립 · 특수 승리!]" if reason == &"LAW_05" else "FINISH!"), "%s: 도장 글자" % reason)
-		_expect((cut.find_child("CutsceneArt", true, false) != null) == (reason == &"LAW_05"), "%s: 법전 그림은 특수 승리만" % reason)
+		var expected_theme: String = "LAW_05" if reason == &"LAW_05" else "FINISH"
+		_expect(cut.law_id == expected_theme and cut.headline_text() == ("CIRCLE\nCOMPLETE" if reason == &"LAW_05" else "RACE\nOVER"), "%s: 전용 승리 문구" % reason)
+		_expect(cut.find_child("VictorySymbolBackground", true, false) != null and cut.find_child("LawVictoryPrelude", true, false) != null, "%s: 전용 배경과 보드 전환 무대" % reason)
 		_expect(cut.find_child("CutsceneActor", true, false) != null, "%s: 사도 전신 그림" % reason)
 		cut.skip()
 		_expect(int(impacts[0]) == 1 and not cut.active, "%s: 건너뛰면 충돌 한 번 + 종료" % reason)

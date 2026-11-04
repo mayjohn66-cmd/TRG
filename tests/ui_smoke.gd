@@ -619,26 +619,25 @@ func _finish() -> bool:
 	_assert(_draft_rounds.has(1), "1라운드 드래프트가 열렸어야 한다")
 	_assert(_board._result_overlay != null, "게임 종료 결과창이 떠야 한다")
 	if _board._result_overlay != null:
-		var restart_found: bool = false
-		for node: Node in _board._result_overlay.find_children("*", "Button", true, false):
-			if (node as Button).text == "같은 설정으로 바로 재시작":
-				restart_found = true
-		_assert(restart_found, "결과창에 [같은 설정으로 바로 재시작] 버튼이 있어야 한다")
+		var report := _board._result_overlay.find_child("ResultComicReport", true, false) as ResultComicReport
+		_assert(report != null and report.is_visible_in_tree(), "게임 종료 후 새 만화 리포트가 보여야 한다")
+		var restart := _board._result_overlay.find_child("RestartButton", true, false) as Button
+		_assert(restart != null and restart.is_visible_in_tree() and not restart.disabled and restart.text == "다시 한 판!", "만화 리포트에 사용 가능한 재시작 버튼이 있어야 한다")
 		var lobby_found: bool = false
 		for node: Node in _board._result_overlay.find_children("*", "Button", true, false):
 			if (node as Button).text == "로비로 나가기":
 				lobby_found = true
 		_assert(lobby_found, "결과창에 [로비로 나가기] 버튼이 있어야 한다")
-		var labels: String = ""
-		for node: Node in _board._result_overlay.find_children("*", "Label", true, false):
-			labels += (node as Label).text + "\n"
-		_assert(labels.contains("플레이한 라운드") and labels.contains("승리 요인"), "결과창에 라운드 수와 승리 요인이 보여야 한다")
-		var ranking: Node = _board._result_overlay.find_child("RankingList", true, false)
-		_assert(ranking != null and ranking.get_child_count() == _board._player_ids.size(), "결과창에 참가자 수만큼 순위 줄이 있다")
-		if ranking != null and ranking.get_child_count() > 0:
-			_assert(int(ranking.get_child(0).get_meta("rank")) == 1 and int(ranking.get_child(0).get_meta("player")) == _board.state.winner, "1등 줄은 승자")
-			for index: int in ranking.get_child_count():
-				_assert(int(ranking.get_child(index).get_meta("rank")) == index + 1, "순위는 1등부터 차례대로")
+		if report != null:
+			var round_label := report.find_child("RoundNumber", true, false) as Label
+			var phrase := report.find_child("ReportVictoryPhrase", true, false) as Label
+			_assert(round_label != null and round_label.text == str(_board.state.round_number), "리포트에 실제 플레이한 라운드 수가 보인다")
+			_assert(phrase != null and phrase.text == _board.result_comic_texts(_board.state.winner)[0], "리포트의 승리 요인은 실제 승리 컷신 문구와 같다")
+			_assert(report.ranking_labels.size() == _board._player_ids.size(), "리포트에 참가자 수만큼 순위 컷이 있다")
+			if not report._entries.is_empty():
+				_assert(int(report._entries[0]["rank"]) == 1 and int(report._rank_cuts[0].get_meta("player")) == _board.state.winner, "1등 컷은 실제 승자")
+				for index: int in report._entries.size():
+					_assert(int(report._entries[index]["rank"]) == index + 1 and report.ranking_labels[index].text == _board._player_name(int(report._entries[index]["player"])), "순위 컷과 이름은 실제 등수 순서대로")
 	# 🏆 법전 슬롯 툴팁: 조건과 모두의 진행도
 	_board.state.rulebook.set_laws_from_ids(["LAW_01"])
 	_board._fill_law_tip(0)
