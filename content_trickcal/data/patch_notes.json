@@ -65,6 +65,11 @@
        "ko": "설정 > 화면에 해상도 선택 추가",
        "en": "Resolution option added to Settings > Display",
        "ja": "設定＞画面に解像度の選択を追加"
+      },
+      {
+       "ko": "연출 추가: 특수 승리 컷신, 완주 피니시 컷신, 결과창 만화 컷 페이지, 특수 승리 진행도가 차오르는 연출과 목표 칸 표시(하극상·식권·포위망)",
+       "en": "New effects: special-victory cutscenes, finish-line cutscene, comic-page result screen, special-victory progress fill and target-tile markers",
+       "ja": "演出追加：特殊勝利カットシーン、ゴール演出、結果画面のマンガページ、特殊勝利の進行度ゲージと目標マス表示"
       }
      ]
     },
@@ -129,6 +134,16 @@
        "ko": "AI 대전에서 방 규칙 설정 버튼을 없앴어요 (난이도가 규칙을 정해요)",
        "en": "Removed the room-rules button from AI matches (difficulty decides the rules)",
        "ja": "AI対戦のルーム設定ボタンを削除（難易度がルールを決めます）"
+      },
+      {
+       "ko": "로비 오른쪽 위에 언어 · 공지사항 · 도감 · 설정 버튼을 모으고 팁 띠는 없앴어요",
+       "en": "Lobby top-right now holds Language, Notices, Rulebook and Settings; the tips bar is gone",
+       "ja": "ロビー右上に言語・お知らせ・図鑑・設定をまとめ、ヒントバーを削除"
+      },
+      {
+       "ko": "다른 사람이 카드를 뽑을 때 노란 카드가 프로필로 날아가는 연출을 없앴어요",
+       "en": "Removed the yellow card flying to a player's profile when they draw",
+       "ja": "他のプレイヤーのドロー時に黄色いカードがプロフィールへ飛ぶ演出を削除"
       }
      ]
     },
@@ -140,49 +155,89 @@
      },
      "items": [
       {
-       "ko": "특수 승리 컷신, 완주 피니시 컷신, 결과창 만화 컷 페이지 연출",
-       "en": "Special-victory cutscenes, finish-line cutscene and a comic-page result screen",
-       "ja": "特殊勝利カットシーン、ゴール演出、結果画面のマンガページ演出"
+       "ko": "화면 가운데 알림이 긴 문장이라 읽기 힘들던 것을, 큰 한 마디(공격! · 방어 발동! · 카드 발동! · 함정 발동! 등)가 쾅 찍히는 방식으로 바꾸고 최소 1.8초는 보이게 개선",
+       "en": "Center notices were long sentences; they are now a big stamped word (Attack!, Defense!, Card!, Trap!...) that stays at least 1.8 s",
+       "ja": "画面中央の通知が長文で読みにくかったため、大きな一言（攻撃！・防御発動！・カード発動！・罠発動！など）をドンと表示し、最低1.8秒は見えるように改善"
       },
       {
-       "ko": "특수 승리 진행도가 차오르는 연출과 목표 칸 표시(하극상·식권·포위망)",
-       "en": "Special-victory progress fill effect and target-tile markers",
-       "ja": "特殊勝利の進行度ゲージ演出と目標マス表示"
+       "ko": "알림·방어 팝업·주사위·결투장·증강 확인 창이 서로 겹치던 것을, 앞의 연출이 끝난 뒤에 다음 알림이 뜨도록 순서를 정리",
+       "en": "Notices, defense popups, dice, duels and augment screens overlapped; the next notice now waits until the previous effect ends",
+       "ja": "通知・防御ポップアップ・ダイス・決闘・オーグメント確認が重なっていたため、前の演出が終わってから次の通知が出るよう順序を整理"
       },
       {
-       "ko": "가운데 알림을 큰 한 마디(공격! · 카드 발동! 등)로 간결하게, 최소 1.8초는 보이게",
-       "en": "Center notices are now short stamped words (Attack!, Card!, ...) and stay at least 1.8 s",
-       "ja": "中央の通知を短い一言に簡潔化し、最低1.8秒は表示"
+       "ko": "쓸 수 있는 필살기·카드를 굴리기 버튼 아래 큰 상자로 알려 보드를 가리던 것을, 화면 위쪽 한 줄 알림(★ 필살기 사용 가능! · 카드 N장 사용 가능!)으로 개선",
+       "en": "The big box under the roll button that covered the board is now a one-line top notice (Skill ready! / N cards ready!)",
+       "ja": "使える必殺技・カードを知らせる大きな枠がロールボタンの下で盤面を隠していたため、画面上部の1行通知（★必殺技使用可能！・カードN枚使用可能！）に改善"
       },
       {
-       "ko": "쓸 수 있는 필살기·카드가 있으면 화면 위쪽에 한 줄로 알려줘요",
-       "en": "A top-of-screen line tells you when a skill or card is ready",
-       "ja": "使える必殺技・カードがあると画面上部に1行で通知"
+       "ko": "필살기 버튼이 눈에 안 띄던 것을, 쓸 수 있을 때는 금색으로 빛나며 두근거리고(못 쓸 때는 어두운 금테, 사용 후엔 회색) 효과가 한 줄로 보이게 개선",
+       "en": "Skill buttons were easy to miss; they now glow gold and pulse when usable (dark rim when not, gray when used) with a one-line effect",
+       "ja": "必殺技ボタンが目立たなかったため、使用可能時は金色に光って脈打ち（不可時は暗い金枠、使用後は灰色）、効果が1行で見えるように改善"
       },
       {
-       "ko": "템포 업 경고음이 4번 울려요",
-       "en": "The Tempo Up warning sound now plays 4 times",
-       "ja": "テンポアップの警告音が4回鳴ります"
+       "ko": "카드 대상을 고를 때 보드를 가리던 큰 안내를, 위쪽 슬림 바로 바꿔 판이 가려지지 않게 개선",
+       "en": "Card targeting no longer covers the board; guidance moved to a slim top bar",
+       "ja": "カード対象選択の大きな案内が盤面を隠していたため、上部のスリムなバーに変更"
       },
       {
-       "ko": "로비 오른쪽 위에 언어 · 공지사항 · 도감 · 설정 버튼을 모았어요 (팁 띠 삭제)",
-       "en": "Lobby top-right now holds Language, Notices, Rulebook and Settings (tips bar removed)",
-       "ja": "ロビー右上に言語・お知らせ・図鑑・設定をまとめました（ヒントバー削除）"
+       "ko": "템포 업 경고음이 한 번만 울리던 것을, 급박하게 4번 되풀이해 울리도록 개선",
+       "en": "The Tempo Up warning played once; it now repeats 4 times, rising slightly in pitch",
+       "ja": "テンポアップの警告音が1回だけだったため、切迫感が出るよう4回繰り返すように改善"
       },
       {
-       "ko": "카드 대상 선택을 보드를 가리지 않는 위쪽 바로, 리벤지 부스터 이동 연출 정리",
-       "en": "Card targeting uses a slim top bar; cleaner Revenge Booster movement",
-       "ja": "カード対象選択を盤面を隠さない上部バーに、リベンジブースターの移動演出を整理"
+       "ko": "리벤지 부스터에서 말이 우다다 달리던 것을, [부스터 로켓] → 잠깐 쉬고 [눈금 N칸] → 한 칸씩 전진하는 순서로 개선",
+       "en": "Revenge Booster pieces used to dash at once; it now shows [Booster Rocket] → pause → [N steps] → one space at a time",
+       "ja": "リベンジブースターで駒が一気に走っていたため、［ブースターロケット］→ひと呼吸→［目N］→1マスずつ前進の順に改善"
       },
       {
-       "ko": "증강 선택·판정 도구가 뜰 때 버벅이던 점을 개선하고 웹 용량을 줄였어요",
-       "en": "Smoother augment/judgment screens and a lighter web download",
-       "ja": "オーグメント選択・判定ツール表示時のカクつきを改善し、Web容量を軽量化"
+       "ko": "피격음과 프로필 피격 반응이 사출 중간에 미리 나던 것을, 말이 출발선에 떨어진 뒤에 나오도록 개선",
+       "en": "Hit sounds and profile reactions fired mid-ejection; they now play after the piece lands at the start",
+       "ja": "被弾音とプロフィールの反応が射出の途中で出ていたため、駒がスタートに落ちた後に出るよう改善"
       },
       {
-       "ko": "아이패드·폰에서 닉네임·방 코드 칸을 누르면 키패드가 바로 올라와요",
-       "en": "On iPad/phones, tapping the nickname or room-code field raises the keyboard right away",
-       "ja": "iPad・スマホでニックネーム・ルームコード欄をタップするとキーボードがすぐ出ます"
+       "ko": "방어에 성공해도 표시가 없던 것을, 방어 카드·보호막·백돌 방어막·기사의 맹세로 막으면 로그와 말 머리 위에 [방어 성공!]이 뜨도록 개선",
+       "en": "Successful defenses had no feedback; blocking now shows [Defended!] in the log and above the piece",
+       "ja": "防御成功でも表示がなかったため、防御カード・バリア・白石バリア・騎士の誓いで防ぐとログと駒の頭上に［防御成功！］が出るよう改善"
+      },
+      {
+       "ko": "중립 기물 소환 카드가 이미 판 위에 있을 때 왜 못 쓰는지 몰랐던 것을, 손패에서 흐리게 보이고 눌렀을 때 이유가 화면 가운데에 뜨도록 개선",
+       "en": "Summon cards that can't be used (a neutral piece is already out) are dimmed and tapping explains why",
+       "ja": "中立の駒がすでにいて召喚カードが使えない理由が分からなかったため、手札で薄く表示し、押すと理由が中央に出るよう改善"
+      },
+      {
+       "ko": "중립 기물이 움직이기 전 [출동!] 알림이 뜰 때 깜빡이던 것을, 제자리에 그대로 보이도록 개선",
+       "en": "Neutral pieces blinked during their [Dispatch!] notice; they now stay in place",
+       "ja": "中立の駒が［出動！］通知中に点滅していたため、その場に表示されたままになるよう改善"
+      },
+      {
+       "ko": "증강 선택 창이 뜰 때 버벅이던 것을, 창이 떠 있는 동안 뒤의 보드·말을 그리지 않게 해 부드럽게 개선 (30프레임 기기 포함)",
+       "en": "Lag when the augment window opened; the board behind is no longer drawn while it is up (smoother on 30 fps devices too)",
+       "ja": "オーグメント選択画面が出る時のカクつきを、画面表示中は背後の盤面・駒を描画しないことで改善（30fps端末も含む）"
+      },
+      {
+       "ko": "웹 용량이 컸던 것을 이미지 압축으로 게임 본체 약 4.4MB, 시작 화면 제목 그림은 장당 1.2MB → 180KB로 줄여 더 빨리 뜨도록 개선",
+       "en": "Web download trimmed: game body about 4.4 MB lighter and the title art from 1.2 MB to 180 KB per image",
+       "ja": "Web容量が大きかったため、画像圧縮でゲーム本体を約4.4MB、タイトル画像を1枚1.2MB→180KBに軽量化し、表示を高速化"
+      },
+      {
+       "ko": "아이패드·폰에서 닉네임 칸을 눌러도 키패드가 안 뜨던 것을, 기본 입력 창으로 바로 열리게 하고 [랜덤 닉네임] 버튼과 빈칸 입장 시 자동 닉네임을 넣어 개선",
+       "en": "On iPad/phones the keyboard didn't appear for the nickname field; it now opens right away, with a [Random Nickname] button and auto nickname for blank entry",
+       "ja": "iPad・スマホでニックネーム欄を押してもキーボードが出なかったため、すぐ入力画面が開くようにし、［ランダムニックネーム］ボタンと空欄入場時の自動ニックネームを追加"
+      },
+      {
+       "ko": "온라인에서 컴퓨터가 대신 두는 자리의 이름이 '컴퓨터 2'로 바뀌어 로그가 헷갈리던 것을, '이름 (자동)'으로 표시하도록 개선",
+       "en": "Seats played by the computer online were renamed 'Computer 2'; they now show 'Name (auto)'",
+       "ja": "オンラインでコンピューターが代行する席の名前が「コンピューター2」になり混乱したため、「名前（自動）」と表示するよう改善"
+      },
+      {
+       "ko": "결과 화면 투표를 [재밌었어요 / 잘 모르겠어요] 두 개로 줄이고, 잘 모르겠어요를 누르면 아쉬운 점 4가지 중에서 고르게 개선",
+       "en": "Result-screen voting simplified to [Fun / Not sure]; Not sure opens 4 follow-up reasons",
+       "ja": "結果画面の投票を［面白かった／よく分からない］の2つに絞り、よく分からないを押すと残念な点4種から選べるよう改善"
+      },
+      {
+       "ko": "이의 있음! 카드가 방어 카드로 오해되던 것을 설명에 '내 차례 시작에 사용 · 방어 카드 아님'을 적어 개선",
+       "en": "Objection! was mistaken for a defense card; its text now says 'Use at the start of your turn · not a defense card'",
+       "ja": "異議あり！が防御カードと誤解されていたため、説明に「自分のターン開始時に使用・防御カードではない」と明記"
       }
      ]
     },
