@@ -1,150 +1,192 @@
-## 불스아이 다트 보드 (v1.1): 돌아가는 다트판 그림. 두 가지로 쓴다.
-## 조준(aiming=true): 판이 돌고, 12시 방향 조준선 위를 조준점이 중심↔바깥으로 오간다. [던지기] 순간의 current_aim()을 굴림 행동에 싣는다.
-## 결과(begin + apply_time): 판이 멈추고 다트가 날아와 엔진이 정한 자리에 꽂힌다.
+## Timing and result views share the same baked 3D models; no RNG lives here.
 class_name DartBoardView
-extends Control
+extends TextureRect
 
-const SIZE := Vector2(300, 300)
-## 판이 한 바퀴 도는 시간 / 조준점이 중심→끝→중심을 오가는 시간 (초).
-const SPIN_PERIOD: float = 2.4
-const AIM_PERIOD: float = 1.3
-## 결과 연출: 다트가 날아오는 시간 / 끝.
-const FLIGHT_TIME: float = 0.45
-const TOTAL_TIME: float = 1.5
-const DARK := Color("1f1f24")
-const LIGHT := Color("f1e3c3")
-const RED := Color("e03131")
-const GREEN := Color("2f9e44")
+const SIZE := Vector2(360, 340)
+const SPIN_PERIOD := 2.4
+const AIM_PERIOD := 1.3
+const FLIGHT_TIME := 0.45
+const TOTAL_TIME := 1.5
+const FACE_Z := 0.075
+const TIP_Z := -0.14
+const SCORE_RADIUS := 2.0
+const BOARD_MODEL: PackedScene = preload("res://assets/models/darts/v02/dartboard_v02.tscn")
+const DART_MODEL: PackedScene = preload("res://assets/models/darts/v02/dart_v02.tscn")
 
-var aiming: bool = false
-var settled: bool = false
-var _spin: float = 0.0
-var _aim_radius: float = 0.0
-var _clock: float = 0.0
-var _hit_radius: float = -1.0
-var _hit_angle: float = 0.0
-var _t: float = 0.0
-var _bull: bool = false
-var _font: Font = null
+var aiming := false
+var settled := false
+var _spin := 0.0
+var _aim_radius := 0.0
+var _clock := 0.0
+var _hit_radius := -1.0
+var _hit_angle := 0.0
+var _bull := false
+var _t := 0.0
+var _viewport: SubViewport
+var _board: Node3D
+var _dart: Node3D
+var _camera: Camera3D
+var _reticle: Node3D
 
 
 func _init() -> void:
 	custom_minimum_size = SIZE
 	size = SIZE
+	expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_process(false)
 
 
 func _ready() -> void:
-	set_process(aiming)  # 엔진이 _ready에서 _process를 다시 켜므로, 조준 중이 아니면 매 프레임 그리지 않게 끈다
+	_build_scene()
+	visibility_changed.connect(_sync_rendering)
+	_present()
+	_sync_rendering()
 
 
-## 조준 화면을 켜고 끈다.
 func set_aiming(on: bool) -> void:
 	aiming = on
 	_hit_radius = -1.0
-	set_process(on)
-	queue_redraw()
+	settled = false
+	if is_node_ready():
+		_present()
+		_sync_rendering()
 
 
-## 지금 던지면 맞을 자리: [중심에서의 거리 0~1, 판 기준 각도 0~1].
+## Fixed twelve-o'clock cursor against a clockwise spinning board.
 func current_aim() -> Array:
 	return [_aim_radius, fposmod(-_spin, 1.0)]
 
 
 func _process(delta: float) -> void:
-	if not aiming:
-		return
 	_clock += delta
 	_spin = fposmod(_clock / SPIN_PERIOD, 1.0)
-	_aim_radius = 0.5 - 0.5 * cos(_clock / AIM_PERIOD * TAU)  # 0(중심) ~ 1(끝)을 부드럽게 오간다
-	queue_redraw()
+	_aim_radius = 0.5 - 0.5 * cos(_clock / AIM_PERIOD * TAU)
+	_present()
 
 
-## 결과 연출 시작: 판을 멈추고 엔진이 정한 자리에 다트를 꽂는다.
 func begin(details: Dictionary) -> void:
-	set_aiming(false)
+	aiming = false
 	_spin = 0.0
 	_hit_radius = float(details.get("radius", 0.5))
 	_hit_angle = float(details.get("angle", 0.0))
 	_bull = bool(details.get("bull", false))
 	settled = false
 	_t = 0.0
-	queue_redraw()
+	if is_node_ready():
+		_present()
+		_sync_rendering()
 
 
 func apply_time(t: float) -> void:
-	_t = t
-	if t >= FLIGHT_TIME:
-		settled = true
-	queue_redraw()
+	_t = maxf(t, 0.0)
+	settled = _t >= FLIGHT_TIME
+	if is_node_ready():
+		_present()
+		_request_frame()
 
 
 static func caption(details: Dictionary, steps: int) -> String:
 	return ToolDarts.hit_text(details, steps)
 
 
-func _board_point(radius: float, angle: float) -> Vector2:
-	var center: Vector2 = size * 0.5
-	var r: float = minf(size.x, size.y) * 0.46
-	var theta: float = (angle + _spin) * TAU - PI * 0.5  # 0 = 12시, 시계 방향
-	return center + Vector2(cos(theta), sin(theta)) * radius * r
+static func hit_point(radius: float, angle: float, z: float = TIP_Z) -> Vector3:
+	return Vector3(sin(angle * TAU) * radius * SCORE_RADIUS, cos(angle * TAU) * radius * SCORE_RADIUS, z)
 
 
-func _draw() -> void:
-	if _font == null:
-		_font = get_theme_default_font()
-	var center: Vector2 = size * 0.5
-	var r: float = minf(size.x, size.y) * 0.46
-	draw_circle(center, r * 1.06, Color("101010"))
-	var wedges: int = ToolDarts.WEDGES.size()
-	for index: int in wedges:
-		var a0: float = (float(index) / wedges + _spin) * TAU - PI * 0.5
-		var a1: float = (float(index + 1) / wedges + _spin) * TAU - PI * 0.5
-		var base: Color = DARK if index % 2 == 0 else LIGHT
-		var ring_color: Color = RED if index % 2 == 0 else GREEN
-		_wedge(center, 0.0, 1.0 * r, a0, a1, base)
-		_wedge(center, 0.45 * r, 0.56 * r, a0, a1, ring_color)  # 트리플
-		_wedge(center, 0.84 * r, 1.0 * r, a0, a1, ring_color)  # 더블
-		var mid: float = (a0 + a1) * 0.5
-		var label_at: Vector2 = center + Vector2(cos(mid), sin(mid)) * r * 0.70 + Vector2(-6, 7)
-		draw_string_outline(_font, label_at, str(ToolDarts.WEDGES[index]), HORIZONTAL_ALIGNMENT_LEFT, -1, 20, 5, Color.BLACK)
-		draw_string(_font, label_at, str(ToolDarts.WEDGES[index]), HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color.WHITE)
-	draw_circle(center, 0.08 * r, RED)
-	draw_circle(center, 0.04 * r, GREEN)
-	if aiming:
-		# 12시 방향 조준선 + 오가는 조준점
-		var top: Vector2 = center + Vector2(0, -r * 1.04)
-		draw_line(center, top, Color(1, 1, 0.6, 0.35), 2.0, true)
-		var aim_point: Vector2 = center + Vector2(0, -r * _aim_radius)
-		draw_arc(aim_point, 14.0, 0.0, TAU, 24, Color("ffe066"), 3.0, true)
-		draw_line(aim_point + Vector2(-20, 0), aim_point + Vector2(20, 0), Color("ffe066"), 2.0)
-		draw_line(aim_point + Vector2(0, -20), aim_point + Vector2(0, 20), Color("ffe066"), 2.0)
-	if _hit_radius >= 0.0:
-		var spot: Vector2 = _board_point(_hit_radius, _hit_angle)
-		var fly: float = clampf(_t / FLIGHT_TIME, 0.0, 1.0)
-		var from: Vector2 = Vector2(size.x * 1.2, -size.y * 0.3)
-		var dart: Vector2 = from.lerp(spot, 1.0 - pow(1.0 - fly, 3.0))
-		var tail: Vector2 = dart + (from - spot).normalized() * 46.0
-		draw_line(dart, tail, Color("dee2e6"), 4.0, true)
-		draw_colored_polygon(PackedVector2Array([tail, tail + Vector2(14, -10), tail + Vector2(18, 8)]), Color("ff922b"))
-		draw_circle(dart, 4.0, Color("adb5bd"))
-		if fly >= 1.0:
-			var ring: float = clampf((_t - FLIGHT_TIME) / 0.3, 0.0, 1.0)
-			draw_arc(spot, lerpf(6.0, 30.0, ring), 0.0, TAU, 24, Color(1, 0.9, 0.3, 1.0 - ring), 3.0, true)
-			if _bull:
-				draw_arc(center, r * lerpf(0.1, 1.1, ring), 0.0, TAU, 48, Color(1, 0.85, 0.2, 1.0 - ring), 5.0, true)
+func _build_scene() -> void:
+	_viewport = SubViewport.new()
+	_viewport.name = "DartsViewport"
+	_viewport.size = Vector2i(SIZE * 2.0)
+	_viewport.transparent_bg = true
+	_viewport.own_world_3d = true
+	_viewport.msaa_3d = Viewport.MSAA_4X
+	_viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	add_child(_viewport)
+	texture = _viewport.get_texture()
+	_board = BOARD_MODEL.instantiate()
+	_board.name = "DartboardModel"
+	_viewport.add_child(_board)
+	_dart = DART_MODEL.instantiate()
+	_dart.name = "EmbeddedDart"
+	_viewport.add_child(_dart)
+	_camera = Camera3D.new()
+	_camera.projection = Camera3D.PROJECTION_ORTHOGONAL
+	_camera.size = 5.65
+	_camera.current = true
+	_viewport.add_child(_camera)
+	_reticle = Node3D.new()
+	_reticle.name = "AimCursor"
+	_viewport.add_child(_reticle)
+	var ink := _cursor_material(Color("101426"))
+	var cream := _cursor_material(Color("fff4d3"))
+	for axis: int in 2:
+		_cursor_bar(Vector2(0.32, 0.045) if axis == 0 else Vector2(0.045, 0.32), ink, 0.0)
+		_cursor_bar(Vector2(0.27, 0.018) if axis == 0 else Vector2(0.018, 0.27), cream, 0.005)
+	var ring := MeshInstance3D.new()
+	var torus := TorusMesh.new()
+	torus.inner_radius = 0.084
+	torus.outer_radius = 0.106
+	torus.rings = 24
+	torus.ring_segments = 8
+	ring.mesh = torus
+	ring.rotation.x = PI / 2.0
+	ring.material_override = cream
+	_reticle.add_child(ring)
 
 
-func _wedge(center: Vector2, inner: float, outer: float, a0: float, a1: float, color: Color) -> void:
-	var points := PackedVector2Array()
-	var steps: int = 6
-	for i: int in steps + 1:
-		var a: float = lerpf(a0, a1, float(i) / steps)
-		points.append(center + Vector2(cos(a), sin(a)) * outer)
-	for i: int in range(steps, -1, -1):
-		var a: float = lerpf(a0, a1, float(i) / steps)
-		points.append(center + Vector2(cos(a), sin(a)) * inner)
-	if inner <= 0.0:
-		points = PackedVector2Array([center]) + points.slice(0, steps + 1)
-	draw_colored_polygon(points, color)
+func _cursor_material(color: Color) -> StandardMaterial3D:
+	var material := StandardMaterial3D.new()
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.albedo_color = color
+	return material
+
+
+func _cursor_bar(dimensions: Vector2, material: Material, z: float) -> void:
+	var bar := MeshInstance3D.new()
+	var quad := QuadMesh.new()
+	quad.size = dimensions
+	bar.mesh = quad
+	bar.material_override = material
+	bar.position.z = z
+	_reticle.add_child(bar)
+
+
+func _present() -> void:
+	_board.rotation.z = -_spin * TAU if aiming else 0.0
+	_reticle.visible = aiming
+	_reticle.position = Vector3(0.0, _aim_radius * SCORE_RADIUS, 0.22)
+	_dart.visible = not aiming and _hit_radius >= 0.0
+	var reveal := smoothstep(0.0, 0.75, _t) if not aiming else 0.0
+	_camera.position = Vector3(5.0 * reveal, 1.6 * reveal, 8.5)
+	_camera.look_at(Vector3.ZERO, Vector3.UP)
+	if _dart.visible:
+		var flight := clampf(_t / FLIGHT_TIME, 0.0, 1.0)
+		_dart.position = hit_point(_hit_radius, _hit_angle) + Vector3(1.1, 1.3, 5.0) * (1.0 - pow(flight, 3.0))
+		var age := maxf(_t - FLIGHT_TIME, 0.0)
+		var wobble := sin(age * 42.0) * exp(-age * 12.0) * 0.045 if settled else 0.0
+		# Wobble pivots about the tip; the authoritative contact point stays fixed.
+		_dart.rotation = Vector3(deg_to_rad(-8.0) + wobble, deg_to_rad(8.0) + wobble, 0.0)
+
+
+func _sync_rendering() -> void:
+	var running := aiming and is_visible_in_tree()
+	set_process(running)
+	if _viewport != null:
+		_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS if running else SubViewport.UPDATE_DISABLED
+		if is_visible_in_tree() and not running:
+			_request_frame()
+
+
+func _request_frame() -> void:
+	if is_visible_in_tree() and not aiming:
+		_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
+
+
+func _exit_tree() -> void:
+	set_process(false)
+	if _viewport != null:
+		_viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	# Detach the canvas consumer before its child render target is destroyed.
+	texture = null

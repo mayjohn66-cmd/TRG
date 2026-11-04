@@ -48,6 +48,10 @@ static func candidates(definition: AugmentDef) -> Array[String]:
 		GameEnums.AugmentCategory.PAWN_EVOLUTION:
 			if not definition.units.is_empty():
 				var subtype: int = PawnCatalog.sub_type_of(definition.payload, definition.units[0])
+				if subtype == GameEnums.PawnSubType.MOB_KYUI:
+					paths.append(ROOT + "pawns/MOB_KYUI_V01.png")
+				if subtype == GameEnums.PawnSubType.ODD_MELON:
+					paths.append(ROOT + "pawns/ODD_MELON_V01.png")
 				paths.append(ROOT + "pawns/%s.png" % GameEnums.PawnSubType.keys()[subtype])
 				if definition.payload == GameEnums.PawnKind.YUT:
 					paths.append(ROOT + "pawns/YUT.png")

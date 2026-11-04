@@ -560,6 +560,8 @@ func spawn_npc(tile: int, behavior: GameEnums.NpcBehavior, summoner_id: int, dis
 	npc.place_at(tile)
 	npc.behavior = behavior
 	npc.display_id = display_id
+	if display_id == NpcSweep.BEAM_ID:
+		npc.rounds_left = NpcSweep.BEAM_ROUNDS
 	npcs.append(npc)
 	npc_spawned.emit(npc.entity_id, tile)
 	return npc

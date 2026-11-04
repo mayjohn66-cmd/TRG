@@ -99,9 +99,12 @@ static func burn(state: GameState, npc: NeutralNPC, direction: int, steps: int) 
 			(result["burned"] as Array[int]).append(tile)
 			node.clear_attachments()
 		for victim: PlayerPawn in catchable_at(state, tile):
-			for member: PlayerPawn in victim.stack_members():
-				(result["ejected"] as Array[int]).append(member.entity_id)
-			state.send_to_start(victim, npc.owner_id)
+			var members:Array[PlayerPawn]=victim.stack_members()
+			state.send_to_start(victim,npc.owner_id)
+			# Shields and amnesia can keep a target alive; report only real ejections.
+			for member:PlayerPawn in members:
+				if not member.has_left_start and not member.is_finished:
+					(result["ejected"] as Array[int]).append(member.entity_id)
 	return result
 
 

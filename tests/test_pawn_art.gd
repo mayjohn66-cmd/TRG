@@ -20,7 +20,8 @@ func test_all_catalog_states_have_distinct_illustrations() -> void:
 				continue
 			subtypes[subtype] = true
 			var key: String = GameEnums.PawnSubType.keys()[subtype]
-			_check_art(PawnArt.sprite(pawn), "YUT.png" if kind == GameEnums.PawnKind.YUT else key + ".png", sources)
+			var filename: String = {"MOB_KYUI": "MOB_KYUI_V01.png", "ODD_MELON": "ODD_MELON_V01.png"}.get(key, "YUT.png" if kind == GameEnums.PawnKind.YUT else key + ".png")
+			_check_art(PawnArt.sprite(pawn), filename, sources)
 			if kind == GameEnums.PawnKind.SHOGI:
 				pawn.promoted = true
 				_check_art(PawnArt.sprite(pawn), key + "_NARI.png", sources)

@@ -17,7 +17,7 @@ dest_files=["res://.godot/imported/magic_contact_v01.png-d35ff3bc1b809ce8f2c159a
 
 compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.9
+compress/lossy_quality=0.85
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

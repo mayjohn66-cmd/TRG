@@ -662,7 +662,7 @@ func test_capture_opens_a_counter_offer_and_mirror_force_ejects_the_attacker() -
 	_dispose(manager)
 
 
-## 2026-10-30 제보: 방어하자마자 투기장의 지배자 달성. 방어 카드의 되갚기 사출(거울의 힘·우노 리버스)은 처치가 아니다:
+## 2026-10-30 제보: 방어하자마자 기물 슬레이어 달성. 방어 카드의 되갚기 사출(거울의 힘·우노 리버스)은 처치가 아니다:
 ## 방어한 사람의 처치·하극상, 되갚기로 쫓겨난 공격자의 사출(동네북) 기록이 오르지 않는다. 막힌 공격의 기록도 모두 되돌린다.
 func test_defending_never_counts_as_a_kill_for_special_victory() -> void:
 	for card_id: StringName in [&"CNT_02"]:
@@ -681,7 +681,7 @@ func test_defending_never_counts_as_a_kill_for_special_victory() -> void:
 		check_eq(state.stat(2, VictoryLaw.EJECTED), 0, "%s: 막힌 공격의 사출도 되돌린다" % card_id)
 		check_eq(state.stat(2, VictoryLaw.KILLS), goal - 1, "%s: 방어의 되갚기 사출은 방어한 사람의 처치가 아니다" % card_id)
 		check_eq(state.stat(1, VictoryLaw.EJECTED), 0, "%s: 되갚기로 쫓겨난 공격자도 동네북 기록이 오르지 않는다" % card_id)
-		check(not state.is_graduated(2), "%s: 방어했다고 투기장의 지배자를 달성하지 않는다" % card_id)
+		check(not state.is_graduated(2), "%s: 방어했다고 기물 슬레이어를 달성하지 않는다" % card_id)
 		check(not state.counter_retaliation, "%s: 되갚기 표시는 끝나면 내린다" % card_id)
 		_dispose(manager)
 
@@ -712,7 +712,7 @@ func test_graduation_keeps_the_real_board_and_the_achieved_law() -> void:
 	check_eq(int(record["finished"]), 0, "졸업 직전 실제 완주 수 (철수 뒤 '완주 4/4'가 아니다)")
 	var first: Dictionary = (record["pawns"] as Array)[0]
 	check(int(first["tile"]) == 5 and bool(first["started"]) and not bool(first["finished"]), "졸업 직전 말 위치")
-	check_eq(record["law"], {"id": "LAW_01", "name":"투기장의 지배자", "value": 10, "goal": 10}, "달성한 법전과 수치")
+	check_eq(record["law"], {"id": "LAW_01", "name":"기물 슬레이어", "value": 10, "goal": 10}, "달성한 법전과 수치")
 	check(state.get_pawn(11).is_finished, "보드에서는 철수(완주 처리)")
 	_dispose(manager)
 

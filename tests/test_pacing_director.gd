@@ -103,7 +103,7 @@ func test_cream_boosts_a_law_that_would_win_right_away() -> void:
 	state.match_rules["laws"] = true
 	state.match_rules["law_pool"] = MatchRules.EASY_LAWS.duplicate()
 	var before: float = AugmentRegistry.effective_weight(arena, state, 1)
-	check(before > 0.0, "법전을 켠 크림: 투기장의 지배자는 나온다")
+	check(before > 0.0, "법전을 켠 크림: 기물 슬레이어는 나온다")
 	check(AugmentRegistry.effective_weight(AugmentRegistry.get_def(&"AUG_LAW_03"), state, 1) == 0.0, "크림: 다른 법전은 안 나온다")
 	state.law_stats[1] = {VictoryLaw.KILLS: (LawRegistry.create("LAW_01") as VictoryLaw).goal()}
 	check_eq(AugmentRegistry.effective_weight(arena, state, 1), before * PacingDirector.CREAM_WINNING_LAW_FACTOR, "고르면 바로 이기는 법전은 가중치 대폭 상승")

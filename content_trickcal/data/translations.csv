@@ -813,7 +813,7 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 기본 주사위,Standard Dice,基本サイコロ
 기본 주사위로 시작해 증강으로 [b]윷·룰렛·홀덤·슬롯…[/b]으로 바꿔요.,"Start with the Standard Dice and swap to [b]Yut, Roulette, Hold'em, Slots…[/b] via Augments.",基本サイコロで始まり、増強で [b]ユッ・ルーレット・ホールデム・スロット…[/b] に変えられます。
 "기본: 컴퓨터가 1등을 먼저 견제하고, 방금 잡힌 사람은 잠깐 봐줘요",Normal: the computer targets the leader first and goes easy on whoever was just captured,普通: コンピューターは1位を優先して狙い、捕まったばかりの人は少し見逃します
-기본값으로,Reset,初期値に戻す
+기본값으로,Reset to Default,初期値に戻す
 꼴찌 ↔ 선두 교환,Last ↔ Leader swap,最下位 ↔ 先頭 交換
 꼴찌와 자리 교환,Swap with last place,最下位と場所交換
 꾹 눌러 파워 게이지를 채우고 손을 떼면 굴러갑니다 (스페이스 키도 동일),"Hold to fill the power gauge, release to roll (Space too)",長押しでパワーゲージを溜め、離すと転がります (スペースキーも同じ)
@@ -1625,7 +1625,7 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 중계 서버에 응답을 보내지 못했습니다. 인터넷 연결을 확인하고 다시 시도해 주세요.,Couldn't reply to the relay server. Check your internet and try again.,中継サーバーに応答を送れませんでした。インターネット接続を確認して、もう一度お試しください。
 중립 NPC 소환형,Neutral NPC Summon,中立NPC召喚型
 중립 NPC 페이즈,Neutral NPC phase,中立NPCフェーズ
-중립 기물,Neutral NPC,中立駒
+중립 기물,Neutral piece,中立の駒
 "중립 기물 카드 %d장 획득, 다른 플레이어에게서 카드 %d장을 빼앗았습니다","Got %d Neutral NPC cards, stole %d cards from others",中立駒カードを%d枚獲得し、他のプレイヤーからカードを%d枚奪いました
 중립 기물이 %d번 타일에 소환되었습니다. 라운드가 끝나면 가장 가까운 적 말 하나를 처치하고 사라집니다.,A Neutral NPC was summoned on tile %d. At round end it KOs the nearest enemy pawn and vanishes.,中立駒が%d番マスに召喚されました。ラウンドが終わると一番近い敵の駒を1個撃破して消えます。
 중앙 법전은 4칸! 새 교칙이 들어오면 가장 오래된 교칙이 밀려나요.,The Codex holds 4! A new Rule pushes out the oldest one.,中央法典は4枠！ 新しい校則が入ると一番古い校則が押し出されます。
@@ -2123,7 +2123,6 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 스피드전: 템포 업이 4·8·12라운드에 오르고 리벤지 부스터가 +2칸 커져 10~12라운드 안에 결판이 납니다.,"Speed Match: Tempo Up rises at rounds 4, 8 and 12 and the Revenge Booster gets +2, so games end within 10-12 rounds.",スピード戦: テンポアップが4・8・12ラウンドで上がり、リベンジブースターが+2マス大きくなり、10〜12ラウンドで決着します。
 기본 템포,Normal Tempo,基本テンポ
 스피드전,Speed Match,スピード戦
-기본값으로,Reset to Default,初期値に戻す
 [함정] %s (설치: %s),[Trap] %s (set by %s),[罠] %s (設置: %s)
 [? 수상한 함정] (설치: %s),[? Suspicious Trap] (set by %s),[? 怪しい罠] (設置: %s)
 [? 수상한 함정],[? Suspicious Trap],[? 怪しい罠]
@@ -2243,7 +2242,6 @@ v%s · 비공식 팬게임 (원작사와 무관한 비영리 무료 배포물),v
 ◆ 모두가 고른 뒤 발동: 모든 플레이어가 고른 증강을 버리고 새 3장 중에서 다시 고른다 (라운드당 1회),◆ Triggers after everyone picks: all players discard their pick and choose again from 3 new augments (once per round),◆ 全員が選んだ後に発動: 全プレイヤーが選んだ増強を捨て、新しい3枚から選び直す（1ラウンド1回）
 아군 말 업기: [업기 (하나로 합체)] 또는 [그냥 두기 (개별 유지)]를 고르세요. (시간이 지나면 자동으로 업기),Stacking with your pawn: pick [Stack (merge into one)] or [Keep separate]. (Time out = auto-stack),味方の駒とおんぶ: [おんぶ (1つに合体)] か [そのまま (個別のまま)] を選んでください。(時間切れで自動的におんぶ)
 아군 말 합류 - 업기,Join Your Pawn - Stack,味方の駒と合流 - おんぶ
-처치 시 재굴림 +1,Reroll +1 on KO,撃破時リロール +1
 한 번 더!,One More!,もう1回！
 이번 차례에 주사위를 한 번 더 굴린다,Roll the dice once more this turn,このターンにダイスをもう1回振る
 ◆ 패시브: 처치 시 재굴림 +1\n◆ [1회] 한 번 더!: 이번 차례에 주사위를 한 번 더 굴린다\n※ 이미 가진 기물은 받을 수 없습니다,◆ Passive: Reroll +1 on KO\n◆ [Once] One More!: roll the dice once more this turn\n※ You can't get a piece you already own,◆ パッシブ: 撃破時、振り直し+1\n◆ [1回] もう1回！: このターンにダイスをもう1回振る\n※ 既に所持している駒は獲得できません
@@ -2584,7 +2582,6 @@ P%d의 %d번 말 수배! 잡으면 +%d칸,P%d's pawn %d is WANTED! Capture it fo
 어라라?!,Uh-oh?!,あれれ？！
 중립 기물(%s)이 이미 판 위에 있습니다. 소환 카드는 중립 기물이 사라진 뒤에 쓸 수 있어요,A neutral piece (%s) is already on the board. Summon cards can be used after it disappears,中立の駒(%s)がすでに盤上にあります。召喚カードはその駒が消えてから使えます
 %s %d번 칸,%s at tile %d,%s %d番マス
-중립 기물,Neutral piece,中立の駒
 -- 중립 기물: %s --,-- Neutral pieces: %s --,-- 中立の駒: %s --
 (베루·사리·메죵을 모두 손패에 모으면 무언가 일어날지도...?),"(Gather Beru, Sari and Mejong in your hand together and something might happen...?)",(ベル・サリ・メジョンを全員手札に集めると、何かが起こるかも…？)
 [방해령 메죵] P%d의 다음 이동 눈금 -%d,[Meddling Spirit Mejong] P%d's next roll -%d,[妨害霊メジョン] P%dの次の移動目盛り-%d
@@ -2630,3 +2627,71 @@ P%d의 %d번 말 수배! 잡으면 +%d칸,P%d's pawn %d is WANTED! Capture it fo
 공격 방어,Attack Guard,攻撃ガード
 함정 방어,Trap Guard,罠ガード
 만능 방어,All-round Guard,オールガード
+  (가장 오래된 [%s] %s이(가) 밀려났습니다),  (oldest [%s] %s was pushed out),  (最も古い [%s] %s が押し出されました)
+[방어] 잡기·공격 카드 1회 회피,[Defense] Dodge 1 capture or attack card,[防御] 捕獲・攻撃カードを1回回避
+[법전] [%s] %s 작동 (%s)%s,[Codex] [%s] %s triggered (%s)%s,[法典] [%s] %s 作動 (%s)%s
+[법전] 교칙 제정: [%s] %s,[Codex] Rule enacted: [%s] %s,[法典] 校則制定: [%s] %s
+[법전] 교칙 파기: [%s] %s,[Codex] Rule repealed: [%s] %s,[法典] 校則廃止: [%s] %s
+\n(가장 오래된 [%s] %s이(가) 밀려났습니다),\n(oldest [%s] %s was pushed out),\n(最も古い [%s] %s が押し出されました)
+가즈아!,Let's gooo!,行っけー！
+공격 1회 회피,Dodge 1 attack,攻撃を1回回避
+그게 최선?,That's your best?,それが精一杯？
+나이스!,Nice!,ナイス！
+말도 안 돼!,No way!,ありえない！
+사료스탕스(▶3~6칸),Feed (▶3~6),サリョスタンス(▶3~6マス)
+와구와구(◀3~6칸),Chomp (◀3~6),パクパク(◀3~6マス)
+이게 억까지!,So rigged!,これぞ理不尽！
+잘 부탁해요!,Nice to meet you!,よろしくお願いします！
+푸하하!,Pfft haha!,ぷはは！
+[법전 수집] 새 도장: %s (%d/8),[Law Collection] New stamp: %s (%d/8),[法典コレクション] 新スタンプ: %s (%d/8)
+법전 수집 %d/8,Laws Collected %d/8,法典収集 %d/8
+%s (수집: %d/8),%s (Collected: %d/8),%s（収集: %d/8）
+법전 %d/8,Codex %d/8,法典 %d/8
+[중반 법전] 아무도 법전을 고르지 않아 [%s] %s이(가) 자동 제정되었습니다,"[Midgame Codex] Nobody picked a Codex law, so [%s] %s was enacted automatically",[中盤法典] 誰も法典を選ばなかったため [%s] %s が自動制定されました
+오이를 밟았다! %s 획득,Stepped on a cucumber! Got %s,キュウリを踏んだ！%sを獲得
+지금 칸에 오이 · 밟은 적에게 먹을 수 있는 [오이 카드],Cucumber on this tile · enemies who land on it get an edible [Cucumber Card],今のマスにキュウリ・踏んだ敵に食べられる[キュウリカード]
+캐릭터 음성,Character Voice,キャラクターボイス
+조건 달성!,CONDITION MET!,条件達成！
+한 번 누르면 굴러갑니다 (스페이스 키도 동일),Press once to roll (Space also works),1回押すと振ります（スペースキーも対応）
+롤링 양성자빔 %d칸 이동 · 말 %d개/설치물 %d개 소각 · %s,Rolling Proton Beam: %d tiles · %d pawns/%d installations burned · %s,ローリング陽子ビーム：%dマス移動・駒%d個／設置物%d個を焼却・%s
+소멸,Expired,消滅
+남은 %d라운드,%d rounds left,残り%dラウンド
+함정·설치물 %d개 동시 유지 · 무한의 함정 완성!,Maintain %d traps/installations at once · Unlimited Trap Works complete!,罠・設置物%d個を同時維持・無限の罠完成！
+말 %d개로 보드연성진을 완성하고 지켜 냈다!,Completed and maintained the Board Alchemy Circle with %d pawns!,駒%d個で盤面錬成陣を完成させ、守り抜いた！
+한 턴에 %d연속 굴림 · 다이스 소울 완성!,%d consecutive rolls in one turn · Dice Soul complete!,1ターンに%d回連続で振った・ダイスソウル完成！
+롤링 양성자빔 · 남은 %d라운드,Rolling Proton Beam · %d rounds left,ローリング陽子ビーム・残り%dラウンド
+라운드 끝마다 무작위 방향 3~5칸 · 내 말 포함 말과 설치물 소각,"Moves 3-5 tiles in a random direction at round end · burns all pawns and installations, including yours",ラウンド終了ごとにランダム方向へ3～5マス・自分の駒を含む駒と設置物を焼却
+3회 이동 후 소멸 · 소환: P%d,Expires after 3 moves · summoned by P%d,3回移動後に消滅・召喚者：P%d
+설치물,Installations,設置物
+적이 이 칸에 멈추면 오이 카드 1장을 받고 오이는 사라집니다,An enemy stopping here receives 1 Cucumber Card; the planted cucumber disappears,敵がこのマスで止まるとキュウリカードを1枚受け取り、植えたキュウリは消える
+다음 강화 성공 %d%% · 실패하면 강화 대상 파괴 · 턴 종료,Next enhancement: %d%% success · failure destroys the target and ends the turn,次の強化成功率%d%%・失敗すると強化対象が破壊されターン終了
+강화 중...,Enhancing...,強化中…
+핀볼\n발사 준비,PREPARE\nPINBALL,ピンボール\n発射準備
+레버\n당기기,PULL\nLEVER,レバーを\n引く
+%d번 타일에 오이 설치,Plant a cucumber on tile %d,%d番マスにキュウリ設置
+다시 한 판!,PLAY AGAIN!,もう1戦！
+내 기록 복사,Copy My Record,自分の記録をコピー
+복사했어요!,Copied!,コピーしました！
+후기 남기기,Leave Feedback,感想を送る
+이번 판 어땠나요?,How was this match?,今回の対戦はいかがでしたか？
+[카드] P%d [%s] 사용,[Card] P%d used [%s],[カード] P%dが[%s]を使用
+%s +%d 강화 성공!,%s +%d enhancement succeeded!,%s +%d 強化成功！
+[강화 망치] P%d 강화 실패! %s 파괴 (턴 종료),[Enhancement Hammer] P%d failed! %s destroyed (turn ends),[強化ハンマー] P%dが強化失敗！%s破壊（ターン終了）
+%s 강화 실패! 파괴 · 턴 종료,%s enhancement failed! Destroyed · turn ends,%s 強化失敗！破壊・ターン終了
+%s 파괴 · 턴 종료,%s destroyed · turn ends,%s破壊・ターン終了
+오이,Cucumber,キュウリ
+플레이어를 선택해 기록을 확인하세요,Select a player to view their record,プレイヤーを選んで記録を確認
+DEATHS / 데스,DEATHS,DEATHS／撃破された回数
+이번 판 실제 처치가 확정된 누적 횟수,Total confirmed eliminations in this match,今回の対戦で確定した撃破の累計
+이번 판 기물이 사출된 누적 횟수,Total pawn ejections in this match,今回の対戦で駒が場外へ出された累計
+PROGRESS / 진행률,PROGRESS,PROGRESS／進行度
+%s 기록 보기,View %s's Record,%sの記録を見る
+남은 %d칸,%d tiles remaining,残り%dマス
+어떤 부분,Which part,どの部分
+어떤 부분이\n아쉬웠나요?,What could\nbe better?,どの部分が\n惜しかったですか？
+이번 판\n어땠나요?,How was\nthis match?,今回の対戦は\nいかがでしたか？
+오늘의 주식은,Today's stock is,今日の株価は
+대폭등! (Bull Market) · %d칸 전진,Bull Market! · Advance %d tiles,大暴騰！(Bull Market)・%dマス前進
+대폭락! (Bear Market)\n이동 없이 선두 말 사출,Bear Market!\nNo movement; your leading pawn is ejected,大暴落！(Bear Market)\n移動せず先頭の駒を場外へ
+대폭등!,BULL MARKET!,大暴騰！
+대폭락!,BEAR MARKET!,大暴落！

@@ -30,6 +30,8 @@ static var pacing_enabled: bool = true
 static var master_volume: float = 1.0
 static var sfx_volume: float = 0.8
 static var bgm_volume: float = 0.6
+static var voice_volume: float = 0.8
+static var voice_muted: bool = false
 static var audio_muted: bool = false
 ## 효과음·배경음악을 따로 음소거한다 (설정 화면의 이름 옆 버튼). audio_muted는 위쪽 [소리] 버튼의 전체 음소거다.
 static var sfx_muted: bool = false
@@ -66,6 +68,8 @@ static func save_settings() -> void:
 	config.set_value("game", "view_mode", view_mode)
 	config.set_value("game", "sfx_volume", sfx_volume)
 	config.set_value("game", "bgm_volume", bgm_volume)
+	config.set_value("game", "voice_volume", voice_volume)
+	config.set_value("game", "voice_muted", voice_muted)
 	config.set_value("game", "audio_muted", audio_muted)
 	config.set_value("game", "sfx_muted", sfx_muted)
 	config.set_value("game", "bgm_muted", bgm_muted)
@@ -89,8 +93,10 @@ static func load_settings() -> void:
 		view_mode = 0  # 설정 화면에서 시점 선택을 없앴다: 저장값과 무관하게 탑뷰
 		sfx_volume = clampf(float(config.get_value("game", "sfx_volume", 0.8)), 0.0, 1.0)
 		bgm_volume = clampf(float(config.get_value("game", "bgm_volume", 0.6)), 0.0, 1.0)
+		voice_volume = clampf(float(config.get_value("game", "voice_volume", sfx_volume)), 0.0, 1.0)
 		audio_muted = bool(config.get_value("game", "audio_muted", false))
 		sfx_muted = bool(config.get_value("game", "sfx_muted", false))
+		voice_muted = bool(config.get_value("game", "voice_muted", sfx_muted))
 		bgm_muted = bool(config.get_value("game", "bgm_muted", false))
 		pace_scale = PACE_NORMAL  # 연출 속도 선택을 없앴다: 저장값과 무관하게 보통
 		avatar_id = StringName(str(config.get_value("game", "avatar", "avatar_01")))
@@ -111,6 +117,8 @@ static func reset_settings() -> void:
 	master_volume = 1.0
 	sfx_volume = 0.8
 	bgm_volume = 0.6
+	voice_volume = 0.8
+	voice_muted = false
 	audio_muted = false
 	sfx_muted = false
 	bgm_muted = false

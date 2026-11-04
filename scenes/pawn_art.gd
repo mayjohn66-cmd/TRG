@@ -11,6 +11,10 @@ static func candidates(pawn: PlayerPawn) -> Array[String]:
 	if pawn.kind == GameEnums.PawnKind.BASIC:
 		return [ROOT + "PAWN_DEFAULT.png"]
 	var subtype: String = GameEnums.PawnSubType.keys()[pawn.sub_type()]
+	if subtype == "MOB_KYUI":
+		paths.append(ROOT + "MOB_KYUI_V01.png")  # Cuee character sprite; keep the original cucumber fallback intact.
+	if subtype == "ODD_MELON":
+		paths.append(ROOT + "ODD_MELON_V01.png")
 	if pawn.is_promoted_shogi():
 		paths.append(ROOT + subtype + "_NARI.png")
 		paths.append(ROOT + "SHOGI_NARI.png")

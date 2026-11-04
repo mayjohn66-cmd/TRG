@@ -68,7 +68,7 @@ func test_stock_chart_events_and_price_walk() -> void:
 				normals += 1
 				total += result.steps
 				check(result.steps >= ToolStockChart.MIN_PRICE and result.steps <= ToolStockChart.MAX_PRICE and result.steps == tool.price, "보통: 지금 주가만큼 (1~12)")
-		check((result.details["history"] as Array).size() <= ToolStockChart.HISTORY_SIZE, "차트는 최근 7개")
+		check((result.details["history"] as Array).size() <= 4, "차트는 최신 4개까지만 보관")
 	check(limit_ups > 150 and limit_ups < 340, "상한가 약 6%% (%d/4000)" % limit_ups)
 	check(crashes > 150 and crashes < 340, "상장폐지 약 6%% (%d/4000)" % crashes)
 	var mean: float = float(total) / float(normals)
@@ -175,7 +175,7 @@ func test_weird_melon_eats_traps_and_grows_to_giant() -> void:
 
 # ---- 기물: 모브 큐이 ----
 
-func test_mob_kyui_cucumber_gives_a_dead_card_and_trap_cards_recharge() -> void:
+func test_mob_kyui_cucumber_is_edible_and_trap_cards_recharge() -> void:
 	var manager := _new_manager()
 	var state: GameState = manager.state
 	var roller: int = manager.current_player_id()
@@ -191,7 +191,7 @@ func test_mob_kyui_cucumber_gives_a_dead_card_and_trap_cards_recharge() -> void:
 		if attachment.attachment_id == "TRP_CUKE":
 			cucumber = attachment
 	check(cucumber != null and kyui.skill_used, "오이가 깔리고 필살기를 썼다")
-	# 적이 오이에 멈추면 먹통 카드
+	# 적이 오이에 멈추면 먹을 수 있는 오이 카드
 	var enemy: int = 2 if roller == 1 else 1
 	var victim: PlayerPawn = state.pawns_of(enemy)[0]
 	_place(victim, 3)
@@ -200,7 +200,7 @@ func test_mob_kyui_cucumber_gives_a_dead_card_and_trap_cards_recharge() -> void:
 	check((state.hands[enemy] as Array).has(&"JNK_CUKE"), "오이를 밟은 적은 [오이 카드]를 받는다")
 	check(victim.has_left_start, "오이는 사출하지 않는다")
 	var cuke: BaseCard = CardRegistry.get_card(&"JNK_CUKE")
-	check(cuke is CardCucumber and not cuke.could_play(state, enemy) and cuke.playable_phases.is_empty(), "오이 카드는 낼 수 없다")
+	check(cuke is CardCucumber and cuke.could_play(state, enemy) and cuke.is_playable_in(TurnManager.State.PHASE_TURN_BEGIN), "오이 카드는 내 턴 시작에 먹을 수 있다")
 	check(not CardRegistry.all_ids().has(&"JNK_CUKE") and not CardRegistry.default_deck().has(&"JNK_CUKE"), "오이 카드는 덱·카드 패키지에 없다")
 	# 함정 카드를 얻으면 35% 확률로 필살기 재충전 (여러 번 시도하면 언젠가 찬다)
 	var recharged: bool = false

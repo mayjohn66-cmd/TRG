@@ -1,10 +1,7 @@
-## 결과 1쪽 (1.01): 1~4위를 만화 컷으로 보여 준다. 왼쪽 큰 칸 = 1위(사도 전신·1st 도장·이름), 오른쪽 사선 칸 = Result · 2nd · 3rd · 4th,
+## 결과 1쪽: 검은 페이드 → Result → 4등 → 3등 → 2등 → 1등. 팝아트 얼굴을 테두리 없이 컷에 직접 쓴다.
 ## 아래 사선 띠 = 승리 이름 (승리 조건), 오른쪽 아래 [Next Page ▶] → 상세 결과표.
-## 등장 (빠르고 경쾌하게, 기본 1초 남짓):
-##   검은 사선 분할선이 화면을 가로지르며 먼저 그어진다 → 왼쪽 1위 칸이 자리를 잡는다 →
-##   Result · 2nd · 3rd · 4th 패널이 STAGGER(0.08초) 간격으로 오른쪽에서 사선을 따라 탄성 있게(overshoot) 탁! 탁! 탁! 들어온다 →
-##   마지막에 1st 도장과 승리 이름이 찍히며 impact (보드가 0.15초 화면 흔들림을 준다).
-## 시계 하나(set_time)로 모든 요소가 움직여 배속·건너뛰기·테스트에서도 어긋나지 않는다. 누르면 등장을 건너뛴다.
+## 4등 → 3등 → 2등을 분리된 박자로 공개하고, 검은 여백을 잠시 남긴 뒤 우승자를 공개한다.
+## 하나의 시계로 실제 순위 공개·효과음·건너뛰기를 맞춘다.
 class_name ResultComicPage
 extends Control
 
@@ -14,16 +11,21 @@ signal intro_done
 signal next_pressed
 
 ## 기본 길이(초, 배율 전).
-const LINES_END: float = 0.18
-const LEFT_START: float = 0.12
-const LEFT_END: float = 0.30
-const PANEL_START: float = 0.20
-const STAGGER: float = 0.08
+const FADE_SECONDS: float = 0.42
+const RESULT_AT: float = 0.62
+const PORTRAIT_CROP = preload("res://scenes/result_portrait_crop.gdshader")
+const RESULT_FONT = preload("res://assets/fonts/result/bangers.ttf")
+const LEFT_START: float = 3.84
+const LEFT_END: float = 4.16
+const PANEL_START: float = 1.26
+const STAGGER: float = 0.70
 const PANEL_LEN: float = 0.26
-const STAMP_START: float = 0.66
-const STAMP_AT: float = 0.78
-const NEXT_START: float = 0.84
-const DURATION: float = 1.0
+const STAMP_START: float = 4.18
+const STAMP_AT: float = 4.37
+const NEXT_START: float = 4.60
+const DURATION: float = 4.88
+const IMPACT_HOLD: float = 0.06
+const REVEAL_ORDER: Array[int] = [3, 2, 1]
 ## 분할선 굵기(px)와 잉크 색.
 const INK := Color("111111")
 const LINE_PX: float = 14.0
@@ -31,10 +33,12 @@ const LINE_PX: float = 14.0
 const ROW_SLOPE: float = 0.33
 const BAND_SLOPE: float = 0.24
 ## 오른쪽 칸 경계가 가운데 분할선과 만나는 높이 (정규화): Result|2nd, 2nd|3rd, 3rd|4th.
-const ROW_EDGES: Array[float] = [0.10, 0.37, 0.61]
+const ROW_EDGES: Array[float] = [0.22, 0.49, 0.64]
 const RANK_TAGS: Array[String] = ["1st", "2nd", "3rd", "4th"]
 
 var active: bool = false
+var skipping: bool = false
+var _audio:=PresentationAudio.new()
 var _time: float = 0.0
 var _time_view: float = 0.0
 var _pace: float = 1.0
@@ -42,7 +46,6 @@ var _impact_fired: bool = false
 var _landed: int = 0
 var _accent: Color = Color("ffd43b")
 var _left: ComicPanel = null
-var _lines: ComicLines = null
 ## 오른쪽 패널: [Result, 2nd, 3rd, 4th] (없는 순위는 빈 칸).
 var panels: Array[ComicPanel] = []
 var stamp: Label = null
@@ -53,6 +56,11 @@ var condition_label: Label = null
 var popart_label: Label = null
 var next_button: Button = null
 var _art: TextureRect = null
+var _stamp_base := Vector2.ZERO
+var _winner_base := Vector2.ZERO
+var _winner_scale := Vector2.ONE
+var _victory_base := Vector2.ZERO
+var _present_ranks: Array[int] = []
 
 
 func _init() -> void:
@@ -81,8 +89,9 @@ func setup(entries: Array[Dictionary], victory: String, condition: String, popar
 	_accent = first.get("color", Color("ffd43b"))
 	_left = ComicPanel.new()
 	_left.name = "FirstPanel"
-	_left.fill = _accent.lightened(0.72)
-	_left.streak = _accent.lightened(0.45)
+	_left.fill = Color("ffe06a")
+	_left.streak = Color("e76c42")
+	_left.pattern = 1
 	_left.clip_children = CanvasItem.CLIP_CHILDREN_AND_DRAW  # 사도 그림을 1위 칸 모양으로 자른다
 	add_child(_left)
 	var art: Texture2D = first.get("art", null)
@@ -96,33 +105,53 @@ func setup(entries: Array[Dictionary], victory: String, condition: String, popar
 		_left.add_child(_art)
 	elif first.get("avatar", null) is Control:
 		_left.add_child(first["avatar"])
-	_lines = ComicLines.new()
-	_lines.name = "ComicLines"
-	add_child(_lines)
 	for index: int in 4:
 		var panel := ComicPanel.new()
 		panel.name = "ResultHeader" if index == 0 else "RankPanel%d" % (index + 1)
 		add_child(panel)
 		panels.append(panel)
 		if index == 0:
-			panel.add_child(_make_text("ResultTitle", "Result", 46, 10))
+			panel.fill = Color("f9eed6")
+			panel.pattern = 5
+			var result_title := _make_text("ResultTitle", "Result", 96, 10, Color("fff5d9"))
+			result_title.add_theme_font_override("font", RESULT_FONT)
+			result_title.add_theme_color_override("font_shadow_color", Color("9b1b5a"))
+			result_title.add_theme_constant_override("shadow_offset_x", 6)
+			result_title.add_theme_constant_override("shadow_offset_y", 8)
+			result_title.add_theme_constant_override("shadow_outline_size", 5)
+			panel.add_child(result_title)
 			continue
 		if index >= entries.size():
 			continue
 		var entry: Dictionary = entries[index]
+		_present_ranks.append(index)
+		panel.fill = [Color.WHITE, Color("80ded8"), Color("ff9db4"), Color("bea9ef")][index]
+		panel.pattern = index + 1
 		var avatar: Control = entry.get("avatar", null)
+		if entry.get("face", null) is Texture2D:
+			var portrait := TextureRect.new()
+			portrait.texture = entry["face"]
+			var crop := ShaderMaterial.new()
+			crop.shader = PORTRAIT_CROP
+			portrait.material = crop
+			portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			portrait.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+			portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			avatar = portrait
 		if avatar != null:
 			avatar.name = "Avatar"
 			panel.add_child(avatar)
-		var name_label: Label = _make_text("Name", str(entry.get("name", "")), 34, 10)
-		name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		var name_label: Label = _make_text("Name", str(entry.get("name", "")), 32, 8)
+		name_label.set_meta("full_name", str(entry.get("name", "")))
 		panel.add_child(name_label)
-		panel.add_child(_make_text("Tag", RANK_TAGS[mini(int(entry.get("rank", index + 1)), 4) - 1], 30, 9))
+		panel.add_child(_make_rank("Tag", RANK_TAGS[mini(int(entry.get("rank", index + 1)), 4) - 1], 40))
 	var quoted: bool = condition.begins_with("\"") or condition.begins_with("(")
 	condition_label = _make_text("VictoryCondition", (condition if quoted else "(%s)" % condition) if condition != "" else "", 20, 6)
 	victory_label = _make_text("VictoryName", victory, 50, 12)
 	winner_label = _make_text("WinnerName", str(first.get("name", "")), 64, 14, Color.WHITE, _accent.darkened(0.6))
-	stamp = _make_text("FirstStamp", "1st", 88, 16)
+	winner_label.set_meta("full_name", str(first.get("name", "")))
+	stamp = _make_rank("FirstStamp", "1st", 88, Color("ffe26c"))
 	for label: Label in [condition_label, victory_label, winner_label, stamp]:
 		add_child(label)
 	if popart_title != "":
@@ -153,6 +182,8 @@ func setup(entries: Array[Dictionary], victory: String, condition: String, popar
 	var arrow := NextArrow.new()
 	arrow.name = "Arrow"
 	next_button.add_child(arrow)
+	next_button.mouse_entered.connect(func() -> void: arrow.nudge(1.0))
+	next_button.mouse_exited.connect(func() -> void: arrow.nudge(0.0))
 	next_button.pressed.connect(func() -> void:
 		if not active and _time_view >= DURATION:
 			next_pressed.emit())
@@ -163,12 +194,15 @@ func setup(entries: Array[Dictionary], victory: String, condition: String, popar
 
 ## 등장을 시작한다. pace: 연출 시간 배율 (1.0 = DURATION초).
 func play(pace: float = 1.0) -> void:
+	skipping=false
 	_pace = maxf(pace, 0.1)
 	_time = 0.0
 	_impact_fired = false
 	_landed = 0
 	active = true
 	visible = true
+	_audio.start(self,[PresentationAudio.cue(RESULT_AT,&"result_title")])
+	set_time(0.0)
 	set_process(true)
 
 
@@ -176,8 +210,10 @@ func play(pace: float = 1.0) -> void:
 func skip() -> void:
 	if not active:
 		return
+	skipping=true
 	_advance_to(DURATION)
 	_finish()
+	skipping=false
 
 
 func _gui_input(event: InputEvent) -> void:
@@ -189,6 +225,9 @@ func _gui_input(event: InputEvent) -> void:
 func _process(delta: float) -> void:
 	_time += delta
 	var t: float = _time / _pace
+	# Hold this page's clock at contact for a few frames; never pause the match clock.
+	if t > STAMP_AT:t = maxf(STAMP_AT, t - IMPACT_HOLD)
+	_audio.advance(t)
 	_advance_to(minf(t, DURATION))
 	if t >= DURATION:
 		_finish()
@@ -196,9 +235,10 @@ func _process(delta: float) -> void:
 
 ## 시계를 t로 옮기며 그 사이의 착지·impact 신호를 순서대로 낸다.
 func _advance_to(t: float) -> void:
-	while _landed < panels.size() and t >= landing_time(_landed):
+	while _landed < REVEAL_ORDER.size() and t >= landing_time(REVEAL_ORDER[_landed]):
+		var index := REVEAL_ORDER[_landed]
 		_landed += 1
-		panel_landed.emit(_landed - 1)
+		if _present_ranks.has(index):panel_landed.emit(index)
 	if not _impact_fired and t >= STAMP_AT:
 		_impact_fired = true
 		impact.emit()
@@ -206,14 +246,16 @@ func _advance_to(t: float) -> void:
 
 
 func _finish() -> void:
+	_audio.cancel()
 	active = false
 	set_process(false)
 	intro_done.emit()
 
 
-## i번째 오른쪽 패널(0 = Result)이 들어오기 시작하는 시각 / 처음 제자리에 닿는 시각(overshoot 직전).
+## 헤더는 먼저, 실제 순위는 4등→3등→2등. 제자리에 닿은 뒤 충분히 머문다.
 static func panel_start(index: int) -> float:
-	return PANEL_START + STAGGER * float(index)
+	if index == 0:return RESULT_AT # Result is a page header, never a competing rank reveal.
+	return PANEL_START + STAGGER * float(3 - index)
 
 
 static func landing_time(index: int) -> float:
@@ -233,6 +275,52 @@ func _make_text(node_name: String, text: String, font_size: int, outline: int, c
 	label.add_theme_color_override("font_outline_color", outline_color)
 	label.add_theme_constant_override("outline_size", outline)
 	return label
+
+
+func _make_rank(node_name: String, text: String, font_size: int, fill: Color = Color("fff5d9")) -> Label:
+	var label := _make_text(node_name,text,font_size,0,INK)
+	label.add_theme_font_override("font",RESULT_FONT)
+	var bubble := RankBubble.new()
+	bubble.name = "RankBubble"
+	bubble.fill = fill
+	bubble.show_behind_parent = true
+	label.add_child(bubble)
+	return label
+
+
+func _layout_rank(label: Label) -> void:
+	label.size = label.get_combined_minimum_size()
+	var padding := Vector2(label.size.y*0.22,label.size.y*0.04)
+	var bubble: RankBubble = label.get_node("RankBubble")
+	bubble.position = -padding
+	bubble.size = label.size + padding*2.0
+	bubble.queue_redraw()
+
+
+## Keep up to ten-character names complete; long lower ranks use two balanced lines.
+## Scale the existing font as a block instead of creating arbitrary font-size variants.
+func _fit_player_name(label: Label, area: Rect2, two_lines: bool) -> void:
+	var full_name := str(label.get_meta("full_name",label.text))
+	var font := label.get_theme_font("font")
+	var px := label.get_theme_font_size("font_size")
+	var text := full_name
+	if two_lines and font.get_string_size(text,HORIZONTAL_ALIGNMENT_LEFT,-1,px).x > area.size.x:
+		var split := maxi(1,full_name.length()/2)
+		var best := INF
+		for i: int in range(1,full_name.length()):
+			var left := font.get_string_size(full_name.left(i),HORIZONTAL_ALIGNMENT_LEFT,-1,px).x
+			var right := font.get_string_size(full_name.substr(i),HORIZONTAL_ALIGNMENT_LEFT,-1,px).x
+			if maxf(left,right) < best:best=maxf(left,right);split=i
+		text = full_name.left(split).strip_edges()+"\n"+full_name.substr(split).strip_edges()
+	label.text = text
+	label.size = Vector2.ZERO
+	label.reset_size()
+	var natural := label.get_combined_minimum_size()
+	label.size = natural
+	var fit := minf(1.0,minf((area.size.x-12.0)/maxf(natural.x,1.0),(area.size.y-12.0)/maxf(natural.y,1.0)))
+	label.scale = Vector2.ONE*fit
+	label.pivot_offset = Vector2.ZERO
+	label.position = area.position + Vector2(0.0,(area.size.y-natural.y*fit)*0.5)
 
 
 func _view() -> Vector2:
@@ -269,13 +357,15 @@ static func row_edge(index: int) -> PackedVector2Array:
 
 ## 오른쪽 i번째 칸(0 = Result)의 다각형 (정규화, 시계 방향).
 static func panel_polygon(index: int) -> PackedVector2Array:
-	var top: PackedVector2Array = PackedVector2Array([Vector2(divider_x(0.0), 0.0), Vector2(1.0, 0.0)]) if index == 0 else row_edge(index - 1)
-	var bottom: PackedVector2Array = row_edge(index) if index < ROW_EDGES.size() else PackedVector2Array([divider_foot(), Vector2(1.0, band_y(1.0))])
-	return PackedVector2Array([top[0], top[1], bottom[1], bottom[0]])
+	match index:
+		0:return PackedVector2Array([Vector2(0.60,0.015),Vector2(0.985,0.015),Vector2(0.985,0.18),Vector2(0.628,0.215)])
+		1:return PackedVector2Array([Vector2(0.628,0.215),Vector2(0.985,0.18),Vector2(0.985,0.415),Vector2(0.59,0.445),Vector2(0.64,0.36)])
+		2:return PackedVector2Array([Vector2(0.59,0.445),Vector2(0.985,0.415),Vector2(0.985,0.68),Vector2(0.555,0.64)])
+		_:return PackedVector2Array([Vector2(0.555,0.64),Vector2(0.985,0.68),Vector2(0.985,0.91),Vector2(0.59,0.84),Vector2(0.54,0.66)])
 
 
 static func first_polygon() -> PackedVector2Array:
-	return PackedVector2Array([Vector2(0, 0), Vector2(divider_x(0.0), 0.0), divider_foot(), Vector2(0.0, band_y(0.0))])
+	return PackedVector2Array([Vector2(0.015,0.04),Vector2(0.58,0.015),Vector2(0.64,0.36),Vector2(0.54,0.66),Vector2(0.59,0.84),Vector2(0.02,0.73)])
 
 
 func _scaled(points: PackedVector2Array, view: Vector2) -> PackedVector2Array:
@@ -283,6 +373,55 @@ func _scaled(points: PackedVector2Array, view: Vector2) -> PackedVector2Array:
 	for point: Vector2 in points:
 		out.append(point * view)
 	return out
+
+
+## Native label ink bounds, including its hard outline and offset block shadow.
+## Bangers' glyph extents for "Result" are normalized against its original em.
+func result_title_ink() -> Rect2:
+	var title: Label = panels[0].get_node("ResultTitle")
+	var px := title.get_theme_font_size("font_size")
+	var font := title.get_theme_font("font")
+	var width := font.get_string_size(title.text,HORIZONTAL_ALIGNMENT_LEFT,-1,px).x * (2413.0 / 2298.0)
+	var top := font.get_ascent(px) - float(px) * 0.737
+	return Rect2(Vector2(-10.0,top-10.0),Vector2(width+31.0,float(px)*0.755+33.0))
+
+
+func result_title_corners() -> PackedVector2Array:
+	var title: Label = panels[0].get_node("ResultTitle")
+	var ink := result_title_ink()
+	var corners := PackedVector2Array()
+	for point: Vector2 in [ink.position,Vector2(ink.end.x,ink.position.y),ink.end,Vector2(ink.position.x,ink.end.y)]:
+		corners.append(title.get_transform() * point)
+	return corners
+
+
+func _fit_result_title(title: Label, poly: PackedVector2Array, view: Vector2) -> void:
+	title.size = title.get_combined_minimum_size()
+	title.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	var center := Vector2.ZERO
+	var area := 0.0
+	for i: int in poly.size():
+		var a := poly[i]
+		var b := poly[(i+1)%poly.size()]
+		var cross := a.cross(b)
+		area += cross
+		center += (a+b)*cross
+	center /= 3.0*area
+	title.pivot_offset = result_title_ink().get_center()
+	title.position = center - title.pivot_offset
+	title.rotation = -0.035
+	var low := 0.0
+	var high := 1.65 * view.y / 768.0
+	# Fit every visible ink corner within the actual polygon, not a guessed rectangle.
+	for i: int in 18:
+		var trial := (low+high)*0.5
+		title.scale = Vector2.ONE*trial
+		var fits := true
+		for point: Vector2 in result_title_corners():
+			if not Geometry2D.is_point_in_polygon(point,poly):fits=false
+		if fits:low=trial
+		else:high=trial
+	title.scale = Vector2.ONE*low*0.88
 
 
 func _layout() -> void:
@@ -296,66 +435,70 @@ func _layout() -> void:
 	_left.polygon = _scaled(first_polygon(), view)
 	_left.pivot_offset = Vector2(view.x * 0.3, view.y * 0.4)
 	if _art != null:
-		var side: float = view.y * 0.86
+		var side: float = view.y * 0.98
 		_art.size = Vector2(side, side)
-		_art.position = Vector2(view.x * 0.30 - side * 0.5, view.y * 0.04)
+		_art.position = Vector2(view.x * 0.29 - side * 0.5, view.y * 0.025)
 	elif _left.get_child_count() > 0:
 		var portrait: Control = _left.get_child(0) as Control
 		portrait.position = Vector2(view.x * 0.24, view.y * 0.2)
-	_lines.size = view
-	var foot: Vector2 = divider_foot()
-	_lines.segments = [_scaled(PackedVector2Array([Vector2(divider_x(-0.05), -0.05), foot]), view),
-		_scaled(PackedVector2Array([Vector2(-0.02, band_y(-0.02)), Vector2(1.02, band_y(1.02))]), view)]
 	for index: int in panels.size():
 		var panel: ComicPanel = panels[index]
 		panel.size = view
-		var poly: PackedVector2Array = _scaled(panel_polygon(index), view)
+		var poly := _scaled(panel_polygon(index), view)
 		panel.polygon = poly
-		var top_left: Vector2 = poly[0]
-		var bottom_left: Vector2 = poly[3]
-		var height: float = bottom_left.y - top_left.y
-		var tilt: float = atan2(ROW_SLOPE * view.y, view.x) * 0.5
+		panel.queue_redraw()
 		if index == 0:
 			var title: Label = panel.get_node("ResultTitle")
-			title.size = title.get_combined_minimum_size()
-			title.position = Vector2(view.x * 0.80, view.y * 0.02)
-			title.rotation = tilt
+			_fit_result_title(title, poly, view)
 			continue
+		var center: Vector2 = [Vector2.ZERO,Vector2(0.710,0.320),Vector2(0.690,0.554),Vector2(0.680,0.770)][index] * view
+		var side: float = view.y * [0.0,0.52,0.49,0.43][index]
+		var anchor := center - Vector2.ONE * side * 0.5
+		var edge := poly[1] - poly[0]
+		var tilt := atan2(edge.y,edge.x)
 		var avatar: Control = panel.get_node_or_null("Avatar")
-		var side: float = clampf(height * 0.52, 56.0, 120.0)
-		var anchor := Vector2(top_left.x + view.x * 0.035, top_left.y + height * 0.28)
 		if avatar != null:
-			avatar.custom_minimum_size = Vector2(side, side)
-			avatar.size = Vector2(side, side)
+			avatar.custom_minimum_size = Vector2(side,side)
+			avatar.size = Vector2(side,side)
 			avatar.position = anchor
-			avatar.rotation = tilt
+			avatar.rotation = 0.0
+			avatar.z_index = 1
+			if avatar.material is ShaderMaterial:
+				var points := poly.duplicate()
+				while points.size() < 8:points.append(Vector2.ZERO)
+				avatar.material.set_shader_parameter("cut_points", points)
+				avatar.material.set_shader_parameter("cut_count", poly.size())
+				avatar.material.set_shader_parameter("image_origin", anchor)
+				avatar.material.set_shader_parameter("ink_inset", LINE_PX * view.y / 1536.0)
 		var label: Label = panel.get_node_or_null("Name")
 		if label != null:
-			label.size = Vector2(view.x - anchor.x - side - 48.0, side)
-			label.position = anchor + Vector2(side + 22.0, side * 0.15)
+			var x: float = [0.0,0.840,0.820,0.810][index]*view.x
+			_fit_player_name(label,Rect2(Vector2(x,center.y-view.y*0.055),Vector2(view.x*0.975-x,view.y*0.12)),true)
 			label.rotation = tilt
+			label.z_index = 2
 		var tag: Label = panel.get_node_or_null("Tag")
 		if tag != null:
-			tag.size = tag.get_combined_minimum_size()
-			tag.position = anchor + Vector2(-tag.size.x * 0.35, -tag.size.y * 0.65)
-			tag.rotation = -0.12
-	stamp.position = Vector2(view.x * 0.02, view.y * 0.01)
+			_layout_rank(tag)
+			tag.position = poly[0] + Vector2(view.x * 0.018,view.y * 0.019)
+			tag.rotation = tilt
+			tag.z_index = 3
+	_layout_rank(stamp)
+	stamp.position = Vector2(view.x * 0.045, view.y * 0.055)
+	_stamp_base = stamp.position
 	stamp.pivot_offset = stamp.size * 0.5
 	stamp.rotation = -0.1
 	if popart_label != null:
 		popart_label.position = Vector2(view.x * 0.022, view.y * 0.01 + stamp.size.y * 0.82)
 		popart_label.pivot_offset = Vector2(0.0, popart_label.size.y * 0.5)
 		popart_label.rotation = -0.07
-	winner_label.size = Vector2(view.x * 0.44, 0.0)
-	winner_label.reset_size()
-	winner_label.size.x = view.x * 0.44
-	winner_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	winner_label.position = Vector2(foot.x * view.x - winner_label.size.x - view.x * 0.03, foot.y * view.y - view.y * 0.06 - winner_label.size.y - 10.0)
-	winner_label.pivot_offset = Vector2(winner_label.size.x, winner_label.size.y * 0.5)
+	_fit_player_name(winner_label,Rect2(Vector2(view.x*0.080,view.y*0.610),Vector2(view.x*0.47,view.y*0.12)),false)
+	_winner_scale = winner_label.scale
 	winner_label.rotation = atan2(BAND_SLOPE * view.y, view.x) * 0.6
-	victory_label.position = Vector2(view.x * 0.02, band_y(0.02) * view.y + 16.0)
+	_winner_base = winner_label.position
+	victory_label.position = Vector2(view.x * 0.035, view.y * 0.80)
 	victory_label.pivot_offset = Vector2(0.0, victory_label.size.y * 0.5)
 	victory_label.rotation = atan2(BAND_SLOPE * view.y, view.x) * 0.5
+	_victory_base = victory_label.position
 	condition_label.position = victory_label.position + Vector2(10.0, victory_label.size.y + 2.0).rotated(victory_label.rotation)
 	condition_label.rotation = victory_label.rotation
 	next_button.size = next_button.get_combined_minimum_size()
@@ -372,28 +515,43 @@ func set_time(t: float) -> void:
 	if _left == null:
 		return
 	var view: Vector2 = _view()
-	_lines.progress = _ease_out(_ramp(t, 0.0, LINES_END))
-	_lines.queue_redraw()
 	# 1위 칸: 살짝 크게·왼쪽에서 → 제자리
 	var settle: float = _ease_out(_ramp(t, LEFT_START, LEFT_END))
-	_left.modulate.a = settle
-	_left.scale = Vector2.ONE * lerpf(1.08, 1.0, settle)
-	_left.position = Vector2((settle - 1.0) * view.x * 0.06, 0.0)
+	_left.visible = t > LEFT_START
+	_left.modulate.a = 1.0
+	_left.scale = Vector2.ONE * lerpf(1.11, 1.0, settle)
+	_left.position = Vector2((settle - 1.0) * view.x * 0.14, 0.0)
+	if _art != null:
+		var art_in := _ease_out(_ramp(t, LEFT_START + 0.03, STAMP_START))
+		_art.pivot_offset = _art.size * Vector2(0.48, 0.62)
+		_art.scale = Vector2.ONE * lerpf(1.075, 1.0, art_in)
 	# 오른쪽 패널: 사선 방향(오른쪽 아래 → 제자리)으로 탄성 있게 슬라이드 인
 	var travel: Vector2 = Vector2(view.x, ROW_SLOPE * view.y).normalized() * view.x * 0.5
 	for index: int in panels.size():
-		var p: float = _ramp(t, panel_start(index), panel_start(index) + PANEL_LEN)
+		var start := panel_start(index)
+		var p := _ramp(t, start, start + PANEL_LEN)
 		var panel: ComicPanel = panels[index]
+		panel.visible = t > start and (index == 0 or _present_ranks.has(index))
 		panel.position = travel * (1.0 - _ease_back(p))
-		panel.visible = p > 0.0
+		var land := landing_time(index)
+		panel.contact = sin(PI * _ramp(t, land, land + 0.12)) if index != 0 else 0.0
+		panel.queue_redraw()
 	# 1st 도장 + 이름: 크게 떨어져 쾅
 	var slam: float = _ramp(t, STAMP_START, STAMP_AT)
 	stamp.scale = Vector2.ONE * lerpf(2.8, 1.0, _ease_out(slam))
 	stamp.modulate.a = clampf(slam * 3.0, 0.0, 1.0)
-	var name_pop: float = _ease_back(_ramp(t, STAMP_AT - 0.04, STAMP_AT + 0.14))
-	for label: Label in [winner_label, victory_label]:
-		label.scale = Vector2.ONE * maxf(lerpf(1.7, 1.0, name_pop), 0.01) if name_pop > 0.0 else Vector2.ONE * 1.7
-		label.modulate.a = clampf(_ramp(t, STAMP_AT - 0.04, STAMP_AT + 0.02), 0.0, 1.0)
+	var recoil := sin(PI * _ramp(t, STAMP_AT, STAMP_AT + 0.14))
+	stamp.scale *= Vector2(1.0 + recoil * 0.07, 1.0 - recoil * 0.06)
+	stamp.rotation = -0.10 - (1.0 - _ease_out(slam)) * 0.18
+	stamp.position = _stamp_base + Vector2(0, -view.y * 0.09 * (1.0 - _ease_out(slam)))
+	var name_in := _ease_out(_ramp(t, STAMP_AT - 0.02, STAMP_AT + 0.16))
+	winner_label.scale = _winner_scale
+	winner_label.position = _winner_base + Vector2(-view.x * 0.035 * (1.0 - name_in), 0)
+	winner_label.modulate.a = clampf(name_in * 2.0, 0.0, 1.0)
+	var title_in := _ease_out(_ramp(t, STAMP_AT + 0.015, DURATION))
+	victory_label.scale = Vector2.ONE
+	victory_label.position = _victory_base + Vector2(-view.x * 0.045 * (1.0 - title_in), 0)
+	victory_label.modulate.a = clampf(title_in * 2.0, 0.0, 1.0)
 	condition_label.modulate.a = _ramp(t, STAMP_AT, STAMP_AT + 0.1)
 	if popart_label != null:
 		# 팝아트 타이틀은 1st 도장 바로 뒤에 더 크게 떨어져 쾅 (도장과 같은 박자에 이어서)
@@ -407,9 +565,12 @@ func set_time(t: float) -> void:
 	queue_redraw()
 
 
-## 흰 종이 (가장 아래 층): 컷신 뒤 화면이 하얗게 번쩍 바뀌며 분할선이 그어진다.
+## Fade from the actual board into full black; unrevealed cuts have no outlines or fills.
 func _draw() -> void:
-	draw_rect(Rect2(Vector2.ZERO, _view()), Color(Color("fbfbf7"), _ramp(_time_view, 0.0, 0.06)))
+	draw_rect(Rect2(Vector2.ZERO,_view()),Color(0,0,0,fade_alpha(_time_view)))
+
+static func fade_alpha(t: float) -> float:
+	return _ease_out(_ramp(t,0.0,FADE_SECONDS))
 
 
 static func _ramp(t: float, start: float, end: float) -> float:
@@ -428,11 +589,36 @@ static func _ease_back(x: float) -> float:
 	return 1.0 + (c1 + 1.0) * pow(x - 1.0, 3.0) + c1 * pow(x - 1.0, 2.0)
 
 
+## A single inked speech balloon follows its rank label's entry/rotation/impact.
+class RankBubble extends Control:
+	var fill := Color("fff5d9")
+	func _init() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+	func _draw() -> void:
+		var points := PackedVector2Array()
+		for degrees: int in range(0,360,15):
+			if degrees == 105:
+				points.append(Vector2(size.x*0.13,size.y*1.15))
+			var angle := deg_to_rad(float(degrees))
+			points.append(size*0.5+Vector2(cos(angle)*size.x*0.56,sin(angle)*size.y*0.47))
+		for i: int in points.size():points[i].x = size.x-points[i].x
+		points.reverse()
+		var shadow := PackedVector2Array()
+		var width := maxf(2.0,size.y*0.055)
+		for point: Vector2 in points:shadow.append(point+Vector2(width,width*1.1))
+		draw_colored_polygon(shadow,INK)
+		draw_colored_polygon(points,fill)
+		points.append(points[0])
+		draw_polyline(points,INK,width,true)
+
+
 ## 만화 칸 하나: 흰(또는 색) 바탕 다각형 + 굵은 잉크 테두리. 1위 칸에는 집중선.
 class ComicPanel extends Control:
 	var polygon: PackedVector2Array = PackedVector2Array()
 	var fill: Color = Color.WHITE
 	var streak: Color = Color(0, 0, 0, 0)
+	var pattern := 0
+	var contact := 0.0
 
 	func _init() -> void:
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -441,6 +627,20 @@ class ComicPanel extends Control:
 		if polygon.size() < 3:
 			return
 		draw_colored_polygon(polygon, fill)
+		var unit := maxf(size.y / 768.0, 0.25)
+		if pattern in [1,2,4,5]:
+			# Large Ben-Day clusters read as print, not a field of tiny UI decorations.
+			for row: int in range(0,ceili(size.y/(22.0*unit))):
+				for column: int in range(0,ceili(size.x/(22.0*unit))):
+					var at := Vector2((float(column)+float(row%2)*0.5)*22.0,float(row)*22.0)*unit
+					if pattern == 1 and at.x > size.x*0.16 and at.x < size.x*0.43:continue
+					if Geometry2D.is_point_in_polygon(at,polygon):draw_circle(at,2.4*unit,Color(INK,0.065 if pattern==5 else (0.18 if pattern!=1 else 0.11)),true,-1,true)
+		if pattern in [3,4]:
+			var shade := Color("bd245e") if pattern == 3 else Color("635194")
+			for stripe: int in range(-30,60):
+				var x := float(stripe)*42.0*unit
+				var band := PackedVector2Array([Vector2(x,0),Vector2(x+12.0*unit,0),Vector2(x+size.y*0.5+12.0*unit,size.y),Vector2(x+size.y*0.5,size.y)])
+				for piece: PackedVector2Array in Geometry2D.intersect_polygons(band,polygon):draw_colored_polygon(piece,Color(shade,0.22))
 		if streak.a > 0.0:
 			var hub: Vector2 = Vector2.ZERO
 			for point: Vector2 in polygon:
@@ -455,29 +655,23 @@ class ComicPanel extends Control:
 					draw_colored_polygon(piece, Color(streak, 0.55))
 		var loop := PackedVector2Array(polygon)
 		loop.append(polygon[0])
-		draw_polyline(loop, ResultComicPage.INK, ResultComicPage.LINE_PX * 0.7, true)
-
-
-## 가운데 분할선·아래 띠 선 (progress만큼 화면을 가로질러 그어진다).
-class ComicLines extends Control:
-	var segments: Array = []
-	var progress: float = 0.0
-
-	func _init() -> void:
-		mouse_filter = Control.MOUSE_FILTER_IGNORE
-
-	func _draw() -> void:
-		for segment: PackedVector2Array in segments:
-			if progress <= 0.0:
-				break
-			var tip: Vector2 = segment[0].lerp(segment[1], progress)
-			draw_line(segment[0], tip, ResultComicPage.INK, ResultComicPage.LINE_PX, true)
+		draw_polyline(loop, ResultComicPage.INK, ResultComicPage.LINE_PX * size.y / 768.0, true)
+		if contact > 0.0:
+			# Contact follows this panel edge; it never crosses the winner artwork.
+			draw_polyline(loop, Color(ResultComicPage.INK, contact * 0.70), (18.0 + contact * 4.0) * unit, true)
 
 
 ## [Next Page ▶]의 삼각형 (글꼴에 없는 기호를 그림으로).
 class NextArrow extends Control:
+	var _hover := 0.0
+	var _tween: Tween
 	func _init() -> void:
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	func _draw() -> void:
-		draw_colored_polygon(PackedVector2Array([Vector2(0, 0), Vector2(size.x, size.y * 0.5), Vector2(0, size.y)]), Color.WHITE)
+		var shift := Vector2(_hover * 5.0, 0)
+		draw_colored_polygon(PackedVector2Array([shift, shift + Vector2(size.x, size.y * 0.5), shift + Vector2(0, size.y)]), Color.WHITE)
+	func nudge(value: float) -> void:
+		if _tween != null and _tween.is_valid():_tween.kill()
+		_tween = create_tween()
+		_tween.tween_method(func(x: float) -> void: _hover = x;queue_redraw(), _hover, value, 0.12).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)

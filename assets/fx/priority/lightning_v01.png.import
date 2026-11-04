@@ -17,7 +17,7 @@ dest_files=["res://.godot/imported/lightning_v01.png-49274b6eba4c016a67318062527
 
 compress/mode=1
 compress/high_quality=false
-compress/lossy_quality=0.9
+compress/lossy_quality=0.85
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1

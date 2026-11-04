@@ -103,7 +103,7 @@ func _run() -> void:
 	var burned_view: Node2D = _board._pawn_views.get(burned_id)
 	var held_pos: Vector2 = burned_view.position if burned_view != null else Vector2.ZERO
 	_expect(burned_view != null and burned_view.visible, "빔이 닿기 전에는 태워질 말이 제자리에 보인다")
-	_expect(not _board._train_trap_hold.is_empty(), "빔이 닿기 전에는 지나갈 칸의 함정 그림도 남아 있다")
+	_expect(not _board._beam_trap_hold.is_empty(), "빔이 닿기 전에는 지나갈 칸의 함정 그림도 남아 있다")
 	var positions: Array[Vector2] = []
 	var hidden_frames: int = 0
 	var visible_before_contact: int = 0
@@ -130,7 +130,7 @@ func _run() -> void:
 	_expect(hidden_frames == 0, "미끄러지는 동안 기둥이 사라지는 프레임이 없다 (%d프레임)" % hidden_frames)
 	_expect(visible_before_contact > 0, "태워질 말은 빔이 닿을 때까지 제자리에 보였다")
 	_expect(not _board._beam_victims.has(burned_id), "빔이 닿은 뒤에는 말을 놓아준다")
-	_expect(_board._train_trap_hold.is_empty(), "지나간 칸의 함정 그림은 빔이 닿을 때 부서졌다")
+	_expect(_board._beam_trap_hold.is_empty(), "지나간 칸의 함정 그림은 빔이 닿을 때 부서졌다")
 	await create_timer(1.5).timeout
 	_expect(burned_view != null and not burned_view.visible, "탄 말은 날아가고 보드에서 사라진다 (출발선)")
 	var still: NeutralNPC = state.get_npc(beam_id)

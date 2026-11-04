@@ -43,7 +43,7 @@ func test_registry_makes_nine_victory_laws_with_table_goals() -> void:
 		check(law != null and law.trigger_timing == "", "%s는 판을 변조하지 않는 특수 승리 교칙" % id)
 		goals.append(law.goal())
 	check_eq(goals, int_array([10, 6, 5, 16, 3, 12, 3, 3, 3]), "표의 목표 수치")
-	check_eq(_law("LAW_01").law_name, "투기장의 지배자", "이름")
+	check_eq(_law("LAW_01").law_name, "기물 슬레이어", "이름")
 	check_eq(_law("LAW_05").condition_text(), "말 3개가 트랙 위에서 서로 4칸 이상 간격", "조건 문구")
 
 
@@ -79,7 +79,7 @@ func test_arena_master_graduates_the_killer_and_removes_the_law() -> void:
 	check(not state.rulebook.has_law("LAW_01"), "달성된 교칙은 법전에서 삭제")
 	check(state.rulebook.has_law("LAW_06"), "다른 교칙은 남는다")
 	check(not manager.is_game_over, "3인 판은 계속된다")
-	check_eq(VictoryChecker.reason_text(&"LAW_01"), "특수 승리 (투기장의 지배자)", "결과 문구")
+	check_eq(VictoryChecker.reason_text(&"LAW_01"), "특수 승리 (기물 슬레이어)", "결과 문구")
 	_dispose(manager)
 
 
@@ -161,7 +161,7 @@ func test_same_law_achievers_at_round_end_only_the_leader_graduates() -> void:
 	var standings: Array[Dictionary] = VictoryChecker.standings(state, manager.player_order, state.rankings[0])
 	var winner_row: Dictionary = standings[0]
 	check(int(winner_row["progress"]) < 100 and int(winner_row["finished"]) == 0, "결과표는 졸업 순간의 진행을 보여 준다 (철수한 말을 완주로 세지 않는다)")
-	check_eq(VictoryChecker.short_reason(winner_row["reason"]), "특수 승리: 투기장의 지배자", "결과표 사유")
+	check_eq(VictoryChecker.short_reason(winner_row["reason"]), "특수 승리: 기물 슬레이어", "결과표 사유")
 	_dispose(manager)
 
 

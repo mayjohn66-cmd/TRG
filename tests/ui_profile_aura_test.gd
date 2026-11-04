@@ -39,7 +39,7 @@ func _run() -> void:
 	_board._refresh_super_marks()
 	_expect(panel.get_node("SuperFlame")==devil,"Updating the active effect does not restart its animation")
 	await create_timer(0.65).timeout
-	_expect(devil.colors==[Color("ffd43b"),Color("ff922b")],"Gambler keeps its gold and amber identity")
+	_expect(devil.colors==[Color("dc1429"),Color("ff5329")],"Gambler keeps its red fire identity")
 	await capture("gambler")
 	_board.state.permanent_roll_bonus[1] = 3
 	_board._refresh_super_marks()
@@ -48,7 +48,7 @@ func _run() -> void:
 	await capture("combined")
 	_board.state.round_number += 1
 	_board._refresh_super_marks()
-	_expect(devil.colors==[Color("9c36b5"),Color("e03131")],"Round expiration removes gold but preserves the permanent contract")
+	_expect(devil.colors==[Color("9c36b5"),Color("e03131")],"Round expiration removes red fire but preserves the permanent contract")
 	_board._super_hidden["1:SUPER_03"] = true
 	_board._refresh_super_marks()
 	_expect(panel.get_node_or_null("SuperFlame")==null,"Hidden or expired marks disappear immediately")

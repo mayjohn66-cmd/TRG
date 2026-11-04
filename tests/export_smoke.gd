@@ -15,6 +15,21 @@ func _init() -> void:
 		failures.append("표에만 있는 증강(CARD_02)이 없다")
 	if UpdateNotes.entries().is_empty() or UpdateNotes.latest_id() == "":
 		failures.append("patch_notes.json이 내보낸 묶음에 없다 (export_presets.cfg include_filter 확인): 업데이트 소식이 비어 보인다")
+	for id: String in LawRegistry.ALL_IDS:
+		var definition := AugmentRegistry.get_def(StringName("AUG_" + id))
+		if definition == null or AugmentArt.load_first(AugmentArt.candidates(definition)) == null:
+			failures.append("Missing exported law icon: " + id)
+	for id: StringName in [&"TOOL_DICE_STOCK", &"TOOL_DICE_DARTS", &"AUG_UTIL_DRIFT", &"AUG_UTIL_BOUNTY"]:
+		var definition := AugmentRegistry.get_def(id)
+		var icon := AugmentArt.load_first(AugmentArt.candidates(definition))
+		if icon == null or not icon.resource_path.contains("_V02.png"):
+			failures.append("Latest augment artwork missing from exported pack: " + str(id))
+	for path: String in ["res://assets/cards/CNT_08.png", "res://assets/cards/SUM_03.png",
+		"res://assets/cards/ACT_16_LETHE_MIB_V04.png", "res://assets/cards/ACT_17_BANA_V01.png",
+		"res://assets/cards/ACT_18_BERU_V01.png", "res://assets/cards/ACT_19_SARI_V01.png", "res://assets/cards/ACT_20_MEJONG_V01.png"]:
+		if not ResourceLoader.exists(path):failures.append("Missing card artwork: " + path)
+	for event: StringName in [&"dart_hit", &"stock_bull", &"hammer_success", &"proton_hum", &"hurricane_wind", &"page_flip", &"report_slam"]:
+		if not Sfx.has_sound(event):failures.append("Missing exported sound: " + str(event))
 	if failures.is_empty():
 		print("EXPORT_SMOKE_OK")
 	else:

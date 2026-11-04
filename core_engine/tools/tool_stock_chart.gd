@@ -16,7 +16,7 @@ const DELTAS: Array[int] = [-3, -2, -1, 0, 1, 2, 3]
 const DELTA_WEIGHTS: Array[int] = [8, 14, 18, 20, 18, 14, 8]
 const PULL_BACK_FROM: int = 4
 ## 차트에 남겨 두는 최근 주가 수.
-const HISTORY_SIZE: int = 7
+const HISTORY_SIZE: int = 4
 
 const EVENT_NONE: StringName = &""
 const EVENT_LIMIT_UP: StringName = &"limit_up"

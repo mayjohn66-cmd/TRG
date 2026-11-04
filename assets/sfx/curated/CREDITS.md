@@ -6,6 +6,9 @@ redistributed with the game. Attribution is retained voluntarily.
 | Creator | Source pack |
 | --- | --- |
 | Kenney | [UI Audio](https://kenney.nl/assets/ui-audio) |
+| Kenney | [Interface Sounds](https://kenney.nl/assets/interface-sounds) — notice open/close |
+| Kenney | [Digital Audio](https://kenney.nl/assets/digital-audio) — new tool and magic cues |
+| Kenney | [Sci-fi Sounds](https://kenney.nl/assets/sci-fi-sounds) — beam, charge and wind layers |
 | Kenney | [Casino Audio](https://kenney.nl/assets/casino-audio) |
 | Kenney | [Impact Sounds](https://kenney.nl/assets/impact-sounds) |
 | Kenney | [Music Jingles](https://kenney.nl/assets/music-jingles) |
@@ -27,6 +30,19 @@ the flag. No realistic firearm discharge recording is used.
 
 The generated `catalog.gd` takes priority over legacy random candidates.
 User files in `content_trickcal/audio/sfx/` still replace an event's whole set.
+
+## New content audio (2026-11-04)
+
+40 additional short mono Vorbis cues cover darts, stocks, the forge, neuralizer,
+proton column, cucumber actions, rolling bodies, themed victory introductions and
+comic result pages. Sources are Kenney CC0 Digital Audio, Sci-fi Sounds, Impact
+Sounds, Casino Audio and Interface Sounds. `manifest.json` records source hashes,
+filtering and measured gains; source license notices are retained in `../licenses/`.
+Loop-ready files remain non-looping resources until a scene-owned copy is used.
+
+Character dialogue recordings remain unchanged. `voice_gains.gd` applies measured
+per-recording playback gains to the eight existing selection voices. These
+user-supplied character recordings are separate from the CC0 sound-effect packs.
 Rebuild with `tools/audio/curate_sfx.py` (NumPy and FFmpeg required).
 
 Halli Galli adds `halli_bell_01.ogg`, a 0.72-second derivative of Kenney's

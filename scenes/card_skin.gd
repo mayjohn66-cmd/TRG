@@ -4,6 +4,8 @@ extends RefCounted
 
 const FONT: Font = preload("res://assets/fonts/game_ui_font.tres")
 const ART_SHADER: Shader = preload("res://scenes/card_art.gdshader")
+const PAPER_SHADER:Shader=preload("res://scenes/card_paper.gdshader")
+const PAPER_STOCK:Texture2D=preload("res://assets/ui/trickcal/card_stock_paper_v02.png")
 const INK: Color = Color("333333")
 const PANEL: Color = Color("e9f5cf")
 const HEADER: Color = Color("cde793")
@@ -24,6 +26,7 @@ const EDGES: Dictionary = {
 const WARNING_RED: Color = Color("e03131")
 ## 설치자·사용자 본인의 말까지 잡거나 멈출 수 있는 카드: 카드 왼쪽 위에 경고 아이콘을 띄우고 상세 설명에 이 문구를 적는다.
 const SELF_RISK: Dictionary = {
+	&"SUM_03": "빛기둥이 지나는 내 말과 설치물도 소각됩니다",
 	&"TRP_03": "폭발 반경 안에 있으면 내 말도 출발선으로 날아갑니다",
 	&"TRP_05": "내 말이 밟아도 멈추고, 연쇄로 터진 지뢰에 내 말도 휘말립니다",
 	&"ACT_09": "데스매치에서 지면 내 선두 말이 출발선으로 날아갑니다",
@@ -78,6 +81,22 @@ static func panel(parent: Control, node_name: String, rect: Rect2, fill: Color, 
 	item.add_theme_stylebox_override("panel", style(fill, edge, border, radius))
 	parent.add_child(item)
 	return item
+
+
+## Decoration stays behind live content and never receives input.
+static func paper(parent:Control,node_name:String,rect:Rect2,k:float,ink:Color,quiet:bool=false,canvas:Vector2=Vector2.ZERO,origin:Vector2=Vector2.ZERO) -> void:
+	var layer:=ColorRect.new()
+	layer.name=node_name;layer.position=rect.position;layer.size=rect.size
+	layer.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	var paint:=ShaderMaterial.new();paint.shader=PAPER_SHADER
+	paint.set_shader_parameter("paper_size",rect.size)
+	paint.set_shader_parameter("paper_stock",PAPER_STOCK)
+	paint.set_shader_parameter("card_canvas",rect.size if canvas==Vector2.ZERO else canvas)
+	paint.set_shader_parameter("paper_offset",origin+rect.position)
+	paint.set_shader_parameter("corner_radius",maxf(2.0,10.0*k))
+	paint.set_shader_parameter("print_ink",ink)
+	paint.set_shader_parameter("grain_strength",0.28 if quiet else 0.65)
+	layer.material=paint;parent.add_child(layer)
 
 
 ## 번역된 긴 이름이 손패 카드의 이름 칸(두 줄까지)에 들어가도록 글자 크기를 줄인다.
@@ -173,6 +192,7 @@ static func body(card: BaseCard, card_size: Vector2, summary_text: String, categ
 	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# Hand uses a larger title area and a short summary, not shrunken detail text.
 	var k: float = card_size.x / (280.0 if detailed else 140.0)
+	paper(holder,"CardPaper",Rect2(Vector2.ONE*3.0,card_size-Vector2.ONE*6.0),k,EDGES[card.category],false,card_size)
 	var touch:=MobileSupport.touch_mode()
 	var margin: float = (20.0 if detailed else (8.0 if touch else 10.0)) * k
 	var width: float = card_size.x - margin * 2.0
@@ -185,6 +205,7 @@ static func body(card: BaseCard, card_size: Vector2, summary_text: String, categ
 	# 이름이 이름 칸(최대 두 줄)에 다 들어가도록 글자를 줄인다 (언어마다 길이가 달라도 칸 밖으로 나가거나 잘리지 않게)
 	title_px = fit_px(shown_name, width - 12.0 * k, title_h - 4.0 * k, title_px, roundi((12.0 if detailed else 8.0) * k), -roundi(2 * k))
 	var name_panel: Panel = panel(holder, "NamePanel", Rect2(margin, margin, width, title_h), HEADER, GREEN, maxi(1, roundi(2 * k)), roundi(10 * k))
+	paper(name_panel,"NamePaper",Rect2(Vector2.ONE*2.0*k,name_panel.size-Vector2.ONE*4.0*k),k,Color("526d36"),true,card_size,name_panel.position)
 	var title: Label = label(name_panel, "CardTitle", card.display_name, Rect2(6 * k, 2 * k, width - 12 * k, title_h - 4 * k), title_px, INK, true, true)
 	title.max_lines_visible = 2
 	title.add_theme_constant_override("line_spacing", -roundi(2 * k))
@@ -192,6 +213,7 @@ static func body(card: BaseCard, card_size: Vector2, summary_text: String, categ
 	var detail_y: float = (260.0 if detailed else 138.0) * k
 	var art_h: float = detail_y - art_y - (12.0 if detailed else 6.0) * k
 	var art: Panel = panel(holder, "ArtWindow", Rect2(margin, art_y, width, art_h), PANEL, GREEN, maxi(1, roundi(2 * k)), roundi(10 * k))
+	paper(art,"ArtPaper",Rect2(Vector2.ONE*2.0*k,art.size-Vector2.ONE*4.0*k),k,Color("526d36"),true,card_size,art.position)
 	var art_path: String = "res://assets/cards/%s.png" % card.card_id
 	var table_icon: String = GameData.text("cards", card.card_id, "icon_file")  # cards_table.csv의 icon_file
 	if table_icon != "":
@@ -231,6 +253,7 @@ static func body(card: BaseCard, card_size: Vector2, summary_text: String, categ
 		icon.size = Vector2(icon_size, icon_size)
 		holder.add_child(icon)
 	var detail: Panel = panel(holder, "EffectPanel", Rect2(margin, detail_y, width, card_size.y - detail_y - margin), PANEL, GREEN, maxi(1, roundi(2 * k)), roundi(10 * k))
+	paper(detail,"EffectPaper",Rect2(Vector2.ONE*2.0*k,detail.size-Vector2.ONE*4.0*k),k,Color("526d36"),true,card_size,detail.position)
 	# 종류 배지는 글에 맞춰 넓어진다 (영어 Summon·일본어 召喚처럼 한국어보다 긴 이름도 배지 안에 들어가게, 효과 칸 폭의 절반까지)
 	var badge_px: int = roundi((14.0 if detailed else 9.0) * k)
 	var badge_text_width: float = FONT.get_string_size(L10n.t(category_name), HORIZONTAL_ALIGNMENT_LEFT, -1, badge_px).x

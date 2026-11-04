@@ -63,7 +63,7 @@ func _run() -> void:
 	_expect(RollPresenter.supports(&"DICE_STOCK") and RollPresenter.supports(&"DICE_DARTS"), "결과 연출 지원")
 	presenter.play(&"DICE_STOCK", {"steps": 20, "details": {"event": &"limit_up", "history": [6, 7, 12], "before": 7, "price": 12, "delta": 5}})
 	await create_timer(StockChartView.TOTAL_TIME + 0.2).timeout
-	_expect(presenter.last_display.contains("상한가"), "주식 차트: 상한가 (%s)" % presenter.last_display)
+	_expect(presenter.last_display.contains("대폭등! (Bull Market)"), "주식 차트: 대폭등 (%s)" % presenter.last_display)
 	presenter.play(&"DICE_DARTS", {"steps": 15, "details": {"radius": 0.5, "angle": 0.04, "number": 5, "ring": "트리플", "multiplier": 3, "bull": false}})
 	await create_timer(DartBoardView.TOTAL_TIME + 0.2).timeout
 	_expect(presenter.last_display.contains("트리플") and presenter.last_display.contains("15"), "다트: 트리플 5 → 15칸 (%s)" % presenter.last_display)

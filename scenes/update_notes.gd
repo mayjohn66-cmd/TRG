@@ -90,6 +90,15 @@ static func open(parent: Control) -> Control:
 	box.add_child(buttons)
 	var close := LobbyTheme.big_button(L10n.t("닫기"), overlay.queue_free, 20)
 	close.name = "NotesClose"
+	Sfx.bind_button(close, &"notice_close")
 	close.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	buttons.add_child(close)
+	# The shared popup already dismisses on a dim-background click.
+	# Give that path the same close sound, without another button click layer.
+	var dim: Control = overlay.get_child(0) as Control
+	dim.gui_input.connect(func(event: InputEvent) -> void:
+		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+			if not overlay.has_meta("notice_close_sounded"):
+				overlay.set_meta("notice_close_sounded", true)
+				Sfx.play(&"notice_close"))
 	return overlay

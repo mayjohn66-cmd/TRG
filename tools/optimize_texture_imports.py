@@ -59,7 +59,7 @@ def main() -> int:
     for imp in glob.glob("**/*.import", recursive=True):
         if imp.startswith((".godot", "tests", "docs", "build")):
             continue
-        source = imp[: -len(".import")]
+        source = imp[: -len(".import")].replace("\\", "/")
         if not os.path.exists(source) or excluded(source, patterns):
             continue
         text = open(imp, encoding="utf-8").read()

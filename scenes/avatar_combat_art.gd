@@ -7,12 +7,15 @@ static var _cache: Dictionary = {}
 ## Identity-preserving fallback: never substitute another character's pose.
 static func texture(avatar: StringName, pose: StringName) -> Texture2D:
 	avatar = AvatarCatalog.sanitize(avatar)
-	if pose != &"attack" and pose != &"hit":
+	if pose != &"attack" and pose != &"hit" and pose != &"victory":
 		return null
 	var key: String = "%s/%s" % [avatar, pose]
 	if _cache.has(key):
 		return _cache[key]
-	for file: String in [String(pose) + ".png", "fullbody.png", "portrait.png"]:
+	var candidates: Array[String] = [String(pose) + ".png", "fullbody.png", "portrait.png"]
+	if pose == &"victory":
+		candidates.push_front("victory_v02.webp")
+	for file: String in candidates:
 		var path: String = "%s/%s/%s" % [ROOT, avatar, file]
 		if ResourceLoader.exists(path):
 			var loaded: Texture2D = TextureCache.fetch(path)
@@ -31,6 +34,8 @@ static func retain(avatars: Array) -> void:
 
 
 static func has_pose(avatar: StringName, pose: StringName) -> bool:
+	if pose == &"victory":
+		return ResourceLoader.exists("%s/%s/victory_v02.webp" % [ROOT, AvatarCatalog.sanitize(avatar)])
 	return ResourceLoader.exists("%s/%s/%s.png" % [ROOT, AvatarCatalog.sanitize(avatar), pose])
 
 

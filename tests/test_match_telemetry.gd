@@ -17,8 +17,8 @@ func cleanup() -> void:
 func test_lines_follow_the_three_formats() -> void:
 	check_eq(MatchTelemetry.lobby_line("교주(#A7B2)", "PC", "0.9.0+abc1234"), "%s 교주(#A7B2) | PC | v0.9.0+abc1234" % MatchTelemetry.lobby_tag(), "로비 입장")
 	check_eq(MatchTelemetry.start_line("교주(#A7B2)", "놀이터", 3), "%s 교주(#A7B2) | 놀이터 | 3번째 판 시작" % MatchTelemetry.start_tag(), "매치 시작")
-	check_eq(MatchTelemetry.end_line("교주(#A7B2)", 3, "놀이터", 13, 754, 2, "특수승리(투기장의 지배자)", AUGMENTS),
-		"%s 교주(#A7B2) (3번째 판) | 놀이터 | 13라운드(소요시간 12분 34초) | 내 최종 순위: 2위 | 1위 우승방식: 특수승리(투기장의 지배자) | 고른 증강: 체스 퀸 진화, 주사위 교체" % MatchTelemetry.tag(), "매치 완료")
+	check_eq(MatchTelemetry.end_line("교주(#A7B2)", 3, "놀이터", 13, 754, 2, "특수승리(기물 슬레이어)", AUGMENTS),
+		"%s 교주(#A7B2) (3번째 판) | 놀이터 | 13라운드(소요시간 12분 34초) | 내 최종 순위: 2위 | 1위 우승방식: 특수승리(기물 슬레이어) | 고른 증강: 체스 퀸 진화, 주사위 교체" % MatchTelemetry.tag(), "매치 완료")
 	check(MatchTelemetry.end_line("A(#B2C3)", 1, "4인 수동", 5, 30, 0, "일반", [] as Array[String]).contains("내 최종 순위: - | 1위 우승방식: 일반 | 고른 증강: 없음"), "한 화면 4인 수동은 순위 칸이 비고 증강이 없으면 [없음]")
 	check_eq(MatchTelemetry.tag(), "[%s 매치 완료]" % String.chr(0x1F4CA), "📊")
 	check_eq(MatchTelemetry.lobby_tag(), "[%s 로비 입장]" % String.chr(0x1F44B), "👋")
@@ -31,7 +31,7 @@ func test_mode_win_and_duration_labels() -> void:
 	check_eq(MatchTelemetry.mode_label(true, true, true), "익명", "빠른 매칭")
 	check_eq(MatchTelemetry.mode_label(false, false), "4인 수동", "한 화면")
 	check_eq(MatchTelemetry.win_label(VictoryChecker.ALL_HOME), "일반", "말 4개 완주")
-	check_eq(MatchTelemetry.win_label(&"LAW_01"), "특수승리(투기장의 지배자)", "특수 승리는 교칙 이름까지")
+	check_eq(MatchTelemetry.win_label(&"LAW_01"), "특수승리(기물 슬레이어)", "특수 승리는 교칙 이름까지")
 	check_eq(MatchTelemetry.duration_text(65), "1분 5초", "걸린 시간")
 	check_eq(MatchTelemetry.device_label(), "PC", "데스크톱 테스트는 PC")
 
@@ -69,7 +69,7 @@ func test_enabled_reports_are_quiet_and_lobby_entry_is_once_per_session() -> voi
 	check_eq(sent[0][0], FeedbackModal.DISCORD_WEBHOOK_URL, "전용 주소가 없으면 피드백 웹후크를 쓴다")
 	check((sent[0][1] as String).contains(MatchTelemetry.lobby_tag() + " " + GameSession.tagged_name() + " | PC | v"), "로비 입장 줄")
 	check((sent[1][1] as String).contains("| 친선 | 4번째 판 시작"), "매치 시작 줄")
-	check((sent[2][1] as String).contains("내 최종 순위: 1위 | 1위 우승방식: 특수승리(투기장의 지배자)"), "매치 완료 줄")
+	check((sent[2][1] as String).contains("내 최종 순위: 1위 | 1위 우승방식: 특수승리(기물 슬레이어)"), "매치 완료 줄")
 	for entry: Array in sent:
 		check((entry[1] as String).contains("\"flags\":4096") and (entry[1] as String).contains("\"allowed_mentions\":{\"parse\":[]}"), "알림음 없이, 멘션 막고")
 		check((entry[2] as String).begins_with("multipart/form-data; boundary="), "사전 확인 없이 가는 multipart")

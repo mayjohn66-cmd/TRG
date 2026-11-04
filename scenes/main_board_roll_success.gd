@@ -78,7 +78,7 @@ func _place_roll_history() -> void:
 		super._place_roll_history()
 		return
 	_roll_history.set_width(RollHistory.WIDTH)
-	var at := stage.position+Vector2(-RollHistory.WIDTH-14,(stage.size.y-_roll_history.size.y)*0.5)
+	var at := stage.position+Vector2(-_roll_history.custom_minimum_size.x-14,(stage.size.y-_roll_history.size.y)*0.5)
 	if at.x<12: at.x = stage.position.x+stage.size.x+14
 	_roll_history.position = at.clamp(Vector2(12,12),get_viewport_rect().size-_roll_history.size-Vector2(12,12))
 

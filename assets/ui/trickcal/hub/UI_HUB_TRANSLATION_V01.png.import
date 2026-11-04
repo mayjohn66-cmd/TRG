@@ -15,7 +15,7 @@ dest_files=["res://.godot/imported/UI_HUB_TRANSLATION_V01.png-190568fc28492f027e
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/high_quality=false
 compress/lossy_quality=0.85
 compress/uastc_level=0

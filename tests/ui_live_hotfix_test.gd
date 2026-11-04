@@ -124,7 +124,7 @@ func _run() -> void:
 	_expect(not _board._stage_pinball.visible and not _board._stage_blackjack.visible and not _board._stage_yacht.visible,"no judgement stage covers the final result")
 	var report:=_board._build_diagnostic_snapshot()
 	_expect(report.contains("완주 0/4") and not report.contains("완주 4/4"),"special victory snapshot preserves every real finish count")
-	_expect(report.contains("9번") and report.contains("투기장의 지배자") and report.contains("달성 완료"),"snapshot retains real tiles and achieved law name")
+	_expect(report.contains("9번") and report.contains("기물 슬레이어") and report.contains("달성 완료"),"snapshot retains real tiles and achieved law name")
 	_expect(_board._result_overlay!=null or _board._presentation_active(),"victory transitions to the result presentation")
 	_board._reset_presentation();_board._close_zoom();_board._close_choice();MatchTelemetry.test_sender=Callable()
 	var board:=_board;_board=null;board.queue_free();await settle()

@@ -21,6 +21,9 @@ const FLAME_SECONDS: float = 1.3
 ## 비상 배너의 y (위쪽 메뉴 줄 바로 아래: 언어·배속·메뉴 버튼을 가리지 않게).
 const SIREN_TOP: float = 52.0
 
+static var _alchemy_node: AtlasTexture = null
+static var _jackpot_chip: AtlasTexture = null
+
 var board: MainBoard = null
 ## 화면 좌표로 그리는 레이어 (구슬·배너). MainBoard가 만들어 넘긴다.
 var screen: CanvasLayer = null
@@ -62,6 +65,29 @@ func _is_animating() -> bool:
 
 
 static func icon(icon_name: String) -> Texture2D:
+	if icon_name=="mochi_sword": return TextureCache.fetch("res://content_trickcal/illustrations/laws/LAW_01.png")
+	if icon_name=="attack": return TextureCache.fetch("res://content_trickcal/illustrations/laws/LAW_08.png")
+	if icon_name=="perma": return TextureCache.fetch("res://content_trickcal/illustrations/laws/LAW_06.png")
+	if icon_name=="dice_soul": return TextureCache.fetch("res://content_trickcal/illustrations/laws/LAW_07.png")
+	if icon_name=="alchemy": return TextureCache.fetch("res://assets/fx/law_fx/victory_prints/alchemy_v02.webp")
+	if icon_name=="alchemy_node":
+		if _alchemy_node==null:
+			var sheet := icon("alchemy")
+			var part := AtlasTexture.new()
+			part.atlas = sheet
+			# Measured isolated upper seal in the 1024px sheet, excluding the neighbouring arcs.
+			part.region = Rect2(484,52,56,97)
+			_alchemy_node = part
+		return _alchemy_node
+	if icon_name=="jackpot": return TextureCache.fetch("res://assets/fx/law_fx/victory_prints/jackpot_v02.webp")
+	if icon_name=="chip":
+		if _jackpot_chip==null:
+			var sheet := icon("jackpot")
+			var part := AtlasTexture.new()
+			part.atlas = sheet
+			part.region = Rect2(sheet.get_size()*Vector2(0.712,0.695),sheet.get_size()*Vector2(0.205,0.23))
+			_jackpot_chip = part
+		return _jackpot_chip
 	return TextureCache.fetch(ICON_ROOT % icon_name)
 
 

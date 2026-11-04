@@ -1,6 +1,6 @@
 # File: res://core_engine/commands/counter_command.gd
 # Class: class_name CounterCommand
-# Role: 방어 카드 CNT_02~07 실행 - 공격 기록 하나의 피해를 되돌리고(말 위치·휴식·밴·기록 복원) 카드별로 되갚는다: 공격한 말 사출 / 공격 카드 반사 / 함정 파괴 후 +3칸 / 함정 무효 + 카드 강탈 / 걸린 함정 카드를 내 패로 (도굴꾼)
+# Role: 방어 카드 CNT_02~08 실행 - 공격 기록 하나의 피해를 되돌리고(말 위치·휴식·밴·기록 복원) 카드별 후속 효과를 적용한다.
 class_name CounterCommand
 extends GameCommand
 
@@ -27,6 +27,8 @@ func _run() -> void:
 		_remove_trap(entry)
 	state.undo_attack(entry)
 	match card_id:
+		&"CNT_08":
+			pass  # 이쪽을 봐라!: 잡기 피해만 복원하며 공격자에게 되갚지 않는다.
 		&"CNT_02":
 			var striker: PlayerPawn = state.get_pawn(int(entry["attacker_pawn"]))
 			if striker != null and striker.has_left_start and not striker.is_finished:

@@ -20,8 +20,6 @@ var _bottom: Dictionary = {}
 var _name_page: VBoxContainer = null
 var _mode_page: Control = null
 var _hub_profile: Dictionary = {}
-## 오른쪽 위 버튼 사이 간격(px).
-const HUB_BUTTON_GAP: int = 22
 ## 맨 아래 한 줄 면책 문구 (허브에서는 아래 띠가 숨으므로 화면 맨 아래로 내린다).
 var _fan_notice: Label = null
 var _train_page: VBoxContainer = null
@@ -33,6 +31,7 @@ var _avatar_tiles: Dictionary = {}
 const HUB_AVATAR_HEIGHT: float = 520.0
 ## 허브 위쪽 줄·프로필 버튼의 고정 크기 (언어를 바꿔도 자리가 그대로다).
 const HUB_LANGUAGE_WIDTH: float = 160.0
+const HUB_BUTTON_GAP: int = 22
 const HUB_AVATAR_BUTTON: Vector2 = Vector2(210, 50)
 const HUB_RENAME_BUTTON: Vector2 = Vector2(112, 40)
 ## 허브 아래 가운데 타이틀 로고 너비 (230px의 120%).
@@ -193,6 +192,7 @@ func _build_mode_page() -> void:
 	language.add_theme_constant_override("h_separation", 10)
 	buttons.add_child(language)
 	var notes_button: Button = HubKit.round_button("HubUpdates", &"notes", _show_updates, 56.0)
+	Sfx.bind_button(notes_button, &"notice_open")
 	notes_button.tooltip_text = "공지사항"
 	_add_new_badge(notes_button)
 	buttons.add_child(notes_button)

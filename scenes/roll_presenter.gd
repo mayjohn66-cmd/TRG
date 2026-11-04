@@ -98,6 +98,7 @@ var _slot_3d: SlotMachine3D = null
 var _toy_gun: ToyFlagGun3D = null
 ## v1.1 판정 도구의 2D 결과 그림 (주식 차트·다트판).
 var _stock_view: StockChartView = null
+var _new_audio:=PresentationAudio.new()
 var _dart_view: DartBoardView = null
 var _gun_intro: float = 0.0
 var _gun_pull_started: bool = false
@@ -206,11 +207,24 @@ func play(tool_id: StringName, result: Dictionary, power: float = 0.5) -> void:
 		_begin_toss()
 	active = true
 	visible = true
+	var cues:Array[Dictionary]=[]
+	if tool_id==&"DICE_DARTS":
+		cues=[PresentationAudio.cue(0.02,&"dart_throw"),PresentationAudio.cue(DartBoardView.FLIGHT_TIME,&"dart_hit")]
+		if bool(_result.get("details",{}).get("bull",false)):cues.append(PresentationAudio.cue(DartBoardView.FLIGHT_TIME+0.14,&"dart_bull"))
+	elif tool_id==&"DICE_STOCK":
+		var details:Dictionary=_result.get("details",{})
+		var change:int=int(details.get("delta",0))
+		if change!=0:cues.append(PresentationAudio.cue(StockChartView.LIVE_AT,&"stock_up" if change>0 else &"stock_down"))
+		var event:StringName=StringName(details.get("event",&""))
+		if event==ToolStockChart.EVENT_LIMIT_UP:cues.append(PresentationAudio.cue(StockChartView.STAMP_AT,&"stock_bull"))
+		elif event==ToolStockChart.EVENT_DELISTED:cues.append(PresentationAudio.cue(StockChartView.STAMP_AT,&"stock_bear"))
+	_new_audio.start(self,cues)
 	await finished
 
 
 ## 진행 중인 연출을 즉시 끝내고 숨긴다 (새 게임 등).
 func cancel() -> void:
+	_new_audio.cancel()
 	holding = false
 	_augment_hold = 0.0
 	if has_meta("gambler_tint_owner"):
@@ -482,6 +496,7 @@ func _process(delta: float) -> void:
 	if not active:
 		return
 	_t += delta
+	_new_audio.advance(_t)
 	_update(_t)
 	if _t >= _total:
 		active = false

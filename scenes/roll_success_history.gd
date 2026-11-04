@@ -58,8 +58,11 @@ func _refresh(animate_latest: bool = false) -> void:
 		row.queue_free()
 	var heading := L10n.tf("%d회 굴림",[entries.size()])
 	if uses_success_markers(): heading = L10n.tf("%d회 성공",[success_count])
-	_header.text = "P%d" % player_id if tool_id==&"REVOLVER" else "P%d · %s" % [player_id,heading]
+	var printed := RollSuccessDisplay.is_ink_stamp(tool_id) or tool_id == &"YUT"
+	_header.text = "" if printed else ("P%d" % player_id if tool_id==&"REVOLVER" else "P%d · %s" % [player_id,heading])
+	_header.get_parent().visible = not printed  # Collapse the entire player/count heading above ink stamps.
 	_tool_icon.texture = AugmentArt.load_first(AugmentArt.tool_candidates(tool_id))
+	_tool_icon.visible = not printed
 	_rows.visible = not uses_success_markers()
 	_success.visible = uses_success_markers() and success_count>0
 	if uses_success_markers(): _success.set_count(success_count,animate_latest)
@@ -78,8 +81,10 @@ func _refresh(animate_latest: bool = false) -> void:
 		if ink_stamp:
 			row.set_meta("ink_stamp",true)
 			row.add_theme_stylebox_override("normal",StyleBoxEmpty.new())
-			row.add_theme_font_size_override("font_size",42)
+			row.add_theme_font_size_override("font_size",50)
 			row.add_theme_color_override("font_color",Color("ad3445") if str(entries[index].text)=="윷" else Color("337354"))
+			row.add_theme_color_override("font_outline_color",Color.WHITE)
+			row.add_theme_constant_override("outline_size",6)
 			row.clip_text = false
 			row.autowrap_mode = TextServer.AUTOWRAP_OFF
 			row.text = L10n.t(entries[index].text)
@@ -115,15 +120,17 @@ func _refresh(animate_latest: bool = false) -> void:
 	reset_size()
 
 func set_width(width: float, force: bool = false) -> void:
+	if _success != null and RollSuccessDisplay.is_ink_stamp(tool_id):
+		width = maxf(width,_success.custom_minimum_size.x)
 	super.set_width(width,force)
 	if _rows == null: return
 	for row: Control in _rows.get_children():
 		if row.has_meta("ink_stamp"):
-			row.custom_minimum_size = Vector2(floorf((width-16.0)/3.0),52)
+			row.custom_minimum_size = Vector2(floorf((width-16.0)/3.0),62)
 			row.pivot_offset = row.custom_minimum_size*0.5
 			var font := row.get_theme_font("font")
-			var glyph_width := font.get_string_size(row.text,HORIZONTAL_ALIGNMENT_LEFT,-1,42).x
-			row.add_theme_font_size_override("font_size",mini(42,int(42.0*(row.custom_minimum_size.x-4.0)/maxf(glyph_width,1.0))))
+			var glyph_width := font.get_string_size(row.text,HORIZONTAL_ALIGNMENT_LEFT,-1,50).x
+			row.add_theme_font_size_override("font_size",mini(50,int(50.0*(row.custom_minimum_size.x-4.0)/maxf(glyph_width,1.0))))
 		else:
 			row.custom_minimum_size = Vector2(floorf((width-16.0)/3.0) if _wide else width,34)
 	reset_size()

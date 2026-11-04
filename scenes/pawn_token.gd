@@ -21,6 +21,11 @@ var _pulse: float = 1.0
 var _shield_shell: ShieldShell
 ## Persistent protection remains visible; this switch only skips gain/break motion.
 var shield_motion: bool = true
+## Only round body artwork rolls; owner base, stack, shield and skill marker stay upright.
+var melon_roll_angle: float = 0.0:
+	set(value):
+		melon_roll_angle = fposmod(value, TAU)
+		queue_redraw()
 
 
 func _ready() -> void:
@@ -40,9 +45,37 @@ func configure(value: PlayerPawn, color: Color, images: bool = true) -> void:
 	var animate_shield: bool = shield_motion and is_inside_tree() and _signature != ""
 	_signature = key
 	artwork = art
+	if not is_rolling_body():
+		melon_roll_angle = 0.0
 	_sync_shield(animate_shield)
 	set_process(skill_ready())
 	queue_redraw()
+
+
+func is_rolling_melon() -> bool:
+	return pawn != null and pawn.sub_type() == GameEnums.PawnSubType.ODD_MELON
+
+func is_rolling_body() -> bool:
+	return pawn != null and pawn.sub_type() in [GameEnums.PawnSubType.ODD_MELON,GameEnums.PawnSubType.POOL_8BALL]
+
+
+func artwork_rect() -> Rect2:
+	if artwork.is_empty():
+		return BODY_BOX
+	var region: Rect2 = artwork.region
+	var factor: float = minf(BODY_BOX.size.x / region.size.x, BODY_BOX.size.y / region.size.y)
+	var size: Vector2 = region.size * factor
+	return Rect2(Vector2(-size.x / 2.0, -size.y), size)
+
+
+## Shared round-body pivot. The melon's short stem extends above this center.
+func melon_roll_center() -> Vector2:
+	var rect: Rect2 = artwork_rect()
+	return Vector2(0, -minf(rect.size.x, rect.size.y) * 0.5)
+
+
+func melon_roll_radius() -> float:
+	return -melon_roll_center().y * scale.x
 
 
 func has_protection() -> bool:
@@ -201,9 +234,11 @@ func _draw() -> void:
 	if not artwork.is_empty():
 		var texture: Texture2D = artwork.texture
 		var region: Rect2 = artwork.region
-		var factor: float = minf(BODY_BOX.size.x / region.size.x, BODY_BOX.size.y / region.size.y)
-		var size: Vector2 = region.size * factor
-		var rect := Rect2(Vector2(-size.x / 2.0, -size.y), size)
+		var rect: Rect2 = artwork_rect()
+		if is_rolling_body():
+			var center: Vector2 = melon_roll_center()
+			draw_set_transform(center, melon_roll_angle)
+			rect.position -= center
 		if pawn.is_promoted_shogi():
 			for offset: Vector2 in [Vector2(-1.4,0),Vector2(1.4,0),Vector2(0,-1.4),Vector2(0,1.4)]:
 				draw_texture_rect_region(texture,Rect2(rect.position+offset,rect.size),region,Color("ff5e50"))
@@ -212,6 +247,7 @@ func _draw() -> void:
 		# Basic tokens use the owner's color; chess/evolved pieces retain their material.
 		var body_color: Color = owner_color if pawn.kind == GameEnums.PawnKind.BASIC else Color.WHITE
 		draw_texture_rect_region(texture, rect, region, body_color)
+		draw_set_transform(Vector2.ZERO)
 	else:
 		_draw_shape()
 	if pawn.is_promoted_shogi() and artwork.is_empty():

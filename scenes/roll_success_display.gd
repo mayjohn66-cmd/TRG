@@ -2,7 +2,7 @@
 class_name RollSuccessDisplay
 extends Control
 
-const TOOLS: Array[StringName] = [&"REVOLVER",&"LIFE_ROULETTE",&"DICE_MAHJONG",&"DICE_TAROT",&"DICE_YACHT",&"DICE_BLACKJACK"]
+const TOOLS: Array[StringName] = [&"REVOLVER",&"LIFE_ROULETTE",&"DICE_MAHJONG",&"DICE_TAROT",&"DICE_YACHT",&"DICE_BLACKJACK",&"DICE_DARTS"]
 const STACK_TOOLS: Array[StringName] = [&"DICE_MAHJONG",&"DICE_BLACKJACK"]
 const STAMPS := {&"LIFE_ROULETTE":"star",&"DICE_TAROT":"moon",&"DICE_YACHT":"thumb"}
 const MAX_SHOWN := 6
@@ -30,6 +30,9 @@ func _init() -> void:
 static func supports(tool: StringName) -> bool:
 	return tool in TOOLS
 
+static func is_ink_stamp(tool: StringName) -> bool:
+	return STAMPS.has(tool) or tool == &"DICE_DARTS"
+
 func clear() -> void:
 	count = 0
 	_latest = -1
@@ -51,6 +54,7 @@ func configure(tool: StringName) -> void:
 	if tool_id == tool: return
 	clear()
 	tool_id = tool
+	custom_minimum_size = Vector2(246,166) if tool == &"DICE_DARTS" else (Vector2(210,146) if is_ink_stamp(tool) else Vector2(180,102))
 
 func set_count(total: int, animate: bool = false) -> void:
 	total = maxi(0,total)
@@ -81,13 +85,19 @@ func set_count(total: int, animate: bool = false) -> void:
 			remove_child(mark)
 			mark.queue_free()
 		_stamps.clear()
-		var tex: Texture2D = load("res://assets/ui/trickcal/roll_success_v01/%s.webp" % STAMPS.get(tool_id,"star"))
+		var tex: Texture2D = load("res://assets/ui/trickcal/roll_success_v01/target.svg") if tool_id == &"DICE_DARTS" else load("res://assets/ui/trickcal/roll_success_v01/%s.webp" % STAMPS.get(tool_id,"star"))
 		for i: int in mini(count,MAX_SHOWN):
 			var mark := TextureRect.new()
 			mark.texture = tex
 			mark.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 			mark.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 			mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			var ink := ShaderMaterial.new()
+			ink.shader = preload("res://scenes/roll_stamp_outline.gdshader")
+			ink.set_shader_parameter("ink_grain", 1.0 if tool_id == &"DICE_DARTS" else 0.0)
+			mark.material = ink
+			if tool_id == &"DICE_DARTS":
+				mark.name = "BullseyeStamp%d" % (i + 1)
 			add_child(mark)
 			_stamps.append(mark)
 		_latest = _stamps.size()-1
@@ -126,9 +136,12 @@ func _layout() -> void:
 	if _view != null: _view.size = size
 	for i: int in _stamps.size():
 		var mark := _stamps[i]
-		mark.size = Vector2(51,51)
+		var edge := 74.0 if tool_id == &"DICE_DARTS" else 62.0
+		var pitch := 81.0 if tool_id == &"DICE_DARTS" else 69.0
+		mark.size = Vector2(edge,edge)
+		(mark.material as ShaderMaterial).set_shader_parameter("draw_size", mark.size)
 		mark.pivot_offset = mark.size*0.5
-		mark.position = Vector2((size.x-165.0)*0.5+(i%3)*57, (i/3)*47.0)
+		mark.position = Vector2((size.x-(pitch*2.0+edge))*0.5+(i%3)*pitch, 7.0+(i/3)*(80.0 if tool_id == &"DICE_DARTS" else 69.0))
 		mark.rotation = deg_to_rad(-8.0 if i%2==0 else 6.0)
 	if _latest >= 0 and _latest < _stamps.size():
 		_stamp_rest = _stamps[_latest].position
