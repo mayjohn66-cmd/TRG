@@ -619,26 +619,22 @@ func _finish() -> bool:
 	_assert(_draft_rounds.has(1), "1라운드 드래프트가 열렸어야 한다")
 	_assert(_board._result_overlay != null, "게임 종료 결과창이 떠야 한다")
 	if _board._result_overlay != null:
-		var restart_found: bool = false
-		for node: Node in _board._result_overlay.find_children("*", "Button", true, false):
-			if (node as Button).text == "같은 설정으로 바로 재시작":
-				restart_found = true
-		_assert(restart_found, "결과창에 [같은 설정으로 바로 재시작] 버튼이 있어야 한다")
-		var lobby_found: bool = false
-		for node: Node in _board._result_overlay.find_children("*", "Button", true, false):
-			if (node as Button).text == "로비로 나가기":
-				lobby_found = true
-		_assert(lobby_found, "결과창에 [로비로 나가기] 버튼이 있어야 한다")
-		var labels: String = ""
-		for node: Node in _board._result_overlay.find_children("*", "Label", true, false):
-			labels += (node as Label).text + "\n"
-		_assert(labels.contains("플레이한 라운드") and labels.contains("승리 요인"), "결과창에 라운드 수와 승리 요인이 보여야 한다")
-		var ranking: Node = _board._result_overlay.find_child("RankingList", true, false)
-		_assert(ranking != null and ranking.get_child_count() == _board._player_ids.size(), "결과창에 참가자 수만큼 순위 줄이 있다")
-		if ranking != null and ranking.get_child_count() > 0:
-			_assert(int(ranking.get_child(0).get_meta("rank")) == 1 and int(ranking.get_child(0).get_meta("player")) == _board.state.winner, "1등 줄은 승자")
-			for index: int in ranking.get_child_count():
-				_assert(int(ranking.get_child(index).get_meta("rank")) == index + 1, "순위는 1등부터 차례대로")
+		# 결과창은 RESULT REPORT 만화 페이지 (ResultComicReport): 버튼은 이름으로, 라운드·승리 요인·순위 줄은 각 칸으로 확인한다
+		var overlay: Node = _board._result_overlay
+		_assert(overlay.find_child("RestartButton", true, false) != null, "결과창에 [다시 한 판!] 재시작 버튼이 있어야 한다")
+		_assert(overlay.find_child("LobbyButton", true, false) != null, "결과창에 [로비로 나가기] 버튼이 있어야 한다")
+		var round_label: Label = overlay.find_child("RoundNumber", true, false) as Label
+		var phrase: Label = overlay.find_child("ReportVictoryPhrase", true, false) as Label
+		var condition: Label = overlay.find_child("MatchEndReasonText", true, false) as Label
+		_assert(round_label != null and round_label.text == str(_board.state.round_number) and phrase != null and condition != null and (phrase.text + condition.text).strip_edges() != "", "결과창에 라운드 수와 승리 요인이 보여야 한다")
+		var names: Array[String] = []
+		for index: int in _board._player_ids.size():
+			var name_label: Label = overlay.find_child("ReportName%d" % (index + 1), true, false) as Label
+			if name_label != null:
+				names.append(name_label.text)
+		_assert(names.size() == _board._player_ids.size() and overlay.find_child("ReportName%d" % (_board._player_ids.size() + 1), true, false) == null, "결과창에 참가자 수만큼 순위 줄이 있다 (%s)" % str(names))
+		if not names.is_empty():
+			_assert(names[0] == _board._player_name(_board.state.winner), "1등 줄은 승자 (%s / %s)" % [names[0], _board._player_name(_board.state.winner)])
 	# 🏆 법전 슬롯 툴팁: 조건과 모두의 진행도
 	_board.state.rulebook.set_laws_from_ids(["LAW_01"])
 	_board._fill_law_tip(0)
