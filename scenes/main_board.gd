@@ -656,7 +656,6 @@ var _match_background: TextureRect = null
 var _track_lines: Array[Line2D] = []
 var _action_row: HFlowContainer = null
 var _roll_pad: RollPad = null
-var _dart_aim: DartBoardView = null
 ## 칸 바닥 한꺼번에 그리기 (그리기 호출 줄이기).
 var _tile_batch: BoardSkin.TileBatch = null
 ## 강화 망치 (v1.1) 선택 판: [더 강화!] / [멈추기].
@@ -2216,12 +2215,6 @@ func _build_action_bar() -> void:
 	_roll_pad.trigger_pulled.connect(_on_pad_trigger_pulled)
 	_roll_pad.preparation_finished.connect(_refresh_controls)
 	add_child(_roll_pad)
-	# 불스아이 다트 (v1.1): 내 차례에 보드 한가운데 돌아가는 과녁 + 조준점. [던지기] 순간의 조준을 굴림에 싣는다.
-	_dart_aim = DartBoardView.new()
-	_dart_aim.name = "DartAim"
-	_dart_aim.position = Vector2(683.0, 335.0) - DartBoardView.SIZE * 0.5
-	_dart_aim.visible = false
-	add_child(_dart_aim)
 	_build_hammer_panel()
 	# 러시안 룰렛은 [발사]와 [정지] 두 버튼만 쓴다 (정지 버튼은 룰렛을 쓸 때만 이 줄로 옮겨 온다).
 	_gun_row = HBoxContainer.new()
@@ -6610,7 +6603,7 @@ const TOOL_CARDS: Dictionary = {
 	&"DICE_BLACKJACK": ["21", Color("2b8a3e"), "카드 합계(11~21)에서 -10 한 만큼 전진!", "(★21 달성: 11칸+한번더 / 22↑ 초과 시 0칸 폭발!)"],
 	&"DICE_PINBALL": ["핀", Color("1971c2"), "발사대를 당겨 쇠구슬 발사!", "구슬이 골인한 칸의 숫자(1 ~ 10칸)만큼 전진"],
 	&"DICE_STOCK": ["주", Color("2f9e44"), "주가만큼 전진! 오를까 내릴까?", "★상한가 20칸 · 상장폐지는 선두 말 사출"],
-	&"DICE_DARTS": ["◎", Color("c92a2a"), "돌아가는 과녁에 타이밍 맞춰 던져라!", "숫자 × 싱글·더블·트리플 · ★불스아이 10칸+한 번 더"],
+	&"DICE_DARTS": ["◎", Color("c92a2a"), "다트를 던져라! 어디에 꽂힐지는 운!", "숫자 × 싱글·더블·트리플 · ★불스아이 10칸+한 번 더"],
 }
 
 
@@ -6764,7 +6757,6 @@ func _refresh_controls() -> void:
 	_roll_button.disabled = not can_roll or _tile_pick_active or _ui_busy() or manager.stack_offer_pending() or manager.duel_pending() or _is_bot_turn() or manager.hammer_pending(player_id)
 	_refresh_roll_pad()
 	_refresh_tool_stage()
-	_refresh_dart_aim(tool)
 	_refresh_hammer_panel()
 	_refresh_bounty_marks()
 	var can_stop: bool = not over and tool.has_pending_state() and current_phase == TurnManager.State.PHASE_ROLL_WAIT
@@ -6966,17 +6958,6 @@ func _play_hammer_outcome(tool_name: String, failed_level: int, success: bool) -
 		panel.hide()
 		panel.queue_free()
 
-
-
-## 다트 조준판: 내가 직접 굴리는 다트 차례(굴리기 전)에만 돌아간다.
-func _refresh_dart_aim(tool: BaseJudgmentTool) -> void:
-	if _dart_aim == null:
-		return
-	_dart_aim.position = _board_center() - DartBoardView.SIZE * 0.5
-	var show: bool = tool is ToolDarts and _roll_view_allowed() and not _roll_button.disabled and not _fx_busy and manager.current_player_id() == _dock_owner() and _fx_on()
-	if show != _dart_aim.visible:
-		_dart_aim.visible = show
-		_dart_aim.set_aiming(show)
 
 
 ## 러시안 룰렛이면 정지 버튼을 [발사] 옆 큰 버튼으로 옮기고, 다른 도구면 원래 자리(우측 버튼 줄)로 돌려보낸다.
@@ -7242,10 +7223,6 @@ func _on_roll_pressed() -> void:
 	if _is_dice_family(tool) and tool.tool_id != &"YUT":
 		Sfx.play(&"dice_roll")
 	var params: Dictionary = {}
-	if tool is ToolDarts and _dart_aim != null and _dart_aim.aiming:
-		params["aim"] = _dart_aim.current_aim()  # 던진 순간의 조준 (타이밍)
-		_dart_aim.set_aiming(false)
-		_dart_aim.visible = false
 	if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN:
 		_act(&"proceed")
 	if manager.current_state == TurnManager.State.PHASE_ROLL_WAIT:

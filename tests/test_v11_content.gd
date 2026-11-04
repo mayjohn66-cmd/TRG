@@ -119,55 +119,59 @@ func test_darts_scoring_rings_and_bull() -> void:
 		else:
 			check(not result.reroll and result.steps >= 1 and result.steps <= 18, "그 밖은 1~18칸, 재굴림 없음")
 	var mean: float = float(total) / 3000.0
-	check(mean > 4.0 and mean < 6.5, "조준 없는(봇) 평균 %.2f칸" % mean)
-	check(bulls < 120, "봇의 불스아이는 드물다 (%d/3000)" % bulls)
+	check(mean > 4.0 and mean < 6.5, "평균 %.2f칸" % mean)
+	check(bulls < 120, "불스아이는 드물다 (%d/3000)" % bulls)
 
 
-## 2026-11-04 밸런스: 노련하게 조준해도 트리플·더블·불스아이가 매번 맞지는 않는다 (이전에는 정중앙 조준이 항상 불스아이, 트리플은 69%).
-func test_darts_precise_aim_is_no_longer_a_sure_thing() -> void:
-	var tool := ToolDarts.new()
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 11
-	var trials: int = 4000
-	var bulls: int = 0
-	var triples: int = 0
-	var total_triple_aim: int = 0
-	for i: int in trials:
-		if bool(tool.throw_at(rng, 0.0, 0.3).details["bull"]):
-			bulls += 1
-	for i: int in trials:
-		var result: RollResult = tool.throw_at(rng, 0.505, 1.0 / 24.0)  # 숫자 6 조각의 한가운데, 트리플 고리 중앙
-		total_triple_aim += result.steps
-		if int(result.details["multiplier"]) == 3:
-			triples += 1
-	check(bulls > trials * 0.5 and bulls < trials * 0.85, "정중앙 조준의 불스아이는 절반 남짓 (%d/%d)" % [bulls, trials])
-	check(triples < trials * 0.5, "트리플 고리를 정확히 노려도 절반 미만 (%d/%d)" % [triples, trials])
-	check(float(total_triple_aim) / trials < 10.0, "트리플 노리기의 평균은 10칸 미만 (%.2f)" % (float(total_triple_aim) / trials))
-	var outside: int = 0
-	for i: int in trials:
-		var edge: Dictionary = tool.throw_at(rng, 0.95, 0.04).details
-		if str(edge["ring"]) == "빗나감":
-			outside += 1
-	check(outside > 0, "바깥쪽을 노리면 판 밖으로 빗나가기도 한다")
-	check_eq(str(ToolDarts.score(1.05, 0.01)["ring"]), "빗나감", "판 밖은 [빗나감]")
-	check_eq(int(ToolDarts.score(1.05, 0.01)["steps"]), ToolDarts.WEDGES[0], "빗나감은 숫자 × 1")
-
-
-func test_darts_aim_from_the_roll_action_is_used_once() -> void:
+func test_darts_ignore_any_aim_and_stay_deterministic() -> void:
 	var manager := _new_manager()
 	var state: GameState = manager.state
 	var roller: int = manager.current_player_id()
 	state.tools[roller] = ToolRegistry.create(&"DICE_DARTS")
 	var events := _events(manager)
 	manager.act(&"proceed", {"player_id": roller})
-	manager.act(&"roll", {"player_id": roller, "aim": [0.0, 0.0]})  # 정중앙을 노렸다 (손떨림 최대 JITTER_RADIUS)
+	manager.act(&"roll", {"player_id": roller, "aim": [0.0, 0.0]})  # 예전 클라이언트가 정중앙 조준을 실어 보내도 결과에 쓰지 않는다
 	var rolled: Array = events.filter(func(event: Dictionary) -> bool: return event["kind"] == &"roll_resolved")
 	check(not rolled.is_empty(), "굴림 결과")
+	var first: Dictionary = {}
 	if not rolled.is_empty():
-		var details: Dictionary = rolled[0]["data"]["result"]["details"]
-		check(float(details["radius"]) <= ToolDarts.JITTER_RADIUS + 0.0001, "조준한 자리 근처에 꽂힌다 (%.3f)" % float(details["radius"]))
-	check_eq((state.tools[roller] as ToolDarts).pending_aim, Vector2(-1, -1), "조준은 한 번 쓰면 비운다")
+		first = rolled[0]["data"]["result"]["details"]
+		check(float(first["radius"]) >= 0.0 and float(first["radius"]) <= 0.98 and float(first["angle"]) >= 0.0 and float(first["angle"]) < 1.0, "꽂힌 자리는 판 안")
 	_dispose(manager)
+	var tool_a := ToolDarts.new()
+	var tool_b := ToolDarts.new()
+	var rng_a := RandomNumberGenerator.new()
+	var rng_b := RandomNumberGenerator.new()
+	rng_a.seed = 77
+	rng_b.seed = 77
+	for i: int in 20:
+		check_eq(tool_a.roll(rng_a).steps, tool_b.roll(rng_b).steps, "같은 난수면 같은 결과 (온라인 동기화) #%d" % i)
+
+
+## 2026-11-04: 다트는 피지컬이 아니라 완전한 운이다. 던진 자리는 판 면적에 비례해 무작위.
+func test_darts_are_pure_chance_with_a_modest_average() -> void:
+	var tool := ToolDarts.new()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 11
+	var trials: int = 20000
+	var total: int = 0
+	var bulls: int = 0
+	var triples: int = 0
+	var doubles: int = 0
+	for i: int in trials:
+		var result: RollResult = tool.roll(rng)
+		total += result.steps
+		if bool(result.details["bull"]):
+			bulls += 1
+		elif int(result.details["multiplier"]) == 3:
+			triples += 1
+		elif int(result.details["multiplier"]) == 2:
+			doubles += 1
+	var mean: float = float(total) / trials
+	check(mean > 4.8 and mean < 5.8, "평균 칸 수 %.2f (기본 주사위 3.5, 대부분 4~6)" % mean)
+	check(float(bulls) / trials < 0.015, "불스아이는 드물다 (%.2f%%)" % (100.0 * bulls / trials))
+	check(float(triples) / trials > 0.08 and float(triples) / trials < 0.15, "트리플은 한 줌 (%.1f%%)" % (100.0 * triples / trials))
+	check(float(doubles) / trials > 0.25 and float(doubles) / trials < 0.34, "더블은 바깥 고리 면적만큼 (%.1f%%)" % (100.0 * doubles / trials))
 
 
 # ---- 기물: 괴상한 멜론 ----

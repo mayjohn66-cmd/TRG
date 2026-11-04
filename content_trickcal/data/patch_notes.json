@@ -146,9 +146,9 @@
        "ja": "他のプレイヤーのドロー時に黄色いカードがプロフィールへ飛ぶ演出を削除"
       },
       {
-       "ko": "불스아이 다트 보드가 너무 강해서, 정확히 노려도 트리플·더블·불스아이가 덜 맞도록 조정하고 바깥쪽을 노리면 판 밖으로 빗나갈 수 있게 했어요",
-       "en": "Bullseye Dartboard was too strong: precise aim now lands triples, doubles and bullseyes less often, and aiming at the outer edge can miss the board",
-       "ja": "ブルズアイダーツが強すぎたため、正確に狙ってもトリプル・ダブル・ブルズアイが当たりにくくなり、外側を狙うと盤外に外れることがあります"
+       "ko": "불스아이 다트 보드는 타이밍 조준 없이 던지면 어디에 꽂힐지 완전한 운으로 정해져요",
+       "en": "Bullseye Dartboard no longer uses timed aiming: where the dart lands is now pure luck",
+       "ja": "ブルズアイダーツはタイミング照準をなくし、どこに刺さるかは完全に運で決まります"
       },
       {
        "ko": "특수 승리는 제정된 시점부터 새로 세요 (미리 쌓은 처치·방문 기록이나 깔아 둔 설치물로 바로 달성되지 않아요)",

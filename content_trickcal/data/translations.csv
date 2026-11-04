@@ -2554,7 +2554,7 @@ P%d의 %d번 말 수배! 잡으면 +%d칸,P%d's pawn %d is WANTED! Capture it fo
 ◆ 1등 적 말에 수배 마크\n◆ 그 말을 잡으면 즉시 +10칸,◆ Mark the leading enemy pawn as WANTED\n◆ Capture it for an instant +10 spaces,◆ 1位の敵の駒に手配マーク\n◆ その駒を捕まえると即+10マス
 주가만큼 전진! 오를까 내릴까?,Advance by the share price. Up or down?,株価の分だけ前進！上がる？下がる？
 ★상한가 20칸 · 상장폐지는 선두 말 사출,★Limit up 20 · delisting ejects your lead pawn,★ストップ高20マス・上場廃止は先頭の駒が射出
-돌아가는 과녁에 타이밍 맞춰 던져라!,Time your throw at the spinning board!,回る的にタイミングよく投げろ！
+다트를 던져라! 어디에 꽂힐지는 운!,Throw a dart! Where it lands is pure luck!,ダーツを投げろ！どこに刺さるかは運次第！
 숫자 × 싱글·더블·트리플 · ★불스아이 10칸+한 번 더,Number × Single/Double/Triple · ★Bullseye 10 + extra roll,数字×シングル・ダブル・トリプル・★ブルズアイ10マス+もう1回
 보통 (88%),Normal (88%),通常 (88%)
 "주가만큼 (1~12칸, 매번 ±3)","By price (1~12, ±3 each roll)",株価の分 (1〜12マス、毎回±3)

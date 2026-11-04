@@ -37,16 +37,14 @@ func _run() -> void:
 	quiet()
 	var me: int = manager.current_player_id()
 
-	# 1) 다트: 내 차례에 조준판이 돌고, [던지기] 순간의 조준이 굴림에 실린다
+	# 1) 다트: 조준판 없이 [다트 던지기] 한 번으로 던진다 (꽂히는 자리는 완전한 운)
 	state.tools[me] = ToolRegistry.create(&"DICE_DARTS")
-	_board.instant_roll_for_test = false  # 조준판은 연출이 켜져 있을 때 보인다
+	_board.instant_roll_for_test = false
 	_board._fx_busy = false
 	_board._refresh_all()
 	await settle(6)
-	_expect(_board._dart_aim.visible and _board._dart_aim.aiming, "다트 차례: 보드 가운데 돌아가는 조준판")
+	_expect(_board.find_child("DartAim", true, false) == null, "다트 차례에도 타이밍 조준판은 없다")
 	_expect(_board._roll_button.text.contains("던지기"), "굴리기 버튼은 [다트 던지기] (%s)" % _board._roll_button.text)
-	var aim: Array = _board._dart_aim.current_aim()
-	_expect(aim.size() == 2 and float(aim[0]) >= 0.0 and float(aim[0]) <= 1.0, "조준 [거리, 각도]")
 	var events: Array = []
 	manager.event_received.connect(func(kind: StringName, data: Dictionary) -> void: events.append({"kind": kind, "data": data}))
 	_board.instant_roll_for_test = true
@@ -54,7 +52,6 @@ func _run() -> void:
 	await settle()
 	var rolled: Array = events.filter(func(event: Dictionary) -> bool: return event["kind"] == &"roll_resolved")
 	_expect(not rolled.is_empty() and StringName(rolled[0]["data"]["result"]["tool_id"]) == &"DICE_DARTS", "다트를 던졌다")
-	_expect(not _board._dart_aim.visible, "던지면 조준판이 사라진다")
 
 	# 2) 결과 그림: 주식 차트·다트판이 같은 시계로 그려지고 끝나면 결과 글
 	var presenter: RollPresenter = RollPresenter.new()

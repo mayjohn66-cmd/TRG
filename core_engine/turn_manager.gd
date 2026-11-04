@@ -477,9 +477,6 @@ func _handle_roll(actor: int, params: Dictionary = {}) -> void:
 	# 야추 다이스: 다시 굴릴 때 고정할 주사위(keep: 5개 bool)를 굴림 행동에 실어 보낸다.
 	if params.has("keep") and tool is ToolYacht:
 		(tool as ToolYacht).set_keep(params["keep"] as Array if params["keep"] is Array else [])
-	# 불스아이 다트: 사람의 던지기 타이밍(조준 [거리, 각도])을 굴림 행동에 실어 보낸다.
-	if params.has("aim") and tool is ToolDarts:
-		(tool as ToolDarts).set_aim(params["aim"])
 	state.pacing_humans = pacing_humans
 	_apply_roll_result(_roll_with_modifiers(actor, tool))
 
