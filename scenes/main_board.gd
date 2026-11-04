@@ -4363,14 +4363,15 @@ func _paint_pawn_slot(parts: Dictionary, pawn: PlayerPawn, color: Color) -> void
 	letter.text = shown if shown != "" else PawnCatalog.basic_letter()
 	letter.add_theme_color_override("font_color", Color("ff6b6b") if pawn.is_promoted_shogi() else Color("f8f9fa"))
 	if pawn.is_finished:
-		panel.add_theme_stylebox_override("panel", _style(Color("d4a72c"), Color("fff3bf"), 3, 8, 12, 1))
-		letter.add_theme_color_override("font_color", Color("2b2100"))
-		status.add_theme_color_override("font_color", Color("2b2100"))
+		# 완주: 플레이어 색(노랑 포함)과 헷갈리지 않게 어두운 바탕 + 굵은 금테 + 모서리 별로 그린다 (2026-11-04 제보: 노란색은 출전과 완주가 구별이 안 됐다)
+		panel.add_theme_stylebox_override("panel", _style(Color("141a24"), Color("ffe066"), 4, 8, 12, 1))
+		letter.add_theme_color_override("font_color", Color("ffe066"))
+		status.add_theme_color_override("font_color", Color("ffe066"))
 		status.text = "★완주"
 		panel.modulate = Color.WHITE
 	elif pawn.has_left_start:
 		panel.add_theme_stylebox_override("panel", _style(color.darkened(0.1), color.lightened(0.5), 2, 8, 0, 1))
-		letter.add_theme_color_override("font_color", Color("ffffff"))
+		letter.add_theme_color_override("font_color", Color("ffffff") if color.get_luminance() < 0.6 else Color("2b2100"))
 		status.add_theme_color_override("font_color", Color("fff3bf"))
 		status.text = "출전"
 		panel.modulate = Color.WHITE
@@ -4381,6 +4382,38 @@ func _paint_pawn_slot(parts: Dictionary, pawn: PlayerPawn, color: Color) -> void
 		status.text = "대기"
 		panel.modulate = Color.WHITE if pawn.revenge_boost else Color(1, 1, 1, 0.6)
 	_paint_revenge_glow(panel, pawn.revenge_boost and not pawn.has_left_start and not pawn.is_finished)
+	_paint_finish_star(panel, pawn.is_finished)
+
+
+## 완주한 말의 프로필 칸 모서리에 금색 별을 붙인다 (색만으로 구별하지 않게: 노란색 플레이어의 출전 칸과 완주 칸이 비슷해 보이던 문제).
+func _paint_finish_star(host: Control, on: bool) -> void:
+	var mark: Control = host.get_node_or_null("FinishStar") as Control
+	if not on:
+		if mark != null:
+			mark.visible = false
+		return
+	if mark == null:
+		mark = FinishStar.new()
+		mark.name = "FinishStar"
+		mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		host.add_child(mark)
+	mark.visible = true
+
+
+## 칸 오른쪽 위에 그리는 금색 별 (바깥은 어두운 테두리).
+class FinishStar extends Control:
+	func _draw() -> void:
+		var radius: float = clampf(minf(size.x, size.y) * 0.26, 7.0, 14.0)
+		var center := Vector2(size.x - radius - 1.0, radius + 1.0)
+		var points := PackedVector2Array()
+		for index: int in 10:
+			var angle: float = -PI / 2.0 + TAU * float(index) / 10.0
+			var length: float = radius if index % 2 == 0 else radius * 0.45
+			points.append(center + Vector2(cos(angle), sin(angle)) * length)
+		draw_colored_polygon(points, Color("ffd43b"))
+		var outline := points.duplicate()
+		outline.append(points[0])
+		draw_polyline(outline, Color("3b2a00"), 1.5, true)
 
 
 ## 리벤지 부스터가 장전된 대기 말: 프로필 칸이 이글이글 불탄다 (주황 네온 테두리 + 칸 가장자리에서 넘실대는 불꽃, 글자 없음).

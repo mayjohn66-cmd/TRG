@@ -248,6 +248,11 @@
        "ko": "이의 있음! 카드가 방어 카드로 오해되던 것을 설명에 '내 차례 시작에 사용 · 방어 카드 아님'을 적어 개선",
        "en": "Objection! was mistaken for a defense card; its text now says 'Use at the start of your turn · not a defense card'",
        "ja": "異議あり！が防御カードと誤解されていたため、説明に「自分のターン開始時に使用・防御カードではない」と明記"
+      },
+      {
+       "ko": "프로필의 말 칸에서 완주와 출전이 비슷해 보이던 것(특히 노란색 플레이어)을, 완주한 말은 어두운 바탕·금테·별 표시로 확실히 구분되게 개선",
+       "en": "Finished and in-play pawn slots looked alike on profiles (especially for the yellow player); finished pawns now use a dark fill, gold frame and a star",
+       "ja": "プロフィールの駒枠で完走と出撃が似て見えた問題（特に黄色のプレイヤー）を、完走した駒は暗い背景・金枠・星マークで見分けやすく改善"
       }
      ]
     },
