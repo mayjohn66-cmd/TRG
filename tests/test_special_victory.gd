@@ -338,3 +338,58 @@ func test_reach_means_exactly_one_step_left() -> void:
 	check(not SpecialVictory.is_reach(state, kaiji, 1), "카이지는 리치 사이렌 대상이 아니다")
 	check_eq(SpecialVictory.goal_of(state, "LAW_01"), arena.goal(), "법전의 목표 수치")
 
+
+
+# ---- 2026-11-04: 특수 승리는 제정한 시점부터 새로 센다 ----
+
+func test_enacting_a_law_starts_cumulative_records_from_zero() -> void:
+	var manager := _new_manager()
+	var state: GameState = manager.state
+	for entry: Array in [[VictoryLaw.KILLS, "LAW_01"], [VictoryLaw.BAKERY, "LAW_02"], [VictoryLaw.EJECTED, "LAW_06"], [VictoryLaw.UNDERDOG, "LAW_08"]]:
+		var key: StringName = entry[0]
+		state.add_stat(1, key, 5)
+		state.add_stat(2, key, 2)
+		var law: VictoryLaw = _law(entry[1])
+		check_eq(law.progress(state, 1), 5, "%s: 제정 전에는 이미 쌓인 기록이 보인다" % entry[1])
+		SpecialVictory.on_law_enacted(state, law)
+		state.rulebook.enqueue_law(law)
+		check_eq(law.progress(state, 1), 0, "%s: 제정하는 순간 0부터 다시 센다" % entry[1])
+		check_eq(law.progress(state, 2), 0, "%s: 모든 사람이 0부터" % entry[1])
+		state.add_stat(1, key, 1)
+		check_eq(law.progress(state, 1), 1, "%s: 제정 뒤에 쌓은 것만 센다" % entry[1])
+	check(SpecialVictory.achieved_by(state, 1) == &"", "미리 쌓은 기록으로 제정하자마자 달성하지 않는다")
+	_dispose(manager)
+
+
+func test_enacting_a_law_does_not_reset_other_laws_records() -> void:
+	var manager := _new_manager()
+	var state: GameState = manager.state
+	var kills: VictoryLaw = _law("LAW_01")
+	SpecialVictory.on_law_enacted(state, kills)
+	state.rulebook.enqueue_law(kills)
+	state.add_stat(1, VictoryLaw.KILLS, 4)
+	var bakery: VictoryLaw = _law("LAW_02")
+	SpecialVictory.on_law_enacted(state, bakery)
+	state.rulebook.enqueue_law(bakery)
+	check_eq(kills.progress(state, 1), 4, "다른 교칙이 새로 제정돼도 이미 걸려 있던 교칙의 기록은 그대로")
+	_dispose(manager)
+
+
+func test_estate_law_ignores_traps_placed_before_it_was_enacted() -> void:
+	var manager := _new_manager()
+	var state: GameState = manager.state
+	for tile: int in [3, 5, 7, 9, 11]:
+		state.place_attachment(tile, TrapPit.new(1))
+	var law: VictoryLaw = _law("LAW_03")
+	check_eq(law.progress(state, 1), 5, "제정 전에는 깔려 있는 설치물 5개가 보인다")
+	SpecialVictory.on_law_enacted(state, law)
+	state.rulebook.enqueue_law(law)
+	check_eq(law.progress(state, 1), 0, "제정 시점에 깔려 있던 설치물은 세지 않는다")
+	check(SpecialVictory.achieved_by(state, 1) == &"", "5개를 미리 깔아 두고 제정해도 바로 달성하지 않는다")
+	state.place_attachment(13, TrapPit.new(1))
+	check_eq(law.progress(state, 1), 1, "제정 뒤에 새로 깐 설치물부터 센다")
+	var snapshot: TurnSnapshot = TurnSnapshot.capture(state)
+	state.board.get_tile(13).clear_attachments()
+	snapshot.restore(state)
+	check_eq(law.progress(state, 1), 1, "스냅샷 복원 뒤에도 같은 개수 (제외 표시도 함께 복원)")
+	_dispose(manager)

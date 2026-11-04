@@ -28,7 +28,7 @@ const DEFS: Dictionary = {
 	"LAW_08": ["구축해 주겠어!", "완주 0개인 채로 선두의 말을 {p1}회 처치", 3, UNDERDOG, "처치"],
 	"LAW_09": ["방해령 허리케인 포스!!", "방해령 {p1}종(베루·사리·메죵)을 모두 손패에 모은 채 내 차례 종료", 3, HAUNT, "종"],
 }
-## 법전에 있는 동안만 세는 순간 기록 (교칙이 제정되면 모두 0부터 다시 센다).
+## 법전에 있는 동안만 세는 순간 기록 (교칙이 제정되면 모두 0부터 다시 센다). 누적 기록(처치·빵집·사출·꼴찌 처치)도 제정 시점에 0부터 다시 센다 (SpecialVictory.on_law_enacted).
 const SESSION_KEYS: Array[StringName] = [BEST_MOVE, BEST_CHAIN]
 ## ACT_06 이의 있음으로 0으로 되돌릴 수 있는 기록 (지금 보드 상태로 정해지는 설치물·포위망은 제외).
 const RESETTABLE_KEYS: Array[StringName] = [KILLS, BAKERY, BEST_MOVE, EJECTED, BEST_CHAIN, UNDERDOG]
@@ -70,7 +70,7 @@ func resettable() -> bool:
 func progress(state: GameState, player_id: int) -> int:
 	match stat_key:
 		ESTATE:
-			return state.owned_attachment_count(player_id)
+			return state.owned_attachment_count(player_id, false)  # 제정 전부터 깔려 있던 설치물은 세지 않는다
 		SPREAD:
 			return spread_count(state, player_id)
 		HAUNT:

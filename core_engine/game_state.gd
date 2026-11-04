@@ -874,13 +874,20 @@ func race_leader(excluding: int) -> int:
 
 
 ## 이 플레이어가 보드에 깔아 둔 설치물(호텔·함정) 수.
-func owned_attachment_count(player_id: int) -> int:
+func owned_attachment_count(player_id: int, include_exempt: bool = true) -> int:
 	var count: int = 0
 	for tile: TileNode in board.tiles:
 		for attachment: TileAttachment in tile.attachments:
-			if attachment.owner_id == player_id:
+			if attachment.owner_id == player_id and (include_exempt or not attachment.law_exempt):
 				count += 1
 	return count
+
+
+## 특수 승리가 제정된 시점에 이미 깔려 있던 설치물은 그 승리의 개수에서 뺀다 (이미 채워진 채로 시작해 바로 달성되는 것을 막는다).
+func exempt_existing_attachments() -> void:
+	for tile: TileNode in board.tiles:
+		for attachment: TileAttachment in tile.attachments:
+			attachment.law_exempt = true
 
 
 ## 바둑 백돌 방어막(또는 [범용] 관심사도 지정 보호막)이 있으면 깨뜨리고 true (잡기·함정을 막았다).

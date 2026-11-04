@@ -149,6 +149,11 @@
        "ko": "불스아이 다트 보드가 너무 강해서, 정확히 노려도 트리플·더블·불스아이가 덜 맞도록 조정하고 바깥쪽을 노리면 판 밖으로 빗나갈 수 있게 했어요",
        "en": "Bullseye Dartboard was too strong: precise aim now lands triples, doubles and bullseyes less often, and aiming at the outer edge can miss the board",
        "ja": "ブルズアイダーツが強すぎたため、正確に狙ってもトリプル・ダブル・ブルズアイが当たりにくくなり、外側を狙うと盤外に外れることがあります"
+      },
+      {
+       "ko": "특수 승리는 제정된 시점부터 새로 세요 (미리 쌓은 처치·방문 기록이나 깔아 둔 설치물로 바로 달성되지 않아요)",
+       "en": "Special victories now count from the moment they are enacted (earlier kills, visits or pre-placed installations no longer carry over)",
+       "ja": "特殊勝利は制定された時点から数え直します（事前の撃破・訪問記録や設置済みの設置物では即達成されません）"
       }
      ]
     },

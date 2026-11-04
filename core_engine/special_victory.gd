@@ -90,11 +90,17 @@ static func note_session(state: GameState, player_id: int, key: StringName, valu
 			return
 
 
-## 교칙이 새로 제정되면 그 교칙의 순간 기록은 모두 0부터 다시 센다.
+## 교칙이 새로 제정되면 그 교칙의 기록은 모두 제정한 시점부터 0에서 새로 센다 (이미 쌓인 처치·빵집·사출 기록이나 깔려 있던 설치물 때문에 제정하자마자 달성되는 것을 막는다).
+## 지금 판 상태로 정해지는 기록(사도 포위망·방해령 손패)은 경보·내 차례 끝 판정으로 따로 막는다.
 static func on_law_enacted(state: GameState, law: LawResource) -> void:
-	if law is VictoryLaw and VictoryLaw.SESSION_KEYS.has((law as VictoryLaw).stat_key):
-		for player_id: int in state.player_ids:
-			state.reset_stat(player_id, (law as VictoryLaw).stat_key)
+	if not (law is VictoryLaw):
+		return
+	var victory: VictoryLaw = law
+	if victory.stat_key == VictoryLaw.ESTATE:
+		state.exempt_existing_attachments()
+		return
+	for player_id: int in state.player_ids:
+		state.reset_stat(player_id, victory.stat_key)
 
 
 ## 아직 방어 여부가 정해지지 않은 공격(방어 대기 중이거나 아직 묻지 않은 공격)이 올린 이 사람의 기록. 화면은 이만큼 빼고 보여 준다:

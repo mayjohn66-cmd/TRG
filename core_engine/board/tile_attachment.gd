@@ -12,6 +12,8 @@ extends Resource
 @export var always_revealed: bool = false
 ## 남은 유지 턴 수. -1이면 영구 유지, 0이면 만료(소모)되어 이동 실행기가 타일에서 제거한다.
 @export var duration_turns: int = -1
+## true면 [무한의 함정(LAW_03)] 같은 특수 승리가 제정되기 전부터 깔려 있던 설치물이라 그 승리의 개수에 세지 않는다 (제정한 시점부터 새로 센다).
+@export var law_exempt: bool = false
 
 
 ## 기물이 이 타일을 한 칸 밟을 때(통과 포함) 호출된다.
@@ -45,6 +47,7 @@ func serialize() -> Dictionary:
 		"hidden": is_hidden_trap,
 		"duration": duration_turns,
 		"revealed": always_revealed,
+		"exempt": law_exempt,
 	}
 
 
@@ -53,3 +56,4 @@ func deserialize(data: Dictionary) -> void:
 	is_hidden_trap = bool(data.get("hidden", true))
 	duration_turns = int(data.get("duration", -1))
 	always_revealed = bool(data.get("revealed", false))
+	law_exempt = bool(data.get("exempt", false))
