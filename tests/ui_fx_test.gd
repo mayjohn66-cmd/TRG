@@ -1988,6 +1988,9 @@ func _test_duel_flow() -> void:
 
 ## 종목 하나를 핫시트로 끝까지: 화면의 입력 함수로 두 자리 모두 값을 낸다.
 func _play_one_duel(game: int) -> void:
+	_duel_resolved = {}
+	if not _board.manager.event_received.is_connected(_on_duel_event):
+		_board.manager.event_received.connect(_on_duel_event)
 	var manager: TurnManager = _board.manager
 	var state: GameState = _board.state
 	_board._announcer.cancel()
@@ -2054,8 +2057,11 @@ func _play_one_duel(game: int) -> void:
 		waited += 0.05
 	_expect(not manager.duel_pending(), "%s: 입력만으로 결투가 끝난다 (%.1f초)" % [title, waited])
 	_expect(saw_hold, "%s: 승패 공개가 끝나기 전에는 보드 연출이 기다린다" % title)
-	var loser_front_gone: bool = not state.get_pawn(opponent * 10 + 1).has_left_start or not state.get_pawn(player_id * 10 + 1).has_left_start
-	_expect(loser_front_gone, "%s: 패자의 선두 말이 출발선으로" % title)
+	# 엔진이 실제로 사출한 패자의 말을 결투 결과 이벤트에서 받아 확인한다 (선두 말이 사출 후보가 아니면 다른 말이 나간다)
+	var struck: int = int(_duel_resolved.get("pawn_id", -1))
+	var loser: int = int(_duel_resolved.get("loser", -1))
+	var struck_pawn: PlayerPawn = state.get_pawn(struck) if struck != -1 else null
+	_expect(loser in [player_id, opponent] and struck_pawn != null and struck_pawn.owner_id == loser and not struck_pawn.has_left_start, "%s: 패자의 말이 출발선으로 (%s)" % [title, str(_duel_resolved)])
 	waited = 0.0
 	while is_instance_valid(arena) and waited < 8.0:
 		await create_timer(0.1).timeout
@@ -3204,3 +3210,12 @@ func _test_move_four_steps() -> void:
 	state.boost_gimmicks = saved_boost
 	_board._reset_presentation()
 	_board.instant_roll_for_test = true
+
+
+## 마지막 결투 결과 (duel_resolved 이벤트): 누가 졌고 어느 말이 사출됐는지.
+var _duel_resolved: Dictionary = {}
+
+
+func _on_duel_event(kind: StringName, data: Dictionary) -> void:
+	if kind == &"duel_resolved":
+		_duel_resolved = data.duplicate()
