@@ -297,6 +297,11 @@
        "ko": "터치를 지원하는 PC에서 팝업이 폰처럼 확대되어 흐려지던 문제",
        "en": "Popups being scaled up and blurry on touch-capable PCs",
        "ja": "タッチ対応PCでポップアップがスマホ扱いで拡大されぼやける問題"
+      },
+      {
+       "ko": "친선전에서 자리가 비어 있는데 '방이 가득 찼거나 닫혔습니다'로 입장하지 못하던 문제 개선: 앞 사람이 접속하는 동안은 포기하지 않고 기다리고, 접속이 막힌 자리는 더 빨리 다시 열려요",
+       "en": "Friendly matches: joining no longer fails with 'room is full or closed' while a seat is still free - guests now wait while someone else is connecting, and stuck seats reopen faster",
+       "ja": "フレンド戦で空き席があるのに「満員か閉じられています」と表示され入室できない問題を改善：他の人が接続中は待機し、接続が止まった席はより早く再開放されます"
       }
      ]
     }

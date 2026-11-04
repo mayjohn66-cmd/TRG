@@ -51,7 +51,13 @@ var claim_check_seconds: float = 1.2
 var connect_timeout_seconds: float = 12.0
 ## 방 찾기~선점 확인(시그널링) 단계가 이 시간(초) 안에 끝나지 않으면 입장 실패로 돌려보낸다 (후보 자리마다 새로 잰다).
 var signaling_timeout_seconds: float = 15.0
-var recycle_seconds: float = 25.0
+## 응답을 받고도 이 시간(초) 안에 연결이 안 되면 방장이 그 자리를 새 초대로 바꾼다 (참가자의 연결 대기 12초보다 조금 길게).
+var recycle_seconds: float = 16.0
+## 다른 사람이 자리를 선점 중이라 빈 자리가 없어 보일 때 참가자가 기다려 보는 시간(초)과 다시 찾는 간격(초).
+var taken_wait_seconds: float = 40.0
+var taken_retry_seconds: float = 4.0
+## 릴레이는 같은 초에 올라온 메시지의 순서를 보장하지 않을 수 있다: 닫힘 표식 뒤 새 초대는 이 시간(ms) 이상 띄워서 올린다.
+const OFFER_AFTER_CLOSE_GAP_MSEC: int = 1150
 var rng := RandomNumberGenerator.new()
 
 var _mp: WebRTCMultiplayerPeer = null
@@ -61,6 +67,8 @@ var _signaling: RoomSignaling = null
 var _offer_nonce: Dictionary = {}    # 좌석 -> 지금 올려 둔 초대의 표식
 var _answer_seen: Dictionary = {}    # 좌석 -> 응답함에서 이미 읽은 개수
 var _answered_at: Dictionary = {}    # 좌석 -> 응답을 적용한 시각(ms)
+var _closed_at: Dictionary = {}      # 좌석 -> 닫힘 표식을 올린 시각(ms)
+var _join_wait_started_msec: int = 0 # 선점 중인 자리를 기다리기 시작한 시각(ms, 0이면 기다리지 않음)
 var _poll_left: float = 0.0
 var _room_changed_at: int = 0
 var _polling_busy: Dictionary = {}
@@ -281,6 +289,13 @@ func _publish_offer(seat: int, offer_code: String) -> void:
 	_offer_nonce[seat] = nonce
 	_answer_seen[seat] = 0
 	_answered_at.erase(seat)
+	# 방금 닫힘 표식을 올렸다면 같은 초에 새 초대를 올리지 않는다 (순서가 뒤집혀 '닫힘'이 마지막으로 보이면 그 자리는 계속 닫힌 것으로 보인다)
+	var wait_msec: int = OFFER_AFTER_CLOSE_GAP_MSEC - (Time.get_ticks_msec() - int(_closed_at.get(seat, -100000)))
+	if wait_msec > 0 and is_inside_tree():
+		get_tree().create_timer(float(wait_msec) / 1000.0).timeout.connect(func() -> void:
+			if _signaling != null and str(_offer_nonce.get(seat, "")) == nonce:
+				_signaling.post_offer(seat, nonce, offer_code, func(ok: bool) -> void: _set_relay_ok(ok)))
+		return
 	_signaling.post_offer(seat, nonce, offer_code, func(ok: bool) -> void: _set_relay_ok(ok))
 
 
@@ -293,6 +308,7 @@ func _set_relay_ok(ok: bool) -> void:
 func _forget_offer(seat: int) -> void:
 	if _offer_nonce.has(seat) and _signaling != null:
 		_signaling.close_offer(seat)
+		_closed_at[seat] = Time.get_ticks_msec()
 	_offer_nonce.erase(seat)
 	_answer_seen.erase(seat)
 	_answered_at.erase(seat)
@@ -341,10 +357,19 @@ func poll_answers_now() -> void:
 			if str(_offer_nonce.get(seat, "")) != str((watch[seat] as Dictionary)["nonce"]):
 				continue
 			_answer_seen[seat] = int((found[seat] as Dictionary)["total"])
+			var applied: bool = false
 			for body: Variant in (found[seat] as Dictionary)["bodies"]:
 				if submit_answer(seat, str(body)):
 					_answered_at[seat] = Time.get_ticks_msec()
-					break)
+					applied = true
+					break
+			# 응답이 올라왔는데 하나도 적용하지 못했다면 그 자리는 참가자들에게 '선점됨'으로만 보이고 영영 안 열린다: 바로 새 초대로 바꾼다.
+			if not applied and not ((found[seat] as Dictionary)["bodies"] as Array).is_empty():
+				NetTrace.step("host.answer_unusable", "seat=%d recycle" % int(seat))
+				_drop_link(int(seat))
+				model.cancel_invite(int(seat))
+				_broadcast_roster()
+				_ensure_invites())
 
 
 # ---------------------------------------------------------------------------
@@ -435,20 +460,41 @@ func join_by_room_code(guest_nickname: String, text: String) -> bool:
 	_signaling = RoomSignaling.new(broker, code)
 	var serial: int = _join_serial
 	NetTrace.step("join.start", "room=%s" % code)
-	_arm_join_watchdog("find_offers", signaling_timeout_seconds)
+	_join_wait_started_msec = 0
 	join_progress.emit("방을 찾는 중...")
+	_search_room(serial)
+	return true
+
+
+## 방의 빈 자리를 찾는다. 다른 사람이 자리를 막 선점해서 빈 자리가 없어 보일 때는 (그 사람이 연결에 실패하면 곧 다시 열린다) 바로 포기하지 않고 taken_wait_seconds 동안 다시 찾아 본다.
+func _search_room(serial: int) -> void:
+	if serial != _join_serial or not _joining or _signaling == null:
+		return
+	_arm_join_watchdog("find_offers", signaling_timeout_seconds)
 	_signaling.find_offers(func(result: Dictionary) -> void:
 		if serial != _join_serial or not _joining:
 			return
-		NetTrace.step("join.offers", "ok=%s saw_room=%s candidates=%d" % [result["ok"], result["saw_room"], (result["candidates"] as Array).size()])
+		NetTrace.step("join.offers", "ok=%s saw_room=%s candidates=%d closed=%d taken=%d" % [result["ok"], result["saw_room"], (result["candidates"] as Array).size(), int(result.get("closed", 0)), int(result.get("taken", 0))])
 		if not bool(result["ok"]):
 			_fail_join("중계 서버에 연결하지 못했습니다. 인터넷 연결을 확인하고 다시 시도해 주세요.")
 		elif (result["candidates"] as Array).is_empty():
+			if int(result.get("taken", 0)) > 0 and is_inside_tree():
+				# 자리가 선점 중이다: 선점한 사람의 연결이 끝나거나 실패해 새 초대가 올라올 때까지 기다린다.
+				var now: int = Time.get_ticks_msec()
+				if _join_wait_started_msec == 0:
+					_join_wait_started_msec = now
+				if now - _join_wait_started_msec < int(taken_wait_seconds * 1000.0):
+					join_progress.emit("다른 사람이 접속하는 중입니다. 자리가 나는지 기다립니다...")
+					_join_deadline_msec = now + int((taken_retry_seconds + signaling_timeout_seconds) * 1000.0)
+					get_tree().create_timer(taken_retry_seconds).timeout.connect(func() -> void: _search_room(serial))
+					return
+				_fail_join("다른 사람이 자리에 접속하는 중이라 아직 빈 자리가 없습니다. 잠시 뒤 다시 시도해 주세요.")
+				return
 			_fail_join("빈 자리가 있는 방을 찾지 못했습니다. 방 코드를 확인하거나 잠시 후 다시 시도해 주세요." if not bool(result["saw_room"]) else "방이 가득 찼거나 닫혔습니다.")
 		else:
+			_join_wait_started_msec = 0
 			_join_candidates = result["candidates"]
 			_try_next_candidate(""))
-	return true
 
 
 func _fail_join(message: String) -> void:
@@ -524,6 +570,7 @@ func _cancel_join() -> void:
 	_join_phase = ""
 	_join_serial += 1
 	_join_candidates.clear()
+	_join_wait_started_msec = 0
 
 
 ## 연결만 정리한다 (방 코드 입장 재시도 사이에도 쓴다).
@@ -531,6 +578,7 @@ func _disconnect_all() -> void:
 	if _signaling != null and is_host:
 		for seat: int in _offer_nonce.keys():
 			_signaling.close_offer(seat)
+			_closed_at[seat] = Time.get_ticks_msec()
 	_offer_nonce.clear()
 	_answer_seen.clear()
 	_answered_at.clear()

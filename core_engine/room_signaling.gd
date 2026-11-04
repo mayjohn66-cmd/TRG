@@ -55,7 +55,8 @@ func collect_answers(watch: Dictionary, done: Callable) -> void:
 # 참가자
 # ---------------------------------------------------------------------------
 
-## 이 방의 입장 가능한 좌석을 찾는다 (요청 2번: 초대함 한 번, 응답함 한 번). done(result): {"ok": 릴레이에 닿았는가, "saw_room": 방 흔적이 있는가, "candidates": [{"seat", "nonce", "offer"}] (좌석 오름차순)}.
+## 이 방의 입장 가능한 좌석을 찾는다 (요청 2번: 초대함 한 번, 응답함 한 번). done(result): {"ok": 릴레이에 닿았는가, "saw_room": 방 흔적이 있는가, "candidates": [{"seat", "nonce", "offer"}] (좌석 오름차순), "closed": 닫힌 좌석 수, "taken": 다른 사람이 막 응답해 선점 중인 좌석 수}.
+## taken은 곧 다시 열릴 수 있는 자리다 (선점한 사람이 연결에 실패하면 방장이 새 초대로 바꾼다): 참가자는 바로 포기하지 않고 기다려 본다.
 func find_offers(done: Callable) -> void:
 	var offer_topics: Array = []
 	for seat: int in range(2, LobbyModel.SEAT_COUNT + 1):
@@ -64,9 +65,10 @@ func find_offers(done: Callable) -> void:
 	broker.fetch_many(offer_topics, 0, func(ok: bool, offers: Dictionary) -> void:
 		if not ok:
 			NetTrace.step("signal.find_offers.failed", "relay unreachable")
-			done.call({"ok": false, "saw_room": false, "candidates": []})
+			done.call({"ok": false, "saw_room": false, "candidates": [], "closed": 0, "taken": 0})
 			return
 		var saw_room: bool = false
+		var closed_count: int = 0
 		var open: Dictionary = {}
 		for seat: int in range(2, LobbyModel.SEAT_COUNT + 1):
 			var messages: Array = offers.get(RoomCode.offer_topic(code, seat), [])
@@ -78,9 +80,11 @@ func find_offers(done: Callable) -> void:
 			var offer: String = str(parts["body"])
 			if nonce != "" and nonce != RoomCode.CLOSED_MARK and offer.begins_with(LobbyCode.PREFIX):
 				open[seat] = {"seat": seat, "nonce": nonce, "offer": offer}
+			else:
+				closed_count += 1
 		NetTrace.step("signal.find_offers.open", "saw_room=%s open_seats=%s" % [saw_room, str(open.keys())])
 		if open.is_empty():
-			done.call({"ok": true, "saw_room": saw_room, "candidates": []})
+			done.call({"ok": true, "saw_room": saw_room, "candidates": [], "closed": closed_count, "taken": 0})
 			return
 		var answer_topics: Array = []
 		for seat: Variant in open.keys():
@@ -88,6 +92,7 @@ func find_offers(done: Callable) -> void:
 		# 이미 누가 응답을 올린 초대는 선점된 것으로 본다.
 		broker.fetch_many(answer_topics, 0, func(answer_ok: bool, answers: Dictionary) -> void:
 			var candidates: Array = []
+			var taken_count: int = 0
 			var seats: Array = open.keys()
 			seats.sort()
 			for seat: Variant in seats:
@@ -100,8 +105,9 @@ func find_offers(done: Callable) -> void:
 				if not taken:
 					candidates.append(open[seat])
 				else:
+					taken_count += 1
 					NetTrace.step("signal.find_offers.taken", "seat=%d" % int(seat))
-			done.call({"ok": true, "saw_room": saw_room, "candidates": candidates})))
+			done.call({"ok": true, "saw_room": saw_room, "candidates": candidates, "closed": closed_count, "taken": taken_count})))
 
 
 ## 응답 코드를 올린다. done(ok: bool).

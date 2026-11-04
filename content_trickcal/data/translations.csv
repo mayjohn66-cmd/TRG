@@ -2701,3 +2701,5 @@ PROGRESS / 진행률,PROGRESS,PROGRESS／進行度
 • 전진 0~20칸 · 시세표: 주가(시작 6)만큼 전진 · 매번 ±3 등락 / ★상한가 20칸 / 상장폐지: 0칸 + 선두 말 사출,• Moves 0~20 · Ticker: Advance by price (starts at 6) · ±3 each roll / ★Limit Up 20 / Delisted: 0 + lead pawn ejected,• 前進0~20マス・相場表: 株価(初期6)だけ前進・毎回±3変動 / ★ストップ高20マス / 上場廃止: 0マス+先頭の駒が射出
 • 전진 1~18칸 · 과녁표: 숫자 1~6 × 싱글·더블·트리플 / ★불스아이 10칸 + 한 번 더,• Moves 1~18 · Board: Number 1~6 × Single/Double/Triple / ★Bullseye 10 + Extra Roll,• 前進1~18マス・的表: 数字1〜6 × シングル・ダブル・トリプル / ★ブルズアイ10マス+もう1回
 ◆ 승리 조건: 방해령 {p1}종(베루·사리·메죵)을 모두 손패에 모은 채 내 차례 종료,"◆ Win Condition: End your turn holding all {p1} Meddling Spirits (Beru, Sari, Mejong) in hand",◆ 勝利条件: 妨害霊{p1}種(ベル・サリ・メジョン)をすべて手札に集めたまま自分のターンを終える
+다른 사람이 접속하는 중입니다. 자리가 나는지 기다립니다...,Someone else is connecting. Waiting for the seat to free up...,他の人が接続中です。席が空くのを待っています...
+다른 사람이 자리에 접속하는 중이라 아직 빈 자리가 없습니다. 잠시 뒤 다시 시도해 주세요.,Someone else is still connecting to the open seat. Please try again in a moment.,他の人が空き席に接続中で、まだ空きがありません。しばらくしてからもう一度お試しください。

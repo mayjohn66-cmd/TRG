@@ -183,3 +183,98 @@ func test_ntfy_poll_body_parsing() -> void:
 	check_eq(messages, ["AAAAAA\nTRG1-x", "second"], "message 이벤트만 시간순으로, 줄바꿈 복원")
 	check(NtfyBroker.parse_poll_body("").is_empty(), "빈 응답")
 	check(NtfyBroker.parse_poll_body("not json").is_empty(), "깨진 응답은 무시")
+
+
+func test_find_offers_reports_closed_and_taken_counts() -> void:
+	var pair: Array = _pair("7K9M2")
+	var host: RoomSignaling = pair[0]
+	var guest: RoomSignaling = pair[1]
+	var offer: String = _offer_code()
+	host.post_offer(2, "AAAAAA", offer, Callable())
+	host.close_offer(2)
+	host.post_offer(3, "BBBBBB", offer, Callable())
+	guest.post_answer(3, "BBBBBB", "TRG1-someone", Callable())
+	var result: Dictionary = _find(guest)
+	check((result["candidates"] as Array).is_empty(), "닫힘·선점뿐이면 후보 없음")
+	check_eq(result["closed"], 1, "닫힌 자리 1")
+	check_eq(result["taken"], 1, "선점 중인 자리 1 (기다리면 다시 열릴 수 있는 자리)")
+
+
+func _service(code: String) -> LobbyService:
+	MemoryBroker.reset_all()
+	var broker := MemoryBroker.new()
+	var service := LobbyService.new()
+	service.broker = broker
+	tree.root.add_child(service)
+	defer_free(service)
+	service.add_child(broker) if broker.get_parent() == null else null
+	return service
+
+
+func test_guest_waits_for_a_taken_seat_and_joins_when_it_reopens() -> void:
+	var service: LobbyService = _service("7K9M2")
+	service.taken_retry_seconds = 0.2
+	service.taken_wait_seconds = 6.0
+	var offer: String = _offer_code()
+	var host := RoomSignaling.new(service.broker, "7K9M2")
+	host.post_offer(2, "AAAAAA", offer, Callable())
+	RoomSignaling.new(service.broker, "7K9M2").post_answer(2, "AAAAAA", "TRG1-stuck-guest", Callable())  # 앞 사람이 응답만 올리고 연결은 못 한 자리
+	var fails: Array[String] = []
+	var progress: Array[String] = []
+	service.join_failed.connect(func(message: String) -> void: fails.append(message))
+	service.join_progress.connect(func(message: String) -> void: progress.append(message))
+	NetTrace.recent.clear()
+	service.join_by_room_code("친구", "7K9M2")
+	await tree.create_timer(0.7).timeout
+	check(fails.is_empty(), "선점 중인 자리만 있으면 바로 실패하지 않는다: %s" % str(fails))
+	check(progress.any(func(message: String) -> bool: return message.contains("기다립니다")), "기다리는 중이라고 알린다: %s" % str(progress))
+	host.post_offer(2, "ZZZZZZ", offer, Callable())  # 방장이 자리를 새 초대로 바꿈
+	await tree.create_timer(0.6).timeout
+	check(NetTrace.saw("join.try_seat"), "자리가 다시 열리면 그 자리로 입장을 시도한다")
+	service.leave()
+
+
+func test_guest_gives_up_with_a_clear_message_after_waiting_too_long() -> void:
+	var service: LobbyService = _service("7K9M2")
+	service.taken_retry_seconds = 0.15
+	service.taken_wait_seconds = 0.5
+	var offer: String = _offer_code()
+	RoomSignaling.new(service.broker, "7K9M2").post_offer(2, "AAAAAA", offer, Callable())
+	RoomSignaling.new(service.broker, "7K9M2").post_answer(2, "AAAAAA", "TRG1-stuck-guest", Callable())
+	var fails: Array[String] = []
+	service.join_failed.connect(func(message: String) -> void: fails.append(message))
+	service.join_by_room_code("친구", "7K9M2")
+	await tree.create_timer(1.4).timeout
+	check_eq(fails.size(), 1, "한도까지 기다린 뒤 한 번만 실패")
+	check(not fails.is_empty() and fails[0].contains("접속하는 중") and not fails[0].contains("가득 찼"), "'가득 찼다'가 아니라 접속 중이라고 안내: %s" % str(fails))
+	service.leave()
+
+
+func test_really_closed_room_still_fails_immediately() -> void:
+	var service: LobbyService = _service("7K9M2")
+	var host := RoomSignaling.new(service.broker, "7K9M2")
+	host.post_offer(2, "AAAAAA", _offer_code(), Callable())
+	host.close_offer(2)
+	var fails: Array[String] = []
+	service.join_failed.connect(func(message: String) -> void: fails.append(message))
+	service.join_by_room_code("친구", "7K9M2")
+	await tree.process_frame
+	check_eq(fails, ["방이 가득 찼거나 닫혔습니다."], "전부 닫힌 방은 기다리지 않고 바로 안내")
+	service.leave()
+
+
+func test_new_offer_waits_out_the_same_second_after_a_close_marker() -> void:
+	var service: LobbyService = _service("7K9M2")
+	service._signaling = RoomSignaling.new(service.broker, "7K9M2")
+	service.auto_signaling = true
+	service._closed_at[2] = Time.get_ticks_msec()  # 방금 닫힘 표식을 올렸다
+	var topic: String = RoomCode.offer_topic("7K9M2", 2)
+	service._publish_offer(2, "TRG1-fresh")
+	check(not MemoryBroker.boxes.has(topic), "닫힘 직후에는 새 초대를 바로 올리지 않는다 (같은 초 순서 뒤집힘 방지)")
+	await tree.create_timer(1.4).timeout
+	check_eq((MemoryBroker.boxes.get(topic, []) as Array).size(), 1, "간격이 지나면 새 초대가 올라간다")
+	var parts: Dictionary = RoomCode.unwrap(str((MemoryBroker.boxes[topic] as Array)[0]))
+	check_eq(parts["body"], "TRG1-fresh", "올라간 것은 새 초대")
+	service._closed_at.clear()
+	service._publish_offer(3, "TRG1-other")
+	check((MemoryBroker.boxes.get(RoomCode.offer_topic("7K9M2", 3), []) as Array).size() == 1, "닫힌 적 없는 자리는 바로 올린다")
