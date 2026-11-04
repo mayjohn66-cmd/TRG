@@ -144,6 +144,11 @@
        "ko": "다른 사람이 카드를 뽑을 때 노란 카드가 프로필로 날아가는 연출을 없앴어요",
        "en": "Removed the yellow card flying to a player's profile when they draw",
        "ja": "他のプレイヤーのドロー時に黄色いカードがプロフィールへ飛ぶ演出を削除"
+      },
+      {
+       "ko": "불스아이 다트 보드가 너무 강해서, 정확히 노려도 트리플·더블·불스아이가 덜 맞도록 조정하고 바깥쪽을 노리면 판 밖으로 빗나갈 수 있게 했어요",
+       "en": "Bullseye Dartboard was too strong: precise aim now lands triples, doubles and bullseyes less often, and aiming at the outer edge can miss the board",
+       "ja": "ブルズアイダーツが強すぎたため、正確に狙ってもトリプル・ダブル・ブルズアイが当たりにくくなり、外側を狙うと盤外に外れることがあります"
       }
      ]
     },

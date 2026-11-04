@@ -123,6 +123,36 @@ func test_darts_scoring_rings_and_bull() -> void:
 	check(bulls < 120, "봇의 불스아이는 드물다 (%d/3000)" % bulls)
 
 
+## 2026-11-04 밸런스: 노련하게 조준해도 트리플·더블·불스아이가 매번 맞지는 않는다 (이전에는 정중앙 조준이 항상 불스아이, 트리플은 69%).
+func test_darts_precise_aim_is_no_longer_a_sure_thing() -> void:
+	var tool := ToolDarts.new()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 11
+	var trials: int = 4000
+	var bulls: int = 0
+	var triples: int = 0
+	var total_triple_aim: int = 0
+	for i: int in trials:
+		if bool(tool.throw_at(rng, 0.0, 0.3).details["bull"]):
+			bulls += 1
+	for i: int in trials:
+		var result: RollResult = tool.throw_at(rng, 0.505, 1.0 / 24.0)  # 숫자 6 조각의 한가운데, 트리플 고리 중앙
+		total_triple_aim += result.steps
+		if int(result.details["multiplier"]) == 3:
+			triples += 1
+	check(bulls > trials * 0.5 and bulls < trials * 0.85, "정중앙 조준의 불스아이는 절반 남짓 (%d/%d)" % [bulls, trials])
+	check(triples < trials * 0.5, "트리플 고리를 정확히 노려도 절반 미만 (%d/%d)" % [triples, trials])
+	check(float(total_triple_aim) / trials < 10.0, "트리플 노리기의 평균은 10칸 미만 (%.2f)" % (float(total_triple_aim) / trials))
+	var outside: int = 0
+	for i: int in trials:
+		var edge: Dictionary = tool.throw_at(rng, 0.95, 0.04).details
+		if str(edge["ring"]) == "빗나감":
+			outside += 1
+	check(outside > 0, "바깥쪽을 노리면 판 밖으로 빗나가기도 한다")
+	check_eq(str(ToolDarts.score(1.05, 0.01)["ring"]), "빗나감", "판 밖은 [빗나감]")
+	check_eq(int(ToolDarts.score(1.05, 0.01)["steps"]), ToolDarts.WEDGES[0], "빗나감은 숫자 × 1")
+
+
 func test_darts_aim_from_the_roll_action_is_used_once() -> void:
 	var manager := _new_manager()
 	var state: GameState = manager.state
@@ -130,13 +160,12 @@ func test_darts_aim_from_the_roll_action_is_used_once() -> void:
 	state.tools[roller] = ToolRegistry.create(&"DICE_DARTS")
 	var events := _events(manager)
 	manager.act(&"proceed", {"player_id": roller})
-	manager.act(&"roll", {"player_id": roller, "aim": [0.0, 0.0]})  # 정중앙을 노렸다 (손떨림 최대 0.08 → 불스아이)
+	manager.act(&"roll", {"player_id": roller, "aim": [0.0, 0.0]})  # 정중앙을 노렸다 (손떨림 최대 JITTER_RADIUS)
 	var rolled: Array = events.filter(func(event: Dictionary) -> bool: return event["kind"] == &"roll_resolved")
 	check(not rolled.is_empty(), "굴림 결과")
 	if not rolled.is_empty():
 		var details: Dictionary = rolled[0]["data"]["result"]["details"]
 		check(float(details["radius"]) <= ToolDarts.JITTER_RADIUS + 0.0001, "조준한 자리 근처에 꽂힌다 (%.3f)" % float(details["radius"]))
-		check(bool(details["bull"]), "정중앙 조준 → 불스아이")
 	check_eq((state.tools[roller] as ToolDarts).pending_aim, Vector2(-1, -1), "조준은 한 번 쓰면 비운다")
 	_dispose(manager)
 
