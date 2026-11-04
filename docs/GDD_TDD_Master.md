@@ -1996,7 +1996,7 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 ### 7.47 로비 둥근 [규칙] 버튼 → [업데이트 소식] 버튼 (로컬, 웹 미배포) (2026-11-03)
 - 요청: 로비 오른쪽 위의 초록 책 버튼(규칙)을 업데이트 내용을 알려 주는 버튼으로 바꾼다 (다음 업데이트가 떠도 모르는 사람이 없게).
 - 구현: `HubKit.round_button(..., &"notes", ...)` - 코드로 그린 소식지+별 그림(`HubKit.NotesIcon`, 그림 파일 없음). 눌러서 `UpdateNotes.open`의 팝업(`UpdateNotesPopup`: 제목·섹션·줄, 스크롤, [닫기], [규칙 책자 보기])을 연다. 규칙 책자는 사라지지 않는다: 팝업의 [규칙 책자 보기], 다른 로비 화면의 청록 띠 [규칙], 게임 중 메뉴의 [규칙 책자]에서 계속 열린다.
-- 내용은 `content_trickcal/data/patch_notes.json` (ko/en/ja, 최신이 맨 앞). **다음 업데이트 때는 entries 맨 앞에 항목 하나(새 `id`)를 추가하면 된다.** 아직 열어 보지 않은 id면 버튼 모서리에 빨간 [N]이 뜨고, 열면 꺼진다 (본 id는 `PlayerSave` `notes_seen`에 저장: 새로고침·기록 코드 병합에도 유지). 지금 들어 있는 소식은 1.01 내용이다.
+- 내용은 `content_trickcal/data/patch_notes.json` (ko/en/ja, 최신이 맨 앞). **다음 업데이트 때는 entries 맨 앞에 항목 하나(새 `id`)를 추가하면 된다.** 아직 열어 보지 않은 id면 버튼 모서리에 빨간 [N]이 뜨고, 열면 꺼진다 (본 id는 `PlayerSave` `notes_seen`에 저장: 새로고침·기록 코드 병합에도 유지). 지금 들어 있는 소식은 1.0 내용이다 (신규 추가 · 변경점 · 개선사항 · 버그 수정 4구역, 히든 보정류는 적지 않는다).
 - 언어: 현재 언어 글을 보이고, 그 언어 글이 비면 한국어. UI 문구 `업데이트 소식`·`규칙 책자 보기`는 translations.csv에 있다.
 - 테스트: tests/test_update_notes.gd (모든 글 ko/en/ja 채움·id 중복 없음·[N] 켜짐/꺼짐/새 id에 다시 켜짐·언어 폴백), tests/ui_menu_test.gd (버튼·팝업·[규칙 책자 보기]).
 - 내보내기: `export_presets.cfg`의 include_filter에 `content_trickcal/data/patch_notes.json`을 넣었다 (csv 말고는 기본으로 안 실린다). CI의 `tests/export_smoke.gd`가 내보낸 index.pck에서 소식을 읽을 수 있는지 확인한다.

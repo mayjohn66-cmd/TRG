@@ -1,123 +1,247 @@
 {
  "entries": [
   {
-   "id": "1.01",
+   "id": "1.0",
    "date": "",
    "title": {
-    "ko": "1.01 업데이트",
-    "en": "Update 1.01",
-    "ja": "1.01アップデート"
+    "ko": "1.0 업데이트",
+    "en": "Update 1.0",
+    "ja": "1.0アップデート"
    },
    "sections": [
     {
      "head": {
-      "ko": "새로 생긴 것",
-      "en": "What's new",
+      "ko": "신규 추가",
+      "en": "New",
       "ja": "新要素"
      },
      "items": [
       {
        "ko": "판정 도구 2종: 엘리아스 주식 차트(상한가 20칸·상장폐지!), 불스아이 다트 보드(조준해서 던지기)",
        "en": "2 new judgment tools: Elias Stock Chart (limit-up = 20 spaces, delisting!) and Bullseye Dartboard (aim and throw)",
-       "ja": "判定ツール2種: エリアス株チャート(ストップ高20マス・上場廃止!)、ブルズアイダーツ(狙って投げる)"
+       "ja": "判定ツール2種：エリアス株チャート（ストップ高20マス・上場廃止！）、ブルズアイダーツ（狙って投げる）"
       },
       {
        "ko": "기물 2종: 모브 큐이(오이 설치), 괴상한 멜론(함정을 먹고 커진다)",
-       "en": "2 new pieces: Mob Kyui (plants cucumbers) and the Odd Melon (eats traps and grows)",
-       "ja": "駒2種: モブ・キュイ(きゅうり設置)、奇妙なメロン(罠を食べて大きくなる)"
+       "en": "2 new pieces: Mob Cucumber (plants cucumbers) and Weird Melon (grows by eating traps)",
+       "ja": "駒2種：モブ・キューイ（キュウリ設置）、奇妙なメロン（罠を食べて大きくなる）"
       },
       {
        "ko": "생떼 카드: 기억상실빔, 강화 망치, 방해령 삼총사(베루·사리·메죵)",
-       "en": "New cards: Amnesia Beam, Enhance Hammer and the Meddling Spirit trio (Beru, Sari, Mejong)",
-       "ja": "新カード: 記憶喪失ビーム、強化ハンマー、お邪魔霊三銃士(ベル・サリ・メジョン)"
+       "en": "Tantrum cards: Amnesia Beam, Power-up Hammer, and the Disruptor Trio (Beru, Sari, Mejong)",
+       "ja": "ワガママカード：記憶喪失ビーム、強化ハンマー、妨害令三銃士（ベル・サリ・メジョン）"
       },
       {
-       "ko": "소환 카드: 롤링 양성자빔 - 빛 기둥이 3라운드 동안 무작위로 미끄러지며 지나는 칸의 말과 함정을 전부 태운다",
-       "en": "Summon card: Rolling Proton Beam - a pillar of light that slides in random directions for 3 rounds, burning every pawn and trap it passes",
-       "ja": "召喚カード: ローリング陽子ビーム - 光の柱が3ラウンドの間ランダムに滑り、通ったマスの駒と罠をすべて焼く"
+       "ko": "소환 카드 롤링 양성자빔: 빛 기둥이 3라운드 동안 무작위로 미끄러지며 지나는 칸의 말과 함정을 전부 태운다",
+       "en": "Summon card Rolling Proton Beam: a light pillar glides at random for 3 rounds, burning every piece and trap in its path",
+       "ja": "召喚カード ローリング陽子ビーム：光の柱が3ラウンドの間ランダムに滑り、通ったマスの駒と罠をすべて焼き払う"
       },
       {
-       "ko": "방어 카드: 이쪽을 봐라! - 잡기를 1회 회피해요",
-       "en": "Defense card: Look Over Here! - evades 1 capture",
-       "ja": "防御カード：こっちを見ろ！ - 捕獲を1回回避します"
+       "ko": "방어 카드 이쪽을 봐라!: 잡기를 1회 회피",
+       "en": "Defense card Look Over Here!: evades 1 capture",
+       "ja": "防御カード こっちを見ろ！：捕獲を1回回避"
       },
       {
-       "ko": "특수 승리: 방해령 허리케인 포스!! (방해령 3종을 손에 모으면 달성)",
-       "en": "Special victory: Meddling Spirit Hurricane Force!! (hold all three spirit cards)",
-       "ja": "特殊勝利: お邪魔霊ハリケーンフォース!!(お邪魔霊3種を手札に揃える)"
+       "ko": "특수 승리 방해령 허리케인 포스!! (방해령 3종을 손에 모으면 달성)",
+       "en": "New special victory: Disruptor Hurricane Force!! (collect all three Disruptor cards)",
+       "ja": "特殊勝利 妨害令ハリケーンフォース!!（妨害令3種を手札に集めると達成）"
       },
       {
        "ko": "범용 증강 2종: 관성 드리프트, 현상금 수배서",
        "en": "2 new utility augments: Inertia Drift and Bounty Poster",
-       "ja": "汎用オーグメント2種: 慣性ドリフト、懸賞金手配書"
+       "ja": "汎用オーグメント2種：慣性ドリフト、懸賞金手配書"
+      },
+      {
+       "ko": "로비 공지사항 버튼: 업데이트 내용을 볼 수 있고, 새 소식이 있으면 N 표시가 떠요",
+       "en": "Lobby Notices button: read update notes; an N badge appears when there's news",
+       "ja": "ロビーのお知らせボタン：アップデート内容を確認でき、新情報があるとNマークが出ます"
+      },
+      {
+       "ko": "친선전 초대 링크: 링크를 열면 방 코드 없이 바로 입장",
+       "en": "Friendly-match invite link: open it to join the room without typing a code",
+       "ja": "フレンド戦の招待リンク：開くとルームコード入力なしで入室"
+      },
+      {
+       "ko": "설정 > 화면에 해상도 선택 추가",
+       "en": "Resolution option added to Settings > Display",
+       "ja": "設定＞画面に解像度の選択を追加"
       }
      ]
     },
     {
      "head": {
-      "ko": "연출이 좋아졌어요",
-      "en": "Nicer presentation",
-      "ja": "演出が良くなりました"
-     },
-     "items": [
-      {
-       "ko": "특수 승리 컷신, 완주 피니시 컷신, 결과창 만화 컷 페이지",
-       "en": "Special-victory cutscenes, a finish-line cutscene and a manga-style result page",
-       "ja": "特殊勝利カットシーン、完走フィニッシュ、結果画面のマンガ風ページ"
-      },
-      {
-       "ko": "특수 승리 진행도가 차오르는 연출과 목표 칸 표시(하극상·식권·포위망)",
-       "en": "Special-victory progress now fills up on screen, with target markers (Upset, Meal Ticket, Siege)",
-       "ja": "特殊勝利の進行度が溜まる演出と目標マス表示(下剋上・食券・包囲網)"
-      },
-      {
-       "ko": "내 차례에 쓸 수 있는 필살기·카드가 있으면 화면 위쪽에 알려 줘요",
-       "en": "A notice at the top of the screen tells you when a skill or card is ready on your turn",
-       "ja": "自分の番に使える必殺技・カードがあると画面上部でお知らせします"
-      },
-      {
-       "ko": "템포 업 경고음이 4번 울려요",
-       "en": "The tempo-up warning sound now plays four times",
-       "ja": "テンポアップの警告音が4回鳴ります"
-      },
-      {
-       "ko": "로비 오른쪽 위에 언어 · 공지사항 · 도감 · 설정 버튼을 모았어요 (팁 띠는 없앴어요)",
-       "en": "The lobby's top-right now holds Language, Notices, Rulebook and Settings (the tips bar is gone)",
-       "ja": "ロビー右上に言語・お知らせ・図鑑・設定をまとめました（ヒントバーはなくなりました）"
-      }
-     ]
-    },
-    {
-     "head": {
-      "ko": "바뀐 것",
+      "ko": "변경점",
       "en": "Changes",
       "ja": "変更点"
      },
      "items": [
       {
+       "ko": "방어 카드를 [잡기 방어] · [공격 방어] · [함정 방어]로 나눠 표시 (바이츠 더 더스트는 [만능 방어])",
+       "en": "Defense cards are now labeled Capture / Attack / Trap Guard (Bites the Dust is All-round Guard)",
+       "ja": "防御カードを［捕獲ガード］［攻撃ガード］［罠ガード］に分けて表示（バイツ・ザ・ダストは［オールガード］）"
+      },
+      {
+       "ko": "감나빗!은 이제 공격 카드만 막는다 (잡기는 못 막음)",
+       "en": "Missed Me! now only evades attack cards (not captures)",
+       "ja": "あたらなーい！は攻撃カードのみ回避（捕獲は不可）"
+      },
+      {
+       "ko": "템포 업이 8·14·20라운드로, 라운드 상한은 25로 바뀌었어요",
+       "en": "Tempo Up now triggers at rounds 8, 14 and 20; round cap is 25",
+       "ja": "テンポアップは8・14・20ラウンド、ラウンド上限は25に変更"
+      },
+      {
+       "ko": "결승선은 [결승선 당기기]를 쓸 때만 당겨져요",
+       "en": "The finish line only moves when someone uses Pull Finish Line",
+       "ja": "ゴールラインは「ゴール引き寄せ」を使った時だけ縮まります"
+      },
+      {
+       "ko": "체스 나이트·장기 포·쇼기 기물의 패시브와 필살기를 정리",
+       "en": "Reworked passives and skills for the Chess Knight, Janggi Cannon and Shogi pieces",
+       "ja": "チェスのナイト・将棋の砲・将棋駒のパッシブと必殺技を整理"
+      },
+      {
+       "ko": "중립 기물은 라운드 끝마다 1~3칸 걷고, 적 말을 만나면 처치하고 사라져요",
+       "en": "Neutral pieces walk 1-3 spaces each round end and vanish after capturing an enemy piece",
+       "ja": "中立の駒はラウンド終了ごとに1〜3マス歩き、敵の駒を倒すと消えます"
+      },
+      {
+       "ko": "코너 함정은 설치자의 턴 3번(3라운드)만 유지되고, 발동하면 사라져요",
+       "en": "Corner traps last 3 of the owner's turns and disappear once triggered",
+       "ja": "コーナー罠は設置者のターン3回分だけ持続し、発動すると消えます"
+      },
+      {
+       "ko": "사도 포위망: 경보가 울린 뒤 다음 자기 차례까지 유지해야 승리",
+       "en": "Apostle Siege: must hold the siege until your next turn after the alarm to win",
+       "ja": "使徒包囲網：警報後、次の自分のターンまで維持して勝利"
+      },
+      {
        "ko": "감정 표현이 기쁨·당황·슬픔 3종으로 줄었어요",
-       "en": "Emotes are down to three: happy, panic and sad",
-       "ja": "エモートは喜び・慌て・悲しみの3種になりました"
+       "en": "Emotes reduced to 3: joy, panic, sadness",
+       "ja": "エモートは喜び・困惑・悲しみの3種に"
       },
       {
-       "ko": "사도 포위망: 경보가 울린 뒤 다음 자기 차례까지 유지해야 승리해요",
-       "en": "Siege: after the alarm you must hold it until your next turn to win",
-       "ja": "使徒包囲網: 警報の後、次の自分の番まで維持して初めて勝利"
+       "ko": "야추: 고정한 주사위는 다시 굴려도 유지 (굴리기 단축키는 스페이스바)",
+       "en": "Yahtzee: held dice stay held after rerolls (Space is the roll key)",
+       "ja": "ヨット：固定したダイスは振り直しても維持（ロールはスペースキー）"
       },
       {
-       "ko": "다른 사람이 카드를 뽑을 때 노란 카드가 프로필로 날아가는 연출을 없앴어요",
-       "en": "Removed the yellow card flying to other players' profiles when they draw",
-       "ja": "他のプレイヤーがカードを引く時に黄色いカードがプロフィールへ飛ぶ演出を削除"
+       "ko": "AI 대전에서 방 규칙 설정 버튼을 없앴어요 (난이도가 규칙을 정해요)",
+       "en": "Removed the room-rules button from AI matches (difficulty decides the rules)",
+       "ja": "AI対戦のルーム設定ボタンを削除（難易度がルールを決めます）"
+      }
+     ]
+    },
+    {
+     "head": {
+      "ko": "개선사항",
+      "en": "Improvements",
+      "ja": "改善"
+     },
+     "items": [
+      {
+       "ko": "특수 승리 컷신, 완주 피니시 컷신, 결과창 만화 컷 페이지 연출",
+       "en": "Special-victory cutscenes, finish-line cutscene and a comic-page result screen",
+       "ja": "特殊勝利カットシーン、ゴール演出、結果画面のマンガページ演出"
       },
       {
-       "ko": "방어 카드를 [잡기 방어] · [공격 방어] · [함정 방어]로 나눠 카드에 표시해요 (바이츠 더 더스트는 [만능 방어])",
-       "en": "Defense cards are now labeled Capture Guard / Attack Guard / Trap Guard (Bites the Dust is All-round Guard)",
-       "ja": "防御カードを［捕獲ガード］［攻撃ガード］［罠ガード］に分けて表示します（バイツ・ザ・ダストは［オールガード］）"
+       "ko": "특수 승리 진행도가 차오르는 연출과 목표 칸 표시(하극상·식권·포위망)",
+       "en": "Special-victory progress fill effect and target-tile markers",
+       "ja": "特殊勝利の進行度ゲージ演出と目標マス表示"
       },
       {
-       "ko": "감나빗!은 이제 공격 카드만 막아요 (잡기는 못 막아요)",
-       "en": "Missed Me! now only evades attack cards (it can't stop a capture)",
-       "ja": "あたらなーい！は攻撃カードだけ回避します（捕獲は防げません）"
+       "ko": "가운데 알림을 큰 한 마디(공격! · 카드 발동! 등)로 간결하게, 최소 1.8초는 보이게",
+       "en": "Center notices are now short stamped words (Attack!, Card!, ...) and stay at least 1.8 s",
+       "ja": "中央の通知を短い一言に簡潔化し、最低1.8秒は表示"
+      },
+      {
+       "ko": "쓸 수 있는 필살기·카드가 있으면 화면 위쪽에 한 줄로 알려줘요",
+       "en": "A top-of-screen line tells you when a skill or card is ready",
+       "ja": "使える必殺技・カードがあると画面上部に1行で通知"
+      },
+      {
+       "ko": "템포 업 경고음이 4번 울려요",
+       "en": "The Tempo Up warning sound now plays 4 times",
+       "ja": "テンポアップの警告音が4回鳴ります"
+      },
+      {
+       "ko": "로비 오른쪽 위에 언어 · 공지사항 · 도감 · 설정 버튼을 모았어요 (팁 띠 삭제)",
+       "en": "Lobby top-right now holds Language, Notices, Rulebook and Settings (tips bar removed)",
+       "ja": "ロビー右上に言語・お知らせ・図鑑・設定をまとめました（ヒントバー削除）"
+      },
+      {
+       "ko": "카드 대상 선택을 보드를 가리지 않는 위쪽 바로, 리벤지 부스터 이동 연출 정리",
+       "en": "Card targeting uses a slim top bar; cleaner Revenge Booster movement",
+       "ja": "カード対象選択を盤面を隠さない上部バーに、リベンジブースターの移動演出を整理"
+      },
+      {
+       "ko": "증강 선택·판정 도구가 뜰 때 버벅이던 점을 개선하고 웹 용량을 줄였어요",
+       "en": "Smoother augment/judgment screens and a lighter web download",
+       "ja": "オーグメント選択・判定ツール表示時のカクつきを改善し、Web容量を軽量化"
+      },
+      {
+       "ko": "아이패드·폰에서 닉네임·방 코드 칸을 누르면 키패드가 바로 올라와요",
+       "en": "On iPad/phones, tapping the nickname or room-code field raises the keyboard right away",
+       "ja": "iPad・スマホでニックネーム・ルームコード欄をタップするとキーボードがすぐ出ます"
+      }
+     ]
+    },
+    {
+     "head": {
+      "ko": "버그 수정",
+      "en": "Bug fixes",
+      "ja": "バグ修正"
+     },
+     "items": [
+      {
+       "ko": "윷말 필살기 [한 번 더!]를 눌러도 반응이 없던 문제",
+       "en": "Yut piece skill [Once more!] did nothing when pressed",
+       "ja": "ユッ駒の必殺技「もう一回！」を押しても反応しない問題"
+      },
+      {
+       "ko": "중립 기물이 출동 알림 중 깜빡이거나 사라지던 문제",
+       "en": "Neutral pieces flickering or vanishing during their dispatch notice",
+       "ja": "中立の駒が出動通知中に点滅・消えてしまう問題"
+      },
+      {
+       "ko": "방어 카드로 막은 뒤 되갚기 사출이 처치로 세어지던 문제",
+       "en": "Retaliation ejections after a defense being counted as kills",
+       "ja": "防御後の反撃射出がキルとして数えられる問題"
+      },
+      {
+       "ko": "온라인 친선전에서 증강 선택 창이 안 뜨거나 내 자리가 컴퓨터로 넘어가던 문제",
+       "en": "Online friendly matches: augment window not showing or your seat being taken over by the computer",
+       "ja": "オンラインのフレンド戦でオーグメント選択が出ない／席がコンピューターに移る問題"
+      },
+      {
+       "ko": "블랙잭 뒤 히트/스탠드가 잠겨 게임이 멈추던 문제",
+       "en": "A Blackjack lock that could freeze the game",
+       "ja": "ブラックジャック後にヒット／スタンドがロックされゲームが止まる問題"
+      },
+      {
+       "ko": "카이지의 한방 역전법이 한 차례 이동 칸 수를 제대로 합산하지 않던 문제",
+       "en": "Kaiji's comeback law not summing a turn's total movement",
+       "ja": "カイジの一発逆転法が1ターンの移動マス数を正しく合算しない問題"
+      },
+      {
+       "ko": "피드백 창을 연 채 증강 선택이 떠서 막히던 문제, BANG! 대상 선택 표시가 남던 문제",
+       "en": "Feedback window blocking augment selection; leftover BANG! target marks",
+       "ja": "フィードバック画面とオーグメント選択の干渉、BANG!の対象表示が残る問題"
+      },
+      {
+       "ko": "화투 패에서 한 번에 끝나는데 굴림 기록판이 뜨던 문제, 최종 결과 화면에 카드 더미가 보이던 문제",
+       "en": "Hwatu showing a roll log despite a single roll; deck pile visible on the final result screen",
+       "ja": "花札で1回で終わるのにロール記録が出る問題、最終結果画面にカード山が見える問題"
+      },
+      {
+       "ko": "알림·방어 팝업·판정 도구 화면이 서로 겹치던 문제",
+       "en": "Overlaps between notices, defense popups and judgment-tool stages",
+       "ja": "通知・防御ポップアップ・判定ツール画面が重なる問題"
+      },
+      {
+       "ko": "터치를 지원하는 PC에서 팝업이 폰처럼 확대되어 흐려지던 문제",
+       "en": "Popups being scaled up and blurry on touch-capable PCs",
+       "ja": "タッチ対応PCでポップアップがスマホ扱いで拡大されぼやける問題"
       }
      ]
     }
