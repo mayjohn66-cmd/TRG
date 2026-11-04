@@ -381,7 +381,8 @@ func _test_card_draw_fx() -> void:
 	_board.state.give_card(owner, &"ACT_09")
 	_board.state.give_card(owner, &"ACT_02")
 	_board.state.give_card(other, &"ACT_03")
-	_expect(fx.in_flight == 3 and int(fx.pending.get(owner, 0)) == 2, "카드 3장이 덱에서 뽑혀 날아간다 (%d장, 내 손패 대기 %s)" % [fx.in_flight, str(fx.pending)])
+	# 1.0: 남이 뽑은 카드는 프로필로 날아가지 않는다 (소리와 프로필 흔들림만). 내 카드 2장만 덱에서 날아온다
+	_expect(fx.in_flight == 2 and int(fx.pending.get(owner, 0)) == 2, "내 카드 2장만 덱에서 뽑혀 날아간다 (%d장, 내 손패 대기 %s)" % [fx.in_flight, str(fx.pending)])
 	_board._refresh_hands()
 	var live: Array[Node] = _board._dock.get_children().filter(func(child: Node) -> bool: return not child.is_queued_for_deletion())
 	_expect(live.size() == hand.size() and (live[live.size() - 1] as Control).modulate.a == 0.0 and (live[live.size() - 2] as Control).modulate.a == 0.0, "날아오는 중인 카드는 손패에서 숨겨 둔다")
@@ -422,13 +423,13 @@ func _test_card_draw_fx() -> void:
 		_expect(visible_faces<=1,"multiple local cards never obscure each other's reveal")
 		await process_frame
 	fx.landed.disconnect(record)
-	_expect(not fx.busy() and arrivals.size() == 3, "모두 도착 (%d장)" % arrivals.size())
+	_expect(not fx.busy() and arrivals.size() == 2, "내 카드 2장 모두 도착 (%d장)" % arrivals.size())
 	_expect(flipped, "내 카드는 앞면으로 뒤집힌다")
 	_expect(saw_carry and shown_duration>0.45,"draw, carry and readable reveal occur before delivery")
 	var elapsed: float = _now() - started
-	_expect(elapsed < 4.5, "local cards reveal individually; three draws finish within 4.5s (%.2f)" % elapsed)
+	_expect(elapsed < 4.5, "local cards reveal individually; the draws finish within 4.5s (%.2f)" % elapsed)
 	var others: Array = arrivals.filter(func(entry: Array) -> bool: return not bool(entry[1]))
-	_expect(others.size() == 1 and int(others[0][0]) == other, "남의 카드는 프로필로 (뒷면)")
+	_expect(others.is_empty(), "남의 카드는 날아가지 않는다 (%d장)" % others.size())
 	live = _board._dock.get_children().filter(func(child: Node) -> bool: return not child.is_queued_for_deletion())
 	_expect(live.size() == hand.size() and (live[live.size() - 1] as Control).modulate.a > 0.0, "도착하면 손패에 보인다")
 	# 드래프트 중에 얻은 카드는 손패에서 바로 숨겨 두고, 비행은 공개 뒤로 미룬다
