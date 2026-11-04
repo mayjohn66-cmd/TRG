@@ -623,6 +623,8 @@ func _finish() -> bool:
 		_assert(report != null and report.is_visible_in_tree(), "게임 종료 후 새 만화 리포트가 보여야 한다")
 		var restart := _board._result_overlay.find_child("RestartButton", true, false) as Button
 		_assert(restart != null and restart.is_visible_in_tree() and not restart.disabled and restart.text == "다시 한 판!", "만화 리포트에 사용 가능한 재시작 버튼이 있어야 한다")
+		var lobby := _board._result_overlay.find_child("LobbyButton", true, false) as Button
+		_assert(lobby != null and lobby.is_visible_in_tree() and not lobby.disabled, "리포트에 사용 가능한 로비 버튼이 있어야 한다")
 		var lobby_found: bool = false
 		for node: Node in _board._result_overlay.find_children("*", "Button", true, false):
 			if (node as Button).text == "로비로 나가기":
@@ -631,8 +633,10 @@ func _finish() -> bool:
 		if report != null:
 			var round_label := report.find_child("RoundNumber", true, false) as Label
 			var phrase := report.find_child("ReportVictoryPhrase", true, false) as Label
+			var condition := report.find_child("MatchEndReasonText", true, false) as Label
 			_assert(round_label != null and round_label.text == str(_board.state.round_number), "리포트에 실제 플레이한 라운드 수가 보인다")
 			_assert(phrase != null and phrase.text == _board.result_comic_texts(_board.state.winner)[0], "리포트의 승리 요인은 실제 승리 컷신 문구와 같다")
+			_assert(condition != null and not condition.text.strip_edges().is_empty(), "리포트에 실제 승리 조건이 보인다")
 			_assert(report.ranking_labels.size() == _board._player_ids.size(), "리포트에 참가자 수만큼 순위 컷이 있다")
 			if not report._entries.is_empty():
 				_assert(int(report._entries[0]["rank"]) == 1 and int(report._rank_cuts[0].get_meta("player")) == _board.state.winner, "1등 컷은 실제 승자")
