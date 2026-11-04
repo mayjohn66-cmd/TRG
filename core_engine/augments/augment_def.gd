@@ -71,7 +71,7 @@ func display_group() -> StringName:
 		GameEnums.AugmentCategory.CARD_PACKAGE: return &"card"
 		GameEnums.AugmentCategory.UTILITY:
 			match StringName(str(payload)):
-				UtilityAugments.MOVE_PLUS, UtilityAugments.HAND_EXPAND, UtilityAugments.LUCKY_DICE, UtilityAugments.EXTRA_TURN:
+				UtilityAugments.MOVE_PLUS, UtilityAugments.HAND_EXPAND, UtilityAugments.LUCKY_DICE, UtilityAugments.EXTRA_TURN, UtilityAugments.DRIFT:
 					return &"passive"
 				UtilityAugments.TRAP_CLEAR1, UtilityAugments.CATCH_UP, UtilityAugments.SHORTEN_GOAL, UtilityAugments.REROLL_ALL_AUG:
 					return &"instant"

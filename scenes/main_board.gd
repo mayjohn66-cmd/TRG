@@ -5,6 +5,7 @@ class_name MainBoard
 extends Control
 
 const MATCH_BACKGROUND_SCRIPT: Script = preload("res://scenes/match_background.gd")
+const ROLL_BUTTON_SKIN:Script=preload("res://scenes/roll_button_skin.gd")
 const COMMON_SHOCKWAVE: Texture2D = preload("res://assets/fx/common/shockwave_v01.png")
 const COMMON_FLECK: Texture2D = preload("res://assets/fx/common/spark_fleck_v01.png")
 const PAWN_SILHOUETTE: Shader = preload("res://assets/fx/common/pawn_silhouette.gdshader")
@@ -141,6 +142,7 @@ const CARD_SHORT: Dictionary = {
 	&"CNT_05": "함정 파괴 +3칸",
 	&"CNT_06": "함정 무효+강탈",
 	&"CNT_07": "함정 카드 획득",
+	&"CNT_08": "잡기 1회 회피",
 	&"ACT_02": "상대 선두 사출",
 	&"ACT_03": "폭탄 패스 & +4칸",
 	&"ACT_04": "이번 굴림 +4",
@@ -166,6 +168,7 @@ const CARD_SHORT: Dictionary = {
 	&"TRP_C04": "주변 적 끌어오기",
 	&"SUM_01": "정방향 질주 사출",
 	&"SUM_02": "역방향 질주 사출",
+	&"SUM_03": "빛 기둥 소각 질주",
 }
 ## 카드 확대 보기에서 읽는 개조식 요약 (키워드 + 명사형 종결). cards_table.csv의 desc가 있으면 그것이 우선이다.
 const CARD_SUMMARIES: Dictionary = {
@@ -176,6 +179,7 @@ const CARD_SUMMARIES: Dictionary = {
 	&"CNT_05": "[방어] 걸린 함정을 부수고 +3칸 전진",
 	&"CNT_06": "[방어] 걸린 함정 무효 + 설치자 카드 1장 강탈",
 	&"CNT_07": "[방어] 걸린 함정을 발동하지 않고 그 함정 카드를 내 패로",
+	&"CNT_08": "[방어] 잡기 1회 회피",
 	&"ACT_02": "상대 선두 말을 출발선으로 장외 사출",
 	&"ACT_03": "다음 유저에게 폭탄 패스: 선두 말 사출 + 내 이동 +4칸",
 	&"ACT_04": "굴리기 전 사용! 이번 굴림 +4칸",
@@ -201,6 +205,7 @@ const CARD_SUMMARIES: Dictionary = {
 	&"TRP_C04": "[코너·3R·1회] 밟은 적 정지 + 코너 2칸 안의 적 말 끌어오기",
 	&"SUM_01": "[상단 코너] 소환 · 라운드마다 정방향 1~3칸 · 적을 잡으면 처치하고 퇴장",
 	&"SUM_02": "[상단 코너] 소환 · 라운드마다 역방향 1~3칸 · 적을 잡으면 처치하고 퇴장",
+	&"SUM_03": "[상단 코너] 빛 기둥 소환 · 라운드마다 무작위 방향 3~5칸 · 내 말 포함 말·설치물 소각 · 3라운드 뒤 소멸",
 }
 
 
@@ -313,6 +318,8 @@ var _danger_label: Label = null
 var _hover_danger_tile: int = -1
 var _pawn_views: Dictionary = {}
 var _npc_views: Dictionary = {}
+var _beam_victims:Dictionary={}
+var _beam_trap_hold:Dictionary={}
 var _flash_law_ids: Dictionary = {}
 
 var _toast_label: Label = null
@@ -627,6 +634,9 @@ var _match_background: TextureRect = null
 var _track_lines: Array[Line2D] = []
 var _action_row: HFlowContainer = null
 var _roll_pad: RollPad = null
+var _dart_aim: DartBoardView = null
+## 강화 망치 (v1.1) 선택 판: [더 강화!] / [멈추기].
+var _hammer_panel: PanelContainer = null
 var _roll_history: RollHistory = null
 var _roll_turn_serial := 0
 var _roll_geometry: StringName = &""
@@ -1252,7 +1262,7 @@ func _bind_state() -> void:
 			return
 		if not _fx_on():
 			_record_ejection(pawn_id, by_player)
-		if _alkkagi_controlled.has(pawn_id) or _train_controlled.has(pawn_id) or _nitro_victims.has(pawn_id):
+		if _alkkagi_controlled.has(pawn_id) or _train_controlled.has(pawn_id) or _nitro_victims.has(pawn_id) or _beam_victims.has(pawn_id):
 			if _fx_on():
 				_record_ejection(pawn_id, by_player)
 			return
@@ -1357,6 +1367,18 @@ func _bind_state() -> void:
 		if not _fx_hints.has(pawn_id):
 			_set_hint(pawn_id, {"arc": 0.0, "dur": 0.5}))
 	state.passive_triggered.connect(_on_passive_triggered)
+	# v1.1: 기억상실빔이 사출을 막았다 / 모브 큐이의 오이를 밟았다
+	state.amnesia_blocked.connect(func(pawn_id: int, tile: int) -> void:
+		_on_passive_triggered(pawn_id, &"amnesia_block")
+		_log_line("[기억상실빔] %s이(가) %d번 타일에서 사출되지 않았습니다" % [_pawn_name(pawn_id), tile], Color("b197fc"))
+		_note_defense_success([pawn_id]))
+	state.bounty_claimed.connect(func(hunter: int, pawn_id: int, steps: int) -> void:
+		_log_line("[현상금] P%d이(가) 수배된 %s을(를) 잡았습니다! +%d칸" % [hunter, _pawn_name(pawn_id), steps], Color("ffd43b"))
+		_record(hunter, "%s 현상금 획득! 수배범 처치 → +%d칸" % [_bq("현상금 수배서"), steps], "", true)
+		_refresh_bounty_marks())
+	state.cucumber_given.connect(func(player_id: int, tile: int) -> void:
+		_log_line("[오이] P%d이(가) %d번 타일의 오이를 밟아 [오이 카드]를 받았습니다" % [player_id, tile], Color("8ce99a"))
+		_record(player_id, "오이를 밟았다! %s 획득" % _bq("오이 카드"), "", true))
 	state.guard_blocked.connect(func(pawn_id: int, tile: int) -> void:
 		_on_passive_triggered(pawn_id, &"knight_guard")
 		_log_line("[기사의 맹세] %s이(가) %d번 타일에서 사출을 막았습니다" % [_pawn_name(pawn_id), tile], Color("4dabf7"))
@@ -1461,8 +1483,11 @@ func _bind_state() -> void:
 	state.card_stolen.connect(func(player_id: int, card_id: StringName) -> void:
 		_steal_from = player_id  # 바로 뒤의 카드 획득은 이 사람 프로필에서 날아온다
 		_log_line("P%d의 카드 [%s]를 도적이 빼앗았습니다" % [player_id, _card_name(card_id)], Color("ff6b6b")))
-	state.npc_spawned.connect(func(_npc_id: int, tile: int) -> void:
-		_log_line("중립 기물이 %d번 타일에 소환되었습니다. 라운드마다 1~3칸 이동하고, 적 말을 잡으면 처치하고 퇴장합니다." % tile, Color("fa5252"))
+	state.npc_spawned.connect(func(npc_id:int,tile:int)->void:
+		var spawned:NeutralNPC=state.get_npc(npc_id)
+		if spawned!=null and spawned.is_beam():
+			_log_line("롤링 양성자빔 소환 · 라운드마다 무작위 방향 3~5칸 · 내 말과 설치물도 소각 · 3라운드 유지",Color("da77f2"))
+		else:_log_line("중립 기물이 %d번 타일에 소환되었습니다. 라운드마다 1~3칸 이동하고, 적 말을 잡으면 처치하고 퇴장합니다."%tile,Color("fa5252"))
 		_refresh_all())
 	state.rulebook.law_added.connect(_on_law_added)
 	state.rulebook.law_removed.connect(func(law: LawResource) -> void:
@@ -2124,8 +2149,9 @@ func _build_action_bar() -> void:
 	_roll_button.position = Vector2(623, 320)
 	_roll_button.size = Vector2(120, 120)
 	_roll_button.custom_minimum_size = Vector2(120, 120)
+	_roll_button.z_index = 31  # Ready actions stay legible above the table-side deck (30).
 	_apply_round_button_style(_roll_button, Color("2b8a3e"))
-	_roll_button.tooltip_text = "꾹 눌러 파워 게이지를 채우고 손을 떼면 굴러갑니다 (스페이스 키도 동일)"
+	_roll_button.tooltip_text = "한 번 누르면 굴러갑니다 (스페이스 키도 동일)"
 	add_child(_roll_button)
 	# 2026-11 개선: 내 차례에 쓸 수 있는 필살기가 있으면 굴리기 버튼 바로 아래에 [필살기 버튼 + 한 줄 효과]를 띄운다 (몰라서 못 쓰는 일이 없게).
 	_skill_hint = PanelContainer.new()
@@ -2145,6 +2171,13 @@ func _build_action_bar() -> void:
 	_roll_pad.trigger_pulled.connect(_on_pad_trigger_pulled)
 	_roll_pad.preparation_finished.connect(_refresh_controls)
 	add_child(_roll_pad)
+	# 불스아이 다트 (v1.1): 내 차례에 보드 한가운데 돌아가는 과녁 + 조준점. [던지기] 순간의 조준을 굴림에 싣는다.
+	_dart_aim = DartBoardView.new()
+	_dart_aim.name = "DartAim"
+	_dart_aim.position = Vector2(683.0, 335.0) - DartBoardView.SIZE * 0.5
+	_dart_aim.visible = false
+	add_child(_dart_aim)
+	_build_hammer_panel()
 	# 러시안 룰렛은 [발사]와 [정지] 두 버튼만 쓴다 (정지 버튼은 룰렛을 쓸 때만 이 줄로 옮겨 온다).
 	_gun_row = HBoxContainer.new()
 	_gun_row.position = Vector2(683.0 - 170.0, 470.0)
@@ -2173,18 +2206,8 @@ func _build_action_bar() -> void:
 
 
 ## 둥근 큰 버튼 스타일 (일반/호버/눌림/비활성): 두꺼운 테두리와 그림자로 눌러 보고 싶게 만든다.
-func _apply_round_button_style(button: Button, base: Color) -> void:
-	var radius: int = int(button.size.x / 2.0)
-	var normal: StyleBoxFlat = _style(base, Color("fff3bf"), 5, radius, 14, 4)
-	var hover: StyleBoxFlat = _style(base.lightened(0.15), Color("ffffff"), 5, radius, 18, 4)
-	var pressed: StyleBoxFlat = _style(base.darkened(0.2), COLOR_GOLD, 5, radius, 0, 4)
-	var disabled: StyleBoxFlat = _style(base.darkened(0.55), base.darkened(0.2), 4, radius, 0, 4)
-	button.add_theme_stylebox_override("normal", normal)
-	button.add_theme_stylebox_override("hover", hover)
-	button.add_theme_stylebox_override("pressed", pressed)
-	button.add_theme_stylebox_override("disabled", disabled)
-	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	button.add_theme_color_override("font_disabled_color", Color("7b8499"))
+func _apply_round_button_style(button: Button, _base: Color) -> void:
+	ROLL_BUTTON_SKIN.apply(button)
 
 
 ## 하단 정중앙 TCG 스타일 카드 독. 카드는 _refresh_hands()가 채운다.
@@ -2742,13 +2765,11 @@ func _refresh_pawns() -> void:
 		(view.get_node("Bounce/Badge") as Label).text = badge_text
 	for npc: NeutralNPC in state.npcs:
 		if not _npc_views.has(npc.entity_id):
-			var marker := PawnToken.new()
-			marker.configure_npc(npc.behavior)
-			_pawn_layer.add_child(marker)
-			_npc_views[npc.entity_id] = marker
+			_npc_views[npc.entity_id]=_make_npc_view(npc)
 		var npc_view: Node2D = _npc_views[npc.entity_id]
 		if npc_view.has_meta("npc_run"):
-			continue  # 달리는 연출이 끝나면 도착 칸에 다시 보인다
+			continue  # The beam owns its position and lifetime display until arrival.
+		if npc_view is ProtonBeamView:(npc_view as ProtonBeamView).configure(npc.rounds_left)
 		var npc_target: Vector2 = _tile_center(npc.current_tile_idx)
 		npc_view.scale = Vector2.ONE * _depth_scale(tile_norm(npc.current_tile_idx).y)
 		if _fx_on() and npc_view.position.distance_to(npc_target) > 3.0 and npc_view.position != Vector2.ZERO:
@@ -2757,16 +2778,19 @@ func _refresh_pawns() -> void:
 		elif not npc_view.has_meta("fx") or not _fx_node_running(npc_view):
 			npc_view.position = npc_target
 	for npc_id: int in _npc_views.keys():
-		if state.get_npc(npc_id) == null:
-			(_npc_views[npc_id] as Node).queue_free()
+		if state.get_npc(npc_id)==null:
+			var expired:Node2D=_npc_views[npc_id]
+			if expired.has_meta("npc_run"):continue
 			_npc_views.erase(npc_id)
+			if expired is ProtonBeamView:(expired as ProtonBeamView).fade_out(0.7 if _fx_on() else 0.02)
+			else:expired.queue_free()
 
 
 func _refresh_tiles() -> void:
 	if _tile_marks.is_empty():
 		return
 	for index: int in BoardSpec.tile_count:
-		if _train_trap_hold.has(index):
+		if _train_trap_hold.has(index) or _beam_trap_hold.has(index):
 			continue
 		var parts: Array[String] = []
 		if BoardSpec.jump_corner_targets.has(index):
@@ -2781,7 +2805,7 @@ func _refresh_tiles() -> void:
 		var trap_icon: Texture2D = null
 		for attachment: TileAttachment in state.board.get_tile(index).attachments:
 			if _structure_kind(attachment) != &"":
-				tips.append("지뢰 (P%d) - 밟으면 폭발" % attachment.owner_id)  # 필살기로 묻은 공개 지뢰는 지뢰 모형으로 보인다
+				tips.append("\n".join(_attachment_tip_lines(attachment)))
 				continue
 			if attachment.attachment_id.begins_with("TRP"):
 				has_trap = true
@@ -2821,6 +2845,7 @@ func _refresh_npc_danger() -> void:
 				var next_tile: int = int(tiles[i + 1]) if i + 1 < tiles.size() else -1
 				# 화살표: 다음 타일이 있으면 그쪽, 마지막 타일이면 NPC가 계속 가는 방향
 				var heading: Vector2 = (_tile_center(next_tile) - _tile_center(tile)) if next_tile != -1 else (_tile_center(tile) - _tile_center(from_tile))
+				if npc.is_beam():heading=Vector2.ZERO
 				var level: int = 2 if catch_tiles.has(tile) else 1
 				var existing: Dictionary = _npc_danger.get(tile, {})
 				if int(existing.get("level", 0)) < level:
@@ -2881,16 +2906,18 @@ func _refresh_danger_label() -> void:
 	_danger_label.modulate.a = 1.0
 
 
-## 칸 위 건축물: 필살기로 지은 호텔·공개 지뢰는 부루마블 건물처럼 칸 위에 모형으로 선다 (지어질 때 솟아오른다).
+## 공개 설치물은 칸 위에 그림으로 선다 (설치할 때 땅에서 솟아오른다).
 var _structure_views: Dictionary = {}
 
 
-## 이 설치물을 칸 위 모형으로 보여 줄지: 호텔, 그리고 필살기로 묻은 공개 지뢰(카드로 깐 지뢰는 숨은 함정이라 모형으로 보이지 않는다).
+## 호텔·공개 지뢰·오이만 표시한다. 숨은 카드 함정의 정체는 노출하지 않는다.
 static func _structure_kind(attachment: TileAttachment) -> StringName:
 	if attachment.attachment_id == "HOTEL":
 		return &"hotel"
 	if attachment.attachment_id == "TRP_03" and not attachment.is_hidden_trap:
 		return &"mine"
+	if attachment.attachment_id == "TRP_CUKE" and not attachment.is_hidden_trap:
+		return &"cucumber"
 	return &""
 
 
@@ -2925,11 +2952,13 @@ func _refresh_structures() -> void:
 			_pawn_layer.move_child(model, 0)  # 말 그림보다 먼저 그려 말이 건물 앞에 선다 (z를 낮추면 보드 칸 밑으로 숨는다)
 			_structure_views[index] = {"kind": model.kind, "owner": wanted[index]["owner"], "node": model}
 			if _fx_on():
-				Sfx.play(&"build_hotel" if model.kind == &"hotel" else &"build_mine", -2.0)
+				Sfx.play(&"cucumber_plant" if model.kind == &"cucumber" else (&"build_hotel" if model.kind == &"hotel" else &"build_mine"), -2.0)
 				# 땅에서 솟아오르듯 세워진다
 				model.scale = Vector2(1.0, 0.05)
 				model.create_tween().tween_property(model, "scale", Vector2.ONE, 0.45).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-		model.position = _tile_center(index) + Vector2(0, -4) * _depth_scale(tile_norm(index).y)
+		# Plant beside the pawn's feet, so Cuee cannot hide her own cucumber.
+		var offset := Vector2(13, -3) if model.kind == &"cucumber" else Vector2(0, -4)
+		model.position = _tile_center(index) + offset * _depth_scale(tile_norm(index).y)
 
 
 ## 함정이 깔린 발판의 보라색 깜빡임.
@@ -2977,6 +3006,7 @@ func _on_pawn_stepped(pawn_id: int, _from_tile: int, _to_tile: int) -> void:
 	# Update only this owner's slots, without restarting turn-light tweens.
 	_refresh_pawn_slots(pawn.owner_id)
 	view.visible = pawn.carrier == null and not pawn.is_finished
+	_refresh_bounty_marks() # A previously captured target may be redeploying now.
 	if not _fx_on():
 		if view.has_meta("fx"):
 			_kill_fx(view)
@@ -3019,6 +3049,9 @@ func _play_hop(pawn_id: int, to_pos: Vector2, to_scale: float, tile: int) -> voi
 	var hop: float = manager.current_step_seconds if manager != null and manager.current_step_seconds > 0.0 else HOP_SECONDS
 	if _move_chain_len >= TurnManager.LONG_MOVE_TILES:
 		hop = minf(hop, TurnManager.LONG_MOVE_STEP_SECONDS)  # 장거리 이동: 큐에 이어진 걸음이 많으면 타다닥
+	if pawn != null and pawn.sub_type() in [GameEnums.PawnSubType.ODD_MELON,GameEnums.PawnSubType.POOL_8BALL]:
+		await _play_melon_roll(view, to_pos, to_scale, hop)
+		return
 	# 칸 시간 = 점프 + 착지 쉼: 점프는 칸 시간의 70%, 나머지는 제자리에서 멈춰 한 칸씩 끊어 보이게 한다
 	var jump: float = minf(hop * (1.0 - HOP_REST_RATIO), HOP_SECONDS * minf(_pace(), 1.5))
 	_glide(view, to_pos, to_scale, {"dur": jump, "arc": HOP_HEIGHT, "pace_cap": 1.0, "land_tile": tile})
@@ -3028,6 +3061,45 @@ func _play_hop(pawn_id: int, to_pos: Vector2, to_scale: float, tile: int) -> voi
 	var rest: float = minf(hop * HOP_REST_RATIO, HOP_REST_MAX)
 	if rest > 0.0 and generation == _fx_generation and _fx_on():
 		await get_tree().create_timer(rest).timeout
+
+
+## Grounded travel with no hop/rest/landing squash or per-tile footstep sound.
+## Rotation follows distance, retains its phase across tiles, and reverses on backward moves.
+## Melon and 8-ball share this route, including Bank Shot and post-capture steps.
+func _play_melon_roll(view: Node2D, to_pos: Vector2, to_scale: float, seconds: float) -> void:
+	PresentationAudio.one_shot(view,&"rolling_body")
+	var token := view.get_node("Bounce/Token") as PawnToken
+	_kill_fx(view)
+	var bounce := view.get_node("Bounce") as Node2D
+	bounce.position = Vector2.ZERO
+	bounce.scale = Vector2.ONE
+	bounce.rotation = 0.0
+	var from_pos: Vector2 = view.position
+	var from_scale: float = view.scale.x
+	var travel: Vector2 = to_pos - from_pos
+	var radius: float = maxf(token.melon_roll_radius() * (from_scale + to_scale) * 0.5, 1.0)
+	var direction: float = signf(travel.x) if absf(travel.x) > 0.001 else -signf(travel.y)
+	var angle: float = travel.length() / radius * direction
+	var start_angle: float = token.melon_roll_angle
+	var duration: float = maxf(seconds, 0.02)
+	var tween: Tween = create_tween()
+	tween.tween_method(_sample_melon_roll.bind(view, token, from_pos, to_pos, from_scale, to_scale, start_angle, angle), 0.0, 1.0, duration).set_trans(Tween.TRANS_LINEAR)
+	tween.tween_callback(func() -> void:
+		if is_instance_valid(view):
+			view.remove_meta("fx"))
+	view.set_meta("fx", tween)
+	_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(duration * 1000.0 + 30))
+	var generation: int = _fx_generation
+	while generation == _fx_generation and is_instance_valid(view) and _fx_running(view):
+		await get_tree().process_frame
+
+
+func _sample_melon_roll(progress: float, view: Node2D, token: PawnToken, from_pos: Vector2, to_pos: Vector2, from_scale: float, to_scale: float, start_angle: float, angle: float) -> void:
+	if not is_instance_valid(view) or not is_instance_valid(token):
+		return
+	view.position = from_pos.lerp(to_pos, progress)
+	view.scale = Vector2.ONE * lerpf(from_scale, to_scale, progress)
+	token.melon_roll_angle = start_angle + angle * progress
 
 
 ## 점프 코너나 옷장 포탈에서 시작한 워프인가: 발판에 먼저 멈춰 발동 연출을 보여 준 뒤 날아가야 한다.
@@ -3102,6 +3174,7 @@ func _on_pawn_warped(pawn_id: int, _from_tile: int, _to_tile: int) -> void:
 	if view == null or pawn == null:
 		return
 	view.visible = pawn.carrier == null and not pawn.is_finished
+	_refresh_bounty_marks()
 	if not _fx_on():
 		_on_pawn_stepped(pawn_id, _from_tile, _to_tile)
 		return
@@ -3565,6 +3638,7 @@ func _shown_turn_player() -> int:
 
 
 func _npc_runner_name(display_id: StringName) -> String:
+	if display_id==NpcSweep.BEAM_ID:return "롤링 양성자빔"
 	if display_id == &"TRAIN":
 		return "폭주 기관차"
 	return "사료스탕스" if display_id == &"SUM_01" else "와구와구 유령"
@@ -3623,6 +3697,9 @@ func _train_camera_step() -> void:
 	_pawn_layer.position = offset
 
 func _on_train_sweep_started(display_id: StringName, path: Array[int]) -> void:
+	if display_id==NpcSweep.BEAM_ID:
+		_beam_prepare(path)
+		return
 	if display_id!=&"TRAIN" or not _fx_on():
 		return
 	for tile: int in path:
@@ -3744,6 +3821,11 @@ func _train_release() -> void:
 ## 중립 기물이 한 칸씩 달리는 연출. 보드의 실제 기물 그림(npc_id)은 달리는 동안 숨기고, 끝나면 도착 칸에 다시 보인다.
 ## 잡힌 말의 사출은 이 연출 뒤에 연출 큐가 이어서 보여 준다 (말이 먼저 날아가지 않게). 끝나면 after를 부른다.
 func _play_npc_run(display_id: StringName, behavior: int, from_tile: int, path: Array, npc_id: int, after: Callable) -> void:
+	if display_id==NpcSweep.BEAM_ID:
+		if not _fx_on() or path.is_empty():
+			_release_beam_victims();after.call()
+		else:_play_beam_run(from_tile,path,npc_id,after)
+		return
 	if not _fx_on() or path.is_empty():
 		after.call()
 		return
@@ -3788,6 +3870,152 @@ func _play_npc_run(display_id: StringName, behavior: int, from_tile: int, path: 
 
 ## 지금 라운드의 리벤지 부스터 칸 수 (템포 업이 오르면 커진다).
 ## 리벤지 부스터 칸수. 말을 주면 그 말 기준(루도 복수자는 +4칸 더).
+## SUM_03 uses the approved energy art and real board-floor projection.
+func _make_npc_view(npc:NeutralNPC) -> Node2D:
+	if not npc.is_beam():
+		var marker:=PawnToken.new();marker.configure_npc(npc.behavior)
+		_pawn_layer.add_child(marker);return marker
+	var beam:=ProtonBeamView.new();beam.name="ProtonBeam";beam.rounds_left=npc.rounds_left
+	beam.z_index=5;beam.position=_tile_center(npc.current_tile_idx)
+	beam.scale=Vector2.ONE*_depth_scale(tile_norm(npc.current_tile_idx).y)
+	beam.setup_projection(self)
+	if _fx_on():beam.hide()
+	_pawn_layer.add_child(beam)
+	# enqueue_step can synchronously refresh the board; publish before queueing.
+	_npc_views[npc.entity_id]=beam
+	if _fx_on():
+		var npc_id:int=npc.entity_id
+		_fx_when_announced(func()->void:
+			var view:ProtonBeamView=_npc_views.get(npc_id) as ProtonBeamView
+			if not is_instance_valid(view):return
+			var generation:int=_fx_generation
+			Sfx.play(&"skill_ult")
+			var descent:Tween=view.descend(0.55*_motion_pace())
+			while generation==_fx_generation and is_instance_valid(view) and descent.is_valid() and descent.is_running():
+				await get_tree().process_frame
+			if generation==_fx_generation and is_instance_valid(view):Sfx.play(&"slam",-2.0))
+	return beam
+
+func _beam_prepare(path:Array[int]) -> void:
+	if not _fx_on():return
+	for npc:NeutralNPC in state.npcs:
+		if npc.is_beam():
+			var beam:Node2D=_npc_views.get(npc.entity_id)
+			if beam!=null:beam.set_meta("npc_run",true)
+	for tile:int in path.slice(1):
+		if tile==GameEnums.GOAL_TILE:continue
+		if not state.board.get_tile(tile).attachments.is_empty():_beam_trap_hold[tile]=true
+		for pawn:PlayerPawn in NpcSweep.catchable_at(state,tile):
+			for member:PlayerPawn in pawn.stack_members():
+				var view:Node2D=_pawn_views.get(member.entity_id)
+				if view!=null and not _beam_victims.has(member.entity_id):
+					_kill_fx(view)
+					_beam_victims[member.entity_id]={"tile":tile,"position":view.position,"visible":view.visible}
+
+func _play_beam_run(from_tile:int,path:Array,npc_id:int,after:Callable) -> void:
+	var waiting:Node2D=_npc_views.get(npc_id)
+	if waiting!=null:waiting.set_meta("npc_run",true)
+	enqueue_step(func()->void:
+		var view:Node2D=_npc_views.get(npc_id)
+		var generation:int=_fx_generation
+		if is_instance_valid(view):
+			view.show();view.position=_tile_center(from_tile if from_tile>=0 else int(path[0]))
+			for tile:Variant in path:
+				var glide:Tween=view.create_tween().set_parallel(true)
+				glide.tween_property(view,"position",_tile_center(int(tile)),0.30*_motion_pace())
+				glide.tween_property(view,"scale",Vector2.ONE*_depth_scale(tile_norm(int(tile)).y),0.30*_motion_pace())
+				view.set_meta("fx",glide)
+				while generation==_fx_generation and is_instance_valid(view) and glide.is_valid() and glide.is_running():
+					await get_tree().process_frame
+				if generation!=_fx_generation or not is_instance_valid(view):return
+				if view.has_meta("fx"):view.remove_meta("fx")
+				_beam_contact(int(tile))
+			# A final target can still be burning after the last travel segment.
+			while generation==_fx_generation and not _beam_victims.is_empty():
+				var burning:bool=false
+				for info:Dictionary in _beam_victims.values():burning=burning or bool(info.get("burning",false))
+				if not burning:break
+				await get_tree().process_frame
+		if generation!=_fx_generation:return
+		_release_beam_victims()
+		var real:Node2D=_npc_views.get(npc_id)
+		if is_instance_valid(real):
+			if real.has_meta("npc_run"):real.remove_meta("npc_run")
+			var still:NeutralNPC=state.get_npc(npc_id)
+			if still!=null:
+				real.position=_tile_center(still.current_tile_idx)
+				if real is ProtonBeamView:(real as ProtonBeamView).configure(still.rounds_left)
+			else:
+				_npc_views.erase(npc_id)
+				if real is ProtonBeamView:(real as ProtonBeamView).fade_out(0.7*_motion_pace())
+				else:real.queue_free()
+		after.call())
+
+func _release_beam_victims() -> void:
+	var ids:Array=_beam_victims.keys();_beam_victims.clear()
+	for pawn_id:Variant in ids:
+		var view:Node2D=_pawn_views.get(int(pawn_id))
+		var pawn:PlayerPawn=state.get_pawn(int(pawn_id)) if state!=null else null
+		if view!=null and pawn!=null:
+			_kill_fx(view);view.modulate=Color.WHITE
+			_settle_pawn_view(view,pawn,true)
+	if not _beam_trap_hold.is_empty():
+		_beam_trap_hold.clear()
+		if state!=null:_refresh_tiles()
+
+func _beam_result_text(report:Dictionary) -> String:
+	return "롤링 양성자빔 %d칸 이동 · 말 %d개/설치물 %d개 소각 · %s"%[(report["path"] as Array).size(),(report["caught"] as Array).size(),int(report.get("destroyed",0)),"소멸" if bool(report["vanished"]) else "남은 %d라운드"%int(report.get("rounds_left",0))]
+
+
+func _beam_contact(tile: int) -> void:
+	if tile == GameEnums.GOAL_TILE:
+		return
+	var at: Vector2 = _tile_center(tile)
+	var hit: bool = false
+	if _beam_trap_hold.has(tile):
+		_beam_trap_hold.erase(tile)
+		_refresh_tiles()
+		_burst_shards(at, Color("b995eb"), 10)
+		hit = true
+	for pawn_id: int in _beam_victims.keys():
+		var info: Dictionary = _beam_victims[pawn_id]
+		if int(info["tile"]) != tile:
+			continue
+		if bool(info.get("burning",false)):continue
+		hit = true
+		var view: Node2D = _pawn_views.get(pawn_id)
+		var pawn: PlayerPawn = state.get_pawn(pawn_id)
+		if view==null or pawn==null:
+			_beam_victims.erase(pawn_id)
+			continue
+		if pawn.has_left_start and pawn.current_tile_idx == tile:
+			_beam_victims.erase(pawn_id)
+			_settle_pawn_view(view, pawn, true)  # 방어막·기억상실빔으로 버텼다: 날아가지 않고 제자리
+			continue
+		info["burning"]=true
+		view.z_index = 12
+		var burn: Tween = view.create_tween().set_parallel(true)
+		burn.tween_property(view, "position", view.position + Vector2(0, -150), 0.55 * _motion_pace()).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		burn.tween_property(view, "modulate", Color(1.6, 0.9, 1.6, 0.0), 0.55 * _motion_pace())
+		view.set_meta("fx",burn)
+		burn.chain().tween_callback(func() -> void:
+			_beam_victims.erase(pawn_id)
+			if is_instance_valid(view):
+				view.remove_meta("fx")
+				view.z_index = 0
+				view.visible = false  # 불타 날아간 말: 보드에서 사라진 채로 출발선 자리에 맞춘다 (다시 보드로 미끄러져 오지 않게)
+				view.modulate = Color.WHITE
+				var now: PlayerPawn = state.get_pawn(pawn_id)
+				if now != null:
+					_settle_pawn_view(view, now, true))
+	if hit:
+		Sfx.play(&"proton_burn", -3.0)
+		screen_shake(3.0, 0.1)
+		_impact_ring(at + _pawn_layer.position, Color("f783ac"), 30.0)
+
+
+
+
 func _revenge_steps(pawn: PlayerPawn = null) -> int:
 	if pawn != null and state != null:
 		return MoveExecutor.revenge_bonus_of(pawn, state)
@@ -4330,11 +4558,11 @@ static func law_win_reason(law_id: String, value: int) -> String:
 	match law_id:
 		"LAW_01": return "경기 중 총 %d회 적 기물 처치 완료!" % value
 		"LAW_02": return "빵집 %d회 방문 · 식권 스탬프 완성!" % value
-		"LAW_03": return "설치물 %d개 동시 유지 · 부동산 제국 완성!" % value
+		"LAW_03": return "함정·설치물 %d개 동시 유지 · 무한의 함정 완성!" % value
 		"LAW_04": return "한 턴에 %d칸 폭발 전진 성공!" % value
-		"LAW_05": return "말 %d개 포위망을 한 바퀴 동안 지켜 냈다!" % value
+		"LAW_05": return "말 %d개로 보드연성진을 완성하고 지켜 냈다!" % value
 		"LAW_06": return "%d번 사출당한 분노가 폭발했다!" % value
-		"LAW_07": return "한 턴에 %d연속 굴림 · 무한 동력 가동!" % value
+		"LAW_07": return "한 턴에 %d연속 굴림 · 다이스 소울 완성!" % value
 		"LAW_08": return "완주 0개로 선두의 말을 %d회 처치!" % value
 	return ""
 
@@ -4354,25 +4582,25 @@ func _play_victory_cutscene(player_id: int, rank_no: int, reason: StringName) ->
 	add_child(canvas)
 	var cut := VictoryCutscene.new()
 	canvas.add_child(cut)
-	var actor: Texture2D = AvatarCombatArt.texture(_avatar_for(player_id), &"attack")
+	var actor: Texture2D = AvatarCombatArt.texture(_avatar_for(player_id), &"victory")
 	if is_law:
-		# 법전 성립 컷신: 원인 자리 스포트라이트(0.8초) → 두루마리 + [중앙 법전 성립 · 특수 승리!] → 우승자 — [법전] 완수! → 달성 사유
+		# 원인 조명 → 법전별 보드 도입부 → 승리 초상·테마 제목 → 이름·순위·달성 사유.
 		var law: LawResource = LawRegistry.create(String(reason))
 		var law_name: String = law.law_name if law != null else ""
-		var art: Texture2D = TextureCache.fetch("res://content_trickcal/illustrations/laws/%s.png" % String(reason))
 		var detail: Dictionary = _law_win_detail.get(player_id, {})
 		var why: String = law_win_reason(String(reason), int(detail.get("value", 0))) if str(detail.get("law", "")) == String(reason) else ""
-		cut.setup(VictoryCutscene.MODE_LAW, color, actor, art, "[중앙 법전 성립 · 특수 승리!]", "%s · [%s] 완수!" % [_player_name(player_id), law_name],
+		cut.setup(VictoryCutscene.MODE_LAW, color, actor, null, "특수 승리!", law_name,
 			"\"달성 사유: %s\"" % why if why != "" else law.description if law != null else "", "%d위 졸업!" % rank_no, 44)
-		cut.set_head_icon(LawFeedback.icon("scroll"))
-		var spots: Array[Vector2] = []
-		for tile: Variant in detail.get("tiles", []):
-			spots.append(get_global_transform_with_canvas() * _tile_center(int(tile)))
-		cut.set_spots(spots)
+		cut.set_board_spots(self,detail.get("tiles",[]))
+		cut.set_law_context(String(reason),get_global_transform_with_canvas()*_board_center(),_avatar_for(player_id),_player_name(player_id),rank_no)
+		cut.confirmed.connect(func() -> void:
+			screen_shake(2.0,0.12))
+		cut.prelude_impact.connect(func() -> void:
+			screen_shake(5.0,0.16))
 	else:
 		cut.setup(VictoryCutscene.MODE_FINISH, color, actor, null, "FINISH!", "%d위 골인!" % rank_no, "말 4개 모두 완주", _player_name(player_id))
 	cut.impact.connect(func() -> void:
-		screen_shake(12.0, 0.35)
+		screen_shake(6.0 if is_law else 12.0, 0.24 if is_law else 0.35)
 		Sfx.play_stinger(&"law" if is_law else &"graduate")
 		_profile_react(player_id, true, "%d위" % rank_no))
 	cut.play(_motion_pace())
@@ -4903,7 +5131,13 @@ func _drag_drop(pointer: Vector2, press: Dictionary) -> void:
 		return
 	# 카드가 보드로 날아가 쾅 내리찍힌다 (타일 지정 카드는 타일을 고른 뒤 그 타일에서도 임팩트가 터진다).
 	_duel_drop_target = duel_target
-	_throw_ghost(_board_center() if not card.needs_tile() else pointer)
+	if card is CardCucumber:
+		# Eating replaces the generic card slam; there is no attack/impact effect.
+		if is_instance_valid(_drag_ghost):
+			_drag_ghost.queue_free()
+		_drag_ghost = null
+	else:
+		_throw_ghost(_board_center() if not card.needs_tile() else pointer)
 	# 타일 지정 카드는 보드에 던지면 '어디에 쓸지' 고르는 UI가 열리고, 즉발 카드는 바로 발동한다.
 	_on_card_pressed(player_id, card_id)
 
@@ -5293,6 +5527,11 @@ func _fill_npc_tip(npc_id: int) -> void:
 	var npc: NeutralNPC = state.get_npc(npc_id) if state != null else null
 	if npc == null:
 		return
+	if npc.is_beam():
+		_tip_title.text="롤링 양성자빔 · 남은 %d라운드"%npc.rounds_left
+		_tip_ability.text="라운드 끝마다 무작위 방향 3~5칸 · 내 말 포함 말과 설치물 소각"
+		_tip_skill.visible=true;_tip_skill.text="3회 이동 후 소멸 · 소환: P%d"%npc.owner_id
+		return
 	var robber: bool = npc.behavior != GameEnums.NpcBehavior.PATROL_REVERSE
 	_tip_title.text = "사료스탕스  ▶ 정방향 전진" if robber else "와구와구 유령  ◀ 역방향 전진"
 	_tip_ability.text = NPC_TIP_ROBBER if robber else NPC_TIP_GHOST
@@ -5350,11 +5589,15 @@ func _attachment_tip_lines(attachment: TileAttachment) -> Array[String]:
 	var kind: String = "호텔" if id == "HOTEL" else ("코너 함정" if id.begins_with("TRP_C") else "함정")
 	if _structure_kind(attachment) == &"mine":
 		kind = "지뢰"
+	elif _structure_kind(attachment) == &"cucumber":
+		kind = "설치물"
 	var known: bool = id == "HOTEL" or _trap_known(attachment)
 	var title: String = "[%s] %s  (설치: %s)" % [kind, _attachment_name(id), _player_name(attachment.owner_id)] if known else "[? 수상한 함정]  (설치: %s)" % _player_name(attachment.owner_id)
 	var effect: String = "직접 밟거나 해체하기 전까지 정체를 알 수 없습니다!"
 	if id == "HOTEL":
 		effect = "다른 플레이어가 멈추면 통행료"
+	elif id == "TRP_CUKE" and known:
+		effect = "적이 이 칸에 멈추면 오이 카드 1장을 받고 오이는 사라집니다"
 	elif known:
 		effect = card_summary(StringName(id))
 	var keep: String = "남은 유지: %d턴" % attachment.duration_turns if attachment.duration_turns > 0 else "유지: 발동할 때까지"
@@ -6106,6 +6349,8 @@ const TOOL_CARDS: Dictionary = {
 	&"DICE_YACHT": ["야", Color("e03131"), "주사위 5개 고정·리롤(2회)로 족보 완성!", "(트리플 5칸 / 풀하·4연속 7칸 / ★야추 12칸+한번더)"],
 	&"DICE_BLACKJACK": ["21", Color("2b8a3e"), "카드 합계(11~21)에서 -10 한 만큼 전진!", "(★21 달성: 11칸+한번더 / 22↑ 초과 시 0칸 폭발!)"],
 	&"DICE_PINBALL": ["핀", Color("1971c2"), "발사대를 당겨 쇠구슬 발사!", "구슬이 골인한 칸의 숫자(1 ~ 10칸)만큼 전진"],
+	&"DICE_STOCK": ["주", Color("2f9e44"), "주가만큼 전진! 오를까 내릴까?", "★상한가 20칸 · 상장폐지는 선두 말 사출"],
+	&"DICE_DARTS": ["◎", Color("c92a2a"), "돌아가는 과녁에 타이밍 맞춰 던져라!", "숫자 × 싱글·더블·트리플 · ★불스아이 10칸+한 번 더"],
 }
 
 
@@ -6124,6 +6369,8 @@ const TOOL_RULES: Dictionary = {
 	&"DICE_YACHT": {"rows": [["찬스 (족보 없음)", "최고 눈÷2 올림 (1~3칸)"], ["트리플 (3개 동일)", "5칸"], ["4연속 / 풀하우스", "7칸"], ["포카드 / 5연속", "9칸"], ["★ 야추 (5개 동일)", "12칸 + 한 번 더!"]], "note": "고정(Keep)하고 나머지를 최대 2번 다시 굴림"},
 	&"DICE_BLACKJACK": {"rows": [["시작", "합 11 이상까지 받음"], ["11 ~ 20 스탠드", "(합 - 10)칸"], ["★ 정확히 21", "11칸 + 한 번 더!"], ["22 이상 (버스트)", "0칸, 턴 종료"]], "note": "A는 11 (넘으면 1) · 히트로 더 뽑거나 스탠드로 확정"},
 	&"DICE_PINBALL": {"rows": [["하단 구멍 7칸", "2·4·6·★10·5·3·1"], ["골인한 구멍", "그 숫자만큼 (1~10칸)"], ["★10 구멍", "가장 드문 대박"]], "note": "발사 버튼을 꾹 눌렀다 놓으면 발사"},
+	&"DICE_STOCK": {"rows": [["보통 (88%)", "주가만큼 (1~12칸, 매번 ±3)"], ["★상한가 (6%)", "20칸"], ["상장폐지 (6%)", "0칸 · 선두 말 사출 · 턴 종료"]], "note": "주가는 6에서 시작해 이어진다 · 상한가·상장폐지 뒤 6으로"},
+	&"DICE_DARTS": {"rows": [["싱글", "숫자(1~6)만큼"], ["더블 (바깥 고리)", "숫자 × 2"], ["트리플 (안쪽 고리)", "숫자 × 3"], ["★불스아이 (정중앙)", "10칸 + 한 번 더!"]], "note": "조준점이 가운데로 올 때 던지기 · 손떨림 약간"},
 }
 
 
@@ -6246,9 +6493,12 @@ func _refresh_controls() -> void:
 	var tool: BaseJudgmentTool = state.tools[player_id]
 	var over: bool = manager.is_game_over
 	var can_roll: bool = not over and (current_phase == TurnManager.State.PHASE_TURN_BEGIN or current_phase == TurnManager.State.PHASE_ROLL_WAIT)
-	_roll_button.disabled = not can_roll or _tile_pick_active or _ui_busy() or manager.stack_offer_pending() or manager.duel_pending() or _is_bot_turn()
+	_roll_button.disabled = not can_roll or _tile_pick_active or _ui_busy() or manager.stack_offer_pending() or manager.duel_pending() or _is_bot_turn() or manager.hammer_pending(player_id)
 	_refresh_roll_pad()
 	_refresh_tool_stage()
+	_refresh_dart_aim(tool)
+	_refresh_hammer_panel()
+	_refresh_bounty_marks()
 	var can_stop: bool = not over and tool.has_pending_state() and current_phase == TurnManager.State.PHASE_ROLL_WAIT
 	if tool is ToolRussianRoulette:
 		# 러시안 룰렛: [방아쇠 당기기]와 [멈추고 N칸 이동 확정]을 한 세트로 상시 노출한다. 1발도 못 당겼으면 멈추기는 비활성(회색)이고,
@@ -6286,6 +6536,181 @@ func _refresh_controls() -> void:
 		_tool_option.select(tool_index)
 
 
+## 현상금 수배서: 수배된 말 위에 흰 테두리의 붉은 타겟. 글자·회전·점멸은 없다.
+func _refresh_bounty_marks() -> void:
+	if state == null:
+		return
+	var wanted: Dictionary = {}
+	if manager != null and not manager.is_game_over:
+		for target_id: Variant in state.bounties.values():
+			var target: PlayerPawn = state.get_pawn(int(target_id))
+			if target == null or target.is_finished or not target.has_left_start:
+				continue
+			# A carried target shares its visible carrier's marker; multiple hunters
+			# of the same stack still produce just one target icon.
+			while target.carrier != null:
+				target = target.carrier
+			wanted[target.entity_id] = true
+	for pawn_id: Variant in _pawn_views.keys():
+		var view: Node2D = _pawn_views[pawn_id]
+		if not is_instance_valid(view):
+			continue
+		var mark: TextureRect = view.get_node_or_null("WantedMark") as TextureRect
+		var show: bool = wanted.has(int(pawn_id))
+		if show and mark == null:
+			if _fx_on():Sfx.play(&"bounty_mark",-4.0)
+			mark = TextureRect.new()
+			mark.name = "WantedMark"
+			mark.texture = preload("res://assets/ui/trickcal/roll_success_v01/target.svg")
+			mark.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			mark.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			mark.size = Vector2(26, 26)
+			var outline := ShaderMaterial.new()
+			outline.shader = preload("res://scenes/roll_stamp_outline.gdshader")
+			outline.set_shader_parameter("draw_size", mark.size)
+			outline.set_shader_parameter("outline_px", 1.8)
+			mark.material = outline
+			mark.z_index = 60
+			mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			view.add_child(mark)
+		if show:
+			var token: PawnToken = view.get_node_or_null("Bounce/Token") as PawnToken
+			var body_top: float = token.artwork_rect().position.y * token.scale.y if token != null else -31.0
+			mark.position = Vector2(-13, body_top - mark.size.y - 7.0)
+		elif mark != null:
+			# Detach now, so a remove/reapply in one frame cannot reuse a doomed node.
+			view.remove_child(mark)
+			mark.queue_free()
+
+
+## 강화 망치 선택 판: 보드 한가운데 [+N] · 다음 강화 확률 · [더 강화!] [멈추기].
+func _build_hammer_panel() -> void:
+	_hammer_panel = PanelContainer.new()
+	_hammer_panel.name = "HammerPanel"
+	_hammer_panel.add_theme_stylebox_override("panel", _style(Color(0.08, 0.07, 0.12, 0.95), Color("ffd43b"), 3, 16, 14, 8))
+	_hammer_panel.visible = false
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 8)
+	_hammer_panel.add_child(column)
+	var title: Label = _make_label("", 30, Color("ffd43b"))
+	title.name = "HammerLevel"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_constant_override("outline_size", 6)
+	title.add_theme_color_override("font_outline_color", Color("1a1206"))
+	column.add_child(title)
+	var forge := HammerForgeView.new()
+	forge.name = "HammerForge"
+	column.add_child(forge)
+	var odds: Label = _make_label("", 16, Color("f1f3f5"))
+	odds.name = "HammerOdds"
+	odds.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(odds)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	column.add_child(row)
+	var up: Button = _make_button("", func() -> void: _act(&"hammer_up"), 18, Color("e8590c"))
+	up.name = "HammerUp"
+	up.custom_minimum_size = Vector2(170, 52)
+	row.add_child(up)
+	var stop: Button = _make_button("", func() -> void: _act(&"hammer_stop"), 18, Color("2b8a3e"))
+	stop.name = "HammerStop"
+	stop.custom_minimum_size = Vector2(170, 52)
+	row.add_child(stop)
+	add_child(_hammer_panel)
+
+
+func _refresh_hammer_panel() -> void:
+	if _hammer_panel == null or manager == null or state == null:
+		return
+	var player_id: int = manager.current_player_id()
+	var show: bool = manager.hammer_pending(player_id) and player_id == _dock_owner() and not _is_bot_turn() and not manager.is_game_over and not (_announcer != null and _announcer.holding())
+	_hammer_panel.visible = show
+	if not show:
+		return
+	var level: int = manager.hammer_level(player_id)
+	var chance: int = TurnManager.hammer_chance(level)
+	(_hammer_panel.find_child("HammerLevel", true, false) as Label).text = "%s +%d" % [_hammer_tool_name(player_id), level]
+	(_hammer_panel.find_child("HammerForge", true, false) as HammerForgeView).show_level(level, _fx_on(), _motion_pace())
+	var maxed: bool = level >= TurnManager.HAMMER_MAX
+	(_hammer_panel.find_child("HammerOdds", true, false) as Label).text = "최대 강화!" if maxed else "다음 강화 성공 %d%% · 실패하면 강화 대상 파괴 · 턴 종료" % chance
+	var up: Button = _hammer_panel.find_child("HammerUp", true, false) as Button
+	up.text = "더 강화! (%d%%)" % chance
+	up.disabled = maxed or _ui_busy()
+	var stop: Button = _hammer_panel.find_child("HammerStop", true, false) as Button
+	stop.text = "멈추기 (+%d 확정)" % level
+	stop.disabled = _ui_busy()
+	_hammer_panel.reset_size()
+	_hammer_panel.position = Vector2(683.0, 335.0) - _hammer_panel.size * 0.5
+
+
+## Read the acting player's actual tool, even after a failed turn advances.
+func _hammer_tool_name(player_id: int) -> String:
+	if state == null: return "판정 도구"
+	var tool: BaseJudgmentTool = state.tools.get(player_id)
+	return tool.display_name if tool != null and not tool.display_name.is_empty() else "판정 도구"
+
+
+func _play_hammer_break(tool_name: String, failed_level: int) -> void:
+	await _play_hammer_outcome(tool_name,failed_level,false)
+
+
+func _play_hammer_success(tool_name: String, value: int) -> void:
+	await _play_hammer_outcome(tool_name,value,true)
+
+
+## Terminal +5 and other seats use the same impact without a live choice panel.
+func _play_hammer_outcome(tool_name: String, failed_level: int, success: bool) -> void:
+	if not _fx_on(): return
+	_hammer_panel.hide()
+	var panel := PanelContainer.new()
+	panel.name = "HammerSuccessStage" if success else "HammerBreakStage"
+	panel.z_index = 80
+	panel.add_theme_stylebox_override("panel", _style(Color(0.08,0.07,0.12,0.97),Color("ffd43b") if success else Color("ff6b6b"),3,16,14,8))
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation",8)
+	panel.add_child(column)
+	var title: Label = _make_label("%s +%d" % [tool_name,failed_level],30,Color("ffd43b"))
+	title.name = "BrokenToolTitle"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(title)
+	var forge := HammerForgeView.new()
+	forge.name = "BreakingForge"
+	column.add_child(forge)
+	var caption: Label = _make_label("강화 중...",20,Color("ffe69a") if success else Color("ffb4b4"))
+	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(caption)
+	add_child(panel)
+	if success: forge.show_level(failed_level,true,_motion_pace())
+	else: forge.begin_break(failed_level,_motion_pace())
+	var generation: int = _fx_generation
+	var struck := false
+	while generation == _fx_generation and is_instance_valid(panel) and not (forge.success_finished() if success else forge.break_finished()):
+		panel.reset_size()
+		panel.position = Vector2(683,335)-panel.size*0.5
+		if not struck and forge._time >= HammerForgeView.HIT_AT:
+			struck = true
+			caption.text = "강화 성공! +%d" % failed_level if success else "강화 실패! · 턴 종료"
+			if not success:
+				screen_shake(3.0,0.16)
+		await get_tree().process_frame
+	if is_instance_valid(panel):
+		panel.hide()
+		panel.queue_free()
+
+
+
+## 다트 조준판: 내가 직접 굴리는 다트 차례(굴리기 전)에만 돌아간다.
+func _refresh_dart_aim(tool: BaseJudgmentTool) -> void:
+	if _dart_aim == null:
+		return
+	_dart_aim.position = _board_center() - DartBoardView.SIZE * 0.5
+	var show: bool = tool is ToolDarts and _roll_view_allowed() and not _roll_button.disabled and not _fx_busy and manager.current_player_id() == _dock_owner() and _fx_on()
+	if show != _dart_aim.visible:
+		_dart_aim.visible = show
+		_dart_aim.set_aiming(show)
+
+
 ## 러시안 룰렛이면 정지 버튼을 [발사] 옆 큰 버튼으로 옮기고, 다른 도구면 원래 자리(우측 버튼 줄)로 돌려보낸다.
 func _set_gun_buttons(gun: bool) -> void:
 	var wanted_parent: Node = _gun_row if gun else _action_row
@@ -6307,24 +6732,30 @@ func _is_dice_family(tool: BaseJudgmentTool) -> bool:
 
 ## 굴림 버튼에 쓰는 글자: 도구마다 다르다.
 func _roll_button_label(tool: BaseJudgmentTool) -> String:
-	if tool is ToolPinball:return "핀볼 발사 준비"
+	if tool is ToolPinball:return "핀볼\n발사 준비"
 	if tool is ToolHwatu:
 		return "패\n뒤집기"
 	if tool is ToolHoldem:
-		return "카드 뽑기"
+		return "카드\n뽑기"
 	if tool is ToolSlot777:
-		return "레버 당기기"
+		return "레버\n당기기"
 	if tool is ToolMahjong:
 		return "쯔모!"
 	if tool is ToolTarot:
 		return "운명\n뽑기"
 	if tool is ToolPinball:
 		return "발사!"
+	if tool is ToolDarts:
+		return "다트\n던지기"
+	if tool is ToolStockChart:
+		return "매수!"
 	return tr_ui("btn.roll")
 
 
 ## 굴림 조작 방식: 차징형(기본 주사위·윷·친치로)은 보드 아래 작은 굴리기 버튼+파워 게이지, 그 외(룰렛 원판·리볼버·홀덤/슬롯 큰 버튼)는 보드 한가운데에 크게 보여 준다.
 func _roll_mode_for(tool: BaseJudgmentTool) -> StringName:
+	if tool is ToolDarts:
+		return &"darts"
 	if tool is ToolLifeRoulette:
 		return &"wheel"
 	if tool is ToolRussianRoulette:
@@ -6373,7 +6804,7 @@ func _place_roll_history() -> void:
 	else:
 		_roll_history.set_width(RollHistory.WIDTH)
 		var half := 205.0 if _roll_history.tool_id in [&"REVOLVER",&"LIFE_ROULETTE"] else 170.0
-		at = _board_center()+Vector2(-half-RollHistory.WIDTH-14,-10-_roll_history.size.y*0.5)
+		at = _board_center()+Vector2(-half-_roll_history.custom_minimum_size.x-14,-10-_roll_history.size.y*0.5)
 	_roll_history.position = at.clamp(Vector2(12,12),get_viewport_rect().size-_roll_history.size-Vector2(12,12))
 
 
@@ -6394,7 +6825,7 @@ func _refresh_roll_pad() -> void:
 	_roll_pad.instant = instant_roll_for_test
 	if _roll_pad.kind != wanted:
 		_roll_pad.set_kind(wanted)
-	if mode == &"big" or mode == &"charge" or mode == &"pinball":
+	if mode == &"big" or mode == &"charge" or mode == &"pinball" or mode == &"darts":
 		_roll_button.text = _roll_button_label(owner_tool)  # 글자를 먼저 바꿔야 새 크기가 이전 글자 폭에 눌리지 않는다
 	if mode != _roll_geometry:
 		_set_roll_geometry(mode)
@@ -6410,7 +6841,7 @@ func _refresh_roll_pad() -> void:
 	if wanted != RollPad.Kind.NONE:
 		_roll_pad.visible = roll_phase or own_fx or pad_busy
 	_gun_row.visible = wanted == RollPad.Kind.REVOLVER and (roll_phase or own_fx or pad_busy)
-	if mode == &"big" or mode == &"charge" or mode == &"pinball":
+	if mode == &"big" or mode == &"charge" or mode == &"pinball" or mode == &"darts":
 		_roll_button.text = _roll_button_label(owner_tool)
 	_roll_pad.set_enabled(not _roll_button.disabled)
 	if wanted == RollPad.Kind.REVOLVER and roll_phase and not _ui_busy():
@@ -6424,6 +6855,9 @@ func _set_roll_geometry(mode: StringName) -> void:
 	var big: bool = mode != &"charge" and mode != &"pinball"
 	var diameter: float = 190.0 if mode == &"big" else (110.0 if mode == &"pinball" else 120.0)
 	var center: Vector2 = Vector2(683.0, 335.0) if mode == &"big" else (Vector2(940.0, 470.0) if mode == &"pinball" else Vector2(683.0, 380.0))
+	if mode == &"darts":
+		diameter = 104.0
+		center = Vector2(953.0, 350.0)  # Beside the board, clear of the face and the tool-info panel.
 	_roll_button.custom_minimum_size = Vector2(diameter, diameter)
 	_roll_button.size = Vector2(diameter, diameter)
 	_roll_button.add_theme_font_size_override("font_size", 32 if mode == &"big" else 24)
@@ -6539,10 +6973,15 @@ func _on_roll_pressed() -> void:
 	# material sounds at animation cues. Only dice need the generic clatter.
 	if _is_dice_family(tool) and tool.tool_id != &"YUT":
 		Sfx.play(&"dice_roll")
+	var params: Dictionary = {}
+	if tool is ToolDarts and _dart_aim != null and _dart_aim.aiming:
+		params["aim"] = _dart_aim.current_aim()  # 던진 순간의 조준 (타이밍)
+		_dart_aim.set_aiming(false)
+		_dart_aim.visible = false
 	if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN:
 		_act(&"proceed")
 	if manager.current_state == TurnManager.State.PHASE_ROLL_WAIT:
-		_act(&"roll")
+		_act(&"roll", params)
 
 
 ## 스페이스 키 한 번으로 굴린다 (굴림 버튼을 한 번 누른 것과 같다).
@@ -6887,6 +7326,8 @@ func _on_skill_used(data: Dictionary) -> void:
 			body = "%d번 타일로 도약!" % int((data["path"] as Array).back())
 		&"plant_mine":
 			body = "%d번 타일에 지뢰 매설" % int(data["from"])
+		&"cucumber":
+			body = "%d번 타일에 오이 설치" % int(data["from"])
 		&"hotel":
 			body = "%d번 타일에 호텔 건설 (밟은 적은 멈춤)" % int(data["from"])
 	_log_line("[필살기] %s: %s - %s" % [who, PawnCatalog.skill_name(skill), body.replace("\n", " ")], Color("ffa94d"))
@@ -7328,6 +7769,18 @@ func _enqueue_batch(entries: Array[Dictionary]) -> void:
 
 ## 연출 큐를 비우고 재생 중인 러너를 멈춘다 (판 초기화·되감기·테스트 정리용). 이미 시작된 트윈은 건드리지 않는다.
 func _reset_presentation() -> void:
+	PresentationAudio.stop_tree(self)
+	_release_beam_victims()
+	for npc_id:Variant in _npc_views.keys():
+		var beam:ProtonBeamView=_npc_views[npc_id] as ProtonBeamView
+		if beam==null:continue
+		_kill_fx(beam);beam.cancel()
+		if beam.has_meta("npc_run"):beam.remove_meta("npc_run")
+		var npc:NeutralNPC=state.get_npc(int(npc_id)) if state!=null else null
+		if npc==null:_npc_views.erase(npc_id);beam.queue_free()
+		else:
+			beam._retire=0.0;beam.drop=1.0;beam.position=_tile_center(npc.current_tile_idx)
+			beam.configure(npc.rounds_left);beam.show()
 	if _roll_history != null: _roll_history.clear()
 	var bang_stage: Node2D = get_node_or_null("BangStage")
 	if bang_stage != null:
@@ -7354,6 +7807,17 @@ func _reset_presentation() -> void:
 	var gambler_result: Node2D = get_node_or_null("GamblerResult")
 	if gambler_result!=null:
 		gambler_result.cancel()
+	var cucumber_eat: Control = get_node_or_null("CucumberEat")
+	if cucumber_eat != null:
+		cucumber_eat.cancel()
+	var hammer_break: Control = get_node_or_null("HammerBreakStage")
+	if hammer_break != null:
+		hammer_break.hide()
+		hammer_break.queue_free()
+	var hammer_success: Control = get_node_or_null("HammerSuccessStage")
+	if hammer_success != null:
+		hammer_success.hide()
+		hammer_success.queue_free()
 	_follow_up_pawns.clear()
 	_rocket_followup.clear()
 	_roll_reasons.clear()
@@ -7367,6 +7831,10 @@ func _reset_presentation() -> void:
 	_alkkagi_top_view(false,true)
 	_aim_pawn = -1
 	_fx_generation += 1
+	var victory_layer: CanvasLayer = get_node_or_null("VictoryCutsceneLayer") as CanvasLayer
+	if victory_layer != null:
+		var victory: VictoryCutscene = victory_layer.find_child("VictoryCutscene",true,false) as VictoryCutscene
+		if victory != null: victory.cancel()
 	_presentation_queue.clear()
 	_presentation_draws.clear()
 	_presentation_moves.clear()
@@ -7819,7 +8287,7 @@ func _glide_node(node: Node2D, to_pos: Vector2, seconds: float) -> void:
 
 ## 상태가 바뀐 뒤 말의 화면 자리를 맞춘다: 자리가 달라졌으면 순간이동 대신 포물선으로 움직이고(힌트가 있으면 그 모양으로), 끝나면 보이기/숨기기를 정한다.
 func _settle_pawn_view(view: Node2D, pawn: PlayerPawn, force: bool = false) -> void:
-	if _alkkagi_controlled.has(pawn.entity_id) or _train_controlled.has(pawn.entity_id) or _nitro_victims.has(pawn.entity_id):
+	if _alkkagi_controlled.has(pawn.entity_id) or _train_controlled.has(pawn.entity_id) or _nitro_victims.has(pawn.entity_id) or _beam_victims.has(pawn.entity_id):
 		return
 	var target_pos: Vector2 = _pawn_position(pawn)
 	var target_scale: float = _depth_scale(tile_norm(pawn.current_tile_idx).y)
@@ -9501,158 +9969,84 @@ func _show_result_overlay() -> void:
 	_result_hold = false
 	_report_match_once()
 	_close_result_overlay()
+	if _caption != null:_caption.clear()
+	var first_tip := get_node_or_null("FirstMatchTip")
+	if first_tip != null:first_tip.queue_free()
 	_close_augment_review()
 	if _announcer != null:
 		_announcer.cancel()  # 결과 화면이 마지막 화면이다: 남은 중앙 알림이 그 위에 겹치지 않게
 	if _draw_fx != null:
 		_draw_fx.set_deck_visible(false)  # 결과 화면에는 카드 더미를 띄우지 않는다
-	_result_overlay = _new_overlay()
-	var center := CenterContainer.new()
-	center.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_result_overlay.add_child(center)
-	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", _panel_style())
-	UiSkin.bind_light_text(panel)
-	center.add_child(panel)
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 14)
-	box.custom_minimum_size = Vector2(1000, 0)
-	panel.add_child(box)
+	_result_overlay = _new_overlay(0.0 if _fx_on() else 0.7)
 	var winner_id: int = state.winner
-	# 1.01: 법전으로 이겼으면 맨 위에 승리 요인 박스를 고정한다
-	var win_reason: StringName = state.rank_reasons.get(winner_id, &"")
-	if LawRegistry.ALL_IDS.has(String(win_reason)):
-		var factor := PanelContainer.new()
-		factor.name = "VictoryFactor"
-		factor.add_theme_stylebox_override("panel", _style(Color(0.16, 0.1, 0.0, 0.97), Color("ffd43b"), 3, 12, 10, 10))
-		var factor_row := HBoxContainer.new()
-		factor_row.alignment = BoxContainer.ALIGNMENT_CENTER
-		factor_row.add_theme_constant_override("separation", 12)
-		factor.add_child(factor_row)
-		factor_row.add_child(MetaIcon.create(&"trophy", Vector2(34, 34)))
-		var factor_law: LawResource = LawRegistry.create(String(win_reason))
-		var factor_label: Label = _make_label("승리 요인: %s의 [%s] 특수 승리 달성!" % [_player_name(winner_id), factor_law.law_name if factor_law != null else ""], 24, Color("ffe066"))
-		factor_label.name = "VictoryFactorText"
-		factor_label.add_theme_color_override("font_outline_color", Color("3b2500"))
-		factor_label.add_theme_constant_override("outline_size", 5)
-		factor_row.add_child(factor_label)
-		box.add_child(factor)
-	var title: Label = _make_label("게임 종료!", 34, Color("ffd43b"))
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	box.add_child(title)
-	Sfx.play_stinger(&"podium")
-	var announcer: Label = _make_label("최종 순위를 발표합니다!", 20, Color("f1f3f5"))
-	announcer.name = "RankingAnnouncer"
-	announcer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	box.add_child(announcer)
-	# 왜 끝났는지: 시상대 위에 결정적 종료 사유 한 줄
-	var reason_bar := PanelContainer.new()
-	reason_bar.name = "MatchEndReason"
-	reason_bar.add_theme_stylebox_override("panel", _style(Color(1.0, 0.85, 0.24, 0.14), Color("ffd43b"), 2, 12, 12, 0))
-	var reason_row := HBoxContainer.new()
-	reason_row.add_theme_constant_override("separation", 10)
-	reason_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	reason_bar.add_child(reason_row)
-	reason_row.add_child(MetaIcon.create(&"trophy", Vector2(26, 26)))
-	var reason_label: Label = _make_label("매치 종료 사유: %s" % match_end_reason(), 18, Color("ffe066"))
-	reason_label.name = "MatchEndReasonText"
-	reason_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	reason_label.custom_minimum_size = Vector2(880, 0)
-	reason_row.add_child(reason_label)
-	box.add_child(reason_bar)
-	# 왼쪽: 1~4위를 한눈에 보는 시상대 / 오른쪽: 순위 근거·진행도가 적힌 순위표
-	var stage_row := HBoxContainer.new()
-	stage_row.add_theme_constant_override("separation", 20)
-	box.add_child(stage_row)
-	var podium := HBoxContainer.new()
-	podium.name = "Podium"
-	podium.add_theme_constant_override("separation", 8)
-	podium.alignment = BoxContainer.ALIGNMENT_CENTER
-	podium.custom_minimum_size = Vector2(420, 0)
-	stage_row.add_child(podium)
-	var ranking := VBoxContainer.new()
-	ranking.name = "RankingList"
-	ranking.add_theme_constant_override("separation", 8)
-	ranking.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	ranking.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	stage_row.add_child(ranking)
-	var standings: Array[Dictionary] = VictoryChecker.standings(state, manager.player_order, winner_id)
-	var rows: Array[Control] = []
-	var columns: Dictionary = {}
-	for entry: Dictionary in standings:
-		var row: Control = _make_rank_row(entry)
-		ranking.add_child(row)
-		rows.append(row)
-		columns[int(entry["rank"])] = _make_podium_column(entry)
-	for rank_no: int in PODIUM_ORDER:  # 2위 · 1위 · 3위 · 4위 순으로 세워 1위 단상이 가운데에 가장 높다
-		if columns.has(rank_no):
-			podium.add_child(columns[rank_no])
-	for row: Control in rows:
-		row.set_meta("podium", columns.get(int(row.get_meta("rank"))))
-	var facts := VBoxContainer.new()
-	facts.add_theme_constant_override("separation", 4)
-	box.add_child(facts)
-	var rounds: Label = _make_label("플레이한 라운드: %d라운드" % state.round_number, 17, Color("f1f3f5"))
-	rounds.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	facts.add_child(rounds)
-	var reason: Label = _make_label("승리 요인: %s" % VictoryChecker.short_reason(state.rank_reasons.get(winner_id, _last_reason)), 17, Color("f1f3f5"))
-	reason.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	reason.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	facts.add_child(reason)
-	box.add_child(_build_vote_bar())
-	var buttons := HBoxContainer.new()
-	buttons.add_theme_constant_override("separation", 12)
-	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
-	box.add_child(buttons)
-	if net == null:
-		var again: Button = _make_button("같은 설정으로 바로 재시작", _new_game, 19, Color("2b8a3e"))
-		again.name = "RestartButton"
-		again.custom_minimum_size = Vector2(0, 52)
-		again.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		buttons.add_child(again)
-	var lobby: Button = _make_button("로비로 나가기", _on_menu_pressed, 19, Color("3b4766"))
-	lobby.name = "LobbyButton"
-	lobby.custom_minimum_size = Vector2(0, 52)
-	lobby.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	buttons.add_child(lobby)
-	# [내 우승 기록 복사하기]: 커뮤니티·디스코드에 바로 붙여 넣는 두 줄 요약 (내 자리가 있는 판만)
-	var seat: int = _telemetry_seat()
-	if seat != -1 and state.rankings.has(seat):
-		var won: bool = int(state.rankings[0]) == seat
-		var brag: Button = _make_button("내 우승 기록 복사하기" if won else "내 기록 복사하기", Callable(), 19, Color("e8590c"))
-		brag.name = "CopyRecordButton"
-		brag.custom_minimum_size = Vector2(0, 52)
-		brag.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var standings: Array[Dictionary] = VictoryChecker.standings(state,manager.player_order,winner_id)
+	var report := _build_result_report(standings,winner_id)
+	_result_overlay.add_child(report)
+	add_child(_result_overlay)
+	_priority_modal(_result_overlay)
+	if _fx_on():
+		report.visible=false
+		var comic := _build_result_comic(standings,winner_id)
+		_result_overlay.add_child(comic)
+		_play_result_comic(comic,report)
+
+
+func _build_result_report(standings: Array[Dictionary], winner_id: int) -> ResultComicReport:
+	var entries: Array[Dictionary] = []
+	for standing: Dictionary in standings:
+		var entry := standing.duplicate()
+		var player_id := int(entry["player"])
+		entry["name"]=_player_name(player_id)
+		entry["face"]=ResultFaceArt.texture(_avatar_for(player_id))
+		entry["kills"]=state.stat(player_id,GameState.TALLY_KILLS)
+		entry["deaths"]=state.stat(player_id,GameState.TALLY_DEATHS)
+		entry["reason_text"]=VictoryChecker.short_reason(entry.get("reason",&""))
+		var reason_id := String(entry.get("reason",&""))
+		if RESULT_VICTORY_PHRASES.has(reason_id):entry["reason_text"]="특수 승리 · "+str(RESULT_VICTORY_PHRASES[reason_id])
+		if str(entry["reason_text"])=="":entry["reason_text"]="진행 순위로 확정"
+		entries.append(entry)
+	var texts := result_comic_texts(winner_id)
+	var report := ResultComicReport.new()
+	report.setup(entries,texts[0],texts[1] if texts[1]!="" else match_end_reason(),state.round_number,_telemetry_seat())
+	report.set_vote_bar(_build_vote_bar())
+	if net==null:
+		var again := _make_button("다시 한 판!",_new_game,22)
+		again.name="RestartButton"
+		report.add_action(again,Color("ffdf59"))
+	var lobby := _make_button("로비로 나가기",_on_menu_pressed,22)
+	lobby.name="LobbyButton"
+	report.add_action(lobby,Color("b9dce6"))
+	var seat := _telemetry_seat()
+	if seat!=-1 and state.rankings.has(seat):
+		var brag := _make_button("내 기록 복사",Callable(),22)
+		brag.name="CopyRecordButton"
 		brag.pressed.connect(func() -> void:
 			MetaIcon.copy_to_clipboard(brag_text(seat))
-			brag.text = "복사했어요! 붙여 넣어 자랑하세요")
-		buttons.add_child(brag)
-	# 한 판이 끝난 순간이 가장 할 말이 많을 때다: 결과 창 아래에 후기·밸런스 피드백 버튼을 크게 둔다.
-	var review: Button = _make_button(tr_ui("result.feedback"), _open_feedback.bind("결과 화면", FeedbackModal.Kind.BALANCE, true), 18, Color("c2255c"))
-	review.name = "ReviewFeedbackButton"
-	review.custom_minimum_size = Vector2(0, 50)
-	box.add_child(review)
-	add_child(_result_overlay)
-	if _fx_on():
-		# 1.01: 먼저 1~4위 만화 컷(1쪽)을 보여 주고, [Next Page]로 이 상세 결과표(2쪽)를 넘겨 펼친다
-		center.visible = false
-		var comic: ResultComicPage = _build_result_comic(standings, winner_id)
-		_result_overlay.add_child(comic)
-		_play_result_comic(comic, center, rows, announcer)
-		return
-	_reveal_ranking(rows, announcer)
+			brag.text="복사했어요!")
+		report.add_action(brag,Color("f6b1c5"))
+	var review := _make_button("후기 남기기",_open_feedback.bind("결과 화면",FeedbackModal.Kind.BALANCE,true),22)
+	review.name="ReviewFeedbackButton"
+	report.add_action(review,Color("c5b4eb"))
+	return report
 
 
-## 결과 1쪽의 승리 이름과 (승리 조건): 법전 = 법전 이름 (달성 사유), 완주 = 완주 피니시 (말 4개 모두 완주), 그 밖 = 짧은 사유.
+## Approved victory-cutscene phrases; keep the result caption consistent with its finale.
+const RESULT_VICTORY_PHRASES: Dictionary = {
+	"LAW_01":"Mochi Reality Shock", "LAW_02":"SWEET VICTORY",
+	"LAW_03":"Unlimited Trap Works", "LAW_04":"JACK POT",
+	"LAW_05":"CIRCLE COMPLETE", "LAW_06":"Perma Death",
+	"LAW_07":"ENDLESS DICE", "LAW_08":"Attack on Meeple",
+}
+## 결과 1쪽: 승리 컷신 문구와 실제 달성 사유. 승리 조건/게임 기록은 그대로 둔다.
 func result_comic_texts(winner_id: int) -> Array[String]:
 	var reason: StringName = state.rank_reasons.get(winner_id, _last_reason)
 	if LawRegistry.ALL_IDS.has(String(reason)):
 		var law: LawResource = LawRegistry.create(String(reason))
 		var detail: Dictionary = _law_win_detail.get(winner_id, {})
 		var why: String = law_win_reason(String(reason), int(detail.get("value", 0))) if str(detail.get("law", "")) == String(reason) else ""
-		return [law.law_name if law != null else String(reason), why if why != "" else "특수 승리"]
+		return [str(RESULT_VICTORY_PHRASES.get(String(reason), law.law_name if law != null else String(reason))), why if why != "" else "특수 승리"]
 	if reason == VictoryChecker.ALL_HOME:
-		return ["완주 피니시", "말 4개 모두 완주"]
+		return ["RACE OVER", "말 4개 모두 완주"]
 	if reason == VictoryChecker.RACE_ORDER:
 		return ["레이스 1위", "진행 순위로 확정"]
 	return [VictoryChecker.short_reason(reason), ""]
@@ -9662,15 +10056,10 @@ func _build_result_comic(standings: Array[Dictionary], winner_id: int) -> Result
 	var entries: Array[Dictionary] = []
 	for entry: Dictionary in standings:
 		var player_id: int = int(entry["player"])
-		var avatar := AvatarSlot.new()
-		avatar.icon_border = false
-		avatar.static_only = true
-		avatar.setup(player_id, PLAYER_COLORS.get(player_id, Color.WHITE), Vector2(96, 96))
-		avatar.set_character(_avatar_for(player_id))
-		avatar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var face := ResultFaceArt.texture(_avatar_for(player_id))
 		var first: bool = entries.is_empty()
-		entries.append({"rank": int(entry["rank"]), "name": _player_name(player_id), "color": PLAYER_COLORS.get(player_id, Color("ffd43b")),
-			"avatar": avatar, "art": AvatarCombatArt.texture(_avatar_for(player_id), &"attack") if first else null})
+		entries.append({"rank": int(entry["rank"]), "name": _player_name(player_id), "color": PLAYER_COLORS.get(player_id,Color.WHITE),
+			"face": face, "art": AvatarCombatArt.texture(_avatar_for(player_id), &"victory") if first else null})
 	var texts: Array[String] = result_comic_texts(winner_id)
 	var comic := ResultComicPage.new()
 	comic.setup(entries, texts[0], texts[1])
@@ -9678,8 +10067,8 @@ func _build_result_comic(standings: Array[Dictionary], winner_id: int) -> Result
 	return comic
 
 
-## 결과 1쪽 등장: 사선 분할선 → 1위 칸 → Result·2nd·3rd·4th 탁!탁!탁! → 1st 도장 쾅 (화면 흔들림 0.15초).
-func _play_result_comic(comic: ResultComicPage, detail: Control, rows: Array[Control], announcer: Label) -> void:
+## 결과 1쪽: 4등→3등→2등을 한 박자씩 공개하고 뜸 뒤 1위 큰 컷과 도장을 보여 준다.
+func _play_result_comic(comic: ResultComicPage, detail: Control) -> void:
 	var overlay: Control = _result_overlay
 	var frames: int = 0
 	while _presentation_active() and frames < 600:
@@ -9688,42 +10077,29 @@ func _play_result_comic(comic: ResultComicPage, detail: Control, rows: Array[Con
 	if overlay != _result_overlay or not is_instance_valid(comic):
 		return
 	comic.panel_landed.connect(func(index: int) -> void:
-		Sfx.play(&"card_impact", -4.0 - float(index)))
+		if not comic.skipping:Sfx.play(&"result_panel", -float(index)))
 	comic.impact.connect(func() -> void:
 		screen_shake(10.0, 0.15)
 		Sfx.play_stinger(&"win"))
-	comic.next_pressed.connect(_turn_result_page.bind(comic, detail, rows, announcer), CONNECT_ONE_SHOT)
-	comic.play(minf(_motion_pace(), 1.5))
+	comic.next_pressed.connect(_turn_result_page.bind(comic, detail), CONNECT_ONE_SHOT)
+	comic.play(clampf(_motion_pace(), 1.0, 1.3))
 
 
-## [Next Page]: 만화 컷이 왼쪽으로 넘어가며(살짝 작아지고 어두워짐) 사라지고, 상세 결과표가 오른쪽에서 다음 장처럼 치고 들어온다.
-const RESULT_PAGE_OUT: float = 0.28
-const RESULT_PAGE_IN: float = 0.38
-func _turn_result_page(comic: ResultComicPage, detail: Control, rows: Array[Control], announcer: Label) -> void:
-	if not is_instance_valid(comic) or not is_instance_valid(detail):
-		return
-	var view: Vector2 = comic.size
-	comic.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	comic.next_button.disabled = true
-	for row: Control in rows:
-		if is_instance_valid(row):
-			row.modulate.a = 1.0
-	announcer.text = "★ 최종 순위 ★"
-	detail.visible = true
-	detail.pivot_offset = Vector2(0.0, view.y * 0.5)  # 왼쪽 가장자리를 축으로 펼쳐진다
-	detail.position.x = view.x
-	detail.rotation = 0.05
-	comic.pivot_offset = view * 0.5
-	Sfx.play(&"dash", -4.0)
-	var tween: Tween = create_tween().set_parallel(true)
-	tween.tween_property(comic, "position:x", -view.x * 0.45, RESULT_PAGE_OUT).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
-	tween.tween_property(comic, "scale", Vector2(0.9, 0.9), RESULT_PAGE_OUT).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
-	tween.tween_property(comic, "modulate", Color(0.3, 0.3, 0.3, 0.0), RESULT_PAGE_OUT).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
-	tween.tween_property(detail, "position:x", 0.0, RESULT_PAGE_IN).set_delay(0.06).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(detail, "rotation", 0.0, RESULT_PAGE_IN).set_delay(0.06).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.chain().tween_callback(func() -> void:
-		if is_instance_valid(comic):
-			comic.queue_free())
+## [Next Page]: 첫 만화 컷이 빠지고 새 결과 리포트가 위에서 내려찍힌다.
+const RESULT_PAGE_OUT: float = ResultPageTurn.OUT_SECONDS
+const RESULT_PAGE_IN: float = ResultPageTurn.IN_SECONDS
+func _turn_result_page(comic: ResultComicPage, detail: Control, _rows: Array[Control] = [], _announcer: Label = null) -> void:
+	if not is_instance_valid(comic) or not is_instance_valid(detail):return
+	if _result_overlay==null or _result_overlay.has_node("ResultPageTurn"):return
+	(_result_overlay.get_child(0) as ColorRect).color=ResultComicReport.INK
+	comic.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	comic.next_button.disabled=true
+	detail.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	Sfx.play(&"page_flip")
+	var turn := ResultPageTurn.new()
+	_result_overlay.add_child(turn)
+	turn.impact.connect(func() -> void:Sfx.play(&"report_slam"))
+	turn.begin(comic,detail)
 
 
 ## 결과 화면 [내 기록 복사하기]의 글 (지금 언어): 1줄 게임·난이도·순위·라운드·졸업 방식, 2줄 판정 도구·기물 4개.
@@ -9755,10 +10131,10 @@ func _build_vote_bar() -> Control:
 	var bar := PanelContainer.new()
 	bar.name = "VoteBar"
 	bar.add_theme_stylebox_override("panel", _style(Color(1, 1, 1, 0.06), Color("ffd43b"), 1, 12, 10, 8))
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation", 6)
+	var column := HBoxContainer.new()
+	column.add_theme_constant_override("separation", 30)
 	bar.add_child(column)
-	var question: Label = _make_label("이번 판 어떠셨나요? (누르면 개발자에게 바로 전달!)", 16, COLOR_GOLD)
+	var question: Label = _make_label("이번 판 어땠나요?", 16, COLOR_GOLD)
 	question.name = "VoteQuestion"
 	question.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(question)
@@ -9807,6 +10183,7 @@ func _open_vote_details(bar: Control, unsure_text: String) -> void:
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.pressed.connect(_on_vote_pressed.bind(bar, "%s → %s" % [unsure_text, str(detail[1])], false))
 		grid.add_child(button)
+	if bool(bar.get_meta("comic_report",false)):ResultComicReport.skin_vote_bar(bar)
 	Sfx.play(&"ui_click")
 
 
@@ -9825,152 +10202,8 @@ func _on_vote_pressed(bar: Control, choice: String, ask_more: bool) -> void:
 	thanks.name = "VoteThanks"
 	thanks.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	bar.add_child(thanks)
+	if bool(bar.get_meta("comic_report",false)):ResultComicReport.skin_vote_bar(bar)
 	Sfx.play(&"card_get", -6.0)
-
-
-const RANK_MEDALS: Array[String] = ["1", "2", "3", "4"]
-## 시상대 왼쪽부터 세우는 순위와 순위별 단상 높이(px).
-const PODIUM_ORDER: Array[int] = [2, 1, 3, 4]
-const PODIUM_HEIGHTS: Array[float] = [150.0, 110.0, 80.0, 50.0]
-const RANK_COLORS: Array[Color] = [Color("ffd43b"), Color("ced4da"), Color("e8a364"), Color("868e96")]
-
-
-## 시상대 한 칸: 아바타 · 이름 · 순위 숫자가 적힌 단상 (1위가 가장 높다).
-func _make_podium_column(entry: Dictionary) -> Control:
-	var rank: int = int(entry["rank"])
-	var player_id: int = int(entry["player"])
-	var color: Color = RANK_COLORS[mini(rank, 4) - 1]
-	var column := VBoxContainer.new()
-	column.name = "Podium%d" % rank
-	column.set_meta("rank", rank)
-	column.alignment = BoxContainer.ALIGNMENT_END
-	column.add_theme_constant_override("separation", 4)
-	column.custom_minimum_size = Vector2(96, 0)
-	column.size_flags_vertical = Control.SIZE_FILL
-	var avatar := AvatarSlot.new()
-	avatar.icon_border = false
-	avatar.static_only = true
-	var face: float = 84.0 if rank == 1 else 68.0
-	avatar.setup(player_id, PLAYER_COLORS.get(player_id, Color.WHITE), Vector2(face, face))
-	avatar.set_character(_avatar_for(player_id))
-	avatar.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	column.add_child(avatar)
-	var name_label: Label = _make_label(_player_name(player_id), 16 if rank == 1 else 14, PLAYER_COLORS.get(player_id, Color.WHITE).lightened(0.3))
-	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_label.clip_text = true
-	name_label.custom_minimum_size = Vector2(96, 0)
-	column.add_child(name_label)
-	var block := PanelContainer.new()
-	block.name = "Block"
-	block.custom_minimum_size = Vector2(96, PODIUM_HEIGHTS[mini(rank, 4) - 1])
-	block.add_theme_stylebox_override("panel", _style(color, color.darkened(0.35), 3, 8, 8, 4))
-	column.add_child(block)
-	var number: Label = _make_label(str(rank), 44 if rank == 1 else 34, Color.WHITE)
-	number.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	number.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	number.add_theme_color_override("font_outline_color", color.darkened(0.55))
-	number.add_theme_constant_override("outline_size", 6)
-	block.add_child(number)
-	return column
-
-
-## 순위표 한 줄: [순위] [아바타] 이름 / 순위 근거(특수 승리 교칙·완주) · 완주 n/4 · 진행도 막대.
-func _make_rank_row(entry: Dictionary) -> Control:
-	var rank: int = int(entry["rank"])
-	var player_id: int = int(entry["player"])
-	var row := PanelContainer.new()
-	row.name = "Rank%d" % rank
-	row.set_meta("rank", rank)
-	row.set_meta("player", player_id)
-	row.add_theme_stylebox_override("panel", _style(Color("fff3bf") if rank == 1 else Color("ffffff"), RANK_COLORS[mini(rank, 4) - 1].darkened(0.1), 3 if rank == 1 else 2, 12, 12, 8))
-	var line := HBoxContainer.new()
-	line.add_theme_constant_override("separation", 12)
-	row.add_child(line)
-	var medal: Label = _make_label(RANK_MEDALS[mini(rank, 4) - 1], 30 if rank <= 3 else 20, RANK_COLORS[mini(rank, 4) - 1])
-	medal.custom_minimum_size = Vector2(54, 0)
-	medal.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	medal.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	line.add_child(medal)
-	var avatar := AvatarSlot.new()
-	avatar.icon_border = false
-	avatar.static_only = true
-	avatar.setup(player_id, PLAYER_COLORS.get(player_id, Color.WHITE), Vector2(56, 56))
-	avatar.set_character(_avatar_for(player_id))
-	avatar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	line.add_child(avatar)
-	var info := VBoxContainer.new()
-	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	info.add_theme_constant_override("separation", 2)
-	line.add_child(info)
-	var name_label: Label = _make_label("%d등  %s" % [rank, _player_name(player_id)], 20 if rank == 1 else 18, PLAYER_COLORS.get(player_id, Color.WHITE).lightened(0.3))
-	info.add_child(name_label)
-	# 순위의 근거를 먼저 보여 준다 (특수 승리면 교칙 이름). 완주·진행도는 졸업한 순간의 기록이다.
-	var reason: StringName = entry.get("reason", &"")
-	var progress_text: String = "완주 %d/%d · 진행도 %d%%" % [int(entry["finished"]), GameEnums.PAWNS_PER_PLAYER, int(entry["progress"])]
-	var detail: Label = _make_label(progress_text if reason == &"" else "%s · %s" % [VictoryChecker.short_reason(reason), progress_text], 14, Color("ced4da"))
-	detail.name = "Detail"
-	info.add_child(detail)
-	var bar := ProgressBar.new()
-	bar.show_percentage = false
-	bar.custom_minimum_size = Vector2(0, 8)
-	bar.max_value = 100
-	bar.value = int(entry["progress"])
-	bar.add_theme_stylebox_override("fill", _style(PLAYER_COLORS.get(player_id, Color.WHITE), Color(0, 0, 0, 0), 0, 4, 0, 0))
-	bar.add_theme_stylebox_override("background", _style(Color("e9ecef"), Color(0, 0, 0, 0), 0, 4, 0, 0))
-	info.add_child(bar)
-	return row
-
-
-## 순위 발표: 꼴찌부터 한 줄씩 쾅 하고 나타나고, 1등은 잠깐 뜸을 들인 뒤 팡파르와 함께 공개한다 (연출을 끈 테스트에서는 바로 다 보인다).
-func _reveal_ranking(rows: Array[Control], announcer: Label) -> void:
-	if not _fx_on():
-		announcer.text = "★ 최종 순위 ★"
-		return
-	for row: Control in rows:
-		row.modulate.a = 0.0
-		var hidden_column: Control = row.get_meta("podium", null)
-		if hidden_column != null:
-			hidden_column.modulate.a = 0.0
-	var overlay: Control = _result_overlay
-	var frames: int = 0
-	while _presentation_active() and frames < 600:  # 마지막 이동·처치 연출이 끝난 뒤에 발표한다
-		frames += 1
-		await get_tree().process_frame
-	await get_tree().create_timer(PODIUM_INTRO_SECONDS).timeout  # 시상대 팡파르의 머리를 들려준 뒤 발표를 시작한다
-	if overlay != _result_overlay:
-		return
-	for index: int in range(rows.size() - 1, -1, -1):
-		if overlay != _result_overlay or not is_instance_valid(rows[index]):
-			return
-		var row: Control = rows[index]
-		var first: bool = int(row.get_meta("rank")) == 1
-		if first:
-			announcer.text = "그리고 대망의 1등은...!"
-			await get_tree().create_timer(FIRST_PLACE_DRUMROLL_SECONDS).timeout
-			if overlay != _result_overlay or not is_instance_valid(row):
-				return
-		else:
-			await get_tree().create_timer(RANK_ROW_SECONDS).timeout
-			if overlay != _result_overlay or not is_instance_valid(row):
-				return
-		row.pivot_offset = row.size / 2.0
-		row.scale = Vector2(1.25, 1.25) if first else Vector2(1.1, 1.1)
-		var tween: Tween = row.create_tween().set_parallel(true)
-		tween.tween_property(row, "modulate:a", 1.0, 0.18)
-		tween.tween_property(row, "scale", Vector2.ONE, 0.32).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-		var column: Control = row.get_meta("podium", null)
-		if column != null and is_instance_valid(column):
-			# 단상이 아래에서 솟아오르며 그 자리의 주인이 나타난다
-			column.pivot_offset = Vector2(column.size.x / 2.0, column.size.y)
-			column.scale = Vector2(1.0, 0.2)
-			tween.tween_property(column, "modulate:a", 1.0, 0.18)
-			tween.tween_property(column, "scale", Vector2.ONE, 0.36).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-		if first:
-			Sfx.play_stinger(&"win")  # 시상대 팡파르를 부드럽게 끊고 우승 팡파르
-			announcer.text = "★ %s 우승! ★" % _player_name(int(row.get_meta("player")))
-			screen_shake(6.0, 0.25)
-		else:
-			Sfx.play(&"card_impact")
 
 
 var _last_reason: StringName = &""
@@ -10176,9 +10409,9 @@ func _refresh_super_marks() -> void:
 	for player_id: int in _player_ids:
 		if not _profiles.has(player_id):
 			continue
-		SuperFX.set_flame(_profiles[player_id]["panel"], "SuperFlame", _flame_colors(player_id),true)
+		SuperFX.set_flame(_profiles[player_id]["panel"], "SuperFlame", _flame_colors(player_id),true,_buff_outline_effects(player_id))
 	var shown: int = int(_tool_board_key.get_slice(":", 0)) if _tool_board_key != "" else -1
-	SuperFX.set_flame(_tool_board, "SuperFlame", _flame_colors(shown) if shown != -1 else [] as Array[Color])
+	SuperFX.set_flame(_tool_board, "SuperFlame", _flame_colors(shown) if shown != -1 else [] as Array[Color],false,_buff_outline_effects(shown))
 	for pawn: PlayerPawn in state.pawns:
 		var view: Node2D = _pawn_views.get(pawn.entity_id)
 		if view != null:
@@ -10187,14 +10420,25 @@ func _refresh_super_marks() -> void:
 
 
 ## 이 플레이어를 감쌀 불꽃 색 (없으면 빈 배열).
-func _flame_colors(player_id: int) -> Array[Color]:
-	var colors: Array[Color] = []
+func _buff_outline_effects(player_id:int) -> int:
 	if not _fx_on() or state == null or player_id == -1:
-		return colors
-	if int(state.permanent_roll_bonus.get(player_id, 0)) > 0 and not _super_hidden.has("%d:%s" % [player_id, SuperAugments.DEVIL]):
-		colors.append_array([Color("9c36b5"), Color("e03131")])
+		return 0
+	var flags:int=0
+	var volt:int=int(state.utility_move_plus.get(player_id,0))
+	if volt>0:flags|=SuperFX.BUFF_VOLT
+	# Both sources share the total bonus. Subtract the recorded utility stacks.
+	if int(state.permanent_roll_bonus.get(player_id,0))-volt>0 and not _super_hidden.has("%d:%s" % [player_id,SuperAugments.DEVIL]):
+		flags|=SuperFX.BUFF_DEVIL
 	if int(state.gambler_round.get(player_id, -1)) == state.round_number and not _super_hidden.has("%d:%s" % [player_id, SuperAugments.GAMBLER]):
-		colors.append_array([Color("ffd43b"), Color("ff922b")])
+		flags|=SuperFX.BUFF_GAMBLER
+	return flags
+
+func _flame_colors(player_id: int) -> Array[Color]:
+	var colors:Array[Color]=[]
+	var flags:int=_buff_outline_effects(player_id)
+	if flags&SuperFX.BUFF_DEVIL:colors.append_array([Color("9c36b5"),Color("e03131")])
+	if flags&SuperFX.BUFF_GAMBLER:colors.append_array([Color("dc1429"),Color("ff5329")])
+	if flags&SuperFX.BUFF_VOLT:colors.append_array([Color("2979ff"),Color("8eeaff")])
 	return colors
 
 
@@ -10572,6 +10816,7 @@ func _announce_now(tag: String, headline: String, body: String, color: Color, ex
 		return -1  # 연출 큐에서 차례가 늦게 돌아왔다: 이미 굴렸거나 다음 단계로 넘어갔으면 차례 배너는 띄우지 않는다
 	_announcer.instant = instant_roll_for_test
 	var hold: float = duration * _pace()
+	if extra!=null:hold=maxf(hold,float(extra.get_meta("minimum_notice_seconds",0.0)))
 	if tag != "턴" and pacing_enabled and not instant_roll_for_test:
 		hold = maxf(hold, announce_reading_seconds(headline, body, stamp))  # 2026-11 납득 보강: 적어도 읽을 시간만큼은 띄운다
 	var serial: int = _announcer.announce(tag, headline, body, color, extra, hold, blocking, stamp)
@@ -10621,6 +10866,7 @@ func _announce_law_added(new_law: LawResource, removed_law: LawResource) -> void
 ## 카드 사용 알림에 붙일 카드 앞면 (손패 카드와 같은 모양, 클릭 불가).
 func _make_card_preview(card_id: StringName) -> Control:
 	var holder := CenterContainer.new()
+	holder.set_meta("card_preview_id",card_id)
 	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	holder.add_child(_make_card_face(card_id))
 	return holder
@@ -10788,6 +11034,10 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 		&"race_ranked":
 			if bool(data.get("round_cap", false)):
 				_log_line("[%d라운드 종료] 남은 플레이어는 진행 순위로 순위가 확정됩니다" % PacingDirector.HARD_CAP_ROUND, Color("ffd43b"))
+		&"stock_delisted":
+			var delisted: PlayerPawn = state.get_pawn(int(data["pawn_id"]))
+			_log_line("[상장폐지] P%d의 %s 대기실로 사출" % [data["player_id"], _pawn_name(int(data["pawn_id"]))], Color("ff6b6b"))
+			_record(int(data["player_id"]), "%s 상장폐지! %s 대기실로 사출" % [_bq("주식 차트"), _bq("%d번 말" % delisted.slot) if delisted != null else "선두 말"], "", true)
 		&"goal_shrunk":
 			var finished_ids: Array = data["finished"]
 			_refresh_tiles()
@@ -10846,7 +11096,10 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			var card: BaseCard = CardRegistry.get_card(data["card_id"])
 			var player: int = int(data["player_id"])
 			_record_card(data)
-			if card.category == GameEnums.CardCategory.TRAP and not card.corner_only:
+			if card is CardCucumber:
+				_log_line("[카드] P%d [%s] 사용" % [player, card.display_name], Color("8ce99a"))
+				enqueue_step(_play_cucumber_eat.bind(player))
+			elif card.category == GameEnums.CardCategory.TRAP and not card.corner_only:
 				# 은신 함정: 무슨 카드인지는 숨기고 "누가 함정을 깔았다"만 알린다 (내 함정이면 로그에만 이름을 남긴다)
 				var mine: bool = (ai_mode or net != null) and player == local_player_id
 				_log_line("[카드] P%d 함정 카드 설치%s" % [player, " [%s]" % card.display_name if mine else ""], Color("74c0fc"))
@@ -10860,7 +11113,12 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 				elif ATTACK_CARDS.has(card_id):
 					_announce_gate(ATTACK_TAG, "공격!", "", Color("ff4d4d"), _make_card_preview(card_id), 1.1, {"key": "attack", "sub": _player_name(player)})
 				else:
-					_announce_gate("카드 발동", "카드 발동!", "", PLAYER_COLORS[player], _make_card_preview(card_id), 1.1, {"key": "card", "sub": _player_name(player)})
+					var preview:Control=_make_card_preview(card_id)
+					if card_id==&"ACT_16" and _fx_on():
+						var neuralizer=(preload("res://scenes/neuralizer_flash.gd")).new()
+						preview.add_child(neuralizer)
+						neuralizer.setup(self,_announcer,preview)
+					_announce_gate("카드 발동", "카드 발동!", "", PLAYER_COLORS[player], preview, 1.1, {"key": "card", "sub": _player_name(player)})
 		&"npc_phase_resolved":
 			if not (data["reports"] as Array).is_empty():
 				# 중립 기물 이동: 안내 카드가 먼저 뜨고, 기물이 한 칸씩 달린 뒤, 말을 잡았으면 그다음에 처치 알림과 사출이 이어진다.
@@ -10870,6 +11128,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 				var caught: Array = report["caught"]
 				var run_path: Array = report["path"]
 				var result_text: String = ("%s %d칸 이동 - 말 %d개를 잡고 퇴장!" % [npc_name, run_path.size(), caught.size()]) if not caught.is_empty() else "%s %d칸 이동" % [npc_name, run_path.size()]
+				if report["display_id"]==NpcSweep.BEAM_ID:result_text=_beam_result_text(report)
 				_play_npc_run(report["display_id"], int(report.get("behavior", GameEnums.NpcBehavior.CHASE_NEAREST)), int(report.get("from", -1)), run_path, int(report["npc_id"]), func() -> void:
 					_log_line("[중립 기물] %s" % result_text, Color("fa5252"))
 					if not caught.is_empty():
@@ -10886,6 +11145,30 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			if _fx_on():
 				_floating_badge(_board_center(), str(UtilityAugments.CALLOUTS[UtilityAugments.REROLL_ALL_AUG]), AugmentDef.DISPLAY_COLORS[&"instant"], 30)
 			_refresh_draft_overlay()
+		&"hammer_result":
+			var hammer_player: int = int(data["player_id"])
+			var hammer_tool: String = _hammer_tool_name(hammer_player)
+			if bool(data["success"]):
+				_log_line("[강화 망치] P%d 강화 성공! +%d (확률 %d%%)" % [hammer_player, int(data["level"]), int(data["chance"])], Color("ffd43b"))
+				_record(hammer_player, "%s +%d 강화 성공!" % [_bq(hammer_tool), int(data["level"])])
+				# The local forge already shows the new level; a central stamp obscures its strike.
+				if hammer_player != _dock_owner() or _is_bot_turn() or int(data["level"]) >= TurnManager.HAMMER_MAX:
+					enqueue_step(_play_hammer_success.bind(hammer_tool,int(data["level"])))
+					_announce_soft("강화 망치", "강화 성공!", "", Color("ffd43b"), null, 0.9, {"key": "hammer_up", "sub": "%s +%d" % [hammer_tool, int(data["level"])]})
+				if not _fx_on(): Sfx.play(&"promote")
+			else:
+				_log_line("[강화 망치] P%d 강화 실패! %s 파괴 (턴 종료)" % [hammer_player,hammer_tool], Color("ff6b6b"))
+				_record(hammer_player, "%s 강화 실패! 파괴 · 턴 종료" % _bq(hammer_tool))
+				enqueue_step(_play_hammer_break.bind(hammer_tool,int(data["level"])))
+				_announce("강화 망치", "강화 실패!", "", Color("ff6b6b"), null, 1.0, true, {"key": "hammer_broken", "sub": "%s 파괴 · 턴 종료" % hammer_tool})
+			_refresh_hammer_panel()
+		&"hammer_banked":
+			_log_line("[강화 망치] P%d +%d에서 멈춤 → 다음 굴림 +%d" % [data["player_id"], data["level"], data["level"]], Color("ffd43b"))
+			_record(int(data["player_id"]), "%s +%d 확정! 다음 굴림 +%d칸" % [_bq(_hammer_tool_name(int(data["player_id"]))), int(data["level"]), int(data["level"])])
+			_refresh_hammer_panel()
+		&"hammer_applied":
+			_roll_total[int(data["player_id"])] = int(data["to"])
+			_add_roll_reason(int(data["player_id"]), "강화 +%d" % int(data["level"]))
 		&"revive_triggered":
 			var revived: int = int(data["player_id"])
 			_log_line("[다이스: 리바이브] P%d: 턴이 끝나도 한 턴 더 합니다" % revived, Color("4dabf7"))
@@ -11035,6 +11318,10 @@ func _roll_text(data: Dictionary) -> String:
 				text += "[%s] 스탠드: 합계 %d → %d칸 이동 확정" % [card_text, int(details["total"]), result["steps"]]
 		&"DICE_PINBALL":
 			text += "구슬이 [%s] 구멍에 골인 → %d칸" % ["★10" if int(details["value"]) == 10 else str(details["value"]), result["steps"]]
+		&"DICE_STOCK":
+			text += StockChartView.caption(details, int(result["steps"]))
+		&"DICE_DARTS":
+			text += ToolDarts.hit_text(details, int(result["steps"]))
 		&"REVOLVER":
 			if details["fired"]:
 				text += "뿅! 깃발 발사 · 누적 %d칸 사라짐, 턴 종료" % details["lost"]
@@ -11217,6 +11504,28 @@ func _record_roll(data: Dictionary) -> void:
 	_record(player_id, "%s 굴림 → %s" % [_bq(state.tools[player_id].display_name), _bb(_roll_text(data))])
 
 
+## Keep the cucumber's only presentation local to the eating player's avatar.
+func _play_cucumber_eat(player_id: int) -> void:
+	if not _fx_on() or not _profiles.has(player_id):
+		return
+	var avatar: Control = _profiles[player_id]["avatar"]
+	if not avatar.is_visible_in_tree():
+		return
+	var stage: Control = get_node_or_null("CucumberEat")
+	if stage == null:
+		stage = preload("res://scenes/cucumber_eat_fx.gd").new()
+		stage.name = "CucumberEat"
+		add_child(stage)
+	var art: Dictionary = PawnArt.load_sprite(["res://assets/board/structures/CUCUMBER_V01.png"])
+	var face: Rect2 = avatar.get_global_rect()
+	var local_from_screen: Transform2D = get_global_transform_with_canvas().affine_inverse()
+	var mouth: Vector2 = local_from_screen * (face.position + face.size * Vector2(0.43, 0.80))
+	stage.begin(art, mouth, local_from_screen * (get_viewport_rect().size * 0.5), clampf(face.size.y * 1.15, 90.0, 150.0), _motion_pace())
+	var generation: int = _fx_generation
+	while generation == _fx_generation and is_instance_valid(stage) and stage.busy():
+		await get_tree().process_frame
+
+
 func _record_card(data: Dictionary) -> void:
 	var player_id: int = int(data["player_id"])
 	var card: BaseCard = CardRegistry.get_card(data["card_id"])
@@ -11272,6 +11581,7 @@ func _attachment_name(attachment_id: String) -> String:
 		"TRP_C02": return "우이의 소원빌기"
 		"TRP_C03": return "지나가는 상인"
 		"TRP_C04": return "물의 세례를 받아라"
+		"TRP_CUKE": return "오이"
 		"HOTEL": return "호텔"
 	return attachment_id
 
@@ -11347,6 +11657,11 @@ func _build_roll_fx() -> void:
 	_announcer.entry_finished.connect(_on_announcer_entry_finished)
 	_announcer.entry_started.connect(func(_serial: int) -> void:
 		_dismiss_center_banner()
+		var extra:Control=_announcer._current.get("extra") as Control
+		if extra!=null and extra.has_meta("card_preview_id") and _fx_on():
+			var preview_id:StringName=StringName(extra.get_meta("card_preview_id"))
+			if preview_id in [&"ACT_18",&"ACT_19",&"ACT_20"]:Sfx.play(&"meddle",-3.0)
+			elif preview_id==&"CNT_08":Sfx.play(&"sword_cut",-5.0)
 		var entry_tag: String = str(_announcer._current.get("tag", ""))
 		if entry_tag == ATTACK_TAG and _fx_on():
 			Sfx.play(&"attack_alert")
@@ -12264,7 +12579,7 @@ class RevengeFire extends Control:
 		PaintedFx.flame(self,base,Vector2(sway,-maxf(height,0.1)).normalized(),height,half,color,base.x*0.13+Time.get_ticks_msec()*0.006)
 
 
-## 설치형 기물: 투명 호텔·지뢰 그림과 주인 색 받침. 코드 모형은 파일 누락 시에만 사용한다.
+## 설치형 기물: 호텔·지뢰와 실제 오이 그림. 오이에는 건물 받침을 그리지 않는다.
 class BoardStructure extends Node2D:
 	var kind: StringName = &"hotel"
 	var color: Color = Color("ffd43b")
@@ -12272,7 +12587,7 @@ class BoardStructure extends Node2D:
 	var artwork: Dictionary = {}
 
 	func _ready() -> void:
-		var filename: String = "MINE.png" if kind == &"mine" else "HOTEL.png"
+		var filename: String = {&"mine": "MINE.png", &"hotel": "HOTEL.png", &"cucumber": "CUCUMBER_V01.png"}.get(kind, "")
 		artwork = PawnArt.load_sprite(["res://assets/board/structures/" + filename])
 		set_process(kind == &"mine")
 
@@ -12280,22 +12595,26 @@ class BoardStructure extends Node2D:
 		queue_redraw()
 
 	func _draw() -> void:
-		_ellipse(Vector2(0, 2), Vector2(16, 6), Color(0, 0, 0, 0.28))
+		var shadow := Vector2(6, 2.5) if kind == &"cucumber" else Vector2(16, 6)
+		_ellipse(Vector2(0, 2), shadow, Color(0, 0, 0, 0.28))
 		if not artwork.is_empty():
 			_draw_artwork()
 			return
 		if kind == &"mine":
 			_draw_mine()
-		else:
+		elif kind == &"hotel":
 			_draw_hotel()
 
 	func _draw_artwork() -> void:
 		# The foundation stays independent of the neutral sprite so all four
 		# owners remain identifiable without tinting roofs, windows or the lamp.
-		_ellipse(Vector2(0, 2), Vector2(16, 5.5), color.darkened(0.5), INK)
-		_ellipse(Vector2.ZERO, Vector2(16, 5), color, color.lightened(0.45))
+		if kind != &"cucumber":
+			_ellipse(Vector2(0, 2), Vector2(16, 5.5), color.darkened(0.5), INK)
+			_ellipse(Vector2.ZERO, Vector2(16, 5), color, color.lightened(0.45))
 		var region: Rect2 = artwork.region
 		var bounds := Vector2(30, 27) if kind == &"mine" else Vector2(32, 40)
+		if kind == &"cucumber":
+			bounds = Vector2(18, 31)
 		var factor: float = minf(bounds.x / region.size.x, bounds.y / region.size.y)
 		var size: Vector2 = region.size * factor
 		var rect := Rect2(Vector2(-size.x / 2.0, -size.y), size)

@@ -106,7 +106,7 @@ func test_skill_catalog_has_seventeen_one_shot_skills() -> void:
 			var skill: StringName = PawnCatalog.skill_of(PawnCatalog.sub_type_of(kind, unit))
 			if skill != &"":
 				found[skill] = PawnCatalog.unit_label(kind, unit)
-	check_eq(found.size(), 17, "필살기 17종")
+	check_eq(found.size(), 18, "필살기 18종 (v1.1 오이 설치)")
 	check_eq(found[&"extra_roll"], "윷말", "한 번 더!는 윷말")
 	check_eq(found[&"hotel"], "모노:미니카", "호텔 건설은 미니카")
 	check_eq(found[&"shoot"], "바둑:흑돌", "알까기 슈팅은 흑돌")

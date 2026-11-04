@@ -67,6 +67,47 @@ static func nearest_target(state: GameState, npc: NeutralNPC) -> Dictionary:
 	return {}
 
 
+## 롤링 양성자빔(SUM_03): 카드 ID, 라운드 끝마다 미끄러지는 칸 수(BEAM_MIN~BEAM_MAX), 수명(라운드).
+const BEAM_ID: StringName = &"SUM_03"
+const BEAM_MIN: int = 3
+const BEAM_MAX: int = 5
+const BEAM_ROUNDS: int = 3
+
+
+## 양성자빔이 direction(+1/-1)으로 steps칸 미끄러지며 지나는 칸을 전부 태운다: 그 칸의 설치물(함정·건물 누구 것이든)을 없애고,
+## 보드 위 말을 (소환한 사람의 말까지) 모두 출발선으로 보낸다. 잡아도 멈추거나 사라지지 않는다. 출발선(결승) 칸은 지나가기만 한다.
+## 반환: {"path": [칸], "ejected": [말 ID], "destroyed": 없앤 설치물 수, "burned": [설치물이 사라진 칸]}
+static func burn(state: GameState, npc: NeutralNPC, direction: int, steps: int) -> Dictionary:
+	var result: Dictionary = {"npc_id": npc.entity_id, "display_id": npc.display_id, "path": [npc.current_tile_idx] as Array[int], "ejected": [] as Array[int], "destroyed": 0, "burned": [] as Array[int], "vanished": false}
+	# 화면이 태우기 전 모습(말·함정 자리)을 붙잡아 두도록 지나갈 길을 먼저 알린다 (폭주 기관차와 같은 신호).
+	var route: Array[int] = [npc.current_tile_idx]
+	for _i: int in steps:
+		route.append(posmod(route[-1] + direction, BoardSpec.tile_count))
+	state.npc_sweep_started.emit(npc.display_id, route)
+	for _i: int in steps:
+		var from_tile: int = npc.current_tile_idx
+		var tile: int = posmod(from_tile + direction, BoardSpec.tile_count)
+		npc.current_tile_idx = tile
+		npc.push_step(tile)
+		(result["path"] as Array[int]).append(tile)
+		state.npc_stepped.emit(npc.entity_id, from_tile, tile)
+		if tile == GameEnums.GOAL_TILE:
+			continue
+		var node: TileNode = state.board.get_tile(tile)
+		if not node.attachments.is_empty():
+			result["destroyed"] = int(result["destroyed"]) + node.attachments.size()
+			(result["burned"] as Array[int]).append(tile)
+			node.clear_attachments()
+		for victim: PlayerPawn in catchable_at(state, tile):
+			var members:Array[PlayerPawn]=victim.stack_members()
+			state.send_to_start(victim,npc.owner_id)
+			# Shields and amnesia can keep a target alive; report only real ejections.
+			for member:PlayerPawn in members:
+				if not member.has_left_start and not member.is_finished:
+					(result["ejected"] as Array[int]).append(member.entity_id)
+	return result
+
+
 ## 소환 기물이 라운드 끝마다 움직이는 칸 수 (WANDER_MIN~WANDER_MAX 중 무작위).
 const WANDER_MIN: int = 1
 const WANDER_MAX: int = 3

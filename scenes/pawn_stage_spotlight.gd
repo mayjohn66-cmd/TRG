@@ -3,6 +3,7 @@
 extends ColorRect
 
 const LIGHT_SHADER := preload("res://assets/fx/pawn_stage_spotlight.gdshader")
+const GROUND=preload("res://scenes/spotlight_geometry.gd")
 var _board_ref: WeakRef
 var _pawn_ref: WeakRef
 var _generation := 0
@@ -50,9 +51,13 @@ func _update_light() -> void:
 		return
 	position = Vector2.ZERO
 	size = get_viewport_rect().size
-	var foot := get_global_transform().affine_inverse()*pawn.global_position
+	var foot:Vector2=GROUND.into_overlay(self,pawn.get_global_transform_with_canvas().origin)
+	var floor_frame:Transform2D=GROUND.floor_axes(board,self)
 	var light := material as ShaderMaterial
 	light.set_shader_parameter("frame_size",size)
 	light.set_shader_parameter("foot",foot)
+	light.set_shader_parameter("floor_axis_x",floor_frame.x)
+	light.set_shader_parameter("floor_axis_y",floor_frame.y)
 	# An off-screen overhead fixture, angled slightly across the stage.
-	light.set_shader_parameter("source",Vector2(foot.x-135.0,minf(-45.0,foot.y-350.0)))
+	var unit:float=maxf(floor_frame.x.length()/41.37,0.1)
+	light.set_shader_parameter("source",Vector2(foot.x-135.0*unit,minf(-45.0,foot.y-350.0*unit)))

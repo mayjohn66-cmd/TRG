@@ -1,6 +1,6 @@
 # File: res://core_engine/cards/card_counter.gd
 # Class: class_name CardCounter
-# Role: 방어 카드 7종(CNT_01~07). 내가 공격(잡기·공격 카드·함정)을 당했을 때 방어 팝업에서 낸다. 이번 턴의 공격 기록(GameState.attack_log) 하나를 골라 되돌리거나 되갚는다
+# Role: 방어 카드 8종(CNT_01~08). 내가 공격(잡기·공격 카드·함정)을 당했을 때 방어 팝업에서 낸다. 이번 턴의 공격 기록(GameState.attack_log) 하나를 골라 되돌리거나 되갚는다
 class_name CardCounter
 extends BaseCard
 
@@ -16,6 +16,7 @@ const DEFS: Dictionary = {
 	&"CNT_05": ["싸이크론", [TRAP]],
 	&"CNT_06": ["교단의 칙령", [TRAP]],
 	&"CNT_07": ["도굴꾼", [TRAP]],
+	&"CNT_08": ["이쪽을 봐라!", [CAPTURE]],  # 잡기 1회 회피, 되갚기 없음
 }
 ## 싸이크론으로 함정을 부순 뒤 전진하는 칸 수 (cards_table.csv CNT_05 param_1).
 const CYCLONE_STEPS: int = 3

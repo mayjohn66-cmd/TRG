@@ -33,6 +33,7 @@ static func capture(state: GameState) -> TurnSnapshot:
 			"shield": pawn.shield,
 			"ward": pawn.ward,
 			"turn_guard": pawn.turn_guard,
+			"melon": pawn.melon_size,
 			"shield_hit": pawn.shield_broken_hit,
 			"carrier": pawn.carrier.entity_id if pawn.carrier != null else -1,
 			"carried": carried_ids,
@@ -46,6 +47,7 @@ static func capture(state: GameState) -> TurnSnapshot:
 			"history": npc.step_history.duplicate(),
 			"behavior": npc.behavior,
 			"display_id": npc.display_id,
+			"rounds_left": npc.rounds_left,
 		})
 	var attachment_data: Dictionary = {}
 	for tile: TileNode in state.board.tiles:
@@ -64,7 +66,8 @@ static func capture(state: GameState) -> TurnSnapshot:
 		"forced_roll": state.forced_roll.duplicate(),
 		"extra_turns": state.extra_turns.duplicate(),
 		"utility": {"hand_bonus": state.hand_bonus.duplicate(), "lucky": state.lucky_dice.duplicate(), "revive": state.revive_charges.duplicate(),
-			"move_plus": state.utility_move_plus.duplicate(), "permanent_roll": state.permanent_roll_bonus.duplicate(), "goal_shrink": state.goal_shrink_bonus, "reshuffle": state.reshuffle_round},
+			"move_plus": state.utility_move_plus.duplicate(), "permanent_roll": state.permanent_roll_bonus.duplicate(), "goal_shrink": state.goal_shrink_bonus, "reshuffle": state.reshuffle_round,
+			"drift": state.drift_players.duplicate(), "bounties": state.bounties.duplicate()},
 		"rankings": state.rankings.duplicate(),
 		"rank_reasons": state.rank_reasons.duplicate(),
 		"rank_stats": state.rank_stats.duplicate(true),
@@ -75,6 +78,9 @@ static func capture(state: GameState) -> TurnSnapshot:
 			"roll_bonus": state.roll_bonus,
 			"corner_buff": state.corner_buff.duplicate(),
 			"round_number": state.round_number,
+			"amnesia_round": state.amnesia_round,
+			"hammer_pending": state.hammer_pending.duplicate(),
+			"hammer_bonus": state.hammer_bonus.duplicate(),
 		},
 	}
 	return snapshot
@@ -114,6 +120,7 @@ func restore(state: GameState, restore_meta: bool = false) -> void:
 		pawn.shield = bool(entry.get("shield", false))
 		pawn.ward = bool(entry.get("ward", false))
 		pawn.turn_guard = bool(entry.get("turn_guard", false))
+		pawn.melon_size = int(entry.get("melon", 0))
 		pawn.shield_broken_hit = bool(entry.get("shield_hit", false))
 		pawn.carrier = null
 		pawn.carried.clear()
@@ -136,6 +143,7 @@ func restore(state: GameState, restore_meta: bool = false) -> void:
 		npc.step_history.assign(entry["history"])
 		npc.behavior = entry["behavior"]
 		npc.display_id = entry["display_id"]
+		npc.rounds_left = int(entry.get("rounds_left",0))
 		state.npcs.append(npc)
 
 	for tile: TileNode in state.board.tiles:
@@ -165,6 +173,8 @@ func restore(state: GameState, restore_meta: bool = false) -> void:
 		state.permanent_roll_bonus = (utility.get("permanent_roll", {}) as Dictionary).duplicate()
 		state.goal_shrink_bonus = int(utility.get("goal_shrink", 0))
 		state.reshuffle_round = int(utility.get("reshuffle", -1))
+		state.drift_players = (utility.get("drift", {}) as Dictionary).duplicate()
+		state.bounties = (utility.get("bounties", {}) as Dictionary).duplicate()
 	if data.has("rankings"):
 		state.rankings.assign(data["rankings"])
 		state.rank_reasons = (data.get("rank_reasons", {}) as Dictionary).duplicate()
@@ -178,4 +188,7 @@ func restore(state: GameState, restore_meta: bool = false) -> void:
 		state.roll_bonus = int(meta.get("roll_bonus", 0))
 		state.corner_buff = (meta.get("corner_buff", {}) as Dictionary).duplicate()
 		state.round_number = int(meta["round_number"])
+		state.amnesia_round = int(meta.get("amnesia_round", -1))
+		state.hammer_pending = (meta.get("hammer_pending", {}) as Dictionary).duplicate()
+		state.hammer_bonus = (meta.get("hammer_bonus", {}) as Dictionary).duplicate()
 	state.snapshot_restored.emit()

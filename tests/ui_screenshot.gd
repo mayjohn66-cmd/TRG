@@ -259,7 +259,7 @@ func _setup_scene() -> void:
 			_board._record(4, "🪤 %s 밟음! (9번 타일, %s)" % [_board._bq("바나나 껍질"), _board._bq("2번 말")])
 			_board._record(1, "♟️ %s 필살기 사용!" % _board._bq("비숍 - 피앙케토"))
 			_board._record(2, "⚡ %s 선택!" % _board._bq("초증강 - 공산주의 재분배"), "증강")
-			_board._record(-1, "[color=#ffe066][lb]📜 법전] 투기장의 지배자 등록![/color]")
+			_board._record(-1, "[color=#ffe066][lb]📜 법전] 기물 슬레이어 등록![/color]")
 			if _shot == "logx":
 				_board._action_log.set_expanded(true)
 		"counterzoom":

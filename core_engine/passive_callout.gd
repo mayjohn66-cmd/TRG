@@ -38,10 +38,16 @@ const TEXTS: Dictionary = {
 	&"plane_warp": "[비행기] 옷장 장거리 워프!",
 	&"yut_reroll": "[윷말] 처치 재굴림 +1!",
 	&"stack_magnet": "[업기] 옆 칸 아군과 합류!",
+	&"melon_grow": "[괴상한 멜론] 함정 냠냠! 커졌다!",
+	&"melon_immune": "[괴상한 멜론] 거대 멜론은 함정 무시!",
+	&"melon_roll": "[괴상한 멜론] 굴러가며 처치!",
+	&"kyui_charge": "[큐이] 함정 카드로 필살기 충전!",
+	&"amnesia_block": "[기억상실빔] 사출 면역!",
+	&"drift": "[관성 드리프트] 코너 +2칸!",
 }
 ## 뱃지 테두리 색: 이동 보너스(노랑) / 방어·면역(하늘) / 처치(빨강) / 카드(초록) / 승급·워프(보라).
 const COLORS: Dictionary = {
-	&"checker_slide": Color("ff6b6b"),
+	&"checker_slide": Color("ff6b6b"), &"melon_roll": Color("ff6b6b"), &"melon_immune": Color("74c0fc"), &"melon_grow": Color("8ce99a"), &"kyui_charge": Color("b197fc"), &"amnesia_block": Color("b197fc"),
 	&"shield_block": Color("74c0fc"), &"kart_immune": Color("74c0fc"), &"knight_pass": Color("74c0fc"), &"queen_pass": Color("74c0fc"), &"keima_pass": Color("74c0fc"), &"ship_sink": Color("74c0fc"),
 	&"dog_bakery": Color("8ce99a"), &"car_salary": Color("8ce99a"), &"sweeper_defuse": Color("8ce99a"), &"yut_reroll": Color("8ce99a"),
 	&"plane_warp": Color("b197fc"), &"plane_card": Color("8ce99a"), &"knight_guard": Color("74c0fc"), &"stack_magnet": Color("b197fc"),

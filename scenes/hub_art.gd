@@ -8,6 +8,7 @@ const ART: Dictionary = {
 	&"match": preload("res://assets/ui/trickcal/hub/UI_HUB_MATCH.tres"),
 	&"tip": preload("res://assets/ui/trickcal/hub/UI_HUB_TIP.tres"),
 	&"rules": preload("res://assets/ui/trickcal/hub/UI_HUB_RULES.tres"),
+	&"notes": preload("res://assets/ui/trickcal/hub/UI_HUB_UPDATES_V01.tres"),
 	&"settings": preload("res://assets/ui/trickcal/hub/UI_HUB_SETTINGS.tres"),
 	&"next": preload("res://assets/ui/trickcal/hub/UI_HUB_NEXT.tres"),
 	&"mode_green": preload("res://assets/ui/trickcal/hub/UI_HUB_MODE_GREEN.tres"),

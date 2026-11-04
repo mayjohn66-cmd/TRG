@@ -2498,3 +2498,93 @@ FINISH!,FINISH!,FINISH!
 되감,Rewind,巻き戻し
 연대책임,Joint Liability,連帯責任
 굴림 →,Roll →,ロール →
+[기억상실빔] %s이(가) %d번 타일에서 사출되지 않았습니다,[Amnesia Beam] %s was not ejected on tile %d,[記憶喪失ビーム] %sは%d番マスで射出されなかった
+[현상금] P%d이(가) 수배된 %s을(를) 잡았습니다! +%d칸,[Bounty] P%d captured the wanted %s! +%d,[懸賞金] P%dが手配中の%sを捕まえた！+%dマス
+%s 현상금 획득! 수배범 처치 → +%d칸,%s Bounty claimed! Wanted pawn down → +%d,%s 懸賞金獲得！手配犯を撃破 → +%dマス
+[오이] P%d이(가) %d번 타일의 오이를 밟아 [오이 카드]를 받았습니다,[Cucumber] P%d stepped on the cucumber on tile %d and got a [Cucumber Card],[キュウリ] P%dが%d番マスのキュウリを踏んで[キュウリカード]を受け取った
+오이를 밟았다! %s 획득,Stepped on a cucumber! Got %s,キュウリを踏んだ！%sを獲得
+최대 강화!,Max upgrade!,最大強化！
+다음 강화 성공 %d%% · 실패하면 주사위가 부서져 턴 종료,"Next upgrade %d%% · fail and the die breaks, ending your turn",次の強化成功%d%%・失敗するとサイコロが壊れて番終了
+더 강화! (%d%%),Upgrade! (%d%%),さらに強化！(%d%%)
+멈추기 (+%d 확정),Stop (lock +%d),やめる (+%d確定)
+강화 망치 +%d,Enhancement Hammer +%d,強化ハンマー +%d
+다트\n던지기,Throw\nDart,ダーツ\n投げる
+매수!,Buy!,買い！
+[상장폐지] P%d의 %s 대기실로 사출,[Delisted] P%d's %s ejected to the waiting room,[上場廃止] P%dの%sが待機室へ射出
+%s 상장폐지! %s 대기실로 사출,%s Delisted! %s ejected to the waiting room,%s 上場廃止！%sが待機室へ射出
+주식 차트,Stock Chart,株式チャート
+선두 말,Lead pawn,先頭の駒
+[강화 망치] P%d 강화 성공! +%d (확률 %d%%),[Enhancement Hammer] P%d upgrade success! +%d (%d%% chance),[強化ハンマー] P%d 強化成功！+%d (確率%d%%)
+%s 강화 성공! +%d,%s Upgrade success! +%d,%s 強化成功！+%d
+강화 성공!,Upgrade success!,強化成功！
+[강화 망치] P%d 강화 실패! 주사위가 부서졌습니다 (턴 종료),[Enhancement Hammer] P%d upgrade failed! The die broke (turn over),[強化ハンマー] P%d 強化失敗！サイコロが壊れた (番終了)
+%s 강화 실패! 주사위가 부서져 턴 종료,"%s Upgrade failed! The die broke, turn over",%s 強化失敗！サイコロが壊れて番終了
+강화 실패!,Upgrade failed!,強化失敗！
+주사위가 부서졌다 · 턴 종료,The die broke · turn over,サイコロが壊れた・番終了
+[강화 망치] P%d +%d에서 멈춤 → 다음 굴림 +%d,[Enhancement Hammer] P%d stopped at +%d → next roll +%d,[強化ハンマー] P%d +%dでストップ → 次のロール+%d
+%s +%d 확정! 다음 굴림 +%d칸,%s +%d locked! Next roll +%d,%s +%d確定！次のロール+%dマス
+강화 +%d,Upgrade +%d,強化 +%d
+강화 망치,Enhancement Hammer,強化ハンマー
+상한가! %d칸 전진,Limit up! Advance %d,ストップ高！%dマス前進
+상장폐지! 이동 없이 선두 말 사출,"Delisted! No move, lead pawn ejected",上場廃止！移動なし・先頭の駒が射出
+주가 %d (%s%d) · %d칸 전진,Price %d (%s%d) · advance %d,株価%d (%s%d)・%dマス前進
+상한가!,Limit up!,ストップ高！
+상장폐지,Delisted,上場廃止
+관성 드리프트 +%d칸,Inertia Drift +%d,慣性ドリフト +%dマス
+[코너 드리프트 +2칸!],[Corner drift +2!],[コーナードリフト +2マス！]
+[현상금 수배!],[Bounty posted!],[懸賞金手配！]
+이번 판 동안 코너를 지날 때마다 +%d칸,+%d every time you pass a corner this match,この試合の間、角を通るたびに+%dマス
+수배할 적 말이 없습니다,No enemy pawn to put a bounty on,手配する敵の駒がいない
+P%d의 %d번 말 수배! 잡으면 +%d칸,P%d's pawn %d is WANTED! Capture it for +%d,P%dの%d番の駒を手配！捕まえると+%dマス
+아케이드:모브 큐이,Arcade: Mob Kyui,アーケード:モブ・キューイ
+아케이드:괴상한 멜론,Arcade: Weird Melon,アーケード:ヘンなメロン
+큐,Ky,瓜
+멜,Me,メ
+함정 카드 획득·설치 시 필살기 충전 (35%),Skill recharges when you gain or set a trap card (35%),罠カードの獲得・設置時に必殺技チャージ (35%)
+함정을 먹고 커진다 (3단계: 함정 면역 + 스친 적 처치),Eats traps and grows (Size 3: trap immune + takes down enemies it passes),罠を食べて大きくなる (3段階: 罠無効+通り過ぎた敵を撃破)
+불스아이,Bullseye,ブルズアイ
+싱글,Single,シングル
+더블,Double,ダブル
+★불스아이! %d칸 + 한 번 더,★Bullseye! %d + extra roll,★ブルズアイ！%dマス+もう1回
+%s %d → %d칸,%s %d → %d,%s %d → %dマス
+엘리아스 주식 차트,Elias Stock Chart,エリアス株式チャート
+불스아이 다트 보드,Bullseye Dartboard,ブルズアイ・ダーツボード
+오이 설치,Plant Cucumber,キュウリ設置
+지금 칸에 오이 · 밟은 적에게 먹을 수 있는 [오이 카드],Cucumber on this tile · enemies who land on it get an edible [Cucumber Card],今のマスにキュウリ・踏んだ敵に食べられる[キュウリカード]
+오이 카드,Cucumber Card,キュウリカード
+기억상실빔,Amnesia Beam,記憶喪失ビーム
+[괴상한 멜론] 함정 냠냠! 커졌다!,[Weird Melon] Ate a trap! Grew bigger!,[ヘンなメロン] 罠をもぐもぐ！大きくなった！
+[괴상한 멜론] 거대 멜론은 함정 무시!,[Weird Melon] Giant melon ignores traps!,[ヘンなメロン] 巨大メロンは罠を無視！
+[괴상한 멜론] 굴러가며 처치!,[Weird Melon] Rolled over an enemy!,[ヘンなメロン] 転がって撃破！
+[큐이] 함정 카드로 필살기 충전!,[Kyui] Trap card recharged the skill!,[キューイ] 罠カードで必殺技チャージ！
+[기억상실빔] 사출 면역!,[Amnesia Beam] Ejection immune!,[記憶喪失ビーム] 射出無効！
+[관성 드리프트] 코너 +2칸!,[Inertia Drift] Corner +2!,[慣性ドリフト] コーナー+2マス！
+[패시브] 관성 드리프트,[Passive] Inertia Drift,[パッシブ] 慣性ドリフト
+◆ 내 말이 코너를 지나갈 때마다 +2칸 (영구),◆ +2 spaces every time your pawn passes a corner (permanent),◆ 自分の駒が角を通過するたびに+2マス (永続)
+[범용 보급] 현상금 수배서,[Utility Supply] Wanted Poster,[汎用補給] 懸賞金手配書
+◆ 1등 적 말에 수배 마크\n◆ 그 말을 잡으면 즉시 +10칸,◆ Mark the leading enemy pawn as WANTED\n◆ Capture it for an instant +10 spaces,◆ 1位の敵の駒に手配マーク\n◆ その駒を捕まえると即+10マス
+주가만큼 전진! 오를까 내릴까?,Advance by the share price. Up or down?,株価の分だけ前進！上がる？下がる？
+★상한가 20칸 · 상장폐지는 선두 말 사출,★Limit up 20 · delisting ejects your lead pawn,★ストップ高20マス・上場廃止は先頭の駒が射出
+돌아가는 과녁에 타이밍 맞춰 던져라!,Time your throw at the spinning board!,回る的にタイミングよく投げろ！
+숫자 × 싱글·더블·트리플 · ★불스아이 10칸+한 번 더,Number × Single/Double/Triple · ★Bullseye 10 + extra roll,数字×シングル・ダブル・トリプル・★ブルズアイ10マス+もう1回
+보통 (88%),Normal (88%),通常 (88%)
+"주가만큼 (1~12칸, 매번 ±3)","By price (1~12, ±3 each roll)",株価の分 (1〜12マス、毎回±3)
+★상한가 (6%),★Limit up (6%),★ストップ高 (6%)
+상장폐지 (6%),Delisted (6%),上場廃止 (6%)
+0칸 · 선두 말 사출 · 턴 종료,0 · lead pawn ejected · turn over,0マス・先頭の駒が射出・番終了
+주가는 6에서 시작해 이어진다 · 상한가·상장폐지 뒤 6으로,Price starts at 6 and carries over · resets to 6 after limit up or delisting,株価は6から始まり引き継がれる・ストップ高・上場廃止の後は6へ
+숫자(1~6)만큼,By the number (1~6),数字(1〜6)の分
+더블 (바깥 고리),Double (outer ring),ダブル (外側のリング)
+숫자 × 2,Number × 2,数字 × 2
+트리플 (안쪽 고리),Triple (inner ring),トリプル (内側のリング)
+숫자 × 3,Number × 3,数字 × 3
+★불스아이 (정중앙),★Bullseye (dead center),★ブルズアイ (ど真ん中)
+10칸 + 한 번 더!,10 + extra roll!,10マス+もう1回！
+조준점이 가운데로 올 때 던지기 · 손떨림 약간,Throw when the reticle reaches the center · slight hand shake,照準が中心に来たら投げる・手ぶれ少し
+시세표: 주가(시작 6)만큼 전진 · 매번 ±3 등락 / ★상한가 20칸 / 상장폐지: 0칸 + 선두 말 사출,Ticker: Advance by price (starts at 6) · ±3 each roll / ★Limit Up 20 / Delisted: 0 + lead pawn ejected,相場表: 株価(初期6)だけ前進・毎回±3変動 / ★ストップ高20マス / 上場廃止: 0マス+先頭の駒が射出
+과녁표: 숫자 1~6 × 싱글·더블·트리플 / ★불스아이 10칸 + 한 번 더,Board: Number 1~6 × Single/Double/Triple / ★Bullseye 10 + Extra Roll,的表: 数字1〜6 × シングル・ダブル・トリプル / ★ブルズアイ10マス+もう1回
+주,St,株
+모브 큐이,Mob Kyui,モブ・キューイ
+괴상한 멜론,Weird Melon,ヘンなメロン
+공지사항,Announcements,お知らせ
+캐릭터 음성,Character Voice,キャラクターボイス

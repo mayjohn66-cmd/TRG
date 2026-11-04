@@ -122,7 +122,7 @@ func _scenario(counter_card: StringName) -> void:
 	var log_text: String = "\n".join(PackedStringArray(board._action_log.lines()))
 	expect(not cutin_while_pending and not moved_while_pending, "%s: 방어 결정 전에는 처치 컷인도 사출도 없다 (대치만)" % label)
 	match counter_card:
-		&"CNT_04":
+		&"CNT_04", &"CNT_08":
 			expect(events.has(&"counter_offer") and events.has(&"counter_resolved"), "감나빗: 방어 대기 -> 방어 발동 %s" % str(events))
 			expect(not victim_cutin and not enemy_flew, "감나빗: 처치 컷인·장외 사출 없이 제자리 (컷인 %s, 날아감 %s)" % [victim_cutin, enemy_flew])
 			expect(state.get_pawn(21).has_left_start and state.get_pawn(21).current_tile_idx == 2, "감나빗: 맞을 뻔한 말은 2번 칸에 그대로")

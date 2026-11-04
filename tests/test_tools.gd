@@ -16,7 +16,7 @@ func _card(rank: int, suit: int) -> int:
 
 
 func test_registry_exposes_exactly_thirteen_tools() -> void:
-	check_eq(ToolRegistry.ALL_IDS.size(), 13, "도구 13종 (친치로·화투·마작·타로·야추·블랙잭·핀볼 포함)")
+	check_eq(ToolRegistry.ALL_IDS.size(), 15, "도구 15종 (친치로·화투·마작·타로·야추·블랙잭·핀볼 + v1.1 주식 차트·다트)")
 	for tool_id: StringName in ToolRegistry.ALL_IDS:
 		check(ToolRegistry.create(tool_id) != null, "%s 생성" % tool_id)
 

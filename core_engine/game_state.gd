@@ -76,6 +76,12 @@ signal leapfrog_boosted(pawn_id: int, waypoint: int, bonus: int)
 signal capture_charge_started(pawn_id: int, steps: int)
 ## 기물 고유 능력이 발동했다 (보드 위 원인 뱃지용 표시 이벤트). passive는 PassiveCallout.TEXTS의 키.
 signal passive_triggered(pawn_id: int, passive: StringName)
+## v1.1 모브 큐이의 오이를 밟아 [오이 카드]를 받았다.
+signal cucumber_given(player_id: int, tile: int)
+## v1.1 기억상실빔이 사출을 막았다.
+signal amnesia_blocked(pawn_id: int, tile: int)
+## v1.1 현상금 수배서: 수배된 말을 잡아 현상금을 받았다.
+signal bounty_claimed(hunter: int, pawn_id: int, steps: int)
 
 var board: BoardGraph = BoardGraph.new()
 ## Node 기반 법전. 씬 트리에 붙이지 않고 GameState가 수명을 관리한다.
@@ -119,6 +125,18 @@ var reshuffle_round: int = -1
 var utility_fx: Array[Dictionary] = []
 ## [초증강] 주사위 도박사의 영혼: 플레이어 -> 효과가 켜진 라운드 번호 (그 라운드 동안만 이동 2배).
 var gambler_round: Dictionary = {}
+## v1.1 기억상실빔: 이 라운드 동안 모든 말이 사출 면역 (-1이면 꺼짐).
+var amnesia_round: int = -1
+## v1.1 강화 망치: 강화를 고르는 중인 사람 -> 지금 강화 단계(+N) / 멈춰서 다음 굴림에 더할 +N.
+var hammer_pending: Dictionary = {}
+var hammer_bonus: Dictionary = {}
+## v1.1 관성 드리프트를 가진 사람 / 현상금 수배서: 사냥꾼 -> 수배된 말 ID.
+var drift_players: Dictionary = {}
+var bounties: Dictionary = {}
+
+
+func amnesia_active() -> bool:
+	return amnesia_round == round_number
 ## UDO 스킵(ACT_15)으로 다음 내 턴을 쉬어야 하는 플레이어들 (강제 턴 패스).
 var rest_next_turn: Dictionary = {}
 var winner: int = -1
@@ -398,6 +416,9 @@ func last_place_pawn(excluding_owner: int) -> PlayerPawn:
 
 func send_to_start(pawn: PlayerPawn, by_player: int) -> void:
 	if pawn==null:return
+	if amnesia_active() and pawn.has_left_start and not pawn.is_finished:
+		amnesia_blocked.emit(pawn.entity_id, pawn.current_tile_idx)  # 기억상실빔: 이번 라운드는 아무도 사출되지 않는다
+		return
 	if by_player!=pawn.owner_id and break_shield(pawn):return
 	var members: Array[PlayerPawn] = pawn.stack_members()
 	# 특수 승리 기록: 다크호스 판정은 사출 전에 선두를 정한다.
@@ -530,6 +551,7 @@ func spawn_npc(tile: int, behavior: GameEnums.NpcBehavior, summoner_id: int, dis
 	npc.place_at(tile)
 	npc.behavior = behavior
 	npc.display_id = display_id
+	if display_id==NpcSweep.BEAM_ID:npc.rounds_left=NpcSweep.BEAM_ROUNDS
 	npcs.append(npc)
 	npc_spawned.emit(npc.entity_id, tile)
 	return npc
@@ -551,7 +573,20 @@ func give_card(player_id: int, card_id: StringName) -> bool:
 		return false
 	hand.append(card_id)
 	card_drawn.emit(player_id, card_id)
+	if CardRegistry.type_of(card_id).begins_with("TRAP"):
+		note_trap_card(player_id)  # 모브 큐이: 함정 카드를 얻으면 필살기 충전 기회
 	return true
+
+
+## 모브 큐이 (v1.1): 내가 함정 카드를 얻거나 설치할 때마다, 필살기를 이미 쓴 큐이마다 35% 확률로 필살기가 다시 찬다.
+const KYUI_CHARGE_CHANCE: float = 0.35
+func note_trap_card(player_id: int) -> void:
+	for pawn: PlayerPawn in pawns_of(player_id):
+		if pawn.sub_type() != GameEnums.PawnSubType.MOB_KYUI or not pawn.skill_used:
+			continue
+		if rng.randf() < KYUI_CHARGE_CHANCE:
+			pawn.skill_used = false
+			passive_triggered.emit(pawn.entity_id, &"kyui_charge")
 
 
 func draw_card(player_id: int) -> StringName:
@@ -816,6 +851,9 @@ func owned_attachment_count(player_id: int) -> int:
 
 ## 바둑 백돌 방어막(또는 [범용] 관심사도 지정 보호막)이 있으면 깨뜨리고 true (잡기·함정을 막았다).
 func break_shield(pawn: PlayerPawn) -> bool:
+	if pawn != null and amnesia_active():
+		amnesia_blocked.emit(pawn.entity_id, pawn.current_tile_idx)  # 기억상실빔: 잡기·함정 사출을 막는다 (닳지 않는다)
+		return true
 	if pawn != null and pawn.turn_guard:
 		guard_blocked.emit(pawn.entity_id, pawn.current_tile_idx)  # 나이트 [기사의 맹세]: 이번 차례 동안은 막아도 사라지지 않는다
 		return true
@@ -1002,4 +1040,3 @@ func undo_attack(entry: Dictionary) -> void:
 
 func is_banned(player_id: int) -> bool:
 	return int(banned_turns.get(player_id, 0)) > 0
-

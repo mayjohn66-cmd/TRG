@@ -15,10 +15,52 @@ const BATTLE_TRACK: StringName = &"battle_monatium_night"
 const MIX_RATE: int = 22050
 const BUS_SFX: StringName = &"SFX"
 const BUS_BGM: StringName = &"BGM"
+const BUS_VOICE: StringName = &"Voice"
+const VOICE_GAINS = preload("res://assets/sfx/curated/voice_gains.gd")
 const POOL_SIZE: int = 12
 
 ## 이벤트 -> (설명, 파일 이름에 들어 있으면 쓰는 키워드들). 파일 이름이 이벤트 이름으로 시작하면(예: hop_01.ogg) 그것이 우선이고, 없으면 키워드(Kenney 팩 이름 등)로 찾는다.
 const EVENTS: Dictionary = {
+	&"dart_throw": ["dart throw", ["dart-throw"]],
+	&"dart_hit": ["dart hit", ["dart-hit"]],
+	&"dart_bull": ["dart bull", ["dart-bull"]],
+	&"stock_up": ["stock up", ["stock-up"]],
+	&"stock_down": ["stock down", ["stock-down"]],
+	&"stock_bull": ["stock bull", ["stock-bull"]],
+	&"stock_bear": ["stock bear", ["stock-bear"]],
+	&"hammer_swing": ["hammer swing", ["hammer-swing"]],
+	&"hammer_hit": ["hammer hit", ["hammer-hit"]],
+	&"hammer_success": ["hammer success", ["hammer-success"]],
+	&"hammer_break": ["hammer break", ["hammer-break"]],
+	&"neuralizer_charge": ["neuralizer charge", ["neuralizer-charge"]],
+	&"neuralizer_flash": ["neuralizer flash", ["neuralizer-flash"]],
+	&"proton_descend": ["proton descend", ["proton-descend"]],
+	&"proton_land": ["proton land", ["proton-land"]],
+	&"proton_hum": ["proton hum", ["proton-hum"]],
+	&"proton_burn": ["proton burn", ["proton-burn"]],
+	&"cucumber_plant": ["cucumber plant", ["cucumber-plant"]],
+	&"cucumber_bite": ["cucumber bite", ["cucumber-bite"]],
+	&"rolling_body": ["rolling body", ["rolling-body"]],
+	&"bounty_mark": ["bounty mark", ["bounty-mark"]],
+	&"meddle": ["meddle", ["meddle"]],
+	&"law_confirm": ["law confirm", ["law-confirm"]],
+	&"magic_draw": ["magic draw", ["magic-draw"]],
+	&"magic_complete": ["magic complete", ["magic-complete"]],
+	&"ticket_rustle": ["ticket rustle", ["ticket-rustle"]],
+	&"ticket_join": ["ticket join", ["ticket-join"]],
+	&"trap_embed": ["trap embed", ["trap-embed"]],
+	&"hero_impact": ["hero impact", ["hero-impact"]],
+	&"casino_win": ["casino win", ["casino-win"]],
+	&"die_rain": ["die rain", ["die-rain"]],
+	&"pawn_fall": ["pawn fall", ["pawn-fall"]],
+	&"sword_cut": ["sword cut", ["sword-cut"]],
+	&"sword_plant": ["sword plant", ["sword-plant"]],
+	&"hurricane_wind": ["hurricane wind", ["hurricane-wind"]],
+	&"race_skid": ["race skid", ["race-skid"]],
+	&"result_title": ["result title", ["result-title"]],
+	&"result_panel": ["result panel", ["result-panel"]],
+	&"page_flip": ["page flip", ["page-flip"]],
+	&"report_slam": ["report slam", ["report-slam"]],
 	&"rail_lay": ["기관차 레일 금속 연결", ["rail-lay"]],
 	&"train_chug": ["기관차 가속 구동음", ["train-chug"]],
 	&"train_whistle": ["기관차 출발 기적", ["train-whistle"]],
@@ -29,6 +71,8 @@ const EVENTS: Dictionary = {
 	&"cutin_slash": ["도적단 컷인 날카로운 베기", ["cutin-slash"]],
 	&"pinball_hit": ["핀볼 쇠구슬 금속 범퍼 충돌", ["pinball-hit"]],
 	&"ui_click": ["버튼 클릭", ["click", "button", "select", "tap"]],
+	&"notice_open": ["공지사항 열기 (짧은 상승 팝)", ["notice-open"]],
+	&"notice_close": ["공지사항 닫기 (짧은 하강 팝)", ["notice-close"]],
 	&"hop": ["말 점프 착지 (톡)", ["chip-lay", "chips-stack", "card-place", "place"]],
 	&"slam": ["내리찍기 (잡을 때 쾅)", ["impact", "thud", "slam", "chips-collide"]],
 	&"launch": ["잡힌 말 장외 홈런·점프 코너 비행 (위로 솟는 소리)", ["whoosh", "swoosh", "phase-jump", "slide"]],
@@ -95,6 +139,7 @@ const SYNTH: Dictionary = {
 	&"ui_click": [[0.0, 0.05, 800.0, 1200.0, "sine", 0.6, 0.0, 5.0]],
 	&"ui_hover": [[0.0, 0.03, 1000.0, 1300.0, "sine", 0.25, 0.0, 6.0]],
 	&"charge": [[0.0, 0.35, 300.0, 1100.0, "tri", 0.45, 0.05, 1.2]],
+	&"neuralizer_charge": [[0.0,1.27,420.0,1480.0,"sine",0.30,0.0,0.05],[0.0,1.27,840.0,2960.0,"sine",0.025,0.0,0.05]],
 	&"dice_roll": [[0.0, 0.03, 1800.0, 900.0, "square", 0.35, 0.5, 6.0], [0.07, 0.03, 1500.0, 800.0, "square", 0.35, 0.5, 6.0], [0.13, 0.03, 2000.0, 1000.0, "square", 0.35, 0.5, 6.0], [0.2, 0.03, 1600.0, 900.0, "square", 0.3, 0.5, 6.0], [0.28, 0.04, 1900.0, 700.0, "square", 0.3, 0.5, 6.0]],
 	&"roll_other": [[0.0, 0.03, 1400.0, 700.0, "square", 0.3, 0.6, 6.0], [0.09, 0.03, 1700.0, 800.0, "square", 0.3, 0.6, 6.0], [0.17, 0.04, 1500.0, 700.0, "square", 0.3, 0.6, 6.0]],
 	&"hop": [[0.0, 0.1, 300.0, 650.0, "sine", 0.65, 0.0, 3.0]],
@@ -136,13 +181,13 @@ static var _cache: Dictionary = {}
 static var _last_variant: Dictionary = {}
 static var _last_play_ms: Dictionary = {}
 ## Only repetitive controls/ticks are gated; tile and Yut landings stay independent.
-const MIN_INTERVAL_MS: Dictionary = {&"ui_click": 45, &"ui_hover": 90, &"roulette_tick": 24, &"slot_spin": 120}
+const MIN_INTERVAL_MS: Dictionary = {&"bounty_mark": 180, &"meddle": 150, &"rolling_body": 140, &"proton_burn": 100, &"ui_click": 45, &"ui_hover": 90, &"roulette_tick": 24, &"slot_spin": 120}
 static var _pool: Array[AudioStreamPlayer] = []
 static var _next: int = 0
 static var _host: Node = null
 static var _bgm: AudioStreamPlayer = null
 static var _bgm_name: StringName = &""
-## 캐릭터 대사 전용 재생기 (효과음 버스). 새 대사가 나오면 앞 대사는 끊는다.
+## Character voices have their own mix bus; a new line replaces the previous one.
 static var _voice: AudioStreamPlayer = null
 ## 승리 장면의 긴 팡파르(법전 달성·졸업·시상대·우승) 전용 재생기 두 개. 한 번에 하나만 들리게,
 ## 새 팡파르가 나오면 앞 것은 STINGER_FADE초에 걸쳐 줄이고 멈춘다 (겹쳐서 웅성거리지 않게).
@@ -216,8 +261,9 @@ static func play_stinger(event: StringName, volume_db: float = 0.0) -> void:
 
 
 static func play_voice(path: String, volume_db: float = 0.0) -> void:
-	if path == "" or not enabled() or GameSession.audio_muted:
+	if path == "" or not enabled() or GameSession.audio_muted or GameSession.voice_muted:
 		return
+	volume_db += float(VOICE_GAINS.DB.get(path, -6.0))
 	var stream: AudioStream = load(path) as AudioStream
 	if stream == null:
 		return
@@ -228,6 +274,7 @@ static func play_voice(path: String, volume_db: float = 0.0) -> void:
 
 
 static func _play_voice_when_ready(stream: AudioStream, volume_db: float) -> void:
+	if GameSession.audio_muted or GameSession.voice_muted:return
 	if _voice == null or not is_instance_valid(_voice) or not _voice.is_inside_tree():
 		return
 	_voice.stop()
@@ -249,8 +296,16 @@ static func has_sound(event: StringName) -> bool:
 
 
 ## 이미지 스킨을 다시 입혀도 클릭음은 한 번만 연결한다.
-static func bind_button(button: BaseButton) -> void:
-	var callback: Callable = play.bind(&"ui_click")
+static func bind_button(button: BaseButton, event: StringName = &"") -> void:
+	var previous: StringName = button.get_meta("button_sfx_event", &"ui_click")
+	if event == &"":
+		event = previous  # Reskinning retains an explicitly assigned button sound.
+	if event != previous:
+		var old_callback: Callable = play.bind(previous)
+		if button.pressed.is_connected(old_callback):
+			button.pressed.disconnect(old_callback)
+	button.set_meta("button_sfx_event", event)
+	var callback: Callable = play.bind(event)
 	if not button.pressed.is_connected(callback):
 		button.pressed.connect(callback)
 
@@ -287,17 +342,20 @@ static func apply_settings() -> void:
 	_ensure_buses()
 	var sfx_index: int = AudioServer.get_bus_index(BUS_SFX)
 	var bgm_index: int = AudioServer.get_bus_index(BUS_BGM)
+	var voice_index: int = AudioServer.get_bus_index(BUS_VOICE)
 	AudioServer.set_bus_volume_db(sfx_index, linear_to_db(maxf(GameSession.sfx_volume, 0.0001)))
 	AudioServer.set_bus_volume_db(bgm_index, linear_to_db(maxf(GameSession.bgm_volume, 0.0001)))
+	AudioServer.set_bus_volume_db(voice_index, linear_to_db(maxf(GameSession.voice_volume, 0.0001)))
 	AudioServer.set_bus_mute(sfx_index, GameSession.audio_muted or GameSession.sfx_muted)
 	AudioServer.set_bus_mute(bgm_index, GameSession.audio_muted or GameSession.bgm_muted)
+	AudioServer.set_bus_mute(voice_index, GameSession.audio_muted or GameSession.voice_muted or GameSession.voice_volume<=0.0)
 	AudioServer.set_bus_volume_db(0, linear_to_db(maxf(GameSession.master_volume, 0.0001)))
 
 
 # --- 내부 -----------------------------------------------------------------------
 
 static func _ensure_buses() -> void:
-	for bus_name: StringName in [BUS_SFX, BUS_BGM]:
+	for bus_name: StringName in [BUS_SFX, BUS_BGM, BUS_VOICE]:
 		if AudioServer.get_bus_index(bus_name) == -1:
 			var index: int = AudioServer.get_bus_count()
 			# Web Sample playback: add_bus() forwards append as -1 and the
@@ -330,7 +388,7 @@ static func _ensure_ready() -> bool:
 		_host.add_child(_bgm)
 		_voice = AudioStreamPlayer.new()
 		_voice.name = "Voice"
-		_voice.bus = BUS_SFX
+		_voice.bus = BUS_VOICE
 		_host.add_child(_voice)
 		_stingers.clear()
 		for i: int in 2:

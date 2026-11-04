@@ -20,8 +20,6 @@ var _bottom: Dictionary = {}
 var _name_page: VBoxContainer = null
 var _mode_page: Control = null
 var _hub_profile: Dictionary = {}
-var _hub_tip: Dictionary = {}
-var _tip_index: int = 0
 ## 맨 아래 한 줄 면책 문구 (허브에서는 아래 띠가 숨으므로 화면 맨 아래로 내린다).
 var _fan_notice: Label = null
 var _train_page: VBoxContainer = null
@@ -33,6 +31,7 @@ var _avatar_tiles: Dictionary = {}
 const HUB_AVATAR_HEIGHT: float = 520.0
 ## 허브 위쪽 줄·프로필 버튼의 고정 크기 (언어를 바꿔도 자리가 그대로다).
 const HUB_LANGUAGE_WIDTH: float = 160.0
+const HUB_BUTTON_GAP: int = 22
 const HUB_AVATAR_BUTTON: Vector2 = Vector2(210, 50)
 const HUB_RENAME_BUTTON: Vector2 = Vector2(112, 40)
 ## 허브 아래 가운데 타이틀 로고 너비 (230px의 120%).
@@ -169,7 +168,7 @@ func _build_mode_page() -> void:
 	_mode_page.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_mode_page.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_mode_page)
-	# 위쪽 줄: 팁 띠 + 둥근 규칙/설정 버튼
+	# 위쪽 오른쪽: 언어 변경 · 공지사항 · 규칙 책자 · 설정.
 	var top := HBoxContainer.new()
 	top.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	top.offset_left = 18
@@ -182,17 +181,8 @@ func _build_mode_page() -> void:
 	fill.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	top.add_child(fill)
-	_hub_tip = HubKit.tip_bar(GameTips.TIPS[0], _next_tip)
-	(_hub_tip["root"] as Control).size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	(_hub_tip["label"] as MarqueeLabel).shrink_to_fit(14)  # 긴 번역은 글자를 조금 줄이고, 그래도 길면 흐른다 (띠 크기는 그대로)
-	top.add_child(_hub_tip["root"])
-	# 팁 띠와 오른쪽 버튼 사이 여백 (간격 12 + 22 + 12 = 46px): 언어가 바뀌어도 서로 붙지 않는다
-	var tip_gap := Control.new()
-	tip_gap.custom_minimum_size = Vector2(22, 0)
-	tip_gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	top.add_child(tip_gap)
 	var buttons := HBoxContainer.new()
-	buttons.add_theme_constant_override("separation", 10)
+	buttons.add_theme_constant_override("separation", HUB_BUTTON_GAP)
 	buttons.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	top.add_child(buttons)
 	var language := LobbyTheme.language_toggle()  # [🌐 KR / EN]: 규칙·설정 버튼 옆
@@ -201,6 +191,11 @@ func _build_mode_page() -> void:
 	language.trailing_caret = true
 	language.add_theme_constant_override("h_separation", 10)
 	buttons.add_child(language)
+	var notes_button: Button = HubKit.round_button("HubUpdates", &"notes", _show_updates, 56.0)
+	Sfx.bind_button(notes_button, &"notice_open")
+	notes_button.tooltip_text = "공지사항"
+	_add_new_badge(notes_button)
+	buttons.add_child(notes_button)
 	buttons.add_child(HubKit.round_button("HubRules", &"book", _show_rules, 56.0))
 	buttons.add_child(HubKit.round_button("HubSettings", &"gear", _show_settings, 56.0))
 	# 왼쪽: 큼직한 전신 아바타 + 닉네임 + 아바타 설정 (타이틀은 오른쪽 아래)
@@ -354,12 +349,6 @@ func _refresh_hub() -> void:
 	_hub_profile["avatar"] = fresh
 
 
-## 팁 띠의 [>>]: 다음 게임 팁으로 넘긴다.
-func _next_tip() -> void:
-	_tip_index = (_tip_index + 1) % GameTips.TIPS.size()
-	(_hub_tip["label"] as MarqueeLabel).text = GameTips.TIPS[_tip_index]
-
-
 func _build_train_page(parent: VBoxContainer) -> void:
 	_train_page = VBoxContainer.new()
 	_train_page.custom_minimum_size = Vector2(560, 0)
@@ -433,6 +422,35 @@ func _on_back_pressed() -> void:
 func _show_rules() -> void:
 	_open_rulebook(0)
 
+
+## 둥근 [업데이트 소식] 버튼: 아직 열어 보지 않은 새 소식이 있으면 모서리에 빨간 [N] 표시가 뜬다.
+func _show_updates() -> void:
+	UpdateNotes.open(self)  # 연 순간 본 것으로 저장된다
+	_refresh_new_badge()
+
+
+func _add_new_badge(button: Button) -> void:
+	var badge := Label.new()
+	badge.name = "NewBadge"
+	badge.text = "N"
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	badge.add_theme_font_size_override("font_size", 13)
+	badge.add_theme_color_override("font_color", Color.WHITE)
+	badge.add_theme_color_override("font_outline_color", Color("7a0000"))
+	badge.add_theme_constant_override("outline_size", 3)
+	badge.add_theme_stylebox_override("normal", LobbyTheme.style(Color("e03131"), Color.WHITE, 2, 11, 0, 0))
+	badge.size = Vector2(22, 22)
+	badge.position = Vector2(34, -4)  # 버튼(56px) 오른쪽 위 모서리
+	badge.visible = UpdateNotes.has_unseen()
+	button.add_child(badge)
+
+
+func _refresh_new_badge() -> void:
+	var badge: Node = find_child("NewBadge", true, false)
+	if badge != null:
+		(badge as Control).visible = UpdateNotes.has_unseen()
 
 ## 규칙 도감을 연다: 기록 코드를 불러오면 허브의 #태그·닉네임을 다시 그린다.
 func _open_rulebook(spread: int) -> Rulebook:

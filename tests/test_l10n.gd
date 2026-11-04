@@ -114,7 +114,7 @@ func test_templates_fill_numbers_and_translate_names() -> void:
 		check_eq(L10n.t("%d라운드 시작!"), "Round %d Start!", "틀 자체도 번역 (L10n.tf)")
 		check_eq(L10n.tf("%d라운드 시작!", [7]), "Round 7 Start!", "tf")
 		check_eq(L10n.t("말 2번이 [체스:폰] 기물로 바뀌었습니다"), "Pawn 2 became a [Chess: Pawn]", "인자(기물 이름)도 번역")
-		check_eq(L10n.t("[color=#ffe066][lb]법전] 투기장의 지배자 등록![/color]"), "[color=#ffe066][lb]Codex] Ruler of the Colosseum enacted![/color]", "BBCode 틀")
+		check_eq(L10n.t("[color=#ffe066][lb]법전] 기물 슬레이어 등록![/color]"), "[color=#ffe066][lb]Codex] Ruler of the Colosseum enacted![/color]", "BBCode 틀")
 		check_eq(L10n.t("◆ 기본 말 1개 → [체스] 폰\n◆ 패시브: 반환점 이상 도달 시 퀸 승급"), "◆ 1 Basic Pawn → [Chess] Pawn\n◆ Passive: Promotes to Queen upon reaching the midpoint+", "여러 줄")
 		check_eq(L10n.t("템포 업 Lv.2 · 광기"), "Tempo Up Lv.2 · Frenzy", "구분자로 이은 글")
 		check_eq(L10n.t("마"), "M", "글자 하나짜리 라벨은 아이콘 글자")

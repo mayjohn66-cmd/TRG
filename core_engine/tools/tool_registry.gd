@@ -7,6 +7,7 @@ extends RefCounted
 const ALL_IDS: Array[StringName] = [
 	&"D6", &"YUT", &"LIFE_ROULETTE", &"HOLDEM", &"CHINCHIRO", &"SLOT_777", &"REVOLVER",
 	&"DICE_HWATU", &"DICE_MAHJONG", &"DICE_TAROT", &"DICE_YACHT", &"DICE_BLACKJACK", &"DICE_PINBALL",
+	&"DICE_STOCK", &"DICE_DARTS",
 ]
 
 
@@ -32,6 +33,8 @@ static func _create_default(id: StringName) -> BaseJudgmentTool:
 		&"DICE_YACHT": return ToolYacht.new()
 		&"DICE_BLACKJACK": return ToolBlackjack.new()
 		&"DICE_PINBALL": return ToolPinball.new()
+		&"DICE_STOCK": return ToolStockChart.new()
+		&"DICE_DARTS": return ToolDarts.new()
 	push_error("ToolRegistry: 알 수 없는 도구 ID '%s'" % id)
 	return null
 
@@ -51,6 +54,8 @@ const TABLES: Dictionary = {
 	&"DICE_YACHT": "족보표: 찬스(1~3) / 트리플(5) / 풀하·4연속(7) / 포카드·5연속(9) / ★야추(12칸+한번더)",
 	&"DICE_BLACKJACK": "족보표: 11~20 스탠드 시 (합계-10)칸 / ★21 달성(11칸+한번더) / 22↑ 버스트(0칸)",
 	&"DICE_PINBALL": "구멍표: [2][4][6][★10][5][3][1] 골인한 숫자만큼 (1~10칸)",
+	&"DICE_STOCK": "시세표: 주가(시작 6)만큼 전진 · 매번 ±3 등락 / ★상한가 20칸 / 상장폐지: 0칸 + 선두 말 사출",
+	&"DICE_DARTS": "과녁표: 숫자 1~6 × 싱글·더블·트리플 / ★불스아이 10칸 + 한 번 더",
 }
 
 
@@ -66,7 +71,7 @@ static func table_line(id: StringName) -> String:
 ## 각 도구에서 가장 높은 결과(잭팟)의 기본 칸 수. dice_table.csv의 jackpot_step이 비어 있지 않으면 이 칸 수 결과를 그 값으로 바꾼다.
 const NATURAL_JACKPOT: Dictionary = {
 	&"YUT": 5, &"HOLDEM": 15, &"SLOT_777": 20, &"DICE_HWATU": 8, &"DICE_MAHJONG": 12,
-	&"DICE_YACHT": 12, &"DICE_BLACKJACK": 11, &"DICE_PINBALL": 10,
+	&"DICE_YACHT": 12, &"DICE_BLACKJACK": 11, &"DICE_PINBALL": 10, &"DICE_STOCK": 20, &"DICE_DARTS": 10,
 }
 
 

@@ -313,7 +313,7 @@ static func round_button(node_name: String, icon_kind: StringName, callback: Cal
 	button.pivot_offset = Vector2(diameter, diameter) / 2.0
 	button.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	HubArt.button(button, &"round_button", int(diameter))
-	var role: StringName = &"rules" if icon_kind == &"book" else &"settings"
+	var role: StringName = &"notes" if icon_kind == &"notes" else (&"rules" if icon_kind == &"book" else &"settings")
 	var icon: TextureRect = HubArt.icon(role)
 	icon.set_anchors_preset(Control.PRESET_FULL_RECT)
 	icon.offset_left = 11

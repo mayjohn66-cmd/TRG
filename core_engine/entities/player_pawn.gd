@@ -37,6 +37,9 @@ var shield_broken_hit: bool = false
 var ward: bool = false
 ## 체스 나이트 [기사의 맹세]: 이번 차례가 끝날 때까지 잡기·함정 사출을 막는다 (막아도 사라지지 않는다).
 var turn_guard: bool = false
+## 괴상한 멜론 (v1.1): 함정을 먹고 커진 단계 (0~MELON_MAX). 최대면 모든 함정 면역 + 스친 적 처치. 출발선으로 가면 0으로.
+var melon_size: int = 0
+const MELON_MAX: int = 3
 
 
 ## 이 말의 세부 기물 (호기에서 정해지며, 승진한 체스 퀸은 5번째 호기다).
@@ -53,7 +56,12 @@ func gets_straight_bonus() -> bool:
 ## 함정에 걸리지 않는 기물: 지뢰찾기 공병(항상), 스타 카트(이동 중 항상).
 func is_trap_immune() -> bool:
 	var sub: GameEnums.PawnSubType = sub_type()
-	return sub == GameEnums.PawnSubType.MINESWEEPER_FLAG or sub == GameEnums.PawnSubType.KART_STAR
+	return sub == GameEnums.PawnSubType.MINESWEEPER_FLAG or sub == GameEnums.PawnSubType.KART_STAR or is_giant_melon()
+
+
+## 괴상한 멜론이 다 자랐는가 (3단계: 함정 면역 + 지나가며 적 처치).
+func is_giant_melon() -> bool:
+	return sub_type() == GameEnums.PawnSubType.ODD_MELON and melon_size >= MELON_MAX
 
 
 ## 체스 나이트(와 퀸)의 고유 능력: 중간 칸의 설치물(함정·호텔)을 무시하고 도착 칸만 판정한다 (나이트 점프).
@@ -67,6 +75,7 @@ func evolve(new_kind: GameEnums.PawnKind, new_unit_no: int) -> void:
 	unit_no = new_unit_no
 	shield = sub_type() == GameEnums.PawnSubType.BADUK_WHITE
 	shield_broken_hit = false
+	melon_size = 0
 
 
 func display_label() -> String:
@@ -113,6 +122,7 @@ func stack_members() -> Array[PlayerPawn]:
 
 func reset_to_start() -> void:
 	reset_position()
+	melon_size = 0  # 잡힌 멜론은 다시 작은 멜론으로
 	has_left_start = false
 	retreated_run = false
 	is_imprisoned = false

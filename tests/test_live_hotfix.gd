@@ -72,7 +72,7 @@ func test_special_win_archives_the_whole_board_and_law_before_retirement() -> vo
 	check_eq(archive["finished"][1],1,"real winner finish count preserved")
 	for player: int in [2,3,4]:check_eq(archive["finished"][player],0,"other players were not finishers")
 	check_eq(archive["pawns"][2][0]["tile"],9,"real opponent tile survives ranking cleanup")
-	check_eq(archive["laws"][0]["name"],"투기장의 지배자","achieved law name captured before removal")
+	check_eq(archive["laws"][0]["name"],"기물 슬레이어","achieved law name captured before removal")
 	check_eq(archive["laws"][0]["values"][1],10,"achieved progress captured")
 	check(s.rulebook.active_laws_queue.is_empty(),"archive survives actual law removal")
 	var packed:=TurnSnapshot.capture(s).to_dict();var copy:=make_state(4)

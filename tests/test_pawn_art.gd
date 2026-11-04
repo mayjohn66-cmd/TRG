@@ -20,7 +20,8 @@ func test_all_catalog_states_have_distinct_illustrations() -> void:
 				continue
 			subtypes[subtype] = true
 			var key: String = GameEnums.PawnSubType.keys()[subtype]
-			_check_art(PawnArt.sprite(pawn), "YUT.png" if kind == GameEnums.PawnKind.YUT else key + ".png", sources)
+			var filename: String = {"MOB_KYUI": "MOB_KYUI_V01.png", "ODD_MELON": "ODD_MELON_V01.png"}.get(key, "YUT.png" if kind == GameEnums.PawnKind.YUT else key + ".png")
+			_check_art(PawnArt.sprite(pawn), filename, sources)
 			if kind == GameEnums.PawnKind.SHOGI:
 				pawn.promoted = true
 				_check_art(PawnArt.sprite(pawn), key + "_NARI.png", sources)
@@ -30,8 +31,8 @@ func test_all_catalog_states_have_distinct_illustrations() -> void:
 		token.configure_npc(behavior)
 		_check_art(token.artwork, "NPC_ROBBER.png" if behavior == GameEnums.NpcBehavior.CHASE_NEAREST else "NPC_GHOST.png", sources)
 		token.free()
-	check_eq(sources.size(), 32, "26 normal + 4 promoted + 2 NPC illustrations")
-	print("PAWN_ART_COVERAGE ", sources.size(), "/32")
+	check_eq(sources.size(), 34, "28 normal + 4 promoted + 2 NPC illustrations")
+	print("PAWN_ART_COVERAGE ", sources.size(), "/34")
 
 
 func _check_art(art: Dictionary, filename: String, sources: Dictionary) -> void:

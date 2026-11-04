@@ -1121,7 +1121,7 @@ func _test_match_report_is_sent_once() -> void:
 		state.rankings.assign([seat])
 		state.rank_reasons = {seat: &"LAW_01"}
 		_board._report_player_ranked(seat, 1)
-		_expect(sent.size() == 1 and sent[0].contains("내 최종 순위: 1위 / 우승자: ") and sent[0].contains("특수승리(투기장의 지배자)"), "내 특수 승리 졸업 즉시 [매치 완료] (%s)" % str(sent))
+		_expect(sent.size() == 1 and sent[0].contains("내 최종 순위: 1위 / 우승자: ") and sent[0].contains("특수승리(기물 슬레이어)"), "내 특수 승리 졸업 즉시 [매치 완료] (%s)" % str(sent))
 		_expect(sent.size() == 1 and sent[0].contains("킬/데스: ") and sent[0].contains("누적: ") and sent[0].contains("1위 "), "체감 난이도 지표: 킬/데스·누적 승률")
 		manager.is_game_over = true
 		_board._report_match_once()
@@ -2842,7 +2842,7 @@ func _test_presentation_queue() -> void:
 	_board._decisive_rank = {"player": 2, "rank": 1, "reason": &"LAW_01"}
 	_board._show_result_overlay()
 	var end_reason: Label = _board._result_overlay.find_child("MatchEndReasonText", true, false)
-	_expect(end_reason != null and end_reason.text.contains("투기장의 지배자") and end_reason.text.contains("1위로 졸업"), "결과 화면 위에 매치 종료 사유 (%s)" % (end_reason.text if end_reason != null else "없음"))
+	_expect(end_reason != null and end_reason.text.contains("기물 슬레이어") and end_reason.text.contains("1위로 졸업"), "결과 화면 위에 매치 종료 사유 (%s)" % (end_reason.text if end_reason != null else "없음"))
 	_board._decisive_rank = {"player": 3, "rank": 2, "reason": VictoryChecker.ALL_HOME}
 	_expect(_board.match_end_reason().contains("말 4개를 모두 완주") and _board.match_end_reason().contains("2위"), "완주 졸업 사유: %s" % _board.match_end_reason())
 	_board._decisive_rank = {}
@@ -2989,7 +2989,7 @@ func _test_law_near_badge() -> void:
 	_expect(not _board._law_near[0].visible or not saved_laws.is_empty(), "법전을 되돌리면 배지도 정리")
 	var saved_instant: bool = _board.instant_roll_for_test
 	_board.instant_roll_for_test = false  # 연출을 켠 판에서만 뜬다
-	_board._fx_law_achieved(Rect2(Vector2(40, 200), Vector2(280, 66)), "투기장의 지배자", "적 말을 10회 처치", Color("ff6b6b"))
+	_board._fx_law_achieved(Rect2(Vector2(40, 200), Vector2(280, 66)), "기물 슬레이어", "적 말을 10회 처치", Color("ff6b6b"))
 	_board.instant_roll_for_test = saved_instant
 	var fx: Node = _board.get_node_or_null("LawAchievedFX")
 	_expect(fx != null and fx.find_child("LawAchievedStamp", true, false) != null, "달성 하이라이트: 법전 카드 + [특수 승리 조건 달성!] 도장")
@@ -3040,7 +3040,7 @@ func _test_law_near_badge() -> void:
 		_expect(_board.law_slot_for("LAW_01") != null, "구슬이 꽂힐 법전 슬롯")
 		law_fx.show_chain(1, 2, 3)
 		_expect(screen.find_child("LawChainBanner", true, false) != null, "초전도체 콤보 배너")
-		var siren: Control = law_fx.show_siren("[비상!] 컴퓨터 2님의 [투기장의 지배자] 달성까지 딱 1걸음 남았습니다!")
+		var siren: Control = law_fx.show_siren("[비상!] 컴퓨터 2님의 [기물 슬레이어] 달성까지 딱 1걸음 남았습니다!")
 		_expect(siren != null and siren.name == "LawSirenBanner", "리치 비상 배너")
 		state.add_stat(2, &"kills", 9 - state.stat(2, &"kills"))
 		var reaches: Array[Array] = law_fx.new_reaches()

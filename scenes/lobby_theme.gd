@@ -483,6 +483,12 @@ static func add_audio_controls(box: Container, ink: Color) -> void:
 	_add_volume_row(box, ink, "배경음악 크기", "BgmVolume", "BgmMute", GameSession.bgm_volume, GameSession.bgm_muted,
 		func(value: float) -> void: GameSession.bgm_volume = value,
 		func(muted: bool) -> void: GameSession.bgm_muted = muted, false)
+	_add_volume_row(box, ink, "캐릭터 음성", "VoiceVolume", "VoiceMute", GameSession.voice_volume, GameSession.voice_muted,
+		func(value: float) -> void: GameSession.voice_volume = value,
+		func(muted: bool) -> void: GameSession.voice_muted = muted, false)
+	var voice_slider:=box.find_child("VoiceVolume",true,false) as HSlider
+	voice_slider.drag_ended.connect(func(_changed:bool)->void:
+		Sfx.play_voice(AvatarCatalog.select_voice_path(GameSession.avatar_id)))
 
 
 ## 한 줄: [이름][음소거 버튼][볼륨 바]. 두 줄 모두 이름 칸 폭과 버튼 폭이 같아 바 크기가 똑같다.

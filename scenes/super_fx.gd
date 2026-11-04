@@ -16,6 +16,9 @@ const MINEFIELD_STAGE = preload("res://scenes/minefield_stage.gd")
 const RAID_STAGE = preload("res://scenes/raid_stage.gd")
 const GAMBLER_STAGE = preload("res://scenes/gambler_fx.gd")
 const PROFILE_AURA = preload("res://scenes/profile_super_aura.gd")
+const BUFF_GAMBLER:int=1
+const BUFF_DEVIL:int=2
+const BUFF_VOLT:int=4
 const CASTLING_STAGE = preload("res://scenes/castling_stage.gd")
 const BAKERY_STAGE = preload("res://scenes/bakery_stage.gd")
 const SNIPER_STAGE = preload("res://scenes/sniper_stage.gd")
@@ -328,59 +331,11 @@ func _guarantee(changes: Array) -> void:
 
 
 # ---------------------------------------------------------------------------
-# 지속 표시: 악마의 계약·도박사의 영혼 불꽃 테두리, 연대책임 발밑 고리
+# 지속 표시: 악마의 계약·도박사의 영혼 UI 외곽선, 연대책임 발밑 고리
 # ---------------------------------------------------------------------------
 
-## 프로필·주사위 UI를 감싸는 불꽃 테두리 (끝나지 않는 표시).
-class FlameBorder extends Control:
-	var colors: Array[Color] = [Color("7b2cbf"), Color("c2255c")]
-	var _time: float = 0.0
-
-	func _init() -> void:
-		mouse_filter = Control.MOUSE_FILTER_IGNORE
-		set_anchors_preset(Control.PRESET_FULL_RECT)
-
-	func _process(delta: float) -> void:
-		_time += delta
-		queue_redraw()
-
-	func _draw() -> void:
-		var rect := Rect2(Vector2.ZERO, size).grow(5.0)
-		for layer: int in 3:
-			var flicker: float = 0.55 + 0.45 * sin(_time * (7.0 + layer * 3.0) + layer)
-			var box := StyleBoxFlat.new()
-			box.draw_center = false
-			box.border_color = Color(colors[layer % colors.size()], 0.35 + 0.4 * flicker)
-			box.set_border_width_all(3 + layer * 2)
-			box.set_corner_radius_all(14 + layer * 2)
-			draw_style_box(box, rect.grow(layer * 2.5))
-		# 테두리를 따라 올라가는 불꽃 혀
-		var tongues: int = 14
-		for i: int in tongues:
-			var u: float = fposmod(float(i) / tongues + _time * 0.12, 1.0)
-			var base: Vector2 = _perimeter(rect, u)
-			var height: float = 8.0 + 7.0 * (0.5 + 0.5 * sin(_time * 9.0 + i * 1.7))
-			var color: Color = colors[i % colors.size()].lightened(0.2)
-			PaintedFx.flame(self,base,Vector2.UP,height,4.0,Color(color,0.85),_time*8+i*1.7)
-
-	func _perimeter(rect: Rect2, u: float) -> Vector2:
-		var w: float = rect.size.x
-		var h: float = rect.size.y
-		var d: float = u * 2.0 * (w + h)
-		if d < w:
-			return rect.position + Vector2(d, 0.0)
-		d -= w
-		if d < h:
-			return rect.position + Vector2(w, d)
-		d -= h
-		if d < w:
-			return rect.position + Vector2(w - d, h)
-		d -= w
-		return rect.position + Vector2(0.0, h - d)
-
-
-## host 위에 불꽃 테두리를 켜거나 끈다. colors가 비면 끈다.
-static func set_flame(host: Control, flame_name: String, colors: Array[Color], profile: bool = false) -> void:
+## Existing UI silhouette takes the buff color; empty colors restore its normal border.
+static func set_flame(host: Control, flame_name: String, colors: Array[Color], _profile: bool = false, effects:int=0) -> void:
 	if host == null:
 		return
 	var flame: Control = host.get_node_or_null(flame_name) as Control
@@ -390,10 +345,11 @@ static func set_flame(host: Control, flame_name: String, colors: Array[Color], p
 			flame.queue_free()
 		return
 	if flame == null:
-		flame = PROFILE_AURA.new() if profile else FlameBorder.new()
+		flame = PROFILE_AURA.new()
 		flame.name = flame_name
 		host.add_child(flame)
 	flame.colors = colors
+	flame.effects = effects
 
 
 ## 연대책임 지속 표시: 금속 족쇄와 맞물린 두 고리가 함께 맥동한다.

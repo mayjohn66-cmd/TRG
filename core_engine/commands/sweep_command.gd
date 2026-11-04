@@ -36,4 +36,6 @@ func can_execute(_ctx: RuleContext) -> bool:
 func _run() -> void:
 	var behavior: GameEnums.NpcBehavior = GameEnums.NpcBehavior.PATROL_REVERSE if display_id == &"SUM_02" else GameEnums.NpcBehavior.CHASE_NEAREST
 	var npc: NeutralNPC = state.spawn_npc(tile, behavior, sender_id, display_id)
+	if display_id == NpcSweep.BEAM_ID:
+		npc.rounds_left = NpcSweep.BEAM_ROUNDS  # 롤링 양성자빔: 3라운드 동안 라운드 끝마다 태우며 움직이고 스스로 사라진다
 	result = {"npc_id": npc.entity_id, "display_id": display_id, "path": [tile] as Array[int], "ejected": [] as Array[int], "vanished": false}
