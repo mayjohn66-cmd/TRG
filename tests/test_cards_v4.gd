@@ -169,7 +169,9 @@ func test_counters_need_a_matching_attack_of_mine() -> void:
 func test_counter_kinds_and_labels() -> void:
 	var labels: Dictionary = {&"CNT_01": "만능 방어", &"CNT_02": "잡기 방어", &"CNT_03": "공격 방어", &"CNT_04": "공격 방어", &"CNT_05": "함정 방어", &"CNT_06": "함정 방어", &"CNT_07": "함정 방어", &"CNT_08": "잡기 방어"}
 	for card_id: StringName in labels.keys():
-		check_eq(MainBoard.category_label(CardRegistry.get_card(card_id)), labels[card_id], "%s 분류 이름" % card_id)
+		check_eq(CardCounter.kind_label(card_id), labels[card_id], "%s 분류 이름" % card_id)
+		check_eq(MainBoard.category_label(CardRegistry.get_card(card_id)), "방어", "%s 모서리 배지는 [방어]" % card_id)
+		check(MainBoard.card_summary(card_id).begins_with("[%s] " % labels[card_id]), "%s 설명 머리표 [%s]: %s" % [card_id, labels[card_id], MainBoard.card_summary(card_id)])
 	check_eq(MainBoard.category_label(CardRegistry.get_card(&"ACT_02")), "즉발", "방어가 아닌 카드는 그대로")
 
 

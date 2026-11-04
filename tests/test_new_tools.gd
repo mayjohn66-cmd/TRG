@@ -343,10 +343,10 @@ func test_every_tool_has_a_payout_table_for_the_augment_card() -> void:
 		var line: String = ToolRegistry.table_line(tool_id)
 		check(ToolRegistry.TABLES.has(tool_id) and line.begins_with("• "), "%s 족보표가 있다" % tool_id)
 		check(line.contains("칸") or line.contains("1~6") or line.contains("1~10") or line.contains("("), "%s 표에 구체적인 칸수가 적혀 있다" % tool_id)
-	check_eq(ToolRegistry.table_line(&"HOLDEM"), "• 족보표: 노페어(1) / 원페어(3) / 투페어(5) / 트리플(7) / 스트레이트(10) / 플러시+(15칸)", "홀덤 표")
-	check_eq(ToolRegistry.table_line(&"DICE_YACHT"), "• 족보표: 찬스(1~3) / 트리플(5) / 풀하·4연속(7) / 포카드·5연속(9) / ★야추(12칸+한번더)", "야추 표")
-	check_eq(ToolRegistry.table_line(&"DICE_BLACKJACK"), "• 족보표: 11~20 스탠드 시 (합계-10)칸 / ★21 달성(11칸+한번더) / 22↑ 버스트(0칸)", "블랙잭 표")
-	check_eq(ToolRegistry.table_line(&"SLOT_777"), "• 족보표: 꽝(1) / 2일치(4) / 3일치(8) / ★777 잭팟(20칸!)", "슬롯 표")
+	check_eq(ToolRegistry.table_line(&"HOLDEM"), "• 전진 1~15칸 · 족보표: 노페어(1) / 원페어(3) / 투페어(5) / 트리플(7) / 스트레이트(10) / 플러시+(15칸)", "홀덤 표")
+	check_eq(ToolRegistry.table_line(&"DICE_YACHT"), "• 전진 1~12칸 · 족보표: 찬스(1~3) / 트리플(5) / 풀하·4연속(7) / 포카드·5연속(9) / ★야추(12칸+한번더)", "야추 표")
+	check_eq(ToolRegistry.table_line(&"DICE_BLACKJACK"), "• 전진 0~11칸 · 족보표: 11~20 스탠드 시 (합계-10)칸 / ★21 달성(11칸+한번더) / 22↑ 버스트(0칸)", "블랙잭 표")
+	check_eq(ToolRegistry.table_line(&"SLOT_777"), "• 전진 1~20칸 · 족보표: 꽝(1) / 2일치(4) / 3일치(8) / ★777 잭팟(20칸!)", "슬롯 표")
 
 
 func test_tool_swap_augment_description_lists_the_table() -> void:

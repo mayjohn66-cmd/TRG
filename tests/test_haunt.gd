@@ -1,6 +1,6 @@
 # File: res://tests/test_haunt.gd
 # Class: class_name TestHaunt
-# Role: 방해령 삼총사(베루·사리·메죵) 카드 3종과 특수 승리 LAW_09 [방해령 허리케인 포스!!] 검증 - 카드 효과·대상 규칙, 법전 진행도(손패 종류 수), 내 차례 끝에만 달성, 증강 보정(카드 지급·드로우 가중치)
+# Role: 방해령 삼총사(베루·사리·메죵) 카드 3종과 특수 승리 LAW_09 [방해령 허리케인 포스!!] 검증 - 카드 효과·대상 규칙, 법전 진행도(손패 종류 수), 내 차례 끝에만 달성, 증강 보정(드로우 가중치)
 class_name TestHaunt
 extends TestCase
 
@@ -203,19 +203,19 @@ func test_hurricane_needs_all_three_at_turn_end() -> void:
 	_dispose(manager)
 
 
-# ---- 증강 보정: 카드 1장 지급 + 드로우 가중치 ----
+# ---- 증강 보정: 드로우 가중치만 (카드 지급 없음, 설명은 승리 조건만) ----
 
-func test_choosing_the_hurricane_law_gifts_a_haunt_card_and_boosts_draws() -> void:
+func test_choosing_the_hurricane_law_boosts_draws_without_a_gift() -> void:
 	var manager := _new_manager()
 	var state: GameState = manager.state
 	var augment: AugmentDef = AugmentRegistry.get_def(&"AUG_LAW_09")
 	state.round_number = augment.min_round
 	check(augment != null and augment.category == GameEnums.AugmentCategory.LAW_ENACT and augment.is_available(state, 1), "법전 증강으로 나온다 (7라운드부터)")
-	check(augment.describe(state, 1).contains("방해령 카드 1장 지급"), "증강 설명에 지급 보정")
+	check(augment.describe(state, 1).contains("승리 조건") and not augment.describe(state, 1).contains("지급") and not augment.describe(state, 1).contains("잘 나옴"), "증강 설명은 승리 조건만: " + augment.describe(state, 1))
 	state.hands[1] = []
 	var result: Dictionary = augment.apply(state, 1)
 	check(bool(result["ok"]) and state.rulebook.has_law("LAW_09"), "교칙 제정")
-	check((state.hands[1] as Array).size() == 1 and HauntCommand.is_haunt((state.hands[1] as Array)[0]), "무작위 방해령 1장 지급")
+	check((state.hands[1] as Array).is_empty(), "고르는 즉시 카드를 주지 않는다")
 	check(state.haunt_boost.has(1) and not state.haunt_boost.has(2), "고른 사람만 드로우 가중치")
 	check(not augment.is_available(state, 2), "이미 법전에 있으면 다시 나오지 않는다")
 	_dispose(manager)

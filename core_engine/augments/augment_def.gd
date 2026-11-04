@@ -224,8 +224,8 @@ func _default_text(state: GameState, player_id: int) -> String:
 			var law: LawResource = LawRegistry.create(payload)
 			if String(payload) == SpecialVictory.SIEGE_LAW:  # 1.01: 사도 포위망은 경보 뒤 한 바퀴를 버텨야 졸업
 				return "◆ 승리 조건: %s\n◆ 차례 끝에 완성하면 [포위망 경보] → 다음 내 차례 끝까지 유지하면 졸업" % law.description
-			if String(payload) == SpecialVictory.HURRICANE_LAW:  # 방해령 허리케인 포스!!: 내 차례 끝에 판정 + 제정 보정(카드 1장 지급, 드로우 가중치)
-				return "◆ 승리 조건: %s\n◆ 고르는 즉시 방해령 카드 1장 지급 · 이후 방해령이 더 잘 나옴" % law.description
+			if String(payload) == SpecialVictory.HURRICANE_LAW:  # 방해령 허리케인 포스!!: 설명은 승리 조건만 (드로우 보정은 숨김)
+				return "◆ 승리 조건: %s" % law.description
 			return "◆ 승리 조건: %s\n◆ 차례가 끝날 때 달성해 있으면 바로 다음 순위로 졸업" % law.description
 		GameEnums.AugmentCategory.SUPER_GAMBLE:
 			return SuperAugments.describe(payload)
@@ -277,14 +277,9 @@ func _apply_law(state: GameState, player_id: int) -> Dictionary:
 	state.rulebook.enqueue_law(law)
 	var text: String = "특수 승리 교칙 [%s] 제정: %s" % [law.law_name, law.description]
 	if String(payload) == SpecialVictory.HURRICANE_LAW:
-		# 달성 보정: 제정한 사람에게 무작위 방해령 1장을 바로 주고, 이 판 동안 방해령이 더 잘 뽑히게 한다 (실제로 모을 수 있게)
-		var gift: StringName = HauntCommand.IDS[state.rng.randi_range(0, HauntCommand.IDS.size() - 1)]
+		# 달성 보정(숨김): 제정한 사람은 이 판 동안 손패에 없는 방해령이 더 잘 뽑힌다. 카드를 바로 주지는 않는다 (2026-11-04)
 		state.haunt_boost[player_id] = true
 		state.haunt_boost_set.emit(player_id)
-		if state.give_card(player_id, gift):
-			text += " · 방해령 [%s] 1장 지급, 이제 방해령 카드가 더 잘 나옵니다" % CardRegistry.get_card(gift).display_name
-		else:
-			text += " · 이제 방해령 카드가 더 잘 나옵니다 (손패가 가득 차 지급은 못 했어요)"
 	return {"ok": true, "text": text}
 
 

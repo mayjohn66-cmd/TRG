@@ -1418,14 +1418,15 @@ func _cards_of(category: int) -> Array:
 	return result
 
 
-## 카드 목록을 [이름, 한 줄 설명] 표로: 설명 앞의 [방어]·[코너] 같은 머리표는 뗀다.
+## 카드 목록을 [이름, 한 줄 설명] 표로: 설명 앞의 [잡기 방어]·[코너] 같은 머리표는 뗀다.
 func _card_rows(card_ids: Array) -> Array:
 	var rows: Array = []
 	for card_id: Variant in card_ids:
 		var card: BaseCard = CardRegistry.get_card(StringName(card_id))
 		var line: String = MainBoard.card_summary(StringName(card_id)).replace("\n", " ")
-		if line.begins_with("[방어] "):
-			line = line.trim_prefix("[방어] ")
+		for head: String in ["[방어] ", "[만능 방어] ", "[잡기 방어] ", "[공격 방어] ", "[함정 방어] "]:
+			if line.begins_with(head):
+				line = line.trim_prefix(head)
 		rows.append([card.display_name, line])
 	return rows
 

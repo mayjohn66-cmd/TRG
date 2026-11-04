@@ -135,10 +135,8 @@ const CARD_CATEGORY_NAMES: Dictionary = {
 	GameEnums.CardCategory.SUMMON: "소환",
 	GameEnums.CardCategory.COUNTER: "방어",
 }
-## 카드 모서리 분류 이름: 방어 카드는 [잡기 방어]·[공격 방어]·[함정 방어]로 세분한다.
+## 카드 모서리 분류 이름 (방어 카드도 [방어]: 잡기·공격·함정 분류는 설명 머리표 [잡기 방어] 등에 적는다).
 static func category_label(card: BaseCard) -> String:
-	if card is CardCounter:
-		return CardCounter.kind_label(card.card_id)
 	return str(CARD_CATEGORY_NAMES[card.category])
 
 
@@ -184,14 +182,14 @@ const CARD_SHORT: Dictionary = {
 }
 ## 카드 확대 보기에서 읽는 개조식 요약 (키워드 + 명사형 종결). cards_table.csv의 desc가 있으면 그것이 우선이다.
 const CARD_SUMMARIES: Dictionary = {
-	&"CNT_01": "[방어] 공격당하면 이번 턴을 통째로 되감고 공격자의 턴 종료",
-	&"CNT_02": "[방어] 잡기를 막고 공격한 말을 출발선으로 사출",
-	&"CNT_03": "[방어] 공격 카드를 막고 반사: 밴·스킵·이의 있음은 공격자에게 그대로 · 그 밖의 카드는 공격자 선두 말 사출",
-	&"CNT_04": "[방어] 공격 카드 1회 회피 (잡기는 못 막음)",
-	&"CNT_05": "[방어] 걸린 함정을 부수고 +3칸 전진",
-	&"CNT_06": "[방어] 걸린 함정 무효 + 설치자 카드 1장 강탈",
-	&"CNT_07": "[방어] 걸린 함정을 발동하지 않고 그 함정 카드를 내 패로",
-	&"CNT_08": "[방어] 잡기 1회 회피",
+	&"CNT_01": "[만능 방어] 공격당하면 이번 턴을 통째로 되감고 공격자의 턴 종료",
+	&"CNT_02": "[잡기 방어] 잡기를 막고 공격한 말을 출발선으로 사출",
+	&"CNT_03": "[공격 방어] 공격 카드를 막고 반사: 밴·스킵·이의 있음은 공격자에게 그대로 · 그 밖의 카드는 공격자 선두 말 사출",
+	&"CNT_04": "[공격 방어] 공격 카드 1회 회피 (잡기는 못 막음)",
+	&"CNT_05": "[함정 방어] 걸린 함정을 부수고 +3칸 전진",
+	&"CNT_06": "[함정 방어] 걸린 함정 무효 + 설치자 카드 1장 강탈",
+	&"CNT_07": "[함정 방어] 걸린 함정을 발동하지 않고 그 함정 카드를 내 패로",
+	&"CNT_08": "[잡기 방어] 잡기 1회 회피",
 	&"ACT_02": "상대 선두 말을 출발선으로 장외 사출",
 	&"ACT_03": "다음 유저에게 폭탄 패스: 선두 말 사출 + 내 이동 +4칸",
 	&"ACT_04": "굴리기 전 사용! 이번 굴림 +4칸",
@@ -1412,8 +1410,7 @@ func _bind_state() -> void:
 		_record(player_id, "%s 다음 이동 눈금 -%d" % [_bq("방해령 메죵"), amount], "", true)
 		if _fx_on() and _profiles.has(player_id):
 			_number_pop(_profile_center(player_id), "눈금 -%d!" % amount, Color("74c0fc")))
-	state.haunt_boost_set.connect(func(player_id: int) -> void:
-		_log_line("[방해령 허리케인 포스!!] P%d: 방해령 카드가 더 잘 나옵니다" % player_id, Color("b197fc")))
+	# 방해령 허리케인 포스!! 드로우 보정은 숨김 보정이라 로그에 알리지 않는다 (2026-11-04)
 	state.bounty_claimed.connect(func(hunter: int, pawn_id: int, steps: int) -> void:
 		_log_line("[현상금] P%d이(가) 수배된 %s을(를) 잡았습니다! +%d칸" % [hunter, _pawn_name(pawn_id), steps], Color("ffd43b"))
 		_record(hunter, "%s 현상금 획득! 수배범 처치 → +%d칸" % [_bq("현상금 수배서"), steps], "", true)

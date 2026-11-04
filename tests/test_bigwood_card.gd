@@ -32,8 +32,8 @@ func test_registered_in_deck_supply_and_live_card_data() -> void:
 	check(CardRegistry.ids_of_type("COUNTER").has(&"CNT_08"), "available in defense supply")
 	check_eq(GameData.text("cards", &"CNT_08", "icon_file"), "CNT_08.png", "approved artwork")
 	check(ResourceLoader.exists("res://assets/cards/CNT_08.png"), "art is imported")
-	check_eq(MainBoard.card_summary(&"CNT_08"), "[방어] 잡기 1회 회피", "live description")
-	check_eq(MainBoard.category_label(card), "잡기 방어", "current remote defense classification remains")
+	check_eq(MainBoard.card_summary(&"CNT_08"), "[잡기 방어] 잡기 1회 회피", "live description: 분류는 설명 머리표에")
+	check_eq(MainBoard.category_label(card), "방어", "모서리 배지는 [방어] (2026-11-04)")
 	for phase: int in [TurnManager.State.PHASE_TURN_BEGIN, TurnManager.State.PHASE_ROLL_WAIT, TurnManager.State.PHASE_RESOLUTION]:
 		check(not card.is_playable_in(phase), "not a regular turn/interrupt card")
 	var row: Dictionary = GameData.table("cards")["CNT_08"]
