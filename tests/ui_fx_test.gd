@@ -1073,17 +1073,26 @@ func _test_rank_log_follows_the_capture() -> void:
 	victim.current_tile_idx = 5
 	state.send_to_start(victim, 4)  # 엔진이 알리는 순서: 처치 -> 법전 파기 -> 순위 확정
 	_board._on_event(&"player_ranked", {"player_id": 4, "rank": 1, "reason": &"LAW_01"})
-	var waited: float = _now()
-	while (_board._ui_busy() or _board._presentation_active()) and _now() - waited < 10.0:
+	# 연출 큐가 아직 비어 보이는 첫 프레임에 기다림이 끝나 처치 기록이 아직 안 찍힌 채로 검사하던 드문 실패(CI 593)를 막는다:
+	# 두 줄이 모두 찍히거나 시간이 다 될 때까지 기다린다.
+	for _i: int in 3:
 		await process_frame
+	var waited: float = _now()
 	var capture_at: int = -1
 	var rank_at: int = -1
-	var lines: Array[String] = _board._action_log.lines()
-	for index: int in lines.size():
-		if lines[index].contains("처치!") and capture_at == -1:
-			capture_at = index
-		if lines[index].contains("1위 확정"):
-			rank_at = index
+	var lines: Array[String] = []
+	while _now() - waited < 10.0:
+		lines = _board._action_log.lines()
+		capture_at = -1
+		rank_at = -1
+		for index: int in lines.size():
+			if lines[index].contains("처치!") and capture_at == -1:
+				capture_at = index
+			if lines[index].contains("1위 확정"):
+				rank_at = index
+		if capture_at != -1 and rank_at != -1 and not _board._ui_busy() and not _board._presentation_active():
+			break
+		await process_frame
 	_expect(capture_at != -1 and rank_at != -1 and capture_at < rank_at, "처치 기록 뒤에 순위 확정 기록이 찍힌다 (처치 %d줄, 순위 %d줄)" % [capture_at, rank_at])
 	_board._announcer.cancel()
 	_board._refresh_all()
