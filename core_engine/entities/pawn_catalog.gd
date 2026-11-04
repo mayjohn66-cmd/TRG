@@ -183,7 +183,7 @@ const SKILL_TEXTS: Dictionary = {
 	&"cannon": "가장 앞에 있는 적의 말 처치",
 	&"back_kick": "뒤 2칸의 적 처치",
 	&"keima_jump": "+2칸 전진 · 처치하면 +1칸 더",
-	&"cucumber": "지금 칸에 오이 · 밟은 적에게 먹통 [오이 카드]",
+	&"cucumber": "지금 칸에 오이 · 밟은 적에게 먹을 수 있는 [오이 카드]",
 }
 
 
