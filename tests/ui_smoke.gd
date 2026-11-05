@@ -501,7 +501,9 @@ func _check_bounds() -> void:
 			if other == _board.manager.current_player_id():
 				_assert(panel.modulate.is_equal_approx(MainBoard.PROFILE_LIT), "현재 턴 프로필은 밝다 (%s)" % str(panel.modulate))
 			else:
-				_assert(panel.modulate.is_equal_approx(MainBoard.PROFILE_DIM) and panel.scale == Vector2.ONE, "다른 프로필은 어둡고 기본 크기다 (%s)" % str(panel.modulate))
+				# 순위가 정해진(졸업한) 프로필은 어둡게 가라앉는 대신 약간 밝은 PROFILE_RANKED로 보인다
+				var expected_light: Color = MainBoard.PROFILE_RANKED if _board.state.is_graduated(other) else MainBoard.PROFILE_DIM
+				_assert(panel.modulate.is_equal_approx(expected_light) and panel.scale == Vector2.ONE, "다른 프로필은 어둡고(졸업자는 PROFILE_RANKED) 기본 크기다 (%s)" % str(panel.modulate))
 	# 2x2 기물 슬롯: 완주/출전/대기 문구와 슬롯 수 (이동 도중 멈춘 상태에서 표본을 뽑아도 문구가 낡지 않도록 먼저 HUD를 최신 상태로 칠한다)
 	_board._refresh_players()
 	for other: int in [1, 2, 3, 4]:
