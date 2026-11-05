@@ -125,6 +125,37 @@ func _run() -> void:
 			_board._close_zoom();await settle()
 	L10n.set_language(old_language)
 	MobileSupport.force_touch=false
+	# 순위 도장: 졸업한 플레이어의 프로필에 1ST/2ND 도장 + 깃발 (흰색=일반 승리, 붉은색=특수 승리)
+	var stamp_ids:Array=_board.state.player_ids
+	_expect(_board._profiles[stamp_ids[0]]["avatar"].get_node_or_null("RankStamp")==null,"no rank stamp before anyone is ranked")
+	_board.state.rankings.append(stamp_ids[0]);_board.state.rank_reasons[stamp_ids[0]]=VictoryChecker.ALL_HOME
+	_board.state.rankings.append(stamp_ids[1]);_board.state.rank_reasons[stamp_ids[1]]=&"LAW_01"
+	_board._refresh_all();await settle()
+	await screenshot("rank-stamps")
+	var first_stamp: Variant=_board._profiles[stamp_ids[0]]["avatar"].get_node_or_null("RankStamp")
+	var second_stamp: Variant=_board._profiles[stamp_ids[1]]["avatar"].get_node_or_null("RankStamp")
+	_expect(first_stamp!=null and first_stamp.label_text=="1ST" and not first_stamp.special,"일반 완주 1위는 흰 깃발 1ST 도장")
+	_expect(second_stamp!=null and second_stamp.label_text=="2ND" and second_stamp.special,"법전(특수 승리) 2위는 붉은 깃발 2ND 도장")
+	_expect(_board._profiles[stamp_ids[2]]["avatar"].get_node_or_null("RankStamp")==null,"아직 순위가 없는 플레이어에게는 도장이 없다")
+	_expect(first_stamp!=null and _board._profiles[stamp_ids[0]]["avatar"].get_global_rect().grow(2.0).encloses(first_stamp.get_global_rect()) and first_stamp.size.x<=_board._profiles[stamp_ids[0]]["avatar"].size.x+1.0,"도장이 프로필 그림 안에 있다")
+	_board._refresh_all();await settle()
+	_expect(_board._profiles[stamp_ids[0]]["avatar"].find_children("RankStamp","",true,false).size()==1,"갱신해도 도장이 겹쳐 쌓이지 않는다")
+	_board.state.rankings.clear();_board.state.rank_reasons.clear();_board._refresh_all();await settle()
+	_expect(_board._profiles[stamp_ids[0]]["avatar"].get_node_or_null("RankStamp")==null,"순위가 없으면 도장이 사라진다")
+	# 법전 책: 새 교칙이 제정되면 중앙에 펼친 책으로 그림·이름·승리 조건을 보여 준다.
+	for language: String in ["ko","en","ja"]:
+		L10n.set_language(language)
+		var new_law:=LawRegistry.create("LAW_01")
+		_board.state.rulebook.enqueue_law(new_law)
+		var book:=_board._make_law_book(new_law)
+		_board.add_child(book);book.position=Vector2(300,150);await settle()
+		await screenshot("law-book-"+language)
+		_expect(book.find_children("*","TextureRect",true,false).size()>=1,"법전 책 왼쪽 쪽에 교칙 그림이 있다 (%s)"%language)
+		var texts:=book.find_children("*","Label",true,false).map(func(label:Node)->String:return (label as Label).text)
+		_expect(texts.has(new_law.law_name) and texts.has(new_law.description),"법전 책에 새 교칙 이름과 승리 조건이 있다 (%s)"%language)
+		_expect(book.get_global_rect().size.x<=_board.get_viewport_rect().size.x and book.get_global_rect().size.y<=_board.get_viewport_rect().size.y*0.7,"법전 책이 화면 안에 들어간다 (%s %s)"%[language,book.get_global_rect().size])
+		book.queue_free();await settle()
+	L10n.set_language(old_language)
 	# Result diagnostics must use departure facts, never synthetic retirement finishes.
 	var helper:=load("res://tests/test_live_hotfix.gd").new() as TestCase
 	var game:=helper.make_state(4);helper.place(game,11,5);helper.place(game,21,9);helper.place(game,31,13);helper.place(game,41,17)

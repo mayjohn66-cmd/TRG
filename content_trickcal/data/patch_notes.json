@@ -70,6 +70,11 @@
        "ko": "연출 추가: 특수 승리 컷신, 완주 피니시 컷신, 결과창 만화 컷 페이지, 특수 승리 진행도가 차오르는 연출과 목표 칸 표시(하극상·식권·포위망)",
        "en": "New effects: special-victory cutscenes, finish-line cutscene, comic-page result screen, special-victory progress fill and target-tile markers",
        "ja": "演出追加：特殊勝利カットシーン、ゴール演出、結果画面のマンガページ、特殊勝利の進行度ゲージと目標マス表示"
+      },
+      {
+       "ko": "순위 도장: 순위가 정해진 플레이어의 프로필에 1ST · 2ND · 3RD 도장과 깃발이 찍힙니다 (흰 깃발 = 일반 승리, 붉은 깃발 = 특수 승리)",
+       "en": "Rank stamps: ranked players get a 1ST / 2ND / 3RD stamp with a flag on their profile (white flag = normal win, red flag = special victory)",
+       "ja": "順位スタンプ：順位が決まったプレイヤーのプロフィールに1ST・2ND・3RDのスタンプと旗が付きます（白旗＝通常勝利、赤旗＝特殊勝利）"
       }
      ]
     },
@@ -154,6 +159,11 @@
        "ko": "특수 승리는 제정된 시점부터 새로 세요 (미리 쌓은 처치·방문 기록이나 깔아 둔 설치물로 바로 달성되지 않아요)",
        "en": "Special victories now count from the moment they are enacted (earlier kills, visits or pre-placed installations no longer carry over)",
        "ja": "特殊勝利は制定された時点から数え直します（事前の撃破・訪問記録や設置済みの設置物では即達成されません）"
+      },
+      {
+       "ko": "교칙이 법전에 등록되면 화면 가운데에 법전(펼친 책)이 나와 그림과 승리 조건을 직접 보여줍니다",
+       "en": "When a law is enacted, an open Codex appears in the center showing its picture and win condition",
+       "ja": "教則が法典に登録されると、画面中央に開いた法典が現れ、絵と勝利条件を直接見せます"
       }
      ]
     },

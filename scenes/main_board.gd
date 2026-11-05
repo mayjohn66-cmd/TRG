@@ -4250,6 +4250,7 @@ func _on_utility_picked(player_id: int, augment_id: StringName) -> void:
 func _refresh_status_stamps(player_id: int) -> void:
 	var host: Control = _profiles[player_id]["avatar"]
 	_refresh_revive_mark(host, player_id)
+	_refresh_rank_stamp(host, player_id)
 	var wanted: Dictionary = {&"skip": bool(state.rest_next_turn.get(player_id, false)) and not state.is_graduated(player_id), &"ban": state.is_banned(player_id) and not state.is_graduated(player_id)}
 	for kind: StringName in [&"skip", &"ban"]:
 		var node_name: String = "Stamp_%s" % kind
@@ -4271,6 +4272,38 @@ func _refresh_status_stamps(player_id: int) -> void:
 		host.add_child(stamp)
 		if _fx_on() and not instant_roll_for_test:
 			stamp.slam_in(self)
+
+
+## 순위가 확정된(졸업한) 플레이어의 프로필 그림 위에 1ST·2ND·3RD 도장을 깃발과 함께 찍어 둔다.
+## 흰 깃발 = 일반 승리(완주 등), 붉은 깃발 = 특수 승리(법전). 순위 때문에 이긴 방식을 프로필만 봐도 알 수 있게 한다.
+const RANK_ORDINALS: Array[String] = ["", "1ST", "2ND", "3RD", "4TH"]
+func rank_stamp_text(rank: int) -> String:
+	return RANK_ORDINALS[rank] if rank > 0 and rank < RANK_ORDINALS.size() else "%dTH" % rank
+func _refresh_rank_stamp(host: Control, player_id: int) -> void:
+	var stamp: RankStamp = host.get_node_or_null("RankStamp") as RankStamp
+	var rank: int = state.rankings.find(player_id) + 1 if state != null else 0
+	if rank <= 0:
+		if stamp != null:
+			stamp.queue_free()
+			host.remove_child(stamp)
+		return
+	var special: bool = VictoryLaw.is_victory_id(str(state.rank_reasons.get(player_id, "")))
+	if stamp != null and stamp.rank == rank and stamp.special == special:
+		return
+	var fresh: bool = stamp == null
+	if stamp != null:
+		stamp.queue_free()
+		host.remove_child(stamp)
+	stamp = RankStamp.new()
+	stamp.name = "RankStamp"
+	stamp.rank = rank
+	stamp.special = special
+	stamp.label_text = rank_stamp_text(rank)
+	stamp.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stamp.set_anchors_preset(Control.PRESET_FULL_RECT)
+	host.add_child(stamp)
+	if fresh and _fx_on() and not instant_roll_for_test:
+		stamp.slam_in(self)
 
 
 ## [범용] 다이스: 리바이브가 장전돼 있으면 프로필 그림 아래에 [리바이브] 표시 (쓰면 사라진다).
@@ -11160,27 +11193,91 @@ func _announce_gate(tag: String, headline: String, body: String, color: Color, e
 		_fx_gate_open = false
 
 
-## 새 교칙이 제정되면 현재 법전 전체를 중앙에 띄우고 새로 들어온 줄을 금색으로 강조한다.
+## 새 교칙이 제정되면 중앙에 법전(펼친 책)을 띄워 어떤 교칙·특수 승리가 들어왔는지 그림과 글로 직접 보여 준다.
 func _announce_law_added(new_law: LawResource, removed_law: LawResource) -> void:
-	var board := VBoxContainer.new()
-	board.add_theme_constant_override("separation", 4)
-	board.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var body: String = ""
+	if removed_law != null:
+		body = "(가장 오래된 %s이(가) 밀려났습니다)" % removed_law.law_name
+	_announce("법전 개정", "법전 개정!", body, COLOR_GOLD, _make_law_book(new_law), 3.4, true, {"key": "law_added", "extra_below": true})
+
+
+## 펼친 법전: 왼쪽 쪽에는 교칙 그림, 오른쪽 쪽에는 새 교칙 이름·승리 조건, 아래 띠에는 지금 법전에 실린 교칙들이 적힌다.
+func _make_law_book(new_law: LawResource) -> Control:
+	var book := VBoxContainer.new()
+	book.name = "LawBook"
+	book.add_theme_constant_override("separation", 6)
+	book.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var cover := PanelContainer.new()
+	cover.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cover.add_theme_stylebox_override("panel", _style(Color("5a3b1e"), Color("2e1b0a"), 4, 12, 10, 10))
+	book.add_child(cover)
+	var spread := HBoxContainer.new()
+	spread.add_theme_constant_override("separation", 6)
+	spread.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cover.add_child(spread)
+	var page_style: StyleBoxFlat = _style(Color("f3e6c4"), Color("c8ae78"), 2, 6, 8, 10)
+	# 왼쪽 쪽: 그림 + 이 교칙이 어떤 종류인지
+	var left := PanelContainer.new()
+	left.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	left.add_theme_stylebox_override("panel", page_style)
+	spread.add_child(left)
+	var left_box := VBoxContainer.new()
+	left_box.add_theme_constant_override("separation", 4)
+	left_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	left.add_child(left_box)
+	var art_path: String = "res://content_trickcal/illustrations/laws/%s.png" % new_law.law_id
+	if ResourceLoader.exists(art_path):
+		var art := TextureRect.new()
+		art.texture = TextureCache.fetch(art_path)
+		art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		art.custom_minimum_size = Vector2(180, 180)
+		art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		left_box.add_child(art)
+	var kind: String = "특수 승리" if VictoryLaw.is_victory_id(new_law.law_id) else "교칙"
+	var kind_label := _make_label(kind, 15, Color("a61e1e") if kind == "특수 승리" else Color("5c3a00"))
+	kind_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	kind_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	left_box.add_child(kind_label)
+	# 오른쪽 쪽: 이름 + 설명
+	var right := PanelContainer.new()
+	right.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	right.add_theme_stylebox_override("panel", page_style)
+	spread.add_child(right)
+	var right_box := VBoxContainer.new()
+	right_box.add_theme_constant_override("separation", 6)
+	right_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	right.add_child(right_box)
+	var new_tag := _make_label("NEW", 13, Color("ffffff"))
+	new_tag.add_theme_stylebox_override("normal", _style(Color("c92a2a"), Color("7a1212"), 1, 6, 0, 2))
+	new_tag.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	new_tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	right_box.add_child(new_tag)
+	var title := _make_label(new_law.law_name, 22, Color("3b2a00"))
+	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	title.custom_minimum_size.x = 250
+	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	right_box.add_child(title)
+	var description := _make_label(new_law.description, 15, Color("4a3418"))
+	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	description.custom_minimum_size.x = 250
+	description.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	right_box.add_child(description)
+	# 아래 띠: 지금 법전에 실린 교칙들 (새 교칙은 금색)
+	var strip := HFlowContainer.new()
+	strip.add_theme_constant_override("h_separation", 6)
+	strip.add_theme_constant_override("v_separation", 4)
+	strip.alignment = FlowContainer.ALIGNMENT_CENTER
+	strip.custom_minimum_size.x = 470
+	strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for law: LawResource in state.rulebook.active_laws_queue:
 		var is_new: bool = law == new_law
-		var row := PanelContainer.new()
-		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		row.custom_minimum_size = Vector2(420, 0)
-		row.add_theme_stylebox_override("panel", _style(Color("4a3d12") if is_new else Color("1b2030"), COLOR_GOLD if is_new else Color("3b4252"), 3 if is_new else 1, 8, 6, 5))
-		var text: String = "%s%s - %s" % ["NEW  " if is_new else "", law.law_name, law.description]
-		var label := _make_label(text, 13, Color("fff3bf") if is_new else Color("adb5bd"))
-		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		row.add_child(label)
-		board.add_child(row)
-	var body: String = new_law.description
-	if removed_law != null:
-		body += "\n(가장 오래된 %s이(가) 밀려났습니다)" % removed_law.law_name
-	_announce("법전 개정", "법전 개정!", body, COLOR_GOLD, board, 2.6, true, {"key": "law_added", "extra_below": true})
+		var chip := _make_label(law.law_name, 13, Color("3b2a00") if is_new else Color("adb5bd"))
+		chip.add_theme_stylebox_override("normal", _style(COLOR_GOLD if is_new else Color("1b2030"), Color("fff3bf") if is_new else Color("3b4252"), 1, 6, 0, 3))
+		chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		strip.add_child(chip)
+	book.add_child(strip)
+	return book
 
 
 ## 카드 사용 알림에 붙일 카드 앞면 (손패 카드와 같은 모양, 클릭 불가).
@@ -12996,6 +13093,64 @@ class BoardStructure extends Node2D:
 		if edge.a > 0.0:
 			points.append(points[0])
 			draw_polyline(points, edge, 1.2, true)
+
+
+## 프로필 그림 오른쪽 아래에 붙는 순위 도장: 어두운 알약 안에 깃발(흰색=일반 승리, 붉은색=특수 승리) + 1ST/2ND/3RD.
+class RankStamp extends Control:
+	var rank: int = 1
+	var special: bool = false
+	var label_text: String = "1ST"
+	const HEIGHT := 26.0
+
+	func _ready() -> void:
+		z_index = 4
+		resized.connect(_fit)
+		_fit()
+
+	## 아바타 칸 전체를 덮는 투명 판을 두고 그 오른쪽 아래에만 알약을 그린다 (칸이 컨테이너여도 크기가 늘어나지 않게).
+	func _pill_rect() -> Rect2:
+		var text_w: float = ThemeDB.fallback_font.get_string_size(label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 15).x
+		var pill := Vector2(HEIGHT + text_w + 12.0, HEIGHT)
+		pill.x = minf(pill.x, maxf(size.x - 4.0, 20.0))
+		return Rect2(size - pill - Vector2(2, 2), pill)
+
+	func _fit() -> void:
+		pivot_offset = _pill_rect().get_center()
+		queue_redraw()
+
+	func slam_in(board: MainBoard) -> void:
+		scale = Vector2(2.4, 2.4)
+		modulate.a = 0.0
+		var tween: Tween = create_tween().set_parallel(true)
+		tween.tween_property(self, "scale", Vector2.ONE, 0.2).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+		tween.tween_property(self, "modulate:a", 1.0, 0.12)
+		tween.chain().tween_callback(func() -> void:
+			Sfx.play(&"slam", -4.0)
+			board.screen_shake(3.0, 0.12))
+
+	func _draw() -> void:
+		var tint: Color = Color("ff6b6b") if special else Color("f8f9fa")
+		var box: Rect2 = _pill_rect()
+		draw_style_box(_pill(tint), box)
+		# 깃대 + 깃발
+		var origin: Vector2 = box.position
+		var pole_x: float = origin.x + 8.0
+		draw_line(Vector2(pole_x, origin.y + 4.0), Vector2(pole_x, origin.y + HEIGHT - 4.0), Color("adb5bd"), 2.0)
+		var flag := PackedVector2Array([Vector2(pole_x + 1.0, origin.y + 4.0), Vector2(pole_x + 14.0, origin.y + 8.0), Vector2(pole_x + 1.0, origin.y + 13.0)])
+		draw_colored_polygon(flag, Color("e03131") if special else Color("ffffff"))
+		draw_polyline(PackedVector2Array([flag[0], flag[1], flag[2], flag[0]]), Color("3b0d0d") if special else Color("495057"), 1.0, true)
+		var font: Font = ThemeDB.fallback_font
+		var at := Vector2(origin.x + HEIGHT, origin.y + HEIGHT - 7.0)
+		draw_string_outline(font, at, label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, 3, Color("0d1018"))
+		draw_string(font, at, label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("ffe066") if rank == 1 else tint)
+
+	func _pill(border: Color) -> StyleBoxFlat:
+		var box := StyleBoxFlat.new()
+		box.bg_color = Color(0.05, 0.06, 0.09, 0.92)
+		box.border_color = border
+		box.set_border_width_all(2)
+		box.set_corner_radius_all(8)
+		return box
 
 
 ## 프로필 위에 찍히는 붓결·잉크 질감의 투명 상태 도장.
