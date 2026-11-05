@@ -343,10 +343,10 @@ func test_every_tool_has_a_payout_table_for_the_augment_card() -> void:
 		var line: String = ToolRegistry.table_line(tool_id)
 		check(ToolRegistry.TABLES.has(tool_id) and line.begins_with("• "), "%s 족보표가 있다" % tool_id)
 		check(line.contains("칸") or line.contains("1~6") or line.contains("1~10") or line.contains("("), "%s 표에 구체적인 칸수가 적혀 있다" % tool_id)
-	check_eq(ToolRegistry.table_line(&"HOLDEM"), "• 전진 1~15칸 · 족보표: 노페어(1) / 원페어(3) / 투페어(5) / 트리플(7) / 스트레이트(10) / 플러시+(15칸)", "홀덤 표")
-	check_eq(ToolRegistry.table_line(&"DICE_YACHT"), "• 전진 1~12칸 · 족보표: 찬스(1~3) / 트리플(5) / 풀하·4연속(7) / 포카드·5연속(9) / ★야추(12칸+한번더)", "야추 표")
-	check_eq(ToolRegistry.table_line(&"DICE_BLACKJACK"), "• 전진 0~11칸 · 족보표: 11~20 스탠드 시 (합계-10)칸 / ★21 달성(11칸+한번더) / 22↑ 버스트(0칸)", "블랙잭 표")
-	check_eq(ToolRegistry.table_line(&"SLOT_777"), "• 전진 1~20칸 · 족보표: 꽝(1) / 2일치(4) / 3일치(8) / ★777 잭팟(20칸!)", "슬롯 표")
+	check_eq(ToolRegistry.table_line(&"HOLDEM"), "• 족보표: 노페어(1) / 원페어(3) / 투페어(5) / 트리플(7) / 스트레이트(10) / 플러시+(15칸)", "홀덤 표")
+	check_eq(ToolRegistry.table_line(&"DICE_YACHT"), "• 족보표: 찬스(1~3) / 트리플(5) / 풀하·4연속(7) / 포카드·5연속(9) / ★야추(12칸+한번더)", "야추 표")
+	check_eq(ToolRegistry.table_line(&"DICE_BLACKJACK"), "• 족보표: 11~20 스탠드 시 (합계-10)칸 / ★21 달성(11칸+한번더) / 22↑ 버스트(0칸)", "블랙잭 표")
+	check_eq(ToolRegistry.table_line(&"SLOT_777"), "• 족보표: 꽝(1) / 2일치(4) / 3일치(8) / ★777 잭팟(20칸!)", "슬롯 표")
 
 
 func test_tool_swap_augment_description_lists_the_table() -> void:
@@ -400,3 +400,12 @@ func test_robber_danger_preview_covers_up_to_three_tiles() -> void:
 	own.current_tile_idx = 11
 	check_eq(robber.danger_preview(state)["catch_tiles"], [11] as Array[int], "소환한 사람의 말은 건너뛰고 같은 칸의 적을 덮친다")
 	check_eq(float(robber.danger_preview(state)["chance"]), 1.0, "바로 앞 칸 적은 반드시 잡힌다")
+
+
+## 2026-11-05: 증강 카드의 [최소 N칸 ~ 최대 M칸] 요약은 dice_table의 min_step·max_step에서 온다: 모든 판정 도구에 있어야 한다 (신규 주식 차트·다트가 비어 있었다).
+func test_every_tool_shows_a_step_range_on_its_augment_card() -> void:
+	for tool_id: StringName in ToolRegistry.TABLES.keys():
+		var span: Array[int] = AugmentDef.tool_step_range(tool_id)
+		check(span.size() == 2 and span[0] >= 1 and span[1] >= span[0], "%s: 최소~최대 칸 수가 있다 %s" % [tool_id, str(span)])
+	check_eq(AugmentDef.tool_step_range(&"DICE_STOCK"), int_array([1, 20]), "주식 차트 1~20칸 (주가 최소 1, 상한가 20)")
+	check_eq(AugmentDef.tool_step_range(&"DICE_DARTS"), int_array([1, 18]), "다트 1~18칸 (숫자 1 ~ 6×트리플)")

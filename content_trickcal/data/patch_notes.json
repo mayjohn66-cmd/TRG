@@ -253,6 +253,11 @@
        "ko": "프로필의 말 칸에서 완주와 출전이 비슷해 보이던 것(특히 노란색 플레이어)을, 완주한 말은 어두운 바탕·금테·별 표시로 확실히 구분되게 개선",
        "en": "Finished and in-play pawn slots looked alike on profiles (especially for the yellow player); finished pawns now use a dark fill, gold frame and a star",
        "ja": "プロフィールの駒枠で完走と出撃が似て見えた問題（特に黄色のプレイヤー）を、完走した駒は暗い背景・金枠・星マークで見分けやすく改善"
+      },
+      {
+       "ko": "엘리아스 주식 차트와 불스아이 다트 보드 카드에도 다른 도구처럼 [최소 ~ 최대 몇 칸]이 보이게 개선",
+       "en": "Elias Stock Chart and Bullseye Dartboard cards now show their minimum~maximum spaces like the other tools",
+       "ja": "エリアス株チャートとブルズアイダーツのカードにも、他のツールと同じく［最小〜最大マス］が表示されるよう改善"
       }
      ]
     },
