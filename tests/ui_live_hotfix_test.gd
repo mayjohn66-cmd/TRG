@@ -126,23 +126,36 @@ func _run() -> void:
 			_board._close_zoom();await settle()
 	L10n.set_language(old_language)
 	MobileSupport.force_touch=false
-	# 순위 도장: 졸업한 플레이어의 프로필에 1ST/2ND 도장 + 깃발 (흰색=일반 승리, 붉은색=특수 승리)
-	var stamp_ids:Array=_board.state.player_ids.filter(func(id:int)->bool:return id!=_board.local_player_id)  # 내 프로필은 숨겨져 있어 다른 사람의 프로필로 본다
-	_expect(_board._profiles[stamp_ids[0]]["avatar"].get_node_or_null("RankStamp")==null,"no rank stamp before anyone is ranked")
+	# 순위 도장: 졸업한 프로필에 노란 순위와 승리 방식에 따른 테두리를 표시한다.
+	var stamp_ids: Array = _board.state.player_ids.filter(func(id: int) -> bool: return id != _board.local_player_id)
+	stamp_ids.append(_board.local_player_id) # 내 도장은 숨겨진 프로필 대신 기물 독에 표시한다.
+	var first_panel: Control = _board._profiles[stamp_ids[0]]["panel"]
+	var second_panel: Control = _board._profiles[stamp_ids[1]]["panel"]
+	var unranked_panel: Control = _board._profiles[stamp_ids[2]]["panel"]
+	_expect(first_panel.get_node_or_null("RankStamp")==null,"no rank stamp before anyone is ranked")
 	_board.state.rankings.append(stamp_ids[0]);_board.state.rank_reasons[stamp_ids[0]]=VictoryChecker.ALL_HOME
 	_board.state.rankings.append(stamp_ids[1]);_board.state.rank_reasons[stamp_ids[1]]=&"LAW_01"
 	_board._refresh_all();await settle()
 	await screenshot("rank-stamps")
-	var first_stamp: Variant=_board._profiles[stamp_ids[0]]["avatar"].get_node_or_null("RankStamp")
-	var second_stamp: Variant=_board._profiles[stamp_ids[1]]["avatar"].get_node_or_null("RankStamp")
-	_expect(first_stamp!=null and first_stamp.label_text=="1ST" and not first_stamp.special,"일반 완주 1위는 흰 깃발 1ST 도장")
-	_expect(second_stamp!=null and second_stamp.label_text=="2ND" and second_stamp.special,"법전(특수 승리) 2위는 붉은 깃발 2ND 도장")
-	_expect(_board._profiles[stamp_ids[2]]["avatar"].get_node_or_null("RankStamp")==null,"아직 순위가 없는 플레이어에게는 도장이 없다")
-	_expect(first_stamp!=null and _board._profiles[stamp_ids[0]]["avatar"].get_global_rect().grow(2.0).encloses(first_stamp.get_global_rect()) and first_stamp.size.x<=_board._profiles[stamp_ids[0]]["avatar"].size.x+1.0,"도장이 프로필 그림 안에 있다")
+	var first_stamp: Variant=first_panel.get_node_or_null("RankStamp")
+	var second_stamp: Variant=second_panel.get_node_or_null("RankStamp")
+	_expect(first_stamp!=null and first_stamp._rank_art.resource_path.ends_with("/1ST.png") and first_stamp._border_art.resource_path.ends_with("/border-normal.png"),"일반 완주 1위는 흰 테두리 1ST 도장")
+	_expect(second_stamp!=null and second_stamp._rank_art.resource_path.ends_with("/2ND.png") and second_stamp._border_art.resource_path.ends_with("/border-special.png"),"법전 특수 승리 2위는 붉은 테두리 2ND 도장")
+	_expect(unranked_panel.get_node_or_null("RankStamp")==null,"아직 순위가 없는 플레이어에게는 도장이 없다")
+	_expect(first_stamp is Node2D and first_stamp.get_parent()==first_panel and first_stamp.position.is_zero_approx(),"도장 레이어가 프로필 카드 전체의 좌표를 사용한다")
 	_board._refresh_all();await settle()
-	_expect(_board._profiles[stamp_ids[0]]["avatar"].find_children("RankStamp","",true,false).size()==1,"갱신해도 도장이 겹쳐 쌓이지 않는다")
+	_expect(first_panel.get_node_or_null("RankStamp")==first_stamp,"갱신해도 도장이 겹쳐 쌓이지 않는다")
+	for index: int in range(2, 4):
+		var seat: int = stamp_ids[index]
+		_board.state.rankings.append(seat)
+		var panel: Control = _board._pawn_bar if seat == _board.local_player_id else _board._profiles[seat]["panel"]
+		_board._refresh_status_stamps(seat)
+		var stamp: Variant = panel.get_node_or_null("RankStamp")
+		var expected := "3RD.png" if index == 2 else "4TH.png"
+		_expect(stamp!=null and stamp._rank_art.resource_path.ends_with("/" + expected),"순위에 맞는 이미지 %s" % expected)
 	_board.state.rankings.clear();_board.state.rank_reasons.clear();_board._refresh_all();await settle()
-	_expect(_board._profiles[stamp_ids[0]]["avatar"].get_node_or_null("RankStamp")==null,"순위가 없으면 도장이 사라진다")
+	_expect(first_panel.get_node_or_null("RankStamp")==null,"순위가 없으면 도장이 사라진다")
+	_expect(_board._pawn_bar.get_node_or_null("RankStamp")==null,"순위가 없으면 내 기물 독 도장도 사라진다")
 	# 법전 책: 새 교칙이 제정되면 중앙에 펼친 책으로 그림·이름·승리 조건을 보여 준다.
 	for language: String in ["ko","en","ja"]:
 		L10n.set_language(language)

@@ -83,7 +83,7 @@ func _run() -> void:
 	# 내 순위 도장은 기물 독에 찍힌다 (내 프로필이 숨겨져 있어서)
 	_board.state.rankings.append(me);_board.state.rank_reasons[me]=&"LAW_01";_board._refresh_all();await settle()
 	var mine_stamp: Variant=_board._pawn_bar.get_node_or_null("RankStamp")
-	_expect(mine_stamp!=null and mine_stamp.label_text=="1ST" and mine_stamp.special,"내 순위 도장(붉은 깃발 1ST)은 기물 독에 찍힌다")
+	_expect(mine_stamp!=null and mine_stamp._rank_art.resource_path.ends_with("/1ST.png") and mine_stamp._border_art.resource_path.ends_with("/border-special.png"),"내 순위 도장(붉은 테두리 1ST)은 기물 독에 찍힌다")
 	_board.state.rankings.clear();_board.state.rank_reasons.clear();_board._refresh_all();await settle()
 	# 내 증강 버튼은 로그 머리에
 	var aug_button:=_board._action_log.find_child("MyAugmentsButton",true,false) as Button

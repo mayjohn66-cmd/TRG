@@ -64,6 +64,7 @@ const CARD_SIZE: Vector2 = Vector2(80, 110)
 const PROFILE_SIZE: Vector2 = Vector2(230, 112)
 ## 현재 턴이 아닌 프로필은 이 색으로 가라앉고, 현재 턴 프로필은 환하게 밝아진다 (스포트라이트).
 const PROFILE_DIM: Color = Color(0.42, 0.42, 0.45, 0.85)
+const PROFILE_RANKED: Color = Color(0.86, 0.86, 0.88, 0.98)
 const PROFILE_LIT: Color = Color(1.1, 1.1, 1.1, 1.0)
 const PAWN_SLOT_SIZE: float = 38.0
 ## 좌석 앵커(네 모서리): me=나(우하단, 크게) / right=다음 순서(우상단) / top=맞은편(좌하단) / left=이전 순서(좌상단).
@@ -4232,7 +4233,7 @@ func _refresh_players() -> void:
 		_refresh_hand_pips(player_id)
 		_refresh_pawn_slots(player_id)
 		var panel: PanelContainer = card["panel"]
-		# 스포트라이트: 현재 턴 플레이어만 환하게 밝고 살짝 커지며 외곽 광채가 켜지고, 나머지는 어둡게 가라앉는다.
+		# 현재 턴을 강조하되 순위가 확정된 프로필은 도장 테두리 색을 읽을 수 있게 밝기를 남긴다.
 		var is_turn: bool = player_id == _shown_turn_player() and not manager.is_game_over
 		var game_over: bool = manager.is_game_over
 		var margin: int = 8
@@ -4243,7 +4244,10 @@ func _refresh_players() -> void:
 				panel.add_theme_stylebox_override("panel", _style(Color("273049"), Color("fff3bf"), 4, 14, 26, margin))
 			else:
 				panel.add_theme_stylebox_override("panel", _style(COLOR_PANEL, color.darkened(0.35), 2, 14, 4, margin))
-		_set_profile_light(panel, PROFILE_LIT if (is_turn or game_over) else PROFILE_DIM, Vector2(1.05, 1.05) if is_turn else Vector2.ONE)
+		var profile_light := PROFILE_RANKED if rank > 0 else PROFILE_DIM
+		if is_turn or game_over:
+			profile_light = PROFILE_LIT
+		_set_profile_light(panel, profile_light, Vector2(1.05, 1.05) if is_turn else Vector2.ONE)
 		_refresh_status_stamps(player_id)
 
 
@@ -4276,8 +4280,9 @@ func _on_utility_picked(player_id: int, augment_id: StringName) -> void:
 func _refresh_status_stamps(player_id: int) -> void:
 	var host: Control = _profiles[player_id]["avatar"]
 	_refresh_revive_mark(host, player_id)
-	# 내 프로필은 숨겼으므로 내 순위 도장은 기물 독(중앙 하단)에 찍는다.
-	_refresh_rank_stamp(_pawn_bar if player_id == local_player_id and _pawn_bar != null else host, player_id)
+	# 내 순위는 기물 독에, 다른 플레이어의 순위는 프로필 카드 전체에 찍는다.
+	var rank_host: Control = _pawn_bar if player_id == local_player_id and _pawn_bar != null else _profiles[player_id]["panel"]
+	_refresh_rank_stamp(rank_host, player_id)
 	var wanted: Dictionary = {&"skip": bool(state.rest_next_turn.get(player_id, false)) and not state.is_graduated(player_id), &"ban": state.is_banned(player_id) and not state.is_graduated(player_id)}
 	for kind: StringName in [&"skip", &"ban"]:
 		var node_name: String = "Stamp_%s" % kind
@@ -4301,15 +4306,12 @@ func _refresh_status_stamps(player_id: int) -> void:
 			stamp.slam_in(self)
 
 
-## 순위가 확정된(졸업한) 플레이어의 프로필 그림 위에 1ST·2ND·3RD 도장을 깃발과 함께 찍어 둔다.
-## 흰 깃발 = 일반 승리(완주 등), 붉은 깃발 = 특수 승리(법전). 순위 때문에 이긴 방식을 프로필만 봐도 알 수 있게 한다.
-const RANK_ORDINALS: Array[String] = ["", "1ST", "2ND", "3RD", "4TH"]
-func rank_stamp_text(rank: int) -> String:
-	return RANK_ORDINALS[rank] if rank > 0 and rank < RANK_ORDINALS.size() else "%dTH" % rank
+## 순위가 확정되면 프로필 카드 전체에 노란 순위 도장을 찍는다.
+## 흰색 테두리는 일반 승리, 붉은색 테두리는 법전 특수 승리를 뜻한다.
 func _refresh_rank_stamp(host: Control, player_id: int) -> void:
 	var stamp: RankStamp = host.get_node_or_null("RankStamp") as RankStamp
 	var rank: int = state.rankings.find(player_id) + 1 if state != null else 0
-	if rank <= 0:
+	if rank <= 0 or rank > RankStamp.NUMERALS.size():
 		if stamp != null:
 			stamp.queue_free()
 			host.remove_child(stamp)
@@ -4325,12 +4327,9 @@ func _refresh_rank_stamp(host: Control, player_id: int) -> void:
 	stamp.name = "RankStamp"
 	stamp.rank = rank
 	stamp.special = special
-	stamp.label_text = rank_stamp_text(rank)
-	stamp.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	stamp.set_anchors_preset(Control.PRESET_FULL_RECT)
 	host.add_child(stamp)
 	if fresh and _fx_on() and not instant_roll_for_test:
-		stamp.slam_in(self)
+		stamp.slam_in()
 
 
 ## [범용] 다이스: 리바이브가 장전돼 있으면 프로필 그림 아래에 [리바이브] 표시 (쓰면 사라진다).
@@ -11332,40 +11331,25 @@ func _announce_law_added(new_law: LawResource, removed_law: LawResource) -> void
 	var body: String = ""
 	if removed_law != null:
 		body = "(가장 오래된 %s이(가) 밀려났습니다)" % removed_law.law_name
-	_announce("법전 개정", "법전 개정!", body, COLOR_GOLD, _make_law_book(new_law), 3.4, true, {"key": "law_added", "extra_below": true})
+	_announce("법전 개정", "법전 개정!", body, COLOR_GOLD, _make_law_book(new_law), 3.4, true, {"key": "law_added", "extra_below": true, "cinematic": true})
 
 
 ## 펼친 법전: 왼쪽 쪽에는 교칙 그림, 오른쪽 쪽에는 새 교칙 이름·승리 조건, 아래 띠에는 지금 법전에 실린 교칙들이 적힌다.
 func _make_law_book(new_law: LawResource) -> Control:
-	var book := VBoxContainer.new()
-	book.name = "LawBook"
-	book.add_theme_constant_override("separation", 6)
-	book.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var cover := PanelContainer.new()
-	cover.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	cover.add_theme_stylebox_override("panel", _style(Color("5a3b1e"), Color("2e1b0a"), 4, 12, 10, 10))
-	book.add_child(cover)
-	var spread := HBoxContainer.new()
-	spread.add_theme_constant_override("separation", 6)
-	spread.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	cover.add_child(spread)
-	var page_style: StyleBoxFlat = _style(Color("f3e6c4"), Color("c8ae78"), 2, 6, 8, 10)
+	var book := preload("res://scenes/law_book_view.gd").new()
 	# 왼쪽 쪽: 그림 + 이 교칙이 어떤 종류인지
-	var left := PanelContainer.new()
-	left.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	left.add_theme_stylebox_override("panel", page_style)
-	spread.add_child(left)
 	var left_box := VBoxContainer.new()
-	left_box.add_theme_constant_override("separation", 4)
+	left_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	left_box.add_theme_constant_override("separation", 7)
 	left_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	left.add_child(left_box)
 	var art_path: String = "res://content_trickcal/illustrations/laws/%s.png" % new_law.law_id
 	if ResourceLoader.exists(art_path):
 		var art := TextureRect.new()
+		art.name = "LawIllustration"
 		art.texture = TextureCache.fetch(art_path)
 		art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		art.custom_minimum_size = Vector2(180, 180)
+		art.custom_minimum_size = Vector2(0, 154)
 		art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		left_box.add_child(art)
 	var kind: String = "특수 승리" if VictoryLaw.is_victory_id(new_law.law_id) else "교칙"
@@ -11374,27 +11358,23 @@ func _make_law_book(new_law: LawResource) -> Control:
 	kind_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	left_box.add_child(kind_label)
 	# 오른쪽 쪽: 이름 + 설명
-	var right := PanelContainer.new()
-	right.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	right.add_theme_stylebox_override("panel", page_style)
-	spread.add_child(right)
 	var right_box := VBoxContainer.new()
+	right_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	right_box.add_theme_constant_override("separation", 6)
 	right_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	right.add_child(right_box)
 	var new_tag := _make_label("NEW", 13, Color("ffffff"))
 	new_tag.add_theme_stylebox_override("normal", _style(Color("c92a2a"), Color("7a1212"), 1, 6, 0, 2))
 	new_tag.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 	new_tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	right_box.add_child(new_tag)
-	var title := _make_label(new_law.law_name, 22, Color("3b2a00"))
+	var title := _make_label(new_law.law_name, 23, Color("3b2a00"))
+	title.name = "LawTitle"
 	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	title.custom_minimum_size.x = 250
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	right_box.add_child(title)
-	var description := _make_label(new_law.description, 15, Color("4a3418"))
+	var description := _make_label(new_law.description, 20, Color("4a3418"))
+	description.name = "LawCondition"
 	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	description.custom_minimum_size.x = 250
 	description.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	right_box.add_child(description)
 	# 아래 띠: 지금 법전에 실린 교칙들 (새 교칙은 금색)
@@ -11402,15 +11382,14 @@ func _make_law_book(new_law: LawResource) -> Control:
 	strip.add_theme_constant_override("h_separation", 6)
 	strip.add_theme_constant_override("v_separation", 4)
 	strip.alignment = FlowContainer.ALIGNMENT_CENTER
-	strip.custom_minimum_size.x = 470
 	strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for law: LawResource in state.rulebook.active_laws_queue:
-		var is_new: bool = law == new_law
+		var is_new: bool = law.law_id == new_law.law_id
 		var chip := _make_label(law.law_name, 13, Color("3b2a00") if is_new else Color("adb5bd"))
 		chip.add_theme_stylebox_override("normal", _style(COLOR_GOLD if is_new else Color("1b2030"), Color("fff3bf") if is_new else Color("3b4252"), 1, 6, 0, 3))
 		chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		strip.add_child(chip)
-	book.add_child(strip)
+	book.setup(left_box, right_box, strip, _fx_on())
 	return book
 
 
@@ -13239,62 +13218,66 @@ class BoardStructure extends Node2D:
 			draw_polyline(points, edge, 1.2, true)
 
 
-## 프로필 그림 오른쪽 아래에 붙는 순위 도장: 어두운 알약 안에 깃발(흰색=일반 승리, 붉은색=특수 승리) + 1ST/2ND/3RD.
-class RankStamp extends Control:
+## 프로필 카드에 같은 크기의 테두리와 순위 잉크 레이어를 찍는다.
+class RankStamp extends Node2D:
+	const ART_DIR := "res://content_trickcal/illustrations/effects/profile_stamps/rank/"
+	const NORMAL_RIM: Texture2D = preload(ART_DIR + "border-normal.png")
+	const SPECIAL_RIM: Texture2D = preload(ART_DIR + "border-special.png")
+	# The outer transparent margin is part of all six aligned images.
+	const INK_HEIGHT_RATIO := 0.82
+	const NUMERALS: Array[Texture2D] = [
+		preload(ART_DIR + "1ST.png"), preload(ART_DIR + "2ND.png"),
+		preload(ART_DIR + "3RD.png"), preload(ART_DIR + "4TH.png"),
+	]
+
 	var rank: int = 1
 	var special: bool = false
-	var label_text: String = "1ST"
-	const HEIGHT := 26.0
+	var _imprint := 1.0
+	var _impact := 1.0
+	var _border_art: Texture2D
+	var _rank_art: Texture2D
+	var _backdrop := StyleBoxFlat.new()
 
 	func _ready() -> void:
 		z_index = 4
-		resized.connect(_fit)
-		_fit()
+		_border_art = SPECIAL_RIM if special else NORMAL_RIM
+		_rank_art = NUMERALS[rank - 1]
+		_backdrop.bg_color = Color(0.02, 0.025, 0.04, 0.66)
+		_backdrop.set_corner_radius_all(11)
+		(get_parent() as Control).resized.connect(queue_redraw)
 
-	## 아바타 칸 전체를 덮는 투명 판을 두고 그 오른쪽 아래에만 알약을 그린다 (칸이 컨테이너여도 크기가 늘어나지 않게).
-	func _pill_rect() -> Rect2:
-		var text_w: float = ThemeDB.fallback_font.get_string_size(label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 15).x
-		var pill := Vector2(HEIGHT + text_w + 12.0, HEIGHT)
-		pill.x = minf(pill.x, maxf(size.x - 4.0, 20.0))
-		return Rect2(size - pill - Vector2(2, 2), pill)
+	func slam_in() -> void:
+		_set_imprint(0.0)
+		var tween := create_tween()
+		tween.tween_method(_set_imprint, 0.0, 1.0, 0.18).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+		tween.tween_callback(func() -> void: Sfx.play(&"slam", -4.0))
+		tween.tween_method(_set_impact, 0.0, 1.0, 0.12)
 
-	func _fit() -> void:
-		pivot_offset = _pill_rect().get_center()
+	func _set_imprint(value: float) -> void:
+		_imprint = value
+		modulate.a = smoothstep(0.0, 0.42, value)
 		queue_redraw()
 
-	func slam_in(board: MainBoard) -> void:
-		scale = Vector2(2.4, 2.4)
-		modulate.a = 0.0
-		var tween: Tween = create_tween().set_parallel(true)
-		tween.tween_property(self, "scale", Vector2.ONE, 0.2).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
-		tween.tween_property(self, "modulate:a", 1.0, 0.12)
-		tween.chain().tween_callback(func() -> void:
-			Sfx.play(&"slam", -4.0)
-			board.screen_shake(3.0, 0.12))
+	func _set_impact(value: float) -> void:
+		_impact = value
+		queue_redraw()
 
 	func _draw() -> void:
-		var tint: Color = Color("ff6b6b") if special else Color("f8f9fa")
-		var box: Rect2 = _pill_rect()
-		draw_style_box(_pill(tint), box)
-		# 깃대 + 깃발
-		var origin: Vector2 = box.position
-		var pole_x: float = origin.x + 8.0
-		draw_line(Vector2(pole_x, origin.y + 4.0), Vector2(pole_x, origin.y + HEIGHT - 4.0), Color("adb5bd"), 2.0)
-		var flag := PackedVector2Array([Vector2(pole_x + 1.0, origin.y + 4.0), Vector2(pole_x + 14.0, origin.y + 8.0), Vector2(pole_x + 1.0, origin.y + 13.0)])
-		draw_colored_polygon(flag, Color("e03131") if special else Color("ffffff"))
-		draw_polyline(PackedVector2Array([flag[0], flag[1], flag[2], flag[0]]), Color("3b0d0d") if special else Color("495057"), 1.0, true)
-		var font: Font = ThemeDB.fallback_font
-		var at := Vector2(origin.x + HEIGHT, origin.y + HEIGHT - 7.0)
-		draw_string_outline(font, at, label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, 3, Color("0d1018"))
-		draw_string(font, at, label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("ffe066") if rank == 1 else tint)
-
-	func _pill(border: Color) -> StyleBoxFlat:
-		var box := StyleBoxFlat.new()
-		box.bg_color = Color(0.05, 0.06, 0.09, 0.92)
-		box.border_color = border
-		box.set_border_width_all(2)
-		box.set_corner_radius_all(8)
-		return box
+		var card_size := (get_parent() as Control).size
+		if card_size.x <= 0.0 or card_size.y <= 0.0 or _imprint <= 0.0:
+			return
+		# Darken the card under the stamp while leaving its seat border visible.
+		draw_style_box(_backdrop, Rect2(Vector2.ZERO, card_size).grow(-3.0))
+		var canvas := _border_art.get_size()
+		var bounds := canvas * minf(card_size.x / canvas.x, card_size.y / (canvas.y * INK_HEIGHT_RATIO))
+		var approach := 1.0 - _imprint
+		var squash := sin(PI * _impact)
+		var press := Vector2(1.0 + 0.05 * squash, 1.0 - 0.08 * squash)
+		bounds *= press * (1.0 + 0.62 * approach)
+		var center := card_size * 0.5 + Vector2(0, -10.0 * approach)
+		var target := Rect2(center - bounds * 0.5, bounds)
+		draw_texture_rect(_border_art, target, false)
+		draw_texture_rect(_rank_art, target, false)
 
 
 ## 프로필 위에 찍히는 붓결·잉크 질감의 투명 상태 도장.
