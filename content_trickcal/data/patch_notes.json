@@ -327,6 +327,11 @@
        "ko": "모바일에서 방해령 카드를 눌렀을 때 [사용하기] 버튼이 화면 밖으로 밀려 가려지던 문제",
        "en": "On mobile, the [Use] button was pushed off-screen when tapping a Meddling Spirit card",
        "ja": "モバイルで妨害霊カードをタップすると［使用する］ボタンが画面外に押し出されて隠れる問題"
+      },
+      {
+       "ko": "리볼버에 강화 망치를 쓰면 강화 창과 리볼버 화면이 겹쳐 보이던 문제",
+       "en": "The enhancement window overlapped the revolver screen when using the Enhancement Hammer with the revolver",
+       "ja": "リボルバーに強化ハンマーを使うと、強化ウィンドウとリボルバー画面が重なる問題"
       }
      ]
     }

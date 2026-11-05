@@ -83,6 +83,35 @@ func _run() -> void:
 	_expect(not panel.visible and int(state.hammer_bonus.get(me, 0)) == 1, "[멈추기] → +1 확정, 판이 사라진다")
 	state.hammer_bonus.erase(me)
 
+	# 3-1) 2026-11-05 제보: 리볼버에 강화를 쓰면 강화 창과 리볼버 패드(발사·정지 버튼)가 겹쳤다.
+	# 강화 창이 떠 있는 동안에는 어떤 도구든 굴림 위젯(패드·굴리기 버튼·야추/블랙잭/핀볼 판)이 그 위에 뜨지 않고, 멈추면 다시 나온다.
+	for tool_id: StringName in [&"REVOLVER", &"LIFE_ROULETTE", &"DICE_YACHT", &"DICE_BLACKJACK", &"DICE_PINBALL", &"DICE_DARTS", &"D6"]:
+		_board._reset_presentation()
+		_board._announcer.cancel()
+		state.hammer_pending.erase(me)
+		state.hammer_bonus.erase(me)
+		manager._card_played_this_turn = false
+		state.tools[me] = ToolRegistry.create(tool_id)
+		state.hands[me] = [&"ACT_17"]
+		manager.change_state(TurnManager.State.PHASE_TURN_BEGIN)
+		quiet()
+		_board._refresh_all()
+		await settle(8)
+		manager.act(&"play_card", {"player_id": me, "card_id": &"ACT_17"})
+		_board._announcer.cancel()
+		_board._refresh_all()
+		await settle(8)
+		var stage_up: bool = _board._stage_yacht.visible or _board._stage_blackjack.visible or _board._stage_pinball.visible
+		_expect(_board._hammer_panel.visible, "강화 창이 떠 있다: %s" % tool_id)
+		_expect(not _board._roll_pad.visible and not _board._gun_row.visible and not _board._roll_button.visible and not stage_up, "강화 창 위에 굴림 위젯이 겹치지 않는다: %s (pad %s, gun %s, button %s, stage %s)" % [tool_id, _board._roll_pad.visible, _board._gun_row.visible, _board._roll_button.visible, stage_up])
+	state.tools[me] = ToolRegistry.create(&"REVOLVER")
+	(_board._hammer_panel.find_child("HammerStop", true, false) as Button).pressed.emit()
+	await settle(8)
+	_board._refresh_all()
+	await settle(8)
+	_expect(not _board._hammer_panel.visible and _board._roll_pad.visible and _board._gun_row.visible, "강화를 멈추면 리볼버 패드가 다시 나온다")
+	state.hammer_bonus.erase(me)
+
 	# 4) 현상금 WANTED 표식 / 멜론 크기 / 오이 카드 손패
 	var enemy: int = manager.player_order[(manager.player_order.find(me) + 1) % manager.player_order.size()]
 	var target: PlayerPawn = state.pawns_of(enemy)[0]

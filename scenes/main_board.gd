@@ -7022,8 +7022,14 @@ func _roll_mode_for(tool: BaseJudgmentTool) -> StringName:
 ## 굴리기 화면(굴리기 버튼·룰렛/리볼버 패드·야추/블랙잭/핀볼 스테이지)을 띄워도 되는가.
 ## 앞선 연출이 하나라도 남아 있으면(라운드·차례 배너, 연출 큐, 처치 컷인, 오프닝·드래프트·확인 창) 띄우지 않는다.
 ## 카드를 끌거나 칸을 고르는 중, 필살기를 겨누는 중에도 화면을 끄고 그 연출을 보여 준다 (끝나면 다시 뜬다).
+## 강화 망치의 [더 강화! / 멈추기] 창이 떠 있는 동안인가: 이 창이 보드 한가운데를 쓰므로 굴림 위젯(리볼버·룰렛 패드, 굴리기 버튼, 야추·블랙잭·핀볼 판)은 그 위에 겹쳐 뜨지 않는다.
+func _hammer_choice_open() -> bool:
+	return manager != null and state != null and manager.hammer_pending(manager.current_player_id()) and not manager.is_game_over
+
+
 func _roll_view_allowed() -> bool:
 	if _choice_overlay!=null or _result_overlay!=null or _zoom_view!=null:return false
+	if _hammer_choice_open():return false  # 2026-11-05 제보: 리볼버에 강화를 쓰면 강화 창과 리볼버 패드가 겹쳤다
 	if manager.is_game_over or not (manager.current_state == TurnManager.State.PHASE_TURN_BEGIN or manager.current_state == TurnManager.State.PHASE_ROLL_WAIT):
 		return false
 	if _intro_blocks() or _turn_banner_pending() or (_announcer != null and _announcer.holding()):
@@ -7087,6 +7093,9 @@ func _refresh_roll_pad() -> void:
 	_roll_button.visible = wanted == RollPad.Kind.NONE and roll_phase and mode != &"stage"
 	# 리볼버가 '준비' 중이라 active여도, 막는 중앙 알림(카드·공격·방어 도장)이 떠 있는 동안에는 숨긴다 (도장 밑에 총이 비치지 않게). 쏘는 중에는 그대로.
 	var pad_busy: bool = _roll_pad.active and not (_roll_pad.preparing and ((_announcer != null and _announcer.holding()) or _presentation_active()))
+	if _hammer_choice_open() and not _fx_busy:
+		pad_busy = false  # 이미 장전돼 있던 리볼버·돌고 있던 룰렛도 강화 창이 떠 있는 동안에는 가린다
+		own_fx = false
 	if wanted != RollPad.Kind.NONE:
 		_roll_pad.visible = roll_phase or own_fx or pad_busy
 	_gun_row.visible = wanted == RollPad.Kind.REVOLVER and (roll_phase or own_fx or pad_busy)
