@@ -74,7 +74,7 @@ func _check_screens() -> void:
 		_expect(board._pawn_views.size() == _seats.size() * 4, "말 그림도 인원 x 4")
 		for seat: int in MainBoard.PLAYER_IDS:
 			var panel: Control = board._profiles[seat]["panel"]
-			_expect(panel.visible == _seats.has(seat), "자리 %d 프로필 표시 여부 (보임=%s)" % [seat, str(panel.visible)])
+			_expect(panel.visible == (_seats.has(seat) and seat != board.local_player_id), "자리 %d 프로필 표시 여부 (보임=%s, 내 프로필은 숨김)" % [seat, str(panel.visible)])
 		_expect(board.seat_anchor_of(board.local_player_id) == MainBoard.SEAT_ME, "내 자리는 우하단")
 		if _seats.size() == 2:
 			for seat: int in _seats:

@@ -268,6 +268,11 @@
        "ko": "엘리아스 주식 차트와 불스아이 다트 보드 카드에도 다른 도구처럼 [최소 ~ 최대 몇 칸]이 보이게 개선",
        "en": "Elias Stock Chart and Bullseye Dartboard cards now show their minimum~maximum spaces like the other tools",
        "ja": "エリアス株チャートとブルズアイダーツのカードにも、他のツールと同じく［最小〜最大マス］が表示されるよう改善"
+      },
+      {
+       "ko": "하단 화면을 정리: 우측 하단 프로필을 없애고 기물 조작을 중앙 하단으로, 카드는 우측 하단에 작게 모아 두었다가 눌러서 펼쳐 보도록 변경 (보유 증강은 로그 머리의 [내 증강] 버튼에서 확인)",
+       "en": "Bottom screen tidied up: the lower-right profile is gone, piece controls moved to the bottom center, and cards are stacked small at the lower right and open when tapped (check your augments with the [My Augments] button on the log header)",
+       "ja": "画面下部を整理：右下のプロフィールを廃止し、駒の操作を中央下へ、カードは右下に小さくまとめてタップで開く方式に変更（所持オーグメントはログ上部の［所持オーグメント］ボタンで確認）"
       }
      ]
     },

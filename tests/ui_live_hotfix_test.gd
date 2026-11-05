@@ -86,6 +86,7 @@ func _run() -> void:
 	_board.manager.change_state(TurnManager.State.PHASE_TURN_BEGIN);quiet();_board._refresh_all()
 	var held:=(_board.state.hands[player] as Array).duplicate()
 	await settle()
+	_board._set_hand_open(true);await settle()  # 손패는 평소 접혀 있다: 눌러 펼친 뒤 카드를 누른다
 	var hand_views:=_board._dock.get_children().filter(func(node: Node) -> bool:return node is PanelContainer and node.has_meta("home_y"))
 	await click_control(hand_views[0] as Control);await settle()
 	_expect(_board.state.hands[player]==held,"first touch is read-only")
@@ -126,7 +127,7 @@ func _run() -> void:
 	L10n.set_language(old_language)
 	MobileSupport.force_touch=false
 	# 순위 도장: 졸업한 플레이어의 프로필에 1ST/2ND 도장 + 깃발 (흰색=일반 승리, 붉은색=특수 승리)
-	var stamp_ids:Array=_board.state.player_ids
+	var stamp_ids:Array=_board.state.player_ids.filter(func(id:int)->bool:return id!=_board.local_player_id)  # 내 프로필은 숨겨져 있어 다른 사람의 프로필로 본다
 	_expect(_board._profiles[stamp_ids[0]]["avatar"].get_node_or_null("RankStamp")==null,"no rank stamp before anyone is ranked")
 	_board.state.rankings.append(stamp_ids[0]);_board.state.rank_reasons[stamp_ids[0]]=VictoryChecker.ALL_HOME
 	_board.state.rankings.append(stamp_ids[1]);_board.state.rank_reasons[stamp_ids[1]]=&"LAW_01"

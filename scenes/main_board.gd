@@ -87,6 +87,11 @@ const DOCK_CARD_Y: float = 6.0
 ## 손패 카드는 한 장 전체 일러스트(140x196)가 따로 있고, 화면 아래로 반쯤 가려진 채 부채꼴로 펼쳐진다. 호버하면 전체가 올라와 보인다.
 const HAND_CARD_SIZE: Vector2 = Vector2(140, 196)
 const HAND_FAN_DEGREES: float = 5.0
+## 접힌 손패: 우측 하단에 작은 카드(풀 카드의 50%)를 일렬로 겹쳐 놓는다. 누르면 부채꼴로 펼쳐진다.
+const HAND_MINI_SCALE: float = 0.5
+const HAND_MINI_SIZE: Vector2 = Vector2(70, 98)
+const HAND_STACK_POS: Vector2 = Vector2(1000, 664)
+const HAND_STACK_SIZE: Vector2 = Vector2(352, 100)
 ## 피해 되돌리기 팝업이 자동으로 넘어가기까지의 시간(초).
 const REACTION_SECONDS: float = 6.0
 ## 행동 사이의 호흡(초): 이동이 끝난 뒤 멈춤 / [P2 차례] 알림 길이.
@@ -453,6 +458,10 @@ var _drag_ghost: PanelContainer = null
 var _drop_zone: PanelContainer = null
 var _drop_label: Label = null
 var _dock: Control = null
+## 손패는 평소 우측 하단에 작은 카드 일렬로 접혀 있고, 누르면 아래 _dock(부채꼴 큰 카드)이 펼쳐진다 (2026-11 배치 개편).
+var _hand_stack: Control = null
+var _hand_open: bool = false
+var _hand_prev_count: int = 0
 var _dock_player: int = -1
 var _debug_toggle: Button = null
 ## 이 판의 [매치 완료]를 이미 보냈다 (판마다 한 번).
@@ -1634,8 +1643,8 @@ func _build_ui() -> void:
 func _register_layout() -> void:
 	_layout_entries.clear()
 	var left: Array = [_law_panel, _feedback_button]
-	var center: Array = [_select_banner, _dir_left, _dir_right, _board_layer, _pawn_layer, _dock, _drop_zone, _pick_banner, _pick_cancel, _roll_button, _roll_pad, _gun_row, _stage_yacht, _stage_blackjack, _stage_pinball, _danger_label]
-	var right: Array = [_tool_board, _action_row, _pawn_bar, _emote_row, _menu_button, _speed_button, _language_button, _debug_box, _log_panel]
+	var center: Array = [_select_banner, _dir_left, _dir_right, _board_layer, _pawn_layer, _dock, _drop_zone, _pick_banner, _pick_cancel, _roll_button, _roll_pad, _gun_row, _stage_yacht, _stage_blackjack, _stage_pinball, _danger_label, _pawn_bar]
+	var right: Array = [_tool_board, _action_row, _hand_stack, _emote_row, _menu_button, _speed_button, _language_button, _debug_box, _log_panel]
 	for index: int in PLAYER_IDS.size():
 		var player_id: int = PLAYER_IDS[index]
 		var panel: Control = _profiles[player_id]["panel"]
@@ -2255,6 +2264,14 @@ func _build_dock() -> void:
 	_dock.size = Vector2(860, 108)
 	_dock.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_dock)
+	_hand_stack = Control.new()
+	_hand_stack.name = "HandStack"
+	_hand_stack.position = HAND_STACK_POS
+	_hand_stack.size = HAND_STACK_SIZE
+	_hand_stack.mouse_filter = Control.MOUSE_FILTER_STOP
+	_hand_stack.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	_hand_stack.gui_input.connect(_on_hand_stack_input)
+	add_child(_hand_stack)
 
 
 ## 주사위/판정 결과를 보드 한가운데에 크게 띄우는 배너.
@@ -4200,6 +4217,7 @@ func _refresh_hand_pips(player_id: int) -> void:
 func _refresh_players() -> void:
 	for player_id: int in _player_ids:
 		var card: Dictionary = _profiles[player_id]
+		(card["panel"] as Control).visible = player_id != local_player_id  # 내 프로필(우측 하단 큰 카드)은 없앴다: 기물 독(중앙 하단)·손패(우측 하단)·[내 증강](로그 머리)이 맡는다
 		var color: Color = PLAYER_COLORS[player_id]
 		var rank: int = state.rankings.find(player_id) + 1
 		(card["name"] as Label).text = ("%s%d위 · %s" % ["★ " if rank == 1 else "", rank, _player_name(player_id)]) if rank > 0 else _player_name(player_id)
@@ -4250,7 +4268,8 @@ func _on_utility_picked(player_id: int, augment_id: StringName) -> void:
 func _refresh_status_stamps(player_id: int) -> void:
 	var host: Control = _profiles[player_id]["avatar"]
 	_refresh_revive_mark(host, player_id)
-	_refresh_rank_stamp(host, player_id)
+	# 내 프로필은 숨겼으므로 내 순위 도장은 기물 독(중앙 하단)에 찍는다.
+	_refresh_rank_stamp(_pawn_bar if player_id == local_player_id and _pawn_bar != null else host, player_id)
 	var wanted: Dictionary = {&"skip": bool(state.rest_next_turn.get(player_id, false)) and not state.is_graduated(player_id), &"ban": state.is_banned(player_id) and not state.is_graduated(player_id)}
 	for kind: StringName in [&"skip", &"ban"]:
 		var node_name: String = "Stamp_%s" % kind
@@ -4899,8 +4918,16 @@ func _refresh_hands() -> void:
 		child.queue_free()
 	# AI 모드: 하단 독에는 사람(P1)의 손패만 앞면으로 보인다 (봇의 손패는 장수만 프로필 카드에 표시).
 	var player_id: int = local_player_id if ai_mode else manager.current_player_id()
+	if player_id != _dock_player:
+		_hand_open = false
 	_dock_player = player_id
 	var hand: Array = state.hands[player_id]
+	# 카드를 쓰거나 잃어 장수가 줄면 펼친 손패는 다시 접힌다.
+	if hand.size() < _hand_prev_count or hand.is_empty():
+		_hand_open = false
+	_hand_prev_count = hand.size()
+	_refresh_hand_stack(player_id)
+	_apply_hand_layout()
 	if hand.is_empty():
 		return
 	var count: int = hand.size()
@@ -4919,6 +4946,84 @@ func _refresh_hands() -> void:
 		card_view.set_meta("home_y", home_y)
 		card_view.set_meta("home_rot", home_rot)
 		_dock.add_child(card_view)
+
+
+## 접힌 손패(우측 하단 일렬 미니 카드)를 다시 그린다.
+func _refresh_hand_stack(player_id: int) -> void:
+	for child: Node in _hand_stack.get_children():
+		_hand_stack.remove_child(child)
+		child.queue_free()
+	var hand: Array = state.hands[player_id]
+	var count: int = hand.size()
+	_hand_stack.tooltip_text = "손패 %d장 (눌러서 펼치기)" % count
+	if count == 0:
+		return
+	var arriving: int = int(_draw_fx.pending.get(player_id, 0)) if _draw_fx != null else 0
+	for index: int in count:
+		var slot := Control.new()
+		slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		slot.custom_minimum_size = HAND_MINI_SIZE
+		slot.size = HAND_MINI_SIZE
+		slot.position = _hand_mini_position(index, count)
+		var face: PanelContainer = _make_card_face(hand[index])
+		face.scale = Vector2.ONE * HAND_MINI_SCALE
+		face.position = Vector2.ZERO
+		slot.add_child(face)
+		if index >= count - arriving:
+			slot.modulate.a = 0.0
+		_hand_stack.add_child(slot)
+	var badge := _make_label(str(count), 13, Color("0d1018"))
+	badge.name = "HandCount"
+	badge.add_theme_stylebox_override("normal", _style(COLOR_GOLD, Color("fff3bf"), 1, 9, 0, 3))
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	badge.position = Vector2(HAND_STACK_SIZE.x - 22.0, 0.0)
+	_hand_stack.add_child(badge)
+
+
+## 접힌 손패에서 index번째 미니 카드의 위치 (스택 안 좌표). 오른쪽 끝에 붙여 일렬로 겹친다.
+func _hand_mini_position(index: int, count: int) -> Vector2:
+	var step: float = minf(HAND_MINI_SIZE.x + 4.0, (HAND_STACK_SIZE.x - HAND_MINI_SIZE.x - 10.0) / maxf(count - 1, 1))
+	var total: float = HAND_MINI_SIZE.x + step * (count - 1)
+	return Vector2(HAND_STACK_SIZE.x - total + step * index, HAND_STACK_SIZE.y - HAND_MINI_SIZE.y)
+
+
+func _on_hand_stack_input(event: InputEvent) -> void:
+	var press: InputEventMouseButton = event as InputEventMouseButton
+	if press != null and press.pressed and press.button_index == MOUSE_BUTTON_LEFT:
+		_set_hand_open(true)
+		_hand_stack.accept_event()
+
+
+## 손패 펼침/접힘. 펼치면 부채꼴 큰 카드 독이 보이고 기물 독·접힌 일렬은 숨는다.
+func _set_hand_open(value: bool) -> void:
+	if state == null or manager == null:
+		return
+	var hand: Array = state.hands[_dock_owner()]
+	_hand_open = value and not hand.is_empty()
+	_apply_hand_layout()
+
+
+## 접힘/펼침과 기물 독·말 선택 배너 사이의 표시 상태를 맞춘다.
+func _apply_hand_layout() -> void:
+	if _dock == null or _hand_stack == null:
+		return
+	var has_cards: bool = state != null and not (state.hands[_dock_owner()] as Array).is_empty()
+	_dock.visible = _hand_open and has_cards
+	_hand_stack.visible = has_cards and not _hand_open
+	if _pawn_bar != null:
+		_pawn_bar.visible = not _hand_open and not (_select_banner != null and _select_banner.visible)
+
+
+## 손패 독 밖을 눌렀는지: 펼친 손패를 접을 때 쓴다 (호버로 솟아오른 카드 높이까지 독 영역으로 본다).
+func _hand_outside_press(point: Vector2) -> bool:
+	if not _hand_open or not _drag_press.is_empty():
+		return false
+	var area := Rect2(_dock.global_position + Vector2(0, HAND_RAISED_Y - 60.0), _dock.size + Vector2(0, -HAND_RAISED_Y + 60.0 + HAND_CARD_SIZE.y))
+	if area.has_point(point):
+		return false
+	if _zoom_view != null and _zoom_view.visible and _zoom_view.get_global_rect().has_point(point):
+		return false
+	return true
 
 
 ## 손패를 펼칠 수 있는 가로 구간 (독 안 x 좌표 [왼쪽, 오른쪽]): 독과 같은 높이에 있는 아래쪽 프로필 카드를 덮지 않게 그 사이로 줄인다.
@@ -4970,7 +5075,7 @@ func _fly_drawn_card(player_id: int, card_id: StringName) -> void:
 	if _draw_fx == null:
 		Sfx.play(&"card_get")
 		return
-	var local: bool = player_id == _dock_owner() and _dock != null and _dock.is_visible_in_tree()
+	var local: bool = player_id == _dock_owner() and _dock != null and is_visible_in_tree()
 	var index: int = (state.hands[player_id] as Array).size() - 1
 	if local:
 		_draw_fx.reserve(player_id)
@@ -5034,6 +5139,10 @@ func _tile_card_origin(tile: int) -> Vector2:
 func _drawn_card_destination(player_id: int, index: int) -> Dictionary:
 	var count: int = maxi((state.hands[player_id] as Array).size(),1)
 	index = clampi(index,0,count-1)
+	if not _hand_open:
+		# 접힌 손패: 우측 하단 일렬 미니 카드 자리로 내려앉는다.
+		var mini_centre: Vector2 = _hand_mini_position(index,count)+HAND_MINI_SIZE/2.0
+		return {"position":_hand_stack.get_global_transform()*mini_centre,"rotation":0.0}
 	var offset: float = float(index)-float(count-1)/2.0
 	var angle: float = deg_to_rad(clampf(offset*HAND_FAN_DEGREES,-16.0,16.0))
 	var pivot := Vector2(HAND_CARD_SIZE.x/2.0,HAND_CARD_SIZE.y)
@@ -5047,7 +5156,7 @@ func _on_drawn_card_landed(player_id: int, local: bool) -> void:
 		return
 	_refresh_hands()
 	var shown: int = (state.hands[player_id] as Array).size() - int(_draw_fx.pending.get(player_id, 0)) - 1
-	var live: Array[Node] = _dock.get_children().filter(func(child: Node) -> bool: return not child.is_queued_for_deletion())
+	var live: Array[Node] = (_dock if _hand_open else _hand_stack).get_children().filter(func(child: Node) -> bool: return not child.is_queued_for_deletion() and child.name != "HandCount")
 	if shown < 0 or shown >= live.size():
 		return
 	var card_view: Control = live[shown]
@@ -5328,6 +5437,8 @@ func _handle_card_pointer(event: InputEvent) -> bool:
 	if button == null or button.button_index != MOUSE_BUTTON_LEFT:
 		return false
 	if button.pressed:
+		if _hand_outside_press(button.position):
+			_set_hand_open(false)
 		# 확대 카드 밖(손패 독 제외)을 누르면 확대가 닫힌다.
 		if _zoom_view != null and _zoom_view.visible and _drag_press.is_empty() and not _zoom_view.get_global_rect().has_point(button.position) and not Rect2(_dock.global_position, _dock.size).has_point(button.position):
 			_close_zoom()
@@ -5968,7 +6079,7 @@ func _pawn_info_text(pawn_id: int) -> String:
 
 func _build_pawn_dock() -> void:
 	_pawn_bar = Panel.new()
-	_pawn_bar.position = Vector2(1024, 432)
+	_pawn_bar.position = Vector2(518, 606)  # 2026-11 배치 개편: 내 프로필을 없애고 기물 조작을 중앙 하단으로
 	_pawn_bar.size = Vector2(330, 156)
 	_pawn_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_pawn_bar.add_theme_stylebox_override("panel", _style(Color("131826"), COLOR_PANEL_EDGE, 2, 12, 8, 0))
@@ -6223,7 +6334,7 @@ func _update_skill_pulse() -> void:
 
 ## 지금 모드에서 실제로 쓰는 필살기 버튼들 (슬롯 순서): AI·온라인은 내 프로필 카드, 수동 4인은 기물 독.
 func active_skill_buttons() -> Array[Button]:
-	return _skill_buttons if ai_mode else _dock_skill_buttons
+	return _dock_skill_buttons  # 내 프로필(큰 카드)을 없애 필살기 버튼은 모든 모드에서 기물 독이 맡는다
 
 
 ## 말 칸·필살기 버튼에 커서를 대면 그 말의 경로만 미리 보여 준다 (설명은 말 칸을 눌러야 열린다).
@@ -6286,8 +6397,7 @@ func _refresh_skill_hint() -> void:
 func _refresh_pawn_dock() -> void:
 	_refresh_skill_hint()
 	_refresh_emote_row()
-	# AI·온라인에서는 내 프로필 카드가 말 칸과 필살기를 맡으므로 기물 독은 4인 수동 조작에서만 보인다.
-	_pawn_bar.visible = not ai_mode
+	_apply_hand_layout()  # 기물 독은 손패가 접혀 있고 말 선택 배너가 없을 때 중앙 하단에 보인다
 	var owner_id: int = _dock_owner()
 	var color: Color = PLAYER_COLORS[owner_id]
 	for index: int in _pawn_buttons.size():
@@ -6325,8 +6435,8 @@ func _refresh_pawn_dock() -> void:
 		# AI·온라인 모드에서는 내 프로필 카드의 버튼이, 수동 4인 모드에서는 기물 독의 버튼이 필살기를 맡는다.
 		var profile_button: Button = _skill_buttons[index]
 		var dock_button: Button = _dock_skill_buttons[index]
-		profile_button.visible = has_skill and ai_mode
-		dock_button.visible = has_skill and not ai_mode
+		profile_button.visible = false
+		dock_button.visible = has_skill
 		# 1.01 시인성: 쓸 수 있음(금색·빛·두근) / 아직 못 씀(어두운 판에 금테) / 사용됨(회색)을 한눈에 구분한다
 		var skill_mode: int = SKILL_BUTTON_USED if pawn.skill_used else (SKILL_BUTTON_READY if usable else SKILL_BUTTON_WAIT)
 		for skill_button: Button in [profile_button, dock_button]:
@@ -6495,6 +6605,7 @@ func _refresh_select_banner() -> void:
 			_stop_pawn_flash()
 			_select_hover_slot = -1
 		_select_banner.visible = false
+		_apply_hand_layout()
 		return
 	var owner_id: int = manager.current_player_id()
 	var color: Color = PLAYER_COLORS[owner_id]
@@ -6543,6 +6654,7 @@ func _refresh_select_banner() -> void:
 		card.add_theme_stylebox_override("disabled", _style(base, Color("495057"), 2, 12, 0, 0))
 		card.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	_select_banner.visible = true
+	_apply_hand_layout()
 
 
 func _on_select_card_pressed(slot: int) -> void:
@@ -11829,6 +11941,13 @@ func _build_action_log() -> void:
 	_action_log = ActionLogPanel.new()
 	add_child(_action_log)
 	_action_log.place(ACTION_LOG_POS)
+	# 내 프로필을 없애면서 [내 증강] 확인 버튼을 로그 머리로 옮겼다 (올리면 미리 보기, 누르면 고정).
+	var augments_button: Button = _make_button("내 증강", Callable(), 12, Color("3b4a6b"), 4)
+	augments_button.name = "MyAugmentsButton"
+	augments_button.focus_mode = Control.FOCUS_NONE
+	augments_button.pressed.connect(func() -> void: _tip_toggle(augments_button, func() -> void: _fill_profile_tip(local_player_id)))
+	_bind_tip(augments_button, func() -> void: _fill_profile_tip(local_player_id))
+	_action_log.add_header_button(augments_button)
 
 
 ## BBCode에 넣을 글자: 대괄호가 태그로 읽히지 않게 바꾼다.
@@ -12094,7 +12213,7 @@ func _build_roll_fx() -> void:
 ## 야추·블랙잭·핀볼의 중앙 오픈 스테이지를 만든다. 눈에 보이는 건 해당 도구를 쓰는 차례뿐이다.
 func _build_tool_stages() -> void:
 	_stage_yacht = YachtStage.new()
-	_stage_yacht.position = Vector2(683.0, 335.0) - YachtStage.STAGE_SIZE / 2.0
+	_stage_yacht.position = Vector2(683.0, 282.0) - YachtStage.STAGE_SIZE / 2.0  # 2026-11: 족보 판을 위로 올려 아래쪽(기물 독·손패)과 멀어지게
 	_stage_yacht.visible = false
 	_stage_yacht.z_index = 5
 	_stage_yacht.start_pressed.connect(_on_stage_start)
@@ -12405,6 +12524,9 @@ func _profile_center(player_id: int) -> Vector2:
 		return Vector2(INF, INF)
 	var panel: Control = _profiles[player_id]["panel"]
 	if not panel.is_visible_in_tree():
+		# 내 프로필은 숨겼다: 내 쪽에서 나가는 카드·투척은 기물 독(중앙 하단)에서 출발한다.
+		if player_id == local_player_id and _pawn_bar != null and is_visible_in_tree():
+			return _pawn_bar.get_global_rect().get_center()
 		return Vector2(INF, INF)
 	return panel.get_global_rect().get_center()
 

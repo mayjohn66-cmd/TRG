@@ -24,6 +24,7 @@ var _shown: Array[int] = []
 var _scroll_pending: bool = false
 var _title: Label = null
 var _toggle: Button = null
+var _header: HBoxContainer = null
 var _text: RichTextLabel = null
 var _scroll: ScrollContainer = null
 var _mini_style: StyleBoxFlat = null
@@ -40,6 +41,7 @@ func _init() -> void:
 	column.add_theme_constant_override("separation", 4)
 	add_child(column)
 	var header := HBoxContainer.new()
+	_header = header
 	column.add_child(header)
 	_title = Label.new()
 	_title.text = L10n.tr_ui("log.title")
@@ -72,6 +74,13 @@ func _init() -> void:
 	_text.add_theme_font_override("bold_font", SMALL_FONT)
 	_scroll.add_child(_text)
 	_apply_mode()
+
+
+## 머리줄([로그 펼치기] 왼쪽)에 버튼을 하나 더 붙인다 (예: 내 증강 보기).
+func add_header_button(button: Button) -> void:
+	button.add_theme_font_size_override("font_size", MobileSupport.text_px(12))
+	_header.add_child(button)
+	_header.move_child(button, _toggle.get_index())
 
 
 func _panel_style(alpha: float) -> StyleBoxFlat:

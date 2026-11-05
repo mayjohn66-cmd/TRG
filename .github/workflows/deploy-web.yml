@@ -465,6 +465,12 @@ jobs:
           grep -Eq 'HOTFIX_UI [0-9]+ assertions; 0 failures' /tmp/live_hotfix_ui.log
           if grep -Eq 'SCRIPT ERROR|SHADER ERROR' /tmp/live_hotfix_{core,ui}.log; then exit 1; fi
 
+      - name: Bottom layout (hand stack, pawn dock, no own profile)
+        run: |
+          set -euo pipefail
+          godot --headless --audio-driver Dummy --path . -s res://tests/ui_layout_ux_test.gd 2>&1 | tee /tmp/layout_ux.log
+          grep -Eq 'LAYOUT [0-9]+ assertions; 0 failures' /tmp/layout_ux.log
+
       - name: Check the weekend hotfix 2 regressions
         if: steps.validation.outputs.scope == 'full'
         run: |
