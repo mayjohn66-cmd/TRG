@@ -92,6 +92,9 @@ const HAND_MINI_SCALE: float = 0.5
 const HAND_MINI_SIZE: Vector2 = Vector2(70, 98)
 const HAND_STACK_POS: Vector2 = Vector2(1000, 664)
 const HAND_STACK_SIZE: Vector2 = Vector2(352, 100)
+## 터치 화면(모바일): 접힌 손패의 누르는 영역을 위로 넓히고, 기물 독을 키운다 (캔버스가 폰 화면에 맞게 줄어들어 손가락으로 누르기 쉽게).
+const HAND_STACK_TOUCH_PAD: float = 40.0
+const PAWN_BAR_TOUCH_SCALE: float = 1.2
 ## 피해 되돌리기 팝업이 자동으로 넘어가기까지의 시간(초).
 const REACTION_SECONDS: float = 6.0
 ## 행동 사이의 호흡(초): 이동이 끝난 뒤 멈춤 / [P2 차례] 알림 길이.
@@ -1673,12 +1676,17 @@ func layout_for(viewport_size: Vector2) -> void:
 	_off_left = Vector2(0.0, extra.y / 2.0)
 	_off_center = Vector2(extra.x / 2.0, extra.y / 2.0)
 	_off_right = Vector2(extra.x, extra.y / 2.0)
+	if _hand_stack != null:
+		_hand_stack.set_meta("touch_pad", 0.0)  # 아래 배치가 위치를 기준값으로 되돌리므로 터치 여백은 다시 적용한다
+		_hand_stack.size.y = HAND_STACK_SIZE.y
 	for entry: Dictionary in _layout_entries:
 		var node: CanvasItem = entry["node"]
 		if node == null or not is_instance_valid(node):
 			continue
 		var offset: Vector2 = [_off_left, _off_center, _off_right][int(entry["group"])]
 		node.position = (entry["base"] as Vector2) + offset
+	if _hand_stack != null and state != null and manager != null:
+		_apply_touch_layout()
 	if _plate != null:
 		_plate.position = PLATE_POS + _off_center
 	if _drop_zone != null:
@@ -4976,7 +4984,7 @@ func _refresh_hand_stack(player_id: int) -> void:
 	badge.name = "HandCount"
 	badge.add_theme_stylebox_override("normal", _style(COLOR_GOLD, Color("fff3bf"), 1, 9, 0, 3))
 	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	badge.position = Vector2(HAND_STACK_SIZE.x - 22.0, 0.0)
+	badge.position = Vector2(HAND_STACK_SIZE.x - 22.0, _hand_stack.size.y - HAND_STACK_SIZE.y)
 	_hand_stack.add_child(badge)
 
 
@@ -4984,7 +4992,7 @@ func _refresh_hand_stack(player_id: int) -> void:
 func _hand_mini_position(index: int, count: int) -> Vector2:
 	var step: float = minf(HAND_MINI_SIZE.x + 4.0, (HAND_STACK_SIZE.x - HAND_MINI_SIZE.x - 10.0) / maxf(count - 1, 1))
 	var total: float = HAND_MINI_SIZE.x + step * (count - 1)
-	return Vector2(HAND_STACK_SIZE.x - total + step * index, HAND_STACK_SIZE.y - HAND_MINI_SIZE.y)
+	return Vector2(HAND_STACK_SIZE.x - total + step * index, _hand_stack.size.y - HAND_MINI_SIZE.y)
 
 
 func _on_hand_stack_input(event: InputEvent) -> void:
@@ -5007,11 +5015,25 @@ func _set_hand_open(value: bool) -> void:
 func _apply_hand_layout() -> void:
 	if _dock == null or _hand_stack == null:
 		return
+	_apply_touch_layout()
 	var has_cards: bool = state != null and not (state.hands[_dock_owner()] as Array).is_empty()
 	_dock.visible = _hand_open and has_cards
 	_hand_stack.visible = has_cards and not _hand_open
 	if _pawn_bar != null:
 		_pawn_bar.visible = not _hand_open and not (_select_banner != null and _select_banner.visible)
+
+
+## 터치 모드면 접힌 손패의 누르는 영역을 위로 넓히고 기물 독을 키운다 (바닥을 기준으로 위쪽으로만 커진다). 반복 호출해도 같다.
+func _apply_touch_layout() -> void:
+	var pad: float = HAND_STACK_TOUCH_PAD if MobileSupport.touch_mode() else 0.0
+	var applied: float = float(_hand_stack.get_meta("touch_pad", 0.0))
+	if not is_equal_approx(applied, pad):
+		_hand_stack.position.y -= pad - applied
+		_hand_stack.size.y = HAND_STACK_SIZE.y + pad
+		_hand_stack.set_meta("touch_pad", pad)
+	if _pawn_bar != null:
+		_pawn_bar.pivot_offset = Vector2(_pawn_bar.size.x / 2.0, _pawn_bar.size.y)
+		_pawn_bar.scale = Vector2.ONE * (PAWN_BAR_TOUCH_SCALE if MobileSupport.touch_mode() else 1.0)
 
 
 ## 손패 독 밖을 눌렀는지: 펼친 손패를 접을 때 쓴다 (호버로 솟아오른 카드 높이까지 독 영역으로 본다).
@@ -5021,8 +5043,8 @@ func _hand_outside_press(point: Vector2) -> bool:
 	var area := Rect2(_dock.global_position + Vector2(0, HAND_RAISED_Y - 60.0), _dock.size + Vector2(0, -HAND_RAISED_Y + 60.0 + HAND_CARD_SIZE.y))
 	if area.has_point(point):
 		return false
-	if _zoom_view != null and _zoom_view.visible and _zoom_view.get_global_rect().has_point(point):
-		return false
+	if _zoom_view != null and _zoom_view.visible:
+		return false  # 카드 확대(미리 보기)를 닫는 터치로 손패까지 접히지 않게: 확대가 닫힌 뒤 한 번 더 누르면 접힌다
 	return true
 
 
