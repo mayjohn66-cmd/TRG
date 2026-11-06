@@ -2110,3 +2110,10 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 - 3D: 인덱스 없이 같은 정점이 중복된 면을 `SurfaceTool.index()`로 합쳤다(`tools/merge_mesh_vertices.gd`, 위치·법선·색·UV가 같은 정점만 합치므로 모양은 그대로). 핀볼 판 1.47 → 0.94 MB, 밥그릇 0.52 → 0.19 MB. 다트판·다트·폭주 기관차는 이미 인덱스가 있어 줄지 않았다. 탄젠트 제거는 저장 시 엔진이 다시 채워 효과가 없어 버렸다.
 - 결과: index.pck 41,295,984 → 37,987,148 바이트 (36.23 MiB). 검증: CI 목록 UI 테스트 전부(기존부터 실패하던 blackjack_compact·roll_history 제외)와 단위 테스트 통과.
 - 남은 후보: 사도별 공격·피격·승리 그림(약 7 MiB)을 아바타 묶음으로 옮기기, 호박 결투 시트 화질 낮추기(약 0.5 MiB), 다트판 메시 단순화.
+
+### 7.62 itch.io 배포 경로 (2026-11-06)
+- 배경: Vercel 무료 플랜이 접속자(한 사람이 첫 접속에 약 76 MB, 아바타 묶음까지 최대 약 130 MB) 때문에 막혔다. GitHub Pages도 사용 권장 한도가 있어, 주소를 itch.io(https://mansic2.itch.io/hypereliasmarble, 종류 HTML)로 옮긴다.
+- 빌드: `Package for itch.io` 단계가 `build/web`을 `build/itch`로 복사하고(`.git`·`.nojekyll`·`vercel.json` 제외) `tools/make_itch_index.py`로 `index.html`에서 Vercel 방문자 집계(window.va + /_vercel/insights/script.js)와 og:/twitter: 메타를 뺀다(itch에서는 404 콘솔 오류, iframe 안에서는 미리보기가 쓸모없음). 기존 gh-pages 배포본과 그 점검(`Vercel Analytics 스크립트 확인`)은 그대로다. 결과 `build/trg-itch.zip`은 index.html이 압축 파일 맨 바깥에 있다.
+- 올리는 법 1(수동): Actions > Deploy web build > Run workflow로 돌리면 `trg-itch` 아티팩트(zip, 7일 보관)가 생긴다 -> itch 페이지 Uploads에 올리고 "This file will be played in the browser" 체크, 임베드 크기 1366x768, SharedArrayBuffer는 끈다(스레드 지원 꺼진 빌드).
+- 올리는 법 2(자동): 저장소 시크릿 `BUTLER_API_KEY`(itch 계정 설정에서 만든 API 키)가 있으면 `Push to itch.io (optional)` 단계가 butler로 `build/itch`를 채널 `html5`에 올린다. 대상은 저장소 변수 `ITCH_TARGET`(없으면 `mansic2/hypereliasmarble:html5`). 시크릿이 없으면 건너뛴다. 키는 채팅·코드에 적지 않는다.
+- 확인할 것(올린 뒤): 온라인 친선전 방 만들기·입장(WebRTC + ntfy), 닉네임·기록 저장(iframe 저장소), 일본어 전환, 피드백 보내기, 버전 표기(1.0.0+해시).

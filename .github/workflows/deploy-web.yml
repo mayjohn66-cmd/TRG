@@ -779,6 +779,48 @@ jobs:
           git commit -q -m "Deploy web build from ${GITHUB_SHA}"
           git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" gh-pages
 
+      # itch.io 배포본: 같은 빌드를 index.html이 맨 바깥인 폴더로 복사해 Vercel 분석·링크 미리보기 메타를 뺀다 (tools/make_itch_index.py).
+      # - 항상 build/itch를 만들어 둔다.
+      # - Actions > Run workflow(수동 실행)로 돌리면 압축 파일(trg-itch.zip)을 아티팩트로 올린다: itch 페이지에 직접 올릴 때 쓴다.
+      # - 저장소 시크릿 BUTLER_API_KEY가 있으면 itch.io에 자동 업로드한다 (대상은 저장소 변수 ITCH_TARGET, 없으면 mansic2/hypereliasmarble:html5).
+      - name: Package for itch.io
+        run: |
+          set -euo pipefail
+          rm -rf build/itch
+          mkdir -p build/itch
+          cp -a build/web/. build/itch/
+          rm -rf build/itch/.git build/itch/.nojekyll build/itch/vercel.json
+          python3 tools/make_itch_index.py build/itch/index.html
+          test -f build/itch/index.html
+          test -f build/itch/index.pck
+          (cd build/itch && zip -qr ../trg-itch.zip .)
+          ls -la build/trg-itch.zip
+
+      - name: Upload itch.io zip (manual runs)
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: trg-itch
+          path: build/trg-itch.zip
+          retention-days: 7
+          compression-level: 0
+
+      - name: Push to itch.io (optional)
+        if: ${{ github.ref_name == 'main' || startsWith(github.ref_name, 'claude/') }}
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+          ITCH_TARGET: ${{ vars.ITCH_TARGET }}
+        run: |
+          if [ -z "${BUTLER_API_KEY}" ]; then
+            echo "BUTLER_API_KEY 시크릿이 없어 itch.io 업로드를 건너뜁니다."
+            exit 0
+          fi
+          TARGET="${ITCH_TARGET:-mansic2/hypereliasmarble:html5}"
+          curl -fsSL -o butler.zip "https://broth.itch.zone/butler/linux-amd64/LATEST/archive/default"
+          unzip -q butler.zip -d butler-bin
+          chmod +x butler-bin/butler
+          ./butler-bin/butler push build/itch "${TARGET}" --userversion "${GITHUB_SHA::7}"
+
       # 선택: 저장소 시크릿 VERCEL_TOKEN / VERCEL_ORG_ID / VERCEL_PROJECT_ID가 있으면 같은 빌드를 Vercel에도 바로 배포한다.
       # (없으면 건너뜀. 시크릿 없이도 Vercel 프로젝트의 Production Branch를 gh-pages로 두면 자동 배포된다 - README 참고)
       - name: Deploy to Vercel (optional)
