@@ -88,6 +88,17 @@ func _run() -> void:
 	# 내 증강 버튼은 로그 머리에
 	var aug_button:=_board._action_log.find_child("MyAugmentsButton",true,false) as Button
 	_expect(aug_button!=null and aug_button.is_visible_in_tree(),"[내 증강] 버튼이 로그 머리에 있다")
+	# 내 프로필이 숨겨진 뒤 그 자리(우측 하단)에 피격·보상 효과가 떠다니지 않는다 (2026-11 제보)
+	var fx_before:int=_board.get_child_count()
+	_board.instant_roll_for_test=false
+	_board._profile_react(me,false);_board._profile_react(me,true);_board._revenge_charged_popup(me)
+	await settle(2)
+	var stray:=_board.get_children().filter(func(n:Node)->bool:return n is Panel and (n as Panel).z_index==36)
+	_expect(stray.is_empty() and _board.get_child_count()<=fx_before,"내 프로필 숨김: 피격 빨간 깜빡임·조각·숫자 효과가 숨은 자리에 생기지 않는다 (추가 %d개)"%(_board.get_child_count()-fx_before))
+	var other_id:int=_board.state.player_ids.filter(func(id:int)->bool:return id!=me)[0]
+	_board._profile_react(other_id,false);await settle(2)
+	_expect(not _board.get_children().filter(func(n:Node)->bool:return n is Panel and (n as Panel).z_index==36).is_empty(),"다른 사람 프로필에는 피격 효과가 그대로 나온다")
+	_board.instant_roll_for_test=true
 	# 증강 타임라인: 위쪽 가운데, 라운드에 따라 글·칩이 바뀐다 (2026-11 제보 "증강이 언제 나오는지 알려주면 좋겠음")
 	var timeline:=_board._augment_timeline as AugmentTimeline
 	_expect(timeline!=null and timeline.visible,"증강 타임라인이 보인다")

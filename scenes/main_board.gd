@@ -3346,6 +3346,8 @@ func _revenge_charged_popup(player_id: int, pawn: PlayerPawn = null) -> void:
 	if not _fx_on() or not _profiles.has(player_id):
 		return
 	var panel: Control = _profiles[player_id]["panel"]
+	if not panel.is_visible_in_tree():
+		return  # 숨긴 내 프로필 자리에 숫자만 떠다니지 않게 (기록 줄에는 이미 남는다)
 	var at: Vector2 = get_global_transform().affine_inverse() * panel.get_global_rect().get_center()
 	at.x = clampf(at.x, 60.0, size.x - 60.0)
 	at.y = clampf(at.y, 60.0, size.y - 60.0)
@@ -9032,6 +9034,8 @@ func _profile_react(player_id: int, good: bool, text: String = "") -> void:
 		return
 	Sfx.play(&"good" if good else &"bad")
 	var panel: Control = _profiles[player_id]["panel"]
+	if not panel.is_visible_in_tree():
+		return  # 내 프로필은 숨겼다: 숨은 자리(우측 하단)에 빨간 깜빡임·조각 효과가 떠다니지 않게 소리만 낸다
 	var rect: Rect2 = panel.get_global_transform() * Rect2(Vector2.ZERO, panel.size)
 	if panel.has_meta("react_tween"):
 		var previous: Tween = panel.get_meta("react_tween")
