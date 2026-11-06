@@ -88,6 +88,33 @@ func _run() -> void:
 	# 내 증강 버튼은 로그 머리에
 	var aug_button:=_board._action_log.find_child("MyAugmentsButton",true,false) as Button
 	_expect(aug_button!=null and aug_button.is_visible_in_tree(),"[내 증강] 버튼이 로그 머리에 있다")
+	# 증강 타임라인: 위쪽 가운데, 라운드에 따라 글·칩이 바뀐다 (2026-11 제보 "증강이 언제 나오는지 알려주면 좋겠음")
+	var timeline:=_board._augment_timeline as AugmentTimeline
+	_expect(timeline!=null and timeline.visible,"증강 타임라인이 보인다")
+	_expect(timeline.get_global_rect().position.y<20.0 and absf(timeline.get_global_rect().get_center().x-screen.size.x/2.0)<30.0,"타임라인은 화면 위쪽 가운데에 있다")
+	_expect(not timeline.get_global_rect().intersects(_board._feedback_button.get_global_rect()) and not timeline.get_global_rect().intersects(_board._language_button.get_global_rect()),"타임라인이 [피드백]·[언어] 버튼과 겹치지 않는다")
+	_board.state.round_number=3;_board._refresh_all();await settle()
+	_expect(timeline.caption_kind==&"soon" and timeline.rounds.size()==6 and bool(timeline.rounds[1]["draft"]),"3라운드: 다음 라운드(4R)가 증강")
+	_expect(_board.round_banner_sub().contains("\n"),"3라운드 시작 연출에 [다음 라운드 증강 선택!] 사전 예고가 붙는다")
+	await create_timer(5.0).timeout  # 증강 선택 알림이 사라진 뒤의 모습
+	# 라운드 시작 연출(ROUND N)에 사전 예고가 한 줄 더 붙는 모습
+	_board.instant_roll_for_test=false;_board.pacing_enabled=true
+	_board._announce("라운드","ROUND 3","",Color("ffd43b"),null,3.0,true,{"key":"round","sub":_board.round_banner_sub()})
+	await create_timer(1.2).timeout
+	await screenshot("round-banner-warning")
+	_board._announcer.cancel();_board.instant_roll_for_test=true;_board.pacing_enabled=false
+	await screenshot("timeline-r3")
+	_board.state.round_number=5;_board._refresh_all();await settle()
+	_expect(timeline.caption_kind==&"later" and timeline.caption_rounds==2 and not _board.round_banner_sub().contains("\n"),"5라운드: 7라운드까지 2라운드 뒤, 사전 예고 없음")
+	_board.state.round_number=6;_board._refresh_all();await settle()
+	_expect(bool(timeline.rounds[1]["super"]),"7라운드 칩은 초증강·법전이 섞이는 별 표시")
+	await screenshot("timeline-r6")
+	for language:String in ["en","ja"]:
+		L10n.set_language(language);_board._refresh_all();await settle()
+		_expect(timeline.size.x<=screen.size.x and not timeline.get_node("..").find_children("*","Label",true,false).is_empty(),"타임라인이 %s에서도 화면 안에 있다"%language)
+		await screenshot("timeline-"+language)
+	L10n.set_language("ko")
+	_board.state.round_number=1;_board._refresh_all();await settle()
 	# 야추 판은 이전보다 위
 	_expect(_board._stage_yacht.position.y+YachtStage.STAGE_SIZE.y/2.0<335.0-20.0,"야추 족보 판은 이전(중심 335)보다 위로 올라갔다")
 	_board._reset_presentation();_board._close_zoom();_board._close_choice();MatchTelemetry.test_sender=Callable()

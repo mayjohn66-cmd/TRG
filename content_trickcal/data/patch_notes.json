@@ -75,6 +75,11 @@
        "ko": "순위 도장: 순위가 정해진 플레이어의 프로필에 1ST · 2ND · 3RD 도장과 깃발이 찍힙니다 (흰 깃발 = 일반 승리, 붉은 깃발 = 특수 승리)",
        "en": "Rank stamps: ranked players get a 1ST / 2ND / 3RD stamp with a flag on their profile (white flag = normal win, red flag = special victory)",
        "ja": "順位スタンプ：順位が決まったプレイヤーのプロフィールに1ST・2ND・3RDのスタンプと旗が付きます（白旗＝通常勝利、赤旗＝特殊勝利）"
+      },
+      {
+       "ko": "증강 타임라인: 화면 위쪽에 앞으로 몇 라운드 뒤에 증강이 나오는지 보여주는 진행 트랙을 추가하고, 증강 한 라운드 전에는 \"다음 라운드 증강 선택!\" 사전 안내를 띄웁니다",
+       "en": "Augment timeline: a track at the top of the screen shows when the next augment round comes, and the round start now warns \"Pick an augment next round!\" one round ahead",
+       "ja": "オーグメントタイムライン：画面上部に、あと何ラウンドでオーグメントが出るかを示す進行トラックを追加し、1ラウンド前には「次のラウンドはオーグメント選択！」と予告します"
       }
      ]
     },

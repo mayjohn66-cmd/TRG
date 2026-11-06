@@ -2118,3 +2118,10 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 - 올리는 법 2(자동): 저장소 시크릿 `BUTLER_API_KEY`(itch 계정 설정에서 만든 API 키)가 있으면 `Push to itch.io (optional)` 단계가 butler로 `build/itch`를 채널 `html5`에 올린다. 대상은 저장소 변수 `ITCH_TARGET`(없으면 `mansic2/hypereliasmarble:html5`). 시크릿이 없으면 건너뛴다. 키는 채팅·코드에 적지 않는다.
 - 확인할 것(올린 뒤): 온라인 친선전 방 만들기·입장(WebRTC + ntfy), 닉네임·기록 저장(iframe 저장소), 일본어 전환, 피드백 보내기, 버전 표기(1.0.0+해시).
 - 내 도메인(예: hypereliasmarble.xyz, 가비아 등록)을 GitHub Pages에 연결: 저장소 변수 `PAGES_DOMAIN`을 넣으면 빌드가 `CNAME` 파일을 싣고(gh-pages를 매번 덮어써도 Custom domain 설정이 유지됨) 링크 미리보기 주소(og:url/og:image/twitter:image)를 그 도메인으로 바꾼다. 변수가 없으면 미리보기 주소만 GitHub Pages 주소(`<owner>.github.io/<repo>/`)로 바꾼다(예전 vercel.app 주소는 죽었다). **DNS가 연결되기 전에 변수를 넣으면 기존 github.io 주소가 그 도메인으로 넘어가 접속이 끊길 수 있으니**, 가비아 DNS(A 레코드 4개 `@` -> 185.199.108~111.153, CNAME `www` -> <owner>.github.io)를 넣고 GitHub Pages Custom domain 확인이 끝난 뒤에 변수를 넣는다. itch 복사본(build/itch)에는 CNAME을 싣지 않는다.
+
+### 7.63 증강 타임라인과 사전 예고 (웹) (2026-11-06)
+- 제보: "증강이 언제 나오는지 알려주면 좋겠음". 요구: ① 상단 라운드 진행 트랙(현재 위치와 다음 증강 라운드를 구분) ② 증강 한 라운드 전 라운드 시작 연출에 "다음 라운드 증강 선택!" 사전 예고.
+- 규칙 근거: 증강(드래프트)은 `GameEnums.is_draft_round` = 1라운드와 그 뒤 3라운드마다(1·4·7·10·13·16·19·22·25). 1번째(1R)는 기물 진화만, 2번째(4R)는 판정 도구·카드·기물 진화, 3번째(7R)부터 법전·초증강까지 섞인다(`AugmentRegistry.DRAFT_FOCUS`, 법전·초증강 행 min_round 7). 판은 `PacingDirector.HARD_CAP_ROUND`(25)에서 끝나므로 그 뒤 라운드는 칩에 넣지 않는다.
+- 화면: `AugmentTimeline`(scenes/augment_timeline.gd)을 위쪽 가운데(x 가운데, y 6, 약 570x40)에 둔다. 칩 6개(지금 + 앞 5라운드), 증강 라운드는 금색 테두리 + 선물 상자(도형으로 그림: 이모지는 글꼴에 없어 깨진다), 7R 이상 증강 라운드는 분홍 테두리 + 별, 지금 라운드는 흰 테두리 + 빛. 왼쪽 글: now(이번 라운드 증강, 아직 안 골랐을 때) / soon(다음 라운드가 증강, 주황) / later(N라운드 뒤) / none. 올리면 규칙 설명 툴팁. `_refresh_header()`가 `_refresh_augment_timeline()`을 부르고, 판이 끝났거나 증강이 꺼진 판(`draft_enabled` false)에서는 숨긴다. 레이아웃은 가운데 묶음(보드와 함께 이동).
+- 사전 예고: `round_banner_sub()`(라운드 시작 연출 `ROUND N`의 부제)에 다음 라운드가 증강 라운드면 줄을 바꿔 "★ 다음 라운드 증강 선택!"을 붙인다 (`AugmentTimeline.warns_next_round`: 3·6·9…·24라운드).
+- 번역: translations.csv에 en/ja 6줄. 테스트: tests/test_augment_timeline.gd(증강 라운드 목록, 초증강 시작 라운드, 칩 목록과 상한, 글 종류, 예고 라운드), tests/ui_layout_ux_test.gd(위치·버튼과 겹침 없음·라운드별 글/칩·예고 부제·en/ja).

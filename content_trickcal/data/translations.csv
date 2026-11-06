@@ -2707,3 +2707,9 @@ PROGRESS / 진행률,PROGRESS,PROGRESS／進行度
 교칙,Law,教則
 내 증강,My Augments,所持オーグメント
 "손패 %d장 (눌러서 펼치기)","Hand: %d cards (tap to open)",手札%d枚（タップで開く）
+이번 라운드 증강!,Augment this round!,今ラウンドはオーグメント！
+다음 라운드 증강!,Augment next round!,次のラウンドはオーグメント！
+다음 증강까지 %d라운드,Next augment in %d rounds,次のオーグメントまで%dラウンド
+남은 증강 없음,No more augments,残りのオーグメントなし
+"증강은 1라운드와 그 뒤 3라운드마다(4·7·10…) 나옵니다. 별 표시는 초증강·법전까지 섞이는 라운드(7라운드부터)입니다.","Augments appear on round 1 and every 3 rounds after (4, 7, 10…). A star marks rounds where super augments and laws can also appear (from round 7).","オーグメントは1ラウンド目とその後3ラウンドごと（4・7・10…）に登場します。星印は超オーグメントや法典も混ざるラウンド（7ラウンド目から）です。"
+★ 다음 라운드 증강 선택!,★ Pick an augment next round!,★ 次のラウンドはオーグメント選択！

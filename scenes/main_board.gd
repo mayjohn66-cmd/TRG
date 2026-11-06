@@ -352,6 +352,8 @@ const IMPORTANT_BEAT_SECONDS: float = 0.45
 ## 사건 자막에서 강조(금테 + 읽을 틈)하는 사건의 낱말.
 const IMPORTANT_WORDS: Array[String] = ["처치", "사출", "밟음", "방어", "발동", "사용!", "필살기", "법전", "확정", "포위망", "결투", "과열", "되감", "게임 종료", "연대책임"]
 var _phase_label: Label = null
+## 화면 위쪽 가운데 [증강 타임라인]: 증강이 나오는 라운드(1·4·7…)를 미리 보여 준다 (2026-11 제보 "증강이 언제 나오는지 알려주면 좋겠음").
+var _augment_timeline: AugmentTimeline = null
 var _queue_label: Label = null
 var _pick_banner: Label = null
 var _pick_cancel: Button = null
@@ -1605,6 +1607,7 @@ func _build_ui() -> void:
 	_build_action_log()
 	_build_tool_board()
 	_build_status_strip()
+	_build_augment_timeline()
 	_build_action_bar()
 	_build_dock()
 	_build_pawn_dock()
@@ -1647,7 +1650,7 @@ func _build_ui() -> void:
 func _register_layout() -> void:
 	_layout_entries.clear()
 	var left: Array = [_law_panel, _feedback_button]
-	var center: Array = [_select_banner, _dir_left, _dir_right, _board_layer, _pawn_layer, _dock, _drop_zone, _pick_banner, _pick_cancel, _roll_button, _roll_pad, _gun_row, _stage_yacht, _stage_blackjack, _stage_pinball, _danger_label, _pawn_bar]
+	var center: Array = [_select_banner, _dir_left, _dir_right, _board_layer, _pawn_layer, _dock, _drop_zone, _pick_banner, _pick_cancel, _roll_button, _roll_pad, _gun_row, _stage_yacht, _stage_blackjack, _stage_pinball, _danger_label, _pawn_bar, _augment_timeline]
 	var right: Array = [_tool_board, _action_row, _hand_stack, _emote_row, _menu_button, _speed_button, _language_button, _debug_box, _log_panel]
 	for index: int in PLAYER_IDS.size():
 		var player_id: int = PLAYER_IDS[index]
@@ -2120,6 +2123,27 @@ func _apply_tool_expand() -> void:
 	_tool_toggle.text = "▲ 접기" if _tool_expanded else "▼ 상세 족보"
 	_tool_rules.visible = has_rules and _tool_expanded
 	_tool_note.visible = has_rules and _tool_expanded and _tool_note.text != ""
+
+
+## 화면 위쪽 가운데에 증강 타임라인을 둔다 (왼쪽 [피드백]과 오른쪽 [언어] 버튼 사이).
+func _build_augment_timeline() -> void:
+	_augment_timeline = AugmentTimeline.new()
+	_augment_timeline.position = Vector2((1366.0 - _augment_timeline.size.x) / 2.0, 6.0)
+	_augment_timeline.z_index = 1
+	add_child(_augment_timeline)
+
+
+## 증강 타임라인을 지금 라운드에 맞춘다. 판이 끝났거나 증강이 꺼진 판(검사용)에서는 숨긴다.
+func _refresh_augment_timeline() -> void:
+	if _augment_timeline == null or manager == null or state == null:
+		return
+	var show: bool = manager.draft_enabled and not manager.is_game_over and state.round_number >= 1
+	_augment_timeline.visible = show
+	if not show:
+		return
+	# 이번 라운드가 증강 라운드이고 아직 고르는 중이면 [이번 라운드 증강!], 다 골랐으면 다음 증강을 가리킨다.
+	var pending_now: bool = AugmentTimeline.is_draft_round(state.round_number) and (manager.current_state == TurnManager.State.PHASE_ROUND_START or _draft_in_progress())
+	_augment_timeline.refresh(state.round_number, pending_now, PacingDirector.HARD_CAP_ROUND)
 
 
 ## 보드 아래 한 줄 상태 띠: 단계 / 안내 문구 / 이동 대기열. (개입 카드 탭이 뜨면 그 자리를 양보한다.)
@@ -3639,6 +3663,7 @@ func _phase_text() -> String:
 
 func _refresh_header() -> void:
 	_phase_label.text = _phase_text()
+	_refresh_augment_timeline()
 	_refresh_direction()
 	var queue_text: String = "남은 이동 대기열: %s" % str(manager.move_queue) if not manager.move_queue.is_empty() else ""
 	if manager.command_stack != null and manager.command_stack.interrupt_count() > 0:
@@ -4162,14 +4187,23 @@ func _check_round_banner() -> void:
 		return
 	_announced_round = state.round_number
 	_announced_turn_key = "%d:%d" % [state.round_number, manager.current_player_id()]
+	var sub: String = round_banner_sub()
+	if _fx_on():
+		Sfx.play(&"round_start")
+	_announce("라운드", "ROUND %d" % state.round_number, "", COLOR_GOLD, null, 1.0, true, {"key": "round", "sub": sub})
+
+
+## 라운드 시작 연출의 부제: 첫 차례 안내 + 템포 업 + (다음 라운드가 증강 라운드면) 사전 예고.
+func round_banner_sub() -> String:
 	var tempo: int = TempoUp.level(state.round_number)
 	# 라운드 첫 차례는 이 배너가 차례 배너를 겸한다: 누구 차례인지 함께 알리고, 끝날 때까지 굴리기를 막는다
 	var first: int = manager.current_player_id()
 	var whose: String = tr_ui("turn.stamp_mine") if ai_mode and first == local_player_id else tr_ui("turn.stamp_other", [_player_name(first)])
 	var sub: String = whose + ("  ·  " + "템포 업 Lv.%d · 첫 이동 +%d칸" % [tempo, TempoUp.move_bonus(state.round_number)] if tempo > 0 else "")
-	if _fx_on():
-		Sfx.play(&"round_start")
-	_announce("라운드", "ROUND %d" % state.round_number, "", COLOR_GOLD, null, 1.0, true, {"key": "round", "sub": sub})
+	# 다음 라운드가 증강 라운드면 미리 알려 전략을 세울 수 있게 한다 (2026-11 제보 "증강이 언제 나오는지 알려주면 좋겠음").
+	if manager.draft_enabled and AugmentTimeline.warns_next_round(state.round_number, PacingDirector.HARD_CAP_ROUND):
+		sub += "\n" + L10n.t("★ 다음 라운드 증강 선택!")
+	return sub
 
 
 ## 새 차례인데 아직 [OO 차례] 배너를 띄우지 못했다 (앞 연출이 끝나기를 기다리는 중): 그동안 봇·굴리기 버튼은 움직이지 않는다.
