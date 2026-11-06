@@ -11,7 +11,8 @@ const STORAGE_KEY: String = "trg_player_save_v1"
 const VERSION: int = 1
 const CODE_PREFIX: String = "TRG1."
 ## 웹이 아닐 때 이어하기 링크의 주소 (배포 주소).
-const SHARE_BASE_URL: String = "https://trickcal-board.vercel.app/"
+## 웹이 아닐 때, 또는 itch.io 안에서(주소가 itch 전용 임시 주소라 즐겨찾기·공유에 못 쓴다) 이어하기 링크의 기준이 되는 대표 주소.
+const SHARE_BASE_URL: String = "https://hypereliasmarble.xyz/"
 const LEGACY_PROFILE: String = "user://profile.cfg"
 const LEGACY_SETTINGS: String = "user://settings.cfg"
 
@@ -236,9 +237,17 @@ static func share_url() -> String:
 	var base: String = SHARE_BASE_URL
 	if OS.has_feature("web"):
 		var here: Variant = JavaScriptBridge.eval("window.location.origin + window.location.pathname", true)
-		if here != null and str(here) != "":
-			base = str(here)
+		if here != null:
+			base = share_base_for(str(here))
 	return base + share_query()
+
+
+## 지금 페이지 주소(origin + path)에서 이어하기 링크의 기준 주소를 정한다: 빈 값이거나 itch.io 안(*.itch.zone: 주소가 임시 주소이고 쿼리도 전달되지 않는다)이면 대표 주소.
+static func share_base_for(page_url: String) -> String:
+	var url: String = page_url.strip_edges()
+	if url == "" or url.contains("itch.zone") or url.contains("itch.io"):
+		return SHARE_BASE_URL
+	return url
 
 
 ## 웹: 주소창을 지금 기록의 이어하기 링크로 바꾼다 (새로고침 없이 history.replaceState). 이대로 즐겨찾기하면 기록이 남는다.

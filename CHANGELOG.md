@@ -30,6 +30,7 @@
 - 필살기 버튼: 쓸 수 있을 때 금색·빛·두근거림 + [필살기!], 못 쓸 때 어두운 금테, 사용됨은 회색. 버튼·글자 크기 확대
 
 ## [Unreleased] (1.0 업데이트: 공지사항 내용은 content_trickcal/data/patch_notes.json)
+- 기록 이어하기: [내 전용 링크]의 대표 주소를 죽은 vercel.app에서 hypereliasmarble.xyz로 바꾸고, itch.io 안(임시 주소)에서는 대표 주소로 링크를 만든다 (PlayerSave.share_base_for). 공지사항에 주소 변경과 기록 이어하기 방법 안내 추가
 - 증강 타임라인(유저 제보: "증강이 언제 나오는지 알려주면 좋겠음"): 화면 위쪽 가운데에 지금 라운드부터 앞으로 6개 라운드 칩을 보여 준다. 증강이 나오는 라운드(1·4·7·10…)는 금색 테두리 선물 상자, 초증강·법전까지 섞이는 라운드(7부터)는 분홍 테두리+별. 왼쪽 글은 [이번 라운드 증강!] / [다음 라운드 증강!] / [다음 증강까지 N라운드]. 증강 한 라운드 전(3·6·9…) 라운드 시작 연출에는 "★ 다음 라운드 증강 선택!"을 덧붙인다
 - 링크 미리보기 주소를 죽은 vercel.app에서 실제 배포 주소로 바꿈(빌드 때 치환). 저장소 변수 PAGES_DOMAIN이 있으면 그 도메인을 쓰고 GitHub Pages용 CNAME 파일도 함께 싣는다 (내 도메인 연결 준비)
 - itch.io 배포 준비 (Vercel 무료 플랜이 접속자 수 때문에 막혀 주소를 itch.io로 옮긴다): CI가 같은 빌드를 itch용 폴더(build/itch: index.html이 맨 바깥, Vercel 분석·링크 미리보기 메타 제거)로 묶어 trg-itch.zip을 만든다. 수동 실행(Run workflow) 때는 zip을 아티팩트로 올리고, 저장소 시크릿 BUTLER_API_KEY가 있으면 butler로 itch 페이지(기본 mansic2/hypereliasmarble:html5)에 자동 업로드한다

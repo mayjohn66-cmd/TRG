@@ -166,3 +166,11 @@ func test_ninth_law_rides_in_the_spare_bits_of_the_buldak_byte() -> void:
 	check_eq(PlayerSave.short_code(), "4BGC-A53F", "LAW_09는 불닭 바이트 상위 비트 (0x1F | 0x20)")
 	check_eq(int(PlayerSave.parse_short("4BGC-A53F")["laws"]), 0x1A5, "읽을 때 다시 9비트로 합친다")
 	check_eq(int(PlayerSave.parse_short("4BGC-A53F")["buldak"]), 0x1F, "불닭 비트는 하위 5비트")
+
+
+func test_share_link_base_is_the_page_but_never_an_itch_temp_address() -> void:
+	check_eq(PlayerSave.share_base_for("https://hypereliasmarble.xyz/"), "https://hypereliasmarble.xyz/", "내 도메인에서는 지금 페이지 주소로 이어하기 링크를 만든다")
+	check_eq(PlayerSave.share_base_for("https://mayjohn66-cmd.github.io/TRG/"), "https://mayjohn66-cmd.github.io/TRG/", "다른 웹 주소도 지금 페이지 주소를 쓴다")
+	check_eq(PlayerSave.share_base_for("https://html-classic.itch.zone/html/123/index.html"), PlayerSave.SHARE_BASE_URL, "itch.io 안(임시 주소)에서는 대표 주소로 링크를 만든다")
+	check_eq(PlayerSave.share_base_for(""), PlayerSave.SHARE_BASE_URL, "주소를 못 읽으면 대표 주소")
+	check(PlayerSave.SHARE_BASE_URL.begins_with("https://") and not PlayerSave.SHARE_BASE_URL.contains("vercel"), "대표 주소는 죽은 vercel 주소가 아니다")
