@@ -2129,3 +2129,6 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 
 ### 7.64 결과 화면 프레임 하락 개선
 `ResultComicPage.set_time()`이 칸 7개 분량(`ComicPanel` 4개 + 페이지)을 매 프레임 `queue_redraw()`해, 반색조 점(약 1,000개 `draw_circle`)·줄무늬 교차·집중선을 계속 다시 만들었다(그리기 호출 최대 3,495). 수정: (1) 칸의 `contact` 값은 setter에서 바뀔 때만 자식 `ContactEdge`를 다시 그림(부딪힘 선을 칸 무늬와 분리). (2) 반색조 점은 `ArrayMesh` 하나로 만들어 `draw_mesh`. (3) 페이드 알파가 변할 때만 페이지를 다시 그림. 결과: 그리기 호출 491, 평균 프레임 159→73ms(소프트웨어 GL 기준 상대값). 측정은 `tests/perf_result_screen.gd`(CI 미포함 수동 도구).
+
+### 7.65 통계 웹후크의 접속 지역
+로비 입장 한 줄에 `국내(시간대, 언어)` 또는 `해외(시간대, 언어)`를 더한다. 시간대가 Asia/Seoul이면 국내, 아니면 해외이며, 값은 브라우저의 `Intl.DateTimeFormat().resolvedOptions().timeZone`과 `navigator.language`다. IP 조회나 외부 서비스 호출은 하지 않는다(VPN·시간대 설정에 따라 틀릴 수 있는 추정값). 정확한 국가가 필요하면 호스팅 쪽(Cloudflare 등)의 국가 헤더가 필요하다.

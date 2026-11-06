@@ -30,6 +30,7 @@
 - 필살기 버튼: 쓸 수 있을 때 금색·빛·두근거림 + [필살기!], 못 쓸 때 어두운 금테, 사용됨은 회색. 버튼·글자 크기 확대
 
 ## [Unreleased] (1.0 업데이트: 공지사항 내용은 content_trickcal/data/patch_notes.json)
+- 통계 웹후크: 로비 입장 줄에 접속 지역 추정을 붙인다 — `국내(Asia/Seoul, ko-KR)` / `해외(America/New_York, en-US)`. 브라우저 시간대·언어만 쓰고 IP는 보지 않는다 (`MatchTelemetry.region_label`)
 - 최적화(유저 제보: 최종 결과에서 프레임 하락): 결과 만화 컷(`ResultComicPage`)이 움직이는 내내 매 프레임 모든 칸을 `queue_redraw()`해서 반색조 점(약 1,000회 `draw_circle` + 점마다 `is_point_in_polygon`)·줄무늬·집중선을 계속 다시 그렸다. 이제 부딪힘 테두리는 별도 자식(`ContactEdge`)이 값이 바뀔 때만 그리고, 점은 메시 하나로 한 번 만들어 쓰며, 검정 페이드도 끝나면 다시 그리지 않는다. 측정(소프트웨어 GL): 그리기 호출 최대 3,495 → 491, 6~9초 구간 평균 프레임 159ms → 73ms. 측정 스크립트 `tests/perf_result_screen.gd`
 - 버그 수정(제보): 내 프로필을 없앤 뒤에도 처치당하면 숨은 자리(우측 하단)에 빨간 깜빡임·조각 효과가 떠 있던 문제. 숨긴 프로필에는 반응 연출(`_profile_react`: 소리만 남김)과 리벤지 숫자 팝업(`_revenge_charged_popup`)을 만들지 않는다. 다른 사람 프로필의 연출은 그대로
 - 기록 이어하기: [내 전용 링크]의 대표 주소를 죽은 vercel.app에서 hypereliasmarble.xyz로 바꾸고, itch.io 안(임시 주소)에서는 대표 주소로 링크를 만든다 (PlayerSave.share_base_for). 공지사항에 주소 변경과 기록 이어하기 방법 안내 추가

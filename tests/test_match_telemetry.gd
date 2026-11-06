@@ -33,6 +33,11 @@ func test_mode_win_and_duration_labels() -> void:
 	check_eq(MatchTelemetry.win_label(VictoryChecker.ALL_HOME), "일반", "말 4개 완주")
 	check_eq(MatchTelemetry.win_label(&"LAW_01"), "특수승리(기물 슬레이어)", "특수 승리는 교칙 이름까지")
 	check_eq(MatchTelemetry.duration_text(65), "1분 5초", "걸린 시간")
+	check_eq(MatchTelemetry.region_text("Asia/Seoul", "ko-KR"), "국내(Asia/Seoul, ko-KR)", "서울 시간대는 국내")
+	check_eq(MatchTelemetry.region_text("America/New_York", "en-US"), "해외(America/New_York, en-US)", "그 밖의 시간대는 해외")
+	check_eq(MatchTelemetry.region_text("", ""), "", "알 수 없으면 비운다")
+	check_eq(MatchTelemetry.lobby_line("a", "PC", "1", "해외(Asia/Tokyo, ja)"), "%s a | PC | 해외(Asia/Tokyo, ja) | v1" % MatchTelemetry.lobby_tag(), "로비 줄에 지역")
+	check_eq(MatchTelemetry.region_label(), "", "데스크톱 테스트는 지역 없음")
 	check_eq(MatchTelemetry.device_label(), "PC", "데스크톱 테스트는 PC")
 
 

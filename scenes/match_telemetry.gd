@@ -147,14 +147,34 @@ static func device_label() -> String:
 	return "PC"
 
 
+## 접속 지역 추정: 브라우저 시간대가 Asia/Seoul이면 국내, 아니면 해외 + (시간대, 브라우저 언어). IP는 보지 않는다.
+## 웹 밖(에디터·테스트)이면 빈 글.
+static func region_label() -> String:
+	if not OS.has_feature("web"):
+		return ""
+	var zone: String = str(JavaScriptBridge.eval("Intl.DateTimeFormat().resolvedOptions().timeZone", true))
+	var language: String = str(JavaScriptBridge.eval("navigator.language", true))
+	return region_text(zone, language)
+
+
+static func region_text(zone: String, language: String) -> String:
+	zone = zone.strip_edges()
+	language = language.strip_edges()
+	if zone == "" and language == "":
+		return ""
+	var detail: String = ", ".join(PackedStringArray([zone if zone != "" else "?", language if language != "" else "?"]))
+	return "국내(%s)" % detail if zone == "Asia/Seoul" else "해외(%s)" % detail
+
+
 ## 걸린 시간 [M분 S초].
 static func duration_text(seconds: int) -> String:
 	seconds = maxi(seconds, 0)
 	return "%d분 %d초" % [seconds / 60, seconds % 60]
 
 
-static func lobby_line(who: String, device: String, version: String) -> String:
-	return "%s %s | %s | v%s" % [lobby_tag(), who, device, version]
+static func lobby_line(who: String, device: String, version: String, region: String = "") -> String:
+	var where: String = " | %s" % region if region != "" else ""
+	return "%s %s | %s%s | v%s" % [lobby_tag(), who, device, where, version]
 
 
 static func start_line(who: String, mode: String, nth: int) -> String:
@@ -187,7 +207,7 @@ static func report_lobby_entry(host: Node) -> bool:
 		return false
 	_lobby_reported = true
 	_notify_page("lobby_enter", {"device": device_label()})
-	return send_line(host, lobby_line(GameSession.tagged_name(), device_label(), GameSession.version()))
+	return send_line(host, lobby_line(GameSession.tagged_name(), device_label(), GameSession.version(), region_label()))
 
 
 ## 보드판에 들어와 한 판이 시작됐다. nth는 이 사람의 누적 판 번호.
