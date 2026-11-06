@@ -14,6 +14,8 @@ const BOARD_MODEL: PackedScene = preload("res://assets/models/darts/v02/dartboar
 const DART_MODEL: PackedScene = preload("res://assets/models/darts/v02/dart_v02.tscn")
 
 var aiming := false
+## 던지기 전 대기 표시: 조준점 없이 과녁만 천천히 돈다 (조준은 없앴지만 던질 곳이 보이게).
+var idle := false
 var settled := false
 var _spin := 0.0
 var _aim_radius := 0.0
@@ -45,6 +47,18 @@ func _ready() -> void:
 	_sync_rendering()
 
 
+func set_idle(on: bool) -> void:
+	idle = on
+	if on:
+		aiming = false
+		_hit_radius = -1.0
+		_t = 0.0
+		settled = false
+	if is_node_ready():
+		_present()
+		_sync_rendering()
+
+
 func set_aiming(on: bool) -> void:
 	aiming = on
 	_hit_radius = -1.0
@@ -68,6 +82,7 @@ func _process(delta: float) -> void:
 
 func begin(details: Dictionary) -> void:
 	aiming = false
+	idle = false
 	_spin = 0.0
 	_hit_radius = float(details.get("radius", 0.5))
 	_hit_angle = float(details.get("angle", 0.0))
@@ -154,7 +169,7 @@ func _cursor_bar(dimensions: Vector2, material: Material, z: float) -> void:
 
 
 func _present() -> void:
-	_board.rotation.z = -_spin * TAU if aiming else 0.0
+	_board.rotation.z = -_spin * TAU if (aiming or idle) else 0.0
 	_reticle.visible = aiming
 	_reticle.position = Vector3(0.0, _aim_radius * SCORE_RADIUS, 0.22)
 	_dart.visible = not aiming and _hit_radius >= 0.0
@@ -171,7 +186,7 @@ func _present() -> void:
 
 
 func _sync_rendering() -> void:
-	var running := aiming and is_visible_in_tree()
+	var running := (aiming or idle) and is_visible_in_tree()
 	set_process(running)
 	if _viewport != null:
 		_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS if running else SubViewport.UPDATE_DISABLED
@@ -180,7 +195,7 @@ func _sync_rendering() -> void:
 
 
 func _request_frame() -> void:
-	if is_visible_in_tree() and not aiming:
+	if is_visible_in_tree() and not aiming and not idle:
 		_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 
 

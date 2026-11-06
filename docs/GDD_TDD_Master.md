@@ -2141,3 +2141,7 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 
 ### 7.67 모바일 증강 선택: 리롤 오터치 방지
 증강 선택 창(`_build_draft_overlay`)에서 [리롤]과 카드가 붙어 있어 폰에서 리롤을 누르려다 카드가 선택되던 제보에 대한 수정. 터치 모드에서 (1) 카드-리롤 간격 `DRAFT_REROLL_GAP_TOUCH`(34px, 데스크톱 14px), (2) 리롤 높이 `DRAFT_REROLL_HEIGHT_TOUCH`(64px) + 글자 20 + `MobileSupport.touch_button`(누르는 즉시 반응), (3) 창이 열리거나 리롤로 새로 그려진 직후 `DRAFT_PICK_GUARD_MSEC`(450ms) 동안 `_on_augment_card_picked`가 카드 선택을 무시한다. 테스트: tests/ui_layout_ux_test.gd(간격·크기·가드).
+
+### 7.68 다트 대기 과녁
+타이밍 조준을 없앤 뒤(7.4x) 던지기 전에는 [다트 던지기] 버튼만 보여 "다트판이 안 나온다"는 제보가 있었다. 내 다트 차례(굴리기 전, 연출 중 아님, 컴퓨터 차례 아님)에는 `DartIdle`(`DartBoardView.set_idle(true)`)이 보드 한가운데에 조준점 없이 천천히 돈다. 조준·aim 전달은 그대로 없다 (꽂히는 자리는 호스트 난수). 도구를 바꾸거나 던지면 사라지고(렌더링 중지), 굴림 연출이 별도 `DartBoardView`로 다트를 꽂는다. 테스트: tests/ui_v11_test.gd.
+

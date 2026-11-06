@@ -670,6 +670,8 @@ var _match_background: TextureRect = null
 var _track_lines: Array[Line2D] = []
 var _action_row: HFlowContainer = null
 var _roll_pad: RollPad = null
+## 불스아이 다트: 내가 던질 차례에 보드 한가운데 보이는 과녁 (던지기 전 대기 표시).
+var _dart_idle: DartBoardView = null
 ## 칸 바닥 한꺼번에 그리기 (그리기 호출 줄이기).
 var _tile_batch: BoardSkin.TileBatch = null
 ## 강화 망치 (v1.1) 선택 판: [더 강화!] / [멈추기].
@@ -2228,6 +2230,11 @@ func _build_action_bar() -> void:
 	_roll_pad.trigger_pulled.connect(_on_pad_trigger_pulled)
 	_roll_pad.preparation_finished.connect(_refresh_controls)
 	add_child(_roll_pad)
+	_dart_idle = DartBoardView.new()
+	_dart_idle.name = "DartIdle"
+	_dart_idle.position = Vector2(683.0, 335.0) - DartBoardView.SIZE * 0.5
+	_dart_idle.visible = false
+	add_child(_dart_idle)
 	_build_hammer_panel()
 	# 러시안 룰렛은 [발사]와 [정지] 두 버튼만 쓴다 (정지 버튼은 룰렛을 쓸 때만 이 줄로 옮겨 온다).
 	_gun_row = HBoxContainer.new()
@@ -6808,6 +6815,7 @@ func _refresh_controls() -> void:
 	var can_roll: bool = not over and (current_phase == TurnManager.State.PHASE_TURN_BEGIN or current_phase == TurnManager.State.PHASE_ROLL_WAIT)
 	_roll_button.disabled = not can_roll or _tile_pick_active or _ui_busy() or manager.stack_offer_pending() or manager.duel_pending() or _is_bot_turn() or manager.hammer_pending(player_id)
 	_refresh_roll_pad()
+	_refresh_dart_idle(tool)
 	_refresh_tool_stage()
 	_refresh_hammer_panel()
 	_refresh_bounty_marks()
@@ -7009,6 +7017,17 @@ func _play_hammer_outcome(tool_name: String, failed_level: int, success: bool) -
 		panel.hide()
 		panel.queue_free()
 
+
+
+## 다트 과녁: 내가 던질 차례(굴리기 전)에만 한가운데 천천히 돈다. 던지면 굴림 연출이 같은 과녁에 다트를 꽂는다.
+func _refresh_dart_idle(tool: BaseJudgmentTool) -> void:
+	if _dart_idle == null:
+		return
+	_dart_idle.position = _board_center() - DartBoardView.SIZE * 0.5
+	var show: bool = tool is ToolDarts and _roll_view_allowed() and not _fx_busy and not _is_bot_turn() and manager.current_player_id() == _dock_owner() and _fx_on()
+	if show != _dart_idle.visible:
+		_dart_idle.visible = show
+		_dart_idle.set_idle(show)
 
 
 ## 러시안 룰렛이면 정지 버튼을 [발사] 옆 큰 버튼으로 옮기고, 다른 도구면 원래 자리(우측 버튼 줄)로 돌려보낸다.

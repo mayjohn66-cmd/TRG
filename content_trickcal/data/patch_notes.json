@@ -377,6 +377,11 @@
        "ko": "모바일에서 증강 [리롤]을 누르려다 증강이 선택되던 문제를 고쳤습니다: [리롤] 버튼을 카드에서 띄우고 크게 키웠으며, 창이 새로 그려진 직후의 이어 누름은 카드를 고르지 않습니다",
        "en": "Fixed an issue on mobile where tapping the augment [Reroll] button picked the augment instead: the button is now larger and set apart from the card, and taps right after the window redraws no longer pick a card",
        "ja": "モバイルでオーグメントの［リロール］を押そうとするとオーグメントが選ばれてしまう問題を修正：ボタンをカードから離して大きくし、画面が描き直された直後の連続タップではカードを選ばないようにしました"
+      },
+      {
+       "ko": "[불스아이 다트 보드]를 던지기 전에 [던지기] 버튼만 보이고 가운데 다트판이 보이지 않던 문제를 고쳤습니다: 내 차례에는 과녁이 보드 한가운데 천천히 돕니다",
+       "en": "Fixed the [Bullseye Dartboard] showing only the Throw button before throwing: the board now spins slowly in the center of the table on your turn",
+       "ja": "［ブルズアイ ダーツボード］を投げる前に［投げる］ボタンだけが表示され、中央にダーツ盤が出ない問題を修正：自分の番には盤面中央でゆっくり回る的が表示されます"
       }
      ]
     }

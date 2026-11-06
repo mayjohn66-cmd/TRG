@@ -45,6 +45,18 @@ func _run() -> void:
 	await settle(6)
 	_expect(_board.find_child("DartAim", true, false) == null, "다트 차례에도 타이밍 조준판은 없다")
 	_expect(_board._roll_button.text.contains("던지기"), "굴리기 버튼은 [다트 던지기] (%s)" % _board._roll_button.text)
+	# 제보(1.0.1): [던지기] 버튼만 보이고 가운데 다트판이 없었다 -> 던지기 전에도 과녁이 한가운데 천천히 돈다
+	var idle: DartBoardView = _board.find_child("DartIdle", true, false) as DartBoardView
+	_expect(idle != null and idle.visible and idle.idle and not idle.aiming, "내 다트 차례에는 가운데 과녁이 보인다")
+	_expect(idle != null and idle.get_global_rect().get_center().distance_to(_board._board_center()) < 2.0, "과녁은 보드 한가운데에 있다")
+	_expect(idle != null and idle.is_processing() and idle._viewport.render_target_update_mode == SubViewport.UPDATE_ALWAYS and not idle._reticle.visible, "과녁은 돌고(조준점 없음) 그려진다")
+	state.tools[me] = ToolRegistry.create(&"D6")
+	_board._refresh_all()
+	await settle(4)
+	_expect(not idle.visible and not idle.is_processing(), "다른 도구로 바꾸면 과녁은 사라지고 멈춘다")
+	state.tools[me] = ToolRegistry.create(&"DICE_DARTS")
+	_board._refresh_all()
+	await settle(4)
 	var events: Array = []
 	manager.event_received.connect(func(kind: StringName, data: Dictionary) -> void: events.append({"kind": kind, "data": data}))
 	_board.instant_roll_for_test = true
