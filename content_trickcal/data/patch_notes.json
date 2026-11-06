@@ -184,6 +184,11 @@
        "ko": "이동할 말 고르기를 하단 기물 독과 통일: 큰 카드 배너 대신 같은 독에서 고를 수 있는 말만 금테로 강조하고, 처치·완주 같은 좋은 결과는 초록 테두리와 글자로 미리 알려 줍니다",
        "en": "Piece selection now uses the bottom piece dock instead of the big card banner: selectable pieces get a gold border and good outcomes such as a capture or finish are previewed in green",
        "ja": "移動する駒の選択を下部の駒ドックに統一：大きなカードバナーの代わりに、同じドックで選べる駒を金枠で強調し、撃破・ゴールなど良い結果は緑枠と文字で予告します"
+      },
+      {
+       "ko": "친선전에서 컴퓨터와 함께 할 때, 사람이 모두 졸업하면 컴퓨터끼리 남은 판은 바로 끝납니다 (남은 컴퓨터는 그 순간의 레이스 순서로 순위가 정해집니다). 사람이 나가 컴퓨터가 자리를 이어받은 경우도 같습니다",
+       "en": "In friendly matches with computer players, the game now ends right away once every human has finished (the remaining computers are ranked by their race order at that moment). The same applies when a human leaves and a computer takes over the seat",
+       "ja": "フレンド戦でコンピューターと一緒に遊ぶ場合、人間のプレイヤーが全員ゴールするとコンピューターだけが残った試合はすぐに終了します（残ったコンピューターはその時点のレース順で順位が決まります）。人間が退出してコンピューターが席を引き継いだ場合も同様です"
       }
      ]
     },

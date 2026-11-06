@@ -80,6 +80,7 @@ func setup(target: TurnManager, host: bool, seat: int, seats: Array[int], bot_se
 		if not bots.has(player_id):
 			humans.append(player_id)
 	lobby_humans.assign(humans)
+	sync_end_watch()
 	names = seat_names.duplicate()
 	seed_value = seed_for_game
 	manager.lockstep = true
@@ -98,6 +99,17 @@ func setup(target: TurnManager, host: bool, seat: int, seats: Array[int], bot_se
 
 func is_bot(seat: int) -> bool:
 	return bots.has(seat)
+
+
+## 컴퓨터가 낀 방: 지금 사람으로 앉아 있는 자리가 모두 졸업하면 컴퓨터끼리 남은 판은 구경만 하는 셈이라 레이스 진행 순서로 순위를 매기고 바로 끝낸다
+## (혼자 하는 AI 대전의 [내가 졸업하면 즉시 종료]와 같은 규칙). 자리를 컴퓨터가 이어받으면(나감·끊김) 그 사람도 기다리지 않는다.
+## 컴퓨터가 없는 방은 사람끼리 끝까지 둔다. 모두의 판에 같은 순서로 불리므로 방장·참가자의 판이 똑같이 끝난다.
+func sync_end_watch() -> void:
+	if manager == null:
+		return
+	manager.end_when_graduated.clear()
+	if not bots.is_empty() and not humans.is_empty():
+		manager.end_when_graduated.assign(humans)
 
 
 func display_name(seat: int) -> String:
@@ -369,6 +381,7 @@ func _apply_restore(seat: int) -> void:
 	bots.erase(seat)
 	humans.append(seat)
 	_heard[seat] = Time.get_ticks_msec()
+	sync_end_watch()
 	seat_restored.emit(seat)
 
 
@@ -385,6 +398,10 @@ func _apply_takeover(seat: int) -> void:
 	humans.erase(seat)
 	bots.append(seat)
 	_restore_requested.erase(seat)
+	sync_end_watch()
+	# 남은 사람이 이미 모두 졸업했는데 마지막 사람이 나간 경우: 새 졸업을 기다리지 않고 바로 끝낸다
+	if manager != null and manager.state != null and not manager.is_game_over:
+		manager.check_race_end()
 	seat_taken_over.emit(seat)
 
 

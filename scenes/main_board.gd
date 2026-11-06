@@ -12991,12 +12991,15 @@ func _refresh_mode_toggle() -> void:
 
 
 ## AI 대전(혼자 하는 판)은 내가 졸업하는 즉시 끝낸다: 남은 컴퓨터는 레이스 진행 순서로 순위를 매긴다.
-## 온라인·한 화면 4인 수동은 끝까지 진행한다.
+## 한 화면 4인 수동은 끝까지 진행한다. 온라인은 컴퓨터가 낀 방만 사람이 모두 졸업(또는 나감)하면 끝낸다 (NetGame.sync_end_watch).
 func _sync_race_end() -> void:
 	if manager == null:
 		return
 	manager.end_when_graduated.clear()
 	manager.pacing_humans.clear()
+	if net != null:
+		net.sync_end_watch()  # 온라인: 컴퓨터가 낀 방은 사람이 모두 졸업(또는 나감)하면 바로 끝낸다
+		return
 	if net == null and ai_mode and not GameSession.net_active:
 		manager.end_when_graduated.append(local_player_id)
 		manager.pacing_humans.append(local_player_id)

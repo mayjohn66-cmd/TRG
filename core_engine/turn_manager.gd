@@ -1957,6 +1957,13 @@ func _end_if_decided() -> bool:
 	return true
 
 
+## 순위가 이미 정해졌는지 지금 다시 본다 (사람 자리가 컴퓨터에게 넘어간 뒤처럼, 졸업 없이 종료 조건이 채워질 수 있을 때). 끝났으면 true.
+func check_race_end() -> bool:
+	if state == null:
+		return false
+	return _end_if_decided()
+
+
 ## 한 명을 다음 순위로 졸업시키고 알린다 (남은 말은 보드에서 철수).
 func _graduate(player_id: int, reason: StringName) -> void:
 	var rank: int = state.graduate(player_id, reason)

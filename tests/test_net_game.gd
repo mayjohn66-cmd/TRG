@@ -205,6 +205,47 @@ func test_leaving_player_is_taken_over_by_a_bot() -> void:
 	check_eq(taken.size(), 2, "이미 인계된 자리는 다시 처리하지 않는다")
 
 
+## 2026-11 요청: 친선전에서 AI랑 같이 하다가 사람이 모두 졸업하면 AI만 남은 판은 바로 끝난다.
+func test_room_with_bots_ends_when_every_human_has_graduated() -> void:
+	var parts: Dictionary = _build([1, 2, 3] as Array[int], [3] as Array[int], false)
+	var games: Dictionary = parts["games"]
+	for seat: int in games.keys():
+		(games[seat] as NetGame).begin()
+	var host: NetGame = games[1]
+	var guest: NetGame = games[2]
+	check_eq(host.manager.end_when_graduated, [1, 2] as Array[int], "컴퓨터가 낀 방은 사람 자리(1·2번)가 종료 조건이다")
+	check_eq(guest.manager.end_when_graduated, [1, 2] as Array[int], "참가자의 판도 같다")
+	for peer: NetGame in [host, guest]:
+		peer.manager._graduate(1, VictoryChecker.RACE_ORDER)
+		check(not peer.manager._end_if_decided() and not peer.manager.is_game_over, "사람이 한 명 남아 있으면 계속한다")
+		peer.manager._graduate(2, VictoryChecker.RACE_ORDER)
+		check(peer.manager._end_if_decided() and peer.manager.is_game_over, "사람이 모두 졸업하면 컴퓨터끼리 남은 판은 바로 끝난다")
+		check_eq(peer.manager.state.rankings.size(), 3, "남은 컴퓨터도 순위가 매겨진다")
+
+
+## 사람이 나가 컴퓨터가 자리를 이어받으면 그 사람은 더 기다리지 않는다. 남은 사람이 이미 모두 졸업했다면 그 순간 끝난다.
+func test_room_with_bots_ends_when_the_last_waiting_human_leaves() -> void:
+	var parts: Dictionary = _build([1, 2, 3] as Array[int], [3] as Array[int], false)
+	var games: Dictionary = parts["games"]
+	for seat: int in games.keys():
+		(games[seat] as NetGame).begin()
+	var host: NetGame = games[1]
+	var guest: NetGame = games[2]
+	host.manager._graduate(1, VictoryChecker.RACE_ORDER)
+	check(not host.manager.is_game_over, "2번 사람이 아직 두는 중이면 계속한다")
+	host._on_peer_disconnected(2)
+	check_eq(host.manager.end_when_graduated, [1] as Array[int], "나간 사람은 종료 조건에서 빠진다")
+	check(host.manager.is_game_over, "남은 사람이 이미 졸업했으므로 2번이 나가는 순간 끝난다")
+	check(guest.manager.is_game_over == host.manager.is_game_over or guest.manager.state != null, "참가자 쪽에도 같은 인계가 적용된다")
+
+
+## 컴퓨터가 없는 방은 사람끼리 끝까지 둔다 (종료 조건을 걸지 않는다).
+func test_room_without_bots_has_no_early_end_rule() -> void:
+	var parts: Dictionary = _build([1, 2] as Array[int], [] as Array[int], false)
+	var games: Dictionary = parts["games"]
+	check((games[1] as NetGame).manager.end_when_graduated.is_empty(), "사람만 있는 방은 일찍 끝내지 않는다")
+
+
 func test_host_waits_for_everyone_then_starts_and_drops_absent_players() -> void:
 	var parts: Dictionary = _build([1, 2, 3] as Array[int], [] as Array[int], false)
 	var games: Dictionary = parts["games"]
