@@ -372,6 +372,11 @@
        "ko": "리볼버에 강화 망치를 쓰면 강화 창과 리볼버 화면이 겹쳐 보이던 문제",
        "en": "The enhancement window overlapped the revolver screen when using the Enhancement Hammer with the revolver",
        "ja": "リボルバーに強化ハンマーを使うと、強化ウィンドウとリボルバー画面が重なる問題"
+      },
+      {
+       "ko": "모바일에서 증강 [리롤]을 누르려다 증강이 선택되던 문제를 고쳤습니다: [리롤] 버튼을 카드에서 띄우고 크게 키웠으며, 창이 새로 그려진 직후의 이어 누름은 카드를 고르지 않습니다",
+       "en": "Fixed an issue on mobile where tapping the augment [Reroll] button picked the augment instead: the button is now larger and set apart from the card, and taps right after the window redraws no longer pick a card",
+       "ja": "モバイルでオーグメントの［リロール］を押そうとするとオーグメントが選ばれてしまう問題を修正：ボタンをカードから離して大きくし、画面が描き直された直後の連続タップではカードを選ばないようにしました"
       }
      ]
     }

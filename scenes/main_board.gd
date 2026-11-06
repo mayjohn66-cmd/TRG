@@ -10031,8 +10031,18 @@ static func _hover_augment_card(card: Button, box: StyleBoxFlat, color: Color, e
 	card.z_index = 5 if entered else 0
 
 
+## 증강 선택 창이 (다시) 열린 직후에는 카드 선택을 잠깐 막는다 (폰에서 [리롤]을 누르면 창이 새로 그려지는데, 같은 자리를 이어서 두드린 손가락이 새 카드를 골라 버렸다).
+const DRAFT_PICK_GUARD_MSEC: int = 450
+## 카드와 [리롤] 버튼 사이 간격: 폰에서는 손가락이 카드까지 걸치지 않게 더 띄운다.
+const DRAFT_REROLL_GAP: float = 14.0
+const DRAFT_REROLL_GAP_TOUCH: float = 34.0
+const DRAFT_REROLL_HEIGHT_TOUCH: float = 64.0
+var _draft_guard_until_msec: int = 0
+
+
 func _build_draft_overlay(player_id: int, remaining: int) -> void:
 	_close_draft_overlay()
+	_draft_guard_until_msec = Time.get_ticks_msec() + DRAFT_PICK_GUARD_MSEC
 	_draft_player = player_id
 	_draft_signature_value = _draft_signature(player_id)
 	_draft_locked = false
@@ -10071,7 +10081,7 @@ func _build_draft_overlay(player_id: int, remaining: int) -> void:
 	for index: int in offers.size():
 		var definition: AugmentDef = AugmentRegistry.get_def(offers[index])
 		var slot := VBoxContainer.new()
-		slot.add_theme_constant_override("separation", 10)
+		slot.add_theme_constant_override("separation", int(DRAFT_REROLL_GAP_TOUCH if MobileSupport.touch_mode() else DRAFT_REROLL_GAP))
 		cards.add_child(slot)
 		var card: Button = _make_augment_card(_augment_card_info(definition, player_id), _on_augment_card_picked.bind(player_id, index, definition))
 		slot.add_child(card)
@@ -10080,6 +10090,9 @@ func _build_draft_overlay(player_id: int, remaining: int) -> void:
 		# 알고리즘 밴은 증강 리롤을 막지 않는다 (밴: 카드·필살기·주사위 리롤만)
 		var reroll: Button = _make_button("리롤 완료" if used else "[ 리롤 (1회) ]", _on_augment_reroll.bind(player_id, index), 15, Color("495a85"), 10)
 		reroll.custom_minimum_size = Vector2(AUGMENT_CARD_SIZE.x, 40)
+		if MobileSupport.touch_mode():
+			reroll.add_theme_font_size_override("font_size", 20)
+			MobileSupport.touch_button(reroll, DRAFT_REROLL_HEIGHT_TOUCH)  # 누르는 즉시 반응 + 큼직한 버튼
 		reroll.disabled = used
 		reroll.focus_mode = Control.FOCUS_NONE
 		slot.add_child(reroll)
@@ -10131,6 +10144,8 @@ func _fit_touch_draft(center: Control, box: Control) -> void:
 func _on_augment_card_picked(player_id: int, index: int, definition: AugmentDef) -> void:
 	if _draft_locked:
 		return
+	if MobileSupport.touch_mode() and not instant_roll_for_test and Time.get_ticks_msec() < _draft_guard_until_msec:
+		return  # 창이 막 열렸거나 [리롤]로 새로 그려진 직후의 이어 누름은 카드 선택으로 치지 않는다
 	_draft_locked = true
 	Sfx.play(&"augment_pick")
 	for button: Button in _draft_reroll_buttons:

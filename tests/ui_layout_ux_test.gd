@@ -76,6 +76,25 @@ func _run() -> void:
 	_board._open_zoom(me,&"ACT_02");await settle()
 	_expect(_board._zoom_view!=null and not _board._hand_outside_press(Vector2(300,150)),"터치: 카드 확대를 닫는 터치로는 손패가 접히지 않는다")
 	_board._close_zoom();_board._set_hand_open(false)
+	# 터치: 증강 선택 창 — [리롤]을 카드에서 띄우고 크게 만들며, 창이 새로 그려진 직후의 이어 누름은 카드를 고르지 않는다 (2026-11 제보)
+	_board.instant_roll_for_test=false
+	_board.manager.change_state(TurnManager.State.PHASE_ROUND_START)
+	_board.manager._draft_offers[1]=AugmentRegistry.generate_offers(_board.state,1);_board.manager._draft_picks.clear()
+	_board._build_draft_overlay(1,2);await settle()
+	var gap_ok:=false;var tall_ok:=false;var apart_ok:=false
+	if _board._draft_cards.size()==3 and _board._draft_reroll_buttons.size()==3:
+		var card0:Button=_board._draft_cards[0];var reroll0:Button=_board._draft_reroll_buttons[0]
+		gap_ok=reroll0.get_global_rect().position.y-card0.get_global_rect().end.y>=MainBoard.DRAFT_REROLL_GAP_TOUCH*0.9
+		tall_ok=reroll0.size.y>=MainBoard.DRAFT_REROLL_HEIGHT_TOUCH-0.5
+		apart_ok=not card0.get_global_rect().intersects(reroll0.get_global_rect())
+	_expect(gap_ok,"터치: [리롤]은 카드에서 충분히 떨어져 있다")
+	_expect(tall_ok and apart_ok,"터치: [리롤]은 크고 카드와 겹치지 않는다")
+	_board._draft_cards[0].pressed.emit();await settle()
+	_expect(not _board._draft_locked,"터치: 창이 열린 직후의 누름은 카드를 고르지 않는다")
+	_board._draft_guard_until_msec=0
+	_board._draft_cards[0].pressed.emit()
+	_expect(_board._draft_locked,"터치: 잠깐 뒤의 누름은 카드를 고른다")
+	_board._close_draft_overlay();_board._draft_locked=false;_board.instant_roll_for_test=true;_board.manager._draft_offers.clear()
 	MobileSupport.force_touch=false;_board._apply_hand_layout();_board._refresh_hands();await settle()
 	_expect(is_equal_approx(bar.scale.x,1.0) and is_equal_approx(stack.size.y,MainBoard.HAND_STACK_SIZE.y),"터치를 끄면 원래 크기로 돌아온다")
 	_board.state.hands[me]=[]
