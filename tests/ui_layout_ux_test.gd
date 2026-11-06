@@ -91,10 +91,17 @@ func _run() -> void:
 	# 증강 타임라인: 위쪽 가운데, 라운드에 따라 글·칩이 바뀐다 (2026-11 제보 "증강이 언제 나오는지 알려주면 좋겠음")
 	var timeline:=_board._augment_timeline as AugmentTimeline
 	_expect(timeline!=null and timeline.visible,"증강 타임라인이 보인다")
-	_expect(timeline.get_global_rect().position.y<20.0 and absf(timeline.get_global_rect().get_center().x-screen.size.x/2.0)<30.0,"타임라인은 화면 위쪽 가운데에 있다")
+	_expect(timeline.get_global_rect().position.y<20.0 and absf(timeline.get_global_rect().get_center().x-screen.get_center().x)<1.0,"타임라인은 화면 위쪽 정중앙에 있다")
 	_expect(not timeline.get_global_rect().intersects(_board._feedback_button.get_global_rect()) and not timeline.get_global_rect().intersects(_board._language_button.get_global_rect()),"타임라인이 [피드백]·[언어] 버튼과 겹치지 않는다")
 	_board.state.round_number=3;_board._refresh_all();await settle()
-	_expect(timeline.caption_kind==&"soon" and timeline.rounds.size()==6 and bool(timeline.rounds[1]["draft"]),"3라운드: 다음 라운드(4R)가 증강")
+	_expect(timeline.caption_kind==&"soon" and timeline.rounds.size()==5 and bool(timeline.rounds[3]["draft"]),"3라운드: 다음 라운드(4R)가 증강")
+	_expect(timeline._numbers[2].text=="3R" and timeline._numbers[2].get_theme_color("font_color")==Color.WHITE,"일반 라운드는 흰색 숫자")
+	_expect(timeline._numbers[3].text=="4R" and timeline._numbers[3].get_theme_color("font_color")==AugmentTimeline.COLOR_GOLD,"증강 라운드는 노란색 숫자")
+	var current_style := timeline._numbers[2].get_theme_stylebox("normal") as StyleBoxFlat
+	_expect(current_style.bg_color==AugmentTimeline.COLOR_CURRENT and current_style.border_color==AugmentTimeline.COLOR_EDGE,"중앙 현재 칸은 별도 배경색과 기본 테두리")
+	var enlarged := timeline._numbers.filter(func(chip: Label) -> bool: return not chip.scale.is_equal_approx(Vector2.ONE))
+	_expect(enlarged==[timeline._numbers[2]] and timeline._numbers[2].scale.x>1.0,"다섯 칸 중 가운데 현재 라운드만 확대한다")
+	_expect(timeline._numbers[0].get_rect().end.x<timeline._numbers[1].position.x,"라운드 칸 사이에 여백이 있다")
 	_expect(_board.round_banner_sub().contains("\n"),"3라운드 시작 연출에 [다음 라운드 증강 선택!] 사전 예고가 붙는다")
 	await create_timer(5.0).timeout  # 증강 선택 알림이 사라진 뒤의 모습
 	# 라운드 시작 연출(ROUND N)에 사전 예고가 한 줄 더 붙는 모습
@@ -107,14 +114,30 @@ func _run() -> void:
 	_board.state.round_number=5;_board._refresh_all();await settle()
 	_expect(timeline.caption_kind==&"later" and timeline.caption_rounds==2 and not _board.round_banner_sub().contains("\n"),"5라운드: 7라운드까지 2라운드 뒤, 사전 예고 없음")
 	_board.state.round_number=6;_board._refresh_all();await settle()
-	_expect(bool(timeline.rounds[1]["super"]),"7라운드 칩은 초증강·법전이 섞이는 별 표시")
+	_expect(bool(timeline.rounds[3]["super"]) and timeline._numbers[3].get_theme_color("font_color")==AugmentTimeline.COLOR_GOLD,"7라운드부터 초증강·법전이 섞여도 증강 숫자는 노란색")
+	_expect((timeline._numbers[4].get_theme_stylebox("normal") as StyleBoxFlat).border_color==AugmentTimeline.COLOR_TEMPO,"앞에 보이는 템포 업 시작 라운드는 붉은 테두리")
 	await screenshot("timeline-r6")
+	_board.state.round_number=TempoUp.stage_rounds[0];_board._refresh_all();await settle()
+	_expect((timeline._numbers[2].get_theme_stylebox("normal") as StyleBoxFlat).border_color==AugmentTimeline.COLOR_TEMPO,"템포 업이 시작되는 라운드 칸만 붉은 테두리")
+	_expect((timeline._numbers[3].get_theme_stylebox("normal") as StyleBoxFlat).border_color==AugmentTimeline.COLOR_EDGE,"템포 업이 이어지는 다음 라운드 칸은 기본 테두리")
+	await screenshot("timeline-tempo")
 	for language:String in ["en","ja"]:
 		L10n.set_language(language);_board._refresh_all();await settle()
-		_expect(timeline.size.x<=screen.size.x and not timeline.get_node("..").find_children("*","Label",true,false).is_empty(),"타임라인이 %s에서도 화면 안에 있다"%language)
+		_expect(timeline.size.x<=screen.size.x and timeline.tooltip_text.contains(L10n.t("노란 숫자는 증강 라운드, 붉은 테두리는 템포 업이 시작되는 라운드를 뜻합니다. 7라운드부터 초증강과 법전도 후보에 섞입니다.")),"타임라인과 도움말이 %s에서도 표시된다"%language)
 		await screenshot("timeline-"+language)
 	L10n.set_language("ko")
+	var next_number := timeline._numbers[3]
+	var prior_x := next_number.position.x
+	_board.instant_roll_for_test=false
+	_board.state.round_number+=1
+	_board._refresh_augment_timeline()
+	_expect(timeline._numbers[2]==next_number and is_equal_approx(next_number.position.x,prior_x),"다음 칸이 기존 위치에서 중앙으로 이동하기 시작한다")
+	await create_timer(AugmentTimeline.SLIDE_SECONDS + 0.06).timeout
+	_expect(is_equal_approx(next_number.position.x+next_number.pivot_offset.x,timeline.size.x*0.5) and not timeline._spare.visible,"전환이 끝나면 새 라운드는 중앙, 지난 칸은 퇴장")
+	_expect(is_equal_approx(next_number.scale.x,AugmentTimeline.CURRENT_SCALE) and timeline._numbers[1].scale.is_equal_approx(Vector2.ONE),"전환 뒤에는 새 현재 라운드만 커진다")
+	_board.instant_roll_for_test=true
 	_board.state.round_number=1;_board._refresh_all();await settle()
+	await screenshot("timeline-opening")
 	# 야추 판은 이전보다 위
 	_expect(_board._stage_yacht.position.y+YachtStage.STAGE_SIZE.y/2.0<335.0-20.0,"야추 족보 판은 이전(중심 335)보다 위로 올라갔다")
 	_board._reset_presentation();_board._close_zoom();_board._close_choice();MatchTelemetry.test_sender=Callable()

@@ -2128,7 +2128,7 @@ func _apply_tool_expand() -> void:
 ## 화면 위쪽 가운데에 증강 타임라인을 둔다 (왼쪽 [피드백]과 오른쪽 [언어] 버튼 사이).
 func _build_augment_timeline() -> void:
 	_augment_timeline = AugmentTimeline.new()
-	_augment_timeline.position = Vector2((1366.0 - _augment_timeline.size.x) / 2.0, 6.0)
+	_augment_timeline.position = Vector2((DESIGN_SIZE.x - _augment_timeline.size.x) * 0.5, 4.0)
 	_augment_timeline.z_index = 1
 	add_child(_augment_timeline)
 
@@ -2143,7 +2143,7 @@ func _refresh_augment_timeline() -> void:
 		return
 	# 이번 라운드가 증강 라운드이고 아직 고르는 중이면 [이번 라운드 증강!], 다 골랐으면 다음 증강을 가리킨다.
 	var pending_now: bool = AugmentTimeline.is_draft_round(state.round_number) and (manager.current_state == TurnManager.State.PHASE_ROUND_START or _draft_in_progress())
-	_augment_timeline.refresh(state.round_number, pending_now, PacingDirector.HARD_CAP_ROUND)
+	_augment_timeline.refresh(state.round_number, pending_now, PacingDirector.HARD_CAP_ROUND, _fx_on())
 
 
 ## 보드 아래 한 줄 상태 띠: 단계 / 안내 문구 / 이동 대기열. (개입 카드 탭이 뜨면 그 자리를 양보한다.)

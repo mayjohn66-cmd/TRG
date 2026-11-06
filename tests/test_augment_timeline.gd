@@ -19,14 +19,16 @@ func test_super_augments_mix_in_from_round_seven() -> void:
 	check(not AugmentTimeline.is_super_round(8), "증강 라운드가 아니면 별 표시가 없다")
 
 
-func test_entries_start_at_the_current_round_and_stop_at_the_cap() -> void:
+func test_entries_keep_the_current_round_centered_at_both_edges() -> void:
 	var list: Array[Dictionary] = AugmentTimeline.entries(3, 25)
-	check_eq(list.size(), AugmentTimeline.CHIP_COUNT, "칩은 지금 라운드 포함 6개")
-	check_eq(int(list[0]["round"]), 3, "첫 칩은 지금 라운드")
-	check(bool(list[0]["current"]) and not bool(list[1]["current"]), "지금 라운드만 current")
-	check(bool(list[1]["draft"]) and int(list[1]["round"]) == 4, "4라운드 칩은 증강")
+	check_eq(list.size(), 5, "칩은 현재 라운드 포함 다섯 개")
+	check_eq(list.map(func(entry: Dictionary) -> int: return entry["round"]), [1, 2, 3, 4, 5], "현재 라운드 앞뒤로 두 칸씩 표시")
+	check(bool(list[2]["current"]) and not bool(list[1]["current"]) and not bool(list[3]["current"]), "가운데 칸만 current")
+	check(bool(list[3]["draft"]) and int(list[3]["round"]) == 4, "4라운드 칩은 증강")
+	var start: Array[Dictionary] = AugmentTimeline.entries(1, 25)
+	check(not start[0]["available"] and not start[1]["available"] and start[2]["available"], "1라운드 왼쪽은 빈칸")
 	var near_end: Array[Dictionary] = AugmentTimeline.entries(24, 25)
-	check_eq(near_end.size(), 2, "상한(25) 뒤 라운드는 칩에 넣지 않는다")
+	check(near_end.size() == 5 and near_end[3]["available"] and not near_end[4]["available"], "상한 뒤 라운드는 번호 없는 칸")
 
 
 func test_caption_counts_rounds_until_the_next_augment() -> void:
