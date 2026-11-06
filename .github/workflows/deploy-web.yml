@@ -689,6 +689,7 @@ jobs:
       - name: Export web build
         env:
           VALIDATION_SCOPE: ${{ steps.validation.outputs.scope }}
+          PAGES_DOMAIN: ${{ vars.PAGES_DOMAIN }}
         run: |
           mkdir -p build/web
           # 시맨틱 버전 뒤에 빌드 메타데이터(+커밋 7자리)를 붙여, 피드백 제보가 어느 빌드에서 왔는지 알 수 있게 한다 (예: 0.9.0+abc1234)
@@ -738,6 +739,18 @@ jobs:
           touch build/web/.nojekyll
           # Vercel이 gh-pages 브랜치(또는 이 폴더)를 빌드 없이 그대로 호스팅하도록 설정 파일을 함께 싣는다.
           cp vercel.json build/web/vercel.json
+          # 공유 주소(링크 미리보기 og:url/og:image/twitter:image)를 지금 실제 주소로 바꾼다: 저장소 변수 PAGES_DOMAIN(내 도메인)이 있으면 그 주소, 없으면 GitHub Pages 주소.
+          # PAGES_DOMAIN이 있으면 CNAME 파일도 함께 싣는다 (gh-pages를 매번 새로 덮어써도 GitHub Pages의 Custom domain 설정이 지워지지 않게).
+          # 주의: DNS가 아직 연결되기 전에 PAGES_DOMAIN을 넣으면 기존 github.io 주소가 그 도메인으로 넘어가 접속이 끊길 수 있다 -> DNS 확인 뒤에 변수를 넣는다.
+          if [ -n "${PAGES_DOMAIN:-}" ]; then
+            SITE_URL="https://${PAGES_DOMAIN}/"
+            printf '%s\n' "${PAGES_DOMAIN}" > build/web/CNAME
+          else
+            SITE_URL="https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/"
+          fi
+          sed -i "s#https://trickcal-board.vercel.app/#${SITE_URL}#g" build/web/index.html
+          grep -c "trickcal-board.vercel.app" build/web/index.html || true
+          echo "공유 주소: ${SITE_URL}"
           # 링크 미리보기(Open Graph)용 이미지와 홈 화면 아이콘: shell.html이 index.html 기준 상대/절대 주소로 참조한다.
           cp web/og-image.png build/web/og-image.png
           cp web/icon.png build/web/icon.png
@@ -789,7 +802,7 @@ jobs:
           rm -rf build/itch
           mkdir -p build/itch
           cp -a build/web/. build/itch/
-          rm -rf build/itch/.git build/itch/.nojekyll build/itch/vercel.json
+          rm -rf build/itch/.git build/itch/.nojekyll build/itch/vercel.json build/itch/CNAME
           python3 tools/make_itch_index.py build/itch/index.html
           test -f build/itch/index.html
           test -f build/itch/index.pck
