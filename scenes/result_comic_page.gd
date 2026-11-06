@@ -40,6 +40,7 @@ var active: bool = false
 var skipping: bool = false
 var _audio:=PresentationAudio.new()
 var _time: float = 0.0
+var _fade_drawn: float = -1.0
 var _time_view: float = 0.0
 var _pace: float = 1.0
 var _impact_fired: bool = false
@@ -438,8 +439,8 @@ func _layout() -> void:
 		var side: float = view.y * 0.98
 		_art.size = Vector2(side, side)
 		_art.position = Vector2(view.x * 0.29 - side * 0.5, view.y * 0.025)
-	elif _left.get_child_count() > 0:
-		var portrait: Control = _left.get_child(0) as Control
+	elif _left.get_child_count() > 1:
+		var portrait: Control = _left.get_child(1) as Control  # 0번은 부딪힘 테두리
 		portrait.position = Vector2(view.x * 0.24, view.y * 0.2)
 	for index: int in panels.size():
 		var panel: ComicPanel = panels[index]
@@ -562,7 +563,10 @@ func set_time(t: float) -> void:
 	next_button.modulate.a = clampf(next_in * 2.0, 0.0, 1.0)
 	next_button.position.x = view.x - next_button.size.x - 14.0 + (1.0 - next_in) * 260.0
 	next_button.disabled = t < DURATION
-	queue_redraw()
+	var fade := fade_alpha(t)
+	if not is_equal_approx(fade, _fade_drawn):  # 페이드가 끝난 뒤에는 매 프레임 다시 그리지 않는다
+		_fade_drawn = fade
+		queue_redraw()
 
 
 ## Fade from the actual board into full black; unrevealed cuts have no outlines or fills.
@@ -618,10 +622,52 @@ class ComicPanel extends Control:
 	var fill: Color = Color.WHITE
 	var streak: Color = Color(0, 0, 0, 0)
 	var pattern := 0
-	var contact := 0.0
+	## 부딪힘 테두리는 따로 그려서, 움직이는 동안 만화 무늬(점·줄무늬·집중선)를 다시 그리지 않는다.
+	var contact := 0.0:
+		set(value):
+			if is_equal_approx(contact, value):
+				return
+			contact = value
+			if _edge != null:
+				_edge.queue_redraw()
+	var _edge: Control = null
+	var _dots: ArrayMesh = null
 
 	func _init() -> void:
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_edge = ContactEdge.new()
+		_edge.name = "ContactEdge"
+		_edge.panel = self
+		add_child(_edge)
+
+	## 반색조 점 전체를 메시 하나로 만든다 (점마다 draw_circle을 부르면 그리기 호출이 천 개가 넘는다).
+	func _build_dots(unit: float) -> ArrayMesh:
+		var vertices := PackedVector2Array()
+		var colors := PackedColorArray()
+		var radius := 2.4 * unit
+		var alpha := 0.065 if pattern == 5 else (0.18 if pattern != 1 else 0.11)
+		var color := Color(ResultComicPage.INK, alpha)
+		for row: int in range(0,ceili(size.y/(22.0*unit))):
+			for column: int in range(0,ceili(size.x/(22.0*unit))):
+				var at := Vector2((float(column)+float(row%2)*0.5)*22.0,float(row)*22.0)*unit
+				if pattern == 1 and at.x > size.x*0.16 and at.x < size.x*0.43:continue
+				if not Geometry2D.is_point_in_polygon(at,polygon):continue
+				for step: int in 8:
+					var a0 := TAU * float(step) / 8.0
+					var a1 := TAU * float(step + 1) / 8.0
+					vertices.append(at)
+					vertices.append(at + Vector2.from_angle(a0) * radius)
+					vertices.append(at + Vector2.from_angle(a1) * radius)
+					colors.append_array([color,color,color])
+		if vertices.is_empty():
+			return null
+		var arrays := []
+		arrays.resize(Mesh.ARRAY_MAX)
+		arrays[Mesh.ARRAY_VERTEX] = vertices
+		arrays[Mesh.ARRAY_COLOR] = colors
+		var mesh := ArrayMesh.new()
+		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+		return mesh
 
 	func _draw() -> void:
 		if polygon.size() < 3:
@@ -630,11 +676,9 @@ class ComicPanel extends Control:
 		var unit := maxf(size.y / 768.0, 0.25)
 		if pattern in [1,2,4,5]:
 			# Large Ben-Day clusters read as print, not a field of tiny UI decorations.
-			for row: int in range(0,ceili(size.y/(22.0*unit))):
-				for column: int in range(0,ceili(size.x/(22.0*unit))):
-					var at := Vector2((float(column)+float(row%2)*0.5)*22.0,float(row)*22.0)*unit
-					if pattern == 1 and at.x > size.x*0.16 and at.x < size.x*0.43:continue
-					if Geometry2D.is_point_in_polygon(at,polygon):draw_circle(at,2.4*unit,Color(INK,0.065 if pattern==5 else (0.18 if pattern!=1 else 0.11)),true,-1,true)
+			_dots = _build_dots(unit)
+			if _dots != null:
+				draw_mesh(_dots, null)
 		if pattern in [3,4]:
 			var shade := Color("bd245e") if pattern == 3 else Color("635194")
 			for stripe: int in range(-30,60):
@@ -659,6 +703,22 @@ class ComicPanel extends Control:
 		if contact > 0.0:
 			# Contact follows this panel edge; it never crosses the winner artwork.
 			draw_polyline(loop, Color(ResultComicPage.INK, contact * 0.70), (18.0 + contact * 4.0) * unit, true)
+
+
+## 칸 가장자리의 부딪힘 강조선. 칸의 무늬와 분리해 이 선만 다시 그린다.
+class ContactEdge extends Control:
+	var panel: ComicPanel = null
+	func _init() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		set_anchors_preset(Control.PRESET_FULL_RECT)
+	func _draw() -> void:
+		if panel == null or panel.contact <= 0.0 or panel.polygon.size() < 3:
+			return
+		# Contact follows this panel edge; it never crosses the winner artwork.
+		var unit := maxf(panel.size.y / 768.0, 0.25)
+		var loop := PackedVector2Array(panel.polygon)
+		loop.append(panel.polygon[0])
+		draw_polyline(loop, Color(ResultComicPage.INK, panel.contact * 0.70), (18.0 + panel.contact * 4.0) * unit, true)
 
 
 ## [Next Page ▶]의 삼각형 (글꼴에 없는 기호를 그림으로).

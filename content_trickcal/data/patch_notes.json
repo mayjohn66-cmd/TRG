@@ -283,6 +283,11 @@
        "ko": "하단 화면을 정리: 우측 하단 프로필을 없애고 기물 조작을 중앙 하단으로, 카드는 우측 하단에 작게 모아 두었다가 눌러서 펼쳐 보도록 변경 (보유 증강은 로그 머리의 [내 증강] 버튼에서 확인)",
        "en": "Bottom screen tidied up: the lower-right profile is gone, piece controls moved to the bottom center, and cards are stacked small at the lower right and open when tapped (check your augments with the [My Augments] button on the log header)",
        "ja": "画面下部を整理：右下のプロフィールを廃止し、駒の操作を中央下へ、カードは右下に小さくまとめてタップで開く方式に変更（所持オーグメントはログ上部の［所持オーグメント］ボタンで確認）"
+      },
+      {
+       "ko": "최종 결과 화면이 느려지던 문제 개선: 결과 만화 컷이 움직이는 동안 매 프레임 반색조 점과 줄무늬를 다시 그리던 것을 바뀔 때만 그리도록 바꿔, 그리기 호출을 약 3,500회에서 약 500회로 줄임",
+       "en": "Fixed slowdown on the final result screen: the comic panels no longer redraw their halftone dots and stripes every frame, cutting draw calls from about 3,500 to about 500",
+       "ja": "最終結果画面の処理落ちを改善：漫画コマが動いている間、毎フレーム網点とストライプを描き直していたのを変化時のみに変更し、描画呼び出しを約3,500回から約500回に削減"
       }
      ]
     },

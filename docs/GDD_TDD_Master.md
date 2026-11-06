@@ -2126,3 +2126,6 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 - 사전 예고: `round_banner_sub()`(라운드 시작 연출 `ROUND N`의 부제)에 다음 라운드가 증강 라운드면 줄을 바꿔 "★ 다음 라운드 증강 선택!"을 붙인다 (`AugmentTimeline.warns_next_round`: 3·6·9…·24라운드).
 - 번역: translations.csv에 en/ja 6줄. 테스트: tests/test_augment_timeline.gd(증강 라운드 목록, 초증강 시작 라운드, 칩 목록과 상한, 글 종류, 예고 라운드), tests/ui_layout_ux_test.gd(위치·버튼과 겹침 없음·라운드별 글/칩·예고 부제·en/ja).
 - 후속 수정(제보 "본인 프로필이 삭제됐는데 피격당하면 우측 하단에 빨갛게 깜빡임"): 숨긴 내 프로필 패널의 화면 좌표가 그대로라, 패널 좌표에 효과를 만드는 `_profile_react`(피격 빨간 깜빡임·좋은 일 조각)와 `_revenge_charged_popup`(+N 숫자)이 숨은 자리에 떴다. 패널이 보이지 않으면(`is_visible_in_tree()` false) 소리만 내거나 아무것도 만들지 않는다. 카드·투척의 출발점은 7.60에서 정한 대로 기물 독이다. tests/ui_layout_ux_test.gd에서 수정 없이 돌리면 실패하는 회귀 검사(내 프로필: 효과 0개, 다른 프로필: 효과 유지).
+
+### 7.64 결과 화면 프레임 하락 개선
+`ResultComicPage.set_time()`이 칸 7개 분량(`ComicPanel` 4개 + 페이지)을 매 프레임 `queue_redraw()`해, 반색조 점(약 1,000개 `draw_circle`)·줄무늬 교차·집중선을 계속 다시 만들었다(그리기 호출 최대 3,495). 수정: (1) 칸의 `contact` 값은 setter에서 바뀔 때만 자식 `ContactEdge`를 다시 그림(부딪힘 선을 칸 무늬와 분리). (2) 반색조 점은 `ArrayMesh` 하나로 만들어 `draw_mesh`. (3) 페이드 알파가 변할 때만 페이지를 다시 그림. 결과: 그리기 호출 491, 평균 프레임 159→73ms(소프트웨어 GL 기준 상대값). 측정은 `tests/perf_result_screen.gd`(CI 미포함 수동 도구).
