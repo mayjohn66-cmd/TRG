@@ -25,9 +25,9 @@ func _process(_delta: float) -> bool:
 		if not _rolled and not _board._ui_busy() and not _board._roll_button.disabled:
 			_rolled = true
 			_board._on_roll_pressed()
-		if _banner_frame == -1 and _board._select_banner.visible:
+		if _banner_frame == -1 and _board._select_active:
 			_banner_frame = _frames
-			_board._on_select_card_hover(1, true)
+			_board._on_pawn_slot_hover(1)
 		if _banner_frame != -1 and _frames == _banner_frame + 10:
 			_banner_frame = -2
 		if _banner_frame != -2 and _frames < 600:

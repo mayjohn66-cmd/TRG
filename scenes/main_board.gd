@@ -126,8 +126,6 @@ const AUGMENT_COMPACT_HEIGHT: float = 280.0
 const AUGMENT_HOVER_SCALE: float = 1.06
 ## 증강 카드를 고른 뒤 다음 단계로 넘어가기 전에 선택 연출을 보여 주는 시간(초).
 const AUGMENT_PICK_SECONDS: float = 0.9
-const SELECT_CARD_SIZE: Vector2 = Vector2(135, 165)
-const SELECT_BANNER_POS: Vector2 = Vector2(380, 568)
 const SLOT_SIZE: Vector2 = Vector2(76, 88)
 ## 슬링샷 조준: 이 거리(px)만큼 당기면 파워 100%.
 ## 호버 툴팁이 뜨기까지 커서를 가만히 대고 있어야 하는 시간(초).
@@ -350,6 +348,8 @@ var _caption: EventCaption = null
 ## 중요한 사건 줄이 나온 뒤 다음 연출 전에 읽을 틈(초, 배율 전).
 const IMPORTANT_BEAT_SECONDS: float = 0.45
 ## 사건 자막에서 강조(금테 + 읽을 틈)하는 사건의 낱말.
+## 사건 자막(화면 위쪽)에 올릴 만한 큰 사건의 낱말. 나머지 줄은 액션 로그에만 남는다 (2026-11: 위쪽이 지저분하다는 제보).
+const CAPTION_WORDS: Array[String] = ["처치", "사출", "법전", "확정", "포위망", "결투", "게임 종료"]
 const IMPORTANT_WORDS: Array[String] = ["처치", "사출", "밟음", "방어", "발동", "사용!", "필살기", "법전", "확정", "포위망", "결투", "과열", "되감", "게임 종료", "연대책임"]
 var _phase_label: Label = null
 ## 화면 위쪽 가운데 [증강 타임라인]: 증강이 나오는 라운드(1·4·7…)를 미리 보여 준다 (2026-11 제보 "증강이 언제 나오는지 알려주면 좋겠음").
@@ -633,9 +633,8 @@ var _stage_blackjack: BlackjackStage = null
 var _stage_pinball: PinballStage = null
 var _stage_turn_key: String = ""
 var _menu_button: Button = null
-var _feedback_button: Button = null  ## 왼쪽 위 피드백 / 버그 제보 (소리·언어는 설정 화면에 있다)
-var _speed_button: Button = null  ## 오른쪽 위 [배속 1x] 진행 속도 (1x -> 2x -> 3x)
-var _language_button: LanguageToggle = null  ## [배속] 왼쪽의 [🌐 한국어 ▾] 언어 버튼 (한국어 / ENGLISH / 日本語 중 고르면 화면 글자가 바로 바뀐다)
+var _feedback_button: Button = null  ## 메뉴 안의 [피드백 / 버그 제보] 항목 (메뉴를 열 때마다 새로 만든다)
+var _speed_button: Button = null  ## 메뉴 안의 [배속 1x] 항목 (1x -> 2x -> 3x). 언어는 설정 화면에만 있다
 ## 이 판을 시작한 시각 (피드백 스냅샷의 플레이 타임).
 var _game_started_msec: int = 0
 ## 액션 로그에 마지막으로 적은 라운드 구분선 (_log_round_divider).
@@ -688,7 +687,8 @@ var _reaction_use_button: Button = null
 var _reaction_pass_button: Button = null
 var _reaction_key: String = ""
 var _reaction_left: float = 0.0
-var _select_banner: Panel = null
+## 말 고르기 단계인가: 큰 선택 배너를 없애고 하단 기물 독이 그 역할을 한다 (2026-11 UI 통일).
+var _select_active: bool = false
 var _dir_left: Node2D = null
 var _dir_right: Node2D = null
 var _announced_round: int = 0
@@ -697,8 +697,6 @@ var _announced_turn_key: String = ""
 var pacing_enabled: bool = true
 var _beat_until_msec: int = 0
 var _select_title: Label = null
-var _select_cards: Array[Button] = []
-var _select_parts: Array[Dictionary] = []
 var _select_hover_slot: int = -1
 var _flash_pawn: int = -1
 var _flash_tween: Tween = null
@@ -940,7 +938,7 @@ func _pawn_pick_blocked() -> bool:
 func _pawn_click_target(pointer: Vector2) -> int:
 	if manager.current_state != TurnManager.State.PHASE_SELECT_PAWN or _pawn_pick_blocked():
 		return -1
-	if _select_banner != null and _select_banner.visible and _select_banner.get_global_rect().has_point(pointer):
+	if _select_active and _pawn_bar != null and _pawn_bar.visible and _pawn_bar.get_global_rect().has_point(pointer):
 		return -1
 	return _pawn_at(pointer)
 
@@ -1612,7 +1610,6 @@ func _build_ui() -> void:
 	_build_dock()
 	_build_pawn_dock()
 	_build_emote_row()
-	_build_select_banner()
 	_build_direction_icons()
 	_build_center_banner()
 	_build_roll_fx()
@@ -1649,9 +1646,9 @@ func _build_ui() -> void:
 ## 어느 묶음에 속하는지 등록해 둔다: 0 왼쪽 / 1 가운데(보드) / 2 오른쪽. 기준 위치(base)에 묶음 오프셋을 더해 배치한다.
 func _register_layout() -> void:
 	_layout_entries.clear()
-	var left: Array = [_law_panel, _feedback_button]
-	var center: Array = [_select_banner, _dir_left, _dir_right, _board_layer, _pawn_layer, _dock, _drop_zone, _pick_banner, _pick_cancel, _roll_button, _roll_pad, _gun_row, _stage_yacht, _stage_blackjack, _stage_pinball, _danger_label, _pawn_bar, _augment_timeline]
-	var right: Array = [_tool_board, _action_row, _hand_stack, _emote_row, _menu_button, _speed_button, _language_button, _debug_box, _log_panel]
+	var left: Array = [_law_panel]
+	var center: Array = [_dir_left, _dir_right, _board_layer, _pawn_layer, _dock, _drop_zone, _pick_banner, _pick_cancel, _roll_button, _roll_pad, _gun_row, _stage_yacht, _stage_blackjack, _stage_pinball, _danger_label, _pawn_bar, _augment_timeline]
+	var right: Array = [_tool_board, _action_row, _hand_stack, _emote_row, _menu_button, _debug_box, _log_panel]
 	for index: int in PLAYER_IDS.size():
 		var player_id: int = PLAYER_IDS[index]
 		var panel: Control = _profiles[player_id]["panel"]
@@ -1740,7 +1737,7 @@ func _build_toast_label() -> void:
 	_toast_label.visible = false
 	add_child(_toast_label)
 	_caption = EventCaption.new()
-	_caption.position = Vector2((1366.0 - EventCaption.WIDTH) * 0.5, 6.0)
+	_caption.position = Vector2((1366.0 - EventCaption.WIDTH) * 0.5, 66.0)  # 증강 타임라인(위쪽 6~63) 바로 아래
 	_caption.z_index = 40
 	add_child(_caption)
 
@@ -2184,44 +2181,18 @@ func _build_status_strip() -> void:
 	_menu_button.size = Vector2(84, 32)
 	_menu_button.tooltip_text = tr_ui("btn.menu_tip")
 	add_child(_menu_button)
-	_feedback_button = _make_button(tr_ui("btn.feedback"), _open_feedback.bind("상단 버튼"), 13, Color("c2255c"), 8)
-	_feedback_button.name = "FeedbackButton"
-	# 소리·언어는 설정 화면으로 옮겼다. 피드백은 왼쪽 위 (오른쪽 위는 [메뉴] 하나)
-	_feedback_button.position = Vector2(SAFE_MARGIN, 10)
-	_feedback_button.size = Vector2(150, 32)
-	_feedback_button.tooltip_text = tr_ui("btn.feedback_tip")
-	add_child(_feedback_button)
-	_speed_button = _make_button("", _on_speed_pressed, 13, Color("3b4766"), 8)
-	_speed_button.name = "SpeedButton"
-	_speed_button.position = Vector2(1180, 10)
-	_speed_button.size = Vector2(84, 32)
-	add_child(_speed_button)
-	_refresh_speed_button()
-	_language_button = LanguageToggle.create(13, Color.WHITE)
-	_apply_button_style(_language_button, Color("3b4766"), 8)
-	Sfx.bind_button(_language_button)
-	_language_button.position = Vector2(1180 - 8 - 132, 10)
-	_language_button.size = Vector2(132, 32)
-	add_child(_language_button)
 	if MobileSupport.touch_mode():
 		_apply_touch_top_bar()
 
 
-## 터치 기기: 위쪽 [피드백]·[배속]·[메뉴] 버튼을 손가락 크기로 키운다 (기준 84x32 -> 124x48, 프로필 패널 위 여백 안에서).
+## 터치 기기: 위쪽 [메뉴] 버튼을 손가락 크기로 키운다 (기준 84x32 -> 124x48, 프로필 패널 위 여백 안에서).
 func _apply_touch_top_bar() -> void:
 	var height: float = MobileSupport.TOUCH_BUTTON_HEIGHT
 	var right: float = 1366.0 - SAFE_MARGIN + 4.0
 	_menu_button.size = Vector2(124, height)
 	_menu_button.position = Vector2(right - 124.0, 3)
-	_speed_button.size = Vector2(124, height)
-	_speed_button.position = Vector2(right - 124.0 * 2.0 - 8.0, 3)
-	_language_button.size = Vector2(132, height)
-	_language_button.position = Vector2(right - 124.0 * 2.0 - 8.0 - 132.0 - 8.0, 3)
-	_feedback_button.size = Vector2(190, height)
-	_feedback_button.position = Vector2(SAFE_MARGIN, 3)
-	for button: Button in [_menu_button, _speed_button, _language_button, _feedback_button]:
-		button.add_theme_font_size_override("font_size", 17)
-		MobileSupport.touch_button(button, height)
+	_menu_button.add_theme_font_size_override("font_size", 17)
+	MobileSupport.touch_button(_menu_button, height)
 
 
 ## 우측 중앙의 큼직한 둥근 [굴리기] 버튼(모두의 마블 방식)과 그 아래의 멈추기·개입 패스·폭탄 떠넘기기 버튼.
@@ -3589,6 +3560,7 @@ func _on_language_changed() -> void:
 	if not is_inside_tree() or manager == null or manager.state == null:
 		return
 	_refresh_all()
+	_refresh_speed_button()
 	if _dock != null:
 		_refresh_hands()
 
@@ -5046,7 +5018,7 @@ func _set_hand_open(value: bool) -> void:
 	_apply_hand_layout()
 
 
-## 접힘/펼침과 기물 독·말 선택 배너 사이의 표시 상태를 맞춘다.
+## 접힘/펼침과 기물 독 사이의 표시 상태를 맞춘다 (말 고르기도 같은 기물 독에서 한다).
 func _apply_hand_layout() -> void:
 	if _dock == null or _hand_stack == null:
 		return
@@ -5055,7 +5027,7 @@ func _apply_hand_layout() -> void:
 	_dock.visible = _hand_open and has_cards
 	_hand_stack.visible = has_cards and not _hand_open
 	if _pawn_bar != null:
-		_pawn_bar.visible = not _hand_open and not (_select_banner != null and _select_banner.visible)
+		_pawn_bar.visible = not _hand_open
 
 
 ## 터치 모드면 접힌 손패의 누르는 영역을 위로 넓히고 기물 독을 키운다 (바닥을 기준으로 위쪽으로만 커진다). 반복 호출해도 같다.
@@ -6174,6 +6146,15 @@ func _build_pawn_dock() -> void:
 		place.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		place.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		button.add_child(place)
+		var result := _make_label("", 16, Color("8ce99a"))  # 말 고르기 단계의 결과 예고(처치!·완주! 등)
+		result.add_theme_color_override("font_outline_color", Color.BLACK)
+		result.add_theme_constant_override("outline_size", 5)
+		result.position = Vector2(0, 2)
+		result.size = Vector2(SLOT_SIZE.x, 22)
+		result.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		result.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		result.visible = false
+		button.add_child(result)
 		var number := _make_label(str(slot + 1), 12, Color("adb5bd"))
 		number.position = Vector2(6, 2)
 		number.visible = false
@@ -6192,7 +6173,17 @@ func _build_pawn_dock() -> void:
 		button.pressed.connect(_on_pawn_slot_pressed.bind(slot))
 		_pawn_bar.add_child(button)
 		_pawn_buttons.append(button)
-		_pawn_slot_parts.append({"letter": letter, "place": place, "badge": badge})
+		_pawn_slot_parts.append({"letter": letter, "place": place, "badge": badge, "result": result})
+	_select_title = _make_label("", 16, Color("ffe066"))
+	_select_title.name = "SelectTitle"
+	_select_title.position = Vector2(-30, -28)
+	_select_title.size = Vector2(_pawn_bar.size.x + 60.0, 24)
+	_select_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_select_title.add_theme_color_override("font_outline_color", Color("5c4300"))
+	_select_title.add_theme_constant_override("outline_size", 5)
+	_select_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_select_title.visible = false
+	_pawn_bar.add_child(_select_title)
 
 
 ## 내 프로필 위의 [감정 표현] 버튼: 누르면 이모트 판(EmoteCatalog 8종)이 펼쳐지고, 고르면 내 아바타 옆에 말풍선이 튀어나오며 아바타 표정이 바뀐다.
@@ -6395,16 +6386,41 @@ func active_skill_buttons() -> Array[Button]:
 
 
 ## 말 칸·필살기 버튼에 커서를 대면 그 말의 경로만 미리 보여 준다 (설명은 말 칸을 눌러야 열린다).
+## 말 고르기 단계에서는 그 말이 보드 위에서 깜빡이고 나머지 칸은 흐려진다.
 func _on_pawn_slot_hover(slot: int) -> void:
-	_preview_pawn(_dock_owner() * 10 + slot + 1)
+	var pawn_id: int = _dock_owner() * 10 + slot + 1
+	_preview_pawn(pawn_id)
+	if _select_active and not _pawn_buttons[slot].disabled:
+		_select_hover_slot = slot
+		_start_pawn_flash(pawn_id)
+		_fade_select_dock(true)
 
 
 func _on_pawn_slot_unhover(_button: Button) -> void:
 	_clear_highlight()
+	if _select_active:
+		if _select_hover_slot != -1:
+			_select_hover_slot = -1
+			_stop_pawn_flash()
+		_fade_select_dock(false)
 
 
-## 기물 독의 말 칸을 누르면 그 말 설명을 열고, 다시 누르면 닫는다.
+## 호버 중에는 나머지 말 칸을 흐리게 해서 보드 위 경로 표시가 잘 보이게 한다.
+func _fade_select_dock(hovering: bool) -> void:
+	for index: int in _pawn_buttons.size():
+		var button: Button = _pawn_buttons[index]
+		if button.disabled:
+			continue
+		button.modulate = Color(1, 1, 1, 0.5) if hovering and index != _select_hover_slot else Color.WHITE
+
+
+## 기물 독의 말 칸을 누르면: 말 고르기 단계면 그 말로 이동, 아니면 그 말 설명을 열고 다시 누르면 닫는다.
 func _on_pawn_slot_pressed(slot: int) -> void:
+	if _select_active:
+		_stop_pawn_flash()
+		_select_hover_slot = -1
+		_on_pawn_pressed(manager.current_player_id() * 10 + slot + 1)
+		return
 	_tip_toggle(_pawn_buttons[slot], _fill_pawn_tip.bind(_dock_owner() * 10 + slot + 1))
 
 
@@ -6416,45 +6432,17 @@ func _on_pawn_icon_input(event: InputEvent, icon: Control, pawn_id: int) -> void
 		icon.accept_event()
 
 
-## 화면 위쪽 [필살기·카드 사용 가능] 알림을 맞춘다: 내 차례에 굴리기 전이고 쓸 수 있는 필살기나 카드가 있으면 한 줄로 알린다.
+## 예전의 위쪽 [필살기·카드 사용 가능] 알림: 위쪽 줄을 비우려고 더 이상 띄우지 않는다 (필살기 버튼이 기물 독에서 금색으로 두근거려 알려 준다).
 func _refresh_skill_hint() -> void:
-	if _skill_hint == null:
-		return
-	var owner_id: int = _dock_owner()
-	var phase: TurnManager.State = manager.current_state
-	var skills: int = 0
-	var cards: int = 0
-	if not manager.is_game_over and manager.current_player_id() == owner_id and not _is_bot_turn() and not _ui_busy() and not _tile_pick_active \
-			and (phase == TurnManager.State.PHASE_TURN_BEGIN or phase == TurnManager.State.PHASE_ROLL_WAIT) and _roll_button.visible:
-		for pawn: PlayerPawn in state.pawns_of(owner_id):
-			if PawnSkills.has_skill(pawn) and not pawn.is_finished and manager.can_use_skill(owner_id, pawn.entity_id):
-				skills += 1
-		for card_id: StringName in state.hands[owner_id]:
-			if _card_usable_now(owner_id, CardRegistry.get_card(card_id)):
-				cards += 1
-	_skill_hint.visible = skills > 0 or cards > 0
-	if not _skill_hint.visible:
-		_skill_hint_key = ""
-		return
-	var key: String = "%d,%d" % [skills, cards]
-	if key != _skill_hint_key:
-		_skill_hint_key = key
-		var parts: Array[String] = []
-		if skills > 0:
-			parts.append(L10n.t("필살기 사용 가능!"))
-		if cards > 0:
-			parts.append(L10n.t("카드 %d장 사용 가능!") % cards)
-		(_skill_hint.get_node("ReadyNoticeText") as Label).text = "★ " + "  ·  ".join(PackedStringArray(parts))
-		_skill_hint.reset_size()
-	_skill_hint.position = Vector2((1366.0 - _skill_hint.size.x) * 0.5, READY_NOTICE_Y)
-	var pulse: float = 0.5 + 0.5 * sin(float(Time.get_ticks_msec()) / 1000.0 * TAU * 0.9)
-	_skill_hint.self_modulate = Color(1.0 + 0.2 * pulse, 1.0 + 0.15 * pulse, 1.0)
+	if _skill_hint != null:
+		_skill_hint.visible = false
 
 
 func _refresh_pawn_dock() -> void:
+	_refresh_select_mode()
 	_refresh_skill_hint()
 	_refresh_emote_row()
-	_apply_hand_layout()  # 기물 독은 손패가 접혀 있고 말 선택 배너가 없을 때 중앙 하단에 보인다
+	_apply_hand_layout()  # 기물 독은 손패가 접혀 있을 때 중앙 하단에 보인다 (말 고르기 단계에서는 손패를 접는다)
 	var owner_id: int = _dock_owner()
 	var color: Color = PLAYER_COLORS[owner_id]
 	for index: int in _pawn_buttons.size():
@@ -6478,15 +6466,33 @@ func _refresh_pawn_dock() -> void:
 		var badge: Label = parts["badge"]
 		badge.visible = false
 		badge.text = "x%d" % (pawn.carried.size() + 1)
-		# 우측 하단 독은 내 말이 어떤 상태인지만 보여 준다 (말 고르기는 가운데 하단 배너가 맡으므로 선택 표시·클릭은 없다).
-		button.disabled = false
+		# 기물 독은 내 말의 상태를 보여 주고, 말 고르기 단계에서는 같은 칸이 선택 버튼이 된다 (고를 수 있는 칸만 금테·결과 예고).
 		var base: Color = color.darkened(0.55)
-		button.add_theme_stylebox_override("normal", _style(base, color.darkened(0.2), 2, 10, 2, 4))
-		button.add_theme_stylebox_override("hover", _style(base.lightened(0.12), color, 2, 10, 4, 4))
-		button.add_theme_stylebox_override("pressed", _style(base, color.darkened(0.2), 2, 10, 2, 4))
-		button.add_theme_stylebox_override("disabled", _style(base, color.darkened(0.35), 2, 10, 0, 4))
+		var result_label: Label = parts["result"]
+		if _select_active:
+			var can_pick: bool = _can_pick_now(pawn)
+			var prediction: Dictionary = _pawn_prediction(pawn)
+			var good: bool = bool(prediction["good"]) and can_pick
+			button.disabled = not can_pick
+			result_label.visible = can_pick and str(prediction["text"]) != ""
+			result_label.text = str(prediction["text"])
+			result_label.add_theme_color_override("font_color", Color("8ce99a") if bool(prediction["good"]) else Color("ffe066"))
+			var edge: Color = Color("69db7c") if good else (COLOR_GOLD if can_pick else color.darkened(0.35))
+			var width: int = 4 if can_pick else 2
+			button.add_theme_stylebox_override("normal", _style(base, edge, width, 10, 8 if can_pick else 0, 4))
+			button.add_theme_stylebox_override("hover", _style(base.lightened(0.15), Color("ffe066"), 4, 10, 16, 4))
+			button.add_theme_stylebox_override("pressed", _style(base.darkened(0.1), COLOR_GOLD, 4, 10, 0, 4))
+			button.add_theme_stylebox_override("disabled", _style(base, color.darkened(0.35), 2, 10, 0, 4))
+			button.modulate = Color.WHITE if can_pick else Color(1, 1, 1, 0.5)
+		else:
+			button.disabled = false
+			result_label.visible = false
+			button.add_theme_stylebox_override("normal", _style(base, color.darkened(0.2), 2, 10, 2, 4))
+			button.add_theme_stylebox_override("hover", _style(base.lightened(0.12), color, 2, 10, 4, 4))
+			button.add_theme_stylebox_override("pressed", _style(base, color.darkened(0.2), 2, 10, 2, 4))
+			button.add_theme_stylebox_override("disabled", _style(base, color.darkened(0.35), 2, 10, 0, 4))
+			button.modulate = Color(1, 1, 1, 0.55) if pawn.is_finished else Color.WHITE
 		button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-		button.modulate = Color(1, 1, 1, 0.55) if pawn.is_finished else Color.WHITE
 		var has_skill: bool = PawnSkills.has_skill(pawn) and not pawn.is_finished
 		var usable: bool = has_skill and manager.can_use_skill(owner_id, pawn.entity_id) and not _ui_busy() and not _is_bot_turn() and not _tile_pick_active
 		# AI·온라인 모드에서는 내 프로필 카드의 버튼이, 수동 4인 모드에서는 기물 독의 버튼이 필살기를 맡는다.
@@ -6504,82 +6510,8 @@ func _refresh_pawn_dock() -> void:
 
 
 # ---------------------------------------------------------------------------
-# 말 선택 배너: 굴림 뒤 보드 아래 중앙에 자동으로 뜨는 4장의 큰 말 카드
+# 말 고르기: 하단 기물 독이 그대로 선택 UI가 된다 (예전의 큰 4장 카드 배너는 없앴다)
 # ---------------------------------------------------------------------------
-
-func _build_select_banner() -> void:
-	_select_banner = Panel.new()
-	_select_banner.position = SELECT_BANNER_POS
-	_select_banner.size = Vector2(606, 198)
-	_select_banner.visible = false
-	_select_banner.mouse_filter = Control.MOUSE_FILTER_STOP
-	_select_banner.add_theme_stylebox_override("panel", _style(Color(0.05, 0.07, 0.12, 0.94), COLOR_GOLD, 3, 16, 14, 0))
-	add_child(_select_banner)
-	_select_title = _make_label("", 18, Color("ffe066"))
-	_select_title.position = Vector2(0, 4)
-	_select_title.size = Vector2(606, 26)
-	_select_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_select_title.add_theme_color_override("font_outline_color", Color("5c4300"))
-	_select_title.add_theme_constant_override("outline_size", 5)
-	_select_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_select_banner.add_child(_select_title)
-	for slot: int in GameEnums.PAWNS_PER_PLAYER:
-		var card := Button.new()
-		card.custom_minimum_size = SELECT_CARD_SIZE
-		card.size = SELECT_CARD_SIZE
-		card.position = Vector2(10 + slot * (SELECT_CARD_SIZE.x + 8.0), 30)
-		card.focus_mode = Control.FOCUS_NONE
-		var badge := _make_label("", 13, Color("0d1018"))
-		badge.position = Vector2(8, 6)
-		badge.size = Vector2(56, 20)
-		badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		card.add_child(badge)
-		var status := _make_label("", 12, Color("ced4da"))
-		status.visible = false  # 출전 중·출발 대기 같은 작은 상태 글자는 그리지 않는다 (말 그림·카드 밝기가 알려 준다)
-		status.position = Vector2(4, 28)
-		status.size = Vector2(SELECT_CARD_SIZE.x - 8.0, 18)
-		status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		status.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		card.add_child(status)
-		var disc := Panel.new()
-		disc.position = Vector2((SELECT_CARD_SIZE.x - 44.0) / 2.0, 50)
-		disc.size = Vector2(44, 44)
-		disc.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		card.add_child(disc)
-		var mark := _make_label("", 22, Color.WHITE)
-		mark.size = Vector2(44, 44)
-		mark.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		mark.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		mark.add_theme_color_override("font_outline_color", Color.BLACK)
-		mark.add_theme_constant_override("outline_size", 4)
-		disc.add_child(mark)
-		var sub := _make_label("", 16, Color.WHITE)
-		sub.position = Vector2(4, 98)
-		sub.size = Vector2(SELECT_CARD_SIZE.x - 8.0, 22)
-		sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		sub.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		sub.add_theme_color_override("font_outline_color", Color.BLACK)
-		sub.add_theme_constant_override("outline_size", 3)
-		card.add_child(sub)
-		var result := _make_label("", 20, Color("8ce99a"))
-		result.add_theme_color_override("font_outline_color", Color.BLACK)
-		result.add_theme_constant_override("outline_size", 5)
-		result.position = Vector2(6, 124)
-		result.size = Vector2(SELECT_CARD_SIZE.x - 12.0, 36)
-		result.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		result.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		result.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		result.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		card.add_child(result)
-		card.pressed.connect(_on_select_card_pressed.bind(slot))
-		card.mouse_entered.connect(_on_select_card_hover.bind(slot, true))
-		card.mouse_exited.connect(_on_select_card_hover.bind(slot, false))
-		_select_banner.add_child(card)
-		_select_cards.append(card)
-		_select_parts.append({"badge": badge, "status": status, "disc": disc, "mark": mark, "sub": sub, "result": result})
-
 
 func _queued_dice() -> int:
 	return 0 if manager.move_queue.is_empty() else int(manager.move_queue[0])
@@ -6645,7 +6577,7 @@ func _pawn_prediction(pawn: PlayerPawn) -> Dictionary:
 	return {"text": "", "good": false}
 
 
-func _select_banner_wanted() -> bool:
+func _select_wanted() -> bool:
 	if manager.is_game_over or manager.current_state != TurnManager.State.PHASE_SELECT_PAWN:
 		return false
 	if _ui_busy() or _is_bot_turn() or _tile_pick_active or _draft_overlay != null or _choice_overlay != null or _result_overlay != null or _stack_overlay != null:
@@ -6653,104 +6585,22 @@ func _select_banner_wanted() -> bool:
 	return not state.selectable_pawns(manager.current_player_id(), _queued_dice()).is_empty()
 
 
-func _refresh_select_banner() -> void:
-	if _select_banner == null:
+## 말 고르기 단계인지 맞춘다: 켜지면 손패를 접고, 기물 독 위에 [어느 말을 N칸 이동시킬까요?] 제목을 띄운다. 칸 모양은 _refresh_pawn_dock이 그린다.
+func _refresh_select_mode() -> void:
+	if _select_title == null:
 		return
-	var wanted: bool = _select_banner_wanted()
-	if not wanted:
-		if _select_banner.visible:
+	var wanted: bool = _select_wanted()
+	if wanted != _select_active:
+		_select_active = wanted
+		if not wanted:
 			_stop_pawn_flash()
 			_select_hover_slot = -1
-		_select_banner.visible = false
-		_apply_hand_layout()
-		return
-	var owner_id: int = manager.current_player_id()
-	var color: Color = PLAYER_COLORS[owner_id]
-	var steps: int = absi(manager.move_queue[0]) if not manager.move_queue.is_empty() else 0
-	_select_title.text = "[어느 말을 %d칸 이동시킬까요?]" % steps
-	for index: int in _select_cards.size():
-		var card: Button = _select_cards[index]
-		var parts: Dictionary = _select_parts[index]
-		var pawn: PlayerPawn = state.get_pawn(owner_id * 10 + index + 1)
-		var can_pick: bool = _can_pick_now(pawn)
-		var badge: Label = parts["badge"]
-		badge.text = "%d번 말" % (index + 1)
-		badge.add_theme_stylebox_override("normal", _style(color.lightened(0.25) if can_pick else Color("6c757d"), Color("ffffff"), 1, 8, 0, 1))
-		var status: String
-		if pawn.is_finished:
-			status = "★완주 완료"
-		elif pawn.blocked_this_turn or pawn.restrained_turns > 0:
-			status = "구속 중"
-		elif pawn.is_imprisoned:
-			status = "감옥"
-		elif not pawn.has_left_start and pawn.revenge_boost:
-			status = "출격 +%d (리벤지 부스터)" % _revenge_steps(pawn)
-		elif not pawn.has_left_start:
-			status = "출발 대기"
-		else:
-			status = "출전 중 (%d번)" % pawn.current_tile_idx
-		(parts["status"] as Label).text = status
-		var letter: String = pawn.letter()
-		(parts["mark"] as Label).text = letter if letter != "" else PawnCatalog.basic_letter()
-		(parts["disc"] as Panel).add_theme_stylebox_override("panel", StyleBoxEmpty.new())
-		(parts["mark"] as Label).visible = false
-		_token_in(parts["disc"], pawn, color, Vector2(22,34),0.95)
-		var sub_name: String = "기본 말" if pawn.kind == GameEnums.PawnKind.BASIC else pawn.display_label().split(":")[-1]
-		(parts["sub"] as Label).text = sub_name
-		var prediction: Dictionary = _pawn_prediction(pawn)
-		var result: Label = parts["result"]
-		result.text = str(prediction["text"])
-		result.add_theme_color_override("font_color", Color("8ce99a") if bool(prediction["good"]) else Color("ffe066"))
-		var base: Color = Color("1b2236") if can_pick else Color("101319")
-		var edge: Color = Color("69db7c") if bool(prediction["good"]) and can_pick else color.lightened(0.1)
-		card.disabled = not can_pick
-		card.modulate = Color.WHITE if can_pick else Color(1, 1, 1, 0.5)
-		card.add_theme_stylebox_override("normal", _style(base, edge, 4 if edge != color.lightened(0.1) else 3, 12, 10 if edge != color.lightened(0.1) else 6, 0))
-		card.add_theme_stylebox_override("hover", _style(base.lightened(0.15), Color("ffe066"), 4, 12, 18, 0))
-		card.add_theme_stylebox_override("pressed", _style(base.darkened(0.1), COLOR_GOLD, 4, 12, 0, 0))
-		card.add_theme_stylebox_override("disabled", _style(base, Color("495057"), 2, 12, 0, 0))
-		card.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	_select_banner.visible = true
-	_apply_hand_layout()
-
-
-func _on_select_card_pressed(slot: int) -> void:
-	_stop_pawn_flash()
-	_select_hover_slot = -1
-	_on_pawn_pressed(manager.current_player_id() * 10 + slot + 1)
-
-
-## 카드에 마우스를 올리면 카드가 떠오르고, 보드 위 해당 말이 크게 깜빡이며 이동 경로 타일이 굵은 노란 테두리로 표시된다.
-func _on_select_card_hover(slot: int, entered: bool) -> void:
-	var card: Button = _select_cards[slot]
-	var tween: Tween = card.create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	if not entered:
-		tween.tween_property(card, "position:y", 30.0, 0.1)
-		if _select_hover_slot == slot:
-			_select_hover_slot = -1
-			_stop_pawn_flash()
-			_clear_highlight()
-		_fade_select_banner(false)
-		return
-	if card.disabled:
-		return
-	tween.tween_property(card, "position:y", 18.0, 0.1)
-	_select_hover_slot = slot
-	var pawn_id: int = manager.current_player_id() * 10 + slot + 1
-	_preview_pawn(pawn_id)
-	_start_pawn_flash(pawn_id)
-	_fade_select_banner(true)
-
-
-## 호버 중에는 배너 배경과 나머지 카드를 흐리게 해서 아래 보드의 경로 표시가 잘 보이게 한다.
-func _fade_select_banner(hovering: bool) -> void:
-	var style: StyleBoxFlat = _style(Color(0.05, 0.07, 0.12, 0.35 if hovering else 0.94), COLOR_GOLD, 3, 16, 14, 0)
-	_select_banner.add_theme_stylebox_override("panel", style)
-	for index: int in _select_cards.size():
-		var card: Button = _select_cards[index]
-		if card.disabled:
-			continue
-		card.modulate = Color(1, 1, 1, 0.45) if hovering and index != _select_hover_slot else Color.WHITE
+	if wanted and _hand_open:
+		_hand_open = false
+	_select_title.visible = wanted
+	if wanted:
+		var steps: int = absi(manager.move_queue[0]) if not manager.move_queue.is_empty() else 0
+		_select_title.text = "[어느 말을 %d칸 이동시킬까요?]" % steps
 
 
 func _start_pawn_flash(pawn_id: int) -> void:
@@ -6991,7 +6841,6 @@ func _refresh_controls() -> void:
 	_hint_label.text = _hint_text(current_phase, tool)
 
 	_refresh_pawn_dock()
-	_refresh_select_banner()
 	_tool_option.disabled = over or not (current_phase == TurnManager.State.PHASE_TURN_BEGIN or current_phase == TurnManager.State.PHASE_ROLL_WAIT) or tool.has_pending_state()
 	var tool_index: int = ToolRegistry.ALL_IDS.find(tool.tool_id)
 	if tool_index != -1:
@@ -12002,9 +11851,12 @@ func _bq(text: String) -> String:
 
 
 ## 🟦 컴퓨터 2 (플레이어 색).
-## 사건 자막에 올릴 줄인가: 매 차례 나오는 굴림 결과는 자막에서 뺀다 (로그에는 남는다).
+## 사건 자막에 올릴 줄인가: 정말 큰 사건(처치·사출·법전·순위 확정·포위망·결투·게임 종료)만 올린다. 굴림·카드·함정 같은 나머지는 로그에만 남는다.
 static func caption_worthy(text: String) -> bool:
-	return not text.contains("굴림 →")
+	for word: String in CAPTION_WORDS:
+		if text.contains(word):
+			return not text.contains("템포 업")  # 템포 업은 가운데 경고 연출이 따로 있다 (긴 줄이 화면 밖으로 넘친다)
+	return false
 
 
 ## 강조할 중요한 사건인가 (처치·사출·함정 밟음·방어·카드 발동·필살기·법전·순위 등).
@@ -12723,6 +12575,15 @@ func _build_main_page() -> void:
 	_menu_item(_make_button(tr_ui("menu.continue"), _close_menu, 17, Color("2b8a3e"), 10))
 	_menu_item(_make_button(tr_ui("menu.settings"), _show_menu_page.bind(&"settings"), 17, Color("3b4766"), 10))
 	_menu_item(_make_button(tr_ui("menu.rulebook"), _open_rulebook, 17, Color("8a5a0a"), 10))
+	# 위쪽 줄을 비우려고 [배속]·[피드백]은 메뉴로 옮겼다. 항목은 메뉴를 열 때마다 새로 만든다.
+	_speed_button = _make_button("", _on_speed_pressed, 17, Color("3b4766"), 10)
+	_speed_button.name = "SpeedButton"
+	_menu_item(_speed_button)
+	_refresh_speed_button()
+	_feedback_button = _make_button(tr_ui("btn.feedback"), _on_menu_feedback_pressed, 17, Color("c2255c"), 10)
+	_feedback_button.name = "FeedbackButton"
+	_feedback_button.tooltip_text = tr_ui("btn.feedback_tip")
+	_menu_item(_feedback_button)
 	# 전체 로그·새 게임·모드 전환은 개발용이라 디버그를 켰을 때만 메뉴에 나온다 (평소엔 게임답게 숨긴다).
 	if _debug_enabled:
 		_menu_item(_log_toggle)
@@ -12731,6 +12592,12 @@ func _build_main_page() -> void:
 			_menu_item(_mode_toggle)
 			_menu_item(_debug_toggle)
 	_menu_item(_make_button(tr_ui("menu.exit"), _show_menu_page.bind(&"confirm_exit"), 17, Color("7a2a2a"), 10))
+
+
+## 메뉴의 [피드백]: 메뉴를 닫고 피드백 창을 연다.
+func _on_menu_feedback_pressed() -> void:
+	_close_menu()
+	_open_feedback("메뉴")
 
 
 ## 메뉴의 [규칙 책자]: 게임 위(메뉴보다 위)에 규칙 책자를 연다.
@@ -12803,9 +12670,12 @@ func _apply_game_speed() -> void:
 
 
 func _refresh_speed_button() -> void:
-	if _speed_button == null:
-		return
 	var speed: int = 1 if net != null else GameSession.game_speed
+	# 배속 버튼이 메뉴 안에 있어서, 켜 둔 배속을 잊지 않게 [메뉴] 버튼에도 작게 적는다.
+	if _menu_button != null:
+		_menu_button.text = tr_ui("btn.menu") if speed <= 1 else "%s %dx" % [tr_ui("btn.menu"), speed]
+	if _speed_button == null or not is_instance_valid(_speed_button):
+		return
 	_speed_button.text = tr_ui("btn.speed", [speed])
 	_speed_button.tooltip_text = tr_ui("btn.speed_online_tip") if net != null else tr_ui("btn.speed_tip")
 	_speed_button.disabled = net != null

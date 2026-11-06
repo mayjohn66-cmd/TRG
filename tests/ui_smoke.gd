@@ -260,7 +260,7 @@ func _step_once() -> void:
 				_board._roll_button.pressed.emit()
 		TurnManager.State.PHASE_SELECT_PAWN:
 			var options: Array[Button] = []
-			for button: Button in _board._select_cards:
+			for button: Button in _board._pawn_buttons:
 				if not button.disabled:
 					options.append(button)
 			if options.is_empty():
@@ -269,16 +269,16 @@ func _step_once() -> void:
 				return
 			var chosen: Button = options[_rng.randi_range(0, options.size() - 1)]
 			# 가끔은 버튼 대신 보드 위의 말 도형을 직접 클릭한다 (호버 미리보기 포함).
-			var chosen_index: int = _board._select_cards.find(chosen)
+			var chosen_index: int = _board._pawn_buttons.find(chosen)
 			var chosen_pawn: PlayerPawn = _board.state.get_pawn(manager.current_player_id() * 10 + chosen_index + 1)
 			var chosen_view: Node2D = _board._pawn_views.get(chosen_pawn.entity_id)
 			_check_select_banner(manager, options)
-			var banner_rect: Rect2 = (_board._select_banner as Control).get_global_rect()
-			if _board._select_banner.visible and _rng.randi_range(0, 2) == 0:
-				# 말 선택 배너의 카드를 직접 눌러 고른다 (호버 미리보기 포함).
-				var card: Button = _board._select_cards[chosen_index]
+			var banner_rect: Rect2 = (_board._pawn_bar as Control).get_global_rect()
+			if _board._select_active and _rng.randi_range(0, 2) == 0:
+				# 기물 독의 말 칸을 직접 눌러 고른다 (호버 미리보기 포함).
+				var card: Button = _board._pawn_buttons[chosen_index]
 				card.mouse_entered.emit()
-				_assert(_board._flash_pawn == chosen_pawn.entity_id, "카드에 호버하면 해당 말이 깜빡이기 시작해야 한다")
+				_assert(_board._flash_pawn == chosen_pawn.entity_id, "말 칸에 호버하면 해당 말이 깜빡이기 시작해야 한다")
 				card.mouse_exited.emit()
 				card.pressed.emit()
 				_banner_picks += 1
@@ -356,23 +356,21 @@ func _play_draft(manager: TurnManager) -> void:
 		_evolutions += 1
 
 
-## 말 선택 단계: 배너가 떠 있고(사람 차례), 카드 4장의 크기·활성 상태·결과 예고 문구가 규격에 맞는지 확인한다.
+## 말 선택 단계: 기물 독이 선택 UI가 되어(사람 차례) 제목이 뜨고, 4칸의 활성 상태·결과 예고 문구가 규격에 맞는지 확인한다.
 func _check_select_banner(manager: TurnManager, options: Array[Button]) -> void:
-	var banner: Control = _board._select_banner
-	_assert(banner.visible, "말 선택 단계에는 이동할 말 선택 배너가 자동으로 떠야 한다")
-	_assert(banner.get_global_rect().position.y >= 540.0, "배너는 보드 아래쪽에 있어야 한다")
-	_assert((_board._select_title as Label).text.begins_with("[어느 말을") and (_board._select_title as Label).text.ends_with("칸 이동시킬까요?]"), "배너 제목 문구")
-	_assert(_board._select_cards.size() == 4, "배너에는 말 카드 4장")
+	var dock: Control = _board._pawn_bar
+	_assert(_board._select_active and dock.visible, "말 선택 단계에는 하단 기물 독이 선택 UI로 보여야 한다")
+	_assert(dock.get_global_rect().position.y >= 540.0, "기물 독은 보드 아래쪽에 있어야 한다")
+	_assert((_board._select_title as Label).visible and (_board._select_title as Label).text.begins_with("[어느 말을") and (_board._select_title as Label).text.ends_with("칸 이동시킬까요?]"), "선택 제목 문구")
+	_assert(_board._pawn_buttons.size() == 4, "기물 독에는 말 칸 4개")
 	for index: int in 4:
-		var card: Button = _board._select_cards[index]
-		_assert(card.size.x >= 135.0 and card.size.y >= 165.0, "말 카드는 최소 135x165")
+		var card: Button = _board._pawn_buttons[index]
 		var slot_pawn: PlayerPawn = _board.state.get_pawn(manager.current_player_id() * 10 + index + 1)
-		_assert(card.disabled == not _board._can_pick_now(slot_pawn), "배너 카드의 활성 상태는 말을 고를 수 있는지와 같아야 한다")
-		_assert(not (_board._pawn_buttons[index] as Button).has_theme_stylebox_override("hover") or not (_board._pawn_buttons[index] as Button).disabled, "독 슬롯은 선택 단계에서도 눌러서 고르는 용도가 아니다")
-		var result_text: String = (_board._select_parts[index]["result"] as Label).text
+		_assert(card.disabled == not _board._can_pick_now(slot_pawn), "독 칸의 활성 상태는 말을 고를 수 있는지와 같아야 한다")
+		var result_text: String = (_board._pawn_slot_parts[index]["result"] as Label).text
 		_assert(not result_text.contains("번") and not result_text.contains("→") and result_text.length() <= 4, "결과 예고는 칸 번호 없이 짧은 한마디(처치!·완주! 등) 또는 빈칸 (%s)" % result_text)
 		if card.disabled:
-			_assert(result_text == "", "고를 수 없는 카드에는 예고 글자를 쓰지 않는다 (흐린 카드가 알려 준다)")
+			_assert(not (_board._pawn_slot_parts[index]["result"] as Label).visible, "고를 수 없는 칸에는 예고 글자를 쓰지 않는다 (흐린 칸이 알려 준다)")
 
 
 var _ban_reroll_checked: bool = false

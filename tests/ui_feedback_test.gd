@@ -36,12 +36,14 @@ func _run() -> void:
 	board._announcer.cancel()
 	board._record(1, "[color=#ffd43b]테스트 기록[/color] [lb]R1] 한 줄")
 	FeedbackModal.reset_cooldown()
-	# 상단 버튼
+	# 메뉴 안의 버튼 (2026-11: 상단 줄을 비우려고 메뉴로 옮겼다)
+	expect(board.find_child("FeedbackButton", true, false) == null, "메뉴를 열기 전에는 피드백 버튼이 화면에 없다")
+	board._menu_button.pressed.emit()
 	var feedback_button: Button = board.find_child("FeedbackButton", true, false)
-	expect(feedback_button != null and feedback_button.text == L10n.tr_ui("btn.feedback"), "상단에 피드백 버튼")
-	expect(board.find_child("LanguageButton", true, false) == null and board.find_child("SoundToggle", true, false) == null, "상단에는 언어·소리 버튼이 없다 (설정으로 옮김)")
-	expect(feedback_button != null and feedback_button.position.x < 200.0, "피드백 버튼은 왼쪽 위")
+	expect(feedback_button != null and feedback_button.text == L10n.tr_ui("btn.feedback"), "메뉴 안에 피드백 버튼")
+	expect(board.find_child("LanguageToggle", true, false) == null and board.find_child("SoundToggle", true, false) == null, "인게임에는 언어·소리 토글 버튼이 없다")
 	feedback_button.pressed.emit()
+	expect(not board._menu_is_open(), "피드백을 누르면 메뉴는 닫힌다")
 	var modal: FeedbackModal = board.find_child("FeedbackModal", false, false)
 	expect(modal != null, "피드백 버튼이 창을 연다")
 	if modal == null:

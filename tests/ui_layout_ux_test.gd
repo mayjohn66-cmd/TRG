@@ -103,7 +103,7 @@ func _run() -> void:
 	var timeline:=_board._augment_timeline as AugmentTimeline
 	_expect(timeline!=null and timeline.visible,"증강 타임라인이 보인다")
 	_expect(timeline.get_global_rect().position.y<20.0 and absf(timeline.get_global_rect().get_center().x-screen.get_center().x)<1.0,"타임라인은 화면 위쪽 정중앙에 있다")
-	_expect(not timeline.get_global_rect().intersects(_board._feedback_button.get_global_rect()) and not timeline.get_global_rect().intersects(_board._language_button.get_global_rect()),"타임라인이 [피드백]·[언어] 버튼과 겹치지 않는다")
+	_expect(not timeline.get_global_rect().intersects(_board._menu_button.get_global_rect()),"타임라인이 [메뉴] 버튼과 겹치지 않는다")
 	_board.state.round_number=3;_board._refresh_all();await settle()
 	_expect(timeline.caption_kind==&"soon" and timeline.rounds.size()==5 and bool(timeline.rounds[3]["draft"]),"3라운드: 다음 라운드(4R)가 증강")
 	_expect(timeline._numbers[2].text=="3R" and timeline._numbers[2].get_theme_color("font_color")==Color.WHITE,"일반 라운드는 흰색 숫자")

@@ -1020,7 +1020,7 @@ func _test_gauge_and_lock() -> void:
 	_expect(_board._fx_busy and _board._presenter.active, "굴림 연출이 재생 중이어야 한다")
 	_expect(_board._roll_button.disabled, "연출 중에는 굴림 버튼이 잠긴다")
 	_expect(_board._roll_button.size.x >= 120.0 and _board._roll_button.size.x == _board._roll_button.size.y, "굴리기 버튼은 큼직한 원형 (%s)" % str(_board._roll_button.size))
-	_expect(not _board._select_banner.visible, "연출 중에는 말 선택 배너가 보이지 않는다")
+	_expect(not _board._select_active and not _board._select_title.visible, "연출 중에는 말 고르기 표시가 없다")
 	_expect(rolled.size() == 1, "엔진은 이미 결과를 확정했다")
 	var wait_start: float = _now()
 	while _board._fx_busy and _now() - wait_start < 4.0:
@@ -1396,32 +1396,36 @@ func _test_view_modes() -> void:
 	GameSession.view_mode = MainBoard.ViewMode.TOP
 
 
-## 상단 UI는 왼쪽 [피드백 / 버그 제보]와 오른쪽 [KR / EN]·[배속]·[메뉴]뿐이고 (소리는 설정), 메뉴 안에서 계속하기/게임 설정/전체 로그/새 게임/모드/치트/게임 나가기를 고른다.
+## 상단 UI는 오른쪽 [메뉴] 하나뿐이고 (소리·언어는 설정), 배속·피드백은 메뉴 안으로 옮겼다. 메뉴에서 계속하기/게임 설정/규칙 책자/배속/피드백/게임 나가기를 고른다.
 func _test_game_menu() -> void:
 	var top_buttons: Array[Button] = []
 	for child: Node in _board.get_children():
 		var button: Button = child as Button
 		if button != null and button.visible and button.position.y < 44.0 and button.size.y <= 40.0:
 			top_buttons.append(button)
-	_expect(top_buttons.size() == 4 and top_buttons.has(_board._menu_button) and top_buttons.has(_board._feedback_button) and top_buttons.has(_board._speed_button) and top_buttons.has(_board._language_button), "상단에는 왼쪽 [피드백]·오른쪽 [KR / EN]·[배속]·[메뉴] 네 개만 남는다 (%d개)" % top_buttons.size())
-	# [배속]: 1x -> 2x -> 3x -> 1x, Engine.time_scale에 걸린다
-	var speed_before: int = GameSession.game_speed
-	GameSession.game_speed = 1
-	_board._apply_game_speed()
-	_board._speed_button.pressed.emit()
-	_expect(GameSession.game_speed == 2 and is_equal_approx(Engine.time_scale, 2.0) and _board._speed_button.text == "배속 2x", "배속 버튼: 2x (%s)" % _board._speed_button.text)
-	_board._speed_button.pressed.emit()
-	_expect(GameSession.game_speed == 3 and is_equal_approx(Engine.time_scale, 3.0), "배속 버튼: 3x")
-	_board._speed_button.pressed.emit()
-	_expect(GameSession.game_speed == 1 and is_equal_approx(Engine.time_scale, 1.0), "배속 버튼: 다시 1x")
-	GameSession.game_speed = speed_before
-	_board._apply_game_speed()
-	Engine.time_scale = 1.0
-	_expect(_board._feedback_button.position.x < 200.0 and _board._menu_button.position.x > 1000.0, "피드백은 왼쪽 위, 메뉴는 오른쪽 위")
+	_expect(top_buttons.size() == 1 and top_buttons.has(_board._menu_button), "상단에는 [메뉴] 버튼 하나만 남는다 (%d개)" % top_buttons.size())
+	_expect(_board.find_child("LanguageToggle", true, false) == null, "인게임 상단에 언어 버튼이 없다")
+	_expect(_board._menu_button.position.x > 1000.0, "메뉴는 오른쪽 위")
 	_expect(_board._mode_toggle.get_parent() == null and _board._new_game_button.get_parent() == null and _board._debug_toggle.get_parent() == null, "닫힌 메뉴에서는 모드·새 게임·치트 버튼이 화면에 없다")
 	_expect(not _board._menu_is_open(), "처음에는 메뉴가 닫혀 있다")
 	_board._menu_button.pressed.emit()
 	_expect(_board._menu_is_open() and _board._menu_page == &"main", "[메뉴]를 누르면 메뉴가 열린다")
+	# [배속]: 메뉴 안에서 1x -> 2x -> 3x -> 1x, Engine.time_scale에 걸리고 닫힌 [메뉴] 버튼에 배속이 적힌다
+	var speed_before: int = GameSession.game_speed
+	GameSession.game_speed = 1
+	_board._apply_game_speed()
+	_expect(_board._speed_button != null and _board._speed_button.get_parent() == _board._menu_box, "배속 버튼은 메뉴 안에 있다")
+	_board._speed_button.pressed.emit()
+	_expect(GameSession.game_speed == 2 and is_equal_approx(Engine.time_scale, 2.0) and _board._speed_button.text == "배속 2x", "배속 버튼: 2x (%s)" % _board._speed_button.text)
+	_expect(_board._menu_button.text.ends_with("2x"), "배속이 켜져 있으면 [메뉴] 버튼에 적힌다 (%s)" % _board._menu_button.text)
+	_board._speed_button.pressed.emit()
+	_expect(GameSession.game_speed == 3 and is_equal_approx(Engine.time_scale, 3.0), "배속 버튼: 3x")
+	_board._speed_button.pressed.emit()
+	_expect(GameSession.game_speed == 1 and is_equal_approx(Engine.time_scale, 1.0) and not _board._menu_button.text.ends_with("x"), "배속 버튼: 다시 1x")
+	GameSession.game_speed = speed_before
+	_board._apply_game_speed()
+	Engine.time_scale = 1.0
+	_expect(_board._feedback_button != null and _board._feedback_button.get_parent() == _board._menu_box, "피드백 버튼도 메뉴 안에 있다")
 	var labels: Array[String] = []
 	for child: Node in _board._menu_box.get_children():
 		if child is Button:
