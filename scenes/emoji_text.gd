@@ -7,7 +7,7 @@ class_name EmojiText
 extends RefCounted
 
 const DIR: String = "res://assets/ui/trickcal/emoji/"
-const NAMES: Array[String] = ["target", "fire"]
+const NAMES: Array[String] = ["target", "fire", "dice", "black"]
 const MARKER_PATTERN: String = "\\{e:([a-z_]+)\\}"
 
 

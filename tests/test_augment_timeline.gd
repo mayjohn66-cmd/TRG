@@ -96,3 +96,10 @@ func test_emoji_text_markers_become_pictures_and_strip_cleanly() -> void:
 	check(column.get_child(0).get_child(0) is TextureRect and column.get_child(0).get_child(1) is Label, "첫 줄은 [그림 + 글자]")
 	check(column.get_child(1).get_child(0) is Label, "표식 없는 줄은 글자만")
 	column.free()
+
+
+func test_move_breakdown_text_marks_icons_only_when_asked() -> void:
+	check_eq(MainBoard.move_breakdown_text(5, ["복수 부스터 +4칸", "흑돌 홀수 +1칸"], 0, 12, true), "{e:dice} 기본 5 + {e:fire} 리벤지 부스터 4 + {e:black} 흑돌 홀수 1 = 총 10칸 이동 (도착 12번 칸)", "그림 표식: 기본=주사위, 리벤지=불꽃, 흑돌=검은 동그라미")
+	check_eq(EmojiText.strip(MainBoard.move_breakdown_text(5, ["복수 부스터 +4칸"], 0, 12, true)), "기본 5 + 리벤지 부스터 4 = 총 9칸 이동 (도착 12번 칸)", "표식을 떼면 평소 문장")
+	for name: String in ["dice", "black"]:
+		check(EmojiText.texture(name) != null, "%s 그림" % name)

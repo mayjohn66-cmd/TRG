@@ -2180,3 +2180,4 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 - 웹·모바일에서 이모지 글꼴이 깨질 수 있어 글꼴 폴백 대신 그림으로 보여 준다. 글에는 `{e:target}`·`{e:fire}` 표식을 넣고, `EmojiText.build(text, size, color, outline, outline_color, max_width)`가 줄마다 [그림 + 글자]를 쌓는다 (`max_width`를 넘으면 줄이 통째로 줄어든다). `EmojiText.strip()`은 로그·기록용으로 표식을 뗀다.
 - 쓰는 곳: 도장 알림 부제(`EventAnnouncer._build_stamp`, 1라운드 승리 조건 `{e:target}`)와 큰 알림 본문(템포 업 `{e:fire}`). 새 이모지는 PNG를 `assets/ui/trickcal/emoji/`에 넣고 `EmojiText.NAMES`에 이름을 더한다.
 - 번역 표의 해당 문장은 표식까지 같이 넣는다 (한/영/일 모두).
+- (7.74 이어서) 이동량 배지는 `move_breakdown_text(..., icons=true)`가 `{e:dice}`(기본)·`{e:fire}`(리벤지 부스터)·`{e:black}`(흑돌) 표식을 붙여 `EmojiText.build`로 그린다 (테스트·글자 전용 호출은 `icons=false` 그대로). 대기 리벤지 배지(`_paint_revenge_glow`)는 왼쪽에 불꽃 그림(`FlameIcon`)을 얹는다.

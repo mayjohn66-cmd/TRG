@@ -4530,6 +4530,17 @@ func _paint_revenge_glow(host: Control, on: bool, steps: int = 0, compact: bool 
 			tag.add_theme_stylebox_override("normal", _style(Color("ffa94d"), Color("ff6b00"), 1, 6, 0, 1))
 			tag.z_index = 5
 			host.add_child(tag)
+			if not compact:  # 불꽃 이모지는 글꼴이 아니라 그림으로 (EmojiText)
+				var flame := TextureRect.new()
+				flame.name = "FlameIcon"
+				flame.texture = EmojiText.texture("fire")
+				flame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+				flame.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+				flame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				flame.position = Vector2(4.0, 8.0)
+				flame.size = Vector2(14.0, 14.0)
+				tag.add_child(flame)
+				(tag.get_theme_stylebox("normal") as StyleBoxFlat).content_margin_left = 18.0
 		tag.text = ("+%d" % steps) if compact else (L10n.t("리벤지 +%d칸 대기중") % steps)
 		var host_size: Vector2 = host.size if host.size.x > 0.0 else host.custom_minimum_size
 		var tag_height: float = 14.0 if compact else 30.0
@@ -6605,9 +6616,9 @@ func _pawn_move_plan(pawn: PlayerPawn) -> Dictionary:
 ## 이동 거리 계산식 한 문장: [기본 5 + 리벤지 부스터 4 + 흑돌 홀수 1 = 총 10칸 이동 (도착 12번 칸)].
 ## notes는 MoveReport.ability_notes ("복수 부스터 +4칸", "흑돌 홀수 +1칸", "점프 부스트! (+2칸)" ...). +N칸이 붙은 줄만 더하는 값으로 센다.
 ## total_cap: 실제 경로가 계산보다 짧으면(결승선 등) 그 칸수를 총합으로 보여 준다 (0이면 제한 없음). dest: 도착 칸 번호 (음수면 생략).
-static func move_breakdown_text(base: int, notes: Array, total_cap: int = 0, dest: int = -1) -> String:
+static func move_breakdown_text(base: int, notes: Array, total_cap: int = 0, dest: int = -1, icons: bool = false) -> String:
 	var matcher: RegEx = RegEx.create_from_string("^(.*?)\\s*\\(?\\+(\\d+)\\D*$")
-	var parts: Array[String] = ["%s %d" % [L10n.t("기본"), base]]
+	var parts: Array[String] = [("{e:dice} " if icons else "") + "%s %d" % [L10n.t("기본"), base]]
 	var total: int = base
 	for note: Variant in notes:
 		var found: RegExMatch = matcher.search(str(note).strip_edges())
@@ -6621,7 +6632,10 @@ static func move_breakdown_text(base: int, notes: Array, total_cap: int = 0, des
 			label = "리벤지 부스터"
 		if label == "":
 			continue
-		parts.append("%s %d" % [L10n.t(label), amount])
+		var mark: String = ""
+		if icons:  # 이모지는 글꼴이 아니라 그림으로 (EmojiText): 리벤지는 불꽃, 흑돌은 검은 동그라미
+			mark = "{e:fire} " if label.begins_with("리벤지") else ("{e:black} " if label.begins_with("흑돌") else "")
+		parts.append("%s%s %d" % [mark, L10n.t(label), amount])
 		total += amount
 	if total_cap > 0:
 		total = mini(total, total_cap)
@@ -10751,7 +10765,14 @@ func _show_move_badge(path: Array[int], plan: Dictionary) -> void:
 		_move_badge.add_child(_move_badge_label)
 		add_child(_move_badge)
 	var report: MoveReport = plan["report"]
-	_move_badge_label.text = move_breakdown_text(int(plan["base"]), report.ability_notes, path.size(), path.back())
+	_move_badge_label.visible = false  # 글자 대신 [그림 + 글자] 줄을 쓴다 (이모지는 글꼴이 아니라 그림으로)
+	var old_row: Node = _move_badge.get_node_or_null("MoveRow")
+	if old_row != null:
+		_move_badge.remove_child(old_row)
+		old_row.queue_free()
+	var row: Control = EmojiText.build(move_breakdown_text(int(plan["base"]), report.ability_notes, path.size(), path.back(), true), MobileSupport.text_px(16), Color("fff3bf"), 4, Color.BLACK, 640.0)
+	row.name = "MoveRow"
+	_move_badge.add_child(row)
 	_move_badge.reset_size()
 	var anchor: Vector2 = _tile_center(path.back()) + Vector2(0.0, -58.0)
 	var view: Vector2 = get_viewport_rect().size
