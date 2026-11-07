@@ -95,6 +95,8 @@ func _run_all() -> void:
 			printerr("FAIL  %s: 스크립트를 불러오지 못했다 (파싱 오류)" % path.get_file())
 			total_failures += 1
 			continue
+		# 규칙 단위 테스트는 옛 일정(1라운드에 첫 드래프트)을 전제로 쓰였다. 새 일정(2라운드)을 검증하는 묶음은 REAL_DRAFT_SCHEDULE을 선언한다.
+		GameEnums.draft_start = GameEnums.DRAFT_START if script.get_script_constant_map().has("REAL_DRAFT_SCHEDULE") else 1
 		var probe: TestCase = script.new()
 		for method: Dictionary in probe.get_method_list():
 			var method_name: String = method["name"]

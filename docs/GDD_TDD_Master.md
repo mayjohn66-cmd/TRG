@@ -2151,3 +2151,10 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 ### 7.70 증강 선택 앞의 [증강 선택!] 알림
 증강 선택지가 바로 올라오지 않도록, `_refresh_draft_overlay`가 라운드마다 한 번(`_draft_stamp_round`) 가운데에 글자 도장 알림(`draft_open`, `DRAFT_STAMP_SECONDS` 1.2초, `STAMP_QUICK_KEYS`라 1.8초 최소 표시 없음)을 띄우고, 알림이 끝나면(`drained` -> `_refresh_all`) 선택지를 올린다. 같은 라운드의 리롤·다음 사람 차례에는 반복하지 않는다. 연출을 끈 판(`pacing_enabled` 거짓·`instant_roll_for_test`)에서는 건너뛴다. 사람이 고르기 전에 선택이 먼저 끝난 경우(`pending` 비어 있음)에는 `EventAnnouncer.cancel_if_only("증강 선택!")`로 알림을 바로 치운다. 테스트: tests/ui_draft_backdrop_test.gd(알림 -> 선택지 순서), tests/ui_smoke.gd(굴림 패드가 막히지 않음).
 
+### 7.71 온보딩 개선 (2026-11)
+1. **첫 증강 2라운드**: `GameEnums.is_draft_round` = `draft_start`(기본 `DRAFT_START`=2)부터 `DRAFT_INTERVAL`(3)마다 → 2·5·8·11…·23(상한 25). `AugmentRegistry.draft_number`는 2라운드=1번째(그 전은 0)이고 `DRAFT_FOCUS`(1번째 기물 진화만, 2번째 도구·카드·진화)는 그대로, 초증강·법전은 `min_round` 7이라 3번째 증강(8라운드)부터 나온다. 백돌 방어막 재충전은 첫 증강 뒤(`> draft_start`)부터. 규칙 단위 테스트는 옛 일정을 전제로 쓰여, 러너가 `GameEnums.draft_start`를 1로 두고 돌리며 새 일정은 `REAL_DRAFT_SCHEDULE`을 선언한 묶음(test_augment_timeline)과 UI 테스트가 검증한다.
+2. **이동 거리 계산식 배지**: `_preview_pawn`(호버)이 `_pawn_move_plan`(경로 + `MoveReport` + 눈금)으로 `move_breakdown_text`를 만들어 도착 칸 위 `MoveBreakdownBadge`에 띄운다. `ability_notes`의 `+N칸`을 보너스로 세고 `복수 부스터`는 `리벤지 부스터`로 표기한다. 터치는 호버가 없어 아직 미리 보이지 않는다.
+3. **대기 리벤지 배지**: `_paint_revenge_glow(host, on, steps, compact)`가 `RevengeBadge`를 붙인다.
+4. **연출 단축**: `AUGMENT_PICK_SECONDS` 0.4, 기물 선택 확인 0.3초, `GameEnums.PHASE_TIME_REVIEW` 4초.
+테스트: tests/test_augment_timeline.gd(일정·계산식), tests/ui_smoke.gd·ui_layout_ux_test.gd(새 일정).
+

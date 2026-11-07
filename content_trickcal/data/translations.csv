@@ -2714,3 +2714,5 @@ PROGRESS / 진행률,PROGRESS,PROGRESS／進行度
 "노란 숫자는 증강 라운드, 붉은 테두리는 템포 업이 시작되는 라운드를 뜻합니다. 7라운드부터 초증강과 법전도 후보에 섞입니다.","Yellow numbers mark augment rounds. Red borders mark rounds that start a Tempo Up stage. Super augments and laws can appear from round 7.","黄色の数字はオーグメントラウンド、赤い枠はテンポアップの各段階が始まるラウンドを表します。7ラウンド目から超オーグメントと法典も候補に加わります。"
 ★ 다음 라운드 증강 선택!,★ Pick an augment next round!,★ 次のラウンドはオーグメント選択！
 증강 선택!,Choose an Augment!,増強選択！
+총 %d칸 이동,Move %d spaces total,合計 %dマス移動
+리벤지 +%d칸 대기중,Revenge +%d waiting,リベンジ +%dマス待機中

@@ -69,7 +69,7 @@ var timer_scale: float = 1.0
 
 ## true면 호스트 로컬(피어 1)이 params["player_id"]로 모든 플레이어를 대리 조작할 수 있다 (핫시트/테스트).
 var hotseat_mode: bool = false
-## 1라운드부터 3라운드마다(1, 4, 7, 10, ...) 시작하는 증강 드래프트를 여는가. 헤드리스 테스트나 드래프트 없는 모드에서는 끈다.
+## 2라운드부터 3라운드마다(2, 5, 8, 11, ...) 시작하는 증강 드래프트를 여는가. 헤드리스 테스트나 드래프트 없는 모드에서는 끈다.
 var draft_enabled: bool = true
 ## true면 윷놀이 기물의 업기 가능 도착마다 PHASE_RESOLUTION 안에서 플레이어의 [업기/그냥 두기] 선택을 기다린다.
 ## false(기본: 헤드리스 테스트·AI 턴)면 선택을 묻지 않고 항상 [업기]를 선택한 것으로 처리한다.
@@ -1340,7 +1340,7 @@ func _enter_round_start() -> void:
 	change_state(State.PHASE_ROUND_START)
 	if _apply_tempo_up():
 		return
-	if GameEnums.is_draft_round(state.round_number) and state.round_number > 1:
+	if GameEnums.is_draft_round(state.round_number) and state.round_number > GameEnums.draft_start:
 		state.recharge_shields()  # 바둑 백돌: 증강 라운드마다 방어막 재충전
 	if draft_enabled and GameEnums.is_draft_round(state.round_number):
 		for player_id: int in player_order:

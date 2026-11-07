@@ -54,18 +54,23 @@ const MAX_NPCS: int = 3
 const MAX_LAWS: int = 4
 const MAX_HAND_SIZE: int = 7
 const MAX_REROLL_CHAIN: int = 8
-## 증강 드래프트는 1라운드부터 DRAFT_INTERVAL라운드마다 열린다 (1, 4, 7, 10, ...).
+## 증강 드래프트는 DRAFT_START라운드부터 DRAFT_INTERVAL라운드마다 열린다 (2, 5, 8, 11, ...).
+## 2026-11 온보딩 개선: 첫 증강은 1라운드가 아니라 2라운드에 나온다 (1라운드에 기본 주사위 굴리기·말 이동을 먼저 직접 해 본 뒤 고르게).
+const DRAFT_START: int = 2
 const DRAFT_INTERVAL: int = 3
+## 실제로 쓰는 첫 드래프트 라운드. 기본은 DRAFT_START이고, 옛 일정(1라운드 시작)을 전제로 쓴 규칙 단위 테스트는 러너가 1로 바꿔 돌린다
+## (새 일정은 REAL_DRAFT_SCHEDULE을 선언한 묶음과 UI 테스트가 검증한다).
+static var draft_start: int = DRAFT_START
 
 
 static func is_draft_round(round_number: int) -> bool:
-	return round_number >= 1 and (round_number - 1) % DRAFT_INTERVAL == 0
+	return round_number >= draft_start and (round_number - draft_start) % DRAFT_INTERVAL == 0
 const DRAFT_OFFER_COUNT: int = 3
 
 ## 페이즈별 제한 시간(초). 0이면 타이머 없음(즉시 진행).
 const PHASE_TIME_DRAFT: float = 15.0
 ## 드래프트가 끝난 뒤 모두가 고른 증강을 확인하는 시간 (모두 [확인]을 누르면 바로 넘어간다).
-const PHASE_TIME_REVIEW: float = 8.0  # 2026-10-27: 20 -> 8 (플레이 시간 단축)
+const PHASE_TIME_REVIEW: float = 4.0  # 2026-10-27: 20 -> 8, 2026-11 온보딩 개선: 8 -> 4 (선택 뒤 확인 창이 오래 가리지 않게. [확인]으로 바로 넘어갈 수 있다)
 const PHASE_TIME_TURN_BEGIN: float = 10.0
 const PHASE_TIME_ROLL: float = 10.0
 const PHASE_TIME_INTERRUPT: float = 3.5

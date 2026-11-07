@@ -127,7 +127,7 @@ const AUGMENT_CARD_SIZE: Vector2 = Vector2(260, 390)
 const AUGMENT_COMPACT_HEIGHT: float = 280.0
 const AUGMENT_HOVER_SCALE: float = 1.06
 ## 증강 카드를 고른 뒤 다음 단계로 넘어가기 전에 선택 연출을 보여 주는 시간(초).
-const AUGMENT_PICK_SECONDS: float = 0.9
+const AUGMENT_PICK_SECONDS: float = 0.4  # 2026-11 온보딩 개선: 0.9 -> 0.4 (선택 완료 연출을 절반 이하로, 조작 템포가 끊기지 않게)
 const SLOT_SIZE: Vector2 = Vector2(76, 88)
 ## 슬링샷 조준: 이 거리(px)만큼 당기면 파워 100%.
 ## 호버 툴팁이 뜨기까지 커서를 가만히 대고 있어야 하는 시간(초).
@@ -677,6 +677,9 @@ var _action_row: HFlowContainer = null
 var _roll_pad: RollPad = null
 ## 불스아이 다트: 내가 던질 차례에 보드 한가운데 보이는 과녁 (던지기 전 대기 표시).
 var _dart_idle: DartBoardView = null
+## 말 선택 때 도착 칸 위에 뜨는 [이동 거리 계산식] 배지 (2026-11 온보딩 개선).
+var _move_badge: PanelContainer = null
+var _move_badge_label: Label = null
 ## 칸 바닥 한꺼번에 그리기 (그리기 호출 줄이기).
 var _tile_batch: BoardSkin.TileBatch = null
 ## 강화 망치 (v1.1) 선택 판: [더 강화!] / [멈추기].
@@ -4455,7 +4458,8 @@ func _paint_pawn_slot(parts: Dictionary, pawn: PlayerPawn, color: Color) -> void
 		status.add_theme_color_override("font_color", Color("868e96"))
 		status.text = "대기"
 		panel.modulate = Color.WHITE if pawn.revenge_boost else Color(1, 1, 1, 0.6)
-	_paint_revenge_glow(panel, pawn.revenge_boost and not pawn.has_left_start and not pawn.is_finished)
+	var revenge_on: bool = pawn.revenge_boost and not pawn.has_left_start and not pawn.is_finished
+	_paint_revenge_glow(panel, revenge_on, _revenge_steps(pawn) if revenge_on else 0, true)
 	_paint_finish_star(panel, pawn.is_finished)
 
 
@@ -4491,12 +4495,36 @@ class FinishStar extends Control:
 
 
 ## 리벤지 부스터가 장전된 대기 말: 프로필 칸이 이글이글 불탄다 (주황 네온 테두리 + 칸 가장자리에서 넘실대는 불꽃, 글자 없음).
-func _paint_revenge_glow(host: Control, on: bool) -> void:
+## 대기석에서 불타는 리벤지 부스터 칸. steps가 있으면 [리벤지 +N칸 대기중] 글자 배지를 상시 붙인다 (출격하기 전부터 보너스가 있다는 걸 알리게).
+## compact: 프로필의 작은 말 칸은 글자가 들어가지 않아 [+N]만 적는다.
+func _paint_revenge_glow(host: Control, on: bool, steps: int = 0, compact: bool = false) -> void:
 	var glow: Panel = host.get_node_or_null("RevengeGlow") as Panel
+	var tag: Label = host.get_node_or_null("RevengeBadge") as Label
 	if not on:
 		if glow != null:
 			glow.visible = false
+		if tag != null:
+			tag.visible = false
 		return
+	if steps > 0:
+		if tag == null:
+			tag = Label.new()
+			tag.name = "RevengeBadge"
+			tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			tag.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			tag.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			tag.add_theme_color_override("font_color", Color("1a0a00"))
+			tag.add_theme_font_size_override("font_size", 10 if compact else 12)
+			tag.add_theme_stylebox_override("normal", _style(Color("ffa94d"), Color("ff6b00"), 1, 6, 0, 1))
+			tag.z_index = 5
+			host.add_child(tag)
+		tag.text = ("+%d" % steps) if compact else (L10n.t("리벤지 +%d칸 대기중") % steps)
+		var host_size: Vector2 = host.size if host.size.x > 0.0 else host.custom_minimum_size
+		var tag_height: float = 14.0 if compact else 30.0
+		tag.size = Vector2(maxf(host_size.x - 6.0, 24.0), tag_height)
+		tag.position = Vector2(3.0, maxf(host_size.y - tag_height - 3.0, 0.0))
+		tag.visible = true
 	if glow == null:
 		glow = Panel.new()
 		glow.name = "RevengeGlow"
@@ -6474,9 +6502,10 @@ func _refresh_pawn_dock() -> void:
 		elif pawn.is_imprisoned:
 			place = "감옥"
 		elif pawn.revenge_boost and not pawn.has_left_start:
-			place = "대기"  # 리벤지 부스터는 칸이 불타는 것으로 보여 준다 (글자 없음)
+			place = ""  # 리벤지 부스터는 칸이 불타고, 아래 배지가 [리벤지 +N칸 대기중]을 적는다
 		(parts["place"] as Label).text = place
-		_paint_revenge_glow(button, pawn.revenge_boost and not pawn.has_left_start and not pawn.is_finished)
+		var revenge_wait: bool = pawn.revenge_boost and not pawn.has_left_start and not pawn.is_finished
+		_paint_revenge_glow(button, revenge_wait, _revenge_steps(pawn) if revenge_wait else 0)
 		var badge: Label = parts["badge"]
 		badge.visible = false
 		badge.text = "x%d" % (pawn.carried.size() + 1)
@@ -6538,8 +6567,14 @@ func _can_pick_now(pawn: PlayerPawn) -> bool:
 
 ## 이 말이 지금 굴림 값으로 움직이면 지나갈 경로 (선택할 수 없으면 빈 배열).
 func _pawn_move_path(pawn: PlayerPawn) -> Array[int]:
+	return _pawn_move_plan(pawn)["path"] as Array[int]
+
+
+## 경로 + 이동 보고서(보너스 내역)와 눈금: {"path": Array[int], "report": MoveReport, "base": 눈금}. 선택할 수 없으면 경로가 빈 배열.
+func _pawn_move_plan(pawn: PlayerPawn) -> Dictionary:
+	var empty: Dictionary = {"path": [] as Array[int], "report": MoveReport.new(), "base": 0}
 	if manager.move_queue.is_empty() or not _can_pick_now(pawn):
-		return [] as Array[int]
+		return empty
 	var ctx := RuleContext.new()
 	ctx.state = state
 	ctx.actor_id = pawn.owner_id
@@ -6550,7 +6585,37 @@ func _pawn_move_path(pawn: PlayerPawn) -> Array[int]:
 	ctx.is_preview = true  # Dry-Run: 법전 로그·깜빡임 없이 수치만 계산
 	ctx = state.rulebook.process_context(ctx)
 	# 실제 이동과 같은 계산(포 넘기 +3, 퀸 +2 등 기물 능력 포함)으로 예상 경로를 구한다.
-	return MoveExecutor.plan_path(state, pawn, ctx, MoveReport.new())
+	var report := MoveReport.new()
+	var path: Array[int] = MoveExecutor.plan_path(state, pawn, ctx, report)
+	return {"path": path, "report": report, "base": maxi(ctx.dice_value, 0)}
+
+
+## 이동 거리 계산식 한 줄: [총 10칸 이동 (기본 5 + 리벤지 부스터 4 + 흑돌 홀수 1)].
+## notes는 MoveReport.ability_notes ("복수 부스터 +4칸", "흑돌 홀수 +1칸", "점프 부스트! (+2칸)" ...). +N칸이 붙은 줄만 더하는 값으로 센다.
+## total_cap: 실제 경로가 계산보다 짧으면(결승선 등) 그 칸수를 총합으로 보여 준다 (0이면 제한 없음).
+static func move_breakdown_text(base: int, notes: Array, total_cap: int = 0) -> String:
+	var matcher: RegEx = RegEx.create_from_string("^(.*?)\\s*\\(?\\+(\\d+)\\D*$")
+	var parts: Array[String] = ["%s %d" % [L10n.t("기본"), base]]
+	var total: int = base
+	for note: Variant in notes:
+		var found: RegExMatch = matcher.search(str(note).strip_edges())
+		if found == null:
+			continue
+		var amount: int = int(found.get_string(2))
+		if amount <= 0:
+			continue
+		var label: String = found.get_string(1).strip_edges().trim_suffix("!").strip_edges()
+		if label == "복수 부스터":
+			label = "리벤지 부스터"
+		if label == "":
+			continue
+		parts.append("%s %d" % [L10n.t(label), amount])
+		total += amount
+	if total_cap > 0:
+		total = mini(total, total_cap)
+	if parts.size() == 1:
+		return L10n.t("총 %d칸 이동") % total
+	return "%s (%s)" % [L10n.t("총 %d칸 이동") % total, " + ".join(PackedStringArray(parts))]
 
 
 ## 선택 결과 예고: {"text": 카드에 적을 짧은 한마디(처치!·완주! 등, 평범한 이동은 빈 문자열), "good": 초록 테두리로 강조할 좋은 결과}.
@@ -10366,7 +10431,7 @@ func _on_pawn_choice_picked(pawn_id: int, on_pick: Callable, slot: int) -> void:
 		return
 	var overlay: Control = _choice_overlay
 	_play_pick_animation(_pawn_choice_cards, slot)
-	get_tree().create_timer(0.7).timeout.connect(func() -> void:
+	get_tree().create_timer(0.3).timeout.connect(func() -> void:
 		if _choice_overlay == overlay and overlay != null:
 			_close_choice()
 			on_pick.call(pawn_id))
@@ -10643,7 +10708,9 @@ func _preview_pawn(pawn_id: int) -> void:
 	var pawn: PlayerPawn = state.get_pawn(pawn_id)
 	if pawn == null or not _can_pick_now(pawn):
 		return
-	var path: Array[int] = _pawn_move_path(pawn)
+	var plan: Dictionary = _pawn_move_plan(pawn)
+	var path: Array[int] = plan["path"]
+	_show_move_badge(path, plan)
 	for index: int in path.size():
 		var highlight: BoardSkin.Ring = _highlights[path[index]]
 		highlight.visible = true
@@ -10652,7 +10719,34 @@ func _preview_pawn(pawn_id: int) -> void:
 	_refresh_danger_label()
 
 
+## 도착 칸 위에 [총 N칸 이동 (기본 + 보너스…)] 배지를 띄운다: 왜 그만큼 가는지 이동 전에 보이게.
+func _show_move_badge(path: Array[int], plan: Dictionary) -> void:
+	if path.is_empty() or not _fx_on():
+		return
+	if _move_badge == null:
+		_move_badge = PanelContainer.new()
+		_move_badge.name = "MoveBreakdownBadge"
+		_move_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_move_badge.z_index = 60
+		_move_badge.add_theme_stylebox_override("panel", _style(Color(0.05, 0.07, 0.12, 0.94), COLOR_GOLD, 3, 12, 10, 6))
+		_move_badge_label = _make_label("", MobileSupport.text_px(16), Color("fff3bf"))
+		_move_badge_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_move_badge_label.add_theme_color_override("font_outline_color", Color.BLACK)
+		_move_badge_label.add_theme_constant_override("outline_size", 4)
+		_move_badge.add_child(_move_badge_label)
+		add_child(_move_badge)
+	var report: MoveReport = plan["report"]
+	_move_badge_label.text = move_breakdown_text(int(plan["base"]), report.ability_notes, path.size())
+	_move_badge.reset_size()
+	var anchor: Vector2 = _tile_center(path.back()) + Vector2(0.0, -58.0)
+	var view: Vector2 = get_viewport_rect().size
+	_move_badge.position = Vector2(clampf(anchor.x - _move_badge.size.x * 0.5, 8.0, view.x - _move_badge.size.x - 8.0), clampf(anchor.y - _move_badge.size.y, 8.0, view.y - _move_badge.size.y - 8.0))
+	_move_badge.visible = true
+
+
 func _clear_highlight() -> void:
+	if _move_badge != null:
+		_move_badge.visible = false
 	for highlight: BoardSkin.Ring in _highlights.values():
 		highlight.visible = false
 		highlight.border_width = 3.0
