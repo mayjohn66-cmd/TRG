@@ -101,6 +101,7 @@ func _wait_stage() -> Node2D:
 	return _board.get_node_or_null("BangStage")
 
 func _run() -> void:
+	GameEnums.draft_start = 1  # 이 검사는 게임 시작에 증강이 바로 열리는 옛 일정을 전제로 한다 (실제 일정은 4라운드부터 -- test_augment_timeline·ui_smoke가 본다)
 	root.size = Vector2i(1366, 768)
 	root.content_scale_size = Vector2i(1366, 768)
 	GameSession.mode = GameSession.MODE_AI

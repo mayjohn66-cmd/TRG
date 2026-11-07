@@ -13,6 +13,9 @@ var _duel_manual: bool = false
 func _process(_delta: float) -> bool:
 	_frames += 1
 	if _frames == 1:
+		# 이 파일 자체의 검사는 게임 시작에 증강이 바로 열리는 옛 일정을 전제로 쓰였다 (시작 때 기물을 받아 필살기·설명을 본다).
+		# 이 파일을 상속한 검사는 실제 일정(4라운드부터)을 그대로 쓴다 -- 일정 자체는 test_augment_timeline·ui_smoke가 본다.
+		GameEnums.draft_start = 1 if get_script().resource_path == "res://tests/ui_fx_test.gd" else GameEnums.DRAFT_START
 		var scene: PackedScene = load("res://scenes/main_board.tscn")
 		_board = scene.instantiate()
 		root.add_child(_board)

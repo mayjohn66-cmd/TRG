@@ -119,7 +119,7 @@ func _check_layout() -> void:
 	_board._log_toggle.pressed.emit()
 	_assert(not _board._log_panel.visible and not _board._debug_box.visible, "다시 누르면 닫힌다")
 	_check_hud_layout()
-	_assert(_board._draft_overlay == null and _board.manager.current_state != TurnManager.State.PHASE_ROUND_START, "1라운드에는 증강 선택 없이 바로 시작한다 (첫 증강은 2라운드 -- 온보딩 개선)")
+	_assert(_board._draft_overlay == null and _board.manager.current_state != TurnManager.State.PHASE_ROUND_START, "1라운드에는 증강 선택 없이 바로 시작한다 (첫 증강은 4라운드 -- 온보딩 개선)")
 	for index: int in BoardSpec.tile_count:
 		_assert(Rect2(Vector2.ZERO, Vector2(1366, 768)).encloses(_tile_rect(index)), "타일 %d가 화면 안에 있어야 한다" % index)
 	for a: int in BoardSpec.tile_count:
@@ -617,7 +617,7 @@ func _finish() -> bool:
 			print("  HANGUL ", leak)
 		_assert(leaks.is_empty(), "영어 화면에 한글이 남지 않는다 (%d곳)" % leaks.size())
 	_assert(manager.is_game_over, "치트 없이 한 판이 끝까지 진행되어 승리자가 나와야 한다 (조작 %d회)" % _actions)
-	_assert(not _draft_rounds.has(1) and _draft_rounds.has(2), "첫 증강 드래프트는 1라운드가 아니라 2라운드에 열린다")
+	_assert(not _draft_rounds.has(1) and not _draft_rounds.has(2) and _draft_rounds.has(4), "첫 증강 드래프트는 1라운드가 아니라 4라운드에 열린다")
 	_assert(_board._result_overlay != null, "게임 종료 결과창이 떠야 한다")
 	if _board._result_overlay != null:
 		var report := _board._result_overlay.find_child("ResultComicReport", true, false) as ResultComicReport
@@ -664,7 +664,7 @@ func _finish() -> bool:
 				continue  # 로그는 최근 100줄만 남아 첫 구분선이 밀려났을 수 있다
 			_assert(int(tagged.get_string(1)) == divider_round, "R%s 줄은 %s라운드 구분선 아래에 (%s)" % [tagged.get_string(1), tagged.get_string(1), entry.substr(0, 80)])
 	for round_number: int in _draft_rounds:
-		_assert(GameEnums.is_draft_round(round_number), "드래프트는 2라운드부터 3라운드마다만 열려야 한다 (%d)" % round_number)
+		_assert(GameEnums.is_draft_round(round_number), "드래프트는 4라운드부터 3라운드마다만 열려야 한다 (%d)" % round_number)
 	if _failures.is_empty():
 		print("UI_SMOKE_OK")
 		quit(0)

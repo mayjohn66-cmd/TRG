@@ -17,9 +17,13 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	# 초증강 연출만 본다: 게임 시작에 바로 증강이 열리게 첫 드래프트 라운드를 1로 둔다 (실제 일정은 4라운드부터 -- test_augment_timeline·ui_smoke가 본다).
+	var saved_start: int = GameEnums.draft_start
+	GameEnums.draft_start = 1
 	for effect: StringName in EFFECTS:
 		await _check(effect)
 	await _check_several_in_one_draft()
+	GameEnums.draft_start = saved_start
 	if _failures.is_empty():
 		print("UI_SUPER_FX_OK: %d super augments" % EFFECTS.size())
 		quit(0)

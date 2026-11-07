@@ -1,26 +1,26 @@
 # File: res://tests/test_augment_timeline.gd
 # Class: class_name TestAugmentTimeline
-# Role: 증강 타임라인(AugmentTimeline)의 계산 검증 - 어느 라운드가 증강인가(2·5·8·11…: 1라운드는 기본 규칙을 먼저 체험), 초증강·법전이 섞이는 라운드(8부터), 왼쪽 글의 종류, 라운드 시작 사전 예고
+# Role: 증강 타임라인(AugmentTimeline)의 계산 검증 - 어느 라운드가 증강인가(4·7·10…: 1~3라운드는 기본 규칙을 먼저 체험), 초증강·법전이 섞이는 라운드(7부터), 왼쪽 글의 종류, 라운드 시작 사전 예고
 class_name TestAugmentTimeline
 extends TestCase
 
-## 실제 일정(첫 증강은 2라운드)으로 검증한다는 표시 (러너가 읽는다).
+## 실제 일정(첫 증강은 4라운드)으로 검증한다는 표시 (러너가 읽는다).
 const REAL_DRAFT_SCHEDULE: bool = true
 
 
-func test_draft_rounds_are_2_then_every_three() -> void:
+func test_draft_rounds_are_4_then_every_three() -> void:
 	var drafts: Array[int] = []
 	for round_number: int in range(1, 26):
 		if AugmentTimeline.is_draft_round(round_number):
 			drafts.append(round_number)
-	check_eq(drafts, [2, 5, 8, 11, 14, 17, 20, 23] as Array[int], "증강 라운드는 2라운드와 그 뒤 3라운드마다 (1라운드는 증강 없이 기본 규칙 체험)")
-	check(not AugmentTimeline.is_draft_round(1), "1라운드에는 증강이 없다")
+	check_eq(drafts, [4, 7, 10, 13, 16, 19, 22, 25] as Array[int], "증강 라운드는 4라운드와 그 뒤 3라운드마다 (1~3라운드는 증강 없이 기본 규칙 체험)")
+	check(not AugmentTimeline.is_draft_round(1) and not AugmentTimeline.is_draft_round(2) and not AugmentTimeline.is_draft_round(3), "1~3라운드에는 증강이 없다")
 
 
-func test_super_augments_mix_in_from_the_third_draft() -> void:
-	check(not AugmentTimeline.is_super_round(2) and not AugmentTimeline.is_super_round(5), "2·5라운드는 초증강이 섞이지 않는다")
-	check(AugmentTimeline.is_super_round(8) and AugmentTimeline.is_super_round(11), "3번째 증강(8라운드)부터는 초증강·법전까지 섞인다")
-	check(not AugmentTimeline.is_super_round(9), "증강 라운드가 아니면 별 표시가 없다")
+func test_super_augments_mix_in_from_round_seven() -> void:
+	check(not AugmentTimeline.is_super_round(1) and not AugmentTimeline.is_super_round(4), "1·4라운드는 초증강이 섞이지 않는다")
+	check(AugmentTimeline.is_super_round(7) and AugmentTimeline.is_super_round(10), "7라운드부터는 초증강·법전까지 섞인다")
+	check(not AugmentTimeline.is_super_round(8), "증강 라운드가 아니면 별 표시가 없다")
 
 
 func test_entries_keep_the_current_round_centered_at_both_edges() -> void:
@@ -28,8 +28,8 @@ func test_entries_keep_the_current_round_centered_at_both_edges() -> void:
 	check_eq(list.size(), 5, "칩은 현재 라운드 포함 다섯 개")
 	check_eq(list.map(func(entry: Dictionary) -> int: return entry["round"]), [1, 2, 3, 4, 5], "현재 라운드 앞뒤로 두 칸씩 표시")
 	check(bool(list[2]["current"]) and not bool(list[1]["current"]) and not bool(list[3]["current"]), "가운데 칸만 current")
-	check(bool(list[1]["draft"]) and int(list[1]["round"]) == 2 and bool(list[4]["draft"]) and int(list[4]["round"]) == 5, "2·5라운드 칩은 증강")
-	check(not bool(list[0]["draft"]), "1라운드 칩은 증강이 아니다")
+	check(bool(list[3]["draft"]) and int(list[3]["round"]) == 4, "4라운드 칩은 증강")
+	check(not bool(list[0]["draft"]) and not bool(list[1]["draft"]), "1·2라운드 칩은 증강이 아니다")
 	var start: Array[Dictionary] = AugmentTimeline.entries(1, 25)
 	check(not start[0]["available"] and not start[1]["available"] and start[2]["available"], "1라운드 왼쪽은 빈칸")
 	var near_end: Array[Dictionary] = AugmentTimeline.entries(24, 25)
@@ -38,13 +38,14 @@ func test_entries_keep_the_current_round_centered_at_both_edges() -> void:
 
 func test_caption_counts_rounds_until_the_next_augment() -> void:
 	var first: Dictionary = AugmentTimeline.caption_for(1, false, 25)
-	check_eq(first["kind"], &"soon", "1라운드에는 다음 라운드(2라운드)가 첫 증강이다")
-	check_eq(AugmentTimeline.caption_for(2, true, 25)["kind"], &"now", "2라운드 증강을 고르는 중이면 [이번 라운드 증강!]")
-	var after_pick: Dictionary = AugmentTimeline.caption_for(2, false, 25)
-	check_eq(after_pick["kind"], &"later", "2라운드 증강을 고른 뒤에는 다음 증강(5라운드)을 센다")
-	check_eq(int(after_pick["rounds"]), 3, "2라운드 -> 5라운드는 3라운드 뒤")
-	check_eq(AugmentTimeline.caption_for(4, false, 25)["kind"], &"soon", "다음 라운드가 증강이면 [다음 라운드 증강!]")
-	check_eq(AugmentTimeline.caption_for(6, false, 25)["kind"], &"later", "6라운드는 8라운드까지 2라운드 뒤")
+	check_eq(first["kind"], &"later", "1라운드에는 첫 증강(4라운드)이 아직 멀다")
+	check_eq(int(first["rounds"]), 3, "1라운드 -> 4라운드는 3라운드 뒤")
+	check_eq(AugmentTimeline.caption_for(3, false, 25)["kind"], &"soon", "다음 라운드가 증강이면 [다음 라운드 증강!]")
+	check_eq(AugmentTimeline.caption_for(4, true, 25)["kind"], &"now", "4라운드 증강을 고르는 중이면 [이번 라운드 증강!]")
+	var after_pick: Dictionary = AugmentTimeline.caption_for(4, false, 25)
+	check_eq(after_pick["kind"], &"later", "4라운드 증강을 고른 뒤에는 다음 증강(7라운드)을 센다")
+	check_eq(int(after_pick["rounds"]), 3, "4라운드 -> 7라운드는 3라운드 뒤")
+	check_eq(AugmentTimeline.caption_for(5, false, 25)["kind"], &"later", "5라운드는 7라운드까지 2라운드 뒤")
 	check_eq(AugmentTimeline.caption_for(25, false, 25)["kind"], &"none", "상한 라운드를 넘으면 남은 증강이 없다")
 
 
@@ -53,13 +54,13 @@ func test_warning_appears_only_the_round_before_an_augment() -> void:
 	for round_number: int in range(1, 26):
 		if AugmentTimeline.warns_next_round(round_number, 25):
 			warned.append(round_number)
-	check_eq(warned, [1, 4, 7, 10, 13, 16, 19, 22] as Array[int], "증강 한 라운드 전(1·4·7…)에만 사전 예고")
+	check_eq(warned, [3, 6, 9, 12, 15, 18, 21, 24] as Array[int], "증강 한 라운드 전(3·6·9…)에만 사전 예고")
 	check(not AugmentTimeline.warns_next_round(25, 25), "상한 라운드 뒤에는 예고하지 않는다")
 
 
-## 온보딩(2026-11): 1라운드는 증강 없이 바로 굴리고 움직일 수 있고, 첫 증강은 2라운드 시작에 열린다. 몇 번째 드래프트인지도 새 일정을 따른다.
-func test_first_draft_waits_until_round_two_and_numbers_follow() -> void:
-	check_eq([AugmentRegistry.draft_number(1), AugmentRegistry.draft_number(2), AugmentRegistry.draft_number(5), AugmentRegistry.draft_number(8), AugmentRegistry.draft_number(11)], [0, 1, 2, 3, 4], "몇 번째 드래프트 (1라운드는 아직 없음)")
+## 온보딩(2026-11): 1~3라운드는 증강 없이 바로 굴리고 움직일 수 있고, 첫 증강은 4라운드 시작에 열린다. 몇 번째 드래프트인지는 옛 일정 기준을 그대로 쓴다 (4라운드 = 2번째).
+func test_first_draft_waits_until_round_four_and_numbers_stay() -> void:
+	check_eq([AugmentRegistry.draft_number(1), AugmentRegistry.draft_number(3), AugmentRegistry.draft_number(4), AugmentRegistry.draft_number(7), AugmentRegistry.draft_number(10)], [0, 0, 2, 3, 4], "몇 번째 드래프트 (4라운드 = 2번째, 첫 드래프트 전은 0)")
 	var manager := TurnManager.new()
 	manager.boost_gimmicks = false
 	tree.root.add_child(manager)

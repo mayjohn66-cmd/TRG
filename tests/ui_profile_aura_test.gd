@@ -2,6 +2,7 @@
 extends "res://tests/ui_super_fx_test.gd"
 
 func _run() -> void:
+	GameEnums.draft_start = 1  # 이 검사는 게임 시작에 증강이 바로 열리는 옛 일정을 전제로 한다 (실제 일정은 4라운드부터 -- test_augment_timeline·ui_smoke가 본다)
 	GameSession.mode = GameSession.MODE_AI
 	_board = (load("res://scenes/main_board.tscn") as PackedScene).instantiate()
 	root.add_child(_board)

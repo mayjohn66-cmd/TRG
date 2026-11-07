@@ -105,19 +105,21 @@ static func get_def(augment_id: StringName) -> AugmentDef:
 
 
 ## 초반 드래프트는 계열을 좁혀 정보량을 줄인다 (단계별 증강 등장): 몇 번째 드래프트 → 그때 제시하는 계열.
-## 1번째(2라운드)는 기물 진화만(자기 말에 먼저 애착이 가게), 2번째(5라운드)는 판정 도구·카드·기물 진화. 3번째(8라운드)부터는 제한 없이
-## 법전·초증강까지 섞인다 (법전·초증강 행의 min_round는 7이라 8라운드부터 실제로 나온다). 그 계열에 받을 수 있는 증강이 모자라면 다른 계열로 채운다.
+## 번호는 옛 일정(1, 4, 7, ...)을 기준으로 센다: 4라운드는 2번째(판정 도구·카드·기물 진화), 7라운드부터는 제한 없이 법전·초증강까지 섞인다
+## (법전·초증강 행의 min_round도 7). 1번째(기물 진화만)는 옛 1라운드 드래프트용이라 지금 일정에서는 쓰이지 않는다 (옛 일정으로 도는 규칙 테스트만 쓴다).
+## 그 계열에 받을 수 있는 증강이 모자라면 다른 계열로 채운다.
 const DRAFT_FOCUS: Dictionary = {
 	1: [GameEnums.AugmentCategory.PAWN_EVOLUTION],
 	2: [GameEnums.AugmentCategory.TOOL_SWAP, GameEnums.AugmentCategory.CARD_PACKAGE, GameEnums.AugmentCategory.PAWN_EVOLUTION],
 }
 
 
-## 이 라운드가 몇 번째 드래프트인가 (2라운드 = 1번째). 드래프트 라운드가 아니어도 직전 드래프트 번호. 첫 드래프트 전(1라운드)은 0.
+## 이 라운드가 몇 번째 드래프트인가 (옛 일정 기준: 1라운드 = 1번째, 4라운드 = 2번째, 7라운드 = 3번째). 드래프트 라운드가 아니어도 직전 드래프트 번호.
+## 첫 드래프트(draft_start) 전에는 0.
 static func draft_number(round_number: int) -> int:
 	if round_number < GameEnums.draft_start:
 		return 0
-	return (round_number - GameEnums.draft_start) / GameEnums.DRAFT_INTERVAL + 1
+	return (round_number - 1) / GameEnums.DRAFT_INTERVAL + 1
 
 
 ## 이번 드래프트에 제시할 계열 (빈 배열이면 제한 없음).
