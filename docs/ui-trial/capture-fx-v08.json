@@ -1,0 +1,87 @@
+{
+  "date": "2026-10-27",
+  "tool": "built-in image_gen.imagegen",
+  "agent": "Codex",
+  "image_model": "not exposed by tool",
+  "source_policy": "Native generated PNGs copied byte-for-byte, alpha not edited.",
+  "assets": [
+    {
+      "key": "speed_field",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-3a435e72-e645-42f9-8dee-3d5c7fbd2950.png",
+      "target": "assets\\fx\\capture\\motion_brush_v01.png",
+      "dimensions": [
+        1672,
+        941
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        253
+      ],
+      "alpha_bbox": [
+        0,
+        0,
+        1672,
+        941
+      ],
+      "prompt": "Use case: stylized-concept. Asset type: transparent game cutscene overlay, hand-painted manga motion brushwork. A single coherent sparse field of 6 to 9 long sweeping off-white dry-brush speed streaks, predominantly moving diagonally from lower left toward upper right. Streaks cluster along the far left/right margins and upper/lower corners of a wide cinematic composition; keep the CENTRAL 55 PERCENT almost completely empty and transparent to frame two large characters. Each stroke has ragged fibrous edges, thin torn brush threads, tiny fading paint dust, irregular widths and lengths with gently tapering ends. Restrained silvery gray secondary strokes. Designed to tint at runtime. Strong directional energy, subtle and sparse, not a busy background. Genuine transparent RGBA background. All visible paint safely padded from canvas edges. No solid background, no central explosion, no symmetric radial triangle wedges, no straight vector lines, no hard-edged band, no words, no symbols, no text, no logo, no border, no characters or objects. One finished overlay, not a sprite sheet.",
+      "attempts": 1,
+      "runtime_size_limit": 1024,
+      "qa": "Actual image inspected: fibrous/soft texture and real transparency, no text or objects. Edge framing is intentionally cropped to the cinematic viewport; character center stays open.",
+      "source_sha256": "2c458378b3c01a669cb080cf8a85bcd902a3153ebb184eb99c6b0cfb6dd42734",
+      "target_sha256": "2c458378b3c01a669cb080cf8a85bcd902a3153ebb184eb99c6b0cfb6dd42734"
+    },
+    {
+      "key": "pierce_trail",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-6a7d0998-ef7b-4c1d-85a9-4a677b982009.png",
+      "target": "assets\\fx\\capture\\pierce_trail_v01.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        254
+      ],
+      "alpha_bbox": [
+        0,
+        0,
+        1223,
+        1068
+      ],
+      "prompt": "Use case: stylized-concept. Asset type: one transparent grayscale game VFX sprite for an arrow or crystal spear thrust. One long, very slim, horizontal white-hot painted thrust streak moving from SCREEN LEFT to SCREEN RIGHT, with its sharp luminous tip at about 86 percent canvas width, mid-height. Strong forward direction, tapering torn silvery fibrous tail trailing left. Luminous ivory-white hot core and soft pale gray wisps, subtle curved thin filaments and a small amount of airy dust. Hand-painted polished game effect, looks like fast compressed air and blade light, not a geometric spear or arrow icon. Narrow silhouette in middle 22 percent of square canvas height. Generous fully transparent padding everywhere, no cropping. True transparent RGBA, no black or colored background. No solid rhombus, triangles, diamonds, hard polygons, mechanical straight laser beam, thick outline, starburst, words, objects, weapon, frame, logo or checkerboard. One standalone texture, not an animation sheet. Neutral white/grayscale so runtime can tint it cyan or gold.",
+      "attempts": 1,
+      "runtime_size_limit": 512,
+      "qa": "Actual image inspected: fibrous/soft texture and real transparency, no text or objects. Edge framing is intentionally cropped to the cinematic viewport; character center stays open.",
+      "source_sha256": "fb980149a9c9d8281462aac6c9cf4a8f3bed3c23f24e277d7a654189ae62d07c",
+      "target_sha256": "fb980149a9c9d8281462aac6c9cf4a8f3bed3c23f24e277d7a654189ae62d07c"
+    },
+    {
+      "key": "magic_contact",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-7240c951-cdb9-4fa4-852c-e6095374aa86.png",
+      "target": "assets\\fx\\capture\\magic_contact_v01.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        253
+      ],
+      "alpha_bbox": [
+        0,
+        0,
+        1254,
+        1254
+      ],
+      "prompt": "Use case: stylized-concept. Asset type: one transparent neutral white game VFX sprite for a small magical contact burst behind a character. Four to six delicate organically curling wisps of silvery white light and tiny dust glints loosely orbit an EMPTY, transparent center. Irregular asymmetrical swirl with broken feathery vapor ribbons, a few irregular tiny glowing embers, nuanced airy soft glow. Sparse, elegant, hand-painted fantasy game VFX, monochrome ivory/gray so runtime can tint it pink, green or blue. Keep center at least 35 percent of width almost transparent so a face beneath it remains readable; wisps mostly in outer half, no full closed ring. Square canvas, full effect comfortably within 15 percent clear padding. Truly transparent RGBA background including soft falloff. No diamond/square particles, regular four-point stars, circles or circle outlines, concentric rings, geometric magic circle, uniform radial spokes, objects, characters, scenery, text, symbols, words, logo, border or checkerboard. Single isolated effect, not a sprite sheet.",
+      "attempts": 1,
+      "runtime_size_limit": 512,
+      "qa": "Actual image inspected: fibrous/soft texture and real transparency, no text or objects. Edge framing is intentionally cropped to the cinematic viewport; character center stays open.",
+      "source_sha256": "ed51ddac18f8fb874b7b9f6c32d828e9308320db3bde9343874f5573331b6ce0",
+      "target_sha256": "ed51ddac18f8fb874b7b9f6c32d828e9308320db3bde9343874f5573331b6ce0"
+    }
+  ]
+}

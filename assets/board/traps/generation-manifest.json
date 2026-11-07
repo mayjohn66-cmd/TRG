@@ -1,0 +1,292 @@
+{
+  "assets": [
+    {
+      "id": "TRP_02",
+      "name": "함정 속으로 (나락)",
+      "native_source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-5467a96b-786d-4f8f-b339-6359b0629a75.png",
+      "sha256": "81d6dad378a2efb129b511671322d75379ea78fdcd7c8e07a2e1be92b6934231",
+      "size": [
+        1254,
+        1254
+      ],
+      "alpha_bounds": [
+        201,
+        248,
+        1053,
+        962
+      ],
+      "normalized_region": [
+        0.16028708133971292,
+        0.19776714513556617,
+        0.6794258373205742,
+        0.569377990430622
+      ],
+      "import_size_limit": 256,
+      "import_lossy_quality": 0.85
+    },
+    {
+      "id": "TRP_03",
+      "name": "지뢰찾기",
+      "native_source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-aa1091f4-cca5-4bc2-911c-392450a527ae.png",
+      "sha256": "0428b6665ccd3882f448ad15f68223e8ce23ca3dffa098612032413c50a2ac23",
+      "size": [
+        1254,
+        1254
+      ],
+      "alpha_bounds": [
+        179,
+        134,
+        1158,
+        1102
+      ],
+      "normalized_region": [
+        0.14274322169059012,
+        0.10685805422647528,
+        0.7807017543859649,
+        0.7719298245614035
+      ],
+      "import_size_limit": 256,
+      "import_lossy_quality": 0.85
+    },
+    {
+      "id": "TRP_05",
+      "name": "도미노 연쇄",
+      "native_source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-20140f0b-69bd-4bd6-890d-b28ec101fb0c.png",
+      "sha256": "e49179b0ab8d97384496f1eeebc0c021ab0cff36f4b882f882f0559a17bd704c",
+      "size": [
+        1254,
+        1254
+      ],
+      "alpha_bounds": [
+        147,
+        305,
+        1188,
+        970
+      ],
+      "normalized_region": [
+        0.11722488038277512,
+        0.24322169059011164,
+        0.8301435406698564,
+        0.5303030303030303
+      ],
+      "import_size_limit": 256,
+      "import_lossy_quality": 0.85
+    },
+    {
+      "id": "TRP_06",
+      "name": "바나나 껍질",
+      "native_source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-59242f92-92ee-4f45-bf53-10cfa8590df6.png",
+      "sha256": "e727800c543a486aa78f8c1b1bbc0e475de88c4362343ee8a36a281cc9961bd7",
+      "size": [
+        1254,
+        1254
+      ],
+      "alpha_bounds": [
+        173,
+        277,
+        1092,
+        979
+      ],
+      "normalized_region": [
+        0.1379585326953748,
+        0.22089314194577353,
+        0.7328548644338118,
+        0.5598086124401914
+      ],
+      "import_size_limit": 256,
+      "import_lossy_quality": 0.85
+    },
+    {
+      "id": "TRP_07",
+      "name": "스파이크",
+      "native_source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-77eaaeb2-8fde-4acf-b630-236b1b548eb5.png",
+      "sha256": "a2d89241200a553ee01b7cf051e742cff8d12a708872ce02bb69b6565f46edd6",
+      "size": [
+        1254,
+        1254
+      ],
+      "alpha_bounds": [
+        91,
+        416,
+        1163,
+        854
+      ],
+      "normalized_region": [
+        0.07256778309409888,
+        0.3317384370015949,
+        0.8548644338118022,
+        0.3492822966507177
+      ],
+      "import_size_limit": 256,
+      "import_lossy_quality": 0.85
+    },
+    {
+      "id": "TRP_08",
+      "name": "강제 환승 포탈",
+      "native_source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-5b0e86b9-638f-4306-a003-ec935674006c.png",
+      "sha256": "9e872bd1d48269b0fd7df303ae65fbbc43681080d1c70bf9b7617716a8454c93",
+      "size": [
+        1254,
+        1254
+      ],
+      "alpha_bounds": [
+        192,
+        334,
+        1062,
+        911
+      ],
+      "normalized_region": [
+        0.15311004784688995,
+        0.266347687400319,
+        0.69377990430622,
+        0.46012759170653905
+      ],
+      "import_size_limit": 256,
+      "import_lossy_quality": 0.85
+    },
+    {
+      "id": "TRP_C01",
+      "name": "무인도 감옥",
+      "native_source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-0c11a1f6-ef58-4121-ad16-b0b0b7e7257e.png",
+      "sha256": "17d48242c01f0eabf048e48652c5de67f93ebd8bffd9479da8bf370c2bb39a3d",
+      "size": [
+        1254,
+        1254
+      ],
+      "alpha_bounds": [
+        158,
+        242,
+        1090,
+        1006
+      ],
+      "normalized_region": [
+        0.12599681020733652,
+        0.19298245614035087,
+        0.7432216905901117,
+        0.6092503987240829
+      ],
+      "import_size_limit": 256,
+      "import_lossy_quality": 0.85
+    },
+    {
+      "id": "TRP_C02",
+      "name": "피아식별 점프대",
+      "native_source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-6c0355c8-e040-4680-bbbc-d171f532f481.png",
+      "sha256": "1673fb167ad718b72954996a30cbad1aecc873113f67f6b5204cb3f65ea84fbd",
+      "size": [
+        1254,
+        1254
+      ],
+      "alpha_bounds": [
+        285,
+        119,
+        969,
+        1139
+      ],
+      "normalized_region": [
+        0.22727272727272727,
+        0.094896331738437,
+        0.5454545454545454,
+        0.8133971291866029
+      ],
+      "import_size_limit": 256,
+      "import_lossy_quality": 0.85
+    },
+    {
+      "id": "TRP_C03",
+      "name": "톨게이트",
+      "native_source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-3b894341-df4d-4f1c-b272-c729e30dc9a6.png",
+      "sha256": "5e52c132db3913de13b95a9bc63688e28022ed44c95847fb0c9327609653d483",
+      "size": [
+        1254,
+        1254
+      ],
+      "alpha_bounds": [
+        184,
+        279,
+        1116,
+        977
+      ],
+      "normalized_region": [
+        0.1467304625199362,
+        0.22248803827751196,
+        0.7432216905901117,
+        0.5566188197767146
+      ],
+      "import_size_limit": 256,
+      "import_lossy_quality": 0.85
+    },
+    {
+      "id": "TRP_C04",
+      "name": "타르",
+      "native_source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-a30f5ba5-71cb-423c-8e2b-de563b21e6e7.png",
+      "sha256": "0a05908b245e559000a713f38ec174f2c581b5f6199cf0fd69ec7f94cf8b30f8",
+      "size": [
+        1254,
+        1254
+      ],
+      "alpha_bounds": [
+        135,
+        173,
+        1120,
+        1066
+      ],
+      "normalized_region": [
+        0.1076555023923445,
+        0.1379585326953748,
+        0.7854864433811802,
+        0.7121212121212122
+      ],
+      "import_size_limit": 256,
+      "import_lossy_quality": 0.85
+    },
+    {
+      "id": "HIDDEN",
+      "name": "미공개 함정",
+      "native_source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-a8ddd06f-3133-44ad-ac7f-5311734e3d66.png",
+      "sha256": "8c116b741f6b188258e241441cdced7f856662f364408a3b0ab86c5c8db247ce",
+      "size": [
+        1254,
+        1254
+      ],
+      "alpha_bounds": [
+        292,
+        182,
+        961,
+        1113
+      ],
+      "normalized_region": [
+        0.23285486443381181,
+        0.14513556618819776,
+        0.5334928229665071,
+        0.7424242424242424
+      ],
+      "import_size_limit": 256,
+      "import_lossy_quality": 0.85
+    },
+    {
+      "id": "TRP_01",
+      "name": "거울의 힘 (기존 호환 함정)",
+      "native_source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-e37c45b0-4ffd-4b33-969f-8ce91407189b.png",
+      "sha256": "07ce36e0769b90da2de18b5e2f0dcf0a21ea1309c6bffe6467a32ab025f01b49",
+      "size": [
+        1254,
+        1254
+      ],
+      "alpha_bounds": [
+        215,
+        199,
+        1059,
+        1067
+      ],
+      "normalized_region": [
+        0.17145135566188197,
+        0.15869218500797447,
+        0.6730462519936204,
+        0.6921850079744817
+      ],
+      "import_size_limit": 256,
+      "import_lossy_quality": 0.85
+    }
+  ]
+}

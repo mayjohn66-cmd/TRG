@@ -1,0 +1,395 @@
+# File: res://tests/test_special_victory.gd
+# Class: class_name TestSpecialVictory
+# Role: 🏆 중앙 법전의 특수 승리 교칙 8종 - 기록 집계, 달성 판정, 달성 시 졸업과 교칙 삭제, 진행도 툴팁 데이터 검증
+class_name TestSpecialVictory
+extends TestCase
+
+
+func _law(id: String) -> VictoryLaw:
+	return LawRegistry.create(id) as VictoryLaw
+
+
+func _new_manager(player_count: int = 4) -> TurnManager:
+	var manager := TurnManager.new()
+	manager.boost_gimmicks = false
+	manager.hotseat_mode = true
+	manager.draft_enabled = false
+	tree.root.add_child(manager)
+	var ids: Array[int] = []
+	for i: int in range(1, player_count + 1):
+		ids.append(i)
+	manager.start_game(ids, 4242)
+	return manager
+
+
+## 이번 라운드를 끝까지 넘긴다 (특수 승리는 라운드가 끝나기 직전에 판정한다).
+func _finish_round(manager: TurnManager) -> void:
+	var start_round: int = manager.state.round_number
+	var guard: int = 0
+	while manager.state.round_number == start_round and not manager.is_game_over and guard < 300:
+		manager.force_timeout()
+		guard += 1
+
+
+func _dispose(manager: TurnManager) -> void:
+	tree.root.remove_child(manager)
+	manager.free()
+
+
+func test_registry_makes_nine_victory_laws_with_table_goals() -> void:
+	var goals: Array[int] = []
+	for id: String in LawRegistry.ALL_IDS:
+		var law: VictoryLaw = _law(id)
+		check(law != null and law.trigger_timing == "", "%s는 판을 변조하지 않는 특수 승리 교칙" % id)
+		goals.append(law.goal())
+	check_eq(goals, int_array([10, 6, 5, 16, 3, 12, 3, 3, 3]), "표의 목표 수치")
+	check_eq(_law("LAW_01").law_name, "기물 슬레이어", "이름")
+	check_eq(_law("LAW_05").condition_text(), "말 3개가 트랙 위에서 서로 4칸 이상 간격", "조건 문구")
+
+
+func test_kills_and_ejections_are_counted_from_captures() -> void:
+	var state := make_state()
+	place(state, 11, 2, [1])
+	place(state, 21, 4, [3])
+	move(state, 11, 2)
+	check_eq(state.stat(1, VictoryLaw.KILLS), 1, "적 처치 1회")
+	check_eq(state.stat(2, VictoryLaw.EJECTED), 1, "사출 1회")
+	state.send_to_start(state.get_pawn(11), 1)  # 자기 말을 스스로 보내면 처치가 아니다
+	check_eq(state.stat(1, VictoryLaw.KILLS), 1, "자폭은 처치가 아니다")
+	check_eq(state.stat(1, VictoryLaw.EJECTED), 1, "그래도 사출은 센다")
+	state.send_to_start(state.get_pawn(12), 2)
+	check_eq(state.stat(1, VictoryLaw.EJECTED), 1, "출발선에 있던 말은 사출로 세지 않는다")
+
+
+func test_arena_master_graduates_the_killer_and_removes_the_law() -> void:
+	var manager: TurnManager = _new_manager(3)
+	var state: GameState = manager.state
+	add_law(state, "LAW_01")
+	add_law(state, "LAW_06")
+	state.law_stats[1] = {VictoryLaw.KILLS: 9}
+	place(state, 11, 2, [1])
+	place(state, 21, 4, [3])
+	manager.state.tools[1] = ScriptedTool.new([2])
+	manager.act(&"proceed", {"player_id": 1})
+	manager.act(&"roll", {"player_id": 1})
+	manager.act(&"select_pawn", {"player_id": 1, "pawn_id": 11})
+	check_eq(state.stat(1, VictoryLaw.KILLS), 10, "10번째 처치")
+	check_eq(state.rankings, int_array([1]), "처치한 차례가 끝나는 순간 10처치 확인 -> 1위 졸업 (라운드 끝까지 기다리지 않는다)")
+	check_eq(state.rank_reasons[1], &"LAW_01", "사유는 교칙 ID")
+	check(not state.rulebook.has_law("LAW_01"), "달성된 교칙은 법전에서 삭제")
+	check(state.rulebook.has_law("LAW_06"), "다른 교칙은 남는다")
+	check(not manager.is_game_over, "3인 판은 계속된다")
+	check_eq(VictoryChecker.reason_text(&"LAW_01"), "특수 승리 (기물 슬레이어)", "결과 문구")
+	_dispose(manager)
+
+
+func test_bakery_law_counts_bakery_stops_and_graduates_at_round_end() -> void:
+	var manager: TurnManager = _new_manager(3)
+	var state: GameState = manager.state
+	add_law(state, "LAW_02")
+	var bakery: int = BoardSpec.bakery_tiles[0]
+	place(state, 21, bakery - 2, [bakery - 3])
+	move(state, 21, 2)
+	check_eq(state.stat(2, VictoryLaw.BAKERY), 1, "빵집에 멈추면 방문 1회")
+	move(state, 21, 1)
+	check_eq(state.stat(2, VictoryLaw.BAKERY), 1, "빵집이 아닌 칸은 세지 않는다")
+	state.law_stats[2] = {VictoryLaw.BAKERY: 6}
+	manager.state.tools[1] = ScriptedTool.new([1])
+	manager.act(&"proceed", {"player_id": 1})
+	manager.act(&"roll", {"player_id": 1})
+	manager.act(&"select_pawn", {"player_id": 1, "pawn_id": 11})
+	_finish_round(manager)
+	check(state.rankings.has(2), "빵집 6회 방문을 채운 P2가 졸업")
+	_dispose(manager)
+
+
+func test_estate_counts_my_hotels_and_traps_on_the_board() -> void:
+	var state := make_state()
+	add_law(state, "LAW_03")
+	for tile: int in [3, 5, 7, 9]:
+		state.place_attachment(tile, TrapDomino.new(1))
+	check_eq(_law("LAW_03").progress(state, 1), 4, "설치물 4개")
+	check(SpecialVictory.achieved_by(state, 1) == &"", "아직 4/5")
+	state.place_attachment(11, TrapDomino.new(1))
+	check_eq(SpecialVictory.achieved_by(state, 1), &"LAW_03", "5개 -> 달성")
+	check(SpecialVictory.achieved_by(state, 2) == &"", "상대는 0개")
+
+
+func test_one_shot_move_and_roll_chain_count_only_while_the_law_is_on_the_board() -> void:
+	var state := make_state()
+	SpecialVictory.note_session(state, 1, VictoryLaw.BEST_MOVE, 20)
+	check_eq(state.stat(1, VictoryLaw.BEST_MOVE), 0, "교칙이 없으면 세지 않는다")
+	AugmentRegistry.get_def(&"AUG_LAW_04").apply(state, 1)
+	SpecialVictory.note_session(state, 1, VictoryLaw.BEST_MOVE, 12)
+	SpecialVictory.note_session(state, 1, VictoryLaw.BEST_MOVE, 9)
+	check_eq(state.stat(1, VictoryLaw.BEST_MOVE), 12, "최고 기록")
+	SpecialVictory.note_session(state, 2, VictoryLaw.BEST_MOVE, 18)
+	check_eq(SpecialVictory.achieved_by(state, 2), &"LAW_04", "18칸 한 방")
+	state.rulebook.remove_law_by_id("LAW_04")
+	AugmentRegistry.get_def(&"AUG_LAW_04").apply(state, 1)
+	check_eq(state.stat(1, VictoryLaw.BEST_MOVE), 0, "다시 제정되면 0부터")
+
+
+func test_roll_chain_is_recorded_by_the_turn_manager() -> void:
+	var manager: TurnManager = _new_manager(2)
+	add_law(manager.state, "LAW_07")
+	manager.state.tools[1] = ScriptedTool.new([ScriptedTool.reroll_of(1), ScriptedTool.reroll_of(1), ScriptedTool.reroll_of(1), 1])
+	for i: int in 4:
+		# 추가 굴림은 이동한 뒤 다시 굴린다: 굴림 -> 말 선택 -> (카드 단계) -> 굴림 ...
+		manager.act(&"proceed", {"player_id": 1})
+		manager.act(&"roll", {"player_id": 1})
+		if i < 3:
+			check(manager.state.rankings.is_empty(), "차례 도중(%d번째 굴림)에는 아직 졸업하지 않는다" % (i + 1))
+		manager.act(&"select_pawn", {"player_id": 1, "pawn_id": 11})
+	check_eq(manager.state.stat(1, VictoryLaw.BEST_CHAIN), 4, "한 차례 4연속 굴림 기록")
+	check_eq(manager.state.rankings, int_array([1, 2]), "차례가 끝나는 순간 판정: 초전도체 달성 -> 1위 졸업, 남은 P2는 2위")
+	check(manager.is_game_over, "2인 판은 1위가 나오면 끝")
+	_dispose(manager)
+
+
+func test_same_law_achievers_at_round_end_only_the_leader_graduates() -> void:
+	var manager: TurnManager = _new_manager(3)
+	var state: GameState = manager.state
+	add_law(state, "LAW_01")
+	state.law_stats[1] = {VictoryLaw.KILLS: 10}
+	state.law_stats[3] = {VictoryLaw.KILLS: 10}
+	place(state, 31, 20, [19])
+	place(state, 11, 4, [3])
+	_finish_round(manager)
+	check_eq(state.rankings, int_array([3]), "같은 교칙을 둘이 달성: 레이스에서 앞선 P3만 졸업 (교칙은 한 명을 졸업시키고 사라진다)")
+	check(not state.is_graduated(1) and not state.rulebook.has_law("LAW_01"), "P1은 레이스에 남고 교칙은 법전에서 사라졌다")
+	var standings: Array[Dictionary] = VictoryChecker.standings(state, manager.player_order, state.rankings[0])
+	var winner_row: Dictionary = standings[0]
+	check(int(winner_row["progress"]) < 100 and int(winner_row["finished"]) == 0, "결과표는 졸업 순간의 진행을 보여 준다 (철수한 말을 완주로 세지 않는다)")
+	check_eq(VictoryChecker.short_reason(winner_row["reason"]), "특수 승리: 기물 슬레이어", "결과표 사유")
+	_dispose(manager)
+
+
+func test_siege_needs_three_separate_pawns_four_tiles_apart() -> void:
+	var state := make_state()
+	for entry: Array in [[11, 2], [12, 5], [13, 9]]:
+		place(state, entry[0], entry[1], [entry[1] - 1])
+	check_eq(VictoryLaw.spread_count(state, 1), 2, "5번은 2번과 3칸 차이라 세지 않는다")
+	place(state, 12, 6, [5])
+	check_eq(VictoryLaw.spread_count(state, 1), 2, "2·6에 9는 6과 3칸 차이라 세지 않는다")
+	place(state, 13, 10, [9])
+	check_eq(VictoryLaw.spread_count(state, 1), 3, "2·6·10: 서로 4칸 이상인 말 3개")
+	add_law(state, "LAW_05")
+	check(VictoryLaw.spread_count(state, 1) >= 3, "사도 포위망 조건 충족")
+	check_eq(SpecialVictory.achieved_by(state, 1), &"", "경보 전에는 포위망으로 졸업하지 않는다 (1.01)")
+	SpecialVictory.update_siege(state, 1)
+	check(SpecialVictory.siege_armed(state, 1), "차례 끝에 처음 완성하면 경보")
+	check_eq(SpecialVictory.achieved_by(state, 1), &"", "경보만으로는 아직")
+	SpecialVictory.update_siege(state, 1)
+	check_eq(SpecialVictory.achieved_by(state, 1), &"LAW_05", "다음 자기 차례 끝까지 유지하면 사도 포위망 달성")
+
+
+## 사도 포위망 기습 승리 방지 (1.01): 경보 → 다른 사람의 차례 → 다시 내 차례 끝까지 유지해야 졸업한다. 그 사이 깨지면 경보가 풀린다.
+func test_siege_needs_to_survive_one_lap_after_the_warning() -> void:
+	var manager := _new_manager()
+	var events: Array = []
+	manager.event_received.connect(func(kind: StringName, data: Dictionary) -> void: events.append({"kind": kind, "data": data}))
+	var state: GameState = manager.state
+	state.rulebook.enqueue_law(LawRegistry.create("LAW_05"))
+	for entry: Array in [[11, 2], [12, 6], [13, 10]]:
+		place(state, entry[0], entry[1], [entry[1] - 1])
+	check(not manager._judge_special_victory(1), "첫 판정: 졸업하지 않는다")
+	check(not state.is_graduated(1) and SpecialVictory.siege_armed(state, 1), "경보만 울린다")
+	check(events.any(func(e: Dictionary) -> bool: return e["kind"] == &"siege_armed" and int(e["data"]["player_id"]) == 1), "경보 이벤트")
+	manager._judge_special_victory(2)
+	manager._judge_special_victory(-1)
+	check(not state.is_graduated(1), "남의 차례·라운드 끝 판정으로는 졸업하지 않는다")
+	manager._judge_special_victory(1)
+	check(state.is_graduated(1) and state.rank_reasons[1] == &"LAW_05", "다음 자기 차례 끝까지 유지하면 졸업")
+	_dispose(manager)
+	# 깨지면 경보가 풀리고 처음부터
+	var broken := _new_manager()
+	var bstate: GameState = broken.state
+	var bevents: Array = []
+	broken.event_received.connect(func(kind: StringName, data: Dictionary) -> void: bevents.append(kind))
+	bstate.rulebook.enqueue_law(LawRegistry.create("LAW_05"))
+	for entry: Array in [[11, 2], [12, 6], [13, 10]]:
+		place(bstate, entry[0], entry[1], [entry[1] - 1])
+	broken._judge_special_victory(1)
+	bstate.send_to_start(bstate.get_pawn(12), 2)
+	broken._judge_special_victory(2)
+	check(not SpecialVictory.siege_armed(bstate, 1) and bevents.has(&"siege_broken"), "다른 사람이 말을 잡아 포위망을 깨면 경보 해제")
+	place(bstate, 12, 6, [5])
+	broken._judge_special_victory(1)
+	check(not bstate.is_graduated(1) and SpecialVictory.siege_armed(bstate, 1), "다시 완성하면 경보부터 다시")
+	_dispose(broken)
+
+
+func test_underdog_counts_kills_on_the_leader_only_with_no_finished_pawns() -> void:
+	var state := make_state(3)
+	place(state, 21, 20, [19])  # P2가 선두
+	place(state, 31, 6, [5])
+	place(state, 11, 4, [3])
+	check_eq(state.race_leader(1), 2, "P1을 뺀 선두는 P2")
+	state.send_to_start(state.get_pawn(31), 1)
+	check_eq(state.stat(1, VictoryLaw.UNDERDOG), 0, "선두가 아닌 사람을 잡으면 세지 않는다")
+	state.send_to_start(state.get_pawn(21), 1)
+	check_eq(state.stat(1, VictoryLaw.UNDERDOG), 1, "선두의 말 처치")
+	state.finish_stack(state.get_pawn(12))
+	place(state, 22, 20, [19])
+	state.send_to_start(state.get_pawn(22), 1)
+	check_eq(state.stat(1, VictoryLaw.UNDERDOG), 1, "완주한 말이 있으면 다크호스가 아니다")
+
+
+func test_progress_rows_flag_danger_and_survive_snapshots() -> void:
+	var state := make_state(2)
+	add_law(state, "LAW_06")
+	state.law_stats[2] = {VictoryLaw.EJECTED: 11}
+	var rows: Array[Dictionary] = SpecialVictory.progress_rows(state, state.rulebook.active_laws_queue[0] as VictoryLaw)
+	check_eq(rows.size(), 2, "플레이어마다 한 줄")
+	check_eq([int(rows[1]["value"]), int(rows[1]["goal"]), bool(rows[1]["danger"])], [11, 12, true], "11/12 위험!")
+	check(not bool(rows[0]["danger"]), "0/12은 안전")
+	var snapshot: TurnSnapshot = TurnSnapshot.capture(state)
+	state.law_stats.clear()
+	snapshot.restore(state)
+	check_eq(state.stat(2, VictoryLaw.EJECTED), 11, "되감기·동기화로 기록 복원")
+
+
+## 처치로 조건을 채우면 이동·처치가 다 끝나고 그 차례가 넘어가는 순간에 판정한다 (이동 도중에 끼어들지 않고, 라운드 끝까지 기다리지도 않는다).
+func test_capture_graduates_right_after_the_acting_turn_not_mid_move() -> void:
+	var manager: TurnManager = _new_manager(4)
+	var state: GameState = manager.state
+	add_law(state, "LAW_01")
+	state.law_stats[1] = {VictoryLaw.KILLS: 9}
+	var order: Array[StringName] = []
+	manager.event_received.connect(func(kind: StringName, _data: Dictionary) -> void:
+		if kind in [&"move_resolved", &"special_victory_judgement", &"player_ranked"]:
+			order.append(kind))
+	place(state, 11, 2, [1])
+	place(state, 21, 4, [3])
+	manager.state.tools[1] = ScriptedTool.new([2])
+	manager.act(&"proceed", {"player_id": 1})
+	manager.act(&"roll", {"player_id": 1})
+	check(state.rankings.is_empty(), "굴리고 아직 움직이지 않았을 때는 판정이 없다")
+	manager.act(&"select_pawn", {"player_id": 1, "pawn_id": 11})
+	check_eq(state.stat(1, VictoryLaw.KILLS), 10, "처치로 진행도가 오른다")
+	check_eq(order, [&"move_resolved", &"special_victory_judgement", &"player_ranked"] as Array[StringName], "이동·처치가 끝난 뒤 판정, 그 뒤 순위 확정")
+	check_eq(state.rankings, int_array([1]), "라운드 끝을 기다리지 않고 바로 1위 졸업")
+	check(state.round_number == 1, "아직 1라운드")
+	check(not state.rulebook.has_law("LAW_01"), "달성된 교칙은 바로 법전에서 사라진다")
+	_dispose(manager)
+
+
+## 졸업한 사람은 이후 라운드의 특수 승리 판정에서 빠지고, 달성된 교칙은 법전에서 사라져 다시 판정되지 않는다.
+func test_graduate_and_destroyed_law_are_never_checked_again_in_later_rounds() -> void:
+	var manager: TurnManager = _new_manager(4)
+	var state: GameState = manager.state
+	add_law(state, "LAW_01")
+	state.law_stats[1] = {VictoryLaw.KILLS: 10}
+	var ranked: Array[int] = []
+	manager.event_received.connect(func(kind: StringName, data: Dictionary) -> void:
+		if kind == &"player_ranked":
+			ranked.append(int(data["player_id"])))
+	_finish_round(manager)
+	check_eq(state.rankings, int_array([1]), "1라운드 끝에 P1이 졸업")
+	check(not state.rulebook.has_law("LAW_01"), "달성된 교칙은 법전에서 완전히 사라진다")
+	# 남은 사람이 같은 교칙을 다시 제정해도 졸업한 P1의 옛 기록 때문에 P1이 다시 걸리지 않는다.
+	state.law_stats[1] = {VictoryLaw.KILLS: 99}
+	add_law(state, "LAW_01")
+	state.law_stats[3] = {VictoryLaw.KILLS: 10}
+	_finish_round(manager)
+	check_eq(ranked.count(1), 1, "P1은 한 번만 순위를 받는다")
+	check_eq(state.rankings, int_array([1, 3]), "다음 라운드에는 새로 달성한 P3만 졸업한다")
+	check(not state.rulebook.has_law("LAW_01"), "다시 달성된 교칙도 법전에서 사라진다")
+	var third_round: int = state.round_number
+	_finish_round(manager)
+	_finish_round(manager)
+	check_eq(state.rankings, int_array([1, 3]), "교칙이 없는 라운드들에는 아무도 졸업하지 않는다 (옛 기록이 남아 있어도)")
+	check(state.round_number > third_round or manager.is_game_over, "라운드는 계속 진행된다")
+	_dispose(manager)
+
+
+## 1.01 진행도 연출: 법전에 걸린 기록이 오르면 일이 일어난 칸과 함께 알린다 (법전에 없는 기록은 조용히).
+func test_law_stat_gained_reports_the_tile_only_for_watched_laws() -> void:
+	var state := make_state()
+	var heard: Array = []
+	state.law_stat_gained.connect(func(player_id: int, key: StringName, value: int, tile: int) -> void: heard.append([player_id, key, value, tile]))
+	place(state, 21, 9, [8])
+	state.send_to_start(state.get_pawn(21), 1)
+	check(heard.is_empty(), "법전에 없는 기록은 알리지 않는다")
+	add_law(state, "LAW_01")
+	add_law(state, "LAW_06")
+	place(state, 22, 12, [11])
+	state.send_to_start(state.get_pawn(22), 1)
+	check(heard.has([1, VictoryLaw.KILLS, 2, 12]), "투기장: 처치한 사람·값·처치된 칸 (%s)" % str(heard))
+	check(heard.has([2, VictoryLaw.EJECTED, 2, 12]), "동네북: 사출된 사람·값·칸")
+	check_eq(state.stat_tile, -1, "칸 꼬리표는 쓰고 나면 비운다")
+
+
+## 1.01 리치 사이렌: 세는 기록이 딱 1 남았을 때만. 카이지(한 번의 최고 기록)는 제외.
+func test_reach_means_exactly_one_step_left() -> void:
+	var state := make_state()
+	add_law(state, "LAW_01")
+	add_law(state, "LAW_04")
+	var arena: VictoryLaw = state.rulebook.active_laws_queue[0] as VictoryLaw
+	var kaiji: VictoryLaw = state.rulebook.active_laws_queue[1] as VictoryLaw
+	state.add_stat(1, VictoryLaw.KILLS, arena.goal() - 2)
+	check(not SpecialVictory.is_reach(state, arena, 1), "두 걸음 남으면 아직")
+	state.add_stat(1, VictoryLaw.KILLS)
+	check(SpecialVictory.is_reach(state, arena, 1), "한 걸음 남으면 리치")
+	state.add_stat(1, VictoryLaw.KILLS)
+	check(not SpecialVictory.is_reach(state, arena, 1), "달성하면 리치가 아니다")
+	state.max_stat(1, VictoryLaw.BEST_MOVE, kaiji.goal() - 1)
+	check(not SpecialVictory.is_reach(state, kaiji, 1), "카이지는 리치 사이렌 대상이 아니다")
+	check_eq(SpecialVictory.goal_of(state, "LAW_01"), arena.goal(), "법전의 목표 수치")
+
+
+
+# ---- 2026-11-04: 특수 승리는 제정한 시점부터 새로 센다 ----
+
+func test_enacting_a_law_starts_cumulative_records_from_zero() -> void:
+	var manager := _new_manager()
+	var state: GameState = manager.state
+	for entry: Array in [[VictoryLaw.KILLS, "LAW_01"], [VictoryLaw.BAKERY, "LAW_02"], [VictoryLaw.EJECTED, "LAW_06"], [VictoryLaw.UNDERDOG, "LAW_08"]]:
+		var key: StringName = entry[0]
+		state.add_stat(1, key, 5)
+		state.add_stat(2, key, 2)
+		var law: VictoryLaw = _law(entry[1])
+		check_eq(law.progress(state, 1), 5, "%s: 제정 전에는 이미 쌓인 기록이 보인다" % entry[1])
+		SpecialVictory.on_law_enacted(state, law)
+		state.rulebook.enqueue_law(law)
+		check_eq(law.progress(state, 1), 0, "%s: 제정하는 순간 0부터 다시 센다" % entry[1])
+		check_eq(law.progress(state, 2), 0, "%s: 모든 사람이 0부터" % entry[1])
+		state.add_stat(1, key, 1)
+		check_eq(law.progress(state, 1), 1, "%s: 제정 뒤에 쌓은 것만 센다" % entry[1])
+	check(SpecialVictory.achieved_by(state, 1) == &"", "미리 쌓은 기록으로 제정하자마자 달성하지 않는다")
+	_dispose(manager)
+
+
+func test_enacting_a_law_does_not_reset_other_laws_records() -> void:
+	var manager := _new_manager()
+	var state: GameState = manager.state
+	var kills: VictoryLaw = _law("LAW_01")
+	SpecialVictory.on_law_enacted(state, kills)
+	state.rulebook.enqueue_law(kills)
+	state.add_stat(1, VictoryLaw.KILLS, 4)
+	var bakery: VictoryLaw = _law("LAW_02")
+	SpecialVictory.on_law_enacted(state, bakery)
+	state.rulebook.enqueue_law(bakery)
+	check_eq(kills.progress(state, 1), 4, "다른 교칙이 새로 제정돼도 이미 걸려 있던 교칙의 기록은 그대로")
+	_dispose(manager)
+
+
+func test_estate_law_ignores_traps_placed_before_it_was_enacted() -> void:
+	var manager := _new_manager()
+	var state: GameState = manager.state
+	for tile: int in [3, 5, 7, 9, 11]:
+		state.place_attachment(tile, TrapPit.new(1))
+	var law: VictoryLaw = _law("LAW_03")
+	check_eq(law.progress(state, 1), 5, "제정 전에는 깔려 있는 설치물 5개가 보인다")
+	SpecialVictory.on_law_enacted(state, law)
+	state.rulebook.enqueue_law(law)
+	check_eq(law.progress(state, 1), 0, "제정 시점에 깔려 있던 설치물은 세지 않는다")
+	check(SpecialVictory.achieved_by(state, 1) == &"", "5개를 미리 깔아 두고 제정해도 바로 달성하지 않는다")
+	state.place_attachment(13, TrapPit.new(1))
+	check_eq(law.progress(state, 1), 1, "제정 뒤에 새로 깐 설치물부터 센다")
+	var snapshot: TurnSnapshot = TurnSnapshot.capture(state)
+	state.board.get_tile(13).clear_attachments()
+	snapshot.restore(state)
+	check_eq(law.progress(state, 1), 1, "스냅샷 복원 뒤에도 같은 개수 (제외 표시도 함께 복원)")
+	_dispose(manager)

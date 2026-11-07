@@ -1,0 +1,16 @@
+[gd_resource type="SpriteFrames" load_steps=7 format=3]
+
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_02/frames/angry_0.webp" id="1_angry"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_02/frames/angry_1.webp" id="2_angry"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_02/frames/angry_2.webp" id="3_angry"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_02/frames/angry_3.webp" id="4_angry"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_02/frames/angry_4.webp" id="5_angry"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_02/frames/angry_5.webp" id="6_angry"]
+
+[resource]
+animations = [{
+"frames": [{"duration": 1.0, "texture": ExtResource("1_angry")}, {"duration": 1.0, "texture": ExtResource("2_angry")}, {"duration": 1.0, "texture": ExtResource("3_angry")}, {"duration": 1.0, "texture": ExtResource("4_angry")}, {"duration": 1.0, "texture": ExtResource("5_angry")}, {"duration": 1.0, "texture": ExtResource("6_angry")}],
+"loop": true,
+"name": &"angry",
+"speed": 10.0
+}]

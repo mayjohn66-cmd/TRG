@@ -1,0 +1,185 @@
+{
+  "date": "2026-10-27",
+  "tool": "built-in image_gen.imagegen",
+  "image_model": "not exposed by tool",
+  "agent": "Codex",
+  "source_policy": "Generated PNGs copied byte-for-byte; previous sources remain in Git history.",
+  "runtime": {
+    "size_limit": 512,
+    "lossy_quality": 0.9,
+    "mipmaps": true,
+    "existing_uids_preserved": true
+  },
+  "assets": [
+    {
+      "key": "MOVE_PLUS",
+      "title": "슈파볼트 탑승",
+      "prompt": "Use case: stylized-concept. Asset type: a single finished painted inventory icon for a cute Korean fantasy board game, square 1:1. Style: simple rounded toy-like objects, thick clean dark-brown contour, hand-painted soft cel shading, limited candy colors, warm highlights, polished mobile game illustration, chunky readable silhouette at 80 pixels. Scene/backdrop: plain very dark midnight blue, very faint soft light directly behind subject only. Composition: centered isolated compact emblem; every important object fits inside the central 76 percent diameter circle, with generous empty outer margin so a circular UI mask never clips the subject. No enclosing border, no frame, no circle outline, no text, no letters, no numbers, no logo, no watermark, no busy particles, no elaborate scenery, no photographic realism. One coherent object grouping, large readable subject. Subject: A small friendly high-speed electric train car, sleek rounded sky-blue and cream body, compact turquoise windscreen, small golden lightning-bolt emblem on its side, nose pointing diagonally toward the lower right. Two short blue motion strokes and a tiny golden forward arrow communicate permanent extra movement. Make it visibly a modern electric ride, no steam engine, no boiler, no tracks, no flames, no character.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-a17ed5b5-55a8-4af9-91b7-915796351595.png",
+      "target": "content_trickcal/illustrations/augments/AUG_UTIL_MOVE_PLUS.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGB",
+      "previous_sha256": "b43b43a0e66f57eca707dc9a6166346852b649094771e88d2ceca42913beef15",
+      "source_sha256": "99e369dc89c4217ea4efd221f1a933f3c3cd1e99138e32a46f5cd5fef6969075",
+      "target_sha256": "99e369dc89c4217ea4efd221f1a933f3c3cd1e99138e32a46f5cd5fef6969075",
+      "attempts": 1,
+      "qa": "Subject, circle-safe layout, simple background and no text inspected; native medal preview checked separately."
+    },
+    {
+      "key": "HAND_EXPAND",
+      "title": "에심당 뽈사탕",
+      "prompt": "Use case: stylized-concept. Asset type: a single finished painted inventory icon for a cute Korean fantasy board game, square 1:1. Style: simple rounded toy-like objects, thick clean dark-brown contour, hand-painted soft cel shading, limited candy colors, warm highlights, polished mobile game illustration, chunky readable silhouette at 80 pixels. Scene/backdrop: plain very dark midnight blue, very faint soft light directly behind subject only. Composition: centered isolated compact emblem; every important object fits inside the central 76 percent diameter circle, with generous empty outer margin so a circular UI mask never clips the subject. No enclosing border, no frame, no circle outline, no text, no letters, no numbers, no logo, no watermark, no busy particles, no elaborate scenery, no photographic realism. One coherent object grouping, large readable subject. Subject: One large round swirled strawberry-and-cream lollipop with a short pale wooden stick and a tiny mint ribbon, beside a compact fan of three small purple playing-card backs at its base. Candy is dominant and instantly recognizable. One small golden plus-shaped sparkle near the cards communicates increased hand capacity. No bread, no food bag, no wrappers with writing.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-80fc9b15-4598-4a5a-a598-76ce383bd83a.png",
+      "target": "content_trickcal/illustrations/augments/AUG_UTIL_HAND_EXPAND.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGB",
+      "previous_sha256": "ef19a028d496a8244efe8e3f54bfd1eface8e09a38958e9b9df817a71ede71b3",
+      "source_sha256": "242ed3d7478b67753cdc7596a11a41d2cbdf1a62ea91aea97659c44dfbd78de2",
+      "target_sha256": "242ed3d7478b67753cdc7596a11a41d2cbdf1a62ea91aea97659c44dfbd78de2",
+      "attempts": 1,
+      "qa": "Subject, circle-safe layout, simple background and no text inspected; native medal preview checked separately."
+    },
+    {
+      "key": "LUCKY_DICE",
+      "title": "손은 눈보다 빨라",
+      "prompt": "Use case: stylized-concept. Asset type: a single finished painted inventory icon for a cute Korean fantasy board game, square 1:1. Style: simple rounded toy-like objects, thick clean dark-brown contour, hand-painted soft cel shading, limited candy colors, warm highlights, polished mobile game illustration, chunky readable silhouette at 80 pixels. Scene/backdrop: plain very dark midnight blue, very faint soft light directly behind subject only. Composition: centered isolated compact emblem; every important object fits inside the central 76 percent diameter circle, with generous empty outer margin so a circular UI mask never clips the subject. No enclosing border, no frame, no circle outline, no text, no letters, no numbers, no logo, no watermark, no busy particles, no elaborate scenery, no photographic realism. One coherent object grouping, large readable subject. Subject: A single small white cartoon magician glove with a purple cuff deftly tilting an ivory six-sided die so its top face clearly has six round dark pips arranged in two columns of three. One subtle curved golden motion swoosh around the fingers suggests a fast sleight of hand and favorable luck. Compact charming hand and die, anatomically coherent four-digit cartoon glove, no eyes, no face, no full character, no fire.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-06f33d22-3412-4157-ac83-257dab927f97.png",
+      "target": "content_trickcal/illustrations/augments/AUG_UTIL_LUCKY_DICE.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGB",
+      "previous_sha256": "82f0757f3a748d3a5949785049713196c2a653675f4620e7b32a76bd63df6474",
+      "source_sha256": "506f43515407674122ff5f4e49da2a9d4e0031e2cd34bdb8552094dcd7b2dc50",
+      "target_sha256": "506f43515407674122ff5f4e49da2a9d4e0031e2cd34bdb8552094dcd7b2dc50",
+      "attempts": 1,
+      "qa": "Subject, circle-safe layout, simple background and no text inspected; native medal preview checked separately."
+    },
+    {
+      "key": "EXTRA_TURN",
+      "title": "다이스: 리바이브",
+      "prompt": "Use case: stylized-concept. Asset type: a single finished painted inventory icon for a cute Korean fantasy board game, square 1:1. Style: simple rounded toy-like objects, thick clean dark-brown contour, hand-painted soft cel shading, limited candy colors, warm highlights, polished mobile game illustration, chunky readable silhouette at 80 pixels. Scene/backdrop: plain very dark midnight blue, very faint soft light directly behind subject only. Composition: centered isolated compact emblem; every important object fits inside the central 76 percent diameter circle, with generous empty outer margin so a circular UI mask never clips the subject. No enclosing border, no frame, no circle outline, no text, no letters, no numbers, no logo, no watermark, no busy particles, no elaborate scenery, no photographic realism. One coherent object grouping, large readable subject. Subject: One chunky rounded ivory six-sided die with blue pips, lifted upright by a large clear mint-green circular return arrow that curls around its lower half and ends upward. A small mint plus-shaped glint and a soft repaired golden seam on the die communicate revival and a second chance. Dominant die and revival arrow. No syringe, no medicine bottle, no skull, no text.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-a6a0ab30-7013-4636-9d3e-952a2efd75d3.png",
+      "target": "content_trickcal/illustrations/augments/AUG_UTIL_EXTRA_TURN.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGB",
+      "previous_sha256": "0cb9a3e9443347466b881c4c5ae52eb24bcf2bb24f45be64240e3faf7e2c97f4",
+      "source_sha256": "0bc69de8691f2cb015366ca2c8a0fd37105731f9d6732a1adabdbbdae9ece0aa",
+      "target_sha256": "0bc69de8691f2cb015366ca2c8a0fd37105731f9d6732a1adabdbbdae9ece0aa",
+      "attempts": 1,
+      "qa": "Subject, circle-safe layout, simple background and no text inspected; native medal preview checked separately."
+    },
+    {
+      "key": "CARD_PACK2",
+      "title": "즉발 카드 패키지",
+      "prompt": "Use case: stylized-concept. Asset type: a single finished painted inventory icon for a cute Korean fantasy board game, square 1:1. Style: simple rounded toy-like objects, thick clean dark-brown contour, hand-painted soft cel shading, limited candy colors, warm highlights, polished mobile game illustration, chunky readable silhouette at 80 pixels. Scene/backdrop: plain very dark midnight blue, very faint soft light directly behind subject only. Composition: centered isolated compact emblem; every important object fits inside the central 76 percent diameter circle, with generous empty outer margin so a circular UI mask never clips the subject. No enclosing border, no frame, no circle outline, no text, no letters, no numbers, no logo, no watermark, no busy particles, no elaborate scenery, no photographic realism. One coherent object grouping, large readable subject. Subject: Exactly TWO thick magenta and warm-purple playing cards emerging from a small open cream-and-gold paper card packet. Each card back bears a simple large golden lightning bolt, conveying instant action cards. Cards have gently rounded corners and layered edges. One tiny spark between the two cards. No gift box, no bow, no third card, no character, no words.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-2ddb8774-5371-4f38-96c1-6204c1794882.png",
+      "target": "content_trickcal/illustrations/augments/AUG_UTIL_CARD_PACK2.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGB",
+      "previous_sha256": "f1082c76593b26be10baa5e1eef182bbb14dafc274d8b69f3b5a7955011997e2",
+      "source_sha256": "35cfdbf0ed086b4ade5277b411e47b244f436650783bc056d0dea94d947826e8",
+      "target_sha256": "35cfdbf0ed086b4ade5277b411e47b244f436650783bc056d0dea94d947826e8",
+      "attempts": 1,
+      "qa": "Subject, circle-safe layout, simple background and no text inspected; native medal preview checked separately."
+    },
+    {
+      "key": "SELECT_SHIELD",
+      "title": "관심사도 지정",
+      "prompt": "Use case: stylized-concept. Asset type: a single finished painted inventory icon for a cute Korean fantasy board game, square 1:1. Style: simple rounded toy-like objects, thick clean dark-brown contour, hand-painted soft cel shading, limited candy colors, warm highlights, polished mobile game illustration, chunky readable silhouette at 80 pixels. Scene/backdrop: plain very dark midnight blue, very faint soft light directly behind subject only. Composition: centered isolated compact emblem; every important object fits inside the central 76 percent diameter circle, with generous empty outer margin so a circular UI mask never clips the subject. No enclosing border, no frame, no circle outline, no text, no letters, no numbers, no logo, no watermark, no busy particles, no elaborate scenery, no photographic realism. One coherent object grouping, large readable subject. Subject: One small golden-yellow board-game pawn protected inside a translucent pale cyan magical shield dome. A simple solid blue shield-shaped crest with a cream star floats on the front of the dome, clear pawn silhouette still visible behind it. A small warm highlight over the pawn suggests a favored chosen piece. Compact rounded dome, no separate playing cards, no treasure box, no crown.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-1c4b5f72-8bf1-4646-8b7c-3b37bc8dd844.png",
+      "target": "content_trickcal/illustrations/augments/AUG_UTIL_SELECT_SHIELD.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGB",
+      "previous_sha256": "03c94903b3297c8bd4cc0dc78de0e0474c3baa6fc16172ce40bbb61be0a3e99a",
+      "source_sha256": "80fa6ac620079edb31a427b9da51a6ac9403d49a46815bda735e32c2276bd337",
+      "target_sha256": "80fa6ac620079edb31a427b9da51a6ac9403d49a46815bda735e32c2276bd337",
+      "attempts": 1,
+      "qa": "Subject, circle-safe layout, simple background and no text inspected; native medal preview checked separately."
+    },
+    {
+      "key": "TRAP_CLEAR1",
+      "title": "간의영역",
+      "prompt": "Use case: stylized-concept. Asset type: a single finished painted inventory icon for a cute Korean fantasy board game, square 1:1. Style: simple rounded toy-like objects, thick clean dark-brown contour, hand-painted soft cel shading, limited candy colors, warm highlights, polished mobile game illustration, chunky readable silhouette at 80 pixels. Scene/backdrop: plain very dark midnight blue, very faint soft light directly behind subject only. Composition: centered isolated compact emblem; every important object fits inside the central 76 percent diameter circle, with generous empty outer margin so a circular UI mask never clips the subject. No enclosing border, no frame, no circle outline, no text, no letters, no numbers, no logo, no watermark, no busy particles, no elaborate scenery, no photographic realism. One coherent object grouping, large readable subject. Subject: One small dark-gray round fantasy board-game mine with a red button being swept away and harmlessly dismantled by a broad curved pale mint magical sweep. The mine is tilted and breaking into only three small inert fragments while a short cyan crescent clears the space underneath. Readable symbol of clearing one trap, no explosion, no additional mines, no terrain board, no character, no weapons, no full magic circle.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-6d307d49-88b7-43cd-959f-643099459cd2.png",
+      "target": "content_trickcal/illustrations/augments/AUG_UTIL_TRAP_CLEAR1.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGB",
+      "previous_sha256": "c9c1c6c22ed609ccdf353898bd5c3b71cb58fa04252e5d3672dac2d7acd1bed5",
+      "source_sha256": "aedfe5c6738b3ff1a42631a35ad2e2a11fa7c78641729f654cf6d73f16568ca4",
+      "target_sha256": "aedfe5c6738b3ff1a42631a35ad2e2a11fa7c78641729f654cf6d73f16568ca4",
+      "attempts": 1,
+      "qa": "Subject, circle-safe layout, simple background and no text inspected; native medal preview checked separately."
+    },
+    {
+      "key": "CATCH_UP",
+      "title": "순보",
+      "prompt": "Use case: stylized-concept. Asset type: a single finished painted inventory icon for a cute Korean fantasy board game, square 1:1. Style: simple rounded toy-like objects, thick clean dark-brown contour, hand-painted soft cel shading, limited candy colors, warm highlights, polished mobile game illustration, chunky readable silhouette at 80 pixels. Scene/backdrop: plain very dark midnight blue, very faint soft light directly behind subject only. Composition: centered isolated compact emblem; every important object fits inside the central 76 percent diameter circle, with generous empty outer margin so a circular UI mask never clips the subject. No enclosing border, no frame, no circle outline, no text, no letters, no numbers, no logo, no watermark, no busy particles, no elaborate scenery, no photographic realism. One coherent object grouping, large readable subject. Subject: One bright blue board-game pawn materializing out of a compact pale-cyan teleport ribbon immediately behind one small golden leading pawn. Both stand on a single short cream path of three connected rounded tiles, pointing toward the upper right. The blue pawn has one faint translucent blue afterimage trailing at lower left, showing it has instantly caught up. Two solid pawns only, no chess rooks, no swapping arrows, no full board.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-0788f067-4872-4896-a11f-74a9ca7baded.png",
+      "target": "content_trickcal/illustrations/augments/AUG_UTIL_CATCH_UP.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGB",
+      "previous_sha256": "0279c35604f075771ea6033fb4f8f3662e17ae5954bc2cbe2b4baae1bdf89302",
+      "source_sha256": "eca0bee9b6d0e259cb7aa7faa6d61a501ea836e630c64743ca0d2fb264cdf83c",
+      "target_sha256": "eca0bee9b6d0e259cb7aa7faa6d61a501ea836e630c64743ca0d2fb264cdf83c",
+      "attempts": 1,
+      "qa": "Subject, circle-safe layout, simple background and no text inspected; native medal preview checked separately."
+    },
+    {
+      "key": "SHORTEN_GOAL",
+      "title": "슬슬 지루한데…",
+      "prompt": "Use case: stylized-concept. Asset type: a single finished painted inventory icon for a cute Korean fantasy board game, square 1:1. Style: simple rounded toy-like objects, thick clean dark-brown contour, hand-painted soft cel shading, limited candy colors, warm highlights, polished mobile game illustration, chunky readable silhouette at 80 pixels. Scene/backdrop: plain very dark midnight blue, very faint soft light directly behind subject only. Composition: centered isolated compact emblem; every important object fits inside the central 76 percent diameter circle, with generous empty outer margin so a circular UI mask never clips the subject. No enclosing border, no frame, no circle outline, no text, no letters, no numbers, no logo, no watermark, no busy particles, no elaborate scenery, no photographic realism. One coherent object grouping, large readable subject. Subject: A small finish-line flag with a clearly readable black-and-cream checkerboard fabric on a short warm wooden pole. Beneath it a tiny cream board-game track made of three chunky tiles is visibly folded inward like an accordion, bringing the finish flag closer to one small blue pawn. One broad warm orange inward-pointing arrow above the shortened gap communicates shortening the race. Compact icon, no train, no hourglass, no words.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-195a6a03-cbc8-41f0-8108-b1b97f3103c5.png",
+      "target": "content_trickcal/illustrations/augments/AUG_UTIL_SHORTEN_GOAL.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGB",
+      "previous_sha256": "f5c5984da12b72ae20a2efa22db50ecd4f0b97cc3048b8d46c68ed3b44ff9092",
+      "source_sha256": "b10143ac81fbc72ec09e7b72aabd9e3b6a4b5f89f66ddf12576bb378968d20c7",
+      "target_sha256": "b10143ac81fbc72ec09e7b72aabd9e3b6a4b5f89f66ddf12576bb378968d20c7",
+      "attempts": 1,
+      "qa": "Subject, circle-safe layout, simple background and no text inspected; native medal preview checked separately."
+    },
+    {
+      "key": "REROLL_ALL_AUG",
+      "title": "올 픽션",
+      "prompt": "Use case: stylized-concept. Asset type: a single finished painted inventory icon for a cute Korean fantasy board game, square 1:1. Style: simple rounded toy-like objects, thick clean dark-brown contour, hand-painted soft cel shading, limited candy colors, warm highlights, polished mobile game illustration, chunky readable silhouette at 80 pixels. Scene/backdrop: plain very dark midnight blue, very faint soft light directly behind subject only. Composition: centered isolated compact emblem; every important object fits inside the central 76 percent diameter circle, with generous empty outer margin so a circular UI mask never clips the subject. No enclosing border, no frame, no circle outline, no text, no letters, no numbers, no logo, no watermark, no busy particles, no elaborate scenery, no photographic realism. One coherent object grouping, large readable subject. Subject: Exactly three fanned purple augment card backs inside one broad cyan circular redraw arrow. A small cream eraser with a coral sleeve sweeps across the front card, leaving one clean blank patch and a few soft violet eraser crumbs, suggesting all selections are erased and redrawn. Each card has a simple warm gold diamond crest. Three cards, one eraser, one reset arrow, balanced compact grouping. No board flip, no pawn, no text.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-d1681c06-63be-41a9-83eb-f949d94483bf.png",
+      "target": "content_trickcal/illustrations/augments/AUG_UTIL_REROLL_ALL_AUG.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGB",
+      "previous_sha256": "0dd378f59c89233a512f1597909f68a90f0da1a0fa9bd640da774ce3fbe5d605",
+      "source_sha256": "5c6e7d322ebd1ac9ef17d5d0a503c1136cb6a4e14aa29ea9f27f9712d8906b2d",
+      "target_sha256": "5c6e7d322ebd1ac9ef17d5d0a503c1136cb6a4e14aa29ea9f27f9712d8906b2d",
+      "attempts": 1,
+      "qa": "Subject, circle-safe layout, simple background and no text inspected; native medal preview checked separately."
+    }
+  ]
+}
