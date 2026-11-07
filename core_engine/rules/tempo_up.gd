@@ -126,7 +126,7 @@ static func stage_name(stage: int) -> String:
 ## 경고 화면에 보여 줄 단계별 효과 문구.
 static func effect_lines(stage: int) -> Array[String]:
 	match stage:
-		1: return ["차례 첫 이동 +%d칸" % MOVE_BONUS[1], "리벤지 부스터 +6칸", "이제부터 고급 증강이 증강 선택지에 등장합니다!"] as Array[String]
-		2: return ["차례 첫 이동 +%d칸" % MOVE_BONUS[2], "리벤지 부스터 +8칸", "이제부터 초증강이 증강 선택지에 등장합니다!"] as Array[String]
+		1: return ["차례 첫 이동 +%d칸" % MOVE_BONUS[1], "리벤지 부스터 +6칸", "{e:fire} 이제부터 고급 증강이 증강 선택지에 등장합니다!"] as Array[String]
+		2: return ["차례 첫 이동 +%d칸" % MOVE_BONUS[2], "리벤지 부스터 +8칸", "{e:fire} 이제부터 초증강이 증강 선택지에 등장합니다!"] as Array[String]
 		3: return ["전원 차례 첫 이동 +%d칸" % MOVE_BONUS[3]] as Array[String]
 	return [] as Array[String]

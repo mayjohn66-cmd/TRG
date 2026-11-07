@@ -197,7 +197,9 @@ func _start_next() -> void:
 		headline.add_theme_color_override("font_outline_color", color.darkened(0.6))
 		headline.add_theme_constant_override("outline_size", 10)
 	_root.add_child(headline)
-	if str(_current["body"]) != "":
+	if EmojiText.has_marker(str(_current["body"])):
+		_root.add_child(EmojiText.build(str(_current["body"]), 20 if big else 14, Color("ced4da")))
+	elif str(_current["body"]) != "":
 		var body: Label = _label(str(_current["body"]), 20 if big else 14, Color("ced4da"))
 		body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		body.custom_minimum_size = Vector2(380, 0)
@@ -252,7 +254,10 @@ func _build_stamp(color: Color) -> void:
 	else:
 		_root.add_child(stamp_label(str(_current["headline"]), STAMP_FONT_PX, color))
 	if str(options.get("sub", "")) != "":
-		_root.add_child(stamp_label(str(options["sub"]), 26, color, 8))
+		if EmojiText.has_marker(str(options["sub"])):  # {e:이름} 표식은 이모지 그림으로 (글꼴이 아니라 그림이라 웹·모바일에서 깨지지 않는다)
+			_root.add_child(EmojiText.build(str(options["sub"]), 26, color.lightened(0.45), 8, color.darkened(0.72), STAMP_MAX_WIDTH))
+		else:
+			_root.add_child(stamp_label(str(options["sub"]), 26, color, 8))
 	if _current["extra"] != null and below:
 		_add_stamp_extra()
 	modulate = Color(1, 1, 1, 0)

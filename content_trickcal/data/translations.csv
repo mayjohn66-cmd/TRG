@@ -2716,12 +2716,12 @@ PROGRESS / 진행률,PROGRESS,PROGRESS／進行度
 총 %d칸 이동,Move %d spaces total,合計 %dマス移動
 리벤지 +%d칸 대기중,Revenge +%d waiting,リベンジ +%dマス待機中
 고급 증강,Advanced augments,上級オーグメント
-이제부터 고급 증강이 증강 선택지에 등장합니다!,Advanced augments now appear among the augment choices!,これから上級オーグメントが選択肢に登場します！
-이제부터 초증강이 증강 선택지에 등장합니다!,Super augments now appear among the augment choices!,これから超オーグメントが選択肢に登場します！
+{e:fire} 이제부터 고급 증강이 증강 선택지에 등장합니다!,{e:fire} Advanced augments now appear among the augment choices!,{e:fire} これから上級オーグメントが選択肢に登場します！
+{e:fire} 이제부터 초증강이 증강 선택지에 등장합니다!,{e:fire} Super augments now appear among the augment choices!,{e:fire} これから超オーグメントが選択肢に登場します！
 ★ %s 합류!,★ %s join!,★ %s 参戦！
 조준 없이 [던지기]만 누르면 돼요 · 꽂히는 자리는 순수한 운,Just press [Throw] - no aiming. Where it lands is pure luck,狙う必要はなく[投げる]を押すだけ・刺さる場所は完全な運
-"승리 조건: 말 4개를 가장 먼저 완주시키거나, 중반에 열리는 [중앙 법전] 조건을 달성하세요!","Win condition: get all 4 pawns home first, or meet a [Central Codex] condition that opens mid-game!",勝利条件: 駒4個を最初にゴールさせるか、中盤に開く[中央法典]の条件を達成しよう！
-승리 조건: 말 4개를 가장 먼저 완주시키세요!,Win condition: get all 4 pawns home first!,勝利条件: 駒4個を最初にゴールさせよう！
+"{e:target} 승리 조건: 말 4개를 가장 먼저 완주시키거나, 중반에 열리는 [중앙 법전] 조건을 달성하세요!","{e:target} Win condition: get all 4 pawns home first, or meet a [Central Codex] condition that opens mid-game!",{e:target} 勝利条件: 駒4個を最初にゴールさせるか、中盤に開く[中央法典]の条件を達成しよう！
+{e:target} 승리 조건: 말 4개를 가장 먼저 완주시키세요!,{e:target} Win condition: get all 4 pawns home first!,{e:target} 勝利条件: 駒4個を最初にゴールさせよう！
 ★ %d라운드에 [%s] 법전이 열립니다!,"★ At Round %d, [%s] opens in the Codex!",★ 第%dラウンドに[%s]の法典が開きます！
 도착 %d번 칸,arrives at tile %d,到着: %d番マス
 [법전 예고] %d라운드에 %s이(가) 열립니다,"[Codex preview] At Round %d, %s opens",[法典予告] 第%dラウンドに%sが開きます

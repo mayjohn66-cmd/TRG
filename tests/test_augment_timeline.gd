@@ -84,3 +84,15 @@ func test_move_breakdown_text_lists_every_bonus() -> void:
 	check_eq(MainBoard.move_breakdown_text(4, ["점프 부스트! (+2칸)", "퀸 +2칸"]), "기본 4 + 점프 부스트 2 + 퀸 2 = 총 8칸 이동", "느낌표·괄호 표기도 읽는다")
 	check_eq(MainBoard.move_breakdown_text(6, ["비숍 코너 진입 +1칸", "들이받힘"]), "기본 6 + 비숍 코너 진입 1 = 총 7칸 이동", "칸 수가 없는 능력 문구는 건너뛴다")
 	check_eq(MainBoard.move_breakdown_text(5, ["복수 부스터 +4칸"], 7), "기본 5 + 리벤지 부스터 4 = 총 7칸 이동", "실제 경로가 짧으면(결승선 등) 총합을 그 칸수로")
+
+
+## 이모지는 글꼴이 아니라 그림으로: {e:이름} 표식 -> [그림][글자] 줄, 로그용으로는 표식을 뗀다.
+func test_emoji_text_markers_become_pictures_and_strip_cleanly() -> void:
+	check_eq(EmojiText.strip("{e:target} 승리 조건: 완주"), "승리 조건: 완주", "표식을 떼면 글자만")
+	check(EmojiText.texture("target") != null and EmojiText.texture("fire") != null, "그림 두 개가 있다")
+	check(EmojiText.texture("nope") == null, "없는 이름은 null")
+	var column: Control = EmojiText.build("{e:fire} 한 줄\n두 번째 줄", 20, Color.WHITE)
+	check_eq(column.get_child_count(), 2, "줄마다 가로줄")
+	check(column.get_child(0).get_child(0) is TextureRect and column.get_child(0).get_child(1) is Label, "첫 줄은 [그림 + 글자]")
+	check(column.get_child(1).get_child(0) is Label, "표식 없는 줄은 글자만")
+	column.free()

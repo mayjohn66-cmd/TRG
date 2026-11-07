@@ -4199,7 +4199,7 @@ func round_banner_sub() -> String:
 			sub += "  ·  " + L10n.t("★ %s 합류!") % L10n.t(news)
 	# 1라운드: 이기는 방법을 한 줄로 (기본 승리 + 중반에 열리는 법전)
 	if state.round_number == 1:
-		sub += "\n" + (L10n.t("승리 조건: 말 4개를 가장 먼저 완주시키거나, 중반에 열리는 [중앙 법전] 조건을 달성하세요!") if bool(state.match_rules.get("laws", true)) else L10n.t("승리 조건: 말 4개를 가장 먼저 완주시키세요!"))
+		sub += "\n" + (L10n.t("{e:target} 승리 조건: 말 4개를 가장 먼저 완주시키거나, 중반에 열리는 [중앙 법전] 조건을 달성하세요!") if bool(state.match_rules.get("laws", true)) else L10n.t("{e:target} 승리 조건: 말 4개를 가장 먼저 완주시키세요!"))
 	# 자동 법전이 곧 열리면 어떤 법전인지 미리 알린다 (TurnManager._preview_auto_law)
 	if state.auto_law_preview != "":
 		var preview_law: LawResource = LawRegistry.create(state.auto_law_preview)
@@ -11551,16 +11551,17 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 		&"tempo_up":
 			var stage: int = int(data["level"])
 			var lines: Array = data["lines"]
-			_log_line("[템포 업 Lv.%d] %d라운드부터: %s" % [stage, data["round"], " / ".join(PackedStringArray(lines))], Color("ff6b6b"))
+			var plain_lines: Array = lines.map(func(line: String) -> String: return EmojiText.strip(L10n.t(line)))  # 로그·기록에는 이모지 표식을 뗀 글자만
+			_log_line("[템포 업 Lv.%d] %d라운드부터: %s" % [stage, data["round"], " / ".join(PackedStringArray(plain_lines))], Color("ff6b6b"))
 			var tempo_round: int = int(data["round"])
 			# 라운드 끝(마지막 차례·NPC 페이즈)의 처치 연출이 다 끝난 뒤에 경고하고, 증강 선택 창은 그 경고 뒤에 연다.
 			# (지연 큐에 넣는다: 처치 연출도 지연 큐로 들어오므로 그보다 앞서 끼어들지 않는다)
 			_enqueue_late(func() -> void:
-				_record(-1, "[color=#ff6b6b][b]!! 템포 업 Lv.%d[/b] - %s[/color]" % [stage, _bb(" · ".join(PackedStringArray(lines)))], "", false, true)
+				_record(-1, "[color=#ff6b6b][b]!! 템포 업 Lv.%d[/b] - %s[/color]" % [stage, _bb(" · ".join(PackedStringArray(plain_lines)))], "", false, true)
 				if _fx_on():
 					screen_shake(12.0, 0.5)
 					Sfx.play_repeated(&"tempo_warning", TEMPO_WARNING_REPEATS, TEMPO_WARNING_GAP, 0.0, 0.03)  # 기존 경고음을 4번 되풀이한다 (점점 급해지는 느낌)
-				_announce_now("템포 업", "템포 업 Lv.%d · %s" % [stage, TempoUp.stage_name(stage)], "%d라운드부터 게임이 빨라집니다!\n◆ %s" % [tempo_round, "\n◆ ".join(PackedStringArray(lines))], Color("ff4d4d"), null, 3.2))
+				_announce_now("템포 업", "템포 업 Lv.%d · %s" % [stage, TempoUp.stage_name(stage)], "%d라운드부터 게임이 빨라집니다!\n◆ %s" % [tempo_round, "\n◆ ".join(PackedStringArray(lines.map(func(line: String) -> String: return L10n.t(line))))], Color("ff4d4d"), null, 3.2))
 		&"law_auto_preview":
 			var preview_name: String = LawRegistry.create(String(data["law_id"])).law_name
 			_log_line("[법전 예고] %d라운드에 %s이(가) 열립니다" % [int(data["open_round"]), preview_name], Color("ffe066"))

@@ -2175,3 +2175,8 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 - **법전 사전 예고**: `TurnManager._preview_auto_law`가 템포 1단계 2라운드 전(`AUTO_LAW_PREVIEW_LEAD`) 라운드 시작에 자동 제정될 법전을 미리 뽑아 `state.auto_law_preview`에 두고(스냅샷 저장) `law_auto_preview`를 보낸다. 1단계에서 그 법전을 그대로 제정하고, 그 사이 법전이 생겨 자동 제정이 필요 없으면 취소한다. 배너에 "★ 8라운드에 [법전] 법전이 열립니다!"가 붙는다. 증강으로 제정하는 법전은 플레이어 선택이라 예고할 수 없다.
 - **이동량**: `move_breakdown_text(base, notes, cap, dest)` = `기본 5 + 리벤지 부스터 4 = 총 9칸 이동 (도착 12번 칸)`. 판에 칸 번호가 없어 번호는 참고용이다.
 - 테스트: test_augment_timeline(이동량), test_tempo_up(예고), ui_layout_ux_test(배너).
+
+### 7.74 이모지를 그림으로 (`EmojiText`)
+- 웹·모바일에서 이모지 글꼴이 깨질 수 있어 글꼴 폴백 대신 그림으로 보여 준다. 글에는 `{e:target}`·`{e:fire}` 표식을 넣고, `EmojiText.build(text, size, color, outline, outline_color, max_width)`가 줄마다 [그림 + 글자]를 쌓는다 (`max_width`를 넘으면 줄이 통째로 줄어든다). `EmojiText.strip()`은 로그·기록용으로 표식을 뗀다.
+- 쓰는 곳: 도장 알림 부제(`EventAnnouncer._build_stamp`, 1라운드 승리 조건 `{e:target}`)와 큰 알림 본문(템포 업 `{e:fire}`). 새 이모지는 PNG를 `assets/ui/trickcal/emoji/`에 넣고 `EmojiText.NAMES`에 이름을 더한다.
+- 번역 표의 해당 문장은 표식까지 같이 넣는다 (한/영/일 모두).
