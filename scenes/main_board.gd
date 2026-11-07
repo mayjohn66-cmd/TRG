@@ -4526,7 +4526,7 @@ func _paint_revenge_glow(host: Control, on: bool, steps: int = 0, compact: bool 
 			tag.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 			tag.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			tag.add_theme_color_override("font_color", Color("1a0a00"))
-			tag.add_theme_font_size_override("font_size", 10 if compact else 12)
+			tag.add_theme_font_size_override("font_size", 10 if compact else 11)
 			tag.add_theme_stylebox_override("normal", _style(Color("ffa94d"), Color("ff6b00"), 1, 6, 0, 1))
 			tag.z_index = 5
 			host.add_child(tag)
@@ -4537,13 +4537,17 @@ func _paint_revenge_glow(host: Control, on: bool, steps: int = 0, compact: bool 
 				flame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 				flame.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 				flame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-				flame.position = Vector2(4.0, 8.0)
-				flame.size = Vector2(14.0, 14.0)
+				flame.position = Vector2(29.0, 2.0)  # 글 위쪽 가운데 (폭 70 기준)
+				flame.size = Vector2(12.0, 12.0)
 				tag.add_child(flame)
-				(tag.get_theme_stylebox("normal") as StyleBoxFlat).content_margin_left = 18.0
-		tag.text = ("+%d" % steps) if compact else (L10n.t("리벤지 +%d칸 대기중") % steps)
+				var tag_box: StyleBoxFlat = tag.get_theme_stylebox("normal") as StyleBoxFlat
+				tag_box.content_margin_left = 1.0
+				tag_box.content_margin_top = 15.0  # 불꽃 그림 아래에서 글이 시작한다
 		var host_size: Vector2 = host.size if host.size.x > 0.0 else host.custom_minimum_size
-		var tag_height: float = 14.0 if compact else 30.0
+		var tag_height: float = 14.0 if compact else 42.0  # 좁은 칸에서 글이 세 줄로 접혀도 잘리지 않게
+		# 폭을 먼저 정한 뒤 글을 넣는다: 폭 0일 때 글자마다 줄이 바뀐 높이(150px 넘게)로 굳어 배지가 칸 밖으로 삐져나가 글이 잘리던 것을 막는다
+		tag.size = Vector2(maxf(host_size.x - 6.0, 24.0), tag_height)
+		tag.text = ("+%d" % steps) if compact else (L10n.t("리벤지 +%d칸 대기중") % steps)
 		tag.size = Vector2(maxf(host_size.x - 6.0, 24.0), tag_height)
 		tag.position = Vector2(3.0, maxf(host_size.y - tag_height - 3.0, 0.0))
 		tag.visible = true
@@ -6214,11 +6218,12 @@ func _build_pawn_dock() -> void:
 		var result := _make_label("", 16, Color("8ce99a"))  # 말 고르기 단계의 결과 예고(처치!·완주! 등)
 		result.add_theme_color_override("font_outline_color", Color.BLACK)
 		result.add_theme_constant_override("outline_size", 5)
-		result.position = Vector2(0, 2)
+		result.position = Vector2(0, 6)  # 칸 위쪽에서 글자 윗부분이 잘리지 않게 조금 내린다
 		result.size = Vector2(SLOT_SIZE.x, 22)
 		result.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		result.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		result.visible = false
+		result.z_index = 3  # 기물 그림 위에 보이게
 		button.add_child(result)
 		var number := _make_label(str(slot + 1), 12, Color("adb5bd"))
 		number.position = Vector2(6, 2)
@@ -6241,11 +6246,13 @@ func _build_pawn_dock() -> void:
 		_pawn_slot_parts.append({"letter": letter, "place": place, "badge": badge, "result": result})
 	_select_title = _make_label("", 16, Color("ffe066"))
 	_select_title.name = "SelectTitle"
-	_select_title.position = Vector2(-30, -28)
-	_select_title.size = Vector2(_pawn_bar.size.x + 60.0, 24)
+	_select_title.position = Vector2(-10, -34)
+	_select_title.size = Vector2(_pawn_bar.size.x + 20.0, 28)
 	_select_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_select_title.add_theme_color_override("font_outline_color", Color("5c4300"))
 	_select_title.add_theme_constant_override("outline_size", 5)
+	_select_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_select_title.add_theme_stylebox_override("normal", _style(Color(0.05, 0.07, 0.12, 0.92), COLOR_GOLD, 2, 10, 8, 2))  # 보드 가장자리 위에서도 읽히게 어두운 띠
 	_select_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_select_title.visible = false
 	_pawn_bar.add_child(_select_title)
@@ -10167,6 +10174,7 @@ static func _hover_augment_card(card: Button, box: StyleBoxFlat, color: Color, e
 const DRAFT_PICK_GUARD_MSEC: int = 450
 ## 카드와 [리롤] 버튼 사이 간격: 폰에서는 손가락이 카드까지 걸치지 않게 더 띄운다.
 const DRAFT_REROLL_GAP: float = 14.0
+const DRAFT_TOP_RESERVE: float = 64.0  ## 증강 선택 창 위쪽에 비워 두는 높이 (타임라인 칩이 y 4~61을 차지한다)
 const DRAFT_REROLL_GAP_TOUCH: float = 34.0
 const DRAFT_REROLL_HEIGHT_TOUCH: float = 64.0
 var _draft_guard_until_msec: int = 0
@@ -10182,6 +10190,7 @@ func _build_draft_overlay(player_id: int, remaining: int) -> void:
 	_draft_overlay = _new_overlay(0.78)
 	var center := CenterContainer.new()
 	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	center.offset_top = DRAFT_TOP_RESERVE  # 위쪽 증강 타임라인에 [증강 선택] 제목이 가려지지 않게 그 아래에서 시작한다
 	_draft_overlay.add_child(center)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)

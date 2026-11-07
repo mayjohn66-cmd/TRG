@@ -2181,3 +2181,9 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 - 쓰는 곳: 도장 알림 부제(`EventAnnouncer._build_stamp`, 1라운드 승리 조건 `{e:target}`)와 큰 알림 본문(템포 업 `{e:fire}`). 새 이모지는 PNG를 `assets/ui/trickcal/emoji/`에 넣고 `EmojiText.NAMES`에 이름을 더한다.
 - 번역 표의 해당 문장은 표식까지 같이 넣는다 (한/영/일 모두).
 - (7.74 이어서) 이동량 배지는 `move_breakdown_text(..., icons=true)`가 `{e:dice}`(기본)·`{e:fire}`(리벤지 부스터)·`{e:black}`(흑돌) 표식을 붙여 `EmojiText.build`로 그린다 (테스트·글자 전용 호출은 `icons=false` 그대로). 대기 리벤지 배지(`_paint_revenge_glow`)는 왼쪽에 불꽃 그림(`FlameIcon`)을 얹는다.
+
+### 7.75 가려지는 곳 정리 (모바일 제보 스크린샷)
+- **증강 선택 창**: 제목이 가운데 정렬 때문에 위로 밀려 타임라인(y 4~61)에 가려졌다. `DRAFT_TOP_RESERVE`(64)만큼 `CenterContainer.offset_top`을 줘 그 아래에서 시작한다 (회귀 검사: ui_layout_ux_test).
+- **말 고르기 안내**(`SelectTitle`): 보드 가장자리 위에 글씨만 있어 읽기 어려웠다. 어두운 띠(금 테두리)를 깔고 기물 독 위 28px 높이로.
+- **대기 리벤지 배지**(`_paint_revenge_glow`): `Label.autowrap`은 폭이 0일 때 글을 먼저 넣으면 글자마다 줄이 바뀐 높이로 굳는다(실측 159px) -> 배지가 칸 아래로 삐져나가 글이 잘렸다. 폭을 먼저 정하고 글을 넣은 뒤 크기를 다시 준다. 높이 42, 글자 11, 불꽃 그림은 글 위 가운데.
+- **말 고르기 결과**(`result` 라벨): 칸 위쪽에서 글자 윗부분이 잘리고 기물 그림에 가려졌다. y 6, `z_index` 3.
