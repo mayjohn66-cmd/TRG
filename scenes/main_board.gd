@@ -99,6 +99,8 @@ const PAWN_BAR_TOUCH_SCALE: float = 1.2
 ## 피해 되돌리기 팝업이 자동으로 넘어가기까지의 시간(초).
 const REACTION_SECONDS: float = 6.0
 ## 행동 사이의 호흡(초): 이동이 끝난 뒤 멈춤 / [P2 차례] 알림 길이.
+## 증강 선택지 앞에 뜨는 [증강 선택!] 도장 알림의 길이(초, 1배속 기준).
+const DRAFT_STAMP_SECONDS: float = 1.2
 const DRAFT_OPEN_BEAT: float = 0.45  ## 증강 창이 열리기 전 여운 (0.12 -> 0.3)
 const BEAT_AFTER_MOVE: float = 0.45  ## 2026-11 납득 보강 0.3 -> 0.45. 이동 뒤 여운 (0.8 -> 0.12 -> 0.3 -> 0.5 -> 2026-10-27 플레이 시간 단축 0.3: 도착 결과를 잠깐 보여 준 뒤 다음 턴·증강 창으로)
 ## 차례 배너는 짧게 막는다: 누구 차례인지 보여 준 뒤에야 카드 선언·굴리기가 열린다 (봇도 배너가 끝난 뒤 움직인다).
@@ -542,6 +544,9 @@ var _opening: OpeningSequence = null
 ## 오프닝 직후 첫 증강 창은 아래에서 위로 솟아오르며 나타난다.
 var _draft_entrance: bool = false
 var _draft_banner_round: int = 0
+## 이번 라운드에 [증강 선택!] 도장 알림을 이미 띄웠는가 (선택지는 그 알림이 끝난 뒤에 올라온다).
+var _draft_stamp_round: int = 0
+var _draft_stamp_serial: int = -1
 ## 이번 드래프트에서 고른 증강 모음 (끝나면 한 장으로 공개).
 var _draft_summary: Array[Dictionary] = []
 ## 드래프트 중에 생긴 효과 연출: 증강 공개 카드 뒤로 미뤄 둔다 ({"step", "pawn"}).
@@ -1248,6 +1253,8 @@ func _new_game() -> void:
 	_shown_turn = -1
 	_draft_summary.clear()
 	_draft_banner_round = 0
+	_draft_stamp_round = 0
+	_draft_stamp_serial = -1
 	state = null
 	manager.match_rules = GameSession.match_rules()
 	manager.start_game(_player_ids, _game_seed)
@@ -8467,6 +8474,8 @@ func _fx_holding(include_draft: bool = true) -> bool:
 
 ## 문으로 등록한 알림 한 건이 끝났다: 말 움직임 연출을 시작하고, 다음 알림은 그 연출이 끝난 뒤에 띄운다.
 func _on_announcer_entry_finished(serial: int) -> void:
+	if serial == _draft_stamp_serial:
+		_draft_stamp_serial = -1
 	if state == null or not _fx_gates.has(serial):
 		return
 	_fx_gates.erase(serial)
@@ -9674,6 +9683,9 @@ func _refresh_draft_overlay() -> void:
 				pending.append(candidate)
 	if pending.is_empty():
 		_close_draft_overlay()
+		if _draft_stamp_serial >= 0 and _announcer != null:
+			_draft_stamp_serial = -1
+			_announcer.cancel_if_only("증강 선택!")  # 선택이 알림 중에 이미 끝났다 (자동 선택 등): 알림 때문에 굴리기가 늦어지지 않게
 		return
 	# 라운드 안내 -> 증강 선택 창 -> (선택이 끝나면) 일괄 공개 순서: 라운드 카드가 먼저 뜨고 끝난 뒤에 증강 창이 올라온다.
 	if _fx_on() and _announcer != null:
@@ -9682,6 +9694,13 @@ func _refresh_draft_overlay() -> void:
 			_draft_entrance = true
 		if _announcer.active and _draft_overlay == null:
 			return
+		# 선택지가 바로 튀어나오지 않게: 먼저 [증강 선택!] 도장 알림을 띄우고, 그 알림이 끝난 뒤(drained -> 다시 이 함수)에 선택지를 올린다.
+		if pacing_enabled and _draft_overlay == null and _draft_stamp_round != state.round_number:
+			_draft_stamp_round = state.round_number
+			Sfx.play(&"augment_show")
+			_draft_stamp_serial = _announce_now("증강", "증강 선택!", "", COLOR_GOLD, null, DRAFT_STAMP_SECONDS, true, {"key": "draft_open"})
+			if _announcer.active:
+				return
 	var player_id: int = pending[0]
 	if _auto_draft_enabled and not ai_mode and player_id != _player_ids[0]:
 		manager.auto_pick_draft(player_id)
@@ -11225,7 +11244,7 @@ func _announce_now(tag: String, headline: String, body: String, color: Color, ex
 ## 도장 알림(카드 발동!·공격!·함정 발동!·필살기 발동! 등)의 1배속 최소 표시 시간(초, 게임 시간). 2026-11 제보: "너무 빨리 지나가 인지가 안 된다".
 ## 게임 시간이라 [배속 2x·3x]를 걸면 그만큼 짧아져 평소처럼 넘길 수 있다. 짧게 스치는 알림(라운드 표지·강화 성공)과 읽는 시간이 따로 정해진 알림은 제외.
 const STAMP_MIN_SECONDS: float = 1.8
-const STAMP_QUICK_KEYS: Array[String] = ["round", "hammer_up", "law_added", "siege_armed", "siege_broken"]
+const STAMP_QUICK_KEYS: Array[String] = ["round", "draft_open", "hammer_up", "law_added", "siege_armed", "siege_broken"]
 static func stamp_min_hold(stamp: Dictionary) -> float:
 	if not stamp.has("key") or STAMP_QUICK_KEYS.has(str(stamp["key"])):
 		return 0.0

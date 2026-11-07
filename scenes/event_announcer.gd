@@ -135,6 +135,14 @@ func cancel() -> void:
 		drained.emit()
 
 
+## 지금 떠 있는 알림이 이 글(headline)뿐이고 줄 선 알림이 없으면 바로 치운다 (알림이 필요 없어진 경우: 증강 선택이 알림 중에 끝난 판 등). 치웠으면 true.
+func cancel_if_only(headline: String) -> bool:
+	if _current.is_empty() or not _queue.is_empty() or str(_current.get("headline", "")) != headline:
+		return false
+	cancel()
+	return true
+
+
 func skip_current() -> void:
 	if _current.is_empty():
 		return

@@ -189,6 +189,11 @@
        "ko": "친선전에서 컴퓨터와 함께 할 때, 사람이 모두 졸업하면 컴퓨터끼리 남은 판은 바로 끝납니다 (남은 컴퓨터는 그 순간의 레이스 순서로 순위가 정해집니다). 사람이 나가 컴퓨터가 자리를 이어받은 경우도 같습니다",
        "en": "In friendly matches with computer players, the game now ends right away once every human has finished (the remaining computers are ranked by their race order at that moment). The same applies when a human leaves and a computer takes over the seat",
        "ja": "フレンド戦でコンピューターと一緒に遊ぶ場合、人間のプレイヤーが全員ゴールするとコンピューターだけが残った試合はすぐに終了します（残ったコンピューターはその時点のレース順で順位が決まります）。人間が退出してコンピューターが席を引き継いだ場合も同様です"
+      },
+      {
+       "ko": "증강 선택지가 바로 튀어나오지 않고, 먼저 [증강 선택!] 알림이 뜬 뒤에 선택지가 올라옵니다",
+       "en": "Augment choices no longer pop up instantly: an [Choose an Augment!] stamp appears first, and then the choices slide in",
+       "ja": "オーグメントの選択肢がいきなり表示されず、まず［増強選択！］の表示が出てから選択肢が現れるようになりました"
       }
      ]
     },

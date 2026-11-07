@@ -2148,3 +2148,6 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 ### 7.69 친선전: 사람이 모두 졸업하면 즉시 종료
 컴퓨터가 낀 온라인 방(`NetGame.bots` 비어 있지 않음)에서는 `TurnManager.end_when_graduated`를 지금 사람으로 앉아 있는 자리(`NetGame.humans`)로 맞춘다(`sync_end_watch`). 그 자리들이 모두 졸업하면 `_end_if_decided`가 남은 컴퓨터를 레이스 진행 순서로 매기고 판을 끝낸다(혼자 하는 AI 대전과 같은 규칙). 사람이 나가 컴퓨터가 자리를 이어받으면(`ACTION_TAKEOVER`) 그 자리는 종료 조건에서 빠지고, 남은 사람이 이미 모두 졸업했다면 그 순간 `check_race_end()`로 끝낸다. 자리를 돌려받으면(`ACTION_RESTORE`) 다시 종료 조건에 들어간다. 모두의 판에 같은 순서로 적용되어 방장·참가자의 판이 똑같이 끝난다. 컴퓨터가 없는 방은 사람끼리 끝까지 둔다. 테스트: tests/test_net_game.gd(3개).
 
+### 7.70 증강 선택 앞의 [증강 선택!] 알림
+증강 선택지가 바로 올라오지 않도록, `_refresh_draft_overlay`가 라운드마다 한 번(`_draft_stamp_round`) 가운데에 글자 도장 알림(`draft_open`, `DRAFT_STAMP_SECONDS` 1.2초, `STAMP_QUICK_KEYS`라 1.8초 최소 표시 없음)을 띄우고, 알림이 끝나면(`drained` -> `_refresh_all`) 선택지를 올린다. 같은 라운드의 리롤·다음 사람 차례에는 반복하지 않는다. 연출을 끈 판(`pacing_enabled` 거짓·`instant_roll_for_test`)에서는 건너뛴다. 사람이 고르기 전에 선택이 먼저 끝난 경우(`pending` 비어 있음)에는 `EventAnnouncer.cancel_if_only("증강 선택!")`로 알림을 바로 치운다. 테스트: tests/ui_draft_backdrop_test.gd(알림 -> 선택지 순서), tests/ui_smoke.gd(굴림 패드가 막히지 않음).
+
