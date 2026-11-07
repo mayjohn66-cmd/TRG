@@ -58,11 +58,14 @@ func test_augment_weights_and_tempo_multiplier() -> void:
 	state.round_number = 7
 	check_eq(AugmentRegistry.effective_weight(AugmentRegistry.get_def(&"SUPER_01"), state), 10.0, "7라운드 초증강 그대로")
 	state.round_number = 8
-	check_eq(AugmentRegistry.effective_weight(AugmentRegistry.get_def(&"SUPER_01"), state), 30.0, "과열(8R): 초증강 확률 상승")
-	check(is_equal_approx(AugmentRegistry.effective_weight(AugmentRegistry.get_def(&"AUG_LAW_01"), state), 5.0 * MatchRules.LAW_DRAFT_FACTOR), "과열: 법전은 그대로 (법전 기본 배수만)")
+	check_eq(AugmentRegistry.effective_weight(AugmentRegistry.get_def(&"SUPER_01"), state), 10.0, "과열(8R): 초증강은 아직 기본 가중치 (풀 합류는 2단계)")
+	check(is_equal_approx(AugmentRegistry.effective_weight(AugmentRegistry.get_def(&"AUG_LAW_01"), state), 15.0 * MatchRules.LAW_DRAFT_FACTOR), "과열(8R): 법전 풀 합류 + 확률 3배")
+	check_eq(AugmentRegistry.effective_weight(AugmentRegistry.get_def(&"EVO_1_1"), state), 50.0, "과열: 기초 풀(말)은 그대로")
 	state.round_number = 14
-	check(is_equal_approx(AugmentRegistry.effective_weight(AugmentRegistry.get_def(&"AUG_LAW_01"), state), 15.0 * MatchRules.LAW_DRAFT_FACTOR), "광기(14R): 법전 확률 3배")
-	check_eq(AugmentRegistry.effective_weight(AugmentRegistry.get_def(&"EVO_1_1"), state), 50.0, "말은 그대로")
+	check_eq(AugmentRegistry.effective_weight(AugmentRegistry.get_def(&"SUPER_01"), state), 30.0, "광기(14R): 초증강 확률 3배")
+	check(is_equal_approx(AugmentRegistry.effective_weight(AugmentRegistry.get_def(&"AUG_LAW_01"), state), 15.0 * MatchRules.LAW_DRAFT_FACTOR), "광기: 법전 3배 유지")
+	check_eq(AugmentRegistry.effective_weight(AugmentRegistry.get_def(&"EVO_1_1"), state), 12.5, "광기: 기초 풀(기물 진화)은 ×0.25")
+	check_eq(AugmentRegistry.effective_weight(AugmentRegistry.get_def(&"TOOL_YUT"), state), 50.0, "광기: 판정 도구는 그대로")
 
 
 func test_revenge_boost_grows_with_tempo() -> void:
@@ -198,7 +201,7 @@ func test_pulled_in_goal_line_finishes_pawns_on_the_move_and_at_round_start() ->
 func test_draft_stages_open_up_categories_gradually() -> void:
 	check_eq([AugmentRegistry.draft_number(1), AugmentRegistry.draft_number(4), AugmentRegistry.draft_number(7), AugmentRegistry.draft_number(10)], [1, 2, 3, 4], "몇 번째 드래프트")
 	var state := make_state()
-	var seen: Dictionary = {1: {}, 4: {}, 7: {}}
+	var seen: Dictionary = {1: {}, 4: {}, 7: {}, 10: {}, 16: {}}
 	for round_number: int in seen:
 		state.round_number = round_number
 		for seed_value: int in 60:
@@ -212,7 +215,10 @@ func test_draft_stages_open_up_categories_gradually() -> void:
 		check([category.TOOL_SWAP, category.CARD_PACKAGE, category.PAWN_EVOLUTION].has(kind), "2번째 드래프트는 판정 도구·카드·기물 진화 (%d)" % kind)
 	check((seen[4] as Dictionary).has(category.TOOL_SWAP) and (seen[4] as Dictionary).has(category.CARD_PACKAGE), "2번째에 판정 도구·카드가 나온다")
 	check(not (seen[4] as Dictionary).has(category.LAW_ENACT) and not (seen[4] as Dictionary).has(category.SUPER_GAMBLE), "2번째까지 법전·초증강 없음")
-	check((seen[7] as Dictionary).has(category.LAW_ENACT) and (seen[7] as Dictionary).has(category.SUPER_GAMBLE), "7라운드(3번째)부터 법전·초증강이 섞인다")
+	check(not (seen[7] as Dictionary).has(category.LAW_ENACT) and not (seen[7] as Dictionary).has(category.SUPER_GAMBLE), "템포 0단계(7라운드): 법전·초증강은 아직 없다")
+	check((seen[7] as Dictionary).has(category.UTILITY), "7라운드: 쉬운 범용 보급이 섞인다")
+	check((seen[10] as Dictionary).has(category.LAW_ENACT) and not (seen[10] as Dictionary).has(category.SUPER_GAMBLE), "템포 1단계(10라운드): 법전이 합류하고 초증강은 아직 없다")
+	check((seen[16] as Dictionary).has(category.LAW_ENACT) and (seen[16] as Dictionary).has(category.SUPER_GAMBLE), "템포 2단계(16라운드): 초증강까지 합류")
 	state.round_number = 1
 	state.rng.seed = 3
 	var current: Array[StringName] = AugmentRegistry.generate_offers(state, 1)
@@ -319,3 +325,38 @@ func test_single_player_game_ends_when_the_human_graduates() -> void:
 	check(full._end_if_decided() and full.is_game_over, "말 4개 완주는 사람 자리 지정이 없어도 바로 끝난다")
 	check_eq(full.state.rank_reasons[full.state.rankings[3]], VictoryChecker.LAST_PLACE, "맨 뒤 한 명은 꼴찌")
 	_dispose(full)
+
+
+## 증강 풀의 단계적 확장: 표의 min_tempo/max_tempo가 정한다 (초반 쉬운 증강 → 중반 판세 개입형 → 후반 초증강).
+func test_pool_expands_with_tempo_stages() -> void:
+	var state := make_state()
+	var expect: Dictionary = {&"EVO_1_1": 0, &"TOOL_YUT": 0, &"CARD_PACKAGE": 0, &"AUG_UTIL_MOVE_PLUS": 0, &"AUG_LAW_01": 1, &"CARD_02": 1, &"UTIL_03": 1, &"SUPER_01": 2, &"SUPER_11": 2, &"UTIL_02": 2}
+	for id: StringName in expect:
+		check_eq(AugmentRegistry.get_def(id).min_tempo, int(expect[id]), "%s 합류 단계" % id)
+	for round_number: int in [4, 7, 8, 13, 14, 20]:
+		state.round_number = round_number
+		var tempo: int = TempoUp.level(round_number)
+		for id: StringName in expect:
+			var def: AugmentDef = AugmentRegistry.get_def(id)
+			if def.category == GameEnums.AugmentCategory.LAW_ENACT or def.category == GameEnums.AugmentCategory.SUPER_GAMBLE:
+				# 초증강은 판 위 상황에도 좌우되므로(말이 없으면 못 쓴다) 합류 전에는 반드시 막히는지만 본다
+				if tempo < int(expect[id]):
+					check(not def.is_available(state, 1), "%s: %d라운드(템포 %d)에는 아직 풀에 없다" % [id, round_number, tempo])
+				elif def.category == GameEnums.AugmentCategory.LAW_ENACT:
+					check(def.is_available(state, 1), "%s: %d라운드(템포 %d)부터 풀에 있다" % [id, round_number, tempo])
+	# max_tempo: 그 단계를 넘으면 풀에서 빠진다
+	var rows: Array = (GameData.table("augments") as Dictionary).values().duplicate(true)
+	for row: Dictionary in rows:
+		if str(row["id"]) == "TOOL_YUT":
+			row["max_tempo"] = "1"
+	GameData.override_table("augments", rows)
+	AugmentRegistry.reload()
+	var yut: AugmentDef = AugmentRegistry.get_def(&"TOOL_YUT")
+	state.round_number = 13
+	check(yut.is_available(state, 1), "max_tempo 1: 템포 1단계(13라운드)까지는 나온다")
+	state.round_number = 14
+	check(not yut.is_available(state, 1), "max_tempo 1: 템포 2단계부터는 빠진다")
+	GameData.override_table("augments")
+	AugmentRegistry.reload()
+	check_eq(TempoUp.effect_lines(1).size(), 3, "1단계 안내 3줄 (고급 증강 합류 포함)")
+	check(str(TempoUp.effect_lines(1)[2]).contains("고급 증강") and str(TempoUp.effect_lines(2)[2]).contains("초증강"), "템포 업 안내에 풀 합류 문구")

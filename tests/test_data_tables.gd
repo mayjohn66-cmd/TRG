@@ -158,7 +158,7 @@ func test_weight_zero_excludes_and_weights_steer_the_draft() -> void:
 	for seed_value: int in 20:
 		var names: Array[String] = []
 		var weighted_state: GameState = make_state(2, seed_value + 1)
-		weighted_state.round_number = 7  # 특수 승리 교칙은 7라운드(3번째 드래프트)부터
+		weighted_state.round_number = TempoUp.stage_rounds[0]  # 특수 승리 교칙은 템포 1단계부터
 		for offered: StringName in AugmentRegistry.generate_offers(weighted_state, 1):
 			names.append(str(offered))
 		names.sort()
@@ -184,7 +184,7 @@ func test_weight_zero_excludes_and_weights_steer_the_draft() -> void:
 
 
 func test_min_round_hides_an_augment_until_its_round() -> void:
-	_edit_augment("AUG_LAW_01", {"min_round": "5"})
+	_edit_augment("AUG_LAW_01", {"min_round": "5", "min_tempo": "0"})
 	var state: GameState = make_state(2, 7)
 	var def: AugmentDef = AugmentRegistry.get_def(&"AUG_LAW_01")
 	state.round_number = 4

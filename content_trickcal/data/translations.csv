@@ -1994,7 +1994,7 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 최소 %d칸 ~ 최대 %d칸,Min %d ~ Max %d spaces,最小%dマス ~ 最大%dマス
 ※ 판정 도구는 고르는 즉시 내 것과 바뀌어요,※ Picking a Judgment Tool swaps yours immediately,※ 判定ツールは選んだ瞬間に自分のものと入れ替わります
 "1라운드는 기물 진화, 4라운드는 판정 도구·카드·기물 진화","Round 1: Pawn Evolutions; Round 4: Tools, Cards and Pawn Evolutions",1ラウンドは駒進化、4ラウンドは判定ツール・カード・駒進化
-7라운드부터 법전·초증강도 등장,Special Wins and Hyper Augments appear from Round 7,7ラウンドから法典・超増強も登場
+"템포 업 1단계부터 고급 증강(법전), 2단계부터 초증강도 등장","Advanced augments (Special Wins) from Tempo Up 1, Super Augments from Tempo Up 2",テンポアップ1段階から上級オーグメント(法典)、2段階から超オーグメントも登場
 [타로] P%d의 운명의 수레바퀴: %s 장외 사출 → %s이(가) 그 자리로,[Tarot] P%d's Wheel of Fortune: %s knocked off → %s takes its spot,[タロット] P%d の運命の輪: %s 場外射出 → %s がその場所へ
 %s이(가) 출발선으로 날아가고 %s이(가) 그 자리를 차지합니다,%s flies back to Start and %s takes its spot,%s がスタートへ飛ばされ、%s がその場所を奪います
 내 꼴찌 말 ↔ 1등 적 선두 말 위치 교환 (내 말이 보드에 없으면 선두 사출 + 대기 말이 그 자리로),Swap your last pawn with the top rival's lead pawn. (None on the board? The leader is knocked off and your waiting pawn takes its spot.),自分の最下位駒 ↔ 1位の敵の先頭駒を入れ替え (自分の駒がボードになければ先頭駒を射出し、待機駒がその場所へ)
@@ -2711,8 +2711,12 @@ PROGRESS / 진행률,PROGRESS,PROGRESS／進行度
 다음 라운드 증강!,Augment next round!,次のラウンドはオーグメント！
 다음 증강까지 %d라운드,Next augment in %d rounds,次のオーグメントまで%dラウンド
 남은 증강 없음,No more augments,残りのオーグメントなし
-"노란 숫자는 증강 라운드, 붉은 테두리는 템포 업이 시작되는 라운드를 뜻합니다. 7라운드부터 초증강과 법전도 후보에 섞입니다.","Yellow numbers mark augment rounds. Red borders mark rounds that start a Tempo Up stage. Super augments and laws can appear from round 7.","黄色の数字はオーグメントラウンド、赤い枠はテンポアップの各段階が始まるラウンドを表します。7ラウンド目から超オーグメントと法典も候補に加わります。"
+"노란 숫자는 증강 라운드, 붉은 테두리는 템포 업이 시작되는 라운드를 뜻합니다. 템포 업 1단계부터 고급 증강(법전 등), 2단계부터 초증강도 증강 선택지에 합류합니다.","Yellow numbers mark augment rounds. Red borders mark rounds that start a Tempo Up stage. Advanced augments (Special Wins, etc.) join the choices from Tempo Up 1, and Super Augments from Tempo Up 2.","黄色の数字はオーグメントラウンド、赤い枠はテンポアップの各段階が始まるラウンドを表します。テンポアップ1段階から上級オーグメント(法典など)、2段階から超オーグメントも選択肢に加わります。"
 ★ 다음 라운드 증강 선택!,★ Pick an augment next round!,★ 次のラウンドはオーグメント選択！
 증강 선택!,Choose an Augment!,増強選択！
 총 %d칸 이동,Move %d spaces total,合計 %dマス移動
 리벤지 +%d칸 대기중,Revenge +%d waiting,リベンジ +%dマス待機中
+고급 증강,Advanced augments,上級オーグメント
+이제부터 고급 증강이 증강 선택지에 등장합니다!,Advanced augments now appear among the augment choices!,これから上級オーグメントが選択肢に登場します！
+이제부터 초증강이 증강 선택지에 등장합니다!,Super augments now appear among the augment choices!,これから超オーグメントが選択肢に登場します！
+★ %s 합류!,★ %s join!,★ %s 参戦！

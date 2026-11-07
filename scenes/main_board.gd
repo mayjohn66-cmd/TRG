@@ -4194,6 +4194,9 @@ func round_banner_sub() -> String:
 	# 다음 라운드가 증강 라운드면 미리 알려 전략을 세울 수 있게 한다 (2026-11 제보 "증강이 언제 나오는지 알려주면 좋겠음").
 	if manager.draft_enabled and AugmentTimeline.warns_next_round(state.round_number, PacingDirector.HARD_CAP_ROUND):
 		sub += "\n" + L10n.t("★ 다음 라운드 증강 선택!")
+		var news: String = AugmentTimeline.pool_news(state.round_number + 1)
+		if not news.is_empty():
+			sub += "  ·  " + L10n.t("★ %s 합류!") % L10n.t(news)
 	return sub
 
 

@@ -9,7 +9,7 @@ const DICE_PATH: String = "res://content_trickcal/data/dice_table.csv"
 const CARDS_PATH: String = "res://content_trickcal/data/cards_table.csv"
 
 ## 각 표의 열. 끝의 *_en / *_ja는 번역 열이다 (비어 있으면 한국어 열을 쓴다, L10n.pick).
-const AUGMENT_COLUMNS: Array[String] = ["id", "enabled", "category", "tier", "weight", "min_round", "title", "subtitle", "desc", "spec_preview", "param_1", "param_2", "target_ref", "icon_file",
+const AUGMENT_COLUMNS: Array[String] = ["id", "enabled", "category", "tier", "weight", "min_round", "min_tempo", "max_tempo", "title", "subtitle", "desc", "spec_preview", "param_1", "param_2", "target_ref", "icon_file",
 	"title_en", "subtitle_en", "desc_en", "spec_preview_en", "title_ja", "subtitle_ja", "desc_ja", "spec_preview_ja"]
 const DICE_COLUMNS: Array[String] = ["id", "enabled", "name", "desc", "spec_table", "min_step", "max_step", "jackpot_step", "icon_file",
 	"name_en", "desc_en", "spec_table_en", "name_ja", "desc_ja", "spec_table_ja"]

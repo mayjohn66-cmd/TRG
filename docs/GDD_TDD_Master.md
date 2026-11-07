@@ -2158,3 +2158,12 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 4. **연출 단축**: `AUGMENT_PICK_SECONDS` 0.4, 기물 선택 확인 0.3초, `GameEnums.PHASE_TIME_REVIEW` 4초.
 테스트: tests/test_augment_timeline.gd(일정·계산식), tests/ui_smoke.gd·ui_layout_ux_test.gd(새 일정).
 
+
+### 7.72 증강 풀의 단계적 확장 (템포 연동)
+- **표**: `augments_table.csv`의 `min_tempo`/`max_tempo`(기본 0/3). `AugmentDef.is_available`이 `TempoUp.level(round)`로 거른다 (`min_round`도 그대로 적용). 법전·초증강·범용 보급의 `min_round`는 1로 내리고 템포가 등장 시점을 정한다.
+- **초반 풀(템포 0, 4~7R)**: 기물 진화·판정 도구·카드 패키지·이동/카드 보급(슈파볼트·뽈사탕·손은 눈보다 빨라·리바이브·즉발 카드·관성 드리프트·보호막). 4R은 그대로 `DRAFT_FOCUS`(도구·카드·진화).
+- **중반 풀(템포 1, 8R~)**: 법전 9종, 방어/공병 보급, 필살기 리필, 지뢰제거반·순보·슬슬 지루한데·올 픽션·현상금. 법전 가중치 ×3.
+- **후반 풀(템포 2, 14R~)**: 초증강 12종, 랜덤 변이 물약, 전군 돌연변이 (초증강 ×3). 기물 진화 가중치 ×0.25 (`TempoUp.pool_factor`).
+- **안내**: `TempoUp.effect_lines`(템포 업 경고에 "이제부터 고급 증강/초증강이 증강 선택지에 등장합니다!"), `AugmentTimeline.pool_news(round)`(새 묶음이 처음 섞이는 증강 라운드 = 10R·16R)가 직전 라운드 예고 `round_banner_sub`에 "★ 고급 증강 합류!" 를 붙이고, 타임라인 별 표시(`is_super_round`)는 템포 1단계 이후 증강 라운드, 툴팁 문구도 같이 바꿨다.
+- **밸런스 영향**: 증강은 4·7·10·13·16·19·22·25R. 초증강은 16R부터이므로 평균 18라운드 판에서는 한두 번 나온다 (이전에는 7R부터). 값은 표(`min_tempo`)로 바꿀 수 있다. 스피드전은 `MatchRules.SPEED_STAGE_ROUNDS` 템포 라운드를 따른다.
+- 테스트: test_tempo_up(풀 합류·max_tempo·가중치·단계별 계열), test_data_tables(헤더), test_augment_timeline, ui_layout_ux_test(예고·툴팁).

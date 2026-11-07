@@ -6,7 +6,7 @@ class_name TestMatchRules
 extends TestCase
 
 
-func _state(rules: Dictionary, round_number: int = 7) -> GameState:
+func _state(rules: Dictionary, round_number: int = 14) -> GameState:
 	var state := GameState.new()
 	state.match_rules = rules
 	state.setup([1, 2, 3, 4] as Array[int], 31)

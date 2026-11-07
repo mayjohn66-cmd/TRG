@@ -14,8 +14,6 @@ const SIDE_MARGIN := 8.0
 const CURRENT_SCALE := 1.32
 const TRACK_HEIGHT := 57.0
 const SLIDE_SECONDS := 0.20
-## 몇 번째 드래프트부터 초증강·법전이 섞이는가 (7라운드 = 3번째). AugmentRegistry.DRAFT_FOCUS 주석 참고.
-const SUPER_FROM_DRAFT: int = 3
 
 const COLOR_GOLD := Color("ffd951")
 const COLOR_EDGE := Color("687589")
@@ -40,9 +38,19 @@ static func is_draft_round(round_number: int) -> bool:
 	return GameEnums.is_draft_round(round_number)
 
 
-## 초증강·법전이 후보에 섞이는 증강 라운드인가 (7라운드부터).
+## 고급 증강(법전·초증강)이 후보에 섞이는 증강 라운드인가 (템포 업 1단계부터).
 static func is_super_round(round_number: int) -> bool:
-	return GameEnums.is_draft_round(round_number) and AugmentRegistry.draft_number(round_number) >= SUPER_FROM_DRAFT
+	return GameEnums.is_draft_round(round_number) and TempoUp.level(round_number) >= 1
+
+
+## 이 증강 라운드에서 새로 풀에 합류하는 증강 묶음 이름 (앞 증강 라운드보다 템포 단계가 올랐을 때만). 없으면 빈 문자열.
+static func pool_news(round_number: int) -> String:
+	if not GameEnums.is_draft_round(round_number):
+		return ""
+	var tempo: int = TempoUp.level(round_number)
+	if tempo >= 1 and TempoUp.level(round_number - GameEnums.DRAFT_INTERVAL) < tempo:
+		return TempoUp.pool_join_text(tempo)
+	return ""
 
 
 ## after 다음(after는 포함하지 않음)에 오는 첫 증강 라운드. cap 안에 없으면 -1.
@@ -148,7 +156,7 @@ func refresh(current: int, pending_now: bool, cap: int, animate: bool = true) ->
 			notice = L10n.t("다음 증강까지 %d라운드") % caption_rounds
 		_:
 			notice = L10n.t("남은 증강 없음")
-	tooltip_text = notice + "\n" + L10n.t("노란 숫자는 증강 라운드, 붉은 테두리는 템포 업이 시작되는 라운드를 뜻합니다. 7라운드부터 초증강과 법전도 후보에 섞입니다.")
+	tooltip_text = notice + "\n" + L10n.t("노란 숫자는 증강 라운드, 붉은 테두리는 템포 업이 시작되는 라운드를 뜻합니다. 템포 업 1단계부터 고급 증강(법전 등), 2단계부터 초증강도 증강 선택지에 합류합니다.")
 
 
 func _chip_position(index: int) -> Vector2:

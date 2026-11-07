@@ -144,7 +144,11 @@ func _run() -> void:
 	_board.state.round_number=5;_board._refresh_all();await settle()
 	_expect(timeline.caption_kind==&"later" and timeline.caption_rounds==2 and not _board.round_banner_sub().contains("\n"),"5라운드: 7라운드까지 2라운드 뒤, 사전 예고 없음")
 	_board.state.round_number=6;_board._refresh_all();await settle()
-	_expect(bool(timeline.rounds[3]["super"]) and timeline._numbers[3].get_theme_color("font_color")==AugmentTimeline.COLOR_GOLD,"7라운드부터 초증강·법전이 섞여도 증강 숫자는 노란색")
+	_expect(not bool(timeline.rounds[3]["super"]) and timeline._numbers[3].get_theme_color("font_color")==AugmentTimeline.COLOR_GOLD,"7라운드(템포 0)는 쉬운 증강만 섞이고 증강 숫자는 노란색")
+	_board.state.round_number=9;_board._refresh_all();await settle()
+	_expect(AugmentTimeline.is_super_round(10) and AugmentTimeline.pool_news(10)!="" and AugmentTimeline.pool_news(13)=="" and AugmentTimeline.pool_news(16)!="","고급 증강 합류는 10라운드, 초증강 합류는 16라운드 증강에서 알린다")
+	_expect(_board.round_banner_sub().contains(L10n.t("★ %s 합류!")%L10n.t(AugmentTimeline.pool_news(10))),"9라운드 사전 예고에 새로 합류하는 증강 안내")
+	_board.state.round_number=6;_board._refresh_all();await settle()
 	_expect((timeline._numbers[4].get_theme_stylebox("normal") as StyleBoxFlat).border_color==AugmentTimeline.COLOR_TEMPO,"앞에 보이는 템포 업 시작 라운드는 붉은 테두리")
 	await screenshot("timeline-r6")
 	_board.state.round_number=TempoUp.stage_rounds[0];_board._refresh_all();await settle()
@@ -153,7 +157,7 @@ func _run() -> void:
 	await screenshot("timeline-tempo")
 	for language:String in ["en","ja"]:
 		L10n.set_language(language);_board._refresh_all();await settle()
-		_expect(timeline.size.x<=screen.size.x and timeline.tooltip_text.contains(L10n.t("노란 숫자는 증강 라운드, 붉은 테두리는 템포 업이 시작되는 라운드를 뜻합니다. 7라운드부터 초증강과 법전도 후보에 섞입니다.")),"타임라인과 도움말이 %s에서도 표시된다"%language)
+		_expect(timeline.size.x<=screen.size.x and timeline.tooltip_text.contains(L10n.t("노란 숫자는 증강 라운드, 붉은 테두리는 템포 업이 시작되는 라운드를 뜻합니다. 템포 업 1단계부터 고급 증강(법전 등), 2단계부터 초증강도 증강 선택지에 합류합니다.")),"타임라인과 도움말이 %s에서도 표시된다"%language)
 		await screenshot("timeline-"+language)
 	L10n.set_language("ko")
 	var next_number := timeline._numbers[3]

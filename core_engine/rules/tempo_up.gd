@@ -1,8 +1,9 @@
 # File: res://core_engine/rules/tempo_up.gd
 # Class: class_name TempoUp
 # Role: 판이 길어지면 라운드 단위로 게임을 완만하게 가속한다 (템포 업). 8·14·20라운드에 단계가 오르고, 단계가 오르는 라운드가 시작될 때 크게 경고한다.
-#       1단계(8R, 과열): 차례 첫 이동 +1칸 · 리벤지 부스터 +6칸 · 초증강 등장 확률 상승 · (법전이 비어 있으면) 무작위 법전 1개 자동 제정
-#       2단계(14R, 광기): 차례 첫 이동 +2칸 · 리벤지 부스터 +8칸 · 법전 등장 확률 상승
+#       1단계(8R, 과열): 차례 첫 이동 +1칸 · 리벤지 부스터 +6칸 · 고급 증강(법전·판세 개입형) 풀 합류 · (법전이 비어 있으면) 무작위 법전 1개 자동 제정
+#       2단계(14R, 광기): 차례 첫 이동 +2칸 · 리벤지 부스터 +8칸 · 초증강·전군 돌연변이 풀 합류 · 기초 증강(기물 진화) 가중치 ×0.25
+#       (증강 풀의 단계적 확장: 표의 min_tempo/max_tempo가 정한다 -- AugmentDef.is_available)
 #       3단계(20R, 대붕괴): 전원 차례 첫 이동 +3칸
 #       (2026-10-29 목표 플레이타임 12~15분) 결승선 자동 단축은 완전히 없앴다. 결승선은 플레이어가 [범용] 슬슬 지루한데...(goal_shrink_bonus)를
 #       직접 쓸 때만 당겨진다. 판은 라운드 상한(PacingDirector.HARD_CAP_ROUND = 25)이 지나면 남은 사람을 진행 순위로 확정해 끝낸다.
@@ -20,8 +21,10 @@ const MOVE_BONUS: Array[int] = [0, 1, 2, 3]
 const REVENGE_BONUS: Array[int] = [0, 6, 8, 8]
 ## 이번 판의 템포 업 라운드 (규칙 설정: 기본 STAGE_ROUNDS / 스피드전 MatchRules.SPEED_STAGE_ROUNDS). GameState.setup이 넣는다.
 static var stage_rounds: Array[int] = [8, 14, 20]
-## 초증강(1단계부터)·법전(2단계부터) 가중치에 곱하는 배수.
+## 법전(1단계부터)·초증강(2단계부터) 가중치에 곱하는 배수 (풀에 막 합류한 고급 증강이 쉬운 증강에 묻히지 않게).
 const RARE_WEIGHT_MULTIPLIER: int = 3
+## 2단계부터 기초 풀(기물 진화) 가중치에 곱하는 배수: 효율이 떨어지는 단순 기물 지급이 후반 선택지를 채우지 않게 낮춘다.
+const BASIC_POOL_FACTOR: float = 0.25
 ## 이 라운드의 템포 업 단계 (0~3).
 static func level(round_number: int) -> int:
 	var result: int = 0
@@ -49,9 +52,24 @@ static func revenge_bonus(round_number: int) -> int:
 ## 드래프트에서 이 카테고리의 가중치에 곱할 배수.
 static func weight_multiplier(round_number: int, category: GameEnums.AugmentCategory) -> int:
 	var stage: int = level(round_number)
-	if (stage >= 1 and category == GameEnums.AugmentCategory.SUPER_GAMBLE) or (stage >= 2 and category == GameEnums.AugmentCategory.LAW_ENACT):
+	if (stage >= 2 and category == GameEnums.AugmentCategory.SUPER_GAMBLE) or (stage >= 1 and category == GameEnums.AugmentCategory.LAW_ENACT):
 		return RARE_WEIGHT_MULTIPLIER
 	return 1
+
+
+## 이 단계에서 이 계열 가중치에 곱할 비율 (기초 풀 = 기물 진화는 2단계부터 낮춘다).
+static func pool_factor(round_number: int, category: GameEnums.AugmentCategory) -> float:
+	if level(round_number) >= 2 and category == GameEnums.AugmentCategory.PAWN_EVOLUTION:
+		return BASIC_POOL_FACTOR
+	return 1.0
+
+
+## 이 단계에 처음 풀에 합류하는 증강 묶음 이름 (안내 문구용). 합류가 없으면 빈 문자열.
+static func pool_join_text(stage: int) -> String:
+	match stage:
+		1: return "고급 증강"
+		2: return "초증강"
+	return ""
 
 
 ## 시스템이 당긴 결승선 칸 수: 없음 (2026-10-29 자동 단축 폐지). 결승선은 [범용] 증강(goal_shrink_bonus)으로만 당겨진다.
@@ -108,7 +126,7 @@ static func stage_name(stage: int) -> String:
 ## 경고 화면에 보여 줄 단계별 효과 문구.
 static func effect_lines(stage: int) -> Array[String]:
 	match stage:
-		1: return ["차례 첫 이동 +%d칸" % MOVE_BONUS[1], "리벤지 부스터 +6칸", "초증강 등장 확률 상승"] as Array[String]
-		2: return ["차례 첫 이동 +%d칸" % MOVE_BONUS[2], "리벤지 부스터 +8칸", "법전 증강 등장 확률 상승"] as Array[String]
+		1: return ["차례 첫 이동 +%d칸" % MOVE_BONUS[1], "리벤지 부스터 +6칸", "이제부터 고급 증강이 증강 선택지에 등장합니다!"] as Array[String]
+		2: return ["차례 첫 이동 +%d칸" % MOVE_BONUS[2], "리벤지 부스터 +8칸", "이제부터 초증강이 증강 선택지에 등장합니다!"] as Array[String]
 		3: return ["전원 차례 첫 이동 +%d칸" % MOVE_BONUS[3]] as Array[String]
 	return [] as Array[String]

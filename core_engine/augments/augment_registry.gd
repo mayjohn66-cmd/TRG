@@ -184,7 +184,7 @@ const OWNED_TOOL_SWAP_FACTOR: float = 0.2
 ## 드래프트에 쓰는 가중치: 표의 weight × 템포 업 배수 (템포 업 1단계 8라운드부터 법전·초증강 ×3).
 ## player_id를 주면 그 사람이 이미 특수 판정 도구를 가졌을 때 판정 도구 교체 증강을 OWNED_TOOL_SWAP_FACTOR배로 줄인다.
 static func effective_weight(def: AugmentDef, state: GameState, player_id: int = -1) -> float:
-	var weight: float = float(def.weight * TempoUp.weight_multiplier(state.round_number, def.category)) * MatchRules.weight_factor(state, def)
+	var weight: float = float(def.weight * TempoUp.weight_multiplier(state.round_number, def.category)) * TempoUp.pool_factor(state.round_number, def.category) * MatchRules.weight_factor(state, def)
 	if def.category == GameEnums.AugmentCategory.TOOL_SWAP and has_special_tool(state, player_id):
 		weight *= OWNED_TOOL_SWAP_FACTOR
 	return weight * PacingDirector.law_offer_factor(state, player_id, def) * haunt_offer_factor(state, player_id, def)

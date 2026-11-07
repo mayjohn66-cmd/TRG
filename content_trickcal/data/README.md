@@ -21,6 +21,7 @@
 | `tier` | 카드 테두리: `NORMAL` / `GOLD`(금빛) / `PRISMA`(보라 후광+금 테두리, 초증강) / `HOLO`(크리스탈 청록+무지개 후광, 법전 전용 희귀) |
 | `weight` | 등장 가중치(기본 100, 초증강 50). 0이면 제외. 한 계열 안에서는 비율대로, 계열 사이에서는 평균 가중치 비율대로 뽑힙니다 |
 | `min_round` | 이 라운드부터 등장 |
+| `min_tempo` / `max_tempo` | 템포 단계(`TempoUp.level`: 0~3, 기본 8·14·20라운드에 오름)가 이 범위일 때만 풀에 있다. 기본 0 / 3 (처음부터 끝까지) |
 | `title` `subtitle` `desc` `spec_preview` | 카드 제목 / 위쪽 계열 표시 / 효과 설명 / 족보·공식 요약. `{p1}` `{p2}`는 아래 param 값으로 바뀝니다. `DICE` 행의 spec_preview를 비우면 dice_table의 `spec_table`을 씁니다 |
 | `param_1` `param_2` | 실제 게임 수치 (아래 표) |
 | `target_ref` | 연결 대상 ID (`DICE`=도구 ID, `LAW`=교칙 ID, `CARD`=카드 종류 `COUNTER`/`TRAP`/`TRAP_CORNER`/`INSTANT`/`SUMMON`, `+`로 이으면 param_1·param_2장씩) |
@@ -50,7 +51,7 @@
 | `RULE_DASH_PAD` ⚡ | 발판 추가 전진 칸 | |
 | `RULE_LEAPFROG` 🏃 (기본 꺼짐) | 말 하나당 칸 | 한 번에 최대 칸 |
 
-`RULE_*` 행은 `enabled=FALSE`로 그 기믹 자체를 끌 수 있습니다. 특수 승리 교칙(`LAW`)과 초증강(`CHAOS`) 행은 7라운드(세 번째 드래프트)부터 나옵니다 (`min_round` 7). 첫 드래프트(1라운드)는 기물 진화(`PAWN`)만, 두 번째(4라운드)는 판정 도구(`DICE`)·카드(`CARD`)·기물 진화만 제시합니다 (`AugmentRegistry.DRAFT_FOCUS`, 그 계열에 받을 수 있는 증강이 모자라면 다른 계열로 채움).
+`RULE_*` 행은 `enabled=FALSE`로 그 기믹 자체를 끌 수 있습니다. 증강 풀은 템포 단계로 넓어집니다: 특수 승리 교칙(`LAW`)·방어/공병 보급·필살기 리필 등은 템포 1단계(`min_tempo` 1), 초증강(`CHAOS`)·랜덤 변이 물약·전군 돌연변이는 템포 2단계(`min_tempo` 2)부터 나옵니다. 2단계부터 기물 진화(`PAWN`) 가중치는 ×0.25 (`TempoUp.BASIC_POOL_FACTOR`). 첫 드래프트(1라운드)는 기물 진화(`PAWN`)만, 두 번째(4라운드)는 판정 도구(`DICE`)·카드(`CARD`)·기물 진화만 제시합니다 (`AugmentRegistry.DRAFT_FOCUS`, 그 계열에 받을 수 있는 증강이 모자라면 다른 계열로 채움).
 
 ## dice_table.csv
 `enabled`(FALSE면 교체 증강에서 빠짐, 기본 주사위 D6는 제외) · `name`(도구 이름) · `desc`(도구 카드 한 줄) · `spec_table`(족보표 문구) · `min_step`/`max_step`(이동 칸을 이 범위로 맞춤. 0칸·턴 종료 결과는 건드리지 않음, 비우면 제한 없음) · `jackpot_step`(그 도구의 최고 결과 칸 수를 이 값으로 교체, 상한과 무관. 윷·홀덤·슬롯·화투·마작·야추·블랙잭·핀볼만 지원) · `icon_file`(`illustrations/dice/` 아래).

@@ -209,8 +209,8 @@ func test_choosing_the_hurricane_law_boosts_draws_without_a_gift() -> void:
 	var manager := _new_manager()
 	var state: GameState = manager.state
 	var augment: AugmentDef = AugmentRegistry.get_def(&"AUG_LAW_09")
-	state.round_number = augment.min_round
-	check(augment != null and augment.category == GameEnums.AugmentCategory.LAW_ENACT and augment.is_available(state, 1), "법전 증강으로 나온다 (7라운드부터)")
+	state.round_number = maxi(augment.min_round, TempoUp.stage_rounds[0])  # 법전은 템포 1단계부터
+	check(augment != null and augment.category == GameEnums.AugmentCategory.LAW_ENACT and augment.is_available(state, 1), "법전 증강으로 나온다 (템포 1단계부터)")
 	check(augment.describe(state, 1).contains("승리 조건") and not augment.describe(state, 1).contains("지급") and not augment.describe(state, 1).contains("잘 나옴"), "증강 설명은 승리 조건만: " + augment.describe(state, 1))
 	state.hands[1] = []
 	var result: Dictionary = augment.apply(state, 1)
@@ -306,7 +306,7 @@ func test_auto_enact_never_picks_the_hurricane_law() -> void:
 func test_collecting_all_three_by_chance_boosts_the_hurricane_offer() -> void:
 	var manager := _new_manager()
 	var state: GameState = manager.state
-	state.round_number = 7  # 법전 증강은 7라운드부터
+	state.round_number = TempoUp.stage_rounds[0]  # 법전 증강은 템포 1단계(8라운드)부터
 	var def: AugmentDef = AugmentRegistry.get_def(&"AUG_LAW_09")
 	state.hands[1] = []
 	var base: float = AugmentRegistry.effective_weight(def, state, 1)

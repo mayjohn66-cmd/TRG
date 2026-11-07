@@ -21,6 +21,10 @@ var tier: String = "NORMAL"
 var weight: int = 100
 ## 이 라운드부터 등장한다.
 var min_round: int = 1
+## 템포 단계(TempoUp.level, 0~3)가 이 값 이상일 때부터 풀에 합류한다 (0 = 처음부터). 초반 쉬운 증강 → 중반 판세 개입형 → 후반 초증강 순으로 풀이 넓어진다.
+var min_tempo: int = 0
+## 템포 단계가 이 값 이하일 때만 나온다 (3 = 끝까지). 초반에만 나오고 빠지는 증강을 만들 때 쓴다.
+var max_tempo: int = 3
 ## 선택 카드 제목·계열 표시·설명·족보 요약 (비어 있으면 코드의 기본 문구).
 var title: String = ""
 var subtitle: String = ""
@@ -104,6 +108,9 @@ func _free_units_for(state: GameState, player_id: int) -> Array[int]:
 ## 이 플레이어에게 지금 제시할 수 있는 선택지인가.
 func is_available(state: GameState, player_id: int) -> bool:
 	if not enabled or state.round_number < min_round:
+		return false
+	var tempo: int = TempoUp.level(state.round_number)
+	if tempo < min_tempo or tempo > max_tempo:
 		return false
 	match category:
 		GameEnums.AugmentCategory.PAWN_EVOLUTION:
@@ -341,6 +348,8 @@ func apply_row(data: Dictionary) -> void:
 		tier = "NORMAL"
 	weight = maxi(DataTable.to_int(data.get("weight", ""), 100), 0)
 	min_round = maxi(DataTable.to_int(data.get("min_round", ""), 1), 1)
+	min_tempo = clampi(DataTable.to_int(data.get("min_tempo", ""), 0), 0, 3)
+	max_tempo = clampi(DataTable.to_int(data.get("max_tempo", ""), 3), min_tempo, 3)
 	param_1 = str(data.get("param_1", "")).strip_edges()
 	param_2 = str(data.get("param_2", "")).strip_edges()
 	# 문구 열은 현재 언어의 번역 열(title_en 등)을 먼저 쓰고, 비어 있으면 한국어 열 (L10n.pick)

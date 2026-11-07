@@ -17,9 +17,10 @@ func test_draft_rounds_are_4_then_every_three() -> void:
 	check(not AugmentTimeline.is_draft_round(1) and not AugmentTimeline.is_draft_round(2) and not AugmentTimeline.is_draft_round(3), "1~3라운드에는 증강이 없다")
 
 
-func test_super_augments_mix_in_from_round_seven() -> void:
+func test_advanced_augments_mix_in_by_tempo_stage() -> void:
 	check(not AugmentTimeline.is_super_round(1) and not AugmentTimeline.is_super_round(4), "1·4라운드는 초증강이 섞이지 않는다")
-	check(AugmentTimeline.is_super_round(7) and AugmentTimeline.is_super_round(10), "7라운드부터는 초증강·법전까지 섞인다")
+	check(not AugmentTimeline.is_super_round(7), "7라운드(템포 0)는 쉬운 증강만 섞인다")
+	check(AugmentTimeline.is_super_round(10) and AugmentTimeline.is_super_round(16), "템포 1단계(8R)부터 고급 증강이 섞인 증강 라운드에 별 표시")
 	check(not AugmentTimeline.is_super_round(8), "증강 라운드가 아니면 별 표시가 없다")
 
 
