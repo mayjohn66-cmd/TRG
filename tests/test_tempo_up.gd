@@ -360,3 +360,27 @@ func test_pool_expands_with_tempo_stages() -> void:
 	AugmentRegistry.reload()
 	check_eq(TempoUp.effect_lines(1).size(), 3, "1단계 안내 3줄 (고급 증강 합류 포함)")
 	check(str(TempoUp.effect_lines(1)[2]).contains("고급 증강") and str(TempoUp.effect_lines(2)[2]).contains("초증강"), "템포 업 안내에 풀 합류 문구")
+
+
+## 자동 법전 사전 예고: 1단계(8R) 두 라운드 전(6R)에 어떤 법전이 열릴지 정해 알리고, 8R에 그 법전을 그대로 제정한다.
+func test_auto_law_is_announced_two_rounds_ahead_and_enacted_as_announced() -> void:
+	var manager := _new_manager()
+	var events: Array = _events(manager)
+	manager.state.round_number = 5
+	manager._enter_round_start()
+	check(not _kinds(events).has(&"law_auto_preview") and manager.state.auto_law_preview == "", "5라운드에는 아직 예고가 없다")
+	manager.state.round_number = 6
+	manager._enter_round_start()
+	check(_kinds(events).has(&"law_auto_preview"), "6라운드 시작에 법전 예고")
+	var preview: String = manager.state.auto_law_preview
+	var data: Dictionary = events[_kinds(events).find(&"law_auto_preview")]["data"]
+	check(preview != "" and String(data["law_id"]) == preview and int(data["open_round"]) == 8, "예고에 법전과 열리는 라운드가 실린다")
+	var count: int = events.filter(func(e: Dictionary) -> bool: return e["kind"] == &"law_auto_preview").size()
+	manager.state.round_number = 7
+	manager._enter_round_start()
+	check_eq(events.filter(func(e: Dictionary) -> bool: return e["kind"] == &"law_auto_preview").size(), count, "7라운드에는 같은 예고를 다시 뽑지 않는다")
+	check_eq(manager.state.auto_law_preview, preview, "예고한 법전은 그대로")
+	manager.state.round_number = 8
+	manager._enter_round_start()
+	check(manager.state.rulebook.has_law(preview) and manager.state.auto_law_preview == "", "8라운드에 예고한 법전이 그대로 제정된다")
+	_dispose(manager)

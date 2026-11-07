@@ -153,13 +153,13 @@ func can_pick_pawn(state: GameState, player_id: int, pawn: PlayerPawn) -> bool:
 ## 카드 본문에서 빼고 드래프트 화면 아래 공통 안내 바에 한 번만 보여 주는 문구 (원문 한국어, 화면에서 번역).
 ## 증강 카드마다 같은 규칙 설명이 되풀이되어 글자가 많아 보이던 것을 줄인다. 표(augments_table.csv)의 글은 그대로 둔다.
 const COMMON_NOTE_PAWN: String = "※ 이미 가진 기물은 받을 수 없습니다"
-const COMMON_NOTE_LAW: String = "◆ 차례가 끝날 때 달성해 있으면 바로 다음 순위로 졸업"
+const COMMON_NOTE_LAW: String = "◆ 내 차례가 끝날 때 조건을 달성해 있으면 특수 승리!"
 const COMMON_NOTE_TOOL: String = "◆ 내 판정 도구 즉시 교체"
 const COMMON_NOTE_EVOLVE: String = "◆ 기본 말 1개 →"
 ## 공통 안내 바에 쓰는 짧은 문구 (계열별).
 const NOTE_BAR: Dictionary = {
 	GameEnums.AugmentCategory.PAWN_EVOLUTION: "※ 이미 가진 기물은 받을 수 없어요",
-	GameEnums.AugmentCategory.LAW_ENACT: "※ 특수 승리: 차례가 끝날 때 달성해 있으면 바로 다음 순위로 졸업",
+	GameEnums.AugmentCategory.LAW_ENACT: "※ 특수 승리: 내 차례가 끝날 때 조건을 달성해 있으면 승리 (보드연성진만 다음 내 차례 끝까지 유지)",
 	GameEnums.AugmentCategory.TOOL_SWAP: "※ 판정 도구는 고르는 즉시 내 것과 바뀌어요",
 }
 
@@ -230,10 +230,10 @@ func _default_text(state: GameState, player_id: int) -> String:
 		GameEnums.AugmentCategory.LAW_ENACT:
 			var law: LawResource = LawRegistry.create(payload)
 			if String(payload) == SpecialVictory.SIEGE_LAW:  # 1.01: 사도 포위망은 경보 뒤 한 바퀴를 버텨야 졸업
-				return "◆ 승리 조건: %s\n◆ 차례 끝에 완성하면 [포위망 경보] → 다음 내 차례 끝까지 유지하면 졸업" % law.description
+				return "◆ 승리 조건: %s\n◆ 조건 달성 후 다음 내 차례가 끝날 때까지 유지하면 특수 승리!" % law.description
 			if String(payload) == SpecialVictory.HURRICANE_LAW:  # 방해령 허리케인 포스!!: 설명은 승리 조건만 (드로우 보정은 숨김)
 				return "◆ 승리 조건: %s" % law.description
-			return "◆ 승리 조건: %s\n◆ 차례가 끝날 때 달성해 있으면 바로 다음 순위로 졸업" % law.description
+			return "◆ 승리 조건: %s\n◆ 내 차례가 끝날 때 조건을 달성해 있으면 특수 승리!" % law.description
 		GameEnums.AugmentCategory.SUPER_GAMBLE:
 			return SuperAugments.describe(payload)
 		GameEnums.AugmentCategory.UTILITY:

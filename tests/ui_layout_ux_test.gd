@@ -145,6 +145,11 @@ func _run() -> void:
 	_expect(timeline.caption_kind==&"later" and timeline.caption_rounds==2 and not _board.round_banner_sub().contains("\n"),"5라운드: 7라운드까지 2라운드 뒤, 사전 예고 없음")
 	_board.state.round_number=6;_board._refresh_all();await settle()
 	_expect(not bool(timeline.rounds[3]["super"]) and timeline._numbers[3].get_theme_color("font_color")==AugmentTimeline.COLOR_GOLD,"7라운드(템포 0)는 쉬운 증강만 섞이고 증강 숫자는 노란색")
+	_board.state.round_number=1;_board.state.auto_law_preview="";_board._refresh_all();await settle()
+	_expect(_board.round_banner_sub().contains(L10n.t("승리 조건: 말 4개를 가장 먼저 완주시키거나, 중반에 열리는 [중앙 법전] 조건을 달성하세요!")),"1라운드 배너에 기본 승리 조건 한 줄")
+	_board.state.round_number=6;_board.state.auto_law_preview="LAW_01";_board._refresh_all();await settle()
+	_expect(_board.round_banner_sub().contains(L10n.t("★ %d라운드에 [%s] 법전이 열립니다!")%[TempoUp.stage_rounds[0],L10n.t(LawRegistry.create("LAW_01").law_name)]) and not _board.round_banner_sub().contains(L10n.t("승리 조건:")),"6라운드 배너에 열릴 법전 예고 (승리 조건 한 줄은 1라운드만)")
+	_board.state.auto_law_preview=""
 	_board.state.round_number=9;_board._refresh_all();await settle()
 	_expect(AugmentTimeline.is_super_round(10) and AugmentTimeline.pool_news(10)!="" and AugmentTimeline.pool_news(13)=="" and AugmentTimeline.pool_news(16)!="","고급 증강 합류는 10라운드, 초증강 합류는 16라운드 증강에서 알린다")
 	_expect(_board.round_banner_sub().contains(L10n.t("★ %s 합류!")%L10n.t(AugmentTimeline.pool_news(10))),"9라운드 사전 예고에 새로 합류하는 증강 안내")

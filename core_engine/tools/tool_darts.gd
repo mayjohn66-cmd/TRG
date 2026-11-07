@@ -1,7 +1,7 @@
 # File: res://core_engine/tools/tool_darts.gd
 # Class: class_name ToolDarts
 # Role: 불스아이 다트 보드 (v1.1) - 던진 다트가 어디에 꽂힐지는 완전한 운이다 (2026-11-04: 타이밍 조준을 없애고 호스트 난수로만 정한다). 맞은 칸 숫자(1~6) × 싱글/더블/트리플, 정중앙 불스아이는 10칸 + 한 번 더
-# 조준(aim)은 굴림 행동에 실려 오고(사람의 클릭 타이밍), 손떨림만 호스트 RNG가 더한다. 조준이 없으면(봇·시간 초과) RNG가 조준한다
+# 조준·타이밍 보정은 없다: 굴림 행동에 aim이 실려 와도 쓰지 않고 순수 호스트 RNG로만 정한다 (화면 설명도 "순수한 운"으로 통일)
 class_name ToolDarts
 extends BaseJudgmentTool
 

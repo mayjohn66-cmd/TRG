@@ -4197,6 +4197,14 @@ func round_banner_sub() -> String:
 		var news: String = AugmentTimeline.pool_news(state.round_number + 1)
 		if not news.is_empty():
 			sub += "  ·  " + L10n.t("★ %s 합류!") % L10n.t(news)
+	# 1라운드: 이기는 방법을 한 줄로 (기본 승리 + 중반에 열리는 법전)
+	if state.round_number == 1:
+		sub += "\n" + (L10n.t("승리 조건: 말 4개를 가장 먼저 완주시키거나, 중반에 열리는 [중앙 법전] 조건을 달성하세요!") if bool(state.match_rules.get("laws", true)) else L10n.t("승리 조건: 말 4개를 가장 먼저 완주시키세요!"))
+	# 자동 법전이 곧 열리면 어떤 법전인지 미리 알린다 (TurnManager._preview_auto_law)
+	if state.auto_law_preview != "":
+		var preview_law: LawResource = LawRegistry.create(state.auto_law_preview)
+		if preview_law != null:
+			sub += "\n" + L10n.t("★ %d라운드에 [%s] 법전이 열립니다!") % [TempoUp.stage_rounds[0], L10n.t(preview_law.law_name)]
 	return sub
 
 
@@ -5917,7 +5925,8 @@ func _fill_law_tip(slot: int) -> void:
 		return
 	var law: LawResource = state.rulebook.active_laws_queue[slot]
 	_tip_title.text = "★ [특수 승리] %s" % law.law_name
-	_tip_ability.text = "조건: %s\n차례가 끝날 때마다 판정: 달성해 있으면 바로 다음 순위로 졸업하고, 이 교칙은 법전에서 사라집니다" % law.description
+	var hold_rule: String = "조건 달성 후 다음 내 차례가 끝날 때까지 유지하면 특수 승리! (이 교칙은 법전에서 사라집니다)" if law.law_id == SpecialVictory.SIEGE_LAW else "내 차례가 끝날 때 조건을 달성해 있으면 특수 승리! (이 교칙은 법전에서 사라집니다)"
+	_tip_ability.text = "조건: %s\n%s" % [law.description, hold_rule]
 	_tip_skill.visible = law is VictoryLaw
 	if law is VictoryLaw:
 		_tip_skill.text = law_progress_text(state, law as VictoryLaw, _player_name)
@@ -6593,10 +6602,10 @@ func _pawn_move_plan(pawn: PlayerPawn) -> Dictionary:
 	return {"path": path, "report": report, "base": maxi(ctx.dice_value, 0)}
 
 
-## 이동 거리 계산식 한 줄: [총 10칸 이동 (기본 5 + 리벤지 부스터 4 + 흑돌 홀수 1)].
+## 이동 거리 계산식 한 문장: [기본 5 + 리벤지 부스터 4 + 흑돌 홀수 1 = 총 10칸 이동 (도착 12번 칸)].
 ## notes는 MoveReport.ability_notes ("복수 부스터 +4칸", "흑돌 홀수 +1칸", "점프 부스트! (+2칸)" ...). +N칸이 붙은 줄만 더하는 값으로 센다.
-## total_cap: 실제 경로가 계산보다 짧으면(결승선 등) 그 칸수를 총합으로 보여 준다 (0이면 제한 없음).
-static func move_breakdown_text(base: int, notes: Array, total_cap: int = 0) -> String:
+## total_cap: 실제 경로가 계산보다 짧으면(결승선 등) 그 칸수를 총합으로 보여 준다 (0이면 제한 없음). dest: 도착 칸 번호 (음수면 생략).
+static func move_breakdown_text(base: int, notes: Array, total_cap: int = 0, dest: int = -1) -> String:
 	var matcher: RegEx = RegEx.create_from_string("^(.*?)\\s*\\(?\\+(\\d+)\\D*$")
 	var parts: Array[String] = ["%s %d" % [L10n.t("기본"), base]]
 	var total: int = base
@@ -6616,9 +6625,12 @@ static func move_breakdown_text(base: int, notes: Array, total_cap: int = 0) -> 
 		total += amount
 	if total_cap > 0:
 		total = mini(total, total_cap)
+	var tail: String = L10n.t("총 %d칸 이동") % total
+	if dest >= 0:
+		tail += " (%s)" % (L10n.t("도착 %d번 칸") % dest)
 	if parts.size() == 1:
-		return L10n.t("총 %d칸 이동") % total
-	return "%s (%s)" % [L10n.t("총 %d칸 이동") % total, " + ".join(PackedStringArray(parts))]
+		return tail
+	return "%s = %s" % [" + ".join(PackedStringArray(parts)), tail]
 
 
 ## 선택 결과 예고: {"text": 카드에 적을 짧은 한마디(처치!·완주! 등, 평범한 이동은 빈 문자열), "good": 초록 테두리로 강조할 좋은 결과}.
@@ -6757,7 +6769,7 @@ const TOOL_RULES: Dictionary = {
 	&"DICE_BLACKJACK": {"rows": [["시작", "합 11 이상까지 받음"], ["11 ~ 20 스탠드", "(합 - 10)칸"], ["★ 정확히 21", "11칸 + 한 번 더!"], ["22 이상 (버스트)", "0칸, 턴 종료"]], "note": "A는 11 (넘으면 1) · 히트로 더 뽑거나 스탠드로 확정"},
 	&"DICE_PINBALL": {"rows": [["하단 구멍 7칸", "2·4·6·★10·5·3·1"], ["골인한 구멍", "그 숫자만큼 (1~10칸)"], ["★10 구멍", "가장 드문 대박"]], "note": "발사 버튼을 꾹 눌렀다 놓으면 발사"},
 	&"DICE_STOCK": {"rows": [["보통 (88%)", "주가만큼 (1~12칸, 매번 ±3)"], ["★상한가 (6%)", "20칸"], ["상장폐지 (6%)", "0칸 · 선두 말 사출 · 턴 종료"]], "note": "주가는 6에서 시작해 이어진다 · 상한가·상장폐지 뒤 6으로"},
-	&"DICE_DARTS": {"rows": [["싱글", "숫자(1~6)만큼"], ["더블 (바깥 고리)", "숫자 × 2"], ["트리플 (안쪽 고리)", "숫자 × 3"], ["★불스아이 (정중앙)", "10칸 + 한 번 더!"]], "note": "조준점이 가운데로 올 때 던지기 · 손떨림 약간"},
+	&"DICE_DARTS": {"rows": [["싱글", "숫자(1~6)만큼"], ["더블 (바깥 고리)", "숫자 × 2"], ["트리플 (안쪽 고리)", "숫자 × 3"], ["★불스아이 (정중앙)", "10칸 + 한 번 더!"]], "note": "조준 없이 [던지기]만 누르면 돼요 · 꽂히는 자리는 순수한 운"},
 }
 
 
@@ -10722,7 +10734,7 @@ func _preview_pawn(pawn_id: int) -> void:
 	_refresh_danger_label()
 
 
-## 도착 칸 위에 [총 N칸 이동 (기본 + 보너스…)] 배지를 띄운다: 왜 그만큼 가는지 이동 전에 보이게.
+## 도착 칸 위에 [기본 + 보너스… = 총 N칸 이동 (도착 N번 칸)] 배지를 띄운다: 왜 그만큼 가는지 이동 전에 보이게.
 func _show_move_badge(path: Array[int], plan: Dictionary) -> void:
 	if path.is_empty() or not _fx_on():
 		return
@@ -10739,7 +10751,7 @@ func _show_move_badge(path: Array[int], plan: Dictionary) -> void:
 		_move_badge.add_child(_move_badge_label)
 		add_child(_move_badge)
 	var report: MoveReport = plan["report"]
-	_move_badge_label.text = move_breakdown_text(int(plan["base"]), report.ability_notes, path.size())
+	_move_badge_label.text = move_breakdown_text(int(plan["base"]), report.ability_notes, path.size(), path.back())
 	_move_badge.reset_size()
 	var anchor: Vector2 = _tile_center(path.back()) + Vector2(0.0, -58.0)
 	var view: Vector2 = get_viewport_rect().size
@@ -11549,6 +11561,9 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 					screen_shake(12.0, 0.5)
 					Sfx.play_repeated(&"tempo_warning", TEMPO_WARNING_REPEATS, TEMPO_WARNING_GAP, 0.0, 0.03)  # 기존 경고음을 4번 되풀이한다 (점점 급해지는 느낌)
 				_announce_now("템포 업", "템포 업 Lv.%d · %s" % [stage, TempoUp.stage_name(stage)], "%d라운드부터 게임이 빨라집니다!\n◆ %s" % [tempo_round, "\n◆ ".join(PackedStringArray(lines))], Color("ff4d4d"), null, 3.2))
+		&"law_auto_preview":
+			var preview_name: String = LawRegistry.create(String(data["law_id"])).law_name
+			_log_line("[법전 예고] %d라운드에 %s이(가) 열립니다" % [int(data["open_round"]), preview_name], Color("ffe066"))
 		&"law_auto_enacted":
 			# 중반 법전 보장: 6라운드 동안 아무도 법전을 고르지 않아 무작위 특수 승리 법전이 자동 제정됐다 (템포 업 경고 뒤에 공개).
 			var auto_law: LawResource = null

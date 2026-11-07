@@ -139,6 +139,8 @@ var drift_players: Dictionary = {}
 var roll_penalty: Dictionary = {}
 ## v1.1 방해령 허리케인 포스(LAW_09)를 제정한 사람: 카드 드로우에서 손패에 없는 방해령 종류가 더 잘 나온다.
 var haunt_boost: Dictionary = {}
+## 자동 법전(템포 1단계 중반 법전 보장)으로 열릴 법전 id를 미리 정해 둔 것 (빈 문자열 = 아직 안 정함). TurnManager._preview_auto_law.
+var auto_law_preview: String = ""
 ## 특수 승리 판정 중인 차례 플레이어 (-1이면 차례 끝 판정이 아님). 내 차례 끝에만 달성되는 법전(방해령 허리케인 포스!!)이 본다.
 var judge_turn_player: int = -1
 var bounties: Dictionary = {}

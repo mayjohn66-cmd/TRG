@@ -1338,6 +1338,7 @@ func _enter_round_start() -> void:
 	_draft_pick_params.clear()
 	_draft_rerolls.clear()
 	change_state(State.PHASE_ROUND_START)
+	_preview_auto_law()
 	if _apply_tempo_up():
 		return
 	if GameEnums.is_draft_round(state.round_number) and state.round_number > GameEnums.draft_start:
@@ -1356,19 +1357,44 @@ func _auto_law_due() -> bool:
 	return MatchRules.auto_law_enabled(state) and MatchRules.victory_law_count(state) == 0 and not MatchRules.laws_full(state)
 
 
+## 자동 제정 후보: 방해령 허리케인 포스!!는 증강으로 제정할 때 주는 카드 지급·드로우 보정이 있어야 달성할 수 있어 뺀다.
+func _auto_law_candidates() -> Array[String]:
+	var candidates: Array[String] = []
+	for law_id: String in LawRegistry.ALL_IDS:
+		if VictoryLaw.is_victory_id(law_id) and law_id != SpecialVictory.HURRICANE_LAW and MatchRules.law_allowed(state, law_id) and not state.rulebook.has_law(law_id):
+			candidates.append(law_id)
+	return candidates
+
+
+## 자동 법전 사전 예고: 템포 1단계 두 라운드 전 라운드 시작에 어떤 법전이 열릴지 미리 정해 알린다 (law_auto_preview 이벤트).
+## 정한 법전은 state.auto_law_preview에 두고 1단계에 그대로 제정한다 (그 사이 누가 법전을 제정해 자동 제정이 필요 없어지면 취소).
+const AUTO_LAW_PREVIEW_LEAD: int = 2
+func _preview_auto_law() -> void:
+	var open_round: int = TempoUp.stage_rounds[0]
+	if state.round_number < maxi(open_round - AUTO_LAW_PREVIEW_LEAD, 1) or state.round_number >= open_round:
+		return
+	if not _auto_law_due():
+		state.auto_law_preview = ""
+		return
+	var candidates: Array[String] = _auto_law_candidates()
+	if candidates.is_empty() or candidates.has(state.auto_law_preview):
+		return
+	state.auto_law_preview = candidates[state.rng.randi_range(0, candidates.size() - 1)]
+	_emit_event(&"law_auto_preview", {"round": state.round_number, "open_round": open_round, "law_id": state.auto_law_preview})
+
+
 ## 중반 법전 보장 (MatchRules.auto_law_enabled): 법전에 특수 승리가 하나도 없으면 무작위 법전 1개를 자동 제정한다.
 ## 규칙의 법전 풀(law_pool)과 최대 개수(max_laws)를 따르고, 호스트 RNG로 고른다. 제정했으면 law_auto_enacted 이벤트.
 func _auto_enact_law() -> void:
 	if not _auto_law_due():
 		return
-	var candidates: Array[String] = []
-	for law_id: String in LawRegistry.ALL_IDS:
-		# 방해령 허리케인 포스!!는 증강으로 제정할 때 주는 카드 지급·드로우 보정이 있어야 달성할 수 있어 자동 제정에서는 뺀다
-		if VictoryLaw.is_victory_id(law_id) and law_id != SpecialVictory.HURRICANE_LAW and MatchRules.law_allowed(state, law_id) and not state.rulebook.has_law(law_id):
-			candidates.append(law_id)
+	var candidates: Array[String] = _auto_law_candidates()
 	if candidates.is_empty():
 		return
-	var law: LawResource = LawRegistry.create(candidates[state.rng.randi_range(0, candidates.size() - 1)])
+	# 미리 예고해 둔 법전이 아직 제정할 수 있으면 그것을, 아니면 새로 뽑는다
+	var law_id: String = state.auto_law_preview if candidates.has(state.auto_law_preview) else candidates[state.rng.randi_range(0, candidates.size() - 1)]
+	state.auto_law_preview = ""
+	var law: LawResource = LawRegistry.create(law_id)
 	SpecialVictory.on_law_enacted(state, law)
 	state.rulebook.enqueue_law(law)
 	_emit_event(&"law_auto_enacted", {"round": state.round_number, "law_id": law.law_id})

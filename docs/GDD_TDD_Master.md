@@ -2167,3 +2167,11 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 - **안내**: `TempoUp.effect_lines`(템포 업 경고에 "이제부터 고급 증강/초증강이 증강 선택지에 등장합니다!"), `AugmentTimeline.pool_news(round)`(새 묶음이 처음 섞이는 증강 라운드 = 10R·16R)가 직전 라운드 예고 `round_banner_sub`에 "★ 고급 증강 합류!" 를 붙이고, 타임라인 별 표시(`is_super_round`)는 템포 1단계 이후 증강 라운드, 툴팁 문구도 같이 바꿨다.
 - **밸런스 영향**: 증강은 4·7·10·13·16·19·22·25R. 초증강은 16R부터이므로 평균 18라운드 판에서는 한두 번 나온다 (이전에는 7R부터). 값은 표(`min_tempo`)로 바꿀 수 있다. 스피드전은 `MatchRules.SPEED_STAGE_ROUNDS` 템포 라운드를 따른다.
 - 테스트: test_tempo_up(풀 합류·max_tempo·가중치·단계별 계열), test_data_tables(헤더), test_augment_timeline, ui_layout_ux_test(예고·툴팁).
+
+### 7.73 텍스트 정합성 (법전 판정·다트·시작 목표·이동량)
+- **법전 판정 문구**: 코드는 보드연성진(`LAW_05`)만 `경보 → 다음 내 차례 끝까지 유지`이고(`SpecialVictory.update_siege`) 나머지 법전은 내 차례 끝(`_judge_special_victory`)에 달성해 있으면 즉시 졸업이다. 규칙은 그대로 두고 문구만 맞췄다: 일반 "내 차례가 끝날 때 조건을 달성해 있으면 특수 승리!", 보드연성진 "조건 달성 후 다음 내 차례가 끝날 때까지 유지하면 특수 승리!" (`AugmentDef.COMMON_NOTE_LAW`·`NOTE_BAR`·표 desc 3개 언어·법전 툴팁·도감).
+- **다트**: `ToolDarts`는 aim을 무시하는 순수 RNG다. 도감 요약의 "조준점이 가운데로 올 때 던지기"를 "조준 없이 [던지기]만 누르면 돼요 · 꽂히는 자리는 순수한 운"으로 고쳤다.
+- **시작 목표**: `round_banner_sub`가 1라운드에 승리 조건 한 줄(법전을 끈 판은 완주만)을 붙인다.
+- **법전 사전 예고**: `TurnManager._preview_auto_law`가 템포 1단계 2라운드 전(`AUTO_LAW_PREVIEW_LEAD`) 라운드 시작에 자동 제정될 법전을 미리 뽑아 `state.auto_law_preview`에 두고(스냅샷 저장) `law_auto_preview`를 보낸다. 1단계에서 그 법전을 그대로 제정하고, 그 사이 법전이 생겨 자동 제정이 필요 없으면 취소한다. 배너에 "★ 8라운드에 [법전] 법전이 열립니다!"가 붙는다. 증강으로 제정하는 법전은 플레이어 선택이라 예고할 수 없다.
+- **이동량**: `move_breakdown_text(base, notes, cap, dest)` = `기본 5 + 리벤지 부스터 4 = 총 9칸 이동 (도착 12번 칸)`. 판에 칸 번호가 없어 번호는 참고용이다.
+- 테스트: test_augment_timeline(이동량), test_tempo_up(예고), ui_layout_ux_test(배너).

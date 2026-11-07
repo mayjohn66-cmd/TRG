@@ -2569,7 +2569,6 @@ P%d의 %d번 말 수배! 잡으면 +%d칸,P%d's pawn %d is WANTED! Capture it fo
 숫자 × 3,Number × 3,数字 × 3
 ★불스아이 (정중앙),★Bullseye (dead center),★ブルズアイ (ど真ん中)
 10칸 + 한 번 더!,10 + extra roll!,10マス+もう1回！
-조준점이 가운데로 올 때 던지기 · 손떨림 약간,Throw when the reticle reaches the center · slight hand shake,照準が中心に来たら投げる・手ぶれ少し
 시세표: 주가(시작 6)만큼 전진 · 매번 ±3 등락 / ★상한가 20칸 / 상장폐지: 0칸 + 선두 말 사출,Ticker: Advance by price (starts at 6) · ±3 each roll / ★Limit Up 20 / Delisted: 0 + lead pawn ejected,相場表: 株価(初期6)だけ前進・毎回±3変動 / ★ストップ高20マス / 上場廃止: 0マス+先頭の駒が射出
 과녁표: 숫자 1~6 × 싱글·더블·트리플 / ★불스아이 10칸 + 한 번 더,Board: Number 1~6 × Single/Double/Triple / ★Bullseye 10 + Extra Roll,的表: 数字1〜6 × シングル・ダブル・トリプル / ★ブルズアイ10マス+もう1回
 주,St,株
@@ -2720,3 +2719,22 @@ PROGRESS / 진행률,PROGRESS,PROGRESS／進行度
 이제부터 고급 증강이 증강 선택지에 등장합니다!,Advanced augments now appear among the augment choices!,これから上級オーグメントが選択肢に登場します！
 이제부터 초증강이 증강 선택지에 등장합니다!,Super augments now appear among the augment choices!,これから超オーグメントが選択肢に登場します！
 ★ %s 합류!,★ %s join!,★ %s 参戦！
+조준 없이 [던지기]만 누르면 돼요 · 꽂히는 자리는 순수한 운,Just press [Throw] - no aiming. Where it lands is pure luck,狙う必要はなく[投げる]を押すだけ・刺さる場所は完全な運
+"승리 조건: 말 4개를 가장 먼저 완주시키거나, 중반에 열리는 [중앙 법전] 조건을 달성하세요!","Win condition: get all 4 pawns home first, or meet a [Central Codex] condition that opens mid-game!",勝利条件: 駒4個を最初にゴールさせるか、中盤に開く[中央法典]の条件を達成しよう！
+승리 조건: 말 4개를 가장 먼저 완주시키세요!,Win condition: get all 4 pawns home first!,勝利条件: 駒4個を最初にゴールさせよう！
+★ %d라운드에 [%s] 법전이 열립니다!,"★ At Round %d, [%s] opens in the Codex!",★ 第%dラウンドに[%s]の法典が開きます！
+도착 %d번 칸,arrives at tile %d,到着: %d番マス
+[법전 예고] %d라운드에 %s이(가) 열립니다,"[Codex preview] At Round %d, %s opens",[法典予告] 第%dラウンドに%sが開きます
+"조건: %s
+%s","Condition: %s
+%s","条件: %s
+%s"
+조건 달성 후 다음 내 차례가 끝날 때까지 유지하면 특수 승리! (이 교칙은 법전에서 사라집니다),"Meet the condition, then keep it until the end of your next turn for a Special Win! (This Rule then leaves the Codex)",条件達成後、次の自分のターン終了まで維持すれば特殊勝利！(この教則は法典から消えます)
+내 차례가 끝날 때 조건을 달성해 있으면 특수 승리! (이 교칙은 법전에서 사라집니다),"If the condition is met when your turn ends, Special Win! (This Rule then leaves the Codex)",自分のターン終了時に条件を達成していれば特殊勝利！(この教則は法典から消えます)
+※ 특수 승리: 내 차례가 끝날 때 조건을 달성해 있으면 승리 (보드연성진만 다음 내 차례 끝까지 유지),※ Special Win: win if the condition is met when your turn ends (Board Alchemy Circle must be kept until the end of your next turn),※ 特殊勝利: 自分のターン終了時に条件を達成していれば勝利 (ボード練成陣のみ次の自分のターン終了まで維持)
+◆ 내 차례가 끝날 때 조건을 달성해 있으면 특수 승리!,"◆ If the condition is met when your turn ends, Special Win!",◆ 自分のターン終了時に条件を達成していれば特殊勝利！
+◆ 조건 달성 후 다음 내 차례가 끝날 때까지 유지하면 특수 승리!,"◆ Meet the condition, then keep it until the end of your next turn for a Special Win!",◆ 条件達成後、次の自分のターン終了まで維持すれば特殊勝利！
+법전 조건은 내 차례가 끝날 때 달성해 있으면 특수 승리!,"At the end of your turn, a met Codex condition is a Special Win!",自分のターン終了時に法典の条件を達成していれば特殊勝利！
+내 차례가 끝날 때 교칙 조건을 달성해 있으면 [b]특수 승리![/b] 그 교칙은 사라져요 (같은 교칙을 여럿이 채우면 레이스에서 앞선 한 명만). 단 [b]보드연성진[/b]은 조건 달성 후 다음 내 차례가 끝날 때까지 유지해야 해요,"If a Rule's condition is met when your turn ends, it's a [b]Special Win![/b] The Rule then disappears (if several meet the same Rule, only the one ahead in the race). The [b]Board Alchemy Circle[/b] must be kept until the end of your next turn",自分のターン終了時に教則の条件を達成していれば[b]特殊勝利！[/b] その教則は消えます (同じ教則を複数人が満たした場合はレースで先の1人のみ)。ただし[b]ボード練成陣[/b]は条件達成後、次の自分のターン終了まで維持が必要です
+조건 달성 후 다음 내 차례가 끝날 때까지 유지하면 특수 승리! 교칙은 사라져요,"Meet the condition, then keep it until the end of your next turn for a Special Win! The Rule then disappears",条件達成後、次の自分のターン終了まで維持すれば特殊勝利！教則は消えます
+내 차례가 끝날 때 조건을 달성해 있으면 특수 승리! 교칙은 사라져요,"If the condition is met when your turn ends, Special Win! The Rule then disappears",自分のターン終了時に条件を達成していれば特殊勝利！教則は消えます

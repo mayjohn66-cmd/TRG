@@ -328,6 +328,16 @@
        "ko": "새 증강이 풀에 합류하는 증강 직전 라운드 예고와 템포 업 알림에 \"이제부터 고급 증강/초증강이 증강 선택지에 등장합니다!\" 안내를 함께 띄운다",
        "en": "The pre-warning before the first draft with new augments and the Tempo Up alert now say that advanced/super augments will appear among the choices from now on",
        "ja": "新しいオーグメントがプールに加わる直前のラウンド予告とテンポアップ通知に、「これから上級/超オーグメントが選択肢に登場します！」の案内を追加"
+      },
+      {
+       "ko": "1라운드 배너에 승리 조건 한 줄 안내, 중반 법전이 자동으로 열리기 2라운드 전부터 어떤 법전이 열릴지 라운드 배너로 예고",
+       "en": "Round 1 banner states the win condition; from 2 rounds before the mid-game Codex opens, the round banner announces which Rule will open",
+       "ja": "1ラウンドのバナーに勝利条件を一行で表示、中盤の法典が自動で開く2ラウンド前から開く法典をバナーで予告"
+      },
+      {
+       "ko": "말 선택 이동량 안내를 한 문장으로: 기본 X + 보너스 Y = 총 Z칸 이동 (도착 N번 칸)",
+       "en": "Move-amount hint is one sentence: Base X + Bonus Y = Z spaces total (arrives at tile N)",
+       "ja": "駒選択時の移動量案内を一文に：基本X＋ボーナスY＝合計Zマス移動（到着N番マス）"
       }
      ]
     },
@@ -412,6 +422,16 @@
        "ko": "[불스아이 다트 보드]를 던지기 전에 [던지기] 버튼만 보이고 가운데 다트판이 보이지 않던 문제를 고쳤습니다: 내 차례에는 과녁이 보드 한가운데 천천히 돕니다",
        "en": "Fixed the [Bullseye Dartboard] showing only the Throw button before throwing: the board now spins slowly in the center of the table on your turn",
        "ja": "［ブルズアイ ダーツボード］を投げる前に［投げる］ボタンだけが表示され、中央にダーツ盤が出ない問題を修正：自分の番には盤面中央でゆっくり回る的が表示されます"
+      },
+      {
+       "ko": "특수 승리(법전) 설명을 실제 판정에 맞춰 통일: 내 차례가 끝날 때 조건을 달성해 있으면 특수 승리, 보드연성진만 달성 후 다음 내 차례가 끝날 때까지 유지",
+       "en": "Special Win (Codex) text now matches the real rule: a met condition at the end of your turn wins; only the Board Alchemy Circle must be kept until the end of your next turn",
+       "ja": "特殊勝利(法典)の説明を実際の判定に統一：自分のターン終了時に条件を達成していれば特殊勝利、ボード練成陣のみ達成後に次の自分のターン終了まで維持"
+      },
+      {
+       "ko": "다트 설명 정리: 조준 없이 [던지기]만 누르면 되고 꽂히는 자리는 순수한 운",
+       "en": "Dart text clarified: no aiming, just press [Throw] - where it lands is pure luck",
+       "ja": "ダーツの説明を整理：狙う必要はなく[投げる]を押すだけ、刺さる場所は完全な運"
       }
      ]
     }

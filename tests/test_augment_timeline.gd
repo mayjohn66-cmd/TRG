@@ -73,9 +73,14 @@ func test_first_draft_waits_until_round_four_and_numbers_stay() -> void:
 
 
 ## 이동 거리 계산식 말풍선 (2026-11): 눈금 + 보너스 내역을 한 줄로.
+func test_move_breakdown_text_adds_destination_tile() -> void:
+	check_eq(MainBoard.move_breakdown_text(5, ["복수 부스터 +4칸"], 0, 12), "기본 5 + 리벤지 부스터 4 = 총 9칸 이동 (도착 12번 칸)", "기본 + 보너스 = 총 N칸 (도착 칸 번호) 한 문장")
+	check_eq(MainBoard.move_breakdown_text(3, [], 0, 7), "총 3칸 이동 (도착 7번 칸)", "보너스가 없어도 도착 칸")
+
+
 func test_move_breakdown_text_lists_every_bonus() -> void:
-	check_eq(MainBoard.move_breakdown_text(5, ["복수 부스터 +4칸", "흑돌 홀수 +1칸"]), "총 10칸 이동 (기본 5 + 리벤지 부스터 4 + 흑돌 홀수 1)", "눈금 5 + 리벤지 4 + 흑돌 1")
-	check_eq(MainBoard.move_breakdown_text(3, []), "총 3칸 이동", "보너스가 없으면 괄호 없이")
-	check_eq(MainBoard.move_breakdown_text(4, ["점프 부스트! (+2칸)", "퀸 +2칸"]), "총 8칸 이동 (기본 4 + 점프 부스트 2 + 퀸 2)", "느낌표·괄호 표기도 읽는다")
-	check_eq(MainBoard.move_breakdown_text(6, ["비숍 코너 진입 +1칸", "들이받힘"]), "총 7칸 이동 (기본 6 + 비숍 코너 진입 1)", "칸 수가 없는 능력 문구는 건너뛴다")
-	check_eq(MainBoard.move_breakdown_text(5, ["복수 부스터 +4칸"], 7), "총 7칸 이동 (기본 5 + 리벤지 부스터 4)", "실제 경로가 짧으면(결승선 등) 총합을 그 칸수로")
+	check_eq(MainBoard.move_breakdown_text(5, ["복수 부스터 +4칸", "흑돌 홀수 +1칸"]), "기본 5 + 리벤지 부스터 4 + 흑돌 홀수 1 = 총 10칸 이동", "눈금 5 + 리벤지 4 + 흑돌 1")
+	check_eq(MainBoard.move_breakdown_text(3, []), "총 3칸 이동", "보너스가 없으면 합계만")
+	check_eq(MainBoard.move_breakdown_text(4, ["점프 부스트! (+2칸)", "퀸 +2칸"]), "기본 4 + 점프 부스트 2 + 퀸 2 = 총 8칸 이동", "느낌표·괄호 표기도 읽는다")
+	check_eq(MainBoard.move_breakdown_text(6, ["비숍 코너 진입 +1칸", "들이받힘"]), "기본 6 + 비숍 코너 진입 1 = 총 7칸 이동", "칸 수가 없는 능력 문구는 건너뛴다")
+	check_eq(MainBoard.move_breakdown_text(5, ["복수 부스터 +4칸"], 7), "기본 5 + 리벤지 부스터 4 = 총 7칸 이동", "실제 경로가 짧으면(결승선 등) 총합을 그 칸수로")
