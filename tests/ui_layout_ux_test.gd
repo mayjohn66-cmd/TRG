@@ -89,6 +89,10 @@ func _run() -> void:
 		apart_ok=not card0.get_global_rect().intersects(reroll0.get_global_rect())
 	_expect(gap_ok,"터치: [리롤]은 카드에서 충분히 떨어져 있다")
 	_expect(_board._draft_title_label!=null and _board._draft_title_label.get_global_rect().position.y>=_board._augment_timeline.get_global_rect().end.y-1.0,"[증강 선택] 제목이 위쪽 타임라인에 가려지지 않는다")
+	var tool_me:int=_board.local_player_id
+	_board.state.tools[tool_me]=ToolRegistry.create(&"DICE_YACHT");_board._tool_expanded=true;_board._refresh_all();await settle(12)
+	_expect(_board._tool_board.get_global_rect().end.y<=_board._emote_row.get_global_rect().position.y+1.0,"펼친 큰 판정 도구 카드가 [감정 표현] 버튼을 덮지 않는다")
+	_board._tool_expanded=false;_board.state.tools[tool_me]=ToolRegistry.create(&"D6")
 	_expect(tall_ok and apart_ok,"터치: [리롤]은 크고 카드와 겹치지 않는다")
 	_board._draft_cards[0].pressed.emit();await settle()
 	_expect(not _board._draft_locked,"터치: 창이 열린 직후의 누름은 카드를 고르지 않는다")

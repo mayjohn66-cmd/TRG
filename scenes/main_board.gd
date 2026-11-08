@@ -1770,7 +1770,7 @@ func _build_profiles() -> void:
 		panel.pivot_offset = card_size / 2.0
 		add_child(panel)
 		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 10)
+		row.add_theme_constant_override("separation", 10 if big else 6)  # 좁은 프로필 카드에서 이름 칸을 조금 더 넓게
 		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		panel.add_child(row)
 
@@ -1792,6 +1792,7 @@ func _build_profiles() -> void:
 		var name_label := _make_label("플레이어 %d" % player_id, MobileSupport.text_px(18 if big else 15, 20), color.lightened(0.3))
 		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		name_label.clip_text = true
+		name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS  # 긴 이름은 뚝 잘리지 않고 …로 줄인다
 		name_label.add_theme_color_override("font_outline_color", Color("0d1018"))
 		name_label.add_theme_constant_override("outline_size", 3)
 		top.add_child(name_label)
@@ -1811,7 +1812,7 @@ func _build_profiles() -> void:
 		hand_pips.mouse_filter = Control.MOUSE_FILTER_PASS
 		for _i: int in GameEnums.MAX_HAND_SIZE + UtilityAugments.HAND_EXPAND_MAX:  # 에심당 뽈사탕으로 늘어난 상한까지
 			var pip := Panel.new()
-			pip.custom_minimum_size = Vector2(6, 12) if not big else Vector2(8, 14)
+			pip.custom_minimum_size = Vector2(4, 12) if not big else Vector2(8, 14)  # 좁은 칩: 손패가 많아도 이름 칸을 덜 밀어낸다
 			pip.pivot_offset = pip.custom_minimum_size / 2.0
 			pip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			pip.add_theme_stylebox_override("panel", _style(Color("ffd43b"), Color("fff3bf"), 1, 2, 0, 0))
@@ -2117,12 +2118,30 @@ func _on_tool_toggle_pressed() -> void:
 
 
 ## 판정 도구 카드는 화면 우측 중앙(세로 중심 384)을 기준으로 앉고, 펼치면 위아래로 늘어난다. 멈추기·패스 버튼 행은 카드 바로 아래에 붙는다.
-func _place_action_row_below_tool_card() -> void:
+func _place_action_row_below_tool_card(settle: bool = true) -> void:
 	var height: float = maxf(_tool_board.size.y, _tool_board.get_combined_minimum_size().y)
+	if settle:
+		_replace_action_row_next_frame.call_deferred(height)  # 글이 줄바꿈되며 카드 높이가 늦게 정해지는 언어(일본어)에서 버튼 행이 겹치지 않게 한 번 더 맞춘다
 	var top_y: float = TOOL_CARD_CENTER_Y - height / 2.0
 	_set_layout_base(_tool_board, Vector2(1144, top_y))
 	_set_layout_base(_action_row, Vector2(1134, top_y + height + 8.0))
+	# 펼친 판정 도구 카드(야추·블랙잭 등)가 커서 [감정 표현] 버튼 자리까지 내려오면 그 버튼을 카드(와 버튼 행) 아래로 비킨다
+	var row_bottom: float = top_y + height + 8.0 + (maxf(_action_row.size.y, 32.0) + 6.0 if _action_row.visible and _action_row.get_children().any(func(child: Node) -> bool: return child is CanvasItem and (child as CanvasItem).visible) else 0.0)
+	var emote_y: float = 538.0 if MobileSupport.touch_mode() else 554.0
+	_set_layout_base(_emote_row, Vector2(1030.0, minf(maxf(emote_y, row_bottom + 4.0), 604.0)))
 	_apply_layout_now()
+
+
+func _replace_action_row_next_frame(previous_height: float) -> void:
+	if not is_instance_valid(_tool_board):
+		return
+	_tool_board.reset_size()
+	await get_tree().process_frame
+	if not is_instance_valid(_tool_board):
+		return
+	var height: float = maxf(_tool_board.size.y, _tool_board.get_combined_minimum_size().y)
+	if absf(height - previous_height) > 0.5:
+		_place_action_row_below_tool_card(false)
 
 
 ## 상세 족보(규칙표·메모)는 펼쳤을 때만 보이고, 족보가 없는 도구는 토글 버튼도 숨긴다.
@@ -4245,6 +4264,20 @@ func _player_name(player_id: int) -> String:
 
 
 ## 손패 칩: 장수만큼 카드 뒷면 칩을 켠다. 늘어난 칩은 톡 튀어 오른다.
+## 프로필 이름이 제 칸에 안 들어가면 글자를 줄여(최소 9px) 맞춘다. 그래도 넘치면 …로 줄어든다 (OVERRUN_TRIM_ELLIPSIS).
+func _fit_name_font(label: Label) -> void:
+	if not is_instance_valid(label) or label.size.x < 8.0:
+		return
+	var base: int = int(label.get_meta("base_px", label.get_theme_font_size("font_size")))
+	label.set_meta("base_px", base)
+	var font: Font = label.get_theme_font("font")
+	var shown: String = label.atr(label.text)
+	var px: int = base
+	while px > 9 and font.get_string_size(shown, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x + 4.0 > label.size.x:
+		px -= 1
+	label.add_theme_font_size_override("font_size", px)
+
+
 func _refresh_hand_pips(player_id: int) -> void:
 	var pips: HBoxContainer = _profiles[player_id]["hand_pips"]
 	var count: int = (state.hands[player_id] as Array).size()
@@ -4267,6 +4300,7 @@ func _refresh_players() -> void:
 		var rank: int = state.rankings.find(player_id) + 1
 		(card["name"] as Label).text = ("%s%d위 · %s" % ["★ " if rank == 1 else "", rank, _player_name(player_id)]) if rank > 0 else _player_name(player_id)
 		_refresh_hand_pips(player_id)
+		_fit_name_font.call_deferred(card["name"] as Label)  # 칩·[증강] 버튼이 이름 칸을 좁히면 글자를 줄여 맞춘다
 		_refresh_pawn_slots(player_id)
 		var panel: PanelContainer = card["panel"]
 		# 현재 턴을 강조하되 순위가 확정된 프로필은 도장 테두리 색을 읽을 수 있게 밝기를 남긴다.
@@ -6821,7 +6855,7 @@ func _refresh_tool_board(tool: BaseJudgmentTool, player_id: int) -> void:
 ## 라벨 글자가 한 줄로 차지하는 폭.
 func _text_width(label: Label) -> float:
 	var font: Font = label.get_theme_font("font")
-	return font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, label.get_theme_font_size("font_size")).x
+	return font.get_string_size(label.atr(label.text), HORIZONTAL_ALIGNMENT_LEFT, -1, label.get_theme_font_size("font_size")).x  # 화면에 보이는(번역된) 글 폭 -- 영어·일본어는 한국어보다 길어 줄바꿈 판단이 틀렸다
 
 
 func _rebuild_tool_rules(rules: Dictionary, _accent: Color) -> void:
@@ -6849,7 +6883,8 @@ func _rebuild_tool_rules(rules: Dictionary, _accent: Color) -> void:
 		var value_width: float = _text_width(value_label)
 		var gap: float = float(line.get_theme_constant("separation"))
 		if name_width + value_width + gap > TOOL_RULE_WIDTH:
-			var value_room: float = minf(value_width, TOOL_RULE_WIDTH * 0.5)
+			# 값 글이 줄바꿈 지점이 없으면(일본어 숫자열 등) 그 폭만큼은 줘야 이름 칸 쪽으로 삐져나가 겹치지 않는다 (카드 폭의 60%까지)
+			var value_room: float = minf(value_width, TOOL_RULE_WIDTH * 0.6)
 			value_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			value_label.custom_minimum_size = Vector2(value_room, 0)
 			name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -10197,6 +10232,7 @@ func _build_draft_overlay(player_id: int, remaining: int) -> void:
 	center.add_child(box)
 	var ready_label := _make_label("준비", 16, Color("adb5bd"))
 	ready_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	ready_label.visible = not MobileSupport.touch_mode()  # 터치는 리롤이 커서 세로가 모자란다: 장식 글자 한 줄을 뺀다
 	box.add_child(ready_label)
 	var title := _make_label("증강 선택", 46, Color("ffe066"))
 	_draft_title_label = title
@@ -10276,7 +10312,8 @@ func _fit_touch_draft(center: Control, box: Control) -> void:
 	if not is_instance_valid(center) or not is_instance_valid(box) or box.size.y <= 0.0:
 		return
 	var view: Vector2 = get_viewport_rect().size
-	var fit: float = minf(DRAFT_TOUCH_SCALE, minf(view.y * 0.97 / box.size.y, view.x * 0.96 / box.size.x))
+	# 창은 위쪽 DRAFT_TOP_RESERVE를 비운 아래 영역의 가운데에 놓이므로, 높이는 그 영역 기준으로 맞춘다 (아니면 아래 안내 글이 화면 밖으로 나간다)
+	var fit: float = minf(DRAFT_TOUCH_SCALE, minf((view.y - DRAFT_TOP_RESERVE) * 0.99 / box.size.y, view.x * 0.96 / box.size.x))
 	center.pivot_offset = center.size / 2.0
 	center.scale = Vector2.ONE * maxf(fit, 1.0)
 
