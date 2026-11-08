@@ -338,6 +338,11 @@
        "ko": "말 선택 이동량 안내를 한 문장으로: 기본 X + 보너스 Y = 총 Z칸 이동 (도착 N번 칸)",
        "en": "Move-amount hint is one sentence: Base X + Bonus Y = Z spaces total (arrives at tile N)",
        "ja": "駒選択時の移動量案内を一文に：基本X＋ボーナスY＝合計Zマス移動（到着N番マス）"
+      },
+      {
+       "ko": "카드 설명 용어 통일: 말을 출발선으로 보내는 효과는 모두 \"출발선으로 사출\", 상대(사람)와 적 말 구분, 턴·손패·강탈·파괴·강제 정지·+N칸 전진·재굴림 표기를 한 가지로 맞춤 (한/영/일 모두)",
+       "en": "Card text terms unified: every start-line send-back reads \"eject … to the start line\", opponents (players) vs enemy pawns are distinguished, and turn / hand / steal / destroy / forced stop / advances +N spaces / reroll are worded one way (KO/EN/JA)",
+       "ja": "カード説明の用語を統一：駒をスタート地点へ送る効果はすべて「スタート地点へ射出」、相手(プレイヤー)と敵の駒を区別し、ターン・手札・強奪・破壊・強制停止・+Nマス前進・振り直しの表記を一つに統一(韓/英/日)"
       }
      ]
     },

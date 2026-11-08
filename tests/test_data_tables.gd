@@ -336,3 +336,26 @@ func test_missing_or_empty_table_falls_back_to_code_defaults() -> void:
 	check_eq(SuperAugments.minefield_count(), 2, "초증강 수치 기본값")
 	check(CardRegistry.default_deck().size() > 0, "카드 덱 기본값")
 	check(AugmentRegistry.get_def(&"SUPER_01").tier == "PRISMA", "초증강 기본 테두리")
+
+
+## 카드 설명 용어집 (content_trickcal/data/README.md "카드 설명 용어"): 표기가 카드마다 달라지지 않게 지킨다.
+func test_card_descriptions_follow_the_glossary() -> void:
+	var rows: Array = (GameData.table("cards") as Dictionary).values()
+	var banned_ko: Array[String] = ["장외 사출", "차례", "내 패", "붕괴", "상납", "유저", "소각", "적 1명", "주사위 리롤"]
+	var banned_en: Array[String] = ["rival", "Rival"]
+	var banned_ja: Array[String] = ["場外射出", "崩壊", "焼却", "上納", "敵1人"]
+	var eject: RegEx = RegEx.create_from_string("사출")
+	for row: Dictionary in rows:
+		var id: String = str(row["id"])
+		var ko: String = str(row["desc"])
+		for word: String in banned_ko:
+			check(not ko.contains(word), "%s: 한국어 설명에 쓰지 않는 말 '%s'" % [id, word])
+		for word: String in banned_en:
+			check(not str(row["desc_en"]).contains(word), "%s: 영어 설명에 쓰지 않는 말 '%s'" % [id, word])
+		for word: String in banned_ja:
+			check(not str(row["desc_ja"]).contains(word), "%s: 일본어 설명에 쓰지 않는 말 '%s'" % [id, word])
+		# 사출은 늘 "출발선으로 사출" (면역 표기만 예외)
+		for found: RegExMatch in eject.search_all(ko):
+			var before: String = ko.substr(maxi(found.get_start() - 6, 0), mini(6, found.get_start()))
+			var after: String = ko.substr(found.get_end(), 3)
+			check(before.ends_with("출발선으로 ") or after.begins_with(" 면역"), "%s: 사출은 '출발선으로 사출'로 적는다: %s" % [id, ko])
