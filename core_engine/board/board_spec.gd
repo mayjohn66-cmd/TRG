@@ -34,31 +34,31 @@ static func is_special_tile(index: int) -> bool:
 	return corner_tiles.has(index) or bakery_tiles.has(index) or portal_tiles.has(index) or dash_tiles.has(index)
 
 
+## 칸 수(24 또는 32)에 따른 특수 타일 배치. 전역 값을 바꾸지 않는 순수 함수라 보드 선택 화면·도감이 판 밖에서 각 보드의 모양을 보여 줄 때도 쓴다.
+## 키: corner_tiles, halfway_tile, bakery_tiles, portal_tiles, portal_warp_targets, plane_warp_targets, bonus_corner_tiles, dash_tiles
+static func layout_for(count: int) -> Dictionary:
+	if count == 24:
+		return {"corner_tiles": [0, 6, 12, 18] as Array[int], "halfway_tile": 12, "bakery_tiles": [4, 10, 14, 20] as Array[int], "portal_tiles": [9, 16] as Array[int],
+			"portal_warp_targets": {9: 16, 16: 20}, "plane_warp_targets": {9: 18, 16: 22}, "bonus_corner_tiles": [6, 12, 18] as Array[int], "dash_tiles": [4, 11, 19] as Array[int]}
+	return {"corner_tiles": [0, 8, 16, 24] as Array[int], "halfway_tile": 16, "bakery_tiles": [5, 13, 19, 30] as Array[int], "portal_tiles": [12, 22] as Array[int],
+		"portal_warp_targets": {12: 22, 22: 12}, "plane_warp_targets": {12: 24, 22: 30}, "bonus_corner_tiles": [8, 16, 24] as Array[int], "dash_tiles": [3, 27] as Array[int]}
+
+
 ## 칸 수를 24(한 변 6칸) 또는 32(한 변 8칸)로 정한다. 특수 타일 번호도 함께 바뀐다.
 static func apply(count: int) -> void:
+	var layout: Dictionary = layout_for(count)
 	tile_count = count
 	side = count / 4
 	last_tile = count - 1
-	if count == 24:
-		corner_tiles = [0, 6, 12, 18]
-		halfway_tile = 12
-		bakery_tiles = [4, 10, 14, 20]
-		portal_tiles = [9, 16]
-		portal_warp_targets = {9: 16, 16: 20}
-		plane_warp_targets = {9: 18, 16: 22}
-		jump_corner_targets = {}
-		bonus_corner_tiles = [6, 12, 18]
-		dash_tiles = [4, 11, 19]
-	else:
-		corner_tiles = [0, 8, 16, 24]
-		halfway_tile = 16
-		bakery_tiles = [5, 13, 19, 30]
-		portal_tiles = [12, 22]
-		portal_warp_targets = {12: 22, 22: 12}
-		plane_warp_targets = {12: 24, 22: 30}
-		jump_corner_targets = {}
-		bonus_corner_tiles = [8, 16, 24]
-		dash_tiles = [3, 27]
+	corner_tiles = layout["corner_tiles"]
+	halfway_tile = int(layout["halfway_tile"])
+	bakery_tiles = layout["bakery_tiles"]
+	portal_tiles = layout["portal_tiles"]
+	portal_warp_targets = (layout["portal_warp_targets"] as Dictionary).duplicate()
+	plane_warp_targets = (layout["plane_warp_targets"] as Dictionary).duplicate()
+	jump_corner_targets = {}
+	bonus_corner_tiles = layout["bonus_corner_tiles"]
+	dash_tiles = layout["dash_tiles"]
 	promotion_tiles = []
 	for index: int in range(halfway_tile, count):
 		promotion_tiles.append(index)

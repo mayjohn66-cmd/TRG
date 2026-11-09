@@ -2195,3 +2195,11 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 ### 7.77 카드 설명 용어 통일
 - 기준표는 `content_trickcal/data/README.md`의 "카드 설명 용어". 바꾼 것: 사출 표기(`장외 사출`·`선두 말 사출`·`출발선 사출` -> `출발선으로 사출`), 사람은 `상대`·말은 `적 말`(ACT_02·ACT_08·ACT_09·ACT_20), 차례 -> 턴(ACT_06), `내 패` -> `내 손패`, `상납` -> `강탈`, `붕괴`·`소각` -> `파괴`, `멈추고`·`정지` -> `강제 정지`, `주사위 리롤` -> `재굴림`, 이동 보너스는 `+N칸 전진`, 일본어 `場外射出`·`崩壊` 제거. TRP_03(지뢰)은 폭파 뒤 출발선으로 사출까지 적었고, SUM_03은 말은 사출·함정은 파괴로 갈라 적었다.
 - 규칙은 바뀌지 않았다 (문구만). 보드 칸 이름은 UI 전체가 `타일`(칸 위치)과 `칸`(거리 단위)을 구분해 쓰므로 그대로 둔다. 로그·증강 설명의 같은 용어는 이번에 건드리지 않았다.
+
+### 7.78 보드판 선택 (v1.2 준비, `next/boards`)
+- **데이터**: `BoardSpec.layout_for(칸 수)`(전역 값을 바꾸지 않는 순수 조회: 코너·반환점·빵집·옷장·워프·부스터 발판)와 `apply`. `BoardCatalog.BOARDS` = [{id, name, desc, tiles}] (지금 `classic` 32칸 하나), `sanitize`·`def_of`·`facts_of`(선택 화면·도감용 요약)·`apply`/`apply_for_match`.
+- **규칙**: `MatchRules` `board` 키(기본 `classic`, `sanitize`가 모르는 id를 기본으로, 기본이 아닌 보드만 규칙 요약에 표시). `GameState.setup`이 `apply_for_match`로 적용하는데, 마지막으로 목록에서 적용한 보드(`BoardCatalog.current_id`)와 같으면 건드리지 않는다 (단위 테스트가 `BoardSpec.apply(24)`로 직접 정한 배치를 덮지 않게). 온라인은 방장 규칙(`config["rules"]`)에 실려 모두 같은 보드를 쓴다 (락스텝).
+- **저장·선택**: `GameSession.board_id()/set_board()`는 방 규칙 override(`RULE_KEYS`)와 따로 프로필 `board`에 저장한다 (컴퓨터 대전은 override를 무시하지만 보드는 적용해야 해서). `match_rules()`·`room_rules()`가 그 값을 실어 보낸다. [기본값으로]는 보드도 기본으로.
+- **화면**: 컴퓨터 대전 시작 화면 `BoardPanel`(토글 버튼, `StartMenu._build_board_picker`), `RoomRulesPanel.board_row()`(친선·핫시트), 도감 보드 장 한눈에 보기 다음에 보드마다 한 장(`Rulebook._ch_board`).
+- **새 보드 추가 방법**: `BoardCatalog.BOARDS`에 항목, 24·32칸이 아니면 `BoardSpec.layout_for`에 배치 추가, 이름·설명 번역 행(translations.csv). 칸 그림·특수 칸 연출이 `BoardSpec` 값을 따르는지 새 보드마다 확인 필요 (이번에는 보드가 하나라 검증하지 않았다).
+- 테스트: test_match_rules(카탈로그·layout_for·규칙·저장). 

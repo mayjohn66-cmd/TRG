@@ -237,6 +237,7 @@ func clear_npcs() -> void:
 func setup(ids: Array[int], seed_value: int = 0, loadouts: Dictionary = {}) -> void:
 	player_ids = ids.duplicate()
 	match_rules = MatchRules.sanitize(match_rules)
+	BoardCatalog.apply_for_match(match_rules.get("board", BoardCatalog.DEFAULT_ID))  # 고른 보드판의 모양(칸 수·특수 칸)을 이 판에 적용한다
 	TempoUp.stage_rounds = MatchRules.stage_rounds(match_rules)  # 템포 업은 라운드 번호만 보는 순수 함수라 판마다 규칙의 라운드를 넣어 둔다
 	if seed_value != 0:
 		rng.seed = seed_value

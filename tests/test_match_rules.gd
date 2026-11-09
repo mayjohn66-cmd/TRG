@@ -138,3 +138,60 @@ func test_bots_pick_laws_only_sometimes() -> void:
 			law_picks += 1
 	check(law_picks > 40 and law_picks < 160, "봇은 법전을 20~30%%만 고른다 (%d/400)" % law_picks)
 
+
+
+# --- 보드판 선택 (v1.2 준비) ----------------------------------------------------------------
+
+func test_board_catalog_lists_boards_and_fixes_unknown_ids() -> void:
+	check(BoardCatalog.ids().has(BoardCatalog.DEFAULT_ID), "기본 보드가 목록에 있다")
+	check_eq(BoardCatalog.sanitize("없는 보드"), BoardCatalog.DEFAULT_ID, "모르는 보드는 기본 보드로")
+	check_eq(BoardCatalog.sanitize(null), BoardCatalog.DEFAULT_ID, "null도 기본 보드로")
+	check_eq(BoardCatalog.tiles_of(&"classic"), 32, "기본 보드는 32칸")
+	var facts: Array = BoardCatalog.facts_of(&"classic")
+	check(facts.size() >= 5 and str(facts[0][0]) == "칸 수", "선택 화면 요약 (칸 수·코너·빵집…)")
+
+
+func test_board_layout_is_a_pure_lookup_and_matches_applied_values() -> void:
+	var saved_count: int = BoardSpec.tile_count
+	var layout: Dictionary = BoardSpec.layout_for(32)
+	BoardSpec.apply(32)
+	check_eq(layout["corner_tiles"], BoardSpec.corner_tiles, "layout_for(32)의 코너 = 적용한 값")
+	check_eq(layout["bakery_tiles"], BoardSpec.bakery_tiles, "빵집")
+	check_eq(int(layout["halfway_tile"]), BoardSpec.halfway_tile, "반환점")
+	BoardSpec.apply(saved_count)
+	var old: Dictionary = BoardSpec.layout_for(24)
+	check_eq(old["dash_tiles"], [4, 11, 19] as Array[int], "24칸 배치는 그대로 남아 있다")
+	check_eq(BoardSpec.tile_count, saved_count, "layout_for는 전역 보드를 바꾸지 않는다")
+
+
+func test_board_rule_is_sanitized_defaulted_and_applied_at_setup() -> void:
+	check_eq(MatchRules.defaults()["board"], "classic", "기본 규칙의 보드")
+	check_eq(MatchRules.sanitize({"board": "nope"})["board"], "classic", "모르는 보드는 기본 보드")
+	check_eq(MatchRules.sanitize({})["board"], "classic", "빠지면 기본 보드")
+	check(not MatchRules.summary({"board": "classic"}).contains("보드"), "기본 보드는 규칙 요약에 쓰지 않는다")
+	var saved_count: int = BoardSpec.tile_count
+	var saved_id: StringName = BoardCatalog.current_id
+	# 직접 정한 배치(단위 테스트의 24칸)는 같은 보드 id로 시작하면 덮어쓰지 않는다
+	BoardSpec.apply(24)
+	BoardCatalog.current_id = &"classic"
+	_state({"board": "classic"})
+	check_eq(BoardSpec.tile_count, 24, "마지막으로 적용한 보드와 같으면 판 시작이 배치를 건드리지 않는다")
+	# 다른 보드에서 넘어오면 고른 보드의 모양이 적용된다
+	BoardCatalog.current_id = &"other"
+	_state({"board": "classic"})
+	check_eq(BoardSpec.tile_count, 32, "다른 보드에서 기본 보드로 시작하면 32칸이 적용된다")
+	BoardSpec.apply(saved_count)
+	BoardCatalog.current_id = saved_id
+
+
+func test_selected_board_is_saved_and_reaches_every_mode_rules() -> void:
+	var before: StringName = GameSession.board_id()
+	GameSession.set_board(&"classic")
+	check_eq(GameSession.room_rules()["board"], "classic", "친선 방장 규칙에 실린다")
+	var saved_mode: StringName = GameSession.mode
+	GameSession.mode = GameSession.MODE_AI
+	check_eq(GameSession.match_rules()["board"], "classic", "컴퓨터 대전 규칙에도 실린다")
+	GameSession.mode = saved_mode
+	GameSession.set_board("모르는 보드")
+	check_eq(GameSession.board_id(), BoardCatalog.DEFAULT_ID, "모르는 값은 기본 보드로 저장된다")
+	GameSession.set_board(before)

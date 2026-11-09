@@ -2739,3 +2739,12 @@ PROGRESS / 진행률,PROGRESS,PROGRESS／進行度
 조건 달성 후 다음 내 차례가 끝날 때까지 유지하면 특수 승리! 교칙은 사라져요,"Meet the condition, then keep it until the end of your next turn for a Special Win! The Rule then disappears",条件達成後、次の自分のターン終了まで維持すれば特殊勝利！教則は消えます
 내 차례가 끝날 때 조건을 달성해 있으면 특수 승리! 교칙은 사라져요,"If the condition is met when your turn ends, Special Win! The Rule then disappears",自分のターン終了時に条件を達成していれば特殊勝利！教則は消えます
 리벤지,Revenge,リベンジ
+보드판,Board,ボード
+기본 보드,Classic Board,基本ボード
+32칸 사각 순환 트랙 · 반시계 한 바퀴,32-tile square loop · one lap counter-clockwise,32マスの四角い周回トラック・反時計回りに一周
+칸 수,Tiles,マス数
+%d칸 (한 변 %d칸),%d tiles (%d per side),%dマス (1辺%dマス)
+%d곳,%d,%dか所
+판을 시작하면 모두 같은 보드판을 씁니다. 보드마다 칸 수와 특수 칸(빵집·옷장·부스터 발판) 배치가 달라요.,"Everyone plays on the same board once the game starts. Boards differ in tile count and special tile layout (Bakery, Wardrobe, Booster Pad).",ゲーム開始後は全員が同じボードで遊びます。ボードごとにマス数と特殊マス(パン屋・クローゼット・ブースター足場)の配置が違います。
+컴퓨터 대전 시작 화면과 [방 규칙 설정]에서 고를 수 있어요,Pick it on the CPU game start screen or in [Room Rules],CPU対戦の開始画面と[ルーム設定]で選べます
+판을 시작하면 모두 같은 보드판을 써요,Everyone uses the same board once the game starts,ゲーム開始後は全員が同じボードを使います

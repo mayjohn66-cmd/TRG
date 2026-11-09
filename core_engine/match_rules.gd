@@ -9,6 +9,7 @@
 #       - pacing: 히든 페이싱 디렉터 단계 (0 끄기 = 친선전·커스텀 기본, 1~5 = 싱글 불닭 난이도, PacingDirector)
 #       - speed: normal / speed (스피드전: 템포 업이 빨리 오르고 초반 리벤지 부스터가 커져 10~12라운드에 결판)
 #       - draft_easy: 입문(Lv.1 크림) 드래프트 완화 - 글이 길고 복잡한 초증강은 덜, 기물 진화·판정 도구는 더 나온다
+#       - board: 보드판 id (BoardCatalog, 기본 classic). 판을 시작할 때 GameState.setup이 BoardSpec에 적용한다
 #       - bot_level: 친선전 빈자리 컴퓨터의 불닭 난이도 Lv.1~5 (놀이터는 따로 고른 불닭 난이도를 쓴다)
 #       친선전 원클릭 프리셋 3종(PRESETS)은 법전·함정·초증강 세 값을 한 번에 맞춘다.
 class_name MatchRules
@@ -50,7 +51,7 @@ const EASY_LAWS: Array[String] = ["LAW_01", "LAW_02"]
 
 
 static func defaults() -> Dictionary:
-	return {"trap_reveal": true, "super_freq": 1, "laws": true, "speed": SPEED_NORMAL, "draft_easy": false, "law_pool": [], "pacing": 0, "bot_level": BotTemper.DEFAULT_LEVEL}
+	return {"trap_reveal": true, "super_freq": 1, "laws": true, "speed": SPEED_NORMAL, "draft_easy": false, "law_pool": [], "pacing": 0, "bot_level": BotTemper.DEFAULT_LEVEL, "board": String(BoardCatalog.DEFAULT_ID)}
 
 
 ## 싱글 불닭 난이도의 기본 규칙: Lv.1~3 함정 공개, Lv.4~5 비공개. Lv.1은 입문 드래프트 + 법전 끄기 (말 4개 완주로만 승부).
@@ -85,6 +86,7 @@ static func sanitize(value: Variant) -> Dictionary:
 				(rules["law_pool"] as Array).append(str(law_id))
 	rules["pacing"] = clampi(int(raw.get("pacing", 0)), 0, 5)
 	rules["bot_level"] = BotTemper.sanitize(raw.get("bot_level", BotTemper.DEFAULT_LEVEL))
+	rules["board"] = String(BoardCatalog.sanitize(raw.get("board", BoardCatalog.DEFAULT_ID)))
 	return rules
 
 
@@ -205,6 +207,8 @@ static func summary(rules: Dictionary) -> String:
 		parts.append("스피드전")
 	if bool(rules.get("draft_easy", false)):
 		parts.append("입문 드래프트")
+	if StringName(rules.get("board", BoardCatalog.DEFAULT_ID)) != BoardCatalog.DEFAULT_ID:
+		parts.append(BoardCatalog.name_of(rules.get("board")))  # 기본이 아닌 보드만 알린다
 	return " · ".join(parts)
 
 
@@ -222,6 +226,7 @@ static func describe(rules: Dictionary) -> String:
 	parts.append(L10n.t("법전 켜기" if bool(rules.get("laws", true)) else "법전 끄기"))
 	if StringName(rules.get("speed", SPEED_NORMAL)) == SPEED_FAST:
 		parts.append(L10n.t("스피드전"))
+	parts.append(L10n.t(BoardCatalog.name_of(rules.get("board", BoardCatalog.DEFAULT_ID))))
 	parts.append(L10n.tf("빈자리 컴퓨터 %s", [BotTemper.label(int(rules.get("bot_level", BotTemper.DEFAULT_LEVEL)))]))
 	return L10n.tf("[방 규칙] %s", [" · ".join(parts)])
 

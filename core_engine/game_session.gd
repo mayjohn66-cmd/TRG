@@ -287,9 +287,12 @@ static func match_rules() -> Dictionary:
 	if net_active:
 		return MatchRules.sanitize(net_rules)
 	if mode == MODE_AI:
-		return MatchRules.sanitize(base_rules())
+		var ai_rules: Dictionary = base_rules()
+		ai_rules["board"] = String(board_id())  # 난이도 기본 규칙에 고른 보드판만 얹는다 (다른 방 규칙은 덮지 않는다)
+		return MatchRules.sanitize(ai_rules)
 	var rules: Dictionary = base_rules()
 	rules.merge(rule_overrides(), true)
+	rules["board"] = String(board_id())
 	return MatchRules.sanitize(rules)
 
 
@@ -297,12 +300,33 @@ static func match_rules() -> Dictionary:
 static func room_rules() -> Dictionary:
 	var rules: Dictionary = MatchRules.defaults()
 	rules.merge(rule_overrides(), true)
+	rules["board"] = String(board_id())
 	return MatchRules.sanitize(rules)
 
 
 ## 놀이터(컴퓨터 대전) 난이도: 불닭 Fire Level 1~5 (BotTemper.LEVELS, 기본 Lv.2 로제). 브라우저 프로필에 남는다.
 ## 옛 저장값(mild/normal/spicy)은 Lv.1/2/4로 읽는다.
 static var _bot_difficulty: int = -1
+
+
+## 고른 보드판 (BoardCatalog id). 싱글·핫시트·친선 방장이 함께 쓰고 프로필에 남는다 (방 규칙 override와 따로 저장해 컴퓨터 대전에도 적용된다).
+static var _board_id: StringName = &""
+
+
+static func board_id() -> StringName:
+	if _board_id == &"":
+		var config := ConfigFile.new()
+		config.load(PROFILE_PATH)
+		_board_id = BoardCatalog.sanitize(config.get_value("profile", "board", String(BoardCatalog.DEFAULT_ID)))
+	return _board_id
+
+
+static func set_board(value: Variant) -> void:
+	_board_id = BoardCatalog.sanitize(value)
+	var config := ConfigFile.new()
+	config.load(PROFILE_PATH)
+	config.set_value("profile", "board", String(_board_id))
+	config.save(PROFILE_PATH)
 
 
 static func bot_difficulty() -> int:

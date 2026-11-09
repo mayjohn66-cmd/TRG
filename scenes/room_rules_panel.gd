@@ -75,6 +75,7 @@ func _ready() -> void:
 	rows.add_child(_make_presets())
 	for row: Array in ROWS:
 		rows.add_child(_make_row(row))
+	rows.add_child(_make_row(board_row()))
 	if room_mode:
 		rows.add_child(_make_row(BOT_ROW))
 	_fit_height.call_deferred(rows)
@@ -170,13 +171,25 @@ func _make_row(row: Array) -> Control:
 	return box
 
 
+## 보드판 줄: 고를 수 있는 보드는 BoardCatalog가 정한다 (값은 보드 id 글자).
+static func board_row() -> Array:
+	var options: Array = []
+	for board: Dictionary in BoardCatalog.BOARDS:
+		options.append([String(board["id"]), str(board["name"])])
+	return ["board", "보드판", "판을 시작하면 모두 같은 보드판을 씁니다. 보드마다 칸 수와 특수 칸(빵집·옷장·부스터 발판) 배치가 달라요.", options]
+
+
 func _on_pick(key: String, value: Variant) -> void:
-	GameSession.set_rule(key, value)
+	if key == "board":
+		GameSession.set_board(value)  # 보드판은 방 규칙 override와 따로 저장한다 (컴퓨터 대전에도 적용)
+	else:
+		GameSession.set_rule(key, value)
 	_refresh()
 
 
 func _on_reset() -> void:
 	GameSession.reset_rules()
+	GameSession.set_board(BoardCatalog.DEFAULT_ID)
 	_refresh()
 
 

@@ -1352,7 +1352,12 @@ func _ch_board() -> Dictionary:
 		board.custom_minimum_size = Vector2(440, 440)
 		board.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		return board
-	return {"title": "보드", "entries": [
+	var board_entries: Array = []
+	for board: Dictionary in BoardCatalog.BOARDS:  # 고를 수 있는 보드판마다 한 장 (칸 수·특수 칸 요약은 판 밖에서도 BoardSpec.layout_for로 센다)
+		board_entries.append({"title": str(board["name"]), "art": &"board", "tone": Color("5fc1e8"), "chips": ["%d칸" % int(board["tiles"])],
+			"summary": str(board["desc"]), "rows": BoardCatalog.facts_of(board["id"]),
+			"points": ["컴퓨터 대전 시작 화면과 [방 규칙 설정]에서 고를 수 있어요", "판을 시작하면 모두 같은 보드판을 써요"]})
+	var entries: Array = [
 		{"title": "한눈에 보기", "art": &"board", "tone": Color("86d94f"), "chips": ["%d칸" % BoardSpec.tile_count, "반시계"],
 			"summary": "우하단 0번에서 출발해 반시계로 한 바퀴. 다시 0번이 [b]결승선[/b]이에요.", "extra": make_board,
 			"points": ["옷장과 부스터 발판은 [b]딱 멈출 때만[/b] 작동해요", "오른쪽 칸 이름을 누르면 자세히 볼 수 있어요"]},
@@ -1371,7 +1376,10 @@ func _ch_board() -> Dictionary:
 		{"title": "함정 칸", "texture": TextureCache.fetch("res://assets/board/traps/HIDDEN.png"), "tone": Color("7a5cd6"), "chips": ["한 칸에 하나"],
 			"summary": "함정이 깔린 칸은 [b]보라색[/b]으로 바뀌고 그 함정 그림이 보여요.",
 			"points": ["상대가 숨긴 함정은 물음표로 보여요", "코너 함정은 누구에게나 공개 · 3라운드 · 1회용", "코너·빵집·옷장·부스터 발판에는 일반 함정을 깔 수 없어요"]},
-	]}
+	]
+	for index: int in board_entries.size():  # 한눈에 보기 다음에 보드판 소개
+		entries.insert(1 + index, board_entries[index])
+	return {"title": "보드", "entries": entries}
 
 
 func _warp_rows() -> Array:
