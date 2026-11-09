@@ -4,7 +4,7 @@
 class_name TileNode
 extends RefCounted
 
-enum TileType { START_GOAL, NORMAL, BAKERY, PORTAL }
+enum TileType { START_GOAL, NORMAL, BAKERY, PORTAL, VENDING }
 
 var tile_id: int = 0
 var tile_type: TileType = TileType.NORMAL

@@ -2211,3 +2211,11 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 - **화면**: 컴퓨터 대전 시작 화면 `BoardPanel`(토글 버튼, `StartMenu._build_board_picker`), `RoomRulesPanel.board_row()`(친선·핫시트), 도감 보드 장 한눈에 보기 다음에 보드마다 한 장(`Rulebook._ch_board`).
 - **새 보드 추가 방법**: `BoardCatalog.BOARDS`에 항목, 24·32칸이 아니면 `BoardSpec.layout_for`에 배치 추가, 이름·설명 번역 행(translations.csv). 칸 그림·특수 칸 연출이 `BoardSpec` 값을 따르는지 새 보드마다 확인 필요 (이번에는 보드가 하나라 검증하지 않았다).
 - 테스트: test_match_rules(카탈로그·layout_for·규칙·저장). 
+
+### 7.82 신규 보드 [모나티엄 도시] (v1.2 준비, `next/boards`)
+- 보드 이름: 기본은 [에르핀 왕국](`classic`), 신규는 [모나티엄 도시](`monatium`). 둘 다 32칸·같은 칸 번호이고 `BoardCatalog.BOARDS`의 `convenience` 값이 다르다.
+- **편의점**: 빵집 자리(5·13·19·30번)를 이름·그림만 바꾼 것. 규칙·식권(LAW_02) 집계·모노 도그 등 번호 의존 규칙은 그대로.
+- **자판기**: 옷장 자리(12·22번)에 서고 옷장·워프·비행기 워프는 없다(`BoardSpec.vending_tiles`, `portal_tiles`는 빈 배열). 일반 함정 설치 불가(`is_special_tile`). 딱 멈추면(`MoveExecutor._resolve_landing`, 주 이동만) `VendingDrinks.pick`(`GameState.rng`)이 5종을 같은 확률로 뽑는다: 에너지 드링크(`corner_buff` 3, 다음 굴림에 더해지고 쓰이면 사라짐) · 아메리카노(2) · 탄산음료(`make_follow_up(2)` 즉시 +2칸, 부스터 발판과 같은 흐름) · 이온음료(`pawn.ward`: 잡기·함정 1회 방어, 쓰기 전까지 유지) · 우유(`draw_card`). 지나가기만 하면 아무 일도 없다. `MoveReport.vending_drink`로 화면이 로그와 말 위 배지를 띄운다(`_vending_feedback`).
+- **지속 시간**: 처음 설명에서는 [내 다음 턴 끝까지]였으나 기존 부품을 재사용하느라 다음 굴림(에너지·아메리카노)과 방어 1회(이온음료)로 구현했다. 시간 기반이 필요하면 별도 만료 필드가 필요하다.
+- **화면**: `BoardSkin`의 `store`(하늘색 띠)·`vending`(분홍 띠) 종류와 새 타일 그림 `BOARD_STORE.png`·`BOARD_VENDING.png`(마스크 PNG, 코드로 생성한 임시 그림이라 아트 교체 가능), 도감은 에르핀 왕국 항목(빵집·옷장)과 모나티엄 도시 항목(편의점·자판기+음료 목록)을 따로 보여 준다.
+- 테스트: `test_vending`(배치 교체·음료 5종 효과·지나가기·편의점 카드).

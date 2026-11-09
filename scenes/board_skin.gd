@@ -31,7 +31,12 @@ static func definition(index: int) -> Dictionary:
 	var footprint := Vector2(width,depth) if horizontal_row else Vector2(depth,width)
 	var data: Dictionary = {"kind":"normal", "fill":Color("fff6df"), "edge":Color("7c9558"), "ink":Color("486135"), "band":Color("b4d479"), "footprint":footprint, "diameter":depth, "major":false}
 	if index in BoardSpec.bakery_tiles:
-		data.merge({"kind":"bakery", "band":Color("f4bd55"), "edge":Color("b68b43"), "ink":Color("845221")},true)
+		if BoardSpec.convenience:  # 모나티엄 도시: 빵집 자리는 편의점 (하늘색 띠로 빵집과 구분)
+			data.merge({"kind":"store", "band":Color("7cc4f2"), "edge":Color("3f86b8"), "ink":Color("245b86")},true)
+		else:
+			data.merge({"kind":"bakery", "band":Color("f4bd55"), "edge":Color("b68b43"), "ink":Color("845221")},true)
+	if index in BoardSpec.vending_tiles:
+		data.merge({"kind":"vending", "band":Color("ff8f7a"), "edge":Color("c4574a"), "ink":Color("8c2f26")},true)
 	if index in BoardSpec.portal_tiles:
 		data.merge({"kind":"portal", "band":Color("5fc4c9"), "edge":Color("3f8f96"), "ink":Color("24636b")},true)  # 청록: 보라색 함정 타일과 구분
 	if index in BoardSpec.corner_tiles:
@@ -110,6 +115,8 @@ static func update_surface(face: MeshInstance2D, projector: Callable) -> void:
 const DECALS: Dictionary = {
 	"bakery": preload("res://assets/board/decals/BOARD_BAKERY.png"),
 	"portal": preload("res://assets/board/decals/BOARD_PORTAL.png"),
+	"store": preload("res://assets/board/decals/BOARD_STORE.png"),
+	"vending": preload("res://assets/board/decals/BOARD_VENDING.png"),
 	"start": preload("res://assets/board/decals/BOARD_START.png"),
 	"half": preload("res://assets/board/decals/BOARD_HALF.png"),
 	"corner": preload("res://assets/board/decals/BOARD_CORNER.png"),
@@ -121,6 +128,7 @@ const WARNING_BOUNDS: Rect2 = Rect2(0.0632622,0.0733945,0.8681402,0.8323603)
 ## Opaque subject bounds in the unchanged 1254px native sources; discard only empty atlas margin.
 const DECAL_BOUNDS: Dictionary = {
 	"bakery": Rect2(196,409,862,482), "portal": Rect2(296,268,662,739),
+	"store": Rect2(170,300,915,701), "vending": Rect2(330,230,595,801),
 	"start": Rect2(308,272,638,750), "half": Rect2(362,246,590,778),
 	"corner": Rect2(99,307,1098,665), "boost": Rect2(175,431,909,391),
 }

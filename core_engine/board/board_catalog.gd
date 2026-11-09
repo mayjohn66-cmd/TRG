@@ -9,7 +9,8 @@ extends RefCounted
 const DEFAULT_ID: StringName = &"classic"
 ## [{id, name(한국어 원문), desc(한 줄 설명), tiles(칸 수)}]
 const BOARDS: Array[Dictionary] = [
-	{"id": &"classic", "name": "기본 보드", "desc": "32칸 사각 순환 트랙 · 반시계 한 바퀴", "tiles": 32},
+	{"id": &"classic", "name": "에르핀 왕국", "desc": "32칸 사각 순환 트랙 · 빵집(카드)과 옷장(순간이동)", "tiles": 32, "convenience": false},
+	{"id": &"monatium", "name": "모나티엄 도시", "desc": "32칸 사각 순환 트랙 · 편의점(카드)과 자판기(랜덤 음료 버프)", "tiles": 32, "convenience": true},
 ]
 
 
@@ -53,7 +54,7 @@ static var current_id: StringName = DEFAULT_ID
 ## 이 보드를 BoardSpec(전역 보드 모양)에 적용한다.
 static func apply(id: Variant) -> void:
 	current_id = sanitize(id)
-	BoardSpec.apply(tiles_of(current_id))
+	BoardSpec.apply(tiles_of(current_id), bool(def_of(current_id).get("convenience", false)))
 
 
 ## 판을 시작할 때 부른다: 고른 보드가 마지막으로 적용한 보드와 다를 때만 적용한다
@@ -66,12 +67,17 @@ static func apply_for_match(id: Variant) -> void:
 ## 선택 화면·도감의 특수 칸 요약 (전역 값을 바꾸지 않고 layout_for로 센다): [[이름, 값], ...]
 static func facts_of(id: Variant) -> Array:
 	var tiles: int = tiles_of(id)
-	var layout: Dictionary = BoardSpec.layout_for(tiles)
-	return [
+	var shop: bool = bool(def_of(id).get("convenience", false))
+	var layout: Dictionary = BoardSpec.layout_for(tiles, shop)
+	var rows: Array = [
 		["칸 수", "%d칸 (한 변 %d칸)" % [tiles, tiles / 4]],
 		["코너", "%d곳" % (layout["corner_tiles"] as Array).size()],
 		["반환점", "%d번" % int(layout["halfway_tile"])],
-		["빵집", "%d곳" % (layout["bakery_tiles"] as Array).size()],
-		["옷장", "%d곳" % (layout["portal_tiles"] as Array).size()],
-		["부스터 발판", "%d곳" % (layout["dash_tiles"] as Array).size()],
+		["편의점" if shop else "빵집", "%d곳" % (layout["bakery_tiles"] as Array).size()],
 	]
+	if shop:
+		rows.append(["자판기", "%d곳" % (layout["vending_tiles"] as Array).size()])
+	else:
+		rows.append(["옷장", "%d곳" % (layout["portal_tiles"] as Array).size()])
+	rows.append(["부스터 발판", "%d곳" % (layout["dash_tiles"] as Array).size()])
+	return rows

@@ -2748,3 +2748,27 @@ PROGRESS / 진행률,PROGRESS,PROGRESS／進行度
 판을 시작하면 모두 같은 보드판을 씁니다. 보드마다 칸 수와 특수 칸(빵집·옷장·부스터 발판) 배치가 달라요.,"Everyone plays on the same board once the game starts. Boards differ in tile count and special tile layout (Bakery, Wardrobe, Booster Pad).",ゲーム開始後は全員が同じボードで遊びます。ボードごとにマス数と特殊マス(パン屋・クローゼット・ブースター足場)の配置が違います。
 컴퓨터 대전 시작 화면과 [방 규칙 설정]에서 고를 수 있어요,Pick it on the CPU game start screen or in [Room Rules],CPU対戦の開始画面と[ルーム設定]で選べます
 판을 시작하면 모두 같은 보드판을 써요,Everyone uses the same board once the game starts,ゲーム開始後は全員が同じボードを使います
+에르핀 왕국,Erpin Kingdom,エルピン王国
+모나티엄 도시,Monatium City,モナティウム市
+32칸 사각 순환 트랙 · 빵집(카드)과 옷장(순간이동),32-tile square loop · Bakeries (cards) and Wardrobes (teleport),32マスの四角い周回トラック・パン屋（カード）とクローゼット（ワープ）
+32칸 사각 순환 트랙 · 편의점(카드)과 자판기(랜덤 음료 버프),32-tile square loop · Convenience stores (cards) and Vending machines (random drink buffs),32マスの四角い周回トラック・コンビニ（カード）と自動販売機（ランダムドリンクバフ）
+편의점,Convenience Store,コンビニ
+자판기,Vending Machine,自動販売機
+빵집 (에르핀 왕국),Bakery (Erpin Kingdom),パン屋（エルピン王国）
+옷장 (에르핀 왕국),Wardrobe (Erpin Kingdom),クローゼット（エルピン王国）
+편의점 (모나티엄 도시),Convenience Store (Monatium City),コンビニ（モナティウム市）
+자판기 (모나티엄 도시),Vending Machine (Monatium City),自動販売機（モナティウム市）
+편의점 (카드 1장),Convenience store (1 card),コンビニ（カード1枚）
+자판기 (랜덤 음료 버프),Vending machine (random drink buff),自動販売機（ランダムドリンクバフ）
+에르핀 왕국의 빵집 자리예요. 딱 멈추면 [b]생떼 카드 1장[/b]! 어떤 카드인지는 본인만 알아요.,This is where the Bakery sits in Erpin Kingdom. Stop exactly here to get [b]1 Tantrum Card[/b]! Only you know which one.,エルピン王国のパン屋の場所です。ぴったり止まると[b]駄々っ子カード1枚[/b]！どのカードかは本人だけが分かります。
+"옷장 자리에 서요. 딱 멈추면 [b]음료수가 랜덤으로 한 캔[/b] 나와요. 지나가기만 하면 아무 일도 없고, 순간이동은 없어요.","It stands where the Wardrobes were. Stop exactly here and [b]a random can of drink[/b] drops out. Passing by does nothing, and there is no teleport.",クローゼットの場所に立っています。ぴったり止まると[b]ランダムなドリンクが1本[/b]出ます。通過するだけでは何も起きず、ワープもありません。
+[자판기] P%d: %s! %s,[Vending] P%d: %s! %s,[自販機] P%d：%s！%s
+에너지 드링크,Energy Drink,エナジードリンク
+다음 굴림 +3칸,Next roll +3,次のロール +3マス
+아메리카노,Americano,アメリカーノ
+다음 굴림 +2칸,Next roll +2,次のロール +2マス
+탄산음료,Soda,炭酸飲料
+지금 바로 +2칸 전진,Advance +2 right now,今すぐ +2マス前進
+이온음료,Sports Drink,スポーツドリンク
+우유,Milk,牛乳
+생떼 카드 1장,1 Tantrum Card,駄々っ子カード1枚

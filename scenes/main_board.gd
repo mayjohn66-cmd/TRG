@@ -3552,6 +3552,24 @@ func _bakery_feedback(data: Dictionary) -> void:
 		_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(180.0 * _motion_pace())))  # 배지는 혼자 떠오르므로 큐를 오래 붙잡지 않는다
 
 
+## 자판기에서 뽑은 음료수: 로그와 말 위 배지로 무엇이 나왔는지 알린다 (모나티엄 도시).
+func _vending_feedback(data: Dictionary) -> void:
+	var drink: StringName = data.get("vending_drink", &"")
+	if drink == &"" or not _pawn_views.has(int(data["pawn_id"])):
+		return
+	var pawn: PlayerPawn = state.get_pawn(int(data["pawn_id"]))
+	var owner_id: int = pawn.owner_id if pawn != null else manager.current_player_id()
+	_log_line("[자판기] P%d: %s! %s" % [owner_id, L10n.t(VendingDrinks.name_of(drink)), L10n.t(VendingDrinks.text_of(drink))], Color("ff8f7a"))
+	if pawn == null or not _fx_on():
+		return
+	var at: Vector2 = (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + _tile_center(pawn.current_tile_idx) + Vector2(0, -46)
+	var label: String = "%s! %s" % [L10n.t(VendingDrinks.name_of(drink)), L10n.t(VendingDrinks.text_of(drink))]
+	_enqueue_late(func() -> void:
+		Sfx.play(&"good", -6.0)
+		_floating_badge(at, label, Color("ff8f7a"), 24)
+		_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(180.0 * _motion_pace())))
+
+
 ## 코너에 정확히 도착해 받은 버프: 그 말 위에 [다음 굴림 +N]이 떠오른다.
 func _corner_buff_feedback(data: Dictionary) -> void:
 	var buff: int = int(data.get("corner_buff", 0))
@@ -11743,6 +11761,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_log_move(data)
 			_start_beat(BEAT_AFTER_MOVE)
 			_bakery_feedback(data)
+			_vending_feedback(data)
 			_corner_buff_feedback(data)
 			if bool(data.get("jailed", false)) and (data.get("path", []) as Array).is_empty():
 				_announce_move_failed("무인도 탈출 실패!", manager.current_player_id(), "짝수 눈금이 나와야 탈출할 수 있습니다")
