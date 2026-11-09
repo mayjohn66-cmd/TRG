@@ -2203,3 +2203,6 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 ### 7.80 시작 연출 순서 (소개 > ROUND 1 > 첫 턴)
 - 원인: `_new_game`이 `_close_opening()`(= `_intro_pending=false`) 뒤 `manager.start_game()`을 부르는데, start_game 도중 phase 신호가 `_refresh_all`을 돌려 `_check_round_banner`가 오프닝이 켜지기도 전에 ROUND 배너(첫 턴 겸용)를 쐈다. 배너는 오프닝(약 4.4초) 아래에서 이미 재생돼 소개·라운드·턴이 겹쳤다.
 - 수정: `_close_opening()` 직후 `_intro_pending = true`, `_check_round_banner`·`_check_turn_banner`에 `_intro_blocks()` 가드 (오프닝이 끝나면 `_on_opening_finished`가 다시 그린다). 실측: 소개 0~4.4초 → ROUND 1 배너 4.4~7.0초.
+
+### 7.85 공지사항 버전 탭
+- `UpdateNotes.open`: 제목 아래 `NotesTabs`(HFlowContainer)에 항목(`entries()`)마다 토글 탭 `NotesTab<n>`(글: 항목 id, 예 `1.0.1`)을 만들고, 누른 버전만 `show_entry`가 `NotesList`에 다시 그린다 (처음엔 최신). 선택한 탭만 진하게, 나머지는 흐리게. 섹션은 한 덩어리(`VBoxContainer`, 간격 10)로 묶어 덩어리 사이 18px, 항목 16px·줄 간격 4, 오른쪽에 스크롤바 여백 22px. 새 소식 id·[N] 표시는 그대로(최신 id 기준). 테스트 `test_popup_shows_one_version_at_a_time_with_tabs`.

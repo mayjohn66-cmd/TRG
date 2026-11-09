@@ -70,3 +70,26 @@ func test_text_picks_the_current_language_and_falls_back_to_korean() -> void:
 	L10n.current_lang = "ja"
 	check_eq(UpdateNotes.pick(node), "한글", "일본어 글이 비면 한국어")
 	L10n.current_lang = saved
+
+
+func test_popup_shows_one_version_at_a_time_with_tabs() -> void:
+	_setup_save()
+	var parent := Control.new()
+	defer_free(parent)
+	var popup: Control = UpdateNotes.open(parent)
+	var tabs: Array = popup.find_children("NotesTab*", "Button", true, false)
+	check_eq(tabs.size(), UpdateNotes.entries().size(), "버전마다 탭 하나")
+	check_eq(popup.find_children("NotesTitle", "Label", true, false).size(), 1, "처음엔 한 버전만 보인다")
+	var first_title: String = (popup.find_children("NotesTitle", "Label", true, false)[0] as Label).text
+	check(first_title.contains(UpdateNotes.pick((UpdateNotes.entries()[0] as Dictionary).get("title"))), "처음엔 최신 버전")
+	if tabs.size() >= 2:
+		(tabs[1] as Button).pressed.emit()
+		var list: Node = popup.find_child("NotesList", true, false)
+		for child: Node in list.get_children():
+			if child.is_queued_for_deletion():
+				list.remove_child(child)
+		var second: String = (popup.find_children("NotesTitle", "Label", true, false)[0] as Label).text
+		check(second.contains(UpdateNotes.pick((UpdateNotes.entries()[1] as Dictionary).get("title"))), "두 번째 탭을 누르면 그 버전이 보인다")
+		check_eq(popup.find_children("NotesTitle", "Label", true, false).size(), 1, "여전히 한 버전만")
+	popup.queue_free()
+	_restore_save()

@@ -48,6 +48,40 @@ static func pick(node: Variant) -> String:
 	return str(node)
 
 
+## 고른 버전 하나의 소식을 그린다 (이전 내용은 지운다). 탭 버튼은 고른 것만 눌린 상태로 둔다.
+static func show_entry(list: VBoxContainer, scroll: ScrollContainer, tab_buttons: Array[Button], entry_index: int) -> void:
+	for child: Node in list.get_children():
+		list.remove_child(child)
+		child.queue_free()
+	for index: int in tab_buttons.size():
+		tab_buttons[index].set_pressed_no_signal(index == entry_index)
+		tab_buttons[index].modulate = Color.WHITE if index == entry_index else Color(1, 1, 1, 0.62)
+	var all: Array = entries()
+	if entry_index < 0 or entry_index >= all.size():
+		return
+	var entry: Dictionary = all[entry_index]
+	var title_text: String = pick(entry.get("title", ""))
+	var date_text: String = str(entry.get("date", ""))
+	var heading: Label = LobbyTheme.label(title_text + ("  ·  " + date_text if date_text != "" else ""), 22, Color("2b8a3e"))
+	heading.name = "NotesTitle"
+	list.add_child(heading)
+	for section: Dictionary in entry.get("sections", []):
+		var block := VBoxContainer.new()  # 섹션마다 한 덩어리: 머리글과 항목 사이는 좁게, 덩어리 사이는 넓게
+		block.add_theme_constant_override("separation", 10)
+		list.add_child(block)
+		var section_label: Label = LobbyTheme.label("■ " + pick(section.get("head", "")), 19, INK)
+		section_label.name = "NotesSection"
+		block.add_child(section_label)
+		for item: Variant in section.get("items", []):
+			var line: Label = LobbyTheme.label("· " + pick(item), 16, INK)
+			line.name = "NotesItem"
+			line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			line.custom_minimum_size = Vector2(500, 0)
+			line.add_theme_constant_override("line_spacing", 4)
+			block.add_child(line)
+	scroll.scroll_vertical = 0
+
+
 ## 팝업을 연다.
 static func open(parent: Control) -> Control:
 	mark_seen()
@@ -56,35 +90,38 @@ static func open(parent: Control) -> Control:
 	overlay.name = "UpdateNotesPopup"
 	var box: VBoxContainer = parts["box"]
 	box.add_child(LobbyTheme.label(L10n.t("공지사항"), 26, LobbyTheme.TEAL))
+	var all: Array = entries()
+	# 버전 탭: 누른 버전의 소식만 보여 준다 (처음엔 최신). 여러 버전이 쌓여도 한 번에 한 버전만 읽는다.
+	var tabs := HFlowContainer.new()
+	tabs.name = "NotesTabs"
+	tabs.add_theme_constant_override("h_separation", 8)
+	tabs.add_theme_constant_override("v_separation", 8)
+	box.add_child(tabs)
 	var scroll := ScrollContainer.new()
 	scroll.name = "NotesScroll"
 	scroll.custom_minimum_size = Vector2(0, 360)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	box.add_child(scroll)
 	var list := VBoxContainer.new()
+	list.name = "NotesList"
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	list.add_theme_constant_override("separation", 8)
-	scroll.add_child(list)
-	var all: Array = entries()
+	list.add_theme_constant_override("separation", 18)
+	var margin := MarginContainer.new()  # 오른쪽은 스크롤바 자리
+	margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	margin.add_theme_constant_override("margin_right", 22)
+	margin.add_child(list)
+	scroll.add_child(margin)
+	var tab_buttons: Array[Button] = []
 	for entry_index: int in all.size():
-		var entry: Dictionary = all[entry_index]
-		var title_text: String = pick(entry.get("title", ""))
-		var date_text: String = str(entry.get("date", ""))
-		var heading: Label = LobbyTheme.label(title_text + ("  ·  " + date_text if date_text != "" else ""), 20, Color("2b8a3e"))
-		heading.name = "NotesTitle"
-		list.add_child(heading)
-		for section: Dictionary in entry.get("sections", []):
-			var section_label: Label = LobbyTheme.label("■ " + pick(section.get("head", "")), 17, INK)
-			section_label.name = "NotesSection"
-			list.add_child(section_label)
-			for item: Variant in section.get("items", []):
-				var line: Label = LobbyTheme.label("· " + pick(item), 15, INK)
-				line.name = "NotesItem"
-				line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-				line.custom_minimum_size = Vector2(540, 0)
-				list.add_child(line)
-		if entry_index < all.size() - 1:
-			list.add_child(HSeparator.new())
+		var tab: Button = LobbyTheme.small_button(str((all[entry_index] as Dictionary).get("id", "")), Callable(), &"teal", 17)
+		tab.name = "NotesTab%d" % entry_index
+		tab.custom_minimum_size = Vector2(76, 40)
+		tab.toggle_mode = true
+		tab.pressed.connect(func() -> void: show_entry(list, scroll, tab_buttons, entry_index))
+		tabs.add_child(tab)
+		tab_buttons.append(tab)
+	if not all.is_empty():
+		show_entry(list, scroll, tab_buttons, 0)
 	var buttons := HBoxContainer.new()
 	buttons.add_theme_constant_override("separation", 10)
 	box.add_child(buttons)

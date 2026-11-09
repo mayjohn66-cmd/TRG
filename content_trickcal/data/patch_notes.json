@@ -138,6 +138,11 @@
        "ko": "카드 설명 용어 통일: 말을 출발선으로 보내는 효과는 모두 \"출발선으로 사출\", 상대(사람)와 적 말 구분, 턴·손패·강탈·파괴·강제 정지·+N칸 전진·재굴림 표기를 한 가지로 맞춤 (한/영/일 모두)",
        "en": "Card text terms unified: every start-line send-back reads \"eject … to the start line\", opponents (players) vs enemy pawns are distinguished, and turn / hand / steal / destroy / forced stop / advances +N spaces / reroll are worded one way (KO/EN/JA)",
        "ja": "カード説明の用語を統一：駒をスタート地点へ送る効果はすべて「スタート地点へ射出」、相手(プレイヤー)と敵の駒を区別し、ターン・手札・強奪・破壊・強制停止・+Nマス前進・振り直しの表記を一つに統一(韓/英/日)"
+      },
+      {
+       "ko": "공지사항을 버전 탭(1.0.1 · 1.0)으로 나누어, 누른 버전의 소식만 보이게 하고 글 간격을 넓혀 읽기 편하게 했습니다",
+       "en": "Patch notes are now split into version tabs (1.0.1 · 1.0) so you only see the version you pick, with wider spacing for easier reading",
+       "ja": "お知らせをバージョンタブ（1.0.1・1.0）に分け、選んだバージョンだけが表示されるようにし、文の間隔も広げて読みやすくしました"
       }
      ]
     },
