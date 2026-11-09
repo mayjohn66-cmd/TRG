@@ -2199,3 +2199,7 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 ### 7.79 배지 z-order·대상 선택 바 확대
 - 리벤지 배지(`RevengeBadge`)는 `z_index = 5`로 드래프트 창(z 0) 위에 그려져 창 밖으로 튀어나왔다. z_index를 없애고 `_paint_revenge_glow` 끝에서 `move_child`로 불꽃 판보다 뒤(위)에 둔다.
 - `_show_choice`(방해령·대상 지정 등) 바: 제목 15->20, 버튼 14->20px·높이 34->52·최소 폭 110(단일 열 90), 취소 96x52, 바 폭 62%->82%(최대 1100). UI 겹침 감사 0건, 전체 테스트 통과.
+
+### 7.80 시작 연출 순서 (소개 > ROUND 1 > 첫 턴)
+- 원인: `_new_game`이 `_close_opening()`(= `_intro_pending=false`) 뒤 `manager.start_game()`을 부르는데, start_game 도중 phase 신호가 `_refresh_all`을 돌려 `_check_round_banner`가 오프닝이 켜지기도 전에 ROUND 배너(첫 턴 겸용)를 쐈다. 배너는 오프닝(약 4.4초) 아래에서 이미 재생돼 소개·라운드·턴이 겹쳤다.
+- 수정: `_close_opening()` 직후 `_intro_pending = true`, `_check_round_banner`·`_check_turn_banner`에 `_intro_blocks()` 가드 (오프닝이 끝나면 `_on_opening_finished`가 다시 그린다). 실측: 소개 0~4.4초 → ROUND 1 배너 4.4~7.0초.

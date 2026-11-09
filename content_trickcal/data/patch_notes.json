@@ -192,6 +192,11 @@
        "ko": "증강 선택 창 위로 [리벤지 +N칸 대기중] 배지가 튀어나오던 문제를 고쳤고, 대상을 지정하는 선택 바의 글자와 버튼을 키웠습니다",
        "en": "Fixed the [Revenge +N] badges poking out above the augment draft window, and enlarged the text and buttons of the target-selection bar",
        "ja": "オーグメント選択画面の上に[リベンジ +Nマス待機中]バッジがはみ出す問題を修正し、対象選択バーの文字とボタンを大きくしました"
+      },
+      {
+       "ko": "게임 시작 때 플레이어 소개, 라운드 시작, 첫 턴 알림이 한꺼번에 나오던 문제를 고쳐 순서대로 나오게 했습니다",
+       "en": "Fixed the player intro, round start and first-turn banners all playing at once when a game starts; they now play in order",
+       "ja": "ゲーム開始時にプレイヤー紹介・ラウンド開始・最初のターン表示が同時に出る問題を修正し、順番に表示されるようにしました"
       }
      ]
     }

@@ -1253,6 +1253,7 @@ func _new_game() -> void:
 	_tool_board_key = ""
 	_close_stack_overlay()
 	_close_opening()
+	_intro_pending = true  # start_game 도중의 갱신이 오프닝보다 먼저 라운드·턴 배너를 쏘지 않게 미리 켠다
 	_shown_turn = -1
 	_draft_summary.clear()
 	_draft_banner_round = 0
@@ -4188,6 +4189,8 @@ func _revenge_steps(pawn: PlayerPawn = null) -> int:
 func _check_round_banner() -> void:
 	if _announcer == null or manager.is_game_over or manager.current_state == TurnManager.State.PHASE_ROUND_START:
 		return
+	if _intro_blocks():
+		return  # 플레이어 소개(오프닝)가 끝난 뒤에 라운드 시작 > 첫 턴 순서로 (끝나면 _on_opening_finished가 다시 그린다)
 	if _fx_on() and (_draft_open or not _draft_deferred.is_empty() or (_review_overlay != null and is_instance_valid(_review_overlay))):
 		_motion_retry = true
 		return  # 증강 확인 창이 닫히고, 고른 증강의 즉시 효과(진화·도구 교체·카드 보급·초증강) 연출이 다 끝난 뒤에 라운드를 연다
@@ -4240,6 +4243,8 @@ func _turn_banner_pending() -> bool:
 func _check_turn_banner() -> void:
 	if not pacing_enabled or _announcer == null or manager.is_game_over or manager.current_state != TurnManager.State.PHASE_TURN_BEGIN:
 		return
+	if _intro_blocks():
+		return  # 오프닝 중에는 턴 배너를 띄우지 않는다
 	if _defer_for_motion():
 		return
 	var key: String = "%d:%d" % [state.round_number, manager.current_player_id()]
