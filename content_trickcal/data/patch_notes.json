@@ -140,9 +140,9 @@
        "ja": "カード説明の用語を統一：駒をスタート地点へ送る効果はすべて「スタート地点へ射出」、相手(プレイヤー)と敵の駒を区別し、ターン・手札・強奪・破壊・強制停止・+Nマス前進・振り直しの表記を一つに統一(韓/英/日)"
       },
       {
-       "ko": "공지사항을 버전 탭(1.0.1 · 1.0)으로 나누어, 누른 버전의 소식만 보이게 하고 글 간격을 넓혀 읽기 편하게 했습니다",
-       "en": "Patch notes are now split into version tabs (1.0.1 · 1.0) so you only see the version you pick, with wider spacing for easier reading",
-       "ja": "お知らせをバージョンタブ（1.0.1・1.0）に分け、選んだバージョンだけが表示されるようにし、文の間隔も広げて読みやすくしました"
+       "ko": "공지사항을 게임 공지 목록처럼 버전마다 한 줄로 나누고, 누르면 그 버전의 소식이 펼쳐지게 했습니다. 글 간격도 넓혀 읽기 편하게 했습니다",
+       "en": "Patch notes now appear as one row per version, like an in-game notice list; tap a row to expand that version's notes. Spacing is wider for easier reading",
+       "ja": "お知らせをゲームのお知らせ一覧のようにバージョンごとの1行にし、タップするとそのバージョンの内容が開くようにしました。文の間隔も広げて読みやすくしました"
       }
      ]
     },
