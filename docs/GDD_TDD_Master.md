@@ -2226,4 +2226,4 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 - 수정: `GameState.setup`이 고른 보드를 적용한 뒤 `BoardGraph.rebuild()`를 부른다 (그래프는 GameState 생성 때 만들어져 자판기·편의점 같은 칸 종류가 빠져 있었다).
 
 ### 7.84 자판기 뽑기 연출
-- `_vending_feedback`(로그 + 연출 예약) → `_play_vending_pull(tile, drink)`: 타일 위에 자판기 마스크 그림(코랄)이 0.2초 만에 나타남 → 0.3초 뒤 캔(음료 색 둥근 사각형, `VENDING_CAN_COLORS`)이 바운스로 떨어짐 → 0.78초에 음료 이름이 캔 색으로 위로 뜸 → 버프 문구 배지(`_floating_badge`)가 말 위로 → 서서히 사라짐. 전체 약 1.5초 × 배속, `_fx_until_msec`로 다음 연출·봇이 기다린다. 일회성 노드는 `_mark_oneshot`으로 청소된다. 결과(음료)는 엔진이 이미 정했고 연출은 보여 주기만 한다.
+- `_vending_feedback`(로그 + 연출 예약) → `_play_vending_pull(tile, drink)`: 일기토 룰렛 창(`DuelArena.SIZE` 560x360, 금테 어두운 패널, 화면 크기에 맞춰 축소)이 화면 가운데에 0.22초 페이드·팝인 → 0.4초에 캔(음료 색, `VENDING_CAN_COLORS`)이 자판기 안에 나타나 0.5초 바운스로 배출구에 떨어짐 → 1.05초에 캔을 오른쪽 위로 꺼내 듦 → 1.3초 음료 이름(40px)·1.6초 버프 문구(26px) → 2.3초부터 창이 사라지며 버프 배지(`_floating_badge`)가 말 위로. 전체 약 2.5초 × 배속, `_fx_until_msec`로 다음 연출·봇이 기다린다 (입력은 막지 않는 `MOUSE_FILTER_IGNORE`). 일회성 노드는 `_mark_oneshot`으로 청소된다. 결과(음료)는 엔진이 이미 정했고 연출은 보여 주기만 한다.

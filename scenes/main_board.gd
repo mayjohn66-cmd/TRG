@@ -3575,58 +3575,86 @@ func _vending_feedback(data: Dictionary) -> void:
 	_enqueue_late(func() -> void: _play_vending_pull(tile, drink))
 
 
-## 자판기 뽑기 연출 한 번 (약 1.5초): 자판기가 톡 나타나고, 캔이 떨어지고, 음료 이름이 뜬 뒤 버프 배지가 말 위로 올라간다. 끝날 때까지 다음 연출은 기다린다.
+## 자판기 뽑기 연출 한 번 (약 2.5초): 일기토 룰렛 창과 같은 크기(560x360)의 창이 화면 가운데에 떠서, 자판기에서 캔이 툭 떨어지고
+## 음료 이름과 버프가 크게 보인 뒤, 버프 배지가 말 위로 올라간다. 끝날 때까지 다음 연출은 기다린다.
 func _play_vending_pull(tile: int, drink: StringName) -> void:
 	var pace: float = _motion_pace()
-	var at: Vector2 = (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + _tile_center(tile) + Vector2(0, -58)
-	var holder := Node2D.new()
-	holder.position = at
-	holder.z_index = 62
-	holder.scale = Vector2(0.5, 0.5)
-	holder.modulate.a = 0.0
-	add_child(holder)
-	_mark_oneshot(holder, 1.6 * pace)
+	var panel := Panel.new()
+	panel.name = "VendingPullModal"
+	panel.size = Vector2(560, 360)
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.z_index = 61
+	panel.add_theme_stylebox_override("panel", _style(Color(0.063, 0.086, 0.14, 0.97), Color("ffd43b"), 5, 22, 0, 0))
+	var view: Vector2 = get_viewport_rect().size
+	var fit: float = minf(1.0, minf((view.x - 24.0) / panel.size.x, (view.y - 24.0) / panel.size.y))
+	panel.scale = Vector2.ONE * fit
+	panel.pivot_offset = panel.size / 2.0
+	panel.position = (view - panel.size) / 2.0
+	panel.modulate.a = 0.0
+	add_child(panel)
+	_mark_oneshot(panel, 2.8 * pace)
+	var can_color: Color = VENDING_CAN_COLORS.get(drink, Color.WHITE)
+	var title: Label = _make_label("자판기", 28, Color("ffd43b"))
+	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	title.position = Vector2(0, 14)
+	title.size = Vector2(panel.size.x, 40)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	panel.add_child(title)
 	var machine := Sprite2D.new()  # 자판기 그림 (타일 도안과 같은 마스크, 코랄색으로)
 	machine.texture = BoardSkin.decal_texture("vending")
 	var material := ShaderMaterial.new()
 	material.shader = BoardSkin.FLAT_INK
 	material.set_shader_parameter("ink", Color("ff8f7a"))
 	machine.material = material
-	machine.scale = Vector2.ONE * (58.0 / maxf(machine.texture.get_width(), machine.texture.get_height()))
-	holder.add_child(machine)
+	machine.scale = Vector2.ONE * (250.0 / maxf(machine.texture.get_width(), machine.texture.get_height()))
+	machine.position = Vector2(170, 205)
+	panel.add_child(machine)
 	var can := Panel.new()  # 캔: 둥근 사각형 한 개
-	var can_color: Color = VENDING_CAN_COLORS.get(drink, Color.WHITE)
-	can.add_theme_stylebox_override("panel", _style(can_color, can_color.darkened(0.45), 2, 7, 0, 0))
-	can.size = Vector2(16, 26)
-	can.position = Vector2(-8, 6)
+	can.add_theme_stylebox_override("panel", _style(can_color, can_color.darkened(0.45), 3, 12, 0, 0))
+	can.size = Vector2(46, 76)
+	can.position = Vector2(170 - 23, 150)
 	can.modulate.a = 0.0
 	can.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	holder.add_child(can)
-	var name_label: Label = _make_label(L10n.t(VendingDrinks.name_of(drink)) + "!", 24, can_color)
+	can.pivot_offset = can.size / 2.0
+	panel.add_child(can)
+	var name_label: Label = _make_label(L10n.t(VendingDrinks.name_of(drink)) + "!", 40, can_color)
 	name_label.add_theme_constant_override("outline_size", 8)
 	name_label.add_theme_color_override("font_outline_color", Color("1b1405"))
 	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	name_label.reset_size()
-	name_label.position = Vector2(-name_label.size.x / 2.0, -64)
+	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.position = Vector2(310, 148)
+	name_label.size = Vector2(230, 90)
 	name_label.modulate.a = 0.0
-	holder.add_child(name_label)
-	var buff_text: String = L10n.t(VendingDrinks.text_of(drink))
-	var badge_at: Vector2 = at + Vector2(0, 58 - 46)  # 말 위 (기존 배지 높이)
+	panel.add_child(name_label)
+	var buff_label: Label = _make_label(L10n.t(VendingDrinks.text_of(drink)), 26, Color("fff3bf"))
+	buff_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	buff_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	buff_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	buff_label.position = Vector2(310, 248)
+	buff_label.size = Vector2(230, 70)
+	buff_label.modulate.a = 0.0
+	panel.add_child(buff_label)
+	var buff_text: String = buff_label.text
+	var badge_at: Vector2 = (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + _tile_center(tile) + Vector2(0, -46)
 	Sfx.play(&"ui_click", -4.0)
-	var tween: Tween = holder.create_tween()
+	var tween: Tween = panel.create_tween()
 	tween.set_parallel(true)
-	tween.tween_property(holder, "modulate:a", 1.0, 0.16 * pace)
-	tween.tween_property(holder, "scale", Vector2.ONE, 0.2 * pace).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(can, "modulate:a", 1.0, 0.05 * pace).set_delay(0.3 * pace)
-	tween.tween_property(can, "position:y", 30.0, 0.34 * pace).set_delay(0.3 * pace).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
-	tween.tween_property(name_label, "modulate:a", 1.0, 0.18 * pace).set_delay(0.78 * pace)
-	tween.tween_property(name_label, "position:y", -76.0, 0.3 * pace).set_delay(0.78 * pace).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	var open_scale: Vector2 = panel.scale
+	panel.scale = open_scale * 0.85
+	tween.tween_property(panel, "modulate:a", 1.0, 0.22 * pace)
+	tween.tween_property(panel, "scale", open_scale, 0.28 * pace).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(can, "modulate:a", 1.0, 0.06 * pace).set_delay(0.4 * pace)  # 캔이 나온다
+	tween.tween_property(can, "position:y", 232.0, 0.5 * pace).set_delay(0.4 * pace).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+	tween.tween_property(can, "position", Vector2(425 - 23, 62), 0.3 * pace).set_delay(1.05 * pace).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)  # 꺼내 든다
+	tween.tween_property(name_label, "modulate:a", 1.0, 0.2 * pace).set_delay(1.3 * pace)
+	tween.tween_property(buff_label, "modulate:a", 1.0, 0.2 * pace).set_delay(1.6 * pace)
+	tween.tween_callback(func() -> void: Sfx.play(&"good", -4.0)).set_delay(1.3 * pace)
+	tween.tween_property(panel, "modulate:a", 0.0, 0.3 * pace).set_delay(2.3 * pace)
 	tween.chain().tween_callback(func() -> void:
-		Sfx.play(&"good", -6.0)
-		_floating_badge(badge_at, buff_text, can_color.lightened(0.15), 26))
-	tween.tween_property(holder, "modulate:a", 0.0, 0.3 * pace).set_delay(0.35 * pace)
-	tween.chain().tween_callback(holder.queue_free)
-	_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(1500.0 * pace))
+		_floating_badge(badge_at, buff_text, can_color.lightened(0.15), 26)
+		panel.queue_free())
+	_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(2400.0 * pace))
 
 
 ## 코너에 정확히 도착해 받은 버프: 그 말 위에 [다음 굴림 +N]이 떠오른다.
