@@ -2230,3 +2230,10 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 
 ### 7.85 공지사항 목록(아코디언)
 - `UpdateNotes.open`: 항목(`entries()`)마다 한 줄 `NotesRow<n>`(버튼: `공지` 태그 · 제목+날짜 · `▼ [보기]`/`▲ [접기]`)과 그 아래 본문 `NotesBody<n>`(연한 패널, 섹션은 한 덩어리 간격 8, 덩어리 사이 16, 항목 16px·줄 간격 4)을 `make_row`가 만든다. 줄을 누르면 `toggle_row`가 그 줄만 펼치고 나머지는 접으며, 펼친 줄을 다시 누르면 접힌다. 가장 새 소식은 처음부터 펼쳐 둔다. 새 소식 id·[N] 표시는 그대로. 테스트 `test_popup_lists_versions_as_rows_and_expands_one_at_a_time`.
+
+### 7.86 와라! 모나티엄 25 (식권의 모나티엄 버전)
+- 방식: 새 교칙 ID를 만들지 않고 LAW_02 자리를 보드로 바꿔 쓴다 (`VictoryLaw.MONATIUM_DEFS`, `variant_active`, `name_of`, `condition_template` — `BoardSpec.convenience`일 때). 그래서 기록 키(`bakery`: 편의점 방문도 같은 기록)·목표(6회)·이의 있음 초기화·법전 수집 도장(PlayerSave)·기록 코드 비트·텔레메트리 사유가 그대로다.
+- 이름: 에르핀 왕국 [봉인된 에르핀의 식권] "빵집에 6회 방문" / 모나티엄 도시 [와라! 모나티엄 25] "편의점에 6회 방문".
+- 선택 카드: `AugmentRegistry.apply_board_variants`가 표에서 다시 입힌 뒤 AUG_LAW_02의 이름·설명을 언어별로 바꾼다 (`BoardCatalog.apply`와 표 로드 때 자동).
+- 승리 연출: `LawVictoryTheme.MONATIUM_THEMES/PAPERS/COMIC_TITLES`(제목 `MONATIUM DAYS` 2줄, 파랑 팔레트, 글꼴 bungee). `of/paper/comic_title`이 보드로 고르고 `geometry_id`(`LAW_02:M`)로 글자 윤곽 데이터를 원래 제목 것과 섞지 않는다. 컷신의 황금 티켓 무대 그림은 에르핀 빵집 티켓 그대로다 (그림 교체 필요).
+- 보드 위: 법전 대상 칸 표시 [식권 목표] → [편의점 목표], 스탬프 알림 [편의점 방문! (n/6)], 결과 문구·달성 사유 문구. 번역(ko/en/ja) 추가, 테스트 `test_monatium_swaps_the_bakery_law_into_wara_monatium_25`.

@@ -149,7 +149,7 @@ func setup(id: String) -> void:
 	_pattern.scene_id = id
 	_pattern.ink = Color(str(THEME.of(id)["ink"]))
 	_pattern.accent = Color(str(THEME.of(id)["accent"]))
-	_pattern.paper = Color(str(THEME.PAPERS[id]))
+	_pattern.paper = Color(str(THEME.paper(id)))
 	_pattern.racing = id=="FINISH"
 	for key: String in KEYS[id]: _pattern.textures[key] = TextureCache.fetch(PRINT_ROOT+key+"_v02.webp")
 	var pop_material := ShaderMaterial.new()

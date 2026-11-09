@@ -55,6 +55,7 @@ static var current_id: StringName = DEFAULT_ID
 static func apply(id: Variant) -> void:
 	current_id = sanitize(id)
 	BoardSpec.apply(tiles_of(current_id), bool(def_of(current_id).get("convenience", false)))
+	AugmentRegistry.apply_board_variants()  # 바꿔 쓰는 특수 승리의 선택 카드 문구도 이 보드에 맞춘다
 
 
 ## 판을 시작할 때 부른다: 고른 보드가 마지막으로 적용한 보드와 다를 때만 적용한다

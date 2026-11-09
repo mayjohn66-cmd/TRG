@@ -2739,7 +2739,6 @@ PROGRESS / 진행률,PROGRESS,PROGRESS／進行度
 조건 달성 후 다음 내 차례가 끝날 때까지 유지하면 특수 승리! 교칙은 사라져요,"Meet the condition, then keep it until the end of your next turn for a Special Win! The Rule then disappears",条件達成後、次の自分のターン終了まで維持すれば特殊勝利！教則は消えます
 내 차례가 끝날 때 조건을 달성해 있으면 특수 승리! 교칙은 사라져요,"If the condition is met when your turn ends, Special Win! The Rule then disappears",自分のターン終了時に条件を達成していれば特殊勝利！教則は消えます
 리벤지,Revenge,リベンジ
-<<<<<<< HEAD
 보드판,Board,ボード
 기본 보드,Classic Board,基本ボード
 32칸 사각 순환 트랙 · 반시계 한 바퀴,32-tile square loop · one lap counter-clockwise,32マスの四角い周回トラック・反時計回りに一周
@@ -2773,8 +2772,12 @@ PROGRESS / 진행률,PROGRESS,PROGRESS／進行度
 이온음료,Sports Drink,スポーツドリンク
 우유,Milk,牛乳
 생떼 카드 1장,1 Tantrum Card,駄々っ子カード1枚
-=======
 공지,Notice,お知らせ
 보기,View,見る
 접기,Hide,閉じる
->>>>>>> claude/tender-gauss-i4mq1o
+[특수 승리] 와라! 모나티엄 25,[Special Victory] Wara! Monatium 25,[特殊勝利] ワラ！モナティウム25
+와라! 모나티엄 25,Wara! Monatium 25,ワラ！モナティウム25
+편의점에 {p1}회 방문,Visit a convenience store {p1} times,コンビニに{p1}回訪問
+편의점 %d회 방문 · 와라! 모나티엄 25 완성!,Visited the convenience store %d times · Wara! Monatium 25 complete!,コンビニに%d回訪問・ワラ！モナティウム25完成！
+편의점 방문! (%d/%d),Convenience store visit! (%d/%d),コンビニ訪問！(%d/%d)
+[편의점 목표],[Store Goal],[コンビニ目標]

@@ -11,7 +11,7 @@ const TARGET_RED: Color = Color("ff3b3b")
 ## 기록 키 -> [아이콘, 배너 문구(%d 현재, %d 목표), 법전 ID]
 const GAIN_STYLE: Dictionary = {
 	&"kills": ["sword", "투기장 처치 +1! (%d/%d)", "LAW_01"],
-	&"bakery": ["croissant", "식권 스탬프 획득! (%d/%d)", "LAW_02"],
+	&"bakery": ["croissant", "식권 스탬프 획득! (%d/%d)", "LAW_02"],  # 모나티엄 도시에서는 stamp_text()가 편의점 문구로 바꾼다
 	&"ejected": ["anger", "동네북 분노 충전! (%d/%d)", "LAW_06"],
 	&"underdog": ["horse", "하극상 처치 +1! (%d/%d)", "LAW_08"],
 }
@@ -137,7 +137,7 @@ func _draw_bakery_goals(state: GameState, radius: float, pulse: float) -> void:
 		if croissant != null:
 			var side: float = radius * 0.95
 			draw_texture_rect(croissant, Rect2(center + Vector2(radius * 0.35, -radius * 1.35), Vector2(side, side)), false)
-		_draw_tag(center + Vector2(0, radius * 1.75), "[식권 목표]", GOLD)
+		_draw_tag(center + Vector2(0, radius * 1.75), "[편의점 목표]" if BoardSpec.convenience else "[식권 목표]", GOLD)
 
 
 ## 다크호스의 하극상: 지금 1위인 사람의 보드 위 말 머리 위에 붉은 과녁.
@@ -259,7 +259,10 @@ func show_gain(player_id: int, key: StringName, value: int, tile: int) -> Contro
 	var goal: int = SpecialVictory.goal_of(state, String(style[2]))
 	var from: Vector2 = _cause_point(player_id, tile)
 	var color: Color = MainBoard.PLAYER_COLORS.get(player_id, GOLD)
-	var banner: Control = popup(from, String(style[0]), String(style[1]) % [mini(value, goal), goal], color)
+	var stamp_text: String = String(style[1])
+	if key == &"bakery" and BoardSpec.convenience:  # 모나티엄 도시: 와라! 모나티엄 25 (편의점 방문)
+		stamp_text = "편의점 방문! (%d/%d)"
+	var banner: Control = popup(from, String(style[0]), stamp_text % [mini(value, goal), goal], color)
 	fly_orb(from, String(style[2]))
 	return banner
 

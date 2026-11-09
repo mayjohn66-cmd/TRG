@@ -4,6 +4,8 @@
 class_name TestVending
 extends TestCase
 
+const THEME_SCRIPT = preload("res://scenes/law_victory_theme.gd")
+
 
 func _monatium_state() -> GameState:
 	var state := GameState.new()
@@ -90,3 +92,33 @@ func test_each_board_has_its_own_skin_palette_and_surface() -> void:
 	check_eq(BoardSkin.definition(12).kind, "vending", "12번 칸은 자판기 종류")
 	check_eq(BoardSkin.definition(5).kind, "store", "5번 칸은 편의점 종류")
 	_restore(saved_count, saved_shop, saved_id)
+
+
+func test_monatium_swaps_the_bakery_law_into_wara_monatium_25() -> void:
+	var saved_count: int = BoardSpec.tile_count
+	var saved_shop: bool = BoardSpec.convenience
+	var saved_id: StringName = BoardCatalog.current_id
+	BoardSpec.apply(32, false)
+	AugmentRegistry.apply_board_variants()
+	var classic_law := VictoryLaw.new("LAW_02")
+	check_eq(classic_law.law_name, "봉인된 에르핀의 식권", "에르핀 왕국의 이름")
+	check(classic_law.condition_text().contains("빵집"), "에르핀 왕국의 조건")
+	var classic_def: AugmentDef = AugmentRegistry.get_def(&"AUG_LAW_02")
+	check(classic_def.title.contains("봉인된 에르핀의 식권") or classic_def.title.contains("Erpin") or classic_def.title.contains("エルフィン"), "에르핀 왕국의 선택 카드 제목")
+	BoardSpec.apply(32, true)
+	AugmentRegistry.apply_board_variants()
+	var city_law := VictoryLaw.new("LAW_02")
+	check_eq(city_law.law_name, "와라! 모나티엄 25", "모나티엄 도시의 이름")
+	check(city_law.condition_text().contains("편의점"), "모나티엄 도시의 조건은 편의점 방문")
+	check_eq(city_law.stat_key, VictoryLaw.BAKERY, "기록 키는 그대로 (편의점 방문도 같은 기록)")
+	check_eq(city_law.goal(), classic_law.goal(), "목표 수치도 그대로")
+	var city_def: AugmentDef = AugmentRegistry.get_def(&"AUG_LAW_02")
+	check(city_def.title.contains("모나티엄") or city_def.title.contains("Monatium") or city_def.title.contains("モナティウム"), "선택 카드 제목이 바뀐다")
+	check(not city_def.desc.contains("빵집") and not city_def.desc.contains("bakery"), "선택 카드 설명에서 빵집이 편의점으로")
+	check(THEME_SCRIPT.variant("LAW_02") and THEME_SCRIPT.of("LAW_02")["headline"] == "MONATIUM DAYS", "승리 문구는 MONATIUM DAYS")
+	check(not THEME_SCRIPT.variant("LAW_01"), "다른 법전은 그대로")
+	BoardSpec.apply(32, false)
+	check_eq(THEME_SCRIPT.of("LAW_02")["headline"], "SWEET VICTORY", "에르핀 왕국에서는 원래 문구")
+	AugmentRegistry.apply_board_variants()
+	_restore(saved_count, saved_shop, saved_id)
+	AugmentRegistry.apply_board_variants()

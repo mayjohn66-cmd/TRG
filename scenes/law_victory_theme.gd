@@ -31,9 +31,34 @@ const COMIC_TITLES: Dictionary = {
 	"LAW_08":{"upper":"ffe06a","lower":"ffffff","shadow":"b62332"},
 	"LAW_09":{"upper":"bdffda","lower":"ffffff","shadow":"a93a7d"},
 }
+## 모나티엄 도시 보드에서 LAW_02(와라! 모나티엄 25)의 승리 연출: 같은 무대에 다른 제목·색 (MONATIUM DAYS).
+const MONATIUM_THEMES: Dictionary = {
+	"LAW_02":{"font":"bungee","headline":"MONATIUM DAYS","lines":"MONATIUM\nDAYS","ink":"10223d","accent":"2f86d6","tilt":-0.055},
+}
+const MONATIUM_PAPERS: Dictionary = {"LAW_02":"e6f1fb"}
+const MONATIUM_COMIC_TITLES: Dictionary = {"LAW_02":{"upper":"9fe3ff","lower":"ffffff","shadow":"1f5fa8"}}
 static var _fonts: Dictionary = {}
+static func variant(id: String) -> bool:
+	return BoardSpec.convenience and MONATIUM_THEMES.has(id)
+
+
 static func of(id: String) -> Dictionary:
+	if variant(id):
+		return MONATIUM_THEMES[id]
 	return THEMES.get(id,{})
+
+
+static func paper(id: String) -> String:
+	return str(MONATIUM_PAPERS[id]) if variant(id) else str(PAPERS.get(id, "ffffff"))
+
+
+static func comic_title(id: String) -> Dictionary:
+	return MONATIUM_COMIC_TITLES[id] if variant(id) else COMIC_TITLES.get(id, {})
+
+
+## 제목 글자 윤곽 데이터(victory_title_geometry_data)의 키: 바꿔 쓰는 제목은 따로 ":M"을 붙여 (없으면 글꼴 크기로 계산) 원래 제목의 윤곽을 잘못 쓰지 않는다.
+static func geometry_id(id: String) -> String:
+	return id + ":M" if variant(id) else id
 
 static func headline(id: String) -> String:
 	return str(of(id).get("lines",""))

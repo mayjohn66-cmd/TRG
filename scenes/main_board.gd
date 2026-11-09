@@ -4971,7 +4971,7 @@ func _note_law_win_detail(player_id: int, law_id: String) -> void:
 static func law_win_reason(law_id: String, value: int) -> String:
 	match law_id:
 		"LAW_01": return "경기 중 총 %d회 적 기물 처치 완료!" % value
-		"LAW_02": return "빵집 %d회 방문 · 식권 스탬프 완성!" % value
+		"LAW_02": return ("편의점 %d회 방문 · 와라! 모나티엄 25 완성!" if VictoryLaw.variant_active("LAW_02") else "빵집 %d회 방문 · 식권 스탬프 완성!") % value
 		"LAW_03": return "함정·설치물 %d개 동시 유지 · 무한의 함정 완성!" % value
 		"LAW_04": return "한 턴에 %d칸 폭발 전진 성공!" % value
 		"LAW_05": return "말 %d개로 보드연성진을 완성하고 지켜 냈다!" % value
@@ -10709,7 +10709,7 @@ func result_comic_texts(winner_id: int) -> Array[String]:
 		var why: String = law_win_reason(String(reason), int(detail.get("value", 0))) if str(detail.get("law", "")) == String(reason) else ""
 		if why != "" and POPART_TITLES.has(String(reason)):
 			why = "\"달성 사유: %s\"" % why  # 팝아트 법전은 하단 배너에 따옴표 달성 사유 (괄호 대신)
-		return [str(RESULT_VICTORY_PHRASES.get(String(reason), law.law_name if law != null else String(reason))), why if why != "" else "특수 승리"]
+		return [str(RESULT_VICTORY_PHRASES.get(String(reason), law.law_name if law != null else String(reason))) if not (String(reason) == "LAW_02" and VictoryLaw.variant_active("LAW_02")) else "MONATIUM DAYS", why if why != "" else "특수 승리"]
 	if reason == VictoryChecker.ALL_HOME:
 		return ["RACE OVER", "말 4개 모두 완주"]
 	if reason == VictoryChecker.RACE_ORDER:
