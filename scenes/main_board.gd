@@ -4608,6 +4608,8 @@ func _paint_revenge_glow(host: Control, on: bool, steps: int = 0, compact: bool 
 		pulse.tween_property(glow, "modulate:a", 0.45, 0.45).set_trans(Tween.TRANS_SINE)
 		pulse.tween_property(glow, "modulate:a", 1.0, 0.45).set_trans(Tween.TRANS_SINE)
 	glow.visible = true
+	if tag != null and tag.get_parent() == host:
+		host.move_child(tag, host.get_child_count() - 1)  # z_index 대신 자식 순서로 글을 불꽃 위에 (드래프트 창을 뚫지 않게)
 
 
 func _fit_profile_token(host: Control) -> void:
@@ -9744,14 +9746,14 @@ func _show_choice(title: String, options: Array[Dictionary], on_pick: Callable, 
 	var panel := PanelContainer.new()
 	panel.name = "ChoiceBarPanel"
 	panel.add_theme_stylebox_override("panel", _style(Color(0.07, 0.09, 0.15, 0.94), COLOR_GOLD, 2, 14, 10, 10))
-	panel.custom_minimum_size = Vector2(minf(view.x * 0.62, 860.0), 0)
+	panel.custom_minimum_size = Vector2(minf(view.x * 0.82, 1100.0), 0)
 	_choice_overlay.add_child(panel)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
 	panel.add_child(row)
 	var title_label: Label = _make_label(title, 15, Color("ffe066"))
 	title_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	title_label.custom_minimum_size = Vector2(180, 0)
+	title_label.custom_minimum_size = Vector2(260, 0)
 	title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	row.add_child(title_label)
 	var flow := HFlowContainer.new()

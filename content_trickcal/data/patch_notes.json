@@ -187,6 +187,11 @@
        "ko": "글자 겹침·잘림 전체 점검: 프로필 이름이 버튼·손패 칩에 밀려 잘리던 것, 터치 증강 선택 창의 아래 안내 글이 화면 밖으로 나가던 것, 영어·일본어에서 판정 도구 족보 줄이 화면 오른쪽 밖으로 삐져나오거나 겹치던 것, 펼친 큰 판정 도구 카드가 [감정 표현] 버튼을 덮던 것 수정",
        "en": "Full text overlap/clipping pass: profile names squeezed by buttons and hand chips, the footnote of the touch augment window going off-screen, judgment-tool tables spilling off the right edge or overlapping in English/Japanese, and a tall tool card covering the [Emote] button",
        "ja": "文字の重なり・見切れを総点検：プロフィール名がボタンや手札チップに押されて切れる問題、タッチ操作のオーグメント選択ウィンドウ下の案内が画面外に出る問題、英語・日本語で判定ツールの表が画面右にはみ出す/重なる問題、大きく開いた判定ツールカードが[エモート]ボタンを覆う問題を修正"
+      },
+      {
+       "ko": "증강 선택 창 위로 [리벤지 +N칸 대기중] 배지가 튀어나오던 문제를 고쳤고, 대상을 지정하는 선택 바의 글자와 버튼을 키웠습니다",
+       "en": "Fixed the [Revenge +N] badges poking out above the augment draft window, and enlarged the text and buttons of the target-selection bar",
+       "ja": "オーグメント選択画面の上に[リベンジ +Nマス待機中]バッジがはみ出す問題を修正し、対象選択バーの文字とボタンを大きくしました"
       }
      ]
     }
