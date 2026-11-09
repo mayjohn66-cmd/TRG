@@ -11,6 +11,13 @@ var _distance_to_goal: Array[int] = []
 var _undirected: Array[Array] = []
 
 func _init() -> void:
+	rebuild()
+
+
+## 현재 BoardSpec(칸 수·특수 칸)대로 그래프를 처음부터 다시 만든다 (판을 시작할 때 고른 보드가 바뀌었을 수 있다).
+func rebuild() -> void:
+	_distance_to_goal.clear()
+	_undirected.clear()
 	_init_24_tiles()
 	_build_distance_table()
 	_build_undirected()

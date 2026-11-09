@@ -1264,6 +1264,9 @@ func _new_game() -> void:
 	manager.start_game(_player_ids, _game_seed)
 	state = manager.state
 	_report_match_start()
+	for surface: MeshInstance2D in [_board_surface, _flat_board_surface]:  # 보드마다 판 바닥 그림이 다르다 (BoardSkin.surface_texture)
+		if surface != null:
+			surface.texture = BoardSkin.surface_texture()
 	if GameSession.match_count() <= 1 and (ai_mode or net != null):
 		_show_first_match_tip()
 	var rule_summary: String = MatchRules.summary(state.match_rules)

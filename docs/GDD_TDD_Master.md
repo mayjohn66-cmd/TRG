@@ -2219,3 +2219,8 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 - **지속 시간**: 처음 설명에서는 [내 다음 턴 끝까지]였으나 기존 부품을 재사용하느라 다음 굴림(에너지·아메리카노)과 방어 1회(이온음료)로 구현했다. 시간 기반이 필요하면 별도 만료 필드가 필요하다.
 - **화면**: `BoardSkin`의 `store`(하늘색 띠)·`vending`(분홍 띠) 종류와 새 타일 그림 `BOARD_STORE.png`·`BOARD_VENDING.png`(마스크 PNG, 코드로 생성한 임시 그림이라 아트 교체 가능), 도감은 에르핀 왕국 항목(빵집·옷장)과 모나티엄 도시 항목(편의점·자판기+음료 목록)을 따로 보여 준다.
 - 테스트: `test_vending`(배치 교체·음료 5종 효과·지나가기·편의점 카드).
+
+### 7.83 보드별 스킨 틀
+- `BoardSkin.PALETTE_DEFAULT`(에르핀 왕국)·`PALETTE_CITY`(모나티엄 도시): 타일 바닥·테두리·글자·띠 색, 코너·반환점 색, 그림자, 부스터 발판 4색(바닥·안쪽·펄스·테두리). `palette()`가 `BoardSpec.convenience`로 고른다. 새 보드는 팔레트 상수를 더하고 `palette()`/`surface_texture()`의 분기를 늘리면 된다.
+- 판 바닥 그림은 `surface_texture()`(`board_surface.png`, 1254px)이고 `_new_game`이 보드 적용 뒤 두 바닥 메시(`_board_surface`·`_flat_board_surface`)의 텍스처를 바꾼다. 도시 바닥은 임시로 코드로 그린 그림이라 같은 이름 파일을 교체하면 된다.
+- 수정: `GameState.setup`이 고른 보드를 적용한 뒤 `BoardGraph.rebuild()`를 부른다 (그래프는 GameState 생성 때 만들어져 자판기·편의점 같은 칸 종류가 빠져 있었다).

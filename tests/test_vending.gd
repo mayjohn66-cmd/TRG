@@ -75,3 +75,18 @@ func test_passing_a_vending_machine_does_nothing_and_store_still_gives_a_card() 
 	check(shop_report.drawn_card != &"" or (state.hands[2] as Array).size() > hand_before, "편의점도 딱 멈추면 카드 1장")
 	check(BoardSpec.is_special_tile(12), "자판기 칸에는 일반 함정을 깔 수 없다")
 	_restore(saved_count, saved_shop, saved_id)
+
+
+func test_each_board_has_its_own_skin_palette_and_surface() -> void:
+	var saved_count: int = BoardSpec.tile_count
+	var saved_shop: bool = BoardSpec.convenience
+	var saved_id: StringName = BoardCatalog.current_id
+	BoardSpec.apply(32, false)
+	var classic_fill: Color = BoardSkin.palette().dash_inner
+	var classic_surface: Texture2D = BoardSkin.surface_texture()
+	BoardSpec.apply(32, true)
+	check(BoardSkin.palette().dash_inner != classic_fill, "도시 보드는 부스터 발판 색이 다르다")
+	check(BoardSkin.surface_texture() != classic_surface, "도시 보드는 판 바닥 그림이 다르다")
+	check_eq(BoardSkin.definition(12).kind, "vending", "12번 칸은 자판기 종류")
+	check_eq(BoardSkin.definition(5).kind, "store", "5번 칸은 편의점 종류")
+	_restore(saved_count, saved_shop, saved_id)
