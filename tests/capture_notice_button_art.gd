@@ -52,7 +52,7 @@ func _run() -> void:
 	expect(popup!=null and popup.is_visible_in_tree(),"actual pointer release opens the notice popup")
 	expect(not badge.visible and not UpdateNotes.has_unseen(),"opening marks current news seen and hides N")
 	if popup!=null:
-		expect(popup.find_children("NotesTitle","Label",true,false).size()==UpdateNotes.entries().size(),"real update headings load from the committed JSON")
+		expect(popup.find_children("NotesRow*","Button",true,false).size()==UpdateNotes.entries().size(),"one expandable row per version")
 		await snap("04-notices-open")
 		var close:=popup.find_child("NotesClose",true,false) as Button
 		await hover(close);await pointer(close,true);await pointer(close,false);await settle(6)

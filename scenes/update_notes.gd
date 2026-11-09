@@ -48,6 +48,81 @@ static func pick(node: Variant) -> String:
 	return str(node)
 
 
+## 한 버전의 본문(섹션·항목)을 body 안에 채운다.
+static func fill_body(body: VBoxContainer, entry: Dictionary) -> void:
+	for section: Dictionary in entry.get("sections", []):
+		var block := VBoxContainer.new()  # 섹션마다 한 덩어리: 머리글과 항목 사이는 좁게, 덩어리 사이는 넓게
+		block.add_theme_constant_override("separation", 8)
+		body.add_child(block)
+		var section_label: Label = LobbyTheme.label("■ " + pick(section.get("head", "")), 18, Color("2b8a3e"))
+		section_label.name = "NotesSection"
+		block.add_child(section_label)
+		for item: Variant in section.get("items", []):
+			var line: Label = LobbyTheme.label("· " + pick(item), 16, INK)
+			line.name = "NotesItem"
+			line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			line.custom_minimum_size = Vector2(470, 0)
+			line.add_theme_constant_override("line_spacing", 4)
+			block.add_child(line)
+
+
+## 공지 한 줄: [공지] 1.0.1 업데이트 ........ ▼ [보기]. 누르면 그 아래에 본문이 펼쳐진다 (한 번에 하나만).
+static func make_row(entry: Dictionary, index: int, rows: Array[Dictionary]) -> Control:
+	var wrap := VBoxContainer.new()
+	wrap.add_theme_constant_override("separation", 0)
+	var header := Button.new()
+	header.name = "NotesRow%d" % index
+	header.custom_minimum_size = Vector2(0, 48)
+	header.focus_mode = Control.FOCUS_NONE
+	header.add_theme_stylebox_override("normal", LobbyTheme.style(Color("c9e3c4"), Color("8fbf88"), 2, 6, 0, 8))
+	header.add_theme_stylebox_override("hover", LobbyTheme.style(Color("d8eed3"), Color("8fbf88"), 2, 6, 0, 8))
+	header.add_theme_stylebox_override("pressed", LobbyTheme.style(Color("b9d8b3"), Color("8fbf88"), 2, 6, 0, 8))
+	header.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	var line := HBoxContainer.new()
+	line.set_anchors_preset(Control.PRESET_FULL_RECT)
+	line.offset_left = 12
+	line.offset_right = -12
+	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	line.add_theme_constant_override("separation", 14)
+	header.add_child(line)
+	var tag: Label = LobbyTheme.label(L10n.t("공지"), 16, Color("2b8a3e"))
+	tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tag.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	line.add_child(tag)
+	var date_text: String = str(entry.get("date", ""))
+	var title: Label = LobbyTheme.label(pick(entry.get("title", "")) + ("  ·  " + date_text if date_text != "" else ""), 18, INK)
+	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	line.add_child(title)
+	var arrow: Label = LobbyTheme.label("", 16, Color("d98b00"))
+	arrow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	arrow.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	line.add_child(arrow)
+	wrap.add_child(header)
+	var body_panel := PanelContainer.new()
+	body_panel.name = "NotesBody%d" % index
+	body_panel.add_theme_stylebox_override("panel", LobbyTheme.style(Color("eef7e9"), Color("8fbf88"), 2, 6, 0, 16))
+	body_panel.visible = false
+	var body := VBoxContainer.new()
+	body.add_theme_constant_override("separation", 16)
+	body_panel.add_child(body)
+	fill_body(body, entry)
+	wrap.add_child(body_panel)
+	rows.append({"panel": body_panel, "arrow": arrow})
+	header.pressed.connect(func() -> void: toggle_row(rows, index))
+	return wrap
+
+
+## index 줄을 펼친다 (이미 펼쳐져 있으면 접는다). 다른 줄은 모두 접는다.
+static func toggle_row(rows: Array[Dictionary], index: int) -> void:
+	var open_now: bool = not (rows[index]["panel"] as Control).visible
+	for i: int in rows.size():
+		var show: bool = open_now and i == index
+		(rows[i]["panel"] as Control).visible = show
+		(rows[i]["arrow"] as Label).text = ("▲ [" + L10n.t("접기") + "]") if show else ("▼ [" + L10n.t("보기") + "]")
+
+
 ## 팝업을 연다.
 static func open(parent: Control) -> Control:
 	mark_seen()
@@ -56,35 +131,26 @@ static func open(parent: Control) -> Control:
 	overlay.name = "UpdateNotesPopup"
 	var box: VBoxContainer = parts["box"]
 	box.add_child(LobbyTheme.label(L10n.t("공지사항"), 26, LobbyTheme.TEAL))
+	var all: Array = entries()
 	var scroll := ScrollContainer.new()
 	scroll.name = "NotesScroll"
-	scroll.custom_minimum_size = Vector2(0, 360)
+	scroll.custom_minimum_size = Vector2(0, 400)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	box.add_child(scroll)
 	var list := VBoxContainer.new()
+	list.name = "NotesList"
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	list.add_theme_constant_override("separation", 8)
-	scroll.add_child(list)
-	var all: Array = entries()
+	var margin := MarginContainer.new()  # 오른쪽은 스크롤바 자리
+	margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	margin.add_theme_constant_override("margin_right", 22)
+	margin.add_child(list)
+	scroll.add_child(margin)
+	var rows: Array[Dictionary] = []
 	for entry_index: int in all.size():
-		var entry: Dictionary = all[entry_index]
-		var title_text: String = pick(entry.get("title", ""))
-		var date_text: String = str(entry.get("date", ""))
-		var heading: Label = LobbyTheme.label(title_text + ("  ·  " + date_text if date_text != "" else ""), 20, Color("2b8a3e"))
-		heading.name = "NotesTitle"
-		list.add_child(heading)
-		for section: Dictionary in entry.get("sections", []):
-			var section_label: Label = LobbyTheme.label("■ " + pick(section.get("head", "")), 17, INK)
-			section_label.name = "NotesSection"
-			list.add_child(section_label)
-			for item: Variant in section.get("items", []):
-				var line: Label = LobbyTheme.label("· " + pick(item), 15, INK)
-				line.name = "NotesItem"
-				line.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-				line.custom_minimum_size = Vector2(540, 0)
-				list.add_child(line)
-		if entry_index < all.size() - 1:
-			list.add_child(HSeparator.new())
+		list.add_child(make_row(all[entry_index], entry_index, rows))
+	if not rows.is_empty():
+		toggle_row(rows, 0)  # 가장 새 소식은 처음부터 펼쳐 둔다
 	var buttons := HBoxContainer.new()
 	buttons.add_theme_constant_override("separation", 10)
 	box.add_child(buttons)

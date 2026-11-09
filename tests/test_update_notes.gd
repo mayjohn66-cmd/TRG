@@ -70,3 +70,22 @@ func test_text_picks_the_current_language_and_falls_back_to_korean() -> void:
 	L10n.current_lang = "ja"
 	check_eq(UpdateNotes.pick(node), "한글", "일본어 글이 비면 한국어")
 	L10n.current_lang = saved
+
+
+func test_popup_lists_versions_as_rows_and_expands_one_at_a_time() -> void:
+	_setup_save()
+	var parent := Control.new()
+	defer_free(parent)
+	var popup: Control = UpdateNotes.open(parent)
+	var rows: Array = popup.find_children("NotesRow*", "Button", true, false)
+	check_eq(rows.size(), UpdateNotes.entries().size(), "버전마다 공지 한 줄")
+	var bodies: Array = popup.find_children("NotesBody*", "PanelContainer", true, false)
+	check(bodies[0].visible, "가장 새 소식은 처음부터 펼쳐져 있다")
+	if rows.size() >= 2:
+		check(not bodies[1].visible, "나머지는 접혀 있다")
+		(rows[1] as Button).pressed.emit()
+		check(bodies[1].visible and not bodies[0].visible, "다른 줄을 누르면 그 줄만 펼쳐진다")
+		(rows[1] as Button).pressed.emit()
+		check(not bodies[1].visible, "펼친 줄을 다시 누르면 접힌다")
+	popup.queue_free()
+	_restore_save()

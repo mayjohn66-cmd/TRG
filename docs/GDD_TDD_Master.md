@@ -2227,3 +2227,6 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 
 ### 7.84 자판기 뽑기 연출
 - `_vending_feedback`(로그 + 연출 예약) → `_play_vending_pull(tile, drink)`: 일기토 룰렛 창(`DuelArena.SIZE` 560x360, 금테 어두운 패널, 화면 크기에 맞춰 축소)이 화면 가운데에 0.22초 페이드·팝인 → 0.4초에 캔(음료 색, `VENDING_CAN_COLORS`)이 자판기 안에 나타나 0.5초 바운스로 배출구에 떨어짐 → 1.05초에 캔을 오른쪽 위로 꺼내 듦 → 1.3초 음료 이름(40px)·1.6초 버프 문구(26px) → 2.3초부터 창이 사라지며 버프 배지(`_floating_badge`)가 말 위로. 전체 약 2.5초 × 배속, `_fx_until_msec`로 다음 연출·봇이 기다린다 (입력은 막지 않는 `MOUSE_FILTER_IGNORE`). 일회성 노드는 `_mark_oneshot`으로 청소된다. 결과(음료)는 엔진이 이미 정했고 연출은 보여 주기만 한다.
+
+### 7.85 공지사항 목록(아코디언)
+- `UpdateNotes.open`: 항목(`entries()`)마다 한 줄 `NotesRow<n>`(버튼: `공지` 태그 · 제목+날짜 · `▼ [보기]`/`▲ [접기]`)과 그 아래 본문 `NotesBody<n>`(연한 패널, 섹션은 한 덩어리 간격 8, 덩어리 사이 16, 항목 16px·줄 간격 4)을 `make_row`가 만든다. 줄을 누르면 `toggle_row`가 그 줄만 펼치고 나머지는 접으며, 펼친 줄을 다시 누르면 접힌다. 가장 새 소식은 처음부터 펼쳐 둔다. 새 소식 id·[N] 표시는 그대로. 테스트 `test_popup_lists_versions_as_rows_and_expands_one_at_a_time`.
