@@ -2224,3 +2224,6 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 - `BoardSkin.PALETTE_DEFAULT`(에르핀 왕국)·`PALETTE_CITY`(모나티엄 도시): 타일 바닥·테두리·글자·띠 색, 코너·반환점 색, 그림자, 부스터 발판 4색(바닥·안쪽·펄스·테두리). `palette()`가 `BoardSpec.convenience`로 고른다. 새 보드는 팔레트 상수를 더하고 `palette()`/`surface_texture()`의 분기를 늘리면 된다.
 - 판 바닥 그림은 `surface_texture()`(`board_surface.png`, 1254px)이고 `_new_game`이 보드 적용 뒤 두 바닥 메시(`_board_surface`·`_flat_board_surface`)의 텍스처를 바꾼다. 도시 바닥은 임시로 코드로 그린 그림이라 같은 이름 파일을 교체하면 된다.
 - 수정: `GameState.setup`이 고른 보드를 적용한 뒤 `BoardGraph.rebuild()`를 부른다 (그래프는 GameState 생성 때 만들어져 자판기·편의점 같은 칸 종류가 빠져 있었다).
+
+### 7.84 자판기 뽑기 연출
+- `_vending_feedback`(로그 + 연출 예약) → `_play_vending_pull(tile, drink)`: 타일 위에 자판기 마스크 그림(코랄)이 0.2초 만에 나타남 → 0.3초 뒤 캔(음료 색 둥근 사각형, `VENDING_CAN_COLORS`)이 바운스로 떨어짐 → 0.78초에 음료 이름이 캔 색으로 위로 뜸 → 버프 문구 배지(`_floating_badge`)가 말 위로 → 서서히 사라짐. 전체 약 1.5초 × 배속, `_fx_until_msec`로 다음 연출·봇이 기다린다. 일회성 노드는 `_mark_oneshot`으로 청소된다. 결과(음료)는 엔진이 이미 정했고 연출은 보여 주기만 한다.

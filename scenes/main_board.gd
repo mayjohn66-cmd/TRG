@@ -3555,7 +3555,13 @@ func _bakery_feedback(data: Dictionary) -> void:
 		_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(180.0 * _motion_pace())))  # 배지는 혼자 떠오르므로 큐를 오래 붙잡지 않는다
 
 
-## 자판기에서 뽑은 음료수: 로그와 말 위 배지로 무엇이 나왔는지 알린다 (모나티엄 도시).
+## 음료수 캔 색 (자판기 연출).
+const VENDING_CAN_COLORS: Dictionary = {
+	&"energy": Color("ffd43b"), &"coffee": Color("a9744f"), &"soda": Color("4dabf7"), &"ion": Color("63e6be"), &"milk": Color("f1f3f5"),
+}
+
+
+## 자판기에서 뽑은 음료수: 로그를 남기고 짧은 뽑기 연출(자판기 등장 → 캔 툭 → 음료 이름 → 버프 배지)을 보여 준다 (모나티엄 도시).
 func _vending_feedback(data: Dictionary) -> void:
 	var drink: StringName = data.get("vending_drink", &"")
 	if drink == &"" or not _pawn_views.has(int(data["pawn_id"])):
@@ -3565,12 +3571,62 @@ func _vending_feedback(data: Dictionary) -> void:
 	_log_line("[자판기] P%d: %s! %s" % [owner_id, L10n.t(VendingDrinks.name_of(drink)), L10n.t(VendingDrinks.text_of(drink))], Color("ff8f7a"))
 	if pawn == null or not _fx_on():
 		return
-	var at: Vector2 = (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + _tile_center(pawn.current_tile_idx) + Vector2(0, -46)
-	var label: String = "%s! %s" % [L10n.t(VendingDrinks.name_of(drink)), L10n.t(VendingDrinks.text_of(drink))]
-	_enqueue_late(func() -> void:
+	var tile: int = pawn.current_tile_idx
+	_enqueue_late(func() -> void: _play_vending_pull(tile, drink))
+
+
+## 자판기 뽑기 연출 한 번 (약 1.5초): 자판기가 톡 나타나고, 캔이 떨어지고, 음료 이름이 뜬 뒤 버프 배지가 말 위로 올라간다. 끝날 때까지 다음 연출은 기다린다.
+func _play_vending_pull(tile: int, drink: StringName) -> void:
+	var pace: float = _motion_pace()
+	var at: Vector2 = (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + _tile_center(tile) + Vector2(0, -58)
+	var holder := Node2D.new()
+	holder.position = at
+	holder.z_index = 62
+	holder.scale = Vector2(0.5, 0.5)
+	holder.modulate.a = 0.0
+	add_child(holder)
+	_mark_oneshot(holder, 1.6 * pace)
+	var machine := Sprite2D.new()  # 자판기 그림 (타일 도안과 같은 마스크, 코랄색으로)
+	machine.texture = BoardSkin.decal_texture("vending")
+	var material := ShaderMaterial.new()
+	material.shader = BoardSkin.FLAT_INK
+	material.set_shader_parameter("ink", Color("ff8f7a"))
+	machine.material = material
+	machine.scale = Vector2.ONE * (58.0 / maxf(machine.texture.get_width(), machine.texture.get_height()))
+	holder.add_child(machine)
+	var can := Panel.new()  # 캔: 둥근 사각형 한 개
+	var can_color: Color = VENDING_CAN_COLORS.get(drink, Color.WHITE)
+	can.add_theme_stylebox_override("panel", _style(can_color, can_color.darkened(0.45), 2, 7, 0, 0))
+	can.size = Vector2(16, 26)
+	can.position = Vector2(-8, 6)
+	can.modulate.a = 0.0
+	can.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.add_child(can)
+	var name_label: Label = _make_label(L10n.t(VendingDrinks.name_of(drink)) + "!", 24, can_color)
+	name_label.add_theme_constant_override("outline_size", 8)
+	name_label.add_theme_color_override("font_outline_color", Color("1b1405"))
+	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	name_label.reset_size()
+	name_label.position = Vector2(-name_label.size.x / 2.0, -64)
+	name_label.modulate.a = 0.0
+	holder.add_child(name_label)
+	var buff_text: String = L10n.t(VendingDrinks.text_of(drink))
+	var badge_at: Vector2 = at + Vector2(0, 58 - 46)  # 말 위 (기존 배지 높이)
+	Sfx.play(&"ui_click", -4.0)
+	var tween: Tween = holder.create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(holder, "modulate:a", 1.0, 0.16 * pace)
+	tween.tween_property(holder, "scale", Vector2.ONE, 0.2 * pace).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(can, "modulate:a", 1.0, 0.05 * pace).set_delay(0.3 * pace)
+	tween.tween_property(can, "position:y", 30.0, 0.34 * pace).set_delay(0.3 * pace).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+	tween.tween_property(name_label, "modulate:a", 1.0, 0.18 * pace).set_delay(0.78 * pace)
+	tween.tween_property(name_label, "position:y", -76.0, 0.3 * pace).set_delay(0.78 * pace).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.chain().tween_callback(func() -> void:
 		Sfx.play(&"good", -6.0)
-		_floating_badge(at, label, Color("ff8f7a"), 24)
-		_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(180.0 * _motion_pace())))
+		_floating_badge(badge_at, buff_text, can_color.lightened(0.15), 26))
+	tween.tween_property(holder, "modulate:a", 0.0, 0.3 * pace).set_delay(0.35 * pace)
+	tween.chain().tween_callback(holder.queue_free)
+	_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(1500.0 * pace))
 
 
 ## 코너에 정확히 도착해 받은 버프: 그 말 위에 [다음 굴림 +N]이 떠오른다.
