@@ -2196,7 +2196,15 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 - 기준표는 `content_trickcal/data/README.md`의 "카드 설명 용어". 바꾼 것: 사출 표기(`장외 사출`·`선두 말 사출`·`출발선 사출` -> `출발선으로 사출`), 사람은 `상대`·말은 `적 말`(ACT_02·ACT_08·ACT_09·ACT_20), 차례 -> 턴(ACT_06), `내 패` -> `내 손패`, `상납` -> `강탈`, `붕괴`·`소각` -> `파괴`, `멈추고`·`정지` -> `강제 정지`, `주사위 리롤` -> `재굴림`, 이동 보너스는 `+N칸 전진`, 일본어 `場外射出`·`崩壊` 제거. TRP_03(지뢰)은 폭파 뒤 출발선으로 사출까지 적었고, SUM_03은 말은 사출·함정은 파괴로 갈라 적었다.
 - 규칙은 바뀌지 않았다 (문구만). 보드 칸 이름은 UI 전체가 `타일`(칸 위치)과 `칸`(거리 단위)을 구분해 쓰므로 그대로 둔다. 로그·증강 설명의 같은 용어는 이번에 건드리지 않았다.
 
-### 7.78 보드판 선택 (v1.2 준비, `next/boards`)
+### 7.79 배지 z-order·대상 선택 바 확대
+- 리벤지 배지(`RevengeBadge`)는 `z_index = 5`로 드래프트 창(z 0) 위에 그려져 창 밖으로 튀어나왔다. z_index를 없애고 `_paint_revenge_glow` 끝에서 `move_child`로 불꽃 판보다 뒤(위)에 둔다.
+- `_show_choice`(방해령·대상 지정 등) 바: 제목 15->20, 버튼 14->20px·높이 34->52·최소 폭 110(단일 열 90), 취소 96x52, 바 폭 62%->82%(최대 1100). UI 겹침 감사 0건, 전체 테스트 통과.
+
+### 7.80 시작 연출 순서 (소개 > ROUND 1 > 첫 턴)
+- 원인: `_new_game`이 `_close_opening()`(= `_intro_pending=false`) 뒤 `manager.start_game()`을 부르는데, start_game 도중 phase 신호가 `_refresh_all`을 돌려 `_check_round_banner`가 오프닝이 켜지기도 전에 ROUND 배너(첫 턴 겸용)를 쐈다. 배너는 오프닝(약 4.4초) 아래에서 이미 재생돼 소개·라운드·턴이 겹쳤다.
+- 수정: `_close_opening()` 직후 `_intro_pending = true`, `_check_round_banner`·`_check_turn_banner`에 `_intro_blocks()` 가드 (오프닝이 끝나면 `_on_opening_finished`가 다시 그린다). 실측: 소개 0~4.4초 → ROUND 1 배너 4.4~7.0초.
+
+### 7.81 보드판 선택 (v1.2 준비, `next/boards`)
 - **데이터**: `BoardSpec.layout_for(칸 수)`(전역 값을 바꾸지 않는 순수 조회: 코너·반환점·빵집·옷장·워프·부스터 발판)와 `apply`. `BoardCatalog.BOARDS` = [{id, name, desc, tiles}] (지금 `classic` 32칸 하나), `sanitize`·`def_of`·`facts_of`(선택 화면·도감용 요약)·`apply`/`apply_for_match`.
 - **규칙**: `MatchRules` `board` 키(기본 `classic`, `sanitize`가 모르는 id를 기본으로, 기본이 아닌 보드만 규칙 요약에 표시). `GameState.setup`이 `apply_for_match`로 적용하는데, 마지막으로 목록에서 적용한 보드(`BoardCatalog.current_id`)와 같으면 건드리지 않는다 (단위 테스트가 `BoardSpec.apply(24)`로 직접 정한 배치를 덮지 않게). 온라인은 방장 규칙(`config["rules"]`)에 실려 모두 같은 보드를 쓴다 (락스텝).
 - **저장·선택**: `GameSession.board_id()/set_board()`는 방 규칙 override(`RULE_KEYS`)와 따로 프로필 `board`에 저장한다 (컴퓨터 대전은 override를 무시하지만 보드는 적용해야 해서). `match_rules()`·`room_rules()`가 그 값을 실어 보낸다. [기본값으로]는 보드도 기본으로.

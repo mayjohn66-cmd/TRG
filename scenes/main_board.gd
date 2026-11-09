@@ -1253,6 +1253,7 @@ func _new_game() -> void:
 	_tool_board_key = ""
 	_close_stack_overlay()
 	_close_opening()
+	_intro_pending = true  # start_game 도중의 갱신이 오프닝보다 먼저 라운드·턴 배너를 쏘지 않게 미리 켠다
 	_shown_turn = -1
 	_draft_summary.clear()
 	_draft_banner_round = 0
@@ -4188,6 +4189,8 @@ func _revenge_steps(pawn: PlayerPawn = null) -> int:
 func _check_round_banner() -> void:
 	if _announcer == null or manager.is_game_over or manager.current_state == TurnManager.State.PHASE_ROUND_START:
 		return
+	if _intro_blocks():
+		return  # 플레이어 소개(오프닝)가 끝난 뒤에 라운드 시작 > 첫 턴 순서로 (끝나면 _on_opening_finished가 다시 그린다)
 	if _fx_on() and (_draft_open or not _draft_deferred.is_empty() or (_review_overlay != null and is_instance_valid(_review_overlay))):
 		_motion_retry = true
 		return  # 증강 확인 창이 닫히고, 고른 증강의 즉시 효과(진화·도구 교체·카드 보급·초증강) 연출이 다 끝난 뒤에 라운드를 연다
@@ -4240,6 +4243,8 @@ func _turn_banner_pending() -> bool:
 func _check_turn_banner() -> void:
 	if not pacing_enabled or _announcer == null or manager.is_game_over or manager.current_state != TurnManager.State.PHASE_TURN_BEGIN:
 		return
+	if _intro_blocks():
+		return  # 오프닝 중에는 턴 배너를 띄우지 않는다
 	if _defer_for_motion():
 		return
 	var key: String = "%d:%d" % [state.round_number, manager.current_player_id()]
@@ -4608,6 +4613,8 @@ func _paint_revenge_glow(host: Control, on: bool, steps: int = 0, compact: bool 
 		pulse.tween_property(glow, "modulate:a", 0.45, 0.45).set_trans(Tween.TRANS_SINE)
 		pulse.tween_property(glow, "modulate:a", 1.0, 0.45).set_trans(Tween.TRANS_SINE)
 	glow.visible = true
+	if tag != null and tag.get_parent() == host:
+		host.move_child(tag, host.get_child_count() - 1)  # z_index 대신 자식 순서로 글을 불꽃 위에 (드래프트 창을 뚫지 않게)
 
 
 func _fit_profile_token(host: Control) -> void:
@@ -9744,14 +9751,14 @@ func _show_choice(title: String, options: Array[Dictionary], on_pick: Callable, 
 	var panel := PanelContainer.new()
 	panel.name = "ChoiceBarPanel"
 	panel.add_theme_stylebox_override("panel", _style(Color(0.07, 0.09, 0.15, 0.94), COLOR_GOLD, 2, 14, 10, 10))
-	panel.custom_minimum_size = Vector2(minf(view.x * 0.62, 860.0), 0)
+	panel.custom_minimum_size = Vector2(minf(view.x * 0.82, 1100.0), 0)
 	_choice_overlay.add_child(panel)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
 	panel.add_child(row)
 	var title_label: Label = _make_label(title, 15, Color("ffe066"))
 	title_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	title_label.custom_minimum_size = Vector2(180, 0)
+	title_label.custom_minimum_size = Vector2(260, 0)
 	title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	row.add_child(title_label)
 	var flow := HFlowContainer.new()
