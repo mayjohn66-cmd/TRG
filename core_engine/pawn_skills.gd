@@ -150,6 +150,29 @@ static func cannon_tile(state: GameState, pawn: PlayerPawn) -> int:
 	return best.current_tile_idx if best != null else -1
 
 
+## 궁수 [애로우샷] 표적: 보드 위에서 가장 뒤에 있는(결승선까지 가장 먼) 처치 가능한 적의 칸. 없으면 -1.
+static func rear_tile(state: GameState, pawn: PlayerPawn) -> int:
+	var best: PlayerPawn = null
+	for enemy: PlayerPawn in state.pawns:
+		if enemy.owner_id == pawn.owner_id or enemy.is_finished or not enemy.has_left_start or enemy.carrier != null:
+			continue
+		if enemy.current_tile_idx == GameEnums.GOAL_TILE or MoveExecutor.is_capture_immune(state, enemy):
+			continue
+		if best == null or state.pawn_progress_distance(enemy) > state.pawn_progress_distance(best):
+			best = enemy
+	return best.current_tile_idx if best != null else -1
+
+
+## 전사 [일자 베기] 경로: 앞으로 1칸 (결승선은 넘지 않는다).
+static func slash_path(state: GameState, pawn: PlayerPawn) -> Array[int]:
+	var route: Array[int] = []
+	for tile: int in state.board.calculate_path(pawn, 1, RuleContext.new()):
+		route.append(tile)
+		if tile == GameEnums.GOAL_TILE:
+			break
+	return route
+
+
 ## 쇼기 계마 [계마 도약] 경로: 앞으로 2칸 (결승선은 넘지 않는다).
 static func keima_path(state: GameState, pawn: PlayerPawn) -> Array[int]:
 	var route: Array[int] = []

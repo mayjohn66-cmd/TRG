@@ -7743,10 +7743,22 @@ func _start_skill(pawn: PlayerPawn) -> void:
 				_log_line("[직항 워프] 이미 반환점을 지나 직항할 곳이 없습니다.", Color("868e96"))
 				return
 			_act(&"use_skill", {"pawn_id": pawn.entity_id, "tile": BoardSpec.halfway_tile})
-		&"cannon":
+		&"cannon", &"fireball":
 			if PawnSkills.cannon_tile(state, pawn) == -1:
 				_log_line("[포격] 처치할 수 있는 적의 말이 보드 위에 없습니다.", Color("868e96"))
 				return
+			_act(&"use_skill", {"pawn_id": pawn.entity_id})
+		&"arrow_shot":
+			if PawnSkills.rear_tile(state, pawn) == -1:
+				_log_line("[애로우샷] 처치할 수 있는 적의 말이 보드 위에 없습니다.", Color("868e96"))
+				return
+			_act(&"use_skill", {"pawn_id": pawn.entity_id})
+		&"warrior_slash":
+			if PawnSkills.slash_path(state, pawn).is_empty():
+				_log_line("[일자 베기] 앞으로 갈 칸이 없습니다.", Color("868e96"))
+				return
+			_act(&"use_skill", {"pawn_id": pawn.entity_id})
+		&"stealth":
 			_act(&"use_skill", {"pawn_id": pawn.entity_id})
 		&"keima_jump":
 			if PawnSkills.keima_path(state, pawn).is_empty():
@@ -7915,7 +7927,14 @@ func _on_skill_used(data: Dictionary) -> void:
 		&"cannon":
 			body = "포격으로 %d개의 말을 출발선으로!" % (data["victims"] as Array).size()
 			screen_shake(8.0, 0.3)
-		&"knight_guard":
+		&"fireball":
+			body = "파이어볼로 %d개의 말을 출발선으로!" % (data["victims"] as Array).size()
+			screen_shake(8.0, 0.3)
+		&"arrow_shot":
+			body = "화살로 %d개의 말을 출발선으로!" % (data["victims"] as Array).size()
+		&"warrior_slash":
+			body = "%d번 타일로 일자 베기!" % int((data["path"] as Array).back())
+		&"stealth", &"knight_guard":
 			body = "이번 차례 동안 잡기·함정 사출을 막습니다"
 		&"keima_jump":
 			body = "%d번 타일로 도약!" % int((data["path"] as Array).back())

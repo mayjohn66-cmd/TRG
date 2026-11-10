@@ -35,6 +35,7 @@ static func capture(state: GameState) -> TurnSnapshot:
 			"ward_box": pawn.ward_box,
 			"turn_guard": pawn.turn_guard,
 			"melon": pawn.melon_size,
+			"trpg_level": pawn.trpg_level,
 			"shield_hit": pawn.shield_broken_hit,
 			"carrier": pawn.carrier.entity_id if pawn.carrier != null else -1,
 			"carried": carried_ids,
@@ -127,6 +128,7 @@ func restore(state: GameState, restore_meta: bool = false) -> void:
 		pawn.ward_box = bool(entry.get("ward_box", false))
 		pawn.turn_guard = bool(entry.get("turn_guard", false))
 		pawn.melon_size = int(entry.get("melon", 0))
+		pawn.trpg_level = int(entry.get("trpg_level", 1))
 		pawn.shield_broken_hit = bool(entry.get("shield_hit", false))
 		pawn.carrier = null
 		pawn.carried.clear()

@@ -14,6 +14,7 @@ const TEXTS: Dictionary = {
 	&"knight_corner": "[나이트] 코너 도약 +2칸!",
 	&"plane_card": "[비행기] 옷장 카드+1!",
 	&"knight_guard": "[나이트] 맹세 방어!",
+	&"trpg_level": "[TRPG] 레벨 업!",
 	&"straight_rook": "[룩] 직진 +2칸!",
 	&"straight_hisha": "[비차] 직진 +2칸!",
 	&"straight_ryuo": "[용왕] 직진 +2칸!",

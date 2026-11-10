@@ -2770,3 +2770,24 @@ PROGRESS / 진행률,PROGRESS,PROGRESS／進行度
 ★%s! %d칸 + 한 번 더,★%s! %d spaces + Extra Roll,★%s！ %dマス + もう1回
 ★한번 더!가 나오면 아이스크림 리필,★One more! refills the ice cream,★もう1回！でアイス補充
 ★한번 더!(3칸+새 아이스크림),★One more!(3 + fresh ice cream),★もう1回！(3マス+新しいアイス)
+[애로우샷] 처치할 수 있는 적의 말이 보드 위에 없습니다.,[Arrow Shot] There is no enemy pawn on the board to defeat.,[アローショット] 倒せる敵の駒が盤上にありません。
+[일자 베기] 앞으로 갈 칸이 없습니다.,[Slash] There is no tile ahead to move to.,[一文字斬り] 進めるマスがありません。
+파이어볼로 %d개의 말을 출발선으로!,Fireball sends %d pawn(s) back to the start!,ファイアボールで%d個の駒をスタートへ！
+화살로 %d개의 말을 출발선으로!,The arrow sends %d pawn(s) back to the start!,矢で%d個の駒をスタートへ！
+%d번 타일로 일자 베기!,Slash to tile %d!,%d番のマスへ一文字斬り！
+"전사·마법사·궁수·도적. 처치하면 레벨 업, 곧바로 추가 전진!","Warrior, Mage, Archer, Rogue. A kill levels up and advances instantly!",戦士・魔法使い・弓使い・盗賊。倒すとレベルアップしてすぐ追加前進！
+TRPG:전사,TRPG:Warrior,TRPG:戦士
+TRPG:마법사,TRPG:Mage,TRPG:魔法使い
+TRPG:궁수,TRPG:Archer,TRPG:弓使い
+TRPG:도적,TRPG:Rogue,TRPG:盗賊
+전,Wr,戦
+궁,Ar,弓
+"처치하면 레벨 업 → 곧바로 추가 전진 (Lv마다 +1칸, 최대 +3칸)","A kill levels up → instant extra advance (+1 per level, max +3)",倒すとレベルアップ → すぐ追加前進 (Lv毎に+1マス、最大+3)
+[TRPG] 레벨 업!,[TRPG] Level up!,[TRPG] レベルアップ！
+일자 베기,Slash,一文字斬り
+파이어볼,Fireball,ファイアボール
+애로우샷,Arrow Shot,アローショット
+은밀기동,Stealth,隠密行動
+1칸 전진하며 그 칸의 적 처치,Advance 1 tile and defeat enemies there,1マス前進してそのマスの敵を倒す
+가장 뒤에 있는 적의 말 처치,Defeat the rearmost enemy pawn,最後尾の敵の駒を倒す
+TRPG,TRPG,TRPG

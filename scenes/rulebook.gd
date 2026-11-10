@@ -1509,6 +1509,7 @@ const PAWN_LINES: Dictionary = {
 	GameEnums.PawnKind.GO: "흑돌은 홀수 눈금 +1칸, 백돌은 방어막.",
 	GameEnums.PawnKind.SHOGI: "반환점을 지나면 승급(나리)해 더 강해져요.",
 	GameEnums.PawnKind.ARCADE: "킹 체커·루도·8번 공·스타 카트·지뢰찾기 공병.",
+	GameEnums.PawnKind.TRPG: "전사·마법사·궁수·도적. 처치하면 레벨 업, 곧바로 추가 전진!",
 }
 
 

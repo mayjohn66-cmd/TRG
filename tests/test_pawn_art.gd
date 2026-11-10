@@ -31,8 +31,8 @@ func test_all_catalog_states_have_distinct_illustrations() -> void:
 		token.configure_npc(behavior)
 		_check_art(token.artwork, "NPC_ROBBER.png" if behavior == GameEnums.NpcBehavior.CHASE_NEAREST else "NPC_GHOST.png", sources)
 		token.free()
-	check_eq(sources.size(), 34, "28 normal + 4 promoted + 2 NPC illustrations")
-	print("PAWN_ART_COVERAGE ", sources.size(), "/34")
+	check_eq(sources.size(), 38, "32 normal + 4 promoted + 2 NPC illustrations")
+	print("PAWN_ART_COVERAGE ", sources.size(), "/38")
 
 
 func _check_art(art: Dictionary, filename: String, sources: Dictionary) -> void:

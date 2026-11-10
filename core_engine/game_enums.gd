@@ -18,7 +18,7 @@ enum Phase {
 }
 
 ## 기물 세트(계열). BASIC은 아직 진화하지 않은 기본 말이다. 진화한 말은 세트 안에서 1~4호기(unit_no)를 순서대로 받는다.
-enum PawnKind { BASIC, YUT, CHESS, JANGGI, MONOPOLY, GO, SHOGI, ARCADE }
+enum PawnKind { BASIC, YUT, CHESS, JANGGI, MONOPOLY, GO, SHOGI, ARCADE, TRPG }
 
 ## 호기별 세부 기물. (세트, 호기)에서 PawnCatalog.sub_type_of()가 정한다. 체스 퀸은 5번째 호기 번호(CHESS_QUEEN_UNIT)로 표현한다.
 enum PawnSubType {
@@ -31,6 +31,7 @@ enum PawnSubType {
 	SHOGI_FU, SHOGI_HISHA, SHOGI_KAKU, SHOGI_KEIMA,
 	CHECKERS_KING, LUDO_AVENGER, POOL_8BALL, KART_STAR, MINESWEEPER_FLAG,
 	MOB_KYUI, ODD_MELON,  # v1.1 아케이드 6·7호기
+	TRPG_WARRIOR, TRPG_MAGE, TRPG_ARCHER, TRPG_ROGUE,  # TRPG 세트 1~4호기
 }
 
 ## 체스 폰이 승진해 퀸이 된 뒤의 호기 번호.

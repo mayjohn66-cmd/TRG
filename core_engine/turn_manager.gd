@@ -670,12 +670,24 @@ func _handle_use_skill(actor: int, params: Dictionary) -> void:
 			_broadcast_state()
 		&"quake", &"slash", &"horse", &"back_kick":
 			_skill_effect(actor, pawn, skill)
-		&"cannon":
+		&"cannon", &"fireball":
 			if PawnSkills.cannon_tile(state, pawn) == -1:
 				action_rejected.emit(actor, &"use_skill", &"invalid_skill")
 				return
 			_skill_effect(actor, pawn, skill)
-		&"knight_guard":
+		&"arrow_shot":
+			if PawnSkills.rear_tile(state, pawn) == -1:
+				action_rejected.emit(actor, &"use_skill", &"invalid_skill")
+				return
+			_skill_effect(actor, pawn, skill)
+		&"warrior_slash":
+			var slash: Array[int] = PawnSkills.slash_path(state, pawn)
+			if slash.is_empty():
+				action_rejected.emit(actor, &"use_skill", &"invalid_skill")
+				return
+			_emit_skill_event(actor, pawn, skill, {"path": slash})
+			_execute_move(pawn, slash, skill)
+		&"knight_guard", &"stealth":
 			# 나이트 기사의 맹세: 이번 차례가 끝날 때까지 잡기·함정 사출을 막는다 (굴림은 그대로)
 			pawn.skill_used = true
 			pawn.turn_guard = true
@@ -723,7 +735,8 @@ func _skill_effect(actor: int, pawn: PlayerPawn, skill: StringName) -> void:
 	match skill:
 		&"quake": tiles = PawnSkills.quake_tiles(pawn)
 		&"slash", &"horse", &"back_kick": tiles = PawnSkills.strike_tiles(pawn, skill)
-		&"cannon": tiles = [PawnSkills.cannon_tile(state, pawn)] as Array[int]
+		&"cannon", &"fireball": tiles = [PawnSkills.cannon_tile(state, pawn)] as Array[int]
+		&"arrow_shot": tiles = [PawnSkills.rear_tile(state, pawn)] as Array[int]
 		&"plant_mine", &"hotel", &"cucumber": tiles = [pawn.current_tile_idx] as Array[int]
 	var from_tile: int = pawn.current_tile_idx
 	var command := SkillEffectCommand.new(actor, pawn.entity_id, skill, tiles)

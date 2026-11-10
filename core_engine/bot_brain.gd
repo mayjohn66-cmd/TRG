@@ -596,7 +596,25 @@ static func skill_option(state: GameState, pawn: PlayerPawn) -> Dictionary:
 				if leader.owner_id != pawn.owner_id and not MoveExecutor.is_capture_immune(state, leader):
 					target += pawn_progress(state, leader)
 			return {"params": {}, "value": target + float(route.size())} if target > 0.0 else {}
-		&"cannon":
+		&"arrow_shot":
+			var rear: int = PawnSkills.rear_tile(state, pawn)
+			if rear == -1:
+				return {}
+			var arrow: float = 0.0
+			for leader: PlayerPawn in state.leaders_at(rear):
+				if leader.owner_id != pawn.owner_id and leader.has_left_start and not MoveExecutor.is_capture_immune(state, leader):
+					arrow += pawn_progress(state, leader)
+			return {"params": {}, "value": arrow} if arrow > 0.0 else {}
+		&"warrior_slash":
+			var ahead: Array[int] = PawnSkills.slash_path(state, pawn)
+			if ahead.is_empty():
+				return {}
+			var cut: float = 0.0
+			for leader: PlayerPawn in state.leaders_at(ahead.back()):
+				if leader.owner_id != pawn.owner_id and leader.has_left_start and not MoveExecutor.is_capture_immune(state, leader):
+					cut += pawn_progress(state, leader)
+			return {"params": {}, "value": cut + 1.0} if cut > 0.0 else {}
+		&"cannon", &"fireball":
 			var target: int = PawnSkills.cannon_tile(state, pawn)
 			if target == -1:
 				return {}
@@ -614,7 +632,7 @@ static func skill_option(state: GameState, pawn: PlayerPawn) -> Dictionary:
 				if leader.owner_id != pawn.owner_id and leader.has_left_start and not MoveExecutor.is_capture_immune(state, leader):
 					prey += pawn_progress(state, leader)
 			return {"params": {}, "value": prey + float(jump.size())} if prey > 0.0 else {}
-		&"knight_guard":
+		&"knight_guard", &"stealth":
 			# 이번 차례에 지나갈 앞쪽 6칸에 보이는 남의 함정이 있으면 쓴다
 			var traps: int = 0
 			for tile: int in state.board.calculate_path(pawn, 6, RuleContext.new()):

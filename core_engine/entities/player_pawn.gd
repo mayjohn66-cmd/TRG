@@ -41,6 +41,9 @@ var ward_box: bool = false
 var turn_guard: bool = false
 ## 괴상한 멜론 (v1.1): 함정을 먹고 커진 단계 (0~MELON_MAX). 최대면 모든 함정 면역 + 스친 적 처치. 출발선으로 가면 0으로.
 var melon_size: int = 0
+## TRPG 기물의 레벨 (처치할 때마다 +1, 잡히면 1로 돌아간다).
+var trpg_level: int = 1
+const TRPG_MAX_LEVEL: int = 5
 const MELON_MAX: int = 3
 
 
@@ -66,6 +69,16 @@ func is_giant_melon() -> bool:
 	return sub_type() == GameEnums.PawnSubType.ODD_MELON and melon_size >= MELON_MAX
 
 
+## TRPG 기물인가 (공통 패시브: 처치하면 레벨 업).
+func is_trpg() -> bool:
+	return kind == GameEnums.PawnKind.TRPG
+
+
+## 처치 직후 곧바로 더 가는 칸수: 새 레벨마다 +1칸, 최대 +3칸.
+func trpg_charge_steps() -> int:
+	return mini(mini(trpg_level + 1, TRPG_MAX_LEVEL), 3) if is_trpg() else 0
+
+
 ## 체스 나이트(와 퀸)의 고유 능력: 중간 칸의 설치물(함정·호텔)을 무시하고 도착 칸만 판정한다 (나이트 점프).
 func jumps_over_attachments() -> bool:
 	return sub_type() == GameEnums.PawnSubType.CHESS_QUEEN
@@ -78,6 +91,7 @@ func evolve(new_kind: GameEnums.PawnKind, new_unit_no: int) -> void:
 	shield = sub_type() == GameEnums.PawnSubType.BADUK_WHITE
 	shield_broken_hit = false
 	melon_size = 0
+	trpg_level = 1
 
 
 func display_label() -> String:
@@ -125,6 +139,7 @@ func stack_members() -> Array[PlayerPawn]:
 func reset_to_start() -> void:
 	reset_position()
 	melon_size = 0  # 잡힌 멜론은 다시 작은 멜론으로
+	trpg_level = 1
 	has_left_start = false
 	retreated_run = false
 	is_imprisoned = false

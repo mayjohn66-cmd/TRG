@@ -91,6 +91,22 @@ signal haunt_boost_set(player_id: int)  ## 방해령 허리케인 포스 제정:
 signal bounty_claimed(hunter: int, pawn_id: int, steps: int)
 
 var board: BoardGraph = BoardGraph.new()
+
+
+func _init() -> void:
+	pawn_captured.connect(_trpg_level_up)
+
+
+## TRPG 공통 패시브: 처치하면 레벨 업 (방어로 처치가 취소되면 되돌릴 수 있게 기록한다).
+func _trpg_level_up(attacker_pawn_id: int, victim_pawn_id: int) -> void:
+	var attacker: PlayerPawn = get_pawn(attacker_pawn_id)
+	var victim: PlayerPawn = get_pawn(victim_pawn_id)
+	if attacker == null or victim == null or not attacker.is_trpg() or attacker.owner_id == victim.owner_id:
+		return
+	record_effect(victim.owner_id, "trpg:%d" % attacker.entity_id, attacker.trpg_level)
+	attacker.trpg_level = mini(attacker.trpg_level + 1, PlayerPawn.TRPG_MAX_LEVEL)
+	passive_triggered.emit(attacker.entity_id, &"trpg_level")
+
 ## Node 기반 법전. 씬 트리에 붙이지 않고 GameState가 수명을 관리한다.
 var rulebook: RuleBookManager = RuleBookManager.new()
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -1084,6 +1100,10 @@ func undo_attack(entry: Dictionary) -> void:
 	if effects.has("hack"):
 		hacked_turns[victim] = int(effects["hack"])
 	for key: String in effects.keys():
+		if key.begins_with("trpg:"):
+			var leveler: PlayerPawn = get_pawn(int(key.trim_prefix("trpg:")))
+			if leveler != null:
+				leveler.trpg_level = int(effects[key])
 		if key.begins_with("stat:"):
 			law_stats[victim] = law_stats.get(victim, {})
 			(law_stats[victim] as Dictionary)[StringName(key.trim_prefix("stat:"))] = int(effects[key])

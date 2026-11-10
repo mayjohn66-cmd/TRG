@@ -713,6 +713,8 @@ static func _resolve_captures(state: GameState, mover: PlayerPawn, ctx: RuleCont
 	# 잡기 추가 턴: 윷놀이 기물의 고유 능력 [신명나는 사냥].
 	ctx.capture_extra_turn = grants_capture_extra_turn(state, mover)
 	ctx.capture_charge_steps = EIGHT_BALL_CHARGE if mover.sub_type() == GameEnums.PawnSubType.POOL_8BALL else 0
+	if mover.is_trpg():
+		ctx.capture_charge_steps = mover.trpg_charge_steps()  # TRPG 공통 패시브: 처치 → 레벨 업 → 추가 전진
 	if ctx.metadata.get("skill", &"") == &"keima_jump":
 		ctx.capture_charge_steps = PawnSkills.KEIMA_CAPTURE_STEPS  # 계마 도약: 처치하면 한 칸 더
 	var bounty_pawn: int = int(state.bounties.get(mover.owner_id, -1))
