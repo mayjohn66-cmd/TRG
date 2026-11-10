@@ -2752,3 +2752,13 @@ PROGRESS / 진행률,PROGRESS,PROGRESS／進行度
 4칸 쌓고 한 번 더!,Stack 4 and throw again!,4マス溜めてもう一回！
 5칸 쌓고 한 번 더!,Stack 5 and throw again!,5マス溜めてもう一回！
 윷·모는 쌓아 두고 계속 던진 뒤 눈금마다 말을 골라 이동,Yut/Mo stack while you keep throwing then each value moves a pawn you choose,ユッ・モは溜めて投げ続け出目ごとに駒を選んで移動
+[긴급 엄폐] %s이(가) 택배 박스를 뒤집어썼습니다 (잡기·함정 1회 방어),[Emergency Cover] %s put on a delivery box (blocks one capture or trap),[緊急遮蔽] %sが宅配ボックスをかぶった（捕獲・罠を1回防ぐ）
+%s 택배 박스로 엄폐,%s took cover under a box,%sが宅配ボックスで身を隠した
+박스 엄폐!,Box cover!,ボックス遮蔽！
+[펭짱 8호] P%d의 펭귄이 날아가 적 말 %d개를 날려 버렸습니다!,[Pengjjang No. 8] P%d's penguin flew and blasted %d enemy pawn(s)!,[ペンちゃん8号] P%dのペンギンが飛んで敵駒%d個を吹き飛ばした！
+[전문적 해킹] P%d이(가) %s의 다음 턴을 해킹했습니다 (자동 진행),[Professional Hacking] P%d hacked %s's next turn (auto-play),[プロのハッキング] P%dが%sの次のターンをハッキングした（自動進行）
+[%s] 펭귄을 날릴 내 말을 고르세요,[%s] Pick your pawn to launch the penguin from,[%s] ペンギンを飛ばす自分の駒を選んでください
+[%s] 박스를 씌울 내 말을 고르세요,[%s] Pick your pawn to cover with a box,[%s] ボックスをかぶせる自分の駒を選んでください
+[해킹] %s의 이번 턴은 자동 진행됩니다,[Hack] %s's turn this time plays itself,[ハッキング] %sのこのターンは自動進行になります
+해킹,Hack,ハッキング
+자동 진행!,Auto-play!,自動進行！

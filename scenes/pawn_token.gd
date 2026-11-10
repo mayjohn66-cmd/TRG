@@ -37,7 +37,7 @@ func configure(value: PlayerPawn, color: Color, images: bool = true) -> void:
 	owner_color = color
 	use_art = images
 	var art: Dictionary = PawnArt.sprite(pawn) if images else {}
-	var key: String = "%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s" % [pawn.kind, pawn.unit_no, pawn.slot, pawn.promoted, pawn.carried.size(), pawn.skill_used, pawn.is_finished, color, pawn.revenge_boost, (art.get("texture") as Texture2D).resource_path if not art.is_empty() else "shape", pawn.shield, pawn.ward, pawn.turn_guard, pawn.melon_size]
+	var key: String = "%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s" % [pawn.kind, pawn.unit_no, pawn.slot, pawn.promoted, pawn.carried.size(), pawn.skill_used, pawn.is_finished, color, pawn.revenge_boost, (art.get("texture") as Texture2D).resource_path if not art.is_empty() else "shape", pawn.shield, pawn.ward, pawn.turn_guard, pawn.melon_size, pawn.ward_box]
 	if key == _signature:
 		return
 	# 괴상한 멜론 (v1.1): 함정을 먹을 때마다 한 단계씩 커진다 (최대 3단계 = 1.6배)
@@ -97,6 +97,35 @@ func _sync_shield(animate: bool) -> void:
 		height = 20.0
 	_shield_shell.fit_body(height, mini(pawn.carried.size(), 3), float(pawn.entity_id))
 	_shield_shell.set_active(has_protection(), animate and not pawn.is_finished)
+	_sync_cover_box(height)
+
+
+## 긴급 엄폐(ACT_22): 보호막 위에 택배 박스를 뒤집어씌운 모습 (임시 그림: 갈색 상자 도형).
+func _sync_cover_box(height: float) -> void:
+	var box: Node2D = get_node_or_null("CoverBox") as Node2D
+	if pawn == null or not pawn.ward_box or not has_protection():
+		if box != null:
+			box.queue_free()
+		return
+	if box == null:
+		box = Node2D.new()
+		box.name = "CoverBox"
+		box.z_index = 3
+		var body := Polygon2D.new()
+		body.polygon = PackedVector2Array([Vector2(-17, -34), Vector2(17, -34), Vector2(20, -2), Vector2(-20, -2)])
+		body.color = Color("c98f55")
+		box.add_child(body)
+		var lid := Polygon2D.new()
+		lid.polygon = PackedVector2Array([Vector2(-21, -38), Vector2(21, -38), Vector2(17, -32), Vector2(-17, -32)])
+		lid.color = Color("e2b277")
+		box.add_child(lid)
+		var tape := Polygon2D.new()
+		tape.polygon = PackedVector2Array([Vector2(-3, -38), Vector2(3, -38), Vector2(3, -2), Vector2(-3, -2)])
+		tape.color = Color("f0dfb4")
+		box.add_child(tape)
+		add_child(box)
+	box.position = Vector2(0, 2)
+	box.scale = Vector2.ONE * clampf(height / 60.0, 0.6, 1.4)
 
 
 ## When a white stone has two protections, consuming one flashes the surviving shell.

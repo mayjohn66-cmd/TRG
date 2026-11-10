@@ -117,7 +117,7 @@ const STEP_LINGER_MIN_MSEC: int = 60
 ## 처치 확정 대기의 최대 시간(초): 방어 결정이 이보다 오래 걸리면(연결 끊김 등) 연출을 계속한다.
 const COUNTER_GATE_LIMIT: float = 30.0
 ## 상대를 해치는 공격 카드: 카드를 공개하기 전에 [공격 카드 발동!] 경보를 먼저 띄운다.
-const ATTACK_CARDS: Array[StringName] = [&"ACT_02", &"ACT_03", &"ACT_06", &"ACT_07", &"ACT_08", &"ACT_09", &"ACT_10", &"ACT_14", &"ACT_15"]
+const ATTACK_CARDS: Array[StringName] = [&"ACT_02", &"ACT_03", &"ACT_06", &"ACT_07", &"ACT_08", &"ACT_09", &"ACT_10", &"ACT_14", &"ACT_15", &"ACT_21", &"ACT_23"]
 const ATTACK_TAG: String = "공격"
 const HAND_RAISED_Y: float = -92.0
 ## 우측 하단 기물 독에서 기물 슬롯이 놓이는 기준 y (필살기 버튼 줄 아래).
@@ -156,6 +156,12 @@ const CARD_SHORT: Dictionary = {
 	&"CNT_03": "공격 카드 반사",
 	&"CNT_04": "공격 카드 1회 회피",
 	&"CNT_08": "잡기 1회 회피",
+	&"CNT_09": "잡기 막고 카드 1장",
+	&"ACT_21": "펭귄 발사로 적 날리기",
+	&"ACT_22": "내 말 박스로 1회 방어",
+	&"ACT_23": "대상 한 턴 자동 진행",
+	&"TRP_09": "밟은 모두 강제 정지",
+	&"SUM_04": "가까운 적 쫓는 팽이",
 	&"CNT_05": "함정 파괴 +3칸",
 	&"CNT_06": "함정 무효+강탈",
 	&"CNT_07": "함정 카드 획득",
@@ -199,6 +205,12 @@ const CARD_SUMMARIES: Dictionary = {
 	&"CNT_06": "[함정 방어] 걸린 함정 무효 + 설치자 카드 1장 강탈",
 	&"CNT_07": "[함정 방어] 걸린 함정을 발동하지 않고 그 함정 카드를 내 패로",
 	&"CNT_08": "[잡기 방어] 잡기 1회 회피",
+	&"CNT_09": "[잡기 방어] 잡기를 막고 카드 1장 획득",
+	&"ACT_21": "[공격] 내 말 하나에서 펭귄 발사 · 알까기처럼 날아가 부딪힌 적 말을 모두 출발선으로 날려 버림",
+	&"ACT_22": "내 말 하나에 택배 박스를 씌움 · 잡기·함정을 1회 막고 벗겨짐",
+	&"ACT_23": "[공격] 대상의 다음 한 턴이 자동 진행 (무작위 말 이동 · 카드·필살기 사용 불가)",
+	&"TRP_09": "[3턴] 밟은 모든 말(내 말도) 그 칸에서 강제 정지 · 한 번 걸려도 사라지지 않음",
+	&"SUM_04": "[상단 코너] 팽이 소환 · 라운드마다 가장 가까운 적 말 쪽으로 1칸 · 부딪힌 칸의 모든 말을 날려 버리고 소멸",
 	&"ACT_02": "상대 선두 말을 출발선으로 장외 사출",
 	&"ACT_03": "다음 유저에게 폭탄 패스: 선두 말 사출 + 내 이동 +4칸",
 	&"ACT_04": "굴리기 전 사용! 이번 굴림 +4칸",
@@ -415,6 +427,9 @@ var _dock_skill_buttons: Array[Button] = []
 var _tile_pick_skill_pawn: int = -1
 var _aim_pawn: int = -1
 var _aim_angle: float = 0.0
+## 펭짱 8호(ACT_21): 알까기 조준을 카드 사용으로 마칠 때 쓰는 카드 ID와 사용자 (비어 있으면 흑돌 필살기 조준).
+var _aim_card: StringName = &""
+var _aim_card_player: int = -1
 var _aim_power: float = 0.0
 var _alkkagi: AlkkagiStage = null
 var _train_stage: RunawayTrainStage
@@ -1422,6 +1437,9 @@ func _bind_state() -> void:
 		_log_line("[기억상실빔] %s이(가) %d번 타일에서 사출되지 않았습니다" % [_pawn_name(pawn_id), tile], Color("b197fc"))
 		_note_defense_success([pawn_id]))
 	state.haunt_shifted.connect(_on_haunt_shifted)
+	state.cover_applied.connect(_on_cover_applied)
+	state.penguin_flew.connect(_on_penguin_flew)
+	state.hack_applied.connect(_on_hack_applied)
 	state.card_drawn.connect(func(player_id: int, card_id: StringName) -> void:
 		# 방해령 허리케인 포스!!가 법전에 있을 때 새 종류의 방해령을 손에 넣으면 프로필 위에 모인 종류 수가 튀어 오른다 (법전 진행도와 같은 값)
 		if not _fx_on() or not HauntCommand.is_haunt(card_id) or not state.rulebook.has_law(SpecialVictory.HURRICANE_LAW) or not _profiles.has(player_id):
@@ -3148,6 +3166,60 @@ func _on_pawn_stepped(pawn_id: int, _from_tile: int, _to_tile: int) -> void:
 
 
 ## 방해령 베루(뒤로)·사리(앞으로): 말 머리 위에 [뒤로 1칸!]/[앞으로 1칸!]을 띄우고, 한 칸 짧은 점프로 옮겨 간다 (워프용 큰 호는 쓰지 않는다).
+## 긴급 엄폐: 택배 박스가 말 위로 툭 내려앉는다.
+func _on_cover_applied(pawn_id: int) -> void:
+	var pawn: PlayerPawn = state.get_pawn(pawn_id)
+	_log_line("[긴급 엄폐] %s이(가) 택배 박스를 뒤집어썼습니다 (잡기·함정 1회 방어)" % _pawn_name(pawn_id), Color("e2b277"))
+	if pawn != null:
+		_record(pawn.owner_id, "%s 택배 박스로 엄폐" % _bq(_pawn_name(pawn_id)), "", true)
+	if not _fx_on():
+		return
+	enqueue_step(func() -> void:
+		var view: Node2D = _pawn_views.get(pawn_id)
+		if view != null and is_instance_valid(view):
+			_floating_badge(view.position + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + Vector2(0, -52), "박스 엄폐!", Color("e2b277"), 26)
+			Sfx.play(&"good", -6.0)
+		await get_tree().create_timer(0.35 * _motion_pace()).timeout, pawn_id)
+
+
+## 펭짱 8호: 펭귄 한 마리가 출발 칸에서 도착 칸으로 날아간다 (임시 그림: 도형 펭귄). 맞은 말은 엔진이 이미 출발선으로 보냈다.
+func _on_penguin_flew(player_id: int, pawn_id: int, from_tile: int, to_tile: int, hits: Array[int]) -> void:
+	_log_line("[펭짱 8호] P%d의 펭귄이 날아가 적 말 %d개를 날려 버렸습니다!" % [player_id, hits.size()], Color("74c0fc"))
+	if not _fx_on():
+		return
+	enqueue_step(func() -> void:
+		var offset: Vector2 = _pawn_layer.position if _pawn_layer != null else Vector2.ZERO
+		var penguin := Node2D.new()
+		penguin.z_index = 70
+		penguin.position = offset + _tile_center(from_tile)
+		add_child(penguin)
+		_mark_oneshot(penguin, 1.2)
+		var body := Polygon2D.new()
+		body.polygon = PackedVector2Array([Vector2(-12, -20), Vector2(12, -20), Vector2(15, 12), Vector2(0, 20), Vector2(-15, 12)])
+		body.color = Color("1f2433")
+		penguin.add_child(body)
+		var belly := Polygon2D.new()
+		belly.polygon = PackedVector2Array([Vector2(-8, -8), Vector2(8, -8), Vector2(9, 12), Vector2(0, 17), Vector2(-9, 12)])
+		belly.color = Color("f1f3f5")
+		penguin.add_child(belly)
+		var beak := Polygon2D.new()
+		beak.polygon = PackedVector2Array([Vector2(-4, -12), Vector2(4, -12), Vector2(0, -6)])
+		beak.color = Color("ffa94d")
+		penguin.add_child(beak)
+		Sfx.play(&"shot", -4.0)
+		var tween: Tween = penguin.create_tween()
+		tween.tween_property(penguin, "position", offset + _tile_center(to_tile), 0.55 * _motion_pace()).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tween.parallel().tween_property(penguin, "rotation", TAU * 2.0, 0.55 * _motion_pace())
+		tween.tween_property(penguin, "modulate:a", 0.0, 0.25 * _motion_pace())
+		tween.tween_callback(penguin.queue_free)
+		await get_tree().create_timer(0.6 * _motion_pace()).timeout, pawn_id)
+
+
+## 전문적 해킹: 대상이 정해졌다. 실제 자동 진행은 그 사람의 턴이 시작될 때(hack_turn 이벤트)부터.
+func _on_hack_applied(player_id: int, target_player: int) -> void:
+	_log_line("[전문적 해킹] P%d이(가) %s의 다음 턴을 해킹했습니다 (자동 진행)" % [player_id, _player_name(target_player)], Color("20c997"))
+
+
 func _on_haunt_shifted(pawn_id: int, direction: int) -> void:
 	var pawn: PlayerPawn = state.get_pawn(pawn_id)
 	_log_line(("[방해령] %s이(가) 뒤로 1칸 밀려났습니다" if direction < 0 else "[방해령] %s이(가) 앞으로 1칸 당겨졌습니다") % _pawn_name(pawn_id), Color("b197fc"))
@@ -3770,6 +3842,7 @@ func _shown_turn_player() -> int:
 
 func _npc_runner_name(display_id: StringName) -> String:
 	if display_id==NpcSweep.BEAM_ID:return "롤링 양성자빔"
+	if display_id==NpcSweep.TOP_ID:return "황금장방형 팽이"
 	if display_id == &"TRAIN":
 		return "폭주 기관차"
 	if display_id == NpcSweep.BEAM_ID:
@@ -7578,7 +7651,21 @@ func _on_card_pressed(player_id: int, card_id: StringName) -> void:
 			if pawn_options.is_empty():
 				return
 			_show_choice(("[%s] 뒤로 밀 적 말을 고르세요" if card_id == &"ACT_18" else "[%s] 앞으로 당길 내 말을 고르세요") % card.display_name, pawn_options, _play_card_with.bind(player_id, card_id, "pawn_id"))
-		&"ACT_14", &"ACT_15", &"ACT_20":
+		&"ACT_21":  # 펭짱 8호: 펭귄을 날릴 내 말을 고르고 알까기 조준 모드로
+			var origins: Array[Dictionary] = []
+			for origin: PlayerPawn in PenguinCommand.origins(state, player_id):
+				origins.append({"label": "%s · %d번 말 (%d번 칸)" % [_player_name(origin.owner_id), origin.slot, origin.current_tile_idx], "value": origin.entity_id})
+			if origins.is_empty():
+				return
+			_show_choice("[%s] 펭귄을 날릴 내 말을 고르세요" % card.display_name, origins, _on_penguin_origin_picked.bind(player_id, card_id))
+		&"ACT_22":  # 긴급 엄폐: 박스를 씌울 내 말
+			var covers: Array[Dictionary] = []
+			for cover: PlayerPawn in CoverCommand.targets(state, player_id):
+				covers.append({"label": "%s · %d번 말 (%d번 칸)" % [_player_name(cover.owner_id), cover.slot, cover.current_tile_idx], "value": cover.entity_id})
+			if covers.is_empty():
+				return
+			_show_choice("[%s] 박스를 씌울 내 말을 고르세요" % card.display_name, covers, _play_card_with.bind(player_id, card_id, "pawn_id"))
+		&"ACT_14", &"ACT_15", &"ACT_20", &"ACT_23":
 			var targets: Array[Dictionary] = []
 			for target: int in StatusCardCommand.targets(state, player_id):
 				targets.append({"label": _player_name(target), "value": target})
@@ -7587,6 +7674,16 @@ func _on_card_pressed(player_id: int, card_id: StringName) -> void:
 			_show_choice("[%s] 대상을 고르세요" % card.display_name, targets, _play_card_with.bind(player_id, card_id, "target_player"))
 		_:
 			_act(&"play_card", {"player_id": player_id, "card_id": card_id})
+
+
+## 펭짱 8호: 고른 말에서 알까기 조준 모드를 연다 (놓으면 각도·세기로 카드 사용).
+func _on_penguin_origin_picked(value: Variant, player_id: int, card_id: StringName) -> void:
+	var pawn: PlayerPawn = state.get_pawn(int(value))
+	if pawn == null:
+		return
+	_aim_card = card_id
+	_aim_card_player = player_id
+	_begin_aim(pawn)
 
 
 func _play_card_with(value: Variant, player_id: int, card_id: StringName, param_name: String) -> void:
@@ -7716,6 +7813,7 @@ func _cancel_aim() -> void:
 	if _aim_pawn == -1:
 		return
 	_aim_pawn = -1
+	_aim_card = &""
 	_alkkagi_top_view(false)
 	if _alkkagi != null:
 		_alkkagi.cancel()
@@ -7737,8 +7835,15 @@ func _aim_fire() -> void:
 	var pawn_id: int = _aim_pawn
 	var angle: float = _aim_angle
 	var power: float = _aim_power
+	var card_id: StringName = _aim_card
+	var card_player: int = _aim_card_player
 	_aim_pawn = -1
+	_aim_card = &""
 	_alkkagi.cancel()
+	if card_id != &"":
+		_alkkagi_top_view(false)
+		_act(&"play_card", {"player_id": card_player, "card_id": card_id, "pawn_id": pawn_id, "angle": angle, "power": power})
+		return
 	_act(&"use_skill", {"pawn_id": pawn_id, "angle": angle, "power": power})
 
 
@@ -11746,6 +11851,11 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_corner_buff_feedback(data)
 			if bool(data.get("jailed", false)) and (data.get("path", []) as Array).is_empty():
 				_announce_move_failed("무인도 탈출 실패!", manager.current_player_id(), "짝수 눈금이 나와야 탈출할 수 있습니다")
+		&"hack_turn":
+			var hacked: int = int(data["player_id"])
+			_log_line("[해킹] %s의 이번 턴은 자동 진행됩니다" % _player_name(hacked), Color("20c997"))
+			if _fx_on():
+				_announce("해킹", "자동 진행!", _player_name(hacked), Color("20c997"), null, 0.9, false, {"key": "hack_turn"})
 		&"turn_skipped":
 			_record(int(data["player_id"]), "움직일 수 있는 말이 없어 이동 실패")
 			_announce_move_failed("움직일 수 있는 말이 없어", int(data["player_id"]), "구속 중이거나 선택할 수 있는 말이 없습니다")
@@ -12250,6 +12360,7 @@ func _attachment_name(attachment_id: String) -> String:
 		"TRP_06": return "바나나 껍질"
 		"TRP_07": return "스파이크"
 		"TRP_08": return "강제 환승 포탈"
+		"TRP_09": return "목둔 : 사탕수수밭"
 		"TRP_C01": return "무인도"
 		"TRP_C02": return "우이의 소원빌기"
 		"TRP_C03": return "지나가는 상인"
