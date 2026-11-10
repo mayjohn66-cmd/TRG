@@ -9,7 +9,7 @@ extends PanelContainer
 ## 연출이 끝났다 (취소 포함). play()는 이 시그널을 await 한다.
 signal finished
 
-const SUPPORTED: Array[StringName] = [&"D6", &"CHINCHIRO", &"YUT", &"LIFE_ROULETTE", &"SLOT_777", &"HOLDEM", &"DICE_HWATU", &"DICE_MAHJONG", &"DICE_TAROT", &"REVOLVER", &"DICE_STOCK", &"DICE_DARTS"]
+const SUPPORTED: Array[StringName] = [&"D6", &"CHINCHIRO", &"YUT", &"LIFE_ROULETTE", &"SLOT_777", &"HOLDEM", &"DICE_HWATU", &"DICE_MAHJONG", &"DICE_TAROT", &"REVOLVER", &"DICE_STOCK", &"DICE_DARTS", &"DICE_OMIKUJI", &"DICE_ICECREAM"]
 const YUT_NAMES: Dictionary = {0: "낙", 1: "도", 2: "개", 3: "걸", 4: "윷", 5: "모"}
 const SLOT_SYMBOLS: Array[String] = ["체리", "레몬", "종", "BAR", "다이아", "7"]
 const SUITS: Array[String] = ["♣", "◆", "♥", "♠"]
@@ -100,6 +100,8 @@ var _toy_gun: ToyFlagGun3D = null
 var _stock_view: StockChartView = null
 var _new_audio:=PresentationAudio.new()
 var _dart_view: DartBoardView = null
+var _omikuji_view: OmikujiView = null
+var _icecream_view: IceCreamView = null
 var _gun_intro: float = 0.0
 var _gun_pull_started: bool = false
 ## 3D 시간 배속 (투척 도구는 압축한다).
@@ -724,6 +726,20 @@ func _build(tool_id: StringName) -> void:
 			_stage.add_child(_dart_view)
 			_dart_view.begin(_result.get("details", {}))
 			_make_card_result(DartBoardView.caption(_result.get("details", {}), int(_result.get("steps", 0))))
+		&"DICE_OMIKUJI":
+			_title.text = "오미쿠지 뽑기통"
+			_total = OmikujiView.TOTAL_TIME
+			_omikuji_view = OmikujiView.new()
+			_stage.add_child(_omikuji_view)
+			_omikuji_view.begin(_result.get("details", {}))
+			_make_card_result(OmikujiView.caption(_result.get("details", {}), int(_result.get("steps", 0))))
+		&"DICE_ICECREAM":
+			_title.text = "아이스크림"
+			_total = IceCreamView.TOTAL_TIME
+			_icecream_view = IceCreamView.new()
+			_stage.add_child(_icecream_view)
+			_icecream_view.begin(_result.get("details", {}))
+			_make_card_result(IceCreamView.caption(_result.get("details", {}), int(_result.get("steps", 0))))
 	pivot_offset = Vector2.ZERO
 
 
@@ -927,6 +943,8 @@ func _update(t: float) -> void:
 		&"DICE_MAHJONG": _update_mahjong(t)
 		&"DICE_STOCK": _update_2d(_stock_view, t)
 		&"DICE_DARTS": _update_2d(_dart_view, t)
+		&"DICE_OMIKUJI": _update_2d(_omikuji_view, t)
+		&"DICE_ICECREAM": _update_2d(_icecream_view, t)
 
 
 ## v1.1 2D 결과 그림: 같은 시계로 그리고, 결과가 정해지면 아래 글을 띄운다.
@@ -1105,4 +1123,6 @@ func _final_text(tool_id: StringName, result: Dictionary) -> String:
 		&"DICE_TAROT": return str(details.get("name", ""))
 		&"DICE_STOCK": return StockChartView.caption(details, int(result.get("steps", 0)))
 		&"DICE_DARTS": return ToolDarts.hit_text(details, int(result.get("steps", 0)))
+		&"DICE_OMIKUJI": return OmikujiView.caption(details, int(result.get("steps", 0)))
+		&"DICE_ICECREAM": return IceCreamView.caption(details, int(result.get("steps", 0)))
 	return ""

@@ -2762,3 +2762,11 @@ PROGRESS / 진행률,PROGRESS,PROGRESS／進行度
 [해킹] %s의 이번 턴은 자동 진행됩니다,[Hack] %s's turn this time plays itself,[ハッキング] %sのこのターンは自動進行になります
 해킹,Hack,ハッキング
 자동 진행!,Auto-play!,自動進行！
+한번 더!,One more!,もう1回！
+냠!,Yum!,もぐもぐ！
+길,Good,吉
+막대에 한번 더! → %d칸 + 새 아이스크림,One more! on the stick → %d + a fresh ice cream,棒にもう1回！ → %dマス + 新しいアイス
+막대에 %d칸 → %d칸,%d spaces on the stick → %d,棒に%dマス → %dマス
+★%s! %d칸 + 한 번 더,★%s! %d spaces + Extra Roll,★%s！ %dマス + もう1回
+★한번 더!가 나오면 아이스크림 리필,★One more! refills the ice cream,★もう1回！でアイス補充
+★한번 더!(3칸+새 아이스크림),★One more!(3 + fresh ice cream),★もう1回！(3マス+新しいアイス)

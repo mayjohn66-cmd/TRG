@@ -6885,6 +6885,8 @@ const TOOL_CARDS: Dictionary = {
 	&"DICE_PINBALL": ["핀", Color("1971c2"), "발사대를 당겨 쇠구슬 발사!", "구슬이 골인한 칸의 숫자(1 ~ 10칸)만큼 전진"],
 	&"DICE_STOCK": ["주", Color("2f9e44"), "주가만큼 전진! 오를까 내릴까?", "★상한가 20칸 · 상장폐지는 선두 말 사출"],
 	&"DICE_DARTS": ["◎", Color("c92a2a"), "다트를 던져라! 어디에 꽂힐지는 운!", "숫자 × 싱글·더블·트리플 · ★불스아이 10칸+한 번 더"],
+	&"DICE_OMIKUJI": ["籤", Color("b5651d"), "통을 흔들어 점괘를 뽑아라!", "★대길 8칸+한 번 더 · 대흉은 턴 종료"],
+	&"DICE_ICECREAM": ["얌", Color("e64980"), "한 입 먹으면 막대에 칸이 나온다!", "★한번 더!가 나오면 아이스크림 리필"],
 }
 
 
@@ -6904,6 +6906,8 @@ const TOOL_RULES: Dictionary = {
 	&"DICE_BLACKJACK": {"rows": [["시작", "합 11 이상까지 받음"], ["11 ~ 20 스탠드", "(합 - 10)칸"], ["★ 정확히 21", "11칸 + 한 번 더!"], ["22 이상 (버스트)", "0칸, 턴 종료"]], "note": "A는 11 (넘으면 1) · 히트로 더 뽑거나 스탠드로 확정"},
 	&"DICE_PINBALL": {"rows": [["하단 구멍 7칸", "2·4·6·★10·5·3·1"], ["골인한 구멍", "그 숫자만큼 (1~10칸)"], ["★10 구멍", "가장 드문 대박"]], "note": "발사 버튼을 꾹 눌렀다 놓으면 발사"},
 	&"DICE_STOCK": {"rows": [["보통 (88%)", "주가만큼 (1~12칸, 매번 ±3)"], ["★상한가 (6%)", "20칸"], ["상장폐지 (6%)", "0칸 · 선두 말 사출 · 턴 종료"]], "note": "주가는 6에서 시작해 이어진다 · 상한가·상장폐지 뒤 6으로"},
+	&"DICE_OMIKUJI": {"rows": [["★대길 (8%)", "8칸 + 한 번 더"], ["중길 (17%)", "6칸"], ["소길·길 (25%씩)", "4칸 / 3칸"], ["말길 (15%)", "2칸"], ["흉 (5%)", "1칸"], ["대흉 (5%)", "0칸 · 턴 종료"]], "note": "통을 흔들어 나온 점괘 그대로 · 순수한 운"},
+	&"DICE_ICECREAM": {"rows": [["막대 1~6칸 (85%)", "드러난 칸만큼"], ["★한번 더! (15%)", "3칸 + 새 아이스크림(한 번 더)"]], "note": "한 입 베어 물면 막대에 칸이 드러나요"},
 	&"DICE_DARTS": {"rows": [["싱글", "숫자(1~6)만큼"], ["더블 (바깥 고리)", "숫자 × 2"], ["트리플 (안쪽 고리)", "숫자 × 3"], ["★불스아이 (정중앙)", "10칸 + 한 번 더!"]], "note": "조준 없이 [던지기]만 누르면 돼요 · 꽂히는 자리는 순수한 운"},
 }
 
@@ -7291,6 +7295,10 @@ func _roll_button_label(tool: BaseJudgmentTool) -> String:
 		return "다트\n던지기"
 	if tool is ToolStockChart:
 		return "매수!"
+	if tool is ToolOmikuji:
+		return "뽑기!"
+	if tool is ToolIceCream:
+		return "냠!"
 	return tr_ui("btn.roll")
 
 
@@ -12095,6 +12103,10 @@ func _roll_text(data: Dictionary) -> String:
 			text += StockChartView.caption(details, int(result["steps"]))
 		&"DICE_DARTS":
 			text += ToolDarts.hit_text(details, int(result["steps"]))
+		&"DICE_OMIKUJI":
+			text += OmikujiView.caption(details, int(result["steps"]))
+		&"DICE_ICECREAM":
+			text += IceCreamView.caption(details, int(result["steps"]))
 		&"REVOLVER":
 			if details["fired"]:
 				text += "뿅! 깃발 발사 · 누적 %d칸 사라짐, 턴 종료" % details["lost"]
