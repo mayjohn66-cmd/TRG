@@ -14,6 +14,7 @@ static func create(attachment_id: String) -> TileAttachment:
 		"TRP_06": return TrapBanana.new()
 		"TRP_07": return TrapSpike.new()
 		"TRP_08": return TrapTransfer.new()
+		"TRP_09": return TrapSugarcane.new()
 		"TRP_C01": return TrapIsland.new()
 		"TRP_C02": return TrapJumpPad.new()
 		"TRP_C03": return TrapToll.new()

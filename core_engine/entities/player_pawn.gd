@@ -35,6 +35,8 @@ var shield: bool = false
 var shield_broken_hit: bool = false
 ## [범용] 관심사도 지정 보호막: 잡기·함정을 한 번 막고 사라진다 (기물 종류와 상관없고, 진화해도 남는다).
 var ward: bool = false
+## 긴급 엄폐(ACT_22)로 택배 박스를 뒤집어쓴 방어막인가 (ward가 깨지면 함께 벗겨진다. 화면은 박스를 그린다).
+var ward_box: bool = false
 ## 체스 나이트 [기사의 맹세]: 이번 차례가 끝날 때까지 잡기·함정 사출을 막는다 (막아도 사라지지 않는다).
 var turn_guard: bool = false
 ## 괴상한 멜론 (v1.1): 함정을 먹고 커진 단계 (0~MELON_MAX). 최대면 모든 함정 면역 + 스친 적 처치. 출발선으로 가면 0으로.

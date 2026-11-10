@@ -16,6 +16,8 @@ var rounds_left: int = 0
 func run_ai(state: GameState, steps: int = 0) -> Dictionary:
 	if is_beam():
 		return _run_beam(state, steps)
+	if is_top():
+		return _run_top(state)
 	if steps <= 0:
 		steps = state.rng.randi_range(NpcSweep.WANDER_MIN, NpcSweep.WANDER_MAX)
 	var run: Dictionary = NpcSweep.wander(state, self, steps)
@@ -43,6 +45,18 @@ func _run_beam(state: GameState, steps: int) -> Dictionary:
 		"vanished": rounds_left <= 0, "behavior": behavior, "direction": dir, "destroyed": run["destroyed"], "burned": run["burned"], "rounds_left": rounds_left}
 
 
+## 황금장방형 팽이(SUM_04)인가: 라운드마다 가장 가까운 적 말 쪽으로 한 칸 다가가고, 말이 있는 칸에 부딪히면 그 칸의 말을 모두 날려 버리고 사라진다.
+func is_top() -> bool:
+	return display_id == NpcSweep.TOP_ID
+
+
+func _run_top(state: GameState) -> Dictionary:
+	var run: Dictionary = NpcSweep.top_step(state, self)
+	var path: Array[int] = []
+	path.assign((run["path"] as Array).slice(1))
+	return {"npc_id": entity_id, "from": int((run["path"] as Array)[0]), "path": path, "caught": run["ejected"], "stolen_cards": [] as Array[StringName], "vanished": run["vanished"], "behavior": behavior, "direction": run["direction"]}
+
+
 func direction() -> int:
 	return -1 if behavior == GameEnums.NpcBehavior.PATROL_REVERSE else 1
 
@@ -53,6 +67,8 @@ func direction() -> int:
 func danger_preview(state: GameState) -> Dictionary:
 	if is_beam():
 		return _beam_preview(state)
+	if is_top():
+		return _top_preview(state)
 	var preview: Dictionary = {"tiles": [] as Array[int], "catch_tiles": [] as Array[int], "chance": 0.0, "direction": direction()}
 	var tiles: Array[int] = []
 	var tile: int = current_tile_idx
@@ -89,4 +105,19 @@ func _beam_preview(state: GameState) -> Dictionary:
 	preview["tiles"] = tiles
 	preview["catch_tiles"] = catches
 	preview["chance"] = best
+	return preview
+
+
+## 팽이 예고: 이번 라운드 끝에 닿을 다음 한 칸과, 거기에 말이 있으면 부딪힌다는 표시 (확률 1).
+func _top_preview(state: GameState) -> Dictionary:
+	var preview: Dictionary = {"tiles": [] as Array[int], "catch_tiles": [] as Array[int], "chance": 0.0, "direction": 0}
+	var dir: int = NpcSweep.top_direction(state, self)
+	if dir == 0:
+		return preview
+	var next: int = posmod(current_tile_idx + dir, BoardSpec.tile_count)
+	preview["direction"] = dir
+	preview["tiles"] = [next] as Array[int]
+	if next != GameEnums.GOAL_TILE and not NpcSweep.catchable_at(state, next).is_empty():
+		preview["catch_tiles"] = [next] as Array[int]
+		preview["chance"] = 1.0
 	return preview

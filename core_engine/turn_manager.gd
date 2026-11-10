@@ -102,6 +102,10 @@ var review_enabled: bool = false
 var _review_pending: Array[int] = []
 var _extra_turn_pending: bool = false
 var _bonus_roll_pending: bool = false
+## 전문적 해킹(ACT_23)에 걸려 이번 턴이 자동 진행인 플레이어 (없으면 -1). 굴림·말 고르기를 짧은 대기 뒤 TurnManager가 직접 하고, 카드·필살기는 쓰지 못한다.
+var _hack_turn_player: int = -1
+## 해킹 턴에서 각 단계가 자동으로 넘어가기까지의 대기 시간(초).
+const HACK_AUTO_SECONDS: float = 0.8
 var _draft_offers: Dictionary = {}
 var _draft_picks: Dictionary = {}
 ## 드래프트에서 고른 증강의 추가 정보 (진화·보호막을 받을 말 pawn_id, 자동 선택 여부). 모두 고른 뒤 한꺼번에 적용한다.
@@ -294,6 +298,8 @@ func change_state(new_state: State) -> void:
 		State.PHASE_SELECT_PAWN: phase_time_left = GameEnums.PHASE_TIME_SELECT * timer_scale
 		State.PHASE_RESOLUTION: phase_time_left = GameEnums.PHASE_TIME_RESOLUTION * timer_scale
 		_: phase_time_left = 0.0
+	if _hack_turn_player != -1 and _hack_turn_player == current_player_id() and phase_time_left > 0.0 and not external_timeouts_blocked():
+		phase_time_left = minf(phase_time_left, HACK_AUTO_SECONDS * timer_scale)  # 해킹당한 턴은 짧은 대기 뒤 자동으로 넘어간다
 	phase_changed.emit(current_state, current_player_id(), phase_time_left)
 	_broadcast_state()
 
@@ -503,7 +509,15 @@ func _handle_select_pawn(actor: int, params: Dictionary) -> void:
 	_execute_move(pawn)
 
 
+## 시간 초과 자동 행동을 막는 상태인가 (지금은 항상 허용: 해킹 턴의 자동 진행도 같은 시간 초과 경로를 쓴다).
+func external_timeouts_blocked() -> bool:
+	return false
+
+
 func _handle_play_card(actor: int, params: Dictionary) -> void:
+	if actor == _hack_turn_player:
+		action_rejected.emit(actor, &"play_card", &"hacked")  # 전문적 해킹: 이번 턴은 자동 진행이라 카드를 쓰지 못한다
+		return
 	var card_id: StringName = StringName(params.get("card_id", &""))
 	var card: BaseCard = CardRegistry.get_card(card_id)
 	if card != null and state.is_banned(actor):
@@ -577,8 +591,8 @@ func can_use_skill(player_id: int, pawn_id: int) -> bool:
 		return false
 	if not move_queue.is_empty() or stack_offer_pending() or (state.tools[player_id] as BaseJudgmentTool).has_pending_state():
 		return false
-	if state.is_banned(player_id):
-		return false  # 알고리즘 밴
+	if state.is_banned(player_id) or player_id == _hack_turn_player:
+		return false  # 알고리즘 밴 · 전문적 해킹
 	var pawn: PlayerPawn = state.get_pawn(pawn_id)
 	if pawn == null or pawn.owner_id != player_id or not PawnSkills.is_ready(pawn):
 		return false
@@ -1523,6 +1537,8 @@ func _begin_turn(new_turn: bool = true) -> void:
 		state.attack_log.clear()
 		_turn_pawn_steps.clear()
 	_sync_current_player()
+	if new_turn:
+		_hack_turn_player = -1
 	# 이미 순위가 확정되어 졸업한 플레이어는 턴을 건너뛴다.
 	if state.is_graduated(current_player_id()) and not is_game_over:
 		advance_to_next_player()
@@ -1535,6 +1551,11 @@ func _begin_turn(new_turn: bool = true) -> void:
 		advance_to_next_player()
 		return
 	if new_turn:
+		var hacked_player: int = current_player_id()
+		if int(state.hacked_turns.get(hacked_player, 0)) > 0:  # 전문적 해킹: 이 턴은 자동 진행
+			state.hacked_turns[hacked_player] = int(state.hacked_turns[hacked_player]) - 1
+			_hack_turn_player = hacked_player
+			_emit_event(&"hack_turn", {"player_id": hacked_player})
 		_tick_restraints(current_player_id())
 		# 특수 승리 판정은 라운드 끝에, 여기서는 말 4개 완주만 본다.
 		if _check_victory(null):
@@ -1733,6 +1754,11 @@ func _enter_select_pawn() -> void:
 
 
 func _auto_select_pawn() -> void:
+	if _hack_turn_player != -1 and _hack_turn_player == current_player_id():
+		var choices: Array[PlayerPawn] = state.selectable_pawns(current_player_id(), _queued_dice())
+		if not choices.is_empty():
+			_execute_move(choices[state.rng.randi_range(0, choices.size() - 1)])  # 해킹당한 턴: 움직일 말을 무작위로 고른다
+			return
 	var best: PlayerPawn = null
 	var best_distance: int = 1 << 30
 	for pawn: PlayerPawn in state.selectable_pawns(current_player_id(), _queued_dice()):

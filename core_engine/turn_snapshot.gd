@@ -32,6 +32,7 @@ static func capture(state: GameState) -> TurnSnapshot:
 			"promoted": pawn.promoted,
 			"shield": pawn.shield,
 			"ward": pawn.ward,
+			"ward_box": pawn.ward_box,
 			"turn_guard": pawn.turn_guard,
 			"melon": pawn.melon_size,
 			"shield_hit": pawn.shield_broken_hit,
@@ -83,6 +84,7 @@ static func capture(state: GameState) -> TurnSnapshot:
 			"hammer_bonus": state.hammer_bonus.duplicate(),
 			"roll_penalty": state.roll_penalty.duplicate(),
 			"haunt_boost": state.haunt_boost.duplicate(),
+			"hacked_turns": state.hacked_turns.duplicate(),
 			"auto_law_preview": state.auto_law_preview,
 		},
 	}
@@ -122,6 +124,7 @@ func restore(state: GameState, restore_meta: bool = false) -> void:
 		pawn.promoted = bool(entry.get("promoted", false))
 		pawn.shield = bool(entry.get("shield", false))
 		pawn.ward = bool(entry.get("ward", false))
+		pawn.ward_box = bool(entry.get("ward_box", false))
 		pawn.turn_guard = bool(entry.get("turn_guard", false))
 		pawn.melon_size = int(entry.get("melon", 0))
 		pawn.shield_broken_hit = bool(entry.get("shield_hit", false))
@@ -196,5 +199,6 @@ func restore(state: GameState, restore_meta: bool = false) -> void:
 		state.hammer_bonus = (meta.get("hammer_bonus", {}) as Dictionary).duplicate()
 		state.roll_penalty = (meta.get("roll_penalty", {}) as Dictionary).duplicate()
 		state.haunt_boost = (meta.get("haunt_boost", {}) as Dictionary).duplicate()
+		state.hacked_turns = (meta.get("hacked_turns", {}) as Dictionary).duplicate()
 		state.auto_law_preview = str(meta.get("auto_law_preview", ""))
 	state.snapshot_restored.emit()

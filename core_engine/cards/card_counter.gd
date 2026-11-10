@@ -17,6 +17,7 @@ const DEFS: Dictionary = {
 	&"CNT_06": ["교단의 칙령", [TRAP]],
 	&"CNT_07": ["도굴꾼", [TRAP]],
 	&"CNT_08": ["이쪽을 봐라!", [CAPTURE]],  # 잡기 방어: 잡기 1회 회피 (되갚기 없음)
+	&"CNT_09": ["비상 식량", [CAPTURE]],  # 잡기 방어: 잡기를 막고 카드 1장 획득
 }
 ## 싸이크론으로 함정을 부순 뒤 전진하는 칸 수 (cards_table.csv CNT_05 param_1).
 const CYCLONE_STEPS: int = 3

@@ -249,9 +249,9 @@ func test_card_registry_has_thirty_two_cards_and_the_default_deck() -> void:
 		check(card != null and card.card_id == card_id, "카드 %s 등록" % card_id)
 		var key: String = "corner" if card.corner_only else str(card.category)
 		counts[key] = int(counts.get(key, 0)) + 1
-	check_eq(CardRegistry.DECK_COMPOSITION.size(), 39, "카드 39종 (v1.1 이쪽을 봐라! 기억상실빔·강화 망치 + 방해령 삼총사 + 롤링 양성자빔)")
-	check_eq([counts.get(str(GameEnums.CardCategory.COUNTER)), counts.get(str(GameEnums.CardCategory.INSTANT)), counts.get(str(GameEnums.CardCategory.TRAP)), counts.get("corner"), counts.get(str(GameEnums.CardCategory.SUMMON))], [8, 18, 6, 4, 3], "방어 8 · 즉발 18 · 함정 6 · 코너 함정 4 · 소환 3")
-	check_eq(CardRegistry.default_deck().size(), 61, "기본 덱 61장 (이쪽을 봐라! 1장, cards_table.csv param_2, v1.1 +3, 방해령 3종 x2, 양성자빔 1)")
+	check_eq(CardRegistry.DECK_COMPOSITION.size(), 45, "카드 45종 (v1.1 + TRPG 확장 6종: 비상 식량·펭짱 8호·긴급 엄폐·전문적 해킹·목둔 사탕수수밭·황금장방형 팽이)")
+	check_eq([counts.get(str(GameEnums.CardCategory.COUNTER)), counts.get(str(GameEnums.CardCategory.INSTANT)), counts.get(str(GameEnums.CardCategory.TRAP)), counts.get("corner"), counts.get(str(GameEnums.CardCategory.SUMMON))], [9, 21, 7, 4, 4], "방어 9 · 즉발 21 · 함정 7 · 코너 함정 4 · 소환 4")
+	check_eq(CardRegistry.default_deck().size(), 68, "기본 덱 68장 (61 + 비상 식량 1 + 펭짱 8호 1 + 긴급 엄폐 2 + 전문적 해킹 1 + 사탕수수밭 1 + 팽이 1)")
 
 
 func test_act_06_objection_resets_one_victory_record() -> void:

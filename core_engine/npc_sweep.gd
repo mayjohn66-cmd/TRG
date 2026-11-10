@@ -67,6 +67,56 @@ static func nearest_target(state: GameState, npc: NeutralNPC) -> Dictionary:
 	return {}
 
 
+## 황금장방형 팽이(SUM_04): 카드 ID. 라운드 끝마다 가장 가까운 적 말 쪽으로 한 칸씩 다가가, 말이 있는 칸에 부딪히면 그 칸의 모든 말을 날려 버리고 사라진다.
+const TOP_ID: StringName = &"SUM_04"
+
+
+## 팽이가 향할 방향: 지금 서 있는 칸을 뺀 보드 위 가장 가까운 적 말(소환한 사람의 말이 아닌 말) 쪽 (+1 정방향 / -1 역방향, 거리가 같으면 정방향). 적 말이 없으면 0.
+static func top_direction(state: GameState, npc: NeutralNPC) -> int:
+	var best_distance: int = 1 << 30
+	var direction: int = 0
+	for tile: int in range(1, BoardSpec.tile_count):
+		if tile == npc.current_tile_idx or enemy_at(state, npc, tile) == null:
+			continue
+		var forward: int = posmod(tile - npc.current_tile_idx, BoardSpec.tile_count)
+		var backward: int = BoardSpec.tile_count - forward
+		var distance: int = mini(forward, backward)
+		if distance < best_distance:
+			best_distance = distance
+			direction = 1 if forward <= backward else -1
+	return direction
+
+
+## 팽이의 라운드 끝 한 걸음. 반환: wander와 같은 모양 ({"npc_id","display_id","path","ejected","destroyed","vanished"}) + "direction".
+## 도착한 칸에 (누구 것이든) 말이 있으면 그 칸의 말을 모두(업힌 말 포함) 출발선으로 날려 보내고 사라진다. 출발선(결승) 칸은 지나가기만 한다.
+static func top_step(state: GameState, npc: NeutralNPC) -> Dictionary:
+	var result: Dictionary = {"npc_id": npc.entity_id, "display_id": npc.display_id, "path": [npc.current_tile_idx] as Array[int], "ejected": [] as Array[int], "destroyed": 0, "vanished": false, "direction": 0}
+	var direction: int = top_direction(state, npc)
+	result["direction"] = direction
+	if direction == 0:
+		return result
+	npc.behavior = GameEnums.NpcBehavior.PATROL_REVERSE if direction < 0 else GameEnums.NpcBehavior.CHASE_NEAREST
+	var from_tile: int = npc.current_tile_idx
+	var tile: int = posmod(from_tile + direction, BoardSpec.tile_count)
+	npc.current_tile_idx = tile
+	npc.push_step(tile)
+	(result["path"] as Array[int]).append(tile)
+	state.npc_stepped.emit(npc.entity_id, from_tile, tile)
+	if tile == GameEnums.GOAL_TILE:
+		return result
+	var victims: Array[PlayerPawn] = catchable_at(state, tile)
+	if victims.is_empty():
+		return result
+	for victim: PlayerPawn in victims:
+		var members: Array[PlayerPawn] = victim.stack_members()
+		state.send_to_start(victim, npc.owner_id)
+		for member: PlayerPawn in members:
+			if not member.has_left_start and not member.is_finished:  # 보호막이 막은 말은 빠진다
+				(result["ejected"] as Array[int]).append(member.entity_id)
+	result["vanished"] = true
+	return result
+
+
 ## 롤링 양성자빔(SUM_03): 카드 ID, 라운드 끝마다 미끄러지는 칸 수(BEAM_MIN~BEAM_MAX), 수명(라운드).
 const BEAM_ID: StringName = &"SUM_03"
 const BEAM_MIN: int = 3

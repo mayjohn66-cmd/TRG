@@ -386,11 +386,29 @@ static func _plan_one_turn_card(state: GameState, player_id: int, card: BaseCard
 			var foe: int = state.race_leader(player_id)  # 메죵: 선두 상대
 			if foe != -1 and HauntCommand.penalty_targets(state, player_id).has(foe):
 				return {"card_id": card.card_id, "params": {"target_player": foe}}
-		&"ACT_14", &"ACT_15":  # 밴·스킵: 선두 상대에게
+		&"ACT_21":  # 펭짱 8호: 내 말에서 여러 각도·세기로 겨눠 보고 가장 많은 적 말을 맞히는 샷 (60%)
+			var best_shot: Dictionary = {}
+			var best_hits: int = 0
+			for origin: PlayerPawn in PenguinCommand.origins(state, player_id):
+				for attempt: int in 24:
+					var angle: float = rng.randf_range(-PI, PI)
+					var power: float = rng.randf_range(0.3, 1.0)
+					var hit_count: int = (PawnSkills.shot_result(state, origin, angle, power)["hits"] as Array).size()
+					if hit_count > best_hits:
+						best_hits = hit_count
+						best_shot = {"pawn_id": origin.entity_id, "angle": angle, "power": power}
+			if best_hits > 0 and rng.randf() < 0.6:
+				return {"card_id": card.card_id, "params": best_shot}
+		&"ACT_22":  # 긴급 엄폐: 가장 앞선 내 말에 박스를 씌운다 (반쯤)
+			var covered: Array[PlayerPawn] = CoverCommand.targets(state, player_id)
+			if not covered.is_empty() and rng.randf() < 0.5:
+				covered.sort_custom(func(a: PlayerPawn, b: PlayerPawn) -> bool: return state.pawn_progress_distance(a) < state.pawn_progress_distance(b))
+				return {"card_id": card.card_id, "params": {"pawn_id": covered[0].entity_id}}
+		&"ACT_14", &"ACT_15", &"ACT_23":  # 밴·스킵·해킹: 선두 상대에게
 			var leader_player: int = state.race_leader(player_id)
 			if leader_player != -1 and card.is_legal(state, player_id, {"target_player": leader_player}) and rng.randf() < 0.6:
 				return {"card_id": card.card_id, "params": {"target_player": leader_player}}
-		&"CNT_01", &"CNT_02", &"CNT_03", &"CNT_04", &"CNT_05", &"CNT_06", &"CNT_07", &"CNT_08":
+		&"CNT_01", &"CNT_02", &"CNT_03", &"CNT_04", &"CNT_05", &"CNT_06", &"CNT_07", &"CNT_08", &"CNT_09":
 			return {}  # 방어 카드는 공격당했을 때만
 		_:
 			if rng.randf() >= TRAP_USE_CHANCE:
@@ -426,7 +444,7 @@ static func plan_window_card(state: GameState, player_id: int, phase: int, roll_
 
 ## 방어 대기에서 봇이 낼 방어 카드: 되갚는 카드를 먼저 고르고(거울의 힘 > 우노 리버스 > 도굴꾼 > 싸이크론 > 포고령 > 빗나감),
 ## 바이츠 더 더스트는 앞서 나간 말을 잃었을 때만 쓴다. 쓰지 않으면 빈 값.
-const COUNTER_PREFERENCE: Array[StringName] = [&"CNT_02", &"CNT_03", &"CNT_07", &"CNT_05", &"CNT_06", &"CNT_08", &"CNT_04", &"CNT_01"]
+const COUNTER_PREFERENCE: Array[StringName] = [&"CNT_02", &"CNT_03", &"CNT_07", &"CNT_05", &"CNT_06", &"CNT_09", &"CNT_08", &"CNT_04", &"CNT_01"]
 
 
 static func choose_counter(state: GameState, _player_id: int, cards: Array, entry: Dictionary, _rng: RandomNumberGenerator) -> StringName:

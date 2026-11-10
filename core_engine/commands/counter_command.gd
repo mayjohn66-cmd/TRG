@@ -29,6 +29,8 @@ func _run() -> void:
 	match card_id:
 		&"CNT_08":
 			pass  # 이쪽을 봐라!: 잡기 피해만 복원하며 공격자에게 되갚지 않는다.
+		&"CNT_09":
+			state.draw_card(sender_id)  # 비상 식량: 잡기를 막고 카드 1장을 얻는다 (손패가 가득 차면 얻지 못한다)
 		&"CNT_02":
 			var striker: PlayerPawn = state.get_pawn(int(entry["attacker_pawn"]))
 			if striker != null and striker.has_left_start and not striker.is_finished:
@@ -63,6 +65,8 @@ static func reflect(game: GameState, entry: Dictionary, reflector: int) -> void:
 			game.banned_turns[attacker] = StatusCardCommand.ban_turns()
 		&"ACT_15":
 			game.rest_next_turn[attacker] = true
+		&"ACT_23":
+			game.hacked_turns[attacker] = int(game.hacked_turns.get(attacker, 0)) + 1  # 전문적 해킹 반사: 해킹을 건 사람의 다음 턴이 자동 진행
 		&"ACT_06":
 			for key: String in (entry["effects"] as Dictionary).keys():
 				if key.begins_with("stat:"):
