@@ -545,7 +545,7 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 • 누적표: 방아쇠 1회 +3칸(최대 15) / 폭죽(6분의 1) 0칸·턴 종료 / 멈추면 누적 칸만큼,• Stack: +3 per pull (Max 15) / Pop!(1/6) 0 spaces & End Turn / Stop to move stacked spaces,• 累積表: 1回ごとに+3マス(最大15) / 暴発(1/6) 0マス・番終了 / 止めれば累積マス分前進
 • 눈금표: 1~10 균등 (나온 숫자만큼) / ★7 당첨(7칸+한번더),• Table: 1~10 Equal odds / ★Hit 7 (7 spaces + Extra Roll),• 出目表: 1〜10均等 (出た数だけ前進) / ★7当たり(7マス+もう1回)
 • 눈금표: 4(2/6) / 5(2/6) / 6(1/6) / 삐끗(1/6) 이번 이동 0칸,• Table: 4(2/6) / 5(2/6) / 6(1/6) / Bust(1/6) Move 0 spaces,• 出目表: 4(2/6) / 5(2/6) / 6(1/6) / ションベン(1/6) 今回移動0マス
-• 눈금표: 낙(0칸+턴 종료) / 도(1) / 개(2) / 걸(3) / 윷(4칸+한번더) / 모(5칸+한번더),• Table: Nak (0 + turn ends) / Do(1) / Gae(2) / Geol(3) / Yut(4 + roll again) / Mo(5 + roll again),• 出目表: 落(0マス+番終了) / ド(1) / ゲ(2) / ゴル(3) / ユッ(4+もう1回) / モ(5+もう1回)
+• 눈금표: 낙(0칸·쌓인 윷이 없으면 턴 종료) / 도(1) / 개(2) / 걸(3) / 윷(4칸+한번더) / 모(5칸+한번더),• Table: Nak (0 · ends turn if nothing stacked) / Do(1) / Gae(2) / Geol(3) / Yut(4 + roll again) / Mo(5 + roll again),• 出目表: 落(0マス·溜めた出目がなければ番終了) / ド(1) / ゲ(2) / ゴル(3) / ユッ(4+もう1回) / モ(5+もう1回)
 • 족보표: 11~20 스탠드 시 (합계-10)칸 / ★21 달성(11칸+한번더) / 22↑ 버스트(0칸),• Table: Stand 11~20 -> (Sum-10) spaces / ★Hit 21 (11+Extra Roll) / 22+ Bust (0 spaces),• 配当表: 11〜20スタンド時(合計-10)マス / ★21達成(11マス+もう1回) / 22↑バースト(0マス)
 • 족보표: 광대(0칸+턴 종료) / 전차(6) / 수레바퀴(4+한번더) / 매달린 남자(1+다음 +8) / 세계(9칸),"• Arcana: Fool(0+End Turn) / Chariot(6) / Wheel(4+Extra Roll) / Hanged Man(1, Next +8) / World(9)",• カード表: 愚者(0+番終了) / 戦車(6) / 運命の輪(4+もう1回) / 吊られた男(1+次回+8) / 世界(9マス)
 • 족보표: 꽝(1) / 2일치(4) / 3일치(8) / ★777 잭팟(20칸!),• Payout: Miss(1) / 2-Match(4) / 3-Match(8) / ★777 Jackpot(20 spaces!),• 配当表: ハズレ(1) / 2揃い(4) / 3揃い(8) / ★777ジャックポット(20マス！)
@@ -886,7 +886,7 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 눈금표: 1~6 (나온 눈금만큼 전진),Table: 1~6 (Advance by rolled number),出目表: 1〜6 (出た目の数だけ前進)
 눈금표: 4(2/6) / 5(2/6) / 6(1/6) / 삐끗(1/6) 이번 이동 0칸,Table: 4(2/6) / 5(2/6) / 6(1/6) / Bust(1/6) Move 0 spaces,出目表: 4(2/6) / 5(2/6) / 6(1/6) / ションベン(1/6) 今回移動0マス
 눈금표: 나온 눈금만큼 전진,Table: move the number rolled,出目表: 出た目の数だけ前進
-눈금표: 낙(0칸+턴 종료) / 도(1) / 개(2) / 걸(3) / 윷(4칸+한번더) / 모(5칸+한번더),Table: Nak (0 + turn ends) / Do(1) / Gae(2) / Geol(3) / Yut(4 + roll again) / Mo(5 + roll again),出目表: 落(0マス+番終了) / ド(1) / ゲ(2) / ゴル(3) / ユッ(4+もう1回) / モ(5+もう1回)
+눈금표: 낙(0칸·쌓인 윷이 없으면 턴 종료) / 도(1) / 개(2) / 걸(3) / 윷(4칸+한번더) / 모(5칸+한번더),Table: Nak (0 · ends turn if nothing stacked) / Do(1) / Gae(2) / Geol(3) / Yut(4 + roll again) / Mo(5 + roll again),出目表: 落(0マス·溜めた出目がなければ番終了) / ド(1) / ゲ(2) / ゴル(3) / ユッ(4+もう1回) / モ(5+もう1回)
 능력 없음,No ability,能力なし
 닉네임 (최대 %d자),Nickname (max %d),ニックネーム (最大 %d文字)
 닉네임 / 연락처 (선택),Nickname / Contact (optional),ニックネーム / 連絡先 (任意)
@@ -2695,8 +2695,8 @@ PROGRESS / 진행률,PROGRESS,PROGRESS／進行度
 대폭등!,BULL MARKET!,大暴騰！
 대폭락!,BEAR MARKET!,大暴落！
 빛기둥이 지나는 내 말과 설치물도 소각됩니다,Your own pawns and installations in the beam path are also burned,光柱の通り道にある自分の駒と設置物も焼却されます
-눈금표: 낙(0칸+턴 종료) / 도(1) / 개(2) / 걸(3) / 윷(4칸+한번더) / 모(5칸+한번더 · 한 차례 최대 3번 뒤엔 도·개·걸),Table: Nak(0+End Turn) / Do(1) / Gae(2) / Geol(3) / Yut(4+Extra Roll) / Mo(5+Extra Roll; after 3 extra rolls: Do/Gae/Geol only),出目表: 落(0マス+番終了) / ド(1) / ゲ(2) / ゴル(3) / ユッ(4+もう1回) / モ(5+もう1回、1ターン最大3回の後はド・ゲ・ゴルのみ)
-• 눈금표: 낙(0칸+턴 종료) / 도(1) / 개(2) / 걸(3) / 윷(4칸+한번더) / 모(5칸+한번더 · 한 차례 최대 3번 뒤엔 도·개·걸),• Table: Nak(0+End Turn) / Do(1) / Gae(2) / Geol(3) / Yut(4+Extra Roll) / Mo(5+Extra Roll; after 3 extra rolls: Do/Gae/Geol only),• 出目表: 落(0マス+番終了) / ド(1) / ゲ(2) / ゴル(3) / ユッ(4+もう1回) / モ(5+もう1回、1ターン最大3回の後はド・ゲ・ゴルのみ)
+눈금표: 낙(0칸·쌓인 윷이 없으면 턴 종료) / 도(1) / 개(2) / 걸(3) / 윷(4칸+한번더) / 모(5칸+한번더) · 윷·모는 쌓아 두고 계속 던진 뒤 하나씩 말을 골라 이동 · 최대 3번 뒤엔 도·개·걸,Table: Nak(0 · ends turn if nothing stacked) / Do(1) / Gae(2) / Geol(3) / Yut(4+Extra Roll) / Mo(5+Extra Roll) · Yut/Mo are stacked while you keep throwing then each value moves a pawn you choose · after 3 extra throws: Do/Gae/Geol only,出目表: 落(0マス·溜めた出目がなければ番終了) / ド(1) / ゲ(2) / ゴル(3) / ユッ(4+もう1回) / モ(5+もう1回) · ユッ・モは溜めて投げ続け終わったら出目ごとに駒を選んで移動 · 最大3回の後はド・ゲ・ゴルのみ
+• 눈금표: 낙(0칸·쌓인 윷이 없으면 턴 종료) / 도(1) / 개(2) / 걸(3) / 윷(4칸+한번더) / 모(5칸+한번더) · 윷·모는 쌓아 두고 계속 던진 뒤 하나씩 말을 골라 이동 · 최대 3번 뒤엔 도·개·걸,• Table: Nak(0 · ends turn if nothing stacked) / Do(1) / Gae(2) / Geol(3) / Yut(4+Extra Roll) / Mo(5+Extra Roll) · Yut/Mo are stacked while you keep throwing then each value moves a pawn you choose · after 3 extra throws: Do/Gae/Geol only,• 出目表: 落(0マス·溜めた出目がなければ番終了) / ド(1) / ゲ(2) / ゴル(3) / ユッ(4+もう1回) / モ(5+もう1回) · ユッ・モは溜めて投げ続け終わったら出目ごとに駒を選んで移動 · 最大3回の後はド・ゲ・ゴルのみ
 • 시세표: 주가(시작 6)만큼 전진 · 매번 ±3 등락 / ★상한가 20칸 / 상장폐지: 0칸 + 선두 말 사출,• Ticker: Advance by price (starts at 6) · ±3 each roll / ★Limit Up 20 / Delisted: 0 + lead pawn ejected,• 相場表: 株価(初期6)だけ前進・毎回±3変動 / ★ストップ高20マス / 上場廃止: 0マス+先頭の駒が射出
 • 과녁표: 숫자 1~6 × 싱글·더블·트리플 / ★불스아이 10칸 + 한 번 더,• Board: Number 1~6 × Single/Double/Triple / ★Bullseye 10 + Extra Roll,• 的表: 数字1〜6 × シングル・ダブル・トリプル / ★ブルズアイ10マス+もう1回
 ◆ 승리 조건: 방해령 {p1}종(베루·사리·메죵)을 모두 손패에 모은 채 내 차례 종료,"◆ Win Condition: End your turn holding all {p1} Meddling Spirits (Beru, Sari, Mejong) in hand",◆ 勝利条件: 妨害霊{p1}種(ベル・サリ・メジョン)をすべて手札に集めたまま自分のターンを終える
@@ -2742,3 +2742,14 @@ PROGRESS / 진행률,PROGRESS,PROGRESS／進行度
 공지,Notice,お知らせ
 보기,View,見る
 접기,Hide,閉じる
+%s · 쌓인 윷으로 이동!,%s · Move with the stacked throws!,%s · 溜めた出目で移動！
+%s · %d칸 쌓음 · 한 번 더!,%s · %d stacked · Throw again!,%s · %dマス溜め · もう一回！
+%s · %d칸 쌓음 · 이제 이동!,%s · %d stacked · Time to move!,%s · %dマス溜め · いざ移動！
+"낙! 윷가락이 판 밖으로 - 던지기 끝, 쌓인 윷으로 이동",Nak! The sticks flew off the board - throwing ends and you move with the stacked throws,落！ユッが盤の外へ - 投げ終了、溜めた出目で移動
+%s (%d칸 쌓음 · 한 번 더),%s (%d stacked · throw again),%s（%dマス溜め・もう一回）
+윷·모는 쌓고 계속 던짐 (최대 3번),Yut/Mo stack and you keep throwing (max 3),ユッ・モは溜めて投げ続ける（最大3回）
+0칸 · 던지기 끝 (쌓인 윷이 없으면 턴 종료),0 spaces · throwing ends (turn ends if nothing stacked),0マス · 投げ終了（溜めた出目がなければ番終了）
+4칸 쌓고 한 번 더!,Stack 4 and throw again!,4マス溜めてもう一回！
+5칸 쌓고 한 번 더!,Stack 5 and throw again!,5マス溜めてもう一回！
+윷·모는 쌓아 두고 계속 던진 뒤 눈금마다 말을 골라 이동,Yut/Mo stack while you keep throwing then each value moves a pawn you choose,ユッ・モは溜めて投げ続け出目ごとに駒を選んで移動
+눈금표: 낙(0칸·쌓인 윷이 없으면 턴 종료) / 도(1) / 개(2) / 걸(3) / 윷(4칸+한번더) / 모(5칸+한번더) · 윷·모는 쌓아 두고 계속 던진 뒤 눈금마다 말 선택,Table: Nak(0 · ends turn if nothing stacked) / Do(1) / Gae(2) / Geol(3) / Yut(4+Extra Roll) / Mo(5+Extra Roll) · Yut/Mo stack while you keep throwing then pick a pawn per value,出目表: 落(0マス·溜めた出目がなければ番終了) / ド(1) / ゲ(2) / ゴル(3) / ユッ(4+もう1回) / モ(5+もう1回) · ユッ・モは溜めて投げ続け出目ごとに駒を選ぶ

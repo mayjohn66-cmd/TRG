@@ -84,6 +84,11 @@
        "ko": "증강 풀이 템포에 맞춰 단계적으로 넓어진다: 초반(4~7라운드)은 기물·판정 도구·카드·이동 보급 같은 쉬운 증강, 템포 업 1단계(8라운드~)부터 법전·함정/방어 패키지·필살기 리필 같은 판세 개입형, 2단계(14라운드~)부터 초증강·전군 돌연변이가 합류하고 기초 기물 증강은 덜 나온다",
        "en": "The augment pool now widens with the tempo: early rounds (4-7) offer easy augments (pieces, judgment tools, cards, move boosts); from Tempo Up 1 (round 8) board-shaping ones join (Special Wins, trap/defense packs, ultimate refills); from Tempo Up 2 (round 14) Super Augments and Mass Mutation join while basic piece augments appear less",
        "ja": "オーグメントのプールがテンポに合わせて段階的に広がる：序盤(4〜7ラウンド)は駒・判定ツール・カード・移動補給などの簡単なもの、テンポアップ1段階(8ラウンド〜)から法典・罠/防御パッケージ・必殺技リフィルなど盤面に介入するもの、2段階(14ラウンド〜)から超オーグメント・全軍突然変異が加わり、基本の駒オーグメントは出にくくなる"
+      },
+      {
+       "ko": "윷 규칙을 윷놀이처럼 바꿨습니다: 윷·모가 나오면 바로 움직이지 않고 계속 던져 눈금을 쌓고, 도·개·걸이 나오면 던지기가 끝난 뒤 쌓인 눈금마다 움직일 말을 골라 이동합니다 (예: 윷 → 모 → 개 = 4칸, 5칸, 2칸을 각각 말을 골라 이동). 쌓인 윷이 있을 때의 낙은 던지기만 끝내고 쌓인 눈금은 그대로 씁니다",
+       "en": "Yut now follows real Yut Nori: Yut and Mo no longer move right away - you keep throwing and the values stack up, and once a Do/Gae/Geol ends the throwing you pick a pawn to move for each stacked value (e.g. Yut → Mo → Gae = 4, 5 and 2 spaces, each with its own pawn). A Nak with values stacked only ends the throwing and the stack is still used",
+       "ja": "ユッをユンノリのルールに変更しました：ユッ・モが出てもすぐには動かず、投げ続けて出目を溜め、ド・ゲ・ゴルで投げ終わったら溜めた出目ごとに駒を選んで移動します（例：ユッ→モ→ゲ＝4マス・5マス・2マスをそれぞれ駒を選んで移動）。溜めた出目がある状態での落は投げを終えるだけで、溜めた出目はそのまま使います"
       }
      ]
     },

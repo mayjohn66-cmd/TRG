@@ -2210,3 +2210,11 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 ### 7.87 굴림 결과 기록판은 [한 번 더]에만
 - `RollSuccessHistory.reveal`(실제 게임이 쓰는 기록판)의 표시 조건: 성공 표식 도구(`RollSuccessDisplay.TOOLS`)는 성공이 쌓였을 때만(`success_count>0`), 그 밖의 도구(윷 등)는 이번 턴에 `reroll`이 한 번이라도 나온 뒤부터(`chained`). 턴 종료 결과만으로는 띄우지 않는다. 기록은 계속 쌓아 두므로 한 번 더가 나오면 앞 굴림까지 함께 보인다. 기본 `RollHistory.reveal`도 같은 규칙.
 - 알려진 것: `ui_roll_history_test`의 "success heading retains full total" 1건은 이 변경 전부터 실패하고 있었다 (범위 지정 검사에서만 돈다).
+
+### 7.88 윷놀이식 던지기 (쌓아 두고 던진 뒤 눈금마다 이동)
+- `TurnManager._apply_roll_result`의 YUT 분기: 윷·모(`reroll`)는 `move_queue`에 눈금을 쌓고 `PHASE_TURN_BEGIN`으로 돌아가 바로 다시 던진다 (이동·말 선택 없음, `_roll_chain < MAX_REROLL_CHAIN`, 4번째 던지기는 기존 `roll_capped`로 도·개·걸). 도·개·걸이 나오면 평소처럼 `_enter_interrupt_roll` → `_enter_select_pawn`으로 가고, `_close_resolution_window`가 `move_queue`가 빌 때까지 눈금마다 말 선택을 이어 간다 (눈금마다 말을 새로 고른다).
+- 낙: 쌓인 눈금이 있으면 `details["nak_keep"]=true`·`ends_turn=false`로 던지기만 끝내고 쌓인 눈금을 쓴다 (낙 자체는 0칸, 템포 업·망치 등 보너스 없음, 리바이브 미발동). 쌓인 눈금이 없으면 예전처럼 0칸 + 턴 종료. 결과 `details["stored"]`는 이번 던지기 직전에 쌓여 있던 눈금 수.
+- `_enter_select_pawn`: 맨 앞 눈금으로 움직일 말이 없으면 그 눈금만 버리고(`turn_skipped`) 다음 눈금으로 간다 (예전엔 대기열 전체를 비웠다).
+- 연출: 윷 던지기 글자 — 윷·모 `윷 · 4칸 쌓음 · 한 번 더!`, 쌓은 뒤 마지막 `개 · 2칸 쌓음 · 이제 이동!`, 쌓인 뒤 낙 `낙 · 쌓인 윷으로 이동!`. 로그·도구 설명(눈금표)·도감 문구도 새 규칙으로 갱신. 윷 결과 기록판(7.87)은 윷·모가 나온 순간부터 보인다.
+- 테스트: `test_turn_manager`의 윷 쌓기/낙 유지/빈 낙 3건, 봇 8판 완주 시뮬레이션(윷·모 146회, 쌓인 낙 70회, 막힘 없음).
+- 밸런스 주의: 템포 업은 첫 던지기에만 붙고(기존), 윷·모를 연달아 쌓아도 이동은 눈금마다 말을 골라 나눠 쓸 수 있게 되어 한 말에 몰아 쓰는 것보다 선택지가 늘었다. 윷 1위율은 별도로 다시 재 볼 필요가 있다.

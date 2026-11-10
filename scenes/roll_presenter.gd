@@ -648,11 +648,18 @@ func _build(tool_id: StringName) -> void:
 			var face: int = int((_result.get("details", {}) as Dictionary).get("face",_result.get("steps",1)))
 			_total = real_time(&"YUT", YutThrow3D.result_time(face)) + 0.02
 			_yut_3d.begin(face,_power)
-			var caption: String = "%s · %s" % [YUT_NAMES[face],"0칸, 턴 종료" if bool(_result.get("ends_turn",false)) else _card_move_text()]
-			if bool(_result.get("reroll",false)):
-				caption += " · 한 번 더"
-			if not bool(_result.get("ends_turn",false)):
-				caption += "!"  # 보드 위로 던진 윷: "걸 · 3칸 전진!"
+			var yut_details: Dictionary = _result.get("details", {})
+			var caption: String = ""
+			if bool(yut_details.get("nak_keep",false)):
+				caption = "%s · 쌓인 윷으로 이동!" % YUT_NAMES[face]  # 윷놀이 규칙: 쌓인 윷이 있으면 낙은 던지기만 끝낸다
+			elif bool(_result.get("reroll",false)):
+				caption = "%s · %d칸 쌓음 · 한 번 더!" % [YUT_NAMES[face], int(_result.get("steps",0))]  # 윷·모는 바로 움직이지 않고 쌓는다
+			elif int(yut_details.get("stored",0)) > 0:
+				caption = "%s · %d칸 쌓음 · 이제 이동!" % [YUT_NAMES[face], int(_result.get("steps",0))]
+			else:
+				caption = "%s · %s" % [YUT_NAMES[face],"0칸, 턴 종료" if bool(_result.get("ends_turn",false)) else _card_move_text()]
+				if not bool(_result.get("ends_turn",false)):
+					caption += "!"  # 보드 위로 던진 윷: "걸 · 3칸 전진!"
 			_make_card_result(caption)
 		&"LIFE_ROULETTE":
 			_title.text = "인생게임 회전 룰렛"

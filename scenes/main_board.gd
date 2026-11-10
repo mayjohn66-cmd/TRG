@@ -6798,7 +6798,7 @@ const TOOL_RULE_WIDTH: float = 180.0
 
 const TOOL_CARDS: Dictionary = {
 	&"D6": ["6", Color("c92a2a"), "굴려서 전진한다", ""],
-	&"YUT": ["윷", Color("8a5a2b"), "윷을 던져 나온 만큼 전진한다", "윷·모 재굴림 (최대 3번)"],
+	&"YUT": ["윷", Color("8a5a2b"), "윷을 던져 나온 만큼 전진한다", "윷·모는 쌓고 계속 던짐 (최대 3번)"],
 	&"LIFE_ROULETTE": ["룰", Color("1971c2"), "룰렛을 돌려 전진한다", "7 당첨 재굴림 +1"],
 	&"HOLDEM": ["♠", Color("343a40"), "카드 족보만큼 전진한다", ""],
 	&"CHINCHIRO": ["친", Color("0b7285"), "주사위를 굴려 전진한다", ""],
@@ -6818,7 +6818,7 @@ const TOOL_CARDS: Dictionary = {
 ## 도구별 전체 규칙표: [항목, 전진 결과] 행들과 보충 설명. 새로운 방식의 도구는 유저가 모르므로 족보·확률을 전부 보여 준다.
 const TOOL_RULES: Dictionary = {
 	&"D6": {"rows": [["1 ~ 6 눈금", "나온 눈금만큼"]], "note": "각 눈금 1/6"},
-	&"YUT": {"rows": [["낙 (판 밖으로)", "0칸, 턴 종료"], ["도 (1)", "1칸"], ["개 (2)", "2칸"], ["걸 (3)", "3칸"], ["윷 (4)", "4칸 + 한 번 더!"], ["모 (5)", "5칸 + 한 번 더!"]], "note": "6가지 각 1/6"},
+	&"YUT": {"rows": [["낙 (판 밖으로)", "0칸 · 던지기 끝 (쌓인 윷이 없으면 턴 종료)"], ["도 (1)", "1칸"], ["개 (2)", "2칸"], ["걸 (3)", "3칸"], ["윷 (4)", "4칸 쌓고 한 번 더!"], ["모 (5)", "5칸 쌓고 한 번 더!"]], "note": "윷·모는 쌓아 두고 계속 던진 뒤 눈금마다 말을 골라 이동"},
 	&"LIFE_ROULETTE": {"rows": [["1 ~ 6, 8 ~ 10", "나온 숫자만큼"], ["7 당첨", "7칸 + 한 번 더!"]], "note": "1 ~ 10 균등 · 원판 돌리기"},
 	&"HOLDEM": {"rows": [["노페어", "1칸"], ["원페어", "3칸"], ["투페어", "5칸"], ["트리플", "7칸"], ["스트레이트", "10칸"], ["플러시 이상", "15칸"]], "note": "5장 드로우 · 플러시 이상 15칸"},
 	&"CHINCHIRO": {"rows": [["4 눈금", "4칸 (2/6)"], ["5 눈금", "5칸 (2/6)"], ["6 눈금", "6칸 (1/6)"], ["삐끗!", "이번 이동 0칸 (1/6)"]], "note": "접시 밖 이탈 = 삐끗 (후퇴는 없음)"},
@@ -11932,6 +11932,10 @@ func _roll_text(data: Dictionary) -> String:
 		&"YUT":
 			if result["ends_turn"]:
 				text += "낙! 윷가락이 판 밖으로 - 0칸, 턴 종료"
+			elif bool(details.get("nak_keep", false)):
+				text += "낙! 윷가락이 판 밖으로 - 던지기 끝, 쌓인 윷으로 이동"
+			elif bool(result.get("reroll", false)):
+				text += "%s (%d칸 쌓음 · 한 번 더)" % [YUT_NAMES.get(int(details.get("face", result["steps"])), "?"), result["steps"]]
 			else:
 				text += "%s (%d칸)" % [YUT_NAMES.get(int(details.get("face", result["steps"])), "?"), result["steps"]]
 		&"HOLDEM": text += "%s → %d칸" % [HAND_NAMES.get(details["hand"], "?"), result["steps"]]

@@ -1610,11 +1610,23 @@ func _apply_roll_result(result: RollResult) -> void:
 		state.forced_roll.erase(roller_id)
 	if state.is_banned(roller_id):
 		result.reroll = false  # 알고리즘 밴: 리롤 금지
+	# 윷놀이 규칙 (2026-11): 윷·모는 바로 움직이지 않고 쌓아 두며 계속 던지고, 쌓인 눈금은 끝난 뒤 하나씩 말을 골라 움직인다.
+	# 쌓인 윷이 있는 채로 낙이 나오면 던지기만 끝나고(낙은 0칸), 쌓인 눈금은 그대로 쓴다. 쌓인 것이 없으면 예전처럼 0칸 + 턴 종료.
+	var yut_stack: bool = result.tool_id == &"YUT"
+	if yut_stack:
+		result.details["stored"] = move_queue.size()
+		if result.ends_turn and not move_queue.is_empty():
+			result.ends_turn = false
+			result.details["nak_keep"] = true
 	_emit_event(&"roll_resolved", {"player_id": current_player_id(), "result": result.to_dict()})
 	if bool(result.details.get("eject_leader", false)):
 		_delist_eject(roller_id)  # 주식 차트 상장폐지: 내 선두 말이 대기실로
-	if result.ends_turn or (result.steps <= 0 and not result.can_continue and not result.reroll):
+	if (result.ends_turn or (result.steps <= 0 and not result.can_continue and not result.reroll)) and not bool(result.details.get("nak_keep", false)):
 		_try_revive(roller_id)
+	if bool(result.details.get("nak_keep", false)):
+		_roll_chain += 1  # 윷: 낙으로 던지기가 끝났다. 쌓인 눈금으로 이동하러 간다.
+		_enter_interrupt_roll()
+		return
 	if result.ends_turn:
 		move_queue.clear()
 		advance_to_next_player()
@@ -1672,6 +1684,11 @@ func _apply_roll_result(result: RollResult) -> void:
 	# 추가 굴림(윷·모, 야추, 역만, 블랙잭, 타로, 룰렛 대박): 이번 눈금으로 먼저 움직이고, 이동이 끝난 뒤 다시 굴린다.
 	# 카드는 턴당 1장 그대로다 (추가 굴림 앞에 카드 단계가 다시 오지만, 이미 냈으면 더 낼 수 없다).
 	if result.reroll and _roll_chain < GameEnums.MAX_REROLL_CHAIN:
+		if yut_stack:
+			# 윷·모: 이동하지 않고 눈금을 쌓은 채 바로 다시 던진다 (카드 단계부터 다시, 턴당 카드 1장 제한은 이어진다).
+			_bonus_roll_pending = false
+			change_state(State.PHASE_TURN_BEGIN)
+			return
 		_bonus_roll_pending = true
 	_enter_interrupt_roll()
 
@@ -1710,10 +1727,11 @@ func _queued_dice() -> int:
 
 
 func _enter_select_pawn() -> void:
-	if move_queue.is_empty() or state.selectable_pawns(current_player_id(), _queued_dice()).is_empty():
-		if not move_queue.is_empty():
-			_emit_event(&"turn_skipped", {"player_id": current_player_id(), "reason": &"no_movable_pawn"})
-		move_queue.clear()
+	# 맨 앞 눈금으로 움직일 수 있는 말이 없으면 그 눈금만 버리고 다음 눈금으로 간다 (윷놀이처럼 쌓인 눈금이 여럿일 수 있다).
+	while not move_queue.is_empty() and state.selectable_pawns(current_player_id(), _queued_dice()).is_empty():
+		_emit_event(&"turn_skipped", {"player_id": current_player_id(), "reason": &"no_movable_pawn"})
+		move_queue.pop_front()
+	if move_queue.is_empty():
 		_enter_resolution()
 		return
 	change_state(State.PHASE_SELECT_PAWN)

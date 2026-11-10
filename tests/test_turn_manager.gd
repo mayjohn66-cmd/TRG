@@ -882,3 +882,57 @@ func test_augment_review_times_out_and_is_off_by_default() -> void:
 	var plain := TurnManager.new()
 	check(not plain.review_enabled, "엔진 기본값은 확인 단계 없음 (화면이 있는 판에서만 켠다)")
 	plain.free()
+
+
+# --- 윷놀이 규칙: 윷·모는 쌓아 두고 계속 던진 뒤, 쌓인 눈금마다 말을 골라 움직인다 -----------------------
+
+func _yut(steps: int, reroll: bool, nak: bool = false) -> RollResult:
+	var result: RollResult = RollResult.make(&"YUT", steps, {"face": 0 if nak else steps})
+	result.reroll = reroll
+	result.ends_turn = nak
+	return result
+
+
+func test_yut_and_mo_stack_then_each_value_moves_a_chosen_pawn() -> void:
+	var manager: TurnManager = _new_manager()
+	manager._apply_roll_result(_yut(4, true))  # 윷
+	check(manager.current_state == Phase.PHASE_TURN_BEGIN and manager.move_queue == int_array([4]), "윷: 바로 움직이지 않고 쌓은 채 다시 던진다")
+	manager._apply_roll_result(_yut(5, true))  # 모
+	check(manager.current_state == Phase.PHASE_TURN_BEGIN and manager.move_queue == int_array([4, 5]), "모도 쌓인다")
+	check_eq(manager.state.get_pawn(11).current_tile_idx, 0, "아직 아무 말도 움직이지 않았다")
+	manager._apply_roll_result(_yut(2, false))  # 개: 던지기 끝
+	check_eq(manager.current_state, Phase.PHASE_SELECT_PAWN, "윷·모가 아닌 눈이 나오면 던지기가 끝나고 말을 고른다")
+	check_eq(manager.move_queue, int_array([4, 5, 2]), "윷·모·개가 순서대로 쌓여 있다")
+	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
+	check_eq(manager.state.get_pawn(11).current_tile_idx, 4, "첫 눈금(윷 4칸)으로 고른 말이 움직인다")
+	check(manager.current_state == Phase.PHASE_SELECT_PAWN and manager.move_queue == int_array([5, 2]), "이어서 다음 눈금(모 5칸)의 말을 고른다")
+	check(manager.state.selectable_pawns(1, 5).size() == 4, "눈금마다 어느 말로 움직일지 새로 고른다 (네 말 모두 후보)")
+	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
+	check_eq(manager.state.get_pawn(11).current_tile_idx, 16, "모 5칸을 같은 말로 (4 + 5 = 9번 옷장, 테스트 보드에서는 16번으로 워프)")
+	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
+	check_eq(manager.state.get_pawn(11).current_tile_idx, 18, "개 2칸을 같은 말로 (16 + 2)")
+	check_eq(manager.state.current_player, 2, "쌓인 눈금을 다 쓰면 다음 플레이어")
+	_dispose(manager)
+
+
+func test_nak_after_stacked_yut_ends_throwing_but_keeps_the_stack() -> void:
+	var manager: TurnManager = _new_manager()
+	var events: Array = _collect_events(manager)
+	manager._apply_roll_result(_yut(4, true))
+	manager._apply_roll_result(_yut(0, false, true))  # 낙
+	check_eq(manager.current_state, Phase.PHASE_SELECT_PAWN, "쌓인 윷이 있으면 낙은 던지기만 끝낸다 (턴이 끝나지 않는다)")
+	check_eq(manager.move_queue, int_array([4]), "쌓인 눈금은 그대로")
+	var nak_event: Dictionary = events.filter(func(e: Dictionary) -> bool: return e["kind"] == &"roll_resolved").back()
+	check(not bool(nak_event["data"]["result"]["ends_turn"]) and bool(nak_event["data"]["result"]["details"].get("nak_keep", false)), "낙 이벤트는 턴 종료가 아니고 쌓인 윷을 쓴다고 표시된다")
+	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
+	check_eq(manager.state.get_pawn(11).current_tile_idx, 4, "쌓인 윷으로 이동")
+	check_eq(manager.state.current_player, 2, "그다음 턴이 넘어간다")
+	_dispose(manager)
+
+
+func test_nak_with_nothing_stacked_still_ends_the_turn() -> void:
+	var manager: TurnManager = _new_manager()
+	manager._apply_roll_result(_yut(0, false, true))
+	check_eq(manager.state.current_player, 2, "쌓인 것이 없으면 낙은 0칸 + 턴 종료")
+	check(manager.move_queue.is_empty(), "대기열 없음")
+	_dispose(manager)
