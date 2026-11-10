@@ -650,8 +650,8 @@ func _build(tool_id: StringName) -> void:
 			_yut_3d.begin(face,_power)
 			var yut_details: Dictionary = _result.get("details", {})
 			var caption: String = ""
-			if bool(yut_details.get("nak_keep",false)):
-				caption = "%s · 쌓인 윷으로 이동!" % YUT_NAMES[face]  # 윷놀이 규칙: 쌓인 윷이 있으면 낙은 던지기만 끝낸다
+			if bool(_result.get("ends_turn",false)) and int(yut_details.get("lost",0)) > 0:
+				caption = "%s · 쌓인 윷이 모두 날아갔다 · 턴 종료" % YUT_NAMES[face]  # 낙: 쌓인 눈금도 사라진다
 			elif bool(_result.get("reroll",false)):
 				caption = "%s · %d칸 쌓음 · 한 번 더!" % [YUT_NAMES[face], int(_result.get("steps",0))]  # 윷·모는 바로 움직이지 않고 쌓는다
 			elif int(yut_details.get("stored",0)) > 0:

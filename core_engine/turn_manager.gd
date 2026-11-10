@@ -1611,22 +1611,17 @@ func _apply_roll_result(result: RollResult) -> void:
 	if state.is_banned(roller_id):
 		result.reroll = false  # 알고리즘 밴: 리롤 금지
 	# 윷놀이 규칙 (2026-11): 윷·모는 바로 움직이지 않고 쌓아 두며 계속 던지고, 쌓인 눈금은 끝난 뒤 하나씩 말을 골라 움직인다.
-	# 쌓인 윷이 있는 채로 낙이 나오면 던지기만 끝나고(낙은 0칸), 쌓인 눈금은 그대로 쓴다. 쌓인 것이 없으면 예전처럼 0칸 + 턴 종료.
+	# 낙이 나오면 쌓인 눈금이 있어도 모두 사라지고 0칸 + 턴 종료 (ends_turn 분기가 move_queue를 비운다).
 	var yut_stack: bool = result.tool_id == &"YUT"
 	if yut_stack:
 		result.details["stored"] = move_queue.size()
-		if result.ends_turn and not move_queue.is_empty():
-			result.ends_turn = false
-			result.details["nak_keep"] = true
+		if result.ends_turn:
+			result.details["lost"] = move_queue.size()  # 연출용: 날아간 쌓인 눈금 수
 	_emit_event(&"roll_resolved", {"player_id": current_player_id(), "result": result.to_dict()})
 	if bool(result.details.get("eject_leader", false)):
 		_delist_eject(roller_id)  # 주식 차트 상장폐지: 내 선두 말이 대기실로
-	if (result.ends_turn or (result.steps <= 0 and not result.can_continue and not result.reroll)) and not bool(result.details.get("nak_keep", false)):
+	if result.ends_turn or (result.steps <= 0 and not result.can_continue and not result.reroll):
 		_try_revive(roller_id)
-	if bool(result.details.get("nak_keep", false)):
-		_roll_chain += 1  # 윷: 낙으로 던지기가 끝났다. 쌓인 눈금으로 이동하러 간다.
-		_enter_interrupt_roll()
-		return
 	if result.ends_turn:
 		move_queue.clear()
 		advance_to_next_player()

@@ -86,9 +86,9 @@
        "ja": "オーグメントのプールがテンポに合わせて段階的に広がる：序盤(4〜7ラウンド)は駒・判定ツール・カード・移動補給などの簡単なもの、テンポアップ1段階(8ラウンド〜)から法典・罠/防御パッケージ・必殺技リフィルなど盤面に介入するもの、2段階(14ラウンド〜)から超オーグメント・全軍突然変異が加わり、基本の駒オーグメントは出にくくなる"
       },
       {
-       "ko": "윷 규칙을 윷놀이처럼 바꿨습니다: 윷·모가 나오면 바로 움직이지 않고 계속 던져 눈금을 쌓고, 도·개·걸이 나오면 던지기가 끝난 뒤 쌓인 눈금마다 움직일 말을 골라 이동합니다 (예: 윷 → 모 → 개 = 4칸, 5칸, 2칸을 각각 말을 골라 이동). 쌓인 윷이 있을 때의 낙은 던지기만 끝내고 쌓인 눈금은 그대로 씁니다",
-       "en": "Yut now follows real Yut Nori: Yut and Mo no longer move right away - you keep throwing and the values stack up, and once a Do/Gae/Geol ends the throwing you pick a pawn to move for each stacked value (e.g. Yut → Mo → Gae = 4, 5 and 2 spaces, each with its own pawn). A Nak with values stacked only ends the throwing and the stack is still used",
-       "ja": "ユッをユンノリのルールに変更しました：ユッ・モが出てもすぐには動かず、投げ続けて出目を溜め、ド・ゲ・ゴルで投げ終わったら溜めた出目ごとに駒を選んで移動します（例：ユッ→モ→ゲ＝4マス・5マス・2マスをそれぞれ駒を選んで移動）。溜めた出目がある状態での落は投げを終えるだけで、溜めた出目はそのまま使います"
+       "ko": "윷 규칙을 윷놀이처럼 바꿨습니다: 윷·모가 나오면 바로 움직이지 않고 계속 던져 눈금을 쌓고, 도·개·걸이 나오면 던지기가 끝난 뒤 쌓인 눈금마다 움직일 말을 골라 이동합니다 (예: 윷 → 모 → 개 = 4칸, 5칸, 2칸을 각각 말을 골라 이동). 낙이 나오면 쌓인 눈금이 있어도 모두 사라지고 턴이 끝납니다",
+       "en": "Yut now follows real Yut Nori: Yut and Mo no longer move right away - you keep throwing and the values stack up, and once a Do/Gae/Geol ends the throwing you pick a pawn to move for each stacked value (e.g. Yut → Mo → Gae = 4, 5 and 2 spaces, each with its own pawn). If a Nak comes up, every stacked value is lost and your turn ends",
+       "ja": "ユッをユンノリのルールに変更しました：ユッ・モが出てもすぐには動かず、投げ続けて出目を溜め、ド・ゲ・ゴルで投げ終わったら溜めた出目ごとに駒を選んで移動します（例：ユッ→モ→ゲ＝4マス・5マス・2マスをそれぞれ駒を選んで移動）。落が出ると溜めた出目はすべて消え、番が終わります"
       }
      ]
     },

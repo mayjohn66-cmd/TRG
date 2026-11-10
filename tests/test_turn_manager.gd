@@ -915,18 +915,17 @@ func test_yut_and_mo_stack_then_each_value_moves_a_chosen_pawn() -> void:
 	_dispose(manager)
 
 
-func test_nak_after_stacked_yut_ends_throwing_but_keeps_the_stack() -> void:
+func test_nak_after_stacked_yut_ends_the_turn_and_loses_the_stack() -> void:
 	var manager: TurnManager = _new_manager()
 	var events: Array = _collect_events(manager)
 	manager._apply_roll_result(_yut(4, true))
+	manager._apply_roll_result(_yut(5, true))
 	manager._apply_roll_result(_yut(0, false, true))  # 낙
-	check_eq(manager.current_state, Phase.PHASE_SELECT_PAWN, "쌓인 윷이 있으면 낙은 던지기만 끝낸다 (턴이 끝나지 않는다)")
-	check_eq(manager.move_queue, int_array([4]), "쌓인 눈금은 그대로")
+	check_eq(manager.state.current_player, 2, "낙이 나오면 쌓인 윷이 있어도 바로 턴이 끝난다")
+	check(manager.move_queue.is_empty(), "쌓인 눈금은 모두 사라진다")
+	check_eq(manager.state.get_pawn(11).current_tile_idx, 0, "아무 말도 움직이지 않았다")
 	var nak_event: Dictionary = events.filter(func(e: Dictionary) -> bool: return e["kind"] == &"roll_resolved").back()
-	check(not bool(nak_event["data"]["result"]["ends_turn"]) and bool(nak_event["data"]["result"]["details"].get("nak_keep", false)), "낙 이벤트는 턴 종료가 아니고 쌓인 윷을 쓴다고 표시된다")
-	_do(manager, 1, &"select_pawn", {"pawn_id": 11})
-	check_eq(manager.state.get_pawn(11).current_tile_idx, 4, "쌓인 윷으로 이동")
-	check_eq(manager.state.current_player, 2, "그다음 턴이 넘어간다")
+	check(bool(nak_event["data"]["result"]["ends_turn"]) and int(nak_event["data"]["result"]["details"].get("lost", 0)) == 2, "낙 이벤트는 턴 종료이고 날아간 쌓인 눈금 수(2)를 싣는다")
 	_dispose(manager)
 
 
