@@ -39,8 +39,10 @@ func reveal(turn: int, player: int, result: Dictionary) -> void:
 	if award: success_count += 1
 	last_result = result.duplicate(true)
 	_refresh(award if RollSuccessDisplay.supports(tool_id) else appended)
-	# Blackjack draws stay in its compact hand; only a 21 earns a trophy.
-	visible = not RollSuccessDisplay.supports(tool_id) or success_count>0 or bool(result.get("ends_turn",false))
+	# 왼쪽 기록판은 [한 번 더]가 나온 턴에만 띄운다 (2026-11 요청): 한 번 굴리고 끝나는 결과·턴 종료 결과는 굴림 연출과 알림이 이미 보여 준다.
+	# 성공 표식을 쓰는 도구(리볼버 생존·7 당첨·역만·수레바퀴·불스아이·21)는 성공이 쌓였을 때, 그 밖의 도구(윷 등)는 한 번 더가 나온 뒤부터.
+	if bool(result.get("reroll",false)): chained = true
+	visible = success_count>0 if RollSuccessDisplay.supports(tool_id) else chained
 
 func _is_success(result: Dictionary, confirmation: bool) -> bool:
 	if not RollSuccessDisplay.supports(tool_id) or bool(result.get("ends_turn",false)): return false

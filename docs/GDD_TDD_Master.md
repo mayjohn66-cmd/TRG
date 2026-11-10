@@ -2206,3 +2206,7 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 
 ### 7.85 공지사항 목록(아코디언)
 - `UpdateNotes.open`: 항목(`entries()`)마다 한 줄 `NotesRow<n>`(버튼: `공지` 태그 · 제목+날짜 · `▼ [보기]`/`▲ [접기]`)과 그 아래 본문 `NotesBody<n>`(연한 패널, 섹션은 한 덩어리 간격 8, 덩어리 사이 16, 항목 16px·줄 간격 4)을 `make_row`가 만든다. 줄을 누르면 `toggle_row`가 그 줄만 펼치고 나머지는 접으며, 펼친 줄을 다시 누르면 접힌다. 가장 새 소식은 처음부터 펼쳐 둔다. 새 소식 id·[N] 표시는 그대로. 테스트 `test_popup_lists_versions_as_rows_and_expands_one_at_a_time`.
+
+### 7.87 굴림 결과 기록판은 [한 번 더]에만
+- `RollSuccessHistory.reveal`(실제 게임이 쓰는 기록판)의 표시 조건: 성공 표식 도구(`RollSuccessDisplay.TOOLS`)는 성공이 쌓였을 때만(`success_count>0`), 그 밖의 도구(윷 등)는 이번 턴에 `reroll`이 한 번이라도 나온 뒤부터(`chained`). 턴 종료 결과만으로는 띄우지 않는다. 기록은 계속 쌓아 두므로 한 번 더가 나오면 앞 굴림까지 함께 보인다. 기본 `RollHistory.reveal`도 같은 규칙.
+- 알려진 것: `ui_roll_history_test`의 "success heading retains full total" 1건은 이 변경 전부터 실패하고 있었다 (범위 지정 검사에서만 돈다).

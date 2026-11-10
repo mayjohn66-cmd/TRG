@@ -23,6 +23,8 @@ var _rows: HFlowContainer
 var _footer: Label
 var _tool_icon: TextureRect
 var _wide := false
+## 이번 턴에 [한 번 더]가 한 번이라도 나왔는가: 그때부터만 기록판을 띄운다 (한 번 굴리고 끝나는 결과는 굴림 연출이 이미 보여 준다).
+var chained := false
 
 func _ready() -> void:
 	name = "RollHistory"
@@ -100,6 +102,7 @@ func clear() -> void:
 	turn_id = -1
 	player_id = -1
 	tool_id = &""
+	chained = false
 	if _rows != null:
 		for row: Node in _rows.get_children():
 			_rows.remove_child(row)
@@ -125,6 +128,10 @@ func reveal(turn: int, player: int, result: Dictionary) -> void:
 	if appended:
 		entries.append({"text":_outcome(result),"tone":BAD if bool(result.get("ends_turn",false)) else (AGAIN if bool(result.get("reroll",false)) else GOOD),"success":tool_id==&"REVOLVER" and not bool(details.get("fired",false))})
 	last_result = result.duplicate(true)
+	if bool(result.get("reroll",false)): chained = true
+	if not chained:
+		hide()  # 한 번 더가 나오기 전에는 띄우지 않는다 (기록은 쌓아 두어, 한 번 더가 나오면 앞 굴림까지 함께 보인다)
+		return
 	# Blackjack already shows current hand, count and total in its fixed-size stage.
 	if tool_id==&"DICE_BLACKJACK":
 		hide()

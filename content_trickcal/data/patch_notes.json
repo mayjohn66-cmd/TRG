@@ -143,6 +143,11 @@
        "ko": "공지사항을 게임 공지 목록처럼 버전마다 한 줄로 나누고, 누르면 그 버전의 소식이 펼쳐지게 했습니다. 글 간격도 넓혀 읽기 편하게 했습니다",
        "en": "Patch notes now appear as one row per version, like an in-game notice list; tap a row to expand that version's notes. Spacing is wider for easier reading",
        "ja": "お知らせをゲームのお知らせ一覧のようにバージョンごとの1行にし、タップするとそのバージョンの内容が開くようにしました。文の間隔も広げて読みやすくしました"
+      },
+      {
+       "ko": "판정 도구 왼쪽의 굴림 결과 기록판은 [한 번 더]가 나왔을 때만 뜨게 했습니다 (한 번 굴리고 끝나는 결과는 더 이상 왼쪽에 뜨지 않습니다)",
+       "en": "The roll-result panel left of the judgment tool now appears only when you earn a Roll Again (single rolls no longer show up on the left)",
+       "ja": "判定ツールの左に出るロール結果パネルは「もう一回」が出たときだけ表示されるようにしました（1回で終わる結果は左に表示されません）"
       }
      ]
     },
