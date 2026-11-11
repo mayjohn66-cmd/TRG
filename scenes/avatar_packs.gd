@@ -34,7 +34,30 @@ var _request: HTTPRequest = null
 static func is_ready(id: StringName) -> bool:
 	if id == UI_LOBBY:
 		return ResourceLoader.exists(UI_LOBBY_DIR + "/UI_LOBBY_WAIT.png") and ResourceLoader.exists(UI_LOBBY_DIR + "/UI_LOBBY_CROWN.png")
+	var tier: String = tier_of(id)
+	if tier != "":  # 대기 애니메이션 묶음(<id>_hq / <id>_lq): 그 화질의 .tres가 읽히면 받은 것이다
+		return ResourceLoader.exists("%s/idle_%s.tres" % [AvatarSlot.character_path(avatar_of(id)), tier])
 	return ResourceLoader.exists(AvatarSlot.character_path(id) + "/emotion_happy.tres")
+
+
+## 묶음 이름 끝의 화질 표시 ("avatar_02_hq" -> "hq", "avatar_02_lq" -> "lq", 그 밖에는 빈 글).
+static func tier_of(id: StringName) -> String:
+	var text: String = String(id)
+	if text.ends_with("_hq"):
+		return "hq"
+	if text.ends_with("_lq"):
+		return "lq"
+	return ""
+
+
+## 묶음 이름에서 아바타 id만 ("avatar_02_hq" -> &"avatar_02").
+static func avatar_of(id: StringName) -> StringName:
+	return StringName(String(id).trim_suffix("_hq").trim_suffix("_lq")) if tier_of(id) != "" else id
+
+
+## 지금 설정의 화질에 맞는 대기 애니메이션 묶음 이름 (고화질 <id>_hq / 저화질 <id>_lq).
+static func idle_pack_for(id: StringName) -> StringName:
+	return StringName("%s_%s" % [id, "lq" if GameSession.low_quality else "hq"])
 
 
 ## 묶음을 따로 받는 환경인가: 웹 빌드에서만 받는다.
@@ -44,10 +67,17 @@ static func downloads_enabled() -> bool:
 
 ## 이 아바타의 묶음을 받아 달라고 줄을 세운다. urgent면 맨 앞에 선다 (내 아바타·지금 판의 아바타).
 static func request(id: StringName, urgent: bool = false) -> void:
-	if (id != UI_LOBBY and not AvatarCatalog.is_valid(id)) or is_ready(id) or not downloads_enabled():
+	if (id != UI_LOBBY and not AvatarCatalog.is_valid(avatar_of(id))) or not downloads_enabled():
 		return
 	var node: AvatarPacks = instance()
-	if node != null:
+	if node == null:
+		return
+	if tier_of(id) == "" and id != UI_LOBBY:
+		# 아바타를 달라고 하면 감정 묶음(<id>)과 지금 화질의 대기 애니메이션 묶음(<id>_hq/_lq)을 함께 줄 세운다
+		var idle: StringName = idle_pack_for(id)
+		if not is_ready(idle):
+			node._enqueue(idle, urgent)
+	if not is_ready(id):
 		node._enqueue(id, urgent)
 
 
@@ -85,8 +115,8 @@ static func register_uids(id: StringName) -> int:
 	if id == UI_LOBBY:
 		return 0  # 두 텍스처는 UID 참조가 아닌 파일 경로로 직접 읽는다.
 	var added: int = 0
-	var folder: String = AvatarSlot.character_path(id)
-	for sub: String in ["frames", "idle", "idle_hq"]:
+	var folder: String = AvatarSlot.character_path(avatar_of(id))
+	for sub: String in ["frames", "idle", "idle_hq", "idle_lq"]:
 		var directory: String = "%s/%s" % [folder, sub]
 		var dir: DirAccess = DirAccess.open(directory)
 		if dir == null:
@@ -137,7 +167,7 @@ func _pump() -> void:
 		return
 	var id: StringName = _queue.pop_front()
 	if is_ready(id):
-		pack_ready.emit(id)
+		pack_ready.emit(avatar_of(id))
 		_pump.call_deferred()
 		return
 	_loading = id
@@ -184,7 +214,7 @@ func _finish(ok: bool) -> void:
 	_loading = &""
 	if ok:
 		print("AvatarPacks: %s 애니메이션 묶음을 붙였다" % id)
-		pack_ready.emit(id)
+		pack_ready.emit(avatar_of(id))  # 대기 애니메이션 묶음도 그 아바타의 준비로 알린다 (화면이 다시 그린다)
 	elif int(_tries.get(id, 0)) <= MAX_RETRIES:
 		_queue.append(id)  # 한 번 더 (맨 뒤에서)
 	else:

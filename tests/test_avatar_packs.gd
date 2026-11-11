@@ -21,7 +21,7 @@ func test_desktop_and_tests_have_every_animation_and_never_download() -> void:
 
 func test_web_export_excludes_exactly_the_split_animation_files() -> void:
 	var presets: String = FileAccess.get_file_as_string("res://export_presets.cfg")
-	for pattern: String in ["content_trickcal/avatars/*/emotion_*.tres", "content_trickcal/avatars/*/frames/*", "content_trickcal/avatars/*/idle/*", "content_trickcal/avatars/*/idle_hq/*", "content_trickcal/avatars/*/idle_hq.tres"]:
+	for pattern: String in ["content_trickcal/avatars/*/emotion_*.tres", "content_trickcal/avatars/*/frames/*", "content_trickcal/avatars/*/idle/*", "content_trickcal/avatars/*/idle_hq/*", "content_trickcal/avatars/*/idle_lq/*", "content_trickcal/avatars/*/idle_lq.tres", "content_trickcal/avatars/*/idle_hq.tres"]:
 		check(presets.contains(pattern), "웹 본체 제외 목록에 %s" % pattern)
 	for kept: String in ["portrait.png", "icon.webp", "fullbody.png", "attack.png", "hit.png"]:
 		check(not presets.contains("avatars/*/" + kept), "정지 그림 %s는 본체에 남는다" % kept)
@@ -42,3 +42,36 @@ func test_uid_is_read_from_an_import_file() -> void:
 	check_eq(AvatarPacks.uid_from_import_text(text), ResourceUID.text_to_id("uid://bbiuerh31fi3h"), "UID를 읽는다")
 	check_eq(AvatarPacks.uid_from_import_text("[remap]\nimporter=\"texture\"\n"), ResourceUID.INVALID_ID, "UID가 없으면 무효")
 	check_eq(AvatarPacks.uid_from_import_text(""), ResourceUID.INVALID_ID, "빈 파일")
+
+
+func test_idle_pack_names_follow_the_quality_setting() -> void:
+	check_eq(AvatarPacks.tier_of(&"avatar_02_hq"), "hq", "고화질 묶음 이름")
+	check_eq(AvatarPacks.tier_of(&"avatar_02_lq"), "lq", "저화질 묶음 이름")
+	check_eq(AvatarPacks.tier_of(&"avatar_02"), "", "감정 묶음은 화질 표시가 없다")
+	check_eq(AvatarPacks.avatar_of(&"avatar_08_lq"), &"avatar_08", "묶음 이름에서 아바타 id")
+	var saved: bool = GameSession.low_quality
+	GameSession.low_quality = false
+	check_eq(AvatarPacks.idle_pack_for(&"avatar_03"), &"avatar_03_hq", "기본은 고화질 묶음")
+	check(HubKit.idle_frames_path(&"avatar_03").ends_with("/idle_hq.tres"), "고화질이면 idle_hq.tres")
+	GameSession.low_quality = true
+	check_eq(AvatarPacks.idle_pack_for(&"avatar_03"), &"avatar_03_lq", "저화질이면 640px 묶음")
+	check(HubKit.idle_frames_path(&"avatar_03").ends_with("/idle_lq.tres"), "저화질이면 idle_lq.tres")
+	GameSession.low_quality = saved
+	check_eq(HubKit.idle_frames_path(&"not_an_avatar"), "", "없는 아바타는 빈 글")
+
+
+func test_both_idle_sets_exist_for_every_avatar_with_matching_framing() -> void:
+	for id: StringName in AvatarCatalog.ids():
+		var folder: String = AvatarSlot.character_path(id)
+		var hq: SpriteFrames = load(folder + "/idle_hq.tres") as SpriteFrames
+		var lq: SpriteFrames = load(folder + "/idle_lq.tres") as SpriteFrames
+		check(hq != null and lq != null, "%s: 두 화질 모두 있다" % id)
+		if hq == null or lq == null:
+			continue
+		check_eq(lq.get_frame_count(&"idle"), hq.get_frame_count(&"idle"), "%s: 프레임 수가 같다" % id)
+		var a: AtlasTexture = hq.get_frame_texture(&"idle", 0) as AtlasTexture
+		var b: AtlasTexture = lq.get_frame_texture(&"idle", 0) as AtlasTexture
+		check_eq(b.atlas.get_size(), Vector2(640, 640), "%s: 저화질은 640px" % id)
+		check_eq(a.atlas.get_size(), Vector2(1024, 1024), "%s: 고화질은 1024px" % id)
+		# 같은 구도: 화면에서 같은 크기·위치로 그려지려면 영역 비율이 같아야 한다
+		check(absf(b.region.size.y / 640.0 - a.region.size.y / 1024.0) < 0.002, "%s: 두 화질의 구도가 같다" % id)

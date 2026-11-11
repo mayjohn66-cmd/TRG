@@ -32,13 +32,27 @@ func _init() -> void:
 		var texture: Texture2D = frames.get_frame_texture(frames.get_animation_names()[0], 0) if frames != null and not frames.get_animation_names().is_empty() else null
 		if texture == null or texture.get_width() <= 0:
 			failures.append("%s: 감정 프레임 텍스처를 읽지 못했다" % id)
-		var hq: String = folder + "/idle_hq.tres"
-		if ResourceLoader.exists(hq):
-			var idle: SpriteFrames = load(hq) as SpriteFrames
-			if idle == null or idle.get_frame_count(&"idle") == 0 or idle.get_frame_texture(&"idle", 0) == null:
-				failures.append("%s: 고화질 대기 프레임을 읽지 못했다" % id)
-		elif not ResourceLoader.exists(folder + "/idle/idle_00.webp"):
-			failures.append("%s: 허브 대기 프레임이 묶음에 없다" % id)
+		# 대기 애니메이션은 화질별 묶음(<id>_hq: 1024px, <id>_lq: 640px)을 따로 받는다: 둘 다 붙여 각각 읽히는지 본다
+		for tier: String in ["hq", "lq"]:
+			var idle_pack: StringName = StringName("%s_%s" % [id, tier])
+			if AvatarPacks.is_ready(idle_pack):
+				failures.append("%s: 묶음을 붙이기 전인데 준비됨으로 나온다" % idle_pack)
+			var idle_file: String = "avatars/%s.pck" % idle_pack
+			if not FileAccess.file_exists(idle_file):
+				failures.append("%s: %s 파일이 없다" % [idle_pack, idle_file])
+				continue
+			if not ProjectSettings.load_resource_pack(idle_file, false):
+				failures.append("%s: 묶음을 붙이지 못했다" % idle_pack)
+				continue
+			if AvatarPacks.register_uids(idle_pack) <= 0:
+				failures.append("%s: 묶음 그림의 UID를 하나도 등록하지 못했다" % idle_pack)
+			var idle: SpriteFrames = load("%s/idle_%s.tres" % [folder, tier]) as SpriteFrames
+			var size: int = 1024 if tier == "hq" else 640
+			var frame: AtlasTexture = idle.get_frame_texture(&"idle", 0) as AtlasTexture if idle != null and idle.get_frame_count(&"idle") > 0 else null
+			if frame == null or frame.atlas.get_size() != Vector2(size, size):
+				failures.append("%s: %dpx 대기 프레임을 읽지 못했다" % [idle_pack, size])
+			if not AvatarPacks.is_ready(idle_pack):
+				failures.append("%s: 묶음을 붙였는데 준비되지 않았다" % idle_pack)
 	if failures.is_empty():
 		print("AVATAR_PACK_SMOKE_OK %d packs" % AvatarCatalog.ids().size())
 	else:

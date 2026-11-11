@@ -175,14 +175,27 @@ class IdleLoop extends TextureRect:
 			texture = current
 
 
+## 로비 대기 애니메이션 파일: 설정의 화질대로 고화질(idle_hq, 1024px) 또는 저화질(idle_lq, 640px)을 먼저 보고, 없으면 다른 쪽, 둘 다 없으면 빈 글.
+static func idle_frames_path(id: StringName) -> String:
+	var folder: String = AvatarSlot.character_path(id)
+	var order: Array[String] = ["idle_hq", "idle_lq"]
+	if GameSession.low_quality:
+		order = ["idle_lq", "idle_hq"]
+	for name: String in order:
+		var path: String = "%s/%s.tres" % [folder, name]
+		if ResourceLoader.exists(path):
+			return path
+	return ""
+
+
 ## 허브 중앙의 전신 아바타. 고해상도 대기 프레임이 있으면 우선 사용하며, 에셋이 없으면 둥근 사각형 아바타로 대신한다.
 static func avatar_full(id: StringName, color: Color, height: float) -> Control:
 	var path: String = "%s/fullbody.png" % AvatarSlot.character_path(id)
 	if not ResourceLoader.exists(path):
 		return avatar_disc(id, color, minf(height, 220.0))
 	var high_quality: SpriteFrames = null
-	var high_quality_path: String = "%s/idle_hq.tres" % AvatarSlot.character_path(id)
-	if ResourceLoader.exists(high_quality_path):
+	var high_quality_path: String = idle_frames_path(id)
+	if high_quality_path != "":
 		high_quality = load(high_quality_path) as SpriteFrames
 	var texture: Texture2D = load(path) as Texture2D
 	if high_quality != null and high_quality.has_animation(&"idle") and high_quality.get_frame_count(&"idle") > 0:

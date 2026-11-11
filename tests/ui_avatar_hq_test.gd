@@ -25,7 +25,7 @@ func _run() -> void:
 		check(count>=32,str(id)+" full animation frame count")
 		check(is_equal_approx(frames.get_animation_speed(&"idle"),HubKit.IdleLoop.FPS),str(id)+" runtime playback cadence")
 		var common := Rect2()
-		var import_size := 1024  # 2026-11: 모든 아바타 1024px 손실 0.9로 통일
+		var import_size := 1024  # 고화질(idle_hq): 모든 아바타 1024px 손실 0.9
 		for index: int in count:
 			var frame := frames.get_frame_texture(&"idle",index) as AtlasTexture
 			check(frame!=null,str(id)+" atlas texture")

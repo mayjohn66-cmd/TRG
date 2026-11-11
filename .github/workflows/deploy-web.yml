@@ -769,7 +769,7 @@ jobs:
               if asset.is_file() and asset.stat().st_size >= 100 * 1024 * 1024:
                   raise SystemExit(f'{asset} exceeds GitHub 100 MiB: exclude unused source assets or split the pack')
           # 용량 예산: 첫 로딩에 받는 본체는 40 MiB 안에서 관리한다 (2026-10: 아바타 애니메이션 분리 후 약 25 MiB).
-          # 아바타 애니메이션은 avatars/*.pck로 따로 받으므로 본체 예산에 들지 않는다 (에르핀 고화질 무손실 묶음 약 32 MiB).
+          # 아바타 애니메이션은 avatars/*.pck로 따로 받으므로 본체 예산에 들지 않는다 (아바타마다 감정 묶음 + 고화질 1024px 대기 묶음 + 저화질 640px 대기 묶음, 설정의 화질대로 하나만 받는다).
           # 넘으면 tools/optimize_texture_imports.py로 새 그림의 임포트 설정을 맞추거나, 늦게 받아도 되는 에셋을 묶음으로 뺀다.
           pck = Path('build/web/index.pck')
           print(f'index.pck = {pck.stat().st_size / 1048576:.2f} MiB')

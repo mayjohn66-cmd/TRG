@@ -23,17 +23,21 @@ AVATARS = ROOT / "content_trickcal" / "avatars"
 IMAGE_SUFFIXES = {".png", ".webp", ".jpg"}
 
 
-def pack_files(avatar: Path) -> list[str]:
-    """이 아바타의 분리 대상 리소스(res:// 경로). 본체 exclude_filter와 같은 묶음이어야 한다."""
-    files: list[Path] = sorted(avatar.glob("emotion_*.tres"))
-    files += sorted(p for p in (avatar / "frames").glob("*") if p.suffix in IMAGE_SUFFIXES)
-    if (avatar / "idle_hq.tres").exists():
-        # 고화질 대기 프레임이 있으면 허브는 그것만 쓴다 (idle/ 저화질 프레임은 본체에서도 이미 빠져 있다)
-        files.append(avatar / "idle_hq.tres")
-        files += sorted(p for p in (avatar / "idle_hq").glob("*") if p.suffix in IMAGE_SUFFIXES)
-    else:
-        files += sorted(p for p in (avatar / "idle").glob("*") if p.suffix in IMAGE_SUFFIXES)
-    return ["res://" + p.relative_to(ROOT).as_posix() for p in files]
+def pack_groups(avatar: Path) -> dict[str, list[str]]:
+    """이 아바타의 분리 대상 리소스(res:// 경로)를 묶음별로: <id>.pck(감정 프레임), <id>_hq.pck(1024px 대기), <id>_lq.pck(640px 대기).
+    본체 exclude_filter와 같은 묶음이어야 한다. 설정의 화질대로 게임이 대기 묶음 하나만 받는다 (scenes/avatar_packs.gd)."""
+    base: list[Path] = sorted(avatar.glob("emotion_*.tres"))
+    base += sorted(p for p in (avatar / "frames").glob("*") if p.suffix in IMAGE_SUFFIXES)
+    groups: dict[str, list[Path]] = {avatar.name: base}
+    for tier in ("hq", "lq"):
+        if (avatar / f"idle_{tier}.tres").exists():
+            files = [avatar / f"idle_{tier}.tres"]
+            files += sorted(p for p in (avatar / f"idle_{tier}").glob("*") if p.suffix in IMAGE_SUFFIXES)
+            groups[f"{avatar.name}_{tier}"] = files
+    if f"{avatar.name}_hq" not in groups and f"{avatar.name}_lq" not in groups:
+        # 고·저화질 대기 프레임이 모두 없으면 허브는 idle/ 프레임을 쓴다
+        base += sorted(p for p in (avatar / "idle").glob("*") if p.suffix in IMAGE_SUFFIXES)
+    return {name: ["res://" + p.relative_to(ROOT).as_posix() for p in files] for name, files in groups.items() if files}
 
 
 def preset_block(original: str, index: int, export_files: list[str]) -> str:
@@ -63,13 +67,11 @@ def main() -> None:
     index = len(re.findall(r"^\[preset\.\d+\]$", original, re.M))
     try:
         for avatar in sorted(p for p in AVATARS.glob("avatar_*") if p.is_dir()):
-            files = pack_files(avatar)
-            if not files:
-                continue
-            PRESETS.write_text(original + preset_block(original, index, files), encoding="utf-8")
-            target = out_dir / f"{avatar.name}.pck"
-            subprocess.run([godot, "--headless", "--path", str(ROOT), "--export-pack", "AvatarPack", str(target.resolve())], check=True)
-            print(f"{target} = {target.stat().st_size / 1048576:.2f} MiB ({len(files)} files)")
+            for name, files in pack_groups(avatar).items():
+                PRESETS.write_text(original + preset_block(original, index, files), encoding="utf-8")
+                target = out_dir / f"{name}.pck"
+                subprocess.run([godot, "--headless", "--path", str(ROOT), "--export-pack", "AvatarPack", str(target.resolve())], check=True)
+                print(f"{target} = {target.stat().st_size / 1048576:.2f} MiB ({len(files)} files)")
         # Only the online lobby needs these images; share the existing pack queue.
         files = ["res://assets/ui/trickcal/lobby/" + name for name in ["UI_LOBBY_WAIT.png", "UI_LOBBY_CROWN.png", "wait_palette.gdshader", "seat_icon.gd"]]
         PRESETS.write_text(original + preset_block(original, index, files), encoding="utf-8")
