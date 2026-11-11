@@ -262,6 +262,9 @@ func _build_stamp(color: Color) -> void:
 		_add_stamp_extra()
 	modulate = Color(1, 1, 1, 0)
 	visible = true
+	var sound: StringName = options.get("sound", &"")
+	if not sound.is_empty():
+		PresentationAudio.one_shot(_root, sound, -6.0)
 	reset_size()
 	_place()
 	call_deferred("_place")

@@ -9,9 +9,9 @@ const NORMAL_SIZE: float = 0.142
 const CORNER_SIZE: float = 0.19
 ## 일반 타일 폭(트랙 방향) 상한
 const MAX_TILE_WIDTH: float = 0.12
-const SURFACE: Texture2D = preload("res://assets/board/trickcal/board_surface.png")
+const SURFACE: Texture2D = preload("res://assets/board/trickcal/board_surface_symbols_v1.png")
 ## 모나티엄 도시 판 바닥 (보드 스킨 틀: 보드마다 바닥 그림·칸 색·부스터 발판 색을 따로 쓴다. 이미지를 바꾸려면 이 파일만 교체하면 된다).
-const SURFACE_CITY: Texture2D = preload("res://assets/board/monatium/board_surface.png")
+const SURFACE_CITY: Texture2D = preload("res://assets/board/monatium/board_surface_symbols_v1.png")
 
 ## 보드별 색 모음. 새 보드는 여기에 항목을 더하고 palette()가 고르게 한다 (키 없는 항목은 기본(에르핀 왕국) 값을 쓴다).
 const PALETTE_DEFAULT: Dictionary = {
@@ -22,7 +22,8 @@ const PALETTE_DEFAULT: Dictionary = {
 }
 const PALETTE_CITY: Dictionary = {  # 도시: 차가운 회청색 타일, 네이비 테두리, 네온 청록 부스터 발판
 	"fill": Color("f2f5fb"), "edge": Color("4f5d7a"), "ink": Color("2f3b57"), "band": Color("9db0cf"),
-	"corner_edge": Color("33507f"), "corner_ink": Color("263f66"), "half_edge": Color("c98a14"), "half_ink": Color("8a5a0c"),
+	"corner_edge": Color("377f94"), "corner_ink": Color("17677c"), "corner_fill": Color("e4f4f8"),
+	"half_edge": Color("8170bf"), "half_ink": Color("59428e"), "half_fill": Color("eee8fc"),
 	"shadow": Color(0.08, 0.1, 0.2, 0.16),
 	"dash_base": Color("1f2a55"), "dash_inner": Color("2fd6d0"), "dash_pulse": Color("8a7bff"), "dash_rim": Color("e6fbff"),
 }
@@ -69,9 +70,9 @@ static func definition(index: int) -> Dictionary:
 		if index == GameEnums.GOAL_TILE:
 			data.merge({"kind":"start", "edge":pal.corner_edge, "ink":pal.corner_ink},true)
 		elif index == BoardSpec.halfway_tile:
-			data.merge({"kind":"half", "edge":pal.half_edge, "ink":pal.half_ink},true)
+			data.merge({"kind":"half", "edge":pal.half_edge, "ink":pal.half_ink, "fill":pal.get("half_fill",data.fill)},true)
 		else:
-			data.merge({"kind":"corner", "edge":pal.corner_edge, "ink":pal.corner_ink},true)
+			data.merge({"kind":"corner", "edge":pal.corner_edge, "ink":pal.corner_ink, "fill":pal.get("corner_fill",data.fill)},true)
 	return data
 
 static func track(norm: Vector2) -> Vector2:
@@ -100,15 +101,27 @@ static func make_surface() -> MeshInstance2D:
 	face.texture = surface_texture()
 	var shader := Shader.new()
 	shader.code = """shader_type canvas_item;
+uniform float source_aspect = 1.7777778;
 void fragment() {
     float r = 0.062;
     vec2 q = abs(UV - vec2(0.5)) - vec2(0.5-r);
     float d = length(max(q,vec2(0.0))) + min(max(q.x,q.y),0.0)-r;
     COLOR = texture(TEXTURE,UV);
+    // Center the emblem on the unprojected board plane first. Compensate only
+    // for the wide source image; the mesh then tilts it together with the board.
+    if (UV.x > 0.055 && UV.x < 0.945 && UV.y > 0.065 && UV.y < 0.935) {
+        vec4 paper = texture(TEXTURE,vec2(0.12,UV.y));
+        vec2 emblem_uv = vec2(0.5) + (UV-vec2(0.5))*vec2(1.0/source_aspect,1.0)*1.70;
+        vec4 emblem = texture(TEXTURE,emblem_uv);
+        float ink = 1.0-smoothstep(0.46,0.50,max(emblem.r,max(emblem.g,emblem.b)));
+        float inside = step(0.23,emblem_uv.x)*step(emblem_uv.x,0.77)*step(0.12,emblem_uv.y)*step(emblem_uv.y,0.88);
+        COLOR = mix(paper,emblem,ink*inside);
+    }
     COLOR.a *= 1.0-smoothstep(-0.0006,0.0006,d);
 }"""
 	var material := ShaderMaterial.new()
 	material.shader = shader
+	material.set_shader_parameter("source_aspect", float(face.texture.get_width()) / face.texture.get_height())
 	face.material = material
 	return face
 
@@ -140,8 +153,8 @@ static func update_surface(face: MeshInstance2D, projector: Callable) -> void:
 const DECALS: Dictionary = {
 	"bakery": preload("res://assets/board/decals/BOARD_BAKERY.png"),
 	"portal": preload("res://assets/board/decals/BOARD_PORTAL.png"),
-	"store": preload("res://assets/board/decals/BOARD_STORE.png"),
-	"vending": preload("res://assets/board/decals/BOARD_VENDING.png"),
+	"store": preload("res://assets/board/decals/BOARD_STORE_MONATIUM_v3.png"),
+	"vending": preload("res://assets/board/decals/BOARD_VENDING_v2.png"),
 	"start": preload("res://assets/board/decals/BOARD_START.png"),
 	"half": preload("res://assets/board/decals/BOARD_HALF.png"),
 	"corner": preload("res://assets/board/decals/BOARD_CORNER.png"),
@@ -153,7 +166,7 @@ const WARNING_BOUNDS: Rect2 = Rect2(0.0632622,0.0733945,0.8681402,0.8323603)
 ## Opaque subject bounds in the unchanged 1254px native sources; discard only empty atlas margin.
 const DECAL_BOUNDS: Dictionary = {
 	"bakery": Rect2(196,409,862,482), "portal": Rect2(296,268,662,739),
-	"store": Rect2(170,300,915,701), "vending": Rect2(330,230,595,801),
+	"store": Rect2(19,34,1221,1170), "vending": Rect2(207,86,841,1105),
 	"start": Rect2(308,272,638,750), "half": Rect2(362,246,590,778),
 	"corner": Rect2(99,307,1098,665), "boost": Rect2(175,431,909,391),
 }
@@ -356,6 +369,7 @@ class Tile extends Control:
 		if data.kind in ["start","half"]:
 			corner_arrow = Symbol.new()
 			corner_arrow.kind = "corner"
+			corner_arrow.ink = BoardSkin.palette().corner_ink
 			add_child(corner_arrow)
 		if BoardSpec.dash_tiles.has(index):
 			boost_symbol = Symbol.new()
@@ -406,6 +420,8 @@ class Tile extends Control:
 		if symbol != null:
 			var footprint: Vector2 = data.footprint
 			var mark_span: float = minf(footprint.x,footprint.y)*(0.62 if data.major else 0.74)
+			if data.kind == "store" or data.kind == "vending":
+				mark_span = minf(footprint.x,footprint.y)*0.86
 			var mark_offset: Vector2 = Vector2(-0.014,-0.014) if corner_arrow != null else (Vector2.ZERO if data.major else -inward*0.011)
 			var stamp_axis: Vector2 = direction if data.kind == "corner" else (Vector2.RIGHT if data.major else BoardSkin.symbol_axis(index))
 			symbol.transform = BoardSkin.decal_frame(plane,mark_span,stamp_axis,mark_offset)

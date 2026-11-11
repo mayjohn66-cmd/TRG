@@ -50,4 +50,4 @@ func _run() -> void:
 			if not member.has_left_start and not member.is_finished:  # 보호막이 막은 말은 빠진다
 				hit_ids.append(member.entity_id)
 	result = {"from": shot["from"], "to": shot["to"], "hits": hit_ids}
-	state.penguin_flew.emit(sender_id, pawn_id, pawn.current_tile_idx, int(shot["landing"]), hit_ids)
+	state.penguin_flew.emit(sender_id, pawn_id, shot["from"], shot["to"], hit_ids)

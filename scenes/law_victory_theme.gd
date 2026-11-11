@@ -36,7 +36,7 @@ const MONATIUM_THEMES: Dictionary = {
 	"LAW_02":{"font":"bungee","headline":"MONATIUM DAYS","lines":"MONATIUM\nDAYS","ink":"10223d","accent":"2f86d6","tilt":-0.055},
 }
 const MONATIUM_PAPERS: Dictionary = {"LAW_02":"e6f1fb"}
-const MONATIUM_COMIC_TITLES: Dictionary = {"LAW_02":{"upper":"9fe3ff","lower":"ffffff","shadow":"1f5fa8"}}
+const MONATIUM_COMIC_TITLES: Dictionary = {"LAW_02":{"upper":"ffe391","lower":"ffffff","shadow":"1f5fa8"}}
 static var _fonts: Dictionary = {}
 static func variant(id: String) -> bool:
 	return BoardSpec.convenience and MONATIUM_THEMES.has(id)

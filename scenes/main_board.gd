@@ -1278,6 +1278,7 @@ func _new_game() -> void:
 	manager.match_rules = GameSession.match_rules()
 	manager.start_game(_player_ids, _game_seed)
 	state = manager.state
+	_refresh_board_buttons()
 	_report_match_start()
 	for surface: MeshInstance2D in [_board_surface, _flat_board_surface]:  # 보드마다 판 바닥 그림이 다르다 (BoardSkin.surface_texture)
 		if surface != null:
@@ -1469,6 +1470,15 @@ func _bind_state() -> void:
 		_log_line("[기사의 맹세] %s이(가) %d번 타일에서 사출을 막았습니다" % [_pawn_name(pawn_id), tile], Color("4dabf7"))
 		_note_defense_success([pawn_id]))
 	state.shield_broken.connect(func(pawn_id: int, tile: int) -> void:
+		var view := _pawn_views.get(pawn_id) as Node2D
+		var box := view.get_node_or_null("Bounce/Token/CoverBox") as Sprite2D if is_instance_valid(view) else null
+		if box != null:
+			var at: Vector2 = get_global_transform().affine_inverse() * box.global_position
+			var size: Vector2 = box.region_rect.size * box.global_scale.abs() / get_global_transform().get_scale().abs()
+			_refresh_pawn_protection(pawn_id, true)
+			_note_defense_success([pawn_id], false)
+			_fx_when_announced(_play_expansion_card_fx.bind(&"box_break", at, at, PackedVector2Array(), size))
+			return
 		_refresh_pawn_protection(pawn_id, true)
 		_on_passive_triggered(pawn_id, &"shield_block")
 		var shield_pawn: PlayerPawn = state.get_pawn(pawn_id)
@@ -1527,7 +1537,8 @@ func _bind_state() -> void:
 			# 순서: 함정이 터진다(충격) -> 잠깐 뒤 프로필 반응 -> 그 뒤 말이 날아간다 (_fx_hint_bonus)
 			_fx_hint_bonus = maxf(_fx_hint_bonus, 0.4)
 			_fx_when_announced(func() -> void:
-				Sfx.play(&"trap")
+				if id != "TRP_09":
+					Sfx.play(&"trap")
 				screen_shake(8.0, 0.25)
 				_impact_ring(trap_pos, Color("ff6b6b"), 56.0)
 				_burst_shards(trap_pos, Color("ff8787"), 14)
@@ -1539,8 +1550,10 @@ func _bind_state() -> void:
 			if _is_human_seat(trapped.owner_id):
 				_mark_spotlight()  # 사람 말이 함정을 밟은 턴은 보통 속도
 			_record(trapped.owner_id, "%s 밟음! (%d번 타일, %s)" % [_bq(_attachment_name(id)), tile, _bq("%d번 말" % trapped.slot)])
-		if id != "TRP_05":  # 도미노는 [도미노 연쇄!] 알림(domino_collapsed)이 먼저 나왔다: 같은 알림을 연쇄 뒤에 또 띄우지 않는다
-			_announce_gate("함정 발동", "함정 발동!", "", Color("ff6b6b"), _make_card_preview(StringName(id)) if CardRegistry.DECK_COMPOSITION.has(StringName(id)) else null, 1.1, {"key": "trap", "sub": _pawn_name(pawn_id)}))
+		if id != "TRP_05":  # 도미노는 연쇄 알림을 먼저 띄운다.
+			_announce_gate("함정 발동", "함정 발동!", "", Color("ff6b6b"), _make_card_preview(StringName(id)) if CardRegistry.DECK_COMPOSITION.has(StringName(id)) else null, 1.1, {"key": "trap", "sub": _pawn_name(pawn_id)})
+		if id == "TRP_09":
+			_fx_when_announced(_play_sugarcane_fx.bind(tile, true)))
 	# 중립 기물이 사라질 때는 알림 카드를 띄우지 않는다: 엔진이 즉시 내는 신호라 진행 중인 다른 연출(처치·이동) 사이에 끼어들었다.
 	# 결과는 [중립 기물 이동] 카드·달리기·처치 컷인과 기록(로그)으로 이미 보인다.
 	state.npc_vanished.connect(func(_npc_id: int, tile: int) -> void:
@@ -1553,6 +1566,11 @@ func _bind_state() -> void:
 			_fx_when_announced(func() -> void:
 				_trap_pending.erase(tile)
 				_refresh_tiles()
+				if id == "TRP_09":
+					for attachment: TileAttachment in state.board.get_tile(tile).attachments:
+						if attachment.attachment_id == id and attachment.owner_id == owner_id and _trap_known(attachment):
+							await _play_sugarcane_fx(tile)
+							return
 				_tile_glow(tile)
 				_impact_ring(_tile_center(tile) + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO), Color("7b2cbf"), 26.0)
 				Sfx.play(&"trap_set")
@@ -1572,6 +1590,10 @@ func _bind_state() -> void:
 		var spawned: NeutralNPC = state.get_npc(npc_id)
 		if spawned != null and spawned.is_beam():
 			_log_line("롤링 양성자빔이 %d번 타일에 내려앉았습니다. 3라운드 동안 라운드가 끝날 때마다 무작위 방향으로 3~5칸 미끄러지며 지나는 칸의 말과 함정을 전부 태웁니다." % tile, Color("da77f2"))
+		elif spawned != null and spawned.is_top():
+			_log_line("황금장방형 팽이가 %d번 타일에 소환되었습니다." % tile, Color("ffd36b"))
+			var at: Vector2 = _tile_center(tile) + _pawn_layer.position
+			_fx_when_announced(_play_expansion_card_fx.bind(&"top", at, at))
 		else:
 			_log_line("중립 기물이 %d번 타일에 소환되었습니다. 라운드마다 1~3칸 이동하고, 적 말을 잡으면 처치하고 퇴장합니다." % tile, Color("fa5252"))
 		_refresh_all())
@@ -2316,7 +2338,7 @@ func _build_action_bar() -> void:
 
 ## 둥근 큰 버튼 스타일 (일반/호버/눌림/비활성): 두꺼운 테두리와 그림자로 눌러 보고 싶게 만든다.
 func _apply_round_button_style(button: Button, _base: Color) -> void:
-	ROLL_BUTTON_SKIN.apply(button)
+	ROLL_BUTTON_SKIN.apply(button, _city_buttons())
 
 
 ## 하단 정중앙 TCG 스타일 카드 독. 카드는 _refresh_hands()가 채운다.
@@ -2480,6 +2502,18 @@ func _make_button(text: String, callback: Callable, font_size: int, base_color: 
 	if callback.is_valid():
 		button.pressed.connect(callback)
 	return button
+
+
+func _city_buttons() -> bool:
+	var rules: Dictionary = state.match_rules if state != null else GameSession.match_rules()
+	return BoardCatalog.sanitize(rules.get("board", BoardCatalog.DEFAULT_ID)) == &"monatium"
+
+
+## Only the round roll control follows the board palette.
+func _refresh_board_buttons() -> void:
+	set_meta("button_board_theme", _city_buttons())
+	if _roll_button != null:
+		ROLL_BUTTON_SKIN.apply(_roll_button, _city_buttons())
 
 
 ## 둥근 모서리·테두리가 있는 게임풍 버튼 스타일 (일반/호버/눌림/비활성).
@@ -3169,53 +3203,75 @@ func _on_pawn_stepped(pawn_id: int, _from_tile: int, _to_tile: int) -> void:
 
 
 ## 방해령 베루(뒤로)·사리(앞으로): 말 머리 위에 [뒤로 1칸!]/[앞으로 1칸!]을 띄우고, 한 칸 짧은 점프로 옮겨 간다 (워프용 큰 호는 쓰지 않는다).
-## 긴급 엄폐: 택배 박스가 말 위로 툭 내려앉는다.
+## 긴급 엄폐: 박스가 내려앉은 뒤 같은 그림이 말에 남는다.
 func _on_cover_applied(pawn_id: int) -> void:
-	var pawn: PlayerPawn = state.get_pawn(pawn_id)
 	_log_line("[긴급 엄폐] %s이(가) 택배 박스를 뒤집어썼습니다 (잡기·함정 1회 방어)" % _pawn_name(pawn_id), Color("e2b277"))
-	if pawn != null:
-		_record(pawn.owner_id, "%s 택배 박스로 엄폐" % _bq(_pawn_name(pawn_id)), "", true)
 	if not _fx_on():
 		return
+	var view := _pawn_views.get(pawn_id) as Node2D
+	if not is_instance_valid(view):
+		return
+	var token := view.get_node("Bounce/Token") as PawnToken
+	token.set_cover_pending(true)
+	_refresh_pawn_protection(pawn_id)
 	enqueue_step(func() -> void:
-		var view: Node2D = _pawn_views.get(pawn_id)
-		if view != null and is_instance_valid(view):
-			_floating_badge(view.position + (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + Vector2(0, -52), "박스 엄폐!", Color("e2b277"), 26)
-			Sfx.play(&"good", -6.0)
-		await get_tree().create_timer(0.35 * _motion_pace()).timeout, pawn_id)
+		var current_view := _pawn_views.get(pawn_id) as Node2D
+		if not is_instance_valid(current_view):
+			return
+		var current_token := current_view.get_node("Bounce/Token") as PawnToken
+		var box := current_token.get_node_or_null("CoverBox") as Sprite2D
+		if box == null:
+			current_token.set_cover_pending(false)
+			return
+		var at: Vector2 = get_global_transform().affine_inverse() * box.global_position
+		var size: Vector2 = box.region_rect.size * box.global_scale.abs() / get_global_transform().get_scale().abs()
+		var generation: int = _fx_generation
+		await _play_expansion_card_fx(&"cover", at, at, PackedVector2Array(), size)
+		if generation == _fx_generation and is_instance_valid(current_token):
+			current_token.set_cover_pending(false), pawn_id)
 
 
-## 펭짱 8호: 펭귄 한 마리가 출발 칸에서 도착 칸으로 날아간다 (임시 그림: 도형 펭귄). 맞은 말은 엔진이 이미 출발선으로 보냈다.
-func _on_penguin_flew(player_id: int, pawn_id: int, from_tile: int, to_tile: int, hits: Array[int]) -> void:
+## 펭짱 8호: 발사 판정의 실제 직선 경로를 사용한다.
+func _on_penguin_flew(player_id: int, pawn_id: int, from: Vector2, to: Vector2, hits: Array[int]) -> void:
 	_log_line("[펭짱 8호] P%d의 펭귄이 날아가 적 말 %d개를 날려 버렸습니다!" % [player_id, hits.size()], Color("74c0fc"))
 	if not _fx_on():
 		return
-	enqueue_step(func() -> void:
-		var offset: Vector2 = _pawn_layer.position if _pawn_layer != null else Vector2.ZERO
-		var penguin := Node2D.new()
-		penguin.z_index = 70
-		penguin.position = offset + _tile_center(from_tile)
-		add_child(penguin)
-		_mark_oneshot(penguin, 1.2)
-		var body := Polygon2D.new()
-		body.polygon = PackedVector2Array([Vector2(-12, -20), Vector2(12, -20), Vector2(15, 12), Vector2(0, 20), Vector2(-15, 12)])
-		body.color = Color("1f2433")
-		penguin.add_child(body)
-		var belly := Polygon2D.new()
-		belly.polygon = PackedVector2Array([Vector2(-8, -8), Vector2(8, -8), Vector2(9, 12), Vector2(0, 17), Vector2(-9, 12)])
-		belly.color = Color("f1f3f5")
-		penguin.add_child(belly)
-		var beak := Polygon2D.new()
-		beak.polygon = PackedVector2Array([Vector2(-4, -12), Vector2(4, -12), Vector2(0, -6)])
-		beak.color = Color("ffa94d")
-		penguin.add_child(beak)
-		Sfx.play(&"shot", -4.0)
-		var tween: Tween = penguin.create_tween()
-		tween.tween_property(penguin, "position", offset + _tile_center(to_tile), 0.55 * _motion_pace()).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		tween.parallel().tween_property(penguin, "rotation", TAU * 2.0, 0.55 * _motion_pace())
-		tween.tween_property(penguin, "modulate:a", 0.0, 0.25 * _motion_pace())
-		tween.tween_callback(penguin.queue_free)
-		await get_tree().create_timer(0.6 * _motion_pace()).timeout, pawn_id)
+	var contacts := PackedVector2Array()
+	for id: int in hits:
+		var view: Node2D = _pawn_views.get(id)
+		if is_instance_valid(view):
+			contacts.append(view.position + _pawn_layer.position)
+	var start: Vector2 = _project(from) + _pawn_layer.position
+	var end: Vector2 = _project(to) + _pawn_layer.position
+	enqueue_step(_play_expansion_card_fx.bind(&"penguin", start, end, contacts), pawn_id)
+
+
+func _play_sugarcane_fx(tile: int, triggered: bool = false) -> void:
+	var at: Vector2 = _tile_center(tile) + _pawn_layer.position
+	await _play_expansion_card_fx(&"cane_snare" if triggered else &"cane", at, at)
+
+
+func _play_rations_fx(pawn_id: int, player: int) -> void:
+	var at: Vector2 = _board_center().lerp(_profile_center(player), 0.58)
+	var pawn: PlayerPawn = state.get_pawn(pawn_id)
+	if pawn != null and pawn.has_left_start and not pawn.is_finished:
+		at = _pawn_position(pawn) + _pawn_layer.position + Vector2(0, -55)
+	await _play_expansion_card_fx(&"rations", at, at)
+
+
+func _play_expansion_card_fx(kind: StringName, start: Vector2, end: Vector2, contacts: PackedVector2Array = PackedVector2Array(), extent: Vector2 = Vector2.ZERO) -> void:
+	if not _fx_on():
+		return
+	var generation: int = _fx_generation
+	var effect := preload("res://scenes/expansion_card_fx.gd").new()
+	effect.extent = extent
+	add_child(effect)
+	effect.play(kind, start, end, _motion_pace(), contacts)
+	while generation == _fx_generation and is_instance_valid(effect) and not effect.complete:
+		await get_tree().process_frame
+	if is_instance_valid(effect):
+		effect.cancel()
+		effect.queue_free()
 
 
 ## 전문적 해킹: 대상이 정해졌다. 실제 자동 진행은 그 사람의 턴이 시작될 때(hack_turn 이벤트)부터.
@@ -3650,21 +3706,18 @@ func _vending_feedback(data: Dictionary) -> void:
 ## 자판기 뽑기 연출 한 번 (약 2.5초): 일기토 룰렛 창과 같은 크기(560x360)의 창이 화면 가운데에 떠서, 자판기에서 캔이 툭 떨어지고
 ## 음료 이름과 버프가 크게 보인 뒤, 버프 배지가 말 위로 올라간다. 끝날 때까지 다음 연출은 기다린다.
 func _play_vending_pull(tile: int, drink: StringName) -> void:
+	if not VendingDrinks.ids().has(drink):
+		return
 	var pace: float = _motion_pace()
-	var panel := Panel.new()
+	var panel := (preload("res://scenes/vending_pull_modal.gd")).new()
 	panel.name = "VendingPullModal"
 	panel.size = Vector2(560, 360)
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.z_index = 61
 	panel.add_theme_stylebox_override("panel", _style(Color(0.063, 0.086, 0.14, 0.97), Color("ffd43b"), 5, 22, 0, 0))
-	var view: Vector2 = get_viewport_rect().size
-	var fit: float = minf(1.0, minf((view.x - 24.0) / panel.size.x, (view.y - 24.0) / panel.size.y))
-	panel.scale = Vector2.ONE * fit
-	panel.pivot_offset = panel.size / 2.0
-	panel.position = (view - panel.size) / 2.0
 	panel.modulate.a = 0.0
 	add_child(panel)
-	_mark_oneshot(panel, 2.8 * pace)
+	_mark_oneshot(panel, 3.2 * pace)
 	var can_color: Color = VENDING_CAN_COLORS.get(drink, Color.WHITE)
 	var title: Label = _make_label("자판기", 28, Color("ffd43b"))
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -3672,24 +3725,14 @@ func _play_vending_pull(tile: int, drink: StringName) -> void:
 	title.size = Vector2(panel.size.x, 40)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	panel.add_child(title)
-	var machine := Sprite2D.new()  # 자판기 그림 (타일 도안과 같은 마스크, 코랄색으로)
-	machine.texture = BoardSkin.decal_texture("vending")
-	var material := ShaderMaterial.new()
-	material.shader = BoardSkin.FLAT_INK
-	material.set_shader_parameter("ink", Color("ff8f7a"))
-	machine.material = material
-	machine.scale = Vector2.ONE * (250.0 / maxf(machine.texture.get_width(), machine.texture.get_height()))
-	machine.position = Vector2(170, 205)
-	panel.add_child(machine)
-	var can := Panel.new()  # 캔: 둥근 사각형 한 개
-	can.add_theme_stylebox_override("panel", _style(can_color, can_color.darkened(0.45), 3, 12, 0, 0))
-	can.size = Vector2(46, 76)
-	can.position = Vector2(170 - 23, 150)
-	can.modulate.a = 0.0
-	can.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	can.pivot_offset = can.size / 2.0
-	panel.add_child(can)
+	var stage := (preload("res://scenes/vending_pull_3d.gd")).new()
+	stage.name = "Vending3D"
+	stage.position = Vector2(20,58)
+	stage.size = Vector2(520,280)
+	panel.add_child(stage)
+	stage.play(drink,pace)
 	var name_label: Label = _make_label(L10n.t(VendingDrinks.name_of(drink)) + "!", 40, can_color)
+	name_label.name = "DrinkName"
 	name_label.add_theme_constant_override("outline_size", 8)
 	name_label.add_theme_color_override("font_outline_color", Color("1b1405"))
 	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -3700,6 +3743,7 @@ func _play_vending_pull(tile: int, drink: StringName) -> void:
 	name_label.modulate.a = 0.0
 	panel.add_child(name_label)
 	var buff_label: Label = _make_label(L10n.t(VendingDrinks.text_of(drink)), 26, Color("fff3bf"))
+	buff_label.name = "DrinkBuff"
 	buff_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	buff_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	buff_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -3711,22 +3755,19 @@ func _play_vending_pull(tile: int, drink: StringName) -> void:
 	var badge_at: Vector2 = (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + _tile_center(tile) + Vector2(0, -46)
 	Sfx.play(&"ui_click", -4.0)
 	var tween: Tween = panel.create_tween()
+	panel.set_meta("vending_tween",tween)
 	tween.set_parallel(true)
-	var open_scale: Vector2 = panel.scale
-	panel.scale = open_scale * 0.85
+	panel.opening_scale = 0.85
 	tween.tween_property(panel, "modulate:a", 1.0, 0.22 * pace)
-	tween.tween_property(panel, "scale", open_scale, 0.28 * pace).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(can, "modulate:a", 1.0, 0.06 * pace).set_delay(0.4 * pace)  # 캔이 나온다
-	tween.tween_property(can, "position:y", 232.0, 0.5 * pace).set_delay(0.4 * pace).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
-	tween.tween_property(can, "position", Vector2(425 - 23, 62), 0.3 * pace).set_delay(1.05 * pace).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)  # 꺼내 든다
-	tween.tween_property(name_label, "modulate:a", 1.0, 0.2 * pace).set_delay(1.3 * pace)
-	tween.tween_property(buff_label, "modulate:a", 1.0, 0.2 * pace).set_delay(1.6 * pace)
-	tween.tween_callback(func() -> void: Sfx.play(&"good", -4.0)).set_delay(1.3 * pace)
-	tween.tween_property(panel, "modulate:a", 0.0, 0.3 * pace).set_delay(2.3 * pace)
+	tween.tween_property(panel, "opening_scale", 1.0, 0.28 * pace).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(name_label, "modulate:a", 1.0, 0.2 * pace).set_delay(1.4 * pace)
+	tween.tween_property(buff_label, "modulate:a", 1.0, 0.2 * pace).set_delay(1.65 * pace)
+	tween.tween_callback(func() -> void: Sfx.play(&"good", -4.0)).set_delay(1.4 * pace)
+	tween.tween_property(panel, "modulate:a", 0.0, 0.3 * pace).set_delay(2.65 * pace)
 	tween.chain().tween_callback(func() -> void:
 		_floating_badge(badge_at, buff_text, can_color.lightened(0.15), 26)
 		panel.queue_free())
-	_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(2400.0 * pace))
+	_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(3000.0 * pace))
 
 
 ## 코너에 정확히 도착해 받은 버프: 그 말 위에 [다음 굴림 +N]이 떠오른다.
@@ -3807,8 +3848,11 @@ func _refresh_now() -> void:
 	if manager == null or manager.state == null:
 		return
 	state = manager.state
+	if not has_meta("button_board_theme") or bool(get_meta("button_board_theme")) != _city_buttons():
+		_refresh_board_buttons()
 	_refresh_header()
 	_refresh_players()
+	_refresh_hack_window()
 	_refresh_laws()
 	_refresh_tiles()
 	_refresh_npc_danger()
@@ -3977,7 +4021,7 @@ func _on_npc_swept(display_id: StringName, path: Array[int], ejected: Array[int]
 	var steps: Array = path.slice(1)
 	_play_npc_run(display_id, behavior, path[0], steps, npc_id, func() -> void:
 		_log_line("[%s] %s" % [runner, outcome], Color("fa5252"))
-		_record(-1, "%s %s" % [_bq(runner), outcome]))
+		_record(-1, "%s %s" % [_bq(runner), outcome]), not ejected.is_empty())
 
 
 func _build_train_stage() -> void:
@@ -4131,7 +4175,7 @@ func _train_release() -> void:
 
 ## 중립 기물이 한 칸씩 달리는 연출. 보드의 실제 기물 그림(npc_id)은 달리는 동안 숨기고, 끝나면 도착 칸에 다시 보인다.
 ## 잡힌 말의 사출은 이 연출 뒤에 연출 큐가 이어서 보여 준다 (말이 먼저 날아가지 않게). 끝나면 after를 부른다.
-func _play_npc_run(display_id: StringName, behavior: int, from_tile: int, path: Array, npc_id: int, after: Callable) -> void:
+func _play_npc_run(display_id: StringName, behavior: int, from_tile: int, path: Array, npc_id: int, after: Callable, caught: bool = false) -> void:
 	if display_id==NpcSweep.BEAM_ID:
 		if not _fx_on() or path.is_empty():
 			_release_beam_victims();after.call()
@@ -4155,7 +4199,7 @@ func _play_npc_run(display_id: StringName, behavior: int, from_tile: int, path: 
 		if hidden != null and is_instance_valid(hidden):
 			hidden.visible = false
 		var token := PawnToken.new()
-		token.configure_npc(behavior)
+		token.configure_npc(behavior, display_id)
 		var runner: Node2D = token
 		runner.name = "NpcRunner"
 		runner.z_index = 6
@@ -4164,17 +4208,24 @@ func _play_npc_run(display_id: StringName, behavior: int, from_tile: int, path: 
 		runner.position = _tile_center(start)
 		runner.scale = Vector2.ONE * _depth_scale(tile_norm(start).y)
 		var step_time: float = 0.16 * _motion_pace()
+		var is_top := display_id == NpcSweep.TOP_ID
+		if is_top:
+			PresentationAudio.one_shot(_pawn_layer, &"top_spin", -9.0)
 		for tile: Variant in path:
 			var target: Vector2 = _tile_center(int(tile))
 			var hop: Tween = runner.create_tween().set_parallel(true)
 			hop.tween_property(runner, "position", target, step_time).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 			hop.tween_property(runner, "scale", Vector2.ONE * _depth_scale(tile_norm(int(tile)).y), step_time)
-			Sfx.play(&"hop")
+			if not is_top:
+				Sfx.play(&"hop")
 			await hop.finished
 			if not is_instance_valid(runner):
 				break
 		if is_instance_valid(runner):
-			_impact_ring(runner.position + _pawn_layer.position, Color("fa5252"), 36.0)
+			if is_top and caught:
+				PresentationAudio.one_shot(_pawn_layer, &"top_hit", -5.0)
+			var tint := Color("ffd36b") if is_top else Color("fa5252")
+			_impact_ring(runner.position + _pawn_layer.position, tint, 36.0)
 			runner.queue_free()
 		# 기물 그림은 달리는 동안 지워질 수 있다(사라진 기물): 람다에 노드를 잡지 않고 다 달린 뒤에 다시 찾는다.
 		var real: Node2D = _npc_views.get(npc_id)
@@ -4213,7 +4264,7 @@ func _beam_scorch(at: Vector2) -> void:
 ## 붙잡아 둔 말을 모두 놓아준다 (연출이 꺼졌거나 중간에 끊겼을 때): 엔진 상태 그대로의 자리로 돌린다.
 func _make_npc_view(npc:NeutralNPC) -> Node2D:
 	if not npc.is_beam():
-		var marker:=PawnToken.new();marker.configure_npc(npc.behavior)
+		var marker:=PawnToken.new();marker.configure_npc(npc.behavior, npc.display_id)
 		_pawn_layer.add_child(marker);return marker
 	var beam:=ProtonBeamView.new();beam.name="ProtonBeam";beam.rounds_left=npc.rounds_left
 	beam.z_index=5;beam.position=_tile_center(npc.current_tile_idx)
@@ -4536,6 +4587,13 @@ func _refresh_status_stamps(player_id: int) -> void:
 	# 내 순위는 기물 독에, 다른 플레이어의 순위는 프로필 카드 전체에 찍는다.
 	var rank_host: Control = _pawn_bar if player_id == local_player_id and _pawn_bar != null else _profiles[player_id]["panel"]
 	_refresh_rank_stamp(rank_host, player_id)
+	var hack_turn := _is_hack_turn(player_id)
+	var show_stamp := not manager.is_game_over and not state.is_graduated(player_id) \
+		and (hack_turn or _confirmed_hack_turns(player_id) > 0) \
+		and not (hack_turn and player_id == local_player_id)
+	_refresh_hack_stamp(rank_host, show_stamp)
+	if player_id == local_player_id and _dock != null:
+		_refresh_hack_stamp(_dock, show_stamp)
 	var wanted: Dictionary = {&"skip": bool(state.rest_next_turn.get(player_id, false)) and not state.is_graduated(player_id), &"ban": state.is_banned(player_id) and not state.is_graduated(player_id)}
 	for kind: StringName in [&"skip", &"ban"]:
 		var node_name: String = "Stamp_%s" % kind
@@ -4557,6 +4615,133 @@ func _refresh_status_stamps(player_id: int) -> void:
 		host.add_child(stamp)
 		if _fx_on() and not instant_roll_for_test:
 			stamp.slam_in(self)
+
+
+func _confirmed_hack_turns(player_id: int) -> int:
+	var turns := int(state.hacked_turns.get(player_id, 0))
+	if turns == 0 or not manager.counter_pending():
+		return turns
+	var attack := state.get_attack(int(manager.pending_counter().get("attack", -1)))
+	if int(attack.get("victim", -1)) == player_id and not bool(attack.get("countered", false)):
+		var effects: Dictionary = attack.get("effects", {})
+		return int(effects.get("hack", turns))
+	return turns
+
+
+func _refresh_hack_stamp(host: Control, visible_stamp: bool) -> void:
+	var stamp := host.get_node_or_null("HackStatus") as HackStatus
+	if not visible_stamp:
+		if stamp != null:
+			host.remove_child(stamp)
+			stamp.queue_free()
+		return
+	if stamp == null:
+		stamp = HackStatus.new()
+		stamp.name = "HackStatus"
+		stamp.glitch_enabled = _fx_on()
+		host.add_child(stamp)
+		if stamp.glitch_enabled and host.is_visible_in_tree():
+			stamp.press_in()
+			PresentationAudio.one_shot(stamp, &"hack_crack", -6.0)
+
+
+func _is_hack_turn(player_id: int) -> bool:
+	return manager.current_player_id() == player_id and manager._hack_turn_player == player_id
+
+
+func _refresh_hack_window() -> void:
+	var layer := get_node_or_null("HackWindow") as CanvasLayer
+	if manager.is_game_over or not _is_hack_turn(local_player_id):
+		if layer != null:
+			remove_child(layer)
+			layer.queue_free()
+		return
+	if layer != null:
+		return
+
+	layer = CanvasLayer.new()
+	layer.name = "HackWindow"
+	layer.layer = 40
+	add_child(layer)
+	var center := CenterContainer.new()
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(center)
+	center.anchor_right = 1.0
+	center.anchor_top = 0.28
+	center.anchor_bottom = 0.28
+	center.offset_top = -64.0
+	center.offset_bottom = 64.0
+
+	var window := PanelContainer.new()
+	window.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	window.custom_minimum_size.x = 262.0
+	window.add_theme_stylebox_override("panel", _style(Color("f5f8f5"), Color("263c70"), 2, 2, 5, 2))
+	center.add_child(window)
+	var content := VBoxContainer.new()
+	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content.add_theme_constant_override("separation", 0)
+	window.add_child(content)
+
+	var title_bar := HBoxContainer.new()
+	title_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content.add_child(title_bar)
+	var title := _make_label("전문적 해킹", 15, Color("263c70"))
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.add_theme_constant_override("outline_size", 0)
+	title_bar.add_child(title)
+	var close := Button.new()
+	close.name = "CloseHackWindow"
+	close.text = "×"
+	close.flat = true
+	close.focus_mode = Control.FOCUS_NONE
+	close.custom_minimum_size = Vector2(28, 26)
+	close.add_theme_font_size_override("font_size", 22)
+	close.add_theme_color_override("font_color", Color("53637a"))
+	close.tooltip_text = "닫기"
+	title_bar.add_child(close)
+
+	var body := HBoxContainer.new()
+	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	body.alignment = BoxContainer.ALIGNMENT_CENTER
+	body.custom_minimum_size.y = 58.0
+	body.add_theme_constant_override("separation", 10)
+	content.add_child(body)
+	var error_icon := HackErrorIcon.new()
+	error_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	error_icon.custom_minimum_size = Vector2(36, 36)
+	error_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	body.add_child(error_icon)
+	var message := "자동으로 진행중"
+	var status := _make_label(message, 21, Color("151e2a"))
+	status.name = "AutomaticTurnStatus"
+	status.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	status.custom_minimum_size.x = status.get_theme_font("font").get_string_size(
+		message + "...", HORIZONTAL_ALIGNMENT_LEFT, -1, status.get_theme_font_size("font_size")
+	).x
+	body.add_child(status)
+
+	var footer := ColorRect.new()
+	footer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	footer.color = Color("e8ece9")
+	footer.custom_minimum_size.y = 13.0
+	content.add_child(footer)
+
+	var dots := status.create_tween().set_loops()
+	for step: int in range(1, 4):
+		dots.tween_interval(0.30)
+		dots.tween_callback(status.set_text.bind(message + ".".repeat(step)))
+	dots.tween_interval(0.45)
+	dots.tween_callback(status.set_text.bind(message))
+	close.pressed.connect(func() -> void:
+		window.hide()
+		dots.kill())
+	if _fx_on():
+		PresentationAudio.one_shot(window, &"hack_window", -9.0)
+		layer.offset.y = -8.0
+		window.modulate.a = 0.0
+		var tween := layer.create_tween().set_parallel(true)
+		tween.tween_property(layer, "offset:y", 0.0, 0.15).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tween.tween_property(window, "modulate:a", 1.0, 0.11)
 
 
 ## 순위가 확정되면 프로필 카드 전체에 노란 순위 도장을 찍는다.
@@ -8051,7 +8236,13 @@ func _on_skill_used(data: Dictionary) -> void:
 			body = "%d번 타일에 호텔 건설 (밟은 적은 멈춤)" % int(data["from"])
 	_log_line("[필살기] %s: %s - %s" % [who, PawnCatalog.skill_name(skill), body.replace("\n", " ")], Color("ffa94d"))
 	if skill != &"shoot":
-		_announce_gate(tr_ui("skill.tag"), "필살기 발동!", "", PLAYER_COLORS[player_id], _skill_cutin(pawn, PLAYER_COLORS[player_id]), 1.3, {"key": "skill", "sub": PawnCatalog.skill_name(skill), "cinematic": true})
+		var stamp := {"key": "skill", "sub": PawnCatalog.skill_name(skill), "cinematic": true}
+		match skill:
+			&"warrior_slash": stamp["sound"] = &"trpg_slash"
+			&"fireball": stamp["sound"] = &"trpg_fireball"
+			&"arrow_shot": stamp["sound"] = &"trpg_arrow"
+			&"stealth": stamp["sound"] = &"trpg_stealth"
+		_announce_gate(tr_ui("skill.tag"), "필살기 발동!", "", PLAYER_COLORS[player_id], _skill_cutin(pawn, PLAYER_COLORS[player_id]), 1.3, stamp)
 
 
 ## 필살기 컷씬: 기물 그림이 옆에서 미끄러져 들어와 도장(필살기 이름) 위에 선다. 그림이 없으면 null (도장만).
@@ -8489,6 +8680,15 @@ func _enqueue_batch(entries: Array[Dictionary]) -> void:
 ## 연출 큐를 비우고 재생 중인 러너를 멈춘다 (판 초기화·되감기·테스트 정리용). 이미 시작된 트윈은 건드리지 않는다.
 func _reset_presentation() -> void:
 	PresentationAudio.stop_tree(self)
+	for effect: Node in get_tree().get_nodes_in_group("expansion_card_fx"):
+		if effect.get_parent() == self:
+			effect.cancel()
+			effect.queue_free()
+	for view: Node2D in _pawn_views.values():
+		if is_instance_valid(view):
+			var token := view.get_node_or_null("Bounce/Token") as PawnToken
+			if token != null:
+				token.set_cover_pending(false)
 	_release_beam_victims()
 	for npc_id:Variant in _npc_views.keys():
 		var beam:ProtonBeamView=_npc_views[npc_id] as ProtonBeamView
@@ -8693,6 +8893,10 @@ func _play_callout(pawn_id: int, passive: StringName) -> void:
 		if child.name.begins_with("PassiveCallout") and not child.is_queued_for_deletion():
 			stacked += 1
 	view.add_child(badge)
+	if passive == &"trpg_level":
+		PresentationAudio.one_shot(badge, &"trpg_level", -7.0)
+	elif passive == &"knight_guard" and pawn.sub_type() == GameEnums.PawnSubType.TRPG_ROGUE:
+		PresentationAudio.one_shot(badge, &"trpg_parry", -7.0)
 	badge.reset_size()
 	var counter: float = 1.0 / maxf(absf(view.scale.x), 0.2)  # 깊이 배율과 상관없이 같은 크기로
 	badge.pivot_offset = badge.size / 2.0
@@ -9399,7 +9603,7 @@ func sweep_oneshot_fx(force: bool = false) -> int:
 
 
 ## 방어(방어 카드·보호막·백돌 방어막·기사의 맹세)로 처치를 막았다: 처치·사출 기록이 오르지 않았음을 로그와 말 머리 위에 분명히 적는다.
-func _note_defense_success(pawn_ids: Array) -> void:
+func _note_defense_success(pawn_ids: Array, show_caption: bool = true) -> void:
 	var text: String = "방어 성공! (처치 무효 · 투기장/킬 카운트 미적용)"
 	_log_line("[방어 성공] 처치 무효 · 투기장/킬 카운트 미적용", Color("74c0fc"))
 	var owner: int = -1
@@ -9408,8 +9612,8 @@ func _note_defense_success(pawn_ids: Array) -> void:
 		if pawn != null:
 			owner = pawn.owner_id
 			break
-	_record(owner, "[color=#74c0fc][b]방어 성공![/b] 처치 무효 · 투기장/킬 카운트 미적용[/color]", "", true)
-	if not _fx_on():
+	_record(owner, "[color=#74c0fc][b]방어 성공![/b] 처치 무효 · 투기장/킬 카운트 미적용[/color]", "", true, false, show_caption)
+	if not _fx_on() or not show_caption:
 		return
 	for pawn_id: Variant in pawn_ids:
 		var id: int = int(pawn_id)
@@ -11987,8 +12191,6 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 		&"hack_turn":
 			var hacked: int = int(data["player_id"])
 			_log_line("[해킹] %s의 이번 턴은 자동 진행됩니다" % _player_name(hacked), Color("20c997"))
-			if _fx_on():
-				_announce("해킹", "자동 진행!", _player_name(hacked), Color("20c997"), null, 0.9, false, {"key": "hack_turn"})
 		&"turn_skipped":
 			_record(int(data["player_id"]), "움직일 수 있는 말이 없어 이동 실패")
 			_announce_move_failed("움직일 수 있는 말이 없어", int(data["player_id"]), "구속 중이거나 선택할 수 있는 말이 없습니다")
@@ -12010,6 +12212,11 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 				var card_id: StringName = StringName(data["card_id"])
 				if CardCounter.is_counter(card_id):
 					_announce_gate("방어", "방어 발동!", "", Color("74c0fc"), _make_card_preview(card_id), 1.1, {"key": "defense", "sub": _player_name(player)})
+					if card_id == &"CNT_09" and _fx_on():
+						var saved: Array = data.get("pawns", [])
+						enqueue_step(_play_rations_fx.bind(int(saved[0]) if not saved.is_empty() else -1, player), -1, false)
+				elif card_id == &"ACT_23":
+					pass  # The target profile carries this card's feedback.
 				elif ATTACK_CARDS.has(card_id):
 					_announce_gate(ATTACK_TAG, "공격!", "", Color("ff4d4d"), _make_card_preview(card_id), 1.1, {"key": "attack", "sub": _player_name(player)})
 				else:
@@ -12033,7 +12240,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 				_play_npc_run(report["display_id"], int(report.get("behavior", GameEnums.NpcBehavior.CHASE_NEAREST)), int(report.get("from", -1)), run_path, int(report["npc_id"]), func() -> void:
 					_log_line("[중립 기물] %s" % result_text, Color("fa5252"))
 					if not caught.is_empty():
-						_record(-1, "%s" % result_text))  # 잡은 말은 처치 컷인·사출로 보인다 (따로 [말을 잡았습니다!] 카드는 띄우지 않는다)
+						_record(-1, "%s" % result_text), not caught.is_empty())  # 잡은 말은 처치 컷인·사출로 보인다 (따로 [말을 잡았습니다!] 카드는 띄우지 않는다)
 		&"augment_offers":
 			_super_changes.clear()
 			_draft_open = true
@@ -12145,7 +12352,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_log_line("[방어 성공] %s의 [%s]!" % [_player_name(int(data["victim"])), _card_name(data["card_id"])], Color("74c0fc"))
 			_profile_react(int(data["victim"]), true)
 			var saved_pawns: Array = (state.get_attack(int(data["attack"])).get("pawns", {}) as Dictionary).keys()
-			_note_defense_success(saved_pawns)
+			_note_defense_success(saved_pawns, StringName(data["card_id"]) != &"CNT_09")
 		&"turn_rewound":
 			_roll_history.clear()
 			_record(int(data["player_id"]), "이번 턴이 통째로 되감겼습니다")
@@ -12382,7 +12589,7 @@ func _log_round_divider(round_number: int) -> void:
 ## 액션 로그 한 줄: [R3] 🟦 컴퓨터 2 : 내용 (player_id가 -1이면 이름 없이).
 ## 연출을 켠 화면에서는 연출 큐를 따라 그 장면이 나올 때 적는다 (결과를 먼저 흘리지 않는다). late는 사출처럼 맨 뒤 연출과 함께 적는다.
 ## now: 연출 큐의 한 단계 안에서 부를 때 (그 연출과 같은 순간에 바로 적는다).
-func _record(player_id: int, text: String, tag: String = "", late: bool = false, now: bool = false) -> void:
+func _record(player_id: int, text: String, tag: String = "", late: bool = false, now: bool = false, show_caption: bool = true) -> void:
 	if _action_log == null or state == null:
 		return
 	var round_tag: String = "[color=#868e96][lb]R%d%s][/color]" % [state.round_number, (" " + tag) if tag != "" else ""]
@@ -12390,7 +12597,7 @@ func _record(player_id: int, text: String, tag: String = "", late: bool = false,
 	var log_panel: ActionLogPanel = _action_log
 	var round_number: int = state.round_number
 	var caption_line: String = "%s  %s" % [_log_who(player_id), text] if player_id >= 1 else text
-	var shown: bool = caption_worthy(text)
+	var shown: bool = show_caption and caption_worthy(text)
 	var important: bool = shown and is_important_record(text)
 	var caption: EventCaption = _caption
 	var add: Callable = func() -> void:
@@ -12467,7 +12674,7 @@ func _record_card(data: Dictionary) -> void:
 			_mark_spotlight()  # AI가 사람을 겨눈 카드: 그 턴은 보통 속도로 보여 준다
 	elif params.has("tile"):
 		detail = " (%d번 타일)" % int(params["tile"])
-	_record(player_id, "%s 사용!%s" % [_bq(card.display_name), detail])
+	_record(player_id, "%s 사용!%s" % [_bq(card.display_name), detail], "", false, false, card.card_id != &"ACT_23")
 
 
 ## 말이 출발선으로 날아갔다: 다른 사람이 보냈으면 처치, 아니면 사출.
@@ -12795,8 +13002,10 @@ func _handle_roll_event(data: Dictionary) -> void:
 	var serial: int = _fx_serial
 	_fx_busy = true
 	_refresh_controls()
+	if tool_id in [&"DICE_OMIKUJI", &"DICE_ICECREAM"]:
+		_roll_button.hide()  # 중앙 소품을 덮는 굴리기 버튼은 연출 종료 후 다시 갱신한다.
 	_presenter.hold_owner = int(data["player_id"])
-	await _presenter.play(tool_id, result, _pending_power)
+	await _presenter.play(tool_id, result, _pending_power, int(data.get("chain_index", 0)) > 0)
 	if generation != _fx_generation or serial != _fx_serial:
 		return
 	_fx_busy = false
@@ -12892,6 +13101,8 @@ func _reveal_roll(data: Dictionary) -> void:
 		# 이동 없이 턴이 끝나는 굴림(러시안 룰렛 실탄·화투 망통): 결과 알림과 피격 반응을 충분히 보여 준 뒤에야 다음 차례로 넘어간다.
 		# 굴림 결과 띠와 실패 카드가 같은 말을 두 번 하지 않게, 결과 문구는 실패 카드 본문에만 싣는다.
 		var fail_name: String = "폭죽 깃발!" if fired else ("낙!" if roll_tool == &"YUT" else ("광대!" if roll_tool == &"DICE_TAROT" else "망통!"))
+		if roll_tool == &"DICE_OMIKUJI":
+			fail_name = "대흉!"
 		_announce_move_failed(fail_name, roller, "P%d  %s" % [roller, roll_text.strip_edges()])
 		return
 	if _presenter.tossing and not instant_roll_for_test and RollPresenter.TOSS_TOOLS.has(roll_tool):
@@ -13679,6 +13890,54 @@ class RankStamp extends Node2D:
 		var target := Rect2(center - bounds * 0.5, bounds)
 		draw_texture_rect(_border_art, target, false)
 		draw_texture_rect(_rank_art, target, false)
+
+
+## The stamp is drawn over the profile without participating in container layout.
+class HackStatus extends Node2D:
+	const ART: Texture2D = preload("res://content_trickcal/illustrations/effects/profile_stamps/cracking_painted.png")
+	const INK: Shader = preload("res://content_trickcal/illustrations/effects/profile_stamps/cracking_ink.gdshader")
+	var glitch_enabled := false
+
+	func _ready() -> void:
+		z_index = 12
+		var ink := ShaderMaterial.new()
+		ink.shader = INK
+		ink.set_shader_parameter("glitch_enabled", glitch_enabled)
+		material = ink
+		var host := get_parent() as Control
+		host.resized.connect(_align)
+		_align()
+
+	func _align() -> void:
+		var host := get_parent() as Control
+		position = host.size * 0.5
+		queue_redraw()
+
+	func press_in() -> void:
+		scale = Vector2.ONE * 1.35
+		var ink := material as ShaderMaterial
+		ink.set_shader_parameter("ink_opacity", 0.0)
+		var tween := create_tween().set_parallel(true)
+		tween.tween_property(self, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		tween.tween_property(ink, "shader_parameter/ink_opacity", 1.0, 0.11)
+
+	func _draw() -> void:
+		var host := get_parent() as Control
+		var art_size := ART.get_size()
+		var fit := minf(minf(host.size.x * 0.84, 178.0) / art_size.x, host.size.y * 0.72 / art_size.y)
+		var size := art_size * fit
+		draw_texture_rect(ART, Rect2(-size * 0.5, size), false)
+
+
+class HackErrorIcon extends Control:
+	func _draw() -> void:
+		var center := size * 0.5
+		draw_circle(center + Vector2(0, 1), 17.0, Color("9daba9"), true, -1.0, true)
+		draw_circle(center, 16.0, Color("f6b2a7"), true, -1.0, true)
+		draw_circle(center, 14.0, Color("aa231e"), true, -1.0, true)
+		draw_circle(center - Vector2(0, 1), 12.0, Color("d44336"), true, -1.0, true)
+		draw_line(center - Vector2(6, 6), center + Vector2(6, 6), Color("fff7f2"), 3.5, true)
+		draw_line(center + Vector2(-6, 6), center + Vector2(6, -6), Color("fff7f2"), 3.5, true)
 
 
 ## 프로필 위에 찍히는 붓결·잉크 질감의 투명 상태 도장.

@@ -70,6 +70,9 @@ var _mode: StringName = &""
 var _t: float = 0.0
 var _total: float = 0.0
 var _result: Dictionary = {}
+var _kept_prop_count := 0
+var _kept_prop_owner := -1
+var _kept_prop_tool: StringName = &""
 var _power: float = 0.5
 var _root: VBoxContainer = null
 var _title: Label = null
@@ -187,8 +190,12 @@ static func real_time(tool_id: StringName, native: float) -> float:
 
 ## 결과 연출을 재생한다. 끝나면(또는 cancel()되면) 돌아온다. instant면 아무것도 그리지 않고 바로 돌아온다.
 ## power: 0~1 파워 게이지 값 - 셔플 속도·회전 수·펀치 크기 같은 '연출'에만 쓰이고 결과(눈금)에는 영향이 없다.
-func play(tool_id: StringName, result: Dictionary, power: float = 0.5) -> void:
-	cancel()
+func play(tool_id: StringName, result: Dictionary, power: float = 0.5, continues_chain: bool = false) -> void:
+	_stop_playback()
+	if not continues_chain or hold_owner != _kept_prop_owner or tool_id != _kept_prop_tool:
+		_kept_prop_count = 0
+		_kept_prop_owner = hold_owner
+		_kept_prop_tool = tool_id
 	modulate = Color.WHITE  # 도박사 과열로 그을린 색을 지운다
 	if instant or not supports(tool_id):
 		last_display = _final_text(tool_id, result)
@@ -196,7 +203,7 @@ func play(tool_id: StringName, result: Dictionary, power: float = 0.5) -> void:
 	_power = clampf(power, 0.0, 1.0)
 	_result = result
 	_hold_after = tool_id == &"REVOLVER" and bool(result.get("can_continue", false))
-	if tool_id in [&"HOLDEM", &"DICE_HWATU", &"DICE_TAROT", &"DICE_MAHJONG", &"YUT", &"LIFE_ROULETTE", &"SLOT_777", &"REVOLVER"]:
+	if tool_id in [&"HOLDEM", &"DICE_HWATU", &"DICE_TAROT", &"DICE_MAHJONG", &"YUT", &"LIFE_ROULETTE", &"SLOT_777", &"REVOLVER", &"DICE_OMIKUJI", &"DICE_ICECREAM"]:
 		last_display = ""
 	_mode = tool_id
 	_t = 0.0
@@ -220,12 +227,35 @@ func play(tool_id: StringName, result: Dictionary, power: float = 0.5) -> void:
 		var event:StringName=StringName(details.get("event",&""))
 		if event==ToolStockChart.EVENT_LIMIT_UP:cues.append(PresentationAudio.cue(StockChartView.STAMP_AT,&"stock_bull"))
 		elif event==ToolStockChart.EVENT_DELISTED:cues.append(PresentationAudio.cue(StockChartView.STAMP_AT,&"stock_bear"))
+	elif tool_id == &"DICE_OMIKUJI":
+		for at: float in [0.27, 0.50, 0.72]:
+			cues.append(PresentationAudio.cue(at, &"yut_clack", -8.0))
+		cues.append(PresentationAudio.cue(OmikujiView.DRAW_AT, &"omikuji_draw", -6.0))
+		cues.append(PresentationAudio.cue(OmikujiView.REVEAL_AT, &"card_pick", -5.0))
+		var fortune: StringName = _result.get("details", {}).get("fortune", &"good")
+		if fortune in [&"great", &"worst"]:
+			cues.append(PresentationAudio.cue(OmikujiView.REVEAL_AT + 0.08, &"good" if fortune == &"great" else &"bad", -6.0))
+		if fortune == &"great":
+			cues.append(PresentationAudio.cue(OmikujiView.FOLD_AT, &"ticket_rustle", -10.0))
+	elif tool_id == &"DICE_ICECREAM":
+		cues.append(PresentationAudio.cue(IceCreamView.BITE_AT, &"icecream_snap", -5.0))
+		cues.append(PresentationAudio.cue(IceCreamView.REVEAL_AT, &"icecream_reveal", -7.0))
+		if bool(_result.get("details", {}).get("again", false)):
+			cues.append(PresentationAudio.cue(IceCreamView.STICK_LAND_AT, &"toy_click", -11.0))
+			cues.append(PresentationAudio.cue(IceCreamView.REFILL_AT, &"good", -6.0))
 	_new_audio.start(self,cues)
 	await finished
 
 
 ## 진행 중인 연출을 즉시 끝내고 숨긴다 (새 게임 등).
 func cancel() -> void:
+	_kept_prop_count = 0
+	_kept_prop_owner = -1
+	_kept_prop_tool = &""
+	_stop_playback()
+
+
+func _stop_playback() -> void:
 	_new_audio.cancel()
 	holding = false
 	_augment_hold = 0.0
@@ -501,6 +531,10 @@ func _process(delta: float) -> void:
 	_new_audio.advance(_t)
 	_update(_t)
 	if _t >= _total:
+		if not bool(_result.get("reroll", false)):
+			_kept_prop_count = 0
+		elif (_mode == &"DICE_OMIKUJI" and _result.get("details", {}).get("fortune") == &"great") or (_mode == &"DICE_ICECREAM" and bool(_result.get("details", {}).get("again", false))):
+			_kept_prop_count += 1
 		active = false
 		# 투척은 결과를 띄운 채 잠깐 남는다 (말 이동이 바로 시작된다). 그 밖의 연출은 바로 사라진다.
 		if tossing:
@@ -728,17 +762,17 @@ func _build(tool_id: StringName) -> void:
 			_make_card_result(DartBoardView.caption(_result.get("details", {}), int(_result.get("steps", 0))))
 		&"DICE_OMIKUJI":
 			_title.text = "오미쿠지 뽑기통"
-			_total = OmikujiView.TOTAL_TIME
+			_total = OmikujiView.GREAT_TOTAL_TIME if _result.get("details", {}).get("fortune") == &"great" else OmikujiView.TOTAL_TIME
 			_omikuji_view = OmikujiView.new()
 			_stage.add_child(_omikuji_view)
-			_omikuji_view.begin(_result.get("details", {}))
+			_omikuji_view.begin(_result.get("details", {}), _kept_prop_count)
 			_make_card_result(OmikujiView.caption(_result.get("details", {}), int(_result.get("steps", 0))))
 		&"DICE_ICECREAM":
 			_title.text = "아이스크림"
-			_total = IceCreamView.TOTAL_TIME
+			_total = IceCreamView.AGAIN_TOTAL_TIME if bool(_result.get("details", {}).get("again", false)) else IceCreamView.TOTAL_TIME
 			_icecream_view = IceCreamView.new()
 			_stage.add_child(_icecream_view)
-			_icecream_view.begin(_result.get("details", {}))
+			_icecream_view.begin(_result.get("details", {}), _kept_prop_count)
 			_make_card_result(IceCreamView.caption(_result.get("details", {}), int(_result.get("steps", 0))))
 	pivot_offset = Vector2.ZERO
 

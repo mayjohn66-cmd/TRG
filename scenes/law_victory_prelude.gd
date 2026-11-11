@@ -9,6 +9,7 @@ const PERMA = preload("res://scenes/perma_death_stage.gd")
 const ATTACK = preload("res://scenes/attack_meeple_stage.gd")
 const MOCHI = preload("res://scenes/mochi_slayer_stage.gd")
 const TICKET = preload("res://scenes/golden_ticket_stage.gd")
+const MONATIUM_CASH = preload("res://scenes/monatium_cash_stage.gd")
 const TRAP = preload("res://scenes/infinite_trap_stage.gd")
 const RACE = preload("res://scenes/race_finish_stage.gd")
 const HURRICANE = preload("res://scenes/hurricane_force_stage.gd")
@@ -25,6 +26,7 @@ var _perma: PERMA
 var _attack: ATTACK
 var _mochi: MOCHI
 var _ticket: TICKET
+var _monatium_cash: MONATIUM_CASH
 var _trap: TRAP
 var _race: RACE
 var _scene_materials: Array[ShaderMaterial]=[]
@@ -35,7 +37,7 @@ static func impact_at(id: String) -> float:
 	if id=="LAW_09": return HURRICANE.IMPACT_AT
 	if id=="FINISH": return RACE.SKID_AT
 	if id=="LAW_03": return TRAP.IMPACT_AT
-	if id=="LAW_02": return TICKET.REVEAL_AT
+	if id=="LAW_02": return MONATIUM_CASH.IMPACT_AT if VictoryLaw.variant_active(id) else TICKET.REVEAL_AT
 	if id=="LAW_08": return ATTACK.IMPACT_AT
 	if id=="LAW_06": return PERMA.IMPACT_AT
 	if id=="LAW_07": return DICE_SOUL.FRONT_AT
@@ -45,7 +47,7 @@ static func duration_for(id: String) -> float:
 	if id=="LAW_09": return HURRICANE.INTRO_SECONDS
 	if id=="FINISH": return RACE.INTRO_SECONDS
 	if id=="LAW_03": return TRAP.INTRO_SECONDS
-	if id=="LAW_02": return TICKET.INTRO_SECONDS
+	if id=="LAW_02": return MONATIUM_CASH.INTRO_SECONDS if VictoryLaw.variant_active(id) else TICKET.INTRO_SECONDS
 	if id=="LAW_01": return MOCHI.INTRO_SECONDS
 	if id=="LAW_08": return ATTACK.INTRO_SECONDS
 	if id=="LAW_06": return PERMA.INTRO_SECONDS
@@ -68,8 +70,15 @@ func setup(id: String, center: Vector2, reference: Vector2, cause: Array[Vector2
 		_race=RACE.new();add_child(_race);_race.setup()
 	if id=="LAW_03" and _trap==null:
 		_trap=TRAP.new();add_child(_trap);_trap.setup(center,reference)
-	if id=="LAW_02" and _ticket==null:
-		_ticket=TICKET.new();add_child(_ticket);_ticket.setup()
+	if id == "LAW_02":
+		if VictoryLaw.variant_active(id):
+			_monatium_cash = MONATIUM_CASH.new()
+			add_child(_monatium_cash)
+			_monatium_cash.setup(center, reference)
+		else:
+			_ticket = TICKET.new()
+			add_child(_ticket)
+			_ticket.setup()
 	if id=="LAW_01" and _mochi==null:
 		_mochi=MOCHI.new();add_child(_mochi);_mochi.setup(center,reference)
 	if id=="LAW_08" and _attack==null:
@@ -127,6 +136,8 @@ func seek(t: float, view: Vector2) -> void:
 	if _attack!=null: _attack.seek(time,view)
 	if _mochi!=null: _mochi.seek(time,view)
 	if _ticket!=null: _ticket.seek(time,view)
+	if _monatium_cash != null:
+		_monatium_cash.seek(time, view)
 	if _trap!=null: _trap.seek(time,view)
 	if _race!=null: _race.seek(time,view)
 	if _circle!=null:
@@ -162,15 +173,17 @@ func _draw() -> void:
 		dim=lerpf(dim,0.76,smoothstep(MOCHI.MORPH_AT,MOCHI.PRINT_AT,time))
 		dim*=1.0-smoothstep(MOCHI.INTRO_SECONDS,MOCHI.INTRO_SECONDS+MOCHI.FADE_SECONDS,time)
 	elif law_id=="LAW_02":
-		dim=lerpf(dim,0.80,smoothstep(0.18,1.0,time))
-		dim*=1.0-smoothstep(TICKET.INTRO_SECONDS,TICKET.INTRO_SECONDS+TICKET.FADE_SECONDS,time)
+		dim = lerpf(dim, 0.80, smoothstep(0.18, 1.0, time))
+		var intro := MONATIUM_CASH.INTRO_SECONDS if _monatium_cash != null else TICKET.INTRO_SECONDS
+		var fade := MONATIUM_CASH.FADE_SECONDS if _monatium_cash != null else TICKET.FADE_SECONDS
+		dim *= 1.0 - smoothstep(intro, intro + fade, time)
 	elif law_id=="LAW_03":
 		dim=lerpf(dim,0.82,smoothstep(0.30,TRAP.IMPACT_AT,time))
 		dim*=1.0-smoothstep(TRAP.INTRO_SECONDS,TRAP.INTRO_SECONDS+TRAP.FADE_SECONDS,time)
 	draw_rect(Rect2(Vector2.ZERO,size),Color(0.06,0.055,0.08,dim))
 	match law_id:
 		"LAW_01": pass # One clipped sword pulls out and becomes its matching print.
-		"LAW_02": pass # Six fragments reunite into one golden meal ticket and its print.
+		"LAW_02": pass # The board's ticket or cash prop carries into the matching print.
 		"LAW_03": pass # Drawn 2D hills and planted cards lead into the same giant-card print.
 		"LAW_04": _jackpot(at,ratio)
 		"LAW_05": _alchemy(at,ratio)
