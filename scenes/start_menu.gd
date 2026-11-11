@@ -22,7 +22,7 @@ var _mode_page: Control = null
 var _hub_profile: Dictionary = {}
 ## 맨 아래 한 줄 면책 문구 (허브에서는 아래 띠가 숨으므로 화면 맨 아래로 내린다).
 var _fan_notice: Label = null
-var _train_page: VBoxContainer = null
+var _train_page: HBoxContainer = null
 var _avatar_page: VBoxContainer = null
 var _avatar_button: Button = null
 var _avatar_preview: AvatarSlot = null
@@ -44,7 +44,6 @@ var _ai_button: Button = null
 var _multi_button: Button = null
 var _quick_button: Button = null
 var _back_button: Button = null
-var _train_label: MarqueeLabel = null
 var _train_start: Button = null
 ## 놀이터 난이도 = 불닭 Fire Level 1~5 (게이지·라면 그릇).
 var _fire_picker: FireLevelPicker = null
@@ -352,30 +351,23 @@ func _refresh_hub() -> void:
 
 
 func _build_train_page(parent: VBoxContainer) -> void:
-	_train_page = VBoxContainer.new()
-	_train_page.custom_minimum_size = Vector2(560, 0)
-	_train_page.add_theme_constant_override("separation", 26)
+	# 놀이터는 늘 컴퓨터 3명과 겨룬다 (인원 고르기는 없앴다). 화면은 2분할: 왼쪽 보드판 고르기(그림·설명), 오른쪽 난이도 + 게임 시작.
+	_train_page = HBoxContainer.new()
+	_train_page.custom_minimum_size = Vector2(1100, 0)
+	_train_page.add_theme_constant_override("separation", 28)
 	parent.add_child(_train_page)
-	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", LobbyTheme.style(LobbyTheme.BLUE_PALE, LobbyTheme.BLUE, 5, 34, 6, 16))
-	_train_page.add_child(panel)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 14)
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	panel.add_child(row)
-	var minus := LobbyTheme.small_button("-", change_ai_count.bind(-1), &"blue", 34)
-	minus.name = "AiMinus"
-	minus.custom_minimum_size = Vector2(64, 64)
-	row.add_child(minus)
-	# 글 길이(언어)와 상관없이 칸 크기는 그대로: 길면 천천히 흘러간다
-	_train_label = MarqueeLabel.create("", 52, LobbyTheme.BLUE, Vector2(330, 72), HORIZONTAL_ALIGNMENT_CENTER, "AiCount").shrink_to_fit(30)  # 흐르지 않고 글자를 줄여 맞춘다
-	row.add_child(_train_label)
-	var plus := LobbyTheme.small_button("+", change_ai_count.bind(1), &"blue", 34)
-	plus.name = "AiPlus"
-	plus.custom_minimum_size = Vector2(64, 64)
-	row.add_child(plus)
-	var note: MarqueeLabel = MarqueeLabel.create("컴퓨터와 겨룹니다. 제한 시간 없이 천천히 연습하세요.", 18, LobbyTheme.BLUE, Vector2(560, 28), HORIZONTAL_ALIGNMENT_CENTER, "TrainNote").shrink_to_fit(13)
-	_train_page.add_child(note)
+	_train_page.add_child(_build_board_picker())
+	var right := VBoxContainer.new()
+	right.name = "TrainRight"
+	right.custom_minimum_size = Vector2(520, 0)
+	right.add_theme_constant_override("separation", 18)
+	_train_page.add_child(right)
+	var note: MarqueeLabel = MarqueeLabel.create("컴퓨터 3명과 겨룹니다. 제한 시간 없이 천천히 연습하세요.", 18, LobbyTheme.BLUE, Vector2(488, 28), HORIZONTAL_ALIGNMENT_CENTER, "TrainNote").shrink_to_fit(13)
+	var note_pill := PanelContainer.new()
+	note_pill.name = "TrainNotePill"
+	note_pill.add_theme_stylebox_override("panel", LobbyTheme.style(Color(1, 1, 1, 0.78), LobbyTheme.BLUE, 2, 18, 0, 8))
+	note_pill.add_child(note)
+	right.add_child(note_pill)
 	# 난이도: 불닭 매운맛 지표 Fire Level 1~5 (기본 Lv.2 로제, 고른 값은 다음 접속에도 남는다)
 	_fire_picker = FireLevelPicker.create(GameSession.bot_difficulty())
 	_fire_picker.level_chosen.connect(set_difficulty)
@@ -383,46 +375,70 @@ func _build_train_page(parent: VBoxContainer) -> void:
 	fire_panel.name = "FirePanel"
 	fire_panel.add_theme_stylebox_override("panel", LobbyTheme.style(Color(1, 1, 1, 0.82), LobbyTheme.BLUE, 3, 26, 0, 10))
 	fire_panel.add_child(_fire_picker)
-	_train_page.add_child(fire_panel)
-	_train_page.add_child(_build_board_picker())
+	fire_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL  # 오른쪽 칸이 왼쪽 보드판 칸과 같은 높이로 늘어나 아래가 맞는다
+	right.add_child(fire_panel)
 	# AI 대전은 난이도(불꽃)가 규칙을 정한다 — 방 규칙 설정은 친선전 방장 전용
-	var start_row := HBoxContainer.new()
-	start_row.add_theme_constant_override("separation", 12)
-	_train_page.add_child(start_row)
 	_train_start = LobbyTheme.cream_button("게임 시작", start_ai_game, 40)
 	_train_start.name = "StartTraining"
 	_train_start.clip_text = true
 	_train_start.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_train_start.custom_minimum_size = Vector2(0, 78)  # 글꼴(언어)에 따라 줄 높이가 달라도 버튼 높이는 그대로
-	start_row.add_child(_train_start)
+	right.add_child(_train_start)
 	_refresh_train_label()
 
 
-## 보드판 고르기 줄 (컴퓨터 대전 시작 화면): [보드판] 제목 + 보드마다 토글 버튼. 고른 보드는 프로필에 남아 다음 판에도 쓴다 (GameSession.set_board).
+## 보드판 고르기 (컴퓨터 대전 시작 화면, 왼쪽 칸): [보드판] 제목 + 보드마다 토글 버튼 + 고른 보드의 그림과 설명.
+## 고른 보드는 프로필에 남아 다음 판에도 쓴다 (GameSession.set_board).
 var _board_buttons: Array = []  # [[보드 id, 버튼], ...]
+var _board_preview: TextureRect = null
+var _board_desc: Label = null
+const BOARD_PREVIEW_DIR: String = "res://assets/ui/trickcal/board_preview/"
 
 
 func _build_board_picker() -> Control:
 	var panel := PanelContainer.new()
 	panel.name = "BoardPanel"
-	panel.add_theme_stylebox_override("panel", LobbyTheme.style(Color(1, 1, 1, 0.82), LobbyTheme.BLUE, 3, 26, 0, 10))
+	panel.custom_minimum_size = Vector2(552, 0)
+	panel.add_theme_stylebox_override("panel", LobbyTheme.style(Color(1, 1, 1, 0.82), LobbyTheme.BLUE, 4, 30, 6, 18))
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 12)
+	panel.add_child(column)
+	var head := LobbyTheme.label("보드판", 26, LobbyTheme.BLUE)
+	head.name = "BoardHead"
+	head.custom_minimum_size = Vector2(0, 46)  # 글꼴(언어)마다 줄 높이가 달라도 칸 높이는 그대로
+	column.add_child(head)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
-	panel.add_child(row)
-	var head := LobbyTheme.label("보드판", 22, LobbyTheme.BLUE)
-	head.name = "BoardHead"
-	row.add_child(head)
+	column.add_child(row)
 	_board_buttons.clear()
 	for board: Dictionary in BoardCatalog.BOARDS:
 		var button := LobbyTheme.small_button(str(board["name"]), _on_board_picked.bind(board["id"]), &"blue", 20)
 		button.name = "Board_%s" % board["id"]
 		button.toggle_mode = true
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.custom_minimum_size = Vector2(0, 46)
+		button.custom_minimum_size = Vector2(0, 50)
 		button.clip_text = true
-		button.tooltip_text = str(board["desc"])
 		row.add_child(button)
 		_board_buttons.append([board["id"], button])
+	# 고른 보드의 그림 (둥근 모서리로 잘라 보여 준다)
+	var frame := PanelContainer.new()
+	frame.name = "BoardPreviewFrame"
+	frame.clip_children = CanvasItem.CLIP_CHILDREN_AND_DRAW
+	frame.add_theme_stylebox_override("panel", LobbyTheme.style(Color("dfeef2"), LobbyTheme.BLUE, 0, 22))
+	column.add_child(frame)
+	_board_preview = TextureRect.new()
+	_board_preview.name = "BoardPreview"
+	_board_preview.custom_minimum_size = Vector2(516, 326)
+	_board_preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_board_preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	frame.add_child(_board_preview)
+	_board_desc = LobbyTheme.label("", 18, LobbyTheme.INK)
+	_board_desc.name = "BoardDesc"
+	_board_desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_board_desc.custom_minimum_size = Vector2(516, 62)  # 두 줄 높이로 고정: 언어마다 줄 수가 달라도 칸 크기는 그대로
+	_board_desc.max_lines_visible = 2
+	_board_desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(_board_desc)
 	_refresh_board_picker()
 	return panel
 
@@ -438,6 +454,12 @@ func _refresh_board_picker() -> void:
 		var button: Button = pair[1]
 		button.set_pressed_no_signal(chosen)
 		button.modulate = Color.WHITE if chosen else Color(1, 1, 1, 0.6)
+	var chosen_id: StringName = GameSession.board_id()
+	if _board_preview != null:
+		var path: String = "%s%s.webp" % [BOARD_PREVIEW_DIR, chosen_id]
+		_board_preview.texture = load(path) as Texture2D if ResourceLoader.exists(path) else null
+	if _board_desc != null:
+		_board_desc.text = str(BoardCatalog.def_of(chosen_id)["desc"])
 
 
 func _show_step(value: int) -> void:
@@ -668,19 +690,11 @@ func _refresh_difficulty() -> void:
 		_fire_picker.set_level(GameSession.bot_difficulty())
 
 
-func change_ai_count(delta: int) -> void:
-	ai_count = clampi(ai_count + delta, MIN_AI, MAX_AI)
-	_refresh_train_label()
-
-
 func _refresh_train_label() -> void:
-	_train_label.text = "AI 상대 %d명" % ai_count
 	_refresh_hub()
-	(_train_page.find_child("AiMinus", true, false) as Button).disabled = ai_count <= MIN_AI
-	(_train_page.find_child("AiPlus", true, false) as Button).disabled = ai_count >= MAX_AI
 
 
-## [게임 시작](훈련): 나(P1) vs 컴퓨터 ai_count명으로 메인 보드를 연다.
+## [게임 시작](훈련): 나(P1) vs 컴퓨터 3명으로 메인 보드를 연다.
 func start_ai_game() -> void:
 	GameSession.clear_net()
 	GameSession.mode = GameSession.MODE_AI

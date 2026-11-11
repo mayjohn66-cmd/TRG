@@ -85,8 +85,14 @@ func _run() -> void:
 	menu.confirm_nickname()
 	# 훈련: AI 인원 선택 후 시작
 	menu._ai_button.pressed.emit()
-	_expect(menu.step == 3 and menu._train_page.visible and menu._train_label.text == "AI 상대 3명", "훈련 화면: 기본 AI 3명")
-	_expect((menu._train_page.find_child("AiPlus", true, false) as Button).disabled, "3명이 최대라 + 버튼은 잠긴다")
+	_expect(menu.step == 3 and menu._train_page.visible and menu.ai_count == 3, "훈련 화면: AI는 늘 3명")
+	_expect(menu._train_page.find_child("AiPlus", true, false) == null and menu._train_page.find_child("AiMinus", true, false) == null, "인원 고르기(+/-)는 없앴다")
+	var board_panel: Control = menu._train_page.find_child("BoardPanel", true, false)
+	var right_panel: Control = menu._train_page.find_child("TrainRight", true, false)
+	_expect(board_panel != null and right_panel != null and board_panel.get_parent() == menu._train_page and right_panel.get_parent() == menu._train_page, "2분할: 왼쪽 보드판 칸, 오른쪽 난이도·시작 칸")
+	_expect(board_panel.get_index() < right_panel.get_index() and menu._train_page.find_child("FirePanel", true, false).get_parent() == right_panel and menu._train_start.get_parent() == right_panel, "오른쪽에 난이도와 [게임 시작]")
+	_expect(menu._train_page.find_child("BoardPreview", true, false) != null and (menu._train_page.find_child("BoardPreview", true, false) as TextureRect).texture != null, "보드판 그림이 보인다")
+	_expect(not (menu._train_page.find_child("BoardDesc", true, false) as Label).text.is_empty(), "보드판 설명이 보인다")
 	_expect(menu._train_page.find_child("OpenRules", true, false) == null, "AI 대전 화면에는 방 규칙 설정 버튼이 없다 (난이도가 규칙을 정한다)")
 	GameSession.mode = GameSession.MODE_AI
 	var saved_rules: Dictionary = GameSession.rule_overrides().duplicate()
@@ -94,11 +100,6 @@ func _run() -> void:
 	_expect(GameSession.match_rules() == MatchRules.sanitize(GameSession.base_rules()), "AI 대전은 저장된 방 규칙을 무시하고 난이도 기본값만 쓴다")
 	GameSession.rule_overrides().clear()
 	GameSession.rule_overrides().merge(saved_rules)
-	menu.change_ai_count(-1)
-	menu.change_ai_count(-5)
-	_expect(menu.ai_count == 1 and (menu._train_page.find_child("AiMinus", true, false) as Button).disabled, "AI는 1명까지")
-	menu.change_ai_count(1)
-	_expect(menu._train_label.text == "AI 상대 2명", "AI 2명으로 조정")
 	# 글 길이(언어)와 상관없이 상자 크기는 그대로, 상자보다 긴 글은 천천히 흘러간다
 	L10n.install()
 	var saved_lang: String = L10n.current_lang
@@ -107,7 +108,7 @@ func _run() -> void:
 		L10n.set_language(lang)
 		await process_frame
 		await process_frame
-		var panel: Control = menu._train_label.get_parent().get_parent()
+		var panel: Control = menu.find_child("BoardPanel", true, false)
 		var fire_panel: Control = menu.find_child("FirePanel", true, false)
 		sizes.append("%s %s %s %s" % [menu._train_page.size.x, panel.size, menu._train_start.size, fire_panel.size if fire_panel != null else Vector2.ZERO])
 	_expect(sizes[0] == sizes[1] and sizes[1] == sizes[2], "놀이터 칸 크기가 언어마다 같다 %s" % str(sizes))
@@ -115,9 +116,6 @@ func _run() -> void:
 	await process_frame
 	await process_frame
 	# 짧은 칸(AI 인원·안내 문구)은 흐르지 않고 글자를 줄여 칸에 맞춘다
-	var inner: Label = menu._train_label.label()
-	_expect(not menu._train_label.scrolling() and menu._train_label.font_px() < 52 and menu._train_label.font_px() >= 30, "영어 \"AI 상대\" 문구는 흐르지 않고 글자를 줄인다 (%dpx)" % menu._train_label.font_px())
-	_expect(inner.get_minimum_size().x <= menu._train_label.size.x + 1.0, "줄인 글이 칸에 들어간다")
 	var train_note: MarqueeLabel = menu.find_child("TrainNoteBox", true, false)
 	_expect(train_note != null and not train_note.scrolling(), "영어 안내 문구도 줄여서 맞춘다")
 	# 긴 설명(난이도 설명)은 전광판처럼 순환한다: 글 뒤에 같은 글이 간격을 두고 이어 붙고, 되감기 없이 처음 모습으로 이어진다
@@ -150,13 +148,13 @@ func _run() -> void:
 	L10n.set_language("ko")
 	await process_frame
 	await process_frame
-	_expect(not menu._train_label.scrolling() and is_equal_approx(menu._train_label.label().position.x, 0.0), "들어가는 글은 흐르지 않는다")
+	_expect(not (menu.find_child("TrainNoteBox", true, false) as MarqueeLabel).scrolling(), "들어가는 글은 흐르지 않는다")
 	L10n.set_language(saved_lang)
 	menu._back_button.pressed.emit()
 	_expect(menu.step == 2, "훈련 화면의 뒤로가기는 모드 선택으로")
 	menu._ai_button.pressed.emit()
 	menu._train_start.pressed.emit()
-	_expect(GameSession.mode == GameSession.MODE_AI and GameSession.ai_opponents == 2 and not GameSession.net_active, "훈련 시작: 컴퓨터 대전, AI 2명")
+	_expect(GameSession.mode == GameSession.MODE_AI and GameSession.ai_opponents == 3 and not GameSession.net_active, "훈련 시작: 컴퓨터 대전, AI 3명")
 	# 비밀 결투 / 랜덤 결투는 로비 씬으로 (목적만 전달)
 	menu._multi_button.pressed.emit()
 	_expect(GameSession.mode == GameSession.MODE_MULTIPLAYER and GameSession.lobby_intent == &"secret", "비밀 결투 -> 로비(방 코드 입력)")
@@ -307,8 +305,8 @@ func _run() -> void:
 	board._refresh_all()
 	_expect((board._profiles[1]["name"] as Label).text == "에르핀", "내 프로필 이름은 닉네임 (%s)" % (board._profiles[1]["name"] as Label).text)
 	_expect((board._profiles[2]["name"] as Label).text == "컴퓨터 2" and (board._profiles[3]["name"] as Label).text == "컴퓨터 3", "봇 이름은 컴퓨터 n")
-	_expect(str(board._player_ids) == "[1, 2, 3]" and not (board._profiles[4]["panel"] as Control).visible, "훈련 AI 2명: 참가 3명, P4 자리는 비어 있다")
-	_expect(board._bot.is_bot(2) and board._bot.is_bot(3) and not board._bot.is_bot(4), "봇은 P2·P3")
+	_expect(str(board._player_ids) == "[1, 2, 3, 4]" and (board._profiles[4]["panel"] as Control).visible, "훈련 AI 3명: 참가 4명")
+	_expect(board._bot.is_bot(2) and board._bot.is_bot(3) and board._bot.is_bot(4), "봇은 P2·P3·P4")
 	_expect((board._profiles[1]["avatar"] as AvatarSlot).character_id == &"avatar_03", "내 프로필 아바타는 설정에서 고른 것")
 	_expect((board._profiles[2]["avatar"] as AvatarSlot).character_id != &"avatar_03" and (board._profiles[2]["avatar"] as AvatarSlot).character_id != (board._profiles[3]["avatar"] as AvatarSlot).character_id, "컴퓨터 아바타는 내 것·서로와 다르다")
 	board._mode_toggle.pressed.emit()
