@@ -305,7 +305,7 @@ func _test_augment_art() -> void:
 		_expect(paths[0].contains("/pawns/") and paths[-1].contains("/PAWN_"), "pawn detail precedes family for %s" % kind)
 	for tool_id: StringName in AugmentRegistry.SWAPPABLE_TOOLS:
 		var paths: Array[String] = AugmentArt.tool_candidates(tool_id)
-		var expected_file: String = "%s_V02.png" % tool_id if tool_id in [&"DICE_STOCK", &"DICE_DARTS"] else "%s.png" % tool_id
+		var expected_file: String = "%s_V02.png" % tool_id if tool_id in [&"DICE_STOCK", &"DICE_DARTS", &"DICE_OMIKUJI", &"DICE_ICECREAM"] else "%s.png" % tool_id
 		_expect(paths[0] == AugmentArt.ROOT + "dice/" + expected_file, "tool detail uses reviewed art for runtime ID %s" % tool_id)
 		_expect(paths[-1].get_file().begins_with("DICE_"), "all nine tools map to requested DICE filename")
 		_board._refresh_tool_board(ToolRegistry.create(tool_id), 1)
