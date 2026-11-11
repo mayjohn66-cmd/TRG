@@ -36,7 +36,7 @@ signal bomb_resolved(shooter: int, victim: int, pawn_id: int, from_tile: int, to
 ## ACT_02 뱅! 저격 결과: 저격당한 선두 말이 from_tile에서 to_tile로 2칸 밀려났다.
 ## 긴급 엄폐(ACT_22): 말 하나가 택배 박스를 뒤집어썼다. 펭짱 8호(ACT_21): 펭귄이 날아가 부딪힌 말들. 전문적 해킹(ACT_23): 대상의 다음 턴이 자동 진행으로 바뀐다.
 signal cover_applied(pawn_id: int)
-signal penguin_flew(player_id: int, pawn_id: int, from_tile: int, to_tile: int, hits: Array[int])
+signal penguin_flew(player_id: int, pawn_id: int, from: Vector2, to: Vector2, hits: Array[int])
 signal hack_applied(player_id: int, target_player: int)
 signal bang_resolved(shooter: int, target_pawn_id: int, from_tile: int, to_tile: int)
 ## 기물 능력 알림: 룩 캐슬링(위치 교환) / 백돌 무적에 막혀 밀려남.
@@ -103,8 +103,13 @@ func _trpg_level_up(attacker_pawn_id: int, victim_pawn_id: int) -> void:
 	var victim: PlayerPawn = get_pawn(victim_pawn_id)
 	if attacker == null or victim == null or not attacker.is_trpg() or attacker.owner_id == victim.owner_id:
 		return
-	record_effect(victim.owner_id, "trpg:%d" % attacker.entity_id, attacker.trpg_level)
-	attacker.trpg_level = mini(attacker.trpg_level + 1, PlayerPawn.TRPG_MAX_LEVEL)
+	if attacker.trpg_level >= PlayerPawn.TRPG_MAX_LEVEL:
+		return
+	var entry := record_effect(victim.owner_id, "trpg:%d" % attacker.entity_id, attacker.trpg_level)
+	attacker.trpg_level += 1
+	# Keep the provisional level available to movement logic, but wait to present it if a defense can undo it.
+	if not bool(entry.get("stats_committed", true)):
+		return
 	passive_triggered.emit(attacker.entity_id, &"trpg_level")
 
 ## Node 기반 법전. 씬 트리에 붙이지 않고 GameState가 수명을 관리한다.
@@ -978,12 +983,14 @@ func record_hit(pawn: PlayerPawn) -> Dictionary:
 
 
 ## 지금 출처 아래에서 피해자 플레이어의 말 이외의 피해(휴식·밴·기록 초기화)를 기록에 남긴다. 되돌릴 때 previous 값으로 복원한다.
-func record_effect(victim: int, key: String, previous: Variant) -> void:
+func record_effect(victim: int, key: String, previous: Variant) -> Dictionary:
 	if attack_source.is_empty() or int(attack_source.get("attacker", -1)) == victim:
-		return
-	var effects: Dictionary = _entry_for(victim)["effects"]
+		return {}
+	var entry := _entry_for(victim)
+	var effects: Dictionary = entry["effects"]
 	if not effects.has(key):
 		effects[key] = previous
+	return entry
 
 
 func _entry_for(victim: int) -> Dictionary:
@@ -1024,6 +1031,11 @@ func commit_attack(entry: Dictionary) -> void:
 		if owner>=1:add_stat(owner,key,int(entry["stats"][key]))
 	if int(entry["stats"].get(&"kills",0))>0:
 		law_stats[victim][LAST_HIT_ROUND]=round_number
+	for key: String in entry["effects"]:
+		if key.begins_with("trpg:"):
+			var pawn := get_pawn(int(key.trim_prefix("trpg:")))
+			if pawn != null and pawn.trpg_level > int(entry["effects"][key]):
+				passive_triggered.emit(pawn.entity_id, &"trpg_level")
 
 
 ## 아무 피해도 남지 않은 기록(발동하지 않은 함정 등)을 지운다.

@@ -2,6 +2,8 @@
 ## Every player belongs to its scene and is stopped on cancellation or hiding.
 class_name PresentationAudio
 extends RefCounted
+
+const MONATIUM_CASH = preload("res://scenes/monatium_cash_stage.gd")
 var _owner:WeakRef
 var _cues:Array[Dictionary]=[]
 var _seen:Dictionary={}
@@ -68,8 +70,13 @@ static func victory_plan(id:String,offset:float,finale:float,confirm:bool) -> Ar
 	match id:
 		"LAW_01":cues.append(cue(offset+0.54,&"sword_plant"))
 		"LAW_02":
-			for i:int in 6:cues.append(cue(offset+0.18+i*0.34,&"ticket_rustle"))
-			cues.append(cue(offset+3.20,&"ticket_join"))
+			if VictoryLaw.variant_active(id):
+				for index: int in MONATIUM_CASH.COUNT:
+					cues.append(cue(offset + MONATIUM_CASH.drop_at(index), &"monatium_cash_drop", -7.0))
+				cues.append(cue(offset + MONATIUM_CASH.IMPACT_AT + 0.04, &"monatium_cash_reward", -6.0))
+			else:
+				for i:int in 6:cues.append(cue(offset+0.18+i*0.34,&"ticket_rustle"))
+				cues.append(cue(offset+3.20,&"ticket_join"))
 		"LAW_03":
 			for i:int in 5:cues.append(cue(offset+0.82+i*0.21,&"trap_embed",-2.0))
 			cues.append(cue(offset+3.08,&"hero_impact"))

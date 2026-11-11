@@ -8,6 +8,8 @@ const IVORY := Color("fff4d6")
 const WOOD := Color("e9b875")
 const BODY_BOX := Rect2(-13, -31, 26, 31)
 const HIT_BOX := Rect2(-18, -34, 36, 42)
+const COVER_ART: Texture2D = preload("res://assets/fx/expansion_cards/cover.png")
+const TOP_ART: Texture2D = preload("res://assets/fx/expansion_cards/top.png")
 var pawn: PlayerPawn
 ## 괴상한 멜론 한 단계마다 커지는 비율.
 const MELON_GROWTH: float = 0.2
@@ -16,6 +18,9 @@ var artwork: Dictionary = {}
 var use_art: bool = true
 var ground_shadow: bool = true
 var npc_behavior: int = -1
+var _golden_top := false
+var _top_phase := 0.0
+var _cover_pending := false
 var _signature: String = ""
 var _pulse: float = 1.0
 var _shield_shell: ShieldShell
@@ -29,7 +34,7 @@ var melon_roll_angle: float = 0.0:
 
 
 func _ready() -> void:
-	set_process(skill_ready())
+	set_process(skill_ready() or _golden_top)
 
 
 func configure(value: PlayerPawn, color: Color, images: bool = true) -> void:
@@ -100,32 +105,30 @@ func _sync_shield(animate: bool) -> void:
 	_sync_cover_box(height)
 
 
-## 긴급 엄폐(ACT_22): 보호막 위에 택배 박스를 뒤집어씌운 모습 (임시 그림: 갈색 상자 도형).
+func set_cover_pending(pending: bool) -> void:
+	_cover_pending = pending
+	var box := get_node_or_null("CoverBox") as Sprite2D
+	if box != null:
+		box.visible = not pending
+
+
+## 긴급 엄폐 상자는 방어가 소모될 때까지 말에 붙어 있다.
 func _sync_cover_box(height: float) -> void:
-	var box: Node2D = get_node_or_null("CoverBox") as Node2D
+	var box := get_node_or_null("CoverBox") as Sprite2D
 	if pawn == null or not pawn.ward_box or not has_protection():
 		if box != null:
+			remove_child(box)
 			box.queue_free()
 		return
 	if box == null:
-		box = Node2D.new()
+		box = PaintedFx.sprite(COVER_ART)
 		box.name = "CoverBox"
 		box.z_index = 3
-		var body := Polygon2D.new()
-		body.polygon = PackedVector2Array([Vector2(-17, -34), Vector2(17, -34), Vector2(20, -2), Vector2(-20, -2)])
-		body.color = Color("c98f55")
-		box.add_child(body)
-		var lid := Polygon2D.new()
-		lid.polygon = PackedVector2Array([Vector2(-21, -38), Vector2(21, -38), Vector2(17, -32), Vector2(-17, -32)])
-		lid.color = Color("e2b277")
-		box.add_child(lid)
-		var tape := Polygon2D.new()
-		tape.polygon = PackedVector2Array([Vector2(-3, -38), Vector2(3, -38), Vector2(3, -2), Vector2(-3, -2)])
-		tape.color = Color("f0dfb4")
-		box.add_child(tape)
 		add_child(box)
-	box.position = Vector2(0, 2)
-	box.scale = Vector2.ONE * clampf(height / 60.0, 0.6, 1.4)
+	var width := clampf(height * 1.38, 34.0, 60.0)
+	box.scale = Vector2.ONE * (width / box.region_rect.size.x)
+	box.position = Vector2(0, 1 - box.region_rect.size.y * box.scale.y * 0.5)
+	box.visible = not _cover_pending
 
 
 ## When a white stone has two protections, consuming one flashes the surviving shell.
@@ -216,10 +219,12 @@ func skill_ready() -> bool:
 	return pawn != null and PawnSkills.has_skill(pawn) and not pawn.skill_used and not pawn.is_finished
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if not is_visible_in_tree():
 		return
 	_pulse = 0.7 + 0.3 * (0.5 + 0.5 * sin(Time.get_ticks_msec() * TAU / 1400.0))
+	if _golden_top:
+		_top_phase = fposmod(_top_phase + delta * 31.0, TAU)
 	queue_redraw()
 
 
@@ -362,14 +367,27 @@ func _draw_monopoly(sub: GameEnums.PawnSubType) -> void:
 			draw_line(Vector2(-1,-21),Vector2(5,-21),IVORY,3,true)
 
 
-func configure_npc(behavior: int) -> void:
+func configure_npc(behavior: int, display_id: StringName = &"") -> void:
 	npc_behavior = behavior
+	_golden_top = display_id == NpcSweep.TOP_ID
 	var filename: String = "NPC_ROBBER.png" if behavior == GameEnums.NpcBehavior.CHASE_NEAREST else "NPC_GHOST.png"
-	artwork = PawnArt.load_sprite([PawnArt.ROOT + filename])
+	if _golden_top:
+		artwork = {"texture":TOP_ART, "region":PaintedFx.region(TOP_ART)}
+	else:
+		artwork = PawnArt.load_sprite([PawnArt.ROOT + filename])
+	set_process(_golden_top)
 	queue_redraw()
 
 
 func _draw_npc() -> void:
+	if _golden_top:
+		_ellipse(Vector2(0,2), Vector2(17,5), Color(0,0,0,0.27))
+		var region: Rect2 = artwork.region
+		var size := region.size * (44.0 / region.size.y)
+		draw_set_transform(Vector2.ZERO, sin(_top_phase) * 0.07, Vector2(0.81 + 0.19 * absf(cos(_top_phase)), 1))
+		draw_texture_rect_region(TOP_ART, Rect2(Vector2(-size.x * 0.5, -size.y), size), region)
+		draw_set_transform(Vector2.ZERO)
+		return
 	_ellipse(Vector2(0,4),Vector2(16,6),Color(0,0,0,0.3))
 	_ellipse(Vector2(0,2),Vector2(14,6),Color("493567"),INK)
 	_ellipse(Vector2.ZERO,Vector2(14,5),Color("8566ac"),Color("cfb2ff"))

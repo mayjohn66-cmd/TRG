@@ -35,6 +35,19 @@ func test_tr_ui_formats_and_keeps_korean_source_for_english() -> void:
 	check_eq(L10n.tr_ui("no.such.key"), "no.such.key", "없는 키는 키 그대로 (빠진 문구가 바로 보이게)")
 
 
+func test_trpg_tool_result_text_has_english_and_japanese() -> void:
+	for lang: String in ["en", "ja"]:
+		_with_lang(lang, func() -> void:
+			for entry: Array in ToolOmikuji.FORTUNES:
+				var roll := ToolOmikuji.of_fortune(entry[0])
+				check(not L10n.has_hangul(L10n.t(roll.details["label"])), "localized fortune slip in " + lang)
+				check(not L10n.has_hangul(L10n.t(ToolOmikuji.caption(roll.details, roll.steps))), "localized fortune caption in " + lang)
+			check_eq(L10n.t("대흉"), "大凶" if lang == "ja" else "Worst Luck", "worst fortune slip")
+			check_eq(L10n.t("대흉!"), "大凶！" if lang == "ja" else "Worst Luck!", "worst fortune stamp")
+			check_eq(L10n.t("한번 더!"), "もう1回！" if lang == "ja" else "One more!", "winning ice cream stick")
+			check_eq(L10n.tf("%d칸", [6]), "6マス" if lang == "ja" else "6 spaces", "numbered ice cream stick"))
+
+
 func test_unknown_language_is_ignored_and_cycle_wraps() -> void:
 	var saved: String = L10n.current_lang
 	L10n.set_language("ko")

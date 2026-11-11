@@ -73,3 +73,15 @@ func test_turn_manager_applies_results() -> void:
 	manager.state.tools[1] = ToolRegistry.create(&"DICE_OMIKUJI")
 	var r: RollResult = manager.state.tools[1].roll(manager.rng) if "rng" in manager else null
 	check(r == null or r.tool_id == &"DICE_OMIKUJI", "tool rolls through the shared rng")
+	var indices: Array[int] = []
+	manager.event_received.connect(func(kind: StringName, data: Dictionary) -> void:
+		if kind == &"roll_resolved":
+			indices.append(int(data.get("chain_index", -1))))
+	manager._apply_roll_result(ToolOmikuji.of_fortune(&"great"))
+	manager.move_queue.clear()
+	manager._close_resolution_window()
+	check_eq(manager.current_state, TurnManager.State.PHASE_TURN_BEGIN, "extra roll reopens the card phase")
+	manager._apply_roll_result(ToolOmikuji.of_fortune(&"great"))
+	manager.advance_to_next_player()
+	manager._apply_roll_result(ToolIceCream.of_again())
+	check_eq(indices, [0, 1, 0], "roll event keeps the chain across card phases and resets on the next turn")

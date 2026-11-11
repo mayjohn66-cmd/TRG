@@ -1651,7 +1651,7 @@ func _apply_roll_result(result: RollResult) -> void:
 		result.details["stored"] = move_queue.size()
 		if result.ends_turn:
 			result.details["lost"] = move_queue.size()  # 연출용: 날아간 쌓인 눈금 수
-	_emit_event(&"roll_resolved", {"player_id": current_player_id(), "result": result.to_dict()})
+	_emit_event(&"roll_resolved", {"player_id": roller_id, "result": result.to_dict(), "chain_index": _roll_chain})
 	if bool(result.details.get("eject_leader", false)):
 		_delist_eject(roller_id)  # 주식 차트 상장폐지: 내 선두 말이 대기실로
 	if result.ends_turn or (result.steps <= 0 and not result.can_continue and not result.reroll):

@@ -46,6 +46,39 @@ func test_level_up_on_kill_and_charge_steps() -> void:
 	check_eq(plain.trpg_level, 1, "non-TRPG pawns never level")
 
 
+func test_level_up_callout_waits_for_defense_and_stops_at_cap() -> void:
+	var pair := _setup_pawn(1)
+	var state: GameState = pair[0]
+	var pawn: PlayerPawn = pair[1]
+	var victim: PlayerPawn = state.pawns_of(2)[0]
+	var callouts: Array[int] = []
+	state.passive_triggered.connect(func(pawn_id: int, passive: StringName) -> void:
+		if passive == &"trpg_level":
+			callouts.append(pawn_id))
+	state.hands[2] = [&"CNT_09"]
+	for blocked: bool in [true, false]:
+		victim.has_left_start = true
+		victim.current_tile_idx = 6
+		state.begin_attack({"kind": CardCounter.CAPTURE, "attacker": 1, "attacker_pawn": pawn.entity_id})
+		state.send_to_start(victim, 1)
+		state.pawn_captured.emit(pawn.entity_id, victim.entity_id)
+		state.end_attack()
+		var entry: Dictionary = state.attack_log.back()
+		check_eq(pawn.trpg_level, 2, "movement can use the provisional level")
+		check(callouts.is_empty(), "defense can still undo this level up")
+		if blocked:
+			state.undo_attack(entry)
+			check_eq(pawn.trpg_level, 1, "defense restored the level")
+			check(callouts.is_empty(), "blocked kill produced no level up cue")
+		else:
+			state.commit_attack(entry)
+			state.commit_attack(entry)
+			check_eq(callouts, [pawn.entity_id], "confirmed kill presents the level once")
+	pawn.trpg_level = PlayerPawn.TRPG_MAX_LEVEL
+	state.pawn_captured.emit(pawn.entity_id, victim.entity_id)
+	check_eq(callouts, [pawn.entity_id], "at cap, no new level up is presented")
+
+
 func test_skill_geometry() -> void:
 	var pair: Array = _setup_pawn(2)
 	var state: GameState = pair[0]
