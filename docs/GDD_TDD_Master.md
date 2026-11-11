@@ -2204,7 +2204,7 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 - 원인: `_new_game`이 `_close_opening()`(= `_intro_pending=false`) 뒤 `manager.start_game()`을 부르는데, start_game 도중 phase 신호가 `_refresh_all`을 돌려 `_check_round_banner`가 오프닝이 켜지기도 전에 ROUND 배너(첫 턴 겸용)를 쐈다. 배너는 오프닝(약 4.4초) 아래에서 이미 재생돼 소개·라운드·턴이 겹쳤다.
 - 수정: `_close_opening()` 직후 `_intro_pending = true`, `_check_round_banner`·`_check_turn_banner`에 `_intro_blocks()` 가드 (오프닝이 끝나면 `_on_opening_finished`가 다시 그린다). 실측: 소개 0~4.4초 → ROUND 1 배너 4.4~7.0초.
 
-### 7.81 보드판 선택 (v1.2 준비, `next/boards`)
+### 7.81 보드판 선택 (v1.1)
 - **데이터**: `BoardSpec.layout_for(칸 수)`(전역 값을 바꾸지 않는 순수 조회: 코너·반환점·빵집·옷장·워프·부스터 발판)와 `apply`. `BoardCatalog.BOARDS` = [{id, name, desc, tiles}] (지금 `classic` 32칸 하나), `sanitize`·`def_of`·`facts_of`(선택 화면·도감용 요약)·`apply`/`apply_for_match`.
 - **규칙**: `MatchRules` `board` 키(기본 `classic`, `sanitize`가 모르는 id를 기본으로, 기본이 아닌 보드만 규칙 요약에 표시). `GameState.setup`이 `apply_for_match`로 적용하는데, 마지막으로 목록에서 적용한 보드(`BoardCatalog.current_id`)와 같으면 건드리지 않는다 (단위 테스트가 `BoardSpec.apply(24)`로 직접 정한 배치를 덮지 않게). 온라인은 방장 규칙(`config["rules"]`)에 실려 모두 같은 보드를 쓴다 (락스텝).
 - **저장·선택**: `GameSession.board_id()/set_board()`는 방 규칙 override(`RULE_KEYS`)와 따로 프로필 `board`에 저장한다 (컴퓨터 대전은 override를 무시하지만 보드는 적용해야 해서). `match_rules()`·`room_rules()`가 그 값을 실어 보낸다. [기본값으로]는 보드도 기본으로.
@@ -2212,7 +2212,7 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 - **새 보드 추가 방법**: `BoardCatalog.BOARDS`에 항목, 24·32칸이 아니면 `BoardSpec.layout_for`에 배치 추가, 이름·설명 번역 행(translations.csv). 칸 그림·특수 칸 연출이 `BoardSpec` 값을 따르는지 새 보드마다 확인 필요 (이번에는 보드가 하나라 검증하지 않았다).
 - 테스트: test_match_rules(카탈로그·layout_for·규칙·저장). 
 
-### 7.82 신규 보드 [모나티엄 도시] (v1.2 준비, `next/boards`)
+### 7.82 신규 보드 [모나티엄 도시] (v1.1)
 - 보드 이름: 기본은 [에르핀 왕국](`classic`), 신규는 [모나티엄 도시](`monatium`). 둘 다 32칸·같은 칸 번호이고 `BoardCatalog.BOARDS`의 `convenience` 값이 다르다.
 - **편의점**: 빵집 자리(5·13·19·30번)를 이름·그림만 바꾼 것. 규칙·식권(LAW_02) 집계·모노 도그 등 번호 의존 규칙은 그대로.
 - **자판기**: 옷장 자리(12·22번)에 서고 옷장·워프·비행기 워프는 없다(`BoardSpec.vending_tiles`, `portal_tiles`는 빈 배열). 일반 함정 설치 불가(`is_special_tile`). 딱 멈추면(`MoveExecutor._resolve_landing`, 주 이동만) `VendingDrinks.pick`(`GameState.rng`)이 5종을 같은 확률로 뽑는다: 에너지 드링크(`corner_buff` 3, 다음 굴림에 더해지고 쓰이면 사라짐) · 아메리카노(2) · 탄산음료(`make_follow_up(2)` 즉시 +2칸, 부스터 발판과 같은 흐름) · 이온음료(`pawn.ward`: 잡기·함정 1회 방어, 쓰기 전까지 유지) · 우유(`draw_card`). 지나가기만 하면 아무 일도 없다. `MoveReport.vending_drink`로 화면이 로그와 말 위 배지를 띄운다(`_vending_feedback`).

@@ -1,6 +1,84 @@
 {
  "entries": [
   {
+   "id": "1.1",
+   "date": "",
+   "title": {
+    "ko": "1.1 업데이트",
+    "en": "Update 1.1",
+    "ja": "1.1アップデート"
+   },
+   "sections": [
+    {
+     "head": {
+      "ko": "신규 추가",
+      "en": "New",
+      "ja": "新要素"
+     },
+     "items": [
+      {
+       "ko": "새 보드판 [모나티엄 도시]: 판 선택에서 고를 수 있어요. 빵집은 편의점으로, 옷장은 자판기로 바뀌고 뽑은 음료에 따라 랜덤 버프를 받아요 (기본 보드는 [에르핀 왕국])",
+       "en": "New board [Monatium City]: pick it on the board select screen. Bakeries become convenience stores, wardrobes become vending machines, and the drink you get grants a random buff (the default board is now [Erpin Kingdom])",
+       "ja": "新ボード[モナティウム市]：ボード選択で選べます。パン屋はコンビニ、衣装棚は自販機になり、出た飲み物でランダムなバフを得ます（基本ボードは[エルピン王国]）"
+      },
+      {
+       "ko": "신규 특수 승리 [와라! 모나티엄 25]: 편의점에 6회 방문하면 승리해요 (승리 문구 MONATIUM DAYS)",
+       "en": "New special victory [Come! Monatium 25]: visit convenience stores 6 times to win (victory text: MONATIUM DAYS)",
+       "ja": "新特殊勝利[来い！モナティウム25]：コンビニに6回訪れると勝利（勝利文言 MONATIUM DAYS）"
+      },
+      {
+       "ko": "TRPG 기물 4종 추가: 전사·마법사·궁수·도적. 처치하면 레벨이 올라 곧바로 추가 전진하고, 각자 필살기가 있어요",
+       "en": "4 new TRPG pawns: Warrior, Mage, Archer, Rogue. A kill levels them up for an instant extra advance, and each has its own skill",
+       "ja": "TRPGの駒4種追加：戦士・魔法使い・弓使い・盗賊。倒すとレベルアップしてすぐ追加前進し、それぞれ必殺技があります"
+      },
+      {
+       "ko": "신규 카드 6종: 펭짱 8호, 황금장방형 팽이, 목둔: 사탕수수밭, 비상 식량, 긴급 엄폐, 전문적 해킹",
+       "en": "6 new cards: Pengjjang No. 8, Golden Rectangle Top, Wood Release: Sugarcane Field, Emergency Rations, Emergency Cover, Professional Hacking",
+       "ja": "新カード6種：ペンちゃん8号、黄金長方形のコマ、木遁：サトウキビ畑、非常食、緊急遮蔽、プロのハッキング"
+      },
+      {
+       "ko": "신규 판정 도구 2종: 오미쿠지 뽑기통(대길은 한 번 더, 대흉은 턴 종료), 아이스크림(막대에 드러난 칸만큼 전진, 한번 더!면 리필)",
+       "en": "2 new judgment tools: Omikuji Shaker (Great Blessing = extra roll, Worst = turn ends) and Ice Cream Bar (advance by the spaces on the stick; One More! refills)",
+       "ja": "新判定ツール2種：おみくじ筒（大吉でもう1回、大凶で番終了）、アイスバー（棒に出たマスだけ前進、もう1回！で補充）"
+      }
+     ]
+    },
+    {
+     "head": {
+      "ko": "변경점",
+      "en": "Changes",
+      "ja": "変更点"
+     },
+     "items": [
+      {
+       "ko": "윷은 윷·모가 나오면 눈금을 쌓으며 계속 던지고, 도·개·걸이 나오면 끝나 쌓은 눈금마다 말을 골라 이동해요. 낙이 나오면 바로 턴이 끝나요",
+       "en": "Yut now stacks values on Yut/Mo and keeps throwing; Do/Gae/Geol ends it, then you move a pawn for each stacked value. Nak ends the turn immediately",
+       "ja": "ユッはユッ・モが出ると目を溜めて投げ続け、ド・ゲ・ゴルで終了、溜めた目ごとに駒を選んで移動します。落が出たら即番終了"
+      }
+     ]
+    },
+    {
+     "head": {
+      "ko": "버그 수정",
+      "en": "Bug Fixes",
+      "ja": "バグ修正"
+     },
+     "items": [
+      {
+       "ko": "판정 결과가 왼쪽에 뜨던 문제를 고쳤어요 (한 번 더가 나온 턴에만 표시)",
+       "en": "Fixed roll results appearing on the left (now shown only on extra-roll turns)",
+       "ja": "判定結果が左に出る問題を修正（もう1回の番のみ表示）"
+      },
+      {
+       "ko": "게임 시작 때 소개·라운드 시작·첫 턴 알림이 한꺼번에 나오던 문제를 고쳤어요",
+       "en": "Fixed the intro, round start and first-turn banners all appearing at once when a game starts",
+       "ja": "ゲーム開始時に紹介・ラウンド開始・最初の番の通知が一度に出る問題を修正"
+      }
+     ]
+    }
+   ]
+  },
+  {
    "id": "1.0.1",
    "date": "",
    "title": {
