@@ -55,7 +55,31 @@ static func all() -> Array[AugmentDef]:
 			utility.min_round = 2
 			_cache.append(utility)
 		_apply_table(_cache)
+		apply_board_variants(_cache)
 	return _cache
+
+
+## 모나티엄 도시 보드의 바꿔 쓰는 특수 승리(와라! 모나티엄 25 = 편의점 방문 식권): 선택 카드의 이름·설명을 이 판의 보드에 맞춘다.
+## BoardCatalog.apply가 보드를 바꿀 때 다시 부르고, 표를 새로 입힐 때(all)에도 자동으로 입는다. 보드가 에르핀 왕국이면 표의 원래 문구로 되돌린다.
+const VARIANT_TITLES: Dictionary = {"ko": "[특수 승리] 와라! 모나티엄 25", "en": "[Special Win] Wara! Monatium 25", "ja": "[特殊勝利] ワラ！モナティウム25"}
+const VARIANT_SHOP_WORDS: Dictionary = {"ko": ["빵집", "편의점"], "en": ["bakery", "convenience store"], "ja": ["パン屋", "コンビニ"]}
+
+
+static func apply_board_variants(defs: Array[AugmentDef] = []) -> void:
+	var list: Array[AugmentDef] = defs if not defs.is_empty() else _cache
+	var rows: Dictionary = GameData.table("augments")
+	var lang: String = L10n.current_lang if VARIANT_TITLES.has(L10n.current_lang) else "ko"
+	for def: AugmentDef in list:
+		var law_id: String = str(def.payload)
+		if def.category != GameEnums.AugmentCategory.LAW_ENACT or not VictoryLaw.MONATIUM_DEFS.has(law_id) or not rows.has(str(def.augment_id)):
+			continue
+		def.apply_row(rows[str(def.augment_id)])  # 표의 원래 문구에서 다시 시작 (보드가 바뀌어도 겹쳐 바뀌지 않는다)
+		def.display_name = "특수 승리: %s" % VictoryLaw.name_of(law_id)
+		if VictoryLaw.variant_active(law_id):
+			var words: Array = VARIANT_SHOP_WORDS[lang]
+			def.title = str(VARIANT_TITLES[lang])
+			def.desc = def.desc.replace(str(words[0]), str(words[1]))
+			def.spec_preview = def.spec_preview.replace(str(words[0]), str(words[1]))
 
 
 ## 캐시를 비워 다음 all()에서 augments_table.csv(와 override_table로 주입한 행)를 다시 입힌다.

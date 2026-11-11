@@ -11,6 +11,13 @@ var _distance_to_goal: Array[int] = []
 var _undirected: Array[Array] = []
 
 func _init() -> void:
+	rebuild()
+
+
+## 현재 BoardSpec(칸 수·특수 칸)대로 그래프를 처음부터 다시 만든다 (판을 시작할 때 고른 보드가 바뀌었을 수 있다).
+func rebuild() -> void:
+	_distance_to_goal.clear()
+	_undirected.clear()
 	_init_24_tiles()
 	_build_distance_table()
 	_build_undirected()
@@ -28,6 +35,8 @@ func _init_24_tiles() -> void:
 		tiles[index].tile_type = TileNode.TileType.BAKERY
 	for index: int in BoardSpec.portal_tiles:
 		tiles[index].tile_type = TileNode.TileType.PORTAL
+	for index: int in BoardSpec.vending_tiles:
+		tiles[index].tile_type = TileNode.TileType.VENDING
 
 
 ## 모든 타일이 유효한 next_default를 갖고, 모든 간선이 보드 범위(BoardSpec.tile_count) 안에 있는지 검사한다.

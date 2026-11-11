@@ -1352,7 +1352,12 @@ func _ch_board() -> Dictionary:
 		board.custom_minimum_size = Vector2(440, 440)
 		board.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		return board
-	return {"title": "보드", "entries": [
+	var board_entries: Array = []
+	for board: Dictionary in BoardCatalog.BOARDS:  # 고를 수 있는 보드판마다 한 장 (칸 수·특수 칸 요약은 판 밖에서도 BoardSpec.layout_for로 센다)
+		board_entries.append({"title": str(board["name"]), "art": &"board", "tone": Color("5fc1e8"), "chips": ["%d칸" % int(board["tiles"])],
+			"summary": str(board["desc"]), "rows": BoardCatalog.facts_of(board["id"]),
+			"points": ["컴퓨터 대전 시작 화면과 [방 규칙 설정]에서 고를 수 있어요", "판을 시작하면 모두 같은 보드판을 써요"]})
+	var entries: Array = [
 		{"title": "한눈에 보기", "art": &"board", "tone": Color("86d94f"), "chips": ["%d칸" % BoardSpec.tile_count, "반시계"],
 			"summary": "우하단 0번에서 출발해 반시계로 한 바퀴. 다시 0번이 [b]결승선[/b]이에요.", "extra": make_board,
 			"points": ["옷장과 부스터 발판은 [b]딱 멈출 때만[/b] 작동해요", "오른쪽 칸 이름을 누르면 자세히 볼 수 있어요"]},
@@ -1361,17 +1366,40 @@ func _ch_board() -> Dictionary:
 			"points": ["[b]코너 전용 함정[/b]만 설치할 수 있는 칸이에요", "무인도·우이의 소원빌기", "지나가는 상인·물의 세례를 받아라"]},
 		{"title": "반환점", "art": &"halfway", "tone": Color("c98a14"), "chips": ["%d번" % BoardSpec.halfway_tile],
 			"summary": "여기를 지나면 체스 폰은 [b]퀸[/b]으로, 쇼기 말은 [b]승급[/b]해요."},
-		{"title": "빵집", "art": &"bread", "tone": Color("d9822b"), "chips": [_join_tiles(BoardSpec.bakery_tiles) + "번"],
+		{"title": "빵집 (에르핀 왕국)", "art": &"bread", "tone": Color("d9822b"), "chips": [_join_tiles(_classic_layout()["bakery_tiles"]) + "번"],
 			"summary": "딱 멈추면 [b]생떼 카드 1장[/b]! 어떤 카드인지는 본인만 알아요."},
-		{"title": "옷장", "art": &"wardrobe", "tone": Color("2f9aa3"), "chips": [_join_tiles(BoardSpec.portal_tiles) + "번"],
+		{"title": "옷장 (에르핀 왕국)", "art": &"wardrobe", "tone": Color("2f9aa3"), "chips": [_join_tiles(_classic_layout()["portal_tiles"]) + "번"],
 			"summary": "딱 멈추면 [b]순간이동[/b]! 두 옷장은 [b]왕복[/b]이라 밟은 쪽의 반대편으로 가요. 지나가기만 하면 아무 일도 없어요.",
 			"rows": _warp_rows()},
+		{"title": "편의점 (모나티엄 도시)", "art": &"store", "tone": Color("3f86b8"), "chips": [_join_tiles(_monatium_layout()["bakery_tiles"]) + "번"],
+			"summary": "에르핀 왕국의 빵집 자리예요. 딱 멈추면 [b]생떼 카드 1장[/b]! 어떤 카드인지는 본인만 알아요."},
+		{"title": "자판기 (모나티엄 도시)", "art": &"vending", "tone": Color("c4574a"), "chips": [_join_tiles(_monatium_layout()["vending_tiles"]) + "번"],
+			"summary": "옷장 자리에 서요. 딱 멈추면 [b]음료수가 랜덤으로 한 캔[/b] 나와요. 지나가기만 하면 아무 일도 없고, 순간이동은 없어요.",
+			"rows": _drink_rows()},
 		{"title": "부스터 발판", "art": &"boost", "tone": Color("2fb59a"), "chips": [_join_tiles(BoardSpec.dash_tiles) + "번"],
 			"summary": "딱 멈추면 [b]+3칸[/b] 더 날아가요."},
 		{"title": "함정 칸", "texture": TextureCache.fetch("res://assets/board/traps/HIDDEN.png"), "tone": Color("7a5cd6"), "chips": ["한 칸에 하나"],
 			"summary": "함정이 깔린 칸은 [b]보라색[/b]으로 바뀌고 그 함정 그림이 보여요.",
 			"points": ["상대가 숨긴 함정은 물음표로 보여요", "코너 함정은 누구에게나 공개 · 3라운드 · 1회용", "코너·빵집·옷장·부스터 발판에는 일반 함정을 깔 수 없어요"]},
-	]}
+	]
+	for index: int in board_entries.size():  # 한눈에 보기 다음에 보드판 소개
+		entries.insert(1 + index, board_entries[index])
+	return {"title": "보드", "entries": entries}
+
+
+func _classic_layout() -> Dictionary:
+	return BoardSpec.layout_for(BoardSpec.DEFAULT_TILE_COUNT, false)
+
+
+func _monatium_layout() -> Dictionary:
+	return BoardSpec.layout_for(BoardSpec.DEFAULT_TILE_COUNT, true)
+
+
+func _drink_rows() -> Array:
+	var rows: Array = []
+	for drink: Dictionary in VendingDrinks.DRINKS:
+		rows.append([str(drink["name"]), str(drink["text"])])
+	return rows
 
 
 func _warp_rows() -> Array:
@@ -1701,6 +1729,9 @@ class MiniBoard extends Control:
 			elif BoardSpec.portal_tiles.has(index):
 				fill = Color("c8eef0")
 				edge = Color("2f9aa3")
+			elif BoardSpec.vending_tiles.has(index):
+				fill = Color("ffd0c8")
+				edge = Color("c4574a")
 			elif BoardSpec.dash_tiles.has(index):
 				fill = Color("ffd3e2")
 				edge = Color("d9577f")
@@ -1723,7 +1754,7 @@ class MiniBoard extends Control:
 			var width: float = font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, label_size).x
 			draw_string(font, center + Vector2(-width / 2.0, label_size * 0.36), label, HORIZONTAL_ALIGNMENT_LEFT, -1, label_size, Color("3a2f1f"))
 		# 안쪽 범례
-		var legend: Array = [[Color("86d94f"), "출발 · 결승"], [Color("b6ea8c"), "코너 (코너 전용 함정)"], [Color("ffe48a"), "반환점 (승급 기준)"], [Color("ffd98a"), "빵집 (카드 1장)"], [Color("c8eef0"), "옷장 (%s)" % _warp_text(BoardSpec.portal_warp_targets)], [Color("ffd3e2"), "부스터 발판 (%s번, 딱 멈추면 +%d칸)" % [_join_dash(BoardSpec.dash_tiles), GameEnums.DASH_STEPS]]]
+		var legend: Array = [[Color("86d94f"), "출발 · 결승"], [Color("b6ea8c"), "코너 (코너 전용 함정)"], [Color("ffe48a"), "반환점 (승급 기준)"], [Color("ffd98a"), "편의점 (카드 1장)" if BoardSpec.convenience else "빵집 (카드 1장)"], (([Color("ffd0c8"), "자판기 (랜덤 음료 버프)"]) if BoardSpec.convenience else ([Color("c8eef0"), "옷장 (%s)" % _warp_text(BoardSpec.portal_warp_targets)])), [Color("ffd3e2"), "부스터 발판 (%s번, 딱 멈추면 +%d칸)" % [_join_dash(BoardSpec.dash_tiles), GameEnums.DASH_STEPS]]]
 		var origin := Vector2(92, 118)
 		for index: int in legend.size():
 			var spot: Vector2 = origin + Vector2(0, index * 30.0)

@@ -2739,6 +2739,39 @@ PROGRESS / 진행률,PROGRESS,PROGRESS／進行度
 조건 달성 후 다음 내 차례가 끝날 때까지 유지하면 특수 승리! 교칙은 사라져요,"Meet the condition, then keep it until the end of your next turn for a Special Win! The Rule then disappears",条件達成後、次の自分のターン終了まで維持すれば特殊勝利！教則は消えます
 내 차례가 끝날 때 조건을 달성해 있으면 특수 승리! 교칙은 사라져요,"If the condition is met when your turn ends, Special Win! The Rule then disappears",自分のターン終了時に条件を達成していれば特殊勝利！教則は消えます
 리벤지,Revenge,リベンジ
+보드판,Board,ボード
+기본 보드,Classic Board,基本ボード
+32칸 사각 순환 트랙 · 반시계 한 바퀴,32-tile square loop · one lap counter-clockwise,32マスの四角い周回トラック・反時計回りに一周
+칸 수,Tiles,マス数
+%d칸 (한 변 %d칸),%d tiles (%d per side),%dマス (1辺%dマス)
+%d곳,%d,%dか所
+판을 시작하면 모두 같은 보드판을 씁니다. 보드마다 칸 수와 특수 칸(빵집·옷장·부스터 발판) 배치가 달라요.,"Everyone plays on the same board once the game starts. Boards differ in tile count and special tile layout (Bakery, Wardrobe, Booster Pad).",ゲーム開始後は全員が同じボードで遊びます。ボードごとにマス数と特殊マス(パン屋・クローゼット・ブースター足場)の配置が違います。
+컴퓨터 대전 시작 화면과 [방 규칙 설정]에서 고를 수 있어요,Pick it on the CPU game start screen or in [Room Rules],CPU対戦の開始画面と[ルーム設定]で選べます
+판을 시작하면 모두 같은 보드판을 써요,Everyone uses the same board once the game starts,ゲーム開始後は全員が同じボードを使います
+에르핀 왕국,Erpin Kingdom,エルピン王国
+모나티엄 도시,Monatium City,モナティウム市
+32칸 사각 순환 트랙 · 빵집(카드)과 옷장(순간이동),32-tile square loop · Bakeries (cards) and Wardrobes (teleport),32マスの四角い周回トラック・パン屋（カード）とクローゼット（ワープ）
+32칸 사각 순환 트랙 · 편의점(카드)과 자판기(랜덤 음료 버프),32-tile square loop · Convenience stores (cards) and Vending machines (random drink buffs),32マスの四角い周回トラック・コンビニ（カード）と自動販売機（ランダムドリンクバフ）
+편의점,Convenience Store,コンビニ
+자판기,Vending Machine,自動販売機
+빵집 (에르핀 왕국),Bakery (Erpin Kingdom),パン屋（エルピン王国）
+옷장 (에르핀 왕국),Wardrobe (Erpin Kingdom),クローゼット（エルピン王国）
+편의점 (모나티엄 도시),Convenience Store (City),コンビニ（モナティウム市）
+자판기 (모나티엄 도시),Vending Machine (City),自動販売機（モナティウム市）
+편의점 (카드 1장),Convenience store (1 card),コンビニ（カード1枚）
+자판기 (랜덤 음료 버프),Vending machine (random drink buff),自動販売機（ランダムドリンクバフ）
+에르핀 왕국의 빵집 자리예요. 딱 멈추면 [b]생떼 카드 1장[/b]! 어떤 카드인지는 본인만 알아요.,This is where the Bakery sits in Erpin Kingdom. Stop exactly here to get [b]1 Tantrum Card[/b]! Only you know which one.,エルピン王国のパン屋の場所です。ぴったり止まると[b]駄々っ子カード1枚[/b]！どのカードかは本人だけが分かります。
+"옷장 자리에 서요. 딱 멈추면 [b]음료수가 랜덤으로 한 캔[/b] 나와요. 지나가기만 하면 아무 일도 없고, 순간이동은 없어요.","It stands where the Wardrobes were. Stop exactly here and [b]a random can of drink[/b] drops out. Passing by does nothing, and there is no teleport.",クローゼットの場所に立っています。ぴったり止まると[b]ランダムなドリンクが1本[/b]出ます。通過するだけでは何も起きず、ワープもありません。
+[자판기] P%d: %s! %s,[Vending] P%d: %s! %s,[自販機] P%d：%s！%s
+에너지 드링크,Energy Drink,エナジードリンク
+다음 굴림 +3칸,Next roll +3,次のロール +3マス
+아메리카노,Americano,アメリカーノ
+다음 굴림 +2칸,Next roll +2,次のロール +2マス
+탄산음료,Soda,炭酸飲料
+지금 바로 +2칸 전진,Advance +2 right now,今すぐ +2マス前進
+이온음료,Sports Drink,スポーツドリンク
+우유,Milk,牛乳
+생떼 카드 1장,1 Tantrum Card,駄々っ子カード1枚
 공지,Notice,お知らせ
 보기,View,見る
 접기,Hide,閉じる
@@ -2791,3 +2824,9 @@ TRPG:도적,TRPG:Rogue,TRPG:盗賊
 1칸 전진하며 그 칸의 적 처치,Advance 1 tile and defeat enemies there,1マス前進してそのマスの敵を倒す
 가장 뒤에 있는 적의 말 처치,Defeat the rearmost enemy pawn,最後尾の敵の駒を倒す
 TRPG,TRPG,TRPG
+[특수 승리] 와라! 모나티엄 25,[Special Victory] Wara! Monatium 25,[特殊勝利] ワラ！モナティウム25
+와라! 모나티엄 25,Wara! Monatium 25,ワラ！モナティウム25
+편의점에 {p1}회 방문,Visit a convenience store {p1} times,コンビニに{p1}回訪問
+편의점 %d회 방문 · 와라! 모나티엄 25 완성!,Visited the convenience store %d times · Wara! Monatium 25 complete!,コンビニに%d回訪問・ワラ！モナティウム25完成！
+편의점 방문! (%d/%d),Convenience store visit! (%d/%d),コンビニ訪問！(%d/%d)
+[편의점 목표],[Store Goal],[コンビニ目標]

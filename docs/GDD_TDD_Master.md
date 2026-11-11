@@ -2204,6 +2204,30 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 - 원인: `_new_game`이 `_close_opening()`(= `_intro_pending=false`) 뒤 `manager.start_game()`을 부르는데, start_game 도중 phase 신호가 `_refresh_all`을 돌려 `_check_round_banner`가 오프닝이 켜지기도 전에 ROUND 배너(첫 턴 겸용)를 쐈다. 배너는 오프닝(약 4.4초) 아래에서 이미 재생돼 소개·라운드·턴이 겹쳤다.
 - 수정: `_close_opening()` 직후 `_intro_pending = true`, `_check_round_banner`·`_check_turn_banner`에 `_intro_blocks()` 가드 (오프닝이 끝나면 `_on_opening_finished`가 다시 그린다). 실측: 소개 0~4.4초 → ROUND 1 배너 4.4~7.0초.
 
+### 7.81 보드판 선택 (v1.2 준비, `next/boards`)
+- **데이터**: `BoardSpec.layout_for(칸 수)`(전역 값을 바꾸지 않는 순수 조회: 코너·반환점·빵집·옷장·워프·부스터 발판)와 `apply`. `BoardCatalog.BOARDS` = [{id, name, desc, tiles}] (지금 `classic` 32칸 하나), `sanitize`·`def_of`·`facts_of`(선택 화면·도감용 요약)·`apply`/`apply_for_match`.
+- **규칙**: `MatchRules` `board` 키(기본 `classic`, `sanitize`가 모르는 id를 기본으로, 기본이 아닌 보드만 규칙 요약에 표시). `GameState.setup`이 `apply_for_match`로 적용하는데, 마지막으로 목록에서 적용한 보드(`BoardCatalog.current_id`)와 같으면 건드리지 않는다 (단위 테스트가 `BoardSpec.apply(24)`로 직접 정한 배치를 덮지 않게). 온라인은 방장 규칙(`config["rules"]`)에 실려 모두 같은 보드를 쓴다 (락스텝).
+- **저장·선택**: `GameSession.board_id()/set_board()`는 방 규칙 override(`RULE_KEYS`)와 따로 프로필 `board`에 저장한다 (컴퓨터 대전은 override를 무시하지만 보드는 적용해야 해서). `match_rules()`·`room_rules()`가 그 값을 실어 보낸다. [기본값으로]는 보드도 기본으로.
+- **화면**: 컴퓨터 대전 시작 화면 `BoardPanel`(토글 버튼, `StartMenu._build_board_picker`), `RoomRulesPanel.board_row()`(친선·핫시트), 도감 보드 장 한눈에 보기 다음에 보드마다 한 장(`Rulebook._ch_board`).
+- **새 보드 추가 방법**: `BoardCatalog.BOARDS`에 항목, 24·32칸이 아니면 `BoardSpec.layout_for`에 배치 추가, 이름·설명 번역 행(translations.csv). 칸 그림·특수 칸 연출이 `BoardSpec` 값을 따르는지 새 보드마다 확인 필요 (이번에는 보드가 하나라 검증하지 않았다).
+- 테스트: test_match_rules(카탈로그·layout_for·규칙·저장). 
+
+### 7.82 신규 보드 [모나티엄 도시] (v1.2 준비, `next/boards`)
+- 보드 이름: 기본은 [에르핀 왕국](`classic`), 신규는 [모나티엄 도시](`monatium`). 둘 다 32칸·같은 칸 번호이고 `BoardCatalog.BOARDS`의 `convenience` 값이 다르다.
+- **편의점**: 빵집 자리(5·13·19·30번)를 이름·그림만 바꾼 것. 규칙·식권(LAW_02) 집계·모노 도그 등 번호 의존 규칙은 그대로.
+- **자판기**: 옷장 자리(12·22번)에 서고 옷장·워프·비행기 워프는 없다(`BoardSpec.vending_tiles`, `portal_tiles`는 빈 배열). 일반 함정 설치 불가(`is_special_tile`). 딱 멈추면(`MoveExecutor._resolve_landing`, 주 이동만) `VendingDrinks.pick`(`GameState.rng`)이 5종을 같은 확률로 뽑는다: 에너지 드링크(`corner_buff` 3, 다음 굴림에 더해지고 쓰이면 사라짐) · 아메리카노(2) · 탄산음료(`make_follow_up(2)` 즉시 +2칸, 부스터 발판과 같은 흐름) · 이온음료(`pawn.ward`: 잡기·함정 1회 방어, 쓰기 전까지 유지) · 우유(`draw_card`). 지나가기만 하면 아무 일도 없다. `MoveReport.vending_drink`로 화면이 로그와 말 위 배지를 띄운다(`_vending_feedback`).
+- **지속 시간**: 처음 설명에서는 [내 다음 턴 끝까지]였으나 기존 부품을 재사용하느라 다음 굴림(에너지·아메리카노)과 방어 1회(이온음료)로 구현했다. 시간 기반이 필요하면 별도 만료 필드가 필요하다.
+- **화면**: `BoardSkin`의 `store`(하늘색 띠)·`vending`(분홍 띠) 종류와 새 타일 그림 `BOARD_STORE.png`·`BOARD_VENDING.png`(마스크 PNG, 코드로 생성한 임시 그림이라 아트 교체 가능), 도감은 에르핀 왕국 항목(빵집·옷장)과 모나티엄 도시 항목(편의점·자판기+음료 목록)을 따로 보여 준다.
+- 테스트: `test_vending`(배치 교체·음료 5종 효과·지나가기·편의점 카드).
+
+### 7.83 보드별 스킨 틀
+- `BoardSkin.PALETTE_DEFAULT`(에르핀 왕국)·`PALETTE_CITY`(모나티엄 도시): 타일 바닥·테두리·글자·띠 색, 코너·반환점 색, 그림자, 부스터 발판 4색(바닥·안쪽·펄스·테두리). `palette()`가 `BoardSpec.convenience`로 고른다. 새 보드는 팔레트 상수를 더하고 `palette()`/`surface_texture()`의 분기를 늘리면 된다.
+- 판 바닥 그림은 `surface_texture()`(`board_surface.png`, 1254px)이고 `_new_game`이 보드 적용 뒤 두 바닥 메시(`_board_surface`·`_flat_board_surface`)의 텍스처를 바꾼다. 도시 바닥은 임시로 코드로 그린 그림이라 같은 이름 파일을 교체하면 된다.
+- 수정: `GameState.setup`이 고른 보드를 적용한 뒤 `BoardGraph.rebuild()`를 부른다 (그래프는 GameState 생성 때 만들어져 자판기·편의점 같은 칸 종류가 빠져 있었다).
+
+### 7.84 자판기 뽑기 연출
+- `_vending_feedback`(로그 + 연출 예약) → `_play_vending_pull(tile, drink)`: 일기토 룰렛 창(`DuelArena.SIZE` 560x360, 금테 어두운 패널, 화면 크기에 맞춰 축소)이 화면 가운데에 0.22초 페이드·팝인 → 0.4초에 캔(음료 색, `VENDING_CAN_COLORS`)이 자판기 안에 나타나 0.5초 바운스로 배출구에 떨어짐 → 1.05초에 캔을 오른쪽 위로 꺼내 듦 → 1.3초 음료 이름(40px)·1.6초 버프 문구(26px) → 2.3초부터 창이 사라지며 버프 배지(`_floating_badge`)가 말 위로. 전체 약 2.5초 × 배속, `_fx_until_msec`로 다음 연출·봇이 기다린다 (입력은 막지 않는 `MOUSE_FILTER_IGNORE`). 일회성 노드는 `_mark_oneshot`으로 청소된다. 결과(음료)는 엔진이 이미 정했고 연출은 보여 주기만 한다.
+
 ### 7.85 공지사항 목록(아코디언)
 - `UpdateNotes.open`: 항목(`entries()`)마다 한 줄 `NotesRow<n>`(버튼: `공지` 태그 · 제목+날짜 · `▼ [보기]`/`▲ [접기]`)과 그 아래 본문 `NotesBody<n>`(연한 패널, 섹션은 한 덩어리 간격 8, 덩어리 사이 16, 항목 16px·줄 간격 4)을 `make_row`가 만든다. 줄을 누르면 `toggle_row`가 그 줄만 펼치고 나머지는 접으며, 펼친 줄을 다시 누르면 접힌다. 가장 새 소식은 처음부터 펼쳐 둔다. 새 소식 id·[N] 표시는 그대로. 테스트 `test_popup_lists_versions_as_rows_and_expands_one_at_a_time`.
 
@@ -2220,3 +2244,9 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 - 밸런스 주의: 템포 업은 첫 던지기에만 붙고(기존), 윷·모를 연달아 쌓아도 이동은 눈금마다 말을 골라 나눠 쓸 수 있게 되어 한 말에 몰아 쓰는 것보다 선택지가 늘었다. 윷 1위율은 별도로 다시 재 볼 필요가 있다.
 
 - 도구 설명(눈금표) 문구는 증강 카드·도감 칸에 맞게 짧게 유지한다: 윷 `... 낙(0칸+턴 종료·쌓은 윷 소멸) ... 모(5칸+한번더) · 윷·모는 쌓아 두었다가 눈금마다 이동` (CI의 text fit scan이 긴 문구를 잘림으로 잡았다. dice_table/augments_table은 따옴표 없는 CSV라 문구에 쉼표를 넣지 않는다).
+### 7.86 와라! 모나티엄 25 (식권의 모나티엄 버전)
+- 방식: 새 교칙 ID를 만들지 않고 LAW_02 자리를 보드로 바꿔 쓴다 (`VictoryLaw.MONATIUM_DEFS`, `variant_active`, `name_of`, `condition_template` — `BoardSpec.convenience`일 때). 그래서 기록 키(`bakery`: 편의점 방문도 같은 기록)·목표(6회)·이의 있음 초기화·법전 수집 도장(PlayerSave)·기록 코드 비트·텔레메트리 사유가 그대로다.
+- 이름: 에르핀 왕국 [봉인된 에르핀의 식권] "빵집에 6회 방문" / 모나티엄 도시 [와라! 모나티엄 25] "편의점에 6회 방문".
+- 선택 카드: `AugmentRegistry.apply_board_variants`가 표에서 다시 입힌 뒤 AUG_LAW_02의 이름·설명을 언어별로 바꾼다 (`BoardCatalog.apply`와 표 로드 때 자동).
+- 승리 연출: `LawVictoryTheme.MONATIUM_THEMES/PAPERS/COMIC_TITLES`(제목 `MONATIUM DAYS` 2줄, 파랑 팔레트, 글꼴 bungee). `of/paper/comic_title`이 보드로 고르고 `geometry_id`(`LAW_02:M`)로 글자 윤곽 데이터를 원래 제목 것과 섞지 않는다. 컷신의 황금 티켓 무대 그림은 에르핀 빵집 티켓 그대로다 (그림 교체 필요).
+- 보드 위: 법전 대상 칸 표시 [식권 목표] → [편의점 목표], 스탬프 알림 [편의점 방문! (n/6)], 결과 문구·달성 사유 문구. 번역(ko/en/ja) 추가, 테스트 `test_monatium_swaps_the_bakery_law_into_wara_monatium_25`.

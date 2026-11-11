@@ -24,6 +24,8 @@ const SOURCES := {
 	&"halfway": preload("res://assets/board/decals/BOARD_HALF.png"),
 	&"bread": preload("res://assets/board/decals/BOARD_BAKERY.png"),
 	&"wardrobe": preload("res://assets/board/decals/BOARD_PORTAL.png"),
+	&"store": preload("res://assets/board/decals/BOARD_STORE.png"),
+	&"vending": preload("res://assets/board/decals/BOARD_VENDING.png"),
 	&"boost": preload("res://assets/board/decals/BOARD_BOOST.png"),
 	&"pawn_basics": preload("res://content_trickcal/illustrations/pawns/PAWN_DEFAULT.png"),
 }
@@ -50,6 +52,8 @@ const REGIONS := {
 	&"halfway": Rect2(360.0/1254,244.0/1254,594.0/1254,783.0/1254),
 	&"bread": Rect2(193.0/1254,406.0/1254,868.0/1254,489.0/1254),
 	&"wardrobe": Rect2(294.0/1254,265.0/1254,666.0/1254,746.0/1254),
+	&"store": Rect2(170.0/1254,300.0/1254,915.0/1254,701.0/1254),
+	&"vending": Rect2(330.0/1254,230.0/1254,595.0/1254,801.0/1254),
 	&"boost": Rect2(172.0/1254,427.0/1254,915.0/1254,398.0/1254),
 	&"pawn_basics": Rect2(334.0/1254,218.0/1254,586.0/1254,854.0/1254),
 }

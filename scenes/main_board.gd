@@ -1279,6 +1279,9 @@ func _new_game() -> void:
 	manager.start_game(_player_ids, _game_seed)
 	state = manager.state
 	_report_match_start()
+	for surface: MeshInstance2D in [_board_surface, _flat_board_surface]:  # 보드마다 판 바닥 그림이 다르다 (BoardSkin.surface_texture)
+		if surface != null:
+			surface.texture = BoardSkin.surface_texture()
 	if GameSession.match_count() <= 1 and (ai_mode or net != null):
 		_show_first_match_tip()
 	var rule_summary: String = MatchRules.summary(state.match_rules)
@@ -3624,6 +3627,108 @@ func _bakery_feedback(data: Dictionary) -> void:
 		_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(180.0 * _motion_pace())))  # 배지는 혼자 떠오르므로 큐를 오래 붙잡지 않는다
 
 
+## 음료수 캔 색 (자판기 연출).
+const VENDING_CAN_COLORS: Dictionary = {
+	&"energy": Color("ffd43b"), &"coffee": Color("a9744f"), &"soda": Color("4dabf7"), &"ion": Color("63e6be"), &"milk": Color("f1f3f5"),
+}
+
+
+## 자판기에서 뽑은 음료수: 로그를 남기고 짧은 뽑기 연출(자판기 등장 → 캔 툭 → 음료 이름 → 버프 배지)을 보여 준다 (모나티엄 도시).
+func _vending_feedback(data: Dictionary) -> void:
+	var drink: StringName = data.get("vending_drink", &"")
+	if drink == &"" or not _pawn_views.has(int(data["pawn_id"])):
+		return
+	var pawn: PlayerPawn = state.get_pawn(int(data["pawn_id"]))
+	var owner_id: int = pawn.owner_id if pawn != null else manager.current_player_id()
+	_log_line("[자판기] P%d: %s! %s" % [owner_id, L10n.t(VendingDrinks.name_of(drink)), L10n.t(VendingDrinks.text_of(drink))], Color("ff8f7a"))
+	if pawn == null or not _fx_on():
+		return
+	var tile: int = pawn.current_tile_idx
+	_enqueue_late(func() -> void: _play_vending_pull(tile, drink))
+
+
+## 자판기 뽑기 연출 한 번 (약 2.5초): 일기토 룰렛 창과 같은 크기(560x360)의 창이 화면 가운데에 떠서, 자판기에서 캔이 툭 떨어지고
+## 음료 이름과 버프가 크게 보인 뒤, 버프 배지가 말 위로 올라간다. 끝날 때까지 다음 연출은 기다린다.
+func _play_vending_pull(tile: int, drink: StringName) -> void:
+	var pace: float = _motion_pace()
+	var panel := Panel.new()
+	panel.name = "VendingPullModal"
+	panel.size = Vector2(560, 360)
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.z_index = 61
+	panel.add_theme_stylebox_override("panel", _style(Color(0.063, 0.086, 0.14, 0.97), Color("ffd43b"), 5, 22, 0, 0))
+	var view: Vector2 = get_viewport_rect().size
+	var fit: float = minf(1.0, minf((view.x - 24.0) / panel.size.x, (view.y - 24.0) / panel.size.y))
+	panel.scale = Vector2.ONE * fit
+	panel.pivot_offset = panel.size / 2.0
+	panel.position = (view - panel.size) / 2.0
+	panel.modulate.a = 0.0
+	add_child(panel)
+	_mark_oneshot(panel, 2.8 * pace)
+	var can_color: Color = VENDING_CAN_COLORS.get(drink, Color.WHITE)
+	var title: Label = _make_label("자판기", 28, Color("ffd43b"))
+	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	title.position = Vector2(0, 14)
+	title.size = Vector2(panel.size.x, 40)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	panel.add_child(title)
+	var machine := Sprite2D.new()  # 자판기 그림 (타일 도안과 같은 마스크, 코랄색으로)
+	machine.texture = BoardSkin.decal_texture("vending")
+	var material := ShaderMaterial.new()
+	material.shader = BoardSkin.FLAT_INK
+	material.set_shader_parameter("ink", Color("ff8f7a"))
+	machine.material = material
+	machine.scale = Vector2.ONE * (250.0 / maxf(machine.texture.get_width(), machine.texture.get_height()))
+	machine.position = Vector2(170, 205)
+	panel.add_child(machine)
+	var can := Panel.new()  # 캔: 둥근 사각형 한 개
+	can.add_theme_stylebox_override("panel", _style(can_color, can_color.darkened(0.45), 3, 12, 0, 0))
+	can.size = Vector2(46, 76)
+	can.position = Vector2(170 - 23, 150)
+	can.modulate.a = 0.0
+	can.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	can.pivot_offset = can.size / 2.0
+	panel.add_child(can)
+	var name_label: Label = _make_label(L10n.t(VendingDrinks.name_of(drink)) + "!", 40, can_color)
+	name_label.add_theme_constant_override("outline_size", 8)
+	name_label.add_theme_color_override("font_outline_color", Color("1b1405"))
+	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.position = Vector2(310, 148)
+	name_label.size = Vector2(230, 90)
+	name_label.modulate.a = 0.0
+	panel.add_child(name_label)
+	var buff_label: Label = _make_label(L10n.t(VendingDrinks.text_of(drink)), 26, Color("fff3bf"))
+	buff_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	buff_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	buff_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	buff_label.position = Vector2(310, 248)
+	buff_label.size = Vector2(230, 70)
+	buff_label.modulate.a = 0.0
+	panel.add_child(buff_label)
+	var buff_text: String = buff_label.text
+	var badge_at: Vector2 = (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + _tile_center(tile) + Vector2(0, -46)
+	Sfx.play(&"ui_click", -4.0)
+	var tween: Tween = panel.create_tween()
+	tween.set_parallel(true)
+	var open_scale: Vector2 = panel.scale
+	panel.scale = open_scale * 0.85
+	tween.tween_property(panel, "modulate:a", 1.0, 0.22 * pace)
+	tween.tween_property(panel, "scale", open_scale, 0.28 * pace).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(can, "modulate:a", 1.0, 0.06 * pace).set_delay(0.4 * pace)  # 캔이 나온다
+	tween.tween_property(can, "position:y", 232.0, 0.5 * pace).set_delay(0.4 * pace).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+	tween.tween_property(can, "position", Vector2(425 - 23, 62), 0.3 * pace).set_delay(1.05 * pace).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)  # 꺼내 든다
+	tween.tween_property(name_label, "modulate:a", 1.0, 0.2 * pace).set_delay(1.3 * pace)
+	tween.tween_property(buff_label, "modulate:a", 1.0, 0.2 * pace).set_delay(1.6 * pace)
+	tween.tween_callback(func() -> void: Sfx.play(&"good", -4.0)).set_delay(1.3 * pace)
+	tween.tween_property(panel, "modulate:a", 0.0, 0.3 * pace).set_delay(2.3 * pace)
+	tween.chain().tween_callback(func() -> void:
+		_floating_badge(badge_at, buff_text, can_color.lightened(0.15), 26)
+		panel.queue_free())
+	_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(2400.0 * pace))
+
+
 ## 코너에 정확히 도착해 받은 버프: 그 말 위에 [다음 굴림 +N]이 떠오른다.
 func _corner_buff_feedback(data: Dictionary) -> void:
 	var buff: int = int(data.get("corner_buff", 0))
@@ -4939,7 +5044,7 @@ func _note_law_win_detail(player_id: int, law_id: String) -> void:
 static func law_win_reason(law_id: String, value: int) -> String:
 	match law_id:
 		"LAW_01": return "경기 중 총 %d회 적 기물 처치 완료!" % value
-		"LAW_02": return "빵집 %d회 방문 · 식권 스탬프 완성!" % value
+		"LAW_02": return ("편의점 %d회 방문 · 와라! 모나티엄 25 완성!" if VictoryLaw.variant_active("LAW_02") else "빵집 %d회 방문 · 식권 스탬프 완성!") % value
 		"LAW_03": return "함정·설치물 %d개 동시 유지 · 무한의 함정 완성!" % value
 		"LAW_04": return "한 턴에 %d칸 폭발 전진 성공!" % value
 		"LAW_05": return "말 %d개로 보드연성진을 완성하고 지켜 냈다!" % value
@@ -10736,7 +10841,7 @@ func result_comic_texts(winner_id: int) -> Array[String]:
 		var why: String = law_win_reason(String(reason), int(detail.get("value", 0))) if str(detail.get("law", "")) == String(reason) else ""
 		if why != "" and POPART_TITLES.has(String(reason)):
 			why = "\"달성 사유: %s\"" % why  # 팝아트 법전은 하단 배너에 따옴표 달성 사유 (괄호 대신)
-		return [str(RESULT_VICTORY_PHRASES.get(String(reason), law.law_name if law != null else String(reason))), why if why != "" else "특수 승리"]
+		return [str(RESULT_VICTORY_PHRASES.get(String(reason), law.law_name if law != null else String(reason))) if not (String(reason) == "LAW_02" and VictoryLaw.variant_active("LAW_02")) else "MONATIUM DAYS", why if why != "" else "특수 승리"]
 	if reason == VictoryChecker.ALL_HOME:
 		return ["RACE OVER", "말 4개 모두 완주"]
 	if reason == VictoryChecker.RACE_ORDER:
@@ -11875,6 +11980,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_log_move(data)
 			_start_beat(BEAT_AFTER_MOVE)
 			_bakery_feedback(data)
+			_vending_feedback(data)
 			_corner_buff_feedback(data)
 			if bool(data.get("jailed", false)) and (data.get("path", []) as Array).is_empty():
 				_announce_move_failed("무인도 탈출 실패!", manager.current_player_id(), "짝수 눈금이 나와야 탈출할 수 있습니다")

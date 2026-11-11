@@ -384,6 +384,7 @@ func _build_train_page(parent: VBoxContainer) -> void:
 	fire_panel.add_theme_stylebox_override("panel", LobbyTheme.style(Color(1, 1, 1, 0.82), LobbyTheme.BLUE, 3, 26, 0, 10))
 	fire_panel.add_child(_fire_picker)
 	_train_page.add_child(fire_panel)
+	_train_page.add_child(_build_board_picker())
 	# AI 대전은 난이도(불꽃)가 규칙을 정한다 — 방 규칙 설정은 친선전 방장 전용
 	var start_row := HBoxContainer.new()
 	start_row.add_theme_constant_override("separation", 12)
@@ -395,6 +396,48 @@ func _build_train_page(parent: VBoxContainer) -> void:
 	_train_start.custom_minimum_size = Vector2(0, 78)  # 글꼴(언어)에 따라 줄 높이가 달라도 버튼 높이는 그대로
 	start_row.add_child(_train_start)
 	_refresh_train_label()
+
+
+## 보드판 고르기 줄 (컴퓨터 대전 시작 화면): [보드판] 제목 + 보드마다 토글 버튼. 고른 보드는 프로필에 남아 다음 판에도 쓴다 (GameSession.set_board).
+var _board_buttons: Array = []  # [[보드 id, 버튼], ...]
+
+
+func _build_board_picker() -> Control:
+	var panel := PanelContainer.new()
+	panel.name = "BoardPanel"
+	panel.add_theme_stylebox_override("panel", LobbyTheme.style(Color(1, 1, 1, 0.82), LobbyTheme.BLUE, 3, 26, 0, 10))
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	panel.add_child(row)
+	var head := LobbyTheme.label("보드판", 22, LobbyTheme.BLUE)
+	head.name = "BoardHead"
+	row.add_child(head)
+	_board_buttons.clear()
+	for board: Dictionary in BoardCatalog.BOARDS:
+		var button := LobbyTheme.small_button(str(board["name"]), _on_board_picked.bind(board["id"]), &"blue", 20)
+		button.name = "Board_%s" % board["id"]
+		button.toggle_mode = true
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.custom_minimum_size = Vector2(0, 46)
+		button.clip_text = true
+		button.tooltip_text = str(board["desc"])
+		row.add_child(button)
+		_board_buttons.append([board["id"], button])
+	_refresh_board_picker()
+	return panel
+
+
+func _on_board_picked(id: StringName) -> void:
+	GameSession.set_board(id)
+	_refresh_board_picker()
+
+
+func _refresh_board_picker() -> void:
+	for pair: Array in _board_buttons:
+		var chosen: bool = pair[0] == GameSession.board_id()
+		var button: Button = pair[1]
+		button.set_pressed_no_signal(chosen)
+		button.modulate = Color.WHITE if chosen else Color(1, 1, 1, 0.6)
 
 
 func _show_step(value: int) -> void:

@@ -10,6 +10,30 @@ const CORNER_SIZE: float = 0.19
 ## 일반 타일 폭(트랙 방향) 상한
 const MAX_TILE_WIDTH: float = 0.12
 const SURFACE: Texture2D = preload("res://assets/board/trickcal/board_surface.png")
+## 모나티엄 도시 판 바닥 (보드 스킨 틀: 보드마다 바닥 그림·칸 색·부스터 발판 색을 따로 쓴다. 이미지를 바꾸려면 이 파일만 교체하면 된다).
+const SURFACE_CITY: Texture2D = preload("res://assets/board/monatium/board_surface.png")
+
+## 보드별 색 모음. 새 보드는 여기에 항목을 더하고 palette()가 고르게 한다 (키 없는 항목은 기본(에르핀 왕국) 값을 쓴다).
+const PALETTE_DEFAULT: Dictionary = {
+	"fill": Color("fff6df"), "edge": Color("7c9558"), "ink": Color("486135"), "band": Color("b4d479"),
+	"corner_edge": Color("5d8c3d"), "corner_ink": Color("416c2b"), "half_edge": Color("b68b43"), "half_ink": Color("845221"),
+	"shadow": Color(0.22, 0.35, 0.13, 0.12),
+	"dash_base": Color("b74838"), "dash_inner": Color("f7785b"), "dash_pulse": Color("ffae73"), "dash_rim": Color("ffe4a3"),
+}
+const PALETTE_CITY: Dictionary = {  # 도시: 차가운 회청색 타일, 네이비 테두리, 네온 청록 부스터 발판
+	"fill": Color("f2f5fb"), "edge": Color("4f5d7a"), "ink": Color("2f3b57"), "band": Color("9db0cf"),
+	"corner_edge": Color("33507f"), "corner_ink": Color("263f66"), "half_edge": Color("c98a14"), "half_ink": Color("8a5a0c"),
+	"shadow": Color(0.08, 0.1, 0.2, 0.16),
+	"dash_base": Color("1f2a55"), "dash_inner": Color("2fd6d0"), "dash_pulse": Color("8a7bff"), "dash_rim": Color("e6fbff"),
+}
+
+
+static func palette() -> Dictionary:
+	return PALETTE_CITY if BoardSpec.convenience else PALETTE_DEFAULT
+
+
+static func surface_texture() -> Texture2D:
+	return SURFACE_CITY if BoardSpec.convenience else SURFACE
 
 ## 타일 크기: 일반 타일은 이웃과 거의 맞닿도록 폭을 넓히고, 코너 타일만 크게 키운다 (코너 둘레의 이웃과는 겹치지 않게 BoardLayout.CORNER_REACH 안에서 계산).
 static func tile_metrics() -> Dictionary:
@@ -29,19 +53,25 @@ static func definition(index: int) -> Dictionary:
 	var width: float = metrics.width
 	var depth: float = metrics.depth
 	var footprint := Vector2(width,depth) if horizontal_row else Vector2(depth,width)
-	var data: Dictionary = {"kind":"normal", "fill":Color("fff6df"), "edge":Color("7c9558"), "ink":Color("486135"), "band":Color("b4d479"), "footprint":footprint, "diameter":depth, "major":false}
+	var pal: Dictionary = palette()
+	var data: Dictionary = {"kind":"normal", "fill":pal.fill, "edge":pal.edge, "ink":pal.ink, "band":pal.band, "footprint":footprint, "diameter":depth, "major":false}
 	if index in BoardSpec.bakery_tiles:
-		data.merge({"kind":"bakery", "band":Color("f4bd55"), "edge":Color("b68b43"), "ink":Color("845221")},true)
+		if BoardSpec.convenience:  # 모나티엄 도시: 빵집 자리는 편의점 (하늘색 띠로 빵집과 구분)
+			data.merge({"kind":"store", "band":Color("7cc4f2"), "edge":Color("3f86b8"), "ink":Color("245b86")},true)
+		else:
+			data.merge({"kind":"bakery", "band":Color("f4bd55"), "edge":Color("b68b43"), "ink":Color("845221")},true)
+	if index in BoardSpec.vending_tiles:
+		data.merge({"kind":"vending", "band":Color("ff8f7a"), "edge":Color("c4574a"), "ink":Color("8c2f26")},true)
 	if index in BoardSpec.portal_tiles:
 		data.merge({"kind":"portal", "band":Color("5fc4c9"), "edge":Color("3f8f96"), "ink":Color("24636b")},true)  # 청록: 보라색 함정 타일과 구분
 	if index in BoardSpec.corner_tiles:
 		data.merge({"diameter":metrics.corner, "footprint":Vector2.ONE*float(metrics.corner), "major":true},true)
 		if index == GameEnums.GOAL_TILE:
-			data.merge({"kind":"start", "edge":Color("5d8c3d"), "ink":Color("416c2b")},true)
+			data.merge({"kind":"start", "edge":pal.corner_edge, "ink":pal.corner_ink},true)
 		elif index == BoardSpec.halfway_tile:
-			data.merge({"kind":"half", "edge":Color("b68b43"), "ink":Color("845221")},true)
+			data.merge({"kind":"half", "edge":pal.half_edge, "ink":pal.half_ink},true)
 		else:
-			data.merge({"kind":"corner", "edge":Color("5d8c3d"), "ink":Color("416c2b")},true)
+			data.merge({"kind":"corner", "edge":pal.corner_edge, "ink":pal.corner_ink},true)
 	return data
 
 static func track(norm: Vector2) -> Vector2:
@@ -67,7 +97,7 @@ static func _rounded_outline(projector: Callable, rect: Rect2, radius: float, of
 
 static func make_surface() -> MeshInstance2D:
 	var face := MeshInstance2D.new()
-	face.texture = SURFACE
+	face.texture = surface_texture()
 	var shader := Shader.new()
 	shader.code = """shader_type canvas_item;
 void fragment() {
@@ -110,6 +140,8 @@ static func update_surface(face: MeshInstance2D, projector: Callable) -> void:
 const DECALS: Dictionary = {
 	"bakery": preload("res://assets/board/decals/BOARD_BAKERY.png"),
 	"portal": preload("res://assets/board/decals/BOARD_PORTAL.png"),
+	"store": preload("res://assets/board/decals/BOARD_STORE.png"),
+	"vending": preload("res://assets/board/decals/BOARD_VENDING.png"),
 	"start": preload("res://assets/board/decals/BOARD_START.png"),
 	"half": preload("res://assets/board/decals/BOARD_HALF.png"),
 	"corner": preload("res://assets/board/decals/BOARD_CORNER.png"),
@@ -121,6 +153,7 @@ const WARNING_BOUNDS: Rect2 = Rect2(0.0632622,0.0733945,0.8681402,0.8323603)
 ## Opaque subject bounds in the unchanged 1254px native sources; discard only empty atlas margin.
 const DECAL_BOUNDS: Dictionary = {
 	"bakery": Rect2(196,409,862,482), "portal": Rect2(296,268,662,739),
+	"store": Rect2(170,300,915,701), "vending": Rect2(330,230,595,801),
 	"start": Rect2(308,272,638,750), "half": Rect2(362,246,590,778),
 	"corner": Rect2(99,307,1098,665), "boost": Rect2(175,431,909,391),
 }
@@ -514,11 +547,12 @@ class Tile extends Control:
 	## Coral accelerator zone and a projected chevron decal; pulse never hides the floor.
 	func _draw_dash() -> void:
 		var inner: PackedVector2Array = layers[layers.size()-1]
-		draw_colored_polygon(layers[1],Color("b74838"))
-		draw_colored_polygon(inner,Color("f7785b").lerp(Color("ffae73"),0.16+0.12*sin(dash_phase*TAU)))
+		var pal: Dictionary = BoardSkin.palette()
+		draw_colored_polygon(layers[1],pal.dash_base)
+		draw_colored_polygon(inner,(pal.dash_inner as Color).lerp(pal.dash_pulse,0.16+0.12*sin(dash_phase*TAU)))
 		var rim := inner.duplicate()
 		rim.append(rim[0])
-		draw_polyline(rim,Color("ffe4a3"),1.4,true)
+		draw_polyline(rim,BoardSkin.palette().dash_rim,1.4,true)
 
 	## 경로 바닥만 펄스한다. 경고 그림과 방향 화살표는 위쪽 자식 레이어에서 타일 평면에 붙인다.
 	func _draw_danger() -> void:
@@ -539,7 +573,7 @@ class Tile extends Control:
 	func base_polygons() -> Array:
 		var edge: Color = data.edge
 		var fill: Color = data.fill
-		var result: Array = [[shadow, Color(0.22,0.35,0.13,0.12)], [side, edge.darkened(0.16)]]
+		var result: Array = [[shadow, BoardSkin.palette().shadow], [side, edge.darkened(0.16)]]
 		var colors: Array[Color] = [edge,Color("fffdf5"),fill]
 		for i: int in layers.size():
 			result.append([layers[i], colors[i]])

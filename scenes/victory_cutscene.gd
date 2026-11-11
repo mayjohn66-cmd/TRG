@@ -212,7 +212,7 @@ func set_law_context(id: String, board_center: Vector2, avatar: StringName, winn
 	actor_material.set_shader_parameter("backdrop_mix",0.0)
 	if id!="FINISH":
 		actor_material.set_shader_parameter("scene_blend",0.80)
-		actor_material.set_shader_parameter("paper_tone",Color(str(THEME.PAPERS[id])))
+		actor_material.set_shader_parameter("paper_tone",Color(str(THEME.paper(id))))
 		actor_material.set_shader_parameter("ink_tone",Color(str(THEME.of(id)["ink"])))
 	_actor.material = actor_material
 	_actor_shadow = _make_picture("VictoryPortraitSilhouette",portrait)
@@ -229,9 +229,9 @@ func set_law_context(id: String, board_center: Vector2, avatar: StringName, winn
 		var board: Node = _spot_board.get_ref()
 		if board != null:
 			_prelude._hurricane.set_board_context(board)
-	_prelude.set_scene_palette(Color(str(THEME.PAPERS[id])),Color(str(THEME.of(id)["ink"])))
+	_prelude.set_scene_palette(Color(str(THEME.paper(id))),Color(str(THEME.of(id)["ink"])))
 	var poster_ink:=_poster._pattern.material as ShaderMaterial
-	poster_ink.set_shader_parameter("paper_tone",Color(str(THEME.PAPERS[id])))
+	poster_ink.set_shader_parameter("paper_tone",Color(str(THEME.paper(id))))
 	poster_ink.set_shader_parameter("ink_tone",Color(str(THEME.of(id)["ink"])))
 	poster_ink.set_shader_parameter("scene_blend",0.70 if id!="FINISH" else 0.0)
 	if id in ["LAW_01","LAW_02","LAW_03","LAW_06","LAW_07","LAW_08","LAW_09"]: move_child(_prelude,_poster.get_index()+1)
@@ -263,7 +263,7 @@ func set_headline_style(_style: StringName) -> void:
 
 func _refresh_comic_shadows() -> void:
 	var ratio:=minf(_view().x/1366.0,_view().y/768.0)
-	var palette: Dictionary=THEME.COMIC_TITLES.get(law_id,{})
+	var palette: Dictionary=THEME.comic_title(law_id)
 	for label: Label in [_headline,_headline_tail]:
 		if label==null:continue
 		label.self_modulate=Color.WHITE
@@ -301,16 +301,16 @@ func _layout_title_rig() -> void:
 	var ratio:=minf(_view().x/1366.0,_view().y/768.0)
 	for label: Label in [_headline,_headline_tail]:
 		if label!=null:label.scale=Vector2.ONE
-	var first:=TITLE_GEOMETRY.ink_bounds(_headline,law_id+":0")
+	var first:=TITLE_GEOMETRY.ink_bounds(_headline,THEME.geometry_id(law_id)+":0")
 	_headline.position=Vector2.ZERO;_headline.pivot_offset=Vector2.ZERO
 	if _headline_tail!=null:
-		var second:=TITLE_GEOMETRY.ink_bounds(_headline_tail,law_id+":1")
+		var second:=TITLE_GEOMETRY.ink_bounds(_headline_tail,THEME.geometry_id(law_id)+":1")
 		_headline_tail.position=Vector2(_view().x*0.08,first.end.y-second.position.y+14.0*ratio)
 		_headline_tail.pivot_offset=Vector2.ZERO
 	var have_bounds:=false
 	for label: Label in [_headline,_headline_tail]:
 		if label==null:continue
-		var key:=law_id+(":0" if label==_headline else ":1")
+		var key:=THEME.geometry_id(law_id)+(":0" if label==_headline else ":1")
 		var ink:=TITLE_GEOMETRY.ink_bounds(label,key).grow(float(label.get_theme_constant("outline_size")))
 		ink.size+=Vector2(18,20)*ratio
 		var transform:=label.get_transform()
@@ -616,9 +616,9 @@ func _layout_themed() -> void:
 	var view := _view()
 	var ratio := minf(view.x/1366.0,view.y/768.0)
 	var theme := THEME.of(law_id)
-	var comic: Dictionary=THEME.COMIC_TITLES[law_id]
+	var comic: Dictionary=THEME.comic_title(law_id)
 	var ink := Color(str(theme["ink"]))
-	var paper := Color(str(THEME.PAPERS[law_id]))
+	var paper := Color(str(THEME.paper(law_id)))
 	_poster.size = view
 	if _spot_overlay!=null: _spot_overlay.size = view
 	var side := minf(view.y*1.02,view.x*0.59)

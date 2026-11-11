@@ -599,10 +599,19 @@ static func _resolve_landing(state: GameState, mover: PlayerPawn, ctx: RuleConte
 		var card_id: StringName = state.draw_card(mover.owner_id)
 		if card_id != &"":
 			report.drawn_card = card_id
+	var soda_steps: int = 0
+	if tile.tile_type == TileNode.TileType.VENDING and _primary_move(ctx) and not mover.is_finished and not mover.is_imprisoned:
+		var drink: StringName = VendingDrinks.pick(state)  # 모나티엄 도시 자판기: 딱 멈추면 음료수 한 캔 (랜덤 버프)
+		VendingDrinks.apply(state, mover, drink, report)
+		if drink == &"soda":
+			soda_steps = VendingDrinks.SODA_STEPS
 	_resolve_captures(state, mover, ctx, report)
 	if mover.is_finished:
 		return
 	_resolve_stacking(state, mover, ctx, report)
+	if soda_steps > 0 and not mover.is_finished and not mover.is_imprisoned:  # 탄산음료: 바로 앞으로 +2칸 (부스터 발판처럼 이어서 도착 정산)
+		report.merge(execute(state, mover, ctx.make_follow_up(soda_steps)))
+		return
 	# 부스터 발판: 멈춘 자리가 발판이면 곧바로 앞으로 3칸 더 날아간다 (뒤따르는 이동이 도착 정산을 이어서 한다).
 	if state.boost_gimmicks and GameData.dash_steps() > 0 and BoardSpec.dash_tiles.has(mover.current_tile_idx) and _primary_move(ctx) and not mover.is_finished and not mover.is_imprisoned:
 		report.dash_tiles.append(mover.current_tile_idx)

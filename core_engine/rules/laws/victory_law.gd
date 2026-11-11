@@ -28,6 +28,23 @@ const DEFS: Dictionary = {
 	"LAW_08": ["구축해 주겠어!", "완주 0개인 채로 선두의 말을 {p1}회 처치", 3, UNDERDOG, "처치"],
 	"LAW_09": ["방해령 허리케인 포스!!", "방해령 {p1}종(베루·사리·메죵)을 모두 손패에 모은 채 내 차례 종료", 3, HAUNT, "종"],
 }
+## 모나티엄 도시 보드에서 같은 자리(같은 기록·같은 목표)를 바꿔 쓰는 판: 교칙 ID -> [이름, 조건 문구]. 규칙·저장·도장은 원래 교칙과 같다.
+const MONATIUM_DEFS: Dictionary = {
+	"LAW_02": ["와라! 모나티엄 25", "편의점에 {p1}회 방문"],
+}
+## 이 판의 보드에서 쓰는 이름·조건 문구 (모나티엄 도시면 바꿔 쓰는 판).
+static func variant_active(id: String) -> bool:
+	return BoardSpec.convenience and MONATIUM_DEFS.has(id)
+
+
+static func name_of(id: String) -> String:
+	return str(MONATIUM_DEFS[id][0]) if variant_active(id) else str((DEFS[id] as Array)[0])
+
+
+static func condition_template(id: String) -> String:
+	return str(MONATIUM_DEFS[id][1]) if variant_active(id) else str((DEFS[id] as Array)[1])
+
+
 ## 법전에 있는 동안만 세는 순간 기록 (교칙이 제정되면 모두 0부터 다시 센다). 누적 기록(처치·빵집·사출·꼴찌 처치)도 제정 시점에 0부터 다시 센다 (SpecialVictory.on_law_enacted).
 const SESSION_KEYS: Array[StringName] = [BEST_MOVE, BEST_CHAIN]
 ## ACT_06 이의 있음으로 0으로 되돌릴 수 있는 기록 (지금 보드 상태로 정해지는 설치물·포위망은 제외).
@@ -39,7 +56,7 @@ var stat_key: StringName = &""
 func _init(id: String = "LAW_01") -> void:
 	law_id = id
 	var row: Array = DEFS[id]
-	law_name = str(row[0])
+	law_name = name_of(id)
 	stat_key = row[3]
 	description = condition_text()
 	trigger_timing = ""  # 판을 변조하지 않는다
@@ -55,7 +72,7 @@ func goal() -> int:
 
 
 func condition_text() -> String:
-	return str(DEFS[law_id][1]).replace("{p1}", str(goal()))
+	return condition_template(law_id).replace("{p1}", str(goal()))
 
 
 func unit() -> String:
