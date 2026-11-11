@@ -2864,3 +2864,9 @@ TRPG,TRPG,TRPG
 [3턴] 밟은 모든 말(내 말도) 그 칸에서 강제 정지 · 한 번 걸려도 사라지지 않음,[3 turns] Every pawn that steps on it (yours too) is forced to stop · stays after triggering,[3ターン] 踏んだすべての駒(自分の駒も)がそのマスで強制停止 · 発動しても消えない
 가까운 적 쫓는 팽이,A top that chases the nearest enemy,近くの敵を追うコマ
 [상단 코너] 팽이 소환 · 라운드마다 가장 가까운 적 말 쪽으로 1칸 · 부딪힌 칸의 모든 말을 날려 버리,[Top corner] Summon a top · each round it moves 1 tile toward the nearest enemy pawn · blasts every pawn on the tile it hits,[上コーナー] コマを召喚 · ラウンドごとに最も近い敵の駒へ1マス · ぶつかったマスの全ての駒を吹き飛ばす
+대길,Great Blessing,大吉
+중길,Mid Blessing,中吉
+소길,Small Blessing,小吉
+말길,Late Blessing,末吉
+흉,Bad Luck,凶
+대흉,Worst Luck,大凶
