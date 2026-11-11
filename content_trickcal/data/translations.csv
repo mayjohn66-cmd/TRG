@@ -2830,3 +2830,37 @@ TRPG,TRPG,TRPG
 편의점 %d회 방문 · 와라! 모나티엄 25 완성!,Visited the convenience store %d times · Wara! Monatium 25 complete!,コンビニに%d回訪問・ワラ！モナティウム25完成！
 편의점 방문! (%d/%d),Convenience store visit! (%d/%d),コンビニ訪問！(%d/%d)
 [편의점 목표],[Store Goal],[コンビニ目標]
+★대길 8칸+한 번 더 · 대흉은 턴 종료,★Great Blessing: 8 + Extra Roll · Worst ends the turn,★大吉 8マス+もう1回 · 大凶は番終了
+★대길 (8%),★Great Blessing (8%),★大吉 (8%)
+중길 (17%),Mid Blessing (17%),中吉 (17%)
+소길·길 (25%씩),Small / Good Blessing (25% each),小吉・吉 (25%ずつ)
+말길 (15%),Late Blessing (15%),末吉 (15%)
+흉 (5%),Bad Luck (5%),凶 (5%)
+대흉 (5%),Worst Luck (5%),大凶 (5%)
+8칸 + 한 번 더,8 + Extra Roll,8マス+もう1回
+4칸 / 3칸,4 / 3 spaces,4マス / 3マス
+0칸 · 턴 종료,0 spaces · turn ends,0マス · 番終了
+통을 흔들어 나온 점괘 그대로 · 순수한 운,Exactly what the shaker gives · pure luck,筒を振って出た運勢そのまま · 完全に運
+막대 1~6칸 (85%),Stick 1~6 spaces (85%),棒 1〜6マス (85%)
+드러난 칸만큼,As many as the spaces shown,出たマスの数だけ
+★한번 더! (15%),★One more! (15%),★もう1回！ (15%)
+3칸 + 새 아이스크림(한 번 더),3 + fresh ice cream (Extra Roll),3マス + 新しいアイス(もう1回)
+한 입 베어 물면 막대에 칸이 드러나요,Take a bite and the spaces appear on the stick,ひと口かじると棒にマスが現れます
+전사,Warrior,戦士
+마법사,Mage,魔法使い
+궁수,Archer,弓使い
+도적,Rogue,盗賊
+내 말이 밟아도 그 자리에서 멈춥니다,Even your own pawns stop on it,自分の駒が踏んでもその場で止まります
+팽이가 부딪힌 칸에 내 말이 있으면 함께 날아갑니다,Your own pawn on the tile the top hits is blown away too,コマがぶつかったマスに自分の駒がいると一緒に飛ばされます
+밟은 모두 강제 정지,Forces all who step on it to stop,踏んだ全員を強制停止
+잡기 막고 카드 1장,Blocks a capture + 1 card,捕獲を防いでカード1枚
+[잡기 방어] 잡기를 막고 카드 1장 획득,[Capture Defense] Block a capture and gain 1 card,[捕獲防御] 捕獲を防いでカード1枚を獲得
+펭귄 발사로 적 날리기,Launch a penguin at enemies,ペンギン発射で敵を吹き飛ばす
+[공격] 내 말 하나에서 펭귄 발사 · 알까기처럼 날아가 부딪힌 적 말을 모두 출발선으로 날려 버림,[Attack] Launch a penguin from one of your pawns · it flies like alkkagi and blasts every enemy pawn it hits back to the start,[攻撃] 自分の駒から ペンギンを発射 · おはじきのように飛んで当たった敵の駒をすべてスタートへ吹き飛ばす
+내 말 박스로 1회 방어,Box defends one of your pawns once,自分の駒を箱で1回防御
+내 말 하나에 택배 박스를 씌움 · 잡기·함정을 1회 막고 벗겨짐,"Put a delivery box on one of your pawns · blocks one capture or trap, then comes off",自分の駒に宅配ボックスをかぶせる · 捕獲・罠を1回防いで外れる
+대상 한 턴 자동 진행,Target's next turn plays itself,対象の1ターンを自動進行
+[공격] 대상의 다음 한 턴이 자동 진행 (무작위 말 이동 · 카드·필살기 사용 불가),[Attack] The target's next turn plays automatically (random pawn move · no cards or skills),[攻撃] 対象の次の1ターンが自動進行 (ランダムな駒を移動 · カード・必殺技使用不可)
+[3턴] 밟은 모든 말(내 말도) 그 칸에서 강제 정지 · 한 번 걸려도 사라지지 않음,[3 turns] Every pawn that steps on it (yours too) is forced to stop · stays after triggering,[3ターン] 踏んだすべての駒(自分の駒も)がそのマスで強制停止 · 発動しても消えない
+가까운 적 쫓는 팽이,A top that chases the nearest enemy,近くの敵を追うコマ
+[상단 코너] 팽이 소환 · 라운드마다 가장 가까운 적 말 쪽으로 1칸 · 부딪힌 칸의 모든 말을 날려 버리,[Top corner] Summon a top · each round it moves 1 tile toward the nearest enemy pawn · blasts every pawn on the tile it hits,[上コーナー] コマを召喚 · ラウンドごとに最も近い敵の駒へ1マス · ぶつかったマスの全ての駒を吹き飛ばす
