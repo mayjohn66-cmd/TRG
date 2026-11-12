@@ -955,9 +955,9 @@ func _picture_tile(data: Dictionary, on_pick: Callable, compact: bool = false) -
 		switch_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		var target_is_monatium: bool = not _tile_shows_monatium(data)
 		var tint := Color("ffe8a3")
-		switch_button.add_theme_stylebox_override("normal", VISUALS.panel(tint, 22))
-		switch_button.add_theme_stylebox_override("hover", VISUALS.panel(tint.lightened(0.45), 22))
-		switch_button.add_theme_stylebox_override("pressed", VISUALS.panel(tint.darkened(0.18), 22))
+		switch_button.add_theme_stylebox_override("normal", VISUALS.disc(tint))
+		switch_button.add_theme_stylebox_override("hover", VISUALS.disc(tint.lightened(0.45)))
+		switch_button.add_theme_stylebox_override("pressed", VISUALS.disc(tint.darkened(0.18)))
 		var destination: String = L10n.t("모나티엄 도시 보기" if target_is_monatium else "에르핀 왕국 보기")
 		switch_button.tooltip_text = destination
 		switch_button.accessibility_name = destination
