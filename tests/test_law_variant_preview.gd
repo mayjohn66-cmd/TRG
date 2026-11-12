@@ -33,6 +33,10 @@ func test_rulebook_tile_flip_uses_the_other_board_and_restores_state() -> void:
 	var flipped: Dictionary = Rulebook._card_info_for_tile(definition, {"augment": &"AUG_LAW_02", "variant_flipped": true})
 	check(str(plain["title"]).contains("식권"), "뒤집기 전: 식권 (%s)" % plain["title"])
 	check(str(flipped["title"]).contains("모나티엄"), "뒤집은 뒤: 모나티엄 25 (%s)" % flipped["title"])
+	var plain_art: Texture2D = plain.get("art")
+	var flipped_art: Texture2D = flipped.get("art")
+	check(plain_art != null and plain_art.resource_path.ends_with("/LAW_02.png"), "식권판은 황금 식권 그림")
+	check(flipped_art != null and flipped_art.resource_path == AugmentArt.MONATIUM_LAW_ICON, "도시판 미리보기는 편의점 그림")
 	check_eq(VictoryLaw.preview_board, -1, "뒤집어 본 뒤 미리보기는 꺼져 있다")
 	check(str(Rulebook._card_info_for_tile(definition, {"augment": &"AUG_LAW_02"})["title"]).contains("식권"), "뒤집어 본 뒤에도 지금 보드 문구로 돌아온다")
 	BoardSpec.convenience = saved
