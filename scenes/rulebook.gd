@@ -946,7 +946,7 @@ func _picture_tile(data: Dictionary, on_pick: Callable, compact: bool = false) -
 	marker.visible = false
 	holder.add_child(marker)
 	holder.set_meta("marker", marker)
-	# 오른쪽 위에 전환할 보드판의 법전 아이콘을 표시한다.
+	# 오른쪽 위 공통 화살표로 다른 보드판의 법전을 본다.
 	if data.has("augment") and _has_board_variant(AugmentRegistry.get_def(data["augment"])):
 		var switch_button := Button.new()
 		switch_button.name = "BoardVariantButton"
@@ -954,17 +954,17 @@ func _picture_tile(data: Dictionary, on_pick: Callable, compact: bool = false) -
 		switch_button.size = Vector2(44, 44)
 		switch_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		var target_is_monatium: bool = not _tile_shows_monatium(data)
-		var tint := Color("b8f6ff") if target_is_monatium else Color("ffe8a3")
+		var tint := Color("ffe8a3")
 		switch_button.add_theme_stylebox_override("normal", VISUALS.panel(tint, 22))
 		switch_button.add_theme_stylebox_override("hover", VISUALS.panel(tint.lightened(0.45), 22))
 		switch_button.add_theme_stylebox_override("pressed", VISUALS.panel(tint.darkened(0.18), 22))
 		var destination: String = L10n.t("모나티엄 도시 보기" if target_is_monatium else "에르핀 왕국 보기")
 		switch_button.tooltip_text = destination
 		switch_button.accessibility_name = destination
-		var icon_path: String = AugmentArt.MONATIUM_LAW_ICON if target_is_monatium else AugmentArt.ROOT + "laws/LAW_02.png"
-		var icon := AugmentArt.make_texture(TextureCache.fetch(icon_path), 36.0)
+		var icon := HubArt.icon(&"next")
 		icon.name = "BoardVariantIcon"
-		icon.position = Vector2(4, 4)
+		icon.position = Vector2(8, 8)
+		icon.size = Vector2(28, 28)
 		switch_button.add_child(icon)
 		switch_button.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 		switch_button.offset_left = -50.0
