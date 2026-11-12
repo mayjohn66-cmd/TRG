@@ -34,7 +34,13 @@ const MONATIUM_DEFS: Dictionary = {
 }
 ## 이 판의 보드에서 쓰는 이름·조건 문구 (모나티엄 도시면 바꿔 쓰는 판).
 static func variant_active(id: String) -> bool:
+	if preview_board >= 0:  # 도감 미리보기: 지금 판의 보드와 상관없이 고른 보드의 판을 본다
+		return preview_board == 1 and MONATIUM_DEFS.has(id)
 	return BoardSpec.convenience and MONATIUM_DEFS.has(id)
+
+
+## 도감에서 다른 보드의 특수 승리를 잠깐 보여 줄 때만 쓴다: -1 = 지금 보드 그대로, 0 = 에르핀 왕국판, 1 = 모나티엄 도시판. 보여 준 뒤 반드시 -1로 되돌린다.
+static var preview_board: int = -1
 
 
 static func name_of(id: String) -> String:

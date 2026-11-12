@@ -895,7 +895,7 @@ func _picture_tile(data: Dictionary, on_pick: Callable, compact: bool = false) -
 		var full: Vector2 = Vector2(MainBoard.AUGMENT_CARD_SIZE.x, MainBoard.AUGMENT_COMPACT_HEIGHT) if compact else MainBoard.AUGMENT_CARD_SIZE
 		card_size = full * tile_scale
 		card_radius = int(round(16.0 * tile_scale))  # 증강 카드 모서리(16)를 줄인 배율 그대로
-		var card: Button = MainBoard.make_augment_card(MainBoard.augment_card_info(definition, null, 1), on_pick, tile_scale, true, compact)
+		var card: Button = MainBoard.make_augment_card(_card_info_for_tile(definition, data), on_pick, tile_scale, true, compact)
 		card.position = -full * (1.0 - tile_scale) / 2.0  # 가운데 기준으로 줄였으니 왼쪽 위를 맞춘다
 		holder.add_child(card)
 	else:
@@ -936,7 +936,76 @@ func _picture_tile(data: Dictionary, on_pick: Callable, compact: bool = false) -
 	marker.visible = false
 	holder.add_child(marker)
 	holder.set_meta("marker", marker)
+	# 보드마다 바꿔 쓰는 특수 승리(봉인된 에르핀의 식권 ↔ 와라! 모나티엄 25): 오른쪽 위 화살표로 다른 보드의 판을 번갈아 본다
+	if data.has("augment") and _has_board_variant(AugmentRegistry.get_def(data["augment"])):
+		var arrow := Button.new()
+		arrow.name = "BoardVariantArrow"
+		arrow.text = "→" if not bool(data.get("variant_flipped", false)) else "←"
+		arrow.focus_mode = Control.FOCUS_NONE
+		arrow.custom_minimum_size = Vector2(40, 40)
+		arrow.size = Vector2(40, 40)
+		arrow.add_theme_font_size_override("font_size", 22)
+		arrow.add_theme_color_override("font_color", Color("12151f"))
+		arrow.add_theme_stylebox_override("normal", VISUALS.panel(Color("ffe8a3"), 20))
+		arrow.add_theme_stylebox_override("hover", VISUALS.panel(Color("fff4cc"), 20))
+		arrow.add_theme_stylebox_override("pressed", VISUALS.panel(Color("ffd966"), 20))
+		var showing_monatium: bool = _tile_shows_monatium(data)
+		arrow.tooltip_text = "에르핀 왕국 보기" if showing_monatium else "모나티엄 도시 보기"
+		arrow.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+		arrow.offset_left = -46.0
+		arrow.offset_right = -6.0
+		arrow.offset_top = 6.0
+		arrow.offset_bottom = 46.0
+		arrow.z_index = 8
+		arrow.pressed.connect(_flip_board_variant.bind(holder, data, on_pick, compact))
+		holder.add_child(arrow)
 	return holder
+
+
+## 이 증강이 보드마다 바꿔 쓰는 특수 승리인가.
+static func _has_board_variant(definition: AugmentDef) -> bool:
+	return definition != null and definition.category == GameEnums.AugmentCategory.LAW_ENACT and VictoryLaw.MONATIUM_DEFS.has(str(definition.payload))
+
+
+## 이 타일이 지금 모나티엄 도시판을 보여 주는가 (지금 보드판 설정 기준 + 화살표로 뒤집은 상태).
+static func _tile_shows_monatium(data: Dictionary) -> bool:
+	return BoardSpec.convenience != bool(data.get("variant_flipped", false))
+
+
+## 타일에 보일 카드 정보: 화살표로 뒤집었으면 다른 보드의 판 문구로 만든다 (끝나면 지금 보드 문구로 되돌린다).
+static func _card_info_for_tile(definition: AugmentDef, data: Dictionary) -> Dictionary:
+	if not bool(data.get("variant_flipped", false)) or not _has_board_variant(definition):
+		return MainBoard.augment_card_info(definition, null, 1)
+	VictoryLaw.preview_board = 1 if _tile_shows_monatium(data) else 0
+	AugmentRegistry.apply_board_variants()
+	var info: Dictionary = MainBoard.augment_card_info(definition, null, 1)
+	VictoryLaw.preview_board = -1
+	AugmentRegistry.apply_board_variants()
+	return info
+
+
+## 화살표: 이 카드를 다른 보드의 판으로 바꿔 다시 그린다 (자리·선택 상태는 그대로, 오른쪽 설명 글도 같이 바뀐다).
+func _flip_board_variant(holder: Control, data: Dictionary, on_pick: Callable, compact: bool) -> void:
+	data["variant_flipped"] = not bool(data.get("variant_flipped", false))
+	var law_id: String = str(data.get("law_id", ""))
+	if law_id != "" and VictoryLaw.DEFS.has(law_id):
+		VictoryLaw.preview_board = 1 if _tile_shows_monatium(data) else 0
+		var law: VictoryLaw = LawRegistry.create(law_id) as VictoryLaw
+		VictoryLaw.preview_board = -1
+		data["title"] = law.law_name
+		data["summary"] = law.condition_text()
+	var fresh: Control = _picture_tile(data, on_pick, compact)
+	var parent: Node = holder.get_parent()
+	var slot: int = holder.get_index()
+	var tile_index: int = _tiles.find(holder)
+	parent.add_child(fresh)
+	parent.move_child(fresh, slot)
+	if tile_index != -1:
+		_tiles[tile_index] = fresh
+		_paint_tile(fresh, tile_index == entry)
+	holder.queue_free()
+	if tile_index != -1 and tile_index == entry:
+		show_entry(entry)  # 보고 있던 항목이면 오른쪽 설명도 새 이름·조건으로
 
 
 ## Scale the whole original face uniformly into its actual grid column.
