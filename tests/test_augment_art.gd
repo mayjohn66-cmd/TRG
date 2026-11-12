@@ -45,3 +45,16 @@ func test_all_draft_icons_resolve_to_the_described_target() -> void:
 	check_eq(AugmentRegistry.all().size(), 85, "26 pawns + 14 tools + 9 laws + 3 card packages + 12 super + 15 utility")
 	check_eq(paths.size(), 85, "every draft effect has its own icon")
 	print("AUGMENT_ART_COVERAGE ", paths.size(), "/85")
+
+
+func test_shop_law_uses_the_icon_for_the_active_board() -> void:
+	var original_tiles: int = BoardSpec.tile_count
+	var original_convenience: bool = BoardSpec.convenience
+	var definition: AugmentDef = AugmentRegistry.get_def(&"AUG_LAW_02")
+	BoardSpec.apply(32, true)
+	var city: Texture2D = AugmentArt.load_first(AugmentArt.candidates(definition))
+	check(city != null and city.resource_path.ends_with("/LAW_02_MONATIUM.png"), "Monatium uses the convenience-store emblem")
+	BoardSpec.apply(32)
+	var classic: Texture2D = AugmentArt.load_first(AugmentArt.candidates(definition))
+	check(classic != null and classic.resource_path.ends_with("/LAW_02.png"), "switching back restores the bakery ticket")
+	BoardSpec.apply(original_tiles, original_convenience)

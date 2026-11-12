@@ -61,7 +61,7 @@ static func candidates(definition: AugmentDef) -> Array[String]:
 		GameEnums.AugmentCategory.TOOL_SWAP:
 			paths.assign(tool_candidates(definition.payload))
 		GameEnums.AugmentCategory.LAW_ENACT:
-			paths.append(ROOT + "laws/%s.png" % definition.payload)
+			paths.assign(law_candidates(str(definition.payload)))
 			paths.append(ROOT + "augments/%s.png" % definition.augment_id)
 			paths.append(ROOT + "augments/AUG_LAW.png")
 		GameEnums.AugmentCategory.SUPER_GAMBLE:
@@ -70,6 +70,13 @@ static func candidates(definition: AugmentDef) -> Array[String]:
 			paths.append(ROOT + "augments/%s.png" % definition.augment_id)
 			paths.append(ROOT + "augments/AUG_CARD_PACK.png")
 	return _with_table_icon(paths, definition.icon_file, "augments/")
+
+
+static func law_candidates(law_id: String) -> Array[String]:
+	var paths: Array[String] = [ROOT + "laws/%s.png" % law_id]
+	if law_id == "LAW_02" and VictoryLaw.variant_active(law_id):
+		paths.push_front(ROOT + "laws/LAW_02_MONATIUM.png")
+	return paths
 
 
 static func tool_candidates(tool_id: StringName) -> Array[String]:

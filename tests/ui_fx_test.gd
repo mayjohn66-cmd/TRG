@@ -295,9 +295,10 @@ func _test_augment_art() -> void:
 		if definition.category in [GameEnums.AugmentCategory.LAW_ENACT, GameEnums.AugmentCategory.CARD_PACKAGE]:
 			_expect(art != null and glyph == null, "%s uses generated representative icon" % definition.augment_id)
 		if art != null:
-			_expect(art.size == Vector2(110, 110) and art.position == Vector2(5, 5), "square art fits inside 5px neon ring")
+			_expect(art.size == Vector2(110, 110) and art.position == Vector2(20, 20), "icon stays centered in the 150px emblem")
 			_expect((art.material as ShaderMaterial).shader == AugmentArt.CIRCLE_SHADER, "real circular shader masks the square icon")
-			_expect(card.find_child("EmblemRing", true, false) != null, "neon ring remains above image")
+			var aura := card.find_child("EmblemAura", true, false) as ColorRect
+			_expect(aura != null and aura.get_index() < art.get_index() and aura.mouse_filter == Control.MOUSE_FILTER_IGNORE, "aura stays behind the art without blocking card input")
 		card.queue_free()
 	for kind: GameEnums.PawnKind in PawnCatalog.EVOLVABLE_SETS:
 		var definition := AugmentDef.new(&"TEST", GameEnums.AugmentCategory.PAWN_EVOLUTION, "", kind, [1])

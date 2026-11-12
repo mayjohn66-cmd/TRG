@@ -1679,7 +1679,7 @@ func _ch_laws() -> Dictionary:
 		if law == null:
 			continue
 		var counting: String = "법전에 있는 동안만 세요" if VictoryLaw.SESSION_KEYS.has(law.stat_key) else "게임 내내 쌓여요"
-		entries.append({"title": law.law_name, "augment": definition.augment_id, "law_id": law.law_id, "texture": TextureCache.fetch("res://content_trickcal/illustrations/laws/%s.png" % law.law_id), "icon": &"book",
+		entries.append({"title": law.law_name, "augment": definition.augment_id, "law_id": law.law_id, "texture": AugmentArt.load_first(AugmentArt.law_candidates(law.law_id)), "icon": &"book",
 			"tone": Color("ffd43b"), "chips": ["목표 %d%s" % [law.goal(), law.unit()]], "summary": law.condition_text(),
 			"rows": [["판정", "조건 달성 후 다음 내 차례가 끝날 때까지 유지하면 특수 승리! 교칙은 사라져요" if law.law_id == SpecialVictory.SIEGE_LAW else "내 차례가 끝날 때 조건을 달성해 있으면 특수 승리! 교칙은 사라져요"], ["기록", counting], ["이의 있음!", "기록을 0으로 되돌릴 수 %s" % ("있어요" if law.resettable() else "없어요")]]})
 	return {"title": "법전", "entries": entries, "wide": true}
