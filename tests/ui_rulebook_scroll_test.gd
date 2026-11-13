@@ -105,6 +105,25 @@ func run() -> void:
 				check(absf(face.size.x*face.scale.x-tile.size.x)<0.1,"Card face fills its grid hit area")
 				check(absf(face.size.y*face.scale.y-tile.size.y)<0.1,"Row height matches card face")
 			await capture("chapter_%d_%d" % [chapter,resolution.x])
+		book.show_spread(7)
+		await frames()
+		var switch_button := book._right_holder.find_child("BoardVariantButton", true, false) as Button
+		check(switch_button != null, "The bakery law has a board variant button")
+		if switch_button != null:
+			var variant_index := book._tiles.find(switch_button.get_parent())
+			var target_icon := switch_button.get_node("BoardVariantIcon") as TextureRect
+			check(target_icon.get_meta("hub_art_role") == &"next", "The switch uses the shared arrow")
+			var target_icon_texture: Texture2D = target_icon.texture
+			var switch_point := point(switch_button)
+			await drag(switch_point, switch_point + Vector2.ONE, MobileSupport.touch_mode())
+			check(book.entry == -1, "The switch flips the card without opening its detail")
+			check((book._content.entries[variant_index]["texture"] as Texture2D).resource_path == AugmentArt.MONATIUM_LAW_ICON, "Detail art switches with the card")
+			var reverse_button := book._tiles[variant_index].get_node("BoardVariantButton") as Button
+			var reverse_icon := reverse_button.get_node("BoardVariantIcon") as TextureRect
+			check(reverse_icon.texture == target_icon_texture, "The arrow stays the same after switching")
+			switch_point = point(reverse_button)
+			await drag(switch_point, switch_point + Vector2.ONE, MobileSupport.touch_mode())
+			check(not bool(book._content.entries[variant_index].get("variant_flipped", true)), "The switch returns to the bakery card")
 		book.show_spread(4)
 		await frames()
 		var scroll := book._right_scroll

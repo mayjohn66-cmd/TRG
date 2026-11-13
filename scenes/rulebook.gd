@@ -65,6 +65,7 @@ var _drag_scroll: ScrollContainer = null
 var _drag_start := Vector2.ZERO
 var _drag_top := 0
 var _drag_entry := -1
+var _drag_variant_button: Button = null
 var _drag_finger := -1
 var _drag_moved := false
 var _notebook_title: Label = null
@@ -197,6 +198,7 @@ func _scroll_at(point: Vector2) -> ScrollContainer:
 func _clear_scroll_drag() -> void:
 	_drag_scroll = null
 	_drag_entry = -1
+	_drag_variant_button = null
 	_drag_finger = -1
 	_drag_moved = false
 
@@ -257,6 +259,9 @@ func _input(event: InputEvent) -> void:
 			for index: int in _tiles.size():
 				if _inside(_tiles[index],point):
 					_drag_entry = index
+					var switch_button := _tiles[index].get_node_or_null("BoardVariantButton") as Button
+					if switch_button != null and _inside(switch_button, point):
+						_drag_variant_button = switch_button
 					break
 	elif _drag_scroll != null:
 		if motion:
@@ -270,8 +275,13 @@ func _input(event: InputEvent) -> void:
 			var pick := _drag_entry
 			var tap := not _drag_moved and pick>=0 and _inside(_tiles[pick],point)
 			if event is InputEventScreenTouch and event.canceled: tap = false
+			var switch_button := _drag_variant_button
 			_clear_scroll_drag()
-			if tap: show_entry(pick)
+			if tap:
+				if switch_button == null:
+					show_entry(pick)
+				elif is_instance_valid(switch_button) and _inside(switch_button, point):
+					switch_button.pressed.emit()
 	else: return
 	get_viewport().set_input_as_handled()
 
@@ -936,29 +946,34 @@ func _picture_tile(data: Dictionary, on_pick: Callable, compact: bool = false) -
 	marker.visible = false
 	holder.add_child(marker)
 	holder.set_meta("marker", marker)
-	# 보드마다 바꿔 쓰는 특수 승리(봉인된 에르핀의 식권 ↔ 와라! 모나티엄 25): 오른쪽 위 화살표로 다른 보드의 판을 번갈아 본다
+	# 오른쪽 위 공통 화살표로 다른 보드판의 법전을 본다.
 	if data.has("augment") and _has_board_variant(AugmentRegistry.get_def(data["augment"])):
-		var arrow := Button.new()
-		arrow.name = "BoardVariantArrow"
-		arrow.text = "→" if not bool(data.get("variant_flipped", false)) else "←"
-		arrow.focus_mode = Control.FOCUS_NONE
-		arrow.custom_minimum_size = Vector2(40, 40)
-		arrow.size = Vector2(40, 40)
-		arrow.add_theme_font_size_override("font_size", 22)
-		arrow.add_theme_color_override("font_color", Color("12151f"))
-		arrow.add_theme_stylebox_override("normal", VISUALS.panel(Color("ffe8a3"), 20))
-		arrow.add_theme_stylebox_override("hover", VISUALS.panel(Color("fff4cc"), 20))
-		arrow.add_theme_stylebox_override("pressed", VISUALS.panel(Color("ffd966"), 20))
-		var showing_monatium: bool = _tile_shows_monatium(data)
-		arrow.tooltip_text = "에르핀 왕국 보기" if showing_monatium else "모나티엄 도시 보기"
-		arrow.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-		arrow.offset_left = -46.0
-		arrow.offset_right = -6.0
-		arrow.offset_top = 6.0
-		arrow.offset_bottom = 46.0
-		arrow.z_index = 8
-		arrow.pressed.connect(_flip_board_variant.bind(holder, data, on_pick, compact))
-		holder.add_child(arrow)
+		var switch_button := Button.new()
+		switch_button.name = "BoardVariantButton"
+		switch_button.custom_minimum_size = Vector2(44, 44)
+		switch_button.size = Vector2(44, 44)
+		switch_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		var target_is_monatium: bool = not _tile_shows_monatium(data)
+		var tint := Color("ffe8a3")
+		switch_button.add_theme_stylebox_override("normal", VISUALS.disc(tint))
+		switch_button.add_theme_stylebox_override("hover", VISUALS.disc(tint.lightened(0.45)))
+		switch_button.add_theme_stylebox_override("pressed", VISUALS.disc(tint.darkened(0.18)))
+		var destination: String = L10n.t("모나티엄 도시 보기" if target_is_monatium else "에르핀 왕국 보기")
+		switch_button.tooltip_text = destination
+		switch_button.accessibility_name = destination
+		var icon := HubArt.icon(&"next")
+		icon.name = "BoardVariantIcon"
+		icon.position = Vector2(8, 8)
+		icon.size = Vector2(28, 28)
+		switch_button.add_child(icon)
+		switch_button.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+		switch_button.offset_left = -50.0
+		switch_button.offset_right = -6.0
+		switch_button.offset_top = 6.0
+		switch_button.offset_bottom = 50.0
+		switch_button.z_index = 8
+		switch_button.pressed.connect(_flip_board_variant.bind(holder, data, on_pick, compact))
+		holder.add_child(switch_button)
 	return holder
 
 
@@ -991,6 +1006,7 @@ func _flip_board_variant(holder: Control, data: Dictionary, on_pick: Callable, c
 	if law_id != "" and VictoryLaw.DEFS.has(law_id):
 		VictoryLaw.preview_board = 1 if _tile_shows_monatium(data) else 0
 		var law: VictoryLaw = LawRegistry.create(law_id) as VictoryLaw
+		data["texture"] = AugmentArt.load_first(AugmentArt.law_candidates(law_id))
 		VictoryLaw.preview_board = -1
 		data["title"] = law.law_name
 		data["summary"] = law.condition_text()
@@ -1679,7 +1695,7 @@ func _ch_laws() -> Dictionary:
 		if law == null:
 			continue
 		var counting: String = "법전에 있는 동안만 세요" if VictoryLaw.SESSION_KEYS.has(law.stat_key) else "게임 내내 쌓여요"
-		entries.append({"title": law.law_name, "augment": definition.augment_id, "law_id": law.law_id, "texture": TextureCache.fetch("res://content_trickcal/illustrations/laws/%s.png" % law.law_id), "icon": &"book",
+		entries.append({"title": law.law_name, "augment": definition.augment_id, "law_id": law.law_id, "texture": AugmentArt.load_first(AugmentArt.law_candidates(law.law_id)), "icon": &"book",
 			"tone": Color("ffd43b"), "chips": ["목표 %d%s" % [law.goal(), law.unit()]], "summary": law.condition_text(),
 			"rows": [["판정", "조건 달성 후 다음 내 차례가 끝날 때까지 유지하면 특수 승리! 교칙은 사라져요" if law.law_id == SpecialVictory.SIEGE_LAW else "내 차례가 끝날 때 조건을 달성해 있으면 특수 승리! 교칙은 사라져요"], ["기록", counting], ["이의 있음!", "기록을 0으로 되돌릴 수 %s" % ("있어요" if law.resettable() else "없어요")]]})
 	return {"title": "법전", "entries": entries, "wide": true}

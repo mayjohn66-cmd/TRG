@@ -10384,51 +10384,40 @@ static func augment_card_info(definition: AugmentDef, game_state: GameState, pla
 		"self_risk": definition.category == GameEnums.AugmentCategory.SUPER_GAMBLE and SuperAugments.SELF_RISK.has(StringName(str(definition.payload)))}
 
 
-## 150px 후광 / 120px 네온 메달 / 110px 원형 이미지. 이미지가 없으면 글자.
+## 150px 엠블럼 안에 110px 원형 이미지와 부드러운 후광을 배치한다. 이미지가 없으면 글자.
 static func _make_emblem(glyph: String, color: Color, texture: Texture2D = null) -> Control:
 	var emblem := Control.new()
 	emblem.custom_minimum_size = Vector2(150, 150)
 	emblem.size = Vector2(150, 150)
 	emblem.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var glow := Panel.new()
-	glow.position = Vector2(0, 0)
-	glow.size = Vector2(150, 150)
-	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var glow_box: StyleBoxFlat = _style(Color(color.r, color.g, color.b, 0.22), Color(color.r, color.g, color.b, 0.0), 0, 75, 0, 0)
-	glow.add_theme_stylebox_override("panel", glow_box)
-	emblem.add_child(glow)
-	var disc := Panel.new()
-	disc.position = Vector2(15, 15)
-	disc.size = Vector2(120, 120)
-	disc.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var disc_box: StyleBoxFlat = _style(color.darkened(0.62), color, 5, 60, 0, 0)
-	disc_box.shadow_color = Color(color.r, color.g, color.b, 0.7)
-	disc_box.shadow_size = 18
-	disc_box.shadow_offset = Vector2.ZERO
-	disc.add_theme_stylebox_override("panel", disc_box)
-	emblem.add_child(disc)
+	var aura := ColorRect.new()
+	aura.name = "EmblemAura"
+	aura.position = Vector2(-12, -12)
+	aura.size = Vector2(174, 174)
+	aura.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var aura_material := ShaderMaterial.new()
+	aura_material.shader = preload("res://scenes/augment_aura.gdshader")
+	aura_material.set_shader_parameter("aura_color", color)
+	var art_key: String = texture.resource_path if texture != null else glyph
+	var angle: float = float(art_key.hash() & 255) * TAU / 256.0
+	aura_material.set_shader_parameter("aura_direction", Vector2.from_angle(angle))
+	aura.material = aura_material
+	emblem.add_child(aura)
 	if texture != null:
-		var art: TextureRect = AugmentArt.make_texture(texture, 110.0)
-		art.position = Vector2(5, 5)
-		disc.add_child(art)
-		# Draw a transparent ring above the image; shader clips only its inner art.
-		var ring := Panel.new()
-		ring.name = "EmblemRing"
-		ring.size = Vector2(120, 120)
-		ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		ring.add_theme_stylebox_override("panel", _style(Color.TRANSPARENT, color, 5, 60, 0, 0))
-		disc.add_child(ring)
+		var art: TextureRect = AugmentArt.make_texture(texture, 110.0, Color(color.lightened(0.18), 0.42))
+		art.position = Vector2(20, 20)
+		emblem.add_child(art)
 		return emblem
 	var mark := _make_label(glyph, 56 if glyph.length() <= 1 else 38, color.lightened(0.55))
 	mark.name = "EmblemGlyph"
-	mark.position = Vector2(0, 0)
+	mark.position = Vector2(15, 15)
 	mark.size = Vector2(120, 120)
 	mark.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	mark.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	mark.add_theme_color_override("font_outline_color", color.darkened(0.7))
 	mark.add_theme_constant_override("outline_size", 6)
-	disc.add_child(mark)
+	emblem.add_child(mark)
 	return emblem
 
 
@@ -11906,11 +11895,11 @@ func _make_law_book(new_law: LawResource) -> Control:
 	left_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	left_box.add_theme_constant_override("separation", 7)
 	left_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var art_path: String = "res://content_trickcal/illustrations/laws/%s.png" % new_law.law_id
-	if ResourceLoader.exists(art_path):
+	var law_art: Texture2D = AugmentArt.load_first(AugmentArt.law_candidates(new_law.law_id))
+	if law_art != null:
 		var art := TextureRect.new()
 		art.name = "LawIllustration"
-		art.texture = TextureCache.fetch(art_path)
+		art.texture = law_art
 		art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		art.custom_minimum_size = Vector2(0, 154)

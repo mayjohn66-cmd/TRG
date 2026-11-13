@@ -3,6 +3,7 @@ class_name AugmentArt
 extends RefCounted
 
 const ROOT: String = "res://content_trickcal/illustrations/"
+const MONATIUM_LAW_ICON: String = ROOT + "laws/LAW_02_MONATIUM.png"
 const CIRCLE_SHADER: Shader = preload("res://scenes/augment_circle.gdshader")
 const PAWN_FILES: Dictionary = {
 	GameEnums.PawnKind.CHESS: "PAWN_CHESS",
@@ -61,7 +62,7 @@ static func candidates(definition: AugmentDef) -> Array[String]:
 		GameEnums.AugmentCategory.TOOL_SWAP:
 			paths.assign(tool_candidates(definition.payload))
 		GameEnums.AugmentCategory.LAW_ENACT:
-			paths.append(ROOT + "laws/%s.png" % definition.payload)
+			paths.assign(law_candidates(str(definition.payload)))
 			paths.append(ROOT + "augments/%s.png" % definition.augment_id)
 			paths.append(ROOT + "augments/AUG_LAW.png")
 		GameEnums.AugmentCategory.SUPER_GAMBLE:
@@ -70,6 +71,13 @@ static func candidates(definition: AugmentDef) -> Array[String]:
 			paths.append(ROOT + "augments/%s.png" % definition.augment_id)
 			paths.append(ROOT + "augments/AUG_CARD_PACK.png")
 	return _with_table_icon(paths, definition.icon_file, "augments/")
+
+
+static func law_candidates(law_id: String) -> Array[String]:
+	var paths: Array[String] = [ROOT + "laws/%s.png" % law_id]
+	if law_id == "LAW_02" and VictoryLaw.variant_active(law_id):
+		paths.push_front(MONATIUM_LAW_ICON)
+	return paths
 
 
 static func tool_candidates(tool_id: StringName) -> Array[String]:
@@ -94,7 +102,7 @@ static func load_first(paths: Array[String]) -> Texture2D:
 	return null
 
 
-static func make_texture(texture: Texture2D, diameter: float) -> TextureRect:
+static func make_texture(texture: Texture2D, diameter: float, rim_color: Color = Color.TRANSPARENT) -> TextureRect:
 	var art := TextureRect.new()
 	art.name = "EmblemArt"
 	art.texture = texture
@@ -104,5 +112,6 @@ static func make_texture(texture: Texture2D, diameter: float) -> TextureRect:
 	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var circle := ShaderMaterial.new()
 	circle.shader = CIRCLE_SHADER
+	circle.set_shader_parameter("rim_color", rim_color)
 	art.material = circle
 	return art
