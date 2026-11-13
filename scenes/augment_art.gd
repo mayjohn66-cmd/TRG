@@ -102,7 +102,7 @@ static func load_first(paths: Array[String]) -> Texture2D:
 	return null
 
 
-static func make_texture(texture: Texture2D, diameter: float) -> TextureRect:
+static func make_texture(texture: Texture2D, diameter: float, rim_color: Color = Color.TRANSPARENT) -> TextureRect:
 	var art := TextureRect.new()
 	art.name = "EmblemArt"
 	art.texture = texture
@@ -112,5 +112,6 @@ static func make_texture(texture: Texture2D, diameter: float) -> TextureRect:
 	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var circle := ShaderMaterial.new()
 	circle.shader = CIRCLE_SHADER
+	circle.set_shader_parameter("rim_color", rim_color)
 	art.material = circle
 	return art

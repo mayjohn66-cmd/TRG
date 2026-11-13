@@ -10404,7 +10404,7 @@ static func _make_emblem(glyph: String, color: Color, texture: Texture2D = null)
 	aura.material = aura_material
 	emblem.add_child(aura)
 	if texture != null:
-		var art: TextureRect = AugmentArt.make_texture(texture, 110.0)
+		var art: TextureRect = AugmentArt.make_texture(texture, 110.0, Color(color.lightened(0.18), 0.42))
 		art.position = Vector2(20, 20)
 		emblem.add_child(art)
 		return emblem
