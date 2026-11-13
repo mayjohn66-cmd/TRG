@@ -48,6 +48,9 @@ static var battery_saver: bool = false
 const BATTERY_SAVER_FPS: int = 30
 ## 저화질: 아바타 로비 대기 애니메이션을 1024px 대신 640px 묶음으로 받아 쓴다 (용량·메모리 절약). 끄면 고화질(1024px).
 static var low_quality: bool = false
+## 웹 캔버스가 그리는 가로 픽셀 상한: 저화질은 기준 해상도(1366) 그대로, 고화질은 그 2배까지 (고해상도 화면·폰에서 그리는 픽셀이 너무 많아지지 않게).
+const RENDER_WIDTH_LOW: int = 1366
+const RENDER_WIDTH_HIGH: int = 2732
 ## 화면은 늘 16:9(기준 1366x768)로 고정한다. 웹은 shell.html이 캔버스를 16:9로 가운데에 두고 남는 칸을 연두색(web/letterbox-pattern.png가 있으면 그 패턴)으로 칠한다.
 ## 화면 언어 (L10n.LANGUAGES). 처음 실행하면 기기 언어를 따른다 (한국어 기기 KR, 그 밖 EN). 번역이 없는 문구는 한국어로 나온다.
 static var language: String = L10n.DEFAULT_LANG
@@ -88,7 +91,7 @@ static func load_settings() -> void:
 		master_volume = clampf(float(config.get_value("game", "master_volume", 1.0)), 0.0, 1.0)
 		screen_shake = bool(config.get_value("game", "screen_shake", true))
 		battery_saver = bool(config.get_value("game", "battery_saver", false))
-		low_quality = bool(config.get_value("game", "low_quality", false))
+		low_quality = bool(config.get_value("game", "low_quality", default_low_quality()))  # 저장값이 없으면 터치 기기는 저화질
 		game_speed = int(config.get_value("game", "game_speed", 1))
 		if not GAME_SPEEDS.has(game_speed):
 			game_speed = 1
@@ -108,12 +111,14 @@ static func load_settings() -> void:
 		# 설정 파일이 없으면 영구 기록의 언어, 그것도 없으면 기기 언어
 		var saved_lang: String = str(PlayerSave.get_value("lang", ""))
 		language = saved_lang if L10n.LANGUAGES.has(saved_lang) else L10n.detect_os_language()
+		low_quality = default_low_quality()
 	if not L10n.set_language(language):
 		language = L10n.DEFAULT_LANG
 		L10n.set_language(language)
 	L10n.install()
 	apply_frame_limit()
 	apply_screen_fit()
+	apply_render_quality()
 
 
 ## 설정 화면의 [기본값으로]: 소리·화면 설정을 처음 값으로 되돌린다 (아바타는 그대로).
@@ -128,9 +133,21 @@ static func reset_settings() -> void:
 	bgm_muted = false
 	screen_shake = true
 	battery_saver = false
-	low_quality = false
+	low_quality = default_low_quality()
 	apply_frame_limit()
+	apply_render_quality()
 	save_settings()
+
+
+## 화질 설정의 처음 값: 터치 기기(폰·태블릿)는 저화질, PC는 고화질. 설정에서 직접 바꾸면 그 값이 저장돼 우선한다.
+static func default_low_quality() -> bool:
+	return MobileSupport.touch_mode()
+
+
+## 웹: 화질에 맞춰 캔버스가 그리는 최대 가로 픽셀을 shell.html에 알린다 (저화질 1366 / 고화질 2732). 웹이 아니면 아무것도 하지 않는다.
+static func apply_render_quality() -> void:
+	if OS.has_feature("web"):
+		JavaScriptBridge.eval("window.trgSetMaxCanvasWidth && window.trgSetMaxCanvasWidth(%d)" % (RENDER_WIDTH_LOW if low_quality else RENDER_WIDTH_HIGH))
 
 
 ## 배터리 절약이면 초당 그리는 장수를 묶고, 아니면 제한을 푼다.

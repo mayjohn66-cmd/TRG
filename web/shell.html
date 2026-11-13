@@ -410,11 +410,14 @@
 		GODOT_CONFIG.canvasResizePolicy = 0;
 		(function () {
 			var canvas = document.getElementById('canvas');
+			// 캔버스가 그리는 가로 픽셀 상한 (게임이 화질 설정에 맞춰 알려 준다: 저화질 1366, 고화질 2732). 고해상도 화면·폰에서 그리는 픽셀 수를 묶는다.
+			var maxCanvasW = 2732;
 			function fit() {
 				var W = window.innerWidth, H = window.innerHeight;
 				var w = W, h = Math.round(W * 768 / 1366);
 				if (h > H) { h = H; w = Math.round(H * 1366 / 768); }
 				var d = window.devicePixelRatio || 1;
+				d = Math.max(0.5, Math.min(d, maxCanvasW / w));
 				canvas.style.width = w + 'px';
 				canvas.style.height = h + 'px';
 				canvas.style.left = Math.floor((W - w) / 2) + 'px';
@@ -426,6 +429,7 @@
 			window.addEventListener('resize', fit);
 			document.addEventListener('fullscreenchange', fit);
 			window.trgFit16x9 = fit;
+			window.trgSetMaxCanvasWidth = function (px) { if (px > 0) { maxCanvasW = px; fit(); } };
 			var pattern = new Image();
 			pattern.onload = function () { document.body.style.backgroundImage = "url('letterbox-pattern.png?v=__TRG_BUILD_ID__')"; };
 			pattern.onerror = function () { console.warn('Letterbox pattern asset could not be loaded.'); };

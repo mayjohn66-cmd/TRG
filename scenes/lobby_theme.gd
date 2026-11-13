@@ -380,6 +380,7 @@ static func add_settings_controls(box: Container, ink: Color) -> void:
 		GameSession.save_settings())
 	_add_switch(box, ink, "LowQualitySwitch", "저화질 (아바타 애니메이션 640px)", GameSession.low_quality, func(on: bool) -> void:
 		GameSession.low_quality = on
+		GameSession.apply_render_quality()
 		GameSession.save_settings()
 		AvatarPacks.request(GameSession.avatar_id, true))  # 웹: 고른 화질의 묶음을 받는다 (이미 받았으면 그대로, 새로 보는 화면부터 적용)
 	box.add_child(_section_label("소리", ink))
