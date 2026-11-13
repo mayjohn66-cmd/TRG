@@ -57,13 +57,6 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	size = Vector2(200, 170)
 	custom_minimum_size = size
-	_wheel = RouletteSpin3D.new()
-	_wheel.custom_minimum_size = Vector2(WHEEL_SIZE, WHEEL_SIZE)
-	_wheel.size = Vector2(WHEEL_SIZE, WHEEL_SIZE)
-	_wheel.position = Vector2((size.x - WHEEL_SIZE) / 2.0, 6.0)
-	_wheel.pivot_offset = _wheel.size / 2.0
-	_wheel.visible = false
-	add_child(_wheel)
 	_face_label = Label.new()
 	_face_label.add_theme_color_override("font_color", Color("ffd43b"))
 	_face_label.add_theme_color_override("font_outline_color", Color("0d1018"))
@@ -73,12 +66,6 @@ func _ready() -> void:
 	_face_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_face_label.visible = false
 	add_child(_face_label)
-	_gun = ToyFlagGun3D.new()
-	_gun.custom_minimum_size = Vector2(280,168)
-	_gun.size = Vector2(280,168)
-	_gun.position = Vector2((size.x - 280.0) / 2.0, 4.0)
-	_gun.visible = false
-	add_child(_gun)
 	_hint_label = Label.new()
 	_hint_label.add_theme_color_override("font_color", Color("fff3bf"))
 	_hint_label.add_theme_font_override("font", preload("res://assets/fonts/game_small_font.tres"))  # 작은 안내 글자는 또렷한 고딕
@@ -90,6 +77,33 @@ func _ready() -> void:
 	set_kind(Kind.NONE)
 
 
+## 3D 룰렛/리볼버는 처음 쓸 때 만든다 (안 쓰는 판에서는 SubViewport 두 개와 그 텍스처 메모리를 아낀다).
+func _ensure_wheel() -> RouletteSpin3D:
+	if _wheel == null:
+		_wheel = RouletteSpin3D.new()
+		_wheel.custom_minimum_size = Vector2(WHEEL_SIZE, WHEEL_SIZE)
+		_wheel.size = Vector2(WHEEL_SIZE, WHEEL_SIZE)
+		_wheel.position = Vector2((size.x - WHEEL_SIZE) / 2.0, 6.0)
+		_wheel.pivot_offset = _wheel.size / 2.0
+		_wheel.visible = false
+		add_child(_wheel)
+		move_child(_wheel, 0)
+	return _wheel
+
+
+func _ensure_gun() -> ToyFlagGun3D:
+	if _gun == null:
+		_gun = ToyFlagGun3D.new()
+		_gun.custom_minimum_size = Vector2(280,168)
+		_gun.size = Vector2(280,168)
+		_gun.position = Vector2((size.x - 280.0) / 2.0, 4.0)
+		_gun.visible = false
+		add_child(_gun)
+		if _face_label != null:
+			move_child(_gun, _face_label.get_index() + 1)
+	return _gun
+
+
 ## 어떤 패드를 보여 줄지 정한다 (NONE이면 숨김: 일반 굴리기 버튼이 대신 보인다).
 func set_kind(value: Kind) -> void:
 	if kind != value:
@@ -97,18 +111,23 @@ func set_kind(value: Kind) -> void:
 		_prepared_key = ""
 	kind = value
 	visible = value != Kind.NONE
-	if _wheel == null:
+	if _face_label == null:
 		return
-	if value != Kind.ROULETTE:
+	if value == Kind.ROULETTE:
+		_ensure_wheel()
+		if _wheel.render_view != null:
+			_wheel.render_view.render_target_update_mode = SubViewport.UPDATE_ONCE
+	elif _wheel != null:
 		_wheel.stop_rendering()
-	elif _wheel.render_view != null:
-		_wheel.render_view.render_target_update_mode = SubViewport.UPDATE_ONCE
-	_wheel.visible = value == Kind.ROULETTE
+	if _wheel != null:
+		_wheel.visible = value == Kind.ROULETTE
 	_face_label.visible = value == Kind.ROULETTE
-	_gun.visible = value == Kind.REVOLVER
 	if value == Kind.REVOLVER:
+		_ensure_gun()
+		_gun.visible = true
 		_gun.render_view.render_target_update_mode = SubViewport.UPDATE_ONCE
-	else:
+	elif _gun != null:
+		_gun.visible = false
 		_gun.stop_rendering()
 	match value:
 		Kind.ROULETTE:
@@ -165,7 +184,7 @@ func ensure_revolver_prepared(key: String, pending: bool) -> void:
 	if _prepared_key==key:
 		return
 	_prepared_key = key
-	_gun.reset_state()
+	_ensure_gun().reset_state()
 	if instant or pending:
 		_gun.show_side()
 		return
@@ -188,7 +207,7 @@ func _gui_input(event: InputEvent) -> void:
 			trigger_pulled.emit()
 		return
 	# 원클릭: 원판을 한 번 누르면 바로 시원하게 돈다 (돌리는 속도를 잴 필요가 없다).
-	var center: Vector2 = _wheel.position + _wheel.size / 2.0
+	var center: Vector2 = _ensure_wheel().position + _wheel.size / 2.0
 	if button != null and button.pressed and button.button_index == MOUSE_BUTTON_LEFT:
 		if button.position.distance_to(center) > WHEEL_SIZE / 2.0 + 14.0:
 			return
@@ -197,6 +216,7 @@ func _gui_input(event: InputEvent) -> void:
 
 
 func _show_face_under_needle() -> void:
+	_ensure_wheel()
 	_face_label.text = str(_wheel.displayed_value())
 
 
@@ -204,6 +224,7 @@ func _show_face_under_needle() -> void:
 func play_spin(face: int, power: float) -> void:
 	cancel_spin()
 	last_face = face
+	_ensure_wheel()
 	_pulse_face(1.0)
 	if instant or not is_inside_tree():
 		_wheel.set_idle_angle((face-1)*RouletteSpin3D.STEP)
@@ -283,7 +304,7 @@ func cancel_spin() -> void:
 func play_trigger(fired: bool, accumulated: int, lost: int = 0, can_continue: bool = true) -> void:
 	cancel_spin()
 	_trigger_caption = ToyFlagGun3D.result_caption(fired,accumulated,lost,can_continue)
-	_gun.show()
+	_ensure_gun().show()
 	_gun.begin(fired,accumulated,lost)
 	if instant or not is_inside_tree():
 		_gun.apply_time(ToyFlagGun3D.total_time(fired))

@@ -1652,7 +1652,7 @@ func _test_roll_pad() -> void:
 	current = manager.current_player_id()
 	manager.state.tools[current] = ToolRegistry.create(&"REVOLVER")
 	_board._refresh_controls()
-	_expect(pad.kind == RollPad.Kind.REVOLVER and pad._gun.visible and not pad._wheel.visible, "러시안 룰렛은 리볼버 패드")
+	_expect(pad.kind == RollPad.Kind.REVOLVER and pad._gun.visible and (pad._wheel == null or not pad._wheel.visible), "러시안 룰렛은 리볼버 패드")
 	var before: int = faces.size()
 	var shots: Array = []
 	manager.event_received.connect(func(kind: StringName, data: Dictionary) -> void:

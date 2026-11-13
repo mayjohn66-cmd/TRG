@@ -2303,11 +2303,6 @@ func _build_action_bar() -> void:
 	_roll_pad.trigger_pulled.connect(_on_pad_trigger_pulled)
 	_roll_pad.preparation_finished.connect(_refresh_controls)
 	add_child(_roll_pad)
-	_dart_idle = DartBoardView.new()
-	_dart_idle.name = "DartIdle"
-	_dart_idle.position = Vector2(683.0, 335.0) - DartBoardView.SIZE * 0.5
-	_dart_idle.visible = false
-	add_child(_dart_idle)
 	_build_hammer_panel()
 	# 러시안 룰렛은 [발사]와 [정지] 두 버튼만 쓴다 (정지 버튼은 룰렛을 쓸 때만 이 줄로 옮겨 온다).
 	_gun_row = HBoxContainer.new()
@@ -7538,10 +7533,15 @@ func _play_hammer_outcome(tool_name: String, failed_level: int, success: bool) -
 
 ## 다트 과녁: 내가 던질 차례(굴리기 전)에만 한가운데 천천히 돈다. 던지면 굴림 연출이 같은 과녁에 다트를 꽂는다.
 func _refresh_dart_idle(tool: BaseJudgmentTool) -> void:
-	if _dart_idle == null:
-		return
-	_dart_idle.position = _board_center() - DartBoardView.SIZE * 0.5
 	var show: bool = tool is ToolDarts and _roll_view_allowed() and not _fx_busy and not _is_bot_turn() and manager.current_player_id() == _dock_owner() and _fx_on()
+	if _dart_idle == null:
+		if not show:
+			return  # 다트를 쓰지 않는 판에서는 과녁 3D 화면을 만들지 않는다
+		_dart_idle = DartBoardView.new()
+		_dart_idle.name = "DartIdle"
+		_dart_idle.visible = false
+		add_child(_dart_idle)
+	_dart_idle.position = _board_center() - DartBoardView.SIZE * 0.5
 	if show != _dart_idle.visible:
 		_dart_idle.visible = show
 		_dart_idle.set_idle(show)
