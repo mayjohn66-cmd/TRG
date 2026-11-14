@@ -1,6 +1,6 @@
 # File: res://scenes/opening_sequence.gd
 # Class: class_name OpeningSequence
-# Role: 게임 시작 직후 1라운드 증강 선택 전에 재생하는 만화 컷 오프닝(참가자마다 사선 컷 + 승리 일러스트가 위·아래에서 탁탁탁 들어옴 -> [GAME START!] 띠가 가로질러 쾅 -> 잠시 뒤 부제 [모든 말을 완주하라!]). 클릭하면 건너뛰며, 끝나면 finished를 보낸다. 연출만 담당한다
+# Role: 게임 시작 직후 재생하는 만화 컷 오프닝(참가자마다 사선 컷 + 승리 일러스트가 위·아래에서 탁탁탁 들어옴 -> 일직선 [GAME START!] 띠가 왼쪽에서 가로질러 쾅 -> 잠시 뒤 띠 안에 부제 [모든 말을 완주하라!] -> 띠는 오른쪽으로 빠지고 1·3번째 컷은 위로, 2·4번째 컷은 아래로 퇴장). 끝나면 보드가 첫 차례(누구 턴인지) 배너를 띄운다. 클릭하면 건너뛰며, 끝나면 finished를 보낸다. 연출만 담당한다
 class_name OpeningSequence
 extends Control
 
@@ -13,10 +13,12 @@ const STEP_HOLD: float = 0.45
 const STEP_SLASH: float = 0.32
 const STEP_SUBTITLE_DELAY: float = 0.5
 const STEP_READ: float = 1.1
-const STEP_OUT: float = 0.3
+const STEP_OUT: float = 0.42
 ## 컷 사이 경계가 기우는 폭(픽셀)과 컷 띠의 높이.
 const SLANT: float = 54.0
 const BAND_MAX_HEIGHT: float = 560.0
+## [GAME START!] 띠 높이 (제목 + 부제가 함께 들어간다).
+const BAND_HEIGHT: float = 240.0
 const SUBTITLE_TEXT: String = "모든 말을 완주하라!"
 
 var _board: MainBoard = null
@@ -25,6 +27,9 @@ var _done: bool = false
 var _dim: ColorRect = null
 var _root: Control = null
 var _skip_hint: Label = null
+var _panels: Array[CutPanel] = []
+var _band: Control = null
+var _band_home: Vector2 = Vector2.ZERO
 ## 연출 속도 배율(설정의 연출 속도, 1~1.4배): 컷 등장·유지 시간에만 곱한다. 띠와 부제는 읽히는 시간을 지키려 그대로 둔다.
 var _k: float = 1.0
 
@@ -113,7 +118,7 @@ func start() -> void:
 	_tween.tween_callback(_step_title)
 	_tween.tween_interval(STEP_SLASH + STEP_SUBTITLE_DELAY + STEP_READ)
 	_tween.tween_callback(_step_out)
-	_tween.tween_interval(STEP_OUT)
+	_tween.tween_interval(STEP_OUT + 0.16)
 	_tween.tween_callback(_finish)
 
 
@@ -155,6 +160,7 @@ func _build_panels() -> void:
 		var from_y: float = -(top + band_h + 40.0) if index % 2 == 0 else (screen.y - top + 40.0)
 		panel.position = home + Vector2(0, from_y)
 		_root.add_child(panel)
+		_panels.append(panel)
 		_add_name_tag(panel, player_id, index == 0, index == count - 1)
 		var delay: float = PANEL_STAGGER * index * _k
 		var slide: Tween = panel.create_tween()
@@ -197,7 +203,7 @@ func _add_name_tag(panel: CutPanel, player_id: int, is_first: bool, is_last: boo
 	panel.add_child(tag)
 
 
-# --- Step 2: [GAME START!] 띠가 가로지른다, 잠시 뒤 부제 ----------------------------------
+# --- Step 2: [GAME START!] 띠가 왼쪽에서 가로질러 들어오고, 잠시 뒤 띠 안에 부제 ---------------------
 
 func _step_title() -> void:
 	if _done:
@@ -205,22 +211,19 @@ func _step_title() -> void:
 	_skip_hint.queue_free()
 	Sfx.play(&"game_start")
 	var screen: Vector2 = get_viewport_rect().size
-	var band_w: float = screen.x * 1.35
-	var band_h: float = 168.0
+	var band_w: float = screen.x + 80.0
 	var band := Control.new()
 	band.name = "GameStartBand"
-	band.size = Vector2(band_w, band_h)
-	band.pivot_offset = band.size / 2.0
-	band.rotation = deg_to_rad(-7.0)
+	band.size = Vector2(band_w, BAND_HEIGHT)
 	band.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var home: Vector2 = Vector2((screen.x - band_w) / 2.0, (screen.y - band_h) / 2.0 - 6.0)
-	band.position = home + Vector2(-(screen.x + band_w) * 0.6, 0)
+	_band_home = Vector2(-40.0, (screen.y - BAND_HEIGHT) / 2.0 - 6.0)
+	band.position = _band_home + Vector2(-band_w, 0)
 	var body := ColorRect.new()
 	body.color = Color("101626")
 	body.size = band.size
 	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	band.add_child(body)
-	for edge_y: float in [0.0, band_h - 8.0]:
+	for edge_y: float in [0.0, BAND_HEIGHT - 8.0]:
 		var edge := ColorRect.new()
 		edge.color = Color("ffe066")
 		edge.size = Vector2(band_w, 8)
@@ -232,12 +235,26 @@ func _step_title() -> void:
 	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	title.add_theme_constant_override("outline_size", 12)
 	title.add_theme_color_override("font_outline_color", Color("3a0f0f"))
-	title.size = Vector2(band_w, band_h)
+	title.size = Vector2(band_w, 140)
+	title.position = Vector2(0, 22)
 	title.pivot_offset = title.size / 2.0
 	band.add_child(title)
+	# 부제는 띠 안 아래쪽에 잠시 뒤 따로 뜬다 (플레이어가 목표를 읽도록)
+	var subtitle: Label = _board._make_label(SUBTITLE_TEXT, 38, Color("fff3bf"))
+	subtitle.name = "GameStartSubtitle"
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	subtitle.size = Vector2(band_w, 60)
+	subtitle.position = Vector2(0, 162)
+	subtitle.pivot_offset = subtitle.size / 2.0
+	subtitle.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	subtitle.modulate.a = 0.0
+	subtitle.scale = Vector2.ONE * 0.9
+	band.add_child(subtitle)
 	_root.add_child(band)
+	_band = band
 	var slash: Tween = band.create_tween()
-	slash.tween_property(band, "position", home, STEP_SLASH).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
+	slash.tween_property(band, "position", _band_home, STEP_SLASH).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
 	slash.tween_callback(func() -> void:
 		_board.screen_shake(9.0, 0.25)
 		_board._impact_ring(screen / 2.0, Color("ffe066"), 110.0))
@@ -246,33 +263,25 @@ func _step_title() -> void:
 	var stamp: Tween = title.create_tween()
 	stamp.tween_interval(STEP_SLASH)
 	stamp.tween_property(title, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	# 잠시 뒤 부제 (플레이어가 목표를 읽도록 띠 아래에 따로 뜬다)
-	var pill := Panel.new()
-	pill.size = Vector2(560, 68)
-	pill.position = Vector2((screen.x - pill.size.x) / 2.0, screen.y / 2.0 + 112.0)
-	pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	pill.add_theme_stylebox_override("panel", _board._style(Color(0.05, 0.06, 0.1, 0.9), Color("ffe066"), 3, 34, 0, 0))
-	pill.pivot_offset = pill.size / 2.0
-	pill.modulate.a = 0.0
-	pill.scale = Vector2.ONE * 0.9
-	var subtitle: Label = _board._make_label(SUBTITLE_TEXT, 38, Color("fff3bf"))
-	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	subtitle.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	subtitle.size = pill.size
-	subtitle.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	pill.add_child(subtitle)
-	_root.add_child(pill)
-	var reveal: Tween = pill.create_tween().set_parallel(true)
-	reveal.tween_property(pill, "modulate:a", 1.0, 0.22).set_delay(STEP_SLASH + STEP_SUBTITLE_DELAY)
-	reveal.tween_property(pill, "scale", Vector2.ONE, 0.25).set_delay(STEP_SLASH + STEP_SUBTITLE_DELAY).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	var reveal: Tween = subtitle.create_tween().set_parallel(true)
+	reveal.tween_property(subtitle, "modulate:a", 1.0, 0.22).set_delay(STEP_SLASH + STEP_SUBTITLE_DELAY)
+	reveal.tween_property(subtitle, "scale", Vector2.ONE, 0.25).set_delay(STEP_SLASH + STEP_SUBTITLE_DELAY).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
+
+# --- Step 3: 퇴장 — 띠는 들어온 방향 그대로 오른쪽으로 빠지고, 1·3번째 컷은 위로, 2·4번째 컷은 아래로 -------------
 
 func _step_out() -> void:
 	if _done:
 		return
-	var fade: Tween = create_tween().set_parallel(true)
-	fade.tween_property(_root, "modulate:a", 0.0, STEP_OUT)
-	fade.tween_property(_dim, "color:a", 0.0, STEP_OUT)
+	var screen: Vector2 = get_viewport_rect().size
+	var out: Tween = create_tween().set_parallel(true).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_IN)
+	if _band != null:
+		out.tween_property(_band, "position", _band_home + Vector2(_band.size.x + 40.0, 0), STEP_OUT)
+	for index: int in _panels.size():
+		var panel: CutPanel = _panels[index]
+		var dy: float = -(panel.position.y + panel.size.y + 40.0) if index % 2 == 0 else (screen.y - panel.position.y + 40.0)
+		out.tween_property(panel, "position:y", panel.position.y + dy, STEP_OUT).set_delay(0.04 * index)
+	out.tween_property(_dim, "color:a", 0.0, STEP_OUT + 0.12).set_trans(Tween.TRANS_LINEAR)
 
 
 func _finish() -> void:
