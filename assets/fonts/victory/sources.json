@@ -1,0 +1,181 @@
+[
+  {
+    "family": "blackhansans",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/blackhansans/BlackHanSans-Regular.ttf",
+    "license": "https://raw.githubusercontent.com/google/fonts/main/ofl/blackhansans/OFL.txt",
+    "source_sha256": "31960809284026681774a8e52dc19ebcad26cf69b0ad9d560f288296fbb52739",
+    "subset_text": "특수 승리!Special Victory!SPECIAL VICTORY!特殊勝利！FINISH!",
+    "derived_family": "TRGVictory-blackhansans",
+    "bytes": 12496
+  },
+  {
+    "family": "jua",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/jua/Jua-Regular.ttf",
+    "license": "https://raw.githubusercontent.com/google/fonts/main/ofl/jua/OFL.txt",
+    "source_sha256": "769677aef240bfc3b9965f2b50748075bff885e6c6992fc591a3fb268279f898",
+    "subset_text": "특수 승리!Special Victory!SPECIAL VICTORY!特殊勝利！FINISH!",
+    "derived_family": "TRGVictory-jua",
+    "bytes": 15012
+  },
+  {
+    "family": "songmyung",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/songmyung/SongMyung-Regular.ttf",
+    "license": "https://raw.githubusercontent.com/google/fonts/main/ofl/songmyung/OFL.txt",
+    "source_sha256": "7f90ab20250911560212cc5819c7b205f9c6644bb96b65095d89fcae096bbf58",
+    "subset_text": "특수 승리!Special Victory!SPECIAL VICTORY!特殊勝利！FINISH!",
+    "derived_family": "TRGVictory-songmyung",
+    "bytes": 15476
+  },
+  {
+    "family": "gugi",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/gugi/Gugi-Regular.ttf",
+    "license": "https://raw.githubusercontent.com/google/fonts/main/ofl/gugi/OFL.txt",
+    "source_sha256": "c0b1f979979cfc309fb2438fa9464f96173353e0c4842cc7a5919658184ed9d3",
+    "subset_text": "특수 승리!Special Victory!SPECIAL VICTORY!特殊勝利！FINISH!",
+    "derived_family": "TRGVictory-gugi",
+    "bytes": 9748
+  },
+  {
+    "family": "blackandwhitepicture",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/blackandwhitepicture/BlackAndWhitePicture-Regular.ttf",
+    "license": "https://raw.githubusercontent.com/google/fonts/main/ofl/blackandwhitepicture/OFL.txt",
+    "source_sha256": "4d72cd6de1f210b446c86f06b4e13d7641cbcfb1b375c6927341388aa8e08056",
+    "subset_text": "특수 승리!Special Victory!SPECIAL VICTORY!特殊勝利！FINISH!",
+    "derived_family": "TRGVictory-blackandwhitepicture",
+    "bytes": 38244
+  },
+  {
+    "family": "reggaeone",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/reggaeone/ReggaeOne-Regular.ttf",
+    "license": "https://raw.githubusercontent.com/google/fonts/main/ofl/reggaeone/OFL.txt",
+    "source_sha256": "aebe62598732d76036f30ec11bb0ec5f68938e373a06d1b4ceb6b9cf1abf3db2",
+    "subset_text": "특수 승리!Special Victory!SPECIAL VICTORY!特殊勝利！FINISH!",
+    "derived_family": "TRGVictory-reggaeone",
+    "bytes": 7604
+  },
+  {
+    "family": "hachimarupop",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/hachimarupop/HachiMaruPop-Regular.ttf",
+    "license": "https://raw.githubusercontent.com/google/fonts/main/ofl/hachimarupop/OFL.txt",
+    "source_sha256": "78408910c8f1a2f174a279cbc1484b48b71780039eba3fe1be2bfcc5d4df3f98",
+    "subset_text": "특수 승리!Special Victory!SPECIAL VICTORY!特殊勝利！FINISH!",
+    "derived_family": "TRGVictory-hachimarupop",
+    "bytes": 8168
+  },
+  {
+    "family": "zenantiquesoft",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/zenantiquesoft/ZenAntiqueSoft-Regular.ttf",
+    "license": "https://raw.githubusercontent.com/google/fonts/main/ofl/zenantiquesoft/OFL.txt",
+    "source_sha256": "ab566917267087f4ee3ee9662ce09ff13070e42c704e1e84b6de4c75457da1a5",
+    "subset_text": "특수 승리!Special Victory!SPECIAL VICTORY!特殊勝利！FINISH!",
+    "derived_family": "TRGVictory-zenantiquesoft",
+    "bytes": 11544
+  },
+  {
+    "family": "dotgothic16",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/dotgothic16/DotGothic16-Regular.ttf",
+    "license": "https://raw.githubusercontent.com/google/fonts/main/ofl/dotgothic16/OFL.txt",
+    "source_sha256": "3ad9af88726d42b40f7f365f0dcac785af73cf20ea6f1d5b44e57cc21150b8f1",
+    "subset_text": "특수 승리!Special Victory!SPECIAL VICTORY!特殊勝利！FINISH!",
+    "derived_family": "TRGVictory-dotgothic16",
+    "bytes": 6984
+  },
+  {
+    "family": "yujisyuku",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/yujisyuku/YujiSyuku-Regular.ttf",
+    "license": "https://raw.githubusercontent.com/google/fonts/main/ofl/yujisyuku/OFL.txt",
+    "source_sha256": "82728ebafc8c97391e2dab633414a806f344b8e4e2227d307179f07b548fca61",
+    "subset_text": "특수 승리!Special Victory!SPECIAL VICTORY!特殊勝利！FINISH!",
+    "derived_family": "TRGVictory-yujisyuku",
+    "bytes": 21296
+  },
+  {
+    "family": "racingsansone",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/racingsansone/RacingSansOne-Regular.ttf",
+    "license": "https://raw.githubusercontent.com/google/fonts/main/ofl/racingsansone/OFL.txt",
+    "source_sha256": "8b5cada83e3e4692f624f1b583a069b34e457e07a4210ceddbb1133b3383673e",
+    "subset_text": "FINISH!",
+    "derived_family": "TRGVictory-Racing",
+    "bytes": 6460
+  },
+  {
+    "family": "finale-goldman",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/goldman/Goldman-Bold.ttf",
+    "license": "https://raw.githubusercontent.com/google/fonts/main/ofl/goldman/OFL.txt",
+    "source_sha256": "3d875bc02d79dff86369ada5b4c4d8c1b7b184bc70a322b651aa5c39693631e3",
+    "derived_family": "TRGFinale-goldman",
+    "subset_text": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~ 특수 승리!特殊勝利！",
+    "oblique_shear": 0.22,
+    "bytes": 19192
+  },
+  {
+    "family": "finale-blackopsone",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/blackopsone/BlackOpsOne-Regular.ttf",
+    "license": "https://raw.githubusercontent.com/google/fonts/main/ofl/blackopsone/OFL.txt",
+    "source_sha256": "282a825b5f294377387e3969f765408157dbea8da0f5d0aae68c6bc704b145b3",
+    "derived_family": "TRGFinale-blackopsone",
+    "subset_text": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~ 특수 승리!特殊勝利！",
+    "oblique_shear": 0,
+    "bytes": 37860
+  },
+  {
+    "family": "finale-pacifico",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/pacifico/Pacifico-Regular.ttf",
+    "license": "https://raw.githubusercontent.com/google/fonts/main/ofl/pacifico/OFL.txt",
+    "source_sha256": "5b6c0d5334a7bf77dea52b975c5a0c408878c0f7115ed5b6fb151f634b7bf701",
+    "derived_family": "TRGFinale-pacifico",
+    "subset_text": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~ 특수 승리!特殊勝利！",
+    "oblique_shear": 0,
+    "bytes": 49908
+  },
+  {
+    "family": "finale-bungee",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/bungee/Bungee-Regular.ttf",
+    "license": "https://raw.githubusercontent.com/google/fonts/main/ofl/bungee/OFL.txt",
+    "source_sha256": "c4f5361ce120af3e6b9156d0bf379fa19cda2ea0cd18ac01fd99596c6bf66e3f",
+    "derived_family": "TRGFinale-bungee",
+    "subset_text": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~ 특수 승리!特殊勝利！",
+    "oblique_shear": 0,
+    "bytes": 19196
+  },
+  {
+    "family": "finale-bebasneue",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/bebasneue/BebasNeue-Regular.ttf",
+    "license": "https://raw.githubusercontent.com/google/fonts/main/ofl/bebasneue/OFL.txt",
+    "source_sha256": "08e4623805102d819f58601e46e345648846075e363b2ceb23313c2d1c83ec73",
+    "derived_family": "TRGFinale-bebasneue",
+    "subset_text": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~ 특수 승리!特殊勝利！",
+    "oblique_shear": 0,
+    "bytes": 20548
+  },
+  {
+    "family": "finale-bangers",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/bangers/Bangers-Regular.ttf",
+    "license": "https://raw.githubusercontent.com/google/fonts/main/ofl/bangers/OFL.txt",
+    "source_sha256": "4160a7311de9342674cce9160cde9fcbb30f48190397d86ff1b70b455af65824",
+    "derived_family": "TRGFinale-bangers",
+    "subset_text": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~ 특수 승리!特殊勝利！",
+    "oblique_shear": 0,
+    "bytes": 31612
+  },
+  {
+    "family": "finale-orbitron",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/orbitron/Orbitron[wght].ttf",
+    "license": "https://raw.githubusercontent.com/google/fonts/main/ofl/orbitron/OFL.txt",
+    "source_sha256": "f42db2dd16e642258e35782916eceb1dcdbea06fb958d77ad71dc5963587e8fd",
+    "derived_family": "TRGFinale-orbitron",
+    "subset_text": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~ 특수 승리!特殊勝利！",
+    "oblique_shear": 0,
+    "bytes": 10660
+  },
+  {
+    "family": "finale-songmyung",
+    "source": "https://raw.githubusercontent.com/google/fonts/main/ofl/songmyung/SongMyung-Regular.ttf",
+    "license": "https://raw.githubusercontent.com/google/fonts/main/ofl/songmyung/OFL.txt",
+    "source_sha256": "7f90ab20250911560212cc5819c7b205f9c6644bb96b65095d89fcae096bbf58",
+    "derived_family": "TRGFinale-songmyung",
+    "subset_text": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~ 특수 승리!特殊勝利！",
+    "oblique_shear": 0,
+    "bytes": 38368
+  }
+]

@@ -1,0 +1,19 @@
+[gd_scene format=3]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wfw8r"]
+resource_name = "PolishedSteel"
+albedo_color = Color(0.7647059, 0.79607844, 0.8235294, 1)
+metallic = 1.0
+roughness = 0.12
+
+[sub_resource type="SphereMesh" id="SphereMesh_pj2qa"]
+resource_name = "SmoothSteelSphere"
+radius = 0.115
+height = 0.23
+rings = 31
+
+[node name="PinballSteelBallV01" type="Node3D" unique_id=208592641]
+
+[node name="SteelBallMesh" type="MeshInstance3D" parent="." unique_id=6288102]
+material_override = SubResource("StandardMaterial3D_wfw8r")
+mesh = SubResource("SphereMesh_pj2qa")

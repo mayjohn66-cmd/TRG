@@ -1,0 +1,7 @@
+{
+  "tool": "imagegen",
+  "asset": "pumpkin.png",
+  "transparent_background": true,
+  "description": "A plump front-facing friendly jack-o-lantern toy with a curved green stem and leaf, warm yellow carved face, restrained cel shading and warm brown outline. Isolated transparent sprite; no scenery, floor, buttons, cables, characters or text.",
+  "processing": "Original generated RGBA copied unchanged. Godot imports at a maximum of 512 pixels with mipmaps."
+}

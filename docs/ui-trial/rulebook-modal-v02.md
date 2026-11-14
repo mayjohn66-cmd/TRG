@@ -1,0 +1,9 @@
+# Large rulebook entry detail — 2026-10-28
+
+Catalogue details now open in a wide page using 88% of the landscape canvas width and a 24px logical margin above/below. A separate page container lets the leather/paper frame, content and input bounds grow together while the underlying book dim retains its original painted contour. The original basic-rule notebook keeps its previous layout.
+
+The detail content is magnified 1.4×. Playing-card faces increase from 170×238 to 240×336 before that magnification; other illustrations grow from 132×132 to 220×220. A large image/card sits on the left, with summary, rules and notes grouped to its right. Long rules retain the existing drag scroll, converted into the scaled pane's local coordinates so the content follows the pointer distance. Close remains available and Escape returns to the list first.
+
+Mouse/finger presses anywhere outside the visible page capture their whole gesture and dismiss on outside release. Header buttons, chapter tabs and grid entries behind the modal cannot receive that same tap. Inside-frame taps do not dismiss, and a drag that starts inside can leave the frame without closing it. Dismissal returns to the same catalogue and preserves its scroll position.
+
+The focused rulebook case passed 745 native/headless checks at 844×390, 740×360 and 1366×768, including large modal bounds, inside/outside pointer and native touch behavior, outside wheel blocking, dismissal over an actual background chapter button and drag distance under magnification. Native renders of both a card detail and an illustrated tool detail were inspected. The existing menu assertion now finds the actual rule text recursively because that text is grouped beside the image; only a parse check is run for the broader menu case. All local runs use `--audio-driver Dummy`. CI scope remains `rulebook-scroll`, with no full game suite.

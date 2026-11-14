@@ -1,0 +1,47 @@
+[
+  {
+    "file": "revolver_side_v02.png",
+    "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-56ad2b88-bbf2-4b75-a21c-de184e0f8a6f.png",
+    "sha256": "142eb7f334470041c45d2afb254e084c8e3fb5b1265bb3f02dc74ea2af4158da",
+    "size": [
+      1536,
+      1024
+    ],
+    "alpha_extrema": [
+      0,
+      254
+    ],
+    "tool": "native image_gen",
+    "accepted": true
+  },
+  {
+    "file": "revolver_open_v02.png",
+    "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-7aad95ff-f0c8-4006-89e2-73bfc6c2286f.png",
+    "sha256": "845aa71d2e3eae57e0acabe53a3e3775e60c3bf9da0b1ff46bd77a97a2ac1775",
+    "size": [
+      1536,
+      1024
+    ],
+    "alpha_extrema": [
+      0,
+      254
+    ],
+    "tool": "native image_gen",
+    "accepted": true
+  },
+  {
+    "file": "revolver_quarter_v02.png",
+    "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-64088187-b1c5-4e2e-a4dd-057a285a661c.png",
+    "sha256": "72663ca4bb4c44dc18ef5bb94dfc8e7dbaaff9b967fdc858d42298d7af6a3a60",
+    "size": [
+      1536,
+      1024
+    ],
+    "alpha_extrema": [
+      0,
+      254
+    ],
+    "tool": "native image_gen",
+    "accepted": true
+  }
+]

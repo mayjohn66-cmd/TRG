@@ -1,0 +1,601 @@
+{
+ "entries": [
+  {
+   "id": "1.1",
+   "date": "",
+   "title": {
+    "ko": "1.1 업데이트",
+    "en": "Update 1.1",
+    "ja": "1.1アップデート"
+   },
+   "sections": [
+    {
+     "head": {
+      "ko": "신규 추가",
+      "en": "New",
+      "ja": "新要素"
+     },
+     "items": [
+      {
+       "ko": "새 보드판 [모나티엄 도시]: 판 선택에서 고를 수 있어요. 빵집은 편의점으로, 옷장은 자판기로 바뀌고 뽑은 음료에 따라 랜덤 버프를 받아요 (기본 보드는 [에르핀 왕국])",
+       "en": "New board [Monatium City]: pick it on the board select screen. Bakeries become convenience stores, wardrobes become vending machines, and the drink you get grants a random buff (the default board is now [Erpin Kingdom])",
+       "ja": "新ボード[モナティウム市]：ボード選択で選べます。パン屋はコンビニ、衣装棚は自販機になり、出た飲み物でランダムなバフを得ます（基本ボードは[エルピン王国]）"
+      },
+      {
+       "ko": "신규 특수 승리 [와라! 모나티엄 25]: 편의점에 6회 방문하면 승리해요 (승리 문구 MONATIUM DAYS)",
+       "en": "New special victory [Come! Monatium 25]: visit convenience stores 6 times to win (victory text: MONATIUM DAYS)",
+       "ja": "新特殊勝利[来い！モナティウム25]：コンビニに6回訪れると勝利（勝利文言 MONATIUM DAYS）"
+      },
+      {
+       "ko": "TRPG 기물 4종 추가: 전사·마법사·궁수·도적. 처치하면 레벨이 올라 곧바로 추가 전진하고, 각자 필살기가 있어요",
+       "en": "4 new TRPG pawns: Warrior, Mage, Archer, Rogue. A kill levels them up for an instant extra advance, and each has its own skill",
+       "ja": "TRPGの駒4種追加：戦士・魔法使い・弓使い・盗賊。倒すとレベルアップしてすぐ追加前進し、それぞれ必殺技があります"
+      },
+      {
+       "ko": "신규 카드 6종: 펭짱 8호, 황금장방형 팽이, 목둔: 사탕수수밭, 비상 식량, 긴급 엄폐, 전문적 해킹",
+       "en": "6 new cards: Pengjjang No. 8, Golden Rectangle Top, Wood Release: Sugarcane Field, Emergency Rations, Emergency Cover, Professional Hacking",
+       "ja": "新カード6種：ペンちゃん8号、黄金長方形のコマ、木遁：サトウキビ畑、非常食、緊急遮蔽、プロのハッキング"
+      },
+      {
+       "ko": "신규 판정 도구 2종: 오미쿠지 뽑기통(대길은 한 번 더, 대흉은 턴 종료), 아이스크림(막대에 드러난 칸만큼 전진, 한번 더!면 리필)",
+       "en": "2 new judgment tools: Omikuji Shaker (Great Blessing = extra roll, Worst = turn ends) and Ice Cream Bar (advance by the spaces on the stick; One More! refills)",
+       "ja": "新判定ツール2種：おみくじ筒（大吉でもう1回、大凶で番終了）、アイスバー（棒に出たマスだけ前進、もう1回！で補充）"
+      }
+     ]
+    },
+    {
+     "head": {
+      "ko": "변경점",
+      "en": "Changes",
+      "ja": "変更点"
+     },
+     "items": [
+      {
+       "ko": "윷은 윷·모가 나오면 눈금을 쌓으며 계속 던지고, 도·개·걸이 나오면 끝나 쌓은 눈금마다 말을 골라 이동해요. 낙이 나오면 바로 턴이 끝나요",
+       "en": "Yut now stacks values on Yut/Mo and keeps throwing; Do/Gae/Geol ends it, then you move a pawn for each stacked value. Nak ends the turn immediately",
+       "ja": "ユッはユッ・モが出ると目を溜めて投げ続け、ド・ゲ・ゴルで終了、溜めた目ごとに駒を選んで移動します。落が出たら即番終了"
+      }
+     ]
+    },
+    {
+     "head": {
+      "ko": "버그 수정",
+      "en": "Bug Fixes",
+      "ja": "バグ修正"
+     },
+     "items": [
+      {
+       "ko": "판정 결과가 왼쪽에 뜨던 문제를 고쳤어요 (한 번 더가 나온 턴에만 표시)",
+       "en": "Fixed roll results appearing on the left (now shown only on extra-roll turns)",
+       "ja": "判定結果が左に出る問題を修正（もう1回の番のみ表示）"
+      },
+      {
+       "ko": "게임 시작 때 소개·라운드 시작·첫 턴 알림이 한꺼번에 나오던 문제를 고쳤어요",
+       "en": "Fixed the intro, round start and first-turn banners all appearing at once when a game starts",
+       "ja": "ゲーム開始時に紹介・ラウンド開始・最初の番の通知が一度に出る問題を修正"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "1.0.1",
+   "date": "",
+   "title": {
+    "ko": "1.0.1 업데이트",
+    "en": "Update 1.0.1",
+    "ja": "1.0.1アップデート"
+   },
+   "sections": [
+    {
+     "head": {
+      "ko": "신규 추가",
+      "en": "New",
+      "ja": "新要素"
+     },
+     "items": [
+      {
+       "ko": "순위 도장: 순위가 정해진 플레이어의 프로필에 1ST · 2ND · 3RD 도장과 깃발이 찍힙니다 (흰 깃발 = 일반 승리, 붉은 깃발 = 특수 승리)",
+       "en": "Rank stamps: ranked players get a 1ST / 2ND / 3RD stamp with a flag on their profile (white flag = normal win, red flag = special victory)",
+       "ja": "順位スタンプ：順位が決まったプレイヤーのプロフィールに1ST・2ND・3RDのスタンプと旗が付きます（白旗＝通常勝利、赤旗＝特殊勝利）"
+      },
+      {
+       "ko": "증강 타임라인: 화면 위쪽에 앞으로 몇 라운드 뒤에 증강이 나오는지 보여주는 진행 트랙을 추가하고, 증강 한 라운드 전에는 \"다음 라운드 증강 선택!\" 사전 안내를 띄웁니다",
+       "en": "Augment timeline: a track at the top of the screen shows when the next augment round comes, and the round start now warns \"Pick an augment next round!\" one round ahead",
+       "ja": "オーグメントタイムライン：画面上部に、あと何ラウンドでオーグメントが出るかを示す進行トラックを追加し、1ラウンド前には「次のラウンドはオーグメント選択！」と予告します"
+      }
+     ]
+    },
+    {
+     "head": {
+      "ko": "변경점",
+      "en": "Changes",
+      "ja": "変更点"
+     },
+     "items": [
+      {
+       "ko": "불스아이 다트 보드는 타이밍 조준 없이 던지면 어디에 꽂힐지 완전한 운으로 정해져요",
+       "en": "Bullseye Dartboard no longer uses timed aiming: where the dart lands is now pure luck",
+       "ja": "ブルズアイダーツはタイミング照準をなくし、どこに刺さるかは完全に運で決まります"
+      },
+      {
+       "ko": "특수 승리는 제정된 시점부터 새로 세요 (미리 쌓은 처치·방문 기록이나 깔아 둔 설치물로 바로 달성되지 않아요)",
+       "en": "Special victories now count from the moment they are enacted (earlier kills, visits or pre-placed installations no longer carry over)",
+       "ja": "特殊勝利は制定された時点から数え直します（事前の撃破・訪問記録や設置済みの設置物では即達成されません）"
+      },
+      {
+       "ko": "교칙이 법전에 등록되면 화면 가운데에 법전(펼친 책)이 나와 그림과 승리 조건을 직접 보여줍니다",
+       "en": "When a law is enacted, an open Codex appears in the center showing its picture and win condition",
+       "ja": "教則が法典に登録されると、画面中央に開いた法典が現れ、絵と勝利条件を直接見せます"
+      },
+      {
+       "ko": "게임 주소가 hypereliasmarble.xyz로 바뀌었습니다. 내 기록(닉네임·도장·클리어 기록)은 브라우저·주소별로 따로 저장되니, 예전 주소에서 도감의 [기록 백업]으로 \"내 전용 링크\"나 코드를 복사해 두면 새 주소에서도 이어서 쓸 수 있습니다",
+       "en": "The game address is now hypereliasmarble.xyz. Your record (nickname, stamps, clears) is saved per browser and address, so copy your personal link or code from [Record backup] in the Rulebook to carry it over to a new address",
+       "ja": "ゲームのアドレスが hypereliasmarble.xyz に変わりました。記録（ニックネーム・スタンプ・クリア記録）はブラウザとアドレスごとに保存されるため、ルールブックの［記録バックアップ］から「専用リンク」またはコードをコピーしておくと、新しいアドレスでも引き継げます"
+      },
+      {
+       "ko": "위쪽 줄을 정리: 상단의 [언어]·[배속]·[피드백] 버튼을 없애고 [메뉴]만 남겼습니다. [배속]과 [피드백]은 메뉴 안에서 쓸 수 있습니다. 중요하지 않은 위쪽 알림(카드·함정·템포 업 자막, 필살기 사용 가능 알림)도 없애고, 처치·법전·순위 같은 큰 사건만 증강 타임라인 아래에 보여 줍니다",
+       "en": "Top bar tidied up: the in-game [Language], [Speed] and [Feedback] buttons are gone and only [Menu] remains; Speed and Feedback now live inside the menu. Minor top alerts (card/trap/tempo-up captions and the \"skill ready\" notice) were removed; only big events such as kills, laws and rankings show under the augment timeline",
+       "ja": "画面上部を整理：ゲーム中の［言語］［倍速］［フィードバック］ボタンを廃止し、［メニュー］のみに。倍速とフィードバックはメニュー内で使えます。重要でない上部通知（カード・罠・テンポアップの字幕、スキル使用可能の通知）も廃止し、撃破・法典・順位など大きな出来事だけをオーグメントタイムラインの下に表示します"
+      },
+      {
+       "ko": "이동할 말 고르기를 하단 기물 독과 통일: 큰 카드 배너 대신 같은 독에서 고를 수 있는 말만 금테로 강조하고, 처치·완주 같은 좋은 결과는 초록 테두리와 글자로 미리 알려 줍니다",
+       "en": "Piece selection now uses the bottom piece dock instead of the big card banner: selectable pieces get a gold border and good outcomes such as a capture or finish are previewed in green",
+       "ja": "移動する駒の選択を下部の駒ドックに統一：大きなカードバナーの代わりに、同じドックで選べる駒を金枠で強調し、撃破・ゴールなど良い結果は緑枠と文字で予告します"
+      },
+      {
+       "ko": "친선전에서 컴퓨터와 함께 할 때, 사람이 모두 졸업하면 컴퓨터끼리 남은 판은 바로 끝납니다 (남은 컴퓨터는 그 순간의 레이스 순서로 순위가 정해집니다). 사람이 나가 컴퓨터가 자리를 이어받은 경우도 같습니다",
+       "en": "In friendly matches with computer players, the game now ends right away once every human has finished (the remaining computers are ranked by their race order at that moment). The same applies when a human leaves and a computer takes over the seat",
+       "ja": "フレンド戦でコンピューターと一緒に遊ぶ場合、人間のプレイヤーが全員ゴールするとコンピューターだけが残った試合はすぐに終了します（残ったコンピューターはその時点のレース順で順位が決まります）。人間が退出してコンピューターが席を引き継いだ場合も同様です"
+      },
+      {
+       "ko": "증강 선택지가 바로 튀어나오지 않고, 먼저 [증강 선택!] 알림이 뜬 뒤에 선택지가 올라옵니다",
+       "en": "Augment choices no longer pop up instantly: an [Choose an Augment!] stamp appears first, and then the choices slide in",
+       "ja": "オーグメントの選択肢がいきなり表示されず、まず［増強選択！］の表示が出てから選択肢が現れるようになりました"
+      },
+      {
+       "ko": "첫 증강이 1라운드가 아니라 4라운드에 나옵니다. 1~3라운드에는 증강 없이 기본 주사위 굴리기와 말 이동을 먼저 체험할 수 있습니다 (이후 7·10·13…라운드, 초증강·법전은 7라운드부터)",
+       "en": "The first augment now appears in round 4 instead of round 1, so you can try the basic dice roll and piece movement in rounds 1-3 first (then rounds 7, 10, 13…; super augments and laws from round 7)",
+       "ja": "最初のオーグメント選択が1ラウンドではなく4ラウンドになりました。1〜3ラウンドでは基本のサイコロと駒の移動を先に体験できます（以降は7・10・13…ラウンド、スーパーオーグメントと法典は7ラウンドから）"
+      },
+      {
+       "ko": "증강 풀이 템포에 맞춰 단계적으로 넓어진다: 초반(4~7라운드)은 기물·판정 도구·카드·이동 보급 같은 쉬운 증강, 템포 업 1단계(8라운드~)부터 법전·함정/방어 패키지·필살기 리필 같은 판세 개입형, 2단계(14라운드~)부터 초증강·전군 돌연변이가 합류하고 기초 기물 증강은 덜 나온다",
+       "en": "The augment pool now widens with the tempo: early rounds (4-7) offer easy augments (pieces, judgment tools, cards, move boosts); from Tempo Up 1 (round 8) board-shaping ones join (Special Wins, trap/defense packs, ultimate refills); from Tempo Up 2 (round 14) Super Augments and Mass Mutation join while basic piece augments appear less",
+       "ja": "オーグメントのプールがテンポに合わせて段階的に広がる：序盤(4〜7ラウンド)は駒・判定ツール・カード・移動補給などの簡単なもの、テンポアップ1段階(8ラウンド〜)から法典・罠/防御パッケージ・必殺技リフィルなど盤面に介入するもの、2段階(14ラウンド〜)から超オーグメント・全軍突然変異が加わり、基本の駒オーグメントは出にくくなる"
+      },
+      {
+       "ko": "윷 규칙을 윷놀이처럼 바꿨습니다: 윷·모가 나오면 바로 움직이지 않고 계속 던져 눈금을 쌓고, 도·개·걸이 나오면 던지기가 끝난 뒤 쌓인 눈금마다 움직일 말을 골라 이동합니다 (예: 윷 → 모 → 개 = 4칸, 5칸, 2칸을 각각 말을 골라 이동). 낙이 나오면 쌓인 눈금이 있어도 모두 사라지고 턴이 끝납니다",
+       "en": "Yut now follows real Yut Nori: Yut and Mo no longer move right away - you keep throwing and the values stack up, and once a Do/Gae/Geol ends the throwing you pick a pawn to move for each stacked value (e.g. Yut → Mo → Gae = 4, 5 and 2 spaces, each with its own pawn). If a Nak comes up, every stacked value is lost and your turn ends",
+       "ja": "ユッをユンノリのルールに変更しました：ユッ・モが出てもすぐには動かず、投げ続けて出目を溜め、ド・ゲ・ゴルで投げ終わったら溜めた出目ごとに駒を選んで移動します（例：ユッ→モ→ゲ＝4マス・5マス・2マスをそれぞれ駒を選んで移動）。落が出ると溜めた出目はすべて消え、番が終わります"
+      }
+     ]
+    },
+    {
+     "head": {
+      "ko": "개선사항",
+      "en": "Improvements",
+      "ja": "改善"
+     },
+     "items": [
+      {
+       "ko": "프로필의 말 칸에서 완주와 출전이 비슷해 보이던 것(특히 노란색 플레이어)을, 완주한 말은 어두운 바탕·금테·별 표시로 확실히 구분되게 개선",
+       "en": "Finished and in-play pawn slots looked alike on profiles (especially for the yellow player); finished pawns now use a dark fill, gold frame and a star",
+       "ja": "プロフィールの駒枠で完走と出撃が似て見えた問題（特に黄色のプレイヤー）を、完走した駒は暗い背景・金枠・星マークで見分けやすく改善"
+      },
+      {
+       "ko": "엘리아스 주식 차트와 불스아이 다트 보드 카드에도 다른 도구처럼 [최소 ~ 최대 몇 칸]이 보이게 개선",
+       "en": "Elias Stock Chart and Bullseye Dartboard cards now show their minimum~maximum spaces like the other tools",
+       "ja": "エリアス株チャートとブルズアイダーツのカードにも、他のツールと同じく［最小〜最大マス］が表示されるよう改善"
+      },
+      {
+       "ko": "하단 화면을 정리: 우측 하단 프로필을 없애고 기물 조작을 중앙 하단으로, 카드는 우측 하단에 작게 모아 두었다가 눌러서 펼쳐 보도록 변경 (보유 증강은 로그 머리의 [내 증강] 버튼에서 확인)",
+       "en": "Bottom screen tidied up: the lower-right profile is gone, piece controls moved to the bottom center, and cards are stacked small at the lower right and open when tapped (check your augments with the [My Augments] button on the log header)",
+       "ja": "画面下部を整理：右下のプロフィールを廃止し、駒の操作を中央下へ、カードは右下に小さくまとめてタップで開く方式に変更（所持オーグメントはログ上部の［所持オーグメント］ボタンで確認）"
+      },
+      {
+       "ko": "최종 결과 화면이 느려지던 문제 개선: 결과 만화 컷이 움직이는 동안 매 프레임 반색조 점과 줄무늬를 다시 그리던 것을 바뀔 때만 그리도록 바꿔, 그리기 호출을 약 3,500회에서 약 500회로 줄임",
+       "en": "Fixed slowdown on the final result screen: the comic panels no longer redraw their halftone dots and stripes every frame, cutting draw calls from about 3,500 to about 500",
+       "ja": "最終結果画面の処理落ちを改善：漫画コマが動いている間、毎フレーム網点とストライプを描き直していたのを変化時のみに変更し、描画呼び出しを約3,500回から約500回に削減"
+      },
+      {
+       "ko": "말을 가리키면 도착 칸 위에 [총 10칸 이동 (기본 5 + 리벤지 부스터 4 + …)]처럼 이동 거리 계산식이 보입니다. 대기 중인 리벤지 부스터 말에는 [리벤지 +4칸 대기중] 배지가 항상 표시되고, 증강·기물 선택 뒤의 확인 연출은 절반 이하로 짧아졌습니다",
+       "en": "Pointing at a piece now shows how far it will move above the destination tile (e.g. \"Move 10 spaces total (Basic 5 + Revenge Booster 4 + …)\"). Waiting pieces with a Revenge Booster always show a \"Revenge +4 waiting\" badge, and the confirmation effects after picking an augment or piece are less than half as long",
+       "ja": "駒にカーソルを合わせると、移動先のマスの上に「合計10マス移動（基本5＋リベンジブースター4＋…）」のように移動距離の内訳が表示されます。待機中のリベンジブースターの駒には「リベンジ+4マス待機中」バッジが常に表示され、オーグメントや駒を選んだ後の確認演出は半分以下に短縮されました"
+      },
+      {
+       "ko": "새 증강이 풀에 합류하는 증강 직전 라운드 예고와 템포 업 알림에 \"이제부터 고급 증강/초증강이 증강 선택지에 등장합니다!\" 안내를 함께 띄운다",
+       "en": "The pre-warning before the first draft with new augments and the Tempo Up alert now say that advanced/super augments will appear among the choices from now on",
+       "ja": "新しいオーグメントがプールに加わる直前のラウンド予告とテンポアップ通知に、「これから上級/超オーグメントが選択肢に登場します！」の案内を追加"
+      },
+      {
+       "ko": "1라운드 배너에 승리 조건 한 줄 안내, 중반 법전이 자동으로 열리기 2라운드 전부터 어떤 법전이 열릴지 라운드 배너로 예고",
+       "en": "Round 1 banner states the win condition; from 2 rounds before the mid-game Codex opens, the round banner announces which Rule will open",
+       "ja": "1ラウンドのバナーに勝利条件を一行で表示、中盤の法典が自動で開く2ラウンド前から開く法典をバナーで予告"
+      },
+      {
+       "ko": "말 선택 이동량 안내를 한 문장으로: 기본 X + 보너스 Y = 총 Z칸 이동 (도착 N번 칸)",
+       "en": "Move-amount hint is one sentence: Base X + Bonus Y = Z spaces total (arrives at tile N)",
+       "ja": "駒選択時の移動量案内を一文に：基本X＋ボーナスY＝合計Zマス移動（到着N番マス）"
+      },
+      {
+       "ko": "카드 설명 용어 통일: 말을 출발선으로 보내는 효과는 모두 \"출발선으로 사출\", 상대(사람)와 적 말 구분, 턴·손패·강탈·파괴·강제 정지·+N칸 전진·재굴림 표기를 한 가지로 맞춤 (한/영/일 모두)",
+       "en": "Card text terms unified: every start-line send-back reads \"eject … to the start line\", opponents (players) vs enemy pawns are distinguished, and turn / hand / steal / destroy / forced stop / advances +N spaces / reroll are worded one way (KO/EN/JA)",
+       "ja": "カード説明の用語を統一：駒をスタート地点へ送る効果はすべて「スタート地点へ射出」、相手(プレイヤー)と敵の駒を区別し、ターン・手札・強奪・破壊・強制停止・+Nマス前進・振り直しの表記を一つに統一(韓/英/日)"
+      },
+      {
+       "ko": "공지사항을 게임 공지 목록처럼 버전마다 한 줄로 나누고, 누르면 그 버전의 소식이 펼쳐지게 했습니다. 글 간격도 넓혀 읽기 편하게 했습니다",
+       "en": "Patch notes now appear as one row per version, like an in-game notice list; tap a row to expand that version's notes. Spacing is wider for easier reading",
+       "ja": "お知らせをゲームのお知らせ一覧のようにバージョンごとの1行にし、タップするとそのバージョンの内容が開くようにしました。文の間隔も広げて読みやすくしました"
+      },
+      {
+       "ko": "판정 도구 왼쪽의 굴림 결과 기록판은 [한 번 더]가 나왔을 때만 뜨게 했습니다 (한 번 굴리고 끝나는 결과는 더 이상 왼쪽에 뜨지 않습니다)",
+       "en": "The roll-result panel left of the judgment tool now appears only when you earn a Roll Again (single rolls no longer show up on the left)",
+       "ja": "判定ツールの左に出るロール結果パネルは「もう一回」が出たときだけ表示されるようにしました（1回で終わる結果は左に表示されません）"
+      }
+     ]
+    },
+    {
+     "head": {
+      "ko": "버그 수정",
+      "en": "Bug fixes",
+      "ja": "バグ修正"
+     },
+     "items": [
+      {
+       "ko": "친선전에서 자리가 비어 있는데 '방이 가득 찼거나 닫혔습니다'로 입장하지 못하던 문제 개선: 앞 사람이 접속하는 동안은 포기하지 않고 기다리고, 접속이 막힌 자리는 더 빨리 다시 열려요",
+       "en": "Friendly matches: joining no longer fails with 'room is full or closed' while a seat is still free - guests now wait while someone else is connecting, and stuck seats reopen faster",
+       "ja": "フレンド戦で空き席があるのに「満員か閉じられています」と表示され入室できない問題を改善：他の人が接続中は待機し、接続が止まった席はより早く再開放されます"
+      },
+      {
+       "ko": "모바일에서 방해령 카드를 눌렀을 때 [사용하기] 버튼이 화면 밖으로 밀려 가려지던 문제",
+       "en": "On mobile, the [Use] button was pushed off-screen when tapping a Meddling Spirit card",
+       "ja": "モバイルで妨害霊カードをタップすると［使用する］ボタンが画面外に押し出されて隠れる問題"
+      },
+      {
+       "ko": "리볼버에 강화 망치를 쓰면 강화 창과 리볼버 화면이 겹쳐 보이던 문제",
+       "en": "The enhancement window overlapped the revolver screen when using the Enhancement Hammer with the revolver",
+       "ja": "リボルバーに強化ハンマーを使うと、強化ウィンドウとリボルバー画面が重なる問題"
+      },
+      {
+       "ko": "모바일에서 증강 [리롤]을 누르려다 증강이 선택되던 문제를 고쳤습니다: [리롤] 버튼을 카드에서 띄우고 크게 키웠으며, 창이 새로 그려진 직후의 이어 누름은 카드를 고르지 않습니다",
+       "en": "Fixed an issue on mobile where tapping the augment [Reroll] button picked the augment instead: the button is now larger and set apart from the card, and taps right after the window redraws no longer pick a card",
+       "ja": "モバイルでオーグメントの［リロール］を押そうとするとオーグメントが選ばれてしまう問題を修正：ボタンをカードから離して大きくし、画面が描き直された直後の連続タップではカードを選ばないようにしました"
+      },
+      {
+       "ko": "[불스아이 다트 보드]를 던지기 전에 [던지기] 버튼만 보이고 가운데 다트판이 보이지 않던 문제를 고쳤습니다: 내 차례에는 과녁이 보드 한가운데 천천히 돕니다",
+       "en": "Fixed the [Bullseye Dartboard] showing only the Throw button before throwing: the board now spins slowly in the center of the table on your turn",
+       "ja": "［ブルズアイ ダーツボード］を投げる前に［投げる］ボタンだけが表示され、中央にダーツ盤が出ない問題を修正：自分の番には盤面中央でゆっくり回る的が表示されます"
+      },
+      {
+       "ko": "특수 승리(법전) 설명을 실제 판정에 맞춰 통일: 내 차례가 끝날 때 조건을 달성해 있으면 특수 승리, 보드연성진만 달성 후 다음 내 차례가 끝날 때까지 유지",
+       "en": "Special Win (Codex) text now matches the real rule: a met condition at the end of your turn wins; only the Board Alchemy Circle must be kept until the end of your next turn",
+       "ja": "特殊勝利(法典)の説明を実際の判定に統一：自分のターン終了時に条件を達成していれば特殊勝利、ボード練成陣のみ達成後に次の自分のターン終了まで維持"
+      },
+      {
+       "ko": "다트 설명 정리: 조준 없이 [던지기]만 누르면 되고 꽂히는 자리는 순수한 운",
+       "en": "Dart text clarified: no aiming, just press [Throw] - where it lands is pure luck",
+       "ja": "ダーツの説明を整理：狙う必要はなく[投げる]を押すだけ、刺さる場所は完全な運"
+      },
+      {
+       "ko": "글자 겹침·잘림 전체 점검: 프로필 이름이 버튼·손패 칩에 밀려 잘리던 것, 터치 증강 선택 창의 아래 안내 글이 화면 밖으로 나가던 것, 영어·일본어에서 판정 도구 족보 줄이 화면 오른쪽 밖으로 삐져나오거나 겹치던 것, 펼친 큰 판정 도구 카드가 [감정 표현] 버튼을 덮던 것 수정",
+       "en": "Full text overlap/clipping pass: profile names squeezed by buttons and hand chips, the footnote of the touch augment window going off-screen, judgment-tool tables spilling off the right edge or overlapping in English/Japanese, and a tall tool card covering the [Emote] button",
+       "ja": "文字の重なり・見切れを総点検：プロフィール名がボタンや手札チップに押されて切れる問題、タッチ操作のオーグメント選択ウィンドウ下の案内が画面外に出る問題、英語・日本語で判定ツールの表が画面右にはみ出す/重なる問題、大きく開いた判定ツールカードが[エモート]ボタンを覆う問題を修正"
+      },
+      {
+       "ko": "증강 선택 창 위로 [리벤지 +N칸 대기중] 배지가 튀어나오던 문제를 고쳤고, 대상을 지정하는 선택 바의 글자와 버튼을 키웠습니다",
+       "en": "Fixed the [Revenge +N] badges poking out above the augment draft window, and enlarged the text and buttons of the target-selection bar",
+       "ja": "オーグメント選択画面の上に[リベンジ +Nマス待機中]バッジがはみ出す問題を修正し、対象選択バーの文字とボタンを大きくしました"
+      },
+      {
+       "ko": "게임 시작 때 플레이어 소개, 라운드 시작, 첫 턴 알림이 한꺼번에 나오던 문제를 고쳐 순서대로 나오게 했습니다",
+       "en": "Fixed the player intro, round start and first-turn banners all playing at once when a game starts; they now play in order",
+       "ja": "ゲーム開始時にプレイヤー紹介・ラウンド開始・最初のターン表示が同時に出る問題を修正し、順番に表示されるようにしました"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "1.0",
+   "date": "",
+   "title": {
+    "ko": "1.0 업데이트",
+    "en": "Update 1.0",
+    "ja": "1.0アップデート"
+   },
+   "sections": [
+    {
+     "head": {
+      "ko": "신규 추가",
+      "en": "New",
+      "ja": "新要素"
+     },
+     "items": [
+      {
+       "ko": "판정 도구 2종: 엘리아스 주식 차트(상한가 20칸·상장폐지!), 불스아이 다트 보드(조준해서 던지기)",
+       "en": "2 new judgment tools: Elias Stock Chart (limit-up = 20 spaces, delisting!) and Bullseye Dartboard (aim and throw)",
+       "ja": "判定ツール2種：エリアス株チャート（ストップ高20マス・上場廃止！）、ブルズアイダーツ（狙って投げる）"
+      },
+      {
+       "ko": "기물 2종: 모브 큐이(오이 설치), 괴상한 멜론(함정을 먹고 커진다)",
+       "en": "2 new pieces: Mob Cucumber (plants cucumbers) and Weird Melon (grows by eating traps)",
+       "ja": "駒2種：モブ・キューイ（キュウリ設置）、奇妙なメロン（罠を食べて大きくなる）"
+      },
+      {
+       "ko": "생떼 카드: 기억상실빔, 강화 망치, 방해령 삼총사(베루·사리·메죵)",
+       "en": "Tantrum cards: Amnesia Beam, Power-up Hammer, and the Disruptor Trio (Beru, Sari, Mejong)",
+       "ja": "ワガママカード：記憶喪失ビーム、強化ハンマー、妨害令三銃士（ベル・サリ・メジョン）"
+      },
+      {
+       "ko": "소환 카드 롤링 양성자빔: 빛 기둥이 3라운드 동안 무작위로 미끄러지며 지나는 칸의 말과 함정을 전부 태운다",
+       "en": "Summon card Rolling Proton Beam: a light pillar glides at random for 3 rounds, burning every piece and trap in its path",
+       "ja": "召喚カード ローリング陽子ビーム：光の柱が3ラウンドの間ランダムに滑り、通ったマスの駒と罠をすべて焼き払う"
+      },
+      {
+       "ko": "방어 카드 이쪽을 봐라!: 잡기를 1회 회피",
+       "en": "Defense card Look Over Here!: evades 1 capture",
+       "ja": "防御カード こっちを見ろ！：捕獲を1回回避"
+      },
+      {
+       "ko": "특수 승리 방해령 허리케인 포스!! (방해령 3종을 손에 모으면 달성)",
+       "en": "New special victory: Disruptor Hurricane Force!! (collect all three Disruptor cards)",
+       "ja": "特殊勝利 妨害令ハリケーンフォース!!（妨害令3種を手札に集めると達成）"
+      },
+      {
+       "ko": "범용 증강 2종: 관성 드리프트, 현상금 수배서",
+       "en": "2 new utility augments: Inertia Drift and Bounty Poster",
+       "ja": "汎用オーグメント2種：慣性ドリフト、懸賞金手配書"
+      },
+      {
+       "ko": "로비 공지사항 버튼: 업데이트 내용을 볼 수 있고, 새 소식이 있으면 N 표시가 떠요",
+       "en": "Lobby Notices button: read update notes; an N badge appears when there's news",
+       "ja": "ロビーのお知らせボタン：アップデート内容を確認でき、新情報があるとNマークが出ます"
+      },
+      {
+       "ko": "친선전 초대 링크: 링크를 열면 방 코드 없이 바로 입장",
+       "en": "Friendly-match invite link: open it to join the room without typing a code",
+       "ja": "フレンド戦の招待リンク：開くとルームコード入力なしで入室"
+      },
+      {
+       "ko": "설정 > 화면에 해상도 선택 추가",
+       "en": "Resolution option added to Settings > Display",
+       "ja": "設定＞画面に解像度の選択を追加"
+      },
+      {
+       "ko": "연출 추가: 특수 승리 컷신, 완주 피니시 컷신, 결과창 만화 컷 페이지, 특수 승리 진행도가 차오르는 연출과 목표 칸 표시(하극상·식권·포위망)",
+       "en": "New effects: special-victory cutscenes, finish-line cutscene, comic-page result screen, special-victory progress fill and target-tile markers",
+       "ja": "演出追加：特殊勝利カットシーン、ゴール演出、結果画面のマンガページ、特殊勝利の進行度ゲージと目標マス表示"
+      }
+     ]
+    },
+    {
+     "head": {
+      "ko": "변경점",
+      "en": "Changes",
+      "ja": "変更点"
+     },
+     "items": [
+      {
+       "ko": "방어 카드를 [잡기 방어] · [공격 방어] · [함정 방어]로 나눠 표시 (바이츠 더 더스트는 [만능 방어])",
+       "en": "Defense cards are now labeled Capture / Attack / Trap Guard (Bites the Dust is All-round Guard)",
+       "ja": "防御カードを［捕獲ガード］［攻撃ガード］［罠ガード］に分けて表示（バイツ・ザ・ダストは［オールガード］）"
+      },
+      {
+       "ko": "감나빗!은 이제 공격 카드만 막는다 (잡기는 못 막음)",
+       "en": "Missed Me! now only evades attack cards (not captures)",
+       "ja": "あたらなーい！は攻撃カードのみ回避（捕獲は不可）"
+      },
+      {
+       "ko": "템포 업이 8·14·20라운드로, 라운드 상한은 25로 바뀌었어요",
+       "en": "Tempo Up now triggers at rounds 8, 14 and 20; round cap is 25",
+       "ja": "テンポアップは8・14・20ラウンド、ラウンド上限は25に変更"
+      },
+      {
+       "ko": "결승선은 [결승선 당기기]를 쓸 때만 당겨져요",
+       "en": "The finish line only moves when someone uses Pull Finish Line",
+       "ja": "ゴールラインは「ゴール引き寄せ」を使った時だけ縮まります"
+      },
+      {
+       "ko": "체스 나이트·장기 포·쇼기 기물의 패시브와 필살기를 정리",
+       "en": "Reworked passives and skills for the Chess Knight, Janggi Cannon and Shogi pieces",
+       "ja": "チェスのナイト・将棋の砲・将棋駒のパッシブと必殺技を整理"
+      },
+      {
+       "ko": "중립 기물은 라운드 끝마다 1~3칸 걷고, 적 말을 만나면 처치하고 사라져요",
+       "en": "Neutral pieces walk 1-3 spaces each round end and vanish after capturing an enemy piece",
+       "ja": "中立の駒はラウンド終了ごとに1〜3マス歩き、敵の駒を倒すと消えます"
+      },
+      {
+       "ko": "코너 함정은 설치자의 턴 3번(3라운드)만 유지되고, 발동하면 사라져요",
+       "en": "Corner traps last 3 of the owner's turns and disappear once triggered",
+       "ja": "コーナー罠は設置者のターン3回分だけ持続し、発動すると消えます"
+      },
+      {
+       "ko": "사도 포위망: 경보가 울린 뒤 다음 자기 차례까지 유지해야 승리",
+       "en": "Apostle Siege: must hold the siege until your next turn after the alarm to win",
+       "ja": "使徒包囲網：警報後、次の自分のターンまで維持して勝利"
+      },
+      {
+       "ko": "감정 표현이 기쁨·당황·슬픔 3종으로 줄었어요",
+       "en": "Emotes reduced to 3: joy, panic, sadness",
+       "ja": "エモートは喜び・困惑・悲しみの3種に"
+      },
+      {
+       "ko": "야추: 고정한 주사위는 다시 굴려도 유지 (굴리기 단축키는 스페이스바)",
+       "en": "Yahtzee: held dice stay held after rerolls (Space is the roll key)",
+       "ja": "ヨット：固定したダイスは振り直しても維持（ロールはスペースキー）"
+      },
+      {
+       "ko": "AI 대전에서 방 규칙 설정 버튼을 없앴어요 (난이도가 규칙을 정해요)",
+       "en": "Removed the room-rules button from AI matches (difficulty decides the rules)",
+       "ja": "AI対戦のルーム設定ボタンを削除（難易度がルールを決めます）"
+      },
+      {
+       "ko": "로비 오른쪽 위에 언어 · 공지사항 · 도감 · 설정 버튼을 모으고 팁 띠는 없앴어요",
+       "en": "Lobby top-right now holds Language, Notices, Rulebook and Settings; the tips bar is gone",
+       "ja": "ロビー右上に言語・お知らせ・図鑑・設定をまとめ、ヒントバーを削除"
+      },
+      {
+       "ko": "다른 사람이 카드를 뽑을 때 노란 카드가 프로필로 날아가는 연출을 없앴어요",
+       "en": "Removed the yellow card flying to a player's profile when they draw",
+       "ja": "他のプレイヤーのドロー時に黄色いカードがプロフィールへ飛ぶ演出を削除"
+      }
+     ]
+    },
+    {
+     "head": {
+      "ko": "개선사항",
+      "en": "Improvements",
+      "ja": "改善"
+     },
+     "items": [
+      {
+       "ko": "화면 가운데 알림이 긴 문장이라 읽기 힘들던 것을, 큰 한 마디(공격! · 방어 발동! 등)로 찍히고 충분히 읽을 시간 동안 보이게 개선",
+       "en": "Center notices were long sentences; they are now a big stamped word (Attack!, Defense!...) that stays long enough to read",
+       "ja": "画面中央の通知が長文で読みにくかったため、大きな一言（攻撃！・防御発動！など）をドンと表示し、読める長さだけ見えるように改善"
+      },
+      {
+       "ko": "알림·방어 팝업·주사위·결투장·증강 확인 창이 서로 겹치던 것을, 앞의 연출이 끝난 뒤에 다음 알림이 뜨도록 순서를 정리",
+       "en": "Notices, defense popups, dice, duels and augment screens overlapped; the next notice now waits until the previous effect ends",
+       "ja": "通知・防御ポップアップ・ダイス・決闘・オーグメント確認が重なっていたため、前の演出が終わってから次の通知が出るよう順序を整理"
+      },
+      {
+       "ko": "쓸 수 있는 필살기·카드를 굴리기 버튼 아래 큰 상자로 알려 보드를 가리던 것을, 화면 위쪽 한 줄 알림(★ 필살기 사용 가능! · 카드 N장 사용 가능!)으로 개선",
+       "en": "The big box under the roll button that covered the board is now a one-line top notice (Skill ready! / N cards ready!)",
+       "ja": "使える必殺技・カードを知らせる大きな枠がロールボタンの下で盤面を隠していたため、画面上部の1行通知（★必殺技使用可能！・カードN枚使用可能！）に改善"
+      },
+      {
+       "ko": "필살기 버튼이 눈에 안 띄던 것을, 쓸 수 있을 때는 금색으로 빛나며 두근거리고(못 쓸 때는 어두운 금테, 사용 후엔 회색) 효과가 한 줄로 보이게 개선",
+       "en": "Skill buttons were easy to miss; they now glow gold and pulse when usable (dark rim when not, gray when used) with a one-line effect",
+       "ja": "必殺技ボタンが目立たなかったため、使用可能時は金色に光って脈打ち（不可時は暗い金枠、使用後は灰色）、効果が1行で見えるように改善"
+      },
+      {
+       "ko": "카드 대상을 고를 때 보드를 가리던 큰 안내를, 위쪽 슬림 바로 바꿔 판이 가려지지 않게 개선",
+       "en": "Card targeting no longer covers the board; guidance moved to a slim top bar",
+       "ja": "カード対象選択の大きな案内が盤面を隠していたため、上部のスリムなバーに変更"
+      },
+      {
+       "ko": "템포 업 경고음이 한 번만 울려 놓치기 쉽던 것을, 여러 번 되풀이해 울려 알아차리기 쉽게 개선",
+       "en": "The Tempo Up warning played once and was easy to miss; it now repeats so it's hard to miss",
+       "ja": "テンポアップの警告音が1回だけで聞き逃しやすかったため、繰り返し鳴らして気づきやすく改善"
+      },
+      {
+       "ko": "리벤지 부스터에서 말이 우다다 달리던 것을, [부스터 로켓] → 잠깐 쉬고 [눈금 N칸] → 한 칸씩 전진하는 순서로 개선",
+       "en": "Revenge Booster pieces used to dash at once; it now shows [Booster Rocket] → pause → [N steps] → one space at a time",
+       "ja": "リベンジブースターで駒が一気に走っていたため、［ブースターロケット］→ひと呼吸→［目N］→1マスずつ前進の順に改善"
+      },
+      {
+       "ko": "피격음과 프로필 피격 반응이 사출 중간에 미리 나던 것을, 말이 출발선에 떨어진 뒤에 나오도록 개선",
+       "en": "Hit sounds and profile reactions fired mid-ejection; they now play after the piece lands at the start",
+       "ja": "被弾音とプロフィールの反応が射出の途中で出ていたため、駒がスタートに落ちた後に出るよう改善"
+      },
+      {
+       "ko": "방어에 성공해도 표시가 없던 것을, 방어 카드·보호막·백돌 방어막·기사의 맹세로 막으면 로그와 말 머리 위에 [방어 성공!]이 뜨도록 개선",
+       "en": "Successful defenses had no feedback; blocking now shows [Defended!] in the log and above the piece",
+       "ja": "防御成功でも表示がなかったため、防御カード・バリア・白石バリア・騎士の誓いで防ぐとログと駒の頭上に［防御成功！］が出るよう改善"
+      },
+      {
+       "ko": "중립 기물 소환 카드가 이미 판 위에 있을 때 왜 못 쓰는지 몰랐던 것을, 손패에서 흐리게 보이고 눌렀을 때 이유가 화면 가운데에 뜨도록 개선",
+       "en": "Summon cards that can't be used (a neutral piece is already out) are dimmed and tapping explains why",
+       "ja": "中立の駒がすでにいて召喚カードが使えない理由が分からなかったため、手札で薄く表示し、押すと理由が中央に出るよう改善"
+      },
+      {
+       "ko": "중립 기물이 움직이기 전 [출동!] 알림이 뜰 때 깜빡이던 것을, 제자리에 그대로 보이도록 개선",
+       "en": "Neutral pieces blinked during their [Dispatch!] notice; they now stay in place",
+       "ja": "中立の駒が［出動！］通知中に点滅していたため、その場に表示されたままになるよう改善"
+      },
+      {
+       "ko": "증강 선택 창이 뜰 때 버벅이던 것을, 창이 떠 있는 동안 뒤의 보드를 그리지 않게 해 부드럽게 개선",
+       "en": "Lag when the augment window opened; the board behind is no longer drawn while it is up",
+       "ja": "オーグメント選択画面が出る時のカクつきを、画面表示中は背後の盤面を描画しないことで改善"
+      },
+      {
+       "ko": "웹 용량이 커서 생기던 문제(로딩이 느리고 화면이 늦게 뜨던 것)를 이미지 용량을 줄여 개선",
+       "en": "Slow loading and late-appearing screens caused by a heavy web download were improved by shrinking image sizes",
+       "ja": "Web容量が大きいために起きていた問題（読み込みが遅い・画面の表示が遅い）を、画像容量の削減で改善"
+      },
+      {
+       "ko": "아이패드·폰에서 닉네임 칸을 눌러도 키패드가 안 뜨던 것을, 기본 입력 창으로 바로 열리게 하고 [랜덤 닉네임] 버튼과 빈칸 입장 시 자동 닉네임을 넣어 개선",
+       "en": "On iPad/phones the keyboard didn't appear for the nickname field; it now opens right away, with a [Random Nickname] button and auto nickname for blank entry",
+       "ja": "iPad・スマホでニックネーム欄を押してもキーボードが出なかったため、すぐ入力画面が開くようにし、［ランダムニックネーム］ボタンと空欄入場時の自動ニックネームを追加"
+      },
+      {
+       "ko": "온라인에서 컴퓨터가 대신 두는 자리의 이름이 '컴퓨터 2'로 바뀌어 로그가 헷갈리던 것을, '이름 (자동)'으로 표시하도록 개선",
+       "en": "Seats played by the computer online were renamed 'Computer 2'; they now show 'Name (auto)'",
+       "ja": "オンラインでコンピューターが代行する席の名前が「コンピューター2」になり混乱したため、「名前（自動）」と表示するよう改善"
+      },
+      {
+       "ko": "결과 화면 투표를 [재밌었어요 / 잘 모르겠어요] 두 개로 줄이고, 잘 모르겠어요를 누르면 아쉬운 점을 골라 알려 줄 수 있게 개선",
+       "en": "Result-screen voting simplified to [Fun / Not sure]; Not sure lets you pick what felt off",
+       "ja": "結果画面の投票を［面白かった／よく分からない］の2つに絞り、よく分からないを押すと残念な点を選べるよう改善"
+      },
+      {
+       "ko": "이의 있음! 카드가 방어 카드로 오해되던 것을 설명에 '내 차례 시작에 사용 · 방어 카드 아님'을 적어 개선",
+       "en": "Objection! was mistaken for a defense card; its text now says 'Use at the start of your turn · not a defense card'",
+       "ja": "異議あり！が防御カードと誤解されていたため、説明に「自分のターン開始時に使用・防御カードではない」と明記"
+      }
+     ]
+    },
+    {
+     "head": {
+      "ko": "버그 수정",
+      "en": "Bug fixes",
+      "ja": "バグ修正"
+     },
+     "items": [
+      {
+       "ko": "윷말 필살기 [한 번 더!]를 눌러도 반응이 없던 문제",
+       "en": "Yut piece skill [Once more!] did nothing when pressed",
+       "ja": "ユッ駒の必殺技「もう一回！」を押しても反応しない問題"
+      },
+      {
+       "ko": "중립 기물이 출동 알림 중 깜빡이거나 사라지던 문제",
+       "en": "Neutral pieces flickering or vanishing during their dispatch notice",
+       "ja": "中立の駒が出動通知中に点滅・消えてしまう問題"
+      },
+      {
+       "ko": "방어 카드로 막은 뒤 되갚기 사출이 처치로 세어지던 문제",
+       "en": "Retaliation ejections after a defense being counted as kills",
+       "ja": "防御後の反撃射出がキルとして数えられる問題"
+      },
+      {
+       "ko": "온라인 친선전에서 증강 선택 창이 안 뜨거나 내 자리가 컴퓨터로 넘어가던 문제",
+       "en": "Online friendly matches: augment window not showing or your seat being taken over by the computer",
+       "ja": "オンラインのフレンド戦でオーグメント選択が出ない／席がコンピューターに移る問題"
+      },
+      {
+       "ko": "블랙잭 뒤 히트/스탠드가 잠겨 게임이 멈추던 문제",
+       "en": "A Blackjack lock that could freeze the game",
+       "ja": "ブラックジャック後にヒット／スタンドがロックされゲームが止まる問題"
+      },
+      {
+       "ko": "카이지의 한방 역전법이 한 차례 이동 칸 수를 제대로 합산하지 않던 문제",
+       "en": "Kaiji's comeback law not summing a turn's total movement",
+       "ja": "カイジの一発逆転法が1ターンの移動マス数を正しく合算しない問題"
+      },
+      {
+       "ko": "피드백 창을 연 채 증강 선택이 떠서 막히던 문제, BANG! 대상 선택 표시가 남던 문제",
+       "en": "Feedback window blocking augment selection; leftover BANG! target marks",
+       "ja": "フィードバック画面とオーグメント選択の干渉、BANG!の対象表示が残る問題"
+      },
+      {
+       "ko": "화투 패에서 한 번에 끝나는데 굴림 기록판이 뜨던 문제, 최종 결과 화면에 카드 더미가 보이던 문제",
+       "en": "Hwatu showing a roll log despite a single roll; deck pile visible on the final result screen",
+       "ja": "花札で1回で終わるのにロール記録が出る問題、最終結果画面にカード山が見える問題"
+      },
+      {
+       "ko": "알림·방어 팝업·판정 도구 화면이 서로 겹치던 문제",
+       "en": "Overlaps between notices, defense popups and judgment-tool stages",
+       "ja": "通知・防御ポップアップ・判定ツール画面が重なる問題"
+      },
+      {
+       "ko": "터치를 지원하는 PC에서 팝업이 폰처럼 확대되어 흐려지던 문제",
+       "en": "Popups being scaled up and blurry on touch-capable PCs",
+       "ja": "タッチ対応PCでポップアップがスマホ扱いで拡大されぼやける問題"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

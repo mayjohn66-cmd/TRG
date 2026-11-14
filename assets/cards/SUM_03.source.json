@@ -1,0 +1,27 @@
+{
+  "scope": "Reserved trio art assigned unchanged to the registered SUM_03 card",
+  "source": "C:\\Users\\john9\\Documents\\Codex\\2026-10-16\\new-chat\\work\\trg-v101-result-polish\\assets\\fx\\law_fx\\victory_prints\\hurricane_trio_v01.png",
+  "card_asset": "C:\\Users\\john9\\Documents\\Codex\\2026-10-16\\new-chat\\work\\trg-v101-result-polish\\assets\\cards\\SUM_03.png",
+  "sha256": "26245a0eac3fbab42ff695cbef4e6d101742b3a6e6d809e9c7f51a48ef3a946c",
+  "unchanged_copy": true,
+  "size": [
+    1448,
+    1086
+  ],
+  "mode": "RGBA",
+  "alpha_extrema": [
+    0,
+    255
+  ],
+  "new_image_generation_calls": 0,
+  "mapping": "CardSkin existing default res://assets/cards/<card_id>.png resolves SUM_03.png",
+  "import": "lossless; mipmaps; size limit1024",
+  "preview": "Registered CardRegistry definition in live hand/detail and native card gallery",
+  "integration_evidence": "outputs/proton-card-integration-v01-20261103",
+  "validation": {
+    "import_exit": 0,
+    "native_render_exit": 0,
+    "audio": "Dummy",
+    "visual": "full trio visible in detail and hand card windows"
+  }
+}

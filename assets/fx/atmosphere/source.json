@@ -1,0 +1,68 @@
+{
+  "date": "2026-10-27",
+  "tool": "built-in image_gen.imagegen",
+  "agent": "Codex",
+  "image_model": "not exposed by tool",
+  "source_policy": "Native generated PNGs copied byte-for-byte with alpha preserved.",
+  "assets": [
+    {
+      "key": "smoke",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-280a98e6-dfe8-44b9-99d1-6c5d8d5cb3d8.png",
+      "target": "assets\\fx\\atmosphere\\steam_puff_v01.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        254
+      ],
+      "alpha_bbox": [
+        0,
+        0,
+        1234,
+        1254
+      ],
+      "prompt": "Use case: stylized-concept. Asset type: a single transparent neutral white steam/smoke puff sprite for a cute tabletop game. An airy irregular softly billowing little puff, asymmetrical wispy curls and delicate translucent inner eddies, broken feathered outer edges and a few clear gaps. Light grayscale white/silver ONLY for runtime tinting into cream train steam or gray overheated smoke. Slight upward drift in shape; compact roughly square silhouette. It should read like soft steam with volume, not a solid ball, cluster of circles, cotton icon, cartoon cloud outline, opaque disk, explosion or fire. Painterly clean texture that remains readable at 10 to 45 pixels. Centered on a square RGBA canvas with generous completely clear padding on every side. Truly transparent background and soft alpha fade, no black fill, no objects, scene, ground, text, frame, logo or checkerboard. One isolated sprite, not a sheet.",
+      "attempts": 1,
+      "runtime_size_limit": 256,
+      "qa": "Actual images inspected: irregular translucent steam and shallow outward dust sweep, clear margins, no objects or text. Soft alpha retained; not an outlined circle or solid sphere.",
+      "source_sha256": "1ac352e2fdcaf854b8410c9f2a5ed60458b819eaab0a9a8562e4aaa38ee65816",
+      "target_sha256": "1ac352e2fdcaf854b8410c9f2a5ed60458b819eaab0a9a8562e4aaa38ee65816"
+    },
+    {
+      "key": "dust",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-57416b16-bc0f-42e9-8425-7a67d62efc81.png",
+      "target": "assets\\fx\\atmosphere\\ground_dust_v01.png",
+      "dimensions": [
+        2172,
+        724
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        254
+      ],
+      "alpha_bbox": [
+        49,
+        20,
+        2140,
+        692
+      ],
+      "prompt": "Use case: stylized-concept. Asset type: a single transparent grayscale landing dust sweep sprite for a cute tabletop board game. A restrained low horizontal outward curling powder splash that hugs the ground plane, airy fine soft brush texture and uneven small tendrils, several sparse tiny dust grains. Open center and frayed wispy sides; a small shallow dust wake rather than a large explosive cloud. Neutral ivory white and pale gray only so the engine can tint it tan, purple or orange. Wide horizontal silhouette approximately 3:1 inside a transparent landscape canvas, generous clear padding on all sides. Reads at 30 to 80 pixels wide. No hard circle, oval outline, ring, radial spokes, solid disk, triangles, fluffy bubble shapes, heavy dark ink, objects, rocks, debris chunks, scenery, ground texture, text, frame, logo or checkerboard. Truly transparent RGBA background with soft alpha falloff. Single effect, not a spritesheet.",
+      "attempts": 1,
+      "runtime_size_limit": 512,
+      "qa": "Actual images inspected: irregular translucent steam and shallow outward dust sweep, clear margins, no objects or text. Soft alpha retained; not an outlined circle or solid sphere.",
+      "source_sha256": "134b945c8e970157f7865f46a4c4321104a679ce55937d38f78e6c7968d00b0e",
+      "target_sha256": "134b945c8e970157f7865f46a4c4321104a679ce55937d38f78e6c7968d00b0e"
+    }
+  ],
+  "reused_assets": [
+    "assets/fx/common/shockwave_v01.png",
+    "assets/fx/common/spark_fleck_v01.png",
+    "assets/fx/capture/pierce_trail_v01.png",
+    "assets/fx/priority/flame_plume_v01.png",
+    "assets/fx/priority/impact_wisp_v01.png"
+  ]
+}

@@ -1,0 +1,22 @@
+[gd_resource type="SpriteFrames" load_steps=13 format=3]
+
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_02/frames/surprised_0.webp" id="1_surprised"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_02/frames/surprised_1.webp" id="2_surprised"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_02/frames/surprised_2.webp" id="3_surprised"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_02/frames/surprised_3.webp" id="4_surprised"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_02/frames/surprised_4.webp" id="5_surprised"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_02/frames/surprised_5.webp" id="6_surprised"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_02/frames/surprised_6.webp" id="7_surprised"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_02/frames/surprised_7.webp" id="8_surprised"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_02/frames/surprised_8.webp" id="9_surprised"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_02/frames/surprised_9.webp" id="10_surprised"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_02/frames/surprised_10.webp" id="11_surprised"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_02/frames/surprised_11.webp" id="12_surprised"]
+
+[resource]
+animations = [{
+"frames": [{"duration": 1.0, "texture": ExtResource("1_surprised")}, {"duration": 1.0, "texture": ExtResource("2_surprised")}, {"duration": 1.0, "texture": ExtResource("3_surprised")}, {"duration": 1.0, "texture": ExtResource("4_surprised")}, {"duration": 1.0, "texture": ExtResource("5_surprised")}, {"duration": 1.0, "texture": ExtResource("6_surprised")}, {"duration": 1.0, "texture": ExtResource("7_surprised")}, {"duration": 1.0, "texture": ExtResource("8_surprised")}, {"duration": 1.0, "texture": ExtResource("9_surprised")}, {"duration": 1.0, "texture": ExtResource("10_surprised")}, {"duration": 1.0, "texture": ExtResource("11_surprised")}, {"duration": 1.0, "texture": ExtResource("12_surprised")}],
+"loop": true,
+"name": &"surprised",
+"speed": 10.0
+}]
