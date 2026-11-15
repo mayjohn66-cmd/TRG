@@ -280,7 +280,8 @@ static func mode_card(node_name: String, icon_kind: StringName, title_text: Stri
 	var disc_art: TextureRect = HubArt.icon(&"icon_disc")
 	disc_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	disc.add_child(disc_art)
-	HubArt.clean_edge(disc_art, 1.0)
+	var rim_tint: Color = {&"blue": Color("327ca7"), &"pink": Color("b65079")}.get(tone, Color.TRANSPARENT)
+	HubArt.clean_edge(disc_art, 1.0, rim_tint)
 	var role: StringName = {&"sword": &"practice", &"key": &"friend", &"dice": &"match"}[icon_kind]
 	var icon: TextureRect = HubArt.icon(role)
 	icon.position = Vector2(12, 12)

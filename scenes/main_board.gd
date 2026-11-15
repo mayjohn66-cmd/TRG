@@ -1283,8 +1283,6 @@ func _new_game() -> void:
 	for surface: MeshInstance2D in [_board_surface, _flat_board_surface]:  # 보드마다 판 바닥 그림이 다르다 (BoardSkin.surface_texture)
 		if surface != null:
 			surface.texture = BoardSkin.surface_texture()
-	if GameSession.match_count() <= 1 and (ai_mode or net != null):
-		_show_first_match_tip()
 	var rule_summary: String = MatchRules.summary(state.match_rules)
 	if rule_summary != "":
 		_log_line("[방 규칙] %s" % rule_summary, Color("63e6be"))
@@ -4424,34 +4422,9 @@ func _check_round_banner() -> void:
 		return
 	_announced_round = state.round_number
 	_announced_turn_key = "%d:%d" % [state.round_number, manager.current_player_id()]
-	var sub: String = round_banner_sub()
 	if _fx_on():
 		Sfx.play(&"round_start")
-	_announce("라운드", "ROUND %d" % state.round_number, "", COLOR_GOLD, null, 1.0, true, {"key": "round", "sub": sub})
-
-
-## 라운드 시작 연출의 부제: 첫 차례 안내 + 템포 업 + (다음 라운드가 증강 라운드면) 사전 예고.
-func round_banner_sub() -> String:
-	var tempo: int = TempoUp.level(state.round_number)
-	# 라운드 첫 차례는 이 배너가 차례 배너를 겸한다: 누구 차례인지 함께 알리고, 끝날 때까지 굴리기를 막는다
-	var first: int = manager.current_player_id()
-	var whose: String = tr_ui("turn.stamp_mine") if ai_mode and first == local_player_id else tr_ui("turn.stamp_other", [_player_name(first)])
-	var sub: String = whose + ("  ·  " + "템포 업 Lv.%d · 첫 이동 +%d칸" % [tempo, TempoUp.move_bonus(state.round_number)] if tempo > 0 else "")
-	# 다음 라운드가 증강 라운드면 미리 알려 전략을 세울 수 있게 한다 (2026-11 제보 "증강이 언제 나오는지 알려주면 좋겠음").
-	if manager.draft_enabled and AugmentTimeline.warns_next_round(state.round_number, PacingDirector.HARD_CAP_ROUND):
-		sub += "\n" + L10n.t("★ 다음 라운드 증강 선택!")
-		var news: String = AugmentTimeline.pool_news(state.round_number + 1)
-		if not news.is_empty():
-			sub += "  ·  " + L10n.t("★ %s 합류!") % L10n.t(news)
-	# 1라운드: 이기는 방법을 한 줄로 (기본 승리 + 중반에 열리는 법전)
-	if state.round_number == 1:
-		sub += "\n" + (L10n.t("{e:target} 승리 조건: 말 4개를 가장 먼저 완주시키거나, 중반에 열리는 [중앙 법전] 조건을 달성하세요!") if bool(state.match_rules.get("laws", true)) else L10n.t("{e:target} 승리 조건: 말 4개를 가장 먼저 완주시키세요!"))
-	# 자동 법전이 곧 열리면 어떤 법전인지 미리 알린다 (TurnManager._preview_auto_law)
-	if state.auto_law_preview != "":
-		var preview_law: LawResource = LawRegistry.create(state.auto_law_preview)
-		if preview_law != null:
-			sub += "\n" + L10n.t("★ %d라운드에 [%s] 법전이 열립니다!") % [TempoUp.stage_rounds[0], L10n.t(preview_law.law_name)]
-	return sub
+	_announce("라운드", "ROUND %d" % state.round_number, "", COLOR_GOLD, null, 1.0, true, {"key": "round"})
 
 
 ## 새 차례인데 아직 [OO 차례] 배너를 띄우지 못했다 (앞 연출이 끝나기를 기다리는 중): 그동안 봇·굴리기 버튼은 움직이지 않는다.
@@ -9801,6 +9774,12 @@ func _on_opening_finished() -> void:
 	if state == null or manager == null:
 		return
 	_refresh_all()
+	if GameSession.match_count() <= 1 and (ai_mode or net != null):
+		var opening_state = state
+		if _announcer != null and _announcer.active:
+			await _announcer.drained
+		if state == opening_state and manager != null and not manager.is_game_over:
+			_show_first_match_tip()
 
 
 func _close_opening() -> void:

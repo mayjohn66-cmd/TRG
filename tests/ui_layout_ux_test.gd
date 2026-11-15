@@ -137,27 +137,25 @@ func _run() -> void:
 	var enlarged := timeline._numbers.filter(func(chip: Label) -> bool: return not chip.scale.is_equal_approx(Vector2.ONE))
 	_expect(enlarged==[timeline._numbers[2]] and timeline._numbers[2].scale.x>1.0,"다섯 칸 중 가운데 현재 라운드만 확대한다")
 	_expect(timeline._numbers[0].get_rect().end.x<timeline._numbers[1].position.x,"라운드 칸 사이에 여백이 있다")
-	_expect(_board.round_banner_sub().contains("\n"),"3라운드 시작 연출에 [다음 라운드 증강 선택!] 사전 예고가 붙는다")
 	await create_timer(5.0).timeout  # 증강 선택 알림이 사라진 뒤의 모습
 	# 라운드 시작 연출(ROUND N)에 사전 예고가 한 줄 더 붙는 모습
 	_board.instant_roll_for_test=false;_board.pacing_enabled=true
-	_board._announce("라운드","ROUND 3","",Color("ffd43b"),null,3.0,true,{"key":"round","sub":_board.round_banner_sub()})
+	_board._announce("라운드","ROUND 3","",Color("ffd43b"),null,3.0,true,{"key":"round"})
 	await create_timer(1.2).timeout
-	await screenshot("round-banner-warning")
+	var stamp: Dictionary = _board._announcer._current.get("stamp", {})
+	_expect(_board._announcer._current.get("headline", "") == "ROUND 3" and not stamp.has("sub"), "라운드 배너에는 라운드 번호만 표시한다")
+	await screenshot("round-banner")
 	_board._announcer.cancel();_board.instant_roll_for_test=true;_board.pacing_enabled=false
 	await screenshot("timeline-r3")
 	_board.state.round_number=5;_board._refresh_all();await settle()
-	_expect(timeline.caption_kind==&"later" and timeline.caption_rounds==2 and not _board.round_banner_sub().contains("\n"),"5라운드: 7라운드까지 2라운드 뒤, 사전 예고 없음")
+	_expect(timeline.caption_kind==&"later" and timeline.caption_rounds==2,"5라운드: 7라운드까지 2라운드 뒤, 사전 예고 없음")
 	_board.state.round_number=6;_board._refresh_all();await settle()
 	_expect(not bool(timeline.rounds[3]["super"]) and timeline._numbers[3].get_theme_color("font_color")==AugmentTimeline.COLOR_GOLD,"7라운드(템포 0)는 쉬운 증강만 섞이고 증강 숫자는 노란색")
 	_board.state.round_number=1;_board.state.auto_law_preview="";_board._refresh_all();await settle()
-	_expect(_board.round_banner_sub().contains(L10n.t("{e:target} 승리 조건: 말 4개를 가장 먼저 완주시키거나, 중반에 열리는 [중앙 법전] 조건을 달성하세요!")),"1라운드 배너에 기본 승리 조건 한 줄")
 	_board.state.round_number=6;_board.state.auto_law_preview="LAW_01";_board._refresh_all();await settle()
-	_expect(_board.round_banner_sub().contains(L10n.t("★ %d라운드에 [%s] 법전이 열립니다!")%[TempoUp.stage_rounds[0],L10n.t(LawRegistry.create("LAW_01").law_name)]) and not _board.round_banner_sub().contains("{e:target}"),"6라운드 배너에 열릴 법전 예고 (승리 조건 한 줄은 1라운드만)")
 	_board.state.auto_law_preview=""
 	_board.state.round_number=9;_board._refresh_all();await settle()
 	_expect(AugmentTimeline.is_super_round(10) and AugmentTimeline.pool_news(10)!="" and AugmentTimeline.pool_news(13)=="" and AugmentTimeline.pool_news(16)!="","고급 증강 합류는 10라운드, 초증강 합류는 16라운드 증강에서 알린다")
-	_expect(_board.round_banner_sub().contains(L10n.t("★ %s 합류!")%L10n.t(AugmentTimeline.pool_news(10))),"9라운드 사전 예고에 새로 합류하는 증강 안내")
 	_board.state.round_number=6;_board._refresh_all();await settle()
 	_expect((timeline._numbers[4].get_theme_stylebox("normal") as StyleBoxFlat).border_color==AugmentTimeline.COLOR_TEMPO,"앞에 보이는 템포 업 시작 라운드는 붉은 테두리")
 	await screenshot("timeline-r6")

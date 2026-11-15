@@ -87,7 +87,7 @@ func _session(lang: String) -> void:
 	_scan(lang, "템포 업 알림")
 	_board._announcer.cancel()
 	_board.state.round_number = 6
-	_board._announce_now("라운드", "ROUND 6", "", Color("ffd43b"), null, 6.0, true, {"key": "round", "sub": _board.round_banner_sub()})
+	_board._announce_now("라운드", "ROUND 6", "", Color("ffd43b"), null, 6.0, true, {"key": "round"})
 	await _frames(40)
 	_scan(lang, "라운드 배너")
 	_board._announcer.cancel()
