@@ -125,26 +125,24 @@ func cancel() -> void:
 
 func fit_window() -> void:
 	var view: Vector2 = get_viewport_rect().size
-	var pixels: Vector2 = Vector2(get_window().size)
-	var units: float = view.x/maxf(pixels.x,1.0)
-	var side_px: float = maxf(200.0,minf(560.0,minf(pixels.x-32,pixels.y-32)))
-	var side: float = side_px*units
-	var large: bool = side_px >= 480.0
-	var pad: float = (16.0 if large else 12.0)*units
-	var gap: float = (12.0 if large else 10.0)*units
-	var head: float = (64.0 if large else 52.0)*units
-	var footer: float = (48.0 if large else 44.0)*units
+	# Use the same canvas coordinates as the UI and mouse or touch input.
+	var side: float = minf(560.0, minf(view.x, view.y) - 32.0)
+	var large: bool = side >= 480.0
+	var pad: float = 16.0 if large else 12.0
+	var gap: float = 12.0 if large else 10.0
+	var head: float = 64.0 if large else 52.0
+	var footer: float = 48.0 if large else 44.0
 	panel.size = Vector2.ONE*side
 	panel.position = (view-panel.size)*0.5
 	title_label.position = Vector2(pad,pad)
-	title_label.add_theme_font_size_override("font_size",roundi((24.0 if large else 18.0)*units))
+	title_label.add_theme_font_size_override("font_size",roundi((24.0 if large else 18.0)))
 	title_label.size = Vector2(side-2*pad,head)
 	scroll.position = Vector2(pad,pad+head+gap)
 	scroll.size = Vector2(side-2*pad,side-2*pad-head-footer-2*gap)
 	var cols: int = mini(maxi(options.size(),1),3 if columns_hint >= 3 else 2)
 	var rows: int = ceili(float(options.size())/cols)
 	var shown_rows: int = clampi(rows,1,2)
-	var cell: float = minf((scroll.size.x-16*units-(cols-1)*gap)/cols,(scroll.size.y-(shown_rows-1)*gap)/shown_rows)
+	var cell: float = minf((scroll.size.x-16-(cols-1)*gap)/cols,(scroll.size.y-(shown_rows-1)*gap)/shown_rows)
 	grid.columns = cols
 	grid.add_theme_constant_override("h_separation",roundi(gap))
 	grid.add_theme_constant_override("v_separation",roundi(gap))
@@ -160,13 +158,13 @@ func fit_window() -> void:
 		var portrait: Panel = entry["portrait"]
 		var label: Label = entry["label"]
 		var detail: Label = entry["detail"]
-		var inset: float = (8.0 if large else 6.0)*units
-		var label_font: int = roundi((22.0 if large else (14.0 if detail.visible else 16.0))*units)
+		var inset: float = (8.0 if large else 6.0)
+		var label_font: int = roundi((22.0 if large else (14.0 if detail.visible else 16.0)))
 		label.add_theme_font_size_override("font_size",label_font)
-		detail.add_theme_font_size_override("font_size",roundi((15.0 if large else 12.0)*units))
+		detail.add_theme_font_size_override("font_size",roundi((15.0 if large else 12.0)))
 		detail.max_lines_visible = 3 if large else 2
 		var detail_lines: int = mini(3,detail.text.count("\n")+1)
-		var detail_height: float = ((22.0 if large else 17.0)*detail_lines+4.0)*units if detail.visible else 0.0
+		var detail_height: float = ((22.0 if large else 17.0)*detail_lines+4.0) if detail.visible else 0.0
 		var top: float = inset
 		var name_height: float = cell-2*inset-detail_height
 		if portrait.visible:
@@ -174,8 +172,8 @@ func fit_window() -> void:
 			# tiny face to the top and centering the name in all remaining space.
 			var lines: int = 2 if label.text.length()>8 else 1
 			name_height = label_font*1.4*lines
-			var face_gap: float = (9.0 if large else 5.0)*units
-			var detail_gap: float = 3.0*units if detail.visible else 0.0
+			var face_gap: float = (9.0 if large else 5.0)
+			var detail_gap: float = 3.0 if detail.visible else 0.0
 			var face_side: float = minf(cell*0.48,cell-2*inset-name_height-detail_height-face_gap-detail_gap)
 			var group_height: float = face_side+face_gap+name_height+detail_gap+detail_height
 			portrait.position = Vector2((cell-face_side)/2,(cell-group_height)/2)
@@ -192,8 +190,8 @@ func fit_window() -> void:
 			top = portrait.position.y+face_side+face_gap
 		label.position = Vector2(inset,top)
 		label.size = Vector2(cell-2*inset,name_height)
-		detail.position = Vector2(inset,top+name_height+(3.0*units if portrait.visible and detail.visible else 0.0))
+		detail.position = Vector2(inset,top+name_height+(3.0 if portrait.visible and detail.visible else 0.0))
 		detail.size = Vector2(cell-2*inset,detail_height)
 	cancel_button.position = Vector2(pad,side-pad-footer)
 	cancel_button.size = Vector2(side-2*pad,footer)
-	cancel_button.add_theme_font_size_override("font_size",roundi(20*units))
+	cancel_button.add_theme_font_size_override("font_size",roundi(20))
