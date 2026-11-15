@@ -7918,31 +7918,31 @@ func _on_card_pressed(player_id: int, card_id: StringName) -> void:
 			var pawn_options: Array[Dictionary] = []
 			var candidates: Array[PlayerPawn] = HauntCommand.shove_targets(state, player_id) if card_id == &"ACT_18" else HauntCommand.pull_targets(state, player_id)
 			for pawn: PlayerPawn in candidates:
-				pawn_options.append({"label": "%s · %d번 말 (%d번 칸)" % [_player_name(pawn.owner_id), pawn.slot, pawn.current_tile_idx], "value": pawn.entity_id})
+				pawn_options.append({"label": "%s · %d번 말 (%d번 칸)" % [_player_name(pawn.owner_id), pawn.slot, pawn.current_tile_idx], "name": _player_name(pawn.owner_id), "detail": "%d번 말 · %d번 칸" % [pawn.slot, pawn.current_tile_idx], "pawn": pawn, "value": pawn.entity_id})
 			if pawn_options.is_empty():
 				return
 			_show_choice(("[%s] 뒤로 밀 적 말을 고르세요" if card_id == &"ACT_18" else "[%s] 앞으로 당길 내 말을 고르세요") % card.display_name, pawn_options, _play_card_with.bind(player_id, card_id, "pawn_id"))
 		&"ACT_21":  # 펭짱 8호: 펭귄을 날릴 내 말을 고르고 알까기 조준 모드로
 			var origins: Array[Dictionary] = []
 			for origin: PlayerPawn in PenguinCommand.origins(state, player_id):
-				origins.append({"label": "%s · %d번 말 (%d번 칸)" % [_player_name(origin.owner_id), origin.slot, origin.current_tile_idx], "value": origin.entity_id})
+				origins.append({"label": "%s · %d번 말 (%d번 칸)" % [_player_name(origin.owner_id), origin.slot, origin.current_tile_idx], "name": _player_name(origin.owner_id), "detail": "%d번 말 · %d번 칸" % [origin.slot, origin.current_tile_idx], "pawn": origin, "value": origin.entity_id})
 			if origins.is_empty():
 				return
 			_show_choice("[%s] 펭귄을 날릴 내 말을 고르세요" % card.display_name, origins, _on_penguin_origin_picked.bind(player_id, card_id))
 		&"ACT_22":  # 긴급 엄폐: 박스를 씌울 내 말
 			var covers: Array[Dictionary] = []
 			for cover: PlayerPawn in CoverCommand.targets(state, player_id):
-				covers.append({"label": "%s · %d번 말 (%d번 칸)" % [_player_name(cover.owner_id), cover.slot, cover.current_tile_idx], "value": cover.entity_id})
+				covers.append({"label": "%s · %d번 말 (%d번 칸)" % [_player_name(cover.owner_id), cover.slot, cover.current_tile_idx], "name": _player_name(cover.owner_id), "detail": "%d번 말 · %d번 칸" % [cover.slot, cover.current_tile_idx], "pawn": cover, "value": cover.entity_id})
 			if covers.is_empty():
 				return
 			_show_choice("[%s] 박스를 씌울 내 말을 고르세요" % card.display_name, covers, _play_card_with.bind(player_id, card_id, "pawn_id"))
 		&"ACT_14", &"ACT_15", &"ACT_20", &"ACT_23":
 			var targets: Array[Dictionary] = []
 			for target: int in StatusCardCommand.targets(state, player_id):
-				targets.append({"label": _player_name(target), "value": target})
+				targets.append({"label": _player_name(target), "portrait": _choice_portrait(target), "value": target})
 			if targets.is_empty():
 				return
-			_show_choice("[%s] 대상을 고르세요" % card.display_name, targets, _play_card_with.bind(player_id, card_id, "target_player"))
+			_show_choice("[%s] 대상을 고르세요" % card.display_name, targets, _play_card_with.bind(player_id, card_id, "target_player"), 3)
 		_:
 			_act(&"play_card", {"player_id": player_id, "card_id": card_id})
 
@@ -10155,54 +10155,30 @@ func _new_overlay(alpha: float = 0.7) -> Control:
 	return overlay
 
 
-## 슬림 선택 바의 y (위쪽 메뉴 줄 바로 아래).
-const CHOICE_BAR_TOP: float = 52.0
-
-
+## Player/pawn/card choices share a centered square modal; direct tile picking stays on the board.
 func _show_choice(title: String, options: Array[Dictionary], on_pick: Callable, columns: int = 1) -> void:
 	_close_choice()
-	# 2026-11 개선: 보드 전체를 어둡게 덮는 창 대신 화면 위쪽의 슬림한 선택 바 (보드 시야를 가리지 않는다).
-	# 바깥은 눌러도 지나간다 (취소는 [취소] 버튼). columns는 옛 격자 배치의 열 수: 바에서는 한 줄에 넘치면 다음 줄로 흐른다.
-	_choice_overlay = Control.new()
-	_choice_overlay.name = "ChoiceBar"
-	_choice_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_choice_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var view: Vector2 = get_viewport_rect().size
-	var panel := PanelContainer.new()
-	panel.name = "ChoiceBarPanel"
-	panel.add_theme_stylebox_override("panel", _style(Color(0.07, 0.09, 0.15, 0.94), COLOR_GOLD, 2, 14, 10, 10))
-	panel.custom_minimum_size = Vector2(minf(view.x * 0.82, 1100.0), 0)
-	_choice_overlay.add_child(panel)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 10)
-	panel.add_child(row)
-	var title_label: Label = _make_label(title, 15, Color("ffe066"))
-	title_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	title_label.custom_minimum_size = Vector2(260, 0)
-	title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	row.add_child(title_label)
-	var flow := HFlowContainer.new()
-	flow.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	flow.add_theme_constant_override("h_separation", 6)
-	flow.add_theme_constant_override("v_separation", 6)
-	row.add_child(flow)
-	for option: Dictionary in options:
-		var button: Button = _make_button(str(option["label"]), _on_choice_picked.bind(option["value"], on_pick), 14)
-		button.custom_minimum_size = Vector2(60 if columns > 1 else 0, 34)
-		MobileSupport.touch_button(button)
-		flow.add_child(button)
-	var cancel: Button = _make_button("취소", _close_choice, 13)
-	cancel.custom_minimum_size = Vector2(64, 34)
-	MobileSupport.touch_button(cancel)
-	row.add_child(cancel)
-	add_child(_choice_overlay)
-	_priority_modal(_choice_overlay)
-	panel.reset_size()
-	panel.position = Vector2((view.x - panel.size.x) * 0.5, CHOICE_BAR_TOP)
+	var modal := (preload("res://scenes/target_choice_modal.gd")).new()
+	modal.name = "TargetChoiceOverlay"
+	modal.board = self
+	modal.heading = title
+	modal.options = options
+	modal.columns_hint = columns
+	modal.selected.connect(_on_choice_picked.bind(on_pick))
+	modal.canceled.connect(_close_choice)
+	_choice_overlay = modal
+	add_child(modal)
+	_priority_modal(modal)
 	_refresh_tool_stage()
 
 
+func _choice_portrait(player_id: int) -> Texture2D:
+	var avatar: StringName = _avatar_for(player_id)
+	return TextureCache.fetch(AvatarSlot.icon_path(avatar)) if AvatarSlot.has_icon(avatar) else null
+
 func _on_choice_picked(value: Variant, on_pick: Callable) -> void:
+	if _choice_overlay == null:
+		return
 	_close_choice()
 	on_pick.call(value)
 

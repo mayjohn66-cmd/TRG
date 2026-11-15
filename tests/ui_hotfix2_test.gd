@@ -51,12 +51,11 @@ func _run() -> void:
 	modal.close_modal()
 	await settle()
 
-	# 2) 슬림 선택 바: 보드 전체를 덮는 어두운 막이 없고 바깥 입력은 지나간다
-	_expect(_board._choice_overlay.mouse_filter == Control.MOUSE_FILTER_IGNORE, "선택 바 바깥은 보드 입력을 막지 않는다")
-	var dims: Array = _board._choice_overlay.find_children("*", "ColorRect", true, false)
-	_expect(dims.is_empty(), "보드를 어둡게 덮는 막이 없다")
-	var bar: Control = _board._choice_overlay.find_child("ChoiceBarPanel", true, false) as Control
-	_expect(bar != null and bar.position.y < 120.0 and bar.size.y < 140.0, "화면 위쪽의 낮은 바 (y=%.0f, h=%.0f)" % [bar.position.y if bar else -1.0, bar.size.y if bar else -1.0])
+	# 2) 중앙 선택 창: 배경 입력을 차단하고 선택지를 뚜렷하게 보여 준다.
+	_expect(_board._choice_overlay.mouse_filter == Control.MOUSE_FILTER_STOP, "선택 창 뒤 보드는 입력을 받지 않는다")
+	var panel: Control = _board._choice_overlay.find_child("ChoicePanel", true, false) as Control
+	_expect(panel != null and is_equal_approx(panel.size.x, panel.size.y), "대상 선택 창은 정사각형이다")
+	_expect(panel != null and panel.get_rect().get_center().is_equal_approx(root.get_visible_rect().get_center()), "대상 선택 창은 화면 중앙에 있다")
 	_board._close_choice()
 
 	# 3) BANG! 대상 고르기 중에 차례가 넘어가면 표식·안내 띠를 치운다
