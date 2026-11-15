@@ -1,7 +1,7 @@
 # File: res://core_engine/board/board_catalog.gd
 # Class: class_name BoardCatalog
 # Role: 고를 수 있는 보드판 목록 (보드판 선택). 규칙(MatchRules "board")에 보드 id가 실리고, 판을 시작할 때 GameState.setup이 apply로 BoardSpec에 적용한다.
-#       지금은 기본 보드 하나뿐이다. 새 보드는 BOARDS에 한 줄 더하고 (칸 수가 24·32가 아니면 BoardSpec.layout_for도 확장) 이름·설명 번역 행을 넣으면
+#       보드: 에르핀 왕국(기본)·모나티엄 도시·벨라티엔 왕국(마녀 도시). 새 보드는 BOARDS에 한 줄 더하고 (칸 수가 24·32가 아니면 BoardSpec.layout_for도 확장) 이름·설명 번역 행을 넣으면
 #       방 규칙·싱글 시작 화면·도감의 선택 목록에 저절로 나온다. 모든 참가자가 같은 보드를 써야 하므로 판 도중에는 바꾸지 않는다.
 class_name BoardCatalog
 extends RefCounted
@@ -11,6 +11,7 @@ const DEFAULT_ID: StringName = &"classic"
 const BOARDS: Array[Dictionary] = [
 	{"id": &"classic", "name": "에르핀 왕국", "desc": "32칸 사각 순환 트랙 · 빵집(카드)과 옷장(순간이동)", "tiles": 32, "convenience": false},
 	{"id": &"monatium", "name": "모나티엄 도시", "desc": "32칸 사각 순환 트랙 · 편의점(카드)과 자판기(랜덤 음료 버프)", "tiles": 32, "convenience": true},
+	{"id": &"belatien", "name": "벨라티엔 왕국", "desc": "마녀들의 도시 · 마녀 상점(카드)과 마녀의 가마솥(랜덤 물약, 나쁜 물약도 있다)", "tiles": 32, "witch": true},
 ]
 
 
@@ -54,7 +55,7 @@ static var current_id: StringName = DEFAULT_ID
 ## 이 보드를 BoardSpec(전역 보드 모양)에 적용한다.
 static func apply(id: Variant) -> void:
 	current_id = sanitize(id)
-	BoardSpec.apply(tiles_of(current_id), bool(def_of(current_id).get("convenience", false)))
+	BoardSpec.apply(tiles_of(current_id), bool(def_of(current_id).get("convenience", false)), bool(def_of(current_id).get("witch", false)))
 	AugmentRegistry.apply_board_variants()  # 바꿔 쓰는 특수 승리의 선택 카드 문구도 이 보드에 맞춘다
 
 
@@ -69,15 +70,18 @@ static func apply_for_match(id: Variant) -> void:
 static func facts_of(id: Variant) -> Array:
 	var tiles: int = tiles_of(id)
 	var shop: bool = bool(def_of(id).get("convenience", false))
-	var layout: Dictionary = BoardSpec.layout_for(tiles, shop)
+	var witch_board: bool = bool(def_of(id).get("witch", false))
+	var layout: Dictionary = BoardSpec.layout_for(tiles, shop, witch_board)
 	var rows: Array = [
 		["칸 수", "%d칸 (한 변 %d칸)" % [tiles, tiles / 4]],
 		["코너", "%d곳" % (layout["corner_tiles"] as Array).size()],
 		["반환점", "%d번" % int(layout["halfway_tile"])],
-		["편의점" if shop else "빵집", "%d곳" % (layout["bakery_tiles"] as Array).size()],
+		["편의점" if shop else ("마녀 상점" if witch_board else "빵집"), "%d곳" % (layout["bakery_tiles"] as Array).size()],
 	]
 	if shop:
 		rows.append(["자판기", "%d곳" % (layout["vending_tiles"] as Array).size()])
+	elif witch_board:
+		rows.append(["마녀의 가마솥", "%d곳" % (layout["cauldron_tiles"] as Array).size()])
 	else:
 		rows.append(["옷장", "%d곳" % (layout["portal_tiles"] as Array).size()])
 	rows.append(["부스터 발판", "%d곳" % (layout["dash_tiles"] as Array).size()])

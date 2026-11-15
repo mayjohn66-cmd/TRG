@@ -2815,8 +2815,10 @@ func _tile_tag(index: int, tile_type: TileNode.TileType) -> String:
 func _tile_tag_base(index: int, tile_type: TileNode.TileType) -> String:
 	match tile_type:
 		TileNode.TileType.START_GOAL: return "▲출발"
-		TileNode.TileType.BAKERY: return "빵집"
+		TileNode.TileType.BAKERY: return "편의점" if BoardSpec.convenience else ("마녀 상점" if BoardSpec.witch else "빵집")
 		TileNode.TileType.PORTAL: return "옷장"
+		TileNode.TileType.VENDING: return "자판기"
+		TileNode.TileType.CAULDRON: return "마녀의 가마솥"
 	if BoardSpec.jump_corner_targets.has(index):
 		return "점프 코너 → %d번" % int(BoardSpec.jump_corner_targets[index])
 	if index == BoardSpec.halfway_tile:
@@ -3676,6 +3678,103 @@ func _bakery_feedback(data: Dictionary) -> void:
 			Sfx.play(&"good")
 		_fly_card_to_profile(at, owner_id, drawn == &"")  # 어떤 카드인지는 알려 주지 않는다 (뒷면만 날아간다)
 		_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(180.0 * _motion_pace())))  # 배지는 혼자 떠오르므로 큐를 오래 붙잡지 않는다
+
+
+## 물약 색 (마녀의 가마솥 연출).
+const POTION_COLORS: Dictionary = {
+	&"power": Color("ff6b6b"), &"swift": Color("74c0fc"), &"guard": Color("ffd43b"), &"frog": Color("8ce99a"), &"boom": Color("ff922b"),
+}
+
+
+## 마녀의 가마솥에서 끓인 물약: 로그를 남기고 짧은 끓이기 연출(가마솥 보글보글 → 물약 병 → 이름·효과 → 말 위 배지)을 보여 준다 (벨라티엔 왕국).
+func _cauldron_feedback(data: Dictionary) -> void:
+	var potion: StringName = data.get("cauldron_potion", &"")
+	if potion == &"" or not _pawn_views.has(int(data["pawn_id"])):
+		return
+	var pawn: PlayerPawn = state.get_pawn(int(data["pawn_id"]))
+	var owner_id: int = pawn.owner_id if pawn != null else manager.current_player_id()
+	var good: bool = WitchPotions.is_good(potion)
+	_log_line("[마녀의 가마솥] P%d: %s! %s" % [owner_id, L10n.t(WitchPotions.name_of(potion)), L10n.t(WitchPotions.text_of(potion))], Color("b197fc") if good else Color("ff8787"))
+	if pawn == null or not _fx_on():
+		return
+	# 물약을 마신 자리 (신속·폭발 물약은 이어서 움직이므로 경로에서 가마솥 칸을 찾는다)
+	var tile: int = pawn.current_tile_idx
+	for step: Variant in data.get("path", []):
+		if BoardSpec.cauldron_tiles.has(int(step)):
+			tile = int(step)
+	_enqueue_late(func() -> void: _play_cauldron_brew(tile, potion))
+
+
+## 가마솥 끓이기 연출 한 번 (약 2.6초): 자판기 창과 같은 크기의 창에 가마솥이 끓고 물약 병이 솟은 뒤, 물약 이름과 효과가 크게 보이고 배지가 말 위로 올라간다.
+func _play_cauldron_brew(tile: int, potion: StringName) -> void:
+	if not WitchPotions.ids().has(potion):
+		return
+	var pace: float = _motion_pace()
+	var good: bool = WitchPotions.is_good(potion)
+	var panel := PanelContainer.new()
+	panel.name = "CauldronBrewModal"
+	panel.size = Vector2(560, 360)
+	panel.position = (get_viewport_rect().size - panel.size) / 2.0
+	panel.pivot_offset = panel.size / 2.0
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.z_index = 61
+	panel.add_theme_stylebox_override("panel", _style(Color(0.11, 0.07, 0.17, 0.97), Color("b197fc"), 5, 22, 0, 0))
+	panel.modulate.a = 0.0
+	panel.scale = Vector2.ONE * 0.85
+	add_child(panel)
+	_mark_oneshot(panel, 3.2 * pace)
+	var holder := Control.new()
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(holder)
+	var color: Color = POTION_COLORS.get(potion, Color.WHITE)
+	var title: Label = _make_label("마녀의 가마솥", 28, Color("d0bfff"))
+	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	title.position = Vector2(0, 14)
+	title.size = Vector2(panel.size.x, 40)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	holder.add_child(title)
+	var view := CauldronBrewView.new()
+	view.name = "Cauldron2D"
+	view.position = Vector2(20, 58)
+	view.size = Vector2(290, 280)
+	holder.add_child(view)
+	view.play(color, good, pace)
+	var name_label: Label = _make_label(L10n.t(WitchPotions.name_of(potion)) + "!", 40, color)
+	name_label.name = "PotionName"
+	name_label.add_theme_constant_override("outline_size", 8)
+	name_label.add_theme_color_override("font_outline_color", Color("1b0f29"))
+	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.position = Vector2(310, 148)
+	name_label.size = Vector2(230, 90)
+	name_label.modulate.a = 0.0
+	holder.add_child(name_label)
+	var effect_label: Label = _make_label(L10n.t(WitchPotions.text_of(potion)), 26, Color("fff3bf") if good else Color("ffc9c9"))
+	effect_label.name = "PotionEffect"
+	effect_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	effect_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	effect_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	effect_label.position = Vector2(310, 248)
+	effect_label.size = Vector2(230, 70)
+	effect_label.modulate.a = 0.0
+	holder.add_child(effect_label)
+	var effect_text: String = effect_label.text
+	var badge_at: Vector2 = (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + _tile_center(tile) + Vector2(0, -46)
+	Sfx.play(&"ui_click", -4.0)
+	var reveal_at: float = CauldronBrewView.BREW_TIME + 0.15
+	var tween: Tween = panel.create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(panel, "modulate:a", 1.0, 0.22 * pace)
+	tween.tween_property(panel, "scale", Vector2.ONE, 0.28 * pace).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(name_label, "modulate:a", 1.0, 0.2 * pace).set_delay(reveal_at * pace)
+	tween.tween_property(effect_label, "modulate:a", 1.0, 0.2 * pace).set_delay((reveal_at + 0.25) * pace)
+	tween.tween_callback(func() -> void: Sfx.play(&"good" if good else &"bad", -4.0)).set_delay(reveal_at * pace)
+	tween.tween_property(panel, "modulate:a", 0.0, 0.3 * pace).set_delay(2.65 * pace)
+	tween.chain().tween_callback(func() -> void:
+		_floating_badge(badge_at, effect_text, color.lightened(0.15), 26)
+		panel.queue_free())
+	_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(3000.0 * pace))
 
 
 ## 음료수 캔 색 (자판기 연출).
@@ -5224,7 +5323,7 @@ func _note_law_win_detail(player_id: int, law_id: String) -> void:
 static func law_win_reason(law_id: String, value: int) -> String:
 	match law_id:
 		"LAW_01": return "경기 중 총 %d회 적 기물 처치 완료!" % value
-		"LAW_02": return ("편의점 %d회 방문 · 와라! 모나티엄 25 완성!" if VictoryLaw.variant_active("LAW_02") else "빵집 %d회 방문 · 식권 스탬프 완성!") % value
+		"LAW_02": return ("편의점 %d회 방문 · 와라! 모나티엄 25 완성!" if VictoryLaw.variant_active("LAW_02") else ("마녀 상점 %d회 방문 · 단골 도장 완성!" if VictoryLaw.witch_variant_active("LAW_02") else "빵집 %d회 방문 · 식권 스탬프 완성!")) % value
 		"LAW_03": return "함정·설치물 %d개 동시 유지 · 무한의 함정 완성!" % value
 		"LAW_04": return "한 턴에 %d칸 폭발 전진 성공!" % value
 		"LAW_05": return "말 %d개로 보드연성진을 완성하고 지켜 냈다!" % value
@@ -7083,7 +7182,9 @@ func _pawn_prediction(pawn: PlayerPawn) -> Dictionary:
 		elif leader != pawn:
 			allied = true
 	if tile.tile_type == TileNode.TileType.BAKERY:
-		return {"text": "빵집!", "good": true}
+		return {"text": "편의점!" if BoardSpec.convenience else ("상점!" if BoardSpec.witch else "빵집!"), "good": true}
+	if tile.tile_type == TileNode.TileType.CAULDRON:
+		return {"text": "가마솥!", "good": true}
 	if promote:
 		return {"text": "나리!", "good": true}
 	if allied:
@@ -12174,6 +12275,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_start_beat(BEAT_AFTER_MOVE)
 			_bakery_feedback(data)
 			_vending_feedback(data)
+			_cauldron_feedback(data)
 			_corner_buff_feedback(data)
 			if bool(data.get("jailed", false)) and (data.get("path", []) as Array).is_empty():
 				_announce_move_failed("무인도 탈출 실패!", manager.current_player_id(), "짝수 눈금이 나와야 탈출할 수 있습니다")

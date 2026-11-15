@@ -26,6 +26,8 @@ const SOURCES := {
 	&"wardrobe": preload("res://assets/board/decals/BOARD_PORTAL.png"),
 	&"store": preload("res://assets/board/decals/BOARD_STORE.png"),
 	&"vending": preload("res://assets/board/decals/BOARD_VENDING.png"),
+	&"witch_shop": preload("res://assets/board/decals/BOARD_WITCH_SHOP.png"),
+	&"cauldron": preload("res://assets/board/decals/BOARD_CAULDRON.png"),
 	&"boost": preload("res://assets/board/decals/BOARD_BOOST.png"),
 	&"pawn_basics": preload("res://content_trickcal/illustrations/pawns/PAWN_DEFAULT.png"),
 }
@@ -54,6 +56,8 @@ const REGIONS := {
 	&"wardrobe": Rect2(294.0/1254,265.0/1254,666.0/1254,746.0/1254),
 	&"store": Rect2(170.0/1254,300.0/1254,915.0/1254,701.0/1254),
 	&"vending": Rect2(330.0/1254,230.0/1254,595.0/1254,801.0/1254),
+	&"witch_shop": Rect2(170.0/1254,150.0/1254,915.0/1254,811.0/1254),
+	&"cauldron": Rect2(190.0/1254,100.0/1254,875.0/1254,1051.0/1254),
 	&"boost": Rect2(172.0/1254,427.0/1254,915.0/1254,398.0/1254),
 	&"pawn_basics": Rect2(334.0/1254,218.0/1254,586.0/1254,854.0/1254),
 }

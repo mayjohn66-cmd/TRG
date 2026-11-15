@@ -2881,3 +2881,30 @@ TRPG,TRPG,TRPG
 에르핀 왕국 보기,View Erpin Kingdom,エルピン王国を見る
 모나티엄 도시 보기,View Monatium City,モナティウム市を見る
 모든 말을 완주하라!,Bring every pawn home!,すべての駒をゴールさせろ！
+[단골 목표],[Regular Goal],[常連目標]
+마녀 상점 방문! (%d/%d),Witch shop visit! (%d/%d),魔女の店に来店！ (%d/%d)
+마녀 상점,Witch Shop,魔女の店
+마녀의 가마솥,Witch's Cauldron,魔女の大釜
+[마녀의 가마솥] P%d: %s! %s,[Witch's Cauldron] P%d: %s! %s,[魔女の大釜] P%d: %s！ %s
+마녀 상점 %d회 방문 · 단골 도장 완성!,%d witch shop visits · Regular stamp complete!,魔女の店に%d回来店 · 常連スタンプ完成！
+상점!,Shop!,お店！
+가마솥!,Cauldron!,大釜！
+편의점!,Store!,コンビニ！
+벨라티엔 왕국 보기,View Belatien Kingdom,ベラティエン王国を見る
+마녀 상점 (벨라티엔 왕국),Witch Shop (Belatien),魔女の店 (ベラティエン王国)
+마녀의 가마솥 (벨라티엔 왕국),Cauldron (Belatien),魔女の大釜 (ベラティエン王国)
+옷장 자리에 서요. 딱 멈추면 [b]물약이 랜덤으로 끓어요[/b]. 좋은 물약 3종과 [b]나쁜 물약 2종[/b]이 같은 확률로 나와요. 지나가기만 하면 아무 일도 없어요.,It stands where the wardrobes are. Stop exactly on it and [b]a random potion brews[/b]. 3 good potions and [b]2 bad potions[/b] come out with equal odds. Passing by does nothing.,クローゼットの場所にあります。ぴったり止まると[b]ランダムな薬が煮えます[/b]。良い薬3種と[b]悪い薬2種[/b]が同じ確率で出ます。通り過ぎるだけでは何も起きません。
+마녀 상점 (카드 1장),Witch Shop (1 card),魔女の店 (カード1枚)
+마녀의 가마솥 (랜덤 물약),Witch's Cauldron (random potion),魔女の大釜 (ランダムな薬)
+[특수 승리] 벨라티엔 단골 마녀,[Special Win] Belatien Regular Witch,[特殊勝利] ベラティエンの常連魔女
+벨라티엔 단골 마녀,Belatien Regular Witch,ベラティエンの常連魔女
+마녀 상점에 {p1}회 방문,Visit the witch shop {p1} times,魔女の店に{p1}回来店
+벨라티엔 왕국,Belatien Kingdom,ベラティエン王国
+"마녀들의 도시 · 마녀 상점(카드)과 마녀의 가마솥(랜덤 물약, 나쁜 물약도 있다)","City of witches · Witch shops (cards) and witch's cauldrons (random potions, some bad)",魔女たちの都市 · 魔女の店(カード)と魔女の大釜(ランダムな薬、悪い薬もある)
+힘의 물약,Potion of Power,力の薬
+신속의 물약,Potion of Swiftness,俊足の薬
+보호의 물약,Potion of Protection,守りの薬
+개구리 물약,Frog Potion,カエルの薬
+폭발 물약,Explosive Potion,爆発の薬
+다음 굴림 -2칸,Next roll -2,次の出目 -2マス
+펑! 뒤로 2칸,Boom! Back 2,ボン！2マス後退

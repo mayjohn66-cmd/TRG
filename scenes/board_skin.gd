@@ -12,6 +12,8 @@ const MAX_TILE_WIDTH: float = 0.12
 const SURFACE: Texture2D = preload("res://assets/board/trickcal/board_surface_symbols_v1.png")
 ## 모나티엄 도시 판 바닥 (보드 스킨 틀: 보드마다 바닥 그림·칸 색·부스터 발판 색을 따로 쓴다. 이미지를 바꾸려면 이 파일만 교체하면 된다).
 const SURFACE_CITY: Texture2D = preload("res://assets/board/monatium/board_surface_symbols_v1.png")
+## 벨라티엔 왕국 판 바닥 (임시 그림: 갈색 나무 테두리 + 연보라 판면 + 마녀 모자 문양. 최종 그림이 오면 이 파일만 교체한다).
+const SURFACE_WITCH: Texture2D = preload("res://assets/board/belatien/board_surface_symbols_v1.png")
 
 ## 보드별 색 모음. 새 보드는 여기에 항목을 더하고 palette()가 고르게 한다 (키 없는 항목은 기본(에르핀 왕국) 값을 쓴다).
 const PALETTE_DEFAULT: Dictionary = {
@@ -28,13 +30,25 @@ const PALETTE_CITY: Dictionary = {  # 도시: 차가운 회청색 타일, 네이
 	"dash_base": Color("1f2a55"), "dash_inner": Color("2fd6d0"), "dash_pulse": Color("8a7bff"), "dash_rim": Color("e6fbff"),
 }
 
+const PALETTE_WITCH: Dictionary = {  # 마녀 도시: 연보라 타일·짙은 보라 테두리, 코너·반환점은 갈색 나무, 보라 마법빛 부스터 발판
+	"fill": Color("f5effb"), "edge": Color("6b4a8f"), "ink": Color("4a2f6b"), "band": Color("b99be0"),
+	"corner_edge": Color("7a5232"), "corner_ink": Color("5a3a20"), "corner_fill": Color("f4e8d8"),
+	"half_edge": Color("8a5a34"), "half_ink": Color("5e3a1c"), "half_fill": Color("efe0cc"),
+	"shadow": Color(0.2, 0.1, 0.3, 0.16),
+	"dash_base": Color("3b1f5c"), "dash_inner": Color("b56cff"), "dash_pulse": Color("e08cff"), "dash_rim": Color("f5e6ff"),
+}
+
 
 static func palette() -> Dictionary:
-	return PALETTE_CITY if BoardSpec.convenience else PALETTE_DEFAULT
+	if BoardSpec.convenience:
+		return PALETTE_CITY
+	return PALETTE_WITCH if BoardSpec.witch else PALETTE_DEFAULT
 
 
 static func surface_texture() -> Texture2D:
-	return SURFACE_CITY if BoardSpec.convenience else SURFACE
+	if BoardSpec.convenience:
+		return SURFACE_CITY
+	return SURFACE_WITCH if BoardSpec.witch else SURFACE
 
 ## 타일 크기: 일반 타일은 이웃과 거의 맞닿도록 폭을 넓히고, 코너 타일만 크게 키운다 (코너 둘레의 이웃과는 겹치지 않게 BoardLayout.CORNER_REACH 안에서 계산).
 static func tile_metrics() -> Dictionary:
@@ -59,10 +73,14 @@ static func definition(index: int) -> Dictionary:
 	if index in BoardSpec.bakery_tiles:
 		if BoardSpec.convenience:  # 모나티엄 도시: 빵집 자리는 편의점 (하늘색 띠로 빵집과 구분)
 			data.merge({"kind":"store", "band":Color("7cc4f2"), "edge":Color("3f86b8"), "ink":Color("245b86")},true)
+		elif BoardSpec.witch:  # 벨라티엔 왕국: 빵집 자리는 마녀 상점 (갈색 띠: 보라 판에서 눈에 띄게)
+			data.merge({"kind":"witch_shop", "band":Color("d8a25e"), "edge":Color("8a5a34"), "ink":Color("5e3a1c")},true)
 		else:
 			data.merge({"kind":"bakery", "band":Color("f4bd55"), "edge":Color("b68b43"), "ink":Color("845221")},true)
 	if index in BoardSpec.vending_tiles:
 		data.merge({"kind":"vending", "band":Color("ff8f7a"), "edge":Color("c4574a"), "ink":Color("8c2f26")},true)
+	if index in BoardSpec.cauldron_tiles:  # 마녀의 가마솥: 초록 물약 띠 + 보라 테두리
+		data.merge({"kind":"cauldron", "band":Color("7fd18b"), "edge":Color("5b3a8a"), "ink":Color("3e2366")},true)
 	if index in BoardSpec.portal_tiles:
 		data.merge({"kind":"portal", "band":Color("5fc4c9"), "edge":Color("3f8f96"), "ink":Color("24636b")},true)  # 청록: 보라색 함정 타일과 구분
 	if index in BoardSpec.corner_tiles:
@@ -155,6 +173,8 @@ const DECALS: Dictionary = {
 	"portal": preload("res://assets/board/decals/BOARD_PORTAL.png"),
 	"store": preload("res://assets/board/decals/BOARD_STORE_MONATIUM_v3.png"),
 	"vending": preload("res://assets/board/decals/BOARD_VENDING_v2.png"),
+	"witch_shop": preload("res://assets/board/decals/BOARD_WITCH_SHOP.png"),
+	"cauldron": preload("res://assets/board/decals/BOARD_CAULDRON.png"),
 	"start": preload("res://assets/board/decals/BOARD_START.png"),
 	"half": preload("res://assets/board/decals/BOARD_HALF.png"),
 	"corner": preload("res://assets/board/decals/BOARD_CORNER.png"),
@@ -167,6 +187,7 @@ const WARNING_BOUNDS: Rect2 = Rect2(0.0632622,0.0733945,0.8681402,0.8323603)
 const DECAL_BOUNDS: Dictionary = {
 	"bakery": Rect2(196,409,862,482), "portal": Rect2(296,268,662,739),
 	"store": Rect2(19,34,1221,1170), "vending": Rect2(207,86,841,1105),
+	"witch_shop": Rect2(170,150,915,811), "cauldron": Rect2(190,100,875,1051),
 	"start": Rect2(308,272,638,750), "half": Rect2(362,246,590,778),
 	"corner": Rect2(99,307,1098,665), "boost": Rect2(175,431,909,391),
 }
@@ -420,7 +441,7 @@ class Tile extends Control:
 		if symbol != null:
 			var footprint: Vector2 = data.footprint
 			var mark_span: float = minf(footprint.x,footprint.y)*(0.62 if data.major else 0.74)
-			if data.kind == "store" or data.kind == "vending":
+			if data.kind == "store" or data.kind == "vending" or data.kind == "witch_shop" or data.kind == "cauldron":
 				mark_span = minf(footprint.x,footprint.y)*0.86
 			var mark_offset: Vector2 = Vector2(-0.014,-0.014) if corner_arrow != null else (Vector2.ZERO if data.major else -inward*0.011)
 			var stamp_axis: Vector2 = direction if data.kind == "corner" else (Vector2.RIGHT if data.major else BoardSkin.symbol_axis(index))

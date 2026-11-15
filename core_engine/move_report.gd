@@ -54,6 +54,8 @@ var trap_at_landing: bool = false
 var corner_buff: int = 0
 ## 자판기에서 뽑은 음료수 id (VendingDrinks, 비어 있으면 없음).
 var vending_drink: StringName = &""
+## 마녀의 가마솥에서 끓인 물약 id (WitchPotions, 비어 있으면 없음).
+var cauldron_potion: StringName = &""
 ## 리벤지 부스터로 더해진 칸 수 (0이면 발동하지 않음)와 그때의 최종 계획 칸 수.
 var revenge_bonus: int = 0
 var revenge_total: int = 0
@@ -82,6 +84,8 @@ func merge(other: MoveReport) -> void:
 	corner_buff = maxi(corner_buff, other.corner_buff)
 	if vending_drink == &"":
 		vending_drink = other.vending_drink
+	if cauldron_potion == &"":
+		cauldron_potion = other.cauldron_potion
 	effect_names.append_array(other.effect_names)
 	cannon_bonus = cannon_bonus or other.cannon_bonus
 	pushed_back = pushed_back or other.pushed_back
@@ -135,4 +139,5 @@ func to_dict() -> Dictionary:
 		"dash_tiles": dash_tiles,
 		"corner_buff": corner_buff,
 		"vending_drink": vending_drink,
+		"cauldron_potion": cauldron_potion,
 	}
