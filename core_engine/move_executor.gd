@@ -605,12 +605,24 @@ static func _resolve_landing(state: GameState, mover: PlayerPawn, ctx: RuleConte
 		VendingDrinks.apply(state, mover, drink, report)
 		if drink == &"soda":
 			soda_steps = VendingDrinks.SODA_STEPS
+	var potion_steps: int = 0  # 가마솥 물약의 이어지는 이동: +N = 앞으로(신속), -N = 뒤로(폭발)
+	if tile.tile_type == TileNode.TileType.CAULDRON and _primary_move(ctx) and not mover.is_finished and not mover.is_imprisoned:
+		var potion: StringName = WitchPotions.pick(state)  # 벨라티엔 왕국 마녀의 가마솥: 딱 멈추면 물약이 끓는다 (좋은 것 3종 + 나쁜 것 2종)
+		WitchPotions.apply(state, mover, potion, report)
+		potion_steps = WitchPotions.follow_up_steps(potion)
 	_resolve_captures(state, mover, ctx, report)
 	if mover.is_finished:
 		return
 	_resolve_stacking(state, mover, ctx, report)
 	if soda_steps > 0 and not mover.is_finished and not mover.is_imprisoned:  # 탄산음료: 바로 앞으로 +2칸 (부스터 발판처럼 이어서 도착 정산)
 		report.merge(execute(state, mover, ctx.make_follow_up(soda_steps)))
+		return
+	if potion_steps > 0 and not mover.is_finished and not mover.is_imprisoned:  # 신속의 물약: 바로 앞으로 +2칸 (탄산음료처럼 이어서 도착 정산)
+		report.merge(execute(state, mover, ctx.make_follow_up(potion_steps)))
+		return
+	if potion_steps < 0 and not mover.is_finished and not mover.is_imprisoned:  # 폭발 물약: 펑! 뒤로 2칸 날아가 그 칸에서 평소 도착처럼 판정 (방해령 베루의 뒤로 밀기와 같은 방식)
+		var back_to: int = maxi(mover.current_tile_idx + potion_steps, 1)
+		teleport_to(state, mover, ctx.make_follow_up(0), report, back_to)
 		return
 	# 부스터 발판: 멈춘 자리가 발판이면 곧바로 앞으로 3칸 더 날아간다 (뒤따르는 이동이 도착 정산을 이어서 한다).
 	if state.boost_gimmicks and GameData.dash_steps() > 0 and BoardSpec.dash_tiles.has(mover.current_tile_idx) and _primary_move(ctx) and not mover.is_finished and not mover.is_imprisoned:

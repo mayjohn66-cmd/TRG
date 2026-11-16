@@ -953,12 +953,11 @@ func _picture_tile(data: Dictionary, on_pick: Callable, compact: bool = false) -
 		switch_button.custom_minimum_size = Vector2(44, 44)
 		switch_button.size = Vector2(44, 44)
 		switch_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-		var target_is_monatium: bool = not _tile_shows_monatium(data)
 		var tint := Color("ffe8a3")
 		switch_button.add_theme_stylebox_override("normal", VISUALS.disc(tint))
 		switch_button.add_theme_stylebox_override("hover", VISUALS.disc(tint.lightened(0.45)))
 		switch_button.add_theme_stylebox_override("pressed", VISUALS.disc(tint.darkened(0.18)))
-		var destination: String = L10n.t("모나티엄 도시 보기" if target_is_monatium else "에르핀 왕국 보기")
+		var destination: String = L10n.t(VARIANT_BOARD_LABELS[_next_variant_board(data)])
 		switch_button.tooltip_text = destination
 		switch_button.accessibility_name = destination
 		var icon := HubArt.icon(&"next")
@@ -977,21 +976,34 @@ func _picture_tile(data: Dictionary, on_pick: Callable, compact: bool = false) -
 	return holder
 
 
+## 보드 넘기기 화살표의 안내 문구 (VictoryLaw 미리보기 보드 번호 순서: 에르핀 왕국 -> 모나티엄 도시 -> 벨라티엔 왕국).
+const VARIANT_BOARD_LABELS: Array[String] = ["에르핀 왕국 보기", "모나티엄 도시 보기", "벨라티엔 왕국 보기"]
+
+
 ## 이 증강이 보드마다 바꿔 쓰는 특수 승리인가.
 static func _has_board_variant(definition: AugmentDef) -> bool:
-	return definition != null and definition.category == GameEnums.AugmentCategory.LAW_ENACT and VictoryLaw.MONATIUM_DEFS.has(str(definition.payload))
+	return definition != null and definition.category == GameEnums.AugmentCategory.LAW_ENACT and VictoryLaw.has_board_variant(str(definition.payload))
 
 
-## 이 타일이 지금 모나티엄 도시판을 보여 주는가 (지금 보드판 설정 기준 + 화살표로 뒤집은 상태).
+## 이 타일이 지금 보여 주는 보드 번호 (지금 보드판 설정 기준 + 화살표를 누른 횟수만큼 다음 보드).
+static func _shown_variant_board(data: Dictionary) -> int:
+	return (VictoryLaw.current_board_index() + int(data.get("variant_step", 0))) % VARIANT_BOARD_LABELS.size()
+
+
+static func _next_variant_board(data: Dictionary) -> int:
+	return (_shown_variant_board(data) + 1) % VARIANT_BOARD_LABELS.size()
+
+
+## 이 타일이 지금 모나티엄 도시판을 보여 주는가.
 static func _tile_shows_monatium(data: Dictionary) -> bool:
-	return BoardSpec.convenience != bool(data.get("variant_flipped", false))
+	return _shown_variant_board(data) == VictoryLaw.PREVIEW_MONATIUM
 
 
 ## 타일에 보일 카드 정보: 화살표로 뒤집었으면 다른 보드의 판 문구로 만든다 (끝나면 지금 보드 문구로 되돌린다).
 static func _card_info_for_tile(definition: AugmentDef, data: Dictionary) -> Dictionary:
-	if not bool(data.get("variant_flipped", false)) or not _has_board_variant(definition):
+	if int(data.get("variant_step", 0)) == 0 or not _has_board_variant(definition):
 		return MainBoard.augment_card_info(definition, null, 1)
-	VictoryLaw.preview_board = 1 if _tile_shows_monatium(data) else 0
+	VictoryLaw.preview_board = _shown_variant_board(data)
 	AugmentRegistry.apply_board_variants()
 	var info: Dictionary = MainBoard.augment_card_info(definition, null, 1)
 	VictoryLaw.preview_board = -1
@@ -1001,10 +1013,11 @@ static func _card_info_for_tile(definition: AugmentDef, data: Dictionary) -> Dic
 
 ## 화살표: 이 카드를 다른 보드의 판으로 바꿔 다시 그린다 (자리·선택 상태는 그대로, 오른쪽 설명 글도 같이 바뀐다).
 func _flip_board_variant(holder: Control, data: Dictionary, on_pick: Callable, compact: bool) -> void:
-	data["variant_flipped"] = not bool(data.get("variant_flipped", false))
+	data["variant_step"] = (int(data.get("variant_step", 0)) + 1) % VARIANT_BOARD_LABELS.size()
+	data["variant_flipped"] = int(data["variant_step"]) != 0  # 지금 보드가 아닌 판을 보는 중 (옛 키, 테스트 호환)
 	var law_id: String = str(data.get("law_id", ""))
 	if law_id != "" and VictoryLaw.DEFS.has(law_id):
-		VictoryLaw.preview_board = 1 if _tile_shows_monatium(data) else 0
+		VictoryLaw.preview_board = _shown_variant_board(data)
 		var law: VictoryLaw = LawRegistry.create(law_id) as VictoryLaw
 		data["texture"] = AugmentArt.load_first(AugmentArt.law_candidates(law_id))
 		VictoryLaw.preview_board = -1
@@ -1461,6 +1474,11 @@ func _ch_board() -> Dictionary:
 		{"title": "자판기 (모나티엄 도시)", "art": &"vending", "tone": Color("c4574a"), "chips": [_join_tiles(_monatium_layout()["vending_tiles"]) + "번"],
 			"summary": "옷장 자리에 서요. 딱 멈추면 [b]음료수가 랜덤으로 한 캔[/b] 나와요. 지나가기만 하면 아무 일도 없고, 순간이동은 없어요.",
 			"rows": _drink_rows()},
+		{"title": "마녀 상점 (벨라티엔 왕국)", "art": &"witch_shop", "tone": Color("8a5a34"), "chips": [_join_tiles(_belatien_layout()["bakery_tiles"]) + "번"],
+			"summary": "에르핀 왕국의 빵집 자리예요. 딱 멈추면 [b]생떼 카드 1장[/b]! 어떤 카드인지는 본인만 알아요."},
+		{"title": "마녀의 가마솥 (벨라티엔 왕국)", "art": &"cauldron", "tone": Color("6b4a8f"), "chips": [_join_tiles(_belatien_layout()["cauldron_tiles"]) + "번"],
+			"summary": "옷장 자리에 서요. 딱 멈추면 [b]물약이 랜덤으로 끓어요[/b]. 좋은 물약 3종과 [b]나쁜 물약 2종[/b]이 같은 확률로 나와요. 지나가기만 하면 아무 일도 없어요.",
+			"rows": _potion_rows()},
 		{"title": "부스터 발판", "art": &"boost", "tone": Color("2fb59a"), "chips": [_join_tiles(BoardSpec.dash_tiles) + "번"],
 			"summary": "딱 멈추면 [b]+3칸[/b] 더 날아가요."},
 		{"title": "함정 칸", "texture": TextureCache.fetch("res://assets/board/traps/HIDDEN.png"), "tone": Color("7a5cd6"), "chips": ["한 칸에 하나"],
@@ -1478,6 +1496,17 @@ func _classic_layout() -> Dictionary:
 
 func _monatium_layout() -> Dictionary:
 	return BoardSpec.layout_for(BoardSpec.DEFAULT_TILE_COUNT, true)
+
+
+func _belatien_layout() -> Dictionary:
+	return BoardSpec.layout_for(BoardSpec.DEFAULT_TILE_COUNT, false, true)
+
+
+func _potion_rows() -> Array:
+	var rows: Array = []
+	for potion: Dictionary in WitchPotions.POTIONS:
+		rows.append([str(potion["name"]), str(potion["text"])])
+	return rows
 
 
 func _drink_rows() -> Array:
@@ -1818,6 +1847,9 @@ class MiniBoard extends Control:
 			elif BoardSpec.vending_tiles.has(index):
 				fill = Color("ffd0c8")
 				edge = Color("c4574a")
+			elif BoardSpec.cauldron_tiles.has(index):
+				fill = Color("d9c8f2")
+				edge = Color("6b4a8f")
 			elif BoardSpec.dash_tiles.has(index):
 				fill = Color("ffd3e2")
 				edge = Color("d9577f")
@@ -1840,7 +1872,7 @@ class MiniBoard extends Control:
 			var width: float = font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, label_size).x
 			draw_string(font, center + Vector2(-width / 2.0, label_size * 0.36), label, HORIZONTAL_ALIGNMENT_LEFT, -1, label_size, Color("3a2f1f"))
 		# 안쪽 범례
-		var legend: Array = [[Color("86d94f"), "출발 · 결승"], [Color("b6ea8c"), "코너 (코너 전용 함정)"], [Color("ffe48a"), "반환점 (승급 기준)"], [Color("ffd98a"), "편의점 (카드 1장)" if BoardSpec.convenience else "빵집 (카드 1장)"], (([Color("ffd0c8"), "자판기 (랜덤 음료 버프)"]) if BoardSpec.convenience else ([Color("c8eef0"), "옷장 (%s)" % _warp_text(BoardSpec.portal_warp_targets)])), [Color("ffd3e2"), "부스터 발판 (%s번, 딱 멈추면 +%d칸)" % [_join_dash(BoardSpec.dash_tiles), GameEnums.DASH_STEPS]]]
+		var legend: Array = [[Color("86d94f"), "출발 · 결승"], [Color("b6ea8c"), "코너 (코너 전용 함정)"], [Color("ffe48a"), "반환점 (승급 기준)"], [Color("ffd98a"), "편의점 (카드 1장)" if BoardSpec.convenience else ("마녀 상점 (카드 1장)" if BoardSpec.witch else "빵집 (카드 1장)")], (([Color("ffd0c8"), "자판기 (랜덤 음료 버프)"]) if BoardSpec.convenience else (([Color("d9c8f2"), "마녀의 가마솥 (랜덤 물약)"]) if BoardSpec.witch else ([Color("c8eef0"), "옷장 (%s)" % _warp_text(BoardSpec.portal_warp_targets)]))), [Color("ffd3e2"), "부스터 발판 (%s번, 딱 멈추면 +%d칸)" % [_join_dash(BoardSpec.dash_tiles), GameEnums.DASH_STEPS]]]
 		var origin := Vector2(92, 118)
 		for index: int in legend.size():
 			var spot: Vector2 = origin + Vector2(0, index * 30.0)

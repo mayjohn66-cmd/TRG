@@ -20,6 +20,10 @@ static var portal_tiles: Array[int] = [12, 22]
 static var vending_tiles: Array[int] = []
 ## 편의점 보드인가: 빵집 자리가 편의점이 된다 (규칙은 같다: 딱 멈추면 카드 1장).
 static var convenience: bool = false
+## 마녀의 가마솥 발판 (벨라티엔 왕국): 옷장 대신 이 자리에 선다. 딱 멈추면 물약이 끓어 랜덤 효과 (좋은 것 3종 + 나쁜 것 2종, WitchPotions).
+static var cauldron_tiles: Array[int] = []
+## 마녀 보드인가 (벨라티엔 왕국): 빵집 자리가 마녀 상점이 된다 (규칙은 같다: 딱 멈추면 카드 1장).
+static var witch: bool = false
 ## 옷장 포탈 일반 워프 (LAW_01 중에는 작동하지 않는다): 두 옷장은 왕복이라 12번을 밟으면 22번으로, 22번을 밟으면 12번으로 간다 / 모노폴리 비행기가 워프하는 곳.
 static var portal_warp_targets: Dictionary = {12: 22, 22: 12}
 static var plane_warp_targets: Dictionary = {12: 24, 22: 30}
@@ -35,17 +39,19 @@ static var dash_tiles: Array[int] = [3, 27]
 
 ## 일반 함정을 설치할 수 없는 칸: 코너(출발선 포함)·빵집·옷장·부스터 발판. 코너는 코너 전용 함정 슬롯이다.
 static func is_special_tile(index: int) -> bool:
-	return corner_tiles.has(index) or bakery_tiles.has(index) or portal_tiles.has(index) or vending_tiles.has(index) or dash_tiles.has(index)
+	return corner_tiles.has(index) or bakery_tiles.has(index) or portal_tiles.has(index) or vending_tiles.has(index) or cauldron_tiles.has(index) or dash_tiles.has(index)
 
 
 ## 칸 수(24 또는 32)에 따른 특수 타일 배치. 전역 값을 바꾸지 않는 순수 함수라 보드 선택 화면·도감이 판 밖에서 각 보드의 모양을 보여 줄 때도 쓴다.
 ## 키: corner_tiles, halfway_tile, bakery_tiles, portal_tiles, portal_warp_targets, plane_warp_targets, bonus_corner_tiles, dash_tiles
-static func layout_for(count: int, convenience_board: bool = false) -> Dictionary:
+static func layout_for(count: int, convenience_board: bool = false, witch_board: bool = false) -> Dictionary:
 	var layout: Dictionary = _classic_layout(count)
 	layout["vending_tiles"] = [] as Array[int]
+	layout["cauldron_tiles"] = [] as Array[int]
 	layout["convenience"] = convenience_board
-	if convenience_board:  # 모나티엄 도시: 옷장(포탈) 자리가 자판기가 된다
-		layout["vending_tiles"] = (layout["portal_tiles"] as Array).duplicate() as Array[int]
+	layout["witch"] = witch_board
+	if convenience_board or witch_board:  # 모나티엄 도시: 옷장(포탈) 자리가 자판기 / 벨라티엔 왕국: 마녀의 가마솥
+		layout["vending_tiles" if convenience_board else "cauldron_tiles"] = (layout["portal_tiles"] as Array).duplicate() as Array[int]
 		layout["portal_tiles"] = [] as Array[int]
 		layout["portal_warp_targets"] = {}
 		layout["plane_warp_targets"] = {}
@@ -61,10 +67,12 @@ static func _classic_layout(count: int) -> Dictionary:
 
 
 ## 칸 수를 24(한 변 6칸) 또는 32(한 변 8칸)로 정한다. 특수 타일 번호도 함께 바뀐다.
-static func apply(count: int, convenience_board: bool = false) -> void:
-	var layout: Dictionary = layout_for(count, convenience_board)
+static func apply(count: int, convenience_board: bool = false, witch_board: bool = false) -> void:
+	var layout: Dictionary = layout_for(count, convenience_board, witch_board)
 	convenience = convenience_board
+	witch = witch_board
 	vending_tiles = layout["vending_tiles"]
+	cauldron_tiles = layout["cauldron_tiles"]
 	tile_count = count
 	side = count / 4
 	last_tile = count - 1
