@@ -6,6 +6,7 @@ func manager4() -> TurnManager:
 
 func test_all_home_ai_winner_ends_before_next_turn() -> void:
 	var m:=manager4();var s:=m.state
+	m.end_when_graduated=[1]  # 혼자 하는 AI 대전: 컴퓨터가 말 4개를 완주하면 바로 끝난다 (사람끼리 하는 판은 2·3·4등까지 계속)
 	place(s,11,4);place(s,21,12);place(s,41,7)
 	var race:=VictoryChecker.sort_by_race(s,[1,2,4])
 	for p: PlayerPawn in s.pawns_of(3):s.finish_stack(p)

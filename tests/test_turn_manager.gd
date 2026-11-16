@@ -343,6 +343,7 @@ func test_all_pawns_home_declares_winner_and_stops_game() -> void:
 
 func test_first_normal_finisher_ends_and_ranks_the_remaining_race() -> void:
 	var manager: TurnManager = _new_manager(4)
+	manager.end_when_graduated.assign([2])  # 혼자 하는 AI 대전: 첫 완주가 나오면 남은 컴퓨터를 진행 순서로 바로 확정한다
 	var state: GameState = manager.state
 	var events: Array = _collect_events(manager)
 	for slot: int in [2,3,4]:state.finish_stack(state.get_pawn(10+slot))
@@ -354,6 +355,30 @@ func test_first_normal_finisher_ends_and_ranks_the_remaining_race() -> void:
 	var expected: Array[int]=[1];expected.append_array(remaining)
 	check_eq(state.rankings,expected,"remaining players retain the pre-cleanup race order")
 	check_eq(events.filter(func(e: Dictionary)->bool:return e["kind"]==&"game_over").size(),1,"one final result event")
+	_dispose(manager)
+
+
+## 사람끼리 하는 판(4인 친선전·핫시트)은 1등이 나와도 2·3·4등이 가려질 때까지 계속한다.
+func test_four_player_match_continues_until_every_rank_is_decided() -> void:
+	var manager: TurnManager = _new_manager(4)
+	var state: GameState = manager.state
+	var events: Array = _collect_events(manager)
+	for pawn: PlayerPawn in state.pawns_of(1):
+		state.finish_stack(pawn)
+	manager._graduate(1, VictoryChecker.ALL_HOME)
+	check(not manager.is_game_over, "1등 완주 뒤에도 판은 계속된다")
+	check_eq(events.filter(func(e: Dictionary) -> bool: return e["kind"] == &"game_over").size(), 0, "결과 화면은 아직 없다")
+	place(state, 21, 6, [5])
+	for pawn: PlayerPawn in state.pawns_of(2):
+		state.finish_stack(pawn)
+	manager._graduate(2, VictoryChecker.ALL_HOME)
+	check(not manager.is_game_over, "2등이 나와도 3·4등이 남아 있어 계속된다")
+	for pawn: PlayerPawn in state.pawns_of(3):
+		state.finish_stack(pawn)
+	manager._graduate(3, VictoryChecker.ALL_HOME)
+	check(manager._end_if_decided() and manager.is_game_over, "3등까지 가려지면 마지막 한 명이 꼴찌로 확정되어 끝난다")
+	check_eq(state.rankings, [1, 2, 3, 4] as Array[int], "순위는 완주한 순서")
+	check_eq(events.filter(func(e: Dictionary) -> bool: return e["kind"] == &"game_over").size(), 1, "결과는 한 번")
 	_dispose(manager)
 
 

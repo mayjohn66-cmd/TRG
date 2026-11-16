@@ -319,10 +319,16 @@ func test_single_player_game_ends_when_the_human_graduates() -> void:
 	check_eq(state.rank_reasons.get(4), VictoryChecker.RACE_ORDER, "남은 컴퓨터는 진행 순위로 확정")
 	check(_kinds(events).has(&"game_over"), "결과 화면으로")
 	_dispose(manager)
-	# 2026-10-30 핫픽스: 실제 말 4개 완주는 온라인·4인 수동(사람 자리 지정 없음)에서도 그 자리에서 판을 끝낸다. 맨 뒤 한 명은 꼴찌.
+	# 2026-11 변경: 사람끼리 하는 판(온라인 친선전·4인 수동, 사람 자리 지정 없음)은 말 4개 완주로 1등이 나와도 계속한다.
+	# 2·3·4등이 가려져 마지막 한 명만 남아야 끝나고, 그 한 명이 꼴찌다. (혼자 하는 AI 대전은 위에서처럼 바로 끝난다)
 	var full := _new_manager([1, 2, 3, 4] as Array[int])
 	full._graduate(1, VictoryChecker.ALL_HOME)
-	check(full._end_if_decided() and full.is_game_over, "말 4개 완주는 사람 자리 지정이 없어도 바로 끝난다")
+	check(not full._end_if_decided() and not full.is_game_over, "1등이 나와도 사람끼리 하는 판은 계속된다")
+	full._graduate(2, VictoryChecker.ALL_HOME)
+	check(not full._end_if_decided() and not full.is_game_over, "2등이 나와도 계속된다")
+	full._graduate(3, VictoryChecker.ALL_HOME)
+	check(full._end_if_decided() and full.is_game_over, "3등까지 가려지면 남은 한 명이 꼴찌로 끝난다")
+	check_eq(full.state.rankings, [1, 2, 3, 4] as Array[int], "졸업한 순서가 순위, 맨 뒤 한 명은 꼴찌")
 	check_eq(full.state.rank_reasons[full.state.rankings[3]], VictoryChecker.LAST_PLACE, "맨 뒤 한 명은 꼴찌")
 	_dispose(full)
 

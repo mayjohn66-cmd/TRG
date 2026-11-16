@@ -2011,7 +2011,9 @@ func _end_if_decided() -> bool:
 	if is_game_over:
 		return true
 	var active: Array[int] = state.active_players(player_order)
-	if state.rank_reasons.values().has(VictoryChecker.ALL_HOME):
+	# 말 4개 완주로 1등이 나와도, 사람끼리 하는 판(4인 친선전·핫시트)은 2·3·4등이 가려질 때까지 계속한다.
+	# 혼자 하는 AI 대전(end_when_graduated가 있는 판)만 옛 규칙 그대로 남은 컴퓨터를 진행 순서로 바로 확정한다.
+	if not end_when_graduated.is_empty() and state.rank_reasons.values().has(VictoryChecker.ALL_HOME):
 		# 남은 사람은 레이스 진행 순서로, 맨 뒤 한 명은 꼴찌로 (라운드 상한 확정과 같은 규칙)
 		var order: Array[int] = VictoryChecker.sort_by_race(state, active)
 		for index: int in order.size():
