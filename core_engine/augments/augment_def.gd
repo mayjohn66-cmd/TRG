@@ -139,11 +139,20 @@ func is_available(state: GameState, player_id: int) -> bool:
 func needs_pawn_choice(state: GameState, player_id: int) -> bool:
 	if category == GameEnums.AugmentCategory.UTILITY:
 		return UtilityAugments.needs_pawn_choice(payload, state, player_id)  # 관심사도 지정: 보호막을 씌울 말
+	if category == GameEnums.AugmentCategory.SUPER_GAMBLE:
+		return payload == SuperAugments.NECKLACE and SuperStatus.necklace_candidates(state, player_id).size() > 1  # 사출 목걸이: 목걸이를 찰 말
 	return category == GameEnums.AugmentCategory.PAWN_EVOLUTION and state.basic_pawns_of(player_id).size() > 1
+
+
+## 적용 전에 플레이어가 상대 한 명을 직접 골라야 하는가 (날조와 선동의 지정 대상).
+func needs_target_choice(state: GameState, player_id: int) -> bool:
+	return category == GameEnums.AugmentCategory.SUPER_GAMBLE and payload == SuperAugments.AGITATE and SuperAugments.agitation_targets(state, player_id).size() > 1
 
 
 ## 말 고르기 화면에서 이 말을 고를 수 있는가.
 func can_pick_pawn(state: GameState, player_id: int, pawn: PlayerPawn) -> bool:
+	if category == GameEnums.AugmentCategory.SUPER_GAMBLE:
+		return SuperStatus.necklace_candidates(state, player_id).has(pawn)
 	if category == GameEnums.AugmentCategory.UTILITY:
 		return UtilityAugments.shield_candidates(state, player_id).has(pawn)
 	return pawn.kind == GameEnums.PawnKind.BASIC and not pawn.is_finished
@@ -248,7 +257,7 @@ func apply(state: GameState, player_id: int, params: Dictionary = {}) -> Diction
 		GameEnums.AugmentCategory.PAWN_EVOLUTION: return _apply_evolution(state, player_id, params)
 		GameEnums.AugmentCategory.TOOL_SWAP: return _apply_tool(state, player_id)
 		GameEnums.AugmentCategory.LAW_ENACT: return _apply_law(state, player_id)
-		GameEnums.AugmentCategory.SUPER_GAMBLE: return SuperAugments.apply(payload, state, player_id)
+		GameEnums.AugmentCategory.SUPER_GAMBLE: return SuperAugments.apply(payload, state, player_id, params)
 		GameEnums.AugmentCategory.UTILITY:
 			if payload == UtilityAugments.SELECT_SHIELD and params.has("pawn_id"):
 				return UtilityAugments.apply_shield_to(state, player_id, int(params["pawn_id"]))

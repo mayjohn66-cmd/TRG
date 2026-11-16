@@ -1434,6 +1434,7 @@ func _bind_state() -> void:
 		if not _fx_hints.has(pawn_id):
 			_set_hint(pawn_id, {"arc": 0.0, "dur": 0.5}))
 	state.passive_triggered.connect(_on_passive_triggered)
+	state.necklace_exploded.connect(_on_necklace_exploded)
 	# v1.1: 기억상실빔이 사출을 막았다 / 모브 큐이의 오이를 밟았다
 	state.amnesia_blocked.connect(func(pawn_id: int, tile: int) -> void:
 		_on_passive_triggered(pawn_id, &"amnesia_block")
@@ -2906,7 +2907,12 @@ func _refresh_pawns() -> void:
 		if view == null:
 			continue
 		_settle_pawn_view(view, pawn)
-		(view.get_node("Bounce/Token") as PawnToken).configure(pawn, PLAYER_COLORS[pawn.owner_id])
+		var token: PawnToken = view.get_node("Bounce/Token") as PawnToken
+		token.blind = SuperStatus.blind_active(state)  # 눈먼 자의 도시: 말이 [?]로만 보인다
+		var chip: Dictionary = _super_chip_for(pawn)
+		token.chip_text = str(chip.get("text", ""))
+		token.chip_color = chip.get("color", Color("ffd43b"))
+		token.configure(pawn, PLAYER_COLORS[pawn.owner_id])
 		var badge_text: String = ""
 		if pawn.restrained_turns > 0 or pawn.blocked_this_turn:
 			badge_text += " 구속"
@@ -2942,6 +2948,20 @@ func _refresh_pawns() -> void:
 			_npc_views.erase(npc_id)
 			if expired is ProtonBeamView:(expired as ProtonBeamView).fade_out(0.7 if _fx_on() else 0.02)
 			else:expired.queue_free()
+
+
+## 기간이 있는 초증강이 걸린 말의 머리 위 칩 (목걸이 > 평화주의자 > 선동 표적).
+func _super_chip_for(pawn: PlayerPawn) -> Dictionary:
+	if state == null or state.super_status.is_empty() or pawn.is_finished:
+		return {}
+	if SuperStatus.is_necklace(state, pawn) and pawn.carrier == null:
+		return {"text": "목걸이 x2", "color": Color("ffa94d")}
+	if SuperStatus.pacifist_active(state, pawn.owner_id) and pawn.carrier == null:
+		return {"text": "평화", "color": Color("8ce99a")}
+	for entry: Dictionary in SuperStatus.active_agitations(state):
+		if int(entry["target"]) == pawn.owner_id and pawn.carrier == null and pawn.has_left_start:
+			return {"text": "표적", "color": Color("ff8787")}
+	return {}
 
 
 func _refresh_tiles() -> void:
@@ -3137,6 +3157,8 @@ func _update_trap_pulse(delta: float) -> void:
 ## 함정 툴팁. 함정 공개 규칙(MatchRules.trap_reveal: 싱글 Lv.1~3 기본)이면 누구 함정이든 정체가 보인다.
 ## 비공개 규칙(Lv.4~5 기본·방 설정 [심리전])이면 AI 대전·온라인에서 내가 깐 함정만 보이고, 남이 깐 함정은 [? 수상한 함정]이다.
 func _trap_tooltip(attachment: TileAttachment) -> String:
+	if SuperStatus.blind_active(state):
+		return "[? 수상한 함정]"  # 눈먼 자의 도시: 설치한 사람도 알 수 없다
 	if not attachment.is_hidden_trap or attachment.always_revealed or (_trap_known(attachment) and attachment.owner_id != local_player_id):
 		return "[함정] %s (설치: %s)" % [_attachment_name(attachment.attachment_id), _player_name(attachment.owner_id)]  # 코너 함정·공개 규칙
 	if _trap_known(attachment):
@@ -3146,6 +3168,8 @@ func _trap_tooltip(attachment: TileAttachment) -> String:
 
 ## 이 화면이 함정의 정체를 알아도 되는가: 공개 함정이거나, 함정 공개 규칙이거나, 혼자 보는 화면(AI 대전·온라인)에서 내가 깐 함정.
 func _trap_known(attachment: TileAttachment) -> bool:
+	if SuperStatus.blind_active(state):
+		return false  # 눈먼 자의 도시: 내 함정도 포함해 모든 함정이 가려진다
 	if not attachment.is_hidden_trap or attachment.always_revealed or MatchRules.trap_reveal(state):
 		return true
 	return (ai_mode or net != null) and attachment.owner_id == local_player_id
@@ -4524,7 +4548,11 @@ func _check_round_banner() -> void:
 	_announced_turn_key = "%d:%d" % [state.round_number, manager.current_player_id()]
 	if _fx_on():
 		Sfx.play(&"round_start")
-	_announce("라운드", "ROUND %d" % state.round_number, "", COLOR_GOLD, null, 1.0, true, {"key": "round"})
+	var round_options: Dictionary = {"key": "round"}
+	var status_lines: Array[String] = _super_status_lines()  # 눈먼 자의 도시·평화주의자·날조와 선동이 걸려 있으면 한 줄씩 알린다
+	if not status_lines.is_empty():
+		round_options["sub"] = "\n".join(PackedStringArray(status_lines))
+	_announce("라운드", "ROUND %d" % state.round_number, "", COLOR_GOLD, null, 1.0, true, round_options)
 
 
 ## 굴림 눈금이 늘어난 이유를 원인별로 한 줄로: "슈파볼트 탑승 +1 · 코너·상점·물약 버프 +2 · 카드 +4". (이유가 안 맞으면 "가속 보너스")
@@ -4545,6 +4573,21 @@ func _roll_boost_reason(data: Dictionary) -> String:
 	if parts.is_empty():
 		return L10n.t("가속 보너스 +%d") % (int(data["to"]) - int(data["from"]))
 	return " · ".join(PackedStringArray(parts))
+
+
+## 기간이 있는 초증강이 걸려 있으면 라운드 알림에 한 줄씩 알린다 (눈먼 자의 도시·평화주의자·날조와 선동).
+func _super_status_lines() -> Array[String]:
+	var lines: Array[String] = []
+	if state == null or state.super_status.is_empty():
+		return lines
+	if SuperStatus.blind_active(state):
+		lines.append(L10n.t("눈먼 자의 도시: 함정·말 가려짐 · 아군도 잡힘"))
+	for player_id: int in state.player_ids:
+		if SuperStatus.pacifist_active(state, player_id):
+			lines.append(L10n.t("평화주의자 P%d: 잡기 면역·잡기 불가 (%d라운드)") % [player_id, SuperStatus.rounds_left(state, SuperStatus.pacifist_until(state, player_id))])
+	for entry: Dictionary in SuperStatus.active_agitations(state):
+		lines.append(L10n.t("날조와 선동 P%d: 공격은 모두 P%d에게") % [int(entry["by"]), int(entry["target"])])
+	return lines
 
 
 ## 새 차례인데 아직 [OO 차례] 배너를 띄우지 못했다 (앞 연출이 끝나기를 기다리는 중): 그동안 봇·굴리기 버튼은 움직이지 않는다.
@@ -7388,6 +7431,8 @@ func _card_usable_now(player_id: int, card: BaseCard) -> bool:
 		return false
 	if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN and (player_id != manager.current_player_id() or manager.card_played_this_turn()):
 		return false
+	if SuperStatus.card_blocked(state, player_id, card.card_id):
+		return false  # 평화주의자: 말을 날리는 카드는 흐리게
 	if state.is_banned(player_id) or not card.could_play(state, player_id):
 		return false  # 지금은 대상이 없다 (예: UDO +4의 다음 차례 사람이 보드에 말이 없음): 흐리게 두고 이유는 _card_block_reason
 	return true
@@ -7395,6 +7440,8 @@ func _card_usable_now(player_id: int, card: BaseCard) -> bool:
 
 ## 지금 이 카드를 낼 수 없는 이유 (낼 수 있으면 빈 문자열). 카드를 눌렀는데 아무 일도 없던 것처럼 보이지 않게 화면에 띄운다.
 func _card_block_reason(player_id: int, card: BaseCard) -> String:
+	if SuperStatus.card_blocked(state, player_id, card.card_id):
+		return "평화주의자! 다음 증강전까지 말을 날리는 카드는 쓸 수 없습니다"
 	if state.is_banned(player_id):
 		return "알고리즘 밴! %d턴 동안 카드를 쓸 수 없습니다" % int(state.banned_turns[player_id])
 	if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN and manager.card_played_this_turn():
@@ -8946,6 +8993,21 @@ func _on_move_bonus(pawn_id: int, notes: Array, revenge: int) -> void:
 		_move_bonus_notes[pawn_id] = notes
 		return
 	# 말 위의 표시는 기물별 원인 뱃지([장기:포] 뛰어넘기 +3칸!)가 맡는다 (passive_triggered → _play_callout).
+
+
+## 사출 목걸이가 라운드 끝에 터진다: 그 칸에서 펑! 하고 터진 뒤 말이 출발선으로 사출된다 (사출 기록은 평소처럼 이어진다).
+func _on_necklace_exploded(pawn_id: int, tile: int) -> void:
+	var pawn: PlayerPawn = state.get_pawn(pawn_id)
+	var owner_id: int = pawn.owner_id if pawn != null else manager.current_player_id()
+	_log_line("[사출 목걸이] P%d의 %s 목걸이가 터졌습니다!" % [owner_id, _pawn_name(pawn_id)], Color("ffa94d"))
+	_record(owner_id, "사출 목걸이가 터져 말이 사출됨!", "", true)
+	if not _fx_on():
+		return
+	var at: Vector2 = (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + _tile_center(tile)
+	Sfx.play(&"slam", -3.0)
+	screen_shake(7.0, 0.22)
+	_impact_ring(at, Color("ffa94d"), 90.0)
+	_floating_badge(at + Vector2(0, -46), "펑!", Color("ffa94d"), 34)
 
 
 ## 기물 고유 능력이 발동했다: 그 말 머리 위에 [기물] 원인 뱃지를 띄운다 (연출 큐 순서대로, 걸음을 끊지 않는다).
@@ -10918,10 +10980,28 @@ func _on_draft_auto_pressed() -> void:
 
 
 func _on_augment_chosen(player_id: int, index: int, definition: AugmentDef) -> void:
+	if definition.needs_target_choice(state, player_id):
+		_show_agitation_choice(player_id, index)  # 날조와 선동: 공격 카드를 몰아 줄 상대를 고른다
+		return
 	if definition.needs_pawn_choice(state, player_id):
 		_show_pawn_choice(player_id, definition, _pick_augment_with_pawn.bind(player_id, index))
 		return
 	_act(&"pick_augment", {"player_id": player_id, "index": index})
+
+
+## 날조와 선동: 모든 공격 카드를 받게 할 상대를 고른다 (취소하면 증강 카드 3장 화면으로).
+func _show_agitation_choice(player_id: int, index: int) -> void:
+	var targets: Array[Dictionary] = []
+	for target: int in SuperAugments.agitation_targets(state, player_id):
+		targets.append({"label": _player_name(target), "portrait": _choice_portrait(target), "value": target})
+	if targets.is_empty():
+		_act(&"pick_augment", {"player_id": player_id, "index": index})
+		return
+	_show_choice("날조와 선동! 모든 공격을 받을 상대를 고르세요", targets, _pick_augment_with_target.bind(player_id, index), 3)
+
+
+func _pick_augment_with_target(target: int, player_id: int, index: int) -> void:
+	_act(&"pick_augment", {"player_id": player_id, "index": index, "target_player": target})
 
 
 ## 기물 증강을 받을 말을 아이콘 카드로 고른다. 이미 진화한 말은 어둡게 잠긴다.
@@ -10938,8 +11018,9 @@ func _show_pawn_choice(player_id: int, definition: AugmentDef, on_pick: Callable
 	box.add_theme_constant_override("separation", 10)
 	center.add_child(box)
 	var info: Dictionary = _augment_card_info(definition, player_id)
-	var shield_pick: bool = definition.category == GameEnums.AugmentCategory.UTILITY
-	var title := _make_label("어느 말에 보호막을 씌울까요?" if shield_pick else "어느 말을 [%s]로 진화시킬까요?" % str(info["title"]).split("] ")[-1], 24, Color("ffe066"))
+	var shield_pick: bool = definition.category == GameEnums.AugmentCategory.UTILITY or definition.category == GameEnums.AugmentCategory.SUPER_GAMBLE
+	var heading: String = "어느 말에 보호막을 씌울까요?" if definition.category == GameEnums.AugmentCategory.UTILITY else ("어느 말에 사출 목걸이를 채울까요?" if definition.category == GameEnums.AugmentCategory.SUPER_GAMBLE else "어느 말을 [%s]로 진화시킬까요?" % str(info["title"]).split("] ")[-1])
+	var title := _make_label(heading, 24, Color("ffe066"))
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_color_override("font_outline_color", Color("5c4300"))
 	title.add_theme_constant_override("outline_size", 6)

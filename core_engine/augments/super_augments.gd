@@ -16,12 +16,16 @@ const SNIPER: StringName = &"SUPER_09"         # 저격수의 표적
 const NITRO: StringName = &"SUPER_10"          # 아우토반 니트로 (선두 말 코너까지 직진, 길을 막은 칸의 말 전부 사출)
 const RUNAWAY: StringName = &"SUPER_11"        # 폭주 기관차 (무작위 한 변 쓸기)
 const GUARANTEE: StringName = &"SUPER_12"      # 강제 연대책임 (선두·후방 말 일심동체)
+const PACIFIST: StringName = &"SUPER_13"       # 평화주의자 (다음 증강전까지 내 말은 잡기 면역, 나도 아무도 못 잡음)
+const AGITATE: StringName = &"SUPER_14"        # 날조와 선동 (다음 증강전까지 지정 대상이 모든 공격 카드를 받음, 내 카드는 전부 버림)
+const BLIND_CITY: StringName = &"SUPER_15"     # 눈먼 자의 도시 (이번 라운드 함정·말이 가려지고 아군 말도 잡음)
+const NECKLACE: StringName = &"SUPER_16"       # 사출 목걸이 (내 말 하나: 모든 공격 방어·이동 2배, 라운드가 끝나면 터져 사출)
 
-const ALL_IDS: Array[StringName] = [FLIP, REDISTRIBUTE, DEVIL, MINEFIELD, RAID, GAMBLER, CASTLING, BAKERY, SNIPER, NITRO, RUNAWAY, GUARANTEE]
+const ALL_IDS: Array[StringName] = [FLIP, REDISTRIBUTE, DEVIL, MINEFIELD, RAID, GAMBLER, CASTLING, BAKERY, SNIPER, NITRO, RUNAWAY, GUARANTEE, PACIFIST, AGITATE, BLIND_CITY, NECKLACE]
 ## 고른 사람의 말도 휘말려 출발선으로 사출될 수 있는 초증강: 증강 카드 왼쪽 위에 경고 아이콘(커서를 대면 SELF_RISK_NOTE)을 띄운다.
 ## 판 뒤집기(실패하면 내 말 추방) / 지뢰밭(누구든 밟으면 반경 안 전원) / 니트로(멈춘 칸의 말 전부) / 기관차(그 변의 말 전부) / 연대책임(하나가 탈락하면 둘 다).
 ## 악마의 계약은 완주한 말을 되돌리는 정해진 대가라 넣지 않는다.
-const SELF_RISK: Array[StringName] = [FLIP, MINEFIELD, NITRO, RUNAWAY, GUARANTEE]
+const SELF_RISK: Array[StringName] = [FLIP, MINEFIELD, NITRO, RUNAWAY, GUARANTEE, BLIND_CITY, NECKLACE]
 const SELF_RISK_NOTE: String = "주의: 본인의 말이 사출될 수 있음"
 ## 남은 게임 내내 그 플레이어에게만 작동하는 패시브 (RuleBookManager.personal_laws, 법전 슬롯을 차지하지 않는다). 지금은 없다 (아우토반 니트로는 즉시 효과로 바뀌었다).
 const PERSONAL: Array[StringName] = []
@@ -105,6 +109,10 @@ const INFO: Dictionary = {
 	NITRO: ["아우토반 니트로", "◆ 내 선두 말이 다음 코너까지 일직선으로 질주!\n◆ 길에 말이 있으면 그 칸에서 멈추고 그 칸의 말을 전부 장외 사출"],
 	RUNAWAY: ["폭주 기관차", "◆ 무작위 한 변을 기관차가 질주!\n◆ 그 변의 모든 말 출발선으로 · 함정 카드 전부 파괴"],
 	GUARANTEE: ["강제 연대책임", "◆ 내 선두 말과 가장 뒤 말이 일심동체\n◆ 하나가 골인하면 둘 다 골인 · 탈락하면 둘 다 탈락"],
+	PACIFIST: ["평화주의자", "◆ 다음 증강전까지 내 모든 말은 잡기 면역\n◆ 단 내 모든 말은 아무도 잡을 수 없다"],
+	AGITATE: ["날조와 선동", "◆ 다음 증강전까지 지정한 대상이 모든 공격 카드를 받는다\n◆ 단 내 손패를 전부 버린다"],
+	BLIND_CITY: ["눈먼 자의 도시", "◆ 이번 라운드 동안 모든 함정과 말이 가려진다\n◆ 아군 말도 잡는다"],
+	NECKLACE: ["사출 목걸이", "◆ 내 말 1개를 골라 목걸이를 채운다: 모든 공격 방어 · 이동 거리 x2\n◆ 라운드가 끝나면 목걸이가 터져 그 말이 사출"],
 }
 
 
@@ -156,12 +164,24 @@ static func is_available(effect: StringName, state: GameState, player_id: int) -
 			return state.front_pawn_of(player_id) != null  # 보드 위에 내 말이 있어야 달린다
 		GUARANTEE:
 			return bond_pair(state, player_id).size() == 2  # 보드 위에 내 말이 둘 이상이어야 묶을 수 있다
+		PACIFIST:
+			return not SuperStatus.pacifist_active(state, player_id)
+		AGITATE:
+			return not agitation_targets(state, player_id).is_empty() and not SuperStatus.agitation_active_by(state, player_id)
+		BLIND_CITY:
+			return not SuperStatus.blind_active(state)
+		NECKLACE:
+			return not SuperStatus.necklace_candidates(state, player_id).is_empty()  # 목걸이를 찰 말이 보드 위에 있어야 한다
 	return true  # 재분배·대습격·도박사·빵집 털이·폭주 기관차는 언제든
 
 
 ## 효과를 적용한다. 반환: {"ok": bool, "text": String}
-static func apply(effect: StringName, state: GameState, player_id: int) -> Dictionary:
+static func apply(effect: StringName, state: GameState, player_id: int, params: Dictionary = {}) -> Dictionary:
 	match effect:
+		PACIFIST: return _apply_pacifist(state, player_id)
+		AGITATE: return _apply_agitate(state, player_id, int(params.get("target_player", -1)))
+		BLIND_CITY: return _apply_blind_city(state)
+		NECKLACE: return _apply_necklace(state, player_id, int(params.get("pawn_id", -1)))
 		FLIP: return _apply_flip(state, player_id)
 		REDISTRIBUTE: return _apply_redistribute(state, player_id)
 		DEVIL: return _apply_devil(state, player_id)
@@ -175,6 +195,60 @@ static func apply(effect: StringName, state: GameState, player_id: int) -> Dicti
 		GUARANTEE: return _apply_guarantee(state, player_id)
 		NITRO: return _apply_nitro(state, player_id)
 	return {"ok": false, "text": "알 수 없는 초증강입니다"}
+
+
+## 날조와 선동으로 지정할 수 있는 사람: 레이스에 남은 다른 플레이어.
+static func agitation_targets(state: GameState, player_id: int) -> Array[int]:
+	var result: Array[int] = []
+	for other: int in state.active_players(state.player_ids):
+		if other != player_id:
+			result.append(other)
+	return result
+
+
+## 사람이 고르지 않았을 때 (시간 초과·봇) 자동으로 지정할 대상: 결승에 가장 가까운 상대.
+static func default_agitation_target(state: GameState, player_id: int) -> int:
+	var best: int = -1
+	var best_key: Array = []
+	for other: int in agitation_targets(state, player_id):
+		var key: Array = [-state.finished_count(other), _remaining(state, other)]
+		if best == -1 or key < best_key:
+			best = other
+			best_key = key
+	return best
+
+
+static func _apply_pacifist(state: GameState, player_id: int) -> Dictionary:
+	var until: int = SuperStatus.set_pacifist(state, player_id)
+	return {"ok": true, "text": "평화주의자! %d번째 라운드 증강전까지 내 모든 말은 잡기 면역이지만, 나도 아무도 잡을 수 없습니다" % until}
+
+
+static func _apply_agitate(state: GameState, player_id: int, target: int) -> Dictionary:
+	if not agitation_targets(state, player_id).has(target):
+		target = default_agitation_target(state, player_id)
+	if target == -1:
+		return {"ok": false, "text": "선동할 상대가 없습니다"}
+	var discarded: int = 0
+	while not (state.hands[player_id] as Array).is_empty():
+		state.discard_random_card(player_id, state.rng)
+		discarded += 1
+	var until: int = SuperStatus.set_agitation(state, player_id, target)
+	return {"ok": true, "text": "날조와 선동! %d번째 라운드 증강전까지 P%d가 모든 공격 카드를 받습니다 (내 손패 %d장을 모두 버렸습니다)" % [until, target, discarded]}
+
+
+static func _apply_blind_city(state: GameState) -> Dictionary:
+	SuperStatus.set_blind(state)
+	return {"ok": true, "text": "눈먼 자의 도시! 이번 라운드 동안 모든 함정과 말이 가려지고, 아군 말도 잡습니다"}
+
+
+static func _apply_necklace(state: GameState, player_id: int, pawn_id: int) -> Dictionary:
+	var pawn: PlayerPawn = state.get_pawn(pawn_id) if pawn_id != -1 else null
+	if pawn == null or not SuperStatus.necklace_candidates(state, player_id).has(pawn):
+		pawn = state.front_pawn_of(player_id)  # 고르지 않았으면 가장 앞선 말
+	if pawn == null:
+		return {"ok": false, "text": "보드 위에 내 말이 없습니다"}
+	SuperStatus.set_necklace(state, player_id, pawn.entity_id)
+	return {"ok": true, "text": "사출 목걸이! 말 %d번은 이번 라운드 모든 공격을 막고 이동 거리가 2배지만, 라운드가 끝나면 목걸이가 터져 출발선으로 사출됩니다" % pawn.slot}
 
 
 static func _apply_flip(state: GameState, player_id: int) -> Dictionary:

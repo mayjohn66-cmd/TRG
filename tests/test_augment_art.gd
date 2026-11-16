@@ -42,9 +42,9 @@ func test_all_draft_icons_resolve_to_the_described_target() -> void:
 		check_eq(texture.resource_path, AugmentArt.ROOT + relative, str(definition.augment_id) + " target image, not an unrelated category fallback")
 		check(not paths.has(texture.resource_path), str(definition.augment_id) + " distinct icon")
 		paths[texture.resource_path] = true
-	check_eq(AugmentRegistry.all().size(), 89, "28 pawns + 16 tools + 9 laws + 3 card packages + 12 super + 15 utility")
-	check_eq(paths.size(), 89, "every draft effect has its own icon")
-	print("AUGMENT_ART_COVERAGE ", paths.size(), "/89")
+	check_eq(AugmentRegistry.all().size(), 93, "28 pawns + 16 tools + 9 laws + 3 card packages + 16 super + 15 utility")
+	check_eq(paths.size(), 93, "every draft effect has its own icon")
+	print("AUGMENT_ART_COVERAGE ", paths.size(), "/93")
 
 
 func test_shop_law_uses_the_icon_for_the_active_board() -> void:

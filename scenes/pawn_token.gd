@@ -26,6 +26,11 @@ var _pulse: float = 1.0
 var _shield_shell: ShieldShell
 ## Persistent protection remains visible; this switch only skips gain/break motion.
 var shield_motion: bool = true
+## 눈먼 자의 도시: 말의 정체(주인·종류)를 가려 [?] 그림자로만 보인다.
+var blind: bool = false
+## 머리 위 상태 칩 (사출 목걸이·평화주의자·선동 표적): 비어 있으면 없다.
+var chip_text: String = ""
+var chip_color: Color = Color("ffd43b")
 ## Only round body artwork rolls; owner base, stack, shield and skill marker stay upright.
 var melon_roll_angle: float = 0.0:
 	set(value):
@@ -42,7 +47,7 @@ func configure(value: PlayerPawn, color: Color, images: bool = true) -> void:
 	owner_color = color
 	use_art = images
 	var art: Dictionary = PawnArt.sprite(pawn) if images else {}
-	var key: String = "%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s" % [pawn.kind, pawn.unit_no, pawn.slot, pawn.promoted, pawn.carried.size(), pawn.skill_used, pawn.is_finished, color, pawn.revenge_boost, (art.get("texture") as Texture2D).resource_path if not art.is_empty() else "shape", pawn.shield, pawn.ward, pawn.turn_guard, pawn.melon_size, pawn.ward_box, pawn.trpg_level if pawn.is_trpg() else 0]
+	var key: String = "%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s" % [pawn.kind, pawn.unit_no, pawn.slot, pawn.promoted, pawn.carried.size(), pawn.skill_used, pawn.is_finished, color, pawn.revenge_boost, (art.get("texture") as Texture2D).resource_path if not art.is_empty() else "shape", pawn.shield, pawn.ward, pawn.turn_guard, pawn.melon_size, pawn.ward_box, pawn.trpg_level if pawn.is_trpg() else 0, blind, chip_text]
 	if key == _signature:
 		return
 	# 괴상한 멜론 (v1.1): 함정을 먹을 때마다 한 단계씩 커진다 (최대 3단계 = 1.6배)
@@ -255,6 +260,9 @@ func _draw() -> void:
 		if npc_behavior >= 0:
 			_draw_npc()
 		return
+	if blind:
+		_draw_blind_silhouette()
+		return
 	# Ground shadow, thick side wall, top ring, and inset make owner color visible.
 	if ground_shadow:
 		_ellipse(Vector2(0, 5 + 4 * mini(pawn.carried.size(), 3)), Vector2(17, 6), Color(0, 0, 0, 0.28))
@@ -288,10 +296,44 @@ func _draw() -> void:
 		_poly(PackedVector2Array([Vector2(0,-32),Vector2(13,-23),Vector2(11,-2),Vector2(-11,-2),Vector2(-13,-23)]), Color.TRANSPARENT, Color("ff5e50"), 2.0)
 	# 슬롯 번호 배지는 그리지 않는다 (기물 그림을 가려 거슬린다는 피드백). 몇 번 말인지는 고르기 카드의 [N번 말]이 알려 준다.
 	# 리벤지 부스터는 말 옆 불꽃 대신 프로필 칸이 불타는 것으로만 보여 준다 (main_board._paint_revenge_glow)
-	_draw_trpg_level()
+	_draw_status_chips()
 	if skill_ready():
 		var bolt := PackedVector2Array([Vector2(13,-29),Vector2(8,-20),Vector2(12,-20),Vector2(10,-13),Vector2(18,-23),Vector2(14,-23)])
 		_poly(bolt, Color(1,0.88,0.25,_pulse), INK, 0.9)
+
+
+## 눈먼 자의 도시: 주인·종류를 알 수 없는 회색 [?] 말.
+func _draw_blind_silhouette() -> void:
+	if ground_shadow:
+		_ellipse(Vector2(0, 5), Vector2(17, 6), Color(0, 0, 0, 0.28))
+	var gray := Color("6c7080")
+	_ellipse(Vector2(0, 3), Vector2(15, 6), gray.darkened(0.45), INK)
+	_ellipse(Vector2.ZERO, Vector2(15, 6), gray, gray.lightened(0.4), 1.5)
+	_poly(PackedVector2Array([Vector2(-4,-21),Vector2(4,-21),Vector2(11,-16),Vector2(9,-12),Vector2(5,-15),Vector2(6,-7),Vector2(9,-2),Vector2(3,-2),Vector2(0,-8),Vector2(-3,-2),Vector2(-9,-2),Vector2(-6,-7),Vector2(-5,-15),Vector2(-9,-12),Vector2(-11,-16)]), Color("2f3342"))
+	draw_circle(Vector2(0, -26), 6, INK)
+	draw_circle(Vector2(0, -26), 4.5, Color("2f3342"))
+	_caption("?", Vector2(0, -26), 11, Color("e9ecef"))
+
+
+## 머리 위 칩들: TRPG 레벨 위에 상태 칩(목걸이·평화·표적)을 쌓는다.
+func _draw_status_chips() -> void:
+	var lifted: float = 0.0
+	if pawn != null and pawn.is_trpg() and not pawn.is_finished and pawn.has_left_start:
+		_draw_trpg_level()
+		lifted = 17.0
+	if chip_text != "" and pawn != null and not pawn.is_finished:
+		var top: float = (artwork_rect().position.y if not artwork.is_empty() else -34.0) - lifted
+		var size_px: int = 11
+		var text: String = L10n.t(chip_text)
+		var width: float = FONT.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px).x + 10.0
+		var chip := Rect2(Vector2(-width / 2.0, top - 17.0), Vector2(width, 15.0))
+		var box := StyleBoxFlat.new()
+		box.bg_color = Color(0.07, 0.08, 0.12, 0.92)
+		box.border_color = chip_color
+		box.set_border_width_all(2)
+		box.set_corner_radius_all(7)
+		draw_style_box(box, chip)
+		draw_string(FONT, Vector2(chip.position.x + 5.0, chip.position.y + 11.5), text, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px, chip_color.lightened(0.35))
 
 
 ## TRPG 기물의 레벨 표시: 머리 위에 [Lv.N] 칩이 떠 있어 처치로 올라간 레벨이 한눈에 보인다 (최대 레벨은 금색 [MAX]).

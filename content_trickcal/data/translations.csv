@@ -2705,12 +2705,12 @@ PROGRESS / 진행률,PROGRESS,PROGRESS／進行度
 빗나감,Missed,外れ
 교칙,Law,教則
 내 증강,My Augments,所持オーグメント
-"손패 %d장 (눌러서 펼치기)","Hand: %d cards (tap to open)",手札%d枚（タップで開く）
+손패 %d장 (눌러서 펼치기),Hand: %d cards (tap to open),手札%d枚（タップで開く）
 이번 라운드 증강!,Augment this round!,今ラウンドはオーグメント！
 다음 라운드 증강!,Augment next round!,次のラウンドはオーグメント！
 다음 증강까지 %d라운드,Next augment in %d rounds,次のオーグメントまで%dラウンド
 남은 증강 없음,No more augments,残りのオーグメントなし
-"노란 숫자는 증강 라운드, 붉은 테두리는 템포 업이 시작되는 라운드를 뜻합니다. 템포 업 1단계부터 고급 증강(법전 등), 2단계부터 초증강도 증강 선택지에 합류합니다.","Yellow numbers mark augment rounds. Red borders mark rounds that start a Tempo Up stage. Advanced augments (Special Wins, etc.) join the choices from Tempo Up 1, and Super Augments from Tempo Up 2.","黄色の数字はオーグメントラウンド、赤い枠はテンポアップの各段階が始まるラウンドを表します。テンポアップ1段階から上級オーグメント(法典など)、2段階から超オーグメントも選択肢に加わります。"
+"노란 숫자는 증강 라운드, 붉은 테두리는 템포 업이 시작되는 라운드를 뜻합니다. 템포 업 1단계부터 고급 증강(법전 등), 2단계부터 초증강도 증강 선택지에 합류합니다.","Yellow numbers mark augment rounds. Red borders mark rounds that start a Tempo Up stage. Advanced augments (Special Wins, etc.) join the choices from Tempo Up 1, and Super Augments from Tempo Up 2.",黄色の数字はオーグメントラウンド、赤い枠はテンポアップの各段階が始まるラウンドを表します。テンポアップ1段階から上級オーグメント(法典など)、2段階から超オーグメントも選択肢に加わります。
 ★ 다음 라운드 증강 선택!,★ Pick an augment next round!,★ 次のラウンドはオーグメント選択！
 증강 선택!,Choose an Augment!,増強選択！
 총 %d칸 이동,Move %d spaces total,合計 %dマス移動
@@ -2778,7 +2778,7 @@ PROGRESS / 진행률,PROGRESS,PROGRESS／進行度
 %s · 쌓인 윷이 모두 날아갔다 · 턴 종료,%s · The stacked throws are all lost · turn ends,%s · 溜めた出目が全て消えた · 番終了
 %s · %d칸 쌓음 · 한 번 더!,%s · %d stacked · Throw again!,%s · %dマス溜め · もう一回！
 %s · %d칸 쌓음 · 이제 이동!,%s · %d stacked · Time to move!,%s · %dマス溜め · いざ移動！
-"낙! 윷가락이 판 밖으로 - 쌓인 윷도 모두 날아가고 턴 종료",Nak! The sticks flew off the board - the stacked throws are lost too and the turn ends,落！ユッが盤の外へ - 溜めた出目も全て消えて番終了
+낙! 윷가락이 판 밖으로 - 쌓인 윷도 모두 날아가고 턴 종료,Nak! The sticks flew off the board - the stacked throws are lost too and the turn ends,落！ユッが盤の外へ - 溜めた出目も全て消えて番終了
 %s (%d칸 쌓음 · 한 번 더),%s (%d stacked · throw again),%s（%dマス溜め・もう一回）
 윷·모는 쌓고 계속 던짐 (최대 3번),Yut/Mo stack and you keep throwing (max 3),ユッ・モは溜めて投げ続ける（最大3回）
 0칸 · 턴 종료 (쌓인 윷도 사라짐),0 spaces · turn ends (stacked values are lost too),0マス · 番終了（溜めた出目も消える）
@@ -2976,3 +2976,40 @@ TRPG,TRPG,TRPG
 폭발 물약,Explosive Potion,爆発の薬
 다음 굴림 -2칸,Next roll -2,次の出目 -2マス
 펑! 뒤로 2칸,Boom! Back 2,ボン！2マス後退
+"평화주의자! %d번째 라운드 증강전까지 내 모든 말은 잡기 면역이지만, 나도 아무도 잡을 수 없습니다","Pacifist! Until round %d's augment round, all your pawns are immune to capture, but you cannot capture anyone",平和主義者！第%dラウンドのオーグメント戦まで、自分の全駒は捕獲無効ですが、自分も誰も捕獲できません
+날조와 선동! %d번째 라운드 증강전까지 P%d가 모든 공격 카드를 받습니다 (내 손패 %d장을 모두 버렸습니다),"Fabrication and Agitation! Until round %d's augment round, P%d receives every attack card (you discarded your whole hand of %d)",でっち上げと扇動！第%dラウンドのオーグメント戦までP%dが全ての攻撃カードを受けます（自分の手札%d枚を全て捨てました）
+"눈먼 자의 도시! 이번 라운드 동안 모든 함정과 말이 가려지고, 아군 말도 잡습니다","City of the Blind! This round all traps and pawns are hidden, and friendly pawns can be captured too",盲目の都市！このラウンドの間、全ての罠と駒が隠され、味方の駒も捕獲します
+"사출 목걸이! 말 %d번은 이번 라운드 모든 공격을 막고 이동 거리가 2배지만, 라운드가 끝나면 목걸이가 터져 출발선으로 사출됩니다","Ejection Necklace! Pawn %d blocks every attack and moves double this round, but the necklace explodes at round end and ejects it",射出ネックレス！駒%d番はこのラウンド全ての攻撃を防ぎ移動距離が2倍ですが、ラウンド終了時にネックレスが爆発して射出されます
+평화주의자,Pacifist,平和主義者
+날조와 선동,Fabrication and Agitation,でっち上げと扇動
+눈먼 자의 도시,City of the Blind,盲目の都市
+사출 목걸이,Ejection Necklace,射出ネックレス
+"◆ 다음 증강전까지 내 모든 말은 잡기 면역
+◆ 단 내 모든 말은 아무도 잡을 수 없다","◆ Until the next augment round, all your pawns are immune to capture
+◆ But none of your pawns can capture anyone","◆ 次のオーグメント戦まで、自分の全駒は捕獲無効
+◆ ただし自分の全駒は誰も捕獲できない"
+"◆ 다음 증강전까지 지정한 대상이 모든 공격 카드를 받는다
+◆ 단 내 손패를 전부 버린다","◆ Until the next augment round, your chosen target receives every attack card
+◆ But you discard your entire hand","◆ 次のオーグメント戦まで、指定した相手が全ての攻撃カードを受ける
+◆ ただし自分の手札を全て捨てる"
+"◆ 이번 라운드 동안 모든 함정과 말이 가려진다
+◆ 아군 말도 잡는다","◆ This round, all traps and pawns are hidden
+◆ Friendly pawns can be captured too","◆ このラウンドの間、全ての罠と駒が隠される
+◆ 味方の駒も捕獲する"
+"◆ 내 말 1개를 골라 목걸이를 채운다: 모든 공격 방어 · 이동 거리 x2
+◆ 라운드가 끝나면 목걸이가 터져 그 말이 사출","◆ Fasten the necklace on 1 of your pawns: blocks every attack · moves x2
+◆ When the round ends the necklace explodes and the pawn is ejected","◆ 自分の駒1個にネックレスを付ける: あらゆる攻撃を防ぐ・移動距離x2
+◆ ラウンドが終わるとネックレスが爆発してその駒が射出される"
+사출 목걸이 x%d,Ejection Necklace x%d,射出ネックレス x%d
+선동할 상대가 없습니다,There is no one to agitate against,扇動する相手がいません
+목걸이 x2,Necklace x2,ネックレス x2
+평화,Peace,平和
+표적,Target,標的
+평화주의자! 다음 증강전까지 말을 날리는 카드는 쓸 수 없습니다,Pacifist! You can't play cards that eject pawns until the next augment round,平和主義者！次のオーグメント戦までは駒を飛ばすカードを使えません
+날조와 선동! 모든 공격을 받을 상대를 고르세요,Fabrication and Agitation! Choose who will receive every attack,でっち上げと扇動！すべての攻撃を受ける相手を選んでください
+어느 말에 사출 목걸이를 채울까요?,Which pawn gets the ejection necklace?,どの駒に射出ネックレスを付けますか？
+[사출 목걸이] P%d의 %s 목걸이가 터졌습니다!,[Ejection Necklace] P%d's %s necklace exploded!,[射出ネックレス] P%dの%sのネックレスが爆発しました！
+사출 목걸이가 터져 말이 사출됨!,The necklace exploded and the pawn was ejected!,ネックレスが爆発して駒が射出された！
+눈먼 자의 도시: 함정·말 가려짐 · 아군도 잡힘,City of the Blind: hidden traps & pawns · friendly fire,盲目の都市: 罠と駒が隠れる · 味方も捕獲
+평화주의자 P%d: 잡기 면역·잡기 불가 (%d라운드),"Pacifist P%d: immune, can't capture (%d rd)",平和主義者 P%d: 捕獲無効・捕獲不可 (%dR)
+날조와 선동 P%d: 공격은 모두 P%d에게,Agitation P%d: all attacks go to P%d,扇動 P%d: 攻撃は全てP%dへ

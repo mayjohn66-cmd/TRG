@@ -2280,3 +2280,13 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 - 화면: `BoardSkin.PALETTE_WITCH`(연보라 타일·짙은 보라 테두리·갈색 코너·보라 마법빛 부스터 발판), 판 바닥 `assets/board/belatien/board_surface_symbols_v1.png`(임시 그림), 가마솥 연출 `CauldronBrewView`(가마솥이 물약 색으로 끓다가 병이 솟고, 나쁜 물약은 검은 연기) + 물약 이름·효과 창 + 말 위 배지. 놀이터 보드 그림 `board_preview/belatien.webp`(게임 화면 캡처).
 - 도감: 보드 장에 마녀 상점·마녀의 가마솥(물약 표) 항목, 식권 카드의 보드 넘기기 화살표는 에르핀 왕국 → 모나티엄 도시 → 벨라티엔 왕국 순서로 돈다 (`VictoryLaw.preview_board` 0/1/2).
 - 임시 그림 교체: 판 바닥·마녀 상점·가마솥 그림, 보드 미리보기 그림은 파일만 바꾸면 된다 (마스크 그림은 `BoardSkin.DECAL_BOUNDS`·`RulebookVisuals.REGIONS`의 테두리 값을 새 그림에 맞춘다).
+
+
+### 7.93 기간이 있는 초증강 4종 (다음 버전 1.2)
+- 코드: `SuperAugments`(SUPER_13 `PACIFIST`·SUPER_14 `AGITATE`·SUPER_15 `BLIND_CITY`·SUPER_16 `NECKLACE`)와 규칙 파일 `SuperStatus`(`core_engine/augments/super_status.gd`). 상태는 `GameState.super_status`(스냅샷 meta에 저장)에 모은다: `pacifist{플레이어: 끝나는 라운드}` · `agitate{선동한 사람: {target, until}}` · `blind` = 걸린 라운드 · `necklace{주인: {pawn, round}}`.
+- "다음 증강전까지" = `SuperStatus.next_draft_round(지금 라운드)`보다 작은 라운드 동안 (4라운드에 고르면 7라운드 증강전이 오기 전, 즉 4·5·6라운드). 눈먼 자의 도시·사출 목걸이는 고른 그 라운드만.
+- **평화주의자:** `GameState.break_shield`가 `SuperStatus.pawn_protected`로 잡기·사출을 막고(방어 연출 `guard_blocked` 재사용), `MoveExecutor.is_capture_immune`도 같이 본다. 남을 잡지 못하게 하는 곳은 `MoveExecutor._resolve_captures`(같은 칸에 함께 섬)와 `GameState.send_to_start`(`blocks_capture_by`). 말을 날리는 카드(`SuperStatus.KILL_CARDS`: ACT_02·03·08·09·10·13)는 `TurnManager`가 `pacifist`로 거절하고 UI는 흐리게, 봇은 고르지 않는다. 뱅·일기토의 대상 목록도 비게 한다.
+- **날조와 선동:** 공격 카드의 대상 목록 함수(`BangCommand.target_players`·`StatusCardCommand.targets`, 일기토는 뱅 목록을 씀)가 `SuperStatus.filter_attack_targets`를 거친다. 그래서 UI·봇·엔진 검증이 모두 같은 목록을 본다 (선동한 사람 포함 모두 대상에게만, 대상 본인은 그대로). 적용 때 선동한 사람의 손패를 `discard_random_card`로 전부 버린다. 대상 고르기는 증강 선택의 `params["target_player"]`(`AugmentDef.needs_target_choice`, `_pick_augment`가 검증).
+- **눈먼 자의 도시:** `_resolve_captures`가 같은 편 말(자기 자신 제외, 출발한 말)도 잡을 말로 센다 (사출이라 처치 기록은 올라가지 않음). 화면은 `PawnToken.blind`로 말을 회색 [?]로, `_trap_known`/`_trap_tooltip`으로 모든 함정을 뒷면으로 그린다. 봇은 눈먼 자의 도시를 피한다(점수 25).
+- **사출 목걸이:** 이동 거리 2배는 `MoveExecutor.plan_path`(미리보기 포함), 모든 공격 방어는 `pawn_protected`. 라운드 끝(`TurnManager._enter_neutral_npc_phase`, 법전 판정 앞)에 `SuperStatus.explode_necklaces`가 그 말(업은 말과 함께)을 출발선으로 사출하고 `GameState.necklace_exploded`로 화면이 [펑!]을 보여 준다. 사람은 `AugmentDef.needs_pawn_choice`로 말을 고르고 봇은 가장 앞선 말에 채운다 (이번 라운드 안에 끝내지 못하면 잃는다).
+- 표시: 말 머리 위 칩(`PawnToken.chip_text`: [목걸이 x2]·[평화]·[표적], TRPG 레벨 칩 위에 쌓임), 라운드 알림 아래 한 줄(`_super_status_lines`), 내 말이 날아갈 수 있는 초증강이라 눈먼 자의 도시·사출 목걸이는 경고 아이콘(`SELF_RISK`). 도감 초증강 장·증강 표(`augments_table.csv`)·번역(ko/en/ja)·임시 아이콘(`illustrations/augments/SUPER_13~16.png`) 포함.

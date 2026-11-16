@@ -23,7 +23,9 @@ static func target_players(game_state: GameState, shooter_id: int) -> Array[int]
 			continue
 		if game_state.front_pawn_of(pawn.owner_id) != null:
 			result.append(pawn.owner_id)
-	return result
+	if SuperStatus.pacifist_active(game_state, shooter_id):
+		return [] as Array[int]  # 평화주의자는 공격 카드를 쓸 수 없다
+	return SuperStatus.filter_attack_targets(game_state, shooter_id, result)  # 날조와 선동: 대상 말고는 겨눌 수 없다
 
 
 ## 그 플레이어의 선두 말 (없으면 null).

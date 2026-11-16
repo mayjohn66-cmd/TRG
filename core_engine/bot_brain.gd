@@ -190,6 +190,14 @@ static func super_augment_score(effect: StringName) -> float:
 			return 55.0
 		SuperAugments.RUNAWAY:
 			return 40.0  # 내 말도 날아갈 수 있는 도박
+		SuperAugments.AGITATE:
+			return 45.0  # 손패를 전부 버리는 대신 모두의 공격이 한 명에게 간다
+		SuperAugments.PACIFIST:
+			return 42.0  # 안전하지만 남을 잡을 수 없다
+		SuperAugments.NECKLACE:
+			return 38.0  # 선두 말이 이번 라운드에 못 끝내면 터진다
+		SuperAugments.BLIND_CITY:
+			return 25.0  # 혼돈: 내 말도 잡힌다
 	return 35.0
 
 
@@ -276,7 +284,7 @@ static func plan_turn_card(state: GameState, player_id: int, tried: Dictionary, 
 		if tried.has(card_id):
 			continue
 		var card: BaseCard = CardRegistry.get_card(card_id)
-		if not card.is_playable_in(TurnManager.State.PHASE_TURN_BEGIN):
+		if not card.is_playable_in(TurnManager.State.PHASE_TURN_BEGIN) or SuperStatus.card_blocked(state, player_id, card_id):
 			continue
 		tried[card_id] = true
 		var plan: Dictionary = _plan_one_turn_card(state, player_id, card, rng)
@@ -434,7 +442,7 @@ static func plan_window_card(state: GameState, player_id: int, phase: int, roll_
 		if tried.has(card_id):
 			continue
 		var card: BaseCard = CardRegistry.get_card(card_id)
-		if not card.is_playable_in(phase):
+		if not card.is_playable_in(phase) or SuperStatus.card_blocked(state, player_id, card_id):
 			continue
 		tried[card_id] = true
 		if card.category != GameEnums.CardCategory.COUNTER and card.could_play(state, player_id):
