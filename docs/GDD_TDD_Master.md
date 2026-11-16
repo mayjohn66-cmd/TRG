@@ -2250,3 +2250,11 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 - 선택 카드: `AugmentRegistry.apply_board_variants`가 표에서 다시 입힌 뒤 AUG_LAW_02의 이름·설명을 언어별로 바꾼다 (`BoardCatalog.apply`와 표 로드 때 자동).
 - 승리 연출: `LawVictoryTheme.MONATIUM_THEMES/PAPERS/COMIC_TITLES`(제목 `MONATIUM DAYS` 2줄, 파랑 팔레트, 글꼴 bungee). `of/paper/comic_title`이 보드로 고르고 `geometry_id`(`LAW_02:M`)로 글자 윤곽 데이터를 원래 제목 것과 섞지 않는다. 컷신의 황금 티켓 무대 그림은 에르핀 빵집 티켓 그대로다 (그림 교체 필요).
 - 보드 위: 법전 대상 칸 표시 [식권 목표] → [편의점 목표], 스탬프 알림 [편의점 방문! (n/6)], 결과 문구·달성 사유 문구. 번역(ko/en/ja) 추가, 테스트 `test_monatium_swaps_the_bakery_law_into_wara_monatium_25`.
+
+
+### 7.90 신규 판정 도구 [포츈쿠키] (다음 버전, `next/gacha` 브랜치, 미배포)
+- id `DICE_COOKIE`, 규칙 `ToolFortuneCookie`(`core_engine/tools/tool_fortune_cookie.gd`). 쿠키를 깨면 안에 종이가 들어 있고, 종이를 펼치면 몇 칸 전진할지 적혀 있다. 순수한 운이며 한 번 더·턴 종료 같은 부가 효과는 없다.
+- 종이표(`PAPERS`: 칸수·가중치·종이에 적힌 글): 1칸 10% "작은 걸음도 걸음이에요" · 2칸 15% · 3칸 25% · 4칸 20% · 5칸 15% · 6칸 10% "지금이 바로 달려 나갈 때!" · ★8칸 5% "대박! 쿠키가 활짝 웃고 있어요" (대박 쿠키). 평균 약 3.7칸. 글은 모두 ko/en/ja 번역 행이 있다.
+- 결과 details: `message`(종이 글)·`lucky`(종이 아래 행운의 숫자, 연출용)·`jackpot`.
+- 연출 `FortuneCookieView`(`scenes/fortune_cookie_view.gd`, 임시 2D 그림): 쿠키가 통통 떨어짐(0.4초) -> 흔들림(1.0초) -> 쩍 갈라짐(1.02초) -> 종이가 올라와 펼쳐짐(1.45초) -> 결과 글(1.95초, 대박이면 빛살) -> 끝(2.6초). 효과음은 기존 `icecream_snap`·`ticket_rustle`·`card_pick`·`good`을 쓴다. 최종 그림이 오면 `_draw_cookie_half`·`_draw_paper`만 바꾸면 된다.
+- 등록: `ToolRegistry`(ALL_IDS·TABLES·NATURAL_JACKPOT 8), `AugmentRegistry.SWAPPABLE_TOOLS`(교체 가능 도구 17종), `dice_table.csv`·`augments_table.csv`(`TOOL_DICE_COOKIE`, 가중치 50), `RollPresenter`(굴림 연출·결과 글), `MainBoard`(도구 안내·확률표·굴리기 버튼 [깨기!]), 아이콘 `content_trickcal/illustrations/dice/DICE_COOKIE.png`(임시 그림).

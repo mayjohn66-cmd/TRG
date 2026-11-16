@@ -7163,6 +7163,7 @@ const TOOL_CARDS: Dictionary = {
 	&"DICE_DARTS": ["◎", Color("c92a2a"), "다트를 던져라! 어디에 꽂힐지는 운!", "숫자 × 싱글·더블·트리플 · ★불스아이 10칸+한 번 더"],
 	&"DICE_OMIKUJI": ["籤", Color("b5651d"), "통을 흔들어 점괘를 뽑아라!", "★대길 8칸+한 번 더 · 대흉은 턴 종료"],
 	&"DICE_ICECREAM": ["얌", Color("e64980"), "한 입 먹으면 막대에 칸이 나온다!", "★한번 더!가 나오면 아이스크림 리필"],
+	&"DICE_COOKIE": ["쿠", Color("d9822b"), "쿠키를 깨서 종이를 펼쳐라!", "★대박 8칸 · 종이에 적힌 대로"],
 }
 
 
@@ -7184,6 +7185,7 @@ const TOOL_RULES: Dictionary = {
 	&"DICE_STOCK": {"rows": [["보통 (88%)", "주가만큼 (1~12칸, 매번 ±3)"], ["★상한가 (6%)", "20칸"], ["상장폐지 (6%)", "0칸 · 선두 말 사출 · 턴 종료"]], "note": "주가는 6에서 시작해 이어진다 · 상한가·상장폐지 뒤 6으로"},
 	&"DICE_OMIKUJI": {"rows": [["★대길 (8%)", "8칸 + 한 번 더"], ["중길 (17%)", "6칸"], ["소길·길 (25%씩)", "4칸 / 3칸"], ["말길 (15%)", "2칸"], ["흉 (5%)", "1칸"], ["대흉 (5%)", "0칸 · 턴 종료"]], "note": "통을 흔들어 나온 점괘 그대로 · 순수한 운"},
 	&"DICE_ICECREAM": {"rows": [["막대 1~6칸 (85%)", "드러난 칸만큼"], ["★한번 더! (15%)", "3칸 + 새 아이스크림(한 번 더)"]], "note": "한 입 베어 물면 막대에 칸이 드러나요"},
+	&"DICE_COOKIE": {"rows": [["1칸 (10%) · 2칸 (15%)", "종이에 적힌 대로"], ["3칸 (25%) · 4칸 (20%)", "종이에 적힌 대로"], ["5칸 (15%) · 6칸 (10%)", "종이에 적힌 대로"], ["★대박 쿠키 (5%)", "8칸"]], "note": "쿠키를 깨면 안의 종이에 몇 칸 갈지 적혀 있어요 · 순수한 운"},
 	&"DICE_DARTS": {"rows": [["싱글", "숫자(1~6)만큼"], ["더블 (바깥 고리)", "숫자 × 2"], ["트리플 (안쪽 고리)", "숫자 × 3"], ["★불스아이 (정중앙)", "10칸 + 한 번 더!"]], "note": "조준 없이 [던지기]만 누르면 돼요 · 꽂히는 자리는 순수한 운"},
 }
 
@@ -7580,6 +7582,8 @@ func _roll_button_label(tool: BaseJudgmentTool) -> String:
 		return "뽑기!"
 	if tool is ToolIceCream:
 		return "냠!"
+	if tool is ToolFortuneCookie:
+		return "깨기!"
 	return tr_ui("btn.roll")
 
 
@@ -12402,6 +12406,8 @@ func _roll_text(data: Dictionary) -> String:
 			text += OmikujiView.caption(details, int(result["steps"]))
 		&"DICE_ICECREAM":
 			text += IceCreamView.caption(details, int(result["steps"]))
+		&"DICE_COOKIE":
+			text += FortuneCookieView.caption(details, int(result["steps"]))
 		&"REVOLVER":
 			if details["fired"]:
 				text += "뿅! 깃발 발사 · 누적 %d칸 사라짐, 턴 종료" % details["lost"]
@@ -12970,7 +12976,7 @@ func _handle_roll_event(data: Dictionary) -> void:
 	var serial: int = _fx_serial
 	_fx_busy = true
 	_refresh_controls()
-	if tool_id in [&"DICE_OMIKUJI", &"DICE_ICECREAM"]:
+	if tool_id in [&"DICE_OMIKUJI", &"DICE_ICECREAM", &"DICE_COOKIE"]:
 		_roll_button.hide()  # 중앙 소품을 덮는 굴리기 버튼은 연출 종료 후 다시 갱신한다.
 	_presenter.hold_owner = int(data["player_id"])
 	await _presenter.play(tool_id, result, _pending_power, int(data.get("chain_index", 0)) > 0)

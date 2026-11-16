@@ -2887,3 +2887,27 @@ TRPG,TRPG,TRPG
 카드 보너스 %+d,Card bonus %+d,カードボーナス %+d
 %s → %d칸 → 총 %d칸 전진!,%s → %d spaces → %d total!,%s → %dマス → 合計 %dマス前進！
 [가속 보너스] P%d: 눈금 %d → %d! (%s),[Speed Bonus] P%d: roll %d → %d! (%s),[加速ボーナス] P%d: 出目 %d → %d！ (%s)
+포츈쿠키,Fortune Cookie,フォーチュンクッキー
+행운의 종이,Lucky Slip,幸運の紙
+행운의 숫자 %02d,Lucky number %02d,ラッキーナンバー %02d
+작은 걸음도 걸음이에요,Even a small step is a step,小さな一歩も一歩です
+서두르지 않아도 도착해요,You'll get there without rushing,急がなくても着きますよ
+오늘은 무난한 하루가 될 거예요,Today will be a steady day,今日は穏やかな一日になるでしょう
+좋은 바람이 뒤에서 불어와요,A good wind blows from behind,良い風が後ろから吹いてきます
+뜻밖의 행운이 찾아와요,Unexpected luck is coming,思いがけない幸運が訪れます
+지금이 바로 달려 나갈 때!,Now is the time to run!,今こそ走り出す時！
+대박! 쿠키가 활짝 웃고 있어요,Jackpot! The cookie is grinning wide,大当たり！クッキーが満面の笑み
+★대박 쿠키! %d칸,★Jackpot Cookie! %d spaces,★大当たりクッキー！%dマス
+쿠키 속 종이 → %d칸,Slip inside → %d spaces,クッキーの紙 → %dマス
+깨기!,Crack!,割る！
+쿠,Fo,ク
+종이표: 쿠키 속 종이에 적힌 1~6칸 / ★대박 쿠키(8칸),Paper: 1~6 spaces written on the slip / ★Jackpot Cookie (8),紙表: 紙に書かれた1〜6マス / ★大当たりクッキー(8マス)
+쿠키를 깨면 종이가 나온다! 펼쳐서 몇 칸 갈지 확인!,Crack it open! The paper inside says how far you go!,クッキーを割ると紙が出てくる！開いて進むマスを確認！
+쿠키를 깨서 종이를 펼쳐라!,Crack the cookie and unfold the slip!,クッキーを割って紙を開こう！
+★대박 8칸 · 종이에 적힌 대로,★Jackpot 8 · as the slip says,★大当たり8マス · 紙の通り
+1칸 (10%) · 2칸 (15%),1 (10%) · 2 (15%),1マス (10%) · 2マス (15%)
+3칸 (25%) · 4칸 (20%),3 (25%) · 4 (20%),3マス (25%) · 4マス (20%)
+5칸 (15%) · 6칸 (10%),5 (15%) · 6 (10%),5マス (15%) · 6マス (10%)
+종이에 적힌 대로,As written on the slip,紙に書かれた通り
+★대박 쿠키 (5%),★Jackpot Cookie (5%),★大当たりクッキー (5%)
+쿠키를 깨면 안의 종이에 몇 칸 갈지 적혀 있어요 · 순수한 운,Crack it and the slip inside says how far you go · pure luck,クッキーを割ると中の紙に進むマス数が書いてあります · 純粋な運
