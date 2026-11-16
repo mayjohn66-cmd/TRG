@@ -42,7 +42,7 @@ func configure(value: PlayerPawn, color: Color, images: bool = true) -> void:
 	owner_color = color
 	use_art = images
 	var art: Dictionary = PawnArt.sprite(pawn) if images else {}
-	var key: String = "%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s" % [pawn.kind, pawn.unit_no, pawn.slot, pawn.promoted, pawn.carried.size(), pawn.skill_used, pawn.is_finished, color, pawn.revenge_boost, (art.get("texture") as Texture2D).resource_path if not art.is_empty() else "shape", pawn.shield, pawn.ward, pawn.turn_guard, pawn.melon_size, pawn.ward_box]
+	var key: String = "%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s" % [pawn.kind, pawn.unit_no, pawn.slot, pawn.promoted, pawn.carried.size(), pawn.skill_used, pawn.is_finished, color, pawn.revenge_boost, (art.get("texture") as Texture2D).resource_path if not art.is_empty() else "shape", pawn.shield, pawn.ward, pawn.turn_guard, pawn.melon_size, pawn.ward_box, pawn.trpg_level if pawn.is_trpg() else 0]
 	if key == _signature:
 		return
 	# 괴상한 멜론 (v1.1): 함정을 먹을 때마다 한 단계씩 커진다 (최대 3단계 = 1.6배)
@@ -288,9 +288,32 @@ func _draw() -> void:
 		_poly(PackedVector2Array([Vector2(0,-32),Vector2(13,-23),Vector2(11,-2),Vector2(-11,-2),Vector2(-13,-23)]), Color.TRANSPARENT, Color("ff5e50"), 2.0)
 	# 슬롯 번호 배지는 그리지 않는다 (기물 그림을 가려 거슬린다는 피드백). 몇 번 말인지는 고르기 카드의 [N번 말]이 알려 준다.
 	# 리벤지 부스터는 말 옆 불꽃 대신 프로필 칸이 불타는 것으로만 보여 준다 (main_board._paint_revenge_glow)
+	_draw_trpg_level()
 	if skill_ready():
 		var bolt := PackedVector2Array([Vector2(13,-29),Vector2(8,-20),Vector2(12,-20),Vector2(10,-13),Vector2(18,-23),Vector2(14,-23)])
 		_poly(bolt, Color(1,0.88,0.25,_pulse), INK, 0.9)
+
+
+## TRPG 기물의 레벨 표시: 머리 위에 [Lv.N] 칩이 떠 있어 처치로 올라간 레벨이 한눈에 보인다 (최대 레벨은 금색 [MAX]).
+func _draw_trpg_level() -> void:
+	if pawn == null or not pawn.is_trpg() or pawn.is_finished or not pawn.has_left_start:
+		return
+	var maxed: bool = pawn.trpg_level >= PlayerPawn.TRPG_MAX_LEVEL
+	var text: String = "MAX" if maxed else "Lv.%d" % pawn.trpg_level
+	var top: float = artwork_rect().position.y if not artwork.is_empty() else -34.0
+	var size_px: int = 11
+	var width: float = FONT.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px).x + 10.0
+	var chip := Rect2(Vector2(-width / 2.0, top - 17.0), Vector2(width, 15.0))
+	var fill: Color = Color("ffd43b") if maxed else Color(0.07, 0.08, 0.12, 0.92)
+	var edge: Color = owner_color.lightened(0.25)
+	var ink: Color = Color("2b2100") if maxed else Color.WHITE
+	var box := StyleBoxFlat.new()
+	box.bg_color = fill
+	box.border_color = edge
+	box.set_border_width_all(2)
+	box.set_corner_radius_all(7)
+	draw_style_box(box, chip)
+	draw_string(FONT, Vector2(chip.position.x + 5.0, chip.position.y + 11.5), text, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px, ink)
 
 
 func _draw_shape() -> void:
