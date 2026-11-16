@@ -3,9 +3,9 @@ class_name HubArt
 extends RefCounted
 
 const ART: Dictionary = {
-	&"practice": preload("res://assets/ui/trickcal/hub/UI_HUB_PRACTICE.tres"),
-	&"friend": preload("res://assets/ui/trickcal/hub/UI_HUB_FRIEND.tres"),
-	&"match": preload("res://assets/ui/trickcal/hub/UI_HUB_MATCH.tres"),
+	&"practice": preload("res://assets/ui/trickcal/hub/UI_HUB_PRACTICE_V02.png"),
+	&"friend": preload("res://assets/ui/trickcal/hub/UI_HUB_FRIEND_V02.png"),
+	&"match": preload("res://assets/ui/trickcal/hub/UI_HUB_MATCH_V02.png"),
 	&"tip": preload("res://assets/ui/trickcal/hub/UI_HUB_TIP.tres"),
 	&"rules": preload("res://assets/ui/trickcal/hub/UI_HUB_RULES.tres"),
 	&"notes": preload("res://assets/ui/trickcal/hub/UI_HUB_UPDATES_V02.tres"),
@@ -22,11 +22,12 @@ static var _skin_cache: Dictionary = {}
 const EDGE_SHADER: Shader = preload("res://scenes/ui_art_edge.gdshader")
 
 
-## 이미지의 색과 음영을 유지하고 외곽의 누끼 잔여만 표시할 때 제거한다.
-static func clean_edge(item: Control, inset: float = 1.75) -> void:
+## 외곽의 누끼 잔여를 제거하고 필요할 때 초록 테두리의 색만 바꾼다.
+static func clean_edge(item: Control, inset: float = 1.75, rim_tint: Color = Color.TRANSPARENT) -> void:
 	var edge := ShaderMaterial.new()
 	edge.shader = EDGE_SHADER
 	edge.set_shader_parameter("edge_inset", inset)
+	edge.set_shader_parameter("rim_tint", rim_tint)
 	item.material = edge
 	var update_frame := func() -> void: edge.set_shader_parameter("frame_size", item.size)
 	item.resized.connect(update_frame)
