@@ -66,6 +66,25 @@
        "ja": "アクションログが原因を表示：地雷などの設置罠で駒が飛ばされると「(設置した[地雷]にかかった)」が付き、出目ボーナスは「スーパーボルト搭乗 +1 · 到着マスのバフ +1」のように由来が分かります"
       }
      ]
+    },
+    {
+     "head": {
+      "ko": "버그 수정",
+      "en": "Bug fixes",
+      "ja": "バグ修正"
+     },
+     "items": [
+      {
+       "ko": "4인 친선전(사람끼리 하는 판)에서 한 명이 말 4개를 모두 완주하면 바로 게임이 끝나던 문제를 고쳤어요. 이제 2·3·4등이 모두 가려질 때까지 계속 진행돼요",
+       "en": "Fixed 4-player friendly matches ending the moment one player brought all four pawns home. The game now continues until 2nd, 3rd and 4th place are all decided",
+       "ja": "4人フレンド戦（人同士の対戦）で、1人が駒4個をゴールさせた瞬間に終了してしまう問題を修正。2・3・4位が決まるまで続行されます"
+      },
+      {
+       "ko": "이미 완주한 플레이어에게 고를 말이 없는 기물 진화 증강이 나오던 문제를 고쳤어요",
+       "en": "Fixed pawn evolution augments being offered to players who had already finished all their pawns",
+       "ja": "すでに全駒ゴールしたプレイヤーに、選べる駒のない駒進化オーグメントが出る問題を修正"
+      }
+     ]
     }
    ]
   },
