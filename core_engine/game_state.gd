@@ -8,6 +8,8 @@ extends RefCounted
 signal pawn_stepped(pawn_id: int, from_tile: int, to_tile: int)
 signal pawn_warped(pawn_id: int, from_tile: int, to_tile: int)
 signal pawn_sent_to_start(pawn_id: int, by_player: int)
+## 출발선으로 날아간 말의 원인 한 줄 (함정 이름 등): 로그가 "누가 처치"가 아니라 "누구의 어떤 함정에 걸려"로 쓰도록 쓴다. 로그가 읽으면 지운다 (게임 규칙에는 쓰지 않는다).
+var ejection_causes: Dictionary = {}
 ## 🏆 법전에 걸린 특수 승리 기록이 올랐다 (1.01 진행도 연출): 기록 키, 올라간 뒤 값, 일이 일어난 칸(-1이면 모름).
 signal law_stat_gained(player_id: int, key: StringName, value: int, tile: int)
 ## A real player-pawn capture, once per victim stack, before reset signals.
@@ -453,6 +455,21 @@ func last_place_pawn(excluding_owner: int) -> PlayerPawn:
 # ---------------------------------------------------------------------------
 # 기물 상태 변경
 # ---------------------------------------------------------------------------
+
+## 곧 출발선으로 보낼 말(과 그 말에 업힌 말들)에 원인(함정 카드 ID)을 적어 둔다.
+func note_ejection_cause(pawn: PlayerPawn, cause_card_id: StringName) -> void:
+	if pawn == null:
+		return
+	for member: PlayerPawn in pawn.stack_members():
+		ejection_causes[member.entity_id] = cause_card_id
+
+
+## 말 하나의 사출 원인을 꺼내며 지운다 (없으면 빈 이름).
+func take_ejection_cause(pawn_id: int) -> StringName:
+	var cause: StringName = ejection_causes.get(pawn_id, &"")
+	ejection_causes.erase(pawn_id)
+	return cause
+
 
 func send_to_start(pawn: PlayerPawn, by_player: int) -> void:
 	if pawn==null:return

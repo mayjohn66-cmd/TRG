@@ -15,6 +15,7 @@ func on_step_trigger(victim: BoardEntity, ctx: RuleContext) -> bool:
 	if pawn == null or pawn.owner_id == owner_id or ctx.state == null:
 		return false
 	ctx.metadata["cutscene_id"] = &"trap_mirror_force"
+	ctx.state.note_ejection_cause(pawn, StringName(attachment_id))
 	ctx.state.send_to_start(pawn, owner_id)
 	duration_turns = 0
 	return true

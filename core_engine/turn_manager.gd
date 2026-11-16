@@ -1694,7 +1694,7 @@ func _apply_roll_result(result: RollResult) -> void:
 		state.corner_buff.erase(roller)
 		var boosted: int = maxi(ctx.dice_value + state.roll_bonus + permanent + corner, 0)
 		if state.roll_bonus != 0 or permanent != 0 or corner != 0:
-			_emit_event(&"roll_boosted", {"player_id": roller, "from": ctx.dice_value, "to": boosted, "corner": corner})
+			_emit_event(&"roll_boosted", {"player_id": roller, "from": ctx.dice_value, "to": boosted, "corner": corner, "permanent": permanent, "bonus": state.roll_bonus})
 			state.roll_bonus = 0
 		if int(state.gambler_round.get(roller, -1)) == state.round_number:
 			_emit_event(&"gambler_doubled", {"player_id": roller, "from": boosted, "to": boosted * SuperAugments.gambler_multiplier()})

@@ -59,6 +59,11 @@
        "ko": "룰렛·리볼버·다트의 3D 화면을 쓸 때만 만들도록 바꿔 메모리를 아꼈어요",
        "en": "The roulette, revolver and darts 3D views are now created only when used, saving memory",
        "ja": "ルーレット・リボルバー・ダーツの3D画面を使う時だけ作るようにして、メモリを節約しました"
+      },
+      {
+       "ko": "액션 로그가 원인을 알려 줘요: 지뢰 같은 설치 함정에 말이 날아가면 \"(설치한 [지뢰]에 걸림)\"이 붙고, 굴림 보너스는 \"슈파볼트 탑승 +1 · 도착 칸 버프 +1\"처럼 어디서 온 칸수인지 나와요",
+       "en": "The action log now shows causes: pawns sent flying by a placed trap such as a mine get \"(caught by a placed [Mine])\", and roll bonuses list their sources, e.g. \"Super Bolt ride +1 · Landing-tile buff +1\"",
+       "ja": "アクションログが原因を表示：地雷などの設置罠で駒が飛ばされると「(設置した[地雷]にかかった)」が付き、出目ボーナスは「スーパーボルト搭乗 +1 · 到着マスのバフ +1」のように由来が分かります"
       }
      ]
     }

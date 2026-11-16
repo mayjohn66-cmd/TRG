@@ -24,5 +24,6 @@ func on_step_trigger(victim: BoardEntity, ctx: RuleContext) -> bool:
 	if pawn.owner_id == owner_id:
 		MoveExecutor.fling(ctx.state, pawn, CardRegistry.param(&"TRP_C02", JUMP_STEPS))
 	else:
+		ctx.state.note_ejection_cause(pawn, StringName(attachment_id))
 		ctx.state.send_to_start(pawn, owner_id)
 	return true

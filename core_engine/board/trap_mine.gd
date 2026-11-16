@@ -22,6 +22,7 @@ func on_step_trigger(_victim: BoardEntity, ctx: RuleContext) -> bool:
 		if tile_index == GameEnums.GOAL_TILE:
 			continue
 		for leader: PlayerPawn in ctx.state.leaders_at(tile_index):
+			ctx.state.note_ejection_cause(leader, &"TRP_03")
 			ctx.state.send_to_start(leader, owner_id)
 	ctx.metadata["cutscene_id"] = &"mine_blast"
 	duration_turns = 0

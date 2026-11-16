@@ -2881,3 +2881,9 @@ TRPG,TRPG,TRPG
 에르핀 왕국 보기,View Erpin Kingdom,エルピン王国を見る
 모나티엄 도시 보기,View Monatium City,モナティウム市を見る
 모든 말을 완주하라!,Bring every pawn home!,すべての駒をゴールさせろ！
+%s의 %s 처치! (설치한 [%s]에 걸림),%s's %s eliminated! (caught by a placed [%s]),%sの%sを撃破！（設置した[%s]にかかった）
+슈파볼트 탑승 %+d,Super Bolt ride %+d,スーパーボルト搭乗 %+d
+도착 칸 버프 %+d,Landing-tile buff %+d,到着マスのバフ %+d
+카드 보너스 %+d,Card bonus %+d,カードボーナス %+d
+%s → %d칸 → 총 %d칸 전진!,%s → %d spaces → %d total!,%s → %dマス → 合計 %dマス前進！
+[가속 보너스] P%d: 눈금 %d → %d! (%s),[Speed Bonus] P%d: roll %d → %d! (%s),[加速ボーナス] P%d: 出目 %d → %d！ (%s)

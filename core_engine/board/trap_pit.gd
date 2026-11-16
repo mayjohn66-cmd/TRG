@@ -17,6 +17,7 @@ func on_step_trigger(victim: BoardEntity, ctx: RuleContext) -> bool:
 	if pawn == null or ctx.state == null or pawn.owner_id == owner_id or absi(ctx.dice_value) < CardRegistry.param(&"TRP_02", MIN_DICE):  # cards_table.csv TRP_02 param_1
 		return false
 	ctx.metadata["cutscene_id"] = &"trap_pit"
+	ctx.state.note_ejection_cause(pawn, &"TRP_02")
 	ctx.state.send_to_start(pawn, owner_id)
 	duration_turns = 0
 	return true

@@ -1325,14 +1325,15 @@ func _bind_state() -> void:
 	state.pawn_sent_to_start.connect(func(pawn_id: int, by_player: int) -> void:
 		_note_super({"kind": "start", "pawn": pawn_id, "by": by_player})
 		var victim: PlayerPawn = state.get_pawn(pawn_id)
+		var cause: StringName = state.take_ejection_cause(pawn_id)  # 어떤 함정에 걸렸는지 (처치 기록에 원인으로 붙인다)
 		_log_line("%s 출발선으로 복귀%s" % [_pawn_name(pawn_id), "  [복수 부스터 획득: 다음 출발 +%d칸]" % _revenge_steps(victim) if victim != null and victim.revenge_boost else ""], Color("ff8787"))
 		if victim == null:
 			return
 		if not _fx_on():
-			_record_ejection(pawn_id, by_player)
+			_record_ejection(pawn_id, by_player, false, cause)
 		if _alkkagi_controlled.has(pawn_id) or _train_controlled.has(pawn_id) or _nitro_victims.has(pawn_id) or _beam_victims.has(pawn_id):
 			if _fx_on():
-				_record_ejection(pawn_id, by_player)
+				_record_ejection(pawn_id, by_player, false, cause)
 			return
 		var victim_owner: int = victim.owner_id
 		if by_player != victim_owner and not _is_computer_seat(victim_owner):
@@ -1351,7 +1352,7 @@ func _bind_state() -> void:
 				if not _ejection_confirmed(pawn_id):
 					_show_defended(pawn_id)
 					return
-				_record_ejection(pawn_id, by_player, true)  # 처치 기록은 처치가 확정되고 연출이 나올 때 적는다
+				_record_ejection(pawn_id, by_player, true, cause)  # 처치 기록은 처치가 확정되고 연출이 나올 때 적는다
 				await _play_capture_eject(pawn_id, by_player, victim_owner, cutin_capture), pawn_id))
 	state.revenge_boost_fired.connect(_on_revenge_boost_fired)
 	state.nitro_dashed.connect(_on_nitro_dashed)
@@ -4452,6 +4453,23 @@ func round_banner_sub() -> String:
 		if preview_law != null:
 			sub += "\n" + L10n.t("★ %d라운드에 [%s] 법전이 열립니다!") % [TempoUp.stage_rounds[0], L10n.t(preview_law.law_name)]
 	return sub
+
+
+## 굴림 눈금이 늘어난 이유를 원인별로 한 줄로: "슈파볼트 탑승 +1 · 코너·상점·물약 버프 +2 · 카드 +4". (이유가 안 맞으면 "가속 보너스")
+func _roll_boost_reason(data: Dictionary) -> String:
+	var parts: Array[String] = []
+	var permanent: int = int(data.get("permanent", 0))
+	var corner: int = int(data.get("corner", 0))
+	var bonus: int = int(data.get("bonus", 0))
+	if permanent != 0:
+		parts.append(L10n.t("슈파볼트 탑승 %+d") % permanent)
+	if corner != 0:
+		parts.append(L10n.t("도착 칸 버프 %+d") % corner)
+	if bonus != 0:
+		parts.append(L10n.t("카드 보너스 %+d") % bonus)
+	if parts.is_empty():
+		return L10n.t("가속 보너스 +%d") % (int(data["to"]) - int(data["from"]))
+	return " · ".join(PackedStringArray(parts))
 
 
 ## 새 차례인데 아직 [OO 차례] 배너를 띄우지 못했다 (앞 연출이 끝나기를 기다리는 중): 그동안 봇·굴리기 버튼은 움직이지 않는다.
@@ -12049,9 +12067,10 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_record_roll(data)
 		&"roll_boosted":
 			_roll_total[int(data["player_id"])] = int(data["to"])
-			_add_roll_reason(int(data["player_id"]), "가속 보너스 +%d" % (int(data["to"]) - int(data["from"])))
-			_log_line("[가속 보너스] P%d: 눈금 %d → %d!" % [data["player_id"], data["from"], data["to"]], Color("ffd43b"))
-			_record(int(data["player_id"]), "가속 보너스 → %d칸 → 총 %d칸 전진!" % [data["from"], data["to"]])
+			var boost_parts: String = _roll_boost_reason(data)  # 어디서 온 보너스인지 (슈파볼트·코너·카드 등)
+			_add_roll_reason(int(data["player_id"]), boost_parts)
+			_log_line("[가속 보너스] P%d: 눈금 %d → %d! (%s)" % [data["player_id"], data["from"], data["to"], boost_parts], Color("ffd43b"))
+			_record(int(data["player_id"]), "%s → %d칸 → 총 %d칸 전진!" % [boost_parts, data["from"], data["to"]])
 		&"tempo_up":
 			var stage: int = int(data["level"])
 			var lines: Array = data["lines"]
@@ -12668,13 +12687,18 @@ func _record_card(data: Dictionary) -> void:
 
 ## 말이 출발선으로 날아갔다: 다른 사람이 보냈으면 처치, 아니면 사출.
 ## now: 처치 연출 단계 안에서 부르면 그 순간 바로 적는다 (아니면 이동 연출이 끝난 뒤로 미룬다).
-func _record_ejection(pawn_id: int, by_player: int, now: bool = false) -> void:
+## cause: 함정으로 날아갔으면 그 함정 카드 ID (처치 기록 뒤에 [지뢰]처럼 원인을 붙인다).
+func _record_ejection(pawn_id: int, by_player: int, now: bool = false, cause: StringName = &"") -> void:
 	var victim: PlayerPawn = state.get_pawn(pawn_id)
 	if victim == null:
 		return
 	var label: String = _bq("%d번 말" % victim.slot)
 	if _player_ids.has(by_player) and by_player != victim.owner_id:
-		_record(by_player, "%s의 %s 처치!" % [_log_who(victim.owner_id), label], "", true, now)
+		var cause_card: BaseCard = CardRegistry.get_card(cause) if cause != &"" else null
+		if cause_card != null:  # 직접 잡은 게 아니라 설치해 둔 함정이 잡았다: 원인을 밝힌다
+			_record(by_player, "%s의 %s 처치! (설치한 [%s]에 걸림)" % [_log_who(victim.owner_id), label, L10n.t(cause_card.display_name)], "", true, now)
+		else:
+			_record(by_player, "%s의 %s 처치!" % [_log_who(victim.owner_id), label], "", true, now)
 	else:
 		_record(victim.owner_id, "%s이(가) 출발선으로 사출" % label, "", true, now)
 
