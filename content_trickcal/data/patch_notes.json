@@ -1,6 +1,70 @@
 {
  "entries": [
   {
+   "id": "1.1.1",
+   "date": "",
+   "title": {
+    "ko": "1.1.1 업데이트",
+    "en": "Update 1.1.1",
+    "ja": "1.1.1アップデート"
+   },
+   "sections": [
+    {
+     "head": {
+      "ko": "신규 추가",
+      "en": "New",
+      "ja": "新要素"
+     },
+     "items": [
+      {
+       "ko": "게임 시작 연출이 만화 컷으로 바뀌었어요: 참가자마다 승리 일러스트 컷이 위·아래에서 들어오고, GAME START! 띠가 가로질러 지나간 뒤 \"모든 말을 완주하라!\"가 나와요",
+       "en": "The game-start intro is now a comic-panel sequence: each player's victory illustration slides in from above or below, a GAME START! band sweeps across, then \"Bring every pawn home!\" appears",
+       "ja": "ゲーム開始演出がマンガのコマになりました：参加者ごとの勝利イラストが上下から入り、GAME START!の帯が横切った後、「すべての駒をゴールさせろ！」が表示されます"
+      },
+      {
+       "ko": "설정에 [저화질 (아바타 애니메이션 640px)] 스위치를 추가했어요. 켜면 로비 아바타 애니메이션을 더 가볍게 받아요",
+       "en": "Added a [Low quality (avatar animations 640px)] switch in Settings. Turn it on to download lighter lobby avatar animations",
+       "ja": "設定に[低画質（アバターアニメ640px）]スイッチを追加。オンにするとロビーのアバターアニメを軽く読み込みます"
+      },
+      {
+       "ko": "도감 [법전]의 \"봉인된 에르핀의 식권\" 카드 오른쪽 위 화살표를 누르면 모나티엄 도시판 \"와라! 모나티엄 25\"를 볼 수 있어요",
+       "en": "In the Codex [Laws], press the arrow at the top-right of the \"Sealed Erpin Ticket\" card to see the Monatium City version, \"Come! Monatium 25\"",
+       "ja": "図鑑[法典]の「封印されたエルピンの食券」カード右上の矢印を押すと、モナティウム市版「来い！モナティウム25」が見られます"
+      }
+     ]
+    },
+    {
+     "head": {
+      "ko": "변경점",
+      "en": "Changes",
+      "ja": "変更点"
+     },
+     "items": [
+      {
+       "ko": "놀이터 시작 화면을 둘로 나눴어요: 왼쪽에서 보드판을 고르면 그림과 설명이 보이고, 오른쪽에서 난이도를 고르고 게임을 시작해요 (컴퓨터는 항상 3명)",
+       "en": "Split the Playground start screen in two: pick a board on the left to see its picture and description, then choose difficulty and start on the right (always 3 computer players)",
+       "ja": "プレイグラウンドの開始画面を2分割：左でボードを選ぶと絵と説明が表示され、右で難易度を選んで開始します（コンピューターは常に3人）"
+      },
+      {
+       "ko": "아바타 대기 애니메이션 화질을 8명 모두 같게 맞췄어요 (고화질 1024px). 에르핀 다운로드 용량이 약 31MB에서 약 12MB로 줄었어요",
+       "en": "All 8 avatars' idle animations now share the same quality (high quality 1024px). Erpin's download shrank from about 31 MB to about 12 MB",
+       "ja": "アバター待機アニメの画質を8人すべて統一（高画質1024px）。エルピンのダウンロード容量が約31MBから約12MBに減りました"
+      },
+      {
+       "ko": "폰·태블릿은 화질 설정이 없으면 저화질로 시작하고, 웹 화면을 그리는 크기에 상한을 둬서 더 가볍게 돌아가요",
+       "en": "Phones and tablets now start in low quality when no setting is saved, and the web canvas size is capped so the game runs lighter",
+       "ja": "スマホ・タブレットは画質設定がない場合に低画質で始まり、Web画面の描画サイズに上限を設けて軽く動くようにしました"
+      },
+      {
+       "ko": "룰렛·리볼버·다트의 3D 화면을 쓸 때만 만들도록 바꿔 메모리를 아꼈어요",
+       "en": "The roulette, revolver and darts 3D views are now created only when used, saving memory",
+       "ja": "ルーレット・リボルバー・ダーツの3D画面を使う時だけ作るようにして、メモリを節約しました"
+      }
+     ]
+    }
+   ]
+  },
+  {
    "id": "1.1",
    "date": "",
    "title": {
