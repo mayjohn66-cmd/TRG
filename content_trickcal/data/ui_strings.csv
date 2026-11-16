@@ -89,4 +89,3 @@ survey.block_text,증강/기물 설명이 눈에 안 들어왔어요,Augment/paw
 survey.block_fast,상대 턴이나 연출이 너무 빨라 상황 파악을 놓쳤어요,Opponent turns/effects were too fast to follow,相手のターンや演出が速すぎて状況を見失った
 survey.block_why,내 말이 왜 죽었는지 / 왜 갑자기 많이 이동했는지 몰랐어요,Didn't know why my pawn died or suddenly moved far,なぜ駒がやられたのか・急に大きく動いたのか分からなかった
 survey.block_howto,기물 필살기나 카드를 언제 어떻게 쓰는지 몰랐어요,Didn't know when/how to use skills or cards,必殺技やカードをいつどう使うか分からなかった
-opening.computer,컴퓨터 %d,Computer %d,コンピューター %d
