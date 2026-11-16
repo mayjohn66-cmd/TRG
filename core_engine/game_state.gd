@@ -523,6 +523,8 @@ func finish_stack(leader: PlayerPawn) -> void:
 		member.carrier = null
 		member.current_tile_idx = GameEnums.GOAL_TILE
 		pawn_finished.emit(member.entity_id)
+		if member.kind == GameEnums.PawnKind.COLLECTIBLE:  # 수집품: 완주하면 버프 (화면이 [수집품 획득!]을 알린다)
+			passive_triggered.emit(member.entity_id, &"collect_corotto" if member.sub_type() == GameEnums.PawnSubType.COLLECT_COROTTO else &"collect_chibi")
 	leader.carried.clear()
 	# 강제 연대책임: 묶인 짝도 함께 골인한다
 	for member: PlayerPawn in members:

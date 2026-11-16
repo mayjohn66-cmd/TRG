@@ -1609,6 +1609,10 @@ func _roll_with_modifiers(roller: int, tool: BaseJudgmentTool) -> RollResult:
 		(tool as ToolYut).bonus_throw = _roll_chain > 0  # 윷·모로 얻은 추가 던지기는 낙이 잘 나온다 (히든 보정)
 	var result: RollResult = PacingDirector.adjust(state, roller, tool, tool.roll(state.rng))
 	result = UtilityAugments.lucky_roll(state, roller, tool, result)
+	var chibi: Dictionary = {}
+	result = CollectibleBuffs.save_from_turn_end(state, roller, tool, result, chibi)  # 치비구루미: 턴 종료 눈금이면 한 번 다시 굴린다
+	if bool(chibi.get("saved", false)):
+		_emit_event(&"chibi_saved", {"player_id": roller, "tool_id": tool.tool_id})
 	result = PacingDirector.damp_chain(state, tool, result, _roll_chain)
 	if tool is ToolYut and _roll_chain >= ToolYut.MAX_REROLLS:
 		result = (tool as ToolYut).roll_capped(state.rng)  # 윷: 재굴림 3번 뒤 던지기는 도·개·걸 중 하나
@@ -1697,9 +1701,10 @@ func _apply_roll_result(result: RollResult) -> void:
 		var permanent: int = int(state.permanent_roll_bonus.get(roller, 0))
 		var corner: int = int(state.corner_buff.get(roller, 0))
 		state.corner_buff.erase(roller)
-		var boosted: int = maxi(ctx.dice_value + state.roll_bonus + permanent + corner, 0)
-		if state.roll_bonus != 0 or permanent != 0 or corner != 0:
-			_emit_event(&"roll_boosted", {"player_id": roller, "from": ctx.dice_value, "to": boosted, "corner": corner, "permanent": permanent, "bonus": state.roll_bonus})
+		var collect: int = CollectibleBuffs.roll_bonus(state, roller)  # 수집품 코롯토: 완주하면 모든 굴림 +1
+		var boosted: int = maxi(ctx.dice_value + state.roll_bonus + permanent + corner + collect, 0)
+		if state.roll_bonus != 0 or permanent != 0 or corner != 0 or collect != 0:
+			_emit_event(&"roll_boosted", {"player_id": roller, "from": ctx.dice_value, "to": boosted, "corner": corner, "permanent": permanent, "bonus": state.roll_bonus, "collect": collect})
 			state.roll_bonus = 0
 		if int(state.gambler_round.get(roller, -1)) == state.round_number:
 			_emit_event(&"gambler_doubled", {"player_id": roller, "from": boosted, "to": boosted * SuperAugments.gambler_multiplier()})

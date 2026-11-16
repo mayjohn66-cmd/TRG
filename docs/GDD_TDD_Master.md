@@ -2258,3 +2258,15 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 - 결과 details: `message`(종이 글)·`lucky`(종이 아래 행운의 숫자, 연출용)·`jackpot`.
 - 연출 `FortuneCookieView`(`scenes/fortune_cookie_view.gd`, 임시 2D 그림): 쿠키가 통통 떨어짐(0.4초) -> 흔들림(1.0초) -> 쩍 갈라짐(1.02초) -> 종이가 올라와 펼쳐짐(1.45초) -> 결과 글(1.95초, 대박이면 빛살) -> 끝(2.6초). 효과음은 기존 `icecream_snap`·`ticket_rustle`·`card_pick`·`good`을 쓴다. 최종 그림이 오면 `_draw_cookie_half`·`_draw_paper`만 바꾸면 된다.
 - 등록: `ToolRegistry`(ALL_IDS·TABLES·NATURAL_JACKPOT 8), `AugmentRegistry.SWAPPABLE_TOOLS`(교체 가능 도구 17종), `dice_table.csv`·`augments_table.csv`(`TOOL_DICE_COOKIE`, 가중치 50), `RollPresenter`(굴림 연출·결과 글), `MainBoard`(도구 안내·확률표·굴리기 버튼 [깨기!]), 아이콘 `content_trickcal/illustrations/dice/DICE_COOKIE.png`(임시 그림).
+
+
+### 7.91 신규 판정 도구 [캡슐뽑기] (다음 버전, `next/gacha` 브랜치, 미배포)
+- id `DICE_CAPSULE`, 규칙 `ToolCapsuleGacha`(`core_engine/tools/tool_capsule_gacha.gd`). 코인을 넣고 돌리면 캡슐이 나오고, 캡슐 안의 캐릭터 미니어처가 몇 칸 갈지 정한다. 순수한 운.
+- 미니어처표(`PRIZES`): 버터(`avatar_02`) 35% 2칸 흔함 / 셰이디(`avatar_05`) 30% 3칸 흔함 / 벨리타(`avatar_07`) 20% 4칸 보통 / 죠안(`avatar_08`) 10% 6칸 희귀 / ★에르핀(`avatar_01`, 황금 캡슐) 5% 8칸 시크릿 + 한 번 더. 평균 약 3.4칸.
+- 연출 `CapsuleGachaView`(`scenes/capsule_gacha_view.gd`, 임시 2D 그림): [뽑기!] 버튼 한 번으로 코인이 투입구로 들어감(0.1초) → 손잡이가 한 바퀴 돎(0.8~1.6초) → 캡슐이 배출구에서 굴러 나옴(1.65초) → 톡 열려 미니어처가 서고(2.3초) → 이름·등급·"N칸 전진!"이 뜸(2.75초) → 끝(3.45초). 미니어처 그림은 그 캐릭터의 승리 일러스트(`AvatarCombatArt`). 등록은 포츈쿠키(7.90)와 같다.
+
+### 7.92 신규 기물 세트 [수집품] (다음 버전, `next/gacha` 브랜치, 미배포)
+- `GameEnums.PawnKind.COLLECTIBLE`, 세부 기물 `COLLECT_COROTTO`·`COLLECT_CHIBI`. 세트 공통 패시브: 완주하면 버프를 얻는다. 버프는 상태로 저장하지 않고 `CollectibleBuffs`가 "완주한 수집품 말이 있는가"로 계산한다 (스냅샷·되감기에 담을 것이 없다).
+- 코롯토: 완주하면 내 모든 굴림 결과 +1 (영구, `TurnManager`의 굴림 보너스 합산에 `collect`로 들어가고 `roll_boosted` 이벤트·보너스 이유에 [수집품 코롯토 +1]로 실림).
+- 치비구루미: 완주하면 굴림이 턴 종료(낙·대흉·망통 등)일 때 50% 확률로 같은 도구를 한 번 다시 굴려 그 결과를 쓴다 (`CollectibleBuffs.save_from_turn_end`, `chibi_saved` 이벤트). 러시안 룰렛·주식 차트처럼 다시 굴리면 상태가 꼬이는 도구는 제외 (`PacingDirector.REROLL_TOOLS`만).
+- 완주 순간 `passive_triggered`로 [수집 완료!] 뱃지(`PassiveCallout`). 기물 지급 증강은 `EVO_9_1`·`EVO_9_2`, 그림은 임시 `COLLECT_COROTTO.png`·`COLLECT_CHIBI.png`.

@@ -7,7 +7,7 @@ extends RefCounted
 const ALL_IDS: Array[StringName] = [
 	&"D6", &"YUT", &"LIFE_ROULETTE", &"HOLDEM", &"CHINCHIRO", &"SLOT_777", &"REVOLVER",
 	&"DICE_HWATU", &"DICE_MAHJONG", &"DICE_TAROT", &"DICE_YACHT", &"DICE_BLACKJACK", &"DICE_PINBALL",
-	&"DICE_STOCK", &"DICE_DARTS", &"DICE_OMIKUJI", &"DICE_ICECREAM", &"DICE_COOKIE",
+	&"DICE_STOCK", &"DICE_DARTS", &"DICE_OMIKUJI", &"DICE_ICECREAM", &"DICE_COOKIE", &"DICE_CAPSULE",
 ]
 
 
@@ -38,6 +38,7 @@ static func _create_default(id: StringName) -> BaseJudgmentTool:
 		&"DICE_OMIKUJI": return ToolOmikuji.new()
 		&"DICE_ICECREAM": return ToolIceCream.new()
 		&"DICE_COOKIE": return ToolFortuneCookie.new()
+		&"DICE_CAPSULE": return ToolCapsuleGacha.new()
 	push_error("ToolRegistry: 알 수 없는 도구 ID '%s'" % id)
 	return null
 
@@ -62,6 +63,7 @@ const TABLES: Dictionary = {
 	&"DICE_OMIKUJI": "점괘표: ★대길(8칸+한번더) / 중길(6) / 소길(4) / 길(3) / 말길(2) / 흉(1) / 대흉(0칸+턴 종료)",
 	&"DICE_ICECREAM": "막대표: 드러난 칸 1~6만큼 전진 / ★한번 더!(3칸+새 아이스크림)",
 	&"DICE_COOKIE": "종이표: 쿠키 속 종이에 적힌 1~6칸 / ★대박 쿠키(8칸)",
+	&"DICE_CAPSULE": "미니어처표: 버터(2) / 셰이디(3) / 벨리타(4) / 죠안(6) / ★시크릿 에르핀(8칸+한번더)",
 }
 
 
@@ -77,7 +79,7 @@ static func table_line(id: StringName) -> String:
 ## 각 도구에서 가장 높은 결과(잭팟)의 기본 칸 수. dice_table.csv의 jackpot_step이 비어 있지 않으면 이 칸 수 결과를 그 값으로 바꾼다.
 const NATURAL_JACKPOT: Dictionary = {
 	&"YUT": 5, &"HOLDEM": 15, &"SLOT_777": 20, &"DICE_HWATU": 8, &"DICE_MAHJONG": 12,
-	&"DICE_YACHT": 12, &"DICE_BLACKJACK": 11, &"DICE_PINBALL": 10, &"DICE_STOCK": 20, &"DICE_DARTS": 10, &"DICE_OMIKUJI": 8, &"DICE_COOKIE": 8,
+	&"DICE_YACHT": 12, &"DICE_BLACKJACK": 11, &"DICE_PINBALL": 10, &"DICE_STOCK": 20, &"DICE_DARTS": 10, &"DICE_OMIKUJI": 8, &"DICE_COOKIE": 8, &"DICE_CAPSULE": 8,
 }
 
 

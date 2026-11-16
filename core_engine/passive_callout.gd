@@ -45,6 +45,8 @@ const TEXTS: Dictionary = {
 	&"kyui_charge": "[큐이] 함정 카드로 필살기 충전!",
 	&"amnesia_block": "[기억상실빔] 사출 면역!",
 	&"drift": "[관성 드리프트] 코너 +2칸!",
+	&"collect_corotto": "[코롯토] 수집 완료! 주사위 +1!",
+	&"collect_chibi": "[치비구루미] 수집 완료! 턴 종료 방어!",
 }
 ## 뱃지 테두리 색: 이동 보너스(노랑) / 방어·면역(하늘) / 처치(빨강) / 카드(초록) / 승급·워프(보라).
 const COLORS: Dictionary = {

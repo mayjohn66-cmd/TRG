@@ -2911,3 +2911,41 @@ TRPG,TRPG,TRPG
 종이에 적힌 대로,As written on the slip,紙に書かれた通り
 ★대박 쿠키 (5%),★Jackpot Cookie (5%),★大当たりクッキー (5%)
 쿠키를 깨면 안의 종이에 몇 칸 갈지 적혀 있어요 · 순수한 운,Crack it and the slip inside says how far you go · pure luck,クッキーを割ると中の紙に進むマス数が書いてあります · 純粋な運
+[치비구루미] P%d: 턴 종료 눈금을 다시 굴렸습니다!,[Chibigurumi] P%d: rerolled a turn-ending result!,[チビぐるみ] P%d: 番終了の出目を振り直しました！
+치비구루미 덕분에 턴 종료를 피해 다시 굴림!,Chibigurumi saved the turn and rerolled!,チビぐるみのおかげで番終了を避けて振り直し！
+치비구루미 재굴림!,Chibigurumi reroll!,チビぐるみ振り直し！
+수집품 코롯토 %+d,Collectible Corotto %+d,コレクション コロット %+d
+[코롯토] 수집 완료! 주사위 +1!,[Corotto] Collected! Dice +1!,[コロット] コンプ！ サイコロ+1！
+[치비구루미] 수집 완료! 턴 종료 방어!,[Chibigurumi] Collected! Turn-end guard!,[チビぐるみ] コンプ！ 番終了ガード！
+수집품,Collectibles,コレクション
+수집품:코롯토,Collectible: Corotto,コレクション:コロット
+수집품:치비구루미,Collectible: Chibigurumi,コレクション:チビぐるみ
+완주하면 수집 버프: 주사위 결과 +1 (영구),On finishing: collection buff — dice result +1 (permanent),完走すると収集バフ: サイコロの出目+1（永続）
+완주하면 수집 버프: 턴 종료 눈금이 나와도 절반 확률로 다시 굴림,On finishing: collection buff — a turn-ending roll is rerolled half the time,完走すると収集バフ: 番終了の出目が出ても半分の確率で振り直し
+코롯토,Corotto,コロット
+치비구루미,Chibigurumi,チビぐるみ
+"코롯토, 치비구루미. 완주하면 수집 버프를 얻어요!",Corotto and Chibigurumi. Finishing a collectible grants a buff!,コロット、チビぐるみ。完走するとコレクションバフがもらえます！
+코,Co,コ
+치,Cg,チ
+캡슐뽑기,Capsule Gacha,カプセルガチャ
+미니어처,Miniature,ミニチュア
+흔함,Common,ノーマル
+보통,Uncommon,アンコモン
+희귀,Rare,レア
+시크릿,Secret,シークレット
+★시크릿 %s 미니어처! %d칸 + 한 번 더,★Secret %s miniature! %d spaces + Extra Roll,★シークレット %s ミニチュア！%dマス＋もう1回
+%s 미니어처 → %d칸,%s miniature → %d spaces,%s ミニチュア → %dマス
+미니어처표: 버터(2) / 셰이디(3) / 벨리타(4) / 죠안(6) / ★시크릿 에르핀(8칸+한번더),Miniatures: Butter(2) / Shady(3) / Belita(4) / Joan(6) / ★Secret Erpin(8 + Extra Roll),ミニチュア表: バター(2) / シェイディ(3) / ベリータ(4) / ジョアン(6) / ★シークレット エルピン(8マス+もう1回)
+코인을 넣고 돌리면 캡슐이 나온다! 안의 미니어처가 칸수를 정한다!,Insert a coin and turn the knob! The miniature inside sets your move!,コインを入れて回すとカプセルが出る！中のミニチュアが進むマスを決める！
+코인을 넣고 돌려라! 캡슐 속 미니어처가 칸수를 정한다!,Insert a coin and turn! The miniature inside sets your move!,コインを入れて回そう！中のミニチュアが進むマスを決める！
+★시크릿 에르핀 8칸+한 번 더,★Secret Erpin 8 + Extra Roll,★シークレット エルピン 8マス+もう1回
+캡,Cp,カ
+버터 (35%) · 셰이디 (30%),Butter (35%) · Shady (30%),バター (35%) · シェイディ (30%)
+2칸 / 3칸 (흔함),2 / 3 spaces (Common),2マス / 3マス (ノーマル)
+벨리타 (20%),Belita (20%),ベリータ (20%)
+4칸 (보통),4 spaces (Uncommon),4マス (アンコモン)
+죠안 (10%),Joan (10%),ジョアン (10%)
+6칸 (희귀),6 spaces (Rare),6マス (レア)
+★시크릿 에르핀 (5%),★Secret Erpin (5%),★シークレット エルピン (5%)
+버튼만 누르면 코인 넣기 · 돌리기 · 캡슐 열기까지 자동 · 순수한 운,"One press does it all: coin, turn, open · pure luck",ボタン1回でコイン投入・回す・開封まで自動 · 純粋な運
+"1,000","1,000","1,000"
