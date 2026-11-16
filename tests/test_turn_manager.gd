@@ -382,6 +382,18 @@ func test_four_player_match_continues_until_every_rank_is_decided() -> void:
 	_dispose(manager)
 
 
+## 완주한 플레이어(1등 뒤에도 판이 계속된다)에게는 고를 수 있는 기본 말이 없어 기물 진화가 나오지 않는다.
+func test_finished_player_is_not_offered_pawn_evolution() -> void:
+	var manager: TurnManager = _new_manager(4)
+	var state: GameState = manager.state
+	var evo: AugmentDef = AugmentRegistry.get_def(&"EVO_7_2")
+	check(evo.is_available(state, 1), "기본 말이 남아 있으면 진화가 나온다")
+	for pawn: PlayerPawn in state.pawns_of(1):
+		state.finish_stack(pawn)
+	check(not evo.is_available(state, 1), "기본 말이 모두 완주했으면 진화는 나오지 않는다")
+	_dispose(manager)
+
+
 func test_yut_four_stack_special_victory_via_turn_manager() -> void:
 	var manager: TurnManager = _new_manager(2, true, {1: [Vector2i(GameEnums.PawnKind.YUT, 1), Vector2i(GameEnums.PawnKind.YUT, 2), Vector2i(GameEnums.PawnKind.YUT, 3), Vector2i(GameEnums.PawnKind.YUT, 4)]})
 	var state: GameState = manager.state

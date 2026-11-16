@@ -115,7 +115,7 @@ func is_available(state: GameState, player_id: int) -> bool:
 	match category:
 		GameEnums.AugmentCategory.PAWN_EVOLUTION:
 			# 이미 그 세부 기물을 가지고 있으면(받을 호기가 남아 있지 않으면) 받을 수 없다.
-			return not state.basic_pawns_of(player_id).is_empty() and not _free_units_for(state, player_id).is_empty()
+			return not _evolvable_basics(state, player_id).is_empty() and not _free_units_for(state, player_id).is_empty()
 		GameEnums.AugmentCategory.TOOL_SWAP:
 			return (state.tools[player_id] as BaseJudgmentTool).tool_id != payload and GameData.enabled("dice", payload)
 		GameEnums.AugmentCategory.LAW_ENACT:
@@ -139,7 +139,16 @@ func is_available(state: GameState, player_id: int) -> bool:
 func needs_pawn_choice(state: GameState, player_id: int) -> bool:
 	if category == GameEnums.AugmentCategory.UTILITY:
 		return UtilityAugments.needs_pawn_choice(payload, state, player_id)  # 관심사도 지정: 보호막을 씌울 말
-	return category == GameEnums.AugmentCategory.PAWN_EVOLUTION and state.basic_pawns_of(player_id).size() > 1
+	return category == GameEnums.AugmentCategory.PAWN_EVOLUTION and _evolvable_basics(state, player_id).size() > 1
+
+
+## 진화시킬 수 있는 기본 말 (이미 완주한 말은 제외). 사람끼리 하는 판은 1등이 나와도 계속되므로 완주한 플레이어에게도 증강이 나온다.
+func _evolvable_basics(state: GameState, player_id: int) -> Array[PlayerPawn]:
+	var result: Array[PlayerPawn] = []
+	for pawn: PlayerPawn in state.basic_pawns_of(player_id):
+		if not pawn.is_finished:
+			result.append(pawn)
+	return result
 
 
 ## 말 고르기 화면에서 이 말을 고를 수 있는가.
@@ -263,7 +272,7 @@ func _apply_evolution(state: GameState, player_id: int, params: Dictionary) -> D
 		if pawn == null or pawn.owner_id != player_id or pawn.kind != GameEnums.PawnKind.BASIC:
 			return {"ok": false, "text": "진화시킬 수 없는 말입니다"}
 	else:
-		var basics: Array[PlayerPawn] = state.basic_pawns_of(player_id)
+		var basics: Array[PlayerPawn] = _evolvable_basics(state, player_id)
 		if basics.is_empty():
 			return {"ok": false, "text": "진화시킬 기본 말이 없습니다"}
 		pawn = basics[0]
