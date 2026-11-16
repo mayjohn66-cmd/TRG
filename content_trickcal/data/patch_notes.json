@@ -64,6 +64,11 @@
        "ko": "액션 로그가 원인을 알려 줘요: 지뢰 같은 설치 함정에 말이 날아가면 \"(설치한 [지뢰]에 걸림)\"이 붙고, 굴림 보너스는 \"슈파볼트 탑승 +1 · 도착 칸 버프 +1\"처럼 어디서 온 칸수인지 나와요",
        "en": "The action log now shows causes: pawns sent flying by a placed trap such as a mine get \"(caught by a placed [Mine])\", and roll bonuses list their sources, e.g. \"Super Bolt ride +1 · Landing-tile buff +1\"",
        "ja": "アクションログが原因を表示：地雷などの設置罠で駒が飛ばされると「(設置した[地雷]にかかった)」が付き、出目ボーナスは「スーパーボルト搭乗 +1 · 到着マスのバフ +1」のように由来が分かります"
+      },
+      {
+       "ko": "TRPG 기물이 레벨업하면 머리 위에 레벨 칩이 떠요: [Lv.N]로 표시되고, 최대 레벨은 금색 MAX예요 (보드와 기물 독 모두)",
+       "en": "TRPG pawns now show a level chip above their heads: [Lv.N], and the max level shows a golden MAX (on both the board and the pawn dock)",
+       "ja": "TRPG駒がレベルアップすると頭上にレベルチップが表示されます：[Lv.N]、最大レベルは金色のMAX（ボードと駒ドックの両方）"
       }
      ]
     },
