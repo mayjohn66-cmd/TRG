@@ -89,3 +89,20 @@ func test_popup_lists_versions_as_rows_and_expands_one_at_a_time() -> void:
 		check(not bodies[1].visible, "펼친 줄을 다시 누르면 접힌다")
 	popup.queue_free()
 	_restore_save()
+
+
+## 버전을 올리면 공지사항(patch_notes.json) 맨 위 항목도 그 버전이어야 한다: 그래야 [업데이트 소식] 버튼에 [N]이 떠서 플레이어가 새 소식을 읽게 된다 (버전만 올리고 공지를 빼먹는 일 방지).
+## 항목 id는 patch 자리가 0이면 줄여 쓴다 (예: 버전 1.1.0 -> "1.1", 1.1.1 -> "1.1.1").
+func test_latest_notice_matches_the_game_version_so_the_new_badge_shows() -> void:
+	var version: String = str(ProjectSettings.get_setting("application/config/version", ""))
+	var parts: PackedStringArray = version.split(".")
+	var expected: String = version
+	if parts.size() == 3 and parts[2] == "0":
+		expected = "%s.%s" % [parts[0], parts[1]]
+	check_eq(UpdateNotes.latest_id(), expected, "공지사항 맨 위 항목(%s)이 게임 버전(%s)과 같다" % [UpdateNotes.latest_id(), version])
+	_setup_save()
+	PlayerSave.set_value(UpdateNotes.SEEN_KEY, "1.1")  # 이전 버전 공지를 읽은 플레이어
+	check(UpdateNotes.has_unseen() == (UpdateNotes.latest_id() != "1.1"), "이전 공지를 읽은 사람에게는 새 버전 공지에 [N]이 뜬다")
+	UpdateNotes.mark_seen()
+	check(not UpdateNotes.has_unseen(), "공지를 열어 읽으면 [N]이 꺼진다")
+	_restore_save()
