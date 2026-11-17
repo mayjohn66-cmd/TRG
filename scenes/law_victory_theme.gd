@@ -37,9 +37,9 @@ const MONATIUM_THEMES: Dictionary = {
 }
 const MONATIUM_PAPERS: Dictionary = {"LAW_02":"e6f1fb"}
 const MONATIUM_COMIC_TITLES: Dictionary = {"LAW_02":{"upper":"ffe391","lower":"ffffff","shadow":"1f5fa8"}}
-## 벨라티엔 왕국에서 LAW_02(Bad Carrut)의 승리 연출: 같은 무대에 보라색 제목 (BAD CARRUT).
+## 벨라티엔 왕국에서 LAW_02(Bad Carrot)의 승리 연출: 같은 무대에 보라색 제목 (BAD CARROT).
 const WITCH_THEMES: Dictionary = {
-	"LAW_02":{"font":"bangers","headline":"BAD CARRUT","lines":"BAD\nCARRUT","ink":"1f1233","accent":"8a4fc4","tilt":-0.05},
+	"LAW_02":{"font":"bangers","headline":"BAD CARROT","lines":"BAD\nCARROT","ink":"1f1233","accent":"8a4fc4","tilt":-0.05},
 }
 const WITCH_PAPERS: Dictionary = {"LAW_02":"efe4f7"}
 const WITCH_COMIC_TITLES: Dictionary = {"LAW_02":{"upper":"e9ccff","lower":"ffffff","shadow":"5a2a8a"}}

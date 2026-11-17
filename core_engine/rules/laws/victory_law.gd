@@ -34,7 +34,7 @@ const MONATIUM_DEFS: Dictionary = {
 }
 ## 벨라티엔 왕국(마녀 도시) 보드에서 같은 자리를 바꿔 쓰는 판. 규칙·저장·도장은 원래 교칙과 같다 (승리 연출도 원래 교칙 것을 쓴다).
 const BELATIEN_DEFS: Dictionary = {
-	"LAW_02": ["Bad Carrut", "마녀 상점에 {p1}회 방문"],
+	"LAW_02": ["Bad Carrot", "마녀 상점에 {p1}회 방문"],
 }
 ## 도감 미리보기 보드 번호 (preview_board): 0 = 에르핀 왕국, 1 = 모나티엄 도시, 2 = 벨라티엔 왕국.
 const PREVIEW_CLASSIC: int = 0

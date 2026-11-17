@@ -63,8 +63,8 @@ static func all() -> Array[AugmentDef]:
 ## BoardCatalog.apply가 보드를 바꿀 때 다시 부르고, 표를 새로 입힐 때(all)에도 자동으로 입는다. 보드가 에르핀 왕국이면 표의 원래 문구로 되돌린다.
 const VARIANT_TITLES: Dictionary = {"ko": "[특수 승리] 와라! 모나티엄 25", "en": "[Special Win] Wara! Monatium 25", "ja": "[特殊勝利] ワラ！モナティウム25"}
 const VARIANT_SHOP_WORDS: Dictionary = {"ko": ["빵집", "편의점"], "en": ["bakery", "convenience store"], "ja": ["パン屋", "コンビニ"]}
-## 벨라티엔 왕국(마녀 도시)판: Bad Carrut = 마녀 상점 방문.
-const WITCH_VARIANT_TITLES: Dictionary = {"ko": "[특수 승리] Bad Carrut", "en": "[Special Win] Bad Carrut", "ja": "[特殊勝利] Bad Carrut"}
+## 벨라티엔 왕국(마녀 도시)판: Bad Carrot = 마녀 상점 방문.
+const WITCH_VARIANT_TITLES: Dictionary = {"ko": "[특수 승리] Bad Carrot", "en": "[Special Win] Bad Carrot", "ja": "[特殊勝利] Bad Carrot"}
 const WITCH_SHOP_WORDS: Dictionary = {"ko": ["빵집", "마녀 상점"], "en": ["bakery", "witch shop"], "ja": ["パン屋", "魔女の店"]}
 
 
