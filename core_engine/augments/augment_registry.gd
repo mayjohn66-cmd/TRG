@@ -217,10 +217,15 @@ static func effective_weight(def: AugmentDef, state: GameState, player_id: int =
 ## 히든 보정: 방해령 3종이 우연히 손패에 모였는데 법전에 방해령 허리케인 포스!!가 없으면, 그 사람의 드래프트에서 이 법전 증강이 훨씬 잘 나온다
 ## (모은 보람이 있게). 화면에는 아무 표시가 없다. 사람·컴퓨터 모두 같고, 법전을 끈 판이면 기본 가중치가 0이라 그대로 0이다.
 const HAUNT_COLLECTED_OFFER_FACTOR: float = 12.0
+## 방해령 2종을 모으고 있으면(법전이 없을 때) 이 법전 증강이 조금 더 잘 나온다.
+const HAUNT_PAIR_OFFER_FACTOR: float = 4.0
 static func haunt_offer_factor(state: GameState, player_id: int, def: AugmentDef) -> float:
 	if player_id < 0 or def.category != GameEnums.AugmentCategory.LAW_ENACT or String(def.payload) != SpecialVictory.HURRICANE_LAW:
 		return 1.0
-	return HAUNT_COLLECTED_OFFER_FACTOR if HauntCommand.held_kinds(state, player_id) >= HauntCommand.IDS.size() else 1.0
+	var held: int = HauntCommand.held_kinds(state, player_id)
+	if held >= HauntCommand.IDS.size():
+		return HAUNT_COLLECTED_OFFER_FACTOR
+	return HAUNT_PAIR_OFFER_FACTOR if held == 2 else 1.0
 
 
 ## 기본 주사위(D6)가 아닌 판정 도구를 쓰고 있는가.

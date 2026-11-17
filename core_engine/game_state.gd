@@ -649,12 +649,15 @@ func note_trap_card(player_id: int) -> void:
 
 ## 방해령 허리케인 포스를 제정한 사람의 드로우: 손패에 없는 방해령 종류는 다른 카드보다 이만큼 더 잘 뽑힌다 (이미 가진 종류는 보통 확률).
 const HAUNT_DRAW_WEIGHT: float = 6.0
+## 법전을 제정하지 않았어도 방해령을 하나라도 손패에 쥐고 있으면, 없는 종류가 이만큼 더 잘 뽑힌다 (모으기 시작하면 이어서 모아지게).
+const HAUNT_HELD_DRAW_WEIGHT: float = 3.0
 
 
 func draw_card(player_id: int) -> StringName:
 	if card_deck.is_empty():
 		return &""
-	var card_id: StringName = _pick_boosted_card(player_id) if haunt_boost.has(player_id) else card_deck.pop_back()
+	var weight: float = HAUNT_DRAW_WEIGHT if haunt_boost.has(player_id) else (HAUNT_HELD_DRAW_WEIGHT if HauntCommand.held_kinds(self, player_id) in [1, 2] else 1.0)
+	var card_id: StringName = _pick_boosted_card(player_id, weight) if weight > 1.0 else card_deck.pop_back()
 	if not give_card(player_id, card_id):
 		card_deck.push_front(card_id)
 		return &""
@@ -663,12 +666,12 @@ func draw_card(player_id: int) -> StringName:
 
 ## 가중치 드로우: 덱에서 손패에 없는 방해령(HAUNT_DRAW_WEIGHT배)과 나머지(1배) 중 하나를 고른다. 같은 시드·같은 행동이면 모든 화면이 같은 카드를 뽑는다.
 ## 덱을 한 번 훑으며 뽑힌 자리를 빼므로 덱 순서는 그대로 두고, 뽑을 카드가 없으면(방해령이 덱에 없으면) 맨 위 카드를 뽑는다.
-func _pick_boosted_card(player_id: int) -> StringName:
+func _pick_boosted_card(player_id: int, boost: float = HAUNT_DRAW_WEIGHT) -> StringName:
 	var missing: Array[StringName] = HauntCommand.missing_kinds(self, player_id)
 	var total: float = 0.0
 	var weights: Array[float] = []
 	for card_id: StringName in card_deck:
-		var weight: float = HAUNT_DRAW_WEIGHT if missing.has(card_id) else 1.0
+		var weight: float = boost if missing.has(card_id) else 1.0
 		weights.append(weight)
 		total += weight
 	var roll: float = rng.randf() * total

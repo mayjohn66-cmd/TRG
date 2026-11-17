@@ -74,6 +74,11 @@
        "ko": "[방해령 허리케인 포스!!] 법전 증강이 조금 더 자주 나와요 (다른 법전의 약 1.5배)",
        "en": "The [Meddling Spirits' Hurricane Force!!] law augment now appears a bit more often (about 1.5x the other laws)",
        "ja": "[妨害霊ハリケーンフォース！！]の法典オーグメントが少し出やすくなりました（他の法典の約1.5倍）"
+      },
+      {
+       "ko": "방해령을 모으기 쉬워졌어요: 방해령 카드를 하나라도 들고 있으면 다음 카드에서 나머지 방해령이 더 잘 나오고, 두 종류를 모으면 [방해령 허리케인 포스!!] 법전이 증강에 더 잘 떠요",
+       "en": "Meddling Spirits are easier to collect: holding any one makes the others likelier on your next draw, and holding two makes the [Meddling Spirits' Hurricane Force!!] law show up more often in augment drafts",
+       "ja": "妨害霊を集めやすくなりました：1枚でも持っていると次のドローで残りが出やすくなり、2種類集めると[妨害霊ハリケーンフォース！！]の法典がオーグメントに出やすくなります"
       }
      ]
     },

@@ -275,6 +275,32 @@ func test_boosted_draws_favor_missing_haunt_kinds_and_stay_deterministic() -> vo
 	_dispose(manager)
 
 
+## 법전이 없어도 방해령을 하나라도 쥐고 있으면 없는 종류가 더 잘 뽑힌다 (모으던 걸 이어서 모으게).
+func test_holding_a_haunt_card_makes_the_missing_kinds_likelier_without_the_law() -> void:
+	var manager := _new_manager(31)
+	var state: GameState = manager.state
+	var holder_hits: int = 0
+	var empty_hits: int = 0
+	for trial: int in 400:
+		for who: int in [1, 2]:
+			state.hands[who] = [&"ACT_18"] if who == 1 else []
+			state.card_deck = [&"ACT_19", &"ACT_04", &"ACT_05", &"ACT_06", &"ACT_07"] as Array[StringName]
+			state._shuffle(state.card_deck)
+			var drawn: StringName = state.draw_card(who)
+			if drawn == &"ACT_19":
+				if who == 1:
+					holder_hits += 1
+				else:
+					empty_hits += 1
+	check(not state.haunt_boost.has(1), "법전은 없다")
+	check(holder_hits > empty_hits * 1.6 and holder_hits > 150, "하나라도 쥐고 있으면 없는 종류가 더 잘 뽑힌다 (%d vs %d / 400)" % [holder_hits, empty_hits])
+	# 3종이 다 모였으면 보정 없이 맨 위 카드 (덱 순서 그대로)
+	state.hands[1] = [&"ACT_18", &"ACT_19", &"ACT_20"]
+	state.card_deck = [&"ACT_04", &"ACT_05"] as Array[StringName]
+	check_eq(state.draw_card(1), &"ACT_05", "3종이 모였으면 평소처럼 맨 위 카드")
+	_dispose(manager)
+
+
 # ---- 스냅샷(되감기)·기록 코드 ----
 
 func test_new_state_survives_a_turn_snapshot_round_trip() -> void:
@@ -311,7 +337,9 @@ func test_collecting_all_three_by_chance_boosts_the_hurricane_offer() -> void:
 	state.hands[1] = []
 	var base: float = AugmentRegistry.effective_weight(def, state, 1)
 	state.hands[1] = [&"ACT_18", &"ACT_19"]
-	check_eq(AugmentRegistry.effective_weight(def, state, 1), base, "2종만으로는 보정이 없다")
+	check_eq(AugmentRegistry.effective_weight(def, state, 1), base * AugmentRegistry.HAUNT_PAIR_OFFER_FACTOR, "2종을 모으면 가중치 x%d" % int(AugmentRegistry.HAUNT_PAIR_OFFER_FACTOR))
+	state.hands[1] = [&"ACT_18"]
+	check_eq(AugmentRegistry.effective_weight(def, state, 1), base, "1종만으로는 증강 보정이 없다")
 	_hand_all(state, 1)
 	check_eq(AugmentRegistry.effective_weight(def, state, 1), base * AugmentRegistry.HAUNT_COLLECTED_OFFER_FACTOR, "3종이 모이면 가중치 x%d" % int(AugmentRegistry.HAUNT_COLLECTED_OFFER_FACTOR))
 	check_eq(AugmentRegistry.effective_weight(def, state, 2), base, "다른 사람은 그대로 (손패 기준)")
