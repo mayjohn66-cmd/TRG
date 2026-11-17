@@ -319,6 +319,53 @@ func test_first_haunt_card_is_a_little_likelier_for_everyone() -> void:
 	_dispose(manager)
 
 
+## 컴퓨터 대전(사람 자리가 있는 판)에서는 사람의 손패가 가득 차도 방해령을 종류마다 한 장씩 더 받는다.
+func test_human_seat_can_overflow_the_hand_with_haunt_cards_in_computer_matches() -> void:
+	var manager := _new_manager(66)
+	var state: GameState = manager.state
+	state.hands[1] = [&"ACT_02", &"ACT_03", &"ACT_04", &"ACT_06", &"ACT_07", &"ACT_08", &"ACT_09"]
+	check(not state.give_card(1, &"ACT_18"), "사람 자리가 없는 판(핫시트·온라인)은 가득 차면 방해령도 못 받는다")
+	state.pacing_humans = [1] as Array[int]
+	check(state.give_card(1, &"ACT_18"), "컴퓨터 대전: 가득 찬 손패에도 방해령 베루를 받는다")
+	check(not state.give_card(1, &"ACT_18"), "같은 종류는 한 장만 예외")
+	check(state.give_card(1, &"ACT_19") and state.give_card(1, &"ACT_20"), "사리·메죵도 한 장씩")
+	check_eq((state.hands[1] as Array).size(), 10, "7장 + 방해령 3종 = 10장")
+	check(not state.give_card(1, &"ACT_10"), "방해령이 아닌 카드는 가득 차면 못 받는다")
+	state.hands[2] = [&"ACT_02", &"ACT_03", &"ACT_04", &"ACT_06", &"ACT_07", &"ACT_08", &"ACT_09"]
+	check(not state.give_card(2, &"ACT_19"), "컴퓨터 자리는 가득 차면 방해령도 못 받는다")
+	_dispose(manager)
+
+
+## 컴퓨터 대전에서는 컴퓨터가 방해령을 쥐면 (법전이 없을 때) 바로 쓴다.
+func test_bots_play_haunt_cards_at_once_in_computer_matches() -> void:
+	var manager := _new_manager(67)
+	var state: GameState = manager.state
+	state.pacing_humans = [1] as Array[int]
+	for pawn: PlayerPawn in state.pawns_of(2):
+		pawn.has_left_start = true
+	place(state, 21, 5)
+	place(state, 11, 9)
+	state.hands[2] = [&"ACT_19"]
+	var card: BaseCard = CardRegistry.get_card(&"ACT_19")
+	var played: int = 0
+	for trial: int in 40:
+		var rng := RandomNumberGenerator.new()
+		rng.seed = trial
+		if not BotBrain._plan_one_turn_card(state, 2, card, rng).is_empty():
+			played += 1
+	state.pacing_humans = [] as Array[int]
+	var plain: int = 0
+	for trial: int in 200:
+		var rng2 := RandomNumberGenerator.new()
+		rng2.seed = trial
+		if not BotBrain._plan_one_turn_card(state, 2, card, rng2).is_empty():
+			plain += 1
+	check(card.could_play(state, 2), "방해령 사리는 쓸 수 있는 상황")
+	check_eq(played, 40, "컴퓨터 대전: 쓸 수 있는 방해령은 늘 바로 쓴다")
+	check(plain > 60 and plain < 140, "그 밖의 판은 예전처럼 반쯤만 쓴다 (%d/200)" % plain)
+	_dispose(manager)
+
+
 # ---- 스냅샷(되감기)·기록 코드 ----
 
 func test_new_state_survives_a_turn_snapshot_round_trip() -> void:

@@ -1857,7 +1857,7 @@ func _build_profiles() -> void:
 		hand_pips.alignment = BoxContainer.ALIGNMENT_END
 		hand_pips.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		hand_pips.mouse_filter = Control.MOUSE_FILTER_PASS
-		for _i: int in GameEnums.MAX_HAND_SIZE + UtilityAugments.HAND_EXPAND_MAX:  # 에심당 뽈사탕으로 늘어난 상한까지
+		for _i: int in GameEnums.MAX_HAND_SIZE + UtilityAugments.HAND_EXPAND_MAX + GameState.HAUNT_HAND_OVERFLOW:  # 에심당 뽈사탕으로 늘어난 상한 + 방해령 예외 3장까지
 			var pip := Panel.new()
 			pip.custom_minimum_size = Vector2(4, 12) if not big else Vector2(8, 14)  # 좁은 칩: 손패가 많아도 이름 칸을 덜 밀어낸다
 			pip.pivot_offset = pip.custom_minimum_size / 2.0

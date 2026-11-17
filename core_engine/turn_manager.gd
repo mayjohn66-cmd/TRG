@@ -289,6 +289,8 @@ func advance_to_next_player() -> void:
 ## 상태를 전환하고 제한 시간을 설정한 뒤 변경을 방송한다.
 func change_state(new_state: State) -> void:
 	phase_serial += 1
+	if state != null:
+		state.pacing_humans = pacing_humans  # 컴퓨터 대전(사람 자리가 있는 판) 여부를 카드 드로우·봇 판단이 항상 최신으로 본다
 	current_state = new_state
 	match new_state:
 		State.PHASE_ROUND_START: phase_time_left = GameEnums.PHASE_TIME_DRAFT * timer_scale

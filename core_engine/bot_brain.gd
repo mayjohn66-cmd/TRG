@@ -372,8 +372,10 @@ static func _plan_one_turn_card(state: GameState, player_id: int, card: BaseCard
 						best_tile = tile
 				if best_tile != -1:
 					return {"card_id": card.card_id, "params": {"tile": best_tile}}
-		&"ACT_18", &"ACT_19", &"ACT_20":  # 방해령 삼총사: 방해령 허리케인 포스!!가 법전에 걸려 있으면 승리 재료라 모아 둔다. 아니면 반쯤은 써서 방해한다
-			if state.rulebook.has_law(SpecialVictory.HURRICANE_LAW) or not card.could_play(state, player_id) or rng.randf() >= 0.5:
+		&"ACT_18", &"ACT_19", &"ACT_20":  # 방해령 삼총사: 방해령 허리케인 포스!!가 법전에 걸려 있으면 승리 재료라 모아 둔다. 아니면 쓸 수 있을 때 바로 써서 방해한다
+			# 컴퓨터 대전(사람 자리가 있는 판)에서는 들고 있지 않고 바로 쓴다 (사람이 방해령을 모을 수 있게 덱에서 빨리 돌려 준다). 그 밖의 판은 예전처럼 반쯤만 쓴다.
+			var use_chance: float = 1.0 if not state.pacing_humans.is_empty() else 0.5
+			if state.rulebook.has_law(SpecialVictory.HURRICANE_LAW) or not card.could_play(state, player_id) or rng.randf() >= use_chance:
 				return {}
 			if card.card_id == &"ACT_18":  # 베루: 가장 앞선 적 말
 				var shove: Array[PlayerPawn] = HauntCommand.shove_targets(state, player_id)

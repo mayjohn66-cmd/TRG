@@ -79,6 +79,11 @@
        "ko": "[방해령 허리케인 포스!!] 법전이 증강에 더 잘 나와요: 기본 확률이 올라갔고, 방해령 카드를 2종 모으면 훨씬 더 잘 떠요",
        "en": "The [Meddling Spirits' Hurricane Force!!] law now appears more often in augment drafts: its base chance went up, and it shows up far more often once you hold two kinds of Meddling Spirits",
        "ja": "[妨害霊ハリケーンフォース！！]の法典がオーグメントに出やすくなりました：基本確率が上がり、妨害霊を2種類集めるとさらに出やすくなります"
+      },
+      {
+       "ko": "컴퓨터 대전에서는 손패가 가득 차도 방해령 카드를 받을 수 있어요 (종류마다 한 장씩). 컴퓨터는 방해령을 들고 있지 않고 바로 써요",
+       "en": "In vs-computer matches you can pick up Meddling Spirit cards even when your hand is full (one of each kind), and the computers use theirs right away instead of holding them",
+       "ja": "コンピューター対戦では、手札がいっぱいでも妨害霊カードを受け取れます（種類ごとに1枚）。コンピューターは妨害霊を持ち続けず、すぐに使います"
       }
      ]
     },
