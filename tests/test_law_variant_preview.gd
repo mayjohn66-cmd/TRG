@@ -32,7 +32,7 @@ func test_rulebook_tile_flip_uses_the_other_board_and_restores_state() -> void:
 	var plain: Dictionary = Rulebook._card_info_for_tile(definition, {"augment": &"AUG_LAW_02"})
 	var flipped: Dictionary = Rulebook._card_info_for_tile(definition, {"augment": &"AUG_LAW_02", "variant_step": 1})
 	var witch_info: Dictionary = Rulebook._card_info_for_tile(definition, {"augment": &"AUG_LAW_02", "variant_step": 2})
-	check(str(witch_info["title"]).contains("벨라티엔"), "두 번 넘기면: 벨라티엔 단골 마녀 (%s)" % witch_info["title"])
+	check(str(witch_info["title"]).contains("Bad Carrut"), "두 번 넘기면: Bad Carrut (%s)" % witch_info["title"])
 	check_eq(VictoryLaw.preview_board, -1, "벨라티엔판을 본 뒤에도 미리보기는 꺼져 있다")
 	check(str(plain["title"]).contains("식권"), "뒤집기 전: 식권 (%s)" % plain["title"])
 	check(str(flipped["title"]).contains("모나티엄"), "뒤집은 뒤: 모나티엄 25 (%s)" % flipped["title"])

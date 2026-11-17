@@ -262,7 +262,7 @@ func show_gain(player_id: int, key: StringName, value: int, tile: int) -> Contro
 	var stamp_text: String = String(style[1])
 	if key == &"bakery" and BoardSpec.convenience:  # 모나티엄 도시: 와라! 모나티엄 25 (편의점 방문)
 		stamp_text = "편의점 방문! (%d/%d)"
-	elif key == &"bakery" and BoardSpec.witch:  # 벨라티엔 왕국: 벨라티엔 단골 마녀 (마녀 상점 방문)
+	elif key == &"bakery" and BoardSpec.witch:  # 벨라티엔 왕국: Bad Carrut (마녀 상점 방문)
 		stamp_text = "마녀 상점 방문! (%d/%d)"
 	var banner: Control = popup(from, String(style[0]), stamp_text % [mini(value, goal), goal], color)
 	fly_orb(from, String(style[2]))

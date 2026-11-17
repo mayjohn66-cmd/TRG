@@ -37,28 +37,40 @@ const MONATIUM_THEMES: Dictionary = {
 }
 const MONATIUM_PAPERS: Dictionary = {"LAW_02":"e6f1fb"}
 const MONATIUM_COMIC_TITLES: Dictionary = {"LAW_02":{"upper":"ffe391","lower":"ffffff","shadow":"1f5fa8"}}
+## 벨라티엔 왕국에서 LAW_02(Bad Carrut)의 승리 연출: 같은 무대에 보라색 제목 (BAD CARRUT).
+const WITCH_THEMES: Dictionary = {
+	"LAW_02":{"font":"bangers","headline":"BAD CARRUT","lines":"BAD\nCARRUT","ink":"1f1233","accent":"8a4fc4","tilt":-0.05},
+}
+const WITCH_PAPERS: Dictionary = {"LAW_02":"efe4f7"}
+const WITCH_COMIC_TITLES: Dictionary = {"LAW_02":{"upper":"e9ccff","lower":"ffffff","shadow":"5a2a8a"}}
 static var _fonts: Dictionary = {}
 static func variant(id: String) -> bool:
-	return BoardSpec.convenience and MONATIUM_THEMES.has(id)
+	return (BoardSpec.convenience and MONATIUM_THEMES.has(id)) or (BoardSpec.witch and WITCH_THEMES.has(id))
 
 
 static func of(id: String) -> Dictionary:
 	if variant(id):
-		return MONATIUM_THEMES[id]
+		return WITCH_THEMES[id] if BoardSpec.witch else MONATIUM_THEMES[id]
 	return THEMES.get(id,{})
 
 
 static func paper(id: String) -> String:
-	return str(MONATIUM_PAPERS[id]) if variant(id) else str(PAPERS.get(id, "ffffff"))
+	if variant(id):
+		return str(WITCH_PAPERS[id] if BoardSpec.witch else MONATIUM_PAPERS[id])
+	return str(PAPERS.get(id, "ffffff"))
 
 
 static func comic_title(id: String) -> Dictionary:
-	return MONATIUM_COMIC_TITLES[id] if variant(id) else COMIC_TITLES.get(id, {})
+	if variant(id):
+		return WITCH_COMIC_TITLES[id] if BoardSpec.witch else MONATIUM_COMIC_TITLES[id]
+	return COMIC_TITLES.get(id, {})
 
 
 ## 제목 글자 윤곽 데이터(victory_title_geometry_data)의 키: 바꿔 쓰는 제목은 따로 ":M"을 붙여 (없으면 글꼴 크기로 계산) 원래 제목의 윤곽을 잘못 쓰지 않는다.
 static func geometry_id(id: String) -> String:
-	return id + ":M" if variant(id) else id
+	if variant(id):
+		return id + (":W" if BoardSpec.witch else ":M")
+	return id
 
 static func headline(id: String) -> String:
 	return str(of(id).get("lines",""))

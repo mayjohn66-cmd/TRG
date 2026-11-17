@@ -2276,7 +2276,7 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 - **마녀의 가마솥** (옷장 자리 12·22번, 워프 없음): 딱 멈추면 `WitchPotions`가 물약 5종 중 하나를 같은 확률로 끓인다 (`GameState.rng`, 모든 참가자가 같은 결과). 지나가기만 하면 아무 일도 없다. `TileNode.TileType.CAULDRON`, `BoardSpec.cauldron_tiles`, `MoveReport.cauldron_potion`.
   - 좋은 물약 (60%): 힘의 물약 = 다음 굴림 +3칸(`corner_buff`, 겹치면 큰 쪽) · 신속의 물약 = 지금 바로 +2칸 전진(이어지는 이동, 도착 정산) · 보호의 물약 = 잡기·함정 1회 방어(`ward`).
   - 나쁜 물약 (40%): 개구리 물약 = 다음 굴림 -2칸(`roll_penalty`, 최소 1칸) · 폭발 물약 = 펑! 뒤로 2칸(`MoveExecutor.teleport_to`, 그 칸에서 평소 도착처럼 함정·잡기 판정).
-- 전용 법전: LAW_02 자리를 [벨라티엔 단골 마녀] "마녀 상점에 6회 방문"으로 바꿔 쓴다 (`VictoryLaw.BELATIEN_DEFS`, `witch_variant_active`). 기록 키·목표·도장은 식권과 같고, 승리 연출은 식권 것을 그대로 쓴다 (모나티엄 전용 MONATIUM DAYS는 켜지지 않는다). 선택 카드 문구는 `AugmentRegistry.apply_board_variants`가 빵집 → 마녀 상점으로 바꾼다.
+- 전용 법전: LAW_02 자리를 [Bad Carrut] "마녀 상점에 6회 방문" (승리 문구: "마녀는 엄청난 것을 훔쳐갔습니다." = 「마리사는 엄청난 것을 훔쳐갔습니다」 패러디, 승리 연출 제목 BAD CARRUT)으로 바꿔 쓴다 (`VictoryLaw.BELATIEN_DEFS`, `witch_variant_active`). 기록 키·목표·도장은 식권과 같고, 승리 연출은 식권 것을 그대로 쓴다 (모나티엄 전용 MONATIUM DAYS는 켜지지 않는다). 선택 카드 문구는 `AugmentRegistry.apply_board_variants`가 빵집 → 마녀 상점으로 바꾼다.
 - 화면: `BoardSkin.PALETTE_WITCH`(연보라 타일·짙은 보라 테두리·갈색 코너·보라 마법빛 부스터 발판), 판 바닥 `assets/board/belatien/board_surface_symbols_v1.png`(임시 그림), 가마솥 연출 `CauldronBrewView`(가마솥이 물약 색으로 끓다가 병이 솟고, 나쁜 물약은 검은 연기) + 물약 이름·효과 창 + 말 위 배지. 놀이터 보드 그림 `board_preview/belatien.webp`(게임 화면 캡처).
 - 도감: 보드 장에 마녀 상점·마녀의 가마솥(물약 표) 항목, 식권 카드의 보드 넘기기 화살표는 에르핀 왕국 → 모나티엄 도시 → 벨라티엔 왕국 순서로 돈다 (`VictoryLaw.preview_board` 0/1/2).
 - 임시 그림 교체: 판 바닥·마녀 상점·가마솥 그림, 보드 미리보기 그림은 파일만 바꾸면 된다 (마스크 그림은 `BoardSkin.DECAL_BOUNDS`·`RulebookVisuals.REGIONS`의 테두리 값을 새 그림에 맞춘다).
