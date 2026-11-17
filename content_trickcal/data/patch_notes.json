@@ -69,6 +69,11 @@
        "ko": "TRPG 기물이 레벨업하면 머리 위에 레벨 칩이 떠요: [Lv.N]로 표시되고, 최대 레벨은 금색 MAX예요 (보드와 기물 독 모두)",
        "en": "TRPG pawns now show a level chip above their heads: [Lv.N], and the max level shows a golden MAX (on both the board and the pawn dock)",
        "ja": "TRPG駒がレベルアップすると頭上にレベルチップが表示されます：[Lv.N]、最大レベルは金色のMAX（ボードと駒ドックの両方）"
+      },
+      {
+       "ko": "[방해령 허리케인 포스!!] 법전 증강이 조금 더 자주 나와요 (다른 법전의 약 1.5배)",
+       "en": "The [Meddling Spirits' Hurricane Force!!] law augment now appears a bit more often (about 1.5x the other laws)",
+       "ja": "[妨害霊ハリケーンフォース！！]の法典オーグメントが少し出やすくなりました（他の法典の約1.5倍）"
       }
      ]
     },
