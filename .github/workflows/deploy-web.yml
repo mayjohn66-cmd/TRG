@@ -606,6 +606,13 @@ jobs:
         if: steps.validation.outputs.scope == 'full' || steps.validation.outputs.scope == 'capture-fx'
         run: godot --headless --path . -s res://tests/ui_capture_test.gd
 
+      - name: Run hacking window test (hides while the roll presentation is up)
+        if: steps.validation.outputs.scope == 'full'
+        run: |
+          set -o pipefail
+          godot --headless --path . -s res://tests/ui_hack_window_test.gd 2>&1 | tee /tmp/ui_hack_window_test.log
+          grep -q 'UI_HACK_WINDOW_OK' /tmp/ui_hack_window_test.log
+
       - name: Run counter-before-kill presentation sequence test (dodge, mirror, no counter)
         if: steps.validation.outputs.scope == 'full'
         run: |

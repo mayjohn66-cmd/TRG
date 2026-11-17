@@ -857,6 +857,10 @@ func _process(delta: float) -> void:
 	if not manager.is_game_over:
 		_phase_label.text = _phase_text()
 	_drop_stale_target_pick()
+	# 전문적 해킹 창은 굴림 연출(야추 다이스·텍사스 홀덤 등 보드 한가운데 판)이 떠 있는 동안 잠시 숨겨 연출을 가리지 않는다.
+	var hack_layer := get_node_or_null("HackWindow") as CanvasLayer
+	if hack_layer != null:
+		hack_layer.visible = _presenter == null or not (_presenter.active or _presenter.visible)
 	if _skill_hint != null and _skill_hint.visible:
 		_refresh_skill_hint()
 	_bot.instant = instant_roll_for_test
