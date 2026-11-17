@@ -42,7 +42,7 @@ func test_three_haunt_cards_are_registered_with_names_and_table_text() -> void:
 	for id: StringName in HauntCommand.IDS:
 		var card: BaseCard = CardRegistry.get_card(id)
 		check(card is CardHaunt and card.category == GameEnums.CardCategory.INSTANT, "%s 즉발 카드" % id)
-		check_eq(CardRegistry.deck_copies(id), 2, "%s 덱 2장" % id)
+		check_eq(CardRegistry.deck_copies(id), 3, "%s 덱 3장" % id)
 		check(CardRegistry.type_of(id) == "INSTANT", "%s 표의 종류" % id)
 		check(GameData.text("cards", id, "desc") != "" and GameData.text("cards", id, "name_ja") != "" and GameData.text("cards", id, "name_en") != "", "%s 표에 한국어·영어·일본어 이름과 설명" % id)
 	check_eq([CardRegistry.get_card(&"ACT_18").display_name, CardRegistry.get_card(&"ACT_19").display_name, CardRegistry.get_card(&"ACT_20").display_name],
@@ -244,7 +244,7 @@ func test_boosted_draws_favor_missing_haunt_kinds_and_stay_deterministic() -> vo
 					haunts_boosted += 1
 				else:
 					haunts_plain += 1
-	check(haunts_boosted > 3 * haunts_plain and haunts_boosted > 60, "가중치가 붙은 사람이 방해령을 훨씬 자주 뽑는다 (%d vs %d / 300)" % [haunts_boosted, haunts_plain])
+	check(haunts_boosted > 2 * haunts_plain and haunts_boosted > 60, "가중치가 붙은 사람이 방해령을 훨씬 자주 뽑는다 (%d vs %d / 300)" % [haunts_boosted, haunts_plain])
 	# 이미 손패에 있는 종류는 보통 확률: 세 종류를 다 가졌으면 균등
 	state.haunt_boost[1] = true
 	state.hands[1] = [&"ACT_18", &"ACT_19", &"ACT_20"]
@@ -298,6 +298,24 @@ func test_holding_a_haunt_card_makes_the_missing_kinds_likelier_without_the_law(
 	state.hands[1] = [&"ACT_18", &"ACT_19", &"ACT_20"]
 	state.card_deck = [&"ACT_04", &"ACT_05"] as Array[StringName]
 	check_eq(state.draw_card(1), &"ACT_05", "3종이 모였으면 평소처럼 맨 위 카드")
+	_dispose(manager)
+
+
+## 방해령을 하나도 안 쥔 사람도 첫 장은 조금 더 잘 뽑힌다 (x1.5).
+func test_first_haunt_card_is_a_little_likelier_for_everyone() -> void:
+	var manager := _new_manager(55)
+	var state: GameState = manager.state
+	var hits: int = 0
+	var plain_expected: float = 0.0
+	for trial: int in 600:
+		state.hands[2] = []
+		state.card_deck = [&"ACT_18", &"ACT_04", &"ACT_05", &"ACT_06", &"ACT_07", &"ACT_08"] as Array[StringName]
+		state._shuffle(state.card_deck)
+		if state.draw_card(2) == &"ACT_18":
+			hits += 1
+	plain_expected = 600.0 / 6.0  # 보정이 없으면 6장 중 1장 = 100번
+	# 보정 x1.5: 1.5 / (1.5 + 5) = 23% 정도 (138번 안팎)
+	check(float(hits) > plain_expected * 1.2 and float(hits) < plain_expected * 1.6, "하나도 없을 때 첫 장 보정 (%d/600, 보정 없으면 약 100)" % hits)
 	_dispose(manager)
 
 

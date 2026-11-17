@@ -28,8 +28,8 @@ func _on_event(manager: TurnManager, kind: StringName, data: Dictionary) -> void
 				_bad("일반 함정을 특수 칸(%d번)에 깔았다" % tile)
 			if card.corner_only and not BoardSpec.bonus_corner_tiles.has(tile):
 				_bad("코너 전용 함정을 코너가 아닌 칸에 깔았다")
-		if (state.hands[player] as Array).size() > 7:
-			_bad("손패가 7장을 넘었다")
+		if (state.hands[player] as Array).size() > state.hand_limit(player):  # 손패 상한 증가 증강이 있으면 7장을 넘을 수 있다
+			_bad("손패가 상한(%d장)을 넘었다" % state.hand_limit(player))
 	elif kind == &"roll_resolved":
 		if state.is_graduated(manager.current_player_id()):
 			_bad("졸업한 플레이어가 굴렸다")

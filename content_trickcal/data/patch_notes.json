@@ -71,9 +71,9 @@
        "ja": "TRPG駒がレベルアップすると頭上にレベルチップが表示されます：[Lv.N]、最大レベルは金色のMAX（ボードと駒ドックの両方）"
       },
       {
-       "ko": "방해령 카드를 하나라도 얻으면 다음 카드를 받을 때 아직 없는 방해령이 나올 확률이 올라가요",
-       "en": "Once you hold any Meddling Spirit card, the kinds you don't have yet are more likely on your next card draws",
-       "ja": "妨害霊カードを1枚でも持っていると、次のカード獲得時にまだ持っていない妨害霊が出る確率が上がります"
+       "ko": "방해령 카드가 덱에 더 많아졌고(각 2장 → 3장), 방해령을 처음 얻기도 쉬워졌어요. 하나라도 얻으면 다음 카드를 받을 때 아직 없는 방해령이 나올 확률이 더 올라가요",
+       "en": "There are more Meddling Spirit cards in the deck (2 → 3 of each) and the first one is easier to get. Once you hold any, the kinds you don't have yet become even likelier on your next draws",
+       "ja": "デッキの妨害霊カードが増え（各2枚→3枚）、最初の1枚も出やすくなりました。1枚でも持っていると、次のドローでまだ持っていない妨害霊がさらに出やすくなります"
       },
       {
        "ko": "[방해령 허리케인 포스!!] 법전이 증강에 더 잘 나와요: 기본 확률이 올라갔고, 방해령 카드를 2종 모으면 훨씬 더 잘 떠요",

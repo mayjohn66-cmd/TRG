@@ -651,12 +651,15 @@ func note_trap_card(player_id: int) -> void:
 const HAUNT_DRAW_WEIGHT: float = 6.0
 ## 법전을 제정하지 않았어도 방해령을 하나라도 손패에 쥐고 있으면, 없는 종류가 이만큼 더 잘 뽑힌다 (모으기 시작하면 이어서 모아지게).
 const HAUNT_HELD_DRAW_WEIGHT: float = 3.0
+## 방해령을 하나도 쥐고 있지 않은 사람도 첫 장은 이만큼 더 잘 뽑힌다 (처음 한 장을 얻기 쉽게).
+const HAUNT_FIRST_DRAW_WEIGHT: float = 1.5
 
 
 func draw_card(player_id: int) -> StringName:
 	if card_deck.is_empty():
 		return &""
-	var weight: float = HAUNT_DRAW_WEIGHT if haunt_boost.has(player_id) else (HAUNT_HELD_DRAW_WEIGHT if HauntCommand.held_kinds(self, player_id) in [1, 2] else 1.0)
+	var held: int = HauntCommand.held_kinds(self, player_id)
+	var weight: float = HAUNT_DRAW_WEIGHT if haunt_boost.has(player_id) else (HAUNT_HELD_DRAW_WEIGHT if held in [1, 2] else (HAUNT_FIRST_DRAW_WEIGHT if held == 0 else 1.0))
 	var card_id: StringName = _pick_boosted_card(player_id, weight) if weight > 1.0 else card_deck.pop_back()
 	if not give_card(player_id, card_id):
 		card_deck.push_front(card_id)
