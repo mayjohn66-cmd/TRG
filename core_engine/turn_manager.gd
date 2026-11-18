@@ -516,6 +516,11 @@ func external_timeouts_blocked() -> bool:
 	return false
 
 
+## 전문적 해킹으로 이번 턴이 자동 진행인 사람인가 (봇·UI가 카드를 내기 전에 확인한다: 해킹 턴에는 카드를 쓸 수 없다).
+func is_hack_turn(player_id: int) -> bool:
+	return _hack_turn_player != -1 and _hack_turn_player == player_id
+
+
 func _handle_play_card(actor: int, params: Dictionary) -> void:
 	if actor == _hack_turn_player:
 		action_rejected.emit(actor, &"play_card", &"hacked")  # 전문적 해킹: 이번 턴은 자동 진행이라 카드를 쓰지 못한다

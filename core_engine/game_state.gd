@@ -625,21 +625,9 @@ func hand_limit(player_id: int) -> int:
 	return GameEnums.MAX_HAND_SIZE + int(hand_bonus.get(player_id, 0))
 
 
-## 컴퓨터 대전에서 사람(내 자리)이 방해령을 손패 상한을 넘어서도 받을 수 있는 최대 장수 (방해령 종류마다 한 장씩).
-const HAUNT_HAND_OVERFLOW: int = 3
-
-
-## 컴퓨터 대전(사람 자리가 있는 판)에서 사람의 손패가 가득 차도 방해령은 종류마다 한 장씩 더 받는다 (모으던 걸 못 모으고 막히지 않게).
-func haunt_overflow_ok(player_id: int, card_id: StringName) -> bool:
-	if not pacing_humans.has(player_id) or not HauntCommand.is_haunt(card_id):
-		return false
-	var hand: Array = hands[player_id]
-	return not hand.has(card_id) and hand.size() < hand_limit(player_id) + HAUNT_HAND_OVERFLOW
-
-
 func give_card(player_id: int, card_id: StringName) -> bool:
 	var hand: Array = hands[player_id]
-	if hand.size() >= hand_limit(player_id) and not haunt_overflow_ok(player_id, card_id):
+	if hand.size() >= hand_limit(player_id):
 		return false
 	hand.append(card_id)
 	card_drawn.emit(player_id, card_id)

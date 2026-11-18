@@ -184,7 +184,7 @@ func _step_counter() -> void:
 			_act(victim, &"counter_pass")
 		return
 	var card_id: StringName = BotBrain.choose_counter(manager.state, victim, offer.get("cards", []), manager.state.get_attack(key), rng)
-	if card_id != &"":
+	if card_id != &"" and not manager.is_hack_turn(victim):
 		_act(victim, &"play_card", {"card_id": card_id})
 	else:
 		_act(victim, &"counter_pass")
@@ -245,7 +245,7 @@ func _step_draft() -> void:
 func _step_turn_begin() -> void:
 	var player_id: int = manager.current_player_id()
 	# 카드는 굴리기 전 턴당 1장만 쓸 수 있다.
-	var plan: Dictionary = {} if manager.card_played_this_turn() else BotTemper.filter_card_plan(manager.state, player_id, BotTemper.plan_turn_card(manager.state, player_id, difficulty, _tried, rng), difficulty, humans(), rng)
+	var plan: Dictionary = {} if manager.card_played_this_turn() or manager.is_hack_turn(player_id) else BotTemper.filter_card_plan(manager.state, player_id, BotTemper.plan_turn_card(manager.state, player_id, difficulty, _tried, rng), difficulty, humans(), rng)
 	if not plan.is_empty():
 		var params: Dictionary = (plan["params"] as Dictionary).duplicate()
 		params["card_id"] = plan["card_id"]
@@ -314,6 +314,8 @@ func _step_window() -> void:
 			continue
 		var tried_for_bot: Dictionary = _tried.get(player_id, {})
 		_tried[player_id] = tried_for_bot
+		if manager.is_hack_turn(player_id):
+			continue  # 해킹당한 턴에는 카드를 낼 수 없다 (엔진이 거절한다)
 		var plan: Dictionary = BotBrain.plan_window_card(manager.state, player_id, phase, roll_value, _bot_turn(), manager.current_player_id(), tried_for_bot, rng)
 		if not plan.is_empty():
 			var params: Dictionary = (plan["params"] as Dictionary).duplicate()

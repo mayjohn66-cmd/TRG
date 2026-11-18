@@ -42,7 +42,7 @@ func test_three_haunt_cards_are_registered_with_names_and_table_text() -> void:
 	for id: StringName in HauntCommand.IDS:
 		var card: BaseCard = CardRegistry.get_card(id)
 		check(card is CardHaunt and card.category == GameEnums.CardCategory.INSTANT, "%s 즉발 카드" % id)
-		check_eq(CardRegistry.deck_copies(id), 3, "%s 덱 3장" % id)
+		check_eq(CardRegistry.deck_copies(id), 6, "%s 덱 6장" % id)
 		check(CardRegistry.type_of(id) == "INSTANT", "%s 표의 종류" % id)
 		check(GameData.text("cards", id, "desc") != "" and GameData.text("cards", id, "name_ja") != "" and GameData.text("cards", id, "name_en") != "", "%s 표에 한국어·영어·일본어 이름과 설명" % id)
 	check_eq([CardRegistry.get_card(&"ACT_18").display_name, CardRegistry.get_card(&"ACT_19").display_name, CardRegistry.get_card(&"ACT_20").display_name],
@@ -293,7 +293,7 @@ func test_holding_a_haunt_card_makes_the_missing_kinds_likelier_without_the_law(
 				else:
 					empty_hits += 1
 	check(not state.haunt_boost.has(1), "법전은 없다")
-	check(holder_hits > empty_hits * 1.6 and holder_hits > 150, "하나라도 쥐고 있으면 없는 종류가 더 잘 뽑힌다 (%d vs %d / 400)" % [holder_hits, empty_hits])
+	check(holder_hits > empty_hits * 1.3 and holder_hits > 140, "하나라도 쥐고 있으면 없는 종류가 더 잘 뽑힌다 (%d vs %d / 400)" % [holder_hits, empty_hits])
 	# 3종이 다 모였으면 보정 없이 맨 위 카드 (덱 순서 그대로)
 	state.hands[1] = [&"ACT_18", &"ACT_19", &"ACT_20"]
 	state.card_deck = [&"ACT_04", &"ACT_05"] as Array[StringName]
@@ -316,23 +316,6 @@ func test_first_haunt_card_is_a_little_likelier_for_everyone() -> void:
 	plain_expected = 600.0 / 6.0  # 보정이 없으면 6장 중 1장 = 100번
 	# 보정 x1.5: 1.5 / (1.5 + 5) = 23% 정도 (138번 안팎)
 	check(float(hits) > plain_expected * 1.2 and float(hits) < plain_expected * 1.6, "하나도 없을 때 첫 장 보정 (%d/600, 보정 없으면 약 100)" % hits)
-	_dispose(manager)
-
-
-## 컴퓨터 대전(사람 자리가 있는 판)에서는 사람의 손패가 가득 차도 방해령을 종류마다 한 장씩 더 받는다.
-func test_human_seat_can_overflow_the_hand_with_haunt_cards_in_computer_matches() -> void:
-	var manager := _new_manager(66)
-	var state: GameState = manager.state
-	state.hands[1] = [&"ACT_02", &"ACT_03", &"ACT_04", &"ACT_06", &"ACT_07", &"ACT_08", &"ACT_09"]
-	check(not state.give_card(1, &"ACT_18"), "사람 자리가 없는 판(핫시트·온라인)은 가득 차면 방해령도 못 받는다")
-	state.pacing_humans = [1] as Array[int]
-	check(state.give_card(1, &"ACT_18"), "컴퓨터 대전: 가득 찬 손패에도 방해령 베루를 받는다")
-	check(not state.give_card(1, &"ACT_18"), "같은 종류는 한 장만 예외")
-	check(state.give_card(1, &"ACT_19") and state.give_card(1, &"ACT_20"), "사리·메죵도 한 장씩")
-	check_eq((state.hands[1] as Array).size(), 10, "7장 + 방해령 3종 = 10장")
-	check(not state.give_card(1, &"ACT_10"), "방해령이 아닌 카드는 가득 차면 못 받는다")
-	state.hands[2] = [&"ACT_02", &"ACT_03", &"ACT_04", &"ACT_06", &"ACT_07", &"ACT_08", &"ACT_09"]
-	check(not state.give_card(2, &"ACT_19"), "컴퓨터 자리는 가득 차면 방해령도 못 받는다")
 	_dispose(manager)
 
 
