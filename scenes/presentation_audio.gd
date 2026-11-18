@@ -4,6 +4,7 @@ class_name PresentationAudio
 extends RefCounted
 
 const MONATIUM_CASH = preload("res://scenes/monatium_cash_stage.gd")
+const BAD_CARROT = preload("res://scenes/bad_carrot_stage.gd")
 var _owner:WeakRef
 var _cues:Array[Dictionary]=[]
 var _seen:Dictionary={}
@@ -70,7 +71,12 @@ static func victory_plan(id:String,offset:float,finale:float,confirm:bool) -> Ar
 	match id:
 		"LAW_01":cues.append(cue(offset+0.54,&"sword_plant"))
 		"LAW_02":
-			if VictoryLaw.variant_active(id):
+			if VictoryLaw.witch_variant_active(id):
+				for index: int in BAD_CARROT.COUNT:
+					cues.append(cue(offset + BAD_CARROT.drop_at(index), &"hop", -9.0))
+				cues.append(cue(offset + BAD_CARROT.FLIGHT_AT + 0.15, &"dash", -5.0))
+				cues.append(cue(offset + BAD_CARROT.IMPACT_AT, &"hero_impact", -4.0))
+			elif VictoryLaw.variant_active(id):
 				for index: int in MONATIUM_CASH.COUNT:
 					cues.append(cue(offset + MONATIUM_CASH.drop_at(index), &"monatium_cash_drop", -7.0))
 				cues.append(cue(offset + MONATIUM_CASH.IMPACT_AT + 0.04, &"monatium_cash_reward", -6.0))

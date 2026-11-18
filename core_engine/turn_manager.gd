@@ -1288,7 +1288,10 @@ func _resolve_draft() -> bool:
 			if not bool(result["ok"]):
 				continue
 			(augments[player_id] as Array).append(offers[index])
-			_emit_event(&"augment_picked", {"player_id": player_id, "augment_id": offers[index], "text": result["text"], "auto": bool(entry.get("auto", false)) or index != picked})
+			var event := {"player_id": player_id, "augment_id": offers[index], "text": result["text"], "auto": bool(entry.get("auto", false)) or index != picked}
+			if result.has("presentation"):
+				event["presentation"] = result["presentation"]
+			_emit_event(&"augment_picked", event)
 			break
 	return false
 

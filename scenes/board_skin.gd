@@ -12,8 +12,8 @@ const MAX_TILE_WIDTH: float = 0.12
 const SURFACE: Texture2D = preload("res://assets/board/trickcal/board_surface_symbols_v1.png")
 ## 모나티엄 도시 판 바닥 (보드 스킨 틀: 보드마다 바닥 그림·칸 색·부스터 발판 색을 따로 쓴다. 이미지를 바꾸려면 이 파일만 교체하면 된다).
 const SURFACE_CITY: Texture2D = preload("res://assets/board/monatium/board_surface_symbols_v1.png")
-## 벨라티엔 왕국 판 바닥 (임시 그림: 갈색 나무 테두리 + 연보라 판면 + 마녀 모자 문양. 최종 그림이 오면 이 파일만 교체한다).
-const SURFACE_WITCH: Texture2D = preload("res://assets/board/belatien/board_surface_symbols_v1.png")
+## 벨라티엔 왕국 판 바닥: 갈색 테두리와 연보라 판면, 중앙 마녀 문양.
+const SURFACE_WITCH: Texture2D = preload("res://assets/board/belatien/board_surface_symbols_v2.png")
 
 ## 보드별 색 모음. 새 보드는 여기에 항목을 더하고 palette()가 고르게 한다 (키 없는 항목은 기본(에르핀 왕국) 값을 쓴다).
 const PALETTE_DEFAULT: Dictionary = {
@@ -173,7 +173,7 @@ const DECALS: Dictionary = {
 	"portal": preload("res://assets/board/decals/BOARD_PORTAL.png"),
 	"store": preload("res://assets/board/decals/BOARD_STORE_MONATIUM_v3.png"),
 	"vending": preload("res://assets/board/decals/BOARD_VENDING_v2.png"),
-	"witch_shop": preload("res://assets/board/decals/BOARD_WITCH_SHOP.png"),
+	"witch_shop": preload("res://assets/board/decals/BOARD_CARROT_FRIES_INK.png"),
 	"cauldron": preload("res://assets/board/decals/BOARD_CAULDRON.png"),
 	"start": preload("res://assets/board/decals/BOARD_START.png"),
 	"half": preload("res://assets/board/decals/BOARD_HALF.png"),
@@ -187,7 +187,6 @@ const WARNING_BOUNDS: Rect2 = Rect2(0.0632622,0.0733945,0.8681402,0.8323603)
 const DECAL_BOUNDS: Dictionary = {
 	"bakery": Rect2(196,409,862,482), "portal": Rect2(296,268,662,739),
 	"store": Rect2(19,34,1221,1170), "vending": Rect2(207,86,841,1105),
-	"witch_shop": Rect2(170,150,915,811), "cauldron": Rect2(190,100,875,1051),
 	"start": Rect2(308,272,638,750), "half": Rect2(362,246,590,778),
 	"corner": Rect2(99,307,1098,665), "boost": Rect2(175,431,909,391),
 }
@@ -230,7 +229,8 @@ static func decal_texture(kind: String) -> AtlasTexture:
 	var source: Texture2D = DECALS[kind]
 	var atlas := AtlasTexture.new()
 	atlas.atlas = source
-	atlas.region = Rect2((DECAL_BOUNDS[kind] as Rect2).position/1254.0*source.get_size(),(DECAL_BOUNDS[kind] as Rect2).size/1254.0*source.get_size())
+	var bounds: Rect2 = DECAL_BOUNDS.get(kind, Rect2(0, 0, 1254, 1254))
+	atlas.region = Rect2(bounds.position / 1254.0 * source.get_size(), bounds.size / 1254.0 * source.get_size())
 	atlas.filter_clip = true
 	return atlas
 
@@ -261,6 +261,7 @@ class Symbol extends Node2D:
 		var flat := ShaderMaterial.new()
 		flat.shader = BoardSkin.FLAT_INK
 		flat.set_shader_parameter("ink",ink)
+		flat.set_shader_parameter("cutout_dark_lines", kind == "cauldron")
 		material = flat
 
 	func _draw() -> void:

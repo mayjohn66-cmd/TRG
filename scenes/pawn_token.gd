@@ -6,10 +6,14 @@ const FONT: Font = preload("res://assets/fonts/game_ui_font.tres")
 const INK := Color("25252a")
 const IVORY := Color("fff4d6")
 const WOOD := Color("e9b875")
+const BLIND_GRAY := Color("a1a1a1")
 const BODY_BOX := Rect2(-13, -31, 26, 31)
 const HIT_BOX := Rect2(-18, -34, 36, 42)
+const COLLECTIBLE_BOARD_ART_SCALE := 1.30
 const COVER_ART: Texture2D = preload("res://assets/fx/expansion_cards/cover.png")
 const TOP_ART: Texture2D = preload("res://assets/fx/expansion_cards/top.png")
+const NECKLACE_ART: Texture2D = preload("res://assets/fx/priority/ejection_necklace.png")
+const AGITATION_MARK = preload("res://scenes/agitation_mark.gd")
 var pawn: PlayerPawn
 ## 괴상한 멜론 한 단계마다 커지는 비율.
 const MELON_GROWTH: float = 0.2
@@ -17,6 +21,7 @@ var owner_color: Color = Color("e5484d")
 var artwork: Dictionary = {}
 var use_art: bool = true
 var ground_shadow: bool = true
+var is_board_token := false
 var npc_behavior: int = -1
 var _golden_top := false
 var _top_phase := 0.0
@@ -24,13 +29,30 @@ var _cover_pending := false
 var _signature: String = ""
 var _pulse: float = 1.0
 var _shield_shell: ShieldShell
+var _necklace_signal: float = 0.0
+var _necklace_signal_tween: Tween
 ## Persistent protection remains visible; this switch only skips gain/break motion.
 var shield_motion: bool = true
-## 눈먼 자의 도시: 말의 정체(주인·종류)를 가려 [?] 그림자로만 보인다.
+## 눈먼 자의 도시: 회색 기본말과 머리 위 물음표로 표시한다.
 var blind: bool = false
-## 머리 위 상태 칩 (사출 목걸이·평화주의자·선동 표적): 비어 있으면 없다.
-var chip_text: String = ""
-var chip_color: Color = Color("ffd43b")
+## 머리 위 상태 칩.
+var peace_mark: bool = false
+var agitation_mark: bool = false
+var necklace_equipped: bool = false:
+	set(value):
+		if necklace_equipped != value:
+			necklace_equipped = value
+			if is_node_ready():
+				_update_necklace_signal()
+			queue_redraw()
+var necklace_offset := 0.0:
+	set(value):
+		necklace_offset = value
+		queue_redraw()
+var necklace_warning := 0.0:
+	set(value):
+		necklace_warning = value
+		queue_redraw()
 ## Only round body artwork rolls; owner base, stack, shield and skill marker stay upright.
 var melon_roll_angle: float = 0.0:
 	set(value):
@@ -40,19 +62,23 @@ var melon_roll_angle: float = 0.0:
 
 func _ready() -> void:
 	set_process(skill_ready() or _golden_top)
+	if necklace_equipped:
+		_update_necklace_signal()
 
 
 func configure(value: PlayerPawn, color: Color, images: bool = true) -> void:
 	pawn = value
 	owner_color = color
 	use_art = images
-	var art: Dictionary = PawnArt.sprite(pawn) if images else {}
-	var key: String = "%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s" % [pawn.kind, pawn.unit_no, pawn.slot, pawn.promoted, pawn.carried.size(), pawn.skill_used, pawn.is_finished, color, pawn.revenge_boost, (art.get("texture") as Texture2D).resource_path if not art.is_empty() else "shape", pawn.shield, pawn.ward, pawn.turn_guard, pawn.melon_size, pawn.ward_box, pawn.trpg_level if pawn.is_trpg() else 0, blind, chip_text]
+	var art: Dictionary = {}
+	if images:
+		art = PawnArt.load_sprite([PawnArt.BASIC_PATH]) if blind else PawnArt.sprite(pawn)
+	var key: String = "%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s" % [pawn.kind, pawn.unit_no, pawn.slot, pawn.promoted, pawn.carried.size(), pawn.skill_used, pawn.is_finished, color, pawn.revenge_boost, (art.get("texture") as Texture2D).resource_path if not art.is_empty() else "shape", pawn.shield, pawn.ward, pawn.turn_guard, pawn.melon_size, pawn.ward_box, pawn.trpg_level if pawn.is_trpg() else 0, blind, agitation_mark, peace_mark]
 	if key == _signature:
 		return
 	# 괴상한 멜론 (v1.1): 함정을 먹을 때마다 한 단계씩 커진다 (최대 3단계 = 1.6배)
-	scale = Vector2.ONE * (1.0 + MELON_GROWTH * pawn.melon_size)
-	var animate_shield: bool = shield_motion and is_inside_tree() and _signature != ""
+	scale = Vector2.ONE if blind else Vector2.ONE * (1.0 + MELON_GROWTH * pawn.melon_size)
+	var animate_shield: bool = shield_motion and not blind and is_inside_tree() and _signature != ""
 	_signature = key
 	artwork = art
 	if not is_rolling_body():
@@ -74,6 +100,8 @@ func artwork_rect() -> Rect2:
 		return BODY_BOX
 	var region: Rect2 = artwork.region
 	var factor: float = minf(BODY_BOX.size.x / region.size.x, BODY_BOX.size.y / region.size.y)
+	if is_board_token and not blind and pawn != null and pawn.kind == GameEnums.PawnKind.COLLECTIBLE:
+		factor *= COLLECTIBLE_BOARD_ART_SCALE
 	var size: Vector2 = region.size * factor
 	return Rect2(Vector2(-size.x / 2.0, -size.y), size)
 
@@ -89,7 +117,7 @@ func melon_roll_radius() -> float:
 
 
 func has_protection() -> bool:
-	return pawn != null and not pawn.is_finished and (pawn.ward or pawn.turn_guard or (pawn.shield and pawn.sub_type() == GameEnums.PawnSubType.BADUK_WHITE))
+	return pawn != null and not blind and not pawn.is_finished and (pawn.ward or pawn.turn_guard or (pawn.shield and pawn.sub_type() == GameEnums.PawnSubType.BADUK_WHITE))
 
 
 func _sync_shield(animate: bool) -> void:
@@ -101,12 +129,13 @@ func _sync_shield(animate: bool) -> void:
 		add_child(_shield_shell)
 	var height: float = BODY_BOX.size.y
 	if not artwork.is_empty():
-		var region: Rect2 = artwork.region
-		height = region.size.y * minf(BODY_BOX.size.x / region.size.x, BODY_BOX.size.y / region.size.y)
+		height = artwork_rect().size.y
 	elif pawn.kind == GameEnums.PawnKind.GO or pawn.kind == GameEnums.PawnKind.YUT or pawn.kind == GameEnums.PawnKind.JANGGI:
 		height = 20.0
 	_shield_shell.fit_body(height, mini(pawn.carried.size(), 3), float(pawn.entity_id))
 	_shield_shell.set_active(has_protection(), animate and not pawn.is_finished)
+	if blind:
+		_shield_shell.hide()
 	_sync_cover_box(height)
 
 
@@ -221,7 +250,7 @@ class ShieldShell extends Node2D:
 
 
 func skill_ready() -> bool:
-	return pawn != null and PawnSkills.has_skill(pawn) and not pawn.skill_used and not pawn.is_finished
+	return pawn != null and not blind and PawnSkills.has_skill(pawn) and not pawn.skill_used and not pawn.is_finished
 
 
 func _process(delta: float) -> void:
@@ -260,38 +289,51 @@ func _draw() -> void:
 		if npc_behavior >= 0:
 			_draw_npc()
 		return
-	if blind:
-		_draw_blind_silhouette()
-		return
+	var color: Color = BLIND_GRAY if blind else owner_color
+	var stack: int = 0 if blind else mini(pawn.carried.size(), 3)
 	# Ground shadow, thick side wall, top ring, and inset make owner color visible.
 	if ground_shadow:
-		_ellipse(Vector2(0, 5 + 4 * mini(pawn.carried.size(), 3)), Vector2(17, 6), Color(0, 0, 0, 0.28))
+		_ellipse(Vector2(0, 5 + 4 * stack), Vector2(17, 6), Color(0, 0, 0, 0.28))
 	# 업은 말은 글자(x2) 대신 받침 원판을 아래로 겹겹이 쌓아 보여 준다 (최대 3장).
-	for layer: int in range(mini(pawn.carried.size(), 3), 0, -1):
+	for layer: int in range(stack, 0, -1):
 		_ellipse(Vector2(0, 3 + 4 * layer), Vector2(15, 6), owner_color.darkened(0.6), INK)
 		_ellipse(Vector2(0, 4 * layer), Vector2(15, 6), owner_color.darkened(0.15), INK, 1.0)
-	_ellipse(Vector2(0, 3), Vector2(15, 6), owner_color.darkened(0.48), INK)
-	_ellipse(Vector2.ZERO, Vector2(15, 6), owner_color, owner_color.lightened(0.5), 1.5)
-	_ellipse(Vector2.ZERO, Vector2(11, 3.5), owner_color.darkened(0.3))
+	_ellipse(Vector2(0, 3), Vector2(15, 6), color.darkened(0.48), INK)
+	_ellipse(Vector2.ZERO, Vector2(15, 6), color, color.lightened(0.5), 1.5)
+	_ellipse(Vector2.ZERO, Vector2(11, 3.5), color.darkened(0.3))
+	var show_necklace: bool = not blind and (necklace_equipped or necklace_warning > 0.0)
+	if show_necklace:
+		_draw_necklace_part(false)
 	if not artwork.is_empty():
 		var texture: Texture2D = artwork.texture
 		var region: Rect2 = artwork.region
 		var rect: Rect2 = artwork_rect()
-		if is_rolling_body():
+		if not blind and is_rolling_body():
 			var center: Vector2 = melon_roll_center()
 			draw_set_transform(center, melon_roll_angle)
 			rect.position -= center
-		if pawn.is_promoted_shogi():
+		if not blind and pawn.is_promoted_shogi():
 			for offset: Vector2 in [Vector2(-1.4,0),Vector2(1.4,0),Vector2(0,-1.4),Vector2(0,1.4)]:
 				draw_texture_rect_region(texture,Rect2(rect.position+offset,rect.size),region,Color("ff5e50"))
 		for offset: Vector2 in [Vector2(-0.7, 0), Vector2(0.7, 0), Vector2(0, -0.7), Vector2(0, 0.7)]:
-			draw_texture_rect_region(texture, Rect2(rect.position + offset, rect.size), region, owner_color.lightened(0.2))
+			draw_texture_rect_region(texture, Rect2(rect.position + offset, rect.size), region, color.lightened(0.2))
 		# Basic tokens use the owner's color; chess/evolved pieces retain their material.
-		var body_color: Color = owner_color if pawn.kind == GameEnums.PawnKind.BASIC else Color.WHITE
+		var body_color: Color = color if blind or pawn.kind == GameEnums.PawnKind.BASIC else Color.WHITE
 		draw_texture_rect_region(texture, rect, region, body_color)
 		draw_set_transform(Vector2.ZERO)
+	elif blind:
+		_draw_basic_shape(color)
 	else:
 		_draw_shape()
+	if show_necklace:
+		_draw_necklace_part(true)
+	if blind:
+		var top := Vector2(0.0, artwork_rect().position.y - 7.0)
+		var width := FONT.get_string_size("?", HORIZONTAL_ALIGNMENT_LEFT, -1, 17).x
+		var origin := top - Vector2(width * 0.5, 0.0)
+		draw_string_outline(FONT, origin, "?", HORIZONTAL_ALIGNMENT_LEFT, -1, 17, 5, INK)
+		draw_string(FONT, origin, "?", HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color.WHITE)
+		return
 	if pawn.is_promoted_shogi() and artwork.is_empty():
 		_poly(PackedVector2Array([Vector2(0,-32),Vector2(13,-23),Vector2(11,-2),Vector2(-11,-2),Vector2(-13,-23)]), Color.TRANSPARENT, Color("ff5e50"), 2.0)
 	# 슬롯 번호 배지는 그리지 않는다 (기물 그림을 가려 거슬린다는 피드백). 몇 번 말인지는 고르기 카드의 [N번 말]이 알려 준다.
@@ -302,17 +344,27 @@ func _draw() -> void:
 		_poly(bolt, Color(1,0.88,0.25,_pulse), INK, 0.9)
 
 
-## 눈먼 자의 도시: 주인·종류를 알 수 없는 회색 [?] 말.
-func _draw_blind_silhouette() -> void:
-	if ground_shadow:
-		_ellipse(Vector2(0, 5), Vector2(17, 6), Color(0, 0, 0, 0.28))
-	var gray := Color("6c7080")
-	_ellipse(Vector2(0, 3), Vector2(15, 6), gray.darkened(0.45), INK)
-	_ellipse(Vector2.ZERO, Vector2(15, 6), gray, gray.lightened(0.4), 1.5)
-	_poly(PackedVector2Array([Vector2(-4,-21),Vector2(4,-21),Vector2(11,-16),Vector2(9,-12),Vector2(5,-15),Vector2(6,-7),Vector2(9,-2),Vector2(3,-2),Vector2(0,-8),Vector2(-3,-2),Vector2(-9,-2),Vector2(-6,-7),Vector2(-5,-15),Vector2(-9,-12),Vector2(-11,-16)]), Color("2f3342"))
-	draw_circle(Vector2(0, -26), 6, INK)
-	draw_circle(Vector2(0, -26), 4.5, Color("2f3342"))
-	_caption("?", Vector2(0, -26), 11, Color("e9ecef"))
+## The rear of the collar sits behind the pawn, with the lock over its chest.
+func _draw_necklace_part(front: bool) -> void:
+	var art_rect := artwork_rect()
+	var center := Vector2(0.0, art_rect.position.y * 0.72 + necklace_offset)
+	var src := PaintedFx.region(NECKLACE_ART)
+	var width := clampf(art_rect.size.x * 0.98, 20.0, 27.0)
+	var size := Vector2(width, width * src.size.y / src.size.x)
+	var dst := Rect2(center - size * 0.5, size)
+	var split := 0.46  # The front rim begins below the opening in the source.
+	if front:
+		src.position.y += src.size.y * split
+		src.size.y *= 1.0 - split
+		dst.position.y += dst.size.y * split
+		dst.size.y *= 1.0 - split
+	else:
+		src.size.y *= split
+		dst.size.y *= split
+	draw_texture_rect_region(NECKLACE_ART, dst, src)
+	if front and necklace_warning > 0.0:
+		var light := center + Vector2(0.0, size.y * 0.30)
+		PaintedFx.stamp(self, PaintedFx.IMPACT, light, Vector2(14.0, 8.0), Color(1.0, 0.24, 0.15, necklace_warning))
 
 
 ## 머리 위 칩들: TRPG 레벨 위에 상태 칩(목걸이·평화·표적)을 쌓는다.
@@ -321,19 +373,67 @@ func _draw_status_chips() -> void:
 	if pawn != null and pawn.is_trpg() and not pawn.is_finished and pawn.has_left_start:
 		_draw_trpg_level()
 		lifted = 17.0
-	if chip_text != "" and pawn != null and not pawn.is_finished:
-		var top: float = (artwork_rect().position.y if not artwork.is_empty() else -34.0) - lifted
-		var size_px: int = 11
-		var text: String = L10n.t(chip_text)
-		var width: float = FONT.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px).x + 10.0
-		var chip := Rect2(Vector2(-width / 2.0, top - 17.0), Vector2(width, 15.0))
-		var box := StyleBoxFlat.new()
-		box.bg_color = Color(0.07, 0.08, 0.12, 0.92)
-		box.border_color = chip_color
-		box.set_border_width_all(2)
-		box.set_corner_radius_all(7)
-		draw_style_box(box, chip)
-		draw_string(FONT, Vector2(chip.position.x + 5.0, chip.position.y + 11.5), text, HORIZONTAL_ALIGNMENT_LEFT, -1, size_px, chip_color.lightened(0.35))
+	if pawn == null or pawn.is_finished:
+		return
+	var top: float = (artwork_rect().position.y if not artwork.is_empty() else -34.0) - lifted
+	if necklace_equipped:
+		var region := PaintedFx.region(NECKLACE_ART)
+		var icon_size := Vector2(42.0, 42.0 * region.size.y / region.size.x)
+		var icon := Rect2(Vector2(-icon_size.x * 0.5, top - icon_size.y - 4.0), icon_size)
+		draw_texture_rect_region(NECKLACE_ART, Rect2(icon.position + Vector2(0.0, 2.0), icon_size), region, Color(0.0, 0.0, 0.0, 0.55))
+		draw_texture_rect_region(NECKLACE_ART, icon, region)
+		if _necklace_signal > 0.0:
+			var light := icon.position + icon.size * Vector2(0.50, 0.80)
+			PaintedFx.stamp(self, PaintedFx.IMPACT, light, Vector2(15.0, 8.0), Color(1.0, 0.10, 0.06, _necklace_signal))
+			draw_rect(Rect2(light - Vector2(2.6, 0.65), Vector2(5.2, 1.3)), Color(1.0, 0.44, 0.27, _necklace_signal))
+	elif peace_mark:
+		_draw_peace_mark(Vector2(0.0, top - 13.0))
+	if agitation_mark:
+		var center := Vector2(0.0, top - 12.0)
+		if necklace_equipped or peace_mark:
+			center = Vector2(artwork_rect().end.x + 11.0, artwork_rect().position.y + 5.0)
+		AGITATION_MARK.draw_mark(self, center, 10.5)
+
+
+func _update_necklace_signal() -> void:
+	if _necklace_signal_tween != null:
+		_necklace_signal_tween.kill()
+		_necklace_signal_tween = null
+	_set_necklace_signal(0.0)
+	if necklace_equipped:
+		_necklace_signal_tween = create_tween().set_loops()
+		_necklace_signal_tween.tween_interval(2.10)
+		_necklace_signal_tween.tween_method(_set_necklace_signal, 0.0, 1.0, 0.05)
+		_necklace_signal_tween.tween_method(_set_necklace_signal, 1.0, 0.0, 0.18)
+
+
+func _set_necklace_signal(strength: float) -> void:
+	_necklace_signal = strength
+	if not blind:
+		queue_redraw()
+
+
+func _draw_peace_mark(center: Vector2) -> void:
+	var mint := Color("b3ffd8")
+	draw_circle(center + Vector2(0.0, 1.0), 12.0, Color("101d1b"), true, -1.0, true)
+	draw_circle(center, 11.0, Color("21483c"), true, -1.0, true)
+	draw_arc(center, 10.1, 0.0, TAU, 32, Color("76cda3"), 1.35, true)
+	draw_set_transform(center, -0.33)
+	draw_polyline(PackedVector2Array([Vector2(-6.3, 6.6), Vector2(-3.0, 3.3), Vector2(0.8, 0.6), Vector2(5.6, -4.8)]), mint, 1.65, true)
+	# Solid leaves keep their silhouette when scaled down with the board.
+	var leaves: Array[Vector4] = [
+		Vector4(-3.7, 4.0, -5.3, -0.5), Vector4(-3.0, 3.3, 2.4, 5.2),
+		Vector4(-0.5, 1.4, -1.6, -4.1), Vector4(1.1, 0.0, 6.0, 2.2),
+		Vector4(3.3, -2.5, 5.3, -7.4),
+	]
+	for leaf: Vector4 in leaves:
+		var from := Vector2(leaf.x, leaf.y)
+		var tip := Vector2(leaf.z, leaf.w)
+		var side := from.direction_to(tip).orthogonal() * 1.55
+		var near := from.lerp(tip, 0.34)
+		var far := from.lerp(tip, 0.68)
+		draw_colored_polygon(PackedVector2Array([from, near - side, far - side, tip, far + side, near + side]), mint)
+	draw_set_transform(Vector2.ZERO)
 
 
 ## TRPG 기물의 레벨 표시: 머리 위에 [Lv.N] 칩이 떠 있어 처치로 올라간 레벨이 한눈에 보인다 (최대 레벨은 금색 [MAX]).
@@ -385,10 +485,14 @@ func _draw_shape() -> void:
 		GameEnums.PawnKind.MONOPOLY:
 			_draw_monopoly(sub)
 		_:
-			# A meeple has arms and two feet; it stays distinct from a chess pawn.
-			_poly(PackedVector2Array([Vector2(-4,-21),Vector2(4,-21),Vector2(11,-16),Vector2(9,-12),Vector2(5,-15),Vector2(6,-7),Vector2(9,-2),Vector2(3,-2),Vector2(0,-8),Vector2(-3,-2),Vector2(-9,-2),Vector2(-6,-7),Vector2(-5,-15),Vector2(-9,-12),Vector2(-11,-16)]),owner_color)
-			draw_circle(Vector2(0,-26),6,INK)
-			draw_circle(Vector2(0,-26),4.5,owner_color)
+			_draw_basic_shape(owner_color)
+
+
+func _draw_basic_shape(color: Color) -> void:
+	# A meeple has arms and two feet; it stays distinct from a chess pawn.
+	_poly(PackedVector2Array([Vector2(-4,-21),Vector2(4,-21),Vector2(11,-16),Vector2(9,-12),Vector2(5,-15),Vector2(6,-7),Vector2(9,-2),Vector2(3,-2),Vector2(0,-8),Vector2(-3,-2),Vector2(-9,-2),Vector2(-6,-7),Vector2(-5,-15),Vector2(-9,-12),Vector2(-11,-16)]), color)
+	draw_circle(Vector2(0,-26),6,INK)
+	draw_circle(Vector2(0,-26),4.5,color)
 
 
 func _draw_chess(sub: GameEnums.PawnSubType) -> void:

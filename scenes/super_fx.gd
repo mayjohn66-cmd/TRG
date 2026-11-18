@@ -27,6 +27,7 @@ const BOND_CUFF = preload("res://scenes/bond_cuff.gd")
 const NITRO_STAGE = preload("res://scenes/nitro_stage.gd")
 const FATE_COIN = preload("res://scenes/fate_coin_3d.gd")
 const STAGE_SPOTLIGHT = preload("res://scenes/pawn_stage_spotlight.gd")
+const AGITATION_MARK = preload("res://scenes/agitation_mark.gd")
 
 const GOLD: Color = Color("ffd43b")
 const RED: Color = Color("ff3b30")
@@ -36,6 +37,11 @@ const NEON: Color = Color("3bc9db")
 const NEON_HOT: Color = Color("f783ac")
 const CHAIN: Color = Color("ff4d4d")
 const BREAD: Color = Color("d9a05b")
+const MINT: Color = Color("9af6cb")
+const COLLAR: Color = Color("ffbb5d")
+const STATUS_EFFECTS: Array[StringName] = [
+	SuperAugments.PACIFIST, SuperAugments.AGITATE, SuperAugments.BLIND_CITY, SuperAugments.NECKLACE,
+]
 
 var board: MainBoard
 var _generation: int = 0
@@ -47,14 +53,19 @@ func _init(owner: MainBoard) -> void:
 
 ## 이 초증강이 연출을 갖고 있는가 (폭주 기관차는 기관차 무대가 맡는다).
 static func handles(effect: StringName) -> bool:
-	return effect in [SuperAugments.FLIP, SuperAugments.REDISTRIBUTE, SuperAugments.DEVIL, SuperAugments.MINEFIELD, SuperAugments.RAID,
+	return is_status_effect(effect) or effect in [SuperAugments.FLIP, SuperAugments.REDISTRIBUTE, SuperAugments.DEVIL, SuperAugments.MINEFIELD, SuperAugments.RAID,
 		SuperAugments.GAMBLER, SuperAugments.CASTLING, SuperAugments.BAKERY, SuperAugments.SNIPER, SuperAugments.NITRO, SuperAugments.GUARANTEE]
+
+
+static func is_status_effect(effect: StringName) -> bool:
+	return STATUS_EFFECTS.has(effect)
 
 
 ## 초증강 하나의 연출을 재생하고 끝날 때까지 기다린다. changes: [{"kind": "teleport"|"start"|"finish"|"place"|"steal"|"bond"|"nitro"|"castle", ...}]
 func play(effect: StringName, player_id: int, changes: Array) -> void:
 	_generation = board._fx_generation
-	_title(effect, player_id)
+	if not is_status_effect(effect):
+		_title(effect, player_id)
 	match effect:
 		SuperAugments.FLIP: await _flip(player_id, changes)
 		SuperAugments.REDISTRIBUTE: await _redistribute(player_id, changes)
@@ -67,6 +78,173 @@ func play(effect: StringName, player_id: int, changes: Array) -> void:
 		SuperAugments.SNIPER: await _sniper(player_id, changes)
 		SuperAugments.NITRO: await _nitro(changes)
 		SuperAugments.GUARANTEE: await _guarantee(changes)
+		SuperAugments.PACIFIST: await _pacifist(player_id)
+		SuperAugments.AGITATE: await _agitate(player_id, _first(changes, "status_pick"))
+		SuperAugments.BLIND_CITY: await _blind_city(player_id)
+		SuperAugments.NECKLACE: await _necklace(player_id, _first(changes, "status_pick"))
+
+
+func _pacifist(player_id: int) -> void:
+	var pace: float = board._motion_pace()
+	var source: Vector2 = board._profile_center(player_id)
+	if source.is_finite():
+		_ring(_local(source), MINT, 64.0, 2.0, 0.55 * pace)
+	Sfx.play(&"good", -6.0)
+	for pawn: PlayerPawn in SuperAugments.board_leaders(board.state, player_id):
+		var view := _view(pawn.entity_id)
+		if view == null or not view.visible:
+			continue
+		var wave := _status_visual(&"peace", view.position)
+		_run_status_visual(wave, 0.60 * pace)
+	await _wait(0.60 * pace)
+
+
+func _agitate(player_id: int, details: Dictionary) -> void:
+	var target: int = int(details.get("target", -1))
+	if target < 0:
+		return
+	var pace: float = board._motion_pace()
+	var source: Vector2 = board._profile_center(player_id)
+	var center: Vector2 = board._board_center()
+	if source.is_finite():
+		var discarded: int = int(details.get("discarded", 0))
+		for index: int in discarded:
+			var spread := float(index) - float(discarded - 1) * 0.5
+			_card_back_flight(source, center + Vector2(spread * 18.0, 38.0), 0.22 * pace, minf(index * 0.055, 0.25) * pace, true)
+		if discarded > 0:
+			Sfx.play(&"card_get", -9.0)
+			await _wait(minf(0.24 + (discarded - 1) * 0.055, 0.48) * pace)
+			if not _alive():
+				return
+	var portrait: Vector2 = board._profile_center(target)
+	if portrait.is_finite():
+		_run_status_visual(_status_visual(&"target", _local(portrait)), 0.60 * pace)
+	if not board._blind_board_visible():
+		for pawn: PlayerPawn in SuperAugments.board_leaders(board.state, target):
+			var view := _view(pawn.entity_id)
+			if view != null and view.visible:
+				_run_status_visual(_status_visual(&"target", view.position - Vector2(0.0, 22.0)), 0.60 * pace)
+	Sfx.play(&"attack_alert", -7.0)
+	await _wait(0.60 * pace)
+
+
+func _blind_city(player_id: int) -> void:
+	var pace: float = board._motion_pace()
+	var rect: Rect2 = board._board_rect()
+	var veil := _status_visual(&"fog", _local(rect.get_center()))
+	veil.z_index = 0
+	_layer().move_child(veil, 0)
+	veil.extent = rect.size
+	_run_status_visual(veil, 0.90 * pace)
+	await _wait(0.41 * pace)
+	if not _alive():
+		return
+	board._reveal_super_status(player_id, SuperAugments.BLIND_CITY)
+	await _wait(0.49 * pace)
+
+
+func _necklace(player_id: int, details: Dictionary) -> void:
+	var view := _view(int(details.get("pawn", -1)))
+	if view == null or not view.visible:
+		return
+	var token := view.get_node("Bounce/Token") as PawnToken
+	var pace: float = board._motion_pace()
+	token.necklace_offset = -38.0
+	board._reveal_super_status(player_id, SuperAugments.NECKLACE)
+	var drop := token.create_tween()
+	drop.tween_property(token, "necklace_offset", 0.0, 0.36 * pace).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	drop.tween_callback(func() -> void:
+		if _alive():
+			Sfx.play(&"toy_click", -5.0))
+	await _wait(0.66 * pace)
+
+
+func necklace_blast(pawn_id: int, tile: int) -> void:
+	var generation: int = board._fx_generation
+	var pace: float = board._motion_pace()
+	var view := _view(pawn_id)
+	var at: Vector2 = view.position if view != null and view.visible else board._tile_center(tile)
+	var token: PawnToken = view.get_node("Bounce/Token") if view != null and view.visible else null
+	if token != null:
+		var blink := token.create_tween()
+		token.necklace_warning = 0.25
+		blink.tween_property(token, "necklace_warning", 1.0, 0.10 * pace)
+		blink.tween_property(token, "necklace_warning", 0.25, 0.07 * pace)
+		blink.tween_property(token, "necklace_warning", 1.0, 0.10 * pace)
+		blink.tween_property(token, "necklace_warning", 0.0, 0.09 * pace)
+	Sfx.play(&"charge", -8.0)
+	await _wait(0.36 * pace)
+	if not is_instance_valid(board) or generation != board._fx_generation:
+		return
+	if is_instance_valid(token):
+		token.necklace_equipped = false
+	_run_status_visual(_status_visual(&"blast", at - Vector2(0.0, 24.0)), 0.30 * pace)
+	_ring(at, COLLAR, 88.0, 4.0, 0.34 * pace)
+	board._burst_shards(at - Vector2(0.0, 22.0), COLLAR, 14)
+	board.screen_shake(7.0, 0.22)
+	Sfx.play(&"slam", -3.0)
+	await _wait(0.15 * pace)
+
+
+func _status_visual(kind: StringName, at: Vector2) -> StatusVisual:
+	var visual := StatusVisual.new()
+	visual.name = "SuperStatus_%s" % kind
+	visual.kind = kind
+	visual.position = at
+	visual.z_index = 65
+	_layer().add_child(visual)
+	return visual
+
+
+func _run_status_visual(visual: StatusVisual, duration: float) -> void:
+	board._mark_oneshot(visual, duration)
+	var tween := visual.create_tween()
+	tween.tween_property(visual, "progress", 1.0, duration)
+	tween.tween_callback(visual.queue_free)
+
+
+class StatusVisual extends Node2D:
+	var kind: StringName
+	var extent := Vector2.ZERO
+	var progress := 0.0:
+		set(value):
+			progress = value
+			queue_redraw()
+
+	func _draw() -> void:
+		var opacity := smoothstep(0.0, 0.17, progress) * (1.0 - smoothstep(0.69, 1.0, progress))
+		match kind:
+			&"peace":
+				var radius := lerpf(17.0, 68.0, ease(progress, 0.5))
+				var light := Color(MINT, opacity)
+				PaintedFx.stamp(self, PaintedFx.RIPPLE, Vector2.ZERO, Vector2(radius * 2.0, radius), light)
+				var canopy := Color(MINT, opacity * 0.52)
+				PaintedFx.stamp(self, PaintedFx.IMPACT, Vector2(0.0, -22.0), Vector2(62.0, 76.0), canopy, PI * 0.25)
+				for index: int in 7:
+					var angle := TAU * index / 7.0 + progress
+					var point := Vector2.from_angle(angle) * Vector2(radius, radius * 0.4) - Vector2(0.0, progress * 49.0)
+					PaintedFx.stamp(self, PaintedFx.FLECK, point, Vector2(19.0, 9.0), light, angle)
+			&"target":
+				var radius := lerpf(67.0, 31.0, ease(minf(progress * 1.8, 1.0), 0.36))
+				AGITATION_MARK.draw_mark(self, Vector2.ZERO, radius, opacity)
+			&"fog":
+				var alpha := smoothstep(0.0, 0.34, progress) * (1.0 - smoothstep(0.53, 1.0, progress))
+				for index: int in 7:
+					var row := float(index % 3) - 1.0
+					var drift := (progress - 0.5) * (0.87 + index * 0.05)
+					var point := extent * Vector2(drift + (index - 3.0) * 0.12, row * 0.20)
+					var size := extent * Vector2(0.62 + 0.04 * (index % 2), 0.48)
+					var tint := Color(Color("a9adc7"), alpha * 0.35) if index % 2 == 0 else Color(Color("f0edf7"), alpha * 0.30)
+					PaintedFx.stamp(self, PaintedFx.SMOKE, point, size, tint, row * 0.15)
+			&"blast":
+				var expansion := ease(progress, 0.36)
+				var flash := 1.0 - smoothstep(0.08, 0.98, progress)
+				for index: int in 6:
+					var angle := TAU * index / 6.0 - PI * 0.12
+					var ray := Vector2.from_angle(angle)
+					PaintedFx.flame(self, ray * 5.0, ray, (35.0 + 48.0 * expansion) * (1.0 - index % 2 * 0.20), 11.0, Color(COLLAR, flash), angle)
+				var size := 40.0 + 56.0 * expansion
+				PaintedFx.stamp(self, PaintedFx.IMPACT, Vector2.ZERO, Vector2.ONE * size, Color(Color("fff4c8"), flash))
 
 
 # ---------------------------------------------------------------------------
