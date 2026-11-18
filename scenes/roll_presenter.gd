@@ -9,7 +9,7 @@ extends PanelContainer
 ## 연출이 끝났다 (취소 포함). play()는 이 시그널을 await 한다.
 signal finished
 
-const SUPPORTED: Array[StringName] = [&"D6", &"CHINCHIRO", &"YUT", &"LIFE_ROULETTE", &"SLOT_777", &"HOLDEM", &"DICE_HWATU", &"DICE_MAHJONG", &"DICE_TAROT", &"REVOLVER", &"DICE_STOCK", &"DICE_DARTS", &"DICE_OMIKUJI", &"DICE_ICECREAM"]
+const SUPPORTED: Array[StringName] = [&"D6", &"CHINCHIRO", &"YUT", &"LIFE_ROULETTE", &"SLOT_777", &"HOLDEM", &"DICE_HWATU", &"DICE_MAHJONG", &"DICE_TAROT", &"REVOLVER", &"DICE_STOCK", &"DICE_DARTS", &"DICE_OMIKUJI", &"DICE_ICECREAM", &"DICE_COOKIE", &"DICE_CAPSULE"]
 const YUT_NAMES: Dictionary = {0: "낙", 1: "도", 2: "개", 3: "걸", 4: "윷", 5: "모"}
 const SLOT_SYMBOLS: Array[String] = ["체리", "레몬", "종", "BAR", "다이아", "7"]
 const SUITS: Array[String] = ["♣", "◆", "♥", "♠"]
@@ -105,6 +105,8 @@ var _new_audio:=PresentationAudio.new()
 var _dart_view: DartBoardView = null
 var _omikuji_view: OmikujiView = null
 var _icecream_view: IceCreamView = null
+var _cookie_view: FortuneCookieView = null
+var _capsule_view: CapsuleGachaView = null
 var _gun_intro: float = 0.0
 var _gun_pull_started: bool = false
 ## 3D 시간 배속 (투척 도구는 압축한다).
@@ -203,7 +205,7 @@ func play(tool_id: StringName, result: Dictionary, power: float = 0.5, continues
 	_power = clampf(power, 0.0, 1.0)
 	_result = result
 	_hold_after = tool_id == &"REVOLVER" and bool(result.get("can_continue", false))
-	if tool_id in [&"HOLDEM", &"DICE_HWATU", &"DICE_TAROT", &"DICE_MAHJONG", &"YUT", &"LIFE_ROULETTE", &"SLOT_777", &"REVOLVER", &"DICE_OMIKUJI", &"DICE_ICECREAM"]:
+	if tool_id in [&"HOLDEM", &"DICE_HWATU", &"DICE_TAROT", &"DICE_MAHJONG", &"YUT", &"LIFE_ROULETTE", &"SLOT_777", &"REVOLVER", &"DICE_OMIKUJI", &"DICE_ICECREAM", &"DICE_COOKIE", &"DICE_CAPSULE"]:
 		last_display = ""
 	_mode = tool_id
 	_t = 0.0
@@ -237,6 +239,20 @@ func play(tool_id: StringName, result: Dictionary, power: float = 0.5, continues
 			cues.append(PresentationAudio.cue(OmikujiView.REVEAL_AT + 0.08, &"good" if fortune == &"great" else &"bad", -6.0))
 		if fortune == &"great":
 			cues.append(PresentationAudio.cue(OmikujiView.FOLD_AT, &"ticket_rustle", -10.0))
+	elif tool_id == &"DICE_CAPSULE":
+		cues.append(PresentationAudio.cue(CapsuleGachaView.COIN_AT + 0.45, &"toy_click", -8.0))
+		for at: float in [0.95, 1.15, 1.35, 1.55]:
+			cues.append(PresentationAudio.cue(at, &"yut_clack", -11.0))
+		cues.append(PresentationAudio.cue(CapsuleGachaView.DROP_AT, &"card_throw", -8.0))
+		cues.append(PresentationAudio.cue(CapsuleGachaView.OPEN_AT, &"icecream_snap", -5.0))
+		cues.append(PresentationAudio.cue(CapsuleGachaView.REVEAL_AT, &"good" if bool(_result.get("details", {}).get("secret", false)) else &"card_pick", -6.0))
+	elif tool_id == &"DICE_COOKIE":
+		cues.append(PresentationAudio.cue(0.18, &"toy_click", -9.0))
+		for at: float in [0.55, 0.72, 0.88]:
+			cues.append(PresentationAudio.cue(at, &"yut_clack", -12.0))
+		cues.append(PresentationAudio.cue(FortuneCookieView.CRACK_AT, &"icecream_snap", -4.0))
+		cues.append(PresentationAudio.cue(FortuneCookieView.UNFOLD_AT, &"ticket_rustle", -9.0))
+		cues.append(PresentationAudio.cue(FortuneCookieView.REVEAL_AT, &"good" if bool(_result.get("details", {}).get("jackpot", false)) else &"card_pick", -6.0))
 	elif tool_id == &"DICE_ICECREAM":
 		cues.append(PresentationAudio.cue(IceCreamView.BITE_AT, &"icecream_snap", -5.0))
 		cues.append(PresentationAudio.cue(IceCreamView.REVEAL_AT, &"icecream_reveal", -7.0))
@@ -767,6 +783,24 @@ func _build(tool_id: StringName) -> void:
 			_stage.add_child(_omikuji_view)
 			_omikuji_view.begin(_result.get("details", {}), _kept_prop_count)
 			_make_card_result(OmikujiView.caption(_result.get("details", {}), int(_result.get("steps", 0))))
+		&"DICE_CAPSULE":
+			_title.text = "캡슐뽑기"
+			_total = CapsuleGachaView.TOTAL_TIME
+			_capsule_view = CapsuleGachaView.new()
+			_stage.add_child(_capsule_view)
+			var capsule_details: Dictionary = (_result.get("details", {}) as Dictionary).duplicate()
+			capsule_details["steps"] = int(_result.get("steps", 0))
+			_capsule_view.begin(capsule_details)
+			_make_card_result(CapsuleGachaView.caption(_result.get("details", {}), int(_result.get("steps", 0))))
+		&"DICE_COOKIE":
+			_title.text = "포츈쿠키"
+			_total = FortuneCookieView.TOTAL_TIME
+			_cookie_view = FortuneCookieView.new()
+			_stage.add_child(_cookie_view)
+			var cookie_details: Dictionary = (_result.get("details", {}) as Dictionary).duplicate()
+			cookie_details["steps"] = int(_result.get("steps", 0))
+			_cookie_view.begin(cookie_details)
+			_make_card_result(FortuneCookieView.caption(_result.get("details", {}), int(_result.get("steps", 0))))
 		&"DICE_ICECREAM":
 			_title.text = "아이스크림"
 			_total = IceCreamView.AGAIN_TOTAL_TIME if bool(_result.get("details", {}).get("again", false)) else IceCreamView.TOTAL_TIME
@@ -979,6 +1013,8 @@ func _update(t: float) -> void:
 		&"DICE_DARTS": _update_2d(_dart_view, t)
 		&"DICE_OMIKUJI": _update_2d(_omikuji_view, t)
 		&"DICE_ICECREAM": _update_2d(_icecream_view, t)
+		&"DICE_COOKIE": _update_2d(_cookie_view, t)
+		&"DICE_CAPSULE": _update_2d(_capsule_view, t)
 
 
 ## v1.1 2D 결과 그림: 같은 시계로 그리고, 결과가 정해지면 아래 글을 띄운다.
@@ -1159,4 +1195,6 @@ func _final_text(tool_id: StringName, result: Dictionary) -> String:
 		&"DICE_DARTS": return ToolDarts.hit_text(details, int(result.get("steps", 0)))
 		&"DICE_OMIKUJI": return OmikujiView.caption(details, int(result.get("steps", 0)))
 		&"DICE_ICECREAM": return IceCreamView.caption(details, int(result.get("steps", 0)))
+		&"DICE_COOKIE": return FortuneCookieView.caption(details, int(result.get("steps", 0)))
+		&"DICE_CAPSULE": return CapsuleGachaView.caption(details, int(result.get("steps", 0)))
 	return ""

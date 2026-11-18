@@ -31,7 +31,7 @@ static func targets(game: GameState, player_id: int) -> Array[int]:
 	for other: int in game.player_ids:
 		if other != player_id and not game.is_graduated(other):
 			result.append(other)
-	return result
+	return SuperStatus.filter_attack_targets(game, player_id, result)  # 날조와 선동: 공격 카드는 대상에게만
 
 
 func _run() -> void:

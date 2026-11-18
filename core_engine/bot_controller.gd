@@ -237,6 +237,12 @@ func _step_draft() -> void:
 	var definition: AugmentDef = AugmentRegistry.get_def(offers[index])
 	if definition.category == GameEnums.AugmentCategory.PAWN_EVOLUTION:
 		params["pawn_id"] = BotBrain.choose_evolution_pawn(manager.state, bot_id)
+	elif definition.category == GameEnums.AugmentCategory.SUPER_GAMBLE and definition.payload == SuperAugments.AGITATE:
+		params["target_player"] = SuperAugments.default_agitation_target(manager.state, bot_id)  # 결승에 가장 가까운 상대에게 모든 공격을 몰아 준다
+	elif definition.category == GameEnums.AugmentCategory.SUPER_GAMBLE and definition.payload == SuperAugments.NECKLACE:
+		var front: PlayerPawn = manager.state.front_pawn_of(bot_id)  # 목걸이는 결승이 가까운 말에: 이번 라운드 안에 끝내지 못하면 터진다
+		if front != null:
+			params["pawn_id"] = front.entity_id
 	_act(bot_id, &"pick_augment", params)
 	_delay(DELAY_DRAFT)
 

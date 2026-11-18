@@ -2705,12 +2705,12 @@ PROGRESS / 진행률,PROGRESS,PROGRESS／進行度
 빗나감,Missed,外れ
 교칙,Law,教則
 내 증강,My Augments,所持オーグメント
-"손패 %d장 (눌러서 펼치기)","Hand: %d cards (tap to open)",手札%d枚（タップで開く）
+손패 %d장 (눌러서 펼치기),Hand: %d cards (tap to open),手札%d枚（タップで開く）
 이번 라운드 증강!,Augment this round!,今ラウンドはオーグメント！
 다음 라운드 증강!,Augment next round!,次のラウンドはオーグメント！
 다음 증강까지 %d라운드,Next augment in %d rounds,次のオーグメントまで%dラウンド
 남은 증강 없음,No more augments,残りのオーグメントなし
-"노란 숫자는 증강 라운드, 붉은 테두리는 템포 업이 시작되는 라운드를 뜻합니다. 템포 업 1단계부터 고급 증강(법전 등), 2단계부터 초증강도 증강 선택지에 합류합니다.","Yellow numbers mark augment rounds. Red borders mark rounds that start a Tempo Up stage. Advanced augments (Special Wins, etc.) join the choices from Tempo Up 1, and Super Augments from Tempo Up 2.","黄色の数字はオーグメントラウンド、赤い枠はテンポアップの各段階が始まるラウンドを表します。テンポアップ1段階から上級オーグメント(法典など)、2段階から超オーグメントも選択肢に加わります。"
+"노란 숫자는 증강 라운드, 붉은 테두리는 템포 업이 시작되는 라운드를 뜻합니다. 템포 업 1단계부터 고급 증강(법전 등), 2단계부터 초증강도 증강 선택지에 합류합니다.","Yellow numbers mark augment rounds. Red borders mark rounds that start a Tempo Up stage. Advanced augments (Special Wins, etc.) join the choices from Tempo Up 1, and Super Augments from Tempo Up 2.",黄色の数字はオーグメントラウンド、赤い枠はテンポアップの各段階が始まるラウンドを表します。テンポアップ1段階から上級オーグメント(法典など)、2段階から超オーグメントも選択肢に加わります。
 ★ 다음 라운드 증강 선택!,★ Pick an augment next round!,★ 次のラウンドはオーグメント選択！
 증강 선택!,Choose an Augment!,増強選択！
 총 %d칸 이동,Move %d spaces total,合計 %dマス移動
@@ -2778,7 +2778,7 @@ PROGRESS / 진행률,PROGRESS,PROGRESS／進行度
 %s · 쌓인 윷이 모두 날아갔다 · 턴 종료,%s · The stacked throws are all lost · turn ends,%s · 溜めた出目が全て消えた · 番終了
 %s · %d칸 쌓음 · 한 번 더!,%s · %d stacked · Throw again!,%s · %dマス溜め · もう一回！
 %s · %d칸 쌓음 · 이제 이동!,%s · %d stacked · Time to move!,%s · %dマス溜め · いざ移動！
-"낙! 윷가락이 판 밖으로 - 쌓인 윷도 모두 날아가고 턴 종료",Nak! The sticks flew off the board - the stacked throws are lost too and the turn ends,落！ユッが盤の外へ - 溜めた出目も全て消えて番終了
+낙! 윷가락이 판 밖으로 - 쌓인 윷도 모두 날아가고 턴 종료,Nak! The sticks flew off the board - the stacked throws are lost too and the turn ends,落！ユッが盤の外へ - 溜めた出目も全て消えて番終了
 %s (%d칸 쌓음 · 한 번 더),%s (%d stacked · throw again),%s（%dマス溜め・もう一回）
 윷·모는 쌓고 계속 던짐 (최대 3번),Yut/Mo stack and you keep throwing (max 3),ユッ・モは溜めて投げ続ける（最大3回）
 0칸 · 턴 종료 (쌓인 윷도 사라짐),0 spaces · turn ends (stacked values are lost too),0マス · 番終了（溜めた出目も消える）
@@ -2887,3 +2887,128 @@ TRPG,TRPG,TRPG
 카드 보너스 %+d,Card bonus %+d,カードボーナス %+d
 %s → %d칸 → 총 %d칸 전진!,%s → %d spaces → %d total!,%s → %dマス → 合計 %dマス前進！
 [가속 보너스] P%d: 눈금 %d → %d! (%s),[Speed Bonus] P%d: roll %d → %d! (%s),[加速ボーナス] P%d: 出目 %d → %d！ (%s)
+포츈쿠키,Fortune Cookie,フォーチュンクッキー
+행운의 종이,Lucky Slip,幸運の紙
+행운의 숫자 %02d,Lucky number %02d,ラッキーナンバー %02d
+작은 걸음도 걸음이에요,Even a small step is a step,小さな一歩も一歩です
+서두르지 않아도 도착해요,You'll get there without rushing,急がなくても着きますよ
+오늘은 무난한 하루가 될 거예요,Today will be a steady day,今日は穏やかな一日になるでしょう
+좋은 바람이 뒤에서 불어와요,A good wind blows from behind,良い風が後ろから吹いてきます
+뜻밖의 행운이 찾아와요,Unexpected luck is coming,思いがけない幸運が訪れます
+지금이 바로 달려 나갈 때!,Now is the time to run!,今こそ走り出す時！
+대박! 쿠키가 활짝 웃고 있어요,Jackpot! The cookie is grinning wide,大当たり！クッキーが満面の笑み
+★대박 쿠키! %d칸,★Jackpot Cookie! %d spaces,★大当たりクッキー！%dマス
+쿠키 속 종이 → %d칸,Slip inside → %d spaces,クッキーの紙 → %dマス
+깨기!,Crack!,割る！
+쿠,Fo,ク
+종이표: 쿠키 속 종이에 적힌 1~6칸 / ★대박 쿠키(8칸),Paper: 1~6 spaces written on the slip / ★Jackpot Cookie (8),紙表: 紙に書かれた1〜6マス / ★大当たりクッキー(8マス)
+쿠키를 깨면 종이가 나온다! 펼쳐서 몇 칸 갈지 확인!,Crack it open! The paper inside says how far you go!,クッキーを割ると紙が出てくる！開いて進むマスを確認！
+쿠키를 깨서 종이를 펼쳐라!,Crack the cookie and unfold the slip!,クッキーを割って紙を開こう！
+★대박 8칸 · 종이에 적힌 대로,★Jackpot 8 · as the slip says,★大当たり8マス · 紙の通り
+1칸 (10%) · 2칸 (15%),1 (10%) · 2 (15%),1マス (10%) · 2マス (15%)
+3칸 (25%) · 4칸 (20%),3 (25%) · 4 (20%),3マス (25%) · 4マス (20%)
+5칸 (15%) · 6칸 (10%),5 (15%) · 6 (10%),5マス (15%) · 6マス (10%)
+종이에 적힌 대로,As written on the slip,紙に書かれた通り
+★대박 쿠키 (5%),★Jackpot Cookie (5%),★大当たりクッキー (5%)
+쿠키를 깨면 안의 종이에 몇 칸 갈지 적혀 있어요 · 순수한 운,Crack it and the slip inside says how far you go · pure luck,クッキーを割ると中の紙に進むマス数が書いてあります · 純粋な運
+[치비구루미] P%d: 턴 종료 눈금을 다시 굴렸습니다!,[Chibigurumi] P%d: rerolled a turn-ending result!,[チビぐるみ] P%d: 番終了の出目を振り直しました！
+치비구루미 덕분에 턴 종료를 피해 다시 굴림!,Chibigurumi saved the turn and rerolled!,チビぐるみのおかげで番終了を避けて振り直し！
+치비구루미 재굴림!,Chibigurumi reroll!,チビぐるみ振り直し！
+수집품 코롯토 %+d,Collectible Corotto %+d,コレクション コロット %+d
+[코롯토] 수집 완료! 주사위 +1!,[Corotto] Collected! Dice +1!,[コロット] コンプ！ サイコロ+1！
+[치비구루미] 수집 완료! 턴 종료 방어!,[Chibigurumi] Collected! Turn-end guard!,[チビぐるみ] コンプ！ 番終了ガード！
+수집품,Collectibles,コレクション
+수집품:코롯토,Collectible: Corotto,コレクション:コロット
+수집품:치비구루미,Collectible: Chibigurumi,コレクション:チビぐるみ
+완주하면 수집 버프: 주사위 결과 +1 (영구),On finishing: collection buff — dice result +1 (permanent),完走すると収集バフ: サイコロの出目+1（永続）
+완주하면 수집 버프: 턴 종료 눈금이 나와도 절반 확률로 다시 굴림,On finishing: collection buff — a turn-ending roll is rerolled half the time,完走すると収集バフ: 番終了の出目が出ても半分の確率で振り直し
+코롯토,Corotto,コロット
+치비구루미,Chibigurumi,チビぐるみ
+"코롯토, 치비구루미. 완주하면 수집 버프를 얻어요!",Corotto and Chibigurumi. Finishing a collectible grants a buff!,コロット、チビぐるみ。完走するとコレクションバフがもらえます！
+코,Co,コ
+치,Cg,チ
+캡슐뽑기,Capsule Gacha,カプセルガチャ
+미니어처,Miniature,ミニチュア
+흔함,Common,ノーマル
+보통,Uncommon,アンコモン
+희귀,Rare,レア
+시크릿,Secret,シークレット
+★시크릿 %s 미니어처! %d칸 + 한 번 더,★Secret %s miniature! %d spaces + Extra Roll,★シークレット %s ミニチュア！%dマス＋もう1回
+%s 미니어처 → %d칸,%s miniature → %d spaces,%s ミニチュア → %dマス
+미니어처표: 버터(2) / 셰이디(3) / 벨리타(4) / 죠안(6) / ★시크릿 에르핀(8칸+한번더),Miniatures: Butter(2) / Shady(3) / Belita(4) / Joan(6) / ★Secret Erpin(8 + Extra Roll),ミニチュア表: バター(2) / シェイディ(3) / ベリータ(4) / ジョアン(6) / ★シークレット エルピン(8マス+もう1回)
+코인을 넣고 돌리면 캡슐이 나온다! 안의 미니어처가 칸수를 정한다!,Insert a coin and turn the knob! The miniature inside sets your move!,コインを入れて回すとカプセルが出る！中のミニチュアが進むマスを決める！
+코인을 넣고 돌려라! 캡슐 속 미니어처가 칸수를 정한다!,Insert a coin and turn! The miniature inside sets your move!,コインを入れて回そう！中のミニチュアが進むマスを決める！
+★시크릿 에르핀 8칸+한 번 더,★Secret Erpin 8 + Extra Roll,★シークレット エルピン 8マス+もう1回
+캡,Cp,カ
+버터 (35%) · 셰이디 (30%),Butter (35%) · Shady (30%),バター (35%) · シェイディ (30%)
+2칸 / 3칸 (흔함),2 / 3 spaces (Common),2マス / 3マス (ノーマル)
+벨리타 (20%),Belita (20%),ベリータ (20%)
+4칸 (보통),4 spaces (Uncommon),4マス (アンコモン)
+죠안 (10%),Joan (10%),ジョアン (10%)
+6칸 (희귀),6 spaces (Rare),6マス (レア)
+★시크릿 에르핀 (5%),★Secret Erpin (5%),★シークレット エルピン (5%)
+버튼만 누르면 코인 넣기 · 돌리기 · 캡슐 열기까지 자동 · 순수한 운,"One press does it all: coin, turn, open · pure luck",ボタン1回でコイン投入・回す・開封まで自動 · 純粋な運
+"1,000","1,000","1,000"
+[단골 목표],[Regular Goal],[常連目標]
+마녀 상점 방문! (%d/%d),Witch shop visit! (%d/%d),魔女の店に来店！ (%d/%d)
+마녀 상점,Witch Shop,魔女の店
+마녀의 가마솥,Witch's Cauldron,魔女の大釜
+[마녀의 가마솥] P%d: %s! %s,[Witch's Cauldron] P%d: %s! %s,[魔女の大釜] P%d: %s！ %s
+마녀는 엄청난 것을 훔쳐갔습니다.,The witch stole something incredible.,魔女はとんでもないものを盗んでいきました。
+상점!,Shop!,お店！
+가마솥!,Cauldron!,大釜！
+편의점!,Store!,コンビニ！
+벨라티엔 왕국 보기,View Belatien Kingdom,ベラティエン王国を見る
+마녀 상점 (벨라티엔 왕국),Witch Shop (Belatien),魔女の店 (ベラティエン王国)
+마녀의 가마솥 (벨라티엔 왕국),Cauldron (Belatien),魔女の大釜 (ベラティエン王国)
+옷장 자리에 서요. 딱 멈추면 [b]물약이 랜덤으로 끓어요[/b]. 좋은 물약 3종과 [b]나쁜 물약 2종[/b]이 같은 확률로 나와요. 지나가기만 하면 아무 일도 없어요.,It stands where the wardrobes are. Stop exactly on it and [b]a random potion brews[/b]. 3 good potions and [b]2 bad potions[/b] come out with equal odds. Passing by does nothing.,クローゼットの場所にあります。ぴったり止まると[b]ランダムな薬が煮えます[/b]。良い薬3種と[b]悪い薬2種[/b]が同じ確率で出ます。通り過ぎるだけでは何も起きません。
+마녀 상점 (카드 1장),Witch Shop (1 card),魔女の店 (カード1枚)
+마녀의 가마솥 (랜덤 물약),Witch's Cauldron (random potion),魔女の大釜 (ランダムな薬)
+[특수 승리] Bad Carrot,[Special Win] Bad Carrot,[特殊勝利] Bad Carrot
+마녀 상점에 {p1}회 방문,Visit the witch shop {p1} times,魔女の店に{p1}回来店
+벨라티엔 왕국,Belatien Kingdom,ベラティエン王国
+"마녀들의 도시 · 마녀 상점(카드)과 마녀의 가마솥(랜덤 물약, 나쁜 물약도 있다)","City of witches · Witch shops (cards) and witch's cauldrons (random potions, some bad)",魔女たちの都市 · 魔女の店(カード)と魔女の大釜(ランダムな薬、悪い薬もある)
+힘의 물약,Potion of Power,力の薬
+신속의 물약,Potion of Swiftness,俊足の薬
+보호의 물약,Potion of Protection,守りの薬
+개구리 물약,Frog Potion,カエルの薬
+폭발 물약,Explosive Potion,爆発の薬
+다음 굴림 -2칸,Next roll -2,次の出目 -2マス
+펑! 뒤로 2칸,Boom! Back 2,ボン！2マス後退
+"평화주의자! %d번째 라운드 증강전까지 내 모든 말은 잡기 면역이지만, 나도 아무도 잡을 수 없습니다","Pacifist! Until round %d's augment round, all your pawns are immune to capture, but you cannot capture anyone",平和主義者！第%dラウンドのオーグメント戦まで、自分の全駒は捕獲無効ですが、自分も誰も捕獲できません
+날조와 선동! %d번째 라운드 증강전까지 P%d가 모든 공격 카드를 받습니다 (내 손패 %d장을 모두 버렸습니다),"Fabrication and Agitation! Until round %d's augment round, P%d receives every attack card (you discarded your whole hand of %d)",でっち上げと扇動！第%dラウンドのオーグメント戦までP%dが全ての攻撃カードを受けます（自分の手札%d枚を全て捨てました）
+"눈먼 자의 도시! 이번 라운드 동안 모든 함정과 말이 가려지고, 아군 말도 잡습니다","City of the Blind! This round all traps and pawns are hidden, and friendly pawns can be captured too",盲目の都市！このラウンドの間、全ての罠と駒が隠され、味方の駒も捕獲します
+"사출 목걸이! 말 %d번은 이번 라운드 모든 공격을 막고 이동 거리가 2배지만, 라운드가 끝나면 목걸이가 터져 출발선으로 사출됩니다","Ejection Necklace! Pawn %d blocks every attack and moves double this round, but the necklace explodes at round end and ejects it",射出ネックレス！駒%d番はこのラウンド全ての攻撃を防ぎ移動距離が2倍ですが、ラウンド終了時にネックレスが爆発して射出されます
+평화주의자,Pacifist,平和主義者
+날조와 선동,Fabrication and Agitation,でっち上げと扇動
+눈먼 자의 도시,City of the Blind,盲目の都市
+사출 목걸이,Ejection Necklace,射出ネックレス
+"◆ 다음 증강전까지 내 모든 말은 잡기 면역
+◆ 단 내 모든 말은 아무도 잡을 수 없다","◆ Until the next augment round, all your pawns are immune to capture
+◆ But none of your pawns can capture anyone","◆ 次のオーグメント戦まで、自分の全駒は捕獲無効
+◆ ただし自分の全駒は誰も捕獲できない"
+"◆ 다음 증강전까지 지정한 대상이 모든 공격 카드를 받는다
+◆ 단 내 손패를 전부 버린다","◆ Until the next augment round, your chosen target receives every attack card
+◆ But you discard your entire hand","◆ 次のオーグメント戦まで、指定した相手が全ての攻撃カードを受ける
+◆ ただし自分の手札を全て捨てる"
+"◆ 이번 라운드 동안 모든 함정과 말이 가려진다
+◆ 아군 말도 잡는다","◆ This round, all traps and pawns are hidden
+◆ Friendly pawns can be captured too","◆ このラウンドの間、全ての罠と駒が隠される
+◆ 味方の駒も捕獲する"
+"◆ 내 말 1개를 골라 목걸이를 채운다: 모든 공격 방어 · 이동 거리 x2
+◆ 라운드가 끝나면 목걸이가 터져 그 말이 사출","◆ Fasten the necklace on 1 of your pawns: blocks every attack · moves x2
+◆ When the round ends the necklace explodes and the pawn is ejected","◆ 自分の駒1個にネックレスを付ける: あらゆる攻撃を防ぐ・移動距離x2
+◆ ラウンドが終わるとネックレスが爆発してその駒が射出される"
+사출 목걸이 x%d,Ejection Necklace x%d,射出ネックレス x%d
+선동할 상대가 없습니다,There is no one to agitate against,扇動する相手がいません
+목걸이 x2,Necklace x2,ネックレス x2
+평화,Peace,平和
+표적,Target,標的
+평화주의자! 다음 증강전까지 말을 날리는 카드는 쓸 수 없습니다,Pacifist! You can't play cards that eject pawns until the next augment round,平和主義者！次のオーグメント戦までは駒を飛ばすカードを使えません
+날조와 선동! 모든 공격을 받을 상대를 고르세요,Fabrication and Agitation! Choose who will receive every attack,でっち上げと扇動！すべての攻撃を受ける相手を選んでください
+어느 말에 사출 목걸이를 채울까요?,Which pawn gets the ejection necklace?,どの駒に射出ネックレスを付けますか？
+[사출 목걸이] P%d의 %s 목걸이가 터졌습니다!,[Ejection Necklace] P%d's %s necklace exploded!,[射出ネックレス] P%dの%sのネックレスが爆発しました！
+사출 목걸이가 터져 말이 사출됨!,The necklace exploded and the pawn was ejected!,ネックレスが爆発して駒が射出された！
+눈먼 자의 도시: 함정·말 가려짐 · 아군도 잡힘,City of the Blind: hidden traps & pawns · friendly fire,盲目の都市: 罠と駒が隠れる · 味方も捕獲
+평화주의자 P%d: 잡기 면역·잡기 불가 (%d라운드),"Pacifist P%d: immune, can't capture (%d rd)",平和主義者 P%d: 捕獲無効・捕獲不可 (%dR)
+날조와 선동 P%d: 공격은 모두 P%d에게,Agitation P%d: all attacks go to P%d,扇動 P%d: 攻撃は全てP%dへ

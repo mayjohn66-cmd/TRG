@@ -7,7 +7,7 @@ extends RefCounted
 static var _cache: Array[AugmentDef] = []
 
 ## 교체 대상 판정 도구. 기본 주사위(D6)를 제외한 확정 12종이다.
-const SWAPPABLE_TOOLS: Array[StringName] = [&"YUT", &"HOLDEM", &"LIFE_ROULETTE", &"CHINCHIRO", &"SLOT_777", &"REVOLVER", &"DICE_HWATU", &"DICE_MAHJONG", &"DICE_TAROT", &"DICE_YACHT", &"DICE_BLACKJACK", &"DICE_PINBALL", &"DICE_STOCK", &"DICE_DARTS", &"DICE_OMIKUJI", &"DICE_ICECREAM"]
+const SWAPPABLE_TOOLS: Array[StringName] = [&"YUT", &"HOLDEM", &"LIFE_ROULETTE", &"CHINCHIRO", &"SLOT_777", &"REVOLVER", &"DICE_HWATU", &"DICE_MAHJONG", &"DICE_TAROT", &"DICE_YACHT", &"DICE_BLACKJACK", &"DICE_PINBALL", &"DICE_STOCK", &"DICE_DARTS", &"DICE_OMIKUJI", &"DICE_ICECREAM", &"DICE_COOKIE", &"DICE_CAPSULE"]
 
 
 ## 기본 가중치 (augments_table.csv weight가 우선). 계열이 뽑힐 확률은 계열 평균 가중치에 비례한다.
@@ -63,6 +63,9 @@ static func all() -> Array[AugmentDef]:
 ## BoardCatalog.apply가 보드를 바꿀 때 다시 부르고, 표를 새로 입힐 때(all)에도 자동으로 입는다. 보드가 에르핀 왕국이면 표의 원래 문구로 되돌린다.
 const VARIANT_TITLES: Dictionary = {"ko": "[특수 승리] 와라! 모나티엄 25", "en": "[Special Win] Wara! Monatium 25", "ja": "[特殊勝利] ワラ！モナティウム25"}
 const VARIANT_SHOP_WORDS: Dictionary = {"ko": ["빵집", "편의점"], "en": ["bakery", "convenience store"], "ja": ["パン屋", "コンビニ"]}
+## 벨라티엔 왕국(마녀 도시)판: Bad Carrot = 마녀 상점 방문.
+const WITCH_VARIANT_TITLES: Dictionary = {"ko": "[특수 승리] Bad Carrot", "en": "[Special Win] Bad Carrot", "ja": "[特殊勝利] Bad Carrot"}
+const WITCH_SHOP_WORDS: Dictionary = {"ko": ["빵집", "마녀 상점"], "en": ["bakery", "witch shop"], "ja": ["パン屋", "魔女の店"]}
 
 
 static func apply_board_variants(defs: Array[AugmentDef] = []) -> void:
@@ -71,7 +74,7 @@ static func apply_board_variants(defs: Array[AugmentDef] = []) -> void:
 	var lang: String = L10n.current_lang if VARIANT_TITLES.has(L10n.current_lang) else "ko"
 	for def: AugmentDef in list:
 		var law_id: String = str(def.payload)
-		if def.category != GameEnums.AugmentCategory.LAW_ENACT or not VictoryLaw.MONATIUM_DEFS.has(law_id) or not rows.has(str(def.augment_id)):
+		if def.category != GameEnums.AugmentCategory.LAW_ENACT or not VictoryLaw.has_board_variant(law_id) or not rows.has(str(def.augment_id)):
 			continue
 		def.apply_row(rows[str(def.augment_id)])  # 표의 원래 문구에서 다시 시작 (보드가 바뀌어도 겹쳐 바뀌지 않는다)
 		def.display_name = "특수 승리: %s" % VictoryLaw.name_of(law_id)
@@ -80,6 +83,11 @@ static func apply_board_variants(defs: Array[AugmentDef] = []) -> void:
 			def.title = str(VARIANT_TITLES[lang])
 			def.desc = def.desc.replace(str(words[0]), str(words[1]))
 			def.spec_preview = def.spec_preview.replace(str(words[0]), str(words[1]))
+		elif VictoryLaw.witch_variant_active(law_id):
+			var witch_words: Array = WITCH_SHOP_WORDS[lang]
+			def.title = str(WITCH_VARIANT_TITLES[lang])
+			def.desc = def.desc.replace(str(witch_words[0]), str(witch_words[1]))
+			def.spec_preview = def.spec_preview.replace(str(witch_words[0]), str(witch_words[1]))
 
 
 ## 캐시를 비워 다음 all()에서 augments_table.csv(와 override_table로 주입한 행)를 다시 입힌다.

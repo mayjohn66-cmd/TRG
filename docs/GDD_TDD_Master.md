@@ -2253,3 +2253,43 @@ v2.0 교정본을 코드와 대조한 뒤 다음과 같이 확정했다 (현행 
 - 선택 카드: `AugmentRegistry.apply_board_variants`가 표에서 다시 입힌 뒤 AUG_LAW_02의 이름·설명을 언어별로 바꾼다 (`BoardCatalog.apply`와 표 로드 때 자동).
 - 승리 연출: `LawVictoryTheme.MONATIUM_THEMES/PAPERS/COMIC_TITLES`(제목 `MONATIUM DAYS` 2줄, 파랑 팔레트, 글꼴 bungee). `of/paper/comic_title`이 보드로 고르고 `geometry_id`(`LAW_02:M`)로 글자 윤곽 데이터를 원래 제목 것과 섞지 않는다. 컷신의 황금 티켓 무대 그림은 에르핀 빵집 티켓 그대로다 (그림 교체 필요).
 - 보드 위: 법전 대상 칸 표시 [식권 목표] → [편의점 목표], 스탬프 알림 [편의점 방문! (n/6)], 결과 문구·달성 사유 문구. 번역(ko/en/ja) 추가, 테스트 `test_monatium_swaps_the_bakery_law_into_wara_monatium_25`.
+
+
+### 7.90 신규 판정 도구 [포츈쿠키] (다음 버전, `next/gacha` 브랜치, 미배포)
+- id `DICE_COOKIE`, 규칙 `ToolFortuneCookie`(`core_engine/tools/tool_fortune_cookie.gd`). 쿠키를 깨면 안에 종이가 들어 있고, 종이를 펼치면 몇 칸 전진할지 적혀 있다. 순수한 운이며 한 번 더·턴 종료 같은 부가 효과는 없다.
+- 종이표(`PAPERS`: 칸수·가중치·종이에 적힌 글): 1칸 10% "작은 걸음도 걸음이에요" · 2칸 15% · 3칸 25% · 4칸 20% · 5칸 15% · 6칸 10% "지금이 바로 달려 나갈 때!" · ★8칸 5% "대박! 쿠키가 활짝 웃고 있어요" (대박 쿠키). 평균 약 3.7칸. 글은 모두 ko/en/ja 번역 행이 있다.
+- 결과 details: `message`(종이 글)·`lucky`(종이 아래 행운의 숫자, 연출용)·`jackpot`.
+- 연출 `FortuneCookieView`(`scenes/fortune_cookie_view.gd`, 임시 2D 그림): 쿠키가 통통 떨어짐(0.4초) -> 흔들림(1.0초) -> 쩍 갈라짐(1.02초) -> 종이가 올라와 펼쳐짐(1.45초) -> 결과 글(1.95초, 대박이면 빛살) -> 끝(2.6초). 효과음은 기존 `icecream_snap`·`ticket_rustle`·`card_pick`·`good`을 쓴다. 최종 그림이 오면 `_draw_cookie_half`·`_draw_paper`만 바꾸면 된다.
+- 등록: `ToolRegistry`(ALL_IDS·TABLES·NATURAL_JACKPOT 8), `AugmentRegistry.SWAPPABLE_TOOLS`(교체 가능 도구 17종), `dice_table.csv`·`augments_table.csv`(`TOOL_DICE_COOKIE`, 가중치 50), `RollPresenter`(굴림 연출·결과 글), `MainBoard`(도구 안내·확률표·굴리기 버튼 [깨기!]), 아이콘 `content_trickcal/illustrations/dice/DICE_COOKIE.png`(임시 그림).
+
+
+### 7.91 신규 판정 도구 [캡슐뽑기] (다음 버전, `next/gacha` 브랜치, 미배포)
+- id `DICE_CAPSULE`, 규칙 `ToolCapsuleGacha`(`core_engine/tools/tool_capsule_gacha.gd`). 코인을 넣고 돌리면 캡슐이 나오고, 캡슐 안의 캐릭터 미니어처가 몇 칸 갈지 정한다. 순수한 운.
+- 미니어처표(`PRIZES`): 버터(`avatar_02`) 35% 2칸 흔함 / 셰이디(`avatar_05`) 30% 3칸 흔함 / 벨리타(`avatar_07`) 20% 4칸 보통 / 죠안(`avatar_08`) 10% 6칸 희귀 / ★에르핀(`avatar_01`, 황금 캡슐) 5% 8칸 시크릿 + 한 번 더. 평균 약 3.4칸.
+- 연출 `CapsuleGachaView`(`scenes/capsule_gacha_view.gd`, 임시 2D 그림): [뽑기!] 버튼 한 번으로 코인이 투입구로 들어감(0.1초) → 손잡이가 한 바퀴 돎(0.8~1.6초) → 캡슐이 배출구에서 굴러 나옴(1.65초) → 톡 열려 미니어처가 서고(2.3초) → 이름·등급·"N칸 전진!"이 뜸(2.75초) → 끝(3.45초). 미니어처 그림은 그 캐릭터의 승리 일러스트(`AvatarCombatArt`). 등록은 포츈쿠키(7.90)와 같다.
+
+### 7.92 신규 기물 세트 [수집품] (다음 버전, `next/gacha` 브랜치, 미배포)
+- `GameEnums.PawnKind.COLLECTIBLE`, 세부 기물 `COLLECT_COROTTO`·`COLLECT_CHIBI`. 세트 공통 패시브: 완주하면 버프를 얻는다. 버프는 상태로 저장하지 않고 `CollectibleBuffs`가 "완주한 수집품 말이 있는가"로 계산한다 (스냅샷·되감기에 담을 것이 없다).
+- 코롯토: 완주하면 내 모든 굴림 결과 +1 (영구, `TurnManager`의 굴림 보너스 합산에 `collect`로 들어가고 `roll_boosted` 이벤트·보너스 이유에 [수집품 코롯토 +1]로 실림).
+- 치비구루미: 완주하면 굴림이 턴 종료(낙·대흉·망통 등)일 때 50% 확률로 같은 도구를 한 번 다시 굴려 그 결과를 쓴다 (`CollectibleBuffs.save_from_turn_end`, `chibi_saved` 이벤트). 러시안 룰렛·주식 차트처럼 다시 굴리면 상태가 꼬이는 도구는 제외 (`PacingDirector.REROLL_TOOLS`만).
+- 완주 순간 `passive_triggered`로 [수집 완료!] 뱃지(`PassiveCallout`). 기물 지급 증강은 `EVO_9_1`·`EVO_9_2`, 그림은 임시 `COLLECT_COROTTO.png`·`COLLECT_CHIBI.png`.
+### 7.89 신규 보드 [벨라티엔 왕국] (다음 버전, `next/belatien` 브랜치, 미배포)
+- 테마: 마녀들의 도시. 보라색 계열이 주색이고 코너·반환점·마녀 상점에 갈색(나무)이 섞인다. id `belatien`, `BoardCatalog.BOARDS`의 `witch: true`. 32칸·칸 번호는 다른 보드와 같다.
+- **마녀 상점** (빵집 자리 5·13·19·30번): 규칙은 빵집과 같다 (딱 멈추면 생떼 카드 1장). 타일 종류 `witch_shop`(갈색 띠), 그림 `BOARD_WITCH_SHOP.png`(마녀 모자 실루엣).
+- **마녀의 가마솥** (옷장 자리 12·22번, 워프 없음): 딱 멈추면 `WitchPotions`가 물약 5종 중 하나를 같은 확률로 끓인다 (`GameState.rng`, 모든 참가자가 같은 결과). 지나가기만 하면 아무 일도 없다. `TileNode.TileType.CAULDRON`, `BoardSpec.cauldron_tiles`, `MoveReport.cauldron_potion`.
+  - 좋은 물약 (60%): 힘의 물약 = 다음 굴림 +3칸(`corner_buff`, 겹치면 큰 쪽) · 신속의 물약 = 지금 바로 +2칸 전진(이어지는 이동, 도착 정산) · 보호의 물약 = 잡기·함정 1회 방어(`ward`).
+  - 나쁜 물약 (40%): 개구리 물약 = 다음 굴림 -2칸(`roll_penalty`, 최소 1칸) · 폭발 물약 = 펑! 뒤로 2칸(`MoveExecutor.teleport_to`, 그 칸에서 평소 도착처럼 함정·잡기 판정).
+- 전용 법전: LAW_02 자리를 [Bad Carrot] "마녀 상점에 6회 방문" (승리 문구: "마녀는 엄청난 것을 훔쳐갔습니다." = 「마리사는 엄청난 것을 훔쳐갔습니다」 패러디, 승리 연출 제목 BAD CARROT)으로 바꿔 쓴다 (`VictoryLaw.BELATIEN_DEFS`, `witch_variant_active`). 기록 키·목표·도장은 식권과 같고, 승리 연출은 식권 것을 그대로 쓴다 (모나티엄 전용 MONATIUM DAYS는 켜지지 않는다). 선택 카드 문구는 `AugmentRegistry.apply_board_variants`가 빵집 → 마녀 상점으로 바꾼다.
+- 화면: `BoardSkin.PALETTE_WITCH`(연보라 타일·짙은 보라 테두리·갈색 코너·보라 마법빛 부스터 발판), 판 바닥 `assets/board/belatien/board_surface_symbols_v1.png`(임시 그림), 가마솥 연출 `CauldronBrewView`(가마솥이 물약 색으로 끓다가 병이 솟고, 나쁜 물약은 검은 연기) + 물약 이름·효과 창 + 말 위 배지. 놀이터 보드 그림 `board_preview/belatien.webp`(게임 화면 캡처).
+- 도감: 보드 장에 마녀 상점·마녀의 가마솥(물약 표) 항목, 식권 카드의 보드 넘기기 화살표는 에르핀 왕국 → 모나티엄 도시 → 벨라티엔 왕국 순서로 돈다 (`VictoryLaw.preview_board` 0/1/2).
+- 임시 그림 교체: 판 바닥·마녀 상점·가마솥 그림, 보드 미리보기 그림은 파일만 바꾸면 된다 (마스크 그림은 `BoardSkin.DECAL_BOUNDS`·`RulebookVisuals.REGIONS`의 테두리 값을 새 그림에 맞춘다).
+
+
+### 7.93 기간이 있는 초증강 4종 (다음 버전 1.2)
+- 코드: `SuperAugments`(SUPER_13 `PACIFIST`·SUPER_14 `AGITATE`·SUPER_15 `BLIND_CITY`·SUPER_16 `NECKLACE`)와 규칙 파일 `SuperStatus`(`core_engine/augments/super_status.gd`). 상태는 `GameState.super_status`(스냅샷 meta에 저장)에 모은다: `pacifist{플레이어: 끝나는 라운드}` · `agitate{선동한 사람: {target, until}}` · `blind` = 걸린 라운드 · `necklace{주인: {pawn, round}}`.
+- "다음 증강전까지" = `SuperStatus.next_draft_round(지금 라운드)`보다 작은 라운드 동안 (4라운드에 고르면 7라운드 증강전이 오기 전, 즉 4·5·6라운드). 눈먼 자의 도시·사출 목걸이는 고른 그 라운드만.
+- **평화주의자:** `GameState.break_shield`가 `SuperStatus.pawn_protected`로 잡기·사출을 막고(방어 연출 `guard_blocked` 재사용), `MoveExecutor.is_capture_immune`도 같이 본다. 남을 잡지 못하게 하는 곳은 `MoveExecutor._resolve_captures`(같은 칸에 함께 섬)와 `GameState.send_to_start`(`blocks_capture_by`). 말을 날리는 카드(`SuperStatus.KILL_CARDS`: ACT_02·03·08·09·10·13)는 `TurnManager`가 `pacifist`로 거절하고 UI는 흐리게, 봇은 고르지 않는다. 뱅·일기토의 대상 목록도 비게 한다.
+- **날조와 선동:** 공격 카드의 대상 목록 함수(`BangCommand.target_players`·`StatusCardCommand.targets`, 일기토는 뱅 목록을 씀)가 `SuperStatus.filter_attack_targets`를 거친다. 그래서 UI·봇·엔진 검증이 모두 같은 목록을 본다 (선동한 사람 포함 모두 대상에게만, 대상 본인은 그대로). 적용 때 선동한 사람의 손패를 `discard_random_card`로 전부 버린다. 대상 고르기는 증강 선택의 `params["target_player"]`(`AugmentDef.needs_target_choice`, `_pick_augment`가 검증).
+- **눈먼 자의 도시:** `_resolve_captures`가 같은 편 말(자기 자신 제외, 출발한 말)도 잡을 말로 센다 (사출이라 처치 기록은 올라가지 않음). 화면은 `PawnToken.blind`로 말을 회색 [?]로, `_trap_known`/`_trap_tooltip`으로 모든 함정을 뒷면으로 그린다. 봇은 눈먼 자의 도시를 피한다(점수 25).
+- **사출 목걸이:** 이동 거리 2배는 `MoveExecutor.plan_path`(미리보기 포함), 모든 공격 방어는 `pawn_protected`. 라운드 끝(`TurnManager._enter_neutral_npc_phase`, 법전 판정 앞)에 `SuperStatus.explode_necklaces`가 그 말(업은 말과 함께)을 출발선으로 사출하고 `GameState.necklace_exploded`로 화면이 [펑!]을 보여 준다. 사람은 `AugmentDef.needs_pawn_choice`로 말을 고르고 봇은 가장 앞선 말에 채운다 (이번 라운드 안에 끝내지 못하면 잃는다).
+- 표시: 말 머리 위 칩(`PawnToken.chip_text`: [목걸이 x2]·[평화]·[표적], TRPG 레벨 칩 위에 쌓임), 라운드 알림 아래 한 줄(`_super_status_lines`), 내 말이 날아갈 수 있는 초증강이라 눈먼 자의 도시·사출 목걸이는 경고 아이콘(`SELF_RISK`). 도감 초증강 장·증강 표(`augments_table.csv`)·번역(ko/en/ja)·임시 아이콘(`illustrations/augments/SUPER_13~16.png`) 포함.

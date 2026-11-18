@@ -1,6 +1,65 @@
 {
  "entries": [
   {
+   "id": "1.2",
+   "date": "",
+   "title": {
+    "ko": "1.2.0 업데이트",
+    "en": "Update 1.2.0",
+    "ja": "1.2.0アップデート"
+   },
+   "sections": [
+    {
+     "head": {
+      "ko": "신규 추가",
+      "en": "New",
+      "ja": "新要素"
+     },
+     "items": [
+      {
+       "ko": "새 보드 [벨라티엔 왕국]이 나왔어요: 마녀들의 도시를 보라색과 갈색으로 꾸몄어요. 빵집 자리는 마녀 상점(카드 1장), 옷장 자리는 [마녀의 가마솥]이에요. 가마솥에 딱 멈추면 물약이 랜덤으로 끓어요 (좋은 물약 3종, 나쁜 물약 2종). 전용 법전은 [Bad Carrot] (마녀 상점 6회 방문)이에요",
+       "en": "New board [Belatien Kingdom]: a city of witches in purple and brown. The bakery spot is a Witch Shop (1 card) and the wardrobe spot is the [Witch's Cauldron]: stop on it and a random potion brews (3 good, 2 bad). Its own law is [Bad Carrot] (visit the witch shop 6 times)",
+       "ja": "新ボード[ベラティエン王国]登場：魔女たちの街を紫と茶色で彩りました。パン屋の位置は魔女の店（カード1枚）、クローゼットの位置は[魔女の大釜]です。大釜にぴったり止まると薬がランダムに煮えます（良い薬3種、悪い薬2種）。専用法典は[Bad Carrot]（魔女の店に6回来店）です"
+      },
+      {
+       "ko": "새 판정 도구 [포츈쿠키]: 쿠키를 깨면 안에 종이가 있고, 펼치면 몇 칸 전진할지 적혀 있어요. 아주 가끔 8칸짜리 대박 쿠키도 나와요",
+       "en": "New judgment tool [Fortune Cookie]: crack the cookie, unfold the slip inside, and it tells you how many tiles to advance. Very rarely you get a jackpot cookie worth 8 tiles",
+       "ja": "新判定ツール[フォーチュンクッキー]：クッキーを割ると中に紙が入っていて、開くと進むマス数が書かれています。ごくまれに8マスの大当たりクッキーも出ます"
+      },
+      {
+       "ko": "새 판정 도구 [캡슐뽑기]: 버튼을 누르면 코인을 넣고 손잡이를 돌려 캡슐이 나오고, 캡슐 속 캐릭터 미니어처가 칸수를 정해요. 황금 캡슐 속 시크릿은 8칸에 한 번 더예요",
+       "en": "New judgment tool [Capsule Gacha]: press the button to insert a coin and turn the knob; a capsule rolls out and the character miniature inside decides your tiles. The secret in the golden capsule gives 8 tiles plus another roll",
+       "ja": "新判定ツール[カプセルガチャ]：ボタンを押すとコインを入れてハンドルを回し、カプセルが出てきて中のキャラクターミニチュアが進むマス数を決めます。金のカプセルのシークレットは8マス＋もう一度です"
+      },
+      {
+       "ko": "새 기물 세트 [수집품]: 완주하면 버프를 얻는 패시브 세트예요. [코롯토]는 완주하면 주사위 결과가 +1, [치비구루미]는 완주하면 턴 종료가 나와도 절반 확률로 한 번 다시 굴려요",
+       "en": "New pawn set [Collectibles]: pawns with a passive that grants a buff once they finish. [Corotto] adds +1 to your dice results, and [Chibigurumi] gives a 50% chance to re-roll a turn-ending result once",
+       "ja": "新しい駒セット[コレクション]：ゴールすると効果を得るパッシブのセットです。[コロット]は出目+1、[チビぐるみ]は手番終了の目が出ても半分の確率で1回振り直せます"
+      },
+      {
+       "ko": "새 초증강 4종: [평화주의자] 다음 증강전까지 내 말은 잡기 면역이지만 누구도 잡을 수 없어요 · [날조와 선동] 다음 증강전까지 지정한 대상이 모든 공격 카드를 받지만 내 손패를 전부 버려요 · [눈먼 자의 도시] 이번 라운드 동안 함정과 말이 가려지고 아군 말도 잡아요 · [사출 목걸이] 말 하나를 골라 공격 방어와 이동 거리가 2배가 되지만 라운드가 끝나면 목걸이가 터져 사출돼요",
+       "en": "4 new Hyper Augments: [Pacifist] until the next augment round your pawns are capture-immune but can't capture anyone · [Fabrication & Agitation] until the next augment round a chosen target receives every attack card, but you discard your whole hand · [City of the Blind] this round all traps and pawns are hidden and you capture friendly pawns too · [Ejection Necklace] pick a pawn: it defends every attack and moves 2x as far, but the necklace bursts and ejects it when the round ends",
+       "ja": "新・超オーグメント4種：[平和主義者] 次のオーグメント戦まで自分の駒は捕獲されませんが、誰も捕獲できません · [捏造と扇動] 次のオーグメント戦まで指定した相手がすべての攻撃カードを受けますが、自分の手札をすべて捨てます · [盲人の街] このラウンドの間、罠と駒が隠れ、味方の駒も捕獲します · [射出ネックレス] 駒を1つ選ぶと、攻撃を全て防ぎ移動距離が2倍になりますが、ラウンド終了時にネックレスが爆発して射出されます"
+      }
+     ]
+    },
+    {
+     "head": {
+      "ko": "버그 수정",
+      "en": "Bug fixes",
+      "ja": "バグ修正"
+     },
+     "items": [
+      {
+       "ko": "컴퓨터가 [전문적 해킹]에 걸린 턴에 카드를 내려다 막히던 문제를 고쳤어요",
+       "en": "Fixed computers trying to play cards on a turn they were hit by Professional Hacking and getting rejected",
+       "ja": "コンピューターが「プロのハッキング」にかかったターンにカードを出そうとして拒否される問題を修正"
+      }
+     ]
+    }
+   ]
+  },
+  {
    "id": "1.1.1",
    "date": "",
    "title": {

@@ -1438,6 +1438,7 @@ func _bind_state() -> void:
 		if not _fx_hints.has(pawn_id):
 			_set_hint(pawn_id, {"arc": 0.0, "dur": 0.5}))
 	state.passive_triggered.connect(_on_passive_triggered)
+	state.necklace_exploded.connect(_on_necklace_exploded)
 	# v1.1: 기억상실빔이 사출을 막았다 / 모브 큐이의 오이를 밟았다
 	state.amnesia_blocked.connect(func(pawn_id: int, tile: int) -> void:
 		_on_passive_triggered(pawn_id, &"amnesia_block")
@@ -2818,8 +2819,10 @@ func _tile_tag(index: int, tile_type: TileNode.TileType) -> String:
 func _tile_tag_base(index: int, tile_type: TileNode.TileType) -> String:
 	match tile_type:
 		TileNode.TileType.START_GOAL: return "▲출발"
-		TileNode.TileType.BAKERY: return "빵집"
+		TileNode.TileType.BAKERY: return "편의점" if BoardSpec.convenience else ("마녀 상점" if BoardSpec.witch else "빵집")
 		TileNode.TileType.PORTAL: return "옷장"
+		TileNode.TileType.VENDING: return "자판기"
+		TileNode.TileType.CAULDRON: return "마녀의 가마솥"
 	if BoardSpec.jump_corner_targets.has(index):
 		return "점프 코너 → %d번" % int(BoardSpec.jump_corner_targets[index])
 	if index == BoardSpec.halfway_tile:
@@ -2908,7 +2911,12 @@ func _refresh_pawns() -> void:
 		if view == null:
 			continue
 		_settle_pawn_view(view, pawn)
-		(view.get_node("Bounce/Token") as PawnToken).configure(pawn, PLAYER_COLORS[pawn.owner_id])
+		var token: PawnToken = view.get_node("Bounce/Token") as PawnToken
+		token.blind = SuperStatus.blind_active(state)  # 눈먼 자의 도시: 말이 [?]로만 보인다
+		var chip: Dictionary = _super_chip_for(pawn)
+		token.chip_text = str(chip.get("text", ""))
+		token.chip_color = chip.get("color", Color("ffd43b"))
+		token.configure(pawn, PLAYER_COLORS[pawn.owner_id])
 		var badge_text: String = ""
 		if pawn.restrained_turns > 0 or pawn.blocked_this_turn:
 			badge_text += " 구속"
@@ -2944,6 +2952,20 @@ func _refresh_pawns() -> void:
 			_npc_views.erase(npc_id)
 			if expired is ProtonBeamView:(expired as ProtonBeamView).fade_out(0.7 if _fx_on() else 0.02)
 			else:expired.queue_free()
+
+
+## 기간이 있는 초증강이 걸린 말의 머리 위 칩 (목걸이 > 평화주의자 > 선동 표적).
+func _super_chip_for(pawn: PlayerPawn) -> Dictionary:
+	if state == null or state.super_status.is_empty() or pawn.is_finished:
+		return {}
+	if SuperStatus.is_necklace(state, pawn) and pawn.carrier == null:
+		return {"text": "목걸이 x2", "color": Color("ffa94d")}
+	if SuperStatus.pacifist_active(state, pawn.owner_id) and pawn.carrier == null:
+		return {"text": "평화", "color": Color("8ce99a")}
+	for entry: Dictionary in SuperStatus.active_agitations(state):
+		if int(entry["target"]) == pawn.owner_id and pawn.carrier == null and pawn.has_left_start:
+			return {"text": "표적", "color": Color("ff8787")}
+	return {}
 
 
 func _refresh_tiles() -> void:
@@ -3139,6 +3161,8 @@ func _update_trap_pulse(delta: float) -> void:
 ## 함정 툴팁. 함정 공개 규칙(MatchRules.trap_reveal: 싱글 Lv.1~3 기본)이면 누구 함정이든 정체가 보인다.
 ## 비공개 규칙(Lv.4~5 기본·방 설정 [심리전])이면 AI 대전·온라인에서 내가 깐 함정만 보이고, 남이 깐 함정은 [? 수상한 함정]이다.
 func _trap_tooltip(attachment: TileAttachment) -> String:
+	if SuperStatus.blind_active(state):
+		return "[? 수상한 함정]"  # 눈먼 자의 도시: 설치한 사람도 알 수 없다
 	if not attachment.is_hidden_trap or attachment.always_revealed or (_trap_known(attachment) and attachment.owner_id != local_player_id):
 		return "[함정] %s (설치: %s)" % [_attachment_name(attachment.attachment_id), _player_name(attachment.owner_id)]  # 코너 함정·공개 규칙
 	if _trap_known(attachment):
@@ -3148,6 +3172,8 @@ func _trap_tooltip(attachment: TileAttachment) -> String:
 
 ## 이 화면이 함정의 정체를 알아도 되는가: 공개 함정이거나, 함정 공개 규칙이거나, 혼자 보는 화면(AI 대전·온라인)에서 내가 깐 함정.
 func _trap_known(attachment: TileAttachment) -> bool:
+	if SuperStatus.blind_active(state):
+		return false  # 눈먼 자의 도시: 내 함정도 포함해 모든 함정이 가려진다
 	if not attachment.is_hidden_trap or attachment.always_revealed or MatchRules.trap_reveal(state):
 		return true
 	return (ai_mode or net != null) and attachment.owner_id == local_player_id
@@ -3679,6 +3705,103 @@ func _bakery_feedback(data: Dictionary) -> void:
 			Sfx.play(&"good")
 		_fly_card_to_profile(at, owner_id, drawn == &"")  # 어떤 카드인지는 알려 주지 않는다 (뒷면만 날아간다)
 		_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(180.0 * _motion_pace())))  # 배지는 혼자 떠오르므로 큐를 오래 붙잡지 않는다
+
+
+## 물약 색 (마녀의 가마솥 연출).
+const POTION_COLORS: Dictionary = {
+	&"power": Color("ff6b6b"), &"swift": Color("74c0fc"), &"guard": Color("ffd43b"), &"frog": Color("8ce99a"), &"boom": Color("ff922b"),
+}
+
+
+## 마녀의 가마솥에서 끓인 물약: 로그를 남기고 짧은 끓이기 연출(가마솥 보글보글 → 물약 병 → 이름·효과 → 말 위 배지)을 보여 준다 (벨라티엔 왕국).
+func _cauldron_feedback(data: Dictionary) -> void:
+	var potion: StringName = data.get("cauldron_potion", &"")
+	if potion == &"" or not _pawn_views.has(int(data["pawn_id"])):
+		return
+	var pawn: PlayerPawn = state.get_pawn(int(data["pawn_id"]))
+	var owner_id: int = pawn.owner_id if pawn != null else manager.current_player_id()
+	var good: bool = WitchPotions.is_good(potion)
+	_log_line("[마녀의 가마솥] P%d: %s! %s" % [owner_id, L10n.t(WitchPotions.name_of(potion)), L10n.t(WitchPotions.text_of(potion))], Color("b197fc") if good else Color("ff8787"))
+	if pawn == null or not _fx_on():
+		return
+	# 물약을 마신 자리 (신속·폭발 물약은 이어서 움직이므로 경로에서 가마솥 칸을 찾는다)
+	var tile: int = pawn.current_tile_idx
+	for step: Variant in data.get("path", []):
+		if BoardSpec.cauldron_tiles.has(int(step)):
+			tile = int(step)
+	_enqueue_late(func() -> void: _play_cauldron_brew(tile, potion))
+
+
+## 가마솥 끓이기 연출 한 번 (약 2.6초): 자판기 창과 같은 크기의 창에 가마솥이 끓고 물약 병이 솟은 뒤, 물약 이름과 효과가 크게 보이고 배지가 말 위로 올라간다.
+func _play_cauldron_brew(tile: int, potion: StringName) -> void:
+	if not WitchPotions.ids().has(potion):
+		return
+	var pace: float = _motion_pace()
+	var good: bool = WitchPotions.is_good(potion)
+	var panel := PanelContainer.new()
+	panel.name = "CauldronBrewModal"
+	panel.size = Vector2(560, 360)
+	panel.position = (get_viewport_rect().size - panel.size) / 2.0
+	panel.pivot_offset = panel.size / 2.0
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.z_index = 61
+	panel.add_theme_stylebox_override("panel", _style(Color(0.11, 0.07, 0.17, 0.97), Color("b197fc"), 5, 22, 0, 0))
+	panel.modulate.a = 0.0
+	panel.scale = Vector2.ONE * 0.85
+	add_child(panel)
+	_mark_oneshot(panel, 3.2 * pace)
+	var holder := Control.new()
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(holder)
+	var color: Color = POTION_COLORS.get(potion, Color.WHITE)
+	var title: Label = _make_label("마녀의 가마솥", 28, Color("d0bfff"))
+	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	title.position = Vector2(0, 14)
+	title.size = Vector2(panel.size.x, 40)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	holder.add_child(title)
+	var view := CauldronBrewView.new()
+	view.name = "Cauldron2D"
+	view.position = Vector2(20, 58)
+	view.size = Vector2(290, 280)
+	holder.add_child(view)
+	view.play(color, good, pace)
+	var name_label: Label = _make_label(L10n.t(WitchPotions.name_of(potion)) + "!", 40, color)
+	name_label.name = "PotionName"
+	name_label.add_theme_constant_override("outline_size", 8)
+	name_label.add_theme_color_override("font_outline_color", Color("1b0f29"))
+	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.position = Vector2(310, 148)
+	name_label.size = Vector2(230, 90)
+	name_label.modulate.a = 0.0
+	holder.add_child(name_label)
+	var effect_label: Label = _make_label(L10n.t(WitchPotions.text_of(potion)), 26, Color("fff3bf") if good else Color("ffc9c9"))
+	effect_label.name = "PotionEffect"
+	effect_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	effect_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	effect_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	effect_label.position = Vector2(310, 248)
+	effect_label.size = Vector2(230, 70)
+	effect_label.modulate.a = 0.0
+	holder.add_child(effect_label)
+	var effect_text: String = effect_label.text
+	var badge_at: Vector2 = (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + _tile_center(tile) + Vector2(0, -46)
+	Sfx.play(&"ui_click", -4.0)
+	var reveal_at: float = CauldronBrewView.BREW_TIME + 0.15
+	var tween: Tween = panel.create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(panel, "modulate:a", 1.0, 0.22 * pace)
+	tween.tween_property(panel, "scale", Vector2.ONE, 0.28 * pace).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(name_label, "modulate:a", 1.0, 0.2 * pace).set_delay(reveal_at * pace)
+	tween.tween_property(effect_label, "modulate:a", 1.0, 0.2 * pace).set_delay((reveal_at + 0.25) * pace)
+	tween.tween_callback(func() -> void: Sfx.play(&"good" if good else &"bad", -4.0)).set_delay(reveal_at * pace)
+	tween.tween_property(panel, "modulate:a", 0.0, 0.3 * pace).set_delay(2.65 * pace)
+	tween.chain().tween_callback(func() -> void:
+		_floating_badge(badge_at, effect_text, color.lightened(0.15), 26)
+		panel.queue_free())
+	_fx_until_msec = maxi(_fx_until_msec, _msec_from_now(3000.0 * pace))
 
 
 ## 음료수 캔 색 (자판기 연출).
@@ -4429,7 +4552,11 @@ func _check_round_banner() -> void:
 	_announced_turn_key = "%d:%d" % [state.round_number, manager.current_player_id()]
 	if _fx_on():
 		Sfx.play(&"round_start")
-	_announce("라운드", "ROUND %d" % state.round_number, "", COLOR_GOLD, null, 1.0, true, {"key": "round"})
+	var round_options: Dictionary = {"key": "round"}
+	var status_lines: Array[String] = _super_status_lines()  # 눈먼 자의 도시·평화주의자·날조와 선동이 걸려 있으면 한 줄씩 알린다
+	if not status_lines.is_empty():
+		round_options["sub"] = "\n".join(PackedStringArray(status_lines))
+	_announce("라운드", "ROUND %d" % state.round_number, "", COLOR_GOLD, null, 1.0, true, round_options)
 
 
 ## 굴림 눈금이 늘어난 이유를 원인별로 한 줄로: "슈파볼트 탑승 +1 · 코너·상점·물약 버프 +2 · 카드 +4". (이유가 안 맞으면 "가속 보너스")
@@ -4438,6 +4565,9 @@ func _roll_boost_reason(data: Dictionary) -> String:
 	var permanent: int = int(data.get("permanent", 0))
 	var corner: int = int(data.get("corner", 0))
 	var bonus: int = int(data.get("bonus", 0))
+	var collect: int = int(data.get("collect", 0))
+	if collect != 0:
+		parts.append(L10n.t("수집품 코롯토 %+d") % collect)
 	if permanent != 0:
 		parts.append(L10n.t("슈파볼트 탑승 %+d") % permanent)
 	if corner != 0:
@@ -4447,6 +4577,21 @@ func _roll_boost_reason(data: Dictionary) -> String:
 	if parts.is_empty():
 		return L10n.t("가속 보너스 +%d") % (int(data["to"]) - int(data["from"]))
 	return " · ".join(PackedStringArray(parts))
+
+
+## 기간이 있는 초증강이 걸려 있으면 라운드 알림에 한 줄씩 알린다 (눈먼 자의 도시·평화주의자·날조와 선동).
+func _super_status_lines() -> Array[String]:
+	var lines: Array[String] = []
+	if state == null or state.super_status.is_empty():
+		return lines
+	if SuperStatus.blind_active(state):
+		lines.append(L10n.t("눈먼 자의 도시: 함정·말 가려짐 · 아군도 잡힘"))
+	for player_id: int in state.player_ids:
+		if SuperStatus.pacifist_active(state, player_id):
+			lines.append(L10n.t("평화주의자 P%d: 잡기 면역·잡기 불가 (%d라운드)") % [player_id, SuperStatus.rounds_left(state, SuperStatus.pacifist_until(state, player_id))])
+	for entry: Dictionary in SuperStatus.active_agitations(state):
+		lines.append(L10n.t("날조와 선동 P%d: 공격은 모두 P%d에게") % [int(entry["by"]), int(entry["target"])])
+	return lines
 
 
 ## 새 차례인데 아직 [OO 차례] 배너를 띄우지 못했다 (앞 연출이 끝나기를 기다리는 중): 그동안 봇·굴리기 버튼은 움직이지 않는다.
@@ -5219,7 +5364,10 @@ func _note_law_win_detail(player_id: int, law_id: String) -> void:
 static func law_win_reason(law_id: String, value: int) -> String:
 	match law_id:
 		"LAW_01": return "경기 중 총 %d회 적 기물 처치 완료!" % value
-		"LAW_02": return ("편의점 %d회 방문 · 와라! 모나티엄 25 완성!" if VictoryLaw.variant_active("LAW_02") else "빵집 %d회 방문 · 식권 스탬프 완성!") % value
+		"LAW_02":
+			if VictoryLaw.witch_variant_active("LAW_02"):
+				return "마녀는 엄청난 것을 훔쳐갔습니다."  # 벨라티엔 왕국 Bad Carrot: 「마리사는 엄청난 것을 훔쳐갔습니다」 패러디
+			return ("편의점 %d회 방문 · 와라! 모나티엄 25 완성!" if VictoryLaw.variant_active("LAW_02") else "빵집 %d회 방문 · 식권 스탬프 완성!") % value
 		"LAW_03": return "함정·설치물 %d개 동시 유지 · 무한의 함정 완성!" % value
 		"LAW_04": return "한 턴에 %d칸 폭발 전진 성공!" % value
 		"LAW_05": return "말 %d개로 보드연성진을 완성하고 지켜 냈다!" % value
@@ -7078,7 +7226,9 @@ func _pawn_prediction(pawn: PlayerPawn) -> Dictionary:
 		elif leader != pawn:
 			allied = true
 	if tile.tile_type == TileNode.TileType.BAKERY:
-		return {"text": "빵집!", "good": true}
+		return {"text": "편의점!" if BoardSpec.convenience else ("상점!" if BoardSpec.witch else "빵집!"), "good": true}
+	if tile.tile_type == TileNode.TileType.CAULDRON:
+		return {"text": "가마솥!", "good": true}
 	if promote:
 		return {"text": "나리!", "good": true}
 	if allied:
@@ -7167,6 +7317,8 @@ const TOOL_CARDS: Dictionary = {
 	&"DICE_DARTS": ["◎", Color("c92a2a"), "다트를 던져라! 어디에 꽂힐지는 운!", "숫자 × 싱글·더블·트리플 · ★불스아이 10칸+한 번 더"],
 	&"DICE_OMIKUJI": ["籤", Color("b5651d"), "통을 흔들어 점괘를 뽑아라!", "★대길 8칸+한 번 더 · 대흉은 턴 종료"],
 	&"DICE_ICECREAM": ["얌", Color("e64980"), "한 입 먹으면 막대에 칸이 나온다!", "★한번 더!가 나오면 아이스크림 리필"],
+	&"DICE_COOKIE": ["쿠", Color("d9822b"), "쿠키를 깨서 종이를 펼쳐라!", "★대박 8칸 · 종이에 적힌 대로"],
+	&"DICE_CAPSULE": ["캡", Color("7950f2"), "코인을 넣고 돌려라! 캡슐 속 미니어처가 칸수를 정한다!", "★시크릿 에르핀 8칸+한 번 더"],
 }
 
 
@@ -7188,6 +7340,8 @@ const TOOL_RULES: Dictionary = {
 	&"DICE_STOCK": {"rows": [["보통 (88%)", "주가만큼 (1~12칸, 매번 ±3)"], ["★상한가 (6%)", "20칸"], ["상장폐지 (6%)", "0칸 · 선두 말 사출 · 턴 종료"]], "note": "주가는 6에서 시작해 이어진다 · 상한가·상장폐지 뒤 6으로"},
 	&"DICE_OMIKUJI": {"rows": [["★대길 (8%)", "8칸 + 한 번 더"], ["중길 (17%)", "6칸"], ["소길·길 (25%씩)", "4칸 / 3칸"], ["말길 (15%)", "2칸"], ["흉 (5%)", "1칸"], ["대흉 (5%)", "0칸 · 턴 종료"]], "note": "통을 흔들어 나온 점괘 그대로 · 순수한 운"},
 	&"DICE_ICECREAM": {"rows": [["막대 1~6칸 (85%)", "드러난 칸만큼"], ["★한번 더! (15%)", "3칸 + 새 아이스크림(한 번 더)"]], "note": "한 입 베어 물면 막대에 칸이 드러나요"},
+	&"DICE_CAPSULE": {"rows": [["버터 (35%) · 셰이디 (30%)", "2칸 / 3칸 (흔함)"], ["벨리타 (20%)", "4칸 (보통)"], ["죠안 (10%)", "6칸 (희귀)"], ["★시크릿 에르핀 (5%)", "8칸 + 한 번 더"]], "note": "버튼만 누르면 코인 넣기 · 돌리기 · 캡슐 열기까지 자동 · 순수한 운"},
+	&"DICE_COOKIE": {"rows": [["1칸 (10%) · 2칸 (15%)", "종이에 적힌 대로"], ["3칸 (25%) · 4칸 (20%)", "종이에 적힌 대로"], ["5칸 (15%) · 6칸 (10%)", "종이에 적힌 대로"], ["★대박 쿠키 (5%)", "8칸"]], "note": "쿠키를 깨면 안의 종이에 몇 칸 갈지 적혀 있어요 · 순수한 운"},
 	&"DICE_DARTS": {"rows": [["싱글", "숫자(1~6)만큼"], ["더블 (바깥 고리)", "숫자 × 2"], ["트리플 (안쪽 고리)", "숫자 × 3"], ["★불스아이 (정중앙)", "10칸 + 한 번 더!"]], "note": "조준 없이 [던지기]만 누르면 돼요 · 꽂히는 자리는 순수한 운"},
 }
 
@@ -7284,6 +7438,8 @@ func _card_usable_now(player_id: int, card: BaseCard) -> bool:
 		return false
 	if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN and (player_id != manager.current_player_id() or manager.card_played_this_turn()):
 		return false
+	if SuperStatus.card_blocked(state, player_id, card.card_id):
+		return false  # 평화주의자: 말을 날리는 카드는 흐리게
 	if state.is_banned(player_id) or not card.could_play(state, player_id):
 		return false  # 지금은 대상이 없다 (예: UDO +4의 다음 차례 사람이 보드에 말이 없음): 흐리게 두고 이유는 _card_block_reason
 	return true
@@ -7291,6 +7447,8 @@ func _card_usable_now(player_id: int, card: BaseCard) -> bool:
 
 ## 지금 이 카드를 낼 수 없는 이유 (낼 수 있으면 빈 문자열). 카드를 눌렀는데 아무 일도 없던 것처럼 보이지 않게 화면에 띄운다.
 func _card_block_reason(player_id: int, card: BaseCard) -> String:
+	if SuperStatus.card_blocked(state, player_id, card.card_id):
+		return "평화주의자! 다음 증강전까지 말을 날리는 카드는 쓸 수 없습니다"
 	if state.is_banned(player_id):
 		return "알고리즘 밴! %d턴 동안 카드를 쓸 수 없습니다" % int(state.banned_turns[player_id])
 	if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN and manager.card_played_this_turn():
@@ -7584,6 +7742,10 @@ func _roll_button_label(tool: BaseJudgmentTool) -> String:
 		return "뽑기!"
 	if tool is ToolIceCream:
 		return "냠!"
+	if tool is ToolFortuneCookie:
+		return "깨기!"
+	if tool is ToolCapsuleGacha:
+		return "뽑기!"
 	return tr_ui("btn.roll")
 
 
@@ -8838,6 +9000,21 @@ func _on_move_bonus(pawn_id: int, notes: Array, revenge: int) -> void:
 		_move_bonus_notes[pawn_id] = notes
 		return
 	# 말 위의 표시는 기물별 원인 뱃지([장기:포] 뛰어넘기 +3칸!)가 맡는다 (passive_triggered → _play_callout).
+
+
+## 사출 목걸이가 라운드 끝에 터진다: 그 칸에서 펑! 하고 터진 뒤 말이 출발선으로 사출된다 (사출 기록은 평소처럼 이어진다).
+func _on_necklace_exploded(pawn_id: int, tile: int) -> void:
+	var pawn: PlayerPawn = state.get_pawn(pawn_id)
+	var owner_id: int = pawn.owner_id if pawn != null else manager.current_player_id()
+	_log_line("[사출 목걸이] P%d의 %s 목걸이가 터졌습니다!" % [owner_id, _pawn_name(pawn_id)], Color("ffa94d"))
+	_record(owner_id, "사출 목걸이가 터져 말이 사출됨!", "", true)
+	if not _fx_on():
+		return
+	var at: Vector2 = (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + _tile_center(tile)
+	Sfx.play(&"slam", -3.0)
+	screen_shake(7.0, 0.22)
+	_impact_ring(at, Color("ffa94d"), 90.0)
+	_floating_badge(at + Vector2(0, -46), "펑!", Color("ffa94d"), 34)
 
 
 ## 기물 고유 능력이 발동했다: 그 말 머리 위에 [기물] 원인 뱃지를 띄운다 (연출 큐 순서대로, 걸음을 끊지 않는다).
@@ -10810,10 +10987,28 @@ func _on_draft_auto_pressed() -> void:
 
 
 func _on_augment_chosen(player_id: int, index: int, definition: AugmentDef) -> void:
+	if definition.needs_target_choice(state, player_id):
+		_show_agitation_choice(player_id, index)  # 날조와 선동: 공격 카드를 몰아 줄 상대를 고른다
+		return
 	if definition.needs_pawn_choice(state, player_id):
 		_show_pawn_choice(player_id, definition, _pick_augment_with_pawn.bind(player_id, index))
 		return
 	_act(&"pick_augment", {"player_id": player_id, "index": index})
+
+
+## 날조와 선동: 모든 공격 카드를 받게 할 상대를 고른다 (취소하면 증강 카드 3장 화면으로).
+func _show_agitation_choice(player_id: int, index: int) -> void:
+	var targets: Array[Dictionary] = []
+	for target: int in SuperAugments.agitation_targets(state, player_id):
+		targets.append({"label": _player_name(target), "portrait": _choice_portrait(target), "value": target})
+	if targets.is_empty():
+		_act(&"pick_augment", {"player_id": player_id, "index": index})
+		return
+	_show_choice("날조와 선동! 모든 공격을 받을 상대를 고르세요", targets, _pick_augment_with_target.bind(player_id, index), 3)
+
+
+func _pick_augment_with_target(target: int, player_id: int, index: int) -> void:
+	_act(&"pick_augment", {"player_id": player_id, "index": index, "target_player": target})
 
 
 ## 기물 증강을 받을 말을 아이콘 카드로 고른다. 이미 진화한 말은 어둡게 잠긴다.
@@ -10830,8 +11025,9 @@ func _show_pawn_choice(player_id: int, definition: AugmentDef, on_pick: Callable
 	box.add_theme_constant_override("separation", 10)
 	center.add_child(box)
 	var info: Dictionary = _augment_card_info(definition, player_id)
-	var shield_pick: bool = definition.category == GameEnums.AugmentCategory.UTILITY
-	var title := _make_label("어느 말에 보호막을 씌울까요?" if shield_pick else "어느 말을 [%s]로 진화시킬까요?" % str(info["title"]).split("] ")[-1], 24, Color("ffe066"))
+	var shield_pick: bool = definition.category == GameEnums.AugmentCategory.UTILITY or definition.category == GameEnums.AugmentCategory.SUPER_GAMBLE
+	var heading: String = "어느 말에 보호막을 씌울까요?" if definition.category == GameEnums.AugmentCategory.UTILITY else ("어느 말에 사출 목걸이를 채울까요?" if definition.category == GameEnums.AugmentCategory.SUPER_GAMBLE else "어느 말을 [%s]로 진화시킬까요?" % str(info["title"]).split("] ")[-1])
+	var title := _make_label(heading, 24, Color("ffe066"))
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_color_override("font_outline_color", Color("5c4300"))
 	title.add_theme_constant_override("outline_size", 6)
@@ -11011,7 +11207,7 @@ func result_comic_texts(winner_id: int) -> Array[String]:
 		var why: String = law_win_reason(String(reason), int(detail.get("value", 0))) if str(detail.get("law", "")) == String(reason) else ""
 		if why != "" and POPART_TITLES.has(String(reason)):
 			why = "\"달성 사유: %s\"" % why  # 팝아트 법전은 하단 배너에 따옴표 달성 사유 (괄호 대신)
-		return [str(RESULT_VICTORY_PHRASES.get(String(reason), law.law_name if law != null else String(reason))) if not (String(reason) == "LAW_02" and VictoryLaw.variant_active("LAW_02")) else "MONATIUM DAYS", why if why != "" else "특수 승리"]
+		return [str(RESULT_VICTORY_PHRASES.get(String(reason), law.law_name if law != null else String(reason))) if not (String(reason) == "LAW_02" and (VictoryLaw.variant_active("LAW_02") or VictoryLaw.witch_variant_active("LAW_02"))) else ("MONATIUM DAYS" if VictoryLaw.variant_active("LAW_02") else "BAD CARROT"), why if why != "" else "특수 승리"]
 	if reason == VictoryChecker.ALL_HOME:
 		return ["RACE OVER", "말 4개 모두 완주"]
 	if reason == VictoryChecker.RACE_ORDER:
@@ -12024,6 +12220,12 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_handle_roll_event(data)
 			_enqueue_roll_summary(data)
 			_record_roll(data)
+		&"chibi_saved":
+			var saved_player: int = int(data["player_id"])
+			_log_line("[치비구루미] P%d: 턴 종료 눈금을 다시 굴렸습니다!" % saved_player, Color("ff9ecb"))
+			_record(saved_player, "치비구루미 덕분에 턴 종료를 피해 다시 굴림!")
+			if _fx_on() and _profiles.has(saved_player):
+				_number_pop(_profile_center(saved_player), "치비구루미 재굴림!", Color("ff9ecb"))
 		&"roll_boosted":
 			_roll_total[int(data["player_id"])] = int(data["to"])
 			var boost_parts: String = _roll_boost_reason(data)  # 어디서 온 보너스인지 (슈파볼트·코너·카드 등)
@@ -12152,6 +12354,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_start_beat(BEAT_AFTER_MOVE)
 			_bakery_feedback(data)
 			_vending_feedback(data)
+			_cauldron_feedback(data)
 			_corner_buff_feedback(data)
 			if bool(data.get("jailed", false)) and (data.get("path", []) as Array).is_empty():
 				_announce_move_failed("무인도 탈출 실패!", manager.current_player_id(), "짝수 눈금이 나와야 탈출할 수 있습니다")
@@ -12406,6 +12609,10 @@ func _roll_text(data: Dictionary) -> String:
 			text += OmikujiView.caption(details, int(result["steps"]))
 		&"DICE_ICECREAM":
 			text += IceCreamView.caption(details, int(result["steps"]))
+		&"DICE_COOKIE":
+			text += FortuneCookieView.caption(details, int(result["steps"]))
+		&"DICE_CAPSULE":
+			text += CapsuleGachaView.caption(details, int(result["steps"]))
 		&"REVOLVER":
 			if details["fired"]:
 				text += "뿅! 깃발 발사 · 누적 %d칸 사라짐, 턴 종료" % details["lost"]
@@ -12974,7 +13181,7 @@ func _handle_roll_event(data: Dictionary) -> void:
 	var serial: int = _fx_serial
 	_fx_busy = true
 	_refresh_controls()
-	if tool_id in [&"DICE_OMIKUJI", &"DICE_ICECREAM"]:
+	if tool_id in [&"DICE_OMIKUJI", &"DICE_ICECREAM", &"DICE_COOKIE", &"DICE_CAPSULE"]:
 		_roll_button.hide()  # 중앙 소품을 덮는 굴리기 버튼은 연출 종료 후 다시 갱신한다.
 	_presenter.hold_owner = int(data["player_id"])
 	await _presenter.play(tool_id, result, _pending_power, int(data.get("chain_index", 0)) > 0)

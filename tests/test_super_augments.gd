@@ -24,7 +24,7 @@ func _def(effect: StringName) -> AugmentDef:
 
 
 func test_twelve_super_augments_are_registered_with_names_and_descriptions() -> void:
-	check_eq(SuperAugments.ALL_IDS.size(), 12, "초증강 12종")
+	check_eq(SuperAugments.ALL_IDS.size(), 16, "초증강 16종 (평화주의자·날조와 선동·눈먼 자의 도시·사출 목걸이 포함)")
 	var state: GameState = _state()
 	for effect: StringName in SuperAugments.ALL_IDS:
 		var def: AugmentDef = _def(effect)
@@ -412,7 +412,7 @@ func test_rest_next_turn_skips_exactly_one_turn() -> void:
 
 ## 내 말도 휘말려 사출될 수 있는 초증강만 카드 왼쪽 위에 경고 아이콘: 커서를 대면 주의 문구, 아이콘을 눌러도 카드가 골라진다.
 func test_self_risk_supers_show_a_warning_icon_with_a_caution_tooltip() -> void:
-	check_eq(SuperAugments.SELF_RISK, [SuperAugments.FLIP, SuperAugments.MINEFIELD, SuperAugments.NITRO, SuperAugments.RUNAWAY, SuperAugments.GUARANTEE] as Array[StringName], "판 뒤집기·지뢰밭·니트로·기관차·연대책임")
+	check_eq(SuperAugments.SELF_RISK, [SuperAugments.FLIP, SuperAugments.MINEFIELD, SuperAugments.NITRO, SuperAugments.RUNAWAY, SuperAugments.GUARANTEE, SuperAugments.BLIND_CITY, SuperAugments.NECKLACE] as Array[StringName], "판 뒤집기·지뢰밭·니트로·기관차·연대책임·눈먼 자의 도시·사출 목걸이")
 	for effect: StringName in SuperAugments.ALL_IDS:
 		var picked: Array[int] = [0]
 		var card: Button = MainBoard.make_augment_card(MainBoard.augment_card_info(_def(effect), null, 1), func() -> void: picked[0] += 1)

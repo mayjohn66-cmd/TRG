@@ -8,6 +8,7 @@ extends RefCounted
 signal pawn_stepped(pawn_id: int, from_tile: int, to_tile: int)
 signal pawn_warped(pawn_id: int, from_tile: int, to_tile: int)
 signal pawn_sent_to_start(pawn_id: int, by_player: int)
+signal necklace_exploded(pawn_id: int, tile: int)  ## 사출 목걸이가 라운드 끝에 터지기 직전 (화면이 [펑!]을 보여 준다)
 ## 출발선으로 날아간 말의 원인 한 줄 (함정 이름 등): 로그가 "누가 처치"가 아니라 "누구의 어떤 함정에 걸려"로 쓰도록 쓴다. 로그가 읽으면 지운다 (게임 규칙에는 쓰지 않는다).
 var ejection_causes: Dictionary = {}
 ## 🏆 법전에 걸린 특수 승리 기록이 올랐다 (1.01 진행도 연출): 기록 키, 올라간 뒤 값, 일이 일어난 칸(-1이면 모름).
@@ -155,6 +156,8 @@ var reshuffle_round: int = -1
 var utility_fx: Array[Dictionary] = []
 ## [초증강] 주사위 도박사의 영혼: 플레이어 -> 효과가 켜진 라운드 번호 (그 라운드 동안만 이동 2배).
 var gambler_round: Dictionary = {}
+## 기간이 있는 초증강 상태 (평화주의자·날조와 선동·눈먼 자의 도시·사출 목걸이): SuperStatus가 읽고 쓴다. 스냅샷에 담긴다.
+var super_status: Dictionary = {}
 ## v1.1 기억상실빔: 이 라운드 동안 모든 말이 사출 면역 (-1이면 꺼짐).
 var amnesia_round: int = -1
 ## v1.1 강화 망치: 강화를 고르는 중인 사람 -> 지금 강화 단계(+N) / 멈춰서 다음 굴림에 더할 +N.
@@ -476,6 +479,7 @@ func send_to_start(pawn: PlayerPawn, by_player: int) -> void:
 	if amnesia_active() and pawn.has_left_start and not pawn.is_finished:
 		amnesia_blocked.emit(pawn.entity_id, pawn.current_tile_idx)  # 기억상실빔: 이번 라운드는 아무도 사출되지 않는다
 		return
+	if SuperStatus.blocks_capture_by(self, by_player, pawn):return  # 평화주의자는 아무도 잡을 수 없다
 	if by_player!=pawn.owner_id and break_shield(pawn):return
 	var members: Array[PlayerPawn] = pawn.stack_members()
 	# 특수 승리 기록: 다크호스 판정은 사출 전에 선두를 정한다.
@@ -523,6 +527,8 @@ func finish_stack(leader: PlayerPawn) -> void:
 		member.carrier = null
 		member.current_tile_idx = GameEnums.GOAL_TILE
 		pawn_finished.emit(member.entity_id)
+		if member.kind == GameEnums.PawnKind.COLLECTIBLE:  # 수집품: 완주하면 버프 (화면이 [수집품 획득!]을 알린다)
+			passive_triggered.emit(member.entity_id, &"collect_corotto" if member.sub_type() == GameEnums.PawnSubType.COLLECT_COROTTO else &"collect_chibi")
 	leader.carried.clear()
 	# 강제 연대책임: 묶인 짝도 함께 골인한다
 	for member: PlayerPawn in members:
@@ -948,6 +954,9 @@ func exempt_existing_attachments() -> void:
 func break_shield(pawn: PlayerPawn) -> bool:
 	if pawn != null and amnesia_active():
 		amnesia_blocked.emit(pawn.entity_id, pawn.current_tile_idx)  # 기억상실빔: 잡기·함정 사출을 막는다 (닳지 않는다)
+		return true
+	if pawn != null and SuperStatus.pawn_protected(self, pawn):
+		guard_blocked.emit(pawn.entity_id, pawn.current_tile_idx)  # 평화주의자·사출 목걸이: 잡기·사출을 막는다 (닳지 않는다)
 		return true
 	if pawn != null and pawn.turn_guard:
 		guard_blocked.emit(pawn.entity_id, pawn.current_tile_idx)  # 나이트 [기사의 맹세]: 이번 차례 동안은 막아도 사라지지 않는다

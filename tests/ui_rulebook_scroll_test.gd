@@ -123,7 +123,11 @@ func run() -> void:
 			check(reverse_icon.texture == target_icon_texture, "The arrow stays the same after switching")
 			switch_point = point(reverse_button)
 			await drag(switch_point, switch_point + Vector2.ONE, MobileSupport.touch_mode())
-			check(not bool(book._content.entries[variant_index].get("variant_flipped", true)), "The switch returns to the bakery card")
+			check(str(book._content.entries[variant_index].get("title", "")) == "Bad Carrot", "The second press shows the Belatien witch-shop card (%s)" % book._content.entries[variant_index].get("title", ""))
+			var third_button := book._tiles[variant_index].get_node("BoardVariantButton") as Button
+			switch_point = point(third_button)
+			await drag(switch_point, switch_point + Vector2.ONE, MobileSupport.touch_mode())
+			check(not bool(book._content.entries[variant_index].get("variant_flipped", true)), "The third press returns to the bakery card")
 		book.show_spread(4)
 		await frames()
 		var scroll := book._right_scroll

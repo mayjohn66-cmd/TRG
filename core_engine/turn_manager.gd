@@ -533,6 +533,9 @@ func _handle_play_card(actor: int, params: Dictionary) -> void:
 	if card is CardCounter:
 		_play_counter(actor, card, params)
 		return
+	if card != null and SuperStatus.card_blocked(state, actor, card_id):
+		action_rejected.emit(actor, &"play_card", &"pacifist")  # 평화주의자: 말을 날리는 카드는 쓸 수 없다
+		return
 	if card == null or not card.is_playable_in(current_state):
 		action_rejected.emit(actor, &"play_card", &"not_playable_now")
 		return
@@ -1243,6 +1246,10 @@ func _pick_augment(player_id: int, index: int, params: Dictionary, automatic: bo
 			return false  # 기물 진화는 기본 말만 (적용할 때와 같은 규칙)
 		if definition.category == GameEnums.AugmentCategory.UTILITY and not definition.can_pick_pawn(state, player_id, pawn):
 			return false
+		if definition.category == GameEnums.AugmentCategory.SUPER_GAMBLE and not definition.can_pick_pawn(state, player_id, pawn):
+			return false  # 사출 목걸이는 보드 위에 나와 있는 내 대표 말에만
+	if params.has("target_player") and not SuperAugments.agitation_targets(state, player_id).has(int(params["target_player"])):
+		return false  # 날조와 선동의 대상은 레이스에 남은 다른 사람
 	_draft_picks[player_id] = index
 	_draft_pick_params[player_id] = {"params": params.duplicate(), "auto": automatic}
 	_emit_event(&"augment_locked", {"player_id": player_id, "auto": automatic})
@@ -1611,6 +1618,10 @@ func _roll_with_modifiers(roller: int, tool: BaseJudgmentTool) -> RollResult:
 		(tool as ToolYut).bonus_throw = _roll_chain > 0  # 윷·모로 얻은 추가 던지기는 낙이 잘 나온다 (히든 보정)
 	var result: RollResult = PacingDirector.adjust(state, roller, tool, tool.roll(state.rng))
 	result = UtilityAugments.lucky_roll(state, roller, tool, result)
+	var chibi: Dictionary = {}
+	result = CollectibleBuffs.save_from_turn_end(state, roller, tool, result, chibi)  # 치비구루미: 턴 종료 눈금이면 한 번 다시 굴린다
+	if bool(chibi.get("saved", false)):
+		_emit_event(&"chibi_saved", {"player_id": roller, "tool_id": tool.tool_id})
 	result = PacingDirector.damp_chain(state, tool, result, _roll_chain)
 	if tool is ToolYut and _roll_chain >= ToolYut.MAX_REROLLS:
 		result = (tool as ToolYut).roll_capped(state.rng)  # 윷: 재굴림 3번 뒤 던지기는 도·개·걸 중 하나
@@ -1699,9 +1710,10 @@ func _apply_roll_result(result: RollResult) -> void:
 		var permanent: int = int(state.permanent_roll_bonus.get(roller, 0))
 		var corner: int = int(state.corner_buff.get(roller, 0))
 		state.corner_buff.erase(roller)
-		var boosted: int = maxi(ctx.dice_value + state.roll_bonus + permanent + corner, 0)
-		if state.roll_bonus != 0 or permanent != 0 or corner != 0:
-			_emit_event(&"roll_boosted", {"player_id": roller, "from": ctx.dice_value, "to": boosted, "corner": corner, "permanent": permanent, "bonus": state.roll_bonus})
+		var collect: int = CollectibleBuffs.roll_bonus(state, roller)  # 수집품 코롯토: 완주하면 모든 굴림 +1
+		var boosted: int = maxi(ctx.dice_value + state.roll_bonus + permanent + corner + collect, 0)
+		if state.roll_bonus != 0 or permanent != 0 or corner != 0 or collect != 0:
+			_emit_event(&"roll_boosted", {"player_id": roller, "from": ctx.dice_value, "to": boosted, "corner": corner, "permanent": permanent, "bonus": state.roll_bonus, "collect": collect})
 			state.roll_bonus = 0
 		if int(state.gambler_round.get(roller, -1)) == state.round_number:
 			_emit_event(&"gambler_doubled", {"player_id": roller, "from": boosted, "to": boosted * SuperAugments.gambler_multiplier()})
@@ -1917,6 +1929,9 @@ func _enter_neutral_npc_phase() -> void:
 		if bool(report["vanished"]):
 			state.remove_npc(npc)
 	_emit_event(&"npc_phase_resolved", {"reports": reports})
+	var exploded: Array[int] = SuperStatus.explode_necklaces(state)  # 사출 목걸이: 라운드가 끝나면 터져 출발선으로
+	if not exploded.is_empty():
+		_emit_event(&"necklace_exploded", {"pawn_ids": exploded})
 	# 라운드의 마지막 단계: 중립 기물이 움직인 뒤 한 번 더 판정한다 (NPC의 처치·사출로 채워진 조건). 포위망 경보는 차례 끝에만 울린다.
 	if _judge_special_victory(-1):
 		return

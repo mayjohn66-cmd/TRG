@@ -69,6 +69,10 @@ static func plan_path(state: GameState, mover: PlayerPawn, ctx: RuleContext, rep
 	# 점프 부스트로 이어 가는 추가 이동은 그 칸수만 그대로 간다 (기물 능력·부스트를 다시 붙이지 않는다).
 	if is_leap_follow_up(ctx):
 		return state.board.calculate_path(mover, steps, ctx)
+	# 사출 목걸이: 목걸이를 찬 말은 이동 거리가 2배 (미리보기도 같은 길을 보여 준다).
+	if ctx.charge_depth == 0 and SuperStatus.is_necklace(state, mover):
+		steps *= SuperStatus.NECKLACE_MOVE_MULTIPLIER
+		report.ability_notes.append("사출 목걸이 x%d" % SuperStatus.NECKLACE_MOVE_MULTIPLIER)
 	# 리벤지 부스터: 사출된 말이 출발선에서 다시 나갈 때 눈금에 +4칸 (루도 복수자는 발동 시 +4칸 더).
 	if state.boost_gimmicks and mover.revenge_boost and not mover.has_left_start and revenge_bonus_of(mover, state) > 0:
 		var revenge: int = revenge_bonus_of(mover, state)
@@ -605,12 +609,24 @@ static func _resolve_landing(state: GameState, mover: PlayerPawn, ctx: RuleConte
 		VendingDrinks.apply(state, mover, drink, report)
 		if drink == &"soda":
 			soda_steps = VendingDrinks.SODA_STEPS
+	var potion_steps: int = 0  # 가마솥 물약의 이어지는 이동: +N = 앞으로(신속), -N = 뒤로(폭발)
+	if tile.tile_type == TileNode.TileType.CAULDRON and _primary_move(ctx) and not mover.is_finished and not mover.is_imprisoned:
+		var potion: StringName = WitchPotions.pick(state)  # 벨라티엔 왕국 마녀의 가마솥: 딱 멈추면 물약이 끓는다 (좋은 것 3종 + 나쁜 것 2종)
+		WitchPotions.apply(state, mover, potion, report)
+		potion_steps = WitchPotions.follow_up_steps(potion)
 	_resolve_captures(state, mover, ctx, report)
 	if mover.is_finished:
 		return
 	_resolve_stacking(state, mover, ctx, report)
 	if soda_steps > 0 and not mover.is_finished and not mover.is_imprisoned:  # 탄산음료: 바로 앞으로 +2칸 (부스터 발판처럼 이어서 도착 정산)
 		report.merge(execute(state, mover, ctx.make_follow_up(soda_steps)))
+		return
+	if potion_steps > 0 and not mover.is_finished and not mover.is_imprisoned:  # 신속의 물약: 바로 앞으로 +2칸 (탄산음료처럼 이어서 도착 정산)
+		report.merge(execute(state, mover, ctx.make_follow_up(potion_steps)))
+		return
+	if potion_steps < 0 and not mover.is_finished and not mover.is_imprisoned:  # 폭발 물약: 펑! 뒤로 2칸 날아가 그 칸에서 평소 도착처럼 판정 (방해령 베루의 뒤로 밀기와 같은 방식)
+		var back_to: int = maxi(mover.current_tile_idx + potion_steps, 1)
+		teleport_to(state, mover, ctx.make_follow_up(0), report, back_to)
 		return
 	# 부스터 발판: 멈춘 자리가 발판이면 곧바로 앞으로 3칸 더 날아간다 (뒤따르는 이동이 도착 정산을 이어서 한다).
 	if state.boost_gimmicks and GameData.dash_steps() > 0 and BoardSpec.dash_tiles.has(mover.current_tile_idx) and _primary_move(ctx) and not mover.is_finished and not mover.is_imprisoned:
@@ -700,9 +716,12 @@ static func _sink_hostile_attachments(state: GameState, mover: PlayerPawn, tile_
 static func _resolve_captures(state: GameState, mover: PlayerPawn, ctx: RuleContext, report: MoveReport) -> void:
 	if mover.current_tile_idx == GameEnums.GOAL_TILE:
 		return
+	if SuperStatus.pacifist_active(state, mover.owner_id):
+		return  # 평화주의자: 아무도 잡을 수 없다 (같은 칸에 함께 선다)
+	var blind: bool = SuperStatus.blind_active(state)  # 눈먼 자의 도시: 같은 편 말도 잡는다
 	var enemies: Array[PlayerPawn] = []
 	for leader: PlayerPawn in state.leaders_at(mover.current_tile_idx):
-		if leader.owner_id != mover.owner_id:
+		if leader.owner_id != mover.owner_id or (blind and leader != mover and leader.has_left_start):
 			enemies.append(leader)
 	if enemies.is_empty():
 		return
@@ -783,7 +802,7 @@ static func pick_capture_victims(enemies: Array[PlayerPawn]) -> Array[PlayerPawn
 
 ## 잡기 면역(미리보기·AI용): 방어막이 남아 있는 바둑 백돌 또는 관심사도 지정 보호막. 실제 잡기에서는 방어막이 깨지며 한 번 막는다 (GameState.break_shield).
 static func is_capture_immune(_state: GameState, pawn: PlayerPawn) -> bool:
-	return (_state != null and _state.amnesia_active()) or pawn.ward or pawn.turn_guard or (pawn.shield and pawn.sub_type() == GameEnums.PawnSubType.BADUK_WHITE)
+	return (_state != null and _state.amnesia_active()) or SuperStatus.pawn_protected(_state, pawn) or pawn.ward or pawn.turn_guard or (pawn.shield and pawn.sub_type() == GameEnums.PawnSubType.BADUK_WHITE)
 
 
 ## 업기 자석 범위: 굴림 이동이 끝난 칸의 바로 앞/뒤 이 칸 수 안에 내 말이 있으면 당겨 붙어 합류한다 (2026-10-27).
