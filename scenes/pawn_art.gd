@@ -3,13 +3,14 @@ class_name PawnArt
 extends RefCounted
 
 const ROOT: String = "res://content_trickcal/illustrations/pawns/"
+const BASIC_PATH: String = ROOT + "PAWN_DEFAULT.png"
 static var _regions: Dictionary = {}
 
 
 static func candidates(pawn: PlayerPawn) -> Array[String]:
 	var paths: Array[String] = []
 	if pawn.kind == GameEnums.PawnKind.BASIC:
-		return [ROOT + "PAWN_DEFAULT.png"]
+		return [BASIC_PATH]
 	var subtype: String = GameEnums.PawnSubType.keys()[pawn.sub_type()]
 	if subtype == "MOB_KYUI":
 		paths.append(ROOT + "MOB_KYUI_V01.png")  # Cuee character sprite; keep the original cucumber fallback intact.

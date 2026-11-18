@@ -9,6 +9,7 @@ const ROLL_BUTTON_SKIN:Script=preload("res://scenes/roll_button_skin.gd")
 const COMMON_SHOCKWAVE: Texture2D = preload("res://assets/fx/common/shockwave_v01.png")
 const COMMON_FLECK: Texture2D = preload("res://assets/fx/common/spark_fleck_v01.png")
 const PAWN_SILHOUETTE: Shader = preload("res://assets/fx/common/pawn_silhouette.gdshader")
+const AGITATION_MARK = preload("res://scenes/agitation_mark.gd")
 
 const PLAYER_IDS: Array[int] = [1, 2, 3, 4]
 const PLAYER_COLORS: Dictionary = {
@@ -415,6 +416,7 @@ var _skip_button: Button = null
 var _new_game_button: Button = null
 var _hint_label: Label = null
 var _pawn_bar: Panel = null
+var _dock_agitation_mark: Node2D
 var _pawn_buttons: Array[Button] = []
 var _pawn_slot_parts: Array[Dictionary] = []
 ## 필살기 버튼: 내 프로필(큰 카드)의 칸 아래 버튼들. 수동 4인 모드에서는 기물 독의 버튼(_dock_skill_buttons)이 대신한다.
@@ -530,6 +532,7 @@ var _super_fx: SuperFX = null
 var _pick_serial: int = 0
 ## 이번 증강 선택 동안 엔진이 낸 변화 (초증강 연출이 무엇을 보여 줄지 정한다).
 var _super_changes: Array[Dictionary] = []
+var _necklace_blast_tiles: Dictionary = {}
 ## 카드를 빼앗긴 사람: 바로 뒤에 오는 카드 획득은 그 사람 프로필에서 날아온다.
 var _steal_from: int = -1
 ## 도박사의 영혼: 이번 굴림이 배수가 됐거나(배수) 과열됐다(-1) - 굴림 결과가 나올 때 주사위 위에 보여 준다.
@@ -1327,6 +1330,8 @@ func _bind_state() -> void:
 	state.pawn_sent_to_start.connect(func(pawn_id: int, by_player: int) -> void:
 		_note_super({"kind": "start", "pawn": pawn_id, "by": by_player})
 		var victim: PlayerPawn = state.get_pawn(pawn_id)
+		var blast_tile: int = int(_necklace_blast_tiles.get(pawn_id, -1))
+		_necklace_blast_tiles.erase(pawn_id)
 		var cause: StringName = state.take_ejection_cause(pawn_id)  # 어떤 함정에 걸렸는지 (처치 기록에 원인으로 붙인다)
 		_log_line("%s 출발선으로 복귀%s" % [_pawn_name(pawn_id), "  [복수 부스터 획득: 다음 출발 +%d칸]" % _revenge_steps(victim) if victim != null and victim.revenge_boost else ""], Color("ff8787"))
 		if victim == null:
@@ -1355,7 +1360,12 @@ func _bind_state() -> void:
 					_show_defended(pawn_id)
 					return
 				_record_ejection(pawn_id, by_player, true, cause)  # 처치 기록은 처치가 확정되고 연출이 나올 때 적는다
-				await _play_capture_eject(pawn_id, by_player, victim_owner, cutin_capture), pawn_id))
+				if blast_tile >= 0 and _super_fx != null:
+					var generation: int = _fx_generation
+					await _super_fx.necklace_blast(pawn_id, blast_tile)
+					if generation != _fx_generation:
+						return
+				await _play_capture_eject(pawn_id, by_player, victim_owner, cutin_capture, blast_tile < 0), pawn_id))
 	state.revenge_boost_fired.connect(_on_revenge_boost_fired)
 	state.nitro_dashed.connect(_on_nitro_dashed)
 	state.leapfrog_boosted.connect(_on_leapfrog_boosted)
@@ -1441,6 +1451,7 @@ func _bind_state() -> void:
 	state.necklace_exploded.connect(_on_necklace_exploded)
 	# v1.1: 기억상실빔이 사출을 막았다 / 모브 큐이의 오이를 밟았다
 	state.amnesia_blocked.connect(func(pawn_id: int, tile: int) -> void:
+		_necklace_blast_tiles.erase(pawn_id)
 		_on_passive_triggered(pawn_id, &"amnesia_block")
 		_log_line("[기억상실빔] %s이(가) %d번 타일에서 사출되지 않았습니다" % [_pawn_name(pawn_id), tile], Color("b197fc"))
 		_note_defense_success([pawn_id]))
@@ -1828,6 +1839,14 @@ func _build_profiles() -> void:
 		avatar.setup(player_id, color, ME_AVATAR_SIZE if big else AVATAR_SIZE)
 		avatar.size_flags_vertical = Control.SIZE_SHRINK_CENTER  # 칸이 카드 높이만큼 길쭉하게 늘어나지 않게 정사각형으로 둔다
 		row.add_child(avatar)
+		var target_mark := AGITATION_MARK.new()
+		target_mark.name = "AgitationMark"
+		target_mark.hide()
+		avatar.add_child(target_mark)
+		var place_target_mark := func() -> void:
+			target_mark.position = Vector2(avatar.size.x - 12.0, 12.0)
+		avatar.resized.connect(place_target_mark)
+		place_target_mark.call()
 
 		var right := VBoxContainer.new()
 		right.add_theme_constant_override("separation", 6 if big else 4)
@@ -1928,6 +1947,7 @@ func _build_profiles() -> void:
 			"hand_pips": hand_pips,
 			"slots": slots,
 			"avatar": avatar,
+			"agitation_mark": target_mark,
 			"anchor": anchor,
 		}
 		panel.resized.connect(_fit_profile_to_seat.bind(panel, anchor))
@@ -2846,6 +2866,7 @@ func _build_pawn_views() -> void:
 		var token := PawnToken.new()
 		token.name = "Token"
 		token.ground_shadow = false
+		token.is_board_token = true
 		token.shield_motion = _fx_on()
 		token.configure(pawn, PLAYER_COLORS[pawn.owner_id])
 		bounce.add_child(token)
@@ -2906,16 +2927,19 @@ func _refresh_pawns() -> void:
 	var armed_ids: Array[int] = []
 	for armed_player: int in state.siege_armed.keys():
 		armed_ids.append_array(VictoryLaw.spread_pawn_ids(state, armed_player))
+	var blind_board: bool = _blind_board_visible()
+	var agitation_targets: Dictionary = _visible_agitation_targets()
 	for pawn: PlayerPawn in state.pawns:
 		var view: Node2D = _pawn_views.get(pawn.entity_id)
 		if view == null:
 			continue
 		_settle_pawn_view(view, pawn)
 		var token: PawnToken = view.get_node("Bounce/Token") as PawnToken
-		token.blind = SuperStatus.blind_active(state)  # 눈먼 자의 도시: 말이 [?]로만 보인다
+		token.blind = blind_board
 		var chip: Dictionary = _super_chip_for(pawn)
-		token.chip_text = str(chip.get("text", ""))
-		token.chip_color = chip.get("color", Color("ffd43b"))
+		token.peace_mark = bool(chip.get("peace", false))
+		token.necklace_equipped = bool(chip.get("necklace", false))
+		token.agitation_mark = agitation_targets.has(pawn.owner_id) and pawn.carrier == null and pawn.has_left_start and not pawn.is_finished
 		token.configure(pawn, PLAYER_COLORS[pawn.owner_id])
 		var badge_text: String = ""
 		if pawn.restrained_turns > 0 or pawn.blocked_this_turn:
@@ -2928,7 +2952,7 @@ func _refresh_pawns() -> void:
 			badge_text += " 포위망!"  # 경보가 울린 포위망의 말 (잡으면 포위망이 깨진다)
 		elif spread_ids.has(pawn.entity_id):
 			badge_text += " 포위망"  # 사도 포위망에 세어지는 말
-		(view.get_node("Bounce/Badge") as Label).text = badge_text
+		(view.get_node("Bounce/Badge") as Label).text = "" if token.blind else badge_text
 	for npc: NeutralNPC in state.npcs:
 		if not _npc_views.has(npc.entity_id):
 			_npc_views[npc.entity_id] = _make_npc_view(npc)
@@ -2954,17 +2978,14 @@ func _refresh_pawns() -> void:
 			else:expired.queue_free()
 
 
-## 기간이 있는 초증강이 걸린 말의 머리 위 칩 (목걸이 > 평화주의자 > 선동 표적).
+## 기간이 있는 초증강이 걸린 말의 머리 위 칩 (목걸이 > 평화주의자).
 func _super_chip_for(pawn: PlayerPawn) -> Dictionary:
 	if state == null or state.super_status.is_empty() or pawn.is_finished:
 		return {}
-	if SuperStatus.is_necklace(state, pawn) and pawn.carrier == null:
-		return {"text": "목걸이 x2", "color": Color("ffa94d")}
-	if SuperStatus.pacifist_active(state, pawn.owner_id) and pawn.carrier == null:
-		return {"text": "평화", "color": Color("8ce99a")}
-	for entry: Dictionary in SuperStatus.active_agitations(state):
-		if int(entry["target"]) == pawn.owner_id and pawn.carrier == null and pawn.has_left_start:
-			return {"text": "표적", "color": Color("ff8787")}
+	if SuperStatus.is_necklace(state, pawn) and pawn.carrier == null and not _super_mark_pending(pawn.owner_id, SuperAugments.NECKLACE):
+		return {"necklace": true}
+	if SuperStatus.pacifist_active(state, pawn.owner_id) and pawn.carrier == null and not _super_mark_pending(pawn.owner_id, SuperAugments.PACIFIST):
+		return {"peace": true}
 	return {}
 
 
@@ -3171,8 +3192,8 @@ func _trap_tooltip(attachment: TileAttachment) -> String:
 
 
 ## 이 화면이 함정의 정체를 알아도 되는가: 공개 함정이거나, 함정 공개 규칙이거나, 혼자 보는 화면(AI 대전·온라인)에서 내가 깐 함정.
-func _trap_known(attachment: TileAttachment) -> bool:
-	if SuperStatus.blind_active(state):
+func _trap_known(attachment: TileAttachment, hide_identity: bool = true) -> bool:
+	if hide_identity and SuperStatus.blind_active(state):
 		return false  # 눈먼 자의 도시: 내 함정도 포함해 모든 함정이 가려진다
 	if not attachment.is_hidden_trap or attachment.always_revealed or MatchRules.trap_reveal(state):
 		return true
@@ -3181,7 +3202,7 @@ func _trap_known(attachment: TileAttachment) -> bool:
 
 ## 함정 타일에 붙일 그림: 정체를 모르는 함정은 물음표.
 func _trap_icon(attachment: TileAttachment) -> Texture2D:
-	var key: String = attachment.attachment_id if _trap_known(attachment) else "HIDDEN"
+	var key: String = attachment.attachment_id if _trap_known(attachment, _blind_board_visible()) else "HIDDEN"
 	var icon: Texture2D = TextureCache.fetch("res://assets/board/traps/%s.png" % key)
 	return icon if icon != null else TextureCache.fetch("res://assets/board/traps/HIDDEN.png")
 
@@ -3761,11 +3782,11 @@ func _play_cauldron_brew(tile: int, potion: StringName) -> void:
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	holder.add_child(title)
 	var view := CauldronBrewView.new()
-	view.name = "Cauldron2D"
+	view.name = "Cauldron3D"
 	view.position = Vector2(20, 58)
 	view.size = Vector2(290, 280)
 	holder.add_child(view)
-	view.play(color, good, pace)
+	view.play(potion, color, good, pace)
 	var name_label: Label = _make_label(L10n.t(WitchPotions.name_of(potion)) + "!", 40, color)
 	name_label.name = "PotionName"
 	name_label.add_theme_constant_override("outline_size", 8)
@@ -6724,6 +6745,11 @@ func _build_pawn_dock() -> void:
 	_pawn_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_pawn_bar.add_theme_stylebox_override("panel", _style(Color("131826"), COLOR_PANEL_EDGE, 2, 12, 8, 0))
 	add_child(_pawn_bar)
+	_dock_agitation_mark = AGITATION_MARK.new()
+	_dock_agitation_mark.position = Vector2(_pawn_bar.size.x - 12.0, -5.0)
+	_dock_agitation_mark.z_index = 4
+	_dock_agitation_mark.hide()
+	_pawn_bar.add_child(_dock_agitation_mark)
 	var step: float = SLOT_SIZE.x + 5.0
 	for slot: int in GameEnums.PAWNS_PER_PLAYER:
 		var skill_button: Button = _make_button("필살기\n발동!", _on_skill_pressed.bind(slot), 15, Color("c77d0a"), 8)
@@ -8927,6 +8953,8 @@ func _reset_presentation() -> void:
 	_late_steps.clear()
 	_draft_deferred.clear()
 	_super_changes.clear()
+	_super_hidden.clear()
+	_necklace_blast_tiles.clear()
 	_steal_from = -1
 	_gambler_flash.clear()
 	if _draw_fx != null:
@@ -9008,13 +9036,8 @@ func _on_necklace_exploded(pawn_id: int, tile: int) -> void:
 	var owner_id: int = pawn.owner_id if pawn != null else manager.current_player_id()
 	_log_line("[사출 목걸이] P%d의 %s 목걸이가 터졌습니다!" % [owner_id, _pawn_name(pawn_id)], Color("ffa94d"))
 	_record(owner_id, "사출 목걸이가 터져 말이 사출됨!", "", true)
-	if not _fx_on():
-		return
-	var at: Vector2 = (_pawn_layer.position if _pawn_layer != null else Vector2.ZERO) + _tile_center(tile)
-	Sfx.play(&"slam", -3.0)
-	screen_shake(7.0, 0.22)
-	_impact_ring(at, Color("ffa94d"), 90.0)
-	_floating_badge(at + Vector2(0, -46), "펑!", Color("ffa94d"), 34)
+	if _fx_on():
+		_necklace_blast_tiles[pawn_id] = tile
 
 
 ## 기물 고유 능력이 발동했다: 그 말 머리 위에 [기물] 원인 뱃지를 띄운다 (연출 큐 순서대로, 걸음을 끊지 않는다).
@@ -11489,7 +11512,7 @@ func _note_super(change: Dictionary) -> void:
 
 ## 초증강을 골랐다: 그 선택이 만든 연출 단계들 바로 앞에 전용 보드 연출을 끼운다 (모두 [선택한 증강] 공개 뒤에 재생된다).
 ## 그 연출이 처치 장면을 직접 보여 주는 초증강은 늦게 붙는 처치 단계를 미리 빼낸다 (같은 장면이 두 번 나오지 않게).
-func _on_super_picked(player_id: int, augment_id: StringName) -> void:
+func _on_super_picked(player_id: int, augment_id: StringName, details: Dictionary = {}) -> void:
 	var definition: AugmentDef = AugmentRegistry.get_def(augment_id)
 	if definition == null or definition.category != GameEnums.AugmentCategory.SUPER_GAMBLE or _super_fx == null or not _draft_in_progress():
 		return
@@ -11499,6 +11522,10 @@ func _on_super_picked(player_id: int, augment_id: StringName) -> void:
 	var changes: Array[Dictionary] = []
 	for change: Dictionary in _super_changes:
 		changes.append(change.duplicate(true))
+	if not details.is_empty():
+		var pick_details := details.duplicate()
+		pick_details["kind"] = "status_pick"
+		changes.append(pick_details)
 	if effect==SuperAugments.RAID:
 		# Synchronize the real reserved deliveries with each successful snatch.
 		# Returned cards (full recipient hand) are restorations, not new rewards.
@@ -11581,14 +11608,16 @@ func _on_super_picked(player_id: int, augment_id: StringName) -> void:
 	var step: Callable = func() -> void:
 		var generation: int = _fx_generation
 		# The contract pays out only after its offering reaches the player's profile.
-		if effect not in [SuperAugments.DEVIL,SuperAugments.GAMBLER]:
+		if effect not in [SuperAugments.DEVIL, SuperAugments.GAMBLER] and not SuperFX.is_status_effect(effect):
 			_super_hidden.erase(hidden_key)
 		await _super_fx.play(effect, player_id, changes)
-		if effect in [SuperAugments.DEVIL,SuperAugments.GAMBLER]:
-			if generation!=_fx_generation:
-				return
+		if generation != _fx_generation:
+			return
+		if SuperFX.is_status_effect(effect):
+			_reveal_super_status(player_id, effect)
+		else:
 			_super_hidden.erase(hidden_key)
-		_refresh_super_marks()
+			_refresh_super_marks()
 	var at: int = _draft_deferred.size()
 	for index: int in _draft_deferred.size():
 		if int(_draft_deferred[index].get("pick", -1)) == serial:
@@ -11601,20 +11630,56 @@ func _on_super_picked(player_id: int, augment_id: StringName) -> void:
 var _super_hidden: Dictionary = {}
 
 
+func _super_mark_pending(player_id: int, effect: StringName) -> bool:
+	return _super_hidden.has("%d:%s" % [player_id, effect])
+
+
+func _blind_board_visible() -> bool:
+	if not SuperStatus.blind_active(state):
+		return false
+	for player_id: int in _player_ids:
+		if _super_mark_pending(player_id, SuperAugments.BLIND_CITY):
+			return false
+	return true
+
+
+func _visible_agitation_targets() -> Dictionary:
+	var targets: Dictionary = {}
+	for entry: Dictionary in SuperStatus.active_agitations(state):
+		if not _super_mark_pending(int(entry["by"]), SuperAugments.AGITATE):
+			targets[int(entry["target"])] = true
+	return targets
+
+
+func _reveal_super_status(player_id: int, effect: StringName) -> void:
+	if not _super_hidden.erase("%d:%s" % [player_id, effect]):
+		return
+	_refresh_pawns()
+	if effect == SuperAugments.BLIND_CITY:
+		_refresh_tiles()
+	if effect in [SuperAugments.BLIND_CITY, SuperAugments.AGITATE]:
+		_refresh_super_marks()
+
+
 ## 지속 표시: 악마의 계약(보라/붉은 불꽃 테두리, 게임 끝까지)·도박사의 영혼(황금 불꽃, 그 라운드)·강제 연대책임(묶인 두 말 발밑 붉은 고리).
 func _refresh_super_marks() -> void:
 	if state == null:
 		return
+	var agitation_targets: Dictionary = _visible_agitation_targets()
+	if _dock_agitation_mark != null:
+		_dock_agitation_mark.visible = agitation_targets.has(local_player_id)
 	for player_id: int in _player_ids:
 		if not _profiles.has(player_id):
 			continue
+		_profiles[player_id]["agitation_mark"].visible = agitation_targets.has(player_id)
 		SuperFX.set_flame(_profiles[player_id]["panel"], "SuperFlame", _flame_colors(player_id),true,_buff_outline_effects(player_id))
 	var shown: int = int(_tool_board_key.get_slice(":", 0)) if _tool_board_key != "" else -1
 	SuperFX.set_flame(_tool_board, "SuperFlame", _flame_colors(shown) if shown != -1 else [] as Array[Color],false,_buff_outline_effects(shown))
+	var blind_board: bool = _blind_board_visible()
 	for pawn: PlayerPawn in state.pawns:
 		var view: Node2D = _pawn_views.get(pawn.entity_id)
 		if view != null:
-			var bonded: bool = _fx_on() and state.bonds.has(pawn.entity_id) and not _super_hidden.has("%d:%s" % [pawn.owner_id, SuperAugments.GUARANTEE])
+			var bonded: bool = _fx_on() and not blind_board and state.bonds.has(pawn.entity_id) and not _super_hidden.has("%d:%s" % [pawn.owner_id, SuperAugments.GUARANTEE])
 			SuperFX.set_bond_ring(view, bonded)
 
 
@@ -12469,7 +12534,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			if int(data["player_id"]) == _telemetry_seat():
 				var picked_def: AugmentDef = AugmentRegistry.get_def(data.get("augment_id", &""))
 				_my_augments.append(picked_def.display_name if picked_def != null else str(data.get("augment_id", "")))
-			_on_super_picked(int(data["player_id"]), data.get("augment_id", &""))
+			_on_super_picked(int(data["player_id"]), data.get("augment_id", &""), data.get("presentation", {}))
 			_on_utility_picked(int(data["player_id"]), data.get("augment_id", &""))
 			_pick_serial += 1
 			_super_changes.clear()

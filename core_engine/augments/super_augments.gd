@@ -233,7 +233,7 @@ static func _apply_agitate(state: GameState, player_id: int, target: int) -> Dic
 		state.discard_random_card(player_id, state.rng)
 		discarded += 1
 	var until: int = SuperStatus.set_agitation(state, player_id, target)
-	return {"ok": true, "text": "날조와 선동! %d번째 라운드 증강전까지 P%d가 모든 공격 카드를 받습니다 (내 손패 %d장을 모두 버렸습니다)" % [until, target, discarded]}
+	return {"ok": true, "presentation": {"target": target, "discarded": discarded}, "text": "날조와 선동! %d번째 라운드 증강전까지 P%d가 모든 공격 카드를 받습니다 (내 손패 %d장을 모두 버렸습니다)" % [until, target, discarded]}
 
 
 static func _apply_blind_city(state: GameState) -> Dictionary:
@@ -248,7 +248,7 @@ static func _apply_necklace(state: GameState, player_id: int, pawn_id: int) -> D
 	if pawn == null:
 		return {"ok": false, "text": "보드 위에 내 말이 없습니다"}
 	SuperStatus.set_necklace(state, player_id, pawn.entity_id)
-	return {"ok": true, "text": "사출 목걸이! 말 %d번은 이번 라운드 모든 공격을 막고 이동 거리가 2배지만, 라운드가 끝나면 목걸이가 터져 출발선으로 사출됩니다" % pawn.slot}
+	return {"ok": true, "presentation": {"pawn": pawn.entity_id}, "text": "사출 목걸이! 말 %d번은 이번 라운드 모든 공격을 막고 이동 거리가 2배지만, 라운드가 끝나면 목걸이가 터져 출발선으로 사출됩니다" % pawn.slot}
 
 
 static func _apply_flip(state: GameState, player_id: int) -> Dictionary:
