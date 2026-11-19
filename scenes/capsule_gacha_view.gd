@@ -45,12 +45,15 @@ var _prize: Node3D
 var _cup_material: StandardMaterial3D
 var _lip_material: StandardMaterial3D
 var _time := 0.0
+var _result_panel := StyleBoxFlat.new()
 
 
 func _init() -> void:
 	custom_minimum_size = SIZE
 	size = SIZE
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_result_panel.set_corner_radius_all(9)
+	_result_panel.set_border_width_all(1)
 
 
 func begin(details: Dictionary, _kept: int = 0) -> void:
@@ -181,11 +184,13 @@ func _draw() -> void:
 	if not settled:
 		return
 	var opacity := smoothstep(REVEAL_AT, REVEAL_AT + 0.16, _time)
-	var ink := Color("3a3347")
+	_result_panel.bg_color = Color(0.065, 0.075, 0.12, opacity * 0.92)
+	_result_panel.border_color = Color(0.94, 0.83, 0.57, opacity * 0.60)
+	draw_style_box(_result_panel, Rect2(208, 6, 194, 88))
 	var top := Vector2(305, 23)
-	_text(L10n.t(_name), top, 17, Color(ink, opacity), 174.0)
-	_text(L10n.t(_rarity_name), top + Vector2(0, 22), 13, Color(Color("9e5c28"), opacity), 174.0)
-	_text(L10n.t("%d칸 전진!") % _steps, top + Vector2(0, 49), 23, Color(Color("ce4a2e"), opacity), 174.0)
+	_text(L10n.t(_name), top, 17, Color(Color("fff8e6"), opacity), 174.0)
+	_text(L10n.t(_rarity_name), top + Vector2(0, 22), 13, Color(Color("ebcf95"), opacity), 174.0)
+	_text(L10n.t("%d칸 전진!") % _steps, top + Vector2(0, 49), 23, Color(Color("ffe26b"), opacity), 174.0)
 
 
 func _text(value: String, at: Vector2, px: int, color: Color, max_width: float) -> void:
