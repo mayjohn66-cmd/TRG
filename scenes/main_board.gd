@@ -11027,7 +11027,12 @@ func _show_agitation_choice(player_id: int, index: int) -> void:
 	if targets.is_empty():
 		_act(&"pick_augment", {"player_id": player_id, "index": index})
 		return
+	# 말 고르기와 같이, 증강 카드 화면은 상대를 고르는 동안 숨긴다 (뒤에 비쳐 겹쳐 보이지 않게). 취소하면 증강 카드 3장 화면을 다시 만든다.
+	if _draft_overlay != null:
+		_draft_overlay.visible = false
 	_show_choice("날조와 선동! 모든 공격을 받을 상대를 고르세요", targets, _pick_augment_with_target.bind(player_id, index), 3)
+	if _choice_overlay != null and _choice_overlay.has_signal("canceled"):
+		_choice_overlay.connect("canceled", _cancel_pawn_choice)
 
 
 func _pick_augment_with_target(target: int, player_id: int, index: int) -> void:
