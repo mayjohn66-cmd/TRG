@@ -6,7 +6,7 @@ const EXPECTED_TOOLS: Dictionary = {
 	&"CHINCHIRO": "DICE_CHINCHIRO", &"SLOT_777": "DICE_SLOT", &"REVOLVER": "REVOLVER",
 	&"DICE_HWATU": "DICE_HWATU", &"DICE_MAHJONG": "DICE_MAHJONG", &"DICE_TAROT": "DICE_TAROT",
 	&"DICE_YACHT": "DICE_YACHT", &"DICE_BLACKJACK": "DICE_BLACKJACK", &"DICE_PINBALL": "DICE_PINBALL",
-	&"DICE_STOCK": "DICE_STOCK_V02", &"DICE_DARTS": "DICE_DARTS_V02", &"DICE_OMIKUJI": "DICE_OMIKUJI_V02", &"DICE_ICECREAM": "DICE_ICECREAM_V02", &"DICE_COOKIE": "DICE_COOKIE", &"DICE_CAPSULE": "DICE_CAPSULE",
+	&"DICE_STOCK": "DICE_STOCK_V02", &"DICE_DARTS": "DICE_DARTS_V02", &"DICE_OMIKUJI": "DICE_OMIKUJI_V02", &"DICE_ICECREAM": "DICE_ICECREAM_V02", &"DICE_COOKIE": "DICE_COOKIE_V02", &"DICE_CAPSULE": "DICE_CAPSULE_V02",
 }
 
 
@@ -24,6 +24,8 @@ func test_all_draft_icons_resolve_to_the_described_target() -> void:
 					relative = "pawns/ODD_MELON_V01.png"
 				if definition.payload == GameEnums.PawnKind.YUT:
 					relative = "pawns/YUT.png"
+				if definition.payload in [GameEnums.PawnKind.TRPG, GameEnums.PawnKind.COLLECTIBLE]:
+					relative = "augments/pawns/%s_V02.png" % GameEnums.PawnSubType.keys()[subtype]
 			GameEnums.AugmentCategory.TOOL_SWAP:
 				check(EXPECTED_TOOLS.has(definition.payload), "known tool: " + str(definition.payload))
 				relative = "dice/%s.png" % EXPECTED_TOOLS.get(definition.payload, "MISSING")
