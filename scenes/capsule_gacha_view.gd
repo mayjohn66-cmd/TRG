@@ -1,6 +1,4 @@
-## 캡슐뽑기 연출 (임시 2D 그림): 코인이 투입구로 들어가고 -> 손잡이가 한 바퀴 돌고 -> 캡슐이 굴러 나와 -> 톡 열리며 미니어처가 나타난다.
-## 규칙 엔진이 이미 정한 결과를 그릴 뿐이다. 플레이어는 [뽑기!] 버튼 한 번만 누르면 모든 동작이 자동으로 이어진다.
-## 최종 그림이 오면 _draw_machine / _draw_capsule만 바꾸면 된다. 미니어처는 그 캐릭터의 승리 일러스트를 작게 세워 보여 준다.
+## The roll clock drives the real machine, coin, capsule halves and acrylic prize.
 class_name CapsuleGachaView
 extends Control
 
@@ -11,24 +9,42 @@ const TURN_END := 1.60
 const DROP_AT := 1.65
 const OPEN_AT := 2.30
 const REVEAL_AT := 2.75
-const TOTAL_TIME := 3.45
-const INK := Color("3a3347")
-const BODY := Color("f4f1f6")
-const BODY_SHADE := Color("d8d2de")
-const GLASS := Color(0.78, 0.9, 1.0, 0.45)
+const TOTAL_TIME := 4.25
 const FONT: Font = preload("res://assets/fonts/game_ui_font.tres")
-const MACHINE_AT := Vector2(22, 14)
-const PRIZE_X := 304.0
+const MODEL_DIR := "res://assets/models/capsule_gacha/"
+const MACHINE: PackedScene = preload(MODEL_DIR + "machine.glb")
+const COIN: PackedScene = preload(MODEL_DIR + "coin.glb")
+const CAPSULE: PackedScene = preload(MODEL_DIR + "capsule.glb")
+const PRIZES: Dictionary = {
+	&"avatar_02": preload(MODEL_DIR + "butter.glb"),
+	&"avatar_05": preload(MODEL_DIR + "shady.glb"),
+	&"avatar_07": preload(MODEL_DIR + "belita.glb"),
+	&"avatar_08": preload(MODEL_DIR + "joan.glb"),
+	&"avatar_01": preload(MODEL_DIR + "erpin.glb"),
+}
 
 var settled := false
-var _t := 0.0
 var _name := ""
 var _steps := 3
-var _rarity: StringName = &"common"
 var _rarity_name := ""
 var _secret := false
-var _color := Color("ffd43b")
-var _art: Texture2D = null
+var _art: Texture2D
+var _viewport: SubViewport
+var _camera: Camera3D
+var _machine: Node3D
+var _knob: Node3D
+var _flap: Node3D
+var _stock: Node3D
+var _stock_rest: Array[Transform3D] = []
+var _coin: Node3D
+var _coin_entry: Node3D
+var _exit: Node3D
+var _capsule: Node3D
+var _lid: Node3D
+var _prize: Node3D
+var _cup_material: StandardMaterial3D
+var _lip_material: StandardMaterial3D
+var _time := 0.0
 
 
 func _init() -> void:
@@ -38,13 +54,25 @@ func _init() -> void:
 
 
 func begin(details: Dictionary, _kept: int = 0) -> void:
+	if _viewport == null:
+		_build_stage()
 	_name = str(details.get("name", ""))
 	_steps = int(details.get("steps", 3))
-	_rarity = StringName(details.get("rarity", &"common"))
 	_rarity_name = str(details.get("rarity_name", ""))
 	_secret = bool(details.get("secret", false))
-	_color = Color(str(details.get("color", "ffd43b")))
-	_art = AvatarCombatArt.texture(StringName(details.get("avatar", &"avatar_01")), &"victory")
+	var color := Color(str(details.get("color", "ffd43b")))
+	_cup_material.albedo_color = color
+	_cup_material.metallic = 0.38 if _secret else 0.0
+	_lip_material.albedo_color = color.darkened(0.20)
+	if is_instance_valid(_prize):
+		_viewport.remove_child(_prize)
+		_prize.queue_free()
+	var avatar := StringName(details.get("avatar", &"avatar_02"))
+	var scene: PackedScene = PRIZES.get(avatar, PRIZES[&"avatar_02"])
+	_prize = scene.instantiate() as Node3D
+	_viewport.add_child(_prize)
+	var acrylic := _prize.find_child("CharacterAcrylic", true, false) as MeshInstance3D
+	_art = (acrylic.mesh.surface_get_material(0) as StandardMaterial3D).albedo_texture
 	apply_time(0.0)
 
 
@@ -52,153 +80,115 @@ static func caption(details: Dictionary, steps: int) -> String:
 	return ToolCapsuleGacha.caption(details, steps)
 
 
+func _build_stage() -> void:
+	_viewport = SubViewport.new()
+	_viewport.name = "CapsuleMachine3D"
+	_viewport.size = Vector2i(840, 600)
+	_viewport.own_world_3d = true
+	_viewport.transparent_bg = true
+	_viewport.msaa_3d = Viewport.MSAA_2X
+	_viewport.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
+	add_child(_viewport)
+	var display := TextureRect.new()
+	display.texture = _viewport.get_texture()
+	display.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	display.size = SIZE
+	display.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(display)
+	var world := WorldEnvironment.new()
+	world.environment = Environment.new()
+	world.environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	world.environment.ambient_light_color = Color("e9efff")
+	world.environment.ambient_light_energy = 0.64
+	_viewport.add_child(world)
+	for entry: Array in [[Vector3(-48, -32, 0), 0.78], [Vector3(-30, 138, 0), 0.38]]:
+		var light := DirectionalLight3D.new()
+		light.rotation_degrees = entry[0]
+		light.light_energy = entry[1]
+		_viewport.add_child(light)
+	_camera = Camera3D.new()
+	_camera.projection = Camera3D.PROJECTION_ORTHOGONAL
+	_camera.size = 3.60
+	_viewport.add_child(_camera)
+	_camera.position = Vector3(0.15, 3.05, 9.0)
+	_camera.look_at(Vector3(0.15, 1.47, 0.0))
+	_camera.current = true
+	_machine = MACHINE.instantiate() as Node3D
+	_machine.position = Vector3(-1.15, 0.0, 0.0)
+	_machine.rotation.y = 0.13
+	_viewport.add_child(_machine)
+	_knob = _machine.find_child("TurnKnob", true, false) as Node3D
+	_flap = _machine.find_child("PickupFlap", true, false) as Node3D
+	_coin_entry = _machine.find_child("CoinEntry", true, false) as Node3D
+	_exit = _machine.find_child("CapsuleExit", true, false) as Node3D
+	_stock = _machine.find_child("CapsuleStock", true, false) as Node3D
+	for capsule: Node3D in _stock.get_children():
+		_stock_rest.append(capsule.transform)
+	_coin = COIN.instantiate() as Node3D
+	_viewport.add_child(_coin)
+	_coin.scale = Vector3.ONE * 0.23
+	_capsule = CAPSULE.instantiate() as Node3D
+	_viewport.add_child(_capsule)
+	_capsule.scale = Vector3.ONE * 0.69
+	_lid = _capsule.find_child("ClearLid", true, false) as Node3D
+	var cup := _capsule.find_child("CupShell", true, false) as MeshInstance3D
+	_cup_material = cup.mesh.surface_get_material(0).duplicate() as StandardMaterial3D
+	cup.set_surface_override_material(0, _cup_material)
+	var lip := _capsule.find_child("CupLip", true, false) as MeshInstance3D
+	_lip_material = lip.mesh.surface_get_material(0).duplicate() as StandardMaterial3D
+	lip.set_surface_override_material(0, _lip_material)
+
+
 func apply_time(t: float) -> void:
-	_t = t
+	_time = t
 	settled = t >= REVEAL_AT
+	if _viewport == null:
+		return
+	var turn := smoothstep(TURN_AT, TURN_END, t)
+	_knob.rotation.z = deg_to_rad(-11.0) - TAU * turn
+	var churn := sin(turn * PI) * 0.065
+	for index: int in _stock.get_child_count():
+		var capsule := _stock.get_child(index) as Node3D
+		capsule.transform = _stock_rest[index]
+		capsule.position += Vector3(sin(turn * TAU * 3.0 + index), sin(turn * TAU * 4.0 + index * 1.7), 0.0) * churn
+		capsule.rotate_z(sin(turn * TAU * 2.0 + index) * churn * 4.0)
+	var insertion := smoothstep(COIN_AT, TURN_AT - 0.12, t)
+	var slot := _coin_entry.global_position
+	_coin.visible = t >= COIN_AT and t < TURN_AT - 0.04
+	_coin.position = (slot + Vector3(-0.77, 0.63, 1.0)).lerp(slot - Vector3(0.0, 0.0, 0.08), insertion)
+	_coin.position.y += sin(insertion * PI) * 0.18
+	_coin.rotation = Vector3(PI * 0.5, 0.0, insertion * TAU)
+	var roll := smoothstep(DROP_AT, OPEN_AT - 0.05, t)
+	var rest := Vector3(1.20, 0.36, 1.05)
+	var opening := smoothstep(OPEN_AT, REVEAL_AT, t)
+	_capsule.visible = t >= DROP_AT
+	_capsule.position = _exit.global_position.lerp(rest, roll)
+	_capsule.position.y += sin(roll * PI) * 0.23
+	_capsule.rotation.z = (1.0 - roll) * TAU * 1.35
+	_capsule.position += Vector3(-0.26, -0.08, 0.0) * opening
+	_lid.position = Vector3(0.56, 1.16, -0.14) * opening
+	_lid.rotation = Vector3(-0.35, 0.0, -0.68) * opening
+	_flap.rotation.x = -sin(smoothstep(DROP_AT - 0.10, DROP_AT + 0.46, t) * PI) * 1.20
+	if is_instance_valid(_prize):
+		_prize.visible = t >= OPEN_AT
+		_prize.position = rest + Vector3(0.0, lerpf(-0.22, 0.34, opening), 0.12)
+		_prize.scale = Vector3.ONE * lerpf(0.05, 1.50, opening)
+		_prize.rotation = Vector3(-0.05, -0.14 + sin(opening * PI) * 0.28, sin(opening * PI) * 0.13)
 	queue_redraw()
 
 
 func _draw() -> void:
-	_draw_machine()
-	_draw_coin()
-	_draw_capsule()
-	if _t >= OPEN_AT:
-		_draw_prize()
-
-
-func _draw_machine() -> void:
-	var at := MACHINE_AT
-	draw_rect(Rect2(at + Vector2(-4, 232), Vector2(168, 12)), Color(0.15, 0.1, 0.2, 0.2))  # 바닥 그림자
-	# 아래 몸통
-	draw_rect(Rect2(at + Vector2(6, 128), Vector2(148, 106)), BODY)
-	draw_rect(Rect2(at + Vector2(6, 128), Vector2(148, 106)), INK, false, 3.0)
-	draw_rect(Rect2(at + Vector2(6, 214), Vector2(148, 20)), BODY_SHADE)
-	# 유리 돔 (안에 알록달록한 캡슐들)
-	draw_circle(at + Vector2(80, 70), 66.0, GLASS)
-	var shake := sin(clampf(inverse_lerp(TURN_AT, TURN_END, _t), 0.0, 1.0) * TAU * 3.0) * 2.0 if _t > TURN_AT and _t < TURN_END else 0.0
-	var palette := [Color("ff8787"), Color("ffd43b"), Color("74c0fc"), Color("8ce99a"), Color("e599f7"), Color("ffa94d"), Color("a9e34b")]
-	for i: int in 14:
-		var angle := float(i) * 2.4
-		var radius := 12.0 + float(i % 4) * 11.0
-		var p := at + Vector2(80, 82) + Vector2(cos(angle) * radius * 1.3 + shake, sin(angle) * radius * 0.55)
-		draw_circle(p, 9.0, palette[i % palette.size()])
-		draw_arc(p, 9.0, 0.0, TAU, 14, INK, 1.5, true)
-		draw_line(p + Vector2(-8, 0), p + Vector2(8, 0), Color(1, 1, 1, 0.55), 1.5, true)
-	draw_arc(at + Vector2(80, 70), 66.0, 0.0, TAU, 40, INK, 3.0, true)
-	draw_rect(Rect2(at + Vector2(20, 128), Vector2(120, 8)), BODY_SHADE)
-	# 코인 투입구 + 손잡이 + 배출구
-	draw_rect(Rect2(at + Vector2(24, 148), Vector2(34, 44)), Color("c9c3d1"))
-	draw_rect(Rect2(at + Vector2(24, 148), Vector2(34, 44)), INK, false, 2.0)
-	draw_rect(Rect2(at + Vector2(37, 156), Vector2(8, 22)), INK)  # 투입구
-	var knob_center := at + Vector2(98, 170)
-	var turn := ease(clampf(inverse_lerp(TURN_AT, TURN_END, _t), 0.0, 1.0), 0.4) * TAU * 1.0
-	draw_circle(knob_center, 22.0, Color("ff8787"))
-	draw_arc(knob_center, 22.0, 0.0, TAU, 24, INK, 3.0, true)
-	for k: int in 2:
-		var dir := Vector2.from_angle(turn + float(k) * PI)
-		draw_line(knob_center - dir * 14.0, knob_center + dir * 14.0, Color("fff5f5"), 6.0, true)
-	draw_circle(knob_center, 5.0, INK)
-	draw_rect(Rect2(at + Vector2(68, 206), Vector2(52, 24)), Color("2b2433"))  # 배출구
-	draw_rect(Rect2(at + Vector2(68, 206), Vector2(52, 24)), INK, false, 2.0)
-	_text("1,000", at + Vector2(41, 140), 10, INK, 36.0)
-	# 위쪽 뚜껑
-	draw_rect(Rect2(at + Vector2(14, 4), Vector2(132, 14)), BODY)
-	draw_rect(Rect2(at + Vector2(14, 4), Vector2(132, 14)), INK, false, 2.0)
-
-
-func _draw_coin() -> void:
-	if _t < COIN_AT or _t > TURN_AT:
+	if not settled:
 		return
-	var k := clampf((_t - COIN_AT) / (TURN_AT - COIN_AT - 0.1), 0.0, 1.0)
-	var slot := MACHINE_AT + Vector2(41, 166)
-	var from := slot + Vector2(-118, -52)
-	var at := from.lerp(slot, ease(k, 0.5)) + Vector2(0, -sin(k * PI) * 34.0)
-	var squash := absf(cos(k * TAU * 2.0))
-	draw_set_transform(at, 0.0, Vector2(maxf(squash, 0.18), 1.0))
-	draw_circle(Vector2.ZERO, 11.0, Color("ffd43b"))
-	draw_arc(Vector2.ZERO, 11.0, 0.0, TAU, 20, INK, 2.0, true)
-	draw_set_transform(Vector2.ZERO)
+	var opacity := smoothstep(REVEAL_AT, REVEAL_AT + 0.16, _time)
+	var ink := Color("3a3347")
+	var top := Vector2(305, 23)
+	_text(L10n.t(_name), top, 17, Color(ink, opacity), 174.0)
+	_text(L10n.t(_rarity_name), top + Vector2(0, 22), 13, Color(Color("9e5c28"), opacity), 174.0)
+	_text(L10n.t("%d칸 전진!") % _steps, top + Vector2(0, 49), 23, Color(Color("ce4a2e"), opacity), 174.0)
 
 
-## 캡슐: 배출구에서 튀어나와 바닥으로 굴러가 톡 열린다.
-func _draw_capsule() -> void:
-	if _t < DROP_AT:
-		return
-	var drop := clampf((_t - DROP_AT) / 0.40, 0.0, 1.0)
-	var roll := clampf((_t - DROP_AT - 0.2) / 0.5, 0.0, 1.0)
-	var start := MACHINE_AT + Vector2(94, 222)
-	var rest := Vector2(PRIZE_X, 238)
-	var at := start.lerp(rest, ease(roll, 0.4)) + Vector2(0, -absf(sin(drop * PI * 1.5)) * 22.0 * (1.0 - roll))
-	var open := clampf((_t - OPEN_AT) / 0.30, 0.0, 1.0)
-	var spin := ease(roll, 0.4) * TAU
-	var radius := 24.0
-	if open <= 0.0:
-		draw_set_transform(at - Vector2(0, radius), spin, Vector2.ONE)
-		_draw_capsule_half(1.0)
-		_draw_capsule_half(-1.0)
-		draw_set_transform(Vector2.ZERO)
-	else:
-		var gap := open * 26.0
-		draw_set_transform(at - Vector2(0, radius + gap), -0.12 * open, Vector2.ONE)
-		_draw_capsule_half(1.0)
-		draw_set_transform(at - Vector2(0, radius) + Vector2(0, 0), 0.0, Vector2.ONE)
-		_draw_capsule_half(-1.0)
-		draw_set_transform(Vector2.ZERO)
-		if open < 1.0:
-			var light := Color(1, 1, 1, 1.0 - open)
-			for i: int in 8:
-				var dir := Vector2.from_angle(i * TAU / 8.0)
-				draw_line(at + Vector2(0, -radius) + dir * 30.0, at + Vector2(0, -radius) + dir * (40.0 + 14.0 * open), light, 3.0, true)
-
-
-## 캡슐 반쪽 (+1 위 / -1 아래).
-func _draw_capsule_half(side: float) -> void:
-	var radius := 24.0
-	var points := PackedVector2Array()
-	for i: int in 17:
-		var a := PI * float(i) / 16.0
-		points.append(Vector2(cos(a) * radius, -sin(a) * radius * side))
-	var tint := _color if side > 0.0 else Color("f8f9fa")
-	draw_colored_polygon(points, tint)
-	var closed := PackedVector2Array(points)
-	closed.append(points[0])
-	draw_polyline(closed, INK, 2.5, true)
-	if side > 0.0:
-		draw_arc(Vector2(-6, -6), 14.0, PI * 1.05, PI * 1.5, 10, Color(1, 1, 1, 0.6), 3.0, true)
-
-
-## 캡슐 안에서 나온 미니어처: 작은 받침 위에 캐릭터를 세우고 이름·등급·칸수를 보여 준다.
-func _draw_prize() -> void:
-	var k := ease(clampf((_t - OPEN_AT) / 0.45, 0.0, 1.0), 0.35)
-	var base := Vector2(PRIZE_X, 238)
-	var stand := base + Vector2(0, -2)
-	draw_set_transform(stand, 0.0, Vector2(1.0, 0.3))
-	draw_circle(Vector2.ZERO, 40.0, Color(0.2, 0.15, 0.3, 0.3))
-	draw_set_transform(Vector2.ZERO)
-	draw_set_transform(base + Vector2(0, -4), 0.0, Vector2(1.0, 0.32))
-	draw_circle(Vector2.ZERO, 38.0, _color.darkened(0.15))
-	draw_arc(Vector2.ZERO, 38.0, 0.0, TAU, 28, INK, 3.0, true)
-	draw_set_transform(Vector2.ZERO)
-	if _art != null:
-		var height := 112.0 * k
-		var width := height * float(_art.get_width()) / float(_art.get_height())
-		draw_texture_rect(_art, Rect2(base + Vector2(-width * 0.5, -height - 6.0), Vector2(width, height)), false)
-	if _t >= REVEAL_AT:
-		var glow := clampf((_t - REVEAL_AT) / 0.35, 0.0, 1.0)
-		var tag_color := _color.darkened(0.25) if _rarity != &"secret" else Color("d9480f")
-		_text(L10n.t(_name) + " " + L10n.t("미니어처"), Vector2(PRIZE_X, 26), 15, Color(INK, glow), 190.0)
-		_text(L10n.t(_rarity_name), Vector2(PRIZE_X, 50), 14, Color(tag_color, glow), 100.0)
-		_text(L10n.t("%d칸 전진!") % _steps, Vector2(PRIZE_X, 84), 28 if not _secret else 32, Color(Color("c2342f") if not _secret else Color("d9480f"), glow), 190.0)
-		if _secret:
-			var sparks := 8
-			var light := Color("ffd46b")
-			light.a = (1.0 - glow) * 0.9
-			for i: int in sparks:
-				var dir := Vector2.from_angle(i * TAU / sparks)
-				draw_line(base + Vector2(0, -60) + dir * (50.0 + 20.0 * glow), base + Vector2(0, -60) + dir * (60.0 + 24.0 * glow), light, 3.0, true)
-
-
-func _text(value: String, at: Vector2, px: int, color: Color, max_width: float = INF) -> void:
+func _text(value: String, at: Vector2, px: int, color: Color, max_width: float) -> void:
 	var width := FONT.get_string_size(value, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
 	if width > max_width:
 		px = maxi(1, floori(px * max_width / width))
