@@ -56,6 +56,12 @@ func test_csv_parser_handles_quotes_commas_newlines_and_bom() -> void:
 
 # --- 표 무결성 -----------------------------------------------------------------------------
 
+## 호박 쁘띠 스피키 시트는 픽셀 좌표(256px 칸)로 잘라 쓰므로 가져오기 크기 제한을 걸면 칸이 어긋난다: 원래 크기 2560x2048이어야 한다.
+func test_pumpkin_sprite_sheet_keeps_its_native_size() -> void:
+	var sheet: Texture2D = load("res://assets/ui/trickcal/duel/pumpkin/petit-speaki-angry.webp") as Texture2D
+	check(sheet != null and sheet.get_size() == Vector2(2560, 2048), "호박 시트는 2560x2048 그대로 (칸 좌표가 픽셀 기준)")
+
+
 func test_the_three_tables_exist_with_the_agreed_headers() -> void:
 	check_eq(DataTable.header_of(_file_text(GameData.AUGMENTS_PATH)), GameData.AUGMENT_COLUMNS, "augments_table.csv 헤더")
 	check_eq(DataTable.header_of(_file_text(GameData.DICE_PATH)), GameData.DICE_COLUMNS, "dice_table.csv 헤더")

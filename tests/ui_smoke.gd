@@ -343,8 +343,17 @@ func _play_draft(manager: TurnManager) -> void:
 	var index: int = _rng.randi_range(0, offers.size() - 1)
 	var definition: AugmentDef = AugmentRegistry.get_def(offers[index])
 	var before_basic: int = _board.state.basic_pawns_of(player_id).size()
+	var needs_target: bool = definition.needs_target_choice(_board.state, player_id)
 	_board._on_augment_chosen(player_id, index, definition)
-	if _board._choice_overlay != null:
+	if _board._choice_overlay != null and needs_target:
+		# 날조와 선동: 공격 카드를 몰아 줄 상대 고르기 창도 뒤의 증강 카드 화면은 숨겨져 겹쳐 보이지 않아야 한다. 첫 번째 상대를 고른다.
+		_assert(_board._draft_overlay == null or not _board._draft_overlay.visible, "상대 고르기 중에는 증강 카드 화면이 숨겨진다")
+		var targets: Array[int] = SuperAugments.agitation_targets(_board.state, player_id)
+		_assert(not targets.is_empty(), "상대 고르기 창에는 고를 수 있는 상대가 있어야 한다")
+		if not targets.is_empty():
+			_board._pick_augment_with_target(targets[0], player_id, index)
+		_board._close_choice()
+	elif _board._choice_overlay != null:
 		# 말 고르기 창(기물 진화·관심사도 지정 보호막): 뒤의 증강 카드 화면은 숨겨져 겹쳐 보이지 않아야 한다. 고를 수 있는 첫 번째 말을 고른다.
 		_assert(_board._draft_overlay == null or not _board._draft_overlay.visible, "말 고르기 중에는 증강 카드 화면이 숨겨진다")
 		var choices: Array = _board.state.pawns_of(player_id).filter(func(pawn: PlayerPawn) -> bool: return definition.can_pick_pawn(_board.state, player_id, pawn))
