@@ -17,7 +17,7 @@ function check(condition, message) {
   }
 }
 
-function fakeWindow({ buildId, version, stored }) {
+function fakeWindow({ buildId, version, stored, hashes = null, href = "https://trickcal-board.vercel.app/" }) {
   const storage = new Map(Object.entries(stored));
   const deleted = [];
   const unregistered = [];
@@ -27,7 +27,7 @@ function fakeWindow({ buildId, version, stored }) {
   class FakeWorklet {}
   FakeWorklet.prototype.addModule = function (url) { modules.push(url); return Promise.resolve(); };
   const window = {
-    location: { href: "https://trickcal-board.vercel.app/", origin: "https://trickcal-board.vercel.app" },
+    location: { href, origin: new URL(href).origin },
     localStorage: {
       getItem: (key) => (storage.has(key) ? storage.get(key) : null),
       setItem: (key, value) => storage.set(key, String(value)),
@@ -48,7 +48,8 @@ function fakeWindow({ buildId, version, stored }) {
     setTimeout,
     Promise,
   };
-  const code = source.replace("__TRG_BUILD_ID__", buildId).replace("__TRG_VERSION__", version);
+  let code = source.replace("__TRG_BUILD_ID__", buildId).replace("__TRG_VERSION__", version);
+  if (hashes !== null) code = code.replace("__TRG_FILE_HASHES__", JSON.stringify(hashes));
   vm.runInNewContext(code, { window, URL, setTimeout, Promise });
   return { window, storage, deleted, unregistered, fetched, modules, persisted };
 }
@@ -83,6 +84,28 @@ function fakeWindow({ buildId, version, stored }) {
   check((await guard.clean()) === false && page.deleted.length === 0, "같은 버전이면 그대로 부팅한다");
 }
 
+// 1b) 내용 해시 표: 표에 있는 파일은 ?v=해시 (게임이 붙인 ?v=버전도 바꾼다), 없는 파일은 예전처럼 ?v=커밋
+{
+  const hashes = { "index.wasm": "aaaa11112222", "index.pck": "bbbb22223333", "index.audio.worklet.js": "cccc33334444", "avatars/erpin.pck": "dddd44445555" };
+  const page = fakeWindow({ buildId: "abc1234", version: "0.9.0+abc1234", stored: {}, hashes });
+  const guard = page.window.trgCacheGuard;
+  check(guard.bust("index.wasm") === "https://trickcal-board.vercel.app/index.wasm?v=aaaa11112222", "index.wasm에 ?v=내용 해시: " + guard.bust("index.wasm"));
+  check(guard.bust("index.pck").endsWith("/index.pck?v=bbbb22223333"), "index.pck에 ?v=내용 해시");
+  check(guard.bust("index.audio.worklet.js").endsWith("/index.audio.worklet.js?v=cccc33334444"), "오디오 워클릿에 ?v=내용 해시");
+  check(guard.bust("index.audio.position.worklet.js").endsWith("/index.audio.position.worklet.js?v=abc1234"), "표에 없는 엔진 파일은 ?v=커밋");
+  check(guard.bust("https://trickcal-board.vercel.app/avatars/erpin.pck?v=0.9.0%2Babc1234") === "https://trickcal-board.vercel.app/avatars/erpin.pck?v=dddd44445555", "게임이 ?v=버전을 붙인 아바타 묶음도 내용 해시로 바꾼다: " + guard.bust("https://trickcal-board.vercel.app/avatars/erpin.pck?v=0.9.0%2Babc1234"));
+  check(guard.bust("avatars/other.pck?v=0.9.0%2Babc1234") === "avatars/other.pck?v=0.9.0%2Babc1234", "표에 없고 쿼리가 있는 묶음은 그대로");
+  page.window.fetch("index.wasm");
+  check(page.fetched[0].endsWith("/index.wasm?v=aaaa11112222"), "fetch로 받는 엔진 파일에 내용 해시가 붙는다: " + page.fetched[0]);
+  // 다음 배포(커밋·버전이 달라도) 내용이 같으면 주소가 같다 = 브라우저 캐시를 그대로 쓴다
+  const next = fakeWindow({ buildId: "def5678", version: "0.9.0+def5678", stored: {}, hashes });
+  check(next.window.trgCacheGuard.bust("index.wasm") === guard.bust("index.wasm"), "내용이 같은 index.wasm은 배포가 바뀌어도 같은 주소");
+  // GitHub Pages 하위 경로(/TRG/)에서도 페이지 폴더 기준으로 찾는다
+  const sub = fakeWindow({ buildId: "abc1234", version: "0.9.0+abc1234", stored: {}, hashes, href: "https://example.github.io/TRG/index.html" });
+  check(sub.window.trgCacheGuard.bust("index.wasm") === "https://example.github.io/TRG/index.wasm?v=aaaa11112222", "하위 경로 페이지에서도 해시: " + sub.window.trgCacheGuard.bust("index.wasm"));
+  check(sub.window.trgCacheGuard.bust("avatars/erpin.pck?v=1") === "https://example.github.io/TRG/avatars/erpin.pck?v=dddd44445555", "하위 경로의 아바타 묶음도 해시");
+}
+
 // 3) 로컬 내보내기(토큰을 안 채움): 아무것도 바꾸지 않는다
 {
   const page = fakeWindow({ buildId: "__TRG_BUILD_ID__", version: "__TRG_VERSION__", stored: { trg_cached_version: "old" } });
@@ -93,6 +116,8 @@ function fakeWindow({ buildId, version, stored }) {
 }
 
 // 4) 부팅: 엔진이 시작돼도 게임이 첫 화면(셰이더 미리 컴파일)을 마칠 때까지 스플래시를 남기고, 6초 안전장치를 둔다
+check(shell.includes('<script src="$GODOT_URL?v=__TRG_HASH_INDEX_JS__"></script>'), "index.js는 내용 해시로 받는다");
+check(shell.includes("JSON.parse('__TRG_FILE_HASHES__')"), "해시 표 자리(__TRG_FILE_HASHES__)가 작은따옴표 문자열 안에 있다");
 check(shell.includes("window.trgBootReady = function ()") && shell.includes("if (gameReady) { hideSplash(); } else { setTimeout(hideSplash, 6000); }"), "스플래시는 게임 신호(trgBootReady, 엔진 시작 전에 와도 기억) 또는 6초 뒤에 걷힌다");
 check(/function hideSplash\(\) \{\s*if \(splash\.classList\.contains\('hidden'\)\) return;/.test(shell), "스플래시 걷기는 두 번 불려도 한 번만");
 

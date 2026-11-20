@@ -322,7 +322,10 @@
 	<!--
 		TRG_CACHE_GUARD: 배포마다 최신 빌드를 받고 옛 캐시를 치운다.
 		- 배포 스크립트(.github/workflows/deploy-web.yml)가 __TRG_BUILD_ID__(커밋 7자리)·__TRG_VERSION__(0.9.0+커밋)을 채운다. 로컬 내보내기는 그대로 남아 아무것도 하지 않는다.
-		- 캐시 버스팅: index.wasm·index.pck(fetch)와 오디오 워클릿(addModule) 주소 뒤에 ?v=커밋을 붙인다. index.js는 아래 script 태그에 붙어 있고, 아바타 묶음은 게임이 ?v=버전을 붙인다.
+		- 캐시 버스팅: 엔진 파일(index.wasm·index.pck·오디오 워클릿)과 아바타 묶음(avatars/*.pck) 주소 뒤에 ?v=<파일 내용 해시>를 붙인다.
+		  해시는 배포 스크립트(tools/stamp_web_build.py)가 __TRG_FILE_HASHES__에 채운다. 내용이 같은 파일(예: 엔진이 그대로인 index.wasm 37MB)은
+		  배포가 바뀌어도 주소가 같아 브라우저 HTTP 캐시를 그대로 쓴다. 표에 없는 파일은 예전처럼 ?v=커밋을 붙인다 (게임이 붙인 ?v=버전은 해시로 바꾼다).
+		  index.js는 아래 script 태그의 __TRG_HASH_INDEX_JS__로 같은 방식이다.
 		- 새 버전으로 처음 열면 Cache Storage를 모두 지우고 옛 서비스 워커를 해제한 뒤 trg_cached_version을 저장하고 부팅한다.
 		  localStorage의 다른 값(닉네임·언어·볼륨)과 게임 세이브(IndexedDB user://)는 건드리지 않는다.
 	-->
@@ -333,13 +336,29 @@
 			var VERSION_KEY = "trg_cached_version";
 			var stamped = BUILD_ID.indexOf("__") !== 0 && CURRENT_VERSION.indexOf("__") !== 0;
 			var BUSTED_FILES = /\.(wasm|pck|worklet\.js)$/;
+			var FILE_HASHES = {};
+			try { if (stamped) { FILE_HASHES = JSON.parse('__TRG_FILE_HASHES__'); } } catch (e) { FILE_HASHES = {}; }
 
-			// 같은 사이트의 엔진 파일(.wasm·.pck·워클릿) 주소에만, 쿼리가 아직 없을 때 ?v=커밋을 붙인다.
+			// 페이지 폴더 기준 상대 경로 (예: "index.wasm", "avatars/avatar_01.pck"). 페이지 폴더 밖이면 null.
+			function relativePath(pathname) {
+				var base = new URL(".", root.location.href).pathname;
+				return pathname.indexOf(base) === 0 ? decodeURIComponent(pathname.slice(base.length)) : null;
+			}
+
+			// 같은 사이트의 엔진 파일(.wasm·.pck·워클릿) 주소에 ?v=를 붙인다: 해시 표에 있으면 내용 해시(이미 붙은 ?v=도 바꾼다),
+			// 없으면 쿼리가 아직 없을 때만 커밋.
 			function bust(url) {
 				if (!stamped) { return url; }
 				try {
 					var parsed = new URL(String(url), root.location.href);
-					if (parsed.origin !== root.location.origin || parsed.search || !BUSTED_FILES.test(parsed.pathname)) { return url; }
+					if (parsed.origin !== root.location.origin || !BUSTED_FILES.test(parsed.pathname)) { return url; }
+					var rel = relativePath(parsed.pathname);
+					var hash = rel !== null && Object.prototype.hasOwnProperty.call(FILE_HASHES, rel) ? FILE_HASHES[rel] : "";
+					if (hash) {
+						parsed.search = "v=" + encodeURIComponent(hash);
+						return parsed.href;
+					}
+					if (parsed.search) { return url; }
 					parsed.search = "v=" + encodeURIComponent(BUILD_ID);
 					return parsed.href;
 				} catch (e) {
@@ -398,10 +417,10 @@
 				return Promise.resolve(false);
 			}
 			keepStorage();
-			root.trgCacheGuard = { bust: bust, clean: clean, keepStorage: keepStorage, version: CURRENT_VERSION, buildId: BUILD_ID, stamped: stamped };
+			root.trgCacheGuard = { bust: bust, hashes: FILE_HASHES, clean: clean, keepStorage: keepStorage, version: CURRENT_VERSION, buildId: BUILD_ID, stamped: stamped };
 		})(window);
 	</script>
-	<script src="$GODOT_URL?v=__TRG_BUILD_ID__"></script>
+	<script src="$GODOT_URL?v=__TRG_HASH_INDEX_JS__"></script>
 	<script>
 		const GODOT_CONFIG = $GODOT_CONFIG;
 		const GODOT_THREADS_ENABLED = $GODOT_THREADS_ENABLED;

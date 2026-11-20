@@ -69,6 +69,11 @@
        "ko": "웹에서 판이 진행될수록 콘솔에 WebGL 버퍼 오류가 쌓이던 문제를 고쳤어요 (말 그림자·탄환 등 단색 도형이 다시 그려질 때)",
        "en": "Fixed WebGL buffer errors piling up in the browser console during web games (when flat shapes such as pawn shadows and bullets were redrawn)",
        "ja": "Web版で対局が進むにつれてコンソールにWebGLバッファーエラーが溜まっていく問題を修正（駒の影や弾などの単色図形を描き直すとき）"
+      },
+      {
+       "ko": "업데이트 뒤 다시 접속하면 바뀌지 않은 파일(엔진·캐릭터 애니메이션)까지 매번 새로 받아 로딩이 오래 걸리던 문제를 고쳤어요. 이제 바뀐 게임 데이터만 새로 받아요",
+       "en": "Fixed reconnecting after an update re-downloading unchanged files (engine and character animations) every time, which made loading slow. Now only the changed game data is downloaded",
+       "ja": "アップデート後に再接続すると、変わっていないファイル（エンジン・キャラクターアニメーション）まで毎回ダウンロードしてロードが長くなっていた問題を修正。今は変更されたゲームデータだけをダウンロードします"
       }
      ]
     }

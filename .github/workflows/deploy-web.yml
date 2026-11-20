@@ -706,12 +706,13 @@ jobs:
           PAGES_DOMAIN: ${{ vars.PAGES_DOMAIN }}
         run: |
           mkdir -p build/web
+          # 아바타 애니메이션은 본체에서 빼고 아바타별 묶음(avatars/<id>.pck)으로 따로 내보낸다: 게임이 필요한 것부터 뒤에서 받는다 (scenes/avatar_packs.gd)
+          # 버전에 +커밋을 붙이기 전에 내보낸다: 묶음 안의 프로젝트 설정에 버전이 들어가, 붙인 뒤 내보내면 그림이 그대로여도 묶음이 배포마다 달라져(내용 해시가 바뀌어) 다시 받게 된다.
+          python3 tools/export_avatar_packs.py godot build/web/avatars
           # 시맨틱 버전 뒤에 빌드 메타데이터(+커밋 7자리)를 붙여, 피드백 제보가 어느 빌드에서 왔는지 알 수 있게 한다 (예: 0.9.0+abc1234)
           sed -i -E "s/^config\/version=\"([^\"+]*)[^\"]*\"/config\/version=\"\1+${GITHUB_SHA::7}\"/" project.godot
           grep '^config/version=' project.godot
           godot --headless --path . --export-release "Web" build/web/index.html
-          # 캐시 버스팅: index.html에 커밋(?v=)과 버전(옛 캐시 청소 기준)을 새긴다 (web/shell.html trg-cache-guard)
-          python3 tools/stamp_web_build.py build/web "${GITHUB_SHA::7}"
           # 내보낸 묶음을 직접 읽어 웹에서만 깨지는 데이터(문구 표·밸런스 CSV)를 검사한다
           if [[ "${VALIDATION_SCOPE}" == "full" ]]; then
             (cd build/web && godot --headless --main-pack index.pck -s "$GITHUB_WORKSPACE/tests/export_smoke.gd")
@@ -719,8 +720,9 @@ jobs:
           if [[ "${VALIDATION_SCOPE}" == "presentation-sfx" ]]; then
             (cd build/web && godot --headless --main-pack index.pck -s "$GITHUB_WORKSPACE/tests/sfx_assets_test.gd")
           fi
-          # 아바타 애니메이션은 본체에서 빼고 아바타별 묶음(avatars/<id>.pck)으로 따로 내보낸다: 게임이 필요한 것부터 뒤에서 받는다 (scenes/avatar_packs.gd)
-          python3 tools/export_avatar_packs.py godot build/web/avatars
+          # 캐시 버스팅: index.html에 엔진 파일·아바타 묶음의 내용 해시(?v=), 커밋, 버전(옛 캐시 청소 기준)을 새긴다 (web/shell.html trg-cache-guard).
+          # 내용이 같은 파일은 배포가 바뀌어도 주소가 같아 다시 받지 않는다: 아바타 묶음을 내보낸 뒤에 실행해야 묶음 해시가 들어간다.
+          python3 tools/stamp_web_build.py build/web "${GITHUB_SHA::7}"
           if [[ "${VALIDATION_SCOPE}" == "lobby-art" ]]; then
             (cd build/web && LOBBY_ART_PACK="$GITHUB_WORKSPACE/build/web/avatars/ui_lobby.pck" godot --headless --main-pack index.pck -s "$GITHUB_WORKSPACE/tests/lobby_art_pack_smoke.gd")
           fi
