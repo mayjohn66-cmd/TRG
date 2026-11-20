@@ -52,11 +52,16 @@ func test_all_draft_icons_resolve_to_the_described_target() -> void:
 func test_shop_law_uses_the_icon_for_the_active_board() -> void:
 	var original_tiles: int = BoardSpec.tile_count
 	var original_convenience: bool = BoardSpec.convenience
+	var original_witch: bool = BoardSpec.witch
 	var definition: AugmentDef = AugmentRegistry.get_def(&"AUG_LAW_02")
 	BoardSpec.apply(32, true)
 	var city: Texture2D = AugmentArt.load_first(AugmentArt.candidates(definition))
 	check(city != null and city.resource_path.ends_with("/LAW_02_MONATIUM.png"), "Monatium uses the convenience-store emblem")
+	BoardSpec.apply(32, false, true)
+	var witch: Texture2D = AugmentArt.load_first(AugmentArt.candidates(definition))
+	check(witch != null and witch.resource_path.ends_with("/LAW_02_BAD_CARROT.png"), "Bad Carrot uses the witch and carrot emblem")
+	check(AugmentArt.load_first(AugmentArt.law_candidates("LAW_02")) == witch, "rulebook and law effect use the same witch emblem")
 	BoardSpec.apply(32)
 	var classic: Texture2D = AugmentArt.load_first(AugmentArt.candidates(definition))
 	check(classic != null and classic.resource_path.ends_with("/LAW_02.png"), "switching back restores the bakery ticket")
-	BoardSpec.apply(original_tiles, original_convenience)
+	BoardSpec.apply(original_tiles, original_convenience, original_witch)

@@ -4,6 +4,7 @@ extends RefCounted
 
 const ROOT: String = "res://content_trickcal/illustrations/"
 const MONATIUM_LAW_ICON: String = ROOT + "laws/LAW_02_MONATIUM.png"
+const BAD_CARROT_LAW_ICON: String = ROOT + "laws/LAW_02_BAD_CARROT.png"
 const CIRCLE_SHADER: Shader = preload("res://scenes/augment_circle.gdshader")
 const PAWN_FILES: Dictionary = {
 	GameEnums.PawnKind.CHESS: "PAWN_CHESS",
@@ -75,8 +76,11 @@ static func candidates(definition: AugmentDef) -> Array[String]:
 
 static func law_candidates(law_id: String) -> Array[String]:
 	var paths: Array[String] = [ROOT + "laws/%s.png" % law_id]
-	if law_id == "LAW_02" and VictoryLaw.variant_active(law_id):
-		paths.push_front(MONATIUM_LAW_ICON)
+	if law_id == "LAW_02":
+		if BoardSpec.witch:
+			paths.push_front(BAD_CARROT_LAW_ICON)
+		elif VictoryLaw.variant_active(law_id):
+			paths.push_front(MONATIUM_LAW_ICON)
 	return paths
 
 
