@@ -613,6 +613,13 @@ jobs:
           godot --headless --path . -s res://tests/ui_hack_window_test.gd 2>&1 | tee /tmp/ui_hack_window_test.log
           grep -q 'UI_HACK_WINDOW_OK' /tmp/ui_hack_window_test.log
 
+      - name: Run augment window beat test (draft opens even when the screen refreshes during its beat)
+        if: steps.validation.outputs.scope == 'full'
+        run: |
+          set -o pipefail
+          godot --headless --path . -s res://tests/ui_draft_beat_test.gd 2>&1 | tee /tmp/ui_draft_beat_test.log
+          grep -q 'UI_DRAFT_BEAT_OK' /tmp/ui_draft_beat_test.log
+
       - name: Run counter-before-kill presentation sequence test (dodge, mirror, no counter)
         if: steps.validation.outputs.scope == 'full'
         run: |

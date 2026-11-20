@@ -54,6 +54,11 @@
        "ko": "컴퓨터가 [전문적 해킹]에 걸린 턴에 카드를 내려다 막히던 문제를 고쳤어요",
        "en": "Fixed computers trying to play cards on a turn they were hit by Professional Hacking and getting rejected",
        "ja": "コンピューターが「プロのハッキング」にかかったターンにカードを出そうとして拒否される問題を修正"
+      },
+      {
+       "ko": "증강 라운드에서 증강 선택 창이 뜨지 않고 게임이 멈추던 문제를 고쳤어요 (특히 마녀의 가마솥 연출 뒤 느린 기기에서)",
+       "en": "Fixed the game freezing at augment rounds when the augment selection window never appeared (especially on slower devices after the Witch's Cauldron scene)",
+       "ja": "オーグメントラウンドで選択ウィンドウが出ずにゲームが止まる問題を修正（特に魔女の大釜の演出後、低速な端末で）"
       }
      ]
     }

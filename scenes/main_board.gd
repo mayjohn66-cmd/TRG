@@ -4090,7 +4090,8 @@ func _build_direction_icons() -> void:
 
 
 ## 말의 움직임 연출(잡기 등)이 진행 중이거나 곧 시작될 예정인가. 이때는 다음 턴 안내·강조를 미뤄 한꺼번에 일어나지 않게 한다.
-func _fx_motion_pending() -> bool:
+## include_beat=false면 행동 뒤 여운 박자(_beat_until_msec)는 빼고 본다: 증강 창이 자기 여운을 움직임으로 착각해 박자를 끝없이 다시 거는 일을 막는다.
+func _fx_motion_pending(include_beat: bool = true) -> bool:
 	if not _fx_on():
 		return false
 	if _draw_fx != null and _draw_fx.busy():
@@ -4103,7 +4104,7 @@ func _fx_motion_pending() -> bool:
 	if _fx_busy or (_announcer != null and _announcer.holding()):
 		return true
 	var now: int = Time.get_ticks_msec()
-	if now < _fx_until_msec or now < _beat_until_msec:
+	if now < _fx_until_msec or (include_beat and now < _beat_until_msec):
 		return true
 	for view: Node2D in _pawn_views.values():
 		if _fx_running(view):
@@ -10425,7 +10426,9 @@ func _refresh_draft_overlay() -> void:
 		_close_draft_overlay()
 		return
 	if _fx_on() and manager.current_state == TurnManager.State.PHASE_ROUND_START and not manager.is_game_over:
-		if _fx_motion_pending():
+		# 여운 박자는 여기서 움직임으로 치지 않는다 (아래에서 따로 기다린다). 박자까지 움직임으로 치면, 박자 중에 화면을 한 번 더 갱신할 때마다
+		# "움직임 대기"가 다시 걸려 박자가 끝나자마자 새 박자를 또 걸고, 증강 창이 영영 안 뜨는 일이 있었다 (느린 기기·웹에서 드래프트 멈춤).
+		if _fx_motion_pending(false):
 			_draft_wait_motion = true
 			_motion_retry = true
 			_close_draft_overlay()
