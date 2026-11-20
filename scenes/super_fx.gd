@@ -810,7 +810,7 @@ func _crosshair() -> Node2D:
 		hair.width = 3.0
 		hair.default_color = RED
 		scope.add_child(hair)
-	var dot := Polygon2D.new()
+	var dot := FlatPolygon.new()
 	dot.polygon = _circle(3.0, 10)
 	dot.color = RED
 	scope.add_child(dot)
@@ -822,7 +822,7 @@ func _bullet_hole(at: Vector2) -> void:
 	var hole := Node2D.new()
 	hole.position = at + Vector2(0.0, 6.0)
 	hole.z_index = 11
-	var pit := Polygon2D.new()
+	var pit := FlatPolygon.new()
 	pit.polygon = _circle(7.0, 12)
 	pit.color = Color(0.08, 0.06, 0.06, 0.9)
 	hole.add_child(pit)
