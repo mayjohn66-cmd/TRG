@@ -688,7 +688,7 @@ var view_mode: int = ViewMode.TOP
 var _board_surface: MeshInstance2D = null
 var _flat_board_surface: MeshInstance2D = null
 var _board_edge: Line2D = null
-var _board_shadow: Polygon2D = null
+var _board_shadow: FlatPolygon = null
 var _match_background: TextureRect = null
 var _track_lines: Array[Line2D] = []
 var _action_row: HFlowContainer = null
@@ -1646,7 +1646,7 @@ func _build_ui() -> void:
 	_board_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_board_layer)
 	# 기울인 시점의 보드 면(사다리꼴)과 그림자: 타일·선보다 아래에 깔린다.
-	_board_shadow = Polygon2D.new()
+	_board_shadow = FlatPolygon.new()
 	_board_shadow.color = Color(0, 0, 0, 0.45)
 	_board_shadow.visible = false
 	_board_layer.add_child(_board_shadow)
@@ -2853,7 +2853,7 @@ func _tile_tag_base(index: int, tile_type: TileNode.TileType) -> String:
 func _build_pawn_views() -> void:
 	for pawn: PlayerPawn in state.pawns:
 		var view := Node2D.new()
-		var shadow := Polygon2D.new()
+		var shadow := FlatPolygon.new()
 		shadow.name = "Shadow"
 		shadow.polygon = _circle_points(16.0, 24)
 		shadow.scale = Vector2(1.0, 0.36)
@@ -4057,7 +4057,7 @@ func _refresh_direction() -> void:
 		var tint: Color = Color("ffa94d") if reversed else Color("ff6b6b")
 		for node: Node2D in [_dir_left, _dir_right]:
 			for chevron: Node in node.get_children():
-				(chevron as Polygon2D).color = Color(tint.r, tint.g, tint.b, 0.4)
+				(chevron as FlatPolygon).color = Color(tint.r, tint.g, tint.b, 0.4)
 	if not _tag_labels.has(GameEnums.GOAL_TILE):
 		return
 	var start_tag: Label = _tag_labels[GameEnums.GOAL_TILE]
@@ -4074,7 +4074,7 @@ func _build_direction_icons() -> void:
 		icon.visible = false  # 마름모 보드에서는 양옆 쌍화살표를 쓰지 않는다 (진행 방향은 코너 화살표가 알린다)
 		icon.z_index = 0  # 오버레이(증강 선택·결과 등)보다 아래: 같은 z면 나중에 추가된 노드가 위에 그려진다
 		for index: int in 2:
-			var chevron := Polygon2D.new()
+			var chevron := FlatPolygon.new()
 			chevron.polygon = PackedVector2Array([Vector2(-8, -20), Vector2(2, -20), Vector2(14, 0), Vector2(2, 20), Vector2(-8, 20), Vector2(4, 0)])
 			chevron.position = Vector2(-10 + index * 16, 0)
 			chevron.color = Color(1.0, 0.42, 0.42, 0.4)
@@ -4388,7 +4388,7 @@ func _play_npc_run(display_id: StringName, behavior: int, from_tile: int, path: 
 
 ## 판 위 중립 기물 그림: 롤링 양성자빔은 빛 기둥(ProtonBeamView, 연출이 켜져 있으면 알림 뒤에 하늘에서 내리꽂힌다), 나머지는 말 토큰.
 func _beam_scorch(at: Vector2) -> void:
-	var mark := Polygon2D.new()
+	var mark := FlatPolygon.new()
 	var points := PackedVector2Array()
 	for i: int in 20:
 		var angle: float = TAU * float(i) / 20.0
@@ -9418,7 +9418,7 @@ func _settle_pawn_view(view: Node2D, pawn: PlayerPawn, force: bool = false) -> v
 	var target_pos: Vector2 = _pawn_position(pawn)
 	var target_scale: float = _depth_scale(tile_norm(pawn.current_tile_idx).y)
 	var want_visible: bool = pawn.carrier == null and not pawn.is_finished and pawn.has_left_start
-	(view.get_node("Shadow") as Polygon2D).visible = true
+	(view.get_node("Shadow") as FlatPolygon).visible = true
 	if not _fx_on():
 		_kill_fx(view)
 		view.position = target_pos
@@ -9502,7 +9502,7 @@ func _fx_simple_shot(shooter: int, target_pawn_id: int) -> void:
 	var to_pos: Vector2 = view.position
 	var flight: float = 0.35 * _motion_pace()
 	_fx_when_announced(func() -> void:
-		var bullet := Polygon2D.new()
+		var bullet := FlatPolygon.new()
 		bullet.polygon = _circle_points(5.0, 12)
 		bullet.color = Color("ffe066")
 		bullet.position = from_pos
@@ -9927,7 +9927,7 @@ func _impact_ring(at: Vector2, color: Color, radius: float) -> void:
 
 ## 맞은 말의 자리에서 화면 밖으로 튕겨 나가는 원형 잔상.
 func _fly_away(from: Vector2, direction: Vector2, color: Color) -> void:
-	var ghost := Polygon2D.new()
+	var ghost := FlatPolygon.new()
 	ghost.polygon = _circle_points(PAWN_RADIUS * 2.0, 16)
 	ghost.color = color
 	ghost.position = from

@@ -62,6 +62,17 @@ func test_pumpkin_sprite_sheet_keeps_its_native_size() -> void:
 	check(sheet != null and sheet.get_size() == Vector2(2560, 2048), "호박 시트는 2560x2048 그대로 (칸 좌표가 픽셀 기준)")
 
 
+func test_game_scripts_do_not_create_polygon2d() -> void:
+	# Godot 4.7.1의 Polygon2D는 같은 꼭짓점 수로 다시 그릴 때 인덱스 버퍼를 GL_ARRAY_BUFFER로 묶어 WebGL 오류를 쌓는다: FlatPolygon을 쓴다
+	var offenders: Array[String] = []
+	for file: String in DirAccess.get_files_at("res://scenes"):
+		if file.get_extension() != "gd" or file == "flat_polygon.gd":
+			continue
+		if _file_text("res://scenes/" + file).contains("Polygon2D.new("):
+			offenders.append(file)
+	check(offenders.is_empty(), "scenes/ 스크립트는 Polygon2D 대신 FlatPolygon을 쓴다: %s" % ", ".join(offenders))
+
+
 func test_the_three_tables_exist_with_the_agreed_headers() -> void:
 	check_eq(DataTable.header_of(_file_text(GameData.AUGMENTS_PATH)), GameData.AUGMENT_COLUMNS, "augments_table.csv 헤더")
 	check_eq(DataTable.header_of(_file_text(GameData.DICE_PATH)), GameData.DICE_COLUMNS, "dice_table.csv 헤더")
