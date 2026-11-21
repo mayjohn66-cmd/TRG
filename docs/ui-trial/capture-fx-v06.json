@@ -1,0 +1,14 @@
+{
+  "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-d864fe7f-9dc0-4a4b-8208-1c6c26caeb69.png",
+  "prompt": "Create one production-ready transparent 2D game VFX sprite: a single clean curved scythe SLASH TRAIL, shaped like a tall right parenthesis ')' or a slender crescent blade sweep, not a circular explosion. Square canvas. The upper tapered tip starts near (32%,15%), the arc bulges rightward to (72%,50%), the lower tapered tip ends near (32%,85%). The entire left and central interior is hollow transparent space. Bright ivory-white sharp cutting edge with a slightly softer cool-gray inner ribbon, restrained rough hand-inked brush texture and two fine parallel wisps hugging the same curve. Fast, elegant, directional top-to-bottom weapon sweep for a comic-book chibi combat impact; dramatic dry brush ink texture, crisp silhouette at small scale. Keep the curved band slender (roughly 4-7% canvas thickness), and maintain at least 10% safe transparent padding. Neutral white/grayscale only so runtime can tint cyan. True transparent background with clean alpha, no black or colored backdrop, no full circle, no radial burst, no central star or impact point, no characters, no weapons, no text, no letters, no logos, no UI frame, no additional standalone effects.",
+  "generator": "native image_gen.imagegen",
+  "tool_event": "exec-d864fe7f-9dc0-4a4b-8208-1c6c26caeb69",
+  "image_model": "Not exposed by native tool",
+  "path": "res://assets/fx/capture/scythe_slash.png",
+  "width": 1254,
+  "height": 1254,
+  "format": "RGBA",
+  "sha256": "9e668e2ef7e89dfc9af306323f663eab355fee4a3c99db8ac08e08f01b1a30a3",
+  "transparent_fraction": 0.8963,
+  "qa": "Accepted first generation. Visually checked single curved directional brush stroke, hollow interior, tapered tips, no radial explosion or text; clean true alpha; original generated PNG bytes preserved."
+}

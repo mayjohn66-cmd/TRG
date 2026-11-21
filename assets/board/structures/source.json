@@ -1,0 +1,47 @@
+{
+  "generator": "native image_gen.imagegen",
+  "image_model": "not exposed by tool",
+  "pixels_modified": false,
+  "assets": [
+    {
+      "id": "HOTEL",
+      "source": "C:/Users/john9/.codex/generated_images/01a142bd-ab11-7f42-8e21-7a03de077bd3/exec-db74fd95-84dd-4800-adf9-f5c4f7faded8.png",
+      "destination": "assets/board/structures/HOTEL.png",
+      "prompt": "Use case: stylized-concept. Asset type: ONE transparent board-game placed structure sprite, a toll HOTEL, for a cute Korean fantasy board game. Create exactly one compact miniature hotel building, centered with generous transparent padding. Match glossy hand-painted chibi board-game tokens: chunky rounded proportions, strong dark chocolate outlines, clean cel shading with broad cream highlights, readable as a tiny 30 by 40 pixel game piece. Three-quarter view slightly from above, front and right side visible, upright verticals, no ground plane or perspective scene. Two-storey warm ivory/cream building, thick terracotta-red gabled roof, tiny cream chimney, four or six LARGE warm yellow window squares, a single dark arched entrance with a small round gold COIN relief above it to suggest collecting toll. Friendly tabletop toy, substantial simple silhouette. Building must be compact, approximately width 75 percent of its height. No extra annex, garden, pavement, trees, characters, luggage or scenery. No letters, no H, no words, numbers, labels or watermark. No sparkle cloud, motion streaks or floating effects. No player-colored pedestal; the game draws its own owner-color foundation underneath. Complete building including flat foundation visible, not cropped. Genuine transparent alpha background, no shadow detached from the base, no checkerboard baked in. Only the isolated hotel.",
+      "width": 1086,
+      "height": 1448,
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "visible_bounds": [
+        65,
+        99,
+        1052,
+        1379
+      ],
+      "sha256": "cb891f51af4a7c00cc5535e0f9f295b90bcf2ceb4f2d4e9122d5edd6be229952"
+    },
+    {
+      "id": "MINE",
+      "source": "C:/Users/john9/.codex/generated_images/01a142bd-ab11-7f42-8e21-7a03de077bd3/exec-df4c0c7b-c0ea-47f2-b13b-dfb03094a457.png",
+      "destination": "assets/board/structures/MINE.png",
+      "prompt": "Use case: stylized-concept. Asset type: ONE transparent placed LANDMINE sprite for a cute Korean fantasy board game, matching glossy chibi board-game pieces. Exactly one small cartoon toy mine, centered with at least 10 percent transparent padding. Three-quarter view slightly from above, visible top and front, no scene or ground plane. A squat graphite-black rounded ball, six thick short rounded spikes distributed clearly around its silhouette (Minesweeper-inspired toy, friendly oversized shapes); thick dark chocolate outline, broad clean cel-shaded gray reflections, one BIG ruby-red rounded warning lamp/button at the very TOP CENTER of the ball. This red top light is a distinct simple circular dome and must remain unobstructed for a runtime blinking glow. The sphere sits on a shallow dark gray circular metal foot, very compact, no tall stem. Use a few simple golden-yellow caution panels on the foot, avoid fine tiny striping. Silhouette approximately square, compact and readable at 28 by 25 game pixels. No skull, face, eyes, numbers, words, letters, logo, watermark. No realistic weapon diagrams, wires, mechanisms, texture noise, smoke, explosion, sparkles, glow aura, loose props or separate shadow. No player-colored ring or pedestal; the game draws an owner-color foundation beneath the cutout. Keep all spikes and the entire foot visible with no cropping. Genuine transparent alpha background, no baked checkerboard. Only one isolated toy mine.",
+      "width": 1274,
+      "height": 1235,
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "visible_bounds": [
+        65,
+        112,
+        1210,
+        1129
+      ],
+      "sha256": "2c42f47a000b8800655d733079931c0b528ec37c7d2da6570b707abd077a1288"
+    }
+  ]
+}

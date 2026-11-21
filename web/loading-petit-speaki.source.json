@@ -1,0 +1,78 @@
+{
+  "character": "쁘띠 스핔이",
+  "viewer_id": "Pet_MiniSpeaki",
+  "source_url": "https://viewer.dclnslde.com/",
+  "animation": "Move",
+  "skin": "Shadow_Off",
+  "method": "Native viewer current-frame PNG export, paused Move timeline, 12 evenly spaced UI slider positions (0 through 91.67 percent); fixed shared crop and downscale only.",
+  "duration_seconds": 0.4,
+  "frame_count": 12,
+  "source_size": [
+    512,
+    512
+  ],
+  "crop": [
+    16,
+    2,
+    481,
+    467
+  ],
+  "sheet_size": [
+    1536,
+    128
+  ],
+  "display_frame": [
+    64,
+    64
+  ],
+  "frames": [
+    {
+      "file": "move_00.png",
+      "sha256": "4ba17cb67003e8b35cd8aba6af30ffc1d859836021e23cb8ebfb00b68221b25f"
+    },
+    {
+      "file": "move_01.png",
+      "sha256": "de78afeece3d8b56ced5d29c99cc9eddf610668198146c8b1fbafb645b7e46dc"
+    },
+    {
+      "file": "move_02.png",
+      "sha256": "47d8ba0f7ea4e4f31a5625df9efd5e58f4696e82531dc4cc396a73c672a0de0d"
+    },
+    {
+      "file": "move_03.png",
+      "sha256": "47d8ba0f7ea4e4f31a5625df9efd5e58f4696e82531dc4cc396a73c672a0de0d"
+    },
+    {
+      "file": "move_04.png",
+      "sha256": "983f13ac769d72541c7b19eeb2d056145d656beb59b6c6d3121ab6fc9ce3755a"
+    },
+    {
+      "file": "move_05.png",
+      "sha256": "1b507bfcb22248cd75fcfc4fcf16170b57ee6e066604b3889a16e42f85b46372"
+    },
+    {
+      "file": "move_06.png",
+      "sha256": "1b507bfcb22248cd75fcfc4fcf16170b57ee6e066604b3889a16e42f85b46372"
+    },
+    {
+      "file": "move_07.png",
+      "sha256": "14ad76f3cb093606e7a2b0debcd6a18db09a407f2ba1cde9ceb1df2614e4ab58"
+    },
+    {
+      "file": "move_08.png",
+      "sha256": "5d1964019e737ceec410541ca26606e358db7726c2add33ef0aaf4551d9596f3"
+    },
+    {
+      "file": "move_09.png",
+      "sha256": "5d1964019e737ceec410541ca26606e358db7726c2add33ef0aaf4551d9596f3"
+    },
+    {
+      "file": "move_10.png",
+      "sha256": "cb08f5d2c500a9ac57777579d6c2681a5f75e839d2abe4cbeab79ffff5408f41"
+    },
+    {
+      "file": "move_11.png",
+      "sha256": "04b9c6a1ea9fe2e8518e6b0925aac2f09816a4c98b82ffca884d2a82e67ac4eb"
+    }
+  ]
+}

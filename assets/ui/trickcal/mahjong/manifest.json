@@ -1,0 +1,95 @@
+{
+  "version": "0.1",
+  "date": "2026-10-18",
+  "generator": "native image_gen.imagegen",
+  "image_model": "not exposed",
+  "calls": 7,
+  "correction_calls": 0,
+  "pixels_modified": false,
+  "assets": [
+    {
+      "id": "DOT_BLUE",
+      "brief": "One circular mahjong pin-suit dot, viewed perfectly straight-on: a simple concentric indigo-blue engraved rosette with exactly one central small blue spot and one wide blue outer ring. Compact traditional printed enamel motif, slight ink highlights, no faceting, no gem, no external rays. All shading stays inside the single circular silhouette.",
+      "prompt": "Production game-art component for a real 3D mahjong tile face, a single isolated flat printed emblem, 1:1 square PNG with actual transparent background. Cute rounded Trickcal-inspired warm fantasy toy aesthetic, crisp broad continuous dark outlines, restrained enamel cel shading, large simple forms that remain legible when repeated at 15-35 pixels. Exactly one complete centered emblem within an 80% square safe area. Orthographic front view, no perspective, no tile body or frame, no text, numerals, labels, watermark, scenery or drop shadow. One circular mahjong pin-suit dot, viewed perfectly straight-on: a simple concentric indigo-blue engraved rosette with exactly one central small blue spot and one wide blue outer ring. Compact traditional printed enamel motif, slight ink highlights, no faceting, no gem, no external rays. All shading stays inside the single circular silhouette.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-dd445fe4-7071-4399-b66e-fec32b5b68e4.png",
+      "qa": "Native output visually inspected: complete silhouette, correct subject/color, true-alpha requested, no text. Concentric dot interior rosettes vary by color; the outer single-dot silhouette is retained. Original pixels preserved.",
+      "path": "assets/ui/trickcal/mahjong/DOT_BLUE.png",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "sha256": "d87825514ffbd36930d9422f93816b160f08525bae1eb0a3480d3576f07783a3"
+    },
+    {
+      "id": "DOT_GREEN",
+      "brief": "One circular mahjong pin-suit dot, viewed perfectly straight-on: a simple concentric jade-green engraved rosette with exactly one central small green spot and one wide green outer ring. Compact traditional printed enamel motif, slight ink highlights, no faceting, no gem, no external rays. All shading stays inside the single circular silhouette.",
+      "prompt": "Production game-art component for a real 3D mahjong tile face, a single isolated flat printed emblem, 1:1 square PNG with actual transparent background. Cute rounded Trickcal-inspired warm fantasy toy aesthetic, crisp broad continuous dark outlines, restrained enamel cel shading, large simple forms that remain legible when repeated at 15-35 pixels. Exactly one complete centered emblem within an 80% square safe area. Orthographic front view, no perspective, no tile body or frame, no text, numerals, labels, watermark, scenery or drop shadow. One circular mahjong pin-suit dot, viewed perfectly straight-on: a simple concentric jade-green engraved rosette with exactly one central small green spot and one wide green outer ring. Compact traditional printed enamel motif, slight ink highlights, no faceting, no gem, no external rays. All shading stays inside the single circular silhouette.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-6238d17e-aa5e-4626-a1fe-72b06c052958.png",
+      "qa": "Native output visually inspected: complete silhouette, correct subject/color, true-alpha requested, no text. Concentric dot interior rosettes vary by color; the outer single-dot silhouette is retained. Original pixels preserved.",
+      "path": "assets/ui/trickcal/mahjong/DOT_GREEN.png",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "sha256": "d43f5987d02f06c90cb4c5648fb4c7f88137922a82a0b54916bb22e6a0f84227"
+    },
+    {
+      "id": "DOT_RED",
+      "brief": "One circular mahjong pin-suit dot, viewed perfectly straight-on: a simple concentric coral-red engraved rosette with exactly one central small red spot and one wide red outer ring. Compact traditional printed enamel motif, slight ink highlights, no faceting, no gem, no external rays. All shading stays inside the single circular silhouette.",
+      "prompt": "Production game-art component for a real 3D mahjong tile face, a single isolated flat printed emblem, 1:1 square PNG with actual transparent background. Cute rounded Trickcal-inspired warm fantasy toy aesthetic, crisp broad continuous dark outlines, restrained enamel cel shading, large simple forms that remain legible when repeated at 15-35 pixels. Exactly one complete centered emblem within an 80% square safe area. Orthographic front view, no perspective, no tile body or frame, no text, numerals, labels, watermark, scenery or drop shadow. One circular mahjong pin-suit dot, viewed perfectly straight-on: a simple concentric coral-red engraved rosette with exactly one central small red spot and one wide red outer ring. Compact traditional printed enamel motif, slight ink highlights, no faceting, no gem, no external rays. All shading stays inside the single circular silhouette.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-9d265666-7811-4535-8d14-d14ae566f9c2.png",
+      "qa": "Native output visually inspected: complete silhouette, correct subject/color, true-alpha requested, no text. Concentric dot interior rosettes vary by color; the outer single-dot silhouette is retained. Original pixels preserved.",
+      "path": "assets/ui/trickcal/mahjong/DOT_RED.png",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "sha256": "f386acc3fdd9106d68ae91c4ddb16a6d02dff651ccf5151685449243095b9720"
+    },
+    {
+      "id": "BAMBOO_GREEN",
+      "brief": "Exactly ONE single short upright jade-green bamboo segment, printed mahjong sou-suit marking, seen flat straight-on. Rounded dumbbell shape, one thick vertical stalk joining a slightly wider top node and bottom node, one simple dark green middle engraved line. No leaves or branches, no extra sticks, no wooden background, no ground shadow.",
+      "prompt": "Production game-art component for a real 3D mahjong tile face, a single isolated flat printed emblem, 1:1 square PNG with actual transparent background. Cute rounded Trickcal-inspired warm fantasy toy aesthetic, crisp broad continuous dark outlines, restrained enamel cel shading, large simple forms that remain legible when repeated at 15-35 pixels. Exactly one complete centered emblem within an 80% square safe area. Orthographic front view, no perspective, no tile body or frame, no text, numerals, labels, watermark, scenery or drop shadow. Exactly ONE single short upright jade-green bamboo segment, printed mahjong sou-suit marking, seen flat straight-on. Rounded dumbbell shape, one thick vertical stalk joining a slightly wider top node and bottom node, one simple dark green middle engraved line. No leaves or branches, no extra sticks, no wooden background, no ground shadow.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-64fd3fa7-7538-4051-91c4-402fb63d568d.png",
+      "qa": "Native output visually inspected: complete silhouette, correct subject/color, true-alpha requested, no text. Concentric dot interior rosettes vary by color; the outer single-dot silhouette is retained. Original pixels preserved.",
+      "path": "assets/ui/trickcal/mahjong/BAMBOO_GREEN.png",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "sha256": "dc908b48926d32bef3d1cc9ecebc3bed887e701ce954e647b05d6dd9018886a6"
+    },
+    {
+      "id": "BAMBOO_RED",
+      "brief": "Exactly ONE single short upright coral-red bamboo segment, printed mahjong sou-suit marking, seen flat straight-on. Rounded dumbbell shape, one thick vertical stalk joining a slightly wider top node and bottom node, one simple dark burgundy middle engraved line. No leaves or branches, no extra sticks, no wooden background, no ground shadow.",
+      "prompt": "Production game-art component for a real 3D mahjong tile face, a single isolated flat printed emblem, 1:1 square PNG with actual transparent background. Cute rounded Trickcal-inspired warm fantasy toy aesthetic, crisp broad continuous dark outlines, restrained enamel cel shading, large simple forms that remain legible when repeated at 15-35 pixels. Exactly one complete centered emblem within an 80% square safe area. Orthographic front view, no perspective, no tile body or frame, no text, numerals, labels, watermark, scenery or drop shadow. Exactly ONE single short upright coral-red bamboo segment, printed mahjong sou-suit marking, seen flat straight-on. Rounded dumbbell shape, one thick vertical stalk joining a slightly wider top node and bottom node, one simple dark burgundy middle engraved line. No leaves or branches, no extra sticks, no wooden background, no ground shadow.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-3d6db261-1cb5-43d5-831e-ac6dab189d2f.png",
+      "qa": "Native output visually inspected: complete silhouette, correct subject/color, true-alpha requested, no text. Concentric dot interior rosettes vary by color; the outer single-dot silhouette is retained. Original pixels preserved.",
+      "path": "assets/ui/trickcal/mahjong/BAMBOO_RED.png",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "sha256": "795f2d40818b06f67016ebaebfb0d208b75cef6d58eabfa9bce004fbcbabe93a"
+    },
+    {
+      "id": "BAMBOO_BIRD",
+      "brief": "Exactly ONE tiny rounded traditional mahjong one-bamboo bird emblem: a cute plump sparrow-like bird, standing in a compact upright pose, with teal-blue head and wing, green folded tail feathers, cream belly and one tiny coral beak, facing left. Plain green feet. No branch, flowers, extra birds or scenery. Bold simple charming printed toy-tile emblem.",
+      "prompt": "Production game-art component for a real 3D mahjong tile face, a single isolated flat printed emblem, 1:1 square PNG with actual transparent background. Cute rounded Trickcal-inspired warm fantasy toy aesthetic, crisp broad continuous dark outlines, restrained enamel cel shading, large simple forms that remain legible when repeated at 15-35 pixels. Exactly one complete centered emblem within an 80% square safe area. Orthographic front view, no perspective, no tile body or frame, no text, numerals, labels, watermark, scenery or drop shadow. Exactly ONE tiny rounded traditional mahjong one-bamboo bird emblem: a cute plump sparrow-like bird, standing in a compact upright pose, with teal-blue head and wing, green folded tail feathers, cream belly and one tiny coral beak, facing left. Plain green feet. No branch, flowers, extra birds or scenery. Bold simple charming printed toy-tile emblem.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-83371c29-969e-4392-bbe5-2b5d829555c9.png",
+      "qa": "Native output visually inspected: complete silhouette, correct subject/color, true-alpha requested, no text. Concentric dot interior rosettes vary by color; the outer single-dot silhouette is retained. Original pixels preserved.",
+      "path": "assets/ui/trickcal/mahjong/BAMBOO_BIRD.png",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "sha256": "d3b127ee22f16c6c70aca66eac04bf30a2bfba7dcafc5e21ac030b0540c5a2b3"
+    },
+    {
+      "id": "BACK_LEAF",
+      "brief": "Exactly ONE centered chunky three-leaf clover emblem of pale mint cream and warm golden outline, viewed flat straight-on, one single short curved stalk below. Balanced quiet mahjong tile-back decorative stamp. No enclosing circle, jewels, rays, stars, lettering or additional objects.",
+      "prompt": "Production game-art component for a real 3D mahjong tile face, a single isolated flat printed emblem, 1:1 square PNG with actual transparent background. Cute rounded Trickcal-inspired warm fantasy toy aesthetic, crisp broad continuous dark outlines, restrained enamel cel shading, large simple forms that remain legible when repeated at 15-35 pixels. Exactly one complete centered emblem within an 80% square safe area. Orthographic front view, no perspective, no tile body or frame, no text, numerals, labels, watermark, scenery or drop shadow. Exactly ONE centered chunky three-leaf clover emblem of pale mint cream and warm golden outline, viewed flat straight-on, one single short curved stalk below. Balanced quiet mahjong tile-back decorative stamp. No enclosing circle, jewels, rays, stars, lettering or additional objects.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-c04eaa9f-29e4-4a78-a8cc-a10013862f99.png",
+      "qa": "Native output visually inspected: complete silhouette, correct subject/color, true-alpha requested, no text. Concentric dot interior rosettes vary by color; the outer single-dot silhouette is retained. Original pixels preserved.",
+      "path": "assets/ui/trickcal/mahjong/BACK_LEAF.png",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "sha256": "03c1fddc93855308785a99179c95b54f424217ae460dddc2382803f989d2759a"
+    }
+  ]
+}

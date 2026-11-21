@@ -1,0 +1,826 @@
+{
+  "character": "에르핀",
+  "id": "avatar_01",
+  "source_url": "https://viewer.dclnslde.com/",
+  "method": "Native viewer current-frame PNG export via visible UI, camera 1536px, Idle_1 paused and slider seek",
+  "source_pixels_modified": false,
+  "source_size": [
+    1536,
+    1536
+  ],
+  "import_size": [
+    1024,
+    1024
+  ],
+  "compression": "Godot Lossless",
+  "mipmaps": true,
+  "fps": 16,
+  "frame_count": 43,
+  "union_bbox": [
+    161,
+    152,
+    1388,
+    1381
+  ],
+  "source_region": [
+    88,
+    140,
+    1373,
+    1253
+  ],
+  "atlas_region": [
+    58.666666666666664,
+    93.33333333333333,
+    915.3333333333334,
+    835.3333333333334
+  ],
+  "files": [
+    {
+      "index": 0,
+      "seek_percent": 0.46123290951729,
+      "file": "idle_00.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536.png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        162,
+        155,
+        1374,
+        1381
+      ],
+      "sha256": "75f7220517ff080e99439a38aca0b9016aba744e89fb99950d4c24aa8eb6d72b",
+      "bytes": 1429052
+    },
+    {
+      "index": 1,
+      "seek_percent": 2.46123290951729,
+      "file": "idle_01.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (1).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        161,
+        155,
+        1375,
+        1381
+      ],
+      "sha256": "076a1d510d7bc207acbc22e91d1e0daa2b6b821af48acf7a1358a86cd09656a1",
+      "bytes": 1431421
+    },
+    {
+      "index": 2,
+      "seek_percent": 5.46123290951729,
+      "file": "idle_02.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (2).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        163,
+        156,
+        1376,
+        1381
+      ],
+      "sha256": "dc24dbb169dfd090f325ef2aaf8cf934b1ad7759158a2fe06777dcd2f75cdf38",
+      "bytes": 1430467
+    },
+    {
+      "index": 3,
+      "seek_percent": 7.46123290951729,
+      "file": "idle_03.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (3).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        166,
+        156,
+        1376,
+        1381
+      ],
+      "sha256": "c18ab2dd4b8efcb2d5337ff060eea120b9894d263ecfc8d20179c3741afbb0cb",
+      "bytes": 1428852
+    },
+    {
+      "index": 4,
+      "seek_percent": 9.46123290951729,
+      "file": "idle_04.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (4).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        169,
+        157,
+        1381,
+        1381
+      ],
+      "sha256": "6302ef75f38dd0c136e41feb07b92437ffb5c935688af883f1390c0f7287a41b",
+      "bytes": 1426688
+    },
+    {
+      "index": 5,
+      "seek_percent": 12.46123290951729,
+      "file": "idle_05.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (5).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        176,
+        157,
+        1387,
+        1381
+      ],
+      "sha256": "f9ccdcf0a47b7cec8d24158faca07c5090c08be1638cc19f84bad015a6454d56",
+      "bytes": 1421534
+    },
+    {
+      "index": 6,
+      "seek_percent": 14.46123290951729,
+      "file": "idle_06.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (6).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        182,
+        157,
+        1388,
+        1381
+      ],
+      "sha256": "626605663c3c73ab2cc713f950feec220f06f9a9d393e5397ed000edb1e7bbcb",
+      "bytes": 1416890
+    },
+    {
+      "index": 7,
+      "seek_percent": 16.46123290951729,
+      "file": "idle_07.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (7).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        187,
+        157,
+        1386,
+        1381
+      ],
+      "sha256": "747de528732c8defe097616dd13c8fec645d80dc4f7ab5bfeafb776b9ec36654",
+      "bytes": 1410247
+    },
+    {
+      "index": 8,
+      "seek_percent": 19.46123290951729,
+      "file": "idle_08.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (8).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        195,
+        158,
+        1379,
+        1381
+      ],
+      "sha256": "e0337ee21eaf849184ebc14eac9322d7c66a83e016341d88533f8523cfb8f7a5",
+      "bytes": 1402339
+    },
+    {
+      "index": 9,
+      "seek_percent": 21.46123290951729,
+      "file": "idle_09.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (9).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        199,
+        157,
+        1373,
+        1381
+      ],
+      "sha256": "4bf5388a1696953142f6f7eb7c8ac35e07b92490629789a7663c0293f7c783a8",
+      "bytes": 1399257
+    },
+    {
+      "index": 10,
+      "seek_percent": 23.46123290951729,
+      "file": "idle_10.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (10).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        202,
+        157,
+        1367,
+        1381
+      ],
+      "sha256": "ca9579ba45899c7fcc56f06ef5435fd24e058d2259e21e5cee249ce762f94f58",
+      "bytes": 1396866
+    },
+    {
+      "index": 11,
+      "seek_percent": 26.46123290951729,
+      "file": "idle_11.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (11).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        203,
+        157,
+        1362,
+        1381
+      ],
+      "sha256": "38d3adaebe612b17794c3d5b8993312c7dfadc21bea190f81b146ad43e1f43af",
+      "bytes": 1393663
+    },
+    {
+      "index": 12,
+      "seek_percent": 28.46123290951729,
+      "file": "idle_12.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (12).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        202,
+        156,
+        1358,
+        1381
+      ],
+      "sha256": "5d1e47f6ddc42e1485a423ac2cc59a3da2304a263c3b186a42a7249f0a9e1fef",
+      "bytes": 1394062
+    },
+    {
+      "index": 13,
+      "seek_percent": 30.46123290951729,
+      "file": "idle_13.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (13).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        200,
+        156,
+        1355,
+        1380
+      ],
+      "sha256": "faf8525b96dd646e4bdf965c734cb8e6e9371e93382ad32c51266d9f462ebfb7",
+      "bytes": 1394365
+    },
+    {
+      "index": 14,
+      "seek_percent": 33.46123290951729,
+      "file": "idle_14.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (14).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        196,
+        155,
+        1353,
+        1380
+      ],
+      "sha256": "5ec8f9ca969131deb85c2b0b55b080bec9742cc44c1696e641c243f3d92e57fb",
+      "bytes": 1396913
+    },
+    {
+      "index": 15,
+      "seek_percent": 35.46123290951729,
+      "file": "idle_15.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (15).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        192,
+        153,
+        1354,
+        1380
+      ],
+      "sha256": "73ad441bbbc32dd21ea2616a9ae8c728a4847480ee6aef27c8947f580fc87e98",
+      "bytes": 1399526
+    },
+    {
+      "index": 16,
+      "seek_percent": 37.46123290951729,
+      "file": "idle_16.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (16).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        187,
+        152,
+        1354,
+        1380
+      ],
+      "sha256": "c0ce6e797f2110382754521827fa355b91b1594b1adf971293761d917cefd440",
+      "bytes": 1401654
+    },
+    {
+      "index": 17,
+      "seek_percent": 40.46123290951729,
+      "file": "idle_17.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (17).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        180,
+        153,
+        1358,
+        1380
+      ],
+      "sha256": "0e1f05eb9009d122d450f6fb710ab5fc160979b7151d90b357ff6327debd015d",
+      "bytes": 1407189
+    },
+    {
+      "index": 18,
+      "seek_percent": 42.46123290951729,
+      "file": "idle_18.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (18).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        175,
+        154,
+        1361,
+        1380
+      ],
+      "sha256": "a764a2afb5707554d1ecd001f99ca6c78d80b123dc89e1fb21c0447a71e578d0",
+      "bytes": 1413166
+    },
+    {
+      "index": 19,
+      "seek_percent": 44.46123290951729,
+      "file": "idle_19.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (19).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        170,
+        154,
+        1364,
+        1380
+      ],
+      "sha256": "ad5b9b45f2fa06ca63135a74bfc324229c12fdb1b42c32804bb0ec6c61d57ad0",
+      "bytes": 1417962
+    },
+    {
+      "index": 20,
+      "seek_percent": 47.46123290951729,
+      "file": "idle_20.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (20).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        165,
+        154,
+        1369,
+        1381
+      ],
+      "sha256": "96efd2e02aadeef3ecb3e2a22b84b13bffc70ee6464f7a62985f73ee6ead1b7e",
+      "bytes": 1423500
+    },
+    {
+      "index": 21,
+      "seek_percent": 49.46123290951729,
+      "file": "idle_21.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (21).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        163,
+        155,
+        1373,
+        1381
+      ],
+      "sha256": "78371569e074b1c622cb5247d46421eeb3f2d3f72af33c19cacda9a50e0a940f",
+      "bytes": 1427325
+    },
+    {
+      "index": 22,
+      "seek_percent": 51.46123290951729,
+      "file": "idle_22.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (22).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        161,
+        155,
+        1375,
+        1381
+      ],
+      "sha256": "ef956c45496d7bdd9bcafa29c54ad2037954a94a56f8d255d00e3590afd72456",
+      "bytes": 1423826
+    },
+    {
+      "index": 23,
+      "seek_percent": 53.46123290951729,
+      "file": "idle_23.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (23).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        161,
+        155,
+        1376,
+        1381
+      ],
+      "sha256": "e76a703678952e7374aa39cfaf041c04fffaadbe5b85ad79635b9d5eef04a40f",
+      "bytes": 1417176
+    },
+    {
+      "index": 24,
+      "seek_percent": 56.46123290951729,
+      "file": "idle_24.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (24).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        164,
+        156,
+        1376,
+        1381
+      ],
+      "sha256": "b5ee8f40e8b36d2c1e59eb653e71da97a52ace6ab89cce25776aed6e22940167",
+      "bytes": 1424619
+    },
+    {
+      "index": 25,
+      "seek_percent": 58.46123290951729,
+      "file": "idle_25.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (25).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        167,
+        156,
+        1377,
+        1381
+      ],
+      "sha256": "7a5f666675a4d3c5fae07cd8fc9bb18438dd505c8b37ff4e6433ccb2c2706c9e",
+      "bytes": 1429456
+    },
+    {
+      "index": 26,
+      "seek_percent": 60.46123290951729,
+      "file": "idle_26.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (26).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        171,
+        157,
+        1383,
+        1381
+      ],
+      "sha256": "acd43197747207c676884204c9b0e57a0ac04ce87efd9b21efdeaa7dceeda421",
+      "bytes": 1420026
+    },
+    {
+      "index": 27,
+      "seek_percent": 63.46123290951729,
+      "file": "idle_27.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (27).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        179,
+        157,
+        1388,
+        1381
+      ],
+      "sha256": "3d9345163877c914d8525cc435f0d8e70ac78e77bee5b678c76bec3f40108aa4",
+      "bytes": 1408749
+    },
+    {
+      "index": 28,
+      "seek_percent": 65.46123290951729,
+      "file": "idle_28.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (28).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        184,
+        157,
+        1387,
+        1381
+      ],
+      "sha256": "e574fe2bc0d8f635562375aacf4c95072518c0296404c9bce14053c19d36a4b7",
+      "bytes": 1410712
+    },
+    {
+      "index": 29,
+      "seek_percent": 67.46123290951729,
+      "file": "idle_29.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (29).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        190,
+        157,
+        1384,
+        1381
+      ],
+      "sha256": "f9dd1396597fb29f3e9716e3651cc76b2f41349075256835b50433d04f14144a",
+      "bytes": 1409650
+    },
+    {
+      "index": 30,
+      "seek_percent": 70.46123290951729,
+      "file": "idle_30.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (30).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        197,
+        157,
+        1376,
+        1381
+      ],
+      "sha256": "b6194568a93df0ba15df086359a4de55995310a9161d79051072a6fed39ed128",
+      "bytes": 1401479
+    },
+    {
+      "index": 31,
+      "seek_percent": 72.46123290951729,
+      "file": "idle_31.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (31).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        200,
+        157,
+        1369,
+        1381
+      ],
+      "sha256": "4372bb84bc3ee68bdaa8eb90568f9773173aa29bb5680b636c3493bef84f1a72",
+      "bytes": 1396482
+    },
+    {
+      "index": 32,
+      "seek_percent": 74.46123290951729,
+      "file": "idle_32.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (32).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        202,
+        157,
+        1365,
+        1381
+      ],
+      "sha256": "0f7f675ce0ac06ab5eb8004f2792a18db5958824709c29f465d4decea03dc27a",
+      "bytes": 1395701
+    },
+    {
+      "index": 33,
+      "seek_percent": 77.46123290951729,
+      "file": "idle_33.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (33).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        203,
+        157,
+        1360,
+        1381
+      ],
+      "sha256": "d96c38c0c3b93408ad2e01ae76f295f4daeba7acc49a91e89b310a9dd1bff0d6",
+      "bytes": 1394327
+    },
+    {
+      "index": 34,
+      "seek_percent": 79.46123290951729,
+      "file": "idle_34.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (34).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        202,
+        156,
+        1356,
+        1380
+      ],
+      "sha256": "12a9f9f87866e4c17571900f058e608cd337122b041ced4c038751f76b0d4bcd",
+      "bytes": 1395502
+    },
+    {
+      "index": 35,
+      "seek_percent": 81.46123290951729,
+      "file": "idle_35.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (35).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        199,
+        156,
+        1354,
+        1380
+      ],
+      "sha256": "18ea13056bb79eba06e04d40c843cf94d9bb0e6b532f560d27f7404983f9afc7",
+      "bytes": 1394313
+    },
+    {
+      "index": 36,
+      "seek_percent": 84.46123290951729,
+      "file": "idle_36.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (36).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        194,
+        154,
+        1353,
+        1380
+      ],
+      "sha256": "2e496eb334eddfcfb72bedd403bb8f1af9959607631bd6decc414a2d467e968d",
+      "bytes": 1397020
+    },
+    {
+      "index": 37,
+      "seek_percent": 86.46123290951729,
+      "file": "idle_37.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (37).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        189,
+        153,
+        1354,
+        1380
+      ],
+      "sha256": "50f4c6946fbbb87d5fbad8afc711c3836204765bbe47cb12e8f81c42c0109f3b",
+      "bytes": 1400240
+    },
+    {
+      "index": 38,
+      "seek_percent": 88.46123290951729,
+      "file": "idle_38.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (38).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        185,
+        152,
+        1355,
+        1380
+      ],
+      "sha256": "b228ef545f18e6438f832c0e1fb016b2fcb9e5777c9646c193990322b90fe683",
+      "bytes": 1402990
+    },
+    {
+      "index": 39,
+      "seek_percent": 91.46123290951729,
+      "file": "idle_39.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (39).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        177,
+        154,
+        1359,
+        1380
+      ],
+      "sha256": "0e441c9d1dfb15e680e84be717df796254e21855a903843c1a3667b94f4240ae",
+      "bytes": 1410638
+    },
+    {
+      "index": 40,
+      "seek_percent": 93.46123290951729,
+      "file": "idle_40.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (40).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        172,
+        154,
+        1363,
+        1380
+      ],
+      "sha256": "7447b26bb60f07f3dbf78fe0fec63e0a167c7320534d57230db7e1fd09dea59c",
+      "bytes": 1415380
+    },
+    {
+      "index": 41,
+      "seek_percent": 95.46123290951729,
+      "file": "idle_41.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (41).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        168,
+        154,
+        1366,
+        1380
+      ],
+      "sha256": "b30178b0d1250f8b3099cf3248ab611bae024c9de89d2c1dada6dcb2fc2b8c27",
+      "bytes": 1419045
+    },
+    {
+      "index": 42,
+      "seek_percent": 98.46123290951729,
+      "file": "idle_42.png",
+      "source": "C:\\Users\\john9\\Downloads\\Erpin-Idle_1-1536x1536 (42).png",
+      "dimensions": [
+        1536,
+        1536
+      ],
+      "bbox": [
+        164,
+        154,
+        1371,
+        1381
+      ],
+      "sha256": "34164e47adf24b5d498e83f6e2b7474ce1de1dafa5a37dfde110417162a84c40",
+      "bytes": 1425440
+    }
+  ],
+  "estimated_gpu_rgba8_mipmapped_MiB": 229.33333333333334,
+  "imported_storage_comparison": [
+    {
+      "folder": "content_trickcal/avatars/avatar_01/idle",
+      "imported_count": 43,
+      "ctex_MiB": 3.3610401153564453
+    },
+    {
+      "folder": "content_trickcal/avatars/avatar_01/idle_hq",
+      "imported_count": 43,
+      "ctex_MiB": 29.5194034576416
+    }
+  ]
+}

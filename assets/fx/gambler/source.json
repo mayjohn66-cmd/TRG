@@ -1,0 +1,17 @@
+{
+  "generator": "native image_gen",
+  "date": "2026-10-25",
+  "reference": "content_trickcal/illustrations/augments/SUPER_06.png",
+  "prompt": "Use case: stylized-concept. Asset type: ONE transparent 2D spirit sprite for a cute mobile board game's gambler dice buff. The reference image is a STYLE and character identity reference only. Isolate and redraw ONLY the little cheerful golden flame spirit from above the die: a round teardrop flame body, two simple happy crescent eyes, open smiling mouth, swept-back soft flame tuft and two short curling tongues. Friendly small fire soul, chunky readable silhouette, warm yellow core, amber-orange outer contour, cream highlights and restrained clean cel-shaded depth. Match the polished rounded illustrated icon style of the reference, but SIMPLIFY details so the face and flame read at 50x65 pixels. Front view, whole single spirit centered with generous 15% empty margin. True alpha transparency around the clean silhouette; no scenery, no big surrounding glow cloud, no cast shadow. NO die, no dice pips, no arrows, no cards, no text, no letters, no watermark, no frame or circular badge. Only the single golden flame soul.",
+  "output": "soul_flame.png",
+  "sha256": "f285633b404a5c70863fa8c5d99d3829edf7b4805da69cf5f35b88270c897240",
+  "source_size": [
+    1236,
+    1272
+  ],
+  "alpha_range": [
+    0,
+    255
+  ],
+  "import_limit": 256
+}

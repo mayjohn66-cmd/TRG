@@ -1,0 +1,22 @@
+[gd_resource type="SpriteFrames" load_steps=13 format=3]
+
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_01/frames/sad_0.webp" id="1_sad"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_01/frames/sad_1.webp" id="2_sad"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_01/frames/sad_2.webp" id="3_sad"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_01/frames/sad_3.webp" id="4_sad"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_01/frames/sad_4.webp" id="5_sad"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_01/frames/sad_5.webp" id="6_sad"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_01/frames/sad_6.webp" id="7_sad"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_01/frames/sad_7.webp" id="8_sad"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_01/frames/sad_8.webp" id="9_sad"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_01/frames/sad_9.webp" id="10_sad"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_01/frames/sad_10.webp" id="11_sad"]
+[ext_resource type="Texture2D" path="res://content_trickcal/avatars/avatar_01/frames/sad_11.webp" id="12_sad"]
+
+[resource]
+animations = [{
+"frames": [{"duration": 1.0, "texture": ExtResource("1_sad")}, {"duration": 1.0, "texture": ExtResource("2_sad")}, {"duration": 1.0, "texture": ExtResource("3_sad")}, {"duration": 1.0, "texture": ExtResource("4_sad")}, {"duration": 1.0, "texture": ExtResource("5_sad")}, {"duration": 1.0, "texture": ExtResource("6_sad")}, {"duration": 1.0, "texture": ExtResource("7_sad")}, {"duration": 1.0, "texture": ExtResource("8_sad")}, {"duration": 1.0, "texture": ExtResource("9_sad")}, {"duration": 1.0, "texture": ExtResource("10_sad")}, {"duration": 1.0, "texture": ExtResource("11_sad")}, {"duration": 1.0, "texture": ExtResource("12_sad")}],
+"loop": true,
+"name": &"sad",
+"speed": 10.0
+}]

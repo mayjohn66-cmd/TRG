@@ -1,0 +1,128 @@
+{
+  "mode": "built-in native image generation",
+  "source_pixel_edits": false,
+  "assets": [
+    {
+      "name": "CHERRY",
+      "prompt": "Create ONE production-ready 1:1 square transparent PNG icon for a reel in a cute pastel fantasy board-game slot machine. Trickcal Revive compatible rounded squishy toy aesthetic, simple bold silhouette, thick clean dark forest-green outer contour (#386045), cream rim highlight, 3-band cel shading and one broad soft glossy highlight. Front view, centered, object fits within central 74 percent of canvas with generous clear transparent margin on all four sides. Warm gentle palette, very readable at 64px. No background at all, no panel, no medallion, no border around canvas, no ground shadow, no scenery, no characters, no letters, no numbers, no watermark. Only the requested isolated symbol. Subject: Two plump glossy rosy-red cherries joined by short dark-green curved stems, ONE tiny fresh green leaf at top. The two fruit bodies have clearly separate outlines and simple cream glints. A recognizable classic slot cherry symbol, no extra fruit.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-48f2aff9-b1c9-4039-9536-bf81fb21bd8f.png",
+      "destination": "SLOT_CHERRY.png",
+      "tool": "image_gen__imagegen",
+      "image_model": "not disclosed by tool",
+      "corrections": 0,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "format": "PNG RGBA",
+      "alpha_bbox": [
+        0,
+        52,
+        1224,
+        1158
+      ],
+      "qa": "Accepted: inspected native icon and in-game rendering; no extra subjects or text; corner alpha clear; low-alpha edge noise retained in the original. Source pixels unchanged. In Godot the visible symbol sizes are normalized; effective alpha>32 bounds are recorded.",
+      "sha256": "c628d0ede8ab37e5e493068ccd9e0a6c1081e859eeb926f825acc05394e78b03",
+      "saved_path": "C:/Users/john9/Documents/Codex/2026-10-16/new-chat/work/trg-ui-trial/assets/ui/trickcal/slot/SLOT_CHERRY.png",
+      "visible_alpha_bbox_gt32": [
+        177,
+        211,
+        1080,
+        1033
+      ]
+    },
+    {
+      "name": "LEMON",
+      "prompt": "Create ONE production-ready 1:1 square transparent PNG icon for a reel in a cute pastel fantasy board-game slot machine. Trickcal Revive compatible rounded squishy toy aesthetic, simple bold silhouette, thick clean dark forest-green outer contour (#386045), cream rim highlight, 3-band cel shading and one broad soft glossy highlight. Front view, centered, object fits within central 74 percent of canvas with generous clear transparent margin on all four sides. Warm gentle palette, very readable at 64px. No background at all, no panel, no medallion, no border around canvas, no ground shadow, no scenery, no characters, no letters, no numbers, no watermark. Only the requested isolated symbol. Subject: One plump golden-yellow lemon with rounded gently pointed ends, tilted diagonally 20 degrees upward to the right, ONE small fresh green leaf at its upper end. Smooth stylized toy surface, no dots or tiny texture. No slice, no second fruit.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-e74932af-3b21-4136-b7fb-4f2a43a576c9.png",
+      "destination": "SLOT_LEMON.png",
+      "tool": "image_gen__imagegen",
+      "image_model": "not disclosed by tool",
+      "corrections": 0,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "format": "PNG RGBA",
+      "alpha_bbox": [
+        17,
+        25,
+        1210,
+        1254
+      ],
+      "qa": "Accepted: inspected native icon and in-game rendering; no extra subjects or text; corner alpha clear; low-alpha edge noise retained in the original. Source pixels unchanged. In Godot the visible symbol sizes are normalized; effective alpha>32 bounds are recorded.",
+      "sha256": "ca5f11033404b5807fc7e6e277edef27577df99544285f17dfa497872573dcae",
+      "saved_path": "C:/Users/john9/Documents/Codex/2026-10-16/new-chat/work/trg-ui-trial/assets/ui/trickcal/slot/SLOT_LEMON.png",
+      "visible_alpha_bbox_gt32": [
+        168,
+        160,
+        1182,
+        1087
+      ]
+    },
+    {
+      "name": "BELL",
+      "prompt": "Create ONE production-ready 1:1 square transparent PNG icon for a reel in a cute pastel fantasy board-game slot machine. Trickcal Revive compatible rounded squishy toy aesthetic, simple bold silhouette, thick clean dark forest-green outer contour (#386045), cream rim highlight, 3-band cel shading and one broad soft glossy highlight. Front view, centered, object fits within central 74 percent of canvas with generous clear transparent margin on all four sides. Warm gentle palette, very readable at 64px. No background at all, no panel, no medallion, no border around canvas, no ground shadow, no scenery, no characters, no letters, no numbers, no watermark. Only the requested isolated symbol. Subject: One small chunky golden lucky bell viewed from front, rounded dome with a small rounded top handle, wide curved lip and one visible little clapper beneath. Amber lower shadow and cream glint. No bow, no ribbons, no magic particles.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-acefb413-5deb-42f4-bb77-744219a57d84.png",
+      "destination": "SLOT_BELL.png",
+      "tool": "image_gen__imagegen",
+      "image_model": "not disclosed by tool",
+      "corrections": 0,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "format": "PNG RGBA",
+      "alpha_bbox": [
+        0,
+        25,
+        1222,
+        1254
+      ],
+      "qa": "Accepted: inspected native icon and in-game rendering; no extra subjects or text; corner alpha clear; low-alpha edge noise retained in the original. Source pixels unchanged. In Godot the visible symbol sizes are normalized; effective alpha>32 bounds are recorded.",
+      "sha256": "1c2daaef609244f15b27136638789f040cc6ceffa2a9adf6641ebabe87ec49d0",
+      "saved_path": "C:/Users/john9/Documents/Codex/2026-10-16/new-chat/work/trg-ui-trial/assets/ui/trickcal/slot/SLOT_BELL.png",
+      "visible_alpha_bbox_gt32": [
+        152,
+        118,
+        1102,
+        1097
+      ]
+    },
+    {
+      "name": "DIAMOND",
+      "prompt": "Create ONE production-ready 1:1 square transparent PNG icon for a reel in a cute pastel fantasy board-game slot machine. Trickcal Revive compatible rounded squishy toy aesthetic, simple bold silhouette, thick clean dark forest-green outer contour (#386045), cream rim highlight, 3-band cel shading and one broad soft glossy highlight. Front view, centered, object fits within central 74 percent of canvas with generous clear transparent margin on all four sides. Warm gentle palette, very readable at 64px. No background at all, no panel, no medallion, no border around canvas, no ground shadow, no scenery, no characters, no letters, no numbers, no watermark. Only the requested isolated symbol. Subject: One chunky brilliant cyan-blue cut gemstone, classic wide diamond silhouette with broad flat crown and tapering rounded lower point. Only 5 to 7 very large clean facet color regions, thick dark-green contour and cream rim glint. No sparkle particles or floating shapes.",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-61b98f49-5fc1-4dfe-9a72-210295e21392.png",
+      "destination": "SLOT_DIAMOND.png",
+      "tool": "image_gen__imagegen",
+      "image_model": "not disclosed by tool",
+      "corrections": 0,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "format": "PNG RGBA",
+      "alpha_bbox": [
+        25,
+        21,
+        1242,
+        1232
+      ],
+      "qa": "Accepted: inspected native icon and in-game rendering; no extra subjects or text; corner alpha clear; low-alpha edge noise retained in the original. Source pixels unchanged. In Godot the visible symbol sizes are normalized; effective alpha>32 bounds are recorded.",
+      "sha256": "5ecd6a1831d40d0fdaf93a21c1696508fb847196e877f184aa7bc64a3faaa163",
+      "saved_path": "C:/Users/john9/Documents/Codex/2026-10-16/new-chat/work/trg-ui-trial/assets/ui/trickcal/slot/SLOT_DIAMOND.png",
+      "visible_alpha_bbox_gt32": [
+        97,
+        209,
+        1157,
+        1045
+      ]
+    }
+  ],
+  "runtime_import": {
+    "size_limit": 256,
+    "mipmaps": true,
+    "compression": "lossless",
+    "source_pixels_changed": false
+  }
+}

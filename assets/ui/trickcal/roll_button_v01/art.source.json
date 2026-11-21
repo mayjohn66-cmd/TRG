@@ -1,0 +1,41 @@
+{
+  "generation": {
+    "tool": "image_gen.imagegen",
+    "calls": 1,
+    "corrections": 0,
+    "mode": "built-in native; no CLI fallback",
+    "model_id": "not provided by tool",
+    "native_path": "C:/Users/john9/.codex/generated_images/01a142bd-ab11-7f42-8e21-7a03de077bd3/exec-c3d26ccc-c34e-4bb4-8c7f-c40a9ed671e5.png",
+    "prompt": "prompt.txt"
+  },
+  "art": {
+    "raw_path": "C:\\Users\\john9\\Documents\\Codex\\2026-10-16\\new-chat\\outputs\\roll-button-art-v01-20261103\\roll-button-source.png",
+    "project_path": "C:\\Users\\john9\\Documents\\Codex\\2026-10-16\\new-chat\\work\\trg-v101-result-polish\\assets\\ui\\trickcal\\roll_button_v01\\roll_button_states.png",
+    "sha256": "d2bb72636a2a488256ce47738e2b5fc1e9221c0766a359ccde0b5d9e0eb074ad",
+    "unchanged_copy": true,
+    "size": [
+      1774,
+      887
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "raw_frame_rects": [
+      [
+        52,
+        60,
+        784,
+        784
+      ],
+      [
+        939,
+        60,
+        784,
+        784
+      ]
+    ],
+    "import": "lossless, mipmaps, size limit1024"
+  }
+}

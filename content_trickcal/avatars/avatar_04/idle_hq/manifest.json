@@ -1,0 +1,653 @@
+{
+  "character": "실라",
+  "name": "Sylla",
+  "id": "avatar_04",
+  "source_url": "https://viewer.dclnslde.com/",
+  "source_archive": "C:\\Users\\john9\\Documents\\Codex\\2026-10-16\\new-chat\\outputs\\avatars-hq-20261025\\Sylla-Idle_1.zip",
+  "method": "Native viewer: base apostle, Normal skin, Idle_1, 1536px camera, interaction off, GIF mode / ZIP / all PNG frames / fit-to-spine off, 16 fps",
+  "source_pixels_modified": false,
+  "source_size": [
+    1536,
+    1536
+  ],
+  "import_size": [
+    640,
+    640
+  ],
+  "compression": "Godot Lossy WebP quality 0.85",
+  "mipmaps": false,
+  "fps": 16,
+  "frame_count": 43,
+  "union_bbox": [
+    244,
+    140,
+    1234,
+    1381
+  ],
+  "source_region": [
+    225,
+    128,
+    1028,
+    1265
+  ],
+  "atlas_region": [
+    93.75,
+    53.333333333333336,
+    428.3333333333333,
+    527.0833333333334
+  ],
+  "files": [
+    {
+      "index": 0,
+      "time_seconds": 0.0,
+      "file": "idle_00.png",
+      "zip_entry": "Sylla-Idle_1/frame_000001.png",
+      "bbox": [
+        316,
+        155,
+        1222,
+        1381
+      ],
+      "sha256": "10e183f034e6b3440ef1646b00b19aefd9b8a65f8681f67ad864d2455b576697",
+      "bytes": 1053249
+    },
+    {
+      "index": 1,
+      "time_seconds": 0.0625,
+      "file": "idle_01.png",
+      "zip_entry": "Sylla-Idle_1/frame_000002.png",
+      "bbox": [
+        315,
+        151,
+        1223,
+        1381
+      ],
+      "sha256": "8743b6323ab44e8835215e0f990efb759ada69cdfd57ba319e5ca521cc2a94c3",
+      "bytes": 1055169
+    },
+    {
+      "index": 2,
+      "time_seconds": 0.125,
+      "file": "idle_02.png",
+      "zip_entry": "Sylla-Idle_1/frame_000003.png",
+      "bbox": [
+        311,
+        148,
+        1224,
+        1381
+      ],
+      "sha256": "627274ad94b6476d3bd4471b8cb16e3dc9f2c1733616cad7ca5334b6bc9bf97c",
+      "bytes": 1054933
+    },
+    {
+      "index": 3,
+      "time_seconds": 0.1875,
+      "file": "idle_03.png",
+      "zip_entry": "Sylla-Idle_1/frame_000004.png",
+      "bbox": [
+        304,
+        145,
+        1226,
+        1381
+      ],
+      "sha256": "d3451b7ca4802bb5fe1d0e94422914f7df88b2b3cd052a800b4748969f6f8868",
+      "bytes": 1059814
+    },
+    {
+      "index": 4,
+      "time_seconds": 0.25,
+      "file": "idle_04.png",
+      "zip_entry": "Sylla-Idle_1/frame_000005.png",
+      "bbox": [
+        295,
+        143,
+        1228,
+        1381
+      ],
+      "sha256": "ebdd86ed671e3c61531e79f92f1cd10a5a4852a95a3ecc53b839a6d7dd2150e1",
+      "bytes": 1064461
+    },
+    {
+      "index": 5,
+      "time_seconds": 0.3125,
+      "file": "idle_05.png",
+      "zip_entry": "Sylla-Idle_1/frame_000006.png",
+      "bbox": [
+        284,
+        141,
+        1229,
+        1381
+      ],
+      "sha256": "d2f38b1de9108b52f43f8d5273626987c54fe792b13d2ddd8024f95d3b0663fa",
+      "bytes": 1069909
+    },
+    {
+      "index": 6,
+      "time_seconds": 0.375,
+      "file": "idle_06.png",
+      "zip_entry": "Sylla-Idle_1/frame_000007.png",
+      "bbox": [
+        272,
+        140,
+        1231,
+        1381
+      ],
+      "sha256": "efae2dde8f8521a99f1ba70084ca54d01cc1edbcba579826b328b1add917f077",
+      "bytes": 1078035
+    },
+    {
+      "index": 7,
+      "time_seconds": 0.4375,
+      "file": "idle_07.png",
+      "zip_entry": "Sylla-Idle_1/frame_000008.png",
+      "bbox": [
+        262,
+        140,
+        1232,
+        1381
+      ],
+      "sha256": "4511e863dff97920b5e5db9cfd483d4205796443d2bad0406059cdb114728951",
+      "bytes": 1082351
+    },
+    {
+      "index": 8,
+      "time_seconds": 0.5,
+      "file": "idle_08.png",
+      "zip_entry": "Sylla-Idle_1/frame_000009.png",
+      "bbox": [
+        253,
+        141,
+        1233,
+        1381
+      ],
+      "sha256": "039671bab8ff082a9be88f30476eafe6f858df3bb354960296d8791417ef81ed",
+      "bytes": 1084222
+    },
+    {
+      "index": 9,
+      "time_seconds": 0.5625,
+      "file": "idle_09.png",
+      "zip_entry": "Sylla-Idle_1/frame_000010.png",
+      "bbox": [
+        247,
+        142,
+        1234,
+        1381
+      ],
+      "sha256": "59b5ce6483c574005f65336d0ee0be2c802930066d952a941fffdf7eda61fce7",
+      "bytes": 1086492
+    },
+    {
+      "index": 10,
+      "time_seconds": 0.625,
+      "file": "idle_10.png",
+      "zip_entry": "Sylla-Idle_1/frame_000011.png",
+      "bbox": [
+        244,
+        144,
+        1234,
+        1381
+      ],
+      "sha256": "7510832554a6af5973dd6a959921cc6514b06125fafee58d6d4ba6be308574f0",
+      "bytes": 1086875
+    },
+    {
+      "index": 11,
+      "time_seconds": 0.6875,
+      "file": "idle_11.png",
+      "zip_entry": "Sylla-Idle_1/frame_000012.png",
+      "bbox": [
+        244,
+        147,
+        1233,
+        1381
+      ],
+      "sha256": "1a255435d000252854e988cde6fd66399c823af9de53bafda5fe7d769916dfa3",
+      "bytes": 1085329
+    },
+    {
+      "index": 12,
+      "time_seconds": 0.75,
+      "file": "idle_12.png",
+      "zip_entry": "Sylla-Idle_1/frame_000013.png",
+      "bbox": [
+        247,
+        150,
+        1232,
+        1381
+      ],
+      "sha256": "42752f7caf61a67e04c17e590a9bf005479dd91359aa2190a653a057b36398e8",
+      "bytes": 1082532
+    },
+    {
+      "index": 13,
+      "time_seconds": 0.8125,
+      "file": "idle_13.png",
+      "zip_entry": "Sylla-Idle_1/frame_000014.png",
+      "bbox": [
+        253,
+        153,
+        1230,
+        1381
+      ],
+      "sha256": "62df59df372278e3322ecff979cb634cd5f5a6def16d005898cf6a128b0120ef",
+      "bytes": 1071027
+    },
+    {
+      "index": 14,
+      "time_seconds": 0.875,
+      "file": "idle_14.png",
+      "zip_entry": "Sylla-Idle_1/frame_000015.png",
+      "bbox": [
+        260,
+        156,
+        1229,
+        1381
+      ],
+      "sha256": "fc7915176b88055394253e54675158b64a055fd5a2e9d85cbef7fb2cde596245",
+      "bytes": 1068791
+    },
+    {
+      "index": 15,
+      "time_seconds": 0.9375,
+      "file": "idle_15.png",
+      "zip_entry": "Sylla-Idle_1/frame_000016.png",
+      "bbox": [
+        270,
+        158,
+        1227,
+        1381
+      ],
+      "sha256": "b7d3097bc672927e2f46ee6266a4ea0d14735e7cbdb5718433ccbf83ee06d92e",
+      "bytes": 1065995
+    },
+    {
+      "index": 16,
+      "time_seconds": 1.0,
+      "file": "idle_16.png",
+      "zip_entry": "Sylla-Idle_1/frame_000017.png",
+      "bbox": [
+        279,
+        160,
+        1225,
+        1381
+      ],
+      "sha256": "9c215ff579d9e1b30fd65e7269634dc3f5f32bb1d52d93823ca397e95432285e",
+      "bytes": 1062843
+    },
+    {
+      "index": 17,
+      "time_seconds": 1.0625,
+      "file": "idle_17.png",
+      "zip_entry": "Sylla-Idle_1/frame_000018.png",
+      "bbox": [
+        289,
+        161,
+        1223,
+        1381
+      ],
+      "sha256": "edf840ed0bf4d5e2ed8ce4ccb2933b400a8f580be606157e659915cb5d9259fa",
+      "bytes": 1051454
+    },
+    {
+      "index": 18,
+      "time_seconds": 1.125,
+      "file": "idle_18.png",
+      "zip_entry": "Sylla-Idle_1/frame_000019.png",
+      "bbox": [
+        298,
+        161,
+        1222,
+        1381
+      ],
+      "sha256": "4ff3e3d6e85d962286d8b9ed814dd8140c9c57fcbd85d9b3185e4ac23b3e1058",
+      "bytes": 1057194
+    },
+    {
+      "index": 19,
+      "time_seconds": 1.1875,
+      "file": "idle_19.png",
+      "zip_entry": "Sylla-Idle_1/frame_000020.png",
+      "bbox": [
+        306,
+        160,
+        1221,
+        1381
+      ],
+      "sha256": "bb826ce992400e37a905e5883ce93d310625f82d1be763e1f7dff2756e93da74",
+      "bytes": 1055513
+    },
+    {
+      "index": 20,
+      "time_seconds": 1.25,
+      "file": "idle_20.png",
+      "zip_entry": "Sylla-Idle_1/frame_000021.png",
+      "bbox": [
+        312,
+        158,
+        1221,
+        1381
+      ],
+      "sha256": "4b817bfbdaacc87b10970df85eac7a7999eeef314cea2220e38748ac3d902cca",
+      "bytes": 1051633
+    },
+    {
+      "index": 21,
+      "time_seconds": 1.3125,
+      "file": "idle_21.png",
+      "zip_entry": "Sylla-Idle_1/frame_000022.png",
+      "bbox": [
+        315,
+        155,
+        1221,
+        1381
+      ],
+      "sha256": "cbf5bc32d0665a8fa1560a74ebdd1c7e2eb04628d526dc2348a1a6942929edc4",
+      "bytes": 1057079
+    },
+    {
+      "index": 22,
+      "time_seconds": 1.375,
+      "file": "idle_22.png",
+      "zip_entry": "Sylla-Idle_1/frame_000023.png",
+      "bbox": [
+        316,
+        152,
+        1222,
+        1381
+      ],
+      "sha256": "819b645904ed87e08d14b29913aa0ef411cc82bbf9fa092676fafc7a2c790d88",
+      "bytes": 1055628
+    },
+    {
+      "index": 23,
+      "time_seconds": 1.4375,
+      "file": "idle_23.png",
+      "zip_entry": "Sylla-Idle_1/frame_000024.png",
+      "bbox": [
+        313,
+        149,
+        1224,
+        1381
+      ],
+      "sha256": "ebe66eb8c045de902fa37cf63dad2ed417d912b079c44296ff568adb1f5e54a5",
+      "bytes": 1045406
+    },
+    {
+      "index": 24,
+      "time_seconds": 1.5,
+      "file": "idle_24.png",
+      "zip_entry": "Sylla-Idle_1/frame_000025.png",
+      "bbox": [
+        307,
+        146,
+        1225,
+        1381
+      ],
+      "sha256": "11fd08aaa43d9b0a7ffe902ad327d9c4afd04f13add9fc1177c464316a5edd5d",
+      "bytes": 1040005
+    },
+    {
+      "index": 25,
+      "time_seconds": 1.5625,
+      "file": "idle_25.png",
+      "zip_entry": "Sylla-Idle_1/frame_000026.png",
+      "bbox": [
+        298,
+        144,
+        1227,
+        1381
+      ],
+      "sha256": "72c44f498d0d7f38b52d957f08ff0ea9d66374f81907c360f4e69161bab8d49e",
+      "bytes": 1056964
+    },
+    {
+      "index": 26,
+      "time_seconds": 1.625,
+      "file": "idle_26.png",
+      "zip_entry": "Sylla-Idle_1/frame_000027.png",
+      "bbox": [
+        288,
+        142,
+        1229,
+        1381
+      ],
+      "sha256": "0b3a4a324ab129149bb2bf790ee0cad5851f3866b88ea8d32a178984b67ffc35",
+      "bytes": 1069543
+    },
+    {
+      "index": 27,
+      "time_seconds": 1.6875,
+      "file": "idle_27.png",
+      "zip_entry": "Sylla-Idle_1/frame_000028.png",
+      "bbox": [
+        276,
+        141,
+        1231,
+        1381
+      ],
+      "sha256": "a8b6fe8d3d38232007a014e0e778941e034687ee8d763a19af42b79952f193de",
+      "bytes": 1074854
+    },
+    {
+      "index": 28,
+      "time_seconds": 1.75,
+      "file": "idle_28.png",
+      "zip_entry": "Sylla-Idle_1/frame_000029.png",
+      "bbox": [
+        265,
+        140,
+        1232,
+        1381
+      ],
+      "sha256": "bd723853e64e26113c313e221088b6c4d64302bee1499f0b90e638da887796bd",
+      "bytes": 1081949
+    },
+    {
+      "index": 29,
+      "time_seconds": 1.8125,
+      "file": "idle_29.png",
+      "zip_entry": "Sylla-Idle_1/frame_000030.png",
+      "bbox": [
+        256,
+        140,
+        1233,
+        1381
+      ],
+      "sha256": "9ba252dd7a854baf5dafba94765dfdbf5deceef2fee2750a1999c8c20cc4e1a6",
+      "bytes": 1087250
+    },
+    {
+      "index": 30,
+      "time_seconds": 1.875,
+      "file": "idle_30.png",
+      "zip_entry": "Sylla-Idle_1/frame_000031.png",
+      "bbox": [
+        249,
+        142,
+        1234,
+        1381
+      ],
+      "sha256": "9b1f80b85765f35df2a0b75fcdbf632b6266f95cfdf7805e7c47dd0f063ae8bd",
+      "bytes": 1086497
+    },
+    {
+      "index": 31,
+      "time_seconds": 1.9375,
+      "file": "idle_31.png",
+      "zip_entry": "Sylla-Idle_1/frame_000032.png",
+      "bbox": [
+        245,
+        144,
+        1234,
+        1381
+      ],
+      "sha256": "107992bf818f90287f010dba23eada2e801374b2ebddd56fbe564c5b3477b66b",
+      "bytes": 1087239
+    },
+    {
+      "index": 32,
+      "time_seconds": 2.0,
+      "file": "idle_32.png",
+      "zip_entry": "Sylla-Idle_1/frame_000033.png",
+      "bbox": [
+        244,
+        146,
+        1233,
+        1381
+      ],
+      "sha256": "6f459144229046a91452524696af37487b8bbbaa684fd2975fe707ec553f7266",
+      "bytes": 1085542
+    },
+    {
+      "index": 33,
+      "time_seconds": 2.0625,
+      "file": "idle_33.png",
+      "zip_entry": "Sylla-Idle_1/frame_000034.png",
+      "bbox": [
+        246,
+        149,
+        1232,
+        1381
+      ],
+      "sha256": "02f3ab944a1dafca1f5be3363399d8106db3bf7df85c93b8d807a6e61aab1975",
+      "bytes": 1076509
+    },
+    {
+      "index": 34,
+      "time_seconds": 2.125,
+      "file": "idle_34.png",
+      "zip_entry": "Sylla-Idle_1/frame_000035.png",
+      "bbox": [
+        251,
+        152,
+        1231,
+        1381
+      ],
+      "sha256": "5091720f74ddde9b463061b310627336cbe0dd47af4b0a3494ce5cb19c97c706",
+      "bytes": 1072668
+    },
+    {
+      "index": 35,
+      "time_seconds": 2.1875,
+      "file": "idle_35.png",
+      "zip_entry": "Sylla-Idle_1/frame_000036.png",
+      "bbox": [
+        258,
+        155,
+        1229,
+        1381
+      ],
+      "sha256": "b4af47b78635f7ffc1d821f8d73cd842bec5a9737f0f1e5d2a2dbdbc85db091e",
+      "bytes": 1072894
+    },
+    {
+      "index": 36,
+      "time_seconds": 2.25,
+      "file": "idle_36.png",
+      "zip_entry": "Sylla-Idle_1/frame_000037.png",
+      "bbox": [
+        266,
+        157,
+        1227,
+        1381
+      ],
+      "sha256": "76c86b0b232a145c47c9fa734a69ef9a670afdcfd87b76d4c1dcdda20c45e11b",
+      "bytes": 1061858
+    },
+    {
+      "index": 37,
+      "time_seconds": 2.3125,
+      "file": "idle_37.png",
+      "zip_entry": "Sylla-Idle_1/frame_000038.png",
+      "bbox": [
+        276,
+        159,
+        1226,
+        1381
+      ],
+      "sha256": "aa9020b0e2321fb51c973573626ec45e1add4d188c4fb6deb046d4086ee2a0b7",
+      "bytes": 1063226
+    },
+    {
+      "index": 38,
+      "time_seconds": 2.375,
+      "file": "idle_38.png",
+      "zip_entry": "Sylla-Idle_1/frame_000039.png",
+      "bbox": [
+        286,
+        160,
+        1224,
+        1381
+      ],
+      "sha256": "c3be287f75fb7faab396ac0789a7c017bf64887763bd6101955b65cf43146c67",
+      "bytes": 1055371
+    },
+    {
+      "index": 39,
+      "time_seconds": 2.4375,
+      "file": "idle_39.png",
+      "zip_entry": "Sylla-Idle_1/frame_000040.png",
+      "bbox": [
+        295,
+        161,
+        1223,
+        1381
+      ],
+      "sha256": "db9fa0e47833ccb1613d9e6b3be46c8cfb645f31f1b914b920fb8ead973c8488",
+      "bytes": 1056921
+    },
+    {
+      "index": 40,
+      "time_seconds": 2.5,
+      "file": "idle_40.png",
+      "zip_entry": "Sylla-Idle_1/frame_000041.png",
+      "bbox": [
+        304,
+        160,
+        1222,
+        1381
+      ],
+      "sha256": "e5fca549845dbb82f0d42044dfe09e5fd4e89c662e7cc911f0f97432e686341e",
+      "bytes": 1056119
+    },
+    {
+      "index": 41,
+      "time_seconds": 2.5625,
+      "file": "idle_41.png",
+      "zip_entry": "Sylla-Idle_1/frame_000042.png",
+      "bbox": [
+        310,
+        159,
+        1221,
+        1381
+      ],
+      "sha256": "73596291ac5f81576d668a4886106b462fe2d6b9284a3fcb3c3257739fa9f070",
+      "bytes": 1057396
+    },
+    {
+      "index": 42,
+      "time_seconds": 2.625,
+      "file": "idle_42.png",
+      "zip_entry": "Sylla-Idle_1/frame_000043.png",
+      "bbox": [
+        315,
+        156,
+        1221,
+        1381
+      ],
+      "sha256": "11432db2ce6634221b639f415f4a2038db3cf0d3449df7ef0b60d056ad462dda",
+      "bytes": 1057585
+    }
+  ],
+  "raw_spine_source_folder": "C:\\Users\\john9\\Documents\\Codex\\2026-10-16\\new-chat\\outputs\\avatars-hq-20261025\\source\\Sylla",
+  "previous_runtime_import": {
+    "import_size": [
+      1024,
+      1024
+    ],
+    "compression": "Godot Lossless",
+    "mipmaps": true
+  },
+  "optimization_reference": "fd0053d9be7182712977ce98248c077ca0c9b66a: original Erpin idle_hq diet; source PNGs unchanged"
+}

@@ -1,0 +1,8 @@
+[gd_resource type="AtlasTexture" load_steps=2 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/trickcal/rulebook/UI_RULE_FAIR_ROLL.png" id="1"]
+
+[resource]
+atlas = ExtResource("1")
+region = Rect2(27.35566, 59.20255, 201.28868, 144.74003)
+filter_clip = true

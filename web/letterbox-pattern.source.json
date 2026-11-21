@@ -1,0 +1,391 @@
+{
+  "purpose": "Static web letterbox wallpaper using eight accepted native image_gen cutouts. The circular medallions are absent. Composited from their alpha silhouettes; no replacement artwork was procedurally drawn.",
+  "pixel_size": [
+    1536,
+    1536
+  ],
+  "css_size": [
+    768,
+    768
+  ],
+  "ink": "#174d39",
+  "background": "transparent; shell body uses #b5e48c",
+  "seed": 20261029,
+  "sha256": "007011b0f396910e5cab367fa931b39c3b86a6359aa1ed9d3a0976c8aa46fe1e",
+  "motifs": [
+    {
+      "key": "skull",
+      "source": "res://assets/ui/trickcal/margins/skull_v01.png",
+      "source_sha256": "32760b3fb127942e45d4c3c3ba357948b06d3ac5e7813ae6b989785c8030a4b2",
+      "tool": "built-in image_gen.imagegen"
+    },
+    {
+      "key": "paw",
+      "source": "res://assets/ui/trickcal/margins/paw_v01.png",
+      "source_sha256": "8c402ef31d893ec0945925cb08a27260ec77121eb3b2f467e4f23acc01ce4d3e",
+      "tool": "built-in image_gen.imagegen"
+    },
+    {
+      "key": "flame",
+      "source": "res://assets/ui/trickcal/margins/flame_v01.png",
+      "source_sha256": "6e4e5a64b38251f85c70f244196af10225850b5974c931d8c57d5e76816e7795",
+      "tool": "built-in image_gen.imagegen"
+    },
+    {
+      "key": "sun",
+      "source": "res://assets/ui/trickcal/margins/sun_v01.png",
+      "source_sha256": "ff05a292c3156c9f1e219a2a44d2917fcc9e4332c75af6e6d96266c36b37def1",
+      "tool": "built-in image_gen.imagegen"
+    },
+    {
+      "key": "star",
+      "source": "res://assets/ui/trickcal/margins/star_v01.png",
+      "source_sha256": "eb8ce55bb9622dc16938cdb4c4044b2ca7d0a0adff465c426dcd543269da211c",
+      "tool": "built-in image_gen.imagegen"
+    },
+    {
+      "key": "crescent",
+      "source": "res://assets/ui/trickcal/margins/crescent_v01.png",
+      "source_sha256": "c2f87340bb59b999fd00d47202361ee526ba8d4a6f2cbee3bb900b79385cd3a8",
+      "tool": "built-in image_gen.imagegen"
+    },
+    {
+      "key": "butterfly",
+      "source": "res://assets/ui/trickcal/margins/butterfly_v01.png",
+      "source_sha256": "1c8cde964e1ec2d83e4fd0c8a174fcebe2bbada7d0c4930c622b1de51bad384c",
+      "tool": "built-in image_gen.imagegen"
+    },
+    {
+      "key": "wing",
+      "source": "res://assets/ui/trickcal/margins/wing_v01.png",
+      "source_sha256": "be07b9d96ac5f0c4a6e5ec1dc877b68141cb39a5418a6e8642e1b5c8a2632d29",
+      "tool": "built-in image_gen.imagegen"
+    }
+  ],
+  "placements": [
+    {
+      "key": "sun",
+      "center_css_px": [
+        59.0,
+        53.0
+      ],
+      "extent_css_px": 47,
+      "rotation_degrees": -17
+    },
+    {
+      "key": "skull",
+      "center_css_px": [
+        193.0,
+        59.0
+      ],
+      "extent_css_px": 50,
+      "rotation_degrees": 13
+    },
+    {
+      "key": "sun",
+      "center_css_px": [
+        310.0,
+        67.0
+      ],
+      "extent_css_px": 57,
+      "rotation_degrees": -20
+    },
+    {
+      "key": "wing",
+      "center_css_px": [
+        453.0,
+        64.0
+      ],
+      "extent_css_px": 57,
+      "rotation_degrees": 26
+    },
+    {
+      "key": "flame",
+      "center_css_px": [
+        575.0,
+        74.0
+      ],
+      "extent_css_px": 59,
+      "rotation_degrees": -3
+    },
+    {
+      "key": "butterfly",
+      "center_css_px": [
+        716.0,
+        78.0
+      ],
+      "extent_css_px": 44,
+      "rotation_degrees": 3
+    },
+    {
+      "key": "flame",
+      "center_css_px": [
+        69.0,
+        198.0
+      ],
+      "extent_css_px": 45,
+      "rotation_degrees": 4
+    },
+    {
+      "key": "sun",
+      "center_css_px": [
+        198.0,
+        191.0
+      ],
+      "extent_css_px": 53,
+      "rotation_degrees": 25
+    },
+    {
+      "key": "paw",
+      "center_css_px": [
+        310.0,
+        192.0
+      ],
+      "extent_css_px": 58,
+      "rotation_degrees": -7
+    },
+    {
+      "key": "flame",
+      "center_css_px": [
+        443.0,
+        201.0
+      ],
+      "extent_css_px": 58,
+      "rotation_degrees": 13
+    },
+    {
+      "key": "star",
+      "center_css_px": [
+        582.0,
+        189.0
+      ],
+      "extent_css_px": 49,
+      "rotation_degrees": 23
+    },
+    {
+      "key": "sun",
+      "center_css_px": [
+        700.0,
+        186.0
+      ],
+      "extent_css_px": 46,
+      "rotation_degrees": -5
+    },
+    {
+      "key": "paw",
+      "center_css_px": [
+        63.0,
+        330.0
+      ],
+      "extent_css_px": 58,
+      "rotation_degrees": 2
+    },
+    {
+      "key": "butterfly",
+      "center_css_px": [
+        198.0,
+        328.0
+      ],
+      "extent_css_px": 57,
+      "rotation_degrees": -12
+    },
+    {
+      "key": "wing",
+      "center_css_px": [
+        315.0,
+        311.0
+      ],
+      "extent_css_px": 58,
+      "rotation_degrees": 4
+    },
+    {
+      "key": "sun",
+      "center_css_px": [
+        447.0,
+        313.0
+      ],
+      "extent_css_px": 44,
+      "rotation_degrees": 15
+    },
+    {
+      "key": "star",
+      "center_css_px": [
+        572.0,
+        316.0
+      ],
+      "extent_css_px": 59,
+      "rotation_degrees": -12
+    },
+    {
+      "key": "skull",
+      "center_css_px": [
+        706.0,
+        321.0
+      ],
+      "extent_css_px": 48,
+      "rotation_degrees": -11
+    },
+    {
+      "key": "wing",
+      "center_css_px": [
+        75.0,
+        459.0
+      ],
+      "extent_css_px": 51,
+      "rotation_degrees": 5
+    },
+    {
+      "key": "skull",
+      "center_css_px": [
+        201.0,
+        461.0
+      ],
+      "extent_css_px": 57,
+      "rotation_degrees": 7
+    },
+    {
+      "key": "star",
+      "center_css_px": [
+        334.0,
+        441.0
+      ],
+      "extent_css_px": 48,
+      "rotation_degrees": 21
+    },
+    {
+      "key": "paw",
+      "center_css_px": [
+        458.0,
+        461.0
+      ],
+      "extent_css_px": 59,
+      "rotation_degrees": -8
+    },
+    {
+      "key": "skull",
+      "center_css_px": [
+        574.0,
+        462.0
+      ],
+      "extent_css_px": 45,
+      "rotation_degrees": 8
+    },
+    {
+      "key": "flame",
+      "center_css_px": [
+        713.0,
+        436.0
+      ],
+      "extent_css_px": 55,
+      "rotation_degrees": 14
+    },
+    {
+      "key": "crescent",
+      "center_css_px": [
+        50.0,
+        587.0
+      ],
+      "extent_css_px": 49,
+      "rotation_degrees": -22
+    },
+    {
+      "key": "skull",
+      "center_css_px": [
+        205.0,
+        581.0
+      ],
+      "extent_css_px": 50,
+      "rotation_degrees": -16
+    },
+    {
+      "key": "paw",
+      "center_css_px": [
+        316.0,
+        590.0
+      ],
+      "extent_css_px": 46,
+      "rotation_degrees": -23
+    },
+    {
+      "key": "crescent",
+      "center_css_px": [
+        448.0,
+        584.0
+      ],
+      "extent_css_px": 57,
+      "rotation_degrees": 13
+    },
+    {
+      "key": "wing",
+      "center_css_px": [
+        584.0,
+        571.0
+      ],
+      "extent_css_px": 46,
+      "rotation_degrees": 28
+    },
+    {
+      "key": "crescent",
+      "center_css_px": [
+        702.0,
+        571.0
+      ],
+      "extent_css_px": 50,
+      "rotation_degrees": -19
+    },
+    {
+      "key": "paw",
+      "center_css_px": [
+        69.0,
+        701.0
+      ],
+      "extent_css_px": 53,
+      "rotation_degrees": -21
+    },
+    {
+      "key": "crescent",
+      "center_css_px": [
+        178.0,
+        705.0
+      ],
+      "extent_css_px": 44,
+      "rotation_degrees": 14
+    },
+    {
+      "key": "butterfly",
+      "center_css_px": [
+        326.0,
+        697.0
+      ],
+      "extent_css_px": 51,
+      "rotation_degrees": 6
+    },
+    {
+      "key": "butterfly",
+      "center_css_px": [
+        462.0,
+        700.0
+      ],
+      "extent_css_px": 45,
+      "rotation_degrees": -24
+    },
+    {
+      "key": "star",
+      "center_css_px": [
+        590.0,
+        692.0
+      ],
+      "extent_css_px": 53,
+      "rotation_degrees": -13
+    },
+    {
+      "key": "flame",
+      "center_css_px": [
+        714.0,
+        692.0
+      ],
+      "extent_css_px": 52,
+      "rotation_degrees": 1
+    }
+  ]
+}

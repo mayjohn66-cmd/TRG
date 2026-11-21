@@ -1,0 +1,320 @@
+{
+  "mode": "built-in image_gen",
+  "transparent_background": true,
+  "files": [
+    {
+      "role": "finish",
+      "file": "finish.png",
+      "original": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-c59f9c0e-cc2a-43d3-b411-d41108fc91ee.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "region": [
+        162,
+        170,
+        931,
+        920
+      ],
+      "limit": 256,
+      "sha256": "187029fc196bb5fc50a7143ad92ab4f2024970d512a10f138a60be06cf45cdc0",
+      "prompt": "Use case: illustration-story. ONE transparent standalone UI symbol for a cozy chibi board-game rulebook. Match the supplied reference's simple rounded chunky silhouette, thick clean dark-brown/forest outline, warm ivory/gold accents and restrained 3-tone matte cartoon shading. Broad simple shapes instantly readable at 40px and attractive at 132px. Front-facing or slight top-down object, no extreme perspective. All objects form ONE compact centered emblem with generous transparent margin. Genuine transparent background outside the objects. No backing disc, no outer badge frame, no scenery, no tiny intricate decoration, no text, no letters, no numerals, no logo, no watermark, no glow, no particle field. Primary subject: A small three-step winners' podium with ONE large golden trophy on the highest center step and two lower ivory steps. Green laurel at the base, very simple, communicates finish and ranking. No crowns."
+    },
+    {
+      "role": "play_card",
+      "file": "play_card.png",
+      "original": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-9582253e-226e-486e-be70-a8713139ccb6.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "region": [
+        167,
+        170,
+        920,
+        930
+      ],
+      "limit": 256,
+      "sha256": "6aee0df8cd534983396f2960659a706c104059a62c02bf35c165a34adc1bc17b",
+      "prompt": "Use case: illustration-story. ONE transparent standalone UI symbol for a cozy chibi board-game rulebook. Match the supplied reference's simple rounded chunky silhouette, thick clean dark-brown/forest outline, warm ivory/gold accents and restrained 3-tone matte cartoon shading. Broad simple shapes instantly readable at 40px and attractive at 132px. Front-facing or slight top-down object, no extreme perspective. All objects form ONE compact centered emblem with generous transparent margin. Genuine transparent background outside the objects. No backing disc, no outer badge frame, no scenery, no tiny intricate decoration, no text, no letters, no numerals, no logo, no watermark, no glow, no particle field. Primary subject: ONE warm ivory playing card with a coral-red face emblem, held at the lower corner by a simple rounded ivory mitten hand, a small teal forward swoosh. Communicates playing one card, not a deck or attack."
+    },
+    {
+      "role": "roll",
+      "file": "roll.png",
+      "original": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-d99d217c-341b-4ef7-b6b8-960a79e5994d.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "region": [
+        164,
+        159,
+        939,
+        984
+      ],
+      "limit": 256,
+      "sha256": "1a2c78f65b24e78e879bb1850104a8fcf0919cd5f4db8813ad60cf1e825dcc0f",
+      "prompt": "Use case: illustration-story. ONE transparent standalone UI symbol for a cozy chibi board-game rulebook. Match the supplied reference's simple rounded chunky silhouette, thick clean dark-brown/forest outline, warm ivory/gold accents and restrained 3-tone matte cartoon shading. Broad simple shapes instantly readable at 40px and attractive at 132px. Front-facing or slight top-down object, no extreme perspective. All objects form ONE compact centered emblem with generous transparent margin. Genuine transparent background outside the objects. No backing disc, no outer badge frame, no scenery, no tiny intricate decoration, no text, no letters, no numerals, no logo, no watermark, no glow, no particle field. Primary subject: ONE chunky ivory six-sided die with large dark round pips, one tiny green curved rolling swoosh underneath. Clear single-die silhouette."
+    },
+    {
+      "role": "choose_pawn",
+      "file": "choose_pawn.png",
+      "original": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-ea7af942-b54b-48ca-90d2-d799c2a4508a.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "region": [
+        91,
+        117,
+        1068,
+        985
+      ],
+      "limit": 256,
+      "sha256": "607707d04957ab5c72175ea348b9bcf8033360c9ca07feaafdee829dfb4bab34",
+      "prompt": "Use case: illustration-story. ONE transparent standalone UI symbol for a cozy chibi board-game rulebook. Match the supplied reference's simple rounded chunky silhouette, thick clean dark-brown/forest outline, warm ivory/gold accents and restrained 3-tone matte cartoon shading. Broad simple shapes instantly readable at 40px and attractive at 132px. Front-facing or slight top-down object, no extreme perspective. All objects form ONE compact centered emblem with generous transparent margin. Genuine transparent background outside the objects. No backing disc, no outer badge frame, no scenery, no tiny intricate decoration, no text, no letters, no numerals, no logo, no watermark, no glow, no particle field. Primary subject: THREE small round pawns in coral, blue and green; ONE large simple ivory pointer hand hovering over the blue center pawn, communicates choosing a piece. Rounded mitten-like finger, very simple hand anatomy."
+    },
+    {
+      "role": "resolve",
+      "file": "resolve.png",
+      "original": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-5b49b592-8edc-4a1f-8f0b-2439ce9662e0.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "region": [
+        151,
+        134,
+        952,
+        979
+      ],
+      "limit": 256,
+      "sha256": "a8701d830439efbc39c4e33f57b39778fb3bb6e5f7cc489e435482d261615ebf",
+      "prompt": "Use case: illustration-story. ONE transparent standalone UI symbol for a cozy chibi board-game rulebook. Match the supplied reference's simple rounded chunky silhouette, thick clean dark-brown/forest outline, warm ivory/gold accents and restrained 3-tone matte cartoon shading. Broad simple shapes instantly readable at 40px and attractive at 132px. Front-facing or slight top-down object, no extreme perspective. All objects form ONE compact centered emblem with generous transparent margin. Genuine transparent background outside the objects. No backing disc, no outer badge frame, no scenery, no tiny intricate decoration, no text, no letters, no numerals, no logo, no watermark, no glow, no particle field. Primary subject: ONE cream/green board tile with ONE large golden checkmark seated on it and a small orange settlement sparkle of four broad rays. Communicates resolving a turn, not winning a trophy."
+    },
+    {
+      "role": "bonus",
+      "file": "bonus.png",
+      "original": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-d0c9da20-471c-4119-97a5-cb107428d6da.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "region": [
+        139,
+        225,
+        983,
+        826
+      ],
+      "limit": 256,
+      "sha256": "8d6118260794e008687c7c54d90c62a0fdcd4f80e1fc88513c4dcffd22034b34",
+      "prompt": "Use case: illustration-story. ONE transparent standalone UI symbol for a cozy chibi board-game rulebook. Match the supplied reference's simple rounded chunky silhouette, thick clean dark-brown/forest outline, warm ivory/gold accents and restrained 3-tone matte cartoon shading. Broad simple shapes instantly readable at 40px and attractive at 132px. Front-facing or slight top-down object, no extreme perspective. All objects form ONE compact centered emblem with generous transparent margin. Genuine transparent background outside the objects. No backing disc, no outer badge frame, no scenery, no tiny intricate decoration, no text, no letters, no numerals, no logo, no watermark, no glow, no particle field. Primary subject: ONE small teal toy rocket with an ivory nose and a short golden-orange exhaust flame, pointing diagonally upper right. One broad gold motion trail, communicates bonus forward movement."
+    },
+    {
+      "role": "augment_round",
+      "file": "augment_round.png",
+      "original": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-fb1316fe-2b91-4814-9d62-b23a9339a7e1.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "region": [
+        70,
+        172,
+        1114,
+        872
+      ],
+      "limit": 256,
+      "sha256": "b9e9b585bc28b8d170c1513c8163f26ca8229bcccb209fc45895f57972adf0ae",
+      "prompt": "Use case: illustration-story. ONE transparent standalone UI symbol for a cozy chibi board-game rulebook. Match the supplied reference's simple rounded chunky silhouette, thick clean dark-brown/forest outline, warm ivory/gold accents and restrained 3-tone matte cartoon shading. Broad simple shapes instantly readable at 40px and attractive at 132px. Front-facing or slight top-down object, no extreme perspective. All objects form ONE compact centered emblem with generous transparent margin. Genuine transparent background outside the objects. No backing disc, no outer badge frame, no scenery, no tiny intricate decoration, no text, no letters, no numerals, no logo, no watermark, no glow, no particle field. Primary subject: A fan of exactly THREE different ivory-backed upgrade cards in green, blue and coral, with ONE small gold faceted crystal hovering above the center card. Simple, communicates choosing one upgrade out of three. No crown."
+    },
+    {
+      "role": "tempo",
+      "file": "tempo.png",
+      "original": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-ff81b428-226e-4bf5-9b5d-949a853f2f86.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "region": [
+        119,
+        195,
+        1020,
+        869
+      ],
+      "limit": 256,
+      "sha256": "475acaf2801f5ed409d4e84368e63fa6fec3cee6c324f7947d33941942578c6c",
+      "prompt": "Use case: illustration-story. ONE transparent standalone UI symbol for a cozy chibi board-game rulebook. Match the supplied reference's simple rounded chunky silhouette, thick clean dark-brown/forest outline, warm ivory/gold accents and restrained 3-tone matte cartoon shading. Broad simple shapes instantly readable at 40px and attractive at 132px. Front-facing or slight top-down object, no extreme perspective. All objects form ONE compact centered emblem with generous transparent margin. Genuine transparent background outside the objects. No backing disc, no outer badge frame, no scenery, no tiny intricate decoration, no text, no letters, no numerals, no logo, no watermark, no glow, no particle field. Primary subject: ONE short hourglass with gold frame and dark red sand, with TWO simple broad coral flame tongues rising behind it. Communicates time speeding up, no clock face or numbers."
+    },
+    {
+      "role": "attack",
+      "file": "attack.png",
+      "original": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-eaed8ae6-3d10-4997-9797-066145dd9614.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "region": [
+        183,
+        182,
+        908,
+        917
+      ],
+      "limit": 256,
+      "sha256": "7a9cd43b726a576a1cbc85d130a7e6c17555cf7eec02cd352286273aeec43cad",
+      "prompt": "Use case: illustration-story. ONE transparent standalone UI symbol for a cozy chibi board-game rulebook. Match the supplied reference's simple rounded chunky silhouette, thick clean dark-brown/forest outline, warm ivory/gold accents and restrained 3-tone matte cartoon shading. Broad simple shapes instantly readable at 40px and attractive at 132px. Front-facing or slight top-down object, no extreme perspective. All objects form ONE compact centered emblem with generous transparent margin. Genuine transparent background outside the objects. No backing disc, no outer badge frame, no scenery, no tiny intricate decoration, no text, no letters, no numerals, no logo, no watermark, no glow, no particle field. Primary subject: ONE coral-red playing card with a single short chunky silver sword crossing it diagonally, blade toward upper right. Simple bold attack-card emblem, no shield or extra weapons."
+    },
+    {
+      "role": "defense",
+      "file": "defense.png",
+      "original": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-091ab913-9846-4196-ab09-0e15ab3aa22a.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "region": [
+        50,
+        184,
+        1144,
+        909
+      ],
+      "limit": 256,
+      "sha256": "acc3275400fd0f3eb1edad5710acf185633c2479c1a8e243b2e152b9a591e791",
+      "prompt": "Use case: illustration-story. ONE transparent standalone UI symbol for a cozy chibi board-game rulebook. Match the supplied reference's simple rounded chunky silhouette, thick clean dark-brown/forest outline, warm ivory/gold accents and restrained 3-tone matte cartoon shading. Broad simple shapes instantly readable at 40px and attractive at 132px. Front-facing or slight top-down object, no extreme perspective. All objects form ONE compact centered emblem with generous transparent margin. Genuine transparent background outside the objects. No backing disc, no outer badge frame, no scenery, no tiny intricate decoration, no text, no letters, no numerals, no logo, no watermark, no glow, no particle field. Primary subject: ONE cobalt-blue playing card behind a large chunky ivory/silver shield with a teal center and broad gold rim. A tiny blunt incoming arrow bounces off to the left, communicates defense. No sword."
+    },
+    {
+      "role": "trap_card",
+      "file": "trap_card.png",
+      "original": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-4375e3b5-f1db-42b8-a360-9af5ec1cd571.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "region": [
+        204,
+        157,
+        877,
+        925
+      ],
+      "limit": 256,
+      "sha256": "b30f15639bdd4cde85ac9e1839e8d2864a46395b5233cd932f35b86ea314e645",
+      "prompt": "Use case: illustration-story. ONE transparent standalone UI symbol for a cozy chibi board-game rulebook. Match the supplied reference's simple rounded chunky silhouette, thick clean dark-brown/forest outline, warm ivory/gold accents and restrained 3-tone matte cartoon shading. Broad simple shapes instantly readable at 40px and attractive at 132px. Front-facing or slight top-down object, no extreme perspective. All objects form ONE compact centered emblem with generous transparent margin. Genuine transparent background outside the objects. No backing disc, no outer badge frame, no scenery, no tiny intricate decoration, no text, no letters, no numerals, no logo, no watermark, no glow, no particle field. Primary subject: ONE purple playing card partly behind ONE open cartoon spring-jaw trap, rounded harmless-looking chunky silver jaws and gold center trigger. Distinct from a hidden question-mark card; no eye, no question mark, no spikes outside the silhouette."
+    },
+    {
+      "role": "lawbook",
+      "file": "lawbook.png",
+      "original": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-77038808-30a6-476a-a686-28a997ac78ca.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "region": [
+        166,
+        134,
+        939,
+        1007
+      ],
+      "limit": 256,
+      "sha256": "23fb258b497f0321b755296d83b7f06ab490025b231bf8b69caadcb68889fea5",
+      "prompt": "Use case: illustration-story. ONE transparent standalone UI symbol for a cozy chibi board-game rulebook. Match the supplied reference's simple rounded chunky silhouette, thick clean dark-brown/forest outline, warm ivory/gold accents and restrained 3-tone matte cartoon shading. Broad simple shapes instantly readable at 40px and attractive at 132px. Front-facing or slight top-down object, no extreme perspective. All objects form ONE compact centered emblem with generous transparent margin. Genuine transparent background outside the objects. No backing disc, no outer badge frame, no scenery, no tiny intricate decoration, no text, no letters, no numerals, no logo, no watermark, no glow, no particle field. Primary subject: ONE closed emerald-green leather lawbook with a large embossed golden balance-scale symbol on its cover and a warm-ivory bookmark. Simple broad gold page edge, straight-on three-quarter book icon, no cards beside it."
+    },
+    {
+      "role": "supply",
+      "file": "supply.png",
+      "original": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-b42fd344-4000-4aa5-a019-4ecd7651a723.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "region": [
+        141,
+        250,
+        972,
+        737
+      ],
+      "limit": 256,
+      "sha256": "74650742c6850912e27618d99537a014c4a3a4f4d5919581bf83c6df308ef496",
+      "prompt": "Use case: illustration-story. ONE transparent standalone UI symbol for a cozy chibi board-game rulebook. Match the supplied reference's simple rounded chunky silhouette, thick clean dark-brown/forest outline, warm ivory/gold accents and restrained 3-tone matte cartoon shading. Broad simple shapes instantly readable at 40px and attractive at 132px. Front-facing or slight top-down object, no extreme perspective. All objects form ONE compact centered emblem with generous transparent margin. Genuine transparent background outside the objects. No backing disc, no outer badge frame, no scenery, no tiny intricate decoration, no text, no letters, no numerals, no logo, no watermark, no glow, no particle field. Primary subject: ONE open honey-brown supply crate containing TWO simple ivory cards and ONE small green refill bottle with a gold cork. Cohesive compact silhouette, communicates general resupply, no book or gift ribbon."
+    },
+    {
+      "role": "super",
+      "file": "super.png",
+      "original": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-b0e824cb-97bf-4d07-8385-b09972ddc409.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "region": [
+        177,
+        85,
+        938,
+        1075
+      ],
+      "limit": 256,
+      "sha256": "e3ef85699774ce72db766248b748a7dd89154236b6e1d938461b2fae4ffb16cc",
+      "prompt": "Use case: illustration-story. ONE transparent standalone UI symbol for a cozy chibi board-game rulebook. Match the supplied reference's simple rounded chunky silhouette, thick clean dark-brown/forest outline, warm ivory/gold accents and restrained 3-tone matte cartoon shading. Broad simple shapes instantly readable at 40px and attractive at 132px. Front-facing or slight top-down object, no extreme perspective. All objects form ONE compact centered emblem with generous transparent margin. Genuine transparent background outside the objects. No backing disc, no outer badge frame, no scenery, no tiny intricate decoration, no text, no letters, no numerals, no logo, no watermark, no glow, no particle field. Primary subject: ONE large purple faceted crystal splitting a golden lightning bolt, with ONE small tilted ivory die at its base. Clear high-risk high-reward special-upgrade symbol, one bold coral accent, no book, no crown."
+    },
+    {
+      "role": "panel",
+      "file": "panel.png",
+      "original": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-8790b2f9-04d9-4e7a-aafb-b712150102ec.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "region": [
+        64,
+        81,
+        1126,
+        1100
+      ],
+      "limit": 512,
+      "sha256": "3529981b69d377b26868dc0df256220656f72ca34b79cf3c05a17b0c315a485a",
+      "prompt": "Use case: productivity-visual. ONE production UI nine-slice panel texture for a simple cozy cartoon game rulebook. A flat front-facing perfectly rectangular SQUARE white/very pale ivory matte paper panel, a simple medium neutral-gray thin rounded rim with a slightly darker clean outside edge, subtle broad inner bevel and very faint paper grain. Small softly rounded corners, perfectly STRAIGHT parallel horizontal and vertical edges, NO inward bow or curved sides, no perspective. White center occupies 85% of the square and is perfectly empty for live text; only gentle uniform off-white texture, no gradients crossing center. Neutral white and gray palette because game code will tint it mint, beige, leather brown or pastel. Tiny restrained baked shadow hugging bottom rim, no outside cast shadow. Entire panel within transparent margins and genuine transparent exterior. No symbols, no ornaments, no screws, no corner flourishes, no line pattern, no writing, no text, no watermark. Single centered square panel only."
+    },
+    {
+      "role": "paper",
+      "file": "paper.png",
+      "original": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-2e2e401e-f5bf-4e96-b85e-d486a646ebbb.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "region": [
+        123,
+        141,
+        1008,
+        988
+      ],
+      "limit": 768,
+      "sha256": "2d4db1492c428032be851a64f0245016043bc02023ed2712b8555d8db7757196",
+      "prompt": "Use case: productivity-visual. ONE square front-facing cream notebook-paper UI sheet for a cozy chibi board-game encyclopedia. Flat pale warm ivory #fbf4df paper with very faint tan horizontal ruled lines, evenly spaced and subtle enough for black text readability; leave the upper 15% blank for a live heading. Small rounded corners, perfectly straight flat edges, tiny folded lower-right corner in pale beige, no ripped edges, no bending or bowed sides. Very restrained matte paper grain, broad empty clean writing space, simple icon-like game UI finish, no elaborate decoration. No book spine, no leather frame, no clips, no drawings, no letters, no text, no watermark. Whole square paper sheet centered with generous genuine transparent margins outside; paper itself opaque."
+    },
+    {
+      "role": "ribbon",
+      "file": "ribbon.png",
+      "original": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-ba0793f7-4afc-4c75-8a0c-789825eea2e7.png",
+      "size": [
+        1942,
+        809
+      ],
+      "region": [
+        31,
+        218,
+        1879,
+        344
+      ],
+      "limit": 512,
+      "sha256": "274ef190df4ef418b11b9ac0159cb744c7f947b7f5f6ba6c08291b88aeb65724",
+      "prompt": "Use case: productivity-visual. ONE simple horizontal ORANGE page-number ribbon UI sprite, about 4.4:1 width to height, for a cozy cartoon board-game encyclopedia. A flat broad rectangular warm-orange #f08a3c center banner with perfectly straight parallel top and bottom edges, narrow gold-peach highlight along the upper edge and darker burnt-orange lower edge. Two SHORT folded fishtail ends extend sideways behind it with simple notches. Symmetric, front-facing, matte 3-tone painted cartoon finish with subtle paper/fabric grain. The central 75% is completely EMPTY for live page numbers. Restrained chunky dark-brown contour, no elaborate curls, no inward bow, no perspective, no shiny gems, no symbols, no words, no numbers, no text, no watermark. Entire ribbon centered with generous genuine transparent margins outside the silhouette."
+    }
+  ],
+  "reused": {
+    "corner": "assets/board/decals/BOARD_CORNER.png",
+    "halfway": "assets/board/decals/BOARD_HALF.png",
+    "bread": "assets/board/decals/BOARD_BAKERY.png",
+    "wardrobe": "assets/board/decals/BOARD_PORTAL.png",
+    "boost": "assets/board/decals/BOARD_BOOST.png",
+    "pawn_basics": "content_trickcal/illustrations/pawns/PAWN_DEFAULT.png"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "mode": "built-in image_gen",
+  "reference": "assets/board/decals/NPC_WARNING.png",
+  "file": "self_risk_warning.png",
+  "original": "exec-8568e2a3-a892-4ebc-a97f-2d5366bad459.png",
+  "size": [
+    1312,
+    1199
+  ],
+  "region": [
+    50,
+    76,
+    1204,
+    1029
+  ],
+  "import_limit": 128,
+  "sha256": "73dd9720ade686c4a7f307ad227aa72bb4c97412e6af722ea4e540b3d0875420"
+}

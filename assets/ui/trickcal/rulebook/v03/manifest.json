@@ -1,0 +1,34 @@
+{
+  "mode": "built-in image_gen",
+  "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-c41d9bed-4a30-4d80-9817-e3de98458d7a.png",
+  "file": "panel_round.png",
+  "dimensions": [
+    1254,
+    1254
+  ],
+  "region": [
+    81,
+    99,
+    1092,
+    1057
+  ],
+  "sha256": "d1e85aa42037d07877414fd0f76fe06e63622f101f38e984a640e244d1838974",
+  "prompt": "Use case: precise-object-edit. Edit target: supplied neutral UI panel texture. Keep its restrained white and light-gray matte cartoon fill, clean thin gray outer border and subtle inner highlight. Change ONLY its silhouette to a MUCH rounder soft rounded square: each corner is a true circular quarter arc with radius exactly about 40% of the visible square width, leaving short, perfectly straight horizontal and vertical middle sides. The overall shape should resemble a soft almost circular rounded app tile, NOT a rectangle with tiny filleted corners. Perfect orthographic front view, left/right/top/bottom symmetry. The inner highlight follows the same generous corner curve. Broad smooth featureless white center suitable for tinting and nine-slice game UI; thin restrained border, no metallic effect, no dramatic shadow. Isolate one centered panel with generous clean transparent margin. No inward-curved or bowed sides; straight edges stay parallel. No objects, text, ornaments, logo or watermark. Genuine transparent background outside silhouette, crisp clean alpha without ragged noise. The visible silhouette must be square with very large rounded corners.",
+  "correction": "Source corner ratio measured at about 24%; nine-slice sizing calibrated to preserve requested visible radius.",
+  "disc": {
+    "file": "disc_round.png",
+    "original": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-76ae4fcf-c00b-4129-98b2-7ab044a9780e.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "region": [
+      113,
+      126,
+      1026,
+      1029
+    ],
+    "sha256": "29af0588596caf34888c7337dc3211521f71e7f713853d449026c49911d86242",
+    "prompt": "Use case: illustration-story. Asset: one small circular icon pedestal for a cozy cartoon game rulebook. EXACTLY ONE perfect round disk, not a rounded square: circular silhouette with no straight edge anywhere. Plain matte warm white flat face, thin light-gray outline and a very subtle soft inner rim. Restrained simple flat cartoon UI style, no metallic look, no texture pattern, no center marking, no cross, no symbol, no text, no drop shadow, no glow, no ornament. Orthographic face-on, symmetric. Transparent background outside the perfect round disk. Centered disk occupies 80% of square canvas. Smooth crisp alpha, generous clean transparent border. It will be tinted to pastel UI colors and displayed 52px wide, keep all detail extremely simple."
+  }
+}

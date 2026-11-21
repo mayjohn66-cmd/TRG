@@ -1,0 +1,262 @@
+[
+  {
+    "card_id": "CNT_03",
+    "file": "CNT_03.png",
+    "source_version": "v0.2",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "ae769208ebf1b6d8a44e905be679d6d3e85e5bd570ed6a9da28bc6da63f6b868"
+  },
+  {
+    "card_id": "ACT_02",
+    "file": "ACT_02.png",
+    "source_version": "v0.1",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "13b475a59e541bed0a3f440141c11d5203a2bcc5a3cdd70556bbcc30867ef975"
+  },
+  {
+    "card_id": "ACT_03",
+    "file": "ACT_03.png",
+    "source_version": "v0.1",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "75bb9a0d2f5499fd6248041aa47979162f13daba13f264c45e6385737213e2b0"
+  },
+  {
+    "card_id": "ACT_04",
+    "file": "ACT_04.png",
+    "source_version": "v0.2",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "e30e5558bdba98e7e8052aca8d73bdc2ecb648addbcd66840ccb6357744f9c39"
+  },
+  {
+    "card_id": "CNT_01",
+    "file": "CNT_01.png",
+    "source_version": "v0.1",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "26f5f5f75742ee1d2336a152bfb1555ca644e6f43074eba430666f363fc259e5"
+  },
+  {
+    "card_id": "ACT_06",
+    "file": "ACT_06.png",
+    "source_version": "v0.1",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "12a4390567bdd90ca2e22ce738ff92384c4dcbbb227633b692f2979872e1ee1f"
+  },
+  {
+    "card_id": "ACT_07",
+    "file": "ACT_07.png",
+    "source_version": "v0.2",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "f322c0f9d8d7c21a370c231593b45f72a53950035334a56a49159d851be0561f"
+  },
+  {
+    "card_id": "ACT_08",
+    "file": "ACT_08.png",
+    "source_version": "simple-background-v5",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "a5d02bd7cef8d68471b89e35884f8179adba7efa1df20456f4d58fbdd3bbb03c"
+  },
+  {
+    "card_id": "CNT_02",
+    "file": "CNT_02.png",
+    "source_version": "v0.1",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "e6034e34ea13bb99306dd9904c5c1aa4eb21f1ad8b06c4d1444c34fb777a295f"
+  },
+  {
+    "card_id": "TRP_02",
+    "file": "TRP_02.png",
+    "source_version": "v0.1",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "181ad6b717b69b0a1bc3dbf164f04c3aee48fb325bc880cbd8de0b462265ba2b"
+  },
+  {
+    "card_id": "TRP_03",
+    "file": "TRP_03.png",
+    "source_version": "v0.1",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "ea2674c2a888037a83e8ec64b91686d6ca3a4dee8002b393ad7e946593d5d688"
+  },
+  {
+    "card_id": "TRP_C01",
+    "file": "TRP_C01.png",
+    "source_version": "v0.1",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "eed835eb180f47bea0312dd28f1e65fc39a647e80bae96abc8e952a3d81dde5a"
+  },
+  {
+    "card_id": "TRP_05",
+    "file": "TRP_05.png",
+    "source_version": "domino-beni-v6",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "cd8bec8a88be37e9ee7dbd9f202324952a71791df4b16792a1fb716841d14da4",
+    "character": "베니",
+    "scene": "커다란 도미노가 덮치기 직전 뒤를 보며 달아나는 장면",
+    "background": "simple-background",
+    "reference_source": "https://gamewith.jp/trickcal/517602"
+  },
+  {
+    "card_id": "SUM_01",
+    "file": "SUM_01.png",
+    "source_version": "v0.1",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "00a63df3c4ff52d59ff4a9b9c6491213cc6927015af2bb85243d97be1054665d"
+  },
+  {
+    "card_id": "SUM_02",
+    "file": "SUM_02.png",
+    "source_version": "v0.1",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "bbd543de8e8f8dedba9f1e94f464bfd54e45a21e509cda206ccf3195696b04ac"
+  },
+  {
+    "card_id": "CNT_04",
+    "file": "CNT_04.png",
+    "source_version": "character-v1",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "98e3bccf84ae4ccbdfeb85d080bfa219e3243a3755ccccb2ae7094b4f8c8100b"
+  },
+  {
+    "card_id": "CNT_05",
+    "file": "CNT_05.png",
+    "source_version": "character-v1",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "f45341fac11d4ceb1d567d5f23b7d8d84c7a11ef983d83f2d7f52707eb99208a"
+  },
+  {
+    "card_id": "CNT_06",
+    "file": "CNT_06.png",
+    "source_version": "character-v1",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "8825bc60b9f25cf0d128d60a47fb9cb347ea795d6a728b34f6a56acd67e37bfc"
+  },
+  {
+    "card_id": "CNT_07",
+    "file": "CNT_07.png",
+    "source_version": "character-v1",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "77078c66efd9dfd42752e4b404a416ae02a070cc77902e24eb4b46b50333424f"
+  },
+  {
+    "card_id": "ACT_10",
+    "file": "ACT_10.png",
+    "source_version": "character-v2",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "9ef7cb12bd0b5ebcaab9d168310259c11305a1e3a889b9ef81322ac59483e763"
+  },
+  {
+    "card_id": "ACT_11",
+    "file": "ACT_11.png",
+    "source_version": "character-v1",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "56b52739c43acca170ad51785ed897adc189f072704e0c7a1ba20eed89792d6c"
+  },
+  {
+    "card_id": "ACT_12",
+    "file": "ACT_12.png",
+    "source_version": "character-v4",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "4463f7da1e8310bb4cc10dee2b2e0e37c82194030d2cb07ba2a601dfbafbd252"
+  },
+  {
+    "card_id": "ACT_13",
+    "file": "ACT_13.png",
+    "source_version": "simple-background-v5",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "88069f264bfccd2cd0ac23dd66b47ff41007c8b9fabc0548d0e28bbc6c25c9c8"
+  },
+  {
+    "card_id": "ACT_14",
+    "file": "ACT_14.png",
+    "source_version": "character-v2",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "3f3f53a93a2fc566dd924ab640f0f8417bd57fc0bfe1a2c154858f7e049a7b6c"
+  },
+  {
+    "card_id": "ACT_15",
+    "file": "ACT_15.png",
+    "source_version": "character-scenes-v3",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "897c2b8f4e8d2b6c0980fd450b0675dcb372d867f98a70d31a04428bb17f3dfb"
+  },
+  {
+    "card_id": "TRP_06",
+    "file": "TRP_06.png",
+    "source_version": "simple-background-v5",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "49e82336c9274355c9f929bb969a13d7f0b8641978a5f3f0b3dc82decd6c4804"
+  },
+  {
+    "card_id": "TRP_07",
+    "file": "TRP_07.png",
+    "source_version": "simple-background-v5",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "39ef50a1755eb002fa99e3150e2d56331a72172e9cbdd8e715170b06bfccccdc"
+  },
+  {
+    "card_id": "TRP_08",
+    "file": "TRP_08.png",
+    "source_version": "simple-background-v5",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "3bd9ac72aef5e281730e98a70dc6835957e3bd74076df95101149f69edf2777f"
+  },
+  {
+    "card_id": "TRP_C02",
+    "file": "TRP_C02.png",
+    "source_version": "simple-background-v5",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "5ad4a1bd67e903709ba8b34ae0dd3f2d657215276c90b78511a6ef80849b4c77"
+  },
+  {
+    "card_id": "TRP_C03",
+    "file": "TRP_C03.png",
+    "source_version": "simple-background-v5",
+    "width": 1446,
+    "height": 1087,
+    "sha256": "220074e730bff5461ea4c9968dccd5da8d2aa0b7324873dc64a9b09ef024a00f"
+  },
+  {
+    "card_id": "TRP_C04",
+    "file": "TRP_C04.png",
+    "source_version": "simple-background-v5",
+    "width": 1448,
+    "height": 1086,
+    "sha256": "e680aaed5b8db9f1a3493d228c7a95a5efc573e3a5cdb24502032fcb28cb8cfb"
+  },
+  {
+    "card_id": "ACT_09",
+    "file": "ACT_09.png",
+    "source_version": "character-scenes-v3",
+    "width": 1447,
+    "height": 1087,
+    "sha256": "7f587a47e7598bd06f3d1f74d01831f554f0652ef89640183b0fd05f0cfebc55"
+  }
+]

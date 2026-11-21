@@ -1,0 +1,92 @@
+{
+  "date": "2026-10-27",
+  "tool": "built-in image_gen.imagegen",
+  "agent": "Codex",
+  "image_model": "not exposed by tool",
+  "source_policy": "Native generated PNGs copied byte-for-byte, alpha not edited.",
+  "assets": [
+    {
+      "key": "flame",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-9c434bf1-fa86-41a3-b4df-3b0ad3f64b97.png",
+      "target": "assets\\fx\\priority\\flame_plume_v01.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        49,
+        37,
+        1208,
+        1230
+      ],
+      "prompt": "Use case: stylized-concept. Asset type: one transparent neutral white flame plume sprite for a cute tabletop game. A compact upward-rising curling fire tongue, front view, with two or three irregular twisting tapered tips, lively layered inner filaments and soft translucent outer fire. Strong narrow bright ivory-white hot core near its lower base, airy white/silver edges, subtle fibrous hand-painted texture. A flame, not smoke, not a rigid triangle or leaf. Monochrome neutral white and gray ONLY so the game can tint this same sprite blue or orange. Upright, base at bottom, apex toward top. One coherent isolated flame centered on a square RGBA canvas; at least 12 percent completely clear padding on every side. Real transparent background, feathered alpha. No circle, border, polygon contour, star, object, firewood, scene, ground, text, logo or checkerboard. Readable as a tiny flame at 15 to 45 pixels.",
+      "attempts": 1,
+      "runtime_size_limit": 256,
+      "qa": "Actual image inspected: real transparent edges, organic textured flame/electric branches/curled impact. No objects or text.",
+      "source_sha256": "42d241ef99726dfacf61500f45ae48e95ad7610506a7fb00cdfefcfe6b2e723f",
+      "target_sha256": "42d241ef99726dfacf61500f45ae48e95ad7610506a7fb00cdfefcfe6b2e723f"
+    },
+    {
+      "key": "lightning",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-23e4a7d1-c9d9-44f0-89ed-a21134341774.png",
+      "target": "assets\\fx\\priority\\lightning_v01.png",
+      "dimensions": [
+        1024,
+        1536
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        254
+      ],
+      "alpha_bbox": [
+        29,
+        16,
+        1002,
+        1536
+      ],
+      "prompt": "Use case: stylized-concept. Asset type: one transparent grayscale lightning strike sprite for a cute stylized tabletop game. A single vertical organic descending lightning filament, top to bottom, with thin irregular branching offshoots and a very narrow white-hot core, restrained soft silvery glow. The main channel visibly wanders sideways but is roughly centered; both main endpoints are on the vertical centerline, the bottom endpoint terminates precisely at the lowest visible tip. Asymmetrical intricate fractal filaments and tiny ion sparks, hand-painted energetic texture. It must look like electricity, not a regular zigzag, wire, arrow, broad ribbon or geometric icon. Neutral white and pale gray ONLY for runtime red or gold tint. Entire bolt fits inside tall portrait RGBA canvas, at least 12 percent empty padding on every side, no clipped sparks. Truly transparent background and soft alpha edges. No cloud, scenery, ground, object, text, frame or checkerboard. One sprite, not a sheet.",
+      "attempts": 1,
+      "runtime_size_limit": 512,
+      "qa": "Actual image inspected: real transparent edges, organic textured flame/electric branches/curled impact. No objects or text.",
+      "source_sha256": "ae20916340f1e6740e696dd6d0e93c60489847241f6bd144a828f3e8a7bc27f6",
+      "target_sha256": "ae20916340f1e6740e696dd6d0e93c60489847241f6bd144a828f3e8a7bc27f6"
+    },
+    {
+      "key": "impact",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-c1c500e4-a58a-44bf-a63e-85a02094a57e.png",
+      "target": "assets\\fx\\priority\\impact_wisp_v01.png",
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        253
+      ],
+      "alpha_bbox": [
+        33,
+        23,
+        1238,
+        1222
+      ],
+      "prompt": "Use case: stylized-concept. Asset type: one small transparent neutral white impact spark for a cute tabletop game. A compact asymmetric burst of thin curling energetic filaments, a few organic wispy brush flicks and tiny ember flecks radiating outward from a tiny brilliant white center. Restrained empty spaces between filaments, uneven short lengths and widths, no evenly spaced spokes. Very small center; open airy silhouette so a pawn stays readable behind the hit. Monochrome ivory-white and silver gray ONLY for blue, red or gold runtime tint. Soft feathered alpha and subtle hand-painted fibrous texture, crisp at tiny 30 to 60 pixel display size. One centered effect on square RGBA canvas with generous completely transparent padding. No hard star polygon, triangles, straight cross, circle disk, thick smoke, fireball, explosion cloud, object, scene, text, border, logo or checkerboard. Single sprite.",
+      "attempts": 1,
+      "runtime_size_limit": 256,
+      "qa": "Actual image inspected: real transparent edges, organic textured flame/electric branches/curled impact. No objects or text.",
+      "source_sha256": "9c545502de86cf2a6360a76c3aacfce1f530bd8bb0a889f73e8360c8ab5f00af",
+      "target_sha256": "9c545502de86cf2a6360a76c3aacfce1f530bd8bb0a889f73e8360c8ab5f00af"
+    }
+  ],
+  "reused_assets": [
+    "assets/fx/common/shockwave_v01.png",
+    "assets/fx/common/spark_fleck_v01.png",
+    "assets/fx/capture/pierce_trail_v01.png"
+  ]
+}

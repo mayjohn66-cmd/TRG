@@ -1,0 +1,21 @@
+{
+  "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-2e9492a3-5bdb-440a-9492-bac1a85e4146.png",
+  "prompt": "Production transparent game UI typography asset, wide horizontal composition, ONLY the exact English phrase: A SINGULAR STRIKE! Set it on ONE single straight horizontal line, every letter fully visible and correctly spelled, with a clearly readable exclamation mark. Darkest Dungeon parody critical-hit lettering: powerful hand-inked condensed gothic display capitals, sharp wedge serifs, rough chiseled brush-cut edges, slightly irregular heavy strokes, strong comic drama. The lettering itself has vivid warm golden-yellow upper highlights transitioning to fiery orange-red lower strokes, thick near-black ink outlines and a restrained deep burgundy offset shadow. Readable immediately at 100 pixels tall over a dark combat scene with cute chibi characters. Very limited distressed texture inside letters; preserve clean readable counters. A few tiny ink splinters around the lettering, no large splash blocking the text. Text is the whole asset: no solid banner, no plaque, no frame, no UI panel, no characters, no weapons, no skull illustrations, no blood, no background scene. TRUE transparent RGBA background, generous transparent margin around ALL sides, no cropped glyphs, no checkerboard, no extra words or subtitles, no logos or watermarks. Overall visible lettering approximately 7:1 width to height, centered in a wide landscape canvas. Exact text including spaces and punctuation: A SINGULAR STRIKE!",
+  "text": "A SINGULAR STRIKE!",
+  "generator": "native image_gen.imagegen",
+  "tool_event": "exec-2e9492a3-5bdb-440a-9492-bac1a85e4146",
+  "image_model": "Not exposed by native tool",
+  "path": "res://assets/fx/capture/singular_strike.png",
+  "width": 2172,
+  "height": 724,
+  "format": "RGBA",
+  "sha256": "848e6d9b0f3e59907f4ad437c48e10e9f3246604e19e646de19d9e5e8c7a97e0",
+  "transparent_fraction": 0.6425,
+  "visible_bounds": [
+    23,
+    163,
+    2148,
+    553
+  ],
+  "qa": "Accepted first generation. Exact wording and exclamation visually inspected. One line of sharp Gothic comic lettering, clean alpha, no clipped glyphs or rectangular backdrop. Original generated PNG bytes preserved. Runtime uses visible alpha bounds to fit the upper gap above both faces."
+}

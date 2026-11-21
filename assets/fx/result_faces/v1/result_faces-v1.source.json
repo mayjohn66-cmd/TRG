@@ -1,0 +1,150 @@
+{
+  "tool": "image_gen.imagegen",
+  "prompt_record": "outputs/result-comic-faces-v3-20261102/imagegen-prompts.json",
+  "assets": [
+    {
+      "avatar": "avatar_01",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-b2f3fc6f-d36b-4585-8a4e-0ca931f98013.png",
+      "project_path": "assets\\fx\\result_faces\\v1\\avatar_01.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "format": "PNG",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "source_sha256": "cc50b762006f4cf441e644063d143f113ef19fe3ca104d36e0a96e1fd8c95fb7",
+      "project_sha256": "cc50b762006f4cf441e644063d143f113ef19fe3ca104d36e0a96e1fd8c95fb7",
+      "qa": "identity/face-only/no body/no frame/alpha visually checked; original colors and head accessories retained",
+      "prompt": "Use case: style-transfer / identity-preserve. Edit target is this exact supplied game avatar. Create ONE game-ready detached head/face cutout for a comic-book results page. Preserve the exact chibi head proportions, face, eye shapes, expression, hair silhouette and defining head accessories of the source character. Remove the entire torso, shoulders, hands, weapons and staff; keep the full head, hair mass around the head and head accessories, ending just below the chin. Enlarge the head to occupy about 80 percent of a square canvas with at least 8 percent transparent safe margin on all sides; complete head edges that were cropped by the reference. Medium: punchy printed POP ART cartoon with bold crisp dark ink contours, flat limited spot-color fills, sharp two-tone cel shadows, restrained Ben-Day halftone dots in only the shadow areas; no soft gradients or realistic lighting. Keep source character colors recognizable, using cream skin, rich colored hair midtones and dark purple-black ink. Clean readable silhouette at 120px display size. Pure transparent RGBA background, NO frame, badge, circle, square tile, scenery, text, rank number, watermark or drop shadow. No body or hands at all. Character identity: blonde royal elf with gold crystal tiara, orange-red eyes with large golden star pupils, cheek blush, smiling open mouth."
+    },
+    {
+      "avatar": "avatar_02",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-a1f95feb-5365-4803-84c7-ac1b9a5a1007.png",
+      "project_path": "assets\\fx\\result_faces\\v1\\avatar_02.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "format": "PNG",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "source_sha256": "16f192bb98c9b52333e2a86846faa0b69b66fb3fb3e82a83984d0e950a43a4d1",
+      "project_sha256": "16f192bb98c9b52333e2a86846faa0b69b66fb3fb3e82a83984d0e950a43a4d1",
+      "qa": "identity/face-only/no body/no frame/alpha visually checked; original colors and head accessories retained",
+      "prompt": "Use case: style-transfer / identity-preserve. Edit target is this exact supplied game avatar. Create ONE game-ready detached head/face cutout for a comic-book results page. Preserve the exact chibi head proportions, face, eye shapes, expression, hair silhouette and defining head accessories of the source character. Remove the entire torso, shoulders, hands, weapons and staff; keep the full head, hair mass around the head and head accessories, ending just below the chin. Enlarge the head to occupy about 80 percent of a square canvas with at least 8 percent transparent safe margin on all sides; complete head edges that were cropped by the reference. Medium: punchy printed POP ART cartoon with bold crisp dark ink contours, flat limited spot-color fills, sharp two-tone cel shadows, restrained Ben-Day halftone dots in only the shadow areas; no soft gradients or realistic lighting. Keep source character colors recognizable, using cream skin, rich colored hair midtones and dark purple-black ink. Clean readable silhouette at 120px display size. Pure transparent RGBA background, NO frame, badge, circle, square tile, scenery, text, rank number, watermark or drop shadow. No body or hands at all. Character identity: light brown fluffy hair, two golden hair bows, long soft dog-like ears, bright cyan-blue eyes, small happy open mouth."
+    },
+    {
+      "avatar": "avatar_03",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-3f3ad25f-2e79-4a6e-b959-f502688a1a70.png",
+      "project_path": "assets\\fx\\result_faces\\v1\\avatar_03.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "format": "PNG",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "source_sha256": "3cdc34931f4e6c88004f5f4f7593fa2be45618780e92c8922aafa3cb8d9b87b0",
+      "project_sha256": "3cdc34931f4e6c88004f5f4f7593fa2be45618780e92c8922aafa3cb8d9b87b0",
+      "qa": "identity/face-only/no body/no frame/alpha visually checked; original colors and head accessories retained",
+      "prompt": "Use case: style-transfer / identity-preserve. Edit target is this exact supplied game avatar. Create ONE game-ready detached head/face cutout for a comic-book results page. Preserve the exact chibi head proportions, face, eye shapes, expression, hair silhouette and defining head accessories of the source character. Remove the entire torso, shoulders, hands, weapons and staff; keep the full head, hair mass around the head and head accessories, ending just below the chin. Enlarge the head to occupy about 80 percent of a square canvas with at least 8 percent transparent safe margin on all sides; complete head edges that were cropped by the reference. Medium: punchy printed POP ART cartoon with bold crisp dark ink contours, flat limited spot-color fills, sharp two-tone cel shadows, restrained Ben-Day halftone dots in only the shadow areas; no soft gradients or realistic lighting. Keep source character colors recognizable, using cream skin, rich colored hair midtones and dark purple-black ink. Clean readable silhouette at 120px display size. Pure transparent RGBA background, NO frame, badge, circle, square tile, scenery, text, rank number, watermark or drop shadow. No body or hands at all. Character identity: long dusty rose hair, turquoise eyes, pointed elf ears, a tiny mischievous sideways smile."
+    },
+    {
+      "avatar": "avatar_04",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-70d71958-881e-46c1-b3d6-a105d8d2aba1.png",
+      "project_path": "assets\\fx\\result_faces\\v1\\avatar_04.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "format": "PNG",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "source_sha256": "15b3bda3812158fee96b8497308f36f0ee37f5ce1d44210e9a4f999dde54a9ba",
+      "project_sha256": "15b3bda3812158fee96b8497308f36f0ee37f5ce1d44210e9a4f999dde54a9ba",
+      "qa": "identity/face-only/no body/no frame/alpha visually checked; original colors and head accessories retained",
+      "prompt": "Use case: style-transfer / identity-preserve. Edit target is this exact supplied game avatar. Create ONE game-ready detached head/face cutout for a comic-book results page. Preserve the exact chibi head proportions, face, eye shapes, expression, hair silhouette and defining head accessories of the source character. Remove the entire torso, shoulders, hands, weapons and staff; keep the full head, hair mass around the head and head accessories, ending just below the chin. Enlarge the head to occupy about 80 percent of a square canvas with at least 8 percent transparent safe margin on all sides; complete head edges that were cropped by the reference. Medium: punchy printed POP ART cartoon with bold crisp dark ink contours, flat limited spot-color fills, sharp two-tone cel shadows, restrained Ben-Day halftone dots in only the shadow areas; no soft gradients or realistic lighting. Keep source character colors recognizable, using cream skin, rich colored hair midtones and dark purple-black ink. Clean readable silhouette at 120px display size. Pure transparent RGBA background, NO frame, badge, circle, square tile, scenery, text, rank number, watermark or drop shadow. No body or hands at all. Character identity: long pale mint hair, brown and gold pointed hornlike hair ornaments, blue-lavender eyes, small surprised open mouth."
+    },
+    {
+      "avatar": "avatar_05",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-7c3176a8-94e0-4c65-8d28-fe0b07a23f8c.png",
+      "project_path": "assets\\fx\\result_faces\\v1\\avatar_05.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "format": "PNG",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "source_sha256": "d04fc248cb1eb3e9b50d15ebc3bb279e0397145afead73800df05b22e2a5bdfc",
+      "project_sha256": "d04fc248cb1eb3e9b50d15ebc3bb279e0397145afead73800df05b22e2a5bdfc",
+      "qa": "identity/face-only/no body/no frame/alpha visually checked; original colors and head accessories retained",
+      "prompt": "Use case: style-transfer / identity-preserve. Edit target is this exact supplied game avatar. Create ONE game-ready detached head/face cutout for a comic-book results page. Preserve the exact chibi head proportions, face, eye shapes, expression, hair silhouette and defining head accessories of the source character. Remove the entire torso, shoulders, hands, weapons and staff; keep the full head, hair mass around the head and head accessories, ending just below the chin. Enlarge the head to occupy about 80 percent of a square canvas with at least 8 percent transparent safe margin on all sides; complete head edges that were cropped by the reference. Medium: punchy printed POP ART cartoon with bold crisp dark ink contours, flat limited spot-color fills, sharp two-tone cel shadows, restrained Ben-Day halftone dots in only the shadow areas; no soft gradients or realistic lighting. Keep source character colors recognizable, using cream skin, rich colored hair midtones and dark purple-black ink. Clean readable silhouette at 120px display size. Pure transparent RGBA background, NO frame, badge, circle, square tile, scenery, text, rank number, watermark or drop shadow. No body or hands at all. Character identity: silver-gray hair with pale cyan ends, half-lidded cyan eyes, small playful tongue, round white ghost/skull hair accessory."
+    },
+    {
+      "avatar": "avatar_06",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-bb37d68a-e780-44d9-8bc0-e3c78ef3bb4c.png",
+      "project_path": "assets\\fx\\result_faces\\v1\\avatar_06.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "format": "PNG",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "source_sha256": "6d076b3272269a59b1f5c49eee8dfbcc66acc627e66b6b89404ec58c03f73886",
+      "project_sha256": "6d076b3272269a59b1f5c49eee8dfbcc66acc627e66b6b89404ec58c03f73886",
+      "qa": "identity/face-only/no body/no frame/alpha visually checked; original colors and head accessories retained",
+      "prompt": "Use case: style-transfer / identity-preserve. Edit target is this exact supplied game avatar. Create ONE game-ready detached head/face cutout for a comic-book results page. Preserve the exact chibi head proportions, face, eye shapes, expression, hair silhouette and defining head accessories of the source character. Remove the entire torso, shoulders, hands, weapons and staff; keep the full head, hair mass around the head and head accessories, ending just below the chin. Enlarge the head to occupy about 80 percent of a square canvas with at least 8 percent transparent safe margin on all sides; complete head edges that were cropped by the reference. Medium: punchy printed POP ART cartoon with bold crisp dark ink contours, flat limited spot-color fills, sharp two-tone cel shadows, restrained Ben-Day halftone dots in only the shadow areas; no soft gradients or realistic lighting. Keep source character colors recognizable, using cream skin, rich colored hair midtones and dark purple-black ink. Clean readable silhouette at 120px display size. Pure transparent RGBA background, NO frame, badge, circle, square tile, scenery, text, rank number, watermark or drop shadow. No body or hands at all. Character identity: silver-white hair with pale icy blue shadows, small crystal tiara, pointed elf ears and diamond earrings, calm half-lidded gray-blue eyes, preserve the exact existing crystal hair accessories."
+    },
+    {
+      "avatar": "avatar_07",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-febd6b8c-6a1c-4a1a-bf8d-a73e9dac4a50.png",
+      "project_path": "assets\\fx\\result_faces\\v1\\avatar_07.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "format": "PNG",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "source_sha256": "f00f93624a74c93dac47e9f660385c6ee0d07f1bf18b12237c9f9e3f1194947a",
+      "project_sha256": "f00f93624a74c93dac47e9f660385c6ee0d07f1bf18b12237c9f9e3f1194947a",
+      "qa": "identity/face-only/no body/no frame/alpha visually checked; original colors and head accessories retained",
+      "prompt": "Use case: style-transfer / identity-preserve. Edit target is this exact supplied game avatar. Create ONE game-ready detached head/face cutout for a comic-book results page. Preserve the exact chibi head proportions, face, eye shapes, expression, hair silhouette and defining head accessories of the source character. Remove the entire torso, shoulders, hands, weapons and staff; keep the full head, hair mass around the head and head accessories, ending just below the chin. Enlarge the head to occupy about 80 percent of a square canvas with at least 8 percent transparent safe margin on all sides; complete head edges that were cropped by the reference. Medium: punchy printed POP ART cartoon with bold crisp dark ink contours, flat limited spot-color fills, sharp two-tone cel shadows, restrained Ben-Day halftone dots in only the shadow areas; no soft gradients or realistic lighting. Keep source character colors recognizable, using cream skin, rich colored hair midtones and dark purple-black ink. Clean readable silhouette at 120px display size. Pure transparent RGBA background, NO frame, badge, circle, square tile, scenery, text, rank number, watermark or drop shadow. No body or hands at all. Character identity: long ivory white hair, dark curled horn-like head accessory and ruby diamonds, pointed elf ear, half-lidded warm gold/red eyes, calm stern small mouth."
+    },
+    {
+      "avatar": "avatar_08",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-edfa3f13-ec5f-4210-a04a-7263df7b8815.png",
+      "project_path": "assets\\fx\\result_faces\\v1\\avatar_08.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "format": "PNG",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "source_sha256": "32ec0dbf4ab045683c005730eb8dbace4f277bfdf70c813aeae7a0346da6996d",
+      "project_sha256": "32ec0dbf4ab045683c005730eb8dbace4f277bfdf70c813aeae7a0346da6996d",
+      "qa": "identity/face-only/no body/no frame/alpha visually checked; original colors and head accessories retained",
+      "prompt": "Use case: style-transfer / identity-preserve. Edit target is this exact supplied game avatar. Create ONE game-ready detached head/face cutout for a comic-book results page. Preserve the exact chibi head proportions, face, eye shapes, expression, hair silhouette and defining head accessories of the source character. Remove the entire torso, shoulders, hands, weapons and staff; keep the full head, hair mass around the head and head accessories, ending just below the chin. Enlarge the head to occupy about 80 percent of a square canvas with at least 8 percent transparent safe margin on all sides; complete head edges that were cropped by the reference. Medium: punchy printed POP ART cartoon with bold crisp dark ink contours, flat limited spot-color fills, sharp two-tone cel shadows, restrained Ben-Day halftone dots in only the shadow areas; no soft gradients or realistic lighting. Keep source character colors recognizable, using cream skin, rich colored hair midtones and dark purple-black ink. Clean readable silhouette at 120px display size. Pure transparent RGBA background, NO frame, badge, circle, square tile, scenery, text, rank number, watermark or drop shadow. No body or hands at all. Character identity: green hair with gold-trimmed dark green wing-shaped headdress, red eyes, pointed elf ears, small calm mouth."
+    }
+  ]
+}

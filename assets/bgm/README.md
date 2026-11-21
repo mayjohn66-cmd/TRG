@@ -1,0 +1,7 @@
+# 배경음 폴더
+
+`<이름>.ogg` (또는 mp3/wav)를 넣으면 `Sfx.bgm_play(&"이름")`으로 재생할 수 있습니다. 출처는 루트 `CREDITS.md`에 기록하세요.
+
+`lobby_daylife.ogg`: 사용자가 지정한 EPIDGames 공식 DayLife 영상의 약 40.43초 반복 구간. 시작 메뉴와 친선/랜덤 매칭 로비에서 연속 반복한다. 출처 및 처리 기록은 `docs/ui-trial/lobby-daylife-bgm-v01.md` 참고.
+
+`battle_monatium_night.ogg`: 사용자가 지정한 EPIDGames 공식 모나티엄의 밤 영상의 약 36.67초 반복 구간. 대전에 들어가면 로비 음악을 교체하고 반복하며, 로비 복귀 시 DayLife로 돌아간다. 두 곡 모두 설정의 배경음악 크기·전체 음소거를 따른다. `docs/ui-trial/battle-monatium-bgm-v01.md` 참고.

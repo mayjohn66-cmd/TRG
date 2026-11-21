@@ -1,0 +1,29 @@
+{
+  "purpose": "HubUpdates notice button icon",
+  "generation": "Built-in image_gen, one native generation call; no CLI fallback or raster edits",
+  "source": "C:/Users/john9/.codex/generated_images/01a142bd-ab11-7f42-8e21-7a03de077bd3/exec-c669cff4-26e3-4a06-a1b9-f5ad8c0bfe09.png",
+  "image": "UI_HUB_UPDATES_V01.png",
+  "size": [
+    1254,
+    1254
+  ],
+  "format": "RGBA PNG",
+  "alpha_extrema": [
+    0,
+    255
+  ],
+  "sha256": "b6d99973d358c903288215503b8bc0db629a12e9b5cdcf311fc788c9e33a60c6",
+  "unchanged_copy": true,
+  "import": "Lossless, 256px limit, mipmaps; AtlasTexture presentation crop only",
+  "evidence": "outputs/notice-button-art-v01-20261104",
+  "prompt_file": "outputs/notice-button-art-v01-20261104/prompt.txt",
+  "qa": "Complete megaphone and two sound rays, genuine alpha, no unintended text, bold readable silhouette at native 34px icon area. Existing button plate and N badge retained.",
+  "validation": {
+    "import_exit": 0,
+    "native_exit": 0,
+    "native_failures": 0,
+    "audio": "Dummy",
+    "flow": "actual pointer hover/press/release; popup opens/closes; unseen N clears; KO/EN/JA position stable"
+  },
+  "deployment": false
+}

@@ -1,0 +1,92 @@
+[
+  {
+    "key": "panel",
+    "source": "exec-61820a84-3314-4ab0-84b0-55a50eed91e3.png",
+    "prompt": "Use the reference as an EDIT TARGET. Make this UI panel much simpler. REMOVE ALL FOUR clover/leaf corner ornaments completely. Replace the metallic gray frame with a slim matte leaf-green #5DA530 frame with a pale mint #E9F5CF inner edge. Keep the same rounded square silhouette and the same continuous FILLED center surface with its very subtle fine paper texture: tint that interior pale cream-green #E9F5CF (clearly light green, not pure white). Preserve the center as OPAQUE solid panel material, not a window/hole; retain its tiny low-contrast paper grain so it visibly remains a physical opaque surface. Reduce border thickness to half of existing, with only a modest smooth upper edge highlight. No metal gloss, no heavy 3D bevel, no gray shadows, no new decoration or object. It should look like a simple green-and-cream functional mobile game UI panel; clean and restrained. NO text, icons or symbols. Transparent background only beyond the outside perimeter.",
+    "path": "assets/ui/trickcal/simple_v01/panel.png",
+    "width": 1254,
+    "height": 1254,
+    "visible_bounds": [
+      19,
+      29,
+      1233,
+      1229
+    ],
+    "normalized_crop": [
+      0.015151515151515152,
+      0.023125996810207338,
+      0.9681020733652312,
+      0.9569377990430622
+    ],
+    "sha256": "207e1f0f2f8ecb62e3724161a72b3876cff9f062ea4b6d6630f0594897128361",
+    "pixels_modified": false,
+    "generator": "native image_gen.imagegen",
+    "runtime_import": {
+      "size_limit": 512,
+      "compression": "lossy",
+      "quality": 0.9,
+      "mipmaps": false
+    },
+    "qa": "Opaque center and original SHA-256 checked. Native 1366x768 menu and 180x28 focus-button captures checked. UI_MENU_OK, UI_LOBBY_OK, UI_SMOKE_OK (340 actions, round 31, game over). Browser UI test pending ego-browser CLI availability; no alternate browser used."
+  },
+  {
+    "key": "action",
+    "source": "exec-8bb50347-839f-4d33-8ca2-ab124f58c892.png",
+    "prompt": "Use case: stylized-concept. Asset: one empty PRIMARY ACTION BUTTON skin for a cheerful Korean board game. Extremely simple and restrained, matching a green/cream mobile game UI. Wide horizontal rounded rectangle, width:height 3:1, perfectly front-facing, NOT capsule, modest circular corner radius one fourth of height. Fill solid warm yellow #FFDD74; narrow clean leaf-green outline #5DA530; very subtle pale upper rim and a shallow 2 percent-height muted green bottom edge, enough to feel clickable. Center is an OPAQUE yellow material with extremely fine low-contrast matte paper grain, no hollow center. Keep 85 percent of surface plain and quiet for dark live text. Uniform straight edges suitable for nine-slice. No clover, leaves, ornament, medallion, silver, metal, glossy highlights, fancy bevels, flourishes, rays, sparkles, icons, text, numbers, letters or symbols. Exactly ONE isolated button face, no sheet, no UI mockup, no labels. Button fills width of canvas, even minimal margins; real transparency ONLY OUTSIDE rounded silhouette.",
+    "path": "assets/ui/trickcal/simple_v01/action.png",
+    "width": 2170,
+    "height": 725,
+    "visible_bounds": [
+      25,
+      51,
+      2145,
+      668
+    ],
+    "normalized_crop": [
+      0.01152073732718894,
+      0.0703448275862069,
+      0.9769585253456221,
+      0.8510344827586207
+    ],
+    "sha256": "1c5c5880f4dbaad1c2055571e509dfcd0e09049c75d78ba18ddd301097cd20d9",
+    "pixels_modified": false,
+    "generator": "native image_gen.imagegen",
+    "runtime_import": {
+      "size_limit": 512,
+      "compression": "lossy",
+      "quality": 0.9,
+      "mipmaps": false
+    },
+    "qa": "Opaque center and original SHA-256 checked. Native 1366x768 menu and 180x28 focus-button captures checked. UI_MENU_OK, UI_LOBBY_OK, UI_SMOKE_OK (340 actions, round 31, game over). Browser UI test pending ego-browser CLI availability; no alternate browser used."
+  },
+  {
+    "key": "secondary",
+    "source": "exec-c93fe8e9-4b6a-44fa-a8d9-827355020852.png",
+    "prompt": "Edit this button, changing ONLY the yellow fill to pale warm CREAM #FFF3C7 for the secondary / cancel button. Keep the identical green #5DA530 narrow outline, same rounded rectangle silhouette, same proportions, same placement, same clean subtle shallow rim and extremely fine paper grain. Keep the interior OPAQUE cream material, not white and not transparent. Keep the outside transparent. NO added ornaments, leaves, clover, icons, letters, words, badges, symbols, sparkles, heavy shadows, texture noise or detail. Simple clean functional game UI, no flashy decoration. Do not change its size or geometry, only the fill hue.",
+    "path": "assets/ui/trickcal/simple_v01/secondary.png",
+    "width": 2169,
+    "height": 725,
+    "visible_bounds": [
+      27,
+      51,
+      2141,
+      667
+    ],
+    "normalized_crop": [
+      0.012448132780082987,
+      0.0703448275862069,
+      0.9746426924850161,
+      0.8496551724137931
+    ],
+    "sha256": "eb84c8d72ab7a9fe413c7159d68f3299d87630a025f4bd785568ba3a41e817de",
+    "pixels_modified": false,
+    "generator": "native image_gen.imagegen",
+    "runtime_import": {
+      "size_limit": 512,
+      "compression": "lossy",
+      "quality": 0.9,
+      "mipmaps": false
+    },
+    "qa": "Opaque center and original SHA-256 checked. Native 1366x768 menu and 180x28 focus-button captures checked. UI_MENU_OK, UI_LOBBY_OK, UI_SMOKE_OK (340 actions, round 31, game over). Browser UI test pending ego-browser CLI availability; no alternate browser used."
+  }
+]

@@ -1,0 +1,13 @@
+{
+  "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-fbae0004-4236-4ba7-ba69-bf0e375de6ed.png",
+  "prompt": "Use case: stylized-concept. Asset type: ONE reusable transparent 2D combat VFX sprite for a dark ink comic critical-hit presentation over cute chibi characters. Draw only the IMPACT ENERGY, no characters. A hand-painted rough white/ivory dry-brush impact burst: a ragged broken elliptical shock ring with several sharp asymmetrical tapered brush streaks and tiny ink flecks shooting mostly toward the RIGHT, indicating a hit traveling LEFT TO RIGHT. The center must be a generous truly transparent opening, so a character face placed there stays visible. Strong graphic irregular brush texture and sharp ink-cut silhouette, dramatic comic energy with a few narrow long diagonal white streaks, elegant negative space, sparse tiny shards. Monochrome ivory-white and grayscale edge accents ONLY so the game can tint it per attacker. No colored background, no full-frame painting, no solid central disk, no circular medallion, no UI, no text, letters, digits, logo, characters, weapons, hands, gore or blood. Isolated single unified effect centered in a 1:1 square transparent RGBA canvas, full rays and fragments inside the canvas with at least 8 percent transparent margin, clean alpha edges, no baked checkerboard, no glow rectangle and no floor shadow.",
+  "generator": "native image_gen.imagegen",
+  "image_model": "Not exposed by native image_gen",
+  "path": "res://assets/fx/capture/ink_impact.png",
+  "width": 1254,
+  "height": 1254,
+  "format": "RGBA",
+  "sha256": "3d3fbebb78edd172fa5e8ca11fe95079bc52e302cb1c791d2a2c1d7332a2cc9b",
+  "transparent_fraction": 0.688,
+  "qa": "Transparent corners and hollow center checked; asymmetrical left-to-right dry brush burst visually reviewed; original generated PNG bytes preserved."
+}
