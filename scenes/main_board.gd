@@ -7395,7 +7395,7 @@ func _refresh_tool_board(tool: BaseJudgmentTool, player_id: int) -> void:
 	_tool_board_key = "%d:%s" % [player_id, tool.tool_id]
 	_tool_icon.add_theme_stylebox_override("panel", _style(card[1], (card[1] as Color).lightened(0.4), 2, 12, 0, 0))
 	_tool_icon_label.text = card[0]
-	_tool_icon_art.texture = AugmentArt.load_first(AugmentArt.tool_candidates(tool.tool_id))
+	AugmentArt.apply_texture_style(_tool_icon_art, AugmentArt.load_first(AugmentArt.tool_candidates(tool.tool_id)))
 	_tool_icon_art.visible = _tool_icon_art.texture != null
 	_tool_icon_label.visible = _tool_icon_art.texture == null
 	_tool_title.text = tool.display_name

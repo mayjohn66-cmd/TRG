@@ -53,6 +53,8 @@ func test_shop_law_uses_the_icon_for_the_active_board() -> void:
 	var original_tiles: int = BoardSpec.tile_count
 	var original_convenience: bool = BoardSpec.convenience
 	var original_witch: bool = BoardSpec.witch
+	var original_preview: int = VictoryLaw.preview_board
+	VictoryLaw.preview_board = -1
 	var definition: AugmentDef = AugmentRegistry.get_def(&"AUG_LAW_02")
 	BoardSpec.apply(32, true)
 	var city: Texture2D = AugmentArt.load_first(AugmentArt.candidates(definition))
@@ -61,7 +63,13 @@ func test_shop_law_uses_the_icon_for_the_active_board() -> void:
 	var witch: Texture2D = AugmentArt.load_first(AugmentArt.candidates(definition))
 	check(witch != null and witch.resource_path.ends_with("/LAW_02_BAD_CARROT.png"), "Bad Carrot uses the witch and carrot emblem")
 	check(AugmentArt.load_first(AugmentArt.law_candidates("LAW_02")) == witch, "rulebook and law effect use the same witch emblem")
+	VictoryLaw.preview_board = VictoryLaw.PREVIEW_MONATIUM
+	check(AugmentArt.load_first(AugmentArt.law_candidates("LAW_02")) == city, "Monatium preview wins over the active witch board")
 	BoardSpec.apply(32)
+	VictoryLaw.preview_board = VictoryLaw.PREVIEW_BELATIEN
+	check(AugmentArt.load_first(AugmentArt.law_candidates("LAW_02")) == witch, "Bad Carrot preview works on a classic board")
+	VictoryLaw.preview_board = -1
 	var classic: Texture2D = AugmentArt.load_first(AugmentArt.candidates(definition))
 	check(classic != null and classic.resource_path.ends_with("/LAW_02.png"), "switching back restores the bakery ticket")
 	BoardSpec.apply(original_tiles, original_convenience, original_witch)
+	VictoryLaw.preview_board = original_preview

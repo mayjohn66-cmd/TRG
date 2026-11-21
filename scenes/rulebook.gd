@@ -1137,10 +1137,9 @@ func _picture(data: Dictionary, extent: Vector2) -> Control:
 	var texture: Texture2D = data.get("texture", null)
 	if texture != null:
 		var image := TextureRect.new()
-		image.texture = texture
 		image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		image.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		AugmentArt.apply_texture_style(image, texture, false)
 		image.custom_minimum_size = extent
 		image.size = extent
 		image.mouse_filter = Control.MOUSE_FILTER_IGNORE

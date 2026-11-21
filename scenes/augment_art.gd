@@ -6,6 +6,26 @@ const ROOT: String = "res://content_trickcal/illustrations/"
 const MONATIUM_LAW_ICON: String = ROOT + "laws/LAW_02_MONATIUM.png"
 const BAD_CARROT_LAW_ICON: String = ROOT + "laws/LAW_02_BAD_CARROT.png"
 const CIRCLE_SHADER: Shader = preload("res://scenes/augment_circle.gdshader")
+## Newer, harder-edged illustrations need a gentler display tone beside the original set.
+## x: contrast, y: saturation, z: highlight compression, w: edge smoothing.
+const SOFT_TONE := Vector4(0.95, 0.94, 0.10, 0.12)
+const LIGHT_SOFT_TONE := Vector4(0.97, 0.97, 0.08, 0.06)
+const DISPLAY_TONES: Dictionary = {
+	"DICE_STOCK_V02.png": SOFT_TONE,
+	"DICE_DARTS_V02.png": SOFT_TONE,
+	"DICE_OMIKUJI_V02.png": SOFT_TONE,
+	"DICE_ICECREAM_V02.png": SOFT_TONE,
+	"DICE_COOKIE_V02.png": SOFT_TONE,
+	"DICE_CAPSULE_V02.png": SOFT_TONE,
+	"AUG_UTIL_DRIFT_V02.png": SOFT_TONE,
+	"AUG_UTIL_BOUNTY_V02.png": SOFT_TONE,
+	"TRPG_WARRIOR_V02.png": LIGHT_SOFT_TONE,
+	"TRPG_MAGE_V02.png": LIGHT_SOFT_TONE,
+	"TRPG_ARCHER_V02.png": LIGHT_SOFT_TONE,
+	"TRPG_ROGUE_V02.png": LIGHT_SOFT_TONE,
+	"LAW_02_BAD_CARROT.png": LIGHT_SOFT_TONE,
+	"SUPER_09.png": LIGHT_SOFT_TONE,
+}
 const PAWN_FILES: Dictionary = {
 	GameEnums.PawnKind.CHESS: "PAWN_CHESS",
 	GameEnums.PawnKind.JANGGI: "PAWN_JANGGI",
@@ -77,7 +97,7 @@ static func candidates(definition: AugmentDef) -> Array[String]:
 static func law_candidates(law_id: String) -> Array[String]:
 	var paths: Array[String] = [ROOT + "laws/%s.png" % law_id]
 	if law_id == "LAW_02":
-		if BoardSpec.witch:
+		if VictoryLaw.witch_variant_active(law_id):
 			paths.push_front(BAD_CARROT_LAW_ICON)
 		elif VictoryLaw.variant_active(law_id):
 			paths.push_front(MONATIUM_LAW_ICON)
@@ -109,7 +129,6 @@ static func load_first(paths: Array[String]) -> Texture2D:
 static func make_texture(texture: Texture2D, diameter: float, rim_color: Color = Color.TRANSPARENT) -> TextureRect:
 	var art := TextureRect.new()
 	art.name = "EmblemArt"
-	art.texture = texture
 	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	art.size = Vector2.ONE * diameter
@@ -118,4 +137,30 @@ static func make_texture(texture: Texture2D, diameter: float, rim_color: Color =
 	circle.shader = CIRCLE_SHADER
 	circle.set_shader_parameter("rim_color", rim_color)
 	art.material = circle
+	apply_texture_style(art, texture)
 	return art
+
+
+static func display_tone(texture: Texture2D) -> Vector4:
+	if texture is AtlasTexture:
+		texture = (texture as AtlasTexture).atlas
+	if texture == null:
+		return Vector4(1, 1, 0, 0)
+	return DISPLAY_TONES.get(texture.resource_path.get_file(), Vector4(1, 1, 0, 0))
+
+
+## Shared by draft/history emblems, the tool HUD and the rulebook's enlarged art.
+static func apply_texture_style(art: TextureRect, texture: Texture2D, circular: bool = true) -> void:
+	art.texture = texture
+	art.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	var tone := display_tone(texture)
+	if not circular and tone == Vector4(1, 1, 0, 0):
+		art.material = null
+		return
+	var material := art.material as ShaderMaterial
+	if material == null or material.shader != CIRCLE_SHADER:
+		material = ShaderMaterial.new()
+		material.shader = CIRCLE_SHADER
+		art.material = material
+	material.set_shader_parameter("style_adjustment", tone)
+	material.set_shader_parameter("circular_mask", circular)
