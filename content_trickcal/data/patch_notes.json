@@ -74,6 +74,11 @@
        "ko": "업데이트 뒤 다시 접속하면 바뀌지 않은 파일(엔진·캐릭터 애니메이션)까지 매번 새로 받아 로딩이 오래 걸리던 문제를 고쳤어요. 이제 바뀐 게임 데이터만 새로 받아요",
        "en": "Fixed reconnecting after an update re-downloading unchanged files (engine and character animations) every time, which made loading slow. Now only the changed game data is downloaded",
        "ja": "アップデート後に再接続すると、変わっていないファイル（エンジン・キャラクターアニメーション）まで毎回ダウンロードしてロードが長くなっていた問題を修正。今は変更されたゲームデータだけをダウンロードします"
+      },
+      {
+       "ko": "함정 설명을 읽는 중에 증강 선택 시간이 되면 함정 설명이 증강 선택 창 위에 계속 남아 있던 문제를 고쳤어요 (제보 감사합니다!)",
+       "en": "Fixed a trap's description staying on top of the augment selection window when augment selection began while you were reading it (thanks for the report!)",
+       "ja": "罠の説明を読んでいる間に増強選択の時間になると、罠の説明が増強選択画面の上にずっと残っていた問題を修正しました（ご報告ありがとうございます！）"
       }
      ]
     }

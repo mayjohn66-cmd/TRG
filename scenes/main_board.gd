@@ -6530,6 +6530,12 @@ func _bind_tip(control: Control, provider: Callable) -> void:
 	control.mouse_exited.connect(_tip_end.bind(control))
 
 
+## 설명 출처 비교: 출처는 보드 칸·말 문자열("tile:5")이거나 버튼(Control)이라, 종류가 다르면 ==가 스크립트 오류를 낸다
+## (고정한 보드 설명이 떠 있을 때 프로필 버튼을 누르면 설명이 안 열렸다).
+static func _same_tip_source(a: Variant, b: Variant) -> bool:
+	return typeof(a) == typeof(b) and a == b
+
+
 func _tip_begin(source: Variant, provider: Callable) -> void:
 	_tip_pinned = false
 	_tip_source = source
@@ -6539,7 +6545,7 @@ func _tip_begin(source: Variant, provider: Callable) -> void:
 
 
 func _tip_end(source: Variant = null) -> void:
-	if source != null and _tip_source != source:
+	if source != null and not _same_tip_source(_tip_source, source):
 		return
 	_tip_source = null
 	_tip_pinned = false
@@ -6550,7 +6556,7 @@ func _tip_end(source: Variant = null) -> void:
 
 ## 기물 설명 열기/닫기: 열려 있는 같은 기물을 다시 누르면 닫고, 아니면 누른 자리 옆에 바로 연다.
 func _tip_toggle(source: Variant, provider: Callable) -> void:
-	if _tip_pinned and _tip_source == source:
+	if _tip_pinned and _same_tip_source(_tip_source, source):
 		_tip_end()
 		return
 	_tip_source = source
@@ -6572,10 +6578,21 @@ func _tip_click_elsewhere(pointer: Vector2) -> bool:
 	return false
 
 
+## 보드를 덮는 창(증강 선택·결과·선택 창)이 떠 있는가: 그 동안 보드 위 칸·말·NPC 설명은 띄우지 않는다.
+func _board_tips_covered() -> bool:
+	return (_draft_overlay != null and is_instance_valid(_draft_overlay) and _draft_overlay.visible) or _result_overlay != null or _choice_overlay != null
+
+
 func _update_tip(delta: float) -> void:
 	if _tip_source == null or _tip_panel == null:
 		return
 	if _tip_source is Object and not is_instance_valid(_tip_source):
+		_tip_end()
+		return
+	# 보드 위 설명(source "tile:"/"board:"/"npc:")을 읽는 중에 증강 선택 창 등이 덮으면 닫는다.
+	# 설명 패널(z 90)이 창 위에 남아 계속 보이던 문제 (제보: 함정 설명을 읽다 증강 선택 시간이 되자 설명이 안 사라짐).
+	# 프로필·[내 증강] 같은 버튼 설명(source가 Control)은 창이 떠 있어도 볼 수 있게 그대로 둔다.
+	if _tip_source is String and _board_tips_covered():
 		_tip_end()
 		return
 	_tip_clock += delta
@@ -6648,12 +6665,12 @@ func _attachment_tile_at(pointer: Vector2) -> int:
 func _hover_attachment_tip(pointer: Vector2) -> void:
 	if _tip_pinned or _tip_panel == null:
 		return
-	if _draft_overlay != null or _result_overlay != null or _choice_overlay != null:
-		return  # 보드를 가린 창 너머의 칸은 설명하지 않는다
+	if _board_tips_covered():
+		return  # 보드를 가린 창 너머의 칸은 설명하지 않는다 (이미 떠 있던 설명은 _update_tip이 닫는다)
 	var tile: int = _attachment_tile_at(pointer)
 	var key: String = "tile:%d" % tile
 	if tile != -1:
-		if _tip_source != key:
+		if not _same_tip_source(_tip_source, key):
 			_tip_begin(key, _fill_attachment_tip.bind(tile))
 			_tip_clock = TIP_DELAY  # 기다리지 않고 바로
 	elif _tip_source is String and String(_tip_source).begins_with("tile:"):

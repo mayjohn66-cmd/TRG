@@ -620,6 +620,13 @@ jobs:
           godot --headless --path . -s res://tests/ui_draft_beat_test.gd 2>&1 | tee /tmp/ui_draft_beat_test.log
           grep -q 'UI_DRAFT_BEAT_OK' /tmp/ui_draft_beat_test.log
 
+      - name: Run trap tooltip under augment window test (board tips close when the draft covers the board)
+        if: steps.validation.outputs.scope == 'full'
+        run: |
+          set -o pipefail
+          godot --headless --path . -s res://tests/ui_trap_tip_draft_test.gd 2>&1 | tee /tmp/ui_trap_tip_draft_test.log
+          grep -q 'UI_TRAP_TIP_DRAFT_OK' /tmp/ui_trap_tip_draft_test.log
+
       - name: Run counter-before-kill presentation sequence test (dodge, mirror, no counter)
         if: steps.validation.outputs.scope == 'full'
         run: |
