@@ -442,8 +442,11 @@ func _check_pawn_labels() -> void:
 		if token == null:
 			continue
 		_assert(token.pawn == pawn and token.owner_color == MainBoard.PLAYER_COLORS[pawn.owner_id], "보드 토큰은 현재 말과 소유자 색상을 반영한다")
-		var expected: Dictionary = PawnArt.sprite(pawn)
-		_assert(token.artwork.get("texture") == expected.get("texture"), "보드 토큰 이미지는 현재 세부 병종 또는 폴백과 일치한다")
+		# 초증강 [눈먼 자의 도시]가 걸린 라운드에는 모든 말이 기본 말 그림(회색 [?])으로 가려진다: 그때는 기본 그림이 맞다.
+		# (봇이 이 초증강을 고르는지는 타이밍에 따라 달라 이 검사가 가끔만 실패했다)
+		_assert(token.blind == _board._blind_board_visible(), "보드 토큰의 가림 상태는 눈먼 자의 도시 표시와 같다")
+		var expected: Dictionary = PawnArt.load_sprite([PawnArt.BASIC_PATH]) if token.blind else PawnArt.sprite(pawn)
+		_assert(token.artwork.get("texture") == expected.get("texture"), "보드 토큰 이미지는 현재 세부 병종 또는 폴백과 일치한다 (가린 라운드는 기본 말)")
 	var owner_id: int = _board._dock_owner()
 	for index: int in _board._pawn_buttons.size():
 		var pawn: PlayerPawn = _board.state.get_pawn(owner_id * 10 + index + 1)
