@@ -212,6 +212,11 @@ static var _bgm_name: StringName = &""
 static var _voice: AudioStreamPlayer = null
 static var _voice_serial := 0
 static var _voice_pending := false
+## 대사를 기다리는 연출(잡기·오프닝)의 안전장치: 대사 길이 + 1.5초가 지나면 재생 중이어도 끝난 것으로 본다.
+## 웹에서 브라우저가 오디오를 멈추면(휴대폰 백그라운드·iOS 끊김) 재생 위치가 멈춰 playing이 계속 true라 판이 멈출 수 있다.
+static var _voice_deadline_ms := 0
+const VOICE_WAIT_SLACK_MS := 1500
+const VOICE_WAIT_FALLBACK_MS := 6000
 ## 승리 장면의 긴 팡파르(법전 달성·졸업·시상대·우승) 전용 재생기 두 개. 한 번에 하나만 들리게,
 ## 새 팡파르가 나오면 앞 것은 STINGER_FADE초에 걸쳐 줄이고 멈춘다 (겹쳐서 웅성거리지 않게).
 static var _stingers: Array[AudioStreamPlayer] = []
@@ -305,6 +310,8 @@ static func play_voice(path: String, volume_db: float = 0.0) -> int:
 	_voice_serial += 1
 	var token := _voice_serial
 	_voice_pending = true
+	var length_ms: int = int(stream.get_length() * 1000.0)
+	_voice_deadline_ms = Time.get_ticks_msec() + (length_ms + VOICE_WAIT_SLACK_MS if length_ms > 0 else VOICE_WAIT_FALLBACK_MS)
 	if not _ensure_ready():
 		_play_voice_when_ready.call_deferred(stream, volume_db, token)
 	else:
@@ -317,7 +324,9 @@ static func _voice_enabled() -> bool:
 
 
 static func voice_is_active(token: int) -> bool:
-	return token != 0 and token == _voice_serial and _voice_enabled() and (_voice_pending or (is_instance_valid(_voice) and _voice.playing))
+	if token == 0 or token != _voice_serial or not _voice_enabled() or Time.get_ticks_msec() > _voice_deadline_ms:
+		return false
+	return _voice_pending or (is_instance_valid(_voice) and _voice.playing)
 
 
 static func stop_voice(token: int) -> void:

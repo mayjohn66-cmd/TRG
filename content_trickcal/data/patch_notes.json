@@ -1,6 +1,50 @@
 {
  "entries": [
   {
+   "id": "1.2.1",
+   "date": "",
+   "title": {
+    "ko": "1.2.1 업데이트",
+    "en": "Update 1.2.1",
+    "ja": "1.2.1アップデート"
+   },
+   "sections": [
+    {
+     "head": {
+      "ko": "신규 추가",
+      "en": "New",
+      "ja": "新要素"
+     },
+     "items": [
+      {
+       "ko": "캐릭터 보이스가 생겼어요! 고른 캐릭터 8명(에르핀·버터·엘레나·실라·셰이디·다야·벨리타·죠안)이 게임 시작, 상대 말을 잡을 때, 내 말이 잡혔을 때, 필살기, 증강을 고를 때, 승리할 때(법전 승리는 전용 대사) 말을 해요. 설정의 [캐릭터 음성]에서 음량을 바꾸거나 끌 수 있어요 (건의해 주셔서 감사합니다!)",
+       "en": "Character voices are here! All 8 characters (Erpin, Butter, Elena, Sylla, Shady, Daya, Velita, Joan) now speak at game start, when capturing a rival's pawn, when one of your pawns is captured, on skills, when picking augments, and on victory (law victories get their own line). Adjust or mute them with [Character Voice] in Settings (thanks for the suggestion!)",
+       "ja": "キャラクターボイスが登場！選んだキャラクター8人（エルフィン・バター・エレナ・シラ・シェイディ・ダヤ・ベリタ・ジョアン）が、ゲーム開始、相手の駒を倒した時、自分の駒が倒された時、必殺技、増強を選ぶ時、勝利時（法典勝利は専用セリフ）にしゃべります。設定の[キャラクターボイス]で音量の変更やミュートができます（ご提案ありがとうございます！）"
+      },
+      {
+       "ko": "게임 시작 연출에 [건너뛰기] 버튼이 생겼어요",
+       "en": "Added a [Skip] button to the game-start intro",
+       "ja": "ゲーム開始演出に[スキップ]ボタンを追加"
+      }
+     ]
+    },
+    {
+     "head": {
+      "ko": "개선",
+      "en": "Improvements",
+      "ja": "改善"
+     },
+     "items": [
+      {
+       "ko": "증강·판정 도구 아이콘이 너무 쨍하게 보이던 것을 증강 선택 창·화면·도감에서 고르게 다듬었어요",
+       "en": "Toned down overly sharp augment and judgment-tool icons so they look consistent across the augment window, the HUD and the rulebook",
+       "ja": "増強・判定ツールのアイコンがくっきりしすぎていたのを、増強選択画面・画面表示・図鑑でそろうように調整"
+      }
+     ]
+    }
+   ]
+  },
+  {
    "id": "1.2",
    "date": "",
    "title": {
