@@ -957,7 +957,7 @@ func _picture_tile(data: Dictionary, on_pick: Callable, compact: bool = false) -
 		switch_button.add_theme_stylebox_override("normal", VISUALS.disc(tint))
 		switch_button.add_theme_stylebox_override("hover", VISUALS.disc(tint.lightened(0.45)))
 		switch_button.add_theme_stylebox_override("pressed", VISUALS.disc(tint.darkened(0.18)))
-		var destination: String = L10n.t(VARIANT_BOARD_LABELS[_next_variant_board(data)])
+		var destination: String = L10n.t("%s 보기" % BoardCatalog.name_of(BoardCatalog.ids()[_next_variant_board(data)]))
 		switch_button.tooltip_text = destination
 		switch_button.accessibility_name = destination
 		var icon := HubArt.icon(&"next")
@@ -976,51 +976,53 @@ func _picture_tile(data: Dictionary, on_pick: Callable, compact: bool = false) -
 	return holder
 
 
-## 보드 넘기기 화살표의 안내 문구 (VictoryLaw 미리보기 보드 번호 순서: 에르핀 왕국 -> 모나티엄 도시 -> 벨라티엔 왕국).
-const VARIANT_BOARD_LABELS: Array[String] = ["에르핀 왕국 보기", "모나티엄 도시 보기", "벨라티엔 왕국 보기"]
-
-
+## 보드 넘기기 화살표: BoardCatalog의 보드 순서대로 돈다 (안내 문구는 "<보드 이름> 보기", 번역 행이 있어야 한다).
 ## 이 증강이 보드마다 바꿔 쓰는 특수 승리인가.
 static func _has_board_variant(definition: AugmentDef) -> bool:
 	return definition != null and definition.category == GameEnums.AugmentCategory.LAW_ENACT and VictoryLaw.has_board_variant(str(definition.payload))
 
 
+## 지금 판의 보드 번호 (BoardCatalog 순서).
+static func _current_board_index() -> int:
+	return maxi(BoardCatalog.ids().find(BoardSpec.board_id), 0)
+
+
 ## 이 타일이 지금 보여 주는 보드 번호 (지금 보드판 설정 기준 + 화살표를 누른 횟수만큼 다음 보드).
 static func _shown_variant_board(data: Dictionary) -> int:
-	return (VictoryLaw.current_board_index() + int(data.get("variant_step", 0))) % VARIANT_BOARD_LABELS.size()
+	return (_current_board_index() + int(data.get("variant_step", 0))) % BoardCatalog.ids().size()
 
 
 static func _next_variant_board(data: Dictionary) -> int:
-	return (_shown_variant_board(data) + 1) % VARIANT_BOARD_LABELS.size()
+	return (_shown_variant_board(data) + 1) % BoardCatalog.ids().size()
 
 
-## 이 타일이 지금 모나티엄 도시판을 보여 주는가.
-static func _tile_shows_monatium(data: Dictionary) -> bool:
-	return _shown_variant_board(data) == VictoryLaw.PREVIEW_MONATIUM
+## 이 타일이 지금 보여 주는 보드 id.
+static func _shown_board_id(data: Dictionary) -> StringName:
+	return BoardCatalog.ids()[_shown_variant_board(data)]
 
 
 ## 타일에 보일 카드 정보: 화살표로 뒤집었으면 다른 보드의 판 문구로 만든다 (끝나면 지금 보드 문구로 되돌린다).
 static func _card_info_for_tile(definition: AugmentDef, data: Dictionary) -> Dictionary:
 	if int(data.get("variant_step", 0)) == 0 or not _has_board_variant(definition):
 		return MainBoard.augment_card_info(definition, null, 1)
-	VictoryLaw.preview_board = _shown_variant_board(data)
+	VictoryLaw.preview_board = _shown_board_id(data)
 	AugmentRegistry.apply_board_variants()
 	var info: Dictionary = MainBoard.augment_card_info(definition, null, 1)
-	VictoryLaw.preview_board = -1
+	VictoryLaw.preview_board = &""
 	AugmentRegistry.apply_board_variants()
 	return info
 
 
 ## 화살표: 이 카드를 다른 보드의 판으로 바꿔 다시 그린다 (자리·선택 상태는 그대로, 오른쪽 설명 글도 같이 바뀐다).
 func _flip_board_variant(holder: Control, data: Dictionary, on_pick: Callable, compact: bool) -> void:
-	data["variant_step"] = (int(data.get("variant_step", 0)) + 1) % VARIANT_BOARD_LABELS.size()
+	data["variant_step"] = (int(data.get("variant_step", 0)) + 1) % BoardCatalog.ids().size()
 	data["variant_flipped"] = int(data["variant_step"]) != 0  # 지금 보드가 아닌 판을 보는 중 (옛 키, 테스트 호환)
 	var law_id: String = str(data.get("law_id", ""))
 	if law_id != "" and VictoryLaw.DEFS.has(law_id):
-		VictoryLaw.preview_board = _shown_variant_board(data)
+		VictoryLaw.preview_board = _shown_board_id(data)
 		var law: VictoryLaw = LawRegistry.create(law_id) as VictoryLaw
 		data["texture"] = AugmentArt.load_first(AugmentArt.law_candidates(law_id))
-		VictoryLaw.preview_board = -1
+		VictoryLaw.preview_board = &""
 		data["title"] = law.law_name
 		data["summary"] = law.condition_text()
 	var fresh: Control = _picture_tile(data, on_pick, compact)
@@ -1463,42 +1465,47 @@ func _ch_board() -> Dictionary:
 			"points": ["[b]코너 전용 함정[/b]만 설치할 수 있는 칸이에요", "무인도·우이의 소원빌기", "지나가는 상인·물의 세례를 받아라"]},
 		{"title": "반환점", "art": &"halfway", "tone": Color("c98a14"), "chips": ["%d번" % BoardSpec.halfway_tile],
 			"summary": "여기를 지나면 체스 폰은 [b]퀸[/b]으로, 쇼기 말은 [b]승급[/b]해요."},
-		{"title": "빵집 (에르핀 왕국)", "art": &"bread", "tone": Color("d9822b"), "chips": [_join_tiles(_classic_layout()["bakery_tiles"]) + "번"],
-			"summary": "딱 멈추면 [b]생떼 카드 1장[/b]! 어떤 카드인지는 본인만 알아요."},
-		{"title": "옷장 (에르핀 왕국)", "art": &"wardrobe", "tone": Color("2f9aa3"), "chips": [_join_tiles(_classic_layout()["portal_tiles"]) + "번"],
-			"summary": "딱 멈추면 [b]순간이동[/b]! 두 옷장은 [b]왕복[/b]이라 밟은 쪽의 반대편으로 가요. 지나가기만 하면 아무 일도 없어요.",
-			"rows": _warp_rows()},
-		{"title": "편의점 (모나티엄 도시)", "art": &"store", "tone": Color("3f86b8"), "chips": [_join_tiles(_monatium_layout()["bakery_tiles"]) + "번"],
-			"summary": "에르핀 왕국의 빵집 자리예요. 딱 멈추면 [b]생떼 카드 1장[/b]! 어떤 카드인지는 본인만 알아요."},
-		{"title": "자판기 (모나티엄 도시)", "art": &"vending", "tone": Color("c4574a"), "chips": [_join_tiles(_monatium_layout()["vending_tiles"]) + "번"],
-			"summary": "옷장 자리에 서요. 딱 멈추면 [b]음료수가 랜덤으로 한 캔[/b] 나와요. 지나가기만 하면 아무 일도 없고, 순간이동은 없어요.",
-			"rows": _drink_rows()},
-		{"title": "마녀 상점 (벨라티엔 왕국)", "art": &"witch_shop", "tone": Color("8a5a34"), "chips": [_join_tiles(_belatien_layout()["bakery_tiles"]) + "번"],
-			"summary": "에르핀 왕국의 빵집 자리예요. 딱 멈추면 [b]생떼 카드 1장[/b]! 어떤 카드인지는 본인만 알아요."},
-		{"title": "마녀의 가마솥 (벨라티엔 왕국)", "art": &"cauldron", "tone": Color("6b4a8f"), "chips": [_join_tiles(_belatien_layout()["cauldron_tiles"]) + "번"],
-			"summary": "옷장 자리에 서요. 딱 멈추면 [b]물약이 랜덤으로 끓어요[/b]. 좋은 물약 3종과 [b]나쁜 물약 2종[/b]이 같은 확률로 나와요. 지나가기만 하면 아무 일도 없어요.",
-			"rows": _potion_rows()},
+	]
+	entries.append_array(_special_tile_entries())  # 빵집 자리·옷장 자리 칸 종류마다 한 장 (BoardCatalog 데이터에서 만든다)
+	entries.append_array([
 		{"title": "부스터 발판", "art": &"boost", "tone": Color("2fb59a"), "chips": [_join_tiles(BoardSpec.dash_tiles) + "번"],
 			"summary": "딱 멈추면 [b]+3칸[/b] 더 날아가요."},
 		{"title": "함정 칸", "texture": TextureCache.fetch("res://assets/board/traps/HIDDEN.png"), "tone": Color("7a5cd6"), "chips": ["한 칸에 하나"],
 			"summary": "함정이 깔린 칸은 [b]보라색[/b]으로 바뀌고 그 함정 그림이 보여요.",
 			"points": ["상대가 숨긴 함정은 물음표로 보여요", "코너 함정은 누구에게나 공개 · 3라운드 · 1회용", "코너·빵집·옷장·부스터 발판에는 일반 함정을 깔 수 없어요"]},
-	]
+	])
 	for index: int in board_entries.size():  # 한눈에 보기 다음에 보드판 소개
 		entries.insert(1 + index, board_entries[index])
 	return {"title": "보드", "entries": entries}
 
 
-func _classic_layout() -> Dictionary:
-	return BoardSpec.layout_for(BoardSpec.DEFAULT_TILE_COUNT, false)
-
-
-func _monatium_layout() -> Dictionary:
-	return BoardSpec.layout_for(BoardSpec.DEFAULT_TILE_COUNT, true)
-
-
-func _belatien_layout() -> Dictionary:
-	return BoardSpec.layout_for(BoardSpec.DEFAULT_TILE_COUNT, false, true)
+## 빵집 자리·옷장 자리 칸 종류마다 한 장: 보드 순서대로, 그 보드의 빵집 자리 칸 → 옷장 자리 칸 (이미 나온 종류는 건너뛴다).
+## 제목은 "<칸 이름> (<이 칸을 쓰는 보드들>)", 번호는 그 칸을 처음 쓰는 보드의 배치. 칸별 표(음료·물약·워프)는 _KIND_ROWS.
+func _special_tile_entries() -> Array:
+	var entries: Array = []
+	var seen: Array[StringName] = []
+	for board: Dictionary in BoardCatalog.BOARDS:
+		for slot: String in ["shop", "portal"]:
+			var kind_id: StringName = board[slot]
+			if seen.has(kind_id):
+				continue
+			seen.append(kind_id)
+			var kind: Dictionary = BoardCatalog.tile_kind(kind_id)
+			var users: PackedStringArray = []
+			for other: Dictionary in BoardCatalog.BOARDS:
+				if other[slot] == kind_id:
+					users.append(str(other["name"]))
+			var layout: Dictionary = BoardCatalog.layout_of(board["id"])
+			var key: String = "bakery_tiles" if slot == "shop" else str(kind["tiles_key"])
+			var book: Dictionary = kind["rulebook"]
+			var entry: Dictionary = {"title": "%s (%s)" % [kind["name"], "·".join(users)], "art": book["art"], "tone": book["tone"],
+				"chips": [_join_tiles(layout[key]) + "번"], "summary": book["summary"]}
+			match kind_id:  # 칸 종류별 상세 표 (그 칸의 규칙 데이터에서 만든다)
+				&"portal": entry["rows"] = _warp_rows()
+				&"vending": entry["rows"] = _drink_rows()
+				&"cauldron": entry["rows"] = _potion_rows()
+			entries.append(entry)
+	return entries
 
 
 func _potion_rows() -> Array:
@@ -1871,7 +1878,7 @@ class MiniBoard extends Control:
 			var width: float = font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, label_size).x
 			draw_string(font, center + Vector2(-width / 2.0, label_size * 0.36), label, HORIZONTAL_ALIGNMENT_LEFT, -1, label_size, Color("3a2f1f"))
 		# 안쪽 범례
-		var legend: Array = [[Color("86d94f"), "출발 · 결승"], [Color("b6ea8c"), "코너 (코너 전용 함정)"], [Color("ffe48a"), "반환점 (승급 기준)"], [Color("ffd98a"), "편의점 (카드 1장)" if BoardSpec.convenience else ("마녀 상점 (카드 1장)" if BoardSpec.witch else "빵집 (카드 1장)")], (([Color("ffd0c8"), "자판기 (랜덤 음료 버프)"]) if BoardSpec.convenience else (([Color("d9c8f2"), "마녀의 가마솥 (랜덤 물약)"]) if BoardSpec.witch else ([Color("c8eef0"), "옷장 (%s)" % _warp_text(BoardSpec.portal_warp_targets)]))), [Color("ffd3e2"), "부스터 발판 (%s번, 딱 멈추면 +%d칸)" % [_join_dash(BoardSpec.dash_tiles), GameEnums.DASH_STEPS]]]
+		var legend: Array = [[Color("86d94f"), "출발 · 결승"], [Color("b6ea8c"), "코너 (코너 전용 함정)"], [Color("ffe48a"), "반환점 (승급 기준)"], [BoardCatalog.current_shop()["legend_color"], str(BoardCatalog.current_shop()["legend"])], [BoardCatalog.current_portal()["legend_color"], ("%s (%s)" % [BoardCatalog.current_portal()["name"], _warp_text(BoardSpec.portal_warp_targets)]) if bool(BoardCatalog.current_portal()["warps"]) else str(BoardCatalog.current_portal()["legend"])], [Color("ffd3e2"), "부스터 발판 (%s번, 딱 멈추면 +%d칸)" % [_join_dash(BoardSpec.dash_tiles), GameEnums.DASH_STEPS]]]
 		var origin := Vector2(92, 118)
 		for index: int in legend.size():
 			var spot: Vector2 = origin + Vector2(0, index * 30.0)

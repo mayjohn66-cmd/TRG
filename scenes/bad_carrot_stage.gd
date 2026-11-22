@@ -8,6 +8,9 @@ const DROP_TIME := 0.30
 const FLIGHT_AT := 1.39
 const IMPACT_AT := 1.97
 const INTRO_SECONDS := 2.48
+## 이 무대가 도는 동안 배경을 어둡게 하는 정도 (LawVictoryPrelude가 읽는다).
+const DIM_TARGET := 0.58
+const DIM_RAMP_END := 0.95  ## 어두워지기를 마치는 시각
 const FADE_SECONDS := 0.38
 const SETTLE_AT := 3.02
 const STACK: Array[Vector2] = [

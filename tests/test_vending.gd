@@ -15,14 +15,15 @@ func _monatium_state() -> GameState:
 	return state
 
 
-func _restore(count: int, shop: bool, id: StringName) -> void:
-	BoardSpec.apply(count, shop)
+func _restore(count: int, board: StringName, id: StringName) -> void:
+	var def: Dictionary = BoardCatalog.def_of(board)
+	BoardSpec.apply(count, def["portal"], def["shop"], board)
 	BoardCatalog.current_id = id
 
 
 func test_monatium_layout_swaps_wardrobes_for_vending_machines() -> void:
-	var classic: Dictionary = BoardSpec.layout_for(32, false)
-	var city: Dictionary = BoardSpec.layout_for(32, true)
+	var classic: Dictionary = BoardSpec.layout_for(32)
+	var city: Dictionary = BoardSpec.layout_for(32, &"vending")
 	check_eq(city["bakery_tiles"], classic["bakery_tiles"], "편의점은 빵집과 같은 자리")
 	check((city["portal_tiles"] as Array).is_empty() and (city["portal_warp_targets"] as Dictionary).is_empty(), "옷장과 워프가 없다")
 	check_eq(city["vending_tiles"], classic["portal_tiles"], "자판기는 옷장 자리 (12·22번)")
@@ -33,7 +34,7 @@ func test_monatium_layout_swaps_wardrobes_for_vending_machines() -> void:
 
 func test_vending_stop_gives_a_drink_without_warping() -> void:
 	var saved_count: int = BoardSpec.tile_count
-	var saved_shop: bool = BoardSpec.convenience
+	var saved_shop: StringName = BoardSpec.board_id
 	var saved_id: StringName = BoardCatalog.current_id
 	var seen: Dictionary = {}
 	for seed_value: int in 40:
@@ -64,7 +65,7 @@ func test_vending_stop_gives_a_drink_without_warping() -> void:
 
 func test_passing_a_vending_machine_does_nothing_and_store_still_gives_a_card() -> void:
 	var saved_count: int = BoardSpec.tile_count
-	var saved_shop: bool = BoardSpec.convenience
+	var saved_shop: StringName = BoardSpec.board_id
 	var saved_id: StringName = BoardCatalog.current_id
 	var state := _monatium_state()
 	place(state, 11, 10, [9])
@@ -81,12 +82,12 @@ func test_passing_a_vending_machine_does_nothing_and_store_still_gives_a_card() 
 
 func test_each_board_has_its_own_skin_palette_and_surface() -> void:
 	var saved_count: int = BoardSpec.tile_count
-	var saved_shop: bool = BoardSpec.convenience
+	var saved_shop: StringName = BoardSpec.board_id
 	var saved_id: StringName = BoardCatalog.current_id
-	BoardSpec.apply(32, false)
+	BoardSpec.apply(32)
 	var classic_fill: Color = BoardSkin.palette().dash_inner
 	var classic_surface: Texture2D = BoardSkin.surface_texture()
-	BoardSpec.apply(32, true)
+	BoardSpec.apply(32, &"vending", &"store", &"monatium")
 	check(BoardSkin.palette().dash_inner != classic_fill, "도시 보드는 부스터 발판 색이 다르다")
 	check(BoardSkin.surface_texture() != classic_surface, "도시 보드는 판 바닥 그림이 다르다")
 	check_eq(BoardSkin.definition(12).kind, "vending", "12번 칸은 자판기 종류")
@@ -96,16 +97,16 @@ func test_each_board_has_its_own_skin_palette_and_surface() -> void:
 
 func test_monatium_swaps_the_bakery_law_into_wara_monatium_25() -> void:
 	var saved_count: int = BoardSpec.tile_count
-	var saved_shop: bool = BoardSpec.convenience
+	var saved_shop: StringName = BoardSpec.board_id
 	var saved_id: StringName = BoardCatalog.current_id
-	BoardSpec.apply(32, false)
+	BoardSpec.apply(32)
 	AugmentRegistry.apply_board_variants()
 	var classic_law := VictoryLaw.new("LAW_02")
 	check_eq(classic_law.law_name, "봉인된 에르핀의 식권", "에르핀 왕국의 이름")
 	check(classic_law.condition_text().contains("빵집"), "에르핀 왕국의 조건")
 	var classic_def: AugmentDef = AugmentRegistry.get_def(&"AUG_LAW_02")
 	check(classic_def.title.contains("봉인된 에르핀의 식권") or classic_def.title.contains("Erpin") or classic_def.title.contains("エルフィン"), "에르핀 왕국의 선택 카드 제목")
-	BoardSpec.apply(32, true)
+	BoardSpec.apply(32, &"vending", &"store", &"monatium")
 	AugmentRegistry.apply_board_variants()
 	var city_law := VictoryLaw.new("LAW_02")
 	check_eq(city_law.law_name, "와라! 모나티엄 25", "모나티엄 도시의 이름")
@@ -120,7 +121,7 @@ func test_monatium_swaps_the_bakery_law_into_wara_monatium_25() -> void:
 	var city_cues := PresentationAudio.victory_plan("LAW_02", 0.0, -1.0, false)
 	check_eq(city_cues.filter(func(entry: Dictionary) -> bool: return entry.event == &"monatium_cash_drop").size(), 6, "one bundle per store visit")
 	check(city_cues.any(func(entry: Dictionary) -> bool: return entry.event == &"monatium_cash_reward"), "city finale has its own cash cue")
-	BoardSpec.apply(32, false)
+	BoardSpec.apply(32)
 	var classic_cues := PresentationAudio.victory_plan("LAW_02", 0.0, -1.0, false)
 	check(classic_cues.any(func(entry: Dictionary) -> bool: return entry.event == &"ticket_join"), "classic finale still uses ticket cues")
 	check_eq(THEME_SCRIPT.of("LAW_02")["headline"], "SWEET VICTORY", "에르핀 왕국에서는 원래 문구")

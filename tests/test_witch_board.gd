@@ -14,23 +14,24 @@ func _witch_state() -> GameState:
 
 
 func _saved() -> Array:
-	return [BoardSpec.tile_count, BoardSpec.convenience, BoardSpec.witch, BoardCatalog.current_id]
+	return [BoardSpec.tile_count, BoardSpec.board_id, BoardCatalog.current_id]
 
 
 func _restore(saved: Array) -> void:
-	BoardSpec.apply(int(saved[0]), bool(saved[1]), bool(saved[2]))
-	BoardCatalog.current_id = saved[3]
+	var def: Dictionary = BoardCatalog.def_of(saved[1])
+	BoardSpec.apply(int(saved[0]), def["portal"], def["shop"], saved[1])
+	BoardCatalog.current_id = saved[2]
 	AugmentRegistry.apply_board_variants()
 
 
 func test_belatien_layout_swaps_wardrobes_for_cauldrons() -> void:
-	var classic: Dictionary = BoardSpec.layout_for(32, false)
-	var witch: Dictionary = BoardSpec.layout_for(32, false, true)
+	var classic: Dictionary = BoardSpec.layout_for(32)
+	var witch: Dictionary = BoardSpec.layout_for(32, &"cauldron")
 	check_eq(witch["bakery_tiles"], classic["bakery_tiles"], "마녀 상점은 빵집과 같은 자리")
 	check((witch["portal_tiles"] as Array).is_empty() and (witch["portal_warp_targets"] as Dictionary).is_empty(), "옷장과 워프가 없다")
 	check_eq(witch["cauldron_tiles"], classic["portal_tiles"], "가마솥은 옷장 자리 (12·22번)")
 	check((witch["vending_tiles"] as Array).is_empty(), "자판기는 없다")
-	check((BoardSpec.layout_for(32, true)["cauldron_tiles"] as Array).is_empty(), "모나티엄 도시에는 가마솥이 없다")
+	check((BoardSpec.layout_for(32, &"vending")["cauldron_tiles"] as Array).is_empty(), "모나티엄 도시에는 가마솥이 없다")
 	check_eq(BoardCatalog.name_of(&"belatien"), "벨라티엔 왕국", "보드 이름")
 	check(BoardCatalog.is_valid(&"belatien"), "보드 목록에 있다")
 
@@ -42,7 +43,7 @@ func test_cauldron_stop_brews_every_potion_without_warping() -> void:
 	for seed_value: int in 60:
 		var state := _witch_state()
 		state.rng.seed = seed_value
-		check(BoardSpec.witch and BoardSpec.cauldron_tiles.has(12) and state.board.get_tile(12).tile_type == TileNode.TileType.CAULDRON, "12번은 가마솥 칸")
+		check(BoardSpec.board_id == &"belatien" and BoardSpec.cauldron_tiles.has(12) and state.board.get_tile(12).tile_type == TileNode.TileType.CAULDRON, "12번은 가마솥 칸")
 		place(state, 11, 10, [9])
 		var report: MoveReport = move(state, 11, 2)  # 10 -> 12 (가마솥)
 		check(report.cauldron_potion != &"", "딱 멈추면 물약이 끓는다")
@@ -86,12 +87,12 @@ func test_passing_a_cauldron_does_nothing_and_witch_shop_gives_a_card() -> void:
 
 func test_belatien_skin_and_law_variant() -> void:
 	var saved: Array = _saved()
-	BoardSpec.apply(32, false, false)
+	BoardSpec.apply(32)
 	var classic_dash: Color = BoardSkin.palette().dash_inner
 	var classic_surface: Texture2D = BoardSkin.surface_texture()
-	BoardSpec.apply(32, false, true)
+	BoardSpec.apply(32, &"cauldron", &"witch_shop", &"belatien")
 	check(BoardSkin.palette().dash_inner != classic_dash, "벨라티엔 보드는 부스터 발판 색이 다르다")
-	check(BoardSkin.palette() == BoardSkin.PALETTE_WITCH, "보라·갈색 판")
+	check(BoardSkin.palette().edge == Color("6b4a8f") and BoardSkin.palette().corner_edge == Color("7a5232"), "보라·갈색 판")
 	check(BoardSkin.surface_texture() != classic_surface, "벨라티엔 보드는 판 바닥 그림이 다르다")
 	check_eq(BoardSkin.definition(12).kind, "cauldron", "12번 칸은 가마솥 종류")
 	check_eq(BoardSkin.definition(5).kind, "witch_shop", "5번 칸은 마녀 상점 종류")
@@ -100,7 +101,7 @@ func test_belatien_skin_and_law_variant() -> void:
 	check_eq(law.law_name, "Bad Carrot", "벨라티엔 왕국의 법전 이름")
 	check(law.condition_text().contains("마녀 상점"), "조건은 마녀 상점 방문")
 	check_eq(law.stat_key, VictoryLaw.BAKERY, "기록 키는 그대로")
-	check(not VictoryLaw.variant_active("LAW_02"), "모나티엄 전용 연출(MONATIUM DAYS)은 켜지지 않는다")
+	check(VictoryLaw.variant("LAW_02").get("stage") == &"bad_carrot", "벨라티엔판 연출(Bad Carrot)이 켜지고 모나티엄 연출(MONATIUM DAYS)은 아니다")
 	var def: AugmentDef = AugmentRegistry.get_def(&"AUG_LAW_02")
 	check(def.title.contains("Bad Carrot"), "선택 카드 제목이 바뀐다 (%s)" % def.title)
 	check_eq(MainBoard.law_win_reason("LAW_02", 6), "마녀는 엄청난 것을 훔쳐갔습니다.", "승리 문구는 「마리사는 엄청난 것을 훔쳐갔습니다」 패러디")

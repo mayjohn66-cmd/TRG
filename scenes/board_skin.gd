@@ -9,46 +9,24 @@ const NORMAL_SIZE: float = 0.142
 const CORNER_SIZE: float = 0.19
 ## 일반 타일 폭(트랙 방향) 상한
 const MAX_TILE_WIDTH: float = 0.12
-const SURFACE: Texture2D = preload("res://assets/board/trickcal/board_surface_symbols_v1.png")
-## 모나티엄 도시 판 바닥 (보드 스킨 틀: 보드마다 바닥 그림·칸 색·부스터 발판 색을 따로 쓴다. 이미지를 바꾸려면 이 파일만 교체하면 된다).
-const SURFACE_CITY: Texture2D = preload("res://assets/board/monatium/board_surface_symbols_v1.png")
-## 벨라티엔 왕국 판 바닥: 갈색 테두리와 연보라 판면, 중앙 마녀 문양.
-const SURFACE_WITCH: Texture2D = preload("res://assets/board/belatien/board_surface_symbols_v2.png")
-
-## 보드별 색 모음. 새 보드는 여기에 항목을 더하고 palette()가 고르게 한다 (키 없는 항목은 기본(에르핀 왕국) 값을 쓴다).
+## 판 바닥 그림·색은 보드마다 BoardCatalog.BOARDS의 surface·palette에서 읽는다 (새 보드는 그 데이터만 더하면 된다).
+## 기본 색 (에르핀 왕국). 보드의 palette는 이 값에서 바꿀 색만 적는다. corner_fill·half_fill이 없으면 일반 칸 색을 쓴다.
 const PALETTE_DEFAULT: Dictionary = {
 	"fill": Color("fff6df"), "edge": Color("7c9558"), "ink": Color("486135"), "band": Color("b4d479"),
 	"corner_edge": Color("5d8c3d"), "corner_ink": Color("416c2b"), "half_edge": Color("b68b43"), "half_ink": Color("845221"),
 	"shadow": Color(0.22, 0.35, 0.13, 0.12),
 	"dash_base": Color("b74838"), "dash_inner": Color("f7785b"), "dash_pulse": Color("ffae73"), "dash_rim": Color("ffe4a3"),
 }
-const PALETTE_CITY: Dictionary = {  # 도시: 차가운 회청색 타일, 네이비 테두리, 네온 청록 부스터 발판
-	"fill": Color("f2f5fb"), "edge": Color("4f5d7a"), "ink": Color("2f3b57"), "band": Color("9db0cf"),
-	"corner_edge": Color("377f94"), "corner_ink": Color("17677c"), "corner_fill": Color("e4f4f8"),
-	"half_edge": Color("8170bf"), "half_ink": Color("59428e"), "half_fill": Color("eee8fc"),
-	"shadow": Color(0.08, 0.1, 0.2, 0.16),
-	"dash_base": Color("1f2a55"), "dash_inner": Color("2fd6d0"), "dash_pulse": Color("8a7bff"), "dash_rim": Color("e6fbff"),
-}
-
-const PALETTE_WITCH: Dictionary = {  # 마녀 도시: 연보라 타일·짙은 보라 테두리, 코너·반환점은 갈색 나무, 보라 마법빛 부스터 발판
-	"fill": Color("f5effb"), "edge": Color("6b4a8f"), "ink": Color("4a2f6b"), "band": Color("b99be0"),
-	"corner_edge": Color("7a5232"), "corner_ink": Color("5a3a20"), "corner_fill": Color("f4e8d8"),
-	"half_edge": Color("8a5a34"), "half_ink": Color("5e3a1c"), "half_fill": Color("efe0cc"),
-	"shadow": Color(0.2, 0.1, 0.3, 0.16),
-	"dash_base": Color("3b1f5c"), "dash_inner": Color("b56cff"), "dash_pulse": Color("e08cff"), "dash_rim": Color("f5e6ff"),
-}
 
 
 static func palette() -> Dictionary:
-	if BoardSpec.convenience:
-		return PALETTE_CITY
-	return PALETTE_WITCH if BoardSpec.witch else PALETTE_DEFAULT
+	var result: Dictionary = PALETTE_DEFAULT.duplicate()
+	result.merge(BoardCatalog.current().get("palette", {}) as Dictionary, true)
+	return result
 
 
 static func surface_texture() -> Texture2D:
-	if BoardSpec.convenience:
-		return SURFACE_CITY
-	return SURFACE_WITCH if BoardSpec.witch else SURFACE
+	return load(str(BoardCatalog.current()["surface"])) as Texture2D
 
 ## 타일 크기: 일반 타일은 이웃과 거의 맞닿도록 폭을 넓히고, 코너 타일만 크게 키운다 (코너 둘레의 이웃과는 겹치지 않게 BoardLayout.CORNER_REACH 안에서 계산).
 static func tile_metrics() -> Dictionary:
@@ -70,19 +48,15 @@ static func definition(index: int) -> Dictionary:
 	var footprint := Vector2(width,depth) if horizontal_row else Vector2(depth,width)
 	var pal: Dictionary = palette()
 	var data: Dictionary = {"kind":"normal", "fill":pal.fill, "edge":pal.edge, "ink":pal.ink, "band":pal.band, "footprint":footprint, "diameter":depth, "major":false}
+	# 빵집 자리·옷장 자리: 이 보드의 칸 종류(BoardCatalog.SHOP_KINDS·PORTAL_KINDS)의 이름·색 띠·그림
+	var special: StringName = &""
 	if index in BoardSpec.bakery_tiles:
-		if BoardSpec.convenience:  # 모나티엄 도시: 빵집 자리는 편의점 (하늘색 띠로 빵집과 구분)
-			data.merge({"kind":"store", "band":Color("7cc4f2"), "edge":Color("3f86b8"), "ink":Color("245b86")},true)
-		elif BoardSpec.witch:  # 벨라티엔 왕국: 빵집 자리는 마녀 상점 (갈색 띠: 보라 판에서 눈에 띄게)
-			data.merge({"kind":"witch_shop", "band":Color("d8a25e"), "edge":Color("8a5a34"), "ink":Color("5e3a1c")},true)
-		else:
-			data.merge({"kind":"bakery", "band":Color("f4bd55"), "edge":Color("b68b43"), "ink":Color("845221")},true)
-	if index in BoardSpec.vending_tiles:
-		data.merge({"kind":"vending", "band":Color("ff8f7a"), "edge":Color("c4574a"), "ink":Color("8c2f26")},true)
-	if index in BoardSpec.cauldron_tiles:  # 마녀의 가마솥: 초록 물약 띠 + 보라 테두리
-		data.merge({"kind":"cauldron", "band":Color("7fd18b"), "edge":Color("5b3a8a"), "ink":Color("3e2366")},true)
-	if index in BoardSpec.portal_tiles:
-		data.merge({"kind":"portal", "band":Color("5fc4c9"), "edge":Color("3f8f96"), "ink":Color("24636b")},true)  # 청록: 보라색 함정 타일과 구분
+		special = BoardSpec.shop_kind
+	elif index in BoardSpec.portal_tiles or index in BoardSpec.vending_tiles or index in BoardSpec.cauldron_tiles:
+		special = BoardSpec.portal_kind
+	if special != &"":
+		var kind: Dictionary = BoardCatalog.tile_kind(special)
+		data.merge({"kind":String(special), "band":kind["band"], "edge":kind["edge"], "ink":kind["ink"]},true)
 	if index in BoardSpec.corner_tiles:
 		data.merge({"diameter":metrics.corner, "footprint":Vector2.ONE*float(metrics.corner), "major":true},true)
 		if index == GameEnums.GOAL_TILE:
@@ -168,25 +142,44 @@ static func update_surface(face: MeshInstance2D, projector: Callable) -> void:
 	face.mesh = mesh
 
 ## Flat source decals are projected by the same board-plane basis as the tile.
-const DECALS: Dictionary = {
-	"bakery": preload("res://assets/board/decals/BOARD_BAKERY.png"),
-	"portal": preload("res://assets/board/decals/BOARD_PORTAL.png"),
-	"store": preload("res://assets/board/decals/BOARD_STORE_MONATIUM_v3.png"),
-	"vending": preload("res://assets/board/decals/BOARD_VENDING_v2.png"),
-	"witch_shop": preload("res://assets/board/decals/BOARD_CARROT_FRIES_INK.png"),
-	"cauldron": preload("res://assets/board/decals/BOARD_CAULDRON.png"),
+const DECALS: Dictionary = {  # 모든 보드가 같이 쓰는 칸 그림. 빵집 자리·옷장 자리 그림은 칸 종류 데이터(BoardCatalog)의 decal에서 읽는다.
 	"start": preload("res://assets/board/decals/BOARD_START.png"),
 	"half": preload("res://assets/board/decals/BOARD_HALF.png"),
 	"corner": preload("res://assets/board/decals/BOARD_CORNER.png"),
 	"boost": preload("res://assets/board/decals/BOARD_BOOST.png"),
 }
+static var _kind_decals: Dictionary = {}
+
+
+## 칸 kind의 그림 원본 (공용 칸 그림 또는 칸 종류 데이터의 decal). 없으면 null.
+static func decal_source(kind: String) -> Texture2D:
+	if DECALS.has(kind):
+		return DECALS[kind]
+	if not _kind_decals.has(kind):
+		var path: String = str(BoardCatalog.tile_kind(kind).get("decal", ""))
+		_kind_decals[kind] = load(path) as Texture2D if path != "" else null
+	return _kind_decals[kind]
+
+
+## 그림이 있는 모든 칸 kind (공용 + 모든 칸 종류).
+static func decal_kinds() -> Array[String]:
+	var kinds: Array[String] = []
+	for kind: String in DECALS:
+		kinds.append(kind)
+	for kind: StringName in BoardCatalog.SHOP_KINDS.keys() + BoardCatalog.PORTAL_KINDS.keys():
+		kinds.append(String(kind))
+	return kinds
+
+
+## 칸 대비 그림 크기 (칸 종류 데이터의 decal_span, 없으면 기본).
+static func decal_span(kind: String, major: bool) -> float:
+	return float(BoardCatalog.tile_kind(kind).get("decal_span", 0.62 if major else 0.74))
+
 const FLAT_INK: Shader = preload("res://assets/board/decals/flat_ink.gdshader")
 const WARNING_SOURCE: Texture2D = preload("res://assets/board/decals/NPC_WARNING.png")
 const WARNING_BOUNDS: Rect2 = Rect2(0.0632622,0.0733945,0.8681402,0.8323603)
 ## Opaque subject bounds in the unchanged 1254px native sources; discard only empty atlas margin.
-const DECAL_BOUNDS: Dictionary = {
-	"bakery": Rect2(196,409,862,482), "portal": Rect2(296,268,662,739),
-	"store": Rect2(19,34,1221,1170), "vending": Rect2(207,86,841,1105),
+const DECAL_BOUNDS: Dictionary = {  # 공용 칸 그림. 칸 종류 그림의 영역은 BoardCatalog의 decal_bounds
 	"start": Rect2(308,272,638,750), "half": Rect2(362,246,590,778),
 	"corner": Rect2(99,307,1098,665), "boost": Rect2(175,431,909,391),
 }
@@ -226,10 +219,10 @@ static func decal_frame(plane: Transform2D, span: float, direction: Vector2 = Ve
 	return Transform2D(plane.basis_xform(along)*span/64.0,plane.basis_xform(across)*span/64.0,plane*center)
 
 static func decal_texture(kind: String) -> AtlasTexture:
-	var source: Texture2D = DECALS[kind]
+	var source: Texture2D = decal_source(kind)
 	var atlas := AtlasTexture.new()
 	atlas.atlas = source
-	var bounds: Rect2 = DECAL_BOUNDS.get(kind, Rect2(0, 0, 1254, 1254))
+	var bounds: Rect2 = DECAL_BOUNDS.get(kind, BoardCatalog.tile_kind(kind).get("decal_bounds", Rect2(0, 0, 1254, 1254)))
 	atlas.region = Rect2(bounds.position / 1254.0 * source.get_size(), bounds.size / 1254.0 * source.get_size())
 	atlas.filter_clip = true
 	return atlas
@@ -261,11 +254,11 @@ class Symbol extends Node2D:
 		var flat := ShaderMaterial.new()
 		flat.shader = BoardSkin.FLAT_INK
 		flat.set_shader_parameter("ink",ink)
-		flat.set_shader_parameter("cutout_dark_lines", kind == "cauldron")
+		flat.set_shader_parameter("cutout_dark_lines", bool(BoardCatalog.tile_kind(kind).get("decal_cutout", false)))
 		material = flat
 
 	func _draw() -> void:
-		if not BoardSkin.DECALS.has(kind):
+		if BoardSkin.decal_source(kind) == null:
 			return
 		if texture == null:
 			texture = BoardSkin.decal_texture(kind)
@@ -441,9 +434,7 @@ class Tile extends Control:
 			shadow.append(p+Vector2(0,thickness*2.0)/scale)
 		if symbol != null:
 			var footprint: Vector2 = data.footprint
-			var mark_span: float = minf(footprint.x,footprint.y)*(0.62 if data.major else 0.74)
-			if data.kind == "store" or data.kind == "vending" or data.kind == "witch_shop" or data.kind == "cauldron":
-				mark_span = minf(footprint.x,footprint.y)*0.86
+			var mark_span: float = minf(footprint.x,footprint.y)*BoardSkin.decal_span(data.kind, data.major)
 			var mark_offset: Vector2 = Vector2(-0.014,-0.014) if corner_arrow != null else (Vector2.ZERO if data.major else -inward*0.011)
 			var stamp_axis: Vector2 = direction if data.kind == "corner" else (Vector2.RIGHT if data.major else BoardSkin.symbol_axis(index))
 			symbol.transform = BoardSkin.decal_frame(plane,mark_span,stamp_axis,mark_offset)

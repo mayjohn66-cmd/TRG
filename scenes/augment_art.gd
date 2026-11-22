@@ -3,8 +3,6 @@ class_name AugmentArt
 extends RefCounted
 
 const ROOT: String = "res://content_trickcal/illustrations/"
-const MONATIUM_LAW_ICON: String = ROOT + "laws/LAW_02_MONATIUM.png"
-const BAD_CARROT_LAW_ICON: String = ROOT + "laws/LAW_02_BAD_CARROT.png"
 const CIRCLE_SHADER: Shader = preload("res://scenes/augment_circle.gdshader")
 ## Newer, harder-edged illustrations need a gentler display tone beside the original set.
 ## x: contrast, y: saturation, z: highlight compression, w: edge smoothing.
@@ -96,11 +94,9 @@ static func candidates(definition: AugmentDef) -> Array[String]:
 
 static func law_candidates(law_id: String) -> Array[String]:
 	var paths: Array[String] = [ROOT + "laws/%s.png" % law_id]
-	if law_id == "LAW_02":
-		if VictoryLaw.witch_variant_active(law_id):
-			paths.push_front(BAD_CARROT_LAW_ICON)
-		elif VictoryLaw.variant_active(law_id):
-			paths.push_front(MONATIUM_LAW_ICON)
+	var board_icon: String = str(VictoryLaw.variant(law_id).get("icon", ""))  # 보드별 판의 아이콘 (BoardCatalog law_variants)
+	if board_icon != "":
+		paths.push_front(ROOT + board_icon)
 	return paths
 
 

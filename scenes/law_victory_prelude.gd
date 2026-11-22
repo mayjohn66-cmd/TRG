@@ -11,6 +11,8 @@ const MOCHI = preload("res://scenes/mochi_slayer_stage.gd")
 const TICKET = preload("res://scenes/golden_ticket_stage.gd")
 const MONATIUM_CASH = preload("res://scenes/monatium_cash_stage.gd")
 const BAD_CARROT = preload("res://scenes/bad_carrot_stage.gd")
+## 보드별 특수 승리 판의 도입 무대 (BoardCatalog law_variants의 stage 키 -> 무대 스크립트). 새 무대는 여기에 한 줄 더한다.
+const STAGES: Dictionary = {&"monatium_cash": MONATIUM_CASH, &"bad_carrot": BAD_CARROT}
 const TRAP = preload("res://scenes/infinite_trap_stage.gd")
 const RACE = preload("res://scenes/race_finish_stage.gd")
 const HURRICANE = preload("res://scenes/hurricane_force_stage.gd")
@@ -27,20 +29,24 @@ var _perma: PERMA
 var _attack: ATTACK
 var _mochi: MOCHI
 var _ticket: TICKET
-var _monatium_cash: MONATIUM_CASH
-var _bad_carrot: BAD_CARROT
+var _board_stage: Node = null  ## 보드별 판의 도입 무대 (STAGES)
 var _trap: TRAP
 var _race: RACE
 var _scene_materials: Array[ShaderMaterial]=[]
 var _scene_blend:=-1.0
 var _backdrop_mix:=-1.0
 
+## 이 교칙의 지금 보드 판이 쓰는 도입 무대 스크립트 (없으면 null = 원래 교칙의 무대).
+static func board_stage(id: String) -> GDScript:
+	return STAGES.get(StringName(str(VictoryLaw.variant(id).get("stage", ""))), null)
+
+
 static func impact_at(id: String) -> float:
 	if id=="LAW_09": return HURRICANE.IMPACT_AT
 	if id=="FINISH": return RACE.SKID_AT
 	if id=="LAW_03": return TRAP.IMPACT_AT
-	if VictoryLaw.witch_variant_active(id): return BAD_CARROT.IMPACT_AT
-	if id=="LAW_02": return MONATIUM_CASH.IMPACT_AT if VictoryLaw.variant_active(id) else TICKET.REVEAL_AT
+	if board_stage(id) != null: return board_stage(id).IMPACT_AT
+	if id=="LAW_02": return TICKET.REVEAL_AT
 	if id=="LAW_08": return ATTACK.IMPACT_AT
 	if id=="LAW_06": return PERMA.IMPACT_AT
 	if id=="LAW_07": return DICE_SOUL.FRONT_AT
@@ -50,8 +56,8 @@ static func duration_for(id: String) -> float:
 	if id=="LAW_09": return HURRICANE.INTRO_SECONDS
 	if id=="FINISH": return RACE.INTRO_SECONDS
 	if id=="LAW_03": return TRAP.INTRO_SECONDS
-	if VictoryLaw.witch_variant_active(id): return BAD_CARROT.INTRO_SECONDS
-	if id=="LAW_02": return MONATIUM_CASH.INTRO_SECONDS if VictoryLaw.variant_active(id) else TICKET.INTRO_SECONDS
+	if board_stage(id) != null: return board_stage(id).INTRO_SECONDS
+	if id=="LAW_02": return TICKET.INTRO_SECONDS
 	if id=="LAW_01": return MOCHI.INTRO_SECONDS
 	if id=="LAW_08": return ATTACK.INTRO_SECONDS
 	if id=="LAW_06": return PERMA.INTRO_SECONDS
@@ -74,19 +80,15 @@ func setup(id: String, center: Vector2, reference: Vector2, cause: Array[Vector2
 		_race=RACE.new();add_child(_race);_race.setup()
 	if id=="LAW_03" and _trap==null:
 		_trap=TRAP.new();add_child(_trap);_trap.setup(center,reference)
-	if id == "LAW_02":
-		if VictoryLaw.witch_variant_active(id):
-			_bad_carrot = BAD_CARROT.new()
-			add_child(_bad_carrot)
-			_bad_carrot.setup(center, reference)
-		elif VictoryLaw.variant_active(id):
-			_monatium_cash = MONATIUM_CASH.new()
-			add_child(_monatium_cash)
-			_monatium_cash.setup(center, reference)
-		else:
-			_ticket = TICKET.new()
-			add_child(_ticket)
-			_ticket.setup()
+	if board_stage(id) != null:
+		if _board_stage == null:
+			_board_stage = board_stage(id).new()
+			add_child(_board_stage)
+			_board_stage.setup(center, reference)
+	elif id == "LAW_02":
+		_ticket = TICKET.new()
+		add_child(_ticket)
+		_ticket.setup()
 	if id=="LAW_01" and _mochi==null:
 		_mochi=MOCHI.new();add_child(_mochi);_mochi.setup(center,reference)
 	if id=="LAW_08" and _attack==null:
@@ -144,10 +146,8 @@ func seek(t: float, view: Vector2) -> void:
 	if _attack!=null: _attack.seek(time,view)
 	if _mochi!=null: _mochi.seek(time,view)
 	if _ticket!=null: _ticket.seek(time,view)
-	if _monatium_cash != null:
-		_monatium_cash.seek(time, view)
-	if _bad_carrot != null:
-		_bad_carrot.seek(time, view)
+	if _board_stage != null:
+		_board_stage.seek(time, view)
 	if _trap!=null: _trap.seek(time,view)
 	if _race!=null: _race.seek(time,view)
 	if _circle!=null:
@@ -182,14 +182,13 @@ func _draw() -> void:
 	elif law_id=="LAW_01":
 		dim=lerpf(dim,0.76,smoothstep(MOCHI.MORPH_AT,MOCHI.PRINT_AT,time))
 		dim*=1.0-smoothstep(MOCHI.INTRO_SECONDS,MOCHI.INTRO_SECONDS+MOCHI.FADE_SECONDS,time)
-	elif _bad_carrot != null:
-		dim = lerpf(dim, 0.58, smoothstep(0.18, 0.95, time))
-		dim *= 1.0 - smoothstep(BAD_CARROT.INTRO_SECONDS, BAD_CARROT.INTRO_SECONDS + BAD_CARROT.FADE_SECONDS, time)
+	elif _board_stage != null:  # 보드별 판의 무대: 무대 스크립트의 어둡기·길이
+		var stage: GDScript = _board_stage.get_script()
+		dim = lerpf(dim, stage.DIM_TARGET, smoothstep(0.18, stage.DIM_RAMP_END, time))
+		dim *= 1.0 - smoothstep(stage.INTRO_SECONDS, stage.INTRO_SECONDS + stage.FADE_SECONDS, time)
 	elif law_id=="LAW_02":
 		dim = lerpf(dim, 0.80, smoothstep(0.18, 1.0, time))
-		var intro := MONATIUM_CASH.INTRO_SECONDS if _monatium_cash != null else TICKET.INTRO_SECONDS
-		var fade := MONATIUM_CASH.FADE_SECONDS if _monatium_cash != null else TICKET.FADE_SECONDS
-		dim *= 1.0 - smoothstep(intro, intro + fade, time)
+		dim *= 1.0 - smoothstep(TICKET.INTRO_SECONDS, TICKET.INTRO_SECONDS + TICKET.FADE_SECONDS, time)
 	elif law_id=="LAW_03":
 		dim=lerpf(dim,0.82,smoothstep(0.30,TRAP.IMPACT_AT,time))
 		dim*=1.0-smoothstep(TRAP.INTRO_SECONDS,TRAP.INTRO_SECONDS+TRAP.FADE_SECONDS,time)

@@ -117,7 +117,7 @@ func run() -> void:
 			var switch_point := point(switch_button)
 			await drag(switch_point, switch_point + Vector2.ONE, MobileSupport.touch_mode())
 			check(book.entry == -1, "The switch flips the card without opening its detail")
-			check((book._content.entries[variant_index]["texture"] as Texture2D).resource_path == AugmentArt.MONATIUM_LAW_ICON, "Detail art switches with the card")
+			check((book._content.entries[variant_index]["texture"] as Texture2D).resource_path == AugmentArt.ROOT + str(BoardCatalog.law_variant(&"monatium", "LAW_02")["icon"]), "Detail art switches with the card")
 			var reverse_button := book._tiles[variant_index].get_node("BoardVariantButton") as Button
 			var reverse_icon := reverse_button.get_node("BoardVariantIcon") as TextureRect
 			check(reverse_icon.texture == target_icon_texture, "The arrow stays the same after switching")

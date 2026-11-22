@@ -31,45 +31,34 @@ const COMIC_TITLES: Dictionary = {
 	"LAW_08":{"upper":"ffe06a","lower":"ffffff","shadow":"b62332"},
 	"LAW_09":{"upper":"bdffda","lower":"ffffff","shadow":"a93a7d"},
 }
-## 모나티엄 도시 보드에서 LAW_02(와라! 모나티엄 25)의 승리 연출: 같은 무대에 다른 제목·색 (MONATIUM DAYS).
-const MONATIUM_THEMES: Dictionary = {
-	"LAW_02":{"font":"bungee","headline":"MONATIUM DAYS","lines":"MONATIUM\nDAYS","ink":"10223d","accent":"2f86d6","tilt":-0.055},
-}
-const MONATIUM_PAPERS: Dictionary = {"LAW_02":"e6f1fb"}
-const MONATIUM_COMIC_TITLES: Dictionary = {"LAW_02":{"upper":"ffe391","lower":"ffffff","shadow":"1f5fa8"}}
-## 벨라티엔 왕국에서 LAW_02(Bad Carrot)의 승리 연출: 같은 무대에 보라색 제목 (BAD CARROT).
-const WITCH_THEMES: Dictionary = {
-	"LAW_02":{"font":"bangers","headline":"BAD CARROT","lines":"BAD\nCARROT","ink":"1f1233","accent":"8a4fc4","tilt":-0.05},
-}
-const WITCH_PAPERS: Dictionary = {"LAW_02":"efe4f7"}
-const WITCH_COMIC_TITLES: Dictionary = {"LAW_02":{"upper":"e9ccff","lower":"ffffff","shadow":"5a2a8a"}}
+## 보드마다 바꿔 쓰는 특수 승리의 무대(제목·색·종이)는 BoardCatalog law_variants의 theme·paper·comic_title·geometry_key에 있다.
 static var _fonts: Dictionary = {}
 static func variant(id: String) -> bool:
-	return (BoardSpec.convenience and MONATIUM_THEMES.has(id)) or (BoardSpec.witch and WITCH_THEMES.has(id))
+	return VictoryLaw.variant(id).has("theme")
 
 
 static func of(id: String) -> Dictionary:
 	if variant(id):
-		return WITCH_THEMES[id] if BoardSpec.witch else MONATIUM_THEMES[id]
+		return VictoryLaw.variant(id)["theme"]
 	return THEMES.get(id,{})
 
 
 static func paper(id: String) -> String:
 	if variant(id):
-		return str(WITCH_PAPERS[id] if BoardSpec.witch else MONATIUM_PAPERS[id])
+		return str(VictoryLaw.variant(id)["paper"])
 	return str(PAPERS.get(id, "ffffff"))
 
 
 static func comic_title(id: String) -> Dictionary:
 	if variant(id):
-		return WITCH_COMIC_TITLES[id] if BoardSpec.witch else MONATIUM_COMIC_TITLES[id]
+		return VictoryLaw.variant(id)["comic_title"]
 	return COMIC_TITLES.get(id, {})
 
 
-## 제목 글자 윤곽 데이터(victory_title_geometry_data)의 키: 바꿔 쓰는 제목은 따로 ":M"을 붙여 (없으면 글꼴 크기로 계산) 원래 제목의 윤곽을 잘못 쓰지 않는다.
+## 제목 글자 윤곽 데이터(victory_title_geometry_data)의 키: 바꿔 쓰는 제목은 판의 geometry_key (예: "LAW_02:M")로 따로 찾아 원래 제목의 윤곽을 잘못 쓰지 않는다.
 static func geometry_id(id: String) -> String:
 	if variant(id):
-		return id + (":W" if BoardSpec.witch else ":M")
+		return str(VictoryLaw.variant(id)["geometry_key"])
 	return id
 
 static func headline(id: String) -> String:

@@ -7,6 +7,9 @@ const DROP_INTERVAL := 0.35
 const DROP_TIME := 0.34
 const IMPACT_AT := FIRST_DROP_AT + DROP_INTERVAL * (COUNT - 1)
 const INTRO_SECONDS := 3.16
+## 이 무대가 도는 동안 배경을 어둡게 하는 정도 (LawVictoryPrelude가 읽는다).
+const DIM_TARGET := 0.80
+const DIM_RAMP_END := 1.0  ## 어두워지기를 마치는 시각
 const FADE_SECONDS := 0.43
 const HANDOFF_SECONDS := 0.82
 const BUNDLE_PATH := "res://assets/fx/law_fx/victory_prints/monatium_cash_v01.png"

@@ -28,66 +28,39 @@ const DEFS: Dictionary = {
 	"LAW_08": ["구축해 주겠어!", "완주 0개인 채로 선두의 말을 {p1}회 처치", 3, UNDERDOG, "처치"],
 	"LAW_09": ["방해령 허리케인 포스!!", "방해령 {p1}종(베루·사리·메죵)을 모두 손패에 모은 채 내 차례 종료", 3, HAUNT, "종"],
 }
-## 모나티엄 도시 보드에서 같은 자리(같은 기록·같은 목표)를 바꿔 쓰는 판: 교칙 ID -> [이름, 조건 문구]. 규칙·저장·도장은 원래 교칙과 같다.
-const MONATIUM_DEFS: Dictionary = {
-	"LAW_02": ["와라! 모나티엄 25", "편의점에 {p1}회 방문"],
-}
-## 벨라티엔 왕국(마녀 도시) 보드에서 같은 자리를 바꿔 쓰는 판. 규칙·저장·도장은 원래 교칙과 같다 (승리 연출도 원래 교칙 것을 쓴다).
-const BELATIEN_DEFS: Dictionary = {
-	"LAW_02": ["Bad Carrot", "마녀 상점에 {p1}회 방문"],
-}
-## 도감 미리보기 보드 번호 (preview_board): 0 = 에르핀 왕국, 1 = 모나티엄 도시, 2 = 벨라티엔 왕국.
-const PREVIEW_CLASSIC: int = 0
-const PREVIEW_MONATIUM: int = 1
-const PREVIEW_BELATIEN: int = 2
+## 보드마다 같은 자리(같은 기록·같은 목표)를 바꿔 쓰는 판은 BoardCatalog.BOARDS의 law_variants에 있다 (규칙·저장·도장은 원래 교칙과 같다).
+## 판 항목 키: name·condition(교칙 이름·조건 문구) / card_title{ko,en,ja}(선택 카드 제목) / icon(illustrations/ 아래 아이콘)
+##   stage(승리 도입 연출: LawVictoryPrelude의 STAGES 키) / theme·paper·comic_title·geometry_key(승리 제목 무대) / win_reason·result_phrase(결과 문구)
 
 
-## 지금 보드의 미리보기 번호 (도감의 보드 넘기기 화살표가 여기서 출발한다).
-static func current_board_index() -> int:
-	if BoardSpec.convenience:
-		return PREVIEW_MONATIUM
-	if BoardSpec.witch:
-		return PREVIEW_BELATIEN
-	return PREVIEW_CLASSIC
+## 도감에서 다른 보드의 특수 승리를 잠깐 보여 줄 때만 쓴다: &"" = 지금 판의 보드 그대로, 아니면 그 보드(BoardCatalog id)의 판을 본다.
+## 보여 준 뒤에는 반드시 &""로 되돌린다.
+static var preview_board: StringName = &""
 
 
-## 이 교칙을 보드마다 바꿔 쓰는가 (모나티엄·벨라티엔 어느 쪽이든).
+## 지금 보여 줄 보드 (미리보기 중이면 그 보드).
+static func shown_board() -> StringName:
+	return preview_board if preview_board != &"" else BoardSpec.board_id
+
+
+## 지금 보여 줄 보드에서 이 교칙을 바꿔 쓰는 판 ({} = 원래 교칙). 보드별 연출·문구·아이콘은 모두 여기서 읽는다.
+static func variant(id: String) -> Dictionary:
+	return BoardCatalog.law_variant(shown_board(), id)
+
+
+## 이 교칙을 어느 보드든 바꿔 쓰는가.
 static func has_board_variant(id: String) -> bool:
-	return MONATIUM_DEFS.has(id) or BELATIEN_DEFS.has(id)
-
-
-## 이 판의 보드에서 쓰는 이름·조건 문구 (모나티엄 도시면 바꿔 쓰는 판). 모나티엄 전용 연출(MONATIUM DAYS 등)도 이 값을 본다.
-static func variant_active(id: String) -> bool:
-	if preview_board >= 0:  # 도감 미리보기: 지금 판의 보드와 상관없이 고른 보드의 판을 본다
-		return preview_board == PREVIEW_MONATIUM and MONATIUM_DEFS.has(id)
-	return BoardSpec.convenience and MONATIUM_DEFS.has(id)
-
-
-## 벨라티엔 왕국 판의 이름·조건 문구를 쓰는가.
-static func witch_variant_active(id: String) -> bool:
-	if preview_board >= 0:
-		return preview_board == PREVIEW_BELATIEN and BELATIEN_DEFS.has(id)
-	return BoardSpec.witch and BELATIEN_DEFS.has(id)
-
-
-## 도감에서 다른 보드의 특수 승리를 잠깐 보여 줄 때만 쓴다: -1 = 지금 보드 그대로, 0 = 에르핀 왕국판, 1 = 모나티엄 도시판, 2 = 벨라티엔 왕국판. 보여 준 뒤 반드시 -1로 되돌린다.
-static var preview_board: int = -1
+	return BoardCatalog.has_law_variant(id)
 
 
 static func name_of(id: String) -> String:
-	if variant_active(id):
-		return str(MONATIUM_DEFS[id][0])
-	if witch_variant_active(id):
-		return str(BELATIEN_DEFS[id][0])
-	return str((DEFS[id] as Array)[0])
+	var board_variant: Dictionary = variant(id)
+	return str(board_variant["name"]) if not board_variant.is_empty() else str((DEFS[id] as Array)[0])
 
 
 static func condition_template(id: String) -> String:
-	if variant_active(id):
-		return str(MONATIUM_DEFS[id][1])
-	if witch_variant_active(id):
-		return str(BELATIEN_DEFS[id][1])
-	return str((DEFS[id] as Array)[1])
+	var board_variant: Dictionary = variant(id)
+	return str(board_variant["condition"]) if not board_variant.is_empty() else str((DEFS[id] as Array)[1])
 
 
 ## 법전에 있는 동안만 세는 순간 기록 (교칙이 제정되면 모두 0부터 다시 센다). 누적 기록(처치·빵집·사출·꼴찌 처치)도 제정 시점에 0부터 다시 센다 (SpecialVictory.on_law_enacted).

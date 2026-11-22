@@ -178,6 +178,6 @@ func test_floor_decals_follow_board_plane_and_next_tile_on_both_layouts() -> voi
 			var inward: Vector2 = [Vector2.LEFT,Vector2.DOWN,Vector2.RIGHT,Vector2.UP][mini(index/BoardSpec.side,3)]
 			check(top.dot(inward)>0.9999,"빵·옷장 윗부분은 네 변 모두 판 중심을 향한다: %d" % index)
 			check(absf(axis.dot(BoardSkin.forward_world(index)))>0.9999,"빵·옷장 가로축은 타일 짧은 변과 나란하다")
-	for kind: String in BoardSkin.DECALS:
-		var texture: Texture2D = BoardSkin.DECALS[kind]
+	for kind: String in BoardSkin.decal_kinds():
+		var texture: Texture2D = BoardSkin.decal_source(kind)
 		check(texture != null and texture.get_width() <= 256,"보드 심볼은 256px 이하로 임포트된다: " + kind)

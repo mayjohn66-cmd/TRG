@@ -2525,7 +2525,7 @@ func _make_button(text: String, callback: Callable, font_size: int, base_color: 
 
 func _city_buttons() -> bool:
 	var rules: Dictionary = state.match_rules if state != null else GameSession.match_rules()
-	return BoardCatalog.sanitize(rules.get("board", BoardCatalog.DEFAULT_ID)) == &"monatium"
+	return bool(BoardCatalog.def_of(rules.get("board", BoardCatalog.DEFAULT_ID)).get("city_buttons", false))
 
 
 ## Only the round roll control follows the board palette.
@@ -2839,10 +2839,8 @@ func _tile_tag(index: int, tile_type: TileNode.TileType) -> String:
 func _tile_tag_base(index: int, tile_type: TileNode.TileType) -> String:
 	match tile_type:
 		TileNode.TileType.START_GOAL: return "▲출발"
-		TileNode.TileType.BAKERY: return "편의점" if BoardSpec.convenience else ("마녀 상점" if BoardSpec.witch else "빵집")
-		TileNode.TileType.PORTAL: return "옷장"
-		TileNode.TileType.VENDING: return "자판기"
-		TileNode.TileType.CAULDRON: return "마녀의 가마솥"
+		TileNode.TileType.BAKERY: return str(BoardCatalog.current_shop()["name"])
+		TileNode.TileType.PORTAL, TileNode.TileType.VENDING, TileNode.TileType.CAULDRON: return str(BoardCatalog.current_portal()["name"])
 	if BoardSpec.jump_corner_targets.has(index):
 		return "점프 코너 → %d번" % int(BoardSpec.jump_corner_targets[index])
 	if index == BoardSpec.halfway_tile:
@@ -5394,9 +5392,8 @@ static func law_win_reason(law_id: String, value: int) -> String:
 	match law_id:
 		"LAW_01": return "경기 중 총 %d회 적 기물 처치 완료!" % value
 		"LAW_02":
-			if VictoryLaw.witch_variant_active("LAW_02"):
-				return "마녀는 엄청난 것을 훔쳐갔습니다."  # 벨라티엔 왕국 Bad Carrot: 「마리사는 엄청난 것을 훔쳐갔습니다」 패러디
-			return ("편의점 %d회 방문 · 와라! 모나티엄 25 완성!" if VictoryLaw.variant_active("LAW_02") else "빵집 %d회 방문 · 식권 스탬프 완성!") % value
+			var reason: String = str(VictoryLaw.variant("LAW_02").get("win_reason", "빵집 %d회 방문 · 식권 스탬프 완성!"))  # 보드별 판의 문구 (BoardCatalog law_variants)
+			return reason % value if reason.contains("%d") else reason
 		"LAW_03": return "함정·설치물 %d개 동시 유지 · 무한의 함정 완성!" % value
 		"LAW_04": return "한 턴에 %d칸 폭발 전진 성공!" % value
 		"LAW_05": return "말 %d개로 보드연성진을 완성하고 지켜 냈다!" % value
@@ -7282,7 +7279,7 @@ func _pawn_prediction(pawn: PlayerPawn) -> Dictionary:
 		elif leader != pawn:
 			allied = true
 	if tile.tile_type == TileNode.TileType.BAKERY:
-		return {"text": "편의점!" if BoardSpec.convenience else ("상점!" if BoardSpec.witch else "빵집!"), "good": true}
+		return {"text": str(BoardCatalog.current_shop()["toast"]), "good": true}
 	if tile.tile_type == TileNode.TileType.CAULDRON:
 		return {"text": "가마솥!", "good": true}
 	if promote:
@@ -11269,7 +11266,7 @@ func result_comic_texts(winner_id: int) -> Array[String]:
 		var why: String = law_win_reason(String(reason), int(detail.get("value", 0))) if str(detail.get("law", "")) == String(reason) else ""
 		if why != "" and POPART_TITLES.has(String(reason)):
 			why = "\"달성 사유: %s\"" % why  # 팝아트 법전은 하단 배너에 따옴표 달성 사유 (괄호 대신)
-		return [str(RESULT_VICTORY_PHRASES.get(String(reason), law.law_name if law != null else String(reason))) if not (String(reason) == "LAW_02" and (VictoryLaw.variant_active("LAW_02") or VictoryLaw.witch_variant_active("LAW_02"))) else ("MONATIUM DAYS" if VictoryLaw.variant_active("LAW_02") else "BAD CARROT"), why if why != "" else "특수 승리"]
+		return [str(RESULT_VICTORY_PHRASES.get(String(reason), law.law_name if law != null else String(reason))) if not VictoryLaw.variant(String(reason)).has("result_phrase") else str(VictoryLaw.variant(String(reason))["result_phrase"]), why if why != "" else "특수 승리"]
 	if reason == VictoryChecker.ALL_HOME:
 		return ["RACE OVER", "말 4개 모두 완주"]
 	if reason == VictoryChecker.RACE_ORDER:

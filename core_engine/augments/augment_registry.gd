@@ -59,35 +59,28 @@ static func all() -> Array[AugmentDef]:
 	return _cache
 
 
-## 모나티엄 도시 보드의 바꿔 쓰는 특수 승리(와라! 모나티엄 25 = 편의점 방문 식권): 선택 카드의 이름·설명을 이 판의 보드에 맞춘다.
-## BoardCatalog.apply가 보드를 바꿀 때 다시 부르고, 표를 새로 입힐 때(all)에도 자동으로 입는다. 보드가 에르핀 왕국이면 표의 원래 문구로 되돌린다.
-const VARIANT_TITLES: Dictionary = {"ko": "[특수 승리] 와라! 모나티엄 25", "en": "[Special Win] Wara! Monatium 25", "ja": "[特殊勝利] ワラ！モナティウム25"}
-const VARIANT_SHOP_WORDS: Dictionary = {"ko": ["빵집", "편의점"], "en": ["bakery", "convenience store"], "ja": ["パン屋", "コンビニ"]}
-## 벨라티엔 왕국(마녀 도시)판: Bad Carrot = 마녀 상점 방문.
-const WITCH_VARIANT_TITLES: Dictionary = {"ko": "[특수 승리] Bad Carrot", "en": "[Special Win] Bad Carrot", "ja": "[特殊勝利] Bad Carrot"}
-const WITCH_SHOP_WORDS: Dictionary = {"ko": ["빵집", "마녀 상점"], "en": ["bakery", "witch shop"], "ja": ["パン屋", "魔女の店"]}
-
-
+## 보드마다 바꿔 쓰는 특수 승리(예: 모나티엄 도시의 와라! 모나티엄 25 = 편의점 방문 식권): 선택 카드의 이름·설명을 이 판의 보드에 맞춘다.
+## 판의 제목은 BoardCatalog law_variants의 card_title, 설명 속 "빵집"은 그 보드 빵집 자리 칸 종류의 words로 바꾼다.
+## BoardCatalog.apply가 보드를 바꿀 때 다시 부르고, 표를 새로 입힐 때(all)에도 자동으로 입는다. 바꿔 쓰는 판이 없는 보드면 표의 원래 문구로 되돌린다.
 static func apply_board_variants(defs: Array[AugmentDef] = []) -> void:
 	var list: Array[AugmentDef] = defs if not defs.is_empty() else _cache
 	var rows: Dictionary = GameData.table("augments")
-	var lang: String = L10n.current_lang if VARIANT_TITLES.has(L10n.current_lang) else "ko"
+	var lang: String = L10n.current_lang if ["ko", "en", "ja"].has(L10n.current_lang) else "ko"
+	var base_word: String = str(BoardCatalog.SHOP_KINDS[&"bakery"]["words"][lang])
+	var shop_kind: StringName = BoardCatalog.def_of(VictoryLaw.shown_board())["shop"]
+	var shop_word: String = str(BoardCatalog.SHOP_KINDS[shop_kind]["words"][lang])
 	for def: AugmentDef in list:
 		var law_id: String = str(def.payload)
 		if def.category != GameEnums.AugmentCategory.LAW_ENACT or not VictoryLaw.has_board_variant(law_id) or not rows.has(str(def.augment_id)):
 			continue
 		def.apply_row(rows[str(def.augment_id)])  # 표의 원래 문구에서 다시 시작 (보드가 바뀌어도 겹쳐 바뀌지 않는다)
 		def.display_name = "특수 승리: %s" % VictoryLaw.name_of(law_id)
-		if VictoryLaw.variant_active(law_id):
-			var words: Array = VARIANT_SHOP_WORDS[lang]
-			def.title = str(VARIANT_TITLES[lang])
-			def.desc = def.desc.replace(str(words[0]), str(words[1]))
-			def.spec_preview = def.spec_preview.replace(str(words[0]), str(words[1]))
-		elif VictoryLaw.witch_variant_active(law_id):
-			var witch_words: Array = WITCH_SHOP_WORDS[lang]
-			def.title = str(WITCH_VARIANT_TITLES[lang])
-			def.desc = def.desc.replace(str(witch_words[0]), str(witch_words[1]))
-			def.spec_preview = def.spec_preview.replace(str(witch_words[0]), str(witch_words[1]))
+		var board_variant: Dictionary = VictoryLaw.variant(law_id)
+		if board_variant.is_empty():
+			continue
+		def.title = str((board_variant["card_title"] as Dictionary)[lang])
+		def.desc = def.desc.replace(base_word, shop_word)
+		def.spec_preview = def.spec_preview.replace(base_word, shop_word)
 
 
 ## 캐시를 비워 다음 all()에서 augments_table.csv(와 override_table로 주입한 행)를 다시 입힌다.

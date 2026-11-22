@@ -1,17 +1,90 @@
 # File: res://core_engine/board/board_catalog.gd
 # Class: class_name BoardCatalog
-# Role: 고를 수 있는 보드판 목록 (보드판 선택). 규칙(MatchRules "board")에 보드 id가 실리고, 판을 시작할 때 GameState.setup이 apply로 BoardSpec에 적용한다.
-#       보드: 에르핀 왕국(기본)·모나티엄 도시·벨라티엔 왕국(마녀 도시). 새 보드는 BOARDS에 한 줄 더하고 (칸 수가 24·32가 아니면 BoardSpec.layout_for도 확장) 이름·설명 번역 행을 넣으면
-#       방 규칙·싱글 시작 화면·도감의 선택 목록에 저절로 나온다. 모든 참가자가 같은 보드를 써야 하므로 판 도중에는 바꾸지 않는다.
+# Role: 고를 수 있는 보드판 목록과 보드마다 다른 것 전부의 단일 출처 (보드판 선택). 규칙(MatchRules "board")에 보드 id가 실리고,
+#       판을 시작할 때 GameState.setup이 apply로 BoardSpec에 적용한다. 모든 참가자가 같은 보드를 써야 하므로 판 도중에는 바꾸지 않는다.
+#
+#       새 보드 만들기 (코드 분기 없이 이 파일만):
+#       1. BOARDS에 한 줄: id·이름·설명·칸 수, 빵집 자리(shop)와 옷장 자리(portal)에 둘 칸 종류, 판 바닥 그림(surface)·색(palette)
+#       2. 그림: 판 바닥 그림(surface 경로), 선택 화면 미리보기 assets/ui/trickcal/board_preview/<id>.webp
+#       3. 번역: translations.csv에 이름·설명 행 (도감 화살표 "<이름> 보기" 행 포함)
+#       4. (선택) law_variants: 특수 승리를 이 보드에 맞게 바꿔 쓰기 (이름·조건·카드 문구·아이콘·승리 연출·결과 문구)
+#       빵집 자리·옷장 자리에 새로운 종류의 칸(새 규칙)이 필요할 때만 SHOP_KINDS/PORTAL_KINDS에 종류를 더하고 그 칸의 규칙 코드를 짠다.
 class_name BoardCatalog
 extends RefCounted
 
 const DEFAULT_ID: StringName = &"classic"
-## [{id, name(한국어 원문), desc(한 줄 설명), tiles(칸 수)}]
+
+## 빵집 자리(bakery_tiles) 칸 종류: 규칙은 모두 같다 (딱 멈추면 카드 1장). 보이는 이름·알림·법전 표시·색 띠·칸 그림만 다르다.
+## name: 칸 이름 / toast: 도착 알림 / law_tag: LAW_02 목표 칸 표시 / visit_stamp: LAW_02 진행 도장("" = 기본 식권 문구)
+## legend·legend_color: 도감 미니 보드 범례 글·색 / words: 특수 승리 카드 문구에서 "빵집"을 바꿔 쓸 말 / band·edge·ink: 칸 색 / decal: 칸 그림
+## rulebook: 도감 "보드" 장의 칸 설명 (art·tone·summary, 제목은 "<칸 이름> (<이 칸을 쓰는 보드들>)")
+## (선택) decal_bounds: 그림에서 쓸 영역(1254px 원본 기준, 없으면 전체) / decal_span: 칸 대비 그림 크기(기본 0.74) / decal_cutout: 어두운 선을 뚫어 그린다
+const SHOP_KINDS: Dictionary = {
+	&"bakery": {"rulebook": {"art": &"bread", "tone": Color("d9822b"), "summary": "딱 멈추면 [b]생떼 카드 1장[/b]! 어떤 카드인지는 본인만 알아요."},
+		"name": "빵집", "toast": "빵집!", "law_tag": "[식권 목표]", "visit_stamp": "", "legend": "빵집 (카드 1장)", "legend_color": Color("ffd98a"),
+		"words": {"ko": "빵집", "en": "bakery", "ja": "パン屋"},
+		"band": Color("f4bd55"), "edge": Color("b68b43"), "ink": Color("845221"), "decal": "res://assets/board/decals/BOARD_BAKERY.png", "decal_bounds": Rect2(196, 409, 862, 482)},
+	&"store": {"rulebook": {"art": &"store", "tone": Color("3f86b8"), "summary": "에르핀 왕국의 빵집 자리예요. 딱 멈추면 [b]생떼 카드 1장[/b]! 어떤 카드인지는 본인만 알아요."},
+		"name": "편의점", "toast": "편의점!", "law_tag": "[편의점 목표]", "visit_stamp": "편의점 방문! (%d/%d)", "legend": "편의점 (카드 1장)", "legend_color": Color("ffd98a"),
+		"words": {"ko": "편의점", "en": "convenience store", "ja": "コンビニ"},
+		"band": Color("7cc4f2"), "edge": Color("3f86b8"), "ink": Color("245b86"), "decal": "res://assets/board/decals/BOARD_STORE_MONATIUM_v3.png", "decal_bounds": Rect2(19, 34, 1221, 1170), "decal_span": 0.86},
+	&"witch_shop": {"rulebook": {"art": &"witch_shop", "tone": Color("8a5a34"), "summary": "에르핀 왕국의 빵집 자리예요. 딱 멈추면 [b]생떼 카드 1장[/b]! 어떤 카드인지는 본인만 알아요."},
+		"name": "마녀 상점", "toast": "상점!", "law_tag": "[단골 목표]", "visit_stamp": "마녀 상점 방문! (%d/%d)", "legend": "마녀 상점 (카드 1장)", "legend_color": Color("ffd98a"),
+		"words": {"ko": "마녀 상점", "en": "witch shop", "ja": "魔女の店"},
+		"band": Color("d8a25e"), "edge": Color("8a5a34"), "ink": Color("5e3a1c"), "decal": "res://assets/board/decals/BOARD_CARROT_FRIES_INK.png", "decal_span": 0.86},
+}
+## 옷장 자리(portal_tiles) 칸 종류: 종류마다 규칙이 다르다 (옷장 = 왕복 워프, 자판기 = 랜덤 음료 버프, 가마솥 = 랜덤 물약).
+## tiles_key: BoardSpec에서 이 칸들을 담는 목록 이름 / warps: 옷장처럼 워프가 있는가 / legend: 도감 미니 보드 범례 / 색·그림 키는 SHOP_KINDS와 같다
+const PORTAL_KINDS: Dictionary = {
+	&"portal": {"rulebook": {"art": &"wardrobe", "tone": Color("2f9aa3"), "summary": "딱 멈추면 [b]순간이동[/b]! 두 옷장은 [b]왕복[/b]이라 밟은 쪽의 반대편으로 가요. 지나가기만 하면 아무 일도 없어요."},
+		"name": "옷장", "tiles_key": "portal_tiles", "warps": true, "legend": "옷장", "legend_color": Color("c8eef0"),
+		"band": Color("5fc4c9"), "edge": Color("3f8f96"), "ink": Color("24636b"), "decal": "res://assets/board/decals/BOARD_PORTAL.png", "decal_bounds": Rect2(296, 268, 662, 739)},
+	&"vending": {"rulebook": {"art": &"vending", "tone": Color("c4574a"), "summary": "옷장 자리에 서요. 딱 멈추면 [b]음료수가 랜덤으로 한 캔[/b] 나와요. 지나가기만 하면 아무 일도 없고, 순간이동은 없어요."},
+		"name": "자판기", "tiles_key": "vending_tiles", "warps": false, "legend": "자판기 (랜덤 음료 버프)", "legend_color": Color("ffd0c8"),
+		"band": Color("ff8f7a"), "edge": Color("c4574a"), "ink": Color("8c2f26"), "decal": "res://assets/board/decals/BOARD_VENDING_v2.png", "decal_bounds": Rect2(207, 86, 841, 1105), "decal_span": 0.86},
+	&"cauldron": {"rulebook": {"art": &"cauldron", "tone": Color("6b4a8f"), "summary": "옷장 자리에 서요. 딱 멈추면 [b]물약이 랜덤으로 끓어요[/b]. 좋은 물약 3종과 [b]나쁜 물약 2종[/b]이 같은 확률로 나와요. 지나가기만 하면 아무 일도 없어요."},
+		"name": "마녀의 가마솥", "tiles_key": "cauldron_tiles", "warps": false, "legend": "마녀의 가마솥 (랜덤 물약)", "legend_color": Color("d9c8f2"),
+		"band": Color("7fd18b"), "edge": Color("5b3a8a"), "ink": Color("3e2366"), "decal": "res://assets/board/decals/BOARD_CAULDRON.png", "decal_span": 0.86, "decal_cutout": true},
+}
+
+## 보드 목록. 키:
+## id·name(한국어 원문)·desc(한 줄 설명)·tiles(칸 수) / shop·portal: 위 칸 종류 / surface: 판 바닥 그림 / palette: 기본 색(BoardSkin.PALETTE_DEFAULT)에서 바꿀 색
+## city_buttons: 굴림 버튼을 도시풍으로 / law_variants: {교칙 ID: 바꿔 쓰는 판} (키 설명은 VictoryLaw.variant 참고)
 const BOARDS: Array[Dictionary] = [
-	{"id": &"classic", "name": "에르핀 왕국", "desc": "32칸 사각 순환 트랙 · 빵집(카드)과 옷장(순간이동)", "tiles": 32, "convenience": false},
-	{"id": &"monatium", "name": "모나티엄 도시", "desc": "32칸 사각 순환 트랙 · 편의점(카드)과 자판기(랜덤 음료 버프)", "tiles": 32, "convenience": true},
-	{"id": &"belatien", "name": "벨라티엔 왕국", "desc": "마녀들의 도시 · 마녀 상점(카드)과 마녀의 가마솥(랜덤 물약, 나쁜 물약도 있다)", "tiles": 32, "witch": true},
+	{"id": &"classic", "name": "에르핀 왕국", "desc": "32칸 사각 순환 트랙 · 빵집(카드)과 옷장(순간이동)", "tiles": 32,
+		"shop": &"bakery", "portal": &"portal", "surface": "res://assets/board/trickcal/board_surface_symbols_v1.png", "palette": {}},
+	{"id": &"monatium", "name": "모나티엄 도시", "desc": "32칸 사각 순환 트랙 · 편의점(카드)과 자판기(랜덤 음료 버프)", "tiles": 32,
+		"shop": &"store", "portal": &"vending", "surface": "res://assets/board/monatium/board_surface_symbols_v1.png", "city_buttons": true,
+		"palette": {  # 도시: 차가운 회청색 타일, 네이비 테두리, 네온 청록 부스터 발판
+			"fill": Color("f2f5fb"), "edge": Color("4f5d7a"), "ink": Color("2f3b57"), "band": Color("9db0cf"),
+			"corner_edge": Color("377f94"), "corner_ink": Color("17677c"), "corner_fill": Color("e4f4f8"),
+			"half_edge": Color("8170bf"), "half_ink": Color("59428e"), "half_fill": Color("eee8fc"),
+			"shadow": Color(0.08, 0.1, 0.2, 0.16),
+			"dash_base": Color("1f2a55"), "dash_inner": Color("2fd6d0"), "dash_pulse": Color("8a7bff"), "dash_rim": Color("e6fbff")},
+		"law_variants": {
+			"LAW_02": {"name": "와라! 모나티엄 25", "condition": "편의점에 {p1}회 방문",
+				"card_title": {"ko": "[특수 승리] 와라! 모나티엄 25", "en": "[Special Win] Wara! Monatium 25", "ja": "[特殊勝利] ワラ！モナティウム25"},
+				"icon": "laws/LAW_02_MONATIUM.png", "stage": &"monatium_cash",
+				"win_reason": "편의점 %d회 방문 · 와라! 모나티엄 25 완성!", "result_phrase": "MONATIUM DAYS", "geometry_key": "LAW_02:M",
+				"theme": {"font": "bungee", "headline": "MONATIUM DAYS", "lines": "MONATIUM\nDAYS", "ink": "10223d", "accent": "2f86d6", "tilt": -0.055},
+				"paper": "e6f1fb", "comic_title": {"upper": "ffe391", "lower": "ffffff", "shadow": "1f5fa8"}},
+		}},
+	{"id": &"belatien", "name": "벨라티엔 왕국", "desc": "마녀들의 도시 · 마녀 상점(카드)과 마녀의 가마솥(랜덤 물약, 나쁜 물약도 있다)", "tiles": 32,
+		"shop": &"witch_shop", "portal": &"cauldron", "surface": "res://assets/board/belatien/board_surface_symbols_v2.png",
+		"palette": {  # 마녀 도시: 연보라 타일·짙은 보라 테두리, 코너·반환점은 갈색 나무, 보라 마법빛 부스터 발판
+			"fill": Color("f5effb"), "edge": Color("6b4a8f"), "ink": Color("4a2f6b"), "band": Color("b99be0"),
+			"corner_edge": Color("7a5232"), "corner_ink": Color("5a3a20"), "corner_fill": Color("f4e8d8"),
+			"half_edge": Color("8a5a34"), "half_ink": Color("5e3a1c"), "half_fill": Color("efe0cc"),
+			"shadow": Color(0.2, 0.1, 0.3, 0.16),
+			"dash_base": Color("3b1f5c"), "dash_inner": Color("b56cff"), "dash_pulse": Color("e08cff"), "dash_rim": Color("f5e6ff")},
+		"law_variants": {
+			"LAW_02": {"name": "Bad Carrot", "condition": "마녀 상점에 {p1}회 방문",
+				"card_title": {"ko": "[특수 승리] Bad Carrot", "en": "[Special Win] Bad Carrot", "ja": "[特殊勝利] Bad Carrot"},
+				"icon": "laws/LAW_02_BAD_CARROT.png", "stage": &"bad_carrot",
+				"win_reason": "마녀는 엄청난 것을 훔쳐갔습니다.", "result_phrase": "BAD CARROT", "geometry_key": "LAW_02:W",  # 「마리사는 엄청난 것을 훔쳐갔습니다」 패러디
+				"theme": {"font": "bangers", "headline": "BAD CARROT", "lines": "BAD\nCARROT", "ink": "1f1233", "accent": "8a4fc4", "tilt": -0.05},
+				"paper": "efe4f7", "comic_title": {"upper": "e9ccff", "lower": "ffffff", "shadow": "5a2a8a"}},
+		}},
 ]
 
 
@@ -55,7 +128,8 @@ static var current_id: StringName = DEFAULT_ID
 ## 이 보드를 BoardSpec(전역 보드 모양)에 적용한다.
 static func apply(id: Variant) -> void:
 	current_id = sanitize(id)
-	BoardSpec.apply(tiles_of(current_id), bool(def_of(current_id).get("convenience", false)), bool(def_of(current_id).get("witch", false)))
+	var board: Dictionary = def_of(current_id)
+	BoardSpec.apply(tiles_of(current_id), board["portal"], board["shop"], current_id)
 	AugmentRegistry.apply_board_variants()  # 바꿔 쓰는 특수 승리의 선택 카드 문구도 이 보드에 맞춘다
 
 
@@ -66,23 +140,56 @@ static func apply_for_match(id: Variant) -> void:
 		apply(id)
 
 
+## 이 보드의 특수 칸 배치 (전역 값을 바꾸지 않는다: 선택 화면·도감용).
+static func layout_of(id: Variant) -> Dictionary:
+	return BoardSpec.layout_for(tiles_of(id), def_of(id)["portal"])
+
+
 ## 선택 화면·도감의 특수 칸 요약 (전역 값을 바꾸지 않고 layout_for로 센다): [[이름, 값], ...]
 static func facts_of(id: Variant) -> Array:
+	var board: Dictionary = def_of(id)
 	var tiles: int = tiles_of(id)
-	var shop: bool = bool(def_of(id).get("convenience", false))
-	var witch_board: bool = bool(def_of(id).get("witch", false))
-	var layout: Dictionary = BoardSpec.layout_for(tiles, shop, witch_board)
-	var rows: Array = [
+	var layout: Dictionary = layout_of(id)
+	var portal: Dictionary = PORTAL_KINDS[board["portal"]]
+	return [
 		["칸 수", "%d칸 (한 변 %d칸)" % [tiles, tiles / 4]],
 		["코너", "%d곳" % (layout["corner_tiles"] as Array).size()],
 		["반환점", "%d번" % int(layout["halfway_tile"])],
-		["편의점" if shop else ("마녀 상점" if witch_board else "빵집"), "%d곳" % (layout["bakery_tiles"] as Array).size()],
+		[str(SHOP_KINDS[board["shop"]]["name"]), "%d곳" % (layout["bakery_tiles"] as Array).size()],
+		[str(portal["name"]), "%d곳" % (layout[portal["tiles_key"]] as Array).size()],
+		["부스터 발판", "%d곳" % (layout["dash_tiles"] as Array).size()],
 	]
-	if shop:
-		rows.append(["자판기", "%d곳" % (layout["vending_tiles"] as Array).size()])
-	elif witch_board:
-		rows.append(["마녀의 가마솥", "%d곳" % (layout["cauldron_tiles"] as Array).size()])
-	else:
-		rows.append(["옷장", "%d곳" % (layout["portal_tiles"] as Array).size()])
-	rows.append(["부스터 발판", "%d곳" % (layout["dash_tiles"] as Array).size()])
-	return rows
+
+
+## 빵집 자리·옷장 자리 칸 종류 하나의 정의 (보드 그림의 칸 kind 문자열로 찾는다, 없으면 {}).
+static func tile_kind(kind: Variant) -> Dictionary:
+	var key: StringName = StringName(str(kind))
+	return SHOP_KINDS.get(key, PORTAL_KINDS.get(key, {}))
+
+
+## 지금 판(BoardSpec)의 보드 정의.
+static func current() -> Dictionary:
+	return def_of(BoardSpec.board_id)
+
+
+## 지금 판의 빵집 자리 칸 종류 정의 (SHOP_KINDS 항목).
+static func current_shop() -> Dictionary:
+	return SHOP_KINDS.get(BoardSpec.shop_kind, SHOP_KINDS[&"bakery"])
+
+
+## 지금 판의 옷장 자리 칸 종류 정의 (PORTAL_KINDS 항목).
+static func current_portal() -> Dictionary:
+	return PORTAL_KINDS.get(BoardSpec.portal_kind, PORTAL_KINDS[&"portal"])
+
+
+## 이 보드가 이 교칙을 바꿔 쓰는 판 ({} = 원래 교칙 그대로).
+static func law_variant(board_id: Variant, law_id: String) -> Dictionary:
+	return (def_of(board_id).get("law_variants", {}) as Dictionary).get(law_id, {})
+
+
+## 어느 보드든 이 교칙을 바꿔 쓰는가 (도감의 보드 넘기기 화살표).
+static func has_law_variant(law_id: String) -> bool:
+	for board: Dictionary in BOARDS:
+		if (board.get("law_variants", {}) as Dictionary).has(law_id):
+			return true
+	return false

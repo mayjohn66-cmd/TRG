@@ -16,14 +16,14 @@ static var halfway_tile: int = 16
 static var last_tile: int = 31
 static var bakery_tiles: Array[int] = [5, 13, 19, 30]
 static var portal_tiles: Array[int] = [12, 22]
-## 자판기 발판 (모나티엄 도시): 옷장 대신 이 자리에 선다. 딱 멈추면 음료수가 나와 랜덤 버프 (워프는 없다).
+## 지금 판의 보드 (BoardCatalog id)와 빵집 자리·옷장 자리 칸 종류 (BoardCatalog.SHOP_KINDS·PORTAL_KINDS). 보드마다 다른 것은 모두 BoardCatalog의 데이터에서 읽는다.
+static var board_id: StringName = &"classic"
+static var shop_kind: StringName = &"bakery"
+static var portal_kind: StringName = &"portal"
+## 자판기 발판 (portal = vending 보드, 예: 모나티엄 도시): 옷장 대신 이 자리에 선다. 딱 멈추면 음료수가 나와 랜덤 버프 (워프는 없다).
 static var vending_tiles: Array[int] = []
-## 편의점 보드인가: 빵집 자리가 편의점이 된다 (규칙은 같다: 딱 멈추면 카드 1장).
-static var convenience: bool = false
-## 마녀의 가마솥 발판 (벨라티엔 왕국): 옷장 대신 이 자리에 선다. 딱 멈추면 물약이 끓어 랜덤 효과 (좋은 것 3종 + 나쁜 것 2종, WitchPotions).
+## 마녀의 가마솥 발판 (portal = cauldron 보드, 예: 벨라티엔 왕국): 옷장 대신 이 자리에 선다. 딱 멈추면 물약이 끓어 랜덤 효과 (좋은 것 3종 + 나쁜 것 2종, WitchPotions).
 static var cauldron_tiles: Array[int] = []
-## 마녀 보드인가 (벨라티엔 왕국): 빵집 자리가 마녀 상점이 된다 (규칙은 같다: 딱 멈추면 카드 1장).
-static var witch: bool = false
 ## 옷장 포탈 일반 워프 (LAW_01 중에는 작동하지 않는다): 두 옷장은 왕복이라 12번을 밟으면 22번으로, 22번을 밟으면 12번으로 간다 / 모노폴리 비행기가 워프하는 곳.
 static var portal_warp_targets: Dictionary = {12: 22, 22: 12}
 static var plane_warp_targets: Dictionary = {12: 24, 22: 30}
@@ -44,15 +44,16 @@ static func is_special_tile(index: int) -> bool:
 
 ## 칸 수(24 또는 32)에 따른 특수 타일 배치. 전역 값을 바꾸지 않는 순수 함수라 보드 선택 화면·도감이 판 밖에서 각 보드의 모양을 보여 줄 때도 쓴다.
 ## 키: corner_tiles, halfway_tile, bakery_tiles, portal_tiles, portal_warp_targets, plane_warp_targets, bonus_corner_tiles, dash_tiles
-static func layout_for(count: int, convenience_board: bool = false, witch_board: bool = false) -> Dictionary:
+static func layout_for(count: int, portal: StringName = &"portal") -> Dictionary:
 	var layout: Dictionary = _classic_layout(count)
 	layout["vending_tiles"] = [] as Array[int]
 	layout["cauldron_tiles"] = [] as Array[int]
-	layout["convenience"] = convenience_board
-	layout["witch"] = witch_board
-	if convenience_board or witch_board:  # 모나티엄 도시: 옷장(포탈) 자리가 자판기 / 벨라티엔 왕국: 마녀의 가마솥
-		layout["vending_tiles" if convenience_board else "cauldron_tiles"] = (layout["portal_tiles"] as Array).duplicate() as Array[int]
+	var kind: Dictionary = BoardCatalog.PORTAL_KINDS.get(portal, BoardCatalog.PORTAL_KINDS[&"portal"])
+	var key: String = str(kind["tiles_key"])
+	if key != "portal_tiles":  # 옷장(포탈) 자리에 다른 칸이 선다 (자판기·가마솥 등): 워프는 없다
+		layout[key] = (layout["portal_tiles"] as Array).duplicate() as Array[int]
 		layout["portal_tiles"] = [] as Array[int]
+	if not bool(kind["warps"]):
 		layout["portal_warp_targets"] = {}
 		layout["plane_warp_targets"] = {}
 	return layout
@@ -67,10 +68,12 @@ static func _classic_layout(count: int) -> Dictionary:
 
 
 ## 칸 수를 24(한 변 6칸) 또는 32(한 변 8칸)로 정한다. 특수 타일 번호도 함께 바뀐다.
-static func apply(count: int, convenience_board: bool = false, witch_board: bool = false) -> void:
-	var layout: Dictionary = layout_for(count, convenience_board, witch_board)
-	convenience = convenience_board
-	witch = witch_board
+## portal·shop은 BoardCatalog의 칸 종류, id는 보드 (보드를 고를 때는 BoardCatalog.apply를 쓴다. 테스트는 칸 수만 바꿀 때 apply(24)처럼 부른다).
+static func apply(count: int, portal: StringName = &"portal", shop: StringName = &"bakery", id: StringName = &"classic") -> void:
+	var layout: Dictionary = layout_for(count, portal)
+	board_id = id
+	shop_kind = shop
+	portal_kind = portal
 	vending_tiles = layout["vending_tiles"]
 	cauldron_tiles = layout["cauldron_tiles"]
 	tile_count = count
