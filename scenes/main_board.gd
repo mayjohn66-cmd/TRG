@@ -3511,13 +3511,20 @@ func _play_eject_settle(pawn_id: int) -> void:
 
 ## 큐의 한 단계: 잡힌 말이 회전하며 장외로 날아가 출발선(0번)에 떨어지고, 떨어진 뒤에 주인들이 반응한다 (피격음·프로필 피격).
 func _play_capture_eject(pawn_id: int, by_player: int, owner_id: int, cutin_capture: bool, impact_feedback: bool = true) -> void:
+	var generation := _fx_generation
+	var voice_token := Sfx.play_voice(AvatarCatalog.voice_path(_avatar_for(owner_id), &"hit"))
+	while generation == _fx_generation and Sfx.voice_is_active(voice_token):
+		await get_tree().process_frame
+	Sfx.stop_voice(voice_token)
+	if generation != _fx_generation:
+		return
 	if impact_feedback:
 		_fx_impact_at_pawn(pawn_id, 0.0)
 	# 처치·사출은 어떤 경우든(잡기·필살기·함정·카드) 보드 밖으로 날아가는 장외 홈런으로 보여 준다 (출발선으로 걸어 돌아가지 않는다).
 	_set_hint(pawn_id, {"homerun": true, "arc": 110.0, "spin": 2.0 * TAU, "dur": 0.45, "land_thud": true})
 	await _play_eject_settle(pawn_id)
 	var ejected: PlayerPawn = state.get_pawn(pawn_id) if state != null else null
-	# 피격음·프로필 피격 반응은 사출이 완전히 끝난 뒤(출발선에 떨어진 뒤) 한 번만: 날아가는 도중이나 방어 결정 전에는 내지 않는다.
+	# 프로필 반응은 사출이 끝나고 출발선에 떨어진 뒤에 표시한다.
 	_profile_react(owner_id, false)
 	if by_player != owner_id:
 		_profile_react(by_player, true)
@@ -8442,7 +8449,8 @@ func _on_skill_used(data: Dictionary) -> void:
 			body = "%d번 타일에 호텔 건설 (밟은 적은 멈춤)" % int(data["from"])
 	_log_line("[필살기] %s: %s - %s" % [who, PawnCatalog.skill_name(skill), body.replace("\n", " ")], Color("ffa94d"))
 	if skill != &"shoot":
-		var stamp := {"key": "skill", "sub": PawnCatalog.skill_name(skill), "cinematic": true}
+		var stamp := {"key": "skill", "sub": PawnCatalog.skill_name(skill), "cinematic": true,
+			"voice_path": AvatarCatalog.voice_path(_avatar_for(player_id), &"skill")}
 		match skill:
 			&"warrior_slash": stamp["sound"] = &"trpg_slash"
 			&"fireball": stamp["sound"] = &"trpg_fireball"
@@ -8663,6 +8671,7 @@ func _prepare_shoot_fx(data: Dictionary) -> void:
 			await get_tree().process_frame
 		if generation != _fx_generation:
 			return
+		Sfx.play_voice(AvatarCatalog.voice_path(_avatar_for(shooter.owner_id), &"skill"))
 		_alkkagi.play_shot(items,id,shot,strength,_motion_pace())
 		while generation == _fx_generation and _alkkagi.mode != &"idle":
 			await get_tree().process_frame

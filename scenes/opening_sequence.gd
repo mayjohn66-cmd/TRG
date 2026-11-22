@@ -32,7 +32,8 @@ var _tween: Tween = null
 var _done: bool = false
 var _page: ComicPage = null
 var _root: Control = null
-var _skip_hint: Label = null
+var _skip_button: Button = null
+var _voice_token := 0
 var _panels: Array[CutPanel] = []
 var _band: Control = null
 var _band_home: Vector2 = Vector2.ZERO
@@ -173,6 +174,7 @@ func start() -> void:
 	_tween.tween_interval(slash_at)
 	_tween.tween_callback(_step_title)
 	_tween.tween_interval(STEP_SLASH + STEP_SUBTITLE_DELAY + SUBTITLE_REVEAL + SUBTITLE_HOLD)
+	_tween.tween_callback(_wait_for_voice)
 	_tween.tween_callback(_step_out)
 	_tween.tween_interval(STEP_OUT + 0.16)
 	_tween.tween_callback(_finish)
@@ -188,9 +190,13 @@ func _input(event: InputEvent) -> void:
 	if _done or _board == null:
 		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		if is_instance_valid(_skip_button) and _skip_button.get_global_rect().has_point(event.position):
+			return
 		get_viewport().set_input_as_handled()
 		_finish()
 	elif event is InputEventScreenTouch and event.pressed:
+		if is_instance_valid(_skip_button) and _skip_button.get_global_rect().has_point(event.position):
+			return
 		get_viewport().set_input_as_handled()
 		_finish()
 
@@ -237,13 +243,11 @@ func _build_panels() -> void:
 		slide.tween_property(panel, "position", home + overshoot, STEP_PANELS * _k - 0.10).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 		slide.tween_callback(func() -> void: Sfx.play(&"card_impact", -16.0, 0.0))
 		slide.tween_property(panel, "position", home, 0.10).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	_skip_hint = _board._make_label(L10n.t("클릭하면 건너뜁니다"), 14, Color("ddd5c8"))
-	_skip_hint.add_theme_color_override("font_outline_color", INK)
-	_skip_hint.add_theme_constant_override("outline_size", 4)
-	_skip_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_skip_hint.position = Vector2(0, screen.y - 20.0)
-	_skip_hint.size = Vector2(screen.x, 10)
-	_root.add_child(_skip_hint)
+	_skip_button = _board._make_button(L10n.t("건너뛰기"), _finish, 17, INK)
+	_skip_button.position = Vector2(screen.x - 144.0, screen.y - 55.0)
+	_skip_button.size = Vector2(126, 38)
+	_skip_button.z_index = 1
+	_root.add_child(_skip_button)
 
 
 ## 기울어진 컷의 해당 높이에서 좌우 경계를 구해 인물 소개 자막을 가운데에 배치한다.
@@ -300,7 +304,6 @@ func _add_name_tag(panel: CutPanel, display_name: String) -> void:
 func _step_title() -> void:
 	if _done:
 		return
-	_skip_hint.queue_free()
 	var screen: Vector2 = get_viewport_rect().size
 	var band_w: float = screen.x + 80.0
 	var band := StartBand.new()
@@ -340,7 +343,7 @@ func _step_title() -> void:
 	slash.tween_property(band, "position", _band_home, STEP_SLASH).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
 	slash.tween_callback(func() -> void:
 		Sfx.play(&"game_start")
-		Sfx.play_voice(AvatarCatalog.voice_path(_board._avatar_for(_board.local_player_id), &"opening"))
+		_voice_token = Sfx.play_voice(AvatarCatalog.voice_path(_board._avatar_for(_board.local_player_id), &"opening"))
 		var flash := ColorRect.new()
 		flash.color = Color(PAPER, 0.30)
 		flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -364,6 +367,21 @@ func _step_title() -> void:
 
 # --- Step 3: 퇴장 — 띠는 들어온 방향 그대로 오른쪽으로 빠지고, 1·3번째 컷은 위로, 2·4번째 컷은 아래로 -------------
 
+func _wait_for_voice() -> void:
+	if not Sfx.voice_is_active(_voice_token):
+		return
+	_tween.pause()
+	while not _done and Sfx.voice_is_active(_voice_token):
+		await get_tree().process_frame
+	if not _done and _tween.is_valid():
+		Sfx.stop_voice(_voice_token)
+		_tween.play()
+
+
+func _exit_tree() -> void:
+	Sfx.stop_voice(_voice_token)
+
+
 func _step_out() -> void:
 	if _done:
 		return
@@ -382,6 +400,7 @@ func _finish() -> void:
 	if _done:
 		return
 	_done = true
+	Sfx.stop_voice(_voice_token)
 	if _tween != null and _tween.is_valid():
 		_tween.kill()
 	finished.emit()

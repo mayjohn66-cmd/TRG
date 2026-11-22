@@ -37,6 +37,7 @@ var _keys: Dictionary = {}
 var _current_key: String = ""
 var _hit_fired: bool = false
 var _swing_fired: bool = false
+var _voice_token := 0
 
 
 func _ready() -> void:
@@ -73,7 +74,13 @@ func busy() -> bool:
 	return active or not _queue.is_empty()
 
 
+func _exit_tree() -> void:
+	Sfx.stop_voice(_voice_token)
+
+
 func cancel() -> void:
+	Sfx.stop_voice(_voice_token)
+	_voice_token = 0
 	_queue.clear()
 	_keys.clear()
 	_current_key = ""
@@ -105,6 +112,7 @@ func _start_next() -> void:
 	_swing_fired = false
 	active = true
 	visible = true
+	_voice_token = Sfx.play_voice(AvatarCatalog.voice_path(attacker_avatar, &"attack"))
 	set_process(true)
 	queue_redraw()
 
@@ -112,7 +120,8 @@ func _start_next() -> void:
 func _process(delta: float) -> void:
 	if not active:
 		return
-	elapsed += delta * speed
+	var end_at := RECOIL_UNTIL if Sfx.voice_is_active(_voice_token) else DURATION
+	elapsed = minf(elapsed + delta * speed, end_at)
 	if not _swing_fired and elapsed >= SWING_AT:
 		_swing_fired = true
 		Sfx.play(&"dash", -9.0, 0.01)

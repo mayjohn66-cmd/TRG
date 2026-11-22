@@ -265,6 +265,7 @@ func _build_stamp(color: Color) -> void:
 	var sound: StringName = options.get("sound", &"")
 	if not sound.is_empty():
 		PresentationAudio.one_shot(_root, sound, -6.0)
+	Sfx.play_voice(str(options.get("voice_path", "")))
 	reset_size()
 	_place()
 	call_deferred("_place")

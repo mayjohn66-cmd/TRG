@@ -210,6 +210,8 @@ static var _bgm: AudioStreamPlayer = null
 static var _bgm_name: StringName = &""
 ## Character voices have their own mix bus; a new line replaces the previous one.
 static var _voice: AudioStreamPlayer = null
+static var _voice_serial := 0
+static var _voice_pending := false
 ## 승리 장면의 긴 팡파르(법전 달성·졸업·시상대·우승) 전용 재생기 두 개. 한 번에 하나만 들리게,
 ## 새 팡파르가 나오면 앞 것은 STINGER_FADE초에 걸쳐 줄이고 멈춘다 (겹쳐서 웅성거리지 않게).
 static var _stingers: Array[AudioStreamPlayer] = []
@@ -293,22 +295,45 @@ static func play_stinger(event: StringName, volume_db: float = 0.0) -> void:
 	_last_play_ms[event] = Time.get_ticks_msec()
 
 
-static func play_voice(path: String, volume_db: float = 0.0) -> void:
-	if path == "" or not enabled() or GameSession.audio_muted or GameSession.voice_muted:
-		return
+static func play_voice(path: String, volume_db: float = 0.0) -> int:
+	if path.is_empty() or not _voice_enabled():
+		return 0
 	volume_db += float(VOICE_GAINS.DB.get(path, -6.0))
 	var stream: AudioStream = load(path) as AudioStream
 	if stream == null:
-		return
+		return 0
+	_voice_serial += 1
+	var token := _voice_serial
+	_voice_pending = true
 	if not _ensure_ready():
-		_play_voice_when_ready.call_deferred(stream, volume_db)  # 재생기 노드가 트리에 붙는 다음 프레임에 낸다
+		_play_voice_when_ready.call_deferred(stream, volume_db, token)
+	else:
+		_play_voice_when_ready(stream, volume_db, token)
+	return token
+
+
+static func _voice_enabled() -> bool:
+	return enabled() and not GameSession.audio_muted and not GameSession.voice_muted and GameSession.voice_volume > 0.0 and GameSession.master_volume > 0.0
+
+
+static func voice_is_active(token: int) -> bool:
+	return token != 0 and token == _voice_serial and _voice_enabled() and (_voice_pending or (is_instance_valid(_voice) and _voice.playing))
+
+
+static func stop_voice(token: int) -> void:
+	if token == 0 or token != _voice_serial:
 		return
-	_play_voice_when_ready(stream, volume_db)
+	_voice_serial += 1
+	_voice_pending = false
+	if is_instance_valid(_voice):
+		_voice.stop()
 
 
-static func _play_voice_when_ready(stream: AudioStream, volume_db: float) -> void:
-	if GameSession.audio_muted or GameSession.voice_muted:return
-	if _voice == null or not is_instance_valid(_voice) or not _voice.is_inside_tree():
+static func _play_voice_when_ready(stream: AudioStream, volume_db: float, token: int) -> void:
+	if token != _voice_serial:
+		return
+	_voice_pending = false
+	if not _voice_enabled() or not is_instance_valid(_voice) or not _voice.is_inside_tree():
 		return
 	_voice.stop()
 	_voice.stream = stream
