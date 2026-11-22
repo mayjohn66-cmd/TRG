@@ -31,6 +31,11 @@ func arrange(state: GameState) -> PlayerPawn:
 		pawn.kind = GameEnums.PawnKind.BASIC
 		pawn.unit_no = 1
 		pawn.shield = false
+		pawn.ward = false  # 자동으로 고른 증강(무작위)이 남긴 잡기 방지를 걷는다 (41번 방어막은 아래에서 일부러 다시 건다)
+		pawn.ward_box = false
+		pawn.turn_guard = false
+	state.super_status = {}  # 평화주의자·사출 목걸이 (무작위 초증강)
+	state.amnesia_round = -1  # 기억상실빔
 	var shooter: PlayerPawn = state.get_pawn(11)
 	shooter.kind = GameEnums.PawnKind.GO
 	shooter.unit_no = 1

@@ -53,6 +53,20 @@ func _expect(condition: bool, message: String) -> void:
 		_failures.append(message)
 
 
+## 잡기를 검사하기 전에 부른다: 검사 시작 때 자동으로 고른 증강(무작위)이나 앞 검사가 남긴 잡기 방지를 모두 걷는다.
+## 보호막·바둑 흰 돌 방어막·나이트 [기사의 맹세]·평화주의자·사출 목걸이·기억상실빔이 남아 있으면 잡기가 [방어 성공! 처치 무효]로 끝나
+## 처치·사출을 기대한 검사가 가끔만 실패한다 (증강이 무작위라서). 보호 자체를 검사하는 곳은 이 뒤에 직접 다시 건다.
+func _clear_capture_protection() -> void:
+	var state: GameState = _board.manager.state
+	state.super_status = {}
+	state.amnesia_round = -1
+	for pawn: PlayerPawn in state.pawns:
+		pawn.shield = false
+		pawn.ward = false
+		pawn.ward_box = false
+		pawn.turn_guard = false
+
+
 func _now() -> float:
 	return Time.get_ticks_msec() / 1000.0
 
@@ -1217,6 +1231,7 @@ func _test_match_report_is_sent_once() -> void:
 
 ## 낼 수 없는 카드(예: UDO +4인데 다음 차례 사람의 말이 보드에 없음)는 흐리게 보이고, 누르면 이유가 화면 가운데 뜬다 (아무 반응 없던 버그).
 func _test_unplayable_card_explains_itself() -> void:
+	_clear_capture_protection()  # 무작위 초증강 평화주의자가 남으면 [낼 수 없는 이유]가 평화주의자 문구로 바뀐다
 	var manager: TurnManager = _board.manager
 	var state: GameState = manager.state
 	var player: int = manager.current_player_id()
@@ -2022,6 +2037,7 @@ func _test_duel_flow() -> void:
 
 ## 종목 하나를 핫시트로 끝까지: 화면의 입력 함수로 두 자리 모두 값을 낸다.
 func _play_one_duel(game: int) -> void:
+	_clear_capture_protection()  # 무작위 증강이 남긴 보호 때문에 잡기가 막혀 가끔 실패하지 않게
 	_duel_resolved = {}
 	if not _board.manager.event_received.is_connected(_on_duel_event):
 		_board.manager.event_received.connect(_on_duel_event)
@@ -2315,6 +2331,7 @@ func _test_trap_tile_marking() -> void:
 
 ## 말을 잡으면 아바타 공격·피격 슬로모션(약 1초)가 뜨고, 그동안 잡힌 말은 제자리에서 기다렸다가 보드 밖으로 날아간 뒤 출발선에 돌아온다.
 func _test_kill_cutin() -> void:
+	_clear_capture_protection()  # 무작위 증강이 남긴 보호 때문에 잡기가 막혀 가끔 실패하지 않게
 	_board._reset_presentation()  # 앞선 검사가 남긴 연출 큐를 비운다
 	var state: GameState = _board.manager.state
 	_board.instant_roll_for_test = false
@@ -2549,6 +2566,7 @@ func _test_npc_danger_preview() -> void:
 
 ## 바뀐 기물·카드·초증강의 연출 순서: 소환 기물은 달린 뒤에 말이 날아가고, 도미노는 [도미노 연쇄!]가 먼저, 드래프트 효과는 증강 공개 뒤.
 func _test_event_order() -> void:
+	_clear_capture_protection()  # 무작위 증강이 남긴 보호 때문에 잡기가 막혀 가끔 실패하지 않게
 	var manager: TurnManager = _board.manager
 	var state: GameState = manager.state
 	_board._reset_presentation()
@@ -3091,6 +3109,7 @@ func _test_law_near_badge() -> void:
 ## 예전에는 큐가 미뤄 둔 연출을 '보드가 가려짐'으로 보고 걸음마다 720프레임(웹 60fps면 12초) 상한까지 기다렸다:
 ## 라운드 마지막 턴에 받은 카드(비행기가 옷장 워프로 빵집에 내릴 때 등)가 드래프트 쪽으로 밀리면 남은 걸음이 한 칸씩 기어갔다.
 func _test_queue_ignores_deferred_draft() -> void:
+	_clear_capture_protection()  # 무작위 증강이 남긴 보호 때문에 잡기가 막혀 가끔 실패하지 않게
 	var state: GameState = _board.state
 	_board._reset_presentation()
 	var saved_instant: bool = _board.instant_roll_for_test
@@ -3126,6 +3145,7 @@ func _test_queue_ignores_deferred_draft() -> void:
 
 
 func _test_move_four_steps() -> void:
+	_clear_capture_protection()  # 무작위 증강이 남긴 보호 때문에 잡기가 막혀 가끔 실패하지 않게
 	var state: GameState = _board.state
 	_board._reset_presentation()
 	_board.instant_roll_for_test = false

@@ -84,6 +84,13 @@ func run() -> void:
 		pawn.reset_to_start()
 		pawn.kind = GameEnums.PawnKind.BASIC
 		pawn.unit_no = 0
+		# 자동으로 고른 증강(무작위)이 남긴 잡기 방지를 걷는다: 남아 있으면 패자의 말이 [방어 성공]으로 안 날아가 가끔 실패한다
+		pawn.shield = false
+		pawn.ward = false
+		pawn.ward_box = false
+		pawn.turn_guard = false
+	board.state.super_status = {}  # 평화주의자·사출 목걸이 (무작위 초증강)
+	board.state.amnesia_round = -1  # 기억상실빔
 	var challenger := manager.current_player_id()
 	var defender := 2 if challenger != 2 else 1
 	for pair: Vector2i in [Vector2i(challenger * 10 + 1, 5), Vector2i(defender * 10 + 1, 14)]:
