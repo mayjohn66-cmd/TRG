@@ -340,6 +340,7 @@ func _step_title() -> void:
 	slash.tween_property(band, "position", _band_home, STEP_SLASH).set_trans(Tween.TRANS_EXPO).set_ease(Tween.EASE_OUT)
 	slash.tween_callback(func() -> void:
 		Sfx.play(&"game_start")
+		Sfx.play_voice(AvatarCatalog.voice_path(_board._avatar_for(_board.local_player_id), &"opening"))
 		var flash := ColorRect.new()
 		flash.color = Color(PAPER, 0.30)
 		flash.mouse_filter = Control.MOUSE_FILTER_IGNORE

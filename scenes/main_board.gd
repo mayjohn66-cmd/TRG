@@ -5533,7 +5533,8 @@ func _play_victory_cutscene(player_id: int, rank_no: int, reason: StringName) ->
 	add_child(canvas)
 	var cut := VictoryCutscene.new()
 	canvas.add_child(cut)
-	var actor: Texture2D = AvatarCombatArt.texture(_avatar_for(player_id), &"victory")
+	var avatar := _avatar_for(player_id)
+	var actor: Texture2D = AvatarCombatArt.texture(avatar, &"victory")
 	if is_law:
 		# 원인 조명 → 법전별 보드 도입부 → 승리 초상·테마 제목 → 이름·순위·달성 사유.
 		var law: LawResource = LawRegistry.create(String(reason))
@@ -5554,6 +5555,10 @@ func _play_victory_cutscene(player_id: int, rank_no: int, reason: StringName) ->
 	cut.impact.connect(func() -> void:
 		screen_shake(6.0 if is_law else 12.0, 0.24 if is_law else 0.35)
 		Sfx.play_stinger(&"law" if is_law else &"graduate")
+		var voice_path := AvatarCatalog.voice_path(avatar, &"special_victory" if is_law else &"victory")
+		if voice_path.is_empty() and is_law:
+			voice_path = AvatarCatalog.voice_path(avatar, &"victory")
+		Sfx.play_voice(voice_path)
 		_profile_react(player_id, true, "%d위" % rank_no))
 	cut.play(_motion_pace())
 	await cut.completed
@@ -12556,6 +12561,8 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_log_line("[증강] P%d%s: %s - %s" % [data["player_id"], " (자동)" if data["auto"] else "", AugmentRegistry.get_def(data["augment_id"]).display_name, data["text"]], Color("ffa94d"))
 			# 한 명씩 공개하면 늘어지므로 모아 두었다가 드래프트가 끝나면 한 장으로 한꺼번에 공개한다.
 			_draft_summary.append({"player": int(data["player_id"]), "augment": data["augment_id"], "text": str(data["text"])})
+			if int(data["player_id"]) == local_player_id and not bool(data["auto"]):
+				Sfx.play_voice(AvatarCatalog.voice_path(_avatar_for(local_player_id), &"augment"))
 			if int(data["player_id"]) == _telemetry_seat():
 				var picked_def: AugmentDef = AugmentRegistry.get_def(data.get("augment_id", &""))
 				_my_augments.append(picked_def.display_name if picked_def != null else str(data.get("augment_id", "")))
