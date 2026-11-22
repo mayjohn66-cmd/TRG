@@ -1075,7 +1075,21 @@ func _test_rank_log_follows_the_capture() -> void:
 	var victim: PlayerPawn = state.get_pawn(21)
 	victim.has_left_start = true
 	victim.current_tile_idx = 5
+	# 앞에서 자동으로 고른 증강이 이 말에 보호를 남겼을 수 있다 (보호막·바둑 흰 돌 방어막·나이트 맹세·평화주의자·사출 목걸이·기억상실빔).
+	# 그러면 잡기가 [방어 성공! 처치 무효]로 끝나 처치 기록이 아예 없다 — 증강이 무작위라 가끔만 실패하던 원인 (CI: 처치 -1줄, 순위 1줄).
+	# 이 검사는 실제로 잡힌 경우의 기록 순서를 보므로 보호를 모두 걷고 잡는다 (끝나면 되돌린다).
+	var saved_super: Dictionary = state.super_status.duplicate(true)
+	var saved_amnesia: int = state.amnesia_round
+	state.super_status = {}
+	state.amnesia_round = -1
+	victim.shield = false
+	victim.ward = false
+	victim.ward_box = false
+	victim.turn_guard = false
 	state.send_to_start(victim, 4)  # 엔진이 알리는 순서: 처치 -> 법전 파기 -> 순위 확정
+	_expect(not victim.has_left_start, "보호를 걷은 말은 실제로 출발선으로 날아간다 (잡기가 막히지 않는다)")
+	state.super_status = saved_super
+	state.amnesia_round = saved_amnesia
 	_board._on_event(&"player_ranked", {"player_id": 4, "rank": 1, "reason": &"LAW_01"})
 	# 연출 큐가 아직 비어 보이는 첫 프레임에 기다림이 끝나 처치 기록이 아직 안 찍힌 채로 검사하던 드문 실패(CI 593)를 막는다:
 	# 두 줄이 모두 찍히거나 시간이 다 될 때까지 기다린다.
