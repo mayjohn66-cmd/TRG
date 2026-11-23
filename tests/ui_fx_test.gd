@@ -1497,7 +1497,13 @@ func _test_game_menu() -> void:
 	_board._emote_ready_msec = 0
 	_board._emote_button.pressed.emit()
 	_expect(_board._emote_picker.visible and _board._emote_picker.find_children("Emote*", "Button", true, false).size() == EmoteCatalog.count(), "버튼을 누르면 이모트 %d종이 펼쳐진다" % EmoteCatalog.count())
-	_expect(EmoteCatalog.count() == 3 and (_board._emote_picker.find_child("Emote0", true, false) as Button).text.contains("기쁨") and (_board._emote_picker.find_child("Emote1", true, false) as Button).text.contains("당황") and (_board._emote_picker.find_child("Emote2", true, false) as Button).text.contains("슬픔"), "이모트는 기쁨 / 당황 / 슬픔 3종")
+	_expect(EmoteCatalog.count() == 3, "이모트는 기쁨 / 당황 / 슬픔 3종")
+	for emote_id: int in EmoteCatalog.count():
+		var entry := EmoteCatalog.entry(emote_id)
+		var button := _board._emote_picker.find_child("Emote%d" % emote_id, true, false) as Button
+		var icon := button.get_child(0) as EmoteFace
+		_expect(button.text.is_empty() and button.accessibility_name == entry["label"] and icon.face == entry["face"], "이모트 선택지는 접근성 이름을 가진 아이콘 버튼이다")
+		_expect((icon.position + icon.size * 0.5).is_equal_approx(button.size * 0.5), "이모트 아이콘은 버튼 정중앙에 배치된다")
 	(_board._emote_picker.find_child("Emote1", true, false) as Button).pressed.emit()
 	var bubble: EmoteBubble = _board._emote_bubbles.get(_board.local_player_id)
 	_expect(not _board._emote_picker.visible and bubble != null and is_instance_valid(bubble) and bubble.emote_id == 1, "이모트를 고르면 판이 닫히고 내 프로필에 말풍선이 뜬다")

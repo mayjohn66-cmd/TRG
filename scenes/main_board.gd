@@ -6890,15 +6890,15 @@ func _build_emote_row() -> void:
 	_emote_picker.add_child(grid)
 	for emote_id: int in EmoteCatalog.count():
 		var entry: Dictionary = EmoteCatalog.entry(emote_id)
-		var button: Button = _make_button("\n" + str(entry["label"]), _on_emote_pressed.bind(emote_id), 13, entry["color"], 12)
+		var button: Button = _make_button("", _on_emote_pressed.bind(emote_id), 13, entry["color"], 12)
 		button.name = "Emote%d" % emote_id
+		button.accessibility_name = str(entry["label"])
 		button.custom_minimum_size = Vector2(96, 82)
 		button.focus_mode = Control.FOCUS_NONE
-		# 얼굴은 코드로 그린다 (게임 글꼴에 이모지가 없다): 위쪽에 얼굴, 아래쪽에 감정 이름
 		var face := EmoteFace.new(entry["face"], 40.0)
-		face.position = Vector2((96.0 - 40.0) / 2.0, 4.0)
 		button.add_child(face)
 		grid.add_child(button)
+		face.set_anchors_and_offsets_preset(Control.PRESET_CENTER, Control.PRESET_MODE_KEEP_SIZE)
 
 
 ## 감정 표현은 내 자리를 직접 조작하는 판(AI 대전·온라인)에서만 쓴다. 4인 수동 조작은 기물 독이 같은 자리를 쓴다.
