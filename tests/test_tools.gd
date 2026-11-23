@@ -16,7 +16,7 @@ func _card(rank: int, suit: int) -> int:
 
 
 func test_registry_exposes_exactly_thirteen_tools() -> void:
-	check_eq(ToolRegistry.ALL_IDS.size(), 19, "도구 19종 (TRPG 오미쿠지·아이스크림, 포츈쿠키·캡슐뽑기 포함) (친치로·화투·마작·타로·야추·블랙잭·핀볼 + v1.1 주식 차트·다트)")
+	check_eq(ToolRegistry.ALL_IDS.size(), 21, "도구 21종 (TRPG 오미쿠지·아이스크림, 포츈쿠키·캡슐뽑기, 해적 룰렛·스크래치 복권 포함) (친치로·화투·마작·타로·야추·블랙잭·핀볼 + v1.1 주식 차트·다트)")
 	for tool_id: StringName in ToolRegistry.ALL_IDS:
 		check(ToolRegistry.create(tool_id) != null, "%s 생성" % tool_id)
 
