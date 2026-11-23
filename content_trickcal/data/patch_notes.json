@@ -49,6 +49,16 @@
        "ko": "게임 중 [감정 표현]의 기쁨·당황·슬픔 아이콘을 새 그림 스티커로 바꿨어요",
        "en": "The Joy, Flustered and Sad icons in the in-game [Emote] picker are now new illustrated stickers",
        "ja": "ゲーム中の[スタンプ]の喜び・あわて・悲しみアイコンを新しいイラストのステッカーに変更しました"
+      },
+      {
+       "ko": "규칙 도감을 정리했어요: 장 구성을 [시작하기·한 턴·잡기·특수 칸] / [보드판·도구·말·카드·법전·보급·초증강]으로 바꾸고, [보드판] 장에서 보드마다 미리보기 그림·작은 판 그림·그 보드만의 칸 설명을 볼 수 있어요. 도감 카드는 한 줄 요약만 보여 주고(도구는 칸 범위), 자세한 표는 카드를 누르면 나와요. 상세 창에서 [◀ 이전]·[다음 ▶]으로 넘겨 볼 수 있어요",
+       "en": "Tidied up the Rulebook: chapters are now [Getting Started · A Turn · Capturing · Special Tiles] / [Boards · Tools · Pieces · Cards · Codex · Supply · Hyper Augments], and the [Boards] chapter shows each board's preview, a small board map and its own special tiles. Catalog cards now show a one-line summary (tools show their space range) with the full table one tap away, and the detail window has [◀ Prev] · [Next ▶] buttons",
+       "ja": "ルール図鑑を整理しました：章を[はじめに・1ターン・捕獲・特殊マス] / [ボード・ツール・駒・カード・法典・補給・超増強]に再構成し、[ボード]の章でボードごとのプレビュー・小さな盤面図・そのボードだけのマスの説明を見られます。図鑑カードは一行の要約だけを表示し（ツールはマス数の範囲）、詳しい表はカードを押すと出ます。詳細ウィンドウは[◀ 前へ]・[次へ ▶]でめくれます"
+      },
+      {
+       "ko": "놀이터의 보드판 버튼에서 긴 보드 이름(모나티엄 도시·벨라티엔 왕국)이 잘리지 않게 했어요",
+       "en": "Long board names (Monatium City, Belatien Kingdom) no longer get cut off on the Playground board buttons",
+       "ja": "広場のボードボタンで長いボード名（モナティウム都市・ベラティエン王国）が切れないようにしました"
       }
      ]
     },
