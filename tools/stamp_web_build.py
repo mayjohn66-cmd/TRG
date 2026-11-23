@@ -25,7 +25,7 @@ def project_version(project_file: Path) -> str:
     return match.group(1)
 
 
-HASHED_PATTERNS = ("index.wasm", "index.pck", "*.worklet.js", "avatars/*.pck")
+HASHED_PATTERNS = ("index.wasm", "index.pck", "game.pck", "*.worklet.js", "avatars/*.pck")
 
 
 def content_hash(path: Path) -> str:

@@ -42,6 +42,7 @@ var _relay_ok: bool = true
 
 
 func _ready() -> void:
+	GamePack.prefetch()  # 웹: 방에 있는 동안 게임 묶음을 뒤에서 받는다
 	Sfx.unlock()
 	Sfx.bgm_play.call_deferred(Sfx.LOBBY_TRACK)
 	set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -255,7 +256,7 @@ func start_game() -> void:
 		GameSession.mode = GameSession.MODE_AI
 		game_started = true
 		if change_scene_enabled:
-			get_tree().change_scene_to_file(BOARD_SCENE)
+			GamePack.run_when_ready(self, func() -> void: get_tree().change_scene_to_file(BOARD_SCENE))  # 웹: 게임 묶음을 다 받은 뒤에
 		return
 	if not service.begin_online_game():
 		_set_status("게임을 시작할 수 없습니다. 방을 다시 만들어 주세요.", true)
@@ -266,7 +267,7 @@ func _on_game_starting(config: Dictionary) -> void:
 	GameSession.set_net(service.is_host, service.my_seat(), config)
 	game_started = true
 	if change_scene_enabled:
-		get_tree().change_scene_to_file(BOARD_SCENE)
+		GamePack.run_when_ready(self, func() -> void: get_tree().change_scene_to_file(BOARD_SCENE))  # 웹: 게임 묶음을 다 받은 뒤에
 
 
 ## [방 만들기]: 방장이 되어 방 코드와 좌석 화면으로 간다.

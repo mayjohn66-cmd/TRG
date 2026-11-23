@@ -112,6 +112,7 @@ func _ready() -> void:
 	add_child(_mobile)
 	# 놀이터 라면 그릇의 3D 셰이더를 첫 화면과 함께 미리 컴파일한다: 놀이터를 처음 열 때 2~3초 멈추던 것을 메뉴 로딩에 묻는다.
 	_prewarm_and_reveal.call_deferred()
+	GamePack.prefetch()  # 웹: 메뉴가 뜨면 게임 묶음(보드·연출·그림)을 뒤에서 받기 시작한다
 
 
 ## 그릇을 한 번 몰래 그려 셰이더를 컴파일하고, 그 프레임이 지나면 웹 로딩 스플래시를 걷는다 (멈춘 첫 프레임을 스플래시가 가린다).
@@ -521,8 +522,15 @@ func _refresh_new_badge() -> void:
 
 
 ## 규칙 도감을 연다: 기록 코드를 불러오면 허브의 #태그·닉네임을 다시 그린다.
-func _open_rulebook(spread: int) -> Rulebook:
-	var book: Rulebook = Rulebook.open(self, spread)
+## 도감은 게임 묶음(그림·보드·3D)을 쓴다: 웹에서 아직 받는 중이면 다 받을 때까지 기다렸다가 연다 (그때는 null을 돌려준다).
+## Rulebook을 이름으로 직접 쓰지 않고 열 때 load한다: 이름으로 쓰면 메뉴를 여는 순간 도감 -> 게임 보드 스크립트가 컴파일되며
+## 그 preload(3D 모델·연출 그림 수 MB)까지 본체에서 읽게 되어 첫 로딩이 무거워진다.
+const RULEBOOK_SCRIPT: String = "res://scenes/rulebook.gd"
+func _open_rulebook(spread: int) -> Control:
+	if not GamePack.is_ready():
+		GamePack.run_when_ready(self, func() -> void: _open_rulebook(spread))
+		return null
+	var book: Control = (load(RULEBOOK_SCRIPT) as GDScript).call("open", self, spread)
 	book.records_imported.connect(_on_records_imported)
 	return book
 
@@ -700,7 +708,7 @@ func start_ai_game() -> void:
 	GameSession.mode = GameSession.MODE_AI
 	GameSession.ai_opponents = ai_count
 	if change_scene_enabled:
-		get_tree().change_scene_to_file(BOARD_SCENE)
+		GamePack.run_when_ready(self, func() -> void: get_tree().change_scene_to_file(BOARD_SCENE))  # 웹: 게임 묶음을 다 받은 뒤에 보드를 연다
 
 
 ## [친선 줘팸터]: 로비 씬에서 방 코드 입력 / 방 만들기.

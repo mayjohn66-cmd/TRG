@@ -8,3 +8,4 @@ __pycache__/
 !.env.example
 # Local secrets written by `elevenlabs onboard`
 /.env.local
+game_pack_manifest.json

@@ -7,6 +7,13 @@ extends SceneTree
 
 func _init() -> void:
 	var failures: Array[String] = []
+	# 게임 묶음을 나눈 빌드: 카드·증강 그림과 효과음은 game.pck에 있다 (GAME_PACK=묶음 절대 경로)
+	var pack: String = OS.get_environment("GAME_PACK")
+	if pack != "":
+		if not ProjectSettings.load_resource_pack(pack, true):
+			failures.append("game.pck를 붙이지 못했다: " + pack)
+		GamePack.register_uids()
+		GamePack.refresh_caches()
 	if L10n.tr_ui("btn.roll") != "굴리기":
 		failures.append("ui_strings.csv: btn.roll = %s" % L10n.tr_ui("btn.roll"))
 	if not GameData.table("augments").has("CARD_PACKAGE") or not GameData.table("cards").has("ACT_02") or not GameData.table("dice").has("YUT"):

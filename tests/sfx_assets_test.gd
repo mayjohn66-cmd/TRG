@@ -6,6 +6,13 @@ const LONG_EVENTS: Dictionary = {&"graduate": 4.2, &"podium": 5.5, &"revenge_ign
 
 func _initialize() -> void:
 	var failures: Array[String] = []
+	# 게임 묶음을 나눈 웹 빌드: 효과음은 game.pck에 있다 (GAME_PACK=묶음 절대 경로)
+	var pack: String = OS.get_environment("GAME_PACK")
+	if pack != "":
+		if not ProjectSettings.load_resource_pack(pack, true):
+			failures.append("game.pck를 붙이지 못했다: " + pack)
+		GamePack.register_uids()
+		GamePack.refresh_caches()
 	if Sfx.CURATED.FILES.size() != Sfx.EVENTS.size():
 		failures.append("Every event must have a curated recording")
 	for event: StringName in Sfx.EVENTS:

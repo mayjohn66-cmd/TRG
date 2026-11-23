@@ -172,15 +172,56 @@ func _pump() -> void:
 		return
 	_loading = id
 	_tries[id] = int(_tries.get(id, 0)) + 1
+	var base: String = str(JavaScriptBridge.eval("window.location.href", true)) if OS.has_feature("web") else ""
+	var url: String = pack_url(base.get_slice("?", 0).get_slice("#", 0), id, GameSession.version())
+	if OS.has_feature("web") and bool(JavaScriptBridge.eval("typeof window.trgFetchPack === 'function'", true)):
+		# 브라우저 fetch로 받아 엔진 파일 시스템(/tmp)에 바로 쓴다 (web/shell.html): HTTPRequest는 한 프레임에 조각 하나만 읽어 느리다
+		var key: String = "avatar_" + String(id)
+		JavaScriptBridge.eval("window.trgPacks[%s] && window.trgPacks[%s].state === 'error' && delete window.trgPacks[%s]" % [JSON.stringify(key), JSON.stringify(key), JSON.stringify(key)], true)
+		JavaScriptBridge.eval("window.trgFetchPack(%s, %s, %s)" % [JSON.stringify(key), JSON.stringify(url), JSON.stringify(_js_path(id))], true)
+		set_process(true)
+		return
 	if _request == null:
 		_request = HTTPRequest.new()
 		_request.name = "PackRequest"
+		# 웹 HTTPRequest는 한 프레임에 download_chunk_size만큼만 본문을 읽는다 (기본 64KB): 수십 MB 묶음이 프레임 수에 묶여 수십 초 걸렸다
+		_request.download_chunk_size = 4 * 1024 * 1024
 		_request.request_completed.connect(_on_completed)
 		add_child(_request)
 	# 웹의 HTTPRequest는 download_file로 파일을 쓰지 않는다 (상태 200인데 파일이 없다): 본문을 받아 직접 파일로 쓴다.
-	var base: String = str(JavaScriptBridge.eval("window.location.href", true)) if OS.has_feature("web") else ""
-	if _request.request(pack_url(base.get_slice("?", 0).get_slice("#", 0), id, GameSession.version())) != OK:
+	if _request.request(url) != OK:
 		_finish(false)
+
+
+## 브라우저 fetch로 받은 묶음을 쓰는 엔진 파일 시스템 경로 (메모리 파일 시스템).
+static func _js_path(id: StringName) -> String:
+	return "/tmp/avatar_pack_%s.pck" % id
+
+
+func _ready() -> void:
+	set_process(false)
+
+
+## 브라우저 fetch로 받는 묶음의 상태를 본다: 다 받았으면 붙인다.
+func _process(_delta: float) -> void:
+	if _loading == &"":
+		set_process(false)
+		return
+	var key: String = "avatar_" + String(_loading)
+	var state: Variant = JSON.parse_string(str(JavaScriptBridge.eval("JSON.stringify(window.trgPacks[%s] || {})" % JSON.stringify(key), true)))
+	if not (state is Dictionary):
+		return
+	match str((state as Dictionary).get("state", "")):
+		"done":
+			set_process(false)
+			var path: String = _js_path(_loading)
+			var ok: bool = FileAccess.file_exists(path) and ProjectSettings.load_resource_pack(path, false)
+			if ok:
+				register_uids(_loading)  # 이 묶음의 .tres를 읽기 전에 그림 UID부터 등록한다
+			_finish(ok and is_ready(_loading))
+		"error":
+			set_process(false)
+			_finish(false)
 
 
 func _on_completed(result: int, code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:

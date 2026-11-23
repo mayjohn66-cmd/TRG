@@ -3013,3 +3013,8 @@ TRPG,TRPG,TRPG
 눈먼 자의 도시: 함정·말 가려짐 · 아군도 잡힘,City of the Blind: hidden traps & pawns · friendly fire,盲目の都市: 罠と駒が隠れる · 味方も捕獲
 평화주의자 P%d: 잡기 면역·잡기 불가 (%d라운드),"Pacifist P%d: immune, can't capture (%d rd)",平和主義者 P%d: 捕獲無効・捕獲不可 (%dR)
 날조와 선동 P%d: 공격은 모두 P%d에게,Agitation P%d: all attacks go to P%d,扇動 P%d: 攻撃は全てP%dへ
+게임 데이터를 받는 중,Downloading game data,ゲームデータをダウンロード中
+처음 한 번만 받아요. 잠시만 기다려 주세요.,This only happens the first time. Please wait a moment.,初回のみダウンロードします。少々お待ちください。
+다시 시도,Retry,再試行
+게임 데이터를 받지 못했어요. 인터넷 연결을 확인하고 다시 시도해 주세요.,Couldn't download the game data. Check your internet connection and try again.,ゲームデータをダウンロードできませんでした。インターネット接続を確認して再試行してください。
+다시 받는 중...,Downloading again...,再ダウンロード中...

@@ -5,6 +5,11 @@ const ROOT: String = "res://content_trickcal/avatars"
 static var _cache: Dictionary = {}
 
 ## Identity-preserving fallback: never substitute another character's pose.
+## 게임 묶음(game.pck)을 붙인 뒤 GamePack이 부른다: 묶음 전에 없던 그림 대신 골라 둔 것을 잊는다.
+static func clear_cache() -> void:
+	_cache.clear()
+
+
 static func texture(avatar: StringName, pose: StringName) -> Texture2D:
 	avatar = AvatarCatalog.sanitize(avatar)
 	if pose != &"attack" and pose != &"hit" and pose != &"victory":

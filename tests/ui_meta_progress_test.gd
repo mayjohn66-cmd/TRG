@@ -52,7 +52,7 @@ func _run() -> void:
 	picker.set_level(5, false)
 	_expect(picker._record_label.text == "미정복", "미정복 단계 (%s)" % picker._record_label.text)
 	# 2) 도감: 법전 장의 도장, 기록 코드 불러오기
-	var book: Rulebook = menu._open_rulebook(Rulebook.LAW_SPREAD)
+	var book: Rulebook = menu._open_rulebook(Rulebook.LAW_SPREAD) as Rulebook
 	for i: int in 3:
 		await process_frame
 	var stamps: Array[Node] = book.find_children("CollectionStamp", "", true, false)

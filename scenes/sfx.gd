@@ -469,6 +469,13 @@ static func _ensure_ready() -> bool:
 	return _host.is_inside_tree()
 
 
+## 소리 파일 목록을 다시 훑게 한다: 웹 게임 묶음(game.pck)을 붙이면 메뉴 때 없던 효과음이 생긴다 (GamePack이 부른다).
+static func rescan() -> void:
+	_scanned = false
+	_index.clear()
+	_cache.clear()
+
+
 static func _scan() -> void:
 	_scanned = true
 	_index.clear()

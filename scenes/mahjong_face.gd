@@ -14,6 +14,12 @@ var tile_id: int = 0
 var back: bool = false
 
 
+## 게임 묶음(game.pck)을 붙인 뒤 GamePack이 부른다: 묶음 전에 없던 그림 대신 골라 둔 것을 잊는다.
+static func clear_cache() -> void:
+	_art.clear()
+	_regions.clear()
+
+
 static func art(key: String) -> Texture2D:
 	if not _art.has(key):
 		var path: String = ROOT + key + ".png"

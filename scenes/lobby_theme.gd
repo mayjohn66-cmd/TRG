@@ -340,7 +340,8 @@ const TOUCH_POPUP_SCALE: float = 1.3
 
 ## 규칙 안내 팝업.
 static func show_rules(parent: Control) -> void:
-	Rulebook.open(parent)
+	# 도감은 게임 묶음을 쓴다: 웹에서 받는 중이면 기다린다. 이름(Rulebook)으로 쓰지 않고 열 때 load한다 (메뉴에서 게임 보드 스크립트까지 미리 컴파일되지 않게)
+	GamePack.run_when_ready(parent, func() -> void: (load("res://scenes/rulebook.gd") as GDScript).call("open", parent))
 
 
 ## 설정 팝업(화면·소리 + 기본값으로 되돌리기).

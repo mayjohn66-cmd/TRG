@@ -716,16 +716,30 @@ jobs:
           # 아바타 애니메이션은 본체에서 빼고 아바타별 묶음(avatars/<id>.pck)으로 따로 내보낸다: 게임이 필요한 것부터 뒤에서 받는다 (scenes/avatar_packs.gd)
           # 버전에 +커밋을 붙이기 전에 내보낸다: 묶음 안의 프로젝트 설정에 버전이 들어가, 붙인 뒤 내보내면 그림이 그대로여도 묶음이 배포마다 달라져(내용 해시가 바뀌어) 다시 받게 된다.
           python3 tools/export_avatar_packs.py godot build/web/avatars
+          # 게임 묶음(game.pck): 메뉴(시작 화면·허브·로비)가 읽지 않는 그림·모델·소리·장면을 본체에서 빼서 따로 내보낸다.
+          # 메뉴가 뜨면 뒤에서 받고, 게임 시작·도감·온라인 입장 때 다 받을 때까지 기다린다 (scenes/game_pack.gd).
+          # 무엇이 본체에 남는지는 tests/menu_tour.gd(메뉴 한 바퀴)를 --verbose로 돌려 매번 다시 뽑는다. 버전에 +커밋을 붙이기 전에 내보낸다 (내용이 같으면 해시가 같아 다시 받지 않는다).
+          python3 tools/export_game_pack.py pack godot build/web
           # 시맨틱 버전 뒤에 빌드 메타데이터(+커밋 7자리)를 붙여, 피드백 제보가 어느 빌드에서 왔는지 알 수 있게 한다 (예: 0.9.0+abc1234)
           sed -i -E "s/^config\/version=\"([^\"+]*)[^\"]*\"/config\/version=\"\1+${GITHUB_SHA::7}\"/" project.godot
           grep '^config/version=' project.godot
-          godot --headless --path . --export-release "Web" build/web/index.html
-          # 내보낸 묶음을 직접 읽어 웹에서만 깨지는 데이터(문구 표·밸런스 CSV)를 검사한다
+          # 본체: 게임 묶음 파일을 뺀 웹 내보내기 (index.html·index.pck·index.wasm ...)
+          python3 tools/export_game_pack.py main godot build/web
+          # 본체만으로 메뉴를 한 바퀴 돈다: 메뉴가 게임 묶음 리소스를 읽으려 하면(로드 실패·스크립트 오류) 묶음을 받기 전에 깨지므로 막는다
+          (cd build/web && godot --headless --main-pack index.pck -s "$GITHUB_WORKSPACE/tests/menu_tour.gd") 2>&1 | tee /tmp/menu_tour_core.log
+          test "${PIPESTATUS[0]}" -eq 0
+          grep -q "MENU_TOUR_OK" /tmp/menu_tour_core.log
+          if grep -Eiq "Failed loading|No loader found|Cannot open file|Resource file not found|SCRIPT ERROR|invalid UID" /tmp/menu_tour_core.log; then echo "core-only menu touched game-pack resources:"; grep -Ei "Failed loading|No loader found|Cannot open file|Resource file not found|SCRIPT ERROR|invalid UID" /tmp/menu_tour_core.log | sort | uniq -c | head -20; exit 1; fi
+          # 게임 묶음을 붙이면 UID가 등록되고 게임 보드가 열려 돈다
+          (cd build/web && GAME_PACK="$PWD/game.pck" godot --headless --main-pack index.pck -s "$GITHUB_WORKSPACE/tests/game_pack_smoke.gd") 2>&1 | tee /tmp/game_pack_smoke.log
+          test "${PIPESTATUS[0]}" -eq 0
+          if grep -Eiq "Failed loading|No loader found|Resource file not found|invalid UID" /tmp/game_pack_smoke.log; then echo "game pack: load failures or invalid UID warnings"; grep -Ei "Failed loading|No loader found|Resource file not found|invalid UID" /tmp/game_pack_smoke.log | sort | uniq -c | head -20; exit 1; fi
+          # 내보낸 묶음을 직접 읽어 웹에서만 깨지는 데이터(문구 표·밸런스 CSV)를 검사한다 (그림·소리는 게임 묶음을 붙여서)
           if [[ "${VALIDATION_SCOPE}" == "full" ]]; then
-            (cd build/web && godot --headless --main-pack index.pck -s "$GITHUB_WORKSPACE/tests/export_smoke.gd")
+            (cd build/web && GAME_PACK="$PWD/game.pck" godot --headless --main-pack index.pck -s "$GITHUB_WORKSPACE/tests/export_smoke.gd")
           fi
           if [[ "${VALIDATION_SCOPE}" == "presentation-sfx" ]]; then
-            (cd build/web && godot --headless --main-pack index.pck -s "$GITHUB_WORKSPACE/tests/sfx_assets_test.gd")
+            (cd build/web && GAME_PACK="$PWD/game.pck" godot --headless --main-pack index.pck -s "$GITHUB_WORKSPACE/tests/sfx_assets_test.gd")
           fi
           # 캐시 버스팅: index.html에 엔진 파일·아바타 묶음의 내용 해시(?v=), 커밋, 버전(옛 캐시 청소 기준)을 새긴다 (web/shell.html trg-cache-guard).
           # 내용이 같은 파일은 배포가 바뀌어도 주소가 같아 다시 받지 않는다: 아바타 묶음을 내보낸 뒤에 실행해야 묶음 해시가 들어간다.
@@ -799,8 +813,14 @@ jobs:
           print(f'index.pck = {pck.stat().st_size / 1048576:.2f} MiB')
           for pack in sorted(Path('build/web/avatars').glob('*.pck')):
               print(f'{pack} = {pack.stat().st_size / 1048576:.2f} MiB')
-          if pck.stat().st_size >= 48 * 1024 * 1024:
-              raise SystemExit(f'{pck} is over the 48 MiB first-load budget: move late assets into packs or run tools/optimize_texture_imports.py')
+          # 게임 묶음 분리(2026-11) 뒤 본체는 메뉴·로비에 필요한 것만이라 약 11 MiB다. 16 MiB를 넘으면 메뉴 쪽 스크립트가 도감·게임 보드를
+          # 이름으로 써서(preload 연쇄) 게임 리소스를 본체로 끌어왔을 가능성이 크다 (tests/test_game_pack.gd, tools/export_game_pack.py 참고).
+          if pck.stat().st_size >= 16 * 1024 * 1024:
+              raise SystemExit(f'{pck} is over the 16 MiB first-load budget: a menu script probably names the rulebook/board (preload chain) — load them when opened instead')
+          game = Path('build/web/game.pck')
+          print(f'game.pck = {game.stat().st_size / 1048576:.2f} MiB (메뉴 뒤에서 받는 게임 묶음)')
+          if game.stat().st_size >= 64 * 1024 * 1024:
+              raise SystemExit(f'{game} is over the 64 MiB game-pack budget: run tools/optimize_texture_imports.py or move rarely used assets into their own packs')
           PY
           ls -la build/web
 

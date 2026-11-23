@@ -455,6 +455,43 @@
 			pattern.src = 'letterbox-pattern.png?v=__TRG_BUILD_ID__';
 		})();
 		const engine = new Engine(GODOT_CONFIG);
+		// 게임 묶음(game.pck) 받기: 엔진의 HTTPRequest는 한 프레임에 네트워크 조각 하나만 읽어 수십 MB가 프레임 수에 묶여 느리다 (낮은 FPS·느린 망에서 수십 초).
+		// 브라우저 fetch로 통째로 받아 엔진 파일 시스템에 바로 써 준다 (engine.copyToFS). 게임(scenes/game_pack.gd)이 trgFetchPack을 부르고 trgPacks[key]를 매 프레임 본다.
+		// 주소의 ?v=는 위 캐시 가드가 내용 해시로 바꾼다.
+		window.trgPacks = {};
+		window.trgFetchPack = function (key, url, fsPath) {
+			var job = window.trgPacks[key];
+			if (job && (job.state === 'loading' || job.state === 'done')) { return; }
+			job = window.trgPacks[key] = { state: 'loading', loaded: 0, total: -1, error: '' };
+			fetch(url).then(function (response) {
+				if (!response.ok) { throw new Error('HTTP ' + response.status); }
+				job.total = Number(response.headers.get('Content-Length')) || -1;
+				if (!response.body || !response.body.getReader) { return response.arrayBuffer(); }
+				var reader = response.body.getReader();
+				var chunks = [];
+				function pump() {
+					return reader.read().then(function (part) {
+						if (part.done) { return; }
+						chunks.push(part.value);
+						job.loaded += part.value.length;
+						return pump();
+					});
+				}
+				return pump().then(function () {
+					var out = new Uint8Array(job.loaded);
+					var offset = 0;
+					for (var i = 0; i < chunks.length; i++) { out.set(chunks[i], offset); offset += chunks[i].length; }
+					return out.buffer;
+				});
+			}).then(function (buffer) {
+				engine.copyToFS(fsPath, buffer);
+				job.loaded = buffer.byteLength;
+				job.state = 'done';
+			}).catch(function (error) {
+				job.state = 'error';
+				job.error = String(error);
+			});
+		};
 
 		(function () {
 			const TIPS = [

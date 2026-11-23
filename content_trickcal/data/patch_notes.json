@@ -36,6 +36,11 @@
      },
      "items": [
       {
+       "ko": "첫 로딩이 훨씬 가벼워졌어요: 처음에는 메뉴에 필요한 것만 받고(약 11MB, 전에는 약 41MB), 게임 데이터는 메뉴에 있는 동안 뒤에서 받아요. 다 받기 전에 게임 시작·규칙 도감을 누르면 진행 막대가 보이고, 다 받으면 바로 열려요",
+       "en": "First loading is much lighter: at first only what the menu needs is downloaded (about 11 MB, previously about 41 MB), and the game data downloads in the background while you're in the menu. If you press Start Game or the Rulebook before it finishes, a progress bar appears and it opens as soon as the download is done",
+       "ja": "初回ロードが大幅に軽くなりました：最初はメニューに必要なものだけをダウンロードし（約11MB、以前は約41MB）、ゲームデータはメニューにいる間に裏でダウンロードします。完了前にゲーム開始やルール図鑑を押すと進行バーが表示され、完了するとすぐに開きます"
+      },
+      {
        "ko": "증강·판정 도구 아이콘이 너무 쨍하게 보이던 것을 증강 선택 창·화면·도감에서 고르게 다듬었어요",
        "en": "Toned down overly sharp augment and judgment-tool icons so they look consistent across the augment window, the HUD and the rulebook",
        "ja": "増強・判定ツールのアイコンがくっきりしすぎていたのを、増強選択画面・画面表示・図鑑でそろうように調整"

@@ -14,6 +14,11 @@ const TYPE_NAMES: Dictionary = {&"gwang":"광", &"yeol":"열끗", &"tti":"띠", 
 static var _textures: Dictionary = {}
 
 
+## 게임 묶음(game.pck)을 붙인 뒤 GamePack이 부른다: 묶음 전에 없던 그림 대신 골라 둔 것을 잊는다.
+static func clear_cache() -> void:
+	_textures.clear()
+
+
 static func poker(card: int) -> Dictionary:
 	var suit: int = card / 13
 	return {"tool": &"HOLDEM", "id":card, "rank":RANKS[card % 13], "suit":suit,

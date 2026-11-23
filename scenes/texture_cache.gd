@@ -120,6 +120,22 @@ static func frames_bytes(frames: SpriteFrames) -> int:
 	return bytes
 
 
+## 없다고 기억해 둔 그림을 잊는다: 웹 게임 묶음(game.pck)을 붙이면 메뉴에서 없던 그림이 생긴다 (GamePack이 부른다).
+static func forget_missing() -> int:
+	var missing: Array = []
+	for path: String in _texture_cache.keys():
+		if _texture_cache[path] == null:
+			missing.append(path)
+	for path: String in missing:
+		_texture_cache.erase(path)
+		_total_bytes -= int(_sizes.get(path, 0))
+		_sizes.erase(path)
+	for path: String in _frames_cache.keys():
+		if _frames_cache[path] == null:
+			_frames_cache.erase(path)
+	return missing.size()
+
+
 static func _touch(path: String) -> void:
 	var bytes: int = int(_sizes.get(path, 0))
 	_sizes.erase(path)
