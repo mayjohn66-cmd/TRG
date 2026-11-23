@@ -92,8 +92,6 @@ signal haunt_shifted(pawn_id: int, direction: int)  ## 방해령 베루(-1)·사
 signal haunt_boost_set(player_id: int)  ## 방해령 허리케인 포스 제정: 이 사람의 카드 드로우에 방해령 가중치가 붙었다
 ## v1.1 현상금 수배서: 수배된 말을 잡아 현상금을 받았다.
 signal bounty_claimed(hunter: int, pawn_id: int, steps: int)
-signal spirits_shifted  ## 정령산: 정령 칸의 정령을 다시 배치했다 (판 시작·증강 라운드)
-signal spirit_triggered(pawn_id: int, tile: int, spirit: StringName)  ## 정령산: 말이 정령 칸의 효과를 받았다 (불·물·바람은 도착, 땅은 지나가다 멈춤)
 
 var board: BoardGraph = BoardGraph.new()
 
@@ -160,8 +158,6 @@ var utility_fx: Array[Dictionary] = []
 var gambler_round: Dictionary = {}
 ## 기간이 있는 초증강 상태 (평화주의자·날조와 선동·눈먼 자의 도시·사출 목걸이): SuperStatus가 읽고 쓴다. 스냅샷에 담긴다.
 var super_status: Dictionary = {}
-## 정령산: 정령 칸 -> 깃든 정령 (MountainSpirits: fire/water/earth/wind). 판 시작과 증강 라운드마다 다시 배치한다.
-var spirits: Dictionary = {}
 ## v1.1 기억상실빔: 이 라운드 동안 모든 말이 사출 면역 (-1이면 꺼짐).
 var amnesia_round: int = -1
 ## v1.1 강화 망치: 강화를 고르는 중인 사람 -> 지금 강화 단계(+N) / 멈춰서 다음 굴림에 더할 +N.
@@ -280,7 +276,6 @@ func setup(ids: Array[int], seed_value: int = 0, loadouts: Dictionary = {}) -> v
 		rng.seed = seed_value
 	else:
 		rng.randomize()
-	MountainSpirits.shuffle(self)  # 정령산: 정령 칸에 정령을 놓는다 (다른 보드는 아무것도 하지 않는다)
 	for old_pawn: PlayerPawn in pawns:
 		old_pawn.free()
 	pawns.clear()

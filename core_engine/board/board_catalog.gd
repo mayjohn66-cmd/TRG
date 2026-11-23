@@ -18,7 +18,6 @@ const DEFAULT_ID: StringName = &"classic"
 ## name: 칸 이름 / toast: 도착 알림 / law_tag: LAW_02 목표 칸 표시 / visit_stamp: LAW_02 진행 도장("" = 기본 식권 문구)
 ## legend·legend_color: 도감 미니 보드 범례 글·색 / words: 특수 승리 카드 문구에서 "빵집"을 바꿔 쓸 말 / band·edge·ink: 칸 색 / decal: 칸 그림
 ## rulebook: 도감 "보드" 장의 칸 설명 (art·tone·summary, 제목은 "<칸 이름> (<이 칸을 쓰는 보드들>)")
-## (선택) tiles_key: 빵집 자리에 다른 칸이 설 때 BoardSpec의 목록 이름 (정령 칸 = "spirit_tiles", 기본은 빵집)
 ## (선택) decal_bounds: 그림에서 쓸 영역(1254px 원본 기준, 없으면 전체) / decal_span: 칸 대비 그림 크기(기본 0.74) / decal_cutout: 어두운 선을 뚫어 그린다
 const SHOP_KINDS: Dictionary = {
 	&"bakery": {"rulebook": {"art": &"bread", "tone": Color("d9822b"), "summary": "딱 멈추면 [b]생떼 카드 1장[/b]! 어떤 카드인지는 본인만 알아요."},
@@ -33,10 +32,6 @@ const SHOP_KINDS: Dictionary = {
 		"name": "마녀 상점", "toast": "상점!", "law_tag": "[단골 목표]", "visit_stamp": "마녀 상점 방문! (%d/%d)", "legend": "마녀 상점 (카드 1장)", "legend_color": Color("ffd98a"),
 		"words": {"ko": "마녀 상점", "en": "witch shop", "ja": "魔女の店"},
 		"band": Color("d8a25e"), "edge": Color("8a5a34"), "ink": Color("5e3a1c"), "decal": "res://assets/board/decals/BOARD_CARROT_FRIES_INK.png", "decal_span": 0.86},
-	&"spirit": {"rulebook": {"art": &"spirit", "tone": Color("2f9e8f"), "summary": "증강 라운드마다 [b]하급 정령[/b]이 자리를 바꿔 깃들어요. 불은 1칸 뒤로, 물은 카드 1장, 바람은 1칸 앞으로 (딱 멈추면), 땅은 [b]지나가기만 해도[/b] 그 칸에서 멈춰요."},
-		"name": "정령 칸", "toast": "정령!", "law_tag": "[순례 목표]", "visit_stamp": "정령 칸 순례! (%d/%d)", "legend": "정령 칸 (증강 라운드마다 정령이 바뀜)", "legend_color": Color("bfe7df"),
-		"tiles_key": "spirit_tiles", "words": {"ko": "정령 칸", "en": "spirit tile", "ja": "精霊マス"},  # 일본어(ja) 값은 일본어 화면에서 _JA 글꼴(Mochiy Pop One)로 그린다
-		"band": Color("63c7b2"), "edge": Color("2f7f73"), "ink": Color("1d5a51"), "decal": "res://assets/board/decals/BOARD_SPIRIT.png", "decal_span": 0.8},
 }
 ## 옷장 자리(portal_tiles) 칸 종류: 종류마다 규칙이 다르다 (옷장 = 왕복 워프, 자판기 = 랜덤 음료 버프, 가마솥 = 랜덤 물약).
 ## tiles_key: BoardSpec에서 이 칸들을 담는 목록 이름 / warps: 옷장처럼 워프가 있는가 / legend: 도감 미니 보드 범례 / 색·그림 키는 SHOP_KINDS와 같다
@@ -50,9 +45,6 @@ const PORTAL_KINDS: Dictionary = {
 	&"cauldron": {"rulebook": {"art": &"cauldron", "tone": Color("6b4a8f"), "summary": "옷장 자리에 서요. 딱 멈추면 [b]물약이 랜덤으로 끓어요[/b]. 좋은 물약 3종과 [b]나쁜 물약 2종[/b]이 같은 확률로 나와요. 지나가기만 하면 아무 일도 없어요."},
 		"name": "마녀의 가마솥", "tiles_key": "cauldron_tiles", "warps": false, "legend": "마녀의 가마솥 (랜덤 물약)", "legend_color": Color("d9c8f2"),
 		"band": Color("7fd18b"), "edge": Color("5b3a8a"), "ink": Color("3e2366"), "decal": "res://assets/board/decals/BOARD_CAULDRON.png", "decal_span": 0.86, "decal_cutout": true},
-	&"spirit": {"rulebook": {"art": &"spirit", "tone": Color("2f9e8f"), "summary": "증강 라운드마다 [b]하급 정령[/b]이 자리를 바꿔 깃들어요."},
-		"name": "정령 칸", "tiles_key": "spirit_tiles", "warps": false, "legend": "정령 칸 (증강 라운드마다 정령이 바뀜)", "legend_color": Color("bfe7df"),
-		"band": Color("63c7b2"), "edge": Color("2f7f73"), "ink": Color("1d5a51"), "decal": "res://assets/board/decals/BOARD_SPIRIT.png", "decal_span": 0.8},
 }
 
 ## 보드 목록. 키:
@@ -92,22 +84,6 @@ const BOARDS: Array[Dictionary] = [
 				"win_reason": "마녀는 엄청난 것을 훔쳐갔습니다.", "result_phrase": "BAD CARROT", "geometry_key": "LAW_02:W",  # 「마리사는 엄청난 것을 훔쳐갔습니다」 패러디
 				"theme": {"font": "bangers", "headline": "BAD CARROT", "lines": "BAD\nCARROT", "ink": "1f1233", "accent": "8a4fc4", "tilt": -0.05},
 				"paper": "efe4f7", "comic_title": {"upper": "e9ccff", "lower": "ffffff", "shadow": "5a2a8a"}},
-		}},
-	{"id": &"spirit_mountain", "name": "정령산", "desc": "정령들의 산 · 증강 라운드마다 빵집·옷장 자리 6곳에 하급 정령(불·물·땅·바람)이 깃들어 효과가 바뀐다", "tiles": 32,
-		"shop": &"spirit", "portal": &"spirit", "surface": "res://assets/board/trickcal/board_surface_symbols_v1.png",
-		"palette": {  # 정령산(임시 색): 이끼 낀 회녹색 바위 타일, 짙은 청록 테두리, 코너·반환점은 돌, 정령빛 부스터 발판
-			"fill": Color("eef5ef"), "edge": Color("3f6f63"), "ink": Color("2a5047"), "band": Color("9fcfbf"),
-			"corner_edge": Color("6b6f66"), "corner_ink": Color("4a4d46"), "corner_fill": Color("e8e6dc"),
-			"half_edge": Color("6b6f66"), "half_ink": Color("4a4d46"), "half_fill": Color("e2e0d4"),
-			"shadow": Color(0.1, 0.2, 0.18, 0.16),
-			"dash_base": Color("1f4f48"), "dash_inner": Color("63e6be"), "dash_pulse": Color("a5d8ff"), "dash_rim": Color("e6fcf5")},
-		"law_variants": {
-			"LAW_02": {"name": "정령산 순례", "condition": "정령 칸에 {p1}회 멈춤",
-				"card_title": {"ko": "[특수 승리] 정령산 순례", "en": "[Special Win] Spirit Mountain Pilgrimage", "ja": "[特殊勝利] 精霊山巡礼"},  # 일본어(ja) 값은 일본어 화면에서 _JA 글꼴(Mochiy Pop One)로 그린다
-				"win_reason": "정령 칸 %d회 순례 · 정령산 순례 완성!", "result_phrase": "SPIRIT PILGRIMAGE", "geometry_key": "LAW_02:S",
-				# 아이콘·도입 무대(icon·stage)는 아직 없어 원래 식권 것을 쓴다 (전용 그림이 생기면 넣는다)
-				"theme": {"font": "bungee", "headline": "SPIRIT PILGRIMAGE", "lines": "SPIRIT\nPILGRIMAGE", "ink": "14332d", "accent": "2f9e8f", "tilt": -0.05},
-				"paper": "e6f4ef", "comic_title": {"upper": "c3fae8", "lower": "ffffff", "shadow": "1d6b5f"}},
 		}},
 ]
 
@@ -166,7 +142,7 @@ static func apply_for_match(id: Variant) -> void:
 
 ## 이 보드의 특수 칸 배치 (전역 값을 바꾸지 않는다: 선택 화면·도감용).
 static func layout_of(id: Variant) -> Dictionary:
-	return BoardSpec.layout_for(tiles_of(id), def_of(id)["portal"], def_of(id)["shop"])
+	return BoardSpec.layout_for(tiles_of(id), def_of(id)["portal"])
 
 
 ## 선택 화면·도감의 특수 칸 요약 (전역 값을 바꾸지 않고 layout_for로 센다): [[이름, 값], ...]

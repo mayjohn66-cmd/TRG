@@ -1387,9 +1387,6 @@ func _enter_round_start() -> void:
 		return
 	if GameEnums.is_draft_round(state.round_number) and state.round_number > GameEnums.draft_start:
 		state.recharge_shields()  # 바둑 백돌: 증강 라운드마다 방어막 재충전
-		if not BoardSpec.spirit_tiles.is_empty():
-			MountainSpirits.shuffle(state)  # 정령산: 증강 라운드마다 정령이 자리를 바꾼다 (첫 증강 라운드는 판 시작 때 놓은 그대로)
-			_emit_event(&"spirits_shifted", {"round": state.round_number, "spirits": state.spirits.duplicate()})
 	if draft_enabled and GameEnums.is_draft_round(state.round_number):
 		for player_id: int in player_order:
 			if not state.is_graduated(player_id):  # 졸업한 플레이어는 드래프트에서 빠진다

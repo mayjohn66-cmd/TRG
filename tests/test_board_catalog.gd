@@ -9,9 +9,7 @@ const PRELUDE_SCRIPT = preload("res://scenes/law_victory_prelude.gd")
 const PREVIEW_DIR: String = "res://assets/ui/trickcal/board_preview/"
 const SHOP_KEYS: Array[String] = ["name", "toast", "law_tag", "visit_stamp", "legend", "legend_color", "words", "band", "edge", "ink", "decal", "rulebook"]
 const PORTAL_KEYS: Array[String] = ["name", "tiles_key", "warps", "legend", "legend_color", "band", "edge", "ink", "decal", "rulebook"]
-const VARIANT_KEYS: Array[String] = ["name", "condition", "card_title", "win_reason", "result_phrase"]
-## 승리 제목 무대는 넣으면 넷 다 (아이콘·도입 무대는 없으면 원래 교칙 것을 쓴다)
-const THEME_KEYS: Array[String] = ["theme", "paper", "comic_title", "geometry_key"]
+const VARIANT_KEYS: Array[String] = ["name", "condition", "card_title", "icon", "stage", "win_reason", "result_phrase", "geometry_key", "theme", "paper", "comic_title"]
 
 
 func _translated(text: String) -> bool:
@@ -73,17 +71,12 @@ func test_every_law_variant_is_complete() -> void:
 				check(variant.has(key), "%s 보드 %s 판에 %s가 있다" % [board["id"], law_id, key])
 			for lang: String in ["ko", "en", "ja"]:
 				check((variant.get("card_title", {}) as Dictionary).has(lang), "%s 보드 %s 판 카드 제목(%s)" % [board["id"], law_id, lang])
-			if variant.has("icon"):
-				check(ResourceLoader.exists(AugmentArt.ROOT + str(variant["icon"])), "%s 보드 %s 판 아이콘 그림이 있다" % [board["id"], law_id])
-			if variant.has("stage"):
-				check(PRELUDE_SCRIPT.STAGES.has(StringName(str(variant["stage"]))), "%s 보드 %s 판의 승리 무대(stage)가 LawVictoryPrelude.STAGES에 있다" % [board["id"], law_id])
-			for key: String in THEME_KEYS:
-				check(variant.has("theme") == variant.has(key), "%s 보드 %s 판의 승리 제목 무대는 %s까지 함께 넣는다" % [board["id"], law_id, key])
+			check(ResourceLoader.exists(AugmentArt.ROOT + str(variant.get("icon", ""))), "%s 보드 %s 판 아이콘 그림이 있다" % [board["id"], law_id])
+			check(PRELUDE_SCRIPT.STAGES.has(StringName(str(variant.get("stage", "")))), "%s 보드 %s 판의 승리 무대(stage)가 LawVictoryPrelude.STAGES에 있다" % [board["id"], law_id])
 			# 지금 판의 보드로 켜면 이름·조건·아이콘이 그 판을 따른다
 			VictoryLaw.preview_board = board["id"]
 			check_eq(VictoryLaw.name_of(law_id), str(variant["name"]), "%s 보드에서 %s 이름" % [board["id"], law_id])
-			if variant.has("icon"):
-				check(AugmentArt.law_candidates(law_id)[0].ends_with(str(variant["icon"])), "%s 보드에서 %s 아이콘" % [board["id"], law_id])
+			check(AugmentArt.law_candidates(law_id)[0].ends_with(str(variant["icon"])), "%s 보드에서 %s 아이콘" % [board["id"], law_id])
 			VictoryLaw.preview_board = &""
 
 
