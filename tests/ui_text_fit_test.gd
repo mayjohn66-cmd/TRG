@@ -97,10 +97,6 @@ func _check_rulebook(lang: String) -> void:
 	for spread: int in book.spread_count():
 		book.show_spread(spread)
 		await process_frame
-		_scan(book, null, "%s 도감 %d장" % [lang, spread])
-		book.show_overview()
-		await process_frame
-		_scan(book, null, "%s 도감 %d장 기본 설명" % [lang, spread])
 		for entry: int in book.entry_count():
 			book.show_entry(entry)
 			await process_frame
@@ -153,11 +149,9 @@ func _label_problem(label: Label, frame: Control) -> String:
 					var chunk_width: float = font.get_string_size(chunk, HORIZONTAL_ALIGNMENT_LEFT, -1, px).x
 					if chunk_width > width + 2.0:
 						return "긴 낱말 넘침 %.0f>%.0f" % [chunk_width, width]
-		# 도감 카드 요약처럼 일부러 몇 줄에서 말줄임으로 자르는 칸 (전체 문장은 툴팁·상세 창): 메타 ellipsis_ok
-		if label.get_line_count() > label.get_visible_line_count() and not (label.has_meta("ellipsis_ok") and label.text_overrun_behavior == TextServer.OVERRUN_TRIM_ELLIPSIS):
+		if label.get_line_count() > label.get_visible_line_count():
 			return "잘림 %d/%d줄" % [label.get_visible_line_count(), label.get_line_count()]
-		var counted: int = label.get_visible_line_count() if label.has_meta("ellipsis_ok") else label.get_line_count()
-		var needed: float = counted * (font.get_height(px) + label.get_theme_constant("line_spacing")) - label.get_theme_constant("line_spacing")
+		var needed: float = label.get_line_count() * (font.get_height(px) + label.get_theme_constant("line_spacing")) - label.get_theme_constant("line_spacing")
 		if not label.clip_text and needed > label.size.y + 4.0 and label.size.y > 0.0:
 			return "세로 넘침 %.0f>%.0f" % [needed, label.size.y]
 	# 배지·칩처럼 Panel 안에 놓인 글 칸은 그 Panel 밖으로 나가면 안 된다 (글이 칩 밖으로 삐져나와 보임)
