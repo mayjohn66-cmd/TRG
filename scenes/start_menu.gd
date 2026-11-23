@@ -411,12 +411,12 @@ func _build_board_picker() -> Control:
 	# 보드가 많으면 두 줄 격자 (한 줄에 다 넣으면 "모나티엄 도시"처럼 긴 이름이 잘린다)
 	var row := GridContainer.new()
 	row.name = "BoardButtons"
-	row.columns = mini(3, ceili(BoardCatalog.BOARDS.size() / 2.0)) if BoardCatalog.BOARDS.size() > 3 else BoardCatalog.BOARDS.size()
+	row.columns = mini(3, ceili(BoardCatalog.available().size() / 2.0)) if BoardCatalog.available().size() > 3 else BoardCatalog.available().size()
 	row.add_theme_constant_override("h_separation", 10)
 	row.add_theme_constant_override("v_separation", 8)
 	column.add_child(row)
 	_board_buttons.clear()
-	for board: Dictionary in BoardCatalog.BOARDS:
+	for board: Dictionary in BoardCatalog.available():
 		var button := LobbyTheme.small_button(str(board["name"]), _on_board_picked.bind(board["id"]), &"blue", 20)
 		button.name = "Board_%s" % board["id"]
 		button.toggle_mode = true

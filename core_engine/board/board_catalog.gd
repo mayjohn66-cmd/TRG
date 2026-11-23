@@ -93,7 +93,7 @@ const BOARDS: Array[Dictionary] = [
 				"theme": {"font": "bangers", "headline": "BAD CARROT", "lines": "BAD\nCARROT", "ink": "1f1233", "accent": "8a4fc4", "tilt": -0.05},
 				"paper": "efe4f7", "comic_title": {"upper": "e9ccff", "lower": "ffffff", "shadow": "5a2a8a"}},
 		}},
-	{"id": &"spirit_mountain", "name": "정령산", "desc": "정령들의 산 · 증강 라운드마다 빵집·옷장 자리 6곳에 하급 정령(불·물·땅·바람)이 깃들어 효과가 바뀐다", "tiles": 32,
+	{"id": &"spirit_mountain", "since": "1.3.0", "name": "정령산", "desc": "정령들의 산 · 증강 라운드마다 빵집·옷장 자리 6곳에 하급 정령(불·물·땅·바람)이 깃들어 효과가 바뀐다", "tiles": 32,
 		"shop": &"spirit", "portal": &"spirit", "surface": "res://assets/board/trickcal/board_surface_symbols_v1.png",
 		"palette": {  # 정령산(임시 색): 이끼 낀 회녹색 바위 타일, 짙은 청록 테두리, 코너·반환점은 돌, 정령빛 부스터 발판
 			"fill": Color("eef5ef"), "edge": Color("3f6f63"), "ink": Color("2a5047"), "band": Color("9fcfbf"),
@@ -112,10 +112,20 @@ const BOARDS: Array[Dictionary] = [
 ]
 
 
+## 고를 수 있는 보드 id (다음 버전용 보드("since")는 그 버전이 되기 전까지 빠진다: 놀이터·방 규칙·도감·저장된 선택 모두).
 static func ids() -> Array[StringName]:
 	var result: Array[StringName] = []
-	for board: Dictionary in BOARDS:
+	for board: Dictionary in available():
 		result.append(board["id"])
+	return result
+
+
+## 공개된 보드 데이터 (BOARDS 순서). 화면은 BOARDS 대신 이것을 돈다.
+static func available() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for board: Dictionary in BOARDS:
+		if ReleaseGate.is_open(str(board.get("since", ""))):
+			result.append(board)
 	return result
 
 

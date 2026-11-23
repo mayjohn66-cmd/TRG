@@ -64,7 +64,7 @@ func _run() -> void:
 	await _close_popups(menu)
 	menu.open_training()
 	await _settle()
-	for board: Dictionary in BoardCatalog.BOARDS:
+	for board: Dictionary in BoardCatalog.available():
 		menu._on_board_picked(board["id"])
 		await _settle(2)
 	for level: int in range(1, 6):

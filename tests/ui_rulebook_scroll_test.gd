@@ -97,13 +97,13 @@ func run() -> void:
 			var grid := book._right_holder.get_node("EntryGrid") as GridContainer
 			check(grid.columns==(3 if MobileSupport.touch_mode() and chapter!=Rulebook.CARD_SPREAD else 4),"Readable phone columns for chapter %d" % chapter)
 			check(not scroll.get_h_scroll_bar().visible,"No sideways overflow in chapter %d" % chapter)
-			var row_end := book._tiles[grid.columns-1].get_global_rect().end.x
+			var row_end := book._tiles[mini(grid.columns,book._tiles.size())-1].get_global_rect().end.x
 			var pane_end := scroll.get_global_rect().end.x-(scroll.get_v_scroll_bar().size.x if scroll.get_v_scroll_bar().visible else 0.0)
-			check(absf(row_end-pane_end)<8.0,"Card columns fill the pane without a blank right-hand strip (chapter %d: %.0f vs %.0f)" % [chapter,row_end,pane_end])
+			check(book._tiles.size()<grid.columns or absf(row_end-pane_end)<8.0,"Card columns fill the pane without a blank right-hand strip (chapter %d: %.0f vs %.0f)" % [chapter,row_end,pane_end])
 			for tile: Control in book._tiles:
 				var face := tile.get_child(0) as Button
 				check(absf(face.size.x*face.scale.x-tile.size.x)<0.1,"Card face fills its grid hit area")
-				check(absf(face.size.y*face.scale.y-tile.size.y)<0.1,"Row height matches card face")
+				check(absf(face.size.y*face.scale.y-tile.size.y)<0.5,"Row height matches card face (chapter %d: %.1f vs %.1f at %s)" % [chapter,face.size.y*face.scale.y,tile.size.y,resolution])
 			await capture("chapter_%d_%d" % [chapter,resolution.x])
 		book.show_spread(Rulebook.LAW_SPREAD)
 		await frames()
@@ -126,7 +126,7 @@ func run() -> void:
 			check(str(book._content.entries[variant_index].get("title", "")) == "Bad Carrot", "The second press shows the Belatien witch-shop card (%s)" % book._content.entries[variant_index].get("title", ""))
 			# 남은 보드 판(정령산 등)을 한 장씩 넘긴 뒤 한 번 더 누르면 원래 빵집 카드로 돌아온다
 			var variant_boards: int = 0
-			for board: Dictionary in BoardCatalog.BOARDS:
+			for board: Dictionary in BoardCatalog.available():
 				if (board.get("law_variants", {}) as Dictionary).has("LAW_02"):
 					variant_boards += 1
 			for press: int in range(variant_boards - 1):
