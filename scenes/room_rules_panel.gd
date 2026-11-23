@@ -174,7 +174,7 @@ func _make_row(row: Array) -> Control:
 ## 보드판 줄: 고를 수 있는 보드는 BoardCatalog가 정한다 (값은 보드 id 글자).
 static func board_row() -> Array:
 	var options: Array = []
-	for board: Dictionary in BoardCatalog.available():
+	for board: Dictionary in BoardCatalog.BOARDS:
 		options.append([String(board["id"]), str(board["name"])])
 	return ["board", "보드판", "판을 시작하면 모두 같은 보드판을 씁니다. 보드마다 칸 수와 특수 칸(빵집·옷장·부스터 발판) 배치가 달라요.", options]
 

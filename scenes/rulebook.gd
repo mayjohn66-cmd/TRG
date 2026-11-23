@@ -1621,7 +1621,7 @@ func _ch_tiles() -> Dictionary:
 ## [보드 이름, 빵집 자리·옷장 자리 칸 이름] 표.
 static func _board_kind_rows() -> Array:
 	var rows: Array = []
-	for board: Dictionary in BoardCatalog.available():
+	for board: Dictionary in BoardCatalog.BOARDS:
 		var names: PackedStringArray = []
 		for kind_id: StringName in BoardCatalog.board_kinds(board["id"]):
 			names.append(str(BoardCatalog.tile_kind(kind_id)["name"]))
@@ -1632,11 +1632,11 @@ static func _board_kind_rows() -> Array:
 ## 보드판: 고를 수 있는 보드판마다 한 장 (미리보기 그림, 판 그림, 그 보드만의 칸 설명).
 func _ch_boards() -> Dictionary:
 	var entries: Array = [
-		{"title": "보드판 고르기", "art": &"board", "tone": Color("5fc1e8"), "chips": ["%d종" % BoardCatalog.available().size()],
+		{"title": "보드판 고르기", "art": &"board", "tone": Color("5fc1e8"), "chips": ["%d종" % BoardCatalog.BOARDS.size()],
 			"summary": "보드판마다 [b]빵집 자리·옷장 자리[/b]에 서는 칸이 달라요.", "rows": _board_kind_rows(),
 			"points": ["컴퓨터 대전 시작 화면과 [방 규칙 설정]에서 고를 수 있어요", "판을 시작하면 모두 같은 보드판을 써요", "출발·코너·반환점·부스터 발판은 모든 보드판이 같아요 (기본 규칙 → 특수 칸)"]},
 	]
-	for board: Dictionary in BoardCatalog.available():
+	for board: Dictionary in BoardCatalog.BOARDS:
 		var id: StringName = board["id"]
 		var blocks: Array = []
 		var kinds: Array[StringName] = BoardCatalog.board_kinds(id)

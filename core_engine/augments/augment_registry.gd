@@ -55,12 +55,6 @@ static func all() -> Array[AugmentDef]:
 			utility.min_round = 2
 			_cache.append(utility)
 		_apply_table(_cache)
-		# 다음 버전용 판정 도구(ReleaseGate.TOOL_SINCE)는 그 버전이 되기 전까지 증강 풀·도감에서 뺀다 (표에 줄이 있어도)
-		var released: Array[AugmentDef] = []
-		for definition: AugmentDef in _cache:
-			if definition.category != GameEnums.AugmentCategory.TOOL_SWAP or ReleaseGate.tool_open(StringName(str(definition.payload))):
-				released.append(definition)
-		_cache = released
 		apply_board_variants(_cache)
 	return _cache
 
