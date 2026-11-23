@@ -2841,6 +2841,9 @@ func _tile_tag_base(index: int, tile_type: TileNode.TileType) -> String:
 		TileNode.TileType.START_GOAL: return "▲출발"
 		TileNode.TileType.BAKERY: return str(BoardCatalog.current_shop()["name"])
 		TileNode.TileType.PORTAL, TileNode.TileType.VENDING, TileNode.TileType.CAULDRON: return str(BoardCatalog.current_portal()["name"])
+		TileNode.TileType.SPIRIT:  # 정령산: 지금 깃든 정령과 효과 (증강 라운드마다 바뀐다)
+			var spirit: StringName = MountainSpirits.at(state, index)
+			return "%s · %s" % [MountainSpirits.name_of(spirit), MountainSpirits.text_of(spirit)] if spirit != &"" else str(BoardCatalog.current_portal()["name"])
 	if BoardSpec.jump_corner_targets.has(index):
 		return "점프 코너 → %d번" % int(BoardSpec.jump_corner_targets[index])
 	if index == BoardSpec.halfway_tile:
@@ -3004,6 +3007,7 @@ func _refresh_tiles() -> void:
 		if not kind_label.is_empty():
 			tips.append(kind_label)
 		var color: Color = Color("ff6b6b")
+		_paint_spirit_chip(index)
 		var has_trap: bool = false
 		var trap_icon: Texture2D = null
 		for attachment: TileAttachment in state.board.get_tile(index).attachments:
@@ -3032,6 +3036,34 @@ func _refresh_tiles() -> void:
 		mark.position = Vector2((_tile_views[index] as Control).size.x - 2 - mark.get_minimum_size().x, 0)
 		mark.add_theme_color_override("font_color", color)
 	_refresh_structures()
+
+
+## 정령산: 정령 칸 가운데에 지금 깃든 정령(불·물·땅·바람)을 그 색의 둥근 칩으로 보여 준다 (증강 라운드마다 바뀐다). 정령 칸이 아니면 숨긴다.
+func _paint_spirit_chip(index: int) -> void:
+	var tile_view: Control = _tile_views[index] as Control
+	var chip: Label = tile_view.get_node_or_null("SpiritChip") as Label
+	var spirit: StringName = MountainSpirits.at(state, index) if state.board.get_tile(index).tile_type == TileNode.TileType.SPIRIT else &""
+	if spirit == &"":
+		if chip != null:
+			chip.visible = false
+		return
+	var spirit_def: Dictionary = MountainSpirits.def_of(spirit)
+	if chip == null:
+		chip = _make_label("", 13, Color.WHITE)
+		chip.name = "SpiritChip"
+		chip.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		chip.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		chip.add_theme_constant_override("outline_size", 4)
+		chip.add_theme_color_override("font_outline_color", Color("10231f"))
+		tile_view.add_child(chip)
+	chip.text = L10n.t(str(spirit_def["short"]))
+	var tint: Color = spirit_def["color"]
+	chip.add_theme_stylebox_override("normal", _style(tint.darkened(0.15), tint.lightened(0.5), 2, 10, 0, 1))
+	chip.reset_size()
+	chip.size = Vector2(maxf(chip.get_minimum_size().x + 10.0, 30.0), chip.get_minimum_size().y)
+	chip.position = tile_view.size / 2.0 - chip.size / 2.0
+	chip.visible = true
 
 
 ## 중립 NPC가 라운드 끝에 덮칠 길을 붉은 테두리·삼각 경고·진행 화살표로 예고한다. 위험 계산은 NeutralNPC.danger_preview가 맡는다.
@@ -3740,6 +3772,22 @@ const POTION_COLORS: Dictionary = {
 
 
 ## 마녀의 가마솥에서 끓인 물약: 로그를 남기고 짧은 끓이기 연출(가마솥 보글보글 → 물약 병 → 이름·효과 → 말 위 배지)을 보여 준다 (벨라티엔 왕국).
+## 정령산: 정령 칸의 효과를 받았다 (불·물·바람은 딱 멈춰서, 땅은 지나가다 멈춰서). 기록 한 줄 + 그 칸 위에 정령 이름이 떠오른다.
+func _spirit_feedback(data: Dictionary) -> void:
+	var spirit: StringName = StringName(str(data.get("spirit", "")))
+	if spirit == &"" or not _pawn_views.has(int(data["pawn_id"])):
+		return
+	var pawn: PlayerPawn = state.get_pawn(int(data["pawn_id"]))
+	var owner_id: int = pawn.owner_id if pawn != null else manager.current_player_id()
+	var spirit_def: Dictionary = MountainSpirits.def_of(spirit)
+	_record(owner_id, "[%s] %s" % [L10n.t(MountainSpirits.name_of(spirit)), L10n.t(MountainSpirits.text_of(spirit))], "", true)
+	if pawn == null or not _fx_on():
+		return
+	var tile: int = int(data.get("spirit_tile", pawn.current_tile_idx))
+	_enqueue_late(func() -> void:
+		_floating_badge(_tile_center(tile) + _pawn_layer.position + Vector2(0, -46), "%s!" % L10n.t(MountainSpirits.name_of(spirit)), spirit_def["color"], 22))
+
+
 func _cauldron_feedback(data: Dictionary) -> void:
 	var potion: StringName = data.get("cauldron_potion", &"")
 	if potion == &"" or not _pawn_views.has(int(data["pawn_id"])):
@@ -7284,6 +7332,9 @@ func _pawn_prediction(pawn: PlayerPawn) -> Dictionary:
 		return {"text": str(BoardCatalog.current_shop()["toast"]), "good": true}
 	if tile.tile_type == TileNode.TileType.CAULDRON:
 		return {"text": "가마솥!", "good": true}
+	if tile.tile_type == TileNode.TileType.SPIRIT and MountainSpirits.at(state, dest) != &"":
+		var spirit_def: Dictionary = MountainSpirits.def_of(MountainSpirits.at(state, dest))
+		return {"text": str(spirit_def["preview"]), "good": bool(spirit_def["good"])}
 	if promote:
 		return {"text": "나리!", "good": true}
 	if allied:
@@ -12460,6 +12511,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_bakery_feedback(data)
 			_vending_feedback(data)
 			_cauldron_feedback(data)
+			_spirit_feedback(data)
 			_corner_buff_feedback(data)
 			if bool(data.get("jailed", false)) and (data.get("path", []) as Array).is_empty():
 				_announce_move_failed("무인도 탈출 실패!", manager.current_player_id(), "짝수 눈금이 나와야 탈출할 수 있습니다")
@@ -12516,6 +12568,10 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 					_log_line("[중립 기물] %s" % result_text, Color("fa5252"))
 					if not caught.is_empty():
 						_record(-1, "%s" % result_text), not caught.is_empty())  # 잡은 말은 처치 컷인·사출로 보인다 (따로 [말을 잡았습니다!] 카드는 띄우지 않는다)
+		&"spirits_shifted":  # 정령산: 증강 라운드마다 정령이 자리를 바꾼다
+			_log_line("[정령산] 정령들이 자리를 바꿨습니다", Color("63c7b2"))
+			_record(-1, "정령들이 자리를 바꿨습니다! 칸 위의 정령을 확인하세요", "", true)
+			_refresh_tiles()
 		&"augment_offers":
 			_super_changes.clear()
 			_draft_open = true

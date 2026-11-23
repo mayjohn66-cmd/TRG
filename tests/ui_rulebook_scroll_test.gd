@@ -124,10 +124,17 @@ func run() -> void:
 			switch_point = point(reverse_button)
 			await drag(switch_point, switch_point + Vector2.ONE, MobileSupport.touch_mode())
 			check(str(book._content.entries[variant_index].get("title", "")) == "Bad Carrot", "The second press shows the Belatien witch-shop card (%s)" % book._content.entries[variant_index].get("title", ""))
-			var third_button := book._tiles[variant_index].get_node("BoardVariantButton") as Button
-			switch_point = point(third_button)
-			await drag(switch_point, switch_point + Vector2.ONE, MobileSupport.touch_mode())
-			check(not bool(book._content.entries[variant_index].get("variant_flipped", true)), "The third press returns to the bakery card")
+			# 남은 보드 판(정령산 등)을 한 장씩 넘긴 뒤 한 번 더 누르면 원래 빵집 카드로 돌아온다
+			var variant_boards: int = 0
+			for board: Dictionary in BoardCatalog.BOARDS:
+				if (board.get("law_variants", {}) as Dictionary).has("LAW_02"):
+					variant_boards += 1
+			for press: int in range(variant_boards - 1):
+				var next_button := book._tiles[variant_index].get_node("BoardVariantButton") as Button
+				switch_point = point(next_button)
+				await drag(switch_point, switch_point + Vector2.ONE, MobileSupport.touch_mode())
+				var flipped: bool = bool(book._content.entries[variant_index].get("variant_flipped", false))
+				check(flipped == (press < variant_boards - 2), "Press %d shows %s" % [press + 3, "the next board card" if press < variant_boards - 2 else "the bakery card again"])
 		book.show_spread(4)
 		await frames()
 		var scroll := book._right_scroll

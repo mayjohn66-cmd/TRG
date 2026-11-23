@@ -3018,3 +3018,36 @@ TRPG,TRPG,TRPG
 다시 시도,Retry,再試行
 게임 데이터를 받지 못했어요. 인터넷 연결을 확인하고 다시 시도해 주세요.,Couldn't download the game data. Check your internet connection and try again.,ゲームデータをダウンロードできませんでした。インターネット接続を確認して再試行してください。
 다시 받는 중...,Downloading again...,再ダウンロード中...
+[정령산] 정령들이 자리를 바꿨습니다,[Spirit Mountain] The spirits have changed places,[精霊山] 精霊たちが場所を入れ替えました
+정령들이 자리를 바꿨습니다! 칸 위의 정령을 확인하세요,The spirits have changed places! Check which spirit sits on each tile,精霊たちが場所を入れ替えました！マスの上の精霊を確認しましょう
+정령 칸,Spirit tile,精霊マス
+정령!,Spirit!,精霊！
+[순례 목표],[Pilgrimage goal],[巡礼目標]
+정령 칸 순례! (%d/%d),Spirit tile pilgrimage! (%d/%d),精霊マス巡礼！ (%d/%d)
+정령 칸 (증강 라운드마다 정령이 바뀜),Spirit tile (spirits change every augment round),精霊マス (増強ラウンドごとに精霊が入れ替わる)
+정령산 순례,Spirit Mountain Pilgrimage,精霊山巡礼
+정령 칸에 {p1}회 멈춤,Stop on spirit tiles {p1} times,精霊マスに{p1}回止まる
+[특수 승리] 정령산 순례,[Special Win] Spirit Mountain Pilgrimage,[特殊勝利] 精霊山巡礼
+정령 칸 %d회 순례 · 정령산 순례 완성!,Visited spirit tiles %d times · Spirit Mountain Pilgrimage complete!,精霊マスを%d回巡礼 · 精霊山巡礼達成！
+하급 불 정령,Lesser Fire Spirit,下級火の精霊
+불,Fire,火
+딱 멈추면 1칸 뒤로,Stop exactly: 1 tile back,ぴったり止まると1マス戻る
+하급 물 정령,Lesser Water Spirit,下級水の精霊
+물,Water,水
+딱 멈추면 카드 1장,Stop exactly: draw 1 card,ぴったり止まるとカード1枚
+하급 땅 정령,Lesser Earth Spirit,下級地の精霊
+땅,Earth,地
+지나가기만 해도 그 칸에서 정지,Stops you on this tile even when just passing,通過するだけでそのマスで停止
+멈춤,Stop,停止
+하급 바람 정령,Lesser Wind Spirit,下級風の精霊
+바람,Wind,風
+딱 멈추면 1칸 앞으로,Stop exactly: 1 tile forward,ぴったり止まると1マス進む
+정령산,Spirit Mountain,精霊山
+정령산 보기,View Spirit Mountain,精霊山を見る
+정령들의 산 · 증강 라운드마다 빵집·옷장 자리 6곳에 하급 정령(불·물·땅·바람)이 깃들어 효과가 바뀐다,"Mountain of spirits · Every augment round, lesser spirits (fire, water, earth, wind) settle on the 6 bakery and wardrobe spots and change their effects",精霊たちの山 · 増強ラウンドごとにパン屋・クローゼットの6か所に下級精霊（火・水・地・風）が宿り、効果が変わる
+"증강 라운드마다 [b]하급 정령[/b]이 자리를 바꿔 깃들어요. 불은 1칸 뒤로, 물은 카드 1장, 바람은 1칸 앞으로 (딱 멈추면), 땅은 [b]지나가기만 해도[/b] 그 칸에서 멈춰요.","Every augment round, [b]lesser spirits[/b] move to new tiles. Fire sends you 1 tile back, Water gives 1 card, Wind moves you 1 tile forward (when you stop exactly), and Earth stops you on its tile [b]even when you just pass[/b].",増強ラウンドごとに[b]下級精霊[/b]が場所を変えて宿ります。火は1マス戻る、水はカード1枚、風は1マス進む（ぴったり止まったとき）、地は[b]通過するだけで[/b]そのマスで止まります。
+증강 라운드마다 [b]하급 정령[/b]이 자리를 바꿔 깃들어요.,"Every augment round, [b]lesser spirits[/b] move to new tiles.",増強ラウンドごとに[b]下級精霊[/b]が場所を変えて宿ります。
+1칸 뒤로,1 tile back,1マス戻る
++1칸,+1 tile,+1マス
+뒤로!,Back!,戻る！
+앞으로!,Forward!,進む！

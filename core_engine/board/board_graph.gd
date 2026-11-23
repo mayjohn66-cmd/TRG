@@ -39,6 +39,8 @@ func _init_24_tiles() -> void:
 		tiles[index].tile_type = TileNode.TileType.VENDING
 	for index: int in BoardSpec.cauldron_tiles:
 		tiles[index].tile_type = TileNode.TileType.CAULDRON
+	for index: int in BoardSpec.spirit_tiles:
+		tiles[index].tile_type = TileNode.TileType.SPIRIT
 
 
 ## 모든 타일이 유효한 next_default를 갖고, 모든 간선이 보드 범위(BoardSpec.tile_count) 안에 있는지 검사한다.

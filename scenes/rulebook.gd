@@ -1496,7 +1496,7 @@ func _special_tile_entries() -> Array:
 				if other[slot] == kind_id:
 					users.append(str(other["name"]))
 			var layout: Dictionary = BoardCatalog.layout_of(board["id"])
-			var key: String = "bakery_tiles" if slot == "shop" else str(kind["tiles_key"])
+			var key: String = str(kind.get("tiles_key", "bakery_tiles"))
 			var book: Dictionary = kind["rulebook"]
 			var entry: Dictionary = {"title": "%s (%s)" % [kind["name"], "·".join(users)], "art": book["art"], "tone": book["tone"],
 				"chips": [_join_tiles(layout[key]) + "번"], "summary": book["summary"]}
@@ -1504,8 +1504,16 @@ func _special_tile_entries() -> Array:
 				&"portal": entry["rows"] = _warp_rows()
 				&"vending": entry["rows"] = _drink_rows()
 				&"cauldron": entry["rows"] = _potion_rows()
+				&"spirit": entry["rows"] = _spirit_rows()
 			entries.append(entry)
 	return entries
+
+
+func _spirit_rows() -> Array:
+	var rows: Array = []
+	for spirit: Dictionary in MountainSpirits.SPIRITS:
+		rows.append([str(spirit["name"]), str(spirit["text"])])
+	return rows
 
 
 func _potion_rows() -> Array:

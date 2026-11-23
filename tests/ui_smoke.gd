@@ -49,6 +49,8 @@ func _process(_delta: float) -> bool:
 			L10n.set_language(smoke_lang)
 		_rng.seed = int(OS.get_environment("SMOKE_SEED")) if OS.get_environment("SMOKE_SEED") != "" else 20261015
 		GameSession.view_mode = 1 if OS.get_environment("SMOKE_VIEW") == "tilt" else 0  # SMOKE_VIEW=tilt: 기울인 탑뷰로 한 판 진행
+		if OS.get_environment("SMOKE_BOARD") != "":  # SMOKE_BOARD=spirit_mountain 등: 그 보드판으로 한 판 (저장된 선택은 건드리지 않는다)
+			GameSession._board_id = BoardCatalog.sanitize(OS.get_environment("SMOKE_BOARD"))
 		var scene: PackedScene = load("res://scenes/main_board.tscn")
 		_board = scene.instantiate()
 		root.add_child(_board)

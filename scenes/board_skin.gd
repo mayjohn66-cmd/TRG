@@ -52,7 +52,7 @@ static func definition(index: int) -> Dictionary:
 	var special: StringName = &""
 	if index in BoardSpec.bakery_tiles:
 		special = BoardSpec.shop_kind
-	elif index in BoardSpec.portal_tiles or index in BoardSpec.vending_tiles or index in BoardSpec.cauldron_tiles:
+	elif index in BoardSpec.portal_tiles or index in BoardSpec.vending_tiles or index in BoardSpec.cauldron_tiles or index in BoardSpec.spirit_tiles:
 		special = BoardSpec.portal_kind
 	if special != &"":
 		var kind: Dictionary = BoardCatalog.tile_kind(special)

@@ -28,6 +28,7 @@ const SOURCES := {
 	&"vending": preload("res://assets/board/decals/BOARD_VENDING.png"),
 	&"witch_shop": preload("res://assets/board/decals/BOARD_WITCH_SHOP.png"),
 	&"cauldron": preload("res://assets/board/decals/BOARD_CAULDRON.png"),
+	&"spirit": preload("res://assets/board/decals/BOARD_SPIRIT.png"),  # 정령산 정령 칸 (임시 그림)
 	&"boost": preload("res://assets/board/decals/BOARD_BOOST.png"),
 	&"pawn_basics": preload("res://content_trickcal/illustrations/pawns/PAWN_DEFAULT.png"),
 }
@@ -58,6 +59,7 @@ const REGIONS := {
 	&"vending": Rect2(330.0/1254,230.0/1254,595.0/1254,801.0/1254),
 	&"witch_shop": Rect2(0, 0, 1, 1),
 	&"cauldron": Rect2(0, 0, 1, 1),
+	&"spirit": Rect2(0, 0, 1, 1),
 	&"boost": Rect2(172.0/1254,427.0/1254,915.0/1254,398.0/1254),
 	&"pawn_basics": Rect2(334.0/1254,218.0/1254,586.0/1254,854.0/1254),
 }
