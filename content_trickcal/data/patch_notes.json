@@ -88,6 +88,11 @@
        "ko": "휴대폰에서 앱을 잠시 내렸다 오는 등 소리가 멈추면, 말이 잡히는 연출이나 게임 시작 연출이 캐릭터 대사가 끝나길 기다리며 멈춰 있을 수 있던 문제를 막았어요",
        "en": "Fixed the capture and game-start scenes possibly freezing while waiting for a character's line to finish when audio stopped (for example after briefly switching away from the app on a phone)",
        "ja": "スマホでアプリを一時的に離れるなど音声が止まったとき、駒が倒される演出やゲーム開始演出がキャラクターのセリフの終わりを待って止まってしまうことがあった問題を修正"
+      },
+      {
+       "ko": "게임 시작·규칙 도감을 열 때 게임 데이터 받기 진행률이 100%를 넘어(118% 등) 보이던 문제를 고쳤어요",
+       "en": "Fixed the game data download progress going past 100% (e.g. 118%) when starting a game or opening the Rulebook",
+       "ja": "ゲーム開始・ルール図鑑を開く時のゲームデータ受信の進行率が100%を超えて（118%など）表示される問題を修正しました"
       }
      ]
     }

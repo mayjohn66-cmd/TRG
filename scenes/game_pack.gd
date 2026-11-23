@@ -92,7 +92,7 @@ func ratio() -> float:
 	if _request == null or not _loading:
 		return 1.0 if is_ready() else 0.0
 	var total: int = _request.get_body_size()
-	return float(_request.get_downloaded_bytes()) / float(total) if total > 0 else -1.0
+	return minf(float(_request.get_downloaded_bytes()) / float(total), 1.0) if total > 0 else -1.0
 
 
 func last_error() -> String:
@@ -120,7 +120,8 @@ func _poll_js() -> void:
 		return
 	var job: Dictionary = state
 	var total: float = float(job.get("total", -1))
-	_js_ratio = float(job.get("loaded", 0)) / total if total > 0.0 else -1.0
+	# 받은 양은 압축을 푼 바이트라, 전체 크기를 모르면(-1) 비율을 내지 않는다. 혹시 넘어도 100%에서 멈춘다
+	_js_ratio = minf(float(job.get("loaded", 0)) / total, 1.0) if total > 0.0 else -1.0
 	match str(job.get("state", "")):
 		"done":
 			_js_job = false

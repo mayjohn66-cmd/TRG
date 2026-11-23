@@ -459,13 +459,26 @@
 		// 브라우저 fetch로 통째로 받아 엔진 파일 시스템에 바로 써 준다 (engine.copyToFS). 게임(scenes/game_pack.gd)이 trgFetchPack을 부르고 trgPacks[key]를 매 프레임 본다.
 		// 주소의 ?v=는 위 캐시 가드가 내용 해시로 바꾼다.
 		window.trgPacks = {};
+		// 묶음 파일의 실제(압축 전) 크기: 배포 스크립트(tools/stamp_web_build.py)가 __TRG_FILE_SIZES__에 채운다.
+		// 서버가 gzip으로 보내면 Content-Length는 압축된 크기인데 브라우저가 넘겨주는 조각은 압축을 푼 바이트라, 그것으로 나누면 100%를 넘는다 (118% 제보).
+		var TRG_FILE_SIZES = {};
+		try { var sizesText = '__TRG_FILE_SIZES__'; if (sizesText.indexOf('__TRG') !== 0) { TRG_FILE_SIZES = JSON.parse(sizesText); } } catch (e) { TRG_FILE_SIZES = {}; }
+		function trgPackSize(url, response) {
+			var path = String(url).split('?')[0];
+			for (var name in TRG_FILE_SIZES) {
+				if (path === name || path.slice(-(name.length + 1)) === '/' + name) { return Number(TRG_FILE_SIZES[name]) || -1; }
+			}
+			// 새긴 크기가 없으면: 압축해서 보낸 응답의 Content-Length는 쓰지 않는다 (진행 막대는 '받는 중'으로만 보인다)
+			if (response.headers.get('Content-Encoding')) { return -1; }
+			return Number(response.headers.get('Content-Length')) || -1;
+		}
 		window.trgFetchPack = function (key, url, fsPath) {
 			var job = window.trgPacks[key];
 			if (job && (job.state === 'loading' || job.state === 'done')) { return; }
 			job = window.trgPacks[key] = { state: 'loading', loaded: 0, total: -1, error: '' };
 			fetch(url).then(function (response) {
 				if (!response.ok) { throw new Error('HTTP ' + response.status); }
-				job.total = Number(response.headers.get('Content-Length')) || -1;
+				job.total = trgPackSize(url, response);
 				if (!response.body || !response.body.getReader) { return response.arrayBuffer(); }
 				var reader = response.body.getReader();
 				var chunks = [];
