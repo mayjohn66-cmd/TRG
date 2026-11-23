@@ -52,9 +52,17 @@
         255
       ],
       "source_sha256": "3cdc34931f4e6c88004f5f4f7593fa2be45618780e92c8922aafa3cb8d9b87b0",
-      "project_sha256": "3cdc34931f4e6c88004f5f4f7593fa2be45618780e92c8922aafa3cb8d9b87b0",
+      "project_sha256": "f3d3ba1f71071321e8fa51a0e529186ba67042c1d41ada45a8c56461b88ec5ad",
       "qa": "identity/face-only/no body/no frame/alpha visually checked; original colors and head accessories retained",
-      "prompt": "Use case: style-transfer / identity-preserve. Edit target is this exact supplied game avatar. Create ONE game-ready detached head/face cutout for a comic-book results page. Preserve the exact chibi head proportions, face, eye shapes, expression, hair silhouette and defining head accessories of the source character. Remove the entire torso, shoulders, hands, weapons and staff; keep the full head, hair mass around the head and head accessories, ending just below the chin. Enlarge the head to occupy about 80 percent of a square canvas with at least 8 percent transparent safe margin on all sides; complete head edges that were cropped by the reference. Medium: punchy printed POP ART cartoon with bold crisp dark ink contours, flat limited spot-color fills, sharp two-tone cel shadows, restrained Ben-Day halftone dots in only the shadow areas; no soft gradients or realistic lighting. Keep source character colors recognizable, using cream skin, rich colored hair midtones and dark purple-black ink. Clean readable silhouette at 120px display size. Pure transparent RGBA background, NO frame, badge, circle, square tile, scenery, text, rank number, watermark or drop shadow. No body or hands at all. Character identity: long dusty rose hair, turquoise eyes, pointed elf ears, a tiny mischievous sideways smile."
+      "prompt": "Use case: style-transfer / identity-preserve. Edit target is this exact supplied game avatar. Create ONE game-ready detached head/face cutout for a comic-book results page. Preserve the exact chibi head proportions, face, eye shapes, expression, hair silhouette and defining head accessories of the source character. Remove the entire torso, shoulders, hands, weapons and staff; keep the full head, hair mass around the head and head accessories, ending just below the chin. Enlarge the head to occupy about 80 percent of a square canvas with at least 8 percent transparent safe margin on all sides; complete head edges that were cropped by the reference. Medium: punchy printed POP ART cartoon with bold crisp dark ink contours, flat limited spot-color fills, sharp two-tone cel shadows, restrained Ben-Day halftone dots in only the shadow areas; no soft gradients or realistic lighting. Keep source character colors recognizable, using cream skin, rich colored hair midtones and dark purple-black ink. Clean readable silhouette at 120px display size. Pure transparent RGBA background, NO frame, badge, circle, square tile, scenery, text, rank number, watermark or drop shadow. No body or hands at all. Character identity: long dusty rose hair, turquoise eyes, pointed elf ears, a tiny mischievous sideways smile.",
+      "edits": [
+        {
+          "date": "2026-11-23",
+          "reason": "결과 화면 제보(일본어): 엘레나의 목이 사라진 것처럼 보임 — 턱 아래가 짙은 뒷머리로 채워져 있었다",
+          "change": "원본 초상화(portrait.png) 비율대로 턱 아래에 짧은 목(피부색 면·진한 윤곽선·턱 밑 셀 그림자)을 그려 넣음 (PIL 스크립트, 턱 윤곽선·앞머리 가닥은 그대로)",
+          "source_sha256_before": "3cdc34931f4e6c88004f5f4f7593fa2be45618780e92c8922aafa3cb8d9b87b0"
+        }
+      ]
     },
     {
       "avatar": "avatar_04",

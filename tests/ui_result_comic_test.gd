@@ -159,9 +159,17 @@ func _run() -> void:
 	_expect(restart != null and not restart.is_visible_in_tree(), "상세 결과표는 [Next Page] 전까지 숨김")
 	_expect(_board.result_comic_texts(1) == (["RACE OVER", "말 4개 모두 완주"] as Array[String]), "완주 우승의 승리 이름·조건")
 	var expected_phrases := {"LAW_01":"Mochi Reality Shock","LAW_02":"SWEET VICTORY","LAW_03":"Unlimited Trap Works","LAW_04":"JACK POT","LAW_05":"CIRCLE COMPLETE","LAW_06":"Perma Death","LAW_07":"ENDLESS DICE","LAW_08":"Attack on Meeple"}
+	# 기대 문구는 에르핀 왕국(기본 보드) 기준이다: 저장된 보드 선택(profile.cfg)이 다른 보드면 LAW_02가 그 보드의 판(MONATIUM DAYS·BAD CARROT)이 된다
+	var saved_preview: StringName = VictoryLaw.preview_board
+	VictoryLaw.preview_board = &"classic"
 	for law_id: String in expected_phrases:
 		state.rank_reasons[1]=StringName(law_id)
 		_expect(_board.result_comic_texts(1)[0]==expected_phrases[law_id],"특수 승리 결과도 승인된 컷신 승리 문구를 쓴다: "+law_id)
+	for board_id: StringName in [&"monatium", &"belatien"]:  # 보드별 판은 그 보드의 결과 문구 (BoardCatalog law_variants)
+		VictoryLaw.preview_board = board_id
+		state.rank_reasons[1]=&"LAW_02"
+		_expect(_board.result_comic_texts(1)[0]==str(BoardCatalog.law_variant(board_id, "LAW_02")["result_phrase"]),"%s 보드의 LAW_02 결과 문구" % board_id)
+	VictoryLaw.preview_board = saved_preview
 	state.rank_reasons[1]=VictoryChecker.ALL_HOME
 	var deadline := Time.get_ticks_msec() + 8000
 	while comic != null and (not comic.visible or comic.active) and Time.get_ticks_msec() < deadline:
