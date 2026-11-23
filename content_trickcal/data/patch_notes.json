@@ -44,6 +44,11 @@
        "ko": "증강·판정 도구 아이콘이 너무 쨍하게 보이던 것을 증강 선택 창·화면·도감에서 고르게 다듬었어요",
        "en": "Toned down overly sharp augment and judgment-tool icons so they look consistent across the augment window, the HUD and the rulebook",
        "ja": "増強・判定ツールのアイコンがくっきりしすぎていたのを、増強選択画面・画面表示・図鑑でそろうように調整"
+      },
+      {
+       "ko": "게임 중 [감정 표현]의 기쁨·당황·슬픔 아이콘을 새 그림 스티커로 바꿨어요",
+       "en": "The Joy, Flustered and Sad icons in the in-game [Emote] picker are now new illustrated stickers",
+       "ja": "ゲーム中の[スタンプ]の喜び・あわて・悲しみアイコンを新しいイラストのステッカーに変更しました"
       }
      ]
     },
@@ -63,6 +68,11 @@
        "ko": "증강 선택 창이 떠 있을 때 아래 기물 칸의 [리벤지 +N칸 대기중] 표시가 창을 뚫고 보이던 문제를 고쳤어요",
        "en": "Fixed the [Revenge +N waiting] badge on the pawn slots showing through the augment selection window",
        "ja": "増強選択画面が出ているとき、下の駒欄の[リベンジ +Nマス待機中]表示が画面を突き抜けて見えていた問題を修正"
+      },
+      {
+       "ko": "휴대폰에서 앱을 잠시 내렸다 오는 등 소리가 멈추면, 말이 잡히는 연출이나 게임 시작 연출이 캐릭터 대사가 끝나길 기다리며 멈춰 있을 수 있던 문제를 막았어요",
+       "en": "Fixed the capture and game-start scenes possibly freezing while waiting for a character's line to finish when audio stopped (for example after briefly switching away from the app on a phone)",
+       "ja": "スマホでアプリを一時的に離れるなど音声が止まったとき、駒が倒される演出やゲーム開始演出がキャラクターのセリフの終わりを待って止まってしまうことがあった問題を修正"
       }
      ]
     }
