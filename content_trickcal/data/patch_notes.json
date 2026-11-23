@@ -58,6 +58,11 @@
        "ko": "결과 화면 순위 칸에서 엘레나의 목이 사라진 것처럼 보이던 그림을 고쳤어요 (제보 감사합니다!)",
        "en": "Fixed Elena looking like she had no neck in the result screen's ranking panels (thanks for the report!)",
        "ja": "リザルト画面の順位欄でエレナの首が消えているように見えていたイラストを修正しました（ご報告ありがとうございます！）"
+      },
+      {
+       "ko": "증강 선택 창이 떠 있을 때 아래 기물 칸의 [리벤지 +N칸 대기중] 표시가 창을 뚫고 보이던 문제를 고쳤어요",
+       "en": "Fixed the [Revenge +N waiting] badge on the pawn slots showing through the augment selection window",
+       "ja": "増強選択画面が出ているとき、下の駒欄の[リベンジ +Nマス待機中]表示が画面を突き抜けて見えていた問題を修正"
       }
      ]
     }

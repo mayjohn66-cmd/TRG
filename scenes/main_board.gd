@@ -5092,7 +5092,8 @@ func _paint_revenge_glow(host: Control, on: bool, steps: int = 0, compact: bool 
 			tag.add_theme_color_override("font_color", Color("1a0a00"))
 			tag.add_theme_font_size_override("font_size", 10 if compact else 11)
 			tag.add_theme_stylebox_override("normal", _style(Color("ffa94d"), Color("ff6b00"), 1, 6, 0, 1))
-			tag.z_index = 5
+			# z_index를 쓰지 않는다: 자식 그림 순서로만 불꽃 위에 둔다 (아래 move_child). z_index가 있으면 증강 선택 창 같은
+			# 보드 위 창(z 0, 나중에 붙어 위에 그린다)을 뚫고 [리벤지 +N칸 대기중]이 비쳤다 (2026-11 제보)
 			host.add_child(tag)
 			if not compact:  # 불꽃 이모지는 글꼴이 아니라 그림으로 (EmojiText)
 				var flame := TextureRect.new()
@@ -6774,9 +6775,8 @@ func _build_pawn_dock() -> void:
 	add_child(_pawn_bar)
 	_dock_agitation_mark = AGITATION_MARK.new()
 	_dock_agitation_mark.position = Vector2(_pawn_bar.size.x - 12.0, -5.0)
-	_dock_agitation_mark.z_index = 4
 	_dock_agitation_mark.hide()
-	_pawn_bar.add_child(_dock_agitation_mark)
+	_pawn_bar.add_child(_dock_agitation_mark)  # z_index 없이: 보여 줄 때 맨 뒤 자식으로 옮겨 칸들 위에 그린다 (증강 선택 창을 뚫지 않게)
 	var step: float = SLOT_SIZE.x + 5.0
 	for slot: int in GameEnums.PAWNS_PER_PLAYER:
 		var skill_button: Button = _make_button("필살기\n발동!", _on_skill_pressed.bind(slot), 15, Color("c77d0a"), 8)
@@ -6817,8 +6817,7 @@ func _build_pawn_dock() -> void:
 		result.size = Vector2(SLOT_SIZE.x, 22)
 		result.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		result.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		result.visible = false
-		result.z_index = 3  # 기물 그림 위에 보이게
+		result.visible = false  # 기물 그림 위에 보이게: z_index 대신 칸을 그릴 때 맨 위로 옮긴다 (증강 선택 창을 뚫지 않게)
 		button.add_child(result)
 		var number := _make_label(str(slot + 1), 12, Color("adb5bd"))
 		number.position = Vector2(6, 2)
@@ -7134,6 +7133,9 @@ func _refresh_pawn_dock() -> void:
 		var badge: Label = parts["badge"]
 		badge.visible = false
 		badge.text = "x%d" % (pawn.carried.size() + 1)
+		# 칸 안 그림 순서: 기물 그림 -> 리벤지 불꽃·배지 -> 결과 예고 -> 업힘 배지. z_index를 쓰면 보드 위 창(증강 선택 등)을 뚫으므로 자식 순서로만 정한다.
+		button.move_child(parts["result"] as Label, -1)
+		button.move_child(badge, -1)
 		# 기물 독은 내 말의 상태를 보여 주고, 말 고르기 단계에서는 같은 칸이 선택 버튼이 된다 (고를 수 있는 칸만 금테·결과 예고).
 		var base: Color = color.darkened(0.55)
 		var result_label: Label = parts["result"]
@@ -11704,6 +11706,8 @@ func _refresh_super_marks() -> void:
 	var agitation_targets: Dictionary = _visible_agitation_targets()
 	if _dock_agitation_mark != null:
 		_dock_agitation_mark.visible = agitation_targets.has(local_player_id)
+		if _dock_agitation_mark.visible:
+			_pawn_bar.move_child(_dock_agitation_mark, -1)
 	for player_id: int in _player_ids:
 		if not _profiles.has(player_id):
 			continue
