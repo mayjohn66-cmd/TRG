@@ -7425,8 +7425,6 @@ const TOOL_CARDS: Dictionary = {
 	&"DICE_ICECREAM": ["얌", Color("e64980"), "한 입 먹으면 막대에 칸이 나온다!", "★한번 더!가 나오면 아이스크림 리필"],
 	&"DICE_COOKIE": ["쿠", Color("d9822b"), "쿠키를 깨서 종이를 펼쳐라!", "★대박 8칸 · 종이에 적힌 대로"],
 	&"DICE_CAPSULE": ["캡", Color("7950f2"), "코인을 넣고 돌려라! 캡슐 속 미니어처가 칸수를 정한다!", "★시크릿 에르핀 8칸+한 번 더"],
-	&"DICE_PIRATE": ["해", Color("c4803f"), "통에 칼을 꽂을 때마다 +2칸! 해적이 튀어나오기 전에 멈춰라!", "해적 → 0칸·턴 종료"],
-	&"DICE_SCRATCH": ["복", Color("3c78d8"), "칸 3개를 긁어 당첨 문양을 맞춰라!", "★황금 문양은 2배"],
 }
 
 
@@ -7448,8 +7446,6 @@ const TOOL_RULES: Dictionary = {
 	&"DICE_STOCK": {"rows": [["보통 (88%)", "주가만큼 (1~12칸, 매번 ±3)"], ["★상한가 (6%)", "20칸"], ["상장폐지 (6%)", "0칸 · 선두 말 사출 · 턴 종료"]], "note": "주가는 6에서 시작해 이어진다 · 상한가·상장폐지 뒤 6으로"},
 	&"DICE_OMIKUJI": {"rows": [["★대길 (8%)", "8칸 + 한 번 더"], ["중길 (17%)", "6칸"], ["소길·길 (25%씩)", "4칸 / 3칸"], ["말길 (15%)", "2칸"], ["흉 (5%)", "1칸"], ["대흉 (5%)", "0칸 · 턴 종료"]], "note": "통을 흔들어 나온 점괘 그대로 · 순수한 운"},
 	&"DICE_ICECREAM": {"rows": [["막대 1~6칸 (85%)", "드러난 칸만큼"], ["★한번 더! (15%)", "3칸 + 새 아이스크림(한 번 더)"]], "note": "한 입 베어 물면 막대에 칸이 드러나요"},
-	&"DICE_PIRATE": {"rows": [["칼 1개", "+2칸 누적"], ["최대 누적", "14칸 (칼 7개 모두 무사하면 자동 확정)"], ["해적 (8구멍 중 1개)", "누적 0칸, 턴 종료"], ["멈추기", "누적한 칸만큼 이동"]], "note": "꽂을수록 해적 구멍만 남는다 · 버튼 한 번에 칼 하나"},
-	&"DICE_SCRATCH": {"rows": [["3개 일치", "12칸 + 한 번 더"], ["2개 일치", "5칸"], ["1개 일치", "1칸"], ["꽝", "0칸"], ["★황금 문양", "일치한 칸이 황금이면 칸수 2배"]], "note": "당첨 문양은 ♠♥◆♣ 중 하나 · 칸마다 당첨 문양이 나올 확률 43%"},
 	&"DICE_CAPSULE": {"rows": [["버터 (35%) · 셰이디 (30%)", "2칸 / 3칸 (흔함)"], ["벨리타 (20%)", "4칸 (보통)"], ["죠안 (10%)", "6칸 (희귀)"], ["★시크릿 에르핀 (5%)", "8칸 + 한 번 더"]], "note": "버튼만 누르면 코인 넣기 · 돌리기 · 캡슐 열기까지 자동 · 순수한 운"},
 	&"DICE_COOKIE": {"rows": [["1칸 (10%) · 2칸 (15%)", "종이에 적힌 대로"], ["3칸 (25%) · 4칸 (20%)", "종이에 적힌 대로"], ["5칸 (15%) · 6칸 (10%)", "종이에 적힌 대로"], ["★대박 쿠키 (5%)", "8칸"]], "note": "쿠키를 깨면 안의 종이에 몇 칸 갈지 적혀 있어요 · 순수한 운"},
 	&"DICE_DARTS": {"rows": [["싱글", "숫자(1~6)만큼"], ["더블 (바깥 고리)", "숫자 × 2"], ["트리플 (안쪽 고리)", "숫자 × 3"], ["★불스아이 (정중앙)", "10칸 + 한 번 더!"]], "note": "조준 없이 [던지기]만 누르면 돼요 · 꽂히는 자리는 순수한 운"},
@@ -7856,10 +7852,6 @@ func _roll_button_label(tool: BaseJudgmentTool) -> String:
 		return "깨기!"
 	if tool is ToolCapsuleGacha:
 		return "뽑기!"
-	if tool is ToolPirateRoulette:
-		return "칼\n꽂기"
-	if tool is ToolScratchLottery:
-		return "긁기!"
 	return tr_ui("btn.roll")
 
 
@@ -8051,8 +8043,6 @@ func _hint_text(current_phase: TurnManager.State, tool: BaseJudgmentTool) -> Str
 				return "고정할 주사위를 클릭하고 [나머지 다시 굴리기], 마음에 들면 [현재 족보로 이동 확정]을 누르세요."
 			if tool.has_pending_state() and tool is ToolBlackjack:
 				return "[히트]로 카드를 더 뽑거나 [스탠드]로 (합계-10)칸 이동을 확정하세요. 22 이상이면 버스트!"
-			if tool.has_pending_state() and tool is ToolPirateRoulette:
-				return "칼을 더 꽂거나, 멈추고 누적 칸수만큼 이동하세요. 해적이 튀어나오면 누적이 사라져요!"
 			if tool.has_pending_state():
 				return "계속 당기거나, 멈추고 누적 칸수만큼 이동하세요. 깃발이 나오면 누적이 사라져요!"
 			return "다시 굴려야 합니다 (재굴림)." if not manager.move_queue.is_empty() else "굴리기 버튼(또는 스페이스)을 한 번 누르세요."
@@ -12786,13 +12776,6 @@ func _roll_text(data: Dictionary) -> String:
 			text += FortuneCookieView.caption(details, int(result["steps"]))
 		&"DICE_CAPSULE":
 			text += CapsuleGachaView.caption(details, int(result["steps"]))
-		&"DICE_PIRATE":
-			text += PirateBarrelView.caption(details, int(result["steps"]), bool(result.get("can_continue", false)))
-		&"DICE_SCRATCH":
-			var faces: PackedStringArray = []
-			for cell: int in (details["cells"] as Array).size():
-				faces.append(("★" if bool((details["gold"] as Array)[cell]) else "") + ToolScratchLottery.SUITS[int((details["cells"] as Array)[cell])])
-			text += "[%s] 당첨 %s · %s" % [" ".join(faces), ToolScratchLottery.SUITS[int(details["winning"])], ScratchTicketView.caption(details, int(result["steps"]))]
 		&"REVOLVER":
 			if details["fired"]:
 				text += "뿅! 깃발 발사 · 누적 %d칸 사라짐, 턴 종료" % details["lost"]
@@ -13316,13 +13299,12 @@ func _handle_roll_event(data: Dictionary) -> void:
 		_handle_stage_roll(data)
 		return
 	# Stopping is a cash-out, not another trigger pull or cylinder advance.
-	if tool_id in [&"REVOLVER", &"DICE_PIRATE"] and bool(details.get("voluntary",false)):
+	if tool_id == &"REVOLVER" and bool(details.get("voluntary",false)):
 		_fx_serial += 1
+		_roll_pad.cancel_spin()
 		_presenter.cancel()
 		_fx_busy = false
-		if tool_id == &"REVOLVER":
-			_roll_pad.cancel_spin()
-			_roll_pad.reset_revolver()
+		_roll_pad.reset_revolver()
 		_reveal_roll(data)
 		_refresh_all()
 		return
@@ -13362,7 +13344,7 @@ func _handle_roll_event(data: Dictionary) -> void:
 	var serial: int = _fx_serial
 	_fx_busy = true
 	_refresh_controls()
-	if tool_id in [&"DICE_OMIKUJI", &"DICE_ICECREAM", &"DICE_COOKIE", &"DICE_CAPSULE", &"DICE_PIRATE", &"DICE_SCRATCH"]:
+	if tool_id in [&"DICE_OMIKUJI", &"DICE_ICECREAM", &"DICE_COOKIE", &"DICE_CAPSULE"]:
 		_roll_button.hide()  # 중앙 소품을 덮는 굴리기 버튼은 연출 종료 후 다시 갱신한다.
 	_presenter.hold_owner = int(data["player_id"])
 	await _presenter.play(tool_id, result, _pending_power, int(data.get("chain_index", 0)) > 0)

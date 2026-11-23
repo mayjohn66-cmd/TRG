@@ -3071,33 +3071,3 @@ TRPG,TRPG,TRPG
 "출발·코너·반환점·부스터 발판은 모든 보드판이 같아요 (기본 규칙 → 특수 칸)","Start, corners, halfway and booster pads are the same on every board (Basic Rules → Special Tiles)",スタート・コーナー・折り返し・ブースター床はどのボードも同じです (基本ルール → 特殊マス)
 생떼 카드 여러 장 (도감 → 보급),Several Tantrum Cards (Catalog → Supply),駄々っ子カード複数枚 (図鑑 → 補給)
 기물 변이 · 전군 돌연변이 · 필살기 리필 (도감 → 보급),Mutation · All-Troop Mutation · Skill Refill (Catalog → Supply),駒変異 · 全軍突然変異 · 必殺技リフィル (図鑑 → 補給)
-칼\n꽂기,Insert\nsword,剣を\n刺す
-긁기!,Scratch!,削る！
-"칼을 더 꽂거나, 멈추고 누적 칸수만큼 이동하세요. 해적이 튀어나오면 누적이 사라져요!","Insert another sword, or stop and move your stacked spaces. If the pirate pops out, the stack is lost!",剣をもう1本刺すか、止めて累積マス分進みましょう。海賊が飛び出すと累積は消えます！
-[%s] 당첨 %s · %s,[%s] Winning %s · %s,[%s] 当選 %s · %s
-당첨 문양,Winning suit,当選の絵柄
-"해적이 튀어나왔다! 누적 %d칸 사라짐, 턴 종료","The pirate popped out! Lost %d stacked spaces, turn over",海賊が飛び出した！累積%dマス消滅、番終了
-칼 7개 모두 무사! %d칸 확정,All 7 swords safe! %d spaces locked in,剣7本すべて無事！%dマス確定
-푹! 칼 %d개 · 누적 %d칸,Thunk! %d swords · %d stacked,ブスッ！剣%d本・累積%dマス
-멈추고 %d칸 이동 확정,Stopped: move %d spaces,止めて%dマス移動確定
- ★황금 2배, ★Gold x2, ★金で2倍
-3개 일치! %d칸 + 한 번 더%s,3 matches! %d spaces + Extra Roll%s,3つ一致！%dマス＋もう1回%s
-꽝! 0칸,No match! 0 spaces,はずれ！0マス
-%d개 일치 → %d칸%s,%d matches → %d spaces%s,%dつ一致 → %dマス%s
-해적 룰렛,Pirate Roulette,海賊ルーレット
-스크래치 복권,Scratch Ticket,スクラッチくじ
-통에 칼을 꽂을 때마다 +2칸! 해적이 튀어나오기 전에 멈춰라!,+2 for every sword in the barrel! Stop before the pirate pops out!,樽に剣を刺すたびに+2マス！海賊が飛び出す前に止めよう！
-해적 → 0칸·턴 종료,Pirate → 0 spaces & turn over,海賊 → 0マス・番終了
-칸 3개를 긁어 당첨 문양을 맞춰라!,Scratch 3 spots and match the winning suit!,3マスを削って当選の絵柄をそろえよう！
-★황금 문양은 2배,★Gold suits pay double,★金の絵柄は2倍
-칼 1개,1 sword,剣1本
-+2칸 누적,+2 stacked,+2マス累積
-14칸 (칼 7개 모두 무사하면 자동 확정),14 (locked in automatically if all 7 swords are safe),14マス (剣7本すべて無事なら自動確定)
-해적 (8구멍 중 1개),Pirate (1 of 8 holes),海賊 (8穴中1つ)
-꽂을수록 해적 구멍만 남는다 · 버튼 한 번에 칼 하나,"The more you insert, the closer the pirate hole · one sword per press",刺すほど海賊の穴だけが残る・ボタン1回で剣1本
-12칸 + 한 번 더,12 spaces + Extra Roll,12マス＋もう1回
-1개 일치,1 match,1つ一致
-★황금 문양,★Gold suit,★金の絵柄
-일치한 칸이 황금이면 칸수 2배,A gold matching spot doubles the spaces,一致したマスが金ならマス数2倍
-당첨 문양은 ♠♥◆♣ 중 하나 · 칸마다 당첨 문양이 나올 확률 43%,The winning suit is one of ♠♥◆♣ · each spot shows it 43% of the time,当選の絵柄は♠♥◆♣のどれか・各マスに当選の絵柄が出る確率43%
-꽝,No match,はずれ

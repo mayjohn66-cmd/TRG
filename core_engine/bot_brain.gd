@@ -477,13 +477,8 @@ static func choose_counter(state: GameState, _player_id: int, cards: Array, entr
 # ---------------------------------------------------------------------------
 
 ## 러시안 룰렛: 빈 총을 pull_target번 당겼으면(누적 칸수 기준) 멈춘다. pull_target은 보통 2~3.
-## 해적 룰렛: 구멍이 더 많고(8개 중 1개) 한 번에 +2칸이라 칼을 pull_target+1개(3~4개, 6~8칸) 꽂으면 멈춘다.
 static func should_stop_roulette(tool: BaseJudgmentTool, pull_target: int) -> bool:
-	if not tool.has_pending_state():
-		return false
-	if tool is ToolPirateRoulette:
-		return (tool as ToolPirateRoulette).swords >= pull_target + 1
-	if not (tool is ToolRussianRoulette):
+	if not (tool is ToolRussianRoulette) or not tool.has_pending_state():
 		return false
 	return (tool as ToolRussianRoulette).accumulated >= ToolRussianRoulette.STEPS_PER_EMPTY * pull_target
 
