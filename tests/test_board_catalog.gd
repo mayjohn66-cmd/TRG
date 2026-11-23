@@ -40,7 +40,9 @@ func test_every_board_has_complete_data_art_and_translations() -> void:
 		check(_translated(str(board["desc"])), "%s 보드 설명 번역 행 (en·ja)" % id)
 		check(_translated("%s 보기" % board["name"]), "도감 보드 넘기기 화살표 문구 번역 행: %s 보기" % board["name"])
 		var facts: Array = BoardCatalog.facts_of(id)
-		check_eq(facts.size(), 6, "%s 보드 특수 칸 요약 6줄" % id)
+		check_eq(facts.size(), 4 + BoardCatalog.board_kinds(id).size(), "%s 보드 특수 칸 요약 (칸 수·코너·반환점·부스터 + 칸 종류마다 한 줄)" % id)
+		for fact: Array in facts:
+			check(not str(fact[1]).begins_with("0"), "%s 보드 요약에 0곳인 칸이 없다: %s" % [id, fact])
 		var layout: Dictionary = BoardCatalog.layout_of(id)
 		var portal: Dictionary = BoardCatalog.PORTAL_KINDS.get(board.get("portal"), {})
 		check(not (layout.get(str(portal.get("tiles_key", "")), []) as Array).is_empty(), "%s 보드의 옷장 자리 칸이 배치된다" % id)

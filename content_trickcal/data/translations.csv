@@ -3051,3 +3051,23 @@ TRPG,TRPG,TRPG
 +1칸,+1 tile,+1マス
 뒤로!,Back!,戻る！
 앞으로!,Forward!,進む！
+보급,Supply,補給
+특수 칸,Special Tiles,特殊マス
+기본 설명,Basics,基本説明
+◀ 이전,◀ Prev,◀ 前へ
+다음 ▶,Next ▶,次へ ▶
+수집 %d/%d,Collected %d/%d,収集 %d/%d
+보드마다 다른 칸,Board-Specific Tiles,ボードごとのマス
+빵집 자리 4곳,4 bakery spots,パン屋の場所 4か所
+옷장 자리 2곳,2 wardrobe spots,クローゼットの場所 2か所
+빵집 자리와 옷장 자리에는 [b]보드판마다 다른 칸[/b]이 서요.,Bakery and wardrobe spots hold [b]different tiles on each board[/b].,パン屋とクローゼットの場所には[b]ボードごとに違うマス[/b]があります。
+빵집 자리와 옷장 자리에는 보드판마다 다른 칸이 서요.,Bakery and wardrobe spots hold different tiles on each board.,パン屋とクローゼットの場所にはボードごとに違うマスがあります。
+보드판마다 [b]빵집 자리·옷장 자리[/b]에 서는 칸이 달라요.,Each board puts different tiles on its [b]bakery and wardrobe spots[/b].,ボードごとに[b]パン屋・クローゼットの場所[/b]のマスが違います。
+보드판마다 빵집 자리·옷장 자리에 서는 칸이 달라요.,Each board puts different tiles on its bakery and wardrobe spots.,ボードごとにパン屋・クローゼットの場所のマスが違います。
+자세한 건 [b]도감 → 보드판[/b],More in [b]Catalog → Boards[/b],詳しくは[b]図鑑 → ボード[/b]
+그림은 지금 고른 보드판이에요,The picture shows the board you picked,図は今選んでいるボードです
+특수 칸은 대부분 [b]딱 멈출 때만[/b] 작동해요,Most special tiles work [b]only on an exact stop[/b],特殊マスはほとんど[b]ぴったり止まった時だけ[/b]発動します
+보드판 고르기,Choosing a Board,ボードの選び方
+"출발·코너·반환점·부스터 발판은 모든 보드판이 같아요 (기본 규칙 → 특수 칸)","Start, corners, halfway and booster pads are the same on every board (Basic Rules → Special Tiles)",スタート・コーナー・折り返し・ブースター床はどのボードも同じです (基本ルール → 特殊マス)
+생떼 카드 여러 장 (도감 → 보급),Several Tantrum Cards (Catalog → Supply),駄々っ子カード複数枚 (図鑑 → 補給)
+기물 변이 · 전군 돌연변이 · 필살기 리필 (도감 → 보급),Mutation · All-Troop Mutation · Skill Refill (Catalog → Supply),駒変異 · 全軍突然変異 · 必殺技リフィル (図鑑 → 補給)

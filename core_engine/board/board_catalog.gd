@@ -174,15 +174,25 @@ static func facts_of(id: Variant) -> Array:
 	var board: Dictionary = def_of(id)
 	var tiles: int = tiles_of(id)
 	var layout: Dictionary = layout_of(id)
-	var portal: Dictionary = PORTAL_KINDS[board["portal"]]
-	return [
+	var facts: Array = [
 		["칸 수", "%d칸 (한 변 %d칸)" % [tiles, tiles / 4]],
 		["코너", "%d곳" % (layout["corner_tiles"] as Array).size()],
 		["반환점", "%d번" % int(layout["halfway_tile"])],
-		[str(SHOP_KINDS[board["shop"]]["name"]), "%d곳" % (layout["bakery_tiles"] as Array).size()],
-		[str(portal["name"]), "%d곳" % (layout[portal["tiles_key"]] as Array).size()],
-		["부스터 발판", "%d곳" % (layout["dash_tiles"] as Array).size()],
 	]
+	for kind_id: StringName in board_kinds(id):  # 빵집 자리·옷장 자리가 같은 칸 종류(정령 칸)면 한 줄로
+		var kind: Dictionary = tile_kind(kind_id)
+		facts.append([str(kind["name"]), "%d곳" % (layout.get(str(kind.get("tiles_key", "bakery_tiles")), []) as Array).size()])
+	facts.append(["부스터 발판", "%d곳" % (layout["dash_tiles"] as Array).size()])
+	return facts
+
+
+## 이 보드의 빵집 자리·옷장 자리 칸 종류 (같은 종류면 하나).
+static func board_kinds(id: Variant) -> Array[StringName]:
+	var board: Dictionary = def_of(id)
+	var kinds: Array[StringName] = [board["shop"]]
+	if board["portal"] != board["shop"]:
+		kinds.append(board["portal"])
+	return kinds
 
 
 ## 빵집 자리·옷장 자리 칸 종류 하나의 정의 (보드 그림의 칸 kind 문자열로 찾는다, 없으면 {}).

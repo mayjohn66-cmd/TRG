@@ -36,6 +36,9 @@ func _run() -> void:
 		book.show_spread(spread)
 		await _frames(1)
 		_scan("규칙 도감 %d장" % spread, book)
+		book.show_overview()
+		await _frames(1)
+		_scan("규칙 도감 %d장 기본 설명" % spread, book)
 		for entry: int in book.entry_count():
 			book.show_entry(entry)
 			await _frames(1)

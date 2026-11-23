@@ -408,8 +408,12 @@ func _build_board_picker() -> Control:
 	head.name = "BoardHead"
 	head.custom_minimum_size = Vector2(0, 46)  # 글꼴(언어)마다 줄 높이가 달라도 칸 높이는 그대로
 	column.add_child(head)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 10)
+	# 보드가 많으면 두 줄 격자 (한 줄에 다 넣으면 "모나티엄 도시"처럼 긴 이름이 잘린다)
+	var row := GridContainer.new()
+	row.name = "BoardButtons"
+	row.columns = mini(3, ceili(BoardCatalog.BOARDS.size() / 2.0)) if BoardCatalog.BOARDS.size() > 3 else BoardCatalog.BOARDS.size()
+	row.add_theme_constant_override("h_separation", 10)
+	row.add_theme_constant_override("v_separation", 8)
 	column.add_child(row)
 	_board_buttons.clear()
 	for board: Dictionary in BoardCatalog.BOARDS:
@@ -417,7 +421,7 @@ func _build_board_picker() -> Control:
 		button.name = "Board_%s" % board["id"]
 		button.toggle_mode = true
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.custom_minimum_size = Vector2(0, 50)
+		button.custom_minimum_size = Vector2(0, 50)  # 일본어 글꼴 줄 높이에도 같은 높이
 		button.clip_text = true
 		row.add_child(button)
 		_board_buttons.append([board["id"], button])
