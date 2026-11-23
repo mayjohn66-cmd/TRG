@@ -208,6 +208,8 @@ static func tool_step_range(tool_id: StringName) -> Array[int]:
 		result.assign([low, high])
 	else:
 		result.assign(TOOL_RANGE_FALLBACK.get(tool_id, []))
+	if result.size() == 2 and ToolRegistry.ZERO_OUTCOME.has(tool_id):
+		result[0] = 0  # 0칸(턴 종료)이 나올 수 있으면 최소 0칸으로 알린다
 	return result
 
 

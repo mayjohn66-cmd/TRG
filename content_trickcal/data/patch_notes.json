@@ -59,6 +59,11 @@
        "ko": "놀이터의 보드판 버튼에서 긴 보드 이름(모나티엄 도시·벨라티엔 왕국)이 잘리지 않게 했어요",
        "en": "Long board names (Monatium City, Belatien Kingdom) no longer get cut off on the Playground board buttons",
        "ja": "広場のボードボタンで長いボード名（モナティウム都市・ベラティエン王国）が切れないようにしました"
+      },
+      {
+       "ko": "0칸이 나올 수 있는 판정 도구(윷·친치로·리볼버·화투·타로·블랙잭·주식 차트·오미쿠지)는 증강 카드와 도구 설명에 [최소 0칸]으로 보여요",
+       "en": "Judgment Tools that can roll 0 spaces (Yut, Chinchiro, Revolver, Hwatu, Tarot, Blackjack, Stock Chart, Omikuji) now show [Min 0 spaces] on their augment cards and tool info",
+       "ja": "0マスが出ることのある判定ツール（ユンノリ・チンチロ・リボルバー・花札・タロット・ブラックジャック・株価チャート・おみくじ）は、増強カードとツール説明に[最小0マス]と表示されます"
       }
      ]
     },

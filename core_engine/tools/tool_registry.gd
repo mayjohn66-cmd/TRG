@@ -76,6 +76,20 @@ static func table_line(id: StringName) -> String:
 	return "• %s" % spec_text(id)
 
 
+## 0칸(대부분 턴 종료)이 나올 수 있는 도구: 증강 카드·도구 설명의 [최소 N칸 ~ 최대 M칸]이 최소 0칸으로 보인다.
+## (dice_table.csv의 min_step은 결과를 끌어올리는 하한에도 쓰여 0으로 둘 수 없어 따로 적는다. 목록이 실제와 맞는지는 test_tools가 굴려서 확인한다)
+const ZERO_OUTCOME: Array[StringName] = [
+	&"YUT",  # 낙: 0칸 + 턴 종료
+	&"CHINCHIRO",  # 삐끗: 이번 이동 0칸
+	&"REVOLVER",  # 폭죽: 누적 0칸 + 턴 종료
+	&"DICE_HWATU",  # 망통: 0칸 + 턴 종료
+	&"DICE_TAROT",  # 광대: 0칸 + 턴 종료
+	&"DICE_BLACKJACK",  # 버스트: 0칸 + 턴 종료
+	&"DICE_STOCK",  # 상장폐지: 0칸 + 선두 말 사출
+	&"DICE_OMIKUJI",  # 대흉: 0칸 + 턴 종료
+]
+
+
 ## 각 도구에서 가장 높은 결과(잭팟)의 기본 칸 수. dice_table.csv의 jackpot_step이 비어 있지 않으면 이 칸 수 결과를 그 값으로 바꾼다.
 const NATURAL_JACKPOT: Dictionary = {
 	&"YUT": 5, &"HOLDEM": 15, &"SLOT_777": 20, &"DICE_HWATU": 8, &"DICE_MAHJONG": 12,

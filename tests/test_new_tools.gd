@@ -406,6 +406,7 @@ func test_robber_danger_preview_covers_up_to_three_tiles() -> void:
 func test_every_tool_shows_a_step_range_on_its_augment_card() -> void:
 	for tool_id: StringName in ToolRegistry.TABLES.keys():
 		var span: Array[int] = AugmentDef.tool_step_range(tool_id)
-		check(span.size() == 2 and span[0] >= 1 and span[1] >= span[0], "%s: 최소~최대 칸 수가 있다 %s" % [tool_id, str(span)])
-	check_eq(AugmentDef.tool_step_range(&"DICE_STOCK"), int_array([1, 20]), "주식 차트 1~20칸 (주가 최소 1, 상한가 20)")
+		check(span.size() == 2 and span[0] >= 0 and span[1] > span[0], "%s: 최소~최대 칸 수가 있다 %s" % [tool_id, str(span)])
+		check_eq(span[0] == 0, ToolRegistry.ZERO_OUTCOME.has(tool_id), "%s: 0칸이 나오는 도구만 최소 0칸으로 알린다" % tool_id)
+	check_eq(AugmentDef.tool_step_range(&"DICE_STOCK"), int_array([0, 20]), "주식 차트 0~20칸 (상장폐지 0칸, 상한가 20)")
 	check_eq(AugmentDef.tool_step_range(&"DICE_DARTS"), int_array([1, 18]), "다트 1~18칸 (숫자 1 ~ 6×트리플)")
