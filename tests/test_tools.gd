@@ -235,3 +235,21 @@ func test_yut_bonus_throw_raises_the_nak_weight() -> void:
 		if tool.roll(rng).reroll:
 			rerolls += 1
 	check(float(rerolls) / 4000.0 > 0.16 and float(rerolls) / 4000.0 < 0.24, "윷·모는 약 1/5 (%.2f)" % (float(rerolls) / 4000.0))
+
+
+## 증강 카드의 [최소 0칸]은 ToolRegistry.ZERO_OUTCOME에서 온다: 목록이 실제와 맞는지 굴려서 확인한다
+## (목록에 있으면 실제로 0칸이 나오고, 없으면 확정 결과가 0칸이 되는 일이 없다). 이어 굴리는 도구는 확정될 때까지 계속 굴린다.
+func test_zero_outcome_list_matches_real_rolls() -> void:
+	for tool_id: StringName in ToolRegistry.ALL_IDS:
+		var rng := RandomNumberGenerator.new()
+		rng.seed = 9090
+		var tool: BaseJudgmentTool = ToolRegistry.create(tool_id)
+		var zero_seen: bool = false
+		for _attempt: int in 4000:
+			var result: RollResult = tool.roll(rng)
+			if result.can_continue:
+				continue
+			if result.steps == 0:
+				zero_seen = true
+				break
+		check_eq(zero_seen, ToolRegistry.ZERO_OUTCOME.has(tool_id), "%s: 0칸 결과가 %s" % [tool_id, "있다" if zero_seen else "없다"])
