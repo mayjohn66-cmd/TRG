@@ -73,7 +73,7 @@ func configure(value: PlayerPawn, color: Color, images: bool = true) -> void:
 	var art: Dictionary = {}
 	if images:
 		art = PawnArt.load_sprite([PawnArt.BASIC_PATH]) if blind else PawnArt.sprite(pawn)
-	var key: String = "%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s" % [pawn.kind, pawn.unit_no, pawn.slot, pawn.promoted, pawn.carried.size(), pawn.skill_used, pawn.is_finished, color, pawn.revenge_boost, (art.get("texture") as Texture2D).resource_path if not art.is_empty() else "shape", pawn.shield, pawn.ward, pawn.turn_guard, pawn.melon_size, pawn.ward_box, pawn.trpg_level if pawn.is_trpg() else 0, blind, agitation_mark, peace_mark]
+	var key: String = "%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s" % [pawn.kind, pawn.unit_no, pawn.slot, pawn.promoted, pawn.carried.size(), pawn.skill_used, pawn.is_finished, color, pawn.revenge_boost, (art.get("texture") as Texture2D).resource_path if not art.is_empty() else "shape", pawn.shield, pawn.ward or pawn.mercury, pawn.turn_guard, pawn.melon_size, pawn.ward_box, pawn.trpg_level if pawn.is_trpg() else 0, blind, agitation_mark, peace_mark]
 	if key == _signature:
 		return
 	# 괴상한 멜론 (v1.1): 함정을 먹을 때마다 한 단계씩 커진다 (최대 3단계 = 1.6배)
@@ -117,7 +117,7 @@ func melon_roll_radius() -> float:
 
 
 func has_protection() -> bool:
-	return pawn != null and not blind and not pawn.is_finished and (pawn.ward or pawn.turn_guard or (pawn.shield and pawn.sub_type() == GameEnums.PawnSubType.BADUK_WHITE))
+	return pawn != null and not blind and not pawn.is_finished and (pawn.ward or pawn.mercury or pawn.turn_guard or (pawn.shield and pawn.sub_type() == GameEnums.PawnSubType.BADUK_WHITE))
 
 
 func _sync_shield(animate: bool) -> void:

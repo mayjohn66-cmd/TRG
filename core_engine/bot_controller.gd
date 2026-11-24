@@ -250,6 +250,11 @@ func _step_draft() -> void:
 ## 턴 시작: 카드/함정 사용 판단 -> 굴리러 진행.
 func _step_turn_begin() -> void:
 	var player_id: int = manager.current_player_id()
+	# 회유책 창: 봇은 늘 쓴다 (밴·스킵·해킹을 풀고 차례를 정상으로 진행)
+	if manager.appease_pending():
+		_act(player_id, &"play_card", {"card_id": &"ACT_25"})
+		_delay(DELAY_TURN_START)
+		return
 	# 카드는 굴리기 전 턴당 1장만 쓸 수 있다.
 	var plan: Dictionary = {} if manager.card_played_this_turn() or manager.is_hack_turn(player_id) else BotTemper.filter_card_plan(manager.state, player_id, BotTemper.plan_turn_card(manager.state, player_id, difficulty, _tried, rng), difficulty, humans(), rng)
 	if not plan.is_empty():

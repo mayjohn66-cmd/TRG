@@ -158,6 +158,13 @@ const CARD_SHORT: Dictionary = {
 	&"CNT_04": "공격 카드 1회 회피",
 	&"CNT_08": "잡기 1회 회피",
 	&"CNT_09": "잡기 막고 카드 1장",
+	&"CNT_10": "공격 막고 카드 1장",
+	&"CNT_11": "공격 막고 그 카드 획득",
+	&"ACT_24": "이번 +9 · 3턴 -3",
+	&"ACT_25": "밴·스킵·해킹 해제",
+	&"ACT_26": "공격 카드 1회 방어",
+	&"TRP_10": "눈금 4+ 적 정지",
+	&"TRP_C05": "지날 때마다 카드 소각",
 	&"ACT_21": "펭귄 발사로 적 날리기",
 	&"ACT_22": "내 말 박스로 1회 방어",
 	&"ACT_23": "대상 한 턴 자동 진행",
@@ -207,6 +214,13 @@ const CARD_SUMMARIES: Dictionary = {
 	&"CNT_07": "[함정 방어] 걸린 함정을 발동하지 않고 그 함정 카드를 내 패로",
 	&"CNT_08": "[잡기 방어] 잡기 1회 회피",
 	&"CNT_09": "[잡기 방어] 잡기를 막고 카드 1장 획득",
+	&"CNT_10": "[공격 방어] 공격 카드를 막고 카드 1장 획득",
+	&"CNT_11": "[공격 방어] 공격 카드를 막고 그 카드를 내 손패로",
+	&"ACT_24": "굴리기 전 사용! 이번 굴림 +9칸 · 대신 다음 내 턴 3번 동안 첫 굴림 -3칸",
+	&"ACT_25": "밴·스킵·해킹이 걸린 채 내 턴이 오면 모두 해제 (밴 중에도 사용 가능)",
+	&"ACT_26": "내 말 하나에 수은 보호막 · 공격 카드로 출발선으로 사출되는 것을 1회 막음",
+	&"TRP_10": "눈금 4+ 로 지나가는 적 말 그 칸에 강제 정지",
+	&"TRP_C05": "[코너·3R·여러 번] 지나가는 적 말 주인의 카드 1장을 태움",
 	&"ACT_21": "[공격] 내 말 하나에서 펭귄 발사 · 알까기처럼 날아가 부딪힌 적 말을 모두 출발선으로 날려 버림",
 	&"ACT_22": "내 말 하나에 택배 박스를 씌움 · 잡기·함정을 1회 막고 벗겨짐",
 	&"ACT_23": "[공격] 대상의 다음 한 턴이 자동 진행 (무작위 말 이동 · 카드·필살기 사용 불가)",
@@ -1457,6 +1471,29 @@ func _bind_state() -> void:
 		_note_defense_success([pawn_id]))
 	state.haunt_shifted.connect(_on_haunt_shifted)
 	state.cover_applied.connect(_on_cover_applied)
+	# 1.3 신규 카드: 수은 가드(보호막 생김·막음) · 이프리트의 분노(카드 소각)
+	state.mercury_applied.connect(func(pawn_id: int) -> void:
+		_log_line("[수은 가드] %s에 수은 보호막 (공격 카드 사출 1회 방어)" % _pawn_name(pawn_id), Color("ced4da"))
+		_refresh_pawn_protection(pawn_id, true))
+	state.mercury_blocked.connect(func(pawn_id: int, tile: int) -> void:
+		_log_line("[수은 가드] %s이(가) %d번 타일에서 공격 카드를 막았습니다" % [_pawn_name(pawn_id), tile], Color("ced4da"))
+		var guarded: PlayerPawn = state.get_pawn(pawn_id)
+		if guarded != null:
+			_record(guarded.owner_id, "%s 공격 카드를 막았다! (%s)" % [_bq("수은 가드"), _bq("%d번 말" % guarded.slot)], "", true)
+		_refresh_pawn_protection(pawn_id, true)
+		_note_defense_success([pawn_id]))
+	state.card_burned.connect(func(player_id: int, card_id: StringName, tile: int) -> void:
+		var burned_card: BaseCard = CardRegistry.get_card(card_id)
+		var burned_name: String = burned_card.display_name if burned_card != null else String(card_id)
+		_log_line("[이프리트의 분노] P%d의 카드 [%s]가 %d번 코너의 불꽃에 탔습니다" % [player_id, burned_name, tile], Color("ff8787"))
+		_record(player_id, "%s 카드 1장이 불탔다! (%s)" % [_bq("이프리트의 분노"), _bq(burned_name)], "", true)
+		if _fx_on():
+			var at: Vector2 = _tile_center(tile)
+			_fx_when_announced(func() -> void:
+				_impact_ring(at, Color("ff6b35"), 52.0)
+				_burst_shards(at, Color("ffa94d"), 16)
+				if _profiles.has(player_id):
+					_number_pop(_profile_center(player_id), "카드 -1!", Color("ff8787"))))
 	state.penguin_flew.connect(_on_penguin_flew)
 	state.hack_applied.connect(_on_hack_applied)
 	state.card_drawn.connect(func(player_id: int, card_id: StringName) -> void:
@@ -4040,6 +4077,8 @@ func _end_refresh_batch() -> void:
 func _refresh_now() -> void:
 	_refresh_queued = false
 	refresh_count += 1
+	if manager != null and manager.state != null:
+		_refresh_appease_popup()  # 회유책 창: 답하면 닫히고, 내 턴에 떠 있으면 연다
 	if manager == null or manager.state == null:
 		return
 	state = manager.state
@@ -8045,6 +8084,8 @@ func _hint_text(current_phase: TurnManager.State, tool: BaseJudgmentTool) -> Str
 		return "타일 선택 모드: 보드판에서 사용할 타일(초록 테두리)을 클릭하세요. 취소는 ESC 또는 오른쪽 클릭."
 	match current_phase:
 		TurnManager.State.PHASE_TURN_BEGIN:
+			if manager.appease_pending():
+				return "회유책: 걸린 디버프를 풀지 고르세요. [회유책 쓰기] 또는 [그냥 두기]"
 			return "카드(▣ 표시는 타일을 클릭해 설치/소환)를 쓰거나 [굴리기] 버튼(또는 스페이스)을 한 번 누르세요. (판정 도구: %s)" % tool.display_name
 		TurnManager.State.PHASE_ROLL_WAIT:
 			if tool.has_pending_state() and tool is ToolYacht:
@@ -8236,6 +8277,13 @@ func _on_card_pressed(player_id: int, card_id: StringName) -> void:
 			if covers.is_empty():
 				return
 			_show_choice("[%s] 박스를 씌울 내 말을 고르세요" % card.display_name, covers, _play_card_with.bind(player_id, card_id, "pawn_id"))
+		&"ACT_26":  # 수은 가드: 수은 보호막을 씌울 내 말
+			var coats: Array[Dictionary] = []
+			for coat: PlayerPawn in CardMercury.targets(state, player_id):
+				coats.append({"label": "%s · %d번 말 (%d번 칸)" % [_player_name(coat.owner_id), coat.slot, coat.current_tile_idx], "name": _player_name(coat.owner_id), "detail": "%d번 말 · %d번 칸" % [coat.slot, coat.current_tile_idx], "pawn": coat, "value": coat.entity_id})
+			if coats.is_empty():
+				return
+			_show_choice("[%s] 수은 보호막을 씌울 내 말을 고르세요" % card.display_name, coats, _play_card_with.bind(player_id, card_id, "pawn_id"))
 		&"ACT_14", &"ACT_15", &"ACT_20", &"ACT_23":
 			var targets: Array[Dictionary] = []
 			for target: int in StatusCardCommand.targets(state, player_id):
@@ -12618,6 +12666,15 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 		&"roll_penalized":
 			_roll_total[int(data["player_id"])] = int(data["to"])
 			_add_roll_reason(int(data["player_id"]), "방해령 메죵 -%d" % int(data["amount"]))
+		&"loan_repaid":
+			_roll_total[int(data["player_id"])] = int(data["to"])
+			_add_roll_reason(int(data["player_id"]), "피라 대출 상환 -%d" % CardLoan.DEBT_STEPS)
+			_log_line("[피라 대출] P%d 상환: 눈금 %d → %d (남은 상환 %d턴)" % [data["player_id"], data["from"], data["to"], data["left"]], Color("ffa94d"))
+			_record(int(data["player_id"]), "%s 상환! 눈금 %d → %d (남은 %d턴)" % [_bq("피라 대출"), int(data["from"]), int(data["to"]), int(data["left"])], "", true)
+		&"appease_offered":
+			var appeaser: int = int(data["player_id"])
+			_log_line("[회유책] P%d: 디버프를 풀 수 있습니다" % appeaser, Color("8ce99a"))
+			_refresh_appease_popup()
 		&"hammer_applied":
 			_roll_total[int(data["player_id"])] = int(data["to"])
 			_add_roll_reason(int(data["player_id"]), "강화 +%d" % int(data["level"]))
@@ -13067,6 +13124,8 @@ func _attachment_name(attachment_id: String) -> String:
 		"TRP_C01": return "무인도"
 		"TRP_C02": return "우이의 소원빌기"
 		"TRP_C03": return "지나가는 상인"
+		"TRP_10": return "뾰족한 성게"
+		"TRP_C05": return "이프리트의 분노"
 		"TRP_C04": return "물의 세례를 받아라"
 		"TRP_CUKE": return "오이"
 		"HOTEL": return "호텔"
@@ -14355,3 +14414,58 @@ class StatusStamp extends Control:
 		draw_set_transform(center,angle)
 		draw_texture_rect_region(texture,rect,region,Color(1,1,1,0.94))
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+# ---------------------------------------------------------------------------
+# 회유책(ACT_25) 창: 밴·스킵·해킹이 걸린 채 내 턴이 왔고 회유책이 있으면 [회유책 쓰기] / [그냥 두기]
+# ---------------------------------------------------------------------------
+
+var _appease_panel: PanelContainer = null
+
+
+## 창을 띄우거나 닫는다 (내 자리 차례에 회유책 창이 떠 있을 때만 보인다).
+func _refresh_appease_popup() -> void:
+	var player: int = manager.current_player_id() if manager != null else -1
+	var show: bool = manager != null and manager.appease_pending() and _is_human_seat(player) and (player == _dock_owner())
+	if not show:
+		if _appease_panel != null:
+			_appease_panel.queue_free()
+			_appease_panel = null
+		return
+	if _appease_panel != null:
+		return
+	var debuffs: PackedStringArray = []
+	if state.is_banned(player):
+		debuffs.append("밴")
+	if bool(state.rest_next_turn.get(player, false)):
+		debuffs.append("스킵")
+	if manager.is_hack_turn(player):
+		debuffs.append("해킹")
+	_appease_panel = PanelContainer.new()
+	_appease_panel.name = "AppeasePopup"
+	_appease_panel.z_index = 60
+	_appease_panel.add_theme_stylebox_override("panel", LobbyTheme.style(Color("fffaf0"), Color("2f9e44"), 4, 22, 10, 18))
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 12)
+	_appease_panel.add_child(column)
+	var title := LobbyTheme.label("회유책", 28, Color("2b8a3e"))
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(title)
+	var body := LobbyTheme.label("지금 걸린 %s을(를) 회유책으로 풀까요?" % " · ".join(debuffs), 20, LobbyTheme.INK)
+	body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.custom_minimum_size = Vector2(420, 0)
+	column.add_child(body)
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 16)
+	column.add_child(row)
+	var use := LobbyTheme.big_button("회유책 쓰기", func() -> void: _act(&"play_card", {"card_id": &"ACT_25"}), 22, Color("2f9e44"))
+	use.name = "AppeaseUse"
+	row.add_child(use)
+	var keep := LobbyTheme.big_button("그냥 두기", func() -> void: _act(&"appease_pass", {}), 22, Color("868e96"))
+	keep.name = "AppeasePass"
+	row.add_child(keep)
+	add_child(_appease_panel)
+	_appease_panel.reset_size()
+	_appease_panel.position = (get_viewport_rect().size - _appease_panel.size) * 0.5
