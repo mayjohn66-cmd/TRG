@@ -30,12 +30,6 @@ const ROWS: Array = [
 		["speed", "스피드전", "4·8·12라운드 템포 업 · 리벤지 부스터 +2칸"],
 	]],
 ]
-const BOARD_NOTES: Dictionary = {
-	&"classic": "빵집에서 카드를 얻고 옷장으로 순간이동해요.",
-	&"monatium": "편의점에서 카드를, 자판기에서 음료를 얻어요.",
-	&"belatien": "마녀 상점에서 카드를, 가마솥에서 물약을 얻어요.",
-	&"spirit_mountain": "증강 라운드에 정령 발판의 속성이 바뀌어요.",
-}
 
 const PAPER := Color("fffdf4")
 const OPTION_FILL := Color("f2f7ed")
@@ -253,7 +247,7 @@ static func _button(text: String, callback: Callable, font_size: int) -> Button:
 static func board_row() -> Array:
 	var options: Array = []
 	for board: Dictionary in BoardCatalog.available():
-		options.append([String(board["id"]), str(board["name"]), BOARD_NOTES.get(board["id"], board["desc"])])
+		options.append([String(board["id"]), str(board["name"]), board.get("settings_note", board["desc"])])
 	return ["board", "보드판", options]
 
 

@@ -59,9 +59,9 @@ const PORTAL_KINDS: Dictionary = {
 ## id·name(한국어 원문)·desc(한 줄 설명)·tiles(칸 수) / shop·portal: 위 칸 종류 / surface: 판 바닥 그림 / palette: 기본 색(BoardSkin.PALETTE_DEFAULT)에서 바꿀 색
 ## city_buttons: 굴림 버튼을 도시풍으로 / law_variants: {교칙 ID: 바꿔 쓰는 판} (키 설명은 VictoryLaw.variant 참고)
 const BOARDS: Array[Dictionary] = [
-	{"id": &"classic", "name": "에르핀 왕국", "desc": "32칸 사각 순환 트랙 · 빵집(카드)과 옷장(순간이동)", "tiles": 32,
+	{"id": &"classic", "settings_note": "빵집에서 카드를 얻고 옷장으로 순간이동해요.", "name": "에르핀 왕국", "desc": "32칸 사각 순환 트랙 · 빵집(카드)과 옷장(순간이동)", "tiles": 32,
 		"shop": &"bakery", "portal": &"portal", "surface": "res://assets/board/trickcal/board_surface_symbols_v1.png", "palette": {}},
-	{"id": &"monatium", "name": "모나티엄 도시", "desc": "32칸 사각 순환 트랙 · 편의점(카드)과 자판기(랜덤 음료 버프)", "tiles": 32,
+	{"id": &"monatium", "settings_note": "편의점에서 카드를, 자판기에서 음료를 얻어요.", "name": "모나티엄 도시", "desc": "32칸 사각 순환 트랙 · 편의점(카드)과 자판기(랜덤 음료 버프)", "tiles": 32,
 		"shop": &"store", "portal": &"vending", "surface": "res://assets/board/monatium/board_surface_symbols_v1.png", "city_buttons": true,
 		"palette": {  # 도시: 차가운 회청색 타일, 네이비 테두리, 네온 청록 부스터 발판
 			"fill": Color("f2f5fb"), "edge": Color("4f5d7a"), "ink": Color("2f3b57"), "band": Color("9db0cf"),
@@ -77,7 +77,7 @@ const BOARDS: Array[Dictionary] = [
 				"theme": {"font": "bungee", "headline": "MONATIUM DAYS", "lines": "MONATIUM\nDAYS", "ink": "10223d", "accent": "2f86d6", "tilt": -0.055},
 				"paper": "e6f1fb", "comic_title": {"upper": "ffe391", "lower": "ffffff", "shadow": "1f5fa8"}},
 		}},
-	{"id": &"belatien", "name": "벨라티엔 왕국", "desc": "마녀들의 도시 · 마녀 상점(카드)과 마녀의 가마솥(랜덤 물약, 나쁜 물약도 있다)", "tiles": 32,
+	{"id": &"belatien", "settings_note": "마녀 상점에서 카드를, 가마솥에서 물약을 얻어요.", "name": "벨라티엔 왕국", "desc": "마녀들의 도시 · 마녀 상점(카드)과 마녀의 가마솥(랜덤 물약, 나쁜 물약도 있다)", "tiles": 32,
 		"shop": &"witch_shop", "portal": &"cauldron", "surface": "res://assets/board/belatien/board_surface_symbols_v2.png",
 		"palette": {  # 마녀 도시: 연보라 타일·짙은 보라 테두리, 코너·반환점은 갈색 나무, 보라 마법빛 부스터 발판
 			"fill": Color("f5effb"), "edge": Color("6b4a8f"), "ink": Color("4a2f6b"), "band": Color("b99be0"),
@@ -93,7 +93,7 @@ const BOARDS: Array[Dictionary] = [
 				"theme": {"font": "bangers", "headline": "BAD CARROT", "lines": "BAD\nCARROT", "ink": "1f1233", "accent": "8a4fc4", "tilt": -0.05},
 				"paper": "efe4f7", "comic_title": {"upper": "e9ccff", "lower": "ffffff", "shadow": "5a2a8a"}},
 		}},
-	{"id": &"spirit_mountain", "since": "1.3.0", "name": "정령산", "desc": "정령들의 산 · 증강 라운드마다 빵집·옷장 자리 6곳에 하급 정령(불·물·땅·바람)이 깃들어 효과가 바뀐다", "tiles": 32,
+	{"id": &"spirit_mountain", "settings_note": "증강 라운드에 정령 발판의 속성이 바뀌어요.", "since": "1.3.0", "name": "정령산", "desc": "정령들의 산 · 증강 라운드마다 빵집·옷장 자리 6곳에 하급 정령(불·물·땅·바람)이 깃들어 효과가 바뀐다", "tiles": 32,
 		"shop": &"spirit", "portal": &"spirit", "surface": "res://assets/board/spirit_mountain/board_surface.png",
 		"palette": {
 			"fill": Color("e9f5f3"), "edge": Color("508984"), "ink": Color("285a55"), "band": Color("a9d2c9"),
