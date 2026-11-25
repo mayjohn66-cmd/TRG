@@ -121,7 +121,7 @@ static func is_available(effect: StringName, state: GameState, player_id: int) -
 		EXTRA_TURN:
 			return int(state.revive_charges.get(player_id, 0)) == 0
 		CARD_PACK2:
-			return (state.hands[player_id] as Array).size() < state.hand_limit(player_id) and not CardRegistry.ids_of_type("INSTANT").is_empty()
+			return (state.hands[player_id] as Array).size() < state.hand_limit(player_id) and not state.allowed_cards(CardRegistry.ids_of_type("INSTANT")).is_empty()
 		SELECT_SHIELD:
 			return not shield_candidates(state, player_id).is_empty()
 		TRAP_CLEAR1:
@@ -328,6 +328,7 @@ static func _apply_catch_up(state: GameState, player_id: int) -> Dictionary:
 ## pool에서 무작위 카드 count장을 준다 (손패 상한까지). 받은 카드 이름 목록.
 static func _give_random_cards(state: GameState, player_id: int, pool: Array[StringName], count: int) -> Array[String]:
 	var given: Array[String] = []
+	pool = state.allowed_cards(pool)
 	for i: int in count:
 		if pool.is_empty():
 			break
@@ -461,7 +462,7 @@ static func _apply_refill(state: GameState, player_id: int) -> Dictionary:
 			pawn.skill_used = false
 			refilled.append(pawn.display_label())
 	var cards: Array[String] = []
-	var pool: Array[StringName] = CardRegistry.all_ids()
+	var pool := state.allowed_cards(CardRegistry.all_ids())
 	for i: int in refill_cards():
 		if pool.is_empty():
 			break

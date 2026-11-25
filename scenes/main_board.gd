@@ -3030,24 +3030,27 @@ func _super_chip_for(pawn: PlayerPawn) -> Dictionary:
 func _refresh_tiles() -> void:
 	if _tile_marks.is_empty():
 		return
+	var rebuild_batch := false
 	for index: int in BoardSpec.tile_count:
 		if _train_trap_hold.has(index) or _beam_trap_hold.has(index):
 			continue
 		var parts: Array[String] = []
+		var tile_view: BoardSkin.Tile = _tile_views[index]
+		var tile: TileNode = state.board.get_tile(index)
 		if BoardSpec.jump_corner_targets.has(index):
-			if (_tile_views[index] as BoardSkin.Tile).arrow_target != _jump_arrow_target(index):
+			if tile_view.arrow_target != _jump_arrow_target(index):
 				_place_tile(index)
-				if _tile_batch != null:
-					_tile_batch.rebuild()  # 드문 일: 칸을 다시 놓았으면 바닥도 다시 만든다
+				rebuild_batch = true
 		var tips: Array[String] = []
-		var kind_label: String = _tile_tag(index, state.board.get_tile(index).tile_type)
+		var kind_label: String = _tile_tag(index, tile.tile_type)
 		if not kind_label.is_empty():
 			tips.append(kind_label)
 		var color: Color = Color("ff6b6b")
-		_paint_spirit_chip(index)
+		if tile.tile_type == TileNode.TileType.SPIRIT and tile_view.set_spirit(MountainSpirits.at(state, index)):
+			rebuild_batch = true
 		var has_trap: bool = false
 		var trap_icon: Texture2D = null
-		for attachment: TileAttachment in state.board.get_tile(index).attachments:
+		for attachment: TileAttachment in tile.attachments:
 			if _structure_kind(attachment) != &"":
 				tips.append("\n".join(_attachment_tip_lines(attachment)))
 				continue
@@ -3058,49 +3061,23 @@ func _refresh_tiles() -> void:
 			elif attachment.attachment_id == "HOTEL":
 				tips.append("호텔 (P%d) - 다른 플레이어가 멈추면 통행료" % attachment.owner_id)  # 칸 위 글자 대신 호텔 건물 모형이 선다 (_refresh_structures)
 		var in_goal: bool = TempoUp.in_zone_for(state, index)
-		(_tile_views[index] as BoardSkin.Tile).set_goal(in_goal)
+		tile_view.set_goal(in_goal)
 		if in_goal:
 			tips.append("당겨진 결승선 (템포 업): 여기 들어서면 완주")
 		var shown_trap: bool = has_trap and not _trap_pending.has(index)
-		(_tile_views[index] as BoardSkin.Tile).set_trap(shown_trap, trap_icon)
+		tile_view.set_trap(shown_trap, trap_icon)
 		if shown_trap and not _trap_tiles.has(index):
 			_trap_tiles.append(index)
 		elif not shown_trap:
 			_trap_tiles.erase(index)
-		(_tile_views[index] as Control).tooltip_text = "\n".join(tips)
+		tile_view.tooltip_text = "\n".join(tips)
 		var mark: Label = _tile_marks[index]
 		mark.text = " ".join(parts)
-		mark.position = Vector2((_tile_views[index] as Control).size.x - 2 - mark.get_minimum_size().x, 0)
+		mark.position = Vector2(tile_view.size.x - 2 - mark.get_minimum_size().x, 0)
 		mark.add_theme_color_override("font_color", color)
+	if rebuild_batch and _tile_batch != null:
+		_tile_batch.rebuild()
 	_refresh_structures()
-
-
-## 정령산: 정령 칸 가운데에 지금 깃든 정령(불·물·땅·바람)을 그 색의 둥근 칩으로 보여 준다 (증강 라운드마다 바뀐다). 정령 칸이 아니면 숨긴다.
-func _paint_spirit_chip(index: int) -> void:
-	var tile_view: Control = _tile_views[index] as Control
-	var chip: Label = tile_view.get_node_or_null("SpiritChip") as Label
-	var spirit: StringName = MountainSpirits.at(state, index) if state.board.get_tile(index).tile_type == TileNode.TileType.SPIRIT else &""
-	if spirit == &"":
-		if chip != null:
-			chip.visible = false
-		return
-	var spirit_def: Dictionary = MountainSpirits.def_of(spirit)
-	if chip == null:
-		chip = _make_label("", 13, Color.WHITE)
-		chip.name = "SpiritChip"
-		chip.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		chip.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		chip.add_theme_constant_override("outline_size", 4)
-		chip.add_theme_color_override("font_outline_color", Color("10231f"))
-		tile_view.add_child(chip)
-	chip.text = L10n.t(str(spirit_def["short"]))
-	var tint: Color = spirit_def["color"]
-	chip.add_theme_stylebox_override("normal", _style(tint.darkened(0.15), tint.lightened(0.5), 2, 10, 0, 1))
-	chip.reset_size()
-	chip.size = Vector2(maxf(chip.get_minimum_size().x + 10.0, 30.0), chip.get_minimum_size().y)
-	chip.position = tile_view.size / 2.0 - chip.size / 2.0
-	chip.visible = true
 
 
 ## 중립 NPC가 라운드 끝에 덮칠 길을 붉은 테두리·삼각 경고·진행 화살표로 예고한다. 위험 계산은 NeutralNPC.danger_preview가 맡는다.

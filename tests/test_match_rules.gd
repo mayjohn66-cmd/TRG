@@ -35,6 +35,50 @@ func test_difficulty_defaults_and_sanitize() -> void:
 	check(not dirty.has("hack") and not dirty["laws"], "모르는 키는 버리고 아는 키는 읽는다")
 
 
+func test_card_bans_are_sanitized_and_exclude_deck_and_grants() -> void:
+	var bans := {"card_bans": [&"ACT_02", "ACT_02", "unknown", "ACT_18"]}
+	var state := _state(bans)
+	check_eq(state.match_rules["card_bans"], ["ACT_02", "ACT_18"], "카드 밴의 잘못된 ID와 중복 제거")
+	check(not state.card_deck.has(&"ACT_02") and not state.card_deck.has(&"ACT_18"), "밴 카드는 덱에 없다")
+	check(not state.give_card(1, &"ACT_02"), "밴 카드는 지급되지 않는다")
+	var pack := AugmentRegistry.get_def(&"CARD_PACKAGE")
+	check(not (pack.card_pools(state)[0] as Array).has(&"ACT_02"), "카드 패키지 후보에도 나오지 않는다")
+	check(not MatchRules.law_allowed(state, SpecialVictory.HURRICANE_LAW), "필수 카드가 밴된 특수 승리도 나오지 않는다")
+	var empty := _state({"card_bans": CardRegistry.all_ids()})
+	check(empty.card_deck.is_empty() and empty.draw_card(1) == &"", "모든 카드를 밴해도 뽑기가 안전하다")
+
+
+func test_augment_bans_filter_initial_offers_rerolls_and_automatic_laws() -> void:
+	var state := _state({"augment_bans": ["TOOL_DICE_PIRATE", &"AUG_LAW_02", "unknown"]})
+	var pirate := AugmentRegistry.get_def(&"TOOL_DICE_PIRATE")
+	check_eq((state.match_rules["augment_bans"] as Array).size(), 2, "증강 밴은 알려진 증강만 남긴다")
+	check(not pirate.is_available(state, 1) and not pirate.apply(state, 1)["ok"], "밴 증강은 제시하거나 적용하지 않는다")
+	var offers := AugmentRegistry.generate_offers(state, 1, AugmentRegistry.all().size())
+	check(not offers.has(&"TOOL_DICE_PIRATE") and not offers.has(&"AUG_LAW_02"), "밴 증강은 최초 선택지에서 제외")
+	var other_ids: Array[StringName] = []
+	for definition: AugmentDef in AugmentRegistry.all():
+		if definition.augment_id != &"TOOL_DICE_PIRATE":
+			other_ids.append(definition.augment_id)
+	check_eq(AugmentRegistry.reroll_candidate(state, 1, other_ids), &"", "밴만 남으면 리롤 후보 없음")
+	check(not MatchRules.law_allowed(state, "LAW_02"), "밴한 법전 증강은 자동 제정 후보에서도 제외")
+
+
+func test_fully_banned_draft_begins_the_turn() -> void:
+	var bans: Array[StringName] = []
+	for definition: AugmentDef in AugmentRegistry.all():
+		bans.append(definition.augment_id)
+	var manager := TurnManager.new()
+	manager.match_rules = {"augment_bans": bans}
+	manager.hotseat_mode = true
+	tree.root.add_child(manager)
+	manager.start_game([1, 2], 31)
+	manager.state.round_number = GameEnums.draft_start
+	manager._enter_round_start()
+	check(manager.draft_pending_players().is_empty(), "밴으로 빈 증강 선택지를 건너뛴다")
+	check_eq(manager.current_state, TurnManager.State.PHASE_TURN_BEGIN, "빈 드래프트는 턴 진행을 막지 않는다")
+	manager.free()
+
+
 func test_super_frequency_and_law_toggle_shape_the_draft() -> void:
 	var off: Dictionary = _offer_categories(_state({"super_freq": 0, "laws": false}))
 	check(not off.has(GameEnums.AugmentCategory.SUPER_GAMBLE), "초증강 끄기: 드래프트에 초증강이 없다")

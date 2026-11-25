@@ -107,7 +107,7 @@ func _free_units_for(state: GameState, player_id: int) -> Array[int]:
 
 ## 이 플레이어에게 지금 제시할 수 있는 선택지인가.
 func is_available(state: GameState, player_id: int) -> bool:
-	if not enabled or state.round_number < min_round:
+	if not enabled or state.round_number < min_round or not MatchRules.augment_allowed(state, augment_id):
 		return false
 	var tempo: int = TempoUp.level(state.round_number)
 	if tempo < min_tempo or tempo > max_tempo:
@@ -128,7 +128,7 @@ func is_available(state: GameState, player_id: int) -> bool:
 			# 손패가 가득 차 있으면 받을 수 없어 선택해도 적용되지 않는다 (드래프트가 멈추는 것을 막는다).
 			if (state.hands[player_id] as Array).size() >= state.hand_limit(player_id):
 				return false
-			for pool: Array[StringName] in card_pools():
+			for pool: Array[StringName] in card_pools(state):
 				if pool.is_empty():
 					return false
 			return true
@@ -264,6 +264,8 @@ func _default_text(state: GameState, player_id: int) -> String:
 ## 증강을 적용한다. params["pawn_id"]로 진화할 기본 말을 지정할 수 있고, 생략하면 슬롯 번호가 가장 낮은 기본 말을 쓴다.
 ## 반환: {"ok": bool, "text": String}
 func apply(state: GameState, player_id: int, params: Dictionary = {}) -> Dictionary:
+	if not MatchRules.augment_allowed(state, augment_id):
+		return {"ok": false, "text": ""}
 	match category:
 		GameEnums.AugmentCategory.PAWN_EVOLUTION: return _apply_evolution(state, player_id, params)
 		GameEnums.AugmentCategory.TOOL_SWAP: return _apply_tool(state, player_id)
@@ -312,7 +314,7 @@ func _apply_law(state: GameState, player_id: int) -> Dictionary:
 
 func _apply_cards(state: GameState, player_id: int) -> Dictionary:
 	var names: Array[String] = []
-	var pools: Array = card_pools()
+	var pools: Array = card_pools(state)
 	var counts: Array[int] = card_counts()
 	for index: int in pools.size():
 		var pool: Array[StringName] = pools[index]
@@ -332,10 +334,11 @@ func card_count() -> int:
 
 ## 카드 패키지의 카드 풀들: target_ref가 카드 종류(COUNTER / TRAP / TRAP_CORNER / INSTANT / SUMMON)면 그 종류만,
 ## "TRAP_CORNER+TRAP"처럼 +로 이으면 풀이 여러 개이고 각각 param_1·param_2장씩 준다. 그 밖(CARD_PACKAGE 등)은 모든 카드.
-func card_pools() -> Array:
+func card_pools(state: GameState = null) -> Array:
 	var pools: Array = []
 	for type_code: String in _card_types():
-		pools.append(CardRegistry.all_ids() if type_code == "" else CardRegistry.ids_of_type(type_code))
+		var pool := CardRegistry.all_ids() if type_code == "" else CardRegistry.ids_of_type(type_code)
+		pools.append(state.allowed_cards(pool) if state != null else pool)
 	return pools
 
 

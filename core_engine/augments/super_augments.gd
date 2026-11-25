@@ -372,7 +372,7 @@ static func _apply_minefield(state: GameState, player_id: int) -> Dictionary:
 		placed.append(tile)
 	placed.sort()
 	var traps: Array[StringName] = []
-	for card_id: StringName in CardRegistry.all_ids():
+	for card_id: StringName in state.allowed_cards(CardRegistry.all_ids()):
 		var card: BaseCard = CardRegistry.get_card(card_id)
 		if card.category == GameEnums.CardCategory.TRAP and not card.corner_only:
 			traps.append(card_id)
@@ -390,7 +390,7 @@ static func _apply_minefield(state: GameState, player_id: int) -> Dictionary:
 ## 내 손패가 가득 차서 못 받는 카드는 주인에게 돌려준다. 어떤 카드인지는 알리지 않는다.
 static func _apply_raid(state: GameState, player_id: int) -> Dictionary:
 	var summons: Array[StringName] = []
-	for card_id: StringName in CardRegistry.all_ids():
+	for card_id: StringName in state.allowed_cards(CardRegistry.all_ids()):
 		if CardRegistry.get_card(card_id).category == GameEnums.CardCategory.SUMMON:
 			summons.append(card_id)
 	var got_summon: int = 0
@@ -460,9 +460,11 @@ static func _apply_castling(state: GameState) -> Dictionary:
 
 
 static func _apply_bakery(state: GameState, player_id: int) -> Dictionary:
-	var pool: Array[StringName] = CardRegistry.all_ids()
+	var pool := state.allowed_cards(CardRegistry.all_ids())
 	var names: Array[String] = []
 	for i: int in bakery_cards():
+		if pool.is_empty():
+			break
 		var picked: StringName = pool[state.rng.randi_range(0, pool.size() - 1)]
 		if state.give_card(player_id, picked):
 			names.append(CardRegistry.get_card(picked).display_name)

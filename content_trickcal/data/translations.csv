@@ -3139,3 +3139,31 @@ TRPG,TRPG,TRPG
 수은 가드,Mercury Guard,水銀ガード
 민트초코,Mint Chocolate,ミントチョコ
 긴급수리,Emergency Repair,緊急修理
+방 규칙,Room Rules,部屋ルール
+밴 설정,Ban Settings,禁止設定
+카드 밴,Card Bans,カード禁止
+증강 밴,Augment Bans,増強禁止
+이름으로 검색,Search by name,名前で検索
+밴한 항목만,Banned only,禁止のみ
+검색 결과가 없습니다,No matching items,検索結果がありません
+밴한 항목이 없습니다,Nothing banned,禁止した項目はありません
+밴,Ban,禁止
+밴 해제,Unban,解除
+밴 %d개,%d banned,%d件禁止
+카드 밴 %d개,%d card bans,カード%d件禁止
+증강 밴 %d개,%d augment bans,増強%d件禁止
+모든 함정의 정체와 효과가 보여요.,All trap types and effects are visible.,すべての罠の種類と効果が見えます。
+상대 함정은 밟거나 해체할 때 정체가 드러나요.,Rival traps are revealed when triggered or defused.,相手の罠は踏むか解除すると正体がわかります。
+초증강이 기본 확률로 등장해요.,Hyper augments appear at the normal rate.,超増強は通常の確率で登場します。
+증강 선택지에서 초증강이 더 자주 나와요.,Hyper augments appear more often in drafts.,超増強がドラフトに出やすくなります。
+증강 선택지에서 초증강이 가장 자주 나와요.,Hyper augments appear most often in drafts.,超増強がドラフトに最も出やすくなります。
+초증강이 등장하지 않아요.,Hyper augments are removed from drafts.,超増強はドラフトに登場しません。
+법전 조건을 달성하면 특수 승리할 수 있어요.,Meeting a codex condition can earn a special win.,法典の条件を満たせば特殊勝利できます。
+말 4개 완주로만 순위를 정해요.,Rankings are decided by finishing all four pieces.,駒4つの完走で順位を決めます。
+8·14·20라운드에 템포 업이 발동해요.,Tempo Up starts in rounds 8 · 14 · 20.,8・14・20ラウンドでテンポアップします。
+4·8·12라운드 템포 업 · 리벤지 부스터 +2칸,Tempo Up in rounds 4 · 8 · 12 · Revenge Boost +2 spaces,4・8・12ラウンドでテンポアップ・リベンジブースト+2マス
+빵집에서 카드를 얻고 옷장으로 순간이동해요.,Draw cards at bakeries and warp through wardrobes.,パン屋でカードを引き、クローゼットでワープします。
+"편의점에서 카드를, 자판기에서 음료를 얻어요.",Draw cards at stores and get drinks from vending machines.,コンビニでカードを引き、自販機で飲み物を受け取れます。
+"마녀 상점에서 카드를, 가마솥에서 물약을 얻어요.",Draw cards at witch shops and get potions from cauldrons.,魔女の店でカードを引き、大釜で薬を受け取れます。
+증강 라운드에 정령 발판의 속성이 바뀌어요.,Spirit tile elements change on draft rounds.,増強ラウンドで精霊マスの属性が変わります。
+빈자리에 추가한 컴퓨터에 이 난이도를 적용해요.,This difficulty applies to bots filling empty seats.,空席に追加したCPUにこの難易度を適用します。

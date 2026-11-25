@@ -28,7 +28,7 @@ const SOURCES := {
 	&"vending": preload("res://assets/board/decals/BOARD_VENDING.png"),
 	&"witch_shop": preload("res://assets/board/decals/BOARD_WITCH_SHOP.png"),
 	&"cauldron": preload("res://assets/board/decals/BOARD_CAULDRON.png"),
-	&"spirit": preload("res://assets/board/decals/BOARD_SPIRIT.png"),  # 정령산 정령 칸 (임시 그림)
+	&"spirit": preload("res://assets/board/decals/BOARD_SPIRIT.png"),
 	&"boost": preload("res://assets/board/decals/BOARD_BOOST.png"),
 	&"pawn_basics": preload("res://content_trickcal/illustrations/pawns/PAWN_DEFAULT.png"),
 }

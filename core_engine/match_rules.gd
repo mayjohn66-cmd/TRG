@@ -51,7 +51,7 @@ const EASY_LAWS: Array[String] = ["LAW_01", "LAW_02"]
 
 
 static func defaults() -> Dictionary:
-	return {"trap_reveal": true, "super_freq": 1, "laws": true, "speed": SPEED_NORMAL, "draft_easy": false, "law_pool": [], "pacing": 0, "bot_level": BotTemper.DEFAULT_LEVEL, "board": String(BoardCatalog.DEFAULT_ID)}
+	return {"trap_reveal": true, "super_freq": 1, "laws": true, "speed": SPEED_NORMAL, "draft_easy": false, "law_pool": [], "pacing": 0, "bot_level": BotTemper.DEFAULT_LEVEL, "board": String(BoardCatalog.DEFAULT_ID), "card_bans": [], "augment_bans": []}
 
 
 ## 싱글 불닭 난이도의 기본 규칙: Lv.1~3 함정 공개, Lv.4~5 비공개. Lv.1은 입문 드래프트 + 법전 끄기 (말 4개 완주로만 승부).
@@ -87,7 +87,25 @@ static func sanitize(value: Variant) -> Dictionary:
 	rules["pacing"] = clampi(int(raw.get("pacing", 0)), 0, 5)
 	rules["bot_level"] = BotTemper.sanitize(raw.get("bot_level", BotTemper.DEFAULT_LEVEL))
 	rules["board"] = String(BoardCatalog.sanitize(raw.get("board", BoardCatalog.DEFAULT_ID)))
+	var card_bans: Variant = raw.get("card_bans", [])
+	if card_bans is Array and not card_bans.is_empty():
+		rules["card_bans"] = _sanitize_bans(card_bans, CardRegistry.all_ids())
+	var augment_bans: Variant = raw.get("augment_bans", [])
+	if augment_bans is Array and not augment_bans.is_empty():
+		var ids: Array[StringName] = []
+		for definition: AugmentDef in AugmentRegistry.all():
+			if definition.enabled:
+				ids.append(definition.augment_id)
+		rules["augment_bans"] = _sanitize_bans(augment_bans, ids)
 	return rules
+
+
+static func _sanitize_bans(requested: Array, available: Array[StringName]) -> Array[String]:
+	var bans: Array[String] = []
+	for id: StringName in available:
+		if requested.has(id) or requested.has(String(id)):
+			bans.append(String(id))
+	return bans
 
 
 ## 규칙이 꼭 맞는 프리셋 키 (없으면 &"").
@@ -159,8 +177,22 @@ static func laws_full(state: GameState) -> bool:
 
 ## 이 법전이 이번 판에 나올 수 있는가 (law_pool이 비어 있으면 모두).
 static func law_allowed(state: GameState, law_id: String) -> bool:
+	if not augment_allowed(state, StringName("AUG_" + law_id)):
+		return false
+	if law_id == SpecialVictory.HURRICANE_LAW:
+		for card_id: StringName in HauntCommand.IDS:
+			if not card_allowed(state, card_id):
+				return false
 	var pool: Array = of(state).get("law_pool", [])
 	return pool.is_empty() or pool.has(law_id)
+
+
+static func card_allowed(state: GameState, id: StringName) -> bool:
+	return not (of(state).get("card_bans", []) as Array).has(String(id))
+
+
+static func augment_allowed(state: GameState, id: StringName) -> bool:
+	return not (of(state).get("augment_bans", []) as Array).has(String(id))
 
 
 static func trap_reveal(state: GameState) -> bool:
@@ -228,6 +260,10 @@ static func describe(rules: Dictionary) -> String:
 		parts.append(L10n.t("스피드전"))
 	parts.append(L10n.t(BoardCatalog.name_of(rules.get("board", BoardCatalog.DEFAULT_ID))))
 	parts.append(L10n.tf("빈자리 컴퓨터 %s", [BotTemper.label(int(rules.get("bot_level", BotTemper.DEFAULT_LEVEL)))]))
+	for entry: Array in [["card_bans", "카드 밴 %d개"], ["augment_bans", "증강 밴 %d개"]]:
+		var count: int = (rules.get(entry[0], []) as Array).size()
+		if count > 0:
+			parts.append(L10n.tf(entry[1], [count]))
 	return L10n.tf("[방 규칙] %s", [" · ".join(parts)])
 
 

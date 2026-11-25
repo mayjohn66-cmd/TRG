@@ -314,7 +314,7 @@ func setup(ids: Array[int], seed_value: int = 0, loadouts: Dictionary = {}) -> v
 					pawn.evolve(int(entry), 0 if int(entry) == GameEnums.PawnKind.BASIC else 1)
 			pawns.append(pawn)
 	current_player = player_ids[0] if not player_ids.is_empty() else -1
-	card_deck = CardRegistry.default_deck()
+	card_deck = allowed_cards(CardRegistry.default_deck())
 	_shuffle(card_deck)
 
 
@@ -649,13 +649,19 @@ func hand_limit(player_id: int) -> int:
 
 func give_card(player_id: int, card_id: StringName) -> bool:
 	var hand: Array = hands[player_id]
-	if hand.size() >= hand_limit(player_id):
+	if hand.size() >= hand_limit(player_id) or not MatchRules.card_allowed(self, card_id):
 		return false
 	hand.append(card_id)
 	card_drawn.emit(player_id, card_id)
 	if CardRegistry.type_of(card_id).begins_with("TRAP"):
 		note_trap_card(player_id)  # 모브 큐이: 함정 카드를 얻으면 필살기 충전 기회
 	return true
+
+
+func allowed_cards(pool: Array[StringName]) -> Array[StringName]:
+	if (match_rules.get("card_bans", []) as Array).is_empty():
+		return pool
+	return pool.filter(func(id: StringName) -> bool: return MatchRules.card_allowed(self, id))
 
 
 ## 모브 큐이 (v1.1): 내가 함정 카드를 얻거나 설치할 때마다, 필살기를 이미 쓴 큐이마다 35% 확률로 필살기가 다시 찬다.

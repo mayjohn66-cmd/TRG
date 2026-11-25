@@ -148,6 +148,16 @@ const DECALS: Dictionary = {  # 모든 보드가 같이 쓰는 칸 그림. 빵�
 	"corner": preload("res://assets/board/decals/BOARD_CORNER.png"),
 	"boost": preload("res://assets/board/decals/BOARD_BOOST.png"),
 }
+const SPIRIT_STYLES: Dictionary = {
+	&"fire": {"texture": preload("res://assets/board/spirit_mountain/fire.png"),
+		"fill": Color("fbe0d5"), "band": Color("ec9276"), "edge": Color("a85248"), "ink": Color("922e24")},
+	&"water": {"texture": preload("res://assets/board/spirit_mountain/water.png"),
+		"fill": Color("d9edfc"), "band": Color("80bce7"), "edge": Color("4c82b1"), "ink": Color("255b92")},
+	&"earth": {"texture": preload("res://assets/board/spirit_mountain/earth.png"),
+		"fill": Color("f3e4c7"), "band": Color("c5a471"), "edge": Color("927044"), "ink": Color("6f4e2c")},
+	&"wind": {"texture": preload("res://assets/board/spirit_mountain/wind.png"),
+		"fill": Color("dff1d1"), "band": Color("9cc77e"), "edge": Color("648d53"), "ink": Color("3a662e")},
+}
 static var _kind_decals: Dictionary = {}
 
 
@@ -259,6 +269,13 @@ class Symbol extends Node2D:
 		flat.set_shader_parameter("cutout_dark_lines", bool(BoardCatalog.tile_kind(kind).get("decal_cutout", false)))
 		material = flat
 
+	func set_appearance(new_texture: Texture2D, new_ink: Color) -> void:
+		texture = new_texture
+		ink = new_ink
+		if material is ShaderMaterial:
+			(material as ShaderMaterial).set_shader_parameter("ink", ink)
+		queue_redraw()
+
 	func _draw() -> void:
 		if BoardSkin.decal_source(kind) == null:
 			return
@@ -358,6 +375,7 @@ class Tile extends Control:
 	var warning_flow: Symbol
 	var plane := Transform2D.IDENTITY
 	var arrow_target: int = -1
+	var _shown_spirit: StringName = &""
 	## 함정이 깔린 발판: 타일 전체가 보라색으로 바뀌고 가운데에 그 함정의 그림(정체를 모르면 물음표)이 붙는다. pulse는 0~1로 main_board가 갱신한다.
 	var trap_on: bool = false
 	var trap_pulse: float = 0.0
@@ -453,6 +471,20 @@ class Tile extends Control:
 				(child as Ring).points = outline_points
 				(child as Ring).queue_redraw()
 		queue_redraw()
+
+	func set_spirit(spirit: StringName) -> bool:
+		if data.kind != "spirit" or spirit == _shown_spirit:
+			return false
+		_shown_spirit = spirit
+		var appearance: Dictionary = BoardSkin.SPIRIT_STYLES.get(spirit, {})
+		if appearance.is_empty():
+			data = BoardSkin.definition(index)
+		else:
+			for key: String in ["fill", "band", "edge", "ink"]:
+				data[key] = appearance[key]
+		symbol.set_appearance(appearance.get("texture") as Texture2D, data.ink)
+		queue_redraw()
+		return true
 
 	func set_trap(on: bool, icon: Texture2D = null) -> void:
 		if trap_on != on or trap_icon != icon:

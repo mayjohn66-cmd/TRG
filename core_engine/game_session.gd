@@ -253,7 +253,7 @@ static func set_nickname(raw: String) -> bool:
 
 ## [방 규칙 설정]에서 바꾼 항목만 담는다 (trap_reveal·super_freq·laws·speed·bot_level). 바꾸지 않은 항목은 난이도 기본값을 따른다.
 ## 싱글 커스텀과 친선전 방장이 함께 쓰고, 브라우저 프로필에 남는다. bot_level은 친선전 빈자리 컴퓨터에만 쓴다.
-const RULE_KEYS: Array[String] = ["trap_reveal", "super_freq", "laws", "speed", "bot_level"]
+const RULE_KEYS: Array[String] = ["trap_reveal", "super_freq", "laws", "speed", "bot_level", "card_bans", "augment_bans"]
 static var _rule_overrides: Variant = null
 
 

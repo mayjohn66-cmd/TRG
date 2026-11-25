@@ -1318,7 +1318,14 @@ func _reshuffle_draft(pickers: Array[int]) -> void:
 	state.pacing_humans = pacing_humans
 	for player_id: int in player_order:
 		if _draft_offers.has(player_id):
-			_draft_offers[player_id] = AugmentRegistry.generate_offers(state, player_id)
+			var offers := AugmentRegistry.generate_offers(state, player_id)
+			if offers.is_empty():
+				_draft_offers.erase(player_id)
+			else:
+				_draft_offers[player_id] = offers
+	if _draft_offers.is_empty():
+		_begin_turn()
+		return
 	phase_serial += 1
 	phase_time_left = GameEnums.PHASE_TIME_DRAFT * timer_scale
 	_emit_event(&"augment_reshuffled", {"players": pickers, "offers": _draft_offers.duplicate(true)})
@@ -1407,10 +1414,13 @@ func _enter_round_start() -> void:
 		for player_id: int in player_order:
 			if not state.is_graduated(player_id):  # 졸업한 플레이어는 드래프트에서 빠진다
 				state.pacing_humans = pacing_humans
-				_draft_offers[player_id] = AugmentRegistry.generate_offers(state, player_id)
-		_emit_event(&"augment_offers", {"round": state.round_number, "offers": _draft_offers.duplicate(true)})
-	else:
-		_begin_turn()
+				var offers := AugmentRegistry.generate_offers(state, player_id)
+				if not offers.is_empty():
+					_draft_offers[player_id] = offers
+		if not _draft_offers.is_empty():
+			_emit_event(&"augment_offers", {"round": state.round_number, "offers": _draft_offers.duplicate(true)})
+			return
+	_begin_turn()
 
 
 func _auto_law_due() -> bool:

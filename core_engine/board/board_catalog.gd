@@ -94,11 +94,11 @@ const BOARDS: Array[Dictionary] = [
 				"paper": "efe4f7", "comic_title": {"upper": "e9ccff", "lower": "ffffff", "shadow": "5a2a8a"}},
 		}},
 	{"id": &"spirit_mountain", "since": "1.3.0", "name": "정령산", "desc": "정령들의 산 · 증강 라운드마다 빵집·옷장 자리 6곳에 하급 정령(불·물·땅·바람)이 깃들어 효과가 바뀐다", "tiles": 32,
-		"shop": &"spirit", "portal": &"spirit", "surface": "res://assets/board/trickcal/board_surface_symbols_v1.png",
-		"palette": {  # 정령산(임시 색): 이끼 낀 회녹색 바위 타일, 짙은 청록 테두리, 코너·반환점은 돌, 정령빛 부스터 발판
-			"fill": Color("eef5ef"), "edge": Color("3f6f63"), "ink": Color("2a5047"), "band": Color("9fcfbf"),
-			"corner_edge": Color("6b6f66"), "corner_ink": Color("4a4d46"), "corner_fill": Color("e8e6dc"),
-			"half_edge": Color("6b6f66"), "half_ink": Color("4a4d46"), "half_fill": Color("e2e0d4"),
+		"shop": &"spirit", "portal": &"spirit", "surface": "res://assets/board/spirit_mountain/board_surface.png",
+		"palette": {
+			"fill": Color("e9f5f3"), "edge": Color("508984"), "ink": Color("285a55"), "band": Color("a9d2c9"),
+			"corner_edge": Color("507f79"), "corner_ink": Color("2b5c56"), "corner_fill": Color("edf5ee"),
+			"half_edge": Color("4b847e"), "half_ink": Color("2b5c56"), "half_fill": Color("d9ede7"),
 			"shadow": Color(0.1, 0.2, 0.18, 0.16),
 			"dash_base": Color("1f4f48"), "dash_inner": Color("63e6be"), "dash_pulse": Color("a5d8ff"), "dash_rim": Color("e6fcf5")},
 		"law_variants": {
