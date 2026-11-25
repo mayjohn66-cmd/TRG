@@ -39,6 +39,11 @@ signal bomb_resolved(shooter: int, victim: int, pawn_id: int, from_tile: int, to
 ## ACT_02 뱅! 저격 결과: 저격당한 선두 말이 from_tile에서 to_tile로 2칸 밀려났다.
 ## 긴급 엄폐(ACT_22): 말 하나가 택배 박스를 뒤집어썼다. 펭짱 8호(ACT_21): 펭귄이 날아가 부딪힌 말들. 전문적 해킹(ACT_23): 대상의 다음 턴이 자동 진행으로 바뀐다.
 signal cover_applied(pawn_id: int)
+## 수은 가드(ACT_26): 말 하나에 수은 보호막이 씌워졌다 / 공격 카드 사출을 막고 보호막이 사라졌다.
+signal mercury_applied(pawn_id: int)
+signal mercury_blocked(pawn_id: int, tile: int)
+## 이프리트의 분노(TRP_C05): 지나간 말 주인의 카드 1장이 불탔다 (카드는 덱 맨 밑으로).
+signal card_burned(player_id: int, card_id: StringName, tile: int)
 signal penguin_flew(player_id: int, pawn_id: int, from: Vector2, to: Vector2, hits: Array[int])
 signal hack_applied(player_id: int, target_player: int)
 signal bang_resolved(shooter: int, target_pawn_id: int, from_tile: int, to_tile: int)
@@ -173,6 +178,11 @@ var drift_players: Dictionary = {}
 ## 전문적 해킹(ACT_23): 플레이어 -> 자동 진행으로 보낼 남은 턴 수 (그 사람의 다음 턴에 한 번 소모된다).
 var hacked_turns: Dictionary = {}
 var roll_penalty: Dictionary = {}
+## 피라 대출(ACT_24): 플레이어 -> 남은 상환 턴 수 (내 턴의 첫 굴림 -3칸). loan_fresh: 빌린 그 턴이라 아직 갚지 않는다.
+var loan_debt: Dictionary = {}
+var loan_fresh: Dictionary = {}
+## 회유책(ACT_25): 차례 시작에 [회유책 쓰기] 창을 띄운 플레이어 -> 1 (답하면 지운다).
+var appease_offer: Dictionary = {}
 ## v1.1 방해령 허리케인 포스(LAW_09)를 제정한 사람: 카드 드로우에서 손패에 없는 방해령 종류가 더 잘 나온다.
 var haunt_boost: Dictionary = {}
 ## 자동 법전(템포 1단계 중반 법전 보장)으로 열릴 법전 id를 미리 정해 둔 것 (빈 문자열 = 아직 안 정함). TurnManager._preview_auto_law.
@@ -485,6 +495,7 @@ func send_to_start(pawn: PlayerPawn, by_player: int) -> void:
 		amnesia_blocked.emit(pawn.entity_id, pawn.current_tile_idx)  # 기억상실빔: 이번 라운드는 아무도 사출되지 않는다
 		return
 	if SuperStatus.blocks_capture_by(self, by_player, pawn):return  # 평화주의자는 아무도 잡을 수 없다
+	if by_player!=pawn.owner_id and break_mercury(pawn):return  # 수은 가드: 공격 카드 사출만 1회 막는다
 	if by_player!=pawn.owner_id and break_shield(pawn):return
 	var members: Array[PlayerPawn] = pawn.stack_members()
 	# 특수 승리 기록: 다크호스 판정은 사출 전에 선두를 정한다.
@@ -979,6 +990,16 @@ func break_shield(pawn: PlayerPawn) -> bool:
 	return true
 
 
+## 수은 가드(ACT_26): 지금 피해가 공격 카드(출처 kind &"card")에서 왔고 이 말에 수은 보호막이 있으면 깨뜨리고 true.
+## 잡기·함정 사출은 막지 않는다 (그건 긴급 엄폐·백돌 방어막).
+func break_mercury(pawn: PlayerPawn) -> bool:
+	if pawn == null or not pawn.mercury or StringName(attack_source.get("kind", &"")) != &"card":
+		return false
+	pawn.mercury = false
+	mercury_blocked.emit(pawn.entity_id, pawn.current_tile_idx)
+	return true
+
+
 ## 증강 라운드: 방어막이 깨진 뒤 잡히지 않은 백돌은 방어막이 다시 차오른다.
 func recharge_shields() -> void:
 	for pawn: PlayerPawn in pawns:
@@ -1098,7 +1119,7 @@ func pawn_state(pawn: PlayerPawn) -> Dictionary:
 		carried_ids.append(carried_pawn.entity_id)
 	return {"tile": pawn.current_tile_idx, "history": pawn.step_history.duplicate(), "started": pawn.has_left_start,
 		"finished": pawn.is_finished, "revenge": pawn.revenge_boost, "comeback": pawn.comeback_run, "restrained": pawn.restrained_turns,
-		"imprisoned": pawn.is_imprisoned, "shield": pawn.shield, "ward": pawn.ward, "ward_box": pawn.ward_box, "turn_guard": pawn.turn_guard, "carrier": pawn.carrier.entity_id if pawn.carrier != null else -1, "carried": carried_ids}
+		"imprisoned": pawn.is_imprisoned, "shield": pawn.shield, "ward": pawn.ward, "ward_box": pawn.ward_box, "mercury": pawn.mercury, "turn_guard": pawn.turn_guard, "carrier": pawn.carrier.entity_id if pawn.carrier != null else -1, "carried": carried_ids}
 
 
 ## 방어으로 피해를 되돌린다: 저장한 말 상태·휴식·밴·기록을 복원하고, 공격으로 오른 특수 승리 기록을 되돌린다.
@@ -1123,6 +1144,7 @@ func undo_attack(entry: Dictionary) -> void:
 		pawn.shield = bool(data["shield"])
 		pawn.ward = bool(data.get("ward", false))
 		pawn.ward_box = bool(data.get("ward_box", false))
+		pawn.mercury = bool(data.get("mercury", false))
 		pawn.turn_guard = bool(data.get("turn_guard", false))
 		if from_tile != pawn.current_tile_idx:
 			pawn_teleported.emit(pawn.entity_id, pawn.current_tile_idx)

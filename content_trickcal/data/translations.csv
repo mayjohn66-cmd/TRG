@@ -3101,3 +3101,41 @@ TRPG,TRPG,TRPG
 일치한 칸이 황금이면 칸수 2배,A gold matching spot doubles the spaces,一致したマスが金ならマス数2倍
 당첨 문양은 ♠♥◆♣ 중 하나 · 칸마다 당첨 문양이 나올 확률 43%,The winning suit is one of ♠♥◆♣ · each spot shows it 43% of the time,当選の絵柄は♠♥◆♣のどれか・各マスに当選の絵柄が出る確率43%
 꽝,No match,はずれ
+[수은 가드] %s에 수은 보호막 (공격 카드 사출 1회 방어),[Mercury Guard] %s is coated in mercury (blocks one attack-card ejection),[水銀ガード] %sに水銀の盾（攻撃カードの射出を1回防ぐ）
+[수은 가드] %s이(가) %d번 타일에서 공격 카드를 막았습니다,[Mercury Guard] %s blocked an attack card on tile %d,[水銀ガード] %sが%d番マスで攻撃カードを防ぎました
+%s 공격 카드를 막았다! (%s),%s blocked an attack card! (%s),%s 攻撃カードを防いだ！（%s）
+[이프리트의 분노] P%d의 카드 [%s]가 %d번 코너의 불꽃에 탔습니다,[Ifrit's Wrath] P%d's card [%s] burned in the flames on corner %d,[イフリートの怒り] P%dのカード[%s]が%d番コーナーの炎で燃えました
+%s 카드 1장이 불탔다! (%s),%s 1 card burned! (%s),%s カードが1枚燃えた！（%s）
+회유책: 걸린 디버프를 풀지 고르세요. [회유책 쓰기] 또는 [그냥 두기],Appeasement: choose whether to lift your debuffs. [Use Appeasement] or [Leave It],懐柔策：かかっているデバフを解除するか選んでください。[懐柔策を使う]または[そのままにする]
+[%s] 수은 보호막을 씌울 내 말을 고르세요,[%s] Choose your pawn to coat in mercury,[%s] 水銀の盾をかぶせる自分の駒を選んでください
+피라 대출 상환 -%d,Pira's Loan repayment -%d,ピラのローン返済 -%d
+[피라 대출] P%d 상환: 눈금 %d → %d (남은 상환 %d턴),[Pira's Loan] P%d repays: roll %d → %d (%d turns left),[ピラのローン] P%d 返済：出目%d → %d（残り返済%dターン）
+%s 상환! 눈금 %d → %d (남은 %d턴),%s repaid! Roll %d → %d (%d turns left),%s 返済！出目%d → %d（残り%dターン）
+[회유책] P%d: 디버프를 풀 수 있습니다,[Appeasement] P%d can lift their debuffs,[懐柔策] P%d：デバフを解除できます
+밴,Ban,バン
+스킵,Skip,スキップ
+지금 걸린 %s을(를) 회유책으로 풀까요?,Lift your %s with Appeasement?,かかっている%sを懐柔策で解除しますか？
+회유책 쓰기,Use Appeasement,懐柔策を使う
+그냥 두기,Leave It,そのままにする
+회유책,Appeasement,懐柔策
+카드 -1!,Card -1!,カード-1！
+공격 막고 카드 1장,"Block attack, draw 1",攻撃を防いでカード1枚
+공격 막고 그 카드 획득,"Block attack, take that card",攻撃を防いでそのカードを獲得
+이번 +9 · 3턴 -3,+9 now · -3 for 3 turns,今回+9・3ターン-3
+밴·스킵·해킹 해제,Lift Ban/Skip/Hack,バン・スキップ・ハッキング解除
+공격 카드 1회 방어,Blocks 1 attack card,攻撃カードを1回防ぐ
+눈금 4+ 적 정지,Stops enemies at 4+,出目4以上の敵を停止
+지날 때마다 카드 소각,Burns a card on every pass,通るたびにカードを燃やす
+[공격 방어] 공격 카드를 막고 카드 1장 획득,[Attack Guard] Block an attack card and draw 1 card.,[攻撃ガード] 攻撃カードを防ぎ、カードを1枚獲得する
+[공격 방어] 공격 카드를 막고 그 카드를 내 손패로,[Attack Guard] Block an attack card and take that card into your hand.,[攻撃ガード] 攻撃カードを防ぎ、そのカードを自分の手札に
+굴리기 전 사용! 이번 굴림 +9칸 · 대신 다음 내 턴 3번 동안 첫 굴림 -3칸,Use before rolling! This roll +9 · but the first roll of each of your next 3 turns is -3.,振る前に使用！今回の出目+9・代わりに次の自分の番3回は最初の出目-3
+밴·스킵·해킹이 걸린 채 내 턴이 오면 모두 해제 (밴 중에도 사용 가능),"When your turn comes while Banned, Skipped or Hacked, lift them all (usable even while Banned).",バン・スキップ・ハッキング中に自分の番が来たらすべて解除（バン中でも使用可）
+내 말 하나에 수은 보호막 · 공격 카드로 출발선으로 사출되는 것을 1회 막음,Coat one of your pawns in mercury - blocks being ejected to the start line by an attack card once.,自分の駒1つに水銀の盾・攻撃カードでスタートラインへ射出されるのを1回防ぐ
+눈금 4+ 로 지나가는 적 말 그 칸에 강제 정지,Forces an enemy pawn passing at 4+ to stop on this tile,出目4以上で通過する敵の駒をそのマスで強制停止
+[코너·3R·여러 번] 지나가는 적 말 주인의 카드 1장을 태움,[Corner·3R·Repeating] Burns 1 card from the owner of every enemy pawn that passes,[コーナー·3R·何度でも] 通過する敵の駒の持ち主のカードを1枚燃やす
+뾰족한 성게,Spiky Sea Urchin,トゲトゲのウニ
+이프리트의 분노,Ifrit's Wrath,イフリートの怒り
+피라 대출,Pira's Loan,ピラのローン
+수은 가드,Mercury Guard,水銀ガード
+민트초코,Mint Chocolate,ミントチョコ
+긴급수리,Emergency Repair,緊急修理

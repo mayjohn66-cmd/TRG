@@ -33,6 +33,7 @@ static func capture(state: GameState) -> TurnSnapshot:
 			"shield": pawn.shield,
 			"ward": pawn.ward,
 			"ward_box": pawn.ward_box,
+			"mercury": pawn.mercury,
 			"turn_guard": pawn.turn_guard,
 			"melon": pawn.melon_size,
 			"trpg_level": pawn.trpg_level,
@@ -84,6 +85,9 @@ static func capture(state: GameState) -> TurnSnapshot:
 			"hammer_pending": state.hammer_pending.duplicate(),
 			"hammer_bonus": state.hammer_bonus.duplicate(),
 			"roll_penalty": state.roll_penalty.duplicate(),
+			"loan_debt": state.loan_debt.duplicate(),
+			"loan_fresh": state.loan_fresh.duplicate(),
+			"appease_offer": state.appease_offer.duplicate(),
 			"haunt_boost": state.haunt_boost.duplicate(),
 			"hacked_turns": state.hacked_turns.duplicate(),
 			"auto_law_preview": state.auto_law_preview,
@@ -128,6 +132,7 @@ func restore(state: GameState, restore_meta: bool = false) -> void:
 		pawn.shield = bool(entry.get("shield", false))
 		pawn.ward = bool(entry.get("ward", false))
 		pawn.ward_box = bool(entry.get("ward_box", false))
+		pawn.mercury = bool(entry.get("mercury", false))
 		pawn.turn_guard = bool(entry.get("turn_guard", false))
 		pawn.melon_size = int(entry.get("melon", 0))
 		pawn.trpg_level = int(entry.get("trpg_level", 1))
@@ -204,6 +209,9 @@ func restore(state: GameState, restore_meta: bool = false) -> void:
 		state.hammer_pending = (meta.get("hammer_pending", {}) as Dictionary).duplicate()
 		state.hammer_bonus = (meta.get("hammer_bonus", {}) as Dictionary).duplicate()
 		state.roll_penalty = (meta.get("roll_penalty", {}) as Dictionary).duplicate()
+		state.loan_debt = (meta.get("loan_debt", {}) as Dictionary).duplicate()
+		state.loan_fresh = (meta.get("loan_fresh", {}) as Dictionary).duplicate()
+		state.appease_offer = (meta.get("appease_offer", {}) as Dictionary).duplicate()
 		state.haunt_boost = (meta.get("haunt_boost", {}) as Dictionary).duplicate()
 		state.hacked_turns = (meta.get("hacked_turns", {}) as Dictionary).duplicate()
 		state.auto_law_preview = str(meta.get("auto_law_preview", ""))

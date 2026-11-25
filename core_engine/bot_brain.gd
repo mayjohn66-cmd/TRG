@@ -418,7 +418,17 @@ static func _plan_one_turn_card(state: GameState, player_id: int, card: BaseCard
 			var leader_player: int = state.race_leader(player_id)
 			if leader_player != -1 and card.is_legal(state, player_id, {"target_player": leader_player}) and rng.randf() < 0.6:
 				return {"card_id": card.card_id, "params": {"target_player": leader_player}}
-		&"CNT_01", &"CNT_02", &"CNT_03", &"CNT_04", &"CNT_05", &"CNT_06", &"CNT_07", &"CNT_08", &"CNT_09":
+		&"ACT_24":  # 피라 대출: 결승선이 가까운 말이 있을 때 한 방 (빚이 없을 때만, 반쯤)
+			if card.could_play(state, player_id) and _leader_near_goal(state, player_id, 12) and rng.randf() < 0.5:
+				return {"card_id": card.card_id, "params": {}}
+		&"ACT_25":
+			return {}  # 회유책: 차례 시작 창에서만 (BotController가 쓴다)
+		&"ACT_26":  # 수은 가드: 가장 앞선 내 말에 (반쯤)
+			var coated: Array[PlayerPawn] = CardMercury.targets(state, player_id)
+			if not coated.is_empty() and rng.randf() < 0.5:
+				coated.sort_custom(func(a: PlayerPawn, b: PlayerPawn) -> bool: return state.pawn_progress_distance(a) < state.pawn_progress_distance(b))
+				return {"card_id": card.card_id, "params": {"pawn_id": coated[0].entity_id}}
+		&"CNT_01", &"CNT_02", &"CNT_03", &"CNT_04", &"CNT_05", &"CNT_06", &"CNT_07", &"CNT_08", &"CNT_09", &"CNT_10", &"CNT_11":
 			return {}  # 방어 카드는 공격당했을 때만
 		_:
 			if rng.randf() >= TRAP_USE_CHANCE:
@@ -454,7 +464,7 @@ static func plan_window_card(state: GameState, player_id: int, phase: int, roll_
 
 ## 방어 대기에서 봇이 낼 방어 카드: 되갚는 카드를 먼저 고르고(거울의 힘 > 우노 리버스 > 도굴꾼 > 싸이크론 > 포고령 > 빗나감),
 ## 바이츠 더 더스트는 앞서 나간 말을 잃었을 때만 쓴다. 쓰지 않으면 빈 값.
-const COUNTER_PREFERENCE: Array[StringName] = [&"CNT_02", &"CNT_03", &"CNT_07", &"CNT_05", &"CNT_06", &"CNT_09", &"CNT_08", &"CNT_04", &"CNT_01"]
+const COUNTER_PREFERENCE: Array[StringName] = [&"CNT_02", &"CNT_03", &"CNT_11", &"CNT_07", &"CNT_05", &"CNT_06", &"CNT_10", &"CNT_09", &"CNT_08", &"CNT_04", &"CNT_01"]
 
 
 static func choose_counter(state: GameState, _player_id: int, cards: Array, entry: Dictionary, _rng: RandomNumberGenerator) -> StringName:
@@ -798,3 +808,11 @@ static func _threat_at(state: GameState, pawn: PlayerPawn) -> float:
 ## 남이 깐 설치물의 정체를 아는가: 공개 설치물, 공개적으로 깔린 함정(지뢰밭 지뢰), 또는 함정 공개 규칙. 사람 화면과 같은 기준이다.
 static func visible_trap(state: GameState, attachment: TileAttachment) -> bool:
 	return not attachment.is_hidden_trap or attachment.always_revealed or MatchRules.trap_reveal(state)
+
+
+## 보드 위 내 말 중 결승선까지 within칸 안에 든 말이 있는가 (피라 대출을 쓸 때).
+static func _leader_near_goal(state: GameState, player_id: int, within: int) -> bool:
+	for pawn: PlayerPawn in state.pawns_of(player_id):
+		if pawn.has_left_start and not pawn.is_finished and state.pawn_progress_distance(pawn) <= within:
+			return true
+	return false

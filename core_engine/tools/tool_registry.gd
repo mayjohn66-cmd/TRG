@@ -92,6 +92,8 @@ const ZERO_OUTCOME: Array[StringName] = [
 	&"DICE_BLACKJACK",  # 버스트: 0칸 + 턴 종료
 	&"DICE_STOCK",  # 상장폐지: 0칸 + 선두 말 사출
 	&"DICE_OMIKUJI",  # 대흉: 0칸 + 턴 종료
+	&"DICE_PIRATE",  # 해적: 누적 0칸 + 턴 종료
+	&"DICE_SCRATCH",  # 꽝: 0칸
 ]
 
 

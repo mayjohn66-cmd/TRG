@@ -226,7 +226,11 @@ func _handle_action(action: StringName, params: Dictionary) -> void:
 	if counter_pending() and not (actor == int(_counter_offer["victim"]) and (action == &"counter_pass" or (action == &"play_card" and CardCounter.is_counter(StringName(params.get("card_id", &"")))))):
 		action_rejected.emit(actor, action, &"counter_pending")
 		return
+	if appease_pending() and not (actor == current_player_id() and (action == &"appease_pass" or (action == &"play_card" and StringName(params.get("card_id", &"")) == &"ACT_25"))):
+		action_rejected.emit(actor, action, &"appease_pending")
+		return
 	match action:
+		&"appease_pass": _handle_appease_pass(actor)
 		&"proceed": _handle_proceed(actor)
 		&"roll": _handle_roll(actor, params)
 		&"stop": _handle_stop(actor)
@@ -300,7 +304,7 @@ func change_state(new_state: State) -> void:
 		State.PHASE_SELECT_PAWN: phase_time_left = GameEnums.PHASE_TIME_SELECT * timer_scale
 		State.PHASE_RESOLUTION: phase_time_left = GameEnums.PHASE_TIME_RESOLUTION * timer_scale
 		_: phase_time_left = 0.0
-	if _hack_turn_player != -1 and _hack_turn_player == current_player_id() and phase_time_left > 0.0 and not external_timeouts_blocked():
+	if _hack_turn_player != -1 and _hack_turn_player == current_player_id() and phase_time_left > 0.0 and not external_timeouts_blocked() and not appease_pending():
 		phase_time_left = minf(phase_time_left, HACK_AUTO_SECONDS * timer_scale)  # 해킹당한 턴은 짧은 대기 뒤 자동으로 넘어간다
 	phase_changed.emit(current_state, current_player_id(), phase_time_left)
 	_broadcast_state()
@@ -522,12 +526,13 @@ func is_hack_turn(player_id: int) -> bool:
 
 
 func _handle_play_card(actor: int, params: Dictionary) -> void:
-	if actor == _hack_turn_player:
+	var appeasing: bool = StringName(params.get("card_id", &"")) == &"ACT_25"  # 회유책: 해킹·밴 중에도 낼 수 있고 턴당 1장에 세지 않는다
+	if actor == _hack_turn_player and not appeasing:
 		action_rejected.emit(actor, &"play_card", &"hacked")  # 전문적 해킹: 이번 턴은 자동 진행이라 카드를 쓰지 못한다
 		return
 	var card_id: StringName = StringName(params.get("card_id", &""))
 	var card: BaseCard = CardRegistry.get_card(card_id)
-	if card != null and state.is_banned(actor):
+	if card != null and state.is_banned(actor) and not appeasing:
 		action_rejected.emit(actor, &"play_card", &"banned")
 		return
 	if card is CardCounter:
@@ -545,7 +550,7 @@ func _handle_play_card(actor: int, params: Dictionary) -> void:
 	if not state.has_card(actor, card_id):
 		action_rejected.emit(actor, &"play_card", &"card_not_in_hand")
 		return
-	if current_state == State.PHASE_TURN_BEGIN and _card_played_this_turn:
+	if current_state == State.PHASE_TURN_BEGIN and _card_played_this_turn and not appeasing:
 		action_rejected.emit(actor, &"play_card", &"card_limit")
 		return
 	if not card.is_legal(state, actor, params):
@@ -566,6 +571,11 @@ func _handle_play_card(actor: int, params: Dictionary) -> void:
 			action_rejected.emit(actor, &"play_card", &"invalid_target")
 			return
 		state.consume_card(actor, card_id)
+		if appeasing:
+			if _hack_turn_player == actor:
+				_hack_turn_player = -1  # 이번 해킹 턴도 풀린다: 직접 진행한다
+			change_state(State.PHASE_TURN_BEGIN)  # 남은 시간을 보통 차례 시간으로 다시 잰다
+			return
 		_card_played_this_turn = true
 		if card.category == GameEnums.CardCategory.TRAP:
 			state.note_trap_card(actor)  # 모브 큐이: 함정을 설치해도 필살기 충전 기회
@@ -1333,6 +1343,9 @@ func _on_timeout() -> void:
 			else:
 				_finish_draft()
 		State.PHASE_TURN_BEGIN:
+			if appease_pending():
+				_handle_appease_pass(current_player_id())
+				return
 			if hammer_pending(current_player_id()):
 				_bank_hammer(current_player_id(), hammer_level(current_player_id()))  # 시간이 다 되면 지금 강화에서 멈춘다
 			_enter_roll_wait()
@@ -1576,8 +1589,14 @@ func _begin_turn(new_turn: bool = true) -> void:
 	if state.is_graduated(current_player_id()) and not is_game_over:
 		advance_to_next_player()
 		return
+	if new_turn:
+		state.loan_fresh.erase(current_player_id())  # 피라 대출: 빌린 턴이 지났다 (이번 턴부터 갚는다)
+	# 회유책(ACT_25): 밴·스킵·해킹이 걸린 채 차례가 왔고 손에 회유책이 있으면 차례 시작에 [회유책 쓰기] 창을 띄운다 (스킵은 답을 들을 때까지 미룬다)
+	var appease: bool = new_turn and state.has_card(current_player_id(), &"ACT_25") and (state.is_banned(current_player_id()) or bool(state.rest_next_turn.get(current_player_id(), false)) or int(state.hacked_turns.get(current_player_id(), 0)) > 0)
+	if appease:
+		state.appease_offer[current_player_id()] = 1
 	# [초증강] 판 뒤집기 실패: 이번 턴은 쉰다 (바로 다음 사람 차례). 쉬는 턴에도 내 설치물의 남은 턴은 줄어든다.
-	if new_turn and bool(state.rest_next_turn.get(current_player_id(), false)):
+	if new_turn and not appease and bool(state.rest_next_turn.get(current_player_id(), false)):
 		state.rest_next_turn[current_player_id()] = false
 		_tick_owned_attachments(current_player_id())
 		_emit_event(&"turn_rested", {"player_id": current_player_id()})
@@ -1596,7 +1615,28 @@ func _begin_turn(new_turn: bool = true) -> void:
 	_tick_owned_attachments(current_player_id())
 	state.turn_snapshot = TurnSnapshot.capture(state)
 	(state.tools[current_player_id()] as BaseJudgmentTool).on_turn_begin(state.rng)
+	if appease:
+		_emit_event(&"appease_offered", {"player_id": current_player_id(), "banned": state.is_banned(current_player_id()), "skipped": bool(state.rest_next_turn.get(current_player_id(), false)), "hacked": _hack_turn_player == current_player_id()})
 	change_state(State.PHASE_TURN_BEGIN)
+
+
+## 회유책 창이 떠 있는가 (지금 차례인 사람의 답을 기다린다).
+func appease_pending() -> bool:
+	return state != null and current_state == State.PHASE_TURN_BEGIN and int(state.appease_offer.get(current_player_id(), 0)) > 0
+
+
+## 회유책 창에서 [그냥 두기](또는 시간 초과): 걸린 디버프대로 진행한다. 미뤄 둔 스킵이면 지금 쉬고 다음 사람 차례로.
+func _handle_appease_pass(actor: int) -> void:
+	if not appease_pending() or actor != current_player_id():
+		action_rejected.emit(actor, &"appease_pass", &"wrong_phase")
+		return
+	state.appease_offer.erase(actor)
+	if bool(state.rest_next_turn.get(actor, false)):
+		state.rest_next_turn[actor] = false
+		_emit_event(&"turn_rested", {"player_id": actor})
+		advance_to_next_player()
+		return
+	change_state(State.PHASE_TURN_BEGIN)  # 남은 시간을 다시 잰다 (해킹 턴이면 짧은 자동 진행 시간)
 
 
 ## TRP_02 나락으로 구속된 말: 내 턴이 시작될 때마다 구속 턴을 하나씩 소모하고, 그 턴에는 선택할 수 없다.
@@ -1713,6 +1753,17 @@ func _apply_roll_result(result: RollResult) -> void:
 			var reduced: int = maxi(ctx.dice_value - penalty, 1)  # 방해령 메죵: 다음 눈금 -1 (눈금이 1이면 그대로 1칸: 0칸으로 만들지는 못한다)
 			_emit_event(&"roll_penalized", {"player_id": roller, "from": ctx.dice_value, "to": reduced, "amount": penalty})
 			ctx.dice_value = reduced
+		# 피라 대출: 빌린 다음 내 턴부터 3번, 차례의 첫 굴림 -3칸 (최소 1칸, 0칸 결과는 그대로이고 그 턴은 갚지 않는다)
+		var debt: int = int(state.loan_debt.get(roller, 0))
+		if debt > 0 and _roll_chain == 0 and ctx.dice_value > 0 and not bool(state.loan_fresh.get(roller, false)):
+			debt -= 1
+			if debt > 0:
+				state.loan_debt[roller] = debt
+			else:
+				state.loan_debt.erase(roller)
+			var repaid: int = maxi(ctx.dice_value - CardLoan.DEBT_STEPS, 1)
+			_emit_event(&"loan_repaid", {"player_id": roller, "from": ctx.dice_value, "to": repaid, "left": debt})
+			ctx.dice_value = repaid
 		var permanent: int = int(state.permanent_roll_bonus.get(roller, 0))
 		var corner: int = int(state.corner_buff.get(roller, 0))
 		state.corner_buff.erase(roller)

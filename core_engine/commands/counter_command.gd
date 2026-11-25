@@ -29,8 +29,13 @@ func _run() -> void:
 	match card_id:
 		&"CNT_08":
 			pass  # 이쪽을 봐라!: 잡기 피해만 복원하며 공격자에게 되갚지 않는다.
-		&"CNT_09":
-			state.draw_card(sender_id)  # 비상 식량: 잡기를 막고 카드 1장을 얻는다 (손패가 가득 차면 얻지 못한다)
+		&"CNT_09", &"CNT_10":
+			state.draw_card(sender_id)  # 비상 식량(잡기)·민트초코(공격 카드): 막고 카드 1장을 얻는다 (손패가 가득 차면 얻지 못한다)
+		&"CNT_11":
+			# 긴급수리: 막은 공격 카드를 내 손패로 가져온다 (손패가 가득 차면 못 가져온다)
+			var attack_card: StringName = StringName(entry.get("card_id", &""))
+			if CardRegistry.DECK_COMPOSITION.has(attack_card):
+				state.give_card(sender_id, attack_card)
 		&"CNT_02":
 			var striker: PlayerPawn = state.get_pawn(int(entry["attacker_pawn"]))
 			if striker != null and striker.has_left_start and not striker.is_finished:
