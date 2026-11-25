@@ -16,6 +16,9 @@ var _scale: float = 1.0
 var _fruit: Sprite2D
 var _audio:=PresentationAudio.new()
 var _bite_material: ShaderMaterial
+var bite_sound: StringName = &"cucumber_bite"
+var flesh_color := Color(0.84, 0.94, 0.61)
+var upright_food := false
 
 func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -44,12 +47,14 @@ func begin(art: Dictionary, mouth: Vector2, toward: Vector2, height: float, pace
 	_fruit.offset = Vector2(-region.size.x * 0.5, 0)
 	_bite_material = ShaderMaterial.new()
 	_bite_material.shader = BITE
+	_bite_material.set_shader_parameter("flesh_color", Vector3(flesh_color.r, flesh_color.g, flesh_color.b))
 	_bite_material.set_shader_parameter("region_uv", Vector4(region.position.x / texture.get_width(), region.position.y / texture.get_height(), region.size.x / texture.get_width(), region.size.y / texture.get_height()))
 	_fruit.material = _bite_material
 	add_child(_fruit)
 	active = true
 	show()
-	_audio.start(self,[PresentationAudio.cue(0.48,&"cucumber_bite"),PresentationAudio.cue(0.80,&"cucumber_bite"),PresentationAudio.cue(1.12,&"cucumber_bite")])
+	if bite_sound != &"":
+		_audio.start(self,[PresentationAudio.cue(0.48,bite_sound),PresentationAudio.cue(0.80,bite_sound),PresentationAudio.cue(1.12,bite_sound)])
 	sample(0.0)
 	set_process(true)
 
@@ -73,6 +78,8 @@ func sample(seconds: float) -> void:
 		chew = sin(clampf(fmod(seconds - 0.48, 0.32) / 0.22, 0.0, 1.0) * PI)
 	_fruit.position = _mouth + _direction * (3.0 + (1.0 - approach) * 80.0 + chew * 9.0 - eaten * _height)
 	_fruit.rotation = _direction.angle() - PI * 0.5 + (1.0 - approach) * 0.2 + chew * 0.035
+	if upright_food:
+		_fruit.rotation = chew * 0.035
 	_fruit.scale = Vector2.ONE * _scale
 	_fruit.modulate.a = minf(1.0, seconds / 0.14)
 	_bite_material.set_shader_parameter("eaten", eaten)

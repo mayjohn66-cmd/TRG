@@ -74,6 +74,7 @@ func configure(value: PlayerPawn, color: Color, images: bool = true) -> void:
 	if images:
 		art = PawnArt.load_sprite([PawnArt.BASIC_PATH]) if blind else PawnArt.sprite(pawn)
 	var key: String = "%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s:%s" % [pawn.kind, pawn.unit_no, pawn.slot, pawn.promoted, pawn.carried.size(), pawn.skill_used, pawn.is_finished, color, pawn.revenge_boost, (art.get("texture") as Texture2D).resource_path if not art.is_empty() else "shape", pawn.shield, pawn.ward or pawn.mercury, pawn.turn_guard, pawn.melon_size, pawn.ward_box, pawn.trpg_level if pawn.is_trpg() else 0, blind, agitation_mark, peace_mark]
+	key += ":mercury=%s" % pawn.mercury
 	if key == _signature:
 		return
 	# 괴상한 멜론 (v1.1): 함정을 먹을 때마다 한 단계씩 커진다 (최대 3단계 = 1.6배)
@@ -133,6 +134,7 @@ func _sync_shield(animate: bool) -> void:
 	elif pawn.kind == GameEnums.PawnKind.GO or pawn.kind == GameEnums.PawnKind.YUT or pawn.kind == GameEnums.PawnKind.JANGGI:
 		height = 20.0
 	_shield_shell.fit_body(height, mini(pawn.carried.size(), 3), float(pawn.entity_id))
+	_shield_shell.set_mercury(pawn.mercury, has_protection())
 	_shield_shell.set_active(has_protection(), animate and not pawn.is_finished)
 	if blind:
 		_shield_shell.hide()
@@ -180,6 +182,11 @@ class ShieldShell extends Node2D:
 	var _materials: Array[ShaderMaterial] = []
 	var _transition: Tween
 	var _flash: Tween
+	func set_mercury(value: bool, remains_active: bool) -> void:
+		# Keep the silver material while a consumed mercury shell disperses.
+		if not value and active and not remains_active:
+			return
+		_parameter(&"mercury", 1.0 if value else 0.0)
 
 	func _init() -> void:
 		for front: bool in [false, true]:

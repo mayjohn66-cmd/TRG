@@ -12600,6 +12600,14 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 					if card_id == &"CNT_09" and _fx_on():
 						var saved: Array = data.get("pawns", [])
 						enqueue_step(_play_rations_fx.bind(int(saved[0]) if not saved.is_empty() else -1, player), -1, false)
+					if card_id == &"CNT_10" and _fx_on():
+						enqueue_step(_play_cucumber_eat.bind(player, true), -1, false)
+					if card_id == &"CNT_11" and _fx_on():
+						enqueue_step(_play_emergency_repair.bind(player), -1, false)
+				elif card_id == &"ACT_24":
+					_fx_when_announced(_play_pira_loan.bind(player))
+				elif card_id == &"ACT_25":
+					_play_appease_release(player)
 				elif card_id == &"ACT_23":
 					pass  # The target profile carries this card's feedback.
 				elif ATTACK_CARDS.has(card_id):
@@ -13043,25 +13051,129 @@ func _record_roll(data: Dictionary) -> void:
 
 
 ## Keep the cucumber's only presentation local to the eating player's avatar.
-func _play_cucumber_eat(player_id: int) -> void:
+func _play_cucumber_eat(player_id: int, mint: bool = false) -> void:
 	if not _fx_on() or not _profiles.has(player_id):
 		return
 	var avatar: Control = _profiles[player_id]["avatar"]
-	if not avatar.is_visible_in_tree():
+	if not avatar.is_visible_in_tree() and not mint:
 		return
-	var stage: Control = get_node_or_null("CucumberEat")
+	var stage_name := "MintChocolateEat" if mint else "CucumberEat"
+	var stage: Control = get_node_or_null(stage_name)
 	if stage == null:
 		stage = preload("res://scenes/cucumber_eat_fx.gd").new()
-		stage.name = "CucumberEat"
+		stage.name = stage_name
 		add_child(stage)
-	var art: Dictionary = PawnArt.load_sprite(["res://assets/board/structures/CUCUMBER_V01.png"])
+	stage.bite_sound = &"" if mint else &"cucumber_bite"
+	stage.upright_food = mint
+	stage.flesh_color = Color("b5f3ce") if mint else Color(0.84, 0.94, 0.61)
 	var face: Rect2 = avatar.get_global_rect()
+	if not avatar.is_visible_in_tree():
+		var portrait := TextureRect.new()
+		portrait.texture = _choice_portrait(player_id)
+		portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		portrait.size = Vector2(96, 96)
+		portrait.position = Vector2(get_viewport_rect().size.x * 0.5 - 48, get_viewport_rect().size.y - 225)
+		portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		stage.add_child(portrait)
+		face = portrait.get_global_rect()
+	var path := "res://assets/fx/mint_chocolate/cone.png" if mint else "res://assets/board/structures/CUCUMBER_V01.png"
+	var art: Dictionary = PawnArt.load_sprite([path])
 	var local_from_screen: Transform2D = get_global_transform_with_canvas().affine_inverse()
 	var mouth: Vector2 = local_from_screen * (face.position + face.size * Vector2(0.43, 0.80))
 	stage.begin(art, mouth, local_from_screen * (get_viewport_rect().size * 0.5), clampf(face.size.y * 1.15, 90.0, 150.0), _motion_pace())
 	var generation: int = _fx_generation
 	while generation == _fx_generation and is_instance_valid(stage) and stage.busy():
 		await get_tree().process_frame
+	if mint and is_instance_valid(stage):
+		stage.queue_free()
+
+
+func _play_emergency_repair(player_id: int) -> void:
+	if not _fx_on() or not _profiles.has(player_id):
+		return
+	var stage := preload("res://scenes/emergency_repair_fx.gd").new()
+	stage.name = "EmergencyRepair"
+	stage.z_index = 45
+	stage.pace = _motion_pace()
+	stage.position = get_global_transform_with_canvas().affine_inverse() * (get_viewport_rect().size * 0.5)
+	add_child(stage)
+	var generation := _fx_generation
+	while generation == _fx_generation and is_instance_valid(stage) and stage.busy():
+		await get_tree().process_frame
+	if is_instance_valid(stage):
+		stage.queue_free()
+
+
+func _play_appease_release(player_id: int) -> void:
+	if not _fx_on() or not _profiles.has(player_id):
+		return
+	var stage := Control.new()
+	stage.name = "AppeaseRelease"
+	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stage.z_index = 45
+	add_child(stage)
+	var avatar: Control = _profiles[player_id]["avatar"]
+	var profile: Control = _profiles[player_id]["panel"]
+	var hosts: Array[Control] = [avatar, profile]
+	if player_id == local_player_id and _dock != null:
+		hosts.append(_dock)
+	if player_id == local_player_id and _pawn_bar != null:
+		hosts.append(_pawn_bar)
+	var local_from_screen := get_global_transform_with_canvas().affine_inverse()
+	var at := local_from_screen * _profile_center(player_id)
+	var pace := _motion_pace()
+	var tween := create_tween()
+	tween.set_parallel(true)
+	for host: Control in hosts:
+		for node_name: String in ["Stamp_ban", "Stamp_skip", "HackStatus"]:
+			var mark := host.get_node_or_null(node_name) as CanvasItem
+			if mark == null:
+				continue
+			mark.reparent(stage, true)
+			tween.tween_property(mark, "position:y", -36.0, 0.85 / pace).as_relative().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+			tween.tween_property(mark, "modulate:a", 0.0, 0.65 / pace).set_delay(0.2 / pace)
+	_impact_ring(at, Color("b5f3da"), 54.0)
+	_burst_shards(at, Color("d8ffe9"), 9)
+	tween.tween_interval(0.9 / pace)
+	tween.chain().tween_callback(stage.queue_free)
+
+
+func _play_pira_loan(player_id: int) -> void:
+	if not _fx_on() or not _profiles.has(player_id):
+		return
+	var stage := Node2D.new()
+	stage.name = "PiraLoan"
+	stage.z_index = 45
+	add_child(stage)
+	var card := Sprite2D.new()
+	card.texture = TextureCache.fetch("res://assets/fx/pira/business_card.png")
+	stage.add_child(card)
+	var local_from_screen := get_global_transform_with_canvas().affine_inverse()
+	var center := local_from_screen * (get_viewport_rect().size * 0.5)
+	var destination := local_from_screen * _profile_center(player_id)
+	var width := minf(get_viewport_rect().size.x * 0.46, 440.0)
+	var shown_scale := Vector2.ONE * width / card.texture.get_width()
+	card.position = center + Vector2(0, 40)
+	card.scale = shown_scale * 0.72
+	card.rotation = -0.12
+	card.modulate.a = 0.0
+	var pace := _motion_pace()
+	var tween := create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(card, "position", center, 0.3 / pace).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(card, "scale", shown_scale, 0.3 / pace).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(card, "rotation", 0.0, 0.3 / pace)
+	tween.tween_property(card, "modulate:a", 1.0, 0.2 / pace)
+	tween.chain().tween_interval(0.7 / pace)
+	tween.chain().tween_property(card, "position", destination, 0.48 / pace).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tween.parallel().tween_property(card, "scale", shown_scale * 0.18, 0.48 / pace)
+	tween.parallel().tween_property(card, "rotation", 0.18, 0.48 / pace)
+	tween.parallel().tween_property(card, "modulate:a", 0.0, 0.18 / pace).set_delay(0.3 / pace)
+	await tween.finished
+	stage.queue_free()
+	_number_pop(destination, "+%d" % CardRegistry.param(&"ACT_24", CardLoan.BONUS), Color("ffe066"))
+	await get_tree().create_timer(0.35 / pace).timeout
 
 
 func _record_card(data: Dictionary) -> void:

@@ -6,6 +6,7 @@ uniform float strength : hint_range(0.0, 1.0) = 1.0;
 uniform float fracture : hint_range(0.0, 1.0) = 0.0;
 uniform float hit_flash : hint_range(0.0, 1.0) = 0.0;
 uniform float phase = 0.0;
+uniform float mercury = 0.0;
 
 void fragment() {
 	vec2 p = (UV * 2.0 - 1.0) * 1.14;
@@ -15,6 +16,7 @@ void fragment() {
 	float direction = (sector + 0.5) * 6.283185 / 7.0 - 3.141593;
 	p -= vec2(cos(direction), sin(direction)) * fracture * 0.16;
 	float radius = length(p);
+	radius += mercury * 0.024 * sin(angle * 5.0 + TIME * 2.1 + phase);
 	float aa = max(fwidth(radius), 0.008);
 	float inside = 1.0 - smoothstep(1.0 - aa, 1.0 + aa, radius);
 	float normal_z = sqrt(max(1.0 - radius * radius, 0.0));
@@ -38,6 +40,13 @@ void fragment() {
 	} else {
 		alpha = inside * (0.065 + fresnel * 0.13) + halo * 0.09;
 		tint = vec3(0.16, 0.65, 0.92);
+	}
+	if (mercury > 0.5) {
+		float flow = sin(angle * 3.0 + TIME * 1.4 + phase) * 0.5 + 0.5;
+		vec3 silver = mix(vec3(0.24, 0.25, 0.32), vec3(0.96, 0.98, 1.0), smoothstep(0.25, 0.72, flow));
+		tint = mix(vec3(0.65, 0.69, 0.76), silver, fresnel);
+		tint = mix(tint, vec3(1.0), clamp(sheen + small_glint + hit_flash * 0.6, 0.0, 1.0));
+		alpha = inside * (front_layer > 0.5 ? 0.045 + fresnel * 0.28 + rim * 0.64 + sheen * 0.7 : 0.045 + fresnel * 0.18);
 	}
 	COLOR *= vec4(tint, clamp(alpha * strength * breath * intact, 0.0, 0.9));
 }
