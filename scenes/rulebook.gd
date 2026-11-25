@@ -1700,7 +1700,15 @@ func _kind_block(kind_id: StringName, board_id: StringName) -> Dictionary:
 		&"portal": block["rows"] = _warp_rows(layout.get("portal_warp_targets", {}))
 		&"vending": block["rows"] = _drink_rows()
 		&"cauldron": block["rows"] = _potion_rows()
+		&"spirit": block["rows"] = _spirit_rows()
 	return block
+
+
+func _spirit_rows() -> Array:
+	var rows: Array = []
+	for spirit: Dictionary in MountainSpirits.SPIRITS:
+		rows.append([str(spirit["name"]), str(spirit["text"])])
+	return rows
 
 
 func _potion_rows() -> Array:

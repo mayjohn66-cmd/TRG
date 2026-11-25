@@ -29,8 +29,9 @@ const DEFS: Dictionary = {
 	"LAW_09": ["방해령 허리케인 포스!!", "방해령 {p1}종(베루·사리·메죵)을 모두 손패에 모은 채 내 차례 종료", 3, HAUNT, "종"],
 }
 ## 보드마다 같은 자리(같은 기록·같은 목표)를 바꿔 쓰는 판은 BoardCatalog.BOARDS의 law_variants에 있다 (규칙·저장·도장은 원래 교칙과 같다).
-## 판 항목 키: name·condition(교칙 이름·조건 문구) / card_title{ko,en,ja}(선택 카드 제목) / icon(illustrations/ 아래 아이콘)
-##   stage(승리 도입 연출: LawVictoryPrelude의 STAGES 키) / theme·paper·comic_title·geometry_key(승리 제목 무대) / win_reason·result_phrase(결과 문구)
+## 판 항목 키: name·condition(교칙 이름·조건 문구) / card_title{ko,en,ja}(선택 카드 제목) / win_reason·result_phrase(결과 문구)
+##   (선택) icon(illustrations/ 아래 아이콘, 없으면 원래 교칙 그림) / stage(승리 도입 연출: LawVictoryPrelude의 STAGES 키, 없으면 원래 교칙 무대)
+##   (선택) theme·paper·comic_title·geometry_key(승리 제목 무대: 넣으면 넷 다)
 
 
 ## 도감에서 다른 보드의 특수 승리를 잠깐 보여 줄 때만 쓴다: &"" = 지금 판의 보드 그대로, 아니면 그 보드(BoardCatalog id)의 판을 본다.

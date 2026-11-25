@@ -56,6 +56,10 @@ var corner_buff: int = 0
 var vending_drink: StringName = &""
 ## 마녀의 가마솥에서 끓인 물약 id (WitchPotions, 비어 있으면 없음).
 var cauldron_potion: StringName = &""
+## 정령산: 이 이동에서 효과를 받은 정령 (fire/water/earth/wind, 없으면 &"").
+var spirit: StringName = &""
+## 그 정령이 있던 칸 (불 정령으로 뒤로 밀려도 원래 칸).
+var spirit_tile: int = -1
 ## 리벤지 부스터로 더해진 칸 수 (0이면 발동하지 않음)와 그때의 최종 계획 칸 수.
 var revenge_bonus: int = 0
 var revenge_total: int = 0
@@ -63,6 +67,9 @@ var revenge_total: int = 0
 
 func merge(other: MoveReport) -> void:
 	path.append_array(other.path)
+	if spirit == &"":
+		spirit = other.spirit
+		spirit_tile = other.spirit_tile
 	canceled = canceled or other.canceled
 	jailed = jailed or other.jailed
 	released = released or other.released
@@ -140,4 +147,6 @@ func to_dict() -> Dictionary:
 		"corner_buff": corner_buff,
 		"vending_drink": vending_drink,
 		"cauldron_potion": cauldron_potion,
+		"spirit": spirit,
+		"spirit_tile": spirit_tile,
 	}

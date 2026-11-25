@@ -378,6 +378,15 @@ static func apply_step(
 			return StepOutcome.FINISHED
 		return StepOutcome.HALTED
 
+	# 정령산 땅 정령: 지나가기만 해도 그 칸에서 멈춘다 (멈춘 칸에서 평소 도착 정산을 한다)
+	if not is_last and is_forward and _primary_move(ctx) and state.board.get_tile(destination).tile_type == TileNode.TileType.SPIRIT \
+			and MountainSpirits.at(state, destination) == MountainSpirits.EARTH and not mover.is_finished:
+		report.stopped_early = true
+		report.spirit = MountainSpirits.EARTH
+		report.spirit_tile = destination
+		state.spirit_triggered.emit(mover.entity_id, destination, MountainSpirits.EARTH)
+		return StepOutcome.HALTED
+
 	if is_forward and (destination == GameEnums.GOAL_TILE or TempoUp.in_zone_for(state, destination)) and mover.can_finish(state):
 		if not is_last and ctx.exact_goal_required:
 			report.bounced = true
@@ -609,6 +618,27 @@ static func _resolve_landing(state: GameState, mover: PlayerPawn, ctx: RuleConte
 		VendingDrinks.apply(state, mover, drink, report)
 		if drink == &"soda":
 			soda_steps = VendingDrinks.SODA_STEPS
+	var spirit_steps: int = 0  # 정령산 정령의 이어지는 이동: +1 = 바람(앞으로), -1 = 불(뒤로)
+	if tile.tile_type == TileNode.TileType.SPIRIT and _primary_move(ctx) and not mover.is_finished and not mover.is_imprisoned:
+		var spirit: StringName = MountainSpirits.at(state, mover.current_tile_idx)
+		if spirit != &"":
+			# 정령산 순례(LAW_02의 정령산판): 정령 칸에 멈춘 횟수 (빵집 방문과 같은 기록). 땅 정령에 막혀 멈춘 것도 센다
+			state.stat_tile = mover.current_tile_idx
+			state.add_stat(mover.owner_id, VictoryLaw.BAKERY)
+			state.stat_tile = -1
+		if spirit != &"" and report.spirit == &"":  # 땅 정령에 막혀 멈춘 경우는 이미 받았다
+			report.spirit = spirit
+			report.spirit_tile = mover.current_tile_idx
+			state.spirit_triggered.emit(mover.entity_id, mover.current_tile_idx, spirit)
+			match spirit:
+				MountainSpirits.WATER:
+					var spirit_card: StringName = state.draw_card(mover.owner_id)
+					if spirit_card != &"":
+						report.drawn_card = spirit_card
+				MountainSpirits.FIRE:
+					spirit_steps = -MountainSpirits.FIRE_STEPS
+				MountainSpirits.WIND:
+					spirit_steps = MountainSpirits.WIND_STEPS
 	var potion_steps: int = 0  # 가마솥 물약의 이어지는 이동: +N = 앞으로(신속), -N = 뒤로(폭발)
 	if tile.tile_type == TileNode.TileType.CAULDRON and _primary_move(ctx) and not mover.is_finished and not mover.is_imprisoned:
 		var potion: StringName = WitchPotions.pick(state)  # 벨라티엔 왕국 마녀의 가마솥: 딱 멈추면 물약이 끓는다 (좋은 것 3종 + 나쁜 것 2종)
@@ -623,6 +653,12 @@ static func _resolve_landing(state: GameState, mover: PlayerPawn, ctx: RuleConte
 		return
 	if potion_steps > 0 and not mover.is_finished and not mover.is_imprisoned:  # 신속의 물약: 바로 앞으로 +2칸 (탄산음료처럼 이어서 도착 정산)
 		report.merge(execute(state, mover, ctx.make_follow_up(potion_steps)))
+		return
+	if spirit_steps > 0 and not mover.is_finished and not mover.is_imprisoned:  # 바람 정령: 바로 앞으로 1칸 (이어서 도착 정산)
+		report.merge(execute(state, mover, ctx.make_follow_up(spirit_steps)))
+		return
+	if spirit_steps < 0 and not mover.is_finished and not mover.is_imprisoned:  # 불 정령: 1칸 뒤로 밀려 그 칸에서 평소 도착처럼 판정
+		teleport_to(state, mover, ctx.make_follow_up(0), report, maxi(mover.current_tile_idx + spirit_steps, 1))
 		return
 	if potion_steps < 0 and not mover.is_finished and not mover.is_imprisoned:  # 폭발 물약: 펑! 뒤로 2칸 날아가 그 칸에서 평소 도착처럼 판정 (방해령 베루의 뒤로 밀기와 같은 방식)
 		var back_to: int = maxi(mover.current_tile_idx + potion_steps, 1)
