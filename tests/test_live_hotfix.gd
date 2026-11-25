@@ -79,3 +79,20 @@ func test_special_win_archives_the_whole_board_and_law_before_retirement() -> vo
 	var packed:=TurnSnapshot.capture(s).to_dict();var copy:=make_state(4)
 	TurnSnapshot.from_dict(packed).restore(copy,true)
 	check_eq(copy.diagnostic_before_graduation,archive,"network/rewind snapshot preserves the frozen report")
+
+
+## 2026-11-24 제보(일본어 "防御して倒されないのに特殊勝利"): 방어 카드가 없는 상대를 잡은 처치는 확정이라 화면 진행도도 바로 오른다.
+## 예전에는 확정된 처치까지 '미정'으로 빼서 처치 순간 9/10으로 보이다가 차례가 끝나자마자 10으로 특수 승리했다.
+func test_committed_kill_shows_up_immediately_on_the_law_progress() -> void:
+	var s:=make_state();place(s,11,3);place(s,21,5);s.hands[2]=[]
+	add_law(s,"LAW_01");s.add_stat(1,&"kills",9)
+	var law:=LawRegistry.create("LAW_01") as VictoryLaw
+	s.begin_attack({"kind":&"trap","attacker":1,"trap_id":"TRP_02"});s.record_hit(s.get_pawn(21));s.send_to_start(s.get_pawn(21),1);s.end_attack()
+	check_eq(s.stat(1,&"kills"),10,"막을 카드가 없으면 처치는 바로 확정")
+	check_eq(SpecialVictory.shown_progress(s,law,1),10,"화면도 바로 10/10 (판정과 같은 값)")
+	# 막을 카드가 있으면 기록에도 화면에도 아직 넣지 않는다
+	var t:=make_state();place(t,11,3);place(t,21,5);t.hands[2]=[&"CNT_05"]
+	add_law(t,"LAW_01");t.add_stat(1,&"kills",9)
+	t.begin_attack({"kind":&"trap","attacker":1,"trap_id":"TRP_02"});t.record_hit(t.get_pawn(21));t.send_to_start(t.get_pawn(21),1);t.end_attack()
+	check_eq(t.stat(1,&"kills"),9,"방어 카드가 있으면 처치는 보류")
+	check_eq(SpecialVictory.shown_progress(t,law,1),9,"화면도 9/10")

@@ -103,7 +103,7 @@ func run() -> void:
 			for tile: Control in book._tiles:
 				var face := tile.get_child(0) as Button
 				check(absf(face.size.x*face.scale.x-tile.size.x)<0.1,"Card face fills its grid hit area")
-				check(absf(face.size.y*face.scale.y-tile.size.y)<0.5,"Row height matches card face (chapter %d: %.1f vs %.1f at %s)" % [chapter,face.size.y*face.scale.y,tile.size.y,resolution])
+				check(absf(face.size.y*face.scale.y-tile.size.y)<0.5,"Row height matches card face (chapter %d)" % chapter)  # 줄을 다 못 채우면 행 높이가 정수로 올림된다
 			await capture("chapter_%d_%d" % [chapter,resolution.x])
 		book.show_spread(Rulebook.LAW_SPREAD)
 		await frames()

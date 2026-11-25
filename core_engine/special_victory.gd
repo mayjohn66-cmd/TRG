@@ -103,18 +103,35 @@ static func on_law_enacted(state: GameState, law: LawResource) -> void:
 		state.reset_stat(player_id, victory.stat_key)
 
 
-## 아직 방어 여부가 정해지지 않은 공격(방어 대기 중이거나 아직 묻지 않은 공격)이 올린 이 사람의 기록. 화면은 이만큼 빼고 보여 준다:
-## 방어하면 되돌아갈 처치를 미리 '달성'으로 보이지 않게 (판정은 방어 대기가 끝난 뒤 차례 끝에만 한다).
+## 아직 방어 여부가 정해지지 않은 공격이 올린 이 사람의 기록. 화면은 이만큼 빼고 보여 준다 (방어하면 되돌아갈 처치를 미리 '달성'으로 보이지 않게).
+## - 피해자가 막을 방어 카드를 들고 있던 공격은 처음부터 기록에 넣지 않는다(stats_committed=false): 뺄 것이 없다.
+## - 이미 기록에 들어간 공격(막을 카드가 없었다)은 확정이라 빼지 않는다. 단 지금 방어 창이 떠 있는 공격(pending_attack)이거나,
+##   아직 묻지 않았는데 피해자가 그 뒤에 막을 카드를 쥐게 된 공격은 빼 둔다.
+## 2026-11-24 제보(일본어): 확정된 처치까지 빼서, 처치 순간 화면은 9/10인데 실제 기록은 10이라 '한 걸음 남았는데' 특수 승리가 났다.
 static func undecided_stat(state: GameState, player_id: int, key: StringName, pending_attack: int = -1) -> int:
 	var total: int = 0
 	for entry: Dictionary in state.attack_log:
-		if not bool(entry.get("stats_committed",true)):continue # Already excluded from authoritative counters.
-		if bool(entry["countered"]) or (bool(entry["offered"]) and int(entry["id"]) != pending_attack):
+		if not bool(entry.get("stats_committed", true)) or bool(entry["countered"]):
+			continue
+		var open: bool = int(entry["id"]) == pending_attack
+		if not open and not bool(entry["offered"]):
+			open = _victim_can_answer(state, entry)
+		if not open:
 			continue
 		var owner: int = int(entry["victim"]) if key == VictoryLaw.EJECTED else int(entry.get("attacker", -1))
 		if owner == player_id:
 			total += int((entry["stats"] as Dictionary).get(key, 0))
 	return total
+
+
+static func _victim_can_answer(state: GameState, entry: Dictionary) -> bool:
+	var victim: int = int(entry["victim"])
+	if state.is_banned(victim):
+		return false
+	for card_id: StringName in state.hands.get(victim, []):
+		if CardCounter.answers(state, card_id, entry):
+			return true
+	return false
 
 
 ## 화면에 보여 줄 진행도: 방어 여부가 정해지지 않은 공격의 기록은 뺀다.

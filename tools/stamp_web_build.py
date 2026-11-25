@@ -5,6 +5,7 @@ __TRG_BUILD_ID__      -> 커밋 7자리 (스플래시 그림 등 해시 표에 �
 __TRG_VERSION__       -> project.godot의 config/version (예: 0.9.0+abc1234, trg_cached_version 비교 값)
 __TRG_FILE_HASHES__   -> {"index.wasm": "<내용 해시>", "avatars/<id>.pck": ...} (엔진 파일·아바타 묶음의 ?v=)
 __TRG_HASH_INDEX_JS__ -> index.js 내용 해시 (script 태그의 ?v=)
+__TRG_FILE_SIZES__    -> {"game.pck": <바이트>, "avatars/<id>.pck": ...} (받기 진행률의 전체 크기: 서버 gzip의 Content-Length는 압축된 크기라 쓸 수 없다)
 
 내용 해시로 주소를 정하므로, 바뀌지 않은 파일(엔진이 그대로인 index.wasm 37MB, 그대로인 아바타 묶음)은
 배포가 바뀌어도 같은 주소라 다시 받지 않는다. 아바타 묶음을 내보낸 뒤에 실행해야 묶음 해시가 들어간다.
@@ -47,6 +48,18 @@ def file_hashes(web_dir: Path) -> dict:
     return hashes
 
 
+SIZED_PATTERNS = ("game.pck", "avatars/*.pck")
+
+
+def file_sizes(web_dir: Path) -> dict:
+    sizes = {}
+    for pattern in SIZED_PATTERNS:
+        for path in sorted(web_dir.glob(pattern)):
+            if path.is_file():
+                sizes[path.relative_to(web_dir).as_posix()] = path.stat().st_size
+    return sizes
+
+
 def main() -> None:
     if len(sys.argv) != 3:
         raise SystemExit(__doc__)
@@ -57,7 +70,7 @@ def main() -> None:
     version = project_version(Path(__file__).resolve().parent.parent / "project.godot")
     page = web_dir / "index.html"
     html = page.read_text(encoding="utf-8")
-    for token in ("__TRG_BUILD_ID__", "__TRG_VERSION__", "__TRG_FILE_HASHES__", "__TRG_HASH_INDEX_JS__", 'id="trg-cache-guard"'):
+    for token in ("__TRG_BUILD_ID__", "__TRG_VERSION__", "__TRG_FILE_HASHES__", "__TRG_HASH_INDEX_JS__", "__TRG_FILE_SIZES__", 'id="trg-cache-guard"'):
         if token not in html:
             raise SystemExit(f"index.html에 {token}이 없다: web/shell.html의 캐시 가드를 확인")
     hashes = file_hashes(web_dir)
@@ -66,6 +79,8 @@ def main() -> None:
     hashes_json = json.dumps(hashes, separators=(",", ":"), sort_keys=True)
     if "'" in hashes_json or "\\" in hashes_json:
         raise SystemExit("해시 표에 따옴표·역슬래시가 들어갔다")
+    sizes_json = json.dumps(file_sizes(web_dir), separators=(",", ":"), sort_keys=True)
+    html = html.replace("__TRG_FILE_SIZES__", sizes_json)
     html = (html.replace("__TRG_BUILD_ID__", build_id).replace("__TRG_VERSION__", version)
             .replace("__TRG_FILE_HASHES__", hashes_json).replace("__TRG_HASH_INDEX_JS__", js_hash))
     if "__TRG_" in html:
