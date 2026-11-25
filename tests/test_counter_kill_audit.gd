@@ -23,7 +23,8 @@ func _on_event(manager: TurnManager, kind: StringName, data: Dictionary) -> void
 			return
 		_seen += 1
 		var after: int = state.stat(int(info["attacker"]), &"kills")
-		if after != int(info["pre"]):
+		# 방어 뒤 처치 수는 공격 직전보다 늘지 않는다 (바이츠 더 더스트는 공격자의 턴 전체를 되감아 그 턴의 앞선 처치까지 되돌리므로 줄 수는 있다)
+		if after > int(info["pre"]) or (StringName(data["card_id"]) != &"CNT_01" and after != int(info["pre"])):
 			info["counter"] = data["card_id"]
 			info["after"] = after
 			_bad.append(info)
