@@ -9,7 +9,7 @@ extends PanelContainer
 ## 연출이 끝났다 (취소 포함). play()는 이 시그널을 await 한다.
 signal finished
 
-const SUPPORTED: Array[StringName] = [&"D6", &"CHINCHIRO", &"YUT", &"LIFE_ROULETTE", &"SLOT_777", &"HOLDEM", &"DICE_HWATU", &"DICE_MAHJONG", &"DICE_TAROT", &"REVOLVER", &"DICE_STOCK", &"DICE_DARTS", &"DICE_OMIKUJI", &"DICE_ICECREAM", &"DICE_COOKIE", &"DICE_CAPSULE"]
+const SUPPORTED: Array[StringName] = [&"D6", &"CHINCHIRO", &"YUT", &"LIFE_ROULETTE", &"SLOT_777", &"HOLDEM", &"DICE_HWATU", &"DICE_MAHJONG", &"DICE_TAROT", &"REVOLVER", &"DICE_STOCK", &"DICE_DARTS", &"DICE_OMIKUJI", &"DICE_ICECREAM", &"DICE_COOKIE", &"DICE_CAPSULE", &"DICE_PIRATE", &"DICE_SCRATCH"]
 const YUT_NAMES: Dictionary = {0: "낙", 1: "도", 2: "개", 3: "걸", 4: "윷", 5: "모"}
 const SLOT_SYMBOLS: Array[String] = ["체리", "레몬", "종", "BAR", "다이아", "7"]
 const SUITS: Array[String] = ["♣", "◆", "♥", "♠"]
@@ -107,6 +107,8 @@ var _omikuji_view: OmikujiView = null
 var _icecream_view: IceCreamView = null
 var _cookie_view: FortuneCookieView = null
 var _capsule_view: CapsuleGachaView = null
+var _pirate_view: PirateBarrelView = null
+var _scratch_view: ScratchTicketView = null
 var _gun_intro: float = 0.0
 var _gun_pull_started: bool = false
 ## 3D 시간 배속 (투척 도구는 압축한다).
@@ -204,8 +206,8 @@ func play(tool_id: StringName, result: Dictionary, power: float = 0.5, continues
 		return
 	_power = clampf(power, 0.0, 1.0)
 	_result = result
-	_hold_after = tool_id == &"REVOLVER" and bool(result.get("can_continue", false))
-	if tool_id in [&"HOLDEM", &"DICE_HWATU", &"DICE_TAROT", &"DICE_MAHJONG", &"YUT", &"LIFE_ROULETTE", &"SLOT_777", &"REVOLVER", &"DICE_OMIKUJI", &"DICE_ICECREAM", &"DICE_COOKIE", &"DICE_CAPSULE"]:
+	_hold_after = tool_id in [&"REVOLVER", &"DICE_PIRATE"] and bool(result.get("can_continue", false))  # 이어서 당길(꽂을) 도구는 다음 시도까지 그림을 남긴다
+	if tool_id in [&"HOLDEM", &"DICE_HWATU", &"DICE_TAROT", &"DICE_MAHJONG", &"YUT", &"LIFE_ROULETTE", &"SLOT_777", &"REVOLVER", &"DICE_OMIKUJI", &"DICE_ICECREAM", &"DICE_COOKIE", &"DICE_CAPSULE", &"DICE_PIRATE", &"DICE_SCRATCH"]:
 		last_display = ""
 	_mode = tool_id
 	_t = 0.0
@@ -246,6 +248,18 @@ func play(tool_id: StringName, result: Dictionary, power: float = 0.5, continues
 		cues.append(PresentationAudio.cue(CapsuleGachaView.DROP_AT, &"card_throw", -8.0))
 		cues.append(PresentationAudio.cue(CapsuleGachaView.OPEN_AT, &"icecream_snap", -5.0))
 		cues.append(PresentationAudio.cue(CapsuleGachaView.REVEAL_AT, &"good" if bool(_result.get("details", {}).get("secret", false)) else &"card_pick", -6.0))
+	elif tool_id == &"DICE_PIRATE":
+		cues.append(PresentationAudio.cue(PirateBarrelView.STAB_END - 0.04, &"toy_click", -6.0))
+		if bool(_result.get("details", {}).get("popped", false)):
+			cues.append(PresentationAudio.cue(PirateBarrelView.POP_AT, &"bad", -4.0))
+		elif not bool(_result.get("can_continue", false)):
+			cues.append(PresentationAudio.cue(PirateBarrelView.THUNK_END, &"good", -6.0))
+	elif tool_id == &"DICE_SCRATCH":
+		for cell: int in 3:
+			for stroke: int in 3:
+				cues.append(PresentationAudio.cue(ScratchTicketView.SCRATCH_START + cell * ScratchTicketView.SCRATCH_EACH + stroke * 0.14, &"ticket_rustle", -12.0))
+		var scratch_details: Dictionary = _result.get("details", {})
+		cues.append(PresentationAudio.cue(ScratchTicketView.REVEAL_AT, &"good" if int(scratch_details.get("matches", 0)) >= 2 or bool(scratch_details.get("golden", false)) else (&"bad" if int(scratch_details.get("matches", 0)) == 0 else &"card_pick"), -6.0))
 	elif tool_id == &"DICE_COOKIE":
 		cues.append(PresentationAudio.cue(0.18, &"toy_click", -9.0))
 		for at: float in [0.55, 0.72, 0.88]:
@@ -792,6 +806,20 @@ func _build(tool_id: StringName) -> void:
 			capsule_details["steps"] = int(_result.get("steps", 0))
 			_capsule_view.begin(capsule_details)
 			_make_card_result(CapsuleGachaView.caption(_result.get("details", {}), int(_result.get("steps", 0))))
+		&"DICE_PIRATE":
+			_title.text = "해적 룰렛"
+			_pirate_view = PirateBarrelView.new()
+			_stage.add_child(_pirate_view)
+			_pirate_view.begin(_result.get("details", {}))
+			_total = _pirate_view.total_time
+			_make_card_result(PirateBarrelView.caption(_result.get("details", {}), int(_result.get("steps", 0)), bool(_result.get("can_continue", false))))
+		&"DICE_SCRATCH":
+			_title.text = "스크래치 복권"
+			_total = ScratchTicketView.TOTAL_TIME
+			_scratch_view = ScratchTicketView.new()
+			_stage.add_child(_scratch_view)
+			_scratch_view.begin(_result.get("details", {}))
+			_make_card_result(ScratchTicketView.caption(_result.get("details", {}), int(_result.get("steps", 0))))
 		&"DICE_COOKIE":
 			_title.text = "포츈쿠키"
 			_total = FortuneCookieView.TOTAL_TIME
@@ -1015,6 +1043,8 @@ func _update(t: float) -> void:
 		&"DICE_ICECREAM": _update_2d(_icecream_view, t)
 		&"DICE_COOKIE": _update_2d(_cookie_view, t)
 		&"DICE_CAPSULE": _update_2d(_capsule_view, t)
+		&"DICE_PIRATE": _update_2d(_pirate_view, t)
+		&"DICE_SCRATCH": _update_2d(_scratch_view, t)
 
 
 ## v1.1 2D 결과 그림: 같은 시계로 그리고, 결과가 정해지면 아래 글을 띄운다.
@@ -1197,4 +1227,6 @@ func _final_text(tool_id: StringName, result: Dictionary) -> String:
 		&"DICE_ICECREAM": return IceCreamView.caption(details, int(result.get("steps", 0)))
 		&"DICE_COOKIE": return FortuneCookieView.caption(details, int(result.get("steps", 0)))
 		&"DICE_CAPSULE": return CapsuleGachaView.caption(details, int(result.get("steps", 0)))
+		&"DICE_PIRATE": return PirateBarrelView.caption(details, int(result.get("steps", 0)), bool(result.get("can_continue", false)))
+		&"DICE_SCRATCH": return ScratchTicketView.caption(details, int(result.get("steps", 0)))
 	return ""

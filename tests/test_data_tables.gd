@@ -95,7 +95,7 @@ func test_every_augment_is_in_the_table_exactly_once_with_valid_fields() -> void
 			check(str(row["title"]) != "" and str(row["desc"]) != "", "%s: title·desc가 있다" % id)
 	for def: AugmentDef in AugmentRegistry.all():
 		check(seen.has(str(def.augment_id)), "%s: 코드의 증강이 표에 빠지지 않았다" % def.augment_id)
-	check_eq(AugmentRegistry.all().size(), 93, "증강 93종 (TRPG 기물 4·수집품 2·포츈쿠키·캡슐뽑기·초증강 4 포함) (기물 28 + 도구 16 + 교칙 9 + 카드 3 + 초증강 16 + 범용 15) — v1.1 기물·도구·범용 각 2, 방해령 허리케인 포스!!")
+	check_eq(AugmentRegistry.all().size(), 95, "증강 95종 (TRPG 기물 4·수집품 2·포츈쿠키·캡슐뽑기·해적 룰렛·스크래치 복권·초증강 4 포함) (기물 28 + 도구 16 + 교칙 9 + 카드 3 + 초증강 16 + 범용 15) — v1.1 기물·도구·범용 각 2, 방해령 허리케인 포스!!")
 	for rule_id: String in ["RULE_REVENGE_BOOST", "RULE_DASH_PAD", "RULE_LEAPFROG"]:
 		check(seen.has(rule_id), "%s 규칙 수치 행" % rule_id)
 
@@ -348,7 +348,7 @@ func test_missing_or_empty_table_falls_back_to_code_defaults() -> void:
 	GameData.override_table("dice", [] as Array[Dictionary])
 	GameData.override_table("cards", [] as Array[Dictionary])
 	AugmentRegistry.reload()
-	check_eq(AugmentRegistry.all().size(), 91, "표가 비어도 증강 91종이 코드 기본값으로 만들어진다 (표에만 있는 카드 패키지 2종 제외)")
+	check_eq(AugmentRegistry.all().size(), 93, "표가 비어도 증강 93종이 코드 기본값으로 만들어진다 (표에만 있는 카드 패키지 2종 제외)")
 	check_eq(GameData.revenge_bonus(), 4, "규칙 수치 기본값")
 	check_eq(SuperAugments.minefield_count(), 2, "초증강 수치 기본값")
 	check(CardRegistry.default_deck().size() > 0, "카드 덱 기본값")
