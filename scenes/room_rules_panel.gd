@@ -104,6 +104,7 @@ func _ready() -> void:
 	_scroll = ScrollContainer.new()
 	_scroll.name = "RulesScroll"
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_ALWAYS
 	_scroll.follow_focus = true
 	_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_scroll.size_flags_stretch_ratio = 1.23
@@ -294,6 +295,33 @@ class RuleStepper extends HBoxContainer:
 	var _caption: Label
 	var detail: Label
 
+	func _ready() -> void:
+		resized.connect(_reserve_text_space)
+		detail.resized.connect(_reserve_text_space)
+		_reserve_text_space.call_deferred()
+
+	func _notification(what: int) -> void:
+		if what == NOTIFICATION_TRANSLATION_CHANGED and is_node_ready():
+			_reserve_text_space.call_deferred()
+
+	func _reserve_text_space() -> void:
+		if detail == null or _caption.size.x <= 0.0 or detail.size.x <= 0.0:
+			return
+		_caption.custom_minimum_size.y = _option_height(_caption, 1)
+		detail.custom_minimum_size.y = _option_height(detail, 2)
+		detail.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+
+	func _option_height(label: Label, column: int) -> float:
+		var font := label.get_theme_font("font")
+		var font_size := label.get_theme_font_size("font_size")
+		var height := 0.0
+		for option: Array in _options:
+			var text := L10n.t(str(option[column]))
+			var measured := font.get_multiline_string_size(
+				text, HORIZONTAL_ALIGNMENT_LEFT, label.size.x, font_size)
+			height = maxf(height, measured.y)
+		return ceilf(height) + 4.0
+
 	func _init(key: String, heading: String, options: Array) -> void:
 		name = key
 		_options = options
@@ -337,7 +365,7 @@ class RuleStepper extends HBoxContainer:
 				_caption.text = str(_options[index][1])
 				break
 		detail.text = str(_options[_index][2]) if _index >= 0 else ""
-		detail.visible = not detail.text.is_empty()
+		_reserve_text_space.call_deferred()
 
 	func _step(direction: int) -> void:
 		if _options.size() < 2:

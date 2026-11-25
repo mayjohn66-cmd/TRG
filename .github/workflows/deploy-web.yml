@@ -451,6 +451,14 @@ jobs:
         if: steps.validation.outputs.scope == 'flip'
         run: godot --headless --path . -s res://tests/ui_flip_test.gd
 
+      - name: Check room rules layout stability
+        if: steps.validation.outputs.scope == 'full' || steps.validation.outputs.scope == 'live-hotfix'
+        run: |
+          set -o pipefail
+          godot --headless --audio-driver Dummy --path . -s res://tests/ui_room_rules_layout_test.gd 2>&1 | tee /tmp/room_rules_layout.log
+          grep -q 'ROOM_RULES_STABLE_GEOMETRY_OK' /tmp/room_rules_layout.log
+          if grep -Eq 'SCRIPT ERROR|SHADER ERROR' /tmp/room_rules_layout.log; then exit 1; fi
+
       - name: Run focused ramen bowl check
         if: steps.validation.outputs.scope == 'full' || steps.validation.outputs.scope == 'ramen'
         run: godot --headless --path . -s res://tests/ui_ramen_bowl_test.gd

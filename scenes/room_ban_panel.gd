@@ -21,6 +21,11 @@ var _scroll: ScrollContainer
 var _list: VBoxContainer
 
 
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_TRANSLATION_CHANGED and is_node_ready():
+		_refresh_actions.call_deferred()
+
+
 func _ready() -> void:
 	name = "RoomBans"
 	add_theme_stylebox_override("panel", LobbyTheme.style(Color("fffdf4"), EDGE, 1, 17, 0, 13))
@@ -74,6 +79,7 @@ func _ready() -> void:
 	_scroll.name = "BanListScroll"
 	_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_ALWAYS
 	_scroll.follow_focus = true
 	column.add_child(_scroll)
 	var gutter := MarginContainer.new()
@@ -177,6 +183,12 @@ func _refresh_actions() -> void:
 	_count.text = L10n.tf("밴 %d개", [bans.size()])
 	for id: String in _actions:
 		var button := _actions[id]
+		var font := button.get_theme_font("font")
+		var font_size := button.get_theme_font_size("font_size")
+		var width := 60.0
+		for caption: String in ["밴", "밴 해제"]:
+			width = maxf(width, ceilf(font.get_string_size(L10n.t(caption), HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x) + 16.0)
+		button.custom_minimum_size.x = width
 		var banned := bans.has(id)
 		button.set_pressed_no_signal(banned)
 		button.text = "밴 해제" if banned else "밴"
