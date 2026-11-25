@@ -126,7 +126,7 @@ func run() -> void:
 			check(str(book._content.entries[variant_index].get("title", "")) == "Bad Carrot", "The second press shows the Belatien witch-shop card (%s)" % book._content.entries[variant_index].get("title", ""))
 			# 남은 보드 판(정령산 등)을 한 장씩 넘긴 뒤 한 번 더 누르면 원래 빵집 카드로 돌아온다
 			var variant_boards: int = 0
-			for board: Dictionary in BoardCatalog.BOARDS:
+			for board: Dictionary in BoardCatalog.available():
 				if (board.get("law_variants", {}) as Dictionary).has("LAW_02"):
 					variant_boards += 1
 			for press: int in range(variant_boards - 1):
