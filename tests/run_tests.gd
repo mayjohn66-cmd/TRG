@@ -99,6 +99,7 @@ func _process(_delta: float) -> bool:
 
 
 func _run_all() -> void:
+	ReleaseGate.preview = true  # 다음 버전용 보드·도구도 검사한다 (게임 화면에서는 그 버전이 되기 전까지 잠겨 있다)
 	BoardSpec.apply(24)  # 기존 규칙 테스트는 옛 24칸 배치로 검증한다 (32칸 배치는 test_board_32.gd가 따로 켠다)
 	var total_failures: int = 0
 	var total_assertions: int = 0
