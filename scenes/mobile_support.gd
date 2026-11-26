@@ -418,7 +418,8 @@ static func nearby_button_point(root: Node, point: Vector2, slop: float = TOUCH_
 
 
 static func _collect_controls(node: Node, out: Array[Control]) -> void:
-	for child: Node in node.get_children():
+	# 내부 자식도 본다: ScrollContainer의 스크롤바처럼 엔진이 내부로 붙인 컨트롤도 누름을 받는다 (뒤쪽 내부 자식은 맨 위에 그려진다)
+	for child: Node in node.get_children(true):
 		if child is CanvasItem and not (child as CanvasItem).visible:
 			continue
 		if child is CanvasLayer and not (child as CanvasLayer).visible:
