@@ -1892,6 +1892,12 @@ godot --headless --audio-driver Dummy --path . -s res://tests/ui_live_hotfix_tes
 - 화면: `ToolPickModal`(뒷면 카드 그림·마작 패·오미쿠지 막대·도구 그림). 다시 누르면 취소, 다 고르면 0.28초 뒤 굴림. 시간 초과 자동 굴림·차례/단계 변경이면 닫힘 (`MainBoard._sync_tool_pick`). 컴퓨터 차례·즉시 테스트 모드·이어지는 굴림 도중에는 열지 않는다.
 - 남은 후보: 스크래치 복권(손가락으로 직접 긁기)·777 슬롯(릴 멈추기)은 결과 연출이 시간축(`apply_time`)으로 도는 구조라 연출을 멈추고 기다리는 기능이 따로 필요하다.
 
+
+### 7.106 판정 도구 직접 조작 2차 (1.3.1, `feature/v1.3.1`)
+- 요청: 룰렛은 직접 돌리되 모바일은 조금만 튕겨도 돌게, 슬롯은 플레이어가 직접 멈추게, 다트는 앞에 든 다트를 끌어 던지게, 복권은 직접 긁게. (복권 직접 긁기는 이미 있는 줄 알았으나 조사해 보니 동전 자동 연출뿐이었다.)
+- 공통 원칙: 결과는 굴릴 때 엔진이 정한 그대로, 조작은 연출에만 쓴다. 손을 대지 않으면 저절로 진행한다. 직접 조작은 이 화면에서 굴린 사람만 (`RollPresenter.interactive`).
+- 룰렛 `RollPad.fling_power`(모바일 기준 낮춤), 슬롯 `SlotMachine3D.manual`(릴 자유 회전 → 누르면 정한 그림까지의 감속 거리를 계산해 선다, 3초 자동), 다트 `DartBoardView.ready_dart` + `MainBoard.dart_throw_released`, 복권 `ScratchTicketView.scratch_at` + 프레젠터 대기(6초 자동). 테스트 `ui_direct_control_test.gd`.
+
 ## 부록 B. 초기 예외 규칙 해석 (v1~v3.2, `EDGE_CASE_SPEC.md`에서 옮김)
 
 > 이 부록의 규칙은 당시 기준이다. 24칸 순환 트랙, 세트 효과, 후퇴 눈금, 옛 법전 교칙 등은 이후 개편으로 바뀌었다.

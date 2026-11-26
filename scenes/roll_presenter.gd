@@ -54,6 +54,14 @@ var active: bool = false
 ## MainBoard가 차례가 바뀌거나 멈추기로 확정되면 cancel()로 내린다. hold_owner는 그 리볼버를 쥔 사람.
 var holding: bool = false
 var hold_owner: int = -1
+## 직접 조작 (1.3.1): 굴린 사람이 이 화면의 사람이면 MainBoard가 켠다. 슬롯은 릴을 직접 멈추고, 스크래치 복권은 직접 긁는다.
+## 결과는 엔진이 정한 그대로이고, 손을 대지 않으면 저절로 진행한다 (SlotMachine3D.AUTO_STOP_AFTER, SCRATCH_AUTO_AFTER).
+var interactive: bool = false
+var _scratch_gate: bool = false
+var _scratch_wait: float = 0.0
+var _scratch_drag: bool = false
+var _scratch_released: bool = false
+const SCRATCH_AUTO_AFTER: float = 6.0
 var _hold_after: bool = false
 ## 연출 패널이 가운데 정렬될 화면 좌표 (창 비율에 따라 MainBoard가 갱신한다).
 var center: Vector2 = Vector2(683.0, 308.0)
@@ -254,6 +262,9 @@ func play(tool_id: StringName, result: Dictionary, power: float = 0.5, continues
 			cues.append(PresentationAudio.cue(PirateBarrelView.POP_AT, &"bad", -4.0))
 		elif not bool(_result.get("can_continue", false)):
 			cues.append(PresentationAudio.cue(PirateBarrelView.THUNK_END, &"good", -6.0))
+	elif tool_id == &"DICE_SCRATCH" and interactive:
+		var manual_details: Dictionary = _result.get("details", {})
+		cues.append(PresentationAudio.cue(ScratchTicketView.REVEAL_AT, &"good" if int(manual_details.get("matches", 0)) >= 2 or bool(manual_details.get("golden", false)) else &"card_pick", -6.0))
 	elif tool_id == &"DICE_SCRATCH":
 		for cell: int in 3:
 			for stroke: int in 3:
@@ -287,6 +298,10 @@ func cancel() -> void:
 
 func _stop_playback() -> void:
 	_new_audio.cancel()
+	_scratch_gate = false
+	_scratch_drag = false
+	_scratch_released = false
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	holding = false
 	_augment_hold = 0.0
 	if has_meta("gambler_tint_owner"):
@@ -546,6 +561,7 @@ func hold_augmented_result(seconds: float, caption: String) -> void:
 			last_display = caption
 
 func _process(delta: float) -> void:
+	_refresh_input_filter()
 	if _linger >= 0.0 and not active:
 		if _augment_hold>0.0:
 			_augment_hold = maxf(_augment_hold-delta,0.0)
@@ -557,9 +573,30 @@ func _process(delta: float) -> void:
 		return
 	if not active:
 		return
+	if _scratch_gate:
+		# 직접 긁기: 다 긁을 때까지 동전 순서 앞에서 멈춰 기다린다. 다 긁으면 바로 공개, 너무 오래면 동전이 나머지를 긁는다.
+		_scratch_wait += delta
+		if _scratch_view == null or _scratch_view.manual_complete():
+			_scratch_gate = false
+			_scratch_released = true
+			_t = ScratchTicketView.REVEAL_AT
+		elif _scratch_wait >= SCRATCH_AUTO_AFTER:
+			_scratch_gate = false
+			_scratch_released = true
+			_scratch_view.manual = false
+		else:
+			_update(_t)
+			return
 	_t += delta
+	if interactive and not _scratch_released and _mode == &"DICE_SCRATCH" and _scratch_view != null and _scratch_view.manual and _t >= ScratchTicketView.SCRATCH_START:
+		_t = ScratchTicketView.SCRATCH_START
+		_scratch_gate = true
+		_scratch_wait = 0.0
 	_new_audio.advance(_t)
 	_update(_t)
+	if _mode == &"SLOT_777" and _slot_3d != null and _slot_3d.manual:
+		var slot_total: float = _slot_3d.total_time()
+		_total = slot_total if slot_total < INF else _t + 1.0
 	if _t >= _total:
 		if not bool(_result.get("reroll", false)):
 			_kept_prop_count = 0
@@ -769,6 +806,7 @@ func _build(tool_id: StringName) -> void:
 			else:
 				_slot_3d.reparent(_stage)
 			_slot_3d.show()
+			_slot_3d.manual = interactive
 			_slot_3d.begin((_result.get("details",{}) as Dictionary).get("reels",[0,0,0]),_power)
 			_make_card_result("%s · %s" % [SlotMachine3D.result_title(_slot_3d.result_values),_card_move_text()])
 		&"HOLDEM":
@@ -818,6 +856,7 @@ func _build(tool_id: StringName) -> void:
 			_total = ScratchTicketView.TOTAL_TIME
 			_scratch_view = ScratchTicketView.new()
 			_stage.add_child(_scratch_view)
+			_scratch_view.manual = interactive
 			_scratch_view.begin(_result.get("details", {}))
 			_make_card_result(ScratchTicketView.caption(_result.get("details", {}), int(_result.get("steps", 0))))
 		&"DICE_COOKIE":
@@ -1230,3 +1269,61 @@ func _final_text(tool_id: StringName, result: Dictionary) -> String:
 		&"DICE_PIRATE": return PirateBarrelView.caption(details, int(result.get("steps", 0)), bool(result.get("can_continue", false)))
 		&"DICE_SCRATCH": return ScratchTicketView.caption(details, int(result.get("steps", 0)))
 	return ""
+
+
+# ---------------------------------------------------------------------------
+# 직접 조작 (1.3.1)
+# ---------------------------------------------------------------------------
+
+## 지금 직접 조작을 받는 중인가 (슬롯 릴 멈추기·복권 긁기).
+func awaiting_input() -> bool:
+	if not active or not interactive:
+		return false
+	if _mode == &"SLOT_777":
+		return _slot_3d != null and _slot_3d.awaiting_stop()
+	if _mode == &"DICE_SCRATCH":
+		return _scratch_view != null and _scratch_view.manual and not _scratch_released
+	return false
+
+
+## 스페이스·탭 한 번: 슬롯은 다음 릴을 멈춘다. 받아들였으면 true.
+func manual_tap() -> bool:
+	if not awaiting_input() or _mode != &"SLOT_777":
+		return false
+	return _slot_3d.request_stop()
+
+
+## 복권 위를 문질렀다 (presenter 좌표). 테스트도 이 길로 긁는다.
+func manual_scratch(local_point: Vector2, distance: float) -> void:
+	if _mode != &"DICE_SCRATCH" or _scratch_view == null or not _scratch_view.manual:
+		return
+	var view_point: Vector2 = _scratch_view.get_global_transform().affine_inverse() * (get_global_transform() * local_point)
+	_scratch_view.scratch_at(view_point, distance)
+
+
+func _gui_input(event: InputEvent) -> void:
+	if not awaiting_input():
+		return
+	var button: InputEventMouseButton = event as InputEventMouseButton
+	var motion: InputEventMouseMotion = event as InputEventMouseMotion
+	if button != null and button.button_index == MOUSE_BUTTON_LEFT:
+		accept_event()
+		if _mode == &"SLOT_777":
+			if button.pressed:
+				manual_tap()
+		else:
+			_scratch_drag = button.pressed
+			if button.pressed:
+				manual_scratch(button.position, 6.0)
+	elif motion != null and _scratch_drag:
+		accept_event()
+		manual_scratch(motion.position, motion.relative.length())
+
+
+func _refresh_input_filter() -> void:
+	var waiting: bool = awaiting_input()
+	mouse_filter = Control.MOUSE_FILTER_STOP if waiting else Control.MOUSE_FILTER_IGNORE
+	if waiting and _die_label != null:
+		_die_label.text = L10n.t("눌러서 릴을 멈추세요! (스페이스)") if _mode == &"SLOT_777" else L10n.t("손가락으로 은박을 긁으세요!")
+		_die_label.modulate.a = 1.0
+

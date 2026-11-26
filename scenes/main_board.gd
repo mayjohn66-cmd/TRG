@@ -712,6 +712,12 @@ var _action_row: HFlowContainer = null
 var _roll_pad: RollPad = null
 ## 불스아이 다트: 내가 던질 차례에 보드 한가운데 보이는 과녁 (던지기 전 대기 표시).
 var _dart_idle: DartBoardView = null
+var _dart_drag: bool = false
+var _dart_press: Vector2 = Vector2.ZERO
+var _dart_press_msec: int = 0
+## 다트 끌어 던지기: 위로 이만큼(px) 끌면 던진다. 모바일은 짧게 튕겨도 되게 낮춘다.
+const DART_THROW_DISTANCE: float = 46.0
+const DART_THROW_DISTANCE_TOUCH: float = 16.0
 ## 말 선택 때 도착 칸 위에 뜨는 [이동 거리 계산식] 배지 (2026-11 온보딩 개선).
 var _move_badge: PanelContainer = null
 var _move_badge_label: Label = null
@@ -7823,11 +7829,17 @@ func _refresh_dart_idle(tool: BaseJudgmentTool) -> void:
 		_dart_idle = DartBoardView.new()
 		_dart_idle.name = "DartIdle"
 		_dart_idle.visible = false
+		_dart_idle.ready_dart = true
+		_dart_idle.gui_input.connect(_on_dart_idle_input)
 		add_child(_dart_idle)
 	_dart_idle.position = _board_center() - DartBoardView.SIZE * 0.5
 	if show != _dart_idle.visible:
 		_dart_idle.visible = show
 		_dart_idle.set_idle(show)
+		_dart_drag = false
+		_dart_idle.set_pull(Vector2.ZERO)
+	# 던질 준비 (1.3.1): 과녁 앞 다트를 잡아 위로 끌어 던진다
+	_dart_idle.mouse_filter = Control.MOUSE_FILTER_STOP if show else Control.MOUSE_FILTER_IGNORE
 
 
 ## 러시안 룰렛이면 정지 버튼을 [발사] 옆 큰 버튼으로 옮기고, 다른 도구면 원래 자리(우측 버튼 줄)로 돌려보낸다.
@@ -8129,6 +8141,8 @@ func _on_roll_pressed() -> void:
 ## 스페이스 키 한 번으로 굴린다 (굴림 버튼을 한 번 누른 것과 같다).
 ## 야추는 처음 굴리기·다시 굴리기, 블랙잭은 첫 [카드 받기]까지 스페이스로 된다 (핀볼은 발사 버튼으로만).
 func _roll_by_key() -> void:
+	if _presenter != null and _presenter.manual_tap():
+		return  # 슬롯머신: 스페이스로 다음 릴을 멈춘다
 	if _roll_button.disabled or _ui_busy() or manager.is_game_over or _stack_overlay != null or _is_bot_turn() or _tile_pick_active:
 		return
 	if state != null and _is_stage_tool(state.tools[manager.current_player_id()].tool_id):
@@ -13517,6 +13531,9 @@ func _handle_roll_event(data: Dictionary) -> void:
 	if tool_id in [&"DICE_OMIKUJI", &"DICE_ICECREAM", &"DICE_COOKIE", &"DICE_CAPSULE", &"DICE_PIRATE", &"DICE_SCRATCH"]:
 		_roll_button.hide()  # 중앙 소품을 덮는 굴리기 버튼은 연출 종료 후 다시 갱신한다.
 	_presenter.hold_owner = int(data["player_id"])
+	# 직접 조작 (1.3.1): 이 화면에서 굴린 사람이면 슬롯 릴을 직접 멈추고 복권을 직접 긁는다 (컴퓨터·다른 기기의 사람은 자동)
+	var roller_id: int = int(data["player_id"])
+	_presenter.interactive = roller_id == _dock_owner() and not _is_bot_turn() and (net == null or not net.is_bot(roller_id))
 	await _presenter.play(tool_id, result, _pending_power, int(data.get("chain_index", 0)) > 0)
 	if generation != _fx_generation or serial != _fx_serial:
 		return
@@ -14613,4 +14630,36 @@ func _tool_pick_state_key() -> String:
 ## 고르기 창이 떠 있는가 (테스트용).
 func tool_pick_modal() -> ToolPickModal:
 	return _tool_pick
+
+
+## 대기 과녁 위 끌기: 누르면 다트를 잡고, 끄는 대로 다트가 당겨지고, 위로 휙 끌어 놓으면 던진다 (결과는 평소처럼 엔진이 정한다).
+func _on_dart_idle_input(event: InputEvent) -> void:
+	var button: InputEventMouseButton = event as InputEventMouseButton
+	var motion: InputEventMouseMotion = event as InputEventMouseMotion
+	if button != null and button.button_index == MOUSE_BUTTON_LEFT:
+		_dart_idle.accept_event()
+		if button.pressed:
+			_dart_drag = true
+			_dart_press = button.position
+			_dart_press_msec = Time.get_ticks_msec()
+			return
+		if not _dart_drag:
+			return
+		_dart_drag = false
+		_dart_idle.set_pull(Vector2.ZERO)
+		if dart_throw_released(_dart_press, button.position, Time.get_ticks_msec() - _dart_press_msec, MobileSupport.touch_mode()):
+			_on_roll_pressed()
+		return
+	if motion != null and _dart_drag:
+		_dart_idle.accept_event()
+		_dart_idle.set_pull(motion.position - _dart_press)
+
+
+## 끌어 놓은 동작이 던지기인가: 위쪽으로 기준 거리 이상, 또는 짧고 빠르게 위로 튕겼다.
+static func dart_throw_released(from: Vector2, to: Vector2, held_msec: int, touch: bool) -> bool:
+	var upward: float = from.y - to.y
+	var needed: float = DART_THROW_DISTANCE_TOUCH if touch else DART_THROW_DISTANCE
+	if upward >= needed and upward >= absf(to.x - from.x) * 0.6:
+		return true
+	return touch and upward >= needed * 0.6 and held_msec <= 220
 

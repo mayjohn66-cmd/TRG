@@ -21,6 +21,10 @@ const MIN_FLING_SPEED: float = 3.0
 const MAX_FLING_SPEED: float = 20.0
 const TAP_MAX_TRAVEL: float = 8.0
 const TAP_MAX_SECONDS: float = 0.35
+## 모바일 보정 (1.3.1): 손가락은 마우스보다 짧고 느리게 튕긴다. 이 속도만 넘거나 이만큼만 끌어도 던진 것으로 친다.
+const TOUCH_MIN_FLING_SPEED: float = 0.8
+const TOUCH_FULL_FLING_SPEED: float = 9.0
+const TOUCH_FLICK_TRAVEL: float = 14.0
 
 var kind: Kind = Kind.NONE
 var enabled: bool = true
@@ -43,6 +47,8 @@ var _last_angle: float = 0.0
 var _last_move_msec: int = 0
 var _velocity: float = 0.0
 var _travel: float = 0.0
+var _drag_base: float = 0.0
+var _drag_turn: float = 0.0
 var _spinning: bool = false
 var _spin_time: float = 0.0
 var _firing: bool = false
@@ -206,13 +212,61 @@ func _gui_input(event: InputEvent) -> void:
 			accept_event()
 			trigger_pulled.emit()
 		return
-	# 원클릭: 원판을 한 번 누르면 바로 시원하게 돈다 (돌리는 속도를 잴 필요가 없다).
+	# 직접 돌리기 (1.3.1): 원판을 잡고 돌리다 놓으면 그 속도로 던진다. 결과 눈금은 엔진이 정하고, 돌린 속도·방향은 연출에만 쓴다.
+	# 모바일(터치)은 조금만 착 튕겨도 돌아가게 기준을 낮추고 세기를 키운다. 그냥 톡 누르면 예전처럼 원클릭으로 돈다.
 	var center: Vector2 = _ensure_wheel().position + _wheel.size / 2.0
-	if button != null and button.pressed and button.button_index == MOUSE_BUTTON_LEFT:
-		if button.position.distance_to(center) > WHEEL_SIZE / 2.0 + 14.0:
+	var motion: InputEventMouseMotion = event as InputEventMouseMotion
+	if button != null and button.button_index == MOUSE_BUTTON_LEFT:
+		if button.pressed:
+			if button.position.distance_to(center) > WHEEL_SIZE / 2.0 + 14.0:
+				return
+			accept_event()
+			_dragging = true
+			_press_pos = button.position
+			_press_time = Time.get_ticks_msec() / 1000.0
+			_last_angle = (button.position - center).angle()
+			_last_move_msec = Time.get_ticks_msec()
+			_velocity = 0.0
+			_travel = 0.0
+			_drag_base = _wheel.angle
+			_drag_turn = 0.0
+			return
+		if not _dragging:
 			return
 		accept_event()
-		spin_released.emit(ONE_CLICK_POWER)
+		_dragging = false
+		var held: float = Time.get_ticks_msec() / 1000.0 - _press_time
+		var power: float = fling_power(_velocity, _travel, held, MobileSupport.touch_mode())
+		if power < 0.0:
+			return  # 천천히 돌리다 놓으면 원판만 그 자리에 둔다 (다시 돌리면 된다)
+		spin_released.emit(power)
+		return
+	if motion != null and _dragging:
+		accept_event()
+		var now: int = Time.get_ticks_msec()
+		var current: float = (motion.position - center).angle()
+		var delta_angle: float = wrapf(current - _last_angle, -PI, PI)
+		var seconds: float = maxf((now - _last_move_msec) / 1000.0, 0.001)
+		# 손가락 속도(rad/s)를 부드럽게 따라간다 (마지막 한두 프레임만 보고 튀지 않게)
+		_velocity = lerpf(_velocity, delta_angle / seconds, 0.5)
+		_travel += motion.relative.length()
+		_drag_turn += delta_angle
+		_last_angle = current
+		_last_move_msec = now
+		_wheel.set_idle_angle(_drag_base - _drag_turn)  # 원판이 손가락을 따라 돈다
+
+
+## 놓을 때의 세기 (0~1). 던지지 않을 만큼 느리면 -1.
+## tap: 거의 움직이지 않고 짧게 눌렀다 뗀 것은 원클릭 세기. touch: 모바일은 기준을 낮추고(조금만 튕겨도) 세기를 키운다.
+static func fling_power(velocity: float, travel: float, held_seconds: float, touch: bool) -> float:
+	if travel <= TAP_MAX_TRAVEL and held_seconds <= TAP_MAX_SECONDS:
+		return ONE_CLICK_POWER
+	var speed: float = absf(velocity)
+	var minimum: float = TOUCH_MIN_FLING_SPEED if touch else MIN_FLING_SPEED
+	var full: float = TOUCH_FULL_FLING_SPEED if touch else MAX_FLING_SPEED
+	if speed < minimum and not (touch and travel >= TOUCH_FLICK_TRAVEL):
+		return -1.0
+	return clampf(0.35 + 0.65 * speed / full, 0.35, 1.0)
 
 
 func _show_face_under_needle() -> void:

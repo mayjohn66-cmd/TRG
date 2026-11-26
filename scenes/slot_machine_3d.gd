@@ -47,6 +47,16 @@ var _power: float = 0.5
 var _time: float = 0.0
 var _last_whirr: float = -1.0
 var _announced: bool = false
+## 직접 멈추기 (1.3.1): 켜면 릴이 계속 돌다가 request_stop()마다 왼쪽부터 하나씩, 엔진이 정한 그림에 맞춰 감속해 선다.
+## 누르지 않으면 AUTO_STOP_AFTER초 뒤 저절로 선다. 결과 그림은 그대로라 확률과 무관하다.
+var manual: bool = false
+var _stop_requested: Array[float] = [-1.0, -1.0, -1.0]
+var _brake_from: Array[float] = [0.0, 0.0, 0.0]
+var _brake_distance: Array[float] = [0.0, 0.0, 0.0]
+const MANUAL_SPEED: float = 15.0
+const MANUAL_FIRST_STOP: float = 0.45
+const MANUAL_GAP: float = 0.18
+const AUTO_STOP_AFTER: float = 3.0
 
 
 func _init() -> void:
@@ -238,6 +248,7 @@ func begin(values: Array, power: float = 0.5) -> void:
 		result_values.append(clampi(int(values[index]),0,5))
 	_power = clampf(power,0,1)
 	stopped = [false,false,false]
+	_stop_requested = [-1.0, -1.0, -1.0]
 	winning_reels = matching_reels(result_values)
 	settled = false
 	_time = 0.0
@@ -260,10 +271,12 @@ func apply_time(seconds: float) -> void:
 	_time = maxf(seconds,0.0)
 	var reaction: float = 0.0
 	for i: int in 3:
-		drums[i].rotation.x = angle_at(_time,i,result_values[i],_power)
-		var velocity: float = absf(angle_at(_time+0.001,i,result_values[i],_power)-angle_at(_time,i,result_values[i],_power))/0.001
+		if manual:
+			_auto_stop(i)
+		drums[i].rotation.x = reel_angle(_time,i)
+		var velocity: float = absf(reel_angle(_time+0.001,i)-reel_angle(_time,i))/0.001
 		_materials[i].set_shader_parameter("blur",clampf(velocity/24.0,0,1))
-		var since: float = _time-STOP_TIMES[i]
+		var since: float = _time-stop_time(i)
 		if since>=0 and since<SETTLE_TIME:
 			reaction += 0.025*sin(since/SETTLE_TIME*TAU)*pow(1.0-since/SETTLE_TIME,2)
 		if since>=0 and not stopped[i]:
@@ -272,13 +285,13 @@ func apply_time(seconds: float) -> void:
 			_lamp_materials[i].set_shader_parameter("cream",Color("a1db64"))
 			if since<0.07:
 				Sfx.play(&"slot_stop",-3.0,0.0,0.94+i*0.08)
-	if _time<STOP_TIMES[2] and _time>=LEAD_TIME and _time-_last_whirr>=0.16:
+	if _time<stop_time(2) and _time>=LEAD_TIME and _time-_last_whirr>=0.16:
 		Sfx.play(&"slot_spin",-17.0,0.0)
 		_last_whirr = _time
 	_cabinet.position.y = reaction
 	var handle_phase: float = clampf(_time/0.30,0,1)
 	_lever.rotation.x = -0.75*sin(handle_phase*PI)
-	settled = _time>=RESULT_TIME
+	settled = _time>=result_time()
 	if settled and not _announced:
 		_announced = true
 		var payout: int = ToolSlot777.steps_for(result_values)
@@ -287,7 +300,7 @@ func apply_time(seconds: float) -> void:
 			if winning_reels[i]:
 				_lamp_materials[i].set_shader_parameter("cream",Color("ffd45f"))
 				_frame_materials[i].set_shader_parameter("cream",Color("eab03f"))
-		if payout>1 and _time-RESULT_TIME<0.08:
+		if payout>1 and _time-result_time()<0.08:
 			Sfx.play(&"good",-4.0 if payout==20 else -9.0,0.0)
 	if settled:
 		_cabinet.position.y = 0.0
@@ -319,6 +332,77 @@ static func result_title(values: Array[int]) -> String:
 		8: return "3개 일치!"
 		4: return "2개 일치!"
 	return "일치 없음"
+
+
+## 이 릴이 서는 시각 (직접 멈추기에서 아직 안 눌렀으면 아주 먼 미래).
+func stop_time(index: int) -> float:
+	if not manual:
+		return STOP_TIMES[index]
+	return _stop_requested[index] + BRAKE_TIME if _stop_requested[index] >= 0.0 else INF
+
+
+## 결과 표시 시각과 연출 전체 길이 (직접 멈추기면 마지막 릴이 선 뒤로 밀린다).
+func result_time() -> float:
+	return stop_time(2) + (RESULT_TIME - STOP_TIMES[2]) if manual else RESULT_TIME
+
+
+func total_time() -> float:
+	return result_time() + (TOTAL_TIME - RESULT_TIME)
+
+
+## 다음 릴(왼쪽부터)을 멈춘다. 받아들였으면 true.
+func request_stop() -> bool:
+	if not manual:
+		return false
+	for index: int in 3:
+		if _stop_requested[index] < 0.0:
+			var earliest: float = LEAD_TIME + ACCEL_TIME + MANUAL_FIRST_STOP if index == 0 else _stop_requested[index - 1] + MANUAL_GAP
+			if _time < earliest:
+				return false
+			var from: float = _free_angle(_time, index)
+			var natural: float = MANUAL_SPEED * BRAKE_TIME * 0.25
+			var target: float = result_values[index] * STEP
+			_stop_requested[index] = _time
+			_brake_from[index] = from
+			_brake_distance[index] = natural + fposmod(target - (from + natural), TAU)
+			return true
+	return false
+
+
+## 아직 멈출 릴이 남았는가 (직접 멈추기에서 입력을 받는 동안).
+func awaiting_stop() -> bool:
+	return manual and _stop_requested[2] < 0.0
+
+
+func _auto_stop(index: int) -> void:
+	if _stop_requested[index] >= 0.0:
+		return
+	var since: float = LEAD_TIME + ACCEL_TIME if index == 0 else _stop_requested[index - 1]
+	if index > 0 and _stop_requested[index - 1] < 0.0:
+		return
+	if _time - since >= AUTO_STOP_AFTER:
+		request_stop()
+
+
+func reel_angle(seconds: float, index: int) -> float:
+	if not manual:
+		return angle_at(seconds, index, result_values[index], _power)
+	var asked: float = _stop_requested[index]
+	if asked < 0.0 or seconds <= asked:
+		return _free_angle(seconds, index)
+	var u: float = clampf((seconds - asked) / BRAKE_TIME, 0, 1)
+	var angle: float = _brake_from[index] + _brake_distance[index] * (1.0 - pow(1.0 - u, 4))
+	if seconds >= asked + BRAKE_TIME:
+		var settle: float = clampf((seconds - asked - BRAKE_TIME) / SETTLE_TIME, 0, 1)
+		angle += 0.035 * sin(settle * TAU) * pow(1 - settle, 2)
+	return angle
+
+
+## 직접 멈추기에서 누르기 전: 가속한 뒤 일정한 속도로 계속 돈다.
+func _free_angle(seconds: float, index: int) -> float:
+	var t: float = maxf(seconds - LEAD_TIME, 0.0)
+	var distance: float = MANUAL_SPEED * t * t / (2.0 * ACCEL_TIME) if t <= ACCEL_TIME else MANUAL_SPEED * (t - ACCEL_TIME * 0.5)
+	return STARTS[index] + distance
 
 
 static func angle_at(seconds: float, index: int, symbol: int, power: float) -> float:

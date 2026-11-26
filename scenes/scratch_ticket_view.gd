@@ -19,6 +19,13 @@ var _print: TicketPrint
 var _coin: Node3D
 var _ticket: Node3D
 var _foils: Array[ColorRect] = []
+## 직접 긁기 (1.3.1): 켜면 동전이 나오지 않고, 손가락·마우스로 문지른 만큼 은박이 벗겨진다 (scratch_at). 당첨 문양은 엔진이 정한 그대로다.
+var manual: bool = false
+var _manual: Array[float] = [0.0, 0.0, 0.0]
+var _last_t: float = 0.0
+var _rustle_msec: int = 0
+## 화면(이 뷰) 좌표 → 복권 인쇄면 좌표 비율 (정사영 카메라 크기 3.2 = 화면 높이 300px, 인쇄면 3.39 단위 = 340px).
+const VIEW_PER_PRINT: float = (300.0 / 3.20) * (PRINT_EXTENT.x / 340.0)
 
 
 func _init() -> void:
@@ -33,6 +40,7 @@ func begin(details: Dictionary) -> void:
 	_print.winning = int(details.get("winning", 0))
 	_print.cells = (details.get("cells", [0, 1, 2]) as Array).duplicate()
 	_print.gold = (details.get("gold", [false, false, false]) as Array).duplicate()
+	_manual = [0.0, 0.0, 0.0]
 	apply_time(0.0)
 
 
@@ -42,10 +50,11 @@ static func caption(details: Dictionary, steps: int) -> String:
 
 func apply_time(t: float) -> void:
 	settled = t >= REVEAL_AT
+	_last_t = t
 	if _print_viewport == null:
 		return
 	for i: int in ToolScratchLottery.CELLS:
-		var progress := _scratched(t, i)
+		var progress := maxf(_scratched(t, i), _manual[i])
 		var foil := _foils[i]
 		foil.visible = progress < 1.0
 		(foil.material as ShaderMaterial).set_shader_parameter("progress", progress)
@@ -56,6 +65,34 @@ func apply_time(t: float) -> void:
 	# Small rise at entry, then the prop stays put so the suits can be read.
 	_ticket.position.y = lerpf(-0.17, 0.0, smoothstep(0.0, 0.26, t))
 	_ticket.rotation_degrees = Vector3(-10, -9, lerpf(-7.0, -2.0, smoothstep(0.0, 0.27, t)))
+
+
+## 이 뷰 안의 한 점을 distance(px)만큼 문질렀다. 그 자리의 칸 은박이 그만큼 벗겨진다.
+func scratch_at(view_point: Vector2, distance: float) -> void:
+	if not manual:
+		return
+	var print_point: Vector2 = (view_point - SIZE * 0.5) / VIEW_PER_PRINT + TicketPrint.SIZE * 0.5
+	for i: int in ToolScratchLottery.CELLS:
+		if TicketPrint.cell_rect(i).grow(14.0).has_point(print_point) and _manual[i] < 1.0:
+			_manual[i] = minf(1.0, _manual[i] + distance / (TicketPrint.cell_rect(i).size.y * 1.5))
+			var now: int = Time.get_ticks_msec()
+			if now - _rustle_msec > 140:
+				_rustle_msec = now
+				Sfx.play(&"ticket_rustle", -12.0)
+	apply_time(_last_t)
+
+
+## 세 칸을 다 긁었는가.
+func manual_complete() -> bool:
+	for value: float in _manual:
+		if value < 1.0:
+			return false
+	return true
+
+
+## 칸별로 벗겨진 정도 (테스트용).
+func manual_progress() -> Array[float]:
+	return _manual.duplicate()
 
 
 static func _scratched(t: float, index: int) -> float:
@@ -166,7 +203,7 @@ func _update_coin(t: float) -> void:
 		at += Vector2(32.0, 24.0) * departure
 		lift = departure * 0.24
 	var uv := at / TicketPrint.SIZE - Vector2(0.5, 0.5)
-	_coin.visible = t < REVEAL_AT + 0.21
+	_coin.visible = t < REVEAL_AT + 0.21 and not manual
 	_coin.position = Vector3(uv.x * PRINT_EXTENT.x, -uv.y * PRINT_EXTENT.y + 0.045, 0.125 + lift)
 	_coin.rotation_degrees = Vector3(-36.0, 18.0 * sin(progress * TAU * 1.5), -19.0 + progress * 38.0)
 

@@ -17,9 +17,34 @@
      },
      "items": [
       {
-       "ko": "판정 도구 8종을 직접 골라서 굴릴 수 있어요: 타로(5장 중 1장)·화투(6장 중 2장)·텍사스 홀덤(7장 중 5장)·마작(6개 중 3개)·오미쿠지(막대 6개 중 1개)·포츈쿠키·아이스크림(3개 중 1개)·캡슐뽑기(4개 중 1개). 어느 것을 골라도 확률은 같고, 시간이 지나면 자동으로 골라요 (제보 감사합니다!)",
-       "en": "You can now pick for 8 Judgment Tools yourself: Tarot (1 of 5), Hwatu (2 of 6), Texas Hold'em (5 of 7), Mahjong (3 of 6), Omikuji (1 of 6 sticks), Fortune Cookie / Ice Cream (1 of 3) and Capsule Gacha (1 of 4). The odds are the same whichever you pick, and it picks automatically when time runs out (thanks for the suggestion!)",
-       "ja": "判定ツール8種を自分で選んで振れるようになりました：タロット（5枚から1枚）・花札（6枚から2枚）・テキサスホールデム（7枚から5枚）・麻雀（6個から3個）・おみくじ（棒6本から1本）・フォーチュンクッキー／アイスクリーム（3個から1個）・カプセルガチャ（4個から1個）。どれを選んでも確率は同じで、時間切れになると自動で選びます（ご提案ありがとうございます！）"
+       "ko": "판정 도구 8종을 직접 골라서 굴릴 수 있어요: 타로(5장 중 1장)·화투(6장 중 2장)·텍사스 홀덤(7장 중 5장)·마작(6개 중 3개)·오미쿠지(막대 6개 중 1개)·포츈쿠키·아이스크림(3개 중 1개)·캡슐뽑기(4개 중 1개). 어느 것을 골라도 확률은 같아요 (제보 감사합니다!)",
+       "en": "You can now pick for 8 Judgment Tools yourself: Tarot (1 of 5), Hwatu (2 of 6), Texas Hold'em (5 of 7), Mahjong (3 of 6), Omikuji (1 of 6 sticks), Fortune Cookie / Ice Cream (1 of 3) and Capsule Gacha (1 of 4). The odds are the same whichever you pick (thanks for the suggestion!)",
+       "ja": "判定ツール8種を自分で選んで振れるようになりました：タロット（5枚から1枚）・花札（6枚から2枚）・テキサスホールデム（7枚から5枚）・麻雀（6個から3個）・おみくじ（棒6本から1本）・フォーチュンクッキー／アイスクリーム（3個から1個）・カプセルガチャ（4個から1個）。どれを選んでも確率は同じです（ご提案ありがとうございます！）"
+      },
+      {
+       "ko": "[인생게임 회전 룰렛]은 원판을 잡고 직접 돌려 던져요. 모바일에서는 조금만 착 튕겨도 시원하게 돌아가요 (톡 누르기만 해도 돌아요)",
+       "en": "Spin the [Life Roulette] wheel yourself by grabbing and flinging it. On mobile, even a small flick spins it (a simple tap still works too)",
+       "ja": "［人生ゲームルーレット］は盤をつかんで自分で回して投げます。モバイルでは軽くはじくだけでも回ります（タップでも回ります）"
+      },
+      {
+       "ko": "[777 슬롯머신]은 릴을 직접 멈춰요: 화면을 누르거나 스페이스를 누를 때마다 왼쪽부터 하나씩 멈춰요 (가만히 있으면 저절로 멈춰요)",
+       "en": "Stop the [777 Slot Machine] reels yourself: each tap (or Space) stops the next reel from the left (they stop on their own if you wait)",
+       "ja": "［777スロットマシン］はリールを自分で止めます：画面をタップ（またはスペース）するたびに左から1つずつ止まります（待てば自動で止まります）"
+      },
+      {
+       "ko": "[불스아이 다트 보드]는 과녁 앞에 든 다트를 위로 끌어 던져요 (모바일은 짧게 튕겨도 돼요, [던지기] 버튼도 그대로)",
+       "en": "For the [Bullseye Dart Board], drag the dart in front of the board upward to throw it (a short flick works on mobile, and the [Throw] button still works)",
+       "ja": "［ブルズアイダーツボード］は的の前に構えたダーツを上にドラッグして投げます（モバイルは短くはじくだけでもOK、［投げる］ボタンもそのまま）"
+      },
+      {
+       "ko": "[스크래치 복권]은 손가락이나 마우스로 은박을 직접 긁어요 (가만히 있으면 동전이 대신 긁어요)",
+       "en": "Scratch the [Scratch Ticket] foil yourself with your finger or mouse (the coin scratches it for you if you wait)",
+       "ja": "［スクラッチくじ］は指やマウスで銀はがしを自分で削ります（待てばコインが代わりに削ります）"
+      },
+      {
+       "ko": "직접 돌리고·멈추고·던지고·긁어도 결과 확률은 그대로예요 (결과는 굴릴 때 정해져요)",
+       "en": "Spinning, stopping, throwing or scratching yourself doesn't change the odds (the result is decided when you roll)",
+       "ja": "自分で回す・止める・投げる・削るをしても確率は同じです（結果は振った時点で決まります）"
       }
      ]
     }

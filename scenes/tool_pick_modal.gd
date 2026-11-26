@@ -191,7 +191,7 @@ func _refresh_status() -> void:
 	if _status == null:
 		return
 	var look: Dictionary = LOOKS.get(tool_id, {})
-	_status.text = L10n.tf("%d / %d %s 골랐어요 · 시간이 지나면 자동으로 골라요", [_picks.size(), _choose, L10n.t(str(look.get("item", "")))])
+	_status.text = L10n.tf("%d / %d %s 골랐어요", [_picks.size(), _choose, L10n.t(str(look.get("item", "")))])
 
 
 func _frame(frame_size: Vector2, fill: Color, edge: Color, radius: int, width: int = 3) -> Panel:

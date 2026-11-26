@@ -29,6 +29,12 @@ var _board: Node3D
 var _dart: Node3D
 var _camera: Camera3D
 var _reticle: Node3D
+## 던질 준비 (1.3.1): 내 차례 대기 과녁 앞에 다트를 들고 있다가, 위로 끌어 던진다 (MainBoard). pull은 끈 거리(px).
+var ready_dart: bool = false
+var _pull: Vector2 = Vector2.ZERO
+const READY_POINT: Vector3 = Vector3(0.95, -0.4, 5.2)
+const READY_TILT: Vector3 = Vector3(118.0, 18.0, 156.0)
+const READY_SCALE: float = 2.2
 
 
 func _init() -> void:
@@ -57,6 +63,13 @@ func set_idle(on: bool) -> void:
 	if is_node_ready():
 		_present()
 		_sync_rendering()
+
+
+## 끈 거리를 알려 준다 (대기 과녁의 다트가 따라 움직인다).
+func set_pull(pull: Vector2) -> void:
+	_pull = pull
+	if is_node_ready():
+		_present()
 
 
 func set_aiming(on: bool) -> void:
@@ -172,10 +185,18 @@ func _present() -> void:
 	_board.rotation.z = -_spin * TAU if (aiming or idle) else 0.0
 	_reticle.visible = aiming
 	_reticle.position = Vector3(0.0, _aim_radius * SCORE_RADIUS, 0.22)
-	_dart.visible = not aiming and _hit_radius >= 0.0
+	_dart.visible = not aiming and (_hit_radius >= 0.0 or (idle and ready_dart))
 	var reveal := smoothstep(0.0, 0.75, _t) if not aiming else 0.0
 	_camera.position = Vector3(5.0 * reveal, 1.6 * reveal, 8.5)
 	_camera.look_at(Vector3.ZERO, Vector3.UP)
+	if idle and ready_dart and _hit_radius < 0.0:
+		# 손가락을 따라 살짝 당겨진다 (아래로 당길수록 몸쪽으로, 좌우는 조금)
+		var pull: Vector2 = _pull.limit_length(120.0) / 120.0
+		_dart.position = READY_POINT + Vector3(pull.x * 0.55, -pull.y * 0.35, pull.y * 0.6)
+		_dart.rotation = Vector3(deg_to_rad(READY_TILT.x - pull.y * 12.0), deg_to_rad(READY_TILT.y + pull.x * 8.0), deg_to_rad(READY_TILT.z))
+		_dart.scale = Vector3.ONE * READY_SCALE
+		return
+	_dart.scale = Vector3.ONE
 	if _dart.visible:
 		var flight := clampf(_t / FLIGHT_TIME, 0.0, 1.0)
 		_dart.position = hit_point(_hit_radius, _hit_angle) + Vector3(1.1, 1.3, 5.0) * (1.0 - pow(flight, 3.0))
