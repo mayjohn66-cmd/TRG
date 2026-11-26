@@ -3167,3 +3167,17 @@ TRPG,TRPG,TRPG
 "마녀 상점에서 카드를, 가마솥에서 물약을 얻어요.",Draw cards at witch shops and get potions from cauldrons.,魔女の店でカードを引き、大釜で薬を受け取れます。
 증강 라운드에 정령 발판의 속성이 바뀌어요.,Spirit tile elements change on draft rounds.,増強ラウンドで精霊マスの属性が変わります。
 빈자리에 추가한 컴퓨터에 이 난이도를 적용해요.,This difficulty applies to bots filling empty seats.,空席に追加したCPUにこの難易度を適用します。
+타로 카드를 한 장 고르세요,Pick one tarot card,タロットカードを1枚選んでください
+화투패를 두 장 고르세요,Pick two Hwatu cards,花札を2枚選んでください
+카드 다섯 장을 고르세요,Pick five cards,カードを5枚選んでください
+마작패 세 개를 고르세요,Pick three Mahjong tiles,麻雀牌を3つ選んでください
+점괘 막대를 하나 뽑으세요,Draw one fortune stick,おみくじ棒を1本引いてください
+포츈쿠키를 하나 고르세요,Pick one fortune cookie,フォーチュンクッキーを1つ選んでください
+아이스크림을 하나 고르세요,Pick one ice cream,アイスクリームを1つ選んでください
+캡슐을 하나 고르세요,Pick one capsule,カプセルを1つ選んでください
+%d / %d %s 골랐어요 · 시간이 지나면 자동으로 골라요,Picked %d / %d %s · Picks automatically when time runs out,%d / %d %s 選択 · 時間切れで自動で選びます
+패,Tiles,牌
+막대,Stick,棒
+쿠키,Cookie,クッキー
+아이스크림,Ice Cream,アイスクリーム
+캡슐,Capsule,カプセル

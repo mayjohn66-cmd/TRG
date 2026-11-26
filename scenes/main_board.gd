@@ -659,6 +659,9 @@ var _draft_wait_motion: bool = false
 ## 굴림 연출마다 늘어나는 번호: 새 연출이 앞선 연출을 덮어쓰면(취소) 앞선 연출의 뒷정리가 입력 잠금을 풀지 않게 한다.
 var _fx_serial: int = 0
 var _stack_overlay: Control = null
+## 판정 도구 터치로 고르기 창 (1.3.1, ToolPickModal). 고르면 굴림 행동에 고른 자리를 실어 보낸다.
+var _tool_pick: ToolPickModal = null
+var _tool_pick_key: String = ""
 ## 사람이 조작하는 플레이어 번호 (AI 대전 모드에서 P2~P4는 봇이 맡는다).
 const HUMAN_ID: int = 1  ## local_player_id의 기본값 (테스트 참조용)
 ## true면 [1P vs 3AI 봇] 모드: P2~P4를 BotController가 조작하고 P1의 손패만 앞면으로 보인다. false면 4인 수동 조작.
@@ -4052,6 +4055,7 @@ func _end_refresh_batch() -> void:
 
 
 func _refresh_now() -> void:
+	_sync_tool_pick()
 	_refresh_queued = false
 	refresh_count += 1
 	if manager != null and manager.state != null:
@@ -8117,6 +8121,8 @@ func _on_roll_pressed() -> void:
 	if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN:
 		_act(&"proceed")
 	if manager.current_state == TurnManager.State.PHASE_ROLL_WAIT:
+		if _open_tool_pick(tool):
+			return  # 뒷면을 직접 고른 뒤에 굴린다 (_on_tool_picked)
 		_act(&"roll", params)
 
 
@@ -14556,3 +14562,55 @@ func _refresh_appease_popup() -> void:
 	add_child(_appease_panel)
 	_appease_panel.reset_size()
 	_appease_panel.position = (get_viewport_rect().size - _appease_panel.size) * 0.5
+
+
+# ---------------------------------------------------------------------------
+# 판정 도구 터치로 고르기 (1.3.1)
+# ---------------------------------------------------------------------------
+
+## 지금 굴리는 사람이 직접 고를 수 있는 도구면 고르기 창을 연다. 열었으면 true (굴림은 고른 뒤에 보낸다).
+## 테스트·즉시 모드(instant_roll_for_test)와 이어지는 굴림 도중에는 열지 않는다.
+func _open_tool_pick(tool: BaseJudgmentTool) -> bool:
+	if _tool_pick != null:
+		return true
+	if instant_roll_for_test or tool == null or not ToolPick.supports(tool.tool_id) or tool.has_pending_state() or _is_bot_turn():
+		return false
+	_tool_pick = ToolPickModal.new()
+	_tool_pick.setup(tool.tool_id)
+	_tool_pick_key = _tool_pick_state_key()
+	_tool_pick.picked.connect(_on_tool_picked)
+	add_child(_tool_pick)
+	return true
+
+
+func _on_tool_picked(indices: Array[int]) -> void:
+	var still_mine: bool = _tool_pick != null and _tool_pick_key == _tool_pick_state_key()
+	_close_tool_pick()
+	if still_mine and manager.current_state == TurnManager.State.PHASE_ROLL_WAIT and not manager.is_game_over:
+		_act(&"roll", {"pick": indices})
+
+
+func _close_tool_pick() -> void:
+	if _tool_pick != null:
+		_tool_pick.queue_free()
+		_tool_pick = null
+	_tool_pick_key = ""
+
+
+## 고르는 동안 차례·단계·도구가 바뀌면(시간 초과로 엔진이 자동으로 굴림 등) 창을 닫는다.
+func _sync_tool_pick() -> void:
+	if _tool_pick != null and (manager == null or manager.is_game_over or _tool_pick_key != _tool_pick_state_key()):
+		_close_tool_pick()
+
+
+func _tool_pick_state_key() -> String:
+	if manager == null or state == null or manager.current_state != TurnManager.State.PHASE_ROLL_WAIT:
+		return ""
+	var roller: int = manager.current_player_id()
+	return "%d:%d:%s:%d" % [state.round_number, roller, str(state.tools[roller].tool_id), manager.move_queue.size()]
+
+
+## 고르기 창이 떠 있는가 (테스트용).
+func tool_pick_modal() -> ToolPickModal:
+	return _tool_pick
+
