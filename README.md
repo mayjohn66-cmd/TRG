@@ -1,5 +1,7 @@
 # TRG - 초증강 엘리아스 마블 (Hyper Augment Elias Marble)
 
+> **이 `main` 브랜치는 문서 정리용이다.** 기획서·예외 규칙·버전 변천사(개발 파이프라인)·변경 기록만 둔다. 게임 코드와 웹 배포는 개발 브랜치(`claude/tender-gauss-i4mq1o`)에 있고, 아래의 테스트·폴더 설명은 그 브랜치 기준이다.
+
 기획서: [`docs/GDD_TDD_Master.md`](docs/GDD_TDD_Master.md) · 예외 규칙 확정 명세: [`docs/EDGE_CASE_SPEC.md`](docs/EDGE_CASE_SPEC.md) · 최종 기획 요약·버전 변천사: [`docs/FINAL_GAME_DESIGN_AND_HISTORY.md`](docs/FINAL_GAME_DESIGN_AND_HISTORY.md)
 
 Godot 4.7 / GDScript 2.0. `core_engine/`은 IP 종속성이 없는 보드게임 프레임워크이며 `content_trickcal/`, UI를 직접 참조하지 않는다.
