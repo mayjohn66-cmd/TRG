@@ -9031,9 +9031,10 @@ func _reset_presentation() -> void:
 	var gambler_result: Node2D = get_node_or_null("GamblerResult")
 	if gambler_result!=null:
 		gambler_result.cancel()
-	var cucumber_eat: Control = get_node_or_null("CucumberEat")
-	if cucumber_eat != null:
-		cucumber_eat.cancel()
+	for stage_name: String in ["CucumberEat", "MintChocolateEat"]:
+		var food: Control = get_node_or_null(stage_name)
+		if food != null:
+			food.cancel()
 	var hammer_break: Control = get_node_or_null("HammerBreakStage")
 	if hammer_break != null:
 		hammer_break.hide()
@@ -13027,12 +13028,13 @@ func _record_roll(data: Dictionary) -> void:
 	_record(player_id, "%s 굴림 → %s" % [_bq(state.tools[player_id].display_name), _bb(_roll_text(data))])
 
 
-## Keep the cucumber's only presentation local to the eating player's avatar.
+## Own food is eaten in the center without a portrait; other seats use their avatar.
 func _play_cucumber_eat(player_id: int, mint: bool = false) -> void:
 	if not _fx_on() or not _profiles.has(player_id):
 		return
 	var avatar: Control = _profiles[player_id]["avatar"]
-	if not avatar.is_visible_in_tree() and not mint:
+	var own_food := player_id == local_player_id
+	if not own_food and not avatar.is_visible_in_tree():
 		return
 	var stage_name := "MintChocolateEat" if mint else "CucumberEat"
 	var stage: Control = get_node_or_null(stage_name)
@@ -13041,24 +13043,20 @@ func _play_cucumber_eat(player_id: int, mint: bool = false) -> void:
 		stage.name = stage_name
 		add_child(stage)
 	stage.bite_sound = &"" if mint else &"cucumber_bite"
-	stage.upright_food = mint
+	stage.upright_food = mint or own_food
 	stage.flesh_color = Color("b5f3ce") if mint else Color(0.84, 0.94, 0.61)
 	var face: Rect2 = avatar.get_global_rect()
-	if not avatar.is_visible_in_tree():
-		var portrait := TextureRect.new()
-		portrait.texture = _choice_portrait(player_id)
-		portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		portrait.size = Vector2(96, 96)
-		portrait.position = Vector2(get_viewport_rect().size.x * 0.5 - 48, get_viewport_rect().size.y - 225)
-		portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		stage.add_child(portrait)
-		face = portrait.get_global_rect()
 	var path := "res://assets/fx/mint_chocolate/cone.png" if mint else "res://assets/board/structures/CUCUMBER_V01.png"
 	var art: Dictionary = PawnArt.load_sprite([path])
 	var local_from_screen: Transform2D = get_global_transform_with_canvas().affine_inverse()
 	var mouth: Vector2 = local_from_screen * (face.position + face.size * Vector2(0.43, 0.80))
-	stage.begin(art, mouth, local_from_screen * (get_viewport_rect().size * 0.5), clampf(face.size.y * 1.15, 90.0, 150.0), _motion_pace())
+	var toward := local_from_screen * (get_viewport_rect().size * 0.5)
+	var height := clampf(face.size.y * 1.15, 90.0, 150.0)
+	if own_food:
+		height = 210.0
+		mouth = toward - Vector2(0, height * 0.5)
+		toward = mouth + Vector2.DOWN * height
+	stage.begin(art, mouth, toward, height, _motion_pace())
 	var generation: int = _fx_generation
 	while generation == _fx_generation and is_instance_valid(stage) and stage.busy():
 		await get_tree().process_frame

@@ -36,6 +36,7 @@ on:
           - difficulty-icons
           - mobile-fx
           - rulebook-scroll
+          - food-profile
           - roll-history
           - blackjack-compact
           - warning-icon
@@ -80,6 +81,8 @@ jobs:
         run: |
           if [[ "${REQUESTED_SCOPE}" == "live-hotfix" || "${COMMIT_MESSAGE}" == *"[check:live-hotfix]"* ]]; then
             echo "scope=live-hotfix" >> "${GITHUB_OUTPUT}"
+          elif [[ "${REQUESTED_SCOPE}" == "food-profile" || "${COMMIT_MESSAGE}" == *"[check:food-profile]"* ]]; then
+            echo "scope=food-profile" >> "${GITHUB_OUTPUT}"
           elif [[ "${REQUESTED_SCOPE}" == "skill-cutin" || "${COMMIT_MESSAGE}" == *"[check:skill-cutin]"* ]]; then
             echo "scope=skill-cutin" >> "${GITHUB_OUTPUT}"
           elif [[ "${REQUESTED_SCOPE}" == "letterbox-pattern" || "${COMMIT_MESSAGE}" == *"[check:letterbox-pattern]"* ]]; then
@@ -219,6 +222,14 @@ jobs:
           godot --headless --audio-driver Dummy --path . -s res://tests/ui_roll_success_test.gd 2>&1 | tee -a /tmp/roll_history.log
           grep -q 'ROLL_SUCCESS_OK' /tmp/roll_history.log
           if grep -Eq 'SCRIPT ERROR|SHADER ERROR' /tmp/roll_history.log; then exit 1; fi
+
+      - name: Check own food and remote profile eating
+        if: steps.validation.outputs.scope == 'food-profile' || steps.validation.outputs.scope == 'full'
+        run: |
+          set -euo pipefail
+          godot --headless --audio-driver Dummy --path . -s res://tests/ui_mint_profile_test.gd 2>&1 | tee /tmp/food_profile.log
+          grep -q 'MINT_PROFILE_OK' /tmp/food_profile.log
+          if grep -Eq 'SCRIPT ERROR|SHADER ERROR' /tmp/food_profile.log; then exit 1; fi
 
       - name: Check rulebook drag and card layout
         if: steps.validation.outputs.scope == 'rulebook-scroll'
