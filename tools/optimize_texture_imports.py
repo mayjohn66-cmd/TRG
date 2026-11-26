@@ -86,12 +86,15 @@ def main() -> int:
         if any(folder == d or folder.startswith(d + "/") for d in ICON_DIRS):
             new_limit = ICON_LIMIT if limit == 0 else min(limit, ICON_LIMIT)
         elif folder == CARD_DIR:
+            new_mode, new_quality = 1, QUALITY
             new_limit = CARD_LIMIT if limit == 0 else min(limit, CARD_LIMIT)
         elif biggest > BIG_LIMIT and (limit == 0 or limit > BIG_LIMIT):
             new_limit = BIG_LIMIT
         mipmaps = re.search(r"^mipmaps/generate=(\w+)", text, re.M)
         old_mip = mipmaps.group(1) if mipmaps else "false"
         new_mip = old_mip
+        if folder == CARD_DIR:
+            new_mip = "true"
         if re.fullmatch(r"content_trickcal/avatars/avatar_\d+/idle", folder):
             new_mip = "false"
         if (new_mode, new_quality, new_limit, new_mip) == (mode, quality, limit, old_mip):
