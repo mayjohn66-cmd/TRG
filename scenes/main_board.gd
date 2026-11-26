@@ -553,6 +553,18 @@ var _steal_from: int = -1
 var _gambler_flash: Dictionary = {}
 var _announcer: EventAnnouncer = null
 var _pending_power: float = 0.5
+## 파워 게이지 (1.3.1 부활): 주사위·윷·친치로·야추·핀볼은 굴리기 버튼(또는 스페이스)을 꾹 누르는 동안 게이지가 0~100%를 왕복하고,
+## 손을 떼는 순간의 값이 굴림 연출 세기가 된다 (던지는 힘·회전·핀볼 스프링). 결과(눈금)에는 영향이 없다.
+const GAUGE_TOOLS: Array[StringName] = [&"D6", &"YUT", &"CHINCHIRO", &"DICE_YACHT", &"DICE_PINBALL"]
+const GAUGE_SPEED: float = 1.6
+var _power_gauge: Control = null
+var _power_bar: ProgressBar = null
+var _power_label: Label = null
+var _charging: bool = false
+var _charge_by_key: bool = false
+var _charge_clock: float = 0.0
+var _charge_value: float = 0.0
+var _charge_anchor: Control = null
 var _fx_busy: bool = false
 var _capture_cutin: CaptureCutin = null
 var _capture_marks: Dictionary = {}
@@ -876,6 +888,7 @@ func seat_anchor_of(player_id: int) -> StringName:
 
 
 func _process(delta: float) -> void:
+	_tick_charge(delta)
 	_update_trap_pulse(delta)
 	_update_danger_pulse(delta)
 	if manager == null or manager.state == null or state == null:
@@ -1026,6 +1039,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		return
 	var roll_key: bool = key_event.keycode == KEY_SPACE  # 굴리기는 스페이스바 하나로 고정
 	if not key_event.pressed:
+		# 파워 게이지: 스페이스를 꾹 눌러 모았다가 떼는 순간 굴린다
+		if roll_key and _charging and _charge_by_key:
+			_roll_by_key()
+			_stop_charge()
 		return
 	if key_event.keycode == KEY_ESCAPE:
 		if _menu_is_open():
@@ -1047,6 +1064,8 @@ func _unhandled_key_input(event: InputEvent) -> void:
 	if _choice_overlay != null or _draft_overlay != null or _result_overlay != null or _stack_overlay != null:
 		return
 	if roll_key:
+		if not (state != null and state.tools.get(_dock_owner()) is ToolPinball) and _begin_charge(_gauge_anchor(), true):
+			return  # 떼는 순간 굴린다
 		_roll_by_key()
 
 
@@ -2343,6 +2362,7 @@ func _apply_touch_top_bar() -> void:
 ## 우측 중앙의 큼직한 둥근 [굴리기] 버튼(모두의 마블 방식)과 그 아래의 멈추기·개입 패스·폭탄 떠넘기기 버튼.
 func _build_action_bar() -> void:
 	_roll_button = _make_button(tr_ui("btn.roll"), _on_roll_pressed, 24, Color("2b8a3e"), 60)
+	_attach_gauge(_roll_button)  # 꾹 누르면 파워 게이지 (주사위·윷·친치로·핀볼)
 	_roll_button.position = Vector2(623, 320)
 	_roll_button.size = Vector2(120, 120)
 	_roll_button.custom_minimum_size = Vector2(120, 120)
@@ -8115,8 +8135,9 @@ func _act(action: StringName, params: Dictionary = {}) -> void:
 
 
 func _on_roll_pressed() -> void:
-	# 원클릭: 누르고 있을 필요 없이 한 번 누르면 바로 굴러간다. 연출 세기는 도구마다 경쾌한 고정값을 쓴다.
-	_pending_power = ONE_CLICK_POWER
+	# 게이지를 모았으면 그 값, 아니면(짧게 누름·게이지 없는 도구) 경쾌한 고정값을 연출 세기로 쓴다.
+	var charged: float = _take_charge()
+	_pending_power = charged if charged >= 0.0 else ONE_CLICK_POWER
 	if manager.is_game_over or _roll_button.disabled or _ui_busy() or _is_bot_turn() or _roll_pad.preparing:
 		return  # 리볼버 장전 연출 중에 쏘면 3D 화면에 장전 자세가 한두 프레임 다시 비친다 (발사 버튼과 같은 조건)
 	var tool: BaseJudgmentTool = state.tools[_dock_owner()]
@@ -13330,6 +13351,7 @@ func _build_tool_stages() -> void:
 	_stage_yacht.visible = false
 	_stage_yacht.z_index = 5
 	_stage_yacht.start_pressed.connect(_on_stage_start)
+	call_deferred("_attach_yacht_gauges")  # 야추도 꾹 눌러 던지는 힘을 모은다 (버튼은 스테이지가 트리에 들어간 뒤 생긴다)
 	_stage_yacht.reroll_pressed.connect(_on_yacht_reroll)
 	_stage_yacht.confirm_pressed.connect(_on_stage_stand)
 	add_child(_stage_yacht)
@@ -13430,7 +13452,8 @@ func _refresh_tool_stage() -> void:
 
 
 func _on_stage_start() -> void:
-	_roll_with_power(0.5)
+	var charged: float = _take_charge()
+	_roll_with_power(charged if charged >= 0.0 else 0.5)
 
 func _pinball_key() -> String:
 	# The host can acknowledge proceed later. Do not invalidate the local request
@@ -13448,6 +13471,8 @@ func _priority_modal(control: Control) -> void:
 func _on_yacht_reroll(keep: Array) -> void:
 	if manager.is_game_over or _ui_busy() or _is_bot_turn() or manager.current_state != TurnManager.State.PHASE_ROLL_WAIT:
 		return
+	var charged: float = _take_charge()
+	_pending_power = charged if charged >= 0.0 else 0.5
 	Sfx.play(&"dice_roll")
 	_act(&"roll", {"keep": keep})
 
@@ -14662,4 +14687,153 @@ static func dart_throw_released(from: Vector2, to: Vector2, held_msec: int, touc
 	if upward >= needed and upward >= absf(to.x - from.x) * 0.6:
 		return true
 	return touch and upward >= needed * 0.6 and held_msec <= 220
+
+
+# ---------------------------------------------------------------------------
+# 파워 게이지 (1.3.1 부활)
+# ---------------------------------------------------------------------------
+
+## 지금 굴릴 도구가 게이지를 쓰는가.
+func _tool_has_gauge() -> bool:
+	if state == null or manager == null:
+		return false
+	var tool: BaseJudgmentTool = state.tools.get(_dock_owner())
+	return tool != null and GAUGE_TOOLS.has(tool.tool_id)
+
+
+## 버튼에 게이지를 붙인다: 누르면 모으기 시작, 버튼 밖에서 떼면 취소.
+func _attach_gauge(button: BaseButton) -> void:
+	button.button_down.connect(func() -> void: _begin_charge(button, false))
+	button.button_up.connect(func() -> void: call_deferred("_stop_charge_if_unconfirmed"))
+
+
+func _attach_yacht_gauges() -> void:
+	if _stage_yacht == null:
+		return
+	for gauge_button: Button in _stage_yacht.gauge_buttons():
+		if gauge_button == null:
+			if is_inside_tree():
+				get_tree().process_frame.connect(_attach_yacht_gauges, CONNECT_ONE_SHOT)
+			return
+	for gauge_button: Button in _stage_yacht.gauge_buttons():
+		_attach_gauge(gauge_button)
+
+
+## 게이지를 띄울 기준 버튼 (스페이스로 모을 때).
+func _gauge_anchor() -> Control:
+	if state != null and state.tools.get(_dock_owner()) is ToolYacht and _stage_yacht != null:
+		for button: Button in _stage_yacht.gauge_buttons():
+			if button.visible and not button.disabled:
+				return button
+	return _roll_button
+
+
+## 모으기 시작. 시작했으면 true.
+func _begin_charge(anchor: Control, by_key: bool) -> bool:
+	if _charging or instant_roll_for_test or not _tool_has_gauge() or manager.is_game_over or _is_bot_turn() or _ui_busy() or _stack_overlay != null or _tile_pick_active:
+		return false
+	if manager.current_state != TurnManager.State.PHASE_TURN_BEGIN and manager.current_state != TurnManager.State.PHASE_ROLL_WAIT:
+		return false
+	var tool: BaseJudgmentTool = state.tools[_dock_owner()]
+	if tool is ToolPinball and _pinball_ready_key != _pinball_key():
+		return false  # 핀볼은 [발사 준비] 뒤 발사 버튼을 꾹 눌러 스프링을 당긴다
+	if anchor == null or not anchor.is_visible_in_tree() or (anchor is BaseButton and (anchor as BaseButton).disabled):
+		return false
+	_ensure_power_gauge()
+	_charging = true
+	_charge_by_key = by_key
+	_charge_clock = 0.0
+	_charge_value = 0.0
+	_charge_anchor = anchor
+	_power_gauge.visible = true
+	_place_power_gauge()
+	Sfx.play(&"charge", -4.0, 0.0)
+	return true
+
+
+## 모은 값을 꺼내고 게이지를 닫는다 (모으지 않았으면 -1).
+func _take_charge() -> float:
+	if not _charging:
+		return -1.0
+	var value: float = _charge_value
+	_stop_charge()
+	return value
+
+
+func _stop_charge() -> void:
+	_charging = false
+	_charge_by_key = false
+	_charge_anchor = null
+	if _power_gauge != null:
+		_power_gauge.visible = false
+	if _stage_pinball != null and _stage_pinball.visible and not _stage_pinball.active:
+		_stage_pinball.set_pull(0.0)
+
+
+## 버튼 밖에서 손을 떼 pressed가 오지 않았으면 게이지를 취소한다.
+func _stop_charge_if_unconfirmed() -> void:
+	if _charging and not _charge_by_key:
+		_stop_charge()
+
+
+func _tick_charge(delta: float) -> void:
+	if not _charging:
+		return
+	if _charge_anchor == null or not is_instance_valid(_charge_anchor) or not _charge_anchor.is_visible_in_tree() or manager.is_game_over or _is_bot_turn():
+		_stop_charge()
+		return
+	_charge_clock += delta
+	_charge_value = pingpong(_charge_clock * GAUGE_SPEED, 1.0)
+	_power_bar.value = _charge_value * 100.0
+	_power_label.text = "POWER %d%%" % int(_charge_value * 100.0)
+	var fill: StyleBoxFlat = _style(Color("51cf66") if _charge_value < 0.4 else (Color("fcc419") if _charge_value < 0.75 else Color("ff6b6b")), Color("fff3bf"), 2, 7, 0, 0)
+	_power_bar.add_theme_stylebox_override("fill", fill)
+	if _stage_pinball != null and _stage_pinball.visible and not _stage_pinball.active:
+		_stage_pinball.set_pull(_charge_value)  # 발사대 스프링이 당겨진다
+	_place_power_gauge()
+
+
+func _ensure_power_gauge() -> void:
+	if _power_gauge != null:
+		return
+	_power_gauge = Control.new()
+	_power_gauge.name = "PowerGauge"
+	_power_gauge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_power_gauge.z_index = 40
+	_power_gauge.size = Vector2(150, 34)
+	_power_bar = ProgressBar.new()
+	_power_bar.size = Vector2(150, 14)
+	_power_bar.min_value = 0.0
+	_power_bar.max_value = 100.0
+	_power_bar.show_percentage = false
+	_power_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_power_bar.add_theme_stylebox_override("background", _style(Color("0b0e16"), Color("5c6b94"), 2, 9, 0, 0))
+	_power_gauge.add_child(_power_bar)
+	_power_label = _make_label("POWER 0%", MobileSupport.text_px(13), Color("fff3bf"))
+	_power_label.position = Vector2(0, 15)
+	_power_label.size = Vector2(150, 18)
+	_power_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_power_label.add_theme_constant_override("outline_size", 5)
+	_power_label.add_theme_color_override("font_outline_color", Color("0d1018"))
+	_power_gauge.add_child(_power_label)
+	_power_gauge.visible = false
+	add_child(_power_gauge)
+
+
+## 게이지를 기준 버튼 바로 위 가운데에 둔다.
+func _place_power_gauge() -> void:
+	if _power_gauge == null or _charge_anchor == null or not is_instance_valid(_charge_anchor):
+		return
+	var rect: Rect2 = _charge_anchor.get_global_rect()
+	var at: Vector2 = get_global_transform().affine_inverse() * Vector2(rect.get_center().x, rect.position.y)
+	_power_gauge.position = at - Vector2(_power_gauge.size.x * 0.5, _power_gauge.size.y + 6.0)
+
+
+## 게이지가 떠 있는가 (테스트용).
+func power_charging() -> bool:
+	return _charging
+
+
+func power_value() -> float:
+	return _charge_value
 

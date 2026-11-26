@@ -1898,6 +1898,11 @@ godot --headless --audio-driver Dummy --path . -s res://tests/ui_live_hotfix_tes
 - 공통 원칙: 결과는 굴릴 때 엔진이 정한 그대로, 조작은 연출에만 쓴다. 손을 대지 않으면 저절로 진행한다. 직접 조작은 이 화면에서 굴린 사람만 (`RollPresenter.interactive`).
 - 룰렛 `RollPad.fling_power`(모바일 기준 낮춤), 슬롯 `SlotMachine3D.manual`(릴 자유 회전 → 누르면 정한 그림까지의 감속 거리를 계산해 선다, 3초 자동), 다트 `DartBoardView.ready_dart` + `MainBoard.dart_throw_released`, 복권 `ScratchTicketView.scratch_at` + 프레젠터 대기(6초 자동). 테스트 `ui_direct_control_test.gd`.
 
+
+### 7.107 파워 게이지 부활 (1.3.1, `feature/v1.3.1`)
+- 요청: 꾹 눌러 파워를 조절하는 기능을 다시. 단 파워가 높다고 효과가 더 나오지 않고, 주사위·윷·친치로·야추·핀볼에만.
+- 6.x(2026-10-19 원클릭 조작)에서 없앤 홀드 & 릴리즈 게이지를 지금 구조에 다시 만들었다: `MainBoard._attach_gauge`(굴리기 버튼·야추 버튼), 스페이스 누름/뗌, 핀볼은 [발사 준비] 뒤 발사 버튼을 누르는 동안 스프링이 당겨진다. 떼는 순간 값은 연출 세기(`_pending_power`)에만 쓰고 엔진에는 보내지 않는다. 테스트 `ui_power_gauge_test.gd`.
+
 ## 부록 B. 초기 예외 규칙 해석 (v1~v3.2, `EDGE_CASE_SPEC.md`에서 옮김)
 
 > 이 부록의 규칙은 당시 기준이다. 24칸 순환 트랙, 세트 효과, 후퇴 눈금, 옛 법전 교칙 등은 이후 개편으로 바뀌었다.

@@ -705,6 +705,10 @@ jobs:
         if: steps.validation.outputs.scope == 'full'
         run: godot --headless --path . -s res://tests/ui_direct_control_test.gd
 
+      - name: Run power gauge test (dice, yut, chinchiro, yacht, pinball)
+        if: steps.validation.outputs.scope == 'full'
+        run: godot --headless --path . -s res://tests/ui_power_gauge_test.gd
+
       - name: Run paired revolver preparation, quickdraw timing and flag effects test
         if: steps.validation.outputs.scope == 'full'
         run: godot --headless --path . -s res://tests/ui_quickdraw_test.gd

@@ -1032,7 +1032,7 @@ func _test_gauge_and_lock() -> void:
 		if kind == &"roll_resolved":
 			rolled.append(data))
 	_expect(not _board._roll_button.disabled, "턴 시작에 굴림 버튼이 활성이어야 한다")
-	_expect(not _board.has_method("_begin_charge"), "누르고 있는 차징 조작은 없다 (원클릭)")
+	_expect(_board.has_method("_begin_charge") and not _board.power_charging(), "파워 게이지는 꾹 누를 때만 뜬다 (1.3.1 부활, 짧게 누르면 원클릭)")
 	_board._roll_button.pressed.emit()  # 한 번 클릭하면 바로 굴러간다
 	_expect(absf(_board._pending_power - MainBoard.ONE_CLICK_POWER) < 0.01, "원클릭 굴림은 고정 연출 세기를 쓴다")
 	_expect(_board._fx_busy and _board._presenter.active, "굴림 연출이 재생 중이어야 한다")

@@ -212,6 +212,11 @@ func _on_reroll() -> void:
 	reroll_pressed.emit(kept.duplicate())
 
 
+## 파워 게이지를 붙일 굴리기 버튼들 ([주사위 5개 굴리기]·[나머지 다시 굴리기]).
+func gauge_buttons() -> Array[Button]:
+	return [_start_button, _reroll_button] as Array[Button]
+
+
 ## 스페이스 키: 처음이면 [주사위 5개 굴리기], 굴린 뒤면 고정하지 않은 주사위만 [다시 굴리기].
 func roll_by_key() -> void:
 	if not started:
