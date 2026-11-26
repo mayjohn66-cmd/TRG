@@ -14,13 +14,7 @@ const INK: Color = Color("f8f9fa")
 ## 도구 -> 뒷면 모양: card(그림 뒷면) / tile(마작 패) / stick(오미쿠지 막대) / icon(도구 그림)
 const LOOKS: Dictionary = {
 	&"DICE_TAROT": {"kind": "card", "back": "backs/TAROT_BACK", "size": Vector2(96, 156), "title": "타로 카드를 한 장 고르세요", "item": "카드"},
-	&"DICE_HWATU": {"kind": "card", "back": "backs/HWATU_BACK", "size": Vector2(78, 124), "title": "화투패를 두 장 고르세요", "item": "패"},
-	&"HOLDEM": {"kind": "card", "back": "backs/POKER_BACK", "size": Vector2(78, 112), "title": "카드 다섯 장을 고르세요", "item": "카드"},
-	&"DICE_MAHJONG": {"kind": "tile", "size": Vector2(70, 96), "title": "마작패 세 개를 고르세요", "item": "패"},
-	&"DICE_OMIKUJI": {"kind": "stick", "size": Vector2(44, 170), "title": "점괘 막대를 하나 뽑으세요", "item": "막대"},
-	&"DICE_COOKIE": {"kind": "icon", "icon": "DICE_COOKIE_V02", "size": Vector2(130, 130), "title": "포츈쿠키를 하나 고르세요", "item": "쿠키"},
-	&"DICE_ICECREAM": {"kind": "icon", "icon": "DICE_ICECREAM_V02", "size": Vector2(130, 130), "title": "아이스크림을 하나 고르세요", "item": "아이스크림"},
-	&"DICE_CAPSULE": {"kind": "icon", "icon": "DICE_CAPSULE_V02", "size": Vector2(120, 120), "title": "캡슐을 하나 고르세요", "item": "캡슐"},
+	&"DICE_HWATU": {"kind": "card", "back": "backs/HWATU_BACK", "size": Vector2(78, 124), "title": "화투패 세 장 중 두 장을 뒤집으세요", "item": "패"},
 }
 const LIFT: float = 16.0
 
@@ -61,7 +55,7 @@ func setup(id: StringName) -> void:
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 14)
 	panel.add_child(column)
-	var look: Dictionary = LOOKS.get(id, LOOKS[&"DICE_COOKIE"])
+	var look: Dictionary = LOOKS.get(id, LOOKS[&"DICE_TAROT"])
 	var title := _label(L10n.t(str(look["title"])), MobileSupport.text_px(22), GOLD)
 	title.name = "PickTitle"
 	column.add_child(title)

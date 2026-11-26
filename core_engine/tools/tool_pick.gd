@@ -11,14 +11,9 @@ extends RefCounted
 ## 도구 -> {count: 놓이는 뒷면 수, choose: 고를 수}
 const SPECS: Dictionary = {
 	&"DICE_TAROT": {"count": 5, "choose": 1},
-	&"DICE_HWATU": {"count": 6, "choose": 2},
-	&"HOLDEM": {"count": 7, "choose": 5},
-	&"DICE_MAHJONG": {"count": 6, "choose": 3},
-	&"DICE_OMIKUJI": {"count": 6, "choose": 1},
-	&"DICE_COOKIE": {"count": 3, "choose": 1},
-	&"DICE_ICECREAM": {"count": 3, "choose": 1},
-	&"DICE_CAPSULE": {"count": 4, "choose": 1},
+	&"DICE_HWATU": {"count": 3, "choose": 2},  # 1.3.1: 3장 받고 2장 뒤집기
 }
+## 1.3.1: 홀덤은 받은 5장을 교환(ToolHoldem), 마작·오미쿠지·쿠키·아이스크림·캡슐은 굴린 뒤 손으로 꺼내는 장면(ToolHandGate·캡슐 레버)으로 바꿨다.
 
 
 static func supports(tool_id: StringName) -> bool:

@@ -17,14 +17,19 @@
      },
      "items": [
       {
-       "ko": "굴리기 전에 내 판정 도구가 굴리기 버튼 위 보드에 놓여 있어요: 주사위·친치로 그릇·윷·슬롯머신·카드 더미·마작패·오미쿠지 통·아이스크림·쿠키·캡슐 기계·해적 통·복권·주식 차트",
-       "en": "Before you roll, your Judgment Tool now sits on the board above the roll button: dice, the Chinchiro bowl, Yut sticks, the slot machine, a card deck, Mahjong tiles, the Omikuji box, ice cream, a cookie, the capsule machine, the pirate barrel, a scratch ticket or the stock chart",
-       "ja": "振る前に、自分の判定ツールが振るボタンの上のボードに置かれるようになりました：サイコロ・チンチロの茶碗・ユッ・スロットマシン・カードの山・麻雀牌・おみくじ箱・アイスクリーム・クッキー・カプセルマシン・海賊の樽・スクラッチくじ・株価チャート"
+       "ko": "굴리기 전에 내 판정 도구가 굴리기 버튼 위 보드에 놓여 있어요: 주사위·친치로 그릇·윷·슬롯머신·카드 더미·마작패·오미쿠지 통·아이스크림·쿠키·캡슐 기계·복권·주식 차트",
+       "en": "Before you roll, your Judgment Tool now sits on the board above the roll button: dice, the Chinchiro bowl, Yut sticks, the slot machine, a card deck, Mahjong tiles, the Omikuji box, ice cream, a cookie, the capsule machine, a scratch ticket or the stock chart",
+       "ja": "振る前に、自分の判定ツールが振るボタンの上のボードに置かれるようになりました：サイコロ・チンチロの茶碗・ユッ・スロットマシン・カードの山・麻雀牌・おみくじ箱・アイスクリーム・クッキー・カプセルマシン・スクラッチくじ・株価チャート"
       },
       {
-       "ko": "판정 도구 8종을 직접 골라서 굴릴 수 있어요: 타로(5장 중 1장)·화투(6장 중 2장)·텍사스 홀덤(7장 중 5장)·마작(6개 중 3개)·오미쿠지(막대 6개 중 1개)·포츈쿠키·아이스크림(3개 중 1개)·캡슐뽑기(4개 중 1개) (제보 감사합니다!)",
-       "en": "You can now pick for 8 Judgment Tools yourself: Tarot (1 of 5), Hwatu (2 of 6), Texas Hold'em (5 of 7), Mahjong (3 of 6), Omikuji (1 of 6 sticks), Fortune Cookie / Ice Cream (1 of 3) and Capsule Gacha (1 of 4) (thanks for the suggestion!)",
-       "ja": "判定ツール8種を自分で選んで振れるようになりました：タロット（5枚から1枚）・花札（6枚から2枚）・テキサスホールデム（7枚から5枚）・麻雀（6個から3個）・おみくじ（棒6本から1本）・フォーチュンクッキー／アイスクリーム（3個から1個）・カプセルガチャ（4個から1個）（ご提案ありがとうございます！）"
+       "ko": "판정 도구를 내 손으로 다뤄요 (제보 감사합니다!): [타로]는 5장 중 1장, [화투]는 3장 중 2장을 골라 뒤집고, [마작]은 1열로 늘어선 패에서 3개를 골라 꺼내 세우고, [포츈쿠키]는 뚜껑 열린 과자통에서 집고, [아이스크림]은 아이스박스에서 꺼내고, [오미쿠지]는 마음껏 흔든 뒤 뽑고, [캡슐뽑기]는 레버를 직접 돌려요 (가만히 있으면 저절로 진행돼요)",
+       "en": "Handle your Judgment Tools yourself (thanks for the suggestion!): flip 1 of 5 [Tarot] cards and 2 of 3 [Hwatu] cards, draw 3 [Mahjong] tiles from a row and stand them up, grab a [Fortune Cookie] from an open jar, pull an [Ice Cream] from the ice box, shake the [Omikuji] box as much as you like before drawing, and turn the [Capsule Gacha] lever yourself (if you do nothing, it plays out on its own)",
+       "ja": "判定ツールを自分の手で扱えます（ご提案ありがとうございます！）：［タロット］は5枚から1枚、［花札］は3枚から2枚を選んでめくり、［麻雀］は1列に並んだ牌から3つ選んで取り出して立て、［フォーチュンクッキー］はふたの開いたお菓子の瓶から取り、［アイスクリーム］はアイスボックスから取り出し、［おみくじ］は好きなだけ振ってから引き、［カプセルガチャ］はレバーを自分で回します（何もしなければ自動で進みます）"
+      },
+      {
+       "ko": "[텍사스 홀덤 딜러]는 카드 5장을 받은 뒤 바꿀 카드를 골라 한 번 교환할 수 있어요 ([그대로 확정]도 돼요). 교환한 최종 족보만큼 전진해요",
+       "en": "[Texas Hold'em Dealer] now deals you 5 cards, then lets you pick cards to swap once (or [Keep these]). You move by your final hand",
+       "ja": "［テキサスホールデム・ディーラー］はカードを5枚配った後、替えるカードを選んで1回交換できます（［このまま確定］も可）。交換後の最終役に応じて前進します"
       },
       {
        "ko": "[인생게임 회전 룰렛]은 원판을 잡고 직접 돌려 던져요. 모바일에서는 조금만 착 튕겨도 시원하게 돌아가요 (톡 누르기만 해도 돌아요)",
@@ -84,6 +89,20 @@
        "ko": "[알고리즘 밴]·[UDO 스킵]·[이의 있음!]은 [너프 발동] 카드가 되어 더 이상 공격이 아니에요. 방어 카드로 막을 수 없고, [UDO 리버스]는 공격 카드를 막고 반사하는 카드로 단순해졌어요",
        "en": "[Algorithm Ban], [UDO Skip] and [Objection!] are now [Nerf] cards and no longer count as attacks. They can't be blocked by Defense cards, and [UDO Reverse] is now simply: block an attack card and reflect it",
        "ja": "［アルゴリズムBAN］・［UDO スキップ］・［異議あり！］は［デバフ発動］カードになり、攻撃ではなくなりました。防御カードでは防げず、［UDO リバース］は攻撃カードを防いで反射するシンプルなカードになりました"
+      }
+     ]
+    },
+    {
+     "head": {
+      "ko": "버그 수정",
+      "en": "Bug fixes",
+      "ja": "バグ修正"
+     },
+     "items": [
+      {
+       "ko": "[해적 룰렛]에서 첫 칼을 꽂은 뒤 [칼 꽂기] 버튼이 사라져 스페이스 키로만 꽂을 수 있던 문제를 고쳤어요. 이제 해적통이 보드 위에 서 있고, 끌어서 돌린 뒤 버튼으로 칼을 꽂아요 (제보 감사합니다!)",
+       "en": "Fixed [Pirate Roulette] hiding the [Stab] button after the first sword, so only the Space key worked. The barrel now stands on the board: drag to turn it, then press the button to stab (thanks for the report!)",
+       "ja": "［海賊ルーレット］で最初の剣を刺した後［剣を刺す］ボタンが消え、スペースキーでしか刺せなかった問題を修正しました。樽がボードの上に立ち、ドラッグで回してからボタンで剣を刺せます（ご報告ありがとうございます！）"
       }
      ]
     }

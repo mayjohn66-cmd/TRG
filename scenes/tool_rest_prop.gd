@@ -1,9 +1,9 @@
 # File: res://scenes/tool_rest_prop.gd
 # Class: class_name ToolRestProp
 # Role: 굴리기 전, 내 판정 도구가 굴리기 버튼 위 보드에 놓여 있는 소품 (1.3.1). 주사위·친치로 그릇·윷·슬롯·카드 더미·마작 패·
-#       오미쿠지 통·아이스크림·쿠키·캡슐 기계·해적 통·복권·주식 차트를 실제 연출 그림 그대로 작게 세워 둔다 (밑에 그림자).
+#       오미쿠지 통·아이스크림·쿠키·캡슐 기계·복권·주식 차트를 실제 연출 그림 그대로 작게 세워 둔다 (밑에 그림자).
 #       굴림 연출의 첫 장면·쉬는 장면을 한 번 그려 두고 3D 화면 갱신은 멈춘다 (기다리는 동안 그리기 비용이 없다).
-#       자체 소품이 있는 도구(룰렛 원판·리볼버 패드·다트 과녁·야추·블랙잭·핀볼 무대)는 표시하지 않는다.
+#       자체 소품이 있는 도구(룰렛 원판·리볼버 패드·다트 과녁·야추·블랙잭·핀볼 무대·해적 대기 통)는 표시하지 않는다.
 class_name ToolRestProp
 extends Control
 
@@ -14,7 +14,7 @@ const KINDS: Dictionary = {
 	&"D6": "dice", &"CHINCHIRO": "dice", &"YUT": "yut", &"SLOT_777": "slot",
 	&"HOLDEM": "cards", &"DICE_HWATU": "cards", &"DICE_TAROT": "cards", &"DICE_MAHJONG": "tiles",
 	&"DICE_OMIKUJI": "view", &"DICE_ICECREAM": "view", &"DICE_COOKIE": "view", &"DICE_CAPSULE": "view",
-	&"DICE_PIRATE": "view", &"DICE_SCRATCH": "view", &"DICE_STOCK": "view",
+	&"DICE_SCRATCH": "view", &"DICE_STOCK": "view",  # 해적 룰렛은 보드 위 대기 통(1.3.1)이 있다
 }
 const CARD_BACKS: Dictionary = {&"HOLDEM": "backs/POKER_BACK", &"DICE_HWATU": "backs/HWATU_BACK", &"DICE_TAROT": "backs/TAROT_BACK"}
 
@@ -94,7 +94,6 @@ func _make(id: StringName) -> Control:
 		&"DICE_ICECREAM": return IceCreamView.new()
 		&"DICE_COOKIE": return FortuneCookieView.new()
 		&"DICE_CAPSULE": return CapsuleGachaView.new()
-		&"DICE_PIRATE": return PirateBarrelView.new()
 		&"DICE_SCRATCH": return ScratchTicketView.new()
 	return StockChartView.new()
 

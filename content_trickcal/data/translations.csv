@@ -3435,3 +3435,28 @@ TRPG,TRPG,TRPG
 반사,Reflect,反射
 공격자의 선두 말이 출발선으로 (해킹은 공격자가 그대로 받아요),The attacker's lead pawn goes back to the start (a Hack hits the attacker instead),攻撃者の先頭の駒がスタートへ（ハッキングは攻撃者がそのまま受けます）
 밴·스킵·이의 있음 같은 [b][너프 발동][/b] 카드는 공격이 아니라서 막지 못해요,"[b][Nerf][/b] cards like Ban, Skip or Objection aren't attacks, so they can't be blocked",BAN・スキップ・異議ありのような[b][デバフ発動][/b]カードは攻撃ではないので防げません
+카드 5장을 받고 한 번 교환한 족보만큼 전진한다,"Get 5 cards, exchange once, and move by your poker hand",カード5枚を受け取り、1回交換した役に応じて前進する
+5장 받기 → 바꿀 카드를 골라 한 번 교환 · 플러시 이상 15칸,"Get 5 → pick cards to swap, exchange once · Flush or better 15 spaces",5枚受け取り → 替えるカードを選んで1回交換 · フラッシュ以上 15マス
+5장 받음: %s (교환 대기),Dealt 5: %s (waiting to exchange),5枚配布: %s (交換待ち)
+%d장 교환 → ,Swapped %d → ,%d枚交換 → 
+그대로 → ,Kept → ,そのまま → 
+레버를 끌어서 돌리세요!,Drag to turn the lever!,レバーをドラッグして回そう！
+바꿀 카드를 고르세요,Pick the cards to swap,交換するカードを選んでください
+화투패 세 장 중 두 장을 뒤집으세요,Flip two of the three Hwatu cards,花札3枚のうち2枚をめくってください
+교환,Swap,交換
+그대로 확정,Keep these,このまま確定
+%d장 교환하기,Swap %d,%d枚交換する
+교환하기,Swap,交換する
+지금 족보: %s (%d칸),Current hand: %s (%d spaces),今の役: %s (%dマス)
+패를 골라 꺼내세요 (%d / %d),Pick tiles to draw (%d / %d),牌を選んで取り出そう (%d / %d)
+과자통에서 쿠키를 하나 집으세요,Take a cookie from the jar,お菓子の瓶からクッキーを1つ取ろう
+아이스크림을 하나 꺼내세요,Pull out an ice cream,アイスを1本取り出そう
+통을 흔들고 뽑으세요,"Shake the box, then draw",筒を振ってから引こう
+흔들흔들… %d번 흔들었어요,Shake shake… %d times so far,ふりふり… %d回振りました
+흔들기,Shake,振る
+뽑기,Draw,引く
+"타로·화투는 뒷면을 골라 뒤집고, 마작은 1열로 늘어선 패에서 골라 꺼내요","Flip face-down Tarot and Hwatu cards you pick, and draw Mahjong tiles from a row",タロット・花札は裏向きのカードを選んでめくり、麻雀は1列に並んだ牌から選んで取り出します
+손으로 꺼내기,Take it out by hand,手で取り出す
+"쿠키는 과자통에서 집고, 아이스크림은 아이스박스에서 꺼내고, 오미쿠지는 흔든 뒤 뽑고, 캡슐은 레버를 돌려요","Grab a cookie from the jar, pull an ice cream from the ice box, shake then draw the Omikuji, and turn the capsule lever",クッキーは瓶から取り、アイスはアイスボックスから取り出し、おみくじは振ってから引き、カプセルはレバーを回します
+"룰렛은 원판을 잡아 돌리고, 슬롯은 눌러 릴을 멈추고, 다트는 끌어 던지고, 복권은 손가락으로 긁고, 해적통은 돌려서 칼을 꽂아요","Grab and spin the roulette wheel, tap to stop the slot reels, drag to throw darts, scratch the ticket with your finger, and turn the pirate barrel to stab a sword in",ルーレットは盤をつかんで回し、スロットは押してリールを止め、ダーツはドラッグで投げ、くじは指で削り、海賊の樽は回して剣を刺します
+"리볼버·야추·블랙잭·해적 룰렛은 멈출지 더 할지 고르고, 홀덤은 받은 5장 중 바꿀 카드를 골라 한 번 교환해요","Revolver, Yacht, Blackjack and Pirate Roulette: choose to stop or keep going. Hold'em: pick cards from your 5 to swap once",リボルバー・ヨット・ブラックジャック・海賊ルーレットは止めるか続けるかを選び、ホールデムは配られた5枚から替えるカードを選んで1回交換します

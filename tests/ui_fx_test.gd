@@ -1754,7 +1754,7 @@ func _test_hud_overhaul() -> void:
 	manager.state.tools[current] = ToolRegistry.create(&"HOLDEM")
 	_board._refresh_controls()
 	_expect(_board._tool_board.size.x == 210.0 and _board._tool_board.size.y >= 100.0 and absf(_board._tool_board.position.y + _board._tool_board.size.y / 2.0 - 384.0) < 2.0, "판정 도구 카드는 폭 210 고정, 높이는 내용에 맞춰 늘어나고 우측 중앙(세로 384) 기준으로 앉는다 (%s %s)" % [str(_board._tool_board.position), str(_board._tool_board.size)])
-	_expect(_board._tool_title.text == "텍사스 홀덤 딜러" and _board._tool_main.text.contains("카드 족보") and _board._tool_icon.custom_minimum_size == Vector2(48, 48), "홀덤 카드: 이름 + 핵심 규칙 + 48x48 심볼 (%s)" % _board._tool_main.text)
+	_expect(_board._tool_title.text == "텍사스 홀덤 딜러" and _board._tool_main.text.contains("족보만큼") and _board._tool_icon.custom_minimum_size == Vector2(48, 48), "홀덤 카드: 이름 + 핵심 규칙 + 48x48 심볼 (%s)" % _board._tool_main.text)
 	_expect(_board._tool_toggle.visible and not _board._tool_expanded and not _board._tool_rules.visible, "처음에는 한 줄 요약만 보이고 상세 족보는 접혀 있다")
 	var collapsed_height: float = _board._tool_board.size.y
 	_board._tool_toggle.pressed.emit()
