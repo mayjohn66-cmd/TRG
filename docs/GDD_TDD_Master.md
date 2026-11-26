@@ -51,173 +51,88 @@
         > 전달하고, 자동으로 일어나는 일은 화면 중앙 알림으로 직접
         > 보여 준다 (4.5 참고).
 
-## **2. 기술 아키텍처 및 디자인 패턴 명세 (TDD & Architecture)**
+## **2. 기술 아키텍처**
 
-### **2.1. 소프트웨어 공학 설계 4대 원칙**
+### **2.1. 설계 원칙**
 
-1.  **개방-폐쇄 원칙 (OCP - Interceptor Pattern):** 새로운 교칙이나 함정
-    > 카드가 100장 추가되어도 TurnManager와 BoardGraph의 코드는 수정되지
-    > 않는다.
+1. **규칙 코어와 화면 분리:** `core_engine/`은 UI를 모르는 순수 규칙이다. 모든 행동은 `TurnManager.act()`로만 들어오고 결과는 시그널·이벤트로 나간다. 화면(`scenes/`)은 그 결과를 받아 그리기만 한다. 그래서 사람·봇·온라인 상대가 같은 길로 행동하고, 헤드리스 테스트가 규칙을 그대로 검증한다.
+2. **코어와 스킨 분리 (데이터 주도):** 2차 창작 리소스(`content_trickcal/`)와 수치 표(`content_trickcal/data/*.csv`)를 코드와 떼어 둔다. 보드도 `BoardCatalog` 데이터로 만든다.
+3. **커맨드 스택:** 카드·필살기 같은 행동은 `GameCommand`로 감싸 `CommandStack`에 쌓고, 되감기(바이츠 더 더스트)는 턴 시작 `TurnSnapshot`으로 돌린다.
+4. **엔티티와 칸 설치물:** 플레이어 말(`PlayerPawn`)과 중립 기물(`NeutralNPC`)은 `BoardEntity`를 잇고, 함정·호텔 같은 칸 위 물건은 `TileAttachment`로 붙인다.
+5. **결정성:** 모든 무작위는 `GameState.rng` 하나로 뽑는다. 같은 시드면 같은 판이 나오므로 온라인 락스텝과 되감기가 성립한다. 연출은 엔진 난수를 쓰지 않는다.
 
-2.  **코어와 스킨의 완전 분리 (MVC & Data-Driven):** 2차 창작
-    > 리소스(content_trickcal)와 순수 보드게임 프레임워크(core_engine)를
-    > 분리하여 언제든 오리지널 IP 상용 게임으로 전환 가능하게 설계한다.
+### **2.2. 주요 클래스**
 
-3.  **커맨드 스택 기반 개입 및 롤백 (Command Stack Pattern):** 모든
-    > 행동과 생떼 카드를 GameCommand 객체로 캡슐화하여 LIFO 역순 판정 및
-    > 시간 역행(undo)을 완벽히 처리한다.
-
-4.  **엔티티 및 타일 데코레이터 확장성:** 플레이어 기물(PlayerPawn)과
-    > 중립 소환수(NeutralNPC)를 단일 BoardEntity로 추상화하고, 타일 위
-    > 은신 함정을 TileAttachment 컴포넌트로 모듈화한다.
-
-### **2.2. 전체 클래스 구조도 (Architecture Tree)**
-
--   **TurnManager (턴 & 상태 총괄 매니저)**
-
-    -   역할: 현재 턴 상태(8단계 FSM), 진행 방향(UDO 리버스 카드 대응), 개입
-        > 스택(CommandStack) 관리
-
-    -   주요 함수: change_state(), reverse_turn_order(),
-        > request_action()
-
-    -   **\[연결 1\] RuleBookManager (중앙 법전 4슬롯 큐)\
-        > **
-
-        -   LawResource: 패시브 교칙 최대 4개 보관 (FIFO 밀어내기 구조)
-
-        -   RuleContext: 주사위 눈금, 이동 경로 데이터를 통과시키며
-            > 수치를 변조하는 페이로드 객체
-
-    -   **\[연결 2\] GameCommand & CommandStack (개입 및 롤백 스택)\
-        > **
-
-        -   역할: 3.5초 개입 타이밍 동안 들어온 생떼 카드를
-            > LIFO(후입선출)로 실행 및 취소(undo)
-
-    -   **\[연결 3\] BoardGraph (24칸 순환 트랙 & 탐색기)\
-        > **
-
-        -   TileNode: 0\~23번 타일 데이터 및 이벤트 관리
-
-            -   TileAttachment: 타일 설치물 컴포넌트 (유희왕 뒷면 함정,
-                > 부르마블 호텔, 지뢰)
-
-        -   BoardEntity: 보드 위를 움직이는 모든 객체의 부모 추상
-            > 클래스
-
-            -   PlayerPawn: 플레이어 소유 기물 6계열 (윷말, 체스, 장기, 모노폴리,
-                > 바둑, 쇼기)
-
-            -   NeutralNPC: 중립 소환수 (사료스탕스 출동, 와구와구 유령 -
-                > 라운드 종료 시 BFS 최단 거리 AI 이동)
-
-### **2.3. 멀티플레이어 패킷 동기화 흐름 (Sequence Flow)**
-
-> **현행 구현(락스텝):** 아래 1~5는 최초 설계(호스트가 상태를 방송하는 방식)이고, 실제 게임 화면의 온라인 대전은 **락스텝**으로 구현되어 있다. 모든 참가자가 같은 시드로 같은 `TurnManager`를 각자 돌리고, 방장이 모든 행동(사람·봇·타임아웃)에 순서를 매겨 똑같이 적용시킨다(`NetGame`, 4.5의 "온라인 대전 동기화" 참고). 최초 설계의 `_rpc_sync_state`(상태 스냅샷 방송)는 코어에 남아 있지만 온라인 판에서는 쓰지 않는다. 연결은 WebRTC 직접 연결이며 시그널링은 공개 Pub/Sub(ntfy.sh)로 자동 처리한다(5자리 방 코드).
-
-1.  **\[주사위 요청\]** Client A(턴 유저) → Host(서버): 주사위 굴림 및
-    > 이동 요청 RPC 전송
-
-2.  **\[법전 파이프라인 통과\]** Host: RuleBookManager의 4슬롯 패시브
-    > 교칙을 순서대로 통과시켜 최종 이동 칸수 확정
-
-3.  **\[개입 타이밍 A (3.5초)\]** Host → 전체 클라이언트: 주사위 결과
-    > 브로드캐스트 및 3.5초간 즉발 생떼 카드 개입 대기
-
-4.  **\[한 칸씩 이동 및 함정 판정\]** Host: 기물이 한 칸씩
-    > 이동(Step-by-Step)할 때마다 해당 TileNode의 TileAttachment(은신
-    > 함정) 유무 검사
-
-    -   유희왕 함정(거울의 힘 등) 감지 시: 즉시 남은 이동력을 0으로
-        > 만들고, 전체 클라이언트에 함정 발동 컷신 재생 후 기물을
-        > 출발선으로 복귀시킴
-
-5.  **\[중립 NPC 페이즈\]** 라운드 마지막 턴 종료 시, Host에서 카탄의
-    > 도적 등 NeutralNPC의 AI 이동(BFS 탐색) 연산 수행 후 최종 보드 상태
-    > 동기화
-
-### **2.4. 클라이언트 · 온라인 · 배포 아키텍처 (v3.0)**
-
-| 계층 | 구성 요소 | 책임 |
+| 영역 | 클래스 (파일) | 역할 |
 |---|---|---|
-| 규칙 코어 (`core_engine/`) | `TurnManager`(8단계 FSM, 락스텝 지원) · `GameState` · `MoveExecutor` · `PawnSkills` · `BotBrain/BotController` | UI를 모르는 순수 규칙. 모든 행동은 `act()`로만 들어오고 시그널로 결과를 알린다 |
-| 화면 (`scenes/`) | `MainBoard`(HUD·보드·연출) · `StartMenu`/`Lobby`(`LobbyTheme` 공통 부품) · `AvatarSlot/AvatarCatalog` · `RollPad/RollPresenter` · `EventAnnouncer` · `MobileSupport` · `UiSkin` | 코어의 시그널을 받아 그리고, 사용자 입력을 `act()`로 되돌린다 |
-| 세션 (`GameSession`) | 정적 설정: 닉네임·AI 인원(1~3)·로비 의도(비밀/랜덤)·아바타·소리(전체/효과음/배경음악)·화면 흔들림·배터리 절약·온라인 설정 | 화면 사이 전달, `user://profile.cfg`·`user://settings.cfg` 저장 |
-| 온라인 (`NetGame` + 로비) | `LobbyService`(WebRTC 스타 연결) · `RoomCode/RoomSignaling` · `SignalBroker`(`NtfyBroker`/`MemoryBroker`) · `MatchBeacon/QuickMatch` | 5자리 방 코드로 연결하고 락스텝으로 같은 판을 진행 |
-| 배포 | GitHub Actions(`deploy-web.yml`) → `gh-pages` 브랜치 → Vercel(`vercel.json`, 운영 `https://trickcal-board.vercel.app/`) | 푸시마다 테스트 → Godot 웹 내보내기(`export_presets.cfg`) → 정적 호스팅 |
+| 턴 진행 | `TurnManager` (`core_engine/turn_manager.gd`) | 턴 상태 머신(3.2), 행동 검증·실행, 제한 시간, 방어 창, 증강 드래프트 |
+| 판 상태 | `GameState` · `TurnSnapshot` | 말·손패·설치물·법전 기록·초증강 상태·난수. 스냅샷으로 되감기·동기화 |
+| 보드 | `BoardSpec` · `BoardCatalog` · `BoardGraph` · `TileNode` · `TileAttachment` | 칸 번호·특수 칸(3.1), 보드 데이터, 경로, 칸 설치물 |
+| 이동 | `MoveExecutor` · `MoveReport` | 경로 계산, 한 칸씩 판정(함정·잡기·워프·완주·정령), 결과 보고 |
+| 말 | `BoardEntity` → `PlayerPawn`(9계열) · `NeutralNPC` · `PawnCatalog` · `PawnSkills` | 말 데이터, 세부 기물 능력·필살기 |
+| 법전 | `RuleBookManager` · `LawResource` · `RuleContext` · `VictoryLaw` · `SpecialVictory` · `VictoryChecker` | 특수 승리 교칙 보관(슬롯 4, 동시 특수 승리는 `MatchRules.max_laws` 기본 2개·Lv.1~2는 1개), 진행 기록과 판정, 완주·순위 |
+| 카드·도구·증강 | `cards/*` · `CardRegistry` · `tools/*` · `ToolRegistry` · `AugmentRegistry` · `SuperAugments` · `SuperStatus` · `UtilityAugments` | 생떼 카드 52종, 판정 도구 21종, 증강 96종 |
+| 템포·밸런스 | `TempoUp` · `PacingDirector` · `MatchRules` · `ReleaseGate` | 라운드 가속, 난이도별 숨은 보정, 방 규칙, 버전 잠금 |
+| 컴퓨터 | `BotBrain` · `BotController` · `BotTemper` | 판단과 구동 (사람과 같은 `act()` 검증을 거친다) |
+| 결투 | `DuelRules` · `BottleCapPhysics` | 일기토 미니게임 6종의 엔진 판정 |
+| 세션 | `GameSession` · `PlayerSave` | 화면 사이 설정(닉네임·아바타·모드·소리·화질·언어·배속)과 저장 |
+| 온라인 | `NetGame` · `LobbyService` · `RtcLink` · `RoomCode` · `RoomSignaling` · `SignalBroker`(`NtfyBroker`·`MemoryBroker`) · `MatchBeacon` · `QuickMatch` | 락스텝 동기화, WebRTC 연결, 방 코드 시그널링, 빠른 매칭 |
+| 화면 | `MainBoard` · `StartMenu` · `Lobby` · `LobbyTheme` · `HubKit` · `Rulebook` · `MobileSupport` · `GamePack` | 보드·HUD·연출, 시작·로비, 도감, 모바일 입력, 웹 게임 묶음 |
 
-- **클라이언트 상대 좌석 매핑:** 화면을 보는 플레이어(`local_player_id`)는 항상 **우측 하단**에 크게 앉고, 나머지는 턴 순서대로 우측 상단 → 좌측 하단 → 좌측 상단에 앉는다 (`MainBoard._compute_seats`). 온라인에서 P2~P4로 접속해도 내 자리는 우측 하단이다.
-- **1P vs 3AI 봇 모드:** 훈련(`GameSession.MODE_AI`)은 나 + 컴퓨터 1~3명(`ai_opponents`)이고, 봇(`BotController`)은 사람과 같은 `act()` 권한 검증을 통과한다. 수동 4인 조작 모드는 개발용으로 메뉴에 남아 있다.
-- **락스텝 온라인:** 같은 시드·같은 `TurnManager`를 각자 돌리고 방장이 행동 순서를 매겨 방송한다 (4.5 "온라인 대전 동기화"). 상태 지문(`state_hash`)으로 어긋남을 감지한다.
-- **5자리 방 코드와 자동 시그널링:** 방장은 5자리 코드를 받고, WebRTC 접속 정보는 공개 Pub/Sub 릴레이(기본 `ntfy.sh`, 토픽 `trg_sig_{코드}_o{좌석}`/`_a{좌석}`)로 자동 교환된다. 사용자가 코드를 복사·붙여넣는 수동 연결은 없다.
-- **빠른 랜덤 매칭:** 대기열 토픽 `trg_matchmaking_queue_v1`의 비콘으로 열린 방을 찾아 들어가거나 직접 방을 열고, 15초 뒤 빈자리를 AI로 채워 시작한다 (`QuickMatch`).
-- **Vercel 웹 배포:** 빌드 산출물(`build/web`)을 `gh-pages`에 올리고 Vercel이 그 브랜치를 Production으로 호스팅한다. `vercel.json`이 캐시 헤더와 `.wasm` 타입을 지정한다. 웹은 가로 화면 전용이다(4.5).
+`NetworkService`(호스트가 상태를 방송하는 초기 Listen Server 설계)는 통합 테스트용으로만 남아 있다.
 
-## **3. 인게임 보드(32칸 사각 순환 트랙) 및 8단계 턴 상태 머신**
+### **2.3. 온라인 동기화 (락스텝)**
 
-### **3.1. 순환 트랙 인덱스 규칙 (부르마블형, v3.2 → 32칸 확장 v3.8)**
+1. 모든 참가자가 **같은 시드**로 같은 `TurnManager`를 각자 돌린다.
+2. 방장이 모든 행동(사람·봇·시간 초과)에 순서 번호를 매겨 모두에게 보내고, 모두가 같은 순서로 `act()`한다 (`NetGame`).
+3. 상태 지문(`state_hash`)으로 어긋남을 감지한다.
+4. 방 규칙(보드·법전·속도·함정 공개·밴 등, `GameSession.RULE_KEYS`)은 시작 전에 방장이 정해 모두에게 전달한다. 모든 참가자가 같은 빌드·같은 CSV여야 한다.
 
-> **v3.8: 기본 보드가 32칸(한 변 8칸)으로 늘었다.** 칸 수와 특수 타일 번호는 `BoardSpec`(core_engine/board/board_spec.gd)이 한곳에서 정하며(`BoardSpec.apply(32 또는 24)`), 규칙·화면·문서의 타일 번호는 모두 여기서 읽는다. 24칸 배치는 기본 이동 규칙 단위 테스트용으로만 남겨 두었다.
->
-> | 항목 | 32칸 (기본) | 옛 24칸 |
-> | --- | --- | --- |
-> | 코너 | 0(출발·결승) · 8 · **16(반환점)** · 24 | 0 · 6 · 12(반환점) · 18 |
-> | 코너 전용 함정 슬롯 (v4.0: 점프대 삭제) | 8 · 16 · 24번 | 6 · 12 · 18번 |
-> | 빵집 | 5 · 13 · 19 · 30번 | 4 · 10 · 14 · 20번 |
-> | 옷장 포탈 | 12번 ↔ 22번 왕복 (비행기: 12 → 24 코너, 22 → 30) | 9 → 16, 16 → 20 (비행기: 9 → 18, 16 → 22) |
-> | ⚡ 부스터 발판 | 3 · 27번 | 4 · 11 · 19번 |
-> | 승급 타일(폰·쇼기) | 16~31번 | 12~23번 |
-> | 비숍·각행 보너스 코너 | 8 · 16 · 24번 | 6 · 12 · 18번 |
->
-> 타일 그림은 한 변이 길어진 만큼 폭을 줄여(`BoardSkin.NORMAL_WIDTH × BoardSpec.tile_scale()`) 겹치지 않는다. 아래 3.1의 세부 설명은 옛 24칸 번호 기준이며 32칸에서는 위 표의 번호로 읽는다.
+### **2.4. 클라이언트 · 온라인 · 배포**
 
-윷놀이 지름길(29칸)을 없애고 **가운데가 뻥 뚫린 24칸 사각 외곽 트랙**(`TILE_COUNT = 24`, 한 변 6칸)으로 개편했다. 화면 좌표는 `BoardLayout`의 0~1 평면 좌표로 정의되고, 진행 방향은 **0번(우측 하단)에서 시작해 반시계 방향**(`0 → 1 → ... → 23 → 0`)이다. 규칙·좌표는 시점(탑뷰/기울인 탑뷰)과 무관하며 `MainBoard._project()`만 시점을 안다. 분기·대각선 타일은 없고 `TileNode.next_default` 하나로 이어진 단일 고리다.
+| 계층 | 구성 | 책임 |
+|---|---|---|
+| 연결 | `LobbyService`(WebRTC 스타 연결) · 공개 Pub/Sub 릴레이(`ntfy.sh`, 토픽 `trg_sig_{코드}_o{좌석}`/`_a{좌석}`) | 5자리 방 코드·초대 링크로 접속 정보를 자동 교환 |
+| 빠른 매칭 | `QuickMatch` · 대기열 토픽 `trg_matchmaking_queue_v1` | 열린 방을 찾거나 직접 열고, 15초 뒤 빈자리를 컴퓨터로 채워 시작 |
+| 웹 빌드 | GitHub Actions(`.github/workflows/deploy-web.yml`) | 푸시마다 테스트 → Godot 웹 내보내기 → 본체 `index.pck`(메뉴용) + 게임 묶음 `game.pck` + 아바타 묶음 → 용량 예산 검사 |
+| 호스팅 | `gh-pages` 브랜치 → GitHub Pages (저장소 변수 `PAGES_DOMAIN`이 있으면 그 도메인과 CNAME, 운영 주소 hypereliasmarble.xyz) | `vercel.json`(캐시 헤더·`.wasm` 형식)도 함께 실어 Vercel 호스팅도 가능. `BUTLER_API_KEY`가 있으면 itch.io에도 올린다 |
+| 배포 브랜치 | `claude/**`·`main`에 푸시하면 실행 (`feature/**`는 배포하지 않음) | main은 지금 문서 정리용이라 배포 설정이 없다 |
 
--   **네 모서리 코너 (큼직한 1.25배 팔각 타일):**
+## **3. 인게임 보드(32칸 사각 순환 트랙)와 턴 상태 머신**
 
-    -   0번 (우측 하단): **출발 / 결승** (START_GOAL). 모든 플레이어가 공유하므로 시점이나 좌석에 따라 돌리지 않는다.
+### **3.1. 순환 트랙과 칸 번호 (`BoardSpec`)**
 
-    -   6번 (우측 상단): **코너 1** - (v4.0) 점프대 삭제. 코너 전용 함정만 설치할 수 있는 슬롯.
+가운데가 빈 32칸 사각 외곽 트랙(한 변 8칸)이다. 0번(우측 하단)에서 출발해 반시계로 돌아 0번으로 돌아오면 완주한다. 칸 번호는 `BoardSpec`이 한곳에서 정하고, 규칙·화면·도감이 모두 여기서 읽는다 (테스트는 옛 24칸 배치도 `apply(24)`로 쓴다).
 
-    -   12번 (좌측 상단): **반환점 코너** (트랙의 절반). 폰 승급·쇼기 나리 승급 기준점이고 와구와구 유령가 소환되는 곳.
+| 칸 | 번호 | 규칙 |
+|---|---|---|
+| 출발·결승 | 0 | 0번을 밟거나 넘으면 완주 (눈금이 남아도 된다). 템포 업의 결승선 당김 구간에 들어가도 완주 (`TempoUp.in_zone_for`) |
+| 코너 | 8 · 16 · 24 | 코너 함정 전용 칸. 16번은 **반환점** |
+| 반환점 이후 | 16~31 | 체스 폰 퀸 승진·쇼기 나리 승급 칸 (`promotion_tiles`) |
+| 빵집 자리 | 5 · 13 · 19 · 30 | 보드마다 빵집·편의점·마녀 상점·정령 칸 (4.0) |
+| 옷장 자리 | 12 · 22 | 에르핀 왕국은 옷장: **정확히 멈췄을 때만** 12 ↔ 22 순간이동 (비행기는 12 → 24, 22 → 30). 다른 보드는 자판기·가마솥·정령 칸이고 워프 없음 |
+| 부스터 발판 | 3 · 27 | 굴림 이동으로 딱 멈추면 앞으로 3칸 더 (`augments_table.csv`의 규칙 수치 `RULE_DASH_PAD`) |
+| 보너스 코너 | 8 · 16 · 24 | 일부 기물 능력의 코너 판정 (`bonus_corner_tiles`) |
 
-    -   18번 (좌측 하단): **코너 2** - (v4.0) 점프대 삭제. 코너 전용 함정 슬롯.
+- **함정 칸:** 한 칸에 설치물 하나. 일반 함정은 코너에 못 놓고 코너 함정은 코너에만 놓는다. 출발선에는 아무것도 없다. 숨긴 함정은 상대에게 뒷면(물음표)으로 보인다 (방 규칙 함정 공개면 모두 보인다).
+- **말은 뒤로 가지 않는다:** 판정 도구는 음수 눈금을 내지 않는다 (실패는 0칸·턴 종료). 뒤로 가는 것은 불 정령·폭발 물약처럼 정해진 효과뿐이다.
+- **가운데 무대:** 안쪽에는 칸이 없고, 굴리기 버튼·판정 도구 연출·결투장·알림이 이 빈 공간에 뜬다.
 
--   **함정 칸:** 함정은 한 칸에 하나만 깔 수 있다 (종류 무관, 코너 함정 포함). 함정이 깔린 칸은 보라색 타일로 바뀌고 그 함정의 그림이 보인다 (상대가 숨긴 함정은 물음표). 옷장 칸은 함정과 헷갈리지 않게 청록색이다.
--   **특수 타일 (TileType):** BAKERY(빵집: 생떼 카드 획득) `4, 10, 14, 20번`, PORTAL(옷장 포탈) `9번`(도착 시 보드를 가로질러 16번으로 워프)·`16번`(도착 시 20번으로 워프), 나머지(`1, 2, 3, 5, 7, 8, 11, 13, 15, 17, 19, 21, 22, 23번`)는 NORMAL.
+### **3.2. 턴 상태 머신 (`TurnManager`, `GameEnums.Phase`)**
 
--   **워프 규칙:** (v4.0부터 코너 점프대는 없다) 옷장은 **정확히 멈췄을 때만** 작동하고 스쳐 지나가면 발동하지 않는다. 워프 도착 칸에서 다시 워프하지는 않지만(9→16에서 16의 포탈은 다시 타지 않음) 도착 칸이 빵집(10·20번)이면 카드를 받는다. 법전 `LAW_01 지름길 공사 중`이 있으면 점프 코너와 옷장이 모두 작동하지 않는다. 무인도에 갇힌 말은 점프하지 않는다. 필살기(비행기 직항·알까기 안착)로 도착한 칸은 점프·워프를 다시 타지 않는다. 체스 비숍·쇼기 각행은 코너(6·12·18번)를 스치거나 멈추면 이동 거리가 +2칸이다.
+| 단계 | 하는 일 | 제한 시간 (초) |
+|---|---|---|
+| `ROUND_START` | 증강 라운드(4라운드부터 3라운드마다: 4·7·10·13…)면 전원 동시 3지선다 드래프트 → 고른 증강 확인 | 15 + 확인 4 |
+| `TURN_BEGIN` | 차례 시작. 생떼 카드 1장·필살기를 쓸 수 있다. 회유책 창·스킵·밴 처리 | 10 |
+| `ROLL_WAIT` | 판정 도구 굴리기 (리볼버·야추·블랙잭처럼 이어지는 도구는 여기서 계속) | 10 |
+| `INTERRUPT_ROLL` | 굴림 결과에 끼어들 수 있는 카드가 있는 사람이 있을 때만 여는 개입 창 | 3.5 |
+| `SELECT_PAWN` | 움직일 말 고르기 (시간이 지나면 자동 선택) | 10 |
+| `MOVING_STEP` | 한 칸씩 이동하며 함정·잡기·워프·정령·완주 판정. 공격당한 사람이 막을 카드를 쥐고 있으면 방어 창을 연다 | — |
+| `RESOLUTION` | 업기 선택, 추가 굴림, 특수 승리·완주 판정 → 달성자는 다음 순위로 졸업 (서바이벌 순위제) | 3.5 |
+| `NEUTRAL_NPC` | 라운드의 마지막 차례 뒤: 중립 기물이 정해진 방향으로 1~3칸 걷다가 적 말을 만나면 그 말을 사출하고 사라진다. 사출 목걸이 폭발 등 라운드 끝 효과 | — |
+| `GAME_OVER` | 순위 확정, 결과 화면 | — |
 
--   **완주:** 0번을 정확히 밟거나 넘을 때이며, `LAW_08`(결승선 문턱)이 있으면 눈금이 정확해야 하고 남으면 결승선 바로 앞 칸(23번)에서 멈춘다 (뒤로 튕기지 않는다). **말은 절대 뒤로 가지 않는다(후퇴 삭제, 6.8)**: 음수 눈금은 0칸으로 고정되고, 공격·페널티는 모두 말을 0번 출발선으로 사출시킨다. (중립 NPC `와구와구 유령`만 역방향 순찰을 유지한다.)
-
--   **중앙 오픈 스테이지:** 안쪽에는 타일이 없다. 굴리기 버튼(120px)과 파워 게이지, 주사위·룰렛·화투·마작·타로 연출, 카드 드롭 존과 발동 배너가 모두 이 빈 공간에서 재생되어 타일을 가리지 않는다. 일반 타일은 슈퍼타원 모양의 큼직한 둥근 사각형(한 변 0.108 = 56px), 코너는 1.25배 팔각형이고 점프 코너에는 목적지를 가리키는 화살표가, 반환점에는 깃발이 그려진다 (`BoardSkin.definition`).
-
-### **3.2. 8단계 턴 상태 머신 (TurnManager.gd)**
-
-1.  PHASE_ROUND_START: 1라운드부터 3라운드마다(1, 4, 7, 10, ...) 시작 시 전원 동시 3지선다 증강
-    > 드래프트 (15초)
-
-2.  PHASE_TURN_BEGIN: 현재 턴 플레이어 지정 (UDO 리버스 카드 적용 시 역순
-    > 진행), 타일 함정 설치 및 즉발 카드 사용 가능 구간
-
-3.  PHASE_ROLL_WAIT: 주사위/포커/룰렛 등 판정 도구 실행 대기 (10초).
-    > (PHASE_TURN_BEGIN과 함께 기물 1회용 필살기 사용이 가능한 구간)
-
-4.  PHASE_INTERRUPT_ROLL: \[개입 타이밍 A\] 주사위 결과 조작계 생떼 카드
-    > 개입 대기 (3.5초)
-
-5.  PHASE_SELECT_PAWN: 이동할 내 기물(1\~4번) 선택 (10초)
-
-6.  PHASE_MOVING_STEP: 기물이 한 칸씩 이동하며 실시간으로 타일 설치
-    > 함정(TileAttachment) 및 중앙 법전 룰 체크. 도착 직전 \[개입 타이밍
-    > B\] 체크
-
-7.  PHASE_RESOLUTION: 말 업기, 말 잡기(추가 턴), 승리 조건(말 4개 완주 또는 특수 승리) 체크 → 달성자는 다음 순위로 졸업 (6.19 서바이벌 순위제)
-
-8.  PHASE_NEUTRAL_NPC: (라운드 마지막 턴 종료 시) 보드 위의 사료스탕스
-    > / 와구와구 유령 등 중립 NPC들이 자동 이동 및 사냥 수행. 기물을
-    > 한 번 잡은 NPC는 판에서 사라진다.
+제한 시간은 `GameEnums.PHASE_TIME_*` × 방 규칙 속도(`timer_scale`)다. 판은 라운드 상한(`PacingDirector`)에 닿으면 남은 사람을 진행도 순으로 매기고 끝난다.
 
 ## **4. 콘텐츠 및 밸런스 데이터 시트 (Data Tables v3.0)**
 
@@ -472,7 +387,7 @@
 - **중앙 이벤트 알림 (`EventAnnouncer`):** 교칙 제정(법전 전체를 띄우고 새 줄 강조), 카드 사용(`[P2 발동!]`과 카드 앞면), 함정·설치물 발동, 교칙 작동, 증강 선택, 중립 기물 사냥·소멸, 체스 퀸 승진, 필살기, 친치로 삐끗이 보드 중앙에 1~2.6초 대기열 카드로 뜬다. 떠 있는 동안 사람의 입력과 봇의 행동이 잠기고 클릭하면 넘어간다.
 - **AI 대전 모드:** 놀이터(컴퓨터 3명, 난이도 Fire Level 1~5)에서 P1만 직접 조작하고 컴퓨터는 `BotController`가 `TurnManager.act()`로만 행동한다 (사람과 같은 권한 검증). 판단은 `BotBrain`: 증강은 필살기 기물 > 윷말 > 다른 기물 > 도구 교체 > 교칙 순, 말 선택은 완주·잡기·코너/빵집 정차 점수, 카드·함정 사용, 개입 카드, 러시안 룰렛 멈춤, 그리고 1회용 필살기(적을 많이 맞히는 알까기 각, 앞선 적을 잡는 차 저격, 이득이 큰 워프, 위험할 때의 캐슬링)까지 판단한다. 봇의 함정은 `?함정`으로만 보이고(타일 은신) 봇의 손패는 보이지 않는다. 단계마다 0.3~0.8초의 호흡을 둔다.
 
-### **4.7. 증강 개요 (1.3 기준 98종)**
+### **4.7. 증강 개요 (1.3 기준 96종 + 규칙 수치 2행)**
 
 증강 라운드(4라운드부터 3라운드마다)에 셋 중 하나를 고른다. 단계별로 풀이 넓어진다: 템포 0(초반) 기물 진화·판정 도구·카드 패키지·보급, 템포 1(8R~) 법전·방어 보급 등, 템포 2(14R~) 초증강 (`augments_table.csv`의 `min_tempo`/`max_tempo`, 개발 기록 7.72). 표는 `augments_table.csv`에서 뽑았다.
 
@@ -484,44 +399,47 @@
 | 카드 패키지 (`CARD`) | 3 | 생떼 카드 2장 · 요충지 매설 패키지 · 절대 방어 패키지 |
 | 초증강 (`CHAOS`) | 16 | 강제 연대책임 · 강제 캐슬링 룰렛 · 공산주의 재분배 · 광란의 지뢰밭 · 날조와 선동 · 눈먼 자의 도시 · 도적단 대습격 · 사출 목걸이 · 아우토반 니트로 · 악마의 계약 (영구 가속) · 에르핀의 빵집 털이 · 저격수의 표적 · 주사위 도박사의 영혼 · 판 뒤집기 (모 아니면 도) · 평화주의자 · 폭주 기관차 |
 | 범용 보급 (`UTIL`) | 15 | 관성 드리프트 · 관심사도 지정 · 다이스: 리바이브 · 랜덤 변이 물약 · 손은 눈보다 빨라 · 순보 · 슈파볼트 탑승 · 슬슬 지루한데... · 에심당 뽈사탕 · 올 픽션 · 전군 돌연변이 · 즉발 카드 패키지 · 지뢰제거반 · 필살기 리필 주사 · 현상금 수배서 |
-| 규칙 증강 (`RULE`) | 2 | 리벤지 부스터 · 부스터 발판 |
+| 규칙 수치 (`RULE`, 드래프트에 나오지 않음) | 2 | 리벤지 부스터(사출된 말의 다음 출발 +4칸) · 부스터 발판(+3칸) |
 
-## **5. Godot 4 프로젝트 디렉토리 표준 구조**
-
-> 큰 틀은 v3.0 그대로다. 1.3 기준 수: 기물 9계열(세부 33종), 판정 도구 21종, 생떼 카드 52종, 증강 98종, 보드 4종. 보드 데이터는 `core_engine/board/board_catalog.gd`, 버전 잠금은 `release_gate.gd`, 웹 게임 묶음은 `scenes/game_pack.gd`. 문서는 `docs/`(기획서·예외 규칙·개발 기록·최종 기획·제작 규격서·ui-trial)에 있다.
+## **5. 프로젝트 디렉토리 구조 (1.3 기준)**
 
 ```
 res://
-├─ project.godot / export_presets.cfg      # 가로 고정, 웹 내보내기 셸(head_include)
-├─ vercel.json / .github/workflows/deploy-web.yml   # 웹 배포 (gh-pages → Vercel)
-├─ docs/                                   # GDD_TDD_Master.md, EDGE_CASE_SPEC.md, ui-trial/
-├─ core_engine/                            # [포트폴리오 핵심] IP·UI 종속성 없는 규칙 프레임워크
-│  ├─ board/        board_layout / board_graph / tile_node / tile_attachment / path_cursor,
-│  │                설치물: hotel, mine_number, trap_mine / trap_pit / trap_island / trap_mirror_force / trap_domino
-│  ├─ entities/     board_entity / player_pawn (6계열) / neutral_npc / pawn_catalog (세부 기물·필살기 표)
-│  ├─ rules/        rule_context / rule_book_manager (FIFO 4슬롯) / base_law / law_registry / laws/ (교칙 9종)
-│  ├─ commands/     game_command / command_stack + 카드·필살기 커맨드 (move, bang, castle, drop, tower, wheel, duel ...)
-│  ├─ cards/        생떼 카드 16종 + card_registry
-│  ├─ tools/        판정 도구 13종 + tool_registry (D6, 윷, 룰렛, 홀덤, 친치로, 슬롯, 리볼버, 화투, 마작, 타로, 야추, 블랙잭, 핀볼)
-│  ├─ augments/     증강 드래프트 (augment_def / augment_registry)
-│  ├─ turn_manager / game_state / move_executor / move_report / pawn_skills / duel_rules / victory_checker / turn_snapshot / tarot_effects
-│  ├─ bot_brain / bot_controller              # AI 판단·구동
-│  ├─ network_service                         # 초기 Listen Server 설계 (통합 테스트용)
-│  └─ 온라인·로비: net_game (락스텝) / lobby_service / lobby_model / rtc_link / lobby_code /
-│                  room_code / room_signaling / signal_broker / ntfy_broker / memory_broker /
-│                  match_beacon / quick_match / game_session
-├─ content_trickcal/avatars/               # [2차 창작 리소스 계층] 아바타 에셋 규격 (실제 그림은 후속)
-├─ assets/  fonts/(기본 UI 글꼴 ONE 모바일 POP체 `game_ui_font.tres` + 대체 NanumGothic, 출처 고지 `ONE-Mobile-POP-NOTICE.md`), ui/trickcal/ (이미지 스킨)
-├─ scenes/                                 # 뷰(View)
-│  ├─ hub_kit (허브·대기방 부품) / rulebook (규칙 책자) / main_board (HUD·보드·시점·좌석·연출) / duel_arena (가위바위보 결투장) / roll_pad / roll_presenter / event_announcer / mobile_support / ui_skin
-│  ├─ start_menu / lobby / lobby_theme       # 민트 테마 시작·로비
-│  └─ avatar_slot / avatar_catalog
-├─ tools/generate_ui_skin.py
-└─ tests/        단위: test_*.gd (27파일, run_tests.gd) · 화면: ui_smoke / ui_fx_test / ui_menu_test /
-                 ui_lobby_test / ui_net_test · net/ (WebSocket RPC) · e2e/ (실제 Chromium + mock_ntfy)
+├─ project.godot · export_presets.cfg       # 1366×768 16:9 고정, 웹 내보내기 (셸: web/shell.html)
+├─ .github/workflows/deploy-web.yml         # 테스트 → 웹 빌드(본체 + 게임 묶음 + 아바타 묶음) → gh-pages
+├─ docs/                                    # 기획서 · 예외 규칙 · 개발 기록 · 최종 기획 · visual/(제작 규격서) · ui-trial/(그림 작업 기록)
+├─ core_engine/                             # IP·UI 종속성 없는 규칙 코어 (스크립트 약 170개)
+│  ├─ turn_manager · game_state · game_enums · turn_snapshot · move_executor · move_report
+│  ├─ pawn_skills · special_victory · victory_checker · match_rules · release_gate · duel_rules · npc_sweep
+│  ├─ bot_brain · bot_controller · bot_temper · game_session · player_save · emote_catalog · collectible_buffs
+│  ├─ 온라인: net_game · lobby_service · rtc_link · room_code · room_signaling · signal_broker · ntfy_broker
+│  │         · memory_broker · match_beacon · quick_match · lobby_model · lobby_code · network_service(초기 설계·테스트용)
+│  ├─ board/      board_spec · board_catalog · board_graph · board_layout · tile_node · tile_attachment · mountain_spirits
+│  │              + 설치물·함정 (hotel, trap_banana, trap_urchin, trap_ifrit, trap_cucumber …, attachment_registry)
+│  ├─ entities/   board_entity · player_pawn · neutral_npc · pawn_catalog
+│  ├─ rules/      rule_book_manager · base_law(LawResource) · rule_context · law_registry · tempo_up · pacing_director · laws/
+│  ├─ commands/   game_command · command_stack + 카드·필살기 커맨드 (bang, duel, castle, appease, loan …)
+│  ├─ cards/      생떼 카드 52종 (base_card · card_counter · card_* …)
+│  ├─ tools/      판정 도구 21종 + tool_registry · roll_result
+│  ├─ augments/   augment_def · augment_registry · super_augments · super_status · utility_augments
+│  └─ data/       data_table · game_data(CSV 읽기) · l10n · l10n_translation
+├─ content_trickcal/                        # 2차 창작 리소스 계층
+│  ├─ data/       cards_table · dice_table · augments_table · translations · ui_strings (CSV) · patch_notes.json
+│  ├─ avatars/    avatar_01~08 (초상·전신·잡기 포즈·대기 애니메이션·보이스)
+│  └─ illustrations/  증강·도구·교칙·기물 아이콘, 연출 그림
+├─ assets/        backgrounds · bgm · board(보드별 바닥·칸 그림) · cards(카드 삽화) · fonts · fx · models(3D) · sfx · ui
+├─ scenes/                                  # 화면 (스크립트 약 170개)
+│  ├─ main_board (보드·HUD·연출 총괄) · start_menu · lobby · lobby_theme · hub_kit · rulebook · update_notes · room_rules_panel · room_ban_panel
+│  ├─ 판정 도구 연출: roll_pad · roll_presenter · dice_roll_3d · stage_yacht/blackjack/pinball · pirate_barrel_view · scratch_ticket_view …
+│  ├─ 결투: duel_arena · duel_*_stage · duel_game_slot
+│  ├─ 연출·컷인: capture_cutin · kill_cutin · super_fx · *_stage(초증강·특수 승리) · victory_* · result_comic_*
+│  └─ 공통: mobile_support · ui_skin · card_skin · board_skin · augment_art · sfx · game_pack · texture_cache · event_announcer
+├─ web/           웹 셸·로딩 화면·링크 미리보기 그림·바깥 칸 무늬
+├─ tools/         내보내기(export_game_pack · export_avatar_packs · stamp_web_build · make_itch_index) · 임포트 정책(optimize_texture_imports)
+│                 · 그림/모델 생성 스크립트 · audio/(효과음 생성·고르기)
+└─ tests/         단위: test_*.gd 82개 (run_tests.gd, TEST_ONLY로 하나만) · 화면: ui_*_test.gd 79개 · net/(WebSocket 2프로세스)
+                  · e2e/(실제 Chromium + mock_ntfy 로비) · web/(캐시 검사)
 ```
-
--   **굴림 위젯 표시:** 굴리기 버튼·룰렛 원판·리볼버 패드는 내가 굴릴 차례(`PHASE_TURN_BEGIN`/`PHASE_ROLL_WAIT`)에만 보이고, 굴림이 끝나면(말 선택·이동 단계) 지워서 보드 가운데가 가려지지 않게 한다. 룰렛·리볼버 패드는 돌아가는 연출 중에는 남는다. 보드 타일의 번호 글자는 없앴다 (설명 태그·말·설치물 배지만 남음).
 
 ## **6. 개발 기록**
 
