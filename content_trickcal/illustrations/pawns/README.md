@@ -55,4 +55,4 @@
 - 각 원본은 1254×1254 RGBA. 원본 픽셀을 편집하지 않고 복사했으며 SHA-256 일치를 확인했다. 런타임은 기존 import 설정으로 최대 256px, 무손실 압축, 밉맵, 알파 경계 보정을 유지한다.
 - 보드·프로필·기물 선택은 PawnToken, 증강 메달은 AugmentArt의 기존 자동 매핑을 사용한다. 새 도형 폴백이나 UI 전용 중복 이미지는 만들지 않았다.
 - 검증: PAWN_ART_COVERAGE 32/32, 전체 480 tests / 591212 assertions / 0 failures, UI_FX_OK, 실제 native 보드·선택 슬롯·플레이어 4색 받침대·증강 메달 캡처 ARCADE_ART_OK.
-- 상세 제작·복구 기록은 docs/ui-trial/arcade-pawns-art-v01.md와 작업공간 outputs/pawns-arcade-v01/에 보관한다. 웹 배포는 하지 않았다.
+- 상세 제작·복구 기록은 docs/ui-trial/board/arcade-pawns-art-v01.md와 작업공간 outputs/pawns-arcade-v01/에 보관한다. 웹 배포는 하지 않았다.

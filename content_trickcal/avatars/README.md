@@ -8,7 +8,7 @@
 무기·얼굴 접촉점은 캐릭터별로 맞췄으며 효과·배경·글자는 그림에 포함하지 않는다.
 이미지가 없으면 같은 캐릭터의 `fullbody.png` → `portrait.png` 순서로 대체한다.
 원본은 1254×1254, 런타임은 최대 1024픽셀/밉맵/투명 경계 보정으로 불러온다.
-생성 프롬프트·원본 해시는 `docs/ui-trial/avatar-capture-poses.json`에 기록했다.
+생성 프롬프트·원본 해시는 `docs/ui-trial/avatars/avatar-capture-poses.json`에 기록했다.
 
 ---
 

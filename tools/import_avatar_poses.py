@@ -38,7 +38,7 @@ for record in records:
  settings=settings.replace('process/size_limit=0','process/size_limit=1024')
  target.with_name(target.name+'.import').write_text(settings,encoding='utf-8')
  results.append(dict(**record,path=new_path,width=im.width,height=im.height,format=im.mode,sha256=digest,bytes=target.stat().st_size,transparent_fraction=round(empty,3),alpha_bbox=alpha.getbbox(),runtime_max_size=1024,import_quality=.85,image_model='Not exposed by native image_gen',reference_sha256=hashlib.sha256((folder/'fullbody.png').read_bytes()).hexdigest()))
-dest=repo/'docs/ui-trial/avatar-capture-poses.json'
+dest=repo/'docs/ui-trial/avatars/avatar-capture-poses.json'
 dest.write_text(json.dumps(results,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
 print(f'Imported {len(results)} transparent poses; source bytes unchanged; {sum(r["bytes"] for r in results)} source bytes')
 for r in results:print(r['avatar'],r['pose'],r['width'],r['height'],r['transparent_fraction'])

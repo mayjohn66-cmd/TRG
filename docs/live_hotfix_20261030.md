@@ -1,21 +1,21 @@
-# Live six-bug hotfix
+# 라이브 버그 6건 핫픽스 (2026-10-30)
 
-Production base: `b1fe101c7c3486436a15ced30d2181d63d369c20` (`claude/tender-gauss-i4mq1o`). This patch was built in an isolated checkout; unfinished `local/v1.01` cutscenes and assets are excluded.
+배포 기준: `b1fe101c7c3486436a15ced30d2181d63d369c20` (`claude/tender-gauss-i4mq1o`). 따로 떼어 낸 체크아웃에서 만든 패치라, 끝나지 않은 `local/v1.01` 컷신과 자산은 빠져 있다.
 
-1. **Pinball / blocked targets:** the turn-start stage used the ordinary roll-phase visibility flag, so it covered the board before card use. Pinball now needs an explicit preparation action. Readiness survives asynchronous host acknowledgement and is consumed when rolling. All card targets, pawn choices and counter prompts use CanvasLayer 10000 (Godot caps CanvasItem z_index at 4096); tools also hide while a choice is open.
-2. **Spaces in editors:** board, duel and rulebook shortcut handlers processed input before TextEdit/LineEdit. A shared guard returns for focused native text editors and browser input/textarea/contenteditable elements.
-3. **Blocked kills / deaths:** reversible damage updated authoritative stats before counters finished. Counterable hits now keep pending deltas; declining/timeout commits once, successful defence restores the pawn without applying the deltas. Central ejection also checks wards and shields before recording damage. Existing counter-retaliation exclusions remain.
-4. **Normal finisher:** completion previously used the survival/spectated-seat graduation rule. A real four-pawn completion now ends immediately, ranks remaining active seats from current race progress and stops the match timer.
-5. **Mobile cards:** touch drags no longer bypass confirmation. First tap opens a large, scrollable description with a separate enabled/disabled Use button; only that button activates the card. Hand and augment description typography is enlarged. Korean, English and Japanese details are checked at two narrow landscape sizes.
-6. **Final diagnostics:** retiring players sets their pawns to synthetic finished positions and removes won laws. Serializable board/law facts are now captured before retirement, preserved by network/rewind snapshots and used by final diagnostic reports. Earlier special graduates retain their own departure facts.
+1. **핀볼 / 막힌 대상 고르기:** 차례 시작 무대가 일반 굴림 단계의 표시 플래그를 써서, 카드를 쓰기 전에 보드를 가렸다. 핀볼은 이제 명시적인 준비 동작이 있어야 뜬다. 준비 상태는 호스트의 비동기 확인 뒤에도 유지되고 굴릴 때 소모된다. 모든 카드 대상·말 고르기·방어 창은 CanvasLayer 10000을 쓴다 (Godot는 CanvasItem z_index를 4096으로 제한한다). 고르기 창이 열려 있으면 도구도 숨긴다.
+2. **입력 칸의 스페이스:** 보드·결투·도감의 단축키 처리가 TextEdit/LineEdit보다 먼저 입력을 받았다. 공통 확인 함수가 초점을 가진 글 입력 칸과 브라우저 input/textarea/contenteditable 요소이면 단축키를 처리하지 않는다.
+3. **막힌 처치 / 사망 기록:** 되돌릴 수 있는 피해가 방어 판정이 끝나기 전에 엔진 기록을 바꿨다. 이제 방어할 수 있는 공격은 바뀔 값을 대기시켜 두고, 그냥 맞기·시간 초과면 한 번 반영하고, 방어에 성공하면 값을 반영하지 않고 말을 되돌린다. 가운데 사출 처리도 피해를 기록하기 전에 보호·보호막을 확인한다. 기존 방어 되갚기 제외 규칙은 그대로다.
+4. **일반 완주 종료:** 완주가 서바이벌·관전 자리 졸업 규칙을 썼다. 이제 말 4개가 실제로 완주하면 바로 끝나고, 남은 자리는 지금 레이스 진행도로 순위를 매기고, 경기 시계를 멈춘다.
+5. **모바일 카드:** 터치로 끌어도 확인을 건너뛰지 않는다. 첫 탭은 크고 스크롤되는 설명 창과 따로 켜지고 꺼지는 [사용하기] 버튼을 연다. 그 버튼만 카드를 쓴다. 손패·증강 설명 글자를 키웠다. 한·영·일 상세를 좁은 가로 화면 두 크기에서 확인했다.
+6. **최종 진단:** 물러나는 플레이어는 말이 가짜 완주 위치로 바뀌고 이긴 법전이 지워진다. 이제 물러나기 전에 보드·법전 정보를 저장 가능한 형태로 담아 두고, 네트워크·되감기 스냅샷에 유지해 최종 진단 보고서에 쓴다. 먼저 특수 승리로 졸업한 사람은 자기 졸업 당시 정보를 유지한다.
 
-Focused, silent validation:
+범위를 좁힌 소리 없는 검증:
 
 ```sh
 godot --headless --audio-driver Dummy --path . -s res://tests/run_live_hotfix.gd
 godot --headless --audio-driver Dummy --path . -s res://tests/ui_live_hotfix_test.gd
 ```
 
-`[check:live-hotfix]` selects these checks in deployment CI. No whole-game suite is requested for this hotfix. Temporary browser fixtures and audio muting are local QA only and are not exported to production.
+배포 CI에서 `[check:live-hotfix]`가 이 검사를 고른다. 이 핫픽스에는 게임 전체 테스트를 요청하지 않았다. 임시 브라우저 테스트 장치와 소리 끄기는 로컬 검수용이며 배포에 들어가지 않는다.
 
-Local result: 132 core assertions and 46 UI assertions passed. The UI checks send real pointer/key events for trap placement, UNO target selection, feedback spaces, the first card tap and the Use button. Native rendering was also checked. In the muted ego-browser session, an actual UNO target click consumed the card, `hello` + Space + `world` remained `hello world`, and a touch on Use consumed the previewed card and closed the preview without script errors. Browser surface screenshots were unavailable in this environment; visual layout was checked with the native renderer and layout bounds.
+로컬 결과: 핵심 단언 132개, UI 단언 46개 통과. UI 검사는 함정 설치, UNO 대상 고르기, 피드백 스페이스, 첫 카드 탭, [사용하기] 버튼에 실제 포인터·키 이벤트를 보낸다. 실제 렌더도 확인했다. 소리를 끈 브라우저에서 실제 UNO 대상 클릭이 카드를 소모했고, `hello` + 스페이스 + `world`가 `hello world`로 남았고, [사용하기] 터치가 미리 본 카드를 소모하고 스크립트 오류 없이 미리보기를 닫았다. 이 환경에서는 브라우저 화면 캡처를 쓸 수 없어 화면 배치는 실제 렌더러와 배치 경계로 확인했다.

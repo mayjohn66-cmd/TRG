@@ -1,20 +1,13 @@
-# Chinchiro rice bowl
+# 친치로 밥그릇
 
-`rice_bowl_v01.tscn` is the in-game model; `rice_bowl_v01.glb` is a portable copy.
-Both contain the same 5,376-triangle ceramic mesh with baked vertex colours.
-The bowl has a closed underside, foot, curved inner/outer walls and rounded lip.
-The mouth is open, and the blue floor ring is part of the ceramic surface.
+`rice_bowl_v01.tscn`이 게임에서 쓰는 모델이고, `rice_bowl_v01.glb`는 다른 도구용 복사본이다. 둘 다 정점 색을 구워 넣은 같은 5,376 삼각형 도자기 메시다. 그릇은 막힌 바닥, 굽, 휘어진 안·바깥 벽, 둥근 입술을 가진다. 입구는 열려 있고 파란 바닥 고리는 도자기 표면의 일부다.
 
-Regenerate both from the checked-in profile with:
+저장소에 있는 단면 정보로 둘 다 다시 만든다:
 
 ```sh
 godot --headless --path . -s res://tools/build_chinchiro_bowl.gd
 ```
 
-The native model is 6.62 units wide and 2.2049 units high. Its inner floor is at
-Y = 0.30. The same profile supplies the presentation's contact-height constraint.
-`DiceRoll3D` instances the scene only for CHINCHIRO and keeps one cached model.
-The die's confirmed engine result is unchanged; the scene adds no random roll.
+기본 모델은 폭 6.62, 높이 2.2049 단위이고 안쪽 바닥은 Y = 0.30이다. 같은 단면 정보가 연출의 접촉 높이 제한에도 쓰인다. `DiceRoll3D`는 CHINCHIRO일 때만 이 장면을 만들고 모델 하나를 캐시에 둔다. 주사위의 확정된 엔진 결과는 바뀌지 않고, 장면은 무작위 굴림을 더하지 않는다.
 
-This is a Godot-generated mesh, not a Blender asset. It needs no runtime editor,
-external textures, physics server, or additional download.
+Blender 자산이 아니라 Godot로 만든 메시다. 실행 중 에디터, 외부 텍스처, 물리 서버, 추가 다운로드가 필요 없다.

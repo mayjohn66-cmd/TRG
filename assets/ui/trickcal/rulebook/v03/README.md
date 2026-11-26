@@ -1,9 +1,9 @@
-# Rounded rulebook skin
+# 둥근 규칙 도감 스킨
 
-Generated with built-in image_gen. The source PNG is copied unchanged; manifest.json records the original path, dimensions, hash and complete edit prompt.
+내장 `image_gen`으로 만들었다. 원본 PNG는 수정 없이 복사했고, `manifest.json`에 원래 경로·크기·해시·전체 편집 프롬프트를 적었다.
 
-Replaces only the previous almost-square panel base. The generated source has generous corner arcs, measured at about 24% of its cropped width. `rulebook_visuals.gd` derives texture size from the requested visible radius and protects the complete curve with matching nine-slice margins. This restores round book edges, pills, entry tiles and circular icon pedestals while keeping straight side segments parallel.
+예전의 거의 네모난 패널 바탕만 바꿨다. 생성한 원본은 모서리 호가 넉넉해서, 잘라 낸 폭의 약 24%다. `rulebook_visuals.gd`가 원하는 보이는 반경에서 텍스처 크기를 계산하고, 맞는 9-slice 여백으로 곡선 전체를 보호한다. 덕분에 책 가장자리·알약 모양·항목 타일·원형 아이콘 받침이 둥글게 돌아오고 곧은 변은 평행을 유지한다.
 
-Existing icon pictures, colors, text and control layout remain unchanged. Native inspection is scoped to the rulebook; CI uses the existing rulebook-art scope.
+기존 아이콘 그림·색·글자·조작 배치는 그대로다. 실제 확인은 도감에만 했고, CI는 기존 `rulebook-art` 범위를 쓴다.
 
-The circular icon pedestals and bullet dots use a second dedicated round source image without nine-slicing, preventing seams where corner slices would otherwise meet. Both original source PNGs remain unchanged.
+원형 아이콘 받침과 글머리 점은 9-slice 없이 따로 만든 둥근 원본 그림을 써서, 모서리 조각이 만나는 이음매가 생기지 않는다. 두 원본 PNG 모두 그대로다.

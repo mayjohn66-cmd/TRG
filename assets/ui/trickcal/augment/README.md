@@ -1,13 +1,13 @@
-# Shared augment card background
+# 증강 카드 공통 배경
 
-`card_base.png` is the unmodified 1024×1536 RGBA image generated with built-in imagegen. Rounded corners retain source transparency. It contains only the painted neutral frame and blank reading surfaces.
+`card_base.png`는 내장 imagegen으로 만든 1024×1536 RGBA 그림을 수정 없이 둔 것이다. 둥근 모서리는 원본의 투명도를 유지한다. 그림에는 칠한 중립 틀과 빈 읽기 면만 있다.
 
-`AugmentCardSkin` places this one texture behind every augment card. `augment_card_tint.gdshader` derives luminance and applies the current category color; separate recolored PNGs are unnecessary. Icons, names, rules, rarity borders, hover glow and selection remain live UI elements.
+`AugmentCardSkin`이 모든 증강 카드 뒤에 이 텍스처 하나를 깐다. `augment_card_tint.gdshader`가 밝기를 뽑아 지금 계열 색을 입히므로 색별 PNG를 따로 만들 필요가 없다. 아이콘·이름·규칙·등급 테두리·호버 빛·선택은 실시간 UI 요소로 남는다.
 
-Runtime texture: maximum 768px, lossy quality 0.9, mipmaps. The 260×390 card keeps its original emblem and description placement. The former small debug category label above the emblem is omitted; the title begins at y=170 to match the painted title band. Utility supply uses blue (#4dabf7) for the shared background, emblem ring and category border, clearly distinct from pawn evolution's mint.
+게임 내 텍스처: 최대 768px, 손실 품질 0.9, 밉맵. 260×390 카드는 원래 엠블럼과 설명 위치를 유지한다. 엠블럼 위의 작은 디버그용 계열 글자는 뺐고, 제목은 칠한 제목 띠에 맞춰 y=170에서 시작한다. 범용 보급은 공통 배경·엠블럼 고리·계열 테두리에 파랑(#4dabf7)을 써서 기물 진화의 민트와 분명히 구분한다.
 
-The exact generation prompt, source path and source SHA-256 are recorded in `card_base.source.json` and `docs/ui-trial/augment-background-v01.json`. Native renderer captures in the task outputs show the neutral base, six categories and real draft screens.
+정확한 생성 프롬프트·원본 경로·원본 SHA-256은 `card_base.source.json`과 `docs/ui-trial/augments/augment-background-v01.json`에 있다. 작업 산출물의 실제 렌더러 캡처로 중립 바탕, 6계열, 실제 증강 선택 화면을 확인할 수 있다.
 
-Frame alignment uses the live StyleBoxFlat border thickness and radius, including 3px normal, 4px gold and 5px rare frames. Two concentric rounded rectangles draw a constant 4.5px inner rim, parallel to that outline on all four sides. Only the corners curve. The painted rim and its inward-sloping corner joins are excluded; the original leaf details are sampled separately. The source PNG is unchanged.
+틀 맞춤은 실시간 StyleBoxFlat 테두리 두께와 반경(보통 3px, 금색 4px, 희귀 5px)을 쓴다. 동심 둥근 사각형 두 개가 그 외곽선과 네 변 모두 평행한 4.5px 안쪽 테두리를 그린다. 모서리만 휜다. 칠한 테두리와 안쪽으로 비스듬한 모서리 이음은 쓰지 않고, 원래 잎 장식은 따로 샘플링한다. 원본 PNG는 바뀌지 않는다.
 
-Reading surfaces retain the neutral paper texture; horizontal separators repeat the center profile. Explicit mip LOD follows the screen-space footprint during hover/scale. The earlier center-profile-only correction left concave painted corner joins and was insufficient. The replacement rim is defined by geometry across the full perimeter. Native before/after 2x purple and red card captures, six-category gallery and actual draft screens are in task outputs/augment-flat-v02.
+읽기 면은 중립 종이 질감을 유지하고, 가로 구분선은 가운데 단면을 반복한다. 명시적 밉 LOD가 호버·확대 중 화면 크기를 따른다. 예전의 가운데 단면만 고치는 방식은 오목하게 칠한 모서리 이음을 남겨 부족했다. 새 테두리는 둘레 전체에 걸쳐 도형으로 정의한다. 2배 보라·빨강 카드 실제 전후 캡처, 6계열 갤러리, 실제 증강 선택 화면은 작업 산출물 `outputs/augment-flat-v02`에 있다.

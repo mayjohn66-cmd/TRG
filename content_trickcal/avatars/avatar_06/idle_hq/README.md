@@ -1,7 +1,9 @@
-# 다야 high-resolution lobby idle
+# 다야 로비 대기 동작 (고해상도)
 
-Source: https://viewer.dclnslde.com/ → 사도 → 다야, default Normal skin, Idle_1. Native viewer full-frame PNG ZIP at 16 fps with a 1536px camera; interaction disabled and fit-to-spine disabled. No screenshot, AI redraw or upscaled old frames.
+출처: https://viewer.dclnslde.com/ → 사도 → 다야, 기본 Normal 스킨, Idle_1. 뷰어에서 1536px 카메라·16fps로 전체 프레임 PNG ZIP을 받았다 (상호작용·스파인 맞춤 끔). 스크린샷·AI 재작화·옛 프레임 확대는 쓰지 않았다.
 
-All 43 transparent 1536×1536 PNG files are preserved byte-for-byte from the native archive. `manifest.json` records exact file hashes, timing and shared crop. Every frame uses the same AtlasTexture region, preventing frame-to-frame crop jitter. Runtime imports use 640×640 lossy WebP at quality 0.85 without mipmaps, following the original Erpin size-reduction settings in fd0053d. The common crop is scaled to 640px so size and position stay the same. This reduces runtime quality/resolution from the earlier 1024px lossless import; the original 1536px PNGs remain intact.
+투명 1536×1536 PNG 43장을 받은 그대로 바이트 단위로 보관한다. `manifest.json`에 파일 해시·시간·공통 자르기 영역을 적었다. 모든 프레임이 같은 AtlasTexture 영역을 써서 프레임마다 잘림이 흔들리지 않는다.
 
-`../idle_hq.tres` is automatically preferred by HubKit.avatar_full. Avatar-specific PCK export keeps this animation out of the main first-load package and retains the existing fallback while downloading. Original skeleton/atlas/texture files are retained in the task's outputs/avatars-hq-20261025/source/Daya/ folder.
+게임 내 임포트: **1024px 손실 WebP 품질 0.9·밉맵** (2026-11, 8명 통일. 처음에는 640px 0.85·밉맵 없음이었다). 공통 자르기 영역은 임포트 크기에 맞춰 배율을 바꿔 크기와 위치가 같게 유지한다. 원본 1536px PNG는 그대로다. 저화질 설정용 640px 묶음은 `../idle_lq/`에 따로 있다.
+
+`../idle_hq.tres`를 `HubKit.avatar_full`이 먼저 쓴다. 아바타별 PCK 내보내기로 이 애니메이션은 첫 로딩 본체에서 빠지고, 받는 동안은 기존 대체 그림을 보여 준다. 원래 골격·아틀라스·텍스처 파일은 작업 산출물 `outputs/avatars-hq-20261025/source/Daya/`에 있다.

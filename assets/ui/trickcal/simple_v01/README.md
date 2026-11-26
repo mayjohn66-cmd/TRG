@@ -1,9 +1,9 @@
-# Simple common UI skins v0.1
+# 단순 공통 UI 스킨 v0.1
 
-User direction: simple UI, familiar existing green/cream palette. No clover, ornamental corners, metallic frames or flashy highlights. Primary actions retain #FFDD74 yellow; secondary actions retain #FFF3C7 cream, panels use #E9F5CF light green, outlines use #5DA530 and live text #333333. Existing green header and inset skins stay unchanged.
+사용자 방향: 단순한 UI, 익숙한 기존 초록·크림 색. 클로버·장식 모서리·금속 틀·화려한 하이라이트는 쓰지 않는다. 주 버튼은 노랑 #FFDD74, 보조 버튼은 크림 #FFF3C7, 패널은 연초록 #E9F5CF, 외곽선은 #5DA530, 글자는 #333333을 유지한다. 기존 초록 머리 띠와 안쪽 면 스킨은 그대로다.
 
-Three original PNGs were generated with built-in imagegen and copied byte-for-byte. skins.source.json records prompts, source names, SHA-256 and visible bounds. Rejected ornate and hollow-panel attempts are not project assets.
+원본 PNG 3장을 내장 imagegen으로 만들어 바이트 그대로 복사했다. `skins.source.json`에 프롬프트·원본 이름·SHA-256·보이는 경계를 적었다. 버린 화려한 시안과 속이 빈 패널 시안은 프로젝트 자산이 아니다.
 
-UiSkin samples the visible source bounds and caches display-sized textures, then uses 9-slice stretching. Backgrounds and buttons share their geometry across normal, hover, pressed and disabled states. Hover/press use a small brightness change; keyboard focus is a simple green outline. Labels, click areas, margins, sounds and game rules remain live controls. Existing specialized circular roll, hub and augment skins are separate.
+`UiSkin`이 원본의 보이는 경계를 샘플링해 표시 크기 텍스처를 캐시한 뒤 9-slice로 늘린다. 배경과 버튼은 보통·호버·누름·비활성 상태에서 같은 형태를 쓴다. 호버·누름은 밝기만 조금 바꾸고, 키보드 초점은 단순한 초록 외곽선이다. 글자·누르는 영역·여백·소리·게임 규칙은 실시간 컨트롤로 남는다. 원형 굴림·허브·증강용 전용 스킨은 따로 있다.
 
-Runtime import: max 512px, lossy quality 0.9, no mipmaps. Originals are unchanged. Native screenshots and menu/lobby smoke checks are stored in task outputs/simple-ui-v01. Browser testing uses ego-browser per user direction and requires the CLI to be available.
+게임 내 임포트: 최대 512px, 손실 품질 0.9, 밉맵 없음. 원본은 그대로다. 실제 스크린샷과 메뉴·로비 스모크 검사는 작업 산출물 `outputs/simple-ui-v01`에 있다. 브라우저 검사는 사용자 지시에 따라 ego-browser를 쓰며 그 CLI가 있어야 한다.

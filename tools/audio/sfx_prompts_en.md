@@ -1,19 +1,21 @@
-# TRG Sound Effect Prompts (English)
+# TRG 효과음 프롬프트 (영어)
 
-Every block below is a complete prompt: description + shared style + duration. Paste it as is into the sound generator.
-File name is shown next to each heading. For sounds that repeat often (clicks, steps, cards, ticks) also make `_02`, `_03` variations.
-Sound effects go in `content_trickcal/audio/sfx/`, background music (section 1-7) in `content_trickcal/audio/bgm/`.
+아래 블록 하나하나가 완성된 프롬프트다(설명 + 공통 스타일 + 길이). 소리 생성기에 그대로 붙여 넣는다. **생성기 입력이므로 프롬프트 본문은 영어로 둔다.**
+제목 옆에 파일 이름이 있다. 자주 반복되는 소리(클릭·걸음·카드·틱)는 `_02`, `_03` 변형도 만든다.
+효과음은 `content_trickcal/audio/sfx/`, 배경 음악(1-7절)은 `content_trickcal/audio/bgm/`에 넣는다.
 
-**Shared style (already included in every SFX prompt):**
+**공통 스타일 (모든 효과음 프롬프트에 이미 들어 있음):**
 
 > Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence.
 
-**Delivery spec (not part of the prompt):** OGG or WAV, mono for SFX (stereo is fine for BGM), 44.1 kHz, peak -1 dBFS, natural fade-out tail.
+(귀여운 2D 애니메 보드게임, 나무 말·플라스틱 칩·종이 카드·주사위 같은 장난감 탁상 질감, 살짝 과장된 만화 느낌, 깔끔하고 건조한 믹스, 목소리 없음, 무음 없이 바로 시작.)
 
-Total: 227 prompts - replacements for existing sounds 63 (61 SFX + 2 BGM), new sounds 164. ★ = high priority (14).
+**납품 규격 (프롬프트에는 넣지 않음):** OGG 또는 WAV, 효과음은 모노(배경 음악은 스테레오 가능), 44.1kHz, 최대 -1 dBFS, 자연스러운 페이드아웃 꼬리.
+
+합계: 프롬프트 227개 — 기존 소리 교체 63개(효과음 61 + 배경 음악 2), 새 소리 164개. ★ = 높은 우선순위(14개).
 
 
-## 1-1 Existing · UI & flow
+## 1-1 기존 · UI와 흐름
 
 **`ui_click_01.ogg`** — 0.08s
 ```
@@ -84,7 +86,7 @@ Rank secured: celebratory bell chime and small applause burst, a pawn graduating
 Results podium rising: mechanical stage lift rumble into a bright orchestral hit with sparkles. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 2 seconds.
 ```
 
-## 1-2 Existing · pawn movement & captures
+## 1-2 기존 · 말 이동과 잡기
 
 **`hop_01.ogg`** — 0.15s
 ```
@@ -127,7 +129,7 @@ Portal warp: swirling magical whoosh sucked inward with a pitch-down shimmer. St
 Promotion sparkle: ascending magical chime arpeggio with glittering bells. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 0.8 seconds.
 ```
 
-## 1-3 Existing · cards & traps
+## 1-3 기존 · 카드와 함정
 
 **`card_pick_01.ogg`** — 0.15s
 ```
@@ -170,7 +172,7 @@ Toy hotel building popping up from the board: wooden blocks stacking quickly end
 Burying a mine: soft dirt scoop and a small electronic arming beep. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 0.5 seconds.
 ```
 
-## 1-4 Existing · law book
+## 1-4 기존 · 법전
 
 **`law_01.ogg`** — 0.6s
 ```
@@ -181,7 +183,7 @@ A new school rule enacted: heavy rubber stamp slam on paper with a judge's gavel
 An old rule page pushed out: paper sliding away with a soft descending whoosh. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 0.5 seconds.
 ```
 
-## 1-5 Existing · judgment tools & minigames
+## 1-5 기존 · 판정 도구와 미니게임
 
 **`dice_roll_01.ogg`** — 0.6s
 ```
@@ -240,7 +242,7 @@ Halli Galli tabletop bell slapped: bright metallic 'ding!' ringing out. Style: c
 Steel pinball ball hitting a metal bumper, springy ping. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 0.2 seconds.
 ```
 
-## 1-6 Existing · super augments
+## 1-6 기존 · 초증강
 
 **`rail_lay_01.ogg`** — 0.3s
 ```
@@ -275,7 +277,7 @@ Chaotic rummaging in a bakery: trays clanging, bread tumbling, cartoon ruckus. S
 Sharp anime blade slash cut-in, swift metallic swish. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 0.4 seconds.
 ```
 
-## 1-7 Existing · background music
+## 1-7 기존 · 배경 음악
 
 **`lobby_daylife.ogg`** — 90s · loop
 ```
@@ -286,7 +288,7 @@ Cheerful looping lobby BGM for a cute anime board game: bright daytime acoustic 
 Looping in-match BGM for a playful competitive board game at night: bouncy pizzicato strings, marimba and soft synth bass, mischievous and lively, 120 BPM. Style: instrumental game music for a cute anime board game, no vocals. Duration: about 120 seconds, seamless loop.
 ```
 
-## 2-1 New · split overused generic sounds
+## 2-1 신규 · 너무 자주 쓰는 일반 소리 나누기
 
 **★ `good_small_01.ogg`** — 0.3s
 ```
@@ -353,7 +355,7 @@ Rare super-augment reveal: deep impact followed by a dazzling sparkle sting. Sty
 Solemn law-augment reveal: gavel knock and a church bell chime with a choir pad. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 1 seconds.
 ```
 
-## 2-2 New · judgment tools
+## 2-2 신규 · 판정 도구
 
 **`d6_shake_01.ogg`** — 0.4s
 ```
@@ -456,7 +458,7 @@ Dart thudding into a cork dartboard. Style: cute 2D anime board game, playful to
 Bullseye: dart thunk followed by a bright bell and a small crowd cheer. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 0.8 seconds.
 ```
 
-## 2-3 New · individual card effects
+## 2-3 신규 · 카드별 효과
 
 **★ `defense_success_01.ogg`** — 0.5s
 ```
@@ -547,7 +549,7 @@ Duel begins: big gong hit followed by a tense string sting. Style: cute 2D anime
 Riffle shuffling a deck of cards. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 0.6 seconds.
 ```
 
-## 2-4 New · neutral summons
+## 2-4 신규 · 중립 소환
 
 **`npc_alert_01.ogg`** — 1s
 ```
@@ -586,7 +588,7 @@ Burning sizzle 'tsss' with flame flare-up. Style: cute 2D anime board game, play
 Electric beam fading out with dwindling crackles and a rising shimmer. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 0.8 seconds.
 ```
 
-## 2-5 New · board & pawn states
+## 2-5 신규 · 보드와 말 상태
 
 **★ `stack_up_01.ogg`** — 0.2s
 ```
@@ -653,7 +655,7 @@ Deflating 'pfft' with a comedic boing, a move fizzles out. Style: cute 2D anime 
 Quick bouncy 'boing' of a piece jumping over another. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 0.2 seconds.
 ```
 
-## 2-6 New · pawn ultimate skills
+## 2-6 신규 · 기물 필살기
 
 **`skill_castle_01.ogg`** — 0.8s
 ```
@@ -716,7 +718,7 @@ Digging soil quickly then an arming beep. Style: cute 2D anime board game, playf
 Hammering construction and a building rising with a ding. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 0.8 seconds.
 ```
 
-## 2-7 New · law book & special victories
+## 2-7 신규 · 법전과 특수 승리
 
 **★ `law_progress_01.ogg`** — 0.4s
 ```
@@ -775,7 +777,7 @@ Dark horse upset victory: quick reversal whoosh and a surprised 'boing' fanfare.
 Hurricane victory: howling wind whirl with flying debris. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 1.5 seconds.
 ```
 
-## 2-8 New · super augments
+## 2-8 신규 · 초증강
 
 **`super_board_flip_01.ogg`** — 1s
 ```
@@ -814,7 +816,7 @@ Engine revving then a nitro boost blast. Style: cute 2D anime board game, playfu
 Violent hurricane wind with pieces flying away. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 2 seconds.
 ```
 
-## 2-9 New · augments & round flow
+## 2-9 신규 · 증강과 라운드 흐름
 
 **`augment_reroll_01.ogg`** — 0.4s
 ```
@@ -845,7 +847,7 @@ Paper card flying into the hand, whoosh and soft tap. Style: cute 2D anime board
 Hand is full: muffled blocked thunk. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 0.3 seconds.
 ```
 
-## 2-10 New · results & cutscenes
+## 2-10 신규 · 결과와 컷신
 
 **`comic_slide_01.ogg`** — 0.2s
 ```
@@ -884,7 +886,7 @@ Party poppers bursting with confetti fluttering. Style: cute 2D anime board game
 Short closing fanfare for game over. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 1.5 seconds.
 ```
 
-## 2-11 New · UI & meta
+## 2-11 신규 · UI와 메타
 
 **`ui_open_01.ogg`** — 0.15s
 ```
@@ -955,7 +957,7 @@ Panic emote: comedic sweat-drop 'ploop' with a nervous wobble, no voice. Style: 
 Sad emote: droopy descending 'boing-ng' with a sigh-like tone, no voice. Style: cute 2D anime board game, playful toy and tabletop textures (wooden pawns, plastic chips, paper cards, dice), slightly exaggerated cartoon feel, clean dry mix, no vocals or speech, starts instantly with no silence. Duration: about 0.4 seconds.
 ```
 
-## 2-12 New · duel minigames
+## 2-12 신규 · 결투 미니게임
 
 **`rps_reveal_01.ogg`** — 0.3s
 ```
