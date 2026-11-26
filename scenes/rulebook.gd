@@ -634,10 +634,16 @@ func _build_notebook() -> void:
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	column.add_child(scroll)
+	var detail_margin := MarginContainer.new()
+	detail_margin.name = "DetailSafeMargins"
+	detail_margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	detail_margin.add_theme_constant_override("margin_right", 14)
+	detail_margin.add_theme_constant_override("margin_bottom", 12)
+	scroll.add_child(detail_margin)
 	_left_holder = VBoxContainer.new()
 	_left_holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_left_holder.add_theme_constant_override("separation", 10)
-	scroll.add_child(_left_holder)
+	detail_margin.add_child(_left_holder)
 	var medal := _art(&"badge", Vector2(80, 96))
 	medal.name = "RulebookBadge"
 	_place_note(medal, Vector2(740, 124), Vector2(80, 96))
@@ -805,14 +811,16 @@ func _layout_notebook() -> void:
 		_note_leather.size = extent
 		_note_paper.position = Vector2(16,16)
 		_note_paper.size = extent-Vector2(32,32)
-		_note_column.position = Vector2(36,26)
-		_note_column.scale = Vector2.ONE*1.4
-		_note_column.size = (extent-Vector2(72,118))/1.4
-		_medal.position = Vector2(extent.x-104,-16)
-		_popup_close.position = extent-Vector2(184,80)
+		# Render fonts, card borders and paper at their final size, without
+		# magnifying an already laid-out control tree.
+		_note_column.position = Vector2(36,30)
+		_note_column.scale = Vector2.ONE
+		_note_column.size = extent-Vector2(72,142)
+		_medal.position = Vector2(extent.x-104,16)
+		_popup_close.position = extent-Vector2(192,96)
 		_popup_close.size = Vector2(160,64)
-		_next_entry.position = extent-Vector2(184+184,80)
-		_prev_entry.position = extent-Vector2(184+184*2,80)
+		_next_entry.position = extent-Vector2(192+184,96)
+		_prev_entry.position = extent-Vector2(192+184*2,96)
 	else:
 		_notebook_page.position = Vector2.ZERO
 		_notebook_page.size = STAGE
@@ -827,10 +835,15 @@ func _layout_notebook() -> void:
 		_medal.position = Vector2(740+BOOK_SHIFT_X,124)  # 위쪽 [기본 규칙]·[도감] 탭 아래 (겹치지 않게)
 		_popup_close.position = Vector2(708+BOOK_SHIFT_X,668)
 		_popup_close.size = Vector2(84,36)
+	_note_column.add_theme_constant_override("separation", 12 if popup else 6)
+	_chapter_label.add_theme_font_size_override("font_size", 20 if popup else 15)
+	_notebook_title.add_theme_font_size_override("font_size", 40 if popup else 30)
+	# Keep the title away from the inset medal, including translated titles.
+	_notebook_title.get_parent().custom_minimum_size.x = _note_column.size.x-160.0 if popup else 0.0
 	_notebook_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART if popup else TextServer.AUTOWRAP_OFF
 	_notebook_title.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_notebook_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_notebook_title.custom_minimum_size.x = minf(720.0,_note_column.size.x-104.0) if popup else 0.0
+	_notebook_title.custom_minimum_size.x = minf(720.0,_note_column.size.x-264.0) if popup else 0.0
 	_popup_close.add_theme_font_size_override("font_size",22 if popup else 16)
 	if popup:
 		_notebook_root.get_parent().move_child(_notebook_root, -1)  # 격자 위에 뜬다
@@ -1277,13 +1290,15 @@ func _picture(data: Dictionary, extent: Vector2) -> Control:
 func _detail(data: Dictionary) -> Array[Control]:
 	var nodes: Array[Control] = []
 	var enlarged := group_of(spread)==1 and entry>=0
-	var hero_size := Vector2(220,220) if enlarged else HERO_ART
+	var hero_size := Vector2(288,288) if enlarged else HERO_ART
 	var tone: Color = data.get("tone", Color("5fc1e8"))
 	var hero := HBoxContainer.new()
-	hero.add_theme_constant_override("separation", 14)
+	hero.add_theme_constant_override("separation", 24 if enlarged else 14)
 	hero.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if data.has("card"):
-		hero.add_child(_card_face(data["card"],Vector2(240,336) if enlarged else CARD_FACE))
+		var face := _card_face(data["card"],Vector2(320,448) if enlarged else CARD_FACE)
+		face.set_meta("native_card_detail", true)
+		hero.add_child(face)
 	elif data.get("texture", null) != null or ART.has(data.get("art", &"")) or VISUALS.has(data.get("art", &"")):
 		hero.add_child(_rounded_art(_picture(data,hero_size),hero_size,HERO_RADIUS,tone))
 	else:
@@ -1295,7 +1310,7 @@ func _detail(data: Dictionary) -> Array[Control]:
 		frame.add_child(_picture(data, Vector2(112, 112)))
 		hero.add_child(frame)
 	var side := VBoxContainer.new()
-	side.add_theme_constant_override("separation", 8)
+	side.add_theme_constant_override("separation", 16 if enlarged else 8)
 	side.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	side.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hero.add_child(side)
@@ -1328,8 +1343,24 @@ func _detail(data: Dictionary) -> Array[Control]:
 		nodes.append(_tip(str(data["tip"])))
 	if enlarged:
 		for index: int in range(1,nodes.size()): side.add_child(nodes[index])
+		_detail_native_type(hero)
 		return [hero]
 	return nodes
+
+
+## Larger live text replaces the old 1.4x subtree transform. CardSkin already
+## builds its labels and shader geometry for the requested final card size.
+func _detail_native_type(node: Control) -> void:
+	if node.has_meta("native_card_detail"):
+		return
+	for key: String in ["font_size", "normal_font_size", "bold_font_size"]:
+		if node.has_theme_font_size_override(key):
+			node.add_theme_font_size_override(key, roundi(node.get_theme_font_size(key)*1.3))
+	if node is Label and node.custom_minimum_size.x == 150.0:
+		node.custom_minimum_size.x = 180.0
+	for child: Node in node.get_children():
+		if child is Control:
+			_detail_native_type(child)
 
 
 ## 작은 묶음 (보드판의 고유 칸 설명): 그림 + 이름 + 꼬리표 + 요약, 아래 표.
