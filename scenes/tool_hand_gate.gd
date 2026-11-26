@@ -44,6 +44,9 @@ func setup(id: StringName, details: Dictionary) -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for tile: Variant in details.get("tiles", []):
 		tiles.append(int(tile))
+		MahjongFace.prepare(int(tile))  # 패를 꺼내는 순간 그림을 읽느라 멈칫하지 않게 미리 읽어 둔다
+	if id == &"DICE_MAHJONG":
+		MahjongFace.prepare(-1)
 	var column := VBoxContainer.new()
 	column.name = "GateColumn"
 	column.add_theme_constant_override("separation", 10)
@@ -164,9 +167,9 @@ func item_count() -> int:
 
 func _process(delta: float) -> void:
 	_clock += delta
-	if _column != null:
+	if _column != null and _clock < 0.25:
 		_column.reset_size()
-		_column.position = -_column.size * 0.5  # 글자·그림 크기가 정해진 뒤 가운데에 둔다
+		_column.position = -_column.size * 0.5  # 글자·그림 크기가 정해진 뒤 가운데에 둔다 (처음 몇 프레임만: 매 프레임 다시 재지 않는다)
 
 
 func _finish() -> void:

@@ -29,6 +29,8 @@ var _end_yaw := 0.0
 ## 플레이어가 끌어서 돌린 만큼 (1.3.1, 보드 위 대기 통). 연출에는 쓰지 않는다.
 var user_yaw := 0.0
 var _rest_t := -1.0
+## 보드 위 대기 통: 바뀔 때만 한 번 그린다 (기다리는 동안 매 프레임 3D를 그리지 않는다).
+var _stage: SubViewport = null
 
 
 func _init() -> void:
@@ -70,6 +72,7 @@ func show_rest(holes: Array) -> void:
 	_start_yaw = _end_yaw
 	_rest_t = THUNK_END + 0.2
 	apply_time(_rest_t)
+	_redraw_once()
 
 
 ## 대기 통을 옆으로 돌린다 (라디안).
@@ -77,6 +80,12 @@ func spin(delta: float) -> void:
 	user_yaw = wrapf(user_yaw + delta, -PI, PI)
 	if _rest_t >= 0.0:
 		apply_time(_rest_t)
+		_redraw_once()
+
+
+func _redraw_once() -> void:
+	if _stage != null:
+		_stage.render_target_update_mode = SubViewport.UPDATE_ONCE
 
 
 static func caption(details: Dictionary, steps: int, can_continue: bool = false) -> String:
@@ -142,6 +151,7 @@ func _build_stage() -> void:
 	stage.msaa_3d = Viewport.MSAA_2X
 	stage.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
 	add_child(stage)
+	_stage = stage
 	var display := TextureRect.new()
 	display.texture = stage.get_texture()
 	display.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
