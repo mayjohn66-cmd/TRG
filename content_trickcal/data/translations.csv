@@ -3185,3 +3185,197 @@ TRPG,TRPG,TRPG
 손가락으로 은박을 긁으세요!,Scratch the foil with your finger!,指で銀はがしを削ろう！
 %d / %d %s 골랐어요,Picked %d / %d %s,%d / %d %s 選択
   [미니카] 부스터 발판: 카드 %d장,  [Mini Car] Booster pad: %d cards,  [ミニカー] ブースター床: カード %d枚
+말 [b]4개를 모두[/b] 한 바퀴 돌려 결승선(0번)에 먼저 넣는 레이스예요.,A race to be first to bring [b]all 4 pawns[/b] around one lap and into the goal (tile 0).,[b]4つの駒すべて[/b]を1周させて、先にゴール（0番）へ入れるレースです。
+법전의 조건을 채운 채 내 차례가 끝나면 바로 졸업,End your turn with a Codex condition met to graduate right away,法典の条件を満たしたまま自分の手番が終わるとすぐ卒業
+생떼 카드 최대 %d장,Up to %d Tantrum cards,駄々っ子カード最大%d枚
+판 길이,Match length,対戦の長さ
+%d라운드가 끝나면 남은 사람은 진행 순위로 확정,"After round %d, everyone left is ranked by progress",%dラウンドが終わると、残りの人は進行度で順位確定
+서바이벌 순위,Survival ranking,サバイバル順位
+말이 0번을 [b]밟거나 넘으면[/b] 완주예요. 눈금이 남아도 괜찮아요. 4개 모두 완주하면 [b]순위 확정[/b]!,"A pawn finishes when it [b]lands on or passes[/b] tile 0, even with steps left over. Finish all 4 to [b]lock in your rank[/b]!",駒が0番を[b]踏むか越える[/b]とゴールです。出目が余っても大丈夫。4つすべてゴールすると[b]順位確定[/b]！
+먼저 해낸 순서대로 (말 4개 완주 또는 특수 승리),In the order players get there (4 pawns finished or a Special Victory),先に達成した順（駒4つゴール、または特殊勝利）
+같은 순간,At the same moment,同時のとき
+"지금 차례인 사람이 먼저, 그다음 차례 순서","The current player first, then in turn order",今の手番の人が先、その後は手番順
+마지막 한 명,Last one left,最後のひとり
+남은 사람이 한 명이 되면 그 사람이 꼴찌로 판이 끝나요,"When only one player is left, they take last place and the match ends",残りがひとりになると、その人が最下位で対戦が終わります
+라운드 상한,Round cap,ラウンド上限
+완주한 말 수 → 결승까지 남은 거리 순으로 순위,"Ranked by pawns finished, then distance left to the goal",ゴールした駒の数 → ゴールまでの残り距離の順で順位
+"순위가 정해진 사람(졸업)은 말이 모두 빠지고, 깔아 둔 함정·호텔도 사라져요","Once your rank is set (graduation), your pawns leave the board and your traps and hotels disappear",順位が決まった人（卒業）は駒がすべて抜け、置いた罠・ホテルも消えます
+졸업한 사람의 차례와 증강 선택은 건너뛰어요,Graduated players skip their turns and augment picks,卒業した人の手番と増強の選択は飛ばします
+증강으로 기본 말을 [b]체스·장기·쇼기·바둑·모노폴리…[/b] 말로 진화시켜요. 말마다 늘 켜진 능력(패시브)과 한 판에 한 번 쓰는 필살기가 있어요.,"Augments evolve your basic pawns into [b]Chess, Janggi, Shogi, Baduk, Monopoly…[/b] pieces. Each has an always-on ability (passive) and a special move you can use once per match.",増強で基本の駒を[b]チェス・チャンギ・将棋・囲碁・モノポリー…[/b]の駒に進化させます。駒ごとに常時発動の能力（パッシブ）と、1試合に1回使える必殺技があります。
+"필살기는 내 차례 시작에, 굴리기 전에 써요","Use special moves at the start of your turn, before rolling",必殺技は自分の手番の最初、振る前に使います
+같은 기물은 두 번 받을 수 없어요,You can't get the same piece twice,同じ駒は2回もらえません
+기본 주사위로 시작해 증강으로 [b]윷·룰렛·홀덤·슬롯·다트…[/b]로 바꿔요. 도구마다 칸 수와 족보가 달라요.,"You start with a basic die and swap it through augments for [b]Yut, roulette, Hold'em, slots, darts…[/b]. Each tool has its own spaces and hands.",基本のサイコロから始め、増強で[b]ユッ・ルーレット・ホールデム・スロット・ダーツ…[/b]に替えます。ツールごとにマス数と役が違います。
+0칸이 나오는 도구는 대부분 그대로 턴이 끝나요 (윷 낙·타로 광대 등),"With most tools, a 0-space result ends your turn (Yut Nak, Tarot Fool, etc.)",0マスが出るツールはたいていそのまま手番が終わります（ユッのナク・タロットの愚者など）
+게임 중 오른쪽 카드에 지금 도구의 규칙표가 나와요,"During a match, the card on the right shows your current tool's table",対戦中は右のカードに今のツールのルール表が出ます
+카드·타로처럼 직접 골라 뒤집는 도구도 있어요,"Some tools, like cards and Tarot, let you pick and flip yourself",カードやタロットのように、自分で選んでめくるツールもあります
+카드 얻기,Getting cards,カードの入手
+빵집(보드마다 편의점·마녀 상점) · 물 정령 · 증강 · 일부 기물 능력,Bakery (Convenience Store / Witch Shop on some boards) · Water spirit · augments · some piece abilities,パン屋（ボードによってコンビニ・魔女の店）・水の精霊・増強・一部の駒の能力
+카드 쓰기,Playing cards,カードを使う
+내 차례에 굴리기 전 한 장 (방어 카드는 공격받을 때),One per turn before rolling (Defense cards when you're attacked),自分の手番に振る前に1枚（防御カードは攻撃されたとき）
+증강으로 교칙을 올리면 모두에게 특수 승리 조건이 열려요 (최대 %d개),Enacting a rule through an augment opens a Special Victory condition for everyone (up to %d),増強で教則を載せると、全員に特殊勝利の条件が開きます（最大%d個）
+법전 조건은 [b]내 차례가 끝날 때[/b] 채워져 있으면 특수 승리!,Meet a Codex condition [b]when your turn ends[/b] for a Special Victory!,法典の条件を[b]自分の手番が終わるとき[/b]満たしていれば特殊勝利！
+교칙이 법전에 오른 순간부터 기록을 새로 세요,Counting starts fresh the moment a rule enters the Codex,教則が法典に載った瞬間から記録を数え直します
+한 턴은 [b]카드 → 굴리기 → 말 고르기 → 정산[/b] 순서예요. 모두 한 번씩 하면 한 라운드예요.,"A turn goes [b]Card → Roll → Pick a pawn → Resolve[/b]. Once everyone has had a turn, that's one round.",1手番は[b]カード → 振る → 駒を選ぶ → 精算[/b]の順です。全員が1回ずつ行うと1ラウンドです。
+굴리기 전에 한 장 (안 써도 돼요) · 필살기도 이때,One card before rolling (optional) · special moves too,振る前に1枚（使わなくてもOK）・必殺技もこのとき
+도착한 칸의 효과 · 잡기 · 업기,Landing tile effect · capture · stacking,到着マスの効果・捕獲・おんぶ
+"친선전에서는 단계마다 제한 시간이 있고, 시간이 지나면 자동으로 진행돼요 (컴퓨터 대전은 제한 없음)",In friendly matches each step has a time limit and moves on automatically when it runs out (no limit against the computer),フレンド対戦では段階ごとに制限時間があり、時間が過ぎると自動で進みます（コンピューター対戦は制限なし）
+라운드 끝에는 소환된 중립 기물이 움직여요,"At the end of each round, summoned neutral pieces move",ラウンドの終わりに、召喚された中立の駒が動きます
+카드를 [b]보드판 위로 끌어다 놓으면[/b] 발동해요. 한 차례에 한 장만 낼 수 있어요.,[b]Drag a card onto the board[/b] to play it. You can play only one per turn.,カードを[b]ボードの上へドラッグ[/b]すると発動します。1手番に1枚だけ出せます。
+일기토 데스매치는 상대 프로필이나 말 위에 놓아요,Drop Duel Deathmatch on a rival's profile or pawn,一騎討ちデスマッチは相手のプロフィールか駒の上に置きます
+밴에 걸리면 그 차례에는 카드·필살기를 못 써요,"While banned, you can't use cards or special moves that turn",バンされている間は、その手番にカード・必殺技を使えません
+[b]굴리기[/b] 버튼(또는 스페이스)을 누르면 내 도구를 굴려요. 도구에 따라 직접 고르거나 조작할 수 있어요.,Press the [b]Roll[/b] button (or Space) to use your tool. Some tools let you pick or control things yourself.,[b]振る[/b]ボタン（またはスペース）を押すと自分のツールを振ります。ツールによっては自分で選んだり操作したりできます。
+꾹 눌러 파워,Hold for power,長押しでパワー
+"주사위·윷·친치로·야추·핀볼은 꾹 누르면 게이지, 떼면 던져요","Dice, Yut, Chinchiro, Yacht and Pinball: hold to fill the gauge, release to throw",サイコロ・ユッ・チンチロ・ヨット・ピンボールは長押しでゲージ、離すと投げます
+직접 고르기,Pick it yourself,自分で選ぶ
+타로·화투·홀덤·마작·오미쿠지·쿠키·아이스크림·캡슐은 뒷면을 골라 뒤집어요,"Tarot, Hwatu, Hold'em, Mahjong, Omikuji, Cookie, Ice Cream and Capsule: pick face-down items to flip",タロット・花札・ホールデム・麻雀・おみくじ・クッキー・アイスクリーム・カプセルは裏向きのものを選んでめくります
+직접 조작,Hands-on,直接操作
+"룰렛은 원판을 잡아 돌리고, 슬롯은 눌러 릴을 멈추고, 다트는 끌어 던지고, 복권은 손가락으로 긁어요","Grab and spin the roulette wheel, tap to stop the slot reels, drag to throw darts, and scratch the ticket with your finger",ルーレットは盤をつかんで回し、スロットは押してリールを止め、ダーツはドラッグで投げ、くじは指で削ります
+이어 굴리기,Keep going,続けて振る
+리볼버·야추·블랙잭·해적 룰렛은 멈출지 더 할지 골라요,"Revolver, Yacht, Blackjack and Pirate Roulette: choose to stop or keep going",リボルバー・ヨット・ブラックジャック・海賊ルーレットは、止めるか続けるかを選びます
+가만히 있으면 저절로 진행돼요,"If you do nothing, it plays out on its own",何もしなければ自動で進みます
+굴리기 전에는 버튼 위에 내 도구가 놓여 있어요,"Before you roll, your tool sits above the button",振る前は、ボタンの上に自分のツールが置かれています
+아래 말 카드나 보드 위의 말을 누르면 그 말이 눈금만큼 움직여요.,Tap a pawn card below or a pawn on the board to move it by the roll.,下の駒カードかボード上の駒を押すと、その駒が出目の分だけ動きます。
+말을 가리키면 도착 칸과 이동 거리 계산(기본 + 보너스)이 미리 보여요,Hover a pawn to preview its landing tile and the move math (base + bonuses),駒を指すと、到着マスと移動距離の計算（基本＋ボーナス）が先に見えます
+카드에 도착 결과가 미리 보여요 (잡기·빵집·워프·정령…),"Cards preview what happens on arrival (capture, Bakery, warp, spirit…)",カードに到着の結果が先に見えます（捕獲・パン屋・ワープ・精霊…）
+출발선의 말을 고르면 새로 출발해요,Pick a pawn at the start to send it out,スタートラインの駒を選ぶと新しく出発します
+도착한 칸의 효과가 터져요. 공격받은 사람은 방어 카드로 받아칠지 고를 수 있어요.,The landing tile's effect fires. Anyone attacked can choose to answer with a Defense card.,到着したマスの効果が発動します。攻撃された人は防御カードで返すかを選べます。
+적 말,Enemy pawn,敵の駒
+그 칸에 멈추면 잡기!,Stop on it to capture!,そのマスに止まると捕獲！
+내 말,Your pawn,自分の駒
+그 칸에 멈추면 업기 (함께 움직여요),Stop on it to stack (they move together),そのマスに止まるとおんぶ（一緒に動きます）
+코너 · 부스터 발판 · 빵집 자리 · 옷장 자리 칸의 효과,"Effects of corners, Booster pads, and the Bakery-spot and Wardrobe-spot tiles",コーナー・ブースター床・パン屋の位置・クローゼットの位置のマスの効果
+지나가거나 멈추면 그 함정이 발동해요,Passing or stopping can set off its trap,通過したり止まったりすると、その罠が発動します
+보드마다 빵집 자리·옷장 자리의 칸이 달라요 ([b]도감 → 보드판[/b]),Each board puts different tiles on the Bakery and Wardrobe spots ([b]Catalog → Board[/b]),ボードごとにパン屋の位置・クローゼットの位置のマスが違います（[b]図鑑 → ボード[/b]）
+굴림은 앞으로만,Rolls only go forward,出目は前にだけ
+굴림은 언제나 앞으로 가요. 여러 보너스로 더 멀리 튀어 나가요.,"Rolls always move you forward, and bonuses push you even farther.",出目はいつも前に進みます。いろいろなボーナスでさらに先へ飛び出します。
+잡혀서 출발선으로 간 말이 다시 나올 때 +%d칸,+%d spaces when a captured pawn sets out again,捕まってスタートに戻った駒が再出発するとき+%dマス
+%s번에 딱 멈추면 +%d칸,Stop exactly on %s for +%d spaces,%s番にぴったり止まると+%dマス
+딱 멈추면 다음 굴림 +1,Stop exactly for +1 on your next roll,ぴったり止まると次の出目+1
+판이 길어지면 차례 첫 이동 +1~3칸,"In long matches, +1 to 3 spaces on each turn's first move",対戦が長引くと手番の最初の移動+1〜3マス
+뒤로 가는 건 불 정령·폭발 물약 같은 정해진 효과뿐이에요,Only specific effects like the Fire spirit or the Explosive Potion move you back,後ろに下がるのは火の精霊・爆発の薬のような決まった効果だけです
+%d라운드부터,From round %d,%dラウンドから
+"%d·%d·%d라운드처럼 3라운드마다, 라운드 시작에 모두가 동시에 3장 중 하나를 골라요.","On rounds %d, %d, %d and so on, every 3 rounds, everyone picks 1 of 3 at the same time at the start of the round.",%d・%d・%dラウンドのように3ラウンドごと、ラウンドの始めに全員が同時に3枚から1枚を選びます。
+처음부터,From the start,最初から
+기물 진화 · 판정 도구 · 카드 패키지 · 보급,Piece evolution · Judgment Tools · card packs · supplies,駒の進化・判定ツール・カードパック・補給
+%d라운드(과열)부터,From round %d (Overheat),%dラウンド（オーバーヒート）から
+특수 승리 법전 같은 고급 증강,Advanced augments like Special Victory laws,特殊勝利の法典のような上級増強
+%d라운드(광기)부터,From round %d (Frenzy),%dラウンド（狂気）から
+판을 뒤흔드는 초증강,Hyper Augments that shake up the board,盤面を揺さぶる超増強
+카드 자리마다 한 번씩 다시 뽑을 수 있어요,You can reroll each card slot once,カードの枠ごとに1回ずつ引き直せます
+1~%d라운드는 기본 주사위로 규칙을 익혀요,Rounds 1 to %d use the basic die so you can learn the rules,1〜%dラウンドは基本のサイコロでルールに慣れます
+자세한 건 [b]도감 → 법전·보급·초증강[/b],See [b]Catalog → Codex / Supply / Hyper Augments[/b],詳しくは[b]図鑑 → 法典・補給・超増強[/b]
+%d·%d·%d라운드,Rounds %d·%d·%d,%d・%d・%dラウンド
+판이 길어지면 [b]게임이 점점 빨라져요[/b]. 단계가 오르는 라운드 시작에 크게 경고해요.,"The longer the match, [b]the faster the game gets[/b]. A big warning shows at the start of each stage-up round.",対戦が長引くと[b]ゲームがだんだん速くなります[/b]。段階が上がるラウンドの始めに大きく警告します。
+%d라운드 · 과열,Round %d · Overheat,%dラウンド・オーバーヒート
+차례 첫 이동 +1칸 · 리벤지 +6칸 · 고급 증강 등장 · 법전이 비어 있으면 1개 자동 제정,+1 to each turn's first move · Revenge +6 spaces · Advanced augments appear · one law is enacted automatically if the Codex is empty,手番の最初の移動+1マス・リベンジ+6マス・上級増強が登場・法典が空なら1つ自動制定
+%d라운드 · 광기,Round %d · Frenzy,%dラウンド・狂気
+차례 첫 이동 +2칸 · 리벤지 +8칸 · 초증강 등장,+2 to each turn's first move · Revenge +8 spaces · Hyper Augments appear,手番の最初の移動+2マス・リベンジ+8マス・超増強が登場
+%d라운드 · 대붕괴,Round %d · Meltdown,%dラウンド・大崩壊
+방 규칙 스피드전은 %d·%d·%d라운드에 올라요,"With the Speed Match room rule, stages rise on rounds %d·%d·%d",部屋ルールのスピード戦は%d・%d・%dラウンドに上がります
+결승선은 [b]슬슬 지루한데...[/b] 보급을 쓸 때만 당겨져요 (체크무늬 칸),The goal line moves closer only when someone uses the [b]Getting Kinda Bored...[/b] supply (checkered tiles),ゴールラインは[b]そろそろ退屈だな…[/b]の補給を使ったときだけ近づきます（チェック柄のマス）
+%d라운드가 끝나면 남은 사람은 진행 순위로 순위 확정,"After round %d, everyone left is ranked by progress",%dラウンドが終わると、残りの人は進行度で順位確定
+특수 칸은 대부분 [b]딱 멈출 때만[/b] 작동해요 (지나가기만 하면 그대로),Most special tiles work [b]only when you stop exactly[/b] on them (passing does nothing),特殊マスはたいてい[b]ぴったり止まったときだけ[/b]働きます（通過するだけならそのまま）
+"출발선(0번)에는 함정을 깔 수 없고, 잡기도 없어요","No traps can go on the start (tile 0), and there are no captures there",スタートライン（0番）には罠を置けず、捕獲もありません
+워프·잡기로 자리를 옮겼으면 버프는 없어요,No buff if a warp or capture moved you there,ワープ・捕獲で位置が変わったときはバフなし
+버프는 겹쳐 쌓이지 않아요,The buff doesn't stack,バフは重なりません
+한 바퀴의 절반이에요. 여기를 지나면 말이 강해져요.,The halfway point of the lap. Some pieces get stronger once they pass it.,1周の半分の地点です。ここを過ぎると駒が強くなります。
+체스 폰,Chess Pawn,チェスのポーン
+반환점 이상에 닿으면 [b]퀸[/b]으로 영구 승진,Promotes to [b]Queen[/b] for good once it reaches the halfway corner,折り返し地点以上に着くと[b]クイーン[/b]に永久昇格
+쇼기 말,Shogi pieces,将棋の駒
+반환점 이상을 지나면 승급(나리),Promote (Nari) past the halfway corner,折り返し地点以上を過ぎると成る（昇格）
+모노폴리 비행기,Monopoly Airplane,モノポリーの飛行機
+반환점을 지날 때마다 카드 +1,+1 card every time it passes the halfway corner,折り返し地点を通るたびにカード+1
+굴린 눈금으로 딱 멈추면 %d칸 더 날아가요.,Stop exactly on it with a roll to fly %d spaces farther.,出目でぴったり止まると%dマスさらに飛びます。
+날아간 칸에서 다시 발판을 밟아도 한 번 더 날지는 않아요,Landing on another pad after flying doesn't launch you again,飛んだ先でまた床を踏んでも、もう一度は飛びません
+날아가는 동안 지나치는 호텔에는 붙잡히지 않아요,Hotels you fly past don't stop you,飛んでいる間に通り過ぎるホテルには捕まりません
+모노폴리 미니카는 발판을 밟으면 카드 +1,The Monopoly Mini Car gets +1 card when it lands on a pad,モノポリーのミニカーは床を踏むとカード+1
+상대가 숨긴 함정은 물음표로 보여요 (방 규칙으로 모두 공개할 수도 있어요),Traps hidden by rivals show as question marks (a room rule can reveal them all),相手が隠した罠は？マークで見えます（部屋ルールで全部公開にもできます）
+코너 함정은 누구에게나 공개되고 정해진 라운드가 지나면 사라져요,Corner traps are visible to everyone and vanish after a set number of rounds,コーナー罠は誰にでも公開され、決まったラウンドが過ぎると消えます
+코너·빵집 자리·옷장 자리·부스터 발판에는 일반 함정을 깔 수 없어요,"Normal traps can't go on corners, the Bakery and Wardrobe spots, or Booster pads",コーナー・パン屋の位置・クローゼットの位置・ブースター床には通常の罠を置けません
+모노폴리 강아지는 이 칸들을 지나가기만 해도 카드 +1,The Monopoly Puppy gets +1 card just for passing these tiles,モノポリーの子犬はこれらのマスを通過するだけでカード+1
+멈춘 쪽이 잡아요 (보통은 스치기만 하면 안 잡혀요),"The pawn that stops captures (usually, just passing doesn't)",止まった側が捕まえます（ふつうは通過するだけでは捕まりません）
+업힌 말,Stacked pawns,おんぶされた駒
+함께 업혀 있던 말도 같이 날아가요,Pawns stacked with it are sent back too,一緒におんぶされていた駒も一緒に飛ばされます
+잡지 않고 업어요,They stack instead of capturing,捕まえずにおんぶします
+킹 체커·거대 멜론처럼 지나가며 잡는 말도 있어요,"Some pieces, like the King Checker or the giant melon, capture as they pass",キングチェッカー・巨大メロンのように、通りながら捕まえる駒もいます
+백돌 보호막·방어 카드로 막을 수 있어요,A White Stone shield or a Defense card can stop it,白石のバリア・防御カードで防げます
+출발선으로 돌아가 다시 출발해요 (리벤지 부스터),Back to the start to set out again (Revenge Booster),スタートに戻って再出発します（リベンジブースター）
+0번을 밟거나 넘으면 끝. 4개 모두 완주하면 순위 확정,Land on or pass tile 0 to finish. Finish all 4 to lock in your rank,0番を踏むか越えると終わり。4つすべてゴールで順位確定
+업기,Stacking,おんぶ
+함께 이동,Move together,一緒に移動
+내 말이 선 칸에 도착하면 [b]업을지[/b] 물어봐요. 업으면 하나로 합쳐 함께 움직여요.,Arrive on a tile with your own pawn and you're asked [b]whether to stack[/b]. Stacked pawns merge and move together.,自分の駒がいるマスに着くと[b]おんぶするか[/b]聞かれます。おんぶすると1つにまとまって一緒に動きます。
+업으면,When stacked,おんぶすると
+한 번 굴려 여러 말이 함께 전진 · 함께 완주,One roll moves several pawns · they finish together,1回振るだけで複数の駒が一緒に前進・一緒にゴール
+대신,But,そのかわり
+잡히면 업힌 말까지 한꺼번에 출발선으로,"If caught, every stacked pawn goes back to the start at once",捕まるとおんぶした駒までまとめてスタートへ
+업기 자석,Stack magnet,おんぶ磁石
+이동이 끝난 칸 바로 앞·뒤에 내 말이 있으면 한 칸 당겨 자동으로 합류,"If your own pawn is right in front of or behind where you stop, you're pulled one tile and join it automatically",移動が終わったマスのすぐ前後に自分の駒がいると、1マス引き寄せて自動で合流
+출발선에서는 업지 않아요,No stacking on the start,スタートラインではおんぶしません
+업지 않고 같은 칸에 따로 서 있으면 말마다 따로 판정해요,Pawns sharing a tile without stacking are judged separately,おんぶせず同じマスに別々に立っている駒は、駒ごとに判定します
++%d칸,+%d spaces,+%dマス
+잡혀서 출발선으로 날아간 말은 다음에 다시 출발할 때 %d칸 더 가요.,A pawn sent back to the start by a capture goes %d spaces farther the next time it sets out.,捕まってスタートへ飛ばされた駒は、次に再出発するとき%dマス多く進みます。
+한 번 쓰면 꺼져요,It's used up after one move,1回使うと消えます
+"템포 업 과열 +6칸, 광기부터 +8칸으로 커져요",It grows to +6 spaces at Tempo Up Overheat and +8 from Frenzy,テンポアップのオーバーヒートで+6マス、狂気から+8マスに増えます
+출발 전이던 말·완주한 말은 받지 않아요,Pawns that hadn't left the start and finished pawns don't get it,出発前だった駒・ゴールした駒はもらえません
+막을 수 있음,Can be blocked,防げる
+상대의 말이나 차례를 직접 노리는 카드예요. 쓰면 먼저 [b]공격 카드 발동![/b] 경보가 뜨고 어떤 카드인지 공개돼요.,Cards that target a rival's pawns or turn directly. Playing one first sounds an [b]Attack card activated![/b] alert and reveals the card.,相手の駒や手番を直接狙うカードです。使うとまず[b]攻撃カード発動！[/b]の警報が出て、どのカードかが公開されます。
+말 날리기,Send pawns back,駒を飛ばす
+상대 말을 출발선으로 사출해요 (그 말에 업힌 말도 함께),Launches a rival pawn back to the start (with any pawns stacked on it),相手の駒をスタートへ射出します（その駒におんぶされた駒も一緒に）
+자리 흔들기,Shake up positions,位置を揺さぶる
+말 위치를 바꾸거나 설치물을 부숴요,Swaps pawn positions or breaks placed objects,駒の位置を入れ替えたり、設置物を壊したりします
+차례 방해,Disrupt turns,手番の妨害
+"상대의 카드·필살기를 막거나, 차례를 건너뛰게 하거나, 자동으로 진행시켜요","Blocks a rival's cards and special moves, skips their turn, or makes it play itself",相手のカード・必殺技を封じたり、手番を飛ばしたり、自動で進めさせたりします
+맞은 사람은 [b]공격 방어[/b]·[b]만능 방어[/b] 카드로 막을 수 있어요,The target can block with an [b]Attack Defense[/b] or [b]All-round Defense[/b] card,受けた人は[b]攻撃防御[/b]・[b]万能防御[/b]カードで防げます
+사출 면역(기억상실빔 라운드)·수은 보호막이 있으면 날아가지 않아요,Launch immunity (an Amnesia Beam round) or a Mercury shield keeps you from being sent back,射出免疫（記憶喪失ビームのラウンド）・水銀バリアがあれば飛ばされません
+카드마다 자세한 효과는 [b]도감 → 카드[/b],Each card's exact effect: [b]Catalog → Cards[/b],カードごとの詳しい効果は[b]図鑑 → カード[/b]
+4가지,4 kinds,4種類
+공격받으면 [b]막을 수 있는 방어 카드가 있을 때만[/b] 쓸지 물어봐요. 막는 공격에 따라 네 가지로 나뉘어요.,"When you're attacked, you're asked whether to use one [b]only if you hold a card that can block it[/b]. There are four kinds, by the attack they stop.",攻撃されたとき、[b]防げる防御カードを持っているときだけ[/b]使うか聞かれます。防ぐ攻撃によって4種類に分かれます。
+적 말이 내 말을 잡을 때,When an enemy pawn captures yours,敵の駒が自分の駒を捕まえるとき
+공격 카드에 맞을 때,When an attack card hits you,攻撃カードを受けたとき
+내 말이 남의 함정에 걸렸을 때,When your pawn hits someone else's trap,自分の駒が他人の罠にかかったとき
+어떤 공격이든,Any attack,どんな攻撃でも
+공격 하나에 방어 카드 한 장,One Defense card per attack,攻撃1回に防御カード1枚
+공격한 사람의 차례 안에서만 막을 수 있어요. [그냥 맞기]를 고르면 그 공격엔 다시 못 써요,You can only block during the attacker's turn. Choose [Take the hit] and you can't use one on that attack later,攻撃した人の手番の中でだけ防げます。［そのまま受ける］を選ぶと、その攻撃にはもう使えません
+막으면 맞기 직전으로 돌아가요: 말 위치·출발 여부·업기·감옥·보호막과 그 공격으로 오른 기록,"Blocking rolls back to just before the hit: pawn positions, whether they had set out, stacking, prison, shields, and records that attack added",防ぐと受ける直前に戻ります：駒の位置・出発したか・おんぶ・監獄・バリアと、その攻撃で増えた記録
+내 함정·내 카드·초증강으로 입은 피해는 공격이 아니라서 막을 수 없어요,"Damage from your own traps, your own cards, or Hyper Augments isn't an attack, so it can't be blocked",自分の罠・自分のカード・超増強による被害は攻撃ではないので防げません
+알고리즘 밴에 걸려 있으면 방어 창이 열리지 않아요,"While under Algorithm Ban, the defense window doesn't open",アルゴリズムBANを受けている間は防御ウィンドウが開きません
+잡기만,Captures only,捕獲だけ
+적 말이 내 말이 선 칸에 멈춰 [b]잡으려 할 때[/b] 써요. 막으면 내 말은 그 자리에 남아요.,Use it when an enemy pawn stops on your tile [b]to capture you[/b]. Block it and your pawn stays put.,敵の駒が自分の駒のマスに止まって[b]捕まえようとするとき[/b]に使います。防ぐと自分の駒はその場に残ります。
+막는 방법,How it blocks,防ぎ方
+카드마다 달라요: 그냥 피하기 · 덤으로 카드 1장 · 잡으러 온 적 말을 출발선으로 되돌려 보내기,Depends on the card: just dodge · dodge and draw 1 card · send the capturing pawn back to the start,カードによって違います：かわすだけ・おまけでカード1枚・捕まえに来た敵の駒をスタートへ送り返す
+한 번 막으면 함께 잡히던 말도 모두 무사해요,One block also saves every pawn that would have been caught with it,1回防げば、一緒に捕まるはずだった駒もみんな無事です
+공격 카드·함정에는 쓸 수 없어요,Can't be used against attack cards or traps,攻撃カード・罠には使えません
+잡으러 온 말을 되돌려 보내는 카드는 그 말이 아직 보드 위에 있어야 써요,The card that sends the capturer back needs that pawn to still be on the board,捕まえに来た駒を送り返すカードは、その駒がまだボード上にいるときだけ使えます
+공격 카드만,Attack cards only,攻撃カードだけ
+상대가 낸 [b]공격 카드[/b]에 맞았을 때 써요. 그 카드의 효과가 나에게 오지 않아요.,Use it when a rival's [b]attack card[/b] hits you. Its effect doesn't reach you.,相手の出した[b]攻撃カード[/b]を受けたときに使います。そのカードの効果は自分に届きません。
+카드마다 달라요: 그냥 피하기 · 덤으로 카드 1장 · 맞은 카드를 내 손패로 빼앗기 · 공격자에게 되돌려 주기,Depends on the card: just dodge · dodge and draw 1 card · take the attack card into your hand · bounce it back at the attacker,カードによって違います：かわすだけ・おまけでカード1枚・受けたカードを自分の手札に奪う・攻撃者に跳ね返す
+되돌려 주기,Bouncing back,跳ね返し
+"밴·스킵 같은 카드는 공격자가 그대로 받고, 그 밖의 공격은 공격자의 선두 말이 출발선으로",Cards like Ban or Skip hit the attacker instead; other attacks send the attacker's lead pawn back to the start,BAN・スキップのようなカードは攻撃者がそのまま受け、それ以外の攻撃は攻撃者の先頭の駒がスタートへ
+잡기와 함정은 막지 못해요,Can't stop captures or traps,捕獲と罠は防げません
+남의 함정,Others' traps,他人の罠
+내 말이 [b]남이 깐 함정[/b]에 걸렸을 때 써요. 내 차례에 걸려도 쓸 수 있어요.,"Use it when your pawn hits [b]a trap someone else placed[/b], even on your own turn.",自分の駒が[b]他人の置いた罠[/b]にかかったときに使います。自分の手番にかかっても使えます。
+카드마다 달라요: 함정을 부수고 더 전진 · 함정을 무효로 하고 설치자의 카드 빼앗기 · 그 함정 카드를 내 손패로,Depends on the card: break the trap and move farther · cancel it and steal a card from whoever placed it · take that trap card into your hand,カードによって違います：罠を壊してさらに前進・罠を無効にして設置者のカードを奪う・その罠カードを自分の手札に
+내가 깐 함정에 내 말이 걸린 건 막을 수 없어요,You can't block your own trap catching your own pawn,自分の置いた罠に自分の駒がかかったときは防げません
+무엇이든,Anything,なんでも
+잡기·공격 카드·함정 [b]어떤 공격이든[/b] 막아요. 공격한 사람의 차례를 통째로 되감고 그 차례를 끝내요.,"Stops [b]any attack[/b]: a capture, an attack card or a trap. It rewinds the attacker's whole turn and ends it.",捕獲・攻撃カード・罠、[b]どんな攻撃でも[/b]防ぎます。攻撃した人の手番をまるごと巻き戻し、その手番を終わらせます。
+되감아도 손패는 돌아오지 않아요,Hands aren't restored by the rewind,巻き戻しても手札は戻りません
+순위가 정해졌다면 순위도 그때로 돌아가요,Any ranks decided in that turn go back too,その手番で順位が決まっていれば、順位もそのときに戻ります
+칸을 골라 깔아 두는 카드예요. 누가 깔았는지만 알려지고 [b]어떤 함정인지는 비밀[/b]!,"Cards you place on a chosen tile. Everyone learns who placed it, but [b]which trap it is stays secret[/b]!",マスを選んで置いておくカードです。誰が置いたかだけ知らされ、[b]どんな罠かは秘密[/b]！
+일반 함정,Normal traps,通常の罠
+코너·빵집 자리·옷장 자리·부스터 발판·출발선을 뺀 칸에 숨겨서 깔아요,"Placed face-down on any tile except corners, the Bakery and Wardrobe spots, Booster pads and the start",コーナー・パン屋の位置・クローゼットの位置・ブースター床・スタートライン以外のマスに隠して置きます
+코너에만 깔고 누구에게나 공개돼요. 정해진 라운드가 지나면 사라져요,Placed only on corners and visible to everyone. They vanish after a set number of rounds,コーナーにだけ置き、誰にでも公開されます。決まったラウンドが過ぎると消えます
+걸리는 때,When it triggers,かかるとき
+"함정마다 달라요: 멈춰야 걸리는 것, 지나가기만 해도 걸리는 것, 큰 눈금으로 지나갈 때만 걸리는 것","Depends on the trap: some need you to stop, some trigger just by passing, some only when you pass with a big roll",罠によって違います：止まるとかかるもの、通過するだけでかかるもの、大きな出目で通過したときだけかかるもの
+몇 번,How many times,何回
+대부분 한 번 걸리면 사라져요 (여러 번 남는 함정도 있어요),Most disappear after triggering once (some stay for several),たいてい1回かかると消えます（何回も残る罠もあります）
+"대부분 적 말에게만 걸리지만, 폭발·연쇄처럼 내 말까지 휘말리는 함정도 있어요","Most only catch enemy pawns, but some, like explosions or chain reactions, can catch yours too",たいてい敵の駒にだけかかりますが、爆発・連鎖のように自分の駒まで巻き込む罠もあります
+걸린 사람은 [b]함정 방어[/b]·[b]만능 방어[/b] 카드로 막을 수 있어요,Whoever is caught can block with a [b]Trap Defense[/b] or [b]All-round Defense[/b] card,かかった人は[b]罠防御[/b]・[b]万能防御[/b]カードで防げます
+만능 방어: 어떤 공격이든,All-round Defense: any attack,万能防御：どんな攻撃でも
+잡기 방어: 적 말이 내 말을 잡을 때,Capture Defense: when an enemy pawn captures yours,捕獲防御：敵の駒が自分の駒を捕まえるとき
+공격 방어: 공격 카드에 맞을 때,Attack Defense: when an attack card hits you,攻撃防御：攻撃カードを受けたとき
+함정 방어: 내 말이 남의 함정에 걸렸을 때,Trap Defense: when your pawn hits someone else's trap,罠防御：自分の駒が他人の罠にかかったとき
+공격받았을 때,When attacked,攻撃されたとき
+%d·%d·%d라운드처럼 3라운드마다 모두가 증강 3장 중 하나를 골라요. 법전의 교칙은 모두 특수 승리 조건이에요.,"On rounds %d, %d, %d and so on, every 3 rounds, everyone picks 1 of 3 augments. Every rule in the Codex is a Special Victory condition.",%d・%d・%dラウンドのように3ラウンドごとに、全員が増強3枚から1枚を選びます。法典の教則はすべて特殊勝利の条件です。
+법전에 새 승리 조건 (%d라운드 과열부터),"A new win condition in the Codex (from round %d, Overheat)",法典に新しい勝利条件（%dラウンドのオーバーヒートから）
+막는 공격,Blocks,防ぐ攻撃
+주사위·윷·친치로·야추·핀볼은 버튼을 꾹 눌러 세기를 모아 던져요,"Dice, Yut, Chinchiro, Yacht and Pinball: hold the button to build power, then throw",サイコロ・ユッ・チンチロ・ヨット・ピンボールはボタンを長押しして力をためて投げます

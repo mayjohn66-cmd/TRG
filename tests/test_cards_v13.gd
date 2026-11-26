@@ -279,3 +279,13 @@ func test_emergency_repair_blocks_an_attack_card_and_takes_it() -> void:
 	manager.act(&"select_pawn", {"player_id": 1, "pawn_id": 11})
 	check(not manager.counter_pending(), "잡기에는 공격 방어 카드를 낼 수 없다")
 	_dispose(manager)
+
+
+func test_rulebook_names_the_defense_kind_of_every_counter_card() -> void:
+	# 규칙 도감 카드 장은 방어 카드마다 공통 설명(피격 시 발동) 대신 막는 공격 종류를 보여 준다: 새 방어 카드도 Rulebook.COUNTER_KINDS에 넣어야 한다
+	for card_id: StringName in CardRegistry.DECK_COMPOSITION.keys():
+		if CardRegistry.get_card(card_id).category != GameEnums.CardCategory.COUNTER:
+			continue
+		check(Rulebook.COUNTER_KINDS.has(card_id), "%s 방어 종류가 도감에 있다" % card_id)
+		var kind: String = Rulebook._counter_kind(card_id)
+		check(MainBoard.card_summary(card_id).begins_with("[" + kind.get_slice(":", 0) + "]"), "%s: 카드 설명 꼬리표와 같다 (%s)" % [card_id, kind])

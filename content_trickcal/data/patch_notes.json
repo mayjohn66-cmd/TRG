@@ -50,6 +50,11 @@
        "ko": "파워 게이지가 돌아왔어요: 기본 주사위·윷·친치로·야추 다이스·핀볼은 굴리기 버튼(또는 스페이스)을 꾹 누르면 게이지가 차오르고, 손을 떼는 순간의 세기로 던져요 (짧게 누르면 예전처럼 바로 굴러요)",
        "en": "The power gauge is back: for Standard Dice, Yut, Chinchiro, Yacht Dice and Pinball, hold the roll button (or Space) to fill the gauge and release to throw at that strength (a short press still rolls right away)",
        "ja": "パワーゲージが復活しました：基本サイコロ・ユッ・チンチロ・ヨットダイス・ピンボールは、振るボタン（またはスペース）を長押しするとゲージがたまり、離した瞬間の強さで投げます（短く押せば今までどおりすぐ振ります）"
+      },
+      {
+       "ko": "규칙 도감의 기본 규칙(시작하기·한 턴·잡기·특수 칸) 설명을 지금 규칙에 맞게 다시 썼어요. 업기·리벤지 부스터, 잡기 방어·공격 방어·함정 방어·만능 방어 설명이 새로 생겼어요",
+       "en": "Rewrote the Basic Rules in the Rulebook (Getting Started, A Turn, Captures, Special Tiles) to match the current rules. New pages explain stacking, the Revenge Booster, and Capture / Attack / Trap / All-round Defense",
+       "ja": "ルール図鑑の基本ルール（はじめに・1手番・捕獲・特殊マス）の説明を今のルールに合わせて書き直しました。おんぶ・リベンジブースター、捕獲防御・攻撃防御・罠防御・万能防御の説明が新しく加わりました"
       }
      ]
     },

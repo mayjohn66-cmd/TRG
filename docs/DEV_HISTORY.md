@@ -1914,6 +1914,11 @@ godot --headless --audio-driver Dummy --path . -s res://tests/ui_live_hotfix_tes
 - 원인: 땅 정령은 지나가기만 해도 멈추게 하는데 정령 칸 5·12·13번이 출발 직후에 몰려 있었고, 섞기는 증강 라운드에만 했다. 강아지는 `TileType.BAKERY`, 비행기는 `TileType.PORTAL`만 봐서 정령산(둘 다 없음)·모나티엄·벨라티엔(옷장 자리가 자판기·가마솥)에서 꺼져 있었다.
 - 구현: `MountainSpirits.shuffle`(땅 먼저 `earth_spots` 중 하나, 나머지 3종 고르게)·`TurnManager._enter_round_start`(2라운드부터 매 라운드), `MoveExecutor.is_special_pad`·부스터 발판 블록(`booster_cards`, `car_booster`)·`_pay_salary`(비행기, `plane_halfway`). 설명·도감·번역·패치노트 갱신. 테스트 `test_spirit_mountain`(땅 자리·매 라운드 섞기)·`test_sub_types`·`test_augments_and_victory`·`test_passive_callouts`.
 
+### 7.110 규칙 도감 기본 규칙 보강 (1.3.1, `feature/v1.3.1`)
+- 요청: 규칙 도감 설명 다시 보강. 같은 대화에서 방향 지시: 방어 카드는 "어떤 카드가 있는지"가 아니라 잡기 방어·공격 방어 같은 규칙을 설명하고, 피격 시 발동처럼 공통인 내용은 카드마다 쓰지 않는다.
+- `Rulebook._ch_start`·`_ch_turn`·`_ch_tiles`·`_ch_capture`를 코드와 대조해 다시 썼다 (낡은 내용은 CHANGELOG 1.3.1). 공격 카드·함정 카드·방어 카드 항목은 카드 목록(`_card_rows`, 삭제)을 쓰지 않는다. 방어 4종 항목 추가, 카드 장 방어 카드는 `COUNTER_KINDS`로 막는 공격만.
+- 숫자는 `GameEnums.MAX_HAND_SIZE`·`DRAFT_START`·`TempoUp.STAGE_ROUNDS`·`MatchRules.SPEED_STAGE_ROUNDS`·`GameData.dash_steps/revenge_bonus`·`PacingDirector.HARD_CAP_ROUND`에서 읽는다. %d가 든 문장은 [b] 강조와 섞으면 번역 틀이 맞지 않아 강조를 뺐다.
+
 ## 부록 B. 초기 예외 규칙 해석 (v1~v3.2, `EDGE_CASE_SPEC.md`에서 옮김)
 
 > 이 부록의 규칙은 당시 기준이다. 24칸 순환 트랙, 세트 효과, 후퇴 눈금, 옛 법전 교칙 등은 이후 개편으로 바뀌었다.
