@@ -12,7 +12,7 @@
 | 항목 | 값 | 출처 |
 |---|---|---|
 | 기준 해상도 | **1366 × 768** (16:9) | project.godot `viewport_width/height` |
-| 늘이기 | `canvas_items` · 비율 유지(`keep`). 화면 밖 남는 칸은 연두색 바깥 칸 (GDD 7.14) | project.godot `stretch` |
+| 늘이기 | `canvas_items` · 비율 유지(`keep`). 화면 밖 남는 칸은 연두색 바깥 칸 (개발 기록 7.14) | project.godot `stretch` |
 | 텍스처 필터 | 선형 + 밉맵(`default_texture_filter=2`) | project.godot |
 | 방향 | 가로 전용. 세로면 "화면을 가로로 돌려 주세요" 안내 | `MobileSupport` |
 | 터치 배치 | 버튼 최소 높이 48px, 18px 미만 글씨 1.2배(최대 18px), 가운데 창은 화면 안에서 최대 배율까지 확대 | `MobileSupport.TOUCH_BUTTON_HEIGHT`·`TOUCH_TEXT_SCALE`·`fit_touch_scale` |
@@ -47,8 +47,9 @@
 | 일본어 | Mochiy Pop One (부분 글꼴 약 3,600자, OFL) | `MochiyPopOne-Regular.ttf` (`L10n`이 일본어일 때 사용) |
 | 이모지 | 글꼴로 쓰지 않고 그림으로 (`EmojiText`, Noto Color Emoji PNG) | `assets/ui/trickcal/emoji/` |
 
-- 글자 크기는 고정 크기 상자 안에서 줄여 맞춘다(`MarqueeLabel`·글자 맞춤, GDD 6.60~6.61). 최소: 확대 카드 설명 10px, 손패 7px, 증강 제목 12px, 증강 설명 10px. 영어·일본어로도 넘치지 않는지 `tests/ui_overlap_audit.gd`로 검사한다.
+- 글자 크기는 고정 크기 상자 안에서 줄여 맞춘다(`MarqueeLabel`·글자 맞춤, 개발 기록 6.60~6.61). 최소: 확대 카드 설명 10px, 손패 7px, 증강 제목 12px, 증강 설명 10px. 영어·일본어로도 넘치지 않는지 `tests/ui_overlap_audit.gd`로 검사한다.
 - 서브셋 글꼴에 새 글자(새 카드 이름 등)가 필요하면 서브셋을 다시 만든다 (각 `*-NOTICE.md`).
+- **ONE 모바일 POP 적용 기록 (옛 `docs/font-trial/`):** 프로젝트 공통 글꼴을 `game_ui_font.tres`로 바꾸고 원스토어 공식 배포 OTF를 기본, 나눔고딕을 없는 글자용 보조로 지정했다. 글꼴을 게임에 넣어 사용자 PC 설치 글꼴에 의존하지 않는다. 시작 화면·인게임 메뉴·설정 화면에서 한글·숫자·줄바꿈을 확인했다 ([적용 화면](font-trial-menu.png)). 공식 배포본과 해시는 `assets/fonts/ONE-Mobile-POP-NOTICE.md`.
 
 ## 4. 색
 
