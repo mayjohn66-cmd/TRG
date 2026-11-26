@@ -186,7 +186,152 @@ func _input(event: InputEvent) -> void:
 	if not accept_press(event, Time.get_ticks_msec()):
 		get_viewport().set_input_as_handled()
 		return
+	if _drag_scroll(event):
+		get_viewport().set_input_as_handled()
+		return
 	_snap_to_nearby_button(event)
+
+
+## 끌어서 스크롤 (2026-11 요청: 모바일에서 공지사항 등을 스크롤바를 정확히 잡아야만 움직일 수 있었다).
+## 터치 기기에서는 스크롤 칸(ScrollContainer·스크롤되는 RichTextLabel) 안 아무 데나 누르고 DRAG_SCROLL_START px 넘게 끌면 내용이 손가락을 따라 움직인다.
+## 누른 자리의 버튼은 그대로 눌림을 받다가, 끌기가 시작되면 화면 밖으로 옮긴 움직임·뗌을 보내 눌림을 취소한다 (끌고 뗐을 때 버튼이 눌리지 않게).
+## 스크롤바·슬라이더를 직접 잡았거나, 스스로 끌기 스크롤을 하는 칸(meta CUSTOM_DRAG_SCROLL: 규칙 도감)은 건드리지 않는다.
+const DRAG_SCROLL_START: float = 10.0
+const CUSTOM_DRAG_SCROLL: StringName = &"trg_custom_drag_scroll"
+const _OFFSCREEN: Vector2 = Vector2(-100000, -100000)
+var _drag_target: Control = null
+var _drag_from: Vector2 = Vector2.ZERO
+var _drag_origin: Vector2 = Vector2.ZERO
+var _drag_active: bool = false
+
+
+## 처리(먹은) 이벤트면 true.
+func _drag_scroll(event: InputEvent) -> bool:
+	var mouse: InputEventMouseButton = event as InputEventMouseButton
+	var touch: InputEventScreenTouch = event as InputEventScreenTouch
+	if (mouse != null and mouse.button_index == MOUSE_BUTTON_LEFT) or (touch != null and touch.index == 0):
+		var pressed: bool = mouse.pressed if mouse != null else touch.pressed
+		var at: Vector2 = mouse.position if mouse != null else touch.position
+		if pressed:
+			_begin_drag_scroll(at)
+			return false
+		if _drag_active and mouse != null:
+			# 버튼 등이 뗌을 '제자리 클릭'으로 받지 않게 화면 밖에서 뗀 것으로 바꿔 보낸다
+			var away: InputEventMouseButton = mouse.duplicate()
+			away.position = _OFFSCREEN
+			away.global_position = _OFFSCREEN
+			_drag_target = null
+			_drag_active = false
+			_push_raw(away)
+			return true
+		if mouse != null or not _drag_active:
+			_drag_target = null
+			_drag_active = false
+		return _drag_active
+	var motion: InputEventMouseMotion = event as InputEventMouseMotion
+	var drag: InputEventScreenDrag = event as InputEventScreenDrag
+	if _drag_target == null or (motion == null and (drag == null or drag.index != 0)):
+		return false
+	if motion != null and not (motion.button_mask & MOUSE_BUTTON_MASK_LEFT):
+		return false
+	if not is_instance_valid(_drag_target) or not _drag_target.is_visible_in_tree():
+		_drag_target = null
+		_drag_active = false
+		return false
+	var at: Vector2 = motion.position if motion != null else drag.position
+	if not _drag_active:
+		if at.distance_to(_drag_from) < DRAG_SCROLL_START:
+			return false
+		_drag_active = true
+		var cancel := InputEventMouseMotion.new()
+		cancel.position = _OFFSCREEN
+		cancel.global_position = _OFFSCREEN
+		cancel.button_mask = MOUSE_BUTTON_MASK_LEFT
+		_push_raw(cancel)
+	var moved: Vector2 = _drag_target.get_global_transform_with_canvas().basis_xform_inv(at - _drag_from)
+	set_drag_scroll(_drag_target, _drag_origin - moved)
+	return true
+
+
+func _begin_drag_scroll(at: Vector2) -> void:
+	_drag_active = false
+	_drag_target = drag_scroll_target(get_tree().root, at)
+	if _drag_target != null:
+		_drag_from = at
+		_drag_origin = drag_scroll_position(_drag_target)
+
+
+func _push_raw(event: InputEvent) -> void:
+	_redirecting = true
+	get_viewport().push_input(event)
+	_redirecting = false
+
+
+## point(화면 좌표)를 누르고 끌면 움직일 스크롤 칸 (없으면 null). 테스트가 직접 부른다.
+static func drag_scroll_target(root: Node, point: Vector2) -> Control:
+	var node: Node = top_control_at(root, point)
+	while node != null and node is Control:
+		if node is ScrollBar or node is Slider or (node as Control).has_meta(CUSTOM_DRAG_SCROLL):
+			return null
+		var control: Control = node
+		if _can_drag_scroll(control) and _screen_rect(control).has_point(point):
+			return control
+		node = node.get_parent()
+	return null
+
+
+static func _can_drag_scroll(control: Control) -> bool:
+	if control is ScrollContainer:
+		var scroll: ScrollContainer = control
+		return scroll.get_v_scroll_bar().max_value > scroll.get_v_scroll_bar().page + 0.5 or scroll.get_h_scroll_bar().max_value > scroll.get_h_scroll_bar().page + 0.5
+	if control is RichTextLabel and (control as RichTextLabel).scroll_active:
+		var bar: VScrollBar = (control as RichTextLabel).get_v_scroll_bar()
+		return bar.max_value > bar.page + 0.5
+	return false
+
+
+static func drag_scroll_position(control: Control) -> Vector2:
+	if control is ScrollContainer:
+		return Vector2((control as ScrollContainer).scroll_horizontal, (control as ScrollContainer).scroll_vertical)
+	return Vector2(0.0, (control as RichTextLabel).get_v_scroll_bar().value)
+
+
+static func set_drag_scroll(control: Control, value: Vector2) -> void:
+	if control is ScrollContainer:
+		var scroll: ScrollContainer = control
+		if scroll.horizontal_scroll_mode != ScrollContainer.SCROLL_MODE_DISABLED:
+			scroll.scroll_horizontal = roundi(value.x)
+		if scroll.vertical_scroll_mode != ScrollContainer.SCROLL_MODE_DISABLED:
+			scroll.scroll_vertical = roundi(value.y)
+	elif control is RichTextLabel:
+		var text: RichTextLabel = control
+		text.scroll_following = false
+		text.get_v_scroll_bar().value = value.y
+
+
+## point(화면 좌표)에서 누름을 받을 맨 위 컨트롤 (마우스를 무시하는 것은 건너뛴다).
+static func top_control_at(root: Node, point: Vector2) -> Control:
+	var controls: Array[Control] = []
+	_collect_controls(root, controls)
+	var ordered: Array = []
+	for index: int in controls.size():
+		ordered.append([_layer_of(controls[index]), index, controls[index]])
+	ordered.sort_custom(func(a: Array, b: Array) -> bool: return a[0] > b[0] if a[0] != b[0] else a[1] > b[1])
+	for entry: Array in ordered:
+		var control: Control = entry[2]
+		if control.mouse_filter != Control.MOUSE_FILTER_IGNORE and _screen_rect(control).has_point(point) and not _clipped_out(control, point):
+			return control
+	return null
+
+
+## 스크롤되어 칸 밖으로 잘려 나간 자리인가 (clip_contents 조상 바깥).
+static func _clipped_out(control: Control, point: Vector2) -> bool:
+	var node: Node = control.get_parent()
+	while node != null and node is Control:
+		if (node as Control).clip_contents and not _screen_rect(node as Control).has_point(point):
+			return true
+		node = node.get_parent()
+	return false
 
 
 ## 터치 판정 넓히기: 버튼 그림은 그대로 두고, 버튼 밖 TOUCH_SLOP px 안을 누르면 가장 가까운 버튼을 누른 것으로 친다.

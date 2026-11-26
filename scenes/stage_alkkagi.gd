@@ -165,7 +165,8 @@ func handle_input(event: InputEvent) -> bool:
 	if press:
 		if _cancel_rect().has_point(point):
 			cancel_requested.emit()
-		elif point.distance_to(to_screen(origin))<=36.0*layout_scale():
+		elif MobileSupport.touch_mode() or point.distance_to(to_screen(origin))<=36.0*layout_scale():
+			# 모바일(터치)은 돌을 정확히 집지 않아도 화면 아무 데나 잡고 당기면 그 자리 기준으로 조준한다 (작은 돌을 손가락으로 집기 어렵다)
 			dragging = true
 			_drag_start = point
 			update_pull(point)

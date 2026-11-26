@@ -79,6 +79,17 @@ func run() -> void:
 	var start := stage.to_screen(stage.origin)
 	mouse(stage,start+Vector2(150,100),true)
 	check(not stage.dragging,"Pressing away from the black stone cannot start a shot")
+	# 모바일: 화면 아무 데나 잡고 당겨도 그 자리 기준으로 조준한다
+	MobileSupport.force_touch = true
+	mouse(stage,start+Vector2(150,100),true)
+	check(stage.dragging,"On touch screens a press anywhere starts the pull")
+	drag(stage,start+Vector2(150,100)+Vector2(100,0)*stage.layout_scale())
+	check(absf(absf(stage.angle)-PI)<0.001 and stage.power>0.0,"The pull is measured from where the finger went down")
+	stage.dragging = false
+	stage.power = 0.0
+	stage.stone = stage.origin
+	stage.preview.clear()
+	MobileSupport.force_touch = false
 	mouse(stage,start,true)
 	check(stage.dragging and not stage.preview.is_empty(),"Pressing the stone immediately shows a default direction and prediction")
 	drag(stage,start+Vector2(100,0)*stage.layout_scale())

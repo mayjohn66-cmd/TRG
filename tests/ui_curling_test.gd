@@ -115,6 +115,10 @@ func run() -> void:
 	var before_rng := board.state.rng.state
 	check(not mouse(stage, start + Vector2(160, 120), true) and not stage.dragging, "Only pressing the cap begins a pull")
 	check(not mouse(stage, start + Vector2(160, 120), false), "Non-gesture releases remain available to GUI buttons")
+	MobileSupport.force_touch = true  # 모바일: 컬링 판 안 아무 데나 잡고 당겨도 된다
+	check(mouse(stage, start + Vector2(160, 120), true) and stage.dragging, "On touch screens a press anywhere on the table starts the pull")
+	stage.cancel_drag()
+	MobileSupport.force_touch = false
 	mouse(stage, start, true)
 	check(stage.dragging and stage.power == 0.0, "Pressing the cap immediately shows the forward arrow")
 	mouse(stage, start + Vector2.ONE, false)

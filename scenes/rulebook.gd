@@ -630,6 +630,7 @@ func _build_notebook() -> void:
 	title_row.add_child(mirrored)
 	var scroll := ScrollContainer.new()
 	_left_scroll = scroll
+	scroll.set_meta(MobileSupport.CUSTOM_DRAG_SCROLL, true)  # 도감은 스스로 끌기 스크롤을 한다
 	scroll.name = "EntryDetailScroll"
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -682,6 +683,7 @@ func _build_cards_area() -> void:
 	_summary_banner.visible = false
 	_right_scroll = ScrollContainer.new()
 	_right_scroll.name = "CatalogScroll"
+	_right_scroll.set_meta(MobileSupport.CUSTOM_DRAG_SCROLL, true)
 	_right_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_place(_right_scroll, Vector2(834+BOOK_SHIFT_X, 142), Vector2(468, 570))
 	_right_holder = VBoxContainer.new()

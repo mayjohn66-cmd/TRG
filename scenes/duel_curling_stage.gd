@@ -131,7 +131,9 @@ func handle_input(event: InputEvent) -> bool:
 		return false
 	else:
 		return false
-	if press and _model_point(point).distance_to(Vector2(BottleCapPhysics.START) / BottleCapPhysics.SCALE) <= 33.0:
+	# 모바일(터치)은 병뚜껑을 정확히 집지 않아도 컬링 판 안 아무 데나 잡고 당기면 그 자리 기준으로 조준한다
+	var grab_anywhere: bool = MobileSupport.touch_mode() and Rect2(Vector2.ZERO, size).has_point(get_global_transform_with_canvas().affine_inverse() * point)
+	if press and (grab_anywhere or _model_point(point).distance_to(Vector2(BottleCapPhysics.START) / BottleCapPhysics.SCALE) <= 33.0):
 		handled = true
 		dragging = true
 		_pointer = id

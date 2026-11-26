@@ -74,6 +74,16 @@
        "ko": "방 규칙 설정 창이 옵션을 바꿔도 크기·배치가 흔들리지 않아요",
        "en": "The Room Rules window no longer shifts in size or layout when you change options",
        "ja": "ルーム設定ウィンドウでオプションを変えてもサイズや配置が揺れなくなりました"
+      },
+      {
+       "ko": "모바일에서 공지사항·기록·방 규칙·목록 같은 스크롤 창을 스크롤바를 정확히 잡지 않아도, 내용 아무 데나 손가락으로 끌어서 스크롤할 수 있어요 (끌다 뗀 자리의 버튼은 눌리지 않아요)",
+       "en": "On mobile, scrolling windows like Notices, logs, Room Rules and lists now scroll when you drag anywhere on the content, not just the scrollbar (a button you drag across won't be pressed)",
+       "ja": "モバイルでお知らせ・記録・ルーム設定・リストなどのスクロール画面を、スクロールバーを正確につかまなくても内容のどこでも指でドラッグしてスクロールできます（ドラッグして離したボタンは押されません）"
+      },
+      {
+       "ko": "모바일에서 알까기·병뚜껑 절벽 컬링은 돌·병뚜껑을 정확히 집지 않아도 화면 아무 데나 누르고 당기면 그 자리 기준으로 조준돼요",
+       "en": "On mobile, Alkkagi and Bottle Cap Cliff Curling now aim from wherever you press and pull, so you don't have to grab the small stone or cap exactly",
+       "ja": "モバイルのおはじき・ボトルキャップ崖っぷちカーリングは、石やキャップを正確につかまなくても画面のどこでも押して引けば、その位置を基準に狙えます"
       }
      ]
     },
