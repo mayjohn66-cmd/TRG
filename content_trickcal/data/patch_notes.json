@@ -17,9 +17,14 @@
      },
      "items": [
       {
-       "ko": "판정 도구 8종을 직접 골라서 굴릴 수 있어요: 타로(5장 중 1장)·화투(6장 중 2장)·텍사스 홀덤(7장 중 5장)·마작(6개 중 3개)·오미쿠지(막대 6개 중 1개)·포츈쿠키·아이스크림(3개 중 1개)·캡슐뽑기(4개 중 1개). 어느 것을 골라도 확률은 같아요 (제보 감사합니다!)",
-       "en": "You can now pick for 8 Judgment Tools yourself: Tarot (1 of 5), Hwatu (2 of 6), Texas Hold'em (5 of 7), Mahjong (3 of 6), Omikuji (1 of 6 sticks), Fortune Cookie / Ice Cream (1 of 3) and Capsule Gacha (1 of 4). The odds are the same whichever you pick (thanks for the suggestion!)",
-       "ja": "判定ツール8種を自分で選んで振れるようになりました：タロット（5枚から1枚）・花札（6枚から2枚）・テキサスホールデム（7枚から5枚）・麻雀（6個から3個）・おみくじ（棒6本から1本）・フォーチュンクッキー／アイスクリーム（3個から1個）・カプセルガチャ（4個から1個）。どれを選んでも確率は同じです（ご提案ありがとうございます！）"
+       "ko": "굴리기 전에 내 판정 도구가 굴리기 버튼 위 보드에 놓여 있어요: 주사위·친치로 그릇·윷·슬롯머신·카드 더미·마작패·오미쿠지 통·아이스크림·쿠키·캡슐 기계·해적 통·복권·주식 차트",
+       "en": "Before you roll, your Judgment Tool now sits on the board above the roll button: dice, the Chinchiro bowl, Yut sticks, the slot machine, a card deck, Mahjong tiles, the Omikuji box, ice cream, a cookie, the capsule machine, the pirate barrel, a scratch ticket or the stock chart",
+       "ja": "振る前に、自分の判定ツールが振るボタンの上のボードに置かれるようになりました：サイコロ・チンチロの茶碗・ユッ・スロットマシン・カードの山・麻雀牌・おみくじ箱・アイスクリーム・クッキー・カプセルマシン・海賊の樽・スクラッチくじ・株価チャート"
+      },
+      {
+       "ko": "판정 도구 8종을 직접 골라서 굴릴 수 있어요: 타로(5장 중 1장)·화투(6장 중 2장)·텍사스 홀덤(7장 중 5장)·마작(6개 중 3개)·오미쿠지(막대 6개 중 1개)·포츈쿠키·아이스크림(3개 중 1개)·캡슐뽑기(4개 중 1개) (제보 감사합니다!)",
+       "en": "You can now pick for 8 Judgment Tools yourself: Tarot (1 of 5), Hwatu (2 of 6), Texas Hold'em (5 of 7), Mahjong (3 of 6), Omikuji (1 of 6 sticks), Fortune Cookie / Ice Cream (1 of 3) and Capsule Gacha (1 of 4) (thanks for the suggestion!)",
+       "ja": "判定ツール8種を自分で選んで振れるようになりました：タロット（5枚から1枚）・花札（6枚から2枚）・テキサスホールデム（7枚から5枚）・麻雀（6個から3個）・おみくじ（棒6本から1本）・フォーチュンクッキー／アイスクリーム（3個から1個）・カプセルガチャ（4個から1個）（ご提案ありがとうございます！）"
       },
       {
        "ko": "[인생게임 회전 룰렛]은 원판을 잡고 직접 돌려 던져요. 모바일에서는 조금만 착 튕겨도 시원하게 돌아가요 (톡 누르기만 해도 돌아요)",
@@ -42,14 +47,9 @@
        "ja": "［スクラッチくじ］は指やマウスで銀はがしを自分で削ります（待てばコインが代わりに削ります）"
       },
       {
-       "ko": "파워 게이지가 돌아왔어요: 기본 주사위·윷·친치로·야추 다이스·핀볼은 굴리기 버튼(또는 스페이스)을 꾹 누르면 게이지가 차오르고, 손을 떼는 순간의 세기로 던져요. 세게 던질수록 화려하게 굴러가지만 결과에는 영향이 없어요 (짧게 누르면 예전처럼 바로 굴러요)",
-       "en": "The power gauge is back: for Standard Dice, Yut, Chinchiro, Yacht Dice and Pinball, hold the roll button (or Space) to fill the gauge and release to throw at that strength. A harder throw looks flashier but doesn't change the result (a short press still rolls right away)",
-       "ja": "パワーゲージが復活しました：基本サイコロ・ユッ・チンチロ・ヨットダイス・ピンボールは、振るボタン（またはスペース）を長押しするとゲージがたまり、離した瞬間の強さで投げます。強く投げるほど派手に転がりますが結果には影響しません（短く押せば今までどおりすぐ振ります）"
-      },
-      {
-       "ko": "직접 고르고·돌리고·멈추고·던지고·긁고·파워를 모아도 결과 확률은 그대로예요 (결과는 굴릴 때 정해져요)",
-       "en": "Picking, spinning, stopping, throwing, scratching or charging power yourself doesn't change the odds (the result is decided when you roll)",
-       "ja": "自分で選ぶ・回す・止める・投げる・削る・パワーをためるをしても確率は同じです（結果は振った時点で決まります）"
+       "ko": "파워 게이지가 돌아왔어요: 기본 주사위·윷·친치로·야추 다이스·핀볼은 굴리기 버튼(또는 스페이스)을 꾹 누르면 게이지가 차오르고, 손을 떼는 순간의 세기로 던져요 (짧게 누르면 예전처럼 바로 굴러요)",
+       "en": "The power gauge is back: for Standard Dice, Yut, Chinchiro, Yacht Dice and Pinball, hold the roll button (or Space) to fill the gauge and release to throw at that strength (a short press still rolls right away)",
+       "ja": "パワーゲージが復活しました：基本サイコロ・ユッ・チンチロ・ヨットダイス・ピンボールは、振るボタン（またはスペース）を長押しするとゲージがたまり、離した瞬間の強さで投げます（短く押せば今までどおりすぐ振ります）"
       }
      ]
     }

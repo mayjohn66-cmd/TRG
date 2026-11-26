@@ -565,6 +565,8 @@ var _charge_by_key: bool = false
 var _charge_clock: float = 0.0
 var _charge_value: float = 0.0
 var _charge_anchor: Control = null
+## 굴리기 전 내 판정 도구 소품 (1.3.1): 굴리기 버튼 위 보드에 놓여 있다 (ToolRestProp).
+var _rest_prop: ToolRestProp = null
 var _fx_busy: bool = false
 var _capture_cutin: CaptureCutin = null
 var _capture_marks: Dictionary = {}
@@ -889,6 +891,7 @@ func seat_anchor_of(player_id: int) -> StringName:
 
 func _process(delta: float) -> void:
 	_tick_charge(delta)
+	_refresh_rest_prop()
 	_update_trap_pulse(delta)
 	_update_danger_pulse(delta)
 	if manager == null or manager.state == null or state == null:
@@ -14820,11 +14823,13 @@ func _ensure_power_gauge() -> void:
 	add_child(_power_gauge)
 
 
-## 게이지를 기준 버튼 바로 위 가운데에 둔다.
+## 게이지를 기준 버튼 바로 위 가운데에 둔다 (버튼 위에 도구 소품이 있으면 소품 위로).
 func _place_power_gauge() -> void:
 	if _power_gauge == null or _charge_anchor == null or not is_instance_valid(_charge_anchor):
 		return
 	var rect: Rect2 = _charge_anchor.get_global_rect()
+	if _charge_anchor == _roll_button and _rest_prop != null and _rest_prop.visible:
+		rect = _rest_prop.get_global_rect()
 	var at: Vector2 = get_global_transform().affine_inverse() * Vector2(rect.get_center().x, rect.position.y)
 	_power_gauge.position = at - Vector2(_power_gauge.size.x * 0.5, _power_gauge.size.y + 6.0)
 
@@ -14836,4 +14841,38 @@ func power_charging() -> bool:
 
 func power_value() -> float:
 	return _charge_value
+
+
+# ---------------------------------------------------------------------------
+# 굴리기 전 도구 소품 (1.3.1)
+# ---------------------------------------------------------------------------
+
+## 내가 굴릴 차례면 굴리기 버튼 위에 내 판정 도구를 보드에 놓인 듯 세워 둔다. 굴리기 시작하면(연출·고르기 창) 숨긴다.
+func _refresh_rest_prop() -> void:
+	if manager == null or state == null or _roll_button == null:
+		return
+	var tool: BaseJudgmentTool = state.tools.get(_dock_owner())
+	var show: bool = tool != null and ToolRestProp.supports(tool.tool_id) and not instant_roll_for_test and not manager.is_game_over \
+		and _roll_button.is_visible_in_tree() and not _roll_button.disabled and not _is_bot_turn() and manager.current_player_id() == _dock_owner() \
+		and (manager.current_state == TurnManager.State.PHASE_TURN_BEGIN or manager.current_state == TurnManager.State.PHASE_ROLL_WAIT) \
+		and not tool.has_pending_state() and _tool_pick == null and not (_presenter != null and _presenter.active) and not _fx_busy
+	if not show:
+		if _rest_prop != null:
+			_rest_prop.visible = false
+		return
+	if _rest_prop == null:
+		_rest_prop = ToolRestProp.new()
+		_rest_prop.name = "ToolRestProp"
+		_rest_prop.z_index = 4
+		add_child(_rest_prop)
+	_rest_prop.visible = true
+	_rest_prop.show_tool(tool.tool_id)
+	var rect: Rect2 = _roll_button.get_global_rect()
+	var at: Vector2 = get_global_transform().affine_inverse() * Vector2(rect.get_center().x, rect.position.y)
+	_rest_prop.position = at - Vector2(_rest_prop.size.x * 0.5, _rest_prop.size.y - 6.0)
+
+
+## 굴리기 버튼 위 도구 소품 (테스트용).
+func rest_prop() -> ToolRestProp:
+	return _rest_prop
 

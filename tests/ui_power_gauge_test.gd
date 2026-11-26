@@ -92,6 +92,14 @@ func run() -> void:
 	await fixture()
 	# 1) 주사위: 꾹 누르면 게이지, 떼면 그 값으로 굴린다
 	await give(&"D6")
+	await frames(3)
+	# 굴리기 전: 내 도구(주사위)가 굴리기 버튼 위 보드에 놓여 있다
+	var prop: ToolRestProp = board.rest_prop()
+	check(prop != null and prop.visible and prop.tool_id == &"D6", "굴리기 전 굴리기 버튼 위에 내 주사위가 놓여 있다")
+	if prop != null:
+		var button_rect: Rect2 = board._roll_button.get_global_rect()
+		var prop_rect: Rect2 = prop.get_global_rect()
+		check(prop_rect.end.y <= button_rect.position.y + 10.0 and absf(prop_rect.get_center().x - button_rect.get_center().x) < 2.0, "소품은 버튼 바로 위 가운데 (%s / %s)" % [prop_rect, button_rect])
 	board._roll_button.button_down.emit()
 	await hold(0.3)
 	check(board.power_charging(), "주사위: 굴리기 버튼을 누르고 있으면 게이지가 뜬다")
@@ -103,6 +111,7 @@ func run() -> void:
 	await frames()
 	check(not board.power_charging(), "손을 떼면 게이지가 닫힌다")
 	check(rolls.size() == 1, "떼는 순간 굴린다")
+	check(board.rest_prop() == null or not board.rest_prop().visible, "굴리면 소품은 숨는다 (굴림 연출이 대신)")
 	check(absf(board._pending_power - value) < 0.15, "모은 값이 연출 세기가 된다 (%.2f / %.2f)" % [board._pending_power, value])
 	# 2) 버튼 밖에서 떼면 취소
 	await next_turn()
@@ -114,8 +123,11 @@ func run() -> void:
 	await frames(3)
 	check(not board.power_charging() and rolls.is_empty(), "윷: 버튼 밖에서 떼면 굴리지 않고 게이지만 닫힌다")
 	# 3) 스페이스를 꾹 눌렀다 떼기
-	board._refresh_all()
-	await frames()
+	for _wait: int in 240:
+		board._refresh_all()
+		if not board._ui_busy() and board._roll_button.is_visible_in_tree() and not board._roll_button.disabled:
+			break
+		await process_frame
 	var key := InputEventKey.new()
 	key.keycode = KEY_SPACE
 	key.pressed = true
