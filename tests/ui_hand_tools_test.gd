@@ -102,6 +102,7 @@ func run() -> void:
 	root.size = Vector2i(1366, 768)
 	await presenter_gates()
 	await fixture()
+	await warmup()
 	await pirate_buttons()
 	await holdem_exchange()
 	if failures.is_empty():
@@ -253,3 +254,29 @@ func holdem_exchange() -> void:
 	if rolls.size() == 2:
 		check(rolls[1]["details"]["exchanged"] == [0], "첫 카드만 바꿨다")
 	check(board.holdem_exchange_panel() == null, "확정하면 창이 닫힌다")
+
+
+func warmup() -> void:
+	board.instant_roll_for_test = false
+	board._start_tool_warmup()
+	var warm: ToolWarmup = board.tool_warmup()
+	check(warm != null, "판이 시작되면 도구 화면을 미리 그린다")
+	if warm == null:
+		return
+	var waited: float = 0.0
+	while warm.pending() > 0 and waited < 30.0:
+		await create_timer(0.1).timeout
+		waited += 0.1
+	check(warm.pending() == 0 and warm.warmed_ids().size() == ToolWarmup.ORDER.size(), "4라운드 전에 다 그린다 (%.1f초, %s)" % [waited, warm.warmed_ids()])
+	var presenter: RollPresenter = board._presenter
+	check(presenter._slot_3d != null and presenter._pirate_view != null and presenter._capsule_view != null and presenter._yut_3d != null, "그린 화면은 실제 연출이 넘겨받는다")
+	for view: Variant in [presenter._slot_3d, presenter._pirate_view]:
+		if view != null:
+			for viewport: Node in (view as Node).find_children("*", "SubViewport", true, false):
+				check((viewport as SubViewport).render_target_update_mode == SubViewport.UPDATE_DISABLED or not (view as Control).is_visible_in_tree(), "넘겨받은 화면은 쓰기 전까지 그리지 않는다")
+	# 판이 끝나면 지운다
+	warm.clear()
+	presenter.release_views()
+	await frames()
+	check(warm.warmed_ids().is_empty() and presenter._slot_3d == null and presenter._pirate_view == null, "판이 끝나면 미리 그린 화면을 지운다")
+	board.instant_roll_for_test = true
