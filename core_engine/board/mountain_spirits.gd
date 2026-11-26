@@ -1,7 +1,8 @@
 # File: res://core_engine/board/mountain_spirits.gd
 # Class: class_name MountainSpirits
 # Role: 정령산 보드의 정령 칸. 빵집·옷장 자리(BoardSpec.spirit_tiles)에 하급 정령이 깃들어 칸의 효과가 바뀐다.
-#       판 시작과 증강 라운드마다 정령을 다시 배치한다: 네 종류가 고르게 섞이도록 무작위 (GameState.rng로 뽑아 모든 참가자가 같은 결과).
+#       판 시작과 매 라운드 시작마다 정령을 다시 배치한다 (1.3.1, 전에는 증강 라운드마다): 땅은 뒤쪽 두 칸 중 한 곳에만,
+#       나머지는 불·물·바람이 고르게 섞이도록 무작위 (GameState.rng로 뽑아 모든 참가자가 같은 결과).
 #       효과(MoveExecutor): 불 = 딱 멈추면 1칸 뒤로 / 물 = 딱 멈추면 카드 1장 / 바람 = 딱 멈추면 1칸 앞으로 / 땅 = 지나가기만 해도 그 칸에서 멈춘다.
 class_name MountainSpirits
 extends RefCounted
@@ -19,6 +20,13 @@ const SPIRITS: Array[Dictionary] = [
 ]
 const FIRE_STEPS: int = 1
 const WIND_STEPS: int = 1
+
+
+## 땅 정령이 깃들 수 있는 칸: 결승선에 가까운 정령 칸 두 곳 (32칸 판이면 22·30번). 출발 직후 칸에서 모두가 막히지 않게 (1.3.1 제보).
+static func earth_spots() -> Array[int]:
+	var tiles: Array[int] = BoardSpec.spirit_tiles.duplicate()
+	tiles.sort()
+	return tiles.slice(maxi(tiles.size() - 2, 0))
 
 
 static func ids() -> Array[StringName]:
@@ -48,16 +56,23 @@ static func at(state: GameState, tile: int) -> StringName:
 	return StringName(str(state.spirits.get(tile, ""))) if state != null else &""
 
 
-## 정령 칸마다 정령을 다시 놓는다: 네 종류를 차례로 채운 뒤(6칸이면 각 1~2곳) GameState.rng로 섞는다.
+## 정령 칸마다 정령을 다시 놓는다 (1.3.1): 땅 정령은 언제나 한 곳, 뒤쪽 두 칸(EARTH_SPOTS, 32칸 판의 22·30번) 중 하나에만 깃든다.
+## 남은 칸은 불·물·바람을 차례로 채운 뒤(5칸이면 2·2·1곳) GameState.rng로 섞는다.
 ## 정령 칸이 없는 보드는 아무것도 하지 않는다 (다른 보드의 무작위 결과를 바꾸지 않게 rng도 쓰지 않는다).
 static func shuffle(state: GameState) -> void:
 	state.spirits = {}
 	var tiles: Array[int] = BoardSpec.spirit_tiles.duplicate()
 	if tiles.is_empty():
 		return
+	tiles.sort()
+	var spots: Array[int] = earth_spots()
+	var earth_tile: int = spots[state.rng.randi_range(0, spots.size() - 1)]
+	tiles.erase(earth_tile)
+	state.spirits[earth_tile] = EARTH
 	var pool: Array[StringName] = []
 	var kinds: Array[StringName] = ids()
-	# 종류 순서도 매번 섞는다: 6칸에 4종이면 두 종류가 2곳씩인데, 늘 같은 종류가 2곳이 되지 않게
+	kinds.erase(EARTH)
+	# 종류 순서도 매번 섞는다: 5칸에 3종이면 두 종류가 2곳씩인데, 늘 같은 종류가 2곳이 되지 않게
 	for index: int in range(kinds.size() - 1, 0, -1):
 		var swap: int = state.rng.randi_range(0, index)
 		var held: StringName = kinds[index]

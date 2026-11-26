@@ -347,12 +347,12 @@ static func apply_step(
 	if not is_last and (mover.sub_type() == GameEnums.PawnSubType.CHECKERS_KING or mover.is_giant_melon()):
 		_checkers_jump(state, mover, destination, report)  # 다 자란 괴상한 멜론도 굴러가며 스친 적을 처치한다
 	if not is_last:
-		# 강아지: 빵집을 멈추지 않고 지나가기만 해도 카드 1장 (도착한 빵집은 _resolve_landing이 처리한다)
-		if mover.sub_type() == GameEnums.PawnSubType.MONO_DOG and state.board.get_tile(destination).tile_type == TileNode.TileType.BAKERY:
+		# 강아지: 특수 발판(빵집·옷장 자리의 칸: 빵집·편의점·마녀 상점·옷장·자판기·가마솥·정령 칸)을 지나가기만 해도 카드 1장 (1.3.1, 모든 보드)
+		if mover.sub_type() == GameEnums.PawnSubType.MONO_DOG and is_special_pad(state, destination):
 			var sniffed: StringName = state.draw_card(mover.owner_id)
 			if sniffed != &"":
 				report.dog_cards += 1
-				state.passive_triggered.emit(mover.entity_id, &"dog_bakery")
+				state.passive_triggered.emit(mover.entity_id, &"dog_pad")
 				if report.drawn_card == &"":
 					report.drawn_card = sniffed
 
@@ -474,13 +474,19 @@ static func _grant_corner_buff(state: GameState, mover: PlayerPawn, report: Move
 	report.corner_buff = CORNER_BUFF_STEPS
 
 
-## 모노폴리 미니카: 반환점(BoardSpec.halfway_tile)을 지나거나 밟을 때마다 손패에 생떼 카드 1장을 보충한다.
+## 모노폴리 비행기: 반환점(BoardSpec.halfway_tile)을 지나거나 밟을 때마다 손패에 생떼 카드 1장을 보충한다 (1.3.1, 전에는 미니카 패시브).
 static func _pay_salary(state: GameState, mover: PlayerPawn, report: MoveReport) -> void:
-	if mover.sub_type() != GameEnums.PawnSubType.MONO_CAR or mover.current_tile_idx != BoardSpec.halfway_tile:
+	if mover.sub_type() != GameEnums.PawnSubType.MONO_PLANE or mover.current_tile_idx != BoardSpec.halfway_tile:
 		return
 	if state.draw_card(mover.owner_id) != &"":
 		report.salary_cards += 1
-		state.passive_triggered.emit(mover.entity_id, &"car_salary")
+		state.passive_triggered.emit(mover.entity_id, &"plane_halfway")
+
+
+## 강아지가 카드를 받는 특수 발판: 빵집·옷장 자리에 선 칸이면 보드 종류와 상관없이 (부스터 발판·코너는 아니다).
+static func is_special_pad(state: GameState, tile_index: int) -> bool:
+	var tile: TileNode = state.board.get_tile(tile_index)
+	return tile != null and tile.tile_type != TileNode.TileType.NORMAL and tile.tile_type != TileNode.TileType.START_GOAL
 
 
 static func _finish(state: GameState, mover: PlayerPawn, report: MoveReport) -> void:
@@ -595,12 +601,6 @@ static func _resolve_landing(state: GameState, mover: PlayerPawn, ctx: RuleConte
 			warp_target = BoardSpec.jump_corner_targets[mover.current_tile_idx]
 		elif tile.tile_type == TileNode.TileType.PORTAL:
 			warp_target = BoardSpec.portal_warp_targets[mover.current_tile_idx]
-			# 비행기: 옷장을 쓰면 카드 1장 (2026-10-28)
-			if mover.sub_type() == GameEnums.PawnSubType.MONO_PLANE:
-				var plane_card: StringName = state.draw_card(mover.owner_id)
-				if plane_card != &"":
-					report.drawn_card = plane_card
-				state.passive_triggered.emit(mover.entity_id, &"plane_card")
 		if warp_target != -1:
 			if not _warp_to(state, mover, ctx, report, warp_target):
 				return
@@ -668,6 +668,10 @@ static func _resolve_landing(state: GameState, mover: PlayerPawn, ctx: RuleConte
 	if state.boost_gimmicks and GameData.dash_steps() > 0 and BoardSpec.dash_tiles.has(mover.current_tile_idx) and _primary_move(ctx) and not mover.is_finished and not mover.is_imprisoned:
 		report.dash_tiles.append(mover.current_tile_idx)
 		state.dash_pad_triggered.emit(mover.entity_id, mover.current_tile_idx)
+		# 미니카: 부스터 발판을 밟으면 카드 1장 (1.3.1)
+		if mover.sub_type() == GameEnums.PawnSubType.MONO_CAR and state.draw_card(mover.owner_id) != &"":
+			report.booster_cards += 1
+			state.passive_triggered.emit(mover.entity_id, &"car_booster")
 		report.merge(execute(state, mover, ctx.make_follow_up(GameData.dash_steps())))
 		return
 	ctx.trigger_timing = RuleContext.ON_TURN_END

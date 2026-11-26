@@ -1,6 +1,6 @@
 # File: res://tests/test_spirit_mountain.gd
 # Class: class_name TestSpiritMountain
-# Role: 정령산 보드 (1.3) - 빵집·옷장 자리 6곳이 정령 칸, 판 시작·증강 라운드마다 정령을 고르게 무작위 재배치(결정적),
+# Role: 정령산 보드 (1.3) - 빵집·옷장 자리 6곳이 정령 칸, 판 시작·매 라운드 정령을 무작위 재배치(결정적, 땅은 22·30번 중 한 곳: 1.3.1),
 #       불(딱 멈추면 1칸 뒤로)·물(카드 1장)·바람(1칸 앞으로)·땅(지나가기만 해도 정지), 스냅샷, 정령산 순례(LAW_02판) 기록.
 class_name TestSpiritMountain
 extends TestCase
@@ -54,6 +54,7 @@ func test_spirits_are_placed_evenly_and_deterministically() -> void:
 		var spirit: StringName = MountainSpirits.at(state, tile)
 		counts[spirit] = int(counts.get(spirit, 0)) + 1
 	check_eq(counts.size(), 4, "네 종류가 모두 깃든다 (%s)" % str(counts))
+	check_eq(int(counts.get(MountainSpirits.EARTH, 0)), 1, "땅 정령은 언제나 한 곳")
 	for spirit: StringName in counts:
 		check(int(counts[spirit]) >= 1 and int(counts[spirit]) <= 2, "종류마다 1~2곳 (고르게): %s %d" % [spirit, counts[spirit]])
 	var again := _spirit_state(4242)
@@ -65,7 +66,23 @@ func test_spirits_are_placed_evenly_and_deterministically() -> void:
 	_restore(saved)
 
 
-func test_spirits_reshuffle_on_augment_rounds_only() -> void:
+func test_earth_spirit_only_settles_on_the_two_tiles_nearest_the_goal() -> void:
+	# 1.3.1 제보: 출발 직후 칸에 땅이 깃들면 모두가 매 턴 막혔다 -> 땅은 32칸 판의 22·30번 중 한 곳에만
+	var saved: Array = _saved()
+	_spirit_state(1)
+	check_eq(MountainSpirits.earth_spots(), [22, 30] as Array[int], "땅 자리는 22·30번")
+	var seen: Dictionary = {}
+	for seed_value: int in range(1, 60):
+		var state := _spirit_state(seed_value)
+		for tile: int in state.spirits:
+			if state.spirits[tile] == MountainSpirits.EARTH:
+				check(tile == 22 or tile == 30, "땅 정령은 22·30번에만 (시드 %d: %d번)" % [seed_value, tile])
+				seen[tile] = true
+	check_eq(seen.size(), 2, "두 칸 모두 나올 수 있다")
+	_restore(saved)
+
+
+func test_spirits_reshuffle_every_round() -> void:
 	var saved: Array = _saved()
 	var manager := TurnManager.new()
 	manager.boost_gimmicks = false
@@ -78,17 +95,12 @@ func test_spirits_reshuffle_on_augment_rounds_only() -> void:
 	manager.state.spirits_shifted.connect(func() -> void: shifted[0] += 1)
 	var first: Dictionary = manager.state.spirits.duplicate()
 	check_eq(first.size(), 6, "판 시작에 정령을 놓는다")
-	manager.state.round_number = GameEnums.draft_start + 1  # 증강 라운드가 아닌 라운드
-	manager._enter_round_start()
-	check_eq(shifted[0], 0, "증강 라운드가 아니면 그대로")
 	var changed: bool = false
-	for round_number: int in range(GameEnums.draft_start + 1, GameEnums.draft_start + 1 + GameEnums.DRAFT_INTERVAL * 6):
-		if not GameEnums.is_draft_round(round_number):
-			continue
+	for round_number: int in range(2, 12):
 		manager.state.round_number = round_number
 		manager._enter_round_start()
 		changed = changed or manager.state.spirits != first
-	check(shifted[0] >= 5, "증강 라운드마다 다시 놓는다 (%d번)" % shifted[0])
+	check_eq(shifted[0], 10, "매 라운드 다시 놓는다 (%d번)" % shifted[0])
 	check(changed, "다시 놓으면 배치가 바뀐다")
 	tree.root.remove_child(manager)
 	manager.free()

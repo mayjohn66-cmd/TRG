@@ -39,6 +39,8 @@ var passives: Array[StringName] = []
 var promoted_pawn_ids: Array[int] = []
 var destroyed_attachments: Array[Dictionary] = []
 var dog_cards: int = 0
+## 미니카가 부스터 발판에서 받은 카드 수 (1.3.1).
+var booster_cards: int = 0
 ## 무인도에서 카드 1장을 내고 탈출했다.
 var paid_bail: bool = false
 ## 지뢰찾기 공병이 적 함정을 해체하고 받은 카드 수.
@@ -104,6 +106,7 @@ func merge(other: MoveReport) -> void:
 	promoted_pawn_ids.append_array(other.promoted_pawn_ids)
 	destroyed_attachments.append_array(other.destroyed_attachments)
 	dog_cards += other.dog_cards
+	booster_cards += other.booster_cards
 	defused_cards += other.defused_cards
 	paid_bail = paid_bail or other.paid_bail
 	leapfrog_bonus += other.leapfrog_bonus
@@ -140,6 +143,7 @@ func to_dict() -> Dictionary:
 		"promoted": promoted_pawn_ids,
 		"destroyed": destroyed_attachments,
 		"dog_cards": dog_cards,
+		"booster_cards": booster_cards,
 		"defused_cards": defused_cards,
 		"paid_bail": paid_bail,
 		"leapfrog_bonus": leapfrog_bonus,

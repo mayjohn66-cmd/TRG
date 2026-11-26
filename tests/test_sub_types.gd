@@ -108,17 +108,14 @@ func test_promotion_survives_snapshot_restore() -> void:
 # --- 모노폴리 ---------------------------------------------------------------------
 
 
-func test_plane_draws_a_card_when_using_a_wardrobe() -> void:
+func test_wardrobe_gives_no_card_to_the_plane_any_more() -> void:
+	# 1.3.1: 비행기 패시브는 반환점 카드로 바뀌었다 (옷장 카드 없음, 옷장 워프는 그대로)
 	var state := make_state(2, 1, {1: _units(Kind.MONOPOLY, [1, 2])})
 	place(state, 12, 8, [7])
 	var report: MoveReport = move(state, 12, 1)  # 9번 옷장
 	check_eq(state.get_pawn(12).current_tile_idx, 16, "비행기도 옷장은 보통 워프 (9 → 16)")
 	check(report.warped, "워프 보고")
-	check_eq((state.hands[1] as Array).size(), 1, "옷장을 쓰면 카드 +1")
-	place(state, 11, 8, [7])
-	move(state, 11, 1)
-	check_eq(state.get_pawn(11).current_tile_idx, 16, "미니카는 평소처럼 16번으로")
-	check_eq((state.hands[1] as Array).size(), 1, "미니카는 옷장 카드 없음")
+	check_eq((state.hands[1] as Array).size(), 0, "옷장을 써도 카드는 없다")
 
 
 func test_steamship_destroys_only_the_first_hostile_attachment_without_triggering_it() -> void:
@@ -139,12 +136,15 @@ func test_steamship_destroys_only_the_first_hostile_attachment_without_triggerin
 	check(move(plain, 11, 4).trapped, "미니카는 함정에 걸린다")
 
 
-func test_dog_draws_a_card_for_every_bakery_it_only_passes() -> void:
+func test_dog_draws_a_card_for_every_special_tile_it_only_passes() -> void:
 	var state := make_state(2, 1, {1: _full(Kind.MONOPOLY)})
 	place(state, 14, 1, [0])
 	var report: MoveReport = move(state, 14, 4)  # 2, 3, 4(빵집 통과), 5
 	check_eq(report.dog_cards, 1, "스친 빵집에서 카드 1장")
 	check_eq((state.hands[1] as Array).size(), 1, "손패에 반영")
+	var wardrobe := make_state(2, 1, {1: _full(Kind.MONOPOLY)})
+	place(wardrobe, 14, 7, [6])
+	check_eq(move(wardrobe, 14, 3).dog_cards, 1, "옷장도 특수 발판: 스치면 카드 1장 (1.3.1)")
 	var car := make_state(2, 1, {1: _full(Kind.MONOPOLY)})
 	place(car, 11, 1, [0])
 	check_eq(move(car, 11, 4).dog_cards, 0, "다른 기물은 스치기만 해서는 카드가 없다")

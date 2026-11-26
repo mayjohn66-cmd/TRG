@@ -63,4 +63,4 @@ func test_checker_king_kills_in_passing_and_dog_sniffs_a_bakery() -> void:
 	place(dog_state, 11, bakery - 1, [bakery - 2])
 	var dog_heard: Array[StringName] = _heard(dog_state)
 	move(dog_state, 11, 2)
-	check(dog_heard.has(&"dog_bakery"), "강아지가 빵집을 스치면 [강아지] 빵집 스침 카드+1")
+	check(dog_heard.has(&"dog_pad"), "강아지가 빵집을 스치면 [강아지] 특수 발판 스침 카드+1")

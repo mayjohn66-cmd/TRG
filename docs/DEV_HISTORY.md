@@ -1908,6 +1908,12 @@ godot --headless --audio-driver Dummy --path . -s res://tests/ui_live_hotfix_tes
 - 요청: 던지기 전에 자신의 판정 도구를 버튼 위에 노출 — 굴리기 버튼 위 보드판에 주사위를 올려 둔 느낌. 같은 요청에서 공지의 "결과 확률 동일" 문구는 적지 않기로 했다.
 - `ToolRestProp`: 도구 15종을 실제 연출 화면(DiceRoll3D·YutThrow3D·SlotMachine3D·각 소품 뷰)이나 카드 뒷면·마작 패로 작게 세운다. 몇 프레임 그린 뒤 SubViewport 갱신을 멈춘다. `MainBoard._refresh_rest_prop`가 내 차례·굴리기 버튼이 보일 때만 버튼 위 가운데에 둔다.
 
+### 7.109 정령산 정체·모노폴리 패시브 정리 (1.3.1, `feature/v1.3.1`)
+- 일본어 제보: 하급 땅 정령이 출발 직후 칸에 깃들면 모두 거기서 막혀 판이 늘어진다 ("멈추면 1턴 휴식"이나 더 잦은 섞기 제안). 빵집·옷장에 걸린 기물 효과(강아지 등)는 모든 보드에서 되면 좋겠다.
+- 사용자 결정: 정령은 매 라운드 섞고, 땅은 22·30번 중 한 곳에만. 강아지 = 특수 발판 스침 카드 +1, 미니카 = 부스터 발판 카드 +1, 비행기 = 반환점 통과 카드 +1 (미니카에서 옮김, 옷장 카드는 없앰).
+- 원인: 땅 정령은 지나가기만 해도 멈추게 하는데 정령 칸 5·12·13번이 출발 직후에 몰려 있었고, 섞기는 증강 라운드에만 했다. 강아지는 `TileType.BAKERY`, 비행기는 `TileType.PORTAL`만 봐서 정령산(둘 다 없음)·모나티엄·벨라티엔(옷장 자리가 자판기·가마솥)에서 꺼져 있었다.
+- 구현: `MountainSpirits.shuffle`(땅 먼저 `earth_spots` 중 하나, 나머지 3종 고르게)·`TurnManager._enter_round_start`(2라운드부터 매 라운드), `MoveExecutor.is_special_pad`·부스터 발판 블록(`booster_cards`, `car_booster`)·`_pay_salary`(비행기, `plane_halfway`). 설명·도감·번역·패치노트 갱신. 테스트 `test_spirit_mountain`(땅 자리·매 라운드 섞기)·`test_sub_types`·`test_augments_and_victory`·`test_passive_callouts`.
+
 ## 부록 B. 초기 예외 규칙 해석 (v1~v3.2, `EDGE_CASE_SPEC.md`에서 옮김)
 
 > 이 부록의 규칙은 당시 기준이다. 24칸 순환 트랙, 세트 효과, 후퇴 눈금, 옛 법전 교칙 등은 이후 개편으로 바뀌었다.

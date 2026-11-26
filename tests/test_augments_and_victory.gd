@@ -506,19 +506,43 @@ func test_yut_pawns_no_longer_reroll_on_four_or_five() -> void:
 	_dispose(manager)
 
 
-func test_mini_car_gets_one_card_when_passing_the_halfway_tile() -> void:
+func test_airplane_gets_one_card_when_passing_the_halfway_tile() -> void:
+	# 1.3.1: 반환점 카드는 미니카에서 비행기 패시브로 옮겼다
 	var half: int = BoardSpec.halfway_tile
-	var state := make_state(2, 1, {1: [Vector2i(Kind.MONOPOLY, 1), 0, 0, 0]})
-	place(state, 11, half - 1, [half - 2])
-	var report: MoveReport = move(state, 11, 2)
-	check_eq(report.salary_cards, 1, "미니카는 반환점을 지날 때 카드 1장")
+	var state := make_state(2, 1, {1: [0, Vector2i(Kind.MONOPOLY, 2), 0, 0]})
+	place(state, 12, half - 1, [half - 2])
+	var report: MoveReport = move(state, 12, 2)
+	check_eq(report.salary_cards, 1, "비행기는 반환점을 지날 때 카드 1장")
 	check_eq((state.hands[1] as Array).size(), 1, "손패에 반영")
-	var finish := make_state(2, 1, {1: [Vector2i(Kind.MONOPOLY, 1), 0, 0, 0]})
-	place(finish, 11, BoardSpec.tile_count - 1, [BoardSpec.tile_count - 2])
-	check_eq(move(finish, 11, 2).salary_cards, 0, "출발선 통과로는 받지 않는다")
+	var finish := make_state(2, 1, {1: [0, Vector2i(Kind.MONOPOLY, 2), 0, 0]})
+	place(finish, 12, BoardSpec.tile_count - 1, [BoardSpec.tile_count - 2])
+	check_eq(move(finish, 12, 2).salary_cards, 0, "출발선 통과로는 받지 않는다")
+	var car := make_state(2, 1, {1: [Vector2i(Kind.MONOPOLY, 1), 0, 0, 0]})
+	place(car, 11, half - 1, [half - 2])
+	check_eq(move(car, 11, 2).salary_cards, 0, "미니카는 이제 반환점 카드를 받지 않는다")
+
+
+func test_mini_car_gets_one_card_on_a_booster_pad() -> void:
+	var pad: int = BoardSpec.dash_tiles[0]
+	var state := make_state(2, 1, {1: [Vector2i(Kind.MONOPOLY, 1), 0, 0, 0]})
+	state.boost_gimmicks = true
+	place(state, 11, pad - 1, [pad - 2])
+	var report: MoveReport = move(state, 11, 1)
+	check_eq(report.booster_cards, 1, "미니카는 부스터 발판을 밟으면 카드 1장")
+	check_eq(state.get_pawn(11).current_tile_idx, pad + GameData.dash_steps(), "발판 가속은 그대로")
+	var basic := make_state(2, 1)
+	basic.boost_gimmicks = true
+	place(basic, 11, pad - 1, [pad - 2])
+	move(basic, 11, 1)  # 날아간 칸이 빵집이면 평소 카드도 받는다: 그보다 1장 더
+	check_eq((state.hands[1] as Array).size(), (basic.hands[1] as Array).size() + 1, "손패에 반영 (기본 말보다 1장 더)")
+	var passing := make_state(2, 1, {1: [Vector2i(Kind.MONOPOLY, 1), 0, 0, 0]})
+	passing.boost_gimmicks = true
+	place(passing, 11, pad - 1, [pad - 2])
+	check_eq(move(passing, 11, 2).booster_cards, 0, "지나가기만 하면 (발판이 안 터지면) 카드 없음")
 	var plane := make_state(2, 1, {1: [0, Vector2i(Kind.MONOPOLY, 2), 0, 0]})
-	place(plane, 12, half - 1, [half - 2])
-	check_eq(move(plane, 12, 2).salary_cards, 0, "다른 모노폴리 기물은 카드를 받지 않는다")
+	plane.boost_gimmicks = true
+	place(plane, 12, pad - 1, [pad - 2])
+	check_eq(move(plane, 12, 1).booster_cards, 0, "다른 기물은 부스터 카드가 없다")
 
 
 func test_black_stone_gets_one_extra_step_on_odd_rolls() -> void:

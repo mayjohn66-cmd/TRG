@@ -33,8 +33,8 @@ const SHOP_KINDS: Dictionary = {
 		"name": "마녀 상점", "toast": "상점!", "law_tag": "[단골 목표]", "visit_stamp": "마녀 상점 방문! (%d/%d)", "legend": "마녀 상점 (카드 1장)", "legend_color": Color("ffd98a"),
 		"words": {"ko": "마녀 상점", "en": "witch shop", "ja": "魔女の店"},
 		"band": Color("d8a25e"), "edge": Color("8a5a34"), "ink": Color("5e3a1c"), "decal": "res://assets/board/decals/BOARD_CARROT_FRIES_INK.png", "decal_span": 0.86},
-	&"spirit": {"rulebook": {"art": &"spirit", "tone": Color("2f9e8f"), "summary": "증강 라운드마다 [b]하급 정령[/b]이 자리를 바꿔 깃들어요. 불은 1칸 뒤로, 물은 카드 1장, 바람은 1칸 앞으로 (딱 멈추면), 땅은 [b]지나가기만 해도[/b] 그 칸에서 멈춰요."},
-		"name": "정령 칸", "toast": "정령!", "law_tag": "[순례 목표]", "visit_stamp": "정령 칸 순례! (%d/%d)", "legend": "정령 칸 (증강 라운드마다 정령이 바뀜)", "legend_color": Color("bfe7df"),
+	&"spirit": {"rulebook": {"art": &"spirit", "tone": Color("2f9e8f"), "summary": "매 라운드 [b]하급 정령[/b]이 자리를 바꿔 깃들어요. 불은 1칸 뒤로, 물은 카드 1장, 바람은 1칸 앞으로 (딱 멈추면), 땅은 [b]지나가기만 해도[/b] 그 칸에서 멈춰요. 땅 정령은 결승선 쪽 두 칸 중 한 곳에만 깃들어요."},
+		"name": "정령 칸", "toast": "정령!", "law_tag": "[순례 목표]", "visit_stamp": "정령 칸 순례! (%d/%d)", "legend": "정령 칸 (매 라운드 정령이 바뀜)", "legend_color": Color("bfe7df"),
 		"tiles_key": "spirit_tiles", "words": {"ko": "정령 칸", "en": "spirit tile", "ja": "精霊マス"},  # 일본어(ja) 값은 일본어 화면에서 _JA 글꼴(Mochiy Pop One)로 그린다
 		"band": Color("63c7b2"), "edge": Color("2f7f73"), "ink": Color("1d5a51"), "decal": "res://assets/board/decals/BOARD_SPIRIT.png", "decal_span": 0.8},
 }
@@ -50,8 +50,8 @@ const PORTAL_KINDS: Dictionary = {
 	&"cauldron": {"rulebook": {"art": &"cauldron", "tone": Color("6b4a8f"), "summary": "옷장 자리에 서요. 딱 멈추면 [b]물약이 랜덤으로 끓어요[/b]. 좋은 물약 3종과 [b]나쁜 물약 2종[/b]이 같은 확률로 나와요. 지나가기만 하면 아무 일도 없어요."},
 		"name": "마녀의 가마솥", "tiles_key": "cauldron_tiles", "warps": false, "legend": "마녀의 가마솥 (랜덤 물약)", "legend_color": Color("d9c8f2"),
 		"band": Color("7fd18b"), "edge": Color("5b3a8a"), "ink": Color("3e2366"), "decal": "res://assets/board/decals/BOARD_CAULDRON.png", "decal_span": 0.86, "decal_cutout": true},
-	&"spirit": {"rulebook": {"art": &"spirit", "tone": Color("2f9e8f"), "summary": "증강 라운드마다 [b]하급 정령[/b]이 자리를 바꿔 깃들어요."},
-		"name": "정령 칸", "tiles_key": "spirit_tiles", "warps": false, "legend": "정령 칸 (증강 라운드마다 정령이 바뀜)", "legend_color": Color("bfe7df"),
+	&"spirit": {"rulebook": {"art": &"spirit", "tone": Color("2f9e8f"), "summary": "매 라운드 [b]하급 정령[/b]이 자리를 바꿔 깃들어요."},
+		"name": "정령 칸", "tiles_key": "spirit_tiles", "warps": false, "legend": "정령 칸 (매 라운드 정령이 바뀜)", "legend_color": Color("bfe7df"),
 		"band": Color("63c7b2"), "edge": Color("2f7f73"), "ink": Color("1d5a51"), "decal": "res://assets/board/decals/BOARD_SPIRIT.png", "decal_span": 0.8},
 }
 
@@ -93,7 +93,7 @@ const BOARDS: Array[Dictionary] = [
 				"theme": {"font": "bangers", "headline": "BAD CARROT", "lines": "BAD\nCARROT", "ink": "1f1233", "accent": "8a4fc4", "tilt": -0.05},
 				"paper": "efe4f7", "comic_title": {"upper": "e9ccff", "lower": "ffffff", "shadow": "5a2a8a"}},
 		}},
-	{"id": &"spirit_mountain", "settings_note": "증강 라운드에 정령 발판의 속성이 바뀌어요.", "since": "1.3.0", "name": "정령산", "desc": "정령들의 산 · 증강 라운드마다 빵집·옷장 자리 6곳에 하급 정령(불·물·땅·바람)이 깃들어 효과가 바뀐다", "tiles": 32,
+	{"id": &"spirit_mountain", "settings_note": "매 라운드 정령 발판의 속성이 바뀌어요.", "since": "1.3.0", "name": "정령산", "desc": "정령들의 산 · 매 라운드 빵집·옷장 자리 6곳에 하급 정령(불·물·땅·바람)이 깃들어 효과가 바뀐다", "tiles": 32,
 		"shop": &"spirit", "portal": &"spirit", "surface": "res://assets/board/spirit_mountain/board_surface.png",
 		"palette": {
 			"fill": Color("e9f5f3"), "edge": Color("508984"), "ink": Color("285a55"), "band": Color("a9d2c9"),

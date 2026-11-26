@@ -52,6 +52,25 @@
        "ja": "パワーゲージが復活しました：基本サイコロ・ユッ・チンチロ・ヨットダイス・ピンボールは、振るボタン（またはスペース）を長押しするとゲージがたまり、離した瞬間の強さで投げます（短く押せば今までどおりすぐ振ります）"
       }
      ]
+    },
+    {
+     "head": {
+      "ko": "변경점",
+      "en": "Changes",
+      "ja": "変更点"
+     },
+     "items": [
+      {
+       "ko": "[정령산] 정령이 증강 라운드마다가 아니라 매 라운드 자리를 바꿔요. 하급 땅 정령은 결승선 쪽 두 칸(22·30번) 중 한 곳에만 깃들어서 출발 직후에 모두가 막히지 않아요 (제보 감사합니다!)",
+       "en": "[Spirit Mountain] Spirits now change places every round instead of every augment round. The Lesser Earth Spirit only settles on one of the two tiles nearest the goal (22 or 30), so nobody gets stuck right after the start (thanks for the report!)",
+       "ja": "［精霊山］精霊が増強ラウンドごとではなく毎ラウンド場所を入れ替えるようになりました。下級地の精霊はゴール側の2マス（22・30番）のどちらかにだけ宿るので、スタート直後でみんなが詰まらなくなります（ご報告ありがとうございます！）"
+      },
+      {
+       "ko": "모노폴리 기물 패시브가 모든 보드판에서 작동하도록 바뀌었어요: [강아지] 특수 발판(빵집·편의점·마녀 상점·옷장·자판기·가마솥·정령 칸)을 지나가기만 해도 카드 +1 · [미니카] 부스터 발판을 밟으면 카드 +1 · [비행기] 반환점을 지나면 카드 +1",
+       "en": "Monopoly pawn passives now work on every board: [Puppy] +1 card just for passing a special tile (Bakery, Convenience Store, Witch Shop, Wardrobe, Vending Machine, Cauldron, Spirit tile) · [Mini Car] +1 card when landing on a Booster pad · [Airplane] +1 card when passing the halfway corner",
+       "ja": "モノポリー駒のパッシブが全ボードで発動するようになりました：［子犬］特殊マス（パン屋・コンビニ・魔女の店・タンス・自販機・大釜・精霊マス）を通過するだけでカード+1・［ミニカー］ブースター床を踏むとカード+1・［飛行機］折り返し地点を通過するとカード+1"
+      }
+     ]
     }
    ]
   },

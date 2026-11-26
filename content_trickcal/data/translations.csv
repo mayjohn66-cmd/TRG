@@ -16,9 +16,9 @@ ko,en,ja
   (승급 후),  (after promotion),  (昇格後)
   (완주),  (finished),  (完走)
   (추가 턴),  (extra turn),  (追加ターン)
-  [강아지] 지나친 빵집에서 카드 %d장,  [Puppy] %d cards from Bakeries passed,  [子犬] 通過したパン屋でカード %d枚
+  [강아지] 지나친 특수 발판에서 카드 %d장,  [Puppy] %d cards from special tiles passed,  [子犬] 通過した特殊マスでカード %d枚
   [능력] %s,  [Ability] %s,  [能力] %s
-  [미니카] 반환점 통과: 카드 %d장,  [Mini Car] halfway passed: %d cards,  [ミニカー] 折り返し地点通過: カード %d枚
+  [비행기] 반환점 통과: 카드 %d장,  [Airplane] halfway passed: %d cards,  [飛行機] 折り返し地点通過: カード %d枚
   [백돌 방어막] 잡을 수 없어 함께 섭니다,"  [White Stone shield] Can't capture, sharing the tile",  [白石バリア] 捕獲できないので同じマスに並びます
   [법전] 이동 변조: %s,  [Codex] Move changed: %s,  [法典] 移動変化: %s
   [복수 부스터 획득: 다음 출발 +%d칸],  [Revenge Booster gained: next start +%d spaces],  [リベンジブースター獲得: 次の出発 +%dマス]
@@ -644,8 +644,8 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 ◆ 패시브: 모든 추가 이동 +2칸 · 이동 중 함정 면역\n※ 이미 가진 기물은 받을 수 없습니다,◆ Passive: All bonus moves +2 spaces · Trap-immune while moving\n※ You can't get a piece you already own,◆ パッシブ: すべての追加移動+2マス・移動中は罠無効\n※ 既に所持している駒は獲得できません
 ◆ 패시브: 반환점 이상 도달 시 퀸 승급\n※ 이미 가진 기물은 받을 수 없습니다,◆ Passive: Promotes to Queen past the halfway corner\n※ You can't get a piece you already own,◆ パッシブ: 折り返し地点以上に到達するとクイーンに昇格\n※ 既に所持している駒は獲得できません
 ◆ 패시브: 반환점 이상 통과 시 토금 승급 (+1칸)\n◆ [1회] 모치고마 낙하: 대기 말 1개를 보병 옆에 즉시 낙하\n※ 이미 가진 기물은 받을 수 없습니다,◆ Passive: Promotes to Tokin past the halfway corner (+1 space)\n◆ [Once] Mochigoma Drop: Drop a waiting pawn next to the Fuhyo\n※ You can't get a piece you already own,◆ パッシブ: 折り返し地点以上通過で「と金」に成る (+1マス)\n◆ [1回] 持ち駒打ち: 待機中の駒1個を歩兵の隣に即時配置\n※ 既に所持している駒は獲得できません
-"◆ 패시브: 반환점 통과 시 카드 +1\n◆ [1회] 호텔 건설: 지금 칸에 내 호텔 설치 (5턴, 밟은 적은 멈춤)\n※ 이미 가진 기물은 받을 수 없습니다","◆ Passive: +1 card when passing the halfway corner\n◆ [Once] Build Hotel: Build my Hotel here (5 turns, enemies who land stop)\n※ You can't get a piece you already own",◆ パッシブ: 折り返し地点通過時、カード+1枚\n◆ [1回] ホテル建設: 現在のマスにホテル設置 (5ターン、踏んだ敵は停止)\n※ 既に所持している駒は獲得できません
-◆ 패시브: 빵집 스침만 해도 카드 +1\n※ 이미 가진 기물은 받을 수 없습니다,◆ Passive: +1 card just for passing a Bakery\n※ You can't get a piece you already own,◆ パッシブ: パン屋を通過するだけでもカード+1枚\n※ 既に所持している駒は獲得できません
+"◆ 패시브: 부스터 발판을 밟으면 카드 +1\n◆ [1회] 호텔 건설: 지금 칸에 내 호텔 설치 (5턴, 밟은 적은 멈춤)\n※ 이미 가진 기물은 받을 수 없습니다","◆ Passive: +1 card when landing on a Booster pad\n◆ [Once] Build Hotel: Build my Hotel here (5 turns, enemies who land stop)\n※ You can't get a piece you already own",◆ パッシブ: ブースター床を踏むとカード+1枚\n◆ [1回] ホテル建設: 現在のマスにホテル設置 (5ターン、踏んだ敵は停止)\n※ 既に所持している駒は獲得できません
+◆ 패시브: 특수 발판 스침만 해도 카드 +1\n※ 이미 가진 기물은 받을 수 없습니다,◆ Passive: +1 card just for passing a special tile\n※ You can't get a piece you already own,◆ パッシブ: 特殊マスを通過するだけでもカード+1枚\n※ 既に所持している駒は獲得できません
 ◆ 패시브: 앞 칸 비면 +2칸\n※ 이미 가진 기물은 받을 수 없습니다,◆ Passive: +2 spaces if the tile ahead is empty\n※ You can't get a piece you already own,◆ パッシブ: 1マス前が空いていれば+2マス\n※ 既に所持している駒は獲得できません
 ◆ 패시브: 앞 칸 비면 +2칸\n◆ [1회] 코끼리 지진: 앞뒤 2칸의 설치물 모두 파괴\n※ 이미 가진 기물은 받을 수 없습니다,◆ Passive: +2 spaces if the tile ahead is empty\n◆ [Once] Elephant Quake: Destroy all placed objects within 2 spaces\n※ You can't get a piece you already own,◆ パッシブ: 1マス前が空いていれば+2マス\n◆ [1回] ゾウ地震: 前後2マスの設置物をすべて破壊\n※ 既に所持している駒は獲得できません
 ◆ 패시브: 없음\n◆ [1회] 직선 전차 저격: 직선 돌진 → 선두 적 처치 (없으면 다음 코너)\n※ 이미 가진 기물은 받을 수 없습니다,◆ Passive: None\n◆ [Once] Straight Chariot Snipe: Straight charge → KO the leading enemy (else next corner)\n※ You can't get a piece you already own,◆ パッシブ: なし\n◆ [1回] 直線戦車狙撃: 直線突進 → 先頭の敵を撃破 (いなければ次のコーナーへ)\n※ 既に所持している駒は獲得できません
@@ -1218,7 +1218,7 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 빠아아아아앙! -에르핀,Paaaaaang! -Erpin,パァァァァン！！ -エルフィン
 빵집,Bakery,パン屋
 빵집 (카드 1장),Bakery (1 card),パン屋 (カード1枚)
-빵집 스침만 해도 카드 +1,+1 card just for passing a Bakery,パン屋を通過するだけでカード +1
+특수 발판 스침만 해도 카드 +1,+1 card just for passing a special tile,特殊マスを通過するだけでカード +1
 빵집 털이! 생떼 카드 %d장(%s),Bakery heist! %d Tantrum Cards (%s),パン屋襲撃！ 駄々っ子カード%d枚(%s)
 빵집!,Bakery!,パン屋！
 빵집·증강에서 얻은 카드를 [b]보드판으로 끌어다 놓아[/b] 써요.,Use cards from Bakeries and Augments by [b]dragging them onto the board[/b].,パン屋・増強で得たカードは[b]ボードへドラッグして[/b]使います。
@@ -2095,9 +2095,9 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 [지뢰찾기 공병] 함정 해체 카드+1!,[Sapper] Trap defused! Card +1,[地雷工兵] 罠解除 カード+1！
 [킹 체커] 스침 처치!,[King Checker] KO in passing!,[キングチェッカー] 通過撃破！
 [백돌] 보호막 방어!,[White Stone] Shield block!,[白石] シールド防御！
-[강아지] 빵집 스침 카드+1!,[Puppy] Bakery sniff! Card +1,[子犬] パン屋通過 カード+1！
+[강아지] 특수 발판 스침 카드+1!,[Puppy] Special tile sniff! Card +1,[子犬] 特殊マス通過 カード+1！
 [증기선] 설치물 파괴!,[Steamboat] Object destroyed!,[蒸気船] 設置物を破壊！
-[미니카] 반환점 카드+1!,[Mini Car] Halfway salary! Card +1,[ミニカー] 折り返し地点 カード+1！
+[비행기] 반환점 카드+1!,[Airplane] Halfway card +1!,[飛行機] 折り返し地点でカード+1！
 [비행기] 옷장 장거리 워프!,[Airplane] Long-range wardrobe warp!,[飛行機] クローゼット長距離ワープ！
 [윷말] 처치 재굴림 +1!,[Yut Token] KO reroll +1!,[ユッ駒] 撃破で振り直し +1！
 [8번 공] 처치 돌진 +%d칸!,[8-Ball] KO dash +%d!,[8番ボール] 撃破ダッシュ +%dマス！
@@ -2285,7 +2285,7 @@ v%s · 비공식 팬게임 (원작사와 무관한 비영리 무료 배포물),v
 나이트 코너 도약 +2칸,Knight corner leap +2,ナイト コーナー跳躍 +2マス
 코너 바로 앞에 멈추면 +2칸,Stop right before a corner: +2 spaces,コーナーの直前に止まると+2マス
 경로에 내 말이 있으면 +3칸,+3 spaces if one of your pawns is on the path,経路上に自分の駒がいれば+3マス
-옷장 사용 시 카드 +1,+1 card when using a Wardrobe,タンスを使うとカード+1
+부스터 발판을 밟으면 카드 +1,+1 card when landing on a Booster pad,ブースター床を踏むとカード +1
 반환점 통과 시 승급,Promotes upon passing the midpoint,折り返し地点を通過すると成る
 기사의 맹세,Knight's Oath,騎士の誓い
 포격,Bombard,砲撃
@@ -2302,7 +2302,7 @@ v%s · 비공식 팬게임 (원작사와 무관한 비영리 무료 배포물),v
 [나리 승급] 이동 +2칸!,[Promotion] Move +2!,[成り] 移動+2マス！
 [장기:차] 직진 +2칸!,[Chariot] Straight +2!,[車] 直進+2マス！
 [나이트] 코너 도약 +2칸!,[Knight] Corner leap +2!,[ナイト] コーナー跳躍+2マス！
-[비행기] 옷장 카드+1!,[Airplane] Wardrobe card +1!,[飛行機] タンスでカード+1！
+[미니카] 부스터 카드+1!,[Mini Car] Booster card +1!,[ミニカー] ブースターでカード+1！
 [나이트] 맹세 방어!,[Knight] Oath guard!,[ナイト] 誓いの防御！
 [나리] %s 승급! 이동할 때마다 +2칸,[Promotion] %s promoted! +2 on every move,[成り] %s 成った！移動ごとに+2マス
 %s 승급 ◆ 이동할 때마다 +2칸,%s promoted ◆ +2 on every move,%s 成り ◆ 移動ごとに+2マス
@@ -3024,7 +3024,7 @@ TRPG,TRPG,TRPG
 정령!,Spirit!,精霊！
 [순례 목표],[Pilgrimage goal],[巡礼目標]
 정령 칸 순례! (%d/%d),Spirit tile pilgrimage! (%d/%d),精霊マス巡礼！ (%d/%d)
-정령 칸 (증강 라운드마다 정령이 바뀜),Spirit tile (spirits change every augment round),精霊マス (増強ラウンドごとに精霊が入れ替わる)
+정령 칸 (매 라운드 정령이 바뀜),Spirit tile (spirits change every round),精霊マス (毎ラウンド精霊が入れ替わる)
 정령산 순례,Spirit Mountain Pilgrimage,精霊山巡礼
 정령 칸에 {p1}회 멈춤,Stop on spirit tiles {p1} times,精霊マスに{p1}回止まる
 [특수 승리] 정령산 순례,[Special Win] Spirit Mountain Pilgrimage,[特殊勝利] 精霊山巡礼
@@ -3044,9 +3044,9 @@ TRPG,TRPG,TRPG
 딱 멈추면 1칸 앞으로,Stop exactly: 1 tile forward,ぴったり止まると1マス進む
 정령산,Spirit Mountain,精霊山
 정령산 보기,View Spirit Mountain,精霊山を見る
-정령들의 산 · 증강 라운드마다 빵집·옷장 자리 6곳에 하급 정령(불·물·땅·바람)이 깃들어 효과가 바뀐다,"Mountain of spirits · Every augment round, lesser spirits (fire, water, earth, wind) settle on the 6 bakery and wardrobe spots and change their effects",精霊たちの山 · 増強ラウンドごとにパン屋・クローゼットの6か所に下級精霊（火・水・地・風）が宿り、効果が変わる
-"증강 라운드마다 [b]하급 정령[/b]이 자리를 바꿔 깃들어요. 불은 1칸 뒤로, 물은 카드 1장, 바람은 1칸 앞으로 (딱 멈추면), 땅은 [b]지나가기만 해도[/b] 그 칸에서 멈춰요.","Every augment round, [b]lesser spirits[/b] move to new tiles. Fire sends you 1 tile back, Water gives 1 card, Wind moves you 1 tile forward (when you stop exactly), and Earth stops you on its tile [b]even when you just pass[/b].",増強ラウンドごとに[b]下級精霊[/b]が場所を変えて宿ります。火は1マス戻る、水はカード1枚、風は1マス進む（ぴったり止まったとき）、地は[b]通過するだけで[/b]そのマスで止まります。
-증강 라운드마다 [b]하급 정령[/b]이 자리를 바꿔 깃들어요.,"Every augment round, [b]lesser spirits[/b] move to new tiles.",増強ラウンドごとに[b]下級精霊[/b]が場所を変えて宿ります。
+정령들의 산 · 매 라운드 빵집·옷장 자리 6곳에 하급 정령(불·물·땅·바람)이 깃들어 효과가 바뀐다,"Mountain of spirits · Every round, lesser spirits (fire, water, earth, wind) settle on the 6 bakery and wardrobe spots and change their effects",精霊たちの山 · 毎ラウンド、パン屋・クローゼットの6か所に下級精霊（火・水・地・風）が宿り、効果が変わる
+"매 라운드 [b]하급 정령[/b]이 자리를 바꿔 깃들어요. 불은 1칸 뒤로, 물은 카드 1장, 바람은 1칸 앞으로 (딱 멈추면), 땅은 [b]지나가기만 해도[/b] 그 칸에서 멈춰요. 땅 정령은 결승선 쪽 두 칸 중 한 곳에만 깃들어요.","Every round, [b]lesser spirits[/b] move to new tiles. Fire sends you 1 tile back, Water gives 1 card, Wind moves you 1 tile forward (when you stop exactly), and Earth stops you on its tile [b]even when you just pass[/b]. The Earth spirit only settles on one of the two tiles nearest the goal.",毎ラウンド[b]下級精霊[/b]が場所を変えて宿ります。火は1マス戻る、水はカード1枚、風は1マス進む（ぴったり止まったとき）、地は[b]通過するだけで[/b]そのマスで止まります。地の精霊はゴール側の2マスのどちらかにだけ宿ります。
+매 라운드 [b]하급 정령[/b]이 자리를 바꿔 깃들어요.,"Every round, [b]lesser spirits[/b] move to new tiles.",毎ラウンド[b]下級精霊[/b]が場所を変えて宿ります。
 1칸 뒤로,1 tile back,1マス戻る
 +1칸,+1 tile,+1マス
 뒤로!,Back!,戻る！
@@ -3165,7 +3165,7 @@ TRPG,TRPG,TRPG
 빵집에서 카드를 얻고 옷장으로 순간이동해요.,Draw cards at bakeries and warp through wardrobes.,パン屋でカードを引き、クローゼットでワープします。
 "편의점에서 카드를, 자판기에서 음료를 얻어요.",Draw cards at stores and get drinks from vending machines.,コンビニでカードを引き、自販機で飲み物を受け取れます。
 "마녀 상점에서 카드를, 가마솥에서 물약을 얻어요.",Draw cards at witch shops and get potions from cauldrons.,魔女の店でカードを引き、大釜で薬を受け取れます。
-증강 라운드에 정령 발판의 속성이 바뀌어요.,Spirit tile elements change on draft rounds.,増強ラウンドで精霊マスの属性が変わります。
+매 라운드 정령 발판의 속성이 바뀌어요.,Spirit tile elements change every round.,毎ラウンド精霊マスの属性が変わります。
 빈자리에 추가한 컴퓨터에 이 난이도를 적용해요.,This difficulty applies to bots filling empty seats.,空席に追加したCPUにこの難易度を適用します。
 타로 카드를 한 장 고르세요,Pick one tarot card,タロットカードを1枚選んでください
 화투패를 두 장 고르세요,Pick two Hwatu cards,花札を2枚選んでください
@@ -3184,3 +3184,4 @@ TRPG,TRPG,TRPG
 눌러서 릴을 멈추세요! (스페이스),Tap to stop the reel! (Space),タップでリールを止めよう！（スペース）
 손가락으로 은박을 긁으세요!,Scratch the foil with your finger!,指で銀はがしを削ろう！
 %d / %d %s 골랐어요,Picked %d / %d %s,%d / %d %s 選択
+  [미니카] 부스터 발판: 카드 %d장,  [Mini Car] Booster pad: %d cards,  [ミニカー] ブースター床: カード %d枚

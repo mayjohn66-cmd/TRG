@@ -2910,7 +2910,7 @@ func _tile_tag_base(index: int, tile_type: TileNode.TileType) -> String:
 		TileNode.TileType.START_GOAL: return "▲출발"
 		TileNode.TileType.BAKERY: return str(BoardCatalog.current_shop()["name"])
 		TileNode.TileType.PORTAL, TileNode.TileType.VENDING, TileNode.TileType.CAULDRON: return str(BoardCatalog.current_portal()["name"])
-		TileNode.TileType.SPIRIT:  # 정령산: 지금 깃든 정령과 효과 (증강 라운드마다 바뀐다)
+		TileNode.TileType.SPIRIT:  # 정령산: 지금 깃든 정령과 효과 (매 라운드 바뀐다)
 			var spirit: StringName = MountainSpirits.at(state, index)
 			return "%s · %s" % [MountainSpirits.name_of(spirit), MountainSpirits.text_of(spirit)] if spirit != &"" else str(BoardCatalog.current_portal()["name"])
 	if BoardSpec.jump_corner_targets.has(index):
@@ -12656,7 +12656,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 					_log_line("[중립 기물] %s" % result_text, Color("fa5252"))
 					if not caught.is_empty():
 						_record(-1, "%s" % result_text), not caught.is_empty())  # 잡은 말은 처치 컷인·사출로 보인다 (따로 [말을 잡았습니다!] 카드는 띄우지 않는다)
-		&"spirits_shifted":  # 정령산: 증강 라운드마다 정령이 자리를 바꾼다
+		&"spirits_shifted":  # 정령산: 매 라운드 정령이 자리를 바꾼다
 			_log_line("[정령산] 정령들이 자리를 바꿨습니다", Color("63c7b2"))
 			_record(-1, "정령들이 자리를 바꿨습니다! 칸 위의 정령을 확인하세요", "", true)
 			_refresh_tiles()
@@ -12919,7 +12919,9 @@ func _log_move(data: Dictionary) -> void:
 	if not (data["destroyed"] as Array).is_empty():
 		text += "  [증기선] 상대 설치물 파괴 %d개" % (data["destroyed"] as Array).size()
 	if int(data["dog_cards"]) > 0:
-		text += "  [강아지] 지나친 빵집에서 카드 %d장" % data["dog_cards"]
+		text += "  [강아지] 지나친 특수 발판에서 카드 %d장" % data["dog_cards"]
+	if int(data.get("booster_cards", 0)) > 0:
+		text += "  [미니카] 부스터 발판: 카드 %d장" % data["booster_cards"]
 	if int(data.get("defused_cards", 0)) > 0:
 		text += "  [지뢰찾기] 함정 해체 카드 %d장" % data["defused_cards"]
 	if data["pushed_back"]:
@@ -12927,7 +12929,7 @@ func _log_move(data: Dictionary) -> void:
 	if data["hotel_built"]:
 		text += "  호텔 건설"
 	if int(data["salary_cards"]) > 0:
-		text += "  [미니카] 반환점 통과: 카드 %d장" % data["salary_cards"]
+		text += "  [비행기] 반환점 통과: 카드 %d장" % data["salary_cards"]
 	if data["drawn_card"] != &"":
 		text += "  [빵집] 카드 획득"
 	if not (data["effects"] as Array).is_empty():

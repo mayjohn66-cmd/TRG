@@ -12,7 +12,6 @@ const TEXTS: Dictionary = {
 	&"nari_bonus": "[나리 승급] 이동 +2칸!",
 	&"straight_cha": "[장기:차] 직진 +2칸!",
 	&"knight_corner": "[나이트] 코너 도약 +2칸!",
-	&"plane_card": "[비행기] 옷장 카드+1!",
 	&"knight_guard": "[나이트] 맹세 방어!",
 	&"trpg_level": "[TRPG] 레벨 업!",
 	&"straight_rook": "[룩] 직진 +2칸!",
@@ -33,9 +32,10 @@ const TEXTS: Dictionary = {
 	&"sweeper_defuse": "[지뢰찾기 공병] 함정 해체 카드+1!",
 	&"checker_slide": "[킹 체커] 스침 처치!",
 	&"shield_block": "[백돌] 보호막 방어!",
-	&"dog_bakery": "[강아지] 빵집 스침 카드+1!",
+	&"dog_pad": "[강아지] 특수 발판 스침 카드+1!",
 	&"ship_sink": "[증기선] 설치물 파괴!",
-	&"car_salary": "[미니카] 반환점 카드+1!",
+	&"car_booster": "[미니카] 부스터 카드+1!",
+	&"plane_halfway": "[비행기] 반환점 카드+1!",
 	&"plane_warp": "[비행기] 옷장 장거리 워프!",
 	&"yut_reroll": "[윷말] 처치 재굴림 +1!",
 	&"stack_magnet": "[업기] 옆 칸 아군과 합류!",
@@ -52,8 +52,8 @@ const TEXTS: Dictionary = {
 const COLORS: Dictionary = {
 	&"checker_slide": Color("ff6b6b"), &"melon_roll": Color("ff6b6b"), &"melon_immune": Color("74c0fc"), &"melon_grow": Color("8ce99a"), &"kyui_charge": Color("b197fc"), &"amnesia_block": Color("b197fc"),
 	&"shield_block": Color("74c0fc"), &"kart_immune": Color("74c0fc"), &"knight_pass": Color("74c0fc"), &"queen_pass": Color("74c0fc"), &"keima_pass": Color("74c0fc"), &"ship_sink": Color("74c0fc"),
-	&"dog_bakery": Color("8ce99a"), &"car_salary": Color("8ce99a"), &"sweeper_defuse": Color("8ce99a"), &"yut_reroll": Color("8ce99a"),
-	&"plane_warp": Color("b197fc"), &"plane_card": Color("8ce99a"), &"knight_guard": Color("74c0fc"), &"stack_magnet": Color("b197fc"),
+	&"dog_pad": Color("8ce99a"), &"car_booster": Color("8ce99a"), &"plane_halfway": Color("8ce99a"), &"sweeper_defuse": Color("8ce99a"), &"yut_reroll": Color("8ce99a"),
+	&"plane_warp": Color("b197fc"), &"knight_guard": Color("74c0fc"), &"stack_magnet": Color("b197fc"),
 }
 
 
