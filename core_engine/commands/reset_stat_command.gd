@@ -30,5 +30,5 @@ func can_execute(_ctx: RuleContext) -> bool:
 
 func _run() -> void:
 	var key: StringName = (LawRegistry.create(law_id) as VictoryLaw).stat_key
-	state.record_effect(target_player, "stat:" + String(key), state.stat(target_player, key))
+	# 1.3.1: 이의 있음!은 [너프 발동] - 공격이 아니라 방어 카드로 막지 않는다 (공격 기록을 남기지 않는다)
 	state.reset_stat(target_player, key)

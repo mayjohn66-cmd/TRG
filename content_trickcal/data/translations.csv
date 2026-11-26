@@ -3425,3 +3425,13 @@ TRPG,TRPG,TRPG
 방법: %s,How: %s,方法：%s
 막는 공격: %s,Blocks: %s,防ぐ攻撃：%s
 종류: %s,Type: %s,種類：%s
+[공격 방어] 공격 카드를 막고 반사,[Attack Guard] Block an attack card and reflect it,[攻撃ガード] 攻撃カードを防いで反射
+[너프 발동] 특수 승리 기록 1개를 0으로 초기화,[Nerf] Reset 1 Special Victory progress counter to 0,[デバフ発動] 特殊勝利の記録1つを0に初期化する
+[너프 발동] 상대 1명 2턴 동안 카드·필살기·주사위 리롤 금지,"[Nerf] Ban 1 opponent from cards, skills and dice rerolls for 2 turns",[デバフ発動] 相手1人を2ターンの間、カード・必殺技・サイコロ振り直し禁止
+[너프 발동] 상대 1명의 다음 턴 건너뛰기,[Nerf] Skip 1 opponent's next turn,[デバフ発動] 相手1人の次のターンをスキップ
+차례 빼앗기,Take over turns,手番の乗っ取り
+상대의 다음 차례를 자동으로 진행시켜요,Makes a rival's next turn play itself,相手の次の手番を自動で進めさせます
+카드마다 달라요: 그냥 피하기 · 덤으로 카드 1장 · 맞은 카드를 내 손패로 빼앗기 · 공격자에게 반사,Depends on the card: just dodge · dodge and draw 1 card · take the attack card into your hand · reflect it at the attacker,カードによって違います：かわすだけ・おまけでカード1枚・受けたカードを自分の手札に奪う・攻撃者に反射
+반사,Reflect,反射
+공격자의 선두 말이 출발선으로 (해킹은 공격자가 그대로 받아요),The attacker's lead pawn goes back to the start (a Hack hits the attacker instead),攻撃者の先頭の駒がスタートへ（ハッキングは攻撃者がそのまま受けます）
+밴·스킵·이의 있음 같은 [b][너프 발동][/b] 카드는 공격이 아니라서 막지 못해요,"[b][Nerf][/b] cards like Ban, Skip or Objection aren't attacks, so they can't be blocked",BAN・スキップ・異議ありのような[b][デバフ発動][/b]カードは攻撃ではないので防げません

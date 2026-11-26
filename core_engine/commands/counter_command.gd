@@ -60,22 +60,15 @@ func _run() -> void:
 				state.give_card(sender_id, trap_card)
 
 
-## 우노 리버스: 되돌린 공격 카드를 공격한 사람에게 돌려준다 (밴·스킵·이의 있음은 같은 효과, 그 밖의 카드는 공격자 선두 말 사출).
+## 우노 리버스: 되돌린 공격 카드를 공격한 사람에게 돌려준다 (해킹은 같은 효과, 그 밖의 카드는 공격자 선두 말 사출).
+## 1.3.1: 밴·스킵·이의 있음은 [너프 발동]이라 공격이 아니다 (반사할 일이 없다).
 static func reflect(game: GameState, entry: Dictionary, reflector: int) -> void:
 	var attacker: int = int(entry.get("attacker", -1))
 	if attacker < 1:
 		return
 	match StringName(entry.get("card_id", &"")):
-		&"ACT_14":
-			game.banned_turns[attacker] = StatusCardCommand.ban_turns()
-		&"ACT_15":
-			game.rest_next_turn[attacker] = true
 		&"ACT_23":
 			game.hacked_turns[attacker] = int(game.hacked_turns.get(attacker, 0)) + 1  # 전문적 해킹 반사: 해킹을 건 사람의 다음 턴이 자동 진행
-		&"ACT_06":
-			for key: String in (entry["effects"] as Dictionary).keys():
-				if key.begins_with("stat:"):
-					game.reset_stat(attacker, StringName(key.trim_prefix("stat:")))
 		_:
 			var front: PlayerPawn = game.front_pawn_of(attacker)
 			if front != null:

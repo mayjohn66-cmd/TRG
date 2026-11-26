@@ -79,6 +79,11 @@
        "ko": "카드 분류 [즉발]이 [발동]으로 바뀌었어요. 발동 카드 설명 맨 앞에 [공격 발동]·[버프 발동]·[너프 발동]·[기타 발동]이 붙어서 어떤 카드인지 바로 알 수 있어요 ([공격 발동]만 공격 방어로 막을 수 있어요)",
        "en": "The [Instant] card type is now [Action]. Action cards now start with [Attack], [Buff], [Nerf] or [Misc] so you can tell what they do at a glance (only [Attack] cards can be stopped by an Attack Guard)",
        "ja": "カード分類［即発］が［発動］になりました。発動カードの説明の先頭に［攻撃発動］・［バフ発動］・［デバフ発動］・［その他発動］が付き、どんなカードかすぐ分かります（攻撃ガードで防げるのは［攻撃発動］だけです）"
+      },
+      {
+       "ko": "[알고리즘 밴]·[UDO 스킵]·[이의 있음!]은 [너프 발동] 카드가 되어 더 이상 공격이 아니에요. 방어 카드로 막을 수 없고, [UDO 리버스]는 공격 카드를 막고 반사하는 카드로 단순해졌어요",
+       "en": "[Algorithm Ban], [UDO Skip] and [Objection!] are now [Nerf] cards and no longer count as attacks. They can't be blocked by Defense cards, and [UDO Reverse] is now simply: block an attack card and reflect it",
+       "ja": "［アルゴリズムBAN］・［UDO スキップ］・［異議あり！］は［デバフ発動］カードになり、攻撃ではなくなりました。防御カードでは防げず、［UDO リバース］は攻撃カードを防いで反射するシンプルなカードになりました"
       }
      ]
     }

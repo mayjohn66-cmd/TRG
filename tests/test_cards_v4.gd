@@ -138,20 +138,22 @@ func test_royal_decree_and_grave_robber_answer_traps() -> void:
 	check(robber.board.get_tile(3).attachments.is_empty(), "보드의 함정은 사라진다")
 
 
-func test_uno_reverse_reflects_skip_and_ban() -> void:
+func test_skip_ban_and_objection_are_nerfs_that_no_counter_answers() -> void:
+	# 1.3.1: 밴·스킵·이의 있음은 [너프 발동] - 공격 기록을 남기지 않아 UDO 리버스·감나빗! 등 방어 카드로 막지 않는다 (옛 규칙: 반사)
 	var state := make_state()
+	state.hands[2] = [&"CNT_01", &"CNT_03", &"CNT_04", &"CNT_10", &"CNT_11"] as Array[StringName]
 	state.begin_attack({"kind": &"card", "card_id": &"ACT_15", "attacker": 1})
 	exec(state, CardRegistry.get_card(&"ACT_15").create_command(state, 1, {"target_player": 2}))
 	state.end_attack()
 	check(bool(state.rest_next_turn.get(2, false)), "P2 휴식 예약")
-	exec(state, CardRegistry.get_card(&"CNT_03").create_command(state, 2, {"attack": int(state.attack_log[0]["id"])}))
-	check(not bool(state.rest_next_turn.get(2, false)) and bool(state.rest_next_turn.get(1, false)), "스킵이 공격자에게 반사")
 	state.begin_attack({"kind": &"card", "card_id": &"ACT_14", "attacker": 1})
 	exec(state, CardRegistry.get_card(&"ACT_14").create_command(state, 1, {"target_player": 2}))
 	state.end_attack()
 	check(state.is_banned(2), "밴")
-	exec(state, CardRegistry.get_card(&"CNT_03").create_command(state, 2, {"attack": int(state.attack_log[1]["id"])}))
-	check(not state.is_banned(2) and state.is_banned(1), "밴이 공격자에게 반사")
+	check(state.attack_log.is_empty(), "밴·스킵은 공격 기록이 없다")
+	for counter: StringName in state.hands[2]:
+		check(not CardRegistry.get_card(counter).could_play(state, 2), "%s로 막을 수 없다" % counter)
+	check(not MainBoard.ATTACK_CARDS.has(&"ACT_14") and not MainBoard.ATTACK_CARDS.has(&"ACT_15") and not MainBoard.ATTACK_CARDS.has(&"ACT_06"), "공격 경보 목록에도 없다")
 
 
 func test_counters_need_a_matching_attack_of_mine() -> void:
