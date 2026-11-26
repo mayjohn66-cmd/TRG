@@ -1919,6 +1919,11 @@ godot --headless --audio-driver Dummy --path . -s res://tests/ui_live_hotfix_tes
 - `Rulebook._ch_start`·`_ch_turn`·`_ch_tiles`·`_ch_capture`를 코드와 대조해 다시 썼다 (낡은 내용은 CHANGELOG 1.3.1). 공격 카드·함정 카드·방어 카드 항목은 카드 목록(`_card_rows`, 삭제)을 쓰지 않는다. 방어 4종 항목 추가, 카드 장 방어 카드는 `COUNTER_KINDS`로 막는 공격만.
 - 숫자는 `GameEnums.MAX_HAND_SIZE`·`DRAFT_START`·`TempoUp.STAGE_ROUNDS`·`MatchRules.SPEED_STAGE_ROUNDS`·`GameData.dash_steps/revenge_bonus`·`PacingDirector.HARD_CAP_ROUND`에서 읽는다. %d가 든 문장은 [b] 강조와 섞으면 번역 틀이 맞지 않아 강조를 뺐다.
 
+### 7.111 카드 분류 [즉발] → [발동]과 발동 세부 종류 (1.3.1, `feature/v1.3.1`)
+- 요청: 공격 카드는 어차피 굴리기 전에만 쓰니 즉시 효과를 적을 필요가 없다. 공통 분류는 [발동]으로 통일하고, 플레이어가 알아야 하는 건 카드 타입이니 공격 발동·버프 발동·너프 발동·기타 발동으로 나눈다.
+- 나눈 기준: 공격 발동 = 공격 경보가 뜨고 공격 방어로 막히는 카드(`ATTACK_CARDS`), 버프 = 나를 돕는 카드, 너프 = 상대를 약하게 하지만 공격이 아닌 카드(방해령 베루·메죵), 기타 = 모두에게 걸리거나(기억상실빔) 상태를 푸는 카드(회유책).
+- `cards_table.csv` desc(ko·en·ja)와 `MainBoard.CARD_SUMMARIES` 앞에 머리표를 붙이고 공통 문구를 뺐다. 카드 앞면(`CardSkin`)의 쓰는 때 꼬리표(즉시 효과·피격 시 발동)를 없앴다 (함정 발동 조건·NPC 소환은 그대로). 카드 확대 창(`_card_timing_text`)·모바일 상세는 "막는 공격"/"종류" 줄.
+
 ## 부록 B. 초기 예외 규칙 해석 (v1~v3.2, `EDGE_CASE_SPEC.md`에서 옮김)
 
 > 이 부록의 규칙은 당시 기준이다. 24칸 순환 트랙, 세트 효과, 후퇴 눈금, 옛 법전 교칙 등은 이후 개편으로 바뀌었다.

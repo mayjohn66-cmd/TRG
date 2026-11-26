@@ -172,7 +172,7 @@ func test_counter_kinds_and_labels() -> void:
 		check_eq(CardCounter.kind_label(card_id), labels[card_id], "%s 분류 이름" % card_id)
 		check_eq(MainBoard.category_label(CardRegistry.get_card(card_id)), "방어", "%s 모서리 배지는 [방어]" % card_id)
 		check(MainBoard.card_summary(card_id).begins_with("[%s] " % labels[card_id]), "%s 설명 머리표 [%s]: %s" % [card_id, labels[card_id], MainBoard.card_summary(card_id)])
-	check_eq(MainBoard.category_label(CardRegistry.get_card(&"ACT_02")), "즉발", "방어가 아닌 카드는 그대로")
+	check_eq(MainBoard.category_label(CardRegistry.get_card(&"ACT_02")), "발동", "방어가 아닌 카드는 그대로")
 
 
 func test_missed_me_stops_only_attack_cards_and_look_here_only_captures() -> void:

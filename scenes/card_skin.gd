@@ -269,13 +269,12 @@ static func body(card: BaseCard, card_size: Vector2, summary_text: String, categ
 	var badge_ink: Color = Color("f9f9f3") if card.category == GameEnums.CardCategory.TRAP or card.category == GameEnums.CardCategory.COUNTER else Color("111111")
 	label(badge, "CategoryName", category_name, Rect2(Vector2.ZERO, badge_size), badge_px, badge_ink, true)
 	if detailed:
-		var tag: String = "타일 설치" if card.needs_tile() else "즉시 효과"
+		# 1.3.1: 발동·방어 카드의 쓰는 때(즉시 효과·피격 시 발동)는 종류마다 같아 적지 않는다 (세부 종류는 설명 머리표 [버프 발동]·[잡기 방어] 등)
+		var tag: String = ""
 		if TRAP_TRIGGERS.has(card.card_id):
 			tag = TRAP_TRIGGERS[card.card_id]  # 함정은 모두 타일에 깔리므로 언제 발동하는지로 나눠 보여 준다
-		if card.category == GameEnums.CardCategory.SUMMON:
+		elif card.category == GameEnums.CardCategory.SUMMON:
 			tag = "NPC 소환"
-		elif card.category == GameEnums.CardCategory.COUNTER:
-			tag = "피격 시 발동"
 		label(detail, "EffectKind", tag, Rect2(padding * 2 + badge_size.x, padding, width - badge_size.x - padding * 3, badge_size.y), roundi(14 * k))
 	var summary_y: float = maxf((36.0 if detailed else 21.0) * k, padding + badge_size.y + 2.0 * k)
 	var summary_box := Rect2(padding, summary_y, width - padding * 2, detail.size.y - summary_y - padding)

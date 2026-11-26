@@ -289,3 +289,16 @@ func test_rulebook_names_the_defense_kind_of_every_counter_card() -> void:
 		check(Rulebook.COUNTER_KINDS.has(card_id), "%s 방어 종류가 도감에 있다" % card_id)
 		var kind: String = Rulebook._counter_kind(card_id)
 		check(MainBoard.card_summary(card_id).begins_with("[" + kind.get_slice(":", 0) + "]"), "%s: 카드 설명 꼬리표와 같다 (%s)" % [card_id, kind])
+
+
+func test_every_action_card_is_tagged_with_its_activation_kind() -> void:
+	# 1.3.1: 즉발 -> [발동]. 발동 카드는 설명 머리표로 공격·버프·너프·기타 발동을 나눈다 (공격 발동 = 공격 경보·공격 방어 대상 ATTACK_CARDS)
+	for card_id: StringName in CardRegistry.DECK_COMPOSITION.keys():
+		var card: BaseCard = CardRegistry.get_card(card_id)
+		if card.category != GameEnums.CardCategory.INSTANT:
+			continue
+		check_eq(MainBoard.category_label(card), "발동", "%s 모서리 이름은 발동" % card_id)
+		var kind: String = MainBoard.activate_kind(card_id)
+		check(MainBoard.ATTACK_CARDS.has(card_id) or MainBoard.ACTIVATE_KINDS.has(card_id), "%s 종류가 정해져 있다" % card_id)
+		check(MainBoard.card_summary(card_id).begins_with("[%s] " % kind), "%s 설명 머리표 [%s] (%s)" % [card_id, kind, MainBoard.card_summary(card_id)])
+		check(not MainBoard.card_summary(card_id).contains("굴리기 전 사용"), "%s: 굴리기 전 사용 문구는 공통이라 뺀다" % card_id)

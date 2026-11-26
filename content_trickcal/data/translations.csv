@@ -1121,7 +1121,7 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 방아쇠를 당긴 만큼 전진한다,Move as far as you pull the trigger,引き金を引いた分だけ前進する
 방어,Defense,防御
 방어 %s 발동! → %s을(를) 받아침,Defense %s activated! → countered %s,防御 %s 発動！ → %s を返り討ち
-방어 (파랑),Defense (blue),防御 (青)
+방어 (파랑),Defense (blue),防御（青）
 방어 카드,Defense Cards,防御カード
 방어 카드 [%s]는 내가 공격받을 때 뜨는 팝업에서 발동합니다.,Defense card [%s] triggers from the popup when you're attacked.,防御カード [%s] は自分が攻撃されたときに出るポップアップで発動します。
 방어 카드는 끌어 쓰지 않아요 (공격받을 때 팝업),Defense cards aren't dragged (popup when attacked),防御カードはドラッグして使いません (攻撃されたときにポップアップ)
@@ -1291,7 +1291,7 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 소리 켜짐,Sound on,音 ON
 소중한 의견 감사합니다!,Thanks for your feedback!,貴重なご意見ありがとうございます！
 소환,Summon,召喚
-소환 (분홍),Summon (pink),召喚 (ピンク)
+소환 (분홍),Summon (pink),召喚（ピンク）
 소환된 자리에서 기다리다가 라운드가 끝나면 역방향으로 가장 가까운 적 말까지 달려가 그 말 하나를 출발선으로 날려버리고 사라집니다,"Waits where summoned; at round end, runs backward to the nearest enemy pawn, blasts it back to Start and vanishes",召喚された場所で待機し、ラウンドが終わると逆方向に一番近い敵の駒まで走って、その駒1個をスタート地点へ吹き飛ばして消えます
 소환된 자리에서 기다리다가 라운드가 끝나면 정방향으로 가장 가까운 적 말까지 달려가 그 말 하나를 출발선으로 날려버리고 사라집니다,"Waits where summoned; at round end, runs forward to the nearest enemy pawn, blasts it back to Start and vanishes",召喚された場所で待機し、ラウンドが終わると順方向に一番近い敵の駒まで走って、その駒1個をスタート地点へ吹き飛ばして消えます
 소환할,summon,召喚する
@@ -1632,7 +1632,7 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 중앙 법전은 4칸! 새 교칙이 들어오면 가장 오래된 교칙이 밀려나요.,The Codex holds 4! A new Rule pushes out the oldest one.,中央法典は4枠！ 新しい校則が入ると一番古い校則が押し出されます。
 즉발,Instant,即発
 즉발 (노랑),Instant (yellow),即発 (黄)
-즉발·개입형,Instant · Interrupt,即発・介入型
+발동형 (굴리기 전에 보드에 끌어 놓기),Action (drag onto the board before rolling),発動型（振る前にボードへドラッグ）
 즉시 효과,Instant,即時効果
 증강,Augment,増強
 증강 공개,Augments Revealed,増強公開
@@ -1918,7 +1918,7 @@ v%s · 비공식 팬 제작 게임 · 원작 제작사와 무관한 비영리 �
 함께 골인!,Finish together!,一緒にゴール！
 함께 출발선으로!,Back to Start together!,一緒にスタート地点へ！
 함정,Trap,罠
-함정 (보라),Trap (purple),罠 (紫)
+함정 (보라),Trap (purple),罠（紫）
 함정 면역 · 밟은 적 함정 해체 +카드 1장,Trap-immune · defuses enemy traps stepped on +1 card,罠無効 · 踏んだ敵の罠を解除 +カード1枚
 함정 무효+강탈,Trap cancel + steal,罠無効+強奪
 함정 발동,Trap Triggered,罠発動
@@ -2218,7 +2218,7 @@ v%s · 비공식 팬게임 (원작사와 무관한 비영리 무료 배포물),v
 [손패 상한 +1!],[Hand limit +1!],[手札上限 +1！]
 [굴림 운 상승!],[Luckier rolls!],[出目運アップ！]
 [리바이브 장전!],[Revive loaded!],[リバイブ装填！]
-[즉발 카드 2장!],[2 Instant cards!],[即発カード2枚！]
+[발동 카드 2장!],[2 Action cards!],[発動カード2枚！]
 [보호막!],[Shield!],[バリア！]
 [함정 1개 철거!],[1 trap removed!],[罠を1つ撤去！]
 [선두 바로 뒤로!],[Right behind the leader!],[先頭のすぐ後ろへ！]
@@ -2229,7 +2229,7 @@ v%s · 비공식 팬게임 (원작사와 무관한 비영리 무료 배포물),v
  · 카드 획득: %s, · Card gained: %s, · カード獲得: %s
 이번 판 동안 굴림이 높게 나올 확률 상승,Rolls come up high more often for the rest of the match,この試合の間、出目が高く出やすくなる
 리바이브 장전: 0칸·턴 종료 굴림이 나오면 한 턴 더,Revive loaded: one more turn if a roll gives 0 spaces or ends your turn,リバイブ装填: 0マス・ターン終了の出目ならもう1ターン
-즉발 카드 획득: %s,Instant cards gained: %s,即発カード獲得: %s
+발동 카드 획득: %s,Action cards gained: %s,発動カード獲得: %s
 모든 플레이어의 결승선이 %d칸 당겨졌습니다 (%d번 칸부터 결승),Everyone's finish line moved %d spaces closer (finish from tile %d),全プレイヤーのゴールが%dマス近づきました（%d番マスからゴール）
 이번 드래프트를 다시 뽑습니다,Redrawing this draft,このドラフトを引き直します
 보호막을 씌울 말이 없습니다,No pawn can take a shield,バリアを張れる駒がありません
@@ -2480,7 +2480,7 @@ FINISH!,FINISH!,FINISH!
 레이스 1위,Race Leader,レース1位
 사출,Ejected,射出
 밟음,Stepped on,踏んだ
-발동,Triggered,発動
+발동,Action,発動
 사용!,Used!,使用！
 확정,Confirmed,確定
 포위망,Siege Net,包囲網
@@ -2855,7 +2855,7 @@ TRPG,TRPG,TRPG
 팽이가 부딪힌 칸에 내 말이 있으면 함께 날아갑니다,Your own pawn on the tile the top hits is blown away too,コマがぶつかったマスに自分の駒がいると一緒に飛ばされます
 밟은 모두 강제 정지,Forces all who step on it to stop,踏んだ全員を強制停止
 잡기 막고 카드 1장,Blocks a capture + 1 card,捕獲を防いでカード1枚
-[잡기 방어] 잡기를 막고 카드 1장 획득,[Capture Defense] Block a capture and gain 1 card,[捕獲防御] 捕獲を防いでカード1枚を獲得
+[잡기 방어] 잡기를 막고 카드 1장 획득,[Capture Guard] Block a capture and gain 1 card,[捕獲ガード] 捕獲を防いでカード1枚を獲得
 펭귄 발사로 적 날리기,Launch a penguin at enemies,ペンギン発射で敵を吹き飛ばす
 [공격] 내 말 하나에서 펭귄 발사 · 알까기처럼 날아가 부딪힌 적 말을 모두 출발선으로 날려 버림,[Attack] Launch a penguin from one of your pawns · it flies like alkkagi and blasts every enemy pawn it hits back to the start,[攻撃] 自分の駒から ペンギンを発射 · おはじきのように飛んで当たった敵の駒をすべてスタートへ吹き飛ばす
 내 말 박스로 1회 방어,Box defends one of your pawns once,自分の駒を箱で1回防御
@@ -3325,7 +3325,7 @@ TRPG,TRPG,TRPG
 말 위치를 바꾸거나 설치물을 부숴요,Swaps pawn positions or breaks placed objects,駒の位置を入れ替えたり、設置物を壊したりします
 차례 방해,Disrupt turns,手番の妨害
 "상대의 카드·필살기를 막거나, 차례를 건너뛰게 하거나, 자동으로 진행시켜요","Blocks a rival's cards and special moves, skips their turn, or makes it play itself",相手のカード・必殺技を封じたり、手番を飛ばしたり、自動で進めさせたりします
-맞은 사람은 [b]공격 방어[/b]·[b]만능 방어[/b] 카드로 막을 수 있어요,The target can block with an [b]Attack Defense[/b] or [b]All-round Defense[/b] card,受けた人は[b]攻撃防御[/b]・[b]万能防御[/b]カードで防げます
+맞은 사람은 [b]공격 방어[/b]·[b]만능 방어[/b] 카드로 막을 수 있어요,The target can block with an [b]Attack Guard[/b] or [b]All-round Guard[/b] card,受けた人は[b]攻撃ガード[/b]・[b]オールガード[/b]カードで防げます
 사출 면역(기억상실빔 라운드)·수은 보호막이 있으면 날아가지 않아요,Launch immunity (an Amnesia Beam round) or a Mercury shield keeps you from being sent back,射出免疫（記憶喪失ビームのラウンド）・水銀バリアがあれば飛ばされません
 카드마다 자세한 효과는 [b]도감 → 카드[/b],Each card's exact effect: [b]Catalog → Cards[/b],カードごとの詳しい効果は[b]図鑑 → カード[/b]
 4가지,4 kinds,4種類
@@ -3369,13 +3369,59 @@ TRPG,TRPG,TRPG
 몇 번,How many times,何回
 대부분 한 번 걸리면 사라져요 (여러 번 남는 함정도 있어요),Most disappear after triggering once (some stay for several),たいてい1回かかると消えます（何回も残る罠もあります）
 "대부분 적 말에게만 걸리지만, 폭발·연쇄처럼 내 말까지 휘말리는 함정도 있어요","Most only catch enemy pawns, but some, like explosions or chain reactions, can catch yours too",たいてい敵の駒にだけかかりますが、爆発・連鎖のように自分の駒まで巻き込む罠もあります
-걸린 사람은 [b]함정 방어[/b]·[b]만능 방어[/b] 카드로 막을 수 있어요,Whoever is caught can block with a [b]Trap Defense[/b] or [b]All-round Defense[/b] card,かかった人は[b]罠防御[/b]・[b]万能防御[/b]カードで防げます
-만능 방어: 어떤 공격이든,All-round Defense: any attack,万能防御：どんな攻撃でも
-잡기 방어: 적 말이 내 말을 잡을 때,Capture Defense: when an enemy pawn captures yours,捕獲防御：敵の駒が自分の駒を捕まえるとき
-공격 방어: 공격 카드에 맞을 때,Attack Defense: when an attack card hits you,攻撃防御：攻撃カードを受けたとき
-함정 방어: 내 말이 남의 함정에 걸렸을 때,Trap Defense: when your pawn hits someone else's trap,罠防御：自分の駒が他人の罠にかかったとき
+걸린 사람은 [b]함정 방어[/b]·[b]만능 방어[/b] 카드로 막을 수 있어요,Whoever is caught can block with a [b]Trap Guard[/b] or [b]All-round Guard[/b] card,かかった人は[b]罠ガード[/b]・[b]オールガード[/b]カードで防げます
+만능 방어: 어떤 공격이든,All-round Guard: any attack,オールガード：どんな攻撃でも
+잡기 방어: 적 말이 내 말을 잡을 때,Capture Guard: when an enemy pawn captures yours,捕獲ガード：敵の駒が自分の駒を捕まえるとき
+공격 방어: 공격 카드에 맞을 때,Attack Guard: when an attack card hits you,攻撃ガード：攻撃カードを受けたとき
+함정 방어: 내 말이 남의 함정에 걸렸을 때,Trap Guard: when your pawn hits someone else's trap,罠ガード：自分の駒が他人の罠にかかったとき
 공격받았을 때,When attacked,攻撃されたとき
 %d·%d·%d라운드처럼 3라운드마다 모두가 증강 3장 중 하나를 골라요. 법전의 교칙은 모두 특수 승리 조건이에요.,"On rounds %d, %d, %d and so on, every 3 rounds, everyone picks 1 of 3 augments. Every rule in the Codex is a Special Victory condition.",%d・%d・%dラウンドのように3ラウンドごとに、全員が増強3枚から1枚を選びます。法典の教則はすべて特殊勝利の条件です。
 법전에 새 승리 조건 (%d라운드 과열부터),"A new win condition in the Codex (from round %d, Overheat)",法典に新しい勝利条件（%dラウンドのオーバーヒートから）
 막는 공격,Blocks,防ぐ攻撃
 주사위·윷·친치로·야추·핀볼은 버튼을 꾹 눌러 세기를 모아 던져요,"Dice, Yut, Chinchiro, Yacht and Pinball: hold the button to build power, then throw",サイコロ・ユッ・チンチロ・ヨット・ピンボールはボタンを長押しして力をためて投げます
+[버프 발동] 이번 굴림 +9칸 · 대신 다음 내 턴 3번 동안 첫 굴림 -3칸,[Buff] This roll +9 · but the first roll of each of your next 3 turns is -3.,[バフ発動] 今回の出目+9・代わりに次の自分の番3回は最初の出目-3
+[기타 발동] 밴·스킵·해킹이 걸린 채 내 턴이 오면 모두 해제 (밴 중에도 사용 가능),"[Misc] When your turn comes while Banned, Skipped or Hacked, lift them all (usable even while Banned).",[その他発動] バン・スキップ・ハッキング中に自分の番が来たらすべて解除（バン中でも使用可）
+[버프 발동] 내 말 하나에 수은 보호막 · 공격 카드로 출발선으로 사출되는 것을 1회 막음,[Buff] Coat one of your pawns in mercury - blocks being ejected to the start line by an attack card once.,[バフ発動] 自分の駒1つに水銀の盾・攻撃カードでスタートラインへ射出されるのを1回防ぐ
+[공격 발동] 내 말 하나에서 펭귄 발사 · 알까기처럼 날아가 부딪힌 적 말을 모두 출발선으로 날려 버림,[Attack] Launch a penguin from one of your pawns · it flies like alkkagi and blasts every enemy pawn it hits back to the start,[攻撃発動] 自分の駒から ペンギンを発射 · おはじきのように飛んで当たった敵の駒をすべてスタートへ吹き飛ばす
+[버프 발동] 내 말 하나에 택배 박스를 씌움 · 잡기·함정을 1회 막고 벗겨짐,"[Buff] Put a delivery box on one of your pawns · blocks one capture or trap, then comes off",[バフ発動] 自分の駒に宅配ボックスをかぶせる · 捕獲・罠を1回防いで外れる
+[공격 발동] 대상의 다음 한 턴이 자동 진행 (무작위 말 이동 · 카드·필살기 사용 불가),[Attack] The target's next turn plays automatically (random pawn move · no cards or skills),[攻撃発動] 対象の次の1ターンが自動進行 (ランダムな駒を移動 · カード・必殺技使用不可)
+[공격 발동] 상대 선두 말을 출발선으로 장외 사출,[Attack] Knock a rival's lead pawn back to Start,[攻撃発動] 相手の先頭駒をスタート地点へ場外射出
+[공격 발동] 다음 유저에게 폭탄 패스: 선두 말 사출 + 내 이동 +4칸,[Attack] Pass the bomb to the next player: knock off their lead pawn + my move +4,[攻撃発動] 次のプレイヤーに爆弾パス: 先頭駒を射出 + 自分の移動 +4マス
+[버프 발동] 이번 굴림 +4칸,[Buff] This roll +4 spaces,[バフ発動] 今回の出目 +4マス
+[공격 발동] 특수 승리 기록 1개를 0으로 초기화 (공격에 반응하는 방어 카드는 아님),[Attack] Reset 1 Special Victory progress counter to 0 (not a defense card).,[攻撃発動] 特殊勝利の記録1つを0に初期化する (防御カードではない)
+[공격 발동] 고른 한 변의 설치물 전부 붕괴,[Attack] Collapse all objects on one chosen side,[攻撃発動] 選んだ一辺の設置物をすべて崩壊させる
+[공격 발동] 내 꼴찌 말 ↔ 1등 적 선두 말 위치 교환,[Attack] Swap my last pawn ↔ the leading enemy pawn,[攻撃発動] 自分の最下位駒 ↔ 1位の敵の先頭駒の位置を入れ替える
+"[공격 발동] 적 1명과 6종 랜덤 미니게임 데스매치! 승자 말 +3칸, 패자 선두 말 사출","[Attack] Deathmatch vs 1 rival in 1 of 6 random minigames! Winner +3 spaces, loser's lead pawn knocked off",[攻撃発動] 敵1人と6種のランダムミニゲームでデスマッチ！ 勝者の駒 +3マス、敗者の先頭駒を射出
+[공격 발동] 내 선두 말 앞 3칸의 적 사출 + 설치물 파괴,[Attack] Knock off enemies 3 spaces ahead of my lead + destroy objects,[攻撃発動] 自分の先頭駒の前方3マス以内の敵を射出 + 設置物を破壊
+[버프 발동] 다음 굴림 결과를 1~6칸 중 직접 지정,[Buff] Set your next roll to 1~6 yourself,[バフ発動] 次の出目結果を1~6マスの中から直接指定する
+[버프 발동] 이번 턴이 끝나면 한 턴 더,[Buff] One more turn after this one,[バフ発動] このターンが終わると、もう1ターン
+[버프 발동] 내 선두 말을 반환점까지의 빈 칸 중 고른 칸으로 순간이동,[Buff] Teleport my lead pawn to an empty tile up to the halfway corner,[バフ発動] 自分の先頭駒を折り返し地点までの空きマスの中から選んだマスへ瞬間移動
+[공격 발동] 상대 1명 2턴 동안 카드·필살기·주사위 리롤 금지,"[Attack] Ban 1 rival's cards, Skills and dice rerolls for 2 turns",[攻撃発動] 相手1人の2ターンの間カード・必殺技・サイコロのリロール禁止
+[공격 발동] 상대 1명의 다음 턴 건너뛰기,[Attack] Skip 1 rival's next turn,[攻撃発動] 相手1人の次のターンをスキップ
+[너프 발동] 적 말 1개를 뒤로 1칸 (도착 칸이 비어 있을 때),[Nerf] Push 1 enemy pawn back 1 space (the space behind must be empty),[デバフ発動] 敵の駒1個を1マス後ろへ（後ろのマスが空いているとき）
+[버프 발동] 내 말 1개를 앞으로 1칸 (도착 칸이 비어 있을 때),[Buff] Move 1 of your pawns forward 1 space (the space ahead must be empty),[バフ発動] 自分の駒1個を1マス前へ（前のマスが空いているとき）
+[너프 발동] 적 1명의 다음 이동 눈금 -1 (최소 1칸),[Nerf] Reduce 1 enemy's next roll by 1 (minimum 1 space),[デバフ発動] 敵1人の次の移動目盛り-1（最小1マス）
+[카드 보급] 발동 카드 패키지,[Card Supply] Action Card Pack,[カード補給] 発動カードパック
+◆ 무작위 발동 카드 2장 획득,◆ Gain 2 random Action cards,◆ ランダムな発動カードを2枚獲得
+공격 발동,Attack,攻撃発動
+버프 발동,Buff,バフ発動
+너프 발동,Nerf,デバフ発動
+기타 발동,Misc,その他発動
+방어 카드를 뺀 모든 카드는 내 차례 [b]굴리기 전에[/b] 보드판으로 끌어다 놓아 써요. 카드 설명 맨 앞의 [b][ ] 머리표[/b]가 세부 종류예요.,Every card except Defense cards is played by dragging it onto the board [b]before you roll[/b] on your turn. The [b][ ] tag[/b] at the start of a card's text tells you its type.,防御カード以外のカードは、自分の手番で[b]振る前に[/b]ボードへドラッグして使います。カード説明の先頭の[b][ ]タグ[/b]が細かい種類です。
+공격받으면 팝업에서 쓸지 물어봐요 · 잡기·공격·함정·만능 방어,"When you're attacked, a popup asks whether to use one · Capture / Attack / Trap / All-round Guard",攻撃されるとポップアップで使うか聞かれます・捕獲／攻撃／罠／オールガード
+발동 (노랑),Action (yellow),発動（黄）
+놓으면 바로 효과 · 아래 네 종류,Takes effect when dropped · four types below,置くとすぐ効果・下の4種類
+상대를 노려요. 공격 경보가 뜨고 [b]공격 방어[/b]로 막힐 수 있어요,"Targets a rival. An attack alert sounds, and it can be stopped by an [b]Attack Guard[/b]",相手を狙います。攻撃警報が出て、[b]攻撃ガード[/b]で防がれることがあります
+내 말이나 내 굴림을 도와요,Helps your pawns or your roll,自分の駒や自分の出目を助けます
+상대를 약하게 하지만 공격은 아니라서 막을 수 없어요,"Weakens a rival, but it isn't an attack, so it can't be blocked",相手を弱めますが、攻撃ではないので防げません
+모두에게 걸리거나 걸린 상태를 풀어요,"Affects everyone, or clears effects placed on you",全員にかかったり、かかった状態を解いたりします
+칸을 골라 숨겨 깔기 · 코너 함정은 코너에 공개로,Place face-down on a chosen tile · corner traps go face-up on corners,マスを選んで隠して置く・コーナー罠はコーナーに公開で
+상단 코너에 중립 기물을 불러내요 · 라운드 끝마다 움직여요,Calls a neutral piece onto a top corner · it moves at the end of each round,上のコーナーに中立の駒を呼び出します・ラウンドの終わりごとに動きます
+종류,Type,種類
+%s: %s,%s: %s,%s：%s
+공격 경보가 뜨고 공격 방어로 막힐 수 있어요,"An attack alert sounds, and an Attack Guard can stop it",攻撃警報が出て、攻撃ガードで防がれることがあります
+"카드 설명에 [b][공격 발동][/b]이 붙은 카드예요. 상대의 말이나 차례를 직접 노리고, 쓰면 먼저 [b]공격 카드 발동![/b] 경보가 뜨고 어떤 카드인지 공개돼요.",Cards tagged [b][Attack][/b]. They target a rival's pawns or turn directly; playing one first sounds an [b]Attack card activated![/b] alert and reveals the card.,カード説明に[b][攻撃発動][/b]が付いたカードです。相手の駒や手番を直接狙い、使うとまず[b]攻撃カード発動！[/b]の警報が出て、どのカードかが公開されます。
+상대를 약하게 해도 공격이 아닌 [b][너프 발동][/b] 카드는 막을 수 없어요,"[b][Nerf][/b] cards weaken rivals but aren't attacks, so they can't be blocked",相手を弱めても攻撃ではない[b][デバフ発動][/b]カードは防げません
+방법: %s,How: %s,方法：%s
+막는 공격: %s,Blocks: %s,防ぐ攻撃：%s
+종류: %s,Type: %s,種類：%s

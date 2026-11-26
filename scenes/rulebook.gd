@@ -1795,9 +1795,9 @@ func _ch_capture() -> Dictionary:
 			"summary": "잡혀서 출발선으로 날아간 말은 다음에 다시 출발할 때 %d칸 더 가요." % GameData.revenge_bonus(),
 			"points": ["한 번 쓰면 꺼져요", "템포 업 과열 +6칸, 광기부터 +8칸으로 커져요", "출발 전이던 말·완주한 말은 받지 않아요"]},
 		{"title": "공격 카드", "art": &"attack", "tone": Color("ff6b6b"), "chips": ["발동 경보", "막을 수 있음"],
-			"summary": "상대의 말이나 차례를 직접 노리는 카드예요. 쓰면 먼저 [b]공격 카드 발동![/b] 경보가 뜨고 어떤 카드인지 공개돼요.",
+			"summary": "카드 설명에 [b][공격 발동][/b]이 붙은 카드예요. 상대의 말이나 차례를 직접 노리고, 쓰면 먼저 [b]공격 카드 발동![/b] 경보가 뜨고 어떤 카드인지 공개돼요.",
 			"rows": [["말 날리기", "상대 말을 출발선으로 사출해요 (그 말에 업힌 말도 함께)"], ["자리 흔들기", "말 위치를 바꾸거나 설치물을 부숴요"], ["차례 방해", "상대의 카드·필살기를 막거나, 차례를 건너뛰게 하거나, 자동으로 진행시켜요"]],
-			"points": ["맞은 사람은 [b]공격 방어[/b]·[b]만능 방어[/b] 카드로 막을 수 있어요", "사출 면역(기억상실빔 라운드)·수은 보호막이 있으면 날아가지 않아요", "카드마다 자세한 효과는 [b]도감 → 카드[/b]"]},
+			"points": ["맞은 사람은 [b]공격 방어[/b]·[b]만능 방어[/b] 카드로 막을 수 있어요", "상대를 약하게 해도 공격이 아닌 [b][너프 발동][/b] 카드는 막을 수 없어요", "사출 면역(기억상실빔 라운드)·수은 보호막이 있으면 날아가지 않아요", "카드마다 자세한 효과는 [b]도감 → 카드[/b]"]},
 		{"title": "방어 카드", "art": &"defense", "tone": Color("74c0fc"), "chips": ["4가지"],
 			"summary": "공격받으면 [b]막을 수 있는 방어 카드가 있을 때만[/b] 쓸지 물어봐요. 막는 공격에 따라 네 가지로 나뉘어요.",
 			"rows": [["잡기 방어", "적 말이 내 말을 잡을 때"], ["공격 방어", "공격 카드에 맞을 때"], ["함정 방어", "내 말이 남의 함정에 걸렸을 때"], ["만능 방어", "어떤 공격이든"]],
@@ -1833,6 +1833,15 @@ const COUNTER_KINDS: Dictionary = {
 	&"CNT_02": "잡기 방어: 적 말이 내 말을 잡을 때", &"CNT_08": "잡기 방어: 적 말이 내 말을 잡을 때", &"CNT_09": "잡기 방어: 적 말이 내 말을 잡을 때",
 	&"CNT_03": "공격 방어: 공격 카드에 맞을 때", &"CNT_04": "공격 방어: 공격 카드에 맞을 때", &"CNT_10": "공격 방어: 공격 카드에 맞을 때", &"CNT_11": "공격 방어: 공격 카드에 맞을 때",
 	&"CNT_05": "함정 방어: 내 말이 남의 함정에 걸렸을 때", &"CNT_06": "함정 방어: 내 말이 남의 함정에 걸렸을 때", &"CNT_07": "함정 방어: 내 말이 남의 함정에 걸렸을 때",
+}
+
+
+## 발동 카드 세부 종류의 뜻 (카드 장 상세 표).
+const ACTIVATE_NOTES: Dictionary = {
+	"공격 발동": "공격 경보가 뜨고 공격 방어로 막힐 수 있어요",
+	"버프 발동": "내 말이나 내 굴림을 도와요",
+	"너프 발동": "상대를 약하게 하지만 공격은 아니라서 막을 수 없어요",
+	"기타 발동": "모두에게 걸리거나 걸린 상태를 풀어요",
 }
 
 
@@ -1944,31 +1953,32 @@ static func _pawn_texture(sub: Variant, kind: GameEnums.PawnKind) -> Texture2D:
 func _ch_cards() -> Dictionary:
 	var entries: Array = [
 		{"title": "카드 쓰는 법", "art": &"play_card", "tone": Color("f0c14e"), "chips": ["손패 최대 7장"],
-			"summary": "빵집·증강에서 얻은 카드를 [b]보드판으로 끌어다 놓아[/b] 써요.",
-			"rows": [["방어 (파랑)", "공격받으면 팝업에서 발동 여부를 물어봐요"], ["즉발 (노랑)", "굴리기 전에 바로 효과"], ["함정 (보라)", "칸을 골라 숨겨 깔기, 코너 전용 4종"], ["소환 (분홍)", "상단 코너에 1마리, 라운드마다 1~3칸 · 적을 잡으면 퇴장"]],
+			"summary": "방어 카드를 뺀 모든 카드는 내 차례 [b]굴리기 전에[/b] 보드판으로 끌어다 놓아 써요. 카드 설명 맨 앞의 [b][ ] 머리표[/b]가 세부 종류예요.",
+			"rows": [["방어 (파랑)", "공격받으면 팝업에서 쓸지 물어봐요 · 잡기·공격·함정·만능 방어"], ["발동 (노랑)", "놓으면 바로 효과 · 아래 네 종류"], ["공격 발동", "상대를 노려요. 공격 경보가 뜨고 [b]공격 방어[/b]로 막힐 수 있어요"], ["버프 발동", "내 말이나 내 굴림을 도와요"], ["너프 발동", "상대를 약하게 하지만 공격은 아니라서 막을 수 없어요"], ["기타 발동", "모두에게 걸리거나 걸린 상태를 풀어요"], ["함정 (보라)", "칸을 골라 숨겨 깔기 · 코너 함정은 코너에 공개로"], ["소환 (분홍)", "상단 코너에 중립 기물을 불러내요 · 라운드 끝마다 움직여요"]],
 			"tip": "일기토 데스매치는 [b]상대 프로필이나 말 위에[/b] 놓으면 그 상대와 붙어요. 종목은 6종 중 무작위!"},
 	]
 	for card_id: StringName in CardRegistry.DECK_COMPOSITION.keys():
 		var card: BaseCard = CardRegistry.get_card(card_id)
 		var tone: Color = Color("f0c14e")
-		var when: String = "굴리기 전 (내 턴 시작)"
-		var how: String = "보드에 끌어 놓기"
+		# 쓰는 때(굴리기 전 / 공격받을 때)는 종류마다 같아 카드 쓰는 법 한 곳에만 적고, 카드마다는 세부 종류만 보여 준다 (1.3.1)
 		var rows: Array = []
 		match card.category:
 			GameEnums.CardCategory.COUNTER:
 				tone = Color("74c0fc")
-				when = ""  # 방어 카드는 모두 공격받을 때 팝업으로 쓴다 (기본 규칙 → 잡기 → 방어 카드): 공통 설명은 빼고 막는 공격만
 				rows.append(["막는 공격", _counter_kind(card_id)])
+			GameEnums.CardCategory.INSTANT:
+				var kind: String = MainBoard.activate_kind(card_id)
+				rows.append(["종류", "%s: %s" % [kind, ACTIVATE_NOTES.get(kind, "")]])
 			GameEnums.CardCategory.TRAP:
 				tone = Color("b197fc")
-				how = "보드에 끌어 놓고 %s 고르기" % ("코너" if card.corner_only else "칸")
+				rows.append(["방법", "보드에 끌어 놓고 %s 고르기" % ("코너" if card.corner_only else "칸")])
 			GameEnums.CardCategory.SUMMON:
 				tone = Color("f08aa8")
 		var quote: String = GameData.text("cards", card_id, "parody_quote")
 		var data: Dictionary = {"title": card.display_name, "card": card_id, "texture": TextureCache.fetch("res://assets/cards/%s.png" % card_id), "icon": &"book", "tone": tone,
 			"chips": [MainBoard.category_label(card), "%d장" % int(CardRegistry.DECK_COMPOSITION[card_id])],
 			"summary": MainBoard.card_summary(card_id).replace("\n", " "),
-			"rows": rows if when == "" else [["언제", when], ["방법", how]]}
+			"rows": rows}
 		if quote != "":
 			data["note"] = "“%s”" % quote
 		if CardSkin.SELF_RISK.has(card_id):

@@ -30,7 +30,7 @@ func _run() -> void:
 		var id := StringName("ACT_%d" % (16 + i))
 		var card: BaseCard = CardRegistry.get_card(id)
 		var description: String = GameData.text("cards", id, "desc")
-		var body: Control = CardSkin.body(card, Vector2(400, 560), description, "즉발", true)
+		var body: Control = CardSkin.body(card, Vector2(400, 560), description, "발동", true)
 		var frame := PanelContainer.new()
 		frame.position = Vector2(208 + i * 550, 110)
 		frame.custom_minimum_size = Vector2(400, 560)

@@ -74,6 +74,11 @@
        "ko": "모노폴리 기물 패시브가 모든 보드판에서 작동하도록 바뀌었어요: [강아지] 특수 발판(빵집·편의점·마녀 상점·옷장·자판기·가마솥·정령 칸)을 지나가기만 해도 카드 +1 · [미니카] 부스터 발판을 밟으면 카드 +1 · [비행기] 반환점을 지나면 카드 +1",
        "en": "Monopoly pawn passives now work on every board: [Puppy] +1 card just for passing a special tile (Bakery, Convenience Store, Witch Shop, Wardrobe, Vending Machine, Cauldron, Spirit tile) · [Mini Car] +1 card when landing on a Booster pad · [Airplane] +1 card when passing the halfway corner",
        "ja": "モノポリー駒のパッシブが全ボードで発動するようになりました：［子犬］特殊マス（パン屋・コンビニ・魔女の店・タンス・自販機・大釜・精霊マス）を通過するだけでカード+1・［ミニカー］ブースター床を踏むとカード+1・［飛行機］折り返し地点を通過するとカード+1"
+      },
+      {
+       "ko": "카드 분류 [즉발]이 [발동]으로 바뀌었어요. 발동 카드 설명 맨 앞에 [공격 발동]·[버프 발동]·[너프 발동]·[기타 발동]이 붙어서 어떤 카드인지 바로 알 수 있어요 ([공격 발동]만 공격 방어로 막을 수 있어요)",
+       "en": "The [Instant] card type is now [Action]. Action cards now start with [Attack], [Buff], [Nerf] or [Misc] so you can tell what they do at a glance (only [Attack] cards can be stopped by an Attack Guard)",
+       "ja": "カード分類［即発］が［発動］になりました。発動カードの説明の先頭に［攻撃発動］・［バフ発動］・［デバフ発動］・［その他発動］が付き、どんなカードかすぐ分かります（攻撃ガードで防げるのは［攻撃発動］だけです）"
       }
      ]
     }

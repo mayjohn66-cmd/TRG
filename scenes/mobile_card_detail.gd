@@ -25,7 +25,7 @@ static func make(card: BaseCard, face: Control, description: String, timing: Str
 	text.add_theme_font_size_override("normal_font_size",maxi(20,roundi(34*unit)))
 	text.add_theme_constant_override("line_separation",6);text.add_theme_color_override("default_color",UiSkin.INK)
 	text.scroll_active=true;body.add_child(text)
-	var hint:=Label.new();hint.text=L10n.tf("발동: %s",[timing]);hint.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	var hint:=Label.new();hint.text=timing;hint.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 	hint.add_theme_font_size_override("font_size",maxi(16,roundi(20*unit)));hint.add_theme_color_override("font_color",UiSkin.SOFT);hint.custom_minimum_size.x=text_width
 	body.add_child(hint)
 	if HauntCommand.is_haunt(card.card_id):  # 방해령 삼총사: 작은 힌트 한 줄 (데스크톱 확대 보기와 같은 문구)

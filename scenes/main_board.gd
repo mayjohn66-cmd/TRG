@@ -137,10 +137,10 @@ const COLOR_BG: Color = Color("0d1018")
 const COLOR_PANEL: Color = Color("1a2030")
 const COLOR_PANEL_EDGE: Color = Color("39435c")
 const COLOR_GOLD: Color = Color("ffd43b")
-## 카드 배경색은 카드의 속성(카테고리)을 알려 준다: 즉발 주황 / 함정 보라 / 소환 청록.
+## 카드 배경색은 카드의 속성(카테고리)을 알려 준다: 발동 주황 / 함정 보라 / 소환 청록.
 const CARD_BG_COLORS: Dictionary = CardSkin.FILLS
 const CARD_CATEGORY_NAMES: Dictionary = {
-	GameEnums.CardCategory.INSTANT: "즉발",
+	GameEnums.CardCategory.INSTANT: "발동",  # 1.3.1: 즉발 -> 발동 (모든 카드가 굴리기 전에 쓰므로 "즉시"는 뺐다)
 	GameEnums.CardCategory.TRAP: "함정",
 	GameEnums.CardCategory.SUMMON: "소환",
 	GameEnums.CardCategory.COUNTER: "방어",
@@ -148,6 +148,20 @@ const CARD_CATEGORY_NAMES: Dictionary = {
 ## 카드 모서리 분류 이름 (방어 카드도 [방어]: 잡기·공격·함정 분류는 설명 머리표 [잡기 방어] 등에 적는다).
 static func category_label(card: BaseCard) -> String:
 	return str(CARD_CATEGORY_NAMES[card.category])
+
+
+## 발동 카드의 세부 종류 (카드 설명 머리표 [공격 발동]·[버프 발동]·[너프 발동]·[기타 발동]과 같다, 1.3.1).
+## 공격 발동 = 공격 경보가 뜨고 공격 방어로 막을 수 있는 카드(ATTACK_CARDS) / 버프 = 나를 돕는다 / 너프 = 상대를 약하게 하지만 공격은 아니다 / 기타 = 모두에게 걸리거나 상태를 푼다.
+const ACTIVATE_KINDS: Dictionary = {
+	&"ACT_04": "버프 발동", &"ACT_11": "버프 발동", &"ACT_12": "버프 발동", &"ACT_13": "버프 발동", &"ACT_17": "버프 발동",
+	&"ACT_19": "버프 발동", &"ACT_22": "버프 발동", &"ACT_24": "버프 발동", &"ACT_26": "버프 발동",
+	&"ACT_18": "너프 발동", &"ACT_20": "너프 발동",
+	&"ACT_16": "기타 발동", &"ACT_25": "기타 발동",
+}
+
+
+static func activate_kind(card_id: StringName) -> String:
+	return "공격 발동" if ATTACK_CARDS.has(card_id) else str(ACTIVATE_KINDS.get(card_id, "기타 발동"))
 
 
 ## 작은 손패 카드에 보여 주는 1줄 핵심 요약 (15자 이내). 자세한 규칙은 클릭해서 확대할 때 CARD_SUMMARIES로 본다.
@@ -216,32 +230,32 @@ const CARD_SUMMARIES: Dictionary = {
 	&"CNT_09": "[잡기 방어] 잡기를 막고 카드 1장 획득",
 	&"CNT_10": "[공격 방어] 공격 카드를 막고 카드 1장 획득",
 	&"CNT_11": "[공격 방어] 공격 카드를 막고 그 카드를 내 손패로",
-	&"ACT_24": "굴리기 전 사용! 이번 굴림 +9칸 · 대신 다음 내 턴 3번 동안 첫 굴림 -3칸",
-	&"ACT_25": "밴·스킵·해킹이 걸린 채 내 턴이 오면 모두 해제 (밴 중에도 사용 가능)",
-	&"ACT_26": "내 말 하나에 수은 보호막 · 공격 카드로 출발선으로 사출되는 것을 1회 막음",
+	&"ACT_24": "[버프 발동] 이번 굴림 +9칸 · 대신 다음 내 턴 3번 동안 첫 굴림 -3칸",
+	&"ACT_25": "[기타 발동] 밴·스킵·해킹이 걸린 채 내 턴이 오면 모두 해제 (밴 중에도 사용 가능)",
+	&"ACT_26": "[버프 발동] 내 말 하나에 수은 보호막 · 공격 카드로 출발선으로 사출되는 것을 1회 막음",
 	&"TRP_10": "눈금 4+ 로 지나가는 적 말 그 칸에 강제 정지",
 	&"TRP_C05": "[코너·3R·여러 번] 지나가는 적 말 주인의 카드 1장을 태움",
-	&"ACT_21": "[공격] 내 말 하나에서 펭귄 발사 · 알까기처럼 날아가 부딪힌 적 말을 모두 출발선으로 날려 버림",
-	&"ACT_22": "내 말 하나에 택배 박스를 씌움 · 잡기·함정을 1회 막고 벗겨짐",
-	&"ACT_23": "[공격] 대상의 다음 한 턴이 자동 진행 (무작위 말 이동 · 카드·필살기 사용 불가)",
+	&"ACT_21": "[공격 발동] 내 말 하나에서 펭귄 발사 · 알까기처럼 날아가 부딪힌 적 말을 모두 출발선으로 날려 버림",
+	&"ACT_22": "[버프 발동] 내 말 하나에 택배 박스를 씌움 · 잡기·함정을 1회 막고 벗겨짐",
+	&"ACT_23": "[공격 발동] 대상의 다음 한 턴이 자동 진행 (무작위 말 이동 · 카드·필살기 사용 불가)",
 	&"TRP_09": "[3턴] 밟은 모든 말(내 말도) 그 칸에서 강제 정지 · 한 번 걸려도 사라지지 않음",
 	&"SUM_04": "[상단 코너] 팽이 소환 · 라운드마다 가장 가까운 적 말 쪽으로 1칸 · 부딪힌 칸의 모든 말을 날려 버리고 소멸",
-	&"ACT_02": "상대 선두 말을 출발선으로 장외 사출",
-	&"ACT_03": "다음 유저에게 폭탄 패스: 선두 말 사출 + 내 이동 +4칸",
-	&"ACT_04": "굴리기 전 사용! 이번 굴림 +4칸",
-	&"ACT_06": "[내 차례 시작에 사용] 특수 승리 기록 1개를 0으로 초기화 (공격에 반응하는 방어 카드는 아님)",
-	&"ACT_07": "고른 한 변의 설치물 전부 붕괴",
-	&"ACT_08": "내 꼴찌 말 ↔ 1등 적 선두 말 위치 교환",
-	&"ACT_09": "적 1명과 6종 랜덤 미니게임 데스매치! 승자 말 +3칸, 패자 선두 말 사출",
-	&"ACT_10": "내 선두 말 앞 3칸의 적 사출 + 설치물 파괴",
-	&"ACT_11": "다음 굴림 결과를 1~6칸 중 직접 지정",
-	&"ACT_12": "이번 턴이 끝나면 한 턴 더",
-	&"ACT_13": "내 선두 말을 반환점까지의 빈 칸 중 고른 칸으로 순간이동",
-	&"ACT_14": "상대 1명 2턴 동안 카드·필살기·주사위 리롤 금지",
-	&"ACT_15": "상대 1명의 다음 턴 건너뛰기",
-	&"ACT_18": "적 말 1개를 뒤로 1칸 (도착 칸이 비어 있을 때)",
-	&"ACT_19": "내 말 1개를 앞으로 1칸 (도착 칸이 비어 있을 때)",
-	&"ACT_20": "적 1명의 다음 이동 눈금 -1 (최소 1칸)",
+	&"ACT_02": "[공격 발동] 상대 선두 말을 출발선으로 장외 사출",
+	&"ACT_03": "[공격 발동] 다음 유저에게 폭탄 패스: 선두 말 사출 + 내 이동 +4칸",
+	&"ACT_04": "[버프 발동] 이번 굴림 +4칸",
+	&"ACT_06": "[공격 발동] 특수 승리 기록 1개를 0으로 초기화 (공격에 반응하는 방어 카드는 아님)",
+	&"ACT_07": "[공격 발동] 고른 한 변의 설치물 전부 붕괴",
+	&"ACT_08": "[공격 발동] 내 꼴찌 말 ↔ 1등 적 선두 말 위치 교환",
+	&"ACT_09": "[공격 발동] 적 1명과 6종 랜덤 미니게임 데스매치! 승자 말 +3칸, 패자 선두 말 사출",
+	&"ACT_10": "[공격 발동] 내 선두 말 앞 3칸의 적 사출 + 설치물 파괴",
+	&"ACT_11": "[버프 발동] 다음 굴림 결과를 1~6칸 중 직접 지정",
+	&"ACT_12": "[버프 발동] 이번 턴이 끝나면 한 턴 더",
+	&"ACT_13": "[버프 발동] 내 선두 말을 반환점까지의 빈 칸 중 고른 칸으로 순간이동",
+	&"ACT_14": "[공격 발동] 상대 1명 2턴 동안 카드·필살기·주사위 리롤 금지",
+	&"ACT_15": "[공격 발동] 상대 1명의 다음 턴 건너뛰기",
+	&"ACT_18": "[너프 발동] 적 말 1개를 뒤로 1칸 (도착 칸이 비어 있을 때)",
+	&"ACT_19": "[버프 발동] 내 말 1개를 앞으로 1칸 (도착 칸이 비어 있을 때)",
+	&"ACT_20": "[너프 발동] 적 1명의 다음 이동 눈금 -1 (최소 1칸)",
 	&"TRP_02": "눈금 4+ 로 지나가는 적 말 출발선 사출",
 	&"TRP_03": "밟으면 반경 2칸 내 모든 말 폭파",
 	&"TRP_05": "밟은 말은 멈추고, 반경 2칸 안의 함정이 전부 연쇄 발동",
@@ -6410,9 +6424,10 @@ func _open_zoom(player_id: int, card_id: StringName) -> void:
 	guide_box.add_theme_constant_override("separation", 4)
 	guide.add_child(guide_box)
 	var how: String = "보드에 드래그 → 타일 선택" if card.needs_tile() else "보드에 드래그"
-	if card.category == GameEnums.CardCategory.COUNTER:
-		how = "피격 시 발동 여부를 묻는 팝업에서 [발동]"
-	var timing := _make_label("발동: %s\n방법: %s" % [_card_timing_text(card), how], MobileSupport.text_px(14), UiSkin.INK)
+	var guide_text: String = _card_timing_text(card)
+	if card.category != GameEnums.CardCategory.COUNTER:
+		guide_text += "\n" + L10n.tf("방법: %s", [L10n.t(how)])  # 방어 카드는 공격받을 때 팝업으로만 쓴다 (공통이라 적지 않는다)
+	var timing := _make_label(guide_text, MobileSupport.text_px(14), UiSkin.INK)
 	timing.name = "CardTiming"
 	timing.custom_minimum_size = Vector2(card_size.x - 24.0, 0)
 	timing.size = Vector2(card_size.x - 24.0, 40)
@@ -6459,14 +6474,14 @@ func _open_zoom(player_id: int, card_id: StringName) -> void:
 	_zoom_view.position = Vector2(maxf(24, (screen.x - total.x) / 2), maxf(24, (screen.y - total.y) / 2))
 
 
+## 카드 확대 창의 종류 줄 (1.3.1): 쓰는 때는 종류마다 같아(방어 = 공격받을 때, 그 밖 = 굴리기 전) 적지 않고 세부 종류를 보여 준다.
 func _card_timing_text(card: BaseCard) -> String:
-	if card.category == GameEnums.CardCategory.COUNTER:
-		return "피격 시 (내 말이 잡히거나 공격 카드·함정에 당했을 때)"
-	var names: Array[String] = []
-	for phase: int in card.playable_phases:
-		var full: String = _phase_name(phase)
-		names.append(full.split(" - ")[0])
-	return " / ".join(names) if not names.is_empty() else "-"
+	match card.category:
+		GameEnums.CardCategory.COUNTER:
+			return L10n.tf("막는 공격: %s", [L10n.t(Rulebook._counter_kind(card.card_id))])
+		GameEnums.CardCategory.INSTANT:
+			return L10n.tf("종류: %s", [L10n.t(activate_kind(card.card_id))])
+	return L10n.tf("종류: %s", [L10n.t(category_label(card))])
 
 
 func _close_zoom() -> void:
@@ -7576,7 +7591,7 @@ func _category_text(category: GameEnums.CardCategory) -> String:
 	match category:
 		GameEnums.CardCategory.TRAP: return "타일 설치형 (사용 후 보드판의 타일을 클릭)"
 		GameEnums.CardCategory.SUMMON: return "중립 NPC 소환형"
-	return "즉발·개입형"
+	return "발동형 (굴리기 전에 보드에 끌어 놓기)"
 
 
 ## 지금 이 플레이어에게 열린 방어 대기(피격 팝업)에 이 카드를 낼 수 있는가.
