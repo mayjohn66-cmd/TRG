@@ -179,6 +179,8 @@ var _toss_start: Vector2 = Vector2.ZERO
 var _last_contact: int = -1
 ## 내려놓기 연출 시각 (-1 = 하지 않는다). 테스트가 읽는다.
 var placing_time: float = -1.0
+## 다트 과녁 판이 던지는 순간 돌아가 있던 각도 (꺼내 놓은 과녁에서 이어 돈다, MainBoard가 정한다).
+var dart_start_turn: float = 0.0
 var _place_pause: float = 0.0  # 놓인 뒤 시계를 멈춰 두는 남은 시간 (캡슐 기계)
 var _place_target: Vector2 = Vector2.ZERO
 var _place_from: Vector2 = Vector2.ZERO
@@ -1177,7 +1179,7 @@ func _build(tool_id: StringName) -> void:
 			if _dart_view == null or not is_instance_valid(_dart_view):
 				_dart_view = DartBoardView.new()
 			_stage_view(_dart_view)
-			_dart_view.begin(_result.get("details", {}))
+			_dart_view.begin(_result.get("details", {}), dart_start_turn)
 			_make_card_result(DartBoardView.caption(_result.get("details", {}), int(_result.get("steps", 0))))
 		&"DICE_OMIKUJI":
 			_title.text = "오미쿠지 뽑기통"

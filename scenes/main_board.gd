@@ -13855,8 +13855,10 @@ func _handle_roll_event(data: Dictionary) -> void:
 	# 내가 꺼내 놓은 과녁·해적 통으로 굴렸으면 결과 연출이 다시 떨어뜨리지 않는다 (같은 자리에서 이어 간다)
 	_presenter.skip_place = GATED_TAKE_OUT.has(tool_id) and int(data["player_id"]) == _dock_owner() and not _is_bot_turn()
 	_presenter.anchor_view_at = Vector2(INF, INF)
+	_presenter.dart_start_turn = 0.0
 	if _presenter.skip_place and tool_id == &"DICE_DARTS" and _dart_idle != null:
 		_presenter.anchor_view_at = _dart_idle.position + _dart_idle.size * 0.5
+		_presenter.dart_start_turn = _dart_idle.face_turn()  # 돌던 과녁 판이 그 각도에서 이어 돈다
 	elif _presenter.skip_place and tool_id == &"DICE_PIRATE" and _pirate_idle != null:
 		_presenter.anchor_view_at = _pirate_idle.position + _pirate_idle.size * 0.5
 	var rest: Dictionary = _rest_prop_seen
