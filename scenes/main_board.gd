@@ -8274,12 +8274,17 @@ func _refresh_roll_pad() -> void:
 		_roll_pad.ensure_revolver_prepared(gun_key,owner_tool.has_pending_state())
 
 
+## 던지는 도구(주사위·친치로·윷)의 굴리기 버튼 가운데 높이 (1.3.1: 380 → 450, 버튼 위 도구 소품도 같이 내려온다).
+const CHARGE_BUTTON_Y: float = 450.0
+
+
 ## 굴림 위젯의 크기·위치를 방식에 맞춘다: charge는 중앙 무대 아래쪽에 작게(120px), 그 외는 보드 한가운데 크게(버튼 190px / 패드 1.9배).
 func _set_roll_geometry(mode: StringName) -> void:
 	_roll_geometry = mode
 	var big: bool = mode != &"charge" and mode != &"pinball"
 	var diameter: float = 190.0 if mode == &"big" else (110.0 if mode == &"pinball" else 120.0)
-	var center: Vector2 = Vector2(683.0, 335.0) if mode == &"big" else (Vector2(940.0, 470.0) if mode == &"pinball" else Vector2(683.0, 380.0))
+	# 1.3.1: 던지는 도구(charge)의 굴리기 버튼은 판 아래쪽으로 내리고, 버튼 위에 놓인 주사위·친치로·윷이 그만큼 판 가운데로 내려온다
+	var center: Vector2 = Vector2(683.0, 335.0) if mode == &"big" else (Vector2(940.0, 470.0) if mode == &"pinball" else Vector2(683.0, CHARGE_BUTTON_Y))
 	if mode == &"darts":
 		diameter = 104.0
 		center = Vector2(953.0, 350.0)  # Beside the board, clear of the face and the tool-info panel.
