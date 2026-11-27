@@ -1,12 +1,11 @@
 name: Deploy web build
 
-# 이 저장소에 푸시할 때마다 테스트를 돌리고, 통과하면 Godot 웹(HTML5) 빌드를 gh-pages 브랜치에 올려
-# https://<계정>.github.io/<저장소>/ 에서 항상 최신 버전을 바로 플레이할 수 있게 한다.
+# dev 브랜치에 푸시할 때마다 테스트를 돌리고, 통과하면 Godot 웹(HTML5) 빌드를 web 브랜치에 올려
+# 항상 최신 버전을 바로 플레이할 수 있게 한다 (문서 브랜치 docs, 차기 버전 브랜치 next는 미배포).
 on:
   push:
     branches:
-      - main
-      - "claude/**"
+      - dev
   workflow_dispatch:
     inputs:
       validation:
@@ -846,10 +845,10 @@ jobs:
           print('Vercel Analytics 스크립트 확인')
           PY
           touch build/web/.nojekyll
-          # Vercel이 gh-pages 브랜치(또는 이 폴더)를 빌드 없이 그대로 호스팅하도록 설정 파일을 함께 싣는다.
+          # Vercel이 web 브랜치(또는 이 폴더)를 빌드 없이 그대로 호스팅하도록 설정 파일을 함께 싣는다.
           cp vercel.json build/web/vercel.json
           # 공유 주소(링크 미리보기 og:url/og:image/twitter:image)를 지금 실제 주소로 바꾼다: 저장소 변수 PAGES_DOMAIN(내 도메인)이 있으면 그 주소, 없으면 GitHub Pages 주소.
-          # PAGES_DOMAIN이 있으면 CNAME 파일도 함께 싣는다 (gh-pages를 매번 새로 덮어써도 GitHub Pages의 Custom domain 설정이 지워지지 않게).
+          # PAGES_DOMAIN이 있으면 CNAME 파일도 함께 싣는다 (web 브랜치를 매번 새로 덮어써도 GitHub Pages의 Custom domain 설정이 지워지지 않게).
           # 주의: DNS가 아직 연결되기 전에 PAGES_DOMAIN을 넣으면 기존 github.io 주소가 그 도메인으로 넘어가 접속이 끊길 수 있다 -> DNS 확인 뒤에 변수를 넣는다.
           if [ -n "${PAGES_DOMAIN:-}" ]; then
             SITE_URL="https://${PAGES_DOMAIN}/"
@@ -896,17 +895,17 @@ jobs:
           PY
           ls -la build/web
 
-      - name: Publish to gh-pages
+      - name: Publish to web
         run: |
           set -euo pipefail
           cd build/web
           git init -q
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout -q -b gh-pages
+          git checkout -q -b web
           git add -A
           git commit -q -m "Deploy web build from ${GITHUB_SHA}"
-          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" gh-pages
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" web
 
       # itch.io 배포본: 같은 빌드를 index.html이 맨 바깥인 폴더로 복사해 Vercel 분석·링크 미리보기 메타를 뺀다 (tools/make_itch_index.py).
       # - 항상 build/itch를 만들어 둔다.
@@ -935,7 +934,7 @@ jobs:
           compression-level: 0
 
       - name: Push to itch.io (optional)
-        if: ${{ github.ref_name == 'main' || startsWith(github.ref_name, 'claude/') }}
+        if: ${{ github.ref_name == 'dev' }}
         env:
           BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
           ITCH_TARGET: ${{ vars.ITCH_TARGET }}
@@ -951,9 +950,9 @@ jobs:
           ./butler-bin/butler push build/itch "${TARGET}" --userversion "${GITHUB_SHA::7}"
 
       # 선택: 저장소 시크릿 VERCEL_TOKEN / VERCEL_ORG_ID / VERCEL_PROJECT_ID가 있으면 같은 빌드를 Vercel에도 바로 배포한다.
-      # (없으면 건너뜀. 시크릿 없이도 Vercel 프로젝트의 Production Branch를 gh-pages로 두면 자동 배포된다 - README 참고)
+      # (없으면 건너뜀. 시크릿 없이도 Vercel 프로젝트의 Production Branch를 web으로 두면 자동 배포된다 - README 참고)
       - name: Deploy to Vercel (optional)
-        if: ${{ github.ref_name == 'main' || startsWith(github.ref_name, 'claude/') }}
+        if: ${{ github.ref_name == 'dev' }}
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
