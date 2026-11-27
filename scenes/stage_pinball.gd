@@ -229,6 +229,7 @@ func play(result: Dictionary, power: float = 0.5) -> void:
 			request_frame()
 		return
 	_highlight(-1)
+	PresentationAudio.one_shot(self,&"pinball_launch",-8)
 	_caption.text = "스프링을 당겼다가… 발사!"
 	_elapsed = 0.0
 	_last_bounce = -1

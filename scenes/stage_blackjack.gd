@@ -172,6 +172,7 @@ func play(result: Dictionary) -> void:
 	cards.assign(all_cards)
 	if not fresh.is_empty():
 		_refresh()
+		PresentationAudio.one_shot(self,&"card_throw",-8)
 		var first := maxi(0,cards.size()-MAX_VISIBLE_CARDS)
 		for index: int in _row.get_child_count():
 			if first+index<known: continue
@@ -188,6 +189,8 @@ func play(result: Dictionary) -> void:
 	_apply_result_text(confirmed, bust, blackjack, int(result["steps"]), int(details["total"]))
 	active = false
 	_refresh()
+	if confirmed:
+		PresentationAudio.one_shot(self,&"bad" if bust else (&"good" if blackjack else &"card_pick"),-7)
 
 
 func _apply_result_text(confirmed: bool, bust: bool, blackjack: bool, steps: int, total: int) -> void:

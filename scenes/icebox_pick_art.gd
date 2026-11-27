@@ -35,6 +35,8 @@ var chosen := -1
 var eating: IceCreamView
 var take_clock := -1.0
 var _bite_played := false
+var _reveal_played := false
+var _stick_played := false
 var _details: Dictionary = {}
 var _stock_alpha := 1.0
 const SELECTED_WRAPPER_SIZE := Vector2(160,225)
@@ -127,7 +129,7 @@ func take(index: int) -> void:
 	tear.tween_callback(func() -> void:
 		packet.hide()
 		eating.show()
-		Sfx.play(&"ticket_rustle",-7)
+		Sfx.play(&"wrapper_tear",-7)
 		for top: bool in [true,false]:
 			var fragment:=TextureRect.new()
 			var atlas:=AtlasTexture.new()
@@ -158,6 +160,13 @@ func _process(delta: float) -> void:
 		if native>=IceCreamView.BITE_AT and not _bite_played:
 			_bite_played=true
 			Sfx.play(&"icecream_snap",-5)
+		if native>=IceCreamView.REVEAL_AT and not _reveal_played:
+			_reveal_played=true
+			Sfx.play(&"icecream_reveal",-7)
+			if bool(_details.get("again",false)): Sfx.play(&"good",-9)
+		if bool(_details.get("again",false)) and native>=IceCreamView.STICK_LAND_AT and not _stick_played:
+			_stick_played=true
+			Sfx.play(&"stick_land",-8)
 
 func _layout_layers() -> void:
 	for index: int in packets.size():

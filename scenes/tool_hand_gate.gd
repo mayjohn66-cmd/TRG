@@ -36,6 +36,7 @@ var _revealed := false
 var _result_caption := ""
 var _table_dim: ColorRect
 var _table_background: Panel
+var _audio := PresentationAudio.new()
 
 
 
@@ -149,7 +150,6 @@ func pick(index: int) -> void:
 	var item: Control = _items[index]
 	match tool_id:
 		&"DICE_MAHJONG":
-			Sfx.play(&"toy_click", -6.0)
 			item.modulate.a = 0.0  # 줄에서 빠진 자리는 빈칸으로 남는다
 			_mahjong.pick(index)
 			if _picks.size() >= MAHJONG_PICKS:
@@ -214,6 +214,7 @@ func _process(delta: float) -> void:
 	_clock += delta
 	if _done_at>=0:
 		var elapsed:=_clock-_done_at
+		_audio.advance(elapsed)
 		var reveal_at:=1.75
 		if _platter!=null: _platter.open_at(elapsed)
 		elif _icebox!=null: reveal_at=2.3
@@ -227,7 +228,14 @@ func _process(delta: float) -> void:
 			_revealed=true
 			_result_label.text=_result_caption
 			_result_label.get_parent().modulate.a=1
-			Sfx.play(&"card_pick",-6)
+			# Ice cream owns its stick reveal; other results use one short result cue.
+			if tool_id != &"DICE_ICECREAM":
+				var event: StringName = &"card_pick"
+				if tool_id==&"DICE_OMIKUJI":
+					if _details.get("fortune")==&"great": event=&"good"
+					elif _details.get("fortune")==&"worst": event=&"bad"
+				elif bool(_details.get("jackpot",false)) or bool(_details.get("yakuman",false)): event=&"good"
+				_audio.fire(event,-6)
 			_prompt.modulate.a=0
 
 	if _column != null and _clock < 0.25:
@@ -242,7 +250,21 @@ func _process(delta: float) -> void:
 func _finish() -> void:
 	if _done_at < 0.0:
 		_done_at = _clock
+		var cues: Array[Dictionary] = []
+		if tool_id==&"DICE_COOKIE":
+			cues.append(PresentationAudio.cue(1.0,&"paper_unfold",-9))
+		elif tool_id==&"DICE_OMIKUJI":
+			cues.append(PresentationAudio.cue(OmikujiView.UNROLL_AT-OmikujiView.DRAW_AT,&"paper_unfold",-8))
+			if _details.get("fortune")==&"great":
+				cues.append(PresentationAudio.cue(OmikujiView.FOLD_AT-OmikujiView.DRAW_AT,&"ticket_rustle",-10))
+				cues.append(PresentationAudio.cue(OmikujiView.TIE_AT-OmikujiView.DRAW_AT,&"ticket_rustle",-9))
+		elif tool_id==&"DICE_MAHJONG":
+			cues.append(PresentationAudio.cue(.92,&"mahjong_tap",-6))
+		_audio.start(self,cues)
 		for button: Node in find_children("*","Button",true,false): button.disabled=true
+
+func _exit_tree() -> void:
+	_audio.cancel()
 
 
 func _refresh_prompt() -> void:
