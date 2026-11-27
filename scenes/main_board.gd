@@ -7985,8 +7985,9 @@ func _refresh_holdem_exchange(tool: BaseJudgmentTool) -> void:
 
 func _create_holdem_exchange(hand: Array) -> void:
 	_holdem_exchange = HoldemExchangePanel.new()
-	_holdem_exchange.setup(hand)
-	_holdem_exchange.position = _board_center()
+	_holdem_exchange.setup(hand, true)
+	_enter_card_view()
+	_holdem_exchange.position = _card_table_center()
 	_holdem_exchange_key = str(hand)+":%d:%d" % [state.round_number,manager.current_player_id()]
 	_holdem_exchange.exchange.connect(func(keep: Array[bool]) -> void: _act(&"roll", {"keep": keep}))
 	_holdem_exchange.stand.connect(func() -> void: _act(&"stop"))
@@ -9261,6 +9262,10 @@ func _reset_presentation() -> void:
 		_alkkagi.cancel()
 	_alkkagi_release(true)
 	_alkkagi_top_view(false,true)
+	_card_view_on = false
+	_card_view_player = -1
+	if _presenter != null:
+		_presenter.center = _board_center() + Vector2(0, -40)
 	_aim_pawn = -1
 	_fx_generation += 1
 	var victory_layer: CanvasLayer = get_node_or_null("VictoryCutsceneLayer") as CanvasLayer
@@ -13782,9 +13787,16 @@ func _handle_roll_event(data: Dictionary) -> void:
 	# 직접 조작 (1.3.1): 이 화면에서 굴린 사람이면 슬롯 릴을 직접 멈추고 복권을 직접 긁는다 (컴퓨터·다른 기기의 사람은 자동)
 	var roller_id: int = int(data["player_id"])
 	_presenter.interactive = roller_id == _dock_owner() and not _is_bot_turn() and (net == null or not net.is_bot(roller_id))
+	if CARD_TABLE_TOOLS.has(tool_id):
+		_enter_card_view()  # 카드는 알까기 시점(위에서 내려다본 판)으로 펼친 판 위에 깐다
+		_presenter.center = _card_table_center()
 	await _presenter.play(tool_id, result, _pending_power, int(data.get("chain_index", 0)) > 0)
 	if generation != _fx_generation or serial != _fx_serial:
 		return
+	if CARD_TABLE_TOOLS.has(tool_id) and not bool(result.get("can_continue", false)):
+		await _leave_card_view()
+		if generation != _fx_generation or serial != _fx_serial:
+			return
 	_fx_busy = false
 	_reveal_roll(data)
 	_refresh_all()
@@ -13813,6 +13825,12 @@ func _play_table_roll(data: Dictionary) -> void:
 		await _tool_pick.reveal_result(result)
 		_close_tool_pick()
 	if generation!=_fx_generation or serial!=_fx_serial: return
+	if not bool(result.get("can_continue",false)):
+		if _holdem_exchange!=null:
+			_holdem_exchange.queue_free()
+			_holdem_exchange=null
+		await _leave_card_view()  # 카드를 다 본 뒤 보드 시점으로 돌아와서 말이 움직인다
+		if generation!=_fx_generation or serial!=_fx_serial: return
 	_fx_busy=false
 	_reveal_roll(data)
 	_refresh_all()
@@ -14877,10 +14895,14 @@ func _open_tool_pick(tool: BaseJudgmentTool) -> bool:
 	if instant_roll_for_test or tool == null or not ToolPick.supports(tool.tool_id) or tool.has_pending_state() or _is_bot_turn():
 		return false
 	_tool_pick = ToolPickModal.new()
-	_tool_pick.setup(tool.tool_id)
+	var on_table: bool = CARD_TABLE_TOOLS.has(tool.tool_id)
+	_tool_pick.setup(tool.tool_id, on_table)
 	_tool_pick_key = _tool_pick_state_key()
 	_tool_pick.picked.connect(_on_tool_picked)
 	add_child(_tool_pick)
+	if on_table:
+		_enter_card_view()
+		_tool_pick.table_center = _card_table_center()
 	return true
 
 
@@ -14901,6 +14923,7 @@ func _close_tool_pick() -> void:
 
 ## 고르는 동안 차례·단계·도구가 바뀌면(시간 초과로 엔진이 자동으로 굴림 등) 창을 닫는다.
 func _sync_tool_pick() -> void:
+	_sync_card_view()
 	if _tool_pick!=null and _tool_pick.revealing and _fx_busy: return
 	if _tool_pick != null and (manager == null or manager.is_game_over or _tool_pick_key != _tool_pick_state_key()):
 		_close_tool_pick()
@@ -14911,6 +14934,55 @@ func _tool_pick_state_key() -> String:
 		return ""
 	var roller: int = manager.current_player_id()
 	return "%d:%d:%s:%d" % [state.round_number, roller, str(state.tools[roller].tool_id), manager.move_queue.size()]
+
+
+## 카드형 판정 도구 (1.3.1): 쓰는 동안 보드를 알까기 시점(위에서 내려다본 평평한 판)으로 펴고, 판 위에 카드를 바로 깐다.
+const CARD_TABLE_TOOLS: Array[StringName] = [&"DICE_TAROT", &"DICE_HWATU", &"HOLDEM"]
+var _card_view_on: bool = false
+var _card_view_player: int = -1
+
+
+func _enter_card_view() -> void:
+	if _card_view_on or _alkkagi_saved_view != -1 or state == null:
+		return
+	_card_view_on = true
+	_card_view_player = manager.current_player_id() if manager != null else -1
+	_alkkagi_top_view(true)
+
+
+## 원래 시점으로 돌아온다 (돌아오는 움직임이 끝날 때까지 기다린다: 말 이동은 원래 시점에서).
+func _leave_card_view() -> void:
+	if not _card_view_on:
+		return
+	_card_view_on = false
+	_card_view_player = -1
+	_alkkagi_top_view(false)
+	while _alkkagi_camera_tween != null and _alkkagi_camera_tween.is_running() and is_inside_tree():
+		await get_tree().process_frame
+	if _presenter != null:
+		_presenter.center = _board_center() + Vector2(0, -40)  # 평소 연출 자리 (_apply_layout과 같다)
+
+
+## 펼친 판의 한가운데 (카드를 까는 자리).
+func _card_table_center() -> Vector2:
+	return _board_center()
+
+
+## 차례가 넘어가거나 게임이 끝났는데 카드 시점이 남았으면 돌려놓는다 (취소·시간 초과 대비).
+func _sync_card_view() -> void:
+	if not _card_view_on:
+		return
+	if manager == null or manager.is_game_over or manager.current_player_id() != _card_view_player:
+		_leave_card_view()
+	elif manager.current_state in [TurnManager.State.PHASE_ROLL_WAIT, TurnManager.State.PHASE_INTERRUPT_ROLL]:
+		return  # 고른 직후 굴림 결과가 오기 전 (결과 연출이 이어서 판 위에서 나온다)
+	elif _tool_pick == null and _holdem_exchange == null and not _fx_busy and not (_presenter != null and _presenter.active) and not _holdem_round_open():
+		_leave_card_view()
+
+
+func _holdem_round_open() -> bool:
+	var tool: BaseJudgmentTool = state.tools.get(manager.current_player_id()) if state != null and manager != null else null
+	return tool != null and tool.tool_id == &"HOLDEM" and tool.has_pending_state()
 
 
 ## 고르기 창이 떠 있는가 (테스트용).

@@ -273,6 +273,8 @@ func holdem_exchange() -> void:
 	if panel == null:
 		return
 	check(not board._roll_button.visible and not board._stop_button.visible, "교환 중에는 굴리기·멈추기 버튼 대신 창의 버튼")
+	check(board._card_view_on and board._alkkagi_saved_view != -1, "카드 도구는 알까기 시점(펼친 판)으로 바꿔 판 위에 깐다")
+	check(panel.on_board and is_zero_approx(panel._dim.color.a), "판 위에서는 어두운 막을 칠하지 않는다")
 	board._roll_by_key()
 	await frames()
 	check(rolls.size() == 1, "스페이스로는 교환하지 않는다")
@@ -287,6 +289,7 @@ func holdem_exchange() -> void:
 	if rolls.size() == 2:
 		check(rolls[1]["details"]["exchanged"] == [0], "첫 카드만 바꿨다")
 	check(board.holdem_exchange_panel() == null, "확정하면 창이 닫힌다")
+	check(not board._card_view_on and board._alkkagi_saved_view == -1 and is_zero_approx(board._alkkagi_camera), "확정하면 원래 시점으로 돌아온 뒤 말이 움직인다")
 
 
 func warmup() -> void:

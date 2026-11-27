@@ -95,6 +95,11 @@
        "ko": "슬롯머신·룰렛·다트판·주식 차트 같은 판정 도구가 화면에 툭 뜨지 않고, 굴린 사람 쪽에서 들고 와 보드판 위에 탁 내려놓아요 (바닥 그림자·먼지). 도구 이름표도 뺐어요",
        "en": "Judgment Tools like the slot machine, roulette, dart board and stock chart no longer just pop up: they're carried in from the roller's side and set down on the board (with a shadow and a puff of dust). The floating tool name is gone too",
        "ja": "スロットマシン・ルーレット・ダーツボード・株価チャートなどの判定ツールが画面にぱっと出るのではなく、振った人の側から運ばれてボードの上にトンと置かれます（床の影・ほこり付き）。ツール名の表示もなくしました"
+      },
+      {
+       "ko": "[타로]·[화투]·[텍사스 홀덤] 카드를 쓸 때 보드판이 위에서 내려다보는 시점으로 펼쳐지고, 창 대신 판 위에 카드를 바로 깔아요. 다 보고 나면 원래 시점으로 돌아와 말이 움직여요",
+       "en": "When using [Tarot], [Hwatu] or [Texas Hold'em], the board now flattens into a top-down view and the cards are laid right on the board instead of in a window. Once you've seen the result, the view returns and your pawn moves",
+       "ja": "［タロット］・［花札］・［テキサスホールデム］のカードを使うとき、ボードが上から見下ろす視点に広がり、ウィンドウの代わりにボードの上に直接カードを並べます。結果を見終わると元の視点に戻って駒が動きます"
       }
      ]
     },
