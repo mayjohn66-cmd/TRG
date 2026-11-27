@@ -119,6 +119,16 @@
        "ko": "[기본 주사위]·[지하노역장 친치로]는 굴리기를 누르면 보드 위에 놓여 있던 주사위가 그 자리에서 통통 튀어 오르며 굴러요 (친치로는 그릇 안에서). 멀리서 새 주사위가 날아오지 않아요",
        "en": "With [Standard Dice] and [Chinchiro], pressing roll now makes the die that was sitting on the board hop and tumble right where it is (inside the bowl for Chinchiro), instead of a new die flying in from afar",
        "ja": "［基本サイコロ］・［地下労働場チンチロ］は振るボタンを押すと、ボードの上に置かれていたサイコロがその場でぴょんと跳ねて転がります（チンチロは茶碗の中で）。遠くから新しいサイコロが飛んでこなくなりました"
+      },
+      {
+       "ko": "[야추 다이스]는 별도 창 대신 판 가운데로 다가가 전용 주사위 케이스에서 굴려요: 오른쪽 컵에서 주사위가 초록 펠트로 쏟아지고, 남길 주사위를 누르면 위쪽 고정 칸으로 올라가요 (다시 누르면 내려와요)",
+       "en": "[Yacht Dice] now rolls in its own dice case in the middle of the board instead of a separate window: the dice pour from the cup onto green felt, and tapping a die moves it up into the hold slots (tap again to put it back)",
+       "ja": "［ヨットダイス］は別ウィンドウの代わりにボード中央に寄って専用のダイスケースで振ります：右のカップから緑のフェルトへサイコロがこぼれ、残したいサイコロを押すと上のキープ枠に上がります（もう一度押すと戻ります）"
+      },
+      {
+       "ko": "[스크래치 복권]도 판 가운데로 다가가 나무 계산대 위에서 긁어요",
+       "en": "[Scratch Ticket] is now scratched on a wooden counter in the middle of the board",
+       "ja": "［スクラッチくじ］もボード中央に寄って木のカウンターの上で削ります"
       }
      ]
     },

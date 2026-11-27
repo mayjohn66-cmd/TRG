@@ -13,6 +13,10 @@ const STYLES: Dictionary = {
 	&"DICE_TAROT": {"base": Color("3a1d5c"), "center": Color("54307f"), "edge": Color("d9b65c"), "fleck": Color("c9a7ff"), "pattern": "stars"},
 	&"DICE_HWATU": {"base": Color("56624a"), "center": Color("66745a"), "edge": Color("3b4433"), "fleck": Color("8d9a7c"), "pattern": "blanket"},
 	&"HOLDEM": {"base": Color("176142"), "center": Color("23845b"), "edge": Color("5b3a22"), "fleck": Color("2f9a6b"), "pattern": "felt"},
+	## 스크래치 복권: 복권방 나무 계산대.
+	&"DICE_SCRATCH": {"base": Color("7a5230"), "center": Color("8f6440"), "edge": Color("4a301c"), "fleck": Color("b08455"), "pattern": "wood"},
+	## 야추 다이스: 매트 없이 어둡게만 (주사위 케이스가 따로 놓인다).
+	&"DICE_YACHT": {"base": Color("000000"), "center": Color("000000"), "edge": Color("000000"), "fleck": Color("000000"), "pattern": "none"},
 }
 ## 매트 크기 (보드 좌표 px). 카드 줄과 버튼이 들어가는 크기.
 const MAT_SIZE: Vector2 = Vector2(820, 470)
@@ -105,6 +109,8 @@ func _draw() -> void:
 		return
 	draw_rect(Rect2(Vector2(-4000, -4000), Vector2(8000, 8000)), Color(0.02, 0.03, 0.05, DIM_ALPHA * reveal))
 	var style: Dictionary = STYLES[tool_id]
+	if str(style["pattern"]) == "none":
+		return
 	var rect: Rect2 = mat_rect()
 	var full := Rect2(mat_center - MAT_SIZE * mat_scale / 2.0, MAT_SIZE * mat_scale)
 	# 그림자 → 바탕 → 가운데 밝은 기운 → 천 질감 → 무늬 → 테두리 → 카드 자리 → 말린 끝(두루마리)
@@ -121,6 +127,7 @@ func _draw() -> void:
 		"stars": _draw_stars(rect, full, style)
 		"blanket": _draw_blanket(rect, style)
 		"felt": _draw_felt(rect, full, style)
+		"wood": _draw_wood(rect, style)
 	if reveal > 0.85:
 		for slot: Rect2 in slots:
 			_dashed_rect(slot.grow(4), Color(1, 1, 1, 0.28 * (reveal - 0.85) / 0.15), 10)
@@ -167,6 +174,19 @@ func _draw_felt(rect: Rect2, _full: Rect2, style: Dictionary) -> void:
 	_round_outline(rect.grow(-9), leather, 22, 18.0)
 	_round_outline(rect.grow(-3), leather.lightened(0.25), 24, 2.0)
 	_round_outline(rect.grow(-32), Color("e9c46a", 0.45), 60, 1.6)
+
+
+## 스크래치 복권: 나무 결이 가로로 흐르는 계산대 상판과 어두운 모서리.
+func _draw_wood(rect: Rect2, style: Dictionary) -> void:
+	var grain: Color = Color(style["edge"], 0.22)
+	for row: int in 14:
+		var y: float = rect.position.y + 18.0 + row * (rect.size.y - 36.0) / 13.0
+		var points := PackedVector2Array()
+		for step: int in 13:
+			var x: float = rect.position.x + 14.0 + step * (rect.size.x - 28.0) / 12.0
+			points.append(Vector2(x, y + sin(step * 0.9 + row * 1.7) * 3.0))
+		draw_polyline(points, grain, 2.0, true)
+	_round_outline(rect.grow(-4), style["edge"], 22, 8.0)
 
 
 func _round_rect(rect: Rect2, color: Color, radius: float) -> void:

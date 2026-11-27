@@ -13685,6 +13685,8 @@ func _refresh_tool_stage() -> void:
 	stage.set("instant", instant_roll_for_test)
 	stage.visible = in_roll or mid_roll
 	if _choice_overlay!=null or _zoom_view!=null or popup_open:stage.visible=false
+	if stage == _stage_yacht:
+		_sync_yacht_case()
 	var acting: bool = not _roll_button.disabled
 	if stage == _stage_pinball:
 		_stage_pinball.set_waiting_caption(_is_bot_turn() or (net != null and current != local_player_id), _player_name(current))
@@ -13891,6 +13893,14 @@ func _handle_stage_roll(data: Dictionary) -> void:
 	await _play_stage(stage, tool_id, result)
 	if generation != _fx_generation or serial != _fx_serial:
 		return
+	if tool_id == &"DICE_YACHT" and not bool(result.get("can_continue", false)) and _card_view_tool == &"DICE_YACHT":
+		await get_tree().create_timer(0.6).timeout  # 확정한 족보를 케이스에서 잠깐 보여 준 뒤
+		if generation != _fx_generation or serial != _fx_serial:
+			return
+		stage.visible = false
+		await _leave_card_view()  # 판 시점으로 돌아와 말이 움직인다
+		if generation != _fx_generation or serial != _fx_serial:
+			return
 	_fx_busy = false
 	_reveal_roll(data)
 	_refresh_all()
@@ -14971,13 +14981,16 @@ func _tool_pick_state_key() -> String:
 
 
 ## 카드형 판정 도구 (1.3.1): 쓰는 동안 보드를 알까기 시점(위에서 내려다본 평평한 판)으로 펴고, 판 위에 카드를 바로 깐다.
-const CARD_TABLE_TOOLS: Array[StringName] = [&"DICE_TAROT", &"DICE_HWATU", &"HOLDEM"]
+const CARD_TABLE_TOOLS: Array[StringName] = [&"DICE_TAROT", &"DICE_HWATU", &"HOLDEM", &"DICE_SCRATCH"]  # 1.3.1 스크래치 복권도 판 위 계산대에서 긁는다
 var _card_view_on: bool = false
 var _card_view_player: int = -1
 ## 카드를 쓰는 동안 판 가운데를 당겨 본다 (보드·말 층만 확대, 화면 UI는 그대로). 시점 전환과 같은 움직임으로 들어가고 나온다.
 ## 1.3.1: 판 가운데를 당겨 보고(2.2배, 보이는 화면이 넓거나 높으면 그만큼 더) 그 위에 카드 매트(CardMat)를 펼친다. 매트 밖 보드는 어둡게 덮인다.
 var card_zoom: float = 2.2
 var _card_mat: CardMat = null
+## 지금 카드 시점을 쓰는 도구.
+var _card_view_tool: StringName = &""
+
 var _card_view_serial: int = 0
 var _card_zoom_on: bool = false
 ## 판 가운데로 들어가고 나오는 시간 (크게 당기므로 알까기 0.26초보다 느긋하게).
@@ -14987,6 +15000,7 @@ const CARD_VIEW_TIME: float = 0.45
 func _enter_card_view(tool_id: StringName = &"DICE_TAROT") -> void:
 	if _card_view_on or _alkkagi_saved_view != -1 or state == null:
 		return
+	_card_view_tool = tool_id
 	_open_card_mat(tool_id)
 	_card_view_on = true
 	_card_view_serial += 1
@@ -15078,11 +15092,25 @@ func _card_table_center() -> Vector2:
 	return _board_center()
 
 
+## 야추 주사위 케이스 (1.3.1): 케이스가 뜨면 카드 시점(판 가운데 확대)으로 들어가 판 한가운데에 놓고, 사라지면 돌아온다.
+func _sync_yacht_case() -> void:
+	if _stage_yacht == null:
+		return
+	# 케이스 자리는 화면 배치(_apply_layout)가 맡는다: 판 가운데 조금 위라 아래 기물 독·버튼과 겹치지 않는다.
+	if _stage_yacht.visible and not manager.is_game_over:
+		# 즉시 모드(테스트·자동 진행)에서는 시점을 옮기지 않는다. 확정 뒤(연출 중, 굴리는 중 아님)에는 다시 들어가지 않는다.
+		if not _card_view_on and not instant_roll_for_test and (not _fx_busy or _stage_yacht.active):
+			_enter_card_view(&"DICE_YACHT")
+	else:
+		if _card_view_on and _card_view_tool == &"DICE_YACHT" and not _stage_yacht.active and (not _fx_busy or instant_roll_for_test):
+			_leave_card_view()
+
+
 ## 차례가 넘어가거나 게임이 끝났는데 카드 시점이 남았으면 돌려놓는다 (취소·시간 초과 대비).
 func _sync_card_view() -> void:
 	if not _card_view_on:
 		return
-	var showing: bool = _fx_busy or _tool_pick != null or _holdem_exchange != null or (_presenter != null and _presenter.active)
+	var showing: bool = _fx_busy or _tool_pick != null or _holdem_exchange != null or (_presenter != null and _presenter.active) or (_card_view_tool == &"DICE_YACHT" and _stage_yacht != null and _stage_yacht.visible)
 	if manager == null or manager.is_game_over:
 		_leave_card_view()
 	elif showing:

@@ -107,6 +107,7 @@ func run() -> void:
 	await warmup()
 	await pirate_buttons()
 	await holdem_exchange()
+	await yacht_case()
 	if failures.is_empty():
 		print("HAND_TOOLS_OK")
 		quit(0)
@@ -326,6 +327,35 @@ func holdem_exchange() -> void:
 		check(rolls[1]["details"]["exchanged"] == [0], "첫 카드만 바꿨다")
 	check(board.holdem_exchange_panel() == null, "확정하면 창이 닫힌다")
 	check(not board._card_view_on and board._alkkagi_saved_view == -1 and is_zero_approx(board._alkkagi_camera), "확정하면 원래 시점으로 돌아온 뒤 말이 움직인다")
+
+
+## 1.3.1 야추 주사위 케이스: 카드 시점으로 판 가운데에 놓이고, 고정한 주사위는 위 고정 칸으로, 확정하면 원래 시점으로.
+func yacht_case() -> void:
+	await next_turn()
+	rolls.clear()
+	await give(&"DICE_YACHT")
+	var stage: YachtStage = board._stage_yacht
+	for _w: int in 120:
+		board._refresh_all()
+		if stage.visible:
+			break
+		await process_frame
+	check(stage.visible and board._card_view_on and board._card_view_tool == &"DICE_YACHT", "야추 케이스가 뜨면 카드 시점으로 들어간다")
+	var case_center: Vector2 = stage.position + YachtStage.STAGE_SIZE / 2.0
+	check(absf(case_center.x - board._card_table_center().x) < 12.0 and absf(case_center.y - board._card_table_center().y) < 80.0, "케이스는 판 가운데 (%s / %s)" % [case_center, board._card_table_center()])
+	stage.start_pressed.emit()
+	var until: int = Time.get_ticks_msec() + 4000
+	while (stage.active or not stage.started) and Time.get_ticks_msec() < until:
+		await process_frame
+	check(stage.started and not stage.active, "주사위 5개가 컵에서 굴러 나온다")
+	var felt_y: float = stage.dice_views[1].position.y
+	stage._on_die_toggled(1)
+	check(stage.kept[1] and stage.dice_views[1].position.y < felt_y - 60.0, "누른 주사위는 위 고정 칸으로 올라간다 (누르는 자리도 따라간다)")
+	stage.confirm_pressed.emit()
+	until = Time.get_ticks_msec() + 30000  # 헤드리스는 프레임이 느려 잠깐 보여 주기(0.6초)·시점 복귀가 오래 걸린다
+	while (board._card_view_on or not is_zero_approx(board._alkkagi_camera)) and Time.get_ticks_msec() < until:
+		await process_frame
+	check(not board._card_view_on and is_zero_approx(board._alkkagi_camera), "확정하면 원래 시점으로 돌아온다")
 
 
 func warmup() -> void:

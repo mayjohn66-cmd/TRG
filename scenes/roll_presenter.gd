@@ -35,7 +35,7 @@ const YUT_TRAVEL_TIME: float = 0.42
 const TOSS_HEIGHT: float = 150.0
 const TOSS_CONTACTS: Array[float] = [0.60, 0.84, 1.0]
 ## 보드 위에 내려놓는 도구 (1.3.1): 굴린 사람 쪽에서 들고 와 보드 한가운데에 '탁' 내려놓는다 (바닥 그림자·먼지). 팝업이 아니라 판 위의 물건처럼.
-const PLACE_TOOLS: Array[StringName] = [&"LIFE_ROULETTE", &"SLOT_777", &"REVOLVER", &"DICE_STOCK", &"DICE_DARTS", &"DICE_OMIKUJI", &"DICE_CAPSULE", &"DICE_PIRATE", &"DICE_SCRATCH", &"DICE_COOKIE", &"DICE_ICECREAM", &"DICE_MAHJONG"]
+const PLACE_TOOLS: Array[StringName] = [&"LIFE_ROULETTE", &"SLOT_777", &"REVOLVER", &"DICE_STOCK", &"DICE_DARTS", &"DICE_OMIKUJI", &"DICE_CAPSULE", &"DICE_PIRATE", &"DICE_COOKIE", &"DICE_ICECREAM", &"DICE_MAHJONG"]  # 스크래치 복권은 카드 시점(판 위 계산대)에서 (MainBoard.CARD_TABLE_TOOLS)
 ## 들고 오는 시간과 내려놓은 뒤 눌렸다 펴지는 시간 (연출 시계는 멈추지 않는다: 결과 시각은 그대로).
 const PLACE_TIME: float = 0.26
 const PLACE_SETTLE: float = 0.16
