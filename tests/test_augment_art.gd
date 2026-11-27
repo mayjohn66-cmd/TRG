@@ -36,7 +36,7 @@ func test_all_draft_icons_resolve_to_the_described_target() -> void:
 				relative = "augments/%s.png" % definition.augment_id
 			_:
 				relative = "augments/%s.png" % definition.augment_id  # 카드 패키지 3종·범용 보급 13종
-		if definition.augment_id in [&"AUG_UTIL_DRIFT", &"AUG_UTIL_BOUNTY"]:
+		if definition.augment_id in [&"AUG_UTIL_DRIFT", &"AUG_UTIL_BOUNTY", &"AUG_UTIL_FULL_POWER"]:
 			relative = "augments/%s_V02.png" % definition.augment_id
 		var texture: Texture2D = AugmentArt.load_first(AugmentArt.candidates(definition))
 		check(texture != null, str(definition.augment_id) + " has illustration")
