@@ -12,6 +12,7 @@ const HUMAN: Array[int] = [1]
 ## P1(사람)의 말이 3칸 앞에 있어 P2 봇이 3을 굴리면 잡을 수 있다. 봇에게는 다른 말(대기 중인 22번)도 있다. 사람이 1등이다.
 func _capture_board() -> GameState:
 	var state := make_state(2)
+	state.round_number = GameEnums.DRAFT_START  # 1~3라운드 초반 자비(1.3.1)와 따로 기본 자비를 본다
 	place(state, 21, 1, [0])
 	place(state, 11, 4, [3])
 	return state
@@ -214,3 +215,25 @@ func test_carbonara_draft_avoids_special_victory_laws() -> void:
 	for seed_value: int in 20:
 		rng.seed = seed_value
 		check_eq(offers[BotTemper.choose_augment(state, 2, offers, 1, rng)], other, "크림는 법전 증강을 고르지 않는다")
+
+
+func test_soft_levels_do_not_capture_humans_before_the_first_draft() -> void:
+	# 1.3.1 제보 "초반에 너무 같은 숫자가 나와 컴퓨터와 죽고 죽이는 상황이 반복": 크림·로제는 1~3라운드에 사람 말을 잡지 않는다
+	var state: GameState = _capture_board()
+	for round_number: int in range(1, GameEnums.DRAFT_START):
+		state.round_number = round_number
+		check_eq(_spare_rate(state, 1), 1.0, "크림 %d라운드: 사람 말을 잡지 않는다" % round_number)
+		check_eq(_spare_rate(state, 2), 1.0, "로제 %d라운드: 사람 말을 잡지 않는다" % round_number)
+		check_eq(_spare_rate(state, 3), 0.0, "오리지널 %d라운드: 그대로 잡는다" % round_number)
+	state.round_number = GameEnums.DRAFT_START
+	var rose: float = _spare_rate(state, 2)
+	check(rose > 0.27 and rose < 0.43, "4라운드부터 로제는 기본 자비로 (%.2f)" % rose)
+	# 잡는 수밖에 없으면 잡는다
+	var only := make_state(2)
+	only.round_number = 1
+	place(only, 11, 4, [3])
+	place(only, 21, 1, [0])
+	for pawn_id: int in [22, 23, 24]:
+		only.get_pawn(pawn_id).is_finished = true
+	var rng := RandomNumberGenerator.new()
+	check_eq(BotTemper.choose_pawn(only, 2, 3, 2, HUMAN, rng), 21, "움직일 말이 하나뿐이면 잡는다")

@@ -15,6 +15,9 @@ const RAW: int = 0
 const LEVEL_MIN: int = 1
 const LEVEL_MAX: int = 5
 const DEFAULT_LEVEL: int = 2
+## 초반 자비를 주는 가장 높은 난이도와 그 감점 (어떤 수보다도 낮게).
+const EARLY_MERCY_MAX_LEVEL: int = 2
+const EARLY_MERCY_PENALTY: float = 10000.0
 ## 히든 법전 브레이크 감점 (PacingDirector.capture_would_win_law): 다른 말을 움직일 수 있으면 그쪽을 고른다.
 const LAW_BRAKE_PENALTY: float = 400.0
 ## 드래프트에서 가장 좋은 선택지가 법전일 때 그대로 고르는 확률 (나머지는 법전이 아닌 가장 좋은 증강). 2026-10-27: 0.25 → 1.5배.
@@ -121,6 +124,12 @@ static func spare_chance(state: GameState, level: int, human: int, key: String) 
 
 
 ## 사람이 보호받는 순위인가 (Lv.1·2: 1등이 아니면).
+## 초반 자비 (1.3.1 제보 "초반에 컴퓨터와 죽고 죽이는 상황이 반복"): 쉬운 난이도(1 크림·2 로제)는 첫 증강 라운드 전(1~3라운드)에
+## 사람 말을 잡지 않는다. 잡는 수밖에 없으면 잡는다. 사람이 컴퓨터 말을 잡는 것은 그대로.
+static func early_mercy(state: GameState, level: int) -> bool:
+	return level >= 1 and level <= EARLY_MERCY_MAX_LEVEL and state.round_number < GameEnums.DRAFT_START
+
+
 static func protected(state: GameState, level: int, human: int) -> bool:
 	var rank_limit: int = int(params(level)["protect_rank"])
 	return rank_limit > 0 and race_rank(state, human) >= rank_limit
@@ -148,6 +157,8 @@ static func choose_pawn(state: GameState, player_id: int, dice_value: int, level
 	for pawn: PlayerPawn in state.selectable_pawns(player_id, dice_value):
 		var score: float = BotBrain.score_move(state, pawn, dice_value)
 		var caught: Array[int] = humans_caught_by(state, pawn, dice_value, humans)
+		if not caught.is_empty() and early_mercy(state, level):
+			score -= EARLY_MERCY_PENALTY  # 쉬운 난이도의 1~3라운드: 사람 말을 잡는 수는 다른 수가 있으면 두지 않는다
 		for human: int in caught:
 			if protected(state, level, human):
 				score -= PROTECT_PENALTY  # 처진 사람을 더 밟지 않는다

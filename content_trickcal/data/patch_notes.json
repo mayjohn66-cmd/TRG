@@ -94,6 +94,11 @@
        "ko": "[알고리즘 밴]·[UDO 스킵]·[이의 있음!]은 [너프 발동] 카드가 되어 더 이상 공격이 아니에요. 방어 카드로 막을 수 없고, [UDO 리버스]는 공격 카드를 막고 반사하는 카드로 단순해졌어요",
        "en": "[Algorithm Ban], [UDO Skip] and [Objection!] are now [Nerf] cards and no longer count as attacks. They can't be blocked by Defense cards, and [UDO Reverse] is now simply: block an attack card and reflect it",
        "ja": "［アルゴリズムBAN］・［UDO スキップ］・［異議あり！］は［デバフ発動］カードになり、攻撃ではなくなりました。防御カードでは防げず、［UDO リバース］は攻撃カードを防いで反射するシンプルなカードになりました"
+      },
+      {
+       "ko": "쉬운 난이도(크림·로제)의 컴퓨터는 1~3라운드에 내 말을 잡는 수를 되도록 피해요. 초반에 서로 잡고 잡히기만 반복되지 않게 했어요 (제보 감사합니다!)",
+       "en": "On the easy difficulties (Cream and Rosé), computer players now avoid capturing your pawns in rounds 1–3 whenever they have another move, so the opening isn't just endless back-and-forth captures (thanks for the report!)",
+       "ja": "やさしい難易度（クリーム・ロゼ）のコンピューターは、1〜3ラウンドの間は自分の駒を捕まえる手をできるだけ避けます。序盤に捕まえ合いばかり繰り返さないようにしました（ご報告ありがとうございます！）"
       }
      ]
     },
