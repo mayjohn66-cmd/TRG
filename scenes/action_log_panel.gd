@@ -6,6 +6,9 @@
 class_name ActionLogPanel
 extends PanelContainer
 
+## 기록 속 링크를 눌렀다 (예: "card:ACT_02" → 그 카드의 효과를 크게 본다, 1.3.1).
+signal link_clicked(meta: String)
+
 signal expanded_changed(expanded: bool)
 
 const MAX_LOG_LINES: int = 100
@@ -70,6 +73,8 @@ func _init() -> void:
 	_text.add_theme_font_size_override("normal_font_size", 18 if MobileSupport.touch_mode() else 13)
 	_text.add_theme_font_size_override("bold_font_size", 18 if MobileSupport.touch_mode() else 13)
 	# 로그처럼 작은 글자가 빽빽한 곳은 또렷한 고딕으로 쓴다 (ONE Mobile POP은 작으면 뭉개진다)
+	_text.meta_underlined = true
+	_text.meta_clicked.connect(func(meta: Variant) -> void: link_clicked.emit(str(meta)))  # [url=card:ACT_02] 같은 링크 (1.3.1)
 	_text.add_theme_font_override("normal_font", SMALL_FONT)
 	_text.add_theme_font_override("bold_font", SMALL_FONT)
 	_scroll.add_child(_text)

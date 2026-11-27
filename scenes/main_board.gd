@@ -88,6 +88,8 @@ const ME_AVATAR_SIZE: Vector2 = Vector2(118, 118)
 const DOCK_CARD_Y: float = 6.0
 ## 손패 카드는 한 장 전체 일러스트(140x196)가 따로 있고, 화면 아래로 반쯤 가려진 채 부채꼴로 펼쳐진다. 호버하면 전체가 올라와 보인다.
 const HAND_CARD_SIZE: Vector2 = Vector2(140, 196)
+## 알림용 카드(이름·그림만) 높이: 손패 카드에서 효과 칸 위까지 (CardSkin: 효과 칸은 138px부터).
+const CARD_ART_ONLY_HEIGHT: float = 140.0
 const HAND_FAN_DEGREES: float = 5.0
 ## 접힌 손패: 우측 하단에 작은 카드(풀 카드의 50%)를 일렬로 겹쳐 놓는다. 누르면 부채꼴로 펼쳐진다.
 const HAND_MINI_SCALE: float = 0.5
@@ -6044,7 +6046,7 @@ func _build_reaction_popup(holder: int, key: String) -> void:
 	for card_id: Variant in cards:
 		var column := VBoxContainer.new()
 		column.add_theme_constant_override("separation", 6)
-		column.add_child(_make_card_preview(StringName(card_id)))
+		column.add_child(_make_card_preview(StringName(card_id), false))  # 방어 카드를 고르는 창은 효과 글이 필요하다
 		var use := _make_button("발동!", _on_reaction_use.bind(holder, StringName(card_id)), 16, Color("3b5bdb"), 10)
 		use.name = "Use_%s" % card_id
 		use.custom_minimum_size = Vector2(130, 40)
@@ -6388,7 +6390,7 @@ func _toggle_zoom(player_id: int, card_id: StringName) -> void:
 
 
 ## 확대 카드(350x490)와 별도 사용 안내 패널. 남의 턴에도 열람할 수 있다.
-func _open_zoom(player_id: int, card_id: StringName) -> void:
+func _open_zoom(player_id: int, card_id: StringName, view_only: bool = false) -> void:
 	_close_zoom()
 	var card: BaseCard = CardRegistry.get_card(card_id)
 	if MobileSupport.touch_mode():
@@ -6422,6 +6424,7 @@ func _open_zoom(player_id: int, card_id: StringName) -> void:
 	box.add_child(face)
 	var guide := PanelContainer.new()
 	guide.name = "CardGuide"
+	guide.visible = not view_only  # 기록에서 연 카드는 보기만 한다 (사용 안내 없음)
 	guide.custom_minimum_size = Vector2(card_size.x, 0)
 	guide.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	guide.add_theme_stylebox_override("panel", UiSkin.panel("panel", 12))
@@ -12488,11 +12491,25 @@ func _make_law_book(new_law: LawResource) -> Control:
 
 
 ## 카드 사용 알림에 붙일 카드 앞면 (손패 카드와 같은 모양, 클릭 불가).
-func _make_card_preview(card_id: StringName) -> Control:
+func _make_card_preview(card_id: StringName, art_only: bool = true) -> Control:
 	var holder := CenterContainer.new()
 	holder.set_meta("card_preview_id",card_id)
 	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	holder.add_child(_make_card_face(card_id))
+	var face: PanelContainer = _make_card_face(card_id)
+	if not art_only:
+		holder.add_child(face)
+		return holder
+	# 1.3.1 글 줄이기: 알림에는 카드 이름·그림만 (효과 글은 기록의 카드 이름을 누르면 본다). 효과 칸을 잘라 낸다.
+	var effect: Node = face.find_child("EffectPanel", true, false)
+	if effect != null:
+		(effect as CanvasItem).visible = false
+	var crop := Control.new()
+	crop.name = "CardArtOnly"
+	crop.clip_contents = true
+	crop.custom_minimum_size = Vector2(HAND_CARD_SIZE.x, CARD_ART_ONLY_HEIGHT)
+	crop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	crop.add_child(face)
+	holder.add_child(crop)
 	return holder
 
 
@@ -13103,6 +13120,7 @@ func _pawn_name(pawn_id: int) -> String:
 
 func _build_action_log() -> void:
 	_action_log = ActionLogPanel.new()
+	_action_log.link_clicked.connect(_on_log_link)
 	add_child(_action_log)
 	_action_log.place(ACTION_LOG_POS)
 	# 내 프로필을 없애면서 [내 증강] 확인 버튼을 로그 머리로 옮겼다 (올리면 미리 보기, 누르면 고정).
@@ -13120,6 +13138,21 @@ func _bb(text: String) -> String:
 
 
 ## [이름] 꼴로 감싼다.
+## 기록 속 카드 이름: 누르면 그 카드를 크게 보여 준다 (효과 글은 알림 대신 여기서 본다, 1.3.1).
+func _card_link(card_id: StringName) -> String:
+	var card: BaseCard = CardRegistry.get_card(card_id)
+	if card == null:
+		return ""
+	return "[url=card:%s]%s[/url]" % [card_id, _bq(card.display_name)]
+
+
+func _on_log_link(meta: String) -> void:
+	if meta.begins_with("card:"):
+		var card_id := StringName(meta.trim_prefix("card:"))
+		if CardRegistry.get_card(card_id) != null:
+			_open_zoom(local_player_id, card_id, true)
+
+
 func _bq(text: String) -> String:
 	if text.begins_with("["):
 		return _bb(text)  # 이미 [분류] 이름 꼴이면 괄호를 겹치지 않는다
@@ -13341,11 +13374,11 @@ func _record_card(data: Dictionary) -> void:
 	var params: Dictionary = data.get("params", {})
 	if bool(data.get("counter", false)):
 		var entry: Dictionary = state.get_attack(int(params.get("attack", -1)))
-		_record(player_id, "방어 %s 발동! → %s을(를) 받아침" % [_bq(card.display_name), _bb(_attack_text(entry)) if entry.has("kind") else "공격"])
+		_record(player_id, "방어 %s 발동! → %s을(를) 받아침" % [_card_link(card.card_id), _bb(_attack_text(entry)) if entry.has("kind") else "공격"])
 		return
 	if card.category == GameEnums.CardCategory.TRAP:
 		if card.corner_only:
-			_record(player_id, "코너 함정 %s 설치! (%d번 코너)" % [_bq(card.display_name), int(params.get("tile", -1))])
+			_record(player_id, "코너 함정 %s 설치! (%d번 코너)" % [_card_link(card.card_id), int(params.get("tile", -1))])
 		else:
 			_record(player_id, "은신 함정 설치!")  # 은신 함정은 종류도 위치도 남기지 않는다
 		return
@@ -13356,7 +13389,7 @@ func _record_card(data: Dictionary) -> void:
 			_mark_spotlight()  # AI가 사람을 겨눈 카드: 그 턴은 보통 속도로 보여 준다
 	elif params.has("tile"):
 		detail = " (%d번 타일)" % int(params["tile"])
-	_record(player_id, "%s 사용!%s" % [_bq(card.display_name), detail], "", false, false, card.card_id != &"ACT_23")
+	_record(player_id, "%s 사용!%s" % [_card_link(card.card_id), detail], "", false, false, card.card_id != &"ACT_23")
 
 
 ## 말이 출발선으로 날아갔다: 다른 사람이 보냈으면 처치, 아니면 사출.
@@ -13795,7 +13828,7 @@ func _reveal_roll(data: Dictionary) -> void:
 	_roll_history.reveal(int(data.get("_history_turn",_roll_turn_serial)),int(data["player_id"]),data["result"])
 	_place_roll_history()
 	_show_gambler_flash(int(data["player_id"]),(data["result"] as Dictionary).get("tool_id",&""))
-	var roll_text: String = _log_roll(data)
+	_log_roll(data)  # 기록 줄을 적는다 (가운데 띠는 1.3.1부터 짧은 "N칸 전진!")
 	var details: Dictionary = (data["result"] as Dictionary)["details"]
 	var fired: bool = bool(details.get("fired", false))
 	var roller: int = int(data["player_id"])
@@ -13817,9 +13850,9 @@ func _reveal_roll(data: Dictionary) -> void:
 			var summary: String = L10n.tf("%d칸 확정",[roll_steps])
 			if bool((data["result"] as Dictionary).get("reroll",false)):
 				summary = L10n.tf("%d칸 전진",[roll_steps])+" · "+L10n.t("한 번 더")
-			_show_center_banner("P%d  %s\n%s" % [roller,heading,summary],Color("fff3bf"))
+			_show_center_banner("%s\n%s" % [heading,summary],Color("fff3bf"))
 			return
-		_show_center_banner("P%d  %s" % [data["player_id"], roll_text.strip_edges()], Color("ffd43b") if bool((data["result"] as Dictionary).get("reroll", false)) else Color("fff3bf"))
+		_show_center_banner(_short_roll_banner(data["result"]), Color("ffd43b") if bool((data["result"] as Dictionary).get("reroll", false)) else Color("fff3bf"))
 		return
 	if bool((data["result"] as Dictionary).get("can_continue", false)):
 		return  # 이어지는 굴림(러시안 룰렛 생존 등)은 패드가 누적을 보여 준다: 이동 칸수는 최종 결과가 나온 뒤 한 번만 띄운다
@@ -13832,11 +13865,19 @@ func _reveal_roll(data: Dictionary) -> void:
 		var fail_name: String = "폭죽 깃발!" if fired else ("낙!" if roll_tool == &"YUT" else ("광대!" if roll_tool == &"DICE_TAROT" else "망통!"))
 		if roll_tool == &"DICE_OMIKUJI":
 			fail_name = "대흉!"
-		_announce_move_failed(fail_name, roller, "P%d  %s" % [roller, roll_text.strip_edges()])
+		_announce_move_failed(fail_name, roller)  # 1.3.1 글 줄이기: [낙!]·[망통!] 같은 큰 글자로 충분하다 (굴림 설명은 기록에)
 		return
 	if _presenter.tossing and not instant_roll_for_test and RollPresenter.TOSS_TOOLS.has(roll_tool):
 		return  # 보드 위로 던진 주사위·윷이 바로 위에 "N칸 전진!"을 띄웠다: 같은 말을 띠로 또 하지 않는다
-	_show_center_banner("P%d  %s" % [data["player_id"], roll_text.strip_edges()], Color("ff8787") if fired else Color("fff3bf"))
+	_show_center_banner(_short_roll_banner(data["result"]), Color("ff8787") if fired else Color("fff3bf"))
+
+
+## 굴림 결과 띠는 짧게 (1.3.1 글 줄이기): "N칸 전진!" (+ 한 번 더). 도구 이름·족보는 연출 그림과 기록에 있다.
+func _short_roll_banner(result: Dictionary) -> String:
+	var text: String = L10n.tf("%d칸 전진!", [int(result.get("steps", 0))])
+	if bool(result.get("reroll", false)):
+		text += " · " + L10n.t("한 번 더")
+	return text
 
 
 ## 프로필 카드 한가운데의 화면 좌표 (투척·카드 비행의 출발·도착점). 프로필이 없으면 INF.

@@ -70,6 +70,11 @@
        "ko": "화면에 겹쳐 나오던 글을 줄였어요: 리벤지 부스터 가운데 알림, 기록 창의 라운드 표시·네모 표식, 증강 공개 카드의 작은 족보 글씨",
        "en": "Less on-screen text clutter: removed the Revenge Booster center banner, the round tags and squares in the log, and the tiny hand tables on revealed augment cards",
        "ja": "画面に重なって出ていた文字を減らしました：リベンジブースターの中央通知、記録欄のラウンド表示・四角マーク、公開される増強カードの小さな役表の文字"
+      },
+      {
+       "ko": "카드를 내면 [카드 발동!]과 카드 그림만 보여요. 효과가 궁금하면 왼쪽 기록 창에서 카드 이름을 눌러 보세요. 굴림 결과도 [6칸 전진!]처럼 짧게 보여요",
+       "en": "Playing a card now just shows [Card activated!] and the card art. To see what it does, tap the card name in the log on the left. Roll results are shorter too, like [Move 6!]",
+       "ja": "カードを出すと［カード発動！］とカードの絵だけが表示されます。効果が気になったら左の記録欄でカード名を押してください。出目の結果も［6マス前進！］のように短く表示されます"
       }
      ]
     },
