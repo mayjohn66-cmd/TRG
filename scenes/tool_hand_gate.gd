@@ -355,32 +355,20 @@ func _build_omikuji(column: VBoxContainer) -> void:
 	view.begin(_details)
 	view.apply_time(OmikujiView.DRAW_AT)  # 연출 첫 장면: 통이 자리 잡은 뒤, 흔들기 전
 	_box = view
-	var buttons := HBoxContainer.new()
-	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
-	buttons.add_theme_constant_override("separation", 14)
-	column.add_child(buttons)
-	var shake_button := _button("ShakeButton", L10n.t("흔들기"), Color("e67700"))
+	var buttons := JudgmentTableStyle.button_row(column)
+	var shake_button := _button("ShakeButton", L10n.t("흔들기"))
 	shake_button.pressed.connect(shake)
 	buttons.add_child(shake_button)
-	var draw_button := _button("DrawButton", L10n.t("뽑기"), Color("2b8a3e"))
+	var draw_button := _button("DrawButton", L10n.t("뽑기"))
 	draw_button.pressed.connect(draw)
 	buttons.add_child(draw_button)
 
 
-func _button(node_name: String, text: String, tone: Color) -> Button:
+func _button(node_name: String, text: String) -> Button:
 	var button := Button.new()
 	button.name = node_name
 	button.text = text
-	button.custom_minimum_size = Vector2(120, 48)
-	button.add_theme_font_size_override("font_size", MobileSupport.text_px(20))
-	for state_name: String in ["normal", "hover", "pressed", "focus"]:
-		var style := _box_style(tone.lightened(0.12 if state_name == "hover" else 0.0), tone.darkened(0.4), 12, 3)
-		if state_name == "focus":
-			style.draw_center = false
-		button.add_theme_stylebox_override(state_name, style)
-	button.add_theme_color_override("font_color", Color.WHITE)
-	button.add_theme_color_override("font_outline_color", Color.BLACK)
-	button.add_theme_constant_override("outline_size", 4)
+	JudgmentTableStyle.button(button,120)
 	return button
 
 

@@ -75,14 +75,26 @@ static func button(item: Button, action: bool = false, horizontal: float = 12.0,
 			item.add_theme_stylebox_override(state, focus)
 			continue
 		var fill := Color("ffdd74") if action else Color("fff3c7")
-		if state == "hover": fill = fill.lightened(0.12)
-		elif state == "pressed": fill = fill.darkened(0.08)
+		if state == "hover": fill = Color("ffebac") if action else Color("ffe4a0")
+		elif state == "pressed": fill = fill.darkened(0.10)
 		elif state == "disabled": fill = Color("d9ddce")
 		var box := surface(fill,Color("7da44e") if state != "disabled" else Color("a6ad99"),1,12,0)
 		box.set_meta("ui_surface_button",true)
 		box.set_content_margin_all(vertical)
 		box.set_content_margin(SIDE_LEFT, horizontal)
 		box.set_content_margin(SIDE_RIGHT, horizontal)
+		box.set_meta("ui_button_feedback",true)
+		if state in ["normal","hover"]:
+			box.shadow_size=3 if state=="hover" else 2
+			box.shadow_offset=Vector2(0,2)
+			box.shadow_color=Color(0,0,0,.18)
+		elif state=="pressed":
+			box.border_color=Color("7c7954")
+			box.border_width_top=4
+			box.border_width_left=3
+			var shift:=minf(2,vertical)
+			box.content_margin_top=vertical+shift
+			box.content_margin_bottom=vertical-shift
 		item.add_theme_stylebox_override(state, box)
 	for key: String in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
 		item.add_theme_color_override(key, INK)

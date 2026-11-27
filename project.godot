@@ -10,6 +10,10 @@ boot_splash/show_image=false
 config/features=PackedStringArray("4.3")
 run/main_scene="res://scenes/start_menu.tscn"
 
+[autoload]
+
+ButtonFeedback="*res://scenes/button_feedback.gd"
+
 [display]
 
 window/size/viewport_width=1366

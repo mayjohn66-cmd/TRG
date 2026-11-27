@@ -107,16 +107,13 @@ func setup(hand: Array, board_table: bool = false) -> void:
 				toggle(index))
 		row.add_child(holder)
 		_items.append(holder)
-	var buttons := HBoxContainer.new()
-	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
-	buttons.add_theme_constant_override("separation", 14)
-	column.add_child(buttons)
-	_exchange_button = _button("ExchangeButton", Color("2b8a3e"))
+	var buttons := JudgmentTableStyle.button_row(column)
+	_exchange_button = _button("ExchangeButton")
 	_exchange_button.pressed.connect(func() -> void:
 		set_busy(true)
 		exchange.emit(keep_mask()))
 	buttons.add_child(_exchange_button)
-	var stand_button := _button("StandButton", Color("37506b"))
+	var stand_button := _button("StandButton")
 	stand_button.text = L10n.t("그대로 확정")
 	stand_button.pressed.connect(func() -> void:
 		set_busy(true)
@@ -317,23 +314,10 @@ func _refresh() -> void:
 	_hand_label.text = L10n.tf("지금 족보: %s (%d칸)", [L10n.t(str(MainBoard.HAND_NAMES.get(hand, ""))), ToolHoldem.steps_for(hand)])
 
 
-func _button(node_name: String, tone: Color) -> Button:
+func _button(node_name: String) -> Button:
 	var button := Button.new()
 	button.name = node_name
-	button.custom_minimum_size = Vector2(150, 46)
-	button.add_theme_font_size_override("font_size", MobileSupport.text_px(18))
-	for state_name: String in ["normal", "hover", "pressed", "disabled", "focus"]:
-		var style := StyleBoxFlat.new()
-		style.bg_color = tone.lightened(0.12 if state_name == "hover" else 0.0).darkened(0.35 if state_name == "disabled" else 0.0)
-		style.set_corner_radius_all(12)
-		style.set_content_margin_all(8)
-		if state_name == "focus":
-			style.draw_center = false
-		button.add_theme_stylebox_override(state_name, style)
-	button.add_theme_color_override("font_color", Color.WHITE)
-	button.add_theme_color_override("font_outline_color",Color.BLACK)
-	button.add_theme_constant_override("outline_size",3)
-	button.add_theme_color_override("font_disabled_color", Color(1, 1, 1, 0.45))
+	JudgmentTableStyle.button(button)
 	return button
 
 

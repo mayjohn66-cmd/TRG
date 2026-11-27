@@ -1,0 +1,8 @@
+Mode: built-in image_gen, generation (material reference rather than editing the user's image).
+Date: 2026-11-27
+
+Create a single seamless tileable material texture for a small web-game card playmat, not a scene or a mockup. Orthographic extreme close-up of dense short-pile brushed felt/microfiber fabric like a real teal poker play mat, but render the albedo in neutral mid gray so the game can tint purple, olive and emerald. Very fine soft irregular interwoven short fuzzy fibers, tiny subtle diagonal/vertical brushed grain, dense matte textile, restrained mottling, minimal contrast. Natural material detail not dots, noise, geometric patterns, loops, knitted wool, carpet, plastic or paper. Absolutely flat uniform diffuse illumination across the entire square, no spotlight, shading gradients, shadows, bevel, corners, borders, objects, text or symbols. Texture fills entire square, seamless opposite edges, no visible repeating motifs. Gray values approximately 95 to 175, average around 128. Fine fibers should remain subtle and not interfere with cards and text. A production-ready clean 2D base-color texture.
+
+Source: felt-neutral-source.png (preserved generated image).
+Runtime: assets/ui/trickcal/card_mats/v1/felt-neutral.webp
+Conversion: Godot Image.resize(512,512,LANCZOS), save_webp(lossy=true,quality=0.74).

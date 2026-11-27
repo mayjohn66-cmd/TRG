@@ -9,7 +9,7 @@ signal reroll_pressed(keep: Array)
 signal confirm_pressed
 signal roll_finished
 
-const STAGE_SIZE: Vector2 = Vector2(620.0, 270.0)
+const STAGE_SIZE: Vector2 = Vector2(620.0, 286.0)
 const ROLL_SECONDS: float = YachtRoll3D.TOTAL_TIME
 
 ## 3D 주사위 위의 입력 영역. 고정 테두리·태그와 굴리기 전 자리만 그린다.
@@ -116,7 +116,7 @@ func _ready() -> void:
 	var buttons := HBoxContainer.new()
 	buttons.add_theme_constant_override("separation", 14)
 	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
-	buttons.position = Vector2(10.0, 212.0)
+	buttons.position = Vector2(10.0, 228.0)
 	buttons.size = Vector2(STAGE_SIZE.x - 20.0, 46.0)
 	add_child(buttons)
 	_start_button = _button("주사위 5개 굴리기", true, 340.0)
@@ -185,13 +185,11 @@ func _label(text: String, size_px: int, color: Color) -> Label:
 	return label
 
 
-func _button(text: String, action: bool, width: float) -> Button:
+func _button(text: String, _action: bool, width: float) -> Button:
 	var button := Button.new()
 	button.text = text
-	button.custom_minimum_size = Vector2(width, 44.0)
 	button.focus_mode = Control.FOCUS_NONE
-	button.add_theme_font_size_override("font_size", 18)
-	UiSkin.button(button, action, 10.0, 6.0)
+	JudgmentTableStyle.button(button,width)
 	return button
 
 

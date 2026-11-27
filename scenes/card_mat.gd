@@ -3,10 +3,14 @@
 # Role: 카드형 판정 도구(타로·화투·텍사스 홀덤)를 쓰는 동안 판 가운데에 펼치는 카드 매트 (1.3.1 임시 구현).
 #       말려 있던 매트가 가운데에서 좌우로 펼쳐지고(unroll), 끝나면 다시 말려 들어간다(roll_up). 매트 밖 보드는 살짝 어둡게 덮는다.
 #       카드가 놓일 자리(slots)를 점선 테두리로 미리 그려 "여기에 놓인다"를 글 없이 보여 준다.
-#       그림 파일 없이 코드로만 그린다 (천 질감 = 결정적 난수 점, 테두리 = 선). 일러스트가 생기면 _draw_* 대신 텍스처를 깔면 된다.
+#       공용 짧은 섬유 텍스처를 세 색상으로 착색한다. 테두리·문양·카드 자리는 코드로 유지한다.
 #       결과·난수와는 상관없다 (그림만).
 class_name CardMat
 extends Control
+
+const FABRIC: Texture2D = preload("res://assets/ui/trickcal/card_mats/v1/felt-neutral.webp")
+## Stable board-space grain: unrolling reveals cloth instead of stretching it.
+const FABRIC_TILE_PIXELS := 320.0
 
 ## 도구별 매트 모양. 다듬을 때 여기 값부터 바꾸면 된다.
 const STYLES: Dictionary = {
@@ -46,6 +50,8 @@ var _tween: Tween = null
 func _init() -> void:
 	name = "CardMat"
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	texture_repeat = CanvasItem.TEXTURE_REPEAT_MIRROR
+	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 131
@@ -99,16 +105,11 @@ func _draw() -> void:
 	var style: Dictionary = STYLES[tool_id]
 	var rect: Rect2 = mat_rect()
 	var full := Rect2(mat_center - MAT_SIZE / 2.0, MAT_SIZE)
-	# 그림자 → 바탕 → 가운데 밝은 기운 → 천 질감 → 무늬 → 테두리 → 카드 자리 → 말린 끝(두루마리)
-	_round_rect(rect.grow(6).grow_side(SIDE_BOTTOM, 6), Color(0, 0, 0, 0.35), 26)
+	# 그림자 → 바탕 → 공용 섬유 질감 → 문양·테두리 → 카드 자리 → 말린 끝
+	for spread: int in [6,4,2]:
+		_round_rect(rect.grow(spread).grow_side(SIDE_BOTTOM,3),Color(0,0,0,.055),22+spread)
 	_round_rect(rect, style["base"], 22)
-	var inner: Rect2 = rect.grow(-rect.size.x * 0.18 if rect.size.x > 80 else 0.0)
-	_round_rect(Rect2(inner.position.x, rect.position.y + 40, inner.size.x, rect.size.y - 80), Color(style["center"], 0.55), 120)
-	var fleck: Color = style["fleck"]
-	for point: Vector2 in _flecks:
-		var at: Vector2 = full.position + point * full.size
-		if rect.has_point(at):
-			draw_rect(Rect2(at, Vector2(2, 2)), Color(fleck, 0.18))
+	_draw_fabric(rect,full,style)
 	match str(style["pattern"]):
 		"stars": _draw_stars(rect, full, style)
 		"blanket": _draw_blanket(rect, style)
@@ -124,41 +125,101 @@ func _draw() -> void:
 			draw_line(Vector2(x - 4, rect.position.y), Vector2(x - 4, rect.end.y), Color(1, 1, 1, 0.18), 3.0)
 
 
-## 타로: 보라 벨벳에 흩뿌린 별과 금실 두 줄 테두리.
+func _draw_fabric(rect: Rect2, full: Rect2, style: Dictionary) -> void:
+	var points := PackedVector2Array()
+	var uvs := PackedVector2Array()
+	var radius := minf(22.0,minf(rect.size.x,rect.size.y)*.5)
+	var centers: Array[Vector2] = [rect.position+Vector2(radius,radius),Vector2(rect.end.x-radius,rect.position.y+radius),rect.end-Vector2.ONE*radius,Vector2(rect.position.x+radius,rect.end.y-radius)]
+	for corner: int in 4:
+		for step: int in 7:
+			var angle := PI+corner*PI*.5+step*PI/12.0
+			var point := centers[corner]+Vector2.from_angle(angle)*radius
+			points.append(point)
+			uvs.append((point-full.position)/FABRIC_TILE_PIXELS)
+	# The neutral cloth averages mid-gray. This tint restores the existing palette
+	# while retaining the fine fiber highlights and depressions in one shared draw.
+	var tint: Color = Color(style["base"]).lerp(Color(style["center"]),.45)
+	tint=Color(tint.r*1.9,tint.g*1.9,tint.b*1.9,1)
+	draw_polygon(points,PackedColorArray([tint]),uvs,FABRIC)
+
+
+## 타로: 보라 천과 가는 금실 봉제선.
 func _draw_stars(rect: Rect2, full: Rect2, style: Dictionary) -> void:
 	var gold: Color = style["edge"]
 	for index: int in 40:
 		var point: Vector2 = _flecks[index * 7]
 		var at: Vector2 = full.position + Vector2(0.06 + point.x * 0.88, 0.08 + point.y * 0.84) * full.size
-		if rect.grow(-14).has_point(at):
+		# During the first/last unroll frames the visible strip is narrower than
+		# the star inset. Do not pass a negative-size Rect2 to has_point().
+		if rect.size.x > 28.0 and rect.size.y > 28.0 and rect.grow(-14).has_point(at):
 			var radius: float = 2.0 + (index % 3) * 1.6
 			draw_line(at - Vector2(radius, 0), at + Vector2(radius, 0), Color(gold, 0.55), 1.4)
 			draw_line(at - Vector2(0, radius), at + Vector2(0, radius), Color(gold, 0.55), 1.4)
-	_round_outline(rect.grow(-10), gold, 18, 2.5)
-	_round_outline(rect.grow(-17), Color(gold, 0.5), 14, 1.2)
+	_draw_binding(rect,style,8.0,Color(gold,.46))
 
 
-## 화투: 군용 담요처럼 거친 털 질감과 휘갑치기 가장자리.
+## 화투: 담요와 같은 천으로 감싼 가장자리, 작은 휘갑치기.
 func _draw_blanket(rect: Rect2, style: Dictionary) -> void:
-	var edge: Color = style["edge"]
-	_round_outline(rect.grow(-6), edge, 20, 6.0)
-	var step: float = 14.0
-	var x: float = rect.position.x + 12
-	while x < rect.end.x - 12:
-		draw_line(Vector2(x, rect.position.y + 2), Vector2(x + 6, rect.position.y + 12), Color("c9c2a3", 0.7), 2.0)
-		draw_line(Vector2(x, rect.end.y - 2), Vector2(x + 6, rect.end.y - 12), Color("c9c2a3", 0.7), 2.0)
-		x += step
-	for row: int in 3:
-		var y: float = rect.position.y + rect.size.y * (0.25 + row * 0.25)
-		draw_line(Vector2(rect.position.x + 20, y), Vector2(rect.end.x - 20, y), Color(0, 0, 0, 0.05), 10.0)
+	_draw_binding(rect,style,9.0,Color("c9c2a3",.34))
 
 
-## 홀덤: 초록 펠트에 가죽 테두리(레일)와 안쪽 금색 선.
+## 홀덤: 짙은 녹색 패브릭 바인딩과 낮은 대비의 실밥.
 func _draw_felt(rect: Rect2, _full: Rect2, style: Dictionary) -> void:
-	var leather: Color = style["edge"]
-	_round_outline(rect.grow(-9), leather, 22, 18.0)
-	_round_outline(rect.grow(-3), leather.lightened(0.25), 24, 2.0)
-	_round_outline(rect.grow(-32), Color("e9c46a", 0.45), 60, 1.6)
+	_draw_binding(rect,style,10.0,Color("b7bb8c",.3))
+
+
+func _rounded_contour(rect: Rect2, radius: float) -> PackedVector2Array:
+	var path:=PackedVector2Array()
+	var r:=minf(radius,minf(rect.size.x,rect.size.y)*.5)
+	var centers: Array[Vector2]=[rect.position+Vector2.ONE*r,Vector2(rect.end.x-r,rect.position.y+r),rect.end-Vector2.ONE*r,Vector2(rect.position.x+r,rect.end.y-r)]
+	for corner: int in 4:
+		for step: int in 7:
+			path.append(centers[corner]+Vector2.from_angle(PI+corner*PI*.5+step*PI/12.0)*r)
+	return path
+
+
+## A textured cloth binding, not a flat frame. Shared fibers run through the
+## narrow band; tiny staggered stitches follow its curved edge on all four sides.
+func _draw_binding(rect: Rect2, style: Dictionary, width: float, thread: Color) -> void:
+	if rect.size.x<=width*2+4 or rect.size.y<=width*2+4: return
+	var outer:=_rounded_contour(rect.grow(-1),21)
+	var inner:=_rounded_contour(rect.grow(-width),maxf(2,22-width))
+	var ink: Color=Color(style["base"]).lerp(Color(style["edge"]),.38).darkened(.12)
+	var full:=Rect2(mat_center-MAT_SIZE*.5,MAT_SIZE)
+	for i: int in outer.size():
+		var next: int=(i+1)%outer.size()
+		var quad:=PackedVector2Array([outer[i],outer[next],inner[next],inner[i]])
+		var uv:=PackedVector2Array()
+		for point: Vector2 in quad: uv.append((point-full.position)/FABRIC_TILE_PIXELS)
+		var tint:=Color(ink.r*1.9,ink.g*1.9,ink.b*1.9,1)
+		draw_polygon(quad,PackedColorArray([tint]),uv,FABRIC)
+	# A shallow crease where the bound edge presses into the pile.
+	var crease:=_rounded_contour(rect.grow(-width+.8),maxf(2,22-width))
+	crease.append(crease[0])
+	draw_polyline(crease,Color(0,0,0,.14),1.0,true)
+	var seam:=_rounded_contour(rect.grow(-width*.55),22-width*.55)
+	var stitches:=PackedVector2Array()
+	var stitch_shadows:=PackedVector2Array()
+	var travelled:=0.0
+	for i: int in seam.size():
+		var start: Vector2=seam[i]
+		var delta: Vector2=seam[(i+1)%seam.size()]-start
+		var length:=delta.length()
+		if length<.01: continue
+		var direction:=delta/length
+		var normal:=Vector2(-direction.y,direction.x)
+		var offset:=fposmod(-travelled,8.5)
+		while offset+3.0<length:
+			var slip:=sin((travelled+offset)*.39)*.35
+			var a:=start+direction*offset+normal*slip
+			var b:=a+direction*2.8+normal*.65
+			stitch_shadows.append_array(PackedVector2Array([a+Vector2(0,.65),b+Vector2(0,.65)]))
+			stitches.append_array(PackedVector2Array([a,b]))
+			offset+=8.5
+		travelled+=length
+	if not stitches.is_empty():
+		draw_multiline(stitch_shadows,Color(0,0,0,.18),1.3,true)
+		draw_multiline(stitches,thread,1.0,true)
 
 
 func _round_rect(rect: Rect2, color: Color, radius: float) -> void:

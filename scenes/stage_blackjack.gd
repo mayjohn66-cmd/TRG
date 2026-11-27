@@ -8,7 +8,7 @@ signal start_pressed
 signal hit_pressed
 signal stand_pressed
 
-const STAGE_SIZE: Vector2 = Vector2(560.0, 240.0)
+const STAGE_SIZE: Vector2 = Vector2(560.0, 264.0)
 const DEAL_SECONDS: float = 0.2
 const CARD_SIZE := Vector2(78.0, 112.0)
 const MAX_VISIBLE_CARDS := 3
@@ -73,7 +73,7 @@ func _ready() -> void:
 	var buttons := HBoxContainer.new()
 	buttons.add_theme_constant_override("separation", 14)
 	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
-	buttons.position = Vector2(10.0, 184.0)
+	buttons.position = Vector2(10.0, 208.0)
 	buttons.size = Vector2(STAGE_SIZE.x - 20.0, 50.0)
 	add_child(buttons)
 	_start_button = _button("카드 받기", true, 320.0)
@@ -109,13 +109,11 @@ func _label(text: String, size_px: int, color: Color) -> Label:
 	return label
 
 
-func _button(text: String, action: bool, width: float) -> Button:
+func _button(text: String, _action: bool, width: float) -> Button:
 	var button := Button.new()
 	button.text = text
-	button.custom_minimum_size = Vector2(width, 46.0)
 	button.focus_mode = Control.FOCUS_NONE
-	button.add_theme_font_size_override("font_size", 18)
-	UiSkin.button(button, action, 10.0, 6.0)
+	JudgmentTableStyle.button(button,width)
 	return button
 
 

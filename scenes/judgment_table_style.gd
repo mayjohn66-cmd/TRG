@@ -13,6 +13,27 @@ const LAYER := 80
 static func surface() -> StyleBoxFlat:
 	return UiSkin.surface(FILL,EDGE,3,20,8,20,Color(0,0,0,.28))
 
+## Every judgment action uses the same cream face, green edge and gray disabled
+## state. Use the existing game button skin so hover/focus and click SFX agree.
+static func button(item: Button, width: float = 150.0) -> void:
+	item.custom_minimum_size=Vector2(width,48)
+	item.add_theme_font_size_override("font_size",MobileSupport.text_px(18))
+	UiSkin.button(item,false,12,8)
+	item.add_theme_color_override("font_outline_color",Color.BLACK)
+	item.add_theme_constant_override("outline_size",1)
+
+## Keep cards/props and their action buttons visually separate on every table.
+static func button_row(column: VBoxContainer) -> HBoxContainer:
+	var space:=MarginContainer.new()
+	space.name="ActionButtonSpacing"
+	space.add_theme_constant_override("margin_top",24)
+	column.add_child(space)
+	var row:=HBoxContainer.new()
+	row.alignment=BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation",16)
+	space.add_child(row)
+	return row
+
 static func backdrop(owner: Control) -> ColorRect:
 	owner.z_index=LAYER
 	owner.z_as_relative=false
