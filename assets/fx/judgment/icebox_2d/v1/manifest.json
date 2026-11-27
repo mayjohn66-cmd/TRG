@@ -1,0 +1,59 @@
+{
+  "mode": "built-in image_gen",
+  "reference": "assets/fx/judgment/icecream_bar.png",
+  "assets": [
+    {
+      "target": "assets/fx/judgment/icebox_2d/v1/icebox_ice.png",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-51218a3d-db24-48d2-be72-1db2f419ece8.png",
+      "prompt": "Reference 1 is ONLY the clean flat 2D painted style and crisp transparent cutout edge. Reference 2 is ONLY the icebox composition and subject. Redraw this open blue icebox with ice cubes as a CLEAN CUTOUT 2D GAME SPRITE, matching reference 1. Isolated object with alpha=0 everywhere beyond its outer brown ink contour. Absolutely NO shadow, no brown glow, no haze, no gradient outside the silhouette. Do not reproduce the brown fog from reference 2. Flat hand-drawn shading and gentle brush texture inside shapes only. Upright open lid, sky-blue outside, ivory rim and lining, mint latch, simple cream snowflake on front, angular pale-cyan ice filling inside, side handles. Wide mostly front-facing composition. No popsicles yet, no characters, no writing. Full subject inside generous truly transparent margins. A warm confident dark-brown outline as in reference 1. Not 3D or photorealistic.",
+      "transparent_background": true
+    },
+    {
+      "target": "assets/fx/judgment/icebox_2d/v1/wrapper_strawberry.png",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-d4a21c9f-f5a9-4487-95f5-5162e700c0d1.png",
+      "prompt": "Create a SINGLE isolated 2D hand-painted game sprite of one sealed popsicle wrapper, upright perfectly front-facing, on truly transparent background. Use the provided popsicle as a STYLE reference only: painterly brush texture, warm dark-brown contour, simple flat cel shading, rounded cute Korean fantasy board-game illustration. Absolutely NOT a 3D render; no photoreal plastic, no dimensional raised labels, no dramatic lighting. Narrow tall rectangular packet, softly uneven hand-drawn edges, crimped zigzag seal at top and bottom, a few simple painted folds. Same overall silhouette for all flavor variants. Large simple cream oval printed label in middle, flavor motif PRINTED FLAT on label, two small horizontal color bands. No writing, no letters, no numbers, no brands. Complete wrapper fits with 12 percent transparent margin. No loose stick protruding through sealed package. Warm pink paper wrapper with darker raspberry seals, a simple red strawberry with two green leaves PRINTED on the cream label.",
+      "transparent_background": true
+    },
+    {
+      "target": "assets/fx/judgment/icebox_2d/v1/wrapper_chocolate.png",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-ca8ff9e6-c6fa-49a1-a269-f43e61622395.png",
+      "prompt": "Create a SINGLE isolated 2D hand-painted game sprite of one sealed popsicle wrapper, upright perfectly front-facing, on truly transparent background. Use the provided popsicle as a STYLE reference only: painterly brush texture, warm dark-brown contour, simple flat cel shading, rounded cute Korean fantasy board-game illustration. Absolutely NOT a 3D render; no photoreal plastic, no dimensional raised labels, no dramatic lighting. Narrow tall rectangular packet, softly uneven hand-drawn edges, crimped zigzag seal at top and bottom, a few simple painted folds. Same overall silhouette for all flavor variants. Large simple cream oval printed label in middle, flavor motif PRINTED FLAT on label, two small horizontal color bands. No writing, no letters, no numbers, no brands. Complete wrapper fits with 12 percent transparent margin. No loose stick protruding through sealed package. Warm cocoa-brown paper wrapper with dark chocolate seals, a simple four-square chocolate bar PRINTED on the cream label.",
+      "transparent_background": true
+    },
+    {
+      "target": "assets/fx/judgment/icebox_2d/v1/wrapper_mint.png",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-c4b13af5-30e5-41ec-81f2-abda6e552be1.png",
+      "prompt": "Create a SINGLE isolated 2D hand-painted game sprite of one sealed popsicle wrapper, upright perfectly front-facing, on truly transparent background. Use the provided popsicle as a STYLE reference only: painterly brush texture, warm dark-brown contour, simple flat cel shading, rounded cute Korean fantasy board-game illustration. Absolutely NOT a 3D render; no photoreal plastic, no dimensional raised labels, no dramatic lighting. Narrow tall rectangular packet, softly uneven hand-drawn edges, crimped zigzag seal at top and bottom, a few simple painted folds. Same overall silhouette for all flavor variants. Large simple cream oval printed label in middle, flavor motif PRINTED FLAT on label, two small horizontal color bands. No writing, no letters, no numbers, no brands. Complete wrapper fits with 12 percent transparent margin. No loose stick protruding through sealed package. Pale mint-green paper wrapper with deep teal seals, two simple green mint leaves and a few brown chocolate chips PRINTED on the cream label.",
+      "transparent_background": true
+    },
+    {
+      "target": "assets/fx/judgment/icecream_variants/v2/chocolate.png",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-40cd5dca-f10a-4e36-8761-a7c78f2c931d.png",
+      "prompt": "Edit the provided existing 2D popsicle BODY game sprite into a sibling flavor variant. Preserve the same long narrow silhouette, frontal view, rounded top, nearly straight sides and flat lower edge, warm hand-painted dark-brown outline, brush texture and soft flat 2D cel shading. This is a texture for the existing eating animation: ONLY THE EDIBLE ICE CREAM BODY, absolutely NO wooden stick, NO wrapper, NO bite, NO text, NO scenery, NO extra props. Keep generous genuinely transparent margins, no glow or ground shadow. Match the original illustrated look rather than a 3D render. Change the pink strawberry interior to warm milk-chocolate brown, retain the dark chocolate dipped cap with a natural softly dripping lower edge, add two or three subtle cream-colored diagonal chocolate drizzle strokes painted flush on the body.",
+      "transparent_background": true
+    },
+    {
+      "target": "assets/fx/judgment/icecream_variants/v2/mint_chocolate.png",
+      "source": "C:\\Users\\john9\\.codex\\generated_images\\01a142bd-ab11-7f42-8e21-7a03de077bd3\\exec-9ff2ff94-309e-4deb-9bac-9b6d2eafb35c.png",
+      "prompt": "Edit the provided existing 2D popsicle BODY game sprite into a sibling flavor variant. Preserve the same long narrow silhouette, frontal view, rounded top, nearly straight sides and flat lower edge, warm hand-painted dark-brown outline, brush texture and soft flat 2D cel shading. This is a texture for the existing eating animation: ONLY THE EDIBLE ICE CREAM BODY, absolutely NO wooden stick, NO wrapper, NO bite, NO text, NO scenery, NO extra props. Keep generous genuinely transparent margins, no glow or ground shadow. Match the original illustrated look rather than a 3D render. Change the entire edible body to a pale mint-green ice cream with scattered small dark chocolate flecks PAINTED into its surface, remove the large dipped chocolate cap so the mint flavor stays immediately clear. Same rounded body outline and frontal 2D treatment.",
+      "transparent_background": true
+    }
+  ],
+  "reused": {
+    "target": "assets/fx/judgment/icecream_variants/v2/strawberry_chocolate.png",
+    "source": "assets/fx/judgment/icecream_bar.png"
+  },
+  "assembly": {
+    "preview": "tools/art/preview_icebox_2d.gd",
+    "packets": 7,
+    "foreground_cut_y": 0.69,
+    "display": "scenes/icebox_pick_art.gd",
+    "layers": [
+      "box_back_and_ice",
+      "seven_independent_tilted_packets",
+      "irregular_foreground_ice",
+      "front_wall_and_rim"
+    ]
+  },
+  "status": "2D asset preparation and assembled preview; selection interaction is not connected yet"
+}

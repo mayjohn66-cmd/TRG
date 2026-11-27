@@ -14,6 +14,21 @@ const SIMPLE_CROPS: Dictionary = {
 }
 static var _simple_cache: Dictionary = {}
 
+## Resolution-independent shared surface. Geometry and content margins stay
+## identical across interaction states; illustrations remain separate textures.
+static func surface(bg: Color, border: Color, border_width: int, radius: int, shadow: int = 0, margin: int = 0, shadow_color: Color = Color(0,0,0,0.22)) -> StyleBoxFlat:
+	var box := StyleBoxFlat.new()
+	box.bg_color = bg
+	box.border_color = border
+	box.set_border_width_all(border_width)
+	box.set_corner_radius_all(radius)
+	box.corner_detail = 16
+	box.anti_aliasing = true
+	box.shadow_color = shadow_color
+	box.shadow_size = shadow
+	box.set_content_margin_all(margin)
+	return box
+
 ## Keep generated originals intact; prepare a display-size texture once per height.
 static func _simple_texture(asset: String, height: int) -> Texture2D:
 	var key: String = "%s:%d" % [asset, height]
@@ -50,7 +65,6 @@ static func button(item: Button, action: bool = false, horizontal: float = 12.0,
 	Sfx.bind_button(item)
 	# 9-slice 조각마다 다른 밉 레벨을 고르면 작은 버튼 중앙에 사각 얼룩이 생긴다.
 	item.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	var prefix: String = "action" if action else "cancel"
 	for state: String in ["normal", "hover", "pressed", "disabled", "focus"]:
 		if state == "focus":
 			var focus := StyleBoxFlat.new()
@@ -60,10 +74,13 @@ static func button(item: Button, action: bool = false, horizontal: float = 12.0,
 			focus.set_content_margin_all(0)
 			item.add_theme_stylebox_override(state, focus)
 			continue
-		var texture_name: String = state if state in ["disabled", "focus"] else prefix + "_" + state
-		var box: StyleBoxTexture = _simple_style("action" if action else "secondary", 40, vertical)
-		box.modulate_color = {"normal": Color.WHITE, "hover": Color(1.04, 1.04, 1.04), "pressed": Color(0.93, 0.93, 0.93), "disabled": Color(0.72, 0.72, 0.72, 0.7)}[state]
-		box.set_meta("ui_button_texture", texture_name)
+		var fill := Color("ffdd74") if action else Color("fff3c7")
+		if state == "hover": fill = fill.lightened(0.12)
+		elif state == "pressed": fill = fill.darkened(0.08)
+		elif state == "disabled": fill = Color("d9ddce")
+		var box := surface(fill,Color("7da44e") if state != "disabled" else Color("a6ad99"),1,12,0)
+		box.set_meta("ui_surface_button",true)
+		box.set_content_margin_all(vertical)
 		box.set_content_margin(SIDE_LEFT, horizontal)
 		box.set_content_margin(SIDE_RIGHT, horizontal)
 		item.add_theme_stylebox_override(state, box)
@@ -79,6 +96,12 @@ static func button(item: Button, action: bool = false, horizontal: float = 12.0,
 ## bottom inset instead of tracing the outside edge of the shadow.
 static func _fit_button(item: Button) -> void:
 	var normal: StyleBox = item.get_theme_stylebox("normal")
+	if normal.has_meta("ui_surface_button"):
+		var radius := clampi(roundi(item.size.y*0.24),8,20)
+		for state: String in ["normal","hover","pressed","disabled","focus"]:
+			var face := item.get_theme_stylebox(state) as StyleBoxFlat
+			if face != null: face.set_corner_radius_all(radius)
+		return
 	if not normal.has_meta("ui_button_texture"):
 		return # A specialized skin, e.g. the circular roll button, took over.
 	var compact: bool = item.size.y > 0.0 and item.size.y < 40.0

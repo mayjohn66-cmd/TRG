@@ -8,10 +8,10 @@ const THUNK_END := 0.62
 const POP_AT := 0.66
 const SAFE_TOTAL := 1.05
 const POP_TOTAL := 1.75
-const MODEL_DIR := "res://assets/models/pirate_roulette/blender_v3/"
-const BARREL: PackedScene = preload(MODEL_DIR + "oak_barrel.glb")
-const SWORD: PackedScene = preload(MODEL_DIR + "toy_sword.glb")
-const PIRATE: PackedScene = preload(MODEL_DIR + "pirate_figure.glb")
+const MODEL_DIR := "res://assets/models/optimized/v4/pirate_roulette/blender_v3/"
+const BARREL: PackedScene = preload(MODEL_DIR + "oak_barrel.scn")
+const SWORD: PackedScene = preload(MODEL_DIR + "toy_sword.scn")
+const PIRATE: PackedScene = preload(MODEL_DIR + "pirate_figure.scn")
 const SWORD_COLORS: Array[Color] = [
 	Color("429d98"), Color("c1514c"), Color("5689bb"), Color("c49946"),
 	Color("8375ab"), Color("6b9756"), Color("c67c53"), Color("b26986"),
@@ -26,6 +26,11 @@ var _swords: Array[Node3D] = []
 var _popped := false
 var _start_yaw := 0.0
 var _end_yaw := 0.0
+## 플레이어가 끌어서 돌린 만큼 (1.3.1, 보드 위 대기 통). 연출에는 쓰지 않는다.
+var user_yaw := 0.0
+var _rest_t := -1.0
+## 보드 위 대기 통: 바뀔 때만 한 번 그린다 (기다리는 동안 매 프레임 3D를 그리지 않는다).
+var _stage: SubViewport = null
 
 
 func _init() -> void:
@@ -61,6 +66,28 @@ func begin(details: Dictionary) -> void:
 	apply_time(0.0)
 
 
+## 보드 위 대기 통 (1.3.1): 지금까지 꽂힌 칼을 그대로 꽂아 둔 채 멈춰 있는 모습. 플레이어가 끌어서 돌린다.
+func show_rest(holes: Array) -> void:
+	begin({"holes": holes})
+	_start_yaw = _end_yaw
+	_rest_t = THUNK_END + 0.2
+	apply_time(_rest_t)
+	_redraw_once()
+
+
+## 대기 통을 옆으로 돌린다 (라디안).
+func spin(delta: float) -> void:
+	user_yaw = wrapf(user_yaw + delta, -PI, PI)
+	if _rest_t >= 0.0:
+		apply_time(_rest_t)
+		_redraw_once()
+
+
+func _redraw_once() -> void:
+	if _stage != null:
+		_stage.render_target_update_mode = SubViewport.UPDATE_ONCE
+
+
 static func caption(details: Dictionary, steps: int, can_continue: bool = false) -> String:
 	return ToolPirateRoulette.caption(details, steps, can_continue)
 
@@ -70,7 +97,7 @@ func apply_time(t: float) -> void:
 	if _barrel == null:
 		return
 	var swivel := smoothstep(0.0, 0.24, t)
-	var yaw := lerp_angle(_start_yaw, _end_yaw, swivel)
+	var yaw := lerp_angle(_start_yaw, _end_yaw, swivel) + user_yaw
 	var thunk := _recoil(t, STAB_END, THUNK_END, 0.028)
 	var pop_shake := _recoil(t, POP_AT, POP_AT + 0.28, 0.043) if _popped else 0.0
 	_barrel.position.x = thunk + pop_shake
@@ -124,6 +151,7 @@ func _build_stage() -> void:
 	stage.msaa_3d = Viewport.MSAA_2X
 	stage.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
 	add_child(stage)
+	_stage = stage
 	var display := TextureRect.new()
 	display.texture = stage.get_texture()
 	display.expand_mode = TextureRect.EXPAND_IGNORE_SIZE

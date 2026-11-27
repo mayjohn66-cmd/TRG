@@ -2,10 +2,10 @@
 ## curled noodle tubes below the lip, and restrained black/red decoration.
 extends RefCounted
 
-const SEGMENTS: int = 72
+const SEGMENTS: int = 32
 ## Building the noodle tubes point by point costs about 0.25 s natively (more on the web), so the menu
 ## loads a baked copy made by tools/bake_ramen_noodles.gd and only builds it when the file is missing.
-const BAKED_NOODLES: String = "res://assets/models/ramen/noodles_baked.res"
+const BAKED_NOODLES: String = "res://assets/models/optimized/v4/ramen/noodles_baked.res"
 const FOOD_Y: float = 1.19
 const LIP_Y: float = 1.52
 const PROFILE: Array[Vector2] = [
@@ -43,8 +43,8 @@ static func make_model() -> Node3D:
 	var mound := SphereMesh.new()
 	mound.radius = 1.22
 	mound.height = 0.16
-	mound.radial_segments = 48
-	mound.rings = 12
+	mound.radial_segments = 24
+	mound.rings = 8
 	part(root, "NoodleMound", mound, material(Color("bb4120"), 0.55)).position.y = 1.10
 	var noodles: MeshInstance3D = part(root, "Noodles", _noodles, material(Color("e65d30"), 0.4))
 	(noodles.material_override as StandardMaterial3D).vertex_color_use_as_albedo = true

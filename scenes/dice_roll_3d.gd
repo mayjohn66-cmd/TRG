@@ -10,7 +10,7 @@ const RENDER_SIZE: Vector2i = Vector2i(560, 464)
 const BOWL_VIEW_SIZE: Vector2 = Vector2(440, 340)
 const BOWL_RENDER_SIZE: Vector2i = Vector2i(880, 680)
 const BOWL_MODEL = preload("res://scenes/chinchiro_bowl_model.gd")
-const BOWL_SCENE: PackedScene = preload("res://assets/models/chinchiro/rice_bowl_v01.tscn")
+const BOWL_SCENE: PackedScene = preload("res://assets/models/optimized/v4/chinchiro/rice_bowl_v01.scn")
 const BOWL_CONTACTS: Array[float] = [0.42, 0.70]
 const HALF_SIZE: float = 1.0
 const ROUND_RADIUS: float = 0.22
@@ -306,7 +306,7 @@ static func _make_body_mesh() -> ArrayMesh:
 	var vertices := PackedVector3Array()
 	var normals := PackedVector3Array()
 	var indices := PackedInt32Array()
-	const SEGMENTS: int = 16
+	const SEGMENTS: int = 8
 	var inner: float = HALF_SIZE - ROUND_RADIUS
 	for face: int in 6:
 		var start: int = vertices.size()

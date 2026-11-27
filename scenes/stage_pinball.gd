@@ -7,9 +7,9 @@ signal finished
 
 const STAGE_SIZE := Vector2(360.0, 430.0)
 const MOTION = preload("res://scenes/pinball_motion.gd")
-const BASE: PackedScene = preload("res://assets/models/pinball/pinball_base_v01.tscn")
-const BALL: PackedScene = preload("res://assets/models/pinball/steel_ball_v01.tscn")
-const STUDIO: Environment = preload("res://assets/models/pinball/steel_ball_preview_environment_v01.tres")
+const BASE: PackedScene = preload("res://assets/models/optimized/v4/pinball/pinball_base_v01.scn")
+const BALL: PackedScene = preload("res://assets/models/optimized/v4/pinball/steel_ball_v01.scn")
+const STUDIO: Environment = preload("res://assets/models/optimized/v4/pinball/steel_ball_preview_environment_v01.tres")
 const WIND_TIME: float = 0.16
 const ARCH_SECONDS: float = 0.52
 const HOLD_SECONDS: float = 0.45

@@ -11,19 +11,21 @@ const OPEN_AT := 2.30
 const REVEAL_AT := 2.75
 const TOTAL_TIME := 4.25
 const FONT: Font = preload("res://assets/fonts/game_ui_font.tres")
-const MODEL_DIR := "res://assets/models/capsule_gacha/"
-const MACHINE: PackedScene = preload(MODEL_DIR + "machine.glb")
-const COIN: PackedScene = preload(MODEL_DIR + "coin.glb")
-const CAPSULE: PackedScene = preload(MODEL_DIR + "capsule.glb")
+const MODEL_DIR := "res://assets/models/optimized/v4/capsule_gacha/"
+const MACHINE: PackedScene = preload(MODEL_DIR + "machine.scn")
+const COIN: PackedScene = preload(MODEL_DIR + "coin.scn")
+const CAPSULE: PackedScene = preload(MODEL_DIR + "capsule.scn")
 const PRIZES: Dictionary = {
-	&"avatar_02": preload(MODEL_DIR + "butter.glb"),
-	&"avatar_05": preload(MODEL_DIR + "shady.glb"),
-	&"avatar_07": preload(MODEL_DIR + "belita.glb"),
-	&"avatar_08": preload(MODEL_DIR + "joan.glb"),
-	&"avatar_01": preload(MODEL_DIR + "erpin.glb"),
+	&"avatar_02": preload(MODEL_DIR + "butter.scn"),
+	&"avatar_05": preload(MODEL_DIR + "shady.scn"),
+	&"avatar_07": preload(MODEL_DIR + "belita.scn"),
+	&"avatar_08": preload(MODEL_DIR + "joan.scn"),
+	&"avatar_01": preload(MODEL_DIR + "erpin.scn"),
 }
 
 var settled := false
+var manual_lever := false
+var lever_focus := 0.0
 var _name := ""
 var _steps := 3
 var _rarity_name := ""
@@ -149,6 +151,12 @@ func apply_time(t: float) -> void:
 		return
 	var turn := smoothstep(TURN_AT, TURN_END, t)
 	_knob.rotation.z = deg_to_rad(-11.0) - TAU * turn
+	if manual_lever:
+		lever_focus=smoothstep(.28,TURN_AT,t)*(1-smoothstep(TURN_END,TURN_END+.55,t))
+		var focus:=Vector3(.15,1.47,0).lerp(_knob.global_position,lever_focus)
+		_camera.size=lerpf(3.6,.85,lever_focus)
+		_camera.position=focus+Vector3(0,1.58,9)
+		_camera.look_at(focus)
 	var churn := sin(turn * PI) * 0.065
 	for index: int in _stock.get_child_count():
 		var capsule := _stock.get_child(index) as Node3D

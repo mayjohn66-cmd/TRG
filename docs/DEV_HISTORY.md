@@ -1914,6 +1914,24 @@ godot --headless --audio-driver Dummy --path . -s res://tests/ui_live_hotfix_tes
 - 원인: 땅 정령은 지나가기만 해도 멈추게 하는데 정령 칸 5·12·13번이 출발 직후에 몰려 있었고, 섞기는 증강 라운드에만 했다. 강아지는 `TileType.BAKERY`, 비행기는 `TileType.PORTAL`만 봐서 정령산(둘 다 없음)·모나티엄·벨라티엔(옷장 자리가 자판기·가마솥)에서 꺼져 있었다.
 - 구현: `MountainSpirits.shuffle`(땅 먼저 `earth_spots` 중 하나, 나머지 3종 고르게)·`TurnManager._enter_round_start`(2라운드부터 매 라운드), `MoveExecutor.is_special_pad`·부스터 발판 블록(`booster_cards`, `car_booster`)·`_pay_salary`(비행기, `plane_halfway`). 설명·도감·번역·패치노트 갱신. 테스트 `test_spirit_mountain`(땅 자리·매 라운드 섞기)·`test_sub_types`·`test_augments_and_victory`·`test_passive_callouts`.
 
+### 7.110 규칙 도감 기본 규칙 보강 (1.3.1, `feature/v1.3.1`)
+- 요청: 규칙 도감 설명 다시 보강. 같은 대화에서 방향 지시: 방어 카드는 "어떤 카드가 있는지"가 아니라 잡기 방어·공격 방어 같은 규칙을 설명하고, 피격 시 발동처럼 공통인 내용은 카드마다 쓰지 않는다.
+- `Rulebook._ch_start`·`_ch_turn`·`_ch_tiles`·`_ch_capture`를 코드와 대조해 다시 썼다 (낡은 내용은 CHANGELOG 1.3.1). 공격 카드·함정 카드·방어 카드 항목은 카드 목록(`_card_rows`, 삭제)을 쓰지 않는다. 방어 4종 항목 추가, 카드 장 방어 카드는 `COUNTER_KINDS`로 막는 공격만.
+- 숫자는 `GameEnums.MAX_HAND_SIZE`·`DRAFT_START`·`TempoUp.STAGE_ROUNDS`·`MatchRules.SPEED_STAGE_ROUNDS`·`GameData.dash_steps/revenge_bonus`·`PacingDirector.HARD_CAP_ROUND`에서 읽는다. %d가 든 문장은 [b] 강조와 섞으면 번역 틀이 맞지 않아 강조를 뺐다.
+
+### 7.111 카드 분류 [즉발] → [발동]과 발동 세부 종류 (1.3.1, `feature/v1.3.1`)
+- 요청: 공격 카드는 어차피 굴리기 전에만 쓰니 즉시 효과를 적을 필요가 없다. 공통 분류는 [발동]으로 통일하고, 플레이어가 알아야 하는 건 카드 타입이니 공격 발동·버프 발동·너프 발동·기타 발동으로 나눈다.
+- 나눈 기준: 공격 발동 = 공격 경보가 뜨고 공격 방어로 막히는 카드(`ATTACK_CARDS`), 버프 = 나를 돕는 카드, 너프 = 상대를 약하게 하지만 공격이 아닌 카드(방해령 베루·메죵), 기타 = 모두에게 걸리거나(기억상실빔) 상태를 푸는 카드(회유책).
+- 후속 결정: 통일성을 위해 밴·스킵·이의 있음은 너프 발동, 회유책은 기타 발동. 너프는 공격이 아니므로 세 장은 공격 기록을 남기지 않고(방어 불가) UDO 리버스의 예외 반사도 없앴다 — 설명이 "공격 카드를 막고 반사"로 단순해진다.
+- `cards_table.csv` desc(ko·en·ja)와 `MainBoard.CARD_SUMMARIES` 앞에 머리표를 붙이고 공통 문구를 뺐다. 카드 앞면(`CardSkin`)의 쓰는 때 꼬리표(즉시 효과·피격 시 발동)를 없앴다 (함정 발동 조건·NPC 소환은 그대로). 카드 확대 창(`_card_timing_text`)·모바일 상세는 "막는 공격"/"종류" 줄.
+
+### 7.112 판정 도구 직접 연출 3차 (1.3.1, `feature/v1.3.1`)
+- 요청 8가지: 쿠키 과자통에서 고르기, 캡슐 레버 직접 돌리기(동전은 자동), 아이스박스에서 아이스크림 꺼내기, 오미쿠지 흔들기/뽑기 버튼, 마작 리치식 1열 패에서 골라 꺼내 세우기, 홀덤 5장 + 교환, 화투 3장 중 2장, 해적통 직접 돌리고 버튼으로 칼 꽂기(제보: 스페이스로만 반응).
+- 해적 제보 원인: 이어 꽂는 동안 결과 연출기(`RollPresenter`)가 해적통 그림을 남겨 두었고(`_hold_after`), 연출기가 보이는 동안은 남의 연출로 보고(`_foreign_roll_fx`) 굴리기 버튼을 숨겼다. 스페이스는 버튼이 보이는지 보지 않아 꽂혔다. 남겨 두기를 리볼버만으로 줄이고, 보드 위 대기 통(`_pirate_idle`, 끌어 돌리기)과 통 아래 버튼 자리(`_roll_mode_for` = pirate)를 만들었다. 재현 테스트로 확인.
+- 홀덤만 규칙이 바뀌었다 (야추처럼 이어 굴리기 + keep). 마작·쿠키·아이스크림·오미쿠지·캡슐은 굴린 뒤 손 장면(`ToolHandGate`, 캡슐은 레버 게이트)이라 결과 확률·난수 순서가 그대로다. `ToolPick`은 타로·화투만 남았다.
+- 멈춤(프리징) 점검: 보드 위 해적 대기 통은 바뀔 때(칼이 꽂힘·끌어 돌림)만 3D를 한 번 그린다(`PirateBarrelView._redraw_once`, 기다리는 동안 매 프레임 그리지 않음). 마작 손 장면은 굴린 패 그림을 장면을 만들 때 미리 읽어 꺼내는 순간 멈칫하지 않게 했다(`MahjongFace.prepare`). 손 장면의 가운데 맞춤은 처음 0.25초만 잰다. 새 장면들은 모두 연출 중에만 만들고 끝나면 지운다 (홀덤 교환 창·손 장면). 3D 모델은 스크립트 preload라 보드를 불러올 때 읽힌다.
+- 테스트: `test_tool_pick`(홀덤 받기·교환·그대로·턴 흐름·봇), `ui_hand_tools_test`(손 장면 4종·자동 진행·남의 굴림·캡슐 레버·해적 버튼·홀덤 교환 창) + CI, `ui_tool_pick_test`(화투 3장, 이동 대기 시간 보강), `ui_fx_test` 문구.
+
 ## 부록 B. 초기 예외 규칙 해석 (v1~v3.2, `EDGE_CASE_SPEC.md`에서 옮김)
 
 > 이 부록의 규칙은 당시 기준이다. 24칸 순환 트랙, 세트 효과, 후퇴 눈금, 옛 법전 교칙 등은 이후 개편으로 바뀌었다.

@@ -15,7 +15,8 @@ class_name PacingDirector
 extends RefCounted
 
 ## 다시 굴려도 상태가 꼬이지 않는 도구 (한 번 굴리고 끝나는 도구만). 야추·블랙잭·러시안 룰렛(이어 굴리기)과 화투·타로(다음 굴림에 이어지는 상태)는 손대지 않는다.
-const REROLL_TOOLS: Array[StringName] = [&"D6", &"YUT", &"LIFE_ROULETTE", &"HOLDEM", &"CHINCHIRO", &"SLOT_777", &"DICE_MAHJONG", &"DICE_PINBALL"]
+const REROLL_TOOLS: Array[StringName] = [&"D6", &"YUT", &"LIFE_ROULETTE", &"CHINCHIRO",  # 홀덤은 1.3.1부터 교환하는 이어 굴리기라 뺐다
+	 &"SLOT_777", &"DICE_MAHJONG", &"DICE_PINBALL"]
 ## 목표 눈금이 나올 때까지 다시 굴리는 최대 횟수 (못 나오면 그중 가장 큰 결과).
 const MAX_TRIES: int = 10
 const HIGH_STEPS: int = 4

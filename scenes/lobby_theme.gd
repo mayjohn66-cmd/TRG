@@ -32,15 +32,7 @@ const RULES_TEXT: String = """목표: 내 말 4개를 먼저 완주시키면 승
 
 
 static func style(bg: Color, border: Color, border_width: int, radius: int, shadow: int = 0, margin: int = 0, shadow_color: Color = Color(0, 0, 0, 0.22)) -> StyleBoxFlat:
-	var box := StyleBoxFlat.new()
-	box.bg_color = bg
-	box.border_color = border
-	box.set_border_width_all(border_width)
-	box.set_corner_radius_all(radius)
-	box.shadow_color = shadow_color
-	box.shadow_size = shadow
-	box.set_content_margin_all(margin)
-	return box
+	return UiSkin.surface(bg,border,border_width,radius,shadow,margin,shadow_color)
 
 
 static func label(text: String, size_px: int, color: Color = INK) -> Label:

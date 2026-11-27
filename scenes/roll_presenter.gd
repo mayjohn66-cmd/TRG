@@ -60,6 +60,16 @@ var interactive: bool = false
 var _scratch_gate: bool = false
 var _scratch_wait: float = 0.0
 var _scratch_drag: bool = false
+## 손으로 다루는 첫 장면 (1.3.1): 마작 패 꺼내기·과자통·아이스박스·오미쿠지 흔들기. 다 하면 원래 연출이 이어진다.
+var _hand_gate: ToolHandGate = null
+var _gate_wait: float = 0.0
+const GATE_AUTO_AFTER: float = 8.0
+## 캡슐 뽑기 레버 (1.3.1): 동전은 저절로 들어가고, 레버는 내가 끌어서 돌린다.
+var _capsule_gate: bool = false
+var _capsule_released: bool = false
+var _capsule_progress: float = 0.0
+var _capsule_clicks: int = 0
+var _capsule_title: String = ""
 var _scratch_released: bool = false
 const SCRATCH_AUTO_AFTER: float = 6.0
 var _hold_after: bool = false
@@ -214,7 +224,9 @@ func play(tool_id: StringName, result: Dictionary, power: float = 0.5, continues
 		return
 	_power = clampf(power, 0.0, 1.0)
 	_result = result
-	_hold_after = tool_id in [&"REVOLVER", &"DICE_PIRATE"] and bool(result.get("can_continue", false))  # 이어서 당길(꽂을) 도구는 다음 시도까지 그림을 남긴다
+	# 이어서 당길 리볼버는 다음 시도까지 그림을 남긴다. 해적 룰렛은 1.3.1부터 보드 위 대기 통(MainBoard._pirate_idle)이 칼을 꽂은 채 이어 받는다
+	# (예전에는 이 그림을 남겨 둔 동안 [칼 꽂기] 버튼이 숨어 스페이스로만 꽂을 수 있었다 - 제보)
+	_hold_after = tool_id == &"REVOLVER" and bool(result.get("can_continue", false))
 	if tool_id in [&"HOLDEM", &"DICE_HWATU", &"DICE_TAROT", &"DICE_MAHJONG", &"YUT", &"LIFE_ROULETTE", &"SLOT_777", &"REVOLVER", &"DICE_OMIKUJI", &"DICE_ICECREAM", &"DICE_COOKIE", &"DICE_CAPSULE", &"DICE_PIRATE", &"DICE_SCRATCH"]:
 		last_display = ""
 	_mode = tool_id
@@ -224,6 +236,18 @@ func play(tool_id: StringName, result: Dictionary, power: float = 0.5, continues
 	tossing = TOSS_TOOLS.has(tool_id)
 	_build(tool_id)
 	_position_center()
+	if interactive and ToolHandGate.supports(tool_id):
+		_hand_gate = ToolHandGate.new()
+		var hand_details: Dictionary = (result.get("details", {}) as Dictionary).duplicate()
+		hand_details["_kept_count"] = _kept_prop_count
+		_hand_gate.setup(tool_id, hand_details)
+		_hand_gate.set_result_caption(_card_result_caption)
+		_hand_gate.interacted.connect(func() -> void: _gate_wait = 0.0)
+		add_child(_hand_gate)
+		_hand_gate.top_level = true
+		_hand_gate.global_position = center  # 보드 한가운데
+		_root.visible = false  # 손으로 다 꺼낼 때까지 원래 연출은 기다린다
+		_gate_wait = 0.0
 	if tossing:
 		_begin_toss()
 	active = true
@@ -251,8 +275,9 @@ func play(tool_id: StringName, result: Dictionary, power: float = 0.5, continues
 			cues.append(PresentationAudio.cue(OmikujiView.FOLD_AT, &"ticket_rustle", -10.0))
 	elif tool_id == &"DICE_CAPSULE":
 		cues.append(PresentationAudio.cue(CapsuleGachaView.COIN_AT + 0.45, &"toy_click", -8.0))
-		for at: float in [0.95, 1.15, 1.35, 1.55]:
-			cues.append(PresentationAudio.cue(at, &"yut_clack", -11.0))
+		if not interactive:  # 내가 돌리는 레버는 돌린 만큼 딸깍 소리를 낸다 (_turn_capsule)
+			for at: float in [0.95, 1.15, 1.35, 1.55]:
+				cues.append(PresentationAudio.cue(at, &"yut_clack", -11.0))
 		cues.append(PresentationAudio.cue(CapsuleGachaView.DROP_AT, &"card_throw", -8.0))
 		cues.append(PresentationAudio.cue(CapsuleGachaView.OPEN_AT, &"icecream_snap", -5.0))
 		cues.append(PresentationAudio.cue(CapsuleGachaView.REVEAL_AT, &"good" if bool(_result.get("details", {}).get("secret", false)) else &"card_pick", -6.0))
@@ -301,6 +326,13 @@ func _stop_playback() -> void:
 	_scratch_gate = false
 	_scratch_drag = false
 	_scratch_released = false
+	if _hand_gate != null:
+		_hand_gate.queue_free()
+		_hand_gate = null
+	_capsule_gate = false
+	_capsule_released = false
+	_capsule_progress = 0.0
+	_capsule_clicks = 0
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	holding = false
 	_augment_hold = 0.0
@@ -573,6 +605,36 @@ func _process(delta: float) -> void:
 		return
 	if not active:
 		return
+	if _hand_gate != null:
+		# 손으로 꺼내는 첫 장면: 다 꺼낼 때까지 연출 시계를 멈춘다. 오래 손대지 않으면 남은 것을 저절로 고른다.
+		_gate_wait += delta
+		if _gate_wait >= GATE_AUTO_AFTER and _hand_gate.waiting():
+			_hand_gate.auto_finish()
+		if not _hand_gate.complete():
+			return
+		# The interaction view has already revealed its own result in place.
+		# Never restart the legacy drop/bite/shake/slam scene after it.
+		_hand_gate.queue_free()
+		_hand_gate = null
+		last_display = _final_text(_mode,_result)
+		if not bool(_result.get("reroll",false)): _kept_prop_count=0
+		elif (_mode==&"DICE_OMIKUJI" and _result.get("details",{}).get("fortune")==&"great") or (_mode==&"DICE_ICECREAM" and bool(_result.get("details",{}).get("again",false))): _kept_prop_count+=1
+		active=false
+		visible=false
+		finished.emit()
+		return
+	if _capsule_gate:
+		# 캡슐 레버: 동전이 들어간 뒤 레버 앞에서 멈춘다. 끌어서 돌린 만큼 레버가 돌고, 한 바퀴 다 돌리면(또는 오래 두면) 캡슐이 떨어진다.
+		_gate_wait += delta
+		var span: float = CapsuleGachaView.TURN_END - CapsuleGachaView.TURN_AT
+		if _capsule_progress >= 1.0 or _gate_wait >= SCRATCH_AUTO_AFTER:
+			_capsule_gate = false
+			_capsule_released = true
+			_t = CapsuleGachaView.TURN_AT + clampf(_capsule_progress, 0.0, 1.0) * span
+			_title.text = _capsule_title
+		else:
+			_update(CapsuleGachaView.TURN_AT + _capsule_progress * span)
+			return
 	if _scratch_gate:
 		# 직접 긁기: 다 긁을 때까지 동전 순서 앞에서 멈춰 기다린다. 다 긁으면 바로 공개, 너무 오래면 동전이 나머지를 긁는다.
 		_scratch_wait += delta
@@ -588,6 +650,12 @@ func _process(delta: float) -> void:
 			_update(_t)
 			return
 	_t += delta
+	if interactive and not _capsule_released and _mode == &"DICE_CAPSULE" and _t >= CapsuleGachaView.TURN_AT:
+		_t = CapsuleGachaView.TURN_AT
+		_capsule_gate = true
+		_gate_wait = 0.0
+		_capsule_title = _title.text
+		_title.text = L10n.t("레버를 끌어서 돌리세요!")
 	if interactive and not _scratch_released and _mode == &"DICE_SCRATCH" and _scratch_view != null and _scratch_view.manual and _t >= ScratchTicketView.SCRATCH_START:
 		_t = ScratchTicketView.SCRATCH_START
 		_scratch_gate = true
@@ -843,6 +911,7 @@ func _build(tool_id: StringName) -> void:
 			var capsule_details: Dictionary = (_result.get("details", {}) as Dictionary).duplicate()
 			capsule_details["steps"] = int(_result.get("steps", 0))
 			_capsule_view.begin(capsule_details)
+			_capsule_view.manual_lever=interactive
 			_make_card_result(CapsuleGachaView.caption(_result.get("details", {}), int(_result.get("steps", 0))))
 		&"DICE_PIRATE":
 			_title.text = "해적 룰렛"
@@ -884,12 +953,21 @@ func _build_holdem() -> void:
 	var details: Dictionary = _result.get("details", {})
 	var models: Array[Dictionary] = []
 	var mask: Array[bool] = []
+	# 1.3.1 교환: 처음 받은 5장은 모두 뒤집고, 교환한 뒤에는 바꾼 자리만 새로 뒤집는다 (남긴 카드는 앞면 그대로)
+	var swapped: Array = details.get("exchanged", [])
+	var final: bool = details.has("exchanged")
+	var index: int = 0
 	for card: Variant in details.get("cards", []):
 		models.append(JudgmentCardArt.poker(int(card)))
 		_card_faces.append(card_text(int(card)))
-		mask.append(true)
+		mask.append(not final or swapped.has(index))
+		index += 1
 	_build_illustrated_row(models, mask, Vector2(96, 144))
-	_make_card_result("%s · %s" % [MainBoard.HAND_NAMES.get(details.get("hand", &"high_card"), "족보"), _card_move_text()])
+	var hand_name: String = MainBoard.HAND_NAMES.get(details.get("hand", &"high_card"), "족보")
+	if bool(_result.get("can_continue", false)):
+		_make_card_result("%s · %s" % [hand_name, "바꿀 카드를 고르세요"])
+	else:
+		_make_card_result("%s · %s" % [hand_name, _card_move_text()])
 
 
 ## 화투: 기존 공개 패는 그대로 두고 새 패만 뒤집는다.
@@ -1283,12 +1361,40 @@ func awaiting_input() -> bool:
 		return _slot_3d != null and _slot_3d.awaiting_stop()
 	if _mode == &"DICE_SCRATCH":
 		return _scratch_view != null and _scratch_view.manual and not _scratch_released
-	return false
+	return _hand_gate != null or _capsule_gate
+
+
+## 손으로 다루는 첫 장면 (테스트용).
+func hand_gate() -> ToolHandGate:
+	return _hand_gate
+
+
+## 캡슐 레버를 돌린다 (0~1 = 한 바퀴). 돌린 만큼 딸깍 소리를 낸다.
+func turn_capsule(amount: float) -> void:
+	if not _capsule_gate:
+		return
+	_capsule_progress = clampf(_capsule_progress + amount, 0.0, 1.0)
+	var clicks: int = int(_capsule_progress * 4.0)
+	while _capsule_clicks < clicks:
+		_capsule_clicks += 1
+		Sfx.play(&"yut_clack", -11.0)
+
+
+func capsule_gate_open() -> bool:
+	return _capsule_gate
 
 
 ## 스페이스·탭 한 번: 슬롯은 다음 릴을 멈춘다. 받아들였으면 true.
 func manual_tap() -> bool:
-	if not awaiting_input() or _mode != &"SLOT_777":
+	if not awaiting_input():
+		return false
+	if _hand_gate != null:
+		_hand_gate.key_press()  # 스페이스: 마작 다음 패 · 오미쿠지 뽑기 · 쿠키/아이스크림 가운데 것
+		return true
+	if _capsule_gate:
+		turn_capsule(0.25)  # 스페이스 한 번에 레버 1/4 바퀴
+		return true
+	if _mode != &"SLOT_777":
 		return false
 	return _slot_3d.request_stop()
 
@@ -1306,6 +1412,18 @@ func _gui_input(event: InputEvent) -> void:
 		return
 	var button: InputEventMouseButton = event as InputEventMouseButton
 	var motion: InputEventMouseMotion = event as InputEventMouseMotion
+	if _capsule_gate:
+		var drag: InputEventScreenDrag = event as InputEventScreenDrag
+		if button != null and button.button_index == MOUSE_BUTTON_LEFT:
+			accept_event()
+			_scratch_drag = button.pressed
+		elif motion != null and _scratch_drag:
+			accept_event()
+			turn_capsule(motion.relative.length() / 320.0)
+		elif drag != null:
+			accept_event()
+			turn_capsule(drag.relative.length() / 260.0)
+		return
 	if button != null and button.button_index == MOUSE_BUTTON_LEFT:
 		accept_event()
 		if _mode == &"SLOT_777":
@@ -1323,7 +1441,7 @@ func _gui_input(event: InputEvent) -> void:
 func _refresh_input_filter() -> void:
 	var waiting: bool = awaiting_input()
 	mouse_filter = Control.MOUSE_FILTER_STOP if waiting else Control.MOUSE_FILTER_IGNORE
-	if waiting and _die_label != null:
+	if waiting and _die_label != null and _mode in [&"SLOT_777", &"DICE_SCRATCH"]:
 		_die_label.text = L10n.t("눌러서 릴을 멈추세요! (스페이스)") if _mode == &"SLOT_777" else L10n.t("손가락으로 은박을 긁으세요!")
 		_die_label.modulate.a = 1.0
 

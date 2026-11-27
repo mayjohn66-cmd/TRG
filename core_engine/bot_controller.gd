@@ -292,6 +292,12 @@ func _step_roll() -> void:
 			_act(player_id, &"stop")
 		else:
 			_act(player_id, &"roll", {"keep": BotBrain.yacht_keep_mask((tool as ToolYacht).dice)})
+	elif tool is ToolHoldem and tool.has_pending_state():
+		# 홀덤 (1.3.1): 스트레이트 이상이면 그대로, 아니면 겹친 카드(없으면 같은 문양 4장, 그것도 없으면 높은 카드 2장)만 남기고 교환한다.
+		if BotBrain.should_stand_holdem(tool):
+			_act(player_id, &"stop")
+		else:
+			_act(player_id, &"roll", {"keep": BotBrain.holdem_keep_mask((tool as ToolHoldem).cards)})
 	elif tool is ToolBlackjack and tool.has_pending_state():
 		_act(player_id, &"roll" if BotBrain.should_hit_blackjack(tool) else &"stop")
 	else:

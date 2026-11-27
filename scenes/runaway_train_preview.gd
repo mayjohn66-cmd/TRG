@@ -7,7 +7,7 @@ var yaw := -0.47
 var elevation := 0.39
 
 func _ready() -> void:
-	add_child((preload("res://assets/models/runaway_train/runaway_train_v02.tscn") as PackedScene).instantiate())
+	add_child((preload("res://assets/models/optimized/v4/runaway_train/runaway_train_v02.scn") as PackedScene).instantiate())
 	var world := WorldEnvironment.new()
 	var environment := Environment.new()
 	environment.background_mode = Environment.BG_COLOR

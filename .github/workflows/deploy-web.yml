@@ -701,9 +701,31 @@ jobs:
         if: steps.validation.outputs.scope == 'full'
         run: godot --headless --path . -s res://tests/ui_tool_pick_test.gd
 
+      - name: Run judgment tool selection presentation test
+        if: steps.validation.outputs.scope == 'full'
+        run: godot --headless --audio-driver Dummy --path . -s res://tests/ui_tool_pick_presentation_test.gd
+
+      - name: Run connected cookie platter and layered icebox test
+        if: steps.validation.outputs.scope == 'full'
+        run: godot --headless --audio-driver Dummy --path . -s res://tests/ui_connected_props_test.gd
+
+      - name: Run continuous prop and card reveal test
+        if: steps.validation.outputs.scope == 'full'
+        run: godot --headless --audio-driver Dummy --path . -s res://tests/ui_seamless_tools_test.gd
+
+      - name: Verify lightweight 3D models and animation anchors
+        if: steps.validation.outputs.scope == 'full'
+        run: godot --headless --audio-driver Dummy --path . -s res://tests/lowpoly_models_test.gd
+
       - name: Run judgment tool direct control test (roulette, slot, darts, scratch)
         if: steps.validation.outputs.scope == 'full'
         run: godot --headless --path . -s res://tests/ui_direct_control_test.gd
+
+      - name: Run hand-held judgment tool test (mahjong, cookie, ice cream, omikuji, capsule, hold'em, pirate)
+        if: steps.validation.outputs.scope == 'full'
+        run: |
+          godot --headless --audio-driver Dummy --path . -s res://tests/ui_hand_tools_test.gd 2>&1 | tee /tmp/hand_tools.log
+          grep -q 'HAND_TOOLS_OK' /tmp/hand_tools.log
 
       - name: Run power gauge test (dice, yut, chinchiro, yacht, pinball)
         if: steps.validation.outputs.scope == 'full'

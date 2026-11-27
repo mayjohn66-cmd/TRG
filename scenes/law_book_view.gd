@@ -1,7 +1,7 @@
 extends VBoxContainer
 ## The announcement owns the clock and can discard this view at any point.
 
-const MODEL_PATH := "res://assets/models/law_codex/law_codex.glb"
+const MODEL_PATH := "res://assets/models/optimized/v4/law_codex/law_codex.scn"
 const DISPLAY := Vector2(610, 390)
 const LAND := 0.20
 const OPEN := 0.30

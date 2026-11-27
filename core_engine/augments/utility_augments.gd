@@ -45,7 +45,7 @@ const CALLOUTS: Dictionary = {
 	HAND_EXPAND: "[손패 상한 +1!]",
 	LUCKY_DICE: "[굴림 운 상승!]",
 	EXTRA_TURN: "[리바이브 장전!]",
-	CARD_PACK2: "[즉발 카드 2장!]",
+	CARD_PACK2: "[발동 카드 2장!]",
 	SELECT_SHIELD: "[보호막!]",
 	TRAP_CLEAR1: "[함정 1개 철거!]",
 	CATCH_UP: "[선두 바로 뒤로!]",
@@ -68,7 +68,7 @@ const INFO: Dictionary = {
 	HAND_EXPAND: ["[패시브] 에심당 뽈사탕", "◆ 무작위 카드 1장 획득\n◆ 최대 손패 +1장 (영구)"],
 	LUCKY_DICE: ["[패시브] 손은 눈보다 빨라", "◆ 이번 판 동안 내 굴림이 높게 나올 확률 상승 (영구)"],
 	EXTRA_TURN: ["[패시브] 다이스: 리바이브", "◆ 굴림이 0칸·턴 종료면 내 턴을 한 번 더 (1회)"],
-	CARD_PACK2: ["[카드 보급] 즉발 카드 패키지", "◆ 무작위 즉발 카드 2장 획득"],
+	CARD_PACK2: ["[카드 보급] 발동 카드 패키지", "◆ 무작위 발동 카드 2장 획득"],
 	SELECT_SHIELD: ["[범용 보급] 관심사도 지정", "◆ 내 말 1개에 보호막 (잡기·함정 1회 방어)"],
 	TRAP_CLEAR1: ["[즉발 발동] 지뢰제거반", "◆ 상대 함정 1개를 무작위로 철거\n◆ 철거할 함정이 없으면 카드 1장"],
 	CATCH_UP: ["[즉발 발동] 순보", "◆ 가장 뒤처진 내 말을 보드 전체 선두 말의 바로 뒤 칸으로 이동"],
@@ -160,7 +160,7 @@ static func apply(effect: StringName, state: GameState, player_id: int) -> Dicti
 			return {"ok": true, "text": "리바이브 장전: 0칸·턴 종료 굴림이 나오면 한 턴 더"}
 		CARD_PACK2:
 			var cards: Array[String] = _give_random_cards(state, player_id, CardRegistry.ids_of_type("INSTANT"), 2)
-			return {"ok": not cards.is_empty(), "text": "즉발 카드 획득: %s" % ", ".join(cards)}
+			return {"ok": not cards.is_empty(), "text": "발동 카드 획득: %s" % ", ".join(cards)}
 		SELECT_SHIELD: return _apply_shield(state, player_id, -1)
 		TRAP_CLEAR1: return _apply_trap_clear(state, player_id)
 		CATCH_UP: return _apply_catch_up(state, player_id)

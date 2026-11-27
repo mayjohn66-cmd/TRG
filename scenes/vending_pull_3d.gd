@@ -1,8 +1,8 @@
 ## Cosmetic only: the engine-supplied drink is shown, never rolled again here.
 extends Control
 
-const MODEL_PATH := "res://assets/models/vending/monatium_vending_v02.tscn"
-const CAN_ROOT := "res://assets/models/vending/can_"
+const MODEL_PATH := "res://assets/models/optimized/v4/vending/monatium_vending_v02.scn"
+const CAN_ROOT := "res://assets/models/optimized/v4/vending/can_"
 var render_view: SubViewport
 var machine: Node3D
 var can_pivot: Node3D
@@ -67,7 +67,7 @@ func play(id: StringName, motion_pace: float) -> void:
 	can_pivot = Node3D.new()
 	can_pivot.name = "DispensedCanPivot"
 	render_view.add_child(can_pivot)
-	can = (load(CAN_ROOT+String(drink)+"_v02.tscn") as PackedScene).instantiate()
+	can = (load(CAN_ROOT+String(drink)+"_v02.scn") as PackedScene).instantiate()
 	can.position.y = -0.24
 	can_pivot.add_child(can)
 	var button: MeshInstance3D = machine.get_node("Select_"+String(drink))

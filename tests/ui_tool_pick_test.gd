@@ -73,6 +73,8 @@ func next_turn() -> void:
 		board._announcer.cancel()
 		board.manager.force_timeout()
 		await frames()
+		if board.manager.current_state == TurnManager.State.PHASE_MOVING_STEP:
+			await create_timer(0.1).timeout  # 말이 한 칸씩 걷는 동안은 시간으로 기다린다
 	print("NEXT_TURN state=", board.manager.current_state, " player=", board.manager.current_player_id())
 
 
@@ -89,6 +91,7 @@ func run() -> void:
 	check(modal != null and modal.is_inside_tree(), "타로는 [굴리기]를 누르면 고르기 창이 뜬다")
 	check(rolls.is_empty(), "고르기 전에는 굴리지 않는다")
 	if modal != null:
+		check(modal.z_index > board._roll_button.z_index,"선택창이 굴리기 버튼보다 위에 표시된다")
 		check(modal.item_count() == 5, "타로 뒷면 5장")
 		board._on_roll_pressed()  # 창이 떠 있는 동안 다시 눌러도 굴리지 않는다
 		await frames()
@@ -115,12 +118,12 @@ func run() -> void:
 	board._on_roll_pressed()
 	await frames()
 	modal = board.tool_pick_modal()
-	check(modal != null and modal.item_count() == 6, "화투는 뒷면 6장 (state %s busy %s banner %s intro %s pres %s fx %s ann %s beat %s)" % [board.manager.current_state, board._ui_busy(), board._turn_banner_pending(), board._intro_blocks(), board._presentation_active(), board._fx_busy, board._announcer.holding(), Time.get_ticks_msec() < board._beat_until_msec])
+	check(modal != null and modal.item_count() == 3, "화투는 뒷면 3장 (1.3.1) (state %s busy %s banner %s intro %s pres %s fx %s ann %s beat %s)" % [board.manager.current_state, board._ui_busy(), board._turn_banner_pending(), board._intro_blocks(), board._presentation_active(), board._fx_busy, board._announcer.holding(), Time.get_ticks_msec() < board._beat_until_msec])
 	if modal != null:
 		modal.pick(1)
 		modal.pick(1)
 		check(modal.picks().is_empty(), "같은 자리를 다시 누르면 고르기 취소")
-		modal.pick(4)
+		modal.pick(2)
 		check(rolls.is_empty() and board.tool_pick_modal() != null, "1장만 고르면 아직 굴리지 않는다")
 		# 3) 고르는 중에 시간이 지나 엔진이 자동으로 굴리면 창이 닫힌다
 		board.manager.force_timeout()
@@ -137,11 +140,11 @@ func run() -> void:
 	# 5) 터치 배치: 창이 화면 안에 들어간다
 	await next_turn()
 	MobileSupport.force_touch = true
-	await give(&"HOLDEM")
+	await give(&"DICE_TAROT")
 	board._on_roll_pressed()
 	await frames(4)
 	modal = board.tool_pick_modal()
-	check(modal != null and modal.item_count() == 7, "홀덤은 뒷면 7장")
+	check(modal != null and modal.item_count() == 5, "터치 배치 타로 뒷면 5장")
 	if modal != null:
 		var panel: Control = modal.find_child("PickPanel", true, false)
 		var rect: Rect2 = panel.get_global_rect()

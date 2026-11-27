@@ -5,15 +5,17 @@ extends Control
 const SIZE := Vector2(420, 300)
 const SHAKE_END := 0.92
 const DRAW_AT := 0.96
-const REVEAL_AT := 1.52
-const TOTAL_TIME := 2.52
-const FOLD_AT := 1.99
-const TIE_AT := 2.35
-const WRAP_AT := 2.63
-const TIED_AT := 2.86
+const SCROLL_OUT_END := 1.36
+const UNROLL_AT := 1.70
+const REVEAL_AT := 2.10
+const TOTAL_TIME := 3.35
+const FOLD_AT := 2.70
+const TIE_AT := 3.05
+const WRAP_AT := 3.35
+const TIED_AT := 3.65
 const ROPE_X := 52.0
 const ROPE_SLOTS := 9
-const GREAT_TOTAL_TIME := 3.10
+const GREAT_TOTAL_TIME := 4.00
 const INK := Color("422822")
 const PAPER := Color("fff0cd")
 const CINNABAR := Color("a73532")
@@ -21,6 +23,8 @@ const FONT: Font = preload("res://assets/fonts/game_ui_font.tres")
 const TUBE: Texture2D = preload("res://assets/fx/judgment/omikuji_tube.png")
 
 var settled := false
+var manual_mode := false
+var manual_swing := 0.0
 var _t := 0.0
 var _label := "길"
 var _key: StringName = &"good"
@@ -64,6 +68,9 @@ func apply_time(t: float) -> void:
 	settled = t >= REVEAL_AT
 	queue_redraw()
 
+func paper_unfold_progress() -> float:
+	return smoothstep(UNROLL_AT,REVEAL_AT,_t)
+
 
 func _draw() -> void:
 	_draw_rope()
@@ -72,7 +79,7 @@ func _draw() -> void:
 	draw_set_transform(Vector2.ZERO)
 	var entry := ease(clampf(_t / 0.22, 0.0, 1.0), 0.36)
 	var shake := clampf(inverse_lerp(0.16, SHAKE_END, _t), 0.0, 1.0)
-	var swing := sin(shake * TAU * 3.0) * sin(shake * PI)
+	var swing := manual_swing if manual_mode else sin(shake * TAU * 3.0) * sin(shake * PI)
 	var stick_rise := ease(clampf((_t - DRAW_AT) / 0.30, 0.0, 1.0), 0.34)
 	var center := Vector2(141.0 + swing * 9.0, 190.0 - (1.0 - entry) * 20.0)
 	draw_set_transform(Vector2(142, 252), 0.0, Vector2(1, 0.24))
@@ -89,49 +96,60 @@ func _draw() -> void:
 		_draw_text(tube_label[1], Vector2(0, 6), 20, INK)
 	else:
 		_draw_text(tube_label, Vector2(0, -7), 20, INK, 31.0)
-	if stick_rise > 0.0:
-		_draw_stick(Vector2(0, -95), stick_rise)
+	if stick_rise > 0.0 and _t<SCROLL_OUT_END:
+		_draw_scroll(Vector2(0, -95), stick_rise)
 	draw_set_transform(Vector2.ZERO)
 	_draw_ticket()
 
 
-func _draw_stick(hole: Vector2, rise: float) -> void:
-	var visible_length := 73.0 * rise
-	var top := hole - Vector2(0, visible_length)
-	draw_style_box(_stick, Rect2(top - Vector2(6, 0), Vector2(12, visible_length)))
-	draw_line(top + Vector2(-3, 3), hole + Vector2(-3, -1), Color("ffd69c"), 1, true)
-	if visible_length > 18.0:
-		draw_line(top + Vector2(-4, 7), top + Vector2(4, 7), CINNABAR, 4, true)
-	if rise > 0.8:
-		_draw_text("%02d" % _ticket, top + Vector2(0, 29), 9, INK)
+func _draw_scroll(hole: Vector2, rise: float) -> void:
+	var length:=73.0*rise
+	var top:=hole-Vector2(0,length)
+	draw_style_box(_paper,Rect2(top-Vector2(11,0),Vector2(22,length)))
+	draw_line(top+Vector2(-7,2),hole+Vector2(-7,-1),Color("d9c6a1"),2,true)
+	draw_line(top+Vector2(7,2),hole+Vector2(7,-1),Color("fff9e8"),2,true)
+	var cap:=PackedVector2Array()
+	for i: int in 32:
+		cap.append(top+Vector2(cos(i*TAU/32)*11,sin(i*TAU/32)*3.5))
+	draw_colored_polygon(cap,Color("e8d6af"))
+	var spiral:=PackedVector2Array()
+	for i: int in 40:
+		var radius:=lerpf(8,1,i/39.0)
+		spiral.append(top+Vector2(cos(i*.28)*radius,sin(i*.28)*radius*.32))
+	draw_polyline(spiral,INK,1,true)
 
 
 func _draw_ticket() -> void:
-	var slide := clampf((_t - 1.24) / 0.33, 0.0, 1.0)
-	if slide <= 0.0:
-		return
+	if _t<SCROLL_OUT_END: return
 	if _key == &"great" and _t >= TIE_AT:
 		_draw_tied_ticket()
 		return
-	var open := ease(slide, 0.32)
-	var pop := sin(slide * PI)
-	var origin := Vector2(lerpf(166.0, 286.0, open), 142.0 - pop * 9.0)
-	var tint := CINNABAR
-	if _key == &"great":
-		tint = Color("a65b16")
-	elif _key in [&"bad", &"worst"]:
-		tint = Color("544b78")
-	var fold := smoothstep(FOLD_AT, TIE_AT, _t) if _key == &"great" else 0.0
-	var folded_scale := Vector2(maxf(open, 0.05), 1.0) * Vector2(lerpf(1.0, 0.34, fold), lerpf(1.0, 0.23, fold))
-	draw_set_transform(origin, -0.09 + 0.17 * (1.0 - open) - fold * 0.16, folded_scale)
-	draw_style_box(_paper, Rect2(-64, -82, 128, 164))
-	draw_rect(Rect2(-53, -71, 106, 142), tint, false, 2)
-	draw_line(Vector2(-53, -37), Vector2(53, -37), tint, 1, true)
-	draw_line(Vector2(-53, 38), Vector2(53, 38), tint, 1, true)
-	if slide >= 0.58 and fold < 0.52:
-		_draw_text("No. %02d" % _ticket, Vector2(0, -54), 15, tint)
-		_draw_text(L10n.t(_label), Vector2(0, 1), 44, tint, 96.0)
-		_draw_text(L10n.t("오미쿠지"), Vector2(0, 53), 13, tint)
+	var travel:=smoothstep(SCROLL_OUT_END,UNROLL_AT,_t)
+	var unfold:=paper_unfold_progress()
+	var origin:=Vector2(124,60).lerp(Vector2(275,142),travel)
+	origin.y-=sin(travel*PI)*15
+	var width:=lerpf(22,128,unfold)
+	var height:=lerpf(73,164,unfold)
+	var tint:=CINNABAR
+	if _key==&"great": tint=Color("a65b16")
+	elif _key in [&"bad",&"worst"]: tint=Color("544b78")
+	var fold:=smoothstep(FOLD_AT,TIE_AT,_t) if _key==&"great" else 0.0
+	draw_set_transform(origin,lerpf(-.13,-.09,travel)-fold*.16,Vector2(lerpf(1,.34,fold),lerpf(1,.23,fold)))
+	draw_style_box(_paper,Rect2(-width*.5,-height*.5,width,height))
+	# Rolled side edges separate as the very same sheet opens horizontally.
+	var curl:=lerpf(7,2,unfold)
+	for side: float in [-1.0,1.0]:
+		var edge:=Rect2(side*(width*.5-curl)-curl,-height*.5,curl*2,height)
+		draw_style_box(_paper,edge)
+		draw_line(Vector2(side*(width*.5-curl),-height*.5+3),Vector2(side*(width*.5-curl),height*.5-3),Color("d1bc91"),1,true)
+	if unfold>.55:
+		draw_rect(Rect2(-53,-71,106,142),Color(tint,unfold),false,2)
+		draw_line(Vector2(-53,-37),Vector2(53,-37),Color(tint,unfold),1,true)
+		draw_line(Vector2(-53,38),Vector2(53,38),Color(tint,unfold),1,true)
+	if _t>=REVEAL_AT and fold<.52:
+		_draw_text("No. %02d" % _ticket,Vector2(0,-54),15,tint)
+		_draw_text(L10n.t(_label),Vector2(0,1),44,tint,96)
+		_draw_text(L10n.t("오미쿠지"),Vector2(0,53),13,tint)
 	draw_set_transform(Vector2.ZERO)
 
 	var spark := clampf((_t - REVEAL_AT) / 0.40, 0.0, 1.0)

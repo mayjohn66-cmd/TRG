@@ -1,6 +1,9 @@
 # File: res://core_engine/tools/tool_holdem.gd
 # Class: class_name ToolHoldem
-# Role: 텍사스 홀덤 딜러 - 52장 덱에서 5장 드로우 후 족보 비례 전진 (노페어 1, 원페어 3, 투페어 5, 트리플 7, 스트레이트 10, 플러시 이상 15)
+# Role: 텍사스 홀덤 딜러 - 52장 덱에서 5장을 받고, 바꿀 카드를 골라 한 번 교환한 뒤 족보 비례 전진
+#       (노페어 1, 원페어 3, 투페어 5, 트리플 7, 스트레이트 10, 플러시 이상 15).
+#       1.3.1: 첫 굴림은 5장을 받는 이어 굴리기 상태(can_continue)이고, 두 번째 굴림(keep 인자 = 남길 카드 5개 bool)이 나머지를 새 카드로
+#       바꿔 확정한다. 멈추기(cash_out)·시간 초과는 받은 5장 그대로 확정. 교환 카드는 받은 카드·버린 카드를 뺀 덱에서 GameState.rng로 뽑는다.
 class_name ToolHoldem
 extends BaseJudgmentTool
 
@@ -17,15 +20,69 @@ const STEPS_BY_HAND: Dictionary = {
 }
 
 
+const HAND_SIZE: int = 5
+
+## 지금 손에 든 5장 (받은 뒤 교환 전까지).
+var cards: Array[int] = []
+var _started: bool = false
+var _keep: Array[bool] = []
+
+
 func _init() -> void:
 	tool_id = &"HOLDEM"
 	display_name = "텍사스 홀덤 딜러"
 
 
+func has_pending_state() -> bool:
+	return _started
+
+
+## 교환할 때 남길 카드 (5개 bool, true = 남긴다). 길이가 맞지 않으면 모두 바꾼다.
+func set_keep(mask: Array) -> void:
+	_keep = []
+	for index: int in HAND_SIZE:
+		_keep.append(index < mask.size() and bool(mask[index]))
+
+
+## 처음이면 5장을 받는다(교환 대기). 이미 받았으면 남기지 않은 카드를 새 카드로 바꿔 확정한다.
 func roll(rng: RandomNumberGenerator) -> RollResult:
-	var cards: Array[int] = sample_distinct(rng, 52, 5)
+	if not _started:
+		cards = sample_distinct(rng, 52, HAND_SIZE)
+		_started = true
+		_keep = []
+		var hand: StringName = evaluate(cards)
+		var pending: RollResult = RollResult.make(tool_id, steps_for(hand), {"cards": cards.duplicate(), "hand": hand, "preview_steps": steps_for(hand), "confirmed": false})
+		pending.can_continue = true
+		return pending
+	var before: Array[int] = cards.duplicate()
+	var used: Array[int] = cards.duplicate()
+	var exchanged: Array[int] = []
+	for index: int in HAND_SIZE:
+		if index < _keep.size() and _keep[index]:
+			continue
+		var card: int = rng.randi_range(0, 51)
+		while used.has(card):
+			card = rng.randi_range(0, 51)
+		used.append(card)
+		cards[index] = card
+		exchanged.append(index)
+	return _commit(before, exchanged)
+
+
+## 교환하지 않고 받은 그대로 확정한다.
+func cash_out() -> RollResult:
+	if not _started:
+		return null
+	return _commit(cards.duplicate(), [] as Array[int])
+
+
+func _commit(before: Array[int], exchanged: Array[int]) -> RollResult:
 	var hand: StringName = evaluate(cards)
-	return RollResult.make(tool_id, steps_for(hand), {"cards": cards, "hand": hand})
+	var result: RollResult = RollResult.make(tool_id, steps_for(hand), {"cards": cards.duplicate(), "hand": hand, "before": before, "exchanged": exchanged, "confirmed": true})
+	_started = false
+	cards = []
+	_keep = []
+	return result
 
 
 static func steps_for(hand: StringName) -> int:

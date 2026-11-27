@@ -33,7 +33,7 @@ func _run() -> void:
 		var card := BaseCard.new()
 		card.card_id = StringName("ACT_%d" % (18 + i))
 		card.display_name = names[i]
-		var body: Control = CardSkin.body(card, Vector2(350, 490), descriptions[i], "즉발", true)
+		var body: Control = CardSkin.body(card, Vector2(350, 490), descriptions[i], "발동", true)
 		var frame := PanelContainer.new()
 		frame.position = Vector2(98 + i * 410, 110)
 		frame.custom_minimum_size = Vector2(350, 490)

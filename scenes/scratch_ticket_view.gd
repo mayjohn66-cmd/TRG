@@ -8,8 +8,8 @@ const SCRATCH_EACH := 0.52
 const REVEAL_AT := SCRATCH_START + SCRATCH_EACH * 3.0
 const TOTAL_TIME := REVEAL_AT + 0.75
 const SCRATCH_STROKES_TIME := SCRATCH_EACH * 0.85
-const TICKET_MESH: PackedScene = preload("res://assets/models/scratch_lottery/scratch_ticket.glb")
-const COIN_MESH: PackedScene = preload("res://assets/models/scratch_lottery/scratch_coin.glb")
+const TICKET_MESH: PackedScene = preload("res://assets/models/optimized/v4/scratch_lottery/scratch_ticket.scn")
+const COIN_MESH: PackedScene = preload("res://assets/models/optimized/v4/scratch_lottery/scratch_coin.scn")
 const FOIL_SHADER: Shader = preload("res://scenes/scratch_foil.gdshader")
 const PRINT_EXTENT := Vector2(3.39, 2.28)
 

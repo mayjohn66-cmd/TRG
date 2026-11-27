@@ -10,8 +10,8 @@ const TOTAL_TIME := 1.5
 const FACE_Z := 0.075
 const TIP_Z := -0.14
 const SCORE_RADIUS := 2.0
-const BOARD_MODEL: PackedScene = preload("res://assets/models/darts/v02/dartboard_v02.tscn")
-const DART_MODEL: PackedScene = preload("res://assets/models/darts/v02/dart_v02.tscn")
+const BOARD_MODEL: PackedScene = preload("res://assets/models/optimized/v4/darts/v02/dartboard_v02.scn")
+const DART_MODEL: PackedScene = preload("res://assets/models/optimized/v4/darts/v02/dart_v02.scn")
 
 var aiming := false
 ## 던지기 전 대기 표시: 조준점 없이 과녁만 천천히 돈다 (조준은 없앴지만 던질 곳이 보이게).

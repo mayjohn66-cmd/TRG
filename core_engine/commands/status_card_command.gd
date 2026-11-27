@@ -40,11 +40,9 @@ func _run() -> void:
 			state.forced_roll[sender_id] = steps
 		&"ACT_12":
 			state.extra_turns[sender_id] = true
-		&"ACT_14":
-			state.record_effect(target_player, "ban", int(state.banned_turns.get(target_player, 0)))
+		&"ACT_14":  # 1.3.1: 밴·스킵은 [너프 발동] - 공격이 아니라 방어 카드로 막지 않는다 (공격 기록을 남기지 않는다)
 			state.banned_turns[target_player] = ban_turns()
 		&"ACT_15":
-			state.record_effect(target_player, "rest", bool(state.rest_next_turn.get(target_player, false)))
 			state.rest_next_turn[target_player] = true
 		&"ACT_16":
 			state.amnesia_round = state.round_number  # 기억상실빔: 이번 라운드 동안 모든 말 사출 면역

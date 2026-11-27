@@ -1,0 +1,56 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://assets/models/fortune_cookie/platter_v1/plate_runtime.scn" id="1_plate"]
+[ext_resource type="PackedScene" path="res://assets/models/fortune_cookie/fortune-cookie-whole.glb" id="2_cookie"]
+
+[node name="FortuneCookiePlatter" type="Node3D"]
+
+[node name="Plate" parent="." instance=ExtResource("1_plate")]
+
+[node name="PickCookie_01" parent="." instance=ExtResource("2_cookie")]
+transform = Transform3D(0.39287004, -0.02161111, -0.00995395, 0.02156209, 0.39299268, -0.00220103, 0.01005970, 0.00165169, 0.39345783, -1.08821738, 0.09882043, -0.19955154)
+
+[node name="PickCookie_02" parent="." instance=ExtResource("2_cookie")]
+transform = Transform3D(0.36569294, -0.00731780, -0.14535518, 0.01136255, 0.39332774, 0.00878476, 0.14509504, -0.01235837, 0.36566064, -0.08033748, 0.08504311, 0.01766487)
+
+[node name="PickCookie_03" parent="." instance=ExtResource("2_cookie")]
+transform = Transform3D(0.39263302, -0.00743005, 0.02640263, 0.00780529, 0.39347622, -0.00534282, -0.02629415, 0.00585342, 0.39266697, 0.30775318, 0.09266917, 0.83614939)
+
+[node name="PickCookie_04" parent="." instance=ExtResource("2_cookie")]
+transform = Transform3D(0.36761895, -0.02414133, 0.13851538, 0.01706501, 0.39253926, 0.02312378, -0.13956396, -0.01559231, 0.36768433, -0.67163450, 0.10581125, -1.03671777)
+
+[node name="PickCookie_05" parent="." instance=ExtResource("2_cookie")]
+transform = Transform3D(0.38927957, -0.02604885, 0.05192175, 0.02983472, 0.39150921, -0.02726562, -0.04984276, 0.03090278, 0.38919625, -0.80370897, 0.11493611, 0.85557771)
+
+[node name="PickCookie_06" parent="." instance=ExtResource("2_cookie")]
+transform = Transform3D(0.35537544, -0.13512591, 0.10179528, 0.15998709, 0.34542152, -0.10000550, -0.05500383, 0.13167369, 0.36681005, 0.34967101, 0.25340718, -0.52016014)
+
+[node name="PickCookie_07" parent="." instance=ExtResource("2_cookie")]
+transform = Transform3D(0.25576314, -0.09981173, 0.28202096, 0.16096084, -0.26684347, -0.24041459, 0.25217021, 0.27156064, -0.13258205, 1.07421064, 0.68770337, -1.11470532)
+
+[node name="PickCookie_08" parent="." instance=ExtResource("2_cookie")]
+transform = Transform3D(0.39145285, -0.00030885, 0.04095792, 0.00491395, 0.39109010, -0.04401566, -0.04066325, 0.04428804, 0.38897052, -0.72659111, 0.41902879, 0.34554830)
+
+[node name="PickCookie_09" parent="." instance=ExtResource("2_cookie")]
+transform = Transform3D(0.39142752, -0.00812570, 0.04039142, 0.01466418, 0.38806820, -0.06403934, -0.03850267, 0.06519239, 0.38623890, 0.39697209, 0.40312499, 0.46189171)
+
+[node name="PickCookie_10" parent="." instance=ExtResource("2_cookie")]
+transform = Transform3D(0.37657022, -0.04929808, -0.10333231, 0.01949238, 0.37765357, -0.10913670, 0.11281805, 0.09929992, 0.36376449, -0.60069501, 0.73839062, 0.09740912)
+
+[node name="PickCookie_11" parent="." instance=ExtResource("2_cookie")]
+transform = Transform3D(0.38974819, 0.04614746, -0.02966091, -0.02059146, 0.32031670, 0.22778544, 0.05084633, -0.22401030, 0.31960452, 0.06080556, 0.60067511, 0.71084911)
+
+[node name="PickCookie_12" parent="." instance=ExtResource("2_cookie")]
+transform = Transform3D(-0.02262070, 0.26394758, -0.29108930, -0.08708023, 0.28095388, 0.26152426, 0.38316882, 0.07943290, 0.04225018, -0.03983582, 0.47122431, 1.26875985)
+
+[node name="PickCookie_13" parent="." instance=ExtResource("2_cookie")]
+transform = Transform3D(0.33524153, -0.15190172, -0.13947035, 0.14909324, 0.36243802, -0.03637130, 0.14246868, -0.02185249, 0.36624876, 0.79116547, 0.44230443, -0.48295075)
+
+[node name="PickCookie_14" parent="." instance=ExtResource("2_cookie")]
+transform = Transform3D(0.05049449, -0.06818900, 0.38433528, 0.10442212, -0.37105343, -0.07955164, 0.37611085, 0.11217266, -0.02951234, -0.46876198, 0.83525181, -0.73412955)
+
+[node name="PickCookie_15" parent="." instance=ExtResource("2_cookie")]
+transform = Transform3D(0.10612182, -0.04785374, 0.37598029, 0.18624596, 0.34663239, -0.00845018, -0.33009636, 0.18019153, 0.11610520, -0.12856406, 0.90387183, -0.64539683)
+
+[node name="PickCookie_16" parent="." instance=ExtResource("2_cookie")]
+transform = Transform3D(0.22882107, 0.28551316, -0.14503843, -0.29323983, 0.11516587, -0.23592420, -0.12870248, 0.24521838, 0.27967232, 1.42752790, 0.57465601, 1.10193121)

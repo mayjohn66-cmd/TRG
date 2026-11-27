@@ -1,8 +1,8 @@
 ## Existing body v0.2 and cylinder v0.3, assembled with an axial fit adjustment in this assembly only.
 extends Node3D
 
-const BODY = preload("res://assets/models/revolver/body_v02.scn")
-const CYLINDER = preload("res://assets/models/revolver/cylinder_v03.tscn")
+const BODY = preload("res://assets/models/optimized/v4/revolver/body_v02.scn")
+const CYLINDER = preload("res://assets/models/optimized/v4/revolver/cylinder_v03.scn")
 
 func _ready() -> void:
 	var body: Node3D = BODY.instantiate()

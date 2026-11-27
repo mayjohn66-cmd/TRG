@@ -551,6 +551,42 @@ static func should_stop_yacht(tool: BaseJudgmentTool) -> bool:
 	return yacht.rerolls_left <= 0 or int(ToolYacht.evaluate(yacht.dice)["steps"]) >= ToolYacht.STEPS_SMALL_OR_FULL
 
 
+## 홀덤 (1.3.1): 스트레이트 이상(10칸)이면 교환하지 않는다.
+static func should_stand_holdem(tool: BaseJudgmentTool) -> bool:
+	return tool is ToolHoldem and tool.has_pending_state() and ToolHoldem.steps_for(ToolHoldem.evaluate((tool as ToolHoldem).cards)) >= 10
+
+
+## 홀덤 교환: 같은 숫자가 겹친 카드는 남긴다. 겹친 게 없으면 같은 문양 4장(플러시 노림), 그것도 없으면 가장 높은 카드 2장만 남긴다.
+static func holdem_keep_mask(cards: Array) -> Array[bool]:
+	var ranks: Dictionary = {}
+	var suits: Dictionary = {}
+	for card: Variant in cards:
+		ranks[int(card) % 13] = int(ranks.get(int(card) % 13, 0)) + 1
+		suits[int(card) / 13] = int(suits.get(int(card) / 13, 0)) + 1
+	var mask: Array[bool] = []
+	var paired: bool = false
+	for card: Variant in cards:
+		var keep: bool = int(ranks[int(card) % 13]) >= 2
+		paired = paired or keep
+		mask.append(keep)
+	if paired:
+		return mask
+	for suit: Variant in suits.keys():
+		if int(suits[suit]) >= 4:
+			mask = []
+			for card: Variant in cards:
+				mask.append(int(card) / 13 == int(suit))
+			return mask
+	var order: Array[int] = []
+	for index: int in cards.size():
+		order.append(index)
+	order.sort_custom(func(a: int, b: int) -> bool: return int(cards[a]) % 13 > int(cards[b]) % 13)
+	mask = []
+	for index: int in cards.size():
+		mask.append(order.find(index) < 2)
+	return mask
+
+
 ## 블랙잭: 합계 16 이하면 히트, 17 이상이면 스탠드.
 static func should_hit_blackjack(tool: BaseJudgmentTool) -> bool:
 	return tool is ToolBlackjack and tool.has_pending_state() and ToolBlackjack.total_of((tool as ToolBlackjack).cards) <= 16

@@ -118,7 +118,7 @@ const STEP_LINGER_MIN_MSEC: int = 60
 ## 처치 확정 대기의 최대 시간(초): 방어 결정이 이보다 오래 걸리면(연결 끊김 등) 연출을 계속한다.
 const COUNTER_GATE_LIMIT: float = 30.0
 ## 상대를 해치는 공격 카드: 카드를 공개하기 전에 [공격 카드 발동!] 경보를 먼저 띄운다.
-const ATTACK_CARDS: Array[StringName] = [&"ACT_02", &"ACT_03", &"ACT_06", &"ACT_07", &"ACT_08", &"ACT_09", &"ACT_10", &"ACT_14", &"ACT_15", &"ACT_21", &"ACT_23"]
+const ATTACK_CARDS: Array[StringName] = [&"ACT_02", &"ACT_03", &"ACT_07", &"ACT_08", &"ACT_09", &"ACT_10", &"ACT_21", &"ACT_23"]  # 1.3.1: 이의 있음·밴·스킵은 너프 발동으로
 const ATTACK_TAG: String = "공격"
 const HAND_RAISED_Y: float = -92.0
 ## 우측 하단 기물 독에서 기물 슬롯이 놓이는 기준 y (필살기 버튼 줄 아래).
@@ -137,10 +137,10 @@ const COLOR_BG: Color = Color("0d1018")
 const COLOR_PANEL: Color = Color("1a2030")
 const COLOR_PANEL_EDGE: Color = Color("39435c")
 const COLOR_GOLD: Color = Color("ffd43b")
-## 카드 배경색은 카드의 속성(카테고리)을 알려 준다: 즉발 주황 / 함정 보라 / 소환 청록.
+## 카드 배경색은 카드의 속성(카테고리)을 알려 준다: 발동 주황 / 함정 보라 / 소환 청록.
 const CARD_BG_COLORS: Dictionary = CardSkin.FILLS
 const CARD_CATEGORY_NAMES: Dictionary = {
-	GameEnums.CardCategory.INSTANT: "즉발",
+	GameEnums.CardCategory.INSTANT: "발동",  # 1.3.1: 즉발 -> 발동 (모든 카드가 굴리기 전에 쓰므로 "즉시"는 뺐다)
 	GameEnums.CardCategory.TRAP: "함정",
 	GameEnums.CardCategory.SUMMON: "소환",
 	GameEnums.CardCategory.COUNTER: "방어",
@@ -148,6 +148,20 @@ const CARD_CATEGORY_NAMES: Dictionary = {
 ## 카드 모서리 분류 이름 (방어 카드도 [방어]: 잡기·공격·함정 분류는 설명 머리표 [잡기 방어] 등에 적는다).
 static func category_label(card: BaseCard) -> String:
 	return str(CARD_CATEGORY_NAMES[card.category])
+
+
+## 발동 카드의 세부 종류 (카드 설명 머리표 [공격 발동]·[버프 발동]·[너프 발동]·[기타 발동]과 같다, 1.3.1).
+## 공격 발동 = 공격 경보가 뜨고 공격 방어로 막을 수 있는 카드(ATTACK_CARDS) / 버프 = 나를 돕는다 / 너프 = 상대를 약하게 하지만 공격은 아니다 / 기타 = 모두에게 걸리거나 상태를 푼다.
+const ACTIVATE_KINDS: Dictionary = {
+	&"ACT_04": "버프 발동", &"ACT_11": "버프 발동", &"ACT_12": "버프 발동", &"ACT_13": "버프 발동", &"ACT_17": "버프 발동",
+	&"ACT_19": "버프 발동", &"ACT_22": "버프 발동", &"ACT_24": "버프 발동", &"ACT_26": "버프 발동",
+	&"ACT_18": "너프 발동", &"ACT_20": "너프 발동", &"ACT_06": "너프 발동", &"ACT_14": "너프 발동", &"ACT_15": "너프 발동",
+	&"ACT_16": "기타 발동", &"ACT_25": "기타 발동",
+}
+
+
+static func activate_kind(card_id: StringName) -> String:
+	return "공격 발동" if ATTACK_CARDS.has(card_id) else str(ACTIVATE_KINDS.get(card_id, "기타 발동"))
 
 
 ## 작은 손패 카드에 보여 주는 1줄 핵심 요약 (15자 이내). 자세한 규칙은 클릭해서 확대할 때 CARD_SUMMARIES로 본다.
@@ -207,7 +221,7 @@ const CARD_SHORT: Dictionary = {
 const CARD_SUMMARIES: Dictionary = {
 	&"CNT_01": "[만능 방어] 공격당하면 이번 턴을 통째로 되감고 공격자의 턴 종료",
 	&"CNT_02": "[잡기 방어] 잡기를 막고 공격한 말을 출발선으로 사출",
-	&"CNT_03": "[공격 방어] 공격 카드를 막고 반사: 밴·스킵·이의 있음은 공격자에게 그대로 · 그 밖의 카드는 공격자 선두 말 사출",
+	&"CNT_03": "[공격 방어] 공격 카드를 막고 반사",
 	&"CNT_04": "[공격 방어] 공격 카드 1회 회피 (잡기는 못 막음)",
 	&"CNT_05": "[함정 방어] 걸린 함정을 부수고 +3칸 전진",
 	&"CNT_06": "[함정 방어] 걸린 함정 무효 + 설치자 카드 1장 강탈",
@@ -216,32 +230,32 @@ const CARD_SUMMARIES: Dictionary = {
 	&"CNT_09": "[잡기 방어] 잡기를 막고 카드 1장 획득",
 	&"CNT_10": "[공격 방어] 공격 카드를 막고 카드 1장 획득",
 	&"CNT_11": "[공격 방어] 공격 카드를 막고 그 카드를 내 손패로",
-	&"ACT_24": "굴리기 전 사용! 이번 굴림 +9칸 · 대신 다음 내 턴 3번 동안 첫 굴림 -3칸",
-	&"ACT_25": "밴·스킵·해킹이 걸린 채 내 턴이 오면 모두 해제 (밴 중에도 사용 가능)",
-	&"ACT_26": "내 말 하나에 수은 보호막 · 공격 카드로 출발선으로 사출되는 것을 1회 막음",
+	&"ACT_24": "[버프 발동] 이번 굴림 +9칸 · 대신 다음 내 턴 3번 동안 첫 굴림 -3칸",
+	&"ACT_25": "[기타 발동] 밴·스킵·해킹이 걸린 채 내 턴이 오면 모두 해제 (밴 중에도 사용 가능)",
+	&"ACT_26": "[버프 발동] 내 말 하나에 수은 보호막 · 공격 카드로 출발선으로 사출되는 것을 1회 막음",
 	&"TRP_10": "눈금 4+ 로 지나가는 적 말 그 칸에 강제 정지",
 	&"TRP_C05": "[코너·3R·여러 번] 지나가는 적 말 주인의 카드 1장을 태움",
-	&"ACT_21": "[공격] 내 말 하나에서 펭귄 발사 · 알까기처럼 날아가 부딪힌 적 말을 모두 출발선으로 날려 버림",
-	&"ACT_22": "내 말 하나에 택배 박스를 씌움 · 잡기·함정을 1회 막고 벗겨짐",
-	&"ACT_23": "[공격] 대상의 다음 한 턴이 자동 진행 (무작위 말 이동 · 카드·필살기 사용 불가)",
+	&"ACT_21": "[공격 발동] 내 말 하나에서 펭귄 발사 · 알까기처럼 날아가 부딪힌 적 말을 모두 출발선으로 날려 버림",
+	&"ACT_22": "[버프 발동] 내 말 하나에 택배 박스를 씌움 · 잡기·함정을 1회 막고 벗겨짐",
+	&"ACT_23": "[공격 발동] 대상의 다음 한 턴이 자동 진행 (무작위 말 이동 · 카드·필살기 사용 불가)",
 	&"TRP_09": "[3턴] 밟은 모든 말(내 말도) 그 칸에서 강제 정지 · 한 번 걸려도 사라지지 않음",
 	&"SUM_04": "[상단 코너] 팽이 소환 · 라운드마다 가장 가까운 적 말 쪽으로 1칸 · 부딪힌 칸의 모든 말을 날려 버리고 소멸",
-	&"ACT_02": "상대 선두 말을 출발선으로 장외 사출",
-	&"ACT_03": "다음 유저에게 폭탄 패스: 선두 말 사출 + 내 이동 +4칸",
-	&"ACT_04": "굴리기 전 사용! 이번 굴림 +4칸",
-	&"ACT_06": "[내 차례 시작에 사용] 특수 승리 기록 1개를 0으로 초기화 (공격에 반응하는 방어 카드는 아님)",
-	&"ACT_07": "고른 한 변의 설치물 전부 붕괴",
-	&"ACT_08": "내 꼴찌 말 ↔ 1등 적 선두 말 위치 교환",
-	&"ACT_09": "적 1명과 6종 랜덤 미니게임 데스매치! 승자 말 +3칸, 패자 선두 말 사출",
-	&"ACT_10": "내 선두 말 앞 3칸의 적 사출 + 설치물 파괴",
-	&"ACT_11": "다음 굴림 결과를 1~6칸 중 직접 지정",
-	&"ACT_12": "이번 턴이 끝나면 한 턴 더",
-	&"ACT_13": "내 선두 말을 반환점까지의 빈 칸 중 고른 칸으로 순간이동",
-	&"ACT_14": "상대 1명 2턴 동안 카드·필살기·주사위 리롤 금지",
-	&"ACT_15": "상대 1명의 다음 턴 건너뛰기",
-	&"ACT_18": "적 말 1개를 뒤로 1칸 (도착 칸이 비어 있을 때)",
-	&"ACT_19": "내 말 1개를 앞으로 1칸 (도착 칸이 비어 있을 때)",
-	&"ACT_20": "적 1명의 다음 이동 눈금 -1 (최소 1칸)",
+	&"ACT_02": "[공격 발동] 상대 선두 말을 출발선으로 장외 사출",
+	&"ACT_03": "[공격 발동] 다음 유저에게 폭탄 패스: 선두 말 사출 + 내 이동 +4칸",
+	&"ACT_04": "[버프 발동] 이번 굴림 +4칸",
+	&"ACT_06": "[너프 발동] 특수 승리 기록 1개를 0으로 초기화",
+	&"ACT_07": "[공격 발동] 고른 한 변의 설치물 전부 붕괴",
+	&"ACT_08": "[공격 발동] 내 꼴찌 말 ↔ 1등 적 선두 말 위치 교환",
+	&"ACT_09": "[공격 발동] 적 1명과 6종 랜덤 미니게임 데스매치! 승자 말 +3칸, 패자 선두 말 사출",
+	&"ACT_10": "[공격 발동] 내 선두 말 앞 3칸의 적 사출 + 설치물 파괴",
+	&"ACT_11": "[버프 발동] 다음 굴림 결과를 1~6칸 중 직접 지정",
+	&"ACT_12": "[버프 발동] 이번 턴이 끝나면 한 턴 더",
+	&"ACT_13": "[버프 발동] 내 선두 말을 반환점까지의 빈 칸 중 고른 칸으로 순간이동",
+	&"ACT_14": "[너프 발동] 상대 1명 2턴 동안 카드·필살기·주사위 리롤 금지",
+	&"ACT_15": "[너프 발동] 상대 1명의 다음 턴 건너뛰기",
+	&"ACT_18": "[너프 발동] 적 말 1개를 뒤로 1칸 (도착 칸이 비어 있을 때)",
+	&"ACT_19": "[버프 발동] 내 말 1개를 앞으로 1칸 (도착 칸이 비어 있을 때)",
+	&"ACT_20": "[너프 발동] 적 1명의 다음 이동 눈금 -1 (최소 1칸)",
 	&"TRP_02": "눈금 4+ 로 지나가는 적 말 출발선 사출",
 	&"TRP_03": "밟으면 반경 2칸 내 모든 말 폭파",
 	&"TRP_05": "밟은 말은 멈추고, 반경 2칸 안의 함정이 전부 연쇄 발동",
@@ -726,6 +740,12 @@ var _action_row: HFlowContainer = null
 var _roll_pad: RollPad = null
 ## 불스아이 다트: 내가 던질 차례에 보드 한가운데 보이는 과녁 (던지기 전 대기 표시).
 var _dart_idle: DartBoardView = null
+## 해적 룰렛 대기 통 (1.3.1): 내 차례에 보드 위에 칼이 꽂힌 그대로 서 있고, 끌어서 돌린 뒤 [칼 꽂기]로 꽂는다.
+var _pirate_idle: PirateBarrelView = null
+var _pirate_drag: bool = false
+## 텍사스 홀덤 교환 창 (1.3.1): 받은 5장 중 바꿀 카드를 골라 교환하거나 그대로 확정한다.
+var _holdem_exchange: HoldemExchangePanel = null
+var _holdem_exchange_key: String = ""
 var _dart_drag: bool = false
 var _dart_press: Vector2 = Vector2.ZERO
 var _dart_press_msec: int = 0
@@ -6410,9 +6430,10 @@ func _open_zoom(player_id: int, card_id: StringName) -> void:
 	guide_box.add_theme_constant_override("separation", 4)
 	guide.add_child(guide_box)
 	var how: String = "보드에 드래그 → 타일 선택" if card.needs_tile() else "보드에 드래그"
-	if card.category == GameEnums.CardCategory.COUNTER:
-		how = "피격 시 발동 여부를 묻는 팝업에서 [발동]"
-	var timing := _make_label("발동: %s\n방법: %s" % [_card_timing_text(card), how], MobileSupport.text_px(14), UiSkin.INK)
+	var guide_text: String = _card_timing_text(card)
+	if card.category != GameEnums.CardCategory.COUNTER:
+		guide_text += "\n" + L10n.tf("방법: %s", [L10n.t(how)])  # 방어 카드는 공격받을 때 팝업으로만 쓴다 (공통이라 적지 않는다)
+	var timing := _make_label(guide_text, MobileSupport.text_px(14), UiSkin.INK)
 	timing.name = "CardTiming"
 	timing.custom_minimum_size = Vector2(card_size.x - 24.0, 0)
 	timing.size = Vector2(card_size.x - 24.0, 40)
@@ -6459,14 +6480,14 @@ func _open_zoom(player_id: int, card_id: StringName) -> void:
 	_zoom_view.position = Vector2(maxf(24, (screen.x - total.x) / 2), maxf(24, (screen.y - total.y) / 2))
 
 
+## 카드 확대 창의 종류 줄 (1.3.1): 쓰는 때는 종류마다 같아(방어 = 공격받을 때, 그 밖 = 굴리기 전) 적지 않고 세부 종류를 보여 준다.
 func _card_timing_text(card: BaseCard) -> String:
-	if card.category == GameEnums.CardCategory.COUNTER:
-		return "피격 시 (내 말이 잡히거나 공격 카드·함정에 당했을 때)"
-	var names: Array[String] = []
-	for phase: int in card.playable_phases:
-		var full: String = _phase_name(phase)
-		names.append(full.split(" - ")[0])
-	return " / ".join(names) if not names.is_empty() else "-"
+	match card.category:
+		GameEnums.CardCategory.COUNTER:
+			return L10n.tf("막는 공격: %s", [L10n.t(Rulebook._counter_kind(card.card_id))])
+		GameEnums.CardCategory.INSTANT:
+			return L10n.tf("종류: %s", [L10n.t(activate_kind(card.card_id))])
+	return L10n.tf("종류: %s", [L10n.t(category_label(card))])
 
 
 func _close_zoom() -> void:
@@ -7458,7 +7479,7 @@ const TOOL_CARDS: Dictionary = {
 	&"D6": ["6", Color("c92a2a"), "굴려서 전진한다", ""],
 	&"YUT": ["윷", Color("8a5a2b"), "윷을 던져 나온 만큼 전진한다", "윷·모는 쌓고 계속 던짐 (최대 3번)"],
 	&"LIFE_ROULETTE": ["룰", Color("1971c2"), "룰렛을 돌려 전진한다", "7 당첨 재굴림 +1"],
-	&"HOLDEM": ["♠", Color("343a40"), "카드 족보만큼 전진한다", ""],
+	&"HOLDEM": ["♠", Color("343a40"), "카드 5장을 받고 한 번 교환한 족보만큼 전진한다", ""],
 	&"CHINCHIRO": ["친", Color("0b7285"), "주사위를 굴려 전진한다", ""],
 	&"SLOT_777": ["7", Color("862e9c"), "슬롯을 돌려 전진한다", "777 잭팟 20칸"],
 	&"REVOLVER": ["탄", Color("495057"), "방아쇠를 당긴 만큼 전진한다", "폭죽 발사 → 0칸·턴 종료"],
@@ -7484,7 +7505,7 @@ const TOOL_RULES: Dictionary = {
 	&"D6": {"rows": [["1 ~ 6 눈금", "나온 눈금만큼"]], "note": "각 눈금 1/6"},
 	&"YUT": {"rows": [["낙 (판 밖으로)", "0칸 · 턴 종료 (쌓인 윷도 사라짐)"], ["도 (1)", "1칸"], ["개 (2)", "2칸"], ["걸 (3)", "3칸"], ["윷 (4)", "4칸 쌓고 한 번 더!"], ["모 (5)", "5칸 쌓고 한 번 더!"]], "note": "윷·모는 쌓아 두고 계속 던진 뒤 눈금마다 말을 골라 이동"},
 	&"LIFE_ROULETTE": {"rows": [["1 ~ 6, 8 ~ 10", "나온 숫자만큼"], ["7 당첨", "7칸 + 한 번 더!"]], "note": "1 ~ 10 균등 · 원판 돌리기"},
-	&"HOLDEM": {"rows": [["노페어", "1칸"], ["원페어", "3칸"], ["투페어", "5칸"], ["트리플", "7칸"], ["스트레이트", "10칸"], ["플러시 이상", "15칸"]], "note": "5장 드로우 · 플러시 이상 15칸"},
+	&"HOLDEM": {"rows": [["노페어", "1칸"], ["원페어", "3칸"], ["투페어", "5칸"], ["트리플", "7칸"], ["스트레이트", "10칸"], ["플러시 이상", "15칸"]], "note": "5장 받기 → 바꿀 카드를 골라 한 번 교환 · 플러시 이상 15칸"},
 	&"CHINCHIRO": {"rows": [["4 눈금", "4칸 (2/6)"], ["5 눈금", "5칸 (2/6)"], ["6 눈금", "6칸 (1/6)"], ["삐끗!", "이번 이동 0칸 (1/6)"]], "note": "접시 밖 이탈 = 삐끗 (후퇴는 없음)"},
 	&"SLOT_777": {"rows": [["3개 모두 다름", "1칸"], ["2개 일치", "4칸"], ["3개 일치", "8칸"], ["7 7 7 잭팟", "20칸"]], "note": "릴 3개 · 그림 6종"},
 	&"DICE_HWATU": {"rows": [["망통", "0칸, 턴 종료"], ["1~3 / 4~6 / 7~9끗", "2 / 3 / 4칸"], ["1~6 / 7~9땡", "6 / 7칸"], ["장땡·광땡", "8칸"]], "note": "월 합 끝자리 (망통 = 끝자리 0)"},
@@ -7576,7 +7597,7 @@ func _category_text(category: GameEnums.CardCategory) -> String:
 	match category:
 		GameEnums.CardCategory.TRAP: return "타일 설치형 (사용 후 보드판의 타일을 클릭)"
 		GameEnums.CardCategory.SUMMON: return "중립 NPC 소환형"
-	return "즉발·개입형"
+	return "발동형 (굴리기 전에 보드에 끌어 놓기)"
 
 
 ## 지금 이 플레이어에게 열린 방어 대기(피격 팝업)에 이 카드를 낼 수 있는가.
@@ -7640,6 +7661,8 @@ func _refresh_controls() -> void:
 	_roll_button.disabled = not can_roll or _tile_pick_active or _ui_busy() or manager.stack_offer_pending() or manager.duel_pending() or _is_bot_turn() or manager.hammer_pending(player_id)
 	_refresh_roll_pad()
 	_refresh_dart_idle(tool)
+	_refresh_pirate_idle(tool)
+	_refresh_holdem_exchange(tool)
 	_refresh_tool_stage()
 	_refresh_hammer_panel()
 	_refresh_bounty_marks()
@@ -7662,7 +7685,7 @@ func _refresh_controls() -> void:
 	else:
 		_set_gun_buttons(false)
 		_roll_button.text = _roll_button_label(tool)
-		_stop_button.visible = can_stop and not _is_stage_tool(tool.tool_id)  # 야추·블랙잭은 스테이지에 자기 확정 버튼이 있다
+		_stop_button.visible = can_stop and not _is_stage_tool(tool.tool_id) and not (tool is ToolHoldem)  # 야추·블랙잭은 스테이지에, 홀덤은 교환 창에 자기 확정 버튼이 있다
 		_stop_button.text = "멈추고 이동 확정"
 		_stop_button.disabled = false
 		_stop_button.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -7865,6 +7888,77 @@ func _refresh_dart_idle(tool: BaseJudgmentTool) -> void:
 	_dart_idle.mouse_filter = Control.MOUSE_FILTER_STOP if show else Control.MOUSE_FILTER_IGNORE
 
 
+func _refresh_pirate_idle(tool: BaseJudgmentTool) -> void:
+	var show: bool = tool is ToolPirateRoulette and _roll_view_allowed() and not _fx_busy and not _is_bot_turn() and manager.current_player_id() == _dock_owner() and _fx_on()
+	if _pirate_idle == null:
+		if not show:
+			return  # 해적 룰렛을 쓰지 않는 판에서는 3D 통을 만들지 않는다
+		_pirate_idle = PirateBarrelView.new()
+		_pirate_idle.name = "PirateIdle"
+		_pirate_idle.visible = false
+		_pirate_idle.gui_input.connect(_on_pirate_idle_input)
+		add_child(_pirate_idle)
+	_pirate_idle.position = _board_center() - PirateBarrelView.SIZE * 0.5 - Vector2(0, 40)
+	if show:
+		var holes: Array = (tool as ToolPirateRoulette).holes.duplicate()
+		if not _pirate_idle.visible or _pirate_idle.get_meta("holes", []) != holes:
+			_pirate_idle.set_meta("holes", holes)
+			_pirate_idle.show_rest(holes)
+	_pirate_idle.visible = show
+	_pirate_drag = _pirate_drag and show
+	_pirate_idle.mouse_filter = Control.MOUSE_FILTER_STOP if show else Control.MOUSE_FILTER_IGNORE
+
+
+func _holdem_exchange_open(tool: BaseJudgmentTool) -> bool:
+	return tool is ToolHoldem and tool.has_pending_state() and manager.current_state == TurnManager.State.PHASE_ROLL_WAIT
+
+
+func _refresh_holdem_exchange(tool: BaseJudgmentTool) -> void:
+	if _holdem_exchange != null and _holdem_exchange.busy: return
+	var show: bool = _holdem_exchange_open(tool) and _roll_view_allowed() and not _fx_busy and not _is_bot_turn() and manager.current_player_id() == _dock_owner()
+	var key: String = str((tool as ToolHoldem).cards) + ":%d:%d" % [state.round_number, manager.current_player_id()] if show else ""
+	if _holdem_exchange != null and key != _holdem_exchange_key:
+		_holdem_exchange.queue_free()
+		_holdem_exchange = null
+	_holdem_exchange_key = key
+	if not show or _holdem_exchange != null:
+		return
+	_create_holdem_exchange((tool as ToolHoldem).cards)
+	_holdem_exchange.play_deal()
+
+func _create_holdem_exchange(hand: Array) -> void:
+	_holdem_exchange = HoldemExchangePanel.new()
+	_holdem_exchange.setup(hand)
+	_holdem_exchange.position = _board_center()
+	_holdem_exchange_key = str(hand)+":%d:%d" % [state.round_number,manager.current_player_id()]
+	_holdem_exchange.exchange.connect(func(keep: Array[bool]) -> void: _act(&"roll", {"keep": keep}))
+	_holdem_exchange.stand.connect(func() -> void: _act(&"stop"))
+	add_child(_holdem_exchange)
+
+
+## 홀덤 교환 창 (테스트용).
+func holdem_exchange_panel() -> HoldemExchangePanel:
+	return _holdem_exchange
+
+
+## 대기 통을 좌우로 끌면 돌아간다 (연출만, 칼이 들어갈 구멍은 엔진이 정한다).
+func _on_pirate_idle_input(event: InputEvent) -> void:
+	var button: InputEventMouseButton = event as InputEventMouseButton
+	var touch: InputEventScreenTouch = event as InputEventScreenTouch
+	var motion: InputEventMouseMotion = event as InputEventMouseMotion
+	var drag: InputEventScreenDrag = event as InputEventScreenDrag
+	if button != null and button.button_index == MOUSE_BUTTON_LEFT:
+		_pirate_drag = button.pressed
+		_pirate_idle.accept_event()
+	elif touch != null:
+		_pirate_drag = touch.pressed
+		_pirate_idle.accept_event()
+	elif (motion != null or drag != null) and _pirate_drag:
+		var dx: float = motion.relative.x if motion != null else drag.relative.x
+		_pirate_idle.spin(dx * 0.012)
+		_pirate_idle.accept_event()
+
+
 ## 러시안 룰렛이면 정지 버튼을 [발사] 옆 큰 버튼으로 옮기고, 다른 도구면 원래 자리(우측 버튼 줄)로 돌려보낸다.
 func _set_gun_buttons(gun: bool) -> void:
 	var wanted_parent: Node = _gun_row if gun else _action_row
@@ -7932,6 +8026,8 @@ func _roll_mode_for(tool: BaseJudgmentTool) -> StringName:
 		return &"stage"
 	if tool is ToolPinball:
 		return &"pinball"
+	if tool is ToolPirateRoulette:
+		return &"pirate"  # 1.3.1: 보드 위 해적통 아래에 [칼 꽂기]
 	return &"charge"
 
 
@@ -7997,7 +8093,7 @@ func _refresh_roll_pad() -> void:
 	_roll_pad.instant = instant_roll_for_test
 	if _roll_pad.kind != wanted:
 		_roll_pad.set_kind(wanted)
-	if mode == &"big" or mode == &"charge" or mode == &"pinball" or mode == &"darts":
+	if mode == &"big" or mode == &"charge" or mode == &"pinball" or mode == &"darts" or mode == &"pirate":
 		_roll_button.text = _roll_button_label(owner_tool)  # 글자를 먼저 바꿔야 새 크기가 이전 글자 폭에 눌리지 않는다
 	if mode != _roll_geometry:
 		_set_roll_geometry(mode)
@@ -8007,7 +8103,7 @@ func _refresh_roll_pad() -> void:
 	# 연출 중에 남겨 두는 것은 '내 도구'가 굴러가는 연출일 때뿐이다 (다른 사람이 굴리는 동안 내 리볼버·룰렛이 밑에 비치지 않게).
 	# 앞 사람의 굴림 연출기(_presenter)가 아직 보이면 그 _fx_busy는 내 도구의 연출이 아니다 (차례가 막 넘어온 순간 내 리볼버가 먼저 떴다 숨는 깜빡임 방지).
 	var own_fx: bool = _fx_busy and manager.current_player_id() == _dock_owner() and not _presenter_showing()
-	_roll_button.visible = wanted == RollPad.Kind.NONE and roll_phase and mode != &"stage"
+	_roll_button.visible = wanted == RollPad.Kind.NONE and roll_phase and mode != &"stage" and not _holdem_exchange_open(owner_tool)  # 홀덤 교환 중에는 교환 창 버튼으로
 	# 리볼버가 '준비' 중이라 active여도, 막는 중앙 알림(카드·공격·방어 도장)이 떠 있는 동안에는 숨긴다 (도장 밑에 총이 비치지 않게). 쏘는 중에는 그대로.
 	var pad_busy: bool = _roll_pad.active and not (_roll_pad.preparing and ((_announcer != null and _announcer.holding()) or _presentation_active()))
 	if _hammer_choice_open() and not _fx_busy:
@@ -8016,7 +8112,7 @@ func _refresh_roll_pad() -> void:
 	if wanted != RollPad.Kind.NONE:
 		_roll_pad.visible = roll_phase or own_fx or pad_busy
 	_gun_row.visible = wanted == RollPad.Kind.REVOLVER and (roll_phase or own_fx or pad_busy)
-	if mode == &"big" or mode == &"charge" or mode == &"pinball" or mode == &"darts":
+	if mode == &"big" or mode == &"charge" or mode == &"pinball" or mode == &"darts" or mode == &"pirate":
 		_roll_button.text = _roll_button_label(owner_tool)
 	_roll_pad.set_enabled(not _roll_button.disabled)
 	if wanted == RollPad.Kind.REVOLVER and roll_phase and not _ui_busy():
@@ -8033,6 +8129,9 @@ func _set_roll_geometry(mode: StringName) -> void:
 	if mode == &"darts":
 		diameter = 104.0
 		center = Vector2(953.0, 350.0)  # Beside the board, clear of the face and the tool-info panel.
+	elif mode == &"pirate":
+		diameter = 112.0
+		center = _board_center() + Vector2(0.0, 190.0)  # 해적통(보드 가운데 조금 위) 바로 아래
 	_roll_button.custom_minimum_size = Vector2(diameter, diameter)
 	_roll_button.size = Vector2(diameter, diameter)
 	_roll_button.add_theme_font_size_override("font_size", 32 if mode == &"big" else 24)
@@ -8169,6 +8268,8 @@ func _roll_by_key() -> void:
 		return  # 슬롯머신: 스페이스로 다음 릴을 멈춘다
 	if _roll_button.disabled or _ui_busy() or manager.is_game_over or _stack_overlay != null or _is_bot_turn() or _tile_pick_active:
 		return
+	if state != null and _holdem_exchange_open(state.tools[manager.current_player_id()]):
+		return  # 홀덤 교환은 창의 버튼으로만 (스페이스로 다섯 장을 다 바꾸지 않게)
 	if state != null and _is_stage_tool(state.tools[manager.current_player_id()].tool_id):
 		match state.tools[manager.current_player_id()].tool_id:
 			&"DICE_YACHT": _stage_yacht.roll_by_key()
@@ -9023,6 +9124,11 @@ func _enqueue_batch(entries: Array[Dictionary]) -> void:
 
 ## 연출 큐를 비우고 재생 중인 러너를 멈춘다 (판 초기화·되감기·테스트 정리용). 이미 시작된 트윈은 건드리지 않는다.
 func _reset_presentation() -> void:
+	_close_tool_pick()
+	if _holdem_exchange!=null:
+		_holdem_exchange.queue_free()
+		_holdem_exchange=null
+	_holdem_exchange_key=""
 	PresentationAudio.stop_tree(self)
 	for effect: Node in get_tree().get_nodes_in_group("expansion_card_fx"):
 		if effect.get_parent() == self:
@@ -12816,7 +12922,12 @@ func _roll_text(data: Dictionary) -> String:
 				text += "%s (%d칸 쌓음 · 한 번 더)" % [YUT_NAMES.get(int(details.get("face", result["steps"])), "?"), result["steps"]]
 			else:
 				text += "%s (%d칸)" % [YUT_NAMES.get(int(details.get("face", result["steps"])), "?"), result["steps"]]
-		&"HOLDEM": text += "%s → %d칸" % [HAND_NAMES.get(details["hand"], "?"), result["steps"]]
+		&"HOLDEM":
+			if bool(result.get("can_continue", false)):
+				text += "5장 받음: %s (교환 대기)" % HAND_NAMES.get(details["hand"], "?")
+			else:
+				var swapped: int = (details.get("exchanged", []) as Array).size()
+				text += ("%d장 교환 → " % swapped if swapped > 0 else "그대로 → ") + "%s → %d칸" % [HAND_NAMES.get(details["hand"], "?"), result["steps"]]
 		&"SLOT_777":
 			var symbols: Array[String] = []
 			for reel: int in details["reels"]:
@@ -13528,6 +13639,10 @@ func _handle_roll_event(data: Dictionary) -> void:
 		if _center_banner.has_meta("fade"):
 			var fade: Tween = _center_banner.get_meta("fade")
 			if fade != null and fade.is_valid(): fade.kill()
+	var local_table := int(data["player_id"])==_dock_owner() and not _is_bot_turn()
+	if not instant_roll_for_test and local_table and (tool_id==&"HOLDEM" or (tool_id==&"DICE_HWATU" and _tool_pick!=null and _tool_pick.revealing)):
+		await _play_table_roll(data)
+		return
 	var on_pad: bool = int(data["player_id"]) == _dock_owner() and ((tool_id == &"LIFE_ROULETTE" and _roll_pad.kind == RollPad.Kind.ROULETTE) or (tool_id == &"REVOLVER" and _roll_pad.kind == RollPad.Kind.REVOLVER))
 	if on_pad and not instant_roll_for_test:
 		var pad_generation: int = _fx_generation
@@ -13568,6 +13683,34 @@ func _handle_roll_event(data: Dictionary) -> void:
 	if generation != _fx_generation or serial != _fx_serial:
 		return
 	_fx_busy = false
+	_reveal_roll(data)
+	_refresh_all()
+
+
+## These cards stay on their table from the first deal until the final result.
+func _play_table_roll(data: Dictionary) -> void:
+	var result: Dictionary=data["result"]
+	var details: Dictionary=result.get("details",{})
+	var generation:=_fx_generation
+	_fx_serial+=1
+	var serial:=_fx_serial
+	_fx_busy=true
+	_refresh_controls()
+	_roll_button.hide()
+	if result["tool_id"]==&"HOLDEM":
+		if bool(result.get("can_continue",false)):
+			if _holdem_exchange==null: _create_holdem_exchange(details.get("cards",[]))
+			await _holdem_exchange.play_deal()
+		else:
+			if _holdem_exchange==null:
+				_create_holdem_exchange(details.get("before",details.get("cards",[])))
+				await _holdem_exchange.play_deal()
+			await _holdem_exchange.play_exchange(details.get("cards",[]),details.get("exchanged",[]))
+	else:
+		await _tool_pick.reveal_result(result)
+		_close_tool_pick()
+	if generation!=_fx_generation or serial!=_fx_serial: return
+	_fx_busy=false
 	_reveal_roll(data)
 	_refresh_all()
 
@@ -14632,7 +14775,8 @@ func _open_tool_pick(tool: BaseJudgmentTool) -> bool:
 
 func _on_tool_picked(indices: Array[int]) -> void:
 	var still_mine: bool = _tool_pick != null and _tool_pick_key == _tool_pick_state_key()
-	_close_tool_pick()
+	if still_mine and _tool_pick.tool_id==&"DICE_HWATU": _tool_pick.revealing=true
+	else: _close_tool_pick()
 	if still_mine and manager.current_state == TurnManager.State.PHASE_ROLL_WAIT and not manager.is_game_over:
 		_act(&"roll", {"pick": indices})
 
@@ -14646,6 +14790,7 @@ func _close_tool_pick() -> void:
 
 ## 고르는 동안 차례·단계·도구가 바뀌면(시간 초과로 엔진이 자동으로 굴림 등) 창을 닫는다.
 func _sync_tool_pick() -> void:
+	if _tool_pick!=null and _tool_pick.revealing and _fx_busy: return
 	if _tool_pick != null and (manager == null or manager.is_game_over or _tool_pick_key != _tool_pick_state_key()):
 		_close_tool_pick()
 

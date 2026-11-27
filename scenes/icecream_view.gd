@@ -14,6 +14,11 @@ const INK := Color("523426")
 const BERRY := Color("a5374e")
 const FONT: Font = preload("res://assets/fonts/game_ui_font.tres")
 const BAR: Texture2D = preload("res://assets/fx/judgment/icecream_bar.png")
+const FLAVORS := {
+	"strawberry": BAR,
+	"chocolate": preload("res://assets/fx/judgment/icecream_variants/v2/chocolate.png"),
+	"mint": preload("res://assets/fx/judgment/icecream_variants/v2/mint_chocolate.png"),
+}
 const BITE_MASK: Shader = preload("res://scenes/icecream_bite.gdshader")
 const BODY_HEIGHT := 171.0
 const CENTER := Vector2(210, 131)
@@ -26,6 +31,10 @@ var _parked_count := 0
 var _bar := Sprite2D.new()
 var _bite_material := ShaderMaterial.new()
 var _stick := StyleBoxFlat.new()
+var in_place := false
+
+func set_flavor(flavor: String) -> void:
+	_bar.texture = FLAVORS.get(flavor, BAR)
 
 
 func _init() -> void:
@@ -59,7 +68,7 @@ func apply_time(t: float) -> void:
 	var bite := 0.0
 	if t >= BITE_AT:
 		bite = lerpf(0.77, 0.96, smoothstep(BITE_AT + 0.12, REVEAL_AT, t))
-	var replaced := _again and t >= REFILL_AT
+	var replaced := _again and not in_place and t >= REFILL_AT
 	var entry := ease(clampf(t / 0.25, 0.0, 1.0), 0.38)
 	var pickup := _refill_progress()
 	var recoil := _bite_recoil()
@@ -68,7 +77,7 @@ func apply_time(t: float) -> void:
 	_bar.position = CENTER + Vector2(-9.0 * windup + 7.0 * recoil, -27.0 * (1.0 - entry) + 5.0 * recoil)
 	_bar.rotation = -0.09 * windup + 0.055 * recoil
 	var squash := Vector2(1.0 + 0.06 * recoil, 1.0 - 0.07 * recoil)
-	_bar.scale = squash * (BODY_HEIGHT / BAR.get_height())
+	_bar.scale = squash * (BODY_HEIGHT / _bar.texture.get_height())
 	if replaced:
 		_bar.position = CENTER + Vector2(74, -58.0 * (1.0 - pickup))
 		_bar.rotation = 0.18 * (1.0 - pickup)
@@ -80,7 +89,7 @@ func apply_time(t: float) -> void:
 
 
 func _draw() -> void:
-	var shift := _refill_progress() if _again else 0.0
+	var shift := _refill_progress() if _again and not in_place else 0.0
 	var start_shift := 28.0 * (1.0 - ease(clampf(_t / 0.25, 0.0, 1.0), 0.38))
 	var put_aside := smoothstep(PUT_ASIDE_AT, STICK_LAND_AT, _t) if _again else 0.0
 	var pile_angle := _pile_angle(_parked_count)

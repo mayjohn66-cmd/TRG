@@ -3,7 +3,7 @@ class_name CauldronBrewView
 extends Control
 
 const BREW_TIME: float = 1.25
-const MODEL_DIR := "res://assets/models/cauldron/"
+const MODEL_DIR := "res://assets/models/optimized/v4/cauldron/"
 const RENDER_SIZE := Vector2i(464, 448)
 const RISE_TIME: float = 0.35
 
@@ -32,7 +32,7 @@ func play(potion: StringName, color: Color, is_good: bool, motion_pace: float = 
 	if is_instance_valid(_bottle):
 		_viewport.remove_child(_bottle)
 		_bottle.queue_free()
-	var scene := load(MODEL_DIR + "potion_%s.glb" % potion) as PackedScene
+	var scene := load(MODEL_DIR + "potion_%s.scn" % potion) as PackedScene
 	_bottle = scene.instantiate() as Node3D
 	_bottle.name = "BrewedPotion"
 	_viewport.add_child(_bottle)
@@ -70,7 +70,7 @@ func _build_stage() -> void:
 		light.light_energy = settings[1]
 		_viewport.add_child(light)
 
-	var scene := load(MODEL_DIR + "cauldron.glb") as PackedScene
+	var scene := load(MODEL_DIR + "cauldron.scn") as PackedScene
 	var pot := scene.instantiate() as Node3D
 	_viewport.add_child(pot)
 	_liquid = pot.find_child("PotionSurface", true, false) as MeshInstance3D

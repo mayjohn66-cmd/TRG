@@ -489,6 +489,9 @@ func _handle_roll(actor: int, params: Dictionary = {}) -> void:
 	# 야추 다이스: 다시 굴릴 때 고정할 주사위(keep: 5개 bool)를 굴림 행동에 실어 보낸다.
 	if params.has("keep") and tool is ToolYacht:
 		(tool as ToolYacht).set_keep(params["keep"] as Array if params["keep"] is Array else [])
+	# 텍사스 홀덤 (1.3.1): 교환할 때 남길 카드(keep: 5개 bool)를 굴림 행동에 실어 보낸다.
+	if params.has("keep") and tool is ToolHoldem:
+		(tool as ToolHoldem).set_keep(params["keep"] as Array if params["keep"] is Array else [])
 	state.pacing_humans = pacing_humans
 	var result: RollResult = _roll_with_modifiers(actor, tool)
 	# 터치로 고르기 (1.3.1): 고른 뒷면 자리를 결과에 싣는다. 결과(눈금·확률)는 위에서 평소처럼 정해졌다.

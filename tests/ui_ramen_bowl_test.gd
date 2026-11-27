@@ -69,12 +69,14 @@ func run() -> void:
 	picker.show()
 	await process_frame
 	expect(bowl.is_processing(), "visible bowl resumes")
-	# Load cost: the menu reads the baked noodles instead of building them, and the bake matches the generator.
+	# The runtime bake is simplified while the original generator remains available.
 	expect(ResourceLoader.exists(BowlModel.BAKED_NOODLES), "baked noodle mesh exists (run tools/bake_ramen_noodles.gd)")
 	var built: ArrayMesh = BowlModel.noodle_mesh()
 	var baked: ArrayMesh = load(BowlModel.BAKED_NOODLES)
 	expect(noodles.mesh == baked, "bowl uses the baked noodle mesh")
-	expect(baked != null and baked.surface_get_array_len(0) == built.surface_get_array_len(0) and baked.get_aabb().is_equal_approx(built.get_aabb()), "baked noodles match noodle_mesh() (re-run the bake after changing it)")
+	expect(baked != null and baked.surface_get_array_len(0)<built.surface_get_array_len(0)*.35, "runtime noodles use substantially fewer vertices than the source")
+	var bounds_error:=maxf(baked.get_aabb().position.distance_to(built.get_aabb().position),baked.get_aabb().end.distance_to(built.get_aabb().end))/built.get_aabb().size.length()
+	expect(bounds_error<.04,"simplified noodles preserve the source bowl volume")
 	# First-render cost: no shadow pass or MSAA, and a hidden bowl can compile its shaders ahead of time.
 	var key_lights: Array = bowl.render_view.find_children("*", "DirectionalLight3D", true, false)
 	expect(key_lights.all(func(light: DirectionalLight3D) -> bool: return not light.shadow_enabled), "bowl lights cast no shadows")

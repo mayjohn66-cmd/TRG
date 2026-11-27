@@ -238,7 +238,7 @@ static func rounded_box(half: Vector3, radius: float) -> ArrayMesh:
 	var vertices := PackedVector3Array()
 	var normals := PackedVector3Array()
 	var indices := PackedInt32Array()
-	const SEGMENTS: int = 12
+	const SEGMENTS: int = 6
 	var core_half: Vector3 = half-Vector3.ONE*radius
 	for side: int in 6:
 		var start: int = vertices.size()

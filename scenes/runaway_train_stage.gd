@@ -6,8 +6,8 @@ signal tile_passed(tile: int)
 signal pose_changed
 signal finished
 
-const TRAIN = preload("res://assets/models/runaway_train/runaway_train_v02.tscn")
-const TRACK = preload("res://assets/models/runaway_train/straight_track_v01.tscn")
+const TRAIN = preload("res://assets/models/optimized/v4/runaway_train/runaway_train_v02.scn")
+const TRACK = preload("res://assets/models/optimized/v4/runaway_train/straight_track_v01.scn")
 const MODEL_SCALE := 0.032
 const TRACK_LENGTH := 3.2
 const LAY_INTERVAL := 0.065
