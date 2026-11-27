@@ -130,6 +130,8 @@ var player_ids: Array[int] = []
 var pawns: Array[PlayerPawn] = []
 var npcs: Array[NeutralNPC] = []
 var _next_npc_id: int = 100
+## 연출 힌트(결과와 무관, 저장하지 않음): 지금 뽑는 카드가 이 말의 능력에서 나왔다 (-1 = 덱에서). 화면이 카드를 그 말에서 날린다.
+var draw_source_pawn: int = -1
 
 ## 플레이어 ID -> Array[StringName] 손패 / 플레이어 ID -> BaseJudgmentTool. (스냅샷에 포함되지 않는다.)
 var hands: Dictionary = {}
@@ -681,6 +683,14 @@ const HAUNT_DRAW_WEIGHT: float = 6.0
 const HAUNT_HELD_DRAW_WEIGHT: float = 3.0
 ## 방해령을 하나도 쥐고 있지 않은 사람도 첫 장은 이만큼 더 잘 뽑힌다 (처음 한 장을 얻기 쉽게).
 const HAUNT_FIRST_DRAW_WEIGHT: float = 1.5
+
+
+## 말 능력으로 카드 1장: 화면이 그 말에서 카드를 날리도록 힌트를 걸고 뽑는다.
+func draw_card_from_pawn(player_id: int, pawn_id: int) -> StringName:
+	draw_source_pawn = pawn_id
+	var card_id: StringName = draw_card(player_id)
+	draw_source_pawn = -1
+	return card_id
 
 
 func draw_card(player_id: int) -> StringName:

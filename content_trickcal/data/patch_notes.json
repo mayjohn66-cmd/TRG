@@ -65,6 +65,41 @@
        "ko": "게임 도중 판정 도구가 처음 나올 때 잠깐 멈칫하던 것을 줄였어요 (판 초반에 미리 준비해 둬요)",
        "en": "Reduced the brief stutter when a Judgment Tool appears for the first time in a match (it's now prepared early in the match)",
        "ja": "対戦中に判定ツールが初めて出るときの一瞬のカクつきを減らしました（対戦の序盤に前もって準備します）"
+      },
+      {
+       "ko": "화면에 겹쳐 나오던 글을 줄였어요: 리벤지 부스터 가운데 알림, 기록 창의 라운드 표시·네모 표식, 증강 공개 카드의 작은 족보 글씨",
+       "en": "Less on-screen text clutter: removed the Revenge Booster center banner, the round tags and squares in the log, and the tiny hand tables on revealed augment cards",
+       "ja": "画面に重なって出ていた文字を減らしました：リベンジブースターの中央通知、記録欄のラウンド表示・四角マーク、公開される増強カードの小さな役表の文字"
+      },
+      {
+       "ko": "카드를 내면 [카드 발동!]과 카드 그림만 보여요. 효과가 궁금하면 왼쪽 기록 창에서 카드 이름을 눌러 보세요. 굴림 결과도 [6칸 전진!]처럼 짧게 보여요",
+       "en": "Playing a card now just shows [Card activated!] and the card art. To see what it does, tap the card name in the log on the left. Roll results are shorter too, like [Move 6!]",
+       "ja": "カードを出すと［カード発動！］とカードの絵だけが表示されます。効果が気になったら左の記録欄でカード名を押してください。出目の結果も［6マス前進！］のように短く表示されます"
+      },
+      {
+       "ko": "화면 위쪽 자막을 없애고, 템포 업·법전 개정·골인 같은 알림의 설명을 한 줄로 줄였어요. 자세한 내용은 왼쪽 기록 창에 남아요",
+       "en": "Removed the subtitles at the top of the screen and cut alerts like Tempo Up, Codex Revised and rank finishes down to one line. Details stay in the log on the left",
+       "ja": "画面上部の字幕をなくし、テンポアップ・法典改定・ゴールなどの通知の説明を1行に短くしました。詳しい内容は左の記録欄に残ります"
+      },
+      {
+       "ko": "기물 패시브가 터질 때 말 옆 배지에 기물 이름을 빼고 효과만 보여요 (배지의 글자 칩이 어느 기물인지 알려 줘요)",
+       "en": "When a pawn passive triggers, the badge next to the pawn now shows only the effect (the letter chip already tells you which pawn it is)",
+       "ja": "駒のパッシブが発動したとき、駒の横のバッジに駒の名前を出さず効果だけを表示します（バッジの文字チップでどの駒か分かります）"
+      },
+      {
+       "ko": "[강아지]·[미니카]·[비행기]·[지뢰찾기 공병]이 카드를 얻으면 글자 대신 그 말에서 카드가 톡 튀어나와 손패로 날아가요",
+       "en": "When [Puppy], [Mini Car], [Airplane] or [Sapper] earns a card, the card now pops out of that pawn and flies to the hand instead of a text badge",
+       "ja": "［子犬］・［ミニカー］・［飛行機］・［地雷工兵］がカードを得ると、文字の代わりにその駒からカードが飛び出して手札へ飛んでいきます"
+      },
+      {
+       "ko": "슬롯머신·룰렛·다트판·주식 차트 같은 판정 도구가 화면에 툭 뜨지 않고, 굴린 사람 쪽에서 들고 와 보드판 위에 탁 내려놓아요 (바닥 그림자·먼지). 도구 이름표도 뺐어요",
+       "en": "Judgment Tools like the slot machine, roulette, dart board and stock chart no longer just pop up: they're carried in from the roller's side and set down on the board (with a shadow and a puff of dust). The floating tool name is gone too",
+       "ja": "スロットマシン・ルーレット・ダーツボード・株価チャートなどの判定ツールが画面にぱっと出るのではなく、振った人の側から運ばれてボードの上にトンと置かれます（床の影・ほこり付き）。ツール名の表示もなくしました"
+      },
+      {
+       "ko": "[타로]·[화투]·[텍사스 홀덤] 카드를 쓸 때 보드판이 위에서 내려다보는 시점으로 펼쳐지고, 창 대신 판 위에 카드를 바로 깔아요. 다 보고 나면 원래 시점으로 돌아와 말이 움직여요",
+       "en": "When using [Tarot], [Hwatu] or [Texas Hold'em], the board now flattens into a top-down view and the cards are laid right on the board instead of in a window. Once you've seen the result, the view returns and your pawn moves",
+       "ja": "［タロット］・［花札］・［テキサスホールデム］のカードを使うとき、ボードが上から見下ろす視点に広がり、ウィンドウの代わりにボードの上に直接カードを並べます。結果を見終わると元の視点に戻って駒が動きます"
       }
      ]
     },

@@ -29,7 +29,7 @@ const TEXTS: Dictionary = {
 	&"queen_pass": "[퀸] 함정 관통!",
 	&"keima_pass": "[계마] 함정 관통!",
 	&"kart_immune": "[스타 카트] 함정 면역!",
-	&"sweeper_defuse": "[지뢰찾기 공병] 함정 해체 카드+1!",
+	&"sweeper_defuse": "[지뢰찾기 공병] 함정 해체!",
 	&"checker_slide": "[킹 체커] 스침 처치!",
 	&"shield_block": "[백돌] 보호막 방어!",
 	&"dog_pad": "[강아지] 특수 발판 스침 카드+1!",

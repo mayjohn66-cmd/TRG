@@ -88,6 +88,8 @@ const ME_AVATAR_SIZE: Vector2 = Vector2(118, 118)
 const DOCK_CARD_Y: float = 6.0
 ## 손패 카드는 한 장 전체 일러스트(140x196)가 따로 있고, 화면 아래로 반쯤 가려진 채 부채꼴로 펼쳐진다. 호버하면 전체가 올라와 보인다.
 const HAND_CARD_SIZE: Vector2 = Vector2(140, 196)
+## 알림용 카드(이름·그림만) 높이: 손패 카드에서 효과 칸 위까지 (CardSkin: 효과 칸은 138px부터).
+const CARD_ART_ONLY_HEIGHT: float = 140.0
 const HAND_FAN_DEGREES: float = 5.0
 ## 접힌 손패: 우측 하단에 작은 카드(풀 카드의 50%)를 일렬로 겹쳐 놓는다. 누르면 부채꼴로 펼쳐진다.
 const HAND_MINI_SCALE: float = 0.5
@@ -719,8 +721,6 @@ const DESIGN_SIZE: Vector2 = Vector2(1366, 768)
 const SAFE_MARGIN: float = 12.0
 ## 액션 로그 미니 패널의 왼쪽 위 (법전 아래, 왼쪽 아래 프로필 위의 빈 자리).
 const ACTION_LOG_POS: Vector2 = Vector2(12.0, 466.0)
-## 액션 로그의 자리 표시 (P1~P4 색 네모).
-const PLAYER_MARKS: Dictionary = {1: "■", 2: "■", 3: "■", 4: "■"}
 ## 메뉴의 [전체 로그] 서랍(디버그용 상세 로그)이 보관하는 최대 줄 수.
 const DEBUG_LOG_LINES: int = 200
 var _layout_entries: Array[Dictionary] = []
@@ -1686,8 +1686,11 @@ func _bind_state() -> void:
 		_log_line("P%d가 %d번 타일에 [%s]을(를) 설치했습니다" % [owner_id, tile, "뒷면 카드" if id.begins_with("TRP") and not MatchRules.trap_reveal(state) else _attachment_name(id)], Color("adb5bd"))
 		_refresh_tiles())
 	state.card_drawn.connect(func(player_id: int, card_id: StringName) -> void:
-		if _fx_on():
-			_fly_drawn_card(player_id, card_id))
+		if not _fx_on():
+			return
+		if state.draw_source_pawn != -1 and _fly_card_from_pawn(player_id, card_id, state.draw_source_pawn):
+			return
+		_fly_drawn_card(player_id, card_id))
 	state.card_drawn.connect(func(player_id: int, _card_id: StringName) -> void: _log_line("[카드] P%d 생떼 카드 1장 획득" % player_id, Color("ffa94d")))  # 뽑은 카드는 비공개
 	state.card_stolen.connect(func(player_id: int, card_id: StringName) -> void:
 		_steal_from = player_id  # 바로 뒤의 카드 획득은 이 사람 프로필에서 날아온다
@@ -3652,7 +3655,7 @@ func _on_revenge_boost_fired(pawn_id: int, base_steps: int, bonus: int, total: i
 	var dice_part: int = maxi(total - bonus, 0)  # 눈금 + 기물 능력 (부스터 뒤에 이어 가는 본 이동)
 	_log_line("[리벤지 부스터] %s +%d칸 선행 전진! 이어서 눈금 %d칸" % [_pawn_name(pawn_id), bonus, dice_part], Color("ff922b"))
 	if pawn != null:
-		_record(pawn.owner_id, "리벤지 부스터 +%d칸 선행 전진 → 이어서 눈금 %d칸 전진" % [bonus, dice_part])
+		_record(pawn.owner_id, "리벤지 부스터 +%d칸 → 눈금 %d칸" % [bonus, dice_part])  # 1.3.1 글 줄이기
 	if not _fx_on() or pawn == null:
 		return
 	_rocket_target[pawn_id] = GameEnums.GOAL_TILE + bonus
@@ -3665,7 +3668,7 @@ func _on_revenge_boost_fired(pawn_id: int, base_steps: int, bonus: int, total: i
 func _play_revenge_launch(pawn_id: int, base_steps: int, bonus: int, total: int) -> void:
 	Sfx.play(&"rocket")
 	screen_shake(6.0, 0.2)
-	_show_center_banner("[리벤지 부스터] +%d칸 선행 전진!\n도착하면 이어서 눈금 %d칸" % [bonus, maxi(total - bonus, 0)], Color("ff922b"))
+	# 1.3.1 글 줄이기: 가운데 알림은 띄우지 않는다. 말 위의 [리벤지 부스터 +N]·[눈금 N칸] 배지가 같은 말을 하고, 둘이 겹쳐 보였다.
 	var view: Node2D = _pawn_views.get(pawn_id)
 	if view != null and _pawn_layer != null:
 		_impact_ring(view.position, Color("ff6b00"), 58.0)
@@ -5888,6 +5891,37 @@ func _fly_drawn_card(player_id: int, card_id: StringName) -> void:
 	launch.call()
 
 
+## 글 배지 없이 "말에서 카드가 튀어나온다"로 보여 주는 능력 (1.3.1 설명 줄이기). 카드 획득은 그 말에서 날아간다.
+const CARD_FROM_PAWN_PASSIVES: Array[StringName] = [&"dog_pad", &"car_booster", &"plane_halfway"]
+
+
+## 말 능력으로 얻은 카드: 덱이 아니라 그 말 머리 위에서 튀어나와 손패(남의 것은 프로필)로 날아간다.
+## 걸음 연출과 같은 큐에 그 말 몫으로 세우므로, 말이 그 칸을 지날 즈음 나온다. 못 날리면 false (평소처럼 덱에서).
+func _fly_card_from_pawn(player_id: int, card_id: StringName, pawn_id: int) -> bool:
+	if _draw_fx == null or _draft_in_progress() or not _pawn_views.has(pawn_id):
+		return false
+	var local: bool = player_id == _dock_owner() and _dock != null and is_visible_in_tree()
+	var index: int = (state.hands[player_id] as Array).size() - 1
+	if local:
+		_draw_fx.reserve(player_id)
+	var origin_of: Callable = func() -> Vector2:
+		var view: Node2D = _pawn_views.get(pawn_id)
+		if view == null or not is_instance_valid(view):
+			return Vector2(INF, INF)
+		return view.global_position + Vector2(0, -40.0 * view.get_global_transform().get_scale().y)
+	var pop: Callable = func() -> void:
+		var view: Node2D = _pawn_views.get(pawn_id)
+		if view != null and is_instance_valid(view):
+			var hop: Tween = view.create_tween()
+			var base: Vector2 = view.scale
+			hop.tween_property(view, "scale", base * Vector2(1.12, 0.9), 0.06)
+			hop.tween_property(view, "scale", base, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		Sfx.play(&"good", -6.0)
+		_launch_drawn_card(player_id, card_id, local, index, origin_of.call(), false, origin_of)
+	enqueue_step(pop, pawn_id)
+	return true
+
+
 func _queue_drawn_after_effects(launch: Callable, generation: int) -> void:
 	if generation != _fx_generation:
 		return
@@ -6046,7 +6080,7 @@ func _build_reaction_popup(holder: int, key: String) -> void:
 	for card_id: Variant in cards:
 		var column := VBoxContainer.new()
 		column.add_theme_constant_override("separation", 6)
-		column.add_child(_make_card_preview(StringName(card_id)))
+		column.add_child(_make_card_preview(StringName(card_id), false))  # 방어 카드를 고르는 창은 효과 글이 필요하다
 		var use := _make_button("발동!", _on_reaction_use.bind(holder, StringName(card_id)), 16, Color("3b5bdb"), 10)
 		use.name = "Use_%s" % card_id
 		use.custom_minimum_size = Vector2(130, 40)
@@ -6390,7 +6424,7 @@ func _toggle_zoom(player_id: int, card_id: StringName) -> void:
 
 
 ## 확대 카드(350x490)와 별도 사용 안내 패널. 남의 턴에도 열람할 수 있다.
-func _open_zoom(player_id: int, card_id: StringName) -> void:
+func _open_zoom(player_id: int, card_id: StringName, view_only: bool = false) -> void:
 	_close_zoom()
 	var card: BaseCard = CardRegistry.get_card(card_id)
 	if MobileSupport.touch_mode():
@@ -6424,6 +6458,7 @@ func _open_zoom(player_id: int, card_id: StringName) -> void:
 	box.add_child(face)
 	var guide := PanelContainer.new()
 	guide.name = "CardGuide"
+	guide.visible = not view_only  # 기록에서 연 카드는 보기만 한다 (사용 안내 없음)
 	guide.custom_minimum_size = Vector2(card_size.x, 0)
 	guide.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	guide.add_theme_stylebox_override("panel", UiSkin.panel("panel", 12))
@@ -7950,8 +7985,9 @@ func _refresh_holdem_exchange(tool: BaseJudgmentTool) -> void:
 
 func _create_holdem_exchange(hand: Array) -> void:
 	_holdem_exchange = HoldemExchangePanel.new()
-	_holdem_exchange.setup(hand)
-	_holdem_exchange.position = _board_center()
+	_holdem_exchange.setup(hand, true)
+	_enter_card_view()
+	_holdem_exchange.position = _card_table_center()
 	_holdem_exchange_key = str(hand)+":%d:%d" % [state.round_number,manager.current_player_id()]
 	_holdem_exchange.exchange.connect(func(keep: Array[bool]) -> void: _act(&"roll", {"keep": keep}))
 	_holdem_exchange.stand.connect(func() -> void: _act(&"stop"))
@@ -9226,6 +9262,10 @@ func _reset_presentation() -> void:
 		_alkkagi.cancel()
 	_alkkagi_release(true)
 	_alkkagi_top_view(false,true)
+	_card_view_on = false
+	_card_view_player = -1
+	if _presenter != null:
+		_presenter.center = _board_center() + Vector2(0, -40)
 	_aim_pawn = -1
 	_fx_generation += 1
 	var victory_layer: CanvasLayer = get_node_or_null("VictoryCutsceneLayer") as CanvasLayer
@@ -9334,10 +9374,22 @@ func _on_necklace_exploded(pawn_id: int, tile: int) -> void:
 func _on_passive_triggered(pawn_id: int, passive: StringName) -> void:
 	if PassiveCallout.text(passive) == "" or not _fx_on():
 		return
+	if CARD_FROM_PAWN_PASSIVES.has(passive):
+		return  # 글 대신 그 말에서 카드가 튀어나와 손패로 날아간다 (_fly_card_from_pawn)
 	enqueue_step(_play_callout.bind(pawn_id, passive), pawn_id)
 
 
 const CALLOUT_SECONDS: float = 1.3  ## 2026-11 납득 보강: 0.8 -> 1.3 (원인 문구를 읽을 시간)
+
+
+## 능력 배지 문구에서 앞의 [이름]을 뗀다 (번역된 문구에도 같은 꼴이 쓰인다). 떼면 비는 문구는 그대로 둔다.
+static func callout_effect_text(text: String) -> String:
+	var trimmed: String = text.strip_edges()
+	if trimmed.begins_with("[") and trimmed.contains("]"):
+		var rest: String = trimmed.substr(trimmed.find("]") + 1).strip_edges()
+		if rest != "":
+			return rest
+	return trimmed
 
 
 ## 원인 뱃지: 말 머리 위에 [기물 글자 칩 + 원인 문구]를 0.8초 크게 띄운다. 말의 자식이라 말이 움직여도 따라간다.
@@ -9368,7 +9420,8 @@ func _play_callout(pawn_id: int, passive: StringName) -> void:
 	chip.add_theme_stylebox_override("normal", _style(tint, tint, 0, 13, 0, 0))
 	chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(chip)
-	var label := _make_label(PassiveCallout.text(passive), 22, Color.WHITE)
+	# 1.3.1 글 줄이기: 앞의 기물 글자 칩이 누구인지 보여 주므로 문구의 [기물 이름]은 떼고 효과만 ("이동 +2칸!")
+	var label := _make_label(callout_effect_text(L10n.t(PassiveCallout.text(passive))), 22, Color.WHITE)
 	label.add_theme_constant_override("outline_size", 5)
 	label.add_theme_color_override("font_outline_color", Color.BLACK)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -12070,7 +12123,9 @@ func _take_draft_summary_row() -> HBoxContainer:
 		var holder := Control.new()
 		holder.custom_minimum_size = AUGMENT_CARD_SIZE * card_scale
 		holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var card: Button = _make_augment_card(_augment_card_info(AugmentRegistry.get_def(entry["augment"]), player_id), Callable())
+		var reveal_info: Dictionary = _augment_card_info(AugmentRegistry.get_def(entry["augment"]), player_id)
+		reveal_info["detail"] = ""  # 1.3.1 글 줄이기: 공개 카드는 작게 줄어 족보표 같은 작은 글씨는 읽히지 않는다 (이름·칸 범위만)
+		var card: Button = _make_augment_card(reveal_info, Callable())
 		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		card.pivot_offset = Vector2.ZERO
 		card.scale = Vector2.ONE * card_scale
@@ -12422,9 +12477,7 @@ func _announce_gate(tag: String, headline: String, body: String, color: Color, e
 
 ## 새 교칙이 제정되면 중앙에 법전(펼친 책)을 띄워 어떤 교칙·특수 승리가 들어왔는지 그림과 글로 직접 보여 준다.
 func _announce_law_added(new_law: LawResource, removed_law: LawResource) -> void:
-	var body: String = ""
-	if removed_law != null:
-		body = "(가장 오래된 %s이(가) 밀려났습니다)" % removed_law.law_name
+	var body: String = ""  # 1.3.1 글 줄이기: 밀려난 교칙은 기록에만 (법전 그림이 새 교칙을 보여 준다)
 	_announce("법전 개정", "법전 개정!", body, COLOR_GOLD, _make_law_book(new_law), 3.4, true, {"key": "law_added", "extra_below": true, "cinematic": true})
 
 
@@ -12488,11 +12541,25 @@ func _make_law_book(new_law: LawResource) -> Control:
 
 
 ## 카드 사용 알림에 붙일 카드 앞면 (손패 카드와 같은 모양, 클릭 불가).
-func _make_card_preview(card_id: StringName) -> Control:
+func _make_card_preview(card_id: StringName, art_only: bool = true) -> Control:
 	var holder := CenterContainer.new()
 	holder.set_meta("card_preview_id",card_id)
 	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	holder.add_child(_make_card_face(card_id))
+	var face: PanelContainer = _make_card_face(card_id)
+	if not art_only:
+		holder.add_child(face)
+		return holder
+	# 1.3.1 글 줄이기: 알림에는 카드 이름·그림만 (효과 글은 기록의 카드 이름을 누르면 본다). 효과 칸을 잘라 낸다.
+	var effect: Node = face.find_child("EffectPanel", true, false)
+	if effect != null:
+		(effect as CanvasItem).visible = false
+	var crop := Control.new()
+	crop.name = "CardArtOnly"
+	crop.clip_contents = true
+	crop.custom_minimum_size = Vector2(HAND_CARD_SIZE.x, CARD_ART_ONLY_HEIGHT)
+	crop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	crop.add_child(face)
+	holder.add_child(crop)
 	return holder
 
 
@@ -12605,7 +12672,6 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			var lines: Array = data["lines"]
 			var plain_lines: Array = lines.map(func(line: String) -> String: return EmojiText.strip(L10n.t(line)))  # 로그·기록에는 이모지 표식을 뗀 글자만
 			_log_line("[템포 업 Lv.%d] %d라운드부터: %s" % [stage, data["round"], " / ".join(PackedStringArray(plain_lines))], Color("ff6b6b"))
-			var tempo_round: int = int(data["round"])
 			# 라운드 끝(마지막 차례·NPC 페이즈)의 처치 연출이 다 끝난 뒤에 경고하고, 증강 선택 창은 그 경고 뒤에 연다.
 			# (지연 큐에 넣는다: 처치 연출도 지연 큐로 들어오므로 그보다 앞서 끼어들지 않는다)
 			_enqueue_late(func() -> void:
@@ -12613,7 +12679,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 				if _fx_on():
 					screen_shake(12.0, 0.5)
 					Sfx.play_repeated(&"tempo_warning", TEMPO_WARNING_REPEATS, TEMPO_WARNING_GAP, 0.0, 0.03)  # 기존 경고음을 4번 되풀이한다 (점점 급해지는 느낌)
-				_announce_now("템포 업", "템포 업 Lv.%d · %s" % [stage, TempoUp.stage_name(stage)], "%d라운드부터 게임이 빨라집니다!\n◆ %s" % [tempo_round, "\n◆ ".join(PackedStringArray(lines.map(func(line: String) -> String: return L10n.t(line))))], Color("ff4d4d"), null, 3.2))
+				_announce_now("템포 업", "템포 업 Lv.%d · %s" % [stage, TempoUp.stage_name(stage)], " · ".join(PackedStringArray(lines.map(func(line: String) -> String: return L10n.t(line)))), Color("ff4d4d"), null, 3.2))
 		&"law_auto_preview":
 			var preview_name: String = LawRegistry.create(String(data["law_id"])).law_name
 			_log_line("[법전 예고] %d라운드에 %s이(가) 열립니다" % [int(data["open_round"]), preview_name], Color("ffe066"))
@@ -12651,7 +12717,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 				if _fx_on():
 					screen_shake(9.0, 0.35)
 					Sfx.play(&"tempo_warning")
-				_announce("사도 포위망", "포위망 경보!", "", Color("ff6b6b"), null, 2.2, true, {"key": "siege_armed", "sub": "%s  ·  %s" % [_player_name(sieger), "말을 잡아 포위망을 깨세요!"]}))
+				_announce("사도 포위망", "포위망 경보!", "", Color("ff6b6b"), null, 2.2, true, {"key": "siege_armed", "sub": _player_name(sieger)}))
 		&"siege_broken":
 			var freed: int = int(data["player_id"])
 			_log_line("[포위망 붕괴] %s의 사도 포위망이 깨졌습니다" % _player_name(freed), Color("74c0fc"))
@@ -12679,7 +12745,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_log_line("[템포 업] 결승선이 %d칸 당겨졌습니다 (%d번 칸부터 결승)%s" % [data["shrink"], data["zone_start"], ", 완주 %d" % finished_ids.size() if not finished_ids.is_empty() else ""], Color("ffd43b"))
 			_record(-1, "결승선 %d칸 당겨짐 (%d번부터 결승)%s" % [int(data["shrink"]), int(data["zone_start"]), " - 말 %d개 즉시 완주!" % finished_ids.size() if not finished_ids.is_empty() else ""])
 			if TempoUp.is_stage_round(int(data["round"])) or not finished_ids.is_empty():
-				_announce("템포 업", "결승선 당김!", "", Color("ffd43b"), null, 1.6, true, {"key": "goal_shrunk", "sub": "%d번 칸부터 결승" % int(data["zone_start"]) + ("  ·  " + "말 %d개 완주!" % finished_ids.size() if not finished_ids.is_empty() else "")})
+				_announce("템포 업", "결승선 당김!", "", Color("ffd43b"), null, 1.6, true, {"key": "goal_shrunk", "sub": "%d번 칸부터 결승" % int(data["zone_start"])})
 		&"tempo_boosted":
 			_roll_total[int(data["player_id"])] = int(data["to"])
 			_add_roll_reason(int(data["player_id"]), "템포 업 +%d" % (int(data["to"]) - int(data["from"])))
@@ -12819,7 +12885,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 				_log_line("[강화 망치] P%d 강화 실패! %s 파괴 (턴 종료)" % [hammer_player,hammer_tool], Color("ff6b6b"))
 				_record(hammer_player, "%s 강화 실패! 파괴 · 턴 종료" % _bq(hammer_tool))
 				enqueue_step(_play_hammer_break.bind(hammer_tool,int(data["level"])))
-				_announce("강화 망치", "강화 실패!", "", Color("ff6b6b"), null, 1.0, true, {"key": "hammer_broken", "sub": "%s 파괴 · 턴 종료" % hammer_tool})
+				_announce("강화 망치", "강화 실패!", "", Color("ff6b6b"), null, 1.0, true, {"key": "hammer_broken", "sub": "턴 종료"})
 			_refresh_hammer_panel()
 		&"hammer_banked":
 			_log_line("[강화 망치] P%d +%d에서 멈춤 → 다음 굴림 +%d" % [data["player_id"], data["level"], data["level"]], Color("ffd43b"))
@@ -12903,7 +12969,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 				if rank_no < _player_ids.size() - 1:  # 3위(마지막 졸업)부터는 결과 화면이 바로 이어진다 (팡파르도 시상대에 맡긴다)
 					if _fx_on():
 						Sfx.play_stinger(&"graduate")
-					_announce(tr_ui("rank.tag"), "%d위 골인!" % rank_no, "", PLAYER_COLORS[ranked], null, RANK_BANNER_SECONDS, true, {"key": "rank_%d" % rank_no, "sub": "%s  ·  %s" % [_player_name(ranked), VictoryChecker.reason_text(rank_reason)]})
+					_announce(tr_ui("rank.tag"), "%d위 골인!" % rank_no, "", PLAYER_COLORS[ranked], null, RANK_BANNER_SECONDS, true, {"key": "rank_%d" % rank_no, "sub": _player_name(ranked)})
 					_profile_react(ranked, true, "%d위" % rank_no)
 					_start_beat(RANK_BEAT_SECONDS))
 		&"counter_offer":
@@ -13103,6 +13169,7 @@ func _pawn_name(pawn_id: int) -> String:
 
 func _build_action_log() -> void:
 	_action_log = ActionLogPanel.new()
+	_action_log.link_clicked.connect(_on_log_link)
 	add_child(_action_log)
 	_action_log.place(ACTION_LOG_POS)
 	# 내 프로필을 없애면서 [내 증강] 확인 버튼을 로그 머리로 옮겼다 (올리면 미리 보기, 누르면 고정).
@@ -13120,6 +13187,21 @@ func _bb(text: String) -> String:
 
 
 ## [이름] 꼴로 감싼다.
+## 기록 속 카드 이름: 누르면 그 카드를 크게 보여 준다 (효과 글은 알림 대신 여기서 본다, 1.3.1).
+func _card_link(card_id: StringName) -> String:
+	var card: BaseCard = CardRegistry.get_card(card_id)
+	if card == null:
+		return ""
+	return "[url=card:%s]%s[/url]" % [card_id, _bq(card.display_name)]
+
+
+func _on_log_link(meta: String) -> void:
+	if meta.begins_with("card:"):
+		var card_id := StringName(meta.trim_prefix("card:"))
+		if CardRegistry.get_card(card_id) != null:
+			_open_zoom(local_player_id, card_id, true)
+
+
 func _bq(text: String) -> String:
 	if text.begins_with("["):
 		return _bb(text)  # 이미 [분류] 이름 꼴이면 괄호를 겹치지 않는다
@@ -13128,11 +13210,10 @@ func _bq(text: String) -> String:
 
 ## 🟦 컴퓨터 2 (플레이어 색).
 ## 사건 자막에 올릴 줄인가: 정말 큰 사건(처치·사출·법전·순위 확정·포위망·결투·게임 종료)만 올린다. 굴림·카드·함정 같은 나머지는 로그에만 남는다.
-static func caption_worthy(text: String) -> bool:
-	for word: String in CAPTION_WORDS:
-		if text.contains(word):
-			return not text.contains("템포 업")  # 템포 업은 가운데 경고 연출이 따로 있다 (긴 줄이 화면 밖으로 넘친다)
+## 1.3.1 글 줄이기: 위쪽 자막은 쓰지 않는다. 자막에 오르던 처치·사출·법전·포위망·결투·순위는 모두 컷인·도장·알림이 따로 있고, 글은 기록 창에 남는다.
+static func caption_worthy(_text: String) -> bool:
 	return false
+
 
 
 ## 강조할 중요한 사건인가 (처치·사출·함정 밟음·방어·카드 발동·필살기·법전·순위 등).
@@ -13153,7 +13234,7 @@ func _is_human_seat(player_id: int) -> bool:
 func _log_who(player_id: int) -> String:
 	if not PLAYER_COLORS.has(player_id):
 		return "[color=#ced4da]중립[/color]"
-	return "%s [color=#%s]%s[/color]" % [PLAYER_MARKS.get(player_id, ""), (PLAYER_COLORS[player_id] as Color).lightened(0.3).to_html(false), _bb(_player_name(player_id))]
+	return "[color=#%s]%s[/color]" % [(PLAYER_COLORS[player_id] as Color).lightened(0.3).to_html(false), _bb(_player_name(player_id))]  # 이름 색이 곧 플레이어 표시 (■ 표식은 1.3.1에 뺐다)
 
 
 ## 액션 로그의 ──── N라운드 ──── 구분선: 그 라운드의 어떤 줄보다 먼저, 한 번만 적는다.
@@ -13172,8 +13253,9 @@ func _log_round_divider(round_number: int) -> void:
 func _record(player_id: int, text: String, tag: String = "", late: bool = false, now: bool = false, show_caption: bool = true) -> void:
 	if _action_log == null or state == null:
 		return
-	var round_tag: String = "[color=#868e96][lb]R%d%s][/color]" % [state.round_number, (" " + tag) if tag != "" else ""]
-	var line: String = "%s %s : %s" % [round_tag, _log_who(player_id), text] if player_id >= 1 else "%s %s" % [round_tag, text]
+	# 1.3.1 글 줄이기: 줄마다 붙던 [R3]은 뺐다 (라운드 구분선이 있다). 증강처럼 꼬리표가 있는 줄만 [증강]을 붙인다.
+	var round_tag: String = "[color=#868e96][lb]%s][/color] " % tag if tag != "" else ""
+	var line: String = "%s%s : %s" % [round_tag, _log_who(player_id), text] if player_id >= 1 else "%s%s" % [round_tag, text]
 	var log_panel: ActionLogPanel = _action_log
 	var round_number: int = state.round_number
 	var caption_line: String = "%s  %s" % [_log_who(player_id), text] if player_id >= 1 else text
@@ -13340,11 +13422,11 @@ func _record_card(data: Dictionary) -> void:
 	var params: Dictionary = data.get("params", {})
 	if bool(data.get("counter", false)):
 		var entry: Dictionary = state.get_attack(int(params.get("attack", -1)))
-		_record(player_id, "방어 %s 발동! → %s을(를) 받아침" % [_bq(card.display_name), _bb(_attack_text(entry)) if entry.has("kind") else "공격"])
+		_record(player_id, "방어 %s 발동! → %s을(를) 받아침" % [_card_link(card.card_id), _bb(_attack_text(entry)) if entry.has("kind") else "공격"])
 		return
 	if card.category == GameEnums.CardCategory.TRAP:
 		if card.corner_only:
-			_record(player_id, "코너 함정 %s 설치! (%d번 코너)" % [_bq(card.display_name), int(params.get("tile", -1))])
+			_record(player_id, "코너 함정 %s 설치! (%d번 코너)" % [_card_link(card.card_id), int(params.get("tile", -1))])
 		else:
 			_record(player_id, "은신 함정 설치!")  # 은신 함정은 종류도 위치도 남기지 않는다
 		return
@@ -13355,7 +13437,7 @@ func _record_card(data: Dictionary) -> void:
 			_mark_spotlight()  # AI가 사람을 겨눈 카드: 그 턴은 보통 속도로 보여 준다
 	elif params.has("tile"):
 		detail = " (%d번 타일)" % int(params["tile"])
-	_record(player_id, "%s 사용!%s" % [_bq(card.display_name), detail], "", false, false, card.card_id != &"ACT_23")
+	_record(player_id, "%s 사용!%s" % [_card_link(card.card_id), detail], "", false, false, card.card_id != &"ACT_23")
 
 
 ## 말이 출발선으로 날아갔다: 다른 사람이 보냈으면 처치, 아니면 사출.
@@ -13704,9 +13786,16 @@ func _handle_roll_event(data: Dictionary) -> void:
 	# 직접 조작 (1.3.1): 이 화면에서 굴린 사람이면 슬롯 릴을 직접 멈추고 복권을 직접 긁는다 (컴퓨터·다른 기기의 사람은 자동)
 	var roller_id: int = int(data["player_id"])
 	_presenter.interactive = roller_id == _dock_owner() and not _is_bot_turn() and (net == null or not net.is_bot(roller_id))
+	if CARD_TABLE_TOOLS.has(tool_id):
+		_enter_card_view()  # 카드는 알까기 시점(위에서 내려다본 판)으로 펼친 판 위에 깐다
+		_presenter.center = _card_table_center()
 	await _presenter.play(tool_id, result, _pending_power, int(data.get("chain_index", 0)) > 0)
 	if generation != _fx_generation or serial != _fx_serial:
 		return
+	if CARD_TABLE_TOOLS.has(tool_id) and not bool(result.get("can_continue", false)):
+		await _leave_card_view()
+		if generation != _fx_generation or serial != _fx_serial:
+			return
 	_fx_busy = false
 	_reveal_roll(data)
 	_refresh_all()
@@ -13735,6 +13824,12 @@ func _play_table_roll(data: Dictionary) -> void:
 		await _tool_pick.reveal_result(result)
 		_close_tool_pick()
 	if generation!=_fx_generation or serial!=_fx_serial: return
+	if not bool(result.get("can_continue",false)):
+		if _holdem_exchange!=null:
+			_holdem_exchange.queue_free()
+			_holdem_exchange=null
+		await _leave_card_view()  # 카드를 다 본 뒤 보드 시점으로 돌아와서 말이 움직인다
+		if generation!=_fx_generation or serial!=_fx_serial: return
 	_fx_busy=false
 	_reveal_roll(data)
 	_refresh_all()
@@ -13793,7 +13888,7 @@ func _reveal_roll(data: Dictionary) -> void:
 	_roll_history.reveal(int(data.get("_history_turn",_roll_turn_serial)),int(data["player_id"]),data["result"])
 	_place_roll_history()
 	_show_gambler_flash(int(data["player_id"]),(data["result"] as Dictionary).get("tool_id",&""))
-	var roll_text: String = _log_roll(data)
+	_log_roll(data)  # 기록 줄을 적는다 (가운데 띠는 1.3.1부터 짧은 "N칸 전진!")
 	var details: Dictionary = (data["result"] as Dictionary)["details"]
 	var fired: bool = bool(details.get("fired", false))
 	var roller: int = int(data["player_id"])
@@ -13815,9 +13910,9 @@ func _reveal_roll(data: Dictionary) -> void:
 			var summary: String = L10n.tf("%d칸 확정",[roll_steps])
 			if bool((data["result"] as Dictionary).get("reroll",false)):
 				summary = L10n.tf("%d칸 전진",[roll_steps])+" · "+L10n.t("한 번 더")
-			_show_center_banner("P%d  %s\n%s" % [roller,heading,summary],Color("fff3bf"))
+			_show_center_banner("%s\n%s" % [heading,summary],Color("fff3bf"))
 			return
-		_show_center_banner("P%d  %s" % [data["player_id"], roll_text.strip_edges()], Color("ffd43b") if bool((data["result"] as Dictionary).get("reroll", false)) else Color("fff3bf"))
+		_show_center_banner(_short_roll_banner(data["result"]), Color("ffd43b") if bool((data["result"] as Dictionary).get("reroll", false)) else Color("fff3bf"))
 		return
 	if bool((data["result"] as Dictionary).get("can_continue", false)):
 		return  # 이어지는 굴림(러시안 룰렛 생존 등)은 패드가 누적을 보여 준다: 이동 칸수는 최종 결과가 나온 뒤 한 번만 띄운다
@@ -13830,11 +13925,19 @@ func _reveal_roll(data: Dictionary) -> void:
 		var fail_name: String = "폭죽 깃발!" if fired else ("낙!" if roll_tool == &"YUT" else ("광대!" if roll_tool == &"DICE_TAROT" else "망통!"))
 		if roll_tool == &"DICE_OMIKUJI":
 			fail_name = "대흉!"
-		_announce_move_failed(fail_name, roller, "P%d  %s" % [roller, roll_text.strip_edges()])
+		_announce_move_failed(fail_name, roller)  # 1.3.1 글 줄이기: [낙!]·[망통!] 같은 큰 글자로 충분하다 (굴림 설명은 기록에)
 		return
 	if _presenter.tossing and not instant_roll_for_test and RollPresenter.TOSS_TOOLS.has(roll_tool):
 		return  # 보드 위로 던진 주사위·윷이 바로 위에 "N칸 전진!"을 띄웠다: 같은 말을 띠로 또 하지 않는다
-	_show_center_banner("P%d  %s" % [data["player_id"], roll_text.strip_edges()], Color("ff8787") if fired else Color("fff3bf"))
+	_show_center_banner(_short_roll_banner(data["result"]), Color("ff8787") if fired else Color("fff3bf"))
+
+
+## 굴림 결과 띠는 짧게 (1.3.1 글 줄이기): "N칸 전진!" (+ 한 번 더). 도구 이름·족보는 연출 그림과 기록에 있다.
+func _short_roll_banner(result: Dictionary) -> String:
+	var text: String = L10n.tf("%d칸 전진!", [int(result.get("steps", 0))])
+	if bool(result.get("reroll", false)):
+		text += " · " + L10n.t("한 번 더")
+	return text
 
 
 ## 프로필 카드 한가운데의 화면 좌표 (투척·카드 비행의 출발·도착점). 프로필이 없으면 INF.
@@ -14791,10 +14894,14 @@ func _open_tool_pick(tool: BaseJudgmentTool) -> bool:
 	if instant_roll_for_test or tool == null or not ToolPick.supports(tool.tool_id) or tool.has_pending_state() or _is_bot_turn():
 		return false
 	_tool_pick = ToolPickModal.new()
-	_tool_pick.setup(tool.tool_id)
+	var on_table: bool = CARD_TABLE_TOOLS.has(tool.tool_id)
+	_tool_pick.setup(tool.tool_id, on_table)
 	_tool_pick_key = _tool_pick_state_key()
 	_tool_pick.picked.connect(_on_tool_picked)
 	add_child(_tool_pick)
+	if on_table:
+		_enter_card_view()
+		_tool_pick.table_center = _card_table_center()
 	return true
 
 
@@ -14815,6 +14922,7 @@ func _close_tool_pick() -> void:
 
 ## 고르는 동안 차례·단계·도구가 바뀌면(시간 초과로 엔진이 자동으로 굴림 등) 창을 닫는다.
 func _sync_tool_pick() -> void:
+	_sync_card_view()
 	if _tool_pick!=null and _tool_pick.revealing and _fx_busy: return
 	if _tool_pick != null and (manager == null or manager.is_game_over or _tool_pick_key != _tool_pick_state_key()):
 		_close_tool_pick()
@@ -14825,6 +14933,55 @@ func _tool_pick_state_key() -> String:
 		return ""
 	var roller: int = manager.current_player_id()
 	return "%d:%d:%s:%d" % [state.round_number, roller, str(state.tools[roller].tool_id), manager.move_queue.size()]
+
+
+## 카드형 판정 도구 (1.3.1): 쓰는 동안 보드를 알까기 시점(위에서 내려다본 평평한 판)으로 펴고, 판 위에 카드를 바로 깐다.
+const CARD_TABLE_TOOLS: Array[StringName] = [&"DICE_TAROT", &"DICE_HWATU", &"HOLDEM"]
+var _card_view_on: bool = false
+var _card_view_player: int = -1
+
+
+func _enter_card_view() -> void:
+	if _card_view_on or _alkkagi_saved_view != -1 or state == null:
+		return
+	_card_view_on = true
+	_card_view_player = manager.current_player_id() if manager != null else -1
+	_alkkagi_top_view(true)
+
+
+## 원래 시점으로 돌아온다 (돌아오는 움직임이 끝날 때까지 기다린다: 말 이동은 원래 시점에서).
+func _leave_card_view() -> void:
+	if not _card_view_on:
+		return
+	_card_view_on = false
+	_card_view_player = -1
+	_alkkagi_top_view(false)
+	while _alkkagi_camera_tween != null and _alkkagi_camera_tween.is_running() and is_inside_tree():
+		await get_tree().process_frame
+	if _presenter != null:
+		_presenter.center = _board_center() + Vector2(0, -40)  # 평소 연출 자리 (_apply_layout과 같다)
+
+
+## 펼친 판의 한가운데 (카드를 까는 자리).
+func _card_table_center() -> Vector2:
+	return _board_center()
+
+
+## 차례가 넘어가거나 게임이 끝났는데 카드 시점이 남았으면 돌려놓는다 (취소·시간 초과 대비).
+func _sync_card_view() -> void:
+	if not _card_view_on:
+		return
+	if manager == null or manager.is_game_over or manager.current_player_id() != _card_view_player:
+		_leave_card_view()
+	elif manager.current_state in [TurnManager.State.PHASE_ROLL_WAIT, TurnManager.State.PHASE_INTERRUPT_ROLL]:
+		return  # 고른 직후 굴림 결과가 오기 전 (결과 연출이 이어서 판 위에서 나온다)
+	elif _tool_pick == null and _holdem_exchange == null and not _fx_busy and not (_presenter != null and _presenter.active) and not _holdem_round_open():
+		_leave_card_view()
+
+
+func _holdem_round_open() -> bool:
+	var tool: BaseJudgmentTool = state.tools.get(manager.current_player_id()) if state != null and manager != null else null
+	return tool != null and tool.tool_id == &"HOLDEM" and tool.has_pending_state()
 
 
 ## 고르기 창이 떠 있는가 (테스트용).

@@ -64,3 +64,26 @@ func test_checker_king_kills_in_passing_and_dog_sniffs_a_bakery() -> void:
 	var dog_heard: Array[StringName] = _heard(dog_state)
 	move(dog_state, 11, 2)
 	check(dog_heard.has(&"dog_pad"), "강아지가 빵집을 스치면 [강아지] 특수 발판 스침 카드+1")
+
+
+func test_badge_shows_only_the_effect_next_to_the_piece_chip() -> void:
+	# 1.3.1 글 줄이기: 배지 앞의 기물 글자 칩이 누구인지 보여 주므로 [이름]은 떼고 효과만 띄운다
+	check_eq(MainBoard.callout_effect_text("[퀸] 이동 +2칸!"), "이동 +2칸!", "이름을 뗀다")
+	check_eq(MainBoard.callout_effect_text("[Queen] Move +2!"), "Move +2!", "번역된 문구도 같은 꼴")
+	check_eq(MainBoard.callout_effect_text("[업기]"), "[업기]", "떼면 비는 문구는 그대로")
+	check_eq(MainBoard.callout_effect_text("함정 해체!"), "함정 해체!", "괄호가 없으면 그대로")
+	for passive: StringName in PassiveCallout.TEXTS.keys():
+		check(MainBoard.callout_effect_text(PassiveCallout.text(passive)) != "", "%s 배지 문구가 비지 않는다" % passive)
+
+
+func test_dog_card_is_drawn_from_the_pawn() -> void:
+	# 1.3.1 연출: 말 능력으로 얻은 카드는 화면이 그 말에서 날린다 (state.draw_source_pawn 힌트, 결과와 무관)
+	var bakery: int = BoardSpec.bakery_tiles[0]
+	var state := make_state(2, 1, {1: _units(Kind.MONOPOLY, 4)})
+	place(state, 11, bakery - 1, [bakery - 2])
+	var sources: Array[int] = []
+	state.card_drawn.connect(func(_player: int, _card: StringName) -> void: sources.append(state.draw_source_pawn))
+	move(state, 11, 2)
+	check(sources.has(11), "강아지 카드는 강아지 말(11)에서 나온다 (%s)" % str(sources))
+	check_eq(state.draw_source_pawn, -1, "뽑은 뒤 힌트는 지워진다")
+	check(MainBoard.CARD_FROM_PAWN_PASSIVES.has(&"dog_pad"), "강아지 카드+1은 글 배지 대신 카드가 날아간다")

@@ -3254,7 +3254,7 @@ func _test_move_four_steps() -> void:
 		if arrived_ms == 0 and left_rocket and view.position.distance_to(final_boost_pos) < 2.0 and not _board._fx_running(view):
 			arrived_ms = Time.get_ticks_msec()
 		await process_frame
-	_expect(banners.any(func(text: String) -> bool: return text.contains("리벤지 부스터") and text.contains("+%d칸 선행 전진" % bonus)), "1단계 배너: [리벤지 부스터] +N칸 선행 전진! (%s)" % str(banners))
+	_expect(not banners.any(func(text: String) -> bool: return text.contains("선행 전진")), "1단계: 가운데 알림 없이 말 위 배지만 (1.3.1 글 줄이기, %s)" % str(banners))
 	_expect(rest_ms >= 500 and rest_ms < 900, "부스터 > 쉬고 > 전진: 부스터 도착 칸에서 0.6초 쉰다 (%dms)" % rest_ms)
 	_expect(boosted.current_tile_idx == bonus + 7, "엔진: 부스터 %d칸 + 눈금 7칸" % bonus)
 	# 거북이 이동 회귀: 걸음마다 여운(0.35초)이 붙으면 부스터 + 눈금 7칸이 4~5초 걸렸다. 걸음은 칸당 0.28초(탁 탁 탁)로 이어서 뛰어 3초 안에 끝난다.

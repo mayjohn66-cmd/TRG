@@ -25,9 +25,12 @@ var dealt := false
 var _title: Label
 var _dealer_deck: JudgmentCard
 var _dim: ColorRect
+## 판 위에 바로 까는가 (1.3.1 알까기 시점): 막을 칠하지 않고 초록 판 없이 펼친 보드 위에 카드를 깐다.
+var on_board: bool = false
 
 
-func setup(hand: Array) -> void:
+func setup(hand: Array, board_table: bool = false) -> void:
+	on_board = board_table
 	name = "HoldemExchange"
 	cards = []
 	for card: Variant in hand:
@@ -37,10 +40,12 @@ func setup(hand: Array) -> void:
 		_marked.append(false)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_dim=JudgmentTableStyle.backdrop(self)
+	if on_board:
+		_dim.color = Color(0, 0, 0, 0)
 	var panel := PanelContainer.new()
 	panel.name = "ExchangePanel"
 	panel.custom_minimum_size.x=JudgmentTableStyle.WIDTH
-	var style := JudgmentTableStyle.surface()
+	var style: StyleBox = StyleBoxEmpty.new() if on_board else JudgmentTableStyle.surface()
 	panel.add_theme_stylebox_override("panel", style)
 	add_child(panel)
 	var column := VBoxContainer.new()
@@ -63,6 +68,15 @@ func setup(hand: Array) -> void:
 		holder.custom_minimum_size = CARD_SIZE + Vector2(0, LIFT)
 		holder.mouse_filter = Control.MOUSE_FILTER_STOP
 		holder.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		if on_board:  # 위에서 내려다본 판: 카드 아래 그림자 (카드가 들리면 그림자만 남아 떠 보인다)
+			var shadow := Panel.new()
+			shadow.name = "TableShadow"
+			shadow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			shadow.size = CARD_SIZE
+			shadow.position = Vector2(5, LIFT + 7)
+			shadow.add_theme_stylebox_override("panel", UiSkin.surface(Color(0.05, 0.12, 0.04, 0.32), Color.TRANSPARENT, 0, 8))
+			shadow.modulate.a = 0.0  # 카드가 날아와 내려앉으면 깔린다
+			holder.add_child(shadow)
 		var card := JudgmentCard.new()
 		card.name = "Face"
 		card.configure(JudgmentCardArt.poker(cards[index]), CARD_SIZE)
@@ -149,6 +163,7 @@ func play_deal() -> void:
 		tween.tween_property(face,"position",Vector2(0,LIFT),.18).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 		tween.tween_property(face,"rotation",0.0,.18)
 		await tween.finished
+		_shadow_shown(i, true)
 		face.set_face_up(true)
 	dealt=true
 	set_busy(false)
@@ -159,6 +174,7 @@ func play_exchange(final_cards: Array, swapped: Array) -> void:
 	for index: Variant in swapped:
 		var face:=_items[int(index)].get_node("Face") as JudgmentCard
 		(_items[int(index)].get_node("SwapTag") as Control).hide()
+		_shadow_shown(int(index), false)
 		var take:=create_tween().set_parallel(true)
 		take.tween_property(face,"position",Vector2(240-int(index)*(CARD_SIZE.x+10),-180),.28).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
 		take.tween_property(face,"rotation",.2,.28)
@@ -184,6 +200,7 @@ func play_exchange(final_cards: Array, swapped: Array) -> void:
 		var deal:=create_tween()
 		deal.tween_property(face,"position",Vector2(0,LIFT),.23).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 		await deal.finished
+		_shadow_shown(i, true)
 		face.set_face_up(true)
 		Sfx.play(&"card_pick",-9)
 	_marked.fill(false)
@@ -193,6 +210,12 @@ func play_exchange(final_cards: Array, swapped: Array) -> void:
 	_hand_label.text=L10n.tf("최종 족보: %s (%d칸)",[L10n.t(str(MainBoard.HAND_NAMES.get(ToolHoldem.evaluate(cards),""))),ToolHoldem.steps_for(ToolHoldem.evaluate(cards))])
 	await get_tree().create_timer(1.0).timeout
 	busy=false
+
+
+func _shadow_shown(index: int, shown: bool) -> void:
+	var shadow: Control = _items[index].get_node_or_null("TableShadow")
+	if shadow != null:
+		shadow.modulate.a = 1.0 if shown else 0.0
 
 
 ## 카드 하나의 교환 표시를 켜고 끈다 (터치·클릭과 테스트가 같은 길을 쓴다).

@@ -14,8 +14,8 @@ const INK: Color = Color("1b4d3e")
 const PROP = preload("res://scenes/tool_pick_prop.gd")
 ## 도구 -> 뒷면 모양: card(그림 뒷면) / tile(마작 패) / stick(오미쿠지 막대) / icon(도구 그림)
 const LOOKS: Dictionary = {
-	&"DICE_TAROT": {"kind": "card", "back": "backs/TAROT_BACK", "size": Vector2(96, 156), "title": "타로 카드를 한 장 고르세요", "item": "카드"},
-	&"DICE_HWATU": {"kind": "card", "back": "backs/HWATU_BACK", "size": Vector2(78, 124), "title": "화투패 세 장 중 두 장을 뒤집으세요", "item": "패"},
+	&"DICE_TAROT": {"kind": "card", "back": "backs/TAROT_BACK", "size": Vector2(96, 156), "title": "한 장 고르세요", "item": "카드"},
+	&"DICE_HWATU": {"kind": "card", "back": "backs/HWATU_BACK", "size": Vector2(78, 124), "title": "두 장 뒤집으세요", "item": "패"},
 }
 const LIFT: float = 16.0
 
@@ -29,6 +29,14 @@ var _motions: Dictionary = {}
 var _progress: HBoxContainer
 var _touch_mouse_until := 0
 var revealing := false
+## 판 위에 바로 까는가 (1.3.1 알까기 시점): 어두운 막·초록 판 없이, 펼친 보드 위에 카드가 눕는다.
+var on_board: bool = false
+## 카드를 깔 자리 (부모 좌표, 판 한가운데). 비어 있으면 화면 가운데.
+var table_center: Vector2 = Vector2(INF, INF):
+	set(value):
+		table_center = value
+		_place_table()
+var _center_box: CenterContainer = null
 
 ## Reveal the two chosen cards in their original holders; the third stays face down.
 func reveal_result(result: Dictionary) -> void:
@@ -57,8 +65,9 @@ func reveal_result(result: Dictionary) -> void:
 
 
 ## 이 도구로 창을 만든다 (부모에 넣기 전에 부른다).
-func setup(id: StringName) -> void:
+func setup(id: StringName, board_table: bool = false) -> void:
 	tool_id = id
+	on_board = board_table
 	name = "ToolPickModal"
 	# Board-side roll actions/deck use z=30..40. Keep both the dim and hit
 	# blocker above them so the live table cannot cover or steal a selection.
@@ -68,18 +77,20 @@ func setup(id: StringName) -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	var dim := ColorRect.new()
-	dim.color = JudgmentTableStyle.DIM
+	dim.name = "PickDim"
+	dim.color = Color(0, 0, 0, 0) if on_board else JudgmentTableStyle.DIM  # 판 위에서는 막을 칠하지 않는다 (다른 곳 누름만 막는다)
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	dim.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(dim)
 	var center := CenterContainer.new()
+	_center_box = center
 	center.set_anchors_preset(Control.PRESET_FULL_RECT)
 	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(center)
 	var panel := PanelContainer.new()
 	panel.name = "PickPanel"
 	panel.custom_minimum_size.x=JudgmentTableStyle.WIDTH
-	var box_style := JudgmentTableStyle.surface()
+	var box_style: StyleBox = StyleBoxEmpty.new() if on_board else JudgmentTableStyle.surface()
 	panel.add_theme_stylebox_override("panel", box_style)
 	center.add_child(panel)
 	var column := VBoxContainer.new()
@@ -125,6 +136,18 @@ func setup(id: StringName) -> void:
 	_refresh_status()
 	MobileSupport.fit_touch_scale(panel, 1.6)
 	ready.connect(_deal,CONNECT_ONE_SHOT)
+	ready.connect(_place_table,CONNECT_ONE_SHOT)
+
+
+## 판 한가운데로 옮긴다 (가운데 정렬 상자를 판 가운데와 화면 가운데의 차이만큼 민다).
+func _place_table() -> void:
+	if _center_box == null or not table_center.is_finite() or not is_inside_tree():
+		return
+	var shift: Vector2 = table_center - get_parent_area_size() / 2.0 if get_parent() is Control else table_center - get_viewport_rect().size / 2.0
+	_center_box.offset_left = shift.x
+	_center_box.offset_right = shift.x
+	_center_box.offset_top = shift.y
+	_center_box.offset_bottom = shift.y
 
 
 ## 자리 하나를 고른다 (터치·클릭과 테스트가 같은 길을 쓴다). 다 고르면 picked를 낸다.
@@ -175,6 +198,10 @@ func _make_item(look: Dictionary, item_size: Vector2, index: int) -> Control:
 	holder.add_child(face)
 	var shadow := _frame(Vector2(item_size.x*0.82,10),Color(0.15,0.25,0.12,0.15),Color.TRANSPARENT,5,0)
 	shadow.position = Vector2(item_size.x*0.09,item_size.y+LIFT-2)
+	if on_board:  # 위에서 내려다본 판: 카드 아래 같은 크기의 그림자가 살짝 비켜 깔린다
+		shadow.size = item_size
+		shadow.position = Vector2(5, LIFT + 7)
+		(shadow.get_theme_stylebox("panel") as StyleBoxFlat).bg_color = Color(0.05, 0.12, 0.04, 0.32)
 	shadow.name = "ContactShadow"
 	holder.add_child(shadow)
 	holder.move_child(shadow,0)
@@ -282,11 +309,12 @@ func _refresh_status() -> void:
 	if _status == null:
 		return
 	var look: Dictionary = LOOKS.get(tool_id, {})
-	_status.text = L10n.tf("%d / %d %s 골랐어요", [_picks.size(), _choose, L10n.t(str(look.get("item", "")))])
+	# 판 위에서는 고른 수를 글로 세지 않는다 (번호 칩이 채워지는 것으로 보인다)
+	_status.text = "" if on_board else L10n.tf("%d / %d %s 골랐어요", [_picks.size(), _choose, L10n.t(str(look.get("item", "")))])
 	for index: int in _progress.get_child_count():
 		var chip := _progress.get_child(index) as Label
 		var filled := index<_picks.size()
-		chip.text = "✓" if filled else str(index+1)
+		chip.text = str(index+1)  # 고른 칸은 초록 바탕·흰 글자 (✓는 게임 글꼴에 없다)
 		chip.add_theme_color_override("font_color",Color.WHITE if filled else Color("747c64"))
 		chip.add_theme_stylebox_override("normal",UiSkin.surface(Color("008f6b") if filled else Color("e9f5cf"),Color("5da530") if filled else Color("bfd598"),1,16))
 
