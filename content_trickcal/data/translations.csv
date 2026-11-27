@@ -3472,3 +3472,14 @@ TRPG,TRPG,TRPG
 한 장 고르세요,Pick one,1枚選んでください
 두 장 뒤집으세요,Flip two,2枚めくってください
 레버를 아래로 당기세요! (스페이스),Pull the lever down! (Space),レバーを下に引いてください！(スペース)
+[풀 파워 장착!],[Full Power equipped!],[フルパワー装備！]
+풀 파워 %+d,Full Power %+d,フルパワー %+d
+파워 게이지를 빨간 끝까지 채워 던지면 +%d칸,Release the power gauge at the red end for +%d spaces,パワーゲージを赤い端まで溜めて投げると+%dマス
+다시 굴리기 (%d),Reroll (%d),振り直し (%d)
+%s → %d칸%s,%s → %d spaces%s,%s → %dマス%s
+정지 +%d칸,Stop +%d,停止 +%dマス
+멈추기 +%d칸,Stop +%d,止める +%dマス
+꺼내기,Take out,取り出す
+카드(▣ 표시는 타일을 클릭해 설치/소환)를 쓰거나 [꺼내기] 버튼(또는 스페이스)으로 판정 도구를 꺼내세요. (판정 도구: %s),Play a card (▣ cards: click a tile to place/summon) or press [Take out] (or Space) to take out your Judgment Tool. (Judgment Tool: %s),カード(▣ 表示はマスをクリックして設置/召喚)を使うか、[取り出す]ボタン(またはスペース)で判定ツールを取り出してください。(判定ツール: %s)
+세 개 꺼내세요,Take out three,3つ取り出してください
+

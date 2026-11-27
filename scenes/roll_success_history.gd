@@ -43,6 +43,10 @@ func reveal(turn: int, player: int, result: Dictionary) -> void:
 	# 성공 표식을 쓰는 도구(리볼버 생존·7 당첨·역만·수레바퀴·불스아이·21)는 성공이 쌓였을 때, 그 밖의 도구(윷 등)는 한 번 더가 나온 뒤부터.
 	if bool(result.get("reroll",false)): chained = true
 	visible = success_count>0 if RollSuccessDisplay.supports(tool_id) else chained
+	# 1.3.1 정리: 리볼버의 누적 칸은 [정지] 버튼에 붙는다 (보드 옆 큰 +N 숫자판은 띄우지 않는다)
+	if tool_id == &"REVOLVER": visible = false
+	# 윷 말고는 글자판(1  3칸 …)을 쓰지 않으므로, 성공 표식이 없는 도구는 보여 줄 것이 없다
+	if not RollSuccessDisplay.supports(tool_id) and tool_id != &"YUT": visible = false
 
 func _is_success(result: Dictionary, confirmation: bool) -> bool:
 	if not RollSuccessDisplay.supports(tool_id) or bool(result.get("ends_turn",false)): return false
@@ -116,7 +120,13 @@ func _refresh(animate_latest: bool = false) -> void:
 		_footer.text = L10n.tf("%d칸 누적",[int(last_result.get("steps",0))]) if tool_id==&"REVOLVER" else L10n.t("계속 도전 가능")
 	else:
 		_footer.text = L10n.tf("%d칸 확정",[int(last_result.get("steps",0))])
-	_footer.visible = not bool(last_result.get("reroll",false)) and not (tool_id==&"REVOLVER" and bool(last_result.get("can_continue",false)))
+	# 1.3.1 정리: 머리줄(P# · N회 성공·도구 그림)과 꼬리 글자판(N칸 누적·N칸 확정·턴 종료)은 띄우지 않는다.
+	# 결과는 굴림 연출·알림이 보여 주고, 기록판에는 성공 표식(칩·도장)과 윷 도장만 남긴다. 글자는 기록·테스트용으로 계속 채운다.
+	_footer.visible = false
+	_header.get_parent().visible = false
+	_tool_icon.visible = false
+	if tool_id != &"YUT":
+		_rows.visible = false
 	_footer.add_theme_color_override("font_color",BAD if bool(last_result.get("ends_turn",false)) else UiSkin.INK)
 	set_width(custom_minimum_size.x,true)
 	reset_size()

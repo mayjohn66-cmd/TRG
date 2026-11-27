@@ -128,8 +128,8 @@ func run() -> void:
 		L10n.set_language(language)
 		history._refresh()
 		await frames()
-		var font := history._footer.get_theme_font("font")
-		check(font.get_string_size(history._footer.text,HORIZONTAL_ALIGNMENT_LEFT,-1,19).x<=history._footer.size.x,"footer fits "+language)
+		# 1.3.1 정리: 꼬리 글자판(N칸 확정·턴 종료)은 띄우지 않는다 (결과는 굴림 연출·알림이 보여 준다). 글자는 기록용으로 채운다.
+		check(not history._footer.visible and not history._footer.text.is_empty(),"footer text kept but not shown "+language)
 		await capture("revolver_"+language)
 	var blackjack := ToolBlackjack.new()
 	var dealt := blackjack.roll(rng)

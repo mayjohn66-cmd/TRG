@@ -70,7 +70,7 @@ static func capture(state: GameState) -> TurnSnapshot:
 		"extra_turns": state.extra_turns.duplicate(),
 		"utility": {"hand_bonus": state.hand_bonus.duplicate(), "lucky": state.lucky_dice.duplicate(), "revive": state.revive_charges.duplicate(),
 			"move_plus": state.utility_move_plus.duplicate(), "permanent_roll": state.permanent_roll_bonus.duplicate(), "goal_shrink": state.goal_shrink_bonus, "reshuffle": state.reshuffle_round,
-			"drift": state.drift_players.duplicate(), "bounties": state.bounties.duplicate()},
+			"drift": state.drift_players.duplicate(), "bounties": state.bounties.duplicate(), "full_power": state.full_power_players.duplicate()},
 		"rankings": state.rankings.duplicate(),
 		"rank_reasons": state.rank_reasons.duplicate(),
 		"rank_stats": state.rank_stats.duplicate(true),
@@ -190,6 +190,7 @@ func restore(state: GameState, restore_meta: bool = false) -> void:
 		state.reshuffle_round = int(utility.get("reshuffle", -1))
 		state.drift_players = (utility.get("drift", {}) as Dictionary).duplicate()
 		state.bounties = (utility.get("bounties", {}) as Dictionary).duplicate()
+		state.full_power_players = (utility.get("full_power", {}) as Dictionary).duplicate()
 	if data.has("rankings"):
 		state.rankings.assign(data["rankings"])
 		state.rank_reasons = (data.get("rank_reasons", {}) as Dictionary).duplicate()

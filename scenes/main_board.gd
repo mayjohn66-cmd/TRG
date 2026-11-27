@@ -571,7 +571,7 @@ var _announcer: EventAnnouncer = null
 var _pending_power: float = 0.5
 ## 파워 게이지 (1.3.1 부활): 주사위·윷·친치로·야추·핀볼은 굴리기 버튼(또는 스페이스)을 꾹 누르는 동안 게이지가 0~100%를 왕복하고,
 ## 손을 떼는 순간의 값이 굴림 연출 세기가 된다 (던지는 힘·회전·핀볼 스프링). 결과(눈금)에는 영향이 없다.
-const GAUGE_TOOLS: Array[StringName] = [&"D6", &"YUT", &"CHINCHIRO", &"DICE_YACHT", &"DICE_PINBALL"]
+const GAUGE_TOOLS: Array[StringName] = UtilityAugments.POWER_GAUGE_TOOLS
 const GAUGE_SPEED: float = 1.6
 var _power_gauge: Control = null
 var _power_bar: ProgressBar = null
@@ -583,6 +583,8 @@ var _charge_value: float = 0.0
 var _charge_anchor: Control = null
 ## 굴리기 전 내 판정 도구 소품 (1.3.1): 굴리기 버튼 위 보드에 놓여 있다 (ToolRestProp).
 var _rest_prop: ToolRestProp = null
+## 소품이 마지막으로 보였던 모습 (굴리기를 누르면 버튼이 잠겨 소품이 먼저 숨으므로, 결과가 오면 이 자리에서 주사위가 튄다).
+var _rest_prop_seen: Dictionary = {}
 var _fx_busy: bool = false
 var _capture_cutin: CaptureCutin = null
 var _capture_marks: Dictionary = {}
@@ -4722,6 +4724,9 @@ func _roll_boost_reason(data: Dictionary) -> String:
 	var corner: int = int(data.get("corner", 0))
 	var bonus: int = int(data.get("bonus", 0))
 	var collect: int = int(data.get("collect", 0))
+	var gauge: int = int(data.get("gauge", 0))
+	if gauge != 0:
+		parts.append(L10n.t("풀 파워 %+d") % gauge)
 	if collect != 0:
 		parts.append(L10n.t("수집품 코롯토 %+d") % collect)
 	if permanent != 0:
@@ -7717,7 +7722,9 @@ func _refresh_controls() -> void:
 		_roll_button.text = "방아쇠\n당기기"
 		_set_gun_buttons(true)
 		_stop_button.visible = not over
-		_stop_button.text = "정지"
+		# 1.3.1 정리: 누적 칸은 보드 옆 숫자판 대신 [정지] 버튼에 ("정지 +12칸")
+		var gun_total: int = (tool as ToolRussianRoulette).accumulated if can_stop else 0
+		_stop_button.text = L10n.tf("정지 +%d칸", [gun_total]) if gun_total > 0 else L10n.t("정지")
 		# 이어서 당기는 중(내 리볼버가 생존 결과로 짧게 철컥하는 동안): 버튼을 회색으로 바꿨다 되돌리면 당길 때마다 깜빡인다.
 		# 모양은 그대로 두고 그동안 클릭만 무시한다 (키 입력은 _roll_button.disabled가 막는다).
 		var mid_pull: bool = _fx_busy and _roll_pad.kind == RollPad.Kind.REVOLVER and _roll_pad.active and not _roll_pad.preparing and can_stop and not _is_bot_turn() and manager.current_player_id() == _dock_owner()
@@ -7730,7 +7737,10 @@ func _refresh_controls() -> void:
 		_set_gun_buttons(false)
 		_roll_button.text = _roll_button_label(tool)
 		_stop_button.visible = can_stop and not _is_stage_tool(tool.tool_id) and not (tool is ToolHoldem)  # 야추·블랙잭은 스테이지에, 홀덤은 교환 창에 자기 확정 버튼이 있다
-		_stop_button.text = "멈추고 이동 확정"
+		# 1.3.1 정리: 오른쪽 버튼 줄 대신 굴리기(칼 꽂기) 버튼 바로 옆에, 누적 칸을 붙여서 ("멈추기 +6칸")
+		var total: int = int(tool.get("accumulated")) if tool.get("accumulated") != null else 0
+		_stop_button.text = L10n.tf("멈추기 +%d칸", [total]) if total > 0 else L10n.t("멈추고 이동 확정")
+		_place_stop_beside_roll(_stop_button.visible)
 		_stop_button.disabled = false
 		_stop_button.mouse_filter = Control.MOUSE_FILTER_STOP
 		_stop_button.modulate = Color.WHITE
@@ -8023,9 +8033,28 @@ func _on_pirate_idle_input(event: InputEvent) -> void:
 		_pirate_idle.accept_event()
 
 
+## 해적 룰렛처럼 이어서 굴리는 도구 (1.3.1 정리): [멈추기]를 굴리기 버튼 바로 오른쪽에 띄운다 (멀리 오른쪽 버튼 줄에 따로 떨어져 있지 않게).
+func _place_stop_beside_roll(beside: bool) -> void:
+	if not beside or _stop_button.get_parent() == _gun_row:
+		if _stop_button.get_parent() == self:
+			_stop_button.reparent(_action_row, false)
+			_action_row.move_child(_stop_button, 0)
+			_stop_button.top_level = false
+		return
+	if _stop_button.get_parent() != self:
+		_stop_button.reparent(self, false)
+	_stop_button.custom_minimum_size = Vector2(150, 46)
+	_stop_button.add_theme_font_size_override("font_size", 17)
+	_stop_button.reset_size()
+	var roll: Rect2 = _roll_button.get_global_rect()
+	var at: Vector2 = get_global_transform().affine_inverse() * Vector2(roll.end.x + 14.0, roll.get_center().y)
+	_stop_button.position = at - Vector2(0.0, _stop_button.size.y * 0.5)
+	_stop_button.z_index = _roll_button.z_index
+
+
 ## 러시안 룰렛이면 정지 버튼을 [발사] 옆 큰 버튼으로 옮기고, 다른 도구면 원래 자리(우측 버튼 줄)로 돌려보낸다.
 func _set_gun_buttons(gun: bool) -> void:
-	var wanted_parent: Node = _gun_row if gun else _action_row
+	var wanted_parent: Node = _gun_row if gun else (self if _stop_button.get_parent() == self else _action_row)  # 굴리기 옆 [멈추기]는 _place_stop_beside_roll이 맡는다
 	if _stop_button.get_parent() != wanted_parent:
 		_stop_button.reparent(wanted_parent, false)
 		if gun:
@@ -8045,35 +8074,19 @@ func _is_dice_family(tool: BaseJudgmentTool) -> bool:
 ## 굴림 버튼에 쓰는 글자: 도구마다 다르다.
 func _roll_button_label(tool: BaseJudgmentTool) -> String:
 	if tool is ToolPinball:return "핀볼\n발사 준비"
-	if tool is ToolHwatu:
-		return "패\n뒤집기"
-	if tool is ToolHoldem:
-		return "카드\n뽑기"
-	if tool is ToolSlot777:
-		return "레버\n당기기"
-	if tool is ToolMahjong:
-		return "쯔모!"
-	if tool is ToolTarot:
-		return "운명\n뽑기"
-	if tool is ToolPinball:
-		return "발사!"
+	# 1.3.1: 던지지 않는 도구는 버튼이 [꺼내기]다. 누르면 그 도구를 판 위로 꺼내고(내려놓기·카드 매트), 실제 조작(고르기·레버·긁기 등)은 꺼낸 도구에서 한다.
+	if TAKE_OUT_TOOLS.has(tool.tool_id):
+		return "꺼내기"
 	if tool is ToolDarts:
 		return "다트\n던지기"
-	if tool is ToolStockChart:
-		return "매수!"
-	if tool is ToolOmikuji:
-		return "뽑기!"
-	if tool is ToolIceCream:
-		return "냠!"
-	if tool is ToolFortuneCookie:
-		return "깨기!"
-	if tool is ToolCapsuleGacha:
-		return "뽑기!"
 	if tool is ToolPirateRoulette:
 		return "칼\n꽂기"
-	if tool is ToolScratchLottery:
-		return "긁기!"
 	return tr_ui("btn.roll")
+
+
+## 던지지 않고 "꺼내서" 쓰는 판정 도구 (굴리기 버튼이 [꺼내기]). 던지는 도구(주사위·친치로·윷·다트·야추·핀볼)와
+## 자기 조작판이 따로 있는 도구(리볼버·룰렛 원판·해적 통·블랙잭)는 빠진다.
+const TAKE_OUT_TOOLS: Array[StringName] = [&"DICE_HWATU", &"HOLDEM", &"SLOT_777", &"DICE_MAHJONG", &"DICE_TAROT", &"DICE_STOCK", &"DICE_OMIKUJI", &"DICE_ICECREAM", &"DICE_COOKIE", &"DICE_CAPSULE", &"DICE_SCRATCH"]
 
 
 ## 굴림 조작 방식: 차징형(기본 주사위·윷·친치로)은 보드 아래 작은 굴리기 버튼+파워 게이지, 그 외(룰렛 원판·리볼버·홀덤/슬롯 큰 버튼)는 보드 한가운데에 크게 보여 준다.
@@ -8230,7 +8243,7 @@ func _on_pad_trigger_pulled() -> void:
 	_roll_with_power(0.5)
 
 
-func _roll_with_power(power: float) -> void:
+func _roll_with_power(power: float, charged: bool = false) -> void:
 	_pending_power = power
 	if manager.is_game_over or _roll_button.disabled or _ui_busy() or _is_bot_turn() or _roll_pad.preparing:
 		return
@@ -8238,7 +8251,7 @@ func _roll_with_power(power: float) -> void:
 		_act(&"proceed")
 	if manager.current_state == TurnManager.State.PHASE_ROLL_WAIT:
 		_pinball_ready_key = ""
-		_act(&"roll")
+		_act(&"roll", {"power": power} if charged else {})
 
 
 func _hint_text(current_phase: TurnManager.State, tool: BaseJudgmentTool) -> String:
@@ -8265,6 +8278,8 @@ func _hint_text(current_phase: TurnManager.State, tool: BaseJudgmentTool) -> Str
 		TurnManager.State.PHASE_TURN_BEGIN:
 			if manager.appease_pending():
 				return "회유책: 걸린 디버프를 풀지 고르세요. [회유책 쓰기] 또는 [그냥 두기]"
+			if TAKE_OUT_TOOLS.has(tool.tool_id):
+				return "카드(▣ 표시는 타일을 클릭해 설치/소환)를 쓰거나 [꺼내기] 버튼(또는 스페이스)으로 판정 도구를 꺼내세요. (판정 도구: %s)" % tool.display_name
 			return "카드(▣ 표시는 타일을 클릭해 설치/소환)를 쓰거나 [굴리기] 버튼(또는 스페이스)을 한 번 누르세요. (판정 도구: %s)" % tool.display_name
 		TurnManager.State.PHASE_ROLL_WAIT:
 			if tool.has_pending_state() and tool is ToolYacht:
@@ -8304,6 +8319,7 @@ func _on_roll_pressed() -> void:
 	# 게이지를 모았으면 그 값, 아니면(짧게 누름·게이지 없는 도구) 경쾌한 고정값을 연출 세기로 쓴다.
 	var charged: float = _take_charge()
 	_pending_power = charged if charged >= 0.0 else ONE_CLICK_POWER
+	var gauge_params: Dictionary = {"power": charged} if charged >= 0.0 else {}  # 게이지를 모아 던졌을 때만 엔진에 값을 보낸다 (1.3.1 풀 파워)
 	if manager.is_game_over or _roll_button.disabled or _ui_busy() or _is_bot_turn() or _roll_pad.preparing:
 		return  # 리볼버 장전 연출 중에 쏘면 3D 화면에 장전 자세가 한두 프레임 다시 비친다 (발사 버튼과 같은 조건)
 	var tool: BaseJudgmentTool = state.tools[_dock_owner()]
@@ -8316,7 +8332,7 @@ func _on_roll_pressed() -> void:
 	# material sounds at animation cues. Only dice need the generic clatter.
 	if _is_dice_family(tool) and tool.tool_id != &"YUT":
 		Sfx.play(&"dice_roll")
-	var params: Dictionary = {}
+	var params: Dictionary = gauge_params
 	if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN:
 		_act(&"proceed")
 	if manager.current_state == TurnManager.State.PHASE_ROLL_WAIT:
@@ -9272,6 +9288,7 @@ func _reset_presentation() -> void:
 	_alkkagi_top_view(false,true)
 	_card_view_on = false
 	_card_view_player = -1
+	_card_view_serial += 1
 	_release_card_zoom()
 	if _card_mat != null and is_instance_valid(_card_mat):
 		_card_mat.reveal = 0.0
@@ -13678,6 +13695,10 @@ func _refresh_tool_stage() -> void:
 	stage.set("instant", instant_roll_for_test)
 	stage.visible = in_roll or mid_roll
 	if _choice_overlay!=null or _zoom_view!=null or popup_open:stage.visible=false
+	if stage == _stage_yacht:
+		_sync_yacht_case()
+	elif stage == _stage_blackjack:
+		_sync_stage_card_view(_stage_blackjack, &"DICE_BLACKJACK")
 	var acting: bool = not _roll_button.disabled
 	if stage == _stage_pinball:
 		_stage_pinball.set_waiting_caption(_is_bot_turn() or (net != null and current != local_player_id), _player_name(current))
@@ -13689,7 +13710,7 @@ func _refresh_tool_stage() -> void:
 
 func _on_stage_start() -> void:
 	var charged: float = _take_charge()
-	_roll_with_power(charged if charged >= 0.0 else 0.5)
+	_roll_with_power(charged if charged >= 0.0 else 0.5, charged >= 0.0)
 
 func _pinball_key() -> String:
 	# The host can acknowledge proceed later. Do not invalidate the local request
@@ -13709,7 +13730,10 @@ func _on_yacht_reroll(keep: Array) -> void:
 		return
 	var charged: float = _take_charge()
 	_pending_power = charged if charged >= 0.0 else 0.5
-	_act(&"roll", {"keep": keep})
+	var yacht_params: Dictionary = {"keep": keep}
+	if charged >= 0.0:
+		yacht_params["power"] = charged
+	_act(&"roll", yacht_params)
 
 
 func _on_blackjack_hit() -> void:
@@ -13737,6 +13761,19 @@ func _handle_roll_event(data: Dictionary) -> void:
 		_announcer.dismiss_soft()  # 굴림이 시작되면 남아 있는 차례·라운드 안내 배너는 걷는다 (주사위와 겹치지 않게)
 	_presenter.instant = instant_roll_for_test
 	_presenter.toss_from = _profile_center(int(data["player_id"]))  # 기본 주사위·친치로·윷은 굴린 사람 프로필에서 마당으로 던진다
+	# 1.3.1 제자리 점프: 굴리기 버튼 위 보드에 놓여 있던 내 주사위(소품)가 그 자리에서 튀어 오르며 구른다 (소품은 그 순간 숨긴다)
+	_presenter.hop_from = Vector2(INF, INF)
+	_presenter.hop_pose = null
+	_presenter.place_from = Vector2(INF, INF)
+	var rest: Dictionary = _rest_prop_seen
+	if not rest.is_empty() and rest["tool"] == tool_id and tool_id in [&"D6", &"CHINCHIRO"] and int(data["player_id"]) == _dock_owner() \
+			and int(data["player_id"]) == int(rest["player"]) and Time.get_ticks_msec() - int(rest["msec"]) < 2500:
+		_presenter.hop_from = rest["center"]
+		_presenter.hop_scale = rest["scale"]
+		_presenter.hop_pose = rest["pose"]
+		if _rest_prop != null:
+			_rest_prop.visible = false
+	_rest_prop_seen = {}
 	var details: Dictionary = result["details"]
 	if _is_stage_tool(tool_id):
 		_handle_stage_roll(data)
@@ -13869,6 +13906,14 @@ func _handle_stage_roll(data: Dictionary) -> void:
 	await _play_stage(stage, tool_id, result)
 	if generation != _fx_generation or serial != _fx_serial:
 		return
+	if CARD_VIEW_STAGES.has(tool_id) and not bool(result.get("can_continue", false)) and _card_view_tool == tool_id:
+		await get_tree().create_timer(0.6).timeout  # 확정한 족보를 케이스에서 잠깐 보여 준 뒤
+		if generation != _fx_generation or serial != _fx_serial:
+			return
+		stage.visible = false
+		await _leave_card_view()  # 판 시점으로 돌아와 말이 움직인다
+		if generation != _fx_generation or serial != _fx_serial:
+			return
 	_fx_busy = false
 	_reveal_roll(data)
 	_refresh_all()
@@ -14949,13 +14994,17 @@ func _tool_pick_state_key() -> String:
 
 
 ## 카드형 판정 도구 (1.3.1): 쓰는 동안 보드를 알까기 시점(위에서 내려다본 평평한 판)으로 펴고, 판 위에 카드를 바로 깐다.
-const CARD_TABLE_TOOLS: Array[StringName] = [&"DICE_TAROT", &"DICE_HWATU", &"HOLDEM"]
+const CARD_TABLE_TOOLS: Array[StringName] = [&"DICE_TAROT", &"DICE_HWATU", &"HOLDEM", &"DICE_SCRATCH", &"DICE_MAHJONG"]  # 1.3.1 스크래치 복권도 판 위 계산대에서 긁는다
 var _card_view_on: bool = false
 var _card_view_player: int = -1
 ## 카드를 쓰는 동안 판 가운데를 당겨 본다 (보드·말 층만 확대, 화면 UI는 그대로). 시점 전환과 같은 움직임으로 들어가고 나온다.
 ## 1.3.1: 판 가운데를 당겨 보고(2.2배, 보이는 화면이 넓거나 높으면 그만큼 더) 그 위에 카드 매트(CardMat)를 펼친다. 매트 밖 보드는 어둡게 덮인다.
 var card_zoom: float = 2.2
 var _card_mat: CardMat = null
+## 지금 카드 시점을 쓰는 도구.
+var _card_view_tool: StringName = &""
+
+var _card_view_serial: int = 0
 var _card_zoom_on: bool = false
 ## 판 가운데로 들어가고 나오는 시간 (크게 당기므로 알까기 0.26초보다 느긋하게).
 const CARD_VIEW_TIME: float = 0.45
@@ -14964,8 +15013,10 @@ const CARD_VIEW_TIME: float = 0.45
 func _enter_card_view(tool_id: StringName = &"DICE_TAROT") -> void:
 	if _card_view_on or _alkkagi_saved_view != -1 or state == null:
 		return
+	_card_view_tool = tool_id
 	_open_card_mat(tool_id)
 	_card_view_on = true
+	_card_view_serial += 1
 	_card_zoom_on = true
 	_card_view_player = manager.current_player_id() if manager != null else -1
 	_alkkagi_top_view(true, false, CARD_VIEW_TIME)
@@ -14977,8 +15028,12 @@ func _leave_card_view() -> void:
 		return
 	_card_view_on = false
 	_card_view_player = -1
+	_card_view_serial += 1
+	var serial: int = _card_view_serial
 	if _card_mat != null and is_instance_valid(_card_mat):
 		await _card_mat.roll_up()  # 매트를 말아 넣은 뒤 판 밖으로 물러난다
+		if serial != _card_view_serial or _card_view_on:
+			return  # 말아 넣는 사이에 판이 초기화됐거나 다시 카드 시점에 들어왔다
 	_alkkagi_top_view(false, false, CARD_VIEW_TIME)
 	while _alkkagi_camera_tween != null and _alkkagi_camera_tween.is_running() and is_inside_tree():
 		await get_tree().process_frame
@@ -14998,6 +15053,7 @@ func _open_card_mat(tool_id: StringName) -> void:
 		_card_mat.slot_source = _card_slot_rects
 	move_child(_card_mat, _pawn_layer.get_index() + 1)
 	_card_mat.setup(tool_id)
+	_card_mat.mat_scale = 1.25 if MobileSupport.touch_mode() else 1.0
 	_card_mat.mat_center = _card_table_center()
 	_card_mat.unroll(0.12)
 
@@ -15049,11 +15105,39 @@ func _card_table_center() -> Vector2:
 	return _board_center()
 
 
+## 야추 주사위 케이스 (1.3.1): 케이스가 뜨면 카드 시점(판 가운데 확대)으로 들어가 판 한가운데에 놓고, 사라지면 돌아온다.
+func _sync_yacht_case() -> void:
+	_sync_stage_card_view(_stage_yacht, &"DICE_YACHT")
+
+
+## 카드 시점에서 쓰는 스테이지 (1.3.1: 야추 케이스·블랙잭 테이블). 스테이지가 뜨면 판 가운데로 다가가고, 사라지면 돌아온다.
+const CARD_VIEW_STAGES: Array[StringName] = [&"DICE_YACHT", &"DICE_BLACKJACK"]
+
+
+func _sync_stage_card_view(stage: Control, tool_id: StringName) -> void:
+	if stage == null:
+		return
+	# 스테이지 자리는 화면 배치가 맡는다 (판 가운데 근처, 아래 기물 독·버튼과 겹치지 않는다).
+	var rolling: bool = bool(stage.get("active"))
+	if stage.visible and not manager.is_game_over:
+		# 즉시 모드(테스트·자동 진행)에서는 시점을 옮기지 않는다. 확정 뒤(연출 중, 굴리는 중 아님)에는 다시 들어가지 않는다.
+		if not _card_view_on and not instant_roll_for_test and (not _fx_busy or rolling):
+			_enter_card_view(tool_id)
+	else:
+		if _card_view_on and _card_view_tool == tool_id and not rolling and (not _fx_busy or instant_roll_for_test):
+			_leave_card_view()
+
+
 ## 차례가 넘어가거나 게임이 끝났는데 카드 시점이 남았으면 돌려놓는다 (취소·시간 초과 대비).
 func _sync_card_view() -> void:
 	if not _card_view_on:
 		return
-	if manager == null or manager.is_game_over or manager.current_player_id() != _card_view_player:
+	var showing: bool = _fx_busy or _tool_pick != null or _holdem_exchange != null or (_presenter != null and _presenter.active) or (_card_view_tool == &"DICE_YACHT" and _stage_yacht != null and _stage_yacht.visible) or (_card_view_tool == &"DICE_BLACKJACK" and _stage_blackjack != null and _stage_blackjack.visible)
+	if manager == null or manager.is_game_over:
+		_leave_card_view()
+	elif showing:
+		return  # 엔진은 연출보다 앞서 간다 (턴 종료 결과면 벌써 다음 차례다): 보여 주는 중에는 연출 쪽 _leave_card_view를 기다린다
+	elif manager.current_player_id() != _card_view_player:
 		_leave_card_view()
 	elif not manager.current_state in [TurnManager.State.PHASE_MOVING_STEP, TurnManager.State.PHASE_RESOLUTION, TurnManager.State.PHASE_NEUTRAL_NPC]:
 		return  # 굴림 대기·결과 직후(말 고르기 전): 결과 연출이 이어서 판 위에서 나오고, 다 보면 _leave_card_view가 돌려놓는다
@@ -15159,6 +15243,7 @@ func _begin_charge(anchor: Control, by_key: bool) -> bool:
 	_charge_clock = 0.0
 	_charge_value = 0.0
 	_charge_anchor = anchor
+	(_power_gauge.get_node("FullPowerZone") as Control).visible = bool(state.full_power_players.get(_dock_owner(), false))
 	_power_gauge.visible = true
 	_place_power_gauge()
 	Sfx.play(&"charge", -4.0, 0.0)
@@ -15223,6 +15308,20 @@ func _ensure_power_gauge() -> void:
 	_power_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_power_bar.add_theme_stylebox_override("background", _style(Color("0b0e16"), Color("5c6b94"), 2, 9, 0, 0))
 	_power_gauge.add_child(_power_bar)
+	# 풀 파워 (1.3.1): 증강을 가졌으면 게이지 끝 성공 구간을 금색 테두리로 보여 준다 (글 설명 없이 노릴 자리)
+	var zone := Panel.new()
+	zone.name = "FullPowerZone"
+	zone.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	zone.position = Vector2(150.0 * UtilityAugments.FULL_POWER_ZONE, -3)
+	zone.size = Vector2(150.0 * (1.0 - UtilityAugments.FULL_POWER_ZONE), 20)
+	var zone_style := StyleBoxFlat.new()
+	zone_style.bg_color = Color(1.0, 0.83, 0.23, 0.18)
+	zone_style.border_color = Color("ffd43b")
+	zone_style.set_border_width_all(2)
+	zone_style.set_corner_radius_all(5)
+	zone.add_theme_stylebox_override("panel", zone_style)
+	zone.visible = false
+	_power_gauge.add_child(zone)
 	_power_label = _make_label("POWER 0%", MobileSupport.text_px(13), Color("fff3bf"))
 	_power_label.position = Vector2(0, 15)
 	_power_label.size = Vector2(150, 18)
@@ -15263,7 +15362,8 @@ func _refresh_rest_prop() -> void:
 	if manager == null or state == null or _roll_button == null:
 		return
 	var tool: BaseJudgmentTool = state.tools.get(_dock_owner())
-	var show: bool = tool != null and ToolRestProp.supports(tool.tool_id) and not instant_roll_for_test and not manager.is_game_over \
+	# 꺼내기 도구(1.3.1)는 미리 놓아 두지 않는다: 아무것도 없다가 [꺼내기]를 누르면 위에서 쿵 떨어진다
+	var show: bool = tool != null and ToolRestProp.supports(tool.tool_id) and not TAKE_OUT_TOOLS.has(tool.tool_id) and not instant_roll_for_test and not manager.is_game_over \
 		and _roll_button.is_visible_in_tree() and not _roll_button.disabled and not _is_bot_turn() and manager.current_player_id() == _dock_owner() \
 		and (manager.current_state == TurnManager.State.PHASE_TURN_BEGIN or manager.current_state == TurnManager.State.PHASE_ROLL_WAIT) \
 		and not tool.has_pending_state() and _tool_pick == null and not (_presenter != null and _presenter.active) and not _fx_busy
@@ -15281,6 +15381,7 @@ func _refresh_rest_prop() -> void:
 	var rect: Rect2 = _roll_button.get_global_rect()
 	var at: Vector2 = get_global_transform().affine_inverse() * Vector2(rect.get_center().x, rect.position.y)
 	_rest_prop.position = at - Vector2(_rest_prop.size.x * 0.5, _rest_prop.size.y - 6.0)
+	_rest_prop_seen = {"tool": tool.tool_id, "player": _dock_owner(), "center": _rest_prop.hop_center(), "scale": _rest_prop.hop_scale(), "pose": _rest_prop.hop_pose(), "msec": Time.get_ticks_msec()}
 
 
 ## 굴리기 버튼 위 도구 소품 (테스트용).

@@ -147,6 +147,16 @@ static func score_augment(state: GameState, player_id: int, definition: AugmentD
 
 
 ## 봇의 [범용] 10종 선호: 완주를 앞당기는 것(순보·이동 +1·굴림 운)이 먼저, 판을 뒤섞는 올 픽션은 가장 나중.
+## 풀 파워: 봇이 게이지를 놓는 값. 난이도가 높을수록 빨간 끝(UtilityAugments.FULL_POWER_ZONE 이상)을 자주 맞힌다.
+const GAUGE_HIT_CHANCE: Dictionary = {0: 0.5, 1: 0.25, 2: 0.35, 3: 0.5, 4: 0.65, 5: 0.8}
+
+
+static func gauge_power(difficulty: int, rng: RandomNumberGenerator) -> float:
+	if rng.randf() < float(GAUGE_HIT_CHANCE.get(difficulty, 0.5)):
+		return rng.randf_range(UtilityAugments.FULL_POWER_ZONE, 1.0)
+	return rng.randf_range(0.2, UtilityAugments.FULL_POWER_ZONE - 0.01)
+
+
 static func utility_score(state: GameState, player_id: int, effect: StringName) -> float:
 	match effect:
 		UtilityAugments.CATCH_UP:
@@ -159,6 +169,8 @@ static func utility_score(state: GameState, player_id: int, effect: StringName) 
 			return 72.0
 		UtilityAugments.DRIFT:
 			return 66.0
+		UtilityAugments.FULL_POWER:
+			return 60.0
 		UtilityAugments.BOUNTY:
 			return 58.0
 		UtilityAugments.LUCKY_DICE:

@@ -176,6 +176,8 @@ var hammer_pending: Dictionary = {}
 var hammer_bonus: Dictionary = {}
 ## v1.1 관성 드리프트를 가진 사람 / 현상금 수배서: 사냥꾼 -> 수배된 말 ID.
 var drift_players: Dictionary = {}
+## 1.3.1 [범용] 풀 파워를 가진 사람 (파워 게이지 빨간 끝에서 던지면 +2칸).
+var full_power_players: Dictionary = {}
 ## v1.1 방해령 메죵: 플레이어 -> 다음 이동 눈금에서 깎을 칸 수 (그 사람의 다음 굴림에 한 번 적용되고 사라진다).
 ## 전문적 해킹(ACT_23): 플레이어 -> 자동 진행으로 보낼 남은 턴 수 (그 사람의 다음 턴에 한 번 소모된다).
 var hacked_turns: Dictionary = {}

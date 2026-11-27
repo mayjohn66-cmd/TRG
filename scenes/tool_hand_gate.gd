@@ -44,6 +44,10 @@ static func supports(id: StringName) -> bool:
 	return TOOLS.has(id)
 
 
+## 카드 시점의 매트 위에 놓이는가 (1.3.1 마작). setup 전에 정한다.
+var on_board: bool = false
+
+
 func setup(id: StringName, details: Dictionary) -> void:
 	tool_id = id
 	_details = details.duplicate()
@@ -86,6 +90,10 @@ func setup(id: StringName, details: Dictionary) -> void:
 		_table_background.name="MahjongTablePanel"
 		_table_background.mouse_filter=Control.MOUSE_FILTER_IGNORE
 		_table_background.add_theme_stylebox_override("panel",JudgmentTableStyle.surface())
+		if on_board:  # 1.3.1 카드 시점: 판 가운데 마작 매트 위에 바로 늘어놓는다 (막은 입력만 막고 투명, 초록 판 없음)
+			_table_dim.color = Color(0, 0, 0, 0)
+			_table_background.add_theme_stylebox_override("panel",StyleBoxEmpty.new())
+			scale = Vector2.ONE * 1.15
 		add_child(_table_background)
 		move_child(_table_background,1)
 		result_panel.add_theme_stylebox_override("panel",StyleBoxEmpty.new())
@@ -270,7 +278,8 @@ func _exit_tree() -> void:
 func _refresh_prompt() -> void:
 	match tool_id:
 		&"DICE_MAHJONG":
-			_prompt.text = L10n.tf("패를 골라 꺼내세요 (%d / %d)", [_picks.size(), MAHJONG_PICKS])
+			# 카드 시점(매트 위)에서는 세는 글 없이 짧게: 꺼낸 패가 아래 줄에 서는 것으로 보인다
+			_prompt.text = L10n.t("세 개 꺼내세요") if on_board else L10n.tf("패를 골라 꺼내세요 (%d / %d)", [_picks.size(), MAHJONG_PICKS])
 		&"DICE_COOKIE":
 			_prompt.text = L10n.t("접시에서 쿠키를 하나 집으세요")
 		&"DICE_ICECREAM":

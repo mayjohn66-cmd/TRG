@@ -102,10 +102,14 @@ func run() -> void:
 	root.size = Vector2i(1366, 768)
 	await presenter_gates()
 	await placed_on_board()
+	await dice_hop_in_place()
 	await fixture()
 	await warmup()
 	await pirate_buttons()
 	await holdem_exchange()
+	await yacht_case()
+	await blackjack_table()
+	take_out_labels()
 	if failures.is_empty():
 		print("HAND_TOOLS_OK")
 		quit(0)
@@ -129,10 +133,15 @@ func placed_on_board() -> void:
 	for id: StringName in [&"DICE_DARTS", &"SLOT_777"]:
 		var result: Dictionary = ToolRegistry.create(id).roll(rng).to_dict()
 		presenter.play(id, result, 0.5)
-		check(presenter.placing_time == 0.0 and presenter.scale.x < 0.6, "%s 작게 들린 채 출발한다" % id)
 		check(not presenter._title.visible, "%s 도구 이름표는 띄우지 않는다" % id)
 		var target: Vector2 = presenter._place_target
-		check(presenter.position.y > target.y, "%s 굴린 사람 쪽(아래)에서 출발한다" % id)
+		if RollPresenter.DROP_TOOLS.has(id):
+			# 꺼내기 도구 (1.3.1): 미리 놓여 있지 않다가 바로 위에서 제 크기로 쿵 떨어진다
+			check(presenter.placing_time == 0.0 and presenter._dropping and is_equal_approx(presenter.scale.x, 1.0), "%s 위에서 떨어진다" % id)
+			check(presenter.position.y < target.y - 300.0 and is_equal_approx(presenter.position.x, target.x), "%s 바로 위에서 출발한다" % id)
+		else:
+			check(presenter.placing_time == 0.0 and presenter.scale.x < 0.6, "%s 작게 들린 채 출발한다" % id)
+			check(presenter.position.y > target.y, "%s 굴린 사람 쪽(아래)에서 출발한다" % id)
 		for _wait: int in 120:
 			if presenter.placing_time < 0.0:
 				break
@@ -140,6 +149,41 @@ func placed_on_board() -> void:
 		check(presenter.placing_time < 0.0 and presenter.scale == Vector2.ONE and presenter.position == target, "%s 제자리·제 크기로 내려앉는다" % id)
 		check(presenter._ground_shadow != null and presenter._ground_shadow.visible, "%s 바닥 그림자가 깔린다" % id)
 		presenter.cancel()
+	host.queue_free()
+	await frames()
+
+
+## 1.3.1: 보드에 놓여 있던 주사위(소품)가 그 자리에서 튀어 오르며 구르고, 그 바로 앞에 내려앉는다 (멀리서 날아오지 않는다).
+func dice_hop_in_place() -> void:
+	var host := Control.new()
+	host.size = Vector2(1366, 768)
+	root.add_child(host)
+	var presenter := RollPresenter.new()
+	host.add_child(presenter)
+	await frames()
+	presenter.toss_from = Vector2(683, 720)
+	presenter.hop_from = Vector2(683, 250)
+	presenter.hop_scale = 0.7
+	var prop := DiceRoll3D.new()
+	host.add_child(prop)
+	prop.begin(6, 0.5)
+	prop.apply_time(3.0)
+	presenter.hop_pose = prop.die_pose()
+	var result: Dictionary = {"tool_id": &"D6", "steps": 4, "details": {"face": 4}}
+	presenter.play(&"D6", result, 0.5)
+	var view: Control = presenter._dice_3d
+	var body: Vector2 = view.get_global_transform() * (view.size / 2.0)
+	check(presenter._hopping and body.distance_to(Vector2(683, 250)) < 2.0, "주사위는 소품 자리에서 출발한다 (%s)" % str(body))
+	check(is_equal_approx(presenter.scale.x, 0.7) and presenter.modulate.a == 1.0, "소품 크기 그대로, 흐려졌다 나타나지 않는다")
+	check(presenter._dice_3d.die_pose().basis.get_rotation_quaternion().is_equal_approx(prop.die_pose().basis.get_rotation_quaternion()), "첫 자세가 소품 주사위와 같다")
+	var top: float = 0.0
+	while presenter.active:
+		top = maxf(top, presenter.toss_height)
+		await process_frame
+	body = view.get_global_transform() * (view.size / 2.0)
+	check(body.distance_to(Vector2(683, 250) + RollPresenter.HOP_DRIFT) < 3.0, "튄 자리 바로 앞에 내려앉는다 (%s)" % str(body))
+	check(top > 20.0 and top < RollPresenter.TOSS_HEIGHT * 0.7, "판 위에서 통통 튀는 높이 (%.1f)" % top)
+	presenter.cancel()
 	host.queue_free()
 	await frames()
 
@@ -290,6 +334,67 @@ func holdem_exchange() -> void:
 		check(rolls[1]["details"]["exchanged"] == [0], "첫 카드만 바꿨다")
 	check(board.holdem_exchange_panel() == null, "확정하면 창이 닫힌다")
 	check(not board._card_view_on and board._alkkagi_saved_view == -1 and is_zero_approx(board._alkkagi_camera), "확정하면 원래 시점으로 돌아온 뒤 말이 움직인다")
+
+
+## 1.3.1 야추 주사위 케이스: 카드 시점으로 판 가운데에 놓이고, 고정한 주사위는 위 고정 칸으로, 확정하면 원래 시점으로.
+func yacht_case() -> void:
+	await next_turn()
+	rolls.clear()
+	await give(&"DICE_YACHT")
+	var stage: YachtStage = board._stage_yacht
+	for _w: int in 120:
+		board._refresh_all()
+		if stage.visible:
+			break
+		await process_frame
+	check(stage.visible and board._card_view_on and board._card_view_tool == &"DICE_YACHT", "야추 케이스가 뜨면 카드 시점으로 들어간다")
+	var case_center: Vector2 = stage.position + YachtStage.STAGE_SIZE / 2.0
+	check(absf(case_center.x - board._card_table_center().x) < 12.0 and absf(case_center.y - board._card_table_center().y) < 80.0, "케이스는 판 가운데 (%s / %s)" % [case_center, board._card_table_center()])
+	stage.start_pressed.emit()
+	var until: int = Time.get_ticks_msec() + 4000
+	while (stage.active or not stage.started) and Time.get_ticks_msec() < until:
+		await process_frame
+	check(stage.started and not stage.active, "주사위 5개가 컵에서 굴러 나온다")
+	var felt_y: float = stage.dice_views[1].position.y
+	stage._on_die_toggled(1)
+	check(stage.kept[1] and stage.dice_views[1].position.y < felt_y - 60.0, "누른 주사위는 위 고정 칸으로 올라간다 (누르는 자리도 따라간다)")
+	stage.confirm_pressed.emit()
+	until = Time.get_ticks_msec() + 30000  # 헤드리스는 프레임이 느려 잠깐 보여 주기(0.6초)·시점 복귀가 오래 걸린다
+	while (board._card_view_on or not is_zero_approx(board._alkkagi_camera)) and Time.get_ticks_msec() < until:
+		await process_frame
+	check(not board._card_view_on and is_zero_approx(board._alkkagi_camera), "확정하면 원래 시점으로 돌아온다")
+
+
+## 1.3.1 블랙잭 테이블: 스테이지가 뜨면 카드 시점(블랙잭 매트), 끝나면 원래 시점으로.
+func blackjack_table() -> void:
+	await next_turn()
+	await give(&"DICE_BLACKJACK")
+	var stage: BlackjackStage = board._stage_blackjack
+	for _w: int in 120:
+		board._refresh_all()
+		if stage.visible:
+			break
+		await process_frame
+	check(stage.visible and board._card_view_on and board._card_view_tool == &"DICE_BLACKJACK", "블랙잭 테이블이 뜨면 카드 시점으로 들어간다")
+	stage.start_pressed.emit()
+	var until: int = Time.get_ticks_msec() + 30000
+	while Time.get_ticks_msec() < until:
+		var tool: BaseJudgmentTool = board.state.tools[board.manager.current_player_id()]
+		if board.manager.current_state == TurnManager.State.PHASE_ROLL_WAIT and tool is ToolBlackjack and tool.has_pending_state() and not stage.active and not board._fx_busy:
+			stage.stand_pressed.emit()
+		if not board._card_view_on and is_zero_approx(board._alkkagi_camera):
+			break
+		await process_frame
+	check(not board._card_view_on and is_zero_approx(board._alkkagi_camera), "블랙잭이 끝나면 원래 시점으로 돌아온다")
+
+
+## 1.3.1: 던지지 않는 도구는 굴리기 버튼이 [꺼내기], 던지는 도구는 그대로.
+func take_out_labels() -> void:
+	for id: StringName in MainBoard.TAKE_OUT_TOOLS:
+		check(board._roll_button_label(ToolRegistry.create(id)) == "꺼내기", "%s 버튼은 [꺼내기]" % id)
+	for id: StringName in [&"D6", &"CHINCHIRO", &"YUT"]:
+		check(board._roll_button_label(ToolRegistry.create(id)) != "꺼내기", "%s는 던지는 도구라 그대로" % id)
+	check(board._roll_button_label(ToolRegistry.create(&"DICE_DARTS")).contains("던지기"), "다트는 [다트 던지기]")
 
 
 func warmup() -> void:

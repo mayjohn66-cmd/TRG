@@ -23,11 +23,18 @@ const REROLL_ALL_AUG: StringName = &"AUG_UTIL_REROLL_ALL_AUG" # [즉발 발동] 
 ## v1.1 범용 2종.
 const DRIFT: StringName = &"AUG_UTIL_DRIFT"                   # [패시브] 관성 드리프트: 코너를 지나갈 때마다 +2칸
 const BOUNTY: StringName = &"AUG_UTIL_BOUNTY"                 # [범용 보급] 현상금 수배서: 1등 적 말에 수배 마크, 잡으면 +10칸
+## 1.3.1 범용 1종.
+const FULL_POWER: StringName = &"AUG_UTIL_FULL_POWER"         # [패시브] 풀 파워: 파워 게이지를 빨간 구간까지 채워 던지면 +2칸
+## 파워 게이지가 있는 판정 도구 (화면의 게이지도 이 목록을 쓴다). 풀 파워는 이 도구로 굴릴 때만 적용된다.
+const POWER_GAUGE_TOOLS: Array[StringName] = [&"D6", &"YUT", &"CHINCHIRO", &"DICE_YACHT", &"DICE_PINBALL"]
+## 풀 파워: 게이지가 이 값 이상(빨간 구간 끝)에서 놓으면 성공 / 성공하면 더 가는 칸.
+const FULL_POWER_ZONE: float = 0.85
+const FULL_POWER_STEPS: int = 2
 ## 관성 드리프트: 코너 하나를 지날 때 더 가는 칸 / 현상금: 수배 말을 잡으면 더 가는 칸.
 const DRIFT_STEPS: int = 2
 const BOUNTY_STEPS: int = 10
 
-const ALL_IDS: Array[StringName] = [MUTATE_ONE, MUTATE_ALL, SKILL_REFILL, MOVE_PLUS, HAND_EXPAND, LUCKY_DICE, EXTRA_TURN, CARD_PACK2, SELECT_SHIELD, TRAP_CLEAR1, CATCH_UP, SHORTEN_GOAL, REROLL_ALL_AUG, DRIFT, BOUNTY]
+const ALL_IDS: Array[StringName] = [MUTATE_ONE, MUTATE_ALL, SKILL_REFILL, MOVE_PLUS, HAND_EXPAND, LUCKY_DICE, EXTRA_TURN, CARD_PACK2, SELECT_SHIELD, TRAP_CLEAR1, CATCH_UP, SHORTEN_GOAL, REROLL_ALL_AUG, DRIFT, BOUNTY, FULL_POWER]
 ## 2026-10 범용 10종 (도감·테스트용).
 const NEW_IDS: Array[StringName] = [MOVE_PLUS, HAND_EXPAND, LUCKY_DICE, EXTRA_TURN, CARD_PACK2, SELECT_SHIELD, TRAP_CLEAR1, CATCH_UP, SHORTEN_GOAL, REROLL_ALL_AUG, DRIFT, BOUNTY]
 ## 영구 패시브: 한 사람이 같은 증강을 겹쳐 받을 수 있는 최대 횟수 (손패 상한·행운은 한 번만, 이동 +1은 두 번까지).
@@ -53,6 +60,7 @@ const CALLOUTS: Dictionary = {
 	REROLL_ALL_AUG: "[전원 증강 재추첨!]",
 	DRIFT: "[코너 드리프트 +2칸!]",
 	BOUNTY: "[현상금 수배!]",
+	FULL_POWER: "[풀 파워 장착!]",
 }
 
 ## 수치 기본값 (augments_table.csv param_1이 비어 있을 때만 쓴다).
@@ -76,6 +84,7 @@ const INFO: Dictionary = {
 	REROLL_ALL_AUG: ["[즉발 발동] 올 픽션", "◆ 모두가 고른 뒤 발동: 모든 플레이어가 고른 증강을 버리고 새 3장 중에서 다시 고른다 (라운드당 1회)"],
 	DRIFT: ["[패시브] 관성 드리프트", "◆ 내 말이 코너를 지나갈 때마다 +2칸 (영구)"],
 	BOUNTY: ["[범용 보급] 현상금 수배서", "◆ 1등 적 말에 수배 마크\n◆ 그 말을 잡으면 즉시 +10칸"],
+	FULL_POWER: ["[패시브] 풀 파워", "◆ 파워 게이지를 빨간 끝(85% 이상)까지 채워 던지면 이동 +2칸 (영구)\n◆ 파워 게이지가 있는 판정 도구(기본 주사위·윷·친치로·야추 다이스·핀볼)에만 적용"],
 }
 
 
@@ -136,6 +145,10 @@ static func is_available(effect: StringName, state: GameState, player_id: int) -
 			return not bool(state.drift_players.get(player_id, false))
 		BOUNTY:
 			return not state.bounties.has(player_id) and bounty_target(state, player_id) != null
+		FULL_POWER:
+			# 지금 게이지가 있는 도구를 쓰는 사람만 (도구를 바꾸면 쉬고, 게이지 도구로 돌아오면 다시 켜진다)
+			var tool: BaseJudgmentTool = state.tools.get(player_id)
+			return not bool(state.full_power_players.get(player_id, false)) and tool != null and POWER_GAUGE_TOOLS.has(tool.tool_id)
 	return false
 
 
@@ -179,7 +192,18 @@ static func apply(effect: StringName, state: GameState, player_id: int) -> Dicti
 			state.bounties[player_id] = wanted.entity_id
 			state.utility_fx.append({"kind": "bounty", "pawn_id": wanted.entity_id, "player_id": player_id})
 			return {"ok": true, "text": "P%d의 %d번 말 수배! 잡으면 +%d칸" % [wanted.owner_id, wanted.slot, BOUNTY_STEPS]}
+		FULL_POWER:
+			state.full_power_players[player_id] = true
+			return {"ok": true, "text": "파워 게이지를 빨간 끝까지 채워 던지면 +%d칸" % FULL_POWER_STEPS}
 	return {"ok": false, "text": "알 수 없는 범용 증강입니다"}
+
+
+## 풀 파워 보너스 칸: 증강을 가졌고, 게이지 도구로, 게이지를 빨간 끝까지 채워 던졌으면 +2 (아니면 0).
+## power는 굴림 행동에 실려 온 게이지 값(0~1, 없으면 NAN = 게이지를 쓰지 않음). 락스텝 행동 값이라 모든 화면이 같다.
+static func full_power_bonus(state: GameState, player_id: int, tool_id: StringName, power: float) -> int:
+	if is_nan(power) or not bool(state.full_power_players.get(player_id, false)) or not POWER_GAUGE_TOOLS.has(tool_id):
+		return 0
+	return FULL_POWER_STEPS if power >= FULL_POWER_ZONE else 0
 
 
 ## 현상금 수배서의 대상: 보드 위 적 말 중 결승에 가장 가까운 말 (같으면 ID가 앞선 말). 없으면 null.

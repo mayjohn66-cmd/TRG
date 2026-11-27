@@ -62,6 +62,21 @@ func show_tool(id: StringName) -> void:
 	set_process(true)
 
 
+## 제자리 점프용 (1.3.1): 소품 그림의 가운데(화면 좌표)·크기 비율·주사위 3D 자세. 주사위 소품이 아니면 hop_pose는 null.
+func hop_center() -> Vector2:
+	return get_global_rect().get_center()
+
+
+func hop_scale() -> float:
+	var content: Control = _holder.get_child(0) as Control if _holder != null and _holder.get_child_count() > 0 else null
+	return content.scale.x if content != null else 1.0
+
+
+func hop_pose() -> Variant:
+	var content: DiceRoll3D = _holder.get_child(0) as DiceRoll3D if _holder != null and _holder.get_child_count() > 0 else null
+	return content.die_pose() if content != null else null
+
+
 func _process(_delta: float) -> void:
 	_freeze_frames -= 1
 	if _freeze_frames > 0:

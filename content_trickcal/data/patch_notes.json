@@ -11,6 +11,20 @@
    "sections": [
     {
      "head": {
+      "ko": "신규",
+      "en": "New",
+      "ja": "新規"
+     },
+     "items": [
+      {
+       "ko": "신규 범용 증강 [패시브] 풀 파워: 파워 게이지를 빨간 끝(85% 이상)까지 채워 던지면 이동 +2칸. 파워 게이지가 있는 판정 도구(기본 주사위·윷·친치로·야추 다이스·핀볼)에만 적용돼요 (게이지 끝에 금색 테두리로 노릴 자리가 보여요)",
+       "en": "New common augment [Passive] Full Power: release the power gauge at the red end (85%+) to move +2 spaces. Only works with Judgment Tools that have a power gauge (Standard Dice, Yut, Chinchiro, Yacht Dice, Pinball); a gold outline marks the target zone on the gauge",
+       "ja": "新しい汎用増強［パッシブ］フルパワー：パワーゲージを赤い端（85%以上）まで溜めて投げると移動+2マス。パワーゲージのある判定ツール（基本サイコロ・ユッ・チンチロ・ヨットダイス・ピンボール）のみ適用されます（ゲージの端に狙う場所が金色の枠で表示されます）"
+      }
+     ]
+    },
+    {
+     "head": {
       "ko": "개선",
       "en": "Improvements",
       "ja": "改善"
@@ -100,6 +114,36 @@
        "ko": "[타로]·[화투]·[텍사스 홀덤] 카드를 쓸 때 보드판 가운데로 다가가 카드 매트를 쫙 펼쳐요 (타로는 보라 벨벳, 화투는 담요, 홀덤은 포커 테이블). 매트 위에서 카드를 섞어 한 장씩 나눠 주고 (섞는 중에 누르면 바로 놓여요), 다 보고 나면 매트를 말아 넣고 원래 시점으로 돌아와 말이 움직여요",
        "en": "When using [Tarot], [Hwatu] or [Texas Hold'em], the camera moves into the middle of the board and rolls out a card mat (purple velvet for Tarot, a blanket for Hwatu, a poker table for Hold'em). The cards are shuffled and dealt onto the mat (tap to skip the shuffle). Afterwards the mat rolls up, the view returns and your pawn moves",
        "ja": "［タロット］・［花札］・［テキサスホールデム］のカードを使うとき、ボードの中央に寄ってカードマットを広げます（タロットは紫のベルベット、花札は毛布、ホールデムはポーカーテーブル）。マットの上でカードをシャッフルして1枚ずつ配り（シャッフル中に押すとすぐ並びます）、見終わるとマットを巻き取って元の視点に戻り、駒が動きます"
+      },
+      {
+       "ko": "[기본 주사위]·[지하노역장 친치로]는 굴리기를 누르면 보드 위에 놓여 있던 주사위가 그 자리에서 통통 튀어 오르며 굴러요 (친치로는 그릇 안에서). 멀리서 새 주사위가 날아오지 않아요",
+       "en": "With [Standard Dice] and [Chinchiro], pressing roll now makes the die that was sitting on the board hop and tumble right where it is (inside the bowl for Chinchiro), instead of a new die flying in from afar",
+       "ja": "［基本サイコロ］・［地下労働場チンチロ］は振るボタンを押すと、ボードの上に置かれていたサイコロがその場でぴょんと跳ねて転がります（チンチロは茶碗の中で）。遠くから新しいサイコロが飛んでこなくなりました"
+      },
+      {
+       "ko": "[야추 다이스]는 별도 창 대신 판 가운데로 다가가 전용 주사위 케이스에서 굴려요: 오른쪽 컵에서 주사위가 초록 펠트로 쏟아지고, 남길 주사위를 누르면 위쪽 고정 칸으로 올라가요 (다시 누르면 내려와요)",
+       "en": "[Yacht Dice] now rolls in its own dice case in the middle of the board instead of a separate window: the dice pour from the cup onto green felt, and tapping a die moves it up into the hold slots (tap again to put it back)",
+       "ja": "［ヨットダイス］は別ウィンドウの代わりにボード中央に寄って専用のダイスケースで振ります：右のカップから緑のフェルトへサイコロがこぼれ、残したいサイコロを押すと上のキープ枠に上がります（もう一度押すと戻ります）"
+      },
+      {
+       "ko": "[스크래치 복권]도 판 가운데로 다가가 나무 계산대 위에서 긁어요",
+       "en": "[Scratch Ticket] is now scratched on a wooden counter in the middle of the board",
+       "ja": "［スクラッチくじ］もボード中央に寄って木のカウンターの上で削ります"
+      },
+      {
+       "ko": "이어서 굴리는 판정 도구 옆 UI를 정리했어요: 보드 왼쪽 기록판의 이름·횟수·누적 글자판을 없애고 성공 표식만 남겼어요. [러시안 룰렛]의 누적 칸은 [정지 +12칸]처럼 정지 버튼에, [해적 룰렛]은 [칼 꽂기] 바로 옆 [멈추기 +6칸] 버튼에 보여요. [블랙잭]의 제목·안내 글도 뺐어요",
+       "en": "Cleaned up the UI next to Judgment Tools that keep rolling: the side panel no longer shows names, counts or running-total plaques, only success markers. [Russian Roulette] shows its running total on the stop button ([Stop +12]), and [Pirate Roulette] has a [Stop +6] button right next to [Stab]. The [Blackjack] title and hint text are gone too",
+       "ja": "続けて振る判定ツールの横のUIを整理しました：ボード左の記録欄から名前・回数・累計の札をなくし、成功マークだけを残しました。［ロシアンルーレット］の累計マスは［停止 +12マス］のように停止ボタンに、［海賊ルーレット］は［剣を刺す］のすぐ横の［止める +6マス］ボタンに表示されます。［ブラックジャック］のタイトル・案内文もなくしました"
+      },
+      {
+       "ko": "던지지 않는 판정 도구(화투·홀덤·슬롯머신·마작·타로·주식 차트·오미쿠지·아이스크림·포츈쿠키·캡슐뽑기·스크래치 복권)는 버튼이 [꺼내기]로 바뀌었어요. 판 위에 미리 놓여 있지 않다가, 누르면 위에서 쿵 떨어져 놓이고 그다음 직접 다뤄요",
+       "en": "Judgment Tools you don't throw (Hwatu, Hold'em, Slot Machine, Mahjong, Tarot, Stock Chart, Omikuji, Ice Cream, Fortune Cookie, Capsule Gacha, Scratch Ticket) now have a [Take out] button. They aren't sitting on the board beforehand: press it and the tool drops onto the board with a thud, then you handle it yourself",
+       "ja": "投げない判定ツール（花札・ホールデム・スロットマシン・麻雀・タロット・株価チャート・おみくじ・アイスクリーム・フォーチュンクッキー・カプセルガチャ・スクラッチくじ）はボタンが［取り出す］になりました。ボードの上に前もって置かれておらず、押すと上からドスンと落ちてきて置かれ、そのあと自分で扱います"
+      },
+      {
+       "ko": "[블랙잭 21 딜러]와 [리치 마작 만리장성]도 판 가운데로 다가가 전용 매트 위에서 써요: 블랙잭은 청록 카지노 테이블, 마작은 진초록 마작 매트",
+       "en": "[Blackjack 21 Dealer] and [Riichi Mahjong Great Wall] are now played on their own mats in the middle of the board too: a teal casino table for Blackjack and a dark green mahjong mat",
+       "ja": "［ブラックジャック21ディーラー］と［リーチ麻雀万里の長城］もボード中央に寄って専用マットの上で使います：ブラックジャックは青緑のカジノテーブル、麻雀は深緑の麻雀マット"
       }
      ]
     },

@@ -35,11 +35,16 @@ const YUT_TRAVEL_TIME: float = 0.42
 const TOSS_HEIGHT: float = 150.0
 const TOSS_CONTACTS: Array[float] = [0.60, 0.84, 1.0]
 ## 보드 위에 내려놓는 도구 (1.3.1): 굴린 사람 쪽에서 들고 와 보드 한가운데에 '탁' 내려놓는다 (바닥 그림자·먼지). 팝업이 아니라 판 위의 물건처럼.
-const PLACE_TOOLS: Array[StringName] = [&"LIFE_ROULETTE", &"SLOT_777", &"REVOLVER", &"DICE_STOCK", &"DICE_DARTS", &"DICE_OMIKUJI", &"DICE_CAPSULE", &"DICE_PIRATE", &"DICE_SCRATCH", &"DICE_COOKIE", &"DICE_ICECREAM", &"DICE_MAHJONG"]
+const PLACE_TOOLS: Array[StringName] = [&"LIFE_ROULETTE", &"SLOT_777", &"REVOLVER", &"DICE_STOCK", &"DICE_DARTS", &"DICE_OMIKUJI", &"DICE_CAPSULE", &"DICE_PIRATE", &"DICE_COOKIE", &"DICE_ICECREAM"]  # 스크래치 복권은 카드 시점(판 위 계산대)에서 (MainBoard.CARD_TABLE_TOOLS)
 ## 들고 오는 시간과 내려놓은 뒤 눌렸다 펴지는 시간 (연출 시계는 멈추지 않는다: 결과 시각은 그대로).
 const PLACE_TIME: float = 0.26
 const PLACE_SETTLE: float = 0.16
 const PLACE_LIFT: float = 70.0
+## 꺼내기 도구 (1.3.1): 미리 놓여 있지 않다가 위에서 "쿵" 떨어져 판 위에 놓인다. 손으로 다루는 첫 장면(손 도구 창)도 같이 떨어진다.
+const DROP_TOOLS: Array[StringName] = [&"SLOT_777", &"DICE_STOCK", &"DICE_OMIKUJI", &"DICE_ICECREAM", &"DICE_COOKIE", &"DICE_CAPSULE", &"DICE_SCRATCH"]  # 마작은 카드 시점 매트에서 (1.3.1)
+const DROP_HEIGHT: float = 420.0
+const DROP_TIME: float = 0.24
+const DROP_SQUASH: float = 0.16
 ## 결과는 작은 반동만 준다. 입력은 결과 확정 즉시 풀린다.
 const PUNCH_TIME: float = 0.14
 const PUNCH_SCALE: float = 1.08
@@ -92,6 +97,19 @@ var table_scale: float = 1.0
 var toss_from: Vector2 = Vector2(INF, INF)
 ## Actual projected board outline, refreshed by MainBoard on layout/view changes.
 var toss_board_outline := PackedVector2Array()
+## 제자리 점프 (1.3.1): 보드 위에 놓여 있던 내 주사위 소품(ToolRestProp)에서 그대로 튀어 오른다. MainBoard가 굴림마다 넣고, 연출이 끝나면 지운다.
+## hop_from = 소품 주사위 화면의 가운데(화면 좌표), hop_scale = 소품 크기 비율, hop_pose = 소품 주사위의 3D 자세(Transform3D).
+var hop_from: Vector2 = Vector2(INF, INF)
+## 꺼내기 (1.3.1): 판 위에 내려놓는 도구가 어디서 나오는가 (굴리기 버튼 위 내 도구 소품 자리). 비어 있으면 굴린 사람 쪽(toss_from).
+var place_from: Vector2 = Vector2(INF, INF)
+var hop_scale: float = 1.0
+var hop_pose: Variant = null
+var _hopping: bool = false
+var _toss_base_scale: float = 1.0
+## 제자리 점프가 내려앉는 자리 (튄 자리에서 살짝 앞으로).
+const HOP_DRIFT: Vector2 = Vector2(0.0, 14.0)
+## 제자리 점프 높이 (멀리서 던질 때 높이 TOSS_HEIGHT의 몇 배).
+const HOP_HEIGHT: float = 0.55
 ## 지금(또는 방금 끝난) 연출이 보드 위 투척인가.
 var tossing: bool = false
 ## 투척 중인 주사위가 바닥에서 떠 있는 높이 (화면 px, 테스트용).
@@ -158,6 +176,8 @@ var _place_target: Vector2 = Vector2.ZERO
 var _place_from: Vector2 = Vector2.ZERO
 var _place_base: Vector2 = Vector2.ZERO
 var _place_landed: bool = false
+var _dropping: bool = false
+var _place_scale: float = 1.0
 
 
 ## 투척하는 주사위 아래 바닥에 깔리는 반투명 타원 그림자 (높이 뜨면 작고 옅어진다).
@@ -260,6 +280,7 @@ func play(tool_id: StringName, result: Dictionary, power: float = 0.5, continues
 		scale = Vector2.ONE * table_scale
 	if interactive and ToolHandGate.supports(tool_id):
 		_hand_gate = ToolHandGate.new()
+		_hand_gate.on_board = not is_equal_approx(table_scale, 1.0)  # 카드 시점(마작): 어두운 막·초록 판 없이 매트 위에
 		var hand_details: Dictionary = (result.get("details", {}) as Dictionary).duplicate()
 		hand_details["_kept_count"] = _kept_prop_count
 		_hand_gate.setup(tool_id, hand_details)
@@ -269,11 +290,13 @@ func play(tool_id: StringName, result: Dictionary, power: float = 0.5, continues
 		_hand_gate.top_level = true
 		_hand_gate.global_position = center  # 보드 한가운데
 		_root.visible = false  # 손으로 다 꺼낼 때까지 원래 연출은 기다린다
+		if DROP_TOOLS.has(tool_id) and not continues_chain:
+			_drop_gate()
 		_gate_wait = 0.0
 	if tossing:
 		_begin_toss()
-	elif PLACE_TOOLS.has(tool_id) and _hand_gate == null and not continues_chain:
-		_begin_place()
+	elif (PLACE_TOOLS.has(tool_id) or DROP_TOOLS.has(tool_id)) and _hand_gate == null and not continues_chain:
+		_begin_place(DROP_TOOLS.has(tool_id))
 	active = true
 	visible = true
 	var cues:Array[Dictionary]=[]
@@ -372,6 +395,8 @@ func _stop_playback() -> void:
 	scale = Vector2.ONE
 	rotation = 0.0
 	placing_time = -1.0
+	_hopping = false
+	_toss_base_scale = 1.0
 	if _contact_fx != null:
 		_contact_fx.marks.clear()
 		_contact_fx.hide()
@@ -409,7 +434,9 @@ func _begin_toss() -> void:
 	_toss_view = _dice_3d if dice else _yut_3d
 	if dice and _dice_3d.shadow != null:
 		_dice_3d.shadow.visible = _mode == &"CHINCHIRO"
-	_toss_start = toss_from if toss_from.is_finite() else center + Vector2(0.0, 260.0)
+	_hopping = hop_from.is_finite() and _mode in [&"D6", &"CHINCHIRO"]
+	_toss_base_scale = hop_scale if _hopping else 1.0
+	_toss_start = hop_from if _hopping else (toss_from if toss_from.is_finite() else center + Vector2(0.0, 260.0))
 	if _ground_shadow == null:
 		_ground_shadow = GroundShadow.new()
 		add_child(_ground_shadow)
@@ -427,8 +454,10 @@ func _begin_toss() -> void:
 	_die_label.top_level = true
 	_die_label.z_index = 3
 	_die_label.pivot_offset = Vector2.ZERO
-	if _mode == &"CHINCHIRO":
+	if _mode == &"CHINCHIRO" and not _hopping:
 		_dice_3d.set_bowl_entry(_toss_start - center - TOSS_LAND_OFFSET)
+	if _hopping and hop_pose is Transform3D:
+		_dice_3d.start_from(hop_pose)  # 소품 주사위의 자세에서 이어서 돈다 (첫 프레임이 튀지 않게)
 	if _mode == &"YUT" and _yut_3d.result_value == 0:
 		_configure_yut_nak()
 	modulate.a = 0.0
@@ -436,9 +465,14 @@ func _begin_toss() -> void:
 
 
 ## 내려놓기 준비: 다 놓인 자리(지금 자리)를 기억하고, 굴린 사람 쪽에서 작게 들려 있는 모습으로 시작한다.
-func _begin_place() -> void:
+func _begin_place(drop: bool = false) -> void:
 	_place_target = position
-	_place_from = (toss_from if toss_from.is_finite() else center + Vector2(0.0, 260.0)) - size / 2.0
+	_dropping = drop
+	_place_scale = scale.x  # 카드 시점 배율(table_scale)이 걸려 있으면 그 크기로 놓인다
+	var source: Vector2 = place_from if place_from.is_finite() else (toss_from if toss_from.is_finite() else center + Vector2(0.0, 260.0))
+	_place_from = source - size / 2.0
+	if drop:
+		_place_from = _place_target - Vector2(0.0, DROP_HEIGHT)  # 바로 위에서 떨어진다
 	var stage_rect: Rect2 = _stage.get_global_rect() if _stage != null else Rect2(center - Vector2(80, 0), Vector2(160, 60))
 	_place_base = Vector2(stage_rect.get_center().x, stage_rect.end.y - 6.0)
 	if _ground_shadow == null:
@@ -452,7 +486,8 @@ func _begin_place() -> void:
 		add_child(_contact_fx)
 	_contact_fx.marks.clear()
 	_contact_fx.show()
-	pivot_offset = _place_base - _place_target  # 바닥 가운데를 기준으로 눌렸다 펴진다
+	if is_equal_approx(_place_scale, 1.0):
+		pivot_offset = _place_base - _place_target  # 바닥 가운데를 기준으로 눌렸다 펴진다 (카드 시점 배율이 걸렸으면 가운데 기준 그대로)
 	placing_time = 0.0
 	_place_landed = false
 	_update_place(0.0)
@@ -460,15 +495,19 @@ func _begin_place() -> void:
 
 ## 들고 와서(호를 그리며 커진다) 바닥에 닿으면 살짝 눌렸다 펴지고, 닿은 자리에 먼지가 인다. 그림자는 놓일 자리에 깔린 채 진해진다.
 func _update_place(t: float) -> void:
-	var u: float = clampf(t / PLACE_TIME, 0.0, 1.0)
-	var eased: float = 1.0 - pow(1.0 - u, 3.0)
-	position = _place_from.lerp(_place_target, eased) + Vector2(0.0, -sin(PI * u) * PLACE_LIFT)
-	var settle: float = clampf((t - PLACE_TIME) / PLACE_SETTLE, 0.0, 1.0)
+	var land_at: float = DROP_TIME if _dropping else PLACE_TIME
+	var u: float = clampf(t / land_at, 0.0, 1.0)
+	var eased: float = u * u if _dropping else 1.0 - pow(1.0 - u, 3.0)  # 떨어질 때는 점점 빨라진다
+	position = _place_from.lerp(_place_target, eased) + (Vector2.ZERO if _dropping else Vector2(0.0, -sin(PI * u) * PLACE_LIFT))
+	var settle: float = clampf((t - land_at) / PLACE_SETTLE, 0.0, 1.0)
 	if u < 1.0:
-		scale = Vector2.ONE * lerpf(0.42, 1.0, eased)
+		scale = Vector2.ONE * _place_scale * (1.0 if _dropping else lerpf(0.42, 1.0, eased))
+		if _dropping:
+			modulate.a = clampf(u * 6.0, 0.0, 1.0)
 	else:
-		var squash: float = sin(PI * settle) * (1.0 - settle) * 0.09
-		scale = Vector2(1.0 + squash, 1.0 - squash)
+		modulate.a = 1.0
+		var squash: float = sin(PI * settle) * (1.0 - settle) * (DROP_SQUASH if _dropping else 0.09)
+		scale = Vector2(1.0 + squash, 1.0 - squash) * _place_scale
 	if _ground_shadow != null:
 		var width: float = float(_ground_shadow.get_meta("width", 200.0)) * lerpf(0.55, 1.0, eased)
 		_ground_shadow.visible = true
@@ -477,20 +516,44 @@ func _update_place(t: float) -> void:
 		_ground_shadow.modulate.a = lerpf(0.6, 2.4, eased)  # 기본 그림자(옅은 연기)를 판 위 물건 무게만큼 진하게
 	if _contact_fx != null:
 		_contact_fx.marks.clear()
-		var age: float = t - PLACE_TIME
+		var age: float = t - land_at
 		if age >= 0.0 and age < 0.20:
-			_contact_fx.marks.append({"at": _place_base, "age": age, "strength": 1.0})
+			_contact_fx.marks.append({"at": _place_base, "age": age, "strength": 1.4 if _dropping else 1.0})
 		_contact_fx.queue_redraw()
-	if t >= PLACE_TIME and not _place_landed:
+	if t >= land_at and not _place_landed:
 		_place_landed = true
-		Sfx.play(&"thud", -9.0, 0.0, 0.9)
-	if t >= PLACE_TIME + maxf(PLACE_SETTLE, 0.20):
+		Sfx.play(&"thud", -3.0 if _dropping else -9.0, 0.0, 0.8 if _dropping else 0.9)  # 쿵
+	if t >= land_at + maxf(PLACE_SETTLE, 0.20):
 		position = _place_target
-		scale = Vector2.ONE
+		scale = Vector2.ONE * _place_scale
+		modulate.a = 1.0
 		placing_time = -1.0
 		if _contact_fx != null:
 			_contact_fx.marks.clear()
 			_contact_fx.queue_redraw()
+
+
+## 투척이 내려앉는 자리: 제자리 점프면 튄 자리 바로 앞, 아니면 보드 마당 한가운데.
+## 손으로 다루는 첫 장면(과자 접시·아이스박스·오미쿠지 통·마작 패)도 위에서 쿵 떨어져 놓인다 (꺼내기).
+func _drop_gate() -> void:
+	if _hand_gate == null:
+		return
+	var gate: Control = _hand_gate
+	var landed: Vector2 = gate.global_position
+	gate.global_position = landed - Vector2(0.0, DROP_HEIGHT)
+	gate.modulate.a = 0.0
+	var fall := gate.create_tween()
+	fall.tween_property(gate, "global_position", landed, DROP_TIME).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	fall.parallel().tween_property(gate, "modulate:a", 1.0, DROP_TIME * 0.3)
+	fall.tween_callback(func() -> void: Sfx.play(&"thud", -3.0, 0.0, 0.8))
+	fall.tween_property(gate, "scale", Vector2(1.0 + DROP_SQUASH, 1.0 - DROP_SQUASH), 0.06)
+	fall.tween_property(gate, "scale", Vector2.ONE, 0.14).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+func _toss_target() -> Vector2:
+	if _hopping:
+		return _toss_start + (HOP_DRIFT if _mode == &"D6" else Vector2.ZERO)  # 친치로 그릇은 제자리에 있고 주사위만 그 안에서 튄다
+	return center + TOSS_LAND_OFFSET
 
 
 func _configure_yut_nak() -> void:
@@ -509,7 +572,7 @@ func _configure_yut_nak() -> void:
 
 
 func _toss_ground(u: float) -> Vector2:
-	var target: Vector2 = center + TOSS_LAND_OFFSET
+	var target: Vector2 = _toss_target()
 	var direction: Vector2 = (target - _toss_start).normalized()
 	var eased: float = 1.0 - pow(1.0 - u, 2.0)
 	var curve: Vector2 = direction.orthogonal() * 18.0 * sin(PI * u) * (1.0 - u)
@@ -561,6 +624,8 @@ func _update_toss(t: float) -> void:
 			if u <= end:
 				var arc: float = clampf((u - start) / (end - start), 0.0, 1.0)
 				height = 4.0 * arc * (1.0 - arc) * TOSS_HEIGHT * lerpf(0.75, 1.05, _power) * [1.0, 0.24, 0.065][index]
+				if _hopping:
+					height *= HOP_HEIGHT  # 제자리 점프는 판 위에서 통통 튀는 정도로
 				break
 			start = end
 		for contact: float in TOSS_CONTACTS:
@@ -570,11 +635,13 @@ func _update_toss(t: float) -> void:
 	toss_height = height
 	var lift: float = clampf(height / TOSS_HEIGHT, 0.0, 1.0)
 	var grow: float = lerpf(0.68 if _mode != &"YUT" else 0.58, 1.0, eased)
+	if _hopping:
+		grow = _toss_base_scale * (1.0 + 0.14 * clampf(height / TOSS_HEIGHT, 0.0, 1.0))  # 제자리 점프: 소품 크기에서 떠오르는 만큼만 살짝 커진다
 	scale = Vector2(1.0 + compression, 1.0 - compression) * grow
-	var direction: Vector2 = (center + TOSS_LAND_OFFSET - _toss_start).normalized()
+	var direction: Vector2 = (_toss_target() - _toss_start).normalized()
 	rotation = direction.x * 0.10 * sin(PI * u) * (1.0 - u)
 	_place_toss_body(ground + Vector2(0.0, -height))
-	modulate.a = clampf(u * 6.0, 0.0, 1.0)
+	modulate.a = 1.0 if _hopping else clampf(u * 6.0, 0.0, 1.0)
 	if _ground_shadow != null and _ground_shadow.visible:
 		var shadow_size: Vector2 = SHADOW_SIZE * grow * (1.0 - 0.5 * lift)
 		_ground_shadow.size = shadow_size
@@ -595,9 +662,9 @@ func _update_toss(t: float) -> void:
 func _update_bowl_toss(t: float) -> void:
 	# The dish stays on the board; only the 3D die travels into its cavity.
 	toss_height = 0.0
-	scale = Vector2.ONE
+	scale = Vector2.ONE * _toss_base_scale
 	rotation = 0.0
-	var landed: Vector2 = center + TOSS_LAND_OFFSET
+	var landed: Vector2 = _toss_target()
 	_place_toss_body(landed)
 	_place_toss_label(landed)
 	modulate.a = clampf(t / 0.10, 0.0, 1.0)
@@ -633,11 +700,12 @@ func _update_linger(t: float) -> void:
 	pivot_offset = size / 2.0
 	scale = k
 	rotation = 0.0
-	var landed: Vector2 = center + TOSS_LAND_OFFSET
-	_place_toss_body(landed - Vector2(0.0, SHADOW_DROP * (k.y - 1.0)))
+	var landed: Vector2 = _toss_target()
+	k *= _toss_base_scale  # 제자리에서 튄 주사위는 보드 위 소품 크기 그대로 남는다
+	_place_toss_body(landed - Vector2(0.0, SHADOW_DROP * (k.y - _toss_base_scale)))
 	if _ground_shadow != null and _ground_shadow.visible:
 		_ground_shadow.size = SHADOW_SIZE * k.x
-		_ground_shadow.position = landed + Vector2(0.0, SHADOW_DROP) - _ground_shadow.size / 2.0
+		_ground_shadow.position = landed + Vector2(0.0, SHADOW_DROP * _toss_base_scale) - _ground_shadow.size / 2.0
 		_ground_shadow.modulate.a = 1.0
 	if _die_label != null:
 		# 도장처럼 크게 떠서 쾅 내려찍고 살짝 튕긴다 (2배 → 1배).

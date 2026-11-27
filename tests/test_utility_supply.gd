@@ -190,3 +190,55 @@ func test_utility_state_survives_snapshots() -> void:
 	state.goal_shrink_bonus = 0
 	snapshot.restore(state)
 	check(state.hand_limit(1) == GameEnums.MAX_HAND_SIZE + 1 and int(state.lucky_dice.get(1, 0)) == 1 and int(state.revive_charges.get(1, 0)) == 1 and state.goal_shrink_bonus == 2, "되감기·동기화로 범용 기록 복원")
+
+
+func test_full_power_needs_a_gauge_tool_and_the_red_end() -> void:
+	# 1.3.1 풀 파워: 게이지 도구로, 게이지를 빨간 끝(0.85 이상)까지 채워 던지면 +2칸. 게이지 값은 굴림 행동에 실려 온다 (NAN = 게이지를 쓰지 않음).
+	var state := make_state(2)
+	state.tools[1] = ToolDiceD6.new()
+	check(AugmentRegistry.get_def(UtilityAugments.FULL_POWER).is_available(state, 1), "게이지 도구면 나온다")
+	state.tools[1] = ToolRegistry.create(&"LIFE_ROULETTE")
+	check(not AugmentRegistry.get_def(UtilityAugments.FULL_POWER).is_available(state, 1), "게이지 없는 도구면 나오지 않는다")
+	state.tools[1] = ToolDiceD6.new()
+	check_eq(UtilityAugments.full_power_bonus(state, 1, &"D6", 1.0), 0, "증강이 없으면 0")
+	check(bool(_apply(state, UtilityAugments.FULL_POWER)["ok"]), "적용")
+	check(not AugmentRegistry.get_def(UtilityAugments.FULL_POWER).is_available(state, 1), "한 번만")
+	check_eq(UtilityAugments.full_power_bonus(state, 1, &"D6", 0.9), 2, "빨간 끝 +2")
+	check_eq(UtilityAugments.full_power_bonus(state, 1, &"YUT", 0.85), 2, "경계값 0.85도 성공")
+	check_eq(UtilityAugments.full_power_bonus(state, 1, &"D6", 0.84), 0, "모자라면 0")
+	check_eq(UtilityAugments.full_power_bonus(state, 1, &"D6", NAN), 0, "게이지를 안 쓰면(짧게 누름) 0")
+	check_eq(UtilityAugments.full_power_bonus(state, 1, &"LIFE_ROULETTE", 1.0), 0, "게이지 없는 도구는 0")
+	check_eq(UtilityAugments.full_power_bonus(state, 2, &"D6", 1.0), 0, "다른 사람은 0")
+	var snapshot: TurnSnapshot = TurnSnapshot.capture(state)
+	state.full_power_players.clear()
+	snapshot.restore(state)
+	check(bool(state.full_power_players.get(1, false)), "되감기·동기화로 복원")
+
+
+func test_full_power_adds_two_to_the_roll_through_the_roll_action() -> void:
+	var manager := _manager(false)
+	var player: int = manager.current_player_id()
+	manager.state.tools[player] = ToolDiceD6.new()
+	manager.state.full_power_players[player] = true
+	var boosts: Array[Dictionary] = []
+	manager.event_received.connect(func(kind: StringName, data: Dictionary) -> void:
+		if kind == &"roll_boosted":
+			boosts.append(data))
+	if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN:
+		manager.act(&"proceed", {"player_id": player})
+	manager.act(&"roll", {"player_id": player, "power": 0.95})
+	check(not boosts.is_empty() and int(boosts[0].get("gauge", 0)) == 2 and int(boosts[0]["to"]) == int(boosts[0]["from"]) + 2, "게이지 빨간 끝으로 굴리면 이동 +2 (%s)" % str(boosts))
+	_dispose(manager)
+	manager = _manager(false)
+	player = manager.current_player_id()
+	manager.state.tools[player] = ToolDiceD6.new()
+	manager.state.full_power_players[player] = true
+	boosts.clear()
+	manager.event_received.connect(func(kind: StringName, data: Dictionary) -> void:
+		if kind == &"roll_boosted":
+			boosts.append(data))
+	if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN:
+		manager.act(&"proceed", {"player_id": player})
+	manager.act(&"roll", {"player_id": player, "power": 0.5})
+	check(boosts.is_empty() or int(boosts[0].get("gauge", 0)) == 0, "게이지가 모자라면 보너스 없음")
+	_dispose(manager)

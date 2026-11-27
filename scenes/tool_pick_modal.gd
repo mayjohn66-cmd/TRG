@@ -118,7 +118,8 @@ func setup(id: StringName, board_table: bool = false) -> void:
 	row.add_theme_constant_override("separation", 14 if MobileSupport.touch_mode() else 10)
 	table.add_child(row)
 	# 판 위(당겨 본 판 가운데)에서는 판이 커진 만큼 카드도 크게
-	var item_size: Vector2 = look["size"] * (1.35 if on_board else (1.25 if MobileSupport.touch_mode() else 1.0))
+	# 터치 화면은 매트도 1.25배로 커지므로 카드도 그만큼 (따로 키우는 fit_touch_scale은 판 위에서는 쓰지 않는다: 겹쳐 키우면 매트 밖으로 넘친다)
+	var item_size: Vector2 = look["size"] * ((1.35 * (1.2 if MobileSupport.touch_mode() else 1.0)) if on_board else (1.25 if MobileSupport.touch_mode() else 1.0))
 	for index: int in ToolPick.count_of(id):
 		var item := _make_item(look, item_size, index)
 		row.add_child(item)
@@ -138,7 +139,8 @@ func setup(id: StringName, board_table: bool = false) -> void:
 	_status.name = "PickStatus"
 	column.add_child(_status)
 	_refresh_status()
-	MobileSupport.fit_touch_scale(panel, 1.6)
+	if not on_board:
+		MobileSupport.fit_touch_scale(panel, 1.6)
 	ready.connect(_deal,CONNECT_ONE_SHOT)
 	ready.connect(_place_table,CONNECT_ONE_SHOT)
 

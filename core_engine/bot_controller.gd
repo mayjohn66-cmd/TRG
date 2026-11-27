@@ -291,7 +291,7 @@ func _step_roll() -> void:
 		if BotBrain.should_stop_yacht(tool):
 			_act(player_id, &"stop")
 		else:
-			_act(player_id, &"roll", {"keep": BotBrain.yacht_keep_mask((tool as ToolYacht).dice)})
+			_act(player_id, &"roll", _gauge({"keep": BotBrain.yacht_keep_mask((tool as ToolYacht).dice)}, player_id, tool))
 	elif tool is ToolHoldem and tool.has_pending_state():
 		# 홀덤 (1.3.1): 스트레이트 이상이면 그대로, 아니면 겹친 카드(없으면 같은 문양 4장, 그것도 없으면 높은 카드 2장)만 남기고 교환한다.
 		if BotBrain.should_stand_holdem(tool):
@@ -301,8 +301,16 @@ func _step_roll() -> void:
 	elif tool is ToolBlackjack and tool.has_pending_state():
 		_act(player_id, &"roll" if BotBrain.should_hit_blackjack(tool) else &"stop")
 	else:
-		_act(player_id, &"roll")
+		_act(player_id, &"roll", _gauge({}, player_id, tool))
 	_delay(DELAY_ROLL_RESULT)
+
+
+## 풀 파워 (1.3.1): 증강을 가진 봇은 게이지를 모아 던진다. 빨간 끝을 맞히는 솜씨는 난이도를 따른다 (봇 자신의 난수, 결과는 행동 값으로 모두에게 같다).
+func _gauge(params: Dictionary, player_id: int, tool: BaseJudgmentTool) -> Dictionary:
+	if not bool(manager.state.full_power_players.get(player_id, false)) or not UtilityAugments.POWER_GAUGE_TOOLS.has(tool.tool_id):
+		return params
+	params["power"] = BotBrain.gauge_power(difficulty, rng)
+	return params
 
 
 ## 이동할 말 선택: BotBrain의 점수가 가장 높은 말.

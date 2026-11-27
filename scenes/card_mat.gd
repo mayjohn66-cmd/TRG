@@ -17,6 +17,14 @@ const STYLES: Dictionary = {
 	&"DICE_TAROT": {"base": Color("3a1d5c"), "center": Color("54307f"), "edge": Color("d9b65c"), "fleck": Color("c9a7ff"), "pattern": "stars"},
 	&"DICE_HWATU": {"base": Color("56624a"), "center": Color("66745a"), "edge": Color("3b4433"), "fleck": Color("8d9a7c"), "pattern": "blanket"},
 	&"HOLDEM": {"base": Color("176142"), "center": Color("23845b"), "edge": Color("5b3a22"), "fleck": Color("2f9a6b"), "pattern": "felt"},
+	## 스크래치 복권: 복권방 나무 계산대.
+	&"DICE_SCRATCH": {"base": Color("7a5230"), "center": Color("8f6440"), "edge": Color("4a301c"), "fleck": Color("b08455"), "pattern": "wood"},
+	## 리치 마작: 자동탁 같은 진초록 펠트에 어두운 테.
+	&"DICE_MAHJONG": {"base": Color("0f5132"), "center": Color("17693f"), "edge": Color("2b2118"), "fleck": Color("2a8a56"), "pattern": "felt"},
+	## 블랙잭: 카지노 블랙잭 테이블 (짙은 청록 펠트·가죽 레일·안쪽 금선).
+	&"DICE_BLACKJACK": {"base": Color("0d4f4a"), "center": Color("16706a"), "edge": Color("4a2a18"), "fleck": Color("23867f"), "pattern": "felt"},
+	## 야추 다이스: 매트 없이 어둡게만 (주사위 케이스가 따로 놓인다).
+	&"DICE_YACHT": {"base": Color("000000"), "center": Color("000000"), "edge": Color("000000"), "fleck": Color("000000"), "pattern": "none"},
 }
 ## 매트 크기 (보드 좌표 px). 카드 줄과 버튼이 들어가는 크기.
 const MAT_SIZE: Vector2 = Vector2(820, 470)
@@ -40,6 +48,11 @@ var slots: Array[Rect2] = []:
 var mat_center: Vector2 = Vector2.ZERO:
 	set(value):
 		mat_center = value
+		queue_redraw()
+## 매트 배율 (터치 화면은 MainBoard가 1.25로: 손가락으로 누를 카드가 커진 만큼).
+var mat_scale: float = 1.0:
+	set(value):
+		mat_scale = value
 		queue_redraw()
 ## 카드 자리를 돌려주는 함수 (펼쳐져 있는 동안 매 프레임 읽어 slots를 맞춘다). 비어 있으면 slots 그대로.
 var slot_source: Callable = Callable()
@@ -83,7 +96,9 @@ func roll_up() -> void:
 		return
 	_run(0.0, ROLL_UP_TIME, 0.0)
 	Sfx.play(&"ticket_rustle", -10.0)
-	await _tween.finished
+	var tween: Tween = _tween
+	while tween != null and tween.is_valid() and tween.is_running() and is_inside_tree():
+		await get_tree().process_frame  # 도중에 다시 펼치면(트윈이 끊기면) 기다림도 바로 끝난다
 
 
 func _run(target: float, seconds: float, delay: float) -> void:
@@ -94,8 +109,9 @@ func _run(target: float, seconds: float, delay: float) -> void:
 
 
 func mat_rect() -> Rect2:
-	var width: float = MAT_SIZE.x * maxf(reveal, 0.0)
-	return Rect2(mat_center - Vector2(width, MAT_SIZE.y) / 2.0, Vector2(width, MAT_SIZE.y))
+	var full: Vector2 = MAT_SIZE * mat_scale
+	var width: float = full.x * maxf(reveal, 0.0)
+	return Rect2(mat_center - Vector2(width, full.y) / 2.0, Vector2(width, full.y))
 
 
 func _draw() -> void:
@@ -103,8 +119,10 @@ func _draw() -> void:
 		return
 	draw_rect(Rect2(Vector2(-4000, -4000), Vector2(8000, 8000)), Color(0.02, 0.03, 0.05, DIM_ALPHA * reveal))
 	var style: Dictionary = STYLES[tool_id]
+	if str(style["pattern"]) == "none":
+		return
 	var rect: Rect2 = mat_rect()
-	var full := Rect2(mat_center - MAT_SIZE / 2.0, MAT_SIZE)
+	var full := Rect2(mat_center - MAT_SIZE * mat_scale / 2.0, MAT_SIZE * mat_scale)
 	# 그림자 → 바탕 → 공용 섬유 질감 → 문양·테두리 → 카드 자리 → 말린 끝
 	for spread: int in [6,4,2]:
 		_round_rect(rect.grow(spread).grow_side(SIDE_BOTTOM,3),Color(0,0,0,.055),22+spread)
@@ -114,6 +132,7 @@ func _draw() -> void:
 		"stars": _draw_stars(rect, full, style)
 		"blanket": _draw_blanket(rect, style)
 		"felt": _draw_felt(rect, full, style)
+		"wood": _draw_wood(rect, style)
 	if reveal > 0.85:
 		for slot: Rect2 in slots:
 			_dashed_rect(slot.grow(4), Color(1, 1, 1, 0.28 * (reveal - 0.85) / 0.15), 10)
@@ -222,6 +241,19 @@ func _draw_binding(rect: Rect2, style: Dictionary, width: float, thread: Color) 
 		draw_multiline(stitches,thread,1.0,true)
 
 
+## 스크래치 복권: 나무 결이 가로로 흐르는 계산대 상판과 어두운 모서리.
+func _draw_wood(rect: Rect2, style: Dictionary) -> void:
+	var grain: Color = Color(style["edge"], 0.22)
+	for row: int in 14:
+		var y: float = rect.position.y + 18.0 + row * (rect.size.y - 36.0) / 13.0
+		var points := PackedVector2Array()
+		for step: int in 13:
+			var x: float = rect.position.x + 14.0 + step * (rect.size.x - 28.0) / 12.0
+			points.append(Vector2(x, y + sin(step * 0.9 + row * 1.7) * 3.0))
+		draw_polyline(points, grain, 2.0, true)
+	_round_outline(rect.grow(-4), style["edge"], 22, 8.0)
+
+
 func _round_rect(rect: Rect2, color: Color, radius: float) -> void:
 	if rect.size.x <= 0.0 or rect.size.y <= 0.0:
 		return
@@ -246,3 +278,4 @@ func _dashed_rect(rect: Rect2, color: Color, dash: float) -> void:
 	var corners: Array[Vector2] = [rect.position, Vector2(rect.end.x, rect.position.y), rect.end, Vector2(rect.position.x, rect.end.y)]
 	for side: int in 4:
 		draw_dashed_line(corners[side], corners[(side + 1) % 4], color, 2.0, dash)
+
