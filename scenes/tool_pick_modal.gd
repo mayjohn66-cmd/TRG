@@ -37,6 +37,9 @@ var table_center: Vector2 = Vector2(INF, INF):
 		table_center = value
 		_place_table()
 var _center_box: CenterContainer = null
+## 섞어서 나눠 주는 중 (판 위 카드). 이때 누르면 남은 섞기를 건너뛰고 바로 놓는다.
+var dealing: bool = false
+var _shuffle: Tween = null
 
 ## Reveal the two chosen cards in their original holders; the third stays face down.
 func reveal_result(result: Dictionary) -> void:
@@ -114,7 +117,8 @@ func setup(id: StringName, board_table: bool = false) -> void:
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 14 if MobileSupport.touch_mode() else 10)
 	table.add_child(row)
-	var item_size: Vector2 = look["size"] * (1.25 if MobileSupport.touch_mode() else 1.0)
+	# 판 위(당겨 본 판 가운데)에서는 판이 커진 만큼 카드도 크게
+	var item_size: Vector2 = look["size"] * (1.35 if on_board else (1.25 if MobileSupport.touch_mode() else 1.0))
 	for index: int in ToolPick.count_of(id):
 		var item := _make_item(look, item_size, index)
 		row.add_child(item)
@@ -152,6 +156,8 @@ func _place_table() -> void:
 
 ## 자리 하나를 고른다 (터치·클릭과 테스트가 같은 길을 쓴다). 다 고르면 picked를 낸다.
 func pick(index: int) -> void:
+	if dealing:
+		_finish_deal()
 	if _done or index < 0 or index >= _items.size():
 		return
 	if _picks.has(index):
@@ -289,7 +295,7 @@ func _make_item(look: Dictionary, item_size: Vector2, index: int) -> Control:
 
 
 func _hover(index: int, on: bool) -> void:
-	if _done or _picks.has(index) or index >= _items.size():
+	if dealing or _done or _picks.has(index) or index >= _items.size():
 		return
 	_move(index,LIFT-(8.0 if on else 0.0),1.04 if on else 1.0,Color.WHITE)
 
@@ -322,6 +328,9 @@ func _deal() -> void:
 	if not _picks.is_empty():
 		_refresh_items()
 		return
+	if on_board and tool_id in [&"DICE_TAROT", &"DICE_HWATU"]:
+		_shuffle_and_deal()
+		return
 	for index: int in _items.size():
 		var face := _items[index].get_node("Face") as Control
 		face.position.y = LIFT+26
@@ -330,6 +339,86 @@ func _deal() -> void:
 		_motions[index] = motion
 		motion.tween_property(face,"position:y",LIFT,0.26).set_delay(index*0.035).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 		motion.tween_property(face,"modulate:a",1.0,0.18).set_delay(index*0.035)
+
+## 판 위 카드 (1.3.1): 가운데에 한 뭉치로 모아 두 번 섞고(반씩 갈라 엇갈려 합치기), 한 장씩 제자리로 나눠 준다.
+## 그림만이다: 어느 자리를 고르든 결과는 엔진이 평소처럼 정한다.
+func _shuffle_and_deal() -> void:
+	dealing = true
+	for index: int in _items.size():
+		var face := _items[index].get_node("Face") as Control
+		face.modulate.a = 0.0
+		(_items[index].get_node("ContactShadow") as Control).modulate.a = 0.0
+	await get_tree().process_frame  # 줄 배치가 끝난 뒤 가운데 자리를 잰다
+	await get_tree().process_frame
+	if not dealing or not is_inside_tree():
+		return
+	var stack: Array[Vector2] = []
+	for index: int in _items.size():
+		stack.append(_stack_point(index))
+	var tween := create_tween()
+	_shuffle = tween
+	# 모으기: 가운데 뭉치로 겹쳐 나타난다 (살짝 어긋나게 쌓인다)
+	tween.set_parallel(true)
+	for index: int in _items.size():
+		var face := _items[index].get_node("Face") as Control
+		face.position = stack[index] + Vector2(0, 30)
+		face.rotation = 0.0
+		tween.tween_property(face, "position", stack[index] + Vector2(index * 0.8, -index * 1.2), 0.18).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		tween.tween_property(face, "modulate:a", 1.0, 0.14)
+	# 섞기 두 번: 반은 왼쪽·반은 오른쪽으로 갈라졌다가 한 장씩 엇갈려 가운데로 합쳐진다
+	for round: int in 2:
+		tween.chain().tween_callback(Sfx.play.bind(&"card_throw", -10.0))
+		tween.set_parallel(true)
+		for index: int in _items.size():
+			var face := _items[index].get_node("Face") as Control
+			var side: float = -1.0 if (index + round) % 2 == 0 else 1.0
+			var width: float = face.size.x * 0.62
+			tween.tween_property(face, "position", stack[index] + Vector2(side * width, -6.0), 0.13).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+			tween.tween_property(face, "rotation", side * 0.12, 0.13)
+		tween.chain().tween_interval(0.02)
+		tween.set_parallel(true)
+		for index: int in _items.size():
+			var face := _items[index].get_node("Face") as Control
+			tween.tween_property(face, "position", stack[index] + Vector2(index * 0.8, -index * 1.2), 0.10).set_delay(index * 0.035).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+			tween.tween_property(face, "rotation", 0.0, 0.10).set_delay(index * 0.035)
+		tween.chain().tween_callback(Sfx.play.bind(&"card_pick", -12.0))
+	# 나눠 주기: 맨 위 장부터 한 장씩 제자리로 (내려앉으면 그림자가 깔린다)
+	for index: int in _items.size():
+		var face := _items[index].get_node("Face") as Control
+		var shadow := _items[index].get_node("ContactShadow") as Control
+		tween.chain().tween_callback(Sfx.play.bind(&"card_throw", -9.0))
+		tween.set_parallel(true)
+		tween.tween_property(face, "position", Vector2(0, LIFT), 0.16).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		tween.tween_property(shadow, "modulate:a", 1.0, 0.12).set_delay(0.08)
+	await tween.finished
+	if _shuffle == tween:
+		_finish_deal()
+
+
+## 섞기를 끝낸 모습으로 바로 놓는다 (다 섞었거나, 섞는 중에 눌렀을 때).
+func _finish_deal() -> void:
+	if not dealing:
+		return
+	dealing = false
+	if _shuffle != null and _shuffle.is_valid():
+		_shuffle.kill()
+	_shuffle = null
+	for index: int in _items.size():
+		var face := _items[index].get_node("Face") as Control
+		face.position = Vector2(0, LIFT)
+		face.rotation = 0.0
+		face.modulate.a = 1.0
+		(_items[index].get_node("ContactShadow") as Control).modulate.a = 1.0
+
+
+## 줄 한가운데(뭉치 자리)를 이 자리 카드의 좌표로.
+func _stack_point(index: int) -> Vector2:
+	var row: Control = _items[index].get_parent() as Control
+	var holder: Control = _items[index]
+	var face := holder.get_node("Face") as Control
+	var center_global: Vector2 = row.get_global_rect().get_center()
+	return holder.get_global_transform().affine_inverse() * center_global - face.size / 2.0
+
 
 func _move(index: int, height: float, factor: float, tint: Color) -> void:
 	if _motions.has(index): (_motions[index] as Tween).kill()

@@ -1871,6 +1871,10 @@ func layout_for(viewport_size: Vector2) -> void:
 	if _train_stage != null and _train_stage.mode!=&"idle":
 		_train_camera_step()
 		_train_stage.sync_projection()
+	if _card_zoom_on:
+		_apply_card_zoom(_alkkagi_camera)  # 배치가 보드 층 자리를 되돌려도 당겨 본 판은 그대로
+		if _card_view_on and _presenter != null:
+			_presenter.center = _card_table_center()
 
 
 ## 보드 한가운데의 화면 좌표 (창 비율 오프셋 포함).
@@ -9015,6 +9019,8 @@ func _alkkagi_camera_step(value: float) -> void:
 		positions[view] = {"norm":plane*view.position,"offset":Vector2.ZERO}
 	_alkkagi_camera = value
 	_apply_view_mode(false)
+	if _card_zoom_on:
+		_apply_card_zoom(value)
 	for view: Node2D in positions:
 		view.position = _project(positions[view].norm)+(positions[view].offset as Vector2)
 	if _alkkagi != null:
@@ -9264,8 +9270,10 @@ func _reset_presentation() -> void:
 	_alkkagi_top_view(false,true)
 	_card_view_on = false
 	_card_view_player = -1
+	_release_card_zoom()
 	if _presenter != null:
 		_presenter.center = _board_center() + Vector2(0, -40)
+		_presenter.table_scale = 1.0
 	_aim_pawn = -1
 	_fx_generation += 1
 	var victory_layer: CanvasLayer = get_node_or_null("VictoryCutsceneLayer") as CanvasLayer
@@ -13790,6 +13798,7 @@ func _handle_roll_event(data: Dictionary) -> void:
 	if CARD_TABLE_TOOLS.has(tool_id):
 		_enter_card_view()  # 카드는 알까기 시점(위에서 내려다본 판)으로 펼친 판 위에 깐다
 		_presenter.center = _card_table_center()
+		_presenter.table_scale = 1.3  # 당겨 본 판 가운데: 판이 커진 만큼 카드도 크게
 	await _presenter.play(tool_id, result, _pending_power, int(data.get("chain_index", 0)) > 0)
 	if generation != _fx_generation or serial != _fx_serial:
 		return
@@ -14940,12 +14949,16 @@ func _tool_pick_state_key() -> String:
 const CARD_TABLE_TOOLS: Array[StringName] = [&"DICE_TAROT", &"DICE_HWATU", &"HOLDEM"]
 var _card_view_on: bool = false
 var _card_view_player: int = -1
+## 카드를 쓰는 동안 판 가운데를 당겨 본다 (보드·말 층만 확대, 화면 UI는 그대로). 시점 전환과 같은 움직임으로 들어가고 나온다.
+const CARD_ZOOM: float = 1.55
+var _card_zoom_on: bool = false
 
 
 func _enter_card_view() -> void:
 	if _card_view_on or _alkkagi_saved_view != -1 or state == null:
 		return
 	_card_view_on = true
+	_card_zoom_on = true
 	_card_view_player = manager.current_player_id() if manager != null else -1
 	_alkkagi_top_view(true)
 
@@ -14959,8 +14972,30 @@ func _leave_card_view() -> void:
 	_alkkagi_top_view(false)
 	while _alkkagi_camera_tween != null and _alkkagi_camera_tween.is_running() and is_inside_tree():
 		await get_tree().process_frame
+	_release_card_zoom()
 	if _presenter != null:
 		_presenter.center = _board_center() + Vector2(0, -40)  # 평소 연출 자리 (_apply_layout과 같다)
+		_presenter.table_scale = 1.0
+
+
+## 판 가운데를 당겨 본다: weight 0~1 (알까기 시점 전환과 같은 값). 기차 연출의 카메라와 같은 방식 (보드·말 층을 같은 변환으로).
+func _apply_card_zoom(weight: float) -> void:
+	if _board_layer == null or _pawn_layer == null:
+		return
+	var zoom: float = lerpf(1.0, CARD_ZOOM, weight)
+	var center: Vector2 = BOARD_ORIGIN + Vector2.ONE * BOARD_SIZE * 0.5
+	var offset: Vector2 = _off_center + center * (1.0 - zoom)
+	_board_layer.scale = Vector2.ONE * zoom
+	_pawn_layer.scale = Vector2.ONE * zoom
+	_board_layer.position = offset
+	_pawn_layer.position = offset
+
+
+func _release_card_zoom() -> void:
+	if not _card_zoom_on:
+		return
+	_card_zoom_on = false
+	_apply_card_zoom(0.0)
 
 
 ## 펼친 판의 한가운데 (카드를 까는 자리).
@@ -14974,8 +15009,8 @@ func _sync_card_view() -> void:
 		return
 	if manager == null or manager.is_game_over or manager.current_player_id() != _card_view_player:
 		_leave_card_view()
-	elif manager.current_state in [TurnManager.State.PHASE_ROLL_WAIT, TurnManager.State.PHASE_INTERRUPT_ROLL]:
-		return  # 고른 직후 굴림 결과가 오기 전 (결과 연출이 이어서 판 위에서 나온다)
+	elif not manager.current_state in [TurnManager.State.PHASE_MOVING_STEP, TurnManager.State.PHASE_RESOLUTION, TurnManager.State.PHASE_NEUTRAL_NPC]:
+		return  # 굴림 대기·결과 직후(말 고르기 전): 결과 연출이 이어서 판 위에서 나오고, 다 보면 _leave_card_view가 돌려놓는다
 	elif _tool_pick == null and _holdem_exchange == null and not _fx_busy and not (_presenter != null and _presenter.active) and not _holdem_round_open():
 		_leave_card_view()
 

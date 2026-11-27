@@ -81,6 +81,8 @@ const SCRATCH_AUTO_AFTER: float = 6.0
 var _hold_after: bool = false
 ## 연출 패널이 가운데 정렬될 화면 좌표 (창 비율에 따라 MainBoard가 갱신한다).
 var center: Vector2 = Vector2(683.0, 308.0)
+## 카드형 도구를 당겨 본 판 가운데에서 보여 줄 때의 배율 (MainBoard 카드 시점, 1.3.1). 1이면 평소 크기.
+var table_scale: float = 1.0
 ## 투척 출발점: 굴린 사람 프로필의 화면 좌표 (MainBoard가 굴림마다 넣는다). 모르면 화면 아래쪽에서 던진다.
 var toss_from: Vector2 = Vector2(INF, INF)
 ## Actual projected board outline, refreshed by MainBoard on layout/view changes.
@@ -248,6 +250,9 @@ func play(tool_id: StringName, result: Dictionary, power: float = 0.5, continues
 	tossing = TOSS_TOOLS.has(tool_id)
 	_build(tool_id)
 	_position_center()
+	if not is_equal_approx(table_scale, 1.0) and not TOSS_TOOLS.has(tool_id):
+		pivot_offset = size / 2.0
+		scale = Vector2.ONE * table_scale
 	if interactive and ToolHandGate.supports(tool_id):
 		_hand_gate = ToolHandGate.new()
 		var hand_details: Dictionary = (result.get("details", {}) as Dictionary).duplicate()

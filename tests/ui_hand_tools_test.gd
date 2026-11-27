@@ -266,8 +266,8 @@ func holdem_exchange() -> void:
 			break
 		await process_frame
 	var panel: HoldemExchangePanel = board.holdem_exchange_panel()
-	for _wait: int in 180:
-		if panel==null or not panel.busy: break
+	var deal_until: int = Time.get_ticks_msec() + 6000  # 섞기·나눠 주기는 실제 시간으로 흐른다 (1.3.1 판 위 셔플)
+	while panel != null and panel.busy and Time.get_ticks_msec() < deal_until:
 		await process_frame
 	check(panel != null and rolls.size() == 1, "5장을 받으면 교환 창이 뜬다")
 	if panel == null:

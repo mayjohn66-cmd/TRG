@@ -125,7 +125,9 @@ func setup(hand: Array, board_table: bool = false) -> void:
 	_refresh()
 	MobileSupport.fit_touch_scale(panel, 1.5)
 	panel.reset_size()
-	panel.position = -panel.size * 0.5
+	if on_board and not MobileSupport.touch_mode():
+		panel.scale = Vector2.ONE * 1.3  # 당겨 본 판 가운데: 판이 커진 만큼 카드도 크게
+	panel.position = -panel.size * panel.scale * 0.5
 	for item: Control in _items: item.get_node("Face").modulate.a=0
 	set_busy(true)
 
@@ -144,6 +146,9 @@ func play_deal() -> void:
 	set_busy(true)
 	await get_tree().process_frame
 	await get_tree().process_frame
+	if on_board:
+		await _shuffle_and_deal()
+		return
 	if _dealer_deck==null:
 		_dealer_deck=JudgmentCard.new()
 		_dealer_deck.name="DealerDeck"
@@ -168,6 +173,57 @@ func play_deal() -> void:
 	dealt=true
 	set_busy(false)
 
+## 판 위 (1.3.1): 가운데 뭉치를 두 번 섞고(반씩 갈라 엇갈려 합치기) 한 장씩 제자리로 나눠 뒤집는다. 그림만이다 (카드는 엔진이 정했다).
+func _shuffle_and_deal() -> void:
+	var stack: Array[Vector2] = []
+	for i: int in _items.size():
+		stack.append(_deck_point(i))
+		var face := _items[i].get_node("Face") as JudgmentCard
+		face.set_face_up(false)
+		face.position = stack[i] + Vector2(i * 0.8, 30.0 - i * 1.2)
+		face.rotation = 0.0
+	var tween := create_tween().set_parallel(true)
+	for i: int in _items.size():
+		var face := _items[i].get_node("Face") as Control
+		tween.tween_property(face, "position", stack[i] + Vector2(i * 0.8, -i * 1.2), 0.18).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		tween.tween_property(face, "modulate:a", 1.0, 0.14)
+	for round: int in 2:
+		tween.chain().tween_callback(Sfx.play.bind(&"card_throw", -10.0))
+		tween.set_parallel(true)
+		for i: int in _items.size():
+			var face := _items[i].get_node("Face") as Control
+			var side: float = -1.0 if (i + round) % 2 == 0 else 1.0
+			tween.tween_property(face, "position", stack[i] + Vector2(side * CARD_SIZE.x * 0.62, -6.0), 0.13).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+			tween.tween_property(face, "rotation", side * 0.12, 0.13)
+		tween.chain().tween_interval(0.02)
+		tween.set_parallel(true)
+		for i: int in _items.size():
+			var face := _items[i].get_node("Face") as Control
+			tween.tween_property(face, "position", stack[i] + Vector2(i * 0.8, -i * 1.2), 0.10).set_delay(i * 0.035).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+			tween.tween_property(face, "rotation", 0.0, 0.10).set_delay(i * 0.035)
+		tween.chain().tween_callback(Sfx.play.bind(&"card_pick", -12.0))
+	await tween.finished
+	for i: int in _items.size():
+		var face := _items[i].get_node("Face") as JudgmentCard
+		Sfx.play(&"card_throw", -8)
+		var deal := create_tween()
+		deal.tween_property(face, "position", Vector2(0, LIFT), 0.16).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		await deal.finished
+		_shadow_shown(i, true)
+		face.set_face_up(true)
+	dealt = true
+	set_busy(false)
+
+
+## 카드 뭉치 자리 (이 자리 카드의 좌표). 판 위에서는 줄 한가운데, 아니면 딜러 더미.
+func _deck_point(index: int) -> Vector2:
+	if not on_board:
+		return Vector2(240 - index * (CARD_SIZE.x + 10), -180)
+	var holder: Control = _items[index]
+	var row: Control = holder.get_parent() as Control
+	return holder.get_global_transform().affine_inverse() * row.get_global_rect().get_center() - CARD_SIZE / 2.0
+
+
 ## Selected cards slide back to the dealer; replacements arrive at the same slots.
 func play_exchange(final_cards: Array, swapped: Array) -> void:
 	set_busy(true)
@@ -176,7 +232,7 @@ func play_exchange(final_cards: Array, swapped: Array) -> void:
 		(_items[int(index)].get_node("SwapTag") as Control).hide()
 		_shadow_shown(int(index), false)
 		var take:=create_tween().set_parallel(true)
-		take.tween_property(face,"position",Vector2(240-int(index)*(CARD_SIZE.x+10),-180),.28).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+		take.tween_property(face,"position",_deck_point(int(index)),.28).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
 		take.tween_property(face,"rotation",.2,.28)
 		take.tween_property(face,"modulate:a",0.0,.2).set_delay(.08)
 		Sfx.play(&"card_pick",-8)
@@ -193,7 +249,7 @@ func play_exchange(final_cards: Array, swapped: Array) -> void:
 		face.name="Face"
 		face.configure(JudgmentCardArt.poker(cards[i]),CARD_SIZE)
 		face.size=CARD_SIZE
-		face.position=Vector2(240-i*(CARD_SIZE.x+10),-180)
+		face.position=_deck_point(i)
 		_items[i].add_child(face)
 		face.set_face_up(false)
 		Sfx.play(&"card_throw",-8)
