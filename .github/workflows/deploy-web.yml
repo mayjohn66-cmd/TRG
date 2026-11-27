@@ -721,7 +721,7 @@ jobs:
         if: steps.validation.outputs.scope == 'full'
         run: godot --headless --path . -s res://tests/ui_direct_control_test.gd
 
-      - name: Run hand-held judgment tool test (mahjong, cookie, ice cream, omikuji, capsule, hold'em, pirate)
+      - name: Run hand-held judgment tool test (mahjong, cookie, ice cream, omikuji, capsule, hold'em, pirate, warm-up)
         if: steps.validation.outputs.scope == 'full'
         run: |
           godot --headless --audio-driver Dummy --path . -s res://tests/ui_hand_tools_test.gd 2>&1 | tee /tmp/hand_tools.log

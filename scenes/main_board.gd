@@ -742,6 +742,8 @@ var _roll_pad: RollPad = null
 var _dart_idle: DartBoardView = null
 ## 해적 룰렛 대기 통 (1.3.1): 내 차례에 보드 위에 칼이 꽂힌 그대로 서 있고, 끌어서 돌린 뒤 [칼 꽂기]로 꽂는다.
 var _pirate_idle: PirateBarrelView = null
+## 3D 도구 화면 미리 그려 두기 (1.3.1): 판 시작 ~ 4라운드 전 한가할 때 하나씩, 판이 끝나면 지운다.
+var _warmup: ToolWarmup = null
 var _pirate_drag: bool = false
 ## 텍사스 홀덤 교환 창 (1.3.1): 받은 5장 중 바꿀 카드를 골라 교환하거나 그대로 확정한다.
 var _holdem_exchange: HoldemExchangePanel = null
@@ -1350,6 +1352,7 @@ func _new_game() -> void:
 	manager.match_rules = GameSession.match_rules()
 	manager.start_game(_player_ids, _game_seed)
 	state = manager.state
+	_start_tool_warmup()
 	_refresh_board_buttons()
 	_report_match_start()
 	for surface: MeshInstance2D in [_board_surface, _flat_board_surface]:  # 보드마다 판 바닥 그림이 다르다 (BoardSkin.surface_texture)
@@ -7888,6 +7891,25 @@ func _refresh_dart_idle(tool: BaseJudgmentTool) -> void:
 	_dart_idle.mouse_filter = Control.MOUSE_FILTER_STOP if show else Control.MOUSE_FILTER_IGNORE
 
 
+## 판 시작: 4라운드 증강(첫 도구 교체) 전에 3D 도구 화면을 하나씩 미리 그려 둔다 (연출이 없는 한가한 순간에만, 보드 밑에 작게).
+func _start_tool_warmup() -> void:
+	if not _fx_on():
+		return  # 연출을 끈 판·즉시 모드 테스트는 3D 연출을 쓰지 않는다
+	if _warmup == null:
+		_warmup = ToolWarmup.new()
+		_warmup.can_step = func() -> bool: return not _fx_busy and not _presentation_active() and not _presenter_showing()
+		_warmup.adopt = func(id: StringName, view: Control) -> bool: return _presenter != null and _presenter.adopt_view(id, view)
+		add_child(_warmup)
+		move_child(_warmup, 0)  # 보드·배경보다 먼저 그려 밑에 깔린다
+	_warmup.position = _board_center()
+	_warmup.start()
+
+
+## 미리 그리기 (테스트용).
+func tool_warmup() -> ToolWarmup:
+	return _warmup
+
+
 func _refresh_pirate_idle(tool: BaseJudgmentTool) -> void:
 	var show: bool = tool is ToolPirateRoulette and _roll_view_allowed() and not _fx_busy and not _is_bot_turn() and manager.current_player_id() == _dock_owner() and _fx_on()
 	if _pirate_idle == null:
@@ -12210,6 +12232,10 @@ func _on_turn_order_reversed(new_direction: int) -> void:
 
 func _on_game_over(winner_id: int, reason: StringName) -> void:
 	_last_reason = reason
+	if _warmup != null:
+		_warmup.clear()  # 판이 끝나면 미리 그려 둔 도구 화면을 지운다
+	if _presenter != null:
+		_presenter.release_views()
 	_close_choice()
 	_close_zoom()
 	_close_reaction_popup()

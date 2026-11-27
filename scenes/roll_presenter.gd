@@ -698,6 +698,86 @@ func _process(delta: float) -> void:
 # 화면 구성
 # ---------------------------------------------------------------------------
 
+## 미리 그려 둔 도구 화면을 넘겨받는다 (ToolWarmup, 1.3.1). 그 도구 화면이 아직 없을 때만 받아 다음 굴림부터 그대로 쓴다.
+func adopt_view(tool_id: StringName, view: Control) -> bool:
+	if active or view == null:
+		return false
+	match tool_id:
+		&"YUT":
+			if _yut_3d != null: return false
+			_yut_3d = view as YutThrow3D
+		&"SLOT_777":
+			if _slot_3d != null: return false
+			_slot_3d = view as SlotMachine3D
+		&"LIFE_ROULETTE":
+			if _wheel != null: return false
+			_wheel = view as RouletteSpin3D
+		&"REVOLVER":
+			if _toy_gun != null: return false
+			_toy_gun = view as ToyFlagGun3D
+		&"DICE_MAHJONG":
+			if _mahjong_3d != null: return false
+			_mahjong_3d = view as MahjongSlam3D
+		&"DICE_DARTS":
+			if _dart_view != null: return false
+			_dart_view = view as DartBoardView
+		&"DICE_CAPSULE":
+			if _capsule_view != null: return false
+			_capsule_view = view as CapsuleGachaView
+		&"DICE_PIRATE":
+			if _pirate_view != null: return false
+			_pirate_view = view as PirateBarrelView
+		&"DICE_COOKIE":
+			if _cookie_view != null: return false
+			_cookie_view = view as FortuneCookieView
+		&"DICE_SCRATCH":
+			if _scratch_view != null: return false
+			_scratch_view = view as ScratchTicketView
+		_:
+			return false
+	view.hide()
+	view.reparent(self, false)  # 미리 그리던 작은 상자의 크기·투명도를 따라오지 않게
+	view.modulate = Color.WHITE
+	return true
+
+
+## 판이 끝나면 다시 쓰던 도구 화면을 모두 지운다 (다음 판은 다시 미리 그린다). 기본 주사위는 남긴다.
+func release_views() -> void:
+	if active:
+		return
+	for view: Variant in [_yut_3d, _slot_3d, _wheel, _toy_gun, _mahjong_3d] + _reused_views():
+		if view != null and is_instance_valid(view):
+			(view as Node).queue_free()
+	_yut_3d = null
+	_slot_3d = null
+	_wheel = null
+	_toy_gun = null
+	_mahjong_3d = null
+	_dart_view = null
+	_capsule_view = null
+	_pirate_view = null
+	_cookie_view = null
+	_scratch_view = null
+
+
+## 다시 쓰는 소품 연출 화면 (만들어 둔 것만).
+func _reused_views() -> Array:
+	var views: Array = []
+	for view: Variant in [_dart_view, _capsule_view, _pirate_view, _scratch_view, _cookie_view]:
+		if view != null and is_instance_valid(view):
+			views.append(view)
+	return views
+
+
+## 소품 연출 화면을 무대에 올린다 (처음이면 만들고, 있으면 다시 쓴다).
+func _stage_view(view: Control) -> Control:
+	if view.get_parent() == null:
+		_stage.add_child(view)
+	elif view.get_parent() != _stage:
+		view.reparent(_stage)
+	view.show()
+	return view
+
 func _clear() -> void:
 	# Keep one viewport/mesh set across rolls; it does not render when idle.
 	if _dice_3d != null:
@@ -730,8 +810,14 @@ func _clear() -> void:
 		_toy_gun.hide()
 		if _toy_gun.get_parent() != self:
 			_toy_gun.reparent(self)
+	# 1.3.1: 3D·화면 안 화면(SubViewport)을 쓰는 소품 연출도 한 번 만든 것을 다시 쓴다 (굴릴 때마다 새로 만들며 멈칫하던 것)
+	var reused: Array = _reused_views()
+	for view: Variant in reused:
+		(view as Control).hide()
+		if (view as Node).get_parent() != self:
+			(view as Node).reparent(self)
 	for child: Node in get_children():
-		if child == _dice_3d or child == _mahjong_3d or child == _yut_3d or child == _wheel or child == _slot_3d or child == _toy_gun or child == _ground_shadow or child == _contact_fx:
+		if child == _dice_3d or child == _mahjong_3d or child == _yut_3d or child == _wheel or child == _slot_3d or child == _toy_gun or child == _ground_shadow or child == _contact_fx or reused.has(child):
 			continue
 		remove_child(child)
 		child.queue_free()
@@ -892,8 +978,9 @@ func _build(tool_id: StringName) -> void:
 		&"DICE_DARTS":
 			_title.text = "불스아이 다트 보드"
 			_total = DartBoardView.TOTAL_TIME
-			_dart_view = DartBoardView.new()
-			_stage.add_child(_dart_view)
+			if _dart_view == null or not is_instance_valid(_dart_view):
+				_dart_view = DartBoardView.new()
+			_stage_view(_dart_view)
 			_dart_view.begin(_result.get("details", {}))
 			_make_card_result(DartBoardView.caption(_result.get("details", {}), int(_result.get("steps", 0))))
 		&"DICE_OMIKUJI":
@@ -906,8 +993,9 @@ func _build(tool_id: StringName) -> void:
 		&"DICE_CAPSULE":
 			_title.text = "캡슐뽑기"
 			_total = CapsuleGachaView.TOTAL_TIME
-			_capsule_view = CapsuleGachaView.new()
-			_stage.add_child(_capsule_view)
+			if _capsule_view == null or not is_instance_valid(_capsule_view):
+				_capsule_view = CapsuleGachaView.new()
+			_stage_view(_capsule_view)
 			var capsule_details: Dictionary = (_result.get("details", {}) as Dictionary).duplicate()
 			capsule_details["steps"] = int(_result.get("steps", 0))
 			_capsule_view.begin(capsule_details)
@@ -915,24 +1003,27 @@ func _build(tool_id: StringName) -> void:
 			_make_card_result(CapsuleGachaView.caption(_result.get("details", {}), int(_result.get("steps", 0))))
 		&"DICE_PIRATE":
 			_title.text = "해적 룰렛"
-			_pirate_view = PirateBarrelView.new()
-			_stage.add_child(_pirate_view)
+			if _pirate_view == null or not is_instance_valid(_pirate_view):
+				_pirate_view = PirateBarrelView.new()
+			_stage_view(_pirate_view)
 			_pirate_view.begin(_result.get("details", {}))
 			_total = _pirate_view.total_time
 			_make_card_result(PirateBarrelView.caption(_result.get("details", {}), int(_result.get("steps", 0)), bool(_result.get("can_continue", false))))
 		&"DICE_SCRATCH":
 			_title.text = "스크래치 복권"
 			_total = ScratchTicketView.TOTAL_TIME
-			_scratch_view = ScratchTicketView.new()
-			_stage.add_child(_scratch_view)
+			if _scratch_view == null or not is_instance_valid(_scratch_view):
+				_scratch_view = ScratchTicketView.new()
+			_stage_view(_scratch_view)
 			_scratch_view.manual = interactive
 			_scratch_view.begin(_result.get("details", {}))
 			_make_card_result(ScratchTicketView.caption(_result.get("details", {}), int(_result.get("steps", 0))))
 		&"DICE_COOKIE":
 			_title.text = "포츈쿠키"
 			_total = FortuneCookieView.TOTAL_TIME
-			_cookie_view = FortuneCookieView.new()
-			_stage.add_child(_cookie_view)
+			if _cookie_view == null or not is_instance_valid(_cookie_view):
+				_cookie_view = FortuneCookieView.new()
+			_stage_view(_cookie_view)
 			var cookie_details: Dictionary = (_result.get("details", {}) as Dictionary).duplicate()
 			cookie_details["steps"] = int(_result.get("steps", 0))
 			_cookie_view.begin(cookie_details)

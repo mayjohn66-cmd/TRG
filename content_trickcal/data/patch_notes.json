@@ -60,6 +60,11 @@
        "ko": "규칙 도감의 기본 규칙(시작하기·한 턴·잡기·특수 칸) 설명을 지금 규칙에 맞게 다시 썼어요. 업기·리벤지 부스터, 잡기 방어·공격 방어·함정 방어·만능 방어 설명이 새로 생겼어요",
        "en": "Rewrote the Basic Rules in the Rulebook (Getting Started, A Turn, Captures, Special Tiles) to match the current rules. New pages explain stacking, the Revenge Booster, and Capture / Attack / Trap / All-round Defense",
        "ja": "ルール図鑑の基本ルール（はじめに・1手番・捕獲・特殊マス）の説明を今のルールに合わせて書き直しました。おんぶ・リベンジブースター、捕獲防御・攻撃防御・罠防御・万能防御の説明が新しく加わりました"
+      },
+      {
+       "ko": "게임 도중 판정 도구가 처음 나올 때 잠깐 멈칫하던 것을 줄였어요 (판 초반에 미리 준비해 둬요)",
+       "en": "Reduced the brief stutter when a Judgment Tool appears for the first time in a match (it's now prepared early in the match)",
+       "ja": "対戦中に判定ツールが初めて出るときの一瞬のカクつきを減らしました（対戦の序盤に前もって準備します）"
       }
      ]
     },
@@ -89,6 +94,11 @@
        "ko": "[알고리즘 밴]·[UDO 스킵]·[이의 있음!]은 [너프 발동] 카드가 되어 더 이상 공격이 아니에요. 방어 카드로 막을 수 없고, [UDO 리버스]는 공격 카드를 막고 반사하는 카드로 단순해졌어요",
        "en": "[Algorithm Ban], [UDO Skip] and [Objection!] are now [Nerf] cards and no longer count as attacks. They can't be blocked by Defense cards, and [UDO Reverse] is now simply: block an attack card and reflect it",
        "ja": "［アルゴリズムBAN］・［UDO スキップ］・［異議あり！］は［デバフ発動］カードになり、攻撃ではなくなりました。防御カードでは防げず、［UDO リバース］は攻撃カードを防いで反射するシンプルなカードになりました"
+      },
+      {
+       "ko": "쉬운 난이도(크림·로제)의 컴퓨터는 1~3라운드에 내 말을 잡는 수를 되도록 피해요. 초반에 서로 잡고 잡히기만 반복되지 않게 했어요 (제보 감사합니다!)",
+       "en": "On the easy difficulties (Cream and Rosé), computer players now avoid capturing your pawns in rounds 1–3 whenever they have another move, so the opening isn't just endless back-and-forth captures (thanks for the report!)",
+       "ja": "やさしい難易度（クリーム・ロゼ）のコンピューターは、1〜3ラウンドの間は自分の駒を捕まえる手をできるだけ避けます。序盤に捕まえ合いばかり繰り返さないようにしました（ご報告ありがとうございます！）"
       }
      ]
     },
