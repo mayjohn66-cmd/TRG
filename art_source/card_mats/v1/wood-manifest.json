@@ -1,0 +1,13 @@
+{
+  "method": "Procedural FastNoiseLite wood grain",
+  "generator": "tools/art/make_wood_texture.gd",
+  "source": "art_source/card_mats/v1/wood-oak-source.png",
+  "source_sha256": "1ec3e9d3f6fd18afbb90b52ad451dd25dd8db032cdab6404134a0fe28fdbc25b",
+  "runtime": "assets/ui/trickcal/card_mats/v1/wood-oak.webp",
+  "runtime_sha256": "ab358744569d1670d79bcf98b9ee62a354f1f9bb807daa729cbdd6bec74d1e7a",
+  "runtime_bytes": 10708,
+  "seeds": [
+    131,
+    27
+  ]
+}

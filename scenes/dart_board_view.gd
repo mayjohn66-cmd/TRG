@@ -10,7 +10,8 @@ const TOTAL_TIME := 1.5
 const FACE_Z := 0.075
 const TIP_Z := -0.14
 const SCORE_RADIUS := 2.0
-const BOARD_MODEL: PackedScene = preload("res://assets/models/optimized/v4/darts/v02/dartboard_v02.scn")
+const FRAME_MODEL: PackedScene = preload("res://assets/models/optimized/v5/darts/fixed_frame.scn")
+const TARGET_MODEL: PackedScene = preload("res://assets/models/optimized/v5/darts/rotating_target.scn")
 const DART_MODEL: PackedScene = preload("res://assets/models/optimized/v4/darts/v02/dart_v02.scn")
 
 var aiming := false
@@ -26,6 +27,7 @@ var _bull := false
 var _t := 0.0
 var _viewport: SubViewport
 var _board: Node3D
+var _frame: Node3D
 var _dart: Node3D
 var _camera: Camera3D
 var _reticle: Node3D
@@ -133,8 +135,11 @@ func _build_scene() -> void:
 	_viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
 	add_child(_viewport)
 	texture = _viewport.get_texture()
-	_board = BOARD_MODEL.instantiate()
-	_board.name = "DartboardModel"
+	_frame=FRAME_MODEL.instantiate()
+	_frame.name="FixedDartboardFrame"
+	_viewport.add_child(_frame)
+	_board = TARGET_MODEL.instantiate()
+	_board.name = "RotatingDartboardTarget"
 	_viewport.add_child(_board)
 	_dart = DART_MODEL.instantiate()
 	_dart.name = "EmbeddedDart"
@@ -182,6 +187,7 @@ func _cursor_bar(dimensions: Vector2, material: Material, z: float) -> void:
 
 
 func _present() -> void:
+	# The physical housing, rim, rivets and feet never inherit the target spin.
 	_board.rotation.z = -_spin * TAU if (aiming or idle) else 0.0
 	_reticle.visible = aiming
 	_reticle.position = Vector3(0.0, _aim_radius * SCORE_RADIUS, 0.22)

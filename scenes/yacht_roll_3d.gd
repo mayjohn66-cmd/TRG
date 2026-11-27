@@ -7,16 +7,19 @@ extends TextureRect
 const ROLL_TIME: float = 1.05
 const STAGGER: float = 0.035
 const TOTAL_TIME: float = ROLL_TIME + STAGGER * 4.0
-const VIEW_SIZE := Vector2(576.0, 300.0)
-const RENDER_SIZE := Vector2i(864, 450)
+const VIEW_SIZE := Vector2(768.0, 300.0)
+const RENDER_SIZE := Vector2i(960, 375)
+const DICE_CENTER := Vector2(288,150)
+const PIXELS_PER_UNIT := 42.0
 const GAP: float = 55.0 / 21.0
 ## 줄 높이 (월드 단위, 1단위 = 화면 42px). 펠트 줄은 가운데보다 아래, 고정 칸 줄은 위.
 const FELT_Y: float = -1.2
 const KEEP_Y: float = 2.0
 ## 컵 자리 (굴린 주사위가 여기서 쏟아져 나온다).
-const CUP: Vector3 = Vector3(7.6, -1.0, 0.0)
+const CUP: Vector3 = Vector3((724.0-320.0)/42.0, 0.0, 0.0)
 ## 고정·해제 때 줄을 옮겨 가는 시간.
 const MOVE_TIME: float = 0.16
+static var _yacht_body_mesh: ArrayMesh
 
 var render_view: SubViewport
 var dice_nodes: Array[Node3D] = []
@@ -51,13 +54,13 @@ func _ready() -> void:
 	texture = render_view.get_texture()
 	var camera := Camera3D.new()
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
-	camera.size = 10.0 / 3.0 * float(RENDER_SIZE.y) / 210.0  # 주사위 크기는 예전 한 줄 화면과 같다
-	camera.position = Vector3(0.0, 0.0, 16.0)
+	camera.size = VIEW_SIZE.y/PIXELS_PER_UNIT
+	camera.position = Vector3((VIEW_SIZE.x*.5-DICE_CENTER.x)/PIXELS_PER_UNIT,0,16)
 	render_view.add_child(camera)
 	camera.current = true
-	# Reuse the exact rounded toy body and six painted sides from the D6.
-	if DiceRoll3D._body_mesh == null:
-		DiceRoll3D._body_mesh = DiceRoll3D._make_body_mesh()
+	# Same dimensions, radius and painted faces; fewer curve samples at 92px.
+	if _yacht_body_mesh == null:
+		_yacht_body_mesh=_make_yacht_body()
 	var body_material := ShaderMaterial.new()
 	body_material.shader = DiceRoll3D.BODY_SHADER
 	var ink := ShaderMaterial.new()
@@ -71,7 +74,7 @@ func _ready() -> void:
 		render_view.add_child(die)
 		for material: Material in [ink, body_material, paint]:
 			var part := MeshInstance3D.new()
-			part.mesh = DiceRoll3D._pip_mesh_for(&"D6") if material == paint else DiceRoll3D._body_mesh
+			part.mesh = DiceRoll3D._pip_mesh_for(&"D6") if material == paint else _yacht_body_mesh
 			part.material_override = material
 			die.add_child(part)
 		dice_nodes.append(die)
@@ -117,9 +120,9 @@ func set_kept(mask: Array) -> void:
 
 ## 이 주사위가 화면에서 놓인 자리 (이 노드 좌표, 입력 영역을 맞출 때 쓴다).
 func die_center(index: int, on_keep_row: bool) -> Vector2:
-	var px: float = VIEW_SIZE.y / (10.0 / 3.0 * float(RENDER_SIZE.y) / 210.0)
+	var px: float = PIXELS_PER_UNIT
 	var world := Vector2((index - 2) * GAP, KEEP_Y if on_keep_row else FELT_Y)
-	return VIEW_SIZE / 2.0 + Vector2(world.x, -world.y) * px
+	return DICE_CENTER + Vector2(world.x, -world.y) * px
 
 
 func _process(delta: float) -> void:
@@ -148,6 +151,37 @@ func _pose(index: int) -> Transform3D:
 func stop_rendering() -> void:
 	if render_view != null:
 		render_view.render_target_update_mode = SubViewport.UPDATE_DISABLED
+
+
+## Concentrate the smaller grid on the bevel boundaries, leaving the painted
+## face truly flat instead of spreading interpolated corner shading over it.
+static func _make_yacht_body() -> ArrayMesh:
+	var vertices:=PackedVector3Array()
+	var normals:=PackedVector3Array()
+	var indices:=PackedInt32Array()
+	var inner:=DiceRoll3D.HALF_SIZE-DiceRoll3D.ROUND_RADIUS
+	var samples: Array[float]=[-1.0,-inner,0.0,inner,1.0]
+	for face:int in 6:
+		var start:=vertices.size()
+		for row:int in 5:
+			for column:int in 5:
+				var point:=DiceRoll3D.FACE_NORMALS[face]+DiceRoll3D.FACE_U[face]*samples[column]+DiceRoll3D.FACE_V[face]*samples[row]
+				var core:=point.clamp(-Vector3.ONE*inner,Vector3.ONE*inner)
+				var normal:=(point-core).normalized()
+				vertices.append(core+normal*DiceRoll3D.ROUND_RADIUS)
+				normals.append(normal)
+		for row:int in 4:
+			for column:int in 4:
+				var a:=start+row*5+column
+				indices.append_array(PackedInt32Array([a,a+5,a+6,a,a+6,a+1]))
+	var arrays:=[]
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX]=vertices
+	arrays[Mesh.ARRAY_NORMAL]=normals
+	arrays[Mesh.ARRAY_INDEX]=indices
+	var mesh:=ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
+	return mesh
 
 
 static func front_orientation(face: int) -> Quaternion:

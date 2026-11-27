@@ -6,7 +6,7 @@ extends TextureRect
 signal reel_stopped(index: int)
 
 const VIEW_SIZE: Vector2 = Vector2(500,330)
-const RENDER_SIZE: Vector2i = Vector2i(750,495)
+const RENDER_SIZE: Vector2i = Vector2i(650,429)
 const STRIP_SIZE: Vector2i = Vector2i(256,1536)
 const SYMBOLS: Array[String] = ["체리","레몬","종","BAR","다이아","7"]
 const ICON_FILES: Dictionary = {0:"CHERRY",1:"LEMON",2:"BELL",4:"DIAMOND"}
@@ -210,12 +210,12 @@ func _build_cabinet() -> void:
 	socket.material_override=gold
 	_lever.add_child(socket)
 	var elbow:=MeshInstance3D.new()
-	elbow.mesh=MahjongSlam3D.rounded_box(Vector3(0.32,0.09,0.09),0.07)
+	elbow.mesh=MahjongSlam3D.rounded_box(Vector3(0.32,0.09,0.09),0.07,2)
 	elbow.position=Vector3(0.32,0,0)
 	elbow.material_override=gold
 	_lever.add_child(elbow)
 	var bar := MeshInstance3D.new()
-	bar.mesh = MahjongSlam3D.rounded_box(Vector3(0.09,0.64,0.09),0.07)
+	bar.mesh = MahjongSlam3D.rounded_box(Vector3(0.09,0.64,0.09),0.07,2)
 	bar.position = Vector3(0.63,0.56,0)
 	bar.material_override = gold
 	_lever.add_child(bar)
@@ -267,7 +267,7 @@ func box(half: Vector3, at: Vector3, material: Material, radius: float) -> void:
 	radius = minf(radius,minf(half.x,minf(half.y,half.z)))
 	var key: String = "%s/%s" % [half,radius]
 	if not _box_meshes.has(key):
-		_box_meshes[key] = MahjongSlam3D.rounded_box(half,radius)
+		_box_meshes[key] = MahjongSlam3D.rounded_box(half,radius,2)
 	var mesh := MeshInstance3D.new()
 	mesh.mesh = _box_meshes[key]
 	mesh.position = at
@@ -466,14 +466,14 @@ static func make_drum_mesh() -> ArrayMesh:
 	var normals := PackedVector3Array()
 	var uvs := PackedVector2Array()
 	var indices := PackedInt32Array()
-	for segment: int in 73:
-		var theta: float = segment*TAU/72.0
+	for segment: int in 49:
+		var theta: float = segment*TAU/48.0
 		var normal := Vector3(0,sin(theta),cos(theta))
 		for side: int in 2:
 			vertices.append(Vector3((-1.0 if side==0 else 1.0)*REEL_HALF_WIDTH,normal.y*REEL_RADIUS,normal.z*REEL_RADIUS))
 			normals.append(normal)
 			uvs.append(Vector2(side,0.5/6.0-theta/TAU))
-		if segment<72:
+		if segment<48:
 			var a: int = segment*2
 			indices.append_array(PackedInt32Array([a,a+3,a+1,a,a+2,a+3]))
 	var arrays: Array = []

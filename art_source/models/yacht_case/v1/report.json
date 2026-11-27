@@ -1,0 +1,43 @@
+{
+  "blender": "5.2.4 LTS",
+  "triangles": 4184,
+  "vertices": 2168,
+  "materials": 7,
+  "case_pixels": [
+    640,
+    336
+  ],
+  "viewport_pixels": [
+    780,
+    352
+  ],
+  "well_centers": [
+    [
+      100,
+      90
+    ],
+    [
+      210,
+      90
+    ],
+    [
+      320,
+      90
+    ],
+    [
+      430,
+      90
+    ],
+    [
+      540,
+      90
+    ]
+  ],
+  "cup_center": [
+    668,
+    232
+  ],
+  "glb_bytes": 191140,
+  "glb_sha256": "4a74ce5a125c19bd8cf285d2d31cbef57d504d48021a1c538939e62ac54fde6f",
+  "saved_readback": true
+}

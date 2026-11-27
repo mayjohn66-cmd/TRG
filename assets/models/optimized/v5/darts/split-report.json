@@ -1,0 +1,40 @@
+{
+  "parts": [
+    {
+      "bytes": 745,
+      "dependencies": [
+        "res://assets/models/optimized/v4/materials/material_0067.res",
+        "res://assets/models/optimized/v4/meshes/mesh_0098.res",
+        "res://assets/models/optimized/v4/meshes/mesh_0099.res",
+        "res://assets/models/optimized/v4/meshes/mesh_0102.res",
+        "res://assets/models/optimized/v4/meshes/mesh_0103.res",
+        "res://assets/models/optimized/v4/meshes/mesh_0104.res"
+      ],
+      "nodes": [
+        "BeveledSolidHousing",
+        "RaisedCreamEdge",
+        "ExtrudedNumbers",
+        "FourInsetRivets",
+        "RearMountingFeet"
+      ],
+      "output": "res://assets/models/optimized/v5/darts/fixed_frame.scn",
+      "saved_readback": true
+    },
+    {
+      "bytes": 657,
+      "dependencies": [
+        "res://assets/models/optimized/v4/materials/material_0067.res",
+        "res://assets/models/optimized/v4/meshes/mesh_0100.res",
+        "res://assets/models/optimized/v4/meshes/mesh_0101.res"
+      ],
+      "nodes": [
+        "TwelveSolidScoringSectors",
+        "RaisedDividerWires"
+      ],
+      "output": "res://assets/models/optimized/v5/darts/rotating_target.scn",
+      "saved_readback": true
+    }
+  ],
+  "source": "res://assets/models/optimized/v4/darts/v02/dartboard_v02.scn",
+  "source_sha256": "0fedd0f1d7ccdbbc0ce13cf3a70e2b8623caf337e65f6f1ae576c6ce2d19a5c9"
+}

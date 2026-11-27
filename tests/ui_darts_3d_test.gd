@@ -22,11 +22,19 @@ func _run() -> void:
 	expect(view.is_processing(), "aim starts clock")
 	expect(view._viewport.render_target_update_mode == SubViewport.UPDATE_ALWAYS, "visible aim renders")
 	view._process(0.37)
+	var frame_transform:=view._frame.global_transform
+	expect(view._frame.has_node("RearMountingFeet") and view._frame.has_node("FourInsetRivets"),"fixed model contains mounting hardware")
+	expect(view._board.has_node("TwelveSolidScoringSectors") and not view._board.has_node("ExtrudedNumbers"),"rotating model contains sectors without the fixed numbers")
+	expect(view._frame.has_node("ExtrudedNumbers"),"number ring belongs to the fixed model")
+	var numbers_transform:Transform3D=view._frame.get_node("ExtrudedNumbers").global_transform
+	expect(not view._board.has_node("BeveledSolidHousing") and not view._frame.has_node("TwelveSolidScoringSectors"),"the two exported models have separate responsibilities")
 	expect(view._camera.position.is_equal_approx(Vector3(0, 0, 8.5)), "aim camera stays frontal")
 	for spin: float in [0.0, 0.19, 0.51, 0.99]:
 		view._spin = spin
 		view._aim_radius = 0.67
 		view._present()
+		expect(view._frame.global_transform.is_equal_approx(frame_transform),"housing, rim and feet stay fixed while the target spins")
+		expect((view._frame.get_node("ExtrudedNumbers") as Node3D).global_transform.is_equal_approx(numbers_transform),"number ring stays fixed at every tested target angle")
 		var aim := view.current_aim()
 		var local_hit := DartBoardView.hit_point(aim[0], aim[1], 0.0)
 		var world_hit := view._board.transform * local_hit
@@ -59,6 +67,9 @@ func _run() -> void:
 	expect(is_equal_approx(DartBoardView.FACE_Z - DartBoardView.TIP_Z, 0.215), "needle visibly penetrates approved depth")
 	view.set_aiming(true)
 	expect(not view._dart.visible and view._reticle.visible and not view.settled, "next throw resets hit visuals")
+	view.set_idle(true)
+	view._process(.4)
+	expect(absf(view._board.rotation.z)>.01 and view._frame.global_transform.is_equal_approx(frame_transform),"idle display also spins only the target")
 	view.queue_free()
 	await process_frame
 	var preconfigured := DartBoardView.new()

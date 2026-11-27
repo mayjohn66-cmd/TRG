@@ -23,6 +23,14 @@ func _entries() -> Array[Dictionary]:
 
 
 func _page_alone() -> void:
+	var digits:=ResultTypography.font()
+	_expect(ResultTypography.DIGITS.get_supported_chars()=="0123456789","숫자 전용 글꼴은 0~9만 제공해 기존 한글·영문 서체를 유지한다")
+	_expect(digits.has_char("가".unicode_at(0)) and digits.has_char("7".unicode_at(0)),"결과 문구는 기존 글자와 구분되는 숫자를 함께 표시한다")
+	for character:String in ["0","1","2","3","4","5","6","8","9"]:
+		var original:=ResultComicPage.RESULT_FONT
+		var original_width:=original.get_string_size(character,HORIZONTAL_ALIGNMENT_LEFT,-1,64).x
+		var current_width:=ResultTypography.DIGITS.get_string_size(character,HORIZONTAL_ALIGNMENT_LEFT,-1,64).x
+		_expect(is_equal_approx(original_width,current_width),"7 이외 숫자는 기존 카툰 글꼴의 폭을 유지한다")
 	var page := ResultComicPage.new()
 	root.add_child(page)
 	page.setup(_entries(), "RACE OVER", "말 4개 모두 완주")
@@ -101,10 +109,10 @@ func _page_alone() -> void:
 				for corner: Vector2 in corners:
 					if not Geometry2D.is_point_in_polygon(corner,names_page.panels[index].polygon):inside=false
 				_expect(inside,"회전·외곽선을 포함한 10글자 이름이 순위 컷 바깥으로 넘치지 않는다")
-				_expect(tag.get_theme_font("font")==ResultComicPage.RESULT_FONT and tag.get_node_or_null("RankBubble")!=null,"2~4등은 전용 카툰 글꼴과 말풍선을 쓴다")
+				_expect(tag.get_theme_font("font")==ResultTypography.font(ResultComicPage.RESULT_FONT) and tag.get_node_or_null("RankBubble")!=null,"2~4등은 카툰 서체에 가독성 숫자와 말풍선을 쓴다")
 			var winner := names_page.winner_label
 			_expect(winner.text==full_name and winner.size.x*winner.scale.x < view.x*0.48,"1등의 10글자 이름도 생략하지 않고 배정 폭에 들어간다")
-		_expect(names_page.stamp.get_theme_font("font")==ResultComicPage.RESULT_FONT and names_page.stamp.get_node_or_null("RankBubble")!=null,"1등도 같은 카툰 글꼴과 우승 말풍선을 쓴다")
+		_expect(names_page.stamp.get_theme_font("font")==ResultTypography.font(ResultComicPage.RESULT_FONT) and names_page.stamp.get_node_or_null("RankBubble")!=null,"1등도 같은 카툰 서체에 가독성 숫자와 우승 말풍선을 쓴다")
 		names_page.queue_free();await settle(2)
 	var page2 := ResultComicPage.new()
 	root.add_child(page2);page2.setup(_entries().slice(0,2),"RACE OVER","")

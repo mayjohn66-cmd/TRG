@@ -280,7 +280,7 @@ func _make_text(node_name: String, text: String, font_size: int, outline: int, c
 
 func _make_rank(node_name: String, text: String, font_size: int, fill: Color = Color("fff5d9")) -> Label:
 	var label := _make_text(node_name,text,font_size,0,INK)
-	label.add_theme_font_override("font",RESULT_FONT)
+	ResultTypography.apply(label,RESULT_FONT)
 	var bubble := RankBubble.new()
 	bubble.name = "RankBubble"
 	bubble.fill = fill

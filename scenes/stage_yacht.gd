@@ -11,13 +11,13 @@ signal reroll_pressed(keep: Array)
 signal confirm_pressed
 signal roll_finished
 
-const STAGE_SIZE: Vector2 = Vector2(640.0, 392.0)
+const STAGE_SIZE: Vector2 = Vector2(640.0, 416.0)
 ## 케이스 (테두리·고정 칸 띠·펠트). 3D 주사위 화면은 케이스 안쪽에 겹친다.
 const CASE_RECT: Rect2 = Rect2(0.0, 0.0, 640.0, 336.0)
 const VIEW_AT: Vector2 = Vector2(32.0, 24.0)
-const FELT_RECT: Rect2 = Rect2(22.0, 118.0, 596.0, 206.0)
-const CUP_CENTER: Vector2 = Vector2(668.0, 232.0)
-const CUP_RADIUS: float = 72.0
+const FELT_RECT: Rect2 = Rect2(22.0, 144.0, 596.0, 180.0)
+const CUP_CENTER: Vector2 = Vector2(724.0, 174.0)
+const CUP_RADIUS: float = 62.0
 const ROLL_SECONDS: float = YachtRoll3D.TOTAL_TIME
 
 ## 3D 주사위 위의 입력 영역. 고정 테두리·태그와 굴리기 전 자리만 그린다.
@@ -84,6 +84,7 @@ var _reroll_button: Button = null
 var _confirm_button: Button = null
 var _result_text: String = ""  ## 확정된 뒤 상태 줄에 남겨 둘 결과 문구
 var _dice_3d: YachtRoll3D
+var _case_view: YachtCase3D
 var _elapsed: float = 0.0
 var _play_serial: int = 0
 var _landed: bool = false
@@ -96,6 +97,7 @@ func _init() -> void:
 
 
 func _ready() -> void:
+	_ensure_case.call_deferred()
 	_title = _label("", 18, UiSkin.GREEN)  # 1.3.1: 케이스가 설명을 대신한다 (제목 없음)
 	_title.visible = false
 	add_child(_title)
@@ -116,7 +118,7 @@ func _ready() -> void:
 	var buttons := HBoxContainer.new()
 	buttons.add_theme_constant_override("separation", 14)
 	buttons.alignment = BoxContainer.ALIGNMENT_CENTER
-	buttons.position = Vector2(10.0, CASE_RECT.end.y + 8.0)
+	buttons.position = Vector2(10.0, CASE_RECT.end.y + 24.0)
 	buttons.size = Vector2(STAGE_SIZE.x - 20.0, 46.0)
 	add_child(buttons)
 	_start_button = _button("주사위 5개 굴리기", true, 340.0)
@@ -135,39 +137,7 @@ func _ready() -> void:
 
 ## 주사위 케이스: 그림자 → 검은 테두리 → 고정 칸 5개 → 초록 펠트 → 오른쪽 주사위 컵 (3D 주사위는 이 위에 겹친다).
 func _draw() -> void:
-	var case_box := StyleBoxFlat.new()
-	case_box.bg_color = Color("1d1f24")
-	case_box.border_color = Color("3b3f47")
-	case_box.set_border_width_all(3)
-	case_box.set_corner_radius_all(18)
-	case_box.shadow_color = Color(0, 0, 0, 0.45)
-	case_box.shadow_size = 14
-	case_box.shadow_offset = Vector2(0, 8)
-	draw_style_box(case_box, CASE_RECT)
-	for index: int in 5:
-		var at: Vector2 = VIEW_AT + _dice_3d_center(index, true) if _dice_3d != null else Vector2.ZERO
-		var slot := Rect2(at - Vector2(40, 40), Vector2(80, 80))
-		var slot_box := StyleBoxFlat.new()
-		slot_box.bg_color = Color("0d0e11")
-		slot_box.border_color = Color("2d3038")
-		slot_box.set_border_width_all(2)
-		slot_box.set_corner_radius_all(10)
-		draw_style_box(slot_box, slot)
-		draw_rect(Rect2(slot.position + Vector2(4, 4), Vector2(slot.size.x - 8, 10)), Color(0, 0, 0, 0.35))
-	var felt := StyleBoxFlat.new()
-	felt.bg_color = Color("1b5a2c")
-	felt.border_color = Color("0f2f17")
-	felt.set_border_width_all(6)
-	felt.set_corner_radius_all(10)
-	draw_style_box(felt, FELT_RECT)
-	draw_rect(Rect2(FELT_RECT.position + Vector2(10, 10), FELT_RECT.size - Vector2(20, 20)), Color(1, 1, 1, 0.03))
-	# 오른쪽 주사위 컵 (케이스 가장자리에 걸쳐 놓였다): 금속 테 → 붉은 안쪽 → 안쪽 그림자
-	draw_circle(CUP_CENTER + Vector2(4, 8), CUP_RADIUS + 6.0, Color(0, 0, 0, 0.35))
-	draw_circle(CUP_CENTER, CUP_RADIUS + 6.0, Color("8a8f98"))
-	draw_arc(CUP_CENTER, CUP_RADIUS + 3.0, 0.0, TAU, 48, Color("c9ced6"), 2.0, true)
-	draw_circle(CUP_CENTER, CUP_RADIUS - 6.0, Color("5a1f12"))
-	draw_circle(CUP_CENTER + Vector2(-8, -6), CUP_RADIUS - 22.0, Color("7a2c18"))
-
+	pass # Case, recessed wells and hollow cup are rendered by YachtCase3D.
 
 func _dice_3d_center(index: int, keep_row: bool) -> Vector2:
 	return _dice_3d.die_center(index, keep_row)
@@ -194,8 +164,20 @@ func _process(delta: float) -> void:
 func _on_visibility_changed() -> void:
 	if not is_visible_in_tree():
 		cancel()
+		if _dice_3d!=null: preload("res://scenes/web_3d_budget.gd").park(_dice_3d)
+		if _case_view!=null: _case_view.set_active(false)
 	elif _dice_3d != null and not active:
+		_ensure_case()
+		preload("res://scenes/web_3d_budget.gd").restore(_dice_3d)
+		_case_view.set_active(true)
 		_dice_3d.show_values(dice)
+
+
+func _ensure_case() -> void:
+	if _case_view==null and is_visible_in_tree():
+		_case_view=YachtCase3D.new()
+		add_child(_case_view)
+		move_child(_case_view,0)
 
 
 func cancel() -> void:

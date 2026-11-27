@@ -8315,9 +8315,10 @@ func _act(action: StringName, params: Dictionary = {}) -> void:
 	_refresh_all()
 
 
-func _on_roll_pressed() -> void:
+func _on_roll_pressed(power_override: float = -1.0) -> void:
 	# 게이지를 모았으면 그 값, 아니면(짧게 누름·게이지 없는 도구) 경쾌한 고정값을 연출 세기로 쓴다.
-	var charged: float = _take_charge()
+	var charged: float = power_override if power_override>=0.0 else _take_charge()
+	if power_override>=0.0: _stop_charge()
 	_pending_power = charged if charged >= 0.0 else ONE_CLICK_POWER
 	var gauge_params: Dictionary = {"power": charged} if charged >= 0.0 else {}  # 게이지를 모아 던졌을 때만 엔진에 값을 보낸다 (1.3.1 풀 파워)
 	if manager.is_game_over or _roll_button.disabled or _ui_busy() or _is_bot_turn() or _roll_pad.preparing:
@@ -13617,6 +13618,7 @@ func _build_tool_stages() -> void:
 	_stage_blackjack.stand_pressed.connect(_on_stage_stand)
 	add_child(_stage_blackjack)
 	_stage_pinball = PinballStage.new()
+	_stage_pinball.launch_requested.connect(_on_roll_pressed)
 	_stage_pinball.position = Vector2(683.0, 335.0) - PinballStage.STAGE_SIZE / 2.0
 	_stage_pinball.visible = false
 	_stage_pinball.z_index = 5

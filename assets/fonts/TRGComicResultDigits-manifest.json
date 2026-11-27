@@ -1,0 +1,13 @@
+{
+  "source": "assets\\fonts\\result\\bangers.ttf",
+  "source_sha256": "37b96b79b88e99c0eaa82ee33211132a5216f0dc46f131818bc4043b67fd9b9b",
+  "output": "assets\\fonts\\TRGComicResultDigits.ttf",
+  "bytes": 7156,
+  "glyphs": 11,
+  "digits": "0123456789",
+  "modified_digits": [
+    "7 crossbar"
+  ],
+  "unchanged_digits": "012345689",
+  "sha256": "4c9d63c0f1095971a5ede107481d1f32ee4a634929d15cb6e51d7d462ae5b340"
+}

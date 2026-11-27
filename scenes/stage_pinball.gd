@@ -4,8 +4,9 @@ class_name PinballStage
 extends Control
 
 signal finished
+signal launch_requested(power: float)
 
-const STAGE_SIZE := Vector2(360.0, 430.0)
+const STAGE_SIZE := Vector2(420.0, 430.0)
 const MOTION = preload("res://scenes/pinball_motion.gd")
 const BASE: PackedScene = preload("res://assets/models/optimized/v4/pinball/pinball_base_v01.scn")
 const BALL: PackedScene = preload("res://assets/models/optimized/v4/pinball/steel_ball_v01.scn")
@@ -23,6 +24,17 @@ var ball: Node3D
 var base: Node3D
 var _caption: Label
 var _coil: MeshInstance3D
+var _coil_home: Vector3
+var _camera: Camera3D
+var _knob: Node3D
+var _side_handle: Node3D
+var _can_launch := false
+var _dragging := false
+var _drag_start := Vector2.ZERO
+var _touch_index := -1
+var _direct_release := false
+var _wind_seconds := WIND_TIME
+var _launch_stroke := .22
 var _moving_plunger: Array[Node3D] = []
 var _plunger_home: Array[Vector3] = []
 var _floors: Array[MeshInstance3D] = []
@@ -47,7 +59,7 @@ func _init() -> void:
 func _ready() -> void:
 	render_view = SubViewport.new()
 	render_view.name = "PinballViewport"
-	render_view.size = Vector2i(720, 800)
+	render_view.size = Vector2i(630, 600)
 	render_view.own_world_3d = true
 	render_view.transparent_bg = true
 	render_view.gui_disable_input = true
@@ -59,15 +71,16 @@ func _ready() -> void:
 	view.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	view.stretch_mode = TextureRect.STRETCH_SCALE
 	view.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	view.size = Vector2(360, 400)
+	view.size = Vector2(420, 400)
 	view.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(view)
 	var camera := Camera3D.new()
+	_camera=camera
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
 	camera.size = 9.8
-	camera.position = Vector3(0, 17, 11)
+	camera.position = Vector3(.75, 17, 11)
 	render_view.add_child(camera)
-	camera.look_at(Vector3(0, 0.1, -0.05))
+	camera.look_at(Vector3(.75, 0.1, -0.05))
 	camera.current = true
 	var world := WorldEnvironment.new()
 	world.environment = STUDIO.duplicate()
@@ -83,11 +96,40 @@ func _ready() -> void:
 	ball = BALL.instantiate() as Node3D
 	render_view.add_child(ball)
 	var plunger: Node3D = base.get_node("StaticSpringPlunger")
+	# Preserve the authored longitudinal spring, rod, bushing and ball pusher.
+	# A short tab slides down the side wall. Its coupling is concealed inside
+	# the cabinet; no exposed U-shaped linkage runs around the bottom edge.
 	_coil = plunger.get_node("SevenTurnSteelSpring")
-	for node_name: String in ["PlungerRod", "BallPusher", "CoralPullKnob", "RoundedKnobEnd"]:
+	_coil_home=_coil.position
+	var coral: Material=(plunger.get_node("CoralPullKnob") as MeshInstance3D).material_override
+	var gold: Material=(plunger.get_node("FrontGuideBushing") as MeshInstance3D).material_override
+	for grip_name: String in ["CoralPullKnob","RoundedKnobEnd"]:
+		var grip:=plunger.get_node(grip_name) as Node3D
+		plunger.remove_child(grip)
+		grip.queue_free()
+	var rod:=plunger.get_node("PlungerRod") as Node3D
+	rod.scale.z=.60
+	rod.position.z=3.28*(1.0-rod.scale.z) # Retract the unused external tail.
+	for node_name: String in ["PlungerRod", "BallPusher"]:
 		var part: Node3D = plunger.get_node(node_name)
 		_moving_plunger.append(part)
 		_plunger_home.append(part.position)
+	_side_handle=Node3D.new()
+	_side_handle.name="SideWallPullTab"
+	_side_handle.position=Vector3(3.62,.70,2.35)
+	plunger.add_child(_side_handle)
+	for spec: Array in [[Vector3(.48,.13,.20),Vector3(0,-.06,0),gold], [Vector3(.45,.11,.17),Vector3(0,.08,0),coral]]:
+		var part:=MeshInstance3D.new()
+		part.mesh=MahjongSlam3D.rounded_box(spec[0],.075,2)
+		part.position=spec[1]
+		part.material_override=spec[2]
+		_side_handle.add_child(part)
+		_knob=part
+	var guide:=MeshInstance3D.new()
+	guide.mesh=MahjongSlam3D.rounded_box(Vector3(.10,.10,.58),.06,2)
+	guide.position=Vector3(3.24,.60,2.72)
+	guide.material_override=_coil.material_override
+	plunger.add_child(guide)
 	var pockets: Node3D = base.get_node("SevenRecessedPockets")
 	for index: int in 7:
 		var floor: MeshInstance3D = pockets.get_node("Pocket_%d_Value_%d/RecessFloor" % [index, ToolPinball.HOLES[index]])
@@ -97,7 +139,7 @@ func _ready() -> void:
 	_batch_static_base()
 	var panel := Panel.new()
 	panel.position = Vector2(20, 400)
-	panel.size = Vector2(320, 28)
+	panel.size = Vector2(380, 28)
 	panel.add_theme_stylebox_override("panel", UiSkin.panel("panel", 2.0))
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(panel)
@@ -117,6 +159,7 @@ func _batch_static_base() -> void:
 	# Combine fixed pieces once, retaining the animated plunger and pocket
 	# floors separately instead of issuing 175 individual mesh draws.
 	var keep: Array[Node] = [_coil]
+	keep.append_array(_side_handle.get_children())
 	keep.append_array(_moving_plunger)
 	keep.append_array(_floors)
 	var groups: Dictionary = {}
@@ -156,7 +199,7 @@ func _process(delta: float) -> void:
 		return
 	_elapsed += delta
 	apply_time(_elapsed)
-	var fall_start: float = WIND_TIME + _rise_seconds + ARCH_SECONDS
+	var fall_start: float = _wind_seconds + _rise_seconds + ARCH_SECONDS
 	var impacts: PackedFloat32Array = _trajectory.get("impacts", PackedFloat32Array())
 	var bounced: bool = false
 	while _last_bounce + 1 < impacts.size() and _elapsed - fall_start >= impacts[_last_bounce + 1]:
@@ -180,11 +223,12 @@ func set_pull(value: float) -> void:
 		return
 	var shift: float = pull * 0.22
 	_coil.scale.z = 1.0 - shift / 0.88
-	_coil.position.z = 4.31 * (1.0 - _coil.scale.z)
+	_coil.position = _coil_home+Vector3(0,0,4.31*(1.0-_coil.scale.z))
 	for index: int in _moving_plunger.size():
-		_moving_plunger[index].position = _plunger_home[index] + Vector3(0, 0, shift)
+		_moving_plunger[index].position = _plunger_home[index] + Vector3(0,0,shift)
+	_side_handle.position.z=2.35+pull*.75
 	if not active:
-		ball.position = MOTION.PARK + Vector3(0, 0, shift)
+		ball.position = MOTION.PARK + Vector3(0, 0, pull*.22)
 	request_frame()
 
 
@@ -198,19 +242,64 @@ func reset() -> void:
 	ball.position = MOTION.PARK
 	ball.quaternion = Quaternion.IDENTITY
 	_highlight(-1)
-	_caption.text = "클래식 구슬 핀볼 · 발사 버튼을 누르세요"
+	_caption.text = L10n.t("측면 손잡이를 아래로 당겼다 놓으세요")
 	request_frame()
 
 
 ## 굴리기 전 안내 문구: 내 차례면 [발사] 버튼 안내, 컴퓨터·다른 사람 차례면 누구 차례인지 (발사 버튼을 누르라고 하지 않는다).
 func set_waiting_caption(other_turn: bool, who: String) -> void:
+	_can_launch=not other_turn and not active and last_hole==-1
+	mouse_filter=Control.MOUSE_FILTER_STOP if _can_launch else Control.MOUSE_FILTER_IGNORE
 	if _caption == null or active or last_hole != -1:
 		return
-	_caption.text = ("클래식 구슬 핀볼 · %s 차례" % who) if other_turn else "클래식 구슬 핀볼 · 발사 버튼을 누르세요"
+	_caption.text = ("클래식 구슬 핀볼 · %s 차례" % who) if other_turn else L10n.t("측면 손잡이를 아래로 당겼다 놓으세요")
+
+
+func lever_grip_position() -> Vector2:
+	return _camera.unproject_position(_knob.global_position)/Vector2(render_view.size)*Vector2(420,400)
+
+
+func _gui_input(event: InputEvent) -> void:
+	if not _can_launch or active: return
+	var at:=Vector2.ZERO
+	var down:=false
+	var release:=false
+	if event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_LEFT:
+		if _touch_index>=0: return
+		at=event.position
+		down=event.pressed
+		release=not event.pressed
+	elif event is InputEventMouseMotion and _touch_index<0: at=event.position
+	elif event is InputEventScreenTouch:
+		if _touch_index>=0 and event.index!=_touch_index: return
+		at=event.position
+		down=event.pressed
+		release=not event.pressed
+		if down: _touch_index=event.index
+	elif event is InputEventScreenDrag and event.index==_touch_index: at=event.position
+	else: return
+	if down:
+		_dragging=at.distance_to(lever_grip_position())<=28.0
+		_drag_start=at
+	elif release:
+		var power:=pull
+		var launch:=_dragging and power>=.12
+		_dragging=false
+		_touch_index=-1
+		if launch:
+			_can_launch=false
+			_direct_release=true
+			launch_requested.emit(power)
+		else: set_pull(0.0)
+	elif _dragging: set_pull((at.y-_drag_start.y)/28.0)
+	accept_event()
 
 
 func play(result: Dictionary, power: float = 0.5) -> void:
+	var direct:=_direct_release
 	cancel()
+	_wind_seconds=0.0 if direct else WIND_TIME
+	_launch_stroke=clampf(power,0,1)*.22 if direct else .22
 	var details: Dictionary = result["details"]
 	_hole = clampi(int(details["hole"]), 0, 6)
 	last_hole = -1
@@ -220,7 +309,7 @@ func play(result: Dictionary, power: float = 0.5) -> void:
 	if not instant and is_inside_tree():
 		_trajectory = MOTION.trajectory(_hole, details.get("bounces", []))
 		_fall_seconds = float(_trajectory["duration"])
-	_arrival = WIND_TIME + _rise_seconds + ARCH_SECONDS + _fall_seconds
+	_arrival = _wind_seconds + _rise_seconds + ARCH_SECONDS + _fall_seconds
 	_total = _arrival + HOLD_SECONDS
 	if instant or not is_inside_tree():
 		last_hole = _hole
@@ -243,16 +332,16 @@ func play(result: Dictionary, power: float = 0.5) -> void:
 
 func apply_time(seconds: float) -> void:
 	var t: float = maxf(seconds, 0.0)
-	var arch_start: float = WIND_TIME + _rise_seconds
+	var arch_start: float = _wind_seconds + _rise_seconds
 	var fall_start: float = arch_start + ARCH_SECONDS
 	var position: Vector3
-	if t < WIND_TIME:
-		set_pull(sin(t / WIND_TIME * PI * 0.5))
+	if t < _wind_seconds:
+		set_pull(sin(t / _wind_seconds * PI * 0.5))
 		position = MOTION.PARK + Vector3(0, 0, pull * 0.22)
 	elif t < arch_start:
 		set_pull(0.0)
-		var u: float = (t - WIND_TIME) / _rise_seconds
-		position = (MOTION.PARK + Vector3(0, 0, 0.22)).lerp(MOTION.arch_position(0.0), (1.35 * u - 0.35 * u * u))
+		var u: float = (t - _wind_seconds) / _rise_seconds
+		position = (MOTION.PARK + Vector3(0, 0, _launch_stroke)).lerp(MOTION.arch_position(0.0), (1.35 * u - 0.35 * u * u))
 	elif t < fall_start:
 		position = MOTION.arch_position((t - arch_start) / ARCH_SECONDS)
 	elif t < _arrival and not _trajectory.is_empty():
@@ -292,6 +381,9 @@ func stop_rendering() -> void:
 
 
 func cancel() -> void:
+	_direct_release=false
+	_dragging=false
+	_touch_index=-1
 	set_process(false)
 	stop_rendering()
 	if active:
@@ -302,7 +394,9 @@ func cancel() -> void:
 func _visibility_changed() -> void:
 	if not is_visible_in_tree():
 		cancel()
+		preload("res://scenes/web_3d_budget.gd").park(self)
 	else:
+		preload("res://scenes/web_3d_budget.gd").restore(self)
 		request_frame()
 
 

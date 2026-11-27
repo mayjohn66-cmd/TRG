@@ -234,29 +234,29 @@ func stop_rendering() -> void:
 		render_view.render_target_update_mode = SubViewport.UPDATE_DISABLED
 
 
-static func rounded_box(half: Vector3, radius: float) -> ArrayMesh:
+static func rounded_box(half: Vector3, radius: float, segments: int = 4) -> ArrayMesh:
 	var vertices := PackedVector3Array()
 	var normals := PackedVector3Array()
 	var indices := PackedInt32Array()
-	const SEGMENTS: int = 4
+	segments=maxi(2,segments)
 	var core_half: Vector3 = half-Vector3.ONE*radius
 	for side: int in 6:
 		var start: int = vertices.size()
 		var n: Vector3 = DiceRoll3D.FACE_NORMALS[side]
 		var u: Vector3 = DiceRoll3D.FACE_U[side]
 		var v: Vector3 = DiceRoll3D.FACE_V[side]
-		for row: int in SEGMENTS+1:
-			for col: int in SEGMENTS+1:
-				var unit: Vector3 = n+u*lerpf(-1,1,float(col)/SEGMENTS)+v*lerpf(-1,1,float(row)/SEGMENTS)
+		for row: int in segments+1:
+			for col: int in segments+1:
+				var unit: Vector3 = n+u*lerpf(-1,1,float(col)/segments)+v*lerpf(-1,1,float(row)/segments)
 				var point: Vector3 = unit*half
 				var core: Vector3 = point.clamp(-core_half,core_half)
 				var normal: Vector3 = (point-core).normalized()
 				vertices.append(core+normal*radius)
 				normals.append(normal)
-		for row: int in SEGMENTS:
-			for col: int in SEGMENTS:
-				var a: int = start+row*(SEGMENTS+1)+col
-				var b: int = a+SEGMENTS+1
+		for row: int in segments:
+			for col: int in segments:
+				var a: int = start+row*(segments+1)+col
+				var b: int = a+segments+1
 				indices.append_array(PackedInt32Array([a,b,b+1,a,b+1,a+1]))
 	var arrays: Array = []
 	arrays.resize(Mesh.ARRAY_MAX)

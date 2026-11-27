@@ -9,6 +9,7 @@ class_name CardMat
 extends Control
 
 const FABRIC: Texture2D = preload("res://assets/ui/trickcal/card_mats/v1/felt-neutral.webp")
+const WOOD: Texture2D = preload("res://assets/ui/trickcal/card_mats/v1/wood-oak.webp")
 ## Stable board-space grain: unrolling reveals cloth instead of stretching it.
 const FABRIC_TILE_PIXELS := 320.0
 
@@ -122,10 +123,13 @@ func _draw() -> void:
 	if str(style["pattern"]) == "none":
 		return
 	var rect: Rect2 = mat_rect()
+	if minf(rect.size.x,rect.size.y)<2.0: return
 	var full := Rect2(mat_center - MAT_SIZE * mat_scale / 2.0, MAT_SIZE * mat_scale)
 	# 그림자 → 바탕 → 공용 섬유 질감 → 문양·테두리 → 카드 자리 → 말린 끝
 	for spread: int in [6,4,2]:
 		_round_rect(rect.grow(spread).grow_side(SIDE_BOTTOM,3),Color(0,0,0,.055),22+spread)
+	if str(style["pattern"])=="wood":
+		_round_rect(Rect2(rect.position+Vector2(0,12),rect.size),Color("674025"),22)
 	_round_rect(rect, style["base"], 22)
 	_draw_fabric(rect,full,style)
 	match str(style["pattern"]):
@@ -136,7 +140,7 @@ func _draw() -> void:
 	if reveal > 0.85:
 		for slot: Rect2 in slots:
 			_dashed_rect(slot.grow(4), Color(1, 1, 1, 0.28 * (reveal - 0.85) / 0.15), 10)
-	if reveal < 0.999:
+	if reveal < 0.999 and str(style["pattern"])!="wood":
 		var roll_color: Color = Color(style["base"]).darkened(0.25)
 		for side: float in [-1.0, 1.0]:
 			var x: float = rect.get_center().x + side * rect.size.x / 2.0
@@ -145,21 +149,22 @@ func _draw() -> void:
 
 
 func _draw_fabric(rect: Rect2, full: Rect2, style: Dictionary) -> void:
+	var wooden:=str(style["pattern"])=="wood"
 	var points := PackedVector2Array()
 	var uvs := PackedVector2Array()
-	var radius := minf(22.0,minf(rect.size.x,rect.size.y)*.5)
+	var radius := minf(22.0,minf(rect.size.x,rect.size.y)*.49)
 	var centers: Array[Vector2] = [rect.position+Vector2(radius,radius),Vector2(rect.end.x-radius,rect.position.y+radius),rect.end-Vector2.ONE*radius,Vector2(rect.position.x+radius,rect.end.y-radius)]
 	for corner: int in 4:
 		for step: int in 7:
 			var angle := PI+corner*PI*.5+step*PI/12.0
 			var point := centers[corner]+Vector2.from_angle(angle)*radius
 			points.append(point)
-			uvs.append((point-full.position)/FABRIC_TILE_PIXELS)
+			uvs.append((point-full.position)/full.size if wooden else (point-full.position)/FABRIC_TILE_PIXELS)
 	# The neutral cloth averages mid-gray. This tint restores the existing palette
 	# while retaining the fine fiber highlights and depressions in one shared draw.
 	var tint: Color = Color(style["base"]).lerp(Color(style["center"]),.45)
 	tint=Color(tint.r*1.9,tint.g*1.9,tint.b*1.9,1)
-	draw_polygon(points,PackedColorArray([tint]),uvs,FABRIC)
+	draw_polygon(points,PackedColorArray([Color.WHITE if wooden else tint]),uvs,WOOD if wooden else FABRIC)
 
 
 ## 타로: 보라 천과 가는 금실 봉제선.
@@ -189,7 +194,7 @@ func _draw_felt(rect: Rect2, _full: Rect2, style: Dictionary) -> void:
 
 func _rounded_contour(rect: Rect2, radius: float) -> PackedVector2Array:
 	var path:=PackedVector2Array()
-	var r:=minf(radius,minf(rect.size.x,rect.size.y)*.5)
+	var r:=minf(radius,minf(rect.size.x,rect.size.y)*.49)
 	var centers: Array[Vector2]=[rect.position+Vector2.ONE*r,Vector2(rect.end.x-r,rect.position.y+r),rect.end-Vector2.ONE*r,Vector2(rect.position.x+r,rect.end.y-r)]
 	for corner: int in 4:
 		for step: int in 7:
@@ -208,6 +213,7 @@ func _draw_binding(rect: Rect2, style: Dictionary, width: float, thread: Color) 
 	for i: int in outer.size():
 		var next: int=(i+1)%outer.size()
 		var quad:=PackedVector2Array([outer[i],outer[next],inner[next],inner[i]])
+		if Geometry2D.triangulate_polygon(quad).is_empty(): continue
 		var uv:=PackedVector2Array()
 		for point: Vector2 in quad: uv.append((point-full.position)/FABRIC_TILE_PIXELS)
 		var tint:=Color(ink.r*1.9,ink.g*1.9,ink.b*1.9,1)
@@ -243,15 +249,10 @@ func _draw_binding(rect: Rect2, style: Dictionary, width: float, thread: Color) 
 
 ## 스크래치 복권: 나무 결이 가로로 흐르는 계산대 상판과 어두운 모서리.
 func _draw_wood(rect: Rect2, style: Dictionary) -> void:
-	var grain: Color = Color(style["edge"], 0.22)
-	for row: int in 14:
-		var y: float = rect.position.y + 18.0 + row * (rect.size.y - 36.0) / 13.0
-		var points := PackedVector2Array()
-		for step: int in 13:
-			var x: float = rect.position.x + 14.0 + step * (rect.size.x - 28.0) / 12.0
-			points.append(Vector2(x, y + sin(step * 0.9 + row * 1.7) * 3.0))
-		draw_polyline(points, grain, 2.0, true)
-	_round_outline(rect.grow(-4), style["edge"], 22, 8.0)
+	_round_outline(rect,Color("6b4529"),22,2.0)
+	if rect.size.x>48 and rect.size.y>48:
+		draw_line(rect.position+Vector2(24,2),Vector2(rect.end.x-24,rect.position.y+2),Color(1,.89,.65,.45),2.0,true)
+		draw_line(Vector2(rect.position.x+24,rect.end.y-1),rect.end-Vector2(24,1),Color(style["edge"],.5),2.0,true)
 
 
 func _round_rect(rect: Rect2, color: Color, radius: float) -> void:

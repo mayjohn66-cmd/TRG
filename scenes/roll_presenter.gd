@@ -514,6 +514,12 @@ func _update_place(t: float) -> void:
 		_ground_shadow.size = Vector2(width, width * 0.22)
 		_ground_shadow.global_position = _place_base - _ground_shadow.size / 2.0
 		_ground_shadow.modulate.a = lerpf(0.6, 2.4, eased)  # 기본 그림자(옅은 연기)를 판 위 물건 무게만큼 진하게
+		if _mode==&"DICE_SCRATCH" and _scratch_view!=null:
+			# A paper ticket rests on the wooden counter, rather than casting a
+			# heavy floating-machine shadow below its transparent viewport margin.
+			_ground_shadow.size=Vector2(width,width*.04)
+			_ground_shadow.global_position=_scratch_view.get_global_transform()*(ScratchTicketView.SIZE*.5+Vector2(0,110))-_ground_shadow.size*.5
+			_ground_shadow.modulate.a=.55*eased
 	if _contact_fx != null:
 		_contact_fx.marks.clear()
 		var age: float = t - land_at
