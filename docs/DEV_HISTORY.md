@@ -1964,7 +1964,7 @@ godot --headless --audio-driver Dummy --path . -s res://tests/ui_live_hotfix_tes
 - 경량 모델(42개 모델 16.4MB → 2.6MB, 삼각형 61만 → 10.7만), 절차 메시·대기 렌더 타깃 경량화(`web_3d_budget.gd`)가 들어왔다. 단위 테스트·관련 화면 테스트(lowpoly_models·web_3d_budget·connected_props·seamless_tools·tool_pick_presentation 등) 통과.
 - 실제 웹 내보내기로 잰 게임 묶음: 41.4MB로 라이브(37.7MB)보다 컸다. 원인은 원본 작업 폴더 `art_source/`(`.gdignore`라 임포트는 안 되지만 내보내기에는 원본 glb 그대로, 5.9MB)가 묶음에 들어간 것. `export_presets.cfg` exclude_filter에 `art_source/*` 추가 → 35.2MB (라이브보다 2.5MB 작음). 본체(index.pck) 11.3MB. 내보낸 빌드로 game_pack_smoke·export_smoke·menu_tour 통과.
 - 글꼴에 없는 글자 "✓"(고르기 창 진행 칸)를 숫자로 바꿨다 (`test_font_glyphs`).
-- 더 줄일 곳: 아이스크림·아이스박스 2D 그림 6장이 무손실·원본 크기(958×1642, 1536×1024)로 묶음에서 약 6.9MB. 화면에 그리는 크기에 맞춰 `process/size_limit`(예: 512~768)을 주면 3~4MB 더 줄어든다 (그림 확인 필요).
+- 아이스크림·아이스박스 2D 그림 6장(무손실·원본 958×1642, 1536×1024)에 `process/size_limit`을 줬다: 막대 아이스크림(초코·민트)·포장지 3장 = 긴 변 512px(화면에서 막대 높이 171px, 포장지 최대 160×225px), 얼음 배경 = 1024px(화면 480×350px). 게임 묶음 35.2MB → 29.5MB. 사용자 결정: 일단 줄여 보고 보기 힘들면 되돌린다 (되돌리기 = 그 6개 `.import`의 size_limit을 0으로).
 
 ## 부록 B. 초기 예외 규칙 해석 (v1~v3.2, `EDGE_CASE_SPEC.md`에서 옮김)
 
