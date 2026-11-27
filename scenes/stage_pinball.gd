@@ -13,6 +13,10 @@ const STUDIO: Environment = preload("res://assets/models/optimized/v4/pinball/st
 const WIND_TIME: float = 0.16
 const ARCH_SECONDS: float = 0.52
 const HOLD_SECONDS: float = 0.45
+## 카드 시점 (1.3.1): 판 가운데로 다가가면 핀볼대를 위에서 쿵 내려놓는다.
+const DROP_HEIGHT: float = 420.0
+const DROP_TIME: float = 0.24
+const DROP_SETTLE: float = 0.16
 
 var pull: float = 0.0
 var active: bool = false
@@ -36,6 +40,11 @@ var _arrival: float = 0.0
 var _total: float = 0.0
 var _last_bounce: int = -1
 var _result_played: bool = false
+## 내려놓는 중의 높이 (0 = 판 위에 놓임). 그림과 안내판이 함께 내려온다.
+var drop_offset: float = 0.0
+var _drop_tween: Tween = null
+var _view: TextureRect
+var _panel: Panel
 
 
 func _init() -> void:
@@ -62,6 +71,7 @@ func _ready() -> void:
 	view.size = Vector2(360, 400)
 	view.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(view)
+	_view = view
 	var camera := Camera3D.new()
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
 	camera.size = 9.8
@@ -101,6 +111,7 @@ func _ready() -> void:
 	panel.add_theme_stylebox_override("panel", UiSkin.panel("panel", 2.0))
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(panel)
+	_panel = panel
 	_caption = Label.new()
 	_caption.size = panel.size
 	_caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -174,6 +185,51 @@ func _process(delta: float) -> void:
 		finished.emit()
 
 
+## 위에서 떨어져 판 위에 놓인다: 점점 빨라지며 내려와 쿵 닿고, 살짝 눌렸다 펴진다. 그림자는 놓일 자리에서 진해진다.
+func drop_in(delay: float = 0.0) -> void:
+	if _view == null:
+		return
+	if _drop_tween != null:
+		_drop_tween.kill()
+	_set_drop(DROP_HEIGHT, 0.0)
+	modulate.a = 0.0
+	_drop_tween = create_tween()
+	if delay > 0.0:
+		_drop_tween.tween_interval(delay)
+	_drop_tween.tween_property(self, "modulate:a", 1.0, 0.04)
+	_drop_tween.parallel().tween_method(func(u: float) -> void: _set_drop(DROP_HEIGHT * (1.0 - u * u), 0.0), 0.0, 1.0, DROP_TIME)
+	_drop_tween.tween_callback(func() -> void: Sfx.play(&"thud", -3.0, 0.0, 0.8))
+	_drop_tween.tween_method(func(u: float) -> void: _set_drop(0.0, sin(PI * u) * (1.0 - u) * 0.12), 0.0, 1.0, DROP_SETTLE)
+	_drop_tween.tween_callback(func() -> void: _set_drop(0.0, 0.0))
+
+
+func dropping() -> bool:
+	return _drop_tween != null and _drop_tween.is_running()
+
+
+func _set_drop(offset: float, squash: float) -> void:
+	drop_offset = offset
+	if _view != null:
+		_view.position = Vector2(0, -offset)
+		_view.pivot_offset = Vector2(_view.size.x * 0.5, _view.size.y * 0.9)
+		_view.scale = Vector2(1.0 + squash, 1.0 - squash)
+	if _panel != null:
+		_panel.position = Vector2(20, 400 - offset)
+	queue_redraw()
+
+
+func _draw() -> void:
+	# 바닥 그림자: 놓일 자리에 깔린 채, 내려올수록 좁고 진해진다.
+	var near: float = 1.0 - clampf(drop_offset / DROP_HEIGHT, 0.0, 1.0)
+	var width: float = lerpf(150.0, 300.0, near)
+	var center := Vector2(size.x * 0.5, 372.0)
+	var points := PackedVector2Array()
+	for i: int in 24:
+		var a: float = TAU * i / 24.0
+		points.append(center + Vector2(cos(a) * width * 0.5, sin(a) * width * 0.09))
+	draw_colored_polygon(points, Color(0, 0, 0, lerpf(0.08, 0.34, near)))
+
+
 func set_pull(value: float) -> void:
 	pull = clampf(value, 0.0, 1.0)
 	if _coil == null:
@@ -211,6 +267,8 @@ func set_waiting_caption(other_turn: bool, who: String) -> void:
 
 func play(result: Dictionary, power: float = 0.5) -> void:
 	cancel()
+	if dropping():
+		_finish_drop()  # 내려오는 중에 쏘면 바로 놓인 자리에서 쏜다
 	var details: Dictionary = result["details"]
 	_hole = clampi(int(details["hole"]), 0, 6)
 	last_hole = -1
@@ -299,8 +357,17 @@ func cancel() -> void:
 		finished.emit()
 
 
+func _finish_drop() -> void:
+	if _drop_tween != null:
+		_drop_tween.kill()
+		_drop_tween = null
+	_set_drop(0.0, 0.0)
+	modulate.a = 1.0
+
+
 func _visibility_changed() -> void:
 	if not is_visible_in_tree():
+		_finish_drop()
 		cancel()
 	else:
 		request_frame()

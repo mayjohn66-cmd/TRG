@@ -13784,6 +13784,8 @@ func _refresh_tool_stage() -> void:
 		_sync_yacht_case()
 	elif stage == _stage_blackjack:
 		_sync_stage_card_view(_stage_blackjack, &"DICE_BLACKJACK")
+	elif stage == _stage_pinball:
+		_sync_stage_card_view(_stage_pinball, &"DICE_PINBALL")
 	var acting: bool = not _roll_button.disabled
 	if stage == _stage_pinball:
 		_stage_pinball.set_waiting_caption(_is_bot_turn() or (net != null and current != local_player_id), _player_name(current))
@@ -15203,7 +15205,7 @@ func _sync_yacht_case() -> void:
 
 
 ## 카드 시점에서 쓰는 스테이지 (1.3.1: 야추 케이스·블랙잭 테이블). 스테이지가 뜨면 판 가운데로 다가가고, 사라지면 돌아온다.
-const CARD_VIEW_STAGES: Array[StringName] = [&"DICE_YACHT", &"DICE_BLACKJACK"]
+const CARD_VIEW_STAGES: Array[StringName] = [&"DICE_YACHT", &"DICE_BLACKJACK", &"DICE_PINBALL"]  # 핀볼도 야추처럼 판 가운데에 내려놓고 쏜다
 
 
 func _sync_stage_card_view(stage: Control, tool_id: StringName) -> void:
@@ -15215,6 +15217,8 @@ func _sync_stage_card_view(stage: Control, tool_id: StringName) -> void:
 		# 즉시 모드(테스트·자동 진행)에서는 시점을 옮기지 않는다. 확정 뒤(연출 중, 굴리는 중 아님)에는 다시 들어가지 않는다.
 		if not _card_view_on and not instant_roll_for_test and (not _fx_busy or rolling):
 			_enter_card_view(tool_id)
+			if stage == _stage_pinball and not rolling and _fx_on():
+				_stage_pinball.drop_in(CARD_VIEW_TIME * 0.6)  # 판 가운데로 다가가는 사이 핀볼대를 위에서 쿵 내려놓는다
 	else:
 		if _card_view_on and _card_view_tool == tool_id and not rolling and (not _fx_busy or instant_roll_for_test):
 			_leave_card_view()
@@ -15224,7 +15228,7 @@ func _sync_stage_card_view(stage: Control, tool_id: StringName) -> void:
 func _sync_card_view() -> void:
 	if not _card_view_on:
 		return
-	var showing: bool = _fx_busy or _tool_pick != null or _holdem_exchange != null or (_presenter != null and _presenter.active) or (_card_view_tool == &"DICE_YACHT" and _stage_yacht != null and _stage_yacht.visible) or (_card_view_tool == &"DICE_BLACKJACK" and _stage_blackjack != null and _stage_blackjack.visible)
+	var showing: bool = _fx_busy or _tool_pick != null or _holdem_exchange != null or (_presenter != null and _presenter.active) or (_card_view_tool == &"DICE_YACHT" and _stage_yacht != null and _stage_yacht.visible) or (_card_view_tool == &"DICE_BLACKJACK" and _stage_blackjack != null and _stage_blackjack.visible) or (_card_view_tool == &"DICE_PINBALL" and _stage_pinball != null and _stage_pinball.visible)
 	if manager == null or manager.is_game_over:
 		_leave_card_view()
 	elif showing:

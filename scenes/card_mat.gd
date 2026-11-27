@@ -21,6 +21,7 @@ const STYLES: Dictionary = {
 	&"DICE_BLACKJACK": {"base": Color("0d4f4a"), "center": Color("16706a"), "edge": Color("4a2a18"), "fleck": Color("23867f"), "pattern": "felt"},
 	## 야추 다이스: 매트 없이 어둡게만 (주사위 케이스가 따로 놓인다).
 	&"DICE_YACHT": {"base": Color("000000"), "center": Color("000000"), "edge": Color("000000"), "fleck": Color("000000"), "pattern": "none"},
+	&"DICE_PINBALL": {"base": Color("000000"), "center": Color("000000"), "edge": Color("000000"), "fleck": Color("000000"), "pattern": "none"},  # 핀볼대가 직접 판 위에 놓인다
 }
 ## 매트 크기 (보드 좌표 px). 카드 줄과 버튼이 들어가는 크기.
 const MAT_SIZE: Vector2 = Vector2(820, 470)

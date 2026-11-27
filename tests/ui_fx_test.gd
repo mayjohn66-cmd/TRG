@@ -948,7 +948,7 @@ func _test_toy_flag_gun() -> void:
 	pad._process(0.25)
 	_expect(gun.flag_root.visible and gun.confetti.filter(func(p: MeshInstance3D) -> bool: return p.visible).size()==ToyFlagGun3D.CONFETTI_COUNT,"fired result produces attached flag and paper confetti")
 	pad._process(ToyFlagGun3D.FLAG_RESULT_TIME-0.56+0.001)
-	_expect(pad._hint_label.text=="뿅! 누적 3칸 사라짐 · 턴 종료","local caption matches actual lost accumulation")
+	_expect(pad._hint_label.text.is_empty(),"party result shows no small caption under the confetti")
 	pad._process(ToyFlagGun3D.FLAG_TOTAL_TIME)
 	_expect(outcomes==[false,true] and not pad.active,"each click/pop emits exactly one outcome and completes")
 	pad.reset_revolver()
@@ -993,7 +993,7 @@ func _test_toy_flag_gun() -> void:
 	presenter._update(0.2)
 	_expect(presenter.last_display.is_empty() and presenter._die_label.text.is_empty(),"remote gun hides its result before pop")
 	presenter._update(ToyFlagGun3D.FLAG_RESULT_TIME+0.001)
-	_expect(presenter._toy_gun.flag_root.visible and presenter.last_display=="뿅!" and presenter._die_label.text.contains("6칸"),"remote presenter uses the same star flag and lost-step result")
+	_expect(presenter._toy_gun.flag_root.visible and presenter.last_display=="뿅!" and presenter._die_label.text.is_empty(),"remote presenter uses the same star flag without a small caption")
 	var cached: ToyFlagGun3D = presenter._toy_gun
 	presenter._process(presenter._total)
 	_expect(cached.render_view.render_target_update_mode==SubViewport.UPDATE_DISABLED,"remote completion sleeps")

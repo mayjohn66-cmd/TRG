@@ -47,6 +47,8 @@ const RISE_TOOLS: Array[StringName] = [&"DICE_STOCK"]
 const DROP_HEIGHT: float = 420.0
 const DROP_TIME: float = 0.24
 const DROP_SQUASH: float = 0.16
+## 캡슐 기계는 내려앉은 뒤 이만큼 그대로 보였다가 레버 쪽으로 다가간다 (1.3.1).
+const CAPSULE_LOOK_PAUSE: float = 0.5
 ## 나무 계산대가 놓이기를 기다렸다가 복권을 떨어뜨리는 시간 (CardMat 들고 오기와 맞춘다).
 const PLACE_AFTER_COUNTER: float = 0.5
 ## 결과는 작은 반동만 준다. 입력은 결과 확정 즉시 풀린다.
@@ -177,6 +179,7 @@ var _toss_start: Vector2 = Vector2.ZERO
 var _last_contact: int = -1
 ## 내려놓기 연출 시각 (-1 = 하지 않는다). 테스트가 읽는다.
 var placing_time: float = -1.0
+var _place_pause: float = 0.0  # 놓인 뒤 시계를 멈춰 두는 남은 시간 (캡슐 기계)
 var _place_target: Vector2 = Vector2.ZERO
 var _place_from: Vector2 = Vector2.ZERO
 var _place_base: Vector2 = Vector2.ZERO
@@ -316,6 +319,7 @@ func play(tool_id: StringName, result: Dictionary, power: float = 0.5, continues
 	elif tool_id==&"DICE_STOCK":
 		var details:Dictionary=_result.get("details",{})
 		var change:int=int(details.get("delta",0))
+		cues.append(PresentationAudio.cue(StockChartView.BOOT_TIME*0.1,&"ui_click",-6.0))  # 태블릿 화면이 켜지는 딸깍
 		if change!=0:cues.append(PresentationAudio.cue(StockChartView.LIVE_AT,&"stock_up" if change>0 else &"stock_down"))
 		var event:StringName=StringName(details.get("event",&""))
 		if event==ToolStockChart.EVENT_LIMIT_UP:cues.append(PresentationAudio.cue(StockChartView.STAMP_AT,&"stock_bull"))
@@ -402,6 +406,7 @@ func _stop_playback() -> void:
 	scale = Vector2.ONE
 	rotation = 0.0
 	placing_time = -1.0
+	_place_pause = 0.0
 	_hopping = false
 	_toss_base_scale = 1.0
 	if _contact_fx != null:
@@ -502,6 +507,7 @@ func _begin_place(drop: bool = false) -> void:
 		pivot_offset = _place_base - _place_target  # 바닥 가운데를 기준으로 눌렸다 펴진다 (카드 시점 배율이 걸렸으면 가운데 기준 그대로)
 	# 스크래치 복권은 나무 계산대(CardMat)를 들고 와 내려놓은 다음에 복권이 떨어진다 (1.3.1)
 	placing_time = -PLACE_AFTER_COUNTER if _mode == &"DICE_SCRATCH" and drop else 0.0
+	_place_pause = CAPSULE_LOOK_PAUSE if _mode == &"DICE_CAPSULE" and drop else 0.0
 	_place_landed = false
 	_update_place(placing_time)
 
@@ -825,8 +831,11 @@ func _process(delta: float) -> void:
 		else:
 			_update(_t)
 			return
-	if _mode in [&"SLOT_777", &"DICE_CAPSULE"] and placing_time >= 0.0 and placing_time < DROP_TIME:
-		_t = 0.0  # 슬롯머신은 떨어져 놓인 다음에 릴이 돌기 시작하고, 캡슐 기계는 놓인 다음에 레버 쪽으로 다가간다 (1.3.1)
+	if _mode in [&"SLOT_777", &"DICE_CAPSULE", &"DICE_STOCK"] and placing_time >= 0.0 and placing_time < DROP_TIME:
+		_t = 0.0  # 슬롯머신은 떨어져 놓인 다음에 릴이 돌고, 캡슐 기계는 놓인 다음에, 태블릿은 다 꺼내 든 다음에 화면이 켜진다 (1.3.1)
+	elif _place_pause > 0.0 and (placing_time == -1.0 or placing_time >= DROP_TIME):
+		_place_pause -= delta  # 캡슐 기계: 내려앉고 잠깐 있다가 레버 쪽으로 다가간다
+		_t = 0.0
 	else:
 		_t += delta
 	if interactive and not _capsule_released and _mode == &"DICE_CAPSULE" and _t >= CapsuleGachaView.TURN_AT:

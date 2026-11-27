@@ -154,6 +154,11 @@
        "ko": "[스크래치 복권]의 나무 계산대는 말렸다 펴지지 않고, 판째로 들고 와 내려놓은 다음 복권이 떨어져요. 다 긁고 나면 계산대를 들어서 치워요",
        "en": "[Scratch Ticket]'s wooden counter no longer rolls out like cloth: the whole board is carried in and set down before the ticket drops onto it, and it is lifted away afterwards",
        "ja": "［スクラッチくじ］の木のカウンターは巻物のように広がらず、板ごと運んで置いてからくじが落ちてきます。削り終わるとカウンターを持ち上げて片付けます"
+      },
+      {
+       "ko": "[러시안 룰렛] 폭죽이 터질 때 밑에 뜨던 작은 문구를 없앴어요. [주식 차트]는 태블릿을 꺼내 든 다음 화면이 켜지고 시작해요. [캡슐뽑기]는 기계가 내려앉고 잠깐 있다가 레버 쪽으로 다가가요. [핀볼]도 야추처럼 판 가운데로 다가가 핀볼대를 위에 내려놓고 쏴요",
+       "en": "Removed the small caption under the [Russian Roulette] confetti. The [Stock Chart] tablet is lifted up first, then its screen turns on. [Capsule Gacha] sits for a moment after landing before moving in on the lever. [Pinball] now moves to the middle of the board like Yacht, and the pinball table is set down there before you launch",
+       "ja": "［ロシアンルーレット］の紙吹雪の下に出ていた小さな文字をなくしました。［株価チャート］はタブレットを取り出してから画面がついて始まります。［カプセルガチャ］は機械が置かれて少したってからレバーに寄ります。［ピンボール］もヨットのようにボード中央に寄って、台を置いてから発射します"
       }
      ]
     },

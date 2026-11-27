@@ -111,6 +111,7 @@ func run() -> void:
 	await yacht_case()
 	await gated_take_out_labels()
 	await blackjack_table()
+	await pinball_table()
 	take_out_labels()
 	if failures.is_empty():
 		print("HAND_TOOLS_OK")
@@ -277,7 +278,9 @@ func presenter_gates() -> void:
 		await presenter.play(&"DICE_CAPSULE", capsule, 0.5)
 		done[0] = true
 	play_capsule.call()
-	await create_timer(1.2 + RollPresenter.DROP_TIME + 0.3).timeout  # 1.3.1: 놓인 다음 레버 쪽으로 다가가고 동전이 들어간다
+	await create_timer(RollPresenter.DROP_TIME + 0.3).timeout
+	check(is_zero_approx(presenter._t) and presenter._place_pause > 0.0, "캡슐 기계는 내려앉은 뒤 잠깐 그대로 있다 (아직 레버 쪽으로 다가가지 않는다)")
+	await create_timer(1.2 + RollPresenter.CAPSULE_LOOK_PAUSE).timeout  # 1.3.1: 놓이고 잠깐 뒤 레버 쪽으로 다가가고 동전이 들어간다
 	check(presenter.capsule_gate_open() and presenter.awaiting_input(), "동전이 들어가면 레버 앞에서 기다린다")
 	presenter.turn_capsule(0.5)
 	await create_timer(0.3).timeout
@@ -433,6 +436,34 @@ func blackjack_table() -> void:
 			break
 		await process_frame
 	check(not board._card_view_on and is_zero_approx(board._alkkagi_camera), "블랙잭이 끝나면 원래 시점으로 돌아온다")
+
+
+## 1.3.1 핀볼: 야추처럼 카드 시점으로 들어가 판 가운데에 핀볼대를 위에서 내려놓고, 쏘고 나면 원래 시점으로.
+func pinball_table() -> void:
+	await next_turn()
+	await give(&"DICE_PINBALL")
+	var stage: PinballStage = board._stage_pinball
+	var saw_drop: bool = false
+	board._on_roll_pressed()  # [발사 준비]
+	for _w: int in 240:
+		board._refresh_all()
+		if stage.visible and board._card_view_on:
+			break
+		await process_frame
+	check(stage.visible and board._card_view_on and board._card_view_tool == &"DICE_PINBALL", "핀볼대가 뜨면 카드 시점으로 들어간다")
+	for _w: int in 240:
+		if stage.drop_offset > 1.0:
+			saw_drop = true
+		if saw_drop and not stage.dropping():
+			break
+		await process_frame
+	check(saw_drop, "핀볼대는 위에서 내려온다")
+	check(is_zero_approx(stage.drop_offset) and is_equal_approx(stage.modulate.a, 1.0), "핀볼대가 판 위에 놓인다")
+	board._on_roll_pressed()
+	var until: int = Time.get_ticks_msec() + 30000
+	while (board._card_view_on or not is_zero_approx(board._alkkagi_camera)) and Time.get_ticks_msec() < until:
+		await process_frame
+	check(not board._card_view_on and is_zero_approx(board._alkkagi_camera), "쏘고 나면 원래 시점으로 돌아온다")
 
 
 ## 1.3.1: 꺼내 놓고 쓰는 도구(다트·해적·룰렛·리볼버)는 꺼내기 전에 가운데 [꺼내기] 버튼만 보인다.
