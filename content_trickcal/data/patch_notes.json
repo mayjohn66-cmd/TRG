@@ -56,9 +56,9 @@
        "ja": "［777スロットマシン］はリールを自分で止めます：画面をタップ（またはスペース）するたびに左から1つずつ止まります（待てば自動で止まります）"
       },
       {
-       "ko": "[불스아이 다트 보드]는 과녁 앞에 든 다트를 위로 끌어 던져요 (모바일은 짧게 튕겨도 돼요, [던지기] 버튼도 그대로)",
-       "en": "For the [Bullseye Dart Board], drag the dart in front of the board upward to throw it (a short flick works on mobile, and the [Throw] button still works)",
-       "ja": "［ブルズアイダーツボード］は的の前に構えたダーツを上にドラッグして投げます（モバイルは短くはじくだけでもOK、［投げる］ボタンもそのまま）"
+       "ko": "[불스아이 다트 보드]는 과녁을 꺼낸 뒤 돌아가는 과녁을 누르거나, 든 다트를 위로 끌어 던져요 (모바일은 짧게 튕겨도 돼요)",
+       "en": "For the [Bullseye Dart Board], take out the board, then tap the spinning board or drag the dart upward to throw (a short flick works on mobile)",
+       "ja": "［ブルズアイダーツボード］は的を取り出したあと、回る的を押すか、構えたダーツを上にドラッグして投げます（モバイルは短くはじくだけでもOK）"
       },
       {
        "ko": "[스크래치 복권]은 손가락이나 마우스로 은박을 직접 긁어요 (가만히 있으면 동전이 대신 긁어요)",
@@ -204,9 +204,9 @@
      },
      "items": [
       {
-       "ko": "[해적 룰렛]에서 첫 칼을 꽂은 뒤 [칼 꽂기] 버튼이 사라져 스페이스 키로만 꽂을 수 있던 문제를 고쳤어요. 이제 해적통이 보드 위에 서 있고, 끌어서 돌린 뒤 버튼으로 칼을 꽂아요 (제보 감사합니다!)",
-       "en": "Fixed [Pirate Roulette] hiding the [Stab] button after the first sword, so only the Space key worked. The barrel now stands on the board: drag to turn it, then press the button to stab (thanks for the report!)",
-       "ja": "［海賊ルーレット］で最初の剣を刺した後［剣を刺す］ボタンが消え、スペースキーでしか刺せなかった問題を修正しました。樽がボードの上に立ち、ドラッグで回してからボタンで剣を刺せます（ご報告ありがとうございます！）"
+       "ko": "[해적 룰렛]에서 첫 칼을 꽂은 뒤 [칼 꽂기] 버튼이 사라져 스페이스 키로만 꽂을 수 있던 문제를 고쳤어요. 이제 해적통이 보드 위에 서 있고, 끌어서 돌린 뒤 구멍을 눌러 칼을 꽂아요 (제보 감사합니다!)",
+       "en": "Fixed [Pirate Roulette] hiding the [Stab] button after the first sword, so only the Space key worked. The barrel now stands on the board: drag to turn it, then tap a hole to stab (thanks for the report!)",
+       "ja": "［海賊ルーレット］で最初の剣を刺した後［剣を刺す］ボタンが消え、スペースキーでしか刺せなかった問題を修正しました。樽がボードの上に立ち、ドラッグで回してから穴を押して剣を刺します（ご報告ありがとうございます！）"
       }
      ]
     }
