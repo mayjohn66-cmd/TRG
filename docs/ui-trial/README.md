@@ -37,6 +37,13 @@
 | [toy-flag-revolver-v01](tools/toy-flag-revolver-v01.md) | 러시안 룰렛 · 폭죽 깃발 장난감 총 v0.1 | 2026-10-18 | 현행 |
 | [yacht-roll-3d-v01](tools/yacht-roll-3d-v01.md) | 야추 주사위 5개 투척 연출 v0.1 | 2026-10-20 | 현행 |
 | [yut-throw-3d-v01](tools/yut-throw-3d-v01.md) | 네 가락 윷 던지기 v0.1 | 2026-10-18 | 현행 |
+| [tool-pick-v131](tools/tool-pick-v131.md) | 직접 선택형 판정 도구 연출 | 2026-11-27 | 현행 |
+| [connected-props-v131](tools/connected-props-v131.md) | 1.3.1 직접 조작 연출 자산 연결 | 2026-11-27 | 현행 |
+| [seamless-tools-v131](tools/seamless-tools-v131.md) | 1.3.1 직접 조작 연출 연속성 보강 | 2026-11-27 | 현행 |
+| [focused-reveal-v131](tools/focused-reveal-v131.md) | 선택 후 중앙 공개와 공통 테이블 UI | 2026-11-27 | 현행 |
+| [tool-audio-v131](tools/tool-audio-v131.md) | 1.3.1 판정 도구 효과음 점검 | 2026-11-27 | 현행 |
+| [model-lightweight-v131](tools/model-lightweight-v131.md) | 3D 게임용 리소스 경량화 | 2026-11-27 | 현행 |
+| [web-3d-budget-v131](tools/web-3d-budget-v131.md) | 1.3.1 추가 3D 경량화 | 2026-11-27 | 현행 |
 
 ## 생떼 카드 (삽화·카드 스킨·카드 얻기·BANG!) — `cards/`
 
