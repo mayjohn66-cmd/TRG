@@ -65,6 +65,11 @@
        "ko": "게임 도중 판정 도구가 처음 나올 때 잠깐 멈칫하던 것을 줄였어요 (판 초반에 미리 준비해 둬요)",
        "en": "Reduced the brief stutter when a Judgment Tool appears for the first time in a match (it's now prepared early in the match)",
        "ja": "対戦中に判定ツールが初めて出るときの一瞬のカクつきを減らしました（対戦の序盤に前もって準備します）"
+      },
+      {
+       "ko": "화면에 겹쳐 나오던 글을 줄였어요: 리벤지 부스터 가운데 알림, 기록 창의 라운드 표시·네모 표식, 증강 공개 카드의 작은 족보 글씨",
+       "en": "Less on-screen text clutter: removed the Revenge Booster center banner, the round tags and squares in the log, and the tiny hand tables on revealed augment cards",
+       "ja": "画面に重なって出ていた文字を減らしました：リベンジブースターの中央通知、記録欄のラウンド表示・四角マーク、公開される増強カードの小さな役表の文字"
       }
      ]
     },
