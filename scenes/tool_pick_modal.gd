@@ -286,7 +286,7 @@ func _refresh_status() -> void:
 	for index: int in _progress.get_child_count():
 		var chip := _progress.get_child(index) as Label
 		var filled := index<_picks.size()
-		chip.text = "✓" if filled else str(index+1)
+		chip.text = str(index+1)  # 고른 칸은 초록 바탕·흰 글자 (✓는 게임 글꼴에 없다)
 		chip.add_theme_color_override("font_color",Color.WHITE if filled else Color("747c64"))
 		chip.add_theme_stylebox_override("normal",UiSkin.surface(Color("008f6b") if filled else Color("e9f5cf"),Color("5da530") if filled else Color("bfd598"),1,16))
 

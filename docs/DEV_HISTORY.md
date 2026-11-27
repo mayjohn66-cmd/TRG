@@ -1960,6 +1960,12 @@ godot --headless --audio-driver Dummy --path . -s res://tests/ui_live_hotfix_tes
 - 결과 (같은 시뮬레이션, 로제): 컴퓨터→사람 1.57 → 0.90 (약 43% 감소). 남은 것은 출발선에서 나가는 말과 보드 위 말이 둘 다 사람 말 위에 떨어지는 등 피할 수 없는 경우.
 - 테스트 `test_bot_temper::test_soft_levels_do_not_capture_humans_before_the_first_draft` (기존 자비 확률 시험은 4라운드 기준으로).
 
+### 7.116 경량 모델 반영 점검 (1.3.1, 기여자 커밋 4299a9bc·51f86a4e·8f9ef6a4)
+- 경량 모델(42개 모델 16.4MB → 2.6MB, 삼각형 61만 → 10.7만), 절차 메시·대기 렌더 타깃 경량화(`web_3d_budget.gd`)가 들어왔다. 단위 테스트·관련 화면 테스트(lowpoly_models·web_3d_budget·connected_props·seamless_tools·tool_pick_presentation 등) 통과.
+- 실제 웹 내보내기로 잰 게임 묶음: 41.4MB로 라이브(37.7MB)보다 컸다. 원인은 원본 작업 폴더 `art_source/`(`.gdignore`라 임포트는 안 되지만 내보내기에는 원본 glb 그대로, 5.9MB)가 묶음에 들어간 것. `export_presets.cfg` exclude_filter에 `art_source/*` 추가 → 35.2MB (라이브보다 2.5MB 작음). 본체(index.pck) 11.3MB. 내보낸 빌드로 game_pack_smoke·export_smoke·menu_tour 통과.
+- 글꼴에 없는 글자 "✓"(고르기 창 진행 칸)를 숫자로 바꿨다 (`test_font_glyphs`).
+- 더 줄일 곳: 아이스크림·아이스박스 2D 그림 6장이 무손실·원본 크기(958×1642, 1536×1024)로 묶음에서 약 6.9MB. 화면에 그리는 크기에 맞춰 `process/size_limit`(예: 512~768)을 주면 3~4MB 더 줄어든다 (그림 확인 필요).
+
 ## 부록 B. 초기 예외 규칙 해석 (v1~v3.2, `EDGE_CASE_SPEC.md`에서 옮김)
 
 > 이 부록의 규칙은 당시 기준이다. 24칸 순환 트랙, 세트 효과, 후퇴 눈금, 옛 법전 교칙 등은 이후 개편으로 바뀌었다.
