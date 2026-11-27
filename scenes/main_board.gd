@@ -12425,9 +12425,7 @@ func _announce_gate(tag: String, headline: String, body: String, color: Color, e
 
 ## 새 교칙이 제정되면 중앙에 법전(펼친 책)을 띄워 어떤 교칙·특수 승리가 들어왔는지 그림과 글로 직접 보여 준다.
 func _announce_law_added(new_law: LawResource, removed_law: LawResource) -> void:
-	var body: String = ""
-	if removed_law != null:
-		body = "(가장 오래된 %s이(가) 밀려났습니다)" % removed_law.law_name
+	var body: String = ""  # 1.3.1 글 줄이기: 밀려난 교칙은 기록에만 (법전 그림이 새 교칙을 보여 준다)
 	_announce("법전 개정", "법전 개정!", body, COLOR_GOLD, _make_law_book(new_law), 3.4, true, {"key": "law_added", "extra_below": true, "cinematic": true})
 
 
@@ -12622,7 +12620,6 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			var lines: Array = data["lines"]
 			var plain_lines: Array = lines.map(func(line: String) -> String: return EmojiText.strip(L10n.t(line)))  # 로그·기록에는 이모지 표식을 뗀 글자만
 			_log_line("[템포 업 Lv.%d] %d라운드부터: %s" % [stage, data["round"], " / ".join(PackedStringArray(plain_lines))], Color("ff6b6b"))
-			var tempo_round: int = int(data["round"])
 			# 라운드 끝(마지막 차례·NPC 페이즈)의 처치 연출이 다 끝난 뒤에 경고하고, 증강 선택 창은 그 경고 뒤에 연다.
 			# (지연 큐에 넣는다: 처치 연출도 지연 큐로 들어오므로 그보다 앞서 끼어들지 않는다)
 			_enqueue_late(func() -> void:
@@ -12630,7 +12627,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 				if _fx_on():
 					screen_shake(12.0, 0.5)
 					Sfx.play_repeated(&"tempo_warning", TEMPO_WARNING_REPEATS, TEMPO_WARNING_GAP, 0.0, 0.03)  # 기존 경고음을 4번 되풀이한다 (점점 급해지는 느낌)
-				_announce_now("템포 업", "템포 업 Lv.%d · %s" % [stage, TempoUp.stage_name(stage)], "%d라운드부터 게임이 빨라집니다!\n◆ %s" % [tempo_round, "\n◆ ".join(PackedStringArray(lines.map(func(line: String) -> String: return L10n.t(line))))], Color("ff4d4d"), null, 3.2))
+				_announce_now("템포 업", "템포 업 Lv.%d · %s" % [stage, TempoUp.stage_name(stage)], " · ".join(PackedStringArray(lines.map(func(line: String) -> String: return L10n.t(line)))), Color("ff4d4d"), null, 3.2))
 		&"law_auto_preview":
 			var preview_name: String = LawRegistry.create(String(data["law_id"])).law_name
 			_log_line("[법전 예고] %d라운드에 %s이(가) 열립니다" % [int(data["open_round"]), preview_name], Color("ffe066"))
@@ -12668,7 +12665,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 				if _fx_on():
 					screen_shake(9.0, 0.35)
 					Sfx.play(&"tempo_warning")
-				_announce("사도 포위망", "포위망 경보!", "", Color("ff6b6b"), null, 2.2, true, {"key": "siege_armed", "sub": "%s  ·  %s" % [_player_name(sieger), "말을 잡아 포위망을 깨세요!"]}))
+				_announce("사도 포위망", "포위망 경보!", "", Color("ff6b6b"), null, 2.2, true, {"key": "siege_armed", "sub": _player_name(sieger)}))
 		&"siege_broken":
 			var freed: int = int(data["player_id"])
 			_log_line("[포위망 붕괴] %s의 사도 포위망이 깨졌습니다" % _player_name(freed), Color("74c0fc"))
@@ -12696,7 +12693,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 			_log_line("[템포 업] 결승선이 %d칸 당겨졌습니다 (%d번 칸부터 결승)%s" % [data["shrink"], data["zone_start"], ", 완주 %d" % finished_ids.size() if not finished_ids.is_empty() else ""], Color("ffd43b"))
 			_record(-1, "결승선 %d칸 당겨짐 (%d번부터 결승)%s" % [int(data["shrink"]), int(data["zone_start"]), " - 말 %d개 즉시 완주!" % finished_ids.size() if not finished_ids.is_empty() else ""])
 			if TempoUp.is_stage_round(int(data["round"])) or not finished_ids.is_empty():
-				_announce("템포 업", "결승선 당김!", "", Color("ffd43b"), null, 1.6, true, {"key": "goal_shrunk", "sub": "%d번 칸부터 결승" % int(data["zone_start"]) + ("  ·  " + "말 %d개 완주!" % finished_ids.size() if not finished_ids.is_empty() else "")})
+				_announce("템포 업", "결승선 당김!", "", Color("ffd43b"), null, 1.6, true, {"key": "goal_shrunk", "sub": "%d번 칸부터 결승" % int(data["zone_start"])})
 		&"tempo_boosted":
 			_roll_total[int(data["player_id"])] = int(data["to"])
 			_add_roll_reason(int(data["player_id"]), "템포 업 +%d" % (int(data["to"]) - int(data["from"])))
@@ -12836,7 +12833,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 				_log_line("[강화 망치] P%d 강화 실패! %s 파괴 (턴 종료)" % [hammer_player,hammer_tool], Color("ff6b6b"))
 				_record(hammer_player, "%s 강화 실패! 파괴 · 턴 종료" % _bq(hammer_tool))
 				enqueue_step(_play_hammer_break.bind(hammer_tool,int(data["level"])))
-				_announce("강화 망치", "강화 실패!", "", Color("ff6b6b"), null, 1.0, true, {"key": "hammer_broken", "sub": "%s 파괴 · 턴 종료" % hammer_tool})
+				_announce("강화 망치", "강화 실패!", "", Color("ff6b6b"), null, 1.0, true, {"key": "hammer_broken", "sub": "턴 종료"})
 			_refresh_hammer_panel()
 		&"hammer_banked":
 			_log_line("[강화 망치] P%d +%d에서 멈춤 → 다음 굴림 +%d" % [data["player_id"], data["level"], data["level"]], Color("ffd43b"))
@@ -12920,7 +12917,7 @@ func _on_event(kind: StringName, data: Dictionary) -> void:
 				if rank_no < _player_ids.size() - 1:  # 3위(마지막 졸업)부터는 결과 화면이 바로 이어진다 (팡파르도 시상대에 맡긴다)
 					if _fx_on():
 						Sfx.play_stinger(&"graduate")
-					_announce(tr_ui("rank.tag"), "%d위 골인!" % rank_no, "", PLAYER_COLORS[ranked], null, RANK_BANNER_SECONDS, true, {"key": "rank_%d" % rank_no, "sub": "%s  ·  %s" % [_player_name(ranked), VictoryChecker.reason_text(rank_reason)]})
+					_announce(tr_ui("rank.tag"), "%d위 골인!" % rank_no, "", PLAYER_COLORS[ranked], null, RANK_BANNER_SECONDS, true, {"key": "rank_%d" % rank_no, "sub": _player_name(ranked)})
 					_profile_react(ranked, true, "%d위" % rank_no)
 					_start_beat(RANK_BEAT_SECONDS))
 		&"counter_offer":
@@ -13161,11 +13158,10 @@ func _bq(text: String) -> String:
 
 ## 🟦 컴퓨터 2 (플레이어 색).
 ## 사건 자막에 올릴 줄인가: 정말 큰 사건(처치·사출·법전·순위 확정·포위망·결투·게임 종료)만 올린다. 굴림·카드·함정 같은 나머지는 로그에만 남는다.
-static func caption_worthy(text: String) -> bool:
-	for word: String in CAPTION_WORDS:
-		if text.contains(word):
-			return not text.contains("템포 업")  # 템포 업은 가운데 경고 연출이 따로 있다 (긴 줄이 화면 밖으로 넘친다)
+## 1.3.1 글 줄이기: 위쪽 자막은 쓰지 않는다. 자막에 오르던 처치·사출·법전·포위망·결투·순위는 모두 컷인·도장·알림이 따로 있고, 글은 기록 창에 남는다.
+static func caption_worthy(_text: String) -> bool:
 	return false
+
 
 
 ## 강조할 중요한 사건인가 (처치·사출·함정 밟음·방어·카드 발동·필살기·법전·순위 등).

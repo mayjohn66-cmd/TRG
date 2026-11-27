@@ -47,7 +47,7 @@ func _run() -> void:
 	_expect(not MainBoard.caption_worthy("[기본 주사위] 굴림 → 4칸"), "굴림 결과는 자막에서 뺀다")
 	_expect(not MainBoard.caption_worthy("[BANG!] 사용! → P1") and not MainBoard.caption_worthy("[지뢰] 밟음! (5번 타일)") and not MainBoard.caption_worthy("은신 함정 설치!"), "카드·함정·설치 줄은 자막에서 뺀다 (로그에만)")
 	_expect(not MainBoard.caption_worthy("!! 템포 업 Lv.1 - 첫 이동 +1칸 · 처치"), "템포 업은 자막에 올리지 않는다 (가운데 경고가 있다)")
-	_expect(MainBoard.caption_worthy("■ 플레이어 1의 [1번 말] 처치!") and MainBoard.caption_worthy("순위 확정: 1위") and MainBoard.caption_worthy("[법전] 기물 슬레이어 등록!"), "처치·순위 확정·법전은 자막에 올린다")
+	_expect(not MainBoard.caption_worthy("플레이어 1의 [1번 말] 처치!") and not MainBoard.caption_worthy("순위 확정: 1위") and not MainBoard.caption_worthy("[법전] 기물 슬레이어 등록!"), "1.3.1 글 줄이기: 위쪽 자막은 쓰지 않는다 (컷인·도장·알림이 따로 있고 글은 기록에)")
 	_expect(MainBoard.is_important_record("■ 플레이어 1의 [1번 말] 처치!") and MainBoard.is_important_record("[BANG!] 사용! → P1") and MainBoard.is_important_record("[지뢰] 밟음! (5번 타일)"), "처치·카드 사용·함정은 중요")
 	_expect(not MainBoard.is_important_record("은신 함정 설치!") and not MainBoard.is_important_record("템포 업 +1 → 총 5칸 전진!"), "설치·추가 전진은 보통 줄")
 	# 4) 보드에 붙은 자막
@@ -64,22 +64,9 @@ func _run() -> void:
 	_expect(caption.lines().is_empty(), "카드 사용 줄도 자막에 오르지 않는다")
 	_board._record(2, "[1번 말] 처치!")
 	_board._record(1, "순위 확정: 1위")
-	var shown: Array[String] = caption.lines()
-	_expect(shown.size() == 2 and shown[0].contains("순위 확정") and shown[1].contains("처치"), "새 줄이 위, 이전 줄은 아래 (%s)" % [shown])
-	_expect(shown.size() == 2 and shown[1].contains(_board._player_name(2)), "누가 했는지 이름이 붙는다")
-	if shown.size() < 2:
-		quit(1)
-		return
-	var older: Control = caption.get_child(1) as Control
-	_expect(older.modulate.a < 0.9 and bool(older.get_meta("important")), "이전 줄은 흐려지고, 처치는 중요 줄")
 	_board._record(3, "[2번 말] 사출!")
 	await settle()
-	_expect(caption.lines().size() == EventCaption.MAX_LINES, "두 줄까지만")
-	# 오래되면 사라진다
-	for child: Node in caption.get_children():
-		child.set_meta("expires", 0)
-	await create_timer(EventCaption.FADE_SECONDS + 0.3).timeout
-	_expect(caption.lines().is_empty(), "읽을 시간이 지나면 사라진다")
+	_expect(caption.lines().is_empty(), "1.3.1 글 줄이기: 처치·순위·사출도 자막에 오르지 않는다 (컷인·도장과 기록 창)")
 	# 5) 사람을 겨눈 AI 카드 턴은 보통 속도
 	_board.ai_mode = true
 	_board._spotlight_turn = false

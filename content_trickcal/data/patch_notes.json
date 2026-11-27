@@ -75,6 +75,11 @@
        "ko": "카드를 내면 [카드 발동!]과 카드 그림만 보여요. 효과가 궁금하면 왼쪽 기록 창에서 카드 이름을 눌러 보세요. 굴림 결과도 [6칸 전진!]처럼 짧게 보여요",
        "en": "Playing a card now just shows [Card activated!] and the card art. To see what it does, tap the card name in the log on the left. Roll results are shorter too, like [Move 6!]",
        "ja": "カードを出すと［カード発動！］とカードの絵だけが表示されます。効果が気になったら左の記録欄でカード名を押してください。出目の結果も［6マス前進！］のように短く表示されます"
+      },
+      {
+       "ko": "화면 위쪽 자막을 없애고, 템포 업·법전 개정·골인 같은 알림의 설명을 한 줄로 줄였어요. 자세한 내용은 왼쪽 기록 창에 남아요",
+       "en": "Removed the subtitles at the top of the screen and cut alerts like Tempo Up, Codex Revised and rank finishes down to one line. Details stay in the log on the left",
+       "ja": "画面上部の字幕をなくし、テンポアップ・法典改定・ゴールなどの通知の説明を1行に短くしました。詳しい内容は左の記録欄に残ります"
       }
      ]
     },
