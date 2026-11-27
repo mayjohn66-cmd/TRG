@@ -52,7 +52,7 @@ func show_tool(id: StringName) -> void:
 	_holder.add_child(content)
 	_pose(id, content)  # 3D 화면은 트리에 들어간 뒤에 자세를 잡는다
 	var natural: Vector2 = content.size if content.size != Vector2.ZERO else content.custom_minimum_size
-	var factor: float = (HEIGHT * {"dice": 1.45, "cards": 0.85}.get(str(KINDS[id]), 1.0)) / maxf(natural.y, 1.0)  # 주사위 화면은 여백이 넓다
+	var factor: float = (HEIGHT * {"dice": 1.45, "cards": 0.85, "yut": 1.9}.get(str(KINDS[id]), 1.0)) / maxf(natural.y, 1.0)  # 주사위·윷 화면은 여백이 넓다 (윷은 판 위에 놓인 윷가락이 잘 보이게 크게)
 	content.scale = Vector2.ONE * factor
 	size = natural * factor
 	_holder.size = size
@@ -73,8 +73,12 @@ func hop_scale() -> float:
 
 
 func hop_pose() -> Variant:
-	var content: DiceRoll3D = _holder.get_child(0) as DiceRoll3D if _holder != null and _holder.get_child_count() > 0 else null
-	return content.die_pose() if content != null else null
+	var node: Node = _holder.get_child(0) if _holder != null and _holder.get_child_count() > 0 else null
+	if node is DiceRoll3D:
+		return (node as DiceRoll3D).die_pose()
+	if node is YutThrow3D:
+		return (node as YutThrow3D).stick_poses()  # 윷가락 4개의 자세
+	return null
 
 
 func _process(_delta: float) -> void:
@@ -120,6 +124,7 @@ func _pose(id: StringName, content: Control) -> void:
 			(content as DiceRoll3D).begin(4 if id == &"CHINCHIRO" else 6, 0.5, id)
 			(content as DiceRoll3D).apply_time(3.0)
 		"yut":
+			(content as YutThrow3D).set_mat_visible(false)  # 보드 위에 바로 놓인 윷가락 (회색 깔개 없이)
 			(content as YutThrow3D).begin(3, 0.5)
 			(content as YutThrow3D).apply_time(YutThrow3D.TOTAL_TIME)
 		"slot":

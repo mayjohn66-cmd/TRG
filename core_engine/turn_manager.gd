@@ -494,6 +494,9 @@ func _handle_roll(actor: int, params: Dictionary = {}) -> void:
 	# 텍사스 홀덤 (1.3.1): 교환할 때 남길 카드(keep: 5개 bool)를 굴림 행동에 실어 보낸다.
 	if params.has("keep") and tool is ToolHoldem:
 		(tool as ToolHoldem).set_keep(params["keep"] as Array if params["keep"] is Array else [])
+	# 해적 룰렛 (1.3.1): 누른 구멍 번호 (칼이 꽂히는 자리만 바뀐다. 해적이 튀어나오는 차례는 그대로)
+	if params.has("hole") and tool is ToolPirateRoulette and (params["hole"] is int or params["hole"] is float):
+		(tool as ToolPirateRoulette).prefer_hole(int(params["hole"]))
 	state.pacing_humans = pacing_humans
 	# 파워 게이지 값 (1.3.1 풀 파워): 게이지를 모아 던졌을 때만 실려 온다. 야추는 마지막으로 굴린 값으로 확정한다.
 	_roll_power = clampf(float(params["power"]), 0.0, 1.0) if params.has("power") and (params["power"] is float or params["power"] is int) else NAN

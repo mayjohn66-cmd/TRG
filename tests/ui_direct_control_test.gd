@@ -131,7 +131,7 @@ func presenter_flow() -> void:
 	await create_timer(0.3).timeout
 	check(presenter.awaiting_input(), "내가 굴린 슬롯은 입력을 기다린다")
 	check(presenter.mouse_filter == Control.MOUSE_FILTER_STOP, "기다리는 동안 화면이 누름을 받는다")
-	await create_timer(0.6).timeout
+	await create_timer(0.6 + RollPresenter.DROP_TIME).timeout  # 1.3.1: 떨어져 놓인 다음에 릴이 돌기 시작한다
 	for reel: int in 3:
 		check(presenter.manual_tap(), "탭 %d번째: 릴 멈춤" % (reel + 1))
 		await create_timer(0.3).timeout

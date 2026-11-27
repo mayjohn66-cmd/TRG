@@ -6,7 +6,11 @@ const SIZE := Vector2(360, 340)
 const SPIN_PERIOD := 2.4
 const AIM_PERIOD := 1.3
 const FLIGHT_TIME := 0.45
-const TOTAL_TIME := 1.5
+## 1.3.1 뜸 들이기: 다트가 꽂힌 뒤 정면 그대로 잠시 멈췄다가(SUSPENSE) 판이 옆으로 기울며(TILT_TIME) 결과를 보여 준다.
+const SUSPENSE := 0.6
+const TILT_TIME := 0.55
+const REVEAL_AT := FLIGHT_TIME + SUSPENSE + TILT_TIME * 0.6
+const TOTAL_TIME := FLIGHT_TIME + SUSPENSE + TILT_TIME + 0.45
 const FACE_Z := 0.075
 const TIP_Z := -0.14
 const SCORE_RADIUS := 2.0
@@ -16,7 +20,9 @@ const DART_MODEL: PackedScene = preload("res://assets/models/optimized/v4/darts/
 var aiming := false
 ## 던지기 전 대기 표시: 조준점 없이 과녁만 천천히 돈다 (조준은 없앴지만 던질 곳이 보이게).
 var idle := false
+## 결과 글을 보여도 되는가 (꽂히고 뜸 들인 뒤 판이 기울 때). 꽂힌 순간은 stuck.
 var settled := false
+var stuck := false
 var _spin := 0.0
 var _aim_radius := 0.0
 var _clock := 0.0
@@ -109,7 +115,8 @@ func begin(details: Dictionary) -> void:
 
 func apply_time(t: float) -> void:
 	_t = maxf(t, 0.0)
-	settled = _t >= FLIGHT_TIME
+	stuck = _t >= FLIGHT_TIME
+	settled = _t >= REVEAL_AT
 	if is_node_ready():
 		_present()
 		_request_frame()
@@ -186,7 +193,7 @@ func _present() -> void:
 	_reticle.visible = aiming
 	_reticle.position = Vector3(0.0, _aim_radius * SCORE_RADIUS, 0.22)
 	_dart.visible = not aiming and (_hit_radius >= 0.0 or (idle and ready_dart))
-	var reveal := smoothstep(0.0, 0.75, _t) if not aiming else 0.0
+	var reveal := smoothstep(FLIGHT_TIME + SUSPENSE, FLIGHT_TIME + SUSPENSE + TILT_TIME, _t) if not aiming else 0.0  # 꽂히고 뜸 들인 뒤에 기운다
 	_camera.position = Vector3(5.0 * reveal, 1.6 * reveal, 8.5)
 	_camera.look_at(Vector3.ZERO, Vector3.UP)
 	if idle and ready_dart and _hit_radius < 0.0:
@@ -201,7 +208,7 @@ func _present() -> void:
 		var flight := clampf(_t / FLIGHT_TIME, 0.0, 1.0)
 		_dart.position = hit_point(_hit_radius, _hit_angle) + Vector3(1.1, 1.3, 5.0) * (1.0 - pow(flight, 3.0))
 		var age := maxf(_t - FLIGHT_TIME, 0.0)
-		var wobble := sin(age * 42.0) * exp(-age * 12.0) * 0.045 if settled else 0.0
+		var wobble := sin(age * 42.0) * exp(-age * 12.0) * 0.045 if stuck else 0.0
 		# Wobble pivots about the tip; the authoritative contact point stays fixed.
 		_dart.rotation = Vector3(deg_to_rad(-8.0) + wobble, deg_to_rad(8.0) + wobble, 0.0)
 

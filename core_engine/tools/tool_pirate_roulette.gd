@@ -17,6 +17,12 @@ var accumulated: int = 0
 ## 칼을 꽂은 구멍 번호 (연출용, 꽂은 순서대로). 어느 구멍이 해적인지와는 상관없이 순서만 정해 둔다.
 var holes: Array[int] = []
 var _order: Array[int] = []
+## 플레이어가 고른 구멍 (1.3.1 구멍을 눌러 꽂기, -1 = 정해진 순서대로). 해적이 튀어나오는 차례(몇 번째 칼)와는 상관없다 - 칼이 꽂히는 자리만 바뀐다.
+var _preferred: int = -1
+
+
+func prefer_hole(hole: int) -> void:
+	_preferred = hole
 
 
 func _init() -> void:
@@ -47,6 +53,12 @@ func roll(rng: RandomNumberGenerator) -> RollResult:
 	if not _armed:
 		var order: Array[int] = sample_distinct(rng, HOLES, HOLES)
 		arm(rng.randi_range(0, HOLES - 1), order)
+	if _preferred >= 0 and _preferred < HOLES and not holes.has(_preferred):
+		var at: int = _order.find(_preferred)
+		if at > swords:
+			_order[at] = _order[swords]
+			_order[swords] = _preferred
+	_preferred = -1
 	var hole: int = _order[swords]
 	holes.append(hole)
 	if swords == _pirate_slot:

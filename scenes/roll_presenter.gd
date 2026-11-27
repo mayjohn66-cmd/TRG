@@ -41,7 +41,9 @@ const PLACE_TIME: float = 0.26
 const PLACE_SETTLE: float = 0.16
 const PLACE_LIFT: float = 70.0
 ## 꺼내기 도구 (1.3.1): 미리 놓여 있지 않다가 위에서 "쿵" 떨어져 판 위에 놓인다. 손으로 다루는 첫 장면(손 도구 창)도 같이 떨어진다.
-const DROP_TOOLS: Array[StringName] = [&"SLOT_777", &"DICE_STOCK", &"DICE_OMIKUJI", &"DICE_ICECREAM", &"DICE_COOKIE", &"DICE_CAPSULE", &"DICE_SCRATCH"]  # 마작은 카드 시점 매트에서 (1.3.1)
+const DROP_TOOLS: Array[StringName] = [&"SLOT_777", &"DICE_STOCK", &"DICE_OMIKUJI", &"DICE_ICECREAM", &"DICE_COOKIE", &"DICE_CAPSULE", &"DICE_SCRATCH", &"DICE_DARTS", &"DICE_PIRATE", &"LIFE_ROULETTE", &"REVOLVER"]  # 마작은 카드 시점 매트에서 (1.3.1)
+## 주식 차트는 태블릿처럼 아래에서 위로 꺼낸다 (떨어지지 않고 올라온다).
+const RISE_TOOLS: Array[StringName] = [&"DICE_STOCK"]
 const DROP_HEIGHT: float = 420.0
 const DROP_TIME: float = 0.24
 const DROP_SQUASH: float = 0.16
@@ -49,6 +51,8 @@ const DROP_SQUASH: float = 0.16
 const PUNCH_TIME: float = 0.14
 const PUNCH_SCALE: float = 1.08
 const LINGER_TIME: float = 0.5
+## 1.3.1 뜸 들이기: 주사위·친치로가 멈춘 뒤 결과 글자가 뜨기까지 기다리는 시간 (멈춘 눈을 먼저 보게).
+const RESULT_SUSPENSE: float = 0.55
 const FADE_TIME: float = 0.2
 ## 투척은 보드 마당 한가운데(연출 패널 자리보다 조금 아래)에 떨어진다. 그림자는 주사위 밑면에 붙는다.
 const TOSS_LAND_OFFSET: Vector2 = Vector2(0.0, 52.0)
@@ -97,6 +101,8 @@ var toss_board_outline := PackedVector2Array()
 var hop_from: Vector2 = Vector2(INF, INF)
 ## 꺼내기 (1.3.1): 판 위에 내려놓는 도구가 어디서 나오는가 (굴리기 버튼 위 내 도구 소품 자리). 비어 있으면 굴린 사람 쪽(toss_from).
 var place_from: Vector2 = Vector2(INF, INF)
+## 이미 판 위에 꺼내 놓은 물건으로 굴렸다 (내 과녁·해적 통): 다시 떨어뜨리지 않고 그 자리에서 이어 간다. MainBoard가 굴림마다 넣는다.
+var skip_place: bool = false
 var hop_scale: float = 1.0
 var hop_pose: Variant = null
 var _hopping: bool = false
@@ -172,6 +178,7 @@ var _place_from: Vector2 = Vector2.ZERO
 var _place_base: Vector2 = Vector2.ZERO
 var _place_landed: bool = false
 var _dropping: bool = false
+var _rising: bool = false
 var _place_scale: float = 1.0
 
 
@@ -290,7 +297,7 @@ func play(tool_id: StringName, result: Dictionary, power: float = 0.5, continues
 		_gate_wait = 0.0
 	if tossing:
 		_begin_toss()
-	elif (PLACE_TOOLS.has(tool_id) or DROP_TOOLS.has(tool_id)) and _hand_gate == null and not continues_chain:
+	elif (PLACE_TOOLS.has(tool_id) or DROP_TOOLS.has(tool_id)) and _hand_gate == null and not continues_chain and not skip_place:
 		_begin_place(DROP_TOOLS.has(tool_id))
 	active = true
 	visible = true
@@ -318,7 +325,7 @@ func play(tool_id: StringName, result: Dictionary, power: float = 0.5, continues
 			cues.append(PresentationAudio.cue(OmikujiView.FOLD_AT, &"ticket_rustle", -10.0))
 			cues.append(PresentationAudio.cue(OmikujiView.TIE_AT, &"ticket_rustle", -9.0))
 	elif tool_id == &"DICE_CAPSULE":
-		cues.append(PresentationAudio.cue(CapsuleGachaView.COIN_AT + 0.45, &"toy_click", -8.0))
+		cues.append(PresentationAudio.cue((CapsuleGachaView.TURN_AT - 0.12) if interactive else (CapsuleGachaView.COIN_AT + 0.45), &"toy_click", -8.0))  # 동전이 들어가는 딸깍
 		if not interactive:  # 내가 돌리는 레버는 돌린 만큼 딸깍 소리를 낸다 (_turn_capsule)
 			for at: float in [0.95, 1.15, 1.35, 1.55]:
 				cues.append(PresentationAudio.cue(at, &"yut_clack", -11.0))
@@ -426,7 +433,7 @@ func _begin_toss() -> void:
 	_toss_view = _dice_3d if dice else _yut_3d
 	if dice and _dice_3d.shadow != null:
 		_dice_3d.shadow.visible = _mode == &"CHINCHIRO"
-	_hopping = hop_from.is_finite() and _mode in [&"D6", &"CHINCHIRO"]
+	_hopping = hop_from.is_finite() and _mode in [&"D6", &"CHINCHIRO", &"YUT"]
 	_toss_base_scale = hop_scale if _hopping else 1.0
 	_toss_start = hop_from if _hopping else (toss_from if toss_from.is_finite() else center + Vector2(0.0, 260.0))
 	if _ground_shadow == null:
@@ -448,9 +455,11 @@ func _begin_toss() -> void:
 	_die_label.pivot_offset = Vector2.ZERO
 	if _mode == &"CHINCHIRO" and not _hopping:
 		_dice_3d.set_bowl_entry(_toss_start - center - TOSS_LAND_OFFSET)
-	if _hopping and hop_pose is Transform3D:
+	if _hopping and hop_pose is Transform3D and dice:
 		_dice_3d.start_from(hop_pose)  # 소품 주사위의 자세에서 이어서 돈다 (첫 프레임이 튀지 않게)
-	if _mode == &"YUT" and _yut_3d.result_value == 0:
+	if _hopping and hop_pose is Array and _mode == &"YUT":
+		_yut_3d.start_from(hop_pose)  # 보드에 놓여 있던 윷가락 자세에서 그대로 위로 던져진다
+	if _mode == &"YUT" and _yut_3d.result_value == 0 and not _hopping:
 		_configure_yut_nak()
 	modulate.a = 0.0
 	_update_toss(0.0)
@@ -463,7 +472,10 @@ func _begin_place(drop: bool = false) -> void:
 	_place_scale = scale.x  # 카드 시점 배율(table_scale)이 걸려 있으면 그 크기로 놓인다
 	var source: Vector2 = place_from if place_from.is_finite() else (toss_from if toss_from.is_finite() else center + Vector2(0.0, 260.0))
 	_place_from = source - size / 2.0
-	if drop:
+	_rising = drop and RISE_TOOLS.has(_mode)
+	if _rising:
+		_place_from = _place_target + Vector2(0.0, DROP_HEIGHT)  # 태블릿처럼 아래에서 위로 꺼내 든다
+	elif drop:
 		_place_from = _place_target - Vector2(0.0, DROP_HEIGHT)  # 바로 위에서 떨어진다
 	var stage_rect: Rect2 = _stage.get_global_rect() if _stage != null else Rect2(center - Vector2(80, 0), Vector2(160, 60))
 	_place_base = Vector2(stage_rect.get_center().x, stage_rect.end.y - 6.0)
@@ -489,7 +501,7 @@ func _begin_place(drop: bool = false) -> void:
 func _update_place(t: float) -> void:
 	var land_at: float = DROP_TIME if _dropping else PLACE_TIME
 	var u: float = clampf(t / land_at, 0.0, 1.0)
-	var eased: float = u * u if _dropping else 1.0 - pow(1.0 - u, 3.0)  # 떨어질 때는 점점 빨라진다
+	var eased: float = (1.0 - pow(1.0 - u, 3.0)) if _rising else (u * u if _dropping else 1.0 - pow(1.0 - u, 3.0))  # 떨어질 때는 점점 빨라지고, 꺼내 들 때는 부드럽게 멈춘다
 	position = _place_from.lerp(_place_target, eased) + (Vector2.ZERO if _dropping else Vector2(0.0, -sin(PI * u) * PLACE_LIFT))
 	var settle: float = clampf((t - land_at) / PLACE_SETTLE, 0.0, 1.0)
 	if u < 1.0:
@@ -498,23 +510,26 @@ func _update_place(t: float) -> void:
 			modulate.a = clampf(u * 6.0, 0.0, 1.0)
 	else:
 		modulate.a = 1.0
-		var squash: float = sin(PI * settle) * (1.0 - settle) * (DROP_SQUASH if _dropping else 0.09)
+		var squash: float = sin(PI * settle) * (1.0 - settle) * (0.0 if _rising else (DROP_SQUASH if _dropping else 0.09))
 		scale = Vector2(1.0 + squash, 1.0 - squash) * _place_scale
 	if _ground_shadow != null:
 		var width: float = float(_ground_shadow.get_meta("width", 200.0)) * lerpf(0.55, 1.0, eased)
-		_ground_shadow.visible = true
+		_ground_shadow.visible = not _rising  # 손에 든 태블릿은 바닥 그림자 없이
 		_ground_shadow.size = Vector2(width, width * 0.22)
 		_ground_shadow.global_position = _place_base - _ground_shadow.size / 2.0
 		_ground_shadow.modulate.a = lerpf(0.6, 2.4, eased)  # 기본 그림자(옅은 연기)를 판 위 물건 무게만큼 진하게
 	if _contact_fx != null:
 		_contact_fx.marks.clear()
 		var age: float = t - land_at
-		if age >= 0.0 and age < 0.20:
+		if age >= 0.0 and age < 0.20 and not _rising:  # 들어 올린 태블릿은 바닥에 먼지를 일으키지 않는다
 			_contact_fx.marks.append({"at": _place_base, "age": age, "strength": 1.4 if _dropping else 1.0})
 		_contact_fx.queue_redraw()
 	if t >= land_at and not _place_landed:
 		_place_landed = true
-		Sfx.play(&"thud", -3.0 if _dropping else -9.0, 0.0, 0.8 if _dropping else 0.9)  # 쿵
+		if _rising:
+			Sfx.play(&"card_pick", -6.0)  # 태블릿을 들어 올린 딸깍
+		else:
+			Sfx.play(&"thud", -3.0 if _dropping else -9.0, 0.0, 0.8 if _dropping else 0.9)  # 쿵
 	if t >= land_at + maxf(PLACE_SETTLE, 0.20):
 		position = _place_target
 		scale = Vector2.ONE * _place_scale
@@ -801,13 +816,16 @@ func _process(delta: float) -> void:
 		else:
 			_update(_t)
 			return
-	_t += delta
+	if _mode in [&"SLOT_777", &"DICE_CAPSULE"] and placing_time >= 0.0 and placing_time < DROP_TIME:
+		_t = 0.0  # 슬롯머신은 떨어져 놓인 다음에 릴이 돌기 시작하고, 캡슐 기계는 놓인 다음에 레버 쪽으로 다가간다 (1.3.1)
+	else:
+		_t += delta
 	if interactive and not _capsule_released and _mode == &"DICE_CAPSULE" and _t >= CapsuleGachaView.TURN_AT:
 		_t = CapsuleGachaView.TURN_AT
 		_capsule_gate = true
 		_gate_wait = 0.0
 		_capsule_title = _title.text
-		_title.text = L10n.t("레버를 끌어서 돌리세요!")
+		_title.text = L10n.t("레버를 돌리세요!")
 		_title.visible = true
 	if interactive and not _scratch_released and _mode == &"DICE_SCRATCH" and _scratch_view != null and _scratch_view.manual and _t >= ScratchTicketView.SCRATCH_START:
 		_t = ScratchTicketView.SCRATCH_START
@@ -1040,7 +1058,7 @@ func _build(tool_id: StringName) -> void:
 	match tool_id:
 		&"D6", &"CHINCHIRO":
 			_title.text = "기본 주사위" if tool_id == &"D6" else "지하노역장 친치로"
-			_total = CHINCHIRO_LAND_TIME if tool_id == &"CHINCHIRO" else TOSS_LAND_TIME
+			_total = (CHINCHIRO_LAND_TIME if tool_id == &"CHINCHIRO" else TOSS_LAND_TIME) + RESULT_SUSPENSE  # 멈춘 뒤 뜸 들였다가 결과
 			if _dice_3d == null:
 				_dice_3d = DiceRoll3D.new()
 				_stage.add_child(_dice_3d)
@@ -1051,6 +1069,7 @@ func _build(tool_id: StringName) -> void:
 			_dice_3d.begin(_final_face, _power, tool_id)
 			_die_label = _label("", RESULT_STAMP_PX, Color("ffe066"))
 			_outline(_die_label, 16)
+			_die_label.modulate.a = 0.0  # 뜸 들이는 동안 숨겨 두고 끝날 때(잔상 시작) 쾅 찍는다
 			_root.add_child(_die_label)
 		&"YUT":
 			_title.text = "전통 박달나무 윷"
@@ -1692,6 +1711,6 @@ func _refresh_input_filter() -> void:
 	var waiting: bool = awaiting_input()
 	mouse_filter = Control.MOUSE_FILTER_STOP if waiting else Control.MOUSE_FILTER_IGNORE
 	if waiting and _die_label != null and _mode in [&"SLOT_777", &"DICE_SCRATCH"]:
-		_die_label.text = L10n.t("눌러서 릴을 멈추세요! (스페이스)") if _mode == &"SLOT_777" else L10n.t("손가락으로 은박을 긁으세요!")
+		_die_label.text = L10n.t("레버를 당기세요! (스페이스)") if _mode == &"SLOT_777" else L10n.t("손가락으로 은박을 긁으세요!")
 		_die_label.modulate.a = 1.0
 

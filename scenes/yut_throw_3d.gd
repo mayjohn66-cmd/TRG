@@ -123,7 +123,26 @@ func _ready() -> void:
 		shadows.append(shadow)
 
 
+## 1.3.1 제자리 던지기: 보드에 놓여 있던 윷가락 자세(4개)에서 시작해 START_BLEND 동안 평소 던지기 자세로 섞여 들어간다.
+const START_BLEND: float = 0.26
+var _start_poses: Array = []
+
+
+func start_from(poses: Array) -> void:
+	_start_poses = poses.duplicate() if poses.size() == 4 else []
+	apply_time(maxf(_time, 0.0))
+
+
+## 지금 윷가락 자세 4개 (보드 위 소품이 넘겨준다).
+func stick_poses() -> Array:
+	var poses: Array = []
+	for stick: Node3D in sticks:
+		poses.append(stick.transform)
+	return poses
+
+
 func begin(value: int, power: float) -> void:
+	_start_poses = []
 	result_value = value
 	# Normal throws retain their small cached render target and original framing.
 	custom_minimum_size = VIEW_SIZE
@@ -228,8 +247,10 @@ static func pose_at(seconds: float, index: int, value: int, power: float, nak_ta
 func apply_time(seconds: float) -> void:
 	var shake: float = 0.0
 	for index: int in 4:
-		sticks[index].visible = seconds >= LEAD_TIME
+		sticks[index].visible = seconds >= LEAD_TIME or not _start_poses.is_empty()  # 놓여 있던 윷은 처음부터 보인다
 		sticks[index].transform = pose_at(seconds,index,result_value,_power,_nak_target,_nak_edge_fraction)
+		if not _start_poses.is_empty() and seconds < START_BLEND:
+			sticks[index].transform = (_start_poses[index] as Transform3D).interpolate_with(sticks[index].transform, smoothstep(0.0, START_BLEND, seconds))
 		var lift: float = maxf(sticks[index].position.y-TABLE_Y-support_height(sticks[index].quaternion),0)
 		shadows[index].visible = sticks[index].visible
 		if result_value == 0 and index == MARKED_STICK:

@@ -10,6 +10,9 @@ const DROP_AT := 1.65
 const OPEN_AT := 2.30
 const REVEAL_AT := 2.75
 const TOTAL_TIME := 4.25
+## 직접 돌리기 (1.3.1): 먼저 레버 쪽으로 다가간 뒤(MANUAL_ZOOM_END) 동전이 들어가고, 그다음 레버를 돌리라고 띄운다.
+const MANUAL_ZOOM_END := 0.34
+const MANUAL_COIN_AT := 0.38
 const FONT: Font = preload("res://assets/fonts/game_ui_font.tres")
 const MODEL_DIR := "res://assets/models/optimized/v4/capsule_gacha/"
 const MACHINE: PackedScene = preload(MODEL_DIR + "machine.scn")
@@ -152,7 +155,7 @@ func apply_time(t: float) -> void:
 	var turn := smoothstep(TURN_AT, TURN_END, t)
 	_knob.rotation.z = deg_to_rad(-11.0) - TAU * turn
 	if manual_lever:
-		lever_focus=smoothstep(.28,TURN_AT,t)*(1-smoothstep(TURN_END,TURN_END+.55,t))
+		lever_focus=smoothstep(0.0,MANUAL_ZOOM_END,t)*(1-smoothstep(TURN_END,TURN_END+.55,t))  # 레버 쪽부터 확대
 		var focus:=Vector3(.15,1.47,0).lerp(_knob.global_position,lever_focus)
 		_camera.size=lerpf(3.6,.85,lever_focus)
 		_camera.position=focus+Vector3(0,1.58,9)
@@ -163,9 +166,10 @@ func apply_time(t: float) -> void:
 		capsule.transform = _stock_rest[index]
 		capsule.position += Vector3(sin(turn * TAU * 3.0 + index), sin(turn * TAU * 4.0 + index * 1.7), 0.0) * churn
 		capsule.rotate_z(sin(turn * TAU * 2.0 + index) * churn * 4.0)
-	var insertion := smoothstep(COIN_AT, TURN_AT - 0.12, t)
+	var coin_at: float = MANUAL_COIN_AT if manual_lever else COIN_AT  # 직접 돌리기는 확대한 뒤에 동전이 들어간다
+	var insertion := smoothstep(coin_at, TURN_AT - 0.12, t)
 	var slot := _coin_entry.global_position
-	_coin.visible = t >= COIN_AT and t < TURN_AT - 0.04
+	_coin.visible = t >= coin_at and t < TURN_AT - 0.04
 	_coin.position = (slot + Vector3(-0.77, 0.63, 1.0)).lerp(slot - Vector3(0.0, 0.0, 0.08), insertion)
 	_coin.position.y += sin(insertion * PI) * 0.18
 	_coin.rotation = Vector3(PI * 0.5, 0.0, insertion * TAU)
