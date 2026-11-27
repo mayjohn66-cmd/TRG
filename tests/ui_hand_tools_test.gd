@@ -101,6 +101,7 @@ func run() -> void:
 	create_timer(180).timeout.connect(func() -> void: printerr("HAND_TOOLS_FAIL timeout"); quit(1))
 	root.size = Vector2i(1366, 768)
 	await presenter_gates()
+	await placed_on_board()
 	await fixture()
 	await warmup()
 	await pirate_buttons()
@@ -112,6 +113,35 @@ func run() -> void:
 		for failure: String in failures:
 			push_error(failure)
 		quit(1)
+
+
+## 1.3.1: 판 위에 놓는 도구는 굴린 사람 쪽에서 들고 와 보드 한가운데에 내려놓는다 (작게 들려 출발 → 제자리·제 크기로 착지).
+func placed_on_board() -> void:
+	var host := Control.new()
+	host.size = Vector2(1366, 768)
+	root.add_child(host)
+	var presenter := RollPresenter.new()
+	host.add_child(presenter)
+	presenter.toss_from = Vector2(683, 700)
+	await frames()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 5
+	for id: StringName in [&"DICE_DARTS", &"SLOT_777"]:
+		var result: Dictionary = ToolRegistry.create(id).roll(rng).to_dict()
+		presenter.play(id, result, 0.5)
+		check(presenter.placing_time == 0.0 and presenter.scale.x < 0.6, "%s 작게 들린 채 출발한다" % id)
+		check(not presenter._title.visible, "%s 도구 이름표는 띄우지 않는다" % id)
+		var target: Vector2 = presenter._place_target
+		check(presenter.position.y > target.y, "%s 굴린 사람 쪽(아래)에서 출발한다" % id)
+		for _wait: int in 120:
+			if presenter.placing_time < 0.0:
+				break
+			await process_frame
+		check(presenter.placing_time < 0.0 and presenter.scale == Vector2.ONE and presenter.position == target, "%s 제자리·제 크기로 내려앉는다" % id)
+		check(presenter._ground_shadow != null and presenter._ground_shadow.visible, "%s 바닥 그림자가 깔린다" % id)
+		presenter.cancel()
+	host.queue_free()
+	await frames()
 
 
 func presenter_gates() -> void:

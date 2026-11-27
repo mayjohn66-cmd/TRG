@@ -34,6 +34,12 @@ const YUT_TRAVEL_TIME: float = 0.42
 ## 큰 비행 → 낮은 튀기 → 잔구름. 화면 이동과 3D 내부 도약을 중복하지 않는다.
 const TOSS_HEIGHT: float = 150.0
 const TOSS_CONTACTS: Array[float] = [0.60, 0.84, 1.0]
+## 보드 위에 내려놓는 도구 (1.3.1): 굴린 사람 쪽에서 들고 와 보드 한가운데에 '탁' 내려놓는다 (바닥 그림자·먼지). 팝업이 아니라 판 위의 물건처럼.
+const PLACE_TOOLS: Array[StringName] = [&"LIFE_ROULETTE", &"SLOT_777", &"REVOLVER", &"DICE_STOCK", &"DICE_DARTS", &"DICE_OMIKUJI", &"DICE_CAPSULE", &"DICE_PIRATE", &"DICE_SCRATCH", &"DICE_COOKIE", &"DICE_ICECREAM", &"DICE_MAHJONG"]
+## 들고 오는 시간과 내려놓은 뒤 눌렸다 펴지는 시간 (연출 시계는 멈추지 않는다: 결과 시각은 그대로).
+const PLACE_TIME: float = 0.26
+const PLACE_SETTLE: float = 0.16
+const PLACE_LIFT: float = 70.0
 ## 결과는 작은 반동만 준다. 입력은 결과 확정 즉시 풀린다.
 const PUNCH_TIME: float = 0.14
 const PUNCH_SCALE: float = 1.08
@@ -139,6 +145,12 @@ var _contact_fx: ContactFX = null
 var _toss_view: Control = null
 var _toss_start: Vector2 = Vector2.ZERO
 var _last_contact: int = -1
+## 내려놓기 연출 시각 (-1 = 하지 않는다). 테스트가 읽는다.
+var placing_time: float = -1.0
+var _place_target: Vector2 = Vector2.ZERO
+var _place_from: Vector2 = Vector2.ZERO
+var _place_base: Vector2 = Vector2.ZERO
+var _place_landed: bool = false
 
 
 ## 투척하는 주사위 아래 바닥에 깔리는 반투명 타원 그림자 (높이 뜨면 작고 옅어진다).
@@ -250,6 +262,8 @@ func play(tool_id: StringName, result: Dictionary, power: float = 0.5, continues
 		_gate_wait = 0.0
 	if tossing:
 		_begin_toss()
+	elif PLACE_TOOLS.has(tool_id) and _hand_gate == null and not continues_chain:
+		_begin_place()
 	active = true
 	visible = true
 	var cues:Array[Dictionary]=[]
@@ -342,6 +356,7 @@ func _stop_playback() -> void:
 	_end_linger()
 	scale = Vector2.ONE
 	rotation = 0.0
+	placing_time = -1.0
 	if _contact_fx != null:
 		_contact_fx.marks.clear()
 		_contact_fx.hide()
@@ -403,6 +418,64 @@ func _begin_toss() -> void:
 		_configure_yut_nak()
 	modulate.a = 0.0
 	_update_toss(0.0)
+
+
+## 내려놓기 준비: 다 놓인 자리(지금 자리)를 기억하고, 굴린 사람 쪽에서 작게 들려 있는 모습으로 시작한다.
+func _begin_place() -> void:
+	_place_target = position
+	_place_from = (toss_from if toss_from.is_finite() else center + Vector2(0.0, 260.0)) - size / 2.0
+	var stage_rect: Rect2 = _stage.get_global_rect() if _stage != null else Rect2(center - Vector2(80, 0), Vector2(160, 60))
+	_place_base = Vector2(stage_rect.get_center().x, stage_rect.end.y - 6.0)
+	if _ground_shadow == null:
+		_ground_shadow = GroundShadow.new()
+		add_child(_ground_shadow)
+	_ground_shadow.z_index = 0
+	_ground_shadow.set_meta("width", clampf(stage_rect.size.x * 0.78, 90.0, 420.0))
+	_root.z_index = 2
+	if _contact_fx == null:
+		_contact_fx = ContactFX.new()
+		add_child(_contact_fx)
+	_contact_fx.marks.clear()
+	_contact_fx.show()
+	pivot_offset = _place_base - _place_target  # 바닥 가운데를 기준으로 눌렸다 펴진다
+	placing_time = 0.0
+	_place_landed = false
+	_update_place(0.0)
+
+
+## 들고 와서(호를 그리며 커진다) 바닥에 닿으면 살짝 눌렸다 펴지고, 닿은 자리에 먼지가 인다. 그림자는 놓일 자리에 깔린 채 진해진다.
+func _update_place(t: float) -> void:
+	var u: float = clampf(t / PLACE_TIME, 0.0, 1.0)
+	var eased: float = 1.0 - pow(1.0 - u, 3.0)
+	position = _place_from.lerp(_place_target, eased) + Vector2(0.0, -sin(PI * u) * PLACE_LIFT)
+	var settle: float = clampf((t - PLACE_TIME) / PLACE_SETTLE, 0.0, 1.0)
+	if u < 1.0:
+		scale = Vector2.ONE * lerpf(0.42, 1.0, eased)
+	else:
+		var squash: float = sin(PI * settle) * (1.0 - settle) * 0.09
+		scale = Vector2(1.0 + squash, 1.0 - squash)
+	if _ground_shadow != null:
+		var width: float = float(_ground_shadow.get_meta("width", 200.0)) * lerpf(0.55, 1.0, eased)
+		_ground_shadow.visible = true
+		_ground_shadow.size = Vector2(width, width * 0.22)
+		_ground_shadow.global_position = _place_base - _ground_shadow.size / 2.0
+		_ground_shadow.modulate.a = lerpf(0.6, 2.4, eased)  # 기본 그림자(옅은 연기)를 판 위 물건 무게만큼 진하게
+	if _contact_fx != null:
+		_contact_fx.marks.clear()
+		var age: float = t - PLACE_TIME
+		if age >= 0.0 and age < 0.20:
+			_contact_fx.marks.append({"at": _place_base, "age": age, "strength": 1.0})
+		_contact_fx.queue_redraw()
+	if t >= PLACE_TIME and not _place_landed:
+		_place_landed = true
+		Sfx.play(&"thud", -9.0, 0.0, 0.9)
+	if t >= PLACE_TIME + maxf(PLACE_SETTLE, 0.20):
+		position = _place_target
+		scale = Vector2.ONE
+		placing_time = -1.0
+		if _contact_fx != null:
+			_contact_fx.marks.clear()
+			_contact_fx.queue_redraw()
 
 
 func _configure_yut_nak() -> void:
@@ -623,6 +696,9 @@ func _process(delta: float) -> void:
 		visible=false
 		finished.emit()
 		return
+	if placing_time >= 0.0:
+		placing_time += delta
+		_update_place(placing_time)
 	if _capsule_gate:
 		# 캡슐 레버: 동전이 들어간 뒤 레버 앞에서 멈춘다. 끌어서 돌린 만큼 레버가 돌고, 한 바퀴 다 돌리면(또는 오래 두면) 캡슐이 떨어진다.
 		_gate_wait += delta
@@ -632,6 +708,7 @@ func _process(delta: float) -> void:
 			_capsule_released = true
 			_t = CapsuleGachaView.TURN_AT + clampf(_capsule_progress, 0.0, 1.0) * span
 			_title.text = _capsule_title
+			_title.visible = false
 		else:
 			_update(CapsuleGachaView.TURN_AT + _capsule_progress * span)
 			return
@@ -656,6 +733,7 @@ func _process(delta: float) -> void:
 		_gate_wait = 0.0
 		_capsule_title = _title.text
 		_title.text = L10n.t("레버를 끌어서 돌리세요!")
+		_title.visible = true
 	if interactive and not _scratch_released and _mode == &"DICE_SCRATCH" and _scratch_view != null and _scratch_view.manual and _t >= ScratchTicketView.SCRATCH_START:
 		_t = ScratchTicketView.SCRATCH_START
 		_scratch_gate = true
@@ -878,7 +956,8 @@ func _build(tool_id: StringName) -> void:
 		_title.add_theme_font_size_override("font_size", 18)
 		_title.add_theme_color_override("font_color", Color("fff3bf"))
 	_outline(_title, 6)
-	_title.visible = not TOSS_TOOLS.has(tool_id)  # 던지는 도구는 이름표 없이 주사위만 날아온다
+	# 1.3.1 글 줄이기: 도구 이름표는 띄우지 않는다 (오른쪽 도구 패널이 이름을 보여 주고, 판 위에는 물건만). 안내가 필요할 때만 켠다 (캡슐 레버).
+	_title.visible = false
 	_root.add_child(_title)
 	_stage = CenterContainer.new()
 	_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE

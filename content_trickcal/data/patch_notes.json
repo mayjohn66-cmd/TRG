@@ -85,6 +85,16 @@
        "ko": "기물 패시브가 터질 때 말 옆 배지에 기물 이름을 빼고 효과만 보여요 (배지의 글자 칩이 어느 기물인지 알려 줘요)",
        "en": "When a pawn passive triggers, the badge next to the pawn now shows only the effect (the letter chip already tells you which pawn it is)",
        "ja": "駒のパッシブが発動したとき、駒の横のバッジに駒の名前を出さず効果だけを表示します（バッジの文字チップでどの駒か分かります）"
+      },
+      {
+       "ko": "[강아지]·[미니카]·[비행기]·[지뢰찾기 공병]이 카드를 얻으면 글자 대신 그 말에서 카드가 톡 튀어나와 손패로 날아가요",
+       "en": "When [Puppy], [Mini Car], [Airplane] or [Sapper] earns a card, the card now pops out of that pawn and flies to the hand instead of a text badge",
+       "ja": "［子犬］・［ミニカー］・［飛行機］・［地雷工兵］がカードを得ると、文字の代わりにその駒からカードが飛び出して手札へ飛んでいきます"
+      },
+      {
+       "ko": "슬롯머신·룰렛·다트판·주식 차트 같은 판정 도구가 화면에 툭 뜨지 않고, 굴린 사람 쪽에서 들고 와 보드판 위에 탁 내려놓아요 (바닥 그림자·먼지). 도구 이름표도 뺐어요",
+       "en": "Judgment Tools like the slot machine, roulette, dart board and stock chart no longer just pop up: they're carried in from the roller's side and set down on the board (with a shadow and a puff of dust). The floating tool name is gone too",
+       "ja": "スロットマシン・ルーレット・ダーツボード・株価チャートなどの判定ツールが画面にぱっと出るのではなく、振った人の側から運ばれてボードの上にトンと置かれます（床の影・ほこり付き）。ツール名の表示もなくしました"
       }
      ]
     },

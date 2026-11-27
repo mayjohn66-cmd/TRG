@@ -349,7 +349,7 @@ static func apply_step(
 	if not is_last:
 		# 강아지: 특수 발판(빵집·옷장 자리의 칸: 빵집·편의점·마녀 상점·옷장·자판기·가마솥·정령 칸)을 지나가기만 해도 카드 1장 (1.3.1, 모든 보드)
 		if mover.sub_type() == GameEnums.PawnSubType.MONO_DOG and is_special_pad(state, destination):
-			var sniffed: StringName = state.draw_card(mover.owner_id)
+			var sniffed: StringName = state.draw_card_from_pawn(mover.owner_id, mover.entity_id)
 			if sniffed != &"":
 				report.dog_cards += 1
 				state.passive_triggered.emit(mover.entity_id, &"dog_pad")
@@ -478,7 +478,7 @@ static func _grant_corner_buff(state: GameState, mover: PlayerPawn, report: Move
 static func _pay_salary(state: GameState, mover: PlayerPawn, report: MoveReport) -> void:
 	if mover.sub_type() != GameEnums.PawnSubType.MONO_PLANE or mover.current_tile_idx != BoardSpec.halfway_tile:
 		return
-	if state.draw_card(mover.owner_id) != &"":
+	if state.draw_card_from_pawn(mover.owner_id, mover.entity_id) != &"":
 		report.salary_cards += 1
 		state.passive_triggered.emit(mover.entity_id, &"plane_halfway")
 
@@ -514,7 +514,7 @@ static func _trigger_attachments(
 			if mover.sub_type() == GameEnums.PawnSubType.MINESWEEPER_FLAG and attachment.owner_id != mover.owner_id:
 				tile.remove_attachment(attachment)
 				state.trap_defused.emit(tile_index, attachment.attachment_id, mover.entity_id)
-				if state.draw_card(mover.owner_id) != &"":
+				if state.draw_card_from_pawn(mover.owner_id, mover.entity_id) != &"":
 					report.defused_cards += 1
 			elif attachment.owner_id != mover.owner_id:
 				state.passive_triggered.emit(mover.entity_id, &"melon_immune" if mover.is_giant_melon() else &"kart_immune")
@@ -669,7 +669,7 @@ static func _resolve_landing(state: GameState, mover: PlayerPawn, ctx: RuleConte
 		report.dash_tiles.append(mover.current_tile_idx)
 		state.dash_pad_triggered.emit(mover.entity_id, mover.current_tile_idx)
 		# 미니카: 부스터 발판을 밟으면 카드 1장 (1.3.1)
-		if mover.sub_type() == GameEnums.PawnSubType.MONO_CAR and state.draw_card(mover.owner_id) != &"":
+		if mover.sub_type() == GameEnums.PawnSubType.MONO_CAR and state.draw_card_from_pawn(mover.owner_id, mover.entity_id) != &"":
 			report.booster_cards += 1
 			state.passive_triggered.emit(mover.entity_id, &"car_booster")
 		report.merge(execute(state, mover, ctx.make_follow_up(GameData.dash_steps())))

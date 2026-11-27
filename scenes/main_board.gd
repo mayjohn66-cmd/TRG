@@ -1686,8 +1686,11 @@ func _bind_state() -> void:
 		_log_line("P%d가 %d번 타일에 [%s]을(를) 설치했습니다" % [owner_id, tile, "뒷면 카드" if id.begins_with("TRP") and not MatchRules.trap_reveal(state) else _attachment_name(id)], Color("adb5bd"))
 		_refresh_tiles())
 	state.card_drawn.connect(func(player_id: int, card_id: StringName) -> void:
-		if _fx_on():
-			_fly_drawn_card(player_id, card_id))
+		if not _fx_on():
+			return
+		if state.draw_source_pawn != -1 and _fly_card_from_pawn(player_id, card_id, state.draw_source_pawn):
+			return
+		_fly_drawn_card(player_id, card_id))
 	state.card_drawn.connect(func(player_id: int, _card_id: StringName) -> void: _log_line("[카드] P%d 생떼 카드 1장 획득" % player_id, Color("ffa94d")))  # 뽑은 카드는 비공개
 	state.card_stolen.connect(func(player_id: int, card_id: StringName) -> void:
 		_steal_from = player_id  # 바로 뒤의 카드 획득은 이 사람 프로필에서 날아온다
@@ -5888,6 +5891,37 @@ func _fly_drawn_card(player_id: int, card_id: StringName) -> void:
 	launch.call()
 
 
+## 글 배지 없이 "말에서 카드가 튀어나온다"로 보여 주는 능력 (1.3.1 설명 줄이기). 카드 획득은 그 말에서 날아간다.
+const CARD_FROM_PAWN_PASSIVES: Array[StringName] = [&"dog_pad", &"car_booster", &"plane_halfway"]
+
+
+## 말 능력으로 얻은 카드: 덱이 아니라 그 말 머리 위에서 튀어나와 손패(남의 것은 프로필)로 날아간다.
+## 걸음 연출과 같은 큐에 그 말 몫으로 세우므로, 말이 그 칸을 지날 즈음 나온다. 못 날리면 false (평소처럼 덱에서).
+func _fly_card_from_pawn(player_id: int, card_id: StringName, pawn_id: int) -> bool:
+	if _draw_fx == null or _draft_in_progress() or not _pawn_views.has(pawn_id):
+		return false
+	var local: bool = player_id == _dock_owner() and _dock != null and is_visible_in_tree()
+	var index: int = (state.hands[player_id] as Array).size() - 1
+	if local:
+		_draw_fx.reserve(player_id)
+	var origin_of: Callable = func() -> Vector2:
+		var view: Node2D = _pawn_views.get(pawn_id)
+		if view == null or not is_instance_valid(view):
+			return Vector2(INF, INF)
+		return view.global_position + Vector2(0, -40.0 * view.get_global_transform().get_scale().y)
+	var pop: Callable = func() -> void:
+		var view: Node2D = _pawn_views.get(pawn_id)
+		if view != null and is_instance_valid(view):
+			var hop: Tween = view.create_tween()
+			var base: Vector2 = view.scale
+			hop.tween_property(view, "scale", base * Vector2(1.12, 0.9), 0.06)
+			hop.tween_property(view, "scale", base, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		Sfx.play(&"good", -6.0)
+		_launch_drawn_card(player_id, card_id, local, index, origin_of.call(), false, origin_of)
+	enqueue_step(pop, pawn_id)
+	return true
+
+
 func _queue_drawn_after_effects(launch: Callable, generation: int) -> void:
 	if generation != _fx_generation:
 		return
@@ -9335,6 +9369,8 @@ func _on_necklace_exploded(pawn_id: int, tile: int) -> void:
 func _on_passive_triggered(pawn_id: int, passive: StringName) -> void:
 	if PassiveCallout.text(passive) == "" or not _fx_on():
 		return
+	if CARD_FROM_PAWN_PASSIVES.has(passive):
+		return  # 글 대신 그 말에서 카드가 튀어나와 손패로 날아간다 (_fly_card_from_pawn)
 	enqueue_step(_play_callout.bind(pawn_id, passive), pawn_id)
 
 
