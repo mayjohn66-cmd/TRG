@@ -9341,6 +9341,16 @@ func _on_passive_triggered(pawn_id: int, passive: StringName) -> void:
 const CALLOUT_SECONDS: float = 1.3  ## 2026-11 납득 보강: 0.8 -> 1.3 (원인 문구를 읽을 시간)
 
 
+## 능력 배지 문구에서 앞의 [이름]을 뗀다 (번역된 문구에도 같은 꼴이 쓰인다). 떼면 비는 문구는 그대로 둔다.
+static func callout_effect_text(text: String) -> String:
+	var trimmed: String = text.strip_edges()
+	if trimmed.begins_with("[") and trimmed.contains("]"):
+		var rest: String = trimmed.substr(trimmed.find("]") + 1).strip_edges()
+		if rest != "":
+			return rest
+	return trimmed
+
+
 ## 원인 뱃지: 말 머리 위에 [기물 글자 칩 + 원인 문구]를 0.8초 크게 띄운다. 말의 자식이라 말이 움직여도 따라간다.
 ## 같은 말에 여러 개가 겹치면 위로 쌓는다. 연출 큐를 붙잡지 않는다 (걸음은 바로 이어진다).
 func _play_callout(pawn_id: int, passive: StringName) -> void:
@@ -9369,7 +9379,8 @@ func _play_callout(pawn_id: int, passive: StringName) -> void:
 	chip.add_theme_stylebox_override("normal", _style(tint, tint, 0, 13, 0, 0))
 	chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(chip)
-	var label := _make_label(PassiveCallout.text(passive), 22, Color.WHITE)
+	# 1.3.1 글 줄이기: 앞의 기물 글자 칩이 누구인지 보여 주므로 문구의 [기물 이름]은 떼고 효과만 ("이동 +2칸!")
+	var label := _make_label(callout_effect_text(L10n.t(PassiveCallout.text(passive))), 22, Color.WHITE)
 	label.add_theme_constant_override("outline_size", 5)
 	label.add_theme_color_override("font_outline_color", Color.BLACK)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE

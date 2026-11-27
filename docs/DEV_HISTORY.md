@@ -1989,6 +1989,11 @@ godot --headless --audio-driver Dummy --path . -s res://tests/ui_live_hotfix_tes
 - 템포 업 경고: "N라운드부터 게임이 빨라집니다!" + 줄마다 ◆ 목록 → 효과 한 줄 ("차례 첫 이동 +1칸 · 리벤지 부스터 +6칸 · 고급 증강 등장"). `TempoUp.effect_lines` 문구도 짧게.
 - 테스트 `ui_readability_test`(자막에 아무 줄도 오르지 않는다).
 
+### 7.120 화면 글 줄이기 4차: 패시브 배지 (1.3.1)
+- 요청: 설명처럼 보이는 글은 덜고, 연출·순서로 납득하게 한다.
+- 기물 패시브 배지(`MainBoard._play_callout`): 앞의 기물 글자 칩이 누구인지 보여 주므로 문구의 "[기물 이름]" 머리를 뗀다 (`MainBoard.callout_effect_text`). 떼면 비는 문구는 그대로 둔다. 기록 창 문구는 그대로.
+- 테스트 `test_passive_callouts`(이름 떼기·번역 문구·빈 문구 보호·모든 패시브 문구가 비지 않음).
+
 ## 부록 B. 초기 예외 규칙 해석 (v1~v3.2, `EDGE_CASE_SPEC.md`에서 옮김)
 
 > 이 부록의 규칙은 당시 기준이다. 24칸 순환 트랙, 세트 효과, 후퇴 눈금, 옛 법전 교칙 등은 이후 개편으로 바뀌었다.
