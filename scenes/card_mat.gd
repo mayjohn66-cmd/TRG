@@ -37,6 +37,11 @@ var mat_center: Vector2 = Vector2.ZERO:
 	set(value):
 		mat_center = value
 		queue_redraw()
+## 매트 배율 (터치 화면은 MainBoard가 1.25로: 손가락으로 누를 카드가 커진 만큼).
+var mat_scale: float = 1.0:
+	set(value):
+		mat_scale = value
+		queue_redraw()
 ## 카드 자리를 돌려주는 함수 (펼쳐져 있는 동안 매 프레임 읽어 slots를 맞춘다). 비어 있으면 slots 그대로.
 var slot_source: Callable = Callable()
 var _flecks: PackedVector2Array = PackedVector2Array()
@@ -77,7 +82,9 @@ func roll_up() -> void:
 		return
 	_run(0.0, ROLL_UP_TIME, 0.0)
 	Sfx.play(&"ticket_rustle", -10.0)
-	await _tween.finished
+	var tween: Tween = _tween
+	while tween != null and tween.is_valid() and tween.is_running() and is_inside_tree():
+		await get_tree().process_frame  # 도중에 다시 펼치면(트윈이 끊기면) 기다림도 바로 끝난다
 
 
 func _run(target: float, seconds: float, delay: float) -> void:
@@ -88,8 +95,9 @@ func _run(target: float, seconds: float, delay: float) -> void:
 
 
 func mat_rect() -> Rect2:
-	var width: float = MAT_SIZE.x * maxf(reveal, 0.0)
-	return Rect2(mat_center - Vector2(width, MAT_SIZE.y) / 2.0, Vector2(width, MAT_SIZE.y))
+	var full: Vector2 = MAT_SIZE * mat_scale
+	var width: float = full.x * maxf(reveal, 0.0)
+	return Rect2(mat_center - Vector2(width, full.y) / 2.0, Vector2(width, full.y))
 
 
 func _draw() -> void:
@@ -98,7 +106,7 @@ func _draw() -> void:
 	draw_rect(Rect2(Vector2(-4000, -4000), Vector2(8000, 8000)), Color(0.02, 0.03, 0.05, DIM_ALPHA * reveal))
 	var style: Dictionary = STYLES[tool_id]
 	var rect: Rect2 = mat_rect()
-	var full := Rect2(mat_center - MAT_SIZE / 2.0, MAT_SIZE)
+	var full := Rect2(mat_center - MAT_SIZE * mat_scale / 2.0, MAT_SIZE * mat_scale)
 	# 그림자 → 바탕 → 가운데 밝은 기운 → 천 질감 → 무늬 → 테두리 → 카드 자리 → 말린 끝(두루마리)
 	_round_rect(rect.grow(6).grow_side(SIDE_BOTTOM, 6), Color(0, 0, 0, 0.35), 26)
 	_round_rect(rect, style["base"], 22)

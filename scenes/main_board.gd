@@ -9272,6 +9272,7 @@ func _reset_presentation() -> void:
 	_alkkagi_top_view(false,true)
 	_card_view_on = false
 	_card_view_player = -1
+	_card_view_serial += 1
 	_release_card_zoom()
 	if _card_mat != null and is_instance_valid(_card_mat):
 		_card_mat.reveal = 0.0
@@ -14956,6 +14957,7 @@ var _card_view_player: int = -1
 ## 1.3.1: 판 가운데를 당겨 보고(2.2배, 보이는 화면이 넓거나 높으면 그만큼 더) 그 위에 카드 매트(CardMat)를 펼친다. 매트 밖 보드는 어둡게 덮인다.
 var card_zoom: float = 2.2
 var _card_mat: CardMat = null
+var _card_view_serial: int = 0
 var _card_zoom_on: bool = false
 ## 판 가운데로 들어가고 나오는 시간 (크게 당기므로 알까기 0.26초보다 느긋하게).
 const CARD_VIEW_TIME: float = 0.45
@@ -14966,6 +14968,7 @@ func _enter_card_view(tool_id: StringName = &"DICE_TAROT") -> void:
 		return
 	_open_card_mat(tool_id)
 	_card_view_on = true
+	_card_view_serial += 1
 	_card_zoom_on = true
 	_card_view_player = manager.current_player_id() if manager != null else -1
 	_alkkagi_top_view(true, false, CARD_VIEW_TIME)
@@ -14977,8 +14980,12 @@ func _leave_card_view() -> void:
 		return
 	_card_view_on = false
 	_card_view_player = -1
+	_card_view_serial += 1
+	var serial: int = _card_view_serial
 	if _card_mat != null and is_instance_valid(_card_mat):
 		await _card_mat.roll_up()  # 매트를 말아 넣은 뒤 판 밖으로 물러난다
+		if serial != _card_view_serial or _card_view_on:
+			return  # 말아 넣는 사이에 판이 초기화됐거나 다시 카드 시점에 들어왔다
 	_alkkagi_top_view(false, false, CARD_VIEW_TIME)
 	while _alkkagi_camera_tween != null and _alkkagi_camera_tween.is_running() and is_inside_tree():
 		await get_tree().process_frame
@@ -14998,6 +15005,7 @@ func _open_card_mat(tool_id: StringName) -> void:
 		_card_mat.slot_source = _card_slot_rects
 	move_child(_card_mat, _pawn_layer.get_index() + 1)
 	_card_mat.setup(tool_id)
+	_card_mat.mat_scale = 1.25 if MobileSupport.touch_mode() else 1.0
 	_card_mat.mat_center = _card_table_center()
 	_card_mat.unroll(0.12)
 
@@ -15053,7 +15061,12 @@ func _card_table_center() -> Vector2:
 func _sync_card_view() -> void:
 	if not _card_view_on:
 		return
-	if manager == null or manager.is_game_over or manager.current_player_id() != _card_view_player:
+	var showing: bool = _fx_busy or _tool_pick != null or _holdem_exchange != null or (_presenter != null and _presenter.active)
+	if manager == null or manager.is_game_over:
+		_leave_card_view()
+	elif showing:
+		return  # 엔진은 연출보다 앞서 간다 (턴 종료 결과면 벌써 다음 차례다): 보여 주는 중에는 연출 쪽 _leave_card_view를 기다린다
+	elif manager.current_player_id() != _card_view_player:
 		_leave_card_view()
 	elif not manager.current_state in [TurnManager.State.PHASE_MOVING_STEP, TurnManager.State.PHASE_RESOLUTION, TurnManager.State.PHASE_NEUTRAL_NPC]:
 		return  # 굴림 대기·결과 직후(말 고르기 전): 결과 연출이 이어서 판 위에서 나오고, 다 보면 _leave_card_view가 돌려놓는다
