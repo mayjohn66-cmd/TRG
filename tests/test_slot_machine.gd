@@ -49,7 +49,8 @@ func test_actual_drum_uvs_show_upright_symbols_and_outward_front_faces() -> void
 	for i: int in vertices.size():
 		check(is_equal_approx(Vector2(vertices[i].y,vertices[i].z).length(),SlotMachine3D.REEL_RADIUS),"reel is a true cylinder")
 	for symbol: int in 6:
-		var index: int = symbol*32*2
+		var segments: int = vertices.size()/2-1
+		var index: int = symbol*(segments/6)*2
 		check(absf(fposmod(uv[index].y,1.0)-(SlotMachine3D.strip_row(symbol)+0.5)/6.0)<0.00001,"UV centre samples the correct actual atlas cell")
 		check(uv[index+2].y<uv[index].y,"moving upward on the drum samples upward in the image")
 	for i: int in range(0,indices.size(),3):

@@ -47,7 +47,7 @@ var _track_mesh: ArrayMesh
 func _ready() -> void:
 	render_view = SubViewport.new()
 	render_view.name = "RunawayTrainViewport"
-	render_view.size = Vector2i(1600,1200)
+	render_view.size = Vector2i(1200,900)
 	render_view.own_world_3d = true
 	render_view.transparent_bg = true
 	render_view.gui_disable_input = true

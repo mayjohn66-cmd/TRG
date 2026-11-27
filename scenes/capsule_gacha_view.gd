@@ -88,7 +88,7 @@ static func caption(details: Dictionary, steps: int) -> String:
 func _build_stage() -> void:
 	_viewport = SubViewport.new()
 	_viewport.name = "CapsuleMachine3D"
-	_viewport.size = Vector2i(840, 600)
+	_viewport.size = Vector2i(630, 450)
 	_viewport.own_world_3d = true
 	_viewport.transparent_bg = true
 	_viewport.msaa_3d = Viewport.MSAA_2X

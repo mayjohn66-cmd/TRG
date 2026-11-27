@@ -85,10 +85,14 @@ func test_wood_surface_and_carvings_face_outward_in_godot() -> void:
 		var arrays: Array = mesh.surface_get_arrays(0)
 		var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 		var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
-		for i: int in range(0,vertices.size(),3):
-			var cross: Vector3 = (vertices[i+1]-vertices[i]).cross(vertices[i+2]-vertices[i])
+		var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+		for i: int in range(0,indices.size(),3):
+			var a: int = indices[i]
+			var b: int = indices[i+1]
+			var c: int = indices[i+2]
+			var cross: Vector3 = (vertices[b]-vertices[a]).cross(vertices[c]-vertices[a])
 			if cross.length_squared()>0.00000001:
-				check(cross.dot(normals[i]+normals[i+1]+normals[i+2])<0,"clockwise outward surfaces remain visible below the inverted outline")
+				check(cross.dot(normals[a]+normals[b]+normals[c])<0,"clockwise outward surfaces remain visible below the inverted outline")
 	check(ResourceLoader.exists("res://assets/ui/trickcal/yut/YUT_WOOD.png"),"real generated wood texture is bundled")
 
 

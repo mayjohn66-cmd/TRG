@@ -84,7 +84,7 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	_view = SubViewport.new()
-	_view.size = Vector2i(1120, 700)
+	_view.size = Vector2i(840, 525)
 	_view.transparent_bg = true
 	_view.own_world_3d = true
 	_view.msaa_3d = Viewport.MSAA_2X

@@ -126,10 +126,10 @@ static func hit_point(radius: float, angle: float, z: float = TIP_Z) -> Vector3:
 func _build_scene() -> void:
 	_viewport = SubViewport.new()
 	_viewport.name = "DartsViewport"
-	_viewport.size = Vector2i(SIZE * 2.0)
+	_viewport.size = Vector2i(SIZE * 1.5)
 	_viewport.transparent_bg = true
 	_viewport.own_world_3d = true
-	_viewport.msaa_3d = Viewport.MSAA_4X
+	_viewport.msaa_3d = Viewport.MSAA_2X
 	_viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
 	add_child(_viewport)
 	texture = _viewport.get_texture()
@@ -156,7 +156,7 @@ func _build_scene() -> void:
 	var torus := TorusMesh.new()
 	torus.inner_radius = 0.084
 	torus.outer_radius = 0.106
-	torus.rings = 24
+	torus.rings = 16
 	torus.ring_segments = 8
 	ring.mesh = torus
 	ring.rotation.x = PI / 2.0

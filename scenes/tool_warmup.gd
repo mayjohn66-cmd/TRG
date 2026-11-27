@@ -117,6 +117,7 @@ func _freeze(view: Control) -> void:
 	for viewport: Node in view.find_children("*", "SubViewport", true, false):
 		(viewport as SubViewport).render_target_update_mode = SubViewport.UPDATE_DISABLED
 	view.visible = false  # 모델·텍스처는 들고 있되 더 그리지 않는다
+	preload("res://scenes/web_3d_budget.gd").park(view)
 
 
 func _make(id: StringName) -> Control:

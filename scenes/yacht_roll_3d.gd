@@ -27,7 +27,7 @@ func _init() -> void:
 func _ready() -> void:
 	render_view = SubViewport.new()
 	render_view.name = "YachtDiceViewport"
-	render_view.size = Vector2i(1152, 280)
+	render_view.size = Vector2i(864, 210)
 	render_view.own_world_3d = true
 	render_view.transparent_bg = true
 	render_view.gui_disable_input = true

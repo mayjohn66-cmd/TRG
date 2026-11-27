@@ -15,7 +15,7 @@ func _ready() -> void:
 	name = "FateCoin3D"
 	z_index = 40
 	render_view = SubViewport.new()
-	render_view.size = Vector2i(512,512)
+	render_view.size = Vector2i(352,352)
 	render_view.own_world_3d = true
 	render_view.transparent_bg = true
 	render_view.gui_disable_input = true
@@ -60,16 +60,19 @@ func _ready() -> void:
 		for corner: Vector2 in [Vector2(-0.12,-0.58),Vector2(0.12,-0.58),Vector2(0.12,0.58),Vector2(-0.12,0.58)]:
 			points.append(corner.rotated(angle))
 		mark(points,-0.18,true,paint(Color("fff0dd"),0.0))
+	var ribs := MultiMeshInstance3D.new()
+	ribs.name = "SharedEdgeRibs"
+	var box := BoxMesh.new()
+	box.size = Vector3(0.035,0.07,0.12)
+	ribs.multimesh = MultiMesh.new()
+	ribs.multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	ribs.multimesh.mesh = box
+	ribs.multimesh.instance_count = 24
+	ribs.material_override = rim
 	for index: int in 24:
 		var angle := TAU*index/24.0
-		var rib := MeshInstance3D.new()
-		var box := BoxMesh.new()
-		box.size = Vector3(0.035,0.07,0.12)
-		rib.mesh = box
-		rib.position = Vector3(cos(angle),sin(angle),0)
-		rib.rotation.z = angle
-		rib.material_override = rim
-		rotor.add_child(rib)
+		ribs.multimesh.set_instance_transform(index, Transform3D(Basis(Vector3.BACK,angle), Vector3(cos(angle),sin(angle),0)))
+	rotor.add_child(ribs)
 	sprite = Sprite2D.new()
 	sprite.texture = render_view.get_texture()
 	sprite.scale = VIEW_SIZE/Vector2(render_view.size)
@@ -119,7 +122,8 @@ func disc(node_name: String, top: float, bottom: float, height: float, z: float,
 	mesh.top_radius = top
 	mesh.bottom_radius = bottom
 	mesh.height = height
-	mesh.radial_segments = 64
+	mesh.radial_segments = 32
+	mesh.rings = 1
 	item.mesh = mesh
 	item.rotation.x = PI/2.0
 	item.position.z = z

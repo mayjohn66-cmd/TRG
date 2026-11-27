@@ -50,10 +50,14 @@ func test_toy_geometry_has_outward_faces_and_stays_inside_the_camera() -> void:
 		var arrays: Array = mesh.surface_get_arrays(0)
 		var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 		var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
-		for i: int in range(0,vertices.size(),3):
-			var cross: Vector3 = (vertices[i+1]-vertices[i]).cross(vertices[i+2]-vertices[i])
+		var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+		for i: int in range(0,indices.size(),3):
+			var a: int = indices[i]
+			var b: int = indices[i+1]
+			var c: int = indices[i+2]
+			var cross: Vector3 = (vertices[b]-vertices[a]).cross(vertices[c]-vertices[a])
 			if cross.length_squared()>0.000001:
-				check(cross.dot(normals[i])<0,"all nondegenerate triangles use clockwise front faces")
+				check(cross.dot(normals[a])<0,"all nondegenerate triangles use clockwise front faces")
 		for vertex: Vector3 in vertices:
 			var point: Vector3 = vertex-RouletteSpin3D.CAMERA_TARGET
 			check(absf(point.dot(camera.x))<RouletteSpin3D.CAMERA_SIZE*0.5-0.1 and absf(point.dot(camera.y))<RouletteSpin3D.CAMERA_SIZE*0.5-0.1,"housing remains inside orthographic frame")

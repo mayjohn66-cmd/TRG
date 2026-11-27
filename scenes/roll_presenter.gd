@@ -816,6 +816,8 @@ func _clear() -> void:
 		(view as Control).hide()
 		if (view as Node).get_parent() != self:
 			(view as Node).reparent(self)
+	for parked: Variant in [_mahjong_3d, _yut_3d, _wheel, _slot_3d, _toy_gun] + reused:
+		if is_instance_valid(parked): preload("res://scenes/web_3d_budget.gd").park(parked)
 	for child: Node in get_children():
 		if child == _dice_3d or child == _mahjong_3d or child == _yut_3d or child == _wheel or child == _slot_3d or child == _toy_gun or child == _ground_shadow or child == _contact_fx or reused.has(child):
 			continue
@@ -859,6 +861,9 @@ func _box(bg: Color, border: Color, radius: int, min_size: Vector2) -> PanelCont
 
 func _build(tool_id: StringName) -> void:
 	_clear()
+	var cached: Dictionary = {&"YUT":_yut_3d, &"SLOT_777":_slot_3d, &"LIFE_ROULETTE":_wheel, &"REVOLVER":_toy_gun, &"DICE_MAHJONG":_mahjong_3d, &"DICE_DARTS":_dart_view, &"DICE_CAPSULE":_capsule_view, &"DICE_PIRATE":_pirate_view, &"DICE_COOKIE":_cookie_view, &"DICE_SCRATCH":_scratch_view}
+	var selected: Variant = cached.get(tool_id)
+	if is_instance_valid(selected): preload("res://scenes/web_3d_budget.gd").restore(selected)
 	var illustrated: bool = tool_id in [&"HOLDEM", &"DICE_HWATU", &"DICE_TAROT", &"DICE_MAHJONG", &"YUT", &"LIFE_ROULETTE", &"SLOT_777", &"REVOLVER"]
 	# 네모난 팝업 상자 없이 보드판 위에 바로 그린다 (글자는 굵은 외곽선으로 보드 위에서도 읽힌다)
 	add_theme_stylebox_override("panel", StyleBoxEmpty.new())

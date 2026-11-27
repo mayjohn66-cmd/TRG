@@ -102,7 +102,7 @@ static func _scratched(t: float, index: int) -> float:
 func _build_stage() -> void:
 	var stage := SubViewport.new()
 	stage.name = "ScratchTicketStage"
-	stage.size = Vector2i(SIZE) * 2
+	stage.size = Vector2i(SIZE * 1.5)
 	stage.own_world_3d = true
 	stage.transparent_bg = true
 	stage.msaa_3d = Viewport.MSAA_2X

@@ -70,7 +70,7 @@ func _build_scene() -> void:
 	_print_view.add_child(_paper_print)
 
 	_stage = SubViewport.new()
-	_stage.size = Vector2i(840, 600)
+	_stage.size = Vector2i(630, 450)
 	_stage.own_world_3d = true
 	_stage.transparent_bg = true
 	_stage.msaa_3d = Viewport.MSAA_2X

@@ -22,10 +22,10 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	render_view = SubViewport.new()
 	render_view.name = "VendingViewport"
-	render_view.size = Vector2i(1040,560)
+	render_view.size = Vector2i(780,420)
 	render_view.own_world_3d = true
 	render_view.transparent_bg = true
-	render_view.msaa_3d = Viewport.MSAA_4X
+	render_view.msaa_3d = Viewport.MSAA_2X
 	add_child(render_view)
 	var image := TextureRect.new()
 	image.texture = render_view.get_texture()

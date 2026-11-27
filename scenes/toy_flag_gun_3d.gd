@@ -6,7 +6,7 @@ extends TextureRect
 signal outcome_reached(fired: bool)
 
 const VIEW_SIZE: Vector2 = Vector2(500,300)
-const RENDER_SIZE: Vector2i = Vector2i(1000,600)
+const RENDER_SIZE: Vector2i = Vector2i(750,450)
 const CAMERA_HOME: Vector3 = Vector3(0,0.10,12)
 const CAMERA_TARGET: Vector3 = Vector3(-0.15,0.10,0)
 const CAMERA_SIZE: float = 4.0

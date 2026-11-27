@@ -6,7 +6,7 @@ extends TextureRect
 signal stick_landed(index: int)
 
 const VIEW_SIZE: Vector2 = Vector2(500,300)
-const RENDER_SIZE: Vector2i = Vector2i(1000,600)
+const RENDER_SIZE: Vector2i = Vector2i(750,450)
 const LEAD_TIME: float = 0.10
 const FLIGHT_TIMES: Array[float] = [0.66,0.70,0.735,0.775]
 const REBOUND_TIME: float = 0.22
@@ -152,9 +152,9 @@ func set_nak_exit(screen_offset: Vector2, edge_fraction: float) -> void:
 	var frame := Vector2(maxf(VIEW_SIZE.x, absf(screen_offset.x)*2.0+180.0), maxf(VIEW_SIZE.y, absf(screen_offset.y)*2.0+220.0)).ceil()
 	custom_minimum_size = frame
 	size = frame
-	render_view.size = Vector2i(frame*2.0)
+	render_view.size = Vector2i(frame*1.5)
 	_camera.size = CAMERA_SIZE*frame.y/VIEW_SIZE.y
-	var pixel: Vector2 = (frame/2.0+screen_offset)*2.0
+	var pixel: Vector2 = (frame/2.0+screen_offset)*1.5
 	var ray: Vector3 = _camera.project_ray_normal(pixel)
 	var origin: Vector3 = _camera.project_ray_origin(pixel)
 	_nak_target = origin+ray*((TABLE_Y-origin.y)/ray.y)
@@ -303,7 +303,7 @@ static func make_body_mesh() -> ArrayMesh:
 	var vertices := PackedVector3Array()
 	var normals := PackedVector3Array()
 	var uvs := PackedVector2Array()
-	const ARC: int = 24
+	const ARC: int = 12
 	var rings: Array[float] = [-HALF_LENGTH,-HALF_LENGTH+0.035,-HALF_LENGTH+0.12,0.0,HALF_LENGTH-0.12,HALF_LENGTH-0.035,HALF_LENGTH]
 	var factors: Array[float] = [0.72,0.94,1.0,1.0,1.0,0.94,0.72]
 	for ring: int in rings.size()-1:
@@ -341,7 +341,7 @@ static func make_body_mesh() -> ArrayMesh:
 	arrays[Mesh.ARRAY_TEX_UV] = uvs
 	var mesh := ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
-	return mesh
+	return preload("res://scenes/web_3d_budget.gd").indexed(mesh)
 
 
 static func make_mark_mesh(marked: bool) -> ArrayMesh:
@@ -369,7 +369,7 @@ static func make_mark_mesh(marked: bool) -> ArrayMesh:
 	arrays[Mesh.ARRAY_COLOR] = colors
 	var mesh := ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
-	return mesh
+	return preload("res://scenes/web_3d_budget.gd").indexed(mesh)
 
 
 static func _mark_bar(vertices: PackedVector3Array, colors: PackedColorArray, a: Vector2, b: Vector2, width: float, ink: Color) -> void:

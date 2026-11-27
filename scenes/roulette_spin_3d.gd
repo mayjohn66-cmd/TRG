@@ -6,7 +6,7 @@ extends TextureRect
 signal tick_passed(ordinal: int)
 
 const VIEW_SIZE: Vector2 = Vector2(350,350)
-const RENDER_SIZE: Vector2i = Vector2i(768,768)
+const RENDER_SIZE: Vector2i = Vector2i(528,528)
 const STEP: float = TAU/10.0
 const LEAD_TIME: float = 0.06
 const ACCEL_TIME: float = 0.18
@@ -250,9 +250,9 @@ static func triangle(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, normal
 
 
 static func sector(st: SurfaceTool, from: float, to: float, inner: float, outer: float, y: float, color: Color) -> void:
-	for index: int in 16:
-		var a: float = lerpf(from,to,index/16.0)
-		var b: float = lerpf(from,to,(index+1)/16.0)
+	for index: int in 6:
+		var a: float = lerpf(from,to,index/6.0)
+		var b: float = lerpf(from,to,(index+1)/6.0)
 		triangle(st,radial(a,inner,y),radial(a,outer,y),radial(b,outer,y),Vector3.UP,color)
 		triangle(st,radial(a,inner,y),radial(b,outer,y),radial(b,inner,y),Vector3.UP,color)
 
@@ -262,9 +262,9 @@ static func lathe(st: SurfaceTool, profile: Array[Vector2], color: Color) -> voi
 		var a: Vector2 = profile[edge]
 		var b: Vector2 = profile[edge+1]
 		var n := Vector2(b.y-a.y,a.x-b.x).normalized()
-		for index: int in 96:
-			var phi: float = index*TAU/96.0
-			var next: float = (index+1)*TAU/96.0
+		for index: int in 48:
+			var phi: float = index*TAU/48.0
+			var next: float = (index+1)*TAU/48.0
 			var normal: Vector3 = radial((phi+next)*0.5,n.x,n.y)
 			triangle(st,radial(phi,a.x,a.y),radial(next,a.x,a.y),radial(next,b.x,b.y),normal,color)
 			triangle(st,radial(phi,a.x,a.y),radial(next,b.x,b.y),radial(phi,b.x,b.y),normal,color)
@@ -278,7 +278,7 @@ static func make_housing_mesh() -> ArrayMesh:
 	lathe(st,[Vector2(1.84,0.395),Vector2(1.81,0.385),Vector2(1.79,0.35)],Color("d9aa45"))
 	for i: int in 10:
 		sector(st,i*STEP-0.018,i*STEP+0.018,1.87,1.92,0.395,Color("92bd5d"))
-	return st.commit()
+	return preload("res://scenes/web_3d_budget.gd").indexed(st.commit())
 
 
 static func make_rotor_mesh() -> ArrayMesh:
@@ -287,7 +287,7 @@ static func make_rotor_mesh() -> ArrayMesh:
 	lathe(st,[Vector2(0,0.27),Vector2(1.71,0.27),Vector2(1.76,0.31),Vector2(1.74,0.35),Vector2(0,0.35)],Color("d1b47b"))
 	for i: int in 10:
 		sector(st,i*STEP-STEP*0.5+0.010,i*STEP+STEP*0.5-0.010,0.29,1.73,0.356,Color(COLORS[i]))
-	return st.commit()
+	return preload("res://scenes/web_3d_budget.gd").indexed(st.commit())
 
 
 static func make_pointer_mesh() -> ArrayMesh:
@@ -304,4 +304,4 @@ static func make_pointer_mesh() -> ArrayMesh:
 		var n := Vector3(b.y-a.y,0,a.x-b.x).normalized()
 		triangle(st,av,bv,Vector3(b.x,-0.04,b.y),n,Color("905933"))
 		triangle(st,av,Vector3(b.x,-0.04,b.y),Vector3(a.x,-0.04,a.y),n,Color("905933"))
-	return st.commit()
+	return preload("res://scenes/web_3d_budget.gd").indexed(st.commit())

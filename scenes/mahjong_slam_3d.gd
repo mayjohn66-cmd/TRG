@@ -9,7 +9,7 @@ const MAX_FACE_VIEWS: int = 6
 signal tile_landed(index: int)
 
 const VIEW_SIZE: Vector2 = Vector2(500,260)
-const RENDER_SIZE: Vector2i = Vector2i(1000,520)
+const RENDER_SIZE: Vector2i = Vector2i(750,390)
 const LEAD_TIME: float = 0.10
 const FALL_TIME: float = 0.20
 const DROP_HEIGHT: float = 0.90
@@ -238,7 +238,7 @@ static func rounded_box(half: Vector3, radius: float) -> ArrayMesh:
 	var vertices := PackedVector3Array()
 	var normals := PackedVector3Array()
 	var indices := PackedInt32Array()
-	const SEGMENTS: int = 6
+	const SEGMENTS: int = 4
 	var core_half: Vector3 = half-Vector3.ONE*radius
 	for side: int in 6:
 		var start: int = vertices.size()

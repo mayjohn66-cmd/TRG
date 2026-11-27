@@ -330,14 +330,14 @@ static func _make_body_mesh() -> ArrayMesh:
 	arrays[Mesh.ARRAY_INDEX] = indices
 	var mesh := ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-	return mesh
+	return preload("res://scenes/web_3d_budget.gd").indexed(mesh)
 
 
 static func _make_pip_mesh(tool_id: StringName = &"D6") -> ArrayMesh:
 	var vertices := PackedVector3Array()
 	var normals := PackedVector3Array()
 	var colors := PackedColorArray()
-	const SIDES: int = 20
+	const SIDES: int = 12
 	for face: int in 6:
 		var value: int = face_values(tool_id)[face]
 		var color: Color = (Color("e77970") if value == 1 or value < 0 else Color("36543c")).srgb_to_linear()
@@ -364,4 +364,4 @@ static func _make_pip_mesh(tool_id: StringName = &"D6") -> ArrayMesh:
 	arrays[Mesh.ARRAY_COLOR] = colors
 	var mesh := ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-	return mesh
+	return preload("res://scenes/web_3d_budget.gd").indexed(mesh)

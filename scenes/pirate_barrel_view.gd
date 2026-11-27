@@ -145,7 +145,7 @@ static func _tint_part(sword: Node3D, part_name: String, tint: Color) -> void:
 func _build_stage() -> void:
 	var stage := SubViewport.new()
 	stage.name = "PirateRouletteStage"
-	stage.size = Vector2i(SIZE) * 2
+	stage.size = Vector2i(SIZE * 1.5)
 	stage.own_world_3d = true
 	stage.transparent_bg = true
 	stage.msaa_3d = Viewport.MSAA_2X
