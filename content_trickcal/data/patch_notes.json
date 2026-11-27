@@ -149,6 +149,11 @@
        "ko": "판정 도구 연출을 다듬었어요: [기본 주사위]·[친치로]는 멈춘 뒤 잠깐 뜸을 들였다가 결과가 떠요. [윷]은 판 위에 놓인 윷가락이 그 자리에서 던져져요. [다트]·[인생게임 룰렛]·[러시안 룰렛]·[해적 룰렛]은 [꺼내기]를 누르면 판 위에 떨어지고, 다트는 과녁을 눌러 던진 뒤 판이 기울며 결과를, 해적 룰렛은 통을 끌어 돌리고 구멍을 눌러 칼을 꽂아요. [슬롯머신]은 놓인 다음 릴이 돌고 레버를 당길 때마다 하나씩 멈춰요. [주식 차트]는 태블릿처럼 아래에서 꺼내 들고, [캡슐뽑기]는 레버 쪽으로 다가간 뒤 동전이 들어가요",
        "en": "Polished the Judgment Tool presentations: [Standard Dice] and [Chinchiro] pause for a moment after stopping before showing the result. [Yut] sticks lying on the board are thrown from where they sit. [Darts], [Life Roulette], [Russian Roulette] and [Pirate Roulette] drop onto the board when you press [Take out]; tap the dart board to throw, and the board tilts to show the result; drag the pirate barrel to turn it and tap a hole to stab. The [Slot Machine] starts spinning after it lands and each lever pull stops the next reel. The [Stock Chart] is lifted up from below like a tablet, and [Capsule Gacha] moves in on the lever before the coin goes in",
        "ja": "判定ツールの演出を磨きました：［基本サイコロ］・［チンチロ］は止まったあと少し間をおいてから結果が出ます。［ユッ］はボードの上に置かれたユッがその場で投げられます。［ダーツ］・［人生ゲームルーレット］・［ロシアンルーレット］・［海賊ルーレット］は［取り出す］を押すとボードに落ちてきて、ダーツは的を押して投げると盤が傾いて結果を、海賊ルーレットは樽をドラッグして回し穴を押して剣を刺します。［スロットマシン］は置かれてからリールが回り、レバーを引くたびに1つずつ止まります。［株価チャート］はタブレットのように下から取り出し、［カプセルガチャ］はレバーに寄ってからコインが入ります"
+      },
+      {
+       "ko": "[스크래치 복권]의 나무 계산대는 말렸다 펴지지 않고, 판째로 들고 와 내려놓은 다음 복권이 떨어져요. 다 긁고 나면 계산대를 들어서 치워요",
+       "en": "[Scratch Ticket]'s wooden counter no longer rolls out like cloth: the whole board is carried in and set down before the ticket drops onto it, and it is lifted away afterwards",
+       "ja": "［スクラッチくじ］の木のカウンターは巻物のように広がらず、板ごと運んで置いてからくじが落ちてきます。削り終わるとカウンターを持ち上げて片付けます"
       }
      ]
     },

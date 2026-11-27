@@ -47,6 +47,8 @@ const RISE_TOOLS: Array[StringName] = [&"DICE_STOCK"]
 const DROP_HEIGHT: float = 420.0
 const DROP_TIME: float = 0.24
 const DROP_SQUASH: float = 0.16
+## 나무 계산대가 놓이기를 기다렸다가 복권을 떨어뜨리는 시간 (CardMat 들고 오기와 맞춘다).
+const PLACE_AFTER_COUNTER: float = 0.5
 ## 결과는 작은 반동만 준다. 입력은 결과 확정 즉시 풀린다.
 const PUNCH_TIME: float = 0.14
 const PUNCH_SCALE: float = 1.08
@@ -492,9 +494,10 @@ func _begin_place(drop: bool = false) -> void:
 	_contact_fx.show()
 	if is_equal_approx(_place_scale, 1.0):
 		pivot_offset = _place_base - _place_target  # 바닥 가운데를 기준으로 눌렸다 펴진다 (카드 시점 배율이 걸렸으면 가운데 기준 그대로)
-	placing_time = 0.0
+	# 스크래치 복권은 나무 계산대(CardMat)를 들고 와 내려놓은 다음에 복권이 떨어진다 (1.3.1)
+	placing_time = -PLACE_AFTER_COUNTER if _mode == &"DICE_SCRATCH" and drop else 0.0
 	_place_landed = false
-	_update_place(0.0)
+	_update_place(placing_time)
 
 
 ## 들고 와서(호를 그리며 커진다) 바닥에 닿으면 살짝 눌렸다 펴지고, 닿은 자리에 먼지가 인다. 그림자는 놓일 자리에 깔린 채 진해진다.
@@ -514,7 +517,7 @@ func _update_place(t: float) -> void:
 		scale = Vector2(1.0 + squash, 1.0 - squash) * _place_scale
 	if _ground_shadow != null:
 		var width: float = float(_ground_shadow.get_meta("width", 200.0)) * lerpf(0.55, 1.0, eased)
-		_ground_shadow.visible = not _rising  # 손에 든 태블릿은 바닥 그림자 없이
+		_ground_shadow.visible = not _rising and t >= 0.0  # 손에 든 태블릿은 바닥 그림자 없이, 떨어지기 전에는 그림자도 없이
 		_ground_shadow.size = Vector2(width, width * 0.22)
 		_ground_shadow.global_position = _place_base - _ground_shadow.size / 2.0
 		_ground_shadow.modulate.a = lerpf(0.6, 2.4, eased)  # 기본 그림자(옅은 연기)를 판 위 물건 무게만큼 진하게
@@ -786,7 +789,7 @@ func _process(delta: float) -> void:
 		visible=false
 		finished.emit()
 		return
-	if placing_time >= 0.0:
+	if placing_time != -1.0:  # 내려놓는 중 (계산대를 기다리는 동안은 음수)
 		placing_time += delta
 		_update_place(placing_time)
 	if _capsule_gate:
@@ -1710,7 +1713,7 @@ func _gui_input(event: InputEvent) -> void:
 func _refresh_input_filter() -> void:
 	var waiting: bool = awaiting_input()
 	mouse_filter = Control.MOUSE_FILTER_STOP if waiting else Control.MOUSE_FILTER_IGNORE
-	if waiting and _die_label != null and _mode in [&"SLOT_777", &"DICE_SCRATCH"]:
+	if waiting and _die_label != null and _mode in [&"SLOT_777", &"DICE_SCRATCH"] and placing_time == -1.0:  # 물건이 놓인 다음에 안내
 		_die_label.text = L10n.t("레버를 당기세요! (스페이스)") if _mode == &"SLOT_777" else L10n.t("손가락으로 은박을 긁으세요!")
 		_die_label.modulate.a = 1.0
 

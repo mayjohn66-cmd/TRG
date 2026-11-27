@@ -102,6 +102,7 @@ func run() -> void:
 	root.size = Vector2i(1366, 768)
 	await presenter_gates()
 	await placed_on_board()
+	rigid_counter()
 	await dice_hop_in_place()
 	await fixture()
 	await warmup()
@@ -187,6 +188,22 @@ func dice_hop_in_place() -> void:
 	presenter.cancel()
 	host.queue_free()
 	await frames()
+
+
+## 1.3.1: 나무 계산대(스크래치 복권)는 말리지 않는다. 들고 오는 동안에도 판 모양 그대로 아래에서 올라온다. 천 매트는 가로로 펼친다.
+func rigid_counter() -> void:
+	var mat := CardMat.new()
+	mat.mat_center = Vector2(683, 335)
+	mat.setup(&"DICE_SCRATCH")
+	mat.reveal = 0.5
+	var half: Rect2 = mat.mat_rect()
+	check(mat.is_rigid() and is_equal_approx(half.size.x, CardMat.MAT_SIZE.x) and half.get_center().y > 335.0 + 100.0, "나무 판은 반쯤 왔을 때도 제 모양으로 아래에서 올라온다 (%s)" % str(half))
+	mat.reveal = 1.0
+	check(mat.mat_rect().get_center().distance_to(Vector2(683, 335)) < 0.5, "다 오면 판 가운데에 놓인다")
+	mat.setup(&"DICE_TAROT")
+	mat.reveal = 0.5
+	check(not mat.is_rigid() and mat.mat_rect().size.x < CardMat.MAT_SIZE.x * 0.6, "천 매트는 가로로 펼친다")
+	mat.free()
 
 
 func presenter_gates() -> void:
