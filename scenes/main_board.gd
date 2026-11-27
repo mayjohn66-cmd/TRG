@@ -719,8 +719,6 @@ const DESIGN_SIZE: Vector2 = Vector2(1366, 768)
 const SAFE_MARGIN: float = 12.0
 ## 액션 로그 미니 패널의 왼쪽 위 (법전 아래, 왼쪽 아래 프로필 위의 빈 자리).
 const ACTION_LOG_POS: Vector2 = Vector2(12.0, 466.0)
-## 액션 로그의 자리 표시 (P1~P4 색 네모).
-const PLAYER_MARKS: Dictionary = {1: "■", 2: "■", 3: "■", 4: "■"}
 ## 메뉴의 [전체 로그] 서랍(디버그용 상세 로그)이 보관하는 최대 줄 수.
 const DEBUG_LOG_LINES: int = 200
 var _layout_entries: Array[Dictionary] = []
@@ -3652,7 +3650,7 @@ func _on_revenge_boost_fired(pawn_id: int, base_steps: int, bonus: int, total: i
 	var dice_part: int = maxi(total - bonus, 0)  # 눈금 + 기물 능력 (부스터 뒤에 이어 가는 본 이동)
 	_log_line("[리벤지 부스터] %s +%d칸 선행 전진! 이어서 눈금 %d칸" % [_pawn_name(pawn_id), bonus, dice_part], Color("ff922b"))
 	if pawn != null:
-		_record(pawn.owner_id, "리벤지 부스터 +%d칸 선행 전진 → 이어서 눈금 %d칸 전진" % [bonus, dice_part])
+		_record(pawn.owner_id, "리벤지 부스터 +%d칸 → 눈금 %d칸" % [bonus, dice_part])  # 1.3.1 글 줄이기
 	if not _fx_on() or pawn == null:
 		return
 	_rocket_target[pawn_id] = GameEnums.GOAL_TILE + bonus
@@ -3665,7 +3663,7 @@ func _on_revenge_boost_fired(pawn_id: int, base_steps: int, bonus: int, total: i
 func _play_revenge_launch(pawn_id: int, base_steps: int, bonus: int, total: int) -> void:
 	Sfx.play(&"rocket")
 	screen_shake(6.0, 0.2)
-	_show_center_banner("[리벤지 부스터] +%d칸 선행 전진!\n도착하면 이어서 눈금 %d칸" % [bonus, maxi(total - bonus, 0)], Color("ff922b"))
+	# 1.3.1 글 줄이기: 가운데 알림은 띄우지 않는다. 말 위의 [리벤지 부스터 +N]·[눈금 N칸] 배지가 같은 말을 하고, 둘이 겹쳐 보였다.
 	var view: Node2D = _pawn_views.get(pawn_id)
 	if view != null and _pawn_layer != null:
 		_impact_ring(view.position, Color("ff6b00"), 58.0)
@@ -12070,7 +12068,9 @@ func _take_draft_summary_row() -> HBoxContainer:
 		var holder := Control.new()
 		holder.custom_minimum_size = AUGMENT_CARD_SIZE * card_scale
 		holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var card: Button = _make_augment_card(_augment_card_info(AugmentRegistry.get_def(entry["augment"]), player_id), Callable())
+		var reveal_info: Dictionary = _augment_card_info(AugmentRegistry.get_def(entry["augment"]), player_id)
+		reveal_info["detail"] = ""  # 1.3.1 글 줄이기: 공개 카드는 작게 줄어 족보표 같은 작은 글씨는 읽히지 않는다 (이름·칸 범위만)
+		var card: Button = _make_augment_card(reveal_info, Callable())
 		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		card.pivot_offset = Vector2.ZERO
 		card.scale = Vector2.ONE * card_scale
@@ -13153,7 +13153,7 @@ func _is_human_seat(player_id: int) -> bool:
 func _log_who(player_id: int) -> String:
 	if not PLAYER_COLORS.has(player_id):
 		return "[color=#ced4da]중립[/color]"
-	return "%s [color=#%s]%s[/color]" % [PLAYER_MARKS.get(player_id, ""), (PLAYER_COLORS[player_id] as Color).lightened(0.3).to_html(false), _bb(_player_name(player_id))]
+	return "[color=#%s]%s[/color]" % [(PLAYER_COLORS[player_id] as Color).lightened(0.3).to_html(false), _bb(_player_name(player_id))]  # 이름 색이 곧 플레이어 표시 (■ 표식은 1.3.1에 뺐다)
 
 
 ## 액션 로그의 ──── N라운드 ──── 구분선: 그 라운드의 어떤 줄보다 먼저, 한 번만 적는다.
@@ -13172,8 +13172,9 @@ func _log_round_divider(round_number: int) -> void:
 func _record(player_id: int, text: String, tag: String = "", late: bool = false, now: bool = false, show_caption: bool = true) -> void:
 	if _action_log == null or state == null:
 		return
-	var round_tag: String = "[color=#868e96][lb]R%d%s][/color]" % [state.round_number, (" " + tag) if tag != "" else ""]
-	var line: String = "%s %s : %s" % [round_tag, _log_who(player_id), text] if player_id >= 1 else "%s %s" % [round_tag, text]
+	# 1.3.1 글 줄이기: 줄마다 붙던 [R3]은 뺐다 (라운드 구분선이 있다). 증강처럼 꼬리표가 있는 줄만 [증강]을 붙인다.
+	var round_tag: String = "[color=#868e96][lb]%s][/color] " % tag if tag != "" else ""
+	var line: String = "%s%s : %s" % [round_tag, _log_who(player_id), text] if player_id >= 1 else "%s%s" % [round_tag, text]
 	var log_panel: ActionLogPanel = _action_log
 	var round_number: int = state.round_number
 	var caption_line: String = "%s  %s" % [_log_who(player_id), text] if player_id >= 1 else text
