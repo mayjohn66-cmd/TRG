@@ -131,7 +131,11 @@ func presenter_flow() -> void:
 	await create_timer(0.3).timeout
 	check(presenter.awaiting_input(), "내가 굴린 슬롯은 입력을 기다린다")
 	check(presenter.mouse_filter == Control.MOUSE_FILTER_STOP, "기다리는 동안 화면이 누름을 받는다")
-	await create_timer(0.6).timeout
+	check(presenter._slot_lever_gate,"슬롯은 먼저 레버 당기기를 기다린다")
+	presenter.pull_slot_lever(0.5)
+	check(presenter._slot_lever_gate,"반만 당기면 릴은 돌지 않는다")
+	presenter.pull_slot_lever(1.0)
+	await create_timer(0.8).timeout
 	for reel: int in 3:
 		check(presenter.manual_tap(), "탭 %d번째: 릴 멈춤" % (reel + 1))
 		await create_timer(0.3).timeout

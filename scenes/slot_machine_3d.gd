@@ -10,7 +10,7 @@ const RENDER_SIZE: Vector2i = Vector2i(750,495)
 const STRIP_SIZE: Vector2i = Vector2i(256,1536)
 const SYMBOLS: Array[String] = ["체리","레몬","종","BAR","다이아","7"]
 const ICON_FILES: Dictionary = {0:"CHERRY",1:"LEMON",2:"BELL",4:"DIAMOND"}
-const ICON_EXTENTS: Dictionary = {0:240.0,1:216.0,2:224.0,4:208.0}
+const ICON_EXTENTS: Dictionary = {0:250.0,1:240.0,2:244.0,4:236.0}
 const FONT: Font = preload("res://assets/fonts/ONE-Mobile-POP.otf")
 const BODY_SHADER: Shader = preload("res://assets/ui/trickcal/dice/toy_die.gdshader")
 const REEL_SHADER: Shader = preload("res://assets/ui/trickcal/slot/slot_reel.gdshader")
@@ -22,11 +22,12 @@ const STOP_TIMES: Array[float] = [1.10,1.48,1.86]
 const SETTLE_TIME: float = 0.14
 const RESULT_TIME: float = 2.00
 const TOTAL_TIME: float = RESULT_TIME+0.65
-const REEL_RADIUS: float = 1.0
-const REEL_HALF_WIDTH: float = 0.51
-const CAMERA_HOME: Vector3 = Vector3(0,1.6,12)
+const REEL_RADIUS: float = 1.30
+const REEL_HALF_WIDTH: float = 0.60
+const REEL_PITCH: float = 1.30
+const CAMERA_HOME: Vector3 = Vector3(0,0.85,12)
 const CAMERA_TARGET: Vector3 = Vector3(0.18,0.0,0)
-const CAMERA_SIZE: float = 4.6
+const CAMERA_SIZE: float = 4.10
 const STARTS: Array[float] = [0.0,2.0*STEP,4.0*STEP]
 static var _drum_mesh: ArrayMesh
 static var _box_meshes: Dictionary = {}
@@ -42,6 +43,8 @@ var _lamp_materials: Array[ShaderMaterial] = []
 var _frame_materials: Array[ShaderMaterial] = []
 var _cabinet: Node3D
 var _lever: Node3D
+var _grip: MeshInstance3D
+var _camera: Camera3D
 var _sign: Label3D
 var _power: float = 0.5
 var _time: float = 0.0
@@ -80,6 +83,7 @@ func _ready() -> void:
 	add_child(render_view)
 	texture = render_view.get_texture()
 	var camera := Camera3D.new()
+	_camera = camera
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
 	camera.size = CAMERA_SIZE
 	camera.position = CAMERA_HOME
@@ -94,7 +98,7 @@ func _ready() -> void:
 	for index: int in 3:
 		var pivot := Node3D.new()
 		pivot.name = "PhysicalReel%d" % (index+1)
-		pivot.position = Vector3((index-1)*1.35,0,-0.35)
+		pivot.position = Vector3((index-1)*REEL_PITCH,0,-0.35)
 		_cabinet.add_child(pivot)
 		drums.append(pivot)
 		var body := MeshInstance3D.new()
@@ -107,12 +111,12 @@ func _ready() -> void:
 		_materials.append(material)
 		var lamp := MeshInstance3D.new()
 		var sphere := SphereMesh.new()
-		sphere.radius = 0.085
-		sphere.height = 0.17
+		sphere.radius = 0.055
+		sphere.height = 0.11
 		sphere.radial_segments = 12
 		sphere.rings = 6
 		lamp.mesh = sphere
-		lamp.position = Vector3((index-1)*1.35,-0.88,1.01)
+		lamp.position = Vector3((index-1)*REEL_PITCH,-1.16,1.13)
 		var paint: ShaderMaterial = toy_material(Color("7f936b"))
 		lamp.material_override = paint
 		_cabinet.add_child(lamp)
@@ -120,7 +124,7 @@ func _ready() -> void:
 		var frame: ShaderMaterial = toy_material(Color("e5cd91"))
 		_frame_materials.append(frame)
 		for side: float in [-1.0,1.0]:
-			box(Vector3(0.56,0.028,0.018),Vector3((index-1)*1.35,side*0.56,1.005),frame,0.016)
+			box(Vector3(0.59,0.018,0.015),Vector3((index-1)*REEL_PITCH,side*1.04,1.10),frame,0.012)
 
 
 func _make_strip() -> SubViewport:
@@ -153,10 +157,10 @@ func _make_strip() -> SubViewport:
 			label.add_theme_font_override("font",FONT)
 			label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-			label.add_theme_font_size_override("font_size",88 if symbol==3 else 196)
+			label.add_theme_font_size_override("font_size",100 if symbol==3 else 212)
 			label.add_theme_color_override("font_color",Color("376245") if symbol==3 else Color("de5076"))
-			label.add_theme_color_override("font_outline_color",Color("fff2bc"))
-			label.add_theme_constant_override("outline_size",9)
+			label.add_theme_color_override("font_outline_color",Color.BLACK)
+			label.add_theme_constant_override("outline_size",3 if symbol==3 else 5)
 			label.position = Vector2(0,row*256)
 			label.size = Vector2(256,256)
 			view.add_child(label)
@@ -164,24 +168,25 @@ func _make_strip() -> SubViewport:
 
 
 func _build_cabinet() -> void:
-	box(Vector3(2.58,1.53,0.36),Vector3(0,0,-0.65),toy_material(Color("46734d")),0.20)
-	box(Vector3(2.48,1.46,0.25),Vector3(0,0,-0.28),toy_material(Color("a1d77b")),0.18)
-	box(Vector3(2.29,1.16,0.10),Vector3(0,0,0.07),toy_material(Color("554d3d")),0.14)
+	# Compact case: the tall curved drums, rather than a thick fascia, dominate.
+	box(Vector3(2.18,1.39,0.30),Vector3(0,0,-0.65),toy_material(Color("46734d")),0.12)
+	box(Vector3(2.13,1.34,0.20),Vector3(0,0,-0.28),toy_material(Color("a1d77b")),0.10)
+	box(Vector3(2.02,1.21,0.10),Vector3(0,0,0.07),toy_material(Color("554d3d")),0.08)
 	var cream: ShaderMaterial = toy_material(Color("fff0c9"))
 	for side: float in [-1.0,1.0]:
-		box(Vector3(2.40,0.54,0.17),Vector3(0,side*1.10,0.82),cream,0.13)
-		box(Vector3(0.22,0.78,0.16),Vector3(side*2.18,0,0.82),cream,0.10)
-		box(Vector3(0.11,0.78,0.16),Vector3(side*0.675,0,0.82),cream,0.07)
-	box(Vector3(1.34,0.20,0.14),Vector3(0,1.11,0.92),toy_material(Color("649f48")),0.13)
-	var title: Label3D = sign_label("777",112,0.0040,Color("fff1bb"))
-	title.position = Vector3(0,1.11,1.08)
-	_sign = sign_label("",64,0.0036,Color("46734d"))
-	_sign.position = Vector3(0,-1.11,1.02)
+		box(Vector3(2.13,0.16,0.12),Vector3(0,side*1.22,1.00),cream,0.07)
+		box(Vector3(0.12,1.08,0.12),Vector3(side*2.02,0,1.00),cream,0.07)
+		box(Vector3(0.05,1.06,0.10),Vector3(side*REEL_PITCH*.5,0,1.00),cream,0.04)
+	box(Vector3(0.66,0.10,0.06),Vector3(0,1.22,1.13),toy_material(Color("649f48")),0.04)
+	var title: Label3D = sign_label("777",72,0.0026,Color("fff1bb"))
+	title.position = Vector3(0,1.22,1.21)
+	_sign = sign_label("",52,0.0030,Color("46734d"))
+	_sign.position = Vector3(0,-1.26,1.16)
 	# Physical arrows mark only the centre payline, never a fake near-miss row.
 	for side: float in [-1.0,1.0]:
 		var st := SurfaceTool.new()
 		st.begin(Mesh.PRIMITIVE_TRIANGLES)
-		RouletteSpin3D.triangle(st,Vector3(side*2.32,-0.12,1.01),Vector3(side*2.32,0.12,1.01),Vector3(side*2.08,0,1.01),Vector3.BACK,Color("649f48"))
+		RouletteSpin3D.triangle(st,Vector3(side*2.10,-0.10,1.14),Vector3(side*2.10,0.10,1.14),Vector3(side*1.94,0,1.14),Vector3.BACK,Color("649f48"))
 		var arrow := MeshInstance3D.new()
 		arrow.mesh = st.commit()
 		var paint := StandardMaterial3D.new()
@@ -190,23 +195,51 @@ func _build_cabinet() -> void:
 		arrow.material_override = paint
 		_cabinet.add_child(arrow)
 	_lever = Node3D.new()
-	_lever.position = Vector3(2.61,-0.15,0)
+	_lever.position = Vector3(2.10,-0.22,0.18)
 	_cabinet.add_child(_lever)
+	# A visible side socket and horizontal shaft connect the upright arm in an L.
+	var gold:=toy_material(Color("d6c287"))
+	var socket:=MeshInstance3D.new()
+	var axle:=CylinderMesh.new()
+	axle.top_radius=0.19
+	axle.bottom_radius=0.19
+	axle.height=0.22
+	axle.radial_segments=16
+	socket.mesh=axle
+	socket.rotation.z=PI*.5
+	socket.material_override=gold
+	_lever.add_child(socket)
+	var elbow:=MeshInstance3D.new()
+	elbow.mesh=MahjongSlam3D.rounded_box(Vector3(0.32,0.09,0.09),0.07)
+	elbow.position=Vector3(0.32,0,0)
+	elbow.material_override=gold
+	_lever.add_child(elbow)
 	var bar := MeshInstance3D.new()
-	bar.mesh = MahjongSlam3D.rounded_box(Vector3(0.07,0.53,0.07),0.06)
-	bar.position = Vector3(0,0.42,0)
-	bar.material_override = toy_material(Color("d6c287"))
+	bar.mesh = MahjongSlam3D.rounded_box(Vector3(0.09,0.64,0.09),0.07)
+	bar.position = Vector3(0.63,0.56,0)
+	bar.material_override = gold
 	_lever.add_child(bar)
 	var handle := MeshInstance3D.new()
 	var ball := SphereMesh.new()
-	ball.radius = 0.20
-	ball.height = 0.4
+	ball.radius = 0.27
+	ball.height = 0.54
 	ball.radial_segments = 16
 	ball.rings = 8
 	handle.mesh = ball
-	handle.position = Vector3(0,1.02,0)
+	handle.position = Vector3(0.63,1.25,0)
 	handle.material_override = toy_material(Color("eb83a7"))
 	_lever.add_child(handle)
+	_grip=handle
+
+
+## Grip position in this TextureRect, including letterboxing and camera angle.
+func lever_grip_position() -> Vector2:
+	var fitted:=Vector2(render_view.size)*minf(size.x/render_view.size.x,size.y/render_view.size.y)
+	return (size-fitted)*.5+_camera.unproject_position(_grip.global_position)/Vector2(render_view.size)*fitted
+
+
+func set_lever_pull(amount: float) -> void:
+	_lever.rotation.x=clampf(amount,0,1)*1.45
 
 
 func sign_label(text: String, font_size: int, pixel_size: float, color: Color) -> Label3D:
@@ -290,7 +323,8 @@ func apply_time(seconds: float) -> void:
 		_last_whirr = _time
 	_cabinet.position.y = reaction
 	var handle_phase: float = clampf(_time/0.30,0,1)
-	_lever.rotation.x = -0.75*sin(handle_phase*PI)
+	# Start pulled, then spring back after the user's full downward stroke.
+	set_lever_pull(1.0-smoothstep(0.0,1.0,handle_phase))
 	settled = _time>=result_time()
 	if settled and not _announced:
 		_announced = true

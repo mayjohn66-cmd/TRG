@@ -72,6 +72,11 @@ var _gate_wait: float = 0.0
 const GATE_AUTO_AFTER: float = 8.0
 ## 캡슐 뽑기 레버 (1.3.1): 동전은 저절로 들어가고, 레버는 내가 끌어서 돌린다.
 var _capsule_gate: bool = false
+var _slot_lever_gate := false
+var _slot_lever_wait := 0.0
+var _slot_lever_drag := false
+var _slot_lever_start := Vector2.ZERO
+var _slot_lever_touch := -1
 var _capsule_released: bool = false
 var _capsule_progress: float = 0.0
 var _capsule_clicks: int = 0
@@ -351,6 +356,9 @@ func _stop_playback() -> void:
 		_hand_gate.queue_free()
 		_hand_gate = null
 	_capsule_gate = false
+	_slot_lever_gate = false
+	_slot_lever_drag = false
+	_slot_lever_touch = -1
 	_capsule_released = false
 	_capsule_progress = 0.0
 	_capsule_clicks = 0
@@ -706,6 +714,12 @@ func _process(delta: float) -> void:
 	if placing_time >= 0.0:
 		placing_time += delta
 		_update_place(placing_time)
+	if _slot_lever_gate:
+		_slot_lever_wait+=delta
+		if _slot_lever_wait>=12.0:
+			pull_slot_lever(1.0)
+		else:
+			return # No drum motion/result timer until the handle is pulled.
 	if _capsule_gate:
 		# 캡슐 레버: 동전이 들어간 뒤 레버 앞에서 멈춘다. 끌어서 돌린 만큼 레버가 돌고, 한 바퀴 다 돌리면(또는 오래 두면) 캡슐이 떨어진다.
 		_gate_wait += delta
@@ -1053,6 +1067,11 @@ func _build(tool_id: StringName) -> void:
 			_slot_3d.show()
 			_slot_3d.manual = interactive
 			_slot_3d.begin((_result.get("details",{}) as Dictionary).get("reels",[0,0,0]),_power)
+			_slot_lever_gate=interactive
+			_slot_lever_wait=0.0
+			_slot_lever_drag=false
+			_slot_lever_touch=-1
+			if _slot_lever_gate: _slot_3d.set_lever_pull(0.0)
 			_make_card_result("%s · %s" % [SlotMachine3D.result_title(_slot_3d.result_values),_card_move_text()])
 		&"HOLDEM":
 			_build_holdem()
@@ -1540,7 +1559,7 @@ func awaiting_input() -> bool:
 	if not active or not interactive:
 		return false
 	if _mode == &"SLOT_777":
-		return _slot_3d != null and _slot_3d.awaiting_stop()
+		return _slot_3d != null and (_slot_lever_gate or _slot_3d.awaiting_stop())
 	if _mode == &"DICE_SCRATCH":
 		return _scratch_view != null and _scratch_view.manual and not _scratch_released
 	return _hand_gate != null or _capsule_gate
@@ -1570,6 +1589,9 @@ func capsule_gate_open() -> bool:
 func manual_tap() -> bool:
 	if not awaiting_input():
 		return false
+	if _slot_lever_gate:
+		pull_slot_lever(1.0) # Keyboard/accessibility equivalent of a complete pull.
+		return true
 	if _hand_gate != null:
 		_hand_gate.key_press()  # 스페이스: 마작 다음 패 · 오미쿠지 뽑기 · 쿠키/아이스크림 가운데 것
 		return true
@@ -1589,8 +1611,60 @@ func manual_scratch(local_point: Vector2, distance: float) -> void:
 	_scratch_view.scratch_at(view_point, distance)
 
 
+func pull_slot_lever(amount: float) -> void:
+	if not _slot_lever_gate: return
+	_slot_3d.set_lever_pull(amount)
+	if amount>=1.0:
+		_slot_lever_gate=false
+		_slot_lever_drag=false
+		_slot_lever_touch=-1
+		_t=0.0
+		Sfx.play(&"toy_click",-6.0)
+
+
+func _slot_lever_input(event: InputEvent) -> void:
+	var point:=Vector2.ZERO
+	var down:=false
+	var release:=false
+	var moving:=false
+	if event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_LEFT:
+		if _slot_lever_touch>=0: return
+		point=event.position
+		down=event.pressed
+		release=not event.pressed
+	elif event is InputEventMouseMotion and _slot_lever_touch<0:
+		point=event.position
+		moving=true
+	elif event is InputEventScreenTouch:
+		if _slot_lever_touch>=0 and event.index!=_slot_lever_touch: return
+		point=event.position
+		down=event.pressed
+		release=not event.pressed
+		if down: _slot_lever_touch=event.index
+	elif event is InputEventScreenDrag and event.index==_slot_lever_touch:
+		point=event.position
+		moving=true
+	else: return
+	var local:=_slot_3d.get_global_transform().affine_inverse()*(get_global_transform()*point)
+	if down:
+		if local.distance_to(_slot_3d.lever_grip_position())<=36.0:
+			_slot_lever_start=local
+			_slot_lever_drag=true
+			accept_event()
+	elif moving and _slot_lever_drag:
+		pull_slot_lever(clampf((local.y-_slot_lever_start.y)/70.0,0.0,1.0))
+		accept_event()
+	elif release:
+		_slot_lever_drag=false
+		_slot_lever_touch=-1
+		pull_slot_lever(0.0) # Incomplete pulls return without starting the spin.
+
+
 func _gui_input(event: InputEvent) -> void:
 	if not awaiting_input():
+		return
+	if _slot_lever_gate:
+		_slot_lever_input(event)
 		return
 	var button: InputEventMouseButton = event as InputEventMouseButton
 	var motion: InputEventMouseMotion = event as InputEventMouseMotion
@@ -1625,5 +1699,6 @@ func _refresh_input_filter() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP if waiting else Control.MOUSE_FILTER_IGNORE
 	if waiting and _die_label != null and _mode in [&"SLOT_777", &"DICE_SCRATCH"]:
 		_die_label.text = L10n.t("눌러서 릴을 멈추세요! (스페이스)") if _mode == &"SLOT_777" else L10n.t("손가락으로 은박을 긁으세요!")
+		if _slot_lever_gate: _die_label.text=L10n.t("레버를 아래로 당기세요! (스페이스)")
 		_die_label.modulate.a = 1.0
 

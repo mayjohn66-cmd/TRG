@@ -94,6 +94,30 @@ func click_at(at: Vector2) -> void:
 		await frames(2)
 func click(control: Control) -> void: await click_at(control.get_global_rect().get_center())
 
+func pull_slot_handle() -> void:
+	var slot:=board._presenter._slot_3d
+	var grip:=slot.lever_grip_position()
+	var transform:=slot.get_global_transform_with_canvas()
+	var press:=InputEventMouseButton.new()
+	press.button_index=MOUSE_BUTTON_LEFT
+	press.pressed=true
+	press.position=transform*grip
+	press.global_position=press.position
+	root.push_input(press,true)
+	await frames(3)
+	for step: int in 8:
+		var drag:=InputEventMouseMotion.new()
+		drag.position=transform*(grip+Vector2(0,(step+1)*10))
+		drag.global_position=drag.position
+		drag.button_mask=MOUSE_BUTTON_MASK_LEFT
+		root.push_input(drag,true)
+		await frames(2)
+	press.pressed=false
+	press.position=transform*(grip+Vector2(0,80))
+	press.global_position=press.position
+	root.push_input(press,true)
+	await frames(3)
+
 ## Find a visible part of a tilted packet instead of clicking through its neighbor.
 func click_packet(packet: Control) -> bool:
 	for y: float in [.1,.2,.35,.5,.65]:
@@ -310,6 +334,8 @@ func remaining_tools() -> void:
 	await seconds(.5)
 	await click(board._roll_button)
 	await seconds(.6)
+	await pull_slot_handle()
+	await seconds(.8)
 	for reel: int in 3:
 		board._presenter.manual_tap()
 		await seconds(.4)
