@@ -132,10 +132,15 @@ func placed_on_board() -> void:
 	for id: StringName in [&"DICE_DARTS", &"SLOT_777"]:
 		var result: Dictionary = ToolRegistry.create(id).roll(rng).to_dict()
 		presenter.play(id, result, 0.5)
-		check(presenter.placing_time == 0.0 and presenter.scale.x < 0.6, "%s 작게 들린 채 출발한다" % id)
 		check(not presenter._title.visible, "%s 도구 이름표는 띄우지 않는다" % id)
 		var target: Vector2 = presenter._place_target
-		check(presenter.position.y > target.y, "%s 굴린 사람 쪽(아래)에서 출발한다" % id)
+		if RollPresenter.DROP_TOOLS.has(id):
+			# 꺼내기 도구 (1.3.1): 미리 놓여 있지 않다가 바로 위에서 제 크기로 쿵 떨어진다
+			check(presenter.placing_time == 0.0 and presenter._dropping and is_equal_approx(presenter.scale.x, 1.0), "%s 위에서 떨어진다" % id)
+			check(presenter.position.y < target.y - 300.0 and is_equal_approx(presenter.position.x, target.x), "%s 바로 위에서 출발한다" % id)
+		else:
+			check(presenter.placing_time == 0.0 and presenter.scale.x < 0.6, "%s 작게 들린 채 출발한다" % id)
+			check(presenter.position.y > target.y, "%s 굴린 사람 쪽(아래)에서 출발한다" % id)
 		for _wait: int in 120:
 			if presenter.placing_time < 0.0:
 				break

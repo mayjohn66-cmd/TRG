@@ -13771,9 +13771,6 @@ func _handle_roll_event(data: Dictionary) -> void:
 		_presenter.hop_pose = rest["pose"]
 		if _rest_prop != null:
 			_rest_prop.visible = false
-	elif not rest.is_empty() and rest["tool"] == tool_id and TAKE_OUT_TOOLS.has(tool_id) and int(data["player_id"]) == _dock_owner() \
-			and int(data["player_id"]) == int(rest["player"]) and Time.get_ticks_msec() - int(rest["msec"]) < 2500:
-		_presenter.place_from = rest["center"]  # 꺼내기: 버튼 위에 놓여 있던 내 도구 소품 자리에서 꺼내져 판 가운데에 놓인다
 	_rest_prop_seen = {}
 	var details: Dictionary = result["details"]
 	if _is_stage_tool(tool_id):
@@ -15354,7 +15351,8 @@ func _refresh_rest_prop() -> void:
 	if manager == null or state == null or _roll_button == null:
 		return
 	var tool: BaseJudgmentTool = state.tools.get(_dock_owner())
-	var show: bool = tool != null and ToolRestProp.supports(tool.tool_id) and not instant_roll_for_test and not manager.is_game_over \
+	# 꺼내기 도구(1.3.1)는 미리 놓아 두지 않는다: 아무것도 없다가 [꺼내기]를 누르면 위에서 쿵 떨어진다
+	var show: bool = tool != null and ToolRestProp.supports(tool.tool_id) and not TAKE_OUT_TOOLS.has(tool.tool_id) and not instant_roll_for_test and not manager.is_game_over \
 		and _roll_button.is_visible_in_tree() and not _roll_button.disabled and not _is_bot_turn() and manager.current_player_id() == _dock_owner() \
 		and (manager.current_state == TurnManager.State.PHASE_TURN_BEGIN or manager.current_state == TurnManager.State.PHASE_ROLL_WAIT) \
 		and not tool.has_pending_state() and _tool_pick == null and not (_presenter != null and _presenter.active) and not _fx_busy
