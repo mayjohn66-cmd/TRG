@@ -2484,7 +2484,11 @@ func _test_new_tool_stages() -> void:
 	await process_frame
 	await process_frame
 	_expect(_board._stage_pinball.active and _board._fx_busy, "핀볼: 구슬이 굴러가는 동안 입력이 잠긴다")
-	await get_root().get_tree().create_timer(5.2).timeout
+	# 1.3.1: 핀볼은 카드 시점에서 쏘고, 끝나면 잠깐 보여 준 뒤 원래 시점으로 돌아온 다음 입력이 풀린다
+	var pinball_until: int = Time.get_ticks_msec() + 12000
+	while (_board._stage_pinball.active or _board._fx_busy) and Time.get_ticks_msec() < pinball_until:
+		await process_frame
+	_expect(not _board._card_view_on, "핀볼: 끝나면 원래 시점으로 돌아온다")
 	_expect(not _board._stage_pinball.active and not _board._fx_busy and holes.size() == before_holes + 1 and _board._stage_pinball.last_hole == holes[-1], "핀볼: 물리 낙하 후 엔진이 정한 구멍에 도착하고 입력이 풀린다")
 	_board.instant_roll_for_test = true
 	guard = 0
