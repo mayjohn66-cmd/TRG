@@ -8984,7 +8984,7 @@ func _alkkagi_screen(point: Vector2) -> Vector2:
 func _alkkagi_world(point: Vector2) -> Vector2:
 	return _alkkagi_plane().affine_inverse()*(get_global_transform().affine_inverse()*point-_pawn_layer.position-_alkkagi_actor_offset)
 
-func _alkkagi_top_view(active: bool, immediate: bool = false) -> void:
+func _alkkagi_top_view(active: bool, immediate: bool = false, duration: float = 0.26) -> void:
 	if active:
 		if _alkkagi_saved_view!=-1:
 			return
@@ -9003,7 +9003,7 @@ func _alkkagi_top_view(active: bool, immediate: bool = false) -> void:
 		_alkkagi_camera_step(target)
 	else:
 		_alkkagi_camera_tween = create_tween()
-		_alkkagi_camera_tween.tween_method(_alkkagi_camera_step,_alkkagi_camera,target,0.26).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		_alkkagi_camera_tween.tween_method(_alkkagi_camera_step,_alkkagi_camera,target,duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 func _alkkagi_camera_step(value: float) -> void:
 	var positions: Dictionary = {}
@@ -14949,8 +14949,11 @@ const CARD_TABLE_TOOLS: Array[StringName] = [&"DICE_TAROT", &"DICE_HWATU", &"HOL
 var _card_view_on: bool = false
 var _card_view_player: int = -1
 ## 카드를 쓰는 동안 판 가운데를 당겨 본다 (보드·말 층만 확대, 화면 UI는 그대로). 시점 전환과 같은 움직임으로 들어가고 나온다.
-const CARD_ZOOM: float = 1.55
+## 1.3.1: 발판이 화면 밖으로 나갈 만큼 (1366x768 기준 4.2배, 보이는 화면이 넓거나 높으면 그만큼 더). 판 가운데 마당만 보인다.
+var card_zoom: float = 4.2
 var _card_zoom_on: bool = false
+## 판 가운데로 들어가고 나오는 시간 (크게 당기므로 알까기 0.26초보다 느긋하게).
+const CARD_VIEW_TIME: float = 0.45
 
 
 func _enter_card_view() -> void:
@@ -14959,7 +14962,7 @@ func _enter_card_view() -> void:
 	_card_view_on = true
 	_card_zoom_on = true
 	_card_view_player = manager.current_player_id() if manager != null else -1
-	_alkkagi_top_view(true)
+	_alkkagi_top_view(true, false, CARD_VIEW_TIME)
 
 
 ## 원래 시점으로 돌아온다 (돌아오는 움직임이 끝날 때까지 기다린다: 말 이동은 원래 시점에서).
@@ -14968,7 +14971,7 @@ func _leave_card_view() -> void:
 		return
 	_card_view_on = false
 	_card_view_player = -1
-	_alkkagi_top_view(false)
+	_alkkagi_top_view(false, false, CARD_VIEW_TIME)
 	while _alkkagi_camera_tween != null and _alkkagi_camera_tween.is_running() and is_inside_tree():
 		await get_tree().process_frame
 	_release_card_zoom()
@@ -14981,13 +14984,21 @@ func _leave_card_view() -> void:
 func _apply_card_zoom(weight: float) -> void:
 	if _board_layer == null or _pawn_layer == null:
 		return
-	var zoom: float = lerpf(1.0, CARD_ZOOM, weight)
+	var zoom: float = lerpf(1.0, card_zoom * _visible_span_ratio(), weight)
 	var center: Vector2 = BOARD_ORIGIN + Vector2.ONE * BOARD_SIZE * 0.5
 	var offset: Vector2 = _off_center + center * (1.0 - zoom)
 	_board_layer.scale = Vector2.ONE * zoom
 	_pawn_layer.scale = Vector2.ONE * zoom
 	_board_layer.position = offset
 	_pawn_layer.position = offset
+
+
+## 지금 보이는 화면이 디자인 크기(1366x768)보다 몇 배 넓거나 높은가 (보드 좌표 기준, 1 이상).
+func _visible_span_ratio() -> float:
+	if not is_inside_tree():
+		return 1.0
+	var visible: Vector2 = get_viewport_rect().size / get_global_transform().get_scale()
+	return maxf(1.0, maxf(visible.x / DESIGN_SIZE.x, visible.y / DESIGN_SIZE.y))
 
 
 func _release_card_zoom() -> void:

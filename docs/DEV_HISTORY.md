@@ -2015,6 +2015,7 @@ godot --headless --audio-driver Dummy --path . -s res://tests/ui_live_hotfix_tes
 - 카드 크기: 판이 커진 만큼 고르기 카드 1.35배, 홀덤 교환 창 1.3배, 결과 연출(`RollPresenter.table_scale`) 1.3배.
 - 섞어서 나눠 주기: 고르기 창(`ToolPickModal._shuffle_and_deal`)과 홀덤(`HoldemExchangePanel._shuffle_and_deal`)은 카드를 줄 한가운데에 한 뭉치로 모아 두 번 섞고(반씩 좌우로 갈라 엇갈려 합치기, 소리) 맨 위부터 한 장씩 제자리로 나눠 준다 (내려앉으면 그림자). 고르기는 섞는 중에 누르면 바로 다 놓고 그 카드를 고른다 (`dealing`, `_finish_deal`). 홀덤 교환 카드도 딜러 더미 대신 가운데 뭉치로 돌아갔다 새로 온다 (`_deck_point`). 그림만이다 (결과는 엔진).
 - 카드 시점 안전장치 보강: 고른 직후~결과 연출 사이(말 고르기 전)에는 돌리지 않는다 (타로 결과가 나오기 전에 시점이 돌아가던 것).
+- 확대 보강 (사용자: "발판 이미지도 안 보일 정도로 확대된 느낌"): `card_zoom` 1.55 → 4.2 (1366x768 기준으로 발판이 화면 밖으로 나가는 배율, 스크린샷으로 2.2·2.8·3.4·3.8·4.2를 비교해 3.8까지는 가장자리에 발판이 남았다). 보이는 화면이 디자인 크기보다 넓거나 높으면 그 비율만큼 더 당긴다 (`_visible_span_ratio`). 크게 당기므로 들어가고 나오는 시간을 0.45초로 (`CARD_VIEW_TIME`, `_alkkagi_top_view`의 duration 인자).
 - 테스트 `ui_hand_tools_test`(홀덤 섞기·나눠 주기를 실제 시간으로 기다린다).
 
 ## 부록 B. 초기 예외 규칙 해석 (v1~v3.2, `EDGE_CASE_SPEC.md`에서 옮김)

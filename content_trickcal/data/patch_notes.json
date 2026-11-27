@@ -97,9 +97,9 @@
        "ja": "スロットマシン・ルーレット・ダーツボード・株価チャートなどの判定ツールが画面にぱっと出るのではなく、振った人の側から運ばれてボードの上にトンと置かれます（床の影・ほこり付き）。ツール名の表示もなくしました"
       },
       {
-       "ko": "[타로]·[화투]·[텍사스 홀덤] 카드를 쓸 때 보드판이 위에서 내려다보는 시점으로 펼쳐지며 가운데를 당겨 보여 줘요. 판 가운데에서 카드를 한 뭉치로 섞은 뒤 한 장씩 나눠 줘요 (섞는 중에 누르면 바로 놓여요). 다 보고 나면 원래 시점으로 돌아와 말이 움직여요",
-       "en": "When using [Tarot], [Hwatu] or [Texas Hold'em], the board flattens into a top-down view and zooms into the center. The cards are shuffled as one deck in the middle of the board and dealt one by one (tap to skip the shuffle). Once you've seen the result, the view returns and your pawn moves",
-       "ja": "［タロット］・［花札］・［テキサスホールデム］のカードを使うとき、ボードが上から見下ろす視点に広がり、中央を寄って見せます。ボードの中央でカードを1つの山にしてシャッフルし、1枚ずつ配ります（シャッフル中に押すとすぐ並びます）。結果を見終わると元の視点に戻って駒が動きます"
+       "ko": "[타로]·[화투]·[텍사스 홀덤] 카드를 쓸 때 보드판이 위에서 내려다보는 시점으로 펼쳐지며 발판이 안 보일 만큼 가운데를 크게 당겨 보여 줘요. 판 가운데에서 카드를 한 뭉치로 섞은 뒤 한 장씩 나눠 줘요 (섞는 중에 누르면 바로 놓여요). 다 보고 나면 원래 시점으로 돌아와 말이 움직여요",
+       "en": "When using [Tarot], [Hwatu] or [Texas Hold'em], the board flattens into a top-down view and zooms deep into the center, past the tiles. The cards are shuffled as one deck in the middle of the board and dealt one by one (tap to skip the shuffle). Once you've seen the result, the view returns and your pawn moves",
+       "ja": "［タロット］・［花札］・［テキサスホールデム］のカードを使うとき、ボードが上から見下ろす視点に広がり、マスが見えなくなるほど中央に大きく寄ります。ボードの中央でカードを1つの山にしてシャッフルし、1枚ずつ配ります（シャッフル中に押すとすぐ並びます）。結果を見終わると元の視点に戻って駒が動きます"
       }
      ]
     },
