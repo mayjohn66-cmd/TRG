@@ -139,6 +139,11 @@
        "ko": "던지지 않는 판정 도구(화투·홀덤·슬롯머신·마작·타로·주식 차트·오미쿠지·아이스크림·포츈쿠키·캡슐뽑기·스크래치 복권)는 버튼이 [꺼내기]로 바뀌었어요. 판 위에 미리 놓여 있지 않다가, 누르면 위에서 쿵 떨어져 놓이고 그다음 직접 다뤄요",
        "en": "Judgment Tools you don't throw (Hwatu, Hold'em, Slot Machine, Mahjong, Tarot, Stock Chart, Omikuji, Ice Cream, Fortune Cookie, Capsule Gacha, Scratch Ticket) now have a [Take out] button. They aren't sitting on the board beforehand: press it and the tool drops onto the board with a thud, then you handle it yourself",
        "ja": "投げない判定ツール（花札・ホールデム・スロットマシン・麻雀・タロット・株価チャート・おみくじ・アイスクリーム・フォーチュンクッキー・カプセルガチャ・スクラッチくじ）はボタンが［取り出す］になりました。ボードの上に前もって置かれておらず、押すと上からドスンと落ちてきて置かれ、そのあと自分で扱います"
+      },
+      {
+       "ko": "[블랙잭 21 딜러]와 [리치 마작 만리장성]도 판 가운데로 다가가 전용 매트 위에서 써요: 블랙잭은 청록 카지노 테이블, 마작은 진초록 마작 매트",
+       "en": "[Blackjack 21 Dealer] and [Riichi Mahjong Great Wall] are now played on their own mats in the middle of the board too: a teal casino table for Blackjack and a dark green mahjong mat",
+       "ja": "［ブラックジャック21ディーラー］と［リーチ麻雀万里の長城］もボード中央に寄って専用マットの上で使います：ブラックジャックは青緑のカジノテーブル、麻雀は深緑の麻雀マット"
       }
      ]
     },

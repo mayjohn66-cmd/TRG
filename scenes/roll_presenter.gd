@@ -35,13 +35,13 @@ const YUT_TRAVEL_TIME: float = 0.42
 const TOSS_HEIGHT: float = 150.0
 const TOSS_CONTACTS: Array[float] = [0.60, 0.84, 1.0]
 ## 보드 위에 내려놓는 도구 (1.3.1): 굴린 사람 쪽에서 들고 와 보드 한가운데에 '탁' 내려놓는다 (바닥 그림자·먼지). 팝업이 아니라 판 위의 물건처럼.
-const PLACE_TOOLS: Array[StringName] = [&"LIFE_ROULETTE", &"SLOT_777", &"REVOLVER", &"DICE_STOCK", &"DICE_DARTS", &"DICE_OMIKUJI", &"DICE_CAPSULE", &"DICE_PIRATE", &"DICE_COOKIE", &"DICE_ICECREAM", &"DICE_MAHJONG"]  # 스크래치 복권은 카드 시점(판 위 계산대)에서 (MainBoard.CARD_TABLE_TOOLS)
+const PLACE_TOOLS: Array[StringName] = [&"LIFE_ROULETTE", &"SLOT_777", &"REVOLVER", &"DICE_STOCK", &"DICE_DARTS", &"DICE_OMIKUJI", &"DICE_CAPSULE", &"DICE_PIRATE", &"DICE_COOKIE", &"DICE_ICECREAM"]  # 스크래치 복권은 카드 시점(판 위 계산대)에서 (MainBoard.CARD_TABLE_TOOLS)
 ## 들고 오는 시간과 내려놓은 뒤 눌렸다 펴지는 시간 (연출 시계는 멈추지 않는다: 결과 시각은 그대로).
 const PLACE_TIME: float = 0.26
 const PLACE_SETTLE: float = 0.16
 const PLACE_LIFT: float = 70.0
 ## 꺼내기 도구 (1.3.1): 미리 놓여 있지 않다가 위에서 "쿵" 떨어져 판 위에 놓인다. 손으로 다루는 첫 장면(손 도구 창)도 같이 떨어진다.
-const DROP_TOOLS: Array[StringName] = [&"SLOT_777", &"DICE_STOCK", &"DICE_OMIKUJI", &"DICE_ICECREAM", &"DICE_COOKIE", &"DICE_CAPSULE", &"DICE_MAHJONG", &"DICE_SCRATCH"]
+const DROP_TOOLS: Array[StringName] = [&"SLOT_777", &"DICE_STOCK", &"DICE_OMIKUJI", &"DICE_ICECREAM", &"DICE_COOKIE", &"DICE_CAPSULE", &"DICE_SCRATCH"]  # 마작은 카드 시점 매트에서 (1.3.1)
 const DROP_HEIGHT: float = 420.0
 const DROP_TIME: float = 0.24
 const DROP_SQUASH: float = 0.16
@@ -275,6 +275,7 @@ func play(tool_id: StringName, result: Dictionary, power: float = 0.5, continues
 		scale = Vector2.ONE * table_scale
 	if interactive and ToolHandGate.supports(tool_id):
 		_hand_gate = ToolHandGate.new()
+		_hand_gate.on_board = not is_equal_approx(table_scale, 1.0)  # 카드 시점(마작): 어두운 막·초록 판 없이 매트 위에
 		var hand_details: Dictionary = (result.get("details", {}) as Dictionary).duplicate()
 		hand_details["_kept_count"] = _kept_prop_count
 		_hand_gate.setup(tool_id, hand_details)

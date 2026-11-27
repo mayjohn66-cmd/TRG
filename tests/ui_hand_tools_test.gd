@@ -108,6 +108,7 @@ func run() -> void:
 	await pirate_buttons()
 	await holdem_exchange()
 	await yacht_case()
+	await blackjack_table()
 	take_out_labels()
 	if failures.is_empty():
 		print("HAND_TOOLS_OK")
@@ -362,6 +363,29 @@ func yacht_case() -> void:
 	while (board._card_view_on or not is_zero_approx(board._alkkagi_camera)) and Time.get_ticks_msec() < until:
 		await process_frame
 	check(not board._card_view_on and is_zero_approx(board._alkkagi_camera), "확정하면 원래 시점으로 돌아온다")
+
+
+## 1.3.1 블랙잭 테이블: 스테이지가 뜨면 카드 시점(블랙잭 매트), 끝나면 원래 시점으로.
+func blackjack_table() -> void:
+	await next_turn()
+	await give(&"DICE_BLACKJACK")
+	var stage: BlackjackStage = board._stage_blackjack
+	for _w: int in 120:
+		board._refresh_all()
+		if stage.visible:
+			break
+		await process_frame
+	check(stage.visible and board._card_view_on and board._card_view_tool == &"DICE_BLACKJACK", "블랙잭 테이블이 뜨면 카드 시점으로 들어간다")
+	stage.start_pressed.emit()
+	var until: int = Time.get_ticks_msec() + 30000
+	while Time.get_ticks_msec() < until:
+		var tool: BaseJudgmentTool = board.state.tools[board.manager.current_player_id()]
+		if board.manager.current_state == TurnManager.State.PHASE_ROLL_WAIT and tool is ToolBlackjack and tool.has_pending_state() and not stage.active and not board._fx_busy:
+			stage.stand_pressed.emit()
+		if not board._card_view_on and is_zero_approx(board._alkkagi_camera):
+			break
+		await process_frame
+	check(not board._card_view_on and is_zero_approx(board._alkkagi_camera), "블랙잭이 끝나면 원래 시점으로 돌아온다")
 
 
 ## 1.3.1: 던지지 않는 도구는 굴리기 버튼이 [꺼내기], 던지는 도구는 그대로.

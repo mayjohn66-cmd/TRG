@@ -29,7 +29,7 @@ var _start_button: Button = null
 var _hit_button: Button = null
 var _stand_button: Button = null
 var _result_text: String = ""
-var _result_color: Color = UiSkin.INK
+var _result_color: Color = Color("fff3bf")
 var _result_summary := ""
 var _play_serial := 0
 
@@ -40,9 +40,14 @@ func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_PASS
 
 
+## 1.3.1 카드 시점: 블랙잭 테이블 매트(CardMat) 위에 바로 놓인다. 흰 판 대신 투명, 글자는 펠트 위에서 읽히는 밝은 색에 외곽선.
+const TEXT := Color("fff3bf")
+const SOFT := Color("cfe3d2")
+
+
 func _ready() -> void:
 	var panel := Panel.new()
-	panel.add_theme_stylebox_override("panel", UiSkin.panel("panel", 12.0))
+	panel.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	panel.set_anchors_preset(Control.PRESET_FULL_RECT)
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(panel)
@@ -55,16 +60,16 @@ func _ready() -> void:
 	_row.size = Vector2(236.0, 118.0)
 	_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_row)
-	_count_label = _label("", 17, UiSkin.SOFT)
+	_count_label = _label("", 17, SOFT)
 	_count_label.position = Vector2(20,160)
 	_count_label.size = Vector2(236,22)
 	add_child(_count_label)
-	_total_label = _label("", 38, UiSkin.INK)
+	_total_label = _label("", 38, TEXT)
 	_total_label.position = Vector2(268,58)
 	_total_label.size = Vector2(272,50)
 	_total_label.clip_text = true
 	add_child(_total_label)
-	_move_label = _label("",22,UiSkin.INK)
+	_move_label = _label("",22,TEXT)
 	_move_label.position = Vector2(268,112)
 	_move_label.size = Vector2(272,56)
 	_move_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -103,7 +108,8 @@ func _label(text: String, size_px: int, color: Color) -> Label:
 	label.text = text
 	label.add_theme_font_size_override("font_size", size_px)
 	label.add_theme_color_override("font_color", color)
-	label.add_theme_constant_override("outline_size", 0)
+	label.add_theme_constant_override("outline_size", 5)
+	label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.8))
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return label
@@ -197,15 +203,15 @@ func _apply_result_text(confirmed: bool, bust: bool, blackjack: bool, steps: int
 	if bust:
 		_result_text = "BUST!"
 		_result_summary = "합계 %d · 턴 종료" % total
-		_result_color = Color("bf4941")
+		_result_color = Color("ff8787")
 	elif blackjack:
 		_result_text = "BLACKJACK!"
 		_result_summary = "%d칸 전진\n한 번 더" % steps
-		_result_color = UiSkin.GREEN
+		_result_color = Color("8ce99a")
 	elif confirmed:
 		_result_text = "합계 %d" % total
 		_result_summary = "%d칸 확정" % steps
-		_result_color = UiSkin.INK
+		_result_color = TEXT
 	else:
 		_result_text = ""
 		_result_summary = ""
@@ -243,11 +249,11 @@ func _refresh() -> void:
 	if active:
 		_total_label.text = "…"
 		_move_label.text = L10n.t("카드 받는 중")
-		_total_label.add_theme_color_override("font_color",UiSkin.INK)
+		_total_label.add_theme_color_override("font_color",TEXT)
 	elif started and not cards.is_empty():
 		_total_label.text = L10n.tf("합계 %d",[total])
 		_move_label.text = L10n.tf("%d칸 전진",[total-ToolBlackjack.STEPS_OFFSET])
-		_total_label.add_theme_color_override("font_color", UiSkin.INK)
+		_total_label.add_theme_color_override("font_color", TEXT)
 	elif _result_text != "":
 		_total_label.text = L10n.t(_result_text)
 		_move_label.text = L10n.t(_result_summary)
@@ -255,7 +261,7 @@ func _refresh() -> void:
 	else:
 		_total_label.text = "21"
 		_move_label.text = ""  # 1.3.1 정리: 안내 글 없이 [카드 받기] 버튼만
-		_total_label.add_theme_color_override("font_color", UiSkin.INK)
+		_total_label.add_theme_color_override("font_color", TEXT)
 	_total_label.add_theme_font_size_override("font_size",32 if _result_text=="BLACKJACK!" else 38)
 	_start_button.visible = not started
 	_start_button.disabled = not can_act or active

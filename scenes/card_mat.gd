@@ -15,6 +15,10 @@ const STYLES: Dictionary = {
 	&"HOLDEM": {"base": Color("176142"), "center": Color("23845b"), "edge": Color("5b3a22"), "fleck": Color("2f9a6b"), "pattern": "felt"},
 	## 스크래치 복권: 복권방 나무 계산대.
 	&"DICE_SCRATCH": {"base": Color("7a5230"), "center": Color("8f6440"), "edge": Color("4a301c"), "fleck": Color("b08455"), "pattern": "wood"},
+	## 리치 마작: 자동탁 같은 진초록 펠트에 어두운 테.
+	&"DICE_MAHJONG": {"base": Color("0f5132"), "center": Color("17693f"), "edge": Color("2b2118"), "fleck": Color("2a8a56"), "pattern": "felt"},
+	## 블랙잭: 카지노 블랙잭 테이블 (짙은 청록 펠트·가죽 레일·안쪽 금선).
+	&"DICE_BLACKJACK": {"base": Color("0d4f4a"), "center": Color("16706a"), "edge": Color("4a2a18"), "fleck": Color("23867f"), "pattern": "felt"},
 	## 야추 다이스: 매트 없이 어둡게만 (주사위 케이스가 따로 놓인다).
 	&"DICE_YACHT": {"base": Color("000000"), "center": Color("000000"), "edge": Color("000000"), "fleck": Color("000000"), "pattern": "none"},
 }
