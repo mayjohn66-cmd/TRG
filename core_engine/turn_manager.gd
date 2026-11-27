@@ -94,6 +94,8 @@ var peer_to_player: Dictionary = {1: 1}
 
 var move_queue: Array[int] = []
 var _roll_chain: int = 0
+## 이번 굴림의 파워 게이지 값 (1.3.1 풀 파워, NAN = 게이지를 쓰지 않았다). 굴림 행동에 실려 오므로 락스텝으로 같다.
+var _roll_power: float = NAN
 ## 이번 라운드에 차례를 마친 플레이어 (졸업·휴식으로 건너뛴 차례 포함). 리버스로 방향이 바뀌어도 모두 정확히 한 번씩 하고 라운드가 끝난다.
 var _round_done: Dictionary = {}
 ## 드래프트가 끝나면 고른 증강을 모두가 확인하는 단계를 둘지 (화면이 있는 판에서 MainBoard가 켠다. 엔진 단위 테스트는 바로 라운드를 시작한다).
@@ -493,6 +495,8 @@ func _handle_roll(actor: int, params: Dictionary = {}) -> void:
 	if params.has("keep") and tool is ToolHoldem:
 		(tool as ToolHoldem).set_keep(params["keep"] as Array if params["keep"] is Array else [])
 	state.pacing_humans = pacing_humans
+	# 파워 게이지 값 (1.3.1 풀 파워): 게이지를 모아 던졌을 때만 실려 온다. 야추는 마지막으로 굴린 값으로 확정한다.
+	_roll_power = clampf(float(params["power"]), 0.0, 1.0) if params.has("power") and (params["power"] is float or params["power"] is int) else NAN
 	var result: RollResult = _roll_with_modifiers(actor, tool)
 	# 터치로 고르기 (1.3.1): 고른 뒷면 자리를 결과에 싣는다. 결과(눈금·확률)는 위에서 평소처럼 정해졌다.
 	if result != null and params.has("pick") and not tool.has_pending_state():
@@ -1595,6 +1599,7 @@ func _begin_turn(new_turn: bool = true) -> void:
 	_stack_offer = {}
 	command_stack.begin_turn()
 	_roll_chain = 0
+	_roll_power = NAN
 	_move_report = null
 	if new_turn:
 		state.attack_log.clear()
@@ -1785,9 +1790,10 @@ func _apply_roll_result(result: RollResult) -> void:
 		var corner: int = int(state.corner_buff.get(roller, 0))
 		state.corner_buff.erase(roller)
 		var collect: int = CollectibleBuffs.roll_bonus(state, roller)  # 수집품 코롯토: 완주하면 모든 굴림 +1
-		var boosted: int = maxi(ctx.dice_value + state.roll_bonus + permanent + corner + collect, 0)
-		if state.roll_bonus != 0 or permanent != 0 or corner != 0 or collect != 0:
-			_emit_event(&"roll_boosted", {"player_id": roller, "from": ctx.dice_value, "to": boosted, "corner": corner, "permanent": permanent, "bonus": state.roll_bonus, "collect": collect})
+		var gauge: int = UtilityAugments.full_power_bonus(state, roller, result.tool_id, _roll_power) if ctx.dice_value > 0 else 0  # 풀 파워 (1.3.1)
+		var boosted: int = maxi(ctx.dice_value + state.roll_bonus + permanent + corner + collect + gauge, 0)
+		if state.roll_bonus != 0 or permanent != 0 or corner != 0 or collect != 0 or gauge != 0:
+			_emit_event(&"roll_boosted", {"player_id": roller, "from": ctx.dice_value, "to": boosted, "corner": corner, "permanent": permanent, "bonus": state.roll_bonus, "collect": collect, "gauge": gauge})
 			state.roll_bonus = 0
 		if int(state.gambler_round.get(roller, -1)) == state.round_number:
 			_emit_event(&"gambler_doubled", {"player_id": roller, "from": boosted, "to": boosted * SuperAugments.gambler_multiplier()})

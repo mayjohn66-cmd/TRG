@@ -2048,6 +2048,17 @@ godot --headless --audio-driver Dummy --path . -s res://tests/ui_live_hotfix_tes
 - 굴리기를 누르면 버튼이 잠기며 소품이 먼저 숨으므로, 소품이 마지막으로 보였던 모습(`MainBoard._rest_prop_seen`, 2.5초 안)을 쓴다. 내 화면에서 내가 굴릴 때만. 컴퓨터·다른 사람·윷은 예전처럼 프로필에서 날아온다.
 - 테스트 `ui_hand_tools_test`(소품 자리·크기·자세에서 출발, 바로 앞에 착지, 튀는 높이).
 
+### 7.126 범용 증강 [패시브] 풀 파워 (1.3.1)
+- 요청: 공용 증강에 파워 게이지가 수치에 영향을 주는 증강을 미리 넣어 둔다. 파워 게이지가 있는 계열에만 적용.
+- `AUG_UTIL_FULL_POWER` ([패시브] 풀 파워, UTIL·NORMAL·가중치 80, 표 `augments_table.csv`): 게이지를 빨간 끝(`UtilityAugments.FULL_POWER_ZONE` 0.85 이상)에서 놓으면 그 굴림 이동 +2칸 (`FULL_POWER_STEPS`). 한 사람 한 번. 표시 분류는 패시브.
+  - 적용 도구 `UtilityAugments.POWER_GAUGE_TOOLS` = 기본 주사위·윷·친치로·야추 다이스·핀볼 (화면의 `MainBoard.GAUGE_TOOLS`도 이 목록을 쓴다: 한 곳에서만 고친다). 드래프트에는 지금 게이지 도구를 쓰는 사람에게만 나온다. 나중에 도구를 바꾸면 쉬고, 게이지 도구로 돌아오면 다시 켜진다.
+  - 이동하는 결과(눈금 > 0)에만 붙는다. 0칸·턴 종료 결과는 그대로.
+- 락스텝: 게이지 값은 굴림 행동의 `power`로 실려 간다 (게이지를 모아 던졌을 때만, 짧게 누르면 값 없음 = 보너스 없음). 엔진 `TurnManager._roll_power`(턴 시작에 NAN)가 받아 가속 단계에서 `UtilityAugments.full_power_bonus`로 더하고 `roll_boosted` 이벤트에 `gauge`로 싣는다 (기록 창 "풀 파워 +2"). 야추는 [그대로 확정] 때 마지막으로 굴린 값으로 판정한다. 저장: `GameState.full_power_players`, 스냅샷 `utility.full_power`.
+- 화면: 증강을 가졌으면 게이지 끝 성공 구간을 금색 테두리로 보여 준다 (`PowerGauge/FullPowerZone`). 굴리기·야추 굴리기·핀볼 발사 모두 값을 보낸다.
+- 봇: 증강을 가진 봇은 게이지를 모아 던진다. 빨간 끝을 맞힐 확률은 난이도별 (`BotBrain.GAUGE_HIT_CHANCE`: 크림 25%·로제 35%·오리지널 50%·마라 65%·핵불닭 80%), 봇 자신의 난수로 정하고 값은 행동에 실려 모두에게 같다. 드래프트 점수 60.
+- 아이콘: 임시 그림(`illustrations/augments/AUG_UTIL_FULL_POWER.png`, 코드로 그린 게이지·번개). 정식 일러스트로 바꿀 것.
+- 테스트: `test_utility_supply`(조건·경계값 0.85·게이지 없음·다른 도구·스냅샷, 굴림 행동으로 +2), `ui_power_gauge_test`(성공 구간 표시, 모은 값이 엔진에 실림), 증강 수 95→96·범용 15→16.
+
 ## 부록 B. 초기 예외 규칙 해석 (v1~v3.2, `EDGE_CASE_SPEC.md`에서 옮김)
 
 > 이 부록의 규칙은 당시 기준이다. 24칸 순환 트랙, 세트 효과, 후퇴 눈금, 옛 법전 교칙 등은 이후 개편으로 바뀌었다.

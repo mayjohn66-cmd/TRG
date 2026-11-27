@@ -571,7 +571,7 @@ var _announcer: EventAnnouncer = null
 var _pending_power: float = 0.5
 ## 파워 게이지 (1.3.1 부활): 주사위·윷·친치로·야추·핀볼은 굴리기 버튼(또는 스페이스)을 꾹 누르는 동안 게이지가 0~100%를 왕복하고,
 ## 손을 떼는 순간의 값이 굴림 연출 세기가 된다 (던지는 힘·회전·핀볼 스프링). 결과(눈금)에는 영향이 없다.
-const GAUGE_TOOLS: Array[StringName] = [&"D6", &"YUT", &"CHINCHIRO", &"DICE_YACHT", &"DICE_PINBALL"]
+const GAUGE_TOOLS: Array[StringName] = UtilityAugments.POWER_GAUGE_TOOLS
 const GAUGE_SPEED: float = 1.6
 var _power_gauge: Control = null
 var _power_bar: ProgressBar = null
@@ -4724,6 +4724,9 @@ func _roll_boost_reason(data: Dictionary) -> String:
 	var corner: int = int(data.get("corner", 0))
 	var bonus: int = int(data.get("bonus", 0))
 	var collect: int = int(data.get("collect", 0))
+	var gauge: int = int(data.get("gauge", 0))
+	if gauge != 0:
+		parts.append(L10n.t("풀 파워 %+d") % gauge)
 	if collect != 0:
 		parts.append(L10n.t("수집품 코롯토 %+d") % collect)
 	if permanent != 0:
@@ -8232,7 +8235,7 @@ func _on_pad_trigger_pulled() -> void:
 	_roll_with_power(0.5)
 
 
-func _roll_with_power(power: float) -> void:
+func _roll_with_power(power: float, charged: bool = false) -> void:
 	_pending_power = power
 	if manager.is_game_over or _roll_button.disabled or _ui_busy() or _is_bot_turn() or _roll_pad.preparing:
 		return
@@ -8240,7 +8243,7 @@ func _roll_with_power(power: float) -> void:
 		_act(&"proceed")
 	if manager.current_state == TurnManager.State.PHASE_ROLL_WAIT:
 		_pinball_ready_key = ""
-		_act(&"roll")
+		_act(&"roll", {"power": power} if charged else {})
 
 
 func _hint_text(current_phase: TurnManager.State, tool: BaseJudgmentTool) -> String:
@@ -8306,6 +8309,7 @@ func _on_roll_pressed() -> void:
 	# 게이지를 모았으면 그 값, 아니면(짧게 누름·게이지 없는 도구) 경쾌한 고정값을 연출 세기로 쓴다.
 	var charged: float = _take_charge()
 	_pending_power = charged if charged >= 0.0 else ONE_CLICK_POWER
+	var gauge_params: Dictionary = {"power": charged} if charged >= 0.0 else {}  # 게이지를 모아 던졌을 때만 엔진에 값을 보낸다 (1.3.1 풀 파워)
 	if manager.is_game_over or _roll_button.disabled or _ui_busy() or _is_bot_turn() or _roll_pad.preparing:
 		return  # 리볼버 장전 연출 중에 쏘면 3D 화면에 장전 자세가 한두 프레임 다시 비친다 (발사 버튼과 같은 조건)
 	var tool: BaseJudgmentTool = state.tools[_dock_owner()]
@@ -8318,7 +8322,7 @@ func _on_roll_pressed() -> void:
 	# material sounds at animation cues. Only dice need the generic clatter.
 	if _is_dice_family(tool) and tool.tool_id != &"YUT":
 		Sfx.play(&"dice_roll")
-	var params: Dictionary = {}
+	var params: Dictionary = gauge_params
 	if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN:
 		_act(&"proceed")
 	if manager.current_state == TurnManager.State.PHASE_ROLL_WAIT:
@@ -13692,7 +13696,7 @@ func _refresh_tool_stage() -> void:
 
 func _on_stage_start() -> void:
 	var charged: float = _take_charge()
-	_roll_with_power(charged if charged >= 0.0 else 0.5)
+	_roll_with_power(charged if charged >= 0.0 else 0.5, charged >= 0.0)
 
 func _pinball_key() -> String:
 	# The host can acknowledge proceed later. Do not invalidate the local request
@@ -13712,7 +13716,10 @@ func _on_yacht_reroll(keep: Array) -> void:
 		return
 	var charged: float = _take_charge()
 	_pending_power = charged if charged >= 0.0 else 0.5
-	_act(&"roll", {"keep": keep})
+	var yacht_params: Dictionary = {"keep": keep}
+	if charged >= 0.0:
+		yacht_params["power"] = charged
+	_act(&"roll", yacht_params)
 
 
 func _on_blackjack_hit() -> void:
@@ -15186,6 +15193,7 @@ func _begin_charge(anchor: Control, by_key: bool) -> bool:
 	_charge_clock = 0.0
 	_charge_value = 0.0
 	_charge_anchor = anchor
+	(_power_gauge.get_node("FullPowerZone") as Control).visible = bool(state.full_power_players.get(_dock_owner(), false))
 	_power_gauge.visible = true
 	_place_power_gauge()
 	Sfx.play(&"charge", -4.0, 0.0)
@@ -15250,6 +15258,20 @@ func _ensure_power_gauge() -> void:
 	_power_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_power_bar.add_theme_stylebox_override("background", _style(Color("0b0e16"), Color("5c6b94"), 2, 9, 0, 0))
 	_power_gauge.add_child(_power_bar)
+	# 풀 파워 (1.3.1): 증강을 가졌으면 게이지 끝 성공 구간을 금색 테두리로 보여 준다 (글 설명 없이 노릴 자리)
+	var zone := Panel.new()
+	zone.name = "FullPowerZone"
+	zone.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	zone.position = Vector2(150.0 * UtilityAugments.FULL_POWER_ZONE, -3)
+	zone.size = Vector2(150.0 * (1.0 - UtilityAugments.FULL_POWER_ZONE), 20)
+	var zone_style := StyleBoxFlat.new()
+	zone_style.bg_color = Color(1.0, 0.83, 0.23, 0.18)
+	zone_style.border_color = Color("ffd43b")
+	zone_style.set_border_width_all(2)
+	zone_style.set_corner_radius_all(5)
+	zone.add_theme_stylebox_override("panel", zone_style)
+	zone.visible = false
+	_power_gauge.add_child(zone)
 	_power_label = _make_label("POWER 0%", MobileSupport.text_px(13), Color("fff3bf"))
 	_power_label.position = Vector2(0, 15)
 	_power_label.size = Vector2(150, 18)

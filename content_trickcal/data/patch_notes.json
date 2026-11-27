@@ -11,6 +11,20 @@
    "sections": [
     {
      "head": {
+      "ko": "신규",
+      "en": "New",
+      "ja": "新規"
+     },
+     "items": [
+      {
+       "ko": "신규 범용 증강 [패시브] 풀 파워: 파워 게이지를 빨간 끝(85% 이상)까지 채워 던지면 이동 +2칸. 파워 게이지가 있는 판정 도구(기본 주사위·윷·친치로·야추 다이스·핀볼)에만 적용돼요 (게이지 끝에 금색 테두리로 노릴 자리가 보여요)",
+       "en": "New common augment [Passive] Full Power: release the power gauge at the red end (85%+) to move +2 spaces. Only works with Judgment Tools that have a power gauge (Standard Dice, Yut, Chinchiro, Yacht Dice, Pinball); a gold outline marks the target zone on the gauge",
+       "ja": "新しい汎用増強［パッシブ］フルパワー：パワーゲージを赤い端（85%以上）まで溜めて投げると移動+2マス。パワーゲージのある判定ツール（基本サイコロ・ユッ・チンチロ・ヨットダイス・ピンボール）のみ適用されます（ゲージの端に狙う場所が金色の枠で表示されます）"
+      }
+     ]
+    },
+    {
+     "head": {
       "ko": "개선",
       "en": "Improvements",
       "ja": "改善"

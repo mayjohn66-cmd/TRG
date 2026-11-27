@@ -100,11 +100,13 @@ func run() -> void:
 		var button_rect: Rect2 = board._roll_button.get_global_rect()
 		var prop_rect: Rect2 = prop.get_global_rect()
 		check(prop_rect.end.y <= button_rect.position.y + 10.0 and absf(prop_rect.get_center().x - button_rect.get_center().x) < 2.0, "소품은 버튼 바로 위 가운데 (%s / %s)" % [prop_rect, button_rect])
+	board.state.full_power_players[board.manager.current_player_id()] = true  # 1.3.1 풀 파워: 게이지 끝 성공 구간이 보이고, 모은 값이 엔진에 실린다
 	board._roll_button.button_down.emit()
 	await hold(0.3)
 	check(board.power_charging(), "주사위: 굴리기 버튼을 누르고 있으면 게이지가 뜬다")
 	var gauge: Control = board.find_child("PowerGauge", true, false)
 	check(gauge != null and gauge.visible, "게이지가 화면에 보인다")
+	check(gauge != null and (gauge.get_node("FullPowerZone") as Control).visible, "풀 파워를 가졌으면 게이지 끝 성공 구간이 보인다")
 	var value: float = board.power_value()
 	check(value > 0.05, "누르고 있는 동안 게이지가 오른다 (%.2f)" % value)
 	board._roll_button.pressed.emit()
@@ -113,6 +115,8 @@ func run() -> void:
 	check(rolls.size() == 1, "떼는 순간 굴린다")
 	check(board.rest_prop() == null or not board.rest_prop().visible, "굴리면 소품은 숨는다 (굴림 연출이 대신)")
 	check(absf(board._pending_power - value) < 0.15, "모은 값이 연출 세기가 된다 (%.2f / %.2f)" % [board._pending_power, value])
+	check(not is_nan(board.manager._roll_power) and absf(board.manager._roll_power - board._pending_power) < 0.001, "모은 값이 굴림 행동에 실려 엔진에 간다 (풀 파워 판정, %.2f)" % board.manager._roll_power)
+	board.state.full_power_players.clear()
 	# 2) 버튼 밖에서 떼면 취소
 	await next_turn()
 	rolls.clear()

@@ -3471,3 +3471,6 @@ TRPG,TRPG,TRPG
 초증강 등장,Hyper Augments appear,超増強が登場
 한 장 고르세요,Pick one,1枚選んでください
 두 장 뒤집으세요,Flip two,2枚めくってください
+[풀 파워 장착!],[Full Power equipped!],[フルパワー装備！]
+풀 파워 %+d,Full Power %+d,フルパワー %+d
+파워 게이지를 빨간 끝까지 채워 던지면 +%d칸,Release the power gauge at the red end for +%d spaces,パワーゲージを赤い端まで溜めて投げると+%dマス
