@@ -41,14 +41,22 @@ const PLACE_TIME: float = 0.26
 const PLACE_SETTLE: float = 0.16
 const PLACE_LIFT: float = 70.0
 ## 꺼내기 도구 (1.3.1): 미리 놓여 있지 않다가 위에서 "쿵" 떨어져 판 위에 놓인다. 손으로 다루는 첫 장면(손 도구 창)도 같이 떨어진다.
-const DROP_TOOLS: Array[StringName] = [&"SLOT_777", &"DICE_STOCK", &"DICE_OMIKUJI", &"DICE_ICECREAM", &"DICE_COOKIE", &"DICE_CAPSULE", &"DICE_SCRATCH"]  # 마작은 카드 시점 매트에서 (1.3.1)
+const DROP_TOOLS: Array[StringName] = [&"SLOT_777", &"DICE_STOCK", &"DICE_OMIKUJI", &"DICE_ICECREAM", &"DICE_COOKIE", &"DICE_CAPSULE", &"DICE_SCRATCH", &"DICE_DARTS", &"DICE_PIRATE", &"LIFE_ROULETTE", &"REVOLVER"]  # 마작은 카드 시점 매트에서 (1.3.1)
+## 주식 차트는 태블릿처럼 아래에서 위로 꺼낸다 (떨어지지 않고 올라온다).
+const RISE_TOOLS: Array[StringName] = [&"DICE_STOCK"]
 const DROP_HEIGHT: float = 420.0
 const DROP_TIME: float = 0.24
 const DROP_SQUASH: float = 0.16
+## 캡슐 기계는 내려앉은 뒤 이만큼 그대로 보였다가 레버 쪽으로 다가간다 (1.3.1).
+const CAPSULE_LOOK_PAUSE: float = 0.5
+## 나무 계산대가 놓이기를 기다렸다가 복권을 떨어뜨리는 시간 (CardMat 들고 오기와 맞춘다).
+const PLACE_AFTER_COUNTER: float = 0.5
 ## 결과는 작은 반동만 준다. 입력은 결과 확정 즉시 풀린다.
 const PUNCH_TIME: float = 0.14
 const PUNCH_SCALE: float = 1.08
 const LINGER_TIME: float = 0.5
+## 1.3.1 뜸 들이기: 주사위·친치로가 멈춘 뒤 결과 글자가 뜨기까지 기다리는 시간 (멈춘 눈을 먼저 보게).
+const RESULT_SUSPENSE: float = 0.55
 const FADE_TIME: float = 0.2
 ## 투척은 보드 마당 한가운데(연출 패널 자리보다 조금 아래)에 떨어진다. 그림자는 주사위 밑면에 붙는다.
 const TOSS_LAND_OFFSET: Vector2 = Vector2(0.0, 52.0)
@@ -102,6 +110,10 @@ var toss_board_outline := PackedVector2Array()
 var hop_from: Vector2 = Vector2(INF, INF)
 ## 꺼내기 (1.3.1): 판 위에 내려놓는 도구가 어디서 나오는가 (굴리기 버튼 위 내 도구 소품 자리). 비어 있으면 굴린 사람 쪽(toss_from).
 var place_from: Vector2 = Vector2(INF, INF)
+## 이미 판 위에 꺼내 놓은 물건으로 굴렸다 (내 과녁·해적 통): 다시 떨어뜨리지 않고 그 자리에서 이어 간다. MainBoard가 굴림마다 넣는다.
+var skip_place: bool = false
+## 꺼내 놓은 물건의 화면 가운데 (skip_place와 함께): 결과 연출의 그 물건 그림을 정확히 이 자리에 맞춘다 (던진 순간 과녁·통이 툭 옮겨 가지 않게).
+var anchor_view_at: Vector2 = Vector2(INF, INF)
 var hop_scale: float = 1.0
 var hop_pose: Variant = null
 var _hopping: bool = false
@@ -172,11 +184,15 @@ var _toss_start: Vector2 = Vector2.ZERO
 var _last_contact: int = -1
 ## 내려놓기 연출 시각 (-1 = 하지 않는다). 테스트가 읽는다.
 var placing_time: float = -1.0
+## 다트 과녁 판이 던지는 순간 돌아가 있던 각도 (꺼내 놓은 과녁에서 이어 돈다, MainBoard가 정한다).
+var dart_start_turn: float = 0.0
+var _place_pause: float = 0.0  # 놓인 뒤 시계를 멈춰 두는 남은 시간 (캡슐 기계)
 var _place_target: Vector2 = Vector2.ZERO
 var _place_from: Vector2 = Vector2.ZERO
 var _place_base: Vector2 = Vector2.ZERO
 var _place_landed: bool = false
 var _dropping: bool = false
+var _rising: bool = false
 var _place_scale: float = 1.0
 
 
@@ -275,6 +291,10 @@ func play(tool_id: StringName, result: Dictionary, power: float = 0.5, continues
 	tossing = TOSS_TOOLS.has(tool_id)
 	_build(tool_id)
 	_position_center()
+	if anchor_view_at.is_finite() and skip_place:
+		var held: Control = _dart_view if tool_id == &"DICE_DARTS" else (_pirate_view if tool_id == &"DICE_PIRATE" else null)
+		if held != null:
+			position = anchor_view_at - Vector2(size.x * 0.5, held.size.y * 0.5)  # 그림은 맨 위(이름표 숨김)라 세로 가운데는 그림 높이의 절반
 	if not is_equal_approx(table_scale, 1.0) and not TOSS_TOOLS.has(tool_id):
 		pivot_offset = size / 2.0
 		scale = Vector2.ONE * table_scale
@@ -295,7 +315,7 @@ func play(tool_id: StringName, result: Dictionary, power: float = 0.5, continues
 		_gate_wait = 0.0
 	if tossing:
 		_begin_toss()
-	elif (PLACE_TOOLS.has(tool_id) or DROP_TOOLS.has(tool_id)) and _hand_gate == null and not continues_chain:
+	elif (PLACE_TOOLS.has(tool_id) or DROP_TOOLS.has(tool_id)) and _hand_gate == null and not continues_chain and not skip_place:
 		_begin_place(DROP_TOOLS.has(tool_id))
 	active = true
 	visible = true
@@ -306,6 +326,7 @@ func play(tool_id: StringName, result: Dictionary, power: float = 0.5, continues
 	elif tool_id==&"DICE_STOCK":
 		var details:Dictionary=_result.get("details",{})
 		var change:int=int(details.get("delta",0))
+		cues.append(PresentationAudio.cue(StockChartView.BOOT_TIME*0.1,&"ui_click",-6.0))  # 태블릿 화면이 켜지는 딸깍
 		if change!=0:cues.append(PresentationAudio.cue(StockChartView.LIVE_AT,&"stock_up" if change>0 else &"stock_down"))
 		var event:StringName=StringName(details.get("event",&""))
 		if event==ToolStockChart.EVENT_LIMIT_UP:cues.append(PresentationAudio.cue(StockChartView.STAMP_AT,&"stock_bull"))
@@ -323,7 +344,7 @@ func play(tool_id: StringName, result: Dictionary, power: float = 0.5, continues
 			cues.append(PresentationAudio.cue(OmikujiView.FOLD_AT, &"ticket_rustle", -10.0))
 			cues.append(PresentationAudio.cue(OmikujiView.TIE_AT, &"ticket_rustle", -9.0))
 	elif tool_id == &"DICE_CAPSULE":
-		cues.append(PresentationAudio.cue(CapsuleGachaView.COIN_AT + 0.45, &"toy_click", -8.0))
+		cues.append(PresentationAudio.cue((CapsuleGachaView.TURN_AT - 0.12) if interactive else (CapsuleGachaView.COIN_AT + 0.45), &"toy_click", -8.0))  # 동전이 들어가는 딸깍
 		if not interactive:  # 내가 돌리는 레버는 돌린 만큼 딸깍 소리를 낸다 (_turn_capsule)
 			for at: float in [0.95, 1.15, 1.35, 1.55]:
 				cues.append(PresentationAudio.cue(at, &"yut_clack", -11.0))
@@ -395,6 +416,7 @@ func _stop_playback() -> void:
 	scale = Vector2.ONE
 	rotation = 0.0
 	placing_time = -1.0
+	_place_pause = 0.0
 	_hopping = false
 	_toss_base_scale = 1.0
 	if _contact_fx != null:
@@ -434,7 +456,7 @@ func _begin_toss() -> void:
 	_toss_view = _dice_3d if dice else _yut_3d
 	if dice and _dice_3d.shadow != null:
 		_dice_3d.shadow.visible = _mode == &"CHINCHIRO"
-	_hopping = hop_from.is_finite() and _mode in [&"D6", &"CHINCHIRO"]
+	_hopping = hop_from.is_finite() and _mode in [&"D6", &"CHINCHIRO", &"YUT"]
 	_toss_base_scale = hop_scale if _hopping else 1.0
 	_toss_start = hop_from if _hopping else (toss_from if toss_from.is_finite() else center + Vector2(0.0, 260.0))
 	if _ground_shadow == null:
@@ -456,9 +478,11 @@ func _begin_toss() -> void:
 	_die_label.pivot_offset = Vector2.ZERO
 	if _mode == &"CHINCHIRO" and not _hopping:
 		_dice_3d.set_bowl_entry(_toss_start - center - TOSS_LAND_OFFSET)
-	if _hopping and hop_pose is Transform3D:
+	if _hopping and hop_pose is Transform3D and dice:
 		_dice_3d.start_from(hop_pose)  # 소품 주사위의 자세에서 이어서 돈다 (첫 프레임이 튀지 않게)
-	if _mode == &"YUT" and _yut_3d.result_value == 0:
+	if _hopping and hop_pose is Array and _mode == &"YUT":
+		_yut_3d.start_from(hop_pose)  # 보드에 놓여 있던 윷가락 자세에서 그대로 위로 던져진다
+	if _mode == &"YUT" and _yut_3d.result_value == 0 and not _hopping:
 		_configure_yut_nak()
 	modulate.a = 0.0
 	_update_toss(0.0)
@@ -471,7 +495,10 @@ func _begin_place(drop: bool = false) -> void:
 	_place_scale = scale.x  # 카드 시점 배율(table_scale)이 걸려 있으면 그 크기로 놓인다
 	var source: Vector2 = place_from if place_from.is_finite() else (toss_from if toss_from.is_finite() else center + Vector2(0.0, 260.0))
 	_place_from = source - size / 2.0
-	if drop:
+	_rising = drop and RISE_TOOLS.has(_mode)
+	if _rising:
+		_place_from = _place_target + Vector2(0.0, DROP_HEIGHT)  # 태블릿처럼 아래에서 위로 꺼내 든다
+	elif drop:
 		_place_from = _place_target - Vector2(0.0, DROP_HEIGHT)  # 바로 위에서 떨어진다
 	var stage_rect: Rect2 = _stage.get_global_rect() if _stage != null else Rect2(center - Vector2(80, 0), Vector2(160, 60))
 	_place_base = Vector2(stage_rect.get_center().x, stage_rect.end.y - 6.0)
@@ -488,16 +515,18 @@ func _begin_place(drop: bool = false) -> void:
 	_contact_fx.show()
 	if is_equal_approx(_place_scale, 1.0):
 		pivot_offset = _place_base - _place_target  # 바닥 가운데를 기준으로 눌렸다 펴진다 (카드 시점 배율이 걸렸으면 가운데 기준 그대로)
-	placing_time = 0.0
+	# 스크래치 복권은 나무 계산대(CardMat)를 들고 와 내려놓은 다음에 복권이 떨어진다 (1.3.1)
+	placing_time = -PLACE_AFTER_COUNTER if _mode == &"DICE_SCRATCH" and drop else 0.0
+	_place_pause = CAPSULE_LOOK_PAUSE if _mode == &"DICE_CAPSULE" and drop else 0.0
 	_place_landed = false
-	_update_place(0.0)
+	_update_place(placing_time)
 
 
 ## 들고 와서(호를 그리며 커진다) 바닥에 닿으면 살짝 눌렸다 펴지고, 닿은 자리에 먼지가 인다. 그림자는 놓일 자리에 깔린 채 진해진다.
 func _update_place(t: float) -> void:
 	var land_at: float = DROP_TIME if _dropping else PLACE_TIME
 	var u: float = clampf(t / land_at, 0.0, 1.0)
-	var eased: float = u * u if _dropping else 1.0 - pow(1.0 - u, 3.0)  # 떨어질 때는 점점 빨라진다
+	var eased: float = (1.0 - pow(1.0 - u, 3.0)) if _rising else (u * u if _dropping else 1.0 - pow(1.0 - u, 3.0))  # 떨어질 때는 점점 빨라지고, 꺼내 들 때는 부드럽게 멈춘다
 	position = _place_from.lerp(_place_target, eased) + (Vector2.ZERO if _dropping else Vector2(0.0, -sin(PI * u) * PLACE_LIFT))
 	var settle: float = clampf((t - land_at) / PLACE_SETTLE, 0.0, 1.0)
 	if u < 1.0:
@@ -506,11 +535,11 @@ func _update_place(t: float) -> void:
 			modulate.a = clampf(u * 6.0, 0.0, 1.0)
 	else:
 		modulate.a = 1.0
-		var squash: float = sin(PI * settle) * (1.0 - settle) * (DROP_SQUASH if _dropping else 0.09)
+		var squash: float = sin(PI * settle) * (1.0 - settle) * (0.0 if _rising else (DROP_SQUASH if _dropping else 0.09))
 		scale = Vector2(1.0 + squash, 1.0 - squash) * _place_scale
 	if _ground_shadow != null:
 		var width: float = float(_ground_shadow.get_meta("width", 200.0)) * lerpf(0.55, 1.0, eased)
-		_ground_shadow.visible = true
+		_ground_shadow.visible = not _rising and t >= 0.0  # 손에 든 태블릿은 바닥 그림자 없이, 떨어지기 전에는 그림자도 없이
 		_ground_shadow.size = Vector2(width, width * 0.22)
 		_ground_shadow.global_position = _place_base - _ground_shadow.size / 2.0
 		_ground_shadow.modulate.a = lerpf(0.6, 2.4, eased)  # 기본 그림자(옅은 연기)를 판 위 물건 무게만큼 진하게
@@ -523,12 +552,15 @@ func _update_place(t: float) -> void:
 	if _contact_fx != null:
 		_contact_fx.marks.clear()
 		var age: float = t - land_at
-		if age >= 0.0 and age < 0.20:
+		if age >= 0.0 and age < 0.20 and not _rising:  # 들어 올린 태블릿은 바닥에 먼지를 일으키지 않는다
 			_contact_fx.marks.append({"at": _place_base, "age": age, "strength": 1.4 if _dropping else 1.0})
 		_contact_fx.queue_redraw()
 	if t >= land_at and not _place_landed:
 		_place_landed = true
-		Sfx.play(&"thud", -3.0 if _dropping else -9.0, 0.0, 0.8 if _dropping else 0.9)  # 쿵
+		if _rising:
+			Sfx.play(&"card_pick", -6.0)  # 태블릿을 들어 올린 딸깍
+		else:
+			Sfx.play(&"thud", -3.0 if _dropping else -9.0, 0.0, 0.8 if _dropping else 0.9)  # 쿵
 	if t >= land_at + maxf(PLACE_SETTLE, 0.20):
 		position = _place_target
 		scale = Vector2.ONE * _place_scale
@@ -785,7 +817,7 @@ func _process(delta: float) -> void:
 		visible=false
 		finished.emit()
 		return
-	if placing_time >= 0.0:
+	if placing_time != -1.0:  # 내려놓는 중 (계산대를 기다리는 동안은 음수)
 		placing_time += delta
 		_update_place(placing_time)
 	if _slot_lever_gate:
@@ -821,13 +853,19 @@ func _process(delta: float) -> void:
 		else:
 			_update(_t)
 			return
-	_t += delta
+	if _mode in [&"SLOT_777", &"DICE_CAPSULE", &"DICE_STOCK"] and placing_time >= 0.0 and placing_time < DROP_TIME:
+		_t = 0.0  # 슬롯머신은 떨어져 놓인 다음에 릴이 돌고, 캡슐 기계는 놓인 다음에, 태블릿은 다 꺼내 든 다음에 화면이 켜진다 (1.3.1)
+	elif _place_pause > 0.0 and (placing_time == -1.0 or placing_time >= DROP_TIME):
+		_place_pause -= delta  # 캡슐 기계: 내려앉고 잠깐 있다가 레버 쪽으로 다가간다
+		_t = 0.0
+	else:
+		_t += delta
 	if interactive and not _capsule_released and _mode == &"DICE_CAPSULE" and _t >= CapsuleGachaView.TURN_AT:
 		_t = CapsuleGachaView.TURN_AT
 		_capsule_gate = true
 		_gate_wait = 0.0
 		_capsule_title = _title.text
-		_title.text = L10n.t("레버를 끌어서 돌리세요!")
+		_title.text = L10n.t("레버를 돌리세요!")
 		_title.visible = true
 	if interactive and not _scratch_released and _mode == &"DICE_SCRATCH" and _scratch_view != null and _scratch_view.manual and _t >= ScratchTicketView.SCRATCH_START:
 		_t = ScratchTicketView.SCRATCH_START
@@ -1060,7 +1098,7 @@ func _build(tool_id: StringName) -> void:
 	match tool_id:
 		&"D6", &"CHINCHIRO":
 			_title.text = "기본 주사위" if tool_id == &"D6" else "지하노역장 친치로"
-			_total = CHINCHIRO_LAND_TIME if tool_id == &"CHINCHIRO" else TOSS_LAND_TIME
+			_total = (CHINCHIRO_LAND_TIME if tool_id == &"CHINCHIRO" else TOSS_LAND_TIME) + RESULT_SUSPENSE  # 멈춘 뒤 뜸 들였다가 결과
 			if _dice_3d == null:
 				_dice_3d = DiceRoll3D.new()
 				_stage.add_child(_dice_3d)
@@ -1071,6 +1109,7 @@ func _build(tool_id: StringName) -> void:
 			_dice_3d.begin(_final_face, _power, tool_id)
 			_die_label = _label("", RESULT_STAMP_PX, Color("ffe066"))
 			_outline(_die_label, 16)
+			_die_label.modulate.a = 0.0  # 뜸 들이는 동안 숨겨 두고 끝날 때(잔상 시작) 쾅 찍는다
 			_root.add_child(_die_label)
 		&"YUT":
 			_title.text = "전통 박달나무 윷"
@@ -1165,7 +1204,7 @@ func _build(tool_id: StringName) -> void:
 			if _dart_view == null or not is_instance_valid(_dart_view):
 				_dart_view = DartBoardView.new()
 			_stage_view(_dart_view)
-			_dart_view.begin(_result.get("details", {}))
+			_dart_view.begin(_result.get("details", {}), dart_start_turn)
 			_make_card_result(DartBoardView.caption(_result.get("details", {}), int(_result.get("steps", 0))))
 		&"DICE_OMIKUJI":
 			_title.text = "오미쿠지 뽑기통"
@@ -1771,7 +1810,7 @@ func _gui_input(event: InputEvent) -> void:
 func _refresh_input_filter() -> void:
 	var waiting: bool = awaiting_input()
 	mouse_filter = Control.MOUSE_FILTER_STOP if waiting else Control.MOUSE_FILTER_IGNORE
-	if waiting and _die_label != null and _mode in [&"SLOT_777", &"DICE_SCRATCH"]:
+	if waiting and _die_label != null and _mode in [&"SLOT_777", &"DICE_SCRATCH"] and placing_time == -1.0:
 		_die_label.text = L10n.t("눌러서 릴을 멈추세요! (스페이스)") if _mode == &"SLOT_777" else L10n.t("손가락으로 은박을 긁으세요!")
 		if _slot_lever_gate: _die_label.text=L10n.t("레버를 아래로 당기세요! (스페이스)")
 		_die_label.modulate.a = 1.0

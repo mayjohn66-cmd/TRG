@@ -6,18 +6,25 @@ const SIZE := Vector2(360, 340)
 const SPIN_PERIOD := 2.4
 const AIM_PERIOD := 1.3
 const FLIGHT_TIME := 0.45
-const TOTAL_TIME := 1.5
+## 1.3.1 뜸 들이기: 다트가 꽂힌 뒤 정면 그대로 잠시 멈췄다가(SUSPENSE) 판이 옆으로 기울며(TILT_TIME) 결과를 보여 준다.
+const SUSPENSE := 0.6
+const TILT_TIME := 0.55
+const REVEAL_AT := FLIGHT_TIME + SUSPENSE + TILT_TIME * 0.6
+const TOTAL_TIME := FLIGHT_TIME + SUSPENSE + TILT_TIME + 0.45
 const FACE_Z := 0.075
 const TIP_Z := -0.14
 const SCORE_RADIUS := 2.0
 const FRAME_MODEL: PackedScene = preload("res://assets/models/optimized/v5/darts/fixed_frame.scn")
 const TARGET_MODEL: PackedScene = preload("res://assets/models/optimized/v5/darts/rotating_target.scn")
+const STOP_TIME := 0.5
 const DART_MODEL: PackedScene = preload("res://assets/models/optimized/v4/darts/v02/dart_v02.scn")
 
 var aiming := false
 ## 던지기 전 대기 표시: 조준점 없이 과녁만 천천히 돈다 (조준은 없앴지만 던질 곳이 보이게).
 var idle := false
+## 결과 글을 보여도 되는가 (꽂히고 뜸 들인 뒤 판이 기울 때). 꽂힌 순간은 stuck.
 var settled := false
+var stuck := false
 var _spin := 0.0
 var _aim_radius := 0.0
 var _clock := 0.0
@@ -28,6 +35,9 @@ var _t := 0.0
 var _viewport: SubViewport
 var _board: Node3D
 var _frame: Node3D
+var _face_turn := 0.0
+var _start_turn := 0.0
+var _dart_frame: Node3D
 var _dart: Node3D
 var _camera: Camera3D
 var _reticle: Node3D
@@ -91,11 +101,29 @@ func current_aim() -> Array:
 func _process(delta: float) -> void:
 	_clock += delta
 	_spin = fposmod(_clock / SPIN_PERIOD, 1.0)
+	if idle:
+		_face_turn = _spin
 	_aim_radius = 0.5 - 0.5 * cos(_clock / AIM_PERIOD * TAU)
 	_present()
 
 
-func begin(details: Dictionary) -> void:
+## 지금 돌아가 있는 과녁 판의 각도 (바퀴). 던지는 순간 결과 연출이 이 각도에서 이어 돈다.
+func face_turn() -> float:
+	return _face_turn
+
+
+## 결과 연출의 과녁 판 각도: 던진 뒤에도 같은 속도로 돌다가, 꽂히면 다트를 꽂은 채 서서히 멈춘다.
+static func face_turn_at(start: float, t: float) -> float:
+	var speed := 1.0 / SPIN_PERIOD
+	if t < FLIGHT_TIME:
+		return start + speed * maxf(t, 0.0)
+	var u := clampf((t - FLIGHT_TIME) / STOP_TIME, 0.0, 1.0)
+	return start + speed * FLIGHT_TIME + speed * STOP_TIME * (2.0 * u - u * u) * 0.5
+
+
+func begin(details: Dictionary, start_turn: float = 0.0) -> void:
+	_start_turn = start_turn
+	_face_turn = start_turn
 	aiming = false
 	idle = false
 	_spin = 0.0
@@ -111,7 +139,9 @@ func begin(details: Dictionary) -> void:
 
 func apply_time(t: float) -> void:
 	_t = maxf(t, 0.0)
-	settled = _t >= FLIGHT_TIME
+	_face_turn = face_turn_at(_start_turn, _t)
+	stuck = _t >= FLIGHT_TIME
+	settled = _t >= REVEAL_AT
 	if is_node_ready():
 		_present()
 		_request_frame()
@@ -141,9 +171,12 @@ func _build_scene() -> void:
 	_board = TARGET_MODEL.instantiate()
 	_board.name = "RotatingDartboardTarget"
 	_viewport.add_child(_board)
+	_dart_frame = Node3D.new()  # 꽂힌 다트는 과녁 판과 함께 돈다 (다트 위치는 판 기준 좌표)
+	_dart_frame.name = "DartFrame"
+	_viewport.add_child(_dart_frame)
 	_dart = DART_MODEL.instantiate()
 	_dart.name = "EmbeddedDart"
-	_viewport.add_child(_dart)
+	_dart_frame.add_child(_dart)
 	_camera = Camera3D.new()
 	_camera.projection = Camera3D.PROJECTION_ORTHOGONAL
 	_camera.size = 5.65
@@ -187,12 +220,12 @@ func _cursor_bar(dimensions: Vector2, material: Material, z: float) -> void:
 
 
 func _present() -> void:
-	# The physical housing, rim, rivets and feet never inherit the target spin.
-	_board.rotation.z = -_spin * TAU if (aiming or idle) else 0.0
+	_board.rotation.z = -_spin * TAU if aiming else -_face_turn * TAU
+	_dart_frame.rotation.z = 0.0
 	_reticle.visible = aiming
 	_reticle.position = Vector3(0.0, _aim_radius * SCORE_RADIUS, 0.22)
 	_dart.visible = not aiming and (_hit_radius >= 0.0 or (idle and ready_dart))
-	var reveal := smoothstep(0.0, 0.75, _t) if not aiming else 0.0
+	var reveal := smoothstep(FLIGHT_TIME + SUSPENSE, FLIGHT_TIME + SUSPENSE + TILT_TIME, _t) if not aiming else 0.0  # 꽂히고 뜸 들인 뒤에 기운다
 	_camera.position = Vector3(5.0 * reveal, 1.6 * reveal, 8.5)
 	_camera.look_at(Vector3.ZERO, Vector3.UP)
 	if idle and ready_dart and _hit_radius < 0.0:
@@ -205,9 +238,11 @@ func _present() -> void:
 	_dart.scale = Vector3.ONE
 	if _dart.visible:
 		var flight := clampf(_t / FLIGHT_TIME, 0.0, 1.0)
-		_dart.position = hit_point(_hit_radius, _hit_angle) + Vector3(1.1, 1.3, 5.0) * (1.0 - pow(flight, 3.0))
+		# 날아가는 동안은 꽂힐 순간의 판 각도를 겨냥하고, 꽂힌 뒤에는 판과 함께 돈다. 날아오는 방향(오른쪽 위 앞)은 화면 기준.
+		_dart_frame.rotation.z = -face_turn_at(_start_turn, maxf(_t, FLIGHT_TIME)) * TAU
+		_dart.position = hit_point(_hit_radius, _hit_angle) + _dart_frame.basis.inverse() * (Vector3(1.1, 1.3, 5.0) * (1.0 - pow(flight, 3.0)))
 		var age := maxf(_t - FLIGHT_TIME, 0.0)
-		var wobble := sin(age * 42.0) * exp(-age * 12.0) * 0.045 if settled else 0.0
+		var wobble := sin(age * 42.0) * exp(-age * 12.0) * 0.045 if stuck else 0.0
 		# Wobble pivots about the tip; the authoritative contact point stays fixed.
 		_dart.rotation = Vector3(deg_to_rad(-8.0) + wobble, deg_to_rad(8.0) + wobble, 0.0)
 

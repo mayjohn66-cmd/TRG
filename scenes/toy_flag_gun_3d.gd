@@ -301,9 +301,8 @@ static func total_time(fired: bool) -> float:
 
 
 ## 발사 결과 문구: 깃발이 나와 턴이 끝날 때만 알린다. 안전한 찰칵(누적·이동 예정 칸)은 글자 없이 총 연출로만 보여 준다.
-static func result_caption(fired: bool, _accumulated: int, lost: int, _can_continue: bool = true) -> String:
-	if fired:
-		return "뿅! 누적 %d칸 사라짐 · 턴 종료" % lost
+## 결과 문구는 쓰지 않는다 — 폭죽과 깃발, 큰 도장이 결과를 말한다 (1.3.1).
+static func result_caption(_fired: bool, _accumulated: int, _lost: int, _can_continue: bool = true) -> String:
 	return ""
 
 

@@ -55,16 +55,32 @@ func _run() -> void:
 			view.begin(details)
 			expect(not view.is_processing() and not view._reticle.visible, "result uses presenter clock only")
 			view.apply_time(DartBoardView.FLIGHT_TIME - 0.01)
-			expect(not view.settled and view._dart.position.z > DartBoardView.TIP_Z, "dart approaches before score reveal")
+			expect(not view.stuck and not view.settled and view._dart.position.z > DartBoardView.TIP_Z, "dart approaches before score reveal")
 			view.apply_time(DartBoardView.FLIGHT_TIME)
 			var expected := DartBoardView.hit_point(radius, angle)
-			expect(view.settled and view._dart.position.distance_to(expected) < 0.00001, "embedded dart matches authoritative point")
+			expect(view.stuck and not view.settled and view._dart.position.distance_to(expected) < 0.00001, "embedded dart matches authoritative point (score waits for the pause and tilt)")
+			view.apply_time(DartBoardView.REVEAL_AT)
+			expect(view.settled and view._camera.position.x > 0.5, "after the pause the board tilts and the score shows")
 			view.apply_time(0.53)
 			expect(view._dart.position.distance_to(expected) < 0.00001, "wobble never slides tip")
 			view.apply_time(DartBoardView.TOTAL_TIME)
 			expect(view._dart.position.distance_to(expected) < 0.00001, "final point remains exact")
 			expect(DartBoardView.caption(details, hit["steps"]) == ToolDarts.hit_text(details, hit["steps"]), "caption matches engine score")
 	expect(is_equal_approx(DartBoardView.FACE_Z - DartBoardView.TIP_Z, 0.215), "needle visibly penetrates approved depth")
+	# 1.3.1: 과녁 판만 돈다. 던진 순간의 각도에서 이어 돌고, 꽂힌 다트는 판의 그 칸에 박힌 채 함께 돌다 멈춘다.
+	var spun := {"radius": 0.6, "angle": 0.3}
+	spun.merge(ToolDarts.score(0.6, 0.3))
+	view.begin(spun, 0.37)
+	view.apply_time(0.0)
+	expect(is_equal_approx(view._board.rotation.z, -0.37 * TAU) and is_zero_approx(view._frame.rotation.z), "result face continues from the thrown angle; housing stays")
+	for at: float in [DartBoardView.FLIGHT_TIME, DartBoardView.FLIGHT_TIME + 0.2, DartBoardView.TOTAL_TIME]:
+		view.apply_time(at)
+		var on_face: Vector3 = view._board.global_transform * DartBoardView.hit_point(0.6, 0.3)
+		expect(view._dart.global_position.distance_to(on_face) < 0.0001, "embedded dart stays on its scoring cell while the face turns (t=%.2f)" % at)
+	view.apply_time(DartBoardView.FLIGHT_TIME + DartBoardView.STOP_TIME)
+	var stopped := view._board.rotation.z
+	view.apply_time(DartBoardView.TOTAL_TIME)
+	expect(is_equal_approx(view._board.rotation.z, stopped), "face has stopped before the tilt reveal")
 	view.set_aiming(true)
 	expect(not view._dart.visible and view._reticle.visible and not view.settled, "next throw resets hit visuals")
 	view.set_idle(true)
@@ -75,7 +91,7 @@ func _run() -> void:
 	var preconfigured := DartBoardView.new()
 	preconfigured.begin({"radius": 0.50, "angle": 0.375})
 	root.add_child(preconfigured)
-	preconfigured.apply_time(1.0)
+	preconfigured.apply_time(DartBoardView.REVEAL_AT)  # 1.3.1: 꽂히고 뜸 들인 뒤 기울 때 결과
 	expect(preconfigured._dart.visible and preconfigured.settled, "result can be configured before ready")
 	preconfigured.queue_free()
 	await process_frame

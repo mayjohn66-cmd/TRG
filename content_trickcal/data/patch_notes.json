@@ -144,6 +144,21 @@
        "ko": "[블랙잭 21 딜러]와 [리치 마작 만리장성]도 판 가운데로 다가가 전용 매트 위에서 써요: 블랙잭은 청록 카지노 테이블, 마작은 진초록 마작 매트",
        "en": "[Blackjack 21 Dealer] and [Riichi Mahjong Great Wall] are now played on their own mats in the middle of the board too: a teal casino table for Blackjack and a dark green mahjong mat",
        "ja": "［ブラックジャック21ディーラー］と［リーチ麻雀万里の長城］もボード中央に寄って専用マットの上で使います：ブラックジャックは青緑のカジノテーブル、麻雀は深緑の麻雀マット"
+      },
+      {
+       "ko": "판정 도구 연출을 다듬었어요: [기본 주사위]·[친치로]는 멈춘 뒤 잠깐 뜸을 들였다가 결과가 떠요. [윷]은 판 위에 놓인 윷가락이 그 자리에서 던져져요. [다트]·[인생게임 룰렛]·[러시안 룰렛]·[해적 룰렛]은 [꺼내기]를 누르면 판 위에 떨어지고, 다트는 돌아가는 과녁을 눌러 던지면 꽂힌 채 멈춘 뒤 판이 기울며 결과를, 해적 룰렛은 통을 끌어 돌리고 구멍을 눌러 칼을 꽂아요. [슬롯머신]은 놓인 다음 릴이 돌고 레버를 당길 때마다 하나씩 멈춰요. [주식 차트]는 태블릿처럼 아래에서 꺼내 들고, [캡슐뽑기]는 레버 쪽으로 다가간 뒤 동전이 들어가요",
+       "en": "Polished the Judgment Tool presentations: [Standard Dice] and [Chinchiro] pause for a moment after stopping before showing the result. [Yut] sticks lying on the board are thrown from where they sit. [Darts], [Life Roulette], [Russian Roulette] and [Pirate Roulette] drop onto the board when you press [Take out]; tap the spinning dart board to throw; it slows to a stop with the dart stuck in it, then tilts to show the result; drag the pirate barrel to turn it and tap a hole to stab. The [Slot Machine] starts spinning after it lands and each lever pull stops the next reel. The [Stock Chart] is lifted up from below like a tablet, and [Capsule Gacha] moves in on the lever before the coin goes in",
+       "ja": "判定ツールの演出を磨きました：［基本サイコロ］・［チンチロ］は止まったあと少し間をおいてから結果が出ます。［ユッ］はボードの上に置かれたユッがその場で投げられます。［ダーツ］・［人生ゲームルーレット］・［ロシアンルーレット］・［海賊ルーレット］は［取り出す］を押すとボードに落ちてきて、ダーツは回る的を押して投げると、刺さったまま止まってから盤が傾いて結果を、海賊ルーレットは樽をドラッグして回し穴を押して剣を刺します。［スロットマシン］は置かれてからリールが回り、レバーを引くたびに1つずつ止まります。［株価チャート］はタブレットのように下から取り出し、［カプセルガチャ］はレバーに寄ってからコインが入ります"
+      },
+      {
+       "ko": "[스크래치 복권]의 나무 계산대는 말렸다 펴지지 않고, 판째로 들고 와 내려놓은 다음 복권이 떨어져요. 다 긁고 나면 계산대를 들어서 치워요",
+       "en": "[Scratch Ticket]'s wooden counter no longer rolls out like cloth: the whole board is carried in and set down before the ticket drops onto it, and it is lifted away afterwards",
+       "ja": "［スクラッチくじ］の木のカウンターは巻物のように広がらず、板ごと運んで置いてからくじが落ちてきます。削り終わるとカウンターを持ち上げて片付けます"
+      },
+      {
+       "ko": "[러시안 룰렛] 폭죽이 터질 때 밑에 뜨던 작은 문구를 없앴어요. [주식 차트]는 태블릿을 꺼내 든 다음 화면이 켜지고 시작해요. [캡슐뽑기]는 기계가 내려앉고 잠깐 있다가 레버 쪽으로 다가가요. [핀볼]도 야추처럼 판 가운데로 다가가 핀볼대를 위에 내려놓고 쏴요",
+       "en": "Removed the small caption under the [Russian Roulette] confetti. The [Stock Chart] tablet is lifted up first, then its screen turns on. [Capsule Gacha] sits for a moment after landing before moving in on the lever. [Pinball] now moves to the middle of the board like Yacht, and the pinball table is set down there before you launch",
+       "ja": "［ロシアンルーレット］の紙吹雪の下に出ていた小さな文字をなくしました。［株価チャート］はタブレットを取り出してから画面がついて始まります。［カプセルガチャ］は機械が置かれて少したってからレバーに寄ります。［ピンボール］もヨットのようにボード中央に寄って、台を置いてから発射します"
       }
      ]
     },

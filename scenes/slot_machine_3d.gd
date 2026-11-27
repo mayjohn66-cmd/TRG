@@ -54,6 +54,8 @@ var _announced: bool = false
 ## 누르지 않으면 AUTO_STOP_AFTER초 뒤 저절로 선다. 결과 그림은 그대로라 확률과 무관하다.
 var manual: bool = false
 var _stop_requested: Array[float] = [-1.0, -1.0, -1.0]
+## 직접 멈추기 (1.3.1): 레버를 마지막으로 당긴 시각 (릴 하나를 멈출 때마다 레버가 한 번 내려갔다 올라온다). -1 = 아직.
+var _lever_at: float = -1.0
 var _brake_from: Array[float] = [0.0, 0.0, 0.0]
 var _brake_distance: Array[float] = [0.0, 0.0, 0.0]
 const MANUAL_SPEED: float = 15.0
@@ -282,6 +284,7 @@ func begin(values: Array, power: float = 0.5) -> void:
 	_power = clampf(power,0,1)
 	stopped = [false,false,false]
 	_stop_requested = [-1.0, -1.0, -1.0]
+	_lever_at = -1.0
 	winning_reels = matching_reels(result_values)
 	settled = false
 	_time = 0.0
@@ -397,6 +400,7 @@ func request_stop() -> bool:
 			var natural: float = MANUAL_SPEED * BRAKE_TIME * 0.25
 			var target: float = result_values[index] * STEP
 			_stop_requested[index] = _time
+			_lever_at = _time
 			_brake_from[index] = from
 			_brake_distance[index] = natural + fposmod(target - (from + natural), TAU)
 			return true

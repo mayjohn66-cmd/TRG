@@ -31,6 +31,9 @@ var user_yaw := 0.0
 var _rest_t := -1.0
 ## 보드 위 대기 통: 바뀔 때만 한 번 그린다 (기다리는 동안 매 프레임 3D를 그리지 않는다).
 var _stage: SubViewport = null
+var _camera: Camera3D = null
+## 누를 수 있는 구멍과의 최대 거리 (화면 px).
+const HOLE_PICK_RADIUS: float = 26.0
 
 
 func _init() -> void:
@@ -81,6 +84,35 @@ func spin(delta: float) -> void:
 	if _rest_t >= 0.0:
 		apply_time(_rest_t)
 		_redraw_once()
+
+
+## 이 자리(이 노드 좌표)에 있는 빈 구멍 번호 (앞쪽을 보고 있는 구멍만, 없으면 -1). 대기 통을 눌러 칼을 꽂을 때 쓴다.
+func hole_at(point: Vector2) -> int:
+	if _camera == null or _barrel == null:
+		return -1
+	var best: int = -1
+	var best_distance: float = HOLE_PICK_RADIUS
+	var taken: Array = get_meta("holes", [])
+	for index: int in _slots.size():
+		if taken.has(index) or _slots[index] == null:
+			continue
+		var at: Vector3 = _slots[index].global_position
+		var outward: Vector3 = at - Vector3(_barrel.global_position.x, at.y, _barrel.global_position.z)
+		if outward.dot(_camera.global_position - at) <= 0.0:
+			continue  # 통 뒤쪽 구멍은 누를 수 없다
+		var screen: Vector2 = _camera.unproject_position(at) / 1.5  # 3D 화면은 1.5배 해상도로 그린다
+		var distance: float = screen.distance_to(point)
+		if distance < best_distance:
+			best_distance = distance
+			best = index
+	return best
+
+
+## 구멍 화면 자리 (테스트용, 이 노드 좌표).
+func hole_screen_point(index: int) -> Vector2:
+	if _camera == null or index < 0 or index >= _slots.size():
+		return Vector2(INF, INF)
+	return _camera.unproject_position(_slots[index].global_position) / 1.5
 
 
 func _redraw_once() -> void:
@@ -179,6 +211,7 @@ func _build_stage() -> void:
 	stage.add_child(camera)
 	camera.look_at(Vector3(0, 1.83, 0))
 	camera.current = true
+	_camera = camera
 
 	_barrel = BARREL.instantiate() as Node3D
 	stage.add_child(_barrel)

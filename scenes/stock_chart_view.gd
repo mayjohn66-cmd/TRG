@@ -3,10 +3,12 @@ class_name StockChartView
 extends Control
 
 const SIZE := Vector2(520,300)
-const LIVE_AT := 0.85
-const DRAW_TIME := 1.65
-const STAMP_AT := 1.80
-const TOTAL_TIME := 2.85
+## 1.3.1: 꺼내 든 태블릿은 꺼진 화면에서 시작해, 빛 줄이 퍼지며 켜진 다음에 시세가 나온다.
+const BOOT_TIME := 0.55
+const LIVE_AT := BOOT_TIME + 0.85
+const DRAW_TIME := BOOT_TIME + 1.65
+const STAMP_AT := BOOT_TIME + 1.80
+const TOTAL_TIME := BOOT_TIME + 2.85
 const ANNOUNCEMENT_BODY := "오늘의 주식은"
 const ANNOUNCEMENT := ANNOUNCEMENT_BODY + "..."
 const DOT_INTERVAL := 0.20
@@ -61,6 +63,10 @@ static func caption(details: Dictionary, steps: int) -> String:
 	var delta := int(details.get("delta",0))
 	return "주가 %d (%s%d) · %d칸 전진" % [int(details.get("price",steps)),"+" if delta>=0 else "",delta,steps]
 
+## 화면 밝기 (0 = 꺼진 화면, 1 = 다 켜짐).
+func screen_on() -> float:
+	return smoothstep(BOOT_TIME*0.45,BOOT_TIME,_t)
+
 func progress() -> float:
 	var p := clampf((_t-LIVE_AT)/(DRAW_TIME-LIVE_AT),0.0,1.0)
 	return p*p*(3.0-2.0*p)
@@ -70,7 +76,7 @@ func displayed_price() -> int:
 
 func announcement_text() -> String:
 	if _t>=LIVE_AT: return ""
-	var dots := int(floor(_t/DOT_INTERVAL))%3+1
+	var dots := int(floor(maxf(_t-BOOT_TIME,0.0)/DOT_INTERVAL))%3+1
 	return ANNOUNCEMENT_BODY + ".".repeat(dots)
 
 func historical_points() -> PackedVector2Array:
@@ -109,19 +115,21 @@ func _text(text: String,at: Vector2,px: int,color: Color,font: Font=null,outline
 
 func _draw() -> void:
 	_font = get_theme_default_font()
-	var intro := 1.0-pow(1.0-clampf(_t/0.18,0.0,1.0),3.0)
-	var zoom := lerpf(0.94,1.0,intro)
 	var age := maxf(_t-STAMP_AT,0.0)
-	draw_set_transform(size*0.5*(1.0-zoom)+Vector2(0.0,10.0*(1.0-intro)),0.0,Vector2.ONE*zoom)
-	var shape := PackedVector2Array([Vector2(0,12),Vector2(16,0),Vector2(size.x-10,0),Vector2(size.x,12),Vector2(size.x,size.y-12),Vector2(size.x-16,size.y),Vector2(10,size.y),Vector2(0,size.y-12)])
-	var shadow := PackedVector2Array()
-	for point: Vector2 in shape: shadow.append(point+Vector2(7,9))
-	draw_colored_polygon(shadow,INK)
-	draw_colored_polygon(shape,PAPER)
-	var edge := shape.duplicate()
-	edge.append(edge[0])
-	draw_polyline(edge,INK,5.0,true)
-	var face := Rect2(Vector2(9,9),size-Vector2(18,18))
+	# 태블릿 몸체: 둥근 검은 테두리와 카메라 구멍. 화면은 그 안쪽이다.
+	var body := StyleBoxFlat.new()
+	body.bg_color = Color("1b2029")
+	body.border_color = Color("3a4250")
+	body.set_border_width_all(2)
+	body.set_corner_radius_all(20)
+	body.shadow_color = Color(0,0,0,0.45)
+	body.shadow_size = 10
+	body.shadow_offset = Vector2(4,8)
+	body.anti_aliasing = true
+	draw_style_box(body,Rect2(Vector2(-12,-12),size+Vector2(24,24)))
+	draw_circle(Vector2(size.x*0.5,-3.0),2.6,Color("0b0e13"))
+	draw_circle(Vector2(size.x*0.5-0.8,-3.8),0.9,Color(0.5,0.6,0.8,0.5))
+	var face := Rect2(Vector2(0,0),size)
 	draw_rect(face,Color("213242") if not (settled and event==ToolStockChart.EVENT_DELISTED) else Color("303641"))
 	for x: int in range(20,int(size.x)-15,10):
 		for y: int in range(18,78,10): draw_circle(Vector2(x,y),0.8,Color(1,1,1,0.07))
@@ -173,7 +181,23 @@ func _draw() -> void:
 		var width := EVENT_FONT.get_string_size(ANNOUNCEMENT,HORIZONTAL_ALIGNMENT_LEFT,-1,29).x
 		_text(announcement,Vector2((size.x-width)*0.5,size.y*0.57),29,PAPER,EVENT_FONT,10)
 	if settled and event!=&"": _event_stamp(age,tone)
-	draw_set_transform(Vector2.ZERO)
+	_draw_boot(face)
+
+## 꺼진 화면 → 가운데 빛 줄이 위아래로 퍼지며 켜진다. 꺼진 화면에는 비스듬한 반사광만 비친다.
+func _draw_boot(face: Rect2) -> void:
+	var on := screen_on()
+	if on >= 1.0: return
+	draw_rect(face,Color(0.02,0.025,0.035,1.0-on))
+	var flash := smoothstep(BOOT_TIME*0.10,BOOT_TIME*0.45,_t)
+	if _t>=BOOT_TIME*0.10:
+		var half := face.size.y*0.5*flash
+		var glow := Color(0.75,0.95,1.0,(1.0-on)*0.55)
+		draw_rect(Rect2(face.position.x,face.get_center().y-half-1.5,face.size.x,half*2.0+3.0),Color(glow,glow.a*0.35))
+		var line_alpha := (1.0-flash)*0.9
+		if line_alpha>0.01:
+			draw_rect(Rect2(face.position.x+face.size.x*0.5*(1.0-minf(flash*3.0,1.0)),face.get_center().y-1.5,face.size.x*minf(flash*3.0,1.0),3.0),Color(1,1,1,line_alpha))
+	var sheen := PackedVector2Array([face.position+Vector2(face.size.x*0.55,0),face.position+Vector2(face.size.x*0.72,0),face.position+Vector2(face.size.x*0.42,face.size.y),face.position+Vector2(face.size.x*0.25,face.size.y)])
+	draw_colored_polygon(sheen,Color(1,1,1,0.05*(1.0-on)))
 
 func _event_stamp(age: float,tone: Color) -> void:
 	var rising := event==ToolStockChart.EVENT_LIMIT_UP

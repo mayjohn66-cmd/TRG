@@ -26,6 +26,7 @@ const STYLES: Dictionary = {
 	&"DICE_BLACKJACK": {"base": Color("0d4f4a"), "center": Color("16706a"), "edge": Color("4a2a18"), "fleck": Color("23867f"), "pattern": "felt"},
 	## 야추 다이스: 매트 없이 어둡게만 (주사위 케이스가 따로 놓인다).
 	&"DICE_YACHT": {"base": Color("000000"), "center": Color("000000"), "edge": Color("000000"), "fleck": Color("000000"), "pattern": "none"},
+	&"DICE_PINBALL": {"base": Color("000000"), "center": Color("000000"), "edge": Color("000000"), "fleck": Color("000000"), "pattern": "none"},  # 핀볼대가 직접 판 위에 놓인다
 }
 ## 매트 크기 (보드 좌표 px). 카드 줄과 버튼이 들어가는 크기.
 const MAT_SIZE: Vector2 = Vector2(820, 470)
@@ -85,8 +86,23 @@ func setup(id: StringName) -> void:
 	queue_redraw()
 
 
-## 가운데에서 좌우로 펼친다.
+## 나무 계산대처럼 단단한 판은 말리거나 접히지 않는다 (1.3.1): 화면 아래에서 들고 와 내려놓고, 끝나면 들어서 아래로 치운다.
+const CARRY_DISTANCE: float = 520.0
+const CARRY_IN_TIME: float = 0.42
+const CARRY_OUT_TIME: float = 0.32
+
+
+func is_rigid() -> bool:
+	return str(STYLES[tool_id]["pattern"]) == "wood"
+
+
+## 가운데에서 좌우로 펼친다 (단단한 판은 아래에서 들고 와 내려놓는다).
 func unroll(delay: float = 0.0) -> void:
+	if is_rigid():
+		_run(1.0, CARRY_IN_TIME, delay)
+		_tween.tween_callback(func() -> void: Sfx.play(&"thud", -8.0, 0.0, 1.1))  # 판을 내려놓는 쿵
+		Sfx.play(&"card_pick", -10.0)
+		return
 	_run(1.0, UNROLL_TIME, delay)
 	Sfx.play(&"ticket_rustle", -8.0)
 
@@ -95,8 +111,12 @@ func unroll(delay: float = 0.0) -> void:
 func roll_up() -> void:
 	if reveal <= 0.0:
 		return
-	_run(0.0, ROLL_UP_TIME, 0.0)
-	Sfx.play(&"ticket_rustle", -10.0)
+	if is_rigid():
+		_run(0.0, CARRY_OUT_TIME, 0.0)  # 살짝 들어 아래로 치운다
+		Sfx.play(&"card_pick", -10.0)
+	else:
+		_run(0.0, ROLL_UP_TIME, 0.0)
+		Sfx.play(&"ticket_rustle", -10.0)
 	var tween: Tween = _tween
 	while tween != null and tween.is_valid() and tween.is_running() and is_inside_tree():
 		await get_tree().process_frame  # 도중에 다시 펼치면(트윈이 끊기면) 기다림도 바로 끝난다
@@ -111,6 +131,9 @@ func _run(target: float, seconds: float, delay: float) -> void:
 
 func mat_rect() -> Rect2:
 	var full: Vector2 = MAT_SIZE * mat_scale
+	if is_rigid():
+		# 판 모양은 그대로, 아래에서 올라오며(들고 오며) 자리를 잡는다
+		return Rect2(mat_center - full / 2.0 + Vector2(0.0, (1.0 - reveal) * CARRY_DISTANCE), full)
 	var width: float = full.x * maxf(reveal, 0.0)
 	return Rect2(mat_center - Vector2(width, full.y) / 2.0, Vector2(width, full.y))
 
@@ -123,13 +146,14 @@ func _draw() -> void:
 	if str(style["pattern"]) == "none":
 		return
 	var rect: Rect2 = mat_rect()
-	if minf(rect.size.x,rect.size.y)<2.0: return
-	var full := Rect2(mat_center - MAT_SIZE * mat_scale / 2.0, MAT_SIZE * mat_scale)
-	# 그림자 → 바탕 → 공용 섬유 질감 → 문양·테두리 → 카드 자리 → 말린 끝
-	for spread: int in [6,4,2]:
-		_round_rect(rect.grow(spread).grow_side(SIDE_BOTTOM,3),Color(0,0,0,.055),22+spread)
-	if str(style["pattern"])=="wood":
-		_round_rect(Rect2(rect.position+Vector2(0,12),rect.size),Color("674025"),22)
+	if minf(rect.size.x, rect.size.y) < 2.0: return
+	var rigid: bool = is_rigid()
+	var full := rect if rigid else Rect2(mat_center - MAT_SIZE * mat_scale / 2.0, MAT_SIZE * mat_scale)  # 단단한 판은 무늬도 판과 같이 움직인다
+	# 그림자 → 바탕 → 가운데 밝은 기운 → 천 질감 → 무늬 → 테두리 → 카드 자리 → 말린 끝(두루마리)
+	var held: float = (1.0 - reveal) if rigid else 0.0  # 들고 있는 동안에는 그림자가 판에서 떨어져 보인다
+	_round_rect(rect.grow(6).grow_side(SIDE_BOTTOM, 6 + held * 28.0), Color(0, 0, 0, 0.35 * (1.0 - held * 0.5)), 26)
+	if rigid:
+		_round_rect(Rect2(rect.position + Vector2(0,12), rect.size), Color("674025"), 22)
 	_round_rect(rect, style["base"], 22)
 	_draw_fabric(rect,full,style)
 	match str(style["pattern"]):
@@ -140,7 +164,7 @@ func _draw() -> void:
 	if reveal > 0.85:
 		for slot: Rect2 in slots:
 			_dashed_rect(slot.grow(4), Color(1, 1, 1, 0.28 * (reveal - 0.85) / 0.15), 10)
-	if reveal < 0.999 and str(style["pattern"])!="wood":
+	if reveal < 0.999 and not rigid:
 		var roll_color: Color = Color(style["base"]).darkened(0.25)
 		for side: float in [-1.0, 1.0]:
 			var x: float = rect.get_center().x + side * rect.size.x / 2.0

@@ -102,13 +102,16 @@ func run() -> void:
 	root.size = Vector2i(1366, 768)
 	await presenter_gates()
 	await placed_on_board()
+	rigid_counter()
 	await dice_hop_in_place()
 	await fixture()
 	await warmup()
 	await pirate_buttons()
 	await holdem_exchange()
 	await yacht_case()
+	await gated_take_out_labels()
 	await blackjack_table()
+	await pinball_table()
 	take_out_labels()
 	if failures.is_empty():
 		print("HAND_TOOLS_OK")
@@ -188,6 +191,22 @@ func dice_hop_in_place() -> void:
 	await frames()
 
 
+## 1.3.1: 나무 계산대(스크래치 복권)는 말리지 않는다. 들고 오는 동안에도 판 모양 그대로 아래에서 올라온다. 천 매트는 가로로 펼친다.
+func rigid_counter() -> void:
+	var mat := CardMat.new()
+	mat.mat_center = Vector2(683, 335)
+	mat.setup(&"DICE_SCRATCH")
+	mat.reveal = 0.5
+	var half: Rect2 = mat.mat_rect()
+	check(mat.is_rigid() and is_equal_approx(half.size.x, CardMat.MAT_SIZE.x) and half.get_center().y > 335.0 + 100.0, "나무 판은 반쯤 왔을 때도 제 모양으로 아래에서 올라온다 (%s)" % str(half))
+	mat.reveal = 1.0
+	check(mat.mat_rect().get_center().distance_to(Vector2(683, 335)) < 0.5, "다 오면 판 가운데에 놓인다")
+	mat.setup(&"DICE_TAROT")
+	mat.reveal = 0.5
+	check(not mat.is_rigid() and mat.mat_rect().size.x < CardMat.MAT_SIZE.x * 0.6, "천 매트는 가로로 펼친다")
+	mat.free()
+
+
 func presenter_gates() -> void:
 	var host := Control.new()
 	host.size = Vector2(1366, 768)
@@ -259,7 +278,9 @@ func presenter_gates() -> void:
 		await presenter.play(&"DICE_CAPSULE", capsule, 0.5)
 		done[0] = true
 	play_capsule.call()
-	await create_timer(1.2).timeout
+	await create_timer(RollPresenter.DROP_TIME + 0.3).timeout
+	check(is_zero_approx(presenter._t) and presenter._place_pause > 0.0, "캡슐 기계는 내려앉은 뒤 잠깐 그대로 있다 (아직 레버 쪽으로 다가가지 않는다)")
+	await create_timer(1.2 + RollPresenter.CAPSULE_LOOK_PAUSE).timeout  # 1.3.1: 놓이고 잠깐 뒤 레버 쪽으로 다가가고 동전이 들어간다
 	check(presenter.capsule_gate_open() and presenter.awaiting_input(), "동전이 들어가면 레버 앞에서 기다린다")
 	presenter.turn_capsule(0.5)
 	await create_timer(0.3).timeout
@@ -281,23 +302,52 @@ func pirate_buttons() -> void:
 	rolls.clear()
 	await give(&"DICE_PIRATE")
 	await wait_idle()
-	check(board._pirate_idle != null and board._pirate_idle.visible, "해적통이 보드 위에 서 있다")
-	check(board._roll_button.is_visible_in_tree() and not board._roll_button.disabled, "[칼 꽂기] 버튼이 보인다")
-	if board._pirate_idle != null:
-		var before: float = board._pirate_idle.user_yaw
-		board._pirate_idle.spin(0.8)
-		check(not is_equal_approx(before, board._pirate_idle.user_yaw), "끌면 통이 돈다")
+	# 1.3.1: 꺼내기 전에는 판 위에 통이 없고 가운데 [꺼내기] 버튼만 있다
+	check(board._pirate_idle == null or not board._pirate_idle.visible, "꺼내기 전에는 해적통이 없다")
+	check(board._roll_button.is_visible_in_tree() and board._roll_button.text == "꺼내기", "[꺼내기] 버튼이 보인다 (%s)" % board._roll_button.text)
 	await click(board._roll_button)
-	await create_timer(2.5).timeout
-	await wait_idle()
-	check(rolls.size() == 1, "첫 칼")
-	if rolls.size() == 1 and bool(rolls[0].get("can_continue", false)):
-		check(board._roll_button.is_visible_in_tree(), "칼을 꽂은 뒤에도 [칼 꽂기] 버튼이 보인다 (제보: 스페이스로만 반응)")
-		check(board._pirate_idle != null and board._pirate_idle.visible, "꽂힌 칼을 단 채 통이 다시 선다")
-		await click(board._roll_button)
+	await frames(4)
+	check(rolls.is_empty(), "꺼내기만 하고 아직 칼을 꽂지 않는다")
+	check(board._pirate_idle != null and board._pirate_idle.visible, "꺼내면 해적통이 판 위에 선다")
+	check(not board._roll_button.visible, "꺼낸 뒤에는 버튼 대신 통의 구멍을 누른다")
+	if board._pirate_idle == null:
+		return
+	await create_timer(0.6).timeout  # 떨어져 놓이는 연출
+	var before: float = board._pirate_idle.user_yaw
+	board._pirate_idle.spin(0.8)
+	check(not is_equal_approx(before, board._pirate_idle.user_yaw), "끌면 통이 돈다")
+	await frames(3)
+	var target: int = -1
+	for hole: int in ToolPirateRoulette.HOLES:
+		var at: Vector2 = board._pirate_idle.hole_screen_point(hole)
+		if at.is_finite() and board._pirate_idle.hole_at(at) == hole:
+			target = hole
+			break
+	check(target >= 0, "앞쪽에 누를 수 있는 구멍이 있다")
+	if target >= 0:
+		await tap_pirate(board._pirate_idle.hole_screen_point(target))
 		await create_timer(2.5).timeout
-		check(rolls.size() == 2, "두 번째 칼도 버튼으로 꽂힌다 (지금 %d번)" % rolls.size())
+		await wait_idle()
+		check(rolls.size() == 1, "구멍을 누르면 칼을 꽂는다")
+		if rolls.size() == 1:
+			var stuck: Array = rolls[0].get("details", {}).get("holes", [])
+			check(not stuck.is_empty() and int(stuck[-1]) == target, "누른 구멍에 칼이 꽂힌다 (%s / %d)" % [str(stuck), target])
 	await next_turn()
+
+
+func tap_pirate(at: Vector2) -> void:
+	var down := InputEventMouseButton.new()
+	down.button_index = MOUSE_BUTTON_LEFT
+	down.pressed = true
+	down.position = at
+	board._on_pirate_idle_input(down)
+	await frames()
+	var up := InputEventMouseButton.new()
+	up.button_index = MOUSE_BUTTON_LEFT
+	up.pressed = false
+	up.position = at
+	board._on_pirate_idle_input(up)
+	await frames()
 
 
 func holdem_exchange() -> void:
@@ -388,13 +438,52 @@ func blackjack_table() -> void:
 	check(not board._card_view_on and is_zero_approx(board._alkkagi_camera), "블랙잭이 끝나면 원래 시점으로 돌아온다")
 
 
+## 1.3.1 핀볼: 야추처럼 카드 시점으로 들어가 판 가운데에 핀볼대를 위에서 내려놓고, 쏘고 나면 원래 시점으로.
+func pinball_table() -> void:
+	await next_turn()
+	await give(&"DICE_PINBALL")
+	var stage: PinballStage = board._stage_pinball
+	var saw_drop: bool = false
+	board._on_roll_pressed()  # [발사 준비]
+	for _w: int in 240:
+		board._refresh_all()
+		if stage.visible and board._card_view_on:
+			break
+		await process_frame
+	check(stage.visible and board._card_view_on and board._card_view_tool == &"DICE_PINBALL", "핀볼대가 뜨면 카드 시점으로 들어간다")
+	for _w: int in 240:
+		if stage.drop_offset > 1.0:
+			saw_drop = true
+		if saw_drop and not stage.dropping():
+			break
+		await process_frame
+	check(saw_drop, "핀볼대는 위에서 내려온다")
+	check(is_zero_approx(stage.drop_offset) and is_equal_approx(stage.modulate.a, 1.0), "핀볼대가 판 위에 놓인다")
+	board._on_roll_pressed()
+	var until: int = Time.get_ticks_msec() + 30000
+	while (board._card_view_on or not is_zero_approx(board._alkkagi_camera)) and Time.get_ticks_msec() < until:
+		await process_frame
+	check(not board._card_view_on and is_zero_approx(board._alkkagi_camera), "쏘고 나면 원래 시점으로 돌아온다")
+
+
+## 1.3.1: 꺼내 놓고 쓰는 도구(다트·해적·룰렛·리볼버)는 꺼내기 전에 가운데 [꺼내기] 버튼만 보인다.
+func gated_take_out_labels() -> void:
+	for id: StringName in MainBoard.GATED_TAKE_OUT:
+		await next_turn()
+		await give(id)
+		board._refresh_all()
+		await frames(3)
+		check(board._roll_button.visible and board._roll_button.text == "꺼내기", "%s: 꺼내기 전 버튼은 [꺼내기] (%s)" % [id, board._roll_button.text.replace("\n", " ")])
+		check(not board._roll_pad.visible, "%s: 꺼내기 전에는 원판·리볼버가 없다" % id)
+
+
 ## 1.3.1: 던지지 않는 도구는 굴리기 버튼이 [꺼내기], 던지는 도구는 그대로.
 func take_out_labels() -> void:
 	for id: StringName in MainBoard.TAKE_OUT_TOOLS:
 		check(board._roll_button_label(ToolRegistry.create(id)) == "꺼내기", "%s 버튼은 [꺼내기]" % id)
 	for id: StringName in [&"D6", &"CHINCHIRO", &"YUT"]:
 		check(board._roll_button_label(ToolRegistry.create(id)) != "꺼내기", "%s는 던지는 도구라 그대로" % id)
-	check(board._roll_button_label(ToolRegistry.create(&"DICE_DARTS")).contains("던지기"), "다트는 [다트 던지기]")
+	check(MainBoard.TAKE_OUT_TOOLS.has(&"DICE_DARTS"), "다트도 [꺼내기] (1.3.1: 꺼낸 과녁을 눌러 던진다)")
 
 
 func warmup() -> void:

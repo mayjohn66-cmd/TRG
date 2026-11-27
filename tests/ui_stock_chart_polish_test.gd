@@ -26,6 +26,9 @@ func _run() -> void:
 		var stored := view.historical_points()
 		expect(view.history==details.history.slice(-4),"only the latest four values are displayed, including legacy history")
 		expect(view.announcement_text()=="오늘의 주식은.","today announcement starts with one dot")
+		expect(is_zero_approx(view.screen_on()),"tablet screen starts dark")
+		view.apply_time(StockChartView.BOOT_TIME)
+		expect(is_equal_approx(view.screen_on(),1.0) and view.announcement_text()=="오늘의 주식은.","screen is fully on before the announcement counts dots")
 		view.apply_time(StockChartView.LIVE_AT*0.5)
 		expect(is_zero_approx(view.progress()) and view.historical_points()==stored,"stored history stays fully drawn and motionless during announcement")
 		expect(view.displayed_price()==int(details.before),"announcement does not reveal new price early")
@@ -59,7 +62,7 @@ func _run() -> void:
 	expect(StockChartView.caption(cases[4],0).contains("대폭락! (Bear Market)"),"bear market uses requested wording")
 	view.begin(cases[0])
 	for phase: int in 4:
-		view.apply_time(phase*StockChartView.DOT_INTERVAL+0.01)
+		view.apply_time(StockChartView.BOOT_TIME+phase*StockChartView.DOT_INTERVAL+0.01)
 		expect(view.announcement_text()==StockChartView.ANNOUNCEMENT_BODY+".".repeat(phase%3+1),"announcement repeats one, two, three dots")
 		expect(is_zero_approx(view.progress()) and view.displayed_price()==int(cases[0].before),"dots cannot start or reveal the price move")
 	var presenter := RollPresenter.new()

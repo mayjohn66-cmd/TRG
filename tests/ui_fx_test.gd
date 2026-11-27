@@ -528,7 +528,9 @@ func _test_board_toss() -> void:
 	_expect(low_shadow < 118.0 * 0.8, "높이 뜨면 그림자가 작아진다 (%.1f)" % low_shadow)
 	presenter.set_process(true)
 	presenter._process(RollPresenter.TOSS_LAND_TIME)
-	_expect(not presenter.active and presenter.visible, "눈금이 정해지는 순간 바로 끝난다 (입력이 풀리고 그림은 잠깐 남는다)")
+	_expect(presenter.active and presenter._die_label.modulate.a == 0.0, "멈춘 뒤 바로 결과를 띄우지 않고 뜸을 들인다 (1.3.1)")
+	presenter._process(RollPresenter.RESULT_SUSPENSE)
+	_expect(not presenter.active and presenter.visible, "뜸이 끝나면 결과와 함께 끝난다 (입력이 풀리고 그림은 잠깐 남는다)")
 	_expect(presenter._die_label.text == "5칸 전진!" and presenter.last_display == "5", "주사위 위에 N칸 전진! (%s)" % presenter._die_label.text)
 	var landed: Vector2 = presenter._dice_3d.get_global_transform() * (presenter._dice_3d.size / 2.0)
 	_expect(landed.distance_to(presenter.center + RollPresenter.TOSS_LAND_OFFSET) < 1.0, "결과 글자가 나타나도 착지한 주사위 중심은 움직이지 않는다")
@@ -570,7 +572,7 @@ func _test_presenters() -> void:
 		var bowl_center: Vector2 = die_view.get_global_transform() * (die_view.size / 2.0)
 		presenter._update(0.40)
 		_expect((die_view.get_global_transform()*(die_view.size/2.0)).distance_to(bowl_center)<1.0,"그릇은 보드에 고정되고 주사위만 날아든다")
-		presenter._process(DiceRoll3D.ROLL_TIME + DiceRoll3D.HOLD_TIME)
+		presenter._process(DiceRoll3D.ROLL_TIME + DiceRoll3D.HOLD_TIME + RollPresenter.RESULT_SUSPENSE)  # 1.3.1: 멈춘 뒤 뜸 들였다가 끝난다
 		_expect(presenter._dice_3d == die_view, "loaded die shares the same 3D viewport")
 		_expect(die_view.displayed_value() == value and presenter.last_display == str(maxi(value, 0)), "loaded physical face and displayed result match %d" % value)
 		_expect(die_view._pips.mesh != ordinary_mesh, "loaded die uses its own face paint")
@@ -603,7 +605,9 @@ func _test_presenters() -> void:
 				stop_times[index] = t
 	elapsed = await _play(&"SLOT_777", {"tool_id": &"SLOT_777", "steps": 4, "details": {"reels": [1, 1, 5]}}, sample_slot)
 	_expect(stop_times[0] > 0.0 and stop_times[0] < stop_times[1] and stop_times[1] < stop_times[2], "릴이 순서대로 멈춰야 한다 %s" % str(stop_times))
-	_expect(absf(stop_times[0] - SlotMachine3D.STOP_TIMES[0]) < 0.2 and absf(stop_times[1] - SlotMachine3D.STOP_TIMES[1]) < 0.2 and absf(stop_times[2] - SlotMachine3D.STOP_TIMES[2]) < 0.2, "실제 릴의 정지 시각 %s" % str(stop_times))
+	# 1.3.1: 슬롯머신은 위에서 떨어져 놓인 다음(DROP_TIME)에 릴이 돌기 시작한다
+	var drop: float = RollPresenter.DROP_TIME
+	_expect(absf(stop_times[0] - drop - SlotMachine3D.STOP_TIMES[0]) < 0.2 and absf(stop_times[1] - drop - SlotMachine3D.STOP_TIMES[1]) < 0.2 and absf(stop_times[2] - drop - SlotMachine3D.STOP_TIMES[2]) < 0.2, "실제 릴의 정지 시각 %s" % str(stop_times))
 	_expect(presenter.last_display == "레몬|레몬|7", "슬롯 최종 심볼 (%s)" % presenter.last_display)
 	# 홀덤: 카드 5장이 0.15초 간격으로 한 장씩 뒤집힌다
 	var flip_times: Array[float] = [-1.0, -1.0, -1.0, -1.0, -1.0]
@@ -944,7 +948,7 @@ func _test_toy_flag_gun() -> void:
 	pad._process(0.25)
 	_expect(gun.flag_root.visible and gun.confetti.filter(func(p: MeshInstance3D) -> bool: return p.visible).size()==ToyFlagGun3D.CONFETTI_COUNT,"fired result produces attached flag and paper confetti")
 	pad._process(ToyFlagGun3D.FLAG_RESULT_TIME-0.56+0.001)
-	_expect(pad._hint_label.text=="뿅! 누적 3칸 사라짐 · 턴 종료","local caption matches actual lost accumulation")
+	_expect(pad._hint_label.text.is_empty(),"party result shows no small caption under the confetti")
 	pad._process(ToyFlagGun3D.FLAG_TOTAL_TIME)
 	_expect(outcomes==[false,true] and not pad.active,"each click/pop emits exactly one outcome and completes")
 	pad.reset_revolver()
@@ -989,7 +993,7 @@ func _test_toy_flag_gun() -> void:
 	presenter._update(0.2)
 	_expect(presenter.last_display.is_empty() and presenter._die_label.text.is_empty(),"remote gun hides its result before pop")
 	presenter._update(ToyFlagGun3D.FLAG_RESULT_TIME+0.001)
-	_expect(presenter._toy_gun.flag_root.visible and presenter.last_display=="뿅!" and presenter._die_label.text.contains("6칸"),"remote presenter uses the same star flag and lost-step result")
+	_expect(presenter._toy_gun.flag_root.visible and presenter.last_display=="뿅!" and presenter._die_label.text.is_empty(),"remote presenter uses the same star flag without a small caption")
 	var cached: ToyFlagGun3D = presenter._toy_gun
 	presenter._process(presenter._total)
 	_expect(cached.render_view.render_target_update_mode==SubViewport.UPDATE_DISABLED,"remote completion sleeps")

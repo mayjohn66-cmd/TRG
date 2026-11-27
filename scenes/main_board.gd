@@ -742,6 +742,8 @@ var _action_row: HFlowContainer = null
 var _roll_pad: RollPad = null
 ## 불스아이 다트: 내가 던질 차례에 보드 한가운데 보이는 과녁 (던지기 전 대기 표시).
 var _dart_idle: DartBoardView = null
+var _pirate_press: Vector2 = Vector2.ZERO
+var _pirate_moved: float = 0.0
 ## 해적 룰렛 대기 통 (1.3.1): 내 차례에 보드 위에 칼이 꽂힌 그대로 서 있고, 끌어서 돌린 뒤 [칼 꽂기]로 꽂는다.
 var _pirate_idle: PirateBarrelView = null
 ## 3D 도구 화면 미리 그려 두기 (1.3.1): 판 시작 ~ 4라운드 전 한가할 때 하나씩, 판이 끝나면 지운다.
@@ -7716,7 +7718,7 @@ func _refresh_controls() -> void:
 	_refresh_hammer_panel()
 	_refresh_bounty_marks()
 	var can_stop: bool = not over and tool.has_pending_state() and current_phase == TurnManager.State.PHASE_ROLL_WAIT
-	if tool is ToolRussianRoulette:
+	if tool is ToolRussianRoulette and not _needs_take_out(tool):  # 꺼내기 전에는 가운데 [꺼내기]만 (1.3.1)
 		# 러시안 룰렛: [방아쇠 당기기]와 [멈추고 N칸 이동 확정]을 한 세트로 상시 노출한다. 1발도 못 당겼으면 멈추기는 비활성(회색)이고,
 		# 누적이 생기면 초록색으로 바뀐다.
 		_roll_button.text = "방아쇠\n당기기"
@@ -7922,7 +7924,7 @@ func _play_hammer_outcome(tool_name: String, failed_level: int, success: bool) -
 
 ## 다트 과녁: 내가 던질 차례(굴리기 전)에만 한가운데 천천히 돈다. 던지면 굴림 연출이 같은 과녁에 다트를 꽂는다.
 func _refresh_dart_idle(tool: BaseJudgmentTool) -> void:
-	var show: bool = tool is ToolDarts and _roll_view_allowed() and not _fx_busy and not _is_bot_turn() and manager.current_player_id() == _dock_owner() and _fx_on()
+	var show: bool = tool is ToolDarts and _roll_view_allowed() and not _fx_busy and not _is_bot_turn() and manager.current_player_id() == _dock_owner() and _fx_on() and not _needs_take_out(tool)  # 꺼낸 뒤에만 (1.3.1)
 	if _dart_idle == null:
 		if not show:
 			return  # 다트를 쓰지 않는 판에서는 과녁 3D 화면을 만들지 않는다
@@ -7930,6 +7932,7 @@ func _refresh_dart_idle(tool: BaseJudgmentTool) -> void:
 		_dart_idle.name = "DartIdle"
 		_dart_idle.visible = false
 		_dart_idle.ready_dart = true
+		_dart_idle.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		_dart_idle.gui_input.connect(_on_dart_idle_input)
 		add_child(_dart_idle)
 	_dart_idle.position = _board_center() - DartBoardView.SIZE * 0.5
@@ -7962,7 +7965,7 @@ func tool_warmup() -> ToolWarmup:
 
 
 func _refresh_pirate_idle(tool: BaseJudgmentTool) -> void:
-	var show: bool = tool is ToolPirateRoulette and _roll_view_allowed() and not _fx_busy and not _is_bot_turn() and manager.current_player_id() == _dock_owner() and _fx_on()
+	var show: bool = tool is ToolPirateRoulette and _roll_view_allowed() and not _fx_busy and not _is_bot_turn() and manager.current_player_id() == _dock_owner() and _fx_on() and not _needs_take_out(tool)  # 꺼낸 뒤에만 (1.3.1)
 	if _pirate_idle == null:
 		if not show:
 			return  # 해적 룰렛을 쓰지 않는 판에서는 3D 통을 만들지 않는다
@@ -7970,6 +7973,7 @@ func _refresh_pirate_idle(tool: BaseJudgmentTool) -> void:
 		_pirate_idle.name = "PirateIdle"
 		_pirate_idle.visible = false
 		_pirate_idle.gui_input.connect(_on_pirate_idle_input)
+		_pirate_idle.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		add_child(_pirate_idle)
 	_pirate_idle.position = _board_center() - PirateBarrelView.SIZE * 0.5 - Vector2(0, 40)
 	if show:
@@ -8021,16 +8025,36 @@ func _on_pirate_idle_input(event: InputEvent) -> void:
 	var touch: InputEventScreenTouch = event as InputEventScreenTouch
 	var motion: InputEventMouseMotion = event as InputEventMouseMotion
 	var drag: InputEventScreenDrag = event as InputEventScreenDrag
-	if button != null and button.button_index == MOUSE_BUTTON_LEFT:
-		_pirate_drag = button.pressed
+	var press: bool = (button != null and button.button_index == MOUSE_BUTTON_LEFT and button.pressed) or (touch != null and touch.pressed)
+	var release: bool = (button != null and button.button_index == MOUSE_BUTTON_LEFT and not button.pressed) or (touch != null and not touch.pressed)
+	if press:
+		_pirate_drag = true
+		_pirate_press = (button.position if button != null else touch.position)
+		_pirate_moved = 0.0
 		_pirate_idle.accept_event()
-	elif touch != null:
-		_pirate_drag = touch.pressed
+	elif release:
 		_pirate_idle.accept_event()
+		var at: Vector2 = button.position if button != null else touch.position
+		var was_drag: bool = _pirate_drag
+		_pirate_drag = false
+		# 1.3.1: 끌지 않고 누르면 그 구멍에 칼을 꽂는다 (어느 구멍이든 해적이 튀어나올 차례는 같다 - 구멍 번호는 그림만)
+		if was_drag and _pirate_moved < 10.0:
+			var hole: int = _pirate_idle.hole_at(at)
+			if hole >= 0:
+				_stab_hole(hole)
 	elif (motion != null or drag != null) and _pirate_drag:
 		var dx: float = motion.relative.x if motion != null else drag.relative.x
+		_pirate_moved += absf(dx) + absf(motion.relative.y if motion != null else drag.relative.y)
 		_pirate_idle.spin(dx * 0.012)
 		_pirate_idle.accept_event()
+
+
+## 해적 통의 이 구멍에 칼을 꽂는다 (굴림 행동에 구멍 번호를 싣는다).
+func _stab_hole(hole: int) -> void:
+	if manager.is_game_over or _ui_busy() or _is_bot_turn() or manager.current_state != TurnManager.State.PHASE_ROLL_WAIT:
+		return
+	_pending_power = 0.5
+	_act(&"roll", {"hole": hole})
 
 
 ## 해적 룰렛처럼 이어서 굴리는 도구 (1.3.1 정리): [멈추기]를 굴리기 버튼 바로 오른쪽에 띄운다 (멀리 오른쪽 버튼 줄에 따로 떨어져 있지 않게).
@@ -8073,6 +8097,8 @@ func _is_dice_family(tool: BaseJudgmentTool) -> bool:
 
 ## 굴림 버튼에 쓰는 글자: 도구마다 다르다.
 func _roll_button_label(tool: BaseJudgmentTool) -> String:
+	if _needs_take_out(tool):
+		return "꺼내기"
 	if tool is ToolPinball:return "핀볼\n발사 준비"
 	# 1.3.1: 던지지 않는 도구는 버튼이 [꺼내기]다. 누르면 그 도구를 판 위로 꺼내고(내려놓기·카드 매트), 실제 조작(고르기·레버·긁기 등)은 꺼낸 도구에서 한다.
 	if TAKE_OUT_TOOLS.has(tool.tool_id):
@@ -8086,11 +8112,62 @@ func _roll_button_label(tool: BaseJudgmentTool) -> String:
 
 ## 던지지 않고 "꺼내서" 쓰는 판정 도구 (굴리기 버튼이 [꺼내기]). 던지는 도구(주사위·친치로·윷·다트·야추·핀볼)와
 ## 자기 조작판이 따로 있는 도구(리볼버·룰렛 원판·해적 통·블랙잭)는 빠진다.
-const TAKE_OUT_TOOLS: Array[StringName] = [&"DICE_HWATU", &"HOLDEM", &"SLOT_777", &"DICE_MAHJONG", &"DICE_TAROT", &"DICE_STOCK", &"DICE_OMIKUJI", &"DICE_ICECREAM", &"DICE_COOKIE", &"DICE_CAPSULE", &"DICE_SCRATCH"]
+const TAKE_OUT_TOOLS: Array[StringName] = [&"DICE_HWATU", &"HOLDEM", &"SLOT_777", &"DICE_MAHJONG", &"DICE_TAROT", &"DICE_STOCK", &"DICE_OMIKUJI", &"DICE_ICECREAM", &"DICE_COOKIE", &"DICE_CAPSULE", &"DICE_SCRATCH", &"DICE_DARTS"]
+## 꺼내 놓고 그 위에서 다루는 도구 (1.3.1): [꺼내기]를 누르면 판 위에 과녁·해적 통·룰렛 원판·리볼버가 위에서 쿵 떨어지고,
+## 그다음 과녁 누르기·구멍 누르기·원판 돌리기·[발사]로 굴린다. 꺼내기 전에는 아무것도 놓여 있지 않다.
+const GATED_TAKE_OUT: Array[StringName] = [&"DICE_DARTS", &"DICE_PIRATE", &"LIFE_ROULETTE", &"REVOLVER"]
+var _taken_out_key: String = ""
+
+
+func _take_out_key() -> String:
+	return "%d:%d:%d" % [_roll_turn_serial, state.round_number if state != null else -1, manager.current_player_id() if manager != null else -1]
+
+
+## 아직 꺼내지 않은 꺼내 놓는 도구인가 (내 화면에서 내가 굴릴 차례일 때만: 컴퓨터·남의 차례·즉시 모드는 바로 굴린다).
+func _needs_take_out(tool: BaseJudgmentTool) -> bool:
+	if tool == null or not GATED_TAKE_OUT.has(tool.tool_id) or tool.has_pending_state() or instant_roll_for_test or manager == null:
+		return false
+	if _is_bot_turn() or manager.current_player_id() != _dock_owner():
+		return false
+	return _taken_out_key != _take_out_key()
+
+
+## [꺼내기]: 도구를 판 위로 꺼낸다 (굴림은 아직이다). 꺼낸 물건은 위에서 쿵 떨어진다.
+func _take_out(tool: BaseJudgmentTool) -> void:
+	if manager.current_state == TurnManager.State.PHASE_TURN_BEGIN:
+		_act(&"proceed")
+	_taken_out_key = _take_out_key()
+	_refresh_all()
+	var dropped: Array[CanvasItem] = []
+	match tool.tool_id:
+		&"DICE_DARTS": dropped = [_dart_idle]
+		&"DICE_PIRATE": dropped = [_pirate_idle]
+		_: dropped = [_roll_pad]
+	for node: CanvasItem in dropped:
+		if node != null and node.visible:
+			_drop_in(node as Control)
+
+
+## 위에서 쿵 떨어져 놓인다 (꺼내기). 놓인 자리는 그대로 두고 그림만 위에서 떨어진다.
+func _drop_in(node: Control) -> void:
+	if node == null or not _fx_on():
+		return
+	var target: Vector2 = node.position
+	var base_scale: Vector2 = node.scale
+	node.position = target - Vector2(0.0, RollPresenter.DROP_HEIGHT)
+	node.modulate.a = 0.0
+	var fall := node.create_tween()
+	fall.tween_property(node, "position", target, RollPresenter.DROP_TIME).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	fall.parallel().tween_property(node, "modulate:a", 1.0, RollPresenter.DROP_TIME * 0.3)
+	fall.tween_callback(func() -> void: Sfx.play(&"thud", -3.0, 0.0, 0.8))
+	fall.tween_property(node, "scale", base_scale * Vector2(1.0 + RollPresenter.DROP_SQUASH, 1.0 - RollPresenter.DROP_SQUASH), 0.06)
+	fall.tween_property(node, "scale", base_scale, 0.14).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
 ## 굴림 조작 방식: 차징형(기본 주사위·윷·친치로)은 보드 아래 작은 굴리기 버튼+파워 게이지, 그 외(룰렛 원판·리볼버·홀덤/슬롯 큰 버튼)는 보드 한가운데에 크게 보여 준다.
 func _roll_mode_for(tool: BaseJudgmentTool) -> StringName:
+	if _needs_take_out(tool):
+		return &"big"  # 꺼내기 전: 가운데 큰 [꺼내기] 버튼만
 	if tool is ToolDarts:
 		return &"darts"
 	if tool is ToolLifeRoulette:
@@ -8180,7 +8257,7 @@ func _refresh_roll_pad() -> void:
 	# 연출 중에 남겨 두는 것은 '내 도구'가 굴러가는 연출일 때뿐이다 (다른 사람이 굴리는 동안 내 리볼버·룰렛이 밑에 비치지 않게).
 	# 앞 사람의 굴림 연출기(_presenter)가 아직 보이면 그 _fx_busy는 내 도구의 연출이 아니다 (차례가 막 넘어온 순간 내 리볼버가 먼저 떴다 숨는 깜빡임 방지).
 	var own_fx: bool = _fx_busy and manager.current_player_id() == _dock_owner() and not _presenter_showing()
-	_roll_button.visible = wanted == RollPad.Kind.NONE and roll_phase and mode != &"stage" and not _holdem_exchange_open(owner_tool)  # 홀덤 교환 중에는 교환 창 버튼으로
+	_roll_button.visible = wanted == RollPad.Kind.NONE and roll_phase and mode != &"stage" and not _holdem_exchange_open(owner_tool) and mode != &"darts" and mode != &"pirate"  # 홀덤 교환 중에는 교환 창 버튼으로. 꺼낸 과녁·해적 통은 그 물건을 눌러서 (1.3.1)
 	# 리볼버가 '준비' 중이라 active여도, 막는 중앙 알림(카드·공격·방어 도장)이 떠 있는 동안에는 숨긴다 (도장 밑에 총이 비치지 않게). 쏘는 중에는 그대로.
 	var pad_busy: bool = _roll_pad.active and not (_roll_pad.preparing and ((_announcer != null and _announcer.holding()) or _presentation_active()))
 	if _hammer_choice_open() and not _fx_busy:
@@ -8197,12 +8274,17 @@ func _refresh_roll_pad() -> void:
 		_roll_pad.ensure_revolver_prepared(gun_key,owner_tool.has_pending_state())
 
 
+## 던지는 도구(주사위·친치로·윷)의 굴리기 버튼 가운데 높이 (1.3.1: 380 → 450, 버튼 위 도구 소품도 같이 내려온다).
+const CHARGE_BUTTON_Y: float = 450.0
+
+
 ## 굴림 위젯의 크기·위치를 방식에 맞춘다: charge는 중앙 무대 아래쪽에 작게(120px), 그 외는 보드 한가운데 크게(버튼 190px / 패드 1.9배).
 func _set_roll_geometry(mode: StringName) -> void:
 	_roll_geometry = mode
 	var big: bool = mode != &"charge" and mode != &"pinball"
 	var diameter: float = 190.0 if mode == &"big" else (110.0 if mode == &"pinball" else 120.0)
-	var center: Vector2 = Vector2(683.0, 335.0) if mode == &"big" else (Vector2(940.0, 470.0) if mode == &"pinball" else Vector2(683.0, 380.0))
+	# 1.3.1: 던지는 도구(charge)의 굴리기 버튼은 판 아래쪽으로 내리고, 버튼 위에 놓인 주사위·친치로·윷이 그만큼 판 가운데로 내려온다
+	var center: Vector2 = Vector2(683.0, 335.0) if mode == &"big" else (Vector2(940.0, 470.0) if mode == &"pinball" else Vector2(683.0, CHARGE_BUTTON_Y))
 	if mode == &"darts":
 		diameter = 104.0
 		center = Vector2(953.0, 350.0)  # Beside the board, clear of the face and the tool-info panel.
@@ -8324,6 +8406,9 @@ func _on_roll_pressed(power_override: float = -1.0) -> void:
 	if manager.is_game_over or _roll_button.disabled or _ui_busy() or _is_bot_turn() or _roll_pad.preparing:
 		return  # 리볼버 장전 연출 중에 쏘면 3D 화면에 장전 자세가 한두 프레임 다시 비친다 (발사 버튼과 같은 조건)
 	var tool: BaseJudgmentTool = state.tools[_dock_owner()]
+	if _needs_take_out(tool):
+		_take_out(tool)  # 꺼내기만 한다: 과녁·해적 통·룰렛·리볼버를 판 위에 꺼내 놓는다
+		return
 	# Yut, Mahjong, cards, roulette, slots and the toy gun emit their own
 	if tool is ToolPinball and _pinball_ready_key!=_pinball_key():
 		if manager.current_state==TurnManager.State.PHASE_TURN_BEGIN:_act(&"proceed")
@@ -13701,6 +13786,8 @@ func _refresh_tool_stage() -> void:
 		_sync_yacht_case()
 	elif stage == _stage_blackjack:
 		_sync_stage_card_view(_stage_blackjack, &"DICE_BLACKJACK")
+	elif stage == _stage_pinball:
+		_sync_stage_card_view(_stage_pinball, &"DICE_PINBALL")
 	var acting: bool = not _roll_button.disabled
 	if stage == _stage_pinball:
 		_stage_pinball.set_waiting_caption(_is_bot_turn() or (net != null and current != local_player_id), _player_name(current))
@@ -13767,8 +13854,17 @@ func _handle_roll_event(data: Dictionary) -> void:
 	_presenter.hop_from = Vector2(INF, INF)
 	_presenter.hop_pose = null
 	_presenter.place_from = Vector2(INF, INF)
+	# 내가 꺼내 놓은 과녁·해적 통으로 굴렸으면 결과 연출이 다시 떨어뜨리지 않는다 (같은 자리에서 이어 간다)
+	_presenter.skip_place = GATED_TAKE_OUT.has(tool_id) and int(data["player_id"]) == _dock_owner() and not _is_bot_turn()
+	_presenter.anchor_view_at = Vector2(INF, INF)
+	_presenter.dart_start_turn = 0.0
+	if _presenter.skip_place and tool_id == &"DICE_DARTS" and _dart_idle != null:
+		_presenter.anchor_view_at = _dart_idle.position + _dart_idle.size * 0.5
+		_presenter.dart_start_turn = _dart_idle.face_turn()  # 돌던 과녁 판이 그 각도에서 이어 돈다
+	elif _presenter.skip_place and tool_id == &"DICE_PIRATE" and _pirate_idle != null:
+		_presenter.anchor_view_at = _pirate_idle.position + _pirate_idle.size * 0.5
 	var rest: Dictionary = _rest_prop_seen
-	if not rest.is_empty() and rest["tool"] == tool_id and tool_id in [&"D6", &"CHINCHIRO"] and int(data["player_id"]) == _dock_owner() \
+	if not rest.is_empty() and rest["tool"] == tool_id and tool_id in [&"D6", &"CHINCHIRO", &"YUT"] and int(data["player_id"]) == _dock_owner() \
 			and int(data["player_id"]) == int(rest["player"]) and Time.get_ticks_msec() - int(rest["msec"]) < 2500:
 		_presenter.hop_from = rest["center"]
 		_presenter.hop_scale = rest["scale"]
@@ -15113,7 +15209,7 @@ func _sync_yacht_case() -> void:
 
 
 ## 카드 시점에서 쓰는 스테이지 (1.3.1: 야추 케이스·블랙잭 테이블). 스테이지가 뜨면 판 가운데로 다가가고, 사라지면 돌아온다.
-const CARD_VIEW_STAGES: Array[StringName] = [&"DICE_YACHT", &"DICE_BLACKJACK"]
+const CARD_VIEW_STAGES: Array[StringName] = [&"DICE_YACHT", &"DICE_BLACKJACK", &"DICE_PINBALL"]  # 핀볼도 야추처럼 판 가운데에 내려놓고 쏜다
 
 
 func _sync_stage_card_view(stage: Control, tool_id: StringName) -> void:
@@ -15125,6 +15221,8 @@ func _sync_stage_card_view(stage: Control, tool_id: StringName) -> void:
 		# 즉시 모드(테스트·자동 진행)에서는 시점을 옮기지 않는다. 확정 뒤(연출 중, 굴리는 중 아님)에는 다시 들어가지 않는다.
 		if not _card_view_on and not instant_roll_for_test and (not _fx_busy or rolling):
 			_enter_card_view(tool_id)
+			if stage == _stage_pinball and not rolling and _fx_on():
+				_stage_pinball.drop_in(CARD_VIEW_TIME * 0.6)  # 판 가운데로 다가가는 사이 핀볼대를 위에서 쿵 내려놓는다
 	else:
 		if _card_view_on and _card_view_tool == tool_id and not rolling and (not _fx_busy or instant_roll_for_test):
 			_leave_card_view()
@@ -15134,7 +15232,7 @@ func _sync_stage_card_view(stage: Control, tool_id: StringName) -> void:
 func _sync_card_view() -> void:
 	if not _card_view_on:
 		return
-	var showing: bool = _fx_busy or _tool_pick != null or _holdem_exchange != null or (_presenter != null and _presenter.active) or (_card_view_tool == &"DICE_YACHT" and _stage_yacht != null and _stage_yacht.visible) or (_card_view_tool == &"DICE_BLACKJACK" and _stage_blackjack != null and _stage_blackjack.visible)
+	var showing: bool = _fx_busy or _tool_pick != null or _holdem_exchange != null or (_presenter != null and _presenter.active) or (_card_view_tool == &"DICE_YACHT" and _stage_yacht != null and _stage_yacht.visible) or (_card_view_tool == &"DICE_BLACKJACK" and _stage_blackjack != null and _stage_blackjack.visible) or (_card_view_tool == &"DICE_PINBALL" and _stage_pinball != null and _stage_pinball.visible)
 	if manager == null or manager.is_game_over:
 		_leave_card_view()
 	elif showing:
@@ -15172,7 +15270,9 @@ func _on_dart_idle_input(event: InputEvent) -> void:
 			return
 		_dart_drag = false
 		_dart_idle.set_pull(Vector2.ZERO)
-		if dart_throw_released(_dart_press, button.position, Time.get_ticks_msec() - _dart_press_msec, MobileSupport.touch_mode()):
+		# 1.3.1: 꺼낸 과녁을 누르면(끌지 않고) 던진다. 위로 끌어 던지기도 그대로.
+		var tapped: bool = button.position.distance_to(_dart_press) < 10.0
+		if tapped or dart_throw_released(_dart_press, button.position, Time.get_ticks_msec() - _dart_press_msec, MobileSupport.touch_mode()):
 			_on_roll_pressed()
 		return
 	if motion != null and _dart_drag:

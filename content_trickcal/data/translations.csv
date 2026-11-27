@@ -3483,4 +3483,5 @@ TRPG,TRPG,TRPG
 카드(▣ 표시는 타일을 클릭해 설치/소환)를 쓰거나 [꺼내기] 버튼(또는 스페이스)으로 판정 도구를 꺼내세요. (판정 도구: %s),Play a card (▣ cards: click a tile to place/summon) or press [Take out] (or Space) to take out your Judgment Tool. (Judgment Tool: %s),カード(▣ 表示はマスをクリックして設置/召喚)を使うか、[取り出す]ボタン(またはスペース)で判定ツールを取り出してください。(判定ツール: %s)
 세 개 꺼내세요,Take out three,3つ取り出してください
 측면 손잡이를 아래로 당겼다 놓으세요,Pull the side handle down and release,側面の取っ手を下に引いて離してください
-
+레버를 당기세요! (스페이스),Pull the lever! (Space),レバーを引いて！(スペース)
+레버를 돌리세요!,Turn the lever!,レバーを回して！

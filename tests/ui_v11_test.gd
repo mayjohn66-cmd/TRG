@@ -44,12 +44,19 @@ func _run() -> void:
 	_board._refresh_all()
 	await settle(6)
 	_expect(_board.find_child("DartAim", true, false) == null, "다트 차례에도 타이밍 조준판은 없다")
-	_expect(_board._roll_button.text.contains("던지기"), "굴리기 버튼은 [다트 던지기] (%s)" % _board._roll_button.text)
-	# 제보(1.0.1): [던지기] 버튼만 보이고 가운데 다트판이 없었다 -> 던지기 전에도 과녁이 한가운데 천천히 돈다
+	# 1.3.1: 다트도 꺼내기 판정이다. 꺼내기 전에는 과녁이 없고, [꺼내기]를 누르면 과녁이 판 한가운데에 떨어진다 (그다음 과녁을 눌러 던진다)
+	_expect(_board._roll_button.text == "꺼내기", "굴리기 버튼은 [꺼내기] (%s)" % _board._roll_button.text)
+	var before_take: DartBoardView = _board.find_child("DartIdle", true, false) as DartBoardView
+	_expect(before_take == null or not before_take.visible, "꺼내기 전에는 과녁이 없다")
+	_board._on_roll_pressed()
+	await create_timer(0.7).timeout  # 떨어져 놓이는 연출
+	await settle(4)
 	var idle: DartBoardView = _board.find_child("DartIdle", true, false) as DartBoardView
 	_expect(idle != null and idle.visible and idle.idle and not idle.aiming, "내 다트 차례에는 가운데 과녁이 보인다")
 	_expect(idle != null and idle.get_global_rect().get_center().distance_to(_board._board_center()) < 2.0, "과녁은 보드 한가운데에 있다")
-	_expect(idle != null and idle.is_processing() and idle._viewport.render_target_update_mode == SubViewport.UPDATE_ALWAYS and not idle._reticle.visible, "과녁은 돌고(조준점 없음) 그려진다")
+	_expect(idle != null and idle.is_processing() and idle._viewport.render_target_update_mode == SubViewport.UPDATE_ALWAYS and not idle._reticle.visible, "과녁이 그려진다 (조준점 없음)")
+	await settle(10)
+	_expect(idle != null and is_zero_approx(idle._board.rotation.z) and not is_zero_approx(idle._face.rotation.z), "1.3.1: 대기 과녁은 과녁 판만 돈다 (테두리·받침은 그대로)")
 	state.tools[me] = ToolRegistry.create(&"D6")
 	_board._refresh_all()
 	await settle(4)
