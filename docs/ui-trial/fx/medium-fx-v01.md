@@ -9,6 +9,6 @@
 - **알까기·병뚜껑 컬링:** 두꺼운 단색 잔상과 같은 간격의 바큇살 대신 끝이 가는 질감 물결과 작은 자연스러운 접촉 강조. 조준선·조작·물리는 그대로다.
 - **호박 룰렛:** 번쩍임과 구름을 그림 강조로, 원래 호박 그림은 각자 중심으로 도는 들쭉날쭉한 조각으로 부서진다. 원래 Angry1_1 프레임과 늦게 커지며 나타나기는 그대로다.
 
-새로 직접 생성한 PNG 두 장을 실제 투명도와 함께 바이트 그대로 복사했다. 게임 내 제한은 증기 256px, 바닥 먼지 512px이며 밉맵과 임포트 UID를 쓴다. [프롬프트·원본 경로·해시·투명도 검수·재사용 자산](https://github.com/mayjohn66-cmd/TRG/blob/claude/tender-gauss-i4mq1o/assets/fx/atmosphere/source.json).
+새로 직접 생성한 PNG 두 장을 실제 투명도와 함께 바이트 그대로 복사했다. 게임 내 제한은 증기 256px, 바닥 먼지 512px이며 밉맵과 임포트 UID를 쓴다. [프롬프트·원본 경로·해시·투명도 검수·재사용 자산](https://github.com/mayjohn66-cmd/TRG/blob/dev/assets/fx/atmosphere/source.json).
 
 실제 OpenGL로 `ui_devil`, `ui_gambler`, `ui_profile_aura`, `ui_train`, `ui_minefield`, `ui_alkkagi`, `ui_curling`, `ui_pumpkin` 검사가 통과했다. 호박 마지막 수정본은 다시 재생해 확인했다. 이 검사들은 단계 시간, 실제 결과, 그림·상태 동시 넘김, 입력, 물리 재현, 시뮬레이션 난수·시간 배율 불변, 취소·정리를 다룬다. CI의 `medium-fx` 범위는 평소 웹 내보내기·배포 전에 이 8개만 돌린다.

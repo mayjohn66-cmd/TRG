@@ -9,8 +9,8 @@
 - **지원 언어:** 한국어 · English · 日本語 (인게임 실시간 전환)
 
 > [!IMPORTANT]
-> **이 `main` 브랜치는 프로젝트 문서 안내판 전용입니다.**
-> 기획서·예외 규칙 명세·개발 파이프라인·UI 검수 기록·변경 기록만 보관하며, 실제 게임 소스 코드와 CI/CD 자동 배포 설정은 개발 브랜치(`claude/tender-gauss-i4mq1o`)에 분리되어 있습니다.
+> **이 `docs` 브랜치는 프로젝트 문서 안내판 전용입니다.**
+> 기획서·예외 규칙 명세·개발 파이프라인·UI 검수 기록·변경 기록만 보관하며, 실제 게임 소스 코드와 CI/CD 자동 배포 설정은 메인 개발 브랜치([`dev`](https://github.com/mayjohn66-cmd/TRG/tree/dev))에 분리되어 있습니다.
 
 ---
 
@@ -56,10 +56,10 @@
 
 | 브랜치 | 역할 |
 |---|---|
-| `main` | **문서 전용 브랜치 (현재 브랜치)** — 기획·명세·변경 기록 보관 (푸시 시 웹 배포 미실행) |
-| [`claude/tender-gauss-i4mq1o`](https://github.com/mayjohn66-cmd/TRG/tree/claude/tender-gauss-i4mq1o) | **메인 개발 · 자동 배포 브랜치** — 푸시 시 전체 헤드리스 테스트 통과 후 분할 웹 빌드 및 `gh-pages` 자동 배포 |
-| `feature/**` | **차기 버전 작업 브랜치** — 미배포 상태로 개발하며 정식 반영 후 정리 (미출시 보드·도구는 인게임 `ReleaseGate`로 이중 잠금) |
-| `gh-pages` | **웹 배포 산출물 브랜치** — GitHub Actions가 생성한 HTML5 빌드 전용 (수동 수정 금지) |
+| **`docs`** | **문서 전용 브랜치** — 기획서·예외 규칙 명세·UI 검수·변경 기록 보관 (푸시 시 웹 배포 미실행) |
+| **[`dev`](https://github.com/mayjohn66-cmd/TRG/tree/dev)** | **메인 개발 · 자동 배포 브랜치** — 푸시 시 전체 헤드리스 테스트 통과 후 분할 웹 빌드 및 `web` 브랜치 자동 배포 |
+| **[`next`](https://github.com/mayjohn66-cmd/TRG/tree/next)** | **차기 버전 작업 브랜치** — 다음 버전 개발 전용 (미배포 상태로 작업 후 출시 시 `dev`에 병합, 인게임 `ReleaseGate` 이중 잠금) |
+| **[`web`](https://github.com/mayjohn66-cmd/TRG/tree/web)** | **웹 배포 산출물 브랜치** — GitHub Actions가 생성한 HTML5 라이브 빌드 전용 (수동 수정 금지) |
 
 ---
 

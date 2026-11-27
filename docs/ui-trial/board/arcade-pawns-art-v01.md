@@ -6,11 +6,11 @@
 
 ## 저장 위치
 
-- `CHECKERS_KING`: [CHECKERS_KING.png](https://github.com/mayjohn66-cmd/TRG/blob/claude/tender-gauss-i4mq1o/content_trickcal/illustrations/pawns/CHECKERS_KING.png)
-- `LUDO_AVENGER`: [LUDO_AVENGER.png](https://github.com/mayjohn66-cmd/TRG/blob/claude/tender-gauss-i4mq1o/content_trickcal/illustrations/pawns/LUDO_AVENGER.png)
-- `POOL_8BALL`: [POOL_8BALL.png](https://github.com/mayjohn66-cmd/TRG/blob/claude/tender-gauss-i4mq1o/content_trickcal/illustrations/pawns/POOL_8BALL.png)
-- `KART_STAR`: [KART_STAR.png](https://github.com/mayjohn66-cmd/TRG/blob/claude/tender-gauss-i4mq1o/content_trickcal/illustrations/pawns/KART_STAR.png)
-- `MINESWEEPER_FLAG`: [MINESWEEPER_FLAG.png](https://github.com/mayjohn66-cmd/TRG/blob/claude/tender-gauss-i4mq1o/content_trickcal/illustrations/pawns/MINESWEEPER_FLAG.png)
+- `CHECKERS_KING`: [CHECKERS_KING.png](https://github.com/mayjohn66-cmd/TRG/blob/dev/content_trickcal/illustrations/pawns/CHECKERS_KING.png)
+- `LUDO_AVENGER`: [LUDO_AVENGER.png](https://github.com/mayjohn66-cmd/TRG/blob/dev/content_trickcal/illustrations/pawns/LUDO_AVENGER.png)
+- `POOL_8BALL`: [POOL_8BALL.png](https://github.com/mayjohn66-cmd/TRG/blob/dev/content_trickcal/illustrations/pawns/POOL_8BALL.png)
+- `KART_STAR`: [KART_STAR.png](https://github.com/mayjohn66-cmd/TRG/blob/dev/content_trickcal/illustrations/pawns/KART_STAR.png)
+- `MINESWEEPER_FLAG`: [MINESWEEPER_FLAG.png](https://github.com/mayjohn66-cmd/TRG/blob/dev/content_trickcal/illustrations/pawns/MINESWEEPER_FLAG.png)
 
 ## 산출물
 

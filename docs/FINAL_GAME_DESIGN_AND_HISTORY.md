@@ -100,7 +100,7 @@
         │
 ④ 문서 동시 현행화 (마스터 기획서 · 예외 규칙 명세 · CHANGELOG)
         │
-⑤ 기능 브랜치 검증 후 배포 브랜치 반영 → GitHub Actions 전체 테스트 → 웹 분할 빌드·배포
+⑤ 차기 버전(`next`) 검증 후 메인 개발(`dev`) 반영 → GitHub Actions 전체 테스트 → 웹 분할 빌드·배포(`web`)
         │
 ⑥ 실제 유저 플레이 → 디스코드 텔레메트리(입장·시작·완료·체감 난이도) + 소감 투표·다국어 제보
         │
@@ -129,8 +129,8 @@
    결정론적 락스텝: 단일 시드 RNG + 방장 행동 순서 직렬화 + state_hash 무결성 검증
         │
         ▼
-[deploy]  GitHub Actions → 테스트 게이트 → 분할 웹 패킹(index.pck + game.pck + 아바타 팩)
-   → gh-pages (hypereliasmarble.xyz) / Vercel 호환
+[deploy]  GitHub Actions(dev) → 테스트 게이트 → 분할 웹 패킹(index.pck + game.pck + 아바타 팩)
+   → web 브랜치 (hypereliasmarble.xyz) / Vercel 호환
 ```
 
 - **핵심 설계 원칙:** 규칙과 화면의 완전 분리 · 커맨드 스택 및 턴 스냅샷(되감기·피격 개입) · 단일 RNG 결정성 · 데이터 주도 확장(`BoardCatalog` 및 CSV 밸런스 테이블) · 버전 잠금(`ReleaseGate`).

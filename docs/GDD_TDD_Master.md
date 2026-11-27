@@ -72,8 +72,8 @@
 | P2P 연결 | `LobbyService`(WebRTC 스타 토폴로지) · 공개 Pub/Sub 릴레이(`ntfy.sh`, 토픽 `trg_sig_{코드}_o{좌석}`/`_a{좌석}`) | 별도 게임 서버 없이 5자리 방 코드·초대 링크로 SDP/ICE 접속 정보를 자동 교환 |
 | 빠른 매칭 | `QuickMatch` · 대기열 토픽 `trg_matchmaking_queue_v1` | 열린 방을 탐색하거나 직접 개설하고, 15초 내 인원이 차지 않으면 빈자리를 AI로 채워 시작 |
 | 웹 빌드 | GitHub Actions (`.github/workflows/deploy-web.yml`) | 푸시마다 단위·화면·온라인 테스트 실행 → Godot 웹 내보내기 → 메뉴용 본체(`index.pck`) + 인게임 묶음(`game.pck`) + 아바타 묶음 분리 패키징 → 용량 예산 검사 |
-| 호스팅 | `gh-pages` 브랜치 → GitHub Pages (커스텀 도메인 `hypereliasmarble.xyz`) | `vercel.json`(캐시 헤더·`.wasm` MIME)을 함께 포함해 Vercel 미러 호스팅 호환, `BUTLER_API_KEY` 설정 시 itch.io 동시 배포 |
-| 브랜치 정책 | 개발·배포 브랜치(`claude/**`) 푸시 시 자동 배포, `feature/**`는 미배포 | `main` 브랜치는 문서 전용 안내판으로 분리되어 배포 워크플로우가 돌지 않는다 |
+| 호스팅 | `web` 브랜치 → GitHub Pages (커스텀 도메인 `hypereliasmarble.xyz`) | `vercel.json`(캐시 헤더·`.wasm` MIME)을 함께 포함해 Vercel 미러 호스팅 호환, `BUTLER_API_KEY` 설정 시 itch.io 동시 배포 |
+| 브랜치 정책 | `docs`(문서 전용) · `dev`(메인 개발·자동 배포) · `next`(차기 버전·미배포) · `web`(웹 배포 산출물) | `dev` 푸시 시에만 자동 테스트·웹 배포가 실행되며 `docs`와 `next`는 배포 워크플로우가 돌지 않는다 |
 
 ---
 
@@ -391,12 +391,12 @@
 
 ---
 
-## 5. 프로젝트 디렉토리 구조 (개발 브랜치 1.3 기준)
+## 5. 프로젝트 디렉토리 구조 (`dev` 브랜치 기준)
 
 ```text
 res://
 ├─ project.godot · export_presets.cfg       # 1366×768 16:9 고정, HTML5 웹 내보내기 (셸: web/shell.html)
-├─ .github/workflows/deploy-web.yml         # 전체 테스트 → 웹 빌드(본체 + 게임 묶음 + 아바타 묶음) → gh-pages 자동 배포
+├─ .github/workflows/deploy-web.yml         # 전체 테스트 → 웹 빌드(본체 + 게임 묶음 + 아바타 묶음) → web 브랜치 자동 배포
 ├─ docs/                                    # 마스터 기획서 · 예외 규칙 · 개발 기록 · 요약 기획서 · visual/(규격서) · ui-trial/(검수 기록)
 ├─ core_engine/                             # IP·UI 종속성이 없는 순수 규칙 코어
 │  ├─ turn_manager · game_state · game_enums · turn_snapshot · move_executor · move_report

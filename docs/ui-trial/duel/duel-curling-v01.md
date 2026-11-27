@@ -16,8 +16,8 @@
 
 내장 `image_gen.imagegen` 도구로 생성했다. 크림색 에나멜 상판·초록 네잎클로버·톱니 금속 테두리를 가진 정면 탑뷰 스프라이트이며 원본 투명 알파를 유지한다. 플레이어 색은 외곽 링과 옅은 색조로 구분한다. Godot 가져오기는 최대 256px, WebP 0.85, 밉맵으로 설정했다.
 
-- [프로젝트에 저장한 병뚜껑 PNG](https://github.com/mayjohn66-cmd/TRG/blob/claude/tender-gauss-i4mq1o/assets/ui/trickcal/duel/curling/bottle_cap.png)
-- [최종 생성 프롬프트와 도구 기록](https://github.com/mayjohn66-cmd/TRG/blob/claude/tender-gauss-i4mq1o/assets/ui/trickcal/duel/curling/art.source.json)
+- [프로젝트에 저장한 병뚜껑 PNG](https://github.com/mayjohn66-cmd/TRG/blob/dev/assets/ui/trickcal/duel/curling/bottle_cap.png)
+- [최종 생성 프롬프트와 도구 기록](https://github.com/mayjohn66-cmd/TRG/blob/dev/assets/ui/trickcal/duel/curling/art.source.json)
 
 ## 검증
 
