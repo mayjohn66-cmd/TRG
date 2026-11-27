@@ -13852,6 +13852,11 @@ func _handle_roll_event(data: Dictionary) -> void:
 	_presenter.place_from = Vector2(INF, INF)
 	# 내가 꺼내 놓은 과녁·해적 통으로 굴렸으면 결과 연출이 다시 떨어뜨리지 않는다 (같은 자리에서 이어 간다)
 	_presenter.skip_place = GATED_TAKE_OUT.has(tool_id) and int(data["player_id"]) == _dock_owner() and not _is_bot_turn()
+	_presenter.anchor_view_at = Vector2(INF, INF)
+	if _presenter.skip_place and tool_id == &"DICE_DARTS" and _dart_idle != null:
+		_presenter.anchor_view_at = _dart_idle.position + _dart_idle.size * 0.5
+	elif _presenter.skip_place and tool_id == &"DICE_PIRATE" and _pirate_idle != null:
+		_presenter.anchor_view_at = _pirate_idle.position + _pirate_idle.size * 0.5
 	var rest: Dictionary = _rest_prop_seen
 	if not rest.is_empty() and rest["tool"] == tool_id and tool_id in [&"D6", &"CHINCHIRO", &"YUT"] and int(data["player_id"]) == _dock_owner() \
 			and int(data["player_id"]) == int(rest["player"]) and Time.get_ticks_msec() - int(rest["msec"]) < 2500:

@@ -105,6 +105,8 @@ var hop_from: Vector2 = Vector2(INF, INF)
 var place_from: Vector2 = Vector2(INF, INF)
 ## 이미 판 위에 꺼내 놓은 물건으로 굴렸다 (내 과녁·해적 통): 다시 떨어뜨리지 않고 그 자리에서 이어 간다. MainBoard가 굴림마다 넣는다.
 var skip_place: bool = false
+## 꺼내 놓은 물건의 화면 가운데 (skip_place와 함께): 결과 연출의 그 물건 그림을 정확히 이 자리에 맞춘다 (던진 순간 과녁·통이 툭 옮겨 가지 않게).
+var anchor_view_at: Vector2 = Vector2(INF, INF)
 var hop_scale: float = 1.0
 var hop_pose: Variant = null
 var _hopping: bool = false
@@ -279,6 +281,10 @@ func play(tool_id: StringName, result: Dictionary, power: float = 0.5, continues
 	tossing = TOSS_TOOLS.has(tool_id)
 	_build(tool_id)
 	_position_center()
+	if anchor_view_at.is_finite() and skip_place:
+		var held: Control = _dart_view if tool_id == &"DICE_DARTS" else (_pirate_view if tool_id == &"DICE_PIRATE" else null)
+		if held != null:
+			position = anchor_view_at - Vector2(size.x * 0.5, held.size.y * 0.5)  # 그림은 맨 위(이름표 숨김)라 세로 가운데는 그림 높이의 절반
 	if not is_equal_approx(table_scale, 1.0) and not TOSS_TOOLS.has(tool_id):
 		pivot_offset = size / 2.0
 		scale = Vector2.ONE * table_scale
