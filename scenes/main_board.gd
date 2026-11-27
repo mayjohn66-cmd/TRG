@@ -583,6 +583,8 @@ var _charge_value: float = 0.0
 var _charge_anchor: Control = null
 ## 굴리기 전 내 판정 도구 소품 (1.3.1): 굴리기 버튼 위 보드에 놓여 있다 (ToolRestProp).
 var _rest_prop: ToolRestProp = null
+## 소품이 마지막으로 보였던 모습 (굴리기를 누르면 버튼이 잠겨 소품이 먼저 숨으므로, 결과가 오면 이 자리에서 주사위가 튄다).
+var _rest_prop_seen: Dictionary = {}
 var _fx_busy: bool = false
 var _capture_cutin: CaptureCutin = null
 var _capture_marks: Dictionary = {}
@@ -13738,6 +13740,18 @@ func _handle_roll_event(data: Dictionary) -> void:
 		_announcer.dismiss_soft()  # 굴림이 시작되면 남아 있는 차례·라운드 안내 배너는 걷는다 (주사위와 겹치지 않게)
 	_presenter.instant = instant_roll_for_test
 	_presenter.toss_from = _profile_center(int(data["player_id"]))  # 기본 주사위·친치로·윷은 굴린 사람 프로필에서 마당으로 던진다
+	# 1.3.1 제자리 점프: 굴리기 버튼 위 보드에 놓여 있던 내 주사위(소품)가 그 자리에서 튀어 오르며 구른다 (소품은 그 순간 숨긴다)
+	_presenter.hop_from = Vector2(INF, INF)
+	_presenter.hop_pose = null
+	var rest: Dictionary = _rest_prop_seen
+	if not rest.is_empty() and rest["tool"] == tool_id and tool_id in [&"D6", &"CHINCHIRO"] and int(data["player_id"]) == _dock_owner() \
+			and int(data["player_id"]) == int(rest["player"]) and Time.get_ticks_msec() - int(rest["msec"]) < 2500:
+		_presenter.hop_from = rest["center"]
+		_presenter.hop_scale = rest["scale"]
+		_presenter.hop_pose = rest["pose"]
+		if _rest_prop != null:
+			_rest_prop.visible = false
+	_rest_prop_seen = {}
 	var details: Dictionary = result["details"]
 	if _is_stage_tool(tool_id):
 		_handle_stage_roll(data)
@@ -15294,6 +15308,7 @@ func _refresh_rest_prop() -> void:
 	var rect: Rect2 = _roll_button.get_global_rect()
 	var at: Vector2 = get_global_transform().affine_inverse() * Vector2(rect.get_center().x, rect.position.y)
 	_rest_prop.position = at - Vector2(_rest_prop.size.x * 0.5, _rest_prop.size.y - 6.0)
+	_rest_prop_seen = {"tool": tool.tool_id, "player": _dock_owner(), "center": _rest_prop.hop_center(), "scale": _rest_prop.hop_scale(), "pose": _rest_prop.hop_pose(), "msec": Time.get_ticks_msec()}
 
 
 ## 굴리기 버튼 위 도구 소품 (테스트용).

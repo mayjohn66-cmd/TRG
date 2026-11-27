@@ -105,8 +105,31 @@ func _ready() -> void:
 	die.add_child(_pips)
 
 
+## 이어서 굴리기 (1.3.1 제자리 점프): 보드에 놓여 있던 주사위 자세에서 시작해 START_BLEND 동안 평소 굴림 자세로 섞여 들어간다.
+const START_BLEND: float = 0.24
+var _start_pose: Variant = null
+
+
+func start_from(pose: Transform3D) -> void:
+	_start_pose = pose
+	apply_time(0.0)
+
+
+## 지금 주사위 자세 (보드 위 소품이 넘겨준다).
+func die_pose() -> Transform3D:
+	return die.transform
+
+
+func _blend_start(pose: Transform3D, seconds: float) -> Transform3D:
+	if not (_start_pose is Transform3D) or seconds >= START_BLEND:
+		return pose
+	var weight: float = smoothstep(0.0, START_BLEND, seconds)
+	return (_start_pose as Transform3D).interpolate_with(pose, weight)
+
+
 func begin(value: int, power: float, tool_id: StringName = &"D6") -> void:
 	_tool_id = tool_id
+	_start_pose = null
 	result_value = value
 	result_face = physical_face_for(value, tool_id)
 	_pips.mesh = _pip_mesh_for(tool_id)
@@ -146,7 +169,7 @@ func apply_time(seconds: float) -> void:
 	if _tool_id == &"CHINCHIRO":
 		_apply_bowl_time(seconds)
 		return
-	die.transform = pose_at(seconds, result_face, _power)
+	die.transform = _blend_start(pose_at(seconds, result_face, _power), seconds)
 	settled = seconds >= ROLL_TIME
 	var lift: float = die.position.y - support_height(die.quaternion)
 	shadow.position.x = die.position.x
@@ -225,7 +248,7 @@ static func bowl_pose_at(seconds: float, face: int, power: float, entry: Vector2
 
 
 func _apply_bowl_time(seconds: float) -> void:
-	die.transform = bowl_pose_at(seconds, result_face, _power, _bowl_entry)
+	die.transform = _blend_start(bowl_pose_at(seconds, result_face, _power, _bowl_entry), seconds)
 	settled = seconds >= ROLL_TIME
 	shadow.position = Vector3(die.position.x, BOWL_MODEL.FLOOR_Y+0.012, die.position.z)
 	var lift: float = maxf(die.position.y - BOWL_MODEL.FLOOR_Y - BOWL_MODEL.DIE_SCALE, 0.0)
@@ -240,6 +263,7 @@ func apply_board_time(seconds: float, screen_lift: float) -> void:
 	var support: float = support_height(die.quaternion)
 	var clearance: float = (HALF_SIZE - ROUND_RADIUS) * sqrt(3.0) + ROUND_RADIUS
 	die.position = Vector3(0.0, lerpf(support, clearance, smoothstep(0.0, 30.0, screen_lift)), 0.0)
+	die.transform = _blend_start(die.transform, seconds)
 	settled = seconds >= ROLL_TIME
 
 

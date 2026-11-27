@@ -87,6 +87,17 @@ var table_scale: float = 1.0
 var toss_from: Vector2 = Vector2(INF, INF)
 ## Actual projected board outline, refreshed by MainBoard on layout/view changes.
 var toss_board_outline := PackedVector2Array()
+## 제자리 점프 (1.3.1): 보드 위에 놓여 있던 내 주사위 소품(ToolRestProp)에서 그대로 튀어 오른다. MainBoard가 굴림마다 넣고, 연출이 끝나면 지운다.
+## hop_from = 소품 주사위 화면의 가운데(화면 좌표), hop_scale = 소품 크기 비율, hop_pose = 소품 주사위의 3D 자세(Transform3D).
+var hop_from: Vector2 = Vector2(INF, INF)
+var hop_scale: float = 1.0
+var hop_pose: Variant = null
+var _hopping: bool = false
+var _toss_base_scale: float = 1.0
+## 제자리 점프가 내려앉는 자리 (튄 자리에서 살짝 앞으로).
+const HOP_DRIFT: Vector2 = Vector2(0.0, 14.0)
+## 제자리 점프 높이 (멀리서 던질 때 높이 TOSS_HEIGHT의 몇 배).
+const HOP_HEIGHT: float = 0.55
 ## 지금(또는 방금 끝난) 연출이 보드 위 투척인가.
 var tossing: bool = false
 ## 투척 중인 주사위가 바닥에서 떠 있는 높이 (화면 px, 테스트용).
@@ -364,6 +375,8 @@ func _stop_playback() -> void:
 	scale = Vector2.ONE
 	rotation = 0.0
 	placing_time = -1.0
+	_hopping = false
+	_toss_base_scale = 1.0
 	if _contact_fx != null:
 		_contact_fx.marks.clear()
 		_contact_fx.hide()
@@ -401,7 +414,9 @@ func _begin_toss() -> void:
 	_toss_view = _dice_3d if dice else _yut_3d
 	if dice and _dice_3d.shadow != null:
 		_dice_3d.shadow.visible = _mode == &"CHINCHIRO"
-	_toss_start = toss_from if toss_from.is_finite() else center + Vector2(0.0, 260.0)
+	_hopping = hop_from.is_finite() and _mode in [&"D6", &"CHINCHIRO"]
+	_toss_base_scale = hop_scale if _hopping else 1.0
+	_toss_start = hop_from if _hopping else (toss_from if toss_from.is_finite() else center + Vector2(0.0, 260.0))
 	if _ground_shadow == null:
 		_ground_shadow = GroundShadow.new()
 		add_child(_ground_shadow)
@@ -419,8 +434,10 @@ func _begin_toss() -> void:
 	_die_label.top_level = true
 	_die_label.z_index = 3
 	_die_label.pivot_offset = Vector2.ZERO
-	if _mode == &"CHINCHIRO":
+	if _mode == &"CHINCHIRO" and not _hopping:
 		_dice_3d.set_bowl_entry(_toss_start - center - TOSS_LAND_OFFSET)
+	if _hopping and hop_pose is Transform3D:
+		_dice_3d.start_from(hop_pose)  # 소품 주사위의 자세에서 이어서 돈다 (첫 프레임이 튀지 않게)
 	if _mode == &"YUT" and _yut_3d.result_value == 0:
 		_configure_yut_nak()
 	modulate.a = 0.0
@@ -485,6 +502,13 @@ func _update_place(t: float) -> void:
 			_contact_fx.queue_redraw()
 
 
+## 투척이 내려앉는 자리: 제자리 점프면 튄 자리 바로 앞, 아니면 보드 마당 한가운데.
+func _toss_target() -> Vector2:
+	if _hopping:
+		return _toss_start + (HOP_DRIFT if _mode == &"D6" else Vector2.ZERO)  # 친치로 그릇은 제자리에 있고 주사위만 그 안에서 튄다
+	return center + TOSS_LAND_OFFSET
+
+
 func _configure_yut_nak() -> void:
 	var origin: Vector2 = center+TOSS_LAND_OFFSET
 	var direction := Vector2(1.0,0.60).normalized()
@@ -501,7 +525,7 @@ func _configure_yut_nak() -> void:
 
 
 func _toss_ground(u: float) -> Vector2:
-	var target: Vector2 = center + TOSS_LAND_OFFSET
+	var target: Vector2 = _toss_target()
 	var direction: Vector2 = (target - _toss_start).normalized()
 	var eased: float = 1.0 - pow(1.0 - u, 2.0)
 	var curve: Vector2 = direction.orthogonal() * 18.0 * sin(PI * u) * (1.0 - u)
@@ -553,6 +577,8 @@ func _update_toss(t: float) -> void:
 			if u <= end:
 				var arc: float = clampf((u - start) / (end - start), 0.0, 1.0)
 				height = 4.0 * arc * (1.0 - arc) * TOSS_HEIGHT * lerpf(0.75, 1.05, _power) * [1.0, 0.24, 0.065][index]
+				if _hopping:
+					height *= HOP_HEIGHT  # 제자리 점프는 판 위에서 통통 튀는 정도로
 				break
 			start = end
 		for contact: float in TOSS_CONTACTS:
@@ -562,11 +588,13 @@ func _update_toss(t: float) -> void:
 	toss_height = height
 	var lift: float = clampf(height / TOSS_HEIGHT, 0.0, 1.0)
 	var grow: float = lerpf(0.68 if _mode != &"YUT" else 0.58, 1.0, eased)
+	if _hopping:
+		grow = _toss_base_scale * (1.0 + 0.14 * clampf(height / TOSS_HEIGHT, 0.0, 1.0))  # 제자리 점프: 소품 크기에서 떠오르는 만큼만 살짝 커진다
 	scale = Vector2(1.0 + compression, 1.0 - compression) * grow
-	var direction: Vector2 = (center + TOSS_LAND_OFFSET - _toss_start).normalized()
+	var direction: Vector2 = (_toss_target() - _toss_start).normalized()
 	rotation = direction.x * 0.10 * sin(PI * u) * (1.0 - u)
 	_place_toss_body(ground + Vector2(0.0, -height))
-	modulate.a = clampf(u * 6.0, 0.0, 1.0)
+	modulate.a = 1.0 if _hopping else clampf(u * 6.0, 0.0, 1.0)
 	if _ground_shadow != null and _ground_shadow.visible:
 		var shadow_size: Vector2 = SHADOW_SIZE * grow * (1.0 - 0.5 * lift)
 		_ground_shadow.size = shadow_size
@@ -587,9 +615,9 @@ func _update_toss(t: float) -> void:
 func _update_bowl_toss(t: float) -> void:
 	# The dish stays on the board; only the 3D die travels into its cavity.
 	toss_height = 0.0
-	scale = Vector2.ONE
+	scale = Vector2.ONE * _toss_base_scale
 	rotation = 0.0
-	var landed: Vector2 = center + TOSS_LAND_OFFSET
+	var landed: Vector2 = _toss_target()
 	_place_toss_body(landed)
 	_place_toss_label(landed)
 	modulate.a = clampf(t / 0.10, 0.0, 1.0)
@@ -625,11 +653,12 @@ func _update_linger(t: float) -> void:
 	pivot_offset = size / 2.0
 	scale = k
 	rotation = 0.0
-	var landed: Vector2 = center + TOSS_LAND_OFFSET
-	_place_toss_body(landed - Vector2(0.0, SHADOW_DROP * (k.y - 1.0)))
+	var landed: Vector2 = _toss_target()
+	k *= _toss_base_scale  # 제자리에서 튄 주사위는 보드 위 소품 크기 그대로 남는다
+	_place_toss_body(landed - Vector2(0.0, SHADOW_DROP * (k.y - _toss_base_scale)))
 	if _ground_shadow != null and _ground_shadow.visible:
 		_ground_shadow.size = SHADOW_SIZE * k.x
-		_ground_shadow.position = landed + Vector2(0.0, SHADOW_DROP) - _ground_shadow.size / 2.0
+		_ground_shadow.position = landed + Vector2(0.0, SHADOW_DROP * _toss_base_scale) - _ground_shadow.size / 2.0
 		_ground_shadow.modulate.a = 1.0
 	if _die_label != null:
 		# 도장처럼 크게 떠서 쾅 내려찍고 살짝 튕긴다 (2배 → 1배).

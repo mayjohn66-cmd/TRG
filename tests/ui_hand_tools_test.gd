@@ -102,6 +102,7 @@ func run() -> void:
 	root.size = Vector2i(1366, 768)
 	await presenter_gates()
 	await placed_on_board()
+	await dice_hop_in_place()
 	await fixture()
 	await warmup()
 	await pirate_buttons()
@@ -140,6 +141,41 @@ func placed_on_board() -> void:
 		check(presenter.placing_time < 0.0 and presenter.scale == Vector2.ONE and presenter.position == target, "%s 제자리·제 크기로 내려앉는다" % id)
 		check(presenter._ground_shadow != null and presenter._ground_shadow.visible, "%s 바닥 그림자가 깔린다" % id)
 		presenter.cancel()
+	host.queue_free()
+	await frames()
+
+
+## 1.3.1: 보드에 놓여 있던 주사위(소품)가 그 자리에서 튀어 오르며 구르고, 그 바로 앞에 내려앉는다 (멀리서 날아오지 않는다).
+func dice_hop_in_place() -> void:
+	var host := Control.new()
+	host.size = Vector2(1366, 768)
+	root.add_child(host)
+	var presenter := RollPresenter.new()
+	host.add_child(presenter)
+	await frames()
+	presenter.toss_from = Vector2(683, 720)
+	presenter.hop_from = Vector2(683, 250)
+	presenter.hop_scale = 0.7
+	var prop := DiceRoll3D.new()
+	host.add_child(prop)
+	prop.begin(6, 0.5)
+	prop.apply_time(3.0)
+	presenter.hop_pose = prop.die_pose()
+	var result: Dictionary = {"tool_id": &"D6", "steps": 4, "details": {"face": 4}}
+	presenter.play(&"D6", result, 0.5)
+	var view: Control = presenter._dice_3d
+	var body: Vector2 = view.get_global_transform() * (view.size / 2.0)
+	check(presenter._hopping and body.distance_to(Vector2(683, 250)) < 2.0, "주사위는 소품 자리에서 출발한다 (%s)" % str(body))
+	check(is_equal_approx(presenter.scale.x, 0.7) and presenter.modulate.a == 1.0, "소품 크기 그대로, 흐려졌다 나타나지 않는다")
+	check(presenter._dice_3d.die_pose().basis.get_rotation_quaternion().is_equal_approx(prop.die_pose().basis.get_rotation_quaternion()), "첫 자세가 소품 주사위와 같다")
+	var top: float = 0.0
+	while presenter.active:
+		top = maxf(top, presenter.toss_height)
+		await process_frame
+	body = view.get_global_transform() * (view.size / 2.0)
+	check(body.distance_to(Vector2(683, 250) + RollPresenter.HOP_DRIFT) < 3.0, "튄 자리 바로 앞에 내려앉는다 (%s)" % str(body))
+	check(top > 20.0 and top < RollPresenter.TOSS_HEIGHT * 0.7, "판 위에서 통통 튀는 높이 (%.1f)" % top)
+	presenter.cancel()
 	host.queue_free()
 	await frames()
 
