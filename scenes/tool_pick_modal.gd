@@ -180,6 +180,16 @@ func pick(index: int) -> void:
 				picked.emit(chosen))
 
 
+## 카드가 내려앉는 자리 (화면 좌표, 카드 매트의 점선 자리). 들리기 전 놓인 자리 기준.
+func slot_rects() -> Array[Rect2]:
+	var rects: Array[Rect2] = []
+	for holder: Control in _items:
+		var face := holder.get_node("Face") as Control
+		var frame: Transform2D = holder.get_global_transform()
+		rects.append(Rect2(frame * Vector2(0, LIFT), face.size * frame.get_scale()))
+	return rects
+
+
 func picks() -> Array[int]:
 	return _picks.duplicate()
 

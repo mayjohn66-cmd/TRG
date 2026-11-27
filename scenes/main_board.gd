@@ -1875,6 +1875,8 @@ func layout_for(viewport_size: Vector2) -> void:
 		_apply_card_zoom(_alkkagi_camera)  # 배치가 보드 층 자리를 되돌려도 당겨 본 판은 그대로
 		if _card_view_on and _presenter != null:
 			_presenter.center = _card_table_center()
+		if _card_mat != null and is_instance_valid(_card_mat):
+			_card_mat.mat_center = _card_table_center()
 
 
 ## 보드 한가운데의 화면 좌표 (창 비율 오프셋 포함).
@@ -7990,7 +7992,7 @@ func _refresh_holdem_exchange(tool: BaseJudgmentTool) -> void:
 func _create_holdem_exchange(hand: Array) -> void:
 	_holdem_exchange = HoldemExchangePanel.new()
 	_holdem_exchange.setup(hand, true)
-	_enter_card_view()
+	_enter_card_view(&"HOLDEM")
 	_holdem_exchange.position = _card_table_center()
 	_holdem_exchange_key = str(hand)+":%d:%d" % [state.round_number,manager.current_player_id()]
 	_holdem_exchange.exchange.connect(func(keep: Array[bool]) -> void: _act(&"roll", {"keep": keep}))
@@ -9271,6 +9273,8 @@ func _reset_presentation() -> void:
 	_card_view_on = false
 	_card_view_player = -1
 	_release_card_zoom()
+	if _card_mat != null and is_instance_valid(_card_mat):
+		_card_mat.reveal = 0.0
 	if _presenter != null:
 		_presenter.center = _board_center() + Vector2(0, -40)
 		_presenter.table_scale = 1.0
@@ -13795,7 +13799,7 @@ func _handle_roll_event(data: Dictionary) -> void:
 	var roller_id: int = int(data["player_id"])
 	_presenter.interactive = roller_id == _dock_owner() and not _is_bot_turn() and (net == null or not net.is_bot(roller_id))
 	if CARD_TABLE_TOOLS.has(tool_id):
-		_enter_card_view()  # 카드는 알까기 시점(위에서 내려다본 판)으로 펼친 판 위에 깐다
+		_enter_card_view(tool_id)  # 카드는 알까기 시점(위에서 내려다본 판)으로 펼친 판 위에 깐다
 		_presenter.center = _card_table_center()
 		_presenter.table_scale = 1.3  # 당겨 본 판 가운데: 판이 커진 만큼 카드도 크게
 	await _presenter.play(tool_id, result, _pending_power, int(data.get("chain_index", 0)) > 0)
@@ -14909,7 +14913,7 @@ func _open_tool_pick(tool: BaseJudgmentTool) -> bool:
 	_tool_pick.picked.connect(_on_tool_picked)
 	add_child(_tool_pick)
 	if on_table:
-		_enter_card_view()
+		_enter_card_view(tool.tool_id)
 		_tool_pick.table_center = _card_table_center()
 	return true
 
@@ -14949,16 +14953,18 @@ const CARD_TABLE_TOOLS: Array[StringName] = [&"DICE_TAROT", &"DICE_HWATU", &"HOL
 var _card_view_on: bool = false
 var _card_view_player: int = -1
 ## 카드를 쓰는 동안 판 가운데를 당겨 본다 (보드·말 층만 확대, 화면 UI는 그대로). 시점 전환과 같은 움직임으로 들어가고 나온다.
-## 1.3.1: 발판이 화면 밖으로 나갈 만큼 (1366x768 기준 4.2배, 보이는 화면이 넓거나 높으면 그만큼 더). 판 가운데 마당만 보인다.
-var card_zoom: float = 4.2
+## 1.3.1: 판 가운데를 당겨 보고(2.2배, 보이는 화면이 넓거나 높으면 그만큼 더) 그 위에 카드 매트(CardMat)를 펼친다. 매트 밖 보드는 어둡게 덮인다.
+var card_zoom: float = 2.2
+var _card_mat: CardMat = null
 var _card_zoom_on: bool = false
 ## 판 가운데로 들어가고 나오는 시간 (크게 당기므로 알까기 0.26초보다 느긋하게).
 const CARD_VIEW_TIME: float = 0.45
 
 
-func _enter_card_view() -> void:
+func _enter_card_view(tool_id: StringName = &"DICE_TAROT") -> void:
 	if _card_view_on or _alkkagi_saved_view != -1 or state == null:
 		return
+	_open_card_mat(tool_id)
 	_card_view_on = true
 	_card_zoom_on = true
 	_card_view_player = manager.current_player_id() if manager != null else -1
@@ -14971,6 +14977,8 @@ func _leave_card_view() -> void:
 		return
 	_card_view_on = false
 	_card_view_player = -1
+	if _card_mat != null and is_instance_valid(_card_mat):
+		await _card_mat.roll_up()  # 매트를 말아 넣은 뒤 판 밖으로 물러난다
 	_alkkagi_top_view(false, false, CARD_VIEW_TIME)
 	while _alkkagi_camera_tween != null and _alkkagi_camera_tween.is_running() and is_inside_tree():
 		await get_tree().process_frame
@@ -14978,6 +14986,34 @@ func _leave_card_view() -> void:
 	if _presenter != null:
 		_presenter.center = _board_center() + Vector2(0, -40)  # 평소 연출 자리 (_apply_layout과 같다)
 		_presenter.table_scale = 1.0
+
+
+## 카드 매트를 판 가운데에 펼친다 (보드·말보다 위, 화면 UI보다 아래). 카드가 놓일 자리는 열린 창에서 매 프레임 읽는다.
+func _open_card_mat(tool_id: StringName) -> void:
+	if not _fx_on() or instant_roll_for_test:
+		return
+	if _card_mat == null or not is_instance_valid(_card_mat):
+		_card_mat = CardMat.new()
+		add_child(_card_mat)
+		_card_mat.slot_source = _card_slot_rects
+	move_child(_card_mat, _pawn_layer.get_index() + 1)
+	_card_mat.setup(tool_id)
+	_card_mat.mat_center = _card_table_center()
+	_card_mat.unroll(0.12)
+
+
+## 열린 고르기·교환 창의 카드 자리 (매트 좌표).
+func _card_slot_rects() -> Array[Rect2]:
+	var rects: Array[Rect2] = []
+	var source: Array[Rect2] = []
+	if _tool_pick != null and is_instance_valid(_tool_pick):
+		source = _tool_pick.slot_rects()
+	elif _holdem_exchange != null and is_instance_valid(_holdem_exchange):
+		source = _holdem_exchange.slot_rects()
+	var inverse: Transform2D = get_global_transform().affine_inverse()
+	for rect: Rect2 in source:
+		rects.append(Rect2(inverse * rect.position, rect.size / get_global_transform().get_scale()))
+	return rects
 
 
 ## 판 가운데를 당겨 본다: weight 0~1 (알까기 시점 전환과 같은 값). 기차 연출의 카메라와 같은 방식 (보드·말 층을 같은 변환으로).

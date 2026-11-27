@@ -268,6 +268,15 @@ func play_exchange(final_cards: Array, swapped: Array) -> void:
 	busy=false
 
 
+## 카드가 내려앉는 자리 (화면 좌표, 카드 매트의 점선 자리).
+func slot_rects() -> Array[Rect2]:
+	var rects: Array[Rect2] = []
+	for holder: Control in _items:
+		var frame: Transform2D = holder.get_global_transform()
+		rects.append(Rect2(frame * Vector2(0, LIFT), CARD_SIZE * frame.get_scale()))
+	return rects
+
+
 func _shadow_shown(index: int, shown: bool) -> void:
 	var shadow: Control = _items[index].get_node_or_null("TableShadow")
 	if shadow != null:
