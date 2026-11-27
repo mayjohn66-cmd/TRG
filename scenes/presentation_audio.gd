@@ -19,6 +19,7 @@ static func cue(at:float,event:StringName,db:float=0.0,until:float=-1.0) -> Dict
 func fire(event:StringName,db:float=0.0,loop:bool=false) -> AudioStreamPlayer:
 	var owner:CanvasItem=_owner.get_ref() as CanvasItem if _owner!=null else null
 	if owner==null or not owner.is_inside_tree() or not owner.is_visible_in_tree():return null
+	Sfx.observe_request(event, db)
 	if not Sfx.enabled() or GameSession.audio_muted or GameSession.sfx_muted:return null
 	var now:int=Time.get_ticks_msec()
 	if Sfx.MIN_INTERVAL_MS.has(event) and now-int(Sfx._last_play_ms.get(event,-10000))<int(Sfx.MIN_INTERVAL_MS[event]):return null

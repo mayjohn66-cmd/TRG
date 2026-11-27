@@ -721,6 +721,10 @@ jobs:
         if: steps.validation.outputs.scope == 'full'
         run: godot --headless --audio-driver Dummy --path . -s res://tests/ui_web_3d_budget_test.gd
 
+      - name: Run direct judgment tool audio test
+        if: steps.validation.outputs.scope == 'full'
+        run: godot --headless --audio-driver Dummy --path . -s res://tests/ui_tool_audio_test.gd
+
       - name: Run judgment tool direct control test (roulette, slot, darts, scratch)
         if: steps.validation.outputs.scope == 'full'
         run: godot --headless --path . -s res://tests/ui_direct_control_test.gd

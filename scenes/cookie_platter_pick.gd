@@ -62,7 +62,7 @@ func open_at(seconds: float) -> void:
 		ink.albedo_texture = _print_view.get_texture()
 		ink.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		mesh.set_surface_override_material(0,ink)
-		Sfx.play(&"icecream_snap",-5)
+		Sfx.play(&"cookie_crack",-5)
 	var spread := smoothstep(0.55,1.65,seconds)
 	_opening.scale=Vector3.ONE*lerpf(.68,1.08,spread)
 	var left_mouth := FortuneCookieView.CLOSED_SEAM.lerp(FortuneCookieView.LEFT_OPENING,spread)

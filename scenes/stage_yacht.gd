@@ -199,6 +199,7 @@ func _on_die_toggled(index: int) -> void:
 	if not _can_toggle():
 		return
 	kept[index] = not kept[index]
+	Sfx.play(&"toy_click",-9)
 	_refresh()
 
 
@@ -261,6 +262,7 @@ func play(result: Dictionary) -> void:
 	var rolled: Array = details["rolled"]
 	var confirmed: bool = bool(details.get("confirmed", false))
 	if confirmed:
+		if not instant: PresentationAudio.one_shot(self,&"good" if bool(result.get("reroll",false)) else &"card_pick",-8)
 		started = false
 		kept = [false, false, false, false, false]
 		rerolls_left = int(details.get("rerolls_left", 0))
@@ -278,6 +280,7 @@ func play(result: Dictionary) -> void:
 		_refresh()
 		return
 	active = true
+	if not rolled.is_empty(): PresentationAudio.one_shot(self,&"dice_roll",-8)
 	_elapsed = 0.0
 	_landed = rolled.is_empty()
 	for index: int in 5:

@@ -7,10 +7,16 @@ var folder := ""
 var tick := 0
 var clips: Array[Dictionary] = []
 var failed := false
+var include_all := false
+var observed_rolls: Array[Dictionary] = []
+var audio_requests: Array[Dictionary] = []
 
 func _initialize() -> void:
+	Sfx.test_event_observer=func(event: StringName, db: float) -> void:
+		audio_requests.append({"frame":tick,"event":str(event),"db":db})
 	for arg: String in OS.get_cmdline_user_args():
 		if arg.begins_with("out="): folder=arg.substr(4)
+		if arg == "all=true": include_all=true
 	run.call_deferred()
 func _process(_delta: float) -> bool:
 	tick+=1
@@ -48,6 +54,9 @@ func fixture(id: StringName) -> void:
 	board.local_player_id=roller
 	board.state.tools[roller]=ToolRegistry.create(id)
 	board.state.rng.seed=42
+	observed_rolls.clear()
+	board.manager.event_received.connect(func(kind: StringName, data: Dictionary) -> void:
+		if kind == &"roll_resolved": observed_rolls.append(data["result"]))
 	board.instant_roll_for_test=false
 	board._refresh_all()
 	await frames(4)
@@ -58,6 +67,18 @@ func start_clip(name: String) -> void:
 	print("CAPTURE_START ",name," frame=",tick)
 func end_clip() -> void:
 	clips[-1]["end_frame"]=tick
+	clips[-1]["tool_id"]=str(board.state.tools[board.local_player_id].tool_id)
+	clips[-1]["resolved_rolls"]=observed_rolls.size()
+	var counts: Dictionary = {}
+	for request: Dictionary in audio_requests:
+		if int(request.frame)>=int(clips[-1].start_frame) and int(request.frame)<=tick:
+			counts[request.event]=int(counts.get(request.event,0))+1
+	clips[-1]["sfx_counts"]=counts
+	var trace:=FileAccess.open(folder.path_join("audio-requests.json"),FileAccess.WRITE)
+	trace.store_string(JSON.stringify(audio_requests,"  "))
+	if observed_rolls.is_empty():
+		failed=true
+		push_error("CAPTURE: no resolved roll for "+str(clips[-1].name))
 	var file:=FileAccess.open(folder.path_join("clips.json"),FileAccess.WRITE)
 	file.store_string(JSON.stringify(clips,"  "))
 	print("CAPTURE_END ",clips[-1].name," frame=",tick)
@@ -262,7 +283,108 @@ func run() -> void:
 			await process_frame
 	await wait_result()
 	end_clip()
+	if include_all: await remaining_tools()
 	if board!=null: board.queue_free()
 	await frames(3)
 	print("CONNECTED_CAPTURE_DONE clips=",clips.size()," failed=",failed)
 	quit(1 if failed else 0)
+
+func remaining_tools() -> void:
+	for entry: Array in [[&"D6","12-standard-dice"],[&"CHINCHIRO","13-chinchiro"],[&"YUT","14-yut"]]:
+		await fixture(entry[0])
+		start_clip(entry[1])
+		await seconds(.6)
+		await click(board._roll_button)
+		await wait_result()
+		end_clip()
+	await fixture(&"LIFE_ROULETTE")
+	start_clip("15-life-roulette")
+	await seconds(.8)
+	var pad:=board._roll_pad
+	var wheel_center: Vector2=pad.get_global_transform()*(pad._wheel.position+pad._wheel.size*.5)
+	await click_at(wheel_center)
+	await wait_result()
+	end_clip()
+	await fixture(&"SLOT_777")
+	start_clip("16-slot-machine")
+	await seconds(.5)
+	await click(board._roll_button)
+	await seconds(.6)
+	for reel: int in 3:
+		board._presenter.manual_tap()
+		await seconds(.4)
+	await wait_result()
+	end_clip()
+	await fixture(&"REVOLVER")
+	start_clip("17-revolver")
+	await seconds(3.3)
+	await click(board._roll_button)
+	await wait_result()
+	if board._stop_button.is_visible_in_tree() and not board._stop_button.disabled:
+		await seconds(.6)
+		await click(board._stop_button)
+		await seconds(1)
+	end_clip()
+	await fixture(&"DICE_DARTS")
+	start_clip("18-darts")
+	await seconds(.8)
+	await click(board._roll_button)
+	await wait_result()
+	end_clip()
+	await fixture(&"DICE_TAROT")
+	start_clip("19-tarot")
+	await click(board._roll_button)
+	await seconds(.9)
+	var modal:=board.tool_pick_modal()
+	if modal!=null:
+		await click(modal.find_child("PickItem2",true,false))
+	else:
+		failed=true
+		push_error("CAPTURE: tarot selection missing")
+	await wait_result()
+	end_clip()
+	await fixture(&"DICE_STOCK")
+	start_clip("20-stock-chart")
+	await seconds(.6)
+	await click(board._roll_button)
+	await wait_result()
+	end_clip()
+	await fixture(&"DICE_YACHT")
+	start_clip("21-yacht-dice")
+	await seconds(.7)
+	await click(board._stage_yacht._start_button)
+	await seconds(1.8)
+	await click(board._stage_yacht.dice_views[1])
+	await click(board._stage_yacht.dice_views[3])
+	await seconds(.6)
+	await click(board._stage_yacht._reroll_button)
+	await seconds(1.8)
+	await snapshot("21-yacht-kept-rerolled")
+	await click(board._stage_yacht._confirm_button)
+	await seconds(2)
+	end_clip()
+	await fixture(&"DICE_BLACKJACK")
+	start_clip("22-blackjack")
+	await seconds(.7)
+	await click(board._stage_blackjack._start_button)
+	await seconds(1.3)
+	if board._stage_blackjack.can_act:
+		await click(board._stage_blackjack._hit_button)
+		await seconds(1.3)
+	if board._stage_blackjack.can_act:
+		await click(board._stage_blackjack._stand_button)
+		await seconds(1.5)
+	await snapshot("22-blackjack-result")
+	end_clip()
+	await fixture(&"DICE_PINBALL")
+	start_clip("23-pinball")
+	await seconds(.6)
+	await click(board._roll_button)
+	await seconds(.8)
+	await snapshot("23-pinball-ready")
+	await click(board._roll_button)
+	for i: int in 450:
+		if observed_rolls.size()>0 and not board._stage_pinball.active and not board._fx_busy: break
+		await process_frame
+	await seconds(.8)
+	end_clip()

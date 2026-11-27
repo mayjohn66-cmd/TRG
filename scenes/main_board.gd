@@ -13705,7 +13705,6 @@ func _on_yacht_reroll(keep: Array) -> void:
 		return
 	var charged: float = _take_charge()
 	_pending_power = charged if charged >= 0.0 else 0.5
-	Sfx.play(&"dice_roll")
 	_act(&"roll", {"keep": keep})
 
 

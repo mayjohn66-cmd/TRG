@@ -286,12 +286,14 @@ func play(tool_id: StringName, result: Dictionary, power: float = 0.5, continues
 		for at: float in [0.27, 0.50, 0.72]:
 			cues.append(PresentationAudio.cue(at, &"yut_clack", -8.0))
 		cues.append(PresentationAudio.cue(OmikujiView.DRAW_AT, &"omikuji_draw", -6.0))
+		cues.append(PresentationAudio.cue(OmikujiView.UNROLL_AT, &"paper_unfold", -8.0))
 		cues.append(PresentationAudio.cue(OmikujiView.REVEAL_AT, &"card_pick", -5.0))
 		var fortune: StringName = _result.get("details", {}).get("fortune", &"good")
 		if fortune in [&"great", &"worst"]:
 			cues.append(PresentationAudio.cue(OmikujiView.REVEAL_AT + 0.08, &"good" if fortune == &"great" else &"bad", -6.0))
 		if fortune == &"great":
 			cues.append(PresentationAudio.cue(OmikujiView.FOLD_AT, &"ticket_rustle", -10.0))
+			cues.append(PresentationAudio.cue(OmikujiView.TIE_AT, &"ticket_rustle", -9.0))
 	elif tool_id == &"DICE_CAPSULE":
 		cues.append(PresentationAudio.cue(CapsuleGachaView.COIN_AT + 0.45, &"toy_click", -8.0))
 		if not interactive:  # 내가 돌리는 레버는 돌린 만큼 딸깍 소리를 낸다 (_turn_capsule)
@@ -319,14 +321,14 @@ func play(tool_id: StringName, result: Dictionary, power: float = 0.5, continues
 		cues.append(PresentationAudio.cue(0.18, &"toy_click", -9.0))
 		for at: float in [0.55, 0.72, 0.88]:
 			cues.append(PresentationAudio.cue(at, &"yut_clack", -12.0))
-		cues.append(PresentationAudio.cue(FortuneCookieView.CRACK_AT, &"icecream_snap", -4.0))
-		cues.append(PresentationAudio.cue(FortuneCookieView.UNFOLD_AT, &"ticket_rustle", -9.0))
+		cues.append(PresentationAudio.cue(FortuneCookieView.CRACK_AT, &"cookie_crack", -4.0))
+		cues.append(PresentationAudio.cue(FortuneCookieView.UNFOLD_AT, &"paper_unfold", -9.0))
 		cues.append(PresentationAudio.cue(FortuneCookieView.REVEAL_AT, &"good" if bool(_result.get("details", {}).get("jackpot", false)) else &"card_pick", -6.0))
 	elif tool_id == &"DICE_ICECREAM":
 		cues.append(PresentationAudio.cue(IceCreamView.BITE_AT, &"icecream_snap", -5.0))
 		cues.append(PresentationAudio.cue(IceCreamView.REVEAL_AT, &"icecream_reveal", -7.0))
 		if bool(_result.get("details", {}).get("again", false)):
-			cues.append(PresentationAudio.cue(IceCreamView.STICK_LAND_AT, &"toy_click", -11.0))
+			cues.append(PresentationAudio.cue(IceCreamView.STICK_LAND_AT, &"stick_land", -8.0))
 			cues.append(PresentationAudio.cue(IceCreamView.REFILL_AT, &"good", -6.0))
 	_new_audio.start(self,cues)
 	await finished

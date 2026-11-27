@@ -136,6 +136,11 @@ const ALIASES: Dictionary = {
 ## 파일이 없는 이벤트를 코드로 합성하는 방법. 마디(segment)마다 [시작초, 길이초, 시작Hz, 끝Hz, 파형, 음량, 잡음비율(0~1)] 이고,
 ## 파형은 sine/tri/square/noise. 소리 크기는 마디 안에서 지수로 줄어든다 (decay는 클수록 빨리 사라짐).
 const SYNTH: Dictionary = {
+	&"paper_unfold": [[0.0,0.13,0.0,0.0,"noise",0.28,1.0,3.0],[0.04,0.09,1050.0,620.0,"tri",0.10,0.7,5.0]],
+	&"wrapper_tear": [[0.0,0.18,0.0,0.0,"noise",0.36,1.0,4.0],[0.025,0.065,2100.0,950.0,"tri",0.13,0.7,6.0]],
+	&"cookie_crack": [[0.0,0.035,0.0,0.0,"noise",0.56,1.0,8.0],[0.003,0.065,1350.0,410.0,"tri",0.28,0.5,7.0],[0.055,0.045,0.0,0.0,"noise",0.20,1.0,7.0]],
+	&"stick_land": [[0.0,0.025,1700.0,730.0,"tri",0.25,0.2,7.0],[0.002,0.065,320.0,160.0,"sine",0.26,0.0,7.0]],
+	&"pinball_launch": [[0.0,0.12,180.0,460.0,"tri",0.22,0.25,2.0],[0.15,0.08,900.0,180.0,"tri",0.40,0.1,6.0]],
 	&"monatium_cash_drop": [[0.0, 0.10, 280, 95, "sine", 0.67, 0.0, 4], [0.005, 0.085, 1050, 430, "tri", 0.43, 0.69, 4.5]],
 	&"monatium_cash_reward": [[0.0, 0.14, 1660, 1300, "tri", 0.44, 0.0, 3.5], [0.07, 0.17, 2093, 2093, "sine", 0.40, 0.0, 3.0], [0.14, 0.28, 2637, 2637, "sine", 0.39, 0.0, 3.3], [0.23, 0.16, 1820, 1660, "tri", 0.24, 0.0, 4.5], [0.31, 0.11, 2260, 1980, "sine", 0.26, 0.0, 4.1]],
 	&"penguin_slide": [[0, 0.12, 440, 970, "tri", 0.37, 0.26, 2], [0.08, 0.21, 1160, 480, "tri", 0.43, 0.51, 2.5]],
@@ -204,6 +209,11 @@ static var _last_play_ms: Dictionary = {}
 ## Only repetitive controls/ticks are gated; tile and Yut landings stay independent.
 const MIN_INTERVAL_MS: Dictionary = {&"bounty_mark": 180, &"meddle": 150, &"rolling_body": 140, &"proton_burn": 100, &"ui_click": 45, &"ui_hover": 90, &"roulette_tick": 24, &"slot_spin": 120, &"hack_crack": 120}
 static var _pool: Array[AudioStreamPlayer] = []
+## Optional inspection hook: requests, including muted/headless ones; never gameplay RNG.
+static var test_event_observer: Callable = Callable()
+
+static func observe_request(event: StringName, db: float) -> void:
+	if test_event_observer.is_valid(): test_event_observer.call(event, db)
 static var _next: int = 0
 static var _host: Node = null
 static var _bgm: AudioStreamPlayer = null
@@ -233,6 +243,7 @@ static func enabled() -> bool:
 ## 이벤트 소리를 낸다. volume_db는 그 소리만의 보정, pitch_variance는 반복 소리가 지루하지 않게 음높이를 조금 흔드는 폭이다.
 ## pitch는 기본 음높이 배율이다 (말이 연달아 걸을 때 한 칸마다 조금씩 높여 다다다닥 달리는 느낌을 낸다).
 static func play(event: StringName, volume_db: float = 0.0, pitch_variance: float = 0.06, pitch: float = 1.0) -> void:
+	observe_request(ALIASES.get(event,event), volume_db)
 	if not enabled() or GameSession.audio_muted:
 		return
 	event = ALIASES.get(event, event)
