@@ -3476,3 +3476,5 @@ TRPG,TRPG,TRPG
 파워 게이지를 빨간 끝까지 채워 던지면 +%d칸,Release the power gauge at the red end for +%d spaces,パワーゲージを赤い端まで溜めて投げると+%dマス
 다시 굴리기 (%d),Reroll (%d),振り直し (%d)
 %s → %d칸%s,%s → %d spaces%s,%s → %dマス%s
+정지 +%d칸,Stop +%d,停止 +%dマス
+멈추기 +%d칸,Stop +%d,止める +%dマス

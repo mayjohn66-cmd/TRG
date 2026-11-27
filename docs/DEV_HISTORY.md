@@ -2069,6 +2069,14 @@ godot --headless --audio-driver Dummy --path . -s res://tests/ui_live_hotfix_tes
 - 모바일(844x390 비율) 캡처로 케이스·계산대 크기 확인.
 - 테스트: `ui_hand_tools_test`(야추: 카드 시점, 판 가운데, 고정하면 위 칸으로, 확정하면 원래 시점), `test_dice_roll_3d`(결과는 펠트 줄에 한 줄로).
 
+### 7.128 이어서 굴리는 판정 도구 옆 UI 정리 (1.3.1)
+- 요청: 연속으로 굴리는 판정들 옆에 UI가 지저분하니 전부 정리.
+- 보드 왼쪽 기록판(`RollSuccessHistory`): 머리줄(도구 그림·"P# · N회 성공"), 결과 글자판 줄(1 3칸 …, 윷 도장 제외), 꼬리 글자판(N칸 누적·N칸 확정·턴 종료·계속 도전 가능)을 띄우지 않는다. 성공 표식(칩 더미·도장)과 윷의 윷·모 도장만 남는다. 글자는 기록·테스트용으로 계속 채운다. 성공 표식이 없는 도구는 기록판을 띄우지 않는다.
+- 러시안 룰렛: 보드 위 큰 "+N" 숫자판(기록판)을 없애고 누적 칸을 [정지] 버튼에 붙였다 ("정지 +12칸", 누적 없으면 "정지").
+- 해적 룰렛: 오른쪽 버튼 줄(도구 패널 아래)에 떨어져 있던 [멈추고 이동 확정]을 [칼 꽂기] 바로 오른쪽으로 옮기고 누적 칸을 붙였다 ("멈추기 +6칸", `_place_stop_beside_roll`).
+- 블랙잭 스테이지: 제목("블랙잭 21 딜러")과 시작 안내("카드를 받아 시작하세요")를 뺐다.
+- 테스트 `ui_darts_stamp_test`·`ui_roll_history_test`를 새 모습에 맞게 고쳤다. 이미 실패하던 `ui_roll_history_test` "success heading retains full total", `ui_blackjack_compact_test` 2건("21 and reroll remain explicit", "long hand cannot grow stage or history")은 이번 변경과 무관하게 그대로다 (변경 전 코드에서도 실패 확인).
+
 ## 부록 B. 초기 예외 규칙 해석 (v1~v3.2, `EDGE_CASE_SPEC.md`에서 옮김)
 
 > 이 부록의 규칙은 당시 기준이다. 24칸 순환 트랙, 세트 효과, 후퇴 눈금, 옛 법전 교칙 등은 이후 개편으로 바뀌었다.

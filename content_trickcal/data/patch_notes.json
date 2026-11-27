@@ -129,6 +129,11 @@
        "ko": "[스크래치 복권]도 판 가운데로 다가가 나무 계산대 위에서 긁어요",
        "en": "[Scratch Ticket] is now scratched on a wooden counter in the middle of the board",
        "ja": "［スクラッチくじ］もボード中央に寄って木のカウンターの上で削ります"
+      },
+      {
+       "ko": "이어서 굴리는 판정 도구 옆 UI를 정리했어요: 보드 왼쪽 기록판의 이름·횟수·누적 글자판을 없애고 성공 표식만 남겼어요. [러시안 룰렛]의 누적 칸은 [정지 +12칸]처럼 정지 버튼에, [해적 룰렛]은 [칼 꽂기] 바로 옆 [멈추기 +6칸] 버튼에 보여요. [블랙잭]의 제목·안내 글도 뺐어요",
+       "en": "Cleaned up the UI next to Judgment Tools that keep rolling: the side panel no longer shows names, counts or running-total plaques, only success markers. [Russian Roulette] shows its running total on the stop button ([Stop +12]), and [Pirate Roulette] has a [Stop +6] button right next to [Stab]. The [Blackjack] title and hint text are gone too",
+       "ja": "続けて振る判定ツールの横のUIを整理しました：ボード左の記録欄から名前・回数・累計の札をなくし、成功マークだけを残しました。［ロシアンルーレット］の累計マスは［停止 +12マス］のように停止ボタンに、［海賊ルーレット］は［剣を刺す］のすぐ横の［止める +6マス］ボタンに表示されます。［ブラックジャック］のタイトル・案内文もなくしました"
       }
      ]
     },

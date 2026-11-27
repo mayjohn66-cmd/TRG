@@ -254,7 +254,7 @@ func _refresh() -> void:
 		_total_label.add_theme_color_override("font_color", _result_color)
 	else:
 		_total_label.text = "21"
-		_move_label.text = L10n.t("카드를 받아 시작하세요")
+		_move_label.text = ""  # 1.3.1 정리: 안내 글 없이 [카드 받기] 버튼만
 		_total_label.add_theme_color_override("font_color", UiSkin.INK)
 	_total_label.add_theme_font_size_override("font_size",32 if _result_text=="BLACKJACK!" else 38)
 	_start_button.visible = not started
@@ -264,7 +264,8 @@ func _refresh() -> void:
 	_hit_button.disabled = not (can_act and not active)
 	_stand_button.disabled = not (can_act and not active)
 	_stand_button.text = L10n.tf("스탠드 · %d칸",[maxi(0,total-ToolBlackjack.STEPS_OFFSET)])
-	_title.text = "블랙잭 21 딜러"
+	_title.text = ""  # 1.3.1 정리: 도구 이름은 오른쪽 도구 패널이 보여 준다
+	_title.visible = false
 
 
 ## Blackjack supplies ranks only (A=1); suits remain deterministic decoration.

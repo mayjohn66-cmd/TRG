@@ -7722,7 +7722,9 @@ func _refresh_controls() -> void:
 		_roll_button.text = "방아쇠\n당기기"
 		_set_gun_buttons(true)
 		_stop_button.visible = not over
-		_stop_button.text = "정지"
+		# 1.3.1 정리: 누적 칸은 보드 옆 숫자판 대신 [정지] 버튼에 ("정지 +12칸")
+		var gun_total: int = (tool as ToolRussianRoulette).accumulated if can_stop else 0
+		_stop_button.text = L10n.tf("정지 +%d칸", [gun_total]) if gun_total > 0 else L10n.t("정지")
 		# 이어서 당기는 중(내 리볼버가 생존 결과로 짧게 철컥하는 동안): 버튼을 회색으로 바꿨다 되돌리면 당길 때마다 깜빡인다.
 		# 모양은 그대로 두고 그동안 클릭만 무시한다 (키 입력은 _roll_button.disabled가 막는다).
 		var mid_pull: bool = _fx_busy and _roll_pad.kind == RollPad.Kind.REVOLVER and _roll_pad.active and not _roll_pad.preparing and can_stop and not _is_bot_turn() and manager.current_player_id() == _dock_owner()
@@ -7735,7 +7737,10 @@ func _refresh_controls() -> void:
 		_set_gun_buttons(false)
 		_roll_button.text = _roll_button_label(tool)
 		_stop_button.visible = can_stop and not _is_stage_tool(tool.tool_id) and not (tool is ToolHoldem)  # 야추·블랙잭은 스테이지에, 홀덤은 교환 창에 자기 확정 버튼이 있다
-		_stop_button.text = "멈추고 이동 확정"
+		# 1.3.1 정리: 오른쪽 버튼 줄 대신 굴리기(칼 꽂기) 버튼 바로 옆에, 누적 칸을 붙여서 ("멈추기 +6칸")
+		var total: int = int(tool.get("accumulated")) if tool.get("accumulated") != null else 0
+		_stop_button.text = L10n.tf("멈추기 +%d칸", [total]) if total > 0 else L10n.t("멈추고 이동 확정")
+		_place_stop_beside_roll(_stop_button.visible)
 		_stop_button.disabled = false
 		_stop_button.mouse_filter = Control.MOUSE_FILTER_STOP
 		_stop_button.modulate = Color.WHITE
@@ -8028,9 +8033,28 @@ func _on_pirate_idle_input(event: InputEvent) -> void:
 		_pirate_idle.accept_event()
 
 
+## 해적 룰렛처럼 이어서 굴리는 도구 (1.3.1 정리): [멈추기]를 굴리기 버튼 바로 오른쪽에 띄운다 (멀리 오른쪽 버튼 줄에 따로 떨어져 있지 않게).
+func _place_stop_beside_roll(beside: bool) -> void:
+	if not beside or _stop_button.get_parent() == _gun_row:
+		if _stop_button.get_parent() == self:
+			_stop_button.reparent(_action_row, false)
+			_action_row.move_child(_stop_button, 0)
+			_stop_button.top_level = false
+		return
+	if _stop_button.get_parent() != self:
+		_stop_button.reparent(self, false)
+	_stop_button.custom_minimum_size = Vector2(150, 46)
+	_stop_button.add_theme_font_size_override("font_size", 17)
+	_stop_button.reset_size()
+	var roll: Rect2 = _roll_button.get_global_rect()
+	var at: Vector2 = get_global_transform().affine_inverse() * Vector2(roll.end.x + 14.0, roll.get_center().y)
+	_stop_button.position = at - Vector2(0.0, _stop_button.size.y * 0.5)
+	_stop_button.z_index = _roll_button.z_index
+
+
 ## 러시안 룰렛이면 정지 버튼을 [발사] 옆 큰 버튼으로 옮기고, 다른 도구면 원래 자리(우측 버튼 줄)로 돌려보낸다.
 func _set_gun_buttons(gun: bool) -> void:
-	var wanted_parent: Node = _gun_row if gun else _action_row
+	var wanted_parent: Node = _gun_row if gun else (self if _stop_button.get_parent() == self else _action_row)  # 굴리기 옆 [멈추기]는 _place_stop_beside_roll이 맡는다
 	if _stop_button.get_parent() != wanted_parent:
 		_stop_button.reparent(wanted_parent, false)
 		if gun:
