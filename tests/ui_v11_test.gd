@@ -54,7 +54,9 @@ func _run() -> void:
 	var idle: DartBoardView = _board.find_child("DartIdle", true, false) as DartBoardView
 	_expect(idle != null and idle.visible and idle.idle and not idle.aiming, "내 다트 차례에는 가운데 과녁이 보인다")
 	_expect(idle != null and idle.get_global_rect().get_center().distance_to(_board._board_center()) < 2.0, "과녁은 보드 한가운데에 있다")
-	_expect(idle != null and idle.is_processing() and idle._viewport.render_target_update_mode == SubViewport.UPDATE_ALWAYS and not idle._reticle.visible, "과녁은 돌고(조준점 없음) 그려진다")
+	_expect(idle != null and idle.is_processing() and idle._viewport.render_target_update_mode == SubViewport.UPDATE_ALWAYS and not idle._reticle.visible, "과녁이 그려진다 (조준점 없음)")
+	await settle(10)
+	_expect(idle != null and is_zero_approx(idle._board.rotation.z), "1.3.1: 대기 과녁은 돌지 않는다 (던질 때 판이 툭 돌아가 보이지 않게)")
 	state.tools[me] = ToolRegistry.create(&"D6")
 	_board._refresh_all()
 	await settle(4)

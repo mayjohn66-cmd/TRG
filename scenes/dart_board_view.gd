@@ -189,7 +189,9 @@ func _cursor_bar(dimensions: Vector2, material: Material, z: float) -> void:
 
 
 func _present() -> void:
-	_board.rotation.z = -_spin * TAU if (aiming or idle) else 0.0
+	# 1.3.1: 대기 과녁은 돌지 않는다 (예전 타이밍 조준의 흔적: 지금은 꽂히는 자리가 순수한 운이라 회전이 의미 없고,
+	# 던지는 순간 결과 연출의 멈춘 과녁으로 바뀌며 판이 툭 돌아가 보였다). 조준 모드(테스트용)만 돈다.
+	_board.rotation.z = -_spin * TAU if aiming else 0.0
 	_reticle.visible = aiming
 	_reticle.position = Vector3(0.0, _aim_radius * SCORE_RADIUS, 0.22)
 	_dart.visible = not aiming and (_hit_radius >= 0.0 or (idle and ready_dart))
