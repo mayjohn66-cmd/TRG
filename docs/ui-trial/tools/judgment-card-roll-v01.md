@@ -44,7 +44,7 @@
 - `JudgmentCardArt`: 52장/48장/5운명의 ID와 그림 경로, 포커 문양 배치.
 - `JudgmentCard`: 개별 카드 앞뒷면, 이미지와 실제 폰트 표기.
 - `RollPresenter`: 배분·순차 공개·결과 표시. D6/친치로의 재사용 3D 뷰포트는 카드 재생 중 렌더링하지 않는다.
-- 이미지 24개와 프롬프트/원본 해시는 [그림 manifest](../../../assets/ui/trickcal/judgment_cards/manifest.json), 소재 구분은 [그림 설명](../../../assets/ui/trickcal/judgment_cards/README.md)에 남긴다.
+- 이미지 24개와 프롬프트/원본 해시는 [그림 manifest](https://github.com/mayjohn66-cmd/TRG/blob/claude/tender-gauss-i4mq1o/assets/ui/trickcal/judgment_cards/manifest.json), 소재 구분은 [그림 설명](https://github.com/mayjohn66-cmd/TRG/blob/claude/tender-gauss-i4mq1o/assets/ui/trickcal/judgment_cards/README.md)에 남긴다.
 
 로컬 Godot 4.7.1에서 단위 테스트 **330개 / 29,089 assertions / 실패 0**을 확인했다. `JUDGMENT_CARD_ART_COVERAGE 52+48+5/105`, `JUDGMENT_CARD_FX_OK`, `UI_FX_OK`를 통과했다. 공개 전 앞면·결과 숨김, 타로 5개 선택 위치 모두에서 정확히 1장 공개, 화투 기존 패 유지, 음수/0칸 표시, 취소 및 3D 뷰포트 휴면을 검사했다.
 

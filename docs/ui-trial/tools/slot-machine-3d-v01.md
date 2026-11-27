@@ -45,7 +45,7 @@
 
 ## 그림과 색상
 
-내장 `image_gen__imagegen`으로 심볼 네 개를 각각 생성했다. 모두 1254×1254 RGBA PNG이며 원본 픽셀과 알파는 수정하지 않았다. 원본·저장 경로·전문 프롬프트·SHA-256·알파 범위·검수 기록은 [manifest.json](../../../assets/ui/trickcal/slot/manifest.json)에 있다. 네 번 생성, 이미지 교정 0회. 이미지 모델 이름은 도구가 공개하지 않는다.
+내장 `image_gen__imagegen`으로 심볼 네 개를 각각 생성했다. 모두 1254×1254 RGBA PNG이며 원본 픽셀과 알파는 수정하지 않았다. 원본·저장 경로·전문 프롬프트·SHA-256·알파 범위·검수 기록은 [manifest.json](https://github.com/mayjohn66-cmd/TRG/blob/claude/tender-gauss-i4mq1o/assets/ui/trickcal/slot/manifest.json)에 있다. 네 번 생성, 이미지 교정 0회. 이미지 모델 이름은 도구가 공개하지 않는다.
 
 생성 원본에는 아주 낮은 알파의 외곽 잡음이 일부 있어 원본에 그대로 보존했다. 실제 게임의 크림색 릴 합성에서 잘림·검은 배경·누끼 띠가 없는 것을 Native 캡처로 확인했다. 투명 여백 차이는 Godot의 TextureRect 크기(체리 240, 레몬 216, 종 224, 다이아 208px)로 맞춰 실제 심볼 크기를 비슷하게 했다. BAR와 7은 ONE Mobile POP으로 직접 렌더한다. import는 무손실·mipmap·최대 256px이다.
 

@@ -10,9 +10,9 @@
 
 `assets/ui/trickcal/mahjong/`의 개별 PNG 7개는 내장 `image_gen.imagegen`으로 생성했다. 세 색상의 통수 원형 문양, 두 색상의 대나무, 1삭 새, 뒷면 클로버다. 각 원본은 1254×1254 RGBA, 실제 알파 포함이며 원본 픽셀을 편집하지 않았다. Godot import는 무손실·256px 상한·mipmap을 사용한다. 런타임에서는 알파 0.08 이상인 내용의 범위에 2px 여백을 더해 비율을 유지하며 문양 칸에 맞춘다. 문양 개수는 생성 모델이 아닌 코드가 결정한다.
 
-전문·원본 경로·저장 경로·SHA-256·QA: [manifest.json](../../../assets/ui/trickcal/mahjong/manifest.json). 7회 생성, 추가 교정 0회. 색상별 통수 장식의 내부 꽃잎 형태 차이는 허용했으며 한 개의 원형 문양이라는 외곽과 실제 배치 개수는 유지했다. 모델 이름은 생성 도구가 공개하지 않는다.
+전문·원본 경로·저장 경로·SHA-256·QA: [manifest.json](https://github.com/mayjohn66-cmd/TRG/blob/claude/tender-gauss-i4mq1o/assets/ui/trickcal/mahjong/manifest.json). 7회 생성, 추가 교정 0회. 색상별 통수 장식의 내부 꽃잎 형태 차이는 허용했으며 한 개의 원형 문양이라는 외곽과 실제 배치 개수는 유지했다. 모델 이름은 생성 도구가 공개하지 않는다.
 
-글꼴은 Noto Sans JP의 굵기 700에서 한자 12자와 공백만 남긴 `TRG Mahjong Glyphs` 4,956바이트다. 원본 출처·해시·OFL 라이선스는 [글꼴 NOTICE](../../../assets/fonts/mahjong/NOTICE.md)에 기록했다.
+글꼴은 Noto Sans JP의 굵기 700에서 한자 12자와 공백만 남긴 `TRG Mahjong Glyphs` 4,956바이트다. 원본 출처·해시·OFL 라이선스는 [글꼴 NOTICE](https://github.com/mayjohn66-cmd/TRG/blob/claude/tender-gauss-i4mq1o/assets/fonts/mahjong/NOTICE.md)에 기록했다.
 
 ## 고정 수치
 

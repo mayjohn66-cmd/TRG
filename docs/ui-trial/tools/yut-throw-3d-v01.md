@@ -44,7 +44,7 @@
 
 나뭇결 `assets/ui/trickcal/yut/YUT_WOOD.png`는 내장 `image_gen.imagegen`으로 생성한 1254×1254 RGB 원본이다. 그림은 자르거나 색을 수정하지 않고 그대로 보관했다. Godot import에서 무손실·mipmap·512px 상한을 적용한다. 재질은 실제 면 방향의 3단 명암과 밝은 배/갈색 등의 구분을 더한다. 텍스처 반복은 끄며 완벽한 타일링을 가정하지 않는다.
 
-전문·원본 경로·저장 경로·SHA-256·QA는 [manifest.json](../../../assets/ui/trickcal/yut/manifest.json)에 기록했다. 생성 1회, 이미지 교정 0회. 이미지 모델 이름은 도구가 공개하지 않는다. 첫 메시 검수에서 발견한 면 방향 문제는 시계방향 앞면으로 수정했고, 나무와 각인의 면 방향 검사를 추가했다. 테두리는 평평한 면과 곡면의 경계에서도 닫힌 윤곽을 유지하는 확대 메시 방식이다.
+전문·원본 경로·저장 경로·SHA-256·QA는 [manifest.json](https://github.com/mayjohn66-cmd/TRG/blob/claude/tender-gauss-i4mq1o/assets/ui/trickcal/yut/manifest.json)에 기록했다. 생성 1회, 이미지 교정 0회. 이미지 모델 이름은 도구가 공개하지 않는다. 첫 메시 검수에서 발견한 면 방향 문제는 시계방향 앞면으로 수정했고, 나무와 각인의 면 방향 검사를 추가했다. 테두리는 평평한 면과 곡면의 경계에서도 닫힌 윤곽을 유지하는 확대 메시 방식이다.
 
 ## 나무 소리
 

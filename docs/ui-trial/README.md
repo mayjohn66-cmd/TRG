@@ -1,13 +1,28 @@
-# 그림·UI 작업 기록 (ui-trial)
+# 그림·UI 작업 기록 (`docs/ui-trial/`)
 
-그림·연출·화면을 만들거나 바꿀 때마다 남긴 검수 기록이다. **지금 따라야 하는 규격은 [이미지·UI 제작 규격서](../visual/Visual_Asset_Guide_Draft.md)**에 있고, 이 폴더는 "그 그림을 왜·어떻게 만들었는지"를 찾아볼 때 쓴다.
+일러스트·3D 연출·화면 레이아웃·사운드를 새로 제작하거나 수정할 때마다 남긴 시안 및 검수 기록 모음이다.
+- **현행 제작 기준(우선 적용):** **[이미지·UI 제작 규격서 v1.0](../visual/Visual_Asset_Guide_Draft.md)**
+- **이 폴더의 용도:** 특정 그림이나 연출을 *"왜, 어떤 기준과 시행착오를 거쳐 이렇게 만들었는지"* 역추적할 때 참고한다.
 
-- 폴더는 주제별로 나눴다. 문서와 같은 이름의 PNG(스크린샷)·MP4(녹화)·JSON(생성 프롬프트·해시 기록)이 같은 폴더에 있다.
-- **상태**: `현행`은 그 주제의 가장 마지막 기록(뒤 판이 없음), `이전 판 → X`는 같은 작업의 뒤 판(X)으로 대체된 기록이다. 그 뒤 게임이 더 바뀌었을 수 있으니 실제 값은 규격서와 코드를 본다. 이전 판도 결정 이력이라 지우지 않는다.
-- 이미지 생성 프롬프트 원문은 같은 그림을 다시 만들 때 그대로 써야 하므로 영어로 남겨 둔 곳이 있다 (설명은 한국어).
-- 문서 날짜는 처음 기록한 날이다. 같은 문서에 뒤에 덧붙인 내용이 있을 수 있다.
+> **기록 열람 안내**
+> - 주제별로 9개 하위 폴더로 나뉘어 있으며, 문서와 같은 이름의 스크린샷(`.png`), 녹화본(`.mp4`), 생성 프롬프트·해시 메타데이터(`.json`)가 함께 보관되어 있다.
+> - **상태 표기:** `현행`은 해당 주제의 마지막 검수 기록이며, `이전 판 → X`는 후속 버전(`X`)으로 대체된 시안 기록이다(의사결정 이력 보존을 위해 이전 판도 삭제하지 않음). 이후 게임 업데이트로 세부 수치가 더 조정되었을 수 있으므로 실제 적용 수치는 항상 제작 규격서와 코드를 따른다.
+> - 동일한 생성 결과를 재현할 수 있도록 AI 이미지 생성 프롬프트 원문은 영어로 유지하고 검수 설명은 한국어로 적었다.
 
-## 판정 도구 연출 (주사위·윷·룰렛·리볼버·핀볼·블랙잭 등 3D·2D) — `tools/`
+### 주제별 바로가기
+1. [판정 도구 연출 (`tools/`)](#1-판정-도구-연출-주사위윷룰렛리볼버핀볼블랙잭-등-3d2d--tools)
+2. [생떼 카드 (`cards/`)](#2-생떼-카드-삽화카드-스킨카드-얻기bang--cards)
+3. [증강·교칙·초증강 아이콘 (`augments/`)](#3-증강교칙초증강-아이콘--augments)
+4. [아바타 (`avatars/`)](#4-아바타-잡기-포즈로비-대기-동작--avatars)
+5. [보드·기물 (`board/`)](#5-보드기물-칸-심볼말-그림보호막npc-경고알까기--board)
+6. [공통·특수 연출 효과 (`fx/`)](#6-공통특수-연출-효과-잡기-컷인초증강모바일-좌표--fx)
+7. [일기토 결투 미니게임 (`duel/`)](#7-일기토-결투-미니게임--duel)
+8. [화면 구성 (`screens/`)](#8-화면-로비로딩타이틀난이도규칙-도감--screens)
+9. [사운드 (`audio/`)](#9-소리-배경-음악효과음--audio)
+
+---
+
+## 1. 판정 도구 연출 (주사위·윷·룰렛·리볼버·핀볼·블랙잭 등 3D·2D) — `tools/`
 
 | 문서 | 내용 | 기록일 | 상태 |
 |---|---|---|---|
@@ -45,7 +60,9 @@
 | [model-lightweight-v131](tools/model-lightweight-v131.md) | 3D 게임용 리소스 경량화 | 2026-11-27 | 현행 |
 | [web-3d-budget-v131](tools/web-3d-budget-v131.md) | 1.3.1 추가 3D 경량화 | 2026-11-27 | 현행 |
 
-## 생떼 카드 (삽화·카드 스킨·카드 얻기·BANG!) — `cards/`
+---
+
+## 2. 생떼 카드 (삽화·카드 스킨·카드 얻기·BANG!) — `cards/`
 
 | 문서 | 내용 | 기록일 | 상태 |
 |---|---|---|---|
@@ -61,23 +78,27 @@
 | [card-skin-v01](cards/card-skin-v01.md) | 카드 이미지 실제 적용 v0.1 · [스크린샷](cards/card-skin-v01.png) | 2026-10-17 | 이전 판 → [card-illustrations-v02](cards/card-illustrations-v02.md) |
 | [card-traps-v04](cards/card-traps-v04.md) | 함정 카드 캐릭터 일러스트 6종 | 2026-10-21 | 현행 |
 
-문서 없이 남은 자료: [card-illustrations-hand-v02.png](cards/card-illustrations-hand-v02.png) · [card-illustrations-ingame-v02.png](cards/card-illustrations-ingame-v02.png)
+- **참고 이미지 자료:** [card-illustrations-hand-v02.png](cards/card-illustrations-hand-v02.png) · [card-illustrations-ingame-v02.png](cards/card-illustrations-ingame-v02.png)
 
-## 증강·교칙·초증강 아이콘 — `augments/`
+---
+
+## 3. 증강·교칙·초증강 아이콘 — `augments/`
 
 | 문서 | 내용 | 기록일 | 상태 |
 |---|---|---|---|
 | [augment-art-v04](augments/augment-art-v04.md) | 증강 그림 갱신: 아우토반·저격수 · [스크린샷](augments/augment-art-v04.png) · [생성 기록](augments/augment-art-v04.json) | 2026-10-19 | 현행 |
 | [augment-display-consistency-20261121](augments/augment-display-consistency-20261121.md) | 증강 아이콘 표시 일관성 점검 | 2026-11-21 | 현행 |
-| [augment-groups-v01](augments/augment-groups-v01.md) | 증강 표시 분류와 색상 (2026-10-27) | 2026-10-27 | 현행 |
+| [augment-groups-v01](augments/augment-groups-v01.md) | 증강 표시 분류와 색상 | 2026-10-27 | 현행 |
 | [augment-icon-audit-v03](augments/augment-icon-audit-v03.md) | 증강 아이콘 의미 점검 v0.3 | 2026-10-18 | 현행 |
 | [law-symbols-v01](augments/law-symbols-v01.md) | 특수 승리 교칙 심볼 v0.1 | 2026-10-21 | 현행 |
 | [super-symbols-v01](augments/super-symbols-v01.md) | 초증강 심볼 · [생성 기록](augments/super-symbols-v01.json) | 2026-10-21 | 현행 |
 | [tool-symbols-v02](augments/tool-symbols-v02.md) | 야추·블랙잭·핀볼 심볼 교체 | 2026-10-21 | 현행 |
 
-문서 없이 남은 자료: [augment-background-v01.json](augments/augment-background-v01.json) · [augment-medals-v01.png](augments/augment-medals-v01.png) · [augment-medals-v02.png](augments/augment-medals-v02.png) · [supply-symbols-v01.json](augments/supply-symbols-v01.json) · [utility-symbols-v01.json](augments/utility-symbols-v01.json)
+- **참고 이미지 · 생성 기록 자료:** [augment-background-v01.json](augments/augment-background-v01.json) · [augment-medals-v01.png](augments/augment-medals-v01.png) · [augment-medals-v02.png](augments/augment-medals-v02.png) · [supply-symbols-v01.json](augments/supply-symbols-v01.json) · [utility-symbols-v01.json](augments/utility-symbols-v01.json)
 
-## 아바타 (잡기 포즈·로비 대기 동작) — `avatars/`
+---
+
+## 4. 아바타 (잡기 포즈·로비 대기 동작) — `avatars/`
 
 | 문서 | 내용 | 기록일 | 상태 |
 |---|---|---|---|
@@ -88,9 +109,11 @@
 | [avatars-diet-v01](avatars/avatars-diet-v01.md) | 나머지 7명 아바타 대기 프레임 경량화 | 2026-10-25 | 이전 판 → [avatars-hq-v02](avatars/avatars-hq-v02.md) |
 | [avatars-hq-v02](avatars/avatars-hq-v02.md) | 나머지 7명 로비 아바타 고해상도 대기 동작 | 2026-10-25 | 현행 |
 
-문서 없이 남은 자료: [avatar-capture-poses.json](avatars/avatar-capture-poses.json) · [avatar-capture-v03-daya.png](avatars/avatar-capture-v03-daya.png) · [avatar-capture-v03-shady.png](avatars/avatar-capture-v03-shady.png) · [avatar-capture-v04-shady.png](avatars/avatar-capture-v04-shady.png)
+- **참고 이미지 · 포즈 기록 자료:** [avatar-capture-poses.json](avatars/avatar-capture-poses.json) · [avatar-capture-v03-daya.png](avatars/avatar-capture-v03-daya.png) · [avatar-capture-v03-shady.png](avatars/avatar-capture-v03-shady.png) · [avatar-capture-v04-shady.png](avatars/avatar-capture-v04-shady.png)
 
-## 보드·기물 (칸 심볼·말 그림·보호막·NPC 경고·알까기) — `board/`
+---
+
+## 5. 보드·기물 (칸 심볼·말 그림·보호막·NPC 경고·알까기) — `board/`
 
 | 문서 | 내용 | 기록일 | 상태 |
 |---|---|---|---|
@@ -101,11 +124,13 @@
 | [board-symbols-v02](board/board-symbols-v02.md) | 단색 심볼과 타일별 방향 v0.2 | 2026-10-21 | 이전 판 → [board-symbols-v03](board/board-symbols-v03.md) |
 | [board-symbols-v03](board/board-symbols-v03.md) | 두툼한 빵과 블록 화살표 v0.3 | 2026-10-21 | 현행 |
 | [npc-warning-v01](board/npc-warning-v01.md) | 중립 기물 경로 경고 그림 | 2026-10-21 | 현행 |
-| [pawn-shield-v01](board/pawn-shield-v01.md) | 기물 보호막 표시 (2026-10-27) | 2026-10-27 | 현행 |
+| [pawn-shield-v01](board/pawn-shield-v01.md) | 기물 보호막 표시 | 2026-10-27 | 현행 |
 
-문서 없이 남은 자료: [board-v09-tilt.png](board/board-v09-tilt.png) · [pawn-token-gallery-v01.png](board/pawn-token-gallery-v01.png) · [pawn-tokens-v01.png](board/pawn-tokens-v01.png)
+- **참고 이미지 자료:** [board-v09-tilt.png](board/board-v09-tilt.png) · [pawn-token-gallery-v01.png](board/pawn-token-gallery-v01.png) · [pawn-tokens-v01.png](board/pawn-tokens-v01.png)
 
-## 공통·특수 연출 효과 (잡기 컷인·초증강·모바일 좌표) — `fx/`
+---
+
+## 6. 공통·특수 연출 효과 (잡기 컷인·초증강·모바일 좌표) — `fx/`
 
 | 문서 | 내용 | 기록일 | 상태 |
 |---|---|---|---|
@@ -125,7 +150,9 @@
 | [runaway-train-animation-v01](fx/runaway-train-animation-v01.md) | 보드 위의 폭주 기관차 | 2026-10-21 | 현행 |
 | [runaway-train-model-v01](fx/runaway-train-model-v01.md) | 폭주 장난감 기차 모델 | 2026-10-21 | 현행 |
 
-## 일기토 결투 미니게임 — `duel/`
+---
+
+## 7. 일기토 결투 미니게임 — `duel/`
 
 | 문서 | 내용 | 기록일 | 상태 |
 |---|---|---|---|
@@ -136,14 +163,16 @@
 | [duel-rps-v01](duel/duel-rps-v01.md) | 묵찌빠 단두대 — 가위바위보 연출 | 2026-10-21 | 현행 |
 | [duel-slot-v01](duel/duel-slot-v01.md) | 결투 게임 고르기 슬롯 | 2026-10-21 | 현행 |
 
-## 화면 (로비·로딩·타이틀·난이도·규칙 도감) — `screens/`
+---
+
+## 8. 화면 (로비·로딩·타이틀·난이도·규칙 도감) — `screens/`
 
 | 문서 | 내용 | 기록일 | 상태 |
 |---|---|---|---|
 | [difficulty-icons-v01](screens/difficulty-icons-v01.md) | 난이도 표정과 상태 아이콘 | 2026-10-27 | 현행 |
 | [fire-level-picker-v02](screens/fire-level-picker-v02.md) | 볶음라면 난이도 선택 v02 | 2026-10-24 | 현행 |
 | [loading-bar-v01](screens/loading-bar-v01.md) | 웹 시작 화면 로딩바 v0.1 | 2026-10-19 | 현행 |
-| [loading-petit-speaki-v02](screens/loading-petit-speaki-v02.md) | 웹 로딩 화면: 쁘띠 스핔이 | 2026-10-19 | 현행 |
+| [loading-petit-speaki-v02](screens/loading-petit-speaki-v02.md) | 웹 로딩 화면: 쁘띠 스피키 | 2026-10-19 | 현행 |
 | [lobby-background-v01](screens/lobby-background-v01.md) | 로비 배경 v0.1 · [스크린샷](screens/lobby-background-v01.png) | 2026-10-17 | 이전 판 → [lobby-background-v02](screens/lobby-background-v02.md) |
 | [lobby-background-v02](screens/lobby-background-v02.md) | 로비 풍경 배경 v0.2 | 2026-10-19 | 현행 |
 | [match-background-v01](screens/match-background-v01.md) | 대전 풍경 배경 v0.1 | 2026-10-19 | 현행 |
@@ -153,14 +182,16 @@
 | [title-logo-localized-v01](screens/title-logo-localized-v01.md) | 언어별 타이틀 로고 | 2026-10-26 | 현행 |
 | [title-logo-v01](screens/title-logo-v01.md) | 타이틀 로고 v0.1 적용 | 2026-10-17 | 이전 판 → [title-logo-localized-v01](screens/title-logo-localized-v01.md) |
 
-문서 없이 남은 자료: [board.png](screens/board.png) · [button-border-comparison.png](screens/button-border-comparison.png) · [menu.png](screens/menu.png)
+- **참고 이미지 자료:** [board.png](screens/board.png) · [button-border-comparison.png](screens/button-border-comparison.png) · [menu.png](screens/menu.png)
 
-## 소리 (배경 음악·효과음) — `audio/`
+---
+
+## 9. 소리 (배경 음악·효과음) — `audio/`
 
 | 문서 | 내용 | 기록일 | 상태 |
 |---|---|---|---|
 | [battle-monatium-bgm-v01](audio/battle-monatium-bgm-v01.md) | 대전 BGM: 모나티엄의 밤 | 2026-10-19 | 현행 |
 | [lobby-daylife-bgm-v01](audio/lobby-daylife-bgm-v01.md) | 로비 BGM: DayLife | 2026-10-19 | 현행 |
-| [presentation-sfx-v01](audio/presentation-sfx-v01.md) | 추가 연출 전용 효과음 (2026-10-26) | 2026-10-26 | 현행 |
+| [presentation-sfx-v01](audio/presentation-sfx-v01.md) | 추가 연출 전용 효과음 | 2026-10-26 | 현행 |
 | [sfx-curated-v01](audio/sfx-curated-v01.md) | 효과음 파일 도입 | 2026-10-19 | 현행 |
 | [web-audio-fix-v01](audio/web-audio-fix-v01.md) | 웹 효과음 무음 수정 | 2026-10-19 | 현행 |

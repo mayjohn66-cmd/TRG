@@ -10,9 +10,9 @@
 
 내장 image_gen 도구로 새로 제작했다. PNG 원본의 투명 알파를 유지하고 Godot에서 최대 512px로 가져온다. 네 손가락(손가락 3개+엄지) 그림이며 가위의 잘못된 다섯 번째 손가락은 재생성 편집으로 제거했다.
 
-- [바위](../../../assets/ui/trickcal/duel/rps/rock.png)
-- [가위](../../../assets/ui/trickcal/duel/rps/scissors.png)
-- [보](../../../assets/ui/trickcal/duel/rps/paper.png)
-- [최종 생성·편집 프롬프트](../../../assets/ui/trickcal/duel/rps/art.source.json)
+- [바위](https://github.com/mayjohn66-cmd/TRG/blob/claude/tender-gauss-i4mq1o/assets/ui/trickcal/duel/rps/rock.png)
+- [가위](https://github.com/mayjohn66-cmd/TRG/blob/claude/tender-gauss-i4mq1o/assets/ui/trickcal/duel/rps/scissors.png)
+- [보](https://github.com/mayjohn66-cmd/TRG/blob/claude/tender-gauss-i4mq1o/assets/ui/trickcal/duel/rps/paper.png)
+- [최종 생성·편집 프롬프트](https://github.com/mayjohn66-cmd/TRG/blob/claude/tender-gauss-i4mq1o/assets/ui/trickcal/duel/rps/art.source.json)
 
 시연 영상·화면: 작업 폴더의 outputs/duel-rps-v01.
