@@ -134,6 +134,11 @@
        "ko": "이어서 굴리는 판정 도구 옆 UI를 정리했어요: 보드 왼쪽 기록판의 이름·횟수·누적 글자판을 없애고 성공 표식만 남겼어요. [러시안 룰렛]의 누적 칸은 [정지 +12칸]처럼 정지 버튼에, [해적 룰렛]은 [칼 꽂기] 바로 옆 [멈추기 +6칸] 버튼에 보여요. [블랙잭]의 제목·안내 글도 뺐어요",
        "en": "Cleaned up the UI next to Judgment Tools that keep rolling: the side panel no longer shows names, counts or running-total plaques, only success markers. [Russian Roulette] shows its running total on the stop button ([Stop +12]), and [Pirate Roulette] has a [Stop +6] button right next to [Stab]. The [Blackjack] title and hint text are gone too",
        "ja": "続けて振る判定ツールの横のUIを整理しました：ボード左の記録欄から名前・回数・累計の札をなくし、成功マークだけを残しました。［ロシアンルーレット］の累計マスは［停止 +12マス］のように停止ボタンに、［海賊ルーレット］は［剣を刺す］のすぐ横の［止める +6マス］ボタンに表示されます。［ブラックジャック］のタイトル・案内文もなくしました"
+      },
+      {
+       "ko": "던지지 않는 판정 도구(화투·홀덤·슬롯머신·마작·타로·주식 차트·오미쿠지·아이스크림·포츈쿠키·캡슐뽑기·스크래치 복권)는 버튼이 [꺼내기]로 바뀌었어요. 누르면 버튼 위에 놓여 있던 도구를 꺼내 판 위에 놓고, 그다음 직접 다뤄요",
+       "en": "Judgment Tools you don't throw (Hwatu, Hold'em, Slot Machine, Mahjong, Tarot, Stock Chart, Omikuji, Ice Cream, Fortune Cookie, Capsule Gacha, Scratch Ticket) now have a [Take out] button. Pressing it takes the tool sitting above the button out onto the board, and then you handle it yourself",
+       "ja": "投げない判定ツール（花札・ホールデム・スロットマシン・麻雀・タロット・株価チャート・おみくじ・アイスクリーム・フォーチュンクッキー・カプセルガチャ・スクラッチくじ）はボタンが［取り出す］になりました。押すとボタンの上に置いてあったツールをボードの上に取り出し、そのあと自分で扱います"
       }
      ]
     },

@@ -90,6 +90,8 @@ var toss_board_outline := PackedVector2Array()
 ## 제자리 점프 (1.3.1): 보드 위에 놓여 있던 내 주사위 소품(ToolRestProp)에서 그대로 튀어 오른다. MainBoard가 굴림마다 넣고, 연출이 끝나면 지운다.
 ## hop_from = 소품 주사위 화면의 가운데(화면 좌표), hop_scale = 소품 크기 비율, hop_pose = 소품 주사위의 3D 자세(Transform3D).
 var hop_from: Vector2 = Vector2(INF, INF)
+## 꺼내기 (1.3.1): 판 위에 내려놓는 도구가 어디서 나오는가 (굴리기 버튼 위 내 도구 소품 자리). 비어 있으면 굴린 사람 쪽(toss_from).
+var place_from: Vector2 = Vector2(INF, INF)
 var hop_scale: float = 1.0
 var hop_pose: Variant = null
 var _hopping: bool = false
@@ -447,7 +449,8 @@ func _begin_toss() -> void:
 ## 내려놓기 준비: 다 놓인 자리(지금 자리)를 기억하고, 굴린 사람 쪽에서 작게 들려 있는 모습으로 시작한다.
 func _begin_place() -> void:
 	_place_target = position
-	_place_from = (toss_from if toss_from.is_finite() else center + Vector2(0.0, 260.0)) - size / 2.0
+	var source: Vector2 = place_from if place_from.is_finite() else (toss_from if toss_from.is_finite() else center + Vector2(0.0, 260.0))
+	_place_from = source - size / 2.0
 	var stage_rect: Rect2 = _stage.get_global_rect() if _stage != null else Rect2(center - Vector2(80, 0), Vector2(160, 60))
 	_place_base = Vector2(stage_rect.get_center().x, stage_rect.end.y - 6.0)
 	if _ground_shadow == null:

@@ -108,6 +108,7 @@ func run() -> void:
 	await pirate_buttons()
 	await holdem_exchange()
 	await yacht_case()
+	take_out_labels()
 	if failures.is_empty():
 		print("HAND_TOOLS_OK")
 		quit(0)
@@ -356,6 +357,15 @@ func yacht_case() -> void:
 	while (board._card_view_on or not is_zero_approx(board._alkkagi_camera)) and Time.get_ticks_msec() < until:
 		await process_frame
 	check(not board._card_view_on and is_zero_approx(board._alkkagi_camera), "확정하면 원래 시점으로 돌아온다")
+
+
+## 1.3.1: 던지지 않는 도구는 굴리기 버튼이 [꺼내기], 던지는 도구는 그대로.
+func take_out_labels() -> void:
+	for id: StringName in MainBoard.TAKE_OUT_TOOLS:
+		check(board._roll_button_label(ToolRegistry.create(id)) == "꺼내기", "%s 버튼은 [꺼내기]" % id)
+	for id: StringName in [&"D6", &"CHINCHIRO", &"YUT"]:
+		check(board._roll_button_label(ToolRegistry.create(id)) != "꺼내기", "%s는 던지는 도구라 그대로" % id)
+	check(board._roll_button_label(ToolRegistry.create(&"DICE_DARTS")).contains("던지기"), "다트는 [다트 던지기]")
 
 
 func warmup() -> void:

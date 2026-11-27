@@ -8074,35 +8074,19 @@ func _is_dice_family(tool: BaseJudgmentTool) -> bool:
 ## 굴림 버튼에 쓰는 글자: 도구마다 다르다.
 func _roll_button_label(tool: BaseJudgmentTool) -> String:
 	if tool is ToolPinball:return "핀볼\n발사 준비"
-	if tool is ToolHwatu:
-		return "패\n뒤집기"
-	if tool is ToolHoldem:
-		return "카드\n뽑기"
-	if tool is ToolSlot777:
-		return "레버\n당기기"
-	if tool is ToolMahjong:
-		return "쯔모!"
-	if tool is ToolTarot:
-		return "운명\n뽑기"
-	if tool is ToolPinball:
-		return "발사!"
+	# 1.3.1: 던지지 않는 도구는 버튼이 [꺼내기]다. 누르면 그 도구를 판 위로 꺼내고(내려놓기·카드 매트), 실제 조작(고르기·레버·긁기 등)은 꺼낸 도구에서 한다.
+	if TAKE_OUT_TOOLS.has(tool.tool_id):
+		return "꺼내기"
 	if tool is ToolDarts:
 		return "다트\n던지기"
-	if tool is ToolStockChart:
-		return "매수!"
-	if tool is ToolOmikuji:
-		return "뽑기!"
-	if tool is ToolIceCream:
-		return "냠!"
-	if tool is ToolFortuneCookie:
-		return "깨기!"
-	if tool is ToolCapsuleGacha:
-		return "뽑기!"
 	if tool is ToolPirateRoulette:
 		return "칼\n꽂기"
-	if tool is ToolScratchLottery:
-		return "긁기!"
 	return tr_ui("btn.roll")
+
+
+## 던지지 않고 "꺼내서" 쓰는 판정 도구 (굴리기 버튼이 [꺼내기]). 던지는 도구(주사위·친치로·윷·다트·야추·핀볼)와
+## 자기 조작판이 따로 있는 도구(리볼버·룰렛 원판·해적 통·블랙잭)는 빠진다.
+const TAKE_OUT_TOOLS: Array[StringName] = [&"DICE_HWATU", &"HOLDEM", &"SLOT_777", &"DICE_MAHJONG", &"DICE_TAROT", &"DICE_STOCK", &"DICE_OMIKUJI", &"DICE_ICECREAM", &"DICE_COOKIE", &"DICE_CAPSULE", &"DICE_SCRATCH"]
 
 
 ## 굴림 조작 방식: 차징형(기본 주사위·윷·친치로)은 보드 아래 작은 굴리기 버튼+파워 게이지, 그 외(룰렛 원판·리볼버·홀덤/슬롯 큰 버튼)는 보드 한가운데에 크게 보여 준다.
@@ -8294,6 +8278,8 @@ func _hint_text(current_phase: TurnManager.State, tool: BaseJudgmentTool) -> Str
 		TurnManager.State.PHASE_TURN_BEGIN:
 			if manager.appease_pending():
 				return "회유책: 걸린 디버프를 풀지 고르세요. [회유책 쓰기] 또는 [그냥 두기]"
+			if TAKE_OUT_TOOLS.has(tool.tool_id):
+				return "카드(▣ 표시는 타일을 클릭해 설치/소환)를 쓰거나 [꺼내기] 버튼(또는 스페이스)으로 판정 도구를 꺼내세요. (판정 도구: %s)" % tool.display_name
 			return "카드(▣ 표시는 타일을 클릭해 설치/소환)를 쓰거나 [굴리기] 버튼(또는 스페이스)을 한 번 누르세요. (판정 도구: %s)" % tool.display_name
 		TurnManager.State.PHASE_ROLL_WAIT:
 			if tool.has_pending_state() and tool is ToolYacht:
@@ -13776,6 +13762,7 @@ func _handle_roll_event(data: Dictionary) -> void:
 	# 1.3.1 제자리 점프: 굴리기 버튼 위 보드에 놓여 있던 내 주사위(소품)가 그 자리에서 튀어 오르며 구른다 (소품은 그 순간 숨긴다)
 	_presenter.hop_from = Vector2(INF, INF)
 	_presenter.hop_pose = null
+	_presenter.place_from = Vector2(INF, INF)
 	var rest: Dictionary = _rest_prop_seen
 	if not rest.is_empty() and rest["tool"] == tool_id and tool_id in [&"D6", &"CHINCHIRO"] and int(data["player_id"]) == _dock_owner() \
 			and int(data["player_id"]) == int(rest["player"]) and Time.get_ticks_msec() - int(rest["msec"]) < 2500:
@@ -13784,6 +13771,9 @@ func _handle_roll_event(data: Dictionary) -> void:
 		_presenter.hop_pose = rest["pose"]
 		if _rest_prop != null:
 			_rest_prop.visible = false
+	elif not rest.is_empty() and rest["tool"] == tool_id and TAKE_OUT_TOOLS.has(tool_id) and int(data["player_id"]) == _dock_owner() \
+			and int(data["player_id"]) == int(rest["player"]) and Time.get_ticks_msec() - int(rest["msec"]) < 2500:
+		_presenter.place_from = rest["center"]  # 꺼내기: 버튼 위에 놓여 있던 내 도구 소품 자리에서 꺼내져 판 가운데에 놓인다
 	_rest_prop_seen = {}
 	var details: Dictionary = result["details"]
 	if _is_stage_tool(tool_id):
