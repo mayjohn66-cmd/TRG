@@ -96,8 +96,9 @@ func run() -> void:
 	# A possible 20-card hand: the two drops ten aces from 20 to 12; nine more aces reach 21.
 	await show_result(result_for(long_hand,[1]))
 	check(stage.cards==long_hand and stage._row.get_child_count()==3,"20-card hand remains compact")
-	check(stage._total_label.text=="BLACKJACK!" and stage._move_label.text.contains(L10n.t("한 번 더")),"21 and reroll remain explicit")
-	check(stage.size==BlackjackStage.STAGE_SIZE and not board._roll_history.visible,"long hand cannot grow stage or history")
+	# 1.3.1: "한 번 더"는 글 대신 기록판의 성공 도장으로 보여 준다 (main_board_roll_success.gd)
+	check(stage._total_label.text=="BLACKJACK!" and stage._move_label.text==L10n.tf("%d칸 전진",[11]) and not stage._move_label.text.contains(L10n.t("한 번 더")),"21 stays explicit; the extra roll is a success stamp, not text")
+	check(stage.size==BlackjackStage.STAGE_SIZE,"long hand cannot grow the stage")
 	var banner_labels := board._center_banner.find_children("*","Label",true,false)
 	check(not banner_labels.is_empty() and str(banner_labels[0].text).length()<65 and not str(banner_labels[0].text).contains("[A A"),"final notice does not enumerate the hand")
 	await capture("blackjack_twenty")

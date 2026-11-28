@@ -178,7 +178,8 @@ func run() -> void:
 	seven.reroll = true
 	for index: int in 8: history.reveal(board._roll_turn_serial,1,seven.to_dict())
 	check(history.entries.size()==8 and history.success_count==8 and history._success._stamps.size()==6,"long chains retain total and show six success stamps")
-	check(history._header.text.contains(L10n.tf("%d회 성공",[8])),"success heading retains full total")
+	# 1.3.1 정리: 글자 머리줄은 숨기고 성공 도장만 보여 준다 (전체 횟수는 기록에 그대로 남는다)
+	check(history.success_count==8 and not history._header.get_parent().visible,"success total is kept while the text heading stays hidden")
 	check(history.mouse_filter==Control.MOUSE_FILTER_IGNORE,"history does not intercept roll input")
 	# Trophy trays stay beside all six tools, including the three card stages.
 	var trophy_tools: Dictionary = {

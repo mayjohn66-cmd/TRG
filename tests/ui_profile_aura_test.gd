@@ -7,13 +7,13 @@ func _run() -> void:
 	_board = (load("res://scenes/main_board.tscn") as PackedScene).instantiate()
 	root.add_child(_board)
 	var guard := 0
-	while (not _board._draft_open or _board._intro_blocks()) and guard<2400:
+	while _board._intro_blocks() and guard<2400:  # 1.3.1: 오프닝이 끝날 때까지만 (증강 창은 열려 있으면 닫는다)
 		guard += 1
 		await process_frame
 	_board._bot.set_enabled(false)
 	_board.manager.set_process(false)
 	_board._reset_presentation()
-	_board._draft_overlay.hide()
+	_board._close_draft_overlay()
 	_board._announcer.cancel()
 	var panel: Control = _board._profiles[1].panel
 	var original_size := panel.size
