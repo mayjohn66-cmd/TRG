@@ -39,116 +39,37 @@
 
 | ID | 우선순위 | 상태 | 대상 역할 | 대상 브랜치 | 요약 |
 |---|---|---|---|---|---|
-| **`HANDOFF-010`** | `P1` | `대기(TODO · 기획 확정)` | 개발 · 3D AI | **`dev`** | 지하노역장 친치로 카이지 4·5·6 사기 주사위 3개 + `1/6` 쇼벤(낙) 리워크 (기획 6항목 확정 완료 → `dev` 바로 구현·배포) |
-| **`HANDOFF-009`** | `P1` | `대기(TODO)` | 개발 AI | `dev` / `next` | 규칙 도감(`scenes/rulebook.gd`) 현행화 — 법전 집계·판정, 9계열, 기물 독, 조작 설명, 카드 색 등 오기·누락 10건 교정 |
-| **`HANDOFF-008`** | `P1` | `대기(TODO)` | 개발 · 3D AI | `dev` / `next` | 야추 다이스 컵 쏟기 연출 교정 (정지 장식 컵 → 흔들고 기울여 입구에서 쏟아내기) |
-| **`HANDOFF-002`** | `P1` | `대기(TODO)` | 개발 AI | `dev` / `next` | 생떼 카드 52종 인게임 도감·툴팁 문구 통일화 |
-| **`HANDOFF-006`** | `P2` | `대기(TODO)` | 개발 / QA AI | `dev` | `1.3.1` 화면 변경 이후 어긋난 개별 범위 CI 시험 3종 정비 |
+| **`HANDOFF-012`** | `P1` | `대기(TODO)` | 개발 · 아트 AI | **`dev`** | 규칙 도감 UI/UX 종합 개선 10건 (`UI-01 ~ UI-10`: 카드 5필터, 상세 팝업 전체 암전·닫기 구분, 백업 팝업 대비·닫기, 특수 칸 미니보드 잘림 해소 등) |
 | **`HANDOFF-003`** | `P2` | `보류(기획 대기)` | 개발 · 3D 아트 AI | `next` | `1.4` 신규 판정 도구(`노래방 점수판`, `후쿠비키` 등) 기획 확정 전 선구현 금지 |
 
 ---
 
-### `[HANDOFF-010]` 지하노역장 친치로(`CHINCHIRO`) 카이지 4·5·6 사기 주사위 3개 + 쇼벤(낙) 리워크 (기획 확정 완료)
+### `[HANDOFF-012]` 규칙 도감(`scenes/rulebook.gd`) UI · UX 종합 개선 10건 (`UI-01 ~ UI-10`)
 
-- **대상 역할 / 브랜치:** 개발 · 3D 연출 AI (`core_engine/tools/tool_chinchiro.gd` · `content_trickcal/data/dice_table.csv` · `scenes/main_board.gd` · `scenes/dice_roll_3d.gd` · `scenes/roll_presenter.gd` · `content_trickcal/data/translations.csv`) / **`dev` 바로 반영·배포** *(사용자 확정 `2026-11-28`)*
-- **우선순위 / 상태:** `보통(P1)` / **`대기(TODO — 기획 확정 완료, 즉시 구현 가능)`**
-- **확정 기획 사양 (요청된 6개 항목 완결 답변):**
-  1. **주사위 구성 · 족보별 칸수 (`카이지 4·5·6 사기 주사위` 3개 패러디 확정):**
-     - 일반 `1~6` 주사위가 아닌 **6면이 `[4, 4, 5, 5, 6, 6]`인 카이지 사기 주사위 3개**를 굴린다(핀조로·히후미 없음).
-     - 비낙(`5/6`) 시 3개를 `GameState.rng`로 독립 추첨 (`27조합` 등확률, 기댓값 총 **`5.41칸`**):
-       - **`4의 눈`** (`5-5-4`, `6-6-4` · 비낙 `6/27`, 전체 `18.5%`): **`4칸`**
-       - **`5의 눈`** (`4-4-5`, `6-6-5` · 비낙 `6/27`, 전체 `18.5%`): **`5칸`**
-       - **`6의 눈`** (`4-4-6`, `5-5-6` · 비낙 `6/27`, 전체 `18.5%`): **`6칸`**
-       - **`시고로`** (`4·5·6` 스트레이트 · 비낙 `6/27`, 전체 `18.5%`): **`8칸`**
-       - **`아라시`** (`4-4-4`, `5-5-5` 트리플 · 비낙 `2/27`, 전체 `6.2%`): **`10칸`**
-       - **`★666 아라시`** (`6-6-6` 트리플 · 비낙 `1/27`, 전체 `3.1%`): **`12칸 + 한 번 더!`** *(재굴림 부여)*
-  2. **메나시(족보 없음) 규칙:** 4·5·6 주사위 3개는 비둘기집 원리상 **메나시가 원천적으로 불가능**하므로 메나시·재굴림 규칙 없음.
-  3. **쇼벤(낙) 확률 및 판정:** 엔진 `GameState.rng`로 먼저 독립 **`1/6` (`16.7%`)** 확률로 **`쇼벤(낙)`** 판정 → **`0칸 + 턴 종료 (`ends_turn = true`)`** (템포 업 보너스 미적용, `다이스: 리바이브` 1회 부활 · `수집품: 치비구루미` 50% 재굴림 · `싸늘한 밑장빼기` 덮어쓰기 정상 연동).
-  4. **도구 카드 · 도감 · 증강 표시:** `dice_table.csv` 기준 `min_step = 4, max_step = 12, jackpot_step = 12`, 표시 범위 **`4 ~ 12칸 (최소 0)`**, **`ToolRegistry.ZERO_OUTCOME` 포함 유지**.
-  5. **파워 게이지 · `[패시브] 풀 파워`(+2칸):** 게이지 도구 5종 포함 유지. `풀 파워` `+2칸`은 비낙(`dice_value > 0`)일 때만 합산(쇼벤 시 미적용).
-  6. **3D 연출 (`DiceRoll3D` · `RollPresenter`):**
-     - 결과 `details`에 `{"dice": [d1, d2, d3], "hand": "...", "shoben": bool, "out_index": int}` 전달.
-     - 기존 밥그릇(`v4/chinchiro/rice_bowl_v01.scn`) 안에 **6면이 `4·4·5·5·6·6`으로 각인된 사기 주사위 3개**(공유 경량 메시 재사용)가 함께 쏟아져 굴러 정착(`1.12초`) → **`0.55초` 뜸 들이기 유지** → 족보명·칸수 공개.
-     - **`쇼벤(낙)` 시 `out_index` 주사위 1개가 그릇 테두리에 튕겨 바깥 바닥으로 이탈**한 뒤 이동 실패 배너(`0.9초`) 표시.
-- **반드시 지킬 제약:**
-  - `GameState.rng` 단일 결정성 · `TurnSnapshot` 호환 · 온라인 락스텝 해시 일치 유지
-  - 3D 예산(`Visual_Asset_Guide_Draft.md` 6절: 공유 메시 · `MSAA_2X` · `Web3DBudget` `32×32` 파킹) 및 `dice_table.csv`·`translations.csv` 한/영/일 동시 갱신
-- **참조 기획서:** [`GDD_TDD_Master.md` 4.2절](GDD_TDD_Master.md#42-판정-도구-21종과-직접-조작-연출) · [`EDGE_CASE_SPEC.md` 1.8절](EDGE_CASE_SPEC.md#18-판정-도구-세부-경계) · [`PRESENTATION_SPEC.md` 2.1절](PRESENTATION_SPEC.md#21-보드-위-투척-도구-toss--3종)
-- **완료 기준 (검증):**
-  - 6종 족보·`★666` 재굴림·`1/6` 쇼벤 `ends_turn = true` 확률 대량 시뮬레이션 및 `리바이브`/`치비구루미`/`풀 파워` 단위 테스트 통과
-  - 3D 그릇 3주사위(4·5·6면)·쇼벤 1개 이탈 화면 테스트(`test_dice_roll_3d`) 및 `ui_text_fit_test` · `ui_web_3d_budget_test` 통과
-
----
-
-### `[HANDOFF-009]` 규칙 도감(`scenes/rulebook.gd`) `v1.3.1` 현행화 및 오기·누락 10건 교정
-
-- **대상 역할 / 브랜치:** 개발 AI (`scenes/rulebook.gd` · `content_trickcal/data/translations.csv`) / `dev` 또는 `next`
+- **대상 역할 / 브랜치:** 개발 · UI 아트 AI (`scenes/rulebook.gd` · `assets/ui/trickcal/board_preview/{classic,monatium}.webp` · `content_trickcal/data/translations.csv`) / **`dev` (1.3.x 실시간 패치)**
 - **우선순위 / 상태:** `보통(P1)` / `대기(TODO)`
-- **전달 내용:**
-  - `scenes/rulebook.gd` 전수 검수에서 발견된 구버전 오기·누락 10건을 [`RULEBOOK_SPEC.md` 3절](RULEBOOK_SPEC.md#3-현행-rulebookgd-전수-검수-결과--수정-필수-10건-handoff-009) 확정 사양대로 일괄 교정한다.
-    1. 법전 기록 집계(`L2006`): `"게임 내내 쌓여요"` 분기 삭제 → 전원 제정 순간 `0` 초기화로 통일
-    2. 법전 등장·판정 시점(`L125·1580·1595·1999·2009`): `8라운드(과열)부터 등장`, 일반 7종(각 차례 정산·NPC 뒤) vs `LAW_09`(내 차례 끝) vs `LAW_05`(경보 후 다음 내 차례 끝 유지) 정확 분기
-    3. 기물 계열 수(`L1885`): `"7계열"` 하드코딩 → `PawnCatalog.EVOLVABLE_SETS.size()` (`9계열`) 동적 표기
-    4. 필살기 위치(`L1888`): `"내 프로필 카드"` → `"하단 중앙 기물 독(내 말 위 [필살기 발동!])"`
-    5. 아케이드 소개(`L1930`): 누락된 `모브 큐이·괴상한 멜론` 추가
-    6. `1.3.1` 조작 설명(`L1614`): `"쿠키는 과자통"` → `"접시 위"`, `"다트는 끌어 던지고"` → `"회전하는 과녁을 눌러 던지고"`
-    7. 카드 대분류 색(`L1957·1976`): `"발동 (노랑)"` → `"발동 (주황)"`, `"소환 (분홍)"`/`#f08aa8` → `"소환 (청록)"`/`#2f9a85`
-    8. 증강 용어(`L123·1886·1998`): 구 `"기물 지급"` → `"기물 진화"` 통일
-    9. 초증강 분류표(`L2043`): 지속형 4종(`평화주의자·날조와 선동·눈먼 자의 도시·사출 목걸이`) 행 추가
-    10. `오이 카드`(`JNK_CUKE`) 안내·손패 상한 확장(`에심당 뽈사탕 +1장`)·땅 정령 통과 강제 정지 예외·주석(`장 11개`) 보완
+- **전달 내용 (실서비스 시각 검수 + 사용자 승인 `2026-11-28`):**
+  - 상세 치수·색상·동작은 [`RULEBOOK_SPEC.md` 4절](RULEBOOK_SPEC.md#4-규칙-도감-ui--ux-종합-개선-확정-규격-10건-handoff-012) 및 [`Visual_Asset_Guide_Draft.md` 7.5절](visual/Visual_Asset_Guide_Draft.md#75-규칙-도감-rulebook--1366--768-고정-스테이지)의 **`UI-01 ~ UI-10`** 규격을 그대로 구현한다.
+  - **P0 (탐색·조작 최우선):**
+    - `UI-01`: `[도감] → [카드]` 상단에 5개 분류 필터 알약 탭 신설 (`전체` · `방어(#4C6EF5)` · `발동(#D98B2B)` · `함정(#8E4AA8)` · `소환(#2F9A85)`, 장수 동적 집계, 상세 팝업 `[◀ 이전]`/`[다음 ▶]`도 필터 목록 내 순환)
+    - `UI-02`: 상세 팝업 암전 막(`_popup_dim`)을 도감 전체 화면(`PRESET_FULL_RECT`, `alpha = 0.65`)으로 확장 + 바깥 클릭 닫기 + 하단 `[닫기]` 버튼 색상 분리(`#5f4630`, 흰 글씨) + 우상단 `[×]` 닫기 버튼(`44×44`) 추가
+    - `UI-03`: `[기록 백업/복구]` 팝업 `_code_field`에 밝은 `LobbyTheme.input_field()` 스킨(`#EEFFA8` / `#1B4D3E`) 적용 + 우상단 `[×]` 버튼(`36×36`) 및 바깥 클릭 자동 닫기
+  - **P1 (잘림·가독성):**
+    - `UI-04`: `[기본 규칙] → [특수 칸]` 좌측 노트 `MiniBoard`를 `276×276`으로 축소해 초기 화면에서 `0번 출발선`까지 스크롤 없이 100% 노출 *(보드 상세 팝업 `320×320` 유지)*
+    - `UI-05`: `EntryDetailScroll`·`CatalogScroll`을 `SCROLL_MODE_AUTO`로 전환해 불필요한 스크롤바 제거 + 짧은 상세 팝업(본문 높이 55% 미만) 세로 중앙 균형 배치
+    - `UI-06`: 도감 스크롤 하단 `margin_bottom = 18px` 확보 및 `풀 파워`·`보드연성진` 끝줄 잘림 해소 + `BoardVariantButton`을 단순 `(→)` 대신 `보드 1/4 ▶` 칩 라벨(또는 상세 팝업 내 보드 전환 탭)로 직관화
+    - `UI-07`: `[잡기]` 우측 방어 타일 5종 중 세부 4종 아이콘 차별화 (기존 에셋 조합 재사용, 추가 용량 `0 KB`)
+  - **P2 (균형·폴리싱):**
+    - `UI-08`: 좌측 챕터 버튼 열 `(28, 136)` · 각 `196×60`(`sep 7px`), 하단 `N / 11` 리본 `y = 716, H = 40` 안착, 우상단 메달 경계 여백 확보(상세 팝업 `[×]` 충돌 회피)
+    - `UI-09`: `classic.webp` · `monatium.webp` 보드 미리보기(`640×400`)를 중앙 `[굴리기]` HUD 없는 클린 캡처로 통일
+    - `UI-10`: `[한 턴]` `① 카드` 설명 간결화(`"굴리기 전에 카드 1장 · 필살기 사용 (안 써도 돼요)"`) 및 하단 `꿀팁` 상자 초기 잘림 해소
 - **반드시 지킬 제약:**
-  - 한국어 원문 변경 시 `content_trickcal/data/translations.csv`의 영어(`en`)·일본어(`ja`) 대응 키도 동시 갱신
-  - 도감 레이아웃 치수(`Visual_Asset_Guide_Draft.md` `7.5절`) 불변
-- **참조 기획서:** [`RULEBOOK_SPEC.md`](RULEBOOK_SPEC.md) · [`GDD_TDD_Master.md` 4.4-c절](GDD_TDD_Master.md#44-c-규칙-도감)
+  - 한국어 신규·수정 문구(필터 탭명·`보드 1/4` 등)는 `translations.csv` 영·일 동시 추가
+  - 터치 모드 버튼 최소 높이 `48px`(필터 `44px` + `TOUCH_SLOP 26px`) 및 `FontSizes.LADDER` 준수
+- **참조 기획서:** [`RULEBOOK_SPEC.md` 4절](RULEBOOK_SPEC.md#4-규칙-도감-ui--ux-종합-개선-확정-규격-10건-handoff-012) · [`Visual_Asset_Guide_Draft.md` 7.5절](visual/Visual_Asset_Guide_Draft.md#75-규칙-도감-rulebook--1366--768-고정-스테이지)
 - **완료 기준 (검증):**
-  - `tests/ui_overlap_audit.gd` (한·영·일 PC/터치 글자 넘침 0건) 및 도감 관련 화면 테스트 통과
-
----
-
-### `[HANDOFF-008]` 야추 다이스 컵 쏟기 연출 교정 (장식 컵 제거 · 실제 흔들기/쏟기 구현)
-
-- **대상 역할 / 브랜치:** 개발 · 3D 연출 AI (`scenes/yacht_case_3d.gd` · `scenes/yacht_roll_3d.gd` · `scenes/stage_yacht.gd`) / `dev` 또는 `next`
-- **우선순위 / 상태:** `보통(P1)` / `대기(TODO)`
-- **전달 내용:**
-  - **현행 문제:** `YachtCase3D`가 `UPDATE_ONCE` 정지 배경으로 컵을 세워 두고, `YachtRoll3D`가 별도 뷰포트의 고정 좌표에서 주사위만 쏘아 내어 컵이 작동하지 않는 장식처럼 보인다.
-  - **확정 연출 ([`PRESENTATION_SPEC.md` 2.3절](PRESENTATION_SPEC.md#23-카드-시점-매트-도구-card_table--8종)):**
-    1. 주사위 컵은 목재 케이스와 분리된 **가동 3D 소품**으로 동작한다(`v5/yacht_case/` 경량 메쉬·예산 유지).
-    2. 첫 굴림 및 리롤 시 컵이 굴릴 주사위(리롤 시 미고정 주사위만)를 품고 **흔들린 뒤(진동 + 딸그락 효과음)**, 펠트 트레이 쪽으로 **기울어지며 컵 입구(mouth) 안쪽에서 주사위가 실제로 쏟아져 나와** 펠트 위 지정 5칸(`FELT_Y`)에 바운스 후 정착한다.
-    3. 쏟아낸 뒤 컵은 우측 거치 자리로 바로 서서 대기하며, 정지 상태에서는 기존처럼 `UPDATE_DISABLED` 저전력 모드로 전환한다.
-- **반드시 지킬 제약:**
-  - `ToolYacht` 판정·RNG·고정(`keep`) 규칙 및 주사위 클릭 영역 좌표 불변
-  - `Visual_Asset_Guide_Draft.md` `6절` 3D 예산(케이스+컵 `≤ 3,500 tris`, `MSAA_2X`, 비활성 `32×32` 파킹) 유지
-- **참조 기획서:** [`PRESENTATION_SPEC.md` 2.3절](PRESENTATION_SPEC.md#23-카드-시점-매트-도구-card_table--8종) · [`Visual_Asset_Guide_Draft.md` 6절](visual/Visual_Asset_Guide_Draft.md#6-3d-모델링-폴리곤-수--저용량-운영-상한-규격-131-전수-계측)
-- **완료 기준 (검증):**
-  - `tests/ui_web_3d_budget_test.gd` · 야추 관련 화면 테스트 통과 및 실제 렌더에서 컵 기울임·입구 출현 일치 확인
-
----
-
-### `[HANDOFF-002]` 생떼 카드 52종 인게임 도감 · 툴팁 문구 통일화
-
-- **대상 역할 / 브랜치:** 개발 AI (`content_trickcal/data/cards_table.csv` · `scenes/main_board.gd` · `scenes/rulebook.gd` · `translations.csv`) / `dev` 또는 `next`
-- **우선순위 / 상태:** `보통(P1)` / `대기(TODO)`
-- **전달 내용:**
-  - `GDD_TDD_Master.md` `4.4절`에서 카드 52종(+ 오이 토큰 1종)의 설명 용어를 전면 통일했다(`내/적 선두 말`, `내/적 꼴찌 말`, `+N칸 전진`, `뒤로 N칸 이동`, `출발선으로 사출`, `그 칸에 강제 정지`, `카드 N장 획득/강탈/소각`, `설치물 파괴`).
-  - 인게임 카드 요약 문구(`CARD_SUMMARIES` · `cards_table.csv` · 규칙 도감) 및 다국어 번역(`en`/`ja`)이 기획서의 통일 서술과 어긋나는 부분을 대조해 정렬한다.
-  - 특히 `[공격 발동]` 8종(방어 가능) vs `[너프 발동]` 5종(방어 불가)의 구분이 플레이어에게 명확히 읽히도록 유지한다.
-- **참조 기획서:** [`GDD_TDD_Master.md` 4.4절](GDD_TDD_Master.md#44-생떼-카드-52종--기본-덱-89장-통일-명세)
-- **완료 기준 (검증):**
-  - `tests/ui_overlap_audit.gd` 통과 (한·영·일 카드 프레임·도감 상세 팝업 글자 넘침 0건)
-
----
-
-### `[HANDOFF-006]` 개별 범위 CI 시험 3종 현행화 (`1.3.1` 화면 변경 반영)
-
-- **대상 역할 / 브랜치:** 개발 AI 또는 QA AI / `dev`
-- **우선순위 / 상태:** `낮음(P2)` / `대기(TODO)` *(배포 차단은 아니나 개별 범위 테스트 실패 상태)*
-- **전달 내용:**
-  - 아래 시험 3종은 전체 배포(`full`) 범위가 아니라 개별 범위에서만 실행되며, `1.3.1` 화면 개편 이후 갱신되지 않아 현재 실패한다.
-    1. `tests/ui_blackjack_compact_test.gd`: `21 and reroll remain explicit`, `long hand cannot grow stage or history` *(블랙잭이 카드 시점 매트로 개편된 뒤 어긋남)*
-    2. `tests/ui_roll_history_test.gd`: `success heading retains full total` *(연속 굴림 기록판에서 글자판 제거 뒤 어긋남)*
-    3. `tests/ui_profile_aura_test.gd`: 16번 줄에서 이미 제거된 노드를 숨기려다 실행 중단
-  - 각 시험의 검증 의도가 현행 `1.3.1` 기획(직접 조작 · 카드 시점)과 일치하는지 확인해 현행 UI에 맞게 갱신하거나 폐기된 항목을 정리한다.
-- **참조 기획서:** [`GDD_TDD_Master.md` 4.2절 · 4.5절](GDD_TDD_Master.md#42-판정-도구-21종과-직접-조작-연출)
+  - `tests/ui_overlap_audit.gd` (한·영·일 PC/터치 넘침 0건) 및 규칙 도감 화면 테스트 통과
+  - 카드 필터 5종 전환·상세 팝업 전체 암전/닫기·백업 팝업 닫기·`특수 칸` 미니보드 무잘림 확인
 
 ---
 
@@ -178,7 +99,7 @@
   - 예외 조건이나 기존 동작 유지 범위 명시
 - **반드시 지킬 제약:**
   - (예: 3D 모델 등급 상한, UI 버튼 고정 크기/좌표, 연출 비침범 `await`, RNG 결정성 유지 등)
-- **참조 기획서:** [`GDD_TDD_Master.md`](GDD_TDD_Master.md) / [`EDGE_CASE_SPEC.md`](EDGE_CASE_SPEC.md) / [`Visual_Asset_Guide_Draft.md`](visual/Visual_Asset_Guide_Draft.md)
+- **참조 기획서:** [`GDD_TDD_Master.md`](GDD_TDD_Master.md) / [`EDGE_CASE_SPEC.md`](EDGE_CASE_SPEC.md) / [`PRESENTATION_SPEC.md`](PRESENTATION_SPEC.md) / [`RULEBOOK_SPEC.md`](RULEBOOK_SPEC.md) / [`Visual_Asset_Guide_Draft.md`](visual/Visual_Asset_Guide_Draft.md)
 - **완료 기준 (검증):**
   - 통과해야 할 테스트 스크립트 및 확인 시나리오
 - **작업 AI 완료 보고 (완료 시 기록):**
@@ -193,8 +114,13 @@
 
 | ID | 완료일 | 대상 브랜치 | 요약 | 반영 커밋 · 검증 결과 |
 |---|---|---|---|---|
-| **`[HANDOFF-001]`** 특수 발판 연출 중 템포 업 경고음 침범 수정 | 2026-11-28 | `dev` · `docs` | 빵집·자판기·가마솥·정령 칸·코너 버프·부스터 발판 연출 스텝이 자기 창·배지·날아가는 카드·파편 퇴장까지 `await`(`_await_tween`·`_await_freed`·`_await_seconds`, 세대 변경 시 즉시 종료)하도록 수정. 정령산 다음 판 디버그 판 준비 오류 동시 수정. `docs`의 `CHANGELOG.md`·`DEV_HISTORY.md`(`7.137`) 동기화 완료 | `dev`: `6d671f34` · `6b17c18f` / 재현 시험 `ui_round_sequence_test::_tempo_after_pad`(6종 발판 통과) · 단위 877개 · 배포 범위 화면 시험 전량 통과 *(참고: `2x`/`3x` 배속·`CNT_01` 되감기 별도 시나리오는 미실행, 배속·세대 초기화는 공용 타이머 경유)* |
-| **`[HANDOFF-004]`** AI 터보 턴 배율 기획서 `0.75배` 고정 | 2026-11-28 | `docs` | 사용자 결정에 따라 실제 코드(`TURBO_PACE_SCALE = 0.75`)에 맞춰 `GDD_TDD_Master.md` `4.6절` 및 `EDGE_CASE_SPEC.md` `2.5절`의 구 `0.35배` 표기를 `0.75배`로 통일 | `docs`: `1247600` · `GDD_TDD_Master.md` · `EDGE_CASE_SPEC.md` 정합성 확인 |
-| **`[HANDOFF-005]`** 처치 장면 리벤지 `+N` · `방어!` 배지 예외 확정 | 2026-11-28 | `docs` | 사용자 결정(`2026-11-28`): 처치 템포 유지를 위해 `_revenge_charged_popup`(`0.12초`) · `_show_defended`(`0.45초`) 2종만 비차단 부가 배지 예외로 인정하고 `EDGE_CASE_SPEC.md` `2.1절` 및 `PRESENTATION_SPEC.md` `1.1·3.2절`에 명문화 (개발 코드 변경 불필요) | `docs` 본 커밋 반영 · `EDGE_CASE_SPEC.md` · `PRESENTATION_SPEC.md` 명문화 완료 |
-| **`[HANDOFF-007]`** TRPG·풀 파워 아이콘 및 확정 아트 통합 인계 | 2026-11-28 | `dev` · `docs` | TRPG 4기물(`TRPG_*_V02.png` 공용) · 풀 파워 아이콘(`AUG_UTIL_FULL_POWER_V02.png`, `256×256` ~14 KB, `SOFT_TONE`) · 다트 숫자 `fixed_frame.scn` 고정 · 결과 숫자 `Bangers`(`7` 가로획 보강) · 야추 빈 컵 분리 · 핀볼 측면 손잡이 유지 사양을 `Visual_Asset_Guide_Draft.md` `6.3절` 회귀 방지 고정 사항 및 `docs/ui-trial/augments/full-power-icon-v02-20261128.json`으로 `docs`에 영구 고정 | `dev`: `1c584e11` · `e497cf85` · `a30e128d` · `f4e5bec8` · `6d557ee5` / `test_pawn_art` 290개 · `test_augment_art` 316개 · `FULL_POWER_DEPLOYED_AUDIT []` 통과 |
-| **`[HANDOFF-011]`** 오미쿠지 2버튼 조작 서술 정정 | 2026-11-28 | `docs` | 사용자 결정(현행 2버튼 코드 유지)에 따라 `PRESENTATION_SPEC.md` `2.2절` 오미쿠지 서술을 `[흔들기](원하는 만큼 반복) + [뽑기]` 2버튼 방식(8초 무입력 자동 진행)으로 정정 | `docs` 본 커밋 반영 · `PRESENTATION_SPEC.md` `2.2절` 정합성 확인 |
+| **`[HANDOFF-001]`** 특수 발판 연출 중 템포 업 경고음 침범 수정 | 2026-11-28 | `dev` · `docs` | 빵집·자판기·가마솥·정령 칸·코너 버프·부스터 발판 연출 스텝이 자기 창·배지·카드·파편 퇴장까지 `await`하도록 수정. 정령산 다음 판 디버그 판 준비 오류 동시 수정 | `dev`: `6d671f34` · `6b17c18f` / `ui_round_sequence_test::_tempo_after_pad`(6종 발판) · 단위 877개 통과 |
+| **`[HANDOFF-002]`** 생떼 카드 52종 인게임 도감·툴팁 문구 통일화 | 2026-11-28 | `dev` · `docs` | 카드 20장 설명·손패 1줄 요약 4종을 `GDD_TDD_Master.md` `4.4절` 통일 용어로 정렬(`소각` 용어 시험 반영, `기억상실빔`은 엔진 기준 `모든 말`로 GDD까지 일치시킴) | `dev`: `762e58b` · `3eac44d` (개발 기록 `7.139`) / `test_card_descriptions_follow_the_glossary` · `ui_overlap_audit` 통과 |
+| **`[HANDOFF-004]`** AI 터보 턴 배율 기획서 `0.75배` 고정 | 2026-11-28 | `docs` | 사용자 결정에 따라 실제 코드(`TURBO_PACE_SCALE = 0.75`)에 맞춰 `GDD_TDD_Master.md` `4.6절` 및 `EDGE_CASE_SPEC.md` `2.5절`의 구 `0.35배` 표기를 `0.75배`로 통일 | `docs`: `1247600` |
+| **`[HANDOFF-005]`** 처치 장면 리벤지 `+N` · `방어!` 배지 예외 확정 | 2026-11-28 | `docs` | 사용자 결정: 처치 템포 유지를 위해 `_revenge_charged_popup`(`0.12초`) · `_show_defended`(`0.45초`) 2종만 비차단 부가 배지 예외로 `EDGE_CASE_SPEC.md` `2.1절`·`PRESENTATION_SPEC.md`에 명문화 | `docs`: `361d904` |
+| **`[HANDOFF-006]`** 개별 범위 CI 시험 3종 `1.3.1` 현행화 | 2026-11-28 | `dev` | `ui_blackjack_compact_test` · `ui_roll_history_test` · `ui_profile_aura_test`를 `1.3.1` 화면 사양에 맞게 정비 완료 | `dev`: `c3af7af` · `3eac44d` (개발 기록 `7.139`) |
+| **`[HANDOFF-007]`** TRPG·풀 파워 아이콘 및 확정 아트 통합 인계 | 2026-11-28 | `dev` · `docs` | TRPG 4기물(`TRPG_*_V02.png`), 풀 파워(`AUG_UTIL_FULL_POWER_V02.png`), 다트 숫자 고정, 결과 숫자 `Bangers`, 야추 빈 컵 분리, 핀볼 측면 손잡이 유지 사양을 `Visual_Asset_Guide_Draft.md` `6.3절`에 영구 고정 | `dev`: `1c584e11`~`6d557ee5` / `docs`: `1247600` · `test_pawn_art` 290개 · `test_augment_art` 316개 통과 |
+| **`[HANDOFF-008]`** 야추 다이스 컵 쏟기 연출 교정 | 2026-11-28 | `dev` · `docs` | `YachtCase3D.split_model`로 케이스에서 컵을 분리해 `YachtRoll3D`에서 흔들기(`0.34초`) → 펠트 쪽 `72°` 기울이기(`0.46초`) → `cup_mouth` 입구에서 주사위 쏟기 → 바로 서기 구현 (추가 삼각형 0) | `dev`: `949b6c4` · `3eac44d` (개발 기록 `7.139`) |
+| **`[HANDOFF-009]`** 규칙 도감(`rulebook.gd`) 텍스트 오기·누락 10건 교정 | 2026-11-28 | `dev` · `docs` | `RULEBOOK_SPEC.md` `3절` 10건 교정 완료 및 도감 요약 배너 `2.2절` 문구 반영, 법전 판정 `_law_judgement` 분기 적용 | `dev`: `0cfd6bb` · `3eac44d` (개발 기록 `7.139`) |
+| **`[HANDOFF-010]`** 지하노역장 친치로 카이지 4·5·6 3주사위 + 쇼벤 리워크 | 2026-11-28 | `dev` · `docs` | 카이지 사기 주사위(`[4,4,5,5,6,6]`) 3개 + `1/6` 쇼벤(`0칸+턴 종료`) · 4/5/6의 눈 · 시고로(8) · 아라시(10) · `★666`(12+한번더) 엔진·3D 그릇 3주사위·쇼벤 이탈·도구 카드·번역 완료 | `dev`: `020f344` · `3eac44d` (개발 기록 `7.139`) / 27조합·27,000회 분포·3D 그릇·연출기 시험 통과 |
+| **`[HANDOFF-011]`** 오미쿠지 2버튼 조작 서술 정정 | 2026-11-28 | `docs` | 사용자 결정(현행 2버튼 코드 유지)에 따라 `PRESENTATION_SPEC.md` `2.2절` 오미쿠지 서술을 `[흔들기](반복) + [뽑기]` 2버튼 방식으로 정정 | `docs`: `8eb241b` |
