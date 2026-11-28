@@ -211,6 +211,7 @@ func _fit_book() -> void:
 	for index: int in _group_tabs.size():
 		_group_tabs[index].position.x = book_center-165.0+index*170.0
 	_summary_banner.size.x = width - 320.0
+	if _popup_dim != null and _popup_dim.visible: _cover_screen.call_deferred()
 	if not _content.is_empty(): _apply_group_layout(group_of(spread))
 
 
@@ -658,14 +659,15 @@ func _build_notebook() -> void:
 	_notebook_root.size = STAGE
 	_stage.add_child(_notebook_root)
 	# 상세 팝업 뒤 암전 (UI-02): 도감 화면 전체를 덮는다. 노트(z 10) 아래, 격자·장 버튼·[기록 백업/복구] 위.
+	# 노트와 같은 무대(_stage) 안, 노트 바로 앞 순서에 둔다: GUI 클릭은 z가 아니라 노드 순서로 고르므로
+	# 도감 노드 맨 끝에 두면 노트의 [이전]·[다음]·[닫기]·[×] 클릭까지 막을 가로챈다 (1.3.1 제보).
 	_popup_dim = ColorRect.new()
 	_popup_dim.name = "NotebookPopupDim"
 	_popup_dim.color = Color(0, 0, 0, 0.65)
-	_popup_dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_popup_dim.z_index = 9
 	_popup_dim.mouse_filter = Control.MOUSE_FILTER_STOP
 	_popup_dim.visible = false
-	add_child(_popup_dim)
+	_stage.add_child(_popup_dim)
 	_notebook_page = Control.new()
 	_notebook_page.name = "NotebookPage"
 	_notebook_page.size = STAGE
@@ -1003,7 +1005,19 @@ func _layout_notebook() -> void:
 	_notebook_title.custom_minimum_size.x = minf(720.0,_note_column.size.x-264.0) if popup else 0.0
 	_popup_close.add_theme_font_size_override("font_size",22 if popup else 16)
 	if popup:
-		_notebook_root.get_parent().move_child(_notebook_root, -1)  # 격자 위에 뜬다
+		_cover_screen()
+		_stage.move_child(_popup_dim, -1)
+		_stage.move_child(_notebook_root, -1)  # 격자 위에 뜬다 (암전 막 바로 뒤 순서라 노트 버튼이 클릭을 받는다)
+		_cover_screen.call_deferred()
+
+
+## 암전 막을 도감 화면 전체(이 노드의 사각형)에 맞춘다. 무대는 가운데 정렬이라 위치를 무대 좌표로 바꿔 넣는다.
+func _cover_screen() -> void:
+	if _popup_dim == null or not is_inside_tree():
+		return
+	var to_stage: Transform2D = _stage.get_global_transform().affine_inverse() * get_global_transform()
+	_popup_dim.position = to_stage.origin
+	_popup_dim.size = size * to_stage.get_scale()
 
 
 ## 장 번호가 속한 위쪽 탭(묶음).
