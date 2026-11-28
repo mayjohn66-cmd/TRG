@@ -25,6 +25,18 @@
 
 ---
 
+## 시각 예시 · 핵심 연출 미리보기
+
+| 인게임 보드 · HUD 화면 | 친치로 3주사위 비겹침 & 쇼벤 탈출 규격 |
+|---|---|
+| ![인게임 보드 화면](docs/ui-trial/screens/board.png) | ![친치로 비겹침 연출 가이드](docs/visual/spec_media/chinchiro_non_overlap.gif) |
+
+| 야추 다이스 컵 쏟기 물리 인과 | 정령산 「정령 원기옥」 특수 승리 컷신 |
+|---|---|
+| ![야추 컵 쏟기 연출 가이드](docs/visual/spec_media/yacht_cup_pour.gif) | ![정령 원기옥 승리 컷신 가이드](docs/visual/spec_media/spirit_bomb_victory.gif) |
+
+---
+
 ## 문서 안내판
 
 | 문서 | 수록 내용 | 이럴 때 읽습니다 |
