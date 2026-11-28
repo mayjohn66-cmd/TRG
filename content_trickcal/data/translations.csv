@@ -3503,3 +3503,30 @@ TRPG,TRPG,TRPG
 "(0칸, 턴 종료)","(0 spaces, turn ends)",(0マス、ターン終了)
 "• 족보표: 쇼벤(낙, 1/6) 0칸+턴 종료 / 4·5·6의 눈(4·5·6) / 시고로 4·5·6(8) / 아라시 444·555(10) / ★666 아라시(12칸+한번더)","• Hands: Shoben (out, 1/6) 0 spaces + turn ends / Eye of 4·5·6 (4·5·6) / Shigoro 4-5-6 (8) / Storm 444·555 (10) / ★666 Storm (12 spaces + roll again)",• 役表: ションベン(1/6) 0マス+ターン終了 / 4・5・6の目(4・5・6) / シゴロ 4・5・6(8) / アラシ 444・555(10) / ★666アラシ(12マス+もう一回)
 카이지 4·5·6 사기 주사위 3개를 굴려 족보만큼 전진한다,Throw three rigged Kaiji 4-5-6 dice and advance by the hand.,カイジの4・5・6イカサマサイコロ3個を振り、役の分だけ前進する
+[보드판] 보드판마다 상점 자리·장치 자리에 서는 특수 칸과 연동 법전이 달라요.,"[Boards] Each board has its own special tiles on the shop and device spots, and its own linked law.",[ボード] ボードごとに、ショップ枠・装置枠の特殊マスと連動する法典が違います。
+[판정 도구] 도구마다 족보와 조작 손맛이 달라요. 증강의 [도구 교체]로 바꿔 굴려요.,[Judgment Tools] Each tool has its own hands and feel. Swap with the [Tool Swap] augment.,[判定ツール] ツールごとに役と操作の手ごたえが違います。増強の［ツール交換］で持ち替えて振ります。
+[말] 증강의 [기물 진화]로 기본 말을 진화시켜요. 말마다 상시 능력과 1회 필살기가 있어요.,[Pieces] Evolve a basic piece with the [Piece Evolution] augment. Each has a passive and a once-per-game special.,[駒] 増強の［駒進化］で基本の駒を進化させます。駒ごとに常時能力と1回限りの必殺技があります。
+[카드] 상점·증강에서 얻은 카드를 보드로 끌어다 놓아 써요. 손패는 기본 최대 7장이에요.,[Cards] Drag cards from shops and augments onto the board to use them. Hand limit is 7 by default.,[カード] ショップや増強で手に入れたカードをボードにドラッグして使います。手札は基本最大7枚です。
+"[특수 승리 법전] 8라운드(과열)부터 증강에 등장하며, 제정 시점부터 0에서 경쟁해 조건을 채우면 즉시 다음 순위로 졸업해요!","[Special Victory Laws] Appear in augments from Round 8 (Overheat). Everyone starts from 0 when a law is enacted, and whoever meets it graduates to the next rank at once!",[特殊勝利法典] 8ラウンド（過熱）から増強に登場し、制定時点から0で競い、条件を満たすとすぐ次の順位で卒業します！
+[초증강] 14라운드(광기)부터 등장하는 하이리스크 하이리턴. 경고 표시는 내 말도 사출될 수 있다는 뜻이에요.,"[Super Augments] High risk, high return from Round 14 (Frenzy). A warning mark means your own pieces may be launched too.",[超増強] 14ラウンド（狂気）から登場するハイリスク・ハイリターン。警告マークは自分の駒も射出されうるという意味です。
+법전의 조건을 채우면 차례 정산 때 바로 졸업,Meet a law's condition and graduate at the end-of-turn check,法典の条件を満たせば手番の精算時にすぐ卒業
+"법전 조건은 [b]각 차례가 끝나는 정산 시점(및 라운드 끝 중립 기물 뒤)[/b]에 채워져 있으면 특수 승리! (방해령 허리케인 포스는 내 차례가 끝날 때, 보드연성진은 경보 뒤 다음 내 차례 끝까지 유지)",A law wins if its condition is met [b]at the check after each turn (and after the round-end neutral pieces)[/b]! (Meddling Spirits' Hurricane Force: at the end of your own turn. Board Alchemy Circle: hold it until the end of your next turn after the alarm),法典の条件は[b]各手番の精算時（およびラウンド終了の中立駒の後）[/b]に満たしていれば特殊勝利！（妨害霊ハリケーンフォースは自分の手番の終わり、盤面錬成陣は警報の後、次の自分の手番の終わりまで維持）
+법전은 %d라운드(과열)부터 증강에 등장해요,Laws appear in augments from Round %d (Overheat),法典は%dラウンド（過熱）から増強に登場します
+교칙이 법전에 오른 순간부터 전원이 0에서 새로 세요,"From the moment a law is enacted, everyone counts again from 0",教則が法典に載った瞬間から全員が0から数え直します
+"쿠키는 접시 위에서 집고, 아이스크림은 아이스박스에서 꺼내고, 오미쿠지는 흔든 뒤 뽑고, 캡슐은 레버를 돌려요","Pick a cookie from the plate, take an ice cream from the ice box, shake then draw the omikuji, and turn the capsule lever",クッキーはお皿から取り、アイスはアイスボックスから出し、おみくじは振ってから引き、カプセルはレバーを回します
+"룰렛은 원판을 잡아 돌리고, 슬롯은 눌러 릴을 멈추고, 다트는 회전하는 과녁을 눌러 던지고, 복권은 손가락으로 긁고, 해적통은 돌려서 칼을 꽂아요","Grab and spin the roulette, tap to stop the slot reels, tap the spinning dartboard to throw, scratch the ticket with your finger, and turn the pirate barrel to stab",ルーレットは円盤をつかんで回し、スロットは押してリールを止め、ダーツは回る的を押して投げ、くじは指で削り、海賊樽は回して剣を刺します
+"단, 정령산의 [b]땅 정령[/b]은 지나가기만 해도 그 칸에 강제로 멈춰요",But Spirit Mountain's [b]Earth Spirit[/b] stops you on its tile even if you only pass,ただし精霊山の[b]地の精霊[/b]は通過するだけでもそのマスで強制停止します
+증강의 [b]기물 진화[/b]로 기본 말 하나를 오른쪽 기물로 진화시켜요.,Use the [b]Piece Evolution[/b] augment to evolve a basic piece into one on the right.,増強の[b]駒進化[/b]で基本の駒を右の駒に進化させます。
+필살기는 하단 중앙 기물 독(내 말 위 [필살기 발동!])에서 굴리기 전에 눌러요,Use specials from the piece dock at the bottom centre ([Special!] above your piece) before rolling,必殺技は下中央の駒ドック（自分の駒の上の［必殺技発動！］）で振る前に押します
+킹 체커·루도·8번 공·스타 카트·지뢰찾기 공병·모브 큐이·괴상한 멜론.,"King Checker, Ludo, 8-Ball, Star Kart, Minesweeper Sapper, Mob Kyui, Weird Melon.",キングチェッカー・ルド・8番ボール・スターカート・マインスイーパー工兵・モブ・キューイ・ヘンなメロン。
+발동 (주황),Action (orange),発動（オレンジ）
+소환 (청록),Summon (teal),召喚（青緑）
+모브 큐이의 오이를 밟으면 받는 덱 밖 카드. 굴리기 전 한 장으로 먹어 치워요 (효과 없음),A non-deck card you get by stepping on Mob Kyui's cucumber. Eat it as your one card before rolling (no effect),モブ・キューイのキュウリを踏むともらえるデッキ外のカード。振る前の1枚として食べてしまいます（効果なし）
+기본 최대 %d장 · 에심당 뽈사탕마다 +1장,Up to %d by default · +1 per Esimdang Lollipop,基本最大%d枚・エシムダンのペロペロキャンディごとに+1枚
+"각 차례가 끝나는 정산 시점(및 라운드 끝 중립 기물 뒤)에 교칙 조건을 채워 두면 [b]특수 승리![/b] 그 교칙은 사라져요 (같은 교칙을 여럿이 채우면 레이스에서 앞선 한 명만). [b]방해령 허리케인 포스[/b]는 내 차례가 끝날 때만, [b]보드연성진[/b]은 경보가 울린 뒤 다음 내 차례 끝까지 유지해야 해요","Meet a law's condition at the check after each turn (and after the round-end neutral pieces) for a [b]Special Victory![/b] The law then disappears (if several meet it, only the one furthest ahead). [b]Meddling Spirits' Hurricane Force[/b] counts only at the end of your own turn, and [b]Board Alchemy Circle[/b] must hold until the end of your next turn after the alarm",各手番の精算時（およびラウンド終了の中立駒の後）に教則の条件を満たしていれば[b]特殊勝利！[/b]その教則は消えます（複数人が満たしたらレースで先行する1人だけ）。[b]妨害霊ハリケーンフォース[/b]は自分の手番の終わりだけ、[b]盤面錬成陣[/b]は警報の後、次の自分の手番の終わりまで維持が必要です
+법전 교칙은 %d라운드(과열)부터 증강에 등장해요,Law augments appear from Round %d (Overheat),法典の教則は%dラウンド（過熱）から増強に登場します
+법전에 오른 순간부터 전원이 0에서 새로 세요,Everyone counts again from 0 once it is enacted,法典に載った瞬間から全員が0から数え直します
+내 차례 끝에 조건을 채워 경보가 울린 뒤 다음 내 차례 끝까지 유지하면 특수 승리!,"Meet it at the end of your turn to sound the alarm, then hold it until the end of your next turn for a Special Victory!",自分の手番の終わりに条件を満たして警報が鳴った後、次の自分の手番の終わりまで維持すれば特殊勝利！
+내 차례가 끝날 때 손패에 3종을 모두 들고 있으면 특수 승리!,Hold all three in your hand at the end of your turn for a Special Victory!,自分の手番の終わりに手札に3種すべてを持っていれば特殊勝利！
+각 차례가 끝나는 정산 시점(및 라운드 끝 NPC 뒤)에 조건을 채워 두면 특수 승리!,Meet it at the check after each turn (and after the round-end NPCs) for a Special Victory!,各手番の精算時（およびラウンド終了のNPCの後）に条件を満たしていれば特殊勝利！
+지속/상태,Lasting / Status,持続／状態

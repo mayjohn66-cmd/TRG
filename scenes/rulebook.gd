@@ -118,13 +118,13 @@ const GRID_COLUMNS: int = 4
 const COMPACT_TILE_SCALE: float = 0.9
 ## 도감 탭 장(보드판~초증강)마다 위쪽 한 줄 요약 (법전은 수집 수가 붙는다).
 const BANNERS: Dictionary = {
-	4: "[보드판] 보드판마다 빵집 자리·옷장 자리에 서는 칸이 달라요.",
-	5: "[판정 도구] 도구마다 족보가 달라요. 증강의 [도구 교체]로 바꿔 굴려요.",
-	6: "[말] 증강의 [기물 지급]으로 기본 말을 진화시켜요. 말마다 상시 능력과 1회 필살기가 있어요.",
-	7: "[카드] 빵집·증강에서 얻은 카드를 보드로 끌어다 놓아 써요. 손패는 최대 7장이에요.",
-	8: "[특수 승리 법전] 3라운드마다 등장하며, 조건 달성 후 내 턴이 끝나면 즉시 다음 순위로 레이스를 졸업합니다!",
+	4: "[보드판] 보드판마다 상점 자리·장치 자리에 서는 특수 칸과 연동 법전이 달라요.",
+	5: "[판정 도구] 도구마다 족보와 조작 손맛이 달라요. 증강의 [도구 교체]로 바꿔 굴려요.",
+	6: "[말] 증강의 [기물 진화]로 기본 말을 진화시켜요. 말마다 상시 능력과 1회 필살기가 있어요.",
+	7: "[카드] 상점·증강에서 얻은 카드를 보드로 끌어다 놓아 써요. 손패는 기본 최대 7장이에요.",
+	8: "[특수 승리 법전] 8라운드(과열)부터 증강에 등장하며, 제정 시점부터 0에서 경쟁해 조건을 채우면 즉시 다음 순위로 졸업해요!",
 	9: "[보급 증강] 패시브·즉발 발동·범용 보급·카드 보급을 색상과 분류 이름으로 구분해요.",
-	10: "[초증강] 판을 한 번에 뒤집는 하이리스크 하이리턴. 경고 표시는 내 말도 사출될 수 있다는 뜻이에요.",
+	10: "[초증강] 14라운드(광기)부터 등장하는 하이리스크 하이리턴. 경고 표시는 내 말도 사출될 수 있다는 뜻이에요.",
 }
 
 
@@ -1570,14 +1570,14 @@ func _chapter(index: int) -> Dictionary:
 
 
 # ---------------------------------------------------------------------------
-# 내용 (장 10개). 장마다 항목 목록: title / tone / 그림(texture·art·number·icon) / chips / summary / rows / points / note / tip / extra
+# 내용 (장 11개). 장마다 항목 목록: title / tone / 그림(texture·art·number·icon) / chips / summary / rows / points / note / tip / extra
 # ---------------------------------------------------------------------------
 
 func _ch_start() -> Dictionary:
 	return {"title": "시작하기", "entries": [
 		{"title": "한눈에 보기", "art": &"start", "tone": Color("86d94f"), "chips": ["2~4인", "한 바퀴 레이스"],
 			"summary": "말 [b]4개를 모두[/b] 한 바퀴 돌려 결승선(0번)에 먼저 넣는 레이스예요.",
-			"rows": [["이기는 법", "말 4개 완주 → 먼저 해낸 순서로 1·2·3위"], ["특수 승리", "법전의 조건을 채운 채 내 차례가 끝나면 바로 졸업"], ["손패", "생떼 카드 최대 %d장" % GameEnums.MAX_HAND_SIZE], ["출발", "말 4개 모두 출발선(0번)에서"], ["판 길이", "%d라운드가 끝나면 남은 사람은 진행 순위로 확정" % PacingDirector.HARD_CAP_ROUND]],
+			"rows": [["이기는 법", "말 4개 완주 → 먼저 해낸 순서로 1·2·3위"], ["특수 승리", "법전의 조건을 채우면 차례 정산 때 바로 졸업"], ["손패", "생떼 카드 최대 %d장" % GameEnums.MAX_HAND_SIZE], ["출발", "말 4개 모두 출발선(0번)에서"], ["판 길이", "%d라운드가 끝나면 남은 사람은 진행 순위로 확정" % PacingDirector.HARD_CAP_ROUND]],
 			"tip": "처음이라면 [b]놀이터[/b]에서 컴퓨터와 한 판 해 보세요."},
 		{"title": "완주와 순위", "art": &"finish", "tone": Color("86d94f"), "chips": ["서바이벌 순위"],
 			"summary": "말이 0번을 [b]밟거나 넘으면[/b] 완주예요. 눈금이 남아도 괜찮아요. 4개 모두 완주하면 [b]순위 확정[/b]!",
@@ -1592,7 +1592,7 @@ func _ch_start() -> Dictionary:
 		{"title": "카드와 법전", "art": &"card_law", "tone": Color("f0c14e"), "chips": ["생떼 카드", "특수 승리"],
 			"summary": "함정을 깔고, 상대 말을 날리고, 법전의 특수 승리를 노려 판을 뒤집어요.",
 			"rows": [["카드 얻기", "빵집(보드마다 편의점·마녀 상점) · 물 정령 · 증강 · 일부 기물 능력"], ["카드 쓰기", "내 차례에 굴리기 전 한 장 (방어 카드는 공격받을 때)"], ["법전", "증강으로 교칙을 올리면 모두에게 특수 승리 조건이 열려요 (최대 %d개)" % GameEnums.MAX_LAWS]],
-			"points": ["법전 조건은 [b]내 차례가 끝날 때[/b] 채워져 있으면 특수 승리!", "교칙이 법전에 오른 순간부터 기록을 새로 세요"]},
+			"points": ["법전 조건은 [b]각 차례가 끝나는 정산 시점(및 라운드 끝 중립 기물 뒤)[/b]에 채워져 있으면 특수 승리! (방해령 허리케인 포스는 내 차례가 끝날 때, 보드연성진은 경보 뒤 다음 내 차례 끝까지 유지)", "법전은 %d라운드(과열)부터 증강에 등장해요" % TempoUp.STAGE_ROUNDS[0], "교칙이 법전에 오른 순간부터 전원이 0에서 새로 세요"]},
 	]}
 
 
@@ -1611,7 +1611,7 @@ func _ch_turn() -> Dictionary:
 			"points": ["함정·소환은 놓은 뒤 칸을 골라요", "일기토 데스매치는 상대 프로필이나 말 위에 놓아요", "방어 카드는 끌어 쓰지 않아요 (공격받을 때 팝업)", "밴에 걸리면 그 차례에는 카드·필살기를 못 써요"]},
 		{"title": "굴리기", "art": &"roll", "number": 2, "tone": Color("86d94f"), "chips": ["스페이스"],
 			"summary": "[b]굴리기[/b] 버튼(또는 스페이스)을 누르면 내 도구를 굴려요. 도구에 따라 직접 고르거나 조작할 수 있어요.",
-			"rows": [["꾹 눌러 파워", "주사위·윷·친치로·야추·핀볼은 꾹 누르면 게이지, 떼면 던져요"], ["직접 고르기", "타로·화투는 뒷면을 골라 뒤집고, 마작은 1열로 늘어선 패에서 골라 꺼내요"], ["손으로 꺼내기", "쿠키는 과자통에서 집고, 아이스크림은 아이스박스에서 꺼내고, 오미쿠지는 흔든 뒤 뽑고, 캡슐은 레버를 돌려요"], ["직접 조작", "룰렛은 원판을 잡아 돌리고, 슬롯은 눌러 릴을 멈추고, 다트는 끌어 던지고, 복권은 손가락으로 긁고, 해적통은 돌려서 칼을 꽂아요"], ["이어 굴리기", "리볼버·야추·블랙잭·해적 룰렛은 멈출지 더 할지 고르고, 홀덤은 받은 5장 중 바꿀 카드를 골라 한 번 교환해요"]],
+			"rows": [["꾹 눌러 파워", "주사위·윷·친치로·야추·핀볼은 꾹 누르면 게이지, 떼면 던져요"], ["직접 고르기", "타로·화투는 뒷면을 골라 뒤집고, 마작은 1열로 늘어선 패에서 골라 꺼내요"], ["손으로 꺼내기", "쿠키는 접시 위에서 집고, 아이스크림은 아이스박스에서 꺼내고, 오미쿠지는 흔든 뒤 뽑고, 캡슐은 레버를 돌려요"], ["직접 조작", "룰렛은 원판을 잡아 돌리고, 슬롯은 눌러 릴을 멈추고, 다트는 회전하는 과녁을 눌러 던지고, 복권은 손가락으로 긁고, 해적통은 돌려서 칼을 꽂아요"], ["이어 굴리기", "리볼버·야추·블랙잭·해적 룰렛은 멈출지 더 할지 고르고, 홀덤은 받은 5장 중 바꿀 카드를 골라 한 번 교환해요"]],
 			"points": ["가만히 있으면 저절로 진행돼요", "굴리기 전에는 버튼 위에 내 도구가 놓여 있어요"]},
 		{"title": "말 고르기", "art": &"choose_pawn", "number": 3, "tone": Color("5fc1e8"),
 			"summary": "아래 말 카드나 보드 위의 말을 누르면 그 말이 눈금만큼 움직여요.",
@@ -1643,7 +1643,7 @@ func _ch_tiles() -> Dictionary:
 	return {"title": "특수 칸", "entries": [
 		{"title": "한눈에 보기", "art": &"board", "tone": Color("86d94f"), "chips": ["%d칸" % BoardSpec.tile_count, "반시계"],
 			"summary": "우하단 0번에서 출발해 반시계로 한 바퀴. 다시 0번이 [b]결승선[/b]이에요.", "extra": make_board,
-			"points": ["특수 칸은 대부분 [b]딱 멈출 때만[/b] 작동해요 (지나가기만 하면 그대로)", "출발선(0번)에는 함정을 깔 수 없고, 잡기도 없어요", "그림은 지금 고른 보드판이에요"]},
+			"points": ["특수 칸은 대부분 [b]딱 멈출 때만[/b] 작동해요 (지나가기만 하면 그대로)", "단, 정령산의 [b]땅 정령[/b]은 지나가기만 해도 그 칸에 강제로 멈춰요", "출발선(0번)에는 함정을 깔 수 없고, 잡기도 없어요", "그림은 지금 고른 보드판이에요"]},
 		{"title": "코너", "art": &"corner", "tone": Color("2f8f4e"), "chips": [_join_tiles(BoardSpec.corner_tiles.slice(1)) + "번"],
 			"summary": "딱 멈추면 [b]다음 굴림 결과 +1[/b]! 단, 이 칸에 함정이 있으면 버프 대신 함정이 발동해요.",
 			"points": ["[b]코너 전용 함정[/b]만 설치할 수 있는 칸이에요", "워프·잡기로 자리를 옮겼으면 버프는 없어요", "버프는 겹쳐 쌓이지 않아요"]},
@@ -1882,10 +1882,10 @@ static func _augments(category: GameEnums.AugmentCategory) -> Array[AugmentDef]:
 
 func _ch_pawns() -> Dictionary:
 	var entries: Array = [
-		{"title": "진화와 필살기", "art": &"pawn_ability", "tone": Color("f08aa8"), "chips": ["7계열", "필살기 1회"],
-			"summary": "증강의 [b]기물 지급[/b]으로 기본 말 하나를 오른쪽 기물로 진화시켜요.",
+		{"title": "진화와 필살기", "art": &"pawn_ability", "tone": Color("f08aa8"), "chips": ["%d계열" % PawnCatalog.EVOLVABLE_SETS.size(), "필살기 1회"],
+			"summary": "증강의 [b]기물 진화[/b]로 기본 말 하나를 오른쪽 기물로 진화시켜요.",
 			"rows": _family_rows(),
-			"points": ["보드 위 말에는 한 글자 라벨이 붙어요", "필살기는 내 프로필 카드에서 굴리기 전에 눌러요", "잡혀서 출발선으로 가도 필살기는 되살아나지 않아요"]},
+			"points": ["보드 위 말에는 한 글자 라벨이 붙어요", "필살기는 하단 중앙 기물 독(내 말 위 [필살기 발동!])에서 굴리기 전에 눌러요", "잡혀서 출발선으로 가도 필살기는 되살아나지 않아요"]},
 	]
 	for definition: AugmentDef in _augments(GameEnums.AugmentCategory.PAWN_EVOLUTION):
 		var kind: GameEnums.PawnKind = definition.payload
@@ -1927,7 +1927,7 @@ const PAWN_LINES: Dictionary = {
 	GameEnums.PawnKind.MONOPOLY: "필살기 호텔·워프·카드로 판을 굴리는 모노폴리 말.",
 	GameEnums.PawnKind.GO: "흑돌은 홀수 눈금 +1칸, 백돌은 방어막.",
 	GameEnums.PawnKind.SHOGI: "반환점을 지나면 승급(나리)해 더 강해져요.",
-	GameEnums.PawnKind.ARCADE: "킹 체커·루도·8번 공·스타 카트·지뢰찾기 공병.",
+	GameEnums.PawnKind.ARCADE: "킹 체커·루도·8번 공·스타 카트·지뢰찾기 공병·모브 큐이·괴상한 멜론.",
 	GameEnums.PawnKind.TRPG: "전사·마법사·궁수·도적. 처치하면 레벨 업, 곧바로 추가 전진!",
 	GameEnums.PawnKind.COLLECTIBLE: "코롯토, 치비구루미. 완주하면 수집 버프를 얻어요!",
 }
@@ -1952,9 +1952,9 @@ static func _pawn_texture(sub: Variant, kind: GameEnums.PawnKind) -> Texture2D:
 
 func _ch_cards() -> Dictionary:
 	var entries: Array = [
-		{"title": "카드 쓰는 법", "art": &"play_card", "tone": Color("f0c14e"), "chips": ["손패 최대 7장"],
+		{"title": "카드 쓰는 법", "art": &"play_card", "tone": Color("f0c14e"), "chips": ["손패 기본 최대 %d장" % GameEnums.MAX_HAND_SIZE],
 			"summary": "방어 카드를 뺀 모든 카드는 내 차례 [b]굴리기 전에[/b] 보드판으로 끌어다 놓아 써요. 카드 설명 맨 앞의 [b][ ] 머리표[/b]가 세부 종류예요.",
-			"rows": [["방어 (파랑)", "공격받으면 팝업에서 쓸지 물어봐요 · 잡기·공격·함정·만능 방어"], ["발동 (노랑)", "놓으면 바로 효과 · 아래 네 종류"], ["공격 발동", "상대를 노려요. 공격 경보가 뜨고 [b]공격 방어[/b]로 막힐 수 있어요"], ["버프 발동", "내 말이나 내 굴림을 도와요"], ["너프 발동", "상대를 약하게 하지만 공격은 아니라서 막을 수 없어요"], ["기타 발동", "모두에게 걸리거나 걸린 상태를 풀어요"], ["함정 (보라)", "칸을 골라 숨겨 깔기 · 코너 함정은 코너에 공개로"], ["소환 (분홍)", "상단 코너에 중립 기물을 불러내요 · 라운드 끝마다 움직여요"]],
+			"rows": [["방어 (파랑)", "공격받으면 팝업에서 쓸지 물어봐요 · 잡기·공격·함정·만능 방어"], ["발동 (주황)", "놓으면 바로 효과 · 아래 네 종류"], ["공격 발동", "상대를 노려요. 공격 경보가 뜨고 [b]공격 방어[/b]로 막힐 수 있어요"], ["버프 발동", "내 말이나 내 굴림을 도와요"], ["너프 발동", "상대를 약하게 하지만 공격은 아니라서 막을 수 없어요"], ["기타 발동", "모두에게 걸리거나 걸린 상태를 풀어요"], ["함정 (보라)", "칸을 골라 숨겨 깔기 · 코너 함정은 코너에 공개로"], ["소환 (청록)", "상단 코너에 중립 기물을 불러내요 · 라운드 끝마다 움직여요"], ["오이 카드", "모브 큐이의 오이를 밟으면 받는 덱 밖 카드. 굴리기 전 한 장으로 먹어 치워요 (효과 없음)"], ["손패", "기본 최대 %d장 · 에심당 뽈사탕마다 +1장" % GameEnums.MAX_HAND_SIZE]],
 			"tip": "일기토 데스매치는 [b]상대 프로필이나 말 위에[/b] 놓으면 그 상대와 붙어요. 종목은 6종 중 무작위!"},
 	]
 	for card_id: StringName in CardRegistry.DECK_COMPOSITION.keys():
@@ -1973,7 +1973,7 @@ func _ch_cards() -> Dictionary:
 				tone = Color("b197fc")
 				rows.append(["방법", "보드에 끌어 놓고 %s 고르기" % ("코너" if card.corner_only else "칸")])
 			GameEnums.CardCategory.SUMMON:
-				tone = Color("f08aa8")
+				tone = Color("2f9a85")
 		var quote: String = GameData.text("cards", card_id, "parody_quote")
 		var data: Dictionary = {"title": card.display_name, "card": card_id, "texture": TextureCache.fetch("res://assets/cards/%s.png" % card_id), "icon": &"book", "tone": tone,
 			"chips": [MainBoard.category_label(card), "%d장" % int(CardRegistry.DECK_COMPOSITION[card_id])],
@@ -1995,18 +1995,18 @@ func _ch_laws() -> Dictionary:
 	var entries: Array = [
 		{"title": "증강과 법전", "art": &"lawbook", "tone": Color("ffa94d"), "chips": ["3라운드마다", "법전 4칸"],
 			"summary": "%d·%d·%d라운드처럼 3라운드마다 모두가 증강 3장 중 하나를 골라요. 법전의 교칙은 모두 특수 승리 조건이에요." % [GameEnums.DRAFT_START, GameEnums.DRAFT_START + 3, GameEnums.DRAFT_START + 6],
-			"rows": [["기물 지급", "말 하나를 새 기물로 진화 (도감 → 말)"], ["도구 교체", "굴리는 도구 바꾸기 (도감 → 도구)"], ["특수 승리", "법전에 새 승리 조건 (%d라운드 과열부터)" % TempoUp.STAGE_ROUNDS[0]], ["카드 패키지", "생떼 카드 여러 장 (도감 → 보급)"], ["범용 보급", "기물 변이 · 전군 돌연변이 · 필살기 리필 (도감 → 보급)"], ["초증강", "하이리스크 하이리턴 (도감 → 초증강)"]],
-			"points": ["내 차례가 끝날 때 교칙 조건을 달성해 있으면 [b]특수 승리![/b] 그 교칙은 사라져요 (같은 교칙을 여럿이 채우면 레이스에서 앞선 한 명만). 단 [b]보드연성진[/b]은 조건 달성 후 다음 내 차례가 끝날 때까지 유지해야 해요", "새 교칙이 들어오면 가장 오래된 교칙이 밀려나요", "증강 카드마다 한 번 다시 뽑기"],
+			"rows": [["기물 진화", "말 하나를 새 기물로 진화 (도감 → 말)"], ["도구 교체", "굴리는 도구 바꾸기 (도감 → 도구)"], ["특수 승리", "법전에 새 승리 조건 (%d라운드 과열부터)" % TempoUp.STAGE_ROUNDS[0]], ["카드 패키지", "생떼 카드 여러 장 (도감 → 보급)"], ["범용 보급", "기물 변이 · 전군 돌연변이 · 필살기 리필 (도감 → 보급)"], ["초증강", "하이리스크 하이리턴 (도감 → 초증강)"]],
+			"points": ["각 차례가 끝나는 정산 시점(및 라운드 끝 중립 기물 뒤)에 교칙 조건을 채워 두면 [b]특수 승리![/b] 그 교칙은 사라져요 (같은 교칙을 여럿이 채우면 레이스에서 앞선 한 명만). [b]방해령 허리케인 포스[/b]는 내 차례가 끝날 때만, [b]보드연성진[/b]은 경보가 울린 뒤 다음 내 차례 끝까지 유지해야 해요", "법전 교칙은 %d라운드(과열)부터 증강에 등장해요" % TempoUp.STAGE_ROUNDS[0], "새 교칙이 들어오면 가장 오래된 교칙이 밀려나요", "증강 카드마다 한 번 다시 뽑기"],
 			"tip": "법전 슬롯에 마우스를 올리면 모두의 진행도가 보여요. [color=#d6336c][b][위험!][/b][/color] 표시를 견제하세요!"},
 	]
 	for definition: AugmentDef in _augments(GameEnums.AugmentCategory.LAW_ENACT):
 		var law: VictoryLaw = LawRegistry.create(String(definition.payload)) as VictoryLaw
 		if law == null:
 			continue
-		var counting: String = "법전에 있는 동안만 세요" if VictoryLaw.SESSION_KEYS.has(law.stat_key) else "게임 내내 쌓여요"
+		var counting: String = "법전에 오른 순간부터 전원이 0에서 새로 세요"  # 1.0.1부터 모든 교칙이 제정 순간 0으로 (SpecialVictory.on_law_enacted)
 		entries.append({"title": law.law_name, "augment": definition.augment_id, "law_id": law.law_id, "texture": AugmentArt.load_first(AugmentArt.law_candidates(law.law_id)), "icon": &"book",
 			"tone": Color("ffd43b"), "chips": ["목표 %d%s" % [law.goal(), law.unit()]], "summary": law.condition_text(),
-			"rows": [["판정", "조건 달성 후 다음 내 차례가 끝날 때까지 유지하면 특수 승리! 교칙은 사라져요" if law.law_id == SpecialVictory.SIEGE_LAW else "내 차례가 끝날 때 조건을 달성해 있으면 특수 승리! 교칙은 사라져요"], ["기록", counting], ["이의 있음!", "기록을 0으로 되돌릴 수 %s" % ("있어요" if law.resettable() else "없어요")]]})
+			"rows": [["판정", _law_judgement(law)], ["기록", counting], ["이의 있음!", "기록을 0으로 되돌릴 수 %s" % ("있어요" if law.resettable() else "없어요")]]})
 	return {"title": "법전", "entries": entries, "wide": true}
 
 
@@ -2035,12 +2035,21 @@ static func _augment_entry(definition: AugmentDef, icon: StringName) -> Dictiona
 		"chips": [str(info["category"])], "summary": str(lines[0]).trim_prefix("◆ "), "points": lines.slice(1).map(func(line: String) -> String: return line.trim_prefix("◆ "))}
 
 
+## 법전 교칙의 판정 시점 (기획서 RULEBOOK 3절 2번: 일반 7종 / 방해령 / 보드연성진).
+static func _law_judgement(law: VictoryLaw) -> String:
+	if law.law_id == SpecialVictory.SIEGE_LAW:
+		return "내 차례 끝에 조건을 채워 경보가 울린 뒤 다음 내 차례 끝까지 유지하면 특수 승리!"
+	if law.law_id == SpecialVictory.HURRICANE_LAW:
+		return "내 차례가 끝날 때 손패에 3종을 모두 들고 있으면 특수 승리!"
+	return "각 차례가 끝나는 정산 시점(및 라운드 끝 NPC 뒤)에 조건을 채워 두면 특수 승리!"
+
+
 ## 초증강: 하이리스크 하이리턴. 판을 한 번에 뒤집을 수 있지만 내게도 화살이 돌아올 수 있는 증강들.
 func _ch_super() -> Dictionary:
 	var entries: Array = [
 		{"title": "하이리스크 하이리턴", "art": &"super", "tone": Color("ffd43b"), "chips": ["초증강", "%d종" % SuperAugments.ALL_IDS.size()],
 			"summary": "초증강은 [b]판을 한 번에 뒤집는[/b] 증강이에요. 크게 얻는 대신 [b]내 말도 다칠 수 있어요[/b].",
-			"rows": [["한 방", "판 뒤집기 · 저격수의 표적"], ["도박", "주사위 도박사 · 악마의 계약"], ["강탈", "도적단 대습격 · 빵집 털이 · 공산주의 재분배"], ["난장판", "폭주 기관차 · 강제 캐슬링 · 광란의 지뢰밭 · 강제 연대책임"], ["질주", "아우토반 니트로: 선두 말이 코너까지 직진, 길을 막은 칸은 전부 장외 사출"]],
+			"rows": [["한 방", "판 뒤집기 · 저격수의 표적"], ["도박", "주사위 도박사 · 악마의 계약"], ["강탈", "도적단 대습격 · 빵집 털이 · 공산주의 재분배"], ["난장판", "폭주 기관차 · 강제 캐슬링 · 광란의 지뢰밭 · 강제 연대책임"], ["질주", "아우토반 니트로: 선두 말이 코너까지 직진, 길을 막은 칸은 전부 장외 사출"], ["지속/상태", "평화주의자 · 날조와 선동 · 눈먼 자의 도시 · 사출 목걸이"]],
 			"points": ["폭주 기관차는 내 말도 가리지 않아요", "강제 연대책임은 선두와 꼴찌 말의 운명을 묶어요", "조건이 안 맞는 초증강은 드래프트에 나오지 않아요"],
 			"tip": "질 것 같을 때가 초증강을 고를 때예요. [b]역전은 한 번이면 충분[/b]하니까요!"},
 	]
