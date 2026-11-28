@@ -819,11 +819,21 @@ func _paint_filters() -> void:
 		var pill: Button = _filter_buttons[index]
 		var tone: Color = CARD_FILTER_COLORS[index]
 		var active: bool = CARD_FILTERS[index] == card_filter
-		var fill: Color = tone if active else Color("fffaf0")
-		var text: Color = Color.WHITE if active else tone.darkened(0.15)
-		pill.add_theme_stylebox_override("normal", LobbyTheme.style(fill, tone, 2, 18, 0, 6))
-		pill.add_theme_stylebox_override("hover", LobbyTheme.style(fill.lightened(0.1) if active else tone.lightened(0.85), tone, 2, 18, 0, 6))
-		pill.add_theme_stylebox_override("pressed", LobbyTheme.style(tone.darkened(0.1), tone, 2, 18, 0, 6))
+		# 고르지 않은 알약도 누를 수 있게 보이도록 분류 색을 옅게 칠하고 아래 그림자를 준다 (흰 바탕 + 테두리는 꺼진 버튼처럼 보였다)
+		var fill: Color = tone if active else tone.lerp(Color.WHITE, 0.72)
+		var text: Color = Color.WHITE if active else tone.darkened(0.35)
+		var edge: Color = tone.darkened(0.25) if active else tone
+		var normal: StyleBoxFlat = LobbyTheme.style(fill, edge, 3 if active else 2, 18, 0, 6)
+		normal.shadow_color = Color(tone.darkened(0.4), 0.45)
+		normal.shadow_size = 1
+		normal.shadow_offset = Vector2(0, 3)
+		var hover: StyleBoxFlat = normal.duplicate()
+		hover.bg_color = fill.lightened(0.12)
+		var pressed: StyleBoxFlat = normal.duplicate()
+		pressed.bg_color = tone.darkened(0.1)
+		pill.add_theme_stylebox_override("normal", normal)
+		pill.add_theme_stylebox_override("hover", hover)
+		pill.add_theme_stylebox_override("pressed", pressed)
 		pill.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 		for key: String in ["font_color", "font_hover_color", "font_focus_color"]:
 			pill.add_theme_color_override(key, text)
