@@ -12,6 +12,7 @@ const MIN_OVERLAP_AREA: float = 30.0
 var _board: MainBoard = null
 var _found: Dictionary = {}
 var _skip_draft: bool = false
+var _failed: bool = false
 
 
 func _initialize() -> void:
@@ -30,6 +31,8 @@ func _run() -> void:
 			L10n.set_language(lang)
 			AugmentRegistry.reload()
 			await _session(lang + ("/터치" if touch else ""))
+			if _failed:
+				return
 	MobileSupport.force_touch = false
 	for touch: bool in [false, true]:
 		MobileSupport.force_touch = touch
@@ -52,14 +55,30 @@ func _run() -> void:
 func _session(lang: String) -> void:
 	_board = (load("res://scenes/main_board.tscn") as PackedScene).instantiate()
 	root.add_child(_board)
+	# 1.3.1 (HANDOFF-014): 판 시작에는 오프닝이 먼저 돌고, 첫 증강은 [증강 선택!] 알림·움직임 대기가 끝난 뒤에 올라온다.
+	# 오프닝을 건너뛰고, 실제로 받은 증강 제안(manager._draft_offers)으로 내 선택 창을 연 뒤 잰다.
+	# 창이 열리지 않으면 아무것도 보지 않고 성공 처리하지 않는다 (AUDIT_FAIL로 끝낸다).
 	var guard: int = 0
-	while (not _board._draft_open or _board._intro_blocks()) and guard < 2400:
+	while not _board._draft_open and guard < 600:
 		guard += 1
 		await process_frame
+	_board._close_opening()
+	_board._announcer.cancel()
+	_board._refresh_all()
+	await _frames(5)
+	var me: int = _board.local_player_id
+	if _board._draft_overlay == null and _board.manager.current_state == TurnManager.State.PHASE_ROUND_START and _board.manager._draft_offers.has(me):
+		_board._build_draft_overlay(me, _board.manager.draft_pending_players().size())
+	if _board._draft_overlay == null or _board._draft_cards.is_empty():
+		_failed = true
+		printerr("AUDIT_FAIL: %s 증강 선택 창이 열리지 않았다 (draft_open=%s, state=%d, offers=%s)" % [lang, _board._draft_open, _board.manager.current_state, _board.manager._draft_offers.keys()])
+		quit(1)
+		return
 	await _frames(90)  # 창이 아래에서 올라오는 연출(0.5초)이 끝난 뒤에 잰다
 	_scan(lang, "증강 선택")
 	_board._draft_open = false
 	_board._close_draft_overlay()
+	_board._close_opening()  # 창을 닫으면 늦게 뜬 오프닝([GAME START!] 띠)도 걷어 내고 판만 본다
 	_board._announcer.cancel()
 	await _frames(10)
 	_scan(lang, "기본 판")
@@ -93,12 +112,13 @@ func _session(lang: String) -> void:
 	_board._announcer.cancel()
 	_board._announcer.cancel()
 	# 판정 도구 카드: 도구마다 요약과 펼친 족보
-	var me: int = _board.local_player_id
+	me = _board.local_player_id
 	for tool_id: StringName in AugmentRegistry.SWAPPABLE_TOOLS:
 		_board.state.tools[me] = ToolRegistry.create(tool_id)
 		for expanded: bool in [false, true]:
 			_board._tool_expanded = expanded
 			_board._refresh_all()
+			_board._close_opening()  # 오프닝([GAME START!] 띠)은 도구 카드와 따로 본다
 			await _frames(12)
 			_scan(lang, "도구 %s%s" % [tool_id, " 펼침" if expanded else ""])
 	_board._tool_expanded = false

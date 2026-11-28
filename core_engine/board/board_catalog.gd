@@ -34,7 +34,7 @@ const SHOP_KINDS: Dictionary = {
 		"words": {"ko": "마녀 상점", "en": "witch shop", "ja": "魔女の店"},
 		"band": Color("d8a25e"), "edge": Color("8a5a34"), "ink": Color("5e3a1c"), "decal": "res://assets/board/decals/BOARD_CARROT_FRIES_INK.png", "decal_span": 0.86},
 	&"spirit": {"rulebook": {"art": &"spirit", "tone": Color("2f9e8f"), "summary": "매 라운드 [b]하급 정령[/b]이 자리를 바꿔 깃들어요. 불은 1칸 뒤로, 물은 카드 1장, 바람은 1칸 앞으로 (딱 멈추면), 땅은 [b]지나가기만 해도[/b] 그 칸에서 멈춰요. 땅 정령은 결승선 쪽 두 칸 중 한 곳에만 깃들어요."},
-		"name": "정령 칸", "toast": "정령!", "law_tag": "[순례 목표]", "visit_stamp": "정령 칸 순례! (%d/%d)", "legend": "정령 칸 (매 라운드 정령이 바뀜)", "legend_color": Color("bfe7df"),
+		"name": "정령 칸", "toast": "정령!", "law_tag": "[기운 목표]", "visit_stamp": "정령의 기운 모음! (%d/%d)", "legend": "정령 칸 (매 라운드 정령이 바뀜)", "legend_color": Color("bfe7df"),
 		"tiles_key": "spirit_tiles", "words": {"ko": "정령 칸", "en": "spirit tile", "ja": "精霊マス"},  # 일본어(ja) 값은 일본어 화면에서 _JA 글꼴(Mochiy Pop One)로 그린다
 		"band": Color("63c7b2"), "edge": Color("2f7f73"), "ink": Color("1d5a51"), "decal": "res://assets/board/decals/BOARD_SPIRIT.png", "decal_span": 0.8},
 }
@@ -102,12 +102,13 @@ const BOARDS: Array[Dictionary] = [
 			"shadow": Color(0.1, 0.2, 0.18, 0.16),
 			"dash_base": Color("1f4f48"), "dash_inner": Color("63e6be"), "dash_pulse": Color("a5d8ff"), "dash_rim": Color("e6fcf5")},
 		"law_variants": {
-			"LAW_02": {"name": "정령산 순례", "condition": "정령 칸에 {p1}회 멈춤",
-				"card_title": {"ko": "[특수 승리] 정령산 순례", "en": "[Special Win] Spirit Mountain Pilgrimage", "ja": "[特殊勝利] 精霊山巡礼"},  # 일본어(ja) 값은 일본어 화면에서 _JA 글꼴(Mochiy Pop One)로 그린다
-				"win_reason": "정령 칸 %d회 순례 · 정령산 순례 완성!", "result_phrase": "SPIRIT PILGRIMAGE", "geometry_key": "LAW_02:S",
-				# 아이콘·도입 무대(icon·stage)는 아직 없어 원래 식권 것을 쓴다 (전용 그림이 생기면 넣는다)
-				"theme": {"font": "bungee", "headline": "SPIRIT PILGRIMAGE", "lines": "SPIRIT\nPILGRIMAGE", "ink": "14332d", "accent": "2f9e8f", "tilt": -0.05},
-				"paper": "e6f4ef", "comic_title": {"upper": "c3fae8", "lower": "ffffff", "shadow": "1d6b5f"}},
+			# 정령 원기옥 (HANDOFF-015, PRESENTATION 5.1): 《드래곤볼》 원기옥(Spirit Bomb = 정령 + 원기옥) 패러디
+			"LAW_02": {"name": "정령 원기옥", "condition": "정령 칸에 {p1}회 멈춤",
+				"card_title": {"ko": "[특수 승리] 정령 원기옥", "en": "[Special Win] Spirit Bomb", "ja": "[特殊勝利] 精霊元気玉"},  # 일본어(ja) 값은 일본어 화면에서 _JA 글꼴(Mochiy Pop One)로 그린다
+				"icon": "laws/LAW_02_SPIRIT_BOMB.png", "stage": &"spirit_bomb",
+				"win_reason": "정령들아, 나에게 힘을 조금만 나눠줘! — 특대 정령 원기옥 완성!", "result_phrase": "SPIRIT BOMB!", "geometry_key": "LAW_02:S",
+				"theme": {"font": "bungee", "headline": "SPIRIT BOMB!", "lines": "SPIRIT\nBOMB!", "ink": "0b2533", "accent": "2cc7c2", "tilt": -0.055},
+				"paper": "e3f6f7", "comic_title": {"upper": "aef5ff", "lower": "ffffff", "shadow": "126b7a"}},
 		}},
 ]
 

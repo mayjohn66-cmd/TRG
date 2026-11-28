@@ -622,7 +622,7 @@ static func _resolve_landing(state: GameState, mover: PlayerPawn, ctx: RuleConte
 	if tile.tile_type == TileNode.TileType.SPIRIT and _primary_move(ctx) and not mover.is_finished and not mover.is_imprisoned:
 		var spirit: StringName = MountainSpirits.at(state, mover.current_tile_idx)
 		if spirit != &"":
-			# 정령산 순례(LAW_02의 정령산판): 정령 칸에 멈춘 횟수 (빵집 방문과 같은 기록). 땅 정령에 막혀 멈춘 것도 센다
+			# 정령 원기옥(LAW_02의 정령산판): 정령 칸에 멈춘 횟수 (빵집 방문과 같은 기록). 땅 정령에 막혀 멈춘 것도 센다
 			state.stat_tile = mover.current_tile_idx
 			state.add_stat(mover.owner_id, VictoryLaw.BAKERY)
 			state.stat_tile = -1

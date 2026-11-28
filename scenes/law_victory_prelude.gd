@@ -12,7 +12,8 @@ const TICKET = preload("res://scenes/golden_ticket_stage.gd")
 const MONATIUM_CASH = preload("res://scenes/monatium_cash_stage.gd")
 const BAD_CARROT = preload("res://scenes/bad_carrot_stage.gd")
 ## 보드별 특수 승리 판의 도입 무대 (BoardCatalog law_variants의 stage 키 -> 무대 스크립트). 새 무대는 여기에 한 줄 더한다.
-const STAGES: Dictionary = {&"monatium_cash": MONATIUM_CASH, &"bad_carrot": BAD_CARROT}
+const SPIRIT_BOMB = preload("res://scenes/spirit_bomb_stage.gd")
+const STAGES: Dictionary = {&"monatium_cash": MONATIUM_CASH, &"bad_carrot": BAD_CARROT, &"spirit_bomb": SPIRIT_BOMB}
 const TRAP = preload("res://scenes/infinite_trap_stage.gd")
 const RACE = preload("res://scenes/race_finish_stage.gd")
 const HURRICANE = preload("res://scenes/hurricane_force_stage.gd")

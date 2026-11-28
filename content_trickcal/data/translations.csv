@@ -3022,13 +3022,12 @@ TRPG,TRPG,TRPG
 정령들이 자리를 바꿨습니다! 칸 위의 정령을 확인하세요,The spirits have changed places! Check which spirit sits on each tile,精霊たちが場所を入れ替えました！マスの上の精霊を確認しましょう
 정령 칸,Spirit tile,精霊マス
 정령!,Spirit!,精霊！
-[순례 목표],[Pilgrimage goal],[巡礼目標]
-정령 칸 순례! (%d/%d),Spirit tile pilgrimage! (%d/%d),精霊マス巡礼！ (%d/%d)
+[기운 목표],[Energy goal],[元気目標]
+정령의 기운 모음! (%d/%d),Spirit energy gathered! (%d/%d),精霊の元気を集めた！ (%d/%d)
 정령 칸 (매 라운드 정령이 바뀜),Spirit tile (spirits change every round),精霊マス (毎ラウンド精霊が入れ替わる)
-정령산 순례,Spirit Mountain Pilgrimage,精霊山巡礼
+정령 원기옥,Spirit Bomb,精霊元気玉
 정령 칸에 {p1}회 멈춤,Stop on spirit tiles {p1} times,精霊マスに{p1}回止まる
-[특수 승리] 정령산 순례,[Special Win] Spirit Mountain Pilgrimage,[特殊勝利] 精霊山巡礼
-정령 칸 %d회 순례 · 정령산 순례 완성!,Visited spirit tiles %d times · Spirit Mountain Pilgrimage complete!,精霊マスを%d回巡礼 · 精霊山巡礼達成！
+[특수 승리] 정령 원기옥,[Special Win] Spirit Bomb,[特殊勝利] 精霊元気玉
 하급 불 정령,Lesser Fire Spirit,下級火の精霊
 불,Fire,火
 딱 멈추면 1칸 뒤로,Stop exactly: 1 tile back,ぴったり止まると1マス戻る
@@ -3589,3 +3588,4 @@ TRPG,TRPG,TRPG
 전체,All,すべて
 보드 %d/%d ▶,Board %d/%d ▶,ボード %d/%d ▶
 굴리기 전에 카드 1장 · 필살기 사용 (안 써도 돼요),1 card before rolling · use your special (optional),振る前にカード1枚・必殺技も (使わなくてもOK)
+"정령들아, 나에게 힘을 조금만 나눠줘! — 특대 정령 원기옥 완성!","Spirits, lend me just a little of your power! — A giant Spirit Bomb is complete!",精霊たちよ、オラにほんの少しだけ力を分けてくれ！ — 特大精霊元気玉、完成！

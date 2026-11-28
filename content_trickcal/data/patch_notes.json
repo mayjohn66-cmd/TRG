@@ -213,6 +213,11 @@
        "ko": "[지하노역장 친치로]가 진짜 친치로가 됐어요: 4·5·6만 그려진 카이지 사기 주사위 3개를 그릇에 던져요. 4·5·6의 눈(4~6칸) · 시고로 4·5·6(8칸) · 아라시 444·555(10칸) · ★666 아라시(12칸 + 한 번 더)! 단 1/6 확률로 주사위가 그릇 밖으로 튀면 쇼벤(낙), 0칸 + 턴 종료예요",
        "en": "[Underground Chinchiro] is now real Chinchiro: throw three rigged Kaiji dice with only 4, 5 and 6 into the bowl. Eye of 4·5·6 (4-6 spaces) · Shigoro 4-5-6 (8) · Storm 444·555 (10) · ★666 Storm (12 + roll again)! But with a 1/6 chance a die bounces out of the bowl: Shoben, 0 spaces and your turn ends",
        "ja": "［地下強制労働所チンチロ］が本物のチンチロになりました：4・5・6だけのカイジのイカサマサイコロ3個をお椀に投げます。4・5・6の目（4〜6マス）・シゴロ 4・5・6（8マス）・アラシ 444・555（10マス）・★666アラシ（12マス＋もう一回）！ただし1/6の確率でサイコロがお椀の外に飛ぶとションベン、0マスでターン終了です"
+      },
+      {
+       "ko": "정령산의 특수 승리가 [정령 원기옥]으로 바뀌었어요: 정령 칸에 6번 멈추면 4원소 정령의 기운이 모여 거대한 원기옥을 떨어뜨려요! (전용 연출·그림·효과음)",
+       "en": "Spirit Mountain's special win is now [Spirit Bomb]: stop on Spirit Tiles 6 times and the energy of the four elemental spirits gathers into a giant Spirit Bomb! (new cutscene, art and sound)",
+       "ja": "精霊山の特殊勝利が［精霊元気玉］になりました：精霊マスに6回止まると四元素の精霊の元気が集まり、巨大な元気玉を落とします！（専用演出・イラスト・効果音）"
       }
      ]
     },
@@ -242,6 +247,11 @@
        "ko": "컴퓨터가 [해적 룰렛]을 이어 꽂는 중에 오른쪽에 [멈추기] 버튼이 떠서, 누르면 컴퓨터의 룰렛이 멈춰 버리던 문제를 고쳤어요. 이제 [멈추기]는 내 차례에만 보여요 (제보 감사합니다!)",
        "en": "Fixed a [Stop] button appearing while a CPU was playing [Pirate Roulette], which let you stop the CPU's roulette. [Stop] now only appears on your own turn (thanks for the report!)",
        "ja": "CPUが［海賊ルーレット］を続けている最中に右側に［止める］ボタンが出て、押すとCPUのルーレットを止められてしまう問題を修正しました。［止める］は自分の手番にだけ表示されます（ご報告ありがとうございます！）"
+      },
+      {
+       "ko": "규칙 도감의 자세히 보기 창에서 [이전]·[다음]·[닫기]·[×] 버튼이 눌리지 않던 문제를 고쳤어요",
+       "en": "Fixed the [Prev], [Next], [Close] and [×] buttons not responding in the Rulebook detail window",
+       "ja": "ルール図鑑の詳細ウィンドウで［前へ］［次へ］［閉じる］［×］が押せなかった問題を修正しました"
       }
      ]
     }

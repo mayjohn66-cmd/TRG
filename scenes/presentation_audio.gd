@@ -5,6 +5,7 @@ extends RefCounted
 
 const MONATIUM_CASH = preload("res://scenes/monatium_cash_stage.gd")
 const BAD_CARROT = preload("res://scenes/bad_carrot_stage.gd")
+const SPIRIT_BOMB = preload("res://scenes/spirit_bomb_stage.gd")
 var _owner:WeakRef
 var _cues:Array[Dictionary]=[]
 var _seen:Dictionary={}
@@ -78,6 +79,12 @@ static func victory_plan(id:String,offset:float,finale:float,confirm:bool) -> Ar
 					cues.append(cue(offset + BAD_CARROT.drop_at(index), &"hop", -9.0))
 				cues.append(cue(offset + BAD_CARROT.FLIGHT_AT + 0.15, &"dash", -5.0))
 				cues.append(cue(offset + BAD_CARROT.IMPACT_AT, &"hero_impact", -4.0))
+			elif stage == &"spirit_bomb":
+				for index: int in SPIRIT_BOMB.COUNT:
+					cues.append(cue(offset + SPIRIT_BOMB.gather_at(index), &"spirit_orb_gather", -6.0 + index * 0.6))
+				cues.append(cue(offset + SPIRIT_BOMB.DROP_START_AT, &"dash", -4.0))
+				cues.append(cue(offset + SPIRIT_BOMB.IMPACT_AT, &"hero_impact", -3.0))
+				cues.append(cue(offset + SPIRIT_BOMB.IMPACT_AT, &"spirit_bomb_burst", -4.0))
 			elif stage == &"monatium_cash":
 				for index: int in MONATIUM_CASH.COUNT:
 					cues.append(cue(offset + MONATIUM_CASH.drop_at(index), &"monatium_cash_drop", -7.0))

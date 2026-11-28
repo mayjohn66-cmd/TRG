@@ -147,7 +147,7 @@ func test_earth_stops_passing_pawns_and_counts_pilgrimage() -> void:
 	check_eq(report.spirit, MountainSpirits.EARTH, "땅 정령을 받는다")
 	check(report.stopped_early, "지나가던 이동이 멈춘다")
 	check_eq(state.get_pawn(11).current_tile_idx, tile, "땅: 지나가기만 해도 그 칸에서 정지")
-	check_eq(state.stat(1, VictoryLaw.BAKERY), visits_before + 1, "정령 칸에 멈춘 것도 순례 기록 (빵집 방문 기록)")
+	check_eq(state.stat(1, VictoryLaw.BAKERY), visits_before + 1, "정령 칸에 멈춘 것도 원기옥 기록 (빵집 방문 기록)")
 	place(state, 11, tile - 1, [tile - 2])
 	report = move(state, 11, 1)
 	check_eq(report.spirit, MountainSpirits.EARTH, "땅 정령에 딱 멈춰도 받는다 (그냥 멈춤)")
@@ -167,14 +167,67 @@ func test_spirits_survive_a_turn_snapshot() -> void:
 	_restore(saved)
 
 
-func test_pilgrimage_variant_replaces_the_bakery_law() -> void:
+func test_spirit_bomb_variant_replaces_the_bakery_law() -> void:
 	var saved: Array = _saved()
 	_spirit_state()
 	AugmentRegistry.apply_board_variants()
 	var law := VictoryLaw.new("LAW_02")
-	check_eq(law.law_name, "정령산 순례", "빵집이 없는 정령산에서는 LAW_02가 정령산 순례")
+	check_eq(law.law_name, "정령 원기옥", "빵집이 없는 정령산에서는 LAW_02가 정령 원기옥")
 	check(law.condition_text().contains("정령 칸"), "조건: 정령 칸에 멈춤")
-	check(AugmentRegistry.get_def(&"AUG_LAW_02").title.contains("정령산 순례"), "선택 카드 제목도 바뀐다")
+	check(AugmentRegistry.get_def(&"AUG_LAW_02").title.contains("정령 원기옥"), "선택 카드 제목도 바뀐다")
 	check(not AugmentRegistry.get_def(&"AUG_LAW_02").desc.contains("빵집"), "선택 카드 설명에서 빵집이 정령 칸으로")
 	_restore(saved)
 	check_eq(VictoryLaw.new("LAW_02").law_name, "봉인된 에르핀의 식권", "되돌리면 원래 이름")
+
+
+## 정령 원기옥 (HANDOFF-015): 전용 아이콘·도입 무대·효과음·만화 제목, 옛 순례·식권 연출이 남지 않는다.
+func test_spirit_bomb_stage_icon_and_cues() -> void:
+	var saved: Array = _saved()
+	_spirit_state()
+	AugmentRegistry.apply_board_variants()
+	var variant: Dictionary = VictoryLaw.variant("LAW_02")
+	check_eq(str(variant.get("result_phrase", "")), "SPIRIT BOMB!", "만화 제목은 SPIRIT BOMB!")
+	check_eq(StringName(variant.get("stage", &"")), &"spirit_bomb", "전용 도입 무대")
+	check(ResourceLoader.exists(AugmentArt.ROOT + str(variant["icon"])), "전용 아이콘이 있다")
+	var icon: Texture2D = load(AugmentArt.ROOT + str(variant["icon"]))
+	check(icon.get_width() <= 512 and icon.get_height() <= 512, "아이콘은 512px 이하")
+	var prelude := preload("res://scenes/law_victory_prelude.gd")
+	check(prelude.board_stage("LAW_02") == preload("res://scenes/spirit_bomb_stage.gd"), "식권 무대 대신 원기옥 무대")
+	check(is_equal_approx(prelude.duration_for("LAW_02"), 2.86) and is_equal_approx(prelude.impact_at("LAW_02"), 2.26), "도입 2.86초 · 착탄 2.26초")
+	var cues := PresentationAudio.victory_plan("LAW_02", 0.0, -1.0, false)
+	var gathers := cues.filter(func(entry: Dictionary) -> bool: return entry.event == &"spirit_orb_gather")
+	check_eq(gathers.size(), 6, "빛방울 6묶음마다 차징 톤")
+	check(is_equal_approx(float(gathers[0].at), 0.22) and is_equal_approx(float(gathers[5].at), 0.22 + 5 * 0.23), "합류 톤 0.22 + i·0.23초")
+	check(cues.any(func(entry: Dictionary) -> bool: return entry.event == &"spirit_bomb_burst" and is_equal_approx(float(entry.at), 2.26)), "착탄 2.26초에 폭발음")
+	check(cues.any(func(entry: Dictionary) -> bool: return entry.event == &"dash" and is_equal_approx(float(entry.at), 1.88)), "투하 1.88초에 풍절음")
+	check(not cues.any(func(entry: Dictionary) -> bool: return entry.event in [&"ticket_rustle", &"ticket_join"]), "식권 효과음은 없다")
+	check(Sfx.SYNTH.has(&"spirit_orb_gather") and Sfx.SYNTH.has(&"spirit_bomb_burst"), "합성음 두 개")
+	var geometry: Dictionary = preload("res://scenes/victory_title_geometry_data.gd").DATA
+	check(geometry.has("LAW_02:S:0") and geometry["LAW_02:S:0"]["text"] == "SPIRIT" and geometry["LAW_02:S:1"]["text"] == "BOMB!", "제목 윤곽 데이터는 SPIRIT / BOMB!")
+	var stamp: String = str(BoardCatalog.SHOP_KINDS[&"spirit"]["visit_stamp"])
+	check(stamp.contains("기운") and not stamp.contains("순례"), "정령 칸 도장 문구에 순례가 없다")
+	# 무대: 시각만으로 정해진다 (같은 시각 = 같은 원기옥), 합류마다 6단계로 커진다
+	var stage_script := preload("res://scenes/spirit_bomb_stage.gd")
+	check_eq(stage_script.merged(0.0), 0, "처음엔 합류 없음")
+	check_eq(stage_script.merged(stage_script.merge_at(5)), 6, "1.63초에 6묶음 합류")
+	check(is_equal_approx(stage_script.merge_at(5), 1.63), "마지막 합류 1.63초")
+	var last := 0.0
+	for index: int in 6:
+		var settled: float = stage_script.orb_radius(stage_script.merge_at(index) + 0.21)
+		check(settled > last, "합류 %d번째에 원기옥이 커진다" % (index + 1))
+		last = settled
+	check(is_equal_approx(last, 136.0), "최대 반지름 136px")
+	check_eq(stage_script.drop_progress(1.87), 0.0, "투하 전에는 머리 위")
+	check(is_equal_approx(stage_script.drop_progress(2.26), 1.0), "2.26초에 착탄")
+	check(stage_script.drop_progress(2.07) < 0.5, "투하는 ease_in (처음이 느리다)")
+	var a := stage_script.new() as Control
+	var b := stage_script.new() as Control
+	a.setup(Vector2(683, 500), Vector2(1366, 768))
+	b.setup(Vector2(683, 500), Vector2(1366, 768))
+	a.seek(1.95, Vector2(1366, 768))
+	b.seek(0.5, Vector2(1366, 768))
+	b.seek(1.95, Vector2(1366, 768))
+	check(a.orb_center().is_equal_approx(b.orb_center()), "되감아도 같은 위치 (결정론)")
+	a.free()
+	b.free()
+	_restore(saved)
